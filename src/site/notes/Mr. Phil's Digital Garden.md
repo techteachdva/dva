@@ -7,6 +7,10 @@
 
 Welcome to Mr. Phil's Digital Garden for his courses.
 
+[[Day 1 & 2\|Day 1 & 2]]
+
+[[Day 3 & 4\|Day 3 & 4]]
+
 [[6th Grade Technology\|6th Grade Technology]]
 
 
