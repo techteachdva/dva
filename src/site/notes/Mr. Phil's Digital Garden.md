@@ -1,0 +1,16 @@
+---
+{"dg-publish":true,"permalink":"/mr-phil-s-digital-garden/","tags":["gardenEntry"],"noteIcon":""}
+---
+
+
+![DaVinci_Full_Button_2Color.png](/img/user/DaVinci_Full_Button_2Color.png)
+
+Welcome to Mr. Phil's Digital Garden for his courses.
+
+[[6th Grade Technology\|6th Grade Technology]]
+[[7th Grade Technology\|7th Grade Technology]]
+[[8th Grade Technology\|8th Grade Technology]]
+[[6.7.8. Video Production\|6.7.8. Video Production]]
+
+[[Nerd Club 24-25\|Nerd Club 24-25]]
+
