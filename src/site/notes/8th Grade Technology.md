@@ -1,4 +1,5 @@
 ---
-{"dg-publish":true,"permalink":"/8th-grade-technology/"}
+{"dg-publish":true,"permalink":"/8th-grade-technology/","noteIcon":""}
 ---
+
 

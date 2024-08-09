@@ -1,5 +1,6 @@
 ---
-{"dg-publish":true,"permalink":"/7th-grade-technology/"}
+{"dg-publish":true,"permalink":"/7th-grade-technology/","noteIcon":""}
 ---
+
 
 
