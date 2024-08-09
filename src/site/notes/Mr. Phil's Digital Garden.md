@@ -8,9 +8,20 @@
 Welcome to Mr. Phil's Digital Garden for his courses.
 
 [[6th Grade Technology\|6th Grade Technology]]
+
+
 [[7th Grade Technology\|7th Grade Technology]]
+
+
 [[8th Grade Technology\|8th Grade Technology]]
+
+
 [[6.7.8. Video Production\|6.7.8. Video Production]]
+
 
 [[Nerd Club 24-25\|Nerd Club 24-25]]
 
+
+
+
+![history of smart tech.jpg](/img/user/history%20of%20smart%20tech.jpg)
