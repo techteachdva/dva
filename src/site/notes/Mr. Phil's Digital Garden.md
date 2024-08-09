@@ -7,6 +7,8 @@
 
 Welcome to Mr. Phil's Digital Garden for his courses.
 
+[[Advisory\|Advisory]]
+
 [[Day 1 & 2\|Day 1 & 2]]
 
 [[Day 3 & 4\|Day 3 & 4]]
