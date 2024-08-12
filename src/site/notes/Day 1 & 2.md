@@ -3,9 +3,15 @@
 ---
 
 We're going to cover:
-	Procedures.
 	Who am I?
 	Who are you?
+	Procedures
+
+# WHO AM I?
+https://docs.google.com/presentation/d/1_S8AAG2VCNoMGWzl-y50ro_tSZcUyHpyw02SgqzafOA/edit#slide=id.p1
+
+# WHO ARE YOU?
+Dice Breaker!
 
 
 Procedures:
