@@ -11,7 +11,7 @@ Unit 1: Working Together
 	Human Search Engine
 Keep Talking And Nobody Explodes
 
-A Day Period 1
+A Day Period 1 (4 Spark Tickets)
 	Peyton
 	Raihana
 	Bassem
