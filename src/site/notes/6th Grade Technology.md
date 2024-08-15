@@ -7,9 +7,31 @@
 
 Unit 1: Working Together
 	Bomb Defusal 101
-	The Quiet Year
 	Pairing Problems
 	Human Search Engine
+Keep Talking And Nobody Explodes
+
+A Day Period 1
+	Peyton
+	Raihana
+	Bassem
+	Mikko
+	Kamden
+	Adrian
+	Maalik
+	Thaddeus
+	Eden
+	Yafa
+	Andy
+	Aria
+	Marwa
+	Alvin
+	Samantha
+	Obsan
+	Allison
+
+
+
 
 Unit 2: 
 
