@@ -7,6 +7,8 @@
 
 Welcome to Mr. Phil's Digital Garden for his courses.
 
+[[Lessons from KTANE\|Lessons from KTANE]]
+
 [[Advisory\|Advisory]]
 
 [[Day 1 & 2\|Day 1 & 2]]
