@@ -18,3 +18,11 @@ On the whole I would say the experiment was a huge success.
 A lot of people participated, everyone tried their best, everyone's teamwork was really impressive. Overall, you guys did a great job. 
 
 The takeaway from playing the game last week is that we need to take turns and let each other speak, not yell over each other. We get to do a lot of fun and exciting things in this class, and in order to make sure we have the time to get to all of it we need to make sure we are all listening, paying attention and being respectful toward one another. The rules matter in the game just like they do in this classroom.
+
+
+**IF/AND/THEN/OTHERWISE Statements**
+The bomb defusal manual features many sentences like this:
+
+IF the bomb has X THEN do Y, otherwise go to the next instruction.
+
+IF the button is Blue AND says "Detonate" THEN do Z.
