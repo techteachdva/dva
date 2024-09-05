@@ -33,13 +33,18 @@ A Day Period 1 (4 Spark Tickets)
 
 A Day Period 5
 
+Algorithm
+Binary
+Coding
+Data
+Encryption
+Firewall
+GUI
+Hardware
+
 
 
 A Day Period 6
 
-
-Unit 2: 
-
-Unit 3:
 
 

@@ -4,4 +4,6 @@
 
 Today we're going to:
 	Review Procedures
-	Teambuilding Games
+
+
+

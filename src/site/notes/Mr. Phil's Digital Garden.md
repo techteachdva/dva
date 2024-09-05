@@ -29,6 +29,15 @@ Welcome to Mr. Phil's Digital Garden for his courses.
 
 [[Nerd Club 24-25\|Nerd Club 24-25]]
 
+Tech Vocab:
+Algorithm
+Binary
+Coding
+Data
+Encryption
+Firewall
+GUI
+Hardware
 
 
 
