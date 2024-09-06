@@ -12,15 +12,16 @@ Unit 1: Working Together
 	Human Search Engine
 
 
-![Kayla D..gif](/img/user/Kayla%20D..gif)
+![Kayla D..gif|100](/img/user/Kayla%20D..gif)
 By Kayla D.
 
 
-![Anikait K..gif](/img/user/Anikait%20K..gif)
+![Anikait K..gif|100](/img/user/Anikait%20K..gif)
+
 By Anikait K.
 
 
-![Layla B..gif](/img/user/Layla%20B..gif)
+![Layla B..gif|160](/img/user/Layla%20B..gif)
 By Layla B.
 
 
@@ -28,11 +29,11 @@ By Layla B.
 By Ari M.
 
 
-![Danya B..gif](/img/user/Danya%20B..gif)
+![Danya B..gif|100](/img/user/Danya%20B..gif)
 By Danya B.
 
 
-![Sumaya O..gif](/img/user/Sumaya%20O..gif)
+![Sumaya O..gif|100](/img/user/Sumaya%20O..gif)
 By Sumaya O.
 
 
