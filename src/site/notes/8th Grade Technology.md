@@ -11,7 +11,33 @@ Unit 1: Working Together
 	Pairing Problems
 	Human Search Engine
 
-Unit 2:
 
-Unit 3:
+![Kayla D..gif](/img/user/Kayla%20D..gif)
+By Kayla D.
+
+
+![Anikait K..gif](/img/user/Anikait%20K..gif)
+By Anikait K.
+
+
+![Layla B..gif](/img/user/Layla%20B..gif)
+By Layla B.
+
+
+![Ari M..gif](/img/user/Ari%20M..gif)
+By Ari M.
+
+
+![Danya B..gif](/img/user/Danya%20B..gif)
+By Danya B.
+
+
+![Sumaya O..gif](/img/user/Sumaya%20O..gif)
+By Sumaya O.
+
+
+![Basheer K..gif](/img/user/Basheer%20K..gif)
+By Basheer K.
+
+
 
