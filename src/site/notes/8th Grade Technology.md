@@ -12,7 +12,7 @@ Unit 1: Working Together
 	Human Search Engine
 
 
-![Kayla D..gif|100](/img/user/Kayla%20D..gif)
+![Kayla D..gif|128](/img/user/Kayla%20D..gif)
 By Kayla D.
 
 
