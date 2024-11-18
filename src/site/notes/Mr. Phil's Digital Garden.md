@@ -7,9 +7,6 @@
 
 Welcome to Mr. Phil's Digital Garden for his courses.
 
-<iframe src="https://docs.google.com/forms/d/e/1FAIpQLSf60Si_6_QQFOrFxl1Drf8g9LU7E-7RlNSp-PD05MFgWhkoPg/viewform?embedded=true" width="600" height="1200" frameborder="0" marginheight="0" marginwidth="0">Loading…</iframe>
-
-
 [[Lessons from KTANE\|Lessons from KTANE]]
 
 [[Advisory\|Advisory]]
