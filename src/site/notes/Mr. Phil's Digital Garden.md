@@ -7,6 +7,10 @@
 
 Welcome to Mr. Phil's Digital Garden for his courses.
 
+[[Pride Club\|Pride Club]]
+
+[[Pixel Art Center\|Pixel Art Center]]
+
 [[Lessons from KTANE\|Lessons from KTANE]]
 
 [[Advisory\|Advisory]]
