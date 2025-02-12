@@ -5,44 +5,9 @@
 
 ![DaVinci_Full_Button_2Color.png](/img/user/DaVinci_Full_Button_2Color.png)
 
-Welcome to Mr. Phil's Digital Garden for his courses.
+Welcome to Mr. Phil's Digital Garden.
 
 [[Pride Club\|Pride Club]]
 
-[[Pixel Art Center\|Pixel Art Center]]
 
-[[Lessons from KTANE\|Lessons from KTANE]]
-
-[[Advisory\|Advisory]]
-
-[[Day 1 & 2\|Day 1 & 2]]
-
-[[Day 3 & 4\|Day 3 & 4]]
-
-[[6th Grade Technology\|6th Grade Technology]]
-
-
-[[7th Grade Technology\|7th Grade Technology]]
-
-
-[[8th Grade Technology\|8th Grade Technology]]
-
-
-[[6.7.8. Video Production\|6.7.8. Video Production]]
-
-
-[[Nerd Club 24-25\|Nerd Club 24-25]]
-
-Tech Vocab:
-Algorithm
-Binary
-Coding
-Data
-Encryption
-Firewall
-GUI
-Hardware
-
-
-
-![history of smart tech.jpg](/img/user/history%20of%20smart%20tech.jpg)
+[[Pixel Art Museum\|Pixel Art Museum]]
