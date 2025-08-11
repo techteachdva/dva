@@ -7,7 +7,7 @@
 
 Welcome to Mr. Phil's Digital Garden.
 
-[[Pride Club\|Pride Club]]
+[[QR Code Hub\|QR Code Hub]]
 
 
 [[Pixel Art Museum\|Pixel Art Museum]]
