@@ -23,7 +23,7 @@ Bubblegum
 ![Rowan.jpeg](/img/user/Rowan.jpeg)
 Rowan
 
-![Lemon.jpg](/img/user/Lemon.jpg)
+![Lemon2.jpg](/img/user/Lemon2.jpg)
 Lemon
 
 ![Middle school pic.jpg](/img/user/Middle%20school%20pic.jpg)
