@@ -14,19 +14,19 @@ Mr. Phil teaches Technology, Game Design, Video Production, and Media Arts.
 Fun Fact: QR Code stands for Quick Response Code.
 
 
-![CARROLL.png](/img/user/CARROLL.png)
+![CARROLL.png](/img/user/Pictures/CARROLL.png)
 Mr. Phil
 
-![Bubblegum.jpeg](/img/user/Bubblegum.jpeg)
+![Bubblegum.jpeg](/img/user/Pictures/Bubblegum.jpeg)
 Bubblegum
 
-![Rowan.jpeg](/img/user/Rowan.jpeg)
+![Rowan.jpeg](/img/user/Pictures/Rowan.jpeg)
 Rowan
 
-![Lemon2.jpg](/img/user/Lemon2.jpg)
+![Lemon2.jpg](/img/user/Pictures/Lemon2.jpg)
 Lemon
 
-![Middle school pic.jpg](/img/user/Middle%20school%20pic.jpg)
+![Middle school pic.jpg](/img/user/Pictures/Middle%20school%20pic.jpg)
 Mr. Phil in Middle School
 
 
