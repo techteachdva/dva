@@ -18,3 +18,5 @@ For Vocabulary: Pretest-Check Test- Final Test. The more feedback they can get o
 2) Beers 2025 page 225:
    *"The move from pretest–check test–final test to get-then-test did stream-line instruction, but this did not serve students well. That first pretest focused students’ attention and the Wednesday check test provided needed feedback. Additionally, the original pattern for instruction (pretest, check test, final test) also included returning to words missed on the weekly Friday test for monthly and yearly review. (Perhaps you remember the six-weeks spelling test that reviewed the previously learned one hundred words?) This type of constant review helped solidify learning (Rohrer 2015)."*
 3) Prompt, DON'T CORRECT. I have been accidentally breaking this rule. I would like to do a better job to remember to prompt and not correct students when they are reading. I don't have many opportunities to have students read aloud, as most of my classwork is independent reading and writing, but I could create more opportunities for students to read from the board or read their answers out loud to share with the class.
+
+![fluency.png](/img/user/fluency.png)
