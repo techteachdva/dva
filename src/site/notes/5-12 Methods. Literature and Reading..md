@@ -9,3 +9,5 @@ This is the homepage for Philip Carroll's Digital Portfolio for ESE588 5-12 Meth
 
 [[Number 2 - 9.18 Reading\|Number 2 - 9.18 Reading]]
 
+[[Number 3 - 9.25 Reading\|Number 3 - 9.25 Reading]]
+
