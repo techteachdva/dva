@@ -19,6 +19,8 @@ The Big Three Questions
 	? What does the author think I already know? (What confused you?)
 	C What changed, challenged, or confirmed what I already know?
 
+*"It’s the third question, though, that you want to be sure becomes your final question: What has changed, challenged, or confirmed your thinking? Reading doesn’t change us, but it gives us the opportunity to change ourselves. End your conversations with this question to remind students that reading empowers them."*
+
 
 
 ![retelling rubric.png](/img/user/retelling%20rubric.png)
