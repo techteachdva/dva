@@ -2,6 +2,8 @@
 {"dg-publish":true,"permalink":"/desiderata/","noteIcon":""}
 ---
 
+https://www.youtube.com/watch?v=ieFJIaIjmBY
+
 ![desiderata-original-text.jpg](/img/user/desiderata-original-text.jpg)
 
 Desiderata ("Things desired" in Latin)
