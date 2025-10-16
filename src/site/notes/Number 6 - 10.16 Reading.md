@@ -4,6 +4,8 @@
 
 Based on this week’s new readings.  What are your 3 most important take aways from this week texts about selecting meaningful young adult literature for adolescent readers?
 
+
+
 Page 270:
 "But when research shows one book a day can give a child a million-word advantage, then as a nation, we are required to ensure all children have access to books. To do less creates an inequity among children that is more than wrong; it is shameful. This million-word gap, more often than not, is another example of systemic problems we must, as a nation, overcome." Beers (2025)
 
@@ -22,6 +24,11 @@ Pages 278-279
 
 page 284
 "We test reading comprehension but do not expect students to comprehend content by reading it." Beers (2025)
+
+
+Dialogic talk is asking questions without easy answers, to test for comprehension.
+Monologic talk is asking "quiz questions" or testing for basic memory of elements.
+Dialogical talk is something I feel I already do well and now I can focus on it with a better understanding the importance of it for transferring real comprehension skills.
 
 
 I NEED TO READ OUT ALL THE INSTRUCTIONS ON MY ASSIGNMENTS.
