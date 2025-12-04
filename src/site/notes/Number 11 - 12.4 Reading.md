@@ -29,4 +29,9 @@ I think a key idea from the reading I can take away is that backwards design sav
 
 Critical media literacy practices and powerful nonfiction reading allows students to build their own towers of knowing, it builds non-reliance on seeking truths from ivory towers behind gilded gates. They have all that they need already, they just need a little scaffolding to build it tall and sturdy. So an experienced architect can give them the plans, give them the tips, give them the means to build their own knowledge on solid ground to raise them to higher levels of thought and being. 
 
+*"Through questioning the bias, values, and points of view of media messages, students recognize that messages can never be completely objective and neutral; they always involve relationships of power."*
+
+Choudhury, M., & Share, J. (2012). Critical Media Literacy: A Pedagogy for New Literacies and Urban Youth. _Voices from the Middle,_ _19_(4), 39-44. https://ezproxy.augsburg.edu/login?url=https://www.proquest.com/scholarly-journals/critical-media-literacy-pedagogy-new-literacies/docview/1011487042/se-2
+
+
 ![firmament.jpg](/img/user/firmament.jpg)
