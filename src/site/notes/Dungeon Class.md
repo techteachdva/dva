@@ -4,3 +4,9 @@
 
 [Play Dungeon Class](https://dva-nu.vercel.app/dungeonclass/Dungeon_Class.html)
 
+PROFE
+DAVINCI
+DRAGONS
+DELTA
+OJIBWE
+VITAL
