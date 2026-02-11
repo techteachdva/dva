@@ -5,6 +5,7 @@
   <title>Dungeon Class</title>
   <link id="-gd-engine-icon" rel="icon" type="image/png" href="Dungeon_Class.icon.png" />
 <link rel="apple-touch-icon" href="Dungeon_Class.apple-touch-icon.png"/>
+<link rel="manifest" href="Dungeon_Class.manifest.json">
 
   <style>
     body { margin: 0; background: #000; }
@@ -20,7 +21,7 @@
       // must load .pck and .wasm from that folder, not from site root "/".
       var path = location.pathname;
       var basePath = path ? (location.origin + path.substring(0, path.lastIndexOf('/') + 1)) : '';
-      var config = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"Dungeon_Class","experimentalVK":false,"fileSizes":{"Dungeon_Class.pck":59457960,"Dungeon_Class.wasm":37686550},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
+      var config = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"Dungeon_Class","experimentalVK":false,"fileSizes":{"Dungeon_Class.pck":65187968,"Dungeon_Class.wasm":1509558},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":"Dungeon_Class.service.worker.js"};
       if (basePath) {
         var name = (config.executable || 'Dungeon_Class').split('/').pop();
         config.executable = basePath + name;

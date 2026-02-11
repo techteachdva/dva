@@ -4,7 +4,7 @@
 // Incrementing CACHE_VERSION will kick off the install event and force
 // previously cached resources to be updated from the network.
 /** @type {string} */
-const CACHE_VERSION = '1770652136|8360598934';
+const CACHE_VERSION = '1770780003|4726247709';
 /** @type {string} */
 const CACHE_PREFIX = 'Dungeon Class-sw-cache-';
 const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION;
@@ -17,7 +17,7 @@ const ENSURE_CROSSORIGIN_ISOLATION_HEADERS = true;
 const CACHED_FILES = ["Dungeon_Class.html","Dungeon_Class.js","Dungeon_Class.offline.html","Dungeon_Class.icon.png","Dungeon_Class.apple-touch-icon.png","Dungeon_Class.audio.worklet.js","Dungeon_Class.audio.position.worklet.js"];
 // Files that we might not want the user to preload, and will only be cached on first load.
 /** @type {string[]} */
-const CACHEABLE_FILES = ["Dungeon_Class.wasm","Dungeon_Class.pck"];
+const CACHEABLE_FILES = ["Dungeon_Class.wasm","Dungeon_Class.pck","Dungeon_Class.side.wasm"];
 const FULL_CACHE = CACHED_FILES.concat(CACHEABLE_FILES);
 
 self.addEventListener('install', (event) => {
