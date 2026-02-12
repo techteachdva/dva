@@ -6,15 +6,15 @@
   "headers": [
     {
       "source": "/(.*)\\.wasm",
-      "headers": [{ "key": "Content-Type", "value": "application/wasm" }]
+      "headers": [
+        { "key": "Content-Type", "value": "application/wasm" }
+      ]
     },
     {
       "source": "/(.*)\\.pck",
-      "headers": [{ "key": "Content-Type", "value": "application/octet-stream" }]
+      "headers": [
+        { "key": "Content-Type", "value": "application/octet-stream" }
+      ]
     }
-  ],
-  "routes": [
-    { "handle": "filesystem" },
-    { "src": "/(.*)", "status": 404, "dest": "/404" }
   ]
 }

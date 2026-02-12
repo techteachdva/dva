@@ -68,7 +68,8 @@ function download(url, redirectCount = 0) {
     fs.writeFileSync(OUT_FILE, buf);
     console.log(`Wrote ${OUT_FILE} (${(buf.length / 1024 / 1024).toFixed(1)} MB).`);
   } catch (err) {
-    console.error(err.message);
-    process.exit(1);
+    console.error("download-pck failed:", err.message);
+    console.warn("Build will continue using .pck from repo (if present). Remove or fix DUNGEONCLASS_PCK_URL in Vercel to avoid this.");
+    process.exit(0);  // Don't fail build - use existing .pck in repo
   }
 })();
