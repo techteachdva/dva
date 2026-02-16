@@ -9,7 +9,7 @@ const fs = require('fs');
 const path = require('path');
 
 const distPath = path.join(__dirname, '..', 'dist', 'crystalwizards', 'index.html');
-const url = process.env.SIGNALING_BASE_URL || 'wss://crystal-wizards-signaling.techteachdva.partykit.dev/party/main';
+const url = process.env.SIGNALING_BASE_URL || 'wss://crystal-wizards-signaling.techteachdva.partykit.dev/parties/main';
 
 if (!fs.existsSync(distPath)) {
   console.log('inject-signaling-url: dist/crystalwizards/index.html not found (run build first?), skipping');
