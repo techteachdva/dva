@@ -2,7 +2,8 @@
 {"dg-publish":true,"permalink":"/crystal-wizards/","noteIcon":""}
 ---
 
-https://dva-nu.vercel.app/crystalwizards/
+[Play Crystal Wizards!](https://dva-nu.vercel.app/crystalwizards/)
+
 
 
 
