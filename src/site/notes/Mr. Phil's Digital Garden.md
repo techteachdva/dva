@@ -30,3 +30,7 @@ Welcome to Mr. Phil's Digital Garden.
 
 
 [[Dungeon Class\|Dungeon Class]]
+
+
+[[Crystal Wizards\|Crystal Wizards]]
+
