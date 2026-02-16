@@ -526,7 +526,24 @@ module.exports = function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy("src/site/styles/_theme.*.css");
   eleventyConfig.addPassthroughCopy("src/site/dungeonclass");
   eleventyConfig.addPassthroughCopy("src/site/crystalwizards");
-  eleventyConfig.addPlugin(faviconsPlugin, { outputDir: "dist" });
+  // Wrap favicons with a mutex to avoid EBUSY on Windows when multiple pages render in parallel
+  const genIcons = require("eleventy-plugin-gen-favicons/favicon-gen");
+  const genHtml = require("eleventy-plugin-gen-favicons/html-gen");
+  let faviconHtmlPromise = null;
+  eleventyConfig.addAsyncShortcode("favicons", async (sourceFile, opts) => {
+    if (!faviconHtmlPromise) {
+      faviconHtmlPromise = (async () => {
+        const outputDir = "dist";
+        const favOpts = Object.assign(
+          { manifestData: {}, generateManifest: true, skipCache: false },
+          opts
+        );
+        const generatedFiles = await genIcons(sourceFile, outputDir, favOpts);
+        return await genHtml(generatedFiles);
+      })();
+    }
+    return await faviconHtmlPromise;
+  });
   eleventyConfig.addPlugin(tocPlugin, {
     ul: true,
     tags: ["h1", "h2", "h3", "h4", "h5", "h6"],

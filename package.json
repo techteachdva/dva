@@ -13,13 +13,13 @@
         "get-theme": "node src/site/get-theme.js",
         "download-pck": "node scripts/download-pck.js",
         "inject-signaling": "node scripts/inject-signaling-url.js",
-        "build": "npm-run-all get-theme build:sass download-pck build:eleventy inject-signaling"
+        "build": "npm-run-all get-theme build:sass download-pck inject-signaling build:eleventy"
     },
     "keywords": [],
     "author": "",
     "license": "ISC",
     "devDependencies": {
-        "@11ty/eleventy": "^2.0.1",
+        "@11ty/eleventy": "^3.1.2",
         "@11ty/eleventy-plugin-rss": "^1.2.0",
         "cross-env": "^7.0.3",
         "html-minifier-terser": "^7.2.0",
@@ -49,4 +49,3 @@
         "rimraf": "^4.4.1"
     }
 }
-
