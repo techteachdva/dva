@@ -1,0 +1,12 @@
+{
+  "name": "crystal-wizards-signaling",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "partykit dev",
+    "deploy": "partykit deploy"
+  },
+  "dependencies": {
+    "partykit": "^0.0.200"
+  }
+}

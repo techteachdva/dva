@@ -12,7 +12,8 @@
         "build:sass": "sass src/site/styles:dist/styles --style compressed",
         "get-theme": "node src/site/get-theme.js",
         "download-pck": "node scripts/download-pck.js",
-        "build": "npm-run-all get-theme build:sass download-pck build:eleventy"
+        "inject-signaling": "node scripts/inject-signaling-url.js",
+        "build": "npm-run-all get-theme build:sass download-pck build:eleventy inject-signaling"
     },
     "keywords": [],
     "author": "",
