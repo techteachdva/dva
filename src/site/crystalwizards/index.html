@@ -30,7 +30,7 @@
   <div id="gd-overlay">
     <span>Click to Play</span>
   </div>
-  <canvas id="canvas"></canvas>
+  <canvas id="canvas" tabindex="0"></canvas>
   <script src="index.js"></script>
   <script>
     (function() {
@@ -44,7 +44,7 @@
           ? location.origin + path + (path.endsWith('/') ? '' : '/')
           : location.origin + path.substring(0, lastSlash + 1);
       }
-      var config = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":713374712,"index.wasm":35740641},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":"index.service.worker.js"};
+      var config = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":685993088,"index.wasm":35740641},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":"index.service.worker.js"};
       if (basePath) {
         var name = (config.executable || 'index').split('/').pop();
         config.executable = basePath + name;
@@ -54,8 +54,29 @@
       var overlay = document.getElementById('gd-overlay');
       function startOnClick() {
         overlay.classList.add('hidden');
-        engine.startGame();
         overlay.removeEventListener('click', startOnClick);
+        // Focus canvas so subsequent input (clicks in-game) is associated with it
+        var canvas = document.getElementById('canvas');
+        if (canvas && canvas.focus) canvas.focus();
+        // Unlock Web Audio API: create and resume AudioContext in same user gesture.
+        // Browsers block audio until this happens; Godot's engine creates its context
+        // asynchronously, so we unlock the page first.
+        try {
+          var ctx = new (window.AudioContext || window.webkitAudioContext)();
+          window.__gdAudioCtx = ctx;
+          if (ctx.state === 'suspended') {
+            ctx.resume();
+          }
+          // Play a 1-sample silent buffer to fully unlock (required on some browsers)
+          var buf = ctx.createBuffer(1, 1, 22050);
+          var src = ctx.createBufferSource();
+          src.buffer = buf;
+          src.connect(ctx.destination);
+          src.start(0);
+        } catch (e) {
+          console.warn('Web Audio unlock failed:', e);
+        }
+        engine.startGame();
       }
       overlay.addEventListener('click', startOnClick);
     })();
