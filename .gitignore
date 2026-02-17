@@ -10,4 +10,9 @@ src/site/styles/_theme.*.css
 .vercel
 .cache
 _site/
+
+# Game assets - downloaded at build from GitHub Releases (avoid LFS budget)
+src/site/crystalwizards/index.pck
+src/site/crystalwizards/index.wasm
+src/site/dungeonclass/*.pck
 **/.DS_Store
