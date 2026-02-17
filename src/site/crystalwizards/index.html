@@ -37,8 +37,9 @@
 <body>
   <div id="gd-loading">
     <div class="spinner"></div>
-    <div class="text">Loading Crystal Wizards...</div>
+    <div class="text" id="gd-loading-text">Click to play</div>
     <div class="bar-wrap"><div class="bar" id="gd-progress-bar"></div></div>
+    <button id="gd-play-btn" style="margin-top:20px;padding:12px 32px;font-size:18px;background:#7b9cff;color:#0a0a12;border:none;border-radius:8px;cursor:pointer;font-weight:bold;">Play</button>
   </div>
   <canvas id="canvas" tabindex="0"></canvas>
   <script src="index.js"></script>
@@ -54,27 +55,51 @@
           ? location.origin + path + (path.endsWith('/') ? '' : '/')
           : location.origin + path.substring(0, lastSlash + 1);
       }
-      var config = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":718941832,"index.wasm":1508102},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
+      var config = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":718941560,"index.wasm":1508102},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
       if (basePath) {
         var name = (config.executable || 'index').split('/').pop();
         config.executable = basePath + name;
         config.mainPack = basePath + name + '.pck';
+        if (config.fileSizes) {
+          config.fileSizes[config.executable + '.wasm'] = config.fileSizes[name + '.wasm'] || config.fileSizes['index.wasm'] || 0;
+          config.fileSizes[config.mainPack] = config.fileSizes[name + '.pck'] || config.fileSizes['index.pck'] || 0;
+          var sideSize = config.fileSizes[name + '.side.wasm'] || config.fileSizes['index.side.wasm'];
+          if (sideSize) config.fileSizes[config.executable + '.side.wasm'] = sideSize;
+        }
       }
       var engine = new Engine(config);
       var loading = document.getElementById('gd-loading');
       var progressBar = document.getElementById('gd-progress-bar');
-      engine.startGame({
-        onProgress: function(current, total) {
-          if (total > 0 && progressBar) {
-            progressBar.style.width = (100 * current / total) + '%';
+      var loadingText = document.getElementById('gd-loading-text');
+      var playBtn = document.getElementById('gd-play-btn');
+      function startGame() {
+        playBtn.style.display = 'none';
+        loadingText.textContent = 'Loading Crystal Wizards...';
+        engine.startGame({
+          onProgress: function(current, total) {
+            if (total > 0 && progressBar) {
+              progressBar.style.width = (100 * current / total) + '%';
+            }
           }
+        }).then(function() {
+          loading.classList.add('hidden');
+        }).catch(function(err) {
+          if (loading) loading.querySelector('.text').textContent = 'Failed to load. Refresh to try again.';
+          playBtn.style.display = 'block';
+          console.error('Godot startGame failed:', err);
+        });
+      }
+      function onPlayClick() {
+        if (window.AudioContext) {
+          try {
+            var c = new AudioContext();
+            if (c.state === 'suspended') c.resume();
+          } catch (e) {}
         }
-      }).then(function() {
-        loading.classList.add('hidden');
-      }).catch(function(err) {
-        if (loading) loading.querySelector('.text').textContent = 'Failed to load. Refresh to try again.';
-        console.error('Godot startGame failed:', err);
-      });
+        startGame();
+      }
+      playBtn.addEventListener('click', onPlayClick);
+      playBtn.addEventListener('touchend', function(e) { e.preventDefault(); onPlayClick(); });
     })();
   </script>
 </body>
