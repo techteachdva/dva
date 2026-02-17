@@ -10,6 +10,8 @@
  * - 4 OFFER, 5 ANSWER, 6 CANDIDATE: WebRTC relay (id = destination peer)
  * - 7 SEAL: host seals lobby (no new joins)
  * - 8 START: host requests start game; server broadcasts to all peers (reliable)
+ * - 9 WIZARD_ASSIGN: peer assigns self to wizard slot; server broadcasts to all (id=senderId, data="slot_index|name")
+ * - 10 BEGIN_GAME: host requests begin after wizard selection; server broadcasts to all (reliable)
  *
  * Connect: wss://YOUR_PROJECT.USERNAME.partykit.dev/parties/main/ROOM_CODE
  * Room code = 6-letter code (e.g. ABC123)
@@ -27,6 +29,8 @@ const CMD = {
   CANDIDATE: 6,
   SEAL: 7,
   START: 8,
+  WIZARD_ASSIGN: 9,
+  BEGIN_GAME: 10,
 } as const;
 
 function protoMessage(type: number, id: number, data: string): string {
@@ -112,6 +116,22 @@ export default class SignalingServer implements Party.Server {
     if (type === CMD.START && senderId === 1) {
       for (const conn of this.getConnections()) {
         if (conn.id !== sender.id) conn.send(protoMessage(CMD.START, 0, ""));
+      }
+      return;
+    }
+
+    if (type === CMD.WIZARD_ASSIGN) {
+      const slotIndex = typeof id === "number" ? Math.floor(id) : 0;
+      const payload = String(slotIndex) + "|" + (data || "");
+      for (const conn of this.getConnections()) {
+        conn.send(protoMessage(CMD.WIZARD_ASSIGN, senderId, payload));
+      }
+      return;
+    }
+
+    if (type === CMD.BEGIN_GAME && senderId === 1) {
+      for (const conn of this.getConnections()) {
+        if (conn.id !== sender.id) conn.send(protoMessage(CMD.BEGIN_GAME, 0, ""));
       }
       return;
     }
