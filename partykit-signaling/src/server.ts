@@ -9,6 +9,7 @@
  * - 3 PEER_DISCONNECT: peer left
  * - 4 OFFER, 5 ANSWER, 6 CANDIDATE: WebRTC relay (id = destination peer)
  * - 7 SEAL: host seals lobby (no new joins)
+ * - 8 START: host requests start game; server broadcasts to all peers (reliable)
  *
  * Connect: wss://YOUR_PROJECT.USERNAME.partykit.dev/parties/main/ROOM_CODE
  * Room code = 6-letter code (e.g. ABC123)
@@ -25,6 +26,7 @@ const CMD = {
   ANSWER: 5,
   CANDIDATE: 6,
   SEAL: 7,
+  START: 8,
 } as const;
 
 function protoMessage(type: number, id: number, data: string): string {
@@ -103,6 +105,13 @@ export default class SignalingServer implements Party.Server {
         for (const conn of this.getConnections()) {
           conn.send(protoMessage(CMD.SEAL, 0, ""));
         }
+      }
+      return;
+    }
+
+    if (type === CMD.START && senderId === 1) {
+      for (const conn of this.getConnections()) {
+        if (conn.id !== sender.id) conn.send(protoMessage(CMD.START, 0, ""));
       }
       return;
     }
