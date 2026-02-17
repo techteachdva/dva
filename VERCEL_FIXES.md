@@ -35,7 +35,14 @@ If you see `Cannot find module 'X'`:
 - Run `npm install` locally and commit `package-lock.json`
 - Ensure the dependency is in `package.json` (not only devDependencies if it’s needed at runtime)
 
-### Fix D: API / serverless error
+### Fix D: Crystal Wizards stuck on loading screen
+
+1. **Check build logs** – In the deployment Build Logs, find `download-crystalwizards`. It should say `Wrote index.pck` and `Wrote index.wasm`. If you see `CRYSTALWIZARDS_PCK_URL and CRYSTALWIZARDS_WASM_URL not set — skipping`, add those env vars in Vercel.
+2. **Verify env vars** – `CRYSTALWIZARDS_PCK_URL` and `CRYSTALWIZARDS_WASM_URL` must point to real files (e.g. GitHub Release assets). Use the exact tag in the URL: `.../releases/download/v1.0/index.pck`.
+3. **COOP/COEP** – `vercel.json` now adds these headers for `/crystalwizards/`. Redeploy after pulling the change.
+4. **Plan limit** – Game is ~735 MB. Hobby = 100 MB max; Pro = 1 GB. On Hobby, the deploy may fail or the game won’t load.
+
+### Fix E: API / serverless error
 
 If the error is in the `api/` folder:
 - Confirm `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` are set in Vercel
