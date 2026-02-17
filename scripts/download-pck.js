@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 /**
- * Downloads Dungeon_Class.pck from DUNGEONCLASS_PCK_URL during build.
- * Use this when Git LFS is off on Vercel so the real .pck is deployed.
- * Set Vercel env: DUNGEONCLASS_PCK_URL = https://github.com/USER/REPO/releases/download/TAG/Dungeon_Class.pck
+ * Downloads Dungeon_Class.pck and Dungeon_Class.wasm during build.
+ * Use when Git LFS is off on Vercel so the real files are deployed.
+ * Set Vercel env:
+ *   DUNGEONCLASS_PCK_URL = https://github.com/USER/REPO/releases/download/TAG/Dungeon_Class.pck
+ *   DUNGEONCLASS_WASM_URL = https://github.com/USER/REPO/releases/download/TAG/Dungeon_Class.wasm
  */
 
 const fs = require('fs');
@@ -12,11 +14,11 @@ const http = require('http');
 const { URL } = require('url');
 
 const OUT_DIR = path.join(__dirname, '..', 'src', 'site', 'dungeonclass');
-const OUT_FILE = path.join(OUT_DIR, 'Dungeon_Class.pck');
-const ENV_URL = process.env.DUNGEONCLASS_PCK_URL;
+const PCK_URL = process.env.DUNGEONCLASS_PCK_URL;
+const WASM_URL = process.env.DUNGEONCLASS_WASM_URL;
 
-if (!ENV_URL) {
-  console.log('DUNGEONCLASS_PCK_URL not set — skipping .pck download (game may show " .pck file missing" unless LFS is on).');
+if (!PCK_URL && !WASM_URL) {
+  console.log('DUNGEONCLASS_PCK_URL and DUNGEONCLASS_WASM_URL not set — skipping (game may show ".pck file missing" unless files are in repo).');
   process.exit(0);
 }
 
@@ -56,20 +58,39 @@ function download(url, redirectCount = 0) {
 }
 
 (async () => {
-  try {
-    if (!fs.existsSync(OUT_DIR)) {
-      fs.mkdirSync(OUT_DIR, { recursive: true });
-    }
-    console.log('Downloading Dungeon_Class.pck from DUNGEONCLASS_PCK_URL...');
-    const buf = await download(ENV_URL);
-    if (buf.length < 1000) {
-      throw new Error(`Downloaded file is too small (${buf.length} bytes). Likely an LFS pointer or 404 page. Use a URL to the real .pck (e.g. GitHub Release asset).`);
-    }
-    fs.writeFileSync(OUT_FILE, buf);
-    console.log(`Wrote ${OUT_FILE} (${(buf.length / 1024 / 1024).toFixed(1)} MB).`);
-  } catch (err) {
-    console.error("download-pck failed:", err.message);
-    console.warn("Build will continue using .pck from repo (if present). Remove or fix DUNGEONCLASS_PCK_URL in Vercel to avoid this.");
-    process.exit(0);  // Don't fail build - use existing .pck in repo
+  if (!fs.existsSync(OUT_DIR)) {
+    fs.mkdirSync(OUT_DIR, { recursive: true });
   }
+
+  if (PCK_URL) {
+    try {
+      console.log('Downloading Dungeon_Class.pck...');
+      const buf = await download(PCK_URL);
+      if (buf.length < 1000) {
+        throw new Error(`File too small (${buf.length} bytes). Likely LFS pointer or 404.`);
+      }
+      fs.writeFileSync(path.join(OUT_DIR, 'Dungeon_Class.pck'), buf);
+      console.log(`Wrote Dungeon_Class.pck (${(buf.length / 1024 / 1024).toFixed(1)} MB).`);
+    } catch (err) {
+      console.error('download-pck Dungeon_Class.pck:', err.message);
+      console.warn('Build will continue using .pck from repo (if present).');
+    }
+  }
+
+  if (WASM_URL) {
+    try {
+      console.log('Downloading Dungeon_Class.wasm...');
+      const buf = await download(WASM_URL);
+      if (buf.length < 1000) {
+        throw new Error(`File too small (${buf.length} bytes). Likely 404.`);
+      }
+      fs.writeFileSync(path.join(OUT_DIR, 'Dungeon_Class.wasm'), buf);
+      console.log(`Wrote Dungeon_Class.wasm (${(buf.length / 1024 / 1024).toFixed(1)} MB).`);
+    } catch (err) {
+      console.error('download-pck Dungeon_Class.wasm:', err.message);
+      console.warn('Build will continue using .wasm from repo (if present).');
+    }
+  }
+
+  process.exit(0);
 })();
