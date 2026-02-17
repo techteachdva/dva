@@ -4,12 +4,12 @@ require("dotenv").config();
  * Injects SIGNALING_BASE_URL into Crystal Wizards index.html at build time.
  * Runs BEFORE eleventy build; modifies src/site/crystalwizards/index.html so the
  * passthrough copy includes the injected URL. Also runs on dist after build as fallback.
- * Set Vercel env: SIGNALING_BASE_URL = wss://crystal-wizards-signaling.YOUR_USERNAME.partykit.dev/party/main
+ * Set Vercel env: SIGNALING_BASE_URL = wss://crystal-wizards-signaling.YOUR_USERNAME.partykit.dev/parties/main
  */
 const fs = require("fs");
 const path = require("path");
 
-const url = process.env.SIGNALING_BASE_URL || "wss://crystal-wizards-signaling.techteachdva.partykit.dev/party/main";
+const url = process.env.SIGNALING_BASE_URL || "wss://crystal-wizards-signaling.techteachdva.partykit.dev/parties/main";
 const placeholder = "__SIGNALING_BASE_URL__";
 const escaped = (url || "").replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, '\\"');
 
@@ -27,12 +27,14 @@ function injectIntoFile(filePath, label) {
     return true;
   }
 
-  // 1b. Fix old URL missing /main (PartyKit production requires /party/main/)
-  if (html.includes("partykit.dev/party") && !html.includes("partykit.dev/party/main")) {
-    html = html.replace(/partykit\.dev\/party"/g, 'partykit.dev/party/main"');
-    html = html.replace(/partykit\.dev\/party'/g, "partykit.dev/party/main'");
+  // 1b. Fix old URL - PartyKit production requires /parties/main/ (plural "parties")
+  if (html.includes("partykit.dev/party") && !html.includes("partykit.dev/parties/main")) {
+    html = html.replace(/partykit\.dev\/party\/main"/g, 'partykit.dev/parties/main"');
+    html = html.replace(/partykit\.dev\/party\/main'/g, "partykit.dev/parties/main'");
+    html = html.replace(/partykit\.dev\/party"/g, 'partykit.dev/parties/main"');
+    html = html.replace(/partykit\.dev\/party'/g, "partykit.dev/parties/main'");
     fs.writeFileSync(filePath, html);
-    console.log("inject-signaling-url: fixed URL (added /main) in " + label);
+    console.log("inject-signaling-url: fixed URL (parties/main) in " + label);
     return true;
   }
 

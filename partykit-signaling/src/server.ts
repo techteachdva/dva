@@ -10,7 +10,7 @@
  * - 4 OFFER, 5 ANSWER, 6 CANDIDATE: WebRTC relay (id = destination peer)
  * - 7 SEAL: host seals lobby (no new joins)
  *
- * Connect: wss://YOUR_PROJECT.USERNAME.partykit.dev/party/ROOM_CODE
+ * Connect: wss://YOUR_PROJECT.USERNAME.partykit.dev/parties/main/ROOM_CODE
  * Room code = 6-letter code (e.g. ABC123)
  */
 

@@ -9,7 +9,7 @@ npm install
 npx partykit deploy
 ```
 
-After deploy, note the URL (e.g. `wss://crystal-wizards-signaling.USERNAME.partykit.dev/party`). The game uses this as the signaling base URL; room codes are appended (e.g. `.../party/ABC123`).
+After deploy, note the URL (e.g. `wss://crystal-wizards-signaling.USERNAME.partykit.dev/parties/main`). The game uses this as the signaling base URL; room codes are appended (e.g. `.../parties/main/ABC123`). **Production uses `/parties/main/` (plural).**
 
 ## Protocol
 

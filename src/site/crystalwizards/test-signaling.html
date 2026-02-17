@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Crystal Wizards - Signaling Test</title>
+  <style>
+    body { font-family: system-ui; max-width: 600px; margin: 2rem auto; padding: 1rem; }
+    button { padding: 0.5rem 1rem; margin: 0.25rem; cursor: pointer; }
+    .ok { color: green; }
+    .err { color: red; }
+    pre { background: #f4f4f4; padding: 1rem; overflow-x: auto; }
+    #log { margin-top: 1rem; white-space: pre-wrap; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <h1>PartyKit Signaling Test</h1>
+  <p>Tests WebSocket connection to the Crystal Wizards signaling server.</p>
+  <p>
+    <label>Room code: <input type="text" id="roomCode" value="TEST12" maxlength="6" style="text-transform:uppercase" /></label>
+    <button id="connectBtn">Connect</button>
+    <button id="disconnectBtn" disabled>Disconnect</button>
+  </p>
+  <p id="status">Ready.</p>
+  <div id="log"></div>
+
+  <script>
+    const BASE = "wss://crystal-wizards-signaling.techteachdva.partykit.dev/parties/main";
+    let ws = null;
+
+    function log(msg, isErr = false) {
+      const el = document.getElementById("log");
+      const time = new Date().toLocaleTimeString();
+      el.textContent += `[${time}] ${msg}\n`;
+      el.scrollTop = el.scrollHeight;
+    }
+
+    function setStatus(msg, isErr = false) {
+      const el = document.getElementById("status");
+      el.textContent = msg;
+      el.className = isErr ? "err" : "ok";
+    }
+
+    document.getElementById("connectBtn").onclick = () => {
+      const code = document.getElementById("roomCode").value.toUpperCase().trim();
+      if (code.length !== 6) {
+        setStatus("Room code must be 6 characters.", true);
+        return;
+      }
+      const url = BASE + "/" + code;
+      log("Connecting to: " + url);
+      setStatus("Connecting...");
+      try {
+        ws = new WebSocket(url);
+        ws.onopen = () => {
+          log("WebSocket OPEN - connection successful!");
+          setStatus("Connected! Waiting for server messages...");
+          document.getElementById("connectBtn").disabled = true;
+          document.getElementById("disconnectBtn").disabled = false;
+        };
+        ws.onmessage = (e) => {
+          log("RECV: " + e.data);
+        };
+        ws.onerror = (e) => {
+          log("ERROR: " + (e.message || "WebSocket error"));
+          setStatus("WebSocket error", true);
+        };
+        ws.onclose = (e) => {
+          log("CLOSED: code=" + e.code + " reason=" + (e.reason || "(none)"));
+          setStatus("Disconnected.");
+          document.getElementById("connectBtn").disabled = false;
+          document.getElementById("disconnectBtn").disabled = true;
+          ws = null;
+        };
+      } catch (err) {
+        log("Exception: " + err.message);
+        setStatus("Failed: " + err.message, true);
+      }
+    };
+
+    document.getElementById("disconnectBtn").onclick = () => {
+      if (ws) {
+        ws.close();
+      }
+    };
+
+    log("Base URL: " + BASE);
+    log("Full URL format: " + BASE + "/ROOMCODE");
+    log("Click Connect to test.");
+  </script>
+</body>
+</html>
