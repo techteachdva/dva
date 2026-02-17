@@ -14,22 +14,9 @@
   <style>
     body { margin: 0; background: #000; }
     #canvas { display: block; width: 100%; height: 100%; }
-    #gd-overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,0.85);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 9999; cursor: pointer;
-    }
-    #gd-overlay.hidden { display: none; }
-    #gd-overlay span {
-      color: #fff; font-family: system-ui, sans-serif; font-size: 1.5rem;
-      padding: 1rem 2rem; border: 2px solid #fff; border-radius: 8px;
-    }
   </style>
 </head>
 <body>
-  <div id="gd-overlay">
-    <span>Click to Play</span>
-  </div>
   <canvas id="canvas" tabindex="0"></canvas>
   <script src="index.js"></script>
   <script>
@@ -44,47 +31,14 @@
           ? location.origin + path + (path.endsWith('/') ? '' : '/')
           : location.origin + path.substring(0, lastSlash + 1);
       }
-      var config = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":713377272,"index.wasm":35740641},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":"index.service.worker.js"};
+      var config = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":718939384,"index.wasm":35740641},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":"index.service.worker.js"};
       if (basePath) {
         var name = (config.executable || 'index').split('/').pop();
         config.executable = basePath + name;
         config.mainPack = basePath + name + '.pck';
       }
       var engine = new Engine(config);
-      var overlay = document.getElementById('gd-overlay');
-      function startOnClick(e) {
-        if (e && e.preventDefault) e.preventDefault();
-        overlay.removeEventListener('click', startOnClick);
-        overlay.removeEventListener('touchend', startOnClick);
-        overlay.removeEventListener('keydown', startOnClick);
-        overlay.remove();  // Remove from DOM so it cannot block canvas input
-        var canvas = document.getElementById('canvas');
-        if (canvas && canvas.focus) canvas.focus();
-        // Unlock Web Audio API: create and resume AudioContext in same user gesture.
-        try {
-          var ctx = new (window.AudioContext || window.webkitAudioContext)();
-          window.__gdAudioCtx = ctx;
-          if (ctx.state === 'suspended') ctx.resume();
-          var buf = ctx.createBuffer(1, 1, 22050);
-          var src = ctx.createBufferSource();
-          src.buffer = buf;
-          src.connect(ctx.destination);
-          src.start(0);
-        } catch (err) {
-          console.warn('Web Audio unlock:', err);
-        }
-        engine.startGame();
-      }
-      overlay.addEventListener('click', startOnClick);
-      overlay.addEventListener('touchend', startOnClick, { passive: false });
-      overlay.addEventListener('keydown', function(e) {
-        if (e.key === ' ' || e.key === 'Enter') {
-          e.preventDefault();
-          startOnClick(e);
-        }
-      });
-      overlay.setAttribute('tabindex', '0');
-      overlay.focus();
+      engine.startGame();
     })();
   </script>
 </body>
