@@ -42,6 +42,14 @@ If you see `Cannot find module 'X'`:
 3. **COOP/COEP** – `vercel.json` now adds these headers for `/crystalwizards/`. Redeploy after pulling the change.
 4. **Plan limit** – Game is ~735 MB. Hobby = 100 MB max; Pro = 1 GB. On Hobby, the deploy may fail or the game won’t load.
 
+### Fix D2: Crystal Wizards 404 for index.side.wasm
+
+If the browser console shows `GET .../index.side.wasm 404 (Not Found)`:
+
+- **Cause:** Crystal Wizards is exported with `extensions_support=true` (for audio worklets). The engine expects `index.side.wasm`, but it's not deployed.
+- **Fix:** Add `CRYSTALWIZARDS_SIDE_WASM_URL` in Vercel env vars, pointing to your `index.side.wasm` (e.g. GitHub Release asset). The download script will fetch it during build.
+- **Alternative:** Export from Godot to `../dva/src/site/crystalwizards/`, then commit `index.side.wasm` to the repo. Ensure it's not in `.gitignore`.
+
 ### Fix E: API / serverless error
 
 If the error is in the `api/` folder:
