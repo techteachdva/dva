@@ -10,6 +10,30 @@
   <link id="-gd-engine-icon" rel="icon" type="image/png" href="index.icon.png" />
 <link rel="apple-touch-icon" href="index.apple-touch-icon.png"/>
 
+  <script>
+    (function() {
+      if (typeof window === 'undefined' || !window.AudioContext) return;
+      window.__godotAudioContexts = [];
+      var Orig = window.AudioContext || window.webkitAudioContext;
+      function PatchedContext(opts) {
+        var ctx = arguments.length ? new Orig(opts) : new Orig();
+        window.__godotAudioContexts.push(ctx);
+        return ctx;
+      }
+      PatchedContext.prototype = Orig.prototype;
+      window.AudioContext = window.webkitAudioContext = PatchedContext;
+      window.__resumeAllAudioContexts = function() {
+        var arr = window.__godotAudioContexts || [];
+        for (var i = 0; i < arr.length; i++) {
+          try {
+            if (arr[i] && typeof arr[i].resume === 'function' && arr[i].state === 'suspended') {
+              arr[i].resume();
+            }
+          } catch (e) {}
+        }
+      };
+    })();
+  </script>
   <style>
     body { margin: 0; background: #0a0a12; }
     #canvas { display: block; width: 100%; height: 100%; }
@@ -55,7 +79,7 @@
           ? location.origin + path + (path.endsWith('/') ? '' : '/')
           : location.origin + path.substring(0, lastSlash + 1);
       }
-      var config = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":716877680,"index.wasm":1509558},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
+      var config = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":716877664,"index.wasm":1509558},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
       if (basePath) {
         var name = (config.executable || 'index').split('/').pop();
         config.executable = basePath + name;
@@ -96,6 +120,17 @@
             if (c.state === 'suspended') c.resume();
           } catch (e) {}
         }
+        function resumeOnNextInteraction() {
+          document.removeEventListener('click', resumeOnNextInteraction, true);
+          document.removeEventListener('touchend', resumeOnNextInteraction, true);
+          try {
+            if (typeof window.__resumeAllAudioContexts === 'function') {
+              window.__resumeAllAudioContexts();
+            }
+          } catch (e) {}
+        }
+        document.addEventListener('click', resumeOnNextInteraction, true);
+        document.addEventListener('touchend', resumeOnNextInteraction, true);
         startGame();
       }
       playBtn.addEventListener('click', onPlayClick);
