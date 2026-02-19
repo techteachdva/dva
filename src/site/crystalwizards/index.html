@@ -79,7 +79,7 @@
           ? location.origin + path + (path.endsWith('/') ? '' : '/')
           : location.origin + path.substring(0, lastSlash + 1);
       }
-      var config = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":716877664,"index.wasm":37686550},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
+      var config = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":716878640,"index.wasm":37686550},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
       if (basePath) {
         var name = (config.executable || 'index').split('/').pop();
         config.executable = basePath + name;
@@ -107,6 +107,27 @@
           }
         }).then(function() {
           loading.classList.add('hidden');
+          // Resume any AudioContext Godot created (may work if chain is from user gesture)
+          try {
+            if (typeof window.__resumeAllAudioContexts === 'function') {
+              window.__resumeAllAudioContexts();
+            }
+          } catch (e) {}
+          // Resume on first canvas interaction (game fills canvas; first click is in-game)
+          var canvas = document.getElementById('canvas');
+          if (canvas) {
+            var once = function() {
+              canvas.removeEventListener('click', once, true);
+              canvas.removeEventListener('touchend', once, true);
+              try {
+                if (typeof window.__resumeAllAudioContexts === 'function') {
+                  window.__resumeAllAudioContexts();
+                }
+              } catch (e) {}
+            };
+            canvas.addEventListener('click', once, true);
+            canvas.addEventListener('touchend', once, true);
+          }
         }).catch(function(err) {
           if (loading) loading.querySelector('.text').textContent = 'Failed to load. Refresh to try again.';
           playBtn.style.display = 'block';
@@ -124,6 +145,11 @@
           document.removeEventListener('click', resumeOnNextInteraction, true);
           document.removeEventListener('touchend', resumeOnNextInteraction, true);
           document.removeEventListener('keydown', resumeOnNextInteraction, true);
+          var canvas = document.getElementById('canvas');
+          if (canvas) {
+            canvas.removeEventListener('click', resumeOnNextInteraction, true);
+            canvas.removeEventListener('touchend', resumeOnNextInteraction, true);
+          }
           try {
             if (typeof window.__resumeAllAudioContexts === 'function') {
               window.__resumeAllAudioContexts();
@@ -133,6 +159,11 @@
         document.addEventListener('click', resumeOnNextInteraction, true);
         document.addEventListener('touchend', resumeOnNextInteraction, true);
         document.addEventListener('keydown', resumeOnNextInteraction, true);
+        var canvas = document.getElementById('canvas');
+        if (canvas) {
+          canvas.addEventListener('click', resumeOnNextInteraction, true);
+          canvas.addEventListener('touchend', resumeOnNextInteraction, true);
+        }
         startGame();
       }
       playBtn.addEventListener('click', onPlayClick);
