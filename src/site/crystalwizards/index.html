@@ -10,75 +10,22 @@
   <link id="-gd-engine-icon" rel="icon" type="image/png" href="index.icon.png" />
 <link rel="apple-touch-icon" href="index.apple-touch-icon.png"/>
 
-  <script>
-    (function() {
-      if (typeof window === 'undefined' || !window.AudioContext) return;
-      window.__godotAudioContexts = [];
-      var Orig = window.AudioContext || window.webkitAudioContext;
-      function PatchedContext(opts) {
-        var ctx = arguments.length ? new Orig(opts) : new Orig();
-        window.__godotAudioContexts.push(ctx);
-        return ctx;
-      }
-      PatchedContext.prototype = Orig.prototype;
-      window.AudioContext = window.webkitAudioContext = PatchedContext;
-      window.__resumeAllAudioContexts = function() {
-        var arr = window.__godotAudioContexts || [];
-        for (var i = 0; i < arr.length; i++) {
-          try {
-            if (arr[i] && typeof arr[i].resume === 'function' && arr[i].state === 'suspended') {
-              arr[i].resume();
-            }
-          } catch (e) {}
-        }
-      };
-    })();
-  </script>
   <style>
     body { margin: 0; background: #0a0a12; }
     #canvas { display: block; width: 100%; height: 100%; }
-    #gd-loading {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: #0a0a12; display: flex; flex-direction: column;
-      align-items: center; justify-content: center; z-index: 9999;
-      font-family: system-ui, -apple-system, sans-serif;
-    }
-    #gd-loading.hidden { display: none !important; }
-    #gd-loading .spinner {
-      width: 48px; height: 48px; border: 4px solid rgba(255,255,255,0.2);
-      border-top-color: #7b9cff; border-radius: 50%;
-      animation: gd-spin 0.9s linear infinite;
-    }
-    #gd-loading .text { color: #c8d4f0; font-size: 18px; margin-top: 20px; }
-    #gd-loading .bar-wrap {
-      width: 240px; height: 6px; background: rgba(255,255,255,0.15);
-      border-radius: 3px; margin-top: 16px; overflow: hidden;
-    }
-    #gd-loading .bar { height: 100%; background: #7b9cff; width: 0%; transition: width 0.15s; }
-    @keyframes gd-spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
-  <div id="gd-loading">
-    <div class="spinner"></div>
-    <div class="text" id="gd-loading-text">Click to play</div>
-    <div class="bar-wrap"><div class="bar" id="gd-progress-bar"></div></div>
-    <button id="gd-play-btn" style="margin-top:20px;padding:12px 32px;font-size:18px;background:#7b9cff;color:#0a0a12;border:none;border-radius:8px;cursor:pointer;font-weight:bold;">Play</button>
-  </div>
-  <canvas id="canvas" tabindex="0"></canvas>
+  <canvas id="canvas"></canvas>
   <script src="index.js"></script>
   <script>
     (function() {
       var params = new URLSearchParams(location.search);
       window.SIGNALING_BASE_URL = params.get('signaling') || '__SIGNALING_BASE_URL__';
+      // When the game is in a subdirectory (e.g. /crystalwizards/), the engine
+      // must load .pck and .wasm from that folder, not from site root "/".
       var path = location.pathname;
-      var basePath = '';
-      if (path) {
-        var lastSlash = path.lastIndexOf('/');
-        basePath = lastSlash <= 0
-          ? location.origin + path + (path.endsWith('/') ? '' : '/')
-          : location.origin + path.substring(0, lastSlash + 1);
-      }
+      var basePath = path ? (location.origin + path.substring(0, path.lastIndexOf('/') + 1)) : '';
       var config = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":426247408,"index.wasm":37686550},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
       if (basePath) {
         var name = (config.executable || 'index').split('/').pop();
@@ -92,82 +39,7 @@
         }
       }
       var engine = new Engine(config);
-      var loading = document.getElementById('gd-loading');
-      var progressBar = document.getElementById('gd-progress-bar');
-      var loadingText = document.getElementById('gd-loading-text');
-      var playBtn = document.getElementById('gd-play-btn');
-      function startGame() {
-        playBtn.style.display = 'none';
-        loadingText.textContent = 'Loading Crystal Wizards...';
-        engine.startGame({
-          onProgress: function(current, total) {
-            if (total > 0 && progressBar) {
-              progressBar.style.width = (100 * current / total) + '%';
-            }
-          }
-        }).then(function() {
-          loading.classList.add('hidden');
-          // Resume any AudioContext Godot created (may work if chain is from user gesture)
-          try {
-            if (typeof window.__resumeAllAudioContexts === 'function') {
-              window.__resumeAllAudioContexts();
-            }
-          } catch (e) {}
-          // Resume on first canvas interaction (game fills canvas; first click is in-game)
-          var canvas = document.getElementById('canvas');
-          if (canvas) {
-            var once = function() {
-              canvas.removeEventListener('click', once, true);
-              canvas.removeEventListener('touchend', once, true);
-              try {
-                if (typeof window.__resumeAllAudioContexts === 'function') {
-                  window.__resumeAllAudioContexts();
-                }
-              } catch (e) {}
-            };
-            canvas.addEventListener('click', once, true);
-            canvas.addEventListener('touchend', once, true);
-          }
-        }).catch(function(err) {
-          if (loading) loading.querySelector('.text').textContent = 'Failed to load. Refresh to try again.';
-          playBtn.style.display = 'block';
-          console.error('Godot startGame failed:', err);
-        });
-      }
-      function onPlayClick() {
-        if (window.AudioContext) {
-          try {
-            var c = new AudioContext();
-            if (c.state === 'suspended') c.resume();
-          } catch (e) {}
-        }
-        function resumeOnNextInteraction() {
-          document.removeEventListener('click', resumeOnNextInteraction, true);
-          document.removeEventListener('touchend', resumeOnNextInteraction, true);
-          document.removeEventListener('keydown', resumeOnNextInteraction, true);
-          var canvas = document.getElementById('canvas');
-          if (canvas) {
-            canvas.removeEventListener('click', resumeOnNextInteraction, true);
-            canvas.removeEventListener('touchend', resumeOnNextInteraction, true);
-          }
-          try {
-            if (typeof window.__resumeAllAudioContexts === 'function') {
-              window.__resumeAllAudioContexts();
-            }
-          } catch (e) {}
-        }
-        document.addEventListener('click', resumeOnNextInteraction, true);
-        document.addEventListener('touchend', resumeOnNextInteraction, true);
-        document.addEventListener('keydown', resumeOnNextInteraction, true);
-        var canvas = document.getElementById('canvas');
-        if (canvas) {
-          canvas.addEventListener('click', resumeOnNextInteraction, true);
-          canvas.addEventListener('touchend', resumeOnNextInteraction, true);
-        }
-        startGame();
-      }
-      playBtn.addEventListener('click', onPlayClick);
-      playBtn.addEventListener('touchend', function(e) { e.preventDefault(); onPlayClick(); });
+      engine.startGame();
     })();
   </script>
 </body>
