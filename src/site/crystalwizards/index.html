@@ -9,14 +9,48 @@
   <link rel="manifest" href="index.manifest.json">
   <link id="-gd-engine-icon" rel="icon" type="image/png" href="index.icon.png" />
 <link rel="apple-touch-icon" href="index.apple-touch-icon.png"/>
+<link rel="manifest" href="index.manifest.json">
 
   <script>(function(){if(typeof window==='undefined'||!window.AudioContext)return;window.__godotAudioContexts=[];var O=window.AudioContext||window.webkitAudioContext;function P(opts){var c=arguments.length?new O(opts):new O();window.__godotAudioContexts.push(c);return c}P.prototype=O.prototype;window.AudioContext=window.webkitAudioContext=P;window.__resumeAllAudioContexts=function(){var a=window.__godotAudioContexts||[];for(var i=0;i<a.length;i++)try{if(a[i]&&typeof a[i].resume==='function'&&a[i].state==='suspended')a[i].resume()}catch(e){}}})();</script>
-  <style>body{margin:0;background:#0a0a12}#canvas{display:block;width:100%;height:100%}</style>
+  <style>body{margin:0;background:#0a0a12}#canvas{display:block;width:100%;height:100%}#gd-loading{position:fixed;top:0;left:0;width:100%;height:100%;background:#0a0a12;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;font-family:system-ui,-apple-system,sans-serif}#gd-loading.hidden{display:none!important}#gd-loading .spinner{width:48px;height:48px;border:4px solid rgba(255,255,255,0.2);border-top-color:#7b9cff;border-radius:50%;animation:gd-spin 0.9s linear infinite}#gd-loading .text{color:#c8d4f0;font-size:18px;margin-top:20px}#gd-loading .bar-wrap{width:240px;height:6px;background:rgba(255,255,255,0.15);border-radius:3px;margin-top:16px;overflow:hidden}#gd-loading .bar{height:100%;background:#7b9cff;width:0%;transition:width 0.15s}@keyframes gd-spin{to{transform:rotate(360deg)}}</style>
 </head>
 <body>
-  <canvas id="canvas"></canvas>
+  <div id="gd-loading">
+    <div class="spinner"></div>
+    <div class="text" id="gd-loading-text">Click to play</div>
+    <div class="bar-wrap"><div class="bar" id="gd-progress-bar"></div></div>
+    <button id="gd-play-btn" style="margin-top:20px;padding:12px 32px;font-size:18px;background:#7b9cff;color:#0a0a12;border:none;border-radius:8px;cursor:pointer;font-weight:bold;">Play</button>
+  </div>
+  <canvas id="canvas" tabindex="0"></canvas>
   <script src="index.js"></script>
-  <script>(function(){var p=new URLSearchParams(location.search);window.SIGNALING_BASE_URL=p.get('signaling')||'__SIGNALING_BASE_URL__';var d=location.pathname,e=d.endsWith('/')?d:d.lastIndexOf('/')>0?d.substring(0,d.lastIndexOf('/')+1):d+'/',b=d?location.origin+e:'',c={"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":false,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":427541684,"index.wasm":37686550},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};if(b){var n=(c.executable||'index').split('/').pop();c.executable=b+n;c.mainPack=b+n+'.pck';if(c.fileSizes){c.fileSizes[c.executable+'.wasm']=c.fileSizes[n+'.wasm']||c.fileSizes['index.wasm']||0;c.fileSizes[c.mainPack]=c.fileSizes[n+'.pck']||c.fileSizes['index.pck']||0;var s=c.fileSizes[n+'.side.wasm']||c.fileSizes['index.side.wasm'];if(s)c.fileSizes[c.executable+'.side.wasm']=s}}function r(){document.removeEventListener('click',r,true);document.removeEventListener('touchend',r,true);document.removeEventListener('keydown',r,true);try{typeof window.__resumeAllAudioContexts==='function'&&window.__resumeAllAudioContexts()}catch(e){}}document.addEventListener('click',r,true);document.addEventListener('touchend',r,true);document.addEventListener('keydown',r,true);new Engine(c).startGame()})();</script>
+  <script>
+(function(){
+  var p=new URLSearchParams(location.search);
+  window.SIGNALING_BASE_URL=p.get('signaling')||'__SIGNALING_BASE_URL__';
+  var d=location.pathname,e=d.endsWith('/')?d:d.lastIndexOf('/')>0?d.substring(0,d.lastIndexOf('/')+1):d+'/',b=d?location.origin+e:'',c={"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":427541764,"index.wasm":37686550},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":"index.service.worker.js"};
+  if(b){var n=(c.executable||'index').split('/').pop();c.executable=b+n;c.mainPack=b+n+'.pck';if(c.fileSizes){c.fileSizes[c.executable+'.wasm']=c.fileSizes[n+'.wasm']||c.fileSizes['index.wasm']||0;c.fileSizes[c.mainPack]=c.fileSizes[n+'.pck']||c.fileSizes['index.pck']||0;var s=c.fileSizes[n+'.side.wasm']||c.fileSizes['index.side.wasm'];if(s)c.fileSizes[c.executable+'.side.wasm']=s}}
+  var engine=new Engine(c),loading=document.getElementById('gd-loading'),progressBar=document.getElementById('gd-progress-bar'),loadingText=document.getElementById('gd-loading-text'),playBtn=document.getElementById('gd-play-btn');
+  function startGame(){
+    playBtn.style.display='none';
+    loadingText.textContent='Loading Crystal Wizards...';
+    engine.startGame({onProgress:function(cur,tot){if(tot>0&&progressBar)progressBar.style.width=(100*cur/tot)+'%'}}).then(function(){
+      loading.classList.add('hidden');
+      try{if(typeof window.__resumeAllAudioContexts==='function')window.__resumeAllAudioContexts()}catch(e){}
+      var canvas=document.getElementById('canvas');
+      if(canvas){var once=function(){canvas.removeEventListener('click',once,true);canvas.removeEventListener('touchend',once,true);try{if(typeof window.__resumeAllAudioContexts==='function')window.__resumeAllAudioContexts()}catch(e){}};canvas.addEventListener('click',once,true);canvas.addEventListener('touchend',once,true)}
+    }).catch(function(err){if(loading)loading.querySelector('.text').textContent='Failed to load. Refresh to try again.';playBtn.style.display='block';console.error('Godot startGame failed:',err)});
+  }
+  function onPlayClick(){
+    if(window.AudioContext){try{var ctx=new AudioContext();if(ctx.state==='suspended')ctx.resume()}catch(e){}}
+    function resumeOnNext(){document.removeEventListener('click',resumeOnNext,true);document.removeEventListener('touchend',resumeOnNext,true);document.removeEventListener('keydown',resumeOnNext,true);var c=document.getElementById('canvas');if(c){c.removeEventListener('click',resumeOnNext,true);c.removeEventListener('touchend',resumeOnNext,true)}try{if(typeof window.__resumeAllAudioContexts==='function')window.__resumeAllAudioContexts()}catch(e){}}
+    document.addEventListener('click',resumeOnNext,true);document.addEventListener('touchend',resumeOnNext,true);document.addEventListener('keydown',resumeOnNext,true);
+    var canvas=document.getElementById('canvas');if(canvas){canvas.addEventListener('click',resumeOnNext,true);canvas.addEventListener('touchend',resumeOnNext,true)}
+    startGame();
+  }
+  playBtn.addEventListener('click',onPlayClick);
+  playBtn.addEventListener('touchend',function(e){e.preventDefault();onPlayClick()});
+})();
+  </script>
 </body>
 </html>
 
