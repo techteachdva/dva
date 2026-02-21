@@ -3,6 +3,9 @@
   "installCommand": "npm install",
   "buildCommand": "npm run build",
   "devCommand": "npm run start",
+  "redirects": [
+    { "source": "/crystalwizards", "destination": "/crystalwizards/", "permanent": true }
+  ],
   "headers": [
     {
       "source": "/crystalwizards/(.*)",
