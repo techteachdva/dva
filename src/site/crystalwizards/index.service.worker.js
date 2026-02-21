@@ -4,7 +4,7 @@
 // Incrementing CACHE_VERSION will kick off the install event and force
 // previously cached resources to be updated from the network.
 /** @type {string} */
-const CACHE_VERSION = '1771641095|7459564428';
+const CACHE_VERSION = '1771643549|9913493484';
 /** @type {string} */
 const CACHE_PREFIX = 'Crystal Wizards-sw-cache-';
 const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION;
