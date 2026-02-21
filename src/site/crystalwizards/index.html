@@ -27,7 +27,7 @@
 (function(){
   var p=new URLSearchParams(location.search);
   window.SIGNALING_BASE_URL=p.get('signaling')||'__SIGNALING_BASE_URL__';
-  var d=location.pathname,e=d.endsWith('/')?d:d.lastIndexOf('/')>0?d.substring(0,d.lastIndexOf('/')+1):d+'/',b=d?location.origin+e:'',c={"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":254727988,"index.wasm":37004618},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":"index.service.worker.js"};
+  var d=location.pathname,e=d.endsWith('/')?d:d.lastIndexOf('/')>0?d.substring(0,d.lastIndexOf('/')+1):d+'/',b=d?location.origin+e:'',c={"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":254743040,"index.wasm":37004618},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":"index.service.worker.js"};
   if(b){var n=(c.executable||'index').split('/').pop();c.executable=b+n;c.mainPack=b+n+'.pck';if(c.fileSizes){c.fileSizes[c.executable+'.wasm']=c.fileSizes[n+'.wasm']||c.fileSizes['index.wasm']||0;c.fileSizes[c.mainPack]=c.fileSizes[n+'.pck']||c.fileSizes['index.pck']||0;var s=c.fileSizes[n+'.side.wasm']||c.fileSizes['index.side.wasm'];if(s)c.fileSizes[c.executable+'.side.wasm']=s}}
   var engine=new Engine(c),loading=document.getElementById('gd-loading'),progressBar=document.getElementById('gd-progress-bar'),loadingText=document.getElementById('gd-loading-text'),playBtn=document.getElementById('gd-play-btn');
   function startGame(){
