@@ -7,36 +7,32 @@
 
 Welcome to Mr. Phil's Digital Garden.
 
-[[QR Code Hub\|QR Code Hub]]
+[[QR Code Hub|QR Code Hub]]
 
-[[Technology\|Technology]]
+[[Technology|Technology]]
 
-[[Game Design\|Game Design]]
+[[Game Design|Game Design]]
 
-[[Video Production\|Video Production]]
+[[Video Production|Video Production]]
 
-[[Media Arts\|Media Arts]]
-
-
-[[Escape Tech Game\|Escape Tech Game]]
+[[Media Arts|Media Arts]]
 
 
-
-[[Pixel Art Museum\|Pixel Art Museum]]
+[[Escape Tech Game|Escape Tech Game]]
 
 
 
-[[5-12 Methods. Literature and Reading.\|5-12 Methods. Literature and Reading.]]
+[[Pixel Art Museum|Pixel Art Museum]]
 
 
-[[Dungeon Class\|Dungeon Class]]
+
+[[5-12 Methods. Literature and Reading.|5-12 Methods. Literature and Reading.]]
 
 
-[[Crystal Wizards\|Crystal Wizards]]
+[[Dungeon Class|Dungeon Class]]
 
-<<<<<<< HEAD
+
+[[Crystal Wizards|Crystal Wizards]]
+
 [PedaGoGee](/peda-go-gee/)
-=======
-[[Peda_Go_Gee\|Peda_Go_Gee]]
->>>>>>> 27d2a8dad4f83f7e2004f438eeda8d7f0118f6c7
 
