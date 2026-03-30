@@ -34,5 +34,9 @@ Welcome to Mr. Phil's Digital Garden.
 
 [[Crystal Wizards\|Crystal Wizards]]
 
+<<<<<<< HEAD
 [PedaGoGee](/peda-go-gee/)
+=======
+[[Peda_Go_Gee\|Peda_Go_Gee]]
+>>>>>>> 27d2a8dad4f83f7e2004f438eeda8d7f0118f6c7
 
