@@ -59,6 +59,55 @@ function band(score) {
   return "Entry / high-growth zone";
 }
 
+function leanOrBuild(score) {
+  return score >= 62 ? "Lean into this asset" : "Build this next";
+}
+
+function actionableInsight(field, score) {
+  // Always points toward the right-hand pole (student-centered, cognitive, etc.)
+  const poles = fieldPoles(field);
+  const intent = leanOrBuild(score);
+
+  const moves = {
+    TEACHER_TO_STUDENT: [
+      "Shift one decision to students: choice of topic, product, or method (keep success criteria constant).",
+      "Use a 3-minute co-criteria routine: ‘What makes a strong answer/work sample?’ then post the class rubric.",
+    ],
+    BEHAVIORISM_TO_COGNITIVISM: [
+      "Add a ‘strategy spotlight’: model one thinking move (e.g., compare, classify, infer) and name it aloud.",
+      "Replace one reward/consequence moment with self-monitoring: a checklist + 1 reflection question (‘What strategy did you use?’).",
+    ],
+    BEHAVIORISM_TO_CONSTRUCTIVISM: [
+      "Run a safe error/revision cycle: predict → test → explain → revise (collect 2 revisions, not 1 final).",
+      "Use ‘My first idea / My revised idea’ exit tickets to normalize changing your mind with evidence.",
+    ],
+    COGNITIVISM_TO_SOCIAL_CONSTRUCTIVISM: [
+      "Structure talk so ideas change: assign roles (summarizer, challenger, connector) and require evidence-based replies.",
+      "Use one discourse move daily: ‘I used to think…, now I think… because…’ (post stems).",
+    ],
+    DIRECT_TO_EXPERIENTIAL: [
+      "Convert one explanation into an experience: a short task first, then mini-lesson after students notice patterns.",
+      "Add an ‘authentic constraint’: a real audience, real data, or real tool (even for 15 minutes).",
+    ],
+    CONSTRUCTIVISM_INDEX: [
+      "Build reflection into the lesson: 2 prompts—‘What did I try?’ and ‘What will I do differently next time?’",
+      "Add peer critique with a protocol (glow/grow + one specific revision) and require a revision submission.",
+    ],
+  };
+
+  let pos = "Currently a **blend** of both poles.";
+  if (score <= 48) pos = `Currently leaning toward **${poles.low}**.`;
+  else if (score < 62) pos = "Currently a **blend** of both poles.";
+  else pos = `Currently leaning toward **${poles.high}**.`;
+
+  const primary = (moves[field] && moves[field][0]) || "";
+  const secondary = (moves[field] && moves[field][1]) || "";
+
+  let out = `Toward **${poles.high}** — ${intent}. ${pos} Try next: ${primary}`;
+  if (secondary) out += ` Also try: ${secondary}`;
+  return out.trim();
+}
+
 function fieldPoles(field) {
   switch (field) {
     case "TEACHER_TO_STUDENT":
@@ -126,22 +175,7 @@ function fieldInterpretation(field, score) {
   else if (score < 75) pos = `Slight lean toward **${high}**.`;
   else pos = `Leans toward **${high}**.`;
 
-  const prompts = {
-    TEACHER_TO_STUDENT:
-      "Reflection prompt: Where do students make consequential choices (task, method, criteria, pacing)? Pick one upcoming lesson and shift **one** decision from you to them.",
-    BEHAVIORISM_TO_COGNITIVISM:
-      "Reflection prompt: Identify one routine currently driven by rewards/consequences and redesign it around visibility of thinking (strategy modeling, self-monitoring, metacognitive checklists).",
-    BEHAVIORISM_TO_CONSTRUCTIVISM:
-      "Reflection prompt: Where can students safely test ideas, be wrong, and revise? Add one low-stakes cycle: predict → test → explain → revise.",
-    COGNITIVISM_TO_SOCIAL_CONSTRUCTIVISM:
-      "Reflection prompt: When do students learn from peers in ways that change their thinking (not just share answers)? Add one structured discourse move (roles, sentence starters, evidence requirement).",
-    DIRECT_TO_EXPERIENTIAL:
-      "Reflection prompt: Take one explanation you usually deliver and convert it into an activity that still preserves clarity (worked example + practice, lab with explicit success criteria, or a small authentic task).",
-    CONSTRUCTIVISM_INDEX:
-      "Reflection prompt: Choose one upcoming unit moment to normalize error and revision (drafting, peer critique, reflection, or retest with explanation).",
-  };
-
-  return `${pos} Band: ${b}. ${prompts[field] ?? ""}`.trim();
+  return `${pos} Band: ${b}. ${actionableInsight(field, score)}`.trim();
 }
 
 function buildAnalysisReport(scores100, rawMeans5) {
@@ -164,6 +198,22 @@ function buildAnalysisReport(scores100, rawMeans5) {
     const v = Number(rawMeans5?.[f] ?? 3.0);
     const label = SHORT_FIELD_LABELS[f] ?? f;
     lines.push(`${label}: ${v.toFixed(2)}/5`);
+  }
+  lines.push("");
+
+  lines.push("ACTIONABLE INSIGHTS (one per spectrum)");
+  lines.push("—".repeat(44));
+  const insightOrder = [
+    "TEACHER_TO_STUDENT",
+    "BEHAVIORISM_TO_COGNITIVISM",
+    "COGNITIVISM_TO_SOCIAL_CONSTRUCTIVISM",
+    "DIRECT_TO_EXPERIENTIAL",
+    "BEHAVIORISM_TO_CONSTRUCTIVISM",
+    "CONSTRUCTIVISM_INDEX",
+  ];
+  for (const f of insightOrder) {
+    const s = Number(scores100?.[f] ?? 50.5);
+    lines.push(`${FIELD_LABELS?.[f] ?? f} (${Math.round(s)}/100): ${actionableInsight(f, s)}`);
   }
   lines.push("");
 
