@@ -16,3 +16,5 @@ src/site/crystalwizards/index.pck
 src/site/crystalwizards/index.wasm
 src/site/dungeonclass/*.pck
 **/.DS_Store
+# Local build artifact (optional download)
+src/site/crystalwizards/index.side.wasm
