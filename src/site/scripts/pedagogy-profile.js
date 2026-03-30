@@ -9,6 +9,283 @@ const state = {
 
 const el = (id) => document.getElementById(id);
 
+function scaleOften() {
+  return [
+    { value: 1, label: "Never / almost never" },
+    { value: 2, label: "Rarely" },
+    { value: 3, label: "Sometimes" },
+    { value: 4, label: "Often" },
+    { value: 5, label: "Almost always" },
+  ];
+}
+
+function scaleChoice() {
+  return [
+    { value: 1, label: "Almost always option A" },
+    { value: 2, label: "Usually option A" },
+    { value: 3, label: "About half-and-half" },
+    { value: 4, label: "Usually option B" },
+    { value: 5, label: "Almost always option B" },
+  ];
+}
+
+const INSTRUMENT = {
+  framework:
+    "Answer 24 short prompts about what you typically do in your classroom (or aim to do). Each prompt has its own 1–5 response anchors. Results are grouped into six pedagogical spectrums and displayed on a 1–100 scale.",
+  likert: scaleOften(),
+  spectrums: [
+    {
+      key: "TEACHER_TO_STUDENT",
+      label: "Teacher-Centered ↔ Student-Centered",
+      short: "Teacher → Student",
+      left: "Teacher-centered",
+      right: "Student-centered",
+    },
+    {
+      key: "BEHAVIORISM_TO_COGNITIVISM",
+      label: "Behaviorism ↔ Cognitivism",
+      short: "Behaviorism → Cognitivism",
+      left: "Behaviorism",
+      right: "Cognitivism",
+    },
+    {
+      key: "BEHAVIORISM_TO_CONSTRUCTIVISM",
+      label: "Behaviorism ↔ Constructivism",
+      short: "Behaviorism → Constructivism",
+      left: "Behaviorism",
+      right: "Constructivism",
+    },
+    {
+      key: "COGNITIVISM_TO_SOCIAL_CONSTRUCTIVISM",
+      label: "Cognitivism ↔ Social Constructivism",
+      short: "Cognitivism → Social",
+      left: "Cognitivism",
+      right: "Social constructivism",
+    },
+    {
+      key: "DIRECT_TO_EXPERIENTIAL",
+      label: "Direct Instruction ↔ Experiential Learning",
+      short: "Direct → Experiential",
+      left: "Direct instruction",
+      right: "Experiential learning",
+    },
+    {
+      key: "CONSTRUCTIVISM_INDEX",
+      label: "Constructivism (index)",
+      short: "Constructivism",
+      left: "Less constructivist",
+      right: "More constructivist",
+    },
+  ],
+  questions: [
+    // 24-item, behavior-anchored bank (4 items per spectrum)
+    // Teacher-centered ↔ Student-centered (higher = student-centered)
+    {
+      id: 1,
+      stem: "In a typical week, how often do students make meaningful choices about topic, process, or product (with clear success criteria)?",
+      spectrum: "TEACHER_TO_STUDENT",
+      reverse_scored: false,
+      contributes_to_constructivism: true,
+      anchors: scaleOften(),
+    },
+    {
+      id: 2,
+      stem: "How often do you begin a lesson/unit by telling students exactly what to do step-by-step for most of the time?",
+      spectrum: "TEACHER_TO_STUDENT",
+      reverse_scored: true,
+      contributes_to_constructivism: false,
+      anchors: scaleOften(),
+    },
+    {
+      id: 3,
+      stem: "When a student is stuck, how often do you ask a question that helps them generate the next step before you give the answer?",
+      spectrum: "TEACHER_TO_STUDENT",
+      reverse_scored: false,
+      contributes_to_constructivism: true,
+      anchors: scaleOften(),
+    },
+    {
+      id: 4,
+      stem: "How often do you adjust pacing, groupings, or scaffolds based on quick evidence of learning (not just a plan)?",
+      spectrum: "TEACHER_TO_STUDENT",
+      reverse_scored: false,
+      contributes_to_constructivism: false,
+      anchors: scaleOften(),
+    },
+
+    // Behaviorism ↔ Cognitivism (higher = cognitivism)
+    {
+      id: 5,
+      stem: "How often do you explicitly teach a thinking strategy (e.g., compare, classify, infer) and name it while modeling?",
+      spectrum: "BEHAVIORISM_TO_COGNITIVISM",
+      reverse_scored: false,
+      contributes_to_constructivism: false,
+      anchors: scaleOften(),
+    },
+    {
+      id: 6,
+      stem: "How often do students explain their reasoning (in writing or talk) rather than only giving final answers?",
+      spectrum: "BEHAVIORISM_TO_COGNITIVISM",
+      reverse_scored: false,
+      contributes_to_constructivism: true,
+      anchors: scaleOften(),
+    },
+    {
+      id: 7,
+      stem: "How often do you rely on points/prizes/public tallies to drive academic effort?",
+      spectrum: "BEHAVIORISM_TO_COGNITIVISM",
+      reverse_scored: true,
+      contributes_to_constructivism: false,
+      anchors: scaleOften(),
+    },
+    {
+      id: 8,
+      stem: "How often do you use a quick “what changed in your thinking?” reflection after learning activities?",
+      spectrum: "BEHAVIORISM_TO_COGNITIVISM",
+      reverse_scored: false,
+      contributes_to_constructivism: true,
+      anchors: scaleOften(),
+    },
+
+    // Behaviorism ↔ Constructivism (higher = constructivism)
+    {
+      id: 9,
+      stem: "How often do students revise work based on feedback and submit a second (or third) version?",
+      spectrum: "BEHAVIORISM_TO_CONSTRUCTIVISM",
+      reverse_scored: false,
+      contributes_to_constructivism: true,
+      anchors: scaleOften(),
+    },
+    {
+      id: 10,
+      stem: "How often do you treat mistakes as data (predict → test → explain → revise), not as something to avoid quickly?",
+      spectrum: "BEHAVIORISM_TO_CONSTRUCTIVISM",
+      reverse_scored: false,
+      contributes_to_constructivism: true,
+      anchors: scaleOften(),
+    },
+    {
+      id: 11,
+      stem: "How often is “being correct on the first try” the main signal students receive that learning happened?",
+      spectrum: "BEHAVIORISM_TO_CONSTRUCTIVISM",
+      reverse_scored: true,
+      contributes_to_constructivism: false,
+      anchors: scaleOften(),
+    },
+    {
+      id: 12,
+      stem: "How often do students build understanding by connecting new ideas to prior experiences/examples they bring in?",
+      spectrum: "BEHAVIORISM_TO_CONSTRUCTIVISM",
+      reverse_scored: false,
+      contributes_to_constructivism: true,
+      anchors: scaleOften(),
+    },
+
+    // Cognitivism ↔ Social constructivism (higher = social)
+    {
+      id: 13,
+      stem: "How often do you structure discussion so students respond to each other with evidence (not just to you)?",
+      spectrum: "COGNITIVISM_TO_SOCIAL_CONSTRUCTIVISM",
+      reverse_scored: false,
+      contributes_to_constructivism: true,
+      anchors: scaleOften(),
+    },
+    {
+      id: 14,
+      stem: "How often do students use shared tools to co-construct meaning (e.g., shared notes, group models, joint solutions)?",
+      spectrum: "COGNITIVISM_TO_SOCIAL_CONSTRUCTIVISM",
+      reverse_scored: false,
+      contributes_to_constructivism: true,
+      anchors: scaleOften(),
+    },
+    {
+      id: 15,
+      stem: "How often is most thinking done silently and individually, with limited peer interaction during learning?",
+      spectrum: "COGNITIVISM_TO_SOCIAL_CONSTRUCTIVISM",
+      reverse_scored: true,
+      contributes_to_constructivism: false,
+      anchors: scaleOften(),
+    },
+    {
+      id: 16,
+      stem: "How often do students take roles that improve the quality of talk (summarizer, challenger, connector, evidence-checker)?",
+      spectrum: "COGNITIVISM_TO_SOCIAL_CONSTRUCTIVISM",
+      reverse_scored: false,
+      contributes_to_constructivism: false,
+      anchors: scaleOften(),
+    },
+
+    // Direct instruction ↔ Experiential learning (higher = experiential)
+    {
+      id: 17,
+      stem: "How often do students learn through authentic tasks (real audience, real data, real constraints) rather than only practice sets?",
+      spectrum: "DIRECT_TO_EXPERIENTIAL",
+      reverse_scored: false,
+      contributes_to_constructivism: true,
+      anchors: scaleOften(),
+    },
+    {
+      id: 18,
+      stem: "How often do you run “task first, mini-lesson after” so students notice patterns before you explain them?",
+      spectrum: "DIRECT_TO_EXPERIENTIAL",
+      reverse_scored: false,
+      contributes_to_constructivism: true,
+      anchors: scaleOften(),
+    },
+    {
+      id: 19,
+      stem: "How often is most class time spent on teacher explanation/modeling while students mainly listen or copy notes?",
+      spectrum: "DIRECT_TO_EXPERIENTIAL",
+      reverse_scored: true,
+      contributes_to_constructivism: false,
+      anchors: scaleOften(),
+    },
+    {
+      id: 20,
+      stem: "How often do students create a product/performance that requires applying learning in a new context?",
+      spectrum: "DIRECT_TO_EXPERIENTIAL",
+      reverse_scored: false,
+      contributes_to_constructivism: true,
+      anchors: scaleOften(),
+    },
+
+    // Constructivism index (higher = more constructivist)
+    // (Kept as an index: not a strict bipolar spectrum; still displayed as a left↔right continuum for readability.)
+    {
+      id: 21,
+      stem: "How often do students use a rubric or success criteria they helped clarify (even if you drafted it first)?",
+      spectrum: "CONSTRUCTIVISM_INDEX",
+      reverse_scored: false,
+      contributes_to_constructivism: true,
+      anchors: scaleOften(),
+    },
+    {
+      id: 22,
+      stem: "How often do students generate questions that shape the lesson (what to investigate, what to test, what to read next)?",
+      spectrum: "CONSTRUCTIVISM_INDEX",
+      reverse_scored: false,
+      contributes_to_constructivism: true,
+      anchors: scaleOften(),
+    },
+    {
+      id: 23,
+      stem: "How often do students do short metacognitive routines (plan → monitor → reflect) during or after learning?",
+      spectrum: "CONSTRUCTIVISM_INDEX",
+      reverse_scored: false,
+      contributes_to_constructivism: true,
+      anchors: scaleOften(),
+    },
+    {
+      id: 24,
+      stem: "How often do students critique each other’s work using a protocol, then revise based on that critique?",
+      spectrum: "CONSTRUCTIVISM_INDEX",
+      reverse_scored: false,
+      contributes_to_constructivism: true,
+      anchors: scaleOften(),
+    },
+  ],
+};
+
 function show(viewId) {
   for (const id of ["welcome", "question", "results"]) el(id).classList.add("pp-hidden");
   el(viewId).classList.remove("pp-hidden");
@@ -32,7 +309,8 @@ function buildChoices(q) {
   container.innerHTML = "";
   const selected = state.responses[q.id] ?? 0;
 
-  for (const item of state.data.likert) {
+  const anchors = Array.isArray(q?.anchors) && q.anchors.length === 5 ? q.anchors : state.data.likert;
+  for (const item of anchors) {
     const wrap = document.createElement("label");
     wrap.className = "pp-choice";
 
@@ -59,16 +337,12 @@ function buildChoices(q) {
 }
 
 function updateRadar(scores100) {
-  const order = [
-    "TEACHER_TO_STUDENT",
-    "BEHAVIORISM_TO_COGNITIVISM",
-    "BEHAVIORISM_TO_CONSTRUCTIVISM",
-    "COGNITIVISM_TO_SOCIAL_CONSTRUCTIVISM",
-    "DIRECT_TO_EXPERIENTIAL",
-    "CONSTRUCTIVISM_INDEX",
-  ];
+  const order = state.data.spectrums.map((s) => s.key);
 
-  const labels = order.map((k) => state.data.short_field_labels[k] ?? k);
+  const labels = order.map((k) => {
+    const spec = state.data.spectrums.find((x) => x.key === k);
+    return spec?.short ?? k;
+  });
   const values = order.map((k) => Number(scores100?.[k] ?? 50.5));
 
   const ctx = el("radarCanvas").getContext("2d");
@@ -113,16 +387,200 @@ function updateRadar(scores100) {
   }
 }
 
-async function fetchJson(url, options) {
-  const res = await fetch(url, {
-    headers: { "Content-Type": "application/json" },
-    ...options,
-  });
-  if (!res.ok) {
-    const t = await res.text();
-    throw new Error(`HTTP ${res.status}: ${t}`);
+function reverseIfNeeded(v, reverse) {
+  return reverse ? 6 - v : v;
+}
+
+function likertMeanTo100(mean1to5) {
+  return 1 + (mean1to5 - 1) * (99 / 4);
+}
+
+function computeScores(responses) {
+  const sums = {};
+  const counts = {};
+
+  const add = (key, value) => {
+    sums[key] = (sums[key] ?? 0) + value;
+    counts[key] = (counts[key] ?? 0) + 1;
+  };
+
+  for (const q of state.data.questions) {
+    const raw = Number(responses[q.id] ?? 0);
+    if (!Number.isFinite(raw) || raw < 1 || raw > 5) continue;
+    const adj = reverseIfNeeded(raw, Boolean(q.reverse_scored));
+    add(q.spectrum, adj);
+    if (q.contributes_to_constructivism) add("CONSTRUCTIVISM_INDEX", adj);
   }
-  return await res.json();
+
+  const means = {};
+  const scores100 = {};
+  for (const s of state.data.spectrums) {
+    const c = counts[s.key] ?? 0;
+    const mean = c > 0 ? (sums[s.key] ?? 0) / c : 3.0;
+    means[s.key] = mean;
+    scores100[s.key] = likertMeanTo100(mean);
+  }
+
+  return { means, scores100 };
+}
+
+function rankSpectrums(scores100) {
+  const items = state.data.spectrums
+    .map((s) => ({ field: s.key, score: Number(scores100?.[s.key] ?? 50.5) }))
+    .sort((a, b) => b.score - a.score);
+  return { ranked_high: items, ranked_low: [...items].reverse() };
+}
+
+function band(score100) {
+  if (score100 >= 88) return "Distinguished alignment";
+  if (score100 >= 75) return "Strong alignment";
+  if (score100 >= 62) return "Solid alignment";
+  if (score100 >= 48) return "Developing alignment";
+  if (score100 >= 35) return "Emerging alignment";
+  return "Entry / high-growth zone";
+}
+
+function renderSpectrumBars(scores100) {
+  const wrap = el("spectrumBars");
+  if (!wrap) return;
+  wrap.innerHTML = "";
+
+  for (const spec of state.data.spectrums) {
+    const score = Math.max(1, Math.min(100, Number(scores100?.[spec.key] ?? 50.5)));
+    const card = document.createElement("div");
+    card.className = "pp-bar";
+
+    const header = document.createElement("div");
+    header.className = "pp-bar-h";
+
+    const title = document.createElement("div");
+    title.className = "pp-bar-title";
+    title.textContent = spec.label;
+
+    const meta = document.createElement("div");
+    meta.className = "pp-bar-score";
+    meta.textContent = `${Math.round(score)}/100 · ${band(score)}`;
+
+    header.appendChild(title);
+    header.appendChild(meta);
+
+    const track = document.createElement("div");
+    track.className = "pp-bar-track";
+
+    const fill = document.createElement("div");
+    fill.className = "pp-bar-fill";
+    fill.style.width = `${score}%`;
+
+    const mid = document.createElement("div");
+    mid.className = "pp-bar-mid";
+
+    const marker = document.createElement("div");
+    marker.className = "pp-bar-marker";
+    marker.style.left = `${score}%`;
+
+    track.appendChild(fill);
+    track.appendChild(mid);
+    track.appendChild(marker);
+
+    const poles = document.createElement("div");
+    poles.className = "pp-bar-poles";
+
+    const left = document.createElement("div");
+    left.className = "pp-bar-pole-l";
+    left.textContent = spec.left;
+
+    const right = document.createElement("div");
+    right.className = "pp-bar-pole-r";
+    right.textContent = spec.right;
+
+    poles.appendChild(left);
+    poles.appendChild(right);
+
+    const rec = document.createElement("div");
+    rec.className = "pp-bar-rec";
+    rec.innerHTML = `<b>Try next week:</b> ${microRecommendation(spec.key, score)}`;
+
+    card.appendChild(header);
+    card.appendChild(track);
+    card.appendChild(poles);
+    card.appendChild(rec);
+    wrap.appendChild(card);
+  }
+}
+
+function microRecommendation(fieldKey, score100) {
+  const towardRight = score100 < 62;
+  const toward = towardRight ? "toward the right-hand pole" : "without losing what already works";
+
+  const picks = {
+    TEACHER_TO_STUDENT: towardRight
+      ? "Offer one bounded choice (topic OR method OR product) and keep success criteria constant."
+      : "Ask students to propose the next step before you intervene; then compare their plan to yours."
+    ,
+    BEHAVIORISM_TO_COGNITIVISM: towardRight
+      ? "Teach one named thinking move (e.g., compare) and require students to label it in an exit ticket."
+      : "Swap one reminder/prompt for a ‘why did you choose that strategy?’ question and log the patterns you hear."
+    ,
+    BEHAVIORISM_TO_CONSTRUCTIVISM: towardRight
+      ? "Add a revision loop: feedback → 10-minute revise → resubmit (collect both versions)."
+      : "Make errors productive: have students explain a common misconception and how evidence changed their thinking."
+    ,
+    COGNITIVISM_TO_SOCIAL_CONSTRUCTIVISM: towardRight
+      ? "Run a 6-minute structured talk: roles + sentence stems (‘I agree because… / I challenge because…’)."
+      : "Tighten collaboration: require evidence-based replies and a shared artifact (one group model, not four copies)."
+    ,
+    DIRECT_TO_EXPERIENTIAL: towardRight
+      ? "Convert one explanation into ‘task first’: a short problem/task, then a mini-lesson after students notice patterns."
+      : "Add an authentic constraint (real audience/data/tool) to one activity so doing stays aligned to goals."
+    ,
+    CONSTRUCTIVISM_INDEX: towardRight
+      ? "Add a 2-question reflection: ‘What did I try?’ and ‘What will I do differently next time?’ (2 minutes)."
+      : "Add peer critique with a simple protocol (glow/grow + one required revision) and collect the revision."
+    ,
+  };
+
+  return `${picks[fieldKey] ?? "Pick one routine you can repeat 3 times in two weeks, then re-take the profile to see movement."} (${toward}.)`;
+}
+
+function buildReportText(scores100, means) {
+  const lines = [];
+  lines.push("FRAMEWORK");
+  lines.push("—".repeat(44));
+  lines.push(
+    `This version has ${state.data.questions.length} behavior-anchored prompts (1–5) grouped into six pedagogical spectrums. Some prompts are reverse-scored so that higher always means more of the right-hand pole (or more constructivist for the index).`
+  );
+  lines.push("");
+  lines.push("RAW (mean Likert per spectrum, 1–5)");
+  lines.push("—".repeat(44));
+  for (const spec of state.data.spectrums) {
+    const v = Number(means?.[spec.key] ?? 3.0);
+    lines.push(`${spec.short}: ${v.toFixed(2)}/5`);
+  }
+  lines.push("");
+  lines.push("FIELD-BY-FIELD SNAPSHOT");
+  lines.push("—".repeat(44));
+  for (const spec of state.data.spectrums) {
+    const s = Number(scores100?.[spec.key] ?? 50.5);
+    const pos =
+      s <= 35
+        ? `Leans toward ${spec.left}.`
+        : s <= 48
+          ? `Slight lean toward ${spec.left}.`
+          : s < 62
+            ? "Sits near the middle (mix of both)."
+            : s < 75
+              ? `Slight lean toward ${spec.right}.`
+              : `Leans toward ${spec.right}.`;
+    lines.push(`${spec.label} — ${s.toFixed(1)}/100 — ${band(s)}`);
+    lines.push(pos);
+    lines.push("");
+  }
+  lines.push("NOTE");
+  lines.push("—".repeat(44));
+  lines.push(
+    "Use these as reflection signals, not grades. A ‘low’ score often reflects context (content, time, safety, class culture) and deliberate tradeoffs, not a deficit."
+  );
+  return lines.join("\n");
 }
 
 function renderWelcome() {
@@ -135,14 +593,18 @@ function renderWelcome() {
 function renderQuestion() {
   const q = currentQuestion();
   setHeader("Question", `Q ${state.idx + 1} / ${questionCount()}`);
-  el("spectrumLabel").textContent = q.spectrum_label;
+  el("spectrumLabel").textContent =
+    state.data.spectrums.find((s) => s.key === q.spectrum)?.label ?? q.spectrum;
   el("qStem").textContent = q.stem;
   buildChoices(q);
   show("question");
 }
 
 function formatTop(fields) {
-  const names = fields.slice(0, 2).map((x) => state.data.short_field_labels[x.field] ?? x.field);
+  const names = fields.slice(0, 2).map((x) => {
+    const spec = state.data.spectrums.find((s) => s.key === x.field);
+    return spec?.short ?? x.field;
+  });
   return names.join(", ");
 }
 
@@ -150,15 +612,14 @@ async function renderResults() {
   setHeader("Results", "Scoring…");
   show("results");
 
-  const out = await fetchJson("/api/pedagogy/score", {
-    method: "POST",
-    body: JSON.stringify({ responses: state.responses }),
-  });
+  const { means, scores100 } = computeScores(state.responses);
+  const ranked = rankSpectrums(scores100);
 
-  updateRadar(out.scores_100);
-  el("reportText").textContent = out.report ?? "";
-  el("strengthsText").textContent = formatTop(out.ranked_high ?? []);
-  el("growthText").textContent = formatTop(out.ranked_low ?? []);
+  updateRadar(scores100);
+  renderSpectrumBars(scores100);
+  el("reportText").textContent = buildReportText(scores100, means);
+  el("strengthsText").textContent = formatTop(ranked.ranked_high);
+  el("growthText").textContent = formatTop(ranked.ranked_low);
   setHeader("Results", "Done");
 }
 
@@ -202,7 +663,7 @@ function reset() {
 
 async function init() {
   setHeader("Loading…", "Please wait");
-  state.data = await fetchJson("/api/pedagogy/questions");
+  state.data = INSTRUMENT;
 
   wireKeys();
   el("beginBtn").addEventListener("click", () => {
