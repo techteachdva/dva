@@ -1,0 +1,90 @@
+---
+title: Pedagogy Profile
+permalink: /pedagogy-profile/
+layout: false
+---
+<!doctype html>
+<html lang="{{ meta.mainLanguage }}">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Pedagogy Profile</title>
+    <link rel="stylesheet" href="/styles/pedagogy-profile.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  </head>
+  <body class="pp-body">
+    <div class="pp-shell">
+      <header class="pp-topbar">
+        <div>
+          <div class="pp-title">Pedagogy Profile</div>
+          <div class="pp-subtitle">Browser test build</div>
+        </div>
+        <div class="pp-actions">
+          <a class="pp-link" href="/">Back to site</a>
+          <button id="restartBtn" class="pp-btn pp-btn-secondary" type="button">Start over</button>
+        </div>
+      </header>
+
+      <main class="pp-grid">
+        <section class="pp-card">
+          <div class="pp-card-h">
+            <div class="pp-card-title" id="stepTitle">Loading…</div>
+            <div class="pp-pill" id="progressPill">—</div>
+          </div>
+
+          <div id="welcome" class="pp-stack pp-hidden">
+            <p class="pp-lead" id="frameworkText"></p>
+            <p class="pp-muted">
+              You’ll answer <strong>20</strong> statements using a <strong>1–5</strong> scale. Then you’ll get a short
+              narrative plus a radar chart where <strong>1</strong> is center and <strong>100</strong> is the outer ring.
+            </p>
+            <div>
+              <button id="beginBtn" class="pp-btn" type="button">Begin questionnaire</button>
+            </div>
+          </div>
+
+          <div id="question" class="pp-stack pp-hidden">
+            <div class="pp-meta" id="spectrumLabel">—</div>
+            <div class="pp-qstem" id="qStem">—</div>
+            <div class="pp-choices" id="choices"></div>
+            <div class="pp-row">
+              <button id="backBtn" class="pp-btn pp-btn-secondary" type="button">Back</button>
+              <button id="nextBtn" class="pp-btn" type="button">Next</button>
+            </div>
+            <div class="pp-muted pp-tiny">Tip: press 1–5 to select; Enter to continue.</div>
+          </div>
+
+          <div id="results" class="pp-stack pp-hidden">
+            <div class="pp-row pp-row-wrap">
+              <div class="pp-kpi">
+                <div class="pp-kpi-k">Relative strengths</div>
+                <div class="pp-kpi-v" id="strengthsText">—</div>
+              </div>
+              <div class="pp-kpi">
+                <div class="pp-kpi-k">Growth edges</div>
+                <div class="pp-kpi-v" id="growthText">—</div>
+              </div>
+            </div>
+
+            <div class="pp-report-wrap">
+              <pre id="reportText" class="pp-report"></pre>
+            </div>
+          </div>
+        </section>
+
+        <aside class="pp-card">
+          <div class="pp-card-h">
+            <div class="pp-card-title">Radar</div>
+            <div class="pp-muted pp-tiny">1 = center, 100 = edge</div>
+          </div>
+          <div class="pp-chart-wrap">
+            <canvas id="radarCanvas"></canvas>
+          </div>
+        </aside>
+      </main>
+    </div>
+
+    <script src="/scripts/pedagogy-profile.js"></script>
+  </body>
+</html>
+

@@ -1,0 +1,210 @@
+export const LIKERT = [
+  { value: 1, label: "Strongly Disagree" },
+  { value: 2, label: "Disagree" },
+  { value: 3, label: "Neutral" },
+  { value: 4, label: "Agree" },
+  { value: 5, label: "Strongly Agree" },
+];
+
+export const FIELD_ORDER = [
+  "TEACHER_TO_STUDENT",
+  "BEHAVIORISM_TO_COGNITIVISM",
+  "BEHAVIORISM_TO_CONSTRUCTIVISM",
+  "COGNITIVISM_TO_SOCIAL_CONSTRUCTIVISM",
+  "DIRECT_TO_EXPERIENTIAL",
+  "CONSTRUCTIVISM_INDEX",
+];
+
+export const FIELD_LABELS = {
+  TEACHER_TO_STUDENT: "Teacher-Centered ↔ Student-Centered",
+  BEHAVIORISM_TO_COGNITIVISM: "Behaviorism ↔ Cognitivism",
+  BEHAVIORISM_TO_CONSTRUCTIVISM: "Behaviorism ↔ Constructivism",
+  COGNITIVISM_TO_SOCIAL_CONSTRUCTIVISM: "Cognitivism ↔ Social Constructivism",
+  DIRECT_TO_EXPERIENTIAL: "Direct Instruction ↔ Experiential Learning",
+  CONSTRUCTIVISM_INDEX: "Constructivism (index)",
+};
+
+export const SHORT_FIELD_LABELS = {
+  TEACHER_TO_STUDENT: "Teacher → Student",
+  BEHAVIORISM_TO_COGNITIVISM: "Behaviorism → Cognitivism",
+  BEHAVIORISM_TO_CONSTRUCTIVISM: "Behaviorism → Constructivism",
+  COGNITIVISM_TO_SOCIAL_CONSTRUCTIVISM: "Cognitivism → Social",
+  DIRECT_TO_EXPERIENTIAL: "Direct → Experiential",
+  CONSTRUCTIVISM_INDEX: "Constructivism",
+};
+
+export const SPECTRUM_POLES = {
+  TEACHER_TO_STUDENT: { low: "Teacher-centered", high: "Student-centered" },
+  BEHAVIORISM_TO_COGNITIVISM: { low: "Behaviorism", high: "Cognitivism" },
+  BEHAVIORISM_TO_CONSTRUCTIVISM: { low: "Behaviorism", high: "Constructivism" },
+  COGNITIVISM_TO_SOCIAL_CONSTRUCTIVISM: { low: "Cognitivism", high: "Social constructivism" },
+  DIRECT_TO_EXPERIENTIAL: { low: "Direct instruction", high: "Experiential learning" },
+  CONSTRUCTIVISM_INDEX: { low: "Less constructivist", high: "More constructivist" },
+};
+
+export const INSTRUMENT_FRAMEWORK =
+  "Rate each statement from 1 (Strongly Disagree) to 5 (Strongly Agree).\nItems are grouped into six pedagogical spectrums.\nResults are shown on a 1–100 scale.";
+
+export const QUESTIONS = [
+  {
+    id: 1,
+    stem: "I structure most of my lessons with clear learning objectives that I deliver through direct instruction.",
+    spectrum: "TEACHER_TO_STUDENT",
+    spectrum_label: FIELD_LABELS.TEACHER_TO_STUDENT,
+    reverse_scored: true,
+    contributes_to_constructivism: false,
+  },
+  {
+    id: 2,
+    stem: "Students should primarily discover knowledge through exploration and problem-solving rather than being told answers.",
+    spectrum: "TEACHER_TO_STUDENT",
+    spectrum_label: FIELD_LABELS.TEACHER_TO_STUDENT,
+    reverse_scored: false,
+    contributes_to_constructivism: false,
+  },
+  {
+    id: 3,
+    stem: "I use a system of rewards and consequences to motivate student learning and manage behavior.",
+    spectrum: "BEHAVIORISM_TO_COGNITIVISM",
+    spectrum_label: FIELD_LABELS.BEHAVIORISM_TO_COGNITIVISM,
+    reverse_scored: true,
+    contributes_to_constructivism: false,
+  },
+  {
+    id: 4,
+    stem: "I focus on helping students understand how to think and process information, rather than just what to memorize.",
+    spectrum: "BEHAVIORISM_TO_COGNITIVISM",
+    spectrum_label: FIELD_LABELS.BEHAVIORISM_TO_COGNITIVISM,
+    reverse_scored: false,
+    contributes_to_constructivism: false,
+  },
+  {
+    id: 5,
+    stem: "Students learn best when I provide immediate feedback and reinforcement for correct responses.",
+    spectrum: "BEHAVIORISM_TO_CONSTRUCTIVISM",
+    spectrum_label: FIELD_LABELS.BEHAVIORISM_TO_CONSTRUCTIVISM,
+    reverse_scored: true,
+    contributes_to_constructivism: false,
+  },
+  {
+    id: 6,
+    stem: "Students learn best by actively constructing their own understanding through experience and reflection.",
+    spectrum: "BEHAVIORISM_TO_CONSTRUCTIVISM",
+    spectrum_label: FIELD_LABELS.BEHAVIORISM_TO_CONSTRUCTIVISM,
+    reverse_scored: false,
+    contributes_to_constructivism: true,
+  },
+  {
+    id: 7,
+    stem: "I prioritize individual student understanding and cognitive development in my instruction.",
+    spectrum: "COGNITIVISM_TO_SOCIAL_CONSTRUCTIVISM",
+    spectrum_label: FIELD_LABELS.COGNITIVISM_TO_SOCIAL_CONSTRUCTIVISM,
+    reverse_scored: true,
+    contributes_to_constructivism: false,
+  },
+  {
+    id: 8,
+    stem: "I design lessons where students collaborate and learn from peer interaction and discussion.",
+    spectrum: "COGNITIVISM_TO_SOCIAL_CONSTRUCTIVISM",
+    spectrum_label: FIELD_LABELS.COGNITIVISM_TO_SOCIAL_CONSTRUCTIVISM,
+    reverse_scored: false,
+    contributes_to_constructivism: false,
+  },
+  {
+    id: 9,
+    stem: "My students spend significant time on hands-on activities, projects, and real-world applications.",
+    spectrum: "DIRECT_TO_EXPERIENTIAL",
+    spectrum_label: FIELD_LABELS.DIRECT_TO_EXPERIENTIAL,
+    reverse_scored: false,
+    contributes_to_constructivism: false,
+  },
+  {
+    id: 10,
+    stem: "I believe the most efficient use of class time is delivering content through clear explanations and modeling.",
+    spectrum: "DIRECT_TO_EXPERIENTIAL",
+    spectrum_label: FIELD_LABELS.DIRECT_TO_EXPERIENTIAL,
+    reverse_scored: true,
+    contributes_to_constructivism: false,
+  },
+  {
+    id: 11,
+    stem: "I encourage students to make mistakes as part of the learning process and reflect on those mistakes.",
+    spectrum: "BEHAVIORISM_TO_CONSTRUCTIVISM",
+    spectrum_label: FIELD_LABELS.BEHAVIORISM_TO_CONSTRUCTIVISM,
+    reverse_scored: false,
+    contributes_to_constructivism: true,
+  },
+  {
+    id: 12,
+    stem: "Consistent routines, clear expectations, and predictable consequences are essential to my classroom.",
+    spectrum: "BEHAVIORISM_TO_CONSTRUCTIVISM",
+    spectrum_label: FIELD_LABELS.BEHAVIORISM_TO_CONSTRUCTIVISM,
+    reverse_scored: true,
+    contributes_to_constructivism: false,
+  },
+  {
+    id: 13,
+    stem: "I differentiate instruction based on individual student needs, interests, and learning styles.",
+    spectrum: "TEACHER_TO_STUDENT",
+    spectrum_label: FIELD_LABELS.TEACHER_TO_STUDENT,
+    reverse_scored: false,
+    contributes_to_constructivism: false,
+  },
+  {
+    id: 14,
+    stem: "I believe all students in my class should follow the same curriculum and pace to ensure consistency.",
+    spectrum: "TEACHER_TO_STUDENT",
+    spectrum_label: FIELD_LABELS.TEACHER_TO_STUDENT,
+    reverse_scored: true,
+    contributes_to_constructivism: false,
+  },
+  {
+    id: 15,
+    stem: "Group work and peer teaching are central to how I structure learning in my classroom.",
+    spectrum: "COGNITIVISM_TO_SOCIAL_CONSTRUCTIVISM",
+    spectrum_label: FIELD_LABELS.COGNITIVISM_TO_SOCIAL_CONSTRUCTIVISM,
+    reverse_scored: false,
+    contributes_to_constructivism: false,
+  },
+  {
+    id: 16,
+    stem: "I focus on building individual cognitive skills like critical thinking and problem-solving.",
+    spectrum: "COGNITIVISM_TO_SOCIAL_CONSTRUCTIVISM",
+    spectrum_label: FIELD_LABELS.COGNITIVISM_TO_SOCIAL_CONSTRUCTIVISM,
+    reverse_scored: true,
+    contributes_to_constructivism: false,
+  },
+  {
+    id: 17,
+    stem: "Students should learn by doing—through labs, projects, and authentic tasks—rather than abstract lessons.",
+    spectrum: "DIRECT_TO_EXPERIENTIAL",
+    spectrum_label: FIELD_LABELS.DIRECT_TO_EXPERIENTIAL,
+    reverse_scored: false,
+    contributes_to_constructivism: false,
+  },
+  {
+    id: 18,
+    stem: "I emphasize explicit instruction in cognitive strategies like organizing, analyzing, and synthesizing information.",
+    spectrum: "DIRECT_TO_EXPERIENTIAL",
+    spectrum_label: FIELD_LABELS.DIRECT_TO_EXPERIENTIAL,
+    reverse_scored: true,
+    contributes_to_constructivism: false,
+  },
+  {
+    id: 19,
+    stem: "I see my role as a facilitator who guides student inquiry rather than an expert who delivers all knowledge.",
+    spectrum: "TEACHER_TO_STUDENT",
+    spectrum_label: FIELD_LABELS.TEACHER_TO_STUDENT,
+    reverse_scored: false,
+    contributes_to_constructivism: true,
+  },
+  {
+    id: 20,
+    stem: "I am responsible for ensuring students master specific content standards through structured lessons.",
+    spectrum: "TEACHER_TO_STUDENT",
+    spectrum_label: FIELD_LABELS.TEACHER_TO_STUDENT,
+    reverse_scored: true,
+    contributes_to_constructivism: false,
+  },
+];
+
