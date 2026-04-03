@@ -31,7 +31,7 @@ function scaleChoice() {
 
 const INSTRUMENT = {
   framework:
-    "Answer 24 short prompts about what you typically do in your classroom (or aim to do). Each prompt has its own 1–5 response anchors. Results are grouped into six pedagogical spectrums and displayed on a 1–100 scale.",
+    "Answer 24 short prompts about what you typically do in your classroom (or aim to do). Each prompt uses 1–5 frequency anchors. Six spectrums; higher scores align with student-centered, constructivist, social, experiential, and process-oriented writing pedagogy. On **Traditional ↔ Process**, 100 = **process pedagogy** (drafting, revision, invention)—contrasted with the **Current Traditional Paradigm** in composition (product-focused, single-draft). Results display on a 1–100 scale.",
   likert: scaleOften(),
   spectrums: [
     {
@@ -42,11 +42,11 @@ const INSTRUMENT = {
       right: "Student-centered",
     },
     {
-      key: "BEHAVIORISM_TO_COGNITIVISM",
-      label: "Behaviorism ↔ Cognitivism",
-      short: "Behaviorism → Cognitivism",
-      left: "Behaviorism",
-      right: "Cognitivism",
+      key: "TRADITIONAL_TO_PROCESS",
+      label: "Current Traditional Paradigm ↔ Process pedagogy (writing)",
+      short: "Traditional → Process",
+      left: "Current Traditional Paradigm",
+      right: "Process pedagogy",
     },
     {
       key: "BEHAVIORISM_TO_CONSTRUCTIVISM",
@@ -113,35 +113,35 @@ const INSTRUMENT = {
       anchors: scaleOften(),
     },
 
-    // Behaviorism ↔ Cognitivism (higher = cognitivism)
+    // Current Traditional Paradigm ↔ Process pedagogy (composition); higher = process-oriented (100 = process)
     {
       id: 5,
-      stem: "How often do you explicitly teach a thinking strategy (e.g., compare, classify, infer) and name it while modeling?",
-      spectrum: "BEHAVIORISM_TO_COGNITIVISM",
-      reverse_scored: false,
-      contributes_to_constructivism: false,
-      anchors: scaleOften(),
-    },
-    {
-      id: 6,
-      stem: "How often do students explain their reasoning (in writing or talk) rather than only giving final answers?",
-      spectrum: "BEHAVIORISM_TO_COGNITIVISM",
+      stem: "How often do students move through multiple drafts of a piece of writing, with meaningful revision between drafts?",
+      spectrum: "TRADITIONAL_TO_PROCESS",
       reverse_scored: false,
       contributes_to_constructivism: true,
       anchors: scaleOften(),
     },
     {
+      id: 6,
+      stem: "How often do you respond to drafts in progress (conference, comment, workshop) rather than only grading a final product?",
+      spectrum: "TRADITIONAL_TO_PROCESS",
+      reverse_scored: false,
+      contributes_to_constructivism: false,
+      anchors: scaleOften(),
+    },
+    {
       id: 7,
-      stem: "How often do you rely on points/prizes/public tallies to drive academic effort?",
-      spectrum: "BEHAVIORISM_TO_COGNITIVISM",
+      stem: "How often is a writing grade based mainly on a single submitted draft with little or no revision cycle?",
+      spectrum: "TRADITIONAL_TO_PROCESS",
       reverse_scored: true,
       contributes_to_constructivism: false,
       anchors: scaleOften(),
     },
     {
       id: 8,
-      stem: "How often do you use a quick “what changed in your thinking?” reflection after learning activities?",
-      spectrum: "BEHAVIORISM_TO_COGNITIVISM",
+      stem: "How often do students spend class time on invention, exploration, or discovery before a fixed form is required?",
+      spectrum: "TRADITIONAL_TO_PROCESS",
       reverse_scored: false,
       contributes_to_constructivism: true,
       anchors: scaleOften(),
@@ -517,9 +517,9 @@ function microRecommendation(fieldKey, score100) {
       ? "Offer one bounded choice (topic OR method OR product) and keep success criteria constant."
       : "Ask students to propose the next step before you intervene; then compare their plan to yours."
     ,
-    BEHAVIORISM_TO_COGNITIVISM: towardRight
-      ? "Teach one named thinking move (e.g., compare) and require students to label it in an exit ticket."
-      : "Swap one reminder/prompt for a ‘why did you choose that strategy?’ question and log the patterns you hear."
+    TRADITIONAL_TO_PROCESS: towardRight
+      ? "Pilot a two-draft minimum on one assignment: quick first draft → reader response → revision before the grade."
+      : "Add a meta question after revision: ‘What did you discover in drafting that you couldn’t plan in advance?’"
     ,
     BEHAVIORISM_TO_CONSTRUCTIVISM: towardRight
       ? "Add a revision loop: feedback → 10-minute revise → resubmit (collect both versions)."
@@ -542,12 +542,69 @@ function microRecommendation(fieldKey, score100) {
   return `${picks[fieldKey] ?? "Pick one routine you can repeat 3 times in two weeks, then re-take the profile to see movement."} (${toward}.)`;
 }
 
+function improvementBullets(specKey, score100) {
+  const s = Number(score100);
+  const tier = s < 48 ? "strong" : s < 75 ? "moderate" : "refine";
+  const packs = {
+    TEACHER_TO_STUDENT: {
+      strong: [
+        "Offer one bounded student choice per week (topic, method, or product) with a shared rubric.",
+        "Replace one ‘tell’ segment with questions so students generate the next step.",
+      ],
+      moderate: ["Co-create success criteria before students start one upcoming task.", "Use think–pair–share before you summarize."],
+      refine: ["Document when students led the agenda; replicate what worked next unit.", "Keep high agency with tight feedback loops."],
+    },
+    TRADITIONAL_TO_PROCESS: {
+      strong: [
+        "Two-draft minimum before summative grade on one writing task; separate draft feedback from final evaluation.",
+        "One class period for invention (freewrite, questioning) before locking thesis or outline.",
+        "Peer response to drafts with a short protocol—not only line edits on polished text.",
+        "Comment on drafts as a reader first (‘I’m confused here…’) before judging correctness.",
+      ],
+      moderate: [
+        "One conference or audio comments on a draft before the final.",
+        "Weight process (planning notes, revision log) for a small part of the grade.",
+      ],
+      refine: [
+        "Students pick one global revision focus per draft (structure, evidence, voice).",
+        "Ask: ‘What did you discover while drafting that you couldn’t plan?’",
+      ],
+    },
+    BEHAVIORISM_TO_CONSTRUCTIVISM: {
+      strong: ["Feedback → revise → resubmit with a one-line reflection on what changed.", "Swap one ‘correct answer’ check for ‘best explanation + what would change it.’"],
+      moderate: ["Improve one anonymous sample as a class.", "Celebrate revision in public: ‘What changed between v1 and v2?’"],
+      refine: ["Students tag what changed between versions.", "Normalize error as data in one unit routine."],
+    },
+    COGNITIVISM_TO_SOCIAL_CONSTRUCTIVISM: {
+      strong: ["Roles + evidence-based replies in discussion.", "Structured controversy with sentence stems."],
+      moderate: ["Turn-and-talk before whole-class.", "One shared group artifact per task."],
+      refine: ["Tighten norms so talk changes thinking, not just airtime.", "Require citing a peer’s idea."],
+    },
+    DIRECT_TO_EXPERIENTIAL: {
+      strong: ["Task first, mini-lesson after in one lesson.", "One real audience or authentic constraint per unit."],
+      moderate: ["Simulation or case before defining terms.", "Short field-like task before notes."],
+      refine: ["Clarify success criteria for discovery tasks.", "Debrief patterns before naming rules."],
+    },
+    CONSTRUCTIVISM_INDEX: {
+      strong: ["Co-build one rubric row; try it once.", "3-minute plan–monitor–reflect after a complex task."],
+      moderate: ["Peer critique protocol + required revision.", "Student-generated questions drive one lesson segment."],
+      refine: ["Track one strategy students used and its effect.", "Glow/grow with one mandatory revision."],
+    },
+  };
+  const p = packs[specKey]?.[tier] ?? packs[specKey]?.moderate ?? [];
+  const out = [...p];
+  if (s < 62) {
+    out.unshift(`Priority: move toward the right-hand pole in small, repeatable steps.`);
+  }
+  return out.slice(0, 5);
+}
+
 function buildReportText(scores100, means) {
   const lines = [];
   lines.push("FRAMEWORK");
   lines.push("—".repeat(44));
   lines.push(
-    `This version has ${state.data.questions.length} behavior-anchored prompts (1–5) grouped into six pedagogical spectrums. Some prompts are reverse-scored so that higher always means more of the right-hand pole (or more constructivist for the index).`
+    `This version has ${state.data.questions.length} behavior-anchored prompts (1–5) across six spectrums. Higher = more alignment with the right-hand pole (or constructivist index). **Traditional → Process** = composition: current-traditional (product/single-draft) vs. **process pedagogy** (drafting, revision, invention—Murray / writing-process tradition).`
   );
   lines.push("");
   lines.push("RAW (mean Likert per spectrum, 1–5)");
@@ -557,6 +614,16 @@ function buildReportText(scores100, means) {
     lines.push(`${spec.short}: ${v.toFixed(2)}/5`);
   }
   lines.push("");
+  lines.push("IMPROVEMENT MOVES (toward 100)");
+  lines.push("—".repeat(44));
+  for (const spec of state.data.spectrums) {
+    const s = Number(scores100?.[spec.key] ?? 50.5);
+    lines.push(`${spec.short} — ${s.toFixed(0)}/100`);
+    for (const b of improvementBullets(spec.key, s)) {
+      lines.push(`  • ${b}`);
+    }
+    lines.push("");
+  }
   lines.push("FIELD-BY-FIELD SNAPSHOT");
   lines.push("—".repeat(44));
   for (const spec of state.data.spectrums) {

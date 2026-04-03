@@ -59,61 +59,12 @@ function band(score) {
   return "Entry / high-growth zone";
 }
 
-function leanOrBuild(score) {
-  return score >= 62 ? "Lean into this asset" : "Build this next";
-}
-
-function actionableInsight(field, score) {
-  // Always points toward the right-hand pole (student-centered, cognitive, etc.)
-  const poles = fieldPoles(field);
-  const intent = leanOrBuild(score);
-
-  const moves = {
-    TEACHER_TO_STUDENT: [
-      "Shift one decision to students: choice of topic, product, or method (keep success criteria constant).",
-      "Use a 3-minute co-criteria routine: ‘What makes a strong answer/work sample?’ then post the class rubric.",
-    ],
-    BEHAVIORISM_TO_COGNITIVISM: [
-      "Add a ‘strategy spotlight’: model one thinking move (e.g., compare, classify, infer) and name it aloud.",
-      "Replace one reward/consequence moment with self-monitoring: a checklist + 1 reflection question (‘What strategy did you use?’).",
-    ],
-    BEHAVIORISM_TO_CONSTRUCTIVISM: [
-      "Run a safe error/revision cycle: predict → test → explain → revise (collect 2 revisions, not 1 final).",
-      "Use ‘My first idea / My revised idea’ exit tickets to normalize changing your mind with evidence.",
-    ],
-    COGNITIVISM_TO_SOCIAL_CONSTRUCTIVISM: [
-      "Structure talk so ideas change: assign roles (summarizer, challenger, connector) and require evidence-based replies.",
-      "Use one discourse move daily: ‘I used to think…, now I think… because…’ (post stems).",
-    ],
-    DIRECT_TO_EXPERIENTIAL: [
-      "Convert one explanation into an experience: a short task first, then mini-lesson after students notice patterns.",
-      "Add an ‘authentic constraint’: a real audience, real data, or real tool (even for 15 minutes).",
-    ],
-    CONSTRUCTIVISM_INDEX: [
-      "Build reflection into the lesson: 2 prompts—‘What did I try?’ and ‘What will I do differently next time?’",
-      "Add peer critique with a protocol (glow/grow + one specific revision) and require a revision submission.",
-    ],
-  };
-
-  let pos = "Currently a **blend** of both poles.";
-  if (score <= 48) pos = `Currently leaning toward **${poles.low}**.`;
-  else if (score < 62) pos = "Currently a **blend** of both poles.";
-  else pos = `Currently leaning toward **${poles.high}**.`;
-
-  const primary = (moves[field] && moves[field][0]) || "";
-  const secondary = (moves[field] && moves[field][1]) || "";
-
-  let out = `Toward **${poles.high}** — ${intent}. ${pos} Try next: ${primary}`;
-  if (secondary) out += ` Also try: ${secondary}`;
-  return out.trim();
-}
-
 function fieldPoles(field) {
   switch (field) {
     case "TEACHER_TO_STUDENT":
       return { low: "Teacher-centered", high: "Student-centered" };
-    case "BEHAVIORISM_TO_COGNITIVISM":
-      return { low: "Behaviorism", high: "Cognitivism" };
+    case "TRADITIONAL_TO_PROCESS":
+      return { low: "Current Traditional Paradigm", high: "Process pedagogy" };
     case "BEHAVIORISM_TO_CONSTRUCTIVISM":
       return { low: "Behaviorism", high: "Constructivism" };
     case "COGNITIVISM_TO_SOCIAL_CONSTRUCTIVISM":
@@ -134,10 +85,11 @@ function fieldDescription(field) {
         "Where you tend to locate agency: 1 leans toward teacher-directed planning and delivery; " +
         "100 leans toward student inquiry, differentiation, and shared sense-making."
       );
-    case "BEHAVIORISM_TO_COGNITIVISM":
+    case "TRADITIONAL_TO_PROCESS":
       return (
-        "What you emphasize for learning/behavior: 1 leans toward reinforcement and contingencies; " +
-        "100 leans toward teaching thinking, processing, and mental models."
+        "Writing/composition stance: 1 leans toward the Current Traditional Paradigm (product-focused, single-draft, " +
+        "prescriptive forms); 100 leans toward process pedagogy—invention, drafting, revision, response to drafts, " +
+        "writing as discovery (cf. Donald Murray, process-not-product)."
       );
     case "BEHAVIORISM_TO_CONSTRUCTIVISM":
       return (
@@ -175,7 +127,22 @@ function fieldInterpretation(field, score) {
   else if (score < 75) pos = `Slight lean toward **${high}**.`;
   else pos = `Leans toward **${high}**.`;
 
-  return `${pos} Band: ${b}. ${actionableInsight(field, score)}`.trim();
+  const prompts = {
+    TEACHER_TO_STUDENT:
+      "Reflection prompt: Where do students make consequential choices (task, method, criteria, pacing)? Pick one upcoming lesson and shift **one** decision from you to them.",
+    TRADITIONAL_TO_PROCESS:
+      "Reflection prompt: On one writing task, add a second draft and respond to the draft as a reader before grading; reserve part of class for invention before the outline is fixed.",
+    BEHAVIORISM_TO_CONSTRUCTIVISM:
+      "Reflection prompt: Where can students safely test ideas, be wrong, and revise? Add one low-stakes cycle: predict → test → explain → revise.",
+    COGNITIVISM_TO_SOCIAL_CONSTRUCTIVISM:
+      "Reflection prompt: When do students learn from peers in ways that change their thinking (not just share answers)? Add one structured discourse move (roles, sentence starters, evidence requirement).",
+    DIRECT_TO_EXPERIENTIAL:
+      "Reflection prompt: Take one explanation you usually deliver and convert it into an activity that still preserves clarity (worked example + practice, lab with explicit success criteria, or a small authentic task).",
+    CONSTRUCTIVISM_INDEX:
+      "Reflection prompt: Choose one upcoming unit moment to normalize error and revision (drafting, peer critique, reflection, or retest with explanation).",
+  };
+
+  return `${pos} Band: ${b}. ${prompts[field] ?? ""}`.trim();
 }
 
 function buildAnalysisReport(scores100, rawMeans5) {
@@ -185,7 +152,7 @@ function buildAnalysisReport(scores100, rawMeans5) {
   lines.push("FRAMEWORK");
   lines.push("—".repeat(44));
   lines.push(
-    "This version has 20 Likert statements (1=Strongly Disagree … 5=Strongly Agree) grouped into six " +
+    "This version has 24 prompts (1–5) grouped into six " +
       "pedagogical spectrums. Some statements are reverse-scored so that higher always means more of the right-hand " +
       "pole. The radar uses a 1–100 display scale derived from your mean Likert ratings (1 ↦ 1, 5 ↦ 100)."
   );
@@ -198,22 +165,6 @@ function buildAnalysisReport(scores100, rawMeans5) {
     const v = Number(rawMeans5?.[f] ?? 3.0);
     const label = SHORT_FIELD_LABELS[f] ?? f;
     lines.push(`${label}: ${v.toFixed(2)}/5`);
-  }
-  lines.push("");
-
-  lines.push("ACTIONABLE INSIGHTS (one per spectrum)");
-  lines.push("—".repeat(44));
-  const insightOrder = [
-    "TEACHER_TO_STUDENT",
-    "BEHAVIORISM_TO_COGNITIVISM",
-    "COGNITIVISM_TO_SOCIAL_CONSTRUCTIVISM",
-    "DIRECT_TO_EXPERIENTIAL",
-    "BEHAVIORISM_TO_CONSTRUCTIVISM",
-    "CONSTRUCTIVISM_INDEX",
-  ];
-  for (const f of insightOrder) {
-    const s = Number(scores100?.[f] ?? 50.5);
-    lines.push(`${FIELD_LABELS?.[f] ?? f} (${Math.round(s)}/100): ${actionableInsight(f, s)}`);
   }
   lines.push("");
 
