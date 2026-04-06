@@ -5,6 +5,7 @@ const state = {
   idx: 0,
   responses: {}, // qid -> 1..5
   chart: null,
+  picks: {}, // spectrumKey -> suggestion index
 };
 
 const el = (id) => document.getElementById(id);
@@ -286,6 +287,82 @@ const INSTRUMENT = {
   ],
 };
 
+// 60 total suggestions (10 per spectrum), oriented toward moving toward 100 (right-hand pole).
+const SUGGESTION_BANK = {
+  TEACHER_TO_STUDENT: [
+    "Offer one bounded choice (topic OR method OR product) while keeping success criteria constant.",
+    "Co-create success criteria: show 2 exemplars, ask ‘what makes this strong?’, and post the class rubric.",
+    "Use a ‘help ladder’: students try a strategy, ask a peer, then ask you—before you rescue.",
+    "Start with a student question: collect 5 questions, pick 2 to investigate today, and revisit at the end.",
+    "Replace one teacher explanation with a guided inquiry task + debrief (students notice patterns first).",
+    "Add a ‘decision point’ checkpoint: students choose next steps (practice set A/B, extension, or reteach station).",
+    "Use exit tickets that require agency: ‘What did you choose today and why?’",
+    "Rotate roles so students lead parts of the routine (warm-up facilitator, summarizer, question curator).",
+    "Make feedback student-driven: students pick one rubric row to improve and plan the revision.",
+    "Run a 10-minute studio/work time with conferencing while students manage pacing via a checklist.",
+  ],
+  TRADITIONAL_TO_PROCESS: [
+    "Two-draft minimum: quick draft → reader response → revision before the grade counts.",
+    "Teach revision as global change: one revision target per draft (structure OR evidence OR clarity), not just edits.",
+    "Schedule invention time (freewrite, question-burst, quick research) before thesis/outline is fixed.",
+    "Respond as a reader first (‘I’m confused here… I’m interested here…’) before correctness comments.",
+    "Use brief writing conferences on drafts-in-progress (3–5 minutes each) before the final submission.",
+    "Add peer response with a protocol (what works / what’s unclear / one question) and require a revision note.",
+    "Require a revision log: ‘What changed? Why? What feedback did you use?’ (2 minutes).",
+    "Grade process lightly: small points for draft, revision, and reflection to signal writing is iterative.",
+    "Model your own messy draft and revise it live so students see real composing decisions.",
+    "End a writing block with: ‘What did you discover while drafting that you couldn’t have planned?’",
+  ],
+  BEHAVIORISM_TO_CONSTRUCTIVISM: [
+    "Run predict → test → explain → revise at least once per week to normalize revision and sense-making.",
+    "Collect two versions: students submit v1 and v2 with a one-line ‘what changed’ reflection.",
+    "Use one ‘productive error’ routine: analyze a common misconception and improve it together.",
+    "Swap one correctness check for ‘best current explanation + what evidence would change your mind?’",
+    "Let students generate examples/counterexamples before you define the rule or concept.",
+    "Use ‘My first idea / My revised idea’ exit tickets to reward changing thinking with evidence.",
+    "Design one task with multiple valid approaches and have students compare strategies publicly.",
+    "Add a ‘revision after feedback’ expectation for one assignment (not optional).",
+    "Use warm feedback + one actionable next step; students must act on it before final submission.",
+    "Ask students to annotate their work: ‘Where did I revise my thinking?’",
+  ],
+  COGNITIVISM_TO_SOCIAL_CONSTRUCTIVISM: [
+    "Use roles in talk (summarizer, challenger, connector, evidence-checker) and rotate weekly.",
+    "Require evidence-based replies: ‘I agree/disagree because…’ plus a quote, data point, or example.",
+    "Have groups produce one shared artifact (one model/solution), not four parallel copies.",
+    "Run a structured academic controversy (argue both sides, then synthesize a joint position).",
+    "Use sentence stems that force uptake: ‘I used to think…, now I think… because…’",
+    "Teach a discussion skill explicitly (paraphrase, ask a clarifying question, build on a peer).",
+    "Use think–pair–share, but require pairs to merge ideas into one improved claim before sharing.",
+    "Create a ‘question curator’ role: students choose which questions the group will answer publicly.",
+    "Use peer teaching: one student explains a strategy, another adds a caveat/example, group revises.",
+    "Add a norm check: groups self-rate talk quality (equity of voice + evidence) after discussion.",
+  ],
+  DIRECT_TO_EXPERIENTIAL: [
+    "Flip one lesson: short task first → pattern noticing → mini-lesson after students struggle productively.",
+    "Add an authentic constraint (real audience, real data, real tool) for 15 minutes of a lesson.",
+    "Use a simulation/case before defining terms; students propose solutions, then learn the concept.",
+    "Turn one practice set into an applied product (poster, tutorial, explanation video, letter).",
+    "Use stations: one hands-on task, one coached practice, one extension, one reflection checkpoint.",
+    "Have students test a claim with data (even a small class dataset) and argue from evidence.",
+    "Require application in a new context: ‘same concept, different setting’ exit problem.",
+    "Use ‘build → break → rebuild’: make a model, stress-test it, then revise it.",
+    "Invite a real reader/user (another class, admin, community) for one authentic feedback moment.",
+    "End with a debrief: ‘What did we notice first? What did the mini-lesson clarify?’",
+  ],
+  CONSTRUCTIVISM_INDEX: [
+    "Co-clarify one rubric row with students; use it immediately on a draft or practice task.",
+    "Add plan–monitor–reflect in 3 minutes (What’s my plan? What’s working? What will I adjust?).",
+    "Use peer critique (glow/grow + one specific revision) and collect the revision, not just comments.",
+    "Have students generate questions that shape the lesson’s investigation (choose 2 to pursue).",
+    "Require a revision submission with a short note: ‘Here’s what I changed and why.’",
+    "Normalize error: celebrate a ‘best mistake’ and what it taught the class.",
+    "Have students self-assess one criterion before you grade; compare their rating to yours.",
+    "Use exemplars: students sort samples from weak→strong and extract criteria.",
+    "Add a reflection prompt: ‘What strategy did I use and when did I switch?’",
+    "Do a 2-minute peer check for understanding (teach-back) before moving on.",
+  ],
+};
+
 function show(viewId) {
   for (const id of ["welcome", "question", "results"]) el(id).classList.add("pp-hidden");
   el(viewId).classList.remove("pp-hidden");
@@ -336,14 +413,23 @@ function buildChoices(q) {
   }
 }
 
-function updateRadar(scores100) {
+function updateRadar(scores100, growthKeys) {
   const order = state.data.spectrums.map((s) => s.key);
+  const growth = new Set(Array.isArray(growthKeys) ? growthKeys : []);
 
   const labels = order.map((k) => {
     const spec = state.data.spectrums.find((x) => x.key === k);
-    return spec?.short ?? k;
+    const short = spec?.short ?? k;
+    return growth.has(k) ? `${short} ★` : short;
   });
   const values = order.map((k) => Number(scores100?.[k] ?? 50.5));
+  const pointRadius = order.map((k) => (growth.has(k) ? 8 : 3));
+  const pointHoverRadius = order.map((k) => (growth.has(k) ? 10 : 5));
+  const pointBackgroundColor = order.map((k) =>
+    growth.has(k) ? "rgba(251,191,36,0.95)" : "rgba(79,124,255,0.95)"
+  );
+  const pointBorderColor = order.map((k) => (growth.has(k) ? "rgba(255,255,255,0.95)" : "rgba(79,124,255,0.35)"));
+  const pointBorderWidth = order.map((k) => (growth.has(k) ? 2 : 1));
 
   const ctx = el("radarCanvas").getContext("2d");
   if (!state.chart) {
@@ -357,8 +443,11 @@ function updateRadar(scores100) {
             data: values,
             borderColor: "rgba(79,124,255,0.95)",
             backgroundColor: "rgba(79,124,255,0.16)",
-            pointBackgroundColor: "rgba(79,124,255,0.95)",
-            pointRadius: 3,
+            pointBackgroundColor,
+            pointBorderColor,
+            pointBorderWidth,
+            pointRadius,
+            pointHoverRadius,
             borderWidth: 2.5,
           },
         ],
@@ -383,6 +472,12 @@ function updateRadar(scores100) {
   } else {
     state.chart.data.labels = labels;
     state.chart.data.datasets[0].data = values;
+    const ds = state.chart.data.datasets[0];
+    ds.pointBackgroundColor = pointBackgroundColor;
+    ds.pointBorderColor = pointBorderColor;
+    ds.pointBorderWidth = pointBorderWidth;
+    ds.pointRadius = pointRadius;
+    ds.pointHoverRadius = pointHoverRadius;
     state.chart.update();
   }
 }
@@ -440,15 +535,24 @@ function band(score100) {
   return "Entry / high-growth zone";
 }
 
-function renderSpectrumBars(scores100) {
+function renderSpectrumBars(scores100, growthKeys) {
   const wrap = el("spectrumBars");
   if (!wrap) return;
   wrap.innerHTML = "";
+  const growth = new Set(Array.isArray(growthKeys) ? growthKeys : []);
 
   for (const spec of state.data.spectrums) {
     const score = Math.max(1, Math.min(100, Number(scores100?.[spec.key] ?? 50.5)));
     const card = document.createElement("div");
     card.className = "pp-bar";
+    if (growth.has(spec.key)) card.classList.add("pp-bar--growth");
+
+    if (growth.has(spec.key)) {
+      const ribbon = document.createElement("div");
+      ribbon.className = "pp-growth-ribbon";
+      ribbon.textContent = "Growth focus";
+      card.appendChild(ribbon);
+    }
 
     const header = document.createElement("div");
     header.className = "pp-bar-h";
@@ -496,50 +600,11 @@ function renderSpectrumBars(scores100) {
     poles.appendChild(left);
     poles.appendChild(right);
 
-    const rec = document.createElement("div");
-    rec.className = "pp-bar-rec";
-    rec.innerHTML = `<b>Try next week:</b> ${microRecommendation(spec.key, score)}`;
-
     card.appendChild(header);
     card.appendChild(track);
     card.appendChild(poles);
-    card.appendChild(rec);
     wrap.appendChild(card);
   }
-}
-
-function microRecommendation(fieldKey, score100) {
-  const towardRight = score100 < 62;
-  const toward = towardRight ? "toward the right-hand pole" : "without losing what already works";
-
-  const picks = {
-    TEACHER_TO_STUDENT: towardRight
-      ? "Offer one bounded choice (topic OR method OR product) and keep success criteria constant."
-      : "Ask students to propose the next step before you intervene; then compare their plan to yours."
-    ,
-    TRADITIONAL_TO_PROCESS: towardRight
-      ? "Pilot a two-draft minimum on one assignment: quick first draft → reader response → revision before the grade."
-      : "Add a meta question after revision: ‘What did you discover in drafting that you couldn’t plan in advance?’"
-    ,
-    BEHAVIORISM_TO_CONSTRUCTIVISM: towardRight
-      ? "Add a revision loop: feedback → 10-minute revise → resubmit (collect both versions)."
-      : "Make errors productive: have students explain a common misconception and how evidence changed their thinking."
-    ,
-    COGNITIVISM_TO_SOCIAL_CONSTRUCTIVISM: towardRight
-      ? "Run a 6-minute structured talk: roles + sentence stems (‘I agree because… / I challenge because…’)."
-      : "Tighten collaboration: require evidence-based replies and a shared artifact (one group model, not four copies)."
-    ,
-    DIRECT_TO_EXPERIENTIAL: towardRight
-      ? "Convert one explanation into ‘task first’: a short problem/task, then a mini-lesson after students notice patterns."
-      : "Add an authentic constraint (real audience/data/tool) to one activity so doing stays aligned to goals."
-    ,
-    CONSTRUCTIVISM_INDEX: towardRight
-      ? "Add a 2-question reflection: ‘What did I try?’ and ‘What will I do differently next time?’ (2 minutes)."
-      : "Add peer critique with a simple protocol (glow/grow + one required revision) and collect the revision."
-    ,
-  };
-
-  return `${picks[fieldKey] ?? "Pick one routine you can repeat 3 times in two weeks, then re-take the profile to see movement."} (${toward}.)`;
 }
 
 function improvementBullets(specKey, score100) {
@@ -599,6 +664,103 @@ function improvementBullets(specKey, score100) {
   return out.slice(0, 5);
 }
 
+function renderPickStrategies(scores100, rankedLow) {
+  const wrap = el("pickWrap");
+  const grid = el("pickGrid");
+  const note = el("pickNote");
+  if (!wrap || !grid || !note) return;
+
+  const growthKeys = (rankedLow ?? []).slice(0, 2).map((x) => x.field);
+  const growthSet = new Set(growthKeys);
+  const growthNames = growthKeys
+    .map((k) => state.data.spectrums.find((s) => s.key === k)?.short ?? k)
+    .join(", ");
+  note.textContent = `Biggest growth edges to prioritize: ${growthNames || "—"}. Those two spectrums are highlighted below. Pick one strategy per spectrum for your next 2-week focus.`;
+
+  grid.innerHTML = "";
+  state.picks = {};
+
+  const specsSorted = [...state.data.spectrums].sort((a, b) => {
+    const ag = growthSet.has(a.key) ? 0 : 1;
+    const bg = growthSet.has(b.key) ? 0 : 1;
+    return ag - bg;
+  });
+
+  for (const spec of specsSorted) {
+    const s = Number(scores100?.[spec.key] ?? 50.5);
+    const suggestions = SUGGESTION_BANK?.[spec.key] ?? [];
+
+    const card = document.createElement("div");
+    card.className = "pp-pick-card";
+    if (growthSet.has(spec.key)) card.classList.add("pp-pick-card--growth");
+
+    const title = document.createElement("div");
+    title.className = "pp-pick-title";
+    if (growthSet.has(spec.key)) {
+      title.innerHTML = `${spec.label} <span class="pp-pick-growth-badge">Growth focus</span>`;
+    } else {
+      title.textContent = spec.label;
+    }
+    card.appendChild(title);
+
+    const list = document.createElement("div");
+    list.className = "pp-pick-list";
+
+    const recommended = improvementBullets(spec.key, s).slice(0, 2);
+
+    suggestions.forEach((txt, idx) => {
+      const opt = document.createElement("label");
+      opt.className = "pp-pick-opt";
+
+      const input = document.createElement("input");
+      input.type = "radio";
+      input.name = `pick-${spec.key}`;
+      input.value = String(idx);
+      input.addEventListener("change", () => {
+        state.picks[spec.key] = idx;
+      });
+
+      const t = document.createElement("div");
+      t.className = "pp-pick-txt";
+      t.textContent = txt;
+
+      const badge = document.createElement("span");
+      badge.className = "pp-pick-badge";
+      if (recommended.some((r) => (r || "").toLowerCase().includes((txt || "").toLowerCase().slice(0, 18)))) {
+        badge.textContent = "Recommended";
+      } else if (growthKeys.includes(spec.key) && idx < 2) {
+        badge.textContent = "Growth edge";
+      } else {
+        badge.textContent = "";
+      }
+
+      opt.appendChild(input);
+      opt.appendChild(t);
+      if (badge.textContent) opt.appendChild(badge);
+      list.appendChild(opt);
+    });
+
+    card.appendChild(list);
+    grid.appendChild(card);
+  }
+}
+
+function selectedPicksComplete() {
+  return state.data.spectrums.every((s) => Number.isInteger(state.picks?.[s.key]));
+}
+
+function buildFinalFocusSection() {
+  const lines = [];
+  lines.push("PRACTICAL FOCUS (your 6 chosen strategies)");
+  lines.push("—".repeat(44));
+  for (const spec of state.data.spectrums) {
+    const idx = state.picks?.[spec.key];
+    const txt = (SUGGESTION_BANK?.[spec.key] ?? [])[idx] ?? "—";
+    lines.push(`${spec.short}: ${txt}`);
+  }
+  return lines.join("\n");
+}
+
 function buildReportText(scores100, means) {
   const lines = [];
   lines.push("FRAMEWORK");
@@ -622,6 +784,11 @@ function buildReportText(scores100, means) {
     for (const b of improvementBullets(spec.key, s)) {
       lines.push(`  • ${b}`);
     }
+    lines.push("");
+  }
+
+  if (selectedPicksComplete()) {
+    lines.push(buildFinalFocusSection());
     lines.push("");
   }
   lines.push("FIELD-BY-FIELD SNAPSHOT");
@@ -681,9 +848,20 @@ async function renderResults() {
 
   const { means, scores100 } = computeScores(state.responses);
   const ranked = rankSpectrums(scores100);
+  const growthKeys = ranked.ranked_low.slice(0, 2).map((x) => x.field);
 
-  updateRadar(scores100);
-  renderSpectrumBars(scores100);
+  updateRadar(scores100, growthKeys);
+  renderSpectrumBars(scores100, growthKeys);
+  renderPickStrategies(scores100, ranked.ranked_low);
+  el("finalizeBtn").onclick = () => {
+    if (!selectedPicksComplete()) {
+      el("finalizeHint").textContent = "Please pick 1 strategy from each list.";
+      return;
+    }
+    el("finalizeHint").textContent = "Saved. Scroll down for your compiled report.";
+    el("reportText").textContent = buildReportText(scores100, means);
+  };
+  // Show report skeleton immediately (without picks).
   el("reportText").textContent = buildReportText(scores100, means);
   el("strengthsText").textContent = formatTop(ranked.ranked_high);
   el("growthText").textContent = formatTop(ranked.ranked_low);

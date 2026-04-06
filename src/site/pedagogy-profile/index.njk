@@ -56,17 +56,30 @@ layout: false
 
           <div id="results" class="pp-stack pp-hidden">
             <div class="pp-row pp-row-wrap">
-              <div class="pp-kpi">
+              <div class="pp-kpi" id="strengthsKpi">
                 <div class="pp-kpi-k">Relative strengths</div>
                 <div class="pp-kpi-v" id="strengthsText">—</div>
               </div>
-              <div class="pp-kpi">
-                <div class="pp-kpi-k">Growth edges</div>
+              <div class="pp-kpi pp-kpi--growth-focus" id="growthKpi">
+                <div class="pp-kpi-k">Growth edges <span class="pp-kpi-tag">prioritize</span></div>
                 <div class="pp-kpi-v" id="growthText">—</div>
               </div>
             </div>
 
             <div class="pp-bars" id="spectrumBars" aria-label="Spectrum results"></div>
+
+            <section class="pp-pick" id="pickWrap" aria-label="Pick strategies">
+              <div class="pp-pick-h">
+                <div class="pp-card-title">Pick one strategy per spectrum</div>
+                <div class="pp-muted pp-tiny">You’ll choose 6 total (1 from each list)</div>
+              </div>
+              <div class="pp-pick-note pp-muted" id="pickNote">—</div>
+              <div class="pp-pick-grid" id="pickGrid"></div>
+              <div class="pp-row">
+                <button id="finalizeBtn" class="pp-btn" type="button">Finalize report</button>
+                <div class="pp-muted pp-tiny" id="finalizeHint">Select 1 strategy from each list.</div>
+              </div>
+            </section>
 
             <div class="pp-report-wrap">
               <pre id="reportText" class="pp-report"></pre>
