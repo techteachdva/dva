@@ -32,7 +32,7 @@ function scaleChoice() {
 
 const INSTRUMENT = {
   framework:
-    "Answer 24 short prompts about what you typically do in your classroom (or aim to do). Each prompt uses 1–5 frequency anchors. Six spectrums; higher scores align with student-centered, constructivist, social, experiential, and process-oriented writing pedagogy. On **Traditional ↔ Process**, 100 = **process pedagogy** (drafting, revision, invention)—contrasted with the **Current Traditional Paradigm** in composition (product-focused, single-draft). Results display on a 1–100 scale.",
+    "Answer 24 short questions about what you typically do in your classroom (or aim to do).\nYou'll be scored along 6 spectrums.\nHigher scores align with student-centered, constructivist, social, experiential, and process-oriented pedagogy.",
   likert: scaleOften(),
   spectrums: [
     {
