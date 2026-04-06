@@ -761,6 +761,151 @@ function buildFinalFocusSection() {
   return lines.join("\n");
 }
 
+function strengthSummary(fieldKey) {
+  const spec = state.data.spectrums.find((s) => s.key === fieldKey);
+  if (!spec) return "You excel at making strong instructional choices.";
+  const map = {
+    TEACHER_TO_STUDENT: `You excel at sharing agency with students while keeping expectations clear.`,
+    TRADITIONAL_TO_PROCESS: `You excel at treating writing as a process—drafting, feedback, and revision as learning.`,
+    BEHAVIORISM_TO_CONSTRUCTIVISM: `You excel at helping students build understanding through revision, evidence, and reflection.`,
+    COGNITIVISM_TO_SOCIAL_CONSTRUCTIVISM: `You are very good at using discourse and collaboration to deepen learning.`,
+    DIRECT_TO_EXPERIENTIAL: `You fully understand how to make learning stick through authentic, applied experiences.`,
+    CONSTRUCTIVISM_INDEX: `You excel at routines that make thinking visible—reflection, criteria, critique, and revision.`,
+  };
+  return map[fieldKey] ?? `You excel at ${spec.right.toLowerCase()} practices.`;
+}
+
+function growthGoal(fieldKey) {
+  const spec = state.data.spectrums.find((s) => s.key === fieldKey);
+  if (!spec) return "Choose one small routine to repeat for two weeks.";
+  const map = {
+    TEACHER_TO_STUDENT: "Growth goal: shift one consequential decision to students (topic/method/product) while holding criteria steady.",
+    TRADITIONAL_TO_PROCESS: "Growth goal: implement a two-draft minimum and respond to drafts-in-progress before grading the final.",
+    BEHAVIORISM_TO_CONSTRUCTIVISM: "Growth goal: add a predict → test → explain → revise loop and collect revisions, not just finals.",
+    COGNITIVISM_TO_SOCIAL_CONSTRUCTIVISM: "Growth goal: structure talk so students respond to peers with evidence and produce a shared artifact.",
+    DIRECT_TO_EXPERIENTIAL: "Growth goal: convert one explanation into task-first learning with an authentic constraint and a debrief.",
+    CONSTRUCTIVISM_INDEX: "Growth goal: add one reflection/revision routine (criteria + critique + revise) and require the revision.",
+  };
+  return map[fieldKey] ?? `Growth goal: move toward ${spec.right}.`;
+}
+
+function buildOnePagerHtml(scores100, rankedHigh, rankedLow) {
+  const growth = (rankedLow ?? []).slice(0, 2).map((x) => x.field);
+  const strengths = (rankedHigh ?? []).slice(0, 2).map((x) => x.field);
+
+  const rows = state.data.spectrums
+    .map((spec) => {
+      const s = Math.max(1, Math.min(100, Number(scores100?.[spec.key] ?? 50.5)));
+      const isGrowth = growth.includes(spec.key);
+      const isStrength = strengths.includes(spec.key);
+      const pickedIdx = state.picks?.[spec.key];
+      const picked = Number.isInteger(pickedIdx) ? (SUGGESTION_BANK?.[spec.key] ?? [])[pickedIdx] : null;
+
+      return `
+        <div class="row ${isGrowth ? "row-growth" : ""} ${isStrength ? "row-strength" : ""}">
+          <div class="row-h">
+            <div class="row-title">${spec.label}</div>
+            <div class="row-score">${Math.round(s)}/100</div>
+          </div>
+          <div class="track">
+            <div class="fill" style="width:${s}%;"></div>
+            <div class="mid"></div>
+            <div class="dot" style="left:${s}%;"></div>
+          </div>
+          <div class="poles"><div>${spec.left}</div><div style="text-align:right">${spec.right}</div></div>
+          ${picked ? `<div class="pick"><b>Chosen focus:</b> ${escapeHtml(picked)}</div>` : ``}
+        </div>
+      `;
+    })
+    .join("");
+
+  const growthLines = growth
+    .map((k) => `<li><b>${escapeHtml(state.data.spectrums.find((s) => s.key === k)?.short ?? k)}:</b> ${escapeHtml(growthGoal(k))}</li>`)
+    .join("");
+  const strengthLines = strengths
+    .map((k) => `<li><b>${escapeHtml(state.data.spectrums.find((s) => s.key === k)?.short ?? k)}:</b> ${escapeHtml(strengthSummary(k))}</li>`)
+    .join("");
+
+  return `<!doctype html>
+  <html>
+  <head>
+    <meta charset="utf-8"/>
+    <title>Pedagogy Profile — One-page summary</title>
+    <style>
+      @page { size: letter; margin: 0.5in; }
+      *{ box-sizing:border-box; }
+      body{ font-family: ui-sans-serif, system-ui, Segoe UI, Roboto, Arial, sans-serif; margin:0; color:#0b1220; }
+      .page{ width:100%; }
+      .h{ display:flex; justify-content:space-between; align-items:flex-end; gap:12px; margin-bottom:10px; }
+      .title{ font-size:20px; font-weight:900; }
+      .sub{ font-size:12px; color:#334155; }
+      .grid{ display:grid; grid-template-columns: 1.1fr .9fr; gap:12px; }
+      .card{ border:1px solid #e2e8f0; border-radius:12px; padding:10px 10px; }
+      .card h3{ margin:0 0 6px 0; font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:#334155; }
+      ul{ margin:6px 0 0 18px; padding:0; }
+      li{ margin:4px 0; font-size:12px; line-height:1.25; }
+      .rows{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px; }
+      .row{ border:1px solid #e2e8f0; border-radius:12px; padding:10px; }
+      .row-growth{ border-color: rgba(245,158,11,.55); box-shadow:0 0 0 2px rgba(245,158,11,.12) inset; }
+      .row-strength{ border-color: rgba(59,130,246,.35); }
+      .row-h{ display:flex; justify-content:space-between; gap:10px; align-items:baseline; margin-bottom:6px; }
+      .row-title{ font-size:12px; font-weight:900; }
+      .row-score{ font-size:12px; color:#334155; font-weight:800; }
+      .track{ position:relative; height:10px; border-radius:999px; background:#f1f5f9; overflow:hidden; border:1px solid #e2e8f0; }
+      .fill{ position:absolute; top:0; bottom:0; left:0; background: linear-gradient(90deg, rgba(59,130,246,.55), rgba(37,99,235,.85)); }
+      .row-growth .fill{ background: linear-gradient(90deg, rgba(251,191,36,.75), rgba(245,158,11,.95)); }
+      .mid{ position:absolute; left:50%; top:-3px; bottom:-3px; width:2px; background:#cbd5e1; }
+      .dot{ position:absolute; top:50%; transform:translate(-50%,-50%); width:8px; height:8px; border-radius:999px; background:#0b1220; }
+      .row-growth .dot{ background:#b45309; }
+      .poles{ display:flex; justify-content:space-between; gap:8px; margin-top:6px; font-size:11px; color:#475569; }
+      .pick{ margin-top:6px; font-size:11.5px; color:#0b1220; }
+      .footer{ margin-top:10px; font-size:10.5px; color:#475569; }
+      .badge{ display:inline-block; padding:2px 8px; border-radius:999px; font-size:10px; font-weight:900; letter-spacing:.08em; text-transform:uppercase; background:#fde68a; color:#78350f; margin-left:8px; }
+      .printHint{ margin-top:6px; font-size:11px; color:#475569; }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div class="h">
+        <div>
+          <div class="title">Pedagogy Profile — One‑page summary</div>
+          <div class="sub">Growth edges are highlighted; strengths are summarized for quick reflection.</div>
+        </div>
+        <div class="sub">Scale: 1–100 (higher = more right‑pole alignment)</div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <h3>Growth goals <span class="badge">focus</span></h3>
+          <ul>${growthLines}</ul>
+          <div class="printHint">Tip: Pick one routine per goal for two weeks, then re‑take.</div>
+        </div>
+        <div class="card">
+          <h3>Strengths</h3>
+          <ul>${strengthLines}</ul>
+        </div>
+      </div>
+
+      <div class="rows">
+        ${rows}
+      </div>
+
+      <div class="footer">This report is a reflection tool, not an evaluation. Context matters (content, time, class culture).</div>
+    </div>
+    <script>window.onload = () => { setTimeout(() => window.print(), 50); };</script>
+  </body>
+  </html>`;
+}
+
+function escapeHtml(s) {
+  return String(s ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll("\"", "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
 function buildReportText(scores100, means) {
   const lines = [];
   lines.push("FRAMEWORK");
@@ -853,6 +998,18 @@ async function renderResults() {
   updateRadar(scores100, growthKeys);
   renderSpectrumBars(scores100, growthKeys);
   renderPickStrategies(scores100, ranked.ranked_low);
+  el("pdfBtn").onclick = () => {
+    if (!selectedPicksComplete()) {
+      el("finalizeHint").textContent = "Pick 1 strategy from each list before exporting the one-page PDF.";
+      return;
+    }
+    const html = buildOnePagerHtml(scores100, ranked.ranked_high, ranked.ranked_low);
+    const w = window.open("", "_blank");
+    if (!w) return;
+    w.document.open();
+    w.document.write(html);
+    w.document.close();
+  };
   el("finalizeBtn").onclick = () => {
     if (!selectedPicksComplete()) {
       el("finalizeHint").textContent = "Please pick 1 strategy from each list.";
