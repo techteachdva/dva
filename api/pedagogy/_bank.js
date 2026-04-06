@@ -43,7 +43,7 @@ export const SPECTRUM_POLES = {
 };
 
 export const INSTRUMENT_FRAMEWORK =
-  "Rate each prompt from 1–5. Six spectrums; higher scores align with student-centered, constructivist, social, experiential, and process-oriented writing pedagogy. Traditional ↔ Process contrasts product/single-draft composition with process pedagogy (drafting, revision, invention). Results: 1–100 scale.";
+  "Rate each prompt from 1–5. Six spectrums; higher scores align with student-centered, constructivist, social, experiential, and process-oriented pedagogy.";
 
 /** @type {Array<{id:number,stem:string,spectrum:keyof typeof FIELD_LABELS,spectrum_label:string,reverse_scored:boolean,contributes_to_constructivism:boolean}>} */
 export const QUESTIONS = [
