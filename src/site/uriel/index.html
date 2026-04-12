@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>URIEL — Holon text → world</title>
+  <link rel="stylesheet" href="./styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/pyodide/v0.26.2/full/pyodide.js"></script>
+</head>
+<body>
+  <header>
+    <h1>URIEL</h1>
+    <p class="tagline">Paste any text. Get holon tokens, prep notes, and a token graph—runs in your browser (no install).</p>
+  </header>
+
+  <main>
+    <section class="input-panel">
+      <label for="src">Source text</label>
+      <textarea id="src" rows="10" placeholder="Paste a paragraph or scene…"></textarea>
+      <div class="actions">
+        <button type="button" id="btn-run" disabled>Analyze (loading engine…)</button>
+        <span id="status" class="status"></span>
+      </div>
+    </section>
+
+    <section class="tabs">
+      <button type="button" class="tab active" data-tab="dm">DM prep</button>
+      <button type="button" class="tab" data-tab="player">Player handout</button>
+      <button type="button" class="tab" data-tab="technical">Technical</button>
+      <button type="button" class="tab" data-tab="graph">Graph</button>
+    </section>
+
+    <section id="out-dm" class="out active"><pre class="prose"></pre></section>
+    <section id="out-player" class="out"><pre class="prose"></pre></section>
+    <section id="out-technical" class="out"><pre class="prose mono"></pre></section>
+    <section id="out-graph" class="out"><div id="graph"></div></section>
+  </main>
+
+  <footer>
+    <p>URIEL is a hobby project: holonic tokenization + kinds chart, not a commercial RPG product.</p>
+  </footer>
+
+  <script src="./app.js"></script>
+</body>
+</html>

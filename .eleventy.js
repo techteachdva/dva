@@ -502,6 +502,10 @@ module.exports = function (eleventyConfig) {
   });
 
   eleventyConfig.addTransform("htmlMinifier", (content, outputPath) => {
+    // Skip minification for URIEL (Pyodide + inline flow; keep predictable)
+    if (outputPath && /[/\\]uriel[/\\]/.test(outputPath)) {
+      return content;
+    }
     if (
       (process.env.NODE_ENV === "production" || process.env.ELEVENTY_ENV === "prod") &&
       outputPath &&
@@ -526,6 +530,8 @@ module.exports = function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy("src/site/styles/_theme.*.css");
   eleventyConfig.addPassthroughCopy("src/site/dungeonclass");
   eleventyConfig.addPassthroughCopy("src/site/crystalwizards");
+  // URIEL holon analyzer (Pyodide) — static files from sibling URIEL repo via scripts/sync_to_dva_garden.py
+  eleventyConfig.addPassthroughCopy("src/site/uriel");
   // Wrap favicons with a mutex to avoid EBUSY on Windows when multiple pages render in parallel
   const genIcons = require("eleventy-plugin-gen-favicons/favicon-gen");
   const genHtml = require("eleventy-plugin-gen-favicons/html-gen");

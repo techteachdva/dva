@@ -1,0 +1,19 @@
+{
+  "root": [
+    "holonic_analyzer.py",
+    "English_Morphemes.csv",
+    "kinds_chart.csv"
+  ],
+  "uriel": [
+    "__init__.py",
+    "bundle.py",
+    "campaign_notes.py",
+    "kind_roll.py",
+    "kinds_registry.py",
+    "models.py",
+    "name_generator.py",
+    "prompt_taxonomy.py",
+    "stable_hash.py",
+    "world_session.py"
+  ]
+}
