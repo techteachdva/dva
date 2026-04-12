@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="URIEL: holonic text analysis in the browser—DM prep, player rumors, technical token log, and a holon graph. Runs locally via Pyodide; no server." />
   <title>URIEL — Holon text → world</title>
   <link rel="stylesheet" href="./styles.css" />
   <script src="https://cdn.jsdelivr.net/npm/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
@@ -11,7 +12,7 @@
 <body>
   <header>
     <h1>URIEL</h1>
-    <p class="tagline">Paste any text. Get holon tokens, prep notes, and a token graph—runs in your browser (no install).</p>
+    <p class="tagline">Turn prose into a play space: holon tokens, DM-ready notes (strong start → scenes → secrets), a player-facing rumor sheet, and an interactive graph—computed in your browser with Pyodide (no install, no upload).</p>
   </header>
 
   <main>
@@ -20,6 +21,7 @@
       <textarea id="src" rows="10" placeholder="Paste a paragraph or scene…"></textarea>
       <div class="actions">
         <button type="button" id="btn-run" disabled>Analyze (loading engine…)</button>
+        <button type="button" id="btn-copy" class="btn-secondary" disabled>Copy visible tab</button>
         <span id="status" class="status"></span>
       </div>
     </section>
@@ -38,7 +40,7 @@
   </main>
 
   <footer>
-    <p>URIEL is a hobby project: holonic tokenization + kinds chart, not a commercial RPG product.</p>
+    <p>URIEL is a hobby project: holonic tokenization, procedural names, and a kinds chart—not a commercial RPG product. Technical tab holds encodings; DM and Player tabs are table aids.</p>
   </footer>
 
   <script src="./app.js"></script>

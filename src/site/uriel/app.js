@@ -51,7 +51,8 @@ sys.path.insert(0, "${root}")
 `);
 
   $("btn-run").disabled = false;
-  status.textContent = "Ready.";
+  $("btn-copy").disabled = false;
+  status.textContent = "Ready — paste text and click Analyze.";
 }
 
 function renderGraph(payload) {
@@ -120,11 +121,32 @@ _out_json = __import__("json").dumps(_bundle)
   renderGraph(bundle.graph || { nodes: [], edges: [] });
 
   const st = bundle.stats || {};
-  $("status").textContent = `${st.sentences ?? "?"} sentence(s), ${st.tokens ?? "?"} holon token(s)`;
+  $("status").textContent = `${st.sentences ?? "?"} sentence(s), ${st.tokens ?? "?"} holon token(s).`;
   $("btn-run").disabled = false;
 }
 
 $("btn-run").addEventListener("click", runAnalyze);
+
+function copyVisibleOutput() {
+  const active = document.querySelector(".out.active");
+  if (!active) return;
+  const pre = active.querySelector("pre");
+  const text = pre ? pre.textContent || "" : "";
+  if (!text.trim()) {
+    $("status").textContent = "Nothing to copy yet — run Analyze first.";
+    return;
+  }
+  navigator.clipboard.writeText(text).then(
+    () => {
+      $("status").textContent = "Copied visible tab to clipboard.";
+    },
+    () => {
+      $("status").textContent = "Copy failed — select text manually.";
+    },
+  );
+}
+
+$("btn-copy").addEventListener("click", copyVisibleOutput);
 
 initPyodide().catch((e) => {
   $("status").textContent = `Load error: ${e.message || e}`;
