@@ -57,14 +57,21 @@ export function applyShake(ctx, dt) {
 }
 
 // ---- background: pulsing flesh with depth layers ----
-export function drawFleshBackground(ctx, t, tint = 1) {
+// If `palette` is provided, it overrides the base flesh colors:
+//   { deep, mid, bruise, bump } - lets chambers shift from blackish purple
+//   (deep guts) to reddish pink (near the mouth).
+export function drawFleshBackground(ctx, t, tint = 1, palette = null) {
   const pulse = (Math.sin(t * 1.6) * 0.5 + 0.5) * 0.12 + 0.88;
+  const deep   = palette?.deep   || COLORS.wormDeep;
+  const mid    = palette?.mid    || COLORS.worm;
+  const bruise = palette?.bruise || "rgba(168, 85, 182, 0.16)";
+  const bump   = palette?.bump   || "rgba(210, 107, 223, 0.14)";
 
   // Base vertical gradient
   const g = ctx.createLinearGradient(0, 0, 0, H);
-  g.addColorStop(0, shade(COLORS.wormDeep, pulse));
-  g.addColorStop(0.5, shade(COLORS.worm, pulse * tint));
-  g.addColorStop(1, shade(COLORS.wormDeep, pulse * 0.65));
+  g.addColorStop(0, shade(deep, pulse));
+  g.addColorStop(0.5, shade(mid, pulse * tint));
+  g.addColorStop(1, shade(deep, pulse * 0.65));
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, W, H);
 
@@ -74,8 +81,8 @@ export function drawFleshBackground(ctx, t, tint = 1) {
     const cy = ((i * 101 + Math.cos(t * 0.3 + i) * 30) % H + H) % H;
     const r = 160 + Math.sin(t + i) * 40;
     const rg = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-    rg.addColorStop(0, "rgba(168, 85, 182, 0.16)");
-    rg.addColorStop(1, "rgba(168, 85, 182, 0)");
+    rg.addColorStop(0, bruise);
+    rg.addColorStop(1, "rgba(0, 0, 0, 0)");
     ctx.fillStyle = rg;
     ctx.fillRect(0, 0, W, H);
   }
@@ -87,8 +94,8 @@ export function drawFleshBackground(ctx, t, tint = 1) {
     const r = 70 + (i % 4) * 20;
     // Light spot from top-left
     const rg = ctx.createRadialGradient(cx - r * 0.35, cy - r * 0.35, r * 0.05, cx, cy, r);
-    rg.addColorStop(0, "rgba(210, 107, 223, 0.14)");
-    rg.addColorStop(0.5, "rgba(107, 42, 122, 0.05)");
+    rg.addColorStop(0, bump);
+    rg.addColorStop(0.5, "rgba(0, 0, 0, 0.05)");
     rg.addColorStop(1, "rgba(0, 0, 0, 0)");
     ctx.fillStyle = rg;
     ctx.beginPath();

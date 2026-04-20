@@ -384,7 +384,7 @@ export class CombatScene {
     const p = game.player;
     const ch = this.chamber;
 
-    drawFleshBackground(ctx, this.t, ch.wormTint * 1.05);
+    drawFleshBackground(ctx, this.t, ch.wormTint * 1.05, ch.palette);
     drawVeins(ctx, this.t, this.chamberIdx + 5);
 
     this.drawSphincter(ctx);

@@ -21,11 +21,47 @@ const NUM_COLS = COLS_X.length;
 const HERO_Y = H - 180;              // hero fixed 180 px above bottom
 const HERO_DEATH_Y = HERO_Y + 28;    // bile touches this Y -> submerged
 
+// Falling objects are split into two categories:
+//
+//   HAZARDS (telegraphed in red) want you OUT of their column:
+//     - rock         : classic armor-absorb hit (armor soak applies).
+//                      Swift eats the brunt; Iron shrugs most of it.
+//     - bone/tooth/  : legacy worm-gunk (same family as rock - armor-absorb).
+//       goblin
+//     - dagger/sword : sharp pierce; bypasses armor and cuts straight into HP.
+//     - mace         : slams armor DIRECTLY. If armor is 0, it STUNS you for
+//                      ~1.3s and also knocks HP a bit. Brutal if you're Swift.
+//     - meat         : wet splat. Ignored if you have armor (just bounces off).
+//                      Hurts a little if you have no armor.
+//
+//   POWER-UPS (telegraphed in gold) want you INTO their column:
+//     - feather      : feather of flying - instant upward boost in climb progress.
+//     - burger       : cheeseburger - heals HP. Does not touch armor.
+//     - ring         : ring of armor - RARE and glows. Grants (or refills) 50
+//                      points of armor and unlocks bile-submersion grace for
+//                      the rest of the chamber.
+//
+// `weight` is the random pick weight within its category. `rarity` on power-ups
+// further tilts picks within the power-up pool (ring is especially rare).
 const DEBRIS_KINDS = [
-  { kind: "bone",   color: COLORS.bone,    sizeR: [10, 18], dmg: 20 },
-  { kind: "tooth",  color: "#f6ecd0",      sizeR: [8, 14],  dmg: 18 },
-  { kind: "goblin", color: "#6ea34a",      sizeR: [14, 22], dmg: 22 },
-  { kind: "rock",   color: "#555",         sizeR: [12, 20], dmg: 25 },
+  // --- HAZARDS ---
+  { kind: "rock",   color: "#555",       sizeR: [12, 20], dmg: 25, damageType: "armor-absorb", weight: 18 },
+  { kind: "bone",   color: COLORS.bone,  sizeR: [10, 18], dmg: 20, damageType: "armor-absorb", weight: 14 },
+  { kind: "tooth",  color: "#f6ecd0",    sizeR: [8, 14],  dmg: 18, damageType: "armor-absorb", weight: 12 },
+  { kind: "goblin", color: "#6ea34a",    sizeR: [14, 22], dmg: 22, damageType: "armor-absorb", weight: 10 },
+  { kind: "dagger", color: "#cfd4dc",    sizeR: [10, 14], dmg: 14, damageType: "pierce",       weight: 14 },
+  { kind: "sword",  color: "#e0e4ec",    sizeR: [16, 22], dmg: 22, damageType: "pierce",       weight: 10 },
+  { kind: "mace",   color: "#9aa0ac",    sizeR: [14, 20], dmg: 16, damageType: "armor-direct", weight: 10, stun: 1.3 },
+  { kind: "meat",   color: "#a82232",    sizeR: [14, 22], dmg: 10, damageType: "flesh-only",   weight: 12 },
+];
+
+// Power-ups are picked from a separate pool so we can tune rarity independently.
+// Inside this pool, ring of armor is especially rare (weight 2 vs 15/12) so
+// it's worth chasing but still shows up maybe once or twice per run.
+const POWERUPS = [
+  { kind: "feather", color: "#eaf6ff", sizeR: [14, 14], damageType: "power", effect: "boost", boost: 220, weight: 15 },
+  { kind: "burger",  color: "#ffbb55", sizeR: [15, 15], damageType: "power", effect: "heal",  heal:  30,  weight: 12 },
+  { kind: "ring",    color: "#ffd966", sizeR: [12, 12], damageType: "power", effect: "armor", armor: 50, weight: 2,  glow: true },
 ];
 
 export class ClimbScene {
@@ -56,6 +92,13 @@ export class ClimbScene {
     this.submerged = false;
     this.submergeFlashT = 0;
     this.drownT = 0; // seconds submerged after armor ran out
+
+    // Stun timer - set by the mace hitting an un-armored hero. While > 0
+    // the climber cannot climb up or hop columns. Bile keeps rising.
+    this.stunT = 0;
+
+    // Ring of Armor visual/feedback pulse (short flash after pickup).
+    this.ringPulseT = 0;
 
     this.particles = new ParticleSystem();
     this.flash = 0;
@@ -93,9 +136,14 @@ export class ClimbScene {
     const p = game.player;
     const ch = this.chamber;
 
+    // Decrement timers that gate the climber each frame.
+    if (this.stunT > 0) this.stunT -= dt;
+    if (this.ringPulseT > 0) this.ringPulseT -= dt;
+    const stunned = this.stunT > 0;
+
     // --- Input: hop between columns (now 5 columns, 0..NUM_COLS-1) ---
     this.hopCooldown -= dt;
-    if (this.hopCooldown <= 0) {
+    if (!stunned && this.hopCooldown <= 0) {
       if (game.input.isDown("ArrowLeft", "a") && this.col > 0) {
         this.col--;
         this.targetX = COLS_X[this.col];
@@ -112,10 +160,13 @@ export class ClimbScene {
     const lerpSpeed = p.buildId === "swift" ? 16 : 10;
     this.heroX += (this.targetX - this.heroX) * Math.min(1, dt * lerpSpeed);
 
-    // --- Climb up ---
-    const climbBase = 200 * p.climbSpeed; // px/sec while holding UP (200 * 1.45 swift, 200 * 0.95 iron)
+    // --- Climb up (blocked while stunned) ---
+    const climbBase = 200 * p.climbSpeed;
     const slipRate = 28;
-    if (game.input.isDown("ArrowUp", "w")) {
+    if (stunned) {
+      // While stunned we slip a bit - captures the "dazed and sliding" feel.
+      this.progress = Math.max(0, this.progress - slipRate * 0.8 * dt);
+    } else if (game.input.isDown("ArrowUp", "w")) {
       this.progress += climbBase * dt;
     } else if (game.input.isDown("ArrowDown", "s")) {
       // brace: hold position (no slip, no climb)
@@ -195,16 +246,21 @@ export class ClimbScene {
       this.submergeFlashT = 0;
     }
 
-    // --- Debris telegraphs + spawns (now 5 columns, optional twin spawns) ---
+    // --- Debris telegraphs + spawns (5 columns, per-chamber density) ---
     this.debrisTimer -= dt;
     if (this.debrisTimer <= 0) {
       const [tMin, tMax] = ch.debrisInterval;
       this.debrisTimer = rand(tMin, tMax);
-      this.spawnTelegraph(ch);
-      // Chance to simultaneously spawn a second one in a different column
-      // for multi-column dodge pressure in later chambers.
+      // Base spawn count per cycle scales with the chamber.
+      const baseCount = ch.spawnCount || 1;
+      const usedCols = [];
+      for (let i = 0; i < baseCount; i++) {
+        this.spawnTelegraph(ch, usedCols);
+        usedCols.push(this._lastSpawnedCol);
+      }
+      // Optional bonus spawn when multiDebrisChance rolls true.
       if (Math.random() < (ch.multiDebrisChance || 0)) {
-        this.spawnTelegraph(ch, this._lastSpawnedCol);
+        this.spawnTelegraph(ch, usedCols);
       }
     }
     for (const tg of this.telegraphs) tg.t += dt;
@@ -263,39 +319,191 @@ export class ClimbScene {
     this.anim += dt * (game.input.isDown("ArrowUp", "w") ? 10 : 3);
   }
 
-  spawnTelegraph(ch, avoidCol = -1) {
-    // Pick a column; if avoidCol is given, pick something else.
-    let col = randInt(0, NUM_COLS - 1);
-    if (avoidCol >= 0 && col === avoidCol) {
-      col = (col + 1 + randInt(0, NUM_COLS - 2)) % NUM_COLS;
+  // Pick a column, preferring ones not in `avoidCols` (array of col ints
+  // already used this cycle). Falls back to any column if every column is
+  // already used.
+  pickColumn(avoidCols) {
+    const freeCols = [];
+    for (let i = 0; i < NUM_COLS; i++) {
+      if (!avoidCols || !avoidCols.includes(i)) freeCols.push(i);
     }
+    const pool = freeCols.length ? freeCols : [...Array(NUM_COLS).keys()];
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  // Weighted pick from a list of items that have a numeric `weight`.
+  weightedPick(items) {
+    let total = 0;
+    for (const it of items) total += it.weight || 1;
+    let r = Math.random() * total;
+    for (const it of items) {
+      r -= it.weight || 1;
+      if (r <= 0) return it;
+    }
+    return items[items.length - 1];
+  }
+
+  // Spawn one telegraph. `avoidCols` is an optional array of columns already
+  // spoken for this cycle so we spread the spawns out naturally.
+  spawnTelegraph(ch, avoidCols = []) {
+    const col = this.pickColumn(avoidCols);
     this._lastSpawnedCol = col;
-    const kind = pick(DEBRIS_KINDS);
+
+    // Roll power-up chance per chamber (rarer in later chambers, and the
+    // ring of armor is especially rare inside the power-up pool).
+    const isPowerUp = Math.random() < (ch.powerUpRarity || 0);
+    const kind = isPowerUp
+      ? this.weightedPick(POWERUPS)
+      : this.weightedPick(DEBRIS_KINDS);
+
     this.telegraphs.push({
       col, t: 0, wait: 1.1, kind,
       speed: ch.debrisSpeed * rand(0.9, 1.3),
+      power: kind.damageType === "power",
     });
   }
 
   handleDebrisHit(game, d) {
     const p = game.player;
-    if (p.tankHitsLeft > 0) {
-      p.tankHitsLeft--;
-      this.showToast(`IRONHIDE soaks it! (${p.tankHitsLeft} tanks left)`, 1.4);
-      SFX.thud();
-      screenShake(6, 0.18);
-      this.particles.burst(d.x, d.y, "#ffd966", 14, 180, 0.45);
+    const kind = d.kind;
+
+    // --- Power-ups first: catching them is a GOOD thing. ---
+    if (kind.damageType === "power") {
+      switch (kind.effect) {
+        case "boost": {
+          // Feather of flying: instant upward boost in climb progress.
+          const boost = kind.boost || 200;
+          this.progress += boost;
+          this.showToast("+FEATHER OF FLYING! Whoosh!", 1.4);
+          SFX.confirm();
+          this.particles.burst(d.x, d.y, "#eaf6ff", 28, 260, 0.7);
+          // Trail of feathers up the screen
+          for (let i = 0; i < 10; i++) {
+            this.particles.emit({
+              x: this.heroX + rand(-14, 14),
+              y: HERO_Y + rand(-10, 20),
+              vx: rand(-30, 30), vy: rand(-320, -200),
+              life: 0.9, max: 0.9, size: 3,
+              color: "rgba(240,250,255,0.95)", gravity: -40,
+            });
+          }
+          break;
+        }
+        case "heal": {
+          const healed = Math.min(kind.heal || 30, p.hpMax - p.hp);
+          p.hp = Math.min(p.hpMax, p.hp + (kind.heal || 30));
+          this.showToast(`+CHEESEBURGER! (+${Math.ceil(healed)} HP)`, 1.4);
+          SFX.confirm();
+          this.particles.burst(d.x, d.y, "#ffbb55", 22, 220, 0.55);
+          break;
+        }
+        case "armor": {
+          // Ring of armor: grants a 50 point armor shield. If the hero
+          // had no armor before, it also unlocks bile-submersion grace
+          // since their armorMax becomes > 0.
+          const grant = kind.armor || 50;
+          p.armorMax = Math.max(p.armorMax, grant);
+          p.armor = Math.min(p.armorMax, p.armor + grant);
+          // If the build had zero soak, give the ring a modest soak so
+          // the shield actually absorbs damage as the player expects.
+          if (p.armorSoak <= 0) p.armorSoak = 0.5;
+          this.ringPulseT = 1.2;
+          this.showToast("+RING OF ARMOR! Glowing protection!", 1.8);
+          SFX.victory();
+          screenShake(6, 0.2);
+          this.particles.burst(d.x, d.y, "#ffd966", 36, 320, 0.9);
+          break;
+        }
+      }
       return;
     }
-    const { armorTaken, hpTaken } = applyDamage(p, d.kind.dmg);
-    SFX.hit();
-    screenShake(10, 0.22);
-    this.flash = 0.35;
-    this.particles.burst(d.x, d.y, armorTaken > 0 ? "#ffcc55" : COLORS.blood, 16, 200, 0.5);
-    this.progress = Math.max(0, this.progress - 60); // slight knockback slip
-    if (armorTaken > 0 && hpTaken === 0) {
-      this.showToast(`Armor holds! (-${Math.ceil(armorTaken)} ARM)`, 1.0);
+
+    // --- Hazards: resolve by damage type ---
+    const dmg = kind.dmg || 0;
+    let armorTaken = 0, hpTaken = 0;
+    let partColor = COLORS.blood;
+    let shake = 10;
+
+    switch (kind.damageType) {
+      case "armor-absorb": {
+        // Tank pips eat a whole hit first (Iron's "free soak" perk).
+        if (p.tankHitsLeft > 0) {
+          p.tankHitsLeft--;
+          this.showToast(`IRONHIDE soaks it! (${p.tankHitsLeft} tanks left)`, 1.4);
+          SFX.thud();
+          screenShake(6, 0.18);
+          this.particles.burst(d.x, d.y, "#ffd966", 14, 180, 0.45);
+          this.progress = Math.max(0, this.progress - 40);
+          return;
+        }
+        const r = applyDamage(p, dmg);
+        armorTaken = r.armorTaken; hpTaken = r.hpTaken;
+        partColor = armorTaken > 0 ? "#ffcc55" : COLORS.blood;
+        if (armorTaken > 0 && hpTaken === 0) {
+          this.showToast(`Armor holds! (-${Math.ceil(armorTaken)} ARM)`, 1.0);
+        }
+        break;
+      }
+      case "pierce": {
+        // Dagger / sword: bypass armor, hit HP directly.
+        hpTaken = Math.min(p.hp, dmg);
+        p.hp = Math.max(0, p.hp - dmg);
+        partColor = COLORS.blood;
+        shake = 12;
+        this.showToast(`${kind.kind.toUpperCase()} STAB! (-${Math.ceil(hpTaken)} HP)`, 1.1);
+        break;
+      }
+      case "armor-direct": {
+        // Mace: damages armor directly. If no armor, STUNS and hits HP a bit.
+        if (p.armor > 0) {
+          const eaten = Math.min(p.armor, dmg);
+          p.armor -= eaten;
+          armorTaken = eaten;
+          partColor = "#d4d8e0";
+          this.showToast(`MACE CLANG! (-${Math.ceil(eaten)} ARM)`, 1.1);
+        } else {
+          this.stunT = Math.max(this.stunT, kind.stun || 1.3);
+          const bonusHp = Math.floor(dmg * 0.4);
+          hpTaken = Math.min(p.hp, bonusHp);
+          p.hp = Math.max(0, p.hp - bonusHp);
+          partColor = "#d4d8e0";
+          shake = 14;
+          this.showToast(`MACE BONK! STUNNED!`, 1.6);
+          SFX.thud();
+        }
+        break;
+      }
+      case "flesh-only": {
+        // Meat chunk: wet splat. Armor shrugs it off entirely; bare flesh
+        // takes a light hit and a stink of gore.
+        if (p.armor > 0) {
+          this.showToast(`SPLAT! The meat slides off your armor.`, 1.0);
+          partColor = "#a82232";
+          shake = 4;
+          this.particles.burst(d.x, d.y, "#a82232", 20, 180, 0.55);
+          this.progress = Math.max(0, this.progress - 20);
+          return;
+        } else {
+          hpTaken = Math.min(p.hp, dmg);
+          p.hp = Math.max(0, p.hp - dmg);
+          partColor = "#c21a1a";
+          this.showToast(`MEAT SPLAT! (-${Math.ceil(hpTaken)} HP)`, 1.0);
+        }
+        break;
+      }
+      default: {
+        // Fallback to legacy behavior.
+        const r = applyDamage(p, dmg);
+        armorTaken = r.armorTaken; hpTaken = r.hpTaken;
+        break;
+      }
     }
+
+    SFX.hit();
+    screenShake(shake, 0.22);
+    this.flash = 0.35;
+    this.particles.burst(d.x, d.y, partColor, 16, 200, 0.5);
+    this.progress = Math.max(0, this.progress - 60);
   }
 
   die(game, reason) {
@@ -308,7 +516,7 @@ export class ClimbScene {
     const p = game.player;
     const ch = this.chamber;
 
-    drawFleshBackground(ctx, this.t + this.progress * 0.002, ch.wormTint);
+    drawFleshBackground(ctx, this.t + this.progress * 0.002, ch.wormTint, ch.palette);
     drawVeins(ctx, this.t + this.progress * 0.002, this.chamberIdx + 1);
 
     this.drawWall(ctx);
@@ -322,6 +530,47 @@ export class ClimbScene {
     ctx.scale(2.8, 2.8);
     drawHero(ctx, 0, 0, 1, this.anim, p.buildId);
     ctx.restore();
+
+    // Ring-of-armor equip pulse (brief golden ring bursting outward).
+    if (this.ringPulseT > 0) {
+      const a = Math.max(0, this.ringPulseT / 1.2);
+      ctx.save();
+      ctx.strokeStyle = `rgba(255, 217, 102, ${a})`;
+      ctx.lineWidth = 4;
+      ctx.shadowColor = "#ffd966";
+      ctx.shadowBlur = 20;
+      ctx.beginPath();
+      ctx.arc(this.heroX, HERO_Y, 40 + (1 - a) * 120, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // Stun stars spinning over the hero's head.
+    if (this.stunT > 0) {
+      ctx.save();
+      const cx = this.heroX, cy = HERO_Y - 90;
+      for (let i = 0; i < 4; i++) {
+        const a = this.t * 4 + (i / 4) * Math.PI * 2;
+        const sx = cx + Math.cos(a) * 22;
+        const sy = cy + Math.sin(a) * 6;
+        ctx.save();
+        ctx.translate(sx, sy);
+        ctx.rotate(a);
+        ctx.fillStyle = "#ffd966";
+        ctx.shadowColor = "#ffea9a";
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        for (let k = 0; k < 5; k++) {
+          const ang = (k / 5) * Math.PI * 2 - Math.PI / 2;
+          const rr = k % 2 === 0 ? 7 : 3;
+          ctx.lineTo(Math.cos(ang) * rr, Math.sin(ang) * rr);
+        }
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+      }
+      ctx.restore();
+    }
 
     // Telegraphs (on top)
     for (const tg of this.telegraphs) this.drawTelegraph(ctx, tg);
@@ -399,110 +648,418 @@ export class ClimbScene {
   }
 
   drawDebris(ctx, d) {
+    const isPower = d.kind.damageType === "power";
     ctx.save();
-    // Shadow
-    ctx.fillStyle = "rgba(0,0,0,0.45)";
-    ctx.beginPath();
-    ctx.ellipse(d.x + 2, d.y + 4, d.r * 0.9, d.r * 0.3, 0, 0, Math.PI * 2);
-    ctx.fill();
+    // Shadow (skip for power-ups so they feel airy / floaty)
+    if (!isPower) {
+      ctx.fillStyle = "rgba(0,0,0,0.45)";
+      ctx.beginPath();
+      ctx.ellipse(d.x + 2, d.y + 4, d.r * 0.9, d.r * 0.3, 0, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      // Power-ups get an aurora halo so the eye is drawn to them.
+      const glowPulse = 0.75 + 0.25 * Math.sin(this.t * 6 + d.x);
+      const glowColor = d.kind.kind === "ring"  ? "rgba(255, 217, 102, "
+                       : d.kind.kind === "burger" ? "rgba(255, 187, 85, "
+                       : "rgba(200, 230, 255, ";
+      const g = ctx.createRadialGradient(d.x, d.y, 2, d.x, d.y, d.r * 3.2);
+      g.addColorStop(0, glowColor + (0.6 * glowPulse) + ")");
+      g.addColorStop(1, glowColor + "0)");
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(d.x, d.y, d.r * 3.2, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     ctx.translate(d.x, d.y);
     ctx.rotate(d.rot);
-    if (d.kind.kind === "bone") {
-      // Bone with cel-shading
-      ctx.fillStyle = shade(d.kind.color, 0.8);
-      ctx.fillRect(-d.r, -3, d.r * 2, 6);
-      ctx.fillStyle = d.kind.color;
-      ctx.fillRect(-d.r + 1, -2.5, d.r * 2 - 2, 3);
-      ctx.fillStyle = shade(d.kind.color, 0.6);
+
+    switch (d.kind.kind) {
+      case "bone":    this.drawBone(ctx, d); break;
+      case "tooth":   this.drawTooth(ctx, d); break;
+      case "goblin":  this.drawGoblinHead(ctx, d); break;
+      case "rock":    this.drawRock(ctx, d); break;
+      case "dagger":  this.drawDagger(ctx, d); break;
+      case "sword":   this.drawSword(ctx, d); break;
+      case "mace":    this.drawMace(ctx, d); break;
+      case "meat":    this.drawMeat(ctx, d); break;
+      case "feather": this.drawFeather(ctx, d); break;
+      case "burger":  this.drawBurger(ctx, d); break;
+      case "ring":    this.drawRingOfArmor(ctx, d); break;
+      default:        this.drawRock(ctx, d);
+    }
+    ctx.restore();
+  }
+
+  // ---- Individual item renderers (all drawn at origin, rotated by d.rot) ----
+
+  drawBone(ctx, d) {
+    ctx.fillStyle = shade(d.kind.color, 0.8);
+    ctx.fillRect(-d.r, -3, d.r * 2, 6);
+    ctx.fillStyle = d.kind.color;
+    ctx.fillRect(-d.r + 1, -2.5, d.r * 2 - 2, 3);
+    ctx.fillStyle = shade(d.kind.color, 0.6);
+    ctx.beginPath();
+    ctx.arc(-d.r, 0, 5, 0, Math.PI * 2);
+    ctx.arc(d.r, 0, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = d.kind.color;
+    ctx.beginPath();
+    ctx.arc(-d.r - 1, -1, 3, 0, Math.PI * 2);
+    ctx.arc(d.r - 1, -1, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(0,0,0,0.6)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  drawTooth(ctx, d) {
+    const g = ctx.createLinearGradient(-d.r, -d.r, d.r, d.r);
+    g.addColorStop(0, "#fff");
+    g.addColorStop(0.6, d.kind.color);
+    g.addColorStop(1, "#7a6a3a");
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(0, -d.r);
+    ctx.lineTo(d.r * 0.7, d.r);
+    ctx.lineTo(-d.r * 0.7, d.r);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "rgba(0,0,0,0.7)";
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(255,255,255,0.55)";
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(-d.r * 0.6, d.r - 1);
+    ctx.lineTo(0, -d.r + 2);
+    ctx.stroke();
+  }
+
+  drawGoblinHead(ctx, d) {
+    const g = ctx.createRadialGradient(-d.r * 0.3, -d.r * 0.3, 2, 0, 0, d.r);
+    g.addColorStop(0, "#8cbf5c");
+    g.addColorStop(0.7, d.kind.color);
+    g.addColorStop(1, "#2a3a0a");
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(0, 0, d.r, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#1a0a0a";
+    ctx.fillRect(-5, -4, 4, 3);
+    ctx.fillRect(1, -4, 4, 3);
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(-5, -4, 1, 1);
+    ctx.fillRect(1, -4, 1, 1);
+    ctx.strokeStyle = "#1a0a0a";
+    ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(-5, 3); ctx.lineTo(5, 5); ctx.stroke();
+    ctx.fillStyle = COLORS.bile;
+    ctx.fillRect(-1, d.r - 2, 2, 5);
+  }
+
+  drawRock(ctx, d) {
+    const g = ctx.createRadialGradient(-d.r * 0.4, -d.r * 0.4, 2, 0, 0, d.r);
+    g.addColorStop(0, "#aaa");
+    g.addColorStop(0.7, "#555");
+    g.addColorStop(1, "#222");
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(-d.r, 0);
+    ctx.lineTo(-d.r * 0.5, -d.r);
+    ctx.lineTo(d.r * 0.5, -d.r * 0.8);
+    ctx.lineTo(d.r, d.r * 0.2);
+    ctx.lineTo(0, d.r);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "rgba(0,0,0,0.75)";
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+    // Crack line
+    ctx.strokeStyle = "rgba(0,0,0,0.5)";
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(-d.r * 0.3, -d.r * 0.4);
+    ctx.lineTo(d.r * 0.2, d.r * 0.3);
+    ctx.stroke();
+  }
+
+  drawDagger(ctx, d) {
+    // Long thin blade pointing "down" (toward +y in local space, since items
+    // are rotating freely anyway).
+    const g = ctx.createLinearGradient(-4, -d.r, 4, d.r);
+    g.addColorStop(0, "#ffffff");
+    g.addColorStop(0.5, "#cfd4dc");
+    g.addColorStop(1, "#5a5f6a");
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(0, d.r + 4);
+    ctx.lineTo(3, -d.r * 0.2);
+    ctx.lineTo(0, -d.r * 0.3);
+    ctx.lineTo(-3, -d.r * 0.2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "rgba(0,0,0,0.7)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    // Crossguard
+    ctx.fillStyle = "#b38244";
+    ctx.fillRect(-6, -d.r * 0.35, 12, 3);
+    ctx.strokeStyle = "rgba(0,0,0,0.6)";
+    ctx.strokeRect(-6, -d.r * 0.35, 12, 3);
+    // Grip
+    ctx.fillStyle = "#3a1f0f";
+    ctx.fillRect(-2, -d.r * 0.35 - 8, 4, 8);
+  }
+
+  drawSword(ctx, d) {
+    // Bigger blade w/ fuller line.
+    const g = ctx.createLinearGradient(-5, -d.r, 5, d.r);
+    g.addColorStop(0, "#ffffff");
+    g.addColorStop(0.45, "#e8ecf2");
+    g.addColorStop(1, "#6f747f");
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(0, d.r + 6);
+    ctx.lineTo(5, -d.r * 0.2);
+    ctx.lineTo(0, -d.r * 0.35);
+    ctx.lineTo(-5, -d.r * 0.2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "rgba(0,0,0,0.75)";
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+    // Fuller
+    ctx.strokeStyle = "rgba(0,0,0,0.4)";
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(0, -d.r * 0.15); ctx.lineTo(0, d.r);
+    ctx.stroke();
+    // Crossguard
+    ctx.fillStyle = "#b38244";
+    ctx.fillRect(-10, -d.r * 0.45, 20, 4);
+    ctx.strokeStyle = "rgba(0,0,0,0.6)";
+    ctx.strokeRect(-10, -d.r * 0.45, 20, 4);
+    // Grip + pommel
+    ctx.fillStyle = "#3a1f0f";
+    ctx.fillRect(-3, -d.r * 0.45 - 10, 6, 10);
+    ctx.fillStyle = "#ffd966";
+    ctx.beginPath(); ctx.arc(0, -d.r * 0.45 - 12, 3, 0, Math.PI * 2); ctx.fill();
+  }
+
+  drawMace(ctx, d) {
+    // Heavy spiked ball + shaft
+    ctx.fillStyle = "#3a1f0f";
+    ctx.fillRect(-2, 0, 4, d.r + 8);
+    ctx.strokeStyle = "rgba(0,0,0,0.6)";
+    ctx.strokeRect(-2, 0, 4, d.r + 8);
+    // Ball
+    drawSphere(ctx, 0, -2, d.r * 0.7, "#9aa0ac", {
+      highlight: "rgba(255,255,255,0.75)",
+      rim: "rgba(220,220,240,0.4)",
+      outline: "rgba(0,0,0,0.7)",
+    });
+    // Spikes
+    const spikes = 8;
+    for (let i = 0; i < spikes; i++) {
+      const a = (i / spikes) * Math.PI * 2;
+      const sx = Math.cos(a) * (d.r * 0.7);
+      const sy = -2 + Math.sin(a) * (d.r * 0.7);
+      ctx.save();
+      ctx.translate(sx, sy);
+      ctx.rotate(a + Math.PI / 2);
+      ctx.fillStyle = "#c0c4cc";
       ctx.beginPath();
-      ctx.arc(-d.r, 0, 5, 0, Math.PI * 2);
-      ctx.arc(d.r, 0, 5, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = d.kind.color;
-      ctx.beginPath();
-      ctx.arc(-d.r - 1, -1, 3, 0, Math.PI * 2);
-      ctx.arc(d.r - 1, -1, 3, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = "rgba(0,0,0,0.6)";
-      ctx.lineWidth = 1;
-      ctx.stroke();
-    } else if (d.kind.kind === "tooth") {
-      const g = ctx.createLinearGradient(-d.r, -d.r, d.r, d.r);
-      g.addColorStop(0, "#fff");
-      g.addColorStop(0.6, d.kind.color);
-      g.addColorStop(1, "#7a6a3a");
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.moveTo(0, -d.r);
-      ctx.lineTo(d.r * 0.7, d.r);
-      ctx.lineTo(-d.r * 0.7, d.r);
+      ctx.moveTo(0, -6);
+      ctx.lineTo(3, 2);
+      ctx.lineTo(-3, 2);
       ctx.closePath();
       ctx.fill();
       ctx.strokeStyle = "rgba(0,0,0,0.7)";
-      ctx.lineWidth = 1.2;
-      ctx.stroke();
-      // Bright edge highlight
-      ctx.strokeStyle = "rgba(255,255,255,0.55)";
       ctx.lineWidth = 0.8;
-      ctx.beginPath();
-      ctx.moveTo(-d.r * 0.6, d.r - 1);
-      ctx.lineTo(0, -d.r + 2);
       ctx.stroke();
-    } else if (d.kind.kind === "goblin") {
-      // Zombie goblin head with volumetric shading
-      const g = ctx.createRadialGradient(-d.r * 0.3, -d.r * 0.3, 2, 0, 0, d.r);
-      g.addColorStop(0, "#8cbf5c");
-      g.addColorStop(0.7, d.kind.color);
-      g.addColorStop(1, "#2a3a0a");
-      ctx.fillStyle = g;
+      ctx.restore();
+    }
+  }
+
+  drawMeat(ctx, d) {
+    // Wobbly gory blob
+    const g = ctx.createRadialGradient(-d.r * 0.3, -d.r * 0.3, 2, 0, 0, d.r);
+    g.addColorStop(0, "#e24050");
+    g.addColorStop(0.6, "#a82232");
+    g.addColorStop(1, "#4a0010");
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    const lobes = 7;
+    for (let i = 0; i <= lobes * 6; i++) {
+      const f = i / (lobes * 6);
+      const a = f * Math.PI * 2;
+      const r = d.r * (0.9 + Math.sin(a * lobes + this.t * 2) * 0.1);
+      const x = Math.cos(a) * r;
+      const y = Math.sin(a) * r;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "rgba(0,0,0,0.6)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    // Bone nub poking out
+    ctx.fillStyle = "#efe6c8";
+    ctx.fillRect(-2, -d.r + 1, 4, 4);
+    ctx.strokeStyle = "rgba(0,0,0,0.7)";
+    ctx.strokeRect(-2, -d.r + 1, 4, 4);
+    // Wet highlight
+    ctx.fillStyle = "rgba(255,180,180,0.5)";
+    ctx.beginPath();
+    ctx.ellipse(-d.r * 0.3, -d.r * 0.3, d.r * 0.3, d.r * 0.15, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  drawFeather(ctx, d) {
+    // Feather shape, white with blue-ish tip, curved quill.
+    ctx.save();
+    const g = ctx.createLinearGradient(0, -d.r, 0, d.r);
+    g.addColorStop(0, "#ffffff");
+    g.addColorStop(0.6, "#cfe8ff");
+    g.addColorStop(1, "#6fa9d6");
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(0, -d.r - 4);
+    ctx.quadraticCurveTo(d.r * 0.8, -d.r * 0.2, 0, d.r + 2);
+    ctx.quadraticCurveTo(-d.r * 0.8, -d.r * 0.2, 0, -d.r - 4);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "rgba(80,120,180,0.8)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    // Spine (quill)
+    ctx.strokeStyle = "rgba(60,80,110,0.9)";
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    ctx.moveTo(0, -d.r - 4); ctx.lineTo(0, d.r + 2);
+    ctx.stroke();
+    // Barbs
+    ctx.strokeStyle = "rgba(140,180,220,0.7)";
+    ctx.lineWidth = 0.7;
+    for (let i = -4; i <= 4; i++) {
       ctx.beginPath();
-      ctx.arc(0, 0, d.r, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = "#1a0a0a";
-      ctx.fillRect(-5, -4, 4, 3);
-      ctx.fillRect(1, -4, 4, 3);
-      ctx.fillStyle = "#fff";
-      ctx.fillRect(-5, -4, 1, 1);
-      ctx.fillRect(1, -4, 1, 1);
-      ctx.strokeStyle = "#1a0a0a";
-      ctx.lineWidth = 1.2;
-      ctx.beginPath();
-      ctx.moveTo(-5, 3); ctx.lineTo(5, 5);
-      ctx.stroke();
-      // Drool
-      ctx.fillStyle = COLORS.bile;
-      ctx.fillRect(-1, d.r - 2, 2, 5);
-    } else {
-      // Rock
-      const g = ctx.createRadialGradient(-d.r * 0.4, -d.r * 0.4, 2, 0, 0, d.r);
-      g.addColorStop(0, "#888");
-      g.addColorStop(0.7, "#555");
-      g.addColorStop(1, "#222");
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.moveTo(-d.r, 0);
-      ctx.lineTo(-d.r * 0.5, -d.r);
-      ctx.lineTo(d.r * 0.5, -d.r * 0.8);
-      ctx.lineTo(d.r, d.r * 0.2);
-      ctx.lineTo(0, d.r);
-      ctx.closePath();
-      ctx.fill();
-      ctx.strokeStyle = "rgba(0,0,0,0.75)";
-      ctx.lineWidth = 1.2;
+      ctx.moveTo(0, i * 2.2);
+      ctx.lineTo((i > 0 ? -1 : 1) * (d.r * 0.7 - Math.abs(i) * 0.6), i * 2.2 + 2);
       ctx.stroke();
     }
     ctx.restore();
   }
 
+  drawBurger(ctx, d) {
+    // Stacked cheeseburger: bottom bun, patty, cheese, lettuce, top bun w/ seeds.
+    const R = d.r;
+    // Bottom bun
+    ctx.fillStyle = "#c98a3c";
+    ctx.beginPath();
+    ctx.ellipse(0, R * 0.75, R, R * 0.35, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(0,0,0,0.7)"; ctx.lineWidth = 1; ctx.stroke();
+    // Patty
+    ctx.fillStyle = "#5a2a10";
+    ctx.fillRect(-R * 0.95, R * 0.35, R * 1.9, R * 0.4);
+    ctx.strokeRect(-R * 0.95, R * 0.35, R * 1.9, R * 0.4);
+    // Cheese (drippy)
+    ctx.fillStyle = "#ffd24a";
+    ctx.beginPath();
+    ctx.moveTo(-R, R * 0.3);
+    ctx.lineTo(R, R * 0.3);
+    ctx.lineTo(R * 0.9, R * 0.45);
+    ctx.lineTo(R * 0.6, R * 0.32);
+    ctx.lineTo(R * 0.3, R * 0.5);
+    ctx.lineTo(0,      R * 0.32);
+    ctx.lineTo(-R * 0.3, R * 0.5);
+    ctx.lineTo(-R * 0.6, R * 0.32);
+    ctx.lineTo(-R * 0.9, R * 0.48);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "rgba(0,0,0,0.6)"; ctx.lineWidth = 0.8; ctx.stroke();
+    // Lettuce ruffle
+    ctx.fillStyle = "#6cbf4a";
+    ctx.beginPath();
+    ctx.moveTo(-R, R * 0.2);
+    for (let i = 0; i <= 8; i++) {
+      const x = -R + (i / 8) * R * 2;
+      const y = R * 0.2 - (i % 2 === 0 ? 3 : 0);
+      ctx.lineTo(x, y);
+    }
+    ctx.lineTo(R, R * 0.3);
+    ctx.lineTo(-R, R * 0.3);
+    ctx.closePath();
+    ctx.fill();
+    // Top bun
+    const bg = ctx.createRadialGradient(-R * 0.4, -R * 0.3, 2, 0, -R * 0.1, R);
+    bg.addColorStop(0, "#ffd48a");
+    bg.addColorStop(0.5, "#e0a04a");
+    bg.addColorStop(1, "#8a4a1a");
+    ctx.fillStyle = bg;
+    ctx.beginPath();
+    ctx.ellipse(0, -R * 0.15, R, R * 0.8, 0, Math.PI, 0, false);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "rgba(0,0,0,0.7)"; ctx.lineWidth = 1; ctx.stroke();
+    // Sesame seeds
+    ctx.fillStyle = "#fff6c0";
+    for (const [sx, sy] of [[-R*0.5, -R*0.5], [-R*0.1, -R*0.65], [R*0.3, -R*0.55], [R*0.55, -R*0.3]]) {
+      ctx.beginPath();
+      ctx.ellipse(sx, sy, 2, 1, 0.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  drawRingOfArmor(ctx, d) {
+    // Glowing golden ring with inset jewel.
+    const R = d.r;
+    ctx.save();
+    // Outer glow (layered)
+    for (let k = 4; k >= 1; k--) {
+      ctx.fillStyle = `rgba(255, 217, 102, ${0.06 * k})`;
+      ctx.beginPath();
+      ctx.arc(0, 0, R * (1.2 + k * 0.25), 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // Ring body
+    ctx.strokeStyle = "#ffd966";
+    ctx.lineWidth = R * 0.32;
+    ctx.shadowColor = "#ffea9a";
+    ctx.shadowBlur = 18;
+    ctx.beginPath(); ctx.arc(0, 2, R * 0.85, 0, Math.PI * 2); ctx.stroke();
+    ctx.shadowBlur = 0;
+    // Highlight rim
+    ctx.strokeStyle = "rgba(255, 250, 210, 0.9)";
+    ctx.lineWidth = R * 0.12;
+    ctx.beginPath(); ctx.arc(0, 2, R * 0.95, Math.PI * 1.1, Math.PI * 1.7);
+    ctx.stroke();
+    // Inset crimson jewel
+    drawSphere(ctx, 0, -R * 0.75, R * 0.35, "#c21a1a", {
+      highlight: "rgba(255,180,180,1)",
+      rim: "rgba(255,80,80,0.8)",
+      outline: "rgba(60,0,0,0.8)",
+    });
+    // Shadow underline
+    ctx.strokeStyle = "rgba(0,0,0,0.6)";
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(0, 2, R * 0.85, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+  }
+
+  // ---- Telegraph: red for hazards, gold/glow for power-ups ----
   drawTelegraph(ctx, tg) {
     const x = COLS_X[tg.col];
     const frac = tg.t / tg.wait;
     const pulse = 0.5 + 0.5 * Math.sin(this.t * 24);
+    const isPower = tg.power;
+    const col1 = isPower ? "rgba(255, 217, 102," : "rgba(255, 70, 70,";
+    const glow = isPower ? "#ffd966" : "#ff3030";
+    const icon = isPower ? "+" : "!";
+
     ctx.save();
     const grd = ctx.createLinearGradient(x, 0, x, 150);
-    grd.addColorStop(0, `rgba(255, 70, 70, ${0.6 + pulse * 0.3})`);
-    grd.addColorStop(1, "rgba(255, 70, 70, 0)");
+    grd.addColorStop(0, `${col1} ${0.6 + pulse * 0.3})`);
+    grd.addColorStop(1, `${col1} 0)`);
     ctx.fillStyle = grd;
     ctx.beginPath();
     ctx.moveTo(x - 34, 0);
@@ -513,12 +1070,12 @@ export class ClimbScene {
     ctx.fill();
 
     ctx.fillStyle = "#fff";
-    ctx.shadowColor = "#ff3030";
+    ctx.shadowColor = glow;
     ctx.shadowBlur = 14;
     ctx.font = "bold 32px 'Courier New', monospace";
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    ctx.fillText("!", x, 36 + Math.sin(this.t * 30) * 2);
+    ctx.fillText(icon, x, 36 + Math.sin(this.t * 30) * 2);
 
     ctx.strokeStyle = "rgba(255,255,255,0.9)";
     ctx.lineWidth = 3;

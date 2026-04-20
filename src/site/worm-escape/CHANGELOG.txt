@@ -223,6 +223,81 @@ COMBAT - JUICY VISUAL FEEDBACK:
 - Stronger particle burst + screen shake on devastating hits.
 
 ---------------------------------------------------------------------
+v0.8.0 - Chamber Atmosphere + Falling Item Menagerie
+---------------------------------------------------------------------
+BACKGROUND NOW REFLECTS WHERE YOU ARE IN THE WORM:
+- drawFleshBackground() accepts a per-chamber palette (deep / mid /
+  bruise / bump). Each chamber ships its own, so the further you
+  climb the worm the lighter and redder the chamber gets:
+    Stomach      : blackish purple, barely any light (#08020a / #22072a)
+    Lower Gut    : purplish maroon, a bit lighter (#1a0416 / #4a1040)
+    Heart-Hollow : deep ventricle red (#2a0812 / #6a1024)
+    Gullet       : reddish pink, daylight bleeding in (#3a0a1a / #9a2a3e)
+- Combat scenes also pull their chamber palette now, so the
+  sphincter gate matches the color of the chamber you fought through.
+
+CHAMBER DIFFICULTY ACTUALLY RAMPS:
+- New per-chamber `spawnCount`: 1 / 2 / 2 / 3. Each cycle fires that
+  many telegraphs simultaneously across different columns.
+- `multiDebrisChance` ramped to 18% / 30% / 45% / 55% for bonus
+  spawns on top of the base count.
+- Debris intervals tightened again in the back half of the game
+  (Heart-Hollow 0.85-1.5s, Gullet 0.65-1.15s) to keep constant
+  pressure even as the player learns the patterns.
+- Net effect: Chamber 4 now feels like a falling-object hailstorm
+  - which is exactly what a worm's gullet near daylight should.
+
+NEW FALLING ITEMS - HAZARDS:
+- ROCK (armor-absorb): classic crushing hit. Armor soak applies, so
+  Swiftfoot (0 soak) eats the full 25 damage and Iron shrugs most
+  of it off. Tank pips still eat whole hits.
+- DAGGER (pierce, 14 dmg): sharp and nimble. Bypasses armor entirely
+  and plants itself in HP. Telegraphs don't warn about type, so
+  Iron's false sense of security can be deadly.
+- SWORD (pierce, 22 dmg): same pierce rule, bigger hurt.
+- MACE (armor-direct, 16 dmg): slams armor DIRECTLY instead of HP.
+  If you have no armor it STUNS you for 1.3s (no climb, no hop,
+  gentle slip) and taxes HP for 40% of its damage. Swift's recurring
+  nightmare.
+- MEAT CHUNK (flesh-only, 10 dmg): wet, gory splat. Ignored entirely
+  if you have any armor (log says "SPLAT! Slides off your armor").
+  Hurts a little if you're bare-skinned.
+- Legacy bone / tooth / zombie-goblin entries kept and retyped as
+  armor-absorb for consistency.
+
+NEW FALLING ITEMS - POWER-UPS (rare, telegraphed in GOLD):
+- FEATHER OF FLYING: instant +220px climb boost, trail of feathers,
+  whoosh banner. Effectively saves ~1 second of climbing.
+- CHEESEBURGER: heals 30 HP on catch. Does NOT touch armor. Drawn
+  as a full stack (bun / lettuce / cheese drip / patty / seeded bun).
+- RING OF ARMOR: VERY rare, glows on approach. Grants +50 armor
+  (raising armorMax if needed) and a 50% armor-soak rating. For
+  Swiftfoot it's game-changing - suddenly you have bile grace AND
+  damage mitigation for the rest of the climb. Drawn as a haloed
+  golden ring with a crimson jewel.
+
+HOW THE DROPS WORK:
+- Telegraphs are color-coded now: RED warning for hazards, GOLD
+  glow + "+" icon for power-ups. You can instantly tell whether to
+  dodge out of the lane or hop into it.
+- Per-chamber powerUpRarity: 12% / 10% / 8% / 7% of spawns roll into
+  the power-up pool. Inside that pool weights are 15 feather /
+  12 burger / 2 ring - so rings appear maybe once or twice per run.
+
+NEW VISUAL FEEDBACK:
+- Each new item has a unique cel-shaded render: metallic daggers,
+  full-size swords w/ pommel jewel, spiked mace with radial spikes,
+  wobbling lobed meat chunk with bone nub, feather with curved
+  quill + individual barbs, stacked burger, haloed armor ring.
+- Power-ups have aurora halos in their respective colors so the
+  eye is drawn to them even under cover.
+- Ring-of-armor pickup triggers a golden shockwave ring expanding
+  outward from the hero for ~1.2s.
+- STUN state: golden pentagram stars orbit the hero's head, climb
+  and hop inputs are locked, and climb progress slips gently until
+  the stun wears off. Very readable "you got bonked" moment.
+
+---------------------------------------------------------------------
 Planned / Future
 ---------------------------------------------------------------------
 - Boss fight in final chamber: the worm's own HEART.
