@@ -298,6 +298,68 @@ NEW VISUAL FEEDBACK:
   the stun wears off. Very readable "you got bonked" moment.
 
 ---------------------------------------------------------------------
+v0.9.0 - Teeth & Bloodier Teeth (Difficulty + Combat Depth)
+---------------------------------------------------------------------
+DAMAGE NUMBERS SCALED UP ACROSS THE BOARD:
+- New CHAMBER_DMG_SCALE table: [1.0, 1.18, 1.32, 1.45]. Every source of
+  damage the player takes is multiplied by this based on which
+  chamber they're in. Gullet hits 45% harder than Stomach.
+- Climb debris raw damage numbers +~40%:
+    rock   25 -> 34    bone  20 -> 28    tooth 18 -> 25
+    goblin 22 -> 30    dagger 14 -> 20   sword 22 -> 30
+    mace   16 -> 24    meat 10 -> 16
+- Mace stun extended 1.3s -> 1.4s (it already hurts, leaning in).
+- Bile-submersion HP drain 18 -> 24 /sec.
+- Acid-gout base damage 16 -> 20 (braced 8 -> 11).
+- Enemy melee attackDmg ranges bumped 25-40%, and each enemy gained a
+  `heavyDmg` range for their new HEAVY SLAM move.
+- Acid-timer corrosion in combat also scales with chamber.
+
+ENEMIES NOW HAVE THREE ATTACK TYPES:
+- JAB (default): the old wind-up / strike. Brace halves it.
+- HEAVY SLAM: longer wind-up (1.6s + dodge window * 0.6), ~2x damage,
+  and CRITICALLY: lane-dodging does NOT save you - brace is the only
+  counter. Telegraphed with an ORANGE banner: "LANE DODGE WON'T SAVE
+  YOU - BRACE (4)". Impact comes with a thicker flash, stronger
+  particles, and heavier screen shake.
+- TRIPLE STRIKE COMBO: short tell, then 3 hits in 0.84s. Each hit
+  does 55% base damage. Brace covers each hit individually, so you
+  need to TIME your brace to catch the last couple. Telegraphed with
+  a YELLOW banner: "TRIPLE STRIKE x/3 - BRACE NOW (4)".
+- Move selection is weighted: 62% jab / 20% combo / 18% heavy
+  normally, shifting to 35% heavy / 30% combo / 35% jab in enrage.
+
+ENRAGE PHASE:
+- Every enemy has `enrageAt: 0.5` (HP threshold). When crossed, a
+  one-shot "ENRAGED!" banner fires, screenShake(14), red particle
+  burst, and a permanent [ENRAGED] tag appears by the enemy name.
+- Enraged enemies get:
+    + 20% damage on every attack
+    + 30-35% faster turn cadence
+    + Double acid gouts (2 different lanes simultaneously, 45% of
+      the time)
+    + Shifted move pool favoring heavy / combo
+
+PERFECT BRACE COUNTER-ATTACK:
+- If you press BRACE (4) within the last 0.5s of a tell, OR at any
+  point during a combo sequence, you trigger a PERFECT GUARD.
+- "PERFECT GUARD! Counter-attack is ready (+50% next hit)!" log.
+- Next attack you land does x1.5 damage, logged as "COUNTER-STRIKE!"
+  with a brighter enemyFlash + bigger shake.
+- A glowing "COUNTER READY" indicator sits between enemy and player
+  until you spend the counter.
+- This gives the fight a read-and-punish rhythm: Spam brace too
+  early and you waste it. Wait and you get rewarded.
+
+UI CHANGES:
+- Attack tell banner recolors based on move type (red jab / orange
+  heavy / yellow combo) so move type is readable at a glance.
+- Brace menu description now says "Reduce next hit. Time it late
+  for +50% counter!".
+- Combo state keeps the banner up for its entire duration, with a
+  live "TRIPLE STRIKE n/3" counter so you can time the last brace.
+
+---------------------------------------------------------------------
 Planned / Future
 ---------------------------------------------------------------------
 - Boss fight in final chamber: the worm's own HEART.

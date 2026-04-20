@@ -43,16 +43,24 @@ const HERO_DEATH_Y = HERO_Y + 28;    // bile touches this Y -> submerged
 //
 // `weight` is the random pick weight within its category. `rarity` on power-ups
 // further tilts picks within the power-up pool (ring is especially rare).
+// Per-chamber damage multiplier - every source of damage (debris, bile, acid)
+// passes through this so the deeper you are in the worm, the nastier every
+// hit becomes. Chamber 0 = baseline, chamber 3 = +45%.
+const CHAMBER_DMG_SCALE = [1.0, 1.18, 1.32, 1.45];
+
+// v0.9: damage numbers bumped across the board (~1.4x) AFTER scaling is
+// applied, so the game actually threatens both builds. Combined with
+// CHAMBER_DMG_SCALE, a mace hit in the Gullet lands at ~35 armor damage.
 const DEBRIS_KINDS = [
   // --- HAZARDS ---
-  { kind: "rock",   color: "#555",       sizeR: [12, 20], dmg: 25, damageType: "armor-absorb", weight: 18 },
-  { kind: "bone",   color: COLORS.bone,  sizeR: [10, 18], dmg: 20, damageType: "armor-absorb", weight: 14 },
-  { kind: "tooth",  color: "#f6ecd0",    sizeR: [8, 14],  dmg: 18, damageType: "armor-absorb", weight: 12 },
-  { kind: "goblin", color: "#6ea34a",    sizeR: [14, 22], dmg: 22, damageType: "armor-absorb", weight: 10 },
-  { kind: "dagger", color: "#cfd4dc",    sizeR: [10, 14], dmg: 14, damageType: "pierce",       weight: 14 },
-  { kind: "sword",  color: "#e0e4ec",    sizeR: [16, 22], dmg: 22, damageType: "pierce",       weight: 10 },
-  { kind: "mace",   color: "#9aa0ac",    sizeR: [14, 20], dmg: 16, damageType: "armor-direct", weight: 10, stun: 1.3 },
-  { kind: "meat",   color: "#a82232",    sizeR: [14, 22], dmg: 10, damageType: "flesh-only",   weight: 12 },
+  { kind: "rock",   color: "#555",       sizeR: [12, 20], dmg: 34, damageType: "armor-absorb", weight: 18 },
+  { kind: "bone",   color: COLORS.bone,  sizeR: [10, 18], dmg: 28, damageType: "armor-absorb", weight: 14 },
+  { kind: "tooth",  color: "#f6ecd0",    sizeR: [8, 14],  dmg: 25, damageType: "armor-absorb", weight: 12 },
+  { kind: "goblin", color: "#6ea34a",    sizeR: [14, 22], dmg: 30, damageType: "armor-absorb", weight: 10 },
+  { kind: "dagger", color: "#cfd4dc",    sizeR: [10, 14], dmg: 20, damageType: "pierce",       weight: 14 },
+  { kind: "sword",  color: "#e0e4ec",    sizeR: [16, 22], dmg: 30, damageType: "pierce",       weight: 10 },
+  { kind: "mace",   color: "#9aa0ac",    sizeR: [14, 20], dmg: 24, damageType: "armor-direct", weight: 10, stun: 1.4 },
+  { kind: "meat",   color: "#a82232",    sizeR: [14, 22], dmg: 16, damageType: "flesh-only",   weight: 12 },
 ];
 
 // Power-ups are picked from a separate pool so we can tune rarity independently.
@@ -222,7 +230,7 @@ export class ClimbScene {
         }
       } else {
         this.drownT += dt;
-        p.hp -= (p.bileHpDrain || 18) * dt;
+        p.hp -= (p.bileHpDrain || 24) * (CHAMBER_DMG_SCALE[this.chamberIdx] || 1) * dt;
         this.flash = Math.max(this.flash, 0.35);
         if (Math.random() < 0.5) {
           this.particles.burst(
@@ -419,7 +427,9 @@ export class ClimbScene {
     }
 
     // --- Hazards: resolve by damage type ---
-    const dmg = kind.dmg || 0;
+    // Apply per-chamber scaling so the Gullet hits ~45% harder than the Stomach.
+    const scale = CHAMBER_DMG_SCALE[this.chamberIdx] || 1;
+    const dmg = Math.round((kind.dmg || 0) * scale);
     let armorTaken = 0, hpTaken = 0;
     let partColor = COLORS.blood;
     let shake = 10;

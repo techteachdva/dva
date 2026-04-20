@@ -133,7 +133,7 @@ export function makePlayer(buildId, loadoutId) {
     // armor is eaten at 1 point per second. Ironhide (60 armor) therefore gets
     // ~60 seconds of emergency grace to claw back out. Swift (0 armor) drowns
     // fast. Once armor hits 0 while submerged, HP melts at `bileHpDrain` /s.
-    bileHpDrain: 18,
+    bileHpDrain: 24,
     chamberIndex: 0,
     cooldowns: { attack: 0, special: 0 },
   };

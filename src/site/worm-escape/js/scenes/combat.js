@@ -16,6 +16,18 @@ const LANES = [W * 0.33, W * 0.5, W * 0.67];
 const FLOOR_Y = 620;
 const HERO_Y = 600;
 
+// Per-chamber damage multiplier applied to every source of damage the
+// PLAYER receives (acid gouts, melee hits, heavy slams, combo jabs).
+// Stomach baseline, Gullet +45%. Same curve as climb hazards.
+const CHAMBER_DMG_SCALE = [1.0, 1.18, 1.32, 1.45];
+
+// Weighted pool of enemy moves. Heavy and Combo are rarer than Jab to keep
+// the cadence readable; during enrage the pool shifts to favor heavy/combo.
+// `jab`  - single lane-targeted strike, brace halves, dodge to other lane helps.
+// `heavy`- full-arena slam, LANE DODGE DOES NOTHING, only brace saves you.
+// `combo`- triple quick strike (3 hits, 0.42s apart), each halved by brace
+//          (so you basically have to time brace so it covers the last 2+).
+
 export class CombatScene {
   constructor(chamberIdx) {
     this.chamberIdx = chamberIdx;
@@ -56,14 +68,30 @@ export class CombatScene {
     this.enemyFlash = 0;
     this.enemyShake = 0;
 
-    // Enemy's between-turn melee wind-up.
-    // v0.7: tighter timer so the player has to actually manage cooldowns,
-    // not just mash attack. Brace becomes a real decision, not a freebie.
-    this.enemyTurnTimer = rand(2.8, 3.8);
+    // Enemy move state machine.
+    // Three move types now exist: "jab" (current behavior), "heavy" (slow
+    // unavoidable slam, brace-only), and "combo" (3-hit quick flurry).
+    this.enemyTurnTimer = rand(2.6, 3.4);
     this.enemyTellTime = 0;
     this.enemyTelling = false;
+    this.enemyMoveType = "jab";
+    // Combo sequencing: once a combo resolves the tell, 3 hits land in a row.
+    this.comboHitsLeft = 0;
+    this.comboHitTimer = 0;
 
+    // Enrage state - triggers at enemy.hp < hpMax * enrageAt. Kicks off
+    // tighter cadence, optional paired acid gouts, and +damage.
+    this.enraged = false;
+    this.enrageFlashT = 0;
+
+    // BRACE mechanic.
+    // `braceTime` = seconds remaining of passive damage reduction.
+    // `perfectBraceReady` = set when the player braces within the last 0.5s
+    // of an enemy tell. Grants a 50% damage counter on the NEXT attack.
     this.braceTime = 0;
+    this.perfectBraceReady = false;
+    this.perfectFlashT = 0;
+
     this.phase = "intro";
     this.introT = 0;
     this.winTimer = 0;
@@ -126,11 +154,13 @@ export class CombatScene {
       }
     }
 
-    // Acid timer keeps ticking in combat too
+    // Acid timer keeps ticking in combat too, and the corrosion itself
+    // scales with chamber difficulty.
+    const corrScale = CHAMBER_DMG_SCALE[this.chamberIdx] || 1;
     p.acidTimer -= dt * p.acidResist;
     if (p.acidTimer <= 0) {
-      if (p.armor > 0) p.armor = Math.max(0, p.armor - 4 * dt);
-      else { p.hp -= 2 * dt; this.hitFlash = Math.max(this.hitFlash, 0.15); }
+      if (p.armor > 0) p.armor = Math.max(0, p.armor - 4 * corrScale * dt);
+      else { p.hp -= 2 * corrScale * dt; this.hitFlash = Math.max(this.hitFlash, 0.15); }
     }
 
     if (this.phase === "intro") {
@@ -149,6 +179,19 @@ export class CombatScene {
     if (this.hitFlash > 0) this.hitFlash = Math.max(0, this.hitFlash - dt);
     if (this.enemyFlash > 0) this.enemyFlash = Math.max(0, this.enemyFlash - dt);
     if (this.enemyShake > 0) this.enemyShake -= dt;
+    if (this.enrageFlashT > 0) this.enrageFlashT = Math.max(0, this.enrageFlashT - dt);
+    if (this.perfectFlashT > 0) this.perfectFlashT = Math.max(0, this.perfectFlashT - dt);
+
+    // Enrage trigger: one-shot state change when HP falls below threshold.
+    if (!this.enraged && this.enemy.hp > 0
+        && this.enemy.hp < this.enemy.hpMax * (this.enemy.enrageAt || 0.5)) {
+      this.enraged = true;
+      this.enrageFlashT = 1.4;
+      this.pushLog(`!! ${this.enemy.name} IS ENRAGED !!`);
+      SFX.thud();
+      screenShake(14, 0.4);
+      this.particles.burst(W / 2, FLOOR_Y - 200, "#ff3030", 40, 320, 0.9);
+    }
 
     // Smooth HP bar tick-down (lerp toward true HP for chewy feedback).
     const hpLerp = Math.min(1, dt * 5.5);
@@ -196,12 +239,19 @@ export class CombatScene {
   updateAcidGouts(dt, p) {
     this.goutsTimer -= dt;
     if (this.goutsTimer <= 0) {
-      const [mn, mx] = this.enemy.acidInterval;
+      let [mn, mx] = this.enemy.acidInterval;
+      // Enraged: tighten the cadence aggressively.
+      if (this.enraged) { mn *= 0.65; mx *= 0.65; }
       this.goutsTimer = rand(mn, mx);
       const lane = randInt(0, 2);
-      // Telegraph duration scales with player's dodge window + the gout's travel time,
-      // so Iron (0.55s window) gets almost as much warning as Swift (0.65s).
       this.telegraphs.push({ lane, t: 0, wait: p.dodgeWindow + 0.15 });
+      // Paired gout: at low HP the enemy sometimes fires TWO at once in
+      // different lanes so the player has to pick AND commit.
+      if (this.enraged && Math.random() < 0.45) {
+        let other = (lane + 1 + randInt(0, 1)) % 3;
+        if (other === lane) other = (other + 1) % 3;
+        this.telegraphs.push({ lane: other, t: 0, wait: p.dodgeWindow + 0.15 });
+      }
     }
     for (const tg of this.telegraphs) tg.t += dt;
     this.telegraphs = this.telegraphs.filter((tg) => {
@@ -214,19 +264,23 @@ export class CombatScene {
 
     for (const g of this.gouts) g.y += g.vy * dt;
 
+    const scale = CHAMBER_DMG_SCALE[this.chamberIdx] || 1;
+    const enrageBonus = this.enraged ? 1.2 : 1;
     for (const g of this.gouts) {
       if (g._hit) continue;
       if (g.y >= FLOOR_Y - 30) {
         g._hit = true;
         if (g.lane === this.lane) {
-          const base = this.braceTime > 0 ? 8 : 16;
-          const { armorTaken, hpTaken } = applyDamage(p, base);
+          // v0.9: base gout damage up from 16 -> 20, and braced 8 -> 11.
+          const raw = this.braceTime > 0 ? 11 : 20;
+          const dmg = Math.round(raw * scale * enrageBonus);
+          const { armorTaken, hpTaken } = applyDamage(p, dmg);
           this.hitFlash = 0.35;
           SFX.acid();
           screenShake(8, 0.22);
           this.particles.burst(g.x, FLOOR_Y - 30, COLORS.bile, 22, 240, 0.65);
           if (this.braceTime > 0) {
-            this.pushLog("You BRACE - acid hisses off your guard!");
+            this.pushLog(`You BRACE - acid hisses off your guard (-${Math.ceil(hpTaken || armorTaken)})`);
           } else if (armorTaken > 0 && hpTaken === 0) {
             this.pushLog(`SPLASH! Armor soaks it (-${Math.ceil(armorTaken)} ARM)`);
           } else {
@@ -241,31 +295,107 @@ export class CombatScene {
     this.gouts = this.gouts.filter((g) => !g._hit && g.y < FLOOR_Y + 30);
   }
 
+  // Pick the next enemy move based on phase. Weights shift in enrage.
+  planEnemyMove() {
+    const r = Math.random();
+    if (this.enraged) {
+      if (r < 0.35) return "heavy";
+      if (r < 0.65) return "combo";
+      return "jab";
+    }
+    if (r < 0.18) return "heavy";
+    if (r < 0.38) return "combo";
+    return "jab";
+  }
+
+  // Apply a single melee hit from the current move type. `hitDmg` is the
+  // already-rolled raw number. Handles brace, perfect-brace, logging.
+  landEnemyMelee(p, rawDmg, moveType) {
+    const scale = CHAMBER_DMG_SCALE[this.chamberIdx] || 1;
+    const enrageBonus = this.enraged ? 1.2 : 1;
+    let dmg = Math.round(rawDmg * scale * enrageBonus);
+    let braceNote = "";
+    if (this.braceTime > 0) {
+      dmg = Math.floor(dmg * 0.35);
+      braceNote = "(BRACED) ";
+    }
+    const { armorTaken, hpTaken } = applyDamage(p, dmg);
+    // Heavy slams get a harder visual impact because they're the "no dodge" move.
+    this.hitFlash = moveType === "heavy" ? 0.7 : 0.4;
+    if (moveType === "heavy") {
+      this.particles.burst(this.heroX, HERO_Y - 20, "#ff8020", 32, 320, 0.8);
+    }
+    SFX.hit();
+    screenShake(moveType === "heavy" ? 16 : 10, moveType === "heavy" ? 0.45 : 0.3);
+    let line = braceNote + pick(this.enemy.flavorHit);
+    if (moveType === "heavy") line = braceNote + "HEAVY SLAM! " + line;
+    line += ` (-${Math.ceil(hpTaken)} HP${armorTaken ? `, -${Math.ceil(armorTaken)} ARM` : ""})`;
+    this.pushLog(line);
+  }
+
   updateEnemyMelee(dt, p) {
-    if (this.enemyTelling) {
-      this.enemyTellTime -= dt;
-      if (this.enemyTellTime <= 0) {
-        const base = randInt(this.enemy.attackDmg[0], this.enemy.attackDmg[1]);
-        const dmg = this.braceTime > 0 ? Math.floor(base * 0.35) : base;
-        const { armorTaken, hpTaken } = applyDamage(p, dmg);
-        this.hitFlash = 0.4;
-        SFX.hit();
-        screenShake(10, 0.3);
-        let line = pick(this.enemy.flavorHit);
-        if (this.braceTime > 0) line = "(BRACED) " + line;
-        line += ` (-${Math.ceil(hpTaken)} HP${armorTaken ? `, -${Math.ceil(armorTaken)} ARM` : ""})`;
-        this.pushLog(line);
-        this.enemyTelling = false;
-        this.enemyTurnTimer = rand(2.8, 3.8);
+    // --- Combo sequence in progress ---
+    if (this.comboHitsLeft > 0) {
+      this.comboHitTimer -= dt;
+      if (this.comboHitTimer <= 0) {
+        const raw = randInt(this.enemy.attackDmg[0], this.enemy.attackDmg[1]) * 0.55;
+        this.landEnemyMelee(p, raw, "combo");
+        this.comboHitsLeft--;
+        this.comboHitTimer = 0.42;
+        if (this.comboHitsLeft === 0) {
+          // Done. Small breather before next turn plan.
+          this.enemyTurnTimer = rand(2.2, 3.0) * (this.enraged ? 0.7 : 1);
+        }
       }
       return;
     }
+
+    // --- Tell in progress ---
+    if (this.enemyTelling) {
+      this.enemyTellTime -= dt;
+      if (this.enemyTellTime <= 0) {
+        // Tell ends -> move resolves.
+        const move = this.enemyMoveType;
+        if (move === "heavy") {
+          // Heavy slam ignores lane-dodging entirely.
+          const raw = randInt(this.enemy.heavyDmg[0], this.enemy.heavyDmg[1]);
+          this.landEnemyMelee(p, raw, "heavy");
+          this.enemyTurnTimer = rand(3.2, 4.2) * (this.enraged ? 0.7 : 1);
+        } else if (move === "combo") {
+          // Start triple strike - first hit lands immediately, next ones via
+          // the comboHitsLeft loop above.
+          const raw = randInt(this.enemy.attackDmg[0], this.enemy.attackDmg[1]) * 0.55;
+          this.landEnemyMelee(p, raw, "combo");
+          this.comboHitsLeft = 2;
+          this.comboHitTimer = 0.42;
+        } else {
+          const raw = randInt(this.enemy.attackDmg[0], this.enemy.attackDmg[1]);
+          this.landEnemyMelee(p, raw, "jab");
+          this.enemyTurnTimer = rand(2.6, 3.4) * (this.enraged ? 0.7 : 1);
+        }
+        this.enemyTelling = false;
+      }
+      return;
+    }
+
+    // --- Between turns: countdown and pick next move ---
     this.enemyTurnTimer -= dt;
     if (this.enemyTurnTimer <= 0) {
+      const move = this.planEnemyMove();
+      this.enemyMoveType = move;
       this.enemyTelling = true;
-      // Wind-up window scales with player's dodge window
-      this.enemyTellTime = 0.9 + p.dodgeWindow * 0.8;
-      this.pushLog(this.enemy.name + " winds up a strike! BRACE (4)!");
+      // Heavy slams have longer wind-up (you have more warning, but no lane-dodge).
+      // Jab/combo scale with dodge window.
+      if (move === "heavy") {
+        this.enemyTellTime = 1.6 + p.dodgeWindow * 0.6;
+        this.pushLog(this.enemy.flavorHeavy || `${this.enemy.name} winds up a HEAVY slam! BRACE (4)!`);
+      } else if (move === "combo") {
+        this.enemyTellTime = 0.8 + p.dodgeWindow * 0.6;
+        this.pushLog(this.enemy.flavorCombo || `${this.enemy.name} readies a TRIPLE STRIKE! BRACE (4)!`);
+      } else {
+        this.enemyTellTime = 0.9 + p.dodgeWindow * 0.8;
+        this.pushLog(this.enemy.name + " winds up a strike! BRACE (4)!");
+      }
     }
   }
 
@@ -320,8 +450,23 @@ export class CombatScene {
       }
       case 3: {
         this.braceTime = 1.8;
-        this.pushLog("You BRACE. Incoming pain is reduced.");
-        SFX.confirm();
+        // Perfect Brace: if you hit BRACE within the last 0.5s of an enemy
+        // tell (or during a combo sequence), you queue up a +50% damage
+        // counter on your NEXT attack. Reward for reading the tell.
+        const perfectWindow = 0.5;
+        const tellEnding = this.enemyTelling && this.enemyTellTime <= perfectWindow;
+        const inCombo = this.comboHitsLeft > 0;
+        if (tellEnding || inCombo) {
+          this.perfectBraceReady = true;
+          this.perfectFlashT = 0.9;
+          this.pushLog("PERFECT GUARD! Counter-attack is ready (+50% next hit)!");
+          SFX.victory();
+          screenShake(4, 0.15);
+          this.particles.burst(this.heroX, HERO_Y - 30, "#ffd966", 22, 240, 0.6);
+        } else {
+          this.pushLog("You BRACE. Incoming pain is reduced.");
+          SFX.confirm();
+        }
         this.turnLocked = 0.2;
         break;
       }
@@ -331,17 +476,22 @@ export class CombatScene {
   dealToEnemy(rawDmg, name, sfx) {
     // Weapon matchup amplifies or deflates damage.
     const mult = this.matchupMult || 1;
-    const dmg = Math.max(1, Math.round(rawDmg * mult));
+    // Perfect Brace counter: 50% bonus on the attack that follows a perfect brace.
+    const counterBonus = this.perfectBraceReady ? 1.5 : 1;
+    const dmg = Math.max(1, Math.round(rawDmg * mult * counterBonus));
     const lbl = this.matchupLabel;
+    const hadCounter = this.perfectBraceReady;
+    this.perfectBraceReady = false;
 
     this.enemy.hp = Math.max(0, this.enemy.hp - dmg);
-    this.enemyFlash = 0.3;
-    this.enemyShake = mult > 1 ? 0.4 : 0.22;
+    this.enemyFlash = hadCounter ? 0.5 : 0.3;
+    this.enemyShake = hadCounter ? 0.55 : (mult > 1 ? 0.4 : 0.22);
 
-    // Log w/ matchup tag.
+    // Log w/ matchup tag and counter tag.
     let line = `${name}! ${this.enemy.name} takes ${dmg} damage.`;
-    if (lbl && mult > 1) line = `${lbl.text} ${line}`;
-    else if (lbl)         line = `${line} (${lbl.text})`;
+    if (hadCounter)       line = `COUNTER-STRIKE! ${line}`;
+    else if (lbl && mult > 1) line = `${lbl.text} ${line}`;
+    else if (lbl)             line = `${line} (${lbl.text})`;
     this.pushLog(line);
 
     // Screen / particle feedback scales with matchup.
@@ -1088,14 +1238,64 @@ export class CombatScene {
     this.drawMenu(ctx, game);
     this.drawLog(ctx);
 
-    // Enemy melee telegraph banner
-    if (this.enemyTelling) {
+    // Enemy melee telegraph banner - styled differently per move type so
+    // the player learns to read the tell at a glance.
+    if (this.enemyTelling || this.comboHitsLeft > 0) {
       const pulse = 0.5 + 0.5 * Math.sin(this.t * 20);
-      ctx.fillStyle = `rgba(255, 60, 60, ${0.3 + pulse * 0.4})`;
+      const move = this.enemyMoveType;
+      let bg, glow, text;
+      if (move === "heavy") {
+        bg = `rgba(255, 120, 20, ${0.35 + pulse * 0.45})`;
+        glow = "#ff8020";
+        text = "!! HEAVY SLAM - LANE DODGE WON'T SAVE YOU - BRACE (4) !!";
+      } else if (move === "combo") {
+        bg = `rgba(255, 220, 60, ${0.3 + pulse * 0.45})`;
+        glow = "#ffd966";
+        text = this.comboHitsLeft > 0
+          ? `>>> TRIPLE STRIKE ${3 - this.comboHitsLeft}/3 - BRACE NOW (4) <<<`
+          : "!!! TRIPLE STRIKE INCOMING - BRACE (4) !!!";
+      } else {
+        bg = `rgba(255, 60, 60, ${0.3 + pulse * 0.4})`;
+        glow = "#ff2020";
+        text = "! INCOMING STRIKE - PRESS 4 TO BRACE !";
+      }
+      ctx.fillStyle = bg;
       ctx.fillRect(0, 130, W, 28);
-      drawText(ctx, "! INCOMING STRIKE - PRESS 4 TO BRACE !", W / 2, 144, {
-        size: 18, color: "#fff", align: "center", bold: true, glow: "#ff2020", baseline: "middle",
+      drawText(ctx, text, W / 2, 144, {
+        size: 17, color: "#fff", align: "center", bold: true, glow, baseline: "middle",
       });
+    }
+
+    // Enrage flash across the top of the screen.
+    if (this.enrageFlashT > 0) {
+      const a = Math.min(1, this.enrageFlashT / 1.4);
+      ctx.save();
+      ctx.globalAlpha = a;
+      drawBanner(ctx, "ENRAGED!", W / 2, 90, 36, "#ff5050", "#400010");
+      ctx.restore();
+    }
+
+    // Persistent "ENRAGED" badge next to enemy name once triggered.
+    if (this.enraged) {
+      const pulse = 0.5 + 0.5 * Math.sin(this.t * 6);
+      drawText(ctx, "[ENRAGED]", W - 148, pad + 70, {
+        size: 11, color: `rgba(255, ${80 + pulse * 100}, 80, 1)`,
+        align: "center", bold: true, glow: "#ff2020",
+      });
+    }
+
+    // Perfect-brace flash indicator.
+    if (this.perfectBraceReady || this.perfectFlashT > 0) {
+      const a = this.perfectBraceReady ? 1 : Math.min(1, this.perfectFlashT / 0.9);
+      ctx.save();
+      ctx.globalAlpha = a;
+      const pulse = 0.5 + 0.5 * Math.sin(this.t * 10);
+      drawText(ctx, this.perfectBraceReady ? ">> COUNTER READY <<" : "PERFECT GUARD!",
+        W / 2, 200, {
+          size: 22, color: `rgba(255, 217, 102, ${0.8 + pulse * 0.2})`,
+          align: "center", bold: true, glow: "#ffd966",
+        });
+      ctx.restore();
     }
   }
 
@@ -1121,7 +1321,7 @@ export class CombatScene {
         cdMax: l.special.cooldown,
       },
       { key: "3", name: "Dodge Roll", info: "+8 MP, reposition", cd: 0, locked: false, cdMax: 0 },
-      { key: "4", name: "Brace",      info: "Halve next hit (~1.8s)", cd: 0, locked: false, cdMax: 0 },
+      { key: "4", name: "Brace",      info: "Reduce next hit. Time it late for +50% counter!", cd: 0, locked: false, cdMax: 0 },
     ];
 
     items.forEach((it, i) => {
