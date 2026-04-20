@@ -1,7 +1,6 @@
 ---
 {"dg-publish":true,"permalink":"/mr-phil-s-digital-garden/","tags":["gardenEntry"],"noteIcon":""}
 ---
-![[src/site/img/user/Pictures/DaVinci_Full_Button_2Color.png]]
 
 Welcome to Mr. Phil's Digital Garden.
 
@@ -29,7 +28,7 @@ GAMES
 
 
 
-
+Class Projects
 
 [[5-12 Methods. Literature and Reading.\|5-12 Methods. Literature and Reading.]]
 

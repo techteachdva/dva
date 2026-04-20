@@ -1,0 +1,120 @@
+/* Guts & Glory - CRT / arcade-cabinet shell */
+
+:root {
+  --bone: #e9dcc1;
+  --bile: #9bff66;
+  --blood: #8b1e1e;
+  --worm: #6b2a7a;
+  --worm-deep: #2a0b33;
+  --ink: #1a0a1f;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  background: radial-gradient(ellipse at center, #1a0a1f 0%, #050208 70%, #000 100%);
+  font-family: "Courier New", ui-monospace, monospace;
+  color: var(--bone);
+  overflow: hidden;
+  user-select: none;
+}
+
+#frame {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px;
+}
+
+#marquee {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-shadow:
+    0 0 6px rgba(155, 255, 102, 0.35),
+    0 0 14px rgba(139, 30, 30, 0.25);
+}
+
+.m-title {
+  font-size: 28px;
+  letter-spacing: 6px;
+  color: var(--bile);
+  font-weight: bold;
+}
+
+.m-sub {
+  font-size: 14px;
+  letter-spacing: 3px;
+  color: var(--bone);
+  opacity: 0.8;
+}
+
+#stage {
+  position: relative;
+  width: 1280px;
+  max-width: 96vw;
+  aspect-ratio: 1280 / 800;
+  border-radius: 14px;
+  background: #000;
+  box-shadow:
+    0 0 0 3px #2a0b33,
+    0 0 0 6px #0a0310,
+    0 0 40px rgba(107, 42, 122, 0.6),
+    inset 0 0 40px rgba(0, 0, 0, 0.8);
+  overflow: hidden;
+}
+
+#game {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+#scanlines {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0px,
+    rgba(0, 0, 0, 0) 2px,
+    rgba(0, 0, 0, 0.18) 3px,
+    rgba(0, 0, 0, 0.18) 4px
+  );
+  mix-blend-mode: multiply;
+  opacity: 0.55;
+}
+
+#vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(0, 0, 0, 0) 55%,
+    rgba(0, 0, 0, 0.55) 100%
+  );
+}
+
+#hint {
+  font-size: 12px;
+  letter-spacing: 2px;
+  color: rgba(233, 220, 193, 0.65);
+}
+
+@media (max-height: 720px) {
+  .m-title { font-size: 22px; }
+  .m-sub { font-size: 12px; }
+  #hint { font-size: 11px; }
+}

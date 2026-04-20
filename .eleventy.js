@@ -530,6 +530,7 @@ module.exports = function (eleventyConfig) {
   eleventyConfig.addPassthroughCopy("src/site/styles/_theme.*.css");
   eleventyConfig.addPassthroughCopy("src/site/dungeonclass");
   eleventyConfig.addPassthroughCopy("src/site/crystalwizards");
+  eleventyConfig.addPassthroughCopy("src/site/worm-escape");
   // URIEL holon analyzer (Pyodide) — static files from sibling URIEL repo via scripts/sync_to_dva_garden.py
   eleventyConfig.addPassthroughCopy("src/site/uriel");
   // Wrap favicons with a mutex to avoid EBUSY on Windows when multiple pages render in parallel

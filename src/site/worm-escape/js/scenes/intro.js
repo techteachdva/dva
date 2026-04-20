@@ -1,0 +1,133 @@
+import {
+  W, H, COLORS,
+  drawFleshBackground, drawVeins, drawText, drawBanner, drawPanel,
+} from "../engine/render.js";
+import { SFX } from "../engine/audio.js";
+import { CreateScene } from "./create.js";
+
+const STORY = [
+  "Oh FART NUGGETS!",
+  "",
+  "You just got swallowed alive (and thankfully WHOLE) by a",
+  "massive purple worm the size of a castle tower!",
+  "",
+  "Quick - climb your way out its gullet and JUMP OUT ITS MAW",
+  "before its belly-acid turns you into adventurer-soup!",
+  "",
+  "The wall is slick. The debris is sharp. The teeth are hungry.",
+  "Pack your courage, say a prayer, and maybe pick one good weapon.",
+  "",
+  "Press SPACE or ENTER to begin.",
+];
+
+export class IntroScene {
+  constructor() {
+    this.t = 0;
+    this.reveal = 0;
+    this.charSpeed = 44;
+    this.pulse = 0;
+  }
+
+  enter() {
+    this.t = 0;
+    this.reveal = 0;
+  }
+
+  update(dt, game) {
+    this.t += dt;
+    this.pulse += dt;
+    const total = STORY.join("\n").length;
+
+    if (game.input.wasPressed(" ", "Space", "Enter")) {
+      if (this.reveal < total) {
+        this.reveal = total;
+        SFX.click();
+      } else {
+        SFX.confirm();
+        game.scenes.replace(new CreateScene(), game);
+        return;
+      }
+    }
+    if (this.reveal < total) {
+      this.reveal = Math.min(total, this.reveal + this.charSpeed * dt);
+    }
+  }
+
+  render(ctx, game) {
+    drawFleshBackground(ctx, this.t, 1.05);
+    drawVeins(ctx, this.t, 1);
+
+    ctx.fillStyle = "rgba(0,0,0,0.5)";
+    ctx.fillRect(0, 0, W, H);
+
+    drawBanner(ctx, "GUTS & GLORY", W / 2, 110, 72, COLORS.bile, COLORS.blood);
+    drawBanner(ctx, "escape the purple worm", W / 2, 172, 26, COLORS.bone, COLORS.worm);
+
+    const panelX = 110, panelY = 230, panelW = W - 220, panelH = 440;
+    drawPanel(ctx, panelX, panelY, panelW, panelH);
+
+    const shown = STORY.join("\n").slice(0, Math.floor(this.reveal));
+    const lines = shown.split("\n");
+    let y = panelY + 40;
+    for (const line of lines) {
+      const bold = line.startsWith("Oh FART");
+      const color = bold ? COLORS.bile : COLORS.bone;
+      const size = bold ? 34 : 22;
+      drawText(ctx, line, panelX + 40, y, { size, color, bold, glow: bold ? COLORS.blood : null });
+      y += size + 8;
+    }
+
+    const total = STORY.join("\n").length;
+    if (this.reveal >= total) {
+      const blink = Math.sin(this.pulse * 5) > 0;
+      if (blink) {
+        drawText(ctx, ">> PRESS SPACE TO FORGE YOUR HERO <<", W / 2, H - 50, {
+          size: 20, color: COLORS.bile, align: "center", bold: true, glow: COLORS.blood,
+        });
+      }
+    } else {
+      drawText(ctx, "(SPACE to skip)", W / 2, H - 50, {
+        size: 13, color: COLORS.boneDim, align: "center",
+      });
+    }
+
+    this.drawWormFrame(ctx);
+  }
+
+  drawWormFrame(ctx) {
+    const draw = (x, y, flip) => {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.scale(flip, 1);
+      for (let i = 0; i < 5; i++) {
+        // Shadow
+        ctx.fillStyle = "rgba(0,0,0,0.55)";
+        ctx.beginPath();
+        ctx.arc(i * 18 + 2, Math.sin(i + this.t * 2) * 4 + 2, 12 - i * 0.8, 0, Math.PI * 2);
+        ctx.fill();
+        // Body with gradient
+        const cx = i * 18;
+        const cy = Math.sin(i + this.t * 2) * 4;
+        const rr = 12 - i * 0.8;
+        const g = ctx.createRadialGradient(cx - 3, cy - 3, 1, cx, cy, rr);
+        g.addColorStop(0, COLORS.wormHi);
+        g.addColorStop(1, COLORS.worm);
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.arc(cx, cy, rr, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      // Head
+      ctx.fillStyle = COLORS.blood;
+      ctx.beginPath();
+      ctx.arc(-6, 0, 7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#000";
+      ctx.fillRect(-8, -1, 2, 2);
+      ctx.fillRect(-5, -1, 2, 2);
+      ctx.restore();
+    };
+    draw(40, H - 40, 1);
+    draw(W - 40, H - 40, -1);
+  }
+}

@@ -1,0 +1,148 @@
+GUTS & GLORY: ESCAPE THE PURPLE WORM
+=====================================
+Changelog
+
+---------------------------------------------------------------------
+v0.1.0 - Foundation Laid (The Worm Hungers)
+---------------------------------------------------------------------
+- Set up modular project structure (js/engine, js/scenes, content).
+- Added index.html entry point + stylized CRT-esque UI shell.
+- Implemented core engine:
+    * requestAnimationFrame game loop with delta time
+    * Scene manager (push/replace/pop)
+    * Keyboard input manager with "just pressed" tracking
+    * Simple procedural audio (WebAudio beeps, no assets needed)
+- Implemented canvas renderer with:
+    * Pulsing purple fleshy wall background
+    * Veins, acid drip particles, screen shake
+    * Pixel-chunky text rendering
+- Added CHANGELOG.txt and README.md.
+
+---------------------------------------------------------------------
+v0.2.0 - The Story Begins (Intro + Character Creation)
+---------------------------------------------------------------------
+- Intro scene with typewriter story text: "Oh fart nuggets!..."
+- Character creation scene:
+    * Pick a build: SWIFTFOOT (speed) or IRONHIDE (armor)
+    * Pick a loadout: SWORD, WARHAMMER, STAFF OF EMBERS, or FROSTBITE WAND
+    * Each has unique stats, attack cadence, and flavor text
+- Class stats feed into climbing agility and combat power.
+
+---------------------------------------------------------------------
+v0.3.0 - Central Mechanic #1: CLIMBING
+---------------------------------------------------------------------
+- Vertical climbing scene with three hand-hold columns.
+- Telegraphed falling debris (bones, teeth, goblins, rocks).
+- Rising stomach acid + per-chamber acid-timer.
+- Height meter + chamber progress bar.
+
+---------------------------------------------------------------------
+v0.4.0 - Central Mechanic #2: SPHINCTER GATE COMBAT
+---------------------------------------------------------------------
+- Hybrid turn-based + live-action combat scene.
+- Menu: ATTACK / SPECIAL / DODGE / BRACE.
+- Acid gouts fall in real time; dodge with A/D.
+- Enemy melee wind-ups with BRACE window.
+
+---------------------------------------------------------------------
+v0.5.0 - Chamber Progression & Polish
+---------------------------------------------------------------------
+- 4 chambers: STOMACH, LOWER GUT, HEART-HOLLOW, GULLET.
+- Title / game-over / victory screens.
+- Glow, particles, screen shake, flavor quips.
+
+---------------------------------------------------------------------
+v0.6.0 - Pop & Polish (3D Graphics + Balance Pass)
+---------------------------------------------------------------------
+GRAPHICS (sprites no longer feel like flat paper cutouts):
+- Bigger canvas: 1280x800 (was 960x600) - more breathing room above
+  the rising bile and between the hero and the sphincter.
+- New volumetric sprite helpers:
+    * drawSphere()   - cel-shaded disc with specular highlight,
+                       rim light, ambient-occlusion shadow, outline
+    * drawPlate()    - beveled rounded rectangle (armor plates, limbs)
+    * drawDropShadow() - soft cast shadow under characters
+- Rewrote drawHero():
+    * Light source is top-left; all sprites now carry consistent
+      highlights + shadow sides
+    * Ironhide: helmet dome (sphere-shaded), glowing visor slit,
+      red crest plume, shoulder pauldrons (spheres), beveled
+      breastplate with chest sigil and plate lines
+    * Swiftfoot: leather doublet, cross-strap, belt w/ buckle,
+      hood collar, skin-shaded head, highlight on eyes
+    * Cape gets cloth-shading gradient + fold highlight
+    * Drop shadow beneath every hero
+- Rewrote all 5 guardians with volumetric shading:
+    * GULLET TENTACLE  - segment discs drawn back-to-front w/ rim
+                         lights, alternating suction cups as tiny
+                         pink spheres, eyeball tip that tracks the
+                         player's lane
+    * TOOTH BEAST      - shaded globular body, depth-shaded maw
+                         throat, gradient teeth with bright edges,
+                         glowing red eyes as spheres
+    * DIGESTED GOBLIN  - sphere-shaded head, rib shadows, gory wound,
+                         shaded claws, animated drool drip
+    * FLESH HORROR     - 7-lobe silhouette + pulsing inner heart-blob,
+                         scattered eye-spheres tracking hero, whip-
+                         tongue with highlight pass
+    * BILE ELEMENTAL   - translucent layered blob, inner radiant
+                         core, floating inner bubbles, evil grin w/
+                         visible teeth, pupils that track hero
+- Wall hand-holds in climb: cast shadows, specular highlights,
+  rim lights, outlined edges.
+- Sphincter door: 14 ring segments with per-segment lighting from
+  top-left, wet upper glint arc, gradient-shaded throat.
+- Falling debris: each type now cel-shaded w/ ground shadow.
+- Acid: deep foam rim with glow, layered bubbles (shadow + body +
+  specular), caustic inner glow band below surface.
+- Bars & panels: subtle gradients + top sheen for volume.
+- Mute indicator badge, paused overlay banner.
+
+BALANCE (Ironhide is finally worth it):
+- IRONHIDE:
+    * HP           120 -> 150
+    * MANA          40 ->  45
+    * ARMOR         25 ->  60
+    * NEW: ARMOR SOAK = 75% of damage drained from armor first.
+    * ACID RESIST  0.65 -> 0.35 (timer ticks 65% slower)
+    * TANK HITS     1 -> 2 (two free debris eats per chamber)
+    * DODGE WINDOW 0.35 -> 0.55 (nearly matches Swift)
+- SWIFTFOOT:
+    * HP            70 ->  80
+    * MANA          60 ->  70
+    * CLIMB SPEED 1.35 -> 1.45
+    * HOP CD      0.11 -> 0.07 (snappier column hops)
+    * DODGE WINDOW 0.55 -> 0.65
+- Movement feel:
+    * New laneSwapCd: Swift 0.06s (near-instant), Iron 0.20s
+      (chunky armored steps). Hero lerp speed also tied to build.
+- Bile rework (the key fix!):
+    * Bile now literally starts at the BOTTOM of the screen and
+      rises slowly in screen-pixels (was abstract 0..1 fraction).
+    * bileRiseRate per chamber: 10, 13, 16, 19 px/sec.
+    * Tuned so both builds can BARELY outrun it with continuous
+      climbing, but debris knock-backs chew into your margin.
+- Guardian acid-gout intervals lengthened 25-35% across the board
+  so Ironhide has real time to react.
+- Enemy melee wind-up time now scales with player dodge window.
+- Armor soak + rebalanced regen means Ironhide can trade hits with
+  Bile Elemental and walk out of the Heart-Hollow victorious.
+
+QUALITY OF LIFE:
+- Pause at any time with P or ESC (overlay banner).
+- Global mute with M (indicator badge at top-center).
+- Cooldown bars on combat actions (time remaining + READY state).
+- Tank-hit pips under the HUD for Ironhide.
+- Armor soak in damage logs: "SPLASH! Armor soaks it (-12 ARM)".
+- Selection highlight on combat menu with accent edge.
+- Toast messages for chamber entry + armor saves.
+- Help-text line at the bottom of every action scene.
+- GameOver & Victory accept SPACE, ENTER, ESC, or R to restart.
+
+---------------------------------------------------------------------
+Planned / Future
+---------------------------------------------------------------------
+- Boss fight in final chamber: the worm's own HEART.
+- Loot drops between chambers (healing guts-jerky, mana phlegm).
+- Save/load via localStorage.
+- Background music loop.
