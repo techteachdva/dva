@@ -11,10 +11,14 @@
             "id": "ef04fab9155606a1",
             "type": "leaf",
             "state": {
-              "type": "empty",
-              "state": {},
+              "type": "markdown",
+              "state": {
+                "file": "src/site/notes/Mr. Phil's Digital Garden.md",
+                "mode": "source",
+                "source": false
+              },
               "icon": "lucide-file",
-              "title": "New tab"
+              "title": "Mr. Phil's Digital Garden"
             }
           }
         ]
@@ -167,6 +171,7 @@
   },
   "left-ribbon": {
     "hiddenItems": {
+      "digitalgarden:Digital Garden Publication Center": false,
       "switcher:Open quick switcher": false,
       "graph:Open graph view": false,
       "canvas:Create new canvas": false,
@@ -177,5 +182,15 @@
     }
   },
   "active": "ef04fab9155606a1",
-  "lastOpenFiles": []
+  "lastOpenFiles": [
+    "src/site/img/user/Pictures/DaVinci_Full_Button_2Color.png",
+    "src/site/img/user/Pictures/CARROLL.png",
+    "src/site/img/user/Pictures/Bubblegum.jpeg",
+    "src/site/img/default-note-icon.svg",
+    "src/site/img/outgoing.svg",
+    "src/site/img/tree-3.svg",
+    "src/site/img/tree-2.svg",
+    "src/site/img/tree-1.svg",
+    "src/site/notes/Mr. Phil's Digital Garden.md"
+  ]
 }

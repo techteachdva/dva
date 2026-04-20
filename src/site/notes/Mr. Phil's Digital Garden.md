@@ -1,9 +1,7 @@
 ---
 {"dg-publish":true,"permalink":"/mr-phil-s-digital-garden/","tags":["gardenEntry"],"noteIcon":""}
 ---
-
-
-![DaVinci_Full_Button_2Color.png](/img/user/Pictures/DaVinci_Full_Button_2Color.png)
+![[src/site/img/user/Pictures/DaVinci_Full_Button_2Color.png]]
 
 Welcome to Mr. Phil's Digital Garden.
 

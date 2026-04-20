@@ -1,4 +1,4 @@
 ---
-{"dg-publish":true,"permalink":"/peda-go-gee/","noteIcon":""}
+{"dg-publish":true,"permalink":"/notes/peda-go-gee/","noteIcon":""}
 ---
 
