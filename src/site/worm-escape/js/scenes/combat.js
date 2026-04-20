@@ -8,7 +8,7 @@ import { SFX } from "../engine/audio.js";
 import { CHAMBERS } from "../content/chambers.js";
 import { ENEMIES } from "../content/enemies.js";
 import { pick, rand, randInt } from "../engine/rng.js";
-import { applyDamage } from "../content/player.js";
+import { applyDamage, matchupMultiplier, matchupLabel } from "../content/player.js";
 import { TransitionScene } from "./transition.js";
 import { GameOverScene } from "./gameover.js";
 
@@ -21,8 +21,15 @@ export class CombatScene {
     this.chamberIdx = chamberIdx;
     this.chamber = CHAMBERS[chamberIdx];
     const ed = ENEMIES[this.chamber.guardian];
-    const hp = Math.floor(ed.hp * (1 + chamberIdx * 0.12));
+    const hp = Math.floor(ed.hp * (1 + chamberIdx * 0.15));
     this.enemy = { ...ed, hp, hpMax: hp };
+    // Display HP lerps toward this.enemy.hp for a satisfying tick-down.
+    this.enemyHpDisplay = hp;
+    // Persistent blood decals painted on the enemy as they take damage.
+    // Each: { x, y, r, alpha } in enemy-local space.
+    this.bloodDecals = [];
+    // Floating damage numbers (spawned on hit, drift up, fade).
+    this.floaters = [];
 
     this.t = 0;
     this.lane = 1;
@@ -40,14 +47,19 @@ export class CombatScene {
     this.log = [];
     this.pushLog("A " + this.enemy.name + " guards the sphincter!");
     this.pushLog(this.enemy.flavorIntro);
+    // Surface the weapon matchup so the player can plan. This is the key
+    // "weapons feel impactful" hook: pick the right tool or pay for it.
+    // We read the loadout at enter() since player isn't attached yet.
 
     this.particles = new ParticleSystem();
     this.hitFlash = 0;
     this.enemyFlash = 0;
     this.enemyShake = 0;
 
-    // Enemy's between-turn melee wind-up
-    this.enemyTurnTimer = rand(4.0, 5.5);
+    // Enemy's between-turn melee wind-up.
+    // v0.7: tighter timer so the player has to actually manage cooldowns,
+    // not just mash attack. Brace becomes a real decision, not a freebie.
+    this.enemyTurnTimer = rand(2.8, 3.8);
     this.enemyTellTime = 0;
     this.enemyTelling = false;
 
@@ -62,6 +74,23 @@ export class CombatScene {
   pushLog(line) {
     this.log.push(line);
     if (this.log.length > 4) this.log.shift();
+  }
+
+  enter(game) {
+    const p = game.player;
+    const mult = matchupMultiplier(p.loadoutId, this.enemy.art);
+    const lbl = matchupLabel(mult);
+    this.matchupMult = mult;
+    this.matchupLabel = lbl;
+    if (lbl) {
+      if (mult > 1) {
+        this.pushLog(`Your ${p.loadout.name} looks ${lbl.text} against it!`);
+      } else {
+        this.pushLog(`Your ${p.loadout.name} feels ${lbl.text.toLowerCase()} here...`);
+      }
+    } else {
+      this.pushLog(`Your ${p.loadout.name} matches up evenly. Fight smart.`);
+    }
   }
 
   update(dt, game) {
@@ -120,6 +149,18 @@ export class CombatScene {
     if (this.hitFlash > 0) this.hitFlash = Math.max(0, this.hitFlash - dt);
     if (this.enemyFlash > 0) this.enemyFlash = Math.max(0, this.enemyFlash - dt);
     if (this.enemyShake > 0) this.enemyShake -= dt;
+
+    // Smooth HP bar tick-down (lerp toward true HP for chewy feedback).
+    const hpLerp = Math.min(1, dt * 5.5);
+    this.enemyHpDisplay += (this.enemy.hp - this.enemyHpDisplay) * hpLerp;
+
+    // Damage floaters drift up and fade.
+    for (const f of this.floaters) {
+      f.life -= dt;
+      f.y += f.vy * dt;
+      f.vy += 40 * dt; // slight deceleration
+    }
+    this.floaters = this.floaters.filter((f) => f.life > 0);
 
     this.particles.update(dt);
 
@@ -215,7 +256,7 @@ export class CombatScene {
         line += ` (-${Math.ceil(hpTaken)} HP${armorTaken ? `, -${Math.ceil(armorTaken)} ARM` : ""})`;
         this.pushLog(line);
         this.enemyTelling = false;
-        this.enemyTurnTimer = rand(4.5, 6.5);
+        this.enemyTurnTimer = rand(2.8, 3.8);
       }
       return;
     }
@@ -287,13 +328,54 @@ export class CombatScene {
     }
   }
 
-  dealToEnemy(dmg, name, sfx) {
+  dealToEnemy(rawDmg, name, sfx) {
+    // Weapon matchup amplifies or deflates damage.
+    const mult = this.matchupMult || 1;
+    const dmg = Math.max(1, Math.round(rawDmg * mult));
+    const lbl = this.matchupLabel;
+
     this.enemy.hp = Math.max(0, this.enemy.hp - dmg);
     this.enemyFlash = 0.3;
-    this.enemyShake = 0.25;
-    this.pushLog(`${name}! ${this.enemy.name} takes ${dmg} damage.`);
-    screenShake(5, 0.15);
-    this.particles.burst(W / 2, FLOOR_Y - 200, COLORS.blood, 16, 220, 0.55);
+    this.enemyShake = mult > 1 ? 0.4 : 0.22;
+
+    // Log w/ matchup tag.
+    let line = `${name}! ${this.enemy.name} takes ${dmg} damage.`;
+    if (lbl && mult > 1) line = `${lbl.text} ${line}`;
+    else if (lbl)         line = `${line} (${lbl.text})`;
+    this.pushLog(line);
+
+    // Screen / particle feedback scales with matchup.
+    screenShake(mult > 1 ? 9 : 5, 0.15);
+    const burstColor = mult > 1 ? "#ffd966" : (mult < 1 ? "#8a9aff" : COLORS.blood);
+    this.particles.burst(W / 2, FLOOR_Y - 200, burstColor,
+      mult > 1 ? 28 : 16, mult > 1 ? 280 : 220, 0.55);
+
+    // Floating damage number.
+    this.floaters.push({
+      x: W / 2 + rand(-60, 60),
+      y: FLOOR_Y - 240,
+      vy: -70,
+      life: 1.1, max: 1.1,
+      text: `-${dmg}`,
+      color: mult > 1 ? "#ffd966" : (mult < 1 ? "#8a9aff" : "#ffffff"),
+      size: mult > 1 ? 28 : 22,
+    });
+
+    // Blood decal: 2-3 spots per hit, more on super-effective hits.
+    // Positioned in enemy-local space (centered on drawEnemy origin at W/2, 340).
+    const count = mult > 1 ? 3 : 2;
+    for (let i = 0; i < count; i++) {
+      this.bloodDecals.push({
+        x: rand(-85, 85),
+        y: rand(-80, 70),
+        r: rand(4, 10) + (mult > 1 ? rand(2, 6) : 0),
+        alpha: rand(0.55, 0.85),
+      });
+    }
+    if (this.bloodDecals.length > 42) {
+      this.bloodDecals.splice(0, this.bloodDecals.length - 42);
+    }
+
     SFX[sfx] ? SFX[sfx]() : SFX.hit();
   }
 
@@ -332,6 +414,18 @@ export class CombatScene {
     ctx.restore();
 
     this.particles.render(ctx);
+
+    // Floating damage numbers
+    for (const f of this.floaters) {
+      const a = Math.max(0, Math.min(1, f.life / f.max));
+      ctx.save();
+      ctx.globalAlpha = a;
+      drawText(ctx, f.text, f.x, f.y, {
+        size: f.size, color: f.color, align: "center",
+        bold: true, glow: f.color, baseline: "middle",
+      });
+      ctx.restore();
+    }
 
     if (this.hitFlash > 0) {
       ctx.fillStyle = `rgba(194, 26, 26, ${this.hitFlash})`;
@@ -451,6 +545,64 @@ export class CombatScene {
       case "zombie":   this.drawZombie(ctx); break;
       case "flesh":    this.drawFleshHorror(ctx); break;
       case "bile":     this.drawBileElemental(ctx); break;
+    }
+
+    // --- Progressive blood / wound overlay ---
+    // Individual decals painted at hit locations.
+    this.drawBloodDecals(ctx);
+    // Global "bloody sheen" that intensifies as the enemy's HP drops.
+    // Non-bile enemies get a wet crimson wash; bile gets a sickly darkening.
+    const hpFrac = Math.max(0, this.enemy.hp / this.enemy.hpMax);
+    const wound = 1 - hpFrac;
+    if (wound > 0.05) {
+      ctx.save();
+      ctx.globalCompositeOperation = "multiply";
+      const g = ctx.createRadialGradient(0, 0, 10, 0, 0, 130);
+      const tint = this.enemy.art === "bile"
+        ? `rgba(120, 70, 40, ${0.2 + wound * 0.5})`
+        : `rgba(200, 30, 30, ${0.15 + wound * 0.55})`;
+      g.addColorStop(0, tint);
+      g.addColorStop(1, "rgba(255,255,255,0)");
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(0, 0, 130, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
+    }
+    // At very low HP, add rhythmic blood drips falling off the body.
+    if (wound > 0.55 && this.enemy.art !== "bile") {
+      const drips = 4;
+      for (let i = 0; i < drips; i++) {
+        const phase = (this.t * 0.9 + i * 0.7) % 1;
+        const x = Math.sin(i * 3.1) * 70;
+        const y = 40 + phase * 120;
+        const alpha = Math.max(0, 1 - phase);
+        ctx.fillStyle = `rgba(180, 15, 15, ${alpha * 0.85})`;
+        ctx.beginPath();
+        ctx.ellipse(x, y, 3, 6, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
+
+  drawBloodDecals(ctx) {
+    if (!this.bloodDecals || !this.bloodDecals.length) return;
+    ctx.save();
+    for (const d of this.bloodDecals) {
+      // Dark outer splash
+      ctx.fillStyle = `rgba(90, 10, 10, ${d.alpha})`;
+      ctx.beginPath();
+      ctx.ellipse(d.x, d.y, d.r, d.r * 0.8, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Bright core
+      ctx.fillStyle = `rgba(190, 20, 20, ${d.alpha})`;
+      ctx.beginPath();
+      ctx.ellipse(d.x - 1, d.y - 1, d.r * 0.6, d.r * 0.5, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Tiny wet specular
+      ctx.fillStyle = `rgba(255,170,170,${d.alpha * 0.5})`;
+      ctx.beginPath();
+      ctx.arc(d.x - d.r * 0.3, d.y - d.r * 0.3, Math.max(1, d.r * 0.22), 0, Math.PI * 2);
+      ctx.fill();
     }
     ctx.restore();
   }
@@ -913,11 +1065,24 @@ export class CombatScene {
     drawText(ctx, this.enemy.name, W - 148, pad + 16, {
       size: 16, color: COLORS.bile, align: "center", bold: true,
     });
+    // Background bar uses the slowly-lerping display HP for a satisfying
+    // tick-down. Underneath we paint a darker "real" HP so the player can
+    // still tell that damage was registered instantly.
     drawBar(ctx, W - 270, pad + 34, 244, 18, this.enemy.hp / this.enemy.hpMax, {
+      fill: "#4a1010",
+      label: null,
+    });
+    drawBar(ctx, W - 270, pad + 34, 244, 18, this.enemyHpDisplay / this.enemy.hpMax, {
       fill: this.enemy.color,
-      label: `${Math.ceil(this.enemy.hp)} / ${this.enemy.hpMax}`,
+      label: `${Math.ceil(this.enemyHpDisplay)} / ${this.enemy.hpMax}`,
       labelColor: "#111",
     });
+    // Matchup tag under the enemy name
+    if (this.matchupLabel) {
+      drawText(ctx, this.matchupLabel.text, W - 148, pad + 56, {
+        size: 11, color: this.matchupLabel.color, align: "center", bold: true,
+      });
+    }
 
     // Bottom menu + log
     this.drawMenu(ctx, game);

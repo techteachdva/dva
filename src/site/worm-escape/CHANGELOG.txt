@@ -140,6 +140,89 @@ QUALITY OF LIFE:
 - GameOver & Victory accept SPACE, ENTER, ESC, or R to restart.
 
 ---------------------------------------------------------------------
+v0.7.0 - The "Iron Finally Wins + Combat Has Teeth" Patch
+---------------------------------------------------------------------
+BILE / IRONHIDE FIX (the critical bug):
+- Being submerged in the rising bile no longer kills instantly.
+- Armor now acts as a bile-survival buffer: while submerged, armor
+  corrodes at 1 point per second. Ironhide (60 armor) gets a full ~60
+  seconds of grace to claw back above the surface, exactly matching
+  their armor rating. Swiftfoot (0 armor) still drowns fast.
+- Once armor is fully eaten by the bile, HP drains at 18/sec for a
+  panicked "GET OUT NOW" moment with screen flash + blood particles.
+- New on-submerge toast: "SUBMERGED! Armor buying you ~60s of grace."
+  so the player actually SEES the mechanic working.
+- Result: the Armored build can now reach the Gullet and win the
+  game, not just dunk and die three pixels short of the finish line.
+
+CLIMBING - WIDER, LONGER, MEANER:
+- Climbing columns: 3 -> 5. Spread across 60% of screen width so
+  the outer columns are a real hop away, not a flick.
+- Chamber climb heights bumped 30-45% to draw out the tension:
+    Stomach     1100 -> 1600 px
+    Lower Gut   1300 -> 1900 px
+    Heart-Hollow 1500 -> 2200 px
+    Gullet      1700 -> 2500 px
+- Bile rise rates dropped 30-35% so Ironhide can keep pace:
+    Stomach     10 -> 6.5 px/sec
+    Lower Gut   13 -> 8.5 px/sec
+    Heart-Hollow 16 -> 11 px/sec
+    Gullet      19 -> 13.5 px/sec
+- Multi-column debris: each spawn has a chance to immediately
+  trigger a second telegraph in a different column. Chance ramps
+  per chamber (18% / 28% / 38% / 50%) for escalating panic.
+- Debris interval windows tightened to match the bigger column grid.
+- Column indicator at bottom now shows all 5 columns.
+
+COMBAT - WEAPONS WITH PERSONALITY:
+- NEW: weapon strength / weakness matchups against enemy art types.
+  Devastating hits deal x1.6 damage (gold particles + "DEVASTATING!"),
+  glancing blows deal x0.6 damage (blue particles + "GLANCING BLOW"):
+    KEEN LONGSWORD : STRONG vs rotted husks, WEAK vs tentacles
+    WARHAMMER      : STRONG vs toothed beasts, WEAK vs flesh horrors
+    STAFF OF EMBERS: STRONG vs flesh horrors, WEAK vs bile oozes
+    FROSTBITE WAND : STRONG vs bile oozes, WEAK vs toothed beasts
+- The loadout-select screen now labels each weapon's matchups so
+  you pick knowing what you're up against.
+- First combat log line announces the matchup against the guardian.
+- Enemy portrait now shows the matchup tag under its name.
+
+COMBAT - LONGER, CHEWIER BATTLES:
+- Enemy HP bumped 60-80% across the board so fights last 3-5
+  meaningful exchanges instead of ending in 2 button mashes:
+    Gullet Tentacle  65 -> 115
+    Tooth Beast      80 -> 135
+    Digested Goblin  60 -> 105
+    Flesh Horror    110 -> 180
+    Bile Elemental  130 -> 210
+- Per-chamber scaling raised 0.12x -> 0.15x.
+- Enemy melee wind-up cadence tightened from ~4-6s to ~2.8-3.8s
+  so you can't just Brace every wind-up without giving up attacks.
+- Acid-gout intervals tightened 20-30% so the dodge-lane game
+  keeps pressure on between menu decisions.
+- Weapon attack cooldowns nudged up 10-15% to defeat button mashing:
+    Slash     0.55 -> 0.62s
+    Smash     0.85 -> 0.95s
+    Ember Bolt 0.48 -> 0.55s
+    Ice Shard 0.40 -> 0.45s
+
+COMBAT - JUICY VISUAL FEEDBACK:
+- Enemy HP bar now animates smoothly: a dark-red underlayer snaps
+  to the true HP for instant feedback, while the colored overlay
+  lerps down for a satisfying tick-down.
+- NEW: floating damage numbers pop off the enemy on every hit
+  (gold for devastating, blue for glancing, white for neutral).
+- NEW: persistent blood decals splatter onto the enemy model
+  at random local positions with each hit. They stack, so by
+  late-fight the guardian is visibly gore-soaked.
+- NEW: global bloody sheen overlay on the enemy that intensifies
+  as HP drops below full. Bile Elemental gets a sickly darkening
+  instead of red so it reads correctly.
+- NEW: at below ~45% HP, non-bile enemies drip visible blood
+  drops off their body in a rhythmic animation.
+- Stronger particle burst + screen shake on devastating hits.
+
+---------------------------------------------------------------------
 Planned / Future
 ---------------------------------------------------------------------
 - Boss fight in final chamber: the worm's own HEART.

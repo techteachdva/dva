@@ -10,12 +10,16 @@ import { applyDamage } from "../content/player.js";
 import { CombatScene } from "./combat.js";
 import { GameOverScene } from "./gameover.js";
 
-// Three hand-hold columns on the veiny wall. Hero is fixed in screen Y;
+// Five hand-hold columns on the veiny wall. Hero is fixed in screen Y;
 // the wall scrolls. Bile rises from the bottom of the screen in absolute pixels.
+//
+// Columns are spread across the middle 60% of the screen so hopping between
+// the outer columns takes real time even for Swiftfoot.
 
-const COLS_X = [W * 0.33, W * 0.5, W * 0.67];
+const COLS_X = [W * 0.22, W * 0.36, W * 0.50, W * 0.64, W * 0.78];
+const NUM_COLS = COLS_X.length;
 const HERO_Y = H - 180;              // hero fixed 180 px above bottom
-const HERO_DEATH_Y = HERO_Y + 28;    // bile touches this Y -> death
+const HERO_DEATH_Y = HERO_Y + 28;    // bile touches this Y -> submerged
 
 const DEBRIS_KINDS = [
   { kind: "bone",   color: COLORS.bone,    sizeR: [10, 18], dmg: 20 },
@@ -30,9 +34,10 @@ export class ClimbScene {
     this.chamber = CHAMBERS[chamberIdx];
     this.t = 0;
     this.progress = 0;
-    this.col = 1;
-    this.targetX = COLS_X[1];
-    this.heroX = COLS_X[1];
+    const startCol = Math.floor(NUM_COLS / 2);
+    this.col = startCol;
+    this.targetX = COLS_X[startCol];
+    this.heroX = COLS_X[startCol];
     this.hopCooldown = 0;
     this.anim = 0;
 
@@ -43,6 +48,14 @@ export class ClimbScene {
     // Bile: rises in pixels from the BOTTOM of the screen.
     // bileY = H - bileHeight. Starts exactly at H (invisible, 0 height).
     this.bileHeight = 0;
+
+    // Bile-submersion grace mechanic: while the bile surface is above
+    // HERO_DEATH_Y, this timer counts up. Armor absorbs the bite for
+    // 1 second per point of armor; afterward HP drains. Swift (0 armor)
+    // basically has a 0.5s grace window from splash-damage immunity.
+    this.submerged = false;
+    this.submergeFlashT = 0;
+    this.drownT = 0; // seconds submerged after armor ran out
 
     this.particles = new ParticleSystem();
     this.flash = 0;
@@ -80,7 +93,7 @@ export class ClimbScene {
     const p = game.player;
     const ch = this.chamber;
 
-    // --- Input: hop between columns ---
+    // --- Input: hop between columns (now 5 columns, 0..NUM_COLS-1) ---
     this.hopCooldown -= dt;
     if (this.hopCooldown <= 0) {
       if (game.input.isDown("ArrowLeft", "a") && this.col > 0) {
@@ -88,7 +101,7 @@ export class ClimbScene {
         this.targetX = COLS_X[this.col];
         this.hopCooldown = p.hopCooldown;
         SFX.grab();
-      } else if (game.input.isDown("ArrowRight", "d") && this.col < 2) {
+      } else if (game.input.isDown("ArrowRight", "d") && this.col < NUM_COLS - 1) {
         this.col++;
         this.targetX = COLS_X[this.col];
         this.hopCooldown = p.hopCooldown;
@@ -125,27 +138,74 @@ export class ClimbScene {
       }
     }
 
-    // --- Death by bile ---
+    // --- Bile submersion (used to be instant death) ---
+    // Armor acts as a bile-survival buffer: it corrodes at 1pt/sec while
+    // submerged. Once armor is gone, HP drains fast. Swift has 0 armor,
+    // so they get almost no grace; Iron (60 armor) gets ~60s of buffer,
+    // which is plenty of time to claw their way up above the surface.
     const bileTopY = H - this.bileHeight;
-    if (bileTopY <= HERO_DEATH_Y) {
-      p.hp = 0;
-      screenShake(18, 0.5);
-      SFX.die();
-      this.die(game, "The bile rose. You did not. SPLORCH.");
-      return;
+    const wasSubmerged = this.submerged;
+    this.submerged = bileTopY <= HERO_DEATH_Y;
+    if (this.submerged) {
+      this.submergeFlashT += dt;
+      if (!wasSubmerged) {
+        SFX.acid();
+        screenShake(6, 0.2);
+        this.showToast(
+          p.armor > 0
+            ? `SUBMERGED! Armor buying you ~${Math.ceil(p.armor)}s of grace.`
+            : "SUBMERGED! No armor - GET OUT NOW!",
+          2.0
+        );
+      }
+      if (p.armor > 0) {
+        p.armor = Math.max(0, p.armor - dt); // 1 point per second
+        // Occasional armor-fizz particles + red-tint flash pulse
+        this.flash = Math.max(this.flash, 0.12 + Math.sin(this.t * 12) * 0.04);
+        if (Math.random() < 0.4) {
+          this.particles.burst(
+            this.heroX + rand(-14, 14),
+            HERO_Y + 6,
+            "#ffe08a", 4, 70, 0.4,
+          );
+        }
+      } else {
+        this.drownT += dt;
+        p.hp -= (p.bileHpDrain || 18) * dt;
+        this.flash = Math.max(this.flash, 0.35);
+        if (Math.random() < 0.5) {
+          this.particles.burst(
+            this.heroX + rand(-16, 16),
+            HERO_Y + 6,
+            COLORS.blood, 6, 140, 0.45,
+          );
+        }
+      }
+      // Panic bubbles
+      if (Math.random() < 0.6) {
+        this.particles.emit({
+          x: this.heroX + rand(-22, 22),
+          y: HERO_Y + rand(0, 18),
+          vx: rand(-20, 20), vy: rand(-120, -50),
+          life: 0.6, max: 0.6, size: 2 + Math.random() * 2,
+          color: "rgba(220,255,170,0.9)", gravity: -30,
+        });
+      }
+    } else {
+      this.submergeFlashT = 0;
     }
 
-    // --- Debris telegraphs + spawns ---
+    // --- Debris telegraphs + spawns (now 5 columns, optional twin spawns) ---
     this.debrisTimer -= dt;
     if (this.debrisTimer <= 0) {
       const [tMin, tMax] = ch.debrisInterval;
       this.debrisTimer = rand(tMin, tMax);
-      const col = randInt(0, 2);
-      const kind = pick(DEBRIS_KINDS);
-      this.telegraphs.push({
-        col, t: 0, wait: 1.1, kind,
-        speed: ch.debrisSpeed * rand(0.9, 1.3),
-      });
+      this.spawnTelegraph(ch);
+      // Chance to simultaneously spawn a second one in a different column
+      // for multi-column dodge pressure in later chambers.
+      if (Math.random() < (ch.multiDebrisChance || 0)) {
+        this.spawnTelegraph(ch, this._lastSpawnedCol);
+      }
     }
     for (const tg of this.telegraphs) tg.t += dt;
     this.telegraphs = this.telegraphs.filter((tg) => {
@@ -181,7 +241,14 @@ export class ClimbScene {
     if (this.toastTime > 0) this.toastTime -= dt;
 
     if (p.hp <= 0) {
-      this.die(game, "Your wounds overwhelm you. The worm belches contentedly.");
+      const msg = this.submerged
+        ? (p.armorMax > 0
+            ? "Armor gave way. The bile finished the job. SPLORCH."
+            : "The bile rose. You did not. SPLORCH.")
+        : "Your wounds overwhelm you. The worm belches contentedly.";
+      screenShake(18, 0.5);
+      SFX.die();
+      this.die(game, msg);
       return;
     }
 
@@ -194,6 +261,20 @@ export class ClimbScene {
     }
 
     this.anim += dt * (game.input.isDown("ArrowUp", "w") ? 10 : 3);
+  }
+
+  spawnTelegraph(ch, avoidCol = -1) {
+    // Pick a column; if avoidCol is given, pick something else.
+    let col = randInt(0, NUM_COLS - 1);
+    if (avoidCol >= 0 && col === avoidCol) {
+      col = (col + 1 + randInt(0, NUM_COLS - 2)) % NUM_COLS;
+    }
+    this._lastSpawnedCol = col;
+    const kind = pick(DEBRIS_KINDS);
+    this.telegraphs.push({
+      col, t: 0, wait: 1.1, kind,
+      speed: ch.debrisSpeed * rand(0.9, 1.3),
+    });
   }
 
   handleDebrisHit(game, d) {
@@ -267,7 +348,7 @@ export class ClimbScene {
     // Fleshy hand-holds in three scrolling columns with volumetric shading.
     const scroll = this.progress * 0.7;
     ctx.save();
-    for (let ci = 0; ci < 3; ci++) {
+    for (let ci = 0; ci < NUM_COLS; ci++) {
       const x = COLS_X[ci];
       // Column guide (subtle cylinder shading)
       const g = ctx.createLinearGradient(x - 40, 0, x + 40, 0);
@@ -523,8 +604,10 @@ export class ClimbScene {
 
   drawColumnIndicator(ctx) {
     const y = H - 54;
-    for (let i = 0; i < 3; i++) {
-      const x = W / 2 - 34 + i * 34;
+    const gap = 30;
+    const span = gap * (NUM_COLS - 1);
+    for (let i = 0; i < NUM_COLS; i++) {
+      const x = W / 2 - span / 2 + i * gap;
       const active = i === this.col;
       drawSphere(ctx, x, y, active ? 9 : 5, active ? COLORS.bile : "#4a4a55",
         { highlight: active ? "rgba(255,255,255,0.9)" : null, rim: active ? COLORS.bileGlow : null });

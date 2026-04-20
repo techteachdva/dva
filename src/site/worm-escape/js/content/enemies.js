@@ -1,13 +1,17 @@
 // Sphincter guardians and their telegraph / attack patterns.
-// Acid-gout intervals are generous so Ironhide has time to react; difficulty scales
-// via chamberIdx multipliers in the combat scene.
+// v0.7 tuning: HP bumped ~60% so fights last long enough for 3-5 exchanges
+// (was ending in 2-3 button mashes). Acid gout cadence tightened so the
+// dodge lane actually matters.
+//
+// Each guardian's `art` key is matched against a weapon's strongVs/weakVs
+// (see content/player.js) for the damage matchup multiplier.
 
 export const ENEMIES = {
   gulletTentacle: {
     id: "gulletTentacle",
     name: "GULLET TENTACLE",
-    hp: 65,
-    acidInterval: [2.4, 3.4],
+    hp: 115,                        // was 65
+    acidInterval: [1.8, 2.6],       // was 2.4-3.4
     attackDmg: [8, 14],
     art: "tentacle",
     color: "#7a2a8a",
@@ -22,8 +26,8 @@ export const ENEMIES = {
   toothBeast: {
     id: "toothBeast",
     name: "TOOTH BEAST",
-    hp: 80,
-    acidInterval: [2.2, 3.1],
+    hp: 135,                        // was 80
+    acidInterval: [1.6, 2.4],       // was 2.2-3.1
     attackDmg: [10, 16],
     art: "teeth",
     color: "#f0e6c8",
@@ -37,8 +41,8 @@ export const ENEMIES = {
   zombieGoblin: {
     id: "zombieGoblin",
     name: "DIGESTED GOBLIN",
-    hp: 60,
-    acidInterval: [2.6, 3.6],
+    hp: 105,                        // was 60
+    acidInterval: [2.0, 2.8],       // was 2.6-3.6
     attackDmg: [6, 10],
     art: "zombie",
     color: "#6ea34a",
@@ -52,8 +56,8 @@ export const ENEMIES = {
   fleshHorror: {
     id: "fleshHorror",
     name: "FLESH HORROR",
-    hp: 110,
-    acidInterval: [1.9, 2.7],
+    hp: 180,                        // was 110
+    acidInterval: [1.4, 2.1],       // was 1.9-2.7
     attackDmg: [12, 18],
     art: "flesh",
     color: "#b04050",
@@ -67,8 +71,8 @@ export const ENEMIES = {
   bileElemental: {
     id: "bileElemental",
     name: "BILE ELEMENTAL",
-    hp: 130,
-    acidInterval: [1.7, 2.4],
+    hp: 210,                        // was 130
+    acidInterval: [1.2, 1.8],       // was 1.7-2.4
     attackDmg: [14, 22],
     art: "bile",
     color: "#9bff66",

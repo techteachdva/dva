@@ -10,6 +10,15 @@ import { ClimbScene } from "./climb.js";
 const BUILD_IDS = ["swift", "iron"];
 const LOADOUT_IDS = ["sword", "hammer", "emberStaff", "frostWand"];
 
+// Friendly labels for enemy "art" types used in weapon matchups.
+const ART_LABEL = {
+  tentacle: "TENTACLES",
+  teeth:    "TOOTHED BEASTS",
+  zombie:   "ROTTED HUSKS",
+  flesh:    "FLESH HORRORS",
+  bile:     "BILE OOZES",
+};
+
 export class CreateScene {
   constructor() {
     this.t = 0;
@@ -148,7 +157,7 @@ export class CreateScene {
       size: 16, color: COLORS.bone, align: "center",
     });
 
-    const cardW = 250, cardH = 450;
+    const cardW = 250, cardH = 470;
     const gap = 30;
     const totalW = cardW * 4 + gap * 3;
     const startX = (W - totalW) / 2;
@@ -177,10 +186,18 @@ export class CreateScene {
       drawText(ctx, `DMG ${l.attack.dmg[0]}-${l.attack.dmg[1]}`, lx, y + 320, { size: 11, color: COLORS.boneDim });
       drawText(ctx, `CD ${l.attack.cooldown}s   MP ${l.attack.manaCost}`, lx, y + 334, { size: 11, color: COLORS.boneDim });
 
-      drawText(ctx, "SPECIAL:", lx, y + 360, { size: 12, color: COLORS.bile });
-      drawText(ctx, l.special.name, lx, y + 378, { size: 13, color: COLORS.bone });
-      drawText(ctx, `DMG ${l.special.dmg[0]}-${l.special.dmg[1]}`, lx, y + 396, { size: 11, color: COLORS.boneDim });
-      drawText(ctx, `CD ${l.special.cooldown}s   MP ${l.special.manaCost}`, lx, y + 410, { size: 11, color: COLORS.boneDim });
+      drawText(ctx, "SPECIAL:", lx, y + 350, { size: 12, color: COLORS.bile });
+      drawText(ctx, l.special.name, lx, y + 368, { size: 13, color: COLORS.bone });
+      drawText(ctx, `DMG ${l.special.dmg[0]}-${l.special.dmg[1]}`, lx, y + 386, { size: 11, color: COLORS.boneDim });
+      drawText(ctx, `CD ${l.special.cooldown}s   MP ${l.special.manaCost}`, lx, y + 400, { size: 11, color: COLORS.boneDim });
+
+      // Matchup hints - which guardian art type this weapon excels/fails vs
+      drawText(ctx, "STRONG vs " + ART_LABEL[l.strongVs], lx, y + 420, {
+        size: 11, color: "#ffd966", bold: true,
+      });
+      drawText(ctx, "WEAK   vs " + ART_LABEL[l.weakVs], lx, y + 434, {
+        size: 11, color: "#8a9aff", bold: true,
+      });
     });
   }
 

@@ -46,39 +46,63 @@ export const LOADOUTS = {
     id: "sword",
     name: "KEEN LONGSWORD",
     icon: "sword",
-    blurb: "Balanced. Bites flesh clean.",
-    attack:  { name: "Slash",       dmg: [16, 24], cooldown: 0.55, manaCost: 0, sfx: "slash" },
-    special: { name: "Riposte",     dmg: [28, 38], cooldown: 2.2,  manaCost: 8, sfx: "slash" },
+    blurb: "Balanced. Bites clean through rot and hide.",
+    attack:  { name: "Slash",       dmg: [16, 24], cooldown: 0.62, manaCost: 0, sfx: "slash" },
+    special: { name: "Riposte",     dmg: [28, 38], cooldown: 2.4,  manaCost: 8, sfx: "slash" },
     color: "#e0e4ec",
+    strongVs: "zombie",   // +60% vs digested goblin (clean slicing through rot)
+    weakVs:   "tentacle", // -40% vs tentacle (coils around the blade)
   },
   hammer: {
     id: "hammer",
     name: "WARHAMMER",
     icon: "hammer",
-    blurb: "Heavy. Turns teeth into gravel.",
-    attack:  { name: "Smash",       dmg: [22, 32], cooldown: 0.85, manaCost: 0,  sfx: "crunch" },
-    special: { name: "Quake Bash",  dmg: [34, 46], cooldown: 2.8,  manaCost: 10, sfx: "thud" },
+    blurb: "Heavy. Turns teeth into gravel; plows through ribs.",
+    attack:  { name: "Smash",       dmg: [22, 32], cooldown: 0.95, manaCost: 0,  sfx: "crunch" },
+    special: { name: "Quake Bash",  dmg: [34, 46], cooldown: 3.0,  manaCost: 10, sfx: "thud" },
     color: "#b38244",
+    strongVs: "teeth",   // +60% vs tooth beast (it's just bone after all)
+    weakVs:   "flesh",   // -40% vs flesh horror (the meat absorbs blunt impact)
   },
   emberStaff: {
     id: "emberStaff",
     name: "STAFF OF EMBERS",
     icon: "staff-fire",
-    blurb: "Cinder-tipped. Hates wet flesh.",
-    attack:  { name: "Ember Bolt",  dmg: [14, 20], cooldown: 0.48, manaCost: 3,  sfx: "cast" },
-    special: { name: "Firestorm",   dmg: [30, 42], cooldown: 2.4,  manaCost: 14, sfx: "cast" },
+    blurb: "Cinder-tipped. Cauterizes rot; sputters in bile.",
+    attack:  { name: "Ember Bolt",  dmg: [14, 20], cooldown: 0.55, manaCost: 3,  sfx: "cast" },
+    special: { name: "Firestorm",   dmg: [30, 42], cooldown: 2.6,  manaCost: 14, sfx: "cast" },
     color: "#ff7a2a",
+    strongVs: "flesh",   // +60% vs flesh horror (burns wet meat beautifully)
+    weakVs:   "bile",    // -40% vs bile elemental (fizzles in wet acid)
   },
   frostWand: {
     id: "frostWand",
     name: "FROSTBITE WAND",
     icon: "wand-ice",
-    blurb: "Freezes the soft bits solid.",
-    attack:  { name: "Ice Shard",   dmg: [12, 18], cooldown: 0.4,  manaCost: 2,  sfx: "cast" },
-    special: { name: "Glacial Pike", dmg: [26, 36], cooldown: 2.0, manaCost: 12, sfx: "cast" },
+    blurb: "Freezes the soft bits solid. Useless on bone.",
+    attack:  { name: "Ice Shard",   dmg: [12, 18], cooldown: 0.45, manaCost: 2,  sfx: "cast" },
+    special: { name: "Glacial Pike", dmg: [26, 36], cooldown: 2.2, manaCost: 12, sfx: "cast" },
     color: "#7fe3ff",
+    strongVs: "bile",    // +60% vs bile elemental (freezes the whole blob)
+    weakVs:   "teeth",   // -40% vs tooth beast (ice shatters on enamel)
   },
 };
+
+// Multiplier returned when loadout `lId` attacks enemy art type `art`.
+// 1.6 = devastating, 0.6 = mostly deflected, 1.0 = neutral.
+export function matchupMultiplier(loadoutId, enemyArt) {
+  const l = LOADOUTS[loadoutId];
+  if (!l) return 1;
+  if (l.strongVs === enemyArt) return 1.6;
+  if (l.weakVs   === enemyArt) return 0.6;
+  return 1;
+}
+
+export function matchupLabel(mult) {
+  if (mult >= 1.5) return { text: "DEVASTATING!", color: "#ffd966" };
+  if (mult <= 0.75) return { text: "GLANCING BLOW", color: "#8a9aff" };
+  return null;
+}
 
 export function makePlayer(buildId, loadoutId) {
   const b = BUILDS[buildId];
@@ -105,6 +129,11 @@ export function makePlayer(buildId, loadoutId) {
     loadout: l,
     acidTimer: 75,
     acidTimerMax: 75,
+    // Bile-submersion grace: while the hero is literally under the rising bile,
+    // armor is eaten at 1 point per second. Ironhide (60 armor) therefore gets
+    // ~60 seconds of emergency grace to claw back out. Swift (0 armor) drowns
+    // fast. Once armor hits 0 while submerged, HP melts at `bileHpDrain` /s.
+    bileHpDrain: 18,
     chamberIndex: 0,
     cooldowns: { attack: 0, special: 0 },
   };
