@@ -17,25 +17,24 @@ Welcome to Mr. Phil's Digital Garden.
 
 [[Media Arts\|Media Arts]]
 
-
-[[Escape Tech Game\|Escape Tech Game]]
-
-
-
 [[Pixel Art Museum\|Pixel Art Museum]]
 
 
-
-[[5-12 Methods. Literature and Reading.\|5-12 Methods. Literature and Reading.]]
-
+GAMES
+[[Escape Tech Game\|Escape Tech Game]]
 
 [[Dungeon Class\|Dungeon Class]]
-
 
 [[Crystal Wizards\|Crystal Wizards]]
 
 [[Purple Worm Escape\|Purple Worm Escape]]
 
 
-[[Peda_Go_Gee\|Peda_Go_Gee]]
 
+
+
+[[5-12 Methods. Literature and Reading.\|5-12 Methods. Literature and Reading.]]
+
+
+
+[[Peda_Go_Gee\|Peda_Go_Gee]]
