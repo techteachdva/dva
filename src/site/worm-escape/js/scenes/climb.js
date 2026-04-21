@@ -2,11 +2,12 @@ import {
   W, H, COLORS,
   drawFleshBackground, drawVeins, drawAcid, drawText, drawPanel, drawBar, drawBanner,
   drawHero, drawSphere, drawPlate, drawDropShadow, ParticleSystem, screenShake, shade,
+  roundRect,
 } from "../engine/render.js";
 import { SFX } from "../engine/audio.js";
 import { CHAMBERS } from "../content/chambers.js";
 import { randInt, rand, pick } from "../engine/rng.js";
-import { applyDamage } from "../content/player.js";
+import { applyDamage, recordDirectHpHit, recordDirectArmorHit } from "../content/player.js";
 import { CombatScene } from "./combat.js";
 import { GameOverScene } from "./gameover.js";
 
@@ -143,6 +144,7 @@ export class ClimbScene {
     this.t += dt;
     const p = game.player;
     const ch = this.chamber;
+    if (p.score) p.score.timeSpent += dt;
 
     // Decrement timers that gate the climber each frame.
     if (this.stunT > 0) this.stunT -= dt;
@@ -150,14 +152,18 @@ export class ClimbScene {
     const stunned = this.stunT > 0;
 
     // --- Input: hop between columns (now 5 columns, 0..NUM_COLS-1) ---
+    // v0.10 INPUT FIX: use wasPressed (one-shot per keystroke) instead of
+    // isDown so a single tap moves EXACTLY one column. Holding the key
+    // no longer tears across multiple columns at once. hopCooldown is
+    // kept as a small anti-spam gate tied to build flavor (Iron is chunky).
     this.hopCooldown -= dt;
     if (!stunned && this.hopCooldown <= 0) {
-      if (game.input.isDown("ArrowLeft", "a") && this.col > 0) {
+      if (game.input.wasPressed("ArrowLeft", "a") && this.col > 0) {
         this.col--;
         this.targetX = COLS_X[this.col];
         this.hopCooldown = p.hopCooldown;
         SFX.grab();
-      } else if (game.input.isDown("ArrowRight", "d") && this.col < NUM_COLS - 1) {
+      } else if (game.input.wasPressed("ArrowRight", "d") && this.col < NUM_COLS - 1) {
         this.col++;
         this.targetX = COLS_X[this.col];
         this.hopCooldown = p.hopCooldown;
@@ -230,7 +236,9 @@ export class ClimbScene {
         }
       } else {
         this.drownT += dt;
-        p.hp -= (p.bileHpDrain || 24) * (CHAMBER_DMG_SCALE[this.chamberIdx] || 1) * dt;
+        const bileDmg = (p.bileHpDrain || 24) * (CHAMBER_DMG_SCALE[this.chamberIdx] || 1) * dt;
+        p.hp -= bileDmg;
+        recordDirectHpHit(p, bileDmg, { countAsHit: false });
         this.flash = Math.max(this.flash, 0.35);
         if (Math.random() < 0.5) {
           this.particles.burst(
@@ -384,6 +392,7 @@ export class ClimbScene {
           this.progress += boost;
           this.showToast("+FEATHER OF FLYING! Whoosh!", 1.4);
           SFX.confirm();
+          if (p.score) p.score.powerUpsCollected++;
           this.particles.burst(d.x, d.y, "#eaf6ff", 28, 260, 0.7);
           // Trail of feathers up the screen
           for (let i = 0; i < 10; i++) {
@@ -402,22 +411,20 @@ export class ClimbScene {
           p.hp = Math.min(p.hpMax, p.hp + (kind.heal || 30));
           this.showToast(`+CHEESEBURGER! (+${Math.ceil(healed)} HP)`, 1.4);
           SFX.confirm();
+          if (p.score) p.score.powerUpsCollected++;
           this.particles.burst(d.x, d.y, "#ffbb55", 22, 220, 0.55);
           break;
         }
         case "armor": {
-          // Ring of armor: grants a 50 point armor shield. If the hero
-          // had no armor before, it also unlocks bile-submersion grace
-          // since their armorMax becomes > 0.
+          // Ring of armor: grants a 50 point armor shield.
           const grant = kind.armor || 50;
           p.armorMax = Math.max(p.armorMax, grant);
           p.armor = Math.min(p.armorMax, p.armor + grant);
-          // If the build had zero soak, give the ring a modest soak so
-          // the shield actually absorbs damage as the player expects.
           if (p.armorSoak <= 0) p.armorSoak = 0.5;
           this.ringPulseT = 1.2;
           this.showToast("+RING OF ARMOR! Glowing protection!", 1.8);
           SFX.victory();
+          if (p.score) { p.score.powerUpsCollected++; p.score.ringsCollected++; }
           screenShake(6, 0.2);
           this.particles.burst(d.x, d.y, "#ffd966", 36, 320, 0.9);
           break;
@@ -439,6 +446,7 @@ export class ClimbScene {
         // Tank pips eat a whole hit first (Iron's "free soak" perk).
         if (p.tankHitsLeft > 0) {
           p.tankHitsLeft--;
+          if (p.score) p.score.hitsTaken++;
           this.showToast(`IRONHIDE soaks it! (${p.tankHitsLeft} tanks left)`, 1.4);
           SFX.thud();
           screenShake(6, 0.18);
@@ -458,6 +466,7 @@ export class ClimbScene {
         // Dagger / sword: bypass armor, hit HP directly.
         hpTaken = Math.min(p.hp, dmg);
         p.hp = Math.max(0, p.hp - dmg);
+        recordDirectHpHit(p, hpTaken);
         partColor = COLORS.blood;
         shake = 12;
         this.showToast(`${kind.kind.toUpperCase()} STAB! (-${Math.ceil(hpTaken)} HP)`, 1.1);
@@ -469,6 +478,7 @@ export class ClimbScene {
           const eaten = Math.min(p.armor, dmg);
           p.armor -= eaten;
           armorTaken = eaten;
+          recordDirectArmorHit(p, eaten);
           partColor = "#d4d8e0";
           this.showToast(`MACE CLANG! (-${Math.ceil(eaten)} ARM)`, 1.1);
         } else {
@@ -476,6 +486,7 @@ export class ClimbScene {
           const bonusHp = Math.floor(dmg * 0.4);
           hpTaken = Math.min(p.hp, bonusHp);
           p.hp = Math.max(0, p.hp - bonusHp);
+          recordDirectHpHit(p, hpTaken);
           partColor = "#d4d8e0";
           shake = 14;
           this.showToast(`MACE BONK! STUNNED!`, 1.6);
@@ -484,8 +495,6 @@ export class ClimbScene {
         break;
       }
       case "flesh-only": {
-        // Meat chunk: wet splat. Armor shrugs it off entirely; bare flesh
-        // takes a light hit and a stink of gore.
         if (p.armor > 0) {
           this.showToast(`SPLAT! The meat slides off your armor.`, 1.0);
           partColor = "#a82232";
@@ -496,6 +505,7 @@ export class ClimbScene {
         } else {
           hpTaken = Math.min(p.hp, dmg);
           p.hp = Math.max(0, p.hp - dmg);
+          recordDirectHpHit(p, hpTaken);
           partColor = "#c21a1a";
           this.showToast(`MEAT SPLAT! (-${Math.ceil(hpTaken)} HP)`, 1.0);
         }
@@ -1155,10 +1165,10 @@ export class ClimbScene {
     // Column indicator (bottom center)
     this.drawColumnIndicator(ctx);
 
-    // Help
-    drawText(ctx, "UP climb   LEFT/RIGHT hop columns   DOWN brace   P/ESC pause", W / 2, H - 20, {
-      size: 12, color: COLORS.boneDim, align: "center",
-    });
+    // --- v0.10 UX: action badge + contextual flashing hint + help bar ---
+    this.drawActionBadge(ctx, game);
+    this.drawContextHint(ctx, game);
+    this.drawHelpBar(ctx);
 
     // Toast
     if (this.toast && this.toastTime > 0) {
@@ -1167,6 +1177,105 @@ export class ClimbScene {
       drawBanner(ctx, this.toast, W / 2, 130, 28, COLORS.bile, COLORS.blood);
       ctx.globalAlpha = 1;
     }
+  }
+
+  // Shows what the hero is CURRENTLY doing so new players can see at a glance
+  // whether their input is registering ("CLIMBING!" vs "SLIPPING...").
+  drawActionBadge(ctx, game) {
+    const p = game.player;
+    const bileCloseY = HERO_DEATH_Y - this.bileHeight; // how far bile is below hero
+    let text, color, glow;
+    if (this.stunT > 0) {
+      text = "STUNNED!"; color = "#ff9070"; glow = "#ff4030";
+    } else if (this.submerged) {
+      text = "SUBMERGED!"; color = "#bfff00"; glow = "#2a6a00";
+    } else if (game.input.isDown("ArrowUp", "w")) {
+      text = "CLIMBING UP!"; color = "#b5f05a"; glow = "#2a6a00";
+    } else if (game.input.isDown("ArrowDown", "s")) {
+      text = "BRACING"; color = "#ffd966"; glow = "#8a5000";
+    } else {
+      text = "SLIPPING..."; color = "#ff9a9a"; glow = "#600000";
+    }
+    const pulse = 0.75 + 0.25 * Math.sin(this.t * 6);
+    ctx.save();
+    const x = W / 2, y = 86;
+    drawText(ctx, text, x, y, {
+      size: 20, color, align: "center", bold: true, glow, baseline: "middle",
+    });
+    // Underline as a visual anchor
+    ctx.strokeStyle = `rgba(255,255,255,${0.2 + pulse * 0.2})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(x - 80, y + 14); ctx.lineTo(x + 80, y + 14);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Flashing, context-aware message above the player telling them what to
+  // actually do right now. The key UX fix - new players kept asking "what
+  // do I do?"; now the game just tells them.
+  drawContextHint(ctx, game) {
+    const p = game.player;
+    const ch = this.chamber;
+    // Figure out the situation and pick one hint.
+    let hint = null;
+
+    // Priority 1: life-threatening states.
+    if (this.submerged) {
+      hint = { text: "!! DROWNING IN BILE - HOLD [UP] TO CLIMB !!", color: "#ffff80", bg: "rgba(140,20,20,0.75)" };
+    } else if (this.stunT > 0) {
+      hint = { text: "STUNNED - wait it out, then climb!", color: "#ffd966", bg: "rgba(110,60,10,0.65)" };
+    } else {
+      // Priority 2: imminent threats/opportunities in nearby telegraphs.
+      const imminent = this.telegraphs.find((tg) => tg.t >= tg.wait - 0.75);
+      if (imminent) {
+        if (imminent.power) {
+          if (imminent.col === this.col) {
+            hint = { text: "+ POWER-UP LANDING HERE - STAY PUT! +", color: "#fff6b0", bg: "rgba(120,90,0,0.7)" };
+          } else {
+            const arrow = imminent.col < this.col ? "< LEFT" : "RIGHT >";
+            hint = { text: `+ POWER-UP COMING - HOP ${arrow} +`, color: "#fff6b0", bg: "rgba(120,90,0,0.7)" };
+          }
+        } else if (imminent.col === this.col) {
+          hint = { text: "! HAZARD IN YOUR LANE - DODGE [LEFT] OR [RIGHT] !", color: "#ffb0b0", bg: "rgba(140,20,20,0.75)" };
+        }
+      }
+      // Priority 3: gentle prompts based on progress.
+      if (!hint) {
+        const bileNearby = this.bileHeight > H - HERO_Y - 200;
+        if (this.progress < 30 && this.t > 0.8) {
+          hint = { text: "HOLD [UP] / [W] TO CLIMB THE WALL", color: "#bfff00", bg: "rgba(20,50,10,0.7)" };
+        } else if (bileNearby) {
+          hint = { text: "BILE RISING FAST - KEEP CLIMBING!", color: "#bfff00", bg: "rgba(40,70,10,0.7)" };
+        }
+      }
+    }
+    if (!hint) return;
+    // Render: pulsing pill at top center, above toast line.
+    const pulse = 0.5 + 0.5 * Math.sin(this.t * 7);
+    ctx.save();
+    ctx.globalAlpha = 0.75 + pulse * 0.25;
+    ctx.fillStyle = hint.bg;
+    const hw = 620, hh = 32;
+    roundRect(ctx, W / 2 - hw / 2, 172, hw, hh, 6);
+    ctx.fill();
+    drawText(ctx, hint.text, W / 2, 188, {
+      size: 17, color: hint.color, align: "center",
+      bold: true, glow: hint.color, baseline: "middle",
+    });
+    ctx.restore();
+  }
+
+  // Persistent control-scheme bar at the very bottom of the screen.
+  drawHelpBar(ctx) {
+    ctx.save();
+    ctx.fillStyle = "rgba(0,0,0,0.55)";
+    ctx.fillRect(0, H - 30, W, 30);
+    const line = "[UP/W] climb   [LEFT/RIGHT or A/D] hop one column   [DOWN/S] brace   [P/ESC] pause";
+    drawText(ctx, line, W / 2, H - 15, {
+      size: 13, color: COLORS.bone, align: "center", baseline: "middle", bold: true,
+    });
+    ctx.restore();
   }
 
   drawColumnIndicator(ctx) {

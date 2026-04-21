@@ -360,6 +360,107 @@ UI CHANGES:
   live "TRIPLE STRIKE n/3" counter so you can time the last brace.
 
 ---------------------------------------------------------------------
+v0.10.0 - Clarity, Control, and a Proper Scoreboard
+---------------------------------------------------------------------
+Quality-of-life patch focused on three painful play-test findings:
+  1) Holding a direction key teleported the player across multiple
+     columns / lanes in a single frame-burst (too sensitive).
+  2) New players did not know what to do in either the climb or the
+     combat scenes - no on-screen guidance beyond a tiny bottom line.
+  3) Finishing the game felt anticlimactic: no score, no grade, no
+     reason to try for a better run.
+
+--- INPUT ---
+- Column hops in CLIMB now fire on wasPressed (one keystroke = one
+  column). Holding left/right no longer skates the hero across two
+  or three columns before you can react. The per-build hopCooldown
+  is still honored as an anti-mash safeguard.
+- Lane swaps in COMBAT likewise switched to wasPressed - a tap moves
+  exactly one lane, never two.
+
+--- ON-SCREEN INSTRUCTIONS ---
+CLIMB:
+- New pulsing ACTION BADGE at top-center reflects what the hero is
+  actually doing right now:
+      "CLIMBING UP!" / "BRACING" / "SLIPPING..." / "STUNNED!" /
+      "SUBMERGED!"
+  so brand-new players can SEE that their input registered.
+- New flashing CONTEXT HINT (rounded pill below the toast area) that
+  tells the player exactly what to do for the current situation,
+  with priority ordering:
+      * drowning/stunned messaging takes top billing
+      * imminent hazard in current column -> "DODGE LEFT OR RIGHT"
+      * imminent power-up in adjacent column -> "HOP LEFT/RIGHT"
+      * power-up landing in current column -> "STAY PUT"
+      * low progress + first seconds -> "HOLD [UP] TO CLIMB"
+      * bile rising -> "BILE RISING - CLIMB FAST"
+- Bottom help bar now reads much more clearly:
+      [UP/W] climb   [LEFT/RIGHT or A/D] hop one column
+      [DOWN/S] brace   [P/ESC] pause
+  on a dark backplate so it stays legible against flesh backgrounds.
+
+COMBAT:
+- New ACTION BADGE near the top tells the player their current state
+  at a glance:
+      "YOUR TURN - ATTACK!" / "ON COOLDOWN - DODGE / BRACE" /
+      "BRACING (x.xs)" / "COMBO INCOMING!" /
+      "ENEMY WINDING UP!" / "COUNTER READY!"
+- New CONTEXT HINT below the red enemy-tell banner that tells the
+  player which button to press for the current threat or opportunity:
+      * Heavy Slam tell        -> "[4] BRACE - dodging won't help!"
+      * Triple Strike tell/hit -> "[4] BRACE - N hit(s) left!"
+      * Normal jab tell        -> "[A]/[D] dodge lanes OR [4] brace"
+      * Counter ready          -> "Press [1] or [2] to cash in!"
+      * Acid in your lane      -> "ACID LANDING - [A]/[D] dodge!"
+      * Low HP                 -> "[3] Dodge for MP, [4] Brace"
+      * Out of MP              -> "Press [3] Dodge Roll to recover."
+      * Otherwise              -> Reminds you what [1] / [2] do.
+- Bottom log panel footer expanded to:
+      "[1] attack  [2] special  [3] dodge (+MP)  [4] brace (time
+      it late!)   [A]/[D] swap lane   [P]/[ESC] pause"
+
+--- VICTORY SCORING ---
+- New end-of-run SCOREBOARD replaces the old victory text with an
+  animated, row-by-row reveal that counts up a real total:
+      Chambers Cleared . . . . . . . . . . +500 each
+      Sphincter Guardians Slain  . . . . . +300 each
+      HP Remaining (pct of max)  . . . . . +up to +700
+      MP Remaining (pct of max)  . . . . . +up to +100
+      Armor Remaining (pct of max) . . . . +up to +350 (if any)
+      Perfect Braces . . . . . . . . . . . +150 each
+      Counter Strikes  . . . . . . . . . . +100 each
+      Power-ups Grabbed  . . . . . . . . . +50 each
+      Rings of Armor . . . . . . . . . . . +250 each
+      Hits Taken Penalty . . . . . . . . . -25 per hit (capped -800)
+- Final RANK badge based on total:
+      4000+  S+  "Worm-Slayer Eternal"
+      3200+  S   "Worm-Slayer"
+      2500+  A   "Heroic"
+      1800+  B   "Seasoned"
+      1100+  C   "Bruised but Breathing"
+       500+  D   "Scraped Through"
+         0+  E   "Barely Ejected"
+- Player now tracks the counters the scoreboard needs:
+      score.hitsTaken, score.totalHpLost, score.totalArmorLost,
+      score.perfectBraces, score.counterStrikes,
+      score.powerUpsCollected, score.ringsCollected,
+      score.bossesDefeated, score.chambersCleared, score.timeSpent
+- applyDamage() automatically bumps hitsTaken/totalHpLost/
+  totalArmorLost. New helpers recordDirectHpHit /
+  recordDirectArmorHit route bile drain, pierce, acid gout
+  corrosion, and mace direct-damage through the same counters
+  so nothing double-counts.
+
+--- BALANCE NITS (no stat changes, just bookkeeping) ---
+- Bile submersion HP drain and combat acid-timer corrosion are now
+  reflected in totalHpLost (so the score knows how much you bled).
+- Tank-pip soaks in climb count as a hit taken (the hit happened,
+  the armor just ate it) so iron builds cannot cheese the hit
+  counter.
+- Counter-strike bonus hits increment counterStrikes only when they
+  actually land.
+
+---------------------------------------------------------------------
 Planned / Future
 ---------------------------------------------------------------------
 - Boss fight in final chamber: the worm's own HEART.

@@ -8,7 +8,7 @@ import { SFX } from "../engine/audio.js";
 import { CHAMBERS } from "../content/chambers.js";
 import { ENEMIES } from "../content/enemies.js";
 import { pick, rand, randInt } from "../engine/rng.js";
-import { applyDamage, matchupMultiplier, matchupLabel } from "../content/player.js";
+import { applyDamage, matchupMultiplier, matchupLabel, recordDirectHpHit, recordDirectArmorHit } from "../content/player.js";
 import { TransitionScene } from "./transition.js";
 import { GameOverScene } from "./gameover.js";
 
@@ -133,20 +133,23 @@ export class CombatScene {
     this.t += dt;
     this.anim += dt * 4;
     const p = game.player;
+    if (p.score) p.score.timeSpent += dt;
 
     // Lane lerp
     const lerpSpeed = p.buildId === "swift" ? 18 : 11;
     this.heroX += (this.targetX - this.heroX) * Math.min(1, dt * lerpSpeed);
 
-    // Lane swapping (cooldown by build)
+    // Lane swapping (cooldown by build).
+    // v0.10 INPUT FIX: wasPressed for one-lane-per-keystroke. A tap moves
+    // exactly one lane; holding the key does NOT slide across all three.
     this.laneCd -= dt;
     if (this.laneCd <= 0) {
-      if (game.input.isDown("ArrowLeft", "a") && this.lane > 0) {
+      if (game.input.wasPressed("ArrowLeft", "a") && this.lane > 0) {
         this.lane--;
         this.targetX = LANES[this.lane];
         this.laneCd = p.laneSwapCd;
         SFX.dodge();
-      } else if (game.input.isDown("ArrowRight", "d") && this.lane < 2) {
+      } else if (game.input.wasPressed("ArrowRight", "d") && this.lane < 2) {
         this.lane++;
         this.targetX = LANES[this.lane];
         this.laneCd = p.laneSwapCd;
@@ -155,12 +158,21 @@ export class CombatScene {
     }
 
     // Acid timer keeps ticking in combat too, and the corrosion itself
-    // scales with chamber difficulty.
+    // scales with chamber difficulty. Corrosion tracks into totalHpLost
+    // but NOT hitsTaken (it's a continuous tick, not a distinct hit).
     const corrScale = CHAMBER_DMG_SCALE[this.chamberIdx] || 1;
     p.acidTimer -= dt * p.acidResist;
     if (p.acidTimer <= 0) {
-      if (p.armor > 0) p.armor = Math.max(0, p.armor - 4 * corrScale * dt);
-      else { p.hp -= 2 * corrScale * dt; this.hitFlash = Math.max(this.hitFlash, 0.15); }
+      if (p.armor > 0) {
+        const lost = Math.min(p.armor, 4 * corrScale * dt);
+        p.armor = Math.max(0, p.armor - lost);
+        recordDirectArmorHit(p, lost, { countAsHit: false });
+      } else {
+        const lost = 2 * corrScale * dt;
+        p.hp -= lost;
+        recordDirectHpHit(p, lost, { countAsHit: false });
+        this.hitFlash = Math.max(this.hitFlash, 0.15);
+      }
     }
 
     if (this.phase === "intro") {
@@ -220,6 +232,11 @@ export class CombatScene {
       this.pushLog(this.enemy.flavorDeath);
       screenShake(10, 0.3);
       this.particles.burst(W / 2, FLOOR_Y - 200, COLORS.bile, 50, 350, 1.0);
+      // Score: chamber + boss credit.
+      if (p.score) {
+        p.score.bossesDefeated++;
+        p.score.chambersCleared++;
+      }
       this.winTimer = 2.2;
     }
     if (this.phase === "win") {
@@ -427,7 +444,7 @@ export class CombatScene {
         p.mana -= l.attack.manaCost;
         p.cooldowns.attack = l.attack.cooldown;
         const dmg = randInt(l.attack.dmg[0], l.attack.dmg[1]);
-        this.dealToEnemy(dmg, l.attack.name, l.attack.sfx);
+        this.dealToEnemy(dmg, l.attack.name, l.attack.sfx, p);
         this.turnLocked = 0.28;
         break;
       }
@@ -437,7 +454,7 @@ export class CombatScene {
         p.mana -= l.special.manaCost;
         p.cooldowns.special = l.special.cooldown;
         const dmg = randInt(l.special.dmg[0], l.special.dmg[1]);
-        this.dealToEnemy(dmg, l.special.name, l.special.sfx);
+        this.dealToEnemy(dmg, l.special.name, l.special.sfx, p);
         this.turnLocked = 0.45;
         break;
       }
@@ -459,6 +476,7 @@ export class CombatScene {
         if (tellEnding || inCombo) {
           this.perfectBraceReady = true;
           this.perfectFlashT = 0.9;
+          if (p.score) p.score.perfectBraces++;
           this.pushLog("PERFECT GUARD! Counter-attack is ready (+50% next hit)!");
           SFX.victory();
           screenShake(4, 0.15);
@@ -473,7 +491,7 @@ export class CombatScene {
     }
   }
 
-  dealToEnemy(rawDmg, name, sfx) {
+  dealToEnemy(rawDmg, name, sfx, p = null) {
     // Weapon matchup amplifies or deflates damage.
     const mult = this.matchupMult || 1;
     // Perfect Brace counter: 50% bonus on the attack that follows a perfect brace.
@@ -482,6 +500,7 @@ export class CombatScene {
     const lbl = this.matchupLabel;
     const hadCounter = this.perfectBraceReady;
     this.perfectBraceReady = false;
+    if (hadCounter && p && p.score) p.score.counterStrikes++;
 
     this.enemy.hp = Math.max(0, this.enemy.hp - dmg);
     this.enemyFlash = hadCounter ? 0.5 : 0.3;
@@ -1297,6 +1316,85 @@ export class CombatScene {
         });
       ctx.restore();
     }
+
+    // v0.10 UX: action badge + context hint + help bar
+    this.drawActionBadge(ctx, game);
+    this.drawContextHint(ctx, game);
+  }
+
+  // Top-center action badge so new players can see at a glance what state
+  // they're in: attacking-ready, on cooldown, braced, counter-ready, etc.
+  drawActionBadge(ctx, game) {
+    const p = game.player;
+    const l = p.loadout;
+    let text, color, glow;
+    if (this.perfectBraceReady) {
+      text = "COUNTER READY!"; color = "#ffd966"; glow = "#d6a020";
+    } else if (this.braceTime > 0) {
+      text = `BRACING (${this.braceTime.toFixed(1)}s)`; color = "#ffd966"; glow = "#8a5000";
+    } else if (this.comboHitsLeft > 0) {
+      text = "COMBO INCOMING!"; color = "#ffdc3c"; glow = "#a06800";
+    } else if (this.enemyTelling) {
+      text = "ENEMY WINDING UP!"; color = "#ff9070"; glow = "#ff4030";
+    } else if (p.cooldowns.attack <= 0 || p.cooldowns.special <= 0) {
+      text = "YOUR TURN - ATTACK!"; color = "#b5f05a"; glow = "#2a6a00";
+    } else {
+      text = "ON COOLDOWN - DODGE / BRACE"; color = "#7fc0ff"; glow = "#1a4080";
+    }
+    const pulse = 0.75 + 0.25 * Math.sin(this.t * 6);
+    ctx.save();
+    drawText(ctx, text, W / 2, 110, {
+      size: 18, color, align: "center", bold: true, glow, baseline: "middle",
+    });
+    ctx.strokeStyle = `rgba(255,255,255,${0.18 + pulse * 0.18})`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(W / 2 - 90, 122); ctx.lineTo(W / 2 + 90, 122);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Flashing tactical hint telling the player WHAT TO DO NOW. Appears below
+  // the existing red tell banner so both readouts reinforce each other.
+  drawContextHint(ctx, game) {
+    const p = game.player;
+    const l = p.loadout;
+    let hint = null;
+
+    if (this.enemyTelling) {
+      if (this.enemyMoveType === "heavy") {
+        hint = { text: "[4] BRACE - dodging won't help this one!", color: "#ffd0b0" };
+      } else if (this.enemyMoveType === "combo") {
+        hint = { text: "[4] BRACE to cover all three hits!", color: "#fff0a0" };
+      } else {
+        hint = { text: "[A]/[D] to dodge lanes OR [4] BRACE", color: "#ffc0c0" };
+      }
+    } else if (this.comboHitsLeft > 0) {
+      hint = { text: `[4] BRACE NOW - ${this.comboHitsLeft} hit(s) left!`, color: "#fff0a0" };
+    } else if (this.perfectBraceReady) {
+      hint = { text: "Press [1] or [2] to CASH IN your counter!", color: "#ffd966" };
+    } else if (this.telegraphs.some((tg) => tg.lane === this.lane && tg.t >= tg.wait - 0.45)) {
+      hint = { text: "ACID LANDING ON YOU - [A]/[D] dodge!", color: "#bfff00" };
+    } else if (p.hp / p.hpMax < 0.35) {
+      hint = { text: "Low HP! [3] Dodge for MP, [4] Brace for safety", color: "#ffa0a0" };
+    } else if (p.cooldowns.attack <= 0 && p.mana >= l.attack.manaCost) {
+      hint = { text: `[1] ${l.attack.name}  -  [2] ${l.special.name}  -  dodge with [A]/[D]`, color: "#c8ffc0" };
+    } else if (p.mana < l.attack.manaCost) {
+      hint = { text: "Out of MP! Press [3] Dodge Roll to recover.", color: "#7fc0ff" };
+    }
+    if (!hint) return;
+    const pulse = 0.5 + 0.5 * Math.sin(this.t * 7);
+    ctx.save();
+    ctx.globalAlpha = 0.8 + pulse * 0.2;
+    ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
+    const hw = 700, hh = 30;
+    roundRect(ctx, W / 2 - hw / 2, 170, hw, hh, 6);
+    ctx.fill();
+    drawText(ctx, hint.text, W / 2, 185, {
+      size: 16, color: hint.color, align: "center",
+      bold: true, glow: hint.color, baseline: "middle",
+    });
+    ctx.restore();
   }
 
   drawMenu(ctx, game) {
@@ -1361,8 +1459,8 @@ export class CombatScene {
         size: 13, color: COLORS.bone,
       });
     });
-    drawText(ctx, "1-4 actions   A/D dodge lanes   P/ESC pause", x + 14, y + h - 22, {
-      size: 11, color: COLORS.boneDim,
+    drawText(ctx, "[1] attack  [2] special  [3] dodge (+MP)  [4] brace (time it late!)   [A]/[D] swap lane   [P]/[ESC] pause",
+      x + 14, y + h - 22, { size: 11, color: COLORS.bone,
     });
   }
 

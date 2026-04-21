@@ -136,6 +136,23 @@ export function makePlayer(buildId, loadoutId) {
     bileHpDrain: 24,
     chamberIndex: 0,
     cooldowns: { attack: 0, special: 0 },
+    // --- v0.10 Score tracking ---
+    // Every time the hero takes damage (climb debris, acid gout, melee,
+    // bile submersion) we bump `hitsTaken`. Individual scenes also
+    // contribute to the other counters. The VictoryScene reads all of
+    // these for its scoring breakdown.
+    score: {
+      hitsTaken: 0,           // total distinct damage instances absorbed
+      totalHpLost: 0,         // raw HP lost (before healing) across the run
+      totalArmorLost: 0,      // raw armor lost across the run
+      perfectBraces: 0,       // counter-strike procs earned
+      counterStrikes: 0,      // counter-strikes actually landed
+      powerUpsCollected: 0,   // feathers + burgers
+      ringsCollected: 0,      // rings of armor (extra rare bonus)
+      bossesDefeated: 0,      // sphincter guardians killed
+      chambersCleared: 0,     // chambers escaped (count on climb completion)
+      timeSpent: 0,           // total seconds of climb+combat gameplay
+    },
   };
 }
 
@@ -154,6 +171,8 @@ export function resetChamber(p) {
 
 // Apply a damage instance against a player's armor+HP, honoring armorSoak.
 // Returns { armorTaken, hpTaken } for logging/visuals.
+// Also updates score.hitsTaken / totalHpLost / totalArmorLost when the
+// player has a `score` object (post-v0.10 saves always do).
 export function applyDamage(p, amount) {
   let remaining = amount;
   let armorTaken = 0;
@@ -166,5 +185,29 @@ export function applyDamage(p, amount) {
   }
   const hpTaken = Math.min(p.hp, remaining);
   p.hp = Math.max(0, p.hp - remaining);
+  if (p.score) {
+    if (armorTaken > 0 || hpTaken > 0) p.score.hitsTaken++;
+    p.score.totalHpLost += hpTaken;
+    p.score.totalArmorLost += armorTaken;
+  }
   return { armorTaken, hpTaken };
+}
+
+// Record a direct (non-soak) HP hit. Used for pierce debris, mace bonus
+// damage, bile submersion drain, combat acid-timer corrosion - places
+// where we don't go through applyDamage but still want the counters
+// updated.
+export function recordDirectHpHit(p, hpAmount, { countAsHit = true } = {}) {
+  if (!p.score) return;
+  if (hpAmount <= 0) return;
+  p.score.totalHpLost += hpAmount;
+  if (countAsHit) p.score.hitsTaken++;
+}
+
+// Same as above but for armor only (mace clang on armor).
+export function recordDirectArmorHit(p, armorAmount, { countAsHit = true } = {}) {
+  if (!p.score) return;
+  if (armorAmount <= 0) return;
+  p.score.totalArmorLost += armorAmount;
+  if (countAsHit) p.score.hitsTaken++;
 }
