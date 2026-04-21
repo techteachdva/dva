@@ -4,6 +4,13 @@
 let ctx = null;
 let muted = false;
 
+// --- v0.11 Background Music ---
+// One looping HTMLAudioElement streamed from disk. Browsers won't let us
+// autoplay before the user interacts, so we arm it on first keydown/click.
+let bgm = null;
+let bgmStarted = false;
+let bgmVolume = 0.35;
+
 function ensure() {
   if (!ctx) {
     try {
@@ -15,8 +22,42 @@ function ensure() {
   return ctx;
 }
 
-window.addEventListener("keydown", () => ensure(), { once: true });
-window.addEventListener("click", () => ensure(), { once: true });
+function kickBgm() {
+  if (!bgm || bgmStarted || muted) return;
+  // play() returns a Promise; swallow errors so a denied autoplay doesn't
+  // spam the console. The next user gesture will retry.
+  const p = bgm.play();
+  if (p && typeof p.then === "function") {
+    p.then(() => { bgmStarted = true; }).catch(() => { /* try again on next input */ });
+  } else {
+    bgmStarted = true;
+  }
+}
+
+window.addEventListener("keydown", () => { ensure(); kickBgm(); }, { capture: true });
+window.addEventListener("click", () => { ensure(); kickBgm(); }, { capture: true });
+
+// Caller hands us a URL. Safe to call twice; second call is ignored.
+export function initBGM(src, { volume = 0.35, loop = true } = {}) {
+  if (bgm) return bgm;
+  bgmVolume = volume;
+  bgm = new Audio(src);
+  bgm.loop = loop;
+  bgm.preload = "auto";
+  bgm.volume = muted ? 0 : bgmVolume;
+  return bgm;
+}
+
+export function setBgmVolume(v) {
+  bgmVolume = Math.max(0, Math.min(1, v));
+  if (bgm) bgm.volume = muted ? 0 : bgmVolume;
+}
+
+export function stopBGM() {
+  if (!bgm) return;
+  try { bgm.pause(); bgm.currentTime = 0; } catch (e) { /* ignore */ }
+  bgmStarted = false;
+}
 
 function beep({ freq = 440, dur = 0.1, type = "square", vol = 0.15, slide = 0 }) {
   const ac = ensure();
@@ -67,6 +108,7 @@ export const SFX = {
 
 export function toggleMute() {
   muted = !muted;
+  if (bgm) bgm.volume = muted ? 0 : bgmVolume;
   return muted;
 }
 

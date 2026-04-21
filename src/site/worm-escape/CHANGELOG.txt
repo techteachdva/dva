@@ -461,6 +461,41 @@ COMBAT:
   actually land.
 
 ---------------------------------------------------------------------
+v0.11.0 - Soundtrack + Onboarding Briefing
+---------------------------------------------------------------------
+- BACKGROUND MUSIC: the "Level Up" track now plays on a loop under the
+  entire experience.
+    * Added engine/audio.js::initBGM(src, {volume, loop}) which creates
+      a looping HTMLAudioElement. main.js calls it on boot with
+      "Level%20Up.mp3" (path relative to index.html).
+    * First keydown/click unlocks playback to satisfy browsers'
+      autoplay policies. Any rejected play() just waits for the next
+      user gesture.
+    * Default volume is 0.35 so it sits politely under SFX.
+    * Global mute toggle [M] now silences BGM as well as the synth
+      blips. Unmuting restores to the configured volume.
+    * Added stopBGM() and setBgmVolume(v) helpers for future scenes.
+- INSTRUCTIONS SCREEN: new scene inserted between the intro story and
+  character creation so brand-new players know what they're signing
+  up for.
+    * IntroScene now transitions to InstructionsScene instead of
+      jumping straight into CreateScene.
+    * Single page that fits entirely in the 1280x800 canvas, laid out
+      as a 2x2 grid of numbered cards:
+        1) CHOOSE YOUR ADVENTURER  - Swiftfoot vs Ironhide overview,
+           pointer to the stats panel on the create screen.
+        2) CHOOSE YOUR WEAPON      - Sword / Hammer / Staff / Frost
+           Wand summary + weapon matchup note.
+        3) CLIMB YOUR WAY OUT      - Goal, full control list (one-tap
+           per column), hazard cheat-sheet, power-up cheat-sheet.
+        4) FIGHT TO ESCAPE         - Goal, action buttons 1-4, tell
+           color legend (red/orange/yellow), Enrage warning.
+    * Each card has an accent color and a big numbered badge so the
+      ordering is obvious.
+    * Footer blinks "PRESS SPACE TO FORGE YOUR HERO" with a reminder
+      that [M] mutes music + sound at any time.
+
+---------------------------------------------------------------------
 Planned / Future
 ---------------------------------------------------------------------
 - Boss fight in final chamber: the worm's own HEART.

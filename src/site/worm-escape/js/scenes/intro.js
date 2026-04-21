@@ -3,7 +3,7 @@ import {
   drawFleshBackground, drawVeins, drawText, drawBanner, drawPanel,
 } from "../engine/render.js";
 import { SFX } from "../engine/audio.js";
-import { CreateScene } from "./create.js";
+import { InstructionsScene } from "./instructions.js";
 
 const STORY = [
   "Oh FART NUGGETS!",
@@ -44,7 +44,7 @@ export class IntroScene {
         SFX.click();
       } else {
         SFX.confirm();
-        game.scenes.replace(new CreateScene(), game);
+        game.scenes.replace(new InstructionsScene(), game);
         return;
       }
     }

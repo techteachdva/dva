@@ -2,8 +2,13 @@ import { Loop } from "./engine/loop.js";
 import { Input } from "./engine/input.js";
 import { SceneManager } from "./engine/scenes.js";
 import { applyShake, W, H, COLORS, drawText } from "./engine/render.js";
-import { toggleMute, isMuted, SFX } from "./engine/audio.js";
+import { toggleMute, isMuted, SFX, initBGM } from "./engine/audio.js";
 import { IntroScene } from "./scenes/intro.js";
+
+// Loop the "Level Up" track as background music. The file lives next to
+// index.html (path relative to the HTML page, not this JS file). Spaces
+// in the filename must be percent-encoded for the request to resolve.
+initBGM("Level%20Up.mp3", { volume: 0.35, loop: true });
 
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
