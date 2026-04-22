@@ -62,12 +62,13 @@ export class GameOverScene {
     drawBanner(ctx, "YOU GOT DIGESTED", W / 2, 140, 64, COLORS.blood, COLORS.ink);
     drawBanner(ctx, "adventurer soup for supper", W / 2, 190, 22, COLORS.bone, COLORS.blood);
 
-    drawPanel(ctx, 200, 240, W - 400, 180, { border: COLORS.blood, borderGlow: COLORS.blood });
+    const gPanelW = W - 400;
+    drawPanel(ctx, 200, 240, gPanelW, 180, { border: COLORS.blood, borderGlow: COLORS.blood });
     drawText(ctx, this.reason, W / 2, 280, {
-      size: 22, color: COLORS.bone, align: "center",
+      size: 22, color: COLORS.bone, align: "center", maxWidth: gPanelW - 40,
     });
     drawText(ctx, "The worm lets out a long, satisfied burp.", W / 2, 326, {
-      size: 16, color: COLORS.bile, align: "center",
+      size: 16, color: COLORS.bile, align: "center", maxWidth: gPanelW - 40,
     });
     drawText(ctx, `Run score: ${this.finalScore}`, W / 2, 362, {
       size: 18, color: COLORS.gold, align: "center", bold: true,
@@ -134,6 +135,7 @@ export class GameOverScene {
       drawText(ctx, u.label, W / 2, y, {
         size: 16, color: COLORS.gold, align: "center", bold: true,
         glow: COLORS.gold, baseline: "middle",
+        maxWidth: 700,
       });
       ctx.restore();
     }

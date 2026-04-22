@@ -257,6 +257,42 @@ export function drawAcid(ctx, t, level /* 0..1 fraction of screen */) {
 }
 
 // ---- text with glow ----
+// v0.14 legibility pass: canonical outlined text for high contrast on ANY
+// background. Default font is a sans-serif stack (much more readable at
+// small sizes than Courier); opt into monospace with `font: "mono"`.
+//
+// Every call gets a dark stroke behind the fill by default, which is the
+// industry-standard technique for game-canvas UI over busy imagery. An
+// optional `glow` adds a colored bloom, and `bg` draws a rounded plate
+// behind the text. `maxWidth` auto-ellipsizes if the string is too long,
+// eliminating overflow into neighboring UI elements.
+const FONT_SANS = '"Segoe UI", Inter, Roboto, system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif';
+const FONT_MONO = '"Consolas", "Courier New", ui-monospace, monospace';
+
+// Shared measurement helper that honors the same font stack drawText uses,
+// so width calculations match what actually renders.
+function setFont(ctx, size, { bold = false, italic = false, font = "sans" } = {}) {
+  const family = font === "mono" ? FONT_MONO : FONT_SANS;
+  // 600 is a touch bolder than "normal" so non-bold text reads well over
+  // busy backgrounds without looking cartoonish.
+  const weight = bold ? "700" : "500";
+  const style = italic ? "italic " : "";
+  ctx.font = `${style}${weight} ${size}px ${family}`;
+}
+
+// Truncate `text` to fit within `maxWidth` (in px) for the currently-set
+// font. Returns the possibly-shortened string. Appends an ellipsis.
+function truncateToWidth(ctx, text, maxWidth) {
+  if (maxWidth == null || maxWidth <= 0) return text;
+  if (ctx.measureText(text).width <= maxWidth) return text;
+  const ell = "\u2026";
+  let s = text;
+  while (s.length > 1 && ctx.measureText(s + ell).width > maxWidth) {
+    s = s.slice(0, -1);
+  }
+  return s + ell;
+}
+
 export function drawText(ctx, text, x, y, opts = {}) {
   const {
     size = 18,
@@ -265,30 +301,97 @@ export function drawText(ctx, text, x, y, opts = {}) {
     align = "left",
     baseline = "top",
     bold = false,
-    shadow = true,
+    italic = false,
+    outline = true,
+    outlineColor = "rgba(0, 0, 0, 0.92)",
+    outlineWidth = null,
+    maxWidth = null,
+    font = "sans",
+    bg = null,
   } = opts;
+
   ctx.save();
-  ctx.font = `${bold ? "bold " : ""}${size}px "Courier New", monospace`;
+  setFont(ctx, size, { bold, italic, font });
   ctx.textAlign = align;
   ctx.textBaseline = baseline;
-  if (glow) {
-    ctx.shadowColor = glow;
-    ctx.shadowBlur = 12;
-  } else if (shadow) {
-    ctx.shadowColor = "rgba(0,0,0,0.9)";
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetX = 2;
-    ctx.shadowOffsetY = 2;
+
+  const str = truncateToWidth(ctx, String(text), maxWidth);
+
+  if (bg) {
+    const mw = ctx.measureText(str).width;
+    let bx = x, by = y;
+    if (align === "center") bx = x - mw / 2;
+    else if (align === "right") bx = x - mw;
+    if (baseline === "middle") by = y - size * 0.6;
+    else if (baseline === "bottom" || baseline === "alphabetic") by = y - size;
+    const px = typeof bg === "object" ? (bg.padX ?? 8) : 8;
+    const py = typeof bg === "object" ? (bg.padY ?? 4) : 4;
+    const fill = (typeof bg === "object" && bg.fill) ? bg.fill : "rgba(0, 0, 0, 0.6)";
+    const rr = Math.min(10, (size + py * 2) / 2);
+    const rx = bx - px, ry = by - py, rw = mw + px * 2, rh = size + py * 2;
+    ctx.save();
+    ctx.fillStyle = fill;
+    ctx.beginPath();
+    ctx.moveTo(rx + rr, ry);
+    ctx.lineTo(rx + rw - rr, ry);
+    ctx.quadraticCurveTo(rx + rw, ry, rx + rw, ry + rr);
+    ctx.lineTo(rx + rw, ry + rh - rr);
+    ctx.quadraticCurveTo(rx + rw, ry + rh, rx + rw - rr, ry + rh);
+    ctx.lineTo(rx + rr, ry + rh);
+    ctx.quadraticCurveTo(rx, ry + rh, rx, ry + rh - rr);
+    ctx.lineTo(rx, ry + rr);
+    ctx.quadraticCurveTo(rx, ry, rx + rr, ry);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
   }
+
+  // Colored glow pass (behind outline/fill). Laid down first so the
+  // outline crisply occludes the blur directly around the glyphs.
+  if (glow) {
+    ctx.save();
+    ctx.shadowColor = glow;
+    ctx.shadowBlur = Math.max(10, size * 0.7);
+    ctx.fillStyle = color;
+    ctx.fillText(str, x, y);
+    ctx.restore();
+  }
+
+  // Dark outline stroke - the magic ingredient for readability on busy
+  // flesh backgrounds. Scales with font size so small text stays crisp
+  // while big headlines get a chunky silhouette.
+  if (outline) {
+    const ow = outlineWidth != null ? outlineWidth : Math.max(2.5, Math.round(size / 6));
+    ctx.save();
+    ctx.lineJoin = "round";
+    ctx.miterLimit = 2;
+    ctx.strokeStyle = outlineColor;
+    ctx.lineWidth = ow;
+    ctx.strokeText(str, x, y);
+    ctx.restore();
+  }
+
+  // Final fill pass on top.
   ctx.fillStyle = color;
-  ctx.fillText(text, x, y);
+  ctx.fillText(str, x, y);
   ctx.restore();
 }
 
-export function wrapText(ctx, text, maxWidth, size = 16) {
+// Text measurement helper matching drawText's font. Useful for layouts
+// that need to align to actual rendered width.
+export function measureText(ctx, text, opts = {}) {
+  const { size = 18, bold = false, italic = false, font = "sans" } = opts;
   ctx.save();
-  ctx.font = `${size}px "Courier New", monospace`;
-  const words = text.split(" ");
+  setFont(ctx, size, { bold, italic, font });
+  const w = ctx.measureText(String(text)).width;
+  ctx.restore();
+  return w;
+}
+
+export function wrapText(ctx, text, maxWidth, size = 16, opts = {}) {
+  ctx.save();
+  setFont(ctx, size, opts);
+  const words = String(text).split(" ");
   const lines = [];
   let line = "";
   for (const w of words) {
@@ -334,12 +437,20 @@ export function drawBar(ctx, x, y, w, h, pct, opts = {}) {
   ctx.lineWidth = 2;
   ctx.strokeRect(x, y, w, h);
   if (label) {
+    // If the label is a dark color (e.g. "#111" on colored bars), pair it
+    // with a LIGHT outline so the text pops. Otherwise use the default
+    // dark outline for light-colored labels on dark bars.
+    const lc = String(labelColor).toLowerCase();
+    const labelIsDark =
+      /^#[0-3]/.test(lc) || lc === "#111" || lc === "#000" || lc === "black";
     drawText(ctx, label, x + w / 2, y + h / 2, {
       size: 12,
       color: labelColor,
       align: "center",
       baseline: "middle",
       bold: true,
+      outlineColor: labelIsDark ? "rgba(255, 255, 255, 0.85)" : "rgba(0, 0, 0, 0.9)",
+      maxWidth: w - 8,
     });
   }
   ctx.restore();

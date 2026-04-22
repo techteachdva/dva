@@ -160,14 +160,17 @@ export class PactScene {
     });
     ctx.restore();
 
+    const textMax = w - 32;
     // Title
     drawText(ctx, pact.name, x + w / 2, y + 30, {
       size: 22, bold: true, color: selected ? COLORS.bile : COLORS.bone,
       align: "center", glow: selected ? COLORS.blood : null,
+      maxWidth: textMax,
     });
     // Blurb
     drawText(ctx, pact.blurb, x + w / 2, y + 64, {
       size: 13, color: COLORS.boneDim, align: "center",
+      maxWidth: textMax,
     });
 
     // Decorative seal in the middle of the card - a wax-sigil.
@@ -176,17 +179,18 @@ export class PactScene {
 
     // Pros/cons
     const rowsY = y + h - 200;
-    drawText(ctx, "GAINS", x + 16, rowsY, { size: 11, color: "#8fe97a", bold: true });
+    const rowMax = w - 32;
+    drawText(ctx, "GAINS", x + 16, rowsY, { size: 12, color: "#8fe97a", bold: true });
     pact.pros.forEach((line, i) => {
       drawText(ctx, "+ " + line, x + 16, rowsY + 20 + i * 18, {
-        size: 12, color: "#b5f05a",
+        size: 12, color: "#b5f05a", maxWidth: rowMax,
       });
     });
     const cy = rowsY + 20 + pact.pros.length * 18 + 14;
-    drawText(ctx, "COSTS", x + 16, cy, { size: 11, color: "#ff9090", bold: true });
+    drawText(ctx, "COSTS", x + 16, cy, { size: 12, color: "#ff9090", bold: true });
     pact.cons.forEach((line, i) => {
       drawText(ctx, "- " + line, x + 16, cy + 20 + i * 18, {
-        size: 12, color: "#ff9090",
+        size: 12, color: "#ff9090", maxWidth: rowMax,
       });
     });
   }

@@ -272,8 +272,10 @@ export class VictoryScene {
       const part = parts[i];
       ctx.save();
       ctx.globalAlpha = local;
+      // Reserve ~100px on the right for the value so the label truncates
+      // before it could ever collide with the score number.
       drawText(ctx, part.label, panelX + 24, y, {
-        size: 14, color: COLORS.bone,
+        size: 14, color: COLORS.bone, maxWidth: panelW - 48 - 100,
       });
       const color = part.value < 0 ? "#ff9a9a"
                    : part.value === 0 ? COLORS.boneDim
@@ -340,19 +342,20 @@ export class VictoryScene {
       drawText(ctx, `${i + 1}.`, panelX + 10, y, {
         size: 13, color, bold: isMe,
       });
-      drawText(ctx, `${e.score}`, panelX + 36, y, {
-        size: 13, color, bold: isMe,
+      drawText(ctx, `${e.score}`, panelX + 32, y, {
+        size: 13, color, bold: isMe, maxWidth: 56,
       });
-      drawText(ctx, `[${e.rank}]`, panelX + 96, y, {
-        size: 12, color, bold: isMe,
+      drawText(ctx, `[${e.rank}]`, panelX + 94, y, {
+        size: 12, color, bold: isMe, maxWidth: 38,
       });
       drawText(ctx, String((e.buildId || "?").slice(0, 5)).toUpperCase(),
-        panelX + 140, y, {
+        panelX + 136, y, {
           size: 11, color: isMe ? color : COLORS.boneDim, bold: isMe,
+          maxWidth: 40,
       });
       drawText(ctx, String(e.chambersCleared) + "ch",
-        panelX + 182, y, {
-          size: 10, color: COLORS.boneDim, align: "right",
+        panelX + panelW - 10, y, {
+          size: 11, color: COLORS.boneDim, align: "right",
       });
     }
     if (this.myRank === 0) {
@@ -384,6 +387,7 @@ export class VictoryScene {
       drawText(ctx, u.label, W / 2, y, {
         size: 18, color: COLORS.gold, align: "center", bold: true,
         glow: COLORS.gold, baseline: "middle",
+        maxWidth: 700,
       });
       ctx.restore();
     }

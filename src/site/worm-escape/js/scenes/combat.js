@@ -1522,22 +1522,23 @@ export class CombatScene {
       labelColor: "#111",
     });
 
-    // Top-right: enemy HP
-    drawPanel(ctx, W - 280, pad, 264, this.eliteKill ? 80 : 60);
+    // Top-right: enemy HP. v0.14 layout - panel grows taller when there
+    // are extra badge rows (elite twist, enraged, matchup) so no two
+    // rows ever overlap.
+    const enemyPanelRows =
+      1 /* name+HP */ +
+      (this.matchupLabel ? 1 : 0) +
+      (this.eliteKill ? 1 : 0) +
+      (this.enraged ? 1 : 0);
+    const enemyPanelH = 56 + Math.max(0, enemyPanelRows - 1) * 16;
+    drawPanel(ctx, W - 280, pad, 264, enemyPanelH);
     drawText(ctx, this.enemy.name, W - 148, pad + 16, {
       size: 16, color: this.eliteKill ? COLORS.gold : COLORS.bile,
       align: "center", bold: true,
       glow: this.eliteKill ? COLORS.gold : null,
+      maxWidth: 248,
     });
-    if (this.eliteKill) {
-      const twColor = this.enemy.eliteColor || COLORS.gold;
-      drawText(ctx, `[ ${this.eliteTwist} ]`, W - 148, pad + 66, {
-        size: 11, color: twColor, align: "center", bold: true, glow: twColor,
-      });
-    }
-    // Background bar uses the slowly-lerping display HP for a satisfying
-    // tick-down. Underneath we paint a darker "real" HP so the player can
-    // still tell that damage was registered instantly.
+    // HP bar right below the name.
     drawBar(ctx, W - 270, pad + 34, 244, 18, this.enemy.hp / this.enemy.hpMax, {
       fill: "#4a1010",
       label: null,
@@ -1547,10 +1548,29 @@ export class CombatScene {
       label: `${Math.ceil(this.enemyHpDisplay)} / ${this.enemy.hpMax}`,
       labelColor: "#111",
     });
-    // Matchup tag under the enemy name
+    // Stacked badge rows (each 16px tall, never overlapping each other).
+    let badgeY = pad + 56;
     if (this.matchupLabel) {
-      drawText(ctx, this.matchupLabel.text, W - 148, pad + 56, {
+      drawText(ctx, this.matchupLabel.text, W - 148, badgeY, {
         size: 11, color: this.matchupLabel.color, align: "center", bold: true,
+        maxWidth: 248,
+      });
+      badgeY += 16;
+    }
+    if (this.eliteKill) {
+      const twColor = this.enemy.eliteColor || COLORS.gold;
+      drawText(ctx, `[ ${this.eliteTwist} ]`, W - 148, badgeY, {
+        size: 11, color: twColor, align: "center", bold: true, glow: twColor,
+        maxWidth: 248,
+      });
+      badgeY += 16;
+    }
+    if (this.enraged) {
+      const pulseE = 0.5 + 0.5 * Math.sin(this.t * 6);
+      drawText(ctx, "[ENRAGED]", W - 148, badgeY, {
+        size: 11, color: `rgba(255, ${80 + pulseE * 100}, 80, 1)`,
+        align: "center", bold: true, glow: "#ff2020",
+        maxWidth: 248,
       });
     }
 
@@ -1583,6 +1603,7 @@ export class CombatScene {
       ctx.fillRect(0, 130, W, 28);
       drawText(ctx, text, W / 2, 144, {
         size: 17, color: "#fff", align: "center", bold: true, glow, baseline: "middle",
+        maxWidth: W - 40,
       });
     }
 
@@ -1593,15 +1614,6 @@ export class CombatScene {
       ctx.globalAlpha = a;
       drawBanner(ctx, "ENRAGED!", W / 2, 90, 36, "#ff5050", "#400010");
       ctx.restore();
-    }
-
-    // Persistent "ENRAGED" badge next to enemy name once triggered.
-    if (this.enraged) {
-      const pulse = 0.5 + 0.5 * Math.sin(this.t * 6);
-      drawText(ctx, "[ENRAGED]", W - 148, pad + 70, {
-        size: 11, color: `rgba(255, ${80 + pulse * 100}, 80, 1)`,
-        align: "center", bold: true, glow: "#ff2020",
-      });
     }
 
     // Perfect-brace flash indicator.
@@ -1687,13 +1699,14 @@ export class CombatScene {
     const pulse = 0.5 + 0.5 * Math.sin(this.t * 7);
     ctx.save();
     ctx.globalAlpha = 0.8 + pulse * 0.2;
-    ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
-    const hw = 700, hh = 30;
+    ctx.fillStyle = "rgba(0, 0, 0, 0.72)";
+    const hw = 820, hh = 32;
     roundRect(ctx, W / 2 - hw / 2, 170, hw, hh, 6);
     ctx.fill();
-    drawText(ctx, hint.text, W / 2, 185, {
+    drawText(ctx, hint.text, W / 2, 186, {
       size: 16, color: hint.color, align: "center",
       bold: true, glow: hint.color, baseline: "middle",
+      maxWidth: hw - 24,
     });
     ctx.restore();
   }
@@ -1734,9 +1747,19 @@ export class CombatScene {
         ctx.fillRect(x + 4, row - 5, 3, 28);
       }
       const col = it.locked ? COLORS.boneDim : (selected ? COLORS.bile : COLORS.bone);
+      // Reserve space for the cooldown bar (90px) when it exists, plus
+      // padding, so the info column truncates cleanly instead of spilling
+      // into the bar.
+      const cdReserve = it.cdMax > 0 ? 110 : 16;
+      const nameMax = 240 - 74 - 6;
+      const infoMax = w - 240 - cdReserve;
       drawText(ctx, `[${it.key}]`, x + 14, row, { size: 13, color: col, bold: true });
-      drawText(ctx, it.name,      x + 74, row, { size: 14, color: col, bold: selected });
-      drawText(ctx, it.info,      x + 240, row, { size: 11, color: COLORS.boneDim });
+      drawText(ctx, it.name,      x + 74, row, {
+        size: 14, color: col, bold: selected, maxWidth: nameMax,
+      });
+      drawText(ctx, it.info,      x + 240, row, {
+        size: 12, color: COLORS.boneDim, maxWidth: infoMax,
+      });
       // Cooldown bar (if applicable)
       if (it.cdMax > 0) {
         const bw = 90;
@@ -1758,11 +1781,15 @@ export class CombatScene {
     this.log.forEach((line, i) => {
       drawText(ctx, line, x + 14, y + 40 + i * 26, {
         size: 13, color: COLORS.bone,
+        maxWidth: w - 28,
       });
     });
-    drawText(ctx, "[Q/1] attack  [E/2] special  [R/3] dodge (+MP)  [F/4] brace (time it late!)   [A]/[D] swap lane   [P]/[ESC] pause",
-      x + 14, y + h - 22, { size: 11, color: COLORS.bone,
-    });
+    // v0.14 legibility: help string trimmed to fit inside the 560-wide
+    // panel so it never runs off the bottom-right of the screen.
+    drawText(ctx,
+      "[Q/1] Attack  [E/2] Special  [R/3] Dodge  [F/4] Brace  -  [A]/[D] Lane  [P] Pause",
+      x + 14, y + h - 22,
+      { size: 12, color: COLORS.bone, maxWidth: w - 28 });
   }
 
   drawPause(ctx) {

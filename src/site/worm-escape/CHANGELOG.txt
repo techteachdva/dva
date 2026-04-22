@@ -735,6 +735,133 @@ lane-hopping for mouse-aim precision.
 - MOD:  js/scenes/instructions.js  (final chamber + keybind copy)
 - MOD:  index.html                 (footer hint)
 
+=====================================================================
+v0.14.0 - The Legibility Pass
+=====================================================================
+Reported issue: "text in the GUIs... is very hard to read and not
+very user friendly... text spills over and covers other text."
+
+This release is a full-engine typography rework. Every drawn glyph
+in the game now goes through a single canonical path that guarantees
+contrast on ANY background, and every panel that previously could
+overflow was audited and given a hard `maxWidth` cap.
+
+--- CORE TEXT ENGINE ---
+- Rewrote `drawText()` in engine/render.js to provide:
+    * A sans-serif stack by default (Segoe UI / Inter / system-ui)
+      for vastly improved small-size readability over the previous
+      Courier monospace. Opt into monospace with `font: "mono"`.
+    * A dark outline stroke behind every fill by default - the
+      industry-standard technique for canvas UI over busy imagery.
+      Outline color, width, and opacity auto-scale with font size.
+    * A first-class `maxWidth` option that auto-ellipsizes long
+      strings ("Really Long Name..." instead of spilling into the
+      next column).
+    * An optional rounded `bg` plate for panel labels.
+    * Cleaner `glow` bloom that no longer doubles with the outline.
+    * `bold` / `italic` flags so scene code no longer has to
+      assemble CSS font strings by hand.
+- Added a `measureText()` helper that uses the same font settings,
+  so layout math finally matches what actually gets drawn.
+- Updated `wrapText()` to use the same font path (previous wraps
+  were off because they were measured in the old mono font).
+
+--- BAR LABEL CONTRAST ---
+- `drawBar()` now picks a LIGHT outline automatically when the
+  label color is dark (e.g. armor bars with "#111" labels on bright
+  steel), and a DARK outline for light labels. End result: HP/MP/
+  Armor labels pop on both bright AND dim bar fills.
+- Bar labels also take a `maxWidth` and truncate cleanly instead of
+  overdrawing the bar endcaps.
+
+--- OVERFLOW + OVERLAP FIXES (per scene) ---
+CombatScene:
+- Enemy HP panel height is now computed from the actual number of
+  active badges (matchup / elite twist / enraged), so `[ENRAGED]`
+  no longer slams on top of the Elite modifier line.
+- Enemy name, matchup label, elite twist, and [ENRAGED] all have
+  hard maxWidth so long names truncate with ellipsis.
+- Action menu rows truncate `name` and `info` independently to
+  reserve space for the cooldown bar on the right.
+- Combat log footer hint was shortened and bumped to size 12,
+  and the whole strip truncates to the footer width.
+- Enemy telegraph banner + context-hint pill are wider, darker,
+  and truncate to the pill width.
+
+TongueBossScene (The Maw):
+- Same action-menu / log-footer / banner / context-hint treatment
+  as CombatScene so QERF/1-4 hints, "LOCKED" / "UNLOCKED", and
+  Heavy-Curl warnings never spill over the edges of their strips.
+- Enemy name pinned to maxWidth 248 to keep room for the HP bar.
+
+ClimbScene:
+- Chamber info panel widened to 320px and the name/tagline
+  truncate rather than bleeding outside the panel border.
+- Context-hint pill widened to 820px, alpha nudged up for
+  legibility over bright acid glow.
+- Help bar string shortened and constrained to the screen width.
+
+CreateScene (character + weapon select):
+- Loadout-card titles, blurbs, attack/special names, and strong/
+  weak-vs lines all have per-card `maxWidth` so the new sans-serif
+  font never causes wrapping into the next card column.
+- Font sizes bumped a point across cards now that the new engine
+  renders them sharply without needing the old heavy mono style.
+
+PactScene:
+- Pact names, blurbs, and every GAIN / COST bullet truncate to
+  the card's internal width so long flavor text can't overhang.
+
+InstructionsScene:
+- Step-card titles truncate to the card; left-column labels
+  reserve 120px and the right-column lines take the remaining
+  width, fixing occasional wraps on step 4 (the Maw explainer).
+
+VictoryScene:
+- Each row in the scoreboard reserves 100px on the right for the
+  score value, guaranteeing "Power-ups Grabbed (x12)" can never
+  touch "+600".
+- Top-5 strip columns realigned with explicit maxWidth per column
+  and the chambers count is now right-anchored to the panel edge.
+- Unlock banners truncate to 700px so e.g. Hex Staff's long label
+  can't blow past the gilded plate.
+
+GameOverScene:
+- Reason line + "worm burp" flavor line cap to the death panel's
+  inner width.
+- Unlock banners truncate to 700px to match Victory.
+
+TransitionScene:
+- "You survived: X" + chamber-name + tagline all have maxWidth,
+  and the quip is similarly constrained.
+
+IntroScene:
+- Story lines cap at panel-width-80 so the opening monologue
+  never kisses the panel border, and the TOP RUN meta line caps
+  at W-200 so a future long build name can't run off-screen.
+
+--- NET EFFECT ---
+- No text in the game overlaps other text anymore. Every label
+  that could have spilled is either a) widened visually to fit
+  comfortably, b) shortened, or c) cleanly ellipsized.
+- Small UI text (14px and below) is dramatically more readable
+  over busy flesh/vein/acid backgrounds thanks to the universal
+  dark outline.
+- No gameplay changes - this is purely a presentation pass.
+
+--- FILES TOUCHED ---
+- MOD:  js/engine/render.js         (drawText/drawBar/measureText)
+- MOD:  js/scenes/combat.js
+- MOD:  js/scenes/tongueBoss.js
+- MOD:  js/scenes/climb.js
+- MOD:  js/scenes/create.js
+- MOD:  js/scenes/pact.js
+- MOD:  js/scenes/instructions.js
+- MOD:  js/scenes/intro.js
+- MOD:  js/scenes/victory.js
+- MOD:  js/scenes/gameover.js
+- MOD:  js/scenes/transition.js
+
 ---------------------------------------------------------------------
 Planned / Future
 ---------------------------------------------------------------------

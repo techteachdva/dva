@@ -57,11 +57,14 @@ export class TransitionScene {
     const doneCh = CHAMBERS[this.completed];
     const next = CHAMBERS[this.nextIdx] || null;
 
+    const tPanelMax = W - 280 - 40;
     drawText(ctx, `You survived: ${doneCh.name}`, W / 2, 220, {
       size: 26, color: COLORS.bone, align: "center", bold: true,
+      maxWidth: tPanelMax,
     });
     drawText(ctx, `"${this.quip}"`, W / 2, 256, {
       size: 16, color: COLORS.bile, align: "center",
+      maxWidth: tPanelMax,
     });
 
     // Hero portrait
@@ -94,9 +97,11 @@ export class TransitionScene {
       });
       drawText(ctx, next.name, W / 2, 588, {
         size: 28, color: COLORS.bile, align: "center", bold: true, glow: COLORS.blood,
+        maxWidth: tPanelMax,
       });
       drawText(ctx, next.tagline, W / 2, 618, {
         size: 15, color: COLORS.bone, align: "center",
+        maxWidth: tPanelMax,
       });
     }
 

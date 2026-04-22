@@ -81,7 +81,11 @@ export class IntroScene {
       const bold = line.startsWith("Oh FART");
       const color = bold ? COLORS.bile : COLORS.bone;
       const size = bold ? 34 : 22;
-      drawText(ctx, line, panelX + 40, y, { size, color, bold, glow: bold ? COLORS.blood : null });
+      drawText(ctx, line, panelX + 40, y, {
+        size, color, bold,
+        glow: bold ? COLORS.blood : null,
+        maxWidth: panelW - 80,
+      });
       y += size + 8;
     }
 
@@ -117,6 +121,7 @@ export class IntroScene {
         + `(${top.chambersCleared}ch)`;
       drawText(ctx, line, W / 2, y, {
         size: 14, color: COLORS.gold, align: "center", bold: true,
+        maxWidth: W - 200,
       });
     } else {
       drawText(ctx, "No runs yet - be the first to escape!", W / 2, y, {

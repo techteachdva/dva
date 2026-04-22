@@ -1291,16 +1291,19 @@ export class ClimbScene {
     }
 
     // Top-right: chamber + climb progress
-    const rX = W - pad - 300;
-    drawPanel(ctx, rX, pad, 300, 80);
-    drawText(ctx, ch.name, rX + 150, pad + 16, {
+    const rW = 320;
+    const rX = W - pad - rW;
+    drawPanel(ctx, rX, pad, rW, 80);
+    drawText(ctx, ch.name, rX + rW / 2, pad + 14, {
       size: 16, color: COLORS.bile, align: "center", bold: true,
+      maxWidth: rW - 16,
     });
-    drawText(ctx, ch.tagline, rX + 150, pad + 38, {
-      size: 11, color: COLORS.boneDim, align: "center",
+    drawText(ctx, ch.tagline, rX + rW / 2, pad + 36, {
+      size: 12, color: COLORS.boneDim, align: "center",
+      maxWidth: rW - 16,
     });
     const pct = Math.min(1, this.progress / ch.climbHeight);
-    drawBar(ctx, rX + 12, pad + 54, 276, 16, pct, {
+    drawBar(ctx, rX + 12, pad + 54, rW - 24, 16, pct, {
       fill: COLORS.gold, label: `CLIMB ${Math.round(pct * 100)}%`, labelColor: "#111",
     });
 
@@ -1396,14 +1399,15 @@ export class ClimbScene {
     // Render: pulsing pill at top center, above toast line.
     const pulse = 0.5 + 0.5 * Math.sin(this.t * 7);
     ctx.save();
-    ctx.globalAlpha = 0.75 + pulse * 0.25;
+    ctx.globalAlpha = 0.82 + pulse * 0.18;
     ctx.fillStyle = hint.bg;
-    const hw = 620, hh = 32;
+    const hw = 760, hh = 34;
     roundRect(ctx, W / 2 - hw / 2, 172, hw, hh, 6);
     ctx.fill();
-    drawText(ctx, hint.text, W / 2, 188, {
+    drawText(ctx, hint.text, W / 2, 189, {
       size: 17, color: hint.color, align: "center",
       bold: true, glow: hint.color, baseline: "middle",
+      maxWidth: hw - 24,
     });
     ctx.restore();
   }
@@ -1413,9 +1417,10 @@ export class ClimbScene {
     ctx.save();
     ctx.fillStyle = "rgba(0,0,0,0.55)";
     ctx.fillRect(0, H - 30, W, 30);
-    const line = "[UP/W] climb   [LEFT/RIGHT or A/D] hop one column   [DOWN/S] brace   [P/ESC] pause";
+    const line = "[UP/W] Climb   [A]/[D] or [LEFT/RIGHT] Hop Lane   [DOWN/S] Brace   [P/ESC] Pause";
     drawText(ctx, line, W / 2, H - 15, {
       size: 13, color: COLORS.bone, align: "center", baseline: "middle", bold: true,
+      maxWidth: W - 40,
     });
     ctx.restore();
   }

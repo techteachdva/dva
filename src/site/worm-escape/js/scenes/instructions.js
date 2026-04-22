@@ -208,28 +208,32 @@ export class InstructionsScene {
     // Title
     drawText(ctx, title, x + 56, y + 18, {
       size: 20, color: accent, bold: true, glow: accent,
+      maxWidth: w - 72,
     });
 
     // Body rows - a small left-column "label" followed by wrapped description.
     const bodyY = y + 58;
     const rowStep = Math.max(42, Math.floor((h - 64) / Math.max(1, rows.length)));
+    const labelW = 120;
     for (let i = 0; i < rows.length; i++) {
       const [label, l1, l2] = rows[i];
       const ry = bodyY + i * rowStep;
       if (label) {
         drawText(ctx, label, x + 16, ry, {
           size: 13, color: COLORS.bone, bold: true,
+          maxWidth: labelW - 4,
         });
       }
-      const tx = x + 16 + (label ? 128 : 0);
+      const tx = x + 16 + (label ? labelW + 8 : 0);
+      const tw = w - (tx - x) - 14;
       if (l1) {
         drawText(ctx, l1, tx, ry, {
-          size: 13, color: COLORS.bone,
+          size: 13, color: COLORS.bone, maxWidth: tw,
         });
       }
       if (l2) {
         drawText(ctx, l2, tx, ry + 18, {
-          size: 13, color: COLORS.boneDim,
+          size: 13, color: COLORS.boneDim, maxWidth: tw,
         });
       }
     }

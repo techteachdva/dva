@@ -1042,6 +1042,7 @@ export class TongueBossScene {
     drawPanel(ctx, W - 280, pad, 264, 64);
     drawText(ctx, this.enemy.name, W - 148, pad + 16, {
       size: 16, color: "#ff9cb0", align: "center", bold: true, glow: "#ff3060",
+      maxWidth: 248,
     });
     drawBar(ctx, W - 270, pad + 34, 244, 18, this.enemy.hp / this.enemy.hpMax, {
       fill: "#4a1010", label: null,
@@ -1084,7 +1085,7 @@ export class TongueBossScene {
       drawText(ctx, "!! HEAVY CURL - AIM CAN'T SAVE YOU - [F] BRACE !!",
         W / 2, 144, {
           size: 17, color: "#fff", align: "center", bold: true,
-          glow: "#ff8020", baseline: "middle",
+          glow: "#ff8020", baseline: "middle", maxWidth: W - 40,
       });
     }
 
@@ -1140,9 +1141,16 @@ export class TongueBossScene {
     items.forEach((it, i) => {
       const row = y + 38 + i * 30;
       const col = it.locked ? COLORS.boneDim : COLORS.bone;
+      const cdReserve = it.cdMax > 0 ? 110 : 16;
+      const nameMax = 240 - 96 - 6;
+      const infoMax = w - 240 - cdReserve;
       drawText(ctx, `[${it.keys}]`, x + 14, row, { size: 13, color: col, bold: true });
-      drawText(ctx, it.name,        x + 96, row, { size: 14, color: col });
-      drawText(ctx, it.info,        x + 240, row, { size: 11, color: COLORS.boneDim });
+      drawText(ctx, it.name,        x + 96, row, {
+        size: 14, color: col, maxWidth: nameMax,
+      });
+      drawText(ctx, it.info,        x + 240, row, {
+        size: 12, color: COLORS.boneDim, maxWidth: infoMax,
+      });
       if (it.cdMax > 0) {
         const bw = 90;
         const bx = x + w - bw - 14;
@@ -1162,12 +1170,12 @@ export class TongueBossScene {
     drawText(ctx, "MAW LOG", x + 14, y + 12, { size: 13, color: COLORS.boneDim });
     this.log.forEach((line, i) => {
       drawText(ctx, line, x + 14, y + 40 + i * 26, {
-        size: 13, color: COLORS.bone,
+        size: 13, color: COLORS.bone, maxWidth: w - 28,
       });
     });
     drawText(ctx,
-      "[MOUSE] aim   [Q/1] attack   [E/2] special   [R/3] dodge   [F/4] brace   [P/ESC] pause",
-      x + 14, y + h - 22, { size: 11, color: COLORS.bone });
+      "[MOUSE] Aim  [Q/1] Attack  [E/2] Special  [R/3] Dodge  [F/4] Brace  [P] Pause",
+      x + 14, y + h - 22, { size: 12, color: COLORS.bone, maxWidth: w - 28 });
   }
 
   drawContextHint(ctx, game) {
@@ -1186,13 +1194,14 @@ export class TongueBossScene {
     const pulse = 0.5 + 0.5 * Math.sin(this.t * 7);
     ctx.save();
     ctx.globalAlpha = 0.8 + pulse * 0.2;
-    ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
-    const hw = 700, hh = 30;
+    ctx.fillStyle = "rgba(0, 0, 0, 0.72)";
+    const hw = 820, hh = 32;
     roundRect(ctx, W / 2 - hw / 2, 170, hw, hh, 6);
     ctx.fill();
-    drawText(ctx, hint.text, W / 2, 185, {
+    drawText(ctx, hint.text, W / 2, 186, {
       size: 16, color: hint.color, align: "center",
       bold: true, glow: hint.color, baseline: "middle",
+      maxWidth: hw - 24,
     });
     ctx.restore();
   }

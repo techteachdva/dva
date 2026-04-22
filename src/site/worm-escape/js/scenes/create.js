@@ -249,39 +249,41 @@ export class CreateScene {
       const unlocked = this.isLoadoutUnlocked(i);
       this.drawCard(ctx, x, y, cardW, cardH, selected);
 
+      const textMax = cardW - 20;
       drawText(ctx, l.name, x + cardW / 2, y + 24, {
-        size: 14, bold: true,
+        size: 15, bold: true,
         color: !unlocked ? "#555" : (selected ? COLORS.bile : COLORS.bone),
         align: "center",
         glow: (selected && unlocked) ? COLORS.blood : null,
+        maxWidth: textMax,
       });
 
       this.drawWeaponIcon(ctx, x + cardW / 2, y + 140, l);
 
       drawText(ctx, l.blurb, x + cardW / 2, y + 230, {
-        size: 10, color: COLORS.boneDim, align: "center",
+        size: 11, color: COLORS.boneDim, align: "center", maxWidth: textMax,
       });
 
       const lx = x + 10;
-      drawText(ctx, "ATTACK:", lx, y + 262, { size: 10, color: COLORS.bile });
-      drawText(ctx, l.attack.name, lx, y + 278, { size: 11, color: COLORS.bone });
-      drawText(ctx, `DMG ${l.attack.dmg[0]}-${l.attack.dmg[1]}`, lx, y + 294, { size: 10, color: COLORS.boneDim });
-      drawText(ctx, `CD ${l.attack.cooldown}s  MP ${l.attack.manaCost}`, lx, y + 308, { size: 10, color: COLORS.boneDim });
-      if (l.attack.multiLane) drawText(ctx, "MULTI-LANE", lx, y + 322, { size: 9, color: "#b5f05a", bold: true });
-      if (l.attack.hexMark)   drawText(ctx, "PLACES HEX", lx, y + 322, { size: 9, color: "#d978ff", bold: true });
+      drawText(ctx, "ATTACK:", lx, y + 262, { size: 11, color: COLORS.bile, bold: true });
+      drawText(ctx, l.attack.name, lx, y + 278, { size: 12, color: COLORS.bone, maxWidth: textMax });
+      drawText(ctx, `DMG ${l.attack.dmg[0]}-${l.attack.dmg[1]}`, lx, y + 294, { size: 11, color: COLORS.boneDim });
+      drawText(ctx, `CD ${l.attack.cooldown}s  MP ${l.attack.manaCost}`, lx, y + 308, { size: 11, color: COLORS.boneDim });
+      if (l.attack.multiLane) drawText(ctx, "MULTI-LANE", lx, y + 322, { size: 10, color: "#b5f05a", bold: true });
+      if (l.attack.hexMark)   drawText(ctx, "PLACES HEX", lx, y + 322, { size: 10, color: "#d978ff", bold: true });
 
-      drawText(ctx, "SPECIAL:", lx, y + 340, { size: 10, color: COLORS.bile });
-      drawText(ctx, l.special.name, lx, y + 356, { size: 11, color: COLORS.bone });
-      drawText(ctx, `DMG ${l.special.dmg[0]}-${l.special.dmg[1]}`, lx, y + 372, { size: 10, color: COLORS.boneDim });
-      drawText(ctx, `CD ${l.special.cooldown}s  MP ${l.special.manaCost}`, lx, y + 386, { size: 10, color: COLORS.boneDim });
-      if (l.special.hexDetonate) drawText(ctx, "DETONATES HEX", lx, y + 400, { size: 9, color: "#d978ff", bold: true });
+      drawText(ctx, "SPECIAL:", lx, y + 340, { size: 11, color: COLORS.bile, bold: true });
+      drawText(ctx, l.special.name, lx, y + 356, { size: 12, color: COLORS.bone, maxWidth: textMax });
+      drawText(ctx, `DMG ${l.special.dmg[0]}-${l.special.dmg[1]}`, lx, y + 372, { size: 11, color: COLORS.boneDim });
+      drawText(ctx, `CD ${l.special.cooldown}s  MP ${l.special.manaCost}`, lx, y + 386, { size: 11, color: COLORS.boneDim });
+      if (l.special.hexDetonate) drawText(ctx, "DETONATES HEX", lx, y + 400, { size: 10, color: "#d978ff", bold: true });
 
       // Matchup hints - which guardian art type this weapon excels/fails vs
       drawText(ctx, "STRONG vs " + ART_LABEL[l.strongVs], lx, y + 420, {
-        size: 10, color: "#ffd966", bold: true,
+        size: 11, color: "#ffd966", bold: true, maxWidth: textMax,
       });
       drawText(ctx, "WEAK vs " + ART_LABEL[l.weakVs], lx, y + 434, {
-        size: 10, color: "#8a9aff", bold: true,
+        size: 11, color: "#8a9aff", bold: true, maxWidth: textMax,
       });
 
       if (!unlocked) this.drawLockedOverlay(ctx, x, y, cardW, cardH,
