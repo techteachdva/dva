@@ -4,6 +4,7 @@ import {
   roundRect,
 } from "../engine/render.js";
 import { SFX } from "../engine/audio.js";
+import { loadSave, recordRun, findScoreRank } from "../engine/storage.js";
 import { IntroScene } from "./intro.js";
 
 // --- v0.10 Scoring ---
@@ -27,6 +28,10 @@ const WEIGHTS = {
   ringBonus:        250,  // each ring of armor
   hitPenaltyEach:   -25,  // per distinct hit taken
   hitPenaltyCap:   -800,  // floor so one horrible chamber can't zero you
+  // v0.12 additions
+  pactPerChamber:    75,  // per pact active per chamber cleared
+  eliteKilled:      400,  // each elite defeated
+  hitlessChamber:   300,  // each chamber cleared without taking a hit
 };
 
 function calcScore(p) {
@@ -60,6 +65,21 @@ function calcScore(p) {
   const hitPenalty = Math.max(WEIGHTS.hitPenaltyCap, rawHitPenalty);
   push(`Hits Taken Penalty (${s.hitsTaken || 0} hits)`, hitPenalty);
 
+  // v0.12: pacts taken, elites killed, hitless chambers.
+  const pactCount = (s.pactsTaken || p.pacts || []).length;
+  if (pactCount > 0) {
+    const pactScore = pactCount * (s.chambersCleared || 0) * WEIGHTS.pactPerChamber;
+    push(`Pacts Survived (x${pactCount})`, pactScore);
+  }
+  if ((s.elitesKilled || 0) > 0) {
+    push(`Elites Vanquished (x${s.elitesKilled})`,
+      s.elitesKilled * WEIGHTS.eliteKilled);
+  }
+  if ((s.hitlessChambers || 0) > 0) {
+    push(`Hitless Chambers (x${s.hitlessChambers})`,
+      s.hitlessChambers * WEIGHTS.hitlessChamber);
+  }
+
   const total = parts.reduce((a, b) => a + b.value, 0);
   return { parts, total };
 }
@@ -84,12 +104,34 @@ export class VictoryScene {
     // Animated count-up: each line index reveals over time.
     this.revealT = 0;          // seconds since scoreboard started revealing
     this.displayTotal = 0;     // lerps toward this.score.total
+
+    // v0.12 persistent save state - populated in enter().
+    this.save = null;
+    this.newUnlocks = [];
+    this.myRank = -1;          // index into save.highScores (-1 if off-list)
   }
 
   enter(game) {
     const p = game.player;
     this.score = calcScore(p);
     this.grade = grade(this.score.total);
+    // Persist the run + compute unlocks.
+    const save = loadSave();
+    const result = {
+      win: true,
+      score: this.score.total,
+      rank: this.grade.rank,
+      buildId: p.buildId,
+      loadoutId: p.loadoutId,
+      chambersCleared: p.score ? p.score.chambersCleared : 0,
+      hitlessChambers: p.score ? p.score.hitlessChambers : 0,
+      gullethitless:   p.score ? !!p.score.gullethitless : false,
+      elitesKilled:    p.score ? p.score.elitesKilled || 0 : 0,
+    };
+    const { save: updated, newUnlocks, entry } = recordRun(save, result);
+    this.save = updated;
+    this.newUnlocks = newUnlocks;
+    this.myRank = findScoreRank(updated, entry);
   }
 
   update(dt, game) {
@@ -184,6 +226,15 @@ export class VictoryScene {
     // --- Scoreboard panel ---
     this.drawScoreboard(ctx);
 
+    // v0.12 top-5 high-score table + unlock banners. Drawn only when the
+    // reveal is finished so it doesn't distract from the scoreboard.
+    const parts = this.score ? this.score.parts : [];
+    const fullyShownGate = this.revealT > parts.length * 0.35 + 0.6;
+    if (fullyShownGate && this.save) {
+      this.drawHighScoreStrip(ctx);
+      this.drawUnlockBanners(ctx);
+    }
+
     // Prompt to continue once everything is revealed
     const fullyShown = this.score
       ? this.revealT > this.score.parts.length * 0.35 + 0.6
@@ -262,6 +313,77 @@ export class VictoryScene {
       ctx.globalAlpha = pulse;
       drawText(ctx, g.label, W / 2, rankY + 26, {
         size: 15, color: COLORS.bone, align: "center", bold: true,
+      });
+      ctx.restore();
+    }
+  }
+
+  // Compact top-5 sidebar rendered in the unused right edge of the screen.
+  drawHighScoreStrip(ctx) {
+    const hs = this.save.highScores || [];
+    if (hs.length === 0) return;
+    const panelX = W - 230;
+    const panelY = 130;
+    const panelW = 214;
+    const panelH = 210;
+    drawPanel(ctx, panelX, panelY, panelW, panelH);
+    drawText(ctx, "TOP 5 RUNS", panelX + panelW / 2, panelY + 18, {
+      size: 14, color: COLORS.bile, align: "center", bold: true,
+    });
+    for (let i = 0; i < Math.min(5, hs.length); i++) {
+      const e = hs[i];
+      const y = panelY + 44 + i * 30;
+      const isMe = i === this.myRank;
+      const pulse = 0.6 + 0.4 * Math.sin(this.t * 6);
+      const color = isMe ? `rgba(255, 217, 102, ${0.7 + pulse * 0.3})`
+                         : COLORS.bone;
+      drawText(ctx, `${i + 1}.`, panelX + 10, y, {
+        size: 13, color, bold: isMe,
+      });
+      drawText(ctx, `${e.score}`, panelX + 36, y, {
+        size: 13, color, bold: isMe,
+      });
+      drawText(ctx, `[${e.rank}]`, panelX + 96, y, {
+        size: 12, color, bold: isMe,
+      });
+      drawText(ctx, String((e.buildId || "?").slice(0, 5)).toUpperCase(),
+        panelX + 140, y, {
+          size: 11, color: isMe ? color : COLORS.boneDim, bold: isMe,
+      });
+      drawText(ctx, String(e.chambersCleared) + "ch",
+        panelX + 182, y, {
+          size: 10, color: COLORS.boneDim, align: "right",
+      });
+    }
+    if (this.myRank === 0) {
+      const pulse = 0.5 + 0.5 * Math.sin(this.t * 6);
+      drawText(ctx, "!! NEW BEST !!", panelX + panelW / 2, panelY + panelH - 12, {
+        size: 14, color: `rgba(255, 217, 102, ${0.7 + pulse * 0.3})`,
+        align: "center", bold: true, glow: COLORS.gold,
+      });
+    } else if (this.myRank >= 0) {
+      drawText(ctx, `Your run: #${this.myRank + 1}`,
+        panelX + panelW / 2, panelY + panelH - 12, {
+        size: 12, color: COLORS.bone, align: "center", bold: true,
+      });
+    }
+  }
+
+  // Flashy banner strip over the worm maw when new unlocks fire.
+  drawUnlockBanners(ctx) {
+    if (!this.newUnlocks || this.newUnlocks.length === 0) return;
+    const baseY = H - 150;
+    const pulse = 0.6 + 0.4 * Math.sin(this.t * 7);
+    for (let i = 0; i < this.newUnlocks.length; i++) {
+      const u = this.newUnlocks[i];
+      const y = baseY + i * 38;
+      ctx.save();
+      ctx.fillStyle = `rgba(255, 217, 102, ${0.25 + pulse * 0.3})`;
+      roundRect(ctx, W / 2 - 360, y - 18, 720, 32, 10);
+      ctx.fill();
+      drawText(ctx, u.label, W / 2, y, {
+        size: 18, color: COLORS.gold, align: "center", bold: true,
+        glow: COLORS.gold, baseline: "middle",
       });
       ctx.restore();
     }

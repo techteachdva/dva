@@ -496,9 +496,141 @@ v0.11.0 - Soundtrack + Onboarding Briefing
       that [M] mutes music + sound at any time.
 
 ---------------------------------------------------------------------
+v0.12.0 - The Big Replayability Update
+---------------------------------------------------------------------
+Five new pillars turn the fixed 10-minute run into a randomized,
+build-shaping roguelite with meta-progression.
+
+--- PILLAR 1: PACTS (between chambers) ---
+- After every boss kill, before the next climb, a new PactScene
+  offers 3 random "Pacts" to choose from. Elite kills buff this to 4.
+- Every pact is a TRADEOFF (one pro + one con) so there are no
+  dominant picks; choices shape the rest of the run.
+- New file content/pacts.js with ~18 pacts across families. Examples:
+      PACT_OF_VIPERS   +30% attack/special damage; HP max -15%
+      FEATHER_CLOAK    +20% climb speed, faster hops; armor soak -15%
+      IRON_GIZZARD     +40 HP max + full heal; climb speed -10%
+      BILE_TONGUE      +50% acid-timer duration; -15% attack damage
+      PERFECTIONIST    brace counter 1.5x -> 2.0x; base dmg -10%
+      RING_FORGER      free Ring of Armor next climb; bile +15% faster
+      PATIENT_BLADE    +25% crit chance; attacks cool 15% slower
+      MARATHON_LUNGS   +12s acid timers; no mana regen between rooms
+- Pact application mutates the player via applyPact(p, id) and
+  tracks active pacts on p.pacts for UI + scoring. Pact modifiers
+  live in p.pactMods and are consumed by both climb.js (bile rise,
+  debris rate, climb speed, acid resist) and combat.js (damage,
+  cooldowns, crit chance, counter multiplier).
+- Flow: Climb -> Combat -> PactScene -> Transition -> Climb.
+
+--- PILLAR 2: ELITE BOSS VARIANTS ---
+- Each chamber rolls for an Elite variant (30/40/45/50/55/60% by
+  chamber). Elites get +30% HP, +15% damage, and enrage at 60% HP.
+- Visuals: pulsing gold aura ring around the enemy sprite,
+  "ELITE [TWIST]" prefix in the name panel.
+- New file content/elites.js defines four Elite twists, applied on
+  top of the base enemy:
+      FANGED    periodically spawns a bonus acid gout outside the
+                normal cadence.
+      SHIELDED  once per fight at 75% HP, enters a 6s shielded
+                phase where attacks deal 1 dmg; 3 perfect braces
+                break the shield early.
+      HEX-EYED  every enemy heavy-slam shortens the NEXT tell by
+                0.2s (stacking up to -1s); also applies light
+                poison-on-attack to the player.
+      BLOATED   death explosion deals 25 dmg (braced 10) unless you
+                brace the instant the killing blow lands.
+- Elites guarantee a 4th pact card as the chamber reward.
+
+--- PILLAR 3: NEW BUILD - VIPER ---
+- Added to content/player.js BUILDS.
+      HP 100, MP 55, armor 20, armorSoak 0.30
+      Climb 1.20, hopCooldown 0.10, laneSwap 0.09
+      Dodge window 0.55, acidResist 0.80, tankHits 1
+- Unique mechanic: all VIPER attacks apply POISON for 3s dealing 5%
+  of the enemy's max HP per second. Stacks refresh duration.
+- Middle-ground build: more durable than Swiftfoot, more mobile than
+  Ironhide, wins slow fights through damage-over-time.
+- Gated behind unlock: "Clear any run with any build."
+
+--- PILLAR 4: TWO NEW WEAPONS ---
+- BILE WHIP - Attack hits ALL 3 combat lanes simultaneously for
+  modest damage; zero mana, fast cooldown. Special "Coil Lash" is
+  a heavy single-target slam. Strong vs flesh, weak vs teeth.
+  Rendered with a multi-lane triple damage-number + triple
+  particle burst on every whip swing.
+  Unlock: "Clear the Gullet climb without taking any hit."
+- HEX STAFF - Attack is a low-damage single-target HEX that marks
+  the enemy for +20% damage from the next 3 hits (stacking up to
+  3 marks). Special "Runic Bolt" consumes all marks for a burst.
+  Strong vs tentacle, weak vs zombie.
+  Unlock: "Defeat any Elite boss."
+- Both weapons get custom icons + card copy on the Create screen
+  (MULTI-LANE, PLACES HEX, DETONATES HEX badges).
+
+--- PILLAR 5: PERSISTENCE (localStorage) ---
+- New file engine/storage.js with a tiny, defensive wrapper:
+      loadSave()              -> full save blob with defaults
+      saveGame(save)          -> writes JSON
+      recordRun(save, result) -> inserts score, sorts top 5,
+                                 flips unlock flags, returns
+                                 { save, newUnlocks, entry }
+      findScoreRank(save, entry) -> index or -1
+- Save blob schema (wormEscape.save.v1):
+      highScores:   top 5 runs (score, rank, build, loadout,
+                    chambers, win/loss, date)
+      unlocks:      viperBuild, bileWhip, hexStaff, anyElite
+      stats:        runs, wins, elitesKilled, hitlessChambers
+- Graceful fallback if localStorage is unavailable (private mode,
+  iframe sandbox, etc.): everything runs in-memory, UI hides
+  high-score panels, no save writes attempted.
+
+--- UI HOOKS ---
+- IntroScene now shows TOP RUN + UNLOCKS x/3 beneath the title.
+- CreateScene grays out locked VIPER / BILE WHIP / HEX STAFF cards
+  with a padlock overlay and unlock-hint text; input is blocked
+  on locked selections.
+- VictoryScene saves the run, renders a top-5 sidebar with a
+  pulsing gold "NEW BEST" badge when the player lands at #1, and
+  flashes NEW WEAPON / NEW BUILD banners for each fresh unlock.
+- GameOverScene computes a partial "losing" score, saves it, and
+  shows the same top-5 table + any unlock banners (Bile Whip and
+  Hex Staff unlocks can be earned even in a losing run).
+- InstructionsScene gains a fifth micro-card explaining PACTS &
+  ELITES and that unlocks persist.
+
+--- SCORE INTEGRATION ---
+- Added three new scoring lines to the Victory breakdown:
+      Pacts Survived     +75 per active pact per chamber cleared
+      Elites Vanquished  +400 each
+      Hitless Chambers   +300 each
+- Player score object gained hitlessChambers, gullethitless,
+  elitesKilled, pactsTaken for downstream tracking.
+
+--- FILES TOUCHED ---
+- NEW:  js/engine/storage.js
+- NEW:  js/content/pacts.js
+- NEW:  js/content/elites.js
+- NEW:  js/scenes/pact.js
+- MOD:  js/content/player.js     (VIPER build, Bile Whip, Hex Staff,
+                                   applyPact, pactMods, score fields,
+                                   poison hooks in damage pipeline)
+- MOD:  js/scenes/combat.js      (elite wrapping, twist mechanics,
+                                   multi-lane + hex attacks, poison,
+                                   Combat -> PactScene routing)
+- MOD:  js/scenes/climb.js       (pact modifiers, hitless tracking,
+                                   Ring Forger freebie)
+- MOD:  js/scenes/create.js      (locked cards, unlock hints, three
+                                   builds, six loadouts)
+- MOD:  js/scenes/victory.js     (recordRun + top-5 + unlock banners)
+- MOD:  js/scenes/gameover.js    (recordRun + top-5 + unlock banners)
+- MOD:  js/scenes/intro.js       (top-run + unlocks meta line)
+- MOD:  js/scenes/instructions.js (Pacts & Elites micro-card)
+
+---------------------------------------------------------------------
 Planned / Future
 ---------------------------------------------------------------------
 - Boss fight in final chamber: the worm's own HEART.
 - Loot drops between chambers (healing guts-jerky, mana phlegm).
-- Save/load via localStorage.
-- Background music loop.
+- Daily seeded run with a global leaderboard.
+- Mid-climb events (Blessed Shrine, hidden passage).
+- Additional weapon matchups and a fourth adventurer build.

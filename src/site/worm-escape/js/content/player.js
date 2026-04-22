@@ -1,3 +1,5 @@
+import { getPact } from "./pacts.js";
+
 // Player model, builds, and loadouts.
 //
 // Balance philosophy:
@@ -38,6 +40,27 @@ export const BUILDS = {
     dodgeWindow: 0.55,     // almost as much warning as Swift (previously too harsh)
     acidResist: 0.35,      // armor repels the bile vapors - timer ticks slow
     tankHits: 2,           // two free debris soaks per chamber
+  },
+  // v0.12 VIPER - middle-ground build. Gated by "win any run" unlock.
+  // Less HP than Iron, more armor than Swift. Signature ability:
+  // every attack poisons the enemy for 3s, ticking 5% of enemy max HP/s.
+  viper: {
+    id: "viper",
+    name: "VIPER",
+    blurb: "Quiet steps, venom breath. Outlasts, doesn't overpower.",
+    hp: 100,
+    mana: 55,
+    armor: 20,
+    armorSoak: 0.30,       // armor soaks 30% - a lean buffer, not a wall
+    climbSpeed: 1.20,      // in between swift and iron
+    hopCooldown: 0.10,
+    laneSwapCd: 0.09,
+    dodgeWindow: 0.55,
+    acidResist: 0.80,      // slightly better than Swift
+    tankHits: 1,           // one free debris soak per chamber
+    // Unique toggle - read by combat.js
+    poisonPct: 0.05,       // poison ticks 5% of enemy max HP / sec
+    poisonTime: 3,         // for 3 seconds after each hit (refreshes duration)
   },
 };
 
@@ -85,6 +108,37 @@ export const LOADOUTS = {
     color: "#7fe3ff",
     strongVs: "bile",    // +60% vs bile elemental (freezes the whole blob)
     weakVs:   "teeth",   // -40% vs tooth beast (ice shatters on enamel)
+  },
+  // v0.12 BILE WHIP - unlocked by clearing Gullet climb hitless.
+  // Its attack hits ALL THREE combat lanes at once (the sphincter guardian
+  // stays in one lane but this matters against Shielded elites whose
+  // shield-break condition is number-of-hits). Each "lane" takes reduced
+  // damage individually, but the total is competitive with single hits.
+  bileWhip: {
+    id: "bileWhip",
+    name: "BILE WHIP",
+    icon: "whip",
+    blurb: "Lashes all three lanes. Wet, theatrical, effective.",
+    attack:  { name: "Triple Lash", dmg: [9, 13],  cooldown: 0.70, manaCost: 0,  sfx: "slash",  multiLane: true },
+    special: { name: "Coil Lash",   dmg: [32, 44], cooldown: 2.8,  manaCost: 10, sfx: "crunch", multiLane: false },
+    color: "#b5f05a",
+    strongVs: "flesh",
+    weakVs:   "teeth",
+  },
+  // v0.12 HEX STAFF - unlocked by defeating any Elite boss.
+  // Attacks place a HEX MARK on the enemy; each mark adds +20% to the
+  // damage of your NEXT 3 hits (stacking up to 3 marks). Special "Runic
+  // Bolt" consumes ALL marks for a big burst (plus a per-mark bonus).
+  hexStaff: {
+    id: "hexStaff",
+    name: "HEX STAFF",
+    icon: "staff-hex",
+    blurb: "Mark them. Wait. Detonate. Repeat.",
+    attack:  { name: "Hex Bolt",    dmg: [10, 14], cooldown: 0.55, manaCost: 3,  sfx: "cast", hexMark: true },
+    special: { name: "Runic Bolt",  dmg: [22, 30], cooldown: 2.6,  manaCost: 12, sfx: "cast", hexDetonate: true },
+    color: "#d978ff",
+    strongVs: "tentacle",
+    weakVs:   "zombie",
   },
 };
 
@@ -152,8 +206,53 @@ export function makePlayer(buildId, loadoutId) {
       bossesDefeated: 0,      // sphincter guardians killed
       chambersCleared: 0,     // chambers escaped (count on climb completion)
       timeSpent: 0,           // total seconds of climb+combat gameplay
+      // v0.12 replayability counters
+      hitlessChambers: 0,     // count of chambers fully cleared without taking any hit
+      gullethitless: false,   // specifically the Gullet chamber cleared hitless
+      elitesKilled: 0,        // number of Elite sphincter guardians slain
+      pactsTaken: [],         // array of pact ids chosen this run (display + scoring)
+    },
+    // v0.12 Pacts - array of ids the player has taken. `pactMods` holds
+    // all live tuning values pacts (and builds) want to nudge. Pre-init
+    // to safe neutrals so consumers can blindly read-multiply/add.
+    pacts: [],
+    pactMods: {
+      dmgMult: 1,             // global outgoing damage
+      attackDmgMult: 1,       // basic attack only
+      specialDmgMult: 1,      // special only
+      attackCdMult: 1,        // basic attack cooldown multiplier
+      specialCdMult: 1,       // special cooldown multiplier
+      critChance: 0,          // added crit chance for dealtoenemy
+      counterMult: 1.5,       // perfect brace counter multiplier
+      incomingDmgMult: 1,     // damage the player takes (multiplier)
+      debrisDmgMult: 1,       // climb debris damage only
+      bileRiseMult: 1,        // climb bile rise multiplier
+      debrisRateMult: 1,      // climb debris INTERVAL multiplier (>1 = slower)
+      powerUpRateMult: 1,     // climb powerup rarity multiplier
+      burgerBonusHp: 0,       // extra HP on burger pickup
+      freeRingPending: false, // start next climb with a free ring
+      manaRegen: 25,          // between-chamber mana restore
+      poisonPct: (b.poisonPct ?? 0),
+      poisonTime: (b.poisonTime ?? 0),
+      heavyTellBonus: 0,      // extra seconds added to heavy slam telegraph
+      lifestealOnKill: 0,     // HP healed when enemy dies
+      executeThreshold: 0,    // enemy HP% below which execute bonus applies
+      executeBonus: 1,        // damage multiplier for execute
     },
   };
+}
+
+// Apply a pact by id. Safe to call multiple times; updates tracking on
+// the player so the scoreboard can list "Pacts taken this run".
+export function applyPact(p, pactId) {
+  if (!p || !pactId) return false;
+  const pact = getPact(pactId);
+  if (!pact) return false;
+  if (p.pacts.includes(pactId)) return false;
+  p.pacts.push(pactId);
+  if (p.score) p.score.pactsTaken = [...p.pacts];
+  pact.apply(p);
+  return true;
 }
 
 export function resetChamber(p) {
@@ -161,8 +260,9 @@ export function resetChamber(p) {
   p.acidTimer = p.acidTimerMax;
   p.cooldowns.attack = 0;
   p.cooldowns.special = 0;
-  // Mana regen between chambers (more for iron since they need to survive longer)
-  p.mana = Math.min(p.manaMax, p.mana + 25);
+  // Mana regen between chambers. Some pacts zero this out (Marathon Lungs).
+  const regen = p.pactMods ? p.pactMods.manaRegen : 25;
+  p.mana = Math.min(p.manaMax, p.mana + regen);
   // Patch wounds
   p.hp = Math.min(p.hpMax, p.hp + 25);
   // Armor repairs partially
@@ -174,7 +274,9 @@ export function resetChamber(p) {
 // Also updates score.hitsTaken / totalHpLost / totalArmorLost when the
 // player has a `score` object (post-v0.10 saves always do).
 export function applyDamage(p, amount) {
-  let remaining = amount;
+  // Pacts like Glass Gauntlets / Feed Frenzy amplify incoming damage.
+  const inMult = p.pactMods ? p.pactMods.incomingDmgMult : 1;
+  let remaining = amount * inMult;
   let armorTaken = 0;
   if (p.armor > 0 && p.armorSoak > 0) {
     const soakable = remaining * p.armorSoak;

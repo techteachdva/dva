@@ -3,7 +3,11 @@ import {
   drawFleshBackground, drawVeins, drawText, drawBanner, drawPanel,
 } from "../engine/render.js";
 import { SFX } from "../engine/audio.js";
+import { loadSave } from "../engine/storage.js";
 import { InstructionsScene } from "./instructions.js";
+
+// Total possible persistent unlocks - keep this in sync with DEFAULT_SAVE.unlocks.
+const UNLOCK_TOTAL = 3; // viperBuild, bileWhip, hexStaff
 
 const STORY = [
   "Oh FART NUGGETS!",
@@ -31,6 +35,7 @@ export class IntroScene {
   enter() {
     this.t = 0;
     this.reveal = 0;
+    this.save = loadSave();
   }
 
   update(dt, game) {
@@ -63,6 +68,9 @@ export class IntroScene {
     drawBanner(ctx, "GUTS & GLORY", W / 2, 110, 72, COLORS.bile, COLORS.blood);
     drawBanner(ctx, "escape the purple worm", W / 2, 172, 26, COLORS.bone, COLORS.worm);
 
+    // v0.12 meta line: current top run + unlocks owned.
+    this.drawMetaLine(ctx);
+
     const panelX = 110, panelY = 230, panelW = W - 220, panelH = 440;
     drawPanel(ctx, panelX, panelY, panelW, panelH);
 
@@ -92,6 +100,36 @@ export class IntroScene {
     }
 
     this.drawWormFrame(ctx);
+  }
+
+  drawMetaLine(ctx) {
+    if (!this.save) return;
+    const hs = this.save.highScores || [];
+    const u = this.save.unlocks || {};
+    const unlockCount =
+      (u.viperBuild ? 1 : 0) + (u.bileWhip ? 1 : 0) + (u.hexStaff ? 1 : 0);
+    const top = hs.length > 0 ? hs[0] : null;
+    const y = 200;
+    if (top) {
+      const line =
+        `TOP RUN: ${top.score} [${top.rank}]  `
+        + `${String(top.buildId || "?").toUpperCase()} / ${String(top.loadoutId || "?")}  `
+        + `(${top.chambersCleared}ch)`;
+      drawText(ctx, line, W / 2, y, {
+        size: 14, color: COLORS.gold, align: "center", bold: true,
+      });
+    } else {
+      drawText(ctx, "No runs yet - be the first to escape!", W / 2, y, {
+        size: 14, color: COLORS.boneDim, align: "center",
+      });
+    }
+    const unlockText = `UNLOCKS: ${unlockCount}/${UNLOCK_TOTAL}`;
+    drawText(ctx, unlockText, W / 2, y + 18, {
+      size: 12,
+      color: unlockCount === UNLOCK_TOTAL ? COLORS.bile : COLORS.boneDim,
+      align: "center",
+      bold: unlockCount === UNLOCK_TOTAL,
+    });
   }
 
   drawWormFrame(ctx) {

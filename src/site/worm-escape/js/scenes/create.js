@@ -5,10 +5,22 @@ import {
 } from "../engine/render.js";
 import { SFX } from "../engine/audio.js";
 import { BUILDS, LOADOUTS, makePlayer } from "../content/player.js";
+import { loadSave } from "../engine/storage.js";
 import { ClimbScene } from "./climb.js";
 
-const BUILD_IDS = ["swift", "iron"];
-const LOADOUT_IDS = ["sword", "hammer", "emberStaff", "frostWand"];
+const BUILD_IDS = ["swift", "iron", "viper"];
+const LOADOUT_IDS = ["sword", "hammer", "emberStaff", "frostWand", "bileWhip", "hexStaff"];
+
+// v0.12 Unlock gating.
+// Keys map a build / loadout id -> save.unlocks flag that must be true.
+// If a build/loadout isn't in this map, it's always available.
+const BUILD_UNLOCK  = { viper: "viperBuild" };
+const LOADOUT_UNLOCK = { bileWhip: "bileWhip", hexStaff: "hexStaff" };
+const BUILD_UNLOCK_HINT  = { viper: "UNLOCK: Clear any run with any build." };
+const LOADOUT_UNLOCK_HINT = {
+  bileWhip: "UNLOCK: Clear the Gullet climb hitless.",
+  hexStaff: "UNLOCK: Defeat any Elite boss.",
+};
 
 // Friendly labels for enemy "art" types used in weapon matchups.
 const ART_LABEL = {
@@ -25,19 +37,45 @@ export class CreateScene {
     this.step = 0;
     this.buildIdx = 0;
     this.loadIdx = 0;
+    // Snapshot unlock state once on scene entry so the UI is stable while
+    // the player navigates. Fresh-save defaults are graceful: everything
+    // locked except the base entries.
+    this.save = loadSave();
+  }
+
+  // Is the build / loadout at this index currently unlocked?
+  isBuildUnlocked(idx) {
+    const id = BUILD_IDS[idx];
+    const flag = BUILD_UNLOCK[id];
+    if (!flag) return true;
+    return !!(this.save && this.save.unlocks && this.save.unlocks[flag]);
+  }
+
+  isLoadoutUnlocked(idx) {
+    const id = LOADOUT_IDS[idx];
+    const flag = LOADOUT_UNLOCK[id];
+    if (!flag) return true;
+    return !!(this.save && this.save.unlocks && this.save.unlocks[flag]);
   }
 
   update(dt, game) {
     this.t += dt;
 
     if (this.step === 0) {
-      if (game.input.wasPressed("ArrowLeft", "a", "ArrowRight", "d")) {
+      if (game.input.wasPressed("ArrowRight", "d")) {
         this.buildIdx = (this.buildIdx + 1) % BUILD_IDS.length;
+        SFX.click();
+      } else if (game.input.wasPressed("ArrowLeft", "a")) {
+        this.buildIdx = (this.buildIdx - 1 + BUILD_IDS.length) % BUILD_IDS.length;
         SFX.click();
       }
       if (game.input.wasPressed(" ", "Space", "Enter")) {
-        SFX.confirm();
-        this.step = 1;
+        if (!this.isBuildUnlocked(this.buildIdx)) {
+          SFX.deny();
+        } else {
+          SFX.confirm();
+          this.step = 1;
+        }
       }
     } else if (this.step === 1) {
       if (game.input.wasPressed("ArrowLeft", "a")) {
@@ -49,8 +87,12 @@ export class CreateScene {
         SFX.click();
       }
       if (game.input.wasPressed(" ", "Space", "Enter")) {
-        SFX.confirm();
-        this.step = 2;
+        if (!this.isLoadoutUnlocked(this.loadIdx)) {
+          SFX.deny();
+        } else {
+          SFX.confirm();
+          this.step = 2;
+        }
       }
       if (game.input.wasPressed("Backspace", "Escape")) {
         SFX.deny();
@@ -94,9 +136,10 @@ export class CreateScene {
       size: 16, color: COLORS.bone, align: "center",
     });
 
-    const cardW = 480, cardH = 480;
-    const gap = 60;
-    const totalW = cardW * 2 + gap;
+    // v0.12 3 builds: cards shrink to fit but the selected one grows.
+    const cardW = 340, cardH = 480;
+    const gap = 30;
+    const totalW = cardW * BUILD_IDS.length + gap * (BUILD_IDS.length - 1);
     const startX = (W - totalW) / 2;
 
     BUILD_IDS.forEach((id, i) => {
@@ -104,52 +147,87 @@ export class CreateScene {
       const x = startX + i * (cardW + gap);
       const y = 170;
       const selected = i === this.buildIdx;
+      const unlocked = this.isBuildUnlocked(i);
       this.drawCard(ctx, x, y, cardW, cardH, selected);
 
       drawText(ctx, b.name, x + cardW / 2, y + 30, {
-        size: 30, bold: true, color: selected ? COLORS.bile : COLORS.bone, align: "center",
-        glow: selected ? COLORS.blood : null,
+        size: 26, bold: true,
+        color: !unlocked ? "#555" : (selected ? COLORS.bile : COLORS.bone),
+        align: "center",
+        glow: (selected && unlocked) ? COLORS.blood : null,
       });
-      drawText(ctx, b.blurb, x + cardW / 2, y + 68, {
-        size: 14, color: COLORS.boneDim, align: "center",
+      drawText(ctx, b.blurb, x + cardW / 2, y + 62, {
+        size: 13, color: COLORS.boneDim, align: "center",
       });
 
-      // Hero portrait (big)
+      // Hero portrait (big). Render viper as a greener-tinted swift.
       ctx.save();
       ctx.translate(x + cardW / 2, y + 200);
-      ctx.scale(5, 5);
-      drawHero(ctx, 0, 0, 1, this.t * 6, id);
+      ctx.scale(4.5, 4.5);
+      if (id === "viper") ctx.filter = "hue-rotate(80deg) saturate(1.2)";
+      drawHero(ctx, 0, 0, 1, this.t * 6, id === "viper" ? "swift" : id);
       ctx.restore();
 
-      // Stat rows
-      const statsY = y + 310;
+      // Stat rows (all three show full grid)
+      const statsY = y + 306;
       const barMax = 150;
-      this.drawStatRow(ctx, x + 40, statsY +  0,  "HP",       b.hp,      barMax, COLORS.blood);
-      this.drawStatRow(ctx, x + 40, statsY + 26,  "MANA",     b.mana,    barMax, COLORS.mana);
-      this.drawStatRow(ctx, x + 40, statsY + 52,  "ARMOR",    b.armor,   barMax, "#c0c4cc");
-      this.drawStatRow(ctx, x + 40, statsY + 78,  "CLIMB",    Math.round(b.climbSpeed * 100), barMax, COLORS.bile);
-      this.drawStatRow(ctx, x + 40, statsY + 104, "ACID RES", Math.round((1 - b.acidResist) * 100), 100, COLORS.gold);
+      this.drawStatRow(ctx, x + 24, statsY +  0,  "HP",       b.hp,      barMax, COLORS.blood);
+      this.drawStatRow(ctx, x + 24, statsY + 22,  "MANA",     b.mana,    barMax, COLORS.mana);
+      this.drawStatRow(ctx, x + 24, statsY + 44,  "ARMOR",    b.armor,   barMax, "#c0c4cc");
+      this.drawStatRow(ctx, x + 24, statsY + 66,  "CLIMB",    Math.round(b.climbSpeed * 100), barMax, COLORS.bile);
+      this.drawStatRow(ctx, x + 24, statsY + 88,  "ACID RES", Math.round((1 - b.acidResist) * 100), 100, COLORS.gold);
 
       // Perk list
-      drawText(ctx, "PERKS:", x + 40, statsY + 136, { size: 12, color: COLORS.bile, bold: true });
+      drawText(ctx, "PERKS:", x + 24, statsY + 114, { size: 11, color: COLORS.bile, bold: true });
       const perks = id === "swift"
-        ? ["- Lightning hops between columns", "- Longest acid-gout warning window", "- Highest mana pool"]
-        : ["- Armor absorbs 75% of damage", "- 2 free debris tanks per chamber", "- Acid-timer ticks 65% slower"];
+        ? ["- Lightning hops between columns", "- Widest acid-gout dodge window", "- Highest mana pool"]
+        : id === "iron"
+        ? ["- Armor absorbs 75% of damage", "- 2 free debris tanks per chamber", "- Acid ticks 65% slower"]
+        : ["- Every attack poisons foe (3s, 5%/s)", "- 30% armor soak (middle ground)", "- Balanced climb speed"];
       perks.forEach((line, k) => {
-        drawText(ctx, line, x + 40, statsY + 154 + k * 18, {
-          size: 12, color: COLORS.bone,
+        drawText(ctx, line, x + 24, statsY + 132 + k * 16, {
+          size: 11, color: COLORS.bone,
         });
       });
+
+      // Locked overlay
+      if (!unlocked) this.drawLockedOverlay(ctx, x, y, cardW, cardH,
+        BUILD_UNLOCK_HINT[id] || "LOCKED");
     });
   }
 
+  // Dim grayscale veil + padlock + unlock hint. Shared by build and loadout
+  // cards so the UX is consistent.
+  drawLockedOverlay(ctx, x, y, w, h, hint) {
+    ctx.save();
+    ctx.fillStyle = "rgba(0, 0, 0, 0.62)";
+    roundRect(ctx, x + 2, y + 2, w - 4, h - 4, 6);
+    ctx.fill();
+    // Padlock icon in the middle
+    const cx = x + w / 2, cy = y + h / 2 - 40;
+    ctx.fillStyle = "#888";
+    ctx.fillRect(cx - 14, cy, 28, 22);
+    ctx.strokeStyle = "#aaa";
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 10, Math.PI, 0);
+    ctx.stroke();
+    drawText(ctx, "LOCKED", cx, cy + 42, {
+      size: 18, color: "#ffd966", align: "center", bold: true, glow: "#ffd966",
+    });
+    drawText(ctx, hint, cx, cy + 70, {
+      size: 12, color: COLORS.bone, align: "center",
+    });
+    ctx.restore();
+  }
+
   drawStatRow(ctx, x, y, label, value, maxBar, color) {
-    drawText(ctx, label, x, y, { size: 13, color: COLORS.bone });
-    const barX = x + 110;
-    const barW = 230;
+    drawText(ctx, label, x, y, { size: 11, color: COLORS.bone });
+    const barX = x + 74;
+    const barW = 168;
     const pct = Math.min(1, value / (maxBar * 1.0));
-    drawBar(ctx, barX, y - 2, barW, 16, pct, { fill: color });
-    drawText(ctx, String(value), barX + barW + 12, y, { size: 13, color: COLORS.bone });
+    drawBar(ctx, barX, y - 2, barW, 14, pct, { fill: color });
+    drawText(ctx, String(value), barX + barW + 6, y, { size: 11, color: COLORS.bone });
   }
 
   renderLoadoutSelect(ctx) {
@@ -157,9 +235,10 @@ export class CreateScene {
       size: 16, color: COLORS.bone, align: "center",
     });
 
-    const cardW = 250, cardH = 470;
-    const gap = 30;
-    const totalW = cardW * 4 + gap * 3;
+    // v0.12 6 weapons: tighter cards, smaller font, still one row.
+    const cardW = 190, cardH = 470;
+    const gap = 14;
+    const totalW = cardW * LOADOUT_IDS.length + gap * (LOADOUT_IDS.length - 1);
     const startX = (W - totalW) / 2;
 
     LOADOUT_IDS.forEach((id, i) => {
@@ -167,37 +246,46 @@ export class CreateScene {
       const x = startX + i * (cardW + gap);
       const y = 170;
       const selected = i === this.loadIdx;
+      const unlocked = this.isLoadoutUnlocked(i);
       this.drawCard(ctx, x, y, cardW, cardH, selected);
 
       drawText(ctx, l.name, x + cardW / 2, y + 24, {
-        size: 16, bold: true, color: selected ? COLORS.bile : COLORS.bone, align: "center",
-        glow: selected ? COLORS.blood : null,
+        size: 14, bold: true,
+        color: !unlocked ? "#555" : (selected ? COLORS.bile : COLORS.bone),
+        align: "center",
+        glow: (selected && unlocked) ? COLORS.blood : null,
       });
 
-      this.drawWeaponIcon(ctx, x + cardW / 2, y + 150, l);
+      this.drawWeaponIcon(ctx, x + cardW / 2, y + 140, l);
 
-      drawText(ctx, l.blurb, x + cardW / 2, y + 250, {
-        size: 12, color: COLORS.boneDim, align: "center",
+      drawText(ctx, l.blurb, x + cardW / 2, y + 230, {
+        size: 10, color: COLORS.boneDim, align: "center",
       });
 
-      const lx = x + 18;
-      drawText(ctx, "ATTACK:", lx, y + 284, { size: 12, color: COLORS.bile });
-      drawText(ctx, l.attack.name, lx, y + 302, { size: 13, color: COLORS.bone });
-      drawText(ctx, `DMG ${l.attack.dmg[0]}-${l.attack.dmg[1]}`, lx, y + 320, { size: 11, color: COLORS.boneDim });
-      drawText(ctx, `CD ${l.attack.cooldown}s   MP ${l.attack.manaCost}`, lx, y + 334, { size: 11, color: COLORS.boneDim });
+      const lx = x + 10;
+      drawText(ctx, "ATTACK:", lx, y + 262, { size: 10, color: COLORS.bile });
+      drawText(ctx, l.attack.name, lx, y + 278, { size: 11, color: COLORS.bone });
+      drawText(ctx, `DMG ${l.attack.dmg[0]}-${l.attack.dmg[1]}`, lx, y + 294, { size: 10, color: COLORS.boneDim });
+      drawText(ctx, `CD ${l.attack.cooldown}s  MP ${l.attack.manaCost}`, lx, y + 308, { size: 10, color: COLORS.boneDim });
+      if (l.attack.multiLane) drawText(ctx, "MULTI-LANE", lx, y + 322, { size: 9, color: "#b5f05a", bold: true });
+      if (l.attack.hexMark)   drawText(ctx, "PLACES HEX", lx, y + 322, { size: 9, color: "#d978ff", bold: true });
 
-      drawText(ctx, "SPECIAL:", lx, y + 350, { size: 12, color: COLORS.bile });
-      drawText(ctx, l.special.name, lx, y + 368, { size: 13, color: COLORS.bone });
-      drawText(ctx, `DMG ${l.special.dmg[0]}-${l.special.dmg[1]}`, lx, y + 386, { size: 11, color: COLORS.boneDim });
-      drawText(ctx, `CD ${l.special.cooldown}s   MP ${l.special.manaCost}`, lx, y + 400, { size: 11, color: COLORS.boneDim });
+      drawText(ctx, "SPECIAL:", lx, y + 340, { size: 10, color: COLORS.bile });
+      drawText(ctx, l.special.name, lx, y + 356, { size: 11, color: COLORS.bone });
+      drawText(ctx, `DMG ${l.special.dmg[0]}-${l.special.dmg[1]}`, lx, y + 372, { size: 10, color: COLORS.boneDim });
+      drawText(ctx, `CD ${l.special.cooldown}s  MP ${l.special.manaCost}`, lx, y + 386, { size: 10, color: COLORS.boneDim });
+      if (l.special.hexDetonate) drawText(ctx, "DETONATES HEX", lx, y + 400, { size: 9, color: "#d978ff", bold: true });
 
       // Matchup hints - which guardian art type this weapon excels/fails vs
       drawText(ctx, "STRONG vs " + ART_LABEL[l.strongVs], lx, y + 420, {
-        size: 11, color: "#ffd966", bold: true,
+        size: 10, color: "#ffd966", bold: true,
       });
-      drawText(ctx, "WEAK   vs " + ART_LABEL[l.weakVs], lx, y + 434, {
-        size: 11, color: "#8a9aff", bold: true,
+      drawText(ctx, "WEAK vs " + ART_LABEL[l.weakVs], lx, y + 434, {
+        size: 10, color: "#8a9aff", bold: true,
       });
+
+      if (!unlocked) this.drawLockedOverlay(ctx, x, y, cardW, cardH,
+        LOADOUT_UNLOCK_HINT[id] || "LOCKED");
     });
   }
 
@@ -212,7 +300,8 @@ export class CreateScene {
     ctx.save();
     ctx.translate(W / 2, 400);
     ctx.scale(7, 7);
-    drawHero(ctx, 0, 0, 1, this.t * 6, b.id);
+    if (b.id === "viper") ctx.filter = "hue-rotate(80deg) saturate(1.2)";
+    drawHero(ctx, 0, 0, 1, this.t * 6, b.id === "viper" ? "swift" : b.id);
     ctx.restore();
 
     drawText(ctx, `${b.name} wielding ${l.name}`, W / 2, 530, {
@@ -354,6 +443,72 @@ export class CreateScene {
       ctx.fillRect(-3, -10, 6, 2);
       ctx.fillRect(-3, 10, 6, 2);
       ctx.fillRect(-3, 30, 6, 2);
+    } else if (loadout.id === "bileWhip") {
+      // Handle
+      ctx.fillStyle = "#4a2a10";
+      ctx.fillRect(-4, -40, 8, 50);
+      ctx.strokeStyle = "rgba(0,0,0,0.6)";
+      ctx.strokeRect(-4, -40, 8, 50);
+      // Grip wrap
+      ctx.fillStyle = "#2a1508";
+      for (let i = 0; i < 4; i++) ctx.fillRect(-5, -36 + i * 10, 10, 3);
+      // Pommel knob
+      drawSphere(ctx, 0, -44, 6, "#ffd966", { highlight: "rgba(255,255,255,1)" });
+      // Whip lash in three curls
+      ctx.strokeStyle = "#b5f05a";
+      ctx.lineWidth = 3;
+      ctx.lineCap = "round";
+      for (let k = 0; k < 3; k++) {
+        ctx.beginPath();
+        ctx.moveTo(0, 10);
+        ctx.quadraticCurveTo(-24 + k * 14, 28 + k * 10, -34 + k * 22, 60);
+        ctx.stroke();
+      }
+      // Wet droplets along lash
+      ctx.fillStyle = "#7fe3ff";
+      ctx.beginPath(); ctx.arc(-18, 34, 2.5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(0,    46, 2.5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(14,   38, 2.5, 0, Math.PI * 2); ctx.fill();
+    } else if (loadout.id === "hexStaff") {
+      // Dark shaft
+      ctx.fillStyle = "#2a1535";
+      ctx.fillRect(-5, -30, 10, 100);
+      ctx.strokeStyle = "rgba(0,0,0,0.6)";
+      ctx.strokeRect(-5, -30, 10, 100);
+      // Purple hex runes glow
+      ctx.fillStyle = "#d978ff";
+      ctx.fillRect(-3, 0, 6, 2);
+      ctx.fillRect(-3, 22, 6, 2);
+      ctx.fillRect(-3, 44, 6, 2);
+      // Hex crystal with purple aura
+      ctx.save();
+      ctx.shadowColor = "#d978ff";
+      ctx.shadowBlur = 20;
+      const g = ctx.createRadialGradient(0, -50, 2, 0, -50, 30);
+      g.addColorStop(0, "#ffffff");
+      g.addColorStop(0.4, "#e9a8ff");
+      g.addColorStop(1, "rgba(120, 20, 200, 0)");
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(0, -50, 30, 0, Math.PI * 2); ctx.fill();
+      // Hexagon crystal
+      ctx.fillStyle = "#a048c8";
+      ctx.beginPath();
+      for (let k = 0; k < 6; k++) {
+        const a = (k / 6) * Math.PI * 2 - Math.PI / 2;
+        const px = Math.cos(a) * 14, py = -50 + Math.sin(a) * 14;
+        if (k === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = "rgba(0,0,0,0.7)";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      // Eye in the middle
+      ctx.fillStyle = "#ffe5ff";
+      ctx.beginPath(); ctx.arc(0, -50, 5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#1a0520";
+      ctx.beginPath(); ctx.arc(0, -50, 2.5, 0, Math.PI * 2); ctx.fill();
+      ctx.restore();
     } else if (loadout.id === "frostWand") {
       // Wand shaft
       ctx.fillStyle = "#2a2f38";

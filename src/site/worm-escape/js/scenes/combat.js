@@ -7,9 +7,11 @@ import {
 import { SFX } from "../engine/audio.js";
 import { CHAMBERS } from "../content/chambers.js";
 import { ENEMIES } from "../content/enemies.js";
+import { rollElite, applyElite } from "../content/elites.js";
 import { pick, rand, randInt } from "../engine/rng.js";
 import { applyDamage, matchupMultiplier, matchupLabel, recordDirectHpHit, recordDirectArmorHit } from "../content/player.js";
 import { TransitionScene } from "./transition.js";
+import { PactScene } from "./pact.js";
 import { GameOverScene } from "./gameover.js";
 
 const LANES = [W * 0.33, W * 0.5, W * 0.67];
@@ -34,7 +36,22 @@ export class CombatScene {
     this.chamber = CHAMBERS[chamberIdx];
     const ed = ENEMIES[this.chamber.guardian];
     const hp = Math.floor(ed.hp * (1 + chamberIdx * 0.15));
-    this.enemy = { ...ed, hp, hpMax: hp };
+    // Deep-copy damage ranges so applyElite can mutate safely.
+    this.enemy = {
+      ...ed, hp, hpMax: hp,
+      attackDmg: ed.attackDmg ? [...ed.attackDmg] : undefined,
+      heavyDmg:  ed.heavyDmg  ? [...ed.heavyDmg]  : undefined,
+    };
+    // Elite roll - if the chamber promotes the guardian to an Elite, wrap
+    // it with the stat bumps and a twist. Elite state is read all over
+    // update()/dealToEnemy() below.
+    const elite = rollElite(chamberIdx);
+    if (elite) {
+      applyElite(this.enemy, elite.twistId);
+      this.eliteKill = true;
+      this.eliteTwist = elite.twistId;
+      this.eliteGoutTimer = rand(2.0, 3.2);
+    }
     // Display HP lerps toward this.enemy.hp for a satisfying tick-down.
     this.enemyHpDisplay = hp;
     // Persistent blood decals painted on the enemy as they take damage.
@@ -97,6 +114,25 @@ export class CombatScene {
     this.winTimer = 0;
     this.paused = false;
     this.done = false;
+
+    // v0.12 Hex staff mark stack (0-3). Builds on attack hits; special
+    // detonates them for a big per-mark damage bonus.
+    this.hexMarks = 0;
+
+    // Poison visual flash - pulses briefly every time poison is refreshed.
+    this.poisonFlashT = 0;
+
+    // Elite twist state (eliteKill / eliteTwist set above if the roll hit).
+    if (this.eliteKill === undefined) this.eliteKill = false;
+    if (this.eliteTwist === undefined) this.eliteTwist = null;
+    if (this.eliteGoutTimer === undefined) this.eliteGoutTimer = 0;
+    this.eliteAuraT = 0;
+    // Hex-eyed elite: cumulative tell-time reduction (stacks with heavy slams).
+    this.hexEyedShorten = 0;
+    // Bloated elite: death explosion already occurred.
+    this.bloatedExploded = false;
+    // Shield-broken flash timer (one-shot visual for Shielded elites).
+    this.shieldBrokenT = 0;
   }
 
   pushLog(line) {
@@ -118,6 +154,9 @@ export class CombatScene {
       }
     } else {
       this.pushLog(`Your ${p.loadout.name} matches up evenly. Fight smart.`);
+    }
+    if (this.eliteKill) {
+      this.pushLog(`!! ELITE [${this.eliteTwist}] - this one is different.`);
     }
   }
 
@@ -193,6 +232,35 @@ export class CombatScene {
     if (this.enemyShake > 0) this.enemyShake -= dt;
     if (this.enrageFlashT > 0) this.enrageFlashT = Math.max(0, this.enrageFlashT - dt);
     if (this.perfectFlashT > 0) this.perfectFlashT = Math.max(0, this.perfectFlashT - dt);
+    if (this.poisonFlashT > 0) this.poisonFlashT = Math.max(0, this.poisonFlashT - dt);
+    if (this.shieldBrokenT > 0) this.shieldBrokenT = Math.max(0, this.shieldBrokenT - dt);
+    this.eliteAuraT += dt;
+
+    // Poison tick - drip damage-over-time from VIPER / HEX-EYED attacks.
+    // Does NOT trigger on-kill effects (unlike a direct hit). Cosmetic
+    // poison bubbles every ~0.3s while active.
+    if (this.enemy.hp > 0 && (this.enemy.poisonT || 0) > 0) {
+      const dps = this.enemy.poisonDps || 0;
+      this.enemy.hp = Math.max(0, this.enemy.hp - dps * dt);
+      this.enemy.poisonT -= dt;
+      if (Math.random() < dt * 6) {
+        this.particles.burst(
+          W / 2 + rand(-40, 40),
+          FLOOR_Y - 220 + rand(-30, 30),
+          "#9bff80", 3, 80, 0.45,
+        );
+      }
+    }
+
+    // Fanged elite: extra acid gouts outside the normal cadence.
+    if (this.eliteTwist === "FANGED" && this.phase === "fight") {
+      this.eliteGoutTimer -= dt;
+      if (this.eliteGoutTimer <= 0) {
+        this.eliteGoutTimer = rand(3.2, 4.6);
+        const lane = randInt(0, 2);
+        this.telegraphs.push({ lane, t: 0, wait: p.dodgeWindow + 0.05 });
+      }
+    }
 
     // Enrage trigger: one-shot state change when HP falls below threshold.
     if (!this.enraged && this.enemy.hp > 0
@@ -203,6 +271,27 @@ export class CombatScene {
       SFX.thud();
       screenShake(14, 0.4);
       this.particles.burst(W / 2, FLOOR_Y - 200, "#ff3030", 40, 320, 0.9);
+    }
+
+    // Shielded Elite: once per fight at the threshold, raise a shield that
+    // drops damage to 1 and requires 3 perfect-brace hits to break. After
+    // shieldDuration seconds it drops automatically.
+    if (this.eliteTwist === "SHIELDED" && !this.enemy.shieldUsed
+        && this.enemy.hp < this.enemy.hpMax * (this.enemy.shieldTriggerFrac || 0.75)) {
+      this.enemy.shielded = true;
+      this.enemy.shieldUsed = true;
+      this.enemy.shieldCooldown = this.enemy.shieldDuration || 6;
+      this.enemy.shieldHitsLeft = 3;
+      this.pushLog(`!! SHIELD RAISED - PERFECT BRACE x3 TO BREAK !!`);
+      SFX.thud();
+      this.particles.burst(W / 2, FLOOR_Y - 200, "#9adaff", 40, 320, 0.9);
+    }
+    if (this.enemy.shielded) {
+      this.enemy.shieldCooldown -= dt;
+      if (this.enemy.shieldCooldown <= 0) {
+        this.enemy.shielded = false;
+        this.pushLog("The shield fades.");
+      }
     }
 
     // Smooth HP bar tick-down (lerp toward true HP for chewy feedback).
@@ -232,10 +321,34 @@ export class CombatScene {
       this.pushLog(this.enemy.flavorDeath);
       screenShake(10, 0.3);
       this.particles.burst(W / 2, FLOOR_Y - 200, COLORS.bile, 50, 350, 1.0);
-      // Score: chamber + boss credit.
+
+      // Blood Tithe pact: heal on kill.
+      const pmKill = p.pactMods || {};
+      if (pmKill.lifestealOnKill > 0) {
+        const heal = pmKill.lifestealOnKill;
+        const healed = Math.min(heal, p.hpMax - p.hp);
+        p.hp = Math.min(p.hpMax, p.hp + heal);
+        if (healed > 0) this.pushLog(`BLOOD TITHE: +${Math.ceil(healed)} HP stolen.`);
+      }
+
+      // Bloated elite: death explosion. Brace just before killing blow to halve it.
+      if (this.eliteTwist === "BLOATED" && !this.bloatedExploded) {
+        this.bloatedExploded = true;
+        const raw = this.braceTime > 0 ? 10 : 25;
+        const dmg = Math.round(raw * (CHAMBER_DMG_SCALE[this.chamberIdx] || 1));
+        const { hpTaken, armorTaken } = applyDamage(p, dmg);
+        screenShake(22, 0.55);
+        this.particles.burst(W / 2, FLOOR_Y - 200, "#ff6a30", 70, 420, 1.1);
+        this.pushLog(this.braceTime > 0
+          ? `BLOATED BURST (braced) - lose ${Math.ceil(hpTaken)} HP, ${Math.ceil(armorTaken)} ARM`
+          : `!! BLOATED BURST !! - lose ${Math.ceil(hpTaken)} HP, ${Math.ceil(armorTaken)} ARM`);
+      }
+
+      // Score: chamber + boss credit. Elite kills count separately.
       if (p.score) {
         p.score.bossesDefeated++;
         p.score.chambersCleared++;
+        if (this.eliteKill) p.score.elitesKilled = (p.score.elitesKilled || 0) + 1;
       }
       this.winTimer = 2.2;
     }
@@ -243,7 +356,12 @@ export class CombatScene {
       this.winTimer -= dt;
       if (this.winTimer <= 0) {
         this.done = true;
-        game.scenes.replace(new TransitionScene(this.chamberIdx), game);
+        // v0.12 route: Combat -> Pact picker -> Transition -> next Climb.
+        // Elite kills grant a 4-card choice as a spoil.
+        game.scenes.replace(
+          new PactScene(this.chamberIdx, { eliteReward: !!this.eliteKill }),
+          game,
+        );
       }
     }
   }
@@ -403,8 +521,15 @@ export class CombatScene {
       this.enemyTelling = true;
       // Heavy slams have longer wind-up (you have more warning, but no lane-dodge).
       // Jab/combo scale with dodge window.
+      // Pact (Worm's Eye) adds bonus seconds to the heavy telegraph; the
+      // Hex-Eyed Elite accumulates NEGATIVE seconds as its own twist.
+      const pm = p.pactMods || {};
+      const heavyBonus = (pm.heavyTellBonus || 0);
       if (move === "heavy") {
-        this.enemyTellTime = 1.6 + p.dodgeWindow * 0.6;
+        this.enemyTellTime = 1.6 + p.dodgeWindow * 0.6 + heavyBonus - this.hexEyedShorten;
+        if (this.eliteTwist === "HEX-EYED") {
+          this.hexEyedShorten = Math.min(1.0, this.hexEyedShorten + 0.2);
+        }
         this.pushLog(this.enemy.flavorHeavy || `${this.enemy.name} winds up a HEAVY slam! BRACE (4)!`);
       } else if (move === "combo") {
         this.enemyTellTime = 0.8 + p.dodgeWindow * 0.6;
@@ -413,6 +538,7 @@ export class CombatScene {
         this.enemyTellTime = 0.9 + p.dodgeWindow * 0.8;
         this.pushLog(this.enemy.name + " winds up a strike! BRACE (4)!");
       }
+      this.enemyTellTime = Math.max(0.3, this.enemyTellTime);
     }
   }
 
@@ -437,14 +563,25 @@ export class CombatScene {
 
   execute(idx, p, game) {
     const l = p.loadout;
+    const pm = p.pactMods || {};
     switch (idx) {
       case 0: {
         if (p.cooldowns.attack > 0) { SFX.deny(); this.pushLog(`${l.attack.name} is recharging...`); return; }
         if (p.mana < l.attack.manaCost) { SFX.deny(); this.pushLog("Not enough mana!"); return; }
         p.mana -= l.attack.manaCost;
-        p.cooldowns.attack = l.attack.cooldown;
+        // Pact modifier: Patient Blade slows attack cooldown; Glass Fangs... no, special.
+        p.cooldowns.attack = l.attack.cooldown * (pm.attackCdMult || 1);
         const dmg = randInt(l.attack.dmg[0], l.attack.dmg[1]);
-        this.dealToEnemy(dmg, l.attack.name, l.attack.sfx, p);
+        // v0.12 BILE WHIP: "Triple Lash" is a multi-lane attack. Fires 3
+        // damage events at modest damage each with staggered floating numbers
+        // so the player sees three hits land. HEX STAFF: its attack puts
+        // down a mark instead of big damage - handled in dealToEnemy.
+        const opts = {
+          kind: "attack",
+          multiLane: !!l.attack.multiLane,
+          hexMark: !!l.attack.hexMark,
+        };
+        this.dealToEnemy(dmg, l.attack.name, l.attack.sfx, p, opts);
         this.turnLocked = 0.28;
         break;
       }
@@ -452,9 +589,14 @@ export class CombatScene {
         if (p.cooldowns.special > 0) { SFX.deny(); this.pushLog(`${l.special.name} is recharging...`); return; }
         if (p.mana < l.special.manaCost) { SFX.deny(); this.pushLog("Not enough mana!"); return; }
         p.mana -= l.special.manaCost;
-        p.cooldowns.special = l.special.cooldown;
+        p.cooldowns.special = l.special.cooldown * (pm.specialCdMult || 1);
         const dmg = randInt(l.special.dmg[0], l.special.dmg[1]);
-        this.dealToEnemy(dmg, l.special.name, l.special.sfx, p);
+        const opts = {
+          kind: "special",
+          multiLane: !!l.special.multiLane,
+          hexDetonate: !!l.special.hexDetonate,
+        };
+        this.dealToEnemy(dmg, l.special.name, l.special.sfx, p, opts);
         this.turnLocked = 0.45;
         break;
       }
@@ -491,61 +633,174 @@ export class CombatScene {
     }
   }
 
-  dealToEnemy(rawDmg, name, sfx, p = null) {
-    // Weapon matchup amplifies or deflates damage.
+  // Compute the final damage amount for ONE hit event, taking pact mods,
+  // weapon matchup, perfect brace, hex marks, execute threshold, and random
+  // crit into account. Returns { dmg, isCrit, executed }.
+  rollHitDamage(rawDmg, { kind = "attack", consumeMarks = false, counterOn = false } = {}, p = null) {
+    const pm = (p && p.pactMods) || {};
     const mult = this.matchupMult || 1;
-    // Perfect Brace counter: 50% bonus on the attack that follows a perfect brace.
-    const counterBonus = this.perfectBraceReady ? 1.5 : 1;
-    const dmg = Math.max(1, Math.round(rawDmg * mult * counterBonus));
-    const lbl = this.matchupLabel;
+    const counterMult = counterOn ? (pm.counterMult || 1.5) : 1;
+    // Basic / special slant
+    const kindMult = kind === "special"
+      ? (pm.specialDmgMult || 1)
+      : (pm.attackDmgMult || 1);
+    const dmgMult = pm.dmgMult || 1;
+    // Execute bonus - below HP threshold, damage spikes.
+    const hpFrac = this.enemy.hp / this.enemy.hpMax;
+    const execOn = pm.executeThreshold && hpFrac <= pm.executeThreshold;
+    const execMult = execOn ? (pm.executeBonus || 1) : 1;
+    // Random crit from pacts (devastating multiplier treated like matchup).
+    const isCrit = (pm.critChance || 0) > 0 && Math.random() < (pm.critChance || 0);
+    const critMult = isCrit ? 1.6 : 1;
+    // Hex marks: the HEX STAFF special detonates all current marks for a
+    // +20% burst per mark (then clears them). Attacks only CONSUME marks
+    // (consume up to 3 of them into a +20%/each buff on the current hit).
+    let markMult = 1;
+    if (this.hexMarks > 0) {
+      markMult = 1 + (consumeMarks ? this.hexMarks * 0.6 : Math.min(this.hexMarks, 1) * 0.2);
+    }
+    const dmg = Math.max(1, Math.round(
+      rawDmg * mult * counterMult * kindMult * dmgMult * execMult * critMult * markMult,
+    ));
+    return { dmg, isCrit, execOn, consumedMarks: consumeMarks ? this.hexMarks : 0 };
+  }
+
+  dealToEnemy(rawDmg, name, sfx, p = null, opts = {}) {
+    const multiLane = !!opts.multiLane;
+    const hexMark   = !!opts.hexMark;
+    const hexDet    = !!opts.hexDetonate;
+
     const hadCounter = this.perfectBraceReady;
     this.perfectBraceReady = false;
     if (hadCounter && p && p.score) p.score.counterStrikes++;
 
-    this.enemy.hp = Math.max(0, this.enemy.hp - dmg);
-    this.enemyFlash = hadCounter ? 0.5 : 0.3;
-    this.enemyShake = hadCounter ? 0.55 : (mult > 1 ? 0.4 : 0.22);
+    // --- Multi-lane (BILE WHIP) ---
+    // Fire three separate damage events at reduced damage each. The total is
+    // balanced similar to a single hit but triggers 3 marks / 3 shield breaks
+    // / 3 poison stacks - very strong against SHIELDED elites.
+    if (multiLane) {
+      const LANE_OFFS = [-160, 0, 160];
+      let firstRoll = true;
+      for (let i = 0; i < LANE_OFFS.length; i++) {
+        const { dmg, isCrit, execOn } = this.rollHitDamage(rawDmg, {
+          kind: opts.kind, counterOn: firstRoll && hadCounter,
+        }, p);
+        firstRoll = false;
+        this.applyHit(dmg, {
+          name: i === 0 ? name : `${name} (lane ${i + 1})`,
+          sfx,
+          p,
+          hadCounter: i === 0 && hadCounter,
+          isCrit, execOn,
+          lane: i,
+          laneX: W / 2 + LANE_OFFS[i],
+        });
+        // Each lane arms a shield-break event against shielded elites.
+        if (this.enemy && this.enemy.shielded) this.enemy.perfectBraceHits = 0;
+      }
+      this.applyOnHitEffects(p, { hexMark, hexDet });
+      SFX[sfx] ? SFX[sfx]() : SFX.hit();
+      return;
+    }
 
-    // Log w/ matchup tag and counter tag.
-    let line = `${name}! ${this.enemy.name} takes ${dmg} damage.`;
-    if (hadCounter)       line = `COUNTER-STRIKE! ${line}`;
+    // --- Hex staff detonate: consume all marks as a big single hit. ---
+    // --- Default single-lane hit ---
+    const { dmg, isCrit, execOn, consumedMarks } = this.rollHitDamage(rawDmg, {
+      kind: opts.kind, consumeMarks: hexDet, counterOn: hadCounter,
+    }, p);
+    this.applyHit(dmg, { name, sfx, p, hadCounter, isCrit, execOn, consumedMarks });
+    this.applyOnHitEffects(p, { hexMark, hexDet });
+    SFX[sfx] ? SFX[sfx]() : SFX.hit();
+  }
+
+  // Centralized "a damage number actually lands" path. Handles enemy HP,
+  // log line, shake, particles, floater, blood decals, shield-break counter.
+  applyHit(dmg, { name, hadCounter, isCrit, execOn, consumedMarks, lane, laneX, p }) {
+    const mult = this.matchupMult || 1;
+    const lbl = this.matchupLabel;
+    // --- Shielded elite: damage is clamped to 1 while shield is up, but
+    // each brace-counter lands a hit point toward breaking the shield.
+    let finalDmg = dmg;
+    if (this.enemy.shielded) {
+      if (hadCounter) this.enemy.shieldHitsLeft = Math.max(0, (this.enemy.shieldHitsLeft ?? 3) - 1);
+      finalDmg = 1;
+      if ((this.enemy.shieldHitsLeft ?? 3) <= 0) {
+        this.enemy.shielded = false;
+        this.enemy.shieldBrokenT = 0.9;
+        this.pushLog("The shield SHATTERS!");
+        screenShake(16, 0.5);
+        this.particles.burst(W / 2, FLOOR_Y - 200, "#fff2a0", 44, 340, 0.9);
+      }
+    }
+    this.enemy.hp = Math.max(0, this.enemy.hp - finalDmg);
+
+    this.enemyFlash = hadCounter ? 0.5 : (isCrit ? 0.5 : 0.3);
+    this.enemyShake = hadCounter ? 0.55 : (mult > 1 || isCrit ? 0.4 : 0.22);
+
+    // Log line with all flavor tags.
+    let line = `${name}! ${this.enemy.name} takes ${finalDmg} damage.`;
+    if (hadCounter) line = `COUNTER-STRIKE! ${line}`;
+    else if (isCrit) line = `PATIENT CUT! ${line}`;
+    else if (execOn) line = `EXECUTE! ${line}`;
+    else if (consumedMarks > 0) line = `HEX DETONATE (${consumedMarks} marks)! ${line}`;
     else if (lbl && mult > 1) line = `${lbl.text} ${line}`;
     else if (lbl)             line = `${line} (${lbl.text})`;
     this.pushLog(line);
 
-    // Screen / particle feedback scales with matchup.
+    // Feedback
     screenShake(mult > 1 ? 9 : 5, 0.15);
-    const burstColor = mult > 1 ? "#ffd966" : (mult < 1 ? "#8a9aff" : COLORS.blood);
-    this.particles.burst(W / 2, FLOOR_Y - 200, burstColor,
+    const burstColor = isCrit ? "#ff40c0"
+      : (mult > 1 ? "#ffd966" : (mult < 1 ? "#8a9aff" : COLORS.blood));
+    this.particles.burst(laneX ?? W / 2, FLOOR_Y - 200, burstColor,
       mult > 1 ? 28 : 16, mult > 1 ? 280 : 220, 0.55);
 
-    // Floating damage number.
+    // Floating damage number (each lane gets its own spot).
     this.floaters.push({
-      x: W / 2 + rand(-60, 60),
-      y: FLOOR_Y - 240,
+      x: (laneX ?? W / 2) + rand(-30, 30),
+      y: FLOOR_Y - 240 + (lane ? lane * 6 : 0),
       vy: -70,
       life: 1.1, max: 1.1,
-      text: `-${dmg}`,
-      color: mult > 1 ? "#ffd966" : (mult < 1 ? "#8a9aff" : "#ffffff"),
-      size: mult > 1 ? 28 : 22,
+      text: isCrit ? `-${finalDmg}!` : `-${finalDmg}`,
+      color: isCrit ? "#ff40c0"
+        : (mult > 1 ? "#ffd966" : (mult < 1 ? "#8a9aff" : "#ffffff")),
+      size: mult > 1 || isCrit ? 28 : 22,
     });
 
-    // Blood decal: 2-3 spots per hit, more on super-effective hits.
-    // Positioned in enemy-local space (centered on drawEnemy origin at W/2, 340).
-    const count = mult > 1 ? 3 : 2;
+    // Blood decal cluster.
+    const count = mult > 1 || isCrit ? 3 : 2;
     for (let i = 0; i < count; i++) {
       this.bloodDecals.push({
         x: rand(-85, 85),
         y: rand(-80, 70),
-        r: rand(4, 10) + (mult > 1 ? rand(2, 6) : 0),
+        r: rand(4, 10) + (mult > 1 || isCrit ? rand(2, 6) : 0),
         alpha: rand(0.55, 0.85),
       });
     }
     if (this.bloodDecals.length > 42) {
       this.bloodDecals.splice(0, this.bloodDecals.length - 42);
     }
+  }
 
-    SFX[sfx] ? SFX[sfx]() : SFX.hit();
+  // Post-hit side effects: poison (VIPER / HEX-EYED pact), hex marks, hex
+  // detonate (consumes marks). Called once per attack regardless of multi-lane.
+  applyOnHitEffects(p, { hexMark, hexDet }) {
+    const pm = (p && p.pactMods) || {};
+    const poisonPct  = pm.poisonPct  ?? 0;
+    const poisonTime = pm.poisonTime ?? 0;
+    if (poisonPct > 0 && poisonTime > 0) {
+      // Refresh duration on stack; damage does not stack.
+      this.enemy.poisonT = Math.max(this.enemy.poisonT || 0, poisonTime);
+      this.enemy.poisonDps = Math.max(this.enemy.poisonDps || 0,
+        poisonPct * this.enemy.hpMax);
+      this.poisonFlashT = 0.6;
+    }
+    if (hexMark) {
+      this.hexMarks = Math.min((this.hexMarks || 0) + 1, 3);
+      this.pushLog(`HEX MARK placed (${this.hexMarks}/3)`);
+    }
+    if (hexDet) {
+      this.hexMarks = 0;
+    }
   }
 
   // ================== RENDER ==================
@@ -703,10 +958,45 @@ export class CombatScene {
     ctx.save();
     // Drop shadow on virtual floor behind enemy
     drawDropShadow(ctx, cx, cy + 150, 120, 16, 0.5);
+    // v0.12 Elite aura: pulsing gold halo ring (or twist-colored) behind
+    // the enemy sprite. Draw BEFORE translating for the sprite so it sits
+    // centered around the enemy at origin.
+    if (this.eliteKill) {
+      const pulse = 0.55 + 0.45 * Math.sin(this.eliteAuraT * 3);
+      const col = this.enemy.eliteColor || COLORS.gold;
+      ctx.save();
+      ctx.translate(cx + sx, cy + sy);
+      ctx.shadowColor = col;
+      ctx.shadowBlur = 30;
+      ctx.strokeStyle = `rgba(255, 217, 102, ${0.35 + pulse * 0.35})`;
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.arc(0, 0, 150 + pulse * 6, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.strokeStyle = `rgba(255, 240, 180, ${0.2 + pulse * 0.3})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0, 0, 172 + pulse * 8, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
     ctx.translate(cx + sx, cy + sy);
     if (this.enemyFlash > 0) {
       ctx.shadowColor = "#ffffff";
       ctx.shadowBlur = 26;
+    }
+    // Shielded phase overlay: blue rippling dome.
+    if (this.enemy.shielded) {
+      ctx.save();
+      const pulse = 0.55 + 0.45 * Math.sin(this.t * 10);
+      ctx.strokeStyle = `rgba(154, 218, 255, ${0.4 + pulse * 0.4})`;
+      ctx.lineWidth = 3;
+      ctx.shadowColor = "#9adaff";
+      ctx.shadowBlur = 22;
+      ctx.beginPath();
+      ctx.arc(0, 0, 120 + pulse * 6, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
     }
     switch (this.enemy.art) {
       case "tentacle": this.drawTentacle(ctx); break;
@@ -1230,10 +1520,18 @@ export class CombatScene {
     });
 
     // Top-right: enemy HP
-    drawPanel(ctx, W - 280, pad, 264, 60);
+    drawPanel(ctx, W - 280, pad, 264, this.eliteKill ? 80 : 60);
     drawText(ctx, this.enemy.name, W - 148, pad + 16, {
-      size: 16, color: COLORS.bile, align: "center", bold: true,
+      size: 16, color: this.eliteKill ? COLORS.gold : COLORS.bile,
+      align: "center", bold: true,
+      glow: this.eliteKill ? COLORS.gold : null,
     });
+    if (this.eliteKill) {
+      const twColor = this.enemy.eliteColor || COLORS.gold;
+      drawText(ctx, `[ ${this.eliteTwist} ]`, W - 148, pad + 66, {
+        size: 11, color: twColor, align: "center", bold: true, glow: twColor,
+      });
+    }
     // Background bar uses the slowly-lerping display HP for a satisfying
     // tick-down. Underneath we paint a darker "real" HP so the player can
     // still tell that damage was registered instantly.

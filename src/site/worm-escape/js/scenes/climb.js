@@ -115,6 +115,9 @@ export class ClimbScene {
     this.toastTime = 0;
     this.paused = false;
     this.done = false;
+    // v0.12 hitless chamber tracking: any damage taken flips this off.
+    // Surfaced to the scoreboard + saves the Gullet-hitless unlock flag.
+    this.hitlessChamber = true;
   }
 
   enter(game) {
@@ -124,6 +127,23 @@ export class ClimbScene {
     p.acidTimerMax = this.chamber.acidTimer;
     this.showToast("ENTER: " + this.chamber.name, 2.0);
     SFX.confirm();
+    // v0.12 Ring Forger pact: start this chamber with a free Ring of Armor.
+    // Consumes the one-shot flag so the bonus doesn't carry into chamber 3.
+    if (p.pactMods && p.pactMods.freeRingPending) {
+      p.pactMods.freeRingPending = false;
+      p.armorMax = Math.max(p.armorMax, 50);
+      p.armor = Math.min(p.armorMax, p.armor + 50);
+      if (p.armorSoak <= 0) p.armorSoak = 0.5;
+      this.ringPulseT = 1.2;
+      this.showToast("RING FORGER: Free Ring of Armor conjured!", 2.2);
+      if (p.score) { p.score.powerUpsCollected++; p.score.ringsCollected++; }
+    }
+  }
+
+  // v0.12 small helper so every damage branch flips the hitless flag in
+  // exactly one place. `points` is informational only for later use.
+  markHit(_points = 1) {
+    this.hitlessChamber = false;
   }
 
   showToast(text, time) {
@@ -190,16 +210,20 @@ export class ClimbScene {
     }
 
     // --- Bile rises ---
-    this.bileHeight += ch.bileRiseRate * dt;
+    // Pact modifier: Tide Watcher slows bile, Ring Forger speeds it up.
+    const bileMult = (p.pactMods && p.pactMods.bileRiseMult) || 1;
+    this.bileHeight += ch.bileRiseRate * bileMult * dt;
 
     // --- Acid timer (atmospheric corrosion, even above bile) ---
     p.acidTimer -= dt * p.acidResist;
     if (p.acidTimer <= 0) {
       if (p.armor > 0) {
         p.armor = Math.max(0, p.armor - 5 * dt);
+        this.markHit();
       } else {
         p.hp -= 3 * dt;
         this.flash = Math.max(this.flash, 0.15);
+        this.markHit();
       }
     }
 
@@ -225,6 +249,7 @@ export class ClimbScene {
       }
       if (p.armor > 0) {
         p.armor = Math.max(0, p.armor - dt); // 1 point per second
+        this.markHit();
         // Occasional armor-fizz particles + red-tint flash pulse
         this.flash = Math.max(this.flash, 0.12 + Math.sin(this.t * 12) * 0.04);
         if (Math.random() < 0.4) {
@@ -240,6 +265,7 @@ export class ClimbScene {
         p.hp -= bileDmg;
         recordDirectHpHit(p, bileDmg, { countAsHit: false });
         this.flash = Math.max(this.flash, 0.35);
+        this.markHit();
         if (Math.random() < 0.5) {
           this.particles.burst(
             this.heroX + rand(-16, 16),
@@ -266,17 +292,20 @@ export class ClimbScene {
     this.debrisTimer -= dt;
     if (this.debrisTimer <= 0) {
       const [tMin, tMax] = ch.debrisInterval;
-      this.debrisTimer = rand(tMin, tMax);
+      // Pact modifier: Tide Watcher raises the interval (slower debris).
+      const rateMult = (p.pactMods && p.pactMods.debrisRateMult) || 1;
+      this.debrisTimer = rand(tMin * rateMult, tMax * rateMult);
       // Base spawn count per cycle scales with the chamber.
       const baseCount = ch.spawnCount || 1;
       const usedCols = [];
+      const pm = p.pactMods || null;
       for (let i = 0; i < baseCount; i++) {
-        this.spawnTelegraph(ch, usedCols);
+        this.spawnTelegraph(ch, usedCols, pm);
         usedCols.push(this._lastSpawnedCol);
       }
       // Optional bonus spawn when multiDebrisChance rolls true.
       if (Math.random() < (ch.multiDebrisChance || 0)) {
-        this.spawnTelegraph(ch, usedCols);
+        this.spawnTelegraph(ch, usedCols, pm);
       }
     }
     for (const tg of this.telegraphs) tg.t += dt;
@@ -328,6 +357,12 @@ export class ClimbScene {
     if (this.progress >= ch.climbHeight) {
       this.done = true;
       SFX.confirm();
+      // v0.12 hitless-chamber bookkeeping. Bile Whip unlock depends on the
+      // specific Gullet (chamber 0) flag.
+      if (this.hitlessChamber && p.score) {
+        p.score.hitlessChambers++;
+        if (this.chamberIdx === 0) p.score.gullethitless = true;
+      }
       game.scenes.replace(new CombatScene(this.chamberIdx), game);
       return;
     }
@@ -361,13 +396,15 @@ export class ClimbScene {
 
   // Spawn one telegraph. `avoidCols` is an optional array of columns already
   // spoken for this cycle so we spread the spawns out naturally.
-  spawnTelegraph(ch, avoidCols = []) {
+  spawnTelegraph(ch, avoidCols = [], pactMods = null) {
     const col = this.pickColumn(avoidCols);
     this._lastSpawnedCol = col;
 
     // Roll power-up chance per chamber (rarer in later chambers, and the
-    // ring of armor is especially rare inside the power-up pool).
-    const isPowerUp = Math.random() < (ch.powerUpRarity || 0);
+    // ring of armor is especially rare inside the power-up pool). Feed
+    // Frenzy pact doubles this ramp.
+    const puMult = (pactMods && pactMods.powerUpRateMult) || 1;
+    const isPowerUp = Math.random() < ((ch.powerUpRarity || 0) * puMult);
     const kind = isPowerUp
       ? this.weightedPick(POWERUPS)
       : this.weightedPick(DEBRIS_KINDS);
@@ -407,8 +444,11 @@ export class ClimbScene {
           break;
         }
         case "heal": {
-          const healed = Math.min(kind.heal || 30, p.hpMax - p.hp);
-          p.hp = Math.min(p.hpMax, p.hp + (kind.heal || 30));
+          // Feed Frenzy pact: +burgerBonusHp on top of the base heal.
+          const bonus = (p.pactMods && p.pactMods.burgerBonusHp) || 0;
+          const totalHeal = (kind.heal || 30) + bonus;
+          const healed = Math.min(totalHeal, p.hpMax - p.hp);
+          p.hp = Math.min(p.hpMax, p.hp + totalHeal);
           this.showToast(`+CHEESEBURGER! (+${Math.ceil(healed)} HP)`, 1.4);
           SFX.confirm();
           if (p.score) p.score.powerUpsCollected++;
@@ -435,8 +475,12 @@ export class ClimbScene {
 
     // --- Hazards: resolve by damage type ---
     // Apply per-chamber scaling so the Gullet hits ~45% harder than the Stomach.
+    // Feed Frenzy pact multiplies incoming debris on top of that.
     const scale = CHAMBER_DMG_SCALE[this.chamberIdx] || 1;
-    const dmg = Math.round((kind.dmg || 0) * scale);
+    const debrisMult = (p.pactMods && p.pactMods.debrisDmgMult) || 1;
+    const dmg = Math.round((kind.dmg || 0) * scale * debrisMult);
+    // Any hazard contact flips hitless off.
+    this.markHit();
     let armorTaken = 0, hpTaken = 0;
     let partColor = COLORS.blood;
     let shake = 10;

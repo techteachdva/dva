@@ -37,14 +37,17 @@ export class InstructionsScene {
       size: 14, color: COLORS.bone, align: "center",
     });
 
-    // One outer panel containing all four numbered steps in a 2x2 grid.
+    // One outer panel containing all four numbered steps in a 2x2 grid,
+    // plus a v0.12 strip beneath covering Pacts & Elites.
     const panelX = 60, panelY = 130, panelW = W - 120, panelH = H - 220;
     drawPanel(ctx, panelX, panelY, panelW, panelH);
 
     const gapX = 24;
-    const gapY = 18;
+    const gapY = 16;
+    const stripH = 100;          // v0.12 "Pacts & Elites" micro-card height
+    const gridH = panelH - stripH - gapY * 4;
     const colW = (panelW - gapX * 3) / 2;
-    const rowH = (panelH - gapY * 3) / 2;
+    const rowH = gridH / 2;
     const x1 = panelX + gapX;
     const x2 = panelX + gapX * 2 + colW;
     const y1 = panelY + gapY;
@@ -90,6 +93,12 @@ export class InstructionsScene {
                      "Stay mobile and time your braces."],
     ], { accent: "#ff9070" });
 
+    // v0.12 micro-card: Pacts & Elites strip
+    const stripX = x1;
+    const stripY = y2 + rowH + gapY;
+    const stripW = panelW - gapX * 2;
+    this.drawPactElitesStrip(ctx, stripX, stripY, stripW, stripH);
+
     // Footer prompt - blinks to draw the eye
     const blink = Math.sin(this.t * 5) > 0;
     if (blink) {
@@ -100,6 +109,73 @@ export class InstructionsScene {
     drawText(ctx, "Tip: press [M] at any time to mute music and sound.",
       W / 2, H - 28, {
       size: 13, color: COLORS.boneDim, align: "center",
+    });
+  }
+
+  // v0.12 addendum strip: new systems (Pacts, Elites) and meta-progression.
+  drawPactElitesStrip(ctx, x, y, w, h) {
+    const accent = "#ffd966"; // gold
+    ctx.save();
+    ctx.fillStyle = "rgba(30, 18, 8, 0.65)";
+    roundRect(ctx, x, y, w, h, 8);
+    ctx.fill();
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.restore();
+
+    // Numbered badge
+    ctx.save();
+    ctx.fillStyle = accent;
+    ctx.beginPath();
+    ctx.arc(x + 26, y + h / 2, 18, 0, Math.PI * 2);
+    ctx.fill();
+    drawText(ctx, "5", x + 26, y + h / 2, {
+      size: 22, color: "#0a0410", bold: true, align: "center", baseline: "middle",
+      shadow: false,
+    });
+    ctx.restore();
+
+    drawText(ctx, "PACTS & ELITES", x + 56, y + 10, {
+      size: 18, color: accent, bold: true, glow: accent,
+    });
+    drawText(ctx, "replay-shaping twists", x + 56, y + 32, {
+      size: 11, color: COLORS.boneDim,
+    });
+
+    // Three columns of bite-sized info.
+    const col1 = x + 56;
+    const col2 = x + Math.floor(w * 0.42);
+    const col3 = x + Math.floor(w * 0.72);
+
+    drawText(ctx, "PACTS", col1, y + 54, {
+      size: 13, color: COLORS.bone, bold: true,
+    });
+    drawText(ctx, "After each boss, pick 1 of 3 (or 4)", col1, y + 72, {
+      size: 12, color: COLORS.bone,
+    });
+    drawText(ctx, "tradeoff cards. Pros AND cons.", col1, y + 86, {
+      size: 12, color: COLORS.boneDim,
+    });
+
+    drawText(ctx, "ELITES", col2, y + 54, {
+      size: 13, color: accent, bold: true,
+    });
+    drawText(ctx, "Gold-ringed bosses: +HP/DMG, unique", col2, y + 72, {
+      size: 12, color: COLORS.bone,
+    });
+    drawText(ctx, "twists. FANGED/SHIELDED/HEX/BLOATED", col2, y + 86, {
+      size: 12, color: COLORS.boneDim,
+    });
+
+    drawText(ctx, "UNLOCKS", col3, y + 54, {
+      size: 13, color: COLORS.bile, bold: true,
+    });
+    drawText(ctx, "Scores save to localStorage.", col3, y + 72, {
+      size: 12, color: COLORS.bone,
+    });
+    drawText(ctx, "New builds/weapons unlock by play.", col3, y + 86, {
+      size: 12, color: COLORS.boneDim,
     });
   }
 
