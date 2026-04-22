@@ -530,13 +530,13 @@ export class CombatScene {
         if (this.eliteTwist === "HEX-EYED") {
           this.hexEyedShorten = Math.min(1.0, this.hexEyedShorten + 0.2);
         }
-        this.pushLog(this.enemy.flavorHeavy || `${this.enemy.name} winds up a HEAVY slam! BRACE (4)!`);
+        this.pushLog(this.enemy.flavorHeavy || `${this.enemy.name} winds up a HEAVY slam! BRACE (F)!`);
       } else if (move === "combo") {
         this.enemyTellTime = 0.8 + p.dodgeWindow * 0.6;
-        this.pushLog(this.enemy.flavorCombo || `${this.enemy.name} readies a TRIPLE STRIKE! BRACE (4)!`);
+        this.pushLog(this.enemy.flavorCombo || `${this.enemy.name} readies a TRIPLE STRIKE! BRACE (F)!`);
       } else {
         this.enemyTellTime = 0.9 + p.dodgeWindow * 0.8;
-        this.pushLog(this.enemy.name + " winds up a strike! BRACE (4)!");
+        this.pushLog(this.enemy.name + " winds up a strike! BRACE (F)!");
       }
       this.enemyTellTime = Math.max(0.3, this.enemyTellTime);
     }
@@ -554,10 +554,13 @@ export class CombatScene {
 
     const choose = (idx) => { this.menuIdx = idx; this.execute(idx, p, game); };
 
-    if (game.input.wasPressed("1")) choose(0);
-    else if (game.input.wasPressed("2")) choose(1);
-    else if (game.input.wasPressed("3")) choose(2);
-    else if (game.input.wasPressed("4")) choose(3);
+    // v0.13: Q/E/R/F are alternate keybinds for the four actions. This
+    // matches the new TongueBossScene layout and keeps your hand on the
+    // left-hand home row while the right hand works the mouse.
+    if      (game.input.wasPressed("1", "q")) choose(0);
+    else if (game.input.wasPressed("2", "e")) choose(1);
+    else if (game.input.wasPressed("3", "r")) choose(2);
+    else if (game.input.wasPressed("4", "f")) choose(3);
     else if (game.input.wasPressed(" ", "Space", "Enter")) choose(this.menuIdx);
   }
 
@@ -1564,17 +1567,17 @@ export class CombatScene {
       if (move === "heavy") {
         bg = `rgba(255, 120, 20, ${0.35 + pulse * 0.45})`;
         glow = "#ff8020";
-        text = "!! HEAVY SLAM - LANE DODGE WON'T SAVE YOU - BRACE (4) !!";
+        text = "!! HEAVY SLAM - LANE DODGE WON'T SAVE YOU - BRACE (F/4) !!";
       } else if (move === "combo") {
         bg = `rgba(255, 220, 60, ${0.3 + pulse * 0.45})`;
         glow = "#ffd966";
         text = this.comboHitsLeft > 0
-          ? `>>> TRIPLE STRIKE ${3 - this.comboHitsLeft}/3 - BRACE NOW (4) <<<`
-          : "!!! TRIPLE STRIKE INCOMING - BRACE (4) !!!";
+          ? `>>> TRIPLE STRIKE ${3 - this.comboHitsLeft}/3 - BRACE NOW (F/4) <<<`
+          : "!!! TRIPLE STRIKE INCOMING - BRACE (F/4) !!!";
       } else {
         bg = `rgba(255, 60, 60, ${0.3 + pulse * 0.4})`;
         glow = "#ff2020";
-        text = "! INCOMING STRIKE - PRESS 4 TO BRACE !";
+        text = "! INCOMING STRIKE - PRESS F/4 TO BRACE !";
       }
       ctx.fillStyle = bg;
       ctx.fillRect(0, 130, W, 28);
@@ -1661,24 +1664,24 @@ export class CombatScene {
 
     if (this.enemyTelling) {
       if (this.enemyMoveType === "heavy") {
-        hint = { text: "[4] BRACE - dodging won't help this one!", color: "#ffd0b0" };
+        hint = { text: "[F/4] BRACE - dodging won't help this one!", color: "#ffd0b0" };
       } else if (this.enemyMoveType === "combo") {
-        hint = { text: "[4] BRACE to cover all three hits!", color: "#fff0a0" };
+        hint = { text: "[F/4] BRACE to cover all three hits!", color: "#fff0a0" };
       } else {
-        hint = { text: "[A]/[D] to dodge lanes OR [4] BRACE", color: "#ffc0c0" };
+        hint = { text: "[A]/[D] to dodge lanes OR [F/4] BRACE", color: "#ffc0c0" };
       }
     } else if (this.comboHitsLeft > 0) {
-      hint = { text: `[4] BRACE NOW - ${this.comboHitsLeft} hit(s) left!`, color: "#fff0a0" };
+      hint = { text: `[F/4] BRACE NOW - ${this.comboHitsLeft} hit(s) left!`, color: "#fff0a0" };
     } else if (this.perfectBraceReady) {
-      hint = { text: "Press [1] or [2] to CASH IN your counter!", color: "#ffd966" };
+      hint = { text: "Press [Q/1] or [E/2] to CASH IN your counter!", color: "#ffd966" };
     } else if (this.telegraphs.some((tg) => tg.lane === this.lane && tg.t >= tg.wait - 0.45)) {
       hint = { text: "ACID LANDING ON YOU - [A]/[D] dodge!", color: "#bfff00" };
     } else if (p.hp / p.hpMax < 0.35) {
-      hint = { text: "Low HP! [3] Dodge for MP, [4] Brace for safety", color: "#ffa0a0" };
+      hint = { text: "Low HP! [R/3] Dodge for MP, [F/4] Brace for safety", color: "#ffa0a0" };
     } else if (p.cooldowns.attack <= 0 && p.mana >= l.attack.manaCost) {
-      hint = { text: `[1] ${l.attack.name}  -  [2] ${l.special.name}  -  dodge with [A]/[D]`, color: "#c8ffc0" };
+      hint = { text: `[Q/1] ${l.attack.name}  -  [E/2] ${l.special.name}  -  dodge with [A]/[D]`, color: "#c8ffc0" };
     } else if (p.mana < l.attack.manaCost) {
-      hint = { text: "Out of MP! Press [3] Dodge Roll to recover.", color: "#7fc0ff" };
+      hint = { text: "Out of MP! Press [R/3] Dodge Roll to recover.", color: "#7fc0ff" };
     }
     if (!hint) return;
     const pulse = 0.5 + 0.5 * Math.sin(this.t * 7);
@@ -1704,20 +1707,20 @@ export class CombatScene {
     drawText(ctx, "ACTIONS", x + 14, y + 12, { size: 13, color: COLORS.boneDim });
 
     const items = [
-      { key: "1", name: l.attack.name,
+      { key: "Q/1", name: l.attack.name,
         info: `DMG ${l.attack.dmg[0]}-${l.attack.dmg[1]}  MP ${l.attack.manaCost}`,
         cd: p.cooldowns.attack,
         locked: p.cooldowns.attack > 0 || p.mana < l.attack.manaCost,
         cdMax: l.attack.cooldown,
       },
-      { key: "2", name: l.special.name,
+      { key: "E/2", name: l.special.name,
         info: `DMG ${l.special.dmg[0]}-${l.special.dmg[1]}  MP ${l.special.manaCost}`,
         cd: p.cooldowns.special,
         locked: p.cooldowns.special > 0 || p.mana < l.special.manaCost,
         cdMax: l.special.cooldown,
       },
-      { key: "3", name: "Dodge Roll", info: "+8 MP, reposition", cd: 0, locked: false, cdMax: 0 },
-      { key: "4", name: "Brace",      info: "Reduce next hit. Time it late for +50% counter!", cd: 0, locked: false, cdMax: 0 },
+      { key: "R/3", name: "Dodge Roll", info: "+8 MP, reposition", cd: 0, locked: false, cdMax: 0 },
+      { key: "F/4", name: "Brace",      info: "Reduce next hit. Time it late for +50% counter!", cd: 0, locked: false, cdMax: 0 },
     ];
 
     items.forEach((it, i) => {
@@ -1731,9 +1734,9 @@ export class CombatScene {
         ctx.fillRect(x + 4, row - 5, 3, 28);
       }
       const col = it.locked ? COLORS.boneDim : (selected ? COLORS.bile : COLORS.bone);
-      drawText(ctx, `[${it.key}]`, x + 14, row, { size: 14, color: col, bold: true });
-      drawText(ctx, it.name,      x + 54, row, { size: 14, color: col, bold: selected });
-      drawText(ctx, it.info,      x + 230, row, { size: 11, color: COLORS.boneDim });
+      drawText(ctx, `[${it.key}]`, x + 14, row, { size: 13, color: col, bold: true });
+      drawText(ctx, it.name,      x + 74, row, { size: 14, color: col, bold: selected });
+      drawText(ctx, it.info,      x + 240, row, { size: 11, color: COLORS.boneDim });
       // Cooldown bar (if applicable)
       if (it.cdMax > 0) {
         const bw = 90;
@@ -1757,7 +1760,7 @@ export class CombatScene {
         size: 13, color: COLORS.bone,
       });
     });
-    drawText(ctx, "[1] attack  [2] special  [3] dodge (+MP)  [4] brace (time it late!)   [A]/[D] swap lane   [P]/[ESC] pause",
+    drawText(ctx, "[Q/1] attack  [E/2] special  [R/3] dodge (+MP)  [F/4] brace (time it late!)   [A]/[D] swap lane   [P]/[ESC] pause",
       x + 14, y + h - 22, { size: 11, color: COLORS.bone,
     });
   }

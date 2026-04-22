@@ -16,7 +16,8 @@ ctx.imageSmoothingEnabled = false;
 
 const game = {
   ctx,
-  input: new Input(),
+  canvas,
+  input: new Input(canvas),
   scenes: new SceneManager(),
   t: 0,
   player: null,

@@ -9,6 +9,7 @@ import { CHAMBERS } from "../content/chambers.js";
 import { randInt, rand, pick } from "../engine/rng.js";
 import { applyDamage, recordDirectHpHit, recordDirectArmorHit } from "../content/player.js";
 import { CombatScene } from "./combat.js";
+import { TongueBossScene } from "./tongueBoss.js";
 import { GameOverScene } from "./gameover.js";
 
 // Five hand-hold columns on the veiny wall. Hero is fixed in screen Y;
@@ -363,7 +364,13 @@ export class ClimbScene {
         p.score.hitlessChambers++;
         if (this.chamberIdx === 0) p.score.gullethitless = true;
       }
-      game.scenes.replace(new CombatScene(this.chamberIdx), game);
+      // v0.13 final chamber: the Maw routes to the Tongue puzzle boss
+      // instead of the standard lane-based combat scene.
+      if (ch.guardian === "wormTongue") {
+        game.scenes.replace(new TongueBossScene(this.chamberIdx), game);
+      } else {
+        game.scenes.replace(new CombatScene(this.chamberIdx), game);
+      }
       return;
     }
 
@@ -584,6 +591,9 @@ export class ClimbScene {
     drawVeins(ctx, this.t + this.progress * 0.002, this.chamberIdx + 1);
 
     this.drawWall(ctx);
+    // v0.13 final chamber: frame the climb with massive fangs drooling
+    // from the sides. Decorative only - doesn't affect gameplay.
+    if (ch.isMaw) this.drawMawFangs(ctx);
 
     // Debris (behind hero)
     for (const d of this.debris) this.drawDebris(ctx, d);
@@ -655,6 +665,94 @@ export class ClimbScene {
     this.drawUI(ctx, game);
 
     if (this.paused) this.drawPause(ctx);
+  }
+
+  // v0.13 THE MAW decoration: massive fangs hanging from the left and
+  // right edges of the canvas, pointed inward. Drawn AFTER the wall so
+  // they sit on top but OUTSIDE the active climb area (teeth are placed
+  // in the leftmost and rightmost 8% of the screen only). Some fangs
+  // drool saliva that drips downward over time.
+  drawMawFangs(ctx) {
+    const t = this.t;
+    ctx.save();
+
+    const drawFang = (x, y, w, h, angle) => {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+      // Gum / shadow
+      ctx.fillStyle = "#4a0a18";
+      ctx.beginPath();
+      ctx.moveTo(-w * 0.8, 0);
+      ctx.lineTo(w * 0.8, 0);
+      ctx.lineTo(0, h);
+      ctx.closePath();
+      ctx.fill();
+      // Ivory body
+      const g = ctx.createLinearGradient(-w, 0, w, h);
+      g.addColorStop(0, "#ffffff");
+      g.addColorStop(0.5, "#f6e9c4");
+      g.addColorStop(1, "#8a7238");
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(-w * 0.6, 2);
+      ctx.lineTo(w * 0.6, 2);
+      ctx.lineTo(0, h - 3);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = "rgba(0,0,0,0.5)";
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
+      // Specular highlight
+      ctx.fillStyle = "rgba(255,255,255,0.55)";
+      ctx.beginPath();
+      ctx.ellipse(-w * 0.2, h * 0.25, w * 0.12, h * 0.25, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Blood smear
+      ctx.fillStyle = "rgba(140, 10, 10, 0.5)";
+      ctx.beginPath();
+      ctx.ellipse(0, h * 0.6, w * 0.25, h * 0.1, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    };
+
+    // Left column - fangs pointing RIGHT.
+    const left = 0;
+    const rowCount = 6;
+    for (let i = 0; i < rowCount; i++) {
+      const f = (i + 0.5) / rowCount;
+      const y = f * H;
+      const w = 38 + Math.sin(i * 11.3) * 6;
+      const h = 110 + Math.sin(i * 7.7) * 22 + (i % 2 === 0 ? 12 : 0);
+      drawFang(left, y, w, h, Math.PI * 1.5);
+    }
+    // Right column - fangs pointing LEFT.
+    for (let i = 0; i < rowCount; i++) {
+      const f = (i + 0.5) / rowCount;
+      const y = f * H;
+      const w = 38 + Math.sin(i * 9.1) * 6;
+      const h = 112 + Math.sin(i * 5.7) * 20;
+      drawFang(W, y, w, h, Math.PI * 0.5);
+    }
+
+    // Drool drops falling from a few fangs.
+    for (let i = 0; i < 8; i++) {
+      const side = i % 2 === 0 ? 1 : -1;
+      const baseX = side < 0 ? 130 : W - 130;
+      const phase = (t * 0.35 + i * 0.37) % 1;
+      const y = (i / 8) * H + phase * 90 - 20;
+      const a = Math.max(0, 1 - phase * 1.2);
+      ctx.fillStyle = `rgba(200, 240, 180, ${a * 0.55})`;
+      ctx.beginPath();
+      ctx.ellipse(baseX, y, 3, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = `rgba(255, 255, 230, ${a * 0.75})`;
+      ctx.beginPath();
+      ctx.arc(baseX - 1, y - 2, 1.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.restore();
   }
 
   drawWall(ctx) {

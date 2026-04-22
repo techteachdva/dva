@@ -106,4 +106,28 @@ export const ENEMIES = {
     flavorDeath: "The bile elemental loses cohesion, splashing into the acid.",
     flavorIntro: "The acid lifts itself up, eyes open, and GRINS.",
   },
+  // v0.13 FINAL BOSS: The Worm's Tongue. Lives only inside the Maw chamber
+  // and only fights in the special TongueBossScene (aim-reticle puzzle).
+  // Stats here are advisory - TongueBossScene runs its own HP pool and
+  // cadence, but we still honor `hp` / `enrageAt` for consistency.
+  wormTongue: {
+    id: "wormTongue",
+    name: "THE WORM'S TONGUE",
+    hp: 420,
+    acidInterval: [1.4, 2.0],
+    attackDmg: [14, 22],
+    heavyDmg:  [28, 40],
+    enrageAt: 0.4,
+    art: "tongue",
+    color: "#ff6b8a",
+    flavorHit: [
+      "The TONGUE slaps you across the chest!",
+      "A wet SLURRRP pulls you off-balance!",
+      "The tongue CURLS around your leg and flings you!",
+    ],
+    flavorHeavy: "The tongue COILS like a python - BRACE FOR IMPACT!",
+    flavorCombo: "Three wet LASHES in rapid succession!",
+    flavorDeath: "The tongue unfurls, limp. Daylight floods the maw.",
+    flavorIntro: "A long muscular TONGUE rises through the maw, wet and watchful.",
+  },
 };

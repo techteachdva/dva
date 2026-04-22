@@ -84,13 +84,13 @@ export class InstructionsScene {
 
     this.drawStep(ctx, 4, "FIGHT TO ESCAPE", x2, y2, colW, rowH, [
       ["GOAL",       "Kill the SPHINCTER GUARDIAN to unlock the next chamber.",
-                     ""],
-      ["ACTIONS",    "[1] Attack   [2] Special (MP)   [3] Dodge Roll (+MP)",
-                     "[4] Brace - time it LATE for +50% COUNTER bonus!"],
+                     "Final chamber: the WORM'S TONGUE (mouse-aim puzzle)."],
+      ["ACTIONS",    "[Q/1] Attack  [E/2] Special (MP)  [R/3] Dodge (+MP)",
+                     "[F/4] Brace - time it LATE for +50% COUNTER bonus!"],
       ["TELLS",      "RED = Jab (dodge lane)  ORANGE = Heavy Slam (BRACE)",
                      "YELLOW = Triple Combo (brace covers all 3 hits)"],
-      ["ENRAGE",     "Below 50% HP enemies ENRAGE: faster, harder, deadlier.",
-                     "Stay mobile and time your braces."],
+      ["THE MAW",    "Use the MOUSE to aim a reticle inside the GREEN circle.",
+                     "Attacks only land when LOCKED. Dodge the RED lash zones."],
     ], { accent: "#ff9070" });
 
     // v0.12 micro-card: Pacts & Elites strip

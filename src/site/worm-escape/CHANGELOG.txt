@@ -626,10 +626,118 @@ build-shaping roguelite with meta-progression.
 - MOD:  js/scenes/intro.js       (top-run + unlocks meta line)
 - MOD:  js/scenes/instructions.js (Pacts & Elites micro-card)
 
+=====================================================================
+v0.13.0 - Into the Maw
+=====================================================================
+A brand-new FINAL CHAMBER, a brand-new FINAL BOSS, and a brand-new
+way to play combat. Previously the Gullet was the top of the worm;
+now you have to climb one level further - into THE MAW itself - and
+face the worm's own TONGUE in a puzzle-combat showdown that trades
+lane-hopping for mouse-aim precision.
+
+--- THE MAW (new chamber, index 4) ---
+- New chamber definition in content/chambers.js with a bright pink
+  palette, shorter climb (1500 units - the final sprint), tight
+  debris cadence, and a guardian flagged `wormTongue`.
+- ClimbScene auto-decorates THE MAW with huge ivory FANGS along the
+  left and right edges of the screen, drooling tinted saliva. The
+  fangs are strictly cosmetic; the 5 climb columns are untouched.
+- Chamber pacing is tuned so even Ironhide can reach the top if
+  they keep moving - the bile bites harder but the peak is close.
+
+--- THE WORM'S TONGUE (new final boss) ---
+- New enemy definition `wormTongue` in content/enemies.js with 420
+  HP, bite-hard attack/heavy damage ranges, custom flavor lines,
+  and `art: "tongue"`. Matchup multipliers still apply (your
+  weapon can be STRONG or WEAK against the tongue like any boss).
+- New scene `scenes/tongueBoss.js` replaces the usual CombatScene
+  exclusively for the Maw:
+    * Dark maw interior with a full TEETH RING around the canvas
+      (upper fangs down, lower fangs up, side fangs inward) and a
+      central pulsing throat gradient.
+    * The tongue is rendered as a pink serpentine body with 18
+      shaded segments, a centerline groove, a wet highlight, and a
+      bulbous forked tip that springs toward its strike target.
+    * Progressive blood decals cluster around the tip as you hit
+      it, and a rhythmic drip animation kicks in at low HP.
+- Boss state machine: intro -> fight -> win. Victory skips the
+  pact picker and goes straight to VictoryScene (this IS the win).
+
+--- AIM-RETICLE PUZZLE COMBAT ---
+- Mouse now controls a reticle drawn as a thin crosshair with a
+  soft particle trail. Reticle color changes to signal state:
+      GREEN  - inside the green AIM LOCK zone
+      RED    - inside a red LASH DANGER zone
+      IVORY  - neutral
+- Green AIM LOCK ZONE: a drifting circle (~110px radius) that
+  wanders around the tongue tip. Attacks only register when your
+  reticle is inside it; attacking while unlocked produces a red
+  MISS ring and a "MISS!" log line.
+- Red LASH ZONES appear every ~3s (1.6s at Enrage). Each zone
+  warns for ~1.25s, biased 60% toward your current reticle
+  position so you can't just camp the center. If your reticle is
+  still inside when the timer expires, the tongue strikes and you
+  take damage; brace halves it, a Perfect Brace timed in the last
+  0.35s readies a +50% counter on your next locked hit.
+- Heavy CURL attack: an aim-ignoring full-screen tongue slam on a
+  ~10s cadence. BRACE is mandatory - no amount of mouse skill
+  saves you. Perfect-brace window applies the same way.
+- Bullseye bonus: reticle within 30% of the zone center on a hit
+  grants +25% damage. The floater turns green to confirm.
+- Zone shrinks and speeds up when the tongue Enrages below 40%.
+- A constant LOCKED/UNLOCKED banner sits above the reticle and a
+  flashing context-hint strip advertises the next correct action
+  (move mouse / BRACE / counter ready / etc.).
+
+--- NEW KEYBIND LAYOUT ---
+- Q / E / R / F are now full-fledged aliases for actions 1-4 in
+  BOTH CombatScene and TongueBossScene:
+      [Q] / [1] Attack
+      [E] / [2] Special
+      [R] / [3] Dodge Roll (+MP)
+      [F] / [4] Brace
+- The old 1-4 keys continue to work; you can mix them freely in
+  the same fight. Combat log lines, context hints, the action
+  panel, the in-combat help bar, and the telegraph banners all
+  now show both aliases ("BRACE (F/4)", "Press [Q/1]", etc.).
+- Left-click in the Tongue fight is also bound to Attack, so you
+  can play the Maw entirely mouse-driven if you want.
+
+--- INPUT ENGINE ---
+- engine/input.js now accepts an optional canvas element. When
+  provided:
+      * mousemove is tracked at the WINDOW level and mapped into
+        CANVAS-SPACE (1280x800) using the current bounding rect,
+        so CSS-resized canvases still produce correct coordinates.
+      * mousedown/mouseup are tracked as synthetic keys "Mouse0"
+        (left), "Mouse1" (middle), "Mouse2" (right) so existing
+        wasPressed() call sites can consume clicks with no new API.
+      * The canvas's native right-click menu is suppressed.
+- main.js wires the game canvas into Input at boot; game.canvas
+  is also exposed on the game object for future scenes.
+
+--- UX POLISH ---
+- InstructionsScene step 4 now mentions the Maw and mouse-aim
+  directly, and advertises the new QERF keybinds.
+- index.html footer hint updated to list QERF + "MOUSE aims in
+  the Maw".
+- Existing combat banners, log lines, and context hints updated
+  to use F/4 (not just "4") so the keybind hints stay current.
+
+--- FILES TOUCHED ---
+- NEW:  js/scenes/tongueBoss.js
+- MOD:  js/engine/input.js         (mouse + canvas-space coords)
+- MOD:  js/main.js                 (pass canvas into Input)
+- MOD:  js/content/enemies.js      (wormTongue)
+- MOD:  js/content/chambers.js     (THE MAW chamber, isMaw flag)
+- MOD:  js/scenes/climb.js         (Tongue routing + drawMawFangs)
+- MOD:  js/scenes/combat.js        (QERF keybinds, updated help)
+- MOD:  js/scenes/instructions.js  (final chamber + keybind copy)
+- MOD:  index.html                 (footer hint)
+
 ---------------------------------------------------------------------
 Planned / Future
 ---------------------------------------------------------------------
-- Boss fight in final chamber: the worm's own HEART.
 - Loot drops between chambers (healing guts-jerky, mana phlegm).
 - Daily seeded run with a global leaderboard.
 - Mid-climb events (Blessed Shrine, hidden passage).

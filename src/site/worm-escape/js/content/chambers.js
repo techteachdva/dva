@@ -104,4 +104,32 @@ export const CHAMBERS = [
       bump:   "rgba(255, 160, 180, 0.20)",
     },
   },
+  // v0.13 FINAL CHAMBER. Climb is short (you are almost OUT), but bile
+  // rises quickly and debris rains down - the worm is panicking. The
+  // guardian is THE WORM'S TONGUE, fought in the special TongueBossScene
+  // (aim-reticle puzzle) instead of the standard CombatScene.
+  {
+    id: "maw",
+    name: "THE MAW",
+    tagline: "Fangs like castle spires. Breath like death.",
+    climbHeight: 1500,           // shorter - this is the final push
+    bileRiseRate: 11.5,
+    debrisInterval: [0.75, 1.2],
+    debrisSpeed: 360,
+    spawnCount: 2,
+    multiDebrisChance: 0.5,
+    powerUpRarity: 0.13,         // final chamber eases power-up rarity
+    acidTimer: 70,
+    guardian: "wormTongue",
+    wormTint: 0.8,
+    // Bright pink - almost daylight. Teeth decorations are drawn by the
+    // climb scene when it detects this chamber's `isMaw` flag.
+    palette: {
+      deep:   "#5a0a22",
+      mid:    "#d23a60",
+      bruise: "rgba(255, 180, 190, 0.24)",
+      bump:   "rgba(255, 220, 220, 0.22)",
+    },
+    isMaw: true,
+  },
 ];
