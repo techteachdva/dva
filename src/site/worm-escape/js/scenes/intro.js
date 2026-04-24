@@ -5,6 +5,9 @@ import {
 import { SFX } from "../engine/audio.js";
 import { loadSave } from "../engine/storage.js";
 import { InstructionsScene } from "./instructions.js";
+import { makePlayer } from "../content/player.js";
+import { CHAMBERS } from "../content/chambers.js";
+import { TongueBossScene } from "./tongueBoss.js";
 
 // Total possible persistent unlocks - keep this in sync with DEFAULT_SAVE.unlocks.
 const UNLOCK_TOTAL = 3; // viperBuild, bileWhip, hexStaff
@@ -42,6 +45,16 @@ export class IntroScene {
     this.t += dt;
     this.pulse += dt;
     const total = STORY.join("\n").length;
+
+    // DEV / TEST: press B from the title screen to jump straight into the
+    // final boss (The Worm's Tongue) with a stock Swift + Sword loadout,
+    // so the reticle puzzle and enrage animation can be tested without
+    // having to clear every chamber first.
+    if (game.input.wasPressed("b", "B")) {
+      SFX.confirm();
+      startBossTest(game);
+      return;
+    }
 
     if (game.input.wasPressed(" ", "Space", "Enter")) {
       if (this.reveal < total) {
@@ -93,15 +106,20 @@ export class IntroScene {
     if (this.reveal >= total) {
       const blink = Math.sin(this.pulse * 5) > 0;
       if (blink) {
-        drawText(ctx, ">> PRESS SPACE TO FORGE YOUR HERO <<", W / 2, H - 50, {
+        drawText(ctx, ">> PRESS SPACE TO FORGE YOUR HERO <<", W / 2, H - 70, {
           size: 20, color: COLORS.bile, align: "center", bold: true, glow: COLORS.blood,
         });
       }
     } else {
-      drawText(ctx, "(SPACE to skip)", W / 2, H - 50, {
+      drawText(ctx, "(SPACE to skip)", W / 2, H - 70, {
         size: 13, color: COLORS.boneDim, align: "center",
       });
     }
+
+    // Dev/test hotkey hint - press B to jump straight to the final boss.
+    drawText(ctx, "[B] dev: test final boss fight", W / 2, H - 22, {
+      size: 12, color: COLORS.boneDim, align: "center", italic: true,
+    });
 
     this.drawWormFrame(ctx);
   }
@@ -173,4 +191,23 @@ export class IntroScene {
     draw(40, H - 40, 1);
     draw(W - 40, H - 40, -1);
   }
+}
+
+// Build a fresh "test pilot" player and drop straight into the final-boss
+// scene. This is for devs/QA who want to see the Worm's Tongue animation
+// and verify the reticle/enrage behavior without playing through the run.
+// We award a little extra HP/MP so a fumbled first attempt doesn't end
+// the test in 5 seconds, but we do NOT pre-apply any pacts - you see the
+// boss exactly as a first-time victor would meet it.
+function startBossTest(game) {
+  const mawIdx = CHAMBERS.findIndex(c => c.isMaw);
+  if (mawIdx < 0) return; // no final chamber defined; bail silently
+  const p = makePlayer("swift", "sword");
+  p.hp = p.hpMax;
+  p.mana = p.manaMax;
+  if (p.armorMax > 0) p.armor = p.armorMax;
+  p.tankHitsLeft = p.tankHitsMax;
+  game.player = p;
+  game.chamberIndex = mawIdx;
+  game.scenes.replace(new TongueBossScene(mawIdx), game);
 }
