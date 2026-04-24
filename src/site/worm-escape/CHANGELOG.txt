@@ -862,6 +862,95 @@ IntroScene:
 - MOD:  js/scenes/gameover.js
 - MOD:  js/scenes/transition.js
 
+=====================================================================
+v0.15.0 - The Maw Rework (Whack-a-Tooth)
+=====================================================================
+The old Worm's Tongue puzzle (aim-reticle + drifting green circle) is
+GONE. The final boss is now a PROPER escape sequence: knock all five
+of the worm's bottom teeth out at the same time while bracing /
+dodging the top row's chomps. The goal, the feel, and the visuals
+are all new - only the chamber routing (climb -> MawBossScene) and
+the file layout were preserved.
+
+--- NEW FINAL BOSS: THE WORM'S MAW ---
+Five columns (same layout as the climb) line up the bottom row of
+molars. Each molar is its own mini-boss:
+- 90 HP pool each, visible HP bar above the tooth.
+- Takes damage from your basic attack / special when you're in its
+  lane. Multi-lane weapons (Bile Whip) also splash to the immediate
+  neighbors for 50% damage, rewarding positioning + kit choice.
+- When a tooth's HP hits 0 it SHATTERS with a burst of blood and
+  bone shards. Daylight pours through the empty socket.
+- Knocked-out teeth ERUPT back up at 50% HP after 60 seconds. A
+  golden countdown ring + "Xs" label on each socket makes the
+  regrow timer obvious.
+- WIN CONDITION: All 5 bottom teeth down simultaneously. Nail the
+  timing or the first-downed tooth regrows before the last falls.
+
+Top row is the aggressor:
+- Every ~2.5-3.5s a RANDOM top tooth glows red (lane-targeted
+  telegraph, ~1.1s warning), then CHOMPS straight down.
+  * Not in that lane: no damage. Move [A/D] out.
+  * In-lane + braced: half damage.
+  * In-lane + unbraced: full chomp (16-26 dmg, difficulty-scaled).
+  * In-lane + dodge i-frames active: no damage.
+- Perfect-brace window (last 0.4s of the telegraph) turns the brace
+  into a COUNTER-STRIKE: you eat 25% of the damage AND the tooth
+  in that same lane takes a 20-32 counter bolt.
+- Rare "FULL-MAW SLAM": all top teeth chomp at once (~1.6s
+  telegraph, screen-wide red band). Brace is the ONLY defense.
+  Perfect-brace on the full-slam counter-strikes every standing
+  tooth (glorious when it lands).
+
+Chomp cadence TIGHTENS as more bottom teeth get knocked down, so
+the final stretch is frantic whack-a-mole. Fights for a climactic
+90-120 seconds with a skilled player.
+
+--- MECHANICS THAT CARRY OVER ---
+- Q/E/R/F and 1/2/3/4 keybinds (Attack / Special / Dodge / Brace)
+  work identically to CombatScene, so muscle memory transfers.
+- Left-click also triggers Attack for one-handed play.
+- A/D or Arrow Left/Right move the hero between the 5 columns,
+  gated by each build's laneSwapCd so Iron hops feel chunky.
+- Pacts apply normally (dmg multipliers, brace counter mult,
+  incoming-dmg mult, multi-lane splash, etc.).
+- Matchup: every tooth is art "teeth", so Warhammer gets the usual
+  +60% strongVs-teeth bonus and Frostbite Wand gets a GLANCING
+  -40% debuff. Matchup label is shown in the intro banner.
+
+--- REMOVED ---
+- TongueBossScene's aim-reticle mechanic, LOCKED/UNLOCKED pill,
+  bullseye bonus, lash zones, heavy-curl telegraph band, and
+  reticle comet-trail are all deleted. The tongue sprite is gone
+  too - the Maw doesn't need it.
+- Mouse is no longer required to beat the game. (Left-click still
+  attacks as a quality-of-life alias.)
+- Enemy entry `wormTongue` replaced with `wormMaw` (art: "teeth",
+  matchup-safe).
+
+--- CONTENT / COPY UPDATES ---
+- chambers.js: THE MAW now points at `guardian: "wormMaw"`; flavor
+  comment updated to describe the whack-a-mole encounter.
+- enemies.js: `wormTongue` replaced with `wormMaw` (THE WORM'S MAW,
+  art: "teeth"). Flavor strings rewritten around teeth + chomping.
+- instructions.js step 4 footnote now reads "Knock out all 5 BOTTOM
+  teeth at the same time to escape. Top teeth chomp one lane at a
+  time - move [A/D] or BRACE." (no more mouse-aim copy).
+- index.html footer hint drops the mouse-aim mention.
+- intro.js dev hotkey [B] still jumps straight into the new scene
+  for rapid iteration / testing.
+
+--- FILES TOUCHED ---
+- MOD:  js/scenes/tongueBoss.js     (full rewrite - MawBossScene;
+                                     re-exported as TongueBossScene
+                                     so climb.js / intro.js imports
+                                     keep working)
+- MOD:  js/content/enemies.js       (wormTongue -> wormMaw)
+- MOD:  js/content/chambers.js      (guardian = wormMaw)
+- MOD:  js/scenes/climb.js          (route on isMaw / wormMaw)
+- MOD:  js/scenes/instructions.js   (final-chamber copy)
+- MOD:  index.html                  (footer hint)
+
 ---------------------------------------------------------------------
 Planned / Future
 ---------------------------------------------------------------------

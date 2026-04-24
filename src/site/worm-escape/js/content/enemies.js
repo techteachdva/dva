@@ -106,28 +106,30 @@ export const ENEMIES = {
     flavorDeath: "The bile elemental loses cohesion, splashing into the acid.",
     flavorIntro: "The acid lifts itself up, eyes open, and GRINS.",
   },
-  // v0.13 FINAL BOSS: The Worm's Tongue. Lives only inside the Maw chamber
-  // and only fights in the special TongueBossScene (aim-reticle puzzle).
-  // Stats here are advisory - TongueBossScene runs its own HP pool and
-  // cadence, but we still honor `hp` / `enrageAt` for consistency.
-  wormTongue: {
-    id: "wormTongue",
-    name: "THE WORM'S TONGUE",
-    hp: 420,
-    acidInterval: [1.4, 2.0],
-    attackDmg: [14, 22],
-    heavyDmg:  [28, 40],
+  // v0.15 FINAL BOSS: The Worm's Maw. Not one creature - the fight is
+  // against a ROW of five molars the adventurer must knock out all at
+  // the same time, while dodging / bracing the top teeth's chomps.
+  // The MawBossScene runs its own multi-tooth HP pool; the fields
+  // below feed flavor text and the "teeth" art tag so per-weapon
+  // matchups resolve sanely (Warhammer = strongVs teeth = DEVASTATING).
+  wormMaw: {
+    id: "wormMaw",
+    name: "THE WORM'S MAW",
+    hp: 450,                  // advisory; real HP lives in the 5 teeth (90 each)
+    acidInterval: [2.0, 3.0], // not used by MawBossScene - no acid this fight
+    attackDmg: [16, 26],
+    heavyDmg:  [28, 46],
     enrageAt: 0.4,
-    art: "tongue",
-    color: "#ff6b8a",
+    art: "teeth",
+    color: "#f6ecd0",
     flavorHit: [
-      "The TONGUE slaps you across the chest!",
-      "A wet SLURRRP pulls you off-balance!",
-      "The tongue CURLS around your leg and flings you!",
+      "A fang SNAPS down across your shoulders!",
+      "A molar the size of a shield GRINDS into your side!",
+      "A canine CRUNCHES your braces into scrap!",
     ],
-    flavorHeavy: "The tongue COILS like a python - BRACE FOR IMPACT!",
-    flavorCombo: "Three wet LASHES in rapid succession!",
-    flavorDeath: "The tongue unfurls, limp. Daylight floods the maw.",
-    flavorIntro: "A long muscular TONGUE rises through the maw, wet and watchful.",
+    flavorHeavy: "THE WHOLE MAW IS CLOSING - BRACE FOR IMPACT!",
+    flavorCombo: "Chomp after chomp after CHOMP!",
+    flavorDeath: "The lower jaw collapses. DAYLIGHT FLOODS IN!",
+    flavorIntro: "Five massive molars bar your path out of the throat. Knock them ALL out.",
   },
 };

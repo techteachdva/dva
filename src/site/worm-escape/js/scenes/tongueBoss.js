@@ -1,13 +1,13 @@
 import {
   W, H, COLORS,
   drawFleshBackground, drawVeins, drawText, drawBanner, drawPanel, drawBar,
-  drawHero, drawSphere, drawDropShadow,
+  drawHero, drawDropShadow,
   ParticleSystem, screenShake, shade, roundRect,
 } from "../engine/render.js";
 import { SFX } from "../engine/audio.js";
 import { CHAMBERS } from "../content/chambers.js";
 import { ENEMIES } from "../content/enemies.js";
-import { pick, rand, randInt } from "../engine/rng.js";
+import { rand, randInt, pick } from "../engine/rng.js";
 import {
   applyDamage, matchupMultiplier, matchupLabel,
   recordDirectHpHit, recordDirectArmorHit,
@@ -16,120 +16,134 @@ import { VictoryScene } from "./victory.js";
 import { GameOverScene } from "./gameover.js";
 
 // =====================================================================
-//  v0.13 FINAL BOSS - The Worm's Tongue (aim-reticle puzzle)
+//  v0.15 FINAL BOSS - The Worm's MAW (whack-a-tooth)
 // =====================================================================
-// Instead of lane-dodging, the player steers a MOUSE RETICLE. To land
-// an attack, the reticle must be inside the green TARGET ZONE - a
-// circle that drifts around the tongue tip. Every few seconds a RED
-// LASH ZONE appears at a random point on screen; if the reticle is
-// still inside it when the warning timer expires, the player eats a
-// tongue slap (brace mitigates). Clear the tongue's huge HP pool
-// before the chamber's dedicated acid-timer runs out.
+// To escape the worm the adventurer must knock out all FIVE bottom
+// teeth at the same time. It's whack-a-mole under pressure:
 //
-// Keybinds (this scene AND CombatScene share the new alias set):
-//   [Q] / [1]  Attack
-//   [E] / [2]  Special
-//   [R] / [3]  Dodge  (recovers MP + briefly snaps aim to safe edge)
-//   [F] / [4]  Brace  (halves the next tongue lash; perfect-brace bonus)
-//   [MOUSE]    Move the reticle.
-//   Clicking anywhere is equivalent to pressing [Q] (basic attack).
+//   - 5 PLAYER COLUMNS (the same 5 lanes used in the climb).
+//   - 5 BOTTOM TEETH sit above the player across those columns. They
+//     are mini-bosses with ~90 HP each. Your basic attack strikes the
+//     tooth in your CURRENT lane. Multi-lane weapons (Bile Whip) also
+//     hit the immediate neighbors. Specials follow their weapon's own
+//     multi-lane rules.
+//   - 5 TOP TEETH hang from the roof of the maw. Periodically ONE
+//     top tooth glows red (lane-targeted telegraph ~1s) and then
+//     CHOMPS DOWN on that column. If the player is in that lane AND
+//     unbraced, they take a heavy hit. Brace halves it (perfect-brace
+//     window = counter-strike on the bottom tooth in that lane).
+//     Move out of the lane entirely = no damage at all.
+//   - A knocked-out bottom tooth stays down for 60 seconds, then pops
+//     back up at 50% HP. The whole escape is the challenge of timing
+//     your damage so all 5 are down simultaneously.
+//
+// Keybinds (shared with CombatScene):
+//   [A] / [ArrowLeft]   move one column left
+//   [D] / [ArrowRight]  move one column right
+//   [Q] / [1]           Attack  (tooth in current lane, +neighbors if weapon multi-lane)
+//   [E] / [2]           Special
+//   [R] / [3]           Dodge roll  (brief i-frame + MP gain)
+//   [F] / [4]           Brace      (mitigates chomp; perfect = counter)
+//   [P] / [Esc]         Pause
 // =====================================================================
 
-const FLOOR_Y = 620;
-// Where the tongue's root sits (its mouth base). Centered horizontally.
-const TONGUE_ROOT = { x: W / 2, y: 470 };
-// Default tongue-tip rest position above the root.
-const TONGUE_TIP  = { x: W / 2, y: 280 };
+const COLS_X = [W * 0.22, W * 0.36, W * 0.50, W * 0.64, W * 0.78];
+const NUM_COLS = COLS_X.length;
 
-// Damage scale for the final chamber. The tongue is already huge in HP
-// and everything hurts - keep its damage just below the Gullet ceiling
-// so a skilled player can bring it down before dying.
-const CHAMBER_DMG_SCALE = 1.45;
+// Vertical anchors for the teeth / hero.
+const TOP_TOOTH_Y    = 110;     // where the top teeth hang from (root)
+const TOP_TOOTH_TIP  = 250;     // where a top tooth's TIP sits at rest
+const TOP_CHOMP_Y    = 520;     // how far down a chomping top tooth reaches
+const BOTTOM_TOOTH_Y = 610;     // where bottom teeth emerge from the gum
+const BOTTOM_TOOTH_TIP = 470;   // where a healthy bottom tooth's tip reaches
+const HERO_Y         = H - 140;
 
-export class TongueBossScene {
+// Tuning (difficulty pass "climactic"):
+const TOOTH_HP_MAX        = 90;     // each bottom tooth's health pool
+const TOOTH_RESPAWN_SECS  = 60;     // how long a knocked-out tooth stays down
+const TOOTH_RESPAWN_FRAC  = 0.5;    // comes back at 50% HP
+const CHOMP_TELEGRAPH_MIN = 1.1;    // seconds between "uhoh" flash and slam
+const CHOMP_COOLDOWN_MIN  = 2.2;    // fast-cycle minimum time between chomps
+const CHOMP_COOLDOWN_MAX  = 3.6;    // baseline time between chomps
+const CHOMP_DMG_RANGE     = [16, 26];
+const PERFECT_BRACE_WINDOW = 0.4;   // seconds before impact where brace = counter
+
+export class MawBossScene {
   constructor(chamberIdx) {
     this.chamberIdx = chamberIdx;
     this.chamber = CHAMBERS[chamberIdx];
-    const ed = ENEMIES[this.chamber.guardian];
-    // Boss HP is fixed (doesn't scale with chamberIdx beyond its own spec).
-    const hp = ed.hp;
-    this.enemy = {
-      ...ed, hp, hpMax: hp,
-      attackDmg: [...ed.attackDmg],
-      heavyDmg:  [...ed.heavyDmg],
-    };
-    this.enemyHpDisplay = hp;
+    const ed = ENEMIES[this.chamber.guardian] || ENEMIES.wormMaw || {};
+    this.enemyName = ed.name || "THE WORM'S MAW";
+    this.flavorIntro = ed.flavorIntro || "Five fangs stand between you and daylight.";
+    this.flavorWin = ed.flavorDeath || "The lower jaw collapses. DAYLIGHT FLOODS IN!";
+
+    // 5 bottom teeth - each is an independent mini-boss.
+    this.bottomTeeth = [];
+    for (let i = 0; i < NUM_COLS; i++) {
+      this.bottomTeeth.push({
+        col: i,
+        hp: TOOTH_HP_MAX,
+        hpMax: TOOTH_HP_MAX,
+        hpDisplay: TOOTH_HP_MAX,
+        knockedOut: false,
+        knockedT: 0,
+        respawnIn: 0,
+        flashT: 0,
+        shakeT: 0,
+        // Visual wobble - helps sell it as "alive".
+        wobble: Math.random() * Math.PI * 2,
+      });
+    }
+
+    // 5 top teeth - the aggressors. They don't HP-track; they only
+    // attack. A given top tooth tracks its own chomp animation state.
+    this.topTeeth = [];
+    for (let i = 0; i < NUM_COLS; i++) {
+      this.topTeeth.push({
+        col: i,
+        // 0 = resting, 1 = fully chomped down.
+        chomp: 0,
+        // Non-null means "telegraphing a chomp that will fire in X seconds".
+        telegraph: null,
+        // Post-chomp recovery so it doesn't instantly re-chomp.
+        cooldown: 0,
+        flashT: 0,
+      });
+    }
+
+    // Player lane state (starts middle).
+    this.col = Math.floor(NUM_COLS / 2);
+    this.laneSwapT = 0;  // delay gate for movement
+    this.heroBob = 0;
+    this.hitFlash = 0;
+    this.braceTime = 0;
+    this.perfectBraceReady = false;
+    this.perfectFlashT = 0;
+    this.dodgeIFrameT = 0;
+    this.dodgeFlashT = 0;
+
+    // Chomp scheduler: time until we pick a top tooth to telegraph.
+    this.nextChompIn = rand(1.8, 2.6);
+    // Big "slam" is a rarer full-row bite where ALL top teeth chomp
+    // together. You can only survive with a brace.
+    this.nextSlamIn = rand(22, 32);
+    this.slamTelegraph = null; // null or seconds-to-slam
 
     this.t = 0;
     this.anim = 0;
     this.done = false;
-
-    // --- Reticle state ---
-    // Mouse position is streamed into reticleX/Y from game.input.mouse*.
-    // Initial position: dead-center so the first frame isn't at (0,0).
-    this.reticleX = W / 2;
-    this.reticleY = TONGUE_TIP.y;
-    this.reticleTrail = [];
-    this.recentlyLocked = false;    // flipped each frame for UI pulse
-
-    // --- Target zone (green aim-lock circle that drifts) ---
-    this.zone = {
-      x: TONGUE_TIP.x,
-      y: TONGUE_TIP.y,
-      r: 110,
-      // Smooth wandering velocities recomputed every ~1.2s.
-      vx: 0, vy: 0,
-      nextDriftT: 0,
-    };
-
-    // --- Lash zones (red warning circles the player must flee) ---
-    this.lashes = [];
-    this.lashTimer = rand(3.2, 4.4);
-    // "Heavy" tongue attack that ignores aim position - full-screen
-    // telegraph, only brace helps. Fires less frequently than lashes.
-    this.heavyTimer = rand(8.0, 11.0);
-    this.heavyTelling = false;
-    this.heavyTellTime = 0;
-
-    // --- Player combat state (shared vocabulary with CombatScene) ---
-    this.hitFlash = 0;
-    this.enemyFlash = 0;
-    this.enemyShake = 0;
-    this.braceTime = 0;
-    this.perfectBraceReady = false;
-    this.perfectFlashT = 0;
-    this.missFlashT = 0;
-    this.lockFlashT = 0;
-    this.dodgeFlashT = 0;
-    this.turnLocked = 0;
-
-    // --- Tongue wobble ---
-    // The tongue tip is a spring-damper toward tipTarget - lashes
-    // temporarily repoint tipTarget to a lash location for the strike
-    // animation, then snap back.
-    this.tipTarget = { x: TONGUE_TIP.x, y: TONGUE_TIP.y };
-    this.tipPos    = { x: TONGUE_TIP.x, y: TONGUE_TIP.y };
-    this.tipVel    = { x: 0, y: 0 };
-
-    // --- Enrage (used for UI + cadence tightening) ---
-    this.enraged = false;
-    this.enrageFlashT = 0;
-
-    // --- Log + banners ---
-    this.log = [];
     this.phase = "intro";
     this.introT = 0;
-    this.winTimer = 0;
+    this.winHoldT = 0;
     this.paused = false;
+
     this.particles = new ParticleSystem();
     this.floaters = [];
     this.bloodDecals = [];
+    this.log = [];
 
-    this.pushLog("The MAW opens. Daylight pours in.");
-    this.pushLog(this.enemy.flavorIntro);
-
-    // Cached click-to-attack input (action 0).
-    this._attackBuffer = false;
+    this.matchupMult = 1;
+    this.matchupLabel = null;
   }
 
   pushLog(line) {
@@ -139,41 +153,24 @@ export class TongueBossScene {
 
   enter(game) {
     const p = game.player;
-    const mult = matchupMultiplier(p.loadoutId, "tongue");
+    // Teeth are BONE - every hit against them is matched by the weapon's
+    // vs-teeth matchup if present. Hammer does great work here. Frost
+    // wand (weakVs teeth) gets a glancing tag.
+    const mult = matchupMultiplier(p.loadoutId, "teeth");
     const lbl = matchupLabel(mult);
     this.matchupMult = mult;
     this.matchupLabel = lbl;
+
+    this.pushLog("The maw CLAMPS around you! Five molars bar your path.");
+    this.pushLog(this.flavorIntro);
     if (lbl) {
-      if (mult > 1) {
-        this.pushLog(`Your ${p.loadout.name} looks ${lbl.text} against the tongue!`);
-      } else {
-        this.pushLog(`Your ${p.loadout.name} feels ${lbl.text.toLowerCase()} here...`);
-      }
-    } else {
-      this.pushLog(`Your ${p.loadout.name} matches up evenly. Aim carefully.`);
+      this.pushLog(lbl.text === "DEVASTATING!"
+        ? `Your ${p.loadout.name} is PERFECT for cracking bone!`
+        : `Your ${p.loadout.name} feels ${lbl.text.toLowerCase()} against enamel...`);
     }
   }
 
-  // --- Helpers ---
-
-  reticleInZone() {
-    const dx = this.reticleX - this.zone.x;
-    const dy = this.reticleY - this.zone.y;
-    return dx * dx + dy * dy <= this.zone.r * this.zone.r;
-  }
-
-  // Is the reticle currently inside the red region of ANY lash?
-  reticleInAnyLash() {
-    for (const L of this.lashes) {
-      if (L.fired) continue;
-      const dx = this.reticleX - L.x;
-      const dy = this.reticleY - L.y;
-      if (dx * dx + dy * dy <= L.r * L.r) return true;
-    }
-    return false;
-  }
-
-  // ================== UPDATE ==================
+  // ======================== UPDATE ========================
   update(dt, game) {
     if (this.done) return;
     if (game.input.wasPressed("p", "Escape")) {
@@ -187,59 +184,40 @@ export class TongueBossScene {
     const p = game.player;
     if (p.score) p.score.timeSpent += dt;
 
-    // Stream mouse into reticle (clamped to canvas).
-    const m = game.input;
-    if (typeof m.mouseX === "number") {
-      this.reticleX = Math.max(0, Math.min(W, m.mouseX));
-      this.reticleY = Math.max(0, Math.min(H, m.mouseY));
-    }
-    // Trail for the reticle so it leaves a soft comet-tail.
-    this.reticleTrail.push({ x: this.reticleX, y: this.reticleY, t: 0 });
-    if (this.reticleTrail.length > 14) this.reticleTrail.shift();
-    for (const r of this.reticleTrail) r.t += dt;
-
-    // Acid timer keeps ticking (same as combat).
-    p.acidTimer -= dt * p.acidResist;
-    if (p.acidTimer <= 0) {
-      if (p.armor > 0) {
-        const lost = Math.min(p.armor, 4 * CHAMBER_DMG_SCALE * dt);
-        p.armor = Math.max(0, p.armor - lost);
-        recordDirectArmorHit(p, lost, { countAsHit: false });
-      } else {
-        const lost = 2 * CHAMBER_DMG_SCALE * dt;
-        p.hp -= lost;
-        recordDirectHpHit(p, lost, { countAsHit: false });
-        this.hitFlash = Math.max(this.hitFlash, 0.15);
-      }
-    }
-
     if (this.phase === "intro") {
       this.introT += dt;
-      if (this.introT > 1.8) this.phase = "fight";
+      if (this.introT > 1.8) {
+        this.phase = "fight";
+        this.pushLog("Knock out all 5 bottom teeth AT ONCE to escape!");
+      }
     }
 
     if (this.phase === "fight") {
       this.updateCooldowns(dt, p);
-      this.updateZone(dt);
-      this.updateTongueTip(dt);
-      this.updateLashes(dt, p);
-      this.updateHeavy(dt, p);
+      this.updateTeeth(dt);
+      this.updateChomps(dt, p, game);
       this.handleInput(dt, game);
+      this.checkWinCondition(game);
     }
 
-    if (this.braceTime > 0) this.braceTime -= dt;
-    if (this.hitFlash > 0)   this.hitFlash   = Math.max(0, this.hitFlash - dt);
-    if (this.enemyFlash > 0) this.enemyFlash = Math.max(0, this.enemyFlash - dt);
-    if (this.enemyShake > 0) this.enemyShake -= dt;
-    if (this.enrageFlashT > 0) this.enrageFlashT = Math.max(0, this.enrageFlashT - dt);
-    if (this.perfectFlashT > 0) this.perfectFlashT = Math.max(0, this.perfectFlashT - dt);
-    if (this.missFlashT > 0)    this.missFlashT    = Math.max(0, this.missFlashT - dt);
-    if (this.lockFlashT > 0)    this.lockFlashT    = Math.max(0, this.lockFlashT - dt);
-    if (this.dodgeFlashT > 0)   this.dodgeFlashT   = Math.max(0, this.dodgeFlashT - dt);
+    if (this.phase === "win") {
+      this.winHoldT += dt;
+      if (this.winHoldT > 2.6 && !this.done) {
+        this.done = true;
+        if (p.score) p.score.bossesDefeated = (p.score.bossesDefeated || 0) + 1;
+        SFX.victory();
+        game.scenes.replace(new VictoryScene(), game);
+        return;
+      }
+    }
 
-    // HP bar tick-down.
-    const hpLerp = Math.min(1, dt * 5.5);
-    this.enemyHpDisplay += (this.enemy.hp - this.enemyHpDisplay) * hpLerp;
+    // Timers tick down regardless of phase.
+    if (this.braceTime > 0) this.braceTime = Math.max(0, this.braceTime - dt);
+    if (this.hitFlash > 0) this.hitFlash = Math.max(0, this.hitFlash - dt);
+    if (this.perfectFlashT > 0) this.perfectFlashT = Math.max(0, this.perfectFlashT - dt);
+    if (this.dodgeIFrameT > 0) this.dodgeIFrameT = Math.max(0, this.dodgeIFrameT - dt);
+    if (this.dodgeFlashT > 0) this.dodgeFlashT = Math.max(0, this.dodgeFlashT - dt);
+    if (this.laneSwapT > 0) this.laneSwapT = Math.max(0, this.laneSwapT - dt);
 
     // Floaters.
     for (const f of this.floaters) {
@@ -250,360 +228,423 @@ export class TongueBossScene {
     this.floaters = this.floaters.filter((f) => f.life > 0);
     this.particles.update(dt);
 
-    // Enrage trigger.
-    if (!this.enraged && this.enemy.hp > 0
-        && this.enemy.hp < this.enemy.hpMax * (this.enemy.enrageAt || 0.4)) {
-      this.enraged = true;
-      this.enrageFlashT = 1.4;
-      this.pushLog("!! THE TONGUE SNARLS - IT'S ENRAGED !!");
-      SFX.thud();
-      screenShake(14, 0.4);
-      this.particles.burst(W / 2, TONGUE_ROOT.y - 60, "#ff3060", 40, 320, 0.9);
-      // Enrage immediately shrinks the zone and quickens its drift.
-      this.zone.r = 85;
-    }
+    this.heroBob += dt * 2.5;
 
-    if (p.hp <= 0) {
+    if (p.hp <= 0 && !this.done) {
       this.done = true;
       SFX.die();
-      game.scenes.replace(new GameOverScene("The tongue flicked you down its own throat."), game);
-      return;
-    }
-
-    if (this.enemy.hp <= 0 && this.phase === "fight") {
-      this.phase = "win";
-      SFX.victory();
-      this.pushLog(this.enemy.flavorDeath);
-      screenShake(14, 0.5);
-      this.particles.burst(TONGUE_ROOT.x, TONGUE_ROOT.y - 80, COLORS.bile, 70, 400, 1.2);
-      if (p.score) {
-        p.score.bossesDefeated++;
-        p.score.chambersCleared++;
-      }
-      this.winTimer = 2.6;
-    }
-    if (this.phase === "win") {
-      this.winTimer -= dt;
-      if (this.winTimer <= 0) {
-        this.done = true;
-        // Final boss: skip pacts + transition, go straight to victory.
-        game.scenes.replace(new VictoryScene(), game);
-      }
+      game.scenes.replace(
+        new GameOverScene("The maw snapped shut. You are the worm's supper."),
+        game,
+      );
     }
   }
 
   updateCooldowns(dt, p) {
-    p.cooldowns.attack  = Math.max(0, p.cooldowns.attack  - dt);
-    p.cooldowns.special = Math.max(0, p.cooldowns.special - dt);
+    if (p.cooldowns.attack > 0)  p.cooldowns.attack  = Math.max(0, p.cooldowns.attack  - dt);
+    if (p.cooldowns.special > 0) p.cooldowns.special = Math.max(0, p.cooldowns.special - dt);
   }
 
-  updateZone(dt) {
-    // Drift the aim zone using a wandering vector that resets every ~1.2s.
-    this.zone.nextDriftT -= dt;
-    if (this.zone.nextDriftT <= 0) {
-      this.zone.nextDriftT = rand(0.9, 1.4);
-      const speedBase = this.enraged ? 95 : 60;
-      const a = rand(0, Math.PI * 2);
-      this.zone.vx = Math.cos(a) * speedBase;
-      this.zone.vy = Math.sin(a) * speedBase * 0.7;
-    }
-    this.zone.x += this.zone.vx * dt;
-    this.zone.y += this.zone.vy * dt;
-    // Keep zone near the upper half of the screen (where the tongue is).
-    const boundL = 240, boundR = W - 240, boundT = 140, boundB = 520;
-    if (this.zone.x < boundL) { this.zone.x = boundL; this.zone.vx = Math.abs(this.zone.vx); }
-    if (this.zone.x > boundR) { this.zone.x = boundR; this.zone.vx = -Math.abs(this.zone.vx); }
-    if (this.zone.y < boundT) { this.zone.y = boundT; this.zone.vy = Math.abs(this.zone.vy); }
-    if (this.zone.y > boundB) { this.zone.y = boundB; this.zone.vy = -Math.abs(this.zone.vy); }
-  }
+  updateTeeth(dt) {
+    for (const t of this.bottomTeeth) {
+      t.wobble += dt * 2.5;
+      t.flashT = Math.max(0, t.flashT - dt);
+      t.shakeT = Math.max(0, t.shakeT - dt);
+      // HP bar lerp toward real HP.
+      t.hpDisplay += (t.hp - t.hpDisplay) * Math.min(1, dt * 6);
 
-  // Spring tongue tip position toward its current target (either its
-  // rest position or the latest lash-strike location).
-  updateTongueTip(dt) {
-    const k = 14, c = 6;
-    const ax = (this.tipTarget.x - this.tipPos.x) * k - this.tipVel.x * c;
-    const ay = (this.tipTarget.y - this.tipPos.y) * k - this.tipVel.y * c;
-    this.tipVel.x += ax * dt;
-    this.tipVel.y += ay * dt;
-    this.tipPos.x += this.tipVel.x * dt;
-    this.tipPos.y += this.tipVel.y * dt;
-    // Slowly pull target back to rest when no lash is active.
-    if (this.lashes.every((L) => L.fired || L.t < 0.4)) {
-      this.tipTarget.x += (TONGUE_TIP.x - this.tipTarget.x) * dt * 2;
-      this.tipTarget.y += (TONGUE_TIP.y - this.tipTarget.y) * dt * 2;
-    }
-  }
-
-  updateLashes(dt, p) {
-    this.lashTimer -= dt;
-    if (this.lashTimer <= 0) {
-      const cadence = this.enraged ? [1.6, 2.6] : [2.8, 4.0];
-      this.lashTimer = rand(cadence[0], cadence[1]);
-      this.spawnLash(p);
-    }
-
-    for (const L of this.lashes) {
-      L.t += dt;
-      if (!L.fired && L.t >= L.wait) {
-        L.fired = true;
-        this.resolveLash(L, p);
+      if (t.knockedOut) {
+        t.respawnIn -= dt;
+        if (t.respawnIn <= 0) {
+          // The tooth SHOOTS back up at 50% HP.
+          const respawnHp = Math.round(t.hpMax * TOOTH_RESPAWN_FRAC);
+          t.hp = respawnHp;
+          t.hpDisplay = respawnHp;
+          t.knockedOut = false;
+          t.flashT = 0.6;
+          t.shakeT = 0.5;
+          this.pushLog(`COLUMN ${t.col + 1}: the molar ERUPTS back up at 50% HP!`);
+          SFX.thud();
+          screenShake(6, 0.2);
+          this.particles.burst(
+            COLS_X[t.col], BOTTOM_TOOTH_Y - 40, "#ffd966", 26, 220, 0.6,
+          );
+        }
       }
     }
-    this.lashes = this.lashes.filter((L) => !L.fired || L.t < L.wait + 0.6);
-  }
 
-  spawnLash(p) {
-    // Lash tries to land NEAR the current reticle so you HAVE to move.
-    // It biases 60% "where you're aiming" and 40% random, so you can't
-    // just always stare at the green zone and expect safety.
-    const biasReticle = Math.random() < 0.6;
-    const x = biasReticle
-      ? this.reticleX + rand(-60, 60)
-      : rand(260, W - 260);
-    const y = biasReticle
-      ? this.reticleY + rand(-40, 40)
-      : rand(200, 520);
-    const r = this.enraged ? rand(120, 150) : rand(130, 170);
-    const wait = (this.enraged ? 0.9 : 1.25) + p.dodgeWindow * 0.3;
-    this.lashes.push({ x, y, r, t: 0, wait, fired: false });
-    // Move tongue tip toward the lash - it's charging up.
-    this.tipTarget.x = x;
-    this.tipTarget.y = y - 20;
-  }
+    // Top teeth animation - fade chomp back to 0 if past the strike.
+    for (const tt of this.topTeeth) {
+      tt.flashT = Math.max(0, tt.flashT - dt);
+      if (tt.cooldown > 0) tt.cooldown = Math.max(0, tt.cooldown - dt);
 
-  resolveLash(L, p) {
-    // Snap the tongue tip to the lash at the moment of impact.
-    this.tipTarget.x = L.x;
-    this.tipTarget.y = L.y;
-    this.tipVel.x *= 0.2; this.tipVel.y *= 0.2;
-    const dx = this.reticleX - L.x, dy = this.reticleY - L.y;
-    const inside = dx * dx + dy * dy <= L.r * L.r;
-    if (!inside) {
-      this.pushLog("You juke the tongue - it slaps empty air!");
-      this.particles.burst(L.x, L.y, "#ffc0c8", 14, 180, 0.5);
-      SFX.dodge();
-      return;
-    }
-    // Hit. Brace halves; perfect-brace readies counter.
-    const raw = randInt(this.enemy.attackDmg[0], this.enemy.attackDmg[1]);
-    let dmg = Math.round(raw * CHAMBER_DMG_SCALE * (this.enraged ? 1.2 : 1));
-    let braceNote = "";
-    if (this.braceTime > 0) {
-      dmg = Math.floor(dmg * 0.35);
-      braceNote = "(BRACED) ";
-    }
-    const { armorTaken, hpTaken } = applyDamage(p, dmg);
-    this.hitFlash = 0.5;
-    SFX.hit();
-    screenShake(12, 0.35);
-    this.particles.burst(L.x, L.y, "#ff6b8a", 28, 260, 0.7);
-    const line = braceNote + pick(this.enemy.flavorHit)
-      + ` (-${Math.ceil(hpTaken)} HP${armorTaken ? `, -${Math.ceil(armorTaken)} ARM` : ""})`;
-    this.pushLog(line);
-  }
-
-  updateHeavy(dt, p) {
-    if (this.heavyTelling) {
-      this.heavyTellTime -= dt;
-      if (this.heavyTellTime <= 0) {
-        this.heavyTelling = false;
-        const raw = randInt(this.enemy.heavyDmg[0], this.enemy.heavyDmg[1]);
-        let dmg = Math.round(raw * CHAMBER_DMG_SCALE * (this.enraged ? 1.2 : 1));
-        let braced = false;
-        if (this.braceTime > 0) { dmg = Math.floor(dmg * 0.35); braced = true; }
-        const { armorTaken, hpTaken } = applyDamage(p, dmg);
-        this.hitFlash = 0.8;
-        SFX.thud();
-        screenShake(20, 0.55);
-        this.particles.burst(W / 2, TONGUE_ROOT.y - 60, "#ff8040", 42, 380, 0.9);
-        const prefix = braced ? "(BRACED) HEAVY CURL! " : "HEAVY CURL! ";
-        this.pushLog(prefix + (this.enemy.flavorHeavy || "The tongue batters you!")
-          + ` (-${Math.ceil(hpTaken)} HP${armorTaken ? `, -${Math.ceil(armorTaken)} ARM` : ""})`);
-        this.heavyTimer = rand(this.enraged ? 5.5 : 9.0, this.enraged ? 8.0 : 12.0);
+      if (tt.telegraph !== null) {
+        tt.telegraph -= dt;
+        // Approach the chomp - pre-dip visual before the actual strike.
+        tt.chomp = Math.max(tt.chomp, 0.15 + 0.10 * Math.sin(this.anim * 14));
+      } else if (tt.chomp > 0) {
+        // Retract.
+        tt.chomp = Math.max(0, tt.chomp - dt * 3.5);
       }
+    }
+  }
+
+  // The boss's attack logic: picks top teeth to telegraph and chomp.
+  updateChomps(dt, p, game) {
+    // Cadence tightens as more bottom teeth get knocked out. With 0 down
+    // the fight is breezy; with 3-4 down it is a panic.
+    const downCount = this.bottomTeeth.filter(t => t.knockedOut).length;
+    const cadenceMul = Math.max(0.55, 1 - 0.13 * downCount);
+
+    // Single-lane chomp scheduling.
+    this.nextChompIn -= dt;
+    if (this.nextChompIn <= 0 && this.slamTelegraph === null) {
+      this.startChomp();
+      this.nextChompIn = rand(CHOMP_COOLDOWN_MIN, CHOMP_COOLDOWN_MAX) * cadenceMul;
+    }
+
+    // Full-row slam (less frequent, more devastating).
+    this.nextSlamIn -= dt;
+    if (this.nextSlamIn <= 0 && this.slamTelegraph === null) {
+      this.startFullSlam();
+      this.nextSlamIn = rand(24, 36) * cadenceMul;
+    }
+    if (this.slamTelegraph !== null) {
+      this.slamTelegraph -= dt;
+      for (const tt of this.topTeeth) {
+        tt.chomp = Math.max(tt.chomp, 0.3 + 0.15 * Math.sin(this.anim * 16));
+      }
+      if (this.slamTelegraph <= 0) {
+        this.resolveFullSlam(p);
+        this.slamTelegraph = null;
+      }
+    }
+
+    // Resolve telegraphed single chomps that ran out their timer.
+    for (const tt of this.topTeeth) {
+      if (tt.telegraph !== null && tt.telegraph <= 0) {
+        this.resolveChomp(tt, p);
+      }
+    }
+  }
+
+  startChomp() {
+    // Pick any top tooth not already mid-telegraph / mid-chomp.
+    const eligible = this.topTeeth.filter(t => t.telegraph === null && t.cooldown <= 0);
+    if (eligible.length === 0) return;
+    const tt = pick(eligible);
+    tt.telegraph = CHOMP_TELEGRAPH_MIN;
+    tt.flashT = 0.25;
+    SFX.click();
+  }
+
+  startFullSlam() {
+    this.slamTelegraph = 1.6; // longer telegraph - this one is survivable only by bracing
+    for (const tt of this.topTeeth) tt.flashT = 0.35;
+    this.pushLog("!!! THE WHOLE MAW IS CLOSING - BRACE [F/4] !!!");
+    SFX.thud();
+  }
+
+  resolveChomp(tt, p) {
+    const inLane = this.col === tt.col && this.dodgeIFrameT <= 0;
+    tt.chomp = 1.0;
+    tt.telegraph = null;
+    tt.cooldown = 0.9;
+    screenShake(8, 0.25);
+    if (SFX.crunch) SFX.crunch(); else SFX.thud();
+    this.particles.burst(
+      COLS_X[tt.col], TOP_CHOMP_Y - 20, "#ffd0d4", 22, 260, 0.55,
+    );
+
+    if (!inLane) {
+      this.pushLog(`A top tooth chomps column ${tt.col + 1} - you sidestepped it.`);
       return;
     }
-    this.heavyTimer -= dt;
-    if (this.heavyTimer <= 0) {
-      this.heavyTelling = true;
-      this.heavyTellTime = (this.enraged ? 1.4 : 2.0) + p.dodgeWindow * 0.3;
-      this.pushLog(this.enemy.flavorHeavy || "The tongue COILS BACK - BRACE!");
+
+    // In-lane - resolve with brace mitigation + perfect brace counter.
+    const rawDmg = randInt(CHOMP_DMG_RANGE[0], CHOMP_DMG_RANGE[1]);
+    const braced = this.braceTime > 0;
+    let finalDmg = rawDmg;
+    if (braced) finalDmg = Math.max(1, Math.round(rawDmg * 0.5));
+    // Perfect brace: if the brace was started within PERFECT_BRACE_WINDOW
+    // of this impact, it's a counter. (this.perfectBraceReady is set when
+    // the player braces while a chomp is imminent.)
+    const hadCounter = this.perfectBraceReady;
+    if (hadCounter) {
+      finalDmg = Math.max(1, Math.round(rawDmg * 0.25));
+      this.perfectBraceReady = false;
+      this.perfectFlashT = 0.9;
+      if (p.score) p.score.counterStrikes++;
+      // Counter: strike the bottom tooth in the SAME lane.
+      this.counterStrike(tt.col, p);
     }
+
+    this.applyHitToPlayer(finalDmg, p);
+    const tag = hadCounter ? "PERFECT GUARD!" : braced ? "BRACED." : "UNBRACED!";
+    this.pushLog(`${tag} Column ${tt.col + 1} chomp hits for ${finalDmg}.`);
+
+    this.floaters.push({
+      x: COLS_X[tt.col] + rand(-16, 16),
+      y: HERO_Y - 20,
+      vy: -70, life: 1.0, max: 1.0,
+      text: `-${finalDmg}`, size: hadCounter ? 26 : 22,
+      color: hadCounter ? "#ffd966" : braced ? "#c9e0ff" : "#ff6060",
+    });
+  }
+
+  resolveFullSlam(p) {
+    for (const tt of this.topTeeth) {
+      tt.chomp = 1.0;
+      tt.cooldown = 1.2;
+    }
+    screenShake(14, 0.45);
+    SFX.thud();
+    this.particles.burst(W / 2, TOP_CHOMP_Y, "#ffd0d4", 60, 360, 0.9);
+
+    if (this.dodgeIFrameT > 0) {
+      this.pushLog("You DODGE under the full-maw slam!");
+      return;
+    }
+
+    const rawDmg = randInt(CHOMP_DMG_RANGE[1], CHOMP_DMG_RANGE[1] + 14);
+    const braced = this.braceTime > 0;
+    const hadCounter = this.perfectBraceReady;
+    let finalDmg = rawDmg;
+    if (hadCounter) {
+      finalDmg = Math.max(1, Math.round(rawDmg * 0.3));
+      this.perfectBraceReady = false;
+      this.perfectFlashT = 1.1;
+      if (p.score) p.score.counterStrikes++;
+      // Counter-strike hits EVERY active bottom tooth.
+      for (let i = 0; i < NUM_COLS; i++) this.counterStrike(i, p);
+      this.pushLog(`PERFECT GUARD on the full-slam! Lightning shoots through every fang!`);
+    } else if (braced) {
+      finalDmg = Math.max(1, Math.round(rawDmg * 0.45));
+      this.pushLog(`Braced the MAW SLAM - ${finalDmg} dmg bleeds through.`);
+    } else {
+      this.pushLog(`!! THE MAW SLAMMED YOU FOR ${finalDmg} !!`);
+    }
+    this.applyHitToPlayer(finalDmg, p);
+  }
+
+  // When a perfect-brace triggers, it also deals a bolt of damage
+  // to the bottom tooth in that column (if one is standing).
+  counterStrike(col, p) {
+    const tooth = this.bottomTeeth[col];
+    if (!tooth || tooth.knockedOut) return;
+    const dmg = 20 + randInt(0, 12);
+    this.dealToTooth(tooth, dmg, "Counter-strike!", "counter", p);
+  }
+
+  applyHitToPlayer(amount, p) {
+    const pm = p.pactMods || {};
+    const scaled = Math.max(1, Math.round(amount * (pm.incomingDmgMult || 1)));
+    applyDamage(p, scaled);
+    this.hitFlash = Math.max(this.hitFlash, 0.35);
   }
 
   handleInput(dt, game) {
-    if (this.turnLocked > 0) { this.turnLocked -= dt; return; }
     const p = game.player;
 
-    // Click anywhere = attack (action 0). Buffered so mousedown doesn't
-    // require a companion keypress.
-    if (game.input.wasPressed("Mouse0")) this.execute(0, p, game);
+    // Lane movement (discrete-press only; hopCooldown gates repeat).
+    const moveCd = p.laneSwapCd || 0.08;
+    if (this.laneSwapT <= 0) {
+      if (game.input.wasPressed("ArrowLeft", "a") && this.col > 0) {
+        this.col -= 1;
+        this.laneSwapT = moveCd;
+        SFX.click();
+      } else if (game.input.wasPressed("ArrowRight", "d") && this.col < NUM_COLS - 1) {
+        this.col += 1;
+        this.laneSwapT = moveCd;
+        SFX.click();
+      }
+    }
 
-    // Keyboard actions. BOTH the new QERF aliases and the legacy 1-4.
-    if      (game.input.wasPressed("q", "1")) this.execute(0, p, game);
-    else if (game.input.wasPressed("e", "2")) this.execute(1, p, game);
-    else if (game.input.wasPressed("r", "3")) this.execute(2, p, game);
-    else if (game.input.wasPressed("f", "4")) this.execute(3, p, game);
+    // Attacks.
+    if      (game.input.wasPressed("q", "Q", "1")) this.execute(0, p, game);
+    else if (game.input.wasPressed("e", "E", "2")) this.execute(1, p, game);
+    else if (game.input.wasPressed("r", "R", "3")) this.execute(2, p, game);
+    else if (game.input.wasPressed("f", "F", "4")) this.execute(3, p, game);
+    else if (game.input.wasPressed("Mouse0"))      this.execute(0, p, game);
   }
 
-  execute(idx, p, game) {
+  execute(idx, p) {
     const l = p.loadout;
     const pm = p.pactMods || {};
     switch (idx) {
       case 0: {
         if (p.cooldowns.attack > 0) { SFX.deny(); this.pushLog(`${l.attack.name} is recharging...`); return; }
         if (p.mana < l.attack.manaCost) { SFX.deny(); this.pushLog("Not enough mana!"); return; }
-        if (!this.reticleInZone()) { this.missShot(l.attack.name); return; }
         p.mana -= l.attack.manaCost;
         p.cooldowns.attack = l.attack.cooldown * (pm.attackCdMult || 1);
-        const raw = randInt(l.attack.dmg[0], l.attack.dmg[1]);
-        this.landShot(raw, l.attack.name, l.attack.sfx, p, "attack");
-        this.turnLocked = 0.22;
+        this.strikeCurrentLane(l.attack, "attack", p);
         break;
       }
       case 1: {
         if (p.cooldowns.special > 0) { SFX.deny(); this.pushLog(`${l.special.name} is recharging...`); return; }
         if (p.mana < l.special.manaCost) { SFX.deny(); this.pushLog("Not enough mana!"); return; }
-        if (!this.reticleInZone()) { this.missShot(l.special.name); return; }
         p.mana -= l.special.manaCost;
         p.cooldowns.special = l.special.cooldown * (pm.specialCdMult || 1);
-        const raw = randInt(l.special.dmg[0], l.special.dmg[1]);
-        this.landShot(raw, l.special.name, l.special.sfx, p, "special");
-        this.turnLocked = 0.38;
+        this.strikeCurrentLane(l.special, "special", p);
         break;
       }
       case 2: {
-        // Dodge roll - +MP + briefly paints a short safe-trail on the reticle.
+        // Dodge roll - short i-frames + MP gain. Great panic button when
+        // you can't reach a safer lane in time.
         p.mana = Math.min(p.manaMax, p.mana + 8);
-        this.pushLog("You ROLL through the maw (+8 MP).");
+        this.dodgeIFrameT = 0.35;
+        this.dodgeFlashT = 0.5;
         SFX.dodge();
-        this.dodgeFlashT = 0.6;
-        this.turnLocked = 0.22;
+        this.pushLog("You ROLL between the fangs (+8 MP, brief i-frames).");
         break;
       }
       case 3: {
-        this.braceTime = 1.8;
-        const perfectWindow = 0.5;
-        const tellEnding = this.heavyTelling && this.heavyTellTime <= perfectWindow;
-        const lashSoon   = this.lashes.some((L) => !L.fired && L.wait - L.t <= 0.35);
-        if (tellEnding || lashSoon) {
+        // Brace. Perfect-brace = any chomp/slam that lands within
+        // PERFECT_BRACE_WINDOW seconds counts as counter-strike.
+        this.braceTime = 1.2;
+        // Does ANY top-tooth chomp (or slam) strike within the perfect window?
+        const imminent = this.topTeeth.some(
+          t => t.telegraph !== null && t.telegraph <= PERFECT_BRACE_WINDOW,
+        ) || (this.slamTelegraph !== null && this.slamTelegraph <= PERFECT_BRACE_WINDOW + 0.15);
+        if (imminent) {
           this.perfectBraceReady = true;
-          this.perfectFlashT = 0.9;
+          this.perfectFlashT = 0.7;
           if (p.score) p.score.perfectBraces++;
-          this.pushLog("PERFECT GUARD! Counter-attack queued (+50% next hit)!");
-          SFX.victory();
-          screenShake(4, 0.15);
-          this.particles.burst(this.reticleX, this.reticleY, "#ffd966", 22, 240, 0.6);
+          this.pushLog("PERFECT BRACE! Counter-strike queued.");
+          SFX.confirm();
+          screenShake(3, 0.1);
         } else {
-          this.pushLog("You BRACE. Next lash hurts less.");
+          this.pushLog("You BRACE. Next chomp hurts half as much.");
           SFX.confirm();
         }
-        this.turnLocked = 0.2;
         break;
       }
     }
   }
 
-  missShot(name) {
-    this.pushLog(`MISS! ${name} needs a LOCK (reticle inside circle).`);
-    this.missFlashT = 0.4;
-    SFX.deny();
-    this.particles.burst(this.reticleX, this.reticleY, "#ff5050", 10, 140, 0.35);
-  }
-
-  // Apply an in-zone hit to the tongue.
-  landShot(rawDmg, name, sfx, p, kind) {
-    const pm = p.pactMods || {};
+  // Apply a weapon strike to the bottom tooth in the player's lane.
+  // Multi-lane weapons (Bile Whip) additionally hit the immediate
+  // neighbors for 50% of the damage.
+  strikeCurrentLane(move, kind, p) {
     const mult = this.matchupMult || 1;
-    const hadCounter = this.perfectBraceReady;
-    this.perfectBraceReady = false;
-    if (hadCounter && p.score) p.score.counterStrikes++;
-
-    const counterMult = hadCounter ? (pm.counterMult || 1.5) : 1;
-    const kindMult = kind === "special"
-      ? (pm.specialDmgMult || 1)
-      : (pm.attackDmgMult || 1);
-    const dmgMult = pm.dmgMult || 1;
-    const isCrit = (pm.critChance || 0) > 0 && Math.random() < (pm.critChance || 0);
+    const pm = p.pactMods || {};
+    const dmgMult = (pm.dmgMult || 1) *
+      (kind === "special" ? (pm.specialDmgMult || 1) : (pm.attackDmgMult || 1));
+    const isCrit = Math.random() < (pm.critChance || 0);
     const critMult = isCrit ? 1.6 : 1;
-    // Aim-lock bonus: a pinpoint shot (reticle within 30% of zone center)
-    // gets an extra 25% for rewarding precise aim.
-    const dx = this.reticleX - this.zone.x;
-    const dy = this.reticleY - this.zone.y;
-    const nearness = Math.sqrt(dx * dx + dy * dy) / Math.max(1, this.zone.r);
-    const bullseye = nearness < 0.3;
-    const bullseyeMult = bullseye ? 1.25 : 1;
+    const raw = randInt(move.dmg[0], move.dmg[1]);
+    const centerDmg = Math.max(1, Math.round(raw * mult * dmgMult * critMult));
 
-    const dmg = Math.max(1, Math.round(
-      rawDmg * mult * counterMult * kindMult * dmgMult * critMult * bullseyeMult,
-    ));
-    this.enemy.hp = Math.max(0, this.enemy.hp - dmg);
-    this.enemyFlash = hadCounter ? 0.55 : (isCrit ? 0.5 : 0.35);
-    this.enemyShake = hadCounter ? 0.55 : (mult > 1 || isCrit ? 0.4 : 0.22);
-    this.lockFlashT = 0.4;
-    SFX[sfx] ? SFX[sfx]() : SFX.hit();
-    screenShake(mult > 1 ? 9 : 5, 0.15);
-
-    let line = `${name}! The tongue takes ${dmg}.`;
-    if (hadCounter) line = `COUNTER-STRIKE! ${line}`;
-    else if (isCrit) line = `CRITICAL! ${line}`;
-    else if (bullseye) line = `BULLSEYE! ${line}`;
-    else if (this.matchupLabel && mult > 1) line = `${this.matchupLabel.text} ${line}`;
-    this.pushLog(line);
-
-    const burstColor = isCrit ? "#ff40c0"
-      : hadCounter ? "#ffd966"
-      : bullseye ? "#b5f05a"
-      : (mult > 1 ? "#ffd966" : "#ff80a0");
-    this.particles.burst(this.reticleX, this.reticleY, burstColor,
-      mult > 1 || isCrit || bullseye ? 30 : 18,
-      mult > 1 || isCrit ? 280 : 220,
-      0.6);
-
-    this.floaters.push({
-      x: this.reticleX + rand(-30, 30),
-      y: this.reticleY - 18,
-      vy: -70,
-      life: 1.1, max: 1.1,
-      text: isCrit ? `-${dmg}!` : `-${dmg}`,
-      color: isCrit ? "#ff40c0"
-        : bullseye ? "#b5f05a"
-        : (mult > 1 ? "#ffd966" : "#ffffff"),
-      size: mult > 1 || isCrit || bullseye ? 28 : 22,
-    });
-
-    // Blood decals at the tongue tip.
-    const count = isCrit || bullseye ? 3 : 2;
-    for (let i = 0; i < count; i++) {
-      this.bloodDecals.push({
-        x: this.tipPos.x + rand(-60, 60),
-        y: this.tipPos.y + rand(-40, 30),
-        r: rand(4, 10),
-        alpha: rand(0.55, 0.85),
-      });
+    const centerTooth = this.bottomTeeth[this.col];
+    if (!centerTooth) return;
+    if (centerTooth.knockedOut) {
+      // Still play the sound but log that there's nothing to hit.
+      this.pushLog(`Column ${this.col + 1}'s molar is already down!`);
+      SFX.deny();
+      return;
     }
-    if (this.bloodDecals.length > 46) {
-      this.bloodDecals.splice(0, this.bloodDecals.length - 46);
+
+    SFX[move.sfx] ? SFX[move.sfx]() : SFX.hit();
+    const tag = isCrit ? "CRITICAL!" : (mult > 1 ? (this.matchupLabel?.text || "") : "");
+    this.dealToTooth(centerTooth, centerDmg, `${tag} ${move.name}!`.trim(), kind, p);
+
+    // Multi-lane weapons sweep adjacent teeth for half damage.
+    if (move.multiLane) {
+      const spread = [-1, 1];
+      for (const dx of spread) {
+        const nc = this.col + dx;
+        if (nc < 0 || nc >= NUM_COLS) continue;
+        const nt = this.bottomTeeth[nc];
+        if (!nt || nt.knockedOut) continue;
+        const splash = Math.max(1, Math.round(centerDmg * 0.5));
+        this.dealToTooth(nt, splash, `Splash lash!`, kind, p);
+      }
     }
   }
 
-  // ================== RENDER ==================
+  // Deal damage to a specific bottom tooth.
+  dealToTooth(tooth, dmg, label, kind, p) {
+    tooth.hp = Math.max(0, tooth.hp - dmg);
+    tooth.flashT = 0.35;
+    tooth.shakeT = 0.3;
+    this.particles.burst(
+      COLS_X[tooth.col] + rand(-10, 10),
+      BOTTOM_TOOTH_TIP + rand(-20, 20),
+      "#fff4d6", 14, 180, 0.45,
+    );
+    this.floaters.push({
+      x: COLS_X[tooth.col] + rand(-16, 16),
+      y: BOTTOM_TOOTH_TIP - 20,
+      vy: -80, life: 0.9, max: 0.9,
+      text: `-${dmg}`, size: kind === "counter" ? 26 : 22,
+      color: kind === "counter" ? "#ffd966" : "#f6ecd0",
+    });
+    this.bloodDecals.push({
+      x: COLS_X[tooth.col] + rand(-22, 22),
+      y: BOTTOM_TOOTH_TIP + rand(-14, 14),
+      r: rand(4, 9),
+      alpha: rand(0.5, 0.85),
+    });
+    if (this.bloodDecals.length > 48) {
+      this.bloodDecals.splice(0, this.bloodDecals.length - 48);
+    }
+    this.pushLog(`${label} Tooth ${tooth.col + 1} takes ${dmg}. (${Math.ceil(tooth.hp)}/${tooth.hpMax})`);
+
+    if (tooth.hp <= 0 && !tooth.knockedOut) {
+      this.knockOutTooth(tooth, p);
+    }
+  }
+
+  knockOutTooth(tooth, p) {
+    tooth.knockedOut = true;
+    tooth.knockedT = 0;
+    tooth.respawnIn = TOOTH_RESPAWN_SECS;
+    SFX.thud();
+    screenShake(10, 0.3);
+    this.particles.burst(
+      COLS_X[tooth.col], BOTTOM_TOOTH_TIP, "#ff4040", 36, 280, 0.8,
+    );
+    this.particles.burst(
+      COLS_X[tooth.col], BOTTOM_TOOTH_TIP, "#f6ecd0", 22, 220, 0.6,
+    );
+    this.pushLog(`MOLAR ${tooth.col + 1} SHATTERED! (${TOOTH_RESPAWN_SECS}s until it regrows)`);
+  }
+
+  checkWinCondition(game) {
+    const allDown = this.bottomTeeth.every(t => t.knockedOut);
+    if (allDown) {
+      this.phase = "win";
+      this.pushLog("ALL FIVE MOLARS ARE DOWN! ESCAPE NOW!");
+      screenShake(18, 0.5);
+      this.particles.burst(W / 2, BOTTOM_TOOTH_TIP, "#ffd966", 80, 360, 1.2);
+      SFX.confirm();
+    }
+  }
+
+  // ======================== RENDER ========================
   render(ctx, game) {
     const ch = this.chamber;
     drawFleshBackground(ctx, this.t, ch.wormTint * 1.05, ch.palette);
     drawVeins(ctx, this.t, this.chamberIdx + 11);
 
-    // Teeth ring around the edge of the canvas.
-    this.drawTeethRing(ctx);
-    // Dark throat / central maw opening.
-    this.drawThroat(ctx);
-    // Tongue body.
-    this.drawTongue(ctx);
-    // Aim zone (green lock circle).
-    this.drawAimZone(ctx);
-    // Lash warnings.
-    for (const L of this.lashes) this.drawLash(ctx, L);
-    // Particles, floaters.
+    // Distant daylight through any knocked-out gaps. Done before teeth so
+    // teeth occlude where they're still standing.
+    this.drawDaylight(ctx);
+
+    // Lane columns (subtle glow per lane so the grid reads).
+    this.drawLaneGuides(ctx);
+
+    // Teeth rows.
+    this.drawTopTeeth(ctx);
+    this.drawBottomTeeth(ctx);
+
+    // Blood decals sit on the gum line.
+    this.drawBloodDecals(ctx);
+
+    // Hero.
+    this.drawHero(ctx, game);
+
+    // Particles + floaters.
     this.particles.render(ctx);
     for (const f of this.floaters) {
       const a = Math.max(0, Math.min(1, f.life / f.max));
@@ -615,603 +656,549 @@ export class TongueBossScene {
       });
       ctx.restore();
     }
-    // Blood decals at the tongue tip area (world space).
-    this.drawBloodDecals(ctx);
-    // Reticle (mouse).
-    this.drawReticle(ctx);
 
     if (this.hitFlash > 0) {
       ctx.fillStyle = `rgba(194, 26, 26, ${this.hitFlash})`;
       ctx.fillRect(0, 0, W, H);
     }
 
+    // Banners / HUD.
     if (this.phase === "intro") {
       const alpha = Math.min(1, this.introT * 2);
-      ctx.globalAlpha = alpha;
-      drawBanner(ctx, "THE WORM'S MAW", W / 2, 120, 44, COLORS.bile, COLORS.blood);
-      drawBanner(ctx, this.enemy.name, W / 2, 168, 26, COLORS.bone, COLORS.worm);
-      ctx.globalAlpha = 1;
-    }
-    if (this.phase === "win") {
-      drawBanner(ctx, "THE MAW GAPES OPEN!", W / 2, 120, 46, COLORS.bile, COLORS.blood);
-      drawBanner(ctx, "YOU LEAP FREE!", W / 2, 168, 24, COLORS.bone, COLORS.worm);
-    }
-
-    this.drawUI(ctx, game);
-    if (this.paused) this.drawPause(ctx);
-  }
-
-  // --- Layered worm mouth effects ---
-
-  drawTeethRing(ctx) {
-    // Teeth are drawn as triangles along all four edges, pointing inward.
-    // Slight random-but-stable jitter so the ring isn't mechanically perfect.
-    ctx.save();
-    const t = this.t;
-    const drawTooth = (x, y, w, h, angle) => {
       ctx.save();
-      ctx.translate(x, y);
-      ctx.rotate(angle);
-      // Shadow / gum base
-      ctx.fillStyle = "#3a0810";
-      ctx.beginPath();
-      ctx.moveTo(-w * 0.7, 0);
-      ctx.lineTo(w * 0.7, 0);
-      ctx.lineTo(0, h);
-      ctx.closePath();
-      ctx.fill();
-      // Tooth body (ivory gradient)
-      const gg = ctx.createLinearGradient(-w, 0, w, h);
-      gg.addColorStop(0, "#ffffff");
-      gg.addColorStop(0.55, "#f6e9c4");
-      gg.addColorStop(1, "#8a7238");
-      ctx.fillStyle = gg;
-      ctx.beginPath();
-      ctx.moveTo(-w * 0.55, 2);
-      ctx.lineTo(w * 0.55, 2);
-      ctx.lineTo(0, h - 2);
-      ctx.closePath();
-      ctx.fill();
-      ctx.strokeStyle = "rgba(0,0,0,0.5)";
-      ctx.lineWidth = 1.2;
-      ctx.stroke();
-      // Blood smear on some teeth
-      ctx.fillStyle = "rgba(140, 10, 10, 0.55)";
-      ctx.beginPath();
-      ctx.ellipse(0, h * 0.5, w * 0.25, h * 0.15, 0, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.globalAlpha = alpha;
+      drawBanner(ctx, "THE WORM'S MAW", W / 2, 60, 44, COLORS.bile, COLORS.blood);
+      drawBanner(ctx, this.enemyName, W / 2, 108, 22, COLORS.bone, COLORS.worm);
       ctx.restore();
-    };
-
-    // Top row - fangs pointing DOWN.
-    const topCount = 18;
-    for (let i = 0; i < topCount; i++) {
-      const f = (i + 0.5) / topCount;
-      const x = f * W;
-      const jitter = Math.sin(i * 37.1) * 5 + Math.sin(t * 0.6 + i) * 1.5;
-      const w = 34 + Math.sin(i * 11.3) * 6;
-      const h = 78 + Math.sin(i * 9.7) * 14 + (i % 3 === 0 ? 18 : 0);
-      drawTooth(x + jitter, 0, w, h, 0);
-    }
-    // Bottom row - fangs pointing UP.
-    const botCount = 18;
-    for (let i = 0; i < botCount; i++) {
-      const f = (i + 0.5) / botCount;
-      const x = f * W;
-      const jitter = Math.sin(i * 29.5) * 6;
-      const w = 32 + Math.sin(i * 17.1) * 5;
-      const h = 72 + Math.sin(i * 7.3) * 16 + (i % 4 === 0 ? 14 : 0);
-      drawTooth(x + jitter, H, w, h, Math.PI);
-    }
-    // Left row - pointing RIGHT.
-    const sideCount = 10;
-    for (let i = 0; i < sideCount; i++) {
-      const f = (i + 0.5) / sideCount;
-      const y = f * H;
-      const w = 28 + Math.sin(i * 5) * 4;
-      const h = 72 + Math.sin(i * 3.1) * 10;
-      drawTooth(0, y, w, h, Math.PI * 1.5);
-    }
-    // Right row - pointing LEFT.
-    for (let i = 0; i < sideCount; i++) {
-      const f = (i + 0.5) / sideCount;
-      const y = f * H;
-      const w = 28 + Math.sin(i * 6.1) * 4;
-      const h = 72 + Math.sin(i * 4.1) * 10;
-      drawTooth(W, y, w, h, Math.PI * 0.5);
     }
 
-    // Vignette darkening toward the teeth so the center pops.
-    const g = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * 0.25,
-      W / 2, H / 2, Math.max(W, H) * 0.65);
-    g.addColorStop(0, "rgba(0,0,0,0)");
-    g.addColorStop(1, "rgba(10,0,14,0.55)");
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, W, H);
-    ctx.restore();
-  }
+    if (this.phase === "win") {
+      drawBanner(ctx, "THE JAW FALLS OPEN!", W / 2, 60, 46, COLORS.bile, COLORS.blood);
+      drawBanner(ctx, "YOU LEAP FREE!", W / 2, 108, 24, COLORS.bone, COLORS.worm);
+    }
 
-  drawThroat(ctx) {
-    // Dark hole behind the tongue, pulsing with the heartbeat.
-    const cx = TONGUE_ROOT.x, cy = TONGUE_ROOT.y;
-    const pulse = 1 + Math.sin(this.t * 2.3) * 0.04;
-    const rOut = 190 * pulse;
-    const rIn  = 130 * pulse;
-    const g = ctx.createRadialGradient(cx, cy - 20, 10, cx, cy, rOut);
-    g.addColorStop(0, "#2a050a");
-    g.addColorStop(0.55, "#100208");
-    g.addColorStop(1, "rgba(0,0,0,0.95)");
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.ellipse(cx, cy, rOut, rOut * 0.8, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = "rgba(80, 10, 30, 0.8)";
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.ellipse(cx, cy, rIn, rIn * 0.8, 0, 0, Math.PI * 2);
-    ctx.stroke();
-    // Saliva strands glistening across the opening.
-    ctx.strokeStyle = "rgba(240, 200, 220, 0.35)";
-    ctx.lineWidth = 1.5;
-    for (let i = 0; i < 5; i++) {
-      ctx.beginPath();
-      const xa = cx - rIn * 0.8 + (i / 4) * rIn * 1.6;
-      ctx.moveTo(xa, cy - rIn * 0.7);
-      ctx.quadraticCurveTo(xa + Math.sin(this.t * 2 + i) * 8, cy - 10, xa + rIn * 0.05, cy + rIn * 0.75);
-      ctx.stroke();
+    // Slam telegraph band - full-width red pulse.
+    if (this.slamTelegraph !== null) {
+      const k = 1 - Math.max(0, this.slamTelegraph) / 1.6;
+      ctx.save();
+      ctx.globalAlpha = 0.25 + 0.35 * Math.abs(Math.sin(this.anim * 9));
+      const g = ctx.createLinearGradient(0, 0, 0, H);
+      g.addColorStop(0, `rgba(255, 60, 60, ${0.35 + k * 0.5})`);
+      g.addColorStop(0.5, `rgba(255, 60, 60, 0.05)`);
+      g.addColorStop(1, `rgba(255, 60, 60, ${0.35 + k * 0.5})`);
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, W, H);
+      ctx.restore();
+      drawText(ctx, `!! FULL-MAW SLAM - BRACE [F/4] !!`, W / 2, 160, {
+        size: 26, color: "#ffbaba", align: "center", bold: true,
+        glow: "#c21a1a", maxWidth: W - 80,
+      });
+    }
+
+    if (this.perfectFlashT > 0) {
+      ctx.save();
+      ctx.globalAlpha = 0.5 * this.perfectFlashT;
+      ctx.fillStyle = COLORS.gold || "#ffd966";
+      ctx.fillRect(0, 0, W, H);
+      ctx.restore();
+    }
+
+    this.drawHUD(ctx, game);
+    this.drawContextHint(ctx);
+    this.drawLog(ctx);
+
+    if (this.paused) {
+      ctx.fillStyle = "rgba(0,0,0,0.65)";
+      ctx.fillRect(0, 0, W, H);
+      drawBanner(ctx, "PAUSED", W / 2, H / 2 - 18, 52, COLORS.bone, COLORS.blood);
+      drawText(ctx, "[P] or [ESC] to resume", W / 2, H / 2 + 34, {
+        size: 18, color: COLORS.boneDim, align: "center",
+      });
     }
   }
 
-  drawTongue(ctx) {
-    // Serpentine tongue from the root up to tipPos, drawn as layered
-    // bulging ellipses with a bright pink gradient.
-    const root = TONGUE_ROOT;
-    const tip  = this.tipPos;
-    const t = this.t;
-    // Spine path - quadratic curve with a wobble through the middle.
-    const mx = (root.x + tip.x) / 2 + Math.sin(t * 2.4) * 30;
-    const my = (root.y + tip.y) / 2 + 20;
-
-    // Segment discs along the spine
-    const SEG = 18;
-    const pts = [];
-    for (let i = 0; i <= SEG; i++) {
-      const u = i / SEG;
-      // Quadratic Bezier
-      const bx = (1 - u) * (1 - u) * root.x + 2 * (1 - u) * u * mx + u * u * tip.x;
-      const by = (1 - u) * (1 - u) * root.y + 2 * (1 - u) * u * my + u * u * tip.y;
-      // Thickness tapers toward the tip.
-      const r = 58 - 44 * u + Math.sin(t * 4 + i) * 2;
-      pts.push({ x: bx, y: by, r });
-    }
-    // Shadow layer
-    for (const p of pts) {
-      ctx.fillStyle = "rgba(0,0,0,0.35)";
-      ctx.beginPath();
-      ctx.ellipse(p.x + 4, p.y + 6, p.r, p.r * 0.78, 0, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    // Body layer
-    for (let i = 0; i < pts.length; i++) {
-      const p = pts[i];
-      const g = ctx.createRadialGradient(p.x - p.r * 0.3, p.y - p.r * 0.3, 3, p.x, p.y, p.r);
-      g.addColorStop(0, "#ffc3ce");
-      g.addColorStop(0.6, "#e06a84");
-      g.addColorStop(1, "#8a1e38");
+  drawDaylight(ctx) {
+    // If any bottom tooth is knocked out, paint a soft daylight gradient
+    // in that column to sell the "escape hole" progress visually.
+    for (const t of this.bottomTeeth) {
+      if (!t.knockedOut) continue;
+      const cx = COLS_X[t.col];
+      const g = ctx.createRadialGradient(cx, BOTTOM_TOOTH_Y, 10, cx, BOTTOM_TOOTH_Y, 140);
+      g.addColorStop(0, "rgba(255, 236, 170, 0.85)");
+      g.addColorStop(1, "rgba(255, 236, 170, 0)");
+      ctx.save();
+      ctx.globalCompositeOperation = "lighter";
       ctx.fillStyle = g;
       ctx.beginPath();
-      ctx.ellipse(p.x, p.y, p.r, p.r * 0.82, 0, 0, Math.PI * 2);
+      ctx.arc(cx, BOTTOM_TOOTH_Y, 140, 0, Math.PI * 2);
       ctx.fill();
+      ctx.restore();
     }
-    // Centerline groove (signature tongue detail)
+  }
+
+  drawLaneGuides(ctx) {
     ctx.save();
-    ctx.strokeStyle = "rgba(90, 10, 30, 0.55)";
-    ctx.lineWidth = 3;
+    for (let i = 0; i < NUM_COLS; i++) {
+      const x = COLS_X[i];
+      const active = i === this.col;
+      ctx.strokeStyle = active ? "rgba(255, 200, 120, 0.35)" : "rgba(0, 0, 0, 0.18)";
+      ctx.lineWidth = active ? 2 : 1;
+      ctx.beginPath();
+      ctx.moveTo(x, 40);
+      ctx.lineTo(x, H - 40);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  drawTopTeeth(ctx) {
+    for (const tt of this.topTeeth) this.drawOneTopTooth(ctx, tt);
+  }
+
+  drawOneTopTooth(ctx, tt) {
+    const x = COLS_X[tt.col];
+    const baseY = TOP_TOOTH_Y;
+    // Tip descends from TOP_TOOTH_TIP (rest) toward TOP_CHOMP_Y at chomp=1.
+    const tipY = TOP_TOOTH_TIP + (TOP_CHOMP_Y - TOP_TOOTH_TIP) * tt.chomp;
+    const halfW = 52;
+
+    // Warning glow if telegraphing.
+    if (tt.telegraph !== null) {
+      const pulse = 0.5 + 0.5 * Math.sin(this.anim * 20);
+      ctx.save();
+      ctx.fillStyle = `rgba(255, 40, 40, ${0.25 + 0.35 * pulse})`;
+      ctx.beginPath();
+      ctx.moveTo(x - halfW - 10, baseY - 10);
+      ctx.lineTo(x + halfW + 10, baseY - 10);
+      ctx.lineTo(x + 10, tipY + 20);
+      ctx.lineTo(x - 10, tipY + 20);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    // Gum base (dark red slab the tooth hangs from).
+    ctx.save();
+    ctx.fillStyle = shade(COLORS.blood || "#a12030", 0.6);
     ctx.beginPath();
-    ctx.moveTo(root.x, root.y);
-    ctx.quadraticCurveTo(mx, my, tip.x, tip.y);
-    ctx.stroke();
-    // Wet highlight along the left/top of the tongue.
-    ctx.strokeStyle = "rgba(255, 225, 230, 0.55)";
-    ctx.lineWidth = 5;
-    ctx.shadowColor = "rgba(255,255,255,0.45)";
-    ctx.shadowBlur = 10;
-    ctx.beginPath();
-    ctx.moveTo(root.x - 20, root.y - 14);
-    ctx.quadraticCurveTo(mx - 20, my - 14, tip.x - 8, tip.y - 8);
-    ctx.stroke();
+    ctx.moveTo(x - halfW - 18, baseY - 40);
+    ctx.lineTo(x + halfW + 18, baseY - 40);
+    ctx.lineTo(x + halfW + 10, baseY + 20);
+    ctx.lineTo(x - halfW - 10, baseY + 20);
+    ctx.closePath();
+    ctx.fill();
     ctx.restore();
 
-    // Bulbous tongue tip with a slightly forked shape.
+    // The tooth itself (tapered fang).
+    const flash = tt.flashT;
+    const toothCol = flash > 0 ? "#ffe9a6" : "#f7efd0";
+    const shadowCol = shade(toothCol, 0.72);
+
     ctx.save();
-    ctx.translate(tip.x, tip.y);
-    const forkAngle = Math.atan2(tip.y - my, tip.x - mx);
-    ctx.rotate(forkAngle);
-    ctx.fillStyle = "#e06a84";
+    // Shadow / outline
+    ctx.fillStyle = "rgba(0,0,0,0.45)";
     ctx.beginPath();
-    ctx.ellipse(0, 0, 30, 20, 0, 0, Math.PI * 2);
+    ctx.moveTo(x - halfW + 4, baseY + 4);
+    ctx.lineTo(x + halfW + 4, baseY + 4);
+    ctx.lineTo(x + 6, tipY + 4);
+    ctx.lineTo(x - 6, tipY + 4);
+    ctx.closePath();
     ctx.fill();
-    // Small forked split
-    ctx.strokeStyle = "rgba(80, 10, 30, 0.8)";
+
+    // Main tooth body - gradient from root to tip.
+    const g = ctx.createLinearGradient(x, baseY, x, tipY);
+    g.addColorStop(0, toothCol);
+    g.addColorStop(0.5, shade(toothCol, 0.9));
+    g.addColorStop(1, shade(toothCol, 0.78));
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(x - halfW, baseY);
+    ctx.lineTo(x + halfW, baseY);
+    ctx.lineTo(x + 4, tipY);
+    ctx.lineTo(x - 4, tipY);
+    ctx.closePath();
+    ctx.fill();
+
+    // Highlight stripe
+    ctx.strokeStyle = "rgba(255,255,255,0.55)";
     ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.moveTo(12, 0);
-    ctx.lineTo(28, -6);
-    ctx.moveTo(12, 0);
-    ctx.lineTo(28, 6);
+    ctx.moveTo(x - halfW * 0.4, baseY + 20);
+    ctx.lineTo(x - 2, tipY - 10);
     ctx.stroke();
-    // Tip highlight
-    ctx.fillStyle = "rgba(255, 220, 230, 0.9)";
-    ctx.beginPath();
-    ctx.ellipse(-6, -6, 9, 5, 0, 0, Math.PI * 2);
-    ctx.fill();
-    // Flash white when we were just hit.
-    if (this.enemyFlash > 0) {
-      ctx.globalAlpha = this.enemyFlash * 1.4;
-      ctx.fillStyle = "#ffffff";
+
+    // Cracks during chomp animation
+    if (tt.chomp > 0.1) {
+      ctx.strokeStyle = shadowCol;
+      ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.ellipse(0, 0, 30, 20, 0, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.moveTo(x - 20, baseY + 30);
+      ctx.lineTo(x - 6, baseY + 80);
+      ctx.moveTo(x + 14, baseY + 38);
+      ctx.lineTo(x + 2, baseY + 90);
+      ctx.stroke();
     }
     ctx.restore();
+  }
+
+  drawBottomTeeth(ctx) {
+    for (const t of this.bottomTeeth) this.drawOneBottomTooth(ctx, t);
+  }
+
+  drawOneBottomTooth(ctx, t) {
+    const x = COLS_X[t.col];
+    const halfW = 58;
+
+    // Gum (at the bottom).
+    ctx.save();
+    ctx.fillStyle = shade(COLORS.blood || "#a12030", 0.55);
+    ctx.beginPath();
+    ctx.moveTo(x - halfW - 22, BOTTOM_TOOTH_Y + 40);
+    ctx.lineTo(x + halfW + 22, BOTTOM_TOOTH_Y + 40);
+    ctx.lineTo(x + halfW + 10, BOTTOM_TOOTH_Y - 20);
+    ctx.lineTo(x - halfW - 10, BOTTOM_TOOTH_Y - 20);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    if (t.knockedOut) {
+      // Draw the empty socket - dark blood cavity with a little daylight
+      // shining through (daylight gradient drawn earlier).
+      ctx.save();
+      ctx.fillStyle = "rgba(20, 0, 8, 0.9)";
+      ctx.beginPath();
+      ctx.ellipse(x, BOTTOM_TOOTH_Y - 4, halfW - 4, 24, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+      // Countdown label so the player knows when it regrows.
+      const pct = Math.max(0, t.respawnIn) / TOOTH_RESPAWN_SECS;
+      const seconds = Math.ceil(Math.max(0, t.respawnIn));
+      drawText(ctx, `${seconds}s`, x, BOTTOM_TOOTH_Y - 4, {
+        size: 16, color: "#ffd966", align: "center", baseline: "middle", bold: true,
+      });
+      // Thin ring filling up.
+      ctx.save();
+      ctx.strokeStyle = "rgba(255, 217, 102, 0.65)";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      const r = halfW - 2;
+      ctx.arc(x, BOTTOM_TOOTH_Y - 4,
+        r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * (1 - pct));
+      ctx.stroke();
+      ctx.restore();
+      return;
+    }
+
+    // Alive tooth - taper upward.
+    const shakeX = t.shakeT > 0 ? Math.sin(this.anim * 40) * 3 : 0;
+    const tipY = BOTTOM_TOOTH_TIP + Math.sin(t.wobble) * 1.5;
+    const flash = t.flashT;
+    const toothCol = flash > 0 ? "#ffe9a6" : "#efe4c2";
+
+    ctx.save();
+    ctx.translate(shakeX, 0);
+    // Shadow
+    ctx.fillStyle = "rgba(0,0,0,0.45)";
+    ctx.beginPath();
+    ctx.moveTo(x - halfW + 4, BOTTOM_TOOTH_Y + 4);
+    ctx.lineTo(x + halfW + 4, BOTTOM_TOOTH_Y + 4);
+    ctx.lineTo(x + 8, tipY + 4);
+    ctx.lineTo(x - 8, tipY + 4);
+    ctx.closePath();
+    ctx.fill();
+
+    // Body
+    const g = ctx.createLinearGradient(x, BOTTOM_TOOTH_Y, x, tipY);
+    g.addColorStop(0, shade(toothCol, 0.78));
+    g.addColorStop(0.5, shade(toothCol, 0.92));
+    g.addColorStop(1, toothCol);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(x - halfW, BOTTOM_TOOTH_Y);
+    ctx.lineTo(x + halfW, BOTTOM_TOOTH_Y);
+    ctx.lineTo(x + 8, tipY);
+    ctx.lineTo(x - 8, tipY);
+    ctx.closePath();
+    ctx.fill();
+
+    // Highlight
+    ctx.strokeStyle = "rgba(255,255,255,0.6)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(x - halfW * 0.35, BOTTOM_TOOTH_Y - 18);
+    ctx.lineTo(x - 6, tipY + 14);
+    ctx.stroke();
+
+    // Damage cracks scale with damage ratio.
+    const dmgPct = 1 - t.hpDisplay / t.hpMax;
+    if (dmgPct > 0.2) {
+      ctx.strokeStyle = "rgba(0,0,0,0.55)";
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(x - 10, BOTTOM_TOOTH_Y - 6);
+      ctx.lineTo(x, tipY + 30);
+      ctx.moveTo(x + 14, BOTTOM_TOOTH_Y - 2);
+      ctx.lineTo(x + 4, tipY + 20);
+      ctx.stroke();
+    }
+    if (dmgPct > 0.55) {
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.moveTo(x - 22, BOTTOM_TOOTH_Y + 14);
+      ctx.lineTo(x - 8, tipY + 10);
+      ctx.moveTo(x + 22, BOTTOM_TOOTH_Y + 10);
+      ctx.lineTo(x + 8, tipY + 14);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // HP bar above the tooth.
+    const barW = 120;
+    const barX = x - barW / 2;
+    const barY = BOTTOM_TOOTH_TIP - 40;
+    drawBar(ctx, barX, barY, barW, 10, t.hpDisplay / t.hpMax, {
+      fill: "#ff7a8a",
+      label: `${Math.ceil(t.hpDisplay)}/${t.hpMax}`,
+      labelColor: "#111",
+    });
+
+    // "Lane" number badge near tip for quick-reference.
+    drawText(ctx, String(t.col + 1), x, tipY - 18, {
+      size: 14, color: "#111", align: "center", bold: true,
+      outline: true, outlineColor: "rgba(255,220,170,0.95)",
+    });
   }
 
   drawBloodDecals(ctx) {
-    if (!this.bloodDecals.length) return;
     ctx.save();
     for (const d of this.bloodDecals) {
-      ctx.fillStyle = `rgba(90, 10, 10, ${d.alpha})`;
+      ctx.fillStyle = `rgba(120, 10, 20, ${d.alpha})`;
       ctx.beginPath();
-      ctx.ellipse(d.x, d.y, d.r, d.r * 0.8, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = `rgba(190, 20, 20, ${d.alpha})`;
-      ctx.beginPath();
-      ctx.ellipse(d.x - 1, d.y - 1, d.r * 0.6, d.r * 0.5, 0, 0, Math.PI * 2);
+      ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.restore();
   }
 
-  drawAimZone(ctx) {
-    const z = this.zone;
-    const inZone = this.reticleInZone();
-    const pulse = 0.55 + 0.45 * Math.sin(this.t * 7);
-    ctx.save();
-    // Fill (very subtle)
-    ctx.fillStyle = inZone
-      ? `rgba(120, 255, 120, ${0.18 + pulse * 0.08})`
-      : `rgba(120, 255, 120, ${0.08 + pulse * 0.05})`;
-    ctx.beginPath();
-    ctx.arc(z.x, z.y, z.r, 0, Math.PI * 2);
-    ctx.fill();
-    // Outer glow ring
-    ctx.strokeStyle = inZone
-      ? `rgba(180, 255, 160, ${0.8 + pulse * 0.2})`
-      : `rgba(150, 220, 150, ${0.55 + pulse * 0.3})`;
-    ctx.lineWidth = inZone ? 4 : 3;
-    ctx.shadowColor = inZone ? "#b5f05a" : "#7fc080";
-    ctx.shadowBlur = inZone ? 22 : 12;
-    ctx.beginPath();
-    ctx.arc(z.x, z.y, z.r, 0, Math.PI * 2);
-    ctx.stroke();
-    // Inner target dot
-    ctx.fillStyle = inZone ? "#b5f05a" : "rgba(180, 220, 180, 0.9)";
-    ctx.beginPath();
-    ctx.arc(z.x, z.y, 4, 0, Math.PI * 2);
-    ctx.fill();
-    // Orbit ticks (rotating dashes so the motion of the zone reads clearly)
-    ctx.strokeStyle = `rgba(180, 255, 180, ${0.4 + pulse * 0.25})`;
-    ctx.lineWidth = 2;
-    for (let i = 0; i < 8; i++) {
-      const a = (i / 8) * Math.PI * 2 + this.t * 0.8;
-      const x0 = z.x + Math.cos(a) * (z.r + 6);
-      const y0 = z.y + Math.sin(a) * (z.r + 6);
-      const x1 = z.x + Math.cos(a) * (z.r + 14);
-      const y1 = z.y + Math.sin(a) * (z.r + 14);
-      ctx.beginPath();
-      ctx.moveTo(x0, y0);
-      ctx.lineTo(x1, y1);
-      ctx.stroke();
-    }
-    ctx.restore();
-  }
+  drawHero(ctx, game) {
+    const p = game.player;
+    const x = COLS_X[this.col];
+    const y = HERO_Y + Math.sin(this.heroBob) * 2;
 
-  drawLash(ctx, L) {
-    if (L.fired) return;
-    const frac = Math.min(1, L.t / L.wait);
-    const pulse = 0.5 + 0.5 * Math.sin(this.t * 18);
-    ctx.save();
-    // Fill
-    ctx.fillStyle = `rgba(255, 40, 60, ${0.18 + frac * 0.25})`;
-    ctx.beginPath();
-    ctx.arc(L.x, L.y, L.r, 0, Math.PI * 2);
-    ctx.fill();
-    // Outline
-    ctx.strokeStyle = `rgba(255, 80, 100, ${0.6 + pulse * 0.3})`;
-    ctx.lineWidth = 3;
-    ctx.shadowColor = "#ff4060";
-    ctx.shadowBlur = 14;
-    ctx.beginPath();
-    ctx.arc(L.x, L.y, L.r, 0, Math.PI * 2);
-    ctx.stroke();
-    // Progress arc
-    ctx.strokeStyle = "#ffd0d8";
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.arc(L.x, L.y, L.r + 10, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2);
-    ctx.stroke();
-    // "LASH" label
-    drawText(ctx, "LASH!", L.x, L.y, {
-      size: 18, color: "#fff", align: "center", bold: true,
-      glow: "#ff4060", baseline: "middle",
-    });
-    ctx.restore();
-  }
-
-  drawReticle(ctx) {
-    const x = this.reticleX, y = this.reticleY;
-    const inZone = this.reticleInZone();
-    const inLash = this.reticleInAnyLash();
-    const col = inLash ? "#ff4060"
-      : inZone ? "#b5f05a"
-      : "#e9dcc1";
-    // Trail
-    ctx.save();
-    for (let i = 0; i < this.reticleTrail.length; i++) {
-      const r = this.reticleTrail[i];
-      const a = (i / this.reticleTrail.length) * 0.35;
-      ctx.fillStyle = `rgba(180, 220, 180, ${a})`;
-      ctx.beginPath();
-      ctx.arc(r.x, r.y, 2, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.restore();
+    drawDropShadow(ctx, x, y + 26, 30, 10, 0.55);
 
     ctx.save();
-    if (this.dodgeFlashT > 0) {
-      ctx.shadowColor = "#9adaff";
-      ctx.shadowBlur = 22;
-    }
-    // Miss flash - red ring
-    if (this.missFlashT > 0) {
-      const a = this.missFlashT / 0.4;
-      ctx.strokeStyle = `rgba(255, 60, 80, ${a})`;
+    ctx.translate(x, y);
+    ctx.scale(2.4, 2.4);
+    drawHero(ctx, 0, 0, 1, this.anim, p?.buildId || "swift");
+    ctx.restore();
+
+    // Brace halo
+    if (this.braceTime > 0) {
+      ctx.save();
+      ctx.globalAlpha = 0.35 + 0.25 * Math.sin(this.anim * 12);
+      ctx.strokeStyle = "#c9e0ff";
       ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.arc(x, y, 30, 0, Math.PI * 2);
+      ctx.arc(x, y + 4, 38, 0, Math.PI * 2);
       ctx.stroke();
+      ctx.restore();
     }
-    // Lock flash - bright green ring
-    if (this.lockFlashT > 0) {
-      const a = this.lockFlashT / 0.4;
-      ctx.strokeStyle = `rgba(180, 255, 120, ${a})`;
-      ctx.lineWidth = 4;
-      ctx.shadowColor = "#b5f05a";
-      ctx.shadowBlur = 18;
+    // Dodge i-frames - cyan after-image.
+    if (this.dodgeFlashT > 0) {
+      ctx.save();
+      ctx.globalAlpha = 0.35 * this.dodgeFlashT;
+      ctx.fillStyle = "#7fe3ff";
       ctx.beginPath();
-      ctx.arc(x, y, 32, 0, Math.PI * 2);
-      ctx.stroke();
+      ctx.ellipse(x, y + 6, 24, 36, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
     }
-
-    ctx.strokeStyle = col;
-    ctx.lineWidth = 2;
-    // Outer ring
-    ctx.beginPath();
-    ctx.arc(x, y, 18, 0, Math.PI * 2);
-    ctx.stroke();
-    // Inner crosshair
-    ctx.beginPath();
-    ctx.moveTo(x - 24, y); ctx.lineTo(x - 6, y);
-    ctx.moveTo(x + 6, y);  ctx.lineTo(x + 24, y);
-    ctx.moveTo(x, y - 24); ctx.lineTo(x, y - 6);
-    ctx.moveTo(x, y + 6);  ctx.lineTo(x, y + 24);
-    ctx.stroke();
-    // Center dot
-    ctx.fillStyle = col;
-    ctx.beginPath();
-    ctx.arc(x, y, 2, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
   }
 
-  // ================== UI ==================
-  drawUI(ctx, game) {
+  drawHUD(ctx, game) {
     const p = game.player;
-    const l = p.loadout;
-    const pad = 16;
-
-    drawBar(ctx, pad, pad,      260, 20, p.hp / p.hpMax, {
+    // Player HP / MP / (Armor) panel in the top-left.
+    const pW = 300;
+    const pH = p.armorMax > 0 ? 116 : 88;
+    const pX = 18, pY = 18;
+    drawPanel(ctx, pX, pY, pW, pH);
+    drawText(ctx, p.name || "HERO", pX + 14, pY + 10, {
+      size: 14, color: COLORS.bone, bold: true, maxWidth: pW - 28,
+    });
+    drawBar(ctx, pX + 14, pY + 32, pW - 28, 16, p.hp / p.hpMax, {
       fill: COLORS.blood, label: `HP  ${Math.ceil(p.hp)}/${p.hpMax}`,
     });
-    drawBar(ctx, pad, pad + 26, 260, 20, p.mana / p.manaMax, {
+    drawBar(ctx, pX + 14, pY + 54, pW - 28, 14, p.mana / p.manaMax, {
       fill: COLORS.mana, label: `MP  ${Math.ceil(p.mana)}/${p.manaMax}`,
     });
     if (p.armorMax > 0) {
-      drawBar(ctx, pad, pad + 52, 260, 20, p.armor / p.armorMax, {
-        fill: "#c0c4cc", label: `ARM ${Math.ceil(p.armor)}/${p.armorMax}`, labelColor: "#111",
-      });
-    }
-    const tY = p.armorMax > 0 ? pad + 78 : pad + 52;
-    drawBar(ctx, pad, tY, 260, 20, Math.max(0, p.acidTimer) / p.acidTimerMax, {
-      fill: COLORS.bile,
-      label: p.acidTimer > 0 ? `ACID TIMER ${Math.ceil(p.acidTimer)}s` : "CORRODING!",
-      labelColor: "#111",
-    });
-
-    // Tongue HP
-    drawPanel(ctx, W - 280, pad, 264, 64);
-    drawText(ctx, this.enemy.name, W - 148, pad + 16, {
-      size: 16, color: "#ff9cb0", align: "center", bold: true, glow: "#ff3060",
-      maxWidth: 248,
-    });
-    drawBar(ctx, W - 270, pad + 34, 244, 18, this.enemy.hp / this.enemy.hpMax, {
-      fill: "#4a1010", label: null,
-    });
-    drawBar(ctx, W - 270, pad + 34, 244, 18, this.enemyHpDisplay / this.enemy.hpMax, {
-      fill: this.enemy.color,
-      label: `${Math.ceil(this.enemyHpDisplay)} / ${this.enemy.hpMax}`,
-      labelColor: "#111",
-    });
-    if (this.matchupLabel) {
-      drawText(ctx, this.matchupLabel.text, W - 148, pad + 56, {
-        size: 11, color: this.matchupLabel.color, align: "center", bold: true,
+      drawBar(ctx, pX + 14, pY + 74, pW - 28, 14, p.armor / p.armorMax, {
+        fill: "#c0c4cc",
+        label: `ARM ${Math.ceil(p.armor)}/${p.armorMax}`,
+        labelColor: "#111",
       });
     }
 
-    // Action rail + combat log
-    this.drawActions(ctx, game);
-    this.drawLog(ctx);
-
-    // "LOCKED" / "UNLOCKED" aim status centered at top
-    const inZone = this.reticleInZone();
-    const pulse = 0.6 + 0.4 * Math.sin(this.t * 10);
-    ctx.save();
-    ctx.fillStyle = "rgba(0,0,0,0.55)";
-    const sw = 220, sh = 30;
-    roundRect(ctx, W / 2 - sw / 2, 90, sw, sh, 8);
-    ctx.fill();
-    drawText(ctx, inZone ? "-- AIM LOCKED --" : "-- AIM UNLOCKED --",
-      W / 2, 105, {
-      size: 16, color: inZone ? `rgba(181, 240, 90, ${0.8 + pulse * 0.2})` : "#ff9090",
-      align: "center", bold: true, glow: inZone ? "#b5f05a" : "#ff3060",
-      baseline: "middle",
+    // Boss status panel in top-right: count of molars still up +
+    // countdown to the next chomp.
+    const bW = 320;
+    const bH = 102;
+    const bX = W - bW - 18;
+    const bY = 18;
+    drawPanel(ctx, bX, bY, bW, bH);
+    drawText(ctx, this.enemyName, bX + 14, bY + 10, {
+      size: 14, color: COLORS.bile, bold: true, maxWidth: bW - 28,
     });
-    ctx.restore();
-
-    if (this.heavyTelling) {
-      const pp = 0.5 + 0.5 * Math.sin(this.t * 18);
-      ctx.fillStyle = `rgba(255, 120, 20, ${0.35 + pp * 0.45})`;
-      ctx.fillRect(0, 130, W, 28);
-      drawText(ctx, "!! HEAVY CURL - AIM CAN'T SAVE YOU - [F] BRACE !!",
-        W / 2, 144, {
-          size: 17, color: "#fff", align: "center", bold: true,
-          glow: "#ff8020", baseline: "middle", maxWidth: W - 40,
+    const standing = this.bottomTeeth.filter(t => !t.knockedOut).length;
+    const downNow  = NUM_COLS - standing;
+    drawText(ctx, `MOLARS STANDING  ${standing} / ${NUM_COLS}`,
+      bX + 14, bY + 32, { size: 14, color: COLORS.bone });
+    drawText(ctx, `KNOCKED OUT      ${downNow} / ${NUM_COLS}`,
+      bX + 14, bY + 50, {
+        size: 14,
+        color: downNow === NUM_COLS ? "#bfff00" : COLORS.bone,
+        bold: downNow === NUM_COLS,
       });
+    // Next-chomp indicator (shortest telegraph remaining, else slam).
+    let nextStr = "READY";
+    let nextColor = COLORS.boneDim;
+    const teleSorted = this.topTeeth
+      .filter(t => t.telegraph !== null)
+      .map(t => t.telegraph).sort((a, b) => a - b);
+    if (this.slamTelegraph !== null) {
+      nextStr = `FULL-MAW SLAM in ${this.slamTelegraph.toFixed(1)}s`;
+      nextColor = "#ff6060";
+    } else if (teleSorted.length > 0) {
+      nextStr = `CHOMP in ${teleSorted[0].toFixed(1)}s`;
+      nextColor = "#ff9a6a";
     }
+    drawText(ctx, nextStr, bX + 14, bY + 72, {
+      size: 13, color: nextColor, bold: true, maxWidth: bW - 28,
+    });
 
-    if (this.enrageFlashT > 0) {
-      const a = Math.min(1, this.enrageFlashT / 1.4);
-      ctx.save(); ctx.globalAlpha = a;
-      drawBanner(ctx, "ENRAGED!", W / 2, 60, 36, "#ff5050", "#400010");
-      ctx.restore();
-    }
-
-    if (this.perfectBraceReady || this.perfectFlashT > 0) {
-      const a = this.perfectBraceReady ? 1 : Math.min(1, this.perfectFlashT / 0.9);
-      ctx.save(); ctx.globalAlpha = a;
-      const pulse2 = 0.5 + 0.5 * Math.sin(this.t * 10);
-      drawText(ctx, this.perfectBraceReady ? ">> COUNTER READY <<" : "PERFECT GUARD!",
-        W / 2, 210, {
-          size: 22, color: `rgba(255, 217, 102, ${0.8 + pulse2 * 0.2})`,
-          align: "center", bold: true, glow: "#ffd966",
-        });
-      ctx.restore();
-    }
-
-    // Context hint below the LOCK status
-    this.drawContextHint(ctx, game);
+    // Action row at the bottom.
+    this.drawActionBar(ctx, game);
   }
 
-  drawActions(ctx, game) {
+  drawActionBar(ctx, game) {
     const p = game.player;
     const l = p.loadout;
-    const x = 16, y = H - 190;
-    const w = 560, h = 174;
-    drawPanel(ctx, x, y, w, h);
-    drawText(ctx, "ACTIONS (mouse to aim)", x + 14, y + 12, {
-      size: 13, color: COLORS.boneDim,
-    });
-
     const items = [
-      { keys: "Q / 1", name: l.attack.name,
-        info: `DMG ${l.attack.dmg[0]}-${l.attack.dmg[1]}  MP ${l.attack.manaCost}  (needs LOCK)`,
-        cd: p.cooldowns.attack, cdMax: l.attack.cooldown,
-        locked: p.cooldowns.attack > 0 || p.mana < l.attack.manaCost,
-      },
-      { keys: "E / 2", name: l.special.name,
-        info: `DMG ${l.special.dmg[0]}-${l.special.dmg[1]}  MP ${l.special.manaCost}  (needs LOCK)`,
-        cd: p.cooldowns.special, cdMax: l.special.cooldown,
-        locked: p.cooldowns.special > 0 || p.mana < l.special.manaCost,
-      },
-      { keys: "R / 3", name: "Dodge Roll", info: "+8 MP", cd: 0, cdMax: 0, locked: false },
-      { keys: "F / 4", name: "Brace",      info: "Halves next lash; time late for counter!",
-        cd: 0, cdMax: 0, locked: false },
+      { key: "Q/1", name: l.attack.name,  info: `DMG ${l.attack.dmg[0]}-${l.attack.dmg[1]}  MP ${l.attack.manaCost}`,
+        cd: p.cooldowns.attack,  cdMax: l.attack.cooldown * (p.pactMods?.attackCdMult || 1) },
+      { key: "E/2", name: l.special.name, info: `DMG ${l.special.dmg[0]}-${l.special.dmg[1]}  MP ${l.special.manaCost}`,
+        cd: p.cooldowns.special, cdMax: l.special.cooldown * (p.pactMods?.specialCdMult || 1) },
+      { key: "R/3", name: "Dodge",  info: "+MP, brief i-frames",       cd: 0, cdMax: 0 },
+      { key: "F/4", name: "Brace",  info: "halve next chomp",           cd: 0, cdMax: 0 },
     ];
-
-    items.forEach((it, i) => {
-      const row = y + 38 + i * 30;
-      const col = it.locked ? COLORS.boneDim : COLORS.bone;
-      const cdReserve = it.cdMax > 0 ? 110 : 16;
-      const nameMax = 240 - 96 - 6;
-      const infoMax = w - 240 - cdReserve;
-      drawText(ctx, `[${it.keys}]`, x + 14, row, { size: 13, color: col, bold: true });
-      drawText(ctx, it.name,        x + 96, row, {
-        size: 14, color: col, maxWidth: nameMax,
+    const barY = H - 86;
+    const barH = 68;
+    const cardW = (W - 48 - 24 * (items.length - 1)) / items.length;
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i];
+      const x = 24 + i * (cardW + 24);
+      ctx.save();
+      roundRect(ctx, x, barY, cardW, barH, 10);
+      ctx.fillStyle = "rgba(10, 0, 20, 0.72)";
+      ctx.fill();
+      ctx.strokeStyle = it.cd > 0 ? COLORS.boneDim : COLORS.bile;
+      ctx.lineWidth = 2;
+      roundRect(ctx, x + 0.5, barY + 0.5, cardW - 1, barH - 1, 10);
+      ctx.stroke();
+      ctx.restore();
+      drawText(ctx, it.key, x + 12, barY + 8, {
+        size: 13, color: COLORS.bile, bold: true, maxWidth: cardW - 24,
       });
-      drawText(ctx, it.info,        x + 240, row, {
-        size: 12, color: COLORS.boneDim, maxWidth: infoMax,
+      const nameMax = cardW - 24 - (it.cdMax > 0 ? 84 : 0);
+      drawText(ctx, it.name, x + 12, barY + 26, {
+        size: 15, color: it.cd > 0 ? COLORS.boneDim : COLORS.bone, bold: true,
+        maxWidth: nameMax,
+      });
+      drawText(ctx, it.info, x + 12, barY + 48, {
+        size: 12, color: COLORS.boneDim, maxWidth: nameMax,
       });
       if (it.cdMax > 0) {
-        const bw = 90;
-        const bx = x + w - bw - 14;
-        drawBar(ctx, bx, row - 2, bw, 14, it.cd > 0 ? 1 - it.cd / it.cdMax : 1, {
-          fill: it.cd > 0 ? "#5a6a7a" : COLORS.bile,
-          label: it.cd > 0 ? `${it.cd.toFixed(1)}s` : "READY",
-          labelColor: "#111",
+        const pct = 1 - it.cd / it.cdMax;
+        drawBar(ctx, x + cardW - 80, barY + 48, 68, 8, pct, {
+          fill: it.cd > 0 ? "#8a9aff" : "#bfff00",
+          label: it.cd > 0 ? it.cd.toFixed(1) + "s" : "READY",
+          labelColor: it.cd > 0 ? "#fff" : "#111",
         });
       }
+    }
+  }
+
+  drawContextHint(ctx) {
+    // Small smart hint just under the HUD. Tells the player what to do NOW.
+    const downNow = this.bottomTeeth.filter(t => t.knockedOut).length;
+    let msg = "";
+    let color = COLORS.bone;
+
+    const imminentChomp = this.topTeeth.find(
+      t => t.telegraph !== null && t.telegraph <= PERFECT_BRACE_WINDOW + 0.4
+    );
+    if (this.slamTelegraph !== null) {
+      msg = "FULL-MAW SLAM - BRACE [F/4] NOW!";
+      color = "#ff9a9a";
+    } else if (imminentChomp) {
+      if (this.col === imminentChomp.col) {
+        msg = `Column ${imminentChomp.col + 1} chomp INCOMING - move [A/D] or BRACE [F/4]!`;
+        color = "#ff9a9a";
+      } else {
+        msg = `Column ${imminentChomp.col + 1} is about to chomp - stay out of that lane.`;
+        color = "#ffd0b0";
+      }
+    } else if (downNow === NUM_COLS - 1) {
+      msg = "One more tooth! Drop it fast - the others can regrow!";
+      color = "#bfff00";
+    } else if (downNow >= 1) {
+      msg = `${downNow}/${NUM_COLS} molars down. Keep the pressure on every lane!`;
+      color = "#e6f0a0";
+    } else {
+      msg = "Move [A/D], swing [Q/1] or [E/2] at the tooth in your lane.";
+      color = COLORS.bone;
+    }
+
+    const hw = 820;
+    ctx.save();
+    ctx.globalAlpha = 0.92;
+    ctx.fillStyle = "rgba(0, 0, 0, 0.72)";
+    roundRect(ctx, W / 2 - hw / 2, 138, hw, 30, 8);
+    ctx.fill();
+    ctx.restore();
+    drawText(ctx, msg, W / 2, 153, {
+      size: 15, color, align: "center", baseline: "middle", bold: true,
+      maxWidth: hw - 24,
     });
   }
 
   drawLog(ctx) {
-    const x = W - 576, y = H - 190;
-    const w = 560, h = 174;
-    drawPanel(ctx, x, y, w, h);
-    drawText(ctx, "MAW LOG", x + 14, y + 12, { size: 13, color: COLORS.boneDim });
-    this.log.forEach((line, i) => {
-      drawText(ctx, line, x + 14, y + 40 + i * 26, {
-        size: 13, color: COLORS.bone, maxWidth: w - 28,
-      });
-    });
-    drawText(ctx,
-      "[MOUSE] Aim  [Q/1] Attack  [E/2] Special  [R/3] Dodge  [F/4] Brace  [P] Pause",
-      x + 14, y + h - 22, { size: 12, color: COLORS.bone, maxWidth: w - 28 });
-  }
-
-  drawContextHint(ctx, game) {
-    const inZone = this.reticleInZone();
-    const inLash = this.reticleInAnyLash();
-    let hint = null;
-    if (this.heavyTelling) {
-      hint = { text: "[F] BRACE - heavy curl incoming, aim won't save you!", color: "#ffd0b0" };
-    } else if (inLash) {
-      hint = { text: "!! RED ZONE - MOVE AIM OR BRACE [F] !!", color: "#ffb0b0" };
-    } else if (!inZone) {
-      hint = { text: "MOVE MOUSE into the GREEN CIRCLE to lock on.", color: "#d0ffd0" };
-    } else {
-      hint = { text: "LOCKED! [Q] attack or [E] special - click also fires.", color: "#b5f05a" };
-    }
-    const pulse = 0.5 + 0.5 * Math.sin(this.t * 7);
+    // Thin log strip just above the action bar.
+    const w = W - 48, h = 72;
+    const x = 24, y = H - 86 - h - 6;
     ctx.save();
-    ctx.globalAlpha = 0.8 + pulse * 0.2;
-    ctx.fillStyle = "rgba(0, 0, 0, 0.72)";
-    const hw = 820, hh = 32;
-    roundRect(ctx, W / 2 - hw / 2, 170, hw, hh, 6);
+    ctx.fillStyle = "rgba(0, 0, 0, 0.55)";
+    roundRect(ctx, x, y, w, h, 8);
     ctx.fill();
-    drawText(ctx, hint.text, W / 2, 186, {
-      size: 16, color: hint.color, align: "center",
-      bold: true, glow: hint.color, baseline: "middle",
-      maxWidth: hw - 24,
-    });
     ctx.restore();
-  }
-
-  drawPause(ctx) {
-    ctx.fillStyle = "rgba(0,0,0,0.65)";
-    ctx.fillRect(0, 0, W, H);
-    drawBanner(ctx, "PAUSED", W / 2, H / 2 - 20, 48, COLORS.bile, COLORS.blood);
-    drawText(ctx, "Press P or ESC to resume", W / 2, H / 2 + 30, {
-      size: 18, color: COLORS.bone, align: "center",
-    });
+    const lines = this.log.slice(-4);
+    for (let i = 0; i < lines.length; i++) {
+      drawText(ctx, lines[i], x + 12, y + 10 + i * 14, {
+        size: 12, color: i === lines.length - 1 ? COLORS.bone : COLORS.boneDim,
+        maxWidth: w - 24,
+      });
+    }
+    // Footer help strip - compact.
+    drawText(ctx,
+      "[A/D] Move   [Q/1] Attack   [E/2] Special   [R/3] Dodge   [F/4] Brace   [P] Pause",
+      x + 12, y + h - 16, {
+        size: 12, color: COLORS.boneDim, maxWidth: w - 28,
+      });
   }
 }
+
+// Preserve the old import name so existing routing (climb.js, intro.js)
+// works without churn. The file is named tongueBoss.js for historical
+// reasons; the scene class itself has been renamed.
+export { MawBossScene as TongueBossScene };

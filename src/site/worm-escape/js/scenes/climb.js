@@ -364,9 +364,9 @@ export class ClimbScene {
         p.score.hitlessChambers++;
         if (this.chamberIdx === 0) p.score.gullethitless = true;
       }
-      // v0.13 final chamber: the Maw routes to the Tongue puzzle boss
-      // instead of the standard lane-based combat scene.
-      if (ch.guardian === "wormTongue") {
+      // Final chamber routes to the Maw boss (5-tooth whack-a-mole,
+      // exported from tongueBoss.js as TongueBossScene for continuity).
+      if (ch.isMaw || ch.guardian === "wormMaw" || ch.guardian === "wormTongue") {
         game.scenes.replace(new TongueBossScene(this.chamberIdx), game);
       } else {
         game.scenes.replace(new CombatScene(this.chamberIdx), game);

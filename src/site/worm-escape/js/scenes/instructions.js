@@ -84,13 +84,13 @@ export class InstructionsScene {
 
     this.drawStep(ctx, 4, "FIGHT TO ESCAPE", x2, y2, colW, rowH, [
       ["GOAL",       "Kill the SPHINCTER GUARDIAN to unlock the next chamber.",
-                     "Final chamber: the WORM'S TONGUE (mouse-aim puzzle)."],
+                     "Final chamber: THE MAW (5-tooth whack-a-mole, see below)."],
       ["ACTIONS",    "[Q/1] Attack  [E/2] Special (MP)  [R/3] Dodge (+MP)",
                      "[F/4] Brace - time it LATE for +50% COUNTER bonus!"],
       ["TELLS",      "RED = Jab (dodge lane)  ORANGE = Heavy Slam (BRACE)",
                      "YELLOW = Triple Combo (brace covers all 3 hits)"],
-      ["THE MAW",    "Use the MOUSE to aim a reticle inside the GREEN circle.",
-                     "Attacks only land when LOCKED. Dodge the RED lash zones."],
+      ["THE MAW",    "Knock out all 5 BOTTOM teeth at the same time to escape.",
+                     "Top teeth chomp one lane at a time - move [A/D] or BRACE."],
     ], { accent: "#ff9070" });
 
     // v0.12 micro-card: Pacts & Elites strip

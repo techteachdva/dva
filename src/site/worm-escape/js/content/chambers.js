@@ -106,8 +106,10 @@ export const CHAMBERS = [
   },
   // v0.13 FINAL CHAMBER. Climb is short (you are almost OUT), but bile
   // rises quickly and debris rains down - the worm is panicking. The
-  // guardian is THE WORM'S TONGUE, fought in the special TongueBossScene
-  // (aim-reticle puzzle) instead of the standard CombatScene.
+  // guardian is THE WORM'S MAW: a whack-a-mole encounter where the
+  // adventurer must knock out ALL FIVE bottom teeth simultaneously
+  // while the top teeth chomp down. Fought in MawBossScene (exported
+  // as TongueBossScene for historical reasons).
   {
     id: "maw",
     name: "THE MAW",
@@ -120,7 +122,7 @@ export const CHAMBERS = [
     multiDebrisChance: 0.5,
     powerUpRarity: 0.13,         // final chamber eases power-up rarity
     acidTimer: 70,
-    guardian: "wormTongue",
+    guardian: "wormMaw",
     wormTint: 0.8,
     // Bright pink - almost daylight. Teeth decorations are drawn by the
     // climb scene when it detects this chamber's `isMaw` flag.
