@@ -8,19 +8,59 @@ import { BUILDS, LOADOUTS, makePlayer } from "../content/player.js";
 import { loadSave } from "../engine/storage.js";
 import { ClimbScene } from "./climb.js";
 
-const BUILD_IDS = ["swift", "iron", "viper"];
-const LOADOUT_IDS = ["sword", "hammer", "emberStaff", "frostWand", "bileWhip", "hexStaff"];
+const BUILD_IDS = ["swift", "iron", "viper", "wizard"];
+
+// v0.16 Full weapon pool. Weapons gated by `LOADOUT_UNLOCK` are filtered out
+// of the random roll if the unlock isn't owned. The shown 4 are a *random*
+// subset of the unlocked pool, so each run feels different.
+const ALL_LOADOUT_IDS = [
+  // Default (no gate)
+  "sword", "hammer", "emberStaff", "frostWand",
+  "fryingPan", "saber", "fists", "club",
+  // Gated unlocks
+  "bileWhip", "hexStaff",
+  "megaphone", "boneSpear", "blunderbuss",
+  "cursedScythe", "rustyChainsaw", "cat",
+];
 
 // v0.12 Unlock gating.
 // Keys map a build / loadout id -> save.unlocks flag that must be true.
 // If a build/loadout isn't in this map, it's always available.
-const BUILD_UNLOCK  = { viper: "viperBuild" };
-const LOADOUT_UNLOCK = { bileWhip: "bileWhip", hexStaff: "hexStaff" };
-const BUILD_UNLOCK_HINT  = { viper: "UNLOCK: Clear any run with any build." };
-const LOADOUT_UNLOCK_HINT = {
-  bileWhip: "UNLOCK: Clear the Gullet climb hitless.",
-  hexStaff: "UNLOCK: Defeat any Elite boss.",
+const BUILD_UNLOCK  = { viper: "viperBuild", wizard: "wizardBuild" };
+const LOADOUT_UNLOCK = {
+  bileWhip:      "bileWhip",
+  hexStaff:      "hexStaff",
+  megaphone:     "megaphone",
+  boneSpear:     "boneSpear",
+  blunderbuss:   "blunderbuss",
+  cursedScythe:  "cursedScythe",
+  rustyChainsaw: "rustyChainsaw",
+  cat:           "cat",
 };
+const BUILD_UNLOCK_HINT  = {
+  viper:  "UNLOCK: Clear any run with any build.",
+  wizard: "UNLOCK: Clear a run with VIPER.",
+};
+const LOADOUT_UNLOCK_HINT = {
+  bileWhip:      "UNLOCK: Clear the Gullet climb hitless.",
+  hexStaff:      "UNLOCK: Defeat any Elite boss.",
+  megaphone:     "UNLOCK: Clear any run.",
+  boneSpear:     "UNLOCK: Clear any run.",
+  blunderbuss:   "UNLOCK: Clear any run.",
+  cursedScythe:  "UNLOCK: Clear a run with VIPER.",
+  rustyChainsaw: "UNLOCK: Defeat any Elite boss.",
+  cat:           "UNLOCK: Clear a run with WIZARD.",
+};
+
+// Fisher-Yates shuffle. Returns a NEW array; doesn't mutate input.
+function shuffled(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
 // Friendly labels for enemy "art" types used in weapon matchups.
 const ART_LABEL = {
@@ -41,6 +81,19 @@ export class CreateScene {
     // the player navigates. Fresh-save defaults are graceful: everything
     // locked except the base entries.
     this.save = loadSave();
+    // v0.16 Roll 4 random UNLOCKED weapons for this run. If somehow fewer
+    // than 4 are unlocked we just show whatever we have. The pool is set
+    // once per scene-entry so flipping back/forth is stable.
+    this.loadoutIds = this.rollLoadouts(4);
+  }
+
+  rollLoadouts(count = 4) {
+    const unlocked = ALL_LOADOUT_IDS.filter((id) => {
+      const flag = LOADOUT_UNLOCK[id];
+      if (!flag) return true;
+      return !!(this.save && this.save.unlocks && this.save.unlocks[flag]);
+    });
+    return shuffled(unlocked).slice(0, count);
   }
 
   // Is the build / loadout at this index currently unlocked?
@@ -52,7 +105,10 @@ export class CreateScene {
   }
 
   isLoadoutUnlocked(idx) {
-    const id = LOADOUT_IDS[idx];
+    // After v0.16 the random roll already filters out locked loadouts, so
+    // this should always return true. Kept for defensive symmetry with
+    // builds (and to leave the door open for showing a locked teaser).
+    const id = this.loadoutIds[idx];
     const flag = LOADOUT_UNLOCK[id];
     if (!flag) return true;
     return !!(this.save && this.save.unlocks && this.save.unlocks[flag]);
@@ -78,12 +134,20 @@ export class CreateScene {
         }
       }
     } else if (this.step === 1) {
+      const N = this.loadoutIds.length;
+      if (N === 0) return; // shouldn't happen but be safe
       if (game.input.wasPressed("ArrowLeft", "a")) {
-        this.loadIdx = (this.loadIdx - 1 + LOADOUT_IDS.length) % LOADOUT_IDS.length;
+        this.loadIdx = (this.loadIdx - 1 + N) % N;
         SFX.click();
       }
       if (game.input.wasPressed("ArrowRight", "d")) {
-        this.loadIdx = (this.loadIdx + 1) % LOADOUT_IDS.length;
+        this.loadIdx = (this.loadIdx + 1) % N;
+        SFX.click();
+      }
+      // v0.16 Reroll the random weapon options.
+      if (game.input.wasPressed("r", "R", "Tab")) {
+        this.loadoutIds = this.rollLoadouts(4);
+        this.loadIdx = 0;
         SFX.click();
       }
       if (game.input.wasPressed(" ", "Space", "Enter")) {
@@ -102,7 +166,7 @@ export class CreateScene {
       if (game.input.wasPressed(" ", "Space", "Enter")) {
         SFX.confirm();
         const buildId = BUILD_IDS[this.buildIdx];
-        const loadId = LOADOUT_IDS[this.loadIdx];
+        const loadId = this.loadoutIds[this.loadIdx];
         game.player = makePlayer(buildId, loadId);
         game.chamberIndex = 0;
         game.scenes.replace(new ClimbScene(0), game);
@@ -136,9 +200,9 @@ export class CreateScene {
       size: 16, color: COLORS.bone, align: "center",
     });
 
-    // v0.12 3 builds: cards shrink to fit but the selected one grows.
-    const cardW = 340, cardH = 480;
-    const gap = 30;
+    // v0.16 4 builds. Tighter cards, smaller portrait, narrower stat bars.
+    const cardW = 260, cardH = 480;
+    const gap = 18;
     const totalW = cardW * BUILD_IDS.length + gap * (BUILD_IDS.length - 1);
     const startX = (W - totalW) / 2;
 
@@ -150,43 +214,46 @@ export class CreateScene {
       const unlocked = this.isBuildUnlocked(i);
       this.drawCard(ctx, x, y, cardW, cardH, selected);
 
+      const textMax = cardW - 18;
       drawText(ctx, b.name, x + cardW / 2, y + 30, {
-        size: 26, bold: true,
+        size: 22, bold: true,
         color: !unlocked ? "#555" : (selected ? COLORS.bile : COLORS.bone),
         align: "center",
         glow: (selected && unlocked) ? COLORS.blood : null,
+        maxWidth: textMax,
       });
-      drawText(ctx, b.blurb, x + cardW / 2, y + 62, {
-        size: 13, color: COLORS.boneDim, align: "center",
+      drawText(ctx, b.blurb, x + cardW / 2, y + 60, {
+        size: 12, color: COLORS.boneDim, align: "center", maxWidth: textMax,
       });
 
-      // Hero portrait (big). Render viper as a greener-tinted swift.
+      // Hero portrait (smaller now, but each build draws distinctly).
       ctx.save();
       ctx.translate(x + cardW / 2, y + 200);
-      ctx.scale(4.5, 4.5);
-      if (id === "viper") ctx.filter = "hue-rotate(80deg) saturate(1.2)";
-      drawHero(ctx, 0, 0, 1, this.t * 6, id === "viper" ? "swift" : id);
+      ctx.scale(3.8, 3.8);
+      drawHero(ctx, 0, 0, 1, this.t * 6, id);
       ctx.restore();
 
-      // Stat rows (all three show full grid)
+      // Stat rows
       const statsY = y + 306;
       const barMax = 150;
-      this.drawStatRow(ctx, x + 24, statsY +  0,  "HP",       b.hp,      barMax, COLORS.blood);
-      this.drawStatRow(ctx, x + 24, statsY + 22,  "MANA",     b.mana,    barMax, COLORS.mana);
-      this.drawStatRow(ctx, x + 24, statsY + 44,  "ARMOR",    b.armor,   barMax, "#c0c4cc");
-      this.drawStatRow(ctx, x + 24, statsY + 66,  "CLIMB",    Math.round(b.climbSpeed * 100), barMax, COLORS.bile);
-      this.drawStatRow(ctx, x + 24, statsY + 88,  "ACID RES", Math.round((1 - b.acidResist) * 100), 100, COLORS.gold);
+      this.drawStatRow(ctx, x + 14, statsY +  0,  "HP",       b.hp,      barMax, COLORS.blood);
+      this.drawStatRow(ctx, x + 14, statsY + 22,  "MANA",     b.mana,    barMax, COLORS.mana);
+      this.drawStatRow(ctx, x + 14, statsY + 44,  "ARMOR",    b.armor,   barMax, "#c0c4cc");
+      this.drawStatRow(ctx, x + 14, statsY + 66,  "CLIMB",    Math.round(b.climbSpeed * 100), barMax, COLORS.bile);
+      this.drawStatRow(ctx, x + 14, statsY + 88,  "ACID RES", Math.round((1 - b.acidResist) * 100), 100, COLORS.gold);
 
       // Perk list
-      drawText(ctx, "PERKS:", x + 24, statsY + 114, { size: 11, color: COLORS.bile, bold: true });
+      drawText(ctx, "PERKS:", x + 14, statsY + 114, { size: 11, color: COLORS.bile, bold: true });
       const perks = id === "swift"
-        ? ["- Lightning hops between columns", "- Widest acid-gout dodge window", "- Highest mana pool"]
+        ? ["- Lightning hops between columns", "- Widest acid-gout dodge window", "- Highest base mana pool"]
         : id === "iron"
         ? ["- Armor absorbs 75% of damage", "- 2 free debris tanks per chamber", "- Acid ticks 65% slower"]
-        : ["- Every attack poisons foe (3s, 5%/s)", "- 30% armor soak (middle ground)", "- Balanced climb speed"];
+        : id === "viper"
+        ? ["- Every attack poisons (3s, 5%/s)", "- 30% armor soak", "- Balanced climb speed"]
+        : ["- HUGE mana pool (110 MP)", "- Mana shields HP at 2:1 until empty", "- +40% damage, +2 MP per attack", "- Frail: 60 HP, no armor"];
       perks.forEach((line, k) => {
-        drawText(ctx, line, x + 24, statsY + 132 + k * 16, {
-          size: 11, color: COLORS.bone,
+        drawText(ctx, line, x + 14, statsY + 132 + k * 14, {
+          size: 10, color: COLORS.bone, maxWidth: textMax,
         });
       });
 
@@ -223,26 +290,29 @@ export class CreateScene {
 
   drawStatRow(ctx, x, y, label, value, maxBar, color) {
     drawText(ctx, label, x, y, { size: 11, color: COLORS.bone });
-    const barX = x + 74;
-    const barW = 168;
+    const barX = x + 70;
+    const barW = 130;
     const pct = Math.min(1, value / (maxBar * 1.0));
     drawBar(ctx, barX, y - 2, barW, 14, pct, { fill: color });
     drawText(ctx, String(value), barX + barW + 6, y, { size: 11, color: COLORS.bone });
   }
 
   renderLoadoutSelect(ctx) {
-    drawText(ctx, "STEP 2 / 2  -  PICK YOUR LOADOUT", W / 2, 130, {
-      size: 16, color: COLORS.bone, align: "center",
+    drawText(ctx, "STEP 2 / 2  -  PICK YOUR LOADOUT  (4 random weapons - press R to reroll)", W / 2, 130, {
+      size: 15, color: COLORS.bone, align: "center", maxWidth: W - 80,
     });
 
-    // v0.12 6 weapons: tighter cards, smaller font, still one row.
-    const cardW = 190, cardH = 470;
-    const gap = 14;
-    const totalW = cardW * LOADOUT_IDS.length + gap * (LOADOUT_IDS.length - 1);
+    // v0.16 Show only the 4 RANDOM weapons that were rolled on entry.
+    // Cards can be larger now since we have fewer of them.
+    const N = this.loadoutIds.length;
+    const cardW = 260, cardH = 470;
+    const gap = 18;
+    const totalW = cardW * N + gap * (N - 1);
     const startX = (W - totalW) / 2;
 
-    LOADOUT_IDS.forEach((id, i) => {
+    this.loadoutIds.forEach((id, i) => {
       const l = LOADOUTS[id];
+      if (!l) return;
       const x = startX + i * (cardW + gap);
       const y = 170;
       const selected = i === this.loadIdx;
@@ -250,39 +320,46 @@ export class CreateScene {
       this.drawCard(ctx, x, y, cardW, cardH, selected);
 
       const textMax = cardW - 20;
-      drawText(ctx, l.name, x + cardW / 2, y + 24, {
-        size: 15, bold: true,
+      drawText(ctx, l.name, x + cardW / 2, y + 28, {
+        size: 18, bold: true,
         color: !unlocked ? "#555" : (selected ? COLORS.bile : COLORS.bone),
         align: "center",
         glow: (selected && unlocked) ? COLORS.blood : null,
         maxWidth: textMax,
       });
 
-      this.drawWeaponIcon(ctx, x + cardW / 2, y + 140, l);
+      this.drawWeaponIcon(ctx, x + cardW / 2, y + 150, l);
 
-      drawText(ctx, l.blurb, x + cardW / 2, y + 230, {
-        size: 11, color: COLORS.boneDim, align: "center", maxWidth: textMax,
+      drawText(ctx, l.blurb, x + cardW / 2, y + 240, {
+        size: 12, color: COLORS.boneDim, align: "center", maxWidth: textMax,
       });
 
-      const lx = x + 10;
-      drawText(ctx, "ATTACK:", lx, y + 262, { size: 11, color: COLORS.bile, bold: true });
-      drawText(ctx, l.attack.name, lx, y + 278, { size: 12, color: COLORS.bone, maxWidth: textMax });
-      drawText(ctx, `DMG ${l.attack.dmg[0]}-${l.attack.dmg[1]}`, lx, y + 294, { size: 11, color: COLORS.boneDim });
-      drawText(ctx, `CD ${l.attack.cooldown}s  MP ${l.attack.manaCost}`, lx, y + 308, { size: 11, color: COLORS.boneDim });
-      if (l.attack.multiLane) drawText(ctx, "MULTI-LANE", lx, y + 322, { size: 10, color: "#b5f05a", bold: true });
-      if (l.attack.hexMark)   drawText(ctx, "PLACES HEX", lx, y + 322, { size: 10, color: "#d978ff", bold: true });
+      const lx = x + 14;
+      drawText(ctx, "ATTACK:", lx, y + 268, { size: 12, color: COLORS.bile, bold: true });
+      drawText(ctx, l.attack.name, lx, y + 284, { size: 13, color: COLORS.bone, maxWidth: textMax });
+      drawText(ctx, `DMG ${l.attack.dmg[0]}-${l.attack.dmg[1]}`, lx, y + 300, { size: 11, color: COLORS.boneDim });
+      drawText(ctx, `CD ${l.attack.cooldown}s  MP ${l.attack.manaCost}`, lx, y + 314, { size: 11, color: COLORS.boneDim });
+      let tagY = y + 328;
+      if (l.attack.multiLane)    { drawText(ctx, "MULTI-LANE",   lx, tagY, { size: 10, color: "#b5f05a", bold: true }); tagY += 12; }
+      if (l.attack.hexMark)      { drawText(ctx, "PLACES HEX",   lx, tagY, { size: 10, color: "#d978ff", bold: true }); tagY += 12; }
+      if (l.attack.lifestealPct) { drawText(ctx, "LIFESTEAL",    lx, tagY, { size: 10, color: "#7fffa0", bold: true }); tagY += 12; }
+      if (l.attack.poisonPct)    { drawText(ctx, l.attack.dotLabel || "BLEED", lx, tagY, { size: 10, color: "#ff8080", bold: true }); tagY += 12; }
 
-      drawText(ctx, "SPECIAL:", lx, y + 340, { size: 11, color: COLORS.bile, bold: true });
-      drawText(ctx, l.special.name, lx, y + 356, { size: 12, color: COLORS.bone, maxWidth: textMax });
-      drawText(ctx, `DMG ${l.special.dmg[0]}-${l.special.dmg[1]}`, lx, y + 372, { size: 11, color: COLORS.boneDim });
-      drawText(ctx, `CD ${l.special.cooldown}s  MP ${l.special.manaCost}`, lx, y + 386, { size: 11, color: COLORS.boneDim });
-      if (l.special.hexDetonate) drawText(ctx, "DETONATES HEX", lx, y + 400, { size: 10, color: "#d978ff", bold: true });
+      drawText(ctx, "SPECIAL:", lx, y + 350, { size: 12, color: COLORS.bile, bold: true });
+      drawText(ctx, l.special.name, lx, y + 366, { size: 13, color: COLORS.bone, maxWidth: textMax });
+      drawText(ctx, `DMG ${l.special.dmg[0]}-${l.special.dmg[1]}`, lx, y + 382, { size: 11, color: COLORS.boneDim });
+      drawText(ctx, `CD ${l.special.cooldown}s  MP ${l.special.manaCost}`, lx, y + 396, { size: 11, color: COLORS.boneDim });
+      let tagY2 = y + 410;
+      if (l.special.hexDetonate)   { drawText(ctx, "DETONATES HEX", lx, tagY2, { size: 10, color: "#d978ff", bold: true }); tagY2 += 12; }
+      if (l.special.misfireChance) { drawText(ctx, `1-IN-6 FIRE`,  lx, tagY2, { size: 10, color: "#ffb060", bold: true }); tagY2 += 12; }
+      if (l.special.lifestealPct)  { drawText(ctx, "LIFESTEAL",    lx, tagY2, { size: 10, color: "#7fffa0", bold: true }); tagY2 += 12; }
+      if (l.special.poisonPct)     { drawText(ctx, l.special.dotLabel || "BLEED", lx, tagY2, { size: 10, color: "#ff8080", bold: true }); tagY2 += 12; }
 
       // Matchup hints - which guardian art type this weapon excels/fails vs
-      drawText(ctx, "STRONG vs " + ART_LABEL[l.strongVs], lx, y + 420, {
+      drawText(ctx, "STRONG vs " + ART_LABEL[l.strongVs], lx, y + 442, {
         size: 11, color: "#ffd966", bold: true, maxWidth: textMax,
       });
-      drawText(ctx, "WEAK vs " + ART_LABEL[l.weakVs], lx, y + 434, {
+      drawText(ctx, "WEAK vs " + ART_LABEL[l.weakVs], lx, y + 456, {
         size: 11, color: "#8a9aff", bold: true, maxWidth: textMax,
       });
 
@@ -293,7 +370,7 @@ export class CreateScene {
 
   renderConfirm(ctx) {
     const b = BUILDS[BUILD_IDS[this.buildIdx]];
-    const l = LOADOUTS[LOADOUT_IDS[this.loadIdx]];
+    const l = LOADOUTS[this.loadoutIds[this.loadIdx]];
     drawPanel(ctx, 220, 170, W - 440, 500);
     drawText(ctx, "READY TO GET DIGESTED?", W / 2, 210, {
       size: 28, color: COLORS.bile, align: "center", bold: true, glow: COLORS.blood,
@@ -302,8 +379,7 @@ export class CreateScene {
     ctx.save();
     ctx.translate(W / 2, 400);
     ctx.scale(7, 7);
-    if (b.id === "viper") ctx.filter = "hue-rotate(80deg) saturate(1.2)";
-    drawHero(ctx, 0, 0, 1, this.t * 6, b.id === "viper" ? "swift" : b.id);
+    drawHero(ctx, 0, 0, 1, this.t * 6, b.id);
     ctx.restore();
 
     drawText(ctx, `${b.name} wielding ${l.name}`, W / 2, 530, {
@@ -511,6 +587,368 @@ export class CreateScene {
       ctx.fillStyle = "#1a0520";
       ctx.beginPath(); ctx.arc(0, -50, 2.5, 0, Math.PI * 2); ctx.fill();
       ctx.restore();
+    } else if (loadout.id === "fryingPan") {
+      // Pan handle
+      ctx.fillStyle = "#3a1f0f";
+      ctx.fillRect(-3, 0, 6, 60);
+      ctx.strokeStyle = "rgba(0,0,0,0.6)";
+      ctx.strokeRect(-3, 0, 6, 60);
+      // Handle wrap
+      ctx.fillStyle = "#1a0e08";
+      ctx.fillRect(-4, 28, 8, 26);
+      // Pan body (ellipse-ish disc)
+      const g = ctx.createRadialGradient(-8, -22, 4, 0, -10, 40);
+      g.addColorStop(0, "#cdd2da");
+      g.addColorStop(0.7, "#7a808c");
+      g.addColorStop(1, "#3a3f48");
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.ellipse(0, -16, 38, 24, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(0,0,0,0.7)";
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+      // Inner ring
+      ctx.strokeStyle = "rgba(255,255,255,0.25)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.ellipse(0, -16, 30, 18, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      // Stink lines (it bonks)
+      ctx.strokeStyle = "rgba(255,217,102,0.7)";
+      ctx.lineWidth = 1.5;
+      for (let k = -1; k <= 1; k++) {
+        ctx.beginPath();
+        ctx.moveTo(k * 16, -52);
+        ctx.lineTo(k * 16, -42);
+        ctx.stroke();
+      }
+    } else if (loadout.id === "saber") {
+      // Curved blade (slim, glints)
+      ctx.fillStyle = "#e0e4ec";
+      ctx.beginPath();
+      ctx.moveTo(0, -76);
+      ctx.quadraticCurveTo(14, -32, 6, 30);
+      ctx.lineTo(-2, 30);
+      ctx.quadraticCurveTo(0, -32, -4, -74);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = "rgba(0,0,0,0.7)";
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+      // Highlight glint along blade
+      ctx.strokeStyle = "rgba(255,255,255,0.7)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(-1, -70);
+      ctx.quadraticCurveTo(2, -30, 4, 20);
+      ctx.stroke();
+      // Hilt guard (D-shaped)
+      ctx.strokeStyle = "#b38244";
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(0, 38, 12, Math.PI * 0.1, Math.PI * 1.5, true);
+      ctx.stroke();
+      // Grip + pommel
+      ctx.fillStyle = "#3a1f0f";
+      ctx.fillRect(-3, 38, 6, 22);
+      drawSphere(ctx, 0, 64, 5, "#ffd966", { highlight: "rgba(255,255,255,1)" });
+    } else if (loadout.id === "fists") {
+      // Two clenched fists
+      drawSphere(ctx, -16, -10, 14, "#d4a07a", { highlight: "rgba(255,230,200,1)" });
+      drawSphere(ctx,  16,  10, 14, "#d4a07a", { highlight: "rgba(255,230,200,1)" });
+      // Knuckle creases
+      ctx.strokeStyle = "rgba(80,40,20,0.7)";
+      ctx.lineWidth = 1.4;
+      for (const cx of [-16, 16]) {
+        const cy = cx === -16 ? -10 : 10;
+        ctx.beginPath();
+        ctx.moveTo(cx - 8, cy - 2); ctx.lineTo(cx + 8, cy - 2);
+        ctx.moveTo(cx - 8, cy + 2); ctx.lineTo(cx + 8, cy + 2);
+        ctx.stroke();
+      }
+      // Hand-wraps
+      ctx.fillStyle = "#f0e8d0";
+      ctx.fillRect(-30, -4, 28, 4);
+      ctx.fillRect(2, 16, 28, 4);
+      // Speed lines
+      ctx.strokeStyle = "rgba(255,217,102,0.65)";
+      ctx.lineWidth = 1.5;
+      for (let k = 0; k < 3; k++) {
+        ctx.beginPath();
+        ctx.moveTo(-38 - k * 6, -20 + k * 4);
+        ctx.lineTo(-22 - k * 6, -20 + k * 4);
+        ctx.stroke();
+      }
+    } else if (loadout.id === "club") {
+      // Tapered wood club, wider at top
+      const g = ctx.createLinearGradient(-24, -60, 24, 30);
+      g.addColorStop(0, "#a6743a");
+      g.addColorStop(0.5, "#7a4f24");
+      g.addColorStop(1, "#3a2410");
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(-22, -60);
+      ctx.quadraticCurveTo(-6, -10, -6, 30);
+      ctx.lineTo(6, 30);
+      ctx.quadraticCurveTo(6, -10, 22, -60);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = "rgba(0,0,0,0.7)";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      // Wood grain striations
+      ctx.strokeStyle = "rgba(0,0,0,0.35)";
+      ctx.lineWidth = 1;
+      for (let k = -3; k <= 3; k++) {
+        ctx.beginPath();
+        ctx.moveTo(k * 4, -54); ctx.lineTo(k * 1.5, 28);
+        ctx.stroke();
+      }
+      // Iron-stud caps
+      drawSphere(ctx, -14, -52, 4, "#5a5f6a", { highlight: "rgba(255,255,255,0.7)" });
+      drawSphere(ctx,  14, -52, 4, "#5a5f6a", { highlight: "rgba(255,255,255,0.7)" });
+      drawSphere(ctx,   0, -36, 4, "#5a5f6a", { highlight: "rgba(255,255,255,0.7)" });
+    } else if (loadout.id === "megaphone") {
+      // Cone (megaphone bell)
+      const g = ctx.createLinearGradient(-30, -40, 30, 30);
+      g.addColorStop(0, "#fff2b5");
+      g.addColorStop(0.5, "#ffd966");
+      g.addColorStop(1, "#a06a18");
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(-32, -50);
+      ctx.lineTo(32, -50);
+      ctx.lineTo(10, 30);
+      ctx.lineTo(-10, 30);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = "rgba(0,0,0,0.7)";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      // Inner disc
+      ctx.fillStyle = "#3a2410";
+      ctx.beginPath();
+      ctx.ellipse(0, -50, 32, 8, 0, 0, Math.PI * 2);
+      ctx.fill();
+      // Grip
+      ctx.fillStyle = "#3a1f0f";
+      ctx.fillRect(-4, 30, 8, 30);
+      // SOUND WAVES
+      ctx.strokeStyle = "rgba(255,255,255,0.6)";
+      ctx.lineWidth = 2;
+      for (let k = 1; k <= 3; k++) {
+        ctx.beginPath();
+        ctx.arc(0, -50, 36 + k * 8, Math.PI * 1.15, Math.PI * 1.85);
+        ctx.stroke();
+      }
+    } else if (loadout.id === "boneSpear") {
+      // Shaft (creamy bone)
+      const g = ctx.createLinearGradient(-4, -70, 4, 30);
+      g.addColorStop(0, "#fff5d8");
+      g.addColorStop(1, "#a89878");
+      ctx.fillStyle = g;
+      ctx.fillRect(-3, -50, 6, 110);
+      ctx.strokeStyle = "rgba(0,0,0,0.6)";
+      ctx.strokeRect(-3, -50, 6, 110);
+      // Jagged bone tip
+      ctx.fillStyle = "#fff5d8";
+      ctx.beginPath();
+      ctx.moveTo(-8, -50);
+      ctx.lineTo(-3, -60);
+      ctx.lineTo(-2, -54);
+      ctx.lineTo(0, -76);
+      ctx.lineTo(2, -54);
+      ctx.lineTo(3, -60);
+      ctx.lineTo(8, -50);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = "rgba(0,0,0,0.7)";
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+      // Sinew wrap
+      ctx.fillStyle = "#a02020";
+      ctx.fillRect(-5, -22, 10, 3);
+      ctx.fillRect(-5, -10, 10, 3);
+      // Drip blood
+      ctx.fillStyle = "#a02020";
+      ctx.beginPath();
+      ctx.arc(0, -42, 2.4, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (loadout.id === "blunderbuss") {
+      // Stock (wood)
+      ctx.fillStyle = "#5a3418";
+      ctx.beginPath();
+      ctx.moveTo(-6, 60);
+      ctx.lineTo(-6, 0);
+      ctx.lineTo(6, -10);
+      ctx.lineTo(6, 50);
+      ctx.lineTo(-2, 60);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = "rgba(0,0,0,0.7)";
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+      // Barrel - flared end
+      const g = ctx.createLinearGradient(-12, -70, 12, -10);
+      g.addColorStop(0, "#c89e54");
+      g.addColorStop(1, "#5a4018");
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(-6, -10);
+      ctx.lineTo(-18, -70);
+      ctx.lineTo(18, -70);
+      ctx.lineTo(6, -10);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = "rgba(0,0,0,0.7)";
+      ctx.stroke();
+      // Trigger
+      ctx.fillStyle = "#3a3f48";
+      ctx.fillRect(-1, 8, 2, 8);
+      // Smoke puff at muzzle
+      ctx.fillStyle = "rgba(220,220,220,0.5)";
+      ctx.beginPath();
+      ctx.arc(-6, -76, 6, 0, Math.PI * 2);
+      ctx.arc(4, -78, 5, 0, Math.PI * 2);
+      ctx.arc(-2, -84, 4, 0, Math.PI * 2);
+      ctx.fill();
+    } else if (loadout.id === "cursedScythe") {
+      // Long curved blade
+      ctx.fillStyle = "#a048c8";
+      ctx.shadowColor = "#a048c8";
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.moveTo(0, -50);
+      ctx.quadraticCurveTo(-40, -40, -36, -8);
+      ctx.quadraticCurveTo(-30, -22, -10, -30);
+      ctx.quadraticCurveTo(-4, -42, 0, -50);
+      ctx.closePath();
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = "rgba(0,0,0,0.7)";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      // Blade highlight
+      ctx.strokeStyle = "rgba(255,200,255,0.7)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(-2, -46);
+      ctx.quadraticCurveTo(-20, -36, -28, -14);
+      ctx.stroke();
+      // Staff
+      ctx.fillStyle = "#1a0e22";
+      ctx.fillRect(-3, -50, 6, 110);
+      ctx.strokeStyle = "rgba(0,0,0,0.7)";
+      ctx.strokeRect(-3, -50, 6, 110);
+      // Skull pommel
+      drawSphere(ctx, 0, 64, 8, "#e6d0a0", { highlight: "rgba(255,255,255,0.9)" });
+      ctx.fillStyle = "#1a0a0a";
+      ctx.fillRect(-3, 62, 2, 2);
+      ctx.fillRect(1, 62, 2, 2);
+      ctx.beginPath();
+      ctx.moveTo(-2, 68); ctx.lineTo(2, 68);
+      ctx.stroke();
+    } else if (loadout.id === "rustyChainsaw") {
+      // Body / housing
+      ctx.fillStyle = "#c25a2a";
+      roundRect(ctx, -22, 0, 44, 36, 5);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(0,0,0,0.7)";
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+      // Pull-cord handle
+      ctx.fillStyle = "#1a0a0a";
+      roundRect(ctx, -10, 36, 20, 18, 3);
+      ctx.fill();
+      ctx.stroke();
+      // Cord
+      ctx.strokeStyle = "#e8c870";
+      ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      ctx.moveTo(-6, 12);
+      ctx.lineTo(-18, 22);
+      ctx.stroke();
+      // Bar (chainsaw guide)
+      ctx.fillStyle = "#9a9aa6";
+      roundRect(ctx, -3, -64, 50, 12, 3);
+      ctx.fill();
+      ctx.stroke();
+      // Chain teeth (jagged saw teeth on top of bar)
+      ctx.fillStyle = "#3a3f48";
+      for (let k = 0; k < 8; k++) {
+        const tx = -1 + k * 6;
+        ctx.beginPath();
+        ctx.moveTo(tx, -64);
+        ctx.lineTo(tx + 3, -70);
+        ctx.lineTo(tx + 6, -64);
+        ctx.closePath();
+        ctx.fill();
+      }
+      // Rust spots
+      ctx.fillStyle = "rgba(60,30,10,0.6)";
+      for (const sp of [[-12, 10], [8, 18], [16, 6]]) {
+        ctx.beginPath();
+        ctx.arc(sp[0], sp[1], 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else if (loadout.id === "cat") {
+      // Body (orange tabby blob)
+      ctx.fillStyle = "#ff9a3c";
+      ctx.beginPath();
+      ctx.ellipse(0, 8, 26, 22, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(0,0,0,0.65)";
+      ctx.lineWidth = 1.4;
+      ctx.stroke();
+      // Stripes
+      ctx.strokeStyle = "rgba(120,50,10,0.7)";
+      ctx.lineWidth = 1.4;
+      for (let k = -2; k <= 2; k++) {
+        ctx.beginPath();
+        ctx.moveTo(k * 6, -10);
+        ctx.lineTo(k * 6, 22);
+        ctx.stroke();
+      }
+      // Head
+      ctx.fillStyle = "#ff9a3c";
+      ctx.beginPath();
+      ctx.arc(0, -22, 16, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(0,0,0,0.65)";
+      ctx.stroke();
+      // Ears
+      ctx.fillStyle = "#ff9a3c";
+      ctx.beginPath();
+      ctx.moveTo(-14, -32); ctx.lineTo(-10, -42); ctx.lineTo(-6, -30); ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(14, -32); ctx.lineTo(10, -42); ctx.lineTo(6, -30); ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      // Eyes (angry slits!)
+      ctx.fillStyle = "#1a0a0a";
+      ctx.beginPath(); ctx.ellipse(-5, -22, 1.5, 3, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse( 5, -22, 1.5, 3, 0, 0, Math.PI * 2); ctx.fill();
+      // Pupil glow
+      ctx.fillStyle = "#ffe5a0";
+      ctx.beginPath(); ctx.ellipse(-5, -23, 0.7, 1.4, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse( 5, -23, 0.7, 1.4, 0, 0, Math.PI * 2); ctx.fill();
+      // Nose
+      ctx.fillStyle = "#a02020";
+      ctx.beginPath();
+      ctx.moveTo(0, -16); ctx.lineTo(-2, -14); ctx.lineTo(2, -14); ctx.closePath();
+      ctx.fill();
+      // HISS lines
+      ctx.strokeStyle = "rgba(255,200,200,0.8)";
+      ctx.lineWidth = 1.5;
+      for (let k = 0; k < 3; k++) {
+        ctx.beginPath();
+        ctx.moveTo(-30 - k * 3, 0 + k * 6);
+        ctx.lineTo(-22 - k * 3, 0 + k * 6);
+        ctx.stroke();
+      }
     } else if (loadout.id === "frostWand") {
       // Wand shaft
       ctx.fillStyle = "#2a2f38";

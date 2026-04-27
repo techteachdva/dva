@@ -569,9 +569,11 @@ export class CombatScene {
     const pm = p.pactMods || {};
     switch (idx) {
       case 0: {
+        // v0.16 Wizard: every attack costs an extra few MP on top of base.
+        const manaCost = l.attack.manaCost + (p.manaCostBonus || 0);
         if (p.cooldowns.attack > 0) { SFX.deny(); this.pushLog(`${l.attack.name} is recharging...`); return; }
-        if (p.mana < l.attack.manaCost) { SFX.deny(); this.pushLog("Not enough mana!"); return; }
-        p.mana -= l.attack.manaCost;
+        if (p.mana < manaCost) { SFX.deny(); this.pushLog("Not enough mana!"); return; }
+        p.mana -= manaCost;
         // Pact modifier: Patient Blade slows attack cooldown; Glass Fangs... no, special.
         p.cooldowns.attack = l.attack.cooldown * (pm.attackCdMult || 1);
         const dmg = randInt(l.attack.dmg[0], l.attack.dmg[1]);
@@ -583,21 +585,41 @@ export class CombatScene {
           kind: "attack",
           multiLane: !!l.attack.multiLane,
           hexMark: !!l.attack.hexMark,
+          // v0.16 per-attack poison/bleed and lifesteal (read by applyOnHitEffects/applyHit).
+          movePoisonPct: l.attack.poisonPct || 0,
+          movePoisonTime: l.attack.poisonTime || 0,
+          dotLabel: l.attack.dotLabel || "POISON",
+          lifestealPct: l.attack.lifestealPct || 0,
         };
         this.dealToEnemy(dmg, l.attack.name, l.attack.sfx, p, opts);
         this.turnLocked = 0.28;
         break;
       }
       case 1: {
+        const manaCost = l.special.manaCost + (p.manaCostBonus || 0);
         if (p.cooldowns.special > 0) { SFX.deny(); this.pushLog(`${l.special.name} is recharging...`); return; }
-        if (p.mana < l.special.manaCost) { SFX.deny(); this.pushLog("Not enough mana!"); return; }
-        p.mana -= l.special.manaCost;
+        if (p.mana < manaCost) { SFX.deny(); this.pushLog("Not enough mana!"); return; }
+        p.mana -= manaCost;
+        // v0.16 RUSTY CHAINSAW: special is unreliable. On misfire we refund
+        // half mana, lock out for half the normal cooldown, and bail out.
+        if (l.special.misfireChance && Math.random() < l.special.misfireChance) {
+          p.mana = Math.min(p.manaMax, p.mana + Math.floor(manaCost / 2));
+          p.cooldowns.special = (l.special.cooldown * 0.5) * (pm.specialCdMult || 1);
+          this.pushLog(`${l.special.name} sputters and dies. (try again)`);
+          SFX.deny();
+          this.turnLocked = 0.25;
+          break;
+        }
         p.cooldowns.special = l.special.cooldown * (pm.specialCdMult || 1);
         const dmg = randInt(l.special.dmg[0], l.special.dmg[1]);
         const opts = {
           kind: "special",
           multiLane: !!l.special.multiLane,
           hexDetonate: !!l.special.hexDetonate,
+          movePoisonPct: l.special.poisonPct || 0,
+          movePoisonTime: l.special.poisonTime || 0,
+          dotLabel: l.special.dotLabel || "POISON",
+          lifestealPct: l.special.lifestealPct || 0,
         };
         this.dealToEnemy(dmg, l.special.name, l.special.sfx, p, opts);
         this.turnLocked = 0.45;
@@ -672,6 +694,13 @@ export class CombatScene {
     const multiLane = !!opts.multiLane;
     const hexMark   = !!opts.hexMark;
     const hexDet    = !!opts.hexDetonate;
+    // v0.16 per-attack on-hit effects. Wired through to applyHit/applyOnHitEffects.
+    const fxCtx = {
+      movePoisonPct:  opts.movePoisonPct  || 0,
+      movePoisonTime: opts.movePoisonTime || 0,
+      dotLabel:       opts.dotLabel       || "POISON",
+      lifestealPct:   opts.lifestealPct   || 0,
+    };
 
     const hadCounter = this.perfectBraceReady;
     this.perfectBraceReady = false;
@@ -697,11 +726,12 @@ export class CombatScene {
           isCrit, execOn,
           lane: i,
           laneX: W / 2 + LANE_OFFS[i],
+          lifestealPct: fxCtx.lifestealPct,
         });
         // Each lane arms a shield-break event against shielded elites.
         if (this.enemy && this.enemy.shielded) this.enemy.perfectBraceHits = 0;
       }
-      this.applyOnHitEffects(p, { hexMark, hexDet });
+      this.applyOnHitEffects(p, { hexMark, hexDet, ...fxCtx });
       SFX[sfx] ? SFX[sfx]() : SFX.hit();
       return;
     }
@@ -711,14 +741,15 @@ export class CombatScene {
     const { dmg, isCrit, execOn, consumedMarks } = this.rollHitDamage(rawDmg, {
       kind: opts.kind, consumeMarks: hexDet, counterOn: hadCounter,
     }, p);
-    this.applyHit(dmg, { name, sfx, p, hadCounter, isCrit, execOn, consumedMarks });
-    this.applyOnHitEffects(p, { hexMark, hexDet });
+    this.applyHit(dmg, { name, sfx, p, hadCounter, isCrit, execOn, consumedMarks,
+      lifestealPct: fxCtx.lifestealPct });
+    this.applyOnHitEffects(p, { hexMark, hexDet, ...fxCtx });
     SFX[sfx] ? SFX[sfx]() : SFX.hit();
   }
 
   // Centralized "a damage number actually lands" path. Handles enemy HP,
   // log line, shake, particles, floater, blood decals, shield-break counter.
-  applyHit(dmg, { name, hadCounter, isCrit, execOn, consumedMarks, lane, laneX, p }) {
+  applyHit(dmg, { name, hadCounter, isCrit, execOn, consumedMarks, lane, laneX, p, lifestealPct = 0 }) {
     const mult = this.matchupMult || 1;
     const lbl = this.matchupLabel;
     // --- Shielded elite: damage is clamped to 1 while shield is up, but
@@ -782,19 +813,43 @@ export class CombatScene {
     if (this.bloodDecals.length > 42) {
       this.bloodDecals.splice(0, this.bloodDecals.length - 42);
     }
+
+    // v0.16 LIFESTEAL (Cursed Scythe). Heal a percentage of the damage just
+    // dealt. Only counts on damage that actually got through (so shield-clamped
+    // 1-dmg hits still drip a tiny heal). Floats a green "+N" over the hero.
+    if (lifestealPct > 0 && p && finalDmg > 0) {
+      const heal = Math.max(1, Math.round(finalDmg * lifestealPct));
+      const before = p.hp;
+      p.hp = Math.min(p.hpMax, p.hp + heal);
+      const actualHeal = p.hp - before;
+      if (actualHeal > 0) {
+        this.floaters.push({
+          x: this.heroX + rand(-12, 12),
+          y: HERO_Y - 70,
+          vy: -55,
+          life: 1.2, max: 1.2,
+          text: `+${actualHeal}`,
+          color: "#7fffa0",
+          size: 18,
+        });
+      }
+    }
   }
 
   // Post-hit side effects: poison (VIPER / HEX-EYED pact), hex marks, hex
   // detonate (consumes marks). Called once per attack regardless of multi-lane.
-  applyOnHitEffects(p, { hexMark, hexDet }) {
+  applyOnHitEffects(p, { hexMark, hexDet, movePoisonPct = 0, movePoisonTime = 0, dotLabel = "POISON" }) {
     const pm = (p && p.pactMods) || {};
-    const poisonPct  = pm.poisonPct  ?? 0;
-    const poisonTime = pm.poisonTime ?? 0;
+    // Combine build-wide poison (Viper, Hex-Eyed pact) with per-weapon
+    // poison/bleed (Bone Spear, Cursed Scythe, Rusty Chainsaw rev). The
+    // strongest of the two wins for both DPS and remaining duration.
+    const poisonPct  = Math.max(pm.poisonPct  ?? 0, movePoisonPct);
+    const poisonTime = Math.max(pm.poisonTime ?? 0, movePoisonTime);
     if (poisonPct > 0 && poisonTime > 0) {
-      // Refresh duration on stack; damage does not stack.
       this.enemy.poisonT = Math.max(this.enemy.poisonT || 0, poisonTime);
       this.enemy.poisonDps = Math.max(this.enemy.poisonDps || 0,
         poisonPct * this.enemy.hpMax);
+      this.enemy.poisonLabel = dotLabel;
       this.poisonFlashT = 0.6;
     }
     if (hexMark) {
@@ -1690,9 +1745,9 @@ export class CombatScene {
       hint = { text: "ACID LANDING ON YOU - [A]/[D] dodge!", color: "#bfff00" };
     } else if (p.hp / p.hpMax < 0.35) {
       hint = { text: "Low HP! [R/3] Dodge for MP, [F/4] Brace for safety", color: "#ffa0a0" };
-    } else if (p.cooldowns.attack <= 0 && p.mana >= l.attack.manaCost) {
+    } else if (p.cooldowns.attack <= 0 && p.mana >= l.attack.manaCost + (p.manaCostBonus || 0)) {
       hint = { text: `[Q/1] ${l.attack.name}  -  [E/2] ${l.special.name}  -  dodge with [A]/[D]`, color: "#c8ffc0" };
-    } else if (p.mana < l.attack.manaCost) {
+    } else if (p.mana < l.attack.manaCost + (p.manaCostBonus || 0)) {
       hint = { text: "Out of MP! Press [R/3] Dodge Roll to recover.", color: "#7fc0ff" };
     }
     if (!hint) return;
@@ -1721,15 +1776,15 @@ export class CombatScene {
 
     const items = [
       { key: "Q/1", name: l.attack.name,
-        info: `DMG ${l.attack.dmg[0]}-${l.attack.dmg[1]}  MP ${l.attack.manaCost}`,
+        info: `DMG ${l.attack.dmg[0]}-${l.attack.dmg[1]}  MP ${l.attack.manaCost + (p.manaCostBonus || 0)}`,
         cd: p.cooldowns.attack,
-        locked: p.cooldowns.attack > 0 || p.mana < l.attack.manaCost,
+        locked: p.cooldowns.attack > 0 || p.mana < l.attack.manaCost + (p.manaCostBonus || 0),
         cdMax: l.attack.cooldown,
       },
       { key: "E/2", name: l.special.name,
-        info: `DMG ${l.special.dmg[0]}-${l.special.dmg[1]}  MP ${l.special.manaCost}`,
+        info: `DMG ${l.special.dmg[0]}-${l.special.dmg[1]}  MP ${l.special.manaCost + (p.manaCostBonus || 0)}`,
         cd: p.cooldowns.special,
-        locked: p.cooldowns.special > 0 || p.mana < l.special.manaCost,
+        locked: p.cooldowns.special > 0 || p.mana < l.special.manaCost + (p.manaCostBonus || 0),
         cdMax: l.special.cooldown,
       },
       { key: "R/3", name: "Dodge Roll", info: "+8 MP, reposition", cd: 0, locked: false, cdMax: 0 },

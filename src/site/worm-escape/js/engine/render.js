@@ -668,8 +668,11 @@ export function drawHero(ctx, x, y, facing = 1, anim = 0, build = "swift") {
   drawDropShadow(ctx, 0, 22, 18, 5, 0.55);
 
   // --- Cape (behind body) ---
-  const capeBase = build === "iron" ? "#394155" : "#2d4eaf";
-  const capeHi   = build === "iron" ? "#5a6680" : "#4c7bdf";
+  // v0.16 per-build palette (viper = green snake-leather, wizard = deep arcane robe).
+  let capeBase = "#2d4eaf", capeHi = "#4c7bdf";
+  if (build === "iron")        { capeBase = "#394155"; capeHi = "#5a6680"; }
+  else if (build === "viper")  { capeBase = "#1f3a1a"; capeHi = "#3f7a36"; }
+  else if (build === "wizard") { capeBase = "#231548"; capeHi = "#5a3aa0"; }
   ctx.save();
   ctx.translate(0, bob);
   // Cape shadow
@@ -705,9 +708,13 @@ export function drawHero(ctx, x, y, facing = 1, anim = 0, build = "swift") {
   // --- Legs (walk cycle) ---
   ctx.save();
   ctx.translate(0, bob);
-  // Back leg (slightly shifted for depth)
-  drawPlate(ctx, 1, 11, 6, 9 - leg, 1.5, build === "iron" ? "#4a3020" : "#4a2510");
-  drawPlate(ctx, -7, 11, 6, 9 + leg, 1.5, build === "iron" ? "#5a3820" : "#6a3a1a");
+  // Back leg (slightly shifted for depth) - tinted per build.
+  let legBack  = "#4a2510", legFront = "#6a3a1a";
+  if (build === "iron")        { legBack = "#4a3020"; legFront = "#5a3820"; }
+  else if (build === "viper")  { legBack = "#1a2a18"; legFront = "#2a4a26"; }
+  else if (build === "wizard") { legBack = "#1f1538"; legFront = "#2f2050"; }
+  drawPlate(ctx, 1, 11, 6, 9 - leg, 1.5, legBack);
+  drawPlate(ctx, -7, 11, 6, 9 + leg, 1.5, legFront);
   // Boots
   drawPlate(ctx, -8, 18 + leg, 8, 4, 1, "#1a0f08");
   drawPlate(ctx, 0, 18 - leg, 8, 4, 1, "#1a0f08");
@@ -716,7 +723,63 @@ export function drawHero(ctx, x, y, facing = 1, anim = 0, build = "swift") {
   // --- Torso (body) ---
   ctx.save();
   ctx.translate(0, bob);
-  if (build === "iron") {
+  if (build === "wizard") {
+    // Long arcane robe with embroidered trim.
+    drawPlate(ctx, -12, -9, 24, 24, 5, "#3a2470");
+    // Robe trim highlight
+    ctx.fillStyle = "#7a52d4";
+    ctx.fillRect(-12, -10, 24, 2);
+    ctx.fillRect(-12, 13, 24, 2);
+    // Star sigil on chest
+    ctx.fillStyle = "#ffd966";
+    ctx.beginPath();
+    for (let k = 0; k < 5; k++) {
+      const a = (k / 5) * Math.PI * 2 - Math.PI / 2;
+      const r = k % 2 === 0 ? 4 : 1.6;
+      const px = Math.cos(a) * r, py = 0 + Math.sin(a) * r;
+      if (k === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fill();
+    // Sash belt
+    ctx.fillStyle = "#1a0f30";
+    ctx.fillRect(-12, 7, 24, 4);
+    // Buckle
+    ctx.fillStyle = "#ffd966";
+    ctx.fillRect(-2, 8, 4, 2);
+  } else if (build === "viper") {
+    // Snakeskin leather doublet (dark green) with venom-vial bandolier.
+    drawPlate(ctx, -10, -9, 20, 21, 4, "#3f7a36");
+    // Scale pattern lines
+    ctx.strokeStyle = "rgba(0,0,0,0.5)";
+    ctx.lineWidth = 0.8;
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath();
+      ctx.moveTo(-9, -4 + i * 6);
+      ctx.lineTo(9, -4 + i * 6);
+      ctx.stroke();
+    }
+    // Belt
+    drawPlate(ctx, -11, 7, 22, 4, 1, "#1a2a18");
+    ctx.fillStyle = "#ffd966";
+    ctx.fillRect(-2, 8, 4, 2);
+    // Venom vial bandolier (bright green dots across chest)
+    ctx.fillStyle = "#b5f05a";
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath();
+      ctx.arc(-7 + i * 7, -2, 1.6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    // Hood collar
+    ctx.fillStyle = "#0e1a0c";
+    ctx.beginPath();
+    ctx.moveTo(-8, -8);
+    ctx.quadraticCurveTo(0, -4, 8, -8);
+    ctx.lineTo(10, -10);
+    ctx.quadraticCurveTo(0, -6, -10, -10);
+    ctx.closePath();
+    ctx.fill();
+  } else if (build === "iron") {
     // Breastplate
     drawPlate(ctx, -11, -9, 22, 21, 4, "#9aa0ac");
     // Chest emblem (worm sigil)
@@ -767,7 +830,84 @@ export function drawHero(ctx, x, y, facing = 1, anim = 0, build = "swift") {
   ctx.save();
   ctx.translate(0, bob);
   // Helmet / hood base
-  if (build === "iron") {
+  if (build === "wizard") {
+    // Skin sphere
+    drawSphere(ctx, 0, -14, 7, COLORS.skin, { highlight: "rgba(255,227,176,0.9)", rim: "rgba(255,200,150,0.4)" });
+    // Bushy white beard
+    ctx.fillStyle = "#e6e6f0";
+    ctx.beginPath();
+    ctx.moveTo(-5, -10);
+    ctx.quadraticCurveTo(-7, -2, -3, 2);
+    ctx.lineTo(3, 2);
+    ctx.quadraticCurveTo(7, -2, 5, -10);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "rgba(0,0,0,0.4)";
+    ctx.lineWidth = 0.6;
+    ctx.stroke();
+    // Eyes (just visible above beard)
+    ctx.fillStyle = "#1a0a0a";
+    ctx.fillRect(-3, -15, 2, 2);
+    ctx.fillRect(1, -15, 2, 2);
+    // Pointed wizard hat
+    ctx.fillStyle = "#231548";
+    ctx.beginPath();
+    ctx.moveTo(-9, -19);
+    ctx.lineTo(2 + Math.sin(anim * 1.5) * 1.2, -32);
+    ctx.lineTo(9, -19);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "rgba(0,0,0,0.7)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    // Hat brim
+    ctx.fillStyle = "#1a0f30";
+    ctx.fillRect(-11, -19, 22, 3);
+    // Hat band stars
+    ctx.fillStyle = "#ffd966";
+    ctx.fillRect(-6, -18, 1.5, 1.5);
+    ctx.fillRect(0, -18, 1.5, 1.5);
+    ctx.fillRect(6, -18, 1.5, 1.5);
+  } else if (build === "viper") {
+    // Skin sphere (slightly paler/greener)
+    drawSphere(ctx, 0, -14, 7, "#e8c8a0", { highlight: "rgba(220,255,200,0.7)", rim: "rgba(180,240,150,0.4)" });
+    // Dark hood
+    ctx.fillStyle = "#0e1a0c";
+    ctx.beginPath();
+    ctx.arc(0, -14, 8.5, Math.PI, 0, true);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "#0e1a0c";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    // Hood points (peaked over forehead)
+    ctx.fillStyle = "#1a2a18";
+    ctx.beginPath();
+    ctx.moveTo(-8, -19);
+    ctx.lineTo(-3, -14);
+    ctx.lineTo(-7, -13);
+    ctx.closePath();
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(8, -19);
+    ctx.lineTo(3, -14);
+    ctx.lineTo(7, -13);
+    ctx.closePath();
+    ctx.fill();
+    // Eyes - venom-yellow slits with glow
+    ctx.fillStyle = "#b5f05a";
+    ctx.shadowColor = "#b5f05a";
+    ctx.shadowBlur = 4;
+    ctx.fillRect(-3, -15, 2, 1.5);
+    ctx.fillRect(1, -15, 2, 1.5);
+    ctx.shadowBlur = 0;
+    // Mask line across cheek
+    ctx.strokeStyle = "rgba(0,0,0,0.6)";
+    ctx.lineWidth = 0.8;
+    ctx.beginPath();
+    ctx.moveTo(-5, -12); ctx.lineTo(5, -12);
+    ctx.stroke();
+  } else if (build === "iron") {
     // Helmet dome
     drawSphere(ctx, 0, -15, 8, "#a8aeba", { highlight: "rgba(255,255,255,0.8)", rim: "rgba(200,210,230,0.5)" });
     // Visor slit
@@ -813,14 +953,40 @@ export function drawHero(ctx, x, y, facing = 1, anim = 0, build = "swift") {
   ctx.save();
   ctx.translate(0, bob);
   // Shoulder
-  if (build !== "iron") {
+  if (build === "iron") {
+    // pauldron already drawn with torso
+  } else if (build === "wizard") {
+    ctx.fillStyle = "#3a2470";
+    roundRect(ctx, 8, -5, 5, 10, 1);
+    ctx.fill();
+  } else if (build === "viper") {
+    ctx.fillStyle = "#3f7a36";
+    roundRect(ctx, 8, -5, 5, 10, 1);
+    ctx.fill();
+  } else {
     ctx.fillStyle = "#b88a4a";
     roundRect(ctx, 8, -5, 5, 10, 1);
     ctx.fill();
   }
   // Hand glove
-  ctx.fillStyle = build === "iron" ? "#5a5f6a" : "#2a1a0a";
+  let gloveColor = "#2a1a0a";
+  if (build === "iron")        gloveColor = "#5a5f6a";
+  else if (build === "wizard") gloveColor = "#1a0f30";
+  else if (build === "viper")  gloveColor = "#0e1a0c";
+  ctx.fillStyle = gloveColor;
   ctx.fillRect(9, 4, 5, 4);
+  // Wizard: faint glowing orb floating above hand
+  if (build === "wizard") {
+    const pulse = 0.6 + 0.4 * Math.abs(Math.sin(anim * 0.6));
+    ctx.save();
+    ctx.shadowColor = "#7a52d4";
+    ctx.shadowBlur = 8 * pulse;
+    ctx.fillStyle = "rgba(180, 140, 255, 0.9)";
+    ctx.beginPath();
+    ctx.arc(13, -2, 2.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
   ctx.restore();
 
   ctx.restore();

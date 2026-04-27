@@ -952,9 +952,135 @@ the final stretch is frantic whack-a-mole. Fights for a climactic
 - MOD:  index.html                  (footer hint)
 
 ---------------------------------------------------------------------
+v0.16.0  --  The Arsenal Update
+---------------------------------------------------------------------
+A LOT of new toys. Ten new weapons (eight bringing brand-new on-hit
+mechanics), a fourth player build (the WIZARD), distinct hero sprites
+for VIPER and WIZARD, and the loadout select is now a RANDOM 4-pick
+from your unlocked weapon pool. Every run, different hands.
+
+--- NEW BUILD: WIZARD ---
+Hard but powerful caster. Frail body, bottomless mana, and a unique
+MANA SHIELD that lets you take MUCH more punishment than your 60 HP
+implies - if you can keep the blue bar full.
+
+  HP: 60   Mana: 110   Armor: 0   Acid Res: 0.85
+  - MANA SHIELD: while mana > 0, incoming damage drains mana at 2:1
+    BEFORE touching armor or HP. The first 220 raw damage is free if
+    you start the fight full. Drop to empty and you're tissue paper.
+  - SPELL AMP: every weapon hit (basic + special) deals +40% damage.
+  - MANA TAX: every attack costs +2 MP on top of the weapon's listed
+    cost. Even "free" 0-MP basics now cost 2.
+  - Slow climb (1.10x), no debris tanks, smaller dodge window.
+
+  Unlock: clear a run with VIPER.
+
+--- NEW WEAPONS (10 total) ---
+Default-unlocked (now in the random pool from run 1):
+- FRYING PAN     - solid mid-range blunt. BONK. (Bonk / Skillet Slam)
+- DUELIST'S SABER - fastest basic in the game; Triple Stab special.
+- BARE FISTS     - 0 MP cost EVER, 0.30s cooldown, low damage. Pure
+                   tempo: spam to keep counters loaded.
+- GNARLED CLUB   - heavy hardwood. Slow, decisive. 4s special CD.
+
+Win-once unlocks (any build):
+- BATTLE MEGAPHONE - low damage, fast cycle, 2 MP. Sustain DPS.
+- BONE SPEAR       - low damage with BLEED on every hit (DoT %max).
+- BRASS BLUNDERBUSS - one slow heavy boom per long cooldown.
+
+Unlock as VIPER:
+- CURSED SCYTHE  - LIFESTEAL on every hit (20% basic / 35% special)
+                   plus a small bleed. Sustain in fights.
+
+Unlock by killing any Elite:
+- RUSTY CHAINSAW - basic is mid; special "REV UP" has a 1-IN-6
+                   chance to fire (60-80 dmg + 6s long bleed). On
+                   misfire you lose half mana and half cooldown so
+                   you can crank again immediately.
+
+Unlock as WIZARD (a meme victory cap):
+- ANGRY CAT      - throws an angry cat. MEOW does 50-70 damage. Yes.
+
+All ten weapons get distinct hand-drawn icons in the loadout select.
+
+--- NEW MECHANICS WIRED THROUGH BOTH COMBAT SCENES ---
+- LIFESTEAL on hit (move.lifestealPct): heal a slice of damage just
+  dealt. Floats a green "+N" over the hero. Works in CombatScene
+  and MawBossScene (sums splash damage when multi-lane).
+- Per-attack BLEED / POISON (move.poisonPct, move.poisonTime,
+  move.dotLabel): a stacking DoT independent from build poison
+  (Viper). The strongest of build-vs-weapon poison wins. Teeth in
+  the maw take it too (separate per-tooth DoT timer that resets
+  cleanly when a tooth respawns).
+- MISFIRE (move.misfireChance): pre-roll on activation. On fail,
+  refund half the mana, halve the cooldown, abort the strike. Only
+  the chainsaw uses this today but the hook is reusable.
+- MANA COST BONUS (player.manaCostBonus): added to every attack
+  cost in CombatScene's execute() and MawBossScene's execute().
+  Action-bar info pills now show the *effective* cost so Wizard
+  players see the real bill.
+- WIZARD MANA SHIELD (player.applyDamage): drains mana at the
+  configured ratio before armor/HP. Updates score.hitsTaken when
+  it intervenes (a blocked hit is still a hit) and returns the
+  manaTaken amount in the result struct for callers that want it.
+
+--- RANDOMIZED LOADOUT SELECT ---
+- CreateScene rolls 4 RANDOM weapons from your unlocked pool on
+  scene entry. Locked weapons aren't shown - they aren't choices.
+- Press [R] (or [Tab]) at the loadout step to REROLL the 4.
+- Backing out from confirm preserves the current 4 (rerolls happen
+  only on explicit input or scene re-entry).
+- Cards are wider now (4 cards instead of 6) so on-hit tags fit
+  with a label per active mechanic: MULTI-LANE, PLACES HEX,
+  DETONATES HEX, LIFESTEAL, BLEED/POISON, 1-IN-6 FIRE.
+
+--- VIPER + WIZARD HERO ART (drawHero) ---
+- Build-specific palette + costume per build. Iron stays as-is.
+- VIPER: dark-green snakeskin doublet, scale-line stitching, a
+  green-vial bandolier across the chest, hooded with peaked points
+  and venom-yellow glowing slit eyes. Replaces the placeholder
+  hue-rotated Swift sprite that used to render in-fight.
+- WIZARD: deep purple robe with embroidered trim, white star sigil
+  on the chest, white bushy beard, pointed wizard hat with a tiny
+  bobbing tip and three gold stars on the brim, plus a faintly
+  pulsing arcane orb floating above the cast hand.
+
+--- UNLOCK / SAVE SCHEMA (storage.js) ---
+- DEFAULT_SAVE.unlocks expanded with: wizardBuild, megaphone,
+  boneSpear, blunderbuss, cursedScythe, rustyChainsaw, cat. Total
+  unlock count is now 10 (intro UNLOCK_TOTAL bumped accordingly).
+- New gating in recordRun:
+    Win any run        -> viperBuild, megaphone, boneSpear, blunderbuss
+    Win as VIPER       -> wizardBuild, cursedScythe
+    Win as WIZARD      -> cat
+    Gullet hitless     -> bileWhip (unchanged)
+    Any Elite kill     -> hexStaff (unchanged) + rustyChainsaw (new)
+- Existing saves merge cleanly; new flags default to false.
+
+--- FILES TOUCHED ---
+- MOD: js/content/player.js          (Wizard build, 10 new loadouts,
+                                      lifesteal/bleed/misfire fields,
+                                      manaCostBonus + manaShield init,
+                                      applyDamage mana-shield branch)
+- MOD: js/engine/render.js           (drawHero: Viper + Wizard)
+- MOD: js/engine/storage.js          (unlock keys + new conditions)
+- MOD: js/scenes/combat.js           (lifesteal, per-attack DoT,
+                                      misfire, manaCostBonus throughout
+                                      execute / dealToEnemy / applyHit /
+                                      applyOnHitEffects + action bar)
+- MOD: js/scenes/tongueBoss.js       (same hooks for the Maw fight,
+                                      including per-tooth DoT and
+                                      respawn cleanup)
+- MOD: js/scenes/create.js           (4 builds, random 4-of-N weapons,
+                                      reroll [R/Tab], 10 new icons,
+                                      wider loadout cards, mechanic
+                                      tags listed per attack/special)
+- MOD: js/scenes/intro.js            (UNLOCK_TOTAL + key list updated)
+
+---------------------------------------------------------------------
 Planned / Future
 ---------------------------------------------------------------------
 - Loot drops between chambers (healing guts-jerky, mana phlegm).
 - Daily seeded run with a global leaderboard.
 - Mid-climb events (Blessed Shrine, hidden passage).
-- Additional weapon matchups and a fourth adventurer build.
+- A fifth adventurer build (Gambler? Tamer? Try-hard?).

@@ -250,6 +250,20 @@ export class MawBossScene {
       t.wobble += dt * 2.5;
       t.flashT = Math.max(0, t.flashT - dt);
       t.shakeT = Math.max(0, t.shakeT - dt);
+      // v0.16 Tooth DoT (BLEED / POISON from weapon on-hit effects).
+      // Drips % of max-hp damage every second while the timer holds.
+      if (!t.knockedOut && (t.dotT || 0) > 0 && (t.dotDps || 0) > 0) {
+        t.hp = Math.max(0, t.hp - t.dotDps * dt);
+        t.dotT -= dt;
+        if (Math.random() < dt * 5) {
+          this.particles.burst(
+            COLS_X[t.col] + rand(-12, 12),
+            BOTTOM_TOOTH_TIP - 20 + rand(-14, 14),
+            "#ff6a6a", 2, 60, 0.4,
+          );
+        }
+        if (t.hp === 0) this.knockOutTooth(t);
+      }
       // HP bar lerp toward real HP.
       t.hpDisplay += (t.hp - t.hpDisplay) * Math.min(1, dt * 6);
 
@@ -263,6 +277,7 @@ export class MawBossScene {
           t.knockedOut = false;
           t.flashT = 0.6;
           t.shakeT = 0.5;
+          t.dotT = 0; t.dotDps = 0;
           this.pushLog(`COLUMN ${t.col + 1}: the molar ERUPTS back up at 50% HP!`);
           SFX.thud();
           screenShake(6, 0.2);
@@ -473,17 +488,29 @@ export class MawBossScene {
     const pm = p.pactMods || {};
     switch (idx) {
       case 0: {
+        // v0.16 Wizard pays +manaCostBonus on every weapon use.
+        const manaCost = l.attack.manaCost + (p.manaCostBonus || 0);
         if (p.cooldowns.attack > 0) { SFX.deny(); this.pushLog(`${l.attack.name} is recharging...`); return; }
-        if (p.mana < l.attack.manaCost) { SFX.deny(); this.pushLog("Not enough mana!"); return; }
-        p.mana -= l.attack.manaCost;
+        if (p.mana < manaCost) { SFX.deny(); this.pushLog("Not enough mana!"); return; }
+        p.mana -= manaCost;
         p.cooldowns.attack = l.attack.cooldown * (pm.attackCdMult || 1);
         this.strikeCurrentLane(l.attack, "attack", p);
         break;
       }
       case 1: {
+        const manaCost = l.special.manaCost + (p.manaCostBonus || 0);
         if (p.cooldowns.special > 0) { SFX.deny(); this.pushLog(`${l.special.name} is recharging...`); return; }
-        if (p.mana < l.special.manaCost) { SFX.deny(); this.pushLog("Not enough mana!"); return; }
-        p.mana -= l.special.manaCost;
+        if (p.mana < manaCost) { SFX.deny(); this.pushLog("Not enough mana!"); return; }
+        p.mana -= manaCost;
+        // v0.16 RUSTY CHAINSAW misfire: refund half the mana, halve the
+        // cooldown, abort the strike. Pure RNG, exactly as designed.
+        if (l.special.misfireChance && Math.random() < l.special.misfireChance) {
+          p.mana = Math.min(p.manaMax, p.mana + Math.floor(manaCost / 2));
+          p.cooldowns.special = (l.special.cooldown * 0.5) * (pm.specialCdMult || 1);
+          this.pushLog(`${l.special.name} sputters and dies. (try again)`);
+          SFX.deny();
+          break;
+        }
         p.cooldowns.special = l.special.cooldown * (pm.specialCdMult || 1);
         this.strikeCurrentLane(l.special, "special", p);
         break;
@@ -548,6 +575,7 @@ export class MawBossScene {
     const tag = isCrit ? "CRITICAL!" : (mult > 1 ? (this.matchupLabel?.text || "") : "");
     this.dealToTooth(centerTooth, centerDmg, `${tag} ${move.name}!`.trim(), kind, p);
 
+    let totalDealt = centerDmg;
     // Multi-lane weapons sweep adjacent teeth for half damage.
     if (move.multiLane) {
       const spread = [-1, 1];
@@ -558,6 +586,50 @@ export class MawBossScene {
         if (!nt || nt.knockedOut) continue;
         const splash = Math.max(1, Math.round(centerDmg * 0.5));
         this.dealToTooth(nt, splash, `Splash lash!`, kind, p);
+        totalDealt += splash;
+      }
+    }
+
+    // v0.16 LIFESTEAL (Cursed Scythe). Heal a slice of the total damage
+    // dealt this swing. Surfaces a green floater near the hero so the
+    // mechanic is visible in the chaos of the maw.
+    const ls = move.lifestealPct || 0;
+    if (ls > 0) {
+      const heal = Math.max(1, Math.round(totalDealt * ls));
+      const before = p.hp;
+      p.hp = Math.min(p.hpMax, p.hp + heal);
+      const actual = p.hp - before;
+      if (actual > 0) {
+        this.floaters.push({
+          x: COLS_X[this.col] + rand(-10, 10),
+          y: 600,
+          vy: -50, life: 1.2, max: 1.2,
+          text: `+${actual}`, size: 18,
+          color: "#7fffa0",
+        });
+      }
+    }
+
+    // v0.16 Per-attack BLEED / POISON: applies a stacking DoT on the tooth
+    // we hit. Reuses the existing tooth.dotT / tooth.dotDps fields if the
+    // tooth has them; otherwise initializes them. Visualization is a quick
+    // crimson particle puff every tick.
+    const pPct  = move.poisonPct  || 0;
+    const pTime = move.poisonTime || 0;
+    if (pPct > 0 && pTime > 0) {
+      const targets = [centerTooth];
+      if (move.multiLane) {
+        for (const dx of [-1, 1]) {
+          const nc = this.col + dx;
+          if (nc >= 0 && nc < NUM_COLS && this.bottomTeeth[nc] && !this.bottomTeeth[nc].knockedOut) {
+            targets.push(this.bottomTeeth[nc]);
+          }
+        }
+      }
+      for (const t of targets) {
+        t.dotT = Math.max(t.dotT || 0, pTime);
+        t.dotDps = Math.max(t.dotDps || 0, pPct * t.hpMax);
+        t.dotLabel = move.dotLabel || "BLEED";
       }
     }
   }
@@ -1085,9 +1157,9 @@ export class MawBossScene {
     const p = game.player;
     const l = p.loadout;
     const items = [
-      { key: "Q/1", name: l.attack.name,  info: `DMG ${l.attack.dmg[0]}-${l.attack.dmg[1]}  MP ${l.attack.manaCost}`,
+      { key: "Q/1", name: l.attack.name,  info: `DMG ${l.attack.dmg[0]}-${l.attack.dmg[1]}  MP ${l.attack.manaCost + (p.manaCostBonus || 0)}`,
         cd: p.cooldowns.attack,  cdMax: l.attack.cooldown * (p.pactMods?.attackCdMult || 1) },
-      { key: "E/2", name: l.special.name, info: `DMG ${l.special.dmg[0]}-${l.special.dmg[1]}  MP ${l.special.manaCost}`,
+      { key: "E/2", name: l.special.name, info: `DMG ${l.special.dmg[0]}-${l.special.dmg[1]}  MP ${l.special.manaCost + (p.manaCostBonus || 0)}`,
         cd: p.cooldowns.special, cdMax: l.special.cooldown * (p.pactMods?.specialCdMult || 1) },
       { key: "R/3", name: "Dodge",  info: "+MP, brief i-frames",       cd: 0, cdMax: 0 },
       { key: "F/4", name: "Brace",  info: "halve next chomp",           cd: 0, cdMax: 0 },

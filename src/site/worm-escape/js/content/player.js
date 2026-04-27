@@ -62,6 +62,37 @@ export const BUILDS = {
     poisonPct: 0.05,       // poison ticks 5% of enemy max HP / sec
     poisonTime: 3,         // for 3 seconds after each hit (refreshes duration)
   },
+  // v0.16 WIZARD - hard but powerful. Gated by "win as Viper" unlock.
+  //   - Tiny HP pool, no armor, slow feet.
+  //   - HUGE mana pool. While mana > 0, incoming damage drains MANA at
+  //     2x rate before touching armor/HP (a "mana shield"). Burn through
+  //     mana too fast and you're a wet noodle, but a careful caster can
+  //     soak shocking amounts of punishment.
+  //   - Every weapon hit (basic + special) gets +40% damage, but every
+  //     attack costs +2 MP on top of the weapon's listed cost. Even a
+  //     "free" 0-MP basic now costs 2.
+  //   - Best paired with cheap-cost / fast-attack loadouts (Frost Wand,
+  //     Ember Staff, Hex Staff). Painful with slow heavy weapons.
+  wizard: {
+    id: "wizard",
+    name: "WIZARD",
+    blurb: "Frail flesh, bottomless mana. Spells eat MP twice as fast.",
+    hp: 60,
+    mana: 110,
+    armor: 0,
+    armorSoak: 0,
+    climbSpeed: 1.10,
+    hopCooldown: 0.12,
+    laneSwapCd: 0.12,
+    dodgeWindow: 0.50,
+    acidResist: 0.85,
+    tankHits: 0,
+    // Unique toggles
+    manaShield: true,        // drain mana before HP/armor
+    manaShieldRatio: 2,      // 2 MP absorbs 1 dmg
+    spellAmpMult: 1.4,       // global +40% outgoing damage
+    manaCostBonus: 2,        // every attack costs +2 MP on top of base
+  },
 };
 
 export const LOADOUTS = {
@@ -140,6 +171,140 @@ export const LOADOUTS = {
     strongVs: "tentacle",
     weakVs:   "zombie",
   },
+  // ============================== v0.16 NEW WEAPONS ==============================
+  // FRYING PAN - meme-tier blunt object. BONK. Decent damage for a kitchen utensil.
+  fryingPan: {
+    id: "fryingPan",
+    name: "FRYING PAN",
+    icon: "pan",
+    blurb: "BONK. Heavy. Slightly greasy. Surprisingly murderous.",
+    attack:  { name: "Bonk",       dmg: [18, 26], cooldown: 0.78, manaCost: 0,  sfx: "thud" },
+    special: { name: "Skillet Slam", dmg: [30, 42], cooldown: 2.6, manaCost: 8, sfx: "crunch" },
+    color: "#9aa0ac",
+    strongVs: "teeth",
+    weakVs:   "flesh",
+  },
+  // SABER - fast stab, devastating triple-stab special.
+  saber: {
+    id: "saber",
+    name: "DUELIST'S SABER",
+    icon: "saber",
+    blurb: "A whisper of a blade. Stabs faster than you can flinch.",
+    attack:  { name: "Stab",        dmg: [13, 19], cooldown: 0.42, manaCost: 0,  sfx: "slash" },
+    // Triple Stab: implemented as a single big-damage hit (the three
+    // slashes are flavor + animation only). High mana, high damage.
+    special: { name: "Triple Stab", dmg: [36, 48], cooldown: 2.3,  manaCost: 12, sfx: "slash" },
+    color: "#e0e4ec",
+    strongVs: "flesh",
+    weakVs:   "teeth",
+  },
+  // FISTS - no mana ever, fast as lightning, low damage. Pure technique.
+  fists: {
+    id: "fists",
+    name: "BARE FISTS",
+    icon: "fists",
+    blurb: "No weapon, no mana cost, no excuses. Just rhythm.",
+    attack:  { name: "Punch",       dmg: [7, 11],  cooldown: 0.30, manaCost: 0,  sfx: "thud" },
+    // Special is also free - a flurry combo.
+    special: { name: "Flurry",      dmg: [22, 32], cooldown: 1.8,  manaCost: 0,  sfx: "thud" },
+    color: "#d4a07a",
+    strongVs: "bile",       // good against soft splatty bile elementals
+    weakVs:   "teeth",
+  },
+  // CLUB - slow, brutal, plain. Beats anything not made of armor.
+  club: {
+    id: "club",
+    name: "GNARLED CLUB",
+    icon: "club",
+    blurb: "Heavy hardwood. Slow. Decisive. Concussive.",
+    attack:  { name: "Clobber",     dmg: [26, 36], cooldown: 1.10, manaCost: 0,  sfx: "thud" },
+    special: { name: "Skull Smash", dmg: [44, 60], cooldown: 4.0,  manaCost: 14, sfx: "crunch" },
+    color: "#7a4f24",
+    strongVs: "zombie",
+    weakVs:   "flesh",
+  },
+  // MEGAPHONE - low damage, fast cycle. Unlock: win any run.
+  megaphone: {
+    id: "megaphone",
+    name: "BATTLE MEGAPHONE",
+    icon: "megaphone",
+    blurb: "Yelling, but tactical. Rattles eardrums and resolve.",
+    attack:  { name: "Sonic Yell",  dmg: [9, 13],   cooldown: 0.40, manaCost: 2,  sfx: "cast" },
+    special: { name: "Riot Boom",   dmg: [24, 34],  cooldown: 2.4,  manaCost: 11, sfx: "cast" },
+    color: "#ffd966",
+    strongVs: "tentacle",
+    weakVs:   "bile",
+  },
+  // BONE SPEAR - low damage, applies BLEED on every hit (reuses poison
+  // pipeline under the hood, but the floater/log call it bleed).
+  // Unlock: win any run.
+  boneSpear: {
+    id: "boneSpear",
+    name: "BONE SPEAR",
+    icon: "boneSpear",
+    blurb: "Splintered shaft, jagged tip. Every hit drinks blood.",
+    attack:  { name: "Jab",         dmg: [11, 15], cooldown: 0.42, manaCost: 1,  sfx: "slash",
+               poisonPct: 0.04, poisonTime: 3, dotLabel: "BLEED" },
+    special: { name: "Lunge",       dmg: [24, 32], cooldown: 2.0,  manaCost: 9,  sfx: "slash",
+               poisonPct: 0.07, poisonTime: 4, dotLabel: "BLEED" },
+    color: "#e8d6b0",
+    strongVs: "flesh",
+    weakVs:   "teeth",
+  },
+  // BLUNDERBUSS - one heavy boom per long cooldown. Unlock: win any run.
+  blunderbuss: {
+    id: "blunderbuss",
+    name: "BRASS BLUNDERBUSS",
+    icon: "blunderbuss",
+    blurb: "One slow shot. Loud. Hot. Inevitable.",
+    attack:  { name: "Boom Shot",   dmg: [28, 40], cooldown: 1.55, manaCost: 4,  sfx: "crunch" },
+    special: { name: "Powder Slam", dmg: [40, 56], cooldown: 4.0,  manaCost: 16, sfx: "crunch" },
+    color: "#c89e54",
+    strongVs: "teeth",
+    weakVs:   "tentacle",
+  },
+  // CURSED SCYTHE - lifesteal weapon. Heals you for a % of damage dealt
+  // on every hit. Unlock: win as Viper.
+  cursedScythe: {
+    id: "cursedScythe",
+    name: "CURSED SCYTHE",
+    icon: "scythe",
+    blurb: "Drinks the blood it spills. Dark magic, dark grin.",
+    attack:  { name: "Reaping Slash", dmg: [13, 19], cooldown: 0.62, manaCost: 2, sfx: "slash",
+               lifestealPct: 0.20, poisonPct: 0.03, poisonTime: 3, dotLabel: "BLEED" },
+    special: { name: "Soul Harvest",  dmg: [28, 40], cooldown: 2.6,  manaCost: 12, sfx: "slash",
+               lifestealPct: 0.35, poisonPct: 0.06, poisonTime: 4, dotLabel: "BLEED" },
+    color: "#a048c8",
+    strongVs: "zombie",
+    weakVs:   "bile",
+  },
+  // RUSTY CHAINSAW - special is unreliable. 5/6 chance to misfire (no
+  // damage, half cooldown), 1/6 chance to deal massive damage and apply
+  // a long bleed DoT. Unlock: defeat any Elite.
+  rustyChainsaw: {
+    id: "rustyChainsaw",
+    name: "RUSTY CHAINSAW",
+    icon: "chainsaw",
+    blurb: "Old engine. Mostly sputters. When it doesn't... pray.",
+    attack:  { name: "Saw Swing",   dmg: [14, 20], cooldown: 0.65, manaCost: 0,  sfx: "slash" },
+    special: { name: "REV UP",      dmg: [60, 80], cooldown: 6.0,  manaCost: 8,  sfx: "crunch",
+               misfireChance: 5/6, poisonPct: 0.10, poisonTime: 6, dotLabel: "BLEED" },
+    color: "#c25a2a",
+    strongVs: "flesh",
+    weakVs:   "teeth",
+  },
+  // CAT - meme weapon. Throws a cat. The cat is mad. Unlock: win as Wizard.
+  cat: {
+    id: "cat",
+    name: "ANGRY CAT",
+    icon: "cat",
+    blurb: "MEOW. Extremely high damage. Deeply unwilling participant.",
+    attack:  { name: "Hiss Swat",   dmg: [16, 22], cooldown: 0.70, manaCost: 1,  sfx: "slash" },
+    special: { name: "MEOW!!!",     dmg: [50, 70], cooldown: 3.5,  manaCost: 14, sfx: "crunch" },
+    color: "#ff9a3c",
+    strongVs: "tentacle",
+    weakVs:   "zombie",
+  },
 };
 
 // Multiplier returned when loadout `lId` attacks enemy art type `art`.
@@ -190,6 +355,12 @@ export function makePlayer(buildId, loadoutId) {
     bileHpDrain: 24,
     chamberIndex: 0,
     cooldowns: { attack: 0, special: 0 },
+    // v0.16 Wizard build flags. Stored on the player so combat scenes can
+    // read them without having to peek into the build descriptor every frame.
+    manaShield:      !!b.manaShield,
+    manaShieldRatio: b.manaShieldRatio || 2,
+    spellAmpMult:    b.spellAmpMult || 1,
+    manaCostBonus:   b.manaCostBonus || 0,
     // --- v0.10 Score tracking ---
     // Every time the hero takes damage (climb debris, acid gout, melee,
     // bile submersion) we bump `hitsTaken`. Individual scenes also
@@ -217,7 +388,7 @@ export function makePlayer(buildId, loadoutId) {
     // to safe neutrals so consumers can blindly read-multiply/add.
     pacts: [],
     pactMods: {
-      dmgMult: 1,             // global outgoing damage
+      dmgMult: b.spellAmpMult || 1,  // global outgoing damage (Wizard pre-amps to 1.4)
       attackDmgMult: 1,       // basic attack only
       specialDmgMult: 1,      // special only
       attackCdMult: 1,        // basic attack cooldown multiplier
@@ -278,6 +449,19 @@ export function applyDamage(p, amount) {
   const inMult = p.pactMods ? p.pactMods.incomingDmgMult : 1;
   let remaining = amount * inMult;
   let armorTaken = 0;
+  // v0.16 Wizard mana shield: drain mana before armor/HP at a configured
+  // ratio (default 2 MP per 1 dmg blocked). Once mana hits 0 the rest
+  // spills through normally.
+  let manaTaken = 0;
+  if (p.manaShield && p.mana > 0 && remaining > 0) {
+    const ratio = p.manaShieldRatio || 2;
+    const blockable = p.mana / ratio;        // how much dmg the current mana pool can soak
+    const blocked   = Math.min(remaining, blockable);
+    const manaSpent = blocked * ratio;
+    p.mana = Math.max(0, p.mana - manaSpent);
+    remaining -= blocked;
+    manaTaken = manaSpent;
+  }
   if (p.armor > 0 && p.armorSoak > 0) {
     const soakable = remaining * p.armorSoak;
     const absorb = Math.min(p.armor, soakable);
@@ -288,11 +472,11 @@ export function applyDamage(p, amount) {
   const hpTaken = Math.min(p.hp, remaining);
   p.hp = Math.max(0, p.hp - remaining);
   if (p.score) {
-    if (armorTaken > 0 || hpTaken > 0) p.score.hitsTaken++;
+    if (armorTaken > 0 || hpTaken > 0 || manaTaken > 0) p.score.hitsTaken++;
     p.score.totalHpLost += hpTaken;
     p.score.totalArmorLost += armorTaken;
   }
-  return { armorTaken, hpTaken };
+  return { armorTaken, hpTaken, manaTaken };
 }
 
 // Record a direct (non-soak) HP hit. Used for pierce debris, mace bonus

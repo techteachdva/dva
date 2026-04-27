@@ -10,7 +10,16 @@ import { CHAMBERS } from "../content/chambers.js";
 import { TongueBossScene } from "./tongueBoss.js";
 
 // Total possible persistent unlocks - keep this in sync with DEFAULT_SAVE.unlocks.
-const UNLOCK_TOTAL = 3; // viperBuild, bileWhip, hexStaff
+// v0.16: viperBuild, wizardBuild, bileWhip, hexStaff, megaphone, boneSpear,
+// blunderbuss, cursedScythe, rustyChainsaw, cat = 10
+const UNLOCK_TOTAL = 10;
+// Order kept matching DEFAULT_SAVE.unlocks (excluding the informational
+// `anyElite` flag which is implied by hexStaff/rustyChainsaw).
+const UNLOCK_KEYS = [
+  "viperBuild", "wizardBuild", "bileWhip", "hexStaff",
+  "megaphone", "boneSpear", "blunderbuss",
+  "cursedScythe", "rustyChainsaw", "cat",
+];
 
 const STORY = [
   "Oh FART NUGGETS!",
@@ -128,8 +137,7 @@ export class IntroScene {
     if (!this.save) return;
     const hs = this.save.highScores || [];
     const u = this.save.unlocks || {};
-    const unlockCount =
-      (u.viperBuild ? 1 : 0) + (u.bileWhip ? 1 : 0) + (u.hexStaff ? 1 : 0);
+    const unlockCount = UNLOCK_KEYS.reduce((n, k) => n + (u[k] ? 1 : 0), 0);
     const top = hs.length > 0 ? hs[0] : null;
     const y = 200;
     if (top) {
