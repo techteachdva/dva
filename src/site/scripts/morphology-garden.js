@@ -3195,7 +3195,8 @@ function init(host, detailEl, selectEl, shellEl) {
     let layoutKeyTo = viewKey;
     if (transition) {
       const elapsed = clock.elapsedTime - transition.t0;
-      const k = Math.min(1, elapsed / TRANSITION_SEC);
+      const k =
+        TRANSITION_SEC > 1e-6 ? Math.min(1, elapsed / TRANSITION_SEC) : 1;
       const e = smoothstep(k);
       layoutEase = e;
       layoutKeyFrom = transition.fromKey;
@@ -3205,12 +3206,15 @@ function init(host, detailEl, selectEl, shellEl) {
       viewBlend = bf + (bt - bf) * e;
       camera.position.lerpVectors(transition.cam0, transition.cam1, e);
       controls.target.lerpVectors(transition.tgt0, transition.tgt1, e);
-      if (k >= 1) {
+      const ended = elapsed >= TRANSITION_SEC - 1e-8 || k >= 1;
+      if (ended) {
         viewBlend = blendForViewKey(transition.toKey);
         layoutEase = 1;
         layoutKeyFrom = transition.toKey;
         layoutKeyTo = transition.toKey;
         viewKey = transition.toKey;
+        camera.position.copy(transition.cam1);
+        controls.target.copy(transition.tgt1);
         transition = null;
         const ue = smoothstep(viewBlend);
         if (ue > 0.9) {
@@ -3226,11 +3230,17 @@ function init(host, detailEl, selectEl, shellEl) {
     }
 
     if (!transition && cameraFitTween) {
-      const ck = Math.min(1, (clock.elapsedTime - cameraFitTween.t0) / cameraFitTween.dur);
+      const elapsedF = clock.elapsedTime - cameraFitTween.t0;
+      const d = Math.max(1e-5, cameraFitTween.dur);
+      const ck = Math.min(1, elapsedF / d);
       const ce = easeOutCubic(ck);
       camera.position.lerpVectors(cameraFitTween.cam0, cameraFitTween.cam1, ce);
       controls.target.lerpVectors(cameraFitTween.tgt0, cameraFitTween.tgt1, ce);
-      if (ck >= 1) cameraFitTween = null;
+      if (ck >= 1 || elapsedF >= cameraFitTween.dur - 1e-8) {
+        camera.position.copy(cameraFitTween.cam1);
+        controls.target.copy(cameraFitTween.tgt1);
+        cameraFitTween = null;
+      }
     }
 
     if (introDone) applyVisualTheme(viewBlend, layoutEase, layoutKeyFrom, layoutKeyTo);
@@ -3340,9 +3350,12 @@ function init(host, detailEl, selectEl, shellEl) {
       }
     }
 
-    // OrbitControls + enableDamping fight programmatic camera lerps (transition/camera tween) and can
-    // spit out NaNs, a frozen view, or a blank framebuffer. Disable interaction while cameras are scripted.
-    controls.enabled = !!(introDone && !transition && !cameraFitTween);
+    // Layout transition (Garden/Master × 3D/WB): camera is fully scripted — disable orbit so damping
+    // does not overwrite transforms. Brief camera-fit tweens leave controls ON (otherwise many sessions
+    // lost input parity if ticks fall behind — whiteboard stays dead).
+    const scriptingLayoutOnly = !!transition;
+    controls.enableDamping = !!(introDone && !scriptingLayoutOnly && !cameraFitTween);
+    controls.enabled = !!(introDone && !scriptingLayoutOnly);
 
     controls.update();
     if (introDone && bridges.visible) updateBridgeLines(bridges, viewBlend);
