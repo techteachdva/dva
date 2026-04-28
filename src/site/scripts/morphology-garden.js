@@ -464,30 +464,30 @@ const WORDS = [
   },
 ];
 
-const COLS = 4;
-const GAP_X = 40;
-const GAP_Z = 36;
+/** Wider 3D garden + single horizontal row for whiteboard (pan along X) */
+const POS3D_SCALE = 1.52;
+const WHITEBOARD_GAP_X = 58;
 
 function assignGrid2d() {
-  const rows = Math.ceil(WORDS.length / COLS);
+  const n = WORDS.length;
   WORDS.forEach((w, i) => {
-    const col = i % COLS;
-    const row = Math.floor(i / COLS);
-    w.pos3d = new THREE.Vector3(w.position[0], w.position[1], w.position[2]);
-    w.pos2d = new THREE.Vector3(
-      (col - (COLS - 1) / 2) * GAP_X,
-      -10,
-      (row - (rows - 1) / 2) * GAP_Z
+    w.pos3d = new THREE.Vector3(
+      w.position[0] * POS3D_SCALE,
+      w.position[1],
+      w.position[2] * POS3D_SCALE
     );
+    w.pos2d = new THREE.Vector3((i - (n - 1) / 2) * WHITEBOARD_GAP_X, -10, 0);
   });
 }
 
+const TREE_DEPTH_STEP = 4.95;
+
 function layoutSubtree(node, depth, xCenter, spread) {
   if (!node.children || node.children.length === 0) {
-    return { width: spread, positions: [{ node, x: xCenter, y: -depth * 3.35, z: 0 }] };
+    return { width: spread, positions: [{ node, x: xCenter, y: -depth * TREE_DEPTH_STEP, z: 0 }] };
   }
   const childSpread = spread / node.children.length;
-  const allPos = [{ node, x: xCenter, y: -depth * 3.35, z: 0 }];
+  const allPos = [{ node, x: xCenter, y: -depth * TREE_DEPTH_STEP, z: 0 }];
   let cursor = xCenter - spread / 2 + childSpread / 2;
   for (const c of node.children) {
     const sub = layoutSubtree(c, depth + 1, cursor, childSpread * 0.9);
@@ -543,7 +543,7 @@ function buildWordGroup(word) {
   group.userData.meshes = [];
   group.userData.lines = [];
 
-  const spread = 13;
+  const spread = 16.5;
   const { positions } = layoutSubtree(word.tree, 0, 0, spread);
   const meshes = new Map();
 
@@ -572,6 +572,7 @@ function buildWordGroup(word) {
     const lift = r + (isRoot ? 0.55 : 0.42);
     label.position.set(x, y - lift, z);
     group.add(label);
+    mesh.userData.label = label;
   }
 
   for (const p of positions) {
@@ -582,6 +583,8 @@ function buildWordGroup(word) {
       const childMesh = meshes.get(c);
       if (parentMesh && childMesh) {
         const line = edgeLine(parentMesh.position.clone(), childMesh.position.clone(), 0x55ffcc, 0.9);
+        line.userData.a = parentMesh;
+        line.userData.b = childMesh;
         group.add(line);
         group.userData.lines.push(line);
       }
@@ -645,14 +648,43 @@ function easeInOutCubic(t) {
   return x < 0.5 ? 4 * x * x * x : 1 - (-2 * x + 2) ** 3 / 2;
 }
 
+/** Overshoot pop (morphemes “burst” in the fast tail of the spawn) */
+function easeOutBack(t, s = 1.55) {
+  const x = Math.min(1, Math.max(0, t));
+  const c1 = s;
+  const c3 = c1 + 1;
+  return 1 + c3 * (x - 1) ** 3 + c1 * (x - 1) ** 2;
+}
+
+function shuffleInPlace(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function updateInternalTreeLine(line) {
+  const a = line.userData.a;
+  const b = line.userData.b;
+  if (!a || !b || !line.geometry) return;
+  line.geometry.setFromPoints([a.position, b.position]);
+}
+
 const SINGULARITY = new THREE.Vector3(0, -8, 0);
-/** Bloom → one smooth 360° pass → settle (no oscillating radius / targets) */
-const INTRO_T_GROW = 2.85;
-const INTRO_T_ORBIT = 10.25;
-const INTRO_T_SETTLE = 1.75;
+/** Per-morpheme spawn (slow → furious) → several camera orbits → settle */
+const INTRO_SPAWN_POWER = 1.72;
+const INTRO_SPAWN_SPREAD = 5.35;
+const INTRO_POP_DUR_SLOW = 0.62;
+const INTRO_POP_DUR_FAST = 0.2;
+const INTRO_T_ORBIT = 13.2;
+const INTRO_T_SETTLE = 2.05;
 const INTRO_ORBIT_RADIUS = 64;
 const INTRO_ORBIT_HEIGHT = 24;
-const INTRO_SPIN_TURNS = 0.75;
+/** Full 360° revolutions during the orbit phase */
+const INTRO_SPIN_TURNS = 3.35;
+/** Ring radius when trees peel out from the singularity (world XZ) */
+const INTRO_RING_RADIUS = 54;
 
 function init(host, detailEl, selectEl, shellEl) {
   assignGrid2d();
@@ -688,10 +720,26 @@ function init(host, detailEl, selectEl, shellEl) {
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.07;
-  controls.minDistance = 10;
-  controls.maxDistance = 220;
+  controls.minDistance = 8;
+  controls.maxDistance = 280;
+  controls.enablePan = true;
+  controls.enableZoom = true;
   controls.target.copy(cam3dTarget);
   controls.enabled = false;
+
+  function refreshControlsForViewMode(blend) {
+    const u = smoothstep(blend);
+    controls.enablePan = true;
+    controls.enableZoom = true;
+    controls.enableRotate = u < 0.12;
+    if (u > 0.88) {
+      controls.minDistance = 40;
+      controls.maxDistance = 520;
+    } else {
+      controls.minDistance = 8;
+      controls.maxDistance = 300;
+    }
+  }
 
   const ambient3d = new THREE.AmbientLight(0x6a8cff, 0.38);
   const key3d = new THREE.DirectionalLight(0xffffff, 1.1);
@@ -727,12 +775,71 @@ function init(host, detailEl, selectEl, shellEl) {
   for (const w of WORDS) sceneCenter.add(w.pos3d);
   sceneCenter.multiplyScalar(1 / WORDS.length);
 
-  for (const w of WORDS) {
-    const g = wordGroups[w.id];
-    g.position.copy(SINGULARITY);
-    g.scale.setScalar(0.012);
-    g.rotation.y = 0;
+  /** @type {Record<string, THREE.Vector3>} */
+  const introCirclePos = {};
+  WORDS.forEach((w, idx) => {
+    const a = (idx / WORDS.length) * Math.PI * 2 + 0.35;
+    introCirclePos[w.id] = new THREE.Vector3(
+      sceneCenter.x + Math.cos(a) * INTRO_RING_RADIUS,
+      sceneCenter.y,
+      sceneCenter.z + Math.sin(a) * INTRO_RING_RADIUS
+    );
+  });
+
+  /** @type {{ mesh: THREE.Mesh, label?: THREE.Object3D, tStart: number, popDur: number, fp: THREE.Vector3, fl?: THREE.Vector3 }[]} */
+  const introSpawnList = [];
+  let introPhaseAEnd = 0.35;
+
+  if (!REDUCED_MOTION) {
+    const allMeshes = [];
+    for (const w of WORDS) {
+      const g = wordGroups[w.id];
+      g.position.copy(SINGULARITY);
+      g.scale.setScalar(1);
+      g.rotation.y = 0;
+      for (const mesh of g.userData.meshes) {
+        mesh.userData.introFinalPos = mesh.position.clone();
+        const lab = mesh.userData.label;
+        if (lab) lab.userData.introFinalPos = lab.position.clone();
+        allMeshes.push(mesh);
+        mesh.position.set(0, 0, 0);
+        mesh.scale.setScalar(0.018);
+        if (lab) lab.position.set(0, 0.5, 0);
+      }
+      for (const line of g.userData.lines) {
+        line.material.opacity = 0;
+        updateInternalTreeLine(line);
+      }
+    }
+
+    shuffleInPlace(allMeshes);
+    const n = allMeshes.length;
+    const denom = Math.max(1, n - 1);
+    for (let i = 0; i < n; i++) {
+      const mesh = allMeshes[i];
+      const lab = mesh.userData.label;
+      const tStart = INTRO_SPAWN_SPREAD * (i / denom) ** INTRO_SPAWN_POWER;
+      const burst = i / denom;
+      const popDur = INTRO_POP_DUR_FAST + (INTRO_POP_DUR_SLOW - INTRO_POP_DUR_FAST) * (1 - burst) ** 1.35;
+      introPhaseAEnd = Math.max(introPhaseAEnd, tStart + popDur);
+      introSpawnList.push({
+        mesh,
+        label: lab,
+        tStart,
+        popDur,
+        fp: /** @type {THREE.Vector3} */ (mesh.userData.introFinalPos),
+        fl: lab?.userData.introFinalPos,
+      });
+    }
+  } else {
+    for (const w of WORDS) {
+      const g = wordGroups[w.id];
+      g.position.copy(w.pos3d);
+      g.scale.setScalar(1);
+      g.rotation.y = 0;
+    }
   }
+
   bridges.visible = false;
   bridges.children.forEach((line) => {
     if (line.material) line.material.opacity = 0;
@@ -745,6 +852,18 @@ function init(host, detailEl, selectEl, shellEl) {
       g.position.copy(w.pos3d);
       g.scale.setScalar(1);
       g.rotation.y = 0;
+      for (const mesh of g.userData.meshes) {
+        const fp = mesh.userData.introFinalPos;
+        if (fp) mesh.position.copy(fp);
+        mesh.scale.setScalar(1);
+        const lab = mesh.userData.label;
+        const fl = lab?.userData.introFinalPos;
+        if (lab && fl) lab.position.copy(fl);
+      }
+      for (const line of g.userData.lines) {
+        updateInternalTreeLine(line);
+        if (line.material) line.material.opacity = 0.9;
+      }
     }
     bridges.visible = true;
     bridges.children.forEach((line) => {
@@ -752,6 +871,10 @@ function init(host, detailEl, selectEl, shellEl) {
     });
     grid.visible = true;
   }
+
+  let viewTarget = 0;
+  let viewBlend = 0;
+  let transition = null;
 
   function flyToWord(id) {
     const g = wordGroups[id];
@@ -761,6 +884,10 @@ function init(host, detailEl, selectEl, shellEl) {
     focusCenter.copy(c);
     cam3dTarget.copy(c);
     cam3dPos.copy(c).add(new THREE.Vector3(18, 16, 36));
+    if (viewBlend < 0.06 && transition === null) {
+      camera.position.copy(cam3dPos);
+      controls.target.copy(cam3dTarget);
+    }
     controls.update();
   }
 
@@ -787,10 +914,6 @@ function init(host, detailEl, selectEl, shellEl) {
     flyToWord(firstWordId);
   }
 
-  let viewTarget = 0;
-  let viewBlend = 0;
-  let transition = null;
-
   const btn3d = document.getElementById("morph-btn-3d");
   const btn2d = document.getElementById("morph-btn-2d");
 
@@ -809,10 +932,29 @@ function init(host, detailEl, selectEl, shellEl) {
   function startTransition(to2d) {
     const next = to2d ? 1 : 0;
     if (next === viewTarget && transition === null && Math.abs(viewBlend - next) < 0.02) return;
+
+    const cam0 = camera.position.clone();
+    const tgt0 = controls.target.clone();
+    let cam1;
+    let tgt1;
+
+    if (to2d) {
+      cam1 = new THREE.Vector3(0, 28, 168);
+      tgt1 = new THREE.Vector3(0, -10, 0);
+    } else {
+      flyToWord(selectEl?.value || firstWordId);
+      cam1 = cam3dPos.clone();
+      tgt1 = cam3dTarget.clone();
+    }
+
     transition = {
-      from: viewBlend,
-      to: next,
       t0: clock.elapsedTime,
+      fromBlend: viewBlend,
+      toBlend: next,
+      cam0,
+      tgt0,
+      cam1,
+      tgt1,
     };
     viewTarget = next;
     setViewButtons();
@@ -869,14 +1011,7 @@ function init(host, detailEl, selectEl, shellEl) {
       }
     }
 
-    const cam2dPos = focusCenter.clone().add(new THREE.Vector3(0, 18, 104));
-    const cam2dTarget = focusCenter.clone();
-    camera.position.lerpVectors(cam3dPos, cam2dPos, u);
-    controls.target.lerpVectors(cam3dTarget, cam2dTarget, u);
-
-    controls.enableRotate = u < 0.75;
-    camera.fov = 48 + 3 * u;
-    camera.updateProjectionMatrix();
+    refreshControlsForViewMode(blend);
   }
 
   /* Intro overlay */
@@ -932,6 +1067,9 @@ function init(host, detailEl, selectEl, shellEl) {
 
   setViewButtons();
 
+  const introTmp0 = new THREE.Vector3();
+  const introTmp1 = new THREE.Vector3();
+
   window.addEventListener("resize", () => {
     camera.aspect = host.clientWidth / host.clientHeight;
     camera.updateProjectionMatrix();
@@ -945,43 +1083,68 @@ function init(host, detailEl, selectEl, shellEl) {
     introT += dt;
 
     if (!introDone && !REDUCED_MOTION) {
-      if (introT < INTRO_T_GROW) {
-        const g = Math.min(1, introT / INTRO_T_GROW);
-        const growE = easeOutCubic(g);
-        const posE = easeOutCubic(g);
-
-        for (const w of WORDS) {
-          const grp = wordGroups[w.id];
-          grp.position.lerpVectors(SINGULARITY, w.pos3d, posE);
-          grp.scale.setScalar(0.012 + 0.988 * growE);
-          grp.rotation.y = 0;
+      if (introT < introPhaseAEnd) {
+        for (const row of introSpawnList) {
+          const { mesh, label, tStart, popDur, fp, fl } = row;
+          if (introT <= tStart) {
+            mesh.position.set(0, 0, 0);
+            mesh.scale.setScalar(0.018);
+            if (label) label.position.set(0, 0.5, 0);
+          } else {
+            const raw = Math.min(1, (introT - tStart) / popDur);
+            const uPos = easeOutCubic(raw);
+            const uPop = Math.min(1, easeOutBack(raw));
+            introTmp0.set(0, 0, 0);
+            mesh.position.lerpVectors(introTmp0, fp, uPos);
+            mesh.scale.setScalar(0.018 + 0.982 * uPop);
+            if (label && fl) {
+              introTmp1.set(0, 0.5, 0);
+              label.position.lerpVectors(introTmp1, fl, uPos);
+            }
+          }
         }
 
-        const bloomBridge = smoothstep((g - 0.22) / 0.55);
+        for (const w of WORDS) {
+          for (const line of wordGroups[w.id].userData.lines) {
+            updateInternalTreeLine(line);
+          }
+        }
+
+        const spawnProg = Math.min(1, introT / introPhaseAEnd);
+        const lineReveal = smoothstep((spawnProg - 0.28) / 0.55);
+        for (const w of WORDS) {
+          for (const line of wordGroups[w.id].userData.lines) {
+            if (line.material) line.material.opacity = 0.88 * lineReveal;
+          }
+        }
+
+        const bloomBridge = smoothstep((spawnProg - 0.38) / 0.42);
         bridges.visible = bloomBridge > 0.03;
         bridges.children.forEach((line) => {
           if (line.material) line.material.opacity = 0.62 * bloomBridge;
         });
-        grid.visible = g > 0.08;
+        grid.visible = spawnProg > 0.06;
 
-        const pull = easeInOutCubic(g);
+        const pull = easeInOutCubic(spawnProg);
         const orbitEntry = new THREE.Vector3(
           sceneCenter.x + INTRO_ORBIT_RADIUS * 0.92,
           sceneCenter.y + INTRO_ORBIT_HEIGHT + 18,
           sceneCenter.z + INTRO_ORBIT_RADIUS * 0.92
         );
         camera.position.lerpVectors(introStartPos, orbitEntry, pull);
-        controls.target.lerpVectors(SINGULARITY.clone(), sceneCenter.clone(), pull);
-      } else if (introT < INTRO_T_GROW + INTRO_T_ORBIT) {
-        const orbitElapsed = introT - INTRO_T_GROW;
+        controls.target.lerpVectors(SINGULARITY, sceneCenter, pull);
+      } else if (introT < introPhaseAEnd + INTRO_T_ORBIT) {
+        const orbitElapsed = introT - introPhaseAEnd;
         const u = Math.min(1, orbitElapsed / INTRO_T_ORBIT);
-        const phi = easeInOutCubic(u) * Math.PI * 2;
+        const spreadU = easeInOutCubic(Math.min(1, u / 0.4));
+        const phi = easeInOutCubic(u) * Math.PI * 2 * INTRO_SPIN_TURNS;
 
-        introSpinAngle = phi * INTRO_SPIN_TURNS;
+        introSpinAngle = phi;
         for (const w of WORDS) {
           const grp = wordGroups[w.id];
           const phase = w.pos3d.x * 0.002 + w.pos3d.z * 0.0015;
-          grp.rotation.y = introSpinAngle + phase * 0.08;
+          grp.rotation.y = introSpinAngle + phase * 0.09;
+          grp.position.lerpVectors(SINGULARITY, introCirclePos[w.id], spreadU);
         }
 
         const R = INTRO_ORBIT_RADIUS;
@@ -999,13 +1162,15 @@ function init(host, detailEl, selectEl, shellEl) {
         });
         grid.visible = true;
       } else {
-        const settleElapsed = introT - INTRO_T_GROW - INTRO_T_ORBIT;
+        const settleElapsed = introT - introPhaseAEnd - INTRO_T_ORBIT;
         const se = Math.min(1, settleElapsed / INTRO_T_SETTLE);
         const spinDamp = 1 - easeOutCubic(se);
+        const kPos = easeOutCubic(se);
         for (const w of WORDS) {
           const grp = wordGroups[w.id];
           const phase = w.pos3d.x * 0.002 + w.pos3d.z * 0.0015;
-          grp.rotation.y = (introSpinAngle + phase * 0.08) * spinDamp;
+          grp.rotation.y = (introSpinAngle + phase * 0.09) * spinDamp;
+          grp.position.lerpVectors(introCirclePos[w.id], w.pos3d, kPos);
         }
 
         if (!introSettle.captured) {
@@ -1025,9 +1190,11 @@ function init(host, detailEl, selectEl, shellEl) {
       const elapsed = clock.elapsedTime - transition.t0;
       const k = Math.min(1, elapsed / TRANSITION_SEC);
       const e = smoothstep(k);
-      viewBlend = transition.from + (transition.to - transition.from) * e;
+      viewBlend = transition.fromBlend + (transition.toBlend - transition.fromBlend) * e;
+      camera.position.lerpVectors(transition.cam0, transition.cam1, e);
+      controls.target.lerpVectors(transition.tgt0, transition.tgt1, e);
       if (k >= 1) {
-        viewBlend = transition.to;
+        viewBlend = transition.toBlend;
         transition = null;
       }
     }
