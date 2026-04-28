@@ -5,8 +5,14 @@ import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 
+/** Reused vectors — avoids per-frame allocations in bridge updates */
+const _vBridgeA = new THREE.Vector3();
+const _vBridgeB = new THREE.Vector3();
+
 const REDUCED_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-const TRANSITION_SEC = REDUCED_MOTION ? 0.01 : 1.35;
+const TRANSITION_SEC = REDUCED_MOTION ? 0.01 : 1.48;
+/** Skip tiny DOM writes when LOD opacity barely changes */
+const LOD_OPACITY_EPS = 0.02;
 
 /** Select “all trees” instead of isolating one */
 const GARDEN_SELECT = "__garden__";
@@ -792,6 +798,7 @@ function assignGrid2d() {
       w.position[1],
       w.position[2] * POS3D_SCALE
     );
+    if (!w.pos2d) w.pos2d = new THREE.Vector3();
   });
 }
 
@@ -914,11 +921,16 @@ function nodePosLabel(node, isRoot) {
 function makeLabel({ pos, text, gloss, isRoot }) {
   const div = document.createElement("div");
   div.className = "morph-lab" + (isRoot ? " morph-lab--root" : "");
+  /** @type {HTMLElement | null} */
+  let posEl = null;
+  /** @type {HTMLElement | null} */
+  let glossEl = null;
   if (pos) {
     const p = document.createElement("div");
     p.className = "morph-lab__pos";
     p.textContent = pos;
     div.appendChild(p);
+    posEl = p;
   }
   const w = document.createElement("div");
   w.className = "morph-lab__word";
@@ -930,9 +942,12 @@ function makeLabel({ pos, text, gloss, isRoot }) {
     ge.className = "morph-lab__gloss";
     ge.textContent = detail;
     div.appendChild(ge);
+    glossEl = ge;
   }
   const obj = new CSS2DObject(div);
   obj.userData.isRoot = isRoot;
+  obj.userData.lodEls = { pos: posEl, word: w, gloss: glossEl };
+  obj.userData.lodPrev = { g: -1, p: -1, w: -1 };
   return obj;
 }
 
@@ -1036,13 +1051,12 @@ function buildBridgeLines(scene) {
 }
 
 function updateBridgeLines(bridges) {
-  const v3a = new THREE.Vector3();
-  const v3b = new THREE.Vector3();
   bridges.children.forEach((line) => {
+    if (!line.visible) return;
     if (!line.userData.a || !line.userData.b) return;
-    line.userData.a.getWorldPosition(v3a);
-    line.userData.b.getWorldPosition(v3b);
-    line.geometry.setFromPoints([v3a, v3b]);
+    line.userData.a.getWorldPosition(_vBridgeA);
+    line.userData.b.getWorldPosition(_vBridgeB);
+    line.geometry.setFromPoints([_vBridgeA, _vBridgeB]);
   });
 }
 
@@ -1121,6 +1135,9 @@ function init(host, detailEl, selectEl, shellEl) {
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(host.clientWidth, host.clientHeight);
+  if ("outputColorSpace" in renderer && THREE.SRGBColorSpace) {
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+  }
   host.appendChild(renderer.domElement);
 
   const labelRenderer = new CSS2DRenderer();
@@ -1133,7 +1150,10 @@ function init(host, detailEl, selectEl, shellEl) {
 
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
-  controls.dampingFactor = 0.07;
+  controls.dampingFactor = 0.055;
+  controls.zoomSpeed = 0.85;
+  controls.rotateSpeed = 0.88;
+  controls.panSpeed = 0.75;
   controls.minDistance = 8;
   controls.maxDistance = 280;
   controls.enablePan = true;
@@ -1630,10 +1650,14 @@ function init(host, detailEl, selectEl, shellEl) {
   const intro = document.createElement("div");
   intro.className = "morph-intro";
   intro.innerHTML = `
-    <div class="morph-intro-grid" aria-hidden="true"></div>
-    <div class="morph-intro-title">Morphology</div>
-    <div class="morph-intro-sub">The Analysis of Words · Ch. 4</div>
-    <div class="morph-intro-tag">● Word trees · 3D &amp; whiteboard ●</div>
+    <div class="morph-intro-chrome">
+      <div class="morph-intro-grid" aria-hidden="true"></div>
+      <div class="morph-intro-head">
+        <div class="morph-intro-title">Morphology</div>
+        <div class="morph-intro-sub">The Analysis of Words · Ch. 4</div>
+        <div class="morph-intro-tag">● Word trees · 3D &amp; whiteboard ●</div>
+      </div>
+    </div>
   `;
   const skipBtn = document.createElement("button");
   skipBtn.type = "button";
@@ -1692,7 +1716,7 @@ function init(host, detailEl, selectEl, shellEl) {
 
   function animate() {
     requestAnimationFrame(animate);
-    const dt = clock.getDelta();
+    const dt = Math.min(clock.getDelta(), 0.064);
     introT += dt;
 
     if (!introDone && !REDUCED_MOTION) {
@@ -1815,24 +1839,58 @@ function init(host, detailEl, selectEl, shellEl) {
     if (introDone) applyVisualTheme(viewBlend);
 
     if (introDone) {
-      const camP = camera.position;
-      for (const w of WORDS) {
-        const grp = wordGroups[w.id];
-        if (!grp.visible) continue;
-        for (const mesh of grp.userData.meshes) {
-          const lab = mesh.userData.label;
-          if (!lab?.element) continue;
-          mesh.getWorldPosition(lodWorld);
-          const d = camP.distanceTo(lodWorld);
-          const glossEl = lab.element.querySelector(".morph-lab__gloss");
-          const posEl = lab.element.querySelector(".morph-lab__pos");
-          const wordEl = lab.element.querySelector(".morph-lab__word");
-          const gA = 1 - smoothstep((d - 14) / 22);
-          const pA = 1 - smoothstep((d - 30) / 30);
-          const wA = 1 - smoothstep((d - 50) / 42);
-          if (glossEl) glossEl.style.opacity = String(Math.max(0, Math.min(1, gA)));
-          if (posEl) posEl.style.opacity = String(Math.max(0, Math.min(1, pA)));
-          if (wordEl) wordEl.style.opacity = String(Math.max(0, Math.min(1, wA)));
+      const uLodView = smoothstep(viewBlend);
+      if (uLodView > 0.84) {
+        for (const w of WORDS) {
+          const grp = wordGroups[w.id];
+          if (!grp?.visible) continue;
+          for (const mesh of grp.userData.meshes) {
+            const lab = mesh.userData.label;
+            const els = lab?.userData?.lodEls;
+            const prev = lab?.userData?.lodPrev;
+            if (!els || !prev) continue;
+            if (els.gloss && Math.abs(prev.g - 1) > LOD_OPACITY_EPS) {
+              els.gloss.style.opacity = "1";
+              prev.g = 1;
+            }
+            if (els.pos && Math.abs(prev.p - 1) > LOD_OPACITY_EPS) {
+              els.pos.style.opacity = "1";
+              prev.p = 1;
+            }
+            if (els.word && Math.abs(prev.w - 1) > LOD_OPACITY_EPS) {
+              els.word.style.opacity = "1";
+              prev.w = 1;
+            }
+          }
+        }
+      } else {
+        const camP = camera.position;
+        for (const w of WORDS) {
+          const grp = wordGroups[w.id];
+          if (!grp?.visible) continue;
+          for (const mesh of grp.userData.meshes) {
+            const lab = mesh.userData.label;
+            const els = lab?.userData?.lodEls;
+            const prev = lab?.userData?.lodPrev;
+            if (!els || !prev) continue;
+            mesh.getWorldPosition(lodWorld);
+            const d = camP.distanceTo(lodWorld);
+            const gA = Math.max(0, Math.min(1, 1 - smoothstep((d - 14) / 22)));
+            const pA = Math.max(0, Math.min(1, 1 - smoothstep((d - 30) / 30)));
+            const wA = Math.max(0, Math.min(1, 1 - smoothstep((d - 50) / 42)));
+            if (els.gloss && Math.abs(gA - prev.g) > LOD_OPACITY_EPS) {
+              els.gloss.style.opacity = String(gA);
+              prev.g = gA;
+            }
+            if (els.pos && Math.abs(pA - prev.p) > LOD_OPACITY_EPS) {
+              els.pos.style.opacity = String(pA);
+              prev.p = pA;
+            }
+            if (els.word && Math.abs(wA - prev.w) > LOD_OPACITY_EPS) {
+              els.word.style.opacity = String(wA);
+              prev.w = wA;
+            }
+          }
         }
       }
     }

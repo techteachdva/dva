@@ -207,7 +207,13 @@
   height: min(88vh, 960px);
   touch-action: none;
   position: relative;
-  transition: background 0.2s ease;
+  transition: background 0.28s ease;
+  contain: layout style;
+}
+
+.morph-canvas-host canvas {
+  display: block;
+  vertical-align: top;
 }
 
 .morph-canvas-host--wb {
@@ -297,12 +303,20 @@
   bottom: 0;
   z-index: 5;
   padding: 0.75rem 1rem 1rem;
-  background: linear-gradient(to top, rgba(10, 14, 26, 0.97) 60%, transparent);
+  background: linear-gradient(to top, rgba(10, 14, 26, 0.94) 55%, rgba(10, 14, 26, 0) 100%);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   pointer-events: none;
 }
 
 .morph-ui-panel * {
   pointer-events: auto;
+}
+
+.morphology-shell--wb .morph-ui-panel {
+  background: linear-gradient(to top, rgba(255, 255, 255, 0.94) 50%, rgba(255, 255, 255, 0) 100%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .morph-ui-row {
@@ -340,7 +354,17 @@
   background: rgba(12, 24, 44, 0.9);
   color: var(--morph-chrome);
   cursor: pointer;
-  transition: background 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
+  transition: background 0.22s ease, color 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease,
+    transform 0.18s ease;
+}
+
+.morph-view-btn:focus-visible {
+  outline: 2px solid var(--morph-gold);
+  outline-offset: 2px;
+}
+
+.morph-view-btn:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
 .morph-view-btn:hover {
@@ -381,6 +405,16 @@
   color: #cbd5e1;
   cursor: pointer;
   margin-left: 0.25rem;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease, transform 0.15s ease;
+}
+
+.morph-fs-btn:focus-visible {
+  outline: 2px solid var(--morph-gold);
+  outline-offset: 2px;
+}
+
+.morph-fs-btn:active {
+  transform: scale(0.96);
 }
 
 .morph-fs-btn:hover {
@@ -523,6 +557,18 @@
   font-size: 0.95rem;
   cursor: pointer;
   max-width: min(100%, 22rem);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.morph-select:hover {
+  border-color: rgba(0, 255, 200, 0.55);
+}
+
+.morph-select:focus-visible {
+  outline: 2px solid var(--morph-gold);
+  outline-offset: 2px;
+  border-color: rgba(255, 208, 96, 0.65);
+  box-shadow: 0 0 0 1px rgba(255, 208, 96, 0.25);
 }
 
 .morphology-shell--wb .morph-select {
@@ -625,11 +671,13 @@
   max-width: 44rem;
   margin: 1.25rem auto 0;
   padding: 1rem 1.25rem;
-  background: rgba(12, 20, 36, 0.85);
-  border: 1px solid rgba(255, 106, 213, 0.25);
+  background: rgba(12, 20, 36, 0.88);
+  border: 1px solid rgba(255, 106, 213, 0.28);
   border-radius: 12px;
   font-size: 0.95rem;
   line-height: 1.5;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
 .morph-detail .morph-bracket {
@@ -645,20 +693,29 @@
   margin: 0.5rem 0 0;
 }
 
-/* Intro overlay — late-90s educational CGI vibe */
+/* Intro: brief title on a veil, then fade so the 3D cinematic stays visible */
 .morph-intro {
   position: absolute;
   inset: 0;
   z-index: 20;
+  overflow: hidden;
+  pointer-events: none;
+  background: transparent;
+}
+
+.morph-intro-chrome {
+  position: absolute;
+  inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   background: radial-gradient(circle at 50% 35%, #1a3a5c 0%, #070b14 62%);
-  overflow: hidden;
+  pointer-events: none;
+  animation: morph-intro-chrome-out 1.45s ease-out forwards;
 }
 
-.morph-intro::before {
+.morph-intro-chrome::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -671,6 +728,26 @@
   );
   pointer-events: none;
   opacity: 0.5;
+}
+
+@keyframes morph-intro-chrome-out {
+  0%,
+  34% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+
+.morph-intro-head {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .morph-intro-grid {
@@ -688,8 +765,6 @@
 }
 
 .morph-intro-title {
-  position: relative;
-  z-index: 2;
   font-size: clamp(1.4rem, 4vw, 2.35rem);
   font-weight: 800;
   text-transform: uppercase;
@@ -697,12 +772,9 @@
   text-align: center;
   color: #e8fbff;
   text-shadow: 0 0 24px rgba(0, 255, 255, 0.75), 0 0 2px #000;
-  animation: morph-title-pulse 2.2s ease-in-out infinite;
 }
 
 .morph-intro-sub {
-  position: relative;
-  z-index: 2;
   margin-top: 1rem;
   font-size: clamp(0.75rem, 2vw, 1rem);
   letter-spacing: 0.28em;
@@ -712,22 +784,10 @@
 }
 
 .morph-intro-tag {
-  position: relative;
-  z-index: 2;
   margin-top: 2rem;
   font-size: 0.7rem;
   letter-spacing: 0.35em;
   color: rgba(200, 244, 255, 0.55);
-}
-
-@keyframes morph-title-pulse {
-  0%,
-  100% {
-    filter: brightness(1);
-  }
-  50% {
-    filter: brightness(1.15);
-  }
 }
 
 .morph-skip {
@@ -735,6 +795,7 @@
   bottom: 1.25rem;
   right: 1.25rem;
   z-index: 25;
+  pointer-events: auto;
   padding: 0.5rem 1rem;
   font-size: 0.75rem;
   font-weight: 700;
@@ -752,8 +813,32 @@
   filter: brightness(1.08);
 }
 
+.morph-skip:focus-visible {
+  outline: 3px solid #0a0e1a;
+  outline-offset: 2px;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .morph-intro-title {
-    animation: none;
+  .morph-ui-panel,
+  .morphology-shell--wb .morph-ui-panel {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .morph-view-btn,
+  .morph-fs-btn,
+  .morph-select {
+    transition: none;
+  }
+
+  .morph-intro-chrome {
+    animation: morph-intro-chrome-out-rm 0.05s ease-out forwards;
+  }
+
+  @keyframes morph-intro-chrome-out-rm {
+    to {
+      opacity: 0;
+      visibility: hidden;
+    }
   }
 }
