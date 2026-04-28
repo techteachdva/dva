@@ -817,25 +817,48 @@ function assignWhiteboardIsolate(wordId) {
   });
 }
 
-/** Vertical gap between levels (root at top → morphemes cascade downward) */
-const TREE_DEPTH_STEP = 5.35;
+/** Vertical gap between levels (apex at top → constituents branch outward in XZ) */
+const TREE_DEPTH_STEP = 5.15;
+/** Initial ring radius from apex; children recurse in smaller wedges for a fractal, bushy silhouette */
+const TREE_LAYOUT_RADIUS0 = 10.2;
 
-function layoutSubtree(node, depth, xCenter, spread) {
-  if (!node.children || node.children.length === 0) {
-    return {
-      width: spread,
-      positions: [{ node, x: xCenter, y: -depth * TREE_DEPTH_STEP, z: 0, depth }],
-    };
+/** Lateral kick so unary chains (one child) do not stack in a straight vertical “pole” */
+function unaryBranchJitter(depth) {
+  return Math.sin(depth * 1.41) * 0.62 + ((depth % 3) - 1) * 0.32;
+}
+
+/**
+ * 3D radial layout: each node’s children live on a ring below it, spaced within a wedge.
+ * Full circle at the root; nested wedges give branching, non-collinear edges.
+ * @returns {Array<{ node: object, x: number, y: number, z: number, depth: number }>}
+ */
+function layoutSubtree(node, depth, x, y, z, wedgeStart, wedgeSize, radius) {
+  const positions = [{ node, x, y, z, depth }];
+  const children = node.children || [];
+  if (!children.length) return positions;
+
+  const yChild = y - TREE_DEPTH_STEP;
+  const n = children.length;
+  const r = Math.max(3.65, Math.min(13.2, radius * (0.58 + 0.12 * n)));
+  const wedge = Math.max(wedgeSize, 0.52 * n);
+
+  for (let i = 0; i < n; i++) {
+    const slice = wedge / n;
+    const t0 = wedgeStart + i * slice;
+    const t1 = t0 + slice;
+    let theta = (t0 + t1) * 0.5;
+    if (n === 1) {
+      theta = wedgeStart + wedge * 0.5 + unaryBranchJitter(depth);
+    }
+    const cx = x + Math.cos(theta) * r;
+    const cz = z + Math.sin(theta) * r;
+
+    const subW = Math.min(Math.PI * 1.42, slice * 1.72);
+    const subStart = t0 - (subW - slice) * 0.14;
+
+    positions.push(...layoutSubtree(children[i], depth + 1, cx, yChild, cz, subStart, subW, r * 1.06));
   }
-  const childSpread = spread / node.children.length;
-  const allPos = [{ node, x: xCenter, y: -depth * TREE_DEPTH_STEP, z: 0, depth }];
-  let cursor = xCenter - spread / 2 + childSpread / 2;
-  for (const c of node.children) {
-    const sub = layoutSubtree(c, depth + 1, cursor, childSpread * 0.9);
-    allPos.push(...sub.positions);
-    cursor += childSpread;
-  }
-  return { width: spread, positions: allPos };
+  return positions;
 }
 
 function sphere(r, color, roughness, metalness) {
@@ -877,10 +900,11 @@ function parseCategoryFromGloss(gloss) {
   const head = (i >= 0 ? gloss.slice(0, i) : gloss).trim();
   const h = head.toLowerCase();
   if (h.includes("prep") && h.includes("adv")) return "Prep · Adv";
+  if (h.includes("function") && (h.includes("prep") || h.includes("adv"))) return "Function";
   if (h.startsWith("noun")) return "Noun";
   if (h.startsWith("adjective")) return "Adjective";
   if (h.startsWith("adj")) return "Adjective";
-  if (h.includes("verb")) return "Verb";
+  if (h.includes("verb") && !h.includes("adverb")) return "Verb";
   if (h.includes("adverb")) return "Adverb";
   if (h.includes("preposition")) return "Preposition";
   const word = head.split(/[\s/]+/)[0];
@@ -895,6 +919,11 @@ function parseCategoryFromGloss(gloss) {
 function nodePosLabel(node, isRoot) {
   if (node.pos) return node.pos;
   if (isRoot) return parseCategoryFromGloss(node.gloss);
+  const g0 = (node.gloss || "").toLowerCase();
+  if (g0.includes("adjective stem")) return "Adj. stem";
+  if (g0.includes("noun stem")) return "Noun stem";
+  if (g0.includes("verb stem")) return "Verb stem";
+  if (g0.startsWith("stem") || g0.includes("stem:")) return "Stem";
   if (node.morphemeKey) {
     if (node.morphemeKey.startsWith("pfx:")) return "Prefix";
     if (node.morphemeKey.startsWith("sfx:")) return "Suffix";
@@ -921,7 +950,7 @@ function nodePosLabel(node, isRoot) {
 
 function makeLabel({ pos, text, gloss, isRoot }) {
   const div = document.createElement("div");
-  div.className = "morph-lab" + (isRoot ? " morph-lab--root" : "");
+  div.className = "morph-lab" + (isRoot ? " morph-lab--root morph-lab--apex" : "");
   /** @type {HTMLElement | null} */
   let posEl = null;
   /** @type {HTMLElement | null} */
@@ -958,15 +987,14 @@ function buildWordGroup(word) {
   group.userData.meshes = [];
   group.userData.lines = [];
 
-  const spread = 16.5;
-  const { positions } = layoutSubtree(word.tree, 0, 0, spread);
+  const positions = layoutSubtree(word.tree, 0, 0, 0, 0, 0, Math.PI * 2, TREE_LAYOUT_RADIUS0);
   const meshes = new Map();
 
   for (const p of positions) {
     const { node, x, y, z, depth: treeDepth } = p;
     const isRoot = node === word.tree;
     const posLabel = nodePosLabel(node, isRoot);
-    const r = isRoot ? 0.84 : node.morphemeKey ? 0.55 : 0.48;
+    const r = isRoot ? 0.88 : node.morphemeKey ? 0.56 : 0.49;
     let hue = 0.38;
     if (isRoot) hue = 0.11;
     else if (node.morphemeKey) {
@@ -998,8 +1026,11 @@ function buildWordGroup(word) {
       gloss: node.gloss || "",
       isRoot,
     });
-    const lift = r + (isRoot ? 1.02 : 0.48);
-    label.position.set(x, y - lift, z);
+    const lift = r + (isRoot ? 1.12 : 0.55);
+    const tx = 0.24;
+    const ox = isRoot ? 0 : -z * tx;
+    const oz = isRoot ? 0 : x * tx;
+    label.position.set(x + ox, y - lift, z + oz);
     group.add(label);
     mesh.userData.label = label;
   }
@@ -1486,18 +1517,12 @@ function init(host, detailEl, selectEl, shellEl) {
 
   const fsBtn = document.getElementById("morph-btn-fs");
   const fsTarget = shellEl || host;
-  if (fsBtn && fsTarget) {
-    fsBtn.addEventListener("click", () => {
-      if (document.fullscreenElement) void document.exitFullscreen();
-      else void fsTarget.requestFullscreen?.();
-    });
-  }
 
-  renderer.domElement.addEventListener("dblclick", (ev) => {
+  function handleCanvasNodePick(clientX, clientY) {
     if (!controls.enabled) return;
     const rect = renderer.domElement.getBoundingClientRect();
-    pointerNdc.x = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
-    pointerNdc.y = -((ev.clientY - rect.top) / rect.height) * 2 + 1;
+    pointerNdc.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+    pointerNdc.y = -((clientY - rect.top) / rect.height) * 2 + 1;
     raycaster.setFromCamera(pointerNdc, camera);
     const meshes = [];
     for (const w of WORDS) {
@@ -1543,7 +1568,35 @@ function init(host, detailEl, selectEl, shellEl) {
       const mk = mesh.userData.morphemeKey;
       if (mk) showMorphemePop(mk);
     }
+  }
+
+  renderer.domElement.addEventListener("dblclick", (ev) => {
+    handleCanvasNodePick(ev.clientX, ev.clientY);
   });
+
+  let morphTapLastT = 0;
+  let morphTapX = 0;
+  let morphTapY = 0;
+  renderer.domElement.addEventListener(
+    "touchend",
+    (ev) => {
+      if (!controls.enabled || ev.changedTouches.length !== 1) return;
+      const t = ev.changedTouches[0];
+      const now = performance.now();
+      const dx = t.clientX - morphTapX;
+      const dy = t.clientY - morphTapY;
+      if (now - morphTapLastT < 320 && dx * dx + dy * dy < 900) {
+        ev.preventDefault();
+        handleCanvasNodePick(t.clientX, t.clientY);
+        morphTapLastT = 0;
+        return;
+      }
+      morphTapLastT = now;
+      morphTapX = t.clientX;
+      morphTapY = t.clientY;
+    },
+    { passive: false }
+  );
 
   const btn3d = document.getElementById("morph-btn-3d");
   const btn2d = document.getElementById("morph-btn-2d");
@@ -1726,6 +1779,102 @@ function init(host, detailEl, selectEl, shellEl) {
   }
   if (window.visualViewport) {
     window.visualViewport.addEventListener("resize", resizeCanvasToHost);
+  }
+
+  /** iOS / many mobile browsers: no element fullscreen — use fixed “immersive” shell instead */
+  let morphImmersiveCss = false;
+
+  function getFullscreenElement() {
+    const d = document;
+    return (
+      d.fullscreenElement ||
+      /** @type {Document & { webkitFullscreenElement?: Element | null }} */ (d).webkitFullscreenElement ||
+      null
+    );
+  }
+
+  function requestFullscreenApi(/** @type {HTMLElement} */ el) {
+    if (typeof el.requestFullscreen === "function") return el.requestFullscreen();
+    const wk =
+      /** @type {HTMLElement & { webkitRequestFullscreen?: () => Promise<void> }} */ (el).webkitRequestFullscreen;
+    if (typeof wk === "function") return wk.call(el);
+    return Promise.reject(new Error("fullscreen"));
+  }
+
+  function exitFullscreenApi() {
+    const d = document;
+    if (typeof d.exitFullscreen === "function") return d.exitFullscreen();
+    const wk =
+      /** @type {Document & { webkitExitFullscreen?: () => Promise<void> }} */ (d).webkitExitFullscreen;
+    if (typeof wk === "function") return wk.call(d);
+    return Promise.resolve();
+  }
+
+  function setMorphImmersiveCss(on) {
+    morphImmersiveCss = on;
+    const root = document.documentElement;
+    if (fsTarget) fsTarget.classList.toggle("morphology-shell--immersive", on);
+    root.classList.toggle("morph-immersive-open", on);
+    requestAnimationFrame(() => resizeCanvasToHost());
+  }
+
+  function isMorphImmersive() {
+    return Boolean(getFullscreenElement() || morphImmersiveCss);
+  }
+
+  function syncFsButton() {
+    if (!fsBtn) return;
+    const on = isMorphImmersive();
+    fsBtn.textContent = on ? "Close" : "Fullscreen";
+    fsBtn.setAttribute("aria-pressed", on ? "true" : "false");
+    fsBtn.title = on ? "Exit full screen" : "Full screen (or fill screen on mobile)";
+  }
+
+  async function toggleMorphImmersive() {
+    if (isMorphImmersive()) {
+      if (getFullscreenElement()) await exitFullscreenApi().catch(() => {});
+      setMorphImmersiveCss(false);
+      syncFsButton();
+      resizeCanvasToHost();
+      return;
+    }
+    const el = /** @type {HTMLElement} */ (fsTarget);
+    const canApi =
+      typeof el.requestFullscreen === "function" ||
+      typeof /** @type {HTMLElement & { webkitRequestFullscreen?: unknown }} */ (el).webkitRequestFullscreen ===
+        "function";
+    if (canApi) {
+      try {
+        await requestFullscreenApi(el);
+        syncFsButton();
+        window.scrollTo(0, 0);
+        resizeCanvasToHost();
+        return;
+      } catch {
+        /* Mobile Safari often rejects non-video fullscreen — fall through */
+      }
+    }
+    setMorphImmersiveCss(true);
+    syncFsButton();
+    window.scrollTo(0, 0);
+  }
+
+  if (fsBtn && fsTarget) {
+    fsBtn.addEventListener("click", () => void toggleMorphImmersive());
+    const onFsEvent = () => {
+      if (!getFullscreenElement()) setMorphImmersiveCss(false);
+      syncFsButton();
+      resizeCanvasToHost();
+    };
+    document.addEventListener("fullscreenchange", onFsEvent);
+    document.addEventListener("webkitfullscreenchange", onFsEvent);
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && morphImmersiveCss) {
+        setMorphImmersiveCss(false);
+        syncFsButton();
+        resizeCanvasToHost();
+      }
+    });
   }
 
   function animate() {

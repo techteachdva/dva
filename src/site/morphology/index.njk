@@ -30,7 +30,7 @@ contentClasses: morphology-page
           3D garden
         </button>
         <button type="button" id="morph-btn-2d" class="morph-view-btn" aria-pressed="false">Whiteboard</button>
-        <button type="button" id="morph-btn-fs" class="morph-fs-btn" title="Fullscreen">Fullscreen</button>
+        <button type="button" id="morph-btn-fs" class="morph-fs-btn" title="Full screen">Fullscreen</button>
       </div>
       <div class="morph-ui-row">
         <label for="morph-word-select">Word tree</label>
@@ -38,11 +38,13 @@ contentClasses: morphology-page
       </div>
       <p id="morph-hint" class="morph-hint">
         <strong>Garden:</strong> choose <em>All words — garden</em> to see every tree; pick one word to isolate it.
-        <strong>3D:</strong> orbit · zoom · labels fade with distance (far = spheres only). Double-click a node to
-        orbit that morpheme (double-click again to stop drift). Magenta = shared morphemes; faint rays = other words
-        when isolated.
-        <strong>Whiteboard:</strong> trees sit on a circle; double-click a node to trim the tree to that depth and list
-        words sharing that morpheme.
+        <strong>3D:</strong> drag to orbit · pinch/spread to zoom · labels fade with distance (far = spheres only).
+        <strong>Double-tap</strong> or double-click a node to orbit that morpheme (again to stop drift). Magenta =
+        shared morphemes; faint rays = other words when isolated.
+        <strong>Whiteboard:</strong> trees sit on a circle; double-tap or double-click a node to trim the tree and list
+        shared morphemes.
+        <strong>Mobile:</strong> <em>Fullscreen</em> uses real fullscreen when the browser allows; otherwise it fills
+        the viewport (tap <em>Close</em> or the back gesture to exit).
       </p>
     </div>
   </div>
