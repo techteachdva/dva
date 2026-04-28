@@ -221,6 +221,26 @@
   user-select: none;
 }
 
+/* Grammatical category (Noun, Prefix, Suffix, …) — textbook / Wikipedia-style apex */
+.morph-canvas-host .morph-lab__pos {
+  font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #b8f0ff;
+  text-shadow: 0 0 10px rgba(0, 220, 255, 0.85), 0 1px 3px #000;
+  line-height: 1.2;
+  margin-bottom: 3px;
+}
+
+.morph-canvas-host .morph-lab--root .morph-lab__pos {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  color: #fff4c2;
+  text-shadow: 0 0 12px rgba(255, 220, 120, 0.9), 0 1px 3px #000;
+}
+
 .morph-canvas-host .morph-lab__word {
   font-family: system-ui, "Segoe UI", Roboto, sans-serif;
   font-size: 15px;
@@ -242,6 +262,18 @@
   line-height: 1.25;
   margin-left: auto;
   margin-right: auto;
+}
+
+.morph-canvas-host--wb .morph-lab__pos {
+  color: #0d5c6e !important;
+  text-shadow: none !important;
+  font-size: 10px !important;
+  letter-spacing: 0.12em !important;
+}
+
+.morph-canvas-host--wb .morph-lab--root .morph-lab__pos {
+  color: #92400e !important;
+  font-size: 11px !important;
 }
 
 .morph-canvas-host--wb .morph-lab__word {

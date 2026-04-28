@@ -480,7 +480,8 @@ function assignGrid2d() {
   });
 }
 
-const TREE_DEPTH_STEP = 4.95;
+/** Vertical gap between levels (root at top → morphemes cascade downward) */
+const TREE_DEPTH_STEP = 5.35;
 
 function layoutSubtree(node, depth, xCenter, spread) {
   if (!node.children || node.children.length === 0) {
@@ -521,17 +522,83 @@ function edgeLine(a, b, colorHex, opacity) {
   return new THREE.Line(geo, mat);
 }
 
-function makeLabel(text, sub, isRoot) {
+/** Gloss text after the first “category:” segment (avoids repeating Noun/Prefix in the subtitle). */
+function glossDetail(gloss) {
+  if (!gloss) return "";
+  const i = gloss.indexOf(":");
+  if (i < 0) return gloss.trim();
+  return gloss.slice(i + 1).trim();
+}
+
+/** Part of speech for the whole word (apex node), from the gloss head before “:”. */
+function parseCategoryFromGloss(gloss) {
+  if (!gloss) return "Word";
+  const i = gloss.indexOf(":");
+  const head = (i >= 0 ? gloss.slice(0, i) : gloss).trim();
+  const h = head.toLowerCase();
+  if (h.includes("prep") && h.includes("adv")) return "Prep · Adv";
+  if (h.startsWith("noun")) return "Noun";
+  if (h.startsWith("adjective")) return "Adjective";
+  if (h.startsWith("adj")) return "Adjective";
+  if (h.includes("verb")) return "Verb";
+  if (h.includes("adverb")) return "Adverb";
+  if (h.includes("preposition")) return "Preposition";
+  const word = head.split(/[\s/]+/)[0];
+  if (!word) return "Word";
+  return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+}
+
+/**
+ * Syntactic/morphological category for a node (Wikipedia-style tree labels).
+ * Optional `node.pos` in data overrides.
+ */
+function nodePosLabel(node, isRoot) {
+  if (node.pos) return node.pos;
+  if (isRoot) return parseCategoryFromGloss(node.gloss);
+  if (node.morphemeKey) {
+    if (node.morphemeKey.startsWith("pfx:")) return "Prefix";
+    if (node.morphemeKey.startsWith("sfx:")) return "Suffix";
+    if (node.morphemeKey.startsWith("root:")) return "Root";
+    if (node.morphemeKey.startsWith("lex:")) return "Lexeme";
+  }
+  const g = (node.gloss || "").toLowerCase();
+  if (g.includes("prefix")) return "Prefix";
+  if (g.includes("suffix")) return "Suffix";
+  if (g.includes("free morpheme")) return "Lexeme";
+  if (g.includes("bound root")) return "Root";
+  if (g.includes("verb stem")) return "Verb stem";
+  if (g.includes("noun stem")) return "Noun stem";
+  if (g.includes("adjective stem")) return "Adj. stem";
+  if (g.startsWith("verb:") || g.startsWith("verb ")) return "Verb";
+  if (g.startsWith("noun:") || g.startsWith("noun ")) return "Noun";
+  if (g.startsWith("adjective:") || g.startsWith("adj:")) return "Adjective";
+  if (g.includes("stem")) return "Stem";
+  const t = node.text || "";
+  if (t.startsWith("-")) return "Suffix";
+  if (t.endsWith("-")) return "Prefix";
+  return "Stem";
+}
+
+function makeLabel({ pos, text, gloss, isRoot }) {
   const div = document.createElement("div");
-  div.className = "morph-lab";
+  div.className = "morph-lab" + (isRoot ? " morph-lab--root" : "");
+  if (pos) {
+    const p = document.createElement("div");
+    p.className = "morph-lab__pos";
+    p.textContent = pos;
+    div.appendChild(p);
+  }
   const w = document.createElement("div");
   w.className = "morph-lab__word";
   w.textContent = text;
-  const g = document.createElement("div");
-  g.className = "morph-lab__gloss";
-  g.textContent = sub || "";
   div.appendChild(w);
-  div.appendChild(g);
+  const detail = glossDetail(gloss);
+  if (detail) {
+    const ge = document.createElement("div");
+    ge.className = "morph-lab__gloss";
+    ge.textContent = detail;
+    div.appendChild(ge);
+  }
   const obj = new CSS2DObject(div);
   obj.userData.isRoot = isRoot;
   return obj;
@@ -550,14 +617,22 @@ function buildWordGroup(word) {
   for (const p of positions) {
     const { node, x, y, z } = p;
     const isRoot = node === word.tree;
-    const r = isRoot ? 0.78 : node.morphemeKey ? 0.55 : 0.48;
-    const hue = node.morphemeKey
-      ? node.morphemeKey.startsWith("pfx:")
-        ? 0.56
-        : node.morphemeKey.startsWith("sfx:")
-          ? 0.82
-          : 0.14
-      : 0.7;
+    const posLabel = nodePosLabel(node, isRoot);
+    const r = isRoot ? 0.84 : node.morphemeKey ? 0.55 : 0.48;
+    let hue = 0.38;
+    if (isRoot) hue = 0.11;
+    else if (node.morphemeKey) {
+      if (node.morphemeKey.startsWith("pfx:")) hue = 0.56;
+      else if (node.morphemeKey.startsWith("sfx:")) hue = 0.82;
+      else if (node.morphemeKey.startsWith("lex:")) hue = 0.22;
+      else hue = 0.14;
+    } else {
+      const pl = posLabel.toLowerCase();
+      if (pl.includes("prefix")) hue = 0.56;
+      else if (pl.includes("suffix")) hue = 0.82;
+      else if (pl.includes("lexeme")) hue = 0.22;
+      else if (pl.includes("root")) hue = 0.14;
+    }
     const col = new THREE.Color().setHSL(hue, 0.72, 0.52);
     const mesh = sphere(r, col);
     mesh.position.set(x, y, z);
@@ -568,8 +643,13 @@ function buildWordGroup(word) {
     group.userData.meshes.push(mesh);
     if (node.morphemeKey) registerMorpheme(node.morphemeKey, mesh, word.id);
 
-    const label = makeLabel(node.text, node.gloss || "", isRoot);
-    const lift = r + (isRoot ? 0.55 : 0.42);
+    const label = makeLabel({
+      pos: posLabel,
+      text: node.text,
+      gloss: node.gloss || "",
+      isRoot,
+    });
+    const lift = r + (isRoot ? 1.02 : 0.48);
     label.position.set(x, y - lift, z);
     group.add(label);
     mesh.userData.label = label;
