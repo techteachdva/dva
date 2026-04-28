@@ -8,6 +8,12 @@ import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer
 const REDUCED_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const TRANSITION_SEC = REDUCED_MOTION ? 0.01 : 1.35;
 
+/** Select “all trees” instead of isolating one */
+const GARDEN_SELECT = "__garden__";
+
+/** Whiteboard: trees on a circle (garden) vs one tree centered (isolate) */
+const WB_CIRCLE_RADIUS = 92;
+
 /** @type {Record<string, { mesh: THREE.Mesh, wordId: string }[]>} */
 const morphemeRegistry = {};
 
@@ -462,21 +468,344 @@ const WORDS = [
       ],
     },
   },
+  {
+    id: "belief",
+    label: "Belief",
+    bracket: "[be- + lief]",
+    note: "A textbook-style <strong>bound root</strong> analysis: <strong>be-</strong> patterns with other <em>be-</em> + stem words (compare <em>before</em>, <em>believe</em>). The second piece is not a free modern English word on its own.",
+    position: [11, 0, 50],
+    tree: {
+      text: "belief",
+      gloss: "noun: conviction; acceptance as true",
+      children: [
+        {
+          text: "be-",
+          gloss: "prefix: fossilized element in a set of stems",
+          morphemeKey: "pfx:be-",
+          children: [],
+        },
+        {
+          text: "lief",
+          gloss: "bound root: dear, willing (archaic; cf. lief, believe)",
+          morphemeKey: "root:lief",
+          children: [],
+        },
+      ],
+    },
+  },
+  {
+    id: "believe",
+    label: "Believe",
+    bracket: "[be- + lieve]",
+    note: "Parallel to <em>belief</em>: same <strong>be-</strong> prefix family, different bound stem. Useful for showing how <strong>related words</strong> can share a formative without sharing every morpheme.",
+    position: [-11, 0, 50],
+    tree: {
+      text: "believe",
+      gloss: "verb: hold as true; trust",
+      children: [
+        {
+          text: "be-",
+          gloss: "prefix: fossilized element in a set of stems",
+          morphemeKey: "pfx:be-",
+          children: [],
+        },
+        {
+          text: "lieve",
+          gloss: "bound root: dear, wish (cf. belief)",
+          morphemeKey: "root:lieve",
+          children: [],
+        },
+      ],
+    },
+  },
+  {
+    id: "endure",
+    label: "Endure",
+    bracket: "[en- + dure]",
+    note: "The productive <strong>en-</strong> / <strong>em-</strong> pattern (Table 4.2 family) attaches to stems to form verbs such as <em>enable</em>, <em>enrich</em>. The stem here is a Latinate <strong>bound root</strong>.",
+    position: [-54, 0, 6],
+    tree: {
+      text: "endure",
+      gloss: "verb: last through; tolerate",
+      children: [
+        {
+          text: "en-",
+          gloss: "prefix: in, into; make (Latinate verb-forming)",
+          morphemeKey: "pfx:en-",
+          children: [],
+        },
+        {
+          text: "dure",
+          gloss: "bound root: hard, lasting (cf. durable)",
+          morphemeKey: "root:dure",
+          children: [],
+        },
+      ],
+    },
+  },
+  {
+    id: "enable",
+    label: "Enable",
+    bracket: "[en- + able]",
+    note: "Shares the same <strong>en-</strong> prefix frame as <em>endure</em>. The stem <em>able</em> ties the word to the <strong>-able</strong> family (compare <em>inhospitable</em>, <em>unlockable</em>).",
+    position: [-58, 0, -22],
+    tree: {
+      text: "enable",
+      gloss: "verb: make able; authorize",
+      children: [
+        {
+          text: "en-",
+          gloss: "prefix: in, into; make (Latinate verb-forming)",
+          morphemeKey: "pfx:en-",
+          children: [],
+        },
+        {
+          text: "able",
+          gloss: "adjective stem: capable (related to the -able suffix family)",
+          children: [],
+        },
+      ],
+    },
+  },
+  {
+    id: "freedom",
+    label: "Freedom",
+    bracket: "[free + -dom]",
+    note: "The noun-forming suffix <strong>-dom</strong> (‘state, realm, condition’) builds an abstract noun on an adjective or noun stem—parallel examples include <em>wisdom</em> and <em>kingdom</em>.",
+    position: [54, 0, 6],
+    tree: {
+      text: "freedom",
+      gloss: "noun: liberty; state of being free",
+      children: [
+        {
+          text: "free",
+          gloss: "free morpheme: not bound; without cost",
+          morphemeKey: "lex:free",
+          children: [],
+        },
+        {
+          text: "-dom",
+          gloss: "suffix: state or realm (derivational)",
+          morphemeKey: "sfx:-dom",
+          children: [],
+        },
+      ],
+    },
+  },
+  {
+    id: "wisdom",
+    label: "Wisdom",
+    bracket: "[wise + -dom]",
+    note: "Shares <strong>-dom</strong> with <em>freedom</em> and <strong>wise</strong> with <em>wiser</em> and <em>unwise</em>—a compact word-family cluster for teaching derivational networks.",
+    position: [36, 0, 44],
+    tree: {
+      text: "wisdom",
+      gloss: "noun: good judgment; learnedness",
+      children: [
+        {
+          text: "wise",
+          gloss: "free morpheme: showing good judgment",
+          morphemeKey: "lex:wise",
+          children: [],
+        },
+        {
+          text: "-dom",
+          gloss: "suffix: state or realm (derivational)",
+          morphemeKey: "sfx:-dom",
+          children: [],
+        },
+      ],
+    },
+  },
+  {
+    id: "kingdom",
+    label: "Kingdom",
+    bracket: "[king + -dom]",
+    note: "Another <strong>-dom</strong> noun. The left element is a free noun stem; the right element fixes the ‘realm / domain’ reading—useful for comparing compound-like stress and structure with <em>freedom</em>.",
+    position: [-6, 0, 54],
+    tree: {
+      text: "kingdom",
+      gloss: "noun: realm ruled by a king; domain",
+      children: [
+        {
+          text: "king",
+          gloss: "free morpheme: monarch",
+          morphemeKey: "lex:king",
+          children: [],
+        },
+        {
+          text: "-dom",
+          gloss: "suffix: state or realm (derivational)",
+          morphemeKey: "sfx:-dom",
+          children: [],
+        },
+      ],
+    },
+  },
+  {
+    id: "wiser",
+    label: "Wiser",
+    bracket: "[wise + -er]",
+    note: "Inflectional <strong>-er</strong> comparative on an adjective stem. The same written <strong>-er</strong> also appears in <strong>agentive</strong> derivations (e.g. <em>finisher</em>)—a classic classroom contrast.",
+    position: [6, 0, -52],
+    tree: {
+      text: "wiser",
+      gloss: "adjective: more wise (comparative)",
+      children: [
+        {
+          text: "wise",
+          gloss: "free morpheme: showing good judgment",
+          morphemeKey: "lex:wise",
+          children: [],
+        },
+        {
+          text: "-er",
+          gloss: "suffix: comparative (inflectional)",
+          morphemeKey: "sfx:-er",
+          children: [],
+        },
+      ],
+    },
+  },
+  {
+    id: "unwise",
+    label: "Unwise",
+    bracket: "[un- + wise]",
+    note: "Shares <strong>un-</strong> with the <em>unlockable</em> trees and <strong>wise</strong> with <em>wisdom</em> / <em>wiser</em>.",
+    position: [26, 0, -40],
+    tree: {
+      text: "unwise",
+      gloss: "adjective: not wise",
+      children: [
+        {
+          text: "un-",
+          gloss: "prefix: not, opposite of",
+          morphemeKey: "pfx:un-",
+          children: [],
+        },
+        {
+          text: "wise",
+          gloss: "free morpheme: showing good judgment",
+          morphemeKey: "lex:wise",
+          children: [],
+        },
+      ],
+    },
+  },
+  {
+    id: "constitution",
+    label: "Constitution",
+    bracket: "[[con- + stitut] + -tion]",
+    note: "Latinate bracketing: <strong>con-</strong> + <strong>stitut</strong> ‘set, place’ + nominalizing <strong>-tion</strong>. Bridges to <em>convince</em> on the prefix and to <em>revolution</em> on <strong>-tion</strong>.",
+    position: [-34, 0, -46],
+    tree: {
+      text: "constitution",
+      gloss: "noun: makeup of something; founding charter",
+      children: [
+        {
+          text: "-tion",
+          gloss: "suffix: action or result (derivational)",
+          morphemeKey: "sfx:-tion",
+          children: [
+            {
+              text: "constitut",
+              gloss: "stem: set together; establish",
+              children: [
+                {
+                  text: "con-",
+                  gloss: "prefix: with, together (Latinate)",
+                  morphemeKey: "pfx:con-",
+                  children: [],
+                },
+                {
+                  text: "stitut",
+                  gloss: "bound root: set, place (as in institute)",
+                  morphemeKey: "root:stitut",
+                  children: [],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    id: "convince",
+    label: "Convince",
+    bracket: "[con- + vince]",
+    note: "Shares <strong>con-</strong> with <em>constitution</em>. The bound stem is not a free modern English word—typical of Latinate vocabulary in academic registers.",
+    position: [-26, 0, 40],
+    tree: {
+      text: "convince",
+      gloss: "verb: persuade by argument or evidence",
+      children: [
+        {
+          text: "con-",
+          gloss: "prefix: with, together (Latinate)",
+          morphemeKey: "pfx:con-",
+          children: [],
+        },
+        {
+          text: "vince",
+          gloss: "bound root: conquer, overcome (cf. invincible)",
+          morphemeKey: "root:vince",
+          children: [],
+        },
+      ],
+    },
+  },
+  {
+    id: "finisher",
+    label: "Finisher",
+    bracket: "[finish + -er]",
+    note: "Derivational <strong>-er</strong> forming an agent noun from a verb stem—compare textbook examples like <em>teacher</em> from <em>teach</em>. Contrast with comparative <strong>-er</strong> on <em>wiser</em>.",
+    position: [44, 0, 34],
+    tree: {
+      text: "finisher",
+      gloss: "noun: one that finishes; final action or blow",
+      children: [
+        {
+          text: "finish",
+          gloss: "free morpheme: complete; end",
+          morphemeKey: "lex:finish",
+          children: [],
+        },
+        {
+          text: "-er",
+          gloss: "suffix: one that does (derivational agentive)",
+          morphemeKey: "sfx:-er",
+          children: [],
+        },
+      ],
+    },
+  },
 ];
 
-/** Wider 3D garden + single horizontal row for whiteboard (pan along X) */
+/** Wider 3D garden; whiteboard uses a circle (garden) or single centered tree (isolate) */
 const POS3D_SCALE = 1.52;
-const WHITEBOARD_GAP_X = 58;
 
 function assignGrid2d() {
-  const n = WORDS.length;
-  WORDS.forEach((w, i) => {
+  WORDS.forEach((w) => {
     w.pos3d = new THREE.Vector3(
       w.position[0] * POS3D_SCALE,
       w.position[1],
       w.position[2] * POS3D_SCALE
     );
-    w.pos2d = new THREE.Vector3((i - (n - 1) / 2) * WHITEBOARD_GAP_X, -10, 0);
+  });
+}
+
+function assignWhiteboardCircle() {
+  const n = WORDS.length;
+  WORDS.forEach((w, i) => {
+    const a = (i / n) * Math.PI * 2 - Math.PI / 2;
+    w.pos2d.set(Math.cos(a) * WB_CIRCLE_RADIUS, -10, Math.sin(a) * WB_CIRCLE_RADIUS);
+  });
+}
+
+function assignWhiteboardIsolate(wordId) {
+  WORDS.forEach((w) => {
+    w.pos2d.set(w.id === wordId ? 0 : WB_CIRCLE_RADIUS * 2.5, -10, 0);
   });
 }
 
@@ -485,10 +814,13 @@ const TREE_DEPTH_STEP = 5.35;
 
 function layoutSubtree(node, depth, xCenter, spread) {
   if (!node.children || node.children.length === 0) {
-    return { width: spread, positions: [{ node, x: xCenter, y: -depth * TREE_DEPTH_STEP, z: 0 }] };
+    return {
+      width: spread,
+      positions: [{ node, x: xCenter, y: -depth * TREE_DEPTH_STEP, z: 0, depth }],
+    };
   }
   const childSpread = spread / node.children.length;
-  const allPos = [{ node, x: xCenter, y: -depth * TREE_DEPTH_STEP, z: 0 }];
+  const allPos = [{ node, x: xCenter, y: -depth * TREE_DEPTH_STEP, z: 0, depth }];
   let cursor = xCenter - spread / 2 + childSpread / 2;
   for (const c of node.children) {
     const sub = layoutSubtree(c, depth + 1, cursor, childSpread * 0.9);
@@ -615,7 +947,7 @@ function buildWordGroup(word) {
   const meshes = new Map();
 
   for (const p of positions) {
-    const { node, x, y, z } = p;
+    const { node, x, y, z, depth: treeDepth } = p;
     const isRoot = node === word.tree;
     const posLabel = nodePosLabel(node, isRoot);
     const r = isRoot ? 0.84 : node.morphemeKey ? 0.55 : 0.48;
@@ -638,6 +970,7 @@ function buildWordGroup(word) {
     mesh.position.set(x, y, z);
     mesh.userData.morphemeKey = node.morphemeKey || null;
     mesh.userData.wordId = word.id;
+    mesh.userData.treeDepth = treeDepth;
     group.add(mesh);
     meshes.set(node, mesh);
     group.userData.meshes.push(mesh);
@@ -768,6 +1101,7 @@ const INTRO_RING_RADIUS = 54;
 
 function init(host, detailEl, selectEl, shellEl) {
   assignGrid2d();
+  assignWhiteboardCircle();
   Object.keys(morphemeRegistry).forEach((k) => delete morphemeRegistry[k]);
 
   const scene = new THREE.Scene();
@@ -851,6 +1185,19 @@ function init(host, detailEl, selectEl, shellEl) {
 
   const bridges = buildBridgeLines(scene);
 
+  const gardenHints = new THREE.Group();
+  gardenHints.name = "garden-hints";
+  gardenHints.visible = false;
+  scene.add(gardenHints);
+  const hintLineMat = new THREE.LineBasicMaterial({
+    color: 0xaaccff,
+    transparent: true,
+    opacity: 0.22,
+    depthWrite: false,
+  });
+  const raycaster = new THREE.Raycaster();
+  const pointerNdc = new THREE.Vector2();
+
   const sceneCenter = new THREE.Vector3();
   for (const w of WORDS) sceneCenter.add(w.pos3d);
   sceneCenter.multiplyScalar(1 / WORDS.length);
@@ -865,6 +1212,38 @@ function init(host, detailEl, selectEl, shellEl) {
       sceneCenter.z + Math.sin(a) * INTRO_RING_RADIUS
     );
   });
+
+  function rebuildGardenHints(focusWordId) {
+    while (gardenHints.children.length) {
+      const o = gardenHints.children[0];
+      gardenHints.remove(o);
+      if (o.geometry) o.geometry.dispose();
+    }
+    if (!focusWordId) return;
+    const fg = wordGroups[focusWordId];
+    if (!fg) return;
+    const box = new THREE.Box3().setFromObject(fg);
+    const c = box.getCenter(new THREE.Vector3());
+    for (const w of WORDS) {
+      if (w.id === focusWordId) continue;
+      const end = w.pos3d.clone();
+      end.y = c.y;
+      const geo = new THREE.BufferGeometry().setFromPoints([c, end]);
+      gardenHints.add(new THREE.Line(geo, hintLineMat));
+    }
+  }
+
+  function clearWbPrune(g) {
+    if (!g?.userData?.meshes) return;
+    delete g.userData.wbPruneDepth;
+    for (const mesh of g.userData.meshes) {
+      mesh.scale.setScalar(1);
+      if (mesh.userData.label) mesh.userData.label.visible = true;
+    }
+    for (const ln of g.userData.lines) {
+      if (ln) ln.visible = true;
+    }
+  }
 
   /** @type {{ mesh: THREE.Mesh, label?: THREE.Object3D, tStart: number, popDur: number, fp: THREE.Vector3, fl?: THREE.Vector3 }[]} */
   const introSpawnList = [];
@@ -955,6 +1334,37 @@ function init(host, detailEl, selectEl, shellEl) {
   let viewTarget = 0;
   let viewBlend = 0;
   let transition = null;
+  /** @type {string | null} */
+  let autoRotateAnchorUuid = null;
+
+  function isGardenScope() {
+    return !selectEl || selectEl.value === GARDEN_SELECT;
+  }
+
+  function flyToOverview() {
+    cam3dTarget.copy(sceneCenter);
+    cam3dPos.set(sceneCenter.x + 8, sceneCenter.y + 44, sceneCenter.z + 122);
+    if (viewBlend < 0.06 && transition === null) {
+      camera.position.copy(cam3dPos);
+      controls.target.copy(cam3dTarget);
+    }
+    controls.update();
+  }
+
+  function applyScopeVisibility() {
+    const garden = isGardenScope();
+    for (const w of WORDS) {
+      const g = wordGroups[w.id];
+      if (!g) continue;
+      g.visible = garden || !!(selectEl && w.id === selectEl.value);
+    }
+    rebuildGardenHints(garden ? null : selectEl?.value || null);
+  }
+
+  function flyToActiveView() {
+    if (isGardenScope()) flyToOverview();
+    else if (selectEl) flyToWord(selectEl.value);
+  }
 
   function flyToWord(id) {
     const g = wordGroups[id];
@@ -981,18 +1391,135 @@ function init(host, detailEl, selectEl, shellEl) {
     detailEl.innerHTML = html;
   }
 
+  function fillDetailFromSelect() {
+    if (!detailEl) return;
+    if (!selectEl || selectEl.value === GARDEN_SELECT) {
+      detailEl.innerHTML = `<p><strong>Garden view.</strong> Every tree is shown together. Choose one word from the menu to <strong>isolate</strong> it: in 3D, faint lines suggest where the other words sit; on the whiteboard, a single tree moves to the center. Double-click a node to focus the camera (3D) or trim the tree / list shared morphemes (whiteboard).</p>`;
+      return;
+    }
+    fillDetail(selectEl.value);
+  }
+
+  const morphPop = document.createElement("div");
+  morphPop.className = "morph-morpheme-pop morph-morpheme-pop--hidden";
+  morphPop.setAttribute("role", "dialog");
+  morphPop.setAttribute("aria-label", "Words sharing this morpheme");
+  host.appendChild(morphPop);
+
+  function hideMorphemePop() {
+    morphPop.classList.add("morph-morpheme-pop--hidden");
+    morphPop.innerHTML = "";
+  }
+
+  function showMorphemePop(key) {
+    const list = morphemeRegistry[key];
+    if (!list || list.length < 2) {
+      hideMorphemePop();
+      return;
+    }
+    const items = [...new Set(list.map((x) => x.wordId))]
+      .map((id) => WORDS.find((w) => w.id === id))
+      .filter(Boolean)
+      .map((w) => `<li><button type="button" class="morph-morpheme-pop__pick" data-morph-sel="${w.id}">${w.label}</button></li>`)
+      .join("");
+    const shortKey = key.replace(/^(pfx|sfx|root|lex):/, "");
+    morphPop.innerHTML = `<div class="morph-morpheme-pop__inner"><h3 class="morph-morpheme-pop__h">Also in the garden: <code>${shortKey}</code></h3><ul class="morph-morpheme-pop__list">${items}</ul><button type="button" class="morph-morpheme-pop__close">Close</button></div>`;
+    morphPop.classList.remove("morph-morpheme-pop--hidden");
+    morphPop.querySelector(".morph-morpheme-pop__close")?.addEventListener("click", hideMorphemePop);
+    morphPop.querySelectorAll(".morph-morpheme-pop__pick").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const sid = btn.getAttribute("data-morph-sel");
+        if (selectEl && sid) {
+          selectEl.value = sid;
+          selectEl.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+        hideMorphemePop();
+      });
+    });
+  }
+
   const firstWordId = WORDS[0].id;
   if (selectEl) {
-    selectEl.innerHTML = WORDS.map((w) => `<option value="${w.id}">${w.label}</option>`).join("");
+    selectEl.innerHTML =
+      `<option value="${GARDEN_SELECT}">All words — garden</option>` +
+      WORDS.map((w) => `<option value="${w.id}">${w.label}</option>`).join("");
+    selectEl.value = GARDEN_SELECT;
     selectEl.addEventListener("change", () => {
-      fillDetail(selectEl.value);
-      flyToWord(selectEl.value);
+      hideMorphemePop();
+      if (isGardenScope()) assignWhiteboardCircle();
+      else assignWhiteboardIsolate(selectEl.value);
+      for (const w of WORDS) clearWbPrune(wordGroups[w.id]);
+      applyScopeVisibility();
+      fillDetailFromSelect();
+      if (viewBlend < 0.06 && !transition) flyToActiveView();
     });
-    fillDetail(selectEl.value || firstWordId);
-    flyToWord(selectEl.value || firstWordId);
+    applyScopeVisibility();
+    fillDetailFromSelect();
+    flyToOverview();
   } else {
     flyToWord(firstWordId);
   }
+
+  const fsBtn = document.getElementById("morph-btn-fs");
+  const fsTarget = shellEl || host;
+  if (fsBtn && fsTarget) {
+    fsBtn.addEventListener("click", () => {
+      if (document.fullscreenElement) void document.exitFullscreen();
+      else void fsTarget.requestFullscreen?.();
+    });
+  }
+
+  renderer.domElement.addEventListener("dblclick", (ev) => {
+    if (!controls.enabled) return;
+    const rect = renderer.domElement.getBoundingClientRect();
+    pointerNdc.x = ((ev.clientX - rect.left) / rect.width) * 2 - 1;
+    pointerNdc.y = -((ev.clientY - rect.top) / rect.height) * 2 + 1;
+    raycaster.setFromCamera(pointerNdc, camera);
+    const meshes = [];
+    for (const w of WORDS) {
+      const g = wordGroups[w.id];
+      if (!g?.visible) continue;
+      meshes.push(...g.userData.meshes);
+    }
+    const hit = raycaster.intersectObjects(meshes, false)[0];
+    if (!hit) return;
+    const mesh = /** @type {THREE.Mesh} */ (hit.object);
+    const u = smoothstep(viewBlend);
+    if (u < 0.12) {
+      mesh.getWorldPosition(cam3dTarget);
+      controls.target.copy(cam3dTarget);
+      if (autoRotateAnchorUuid === mesh.uuid && controls.autoRotate) {
+        controls.autoRotate = false;
+        autoRotateAnchorUuid = null;
+      } else {
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.75;
+        autoRotateAnchorUuid = mesh.uuid;
+      }
+      controls.update();
+    } else {
+      const wid = mesh.userData.wordId;
+      const g = wordGroups[wid];
+      if (g) {
+        const D = mesh.userData.treeDepth ?? 0;
+        g.userData.wbPruneDepth = D;
+        for (const ln of g.userData.lines) {
+          const a = ln.userData.a;
+          const b = ln.userData.b;
+          const da = a?.userData.treeDepth ?? 0;
+          const db = b?.userData.treeDepth ?? 0;
+          ln.visible = da <= D && db <= D;
+        }
+        for (const m of g.userData.meshes) {
+          const hide = (m.userData.treeDepth ?? 0) > D;
+          m.scale.setScalar(hide ? 0.05 : 1);
+          if (m.userData.label) m.userData.label.visible = !hide;
+        }
+      }
+      const mk = mesh.userData.morphemeKey;
+      if (mk) showMorphemePop(mk);
+    }
+  });
 
   const btn3d = document.getElementById("morph-btn-3d");
   const btn2d = document.getElementById("morph-btn-2d");
@@ -1010,6 +1537,8 @@ function init(host, detailEl, selectEl, shellEl) {
   }
 
   function startTransition(to2d) {
+    controls.autoRotate = false;
+    autoRotateAnchorUuid = null;
     const next = to2d ? 1 : 0;
     if (next === viewTarget && transition === null && Math.abs(viewBlend - next) < 0.02) return;
 
@@ -1022,7 +1551,7 @@ function init(host, detailEl, selectEl, shellEl) {
       cam1 = new THREE.Vector3(0, 28, 168);
       tgt1 = new THREE.Vector3(0, -10, 0);
     } else {
-      flyToWord(selectEl?.value || firstWordId);
+      flyToActiveView();
       cam1 = cam3dPos.clone();
       tgt1 = cam3dTarget.clone();
     }
@@ -1061,9 +1590,12 @@ function init(host, detailEl, selectEl, shellEl) {
     if (shellEl) shellEl.classList.toggle("morphology-shell--wb", u > 0.88);
 
     const bridgeOpacity = 0.62 * (1 - u) * (1 - u);
+    const isolate3d = selectEl && selectEl.value !== GARDEN_SELECT && u < 0.38;
     bridges.children.forEach((line) => {
-      if (line.material) line.material.opacity = bridgeOpacity;
+      if (line.material) line.material.opacity = isolate3d ? 0 : bridgeOpacity;
+      line.visible = !isolate3d && u < 0.92;
     });
+    gardenHints.visible = isolate3d && u < 0.26;
 
     for (const w of WORDS) {
       const g = wordGroups[w.id];
@@ -1124,7 +1656,7 @@ function init(host, detailEl, selectEl, shellEl) {
     intro.remove();
     introDone = true;
     finishIntroGroups();
-    flyToWord(WORDS[0].id);
+    flyToActiveView();
     camera.position.copy(cam3dPos);
     controls.target.copy(cam3dTarget);
     controls.enabled = true;
@@ -1136,7 +1668,7 @@ function init(host, detailEl, selectEl, shellEl) {
     introDone = true;
     intro.remove();
     finishIntroGroups();
-    flyToWord(selectEl?.value || firstWordId);
+    flyToActiveView();
     camera.position.copy(cam3dPos);
     controls.target.copy(cam3dTarget);
     controls.enabled = true;
@@ -1149,6 +1681,7 @@ function init(host, detailEl, selectEl, shellEl) {
 
   const introTmp0 = new THREE.Vector3();
   const introTmp1 = new THREE.Vector3();
+  const lodWorld = new THREE.Vector3();
 
   window.addEventListener("resize", () => {
     camera.aspect = host.clientWidth / host.clientHeight;
@@ -1257,7 +1790,7 @@ function init(host, detailEl, selectEl, shellEl) {
           introSettle.captured = true;
           introSettle.fromPos.copy(camera.position);
           introSettle.fromTarget.copy(controls.target);
-          flyToWord(selectEl?.value || firstWordId);
+          flyToActiveView();
         }
         const k = easeOutCubic(se);
         camera.position.lerpVectors(introSettle.fromPos, cam3dPos, k);
@@ -1280,6 +1813,29 @@ function init(host, detailEl, selectEl, shellEl) {
     }
 
     if (introDone) applyVisualTheme(viewBlend);
+
+    if (introDone) {
+      const camP = camera.position;
+      for (const w of WORDS) {
+        const grp = wordGroups[w.id];
+        if (!grp.visible) continue;
+        for (const mesh of grp.userData.meshes) {
+          const lab = mesh.userData.label;
+          if (!lab?.element) continue;
+          mesh.getWorldPosition(lodWorld);
+          const d = camP.distanceTo(lodWorld);
+          const glossEl = lab.element.querySelector(".morph-lab__gloss");
+          const posEl = lab.element.querySelector(".morph-lab__pos");
+          const wordEl = lab.element.querySelector(".morph-lab__word");
+          const gA = 1 - smoothstep((d - 14) / 22);
+          const pA = 1 - smoothstep((d - 30) / 30);
+          const wA = 1 - smoothstep((d - 50) / 42);
+          if (glossEl) glossEl.style.opacity = String(Math.max(0, Math.min(1, gA)));
+          if (posEl) posEl.style.opacity = String(Math.max(0, Math.min(1, pA)));
+          if (wordEl) wordEl.style.opacity = String(Math.max(0, Math.min(1, wA)));
+        }
+      }
+    }
 
     controls.update();
     if (bridges.visible) updateBridgeLines(bridges);

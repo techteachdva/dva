@@ -368,6 +368,138 @@
   box-shadow: none;
 }
 
+.morph-fs-btn {
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.45rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  background: rgba(15, 23, 42, 0.65);
+  color: #cbd5e1;
+  cursor: pointer;
+  margin-left: 0.25rem;
+}
+
+.morph-fs-btn:hover {
+  color: #fff;
+  border-color: rgba(255, 208, 96, 0.55);
+}
+
+.morphology-shell--wb .morph-fs-btn {
+  background: #f1f5f9;
+  color: #334155;
+  border-color: #94a3b8;
+}
+
+/* Shared-morpheme popover (double-click on whiteboard) */
+.morph-morpheme-pop {
+  position: absolute;
+  left: 50%;
+  top: 44%;
+  transform: translate(-50%, -50%);
+  z-index: 25;
+  max-width: min(92vw, 24rem);
+  pointer-events: auto;
+}
+
+.morph-morpheme-pop--hidden {
+  display: none;
+}
+
+.morph-morpheme-pop__inner {
+  background: rgba(10, 14, 26, 0.96);
+  border: 1px solid rgba(0, 255, 200, 0.35);
+  border-radius: 12px;
+  padding: 1rem 1.1rem 0.85rem;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
+}
+
+.morphology-shell--wb .morph-morpheme-pop__inner {
+  background: #fff;
+  border-color: #cbd5e1;
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.15);
+}
+
+.morph-morpheme-pop__h {
+  margin: 0 0 0.65rem;
+  font-size: 0.88rem;
+  font-weight: 800;
+  color: #e2e8f0;
+}
+
+.morphology-shell--wb .morph-morpheme-pop__h {
+  color: #0f172a;
+}
+
+.morph-morpheme-pop__h code {
+  font-size: 0.95em;
+  color: #7dd3fc;
+}
+
+.morphology-shell--wb .morph-morpheme-pop__h code {
+  color: #0369a1;
+}
+
+.morph-morpheme-pop__list {
+  list-style: none;
+  margin: 0 0 0.75rem;
+  padding: 0;
+  max-height: min(40vh, 14rem);
+  overflow-y: auto;
+}
+
+.morph-morpheme-pop__pick {
+  display: block;
+  width: 100%;
+  text-align: left;
+  font: inherit;
+  font-weight: 650;
+  padding: 0.45rem 0.5rem;
+  margin-bottom: 0.25rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: rgba(30, 41, 59, 0.85);
+  color: #f1f5f9;
+  cursor: pointer;
+}
+
+.morph-morpheme-pop__pick:hover {
+  border-color: rgba(255, 208, 96, 0.5);
+  color: #fff;
+}
+
+.morphology-shell--wb .morph-morpheme-pop__pick {
+  background: #f8fafc;
+  color: #0f172a;
+  border-color: #e2e8f0;
+}
+
+.morph-morpheme-pop__close {
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 0.4rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+}
+
+.morph-morpheme-pop__close:hover {
+  color: #fff;
+}
+
+.morphology-shell--wb .morph-morpheme-pop__close {
+  color: #64748b;
+  border-color: #94a3b8;
+}
+
 .morph-ui-row label {
   font-size: 0.8rem;
   text-transform: uppercase;
