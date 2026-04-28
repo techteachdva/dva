@@ -482,20 +482,21 @@ html.morph-immersive-open body {
   min-width: 2.6rem;
 }
 
-/* Checkmark (whiteboard): dark on light surfaces, light on dark chrome */
-.morphology-shell:not(.morphology-shell--wb) .morph-view-btn--icon#morph-btn-2d:not(.morph-view-btn--active) {
+/* Checkmark (whiteboard surface): dark on light surfaces, light on dark chrome */
+.morphology-shell:not(.morphology-shell--wb)
+  .morph-view-btn--icon#morph-btn-surf-wb:not(.morph-view-btn--active) {
   color: #f1f5f9;
 }
 
-.morphology-shell:not(.morphology-shell--wb) .morph-view-btn--icon#morph-btn-2d.morph-view-btn--active {
+.morphology-shell:not(.morphology-shell--wb) .morph-view-btn--icon#morph-btn-surf-wb.morph-view-btn--active {
   color: #0a0e1a;
 }
 
-.morphology-shell--wb .morph-view-btn--icon#morph-btn-2d:not(.morph-view-btn--active) {
+.morphology-shell--wb .morph-view-btn--icon#morph-btn-surf-wb:not(.morph-view-btn--active) {
   color: #0f172a;
 }
 
-.morphology-shell--wb .morph-view-btn--icon#morph-btn-2d.morph-view-btn--active {
+.morphology-shell--wb .morph-view-btn--icon#morph-btn-surf-wb.morph-view-btn--active {
   color: #f8fafc;
 }
 
@@ -840,6 +841,87 @@ html.morph-immersive-open body {
   font-style: italic;
   opacity: 0.9;
   margin: 0.5rem 0 0;
+}
+
+.morph-lesson__h {
+  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--morph-gold);
+}
+
+.morph-lesson__bracket {
+  font-family: ui-monospace, "Cascadia Code", monospace;
+  font-size: 0.85rem;
+  color: rgba(220, 244, 255, 0.82);
+  margin-bottom: 0.75rem;
+}
+
+.morph-lesson__lead {
+  margin: 0 0 0.75rem;
+  line-height: 1.55;
+}
+
+.morph-lesson__sec {
+  margin: 0.85rem 0 0;
+  padding-top: 0.65rem;
+  border-top: 1px solid rgba(120, 200, 190, 0.16);
+}
+
+.morph-lesson__sec h4 {
+  margin: 0 0 0.45rem;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 800;
+  color: var(--morph-chrome);
+  opacity: 0.95;
+}
+
+.morph-lesson__sec--callout {
+  border-left: 3px solid rgba(255, 106, 213, 0.55);
+  padding-left: 0.65rem;
+}
+
+.morph-lesson__ul {
+  margin: 0.35rem 0 0;
+  padding-left: 1.2rem;
+}
+
+.morph-lesson__ul li {
+  margin: 0.28rem 0;
+}
+
+.morph-chapter-note {
+  margin: 1rem 0 0;
+  padding-top: 0.85rem;
+  border-top: 1px dashed rgba(255, 106, 213, 0.35);
+}
+
+.morph-chapter-note__h {
+  margin: 0 0 0.4rem;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  opacity: 0.85;
+}
+
+.morph-chapter-note__body {
+  font-size: 0.92rem;
+  line-height: 1.55;
+}
+
+/* Two-row Arrange / Surface toolbars */
+
+.morph-ui-row--surface {
+  margin-bottom: 0;
+}
+
+.morph-help__sub {
+  margin: -0.2rem 0 0.5rem;
+  font-size: 0.9rem;
+  line-height: 1.48;
+  opacity: 0.92;
 }
 
 /* Intro: brief title on a veil, then fade so the 3D cinematic stays visible */

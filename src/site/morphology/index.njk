@@ -21,7 +21,7 @@ contentClasses: morphology-page
       id="morph-canvas-host"
       class="morph-canvas-host"
       role="img"
-      aria-label="Morpheme trees: use view buttons to switch between 3D garden, master tree, and whiteboard layout"
+      aria-label="Morpheme trees: use Arrange / Surface toggles — garden vs master-links, then 3D vs whiteboard"
     ></div>
     <div class="morph-ui-panel">
       <div class="morph-ui-row morph-ui-row--meta" role="group" aria-label="Curriculum level">
@@ -41,37 +41,27 @@ contentClasses: morphology-page
           ❓
         </button>
       </div>
-      <div class="morph-ui-row morph-ui-row--toggle" role="group" aria-label="Visualization mode">
-        <span class="morph-ui-label">View</span>
+      <div class="morph-ui-row morph-ui-row--toggle morph-ui-row--arrange" role="group" aria-label="Garden or master links layout">
+        <span class="morph-ui-label">Arrange</span>
         <button
           type="button"
-          id="morph-btn-3d"
+          id="morph-btn-arr-garden"
           class="morph-view-btn morph-view-btn--icon morph-view-btn--active"
           aria-pressed="true"
-          title="3D garden"
-          aria-label="3D garden view"
+          title="Garden — every word tree spaced by vocabulary"
+          aria-label="Garden arrangement"
         >
           🌳
         </button>
         <button
           type="button"
-          id="morph-btn-2d"
+          id="morph-btn-arr-master"
           class="morph-view-btn morph-view-btn--icon"
           aria-pressed="false"
-          title="Whiteboard"
-          aria-label="Whiteboard view"
+          title="Links — hubs by shared morphemes across words"
+          aria-label="Master tree by links"
         >
-          ✔
-        </button>
-        <button
-          type="button"
-          id="morph-btn-master"
-          class="morph-view-btn morph-view-btn--icon"
-          aria-pressed="false"
-          title="Master tree — morpheme mega-clusters"
-          aria-label="Master tree view"
-        >
-          🧬
+          🔗
         </button>
         <button
           type="button"
@@ -83,12 +73,36 @@ contentClasses: morphology-page
           🖥️
         </button>
       </div>
+      <div class="morph-ui-row morph-ui-row--toggle morph-ui-row--surface" role="group" aria-label="3D spatial or flat whiteboard">
+        <span class="morph-ui-label">Surface</span>
+        <button
+          type="button"
+          id="morph-btn-surf-3d"
+          class="morph-view-btn morph-view-btn--icon morph-view-btn--active"
+          aria-pressed="true"
+          title="Depth — orbital camera; bridges arc between trees"
+          aria-label="Three-dimensional surface"
+        >
+          🌐
+        </button>
+        <button
+          type="button"
+          id="morph-btn-surf-wb"
+          class="morph-view-btn morph-view-btn--icon"
+          aria-pressed="false"
+          title="Whiteboard — projector layout"
+          aria-label="Whiteboard surface"
+        >
+          ✔
+        </button>
+      </div>
       <div class="morph-ui-row">
         <label for="morph-word-select">Word tree</label>
         <select id="morph-word-select" class="morph-select" aria-describedby="morph-hint"></select>
       </div>
       <p id="morph-hint" class="morph-hint morph-hint--compact">
-        <strong>Tip:</strong> Hover morpheme spheres for details. Press <strong>❓ Help</strong> for all controls ·
+        <strong>Tip:</strong> Use <strong>Arrange → Links</strong> for morpheme webs; <strong>Surface</strong> swaps 3D depth for a projector board — both pair independently.
+        Hover morphemes for gloss. Press <strong>❓ Help</strong> for controls ·
         <kbd>F</kbd> fit · <kbd>R</kbd> reset · <kbd>Space</kbd> orbit drift.
       </p>
     </div>
@@ -112,12 +126,37 @@ contentClasses: morphology-page
             </p>
           </section>
           <section class="morph-help__sec">
-            <h3>Views</h3>
+            <h3>Arrange &amp; surface</h3>
+            <p class="morph-help__sub">
+              The top row chooses <strong>layout</strong>; the bottom row chooses <strong>presentation</strong>. Combine them freely —
+              for example Links + Whiteboard, or Garden + 3D.
+            </p>
             <ul>
-              <li><strong>🌳 Garden</strong> — All word trees in 3D space; magenta lines link the <em>same</em> morpheme across words.</li>
-              <li><strong>✔ Whiteboard</strong> — Flat classroom layout. Double-click a node to trim the tree or open words that share that morpheme.</li>
-              <li><strong>🧬 Master</strong> — One field where clusters show shared morphemes across the whole set.</li>
+              <li>
+                <strong>🌳 Garden</strong> — Each tree keeps its textbook position; magenta bridges show morphemes that repeat
+                elsewhere.
+              </li>
+              <li>
+                <strong>🔗 Links (master)</strong> — Compresses vocabulary into hubs so recurring morphemes are easy to chase;
+                magenta connectors show identities across clusters.
+              </li>
+              <li>
+                <strong>✔ Whiteboard</strong> — A flat projector layout optimized for pacing a lesson and reading labels.
+              </li>
+              <li>
+                <strong>🌐 3D</strong> — Adds depth: bridges can pass <em>over</em> or <em>under</em> unrelated trees instead of slicing
+                across them; orbit gives a tactile sense of proximity between words.
+              </li>
             </ul>
+          </section>
+          <section class="morph-help__sec">
+            <h3>Why keep 3D?</h3>
+            <p>
+              If 2D had no gaps, spatial mode would waste pixels and attention. Here, 3D is not lipstick: it hides line-crossings,
+              restores parallax for telling which bridge belongs to what, and stacks “overview → zoom” as real distance — you skim
+              far away (apex silhouettes), then swoop toward one tree for morphology detail. Prefer whiteboard for board work; grab
+              3D when the story is relationships <em>between</em> distant words.
+            </p>
           </section>
           <section class="morph-help__sec">
             <h3>Mouse / touch</h3>
@@ -126,7 +165,7 @@ contentClasses: morphology-page
               <li><strong>Drag</strong> to orbit (3D) or pan (whiteboard).</li>
               <li><strong>Scroll / pinch</strong> to zoom.</li>
               <li><strong>Click</strong> a morpheme to ease the camera target toward it.</li>
-              <li><strong>Double-click</strong> zooms to that node in 3D; on the whiteboard, trims or opens the shared-morpheme list.</li>
+              <li><strong>Double-click</strong> zooms and frames the entire word tree with that node as focus (every view).</li>
               <li><strong>Shift + double-click</strong> (3D garden/master) toggles slow auto-orbit around the last focused node.</li>
             </ul>
           </section>
@@ -145,8 +184,8 @@ contentClasses: morphology-page
           <section class="morph-help__sec">
             <h3>Word menu &amp; details</h3>
             <p>
-              <strong>Word tree</strong> chooses a single tree or <strong>All words — garden</strong>. The panel below
-              the canvas shows chapter notes for the selected word.
+              <strong>Word tree</strong> chooses one tree or <strong>All words — garden</strong>. Isolating opens a morphology
+              mini-lesson (etymology cues, overlaps, tense notes) followed by textbook chapter notes below.
             </p>
           </section>
         </div>
