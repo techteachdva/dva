@@ -8,6 +8,7 @@ import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer
 /** Reused vectors — avoids per-frame allocations in bridge updates */
 const _vBridgeA = new THREE.Vector3();
 const _vBridgeB = new THREE.Vector3();
+const _orbitDblClickTarget = new THREE.Vector3();
 
 const REDUCED_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const TRANSITION_SEC = REDUCED_MOTION ? 0.01 : 1.48;
@@ -1150,26 +1151,29 @@ function init(host, detailEl, selectEl, shellEl) {
 
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
-  controls.dampingFactor = 0.055;
-  controls.zoomSpeed = 0.85;
-  controls.rotateSpeed = 0.88;
-  controls.panSpeed = 0.75;
+  controls.dampingFactor = 0.05;
   controls.minDistance = 8;
-  controls.maxDistance = 280;
+  controls.maxDistance = 300;
   controls.enablePan = true;
   controls.enableZoom = true;
   controls.target.copy(cam3dTarget);
   controls.enabled = false;
+  /** Hysteresis: avoid flipping min/max distance when blend hovers near the threshold (causes zoom snapping). */
+  controls.userData.wbZoomLimits = false;
 
   function refreshControlsForViewMode(blend) {
     const u = smoothstep(blend);
     controls.enablePan = true;
     controls.enableZoom = true;
     controls.enableRotate = u < 0.12;
-    if (u > 0.88) {
+    const enterWbZoom = u > 0.92;
+    const exitWbZoom = u < 0.78;
+    if (enterWbZoom && !controls.userData.wbZoomLimits) {
+      controls.userData.wbZoomLimits = true;
       controls.minDistance = 40;
       controls.maxDistance = 520;
-    } else {
+    } else if (exitWbZoom && controls.userData.wbZoomLimits) {
+      controls.userData.wbZoomLimits = false;
       controls.minDistance = 8;
       controls.maxDistance = 300;
     }
@@ -1506,8 +1510,8 @@ function init(host, detailEl, selectEl, shellEl) {
     const mesh = /** @type {THREE.Mesh} */ (hit.object);
     const u = smoothstep(viewBlend);
     if (u < 0.12) {
-      mesh.getWorldPosition(cam3dTarget);
-      controls.target.copy(cam3dTarget);
+      mesh.getWorldPosition(_orbitDblClickTarget);
+      controls.target.copy(_orbitDblClickTarget);
       if (autoRotateAnchorUuid === mesh.uuid && controls.autoRotate) {
         controls.autoRotate = false;
         autoRotateAnchorUuid = null;
@@ -1833,6 +1837,16 @@ function init(host, detailEl, selectEl, shellEl) {
       if (k >= 1) {
         viewBlend = transition.toBlend;
         transition = null;
+        const ue = smoothstep(viewBlend);
+        if (ue > 0.9) {
+          controls.userData.wbZoomLimits = true;
+          controls.minDistance = 40;
+          controls.maxDistance = 520;
+        } else {
+          controls.userData.wbZoomLimits = false;
+          controls.minDistance = 8;
+          controls.maxDistance = 300;
+        }
       }
     }
 
