@@ -17,6 +17,11 @@ const _morphToNode = new THREE.Vector3();
 const _morphFitBox = new THREE.Box3();
 const _morphFitCenter = new THREE.Vector3();
 const _morphFitSize = new THREE.Vector3();
+const _nodeZoomDir = new THREE.Vector3();
+const _keyPanFwd = new THREE.Vector3();
+const _keyPanRight = new THREE.Vector3();
+const _keyOrbitOff = new THREE.Vector3();
+const _yAxisUp = new THREE.Vector3(0, 1, 0);
 
 const REDUCED_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const TRANSITION_SEC = REDUCED_MOTION ? 0.01 : 1.48;
@@ -826,9 +831,11 @@ function assignWhiteboardIsolate(wordId) {
   });
 }
 
-/** Mega-tree ring: each connected morpheme-component gets a hub on this radius */
-const MASTER_TREE_RING = 132;
-const MASTER_TREE_INNER = 46;
+/** Master view: tight grid of meaning-clusters + spiral placement of words within each hub */
+const MASTER_HUB_SPACING = 46;
+const MASTER_WORD_RADIUS = 19;
+/** Golden-angle step (rad) for fractal-like packing within a hub */
+const MASTER_GOLDEN_ANGLE = 2.39996322972865332;
 
 function collectMorphemeKeys(node, /** @type {Set<string>} */ out) {
   if (node.morphemeKey) out.add(node.morphemeKey);
@@ -885,24 +892,36 @@ function assignMasterTreeLayout(sceneCenter) {
   }
   components.sort((a, b) => b.length - a.length);
 
-  const y = sceneCenter.y - 6;
+  const baseY = sceneCenter.y - 5;
   const nComp = components.length;
   for (const w of WORDS) {
     if (!w.posMaster) w.posMaster = new THREE.Vector3();
   }
 
+  const cols = Math.max(1, Math.ceil(Math.sqrt(nComp * 1.2)));
+  const rows = Math.max(1, Math.ceil(nComp / cols));
+  const ix0 = (cols - 1) * 0.5;
+  const iz0 = (rows - 1) * 0.5;
+
   components.forEach((comp, ci) => {
-    const theta = (ci / Math.max(1, nComp)) * Math.PI * 2 - Math.PI / 2;
-    const cx = sceneCenter.x + Math.cos(theta) * MASTER_TREE_RING;
-    const cz = sceneCenter.z + Math.sin(theta) * MASTER_TREE_RING;
+    const row = Math.floor(ci / cols);
+    const col = ci % cols;
+    const cx = sceneCenter.x + (col - ix0) * MASTER_HUB_SPACING;
+    const cz = sceneCenter.z + (row - iz0) * MASTER_HUB_SPACING;
     const m = comp.length;
     comp.forEach((wid, j) => {
       const w = WORDS.find((x) => x.id === wid);
       if (!w) return;
-      const phi = m <= 1 ? 0 : (j / m) * Math.PI * 2;
-      const ox = m <= 1 ? 0 : Math.cos(phi) * MASTER_TREE_INNER;
-      const oz = m <= 1 ? 0 : Math.sin(phi) * MASTER_TREE_INNER;
-      w.posMaster.set(cx + ox, y, cz + oz);
+      let ox = 0;
+      let oz = 0;
+      if (m > 1) {
+        const ang = j * MASTER_GOLDEN_ANGLE + ci * 1.05;
+        const rad = MASTER_WORD_RADIUS * (0.28 + (0.72 * (j + 0.6)) / m);
+        ox = Math.cos(ang) * rad;
+        oz = Math.sin(ang) * rad;
+      }
+      const yy = baseY + (j % 3) * 0.85 + (ci % 2) * 0.4;
+      w.posMaster.set(cx + ox, yy, cz + oz);
     });
   });
 }
@@ -1410,7 +1429,7 @@ function init(host, detailEl, selectEl, shellEl) {
 
   function computeMasterCamera() {
     const box = new THREE.Box3();
-    const pad = new THREE.Vector3(26, 14, 26);
+    const pad = new THREE.Vector3(20, 14, 20);
     for (const w of WORDS) {
       if (!w.posMaster) continue;
       box.expandByPoint(w.posMaster.clone().add(pad));
@@ -1423,9 +1442,9 @@ function init(host, detailEl, selectEl, shellEl) {
     }
     const c = box.getCenter(new THREE.Vector3());
     const size = box.getSize(new THREE.Vector3());
-    const extent = Math.max(size.x, size.z, 95);
+    const extent = Math.max(size.x, size.y, size.z, 38);
     cam3dTargetMaster.copy(c);
-    cam3dMaster.set(c.x + extent * 0.48, c.y + extent * 0.36, c.z + extent * 0.68);
+    cam3dMaster.set(c.x + extent * 0.38, c.y + extent * 0.42, c.z + extent * 0.52);
   }
 
   computeMasterCamera();
@@ -1572,6 +1591,19 @@ function init(host, detailEl, selectEl, shellEl) {
   /** @type {{ t0: number, dur: number, cam0: THREE.Vector3, tgt0: THREE.Vector3, cam1: THREE.Vector3, tgt1: THREE.Vector3 } | null} */
   let cameraFitTween = null;
 
+  const morphFlyKeyCodes = new Set([
+    "KeyW",
+    "KeyA",
+    "KeyS",
+    "KeyD",
+    "ArrowUp",
+    "ArrowDown",
+    "ArrowLeft",
+    "ArrowRight",
+  ]);
+  /** @type {Set<string>} */
+  const morphKeysDown = new Set();
+
   const WB_DEFAULT_CAM = new THREE.Vector3(0, 34, 198);
   const WB_DEFAULT_TGT = new THREE.Vector3(0, -10, 0);
 
@@ -1615,6 +1647,76 @@ function init(host, detailEl, selectEl, shellEl) {
       cam1: cam3dPos.clone(),
       tgt1: cam3dTarget.clone(),
     };
+  }
+
+  /** Smooth zoom / frame the clicked morpheme (garden + master 3D). */
+  function morphZoomCameraToMesh(/** @type {THREE.Mesh} */ mesh) {
+    mesh.getWorldPosition(_orbitDblClickTarget);
+    morphInspectActive = false;
+    controls.autoRotate = false;
+    autoRotateAnchorUuid = null;
+    if (!mesh.geometry.boundingSphere) mesh.geometry.computeBoundingSphere();
+    const bs = mesh.geometry.boundingSphere;
+    const meshR = bs?.radius ?? 0.55;
+    _nodeZoomDir.copy(camera.position).sub(_orbitDblClickTarget);
+    if (_nodeZoomDir.lengthSq() < 1e-4) _nodeZoomDir.set(1, 0.55, 0.9);
+    _nodeZoomDir.normalize();
+    const pull = Math.max(12, Math.min(52, meshR * 15 + 10));
+    cam3dTarget.copy(_orbitDblClickTarget);
+    cam3dPos.copy(_orbitDblClickTarget).addScaledVector(_nodeZoomDir, pull);
+    cameraFitTween = {
+      t0: clock.elapsedTime,
+      dur: REDUCED_MOTION ? 0.01 : 0.48,
+      cam0: camera.position.clone(),
+      tgt0: controls.target.clone(),
+      cam1: cam3dPos.clone(),
+      tgt1: cam3dTarget.clone(),
+    };
+  }
+
+  function morphApplyFlyCamera(dt) {
+    if (transition) return;
+    const moveSpeed = (viewMode === "master" ? 44 : 54) * dt;
+    const orbitSpeed = (viewMode === "master" ? 0.92 : 1.12) * dt;
+    camera.getWorldDirection(_keyPanFwd);
+    _keyPanFwd.y = 0;
+    if (_keyPanFwd.lengthSq() > 1e-8) _keyPanFwd.normalize();
+    else _keyPanFwd.set(0, 0, -1);
+    _keyPanRight.crossVectors(_keyPanFwd, _yAxisUp);
+    if (_keyPanRight.lengthSq() > 1e-8) _keyPanRight.normalize();
+    else _keyPanRight.set(1, 0, 0);
+
+    if (morphKeysDown.has("KeyW")) {
+      camera.position.addScaledVector(_keyPanFwd, moveSpeed);
+      controls.target.addScaledVector(_keyPanFwd, moveSpeed);
+    }
+    if (morphKeysDown.has("KeyS")) {
+      camera.position.addScaledVector(_keyPanFwd, -moveSpeed);
+      controls.target.addScaledVector(_keyPanFwd, -moveSpeed);
+    }
+    if (morphKeysDown.has("KeyA")) {
+      camera.position.addScaledVector(_keyPanRight, -moveSpeed);
+      controls.target.addScaledVector(_keyPanRight, -moveSpeed);
+    }
+    if (morphKeysDown.has("KeyD")) {
+      camera.position.addScaledVector(_keyPanRight, moveSpeed);
+      controls.target.addScaledVector(_keyPanRight, moveSpeed);
+    }
+
+    const yaw =
+      (morphKeysDown.has("ArrowLeft") ? 1 : 0) + (morphKeysDown.has("ArrowRight") ? -1 : 0);
+    if (yaw !== 0) {
+      _keyOrbitOff.copy(camera.position).sub(controls.target);
+      _keyOrbitOff.applyAxisAngle(_yAxisUp, yaw * orbitSpeed);
+      camera.position.copy(controls.target).add(_keyOrbitOff);
+    }
+    const pitchMove =
+      (morphKeysDown.has("ArrowUp") ? 1 : 0) + (morphKeysDown.has("ArrowDown") ? -1 : 0);
+    if (pitchMove !== 0) {
+      const elev = pitchMove * moveSpeed * 0.88;
+      camera.position.y += elev;
+      controls.target.y += elev * 0.38;
+    }
   }
 
   function morphResetCameraToMode() {
@@ -1686,11 +1788,11 @@ function init(host, detailEl, selectEl, shellEl) {
         fillDetail(selectEl.value);
         return;
       }
-      detailEl.innerHTML = `<p><strong>Master Tree.</strong> Words that share morphemes are grouped into mega-clusters on a large ring. Bright magenta bridges connect the <em>same</em> morpheme across different words. Orbit and zoom to explore connections; pick a word in the menu to read its note (all trees stay visible here).</p>`;
+      detailEl.innerHTML = `<p><strong>Master Tree.</strong> Every word tree is packed into a compact <em>grid of meaning-clusters</em> (golden-angle spirals inside each hub) so the whole lexicon fits one view. <strong>Magenta lines</strong> connect the <em>same</em> morpheme across different words—follow them to see shared structure. Use <strong>WASD</strong> to glide, <strong>arrow keys</strong> to orbit and climb, <strong>double-click</strong> a node to zoom in, <kbd>Shift</kbd>+double-click to toggle slow drift. Pick a word in the menu to read its note.</p>`;
       return;
     }
     if (!selectEl || selectEl.value === GARDEN_SELECT) {
-      detailEl.innerHTML = `<p><strong>Garden view.</strong> Every tree is shown together. Choose one word from the menu to <strong>isolate</strong> it: in 3D, faint lines suggest where the other words sit; on the whiteboard, a single tree moves to the center. <strong>Click</strong> a morpheme to ease the orbit target; <strong>double-click</strong> to toggle slow orbit around that node (3D) or trim the tree / list shared morphemes (whiteboard).</p>`;
+      detailEl.innerHTML = `<p><strong>Garden view.</strong> Every tree is shown together. Choose one word from the menu to <strong>isolate</strong> it: in 3D, faint lines suggest where the other words sit; on the whiteboard, a single tree moves to the center. <strong>WASD</strong> and <strong>arrow keys</strong> move the camera in 3D. <strong>Click</strong> a morpheme to ease the target; <strong>double-click</strong> zooms to that node (3D); <kbd>Shift</kbd>+double-click toggles slow drift. On the whiteboard, double-click trims the tree / lists shared morphemes.</p>`;
       return;
     }
     fillDetail(selectEl.value);
@@ -1788,21 +1890,25 @@ function init(host, detailEl, selectEl, shellEl) {
     return /** @type {THREE.Mesh} */ (hit.object);
   }
 
-  function morphHandleDoublePick(clientX, clientY) {
+  function morphHandleDoublePick(clientX, clientY, shiftKey = false) {
     const mesh = morphPickMeshAt(clientX, clientY);
     if (!mesh) return;
     const u = smoothstep(viewBlend);
     if (u < 0.12) {
-      mesh.getWorldPosition(_orbitDblClickTarget);
-      controls.target.copy(_orbitDblClickTarget);
-      morphInspectActive = false;
-      if (autoRotateAnchorUuid === mesh.uuid && controls.autoRotate) {
-        controls.autoRotate = false;
-        autoRotateAnchorUuid = null;
+      if (shiftKey) {
+        mesh.getWorldPosition(_orbitDblClickTarget);
+        controls.target.copy(_orbitDblClickTarget);
+        morphInspectActive = false;
+        if (autoRotateAnchorUuid === mesh.uuid && controls.autoRotate) {
+          controls.autoRotate = false;
+          autoRotateAnchorUuid = null;
+        } else {
+          controls.autoRotate = true;
+          controls.autoRotateSpeed = 0.75;
+          autoRotateAnchorUuid = mesh.uuid;
+        }
       } else {
-        controls.autoRotate = true;
-        controls.autoRotateSpeed = 0.75;
-        autoRotateAnchorUuid = mesh.uuid;
+        morphZoomCameraToMesh(mesh);
       }
       morphFocusMesh = mesh;
       morphFocusT0 = clock.elapsedTime;
@@ -1855,7 +1961,7 @@ function init(host, detailEl, selectEl, shellEl) {
     if (ev.detail === 2) {
       if (morphClickTimer != null) window.clearTimeout(morphClickTimer);
       morphClickTimer = null;
-      morphHandleDoublePick(ev.clientX, ev.clientY);
+      morphHandleDoublePick(ev.clientX, ev.clientY, ev.shiftKey);
       return;
     }
     if (ev.detail !== 1) return;
@@ -1931,7 +2037,14 @@ function init(host, detailEl, selectEl, shellEl) {
     if (!introDone) return;
     const ae = document.activeElement;
     const tag = ae?.tagName;
-    if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA" || ae?.isContentEditable) return;
+    const inField =
+      tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA" || ae?.isContentEditable;
+    if (morphFlyKeyCodes.has(ev.code) && smoothstep(viewBlend) < 0.12 && !inField) {
+      morphKeysDown.add(ev.code);
+      if (ev.key === "ArrowUp" || ev.key === "ArrowDown" || ev.key === "ArrowLeft" || ev.key === "ArrowRight")
+        ev.preventDefault();
+    }
+    if (inField) return;
     if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
     const k = ev.key.toLowerCase();
     if (k === "f") {
@@ -1956,6 +2069,12 @@ function init(host, detailEl, selectEl, shellEl) {
     }
   }
   window.addEventListener("keydown", morphOnKeydown);
+
+  function morphOnKeyup(ev) {
+    morphKeysDown.delete(ev.code);
+  }
+  window.addEventListener("keyup", morphOnKeyup);
+  window.addEventListener("blur", () => morphKeysDown.clear());
 
   const btn3d = document.getElementById("morph-btn-3d");
   const btn2d = document.getElementById("morph-btn-2d");
@@ -2453,6 +2572,15 @@ function init(host, detailEl, selectEl, shellEl) {
 
     if (introDone && morphInspectActive && !transition && !cameraFitTween) {
       controls.target.lerp(morphInspectTargetVec, 0.11);
+    }
+
+    if (
+      introDone &&
+      morphKeysDown.size > 0 &&
+      smoothstep(viewBlend) < 0.12 &&
+      !transition
+    ) {
+      morphApplyFlyCamera(dt);
     }
 
     if (introDone) {
