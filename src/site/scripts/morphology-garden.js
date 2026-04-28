@@ -58,6 +58,45 @@ function getStoredMorphCurriculum() {
   return "elementary";
 }
 
+/** Intro runs once per browser tab session so curriculum reload / in-page navigation does not replay it */
+const MORPH_INTRO_SESSION_KEY = "morphGardenIntroPlayed";
+function morphIntroPlayedThisSession() {
+  try {
+    return sessionStorage.getItem(MORPH_INTRO_SESSION_KEY) === "1";
+  } catch (_) {
+    return false;
+  }
+}
+function morphIntroMarkPlayed() {
+  try {
+    sessionStorage.setItem(MORPH_INTRO_SESSION_KEY, "1");
+  } catch (_) {
+    /* ignore */
+  }
+}
+
+function morphIntroEsc(s) {
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/** One row per letter in “MORPHOLOGY”: full word + morpheme chips for the title-card mini-trees */
+const INTRO_OVERLAY_LEXEMES = [
+  { word: "Multitude", parts: ["multi-", "-tude"] },
+  { word: "Organization", parts: ["organ", "-ize", "-ation"] },
+  { word: "Revolution", parts: ["re-", "volu", "-tion"] },
+  { word: "Philosophy", parts: ["philo", "-sophy"] },
+  { word: "Hospitalize", parts: ["hospital", "-ize"] },
+  { word: "Order", parts: ["order"] },
+  { word: "Language", parts: ["langu-", "-age"] },
+  { word: "Oddity", parts: ["odd", "-ity"] },
+  { word: "Generous", parts: ["gener", "-ous"] },
+  { word: "Yardstick", parts: ["yard", "stick"] },
+];
+
 function cloneWordList(arr) {
   return JSON.parse(JSON.stringify(arr));
 }
@@ -1639,9 +1678,9 @@ function updateInternalTreeLine(line) {
 const SINGULARITY = new THREE.Vector3(0, -8, 0);
 /** Letter overlay + trees peel to garden (≤ ~12s) vs legacy long cinematic */
 const USE_TYPO_INTRO = !REDUCED_MOTION;
-/** Letter spawn + micro-trees, then 3D settle — keep total intro under ~15s */
-const TYPO_LETTER_SEC = 5.25;
-const TYPO_SETTLE_SEC = 3.75;
+/** Title phase (letters + overlay mini-trees) then 3D garden settle — keep total under ~15s */
+const TYPO_LETTER_SEC = 4.65;
+const TYPO_SETTLE_SEC = 3.15;
 /** Per-morpheme spawn (slow → furious) → several camera orbits → settle */
 const INTRO_SPAWN_POWER = 1.72;
 const INTRO_SPAWN_SPREAD = 5.35;
@@ -1657,6 +1696,7 @@ const INTRO_SPIN_TURNS = 3.35;
 const INTRO_RING_RADIUS = 54;
 
 function init(host, detailEl, selectEl, shellEl) {
+  const runIntroCinematic = !REDUCED_MOTION && USE_TYPO_INTRO && !morphIntroPlayedThisSession();
   assignGrid2d();
   assignWhiteboardCircle();
   Object.keys(morphemeRegistry).forEach((k) => delete morphemeRegistry[k]);
@@ -1672,7 +1712,7 @@ function init(host, detailEl, selectEl, shellEl) {
   const focusCenter = new THREE.Vector3(0, -12, 0);
   const cam3dPos = new THREE.Vector3(22, 28, 76);
   const cam3dTarget = focusCenter.clone();
-  camera.position.copy(REDUCED_MOTION ? cam3dPos : introStartPos);
+  camera.position.copy(REDUCED_MOTION || !runIntroCinematic ? cam3dPos : introStartPos);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -1857,7 +1897,7 @@ function init(host, detailEl, selectEl, shellEl) {
   const introSpawnList = [];
   let introPhaseAEnd = 0.35;
 
-  if (!REDUCED_MOTION && USE_TYPO_INTRO) {
+  if (runIntroCinematic) {
     for (const w of WORDS) {
       const g = wordGroups[w.id];
       g.position.copy(SINGULARITY);
@@ -1874,7 +1914,7 @@ function init(host, detailEl, selectEl, shellEl) {
       }
     }
     introPhaseAEnd = 0;
-  } else if (!REDUCED_MOTION) {
+  } else if (!REDUCED_MOTION && !USE_TYPO_INTRO) {
     const allMeshes = [];
     for (const w of WORDS) {
       const g = wordGroups[w.id];
@@ -2735,31 +2775,55 @@ function init(host, detailEl, selectEl, shellEl) {
     refreshControlsForViewMode(blend, masterWeight);
   }
 
-  /* Intro overlay — M-O-R-P-H-O-L-O-G-Y + micro “trees”, then hand off to 3D settle */
-  const intro = document.createElement("div");
-  intro.className = "morph-intro morph-intro--typo";
+  /* Intro overlay — letters branch into words + mini morpheme trees, then 3D settle (once per session) */
+  /** @type {HTMLDivElement | null} */
+  let introOverlay = null;
   const introLetters = "MORPHOLOGY".split("");
-  intro.innerHTML = `
+  const introLex = INTRO_OVERLAY_LEXEMES;
+
+  function buildIntroOverlayHtml() {
+    const cells = introLetters
+      .map((ch, i) => {
+        const row = introLex[i];
+        const word = row ? morphIntroEsc(row.word) : "";
+        const parts =
+          row?.parts
+            .map(
+              (p, j) =>
+                `<span class="morph-intro-typo__mor" style="--mj:${j}"><span class="morph-intro-typo__mor-inner">${morphIntroEsc(p)}</span></span>`
+            )
+            .join("") ?? "";
+        const vine = row && row.parts.length ? `<span class="morph-intro-typo__vine" aria-hidden="true"></span>` : "";
+        const tree =
+          row && row.parts.length
+            ? `<div class="morph-intro-typo__tree" aria-hidden="true">${vine}<div class="morph-intro-typo__parts">${parts}</div></div>`
+            : "";
+        const wordEl = row
+          ? `<span class="morph-intro-typo__word" style="--morph-i:${i}">${word}</span>${tree}`
+          : "";
+        return `<span class="morph-intro-typo__cell" style="--morph-i:${i}"><span class="morph-intro-typo__ch">${morphIntroEsc(ch)}</span><span class="morph-intro-typo__twig" aria-hidden="true"></span>${wordEl}</span>`;
+      })
+      .join("");
+    return `
     <div class="morph-intro-typo" aria-hidden="true">
       <div class="morph-intro-typo__letters">
-        ${introLetters
-          .map(
-            (ch, i) =>
-              `<span class="morph-intro-typo__cell" style="--morph-i:${i}"><span class="morph-intro-typo__ch">${ch}</span><span class="morph-intro-typo__twig"></span></span>`
-          )
-          .join("")}
+        ${cells}
       </div>
       <p class="morph-intro-typo__sub">The Analysis of Words · Ch. 4</p>
     </div>
   `;
-  const skipBtn = document.createElement("button");
-  skipBtn.type = "button";
-  skipBtn.className = "morph-skip";
-  skipBtn.textContent = "Skip intro";
-  intro.appendChild(skipBtn);
-  host.appendChild(intro);
+  }
 
-  let introDone = false;
+  if (!runIntroCinematic) {
+    finishIntroGroups();
+    flyToActiveView();
+    camera.position.copy(cam3dPos);
+    controls.target.copy(cam3dTarget);
+    controls.enabled = true;
+    controls.update();
+  }
+
+  let introDone = !runIntroCinematic;
   let introT = 0;
 
   let introSpinAngle = 0;
@@ -2769,23 +2833,31 @@ function init(host, detailEl, selectEl, shellEl) {
     fromTarget: new THREE.Vector3(),
   };
 
-  if (REDUCED_MOTION) {
-    intro.remove();
-    introDone = true;
-    finishIntroGroups();
-    flyToActiveView();
-    camera.position.copy(cam3dPos);
-    controls.target.copy(cam3dTarget);
-    controls.enabled = true;
-    controls.update();
+  if (runIntroCinematic) {
+    introOverlay = document.createElement("div");
+    introOverlay.className = "morph-intro morph-intro--typo";
+    introOverlay.innerHTML = buildIntroOverlayHtml();
+    const skipBtn = document.createElement("button");
+    skipBtn.type = "button";
+    skipBtn.className = "morph-skip";
+    skipBtn.textContent = "Skip intro";
+    introOverlay.appendChild(skipBtn);
+    host.appendChild(introOverlay);
+    skipBtn.addEventListener("click", endIntro);
   }
 
   function endIntro() {
     if (introDone) return;
+    morphIntroMarkPlayed();
     introDone = true;
-    intro.style.opacity = "0";
-    intro.style.pointerEvents = "none";
-    window.setTimeout(() => intro.remove(), 380);
+    if (introOverlay) {
+      introOverlay.style.opacity = "0";
+      introOverlay.style.pointerEvents = "none";
+      window.setTimeout(() => {
+        introOverlay?.remove();
+        introOverlay = null;
+      }, 380);
+    }
     finishIntroGroups();
     flyToActiveView();
     camera.position.copy(cam3dPos);
@@ -2793,8 +2865,6 @@ function init(host, detailEl, selectEl, shellEl) {
     controls.enabled = true;
     controls.update();
   }
-
-  skipBtn.addEventListener("click", endIntro);
 
   setViewButtons();
 
@@ -2925,7 +2995,7 @@ function init(host, detailEl, selectEl, shellEl) {
     const dt = Math.min(clock.getDelta(), 0.064);
     introT += dt;
 
-    if (!introDone && !REDUCED_MOTION && USE_TYPO_INTRO) {
+    if (!introDone && runIntroCinematic) {
       const t = introT;
       if (t < TYPO_LETTER_SEC) {
         const drift = Math.min(1, t / TYPO_LETTER_SEC);
@@ -2937,12 +3007,13 @@ function init(host, detailEl, selectEl, shellEl) {
           }
         }
         const fade = smoothstep((t - TYPO_LETTER_SEC * 0.5) / (TYPO_LETTER_SEC * 0.42));
-        intro.style.opacity = String(1 - fade * 0.25);
+        if (introOverlay) introOverlay.style.opacity = String(1 - fade * 0.25);
       } else {
         const t2 = t - TYPO_LETTER_SEC;
         const k = Math.min(1, t2 / TYPO_SETTLE_SEC);
         const e = easeOutCubic(k);
-        intro.style.opacity = String(Math.max(0, 0.75 - smoothstep((t2 - 0.15) / 1.85)));
+        if (introOverlay)
+          introOverlay.style.opacity = String(Math.max(0, 0.75 - smoothstep((t2 - 0.15) / 1.85)));
         if (!introSettle.captured) {
           introSettle.captured = true;
           introSettle.fromPos.copy(camera.position);
@@ -2968,7 +3039,7 @@ function init(host, detailEl, selectEl, shellEl) {
         grid.visible = k > 0.05;
         if (k >= 1) endIntro();
       }
-    } else if (!introDone && !REDUCED_MOTION) {
+    } else if (!introDone && !REDUCED_MOTION && !USE_TYPO_INTRO) {
       if (introT < introPhaseAEnd) {
         for (const row of introSpawnList) {
           const { mesh, label, tStart, popDur, fp, fl } = row;
