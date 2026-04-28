@@ -640,20 +640,19 @@ function easeOutCubic(t) {
   return 1 - (1 - x) ** 3;
 }
 
-/** Slight overshoot — trees “pop” from the singularity */
-function easeOutBack(t) {
+function easeInOutCubic(t) {
   const x = Math.min(1, Math.max(0, t));
-  const c1 = 1.525;
-  const c3 = c1 + 1;
-  return 1 + c3 * (x - 1) ** 3 + c1 * (x - 1) ** 2;
+  return x < 0.5 ? 4 * x * x * x : 1 - (-2 * x + 2) ** 3 / 2;
 }
 
 const SINGULARITY = new THREE.Vector3(0, -8, 0);
-/** Seconds: bloom → orbit tour → settle */
-const INTRO_T_GROW = 3.35;
-const INTRO_T_TOUR = 14.5;
-const INTRO_T_SETTLE = 1.85;
-const INTRO_TOTAL = INTRO_T_GROW + INTRO_T_TOUR + INTRO_T_SETTLE;
+/** Bloom → one smooth 360° pass → settle (no oscillating radius / targets) */
+const INTRO_T_GROW = 2.85;
+const INTRO_T_ORBIT = 10.25;
+const INTRO_T_SETTLE = 1.75;
+const INTRO_ORBIT_RADIUS = 64;
+const INTRO_ORBIT_HEIGHT = 24;
+const INTRO_SPIN_TURNS = 0.75;
 
 function init(host, detailEl, selectEl, shellEl) {
   assignGrid2d();
@@ -728,19 +727,11 @@ function init(host, detailEl, selectEl, shellEl) {
   for (const w of WORDS) sceneCenter.add(w.pos3d);
   sceneCenter.multiplyScalar(1 / WORDS.length);
 
-  const visitOrder = [...WORDS].sort((a, b) => {
-    const ang = (w) => Math.atan2(w.pos3d.z - sceneCenter.z, w.pos3d.x - sceneCenter.x);
-    return ang(a) - ang(b);
-  });
-
   for (const w of WORDS) {
     const g = wordGroups[w.id];
-    g.position.copy(w.pos3d);
-    g.scale.setScalar(1);
-    const box = new THREE.Box3().setFromObject(g);
-    w.introCamTarget = box.getCenter(new THREE.Vector3());
     g.position.copy(SINGULARITY);
     g.scale.setScalar(0.012);
+    g.rotation.y = 0;
   }
   bridges.visible = false;
   bridges.children.forEach((line) => {
@@ -753,6 +744,7 @@ function init(host, detailEl, selectEl, shellEl) {
       const g = wordGroups[w.id];
       g.position.copy(w.pos3d);
       g.scale.setScalar(1);
+      g.rotation.y = 0;
     }
     bridges.visible = true;
     bridges.children.forEach((line) => {
@@ -906,7 +898,7 @@ function init(host, detailEl, selectEl, shellEl) {
   let introDone = false;
   let introT = 0;
 
-  let introTourLastIndex = -1;
+  let introSpinAngle = 0;
   const introSettle = {
     captured: false,
     fromPos: new THREE.Vector3(),
@@ -955,64 +947,51 @@ function init(host, detailEl, selectEl, shellEl) {
     if (!introDone && !REDUCED_MOTION) {
       if (introT < INTRO_T_GROW) {
         const g = Math.min(1, introT / INTRO_T_GROW);
-        const growE = easeOutBack(g);
-        const posE = easeOutCubic(Math.min(1, g * 1.08));
+        const growE = easeOutCubic(g);
+        const posE = easeOutCubic(g);
 
         for (const w of WORDS) {
           const grp = wordGroups[w.id];
           grp.position.lerpVectors(SINGULARITY, w.pos3d, posE);
           grp.scale.setScalar(0.012 + 0.988 * growE);
+          grp.rotation.y = 0;
         }
 
-        const bloomBridge = smoothstep((g - 0.26) / 0.5);
+        const bloomBridge = smoothstep((g - 0.22) / 0.55);
         bridges.visible = bloomBridge > 0.03;
         bridges.children.forEach((line) => {
           if (line.material) line.material.opacity = 0.62 * bloomBridge;
         });
-        grid.visible = g > 0.1;
+        grid.visible = g > 0.08;
 
-        const pull = easeOutCubic(g);
-        const midOrbit = new THREE.Vector3(
-          sceneCenter.x + 12,
-          sceneCenter.y + 46,
-          sceneCenter.z + 64
+        const pull = easeInOutCubic(g);
+        const orbitEntry = new THREE.Vector3(
+          sceneCenter.x + INTRO_ORBIT_RADIUS * 0.92,
+          sceneCenter.y + INTRO_ORBIT_HEIGHT + 18,
+          sceneCenter.z + INTRO_ORBIT_RADIUS * 0.92
         );
-        camera.position.lerpVectors(introStartPos, midOrbit, pull);
-        const gaze = new THREE.Vector3().lerpVectors(SINGULARITY, sceneCenter, pull);
-        controls.target.lerp(gaze, 0.12);
-      } else if (introT < INTRO_T_GROW + INTRO_T_TOUR) {
-        const tourElapsed = introT - INTRO_T_GROW;
-        const tourT = tourElapsed / INTRO_T_TOUR;
-        const n = visitOrder.length;
-        const wordPhase = tourT * n;
-        const i0 = Math.floor(wordPhase) % n;
-        const i1 = (i0 + 1) % n;
-        const localT = wordPhase - Math.floor(wordPhase);
+        camera.position.lerpVectors(introStartPos, orbitEntry, pull);
+        controls.target.lerpVectors(SINGULARITY.clone(), sceneCenter.clone(), pull);
+      } else if (introT < INTRO_T_GROW + INTRO_T_ORBIT) {
+        const orbitElapsed = introT - INTRO_T_GROW;
+        const u = Math.min(1, orbitElapsed / INTRO_T_ORBIT);
+        const phi = easeInOutCubic(u) * Math.PI * 2;
 
-        if (i0 !== introTourLastIndex) {
-          introTourLastIndex = i0;
-          fillDetail(visitOrder[i0].id);
+        introSpinAngle = phi * INTRO_SPIN_TURNS;
+        for (const w of WORDS) {
+          const grp = wordGroups[w.id];
+          const phase = w.pos3d.x * 0.002 + w.pos3d.z * 0.0015;
+          grp.rotation.y = introSpinAngle + phase * 0.08;
         }
 
-        const focus = new THREE.Vector3().lerpVectors(
-          visitOrder[i0].introCamTarget,
-          visitOrder[i1].introCamTarget,
-          smoothstep(localT)
-        );
-        const thru = new THREE.Vector3().lerpVectors(
-          focus,
-          sceneCenter,
-          0.11 + 0.07 * Math.sin(tourT * Math.PI * 2)
-        );
-        const theta = tourT * Math.PI * 2 * 1.18;
-        const R = 48 + 14 * Math.sin(localT * Math.PI) + 10 * Math.sin(tourT * Math.PI * 2);
-        const camY = 16 + 16 * Math.sin(tourT * Math.PI * 2) + 7 * Math.cos(localT * Math.PI);
+        const R = INTRO_ORBIT_RADIUS;
+        const y = sceneCenter.y + INTRO_ORBIT_HEIGHT;
         camera.position.set(
-          sceneCenter.x + Math.cos(theta) * R,
-          camY,
-          sceneCenter.z + Math.sin(theta) * R
+          sceneCenter.x + Math.cos(phi) * R,
+          y,
+          sceneCenter.z + Math.sin(phi) * R
         );
-        controls.target.lerp(thru, 0.2);
+        controls.target.copy(sceneCenter);
 
         bridges.visible = true;
         bridges.children.forEach((line) => {
@@ -1020,8 +999,15 @@ function init(host, detailEl, selectEl, shellEl) {
         });
         grid.visible = true;
       } else {
-        const settleElapsed = introT - INTRO_T_GROW - INTRO_T_TOUR;
+        const settleElapsed = introT - INTRO_T_GROW - INTRO_T_ORBIT;
         const se = Math.min(1, settleElapsed / INTRO_T_SETTLE);
+        const spinDamp = 1 - easeOutCubic(se);
+        for (const w of WORDS) {
+          const grp = wordGroups[w.id];
+          const phase = w.pos3d.x * 0.002 + w.pos3d.z * 0.0015;
+          grp.rotation.y = (introSpinAngle + phase * 0.08) * spinDamp;
+        }
+
         if (!introSettle.captured) {
           introSettle.captured = true;
           introSettle.fromPos.copy(camera.position);
