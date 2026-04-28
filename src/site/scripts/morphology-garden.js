@@ -1158,8 +1158,8 @@ function init(host, detailEl, selectEl, shellEl) {
   controls.enableZoom = true;
   controls.target.copy(cam3dTarget);
   controls.enabled = false;
-  /** Hysteresis: avoid flipping min/max distance when blend hovers near the threshold (causes zoom snapping). */
-  controls.userData.wbZoomLimits = false;
+  /** Hysteresis for min/max distance (OrbitControls has no userData — do not store state there). */
+  let wbZoomLimitsActive = false;
 
   function refreshControlsForViewMode(blend) {
     const u = smoothstep(blend);
@@ -1168,12 +1168,12 @@ function init(host, detailEl, selectEl, shellEl) {
     controls.enableRotate = u < 0.12;
     const enterWbZoom = u > 0.92;
     const exitWbZoom = u < 0.78;
-    if (enterWbZoom && !controls.userData.wbZoomLimits) {
-      controls.userData.wbZoomLimits = true;
+    if (enterWbZoom && !wbZoomLimitsActive) {
+      wbZoomLimitsActive = true;
       controls.minDistance = 40;
       controls.maxDistance = 520;
-    } else if (exitWbZoom && controls.userData.wbZoomLimits) {
-      controls.userData.wbZoomLimits = false;
+    } else if (exitWbZoom && wbZoomLimitsActive) {
+      wbZoomLimitsActive = false;
       controls.minDistance = 8;
       controls.maxDistance = 300;
     }
@@ -1839,11 +1839,11 @@ function init(host, detailEl, selectEl, shellEl) {
         transition = null;
         const ue = smoothstep(viewBlend);
         if (ue > 0.9) {
-          controls.userData.wbZoomLimits = true;
+          wbZoomLimitsActive = true;
           controls.minDistance = 40;
           controls.maxDistance = 520;
         } else {
-          controls.userData.wbZoomLimits = false;
+          wbZoomLimitsActive = false;
           controls.minDistance = 8;
           controls.maxDistance = 300;
         }
