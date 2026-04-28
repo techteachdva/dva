@@ -23,6 +23,19 @@
   padding: 0 0 2rem !important;
 }
 
+.morphology-top {
+  max-width: 52rem;
+  margin: 0 auto;
+  padding: 1.25rem 1.5rem 0.75rem;
+}
+
+.morphology-tagline {
+  margin: 0.5rem 0 0;
+  font-size: 1.02rem;
+  line-height: 1.55;
+  opacity: 0.9;
+}
+
 .morphology-page .morphology-header {
   max-width: 52rem;
   margin: 0 auto;
@@ -171,20 +184,78 @@
 .morphology-shell {
   position: relative;
   width: 100%;
-  min-height: 88vh;
-  margin-top: 1rem;
+  min-height: min(88vh, 960px);
+  margin-top: 0.5rem;
   background: radial-gradient(ellipse 120% 80% at 50% 20%, #152238 0%, var(--morph-bg) 55%);
-  border-radius: 0;
+  border-radius: 12px;
   overflow: hidden;
   border: 1px solid rgba(200, 244, 255, 0.15);
   box-shadow: inset 0 0 120px rgba(0, 200, 255, 0.06);
+  transition: border-color 0.35s ease, box-shadow 0.35s ease, background 0.35s ease;
 }
 
-#morph-canvas-host {
+.morphology-shell--wb {
+  background: #f4f6fb;
+  border: 3px solid #c5cedd;
+  box-shadow: 0 12px 40px rgba(15, 23, 42, 0.12);
+}
+
+#morph-canvas-host,
+.morph-canvas-host {
   display: block;
   width: 100%;
-  height: min(88vh, 920px);
+  height: min(88vh, 960px);
   touch-action: none;
+  position: relative;
+  transition: background 0.2s ease;
+}
+
+.morph-canvas-host--wb {
+  /* WebGL clears to near-white; frame reads as whiteboard */
+}
+
+/* CSS2D morpheme labels (children of canvas host) */
+.morph-canvas-host .morph-lab {
+  text-align: center;
+  pointer-events: none;
+  user-select: none;
+}
+
+.morph-canvas-host .morph-lab__word {
+  font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  color: #ffffff;
+  text-shadow: 0 0 14px rgba(0, 255, 255, 0.95), 0 0 3px #000, 0 2px 6px rgba(0, 0, 0, 0.85);
+  line-height: 1.15;
+}
+
+.morph-canvas-host .morph-lab__gloss {
+  font-family: system-ui, "Segoe UI", Roboto, sans-serif;
+  font-size: 11px;
+  font-weight: 650;
+  color: #ffe8a8;
+  text-shadow: 0 1px 4px #000;
+  margin-top: 4px;
+  max-width: 16em;
+  line-height: 1.25;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.morph-canvas-host--wb .morph-lab__word {
+  color: #0a1020 !important;
+  text-shadow: none !important;
+  font-size: 17px !important;
+  font-weight: 900 !important;
+}
+
+.morph-canvas-host--wb .morph-lab__gloss {
+  color: #334155 !important;
+  text-shadow: none !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
 }
 
 .morph-ui-panel {
@@ -212,12 +283,70 @@
   margin: 0 auto;
 }
 
+.morph-ui-row--toggle {
+  margin-bottom: 0.25rem;
+}
+
+.morph-ui-label {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--morph-chrome);
+  font-weight: 800;
+  margin-right: 0.25rem;
+}
+
+.morph-view-btn {
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 255, 200, 0.35);
+  background: rgba(12, 24, 44, 0.9);
+  color: var(--morph-chrome);
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+
+.morph-view-btn:hover {
+  border-color: rgba(255, 208, 96, 0.6);
+  color: #fff;
+}
+
+.morph-view-btn--active {
+  background: linear-gradient(180deg, rgba(255, 208, 96, 0.95), rgba(255, 159, 64, 0.95));
+  color: #0a0e1a !important;
+  border-color: #fff8e0;
+  box-shadow: 0 0 20px rgba(255, 208, 96, 0.35);
+}
+
+.morphology-shell--wb .morph-view-btn:not(.morph-view-btn--active) {
+  background: #fff;
+  color: #334155;
+  border-color: #94a3b8;
+}
+
+.morphology-shell--wb .morph-view-btn--active {
+  background: #0f172a;
+  color: #f8fafc !important;
+  border-color: #0f172a;
+  box-shadow: none;
+}
+
 .morph-ui-row label {
   font-size: 0.8rem;
   text-transform: uppercase;
   letter-spacing: 0.12em;
   color: var(--morph-chrome);
   margin-right: 0.35rem;
+}
+
+.morphology-shell--wb .morph-ui-row label,
+.morphology-shell--wb .morph-ui-label {
+  color: #475569;
 }
 
 .morph-select {
@@ -232,6 +361,12 @@
   max-width: min(100%, 22rem);
 }
 
+.morphology-shell--wb .morph-select {
+  background: #fff;
+  color: #0f172a;
+  border-color: #64748b;
+}
+
 .morph-hint {
   font-size: 0.78rem;
   color: rgba(200, 244, 255, 0.65);
@@ -242,9 +377,89 @@
   margin-right: auto;
 }
 
+.morphology-shell--wb .morph-hint {
+  color: #64748b;
+}
+
+.morph-highlights {
+  max-width: 52rem;
+  margin: 2.25rem auto 0;
+  padding: 0 1.5rem 1rem;
+}
+
+.morph-highlights-title {
+  margin: 0 0 0.35rem;
+  font-size: 1.45rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+
+.morph-highlights-intro {
+  margin: 0 0 1.25rem;
+  font-size: 0.98rem;
+  line-height: 1.55;
+  opacity: 0.88;
+}
+
+.morph-concept-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: morphconcept;
+}
+
+.morph-concept {
+  position: relative;
+  margin: 0 0 1.5rem;
+  padding: 1rem 1rem 1rem 3.25rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(200, 244, 255, 0.12);
+  counter-increment: morphconcept;
+}
+
+.morph-concept::before {
+  content: counter(morphconcept);
+  position: absolute;
+  left: 1rem;
+  top: 1rem;
+  width: 1.65rem;
+  height: 1.65rem;
+  line-height: 1.65rem;
+  text-align: center;
+  font-weight: 900;
+  font-size: 0.85rem;
+  border-radius: 50%;
+  background: linear-gradient(145deg, var(--morph-gold), #ff9f40);
+  color: #0a0e1a;
+}
+
+.morph-concept-name {
+  margin: 0 0 0.4rem;
+  font-size: 1.08rem;
+  font-weight: 800;
+  color: var(--morph-chrome);
+}
+
+.morph-concept p {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  opacity: 0.9;
+}
+
+.morph-source-line {
+  margin: 1.75rem 0 0;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(200, 244, 255, 0.15);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  opacity: 0.8;
+}
+
 .morph-detail {
   max-width: 44rem;
-  margin: 1rem auto 0;
+  margin: 1.25rem auto 0;
   padding: 1rem 1.25rem;
   background: rgba(12, 20, 36, 0.85);
   border: 1px solid rgba(255, 106, 213, 0.25);

@@ -1,12 +1,12 @@
 /**
- * Morphology Garden — 3D morpheme trees + shared-affix graph.
- * Three.js via CDN import map (Chrome / Chromebook friendly).
+ * Morphology Garden — 3D + animated whiteboard view, shared morpheme bridges.
  */
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 
 const REDUCED_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const TRANSITION_SEC = REDUCED_MOTION ? 0.01 : 1.35;
 
 /** @type {Record<string, { mesh: THREE.Mesh, wordId: string }[]>} */
 const morphemeRegistry = {};
@@ -23,6 +23,7 @@ const WORDS = [
     label: "Presentation",
     bracket: "[[pre- + sent] + -ation]",
     note: "Like <em>statement</em> + <strong>-ment</strong> in the textbook, <strong>-ation</strong> is a derivational suffix that helps form an abstract noun (Table 4.2). The stem is not a separate modern English word, which is why many roots in academic vocabulary are <strong>bound morphemes</strong> (§4.3).",
+    position: [29, 0, 24],
     tree: {
       text: "presentation",
       gloss: "noun: an act of presenting",
@@ -54,13 +55,13 @@ const WORDS = [
         },
       ],
     },
-    position: [12, 0, 10],
   },
   {
     id: "hallway",
     label: "Hallway",
     bracket: "[hall + way]",
     note: "<strong>Compounding</strong> joins two existing words (§4.6). In English, the <strong>rightmost</strong> element often determines the word class of the whole—here <em>hallway</em> patterns like <em>way</em> (a path), not like <em>hall</em> alone.",
+    position: [-34, 0, 19],
     tree: {
       text: "hallway",
       gloss: "noun: a corridor",
@@ -79,13 +80,13 @@ const WORDS = [
         },
       ],
     },
-    position: [-14, 0, 8],
   },
   {
     id: "final",
     label: "Final",
     bracket: "[fin + -al]",
     note: "The suffix <strong>-al</strong> is one of the textbook’s derivational suffixes meaning ‘pertaining to’ (Table 4.2, as in <em>national</em>, <em>seasonal</em>). Here it attaches to a <strong>bound root</strong> <em>fin-</em> ‘end,’ parallel to the book’s examples like <em>ept</em> in <em>inept</em> (§4.3).",
+    position: [-19, 0, -29],
     tree: {
       text: "final",
       gloss: "adjective: last; conclusive",
@@ -105,13 +106,13 @@ const WORDS = [
         },
       ],
     },
-    position: [-8, 0, -12],
   },
   {
     id: "sourdough",
     label: "Sourdough",
     bracket: "[sour + dough]",
     note: "Another compound of two <strong>content morphemes</strong> (open-class items; §4.3). The textbook reminds us that compounds may be written solid, with a hyphen, or as separate words (§4.6)—here both parts are merged in spelling.",
+    position: [14, 0, -34],
     tree: {
       text: "sourdough",
       gloss: "noun: leavened bread or its starter",
@@ -130,13 +131,13 @@ const WORDS = [
         },
       ],
     },
-    position: [6, 0, -14],
   },
   {
     id: "before",
     label: "Before",
     bracket: "[be- + fore]",
     note: "As a <strong>function morpheme</strong> in use, <em>before</em> behaves as a closed-class preposition or adverb. Morphologically, many textbooks still separate <strong>be-</strong> + <strong>fore</strong> for teaching (compare the book’s discussion of how complex words are built from roots and affixes in §4.2).",
+    position: [-38, 0, -10],
     tree: {
       text: "before",
       gloss: "preposition / adverb: earlier than; in front of",
@@ -155,13 +156,13 @@ const WORDS = [
         },
       ],
     },
-    position: [-16, 0, -4],
   },
   {
     id: "rainbow",
     label: "Rainbow",
     bracket: "[rain + bow]",
     note: "Compound noun: <em>rain</em> + <em>bow</em> (§4.6). The book’s stress contrast (<em>blúebird</em> vs. <em>blue bírd</em>) is a useful reminder that compounds are not just long spelling—they have their own pronunciation patterns.",
+    position: [38, 0, -14],
     tree: {
       text: "rainbow",
       gloss: "noun: colored arc in the sky",
@@ -180,13 +181,13 @@ const WORDS = [
         },
       ],
     },
-    position: [16, 0, -6],
   },
   {
     id: "inhospitable",
     label: "Inhospitable",
     bracket: "[in- + [hospit + -able]]",
     note: "The textbook groups <strong>il-, im-, in-, ir-</strong> as variants of a negative prefix (Table 4.2). <strong>-able</strong> ‘capable of being’ is derivational (Table 4.2). Together they illustrate how derivational affixes change meaning and often word class (§4.3).",
+    position: [-24, 0, 34],
     tree: {
       text: "inhospitable",
       gloss: "adjective: not welcoming; harsh (environment)",
@@ -217,13 +218,13 @@ const WORDS = [
         },
       ],
     },
-    position: [-10, 0, 14],
   },
   {
     id: "demarcation",
     label: "Demarcation",
     bracket: "[[de- + mark] + -ation]",
     note: "Table 4.2 lists several negative / reversal prefixes (e.g. <strong>dis-</strong>, <strong>un-</strong>, <strong>in-</strong>); <strong>de-</strong> fits the same teaching point—derivational prefixes that reshape meaning before suffixes like <strong>-ation</strong> attach. That order (derivation before inflection) is stressed in §4.3.",
+    position: [43, 0, 29],
     tree: {
       text: "demarcation",
       gloss: "noun: a boundary or the act of marking one",
@@ -255,13 +256,13 @@ const WORDS = [
         },
       ],
     },
-    position: [18, 0, 12],
   },
   {
     id: "dehumanization",
     label: "Dehumanization",
     bracket: "[[de- + [human + -ize]] + -ation]",
     note: "Stacks like <strong>-ize</strong> + <strong>-ation</strong> mirror the textbook pattern: <strong>-ize</strong> ‘become’ builds a verb stem, then <strong>-ation</strong> forms an abstract noun (Tables 4.2–4.3 show how such suffixes differ from inflectional <strong>-s</strong> or <strong>-ed</strong>).",
+    position: [48, 0, -24],
     tree: {
       text: "dehumanization",
       gloss: "noun: treating people as less than human",
@@ -305,13 +306,13 @@ const WORDS = [
         },
       ],
     },
-    position: [20, 0, -10],
   },
   {
     id: "resistance",
     label: "Resistance",
     bracket: "[[re- + sist] + -ance]",
     note: "The suffix <strong>-ance</strong> nominalizes the verb stem (parallel in function to nominal <strong>-ment</strong> in the book’s examples such as <em>argument</em>). <strong>re-</strong> is listed among productive prefixes in Table 4.2; here it patterns with ‘back / against’ more than ‘again’ (compare <em>rewrite</em> vs. <em>resist</em>).",
+    position: [-43, 0, 24],
     tree: {
       text: "resistance",
       gloss: "noun: opposition; ability to withstand",
@@ -343,13 +344,13 @@ const WORDS = [
         },
       ],
     },
-    position: [-18, 0, 10],
   },
   {
     id: "revolution",
     label: "Revolution",
     bracket: "[[re- + volu] + -tion]",
     note: "Another <strong>re-</strong> + stem + <strong>-tion</strong> pattern, parallel to how the textbook discusses Latinate derivation in long academic words (§4.2–4.3). <strong>-tion</strong> is in the same family of nominalizing suffixes as <strong>-ation</strong>.",
+    position: [-48, 0, -19],
     tree: {
       text: "revolution",
       gloss: "noun: overthrow; complete cycle",
@@ -381,7 +382,6 @@ const WORDS = [
         },
       ],
     },
-    position: [-20, 0, -8],
   },
   {
     id: "unlockable-a",
@@ -390,6 +390,7 @@ const WORDS = [
     note: "Table 4.2 lists <strong>un-</strong> as ‘not, opposite of.’ Here <strong>un-</strong> attaches to the adjective <em>lockable</em>, so the reading is ‘not lockable’—i.e. <strong>not able to be locked</strong>. Bracketing [[un- [lock -able]]] matches that scope (compare §4.2 on how affixes combine).",
     context:
       "Fire-safety rules meant the side door stayed <strong>unlockable</strong>: it <strong>could not be locked</strong> during store hours, even though managers wanted tighter security.",
+    position: [5, 0, 38],
     tree: {
       text: "unlockable",
       gloss: "adj: not able to be locked",
@@ -420,7 +421,6 @@ const WORDS = [
         },
       ],
     },
-    position: [2, 0, 16],
   },
   {
     id: "unlockable-b",
@@ -429,6 +429,7 @@ const WORDS = [
     note: "Same surface string, different structure: <strong>-able</strong> attaches to the verb <em>unlock</em>, so the paraphrase is ‘able to be unlocked.’ This is a compact classroom example of why morphology cares about <strong>constituent structure</strong>, not just letters.",
     context:
       "After the update, my old phone was finally <strong>unlockable</strong>: Face ID meant we <strong>could unlock it</strong> without the forgotten passcode.",
+    position: [19, 0, 43],
     tree: {
       text: "unlockable",
       gloss: "adj: able to be unlocked",
@@ -460,95 +461,116 @@ const WORDS = [
         },
       ],
     },
-    position: [8, 0, 18],
   },
 ];
 
+const COLS = 4;
+const GAP_X = 40;
+const GAP_Z = 36;
+
+function assignGrid2d() {
+  const rows = Math.ceil(WORDS.length / COLS);
+  WORDS.forEach((w, i) => {
+    const col = i % COLS;
+    const row = Math.floor(i / COLS);
+    w.pos3d = new THREE.Vector3(w.position[0], w.position[1], w.position[2]);
+    w.pos2d = new THREE.Vector3(
+      (col - (COLS - 1) / 2) * GAP_X,
+      -10,
+      (row - (rows - 1) / 2) * GAP_Z
+    );
+  });
+}
+
 function layoutSubtree(node, depth, xCenter, spread) {
   if (!node.children || node.children.length === 0) {
-    return { width: spread, positions: [{ node, x: xCenter, y: -depth * 2.4, z: 0 }] };
+    return { width: spread, positions: [{ node, x: xCenter, y: -depth * 3.35, z: 0 }] };
   }
   const childSpread = spread / node.children.length;
-  let totalW = 0;
-  const allPos = [{ node, x: xCenter, y: -depth * 2.4, z: 0 }];
+  const allPos = [{ node, x: xCenter, y: -depth * 3.35, z: 0 }];
   let cursor = xCenter - spread / 2 + childSpread / 2;
   for (const c of node.children) {
-    const sub = layoutSubtree(c, depth + 1, cursor, childSpread * 0.92);
-    totalW += sub.width;
+    const sub = layoutSubtree(c, depth + 1, cursor, childSpread * 0.9);
     allPos.push(...sub.positions);
     cursor += childSpread;
   }
-  return { width: Math.max(spread, totalW), positions: allPos };
+  return { width: spread, positions: allPos };
 }
 
-function sphere(r, color) {
-  const g = new THREE.SphereGeometry(r, 24, 24);
+function sphere(r, color, roughness, metalness) {
+  const g = new THREE.SphereGeometry(r, 28, 28);
   const m = new THREE.MeshStandardMaterial({
     color,
-    metalness: 0.55,
-    roughness: 0.32,
+    metalness: metalness ?? 0.5,
+    roughness: roughness ?? 0.35,
     emissive: color,
-    emissiveIntensity: 0.08,
+    emissiveIntensity: 0.12,
   });
-  return new THREE.Mesh(g, m);
+  const mesh = new THREE.Mesh(g, m);
+  mesh.userData.baseEmissive = color.clone();
+  return mesh;
 }
 
-function edgeLine(a, b, color) {
+function edgeLine(a, b, colorHex, opacity) {
   const geo = new THREE.BufferGeometry().setFromPoints([a, b]);
-  const mat = new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.85 });
+  const mat = new THREE.LineBasicMaterial({
+    color: colorHex,
+    transparent: true,
+    opacity: opacity ?? 0.92,
+  });
   return new THREE.Line(geo, mat);
 }
 
 function makeLabel(text, sub, isRoot) {
   const div = document.createElement("div");
-  div.className = "morph-node-label";
-  div.style.marginTop = "-1em";
-  div.style.textAlign = "center";
-  div.style.pointerEvents = "none";
-  div.style.fontFamily = "system-ui, Segoe UI, sans-serif";
-  div.style.fontSize = isRoot ? "13px" : "11px";
-  div.style.fontWeight = isRoot ? "800" : "600";
-  div.style.color = isRoot ? "#ffffff" : "#c8f4ff";
-  div.style.textShadow = "0 0 8px #00ffff, 0 1px 2px #000";
-  div.innerHTML = `<div>${text}</div><div style="font-size:10px;opacity:.82;font-weight:500;color:#ffd060;margin-top:2px">${sub || ""}</div>`;
-  return new CSS2DObject(div);
+  div.className = "morph-lab";
+  const w = document.createElement("div");
+  w.className = "morph-lab__word";
+  w.textContent = text;
+  const g = document.createElement("div");
+  g.className = "morph-lab__gloss";
+  g.textContent = sub || "";
+  div.appendChild(w);
+  div.appendChild(g);
+  const obj = new CSS2DObject(div);
+  obj.userData.isRoot = isRoot;
+  return obj;
 }
 
 function buildWordGroup(word) {
   const group = new THREE.Group();
-  group.position.set(word.position[0], word.position[1], word.position[2]);
   group.userData.wordId = word.id;
+  group.userData.meshes = [];
+  group.userData.lines = [];
 
-  const { positions } = layoutSubtree(word.tree, 0, 0, 10);
-  const posMap = new Map();
-  for (const p of positions) {
-    posMap.set(p.node, p);
-  }
-
+  const spread = 13;
+  const { positions } = layoutSubtree(word.tree, 0, 0, spread);
   const meshes = new Map();
 
   for (const p of positions) {
     const { node, x, y, z } = p;
     const isRoot = node === word.tree;
-    const r = isRoot ? 0.55 : node.morphemeKey ? 0.38 : 0.32;
+    const r = isRoot ? 0.78 : node.morphemeKey ? 0.55 : 0.48;
     const hue = node.morphemeKey
       ? node.morphemeKey.startsWith("pfx:")
-        ? 0.55
+        ? 0.56
         : node.morphemeKey.startsWith("sfx:")
-          ? 0.85
-          : 0.12
-      : 0.72;
-    const col = new THREE.Color().setHSL(hue, 0.65, 0.55);
+          ? 0.82
+          : 0.14
+      : 0.7;
+    const col = new THREE.Color().setHSL(hue, 0.72, 0.52);
     const mesh = sphere(r, col);
     mesh.position.set(x, y, z);
     mesh.userData.morphemeKey = node.morphemeKey || null;
     mesh.userData.wordId = word.id;
     group.add(mesh);
     meshes.set(node, mesh);
+    group.userData.meshes.push(mesh);
     if (node.morphemeKey) registerMorpheme(node.morphemeKey, mesh, word.id);
 
     const label = makeLabel(node.text, node.gloss || "", isRoot);
-    label.position.set(x, y - r - 0.35, z);
+    const lift = r + (isRoot ? 0.55 : 0.42);
+    label.position.set(x, y - lift, z);
     group.add(label);
   }
 
@@ -559,8 +581,9 @@ function buildWordGroup(word) {
     for (const c of node.children) {
       const childMesh = meshes.get(c);
       if (parentMesh && childMesh) {
-        const line = edgeLine(parentMesh.position.clone(), childMesh.position.clone(), 0x44ffcc);
+        const line = edgeLine(parentMesh.position.clone(), childMesh.position.clone(), 0x55ffcc, 0.9);
         group.add(line);
+        group.userData.lines.push(line);
       }
     }
   }
@@ -572,9 +595,9 @@ function buildBridgeLines(scene) {
   const bridges = new THREE.Group();
   bridges.name = "morpheme-bridges";
   const mat = new THREE.LineBasicMaterial({
-    color: 0xff6ad5,
+    color: 0xff4dd4,
     transparent: true,
-    opacity: 0.65,
+    opacity: 0.62,
   });
 
   for (const key of Object.keys(morphemeRegistry)) {
@@ -607,22 +630,52 @@ function updateBridgeLines(bridges) {
   });
 }
 
-function init(host, detailEl, selectEl) {
+function smoothstep(t) {
+  const x = Math.min(1, Math.max(0, t));
+  return x * x * (3 - 2 * x);
+}
+
+function easeOutCubic(t) {
+  const x = Math.min(1, Math.max(0, t));
+  return 1 - (1 - x) ** 3;
+}
+
+/** Slight overshoot — trees “pop” from the singularity */
+function easeOutBack(t) {
+  const x = Math.min(1, Math.max(0, t));
+  const c1 = 1.525;
+  const c3 = c1 + 1;
+  return 1 + c3 * (x - 1) ** 3 + c1 * (x - 1) ** 2;
+}
+
+const SINGULARITY = new THREE.Vector3(0, -8, 0);
+/** Seconds: bloom → orbit tour → settle */
+const INTRO_T_GROW = 3.35;
+const INTRO_T_TOUR = 14.5;
+const INTRO_T_SETTLE = 1.85;
+const INTRO_TOTAL = INTRO_T_GROW + INTRO_T_TOUR + INTRO_T_SETTLE;
+
+function init(host, detailEl, selectEl, shellEl) {
+  assignGrid2d();
   Object.keys(morphemeRegistry).forEach((k) => delete morphemeRegistry[k]);
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0a0e1a);
-  scene.fog = new THREE.FogExp2(0x0a1528, 0.012);
+  const bg3d = new THREE.Color(0x0a0e1a);
+  const bg2d = new THREE.Color(0xf7f8fc);
+  scene.background = bg3d.clone();
+  scene.fog = new THREE.FogExp2(0x0a1528, 0.0085);
 
-  const camera = new THREE.PerspectiveCamera(50, host.clientWidth / host.clientHeight, 0.1, 500);
-  const introEndPos = new THREE.Vector3(8, 11, 28);
-  const introStartPos = new THREE.Vector3(3, 48, 95);
-  camera.position.copy(REDUCED_MOTION ? introEndPos : introStartPos);
+  const clock = new THREE.Clock();
+  const camera = new THREE.PerspectiveCamera(48, host.clientWidth / host.clientHeight, 0.1, 600);
+  const introStartPos = new THREE.Vector3(8, 58, 118);
+  const focusCenter = new THREE.Vector3(0, -12, 0);
+  const cam3dPos = new THREE.Vector3(22, 26, 62);
+  const cam3dTarget = focusCenter.clone();
+  camera.position.copy(REDUCED_MOTION ? cam3dPos : introStartPos);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(host.clientWidth, host.clientHeight);
-  renderer.setClearColor(0x0a0e1a, 1);
   host.appendChild(renderer.domElement);
 
   const labelRenderer = new CSS2DRenderer();
@@ -635,76 +688,89 @@ function init(host, detailEl, selectEl) {
 
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
-  controls.dampingFactor = 0.06;
-  controls.minDistance = 6;
-  controls.maxDistance = 120;
-  controls.target.set(2, -4, 2);
+  controls.dampingFactor = 0.07;
+  controls.minDistance = 10;
+  controls.maxDistance = 220;
+  controls.target.copy(cam3dTarget);
   controls.enabled = false;
-  controls.update();
 
-  scene.add(new THREE.AmbientLight(0x6a8cff, 0.35));
-  const key = new THREE.DirectionalLight(0xffffff, 1.05);
-  key.position.set(20, 40, 25);
-  scene.add(key);
-  const rim = new THREE.PointLight(0xff6ad5, 0.8, 120);
-  rim.position.set(-15, 10, -10);
-  scene.add(rim);
-  const fill = new THREE.PointLight(0x00ffd0, 0.45, 100);
-  fill.position.set(30, -5, 20);
-  scene.add(fill);
+  const ambient3d = new THREE.AmbientLight(0x6a8cff, 0.38);
+  const key3d = new THREE.DirectionalLight(0xffffff, 1.1);
+  key3d.position.set(28, 50, 32);
+  const rim3d = new THREE.PointLight(0xff6ad5, 0.85, 200);
+  rim3d.position.set(-28, 18, -18);
+  const fill3d = new THREE.PointLight(0x44ffd0, 0.5, 160);
+  fill3d.position.set(40, -8, 28);
+  scene.add(ambient3d, key3d, rim3d, fill3d);
 
-  const grid = new THREE.GridHelper(160, 40, 0x00ffc8, 0x1a3048);
-  grid.position.y = -14;
+  const ambient2d = new THREE.AmbientLight(0xffffff, 0.95);
+  const key2d = new THREE.DirectionalLight(0xffffff, 0.55);
+  key2d.position.set(0.3, 1, 0.65);
+  ambient2d.visible = false;
+  key2d.visible = false;
+  scene.add(ambient2d, key2d);
+
+  const grid = new THREE.GridHelper(220, 44, 0x00ffc8, 0x1a3048);
+  grid.position.y = -22;
   scene.add(grid);
 
   const wordGroups = {};
   for (const w of WORDS) {
     const g = buildWordGroup(w);
+    g.position.copy(w.pos3d);
     scene.add(g);
     wordGroups[w.id] = g;
   }
 
   const bridges = buildBridgeLines(scene);
 
-  /* Intro overlay */
-  const intro = document.createElement("div");
-  intro.className = "morph-intro";
-  intro.innerHTML = `
-    <div class="morph-intro-grid" aria-hidden="true"></div>
-    <div class="morph-intro-title">Morphology</div>
-    <div class="morph-intro-sub">The Analysis of Words · Ch. 4</div>
-    <div class="morph-intro-tag">● Interactive module · Park-Johnson &amp; Shin ●</div>
-  `;
-  const skipBtn = document.createElement("button");
-  skipBtn.type = "button";
-  skipBtn.className = "morph-skip";
-  skipBtn.textContent = "Skip intro";
-  intro.appendChild(skipBtn);
-  host.appendChild(intro);
+  const sceneCenter = new THREE.Vector3();
+  for (const w of WORDS) sceneCenter.add(w.pos3d);
+  sceneCenter.multiplyScalar(1 / WORDS.length);
 
-  let introDone = false;
-  let introT = 0;
-  const introDur = 5.2;
+  const visitOrder = [...WORDS].sort((a, b) => {
+    const ang = (w) => Math.atan2(w.pos3d.z - sceneCenter.z, w.pos3d.x - sceneCenter.x);
+    return ang(a) - ang(b);
+  });
 
-  if (REDUCED_MOTION) {
-    intro.remove();
-    introDone = true;
-    camera.position.copy(introEndPos);
-    controls.enabled = true;
-    controls.update();
+  for (const w of WORDS) {
+    const g = wordGroups[w.id];
+    g.position.copy(w.pos3d);
+    g.scale.setScalar(1);
+    const box = new THREE.Box3().setFromObject(g);
+    w.introCamTarget = box.getCenter(new THREE.Vector3());
+    g.position.copy(SINGULARITY);
+    g.scale.setScalar(0.012);
+  }
+  bridges.visible = false;
+  bridges.children.forEach((line) => {
+    if (line.material) line.material.opacity = 0;
+  });
+  grid.visible = false;
+
+  function finishIntroGroups() {
+    for (const w of WORDS) {
+      const g = wordGroups[w.id];
+      g.position.copy(w.pos3d);
+      g.scale.setScalar(1);
+    }
+    bridges.visible = true;
+    bridges.children.forEach((line) => {
+      if (line.material) line.material.opacity = 0.62;
+    });
+    grid.visible = true;
   }
 
-  function endIntro() {
-    if (introDone) return;
-    introDone = true;
-    intro.remove();
-    camera.position.copy(introEndPos);
-    controls.target.set(2, -4, 2);
-    controls.enabled = true;
+  function flyToWord(id) {
+    const g = wordGroups[id];
+    if (!g) return;
+    const box = new THREE.Box3().setFromObject(g);
+    const c = box.getCenter(new THREE.Vector3());
+    focusCenter.copy(c);
+    cam3dTarget.copy(c);
+    cam3dPos.copy(c).add(new THREE.Vector3(18, 16, 36));
     controls.update();
   }
-
-  skipBtn.addEventListener("click", endIntro);
 
   function fillDetail(wordId) {
     const w = WORDS.find((x) => x.id === wordId);
@@ -716,24 +782,163 @@ function init(host, detailEl, selectEl) {
     detailEl.innerHTML = html;
   }
 
+  const firstWordId = WORDS[0].id;
   if (selectEl) {
-    selectEl.innerHTML = WORDS.map(
-      (w) => `<option value="${w.id}">${w.label}</option>`
-    ).join("");
+    selectEl.innerHTML = WORDS.map((w) => `<option value="${w.id}">${w.label}</option>`).join("");
     selectEl.addEventListener("change", () => {
-      const id = selectEl.value;
-      fillDetail(id);
-      const g = wordGroups[id];
-      if (g) {
-        const box = new THREE.Box3().setFromObject(g);
-        const c = box.getCenter(new THREE.Vector3());
-        controls.target.copy(c);
-        camera.position.set(c.x + 10, c.y + 8, c.z + 14);
-        controls.update();
-      }
+      fillDetail(selectEl.value);
+      flyToWord(selectEl.value);
     });
-    fillDetail(selectEl.value || WORDS[0].id);
+    fillDetail(selectEl.value || firstWordId);
+    flyToWord(selectEl.value || firstWordId);
+  } else {
+    flyToWord(firstWordId);
   }
+
+  let viewTarget = 0;
+  let viewBlend = 0;
+  let transition = null;
+
+  const btn3d = document.getElementById("morph-btn-3d");
+  const btn2d = document.getElementById("morph-btn-2d");
+
+  function setViewButtons() {
+    const is2 = viewTarget >= 0.5;
+    if (btn3d) {
+      btn3d.classList.toggle("morph-view-btn--active", !is2);
+      btn3d.setAttribute("aria-pressed", (!is2).toString());
+    }
+    if (btn2d) {
+      btn2d.classList.toggle("morph-view-btn--active", is2);
+      btn2d.setAttribute("aria-pressed", is2.toString());
+    }
+  }
+
+  function startTransition(to2d) {
+    const next = to2d ? 1 : 0;
+    if (next === viewTarget && transition === null && Math.abs(viewBlend - next) < 0.02) return;
+    transition = {
+      from: viewBlend,
+      to: next,
+      t0: clock.elapsedTime,
+    };
+    viewTarget = next;
+    setViewButtons();
+  }
+
+  if (btn3d) btn3d.addEventListener("click", () => startTransition(false));
+  if (btn2d) btn2d.addEventListener("click", () => startTransition(true));
+
+  function applyVisualTheme(blend) {
+    const u = smoothstep(blend);
+    scene.background.copy(bg3d).lerp(bg2d, u);
+    scene.fog.color.copy(scene.background);
+    scene.fog.density = 0.0085 * (1 - u);
+
+    grid.visible = u < 0.35;
+    ambient3d.intensity = 0.38 * (1 - u);
+    key3d.intensity = 1.1 * (1 - u);
+    rim3d.intensity = 0.85 * (1 - u);
+    fill3d.intensity = 0.5 * (1 - u);
+    ambient2d.visible = u > 0.2;
+    key2d.visible = u > 0.2;
+
+    host.classList.toggle("morph-canvas-host--wb", u > 0.88);
+    if (shellEl) shellEl.classList.toggle("morphology-shell--wb", u > 0.88);
+
+    const bridgeOpacity = 0.62 * (1 - u) * (1 - u);
+    bridges.children.forEach((line) => {
+      if (line.material) line.material.opacity = bridgeOpacity;
+    });
+
+    for (const w of WORDS) {
+      const g = wordGroups[w.id];
+      if (!g) continue;
+      g.position.lerpVectors(w.pos3d, w.pos2d, u);
+
+      const sway = (1 - u) * Math.sin(clock.elapsedTime * 0.1 + w.pos3d.x * 0.02) * 0.045;
+      g.rotation.y = sway;
+
+      const dim = 0.08 * u;
+      for (const mesh of g.userData.meshes) {
+        const m = mesh.material;
+        m.metalness = 0.5 * (1 - u) + 0.12 * u;
+        m.roughness = 0.35 * (1 - u) + 0.55 * u;
+        m.emissiveIntensity = 0.12 * (1 - u) + 0.04 * u;
+        if (mesh.userData.baseEmissive)
+          m.emissive.copy(mesh.userData.baseEmissive).multiplyScalar(1 - dim);
+      }
+      const line3 = 0x33ddaa;
+      const line2 = 0x1a4d44;
+      const lc = new THREE.Color(line3).lerp(new THREE.Color(line2), u);
+      for (const line of g.userData.lines) {
+        line.material.color.copy(lc);
+        line.material.opacity = 0.88 * (1 - u) + 0.95 * u;
+      }
+    }
+
+    const cam2dPos = focusCenter.clone().add(new THREE.Vector3(0, 18, 104));
+    const cam2dTarget = focusCenter.clone();
+    camera.position.lerpVectors(cam3dPos, cam2dPos, u);
+    controls.target.lerpVectors(cam3dTarget, cam2dTarget, u);
+
+    controls.enableRotate = u < 0.75;
+    camera.fov = 48 + 3 * u;
+    camera.updateProjectionMatrix();
+  }
+
+  /* Intro overlay */
+  const intro = document.createElement("div");
+  intro.className = "morph-intro";
+  intro.innerHTML = `
+    <div class="morph-intro-grid" aria-hidden="true"></div>
+    <div class="morph-intro-title">Morphology</div>
+    <div class="morph-intro-sub">The Analysis of Words · Ch. 4</div>
+    <div class="morph-intro-tag">● Word trees · 3D &amp; whiteboard ●</div>
+  `;
+  const skipBtn = document.createElement("button");
+  skipBtn.type = "button";
+  skipBtn.className = "morph-skip";
+  skipBtn.textContent = "Skip intro";
+  intro.appendChild(skipBtn);
+  host.appendChild(intro);
+
+  let introDone = false;
+  let introT = 0;
+
+  let introTourLastIndex = -1;
+  const introSettle = {
+    captured: false,
+    fromPos: new THREE.Vector3(),
+    fromTarget: new THREE.Vector3(),
+  };
+
+  if (REDUCED_MOTION) {
+    intro.remove();
+    introDone = true;
+    finishIntroGroups();
+    flyToWord(WORDS[0].id);
+    camera.position.copy(cam3dPos);
+    controls.target.copy(cam3dTarget);
+    controls.enabled = true;
+    controls.update();
+  }
+
+  function endIntro() {
+    if (introDone) return;
+    introDone = true;
+    intro.remove();
+    finishIntroGroups();
+    flyToWord(selectEl?.value || firstWordId);
+    camera.position.copy(cam3dPos);
+    controls.target.copy(cam3dTarget);
+    controls.enabled = true;
+    controls.update();
+  }
+
+  skipBtn.addEventListener("click", endIntro);
+
+  setViewButtons();
 
   window.addEventListener("resize", () => {
     camera.aspect = host.clientWidth / host.clientHeight;
@@ -742,27 +947,109 @@ function init(host, detailEl, selectEl) {
     labelRenderer.setSize(host.clientWidth, host.clientHeight);
   });
 
-  const clock = new THREE.Clock();
-
   function animate() {
     requestAnimationFrame(animate);
     const dt = clock.getDelta();
     introT += dt;
 
     if (!introDone && !REDUCED_MOTION) {
-      const u = Math.min(1, introT / introDur);
-      const ease = 1 - (1 - u) ** 3;
-      camera.position.lerpVectors(introStartPos, introEndPos, ease);
-      controls.target.lerp(new THREE.Vector3(2, -4 + ease * 2, 2), 0.04);
-      if (u >= 1) endIntro();
+      if (introT < INTRO_T_GROW) {
+        const g = Math.min(1, introT / INTRO_T_GROW);
+        const growE = easeOutBack(g);
+        const posE = easeOutCubic(Math.min(1, g * 1.08));
+
+        for (const w of WORDS) {
+          const grp = wordGroups[w.id];
+          grp.position.lerpVectors(SINGULARITY, w.pos3d, posE);
+          grp.scale.setScalar(0.012 + 0.988 * growE);
+        }
+
+        const bloomBridge = smoothstep((g - 0.26) / 0.5);
+        bridges.visible = bloomBridge > 0.03;
+        bridges.children.forEach((line) => {
+          if (line.material) line.material.opacity = 0.62 * bloomBridge;
+        });
+        grid.visible = g > 0.1;
+
+        const pull = easeOutCubic(g);
+        const midOrbit = new THREE.Vector3(
+          sceneCenter.x + 12,
+          sceneCenter.y + 46,
+          sceneCenter.z + 64
+        );
+        camera.position.lerpVectors(introStartPos, midOrbit, pull);
+        const gaze = new THREE.Vector3().lerpVectors(SINGULARITY, sceneCenter, pull);
+        controls.target.lerp(gaze, 0.12);
+      } else if (introT < INTRO_T_GROW + INTRO_T_TOUR) {
+        const tourElapsed = introT - INTRO_T_GROW;
+        const tourT = tourElapsed / INTRO_T_TOUR;
+        const n = visitOrder.length;
+        const wordPhase = tourT * n;
+        const i0 = Math.floor(wordPhase) % n;
+        const i1 = (i0 + 1) % n;
+        const localT = wordPhase - Math.floor(wordPhase);
+
+        if (i0 !== introTourLastIndex) {
+          introTourLastIndex = i0;
+          fillDetail(visitOrder[i0].id);
+        }
+
+        const focus = new THREE.Vector3().lerpVectors(
+          visitOrder[i0].introCamTarget,
+          visitOrder[i1].introCamTarget,
+          smoothstep(localT)
+        );
+        const thru = new THREE.Vector3().lerpVectors(
+          focus,
+          sceneCenter,
+          0.11 + 0.07 * Math.sin(tourT * Math.PI * 2)
+        );
+        const theta = tourT * Math.PI * 2 * 1.18;
+        const R = 48 + 14 * Math.sin(localT * Math.PI) + 10 * Math.sin(tourT * Math.PI * 2);
+        const camY = 16 + 16 * Math.sin(tourT * Math.PI * 2) + 7 * Math.cos(localT * Math.PI);
+        camera.position.set(
+          sceneCenter.x + Math.cos(theta) * R,
+          camY,
+          sceneCenter.z + Math.sin(theta) * R
+        );
+        controls.target.lerp(thru, 0.2);
+
+        bridges.visible = true;
+        bridges.children.forEach((line) => {
+          if (line.material) line.material.opacity = 0.62;
+        });
+        grid.visible = true;
+      } else {
+        const settleElapsed = introT - INTRO_T_GROW - INTRO_T_TOUR;
+        const se = Math.min(1, settleElapsed / INTRO_T_SETTLE);
+        if (!introSettle.captured) {
+          introSettle.captured = true;
+          introSettle.fromPos.copy(camera.position);
+          introSettle.fromTarget.copy(controls.target);
+          flyToWord(selectEl?.value || firstWordId);
+        }
+        const k = easeOutCubic(se);
+        camera.position.lerpVectors(introSettle.fromPos, cam3dPos, k);
+        controls.target.lerpVectors(introSettle.fromTarget, cam3dTarget, k);
+        if (se >= 1) endIntro();
+      }
     }
 
-    controls.update();
-    updateBridgeLines(bridges);
-    for (const w of WORDS) {
-      const g = wordGroups[w.id];
-      if (g) g.rotation.y = Math.sin(clock.elapsedTime * 0.12 + w.position[0]) * 0.04;
+    if (transition) {
+      const elapsed = clock.elapsedTime - transition.t0;
+      const k = Math.min(1, elapsed / TRANSITION_SEC);
+      const e = smoothstep(k);
+      viewBlend = transition.from + (transition.to - transition.from) * e;
+      if (k >= 1) {
+        viewBlend = transition.to;
+        transition = null;
+      }
     }
+
+    if (introDone) applyVisualTheme(viewBlend);
+
+    controls.update();
+    if (bridges.visible) updateBridgeLines(bridges);
     renderer.render(scene, camera);
     labelRenderer.render(scene, camera);
   }
@@ -774,6 +1061,7 @@ if (host) {
   init(
     host,
     document.getElementById("morph-detail"),
-    document.getElementById("morph-word-select")
+    document.getElementById("morph-word-select"),
+    document.getElementById("morphology-shell")
   );
 }
