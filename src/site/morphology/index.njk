@@ -21,7 +21,7 @@ contentClasses: morphology-page
       id="morph-canvas-host"
       class="morph-canvas-host"
       role="img"
-      aria-label="Morpheme trees: use view buttons to switch between 3D garden and whiteboard layout"
+      aria-label="Morpheme trees: use view buttons to switch between 3D garden, master tree, and whiteboard layout"
     ></div>
     <div class="morph-ui-panel">
       <div class="morph-ui-row morph-ui-row--toggle" role="group" aria-label="Visualization mode">
@@ -45,6 +45,16 @@ contentClasses: morphology-page
           aria-label="Whiteboard view"
         >
           ✔
+        </button>
+        <button
+          type="button"
+          id="morph-btn-master"
+          class="morph-view-btn morph-view-btn--icon"
+          aria-pressed="false"
+          title="Master tree — morpheme mega-clusters"
+          aria-label="Master tree view"
+        >
+          🧬
         </button>
         <button
           type="button"

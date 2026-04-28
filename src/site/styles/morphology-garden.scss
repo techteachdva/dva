@@ -280,107 +280,109 @@ html.morph-immersive-open body {
   /* WebGL clears to near-white; frame reads as whiteboard */
 }
 
-/* CSS2D morpheme labels — card backing reduces overlap & improves contrast */
+/* CSS2D morpheme labels — larger type + cards so text stays readable at normal camera distance */
 .morph-canvas-host .morph-lab {
   text-align: center;
   pointer-events: none;
   user-select: none;
-  max-width: 11.5rem;
-  padding: 0.4rem 0.55rem 0.45rem;
-  border-radius: 10px;
-  background: rgba(6, 14, 32, 0.82);
-  border: 1px solid rgba(120, 210, 255, 0.22);
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5);
+  max-width: 13rem;
+  padding: 0.45rem 0.6rem 0.5rem;
+  border-radius: 11px;
+  background: rgba(6, 14, 32, 0.88);
+  border: 1px solid rgba(130, 220, 255, 0.28);
+  box-shadow: 0 4px 22px rgba(0, 0, 0, 0.55);
   -webkit-font-smoothing: antialiased;
 }
 
 /* Grammatical category (Noun, Prefix, Suffix, …) — apex shows whole-word POS */
 .morph-canvas-host .morph-lab__pos {
   font-family: system-ui, "Segoe UI", Roboto, sans-serif;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 800;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.13em;
   text-transform: uppercase;
   color: #b8f0ff;
   text-shadow: 0 0 10px rgba(0, 220, 255, 0.85), 0 1px 3px #000;
-  line-height: 1.25;
-  margin-bottom: 4px;
+  line-height: 1.3;
+  margin-bottom: 5px;
 }
 
 .morph-canvas-host .morph-lab--apex .morph-lab__pos {
-  font-size: 12px;
-  letter-spacing: 0.18em;
+  font-size: 13px;
+  letter-spacing: 0.16em;
   color: #fff8e0;
   text-shadow: 0 0 14px rgba(255, 220, 120, 0.95), 0 1px 3px #000;
-  margin-bottom: 5px;
+  margin-bottom: 6px;
 }
 
 .morph-canvas-host .morph-lab__word {
   font-family: system-ui, "Segoe UI", Roboto, sans-serif;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 900;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.02em;
   color: #ffffff;
   text-shadow: 0 0 14px rgba(0, 255, 255, 0.95), 0 0 3px #000, 0 2px 6px rgba(0, 0, 0, 0.85);
-  line-height: 1.2;
+  line-height: 1.25;
   word-break: break-word;
   overflow-wrap: anywhere;
 }
 
 .morph-canvas-host .morph-lab--apex .morph-lab__word {
-  font-size: 15px;
-  line-height: 1.22;
+  font-size: 17px;
+  line-height: 1.28;
 }
 
 .morph-canvas-host .morph-lab__gloss {
   font-family: system-ui, "Segoe UI", Roboto, sans-serif;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 650;
-  color: #ffe8a8;
+  color: #ffeecc;
   text-shadow: 0 1px 4px #000;
-  margin-top: 5px;
-  max-width: 14em;
-  line-height: 1.35;
+  margin-top: 6px;
+  max-width: 15em;
+  line-height: 1.4;
   margin-left: auto;
   margin-right: auto;
-  opacity: 0.96;
+  opacity: 0.98;
 }
 
 .morph-canvas-host--wb .morph-lab {
-  background: rgba(255, 255, 255, 0.94);
-  border-color: rgba(15, 23, 42, 0.14);
-  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.97);
+  border: 1px solid rgba(15, 23, 42, 0.2);
+  box-shadow: 0 5px 24px rgba(15, 23, 42, 0.16);
 }
 
 .morph-canvas-host--wb .morph-lab__pos {
-  color: #0d5c6e !important;
+  color: #0a4c5c !important;
   text-shadow: none !important;
-  font-size: 10px !important;
-  letter-spacing: 0.12em !important;
+  font-size: 11px !important;
+  letter-spacing: 0.11em !important;
+  font-weight: 850 !important;
 }
 
 .morph-canvas-host--wb .morph-lab--apex .morph-lab__pos {
-  color: #92400e !important;
-  font-size: 12px !important;
-  letter-spacing: 0.14em !important;
+  color: #7c2d12 !important;
+  font-size: 13px !important;
+  letter-spacing: 0.13em !important;
 }
 
 .morph-canvas-host--wb .morph-lab__word {
-  color: #0a1020 !important;
+  color: #020617 !important;
   text-shadow: none !important;
-  font-size: 15px !important;
+  font-size: 17px !important;
   font-weight: 900 !important;
 }
 
 .morph-canvas-host--wb .morph-lab--apex .morph-lab__word {
-  font-size: 16px !important;
+  font-size: 18px !important;
 }
 
 .morph-canvas-host--wb .morph-lab__gloss {
-  color: #334155 !important;
+  color: #0f172a !important;
   text-shadow: none !important;
-  font-size: 11px !important;
-  font-weight: 600 !important;
+  font-size: 12.5px !important;
+  font-weight: 650 !important;
+  line-height: 1.45 !important;
 }
 
 .morph-ui-panel {
@@ -992,7 +994,7 @@ html.morph-immersive-open body {
 
   .morph-ui-row--toggle {
     flex-direction: row;
-    flex-wrap: nowrap;
+    flex-wrap: wrap;
     justify-content: center;
     align-items: center;
     gap: 0.35rem;

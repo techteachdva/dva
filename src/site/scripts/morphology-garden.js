@@ -9,6 +9,8 @@ import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer
 const _vBridgeA = new THREE.Vector3();
 const _vBridgeB = new THREE.Vector3();
 const _orbitDblClickTarget = new THREE.Vector3();
+const _posFrom = new THREE.Vector3();
+const _posTo = new THREE.Vector3();
 
 const REDUCED_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const TRANSITION_SEC = REDUCED_MOTION ? 0.01 : 1.48;
@@ -19,7 +21,8 @@ const LOD_OPACITY_EPS = 0.02;
 const GARDEN_SELECT = "__garden__";
 
 /** Whiteboard: trees on a circle (garden) vs one tree centered (isolate) */
-const WB_CIRCLE_RADIUS = 92;
+/** Wider spacing on the whiteboard ring so neighboring trees / labels overlap less */
+const WB_CIRCLE_RADIUS = 112;
 
 /** @type {Record<string, { mesh: THREE.Mesh, wordId: string }[]>} */
 const morphemeRegistry = {};
@@ -817,10 +820,98 @@ function assignWhiteboardIsolate(wordId) {
   });
 }
 
+/** Mega-tree ring: each connected morpheme-component gets a hub on this radius */
+const MASTER_TREE_RING = 132;
+const MASTER_TREE_INNER = 46;
+
+function collectMorphemeKeys(node, /** @type {Set<string>} */ out) {
+  if (node.morphemeKey) out.add(node.morphemeKey);
+  for (const c of node.children || []) collectMorphemeKeys(c, out);
+}
+
+/**
+ * Place words into shared-morpheme clusters on a large ring (master tree view).
+ * @param {THREE.Vector3} sceneCenter
+ */
+function assignMasterTreeLayout(sceneCenter) {
+  /** @type {Map<string, Set<string>>} */
+  const adj = new Map();
+  for (const w of WORDS) adj.set(w.id, new Set());
+
+  /** @type {Map<string, string[]>} */
+  const keyToWords = new Map();
+  for (const w of WORDS) {
+    const ks = new Set();
+    collectMorphemeKeys(w.tree, ks);
+    for (const k of ks) {
+      if (!keyToWords.has(k)) keyToWords.set(k, []);
+      keyToWords.get(k).push(w.id);
+    }
+  }
+  for (const list of keyToWords.values()) {
+    if (list.length < 2) continue;
+    for (let i = 0; i < list.length; i++) {
+      for (let j = i + 1; j < list.length; j++) {
+        const a = list[i];
+        const b = list[j];
+        adj.get(a)?.add(b);
+        adj.get(b)?.add(a);
+      }
+    }
+  }
+
+  const seen = new Set();
+  const components = [];
+  for (const w of WORDS) {
+    if (seen.has(w.id)) continue;
+    const comp = [];
+    const stack = [w.id];
+    while (stack.length) {
+      const id = stack.pop();
+      if (seen.has(id)) continue;
+      seen.add(id);
+      comp.push(id);
+      for (const n of adj.get(id) || []) {
+        if (!seen.has(n)) stack.push(n);
+      }
+    }
+    components.push(comp);
+  }
+  components.sort((a, b) => b.length - a.length);
+
+  const y = sceneCenter.y - 6;
+  const nComp = components.length;
+  for (const w of WORDS) {
+    if (!w.posMaster) w.posMaster = new THREE.Vector3();
+  }
+
+  components.forEach((comp, ci) => {
+    const theta = (ci / Math.max(1, nComp)) * Math.PI * 2 - Math.PI / 2;
+    const cx = sceneCenter.x + Math.cos(theta) * MASTER_TREE_RING;
+    const cz = sceneCenter.z + Math.sin(theta) * MASTER_TREE_RING;
+    const m = comp.length;
+    comp.forEach((wid, j) => {
+      const w = WORDS.find((x) => x.id === wid);
+      if (!w) return;
+      const phi = m <= 1 ? 0 : (j / m) * Math.PI * 2;
+      const ox = m <= 1 ? 0 : Math.cos(phi) * MASTER_TREE_INNER;
+      const oz = m <= 1 ? 0 : Math.sin(phi) * MASTER_TREE_INNER;
+      w.posMaster.set(cx + ox, y, cz + oz);
+    });
+  });
+}
+
+/** Word group position for the given view mode. */
+function getPosForMode(w, mode) {
+  if (mode === "whiteboard") return w.pos2d;
+  if (mode === "master") return w.posMaster;
+  return w.pos3d;
+}
+
 /** Vertical gap between levels (apex at top → constituents branch outward in XZ) */
-const TREE_DEPTH_STEP = 5.15;
+const TREE_DEPTH_STEP = 5.75;
 /** Initial ring radius from apex; children recurse in smaller wedges for a fractal, bushy silhouette */
-const TREE_LAYOUT_RADIUS0 = 10.2;
+const TREE_LAYOUT_RADIUS0 = 13.6;
 
 /** Lateral kick so unary chains (one child) do not stack in a straight vertical “pole” */
 function unaryBranchJitter(depth) {
@@ -839,7 +930,7 @@ function layoutSubtree(node, depth, x, y, z, wedgeStart, wedgeSize, radius) {
 
   const yChild = y - TREE_DEPTH_STEP;
   const n = children.length;
-  const r = Math.max(3.65, Math.min(13.2, radius * (0.58 + 0.12 * n)));
+  const r = Math.max(4.1, Math.min(17, radius * (0.58 + 0.12 * n)));
   const wedge = Math.max(wedgeSize, 0.52 * n);
 
   for (let i = 0; i < n; i++) {
@@ -1026,11 +1117,22 @@ function buildWordGroup(word) {
       gloss: node.gloss || "",
       isRoot,
     });
-    const lift = r + (isRoot ? 1.12 : 0.55);
-    const tx = 0.24;
-    const ox = isRoot ? 0 : -z * tx;
-    const oz = isRoot ? 0 : x * tx;
+    const lift = r + (isRoot ? 1.42 : 0.78);
+    let ox = 0;
+    let oz = 0;
+    if (!isRoot) {
+      const hr = Math.hypot(x, z);
+      const push = 0.62 + treeDepth * 0.16;
+      if (hr > 1e-3) {
+        ox = (x / hr) * push;
+        oz = (z / hr) * push;
+      } else {
+        const side = treeDepth % 2 === 0 ? 1 : -1;
+        ox = side * (0.55 + treeDepth * 0.1);
+      }
+    }
     label.position.set(x + ox, y - lift, z + oz);
+    label.scale.setScalar(isRoot ? 1.32 : 1.2);
     group.add(label);
     mesh.userData.label = label;
   }
@@ -1160,7 +1262,7 @@ function init(host, detailEl, selectEl, shellEl) {
   const camera = new THREE.PerspectiveCamera(48, host.clientWidth / host.clientHeight, 0.1, 600);
   const introStartPos = new THREE.Vector3(8, 58, 118);
   const focusCenter = new THREE.Vector3(0, -12, 0);
-  const cam3dPos = new THREE.Vector3(22, 26, 62);
+  const cam3dPos = new THREE.Vector3(22, 28, 76);
   const cam3dTarget = focusCenter.clone();
   camera.position.copy(REDUCED_MOTION ? cam3dPos : introStartPos);
 
@@ -1267,6 +1369,36 @@ function init(host, detailEl, selectEl, shellEl) {
       sceneCenter.z + Math.sin(a) * INTRO_RING_RADIUS
     );
   });
+
+  assignMasterTreeLayout(sceneCenter);
+
+  const cam3dMaster = new THREE.Vector3();
+  const cam3dTargetMaster = new THREE.Vector3();
+
+  function computeMasterCamera() {
+    const box = new THREE.Box3();
+    const pad = new THREE.Vector3(26, 14, 26);
+    for (const w of WORDS) {
+      if (!w.posMaster) continue;
+      box.expandByPoint(w.posMaster.clone().add(pad));
+      box.expandByPoint(w.posMaster.clone().sub(pad));
+    }
+    if (box.isEmpty()) {
+      cam3dTargetMaster.copy(sceneCenter);
+      cam3dMaster.copy(cam3dPos);
+      return;
+    }
+    const c = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    const extent = Math.max(size.x, size.z, 95);
+    cam3dTargetMaster.copy(c);
+    cam3dMaster.set(c.x + extent * 0.48, c.y + extent * 0.36, c.z + extent * 0.68);
+  }
+
+  computeMasterCamera();
+
+  /** @type {'garden' | 'whiteboard' | 'master'} */
+  let viewMode = "garden";
 
   function rebuildGardenHints(focusWordId) {
     while (gardenHints.children.length) {
@@ -1386,8 +1518,8 @@ function init(host, detailEl, selectEl, shellEl) {
     grid.visible = true;
   }
 
-  let viewTarget = 0;
   let viewBlend = 0;
+  /** @type {{ t0: number, fromMode: 'garden' | 'whiteboard' | 'master', toMode: 'garden' | 'whiteboard' | 'master', blendFrom: number, blendTo: number, cam0: THREE.Vector3, tgt0: THREE.Vector3, cam1: THREE.Vector3, tgt1: THREE.Vector3 } | null} */
   let transition = null;
   /** @type {string | null} */
   let autoRotateAnchorUuid = null;
@@ -1398,8 +1530,8 @@ function init(host, detailEl, selectEl, shellEl) {
 
   function flyToOverview() {
     cam3dTarget.copy(sceneCenter);
-    cam3dPos.set(sceneCenter.x + 8, sceneCenter.y + 44, sceneCenter.z + 122);
-    if (viewBlend < 0.06 && transition === null) {
+    cam3dPos.set(sceneCenter.x + 8, sceneCenter.y + 48, sceneCenter.z + 142);
+    if (viewMode === "garden" && viewBlend < 0.06 && transition === null) {
       camera.position.copy(cam3dPos);
       controls.target.copy(cam3dTarget);
     }
@@ -1412,6 +1544,12 @@ function init(host, detailEl, selectEl, shellEl) {
       const g = wordGroups[w.id];
       if (!g) continue;
       g.visible = garden || !!(selectEl && w.id === selectEl.value);
+    }
+    if (viewMode === "master") {
+      for (const w of WORDS) {
+        const g = wordGroups[w.id];
+        if (g) g.visible = true;
+      }
     }
     rebuildGardenHints(garden ? null : selectEl?.value || null);
   }
@@ -1428,8 +1566,8 @@ function init(host, detailEl, selectEl, shellEl) {
     const c = box.getCenter(new THREE.Vector3());
     focusCenter.copy(c);
     cam3dTarget.copy(c);
-    cam3dPos.copy(c).add(new THREE.Vector3(18, 16, 36));
-    if (viewBlend < 0.06 && transition === null) {
+    cam3dPos.copy(c).add(new THREE.Vector3(22, 18, 44));
+    if (viewMode === "garden" && viewBlend < 0.06 && transition === null) {
       camera.position.copy(cam3dPos);
       controls.target.copy(cam3dTarget);
     }
@@ -1448,6 +1586,14 @@ function init(host, detailEl, selectEl, shellEl) {
 
   function fillDetailFromSelect() {
     if (!detailEl) return;
+    if (viewMode === "master") {
+      if (selectEl && selectEl.value !== GARDEN_SELECT) {
+        fillDetail(selectEl.value);
+        return;
+      }
+      detailEl.innerHTML = `<p><strong>Master Tree.</strong> Words that share morphemes are grouped into mega-clusters on a large ring. Bright magenta bridges connect the <em>same</em> morpheme across different words. Orbit and zoom to explore connections; pick a word in the menu to read its note (all trees stay visible here).</p>`;
+      return;
+    }
     if (!selectEl || selectEl.value === GARDEN_SELECT) {
       detailEl.innerHTML = `<p><strong>Garden view.</strong> Every tree is shown together. Choose one word from the menu to <strong>isolate</strong> it: in 3D, faint lines suggest where the other words sit; on the whiteboard, a single tree moves to the center. Double-click a node to focus the camera (3D) or trim the tree / list shared morphemes (whiteboard).</p>`;
       return;
@@ -1506,7 +1652,7 @@ function init(host, detailEl, selectEl, shellEl) {
       for (const w of WORDS) clearWbPrune(wordGroups[w.id]);
       applyScopeVisibility();
       fillDetailFromSelect();
-      if (viewBlend < 0.06 && !transition) flyToActiveView();
+      if (viewMode === "garden" && viewBlend < 0.06 && !transition) flyToActiveView();
     });
     applyScopeVisibility();
     fillDetailFromSelect();
@@ -1600,33 +1746,44 @@ function init(host, detailEl, selectEl, shellEl) {
 
   const btn3d = document.getElementById("morph-btn-3d");
   const btn2d = document.getElementById("morph-btn-2d");
+  const btnMaster = document.getElementById("morph-btn-master");
 
   function setViewButtons() {
-    const is2 = viewTarget >= 0.5;
     if (btn3d) {
-      btn3d.classList.toggle("morph-view-btn--active", !is2);
-      btn3d.setAttribute("aria-pressed", (!is2).toString());
+      btn3d.classList.toggle("morph-view-btn--active", viewMode === "garden");
+      btn3d.setAttribute("aria-pressed", (viewMode === "garden").toString());
     }
     if (btn2d) {
-      btn2d.classList.toggle("morph-view-btn--active", is2);
-      btn2d.setAttribute("aria-pressed", is2.toString());
+      btn2d.classList.toggle("morph-view-btn--active", viewMode === "whiteboard");
+      btn2d.setAttribute("aria-pressed", (viewMode === "whiteboard").toString());
+    }
+    if (btnMaster) {
+      btnMaster.classList.toggle("morph-view-btn--active", viewMode === "master");
+      btnMaster.setAttribute("aria-pressed", (viewMode === "master").toString());
     }
   }
 
-  function startTransition(to2d) {
+  function startTransitionTo(/** @type {'garden' | 'whiteboard' | 'master'} */ toMode) {
+    if (transition) return;
+    const fromMode = viewMode;
+    const blendGoal = toMode === "whiteboard" ? 1 : 0;
+    if (fromMode === toMode && Math.abs(viewBlend - blendGoal) < 0.03) return;
+
     controls.autoRotate = false;
     autoRotateAnchorUuid = null;
-    const next = to2d ? 1 : 0;
-    if (next === viewTarget && transition === null && Math.abs(viewBlend - next) < 0.02) return;
 
     const cam0 = camera.position.clone();
     const tgt0 = controls.target.clone();
     let cam1;
     let tgt1;
 
-    if (to2d) {
-      cam1 = new THREE.Vector3(0, 28, 168);
+    if (toMode === "whiteboard") {
+      cam1 = new THREE.Vector3(0, 34, 198);
       tgt1 = new THREE.Vector3(0, -10, 0);
+    } else if (toMode === "master") {
+      computeMasterCamera();
+      cam1 = cam3dMaster.clone();
+      tgt1 = cam3dTargetMaster.clone();
     } else {
       flyToActiveView();
       cam1 = cam3dPos.clone();
@@ -1635,21 +1792,31 @@ function init(host, detailEl, selectEl, shellEl) {
 
     transition = {
       t0: clock.elapsedTime,
-      fromBlend: viewBlend,
-      toBlend: next,
+      fromMode,
+      toMode,
+      blendFrom: viewBlend,
+      blendTo: blendGoal,
       cam0,
       tgt0,
       cam1,
       tgt1,
     };
-    viewTarget = next;
+    viewMode = toMode;
+    applyScopeVisibility();
+    fillDetailFromSelect();
     setViewButtons();
   }
 
-  if (btn3d) btn3d.addEventListener("click", () => startTransition(false));
-  if (btn2d) btn2d.addEventListener("click", () => startTransition(true));
+  if (btn3d) btn3d.addEventListener("click", () => startTransitionTo("garden"));
+  if (btn2d) btn2d.addEventListener("click", () => startTransitionTo("whiteboard"));
+  if (btnMaster) btnMaster.addEventListener("click", () => startTransitionTo("master"));
 
-  function applyVisualTheme(blend) {
+  function applyVisualTheme(
+    blend,
+    layoutEase = 1,
+    layoutFrom = viewMode,
+    layoutTo = viewMode
+  ) {
     const u = smoothstep(blend);
     scene.background.copy(bg3d).lerp(bg2d, u);
     scene.fog.color.copy(scene.background);
@@ -1666,20 +1833,30 @@ function init(host, detailEl, selectEl, shellEl) {
     host.classList.toggle("morph-canvas-host--wb", u > 0.88);
     if (shellEl) shellEl.classList.toggle("morphology-shell--wb", u > 0.88);
 
-    const bridgeOpacity = 0.62 * (1 - u) * (1 - u);
-    const isolate3d = selectEl && selectEl.value !== GARDEN_SELECT && u < 0.38;
+    const masterWeight =
+      (layoutFrom === "master" ? 1 - layoutEase : 0) + (layoutTo === "master" ? layoutEase : 0);
+    const gardenBridgeOpacity = 0.62 * (1 - u) * (1 - u);
+    const bridgeOpacity = masterWeight * 0.85 + (1 - masterWeight) * gardenBridgeOpacity;
+    const isolate3d =
+      selectEl &&
+      selectEl.value !== GARDEN_SELECT &&
+      u < 0.38 &&
+      masterWeight < 0.45;
     bridges.children.forEach((line) => {
       if (line.material) line.material.opacity = isolate3d ? 0 : bridgeOpacity;
-      line.visible = !isolate3d && u < 0.92;
+      line.visible = (!isolate3d && u < 0.92) || masterWeight > 0.08;
     });
+    bridges.visible = bridges.children.some((ln) => ln.visible);
     gardenHints.visible = isolate3d && u < 0.26;
 
+    const le = Math.max(0, Math.min(1, layoutEase));
     for (const w of WORDS) {
       const g = wordGroups[w.id];
       if (!g) continue;
-      g.position.lerpVectors(w.pos3d, w.pos2d, u);
+      g.position.lerpVectors(getPosForMode(w, layoutFrom), getPosForMode(w, layoutTo), le);
 
-      const sway = (1 - u) * Math.sin(clock.elapsedTime * 0.1 + w.pos3d.x * 0.02) * 0.045;
+      const swayMul = (1 - u) * (1 - masterWeight * 0.92);
+      const sway = swayMul * Math.sin(clock.elapsedTime * 0.1 + w.pos3d.x * 0.02) * 0.045;
       g.rotation.y = sway;
 
       const dim = 0.08 * u;
@@ -1991,15 +2168,24 @@ function init(host, detailEl, selectEl, shellEl) {
       }
     }
 
+    let layoutEase = 1;
+    let layoutFrom = viewMode;
+    let layoutTo = viewMode;
     if (transition) {
       const elapsed = clock.elapsedTime - transition.t0;
       const k = Math.min(1, elapsed / TRANSITION_SEC);
       const e = smoothstep(k);
-      viewBlend = transition.fromBlend + (transition.toBlend - transition.fromBlend) * e;
+      layoutEase = e;
+      layoutFrom = transition.fromMode;
+      layoutTo = transition.toMode;
+      viewBlend = transition.blendFrom + (transition.blendTo - transition.blendFrom) * e;
       camera.position.lerpVectors(transition.cam0, transition.cam1, e);
       controls.target.lerpVectors(transition.tgt0, transition.tgt1, e);
       if (k >= 1) {
-        viewBlend = transition.toBlend;
+        viewBlend = transition.blendTo;
+        layoutEase = 1;
+        layoutFrom = transition.toMode;
+        layoutTo = transition.toMode;
         transition = null;
         const ue = smoothstep(viewBlend);
         if (ue > 0.9) {
@@ -2014,7 +2200,7 @@ function init(host, detailEl, selectEl, shellEl) {
       }
     }
 
-    if (introDone) applyVisualTheme(viewBlend);
+    if (introDone) applyVisualTheme(viewBlend, layoutEase, layoutFrom, layoutTo);
 
     if (introDone) {
       const uLodView = smoothstep(viewBlend);
@@ -2053,9 +2239,10 @@ function init(host, detailEl, selectEl, shellEl) {
             if (!els || !prev) continue;
             mesh.getWorldPosition(lodWorld);
             const d = camP.distanceTo(lodWorld);
-            const gA = Math.max(0, Math.min(1, 1 - smoothstep((d - 14) / 22)));
-            const pA = Math.max(0, Math.min(1, 1 - smoothstep((d - 30) / 30)));
-            const wA = Math.max(0, Math.min(1, 1 - smoothstep((d - 50) / 42)));
+            /* Gentle LOD: keep word + category readable at normal garden / orbit distance */
+            const gA = Math.max(0, Math.min(1, 1 - smoothstep((d - 38) / 58)));
+            const pA = Math.max(0, Math.min(1, 1 - smoothstep((d - 62) / 78)));
+            const wA = Math.max(0, Math.min(1, 1 - smoothstep((d - 92) / 100)));
             if (els.gloss && Math.abs(gA - prev.g) > LOD_OPACITY_EPS) {
               els.gloss.style.opacity = String(gA);
               prev.g = gA;
