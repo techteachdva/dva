@@ -3340,8 +3340,12 @@ function init(host, detailEl, selectEl, shellEl) {
       }
     }
 
+    // OrbitControls + enableDamping fight programmatic camera lerps (transition/camera tween) and can
+    // spit out NaNs, a frozen view, or a blank framebuffer. Disable interaction while cameras are scripted.
+    controls.enabled = !!(introDone && !transition && !cameraFitTween);
+
     controls.update();
-    if (bridges.visible) updateBridgeLines(bridges, viewBlend);
+    if (introDone && bridges.visible) updateBridgeLines(bridges, viewBlend);
     renderer.render(scene, camera);
     labelRenderer.render(scene, camera);
   }
