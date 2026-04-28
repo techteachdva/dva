@@ -11,6 +11,12 @@ const _vBridgeB = new THREE.Vector3();
 const _orbitDblClickTarget = new THREE.Vector3();
 const _posFrom = new THREE.Vector3();
 const _posTo = new THREE.Vector3();
+const morphInspectTargetVec = new THREE.Vector3();
+const _morphCamDir = new THREE.Vector3();
+const _morphToNode = new THREE.Vector3();
+const _morphFitBox = new THREE.Box3();
+const _morphFitCenter = new THREE.Vector3();
+const _morphFitSize = new THREE.Vector3();
 
 const REDUCED_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const TRANSITION_SEC = REDUCED_MOTION ? 0.01 : 1.48;
@@ -959,11 +965,33 @@ function sphere(r, color, roughness, metalness) {
     metalness: metalness ?? 0.5,
     roughness: roughness ?? 0.35,
     emissive: color,
-    emissiveIntensity: 0.12,
+    emissiveIntensity: 0.09,
   });
   const mesh = new THREE.Mesh(g, m);
   mesh.userData.baseEmissive = color.clone();
   return mesh;
+}
+
+/** Glass halo around morpheme node; raycast disabled so picks hit the inner sphere. */
+function morphShellSphere(innerR, baseColor, isRoot) {
+  const geo = new THREE.SphereGeometry(innerR * 1.65, 28, 28);
+  const shellCol = baseColor.clone().lerp(new THREE.Color(0xffffff), 0.22);
+  const mat = new THREE.MeshPhysicalMaterial({
+    color: shellCol,
+    transparent: true,
+    opacity: isRoot ? 0.24 : 0.2,
+    transmission: 0.85,
+    thickness: 0.22,
+    roughness: 0.08,
+    metalness: 0,
+    clearcoat: 1,
+    clearcoatRoughness: 0.08,
+    depthWrite: false,
+  });
+  const shell = new THREE.Mesh(geo, mat);
+  shell.raycast = () => {};
+  shell.userData.isMorphShell = true;
+  return shell;
 }
 
 function edgeLine(a, b, colorHex, opacity) {
@@ -1041,7 +1069,8 @@ function nodePosLabel(node, isRoot) {
 
 function makeLabel({ pos, text, gloss, isRoot }) {
   const div = document.createElement("div");
-  div.className = "morph-lab" + (isRoot ? " morph-lab--root morph-lab--apex" : "");
+  div.className =
+    "morph-lab morph-lab--orbital" + (isRoot ? " morph-lab--root morph-lab--apex" : "");
   /** @type {HTMLElement | null} */
   let posEl = null;
   /** @type {HTMLElement | null} */
@@ -1067,6 +1096,7 @@ function makeLabel({ pos, text, gloss, isRoot }) {
   }
   const obj = new CSS2DObject(div);
   obj.userData.isRoot = isRoot;
+  obj.userData.lodScale0 = isRoot ? 1.08 : 1;
   obj.userData.lodEls = { pos: posEl, word: w, gloss: glossEl };
   obj.userData.lodPrev = { g: -1, p: -1, w: -1 };
   return obj;
@@ -1106,6 +1136,10 @@ function buildWordGroup(word) {
     mesh.userData.morphemeKey = node.morphemeKey || null;
     mesh.userData.wordId = word.id;
     mesh.userData.treeDepth = treeDepth;
+    const shell = morphShellSphere(r, col, isRoot);
+    mesh.add(shell);
+    mesh.userData.shell = shell;
+    mesh.userData.shellIsRoot = isRoot;
     group.add(mesh);
     meshes.set(node, mesh);
     group.userData.meshes.push(mesh);
@@ -1117,22 +1151,9 @@ function buildWordGroup(word) {
       gloss: node.gloss || "",
       isRoot,
     });
-    const lift = r + (isRoot ? 1.42 : 0.78);
-    let ox = 0;
-    let oz = 0;
-    if (!isRoot) {
-      const hr = Math.hypot(x, z);
-      const push = 0.62 + treeDepth * 0.16;
-      if (hr > 1e-3) {
-        ox = (x / hr) * push;
-        oz = (z / hr) * push;
-      } else {
-        const side = treeDepth % 2 === 0 ? 1 : -1;
-        ox = side * (0.55 + treeDepth * 0.1);
-      }
-    }
-    label.position.set(x + ox, y - lift, z + oz);
-    label.scale.setScalar(isRoot ? 1.32 : 1.2);
+    const lift = r * (isRoot ? 0.45 : 0.38);
+    label.position.set(x, y + lift, z);
+    label.scale.setScalar(label.userData.lodScale0);
     group.add(label);
     mesh.userData.label = label;
   }
@@ -1284,17 +1305,19 @@ function init(host, detailEl, selectEl, shellEl) {
 
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
-  controls.dampingFactor = 0.05;
+  controls.dampingFactor = 0.062;
   controls.minDistance = 8;
   controls.maxDistance = 300;
   controls.enablePan = true;
   controls.enableZoom = true;
+  controls.minPolarAngle = Math.PI * 0.08;
+  controls.maxPolarAngle = Math.PI * 0.92;
   controls.target.copy(cam3dTarget);
   controls.enabled = false;
   /** Hysteresis for min/max distance (OrbitControls has no userData — do not store state there). */
   let wbZoomLimitsActive = false;
 
-  function refreshControlsForViewMode(blend) {
+  function refreshControlsForViewMode(blend, masterWeight = 0) {
     const u = smoothstep(blend);
     controls.enablePan = true;
     controls.enableZoom = true;
@@ -1309,6 +1332,17 @@ function init(host, detailEl, selectEl, shellEl) {
       wbZoomLimitsActive = false;
       controls.minDistance = 8;
       controls.maxDistance = 300;
+    }
+    if (u > 0.88) {
+      controls.rotateSpeed = 0.88;
+      controls.zoomSpeed = 0.92;
+    } else {
+      const gardenRot = 0.64;
+      const masterRot = 0.4;
+      controls.rotateSpeed = gardenRot + (masterRot - gardenRot) * masterWeight;
+      const gardenZoom = 0.82;
+      const masterZoom = 0.72;
+      controls.zoomSpeed = gardenZoom + (masterZoom - gardenZoom) * masterWeight;
     }
   }
 
@@ -1524,18 +1558,84 @@ function init(host, detailEl, selectEl, shellEl) {
   /** @type {string | null} */
   let autoRotateAnchorUuid = null;
 
+  /** @type {ReturnType<typeof setTimeout> | null} */
+  let morphClickTimer = null;
+  /** @type {THREE.Mesh | null} */
+  let morphFocusMesh = null;
+  let morphFocusT0 = 0;
+  /** @type {THREE.Mesh | null} */
+  let morphHoverMesh = null;
+  let morphInspectActive = false;
+  /** @type {ReturnType<typeof requestAnimationFrame> | null} */
+  let morphHoverRaf = null;
+  let morphHoverLastX = 0;
+  let morphHoverLastY = 0;
+  /** @type {{ t0: number, dur: number, cam0: THREE.Vector3, tgt0: THREE.Vector3, cam1: THREE.Vector3, tgt1: THREE.Vector3 } | null} */
+  let cameraFitTween = null;
+
+  const WB_DEFAULT_CAM = new THREE.Vector3(0, 34, 198);
+  const WB_DEFAULT_TGT = new THREE.Vector3(0, -10, 0);
+
   function isGardenScope() {
     return !selectEl || selectEl.value === GARDEN_SELECT;
   }
 
-  function flyToOverview() {
+  function syncCam3dToOverview() {
     cam3dTarget.copy(sceneCenter);
     cam3dPos.set(sceneCenter.x + 8, sceneCenter.y + 48, sceneCenter.z + 142);
+  }
+
+  function flyToOverview() {
+    syncCam3dToOverview();
     if (viewMode === "garden" && viewBlend < 0.06 && transition === null) {
       camera.position.copy(cam3dPos);
       controls.target.copy(cam3dTarget);
     }
     controls.update();
+  }
+
+  function syncCam3dToWord(id) {
+    const g = wordGroups[id];
+    if (!g) return;
+    _morphFitBox.setFromObject(g);
+    _morphFitBox.expandByScalar(5);
+    const c = _morphFitBox.getCenter(_morphFitCenter);
+    const sz = _morphFitBox.getSize(_morphFitSize);
+    const ext = Math.max(sz.x, sz.y, sz.z, 14);
+    cam3dTarget.copy(c);
+    cam3dPos.copy(c).add(new THREE.Vector3(ext * 0.48, ext * 0.36, ext * 0.68));
+  }
+
+  function startCameraFit() {
+    if (!introDone || transition) return;
+    cameraFitTween = {
+      t0: clock.elapsedTime,
+      dur: REDUCED_MOTION ? 0.01 : 0.52,
+      cam0: camera.position.clone(),
+      tgt0: controls.target.clone(),
+      cam1: cam3dPos.clone(),
+      tgt1: cam3dTarget.clone(),
+    };
+  }
+
+  function morphResetCameraToMode() {
+    morphInspectActive = false;
+    cameraFitTween = null;
+    controls.autoRotate = false;
+    autoRotateAnchorUuid = null;
+    if (viewMode === "whiteboard") {
+      cam3dPos.copy(WB_DEFAULT_CAM);
+      cam3dTarget.copy(WB_DEFAULT_TGT);
+    } else if (viewMode === "master") {
+      computeMasterCamera();
+      cam3dPos.copy(cam3dMaster);
+      cam3dTarget.copy(cam3dTargetMaster);
+    } else {
+      if (isGardenScope()) syncCam3dToOverview();
+      else if (selectEl && selectEl.value !== GARDEN_SELECT) syncCam3dToWord(selectEl.value);
+      else syncCam3dToOverview();
+    }
+    startCameraFit();
   }
 
   function applyScopeVisibility() {
@@ -1560,13 +1660,9 @@ function init(host, detailEl, selectEl, shellEl) {
   }
 
   function flyToWord(id) {
-    const g = wordGroups[id];
-    if (!g) return;
-    const box = new THREE.Box3().setFromObject(g);
-    const c = box.getCenter(new THREE.Vector3());
-    focusCenter.copy(c);
-    cam3dTarget.copy(c);
-    cam3dPos.copy(c).add(new THREE.Vector3(22, 18, 44));
+    if (!wordGroups[id]) return;
+    syncCam3dToWord(id);
+    focusCenter.copy(cam3dTarget);
     if (viewMode === "garden" && viewBlend < 0.06 && transition === null) {
       camera.position.copy(cam3dPos);
       controls.target.copy(cam3dTarget);
@@ -1595,7 +1691,7 @@ function init(host, detailEl, selectEl, shellEl) {
       return;
     }
     if (!selectEl || selectEl.value === GARDEN_SELECT) {
-      detailEl.innerHTML = `<p><strong>Garden view.</strong> Every tree is shown together. Choose one word from the menu to <strong>isolate</strong> it: in 3D, faint lines suggest where the other words sit; on the whiteboard, a single tree moves to the center. Double-click a node to focus the camera (3D) or trim the tree / list shared morphemes (whiteboard).</p>`;
+      detailEl.innerHTML = `<p><strong>Garden view.</strong> Every tree is shown together. Choose one word from the menu to <strong>isolate</strong> it: in 3D, faint lines suggest where the other words sit; on the whiteboard, a single tree moves to the center. <strong>Click</strong> a morpheme to ease the orbit target; <strong>double-click</strong> to toggle slow orbit around that node (3D) or trim the tree / list shared morphemes (whiteboard).</p>`;
       return;
     }
     fillDetail(selectEl.value);
@@ -1652,7 +1748,19 @@ function init(host, detailEl, selectEl, shellEl) {
       for (const w of WORDS) clearWbPrune(wordGroups[w.id]);
       applyScopeVisibility();
       fillDetailFromSelect();
-      if (viewMode === "garden" && viewBlend < 0.06 && !transition) flyToActiveView();
+      if (
+        (viewMode === "garden" || viewMode === "master") &&
+        viewBlend < 0.06 &&
+        !transition
+      ) {
+        if (introDone) {
+          if (isGardenScope()) syncCam3dToOverview();
+          else if (selectEl) syncCam3dToWord(selectEl.value);
+          startCameraFit();
+        } else if (viewMode === "garden") {
+          flyToActiveView();
+        }
+      }
     });
     applyScopeVisibility();
     fillDetailFromSelect();
@@ -1664,8 +1772,8 @@ function init(host, detailEl, selectEl, shellEl) {
   const fsBtn = document.getElementById("morph-btn-fs");
   const fsTarget = shellEl || host;
 
-  function handleCanvasNodePick(clientX, clientY) {
-    if (!controls.enabled) return;
+  function morphPickMeshAt(clientX, clientY) {
+    if (!controls.enabled) return null;
     const rect = renderer.domElement.getBoundingClientRect();
     pointerNdc.x = ((clientX - rect.left) / rect.width) * 2 - 1;
     pointerNdc.y = -((clientY - rect.top) / rect.height) * 2 + 1;
@@ -1677,12 +1785,18 @@ function init(host, detailEl, selectEl, shellEl) {
       meshes.push(...g.userData.meshes);
     }
     const hit = raycaster.intersectObjects(meshes, false)[0];
-    if (!hit) return;
-    const mesh = /** @type {THREE.Mesh} */ (hit.object);
+    if (!hit) return null;
+    return /** @type {THREE.Mesh} */ (hit.object);
+  }
+
+  function morphHandleDoublePick(clientX, clientY) {
+    const mesh = morphPickMeshAt(clientX, clientY);
+    if (!mesh) return;
     const u = smoothstep(viewBlend);
     if (u < 0.12) {
       mesh.getWorldPosition(_orbitDblClickTarget);
       controls.target.copy(_orbitDblClickTarget);
+      morphInspectActive = false;
       if (autoRotateAnchorUuid === mesh.uuid && controls.autoRotate) {
         controls.autoRotate = false;
         autoRotateAnchorUuid = null;
@@ -1691,6 +1805,8 @@ function init(host, detailEl, selectEl, shellEl) {
         controls.autoRotateSpeed = 0.75;
         autoRotateAnchorUuid = mesh.uuid;
       }
+      morphFocusMesh = mesh;
+      morphFocusT0 = clock.elapsedTime;
       controls.update();
     } else {
       const wid = mesh.userData.wordId;
@@ -1716,8 +1832,39 @@ function init(host, detailEl, selectEl, shellEl) {
     }
   }
 
-  renderer.domElement.addEventListener("dblclick", (ev) => {
-    handleCanvasNodePick(ev.clientX, ev.clientY);
+  function morphHandleSinglePick(clientX, clientY) {
+    const mesh = morphPickMeshAt(clientX, clientY);
+    if (!mesh) {
+      morphInspectActive = false;
+      return;
+    }
+    const u = smoothstep(viewBlend);
+    mesh.getWorldPosition(morphInspectTargetVec);
+    morphInspectActive = true;
+    morphFocusMesh = mesh;
+    morphFocusT0 = clock.elapsedTime;
+    if (u < 0.12) {
+      controls.target.lerp(morphInspectTargetVec, 0.22);
+    } else {
+      controls.target.lerp(morphInspectTargetVec, 0.18);
+    }
+    controls.update();
+  }
+
+  renderer.domElement.addEventListener("click", (ev) => {
+    if (!controls.enabled) return;
+    if (ev.detail === 2) {
+      if (morphClickTimer != null) window.clearTimeout(morphClickTimer);
+      morphClickTimer = null;
+      morphHandleDoublePick(ev.clientX, ev.clientY);
+      return;
+    }
+    if (ev.detail !== 1) return;
+    if (morphClickTimer != null) window.clearTimeout(morphClickTimer);
+    morphClickTimer = window.setTimeout(() => {
+      morphClickTimer = null;
+      morphHandleSinglePick(ev.clientX, ev.clientY);
+    }, 300);
   });
 
   let morphTapLastT = 0;
@@ -1733,7 +1880,7 @@ function init(host, detailEl, selectEl, shellEl) {
       const dy = t.clientY - morphTapY;
       if (now - morphTapLastT < 320 && dx * dx + dy * dy < 900) {
         ev.preventDefault();
-        handleCanvasNodePick(t.clientX, t.clientY);
+        morphHandleDoublePick(t.clientX, t.clientY);
         morphTapLastT = 0;
         return;
       }
@@ -1743,6 +1890,73 @@ function init(host, detailEl, selectEl, shellEl) {
     },
     { passive: false }
   );
+
+  renderer.domElement.addEventListener("pointermove", (ev) => {
+    if (!introDone || !controls.enabled) return;
+    morphHoverLastX = ev.clientX;
+    morphHoverLastY = ev.clientY;
+    if (morphHoverRaf != null) return;
+    morphHoverRaf = requestAnimationFrame(() => {
+      morphHoverRaf = null;
+      const u = smoothstep(viewBlend);
+      if (u > 0.14) {
+        morphHoverMesh = null;
+        renderer.domElement.style.cursor = "";
+        return;
+      }
+      const m = morphPickMeshAt(morphHoverLastX, morphHoverLastY);
+      morphHoverMesh = m;
+      renderer.domElement.style.cursor = m ? "pointer" : "";
+    });
+  });
+
+  function morphToggleAutoRotateFromKeyboard() {
+    const u = smoothstep(viewBlend);
+    if (u >= 0.12) return;
+    if (controls.autoRotate && autoRotateAnchorUuid) {
+      controls.autoRotate = false;
+      autoRotateAnchorUuid = null;
+      return;
+    }
+    const mesh = morphFocusMesh;
+    if (!mesh?.userData?.wordId) return;
+    mesh.getWorldPosition(morphInspectTargetVec);
+    controls.target.copy(morphInspectTargetVec);
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 0.75;
+    autoRotateAnchorUuid = mesh.uuid;
+    controls.update();
+  }
+
+  function morphOnKeydown(ev) {
+    if (!introDone) return;
+    const ae = document.activeElement;
+    const tag = ae?.tagName;
+    if (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA" || ae?.isContentEditable) return;
+    if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
+    const k = ev.key.toLowerCase();
+    if (k === "f") {
+      if (
+        (viewMode === "garden" || viewMode === "master") &&
+        viewBlend < 0.06 &&
+        !transition
+      ) {
+        if (isGardenScope()) syncCam3dToOverview();
+        else if (selectEl) syncCam3dToWord(selectEl.value);
+        startCameraFit();
+      }
+      return;
+    }
+    if (k === "r") {
+      morphResetCameraToMode();
+      return;
+    }
+    if (ev.code === "Space") {
+      ev.preventDefault();
+      morphToggleAutoRotateFromKeyboard();
+    }
+  }
+  window.addEventListener("keydown", morphOnKeydown);
 
   const btn3d = document.getElementById("morph-btn-3d");
   const btn2d = document.getElementById("morph-btn-2d");
@@ -1765,6 +1979,7 @@ function init(host, detailEl, selectEl, shellEl) {
 
   function startTransitionTo(/** @type {'garden' | 'whiteboard' | 'master'} */ toMode) {
     if (transition) return;
+    cameraFitTween = null;
     const fromMode = viewMode;
     const blendGoal = toMode === "whiteboard" ? 1 : 0;
     if (fromMode === toMode && Math.abs(viewBlend - blendGoal) < 0.03) return;
@@ -1860,13 +2075,42 @@ function init(host, detailEl, selectEl, shellEl) {
       g.rotation.y = sway;
 
       const dim = 0.08 * u;
+      const tNow = clock.elapsedTime;
       for (const mesh of g.userData.meshes) {
         const m = mesh.material;
         m.metalness = 0.5 * (1 - u) + 0.12 * u;
         m.roughness = 0.35 * (1 - u) + 0.55 * u;
-        m.emissiveIntensity = 0.12 * (1 - u) + 0.04 * u;
+        m.emissiveIntensity = 0.09 * (1 - u) + 0.035 * u;
         if (mesh.userData.baseEmissive)
           m.emissive.copy(mesh.userData.baseEmissive).multiplyScalar(1 - dim);
+
+        const shell = mesh.userData.shell;
+        const sm = shell?.material;
+        if (sm && "transmission" in sm) {
+          const isRoot = !!mesh.userData.shellIsRoot;
+          const baseGarden = isRoot ? 0.24 : 0.185;
+          const baseWb = isRoot ? 0.13 : 0.09;
+          let op = baseGarden * (1 - u) + baseWb * u;
+          let trans = 0.85 * (1 - u) + 0.34 * u;
+          let thick = 0.22 * (1 - u) + 0.11 * u;
+          const orbitHi = autoRotateAnchorUuid === mesh.uuid;
+          const clickAge = morphFocusMesh === mesh ? tNow - morphFocusT0 : 999;
+          const clickHi = morphFocusMesh === mesh && clickAge < 0.4 && !orbitHi;
+          const clickPulse = clickHi ? 1 - smoothstep(clickAge / 0.34) : 0;
+          if (orbitHi) op += 0.14;
+          else op += 0.12 * clickPulse;
+          if (morphHoverMesh === mesh) op += 0.06;
+          sm.opacity = Math.min(0.95, op);
+          sm.transmission = trans;
+          sm.thickness = thick;
+          const glow = orbitHi ? 0.11 : 0.09 * clickPulse;
+          if (mesh.userData.baseEmissive && glow > 0.002) {
+            sm.emissive.copy(mesh.userData.baseEmissive);
+            sm.emissiveIntensity = glow;
+          } else {
+            sm.emissiveIntensity = 0;
+          }
+        }
       }
       const line3 = 0x33ddaa;
       const line2 = 0x1a4d44;
@@ -1877,7 +2121,7 @@ function init(host, detailEl, selectEl, shellEl) {
       }
     }
 
-    refreshControlsForViewMode(blend);
+    refreshControlsForViewMode(blend, masterWeight);
   }
 
   /* Intro overlay */
@@ -2200,7 +2444,19 @@ function init(host, detailEl, selectEl, shellEl) {
       }
     }
 
+    if (!transition && cameraFitTween) {
+      const ck = Math.min(1, (clock.elapsedTime - cameraFitTween.t0) / cameraFitTween.dur);
+      const ce = easeOutCubic(ck);
+      camera.position.lerpVectors(cameraFitTween.cam0, cameraFitTween.cam1, ce);
+      controls.target.lerpVectors(cameraFitTween.tgt0, cameraFitTween.tgt1, ce);
+      if (ck >= 1) cameraFitTween = null;
+    }
+
     if (introDone) applyVisualTheme(viewBlend, layoutEase, layoutFrom, layoutTo);
+
+    if (introDone && morphInspectActive && !transition && !cameraFitTween) {
+      controls.target.lerp(morphInspectTargetVec, 0.11);
+    }
 
     if (introDone) {
       const uLodView = smoothstep(viewBlend);
@@ -2229,6 +2485,9 @@ function init(host, detailEl, selectEl, shellEl) {
         }
       } else {
         const camP = camera.position;
+        const focusT = morphFocusMesh ? clock.elapsedTime - morphFocusT0 : 100;
+        const focusPulse = focusT < 0.33 ? 1 - smoothstep(focusT / 0.3) : 0;
+        const focusWordId = morphFocusMesh?.userData?.wordId ?? null;
         for (const w of WORDS) {
           const grp = wordGroups[w.id];
           if (!grp?.visible) continue;
@@ -2239,10 +2498,23 @@ function init(host, detailEl, selectEl, shellEl) {
             if (!els || !prev) continue;
             mesh.getWorldPosition(lodWorld);
             const d = camP.distanceTo(lodWorld);
-            /* Gentle LOD: keep word + category readable at normal garden / orbit distance */
-            const gA = Math.max(0, Math.min(1, 1 - smoothstep((d - 38) / 58)));
-            const pA = Math.max(0, Math.min(1, 1 - smoothstep((d - 62) / 78)));
-            const wA = Math.max(0, Math.min(1, 1 - smoothstep((d - 92) / 100)));
+            _morphCamDir.subVectors(camP, controls.target).normalize();
+            _morphToNode.subVectors(lodWorld, controls.target).normalize();
+            const facing = _morphCamDir.dot(_morphToNode);
+            const backMul = facing < -0.12 && d > 46 ? 0.55 + 0.45 * smoothstep((d - 46) / 42) : 1;
+            const sMul =
+              focusWordId &&
+              mesh.userData.wordId === focusWordId &&
+              mesh !== morphFocusMesh &&
+              focusT < 0.38
+                ? 1 - 0.26 * focusPulse
+                : 1;
+            const gA0 = Math.max(0, Math.min(1, 1 - smoothstep((d - 24) / 36)));
+            const pA0 = Math.max(0, Math.min(1, 1 - smoothstep((d - 42) / 48)));
+            const wA0 = Math.max(0, Math.min(1, 1 - smoothstep((d - 64) / 54)));
+            const gA = gA0 * backMul * sMul;
+            const pA = pA0 * backMul * sMul;
+            const wA = wA0 * backMul * sMul;
             if (els.gloss && Math.abs(gA - prev.g) > LOD_OPACITY_EPS) {
               els.gloss.style.opacity = String(gA);
               prev.g = gA;
@@ -2255,6 +2527,17 @@ function init(host, detailEl, selectEl, shellEl) {
               els.word.style.opacity = String(wA);
               prev.w = wA;
             }
+            const distScale = THREE.MathUtils.clamp(
+              1.06 - 0.34 * smoothstep((d - 26) / 86),
+              0.75,
+              1.06
+            );
+            const focusLabBoost =
+              morphFocusMesh === mesh && focusT < 0.32
+                ? 1 + 0.12 * (1 - smoothstep(focusT / 0.3))
+                : 1;
+            const s0 = lab.userData.lodScale0 ?? 1;
+            lab.scale.setScalar(s0 * distScale * focusLabBoost);
           }
         }
       }

@@ -280,109 +280,113 @@ html.morph-immersive-open body {
   /* WebGL clears to near-white; frame reads as whiteboard */
 }
 
-/* CSS2D morpheme labels — larger type + cards so text stays readable at normal camera distance */
+/* CSS2D morpheme labels — minimal chrome; read with glass shells in WebGL */
 .morph-canvas-host .morph-lab {
   text-align: center;
   pointer-events: none;
   user-select: none;
-  max-width: 13rem;
-  padding: 0.45rem 0.6rem 0.5rem;
-  border-radius: 11px;
-  background: rgba(6, 14, 32, 0.88);
-  border: 1px solid rgba(130, 220, 255, 0.28);
-  box-shadow: 0 4px 22px rgba(0, 0, 0, 0.55);
+  max-width: 8rem;
+  padding: 0.08rem 0.14rem;
+  border-radius: 6px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Grammatical category (Noun, Prefix, Suffix, …) — apex shows whole-word POS */
+.morph-canvas-host .morph-lab--orbital {
+  line-height: 1.2;
+}
+
+/* Grammatical category (Noun, Prefix, Suffix, …) */
 .morph-canvas-host .morph-lab__pos {
   font-family: system-ui, "Segoe UI", Roboto, sans-serif;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 800;
-  letter-spacing: 0.13em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #b8f0ff;
-  text-shadow: 0 0 10px rgba(0, 220, 255, 0.85), 0 1px 3px #000;
-  line-height: 1.3;
-  margin-bottom: 5px;
+  color: #c8f4ff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.92), 0 0 1px rgba(0, 0, 0, 0.9);
+  line-height: 1.25;
+  margin-bottom: 3px;
 }
 
 .morph-canvas-host .morph-lab--apex .morph-lab__pos {
-  font-size: 13px;
-  letter-spacing: 0.16em;
-  color: #fff8e0;
-  text-shadow: 0 0 14px rgba(255, 220, 120, 0.95), 0 1px 3px #000;
-  margin-bottom: 6px;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  color: #fff4d6;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.92), 0 0 1px rgba(0, 0, 0, 0.88);
+  margin-bottom: 4px;
 }
 
 .morph-canvas-host .morph-lab__word {
   font-family: system-ui, "Segoe UI", Roboto, sans-serif;
-  font-size: 16px;
-  font-weight: 900;
+  font-size: 13px;
+  font-weight: 850;
   letter-spacing: 0.02em;
   color: #ffffff;
-  text-shadow: 0 0 14px rgba(0, 255, 255, 0.95), 0 0 3px #000, 0 2px 6px rgba(0, 0, 0, 0.85);
-  line-height: 1.25;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.95), 0 0 1px rgba(0, 0, 0, 0.9);
+  line-height: 1.22;
   word-break: break-word;
   overflow-wrap: anywhere;
 }
 
 .morph-canvas-host .morph-lab--apex .morph-lab__word {
-  font-size: 17px;
-  line-height: 1.28;
+  font-size: 15px;
+  line-height: 1.24;
 }
 
 .morph-canvas-host .morph-lab__gloss {
   font-family: system-ui, "Segoe UI", Roboto, sans-serif;
-  font-size: 11px;
-  font-weight: 650;
-  color: #ffeecc;
-  text-shadow: 0 1px 4px #000;
-  margin-top: 6px;
-  max-width: 15em;
-  line-height: 1.4;
+  font-size: 10px;
+  font-weight: 600;
+  color: #f5ead0;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
+  margin-top: 3px;
+  max-width: 12em;
+  line-height: 1.35;
   margin-left: auto;
   margin-right: auto;
-  opacity: 0.98;
+  opacity: 0.95;
 }
 
 .morph-canvas-host--wb .morph-lab {
-  background: rgba(255, 255, 255, 0.97);
-  border: 1px solid rgba(15, 23, 42, 0.2);
-  box-shadow: 0 5px 24px rgba(15, 23, 42, 0.16);
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
 
 .morph-canvas-host--wb .morph-lab__pos {
-  color: #0a4c5c !important;
-  text-shadow: none !important;
-  font-size: 11px !important;
-  letter-spacing: 0.11em !important;
-  font-weight: 850 !important;
+  color: #0c4a6e !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) !important;
+  font-size: 10px !important;
+  letter-spacing: 0.1em !important;
+  font-weight: 800 !important;
 }
 
 .morph-canvas-host--wb .morph-lab--apex .morph-lab__pos {
-  color: #7c2d12 !important;
-  font-size: 13px !important;
-  letter-spacing: 0.13em !important;
+  color: #9a3412 !important;
+  font-size: 11px !important;
+  letter-spacing: 0.11em !important;
 }
 
 .morph-canvas-host--wb .morph-lab__word {
   color: #020617 !important;
-  text-shadow: none !important;
-  font-size: 17px !important;
-  font-weight: 900 !important;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.55) !important;
+  font-size: 14px !important;
+  font-weight: 850 !important;
 }
 
 .morph-canvas-host--wb .morph-lab--apex .morph-lab__word {
-  font-size: 18px !important;
+  font-size: 16px !important;
 }
 
 .morph-canvas-host--wb .morph-lab__gloss {
-  color: #0f172a !important;
+  color: #1e293b !important;
   text-shadow: none !important;
-  font-size: 12.5px !important;
-  font-weight: 650 !important;
-  line-height: 1.45 !important;
+  font-size: 10.5px !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
 }
 
 .morph-ui-panel {
@@ -391,10 +395,10 @@ html.morph-immersive-open body {
   right: 0;
   bottom: 0;
   z-index: 5;
-  padding: 0.75rem 1rem 1rem;
-  background: linear-gradient(to top, rgba(10, 14, 26, 0.94) 55%, rgba(10, 14, 26, 0) 100%);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  padding: 0.55rem 0.85rem 0.75rem;
+  background: linear-gradient(to top, rgba(10, 14, 26, 0.78) 42%, rgba(10, 14, 26, 0) 100%);
+  backdrop-filter: blur(7px) saturate(1.05);
+  -webkit-backdrop-filter: blur(7px) saturate(1.05);
   pointer-events: none;
 }
 
@@ -403,9 +407,9 @@ html.morph-immersive-open body {
 }
 
 .morphology-shell--wb .morph-ui-panel {
-  background: linear-gradient(to top, rgba(255, 255, 255, 0.94) 50%, rgba(255, 255, 255, 0) 100%);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: linear-gradient(to top, rgba(255, 255, 255, 0.82) 40%, rgba(255, 255, 255, 0) 100%);
+  backdrop-filter: blur(8px) saturate(1.02);
+  -webkit-backdrop-filter: blur(8px) saturate(1.02);
 }
 
 .morph-ui-row {
@@ -438,13 +442,13 @@ html.morph-immersive-open body {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   padding: 0.45rem 0.85rem;
-  border-radius: 8px;
-  border: 1px solid rgba(0, 255, 200, 0.35);
-  background: rgba(12, 24, 44, 0.9);
+  border-radius: 10px;
+  border: 1px solid rgba(120, 200, 190, 0.38);
+  background: rgba(12, 24, 44, 0.82);
   color: var(--morph-chrome);
   cursor: pointer;
-  transition: background 0.22s ease, color 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease,
-    transform 0.18s ease;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease,
+    transform 0.16s ease;
 }
 
 .morph-view-btn:focus-visible {
@@ -457,15 +461,15 @@ html.morph-immersive-open body {
 }
 
 .morph-view-btn:hover {
-  border-color: rgba(255, 208, 96, 0.6);
+  border-color: rgba(255, 208, 96, 0.45);
   color: #fff;
 }
 
 .morph-view-btn--active {
-  background: linear-gradient(180deg, rgba(255, 208, 96, 0.95), rgba(255, 159, 64, 0.95));
+  background: linear-gradient(180deg, rgba(255, 214, 122, 0.92), rgba(245, 158, 72, 0.92));
   color: #0a0e1a !important;
-  border-color: #fff8e0;
-  box-shadow: 0 0 20px rgba(255, 208, 96, 0.35);
+  border-color: rgba(255, 237, 192, 0.95);
+  box-shadow: 0 2px 12px rgba(255, 180, 72, 0.22);
 }
 
 /* Icon-only view / whiteboard toggles (tree, checkmark) */
@@ -529,13 +533,14 @@ html.morph-immersive-open body {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   padding: 0.45rem 0.75rem;
-  border-radius: 8px;
-  border: 1px solid rgba(148, 163, 184, 0.45);
-  background: rgba(15, 23, 42, 0.65);
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.42);
+  background: rgba(15, 23, 42, 0.58);
   color: #cbd5e1;
   cursor: pointer;
   margin-left: 0.25rem;
-  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease, transform 0.15s ease;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease, transform 0.15s ease,
+    box-shadow 0.2s ease;
 }
 
 .morph-fs-btn:focus-visible {
@@ -679,26 +684,26 @@ html.morph-immersive-open body {
 
 .morph-select {
   appearance: none;
-  background: rgba(20, 35, 55, 0.95);
+  background: rgba(20, 35, 55, 0.88);
   color: var(--morph-chrome);
-  border: 1px solid rgba(0, 255, 200, 0.35);
-  border-radius: 8px;
-  padding: 0.45rem 2rem 0.45rem 0.75rem;
-  font-size: 0.95rem;
+  border: 1px solid rgba(120, 200, 190, 0.4);
+  border-radius: 10px;
+  padding: 0.42rem 2rem 0.42rem 0.72rem;
+  font-size: 0.92rem;
   cursor: pointer;
   max-width: min(100%, 22rem);
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
 
 .morph-select:hover {
-  border-color: rgba(0, 255, 200, 0.55);
+  border-color: rgba(160, 220, 200, 0.55);
 }
 
 .morph-select:focus-visible {
   outline: 2px solid var(--morph-gold);
   outline-offset: 2px;
-  border-color: rgba(255, 208, 96, 0.65);
-  box-shadow: 0 0 0 1px rgba(255, 208, 96, 0.25);
+  border-color: rgba(255, 208, 96, 0.55);
+  box-shadow: 0 0 0 3px rgba(255, 208, 96, 0.12);
 }
 
 .morphology-shell--wb .morph-select {
@@ -708,17 +713,31 @@ html.morph-immersive-open body {
 }
 
 .morph-hint {
-  font-size: 0.78rem;
-  color: rgba(200, 244, 255, 0.65);
+  font-size: 0.74rem;
+  color: rgba(200, 244, 255, 0.58);
   text-align: center;
-  margin-top: 0.5rem;
-  max-width: 40rem;
+  margin-top: 0.45rem;
+  max-width: 34rem;
+  line-height: 1.45;
   margin-left: auto;
   margin-right: auto;
 }
 
 .morphology-shell--wb .morph-hint {
   color: #64748b;
+}
+
+.morph-hint kbd {
+  font: 0.78em ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  padding: 0.08em 0.35em;
+  border-radius: 4px;
+  border: 1px solid rgba(148, 163, 184, 0.45);
+  background: rgba(15, 23, 42, 0.35);
+}
+
+.morphology-shell--wb .morph-hint kbd {
+  border-color: #cbd5e1;
+  background: rgba(241, 245, 249, 0.95);
 }
 
 .morph-highlights {

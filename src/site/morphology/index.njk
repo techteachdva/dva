@@ -70,15 +70,12 @@ contentClasses: morphology-page
         <label for="morph-word-select">Word tree</label>
         <select id="morph-word-select" class="morph-select" aria-describedby="morph-hint"></select>
       </div>
-      <p id="morph-hint" class="morph-hint">
-        <strong>Garden:</strong> choose <em>All words — garden</em> to see every tree; pick one word to isolate it.
-        <strong>3D:</strong> drag to orbit · pinch/spread to zoom · labels fade with distance (far = spheres only).
-        <strong>Double-tap</strong> or double-click a node to orbit that morpheme (again to stop drift). Magenta =
-        shared morphemes; faint rays = other words when isolated.
-        <strong>Whiteboard:</strong> trees sit on a circle; double-tap or double-click a node to trim the tree and list
-        shared morphemes.
-        <strong>Mobile:</strong> <em>Fullscreen</em> uses real fullscreen when the browser allows; otherwise it fills
-        the viewport (tap <em>Close</em> or the back gesture to exit).
+      <p id="morph-hint" class="morph-hint morph-hint--compact">
+        <strong>Garden / Master:</strong> click a morpheme to ease the orbit target; double-click toggles slow drift on
+        that node. Magenta links = shared morphemes. <strong>Keys:</strong> <kbd>F</kbd> fit view to the word menu
+        selection · <kbd>R</kbd> reset camera for this mode · <kbd>Space</kbd> toggle drift (after a focused node).
+        <strong>Whiteboard:</strong> double-click a node to trim the tree or open shared-morpheme links.
+        <strong>Mobile:</strong> double-tap matches double-click; fullscreen uses the real API when available.
       </p>
     </div>
   </div>
