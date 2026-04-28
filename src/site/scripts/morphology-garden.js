@@ -1711,12 +1711,22 @@ function init(host, detailEl, selectEl, shellEl) {
   const introTmp1 = new THREE.Vector3();
   const lodWorld = new THREE.Vector3();
 
-  window.addEventListener("resize", () => {
-    camera.aspect = host.clientWidth / host.clientHeight;
+  function resizeCanvasToHost() {
+    const w = host.clientWidth;
+    const h = host.clientHeight;
+    if (w <= 0 || h <= 0) return;
+    camera.aspect = w / h;
     camera.updateProjectionMatrix();
-    renderer.setSize(host.clientWidth, host.clientHeight);
-    labelRenderer.setSize(host.clientWidth, host.clientHeight);
-  });
+    renderer.setSize(w, h);
+    labelRenderer.setSize(w, h);
+  }
+  window.addEventListener("resize", resizeCanvasToHost);
+  if (typeof ResizeObserver !== "undefined") {
+    new ResizeObserver(resizeCanvasToHost).observe(host);
+  }
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", resizeCanvasToHost);
+  }
 
   function animate() {
     requestAnimationFrame(animate);

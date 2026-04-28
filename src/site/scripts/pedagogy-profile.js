@@ -413,6 +413,21 @@ function buildChoices(q) {
   }
 }
 
+function radarPointLabelFontSize() {
+  const w = window.innerWidth;
+  if (w < 380) return 9;
+  if (w < 520) return 10;
+  if (w < 720) return 11;
+  return 12;
+}
+
+function syncRadarToViewport() {
+  if (!state.chart) return;
+  state.chart.options.scales.r.pointLabels.font.size = radarPointLabelFontSize();
+  state.chart.resize();
+  state.chart.update("none");
+}
+
 function updateRadar(scores100, growthKeys) {
   const order = state.data.spectrums.map((s) => s.key);
   const growth = new Set(Array.isArray(growthKeys) ? growthKeys : []);
@@ -462,13 +477,15 @@ function updateRadar(scores100, growthKeys) {
             ticks: { stepSize: 20, showLabelBackdrop: false, color: "rgba(232,238,252,0.8)" },
             grid: { color: "rgba(255,255,255,0.10)" },
             angleLines: { color: "rgba(255,255,255,0.10)" },
-            pointLabels: { color: "rgba(232,238,252,0.92)", font: { size: 12, weight: "700" } },
+            pointLabels: {
+              color: "rgba(232,238,252,0.92)",
+              font: { size: radarPointLabelFontSize(), weight: "700" },
+            },
           },
         },
         plugins: { legend: { display: false } },
       },
     });
-    el("radarCanvas").parentElement.style.height = "520px";
   } else {
     state.chart.data.labels = labels;
     state.chart.data.datasets[0].data = values;
@@ -478,7 +495,7 @@ function updateRadar(scores100, growthKeys) {
     ds.pointBorderWidth = pointBorderWidth;
     ds.pointRadius = pointRadius;
     ds.pointHoverRadius = pointHoverRadius;
-    state.chart.update();
+    syncRadarToViewport();
   }
 }
 
@@ -1068,6 +1085,7 @@ async function init() {
   state.data = INSTRUMENT;
 
   wireKeys();
+  window.addEventListener("resize", syncRadarToViewport);
   el("beginBtn").addEventListener("click", () => {
     state.idx = 0;
     renderQuestion();

@@ -1,13 +1,114 @@
 body {
-    /***
+  /***
       ADD YOUR CUSTOM STYLING HERE. (INSIDE THE body {...} section.)
       IT WILL TAKE PRECEDENCE OVER THE STYLING IN THE STYLE.CSS FILE.
    ***/
-    //  background-color: white;
-    //  .content {
-    //   font-size: 14px;
-    //  }
-    //  h1 {
-    //   color: black;
-    //  }
+  //  background-color: white;
+  //  .content { font-size: 14px; }
+  //  h1 { color: black; }
+}
+
+/* --------------------------------------------------------------------------
+   Mobile-friendly defaults (safe areas, tap targets, horizontal scroll)
+   -------------------------------------------------------------------------- */
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+@media (max-width: 48rem) {
+  body {
+    padding-left: env(safe-area-inset-left, 0);
+    padding-right: env(safe-area-inset-right, 0);
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  .navbar {
+    padding-left: max(var(--file-margins, 1rem), env(safe-area-inset-left, 0));
+    padding-right: max(var(--file-margins, 1rem), env(safe-area-inset-right, 0));
+    padding-top: max(0.35rem, env(safe-area-inset-top, 0));
+    flex-wrap: wrap;
+    row-gap: 0.35rem;
+    align-items: flex-start;
+  }
+
+  .navbar .navbar-inner {
+    min-height: 2.75rem;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .navbar h1 {
+    font-size: clamp(1rem, 4.2vw, 1.25rem) !important;
+    line-height: 1.25;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: min(70vw, 18rem);
+  }
+
+  .content {
+    box-sizing: border-box;
+    padding-left: max(0.75rem, env(safe-area-inset-left, 0));
+    padding-right: max(0.75rem, env(safe-area-inset-right, 0));
+    font-size: 1rem;
+    line-height: 1.55;
+    margin-top: clamp(4.5rem, 18vw, 5.5rem);
+  }
+
+  .search-box {
+    box-sizing: border-box;
+    max-width: calc(100vw - 1.25rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+    width: 100%;
+    margin: 0 0.625rem;
+    transform: translateY(max(3.5rem, calc(env(safe-area-inset-top, 0px) + 2.5rem)));
+  }
+
+  .search-box input {
+    font-size: 1.05rem;
+  }
+
+  #search-results {
+    max-height: min(58vh, 26rem);
+    padding: 0.75rem;
+  }
+
+  .markdown-preview-view pre,
+  .markdown-preview-view .mermaid {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+  }
+
+  .markdown-preview-view table {
+    display: block;
+    width: max-content;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .sidebar {
+    padding-left: env(safe-area-inset-left, 0);
+    padding-right: env(safe-area-inset-right, 0);
+  }
+
+  .filetree-sidebar {
+    padding-left: max(10px, env(safe-area-inset-left, 0));
+    padding-top: max(10px, env(safe-area-inset-top, 0));
+    max-width: min(250px, calc(100vw - 2rem));
+  }
+
+  .search-button {
+    min-height: 2.75rem;
+    touch-action: manipulation;
+  }
+
+  a.tag {
+    min-height: 2.25rem;
+    display: inline-flex;
+    align-items: center;
+    touch-action: manipulation;
+  }
 }

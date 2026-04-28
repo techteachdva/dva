@@ -818,6 +818,106 @@
   outline-offset: 2px;
 }
 
+/* Phones and small tablets: shorter canvas (dynamic viewport), safe areas, 44px targets */
+@media (max-width: 40rem) {
+  .morphology-top {
+    padding-left: max(0.75rem, env(safe-area-inset-left, 0));
+    padding-right: max(0.75rem, env(safe-area-inset-right, 0));
+  }
+
+  .morphology-page .morph-page-title {
+    font-size: 1.4rem;
+  }
+
+  .morphology-tagline {
+    font-size: 0.95rem;
+  }
+
+  .morphology-shell {
+    border-radius: 0;
+    margin-top: 0.25rem;
+    min-height: min(58vh, 480px);
+    min-height: min(58dvh, 480px);
+  }
+
+  #morph-canvas-host,
+  .morph-canvas-host {
+    height: min(58vh, 480px);
+    height: min(58dvh, 480px);
+  }
+
+  .morph-ui-panel {
+    padding-left: max(0.65rem, env(safe-area-inset-left, 0));
+    padding-right: max(0.65rem, env(safe-area-inset-right, 0));
+    padding-bottom: max(0.85rem, env(safe-area-inset-bottom, 0));
+  }
+
+  .morph-ui-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .morph-ui-row--toggle {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .morph-view-btn,
+  .morph-fs-btn {
+    min-height: 2.75rem;
+    padding: 0.5rem 0.9rem;
+    touch-action: manipulation;
+  }
+
+  .morph-select {
+    width: 100%;
+    max-width: none;
+    min-height: 2.75rem;
+    font-size: 1rem;
+  }
+
+  .morph-hint {
+    font-size: 0.72rem;
+    text-align: left;
+    max-width: none;
+  }
+
+  .morph-highlights {
+    padding-left: max(0.85rem, env(safe-area-inset-left, 0));
+    padding-right: max(0.85rem, env(safe-area-inset-right, 0));
+  }
+
+  .morph-concept {
+    padding: 0.85rem 0.85rem 0.85rem 2.85rem;
+  }
+
+  .morph-concept::before {
+    left: 0.75rem;
+    top: 0.85rem;
+    width: 1.5rem;
+    height: 1.5rem;
+    line-height: 1.5rem;
+    font-size: 0.8rem;
+  }
+
+  .morph-detail {
+    margin-left: max(0.5rem, env(safe-area-inset-left, 0));
+    margin-right: max(0.5rem, env(safe-area-inset-right, 0));
+    padding: 0.85rem 1rem;
+    font-size: 0.92rem;
+  }
+
+  .morph-skip {
+    bottom: max(1rem, env(safe-area-inset-bottom, 0));
+    right: max(1rem, env(safe-area-inset-right, 0));
+  }
+
+  .morph-morpheme-pop__pick {
+    min-height: 2.75rem;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .morph-ui-panel,
   .morphology-shell--wb .morph-ui-panel {
