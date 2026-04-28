@@ -1648,26 +1648,31 @@ function updateBridgeLines(bridges, blendVal) {
   const pts = arc ? bridgeArcEnsure(BRIDGE_SEG) : null;
 
   bridges.children.forEach((line) => {
-    if (!line.visible) return;
-    if (!line.userData.a || !line.userData.b) return;
-    line.userData.a.getWorldPosition(_vBridgeA);
-    line.userData.b.getWorldPosition(_vBridgeB);
-    if (!arc) {
-      line.geometry.setFromPoints([_vBridgeA, _vBridgeB]);
-      return;
+    try {
+      if (!line.visible) return;
+      if (!line.userData.a || !line.userData.b) return;
+      line.userData.a.getWorldPosition(_vBridgeA);
+      line.userData.b.getWorldPosition(_vBridgeB);
+      if (!Number.isFinite(_vBridgeA.x) || !Number.isFinite(_vBridgeB.x)) return;
+      if (!arc) {
+        line.geometry.setFromPoints([_vBridgeA, _vBridgeB]);
+        return;
+      }
+      _midBridge.lerpVectors(_vBridgeA, _vBridgeB, 0.5);
+      const dx = _vBridgeB.x - _vBridgeA.x;
+      const dz = _vBridgeB.z - _vBridgeA.z;
+      const distH = Math.hypot(dx, dz);
+      const lift = THREE.MathUtils.clamp(distH * 0.16 + 7, 9, 38);
+      _midBridge.y += lift;
+      const n = BRIDGE_SEG;
+      for (let i = 0; i <= n; i++) {
+        const t = i / n;
+        quadBezierPoint(pts[i], _vBridgeA, _midBridge, _vBridgeB, t);
+      }
+      line.geometry.setFromPoints(pts);
+    } catch {
+      /* bad bridge geometry — skip frame */
     }
-    _midBridge.lerpVectors(_vBridgeA, _vBridgeB, 0.5);
-    const dx = _vBridgeB.x - _vBridgeA.x;
-    const dz = _vBridgeB.z - _vBridgeA.z;
-    const distH = Math.hypot(dx, dz);
-    const lift = THREE.MathUtils.clamp(distH * 0.16 + 7, 9, 38);
-    _midBridge.y += lift;
-    const n = BRIDGE_SEG;
-    for (let i = 0; i <= n; i++) {
-      const t = i / n;
-      quadBezierPoint(pts[i], _vBridgeA, _midBridge, _vBridgeB, t);
-    }
-    line.geometry.setFromPoints(pts);
   });
 }
 
@@ -1741,6 +1746,14 @@ function init(host, detailEl, selectEl, shellEl) {
   scene.background = bg3d.clone();
 
   const clock = new THREE.Clock();
+  /** Monotonic seconds for scripted tweens (independent of THREE.Clock / getDelta quirks). */
+  function morphWallSec() {
+    return typeof performance !== "undefined" && typeof performance.now === "function"
+      ? performance.now() * 0.001
+      : typeof Date !== "undefined"
+        ? Date.now() * 0.001
+        : clock.elapsedTime;
+  }
   const camera = new THREE.PerspectiveCamera(48, host.clientWidth / host.clientHeight, 0.1, 600);
   const introStartPos = new THREE.Vector3(8, 58, 118);
   const focusCenter = new THREE.Vector3(0, -12, 0);
@@ -2037,7 +2050,7 @@ function init(host, detailEl, selectEl, shellEl) {
   }
 
   let viewBlend = 0;
-  /** @type {{ t0: number, fromKey: string, toKey: string, cam0: THREE.Vector3, tgt0: THREE.Vector3, cam1: THREE.Vector3, tgt1: THREE.Vector3 } | null} */
+  /** @type {{ wallSec0: number, fromKey: string, toKey: string, cam0: THREE.Vector3, tgt0: THREE.Vector3, cam1: THREE.Vector3, tgt1: THREE.Vector3 } | null} */
   let transition = null;
   /** @type {string | null} */
   let autoRotateAnchorUuid = null;
@@ -2058,7 +2071,7 @@ function init(host, detailEl, selectEl, shellEl) {
   let morphHelpEl = null;
   /** @type {() => void} */
   let closeMorphHelp = () => {};
-  /** @type {{ t0: number, dur: number, cam0: THREE.Vector3, tgt0: THREE.Vector3, cam1: THREE.Vector3, tgt1: THREE.Vector3 } | null} */
+  /** @type {{ wallSec0: number, dur: number, cam0: THREE.Vector3, tgt0: THREE.Vector3, cam1: THREE.Vector3, tgt1: THREE.Vector3 } | null} */
   let cameraFitTween = null;
 
   const morphFlyKeyCodes = new Set([
@@ -2078,7 +2091,9 @@ function init(host, detailEl, selectEl, shellEl) {
   const WB_DEFAULT_TGT = new THREE.Vector3(0, -10, 0);
 
   function isGardenScope() {
-    return !selectEl || selectEl.value === GARDEN_SELECT;
+    if (!selectEl) return true;
+    const v = selectEl.value;
+    return v === GARDEN_SELECT || v === "";
   }
 
   function syncCam3dToOverview() {
@@ -2110,7 +2125,7 @@ function init(host, detailEl, selectEl, shellEl) {
   function startCameraFit() {
     if (!introDone || transition) return;
     cameraFitTween = {
-      t0: clock.elapsedTime,
+      wallSec0: morphWallSec(),
       dur: REDUCED_MOTION ? 0.01 : 0.52,
       cam0: camera.position.clone(),
       tgt0: controls.target.clone(),
@@ -2329,7 +2344,7 @@ function init(host, detailEl, selectEl, shellEl) {
     controls.autoRotate = false;
     autoRotateAnchorUuid = null;
     cameraFitTween = {
-      t0: clock.elapsedTime,
+      wallSec0: morphWallSec(),
       dur: REDUCED_MOTION ? 0.01 : 0.52,
       cam0: camera.position.clone(),
       tgt0: controls.target.clone(),
@@ -2695,7 +2710,7 @@ function init(host, detailEl, selectEl, shellEl) {
     const end = camerasForTransitionEnd(toKey);
 
     transition = {
-      t0: clock.elapsedTime,
+      wallSec0: morphWallSec(),
       fromKey: viewKey,
       toKey,
       cam0,
@@ -3194,10 +3209,10 @@ function init(host, detailEl, selectEl, shellEl) {
     let layoutKeyFrom = viewKey;
     let layoutKeyTo = viewKey;
     if (transition) {
-      const elapsed = clock.elapsedTime - transition.t0;
+      const elapsed = morphWallSec() - transition.wallSec0;
       const k =
         TRANSITION_SEC > 1e-6 ? Math.min(1, elapsed / TRANSITION_SEC) : 1;
-      const e = smoothstep(k);
+      const e = smoothstep(Math.min(k, 1));
       layoutEase = e;
       layoutKeyFrom = transition.fromKey;
       layoutKeyTo = transition.toKey;
@@ -3206,7 +3221,8 @@ function init(host, detailEl, selectEl, shellEl) {
       viewBlend = bf + (bt - bf) * e;
       camera.position.lerpVectors(transition.cam0, transition.cam1, e);
       controls.target.lerpVectors(transition.tgt0, transition.tgt1, e);
-      const ended = elapsed >= TRANSITION_SEC - 1e-8 || k >= 1;
+      const ended =
+        elapsed >= TRANSITION_SEC - 1e-6 || k >= 1 - 1e-9 || !Number.isFinite(elapsed);
       if (ended) {
         viewBlend = blendForViewKey(transition.toKey);
         layoutEase = 1;
@@ -3216,6 +3232,7 @@ function init(host, detailEl, selectEl, shellEl) {
         camera.position.copy(transition.cam1);
         controls.target.copy(transition.tgt1);
         transition = null;
+        setViewButtons();
         const ue = smoothstep(viewBlend);
         if (ue > 0.9) {
           wbZoomLimitsActive = true;
@@ -3230,7 +3247,7 @@ function init(host, detailEl, selectEl, shellEl) {
     }
 
     if (!transition && cameraFitTween) {
-      const elapsedF = clock.elapsedTime - cameraFitTween.t0;
+      const elapsedF = morphWallSec() - cameraFitTween.wallSec0;
       const d = Math.max(1e-5, cameraFitTween.dur);
       const ck = Math.min(1, elapsedF / d);
       const ce = easeOutCubic(ck);
