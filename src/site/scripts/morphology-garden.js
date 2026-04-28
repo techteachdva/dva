@@ -1755,7 +1755,9 @@ function init(host, detailEl, selectEl, shellEl) {
         ? Date.now() * 0.001
         : clock.elapsedTime;
   }
-  const camera = new THREE.PerspectiveCamera(48, host.clientWidth / host.clientHeight, 0.1, 600);
+  const CAMERA_FOV_3D = 48;
+  const camera = new THREE.PerspectiveCamera(CAMERA_FOV_3D, host.clientWidth / host.clientHeight, 0.1, 600);
+  camera.userData.morphBaseFov = CAMERA_FOV_3D;
   const introStartPos = new THREE.Vector3(8, 58, 118);
   const focusCenter = new THREE.Vector3(0, -12, 0);
   const cam3dPos = new THREE.Vector3(22, 28, 76);
@@ -1883,6 +1885,17 @@ function init(host, detailEl, selectEl, shellEl) {
   });
 
   assignMasterTreeLayout(sceneCenter);
+
+  /**
+   * Whiteboard framing: textbook-style side elevation (−x direction looks toward vocabulary), not orbital 3D.
+   * `masterBoost` pushes the camera farther back for dense link layouts.
+   */
+  function wbSideCameraPair(/** @type {boolean} */ masterBoost) {
+    const pull = masterBoost ? 1.72 : 1;
+    const tgt = new THREE.Vector3(sceneCenter.x, sceneCenter.y - 14, sceneCenter.z);
+    const cam = new THREE.Vector3(sceneCenter.x + 158 * pull, sceneCenter.y + 24 * pull, sceneCenter.z + 12);
+    return { cam, tgt };
+  }
 
   const cam3dMaster = new THREE.Vector3();
   const cam3dTargetMaster = new THREE.Vector3();
@@ -2090,8 +2103,6 @@ function init(host, detailEl, selectEl, shellEl) {
   /** @type {Set<string>} */
   const morphKeysDown = new Set();
 
-  const WB_DEFAULT_CAM = new THREE.Vector3(0, 34, 198);
-  const WB_DEFAULT_TGT = new THREE.Vector3(0, -10, 0);
   /** Magenta bridges in garden layouts; Master view lerps opacity toward ~0.85 via `masterWeight`. */
   const gardenBridgeOpacity = 0.62;
 
@@ -2190,8 +2201,9 @@ function init(host, detailEl, selectEl, shellEl) {
     controls.autoRotate = false;
     autoRotateAnchorUuid = null;
     if (vk().endsWith("Wb")) {
-      cam3dPos.copy(WB_DEFAULT_CAM);
-      cam3dTarget.copy(WB_DEFAULT_TGT);
+      const wb = wbSideCameraPair(vk().startsWith("Master"));
+      cam3dPos.copy(wb.cam);
+      cam3dTarget.copy(wb.tgt);
     } else if (vk().startsWith("Master")) {
       computeMasterCamera();
       cam3dPos.copy(cam3dMaster);
@@ -2206,12 +2218,16 @@ function init(host, detailEl, selectEl, shellEl) {
 
   function applyScopeVisibility() {
     const garden = isGardenScope();
+    const isolate =
+      !!(selectEl && selectEl.value !== "" && selectEl.value !== GARDEN_SELECT);
+
     for (const w of WORDS) {
       const g = wordGroups[w.id];
       if (!g) continue;
       g.visible = garden || !!(selectEl && w.id === selectEl.value);
     }
-    if (vk().startsWith("Master")) {
+    // Master/links layout normally needs every hub visible (“all trees” picker). Respect an explicit single-word isolate.
+    if (vk().startsWith("Master") && !isolate) {
       for (const w of WORDS) {
         const g = wordGroups[w.id];
         if (g) g.visible = true;
@@ -2259,7 +2275,7 @@ function init(host, detailEl, selectEl, shellEl) {
       return;
     }
     if (!selectEl || selectEl.value === GARDEN_SELECT) {
-      detailEl.innerHTML = `<p><strong>Garden (🌳)</strong> — all words laid out spatially instead of clustered by links. Toggle <strong>Surface</strong> to compare the same arrangement on a <strong>whiteboard</strong> vs full <strong>3D</strong>. Isolate one word from the menu: in 3D, periphery fades; on the board, that tree snaps to center. Hover morphemes for meaning; sparse labels tighten when you zoom out. <strong>WASD</strong>/<strong>arrows</strong> move in 3D; <strong>double-click</strong> frames a tree; <kbd>Shift</kbd>+double-click toggles slow orbit.</p>`;
+      detailEl.innerHTML = `<p><strong>Garden (🌳)</strong> — every tree in textbook space. Toggle <strong>Surface ▸ ✔ Whiteboard</strong> for diagram-style side-elevation (narrow lens, tilted silhouette, pan/zoom) vs <strong>🌐 3D</strong> orbital depth.</p><p><strong>Tips:</strong> isolate one word from the menu; hover morphemes for gloss; zoom out for sparse labels.</p>`;
       return;
     }
     fillDetail(selectEl.value);
@@ -2476,11 +2492,12 @@ function init(host, detailEl, selectEl, shellEl) {
   const fsTarget = shellEl || host;
 
   function morphPickMeshAt(clientX, clientY) {
-    if (!controls.enabled) return null;
+    if (!introDone || transition) return null;
     const rect = renderer.domElement.getBoundingClientRect();
     pointerNdc.x = ((clientX - rect.left) / rect.width) * 2 - 1;
     pointerNdc.y = -((clientY - rect.top) / rect.height) * 2 + 1;
     raycaster.setFromCamera(pointerNdc, camera);
+    scene.updateMatrixWorld(true);
     const meshes = [];
     for (const w of WORDS) {
       const g = wordGroups[w.id];
@@ -2539,7 +2556,7 @@ function init(host, detailEl, selectEl, shellEl) {
   }
 
   renderer.domElement.addEventListener("click", (ev) => {
-    if (!controls.enabled) return;
+    if (!introDone || transition) return;
     if (ev.detail === 2) {
       if (morphClickTimer != null) window.clearTimeout(morphClickTimer);
       morphClickTimer = null;
@@ -2560,7 +2577,7 @@ function init(host, detailEl, selectEl, shellEl) {
   renderer.domElement.addEventListener(
     "touchend",
     (ev) => {
-      if (!controls.enabled || ev.changedTouches.length !== 1) return;
+      if (!introDone || transition || ev.changedTouches.length !== 1) return;
       const t = ev.changedTouches[0];
       const now = performance.now();
       const dx = t.clientX - morphTapX;
@@ -2579,7 +2596,7 @@ function init(host, detailEl, selectEl, shellEl) {
   );
 
   renderer.domElement.addEventListener("pointermove", (ev) => {
-    if (!introDone || !controls.enabled) return;
+    if (!introDone || transition) return;
     morphHoverLastX = ev.clientX;
     morphHoverLastY = ev.clientY;
     if (morphHoverRaf != null) return;
@@ -2692,7 +2709,8 @@ function init(host, detailEl, selectEl, shellEl) {
 
   function camerasForTransitionEnd(/** @type {string} */ key) {
     if (key.endsWith("Wb")) {
-      return { cam: WB_DEFAULT_CAM.clone(), tgt: WB_DEFAULT_TGT.clone() };
+      const wb = wbSideCameraPair(key.startsWith("Master"));
+      return { cam: wb.cam.clone(), tgt: wb.tgt.clone() };
     }
     if (key.startsWith("Master")) {
       computeMasterCamera();
@@ -2790,7 +2808,12 @@ function init(host, detailEl, selectEl, shellEl) {
 
       const swayMul = (1 - u) * (1 - masterWeight * 0.92);
       const sway = swayMul * Math.sin(clock.elapsedTime * 0.1 + w.pos3d.x * 0.02) * 0.045;
-      g.rotation.y = sway;
+      // Whiteboard: pitch trees toward diagram-like side elevation — branches open in-plane instead of orbiting bushes.
+      const wbElev = smoothstep((u - 0.54) / 0.42);
+      g.rotation.order = "YXZ";
+      g.rotation.z = 0;
+      g.rotation.x = wbElev * 0.88;
+      g.rotation.y = sway * (1 - wbElev * 0.94);
 
       const dim = 0.08 * u;
       const tNow = clock.elapsedTime;
@@ -2837,6 +2860,13 @@ function init(host, detailEl, selectEl, shellEl) {
         line.material.color.copy(lc);
         line.material.opacity = 0.88 * (1 - u) + 0.95 * u;
       }
+    }
+
+    if (camera.isPerspectiveCamera) {
+      const fBlend = smoothstep((u - 0.5) / 0.45);
+      const baseFov = /** @type {number} */ (camera.userData?.morphBaseFov ?? CAMERA_FOV_3D);
+      camera.fov = THREE.MathUtils.lerp(baseFov, 19, fBlend);
+      camera.updateProjectionMatrix();
     }
 
     refreshControlsForViewMode(blend, masterWeight);
