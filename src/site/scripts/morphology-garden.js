@@ -1231,6 +1231,7 @@ function assignGrid2d() {
 
 function assignWhiteboardCircle() {
   const n = WORDS.length;
+  if (n < 1) return;
   WORDS.forEach((w, i) => {
     const a = (i / n) * Math.PI * 2 - Math.PI / 2;
     w.pos2d.set(Math.cos(a) * WB_CIRCLE_RADIUS, -10, Math.sin(a) * WB_CIRCLE_RADIUS);
@@ -1865,8 +1866,10 @@ function init(host, detailEl, selectEl, shellEl) {
   const pointerNdc = new THREE.Vector2();
 
   const sceneCenter = new THREE.Vector3();
-  for (const w of WORDS) sceneCenter.add(w.pos3d);
-  sceneCenter.multiplyScalar(1 / WORDS.length);
+  if (WORDS.length > 0) {
+    for (const w of WORDS) sceneCenter.add(w.pos3d);
+    sceneCenter.multiplyScalar(1 / WORDS.length);
+  }
 
   /** @type {Record<string, THREE.Vector3>} */
   const introCirclePos = {};
@@ -2089,6 +2092,8 @@ function init(host, detailEl, selectEl, shellEl) {
 
   const WB_DEFAULT_CAM = new THREE.Vector3(0, 34, 198);
   const WB_DEFAULT_TGT = new THREE.Vector3(0, -10, 0);
+  /** Magenta bridges in garden layouts; Master view lerps opacity toward ~0.85 via `masterWeight`. */
+  const gardenBridgeOpacity = 0.62;
 
   function isGardenScope() {
     if (!selectEl) return true;
@@ -2433,7 +2438,7 @@ function init(host, detailEl, selectEl, shellEl) {
     });
   }
 
-  const firstWordId = WORDS[0].id;
+  const firstWordId = WORDS[0]?.id;
   if (selectEl) {
     selectEl.innerHTML =
       `<option value="${GARDEN_SELECT}">All words — garden</option>` +
@@ -2463,7 +2468,7 @@ function init(host, detailEl, selectEl, shellEl) {
     applyScopeVisibility();
     fillDetailFromSelect();
     flyToOverview();
-  } else {
+  } else if (firstWordId) {
     flyToWord(firstWordId);
   }
 
