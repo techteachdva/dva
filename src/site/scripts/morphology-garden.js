@@ -44,7 +44,25 @@ function registerMorpheme(key, mesh, wordId) {
   morphemeRegistry[key].push({ mesh, wordId });
 }
 
-const WORDS = [
+/**
+ * Thinkmap Visual Thesaurus is proprietary (see visualthesaurus.com); no open-source app code.
+ * Manual highlights useful patterns we echo: center-focused exploration, hover definitions, clear help.
+ */
+function getStoredMorphCurriculum() {
+  try {
+    const q = new URLSearchParams(window.location.search).get("set");
+    if (q === "elementary" || q === "middle" || q === "high") return q;
+    const v = localStorage.getItem("morphCurriculum");
+    if (v === "elementary" || v === "middle" || v === "high") return v;
+  } catch (_) {}
+  return "elementary";
+}
+
+function cloneWordList(arr) {
+  return JSON.parse(JSON.stringify(arr));
+}
+
+const ALL_WORD_DATA = [
   {
     id: "presentation",
     label: "Presentation",
@@ -801,7 +819,345 @@ const WORDS = [
       ],
     },
   },
+  {
+    id: "teacher",
+    label: "Teacher",
+    bracket: "[teach + -er]",
+    note: "Agentive <strong>-er</strong> (person who): compare <em>finisher</em> and comparative <em>wiser</em> in other trees.",
+    position: [22, 0, 48],
+    tree: {
+      text: "teacher",
+      gloss: "noun: one who teaches",
+      children: [
+        {
+          text: "teach",
+          gloss: "free morpheme: to instruct",
+          morphemeKey: "lex:teach",
+          children: [],
+        },
+        {
+          text: "-er",
+          gloss: "suffix: one who (often agentive)",
+          morphemeKey: "sfx:-er",
+          children: [],
+        },
+      ],
+    },
+  },
+  {
+    id: "unhappy",
+    label: "Unhappy",
+    bracket: "[un- + happy]",
+    note: "Productive <strong>un-</strong> ‘not’ on an adjective stem—same prefix family as <em>unwise</em>.",
+    position: [-20, 0, 48],
+    tree: {
+      text: "unhappy",
+      gloss: "adjective: not happy",
+      children: [
+        {
+          text: "un-",
+          gloss: "prefix: not, opposite of",
+          morphemeKey: "pfx:un-",
+          children: [],
+        },
+        {
+          text: "happy",
+          gloss: "free morpheme: glad, pleased",
+          morphemeKey: "lex:happy",
+          children: [],
+        },
+      ],
+    },
+  },
+  {
+    id: "baseball",
+    label: "Baseball",
+    bracket: "[base + ball]",
+    note: "Compound noun: two free morphemes, like <em>rainbow</em> and <em>hallway</em>.",
+    position: [34, 0, 40],
+    tree: {
+      text: "baseball",
+      gloss: "noun: bat-and-ball sport; the ball",
+      children: [
+        {
+          text: "base",
+          gloss: "free morpheme: foundation; station",
+          morphemeKey: "lex:base",
+          children: [],
+        },
+        {
+          text: "ball",
+          gloss: "free morpheme: sphere; game object",
+          morphemeKey: "lex:ball",
+          children: [],
+        },
+      ],
+    },
+  },
+  {
+    id: "toothbrush",
+    label: "Toothbrush",
+    bracket: "[tooth + brush]",
+    note: "Endocentric compound: a brush for teeth—stress and class often follow the right element.",
+    position: [-32, 0, 44],
+    tree: {
+      text: "toothbrush",
+      gloss: "noun: brush for cleaning teeth",
+      children: [
+        {
+          text: "tooth",
+          gloss: "free morpheme: dental crown",
+          morphemeKey: "lex:tooth",
+          children: [],
+        },
+        {
+          text: "brush",
+          gloss: "free morpheme: bristle tool",
+          morphemeKey: "lex:brush",
+          children: [],
+        },
+      ],
+    },
+  },
+  {
+    id: "national",
+    label: "National",
+    bracket: "[nation + -al]",
+    note: "Derivational <strong>-al</strong> ‘pertaining to’—same suffix family as <em>final</em>.",
+    position: [40, 0, -38],
+    tree: {
+      text: "national",
+      gloss: "adjective: of a nation",
+      children: [
+        {
+          text: "-al",
+          gloss: "suffix: pertaining to (derivational)",
+          morphemeKey: "sfx:-al",
+          children: [
+            {
+              text: "nation",
+              gloss: "free morpheme: country; people",
+              morphemeKey: "lex:nation",
+              children: [],
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    id: "careful",
+    label: "Careful",
+    bracket: "[care + -ful]",
+    note: "Suffix <strong>-ful</strong> ‘full of, tending to’ builds adjectives from noun stems.",
+    position: [-40, 0, -36],
+    tree: {
+      text: "careful",
+      gloss: "adjective: cautious; thorough",
+      children: [
+        {
+          text: "care",
+          gloss: "free morpheme: concern; caution",
+          morphemeKey: "lex:care",
+          children: [],
+        },
+        {
+          text: "-ful",
+          gloss: "suffix: full of; characterized by",
+          morphemeKey: "sfx:-ful",
+          children: [],
+        },
+      ],
+    },
+  },
+  {
+    id: "readable",
+    label: "Readable",
+    bracket: "[read + -able]",
+    note: "Same <strong>-able</strong> pattern as <em>unlockable</em>—able to be read.",
+    position: [8, 0, -50],
+    tree: {
+      text: "readable",
+      gloss: "adjective: able to be read; legible",
+      children: [
+        {
+          text: "read",
+          gloss: "free morpheme: interpret text",
+          morphemeKey: "lex:read",
+          children: [],
+        },
+        {
+          text: "-able",
+          gloss: "suffix: able to be (derivational)",
+          morphemeKey: "sfx:-able",
+          children: [],
+        },
+      ],
+    },
+  },
+  {
+    id: "preview",
+    label: "Preview",
+    bracket: "[pre- + view]",
+    note: "Shares <strong>pre-</strong> ‘before’ with <em>presentation</em>—see before the full thing.",
+    position: [-8, 0, -50],
+    tree: {
+      text: "preview",
+      gloss: "noun/verb: look beforehand",
+      children: [
+        {
+          text: "pre-",
+          gloss: "prefix: before, in front",
+          morphemeKey: "pfx:pre-",
+          children: [],
+        },
+        {
+          text: "view",
+          gloss: "free morpheme: see; outlook",
+          morphemeKey: "lex:view",
+          children: [],
+        },
+      ],
+    },
+  },
+  {
+    id: "invisible",
+    label: "Invisible",
+    bracket: "[in- + vis + -ible]",
+    note: "Bound stem <em>vis</em> ‘see’ plus adjective-forming <strong>-ible</strong> (parallel to <strong>-able</strong>).",
+    position: [50, 0, 8],
+    tree: {
+      text: "invisible",
+      gloss: "adjective: cannot be seen",
+      children: [
+        {
+          text: "in-",
+          gloss: "prefix: not, without",
+          morphemeKey: "pfx:in-",
+          children: [],
+        },
+        {
+          text: "visible",
+          gloss: "adjective stem: able to be seen",
+          children: [
+            {
+              text: "vis",
+              gloss: "bound root: see (as in vision)",
+              morphemeKey: "root:vis",
+              children: [],
+            },
+            {
+              text: "-ible",
+              gloss: "suffix: able to be (derivational)",
+              morphemeKey: "sfx:-ible",
+              children: [],
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    id: "predict",
+    label: "Predict",
+    bracket: "[pre- + dict]",
+    note: "Latin-style ‘say beforehand’—<strong>pre-</strong> plus bound stem <em>dict</em> ‘say.’",
+    position: [-50, 0, 8],
+    tree: {
+      text: "predict",
+      gloss: "verb: say what will happen before it does",
+      children: [
+        {
+          text: "pre-",
+          gloss: "prefix: before",
+          morphemeKey: "pfx:pre-",
+          children: [],
+        },
+        {
+          text: "dict",
+          gloss: "bound root: say (as in dictionary)",
+          morphemeKey: "root:dict",
+          children: [],
+        },
+      ],
+    },
+  },
+  {
+    id: "transport",
+    label: "Transport",
+    bracket: "[trans- + port]",
+    note: "Carry ‘across’—<strong>trans-</strong> ‘across, through’ with <em>port</em> ‘carry.’",
+    position: [46, 0, -8],
+    tree: {
+      text: "transport",
+      gloss: "verb/noun: carry across; transportation",
+      children: [
+        {
+          text: "trans-",
+          gloss: "prefix: across, through",
+          morphemeKey: "pfx:trans-",
+          children: [],
+        },
+        {
+          text: "port",
+          gloss: "bound root: carry (as in portable)",
+          morphemeKey: "root:port",
+          children: [],
+        },
+      ],
+    },
+  },
 ];
+
+const CURRICULUM_IDS = {
+  elementary: new Set([
+    "hallway",
+    "rainbow",
+    "sourdough",
+    "before",
+    "freedom",
+    "kingdom",
+    "wisdom",
+    "believe",
+    "unwise",
+    "unhappy",
+    "teacher",
+    "toothbrush",
+  ]),
+  middle: new Set([
+    "final",
+    "belief",
+    "wiser",
+    "finisher",
+    "enable",
+    "endure",
+    "resistance",
+    "national",
+    "careful",
+    "readable",
+    "preview",
+    "baseball",
+  ]),
+  high: new Set([
+    "presentation",
+    "inhospitable",
+    "demarcation",
+    "dehumanization",
+    "revolution",
+    "convince",
+    "constitution",
+    "unlockable-a",
+    "unlockable-b",
+    "invisible",
+    "predict",
+    "transport",
+  ]),
+};
+
+const ACTIVE_CURRICULUM_KEY = getStoredMorphCurriculum();
+const WORDS = cloneWordList(
+  ALL_WORD_DATA.filter((w) => CURRICULUM_IDS[ACTIVE_CURRICULUM_KEY]?.has(w.id))
+);
 
 /** Wider 3D garden; whiteboard uses a circle (garden) or single centered tree (isolate) */
 const POS3D_SCALE = 1.52;
@@ -1155,6 +1511,14 @@ function buildWordGroup(word) {
     mesh.userData.morphemeKey = node.morphemeKey || null;
     mesh.userData.wordId = word.id;
     mesh.userData.treeDepth = treeDepth;
+    const glossLine = node.gloss || "";
+    mesh.userData.morphTooltip = {
+      morpheme: node.text,
+      category: posLabel,
+      gloss: glossDetail(glossLine) || glossLine,
+      wordLabel: word.label,
+      morphemeKey: node.morphemeKey || null,
+    };
     const shell = morphShellSphere(r, col, isRoot);
     mesh.add(shell);
     mesh.userData.shell = shell;
@@ -1273,6 +1637,11 @@ function updateInternalTreeLine(line) {
 }
 
 const SINGULARITY = new THREE.Vector3(0, -8, 0);
+/** Letter overlay + trees peel to garden (≤ ~12s) vs legacy long cinematic */
+const USE_TYPO_INTRO = !REDUCED_MOTION;
+/** Letter spawn + micro-trees, then 3D settle — keep total intro under ~15s */
+const TYPO_LETTER_SEC = 5.25;
+const TYPO_SETTLE_SEC = 3.75;
 /** Per-morpheme spawn (slow → furious) → several camera orbits → settle */
 const INTRO_SPAWN_POWER = 1.72;
 const INTRO_SPAWN_SPREAD = 5.35;
@@ -1488,7 +1857,24 @@ function init(host, detailEl, selectEl, shellEl) {
   const introSpawnList = [];
   let introPhaseAEnd = 0.35;
 
-  if (!REDUCED_MOTION) {
+  if (!REDUCED_MOTION && USE_TYPO_INTRO) {
+    for (const w of WORDS) {
+      const g = wordGroups[w.id];
+      g.position.copy(SINGULARITY);
+      g.scale.setScalar(0.06);
+      g.rotation.y = 0;
+      for (const mesh of g.userData.meshes) {
+        mesh.userData.introFinalPos = mesh.position.clone();
+        const lab = mesh.userData.label;
+        if (lab) lab.userData.introFinalPos = lab.position.clone();
+      }
+      for (const line of g.userData.lines) {
+        line.material.opacity = 0;
+        updateInternalTreeLine(line);
+      }
+    }
+    introPhaseAEnd = 0;
+  } else if (!REDUCED_MOTION) {
     const allMeshes = [];
     for (const w of WORDS) {
       const g = wordGroups[w.id];
@@ -1588,6 +1974,10 @@ function init(host, detailEl, selectEl, shellEl) {
   let morphHoverRaf = null;
   let morphHoverLastX = 0;
   let morphHoverLastY = 0;
+  /** @type {HTMLElement | null} */
+  let morphHelpEl = null;
+  /** @type {() => void} */
+  let closeMorphHelp = () => {};
   /** @type {{ t0: number, dur: number, cam0: THREE.Vector3, tgt0: THREE.Vector3, cam1: THREE.Vector3, tgt1: THREE.Vector3 } | null} */
   let cameraFitTween = null;
 
@@ -1836,6 +2226,104 @@ function init(host, detailEl, selectEl, shellEl) {
     });
   }
 
+  function morphEscapeHtml(s) {
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  const morphTooltipEl = document.createElement("div");
+  morphTooltipEl.className = "morph-node-tooltip morph-node-tooltip--hidden";
+  morphTooltipEl.setAttribute("role", "tooltip");
+  document.body.appendChild(morphTooltipEl);
+
+  function hideMorphTooltip() {
+    morphTooltipEl.classList.add("morph-node-tooltip--hidden");
+    morphTooltipEl.innerHTML = "";
+  }
+
+  function morphTooltipAlsoHtml(key, currentWordId) {
+    const list = morphemeRegistry[key];
+    if (!list || list.length < 2) return "";
+    const ids = [...new Set(list.map((x) => x.wordId))].filter((id) => id !== currentWordId);
+    if (!ids.length) return "";
+    const labels = ids.map((id) => WORDS.find((w) => w.id === id)?.label).filter(Boolean);
+    if (!labels.length) return "";
+    return `<p class="morph-node-tooltip__also"><strong>Also in:</strong> ${labels.map(morphEscapeHtml).join(", ")}</p>`;
+  }
+
+  function showMorphTooltip(mesh, clientX, clientY) {
+    const tip = mesh?.userData?.morphTooltip;
+    if (!tip) {
+      hideMorphTooltip();
+      return;
+    }
+    const also = tip.morphemeKey ? morphTooltipAlsoHtml(tip.morphemeKey, mesh.userData.wordId) : "";
+    morphTooltipEl.innerHTML = `<div class="morph-node-tooltip__inner">
+      <p class="morph-node-tooltip__word">${morphEscapeHtml(tip.wordLabel)}</p>
+      <p class="morph-node-tooltip__head"><span class="morph-node-tooltip__cat">${morphEscapeHtml(tip.category)}</span> · <strong>${morphEscapeHtml(tip.morpheme)}</strong></p>
+      <p class="morph-node-tooltip__gloss">${morphEscapeHtml(tip.gloss)}</p>
+      ${also}</div>`;
+    morphTooltipEl.classList.remove("morph-node-tooltip--hidden");
+    morphTooltipEl.classList.toggle(
+      "morph-node-tooltip--wb",
+      Boolean(shellEl?.classList.contains("morphology-shell--wb"))
+    );
+    requestAnimationFrame(() => {
+      const pad = 10;
+      const rect = morphTooltipEl.getBoundingClientRect();
+      let left = clientX + 14;
+      let top = clientY + 14;
+      if (left + rect.width > window.innerWidth - pad) left = window.innerWidth - rect.width - pad;
+      if (top + rect.height > window.innerHeight - pad) top = clientY - rect.height - 12;
+      if (left < pad) left = pad;
+      if (top < pad) top = pad;
+      morphTooltipEl.style.left = `${left}px`;
+      morphTooltipEl.style.top = `${top}px`;
+    });
+  }
+
+  morphHelpEl = document.getElementById("morph-help");
+  const morphHelpBtn = document.getElementById("morph-help-btn");
+  function openMorphHelp() {
+    if (!morphHelpEl) return;
+    morphHelpEl.classList.remove("morph-help--hidden");
+    morphHelpEl.querySelector(".morph-help__close")?.focus();
+  }
+  closeMorphHelp = () => {
+    morphHelpEl?.classList.add("morph-help--hidden");
+    morphHelpBtn?.focus();
+  };
+  if (morphHelpEl) {
+    morphHelpEl.querySelector(".morph-help__backdrop")?.addEventListener("click", closeMorphHelp);
+    morphHelpEl.querySelector(".morph-help__close")?.addEventListener("click", closeMorphHelp);
+  }
+  morphHelpBtn?.addEventListener("click", () => {
+    if (!morphHelpEl) return;
+    if (morphHelpEl.classList.contains("morph-help--hidden")) openMorphHelp();
+    else closeMorphHelp();
+  });
+
+  const curriculumEl = document.getElementById("morph-curriculum");
+  if (curriculumEl) {
+    curriculumEl.value = ACTIVE_CURRICULUM_KEY;
+    curriculumEl.addEventListener("change", () => {
+      const v = curriculumEl.value;
+      if (v !== "elementary" && v !== "middle" && v !== "high") return;
+      try {
+        localStorage.setItem("morphCurriculum", v);
+        const url = new URL(window.location.href);
+        url.searchParams.set("set", v);
+        window.history.replaceState(null, "", url.toString());
+      } catch (_) {
+        /* ignore */
+      }
+      window.location.reload();
+    });
+  }
+
   const firstWordId = WORDS[0].id;
   if (selectEl) {
     selectEl.innerHTML =
@@ -2003,16 +2491,18 @@ function init(host, detailEl, selectEl, shellEl) {
     if (morphHoverRaf != null) return;
     morphHoverRaf = requestAnimationFrame(() => {
       morphHoverRaf = null;
-      const u = smoothstep(viewBlend);
-      if (u > 0.14) {
-        morphHoverMesh = null;
-        renderer.domElement.style.cursor = "";
-        return;
-      }
       const m = morphPickMeshAt(morphHoverLastX, morphHoverLastY);
       morphHoverMesh = m;
       renderer.domElement.style.cursor = m ? "pointer" : "";
+      if (m) showMorphTooltip(m, morphHoverLastX, morphHoverLastY);
+      else hideMorphTooltip();
     });
+  });
+
+  renderer.domElement.addEventListener("pointerleave", () => {
+    morphHoverMesh = null;
+    hideMorphTooltip();
+    renderer.domElement.style.cursor = "";
   });
 
   function morphToggleAutoRotateFromKeyboard() {
@@ -2035,6 +2525,11 @@ function init(host, detailEl, selectEl, shellEl) {
 
   function morphOnKeydown(ev) {
     if (!introDone) return;
+    if (ev.key === "Escape" && morphHelpEl && !morphHelpEl.classList.contains("morph-help--hidden")) {
+      closeMorphHelp();
+      ev.preventDefault();
+      return;
+    }
     const ae = document.activeElement;
     const tag = ae?.tagName;
     const inField =
@@ -2240,17 +2735,21 @@ function init(host, detailEl, selectEl, shellEl) {
     refreshControlsForViewMode(blend, masterWeight);
   }
 
-  /* Intro overlay */
+  /* Intro overlay — M-O-R-P-H-O-L-O-G-Y + micro “trees”, then hand off to 3D settle */
   const intro = document.createElement("div");
-  intro.className = "morph-intro";
+  intro.className = "morph-intro morph-intro--typo";
+  const introLetters = "MORPHOLOGY".split("");
   intro.innerHTML = `
-    <div class="morph-intro-chrome">
-      <div class="morph-intro-grid" aria-hidden="true"></div>
-      <div class="morph-intro-head">
-        <div class="morph-intro-title">Morphology</div>
-        <div class="morph-intro-sub">The Analysis of Words · Ch. 4</div>
-        <div class="morph-intro-tag">● Word trees · 3D &amp; whiteboard ●</div>
+    <div class="morph-intro-typo" aria-hidden="true">
+      <div class="morph-intro-typo__letters">
+        ${introLetters
+          .map(
+            (ch, i) =>
+              `<span class="morph-intro-typo__cell" style="--morph-i:${i}"><span class="morph-intro-typo__ch">${ch}</span><span class="morph-intro-typo__twig"></span></span>`
+          )
+          .join("")}
       </div>
+      <p class="morph-intro-typo__sub">The Analysis of Words · Ch. 4</p>
     </div>
   `;
   const skipBtn = document.createElement("button");
@@ -2284,7 +2783,9 @@ function init(host, detailEl, selectEl, shellEl) {
   function endIntro() {
     if (introDone) return;
     introDone = true;
-    intro.remove();
+    intro.style.opacity = "0";
+    intro.style.pointerEvents = "none";
+    window.setTimeout(() => intro.remove(), 380);
     finishIntroGroups();
     flyToActiveView();
     camera.position.copy(cam3dPos);
@@ -2424,7 +2925,50 @@ function init(host, detailEl, selectEl, shellEl) {
     const dt = Math.min(clock.getDelta(), 0.064);
     introT += dt;
 
-    if (!introDone && !REDUCED_MOTION) {
+    if (!introDone && !REDUCED_MOTION && USE_TYPO_INTRO) {
+      const t = introT;
+      if (t < TYPO_LETTER_SEC) {
+        const drift = Math.min(1, t / TYPO_LETTER_SEC);
+        camera.position.lerpVectors(introStartPos, cam3dPos, drift * 0.26);
+        controls.target.lerpVectors(SINGULARITY, sceneCenter, drift * 0.2);
+        for (const w of WORDS) {
+          for (const line of wordGroups[w.id].userData.lines) {
+            updateInternalTreeLine(line);
+          }
+        }
+        const fade = smoothstep((t - TYPO_LETTER_SEC * 0.5) / (TYPO_LETTER_SEC * 0.42));
+        intro.style.opacity = String(1 - fade * 0.25);
+      } else {
+        const t2 = t - TYPO_LETTER_SEC;
+        const k = Math.min(1, t2 / TYPO_SETTLE_SEC);
+        const e = easeOutCubic(k);
+        intro.style.opacity = String(Math.max(0, 0.75 - smoothstep((t2 - 0.15) / 1.85)));
+        if (!introSettle.captured) {
+          introSettle.captured = true;
+          introSettle.fromPos.copy(camera.position);
+          introSettle.fromTarget.copy(controls.target);
+          flyToActiveView();
+        }
+        for (const w of WORDS) {
+          const g = wordGroups[w.id];
+          g.position.lerpVectors(SINGULARITY, w.pos3d, e);
+          g.scale.setScalar(0.06 + 0.94 * e);
+          for (const line of g.userData.lines) {
+            if (line.material) line.material.opacity = 0.72 * e;
+            updateInternalTreeLine(line);
+          }
+        }
+        camera.position.lerpVectors(introSettle.fromPos, cam3dPos, e);
+        controls.target.lerpVectors(introSettle.fromTarget, cam3dTarget, e);
+        const bloomBridge = smoothstep((k - 0.12) / 0.5);
+        bridges.visible = bloomBridge > 0.03;
+        bridges.children.forEach((line) => {
+          if (line.material) line.material.opacity = 0.62 * bloomBridge;
+        });
+        grid.visible = k > 0.05;
+        if (k >= 1) endIntro();
+      }
+    } else if (!introDone && !REDUCED_MOTION) {
       if (introT < introPhaseAEnd) {
         for (const row of introSpawnList) {
           const { mesh, label, tStart, popDur, fp, fl } = row;

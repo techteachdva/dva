@@ -967,6 +967,339 @@ html.morph-immersive-open body {
   outline-offset: 2px;
 }
 
+/* Typographic intro: M-O-R-P-H-O-L-O-G-Y spawns from center with micro “twigs” */
+.morph-intro--typo .morph-intro-typo {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0 1rem;
+}
+
+.morph-intro-typo__letters {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.08em 0.2em;
+  max-width: min(96vw, 38rem);
+}
+
+.morph-intro-typo__cell {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  animation: morph-intro-letter-in 0.55s cubic-bezier(0.2, 0.88, 0.24, 1) both;
+  animation-delay: calc(var(--morph-i) * 0.07s);
+}
+
+.morph-intro-typo__ch {
+  font-size: clamp(1.75rem, 6.5vw, 3.1rem);
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  color: #e8fbff;
+  text-shadow: 0 0 28px rgba(0, 255, 220, 0.55), 0 0 2px #000;
+  line-height: 1;
+}
+
+.morph-intro-typo__twig {
+  width: 2px;
+  height: 0.5em;
+  margin-top: 0.1em;
+  background: linear-gradient(180deg, rgba(0, 255, 200, 0.95), rgba(255, 106, 213, 0.35));
+  border-radius: 2px;
+  transform-origin: top center;
+  animation: morph-intro-twig 0.38s ease-out both;
+  animation-delay: calc(var(--morph-i) * 0.07s + 0.28s);
+}
+
+.morph-intro-typo__sub {
+  margin: 1.35rem 0 0;
+  font-size: clamp(0.68rem, 2vw, 0.82rem);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(255, 106, 213, 0.92);
+  text-shadow: 0 0 14px rgba(255, 106, 213, 0.45);
+}
+
+@keyframes morph-intro-letter-in {
+  from {
+    transform: scale(0) translateY(0.35em);
+    opacity: 0;
+    filter: blur(10px);
+  }
+
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+@keyframes morph-intro-twig {
+  from {
+    transform: scaleY(0);
+    opacity: 0;
+  }
+
+  to {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+.morph-ui-row--meta {
+  margin-bottom: 0.15rem;
+}
+
+.morph-select--curriculum {
+  max-width: min(100%, 13rem);
+}
+
+.morph-help-btn {
+  font: inherit;
+  font-size: 1.25rem;
+  line-height: 1;
+  padding: 0.38rem 0.55rem;
+  min-width: 2.5rem;
+  border-radius: 10px;
+  border: 1px solid rgba(120, 200, 190, 0.45);
+  background: rgba(12, 24, 44, 0.82);
+  cursor: pointer;
+  transition: border-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+}
+
+.morph-help-btn:hover {
+  border-color: rgba(255, 208, 96, 0.55);
+  box-shadow: 0 0 16px rgba(255, 106, 213, 0.25);
+}
+
+.morph-help-btn:focus-visible {
+  outline: 2px solid var(--morph-gold);
+  outline-offset: 2px;
+}
+
+.morph-help-btn:active {
+  transform: scale(0.96);
+}
+
+.morphology-shell--wb .morph-help-btn {
+  background: #fff;
+  border-color: #94a3b8;
+}
+
+/* Hover tooltip (above fullscreen shell when needed) */
+.morph-node-tooltip {
+  position: fixed;
+  z-index: 2147483200;
+  left: 0;
+  top: 0;
+  max-width: min(18rem, calc(100vw - 20px));
+  pointer-events: none;
+  filter: drop-shadow(0 12px 28px rgba(0, 0, 0, 0.45));
+}
+
+.morph-node-tooltip--hidden {
+  display: none;
+}
+
+.morph-node-tooltip__inner {
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  background: rgba(10, 14, 26, 0.94);
+  border: 1px solid rgba(0, 255, 200, 0.35);
+  color: #e2e8f0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.morph-node-tooltip__word {
+  margin: 0 0 0.35rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(200, 244, 255, 0.75);
+}
+
+.morph-node-tooltip__head {
+  margin: 0 0 0.35rem;
+  font-size: 0.88rem;
+}
+
+.morph-node-tooltip__cat {
+  color: #7dd3fc;
+  font-weight: 700;
+}
+
+.morph-node-tooltip__gloss {
+  margin: 0;
+  opacity: 0.92;
+}
+
+.morph-node-tooltip__also {
+  margin: 0.45rem 0 0;
+  padding-top: 0.4rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.35);
+  font-size: 0.78rem;
+  opacity: 0.88;
+}
+
+.morph-node-tooltip--wb .morph-node-tooltip__inner {
+  background: #fff;
+  border-color: #94a3b8;
+  color: #0f172a;
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.12);
+}
+
+.morph-node-tooltip--wb .morph-node-tooltip__word {
+  color: #64748b;
+}
+
+.morph-node-tooltip--wb .morph-node-tooltip__cat {
+  color: #0369a1;
+}
+
+.morph-node-tooltip--wb .morph-node-tooltip__also {
+  border-top-color: #e2e8f0;
+}
+
+/* Help dialog */
+.morph-help {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(0.75rem, env(safe-area-inset-top, 0)) max(0.75rem, env(safe-area-inset-right, 0))
+    max(0.75rem, env(safe-area-inset-bottom, 0)) max(0.75rem, env(safe-area-inset-left, 0));
+}
+
+.morph-help--hidden {
+  display: none;
+}
+
+.morph-help__backdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: rgba(2, 6, 16, 0.62);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  cursor: pointer;
+}
+
+.morph-help__panel {
+  position: relative;
+  z-index: 1;
+  width: min(36rem, 100%);
+  max-height: min(78vh, 34rem);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border-radius: 14px;
+  background: rgba(12, 18, 32, 0.97);
+  border: 1px solid rgba(0, 255, 200, 0.28);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
+}
+
+.morph-help__title {
+  margin: 0;
+  padding: 1rem 1.15rem 0.65rem;
+  font-size: 1.05rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: #f1f5f9;
+  border-bottom: 1px solid rgba(200, 244, 255, 0.12);
+}
+
+.morph-help__body {
+  padding: 0.65rem 1.15rem 0.85rem;
+  overflow-y: auto;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: #cbd5e1;
+}
+
+.morph-help__sec {
+  margin-bottom: 0.85rem;
+}
+
+.morph-help__sec:last-child {
+  margin-bottom: 0;
+}
+
+.morph-help__sec h3 {
+  margin: 0 0 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #7dd3fc;
+}
+
+.morph-help__sec p {
+  margin: 0;
+}
+
+.morph-help__sec ul {
+  margin: 0.25rem 0 0;
+  padding-left: 1.1rem;
+}
+
+.morph-help__sec li {
+  margin: 0.3rem 0;
+}
+
+.morph-help__close {
+  flex: 0 0 auto;
+  margin: 0 1rem 1rem;
+  padding: 0.5rem 1rem;
+  font: inherit;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 208, 96, 0.45);
+  background: linear-gradient(180deg, rgba(255, 214, 122, 0.92), rgba(245, 158, 72, 0.92));
+  color: #0a0e1a;
+  cursor: pointer;
+}
+
+.morph-help__close:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.morphology-shell--wb .morph-help__panel {
+  background: #fff;
+  border-color: #cbd5e1;
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.18);
+}
+
+.morphology-shell--wb .morph-help__title {
+  color: #0f172a;
+  border-bottom-color: #e2e8f0;
+}
+
+.morphology-shell--wb .morph-help__body {
+  color: #334155;
+}
+
+.morphology-shell--wb .morph-help__sec h3 {
+  color: #0369a1;
+}
+
+.morphology-shell--wb .morph-help__backdrop {
+  background: rgba(15, 23, 42, 0.35);
+}
+
 /* Phones and small tablets: shorter canvas (dynamic viewport), safe areas, compact icon bar */
 @media (max-width: 40rem) {
   .morphology-top {
@@ -1099,6 +1432,14 @@ html.morph-immersive-open body {
 
   .morph-intro-chrome {
     animation: morph-intro-chrome-out-rm 0.05s ease-out forwards;
+  }
+
+  .morph-intro-typo__cell,
+  .morph-intro-typo__twig {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
   }
 
   @keyframes morph-intro-chrome-out-rm {

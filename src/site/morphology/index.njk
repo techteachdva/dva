@@ -24,6 +24,23 @@ contentClasses: morphology-page
       aria-label="Morpheme trees: use view buttons to switch between 3D garden, master tree, and whiteboard layout"
     ></div>
     <div class="morph-ui-panel">
+      <div class="morph-ui-row morph-ui-row--meta" role="group" aria-label="Curriculum level">
+        <label for="morph-curriculum">Level</label>
+        <select id="morph-curriculum" class="morph-select morph-select--curriculum" title="Word trees by grade band">
+          <option value="elementary">Elementary</option>
+          <option value="middle">Middle school</option>
+          <option value="high">High school</option>
+        </select>
+        <button
+          type="button"
+          id="morph-help-btn"
+          class="morph-help-btn"
+          aria-label="Help: controls and views"
+          title="Help"
+        >
+          ❓
+        </button>
+      </div>
       <div class="morph-ui-row morph-ui-row--toggle" role="group" aria-label="Visualization mode">
         <span class="morph-ui-label">View</span>
         <button
@@ -71,12 +88,70 @@ contentClasses: morphology-page
         <select id="morph-word-select" class="morph-select" aria-describedby="morph-hint"></select>
       </div>
       <p id="morph-hint" class="morph-hint morph-hint--compact">
-        <strong>Garden / Master:</strong> <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> glide; arrow keys orbit (↔)
-        and elevate (↕). Click a morpheme to ease the target; <strong>double-click</strong> zooms the camera to that
-        node. <kbd>Shift</kbd>+double-click toggles slow orbit drift. Magenta = same morpheme in different words.
-        <strong>Master</strong> fits all trees in one field of clusters. <kbd>F</kbd> fit · <kbd>R</kbd> reset ·
-        <kbd>Space</kbd> drift. <strong>Whiteboard:</strong> double-click trims / shared morphemes.
+        <strong>Tip:</strong> Hover morpheme spheres for details. Press <strong>❓ Help</strong> for all controls ·
+        <kbd>F</kbd> fit · <kbd>R</kbd> reset · <kbd>Space</kbd> orbit drift.
       </p>
+    </div>
+
+    <div
+      id="morph-help"
+      class="morph-help morph-help--hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="morph-help-title"
+    >
+      <button type="button" class="morph-help__backdrop" aria-label="Close help"></button>
+      <div class="morph-help__panel">
+        <h2 id="morph-help-title" class="morph-help__title">Digital morphemes — how to use</h2>
+        <div class="morph-help__body">
+          <section class="morph-help__sec">
+            <h3>Levels</h3>
+            <p>
+              Use <strong>Level</strong> to load <strong>Elementary</strong>, <strong>Middle school</strong>, or
+              <strong>High school</strong> word sets (saved in this browser). The page reloads when you change level.
+            </p>
+          </section>
+          <section class="morph-help__sec">
+            <h3>Views</h3>
+            <ul>
+              <li><strong>🌳 Garden</strong> — All word trees in 3D space; magenta lines link the <em>same</em> morpheme across words.</li>
+              <li><strong>✔ Whiteboard</strong> — Flat classroom layout. Double-click a node to trim the tree or open words that share that morpheme.</li>
+              <li><strong>🧬 Master</strong> — One field where clusters show shared morphemes across the whole set.</li>
+            </ul>
+          </section>
+          <section class="morph-help__sec">
+            <h3>Mouse / touch</h3>
+            <ul>
+              <li><strong>Hover</strong> a morpheme sphere for a tooltip (gloss, category, and other words using that morpheme).</li>
+              <li><strong>Drag</strong> to orbit (3D) or pan (whiteboard).</li>
+              <li><strong>Scroll / pinch</strong> to zoom.</li>
+              <li><strong>Click</strong> a morpheme to ease the camera target toward it.</li>
+              <li><strong>Double-click</strong> zooms to that node in 3D; on the whiteboard, trims or opens the shared-morpheme list.</li>
+              <li><strong>Shift + double-click</strong> (3D garden/master) toggles slow auto-orbit around the last focused node.</li>
+            </ul>
+          </section>
+          <section class="morph-help__sec">
+            <h3>Keyboard</h3>
+            <ul>
+              <li><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> — glide the camera on the ground plane (3D).</li>
+              <li><kbd>↑</kbd> <kbd>↓</kbd> — raise / lower camera.</li>
+              <li><kbd>←</kbd> <kbd>→</kbd> — orbit sideways.</li>
+              <li><kbd>F</kbd> — fit the current view (garden overview or selected word).</li>
+              <li><kbd>R</kbd> — reset camera for the current mode.</li>
+              <li><kbd>Space</kbd> — toggle orbit drift (when a node is focused).</li>
+              <li><kbd>Escape</kbd> — close this help panel (or exit full-screen / immersive mode).</li>
+            </ul>
+          </section>
+          <section class="morph-help__sec">
+            <h3>Word menu &amp; details</h3>
+            <p>
+              <strong>Word tree</strong> chooses a single tree or <strong>All words — garden</strong>. The panel below
+              the canvas shows chapter notes for the selected word.
+            </p>
+          </section>
+        </div>
+        <button type="button" class="morph-help__close">Close</button>
+      </div>
     </div>
   </div>
 
