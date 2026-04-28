@@ -830,6 +830,12 @@ html.morph-immersive-open body {
   transition: border-color 0.25s ease, box-shadow 0.25s ease;
 }
 
+.morph-detail--word-focus {
+  border-color: rgba(125, 211, 252, 0.55);
+  box-shadow: 0 10px 38px rgba(0, 140, 220, 0.12);
+  outline: 1px solid rgba(125, 211, 252, 0.2);
+}
+
 .morph-detail .morph-bracket {
   font-family: ui-monospace, "Cascadia Code", monospace;
   font-size: 0.88rem;

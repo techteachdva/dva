@@ -1355,46 +1355,50 @@ function masterWtKey(key) {
   return key.startsWith("Master") ? 1 : 0;
 }
 
-/** Vertical gap between levels (apex at top → constituents branch outward in XZ) */
-const TREE_DEPTH_STEP = 5.75;
-/** Initial ring radius from apex; children recurse in smaller wedges for a fractal, bushy silhouette */
-const TREE_LAYOUT_RADIUS0 = 13.6;
+/** Vertical gap between apex (whole word) and each branching row — textbook trees read top → down. */
+const TREE_DEPTH_STEP = 5.35;
+/** Base horizontal reach for the first branching ring (narrower ⇒ tighter “triangle” silhouette). */
+const TREE_LAYOUT_RADIUS0 = 11;
 
-/** Lateral kick so unary chains (one child) do not stack in a straight vertical “pole” */
+/** Small lateral kick so unary chains are not perfectly vertical poles. */
 function unaryBranchJitter(depth) {
-  return Math.sin(depth * 1.41) * 0.62 + ((depth % 3) - 1) * 0.32;
+  return Math.sin(depth * 1.37) * 0.28 + (((depth % 3) - 1) * 0.22);
 }
 
 /**
- * 3D radial layout: each node’s children live on a ring below it, spaced within a wedge.
- * Full circle at the root; nested wedges give branching, non-collinear edges.
+ * Planar frontal tree (XY): apex highest, constituents branch downward in symmetric wedges — reads like diagrams in Ch.&nbsp;4.
+ * Fixed z = 0 in local word space (+Z frontal view stays upright; avoids “trees lying on their side” from old XZ-ring layout).
+ *
+ * wedgeStart/wedgeSize are radians in [0, 2π), measured from +X axis; subtree fan is constrained to that wedge.
  * @returns {Array<{ node: object, x: number, y: number, z: number, depth: number }>}
  */
-function layoutSubtree(node, depth, x, y, z, wedgeStart, wedgeSize, radius) {
-  const positions = [{ node, x, y, z, depth }];
+function layoutSubtree(node, depth, x, y, wedgeStart, wedgeSize, radial) {
+  const positions = [{ node, x, y, z: 0, depth }];
   const children = node.children || [];
   if (!children.length) return positions;
 
   const yChild = y - TREE_DEPTH_STEP;
   const n = children.length;
-  const r = Math.max(4.1, Math.min(17, radius * (0.58 + 0.12 * n)));
-  const wedge = Math.max(wedgeSize, 0.52 * n);
+  const wedge = Math.max(wedgeSize, 0.45 + 0.28 * n);
+  const rBase = radial * Math.max(0.48, Math.min(1.06, 0.62 / Math.sqrt(Math.max(n, 2))));
+  const r = Math.max(4, Math.min(16, TREE_LAYOUT_RADIUS0 * rBase));
 
   for (let i = 0; i < n; i++) {
-    const slice = wedge / n;
-    const t0 = wedgeStart + i * slice;
-    const t1 = t0 + slice;
-    let theta = (t0 + t1) * 0.5;
+    const slice = wedge / Math.max(n, 1);
+    const tLo = wedgeStart + i * slice;
+    let theta = (tLo + slice * 0.5) % (Math.PI * 2);
     if (n === 1) {
-      theta = wedgeStart + wedge * 0.5 + unaryBranchJitter(depth);
+      theta = (wedgeStart + wedge * 0.5 + unaryBranchJitter(depth)) % (Math.PI * 2);
     }
     const cx = x + Math.cos(theta) * r;
-    const cz = z + Math.sin(theta) * r;
+    const cy = yChild;
 
-    const subW = Math.min(Math.PI * 1.42, slice * 1.72);
-    const subStart = t0 - (subW - slice) * 0.14;
+    const subLo = tLo;
+    const subWedge = slice;
 
-    positions.push(...layoutSubtree(children[i], depth + 1, cx, yChild, cz, subStart, subW, r * 1.06));
+    positions.push(
+      ...layoutSubtree(children[i], depth + 1, cx, cy, subLo, subWedge, radial * 0.96)
+    );
   }
   return positions;
 }
@@ -1539,7 +1543,11 @@ function buildWordGroup(word) {
   group.userData.meshes = [];
   group.userData.lines = [];
 
-  const positions = layoutSubtree(word.tree, 0, 0, 0, 0, 0, Math.PI * 2, TREE_LAYOUT_RADIUS0);
+  /* Apex → constituents fan through the bottom semicircle (θ ∈ [−π, 0]): symmetric left↔right, opening downward (−Y). */
+  const rootWedgeStart = -Math.PI;
+  const rootWedge = Math.PI;
+
+  const positions = layoutSubtree(word.tree, 0, 0, 0, rootWedgeStart, rootWedge, 1);
   const meshes = new Map();
 
   for (const p of positions) {
@@ -1865,6 +1873,9 @@ function init(host, detailEl, selectEl, shellEl) {
     depthWrite: false,
   });
   const raycaster = new THREE.Raycaster();
+  if (/** @type {{ Line?: { threshold: number }}} */ (raycaster.params).Line) {
+    raycaster.params.Line.threshold = 0.12;
+  }
   const pointerNdc = new THREE.Vector2();
 
   const sceneCenter = new THREE.Vector3();
@@ -2117,11 +2128,29 @@ function init(host, detailEl, selectEl, shellEl) {
     cam3dPos.set(sceneCenter.x + 8, sceneCenter.y + 48, sceneCenter.z + 142);
   }
 
+  /** Garden “all words”: side whiteboard framing vs orbital overview — keeps reset / fit consistent with the active surface. */
+  function syncCamGardenOverview() {
+    if (vk().startsWith("Garden") && vk().endsWith("Wb")) {
+      const wb = wbSideCameraPair(false);
+      cam3dPos.copy(wb.cam);
+      cam3dTarget.copy(wb.tgt);
+    } else {
+      syncCam3dToOverview();
+    }
+  }
+
   function flyToOverview() {
-    syncCam3dToOverview();
-    if (vk().startsWith("Garden") && vk().endsWith("3d") && viewBlend < 0.06 && transition === null) {
-      camera.position.copy(cam3dPos);
-      controls.target.copy(cam3dTarget);
+    syncCamGardenOverview();
+    if (vk().startsWith("Garden") && transition === null) {
+      if (vk().endsWith("3d")) {
+        if (viewBlend < 0.06) {
+          camera.position.copy(cam3dPos);
+          controls.target.copy(cam3dTarget);
+        }
+      } else if (smoothstep(viewBlend) > 0.85) {
+        camera.position.copy(cam3dPos);
+        controls.target.copy(cam3dTarget);
+      }
     }
     controls.update();
   }
@@ -2209,9 +2238,9 @@ function init(host, detailEl, selectEl, shellEl) {
       cam3dPos.copy(cam3dMaster);
       cam3dTarget.copy(cam3dTargetMaster);
     } else {
-      if (isGardenScope()) syncCam3dToOverview();
+      if (isGardenScope()) syncCamGardenOverview();
       else if (selectEl && selectEl.value !== GARDEN_SELECT) syncCam3dToWord(selectEl.value);
-      else syncCam3dToOverview();
+      else syncCamGardenOverview();
     }
     startCameraFit();
   }
@@ -2245,9 +2274,17 @@ function init(host, detailEl, selectEl, shellEl) {
     if (!wordGroups[id]) return;
     syncCam3dToWord(id);
     focusCenter.copy(cam3dTarget);
-    if (vk().startsWith("Garden") && vk().endsWith("3d") && viewBlend < 0.06 && transition === null) {
-      camera.position.copy(cam3dPos);
-      controls.target.copy(cam3dTarget);
+    if (vk().startsWith("Garden") && transition === null) {
+      const wb = smoothstep(viewBlend) > 0.85;
+      if (vk().endsWith("3d")) {
+        if (viewBlend < 0.06) {
+          camera.position.copy(cam3dPos);
+          controls.target.copy(cam3dTarget);
+        }
+      } else if (wb) {
+        camera.position.copy(cam3dPos);
+        controls.target.copy(cam3dTarget);
+      }
     }
     controls.update();
   }
@@ -2262,6 +2299,10 @@ function init(host, detailEl, selectEl, shellEl) {
     if (w.context) html += `<p class="morph-context">${w.context}</p>`;
     html += `</section>`;
     detailEl.innerHTML = html;
+    detailEl.classList.add("morph-detail--word-focus");
+    requestAnimationFrame(() => {
+      detailEl?.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
+    });
   }
 
   function fillDetailFromSelect() {
@@ -2271,11 +2312,13 @@ function init(host, detailEl, selectEl, shellEl) {
         fillDetail(selectEl.value);
         return;
       }
+      detailEl.classList.remove("morph-detail--word-focus");
       detailEl.innerHTML = `<p><strong>Master Tree (🔗 links).</strong> Every word packs into hubs so all shared morphemes stay visible together. Switch <strong>Arrangement ▸ Master</strong> for this linked layout; switch <strong>Surface ▸ 📋 Whiteboard</strong> for a flat projector view or <strong>🌐 3D</strong> so bridges arch in depth. Magenta ribbons connect identical morphemes across words—those <em>spatial</em> links are deliberately stronger in 3D. Hover spheres for gloss; pick a word in the menu for the chapter note and morphology mini-lesson.</p>`;
       return;
     }
     if (!selectEl || selectEl.value === GARDEN_SELECT) {
-      detailEl.innerHTML = `<p><strong>Garden (🌳)</strong> — every tree in textbook space. Toggle <strong>Surface ▸ ✔ Whiteboard</strong> for diagram-style side-elevation (narrow lens, tilted silhouette, pan/zoom) vs <strong>🌐 3D</strong> orbital depth.</p><p><strong>Tips:</strong> isolate one word from the menu; hover morphemes for gloss; zoom out for sparse labels.</p>`;
+      detailEl.classList.remove("morph-detail--word-focus");
+      detailEl.innerHTML = `<p><strong>Garden (🌳)</strong> — every tree in textbook space. Toggle <strong>Surface ▸ ✔ Whiteboard</strong> for diagram-style side-elevation (narrow lens, tilted silhouette, pan/zoom) vs <strong>🌐 3D</strong> orbital depth.</p><p><strong>Tips:</strong> isolate one word from the menu for a focused tree, mini-lesson, and camera zoom; hover morphemes for gloss.</p>`;
       return;
     }
     fillDetail(selectEl.value);
@@ -2467,13 +2510,9 @@ function init(host, detailEl, selectEl, shellEl) {
       for (const w of WORDS) clearWbPrune(wordGroups[w.id]);
       applyScopeVisibility();
       fillDetailFromSelect();
-      if (
-        (vk().startsWith("Garden") || vk().startsWith("Master")) &&
-        viewBlend < 0.06 &&
-        !transition
-      ) {
+      if ((vk().startsWith("Garden") || vk().startsWith("Master")) && !transition) {
         if (introDone) {
-          if (isGardenScope()) syncCam3dToOverview();
+          if (isGardenScope()) syncCamGardenOverview();
           else if (selectEl) syncCam3dToWord(selectEl.value);
           startCameraFit();
         } else if (vk().startsWith("Garden")) {
@@ -2494,6 +2533,16 @@ function init(host, detailEl, selectEl, shellEl) {
   function morphPickMeshAt(clientX, clientY) {
     if (!introDone || transition) return null;
     const rect = renderer.domElement.getBoundingClientRect();
+    if (
+      rect.width <= 0 ||
+      rect.height <= 0 ||
+      clientX < rect.left ||
+      clientX > rect.right ||
+      clientY < rect.top ||
+      clientY > rect.bottom
+    ) {
+      return null;
+    }
     pointerNdc.x = ((clientX - rect.left) / rect.width) * 2 - 1;
     pointerNdc.y = -((clientY - rect.top) / rect.height) * 2 + 1;
     raycaster.setFromCamera(pointerNdc, camera);
@@ -2504,9 +2553,17 @@ function init(host, detailEl, selectEl, shellEl) {
       if (!g?.visible) continue;
       meshes.push(...g.userData.meshes);
     }
-    const hit = raycaster.intersectObjects(meshes, false)[0];
-    if (!hit) return null;
-    return /** @type {THREE.Mesh} */ (hit.object);
+    const hits = raycaster.intersectObjects(meshes, true);
+    for (const h of hits) {
+      let o = h.object;
+      while (o) {
+        if (o.userData?.morphTooltip) {
+          return /** @type {THREE.Mesh} */ (o);
+        }
+        o = o.parent;
+      }
+    }
+    return null;
   }
 
   function morphHandleDoublePick(clientX, clientY, shiftKey = false) {
@@ -2654,12 +2711,8 @@ function init(host, detailEl, selectEl, shellEl) {
     if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
     const k = ev.key.toLowerCase();
     if (k === "f") {
-      if (
-        (vk().startsWith("Garden") || vk().startsWith("Master")) &&
-        viewBlend < 0.06 &&
-        !transition
-      ) {
-        if (isGardenScope()) syncCam3dToOverview();
+      if ((vk().startsWith("Garden") || vk().startsWith("Master")) && !transition) {
+        if (isGardenScope()) syncCamGardenOverview();
         else if (selectEl) syncCam3dToWord(selectEl.value);
         startCameraFit();
       }
@@ -2788,17 +2841,20 @@ function init(host, detailEl, selectEl, shellEl) {
     const masterWeight =
       masterWtKey(layoutKeyFrom) * (1 - layoutEase) + masterWtKey(layoutKeyTo) * layoutEase;
     const bridgeOpacity = masterWeight * 0.85 + (1 - masterWeight) * gardenBridgeOpacity;
-    const isolate3d =
-      selectEl &&
-      selectEl.value !== GARDEN_SELECT &&
-      u < 0.38 &&
-      masterWeight < 0.45;
+    const isolateWord =
+      !!(selectEl && selectEl.value !== "" && selectEl.value !== GARDEN_SELECT);
+    const isolate3d = isolateWord && u < 0.38 && masterWeight < 0.45;
     bridges.children.forEach((line) => {
+      if (isolateWord) {
+        line.visible = false;
+        if (line.material) line.material.opacity = 0;
+        return;
+      }
       if (line.material) line.material.opacity = isolate3d ? 0 : bridgeOpacity;
       line.visible = (!isolate3d && u < 0.92) || masterWeight > 0.08;
     });
-    bridges.visible = bridges.children.some((ln) => ln.visible);
-    gardenHints.visible = isolate3d && u < 0.26;
+    bridges.visible = !isolateWord && bridges.children.some((ln) => ln.visible);
+    gardenHints.visible = !isolateWord && isolate3d && u < 0.26;
 
     const le = Math.max(0, Math.min(1, layoutEase));
     for (const w of WORDS) {
@@ -2807,13 +2863,13 @@ function init(host, detailEl, selectEl, shellEl) {
       g.position.lerpVectors(posForViewKey(w, layoutKeyFrom), posForViewKey(w, layoutKeyTo), le);
 
       const swayMul = (1 - u) * (1 - masterWeight * 0.92);
-      const sway = swayMul * Math.sin(clock.elapsedTime * 0.1 + w.pos3d.x * 0.02) * 0.045;
-      // Whiteboard: pitch trees toward diagram-like side elevation — branches open in-plane instead of orbiting bushes.
+      const sway = swayMul * Math.sin(clock.elapsedTime * 0.1 + w.pos3d.x * 0.02) * 0.028;
+      // Whiteboard: very mild pitch only — planar trees stay textbook-upright (+Y) on the board.
       const wbElev = smoothstep((u - 0.54) / 0.42);
       g.rotation.order = "YXZ";
       g.rotation.z = 0;
-      g.rotation.x = wbElev * 0.88;
-      g.rotation.y = sway * (1 - wbElev * 0.94);
+      g.rotation.x = wbElev * 0.1;
+      g.rotation.y = sway * (1 - wbElev * 0.5);
 
       const dim = 0.08 * u;
       const tNow = clock.elapsedTime;
