@@ -1277,7 +1277,6 @@ function init(host, detailEl, selectEl, shellEl) {
   const bg3d = new THREE.Color(0x0a0e1a);
   const bg2d = new THREE.Color(0xf7f8fc);
   scene.background = bg3d.clone();
-  scene.fog = new THREE.FogExp2(0x0a1528, 0.0085);
 
   const clock = new THREE.Clock();
   const camera = new THREE.PerspectiveCamera(48, host.clientWidth / host.clientHeight, 0.1, 600);
@@ -2034,8 +2033,6 @@ function init(host, detailEl, selectEl, shellEl) {
   ) {
     const u = smoothstep(blend);
     scene.background.copy(bg3d).lerp(bg2d, u);
-    scene.fog.color.copy(scene.background);
-    scene.fog.density = 0.0085 * (1 - u);
 
     grid.visible = u < 0.35;
     ambient3d.intensity = 0.38 * (1 - u);
