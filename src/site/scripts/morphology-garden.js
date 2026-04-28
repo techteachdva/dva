@@ -1822,12 +1822,16 @@ function init(host, detailEl, selectEl, shellEl) {
     return Boolean(getFullscreenElement() || morphImmersiveCss);
   }
 
+  const MORPH_ICON_FS_OPEN = "🖥️";
+  const MORPH_ICON_FS_CLOSE = "❌";
+
   function syncFsButton() {
     if (!fsBtn) return;
     const on = isMorphImmersive();
-    fsBtn.textContent = on ? "Close" : "Fullscreen";
+    fsBtn.textContent = on ? MORPH_ICON_FS_CLOSE : MORPH_ICON_FS_OPEN;
     fsBtn.setAttribute("aria-pressed", on ? "true" : "false");
     fsBtn.title = on ? "Exit full screen" : "Full screen (or fill screen on mobile)";
+    fsBtn.setAttribute("aria-label", on ? "Exit full screen" : "Enter full screen");
   }
 
   async function toggleMorphImmersive() {
@@ -1875,6 +1879,7 @@ function init(host, detailEl, selectEl, shellEl) {
         resizeCanvasToHost();
       }
     });
+    syncFsButton();
   }
 
   function animate() {

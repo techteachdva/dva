@@ -247,6 +247,17 @@ html.morph-immersive-open body {
 .morphology-shell--immersive .morph-ui-panel {
   flex: 0 0 auto !important;
   touch-action: manipulation;
+  padding-top: 0.35rem !important;
+  padding-bottom: max(0.35rem, env(safe-area-inset-bottom, 0)) !important;
+  background: linear-gradient(to top, rgba(10, 14, 26, 0.92) 70%, rgba(10, 14, 26, 0) 100%) !important;
+}
+
+.morphology-shell--immersive .morph-hint {
+  display: none !important;
+}
+
+.morphology-shell--wb.morphology-shell--immersive .morph-ui-panel {
+  background: linear-gradient(to top, rgba(255, 255, 255, 0.96) 75%, rgba(255, 255, 255, 0) 100%) !important;
 }
 
 #morph-canvas-host,
@@ -453,6 +464,47 @@ html.morph-immersive-open body {
   color: #0a0e1a !important;
   border-color: #fff8e0;
   box-shadow: 0 0 20px rgba(255, 208, 96, 0.35);
+}
+
+/* Icon-only view / whiteboard toggles (tree, checkmark) */
+.morph-view-btn--icon {
+  font-size: 1.35rem;
+  line-height: 1;
+  letter-spacing: 0;
+  text-transform: none;
+  padding: 0.4rem 0.55rem;
+  min-width: 2.6rem;
+}
+
+/* Checkmark (whiteboard): dark on light surfaces, light on dark chrome */
+.morphology-shell:not(.morphology-shell--wb) .morph-view-btn--icon#morph-btn-2d:not(.morph-view-btn--active) {
+  color: #f1f5f9;
+}
+
+.morphology-shell:not(.morphology-shell--wb) .morph-view-btn--icon#morph-btn-2d.morph-view-btn--active {
+  color: #0a0e1a;
+}
+
+.morphology-shell--wb .morph-view-btn--icon#morph-btn-2d:not(.morph-view-btn--active) {
+  color: #0f172a;
+}
+
+.morphology-shell--wb .morph-view-btn--icon#morph-btn-2d.morph-view-btn--active {
+  color: #f8fafc;
+}
+
+.morph-fs-btn--icon {
+  font-size: 1.2rem;
+  line-height: 1;
+  letter-spacing: 0;
+  text-transform: none;
+  padding: 0.4rem 0.55rem;
+  min-width: 2.6rem;
+  color: #cbd5e1;
+}
+
+.morphology-shell--wb .morph-fs-btn--icon {
+  color: #334155;
 }
 
 .morphology-shell--wb .morph-view-btn:not(.morph-view-btn--active) {
@@ -894,7 +946,7 @@ html.morph-immersive-open body {
   outline-offset: 2px;
 }
 
-/* Phones and small tablets: shorter canvas (dynamic viewport), safe areas, 44px targets */
+/* Phones and small tablets: shorter canvas (dynamic viewport), safe areas, compact icon bar */
 @media (max-width: 40rem) {
   .morphology-top {
     padding-left: max(0.75rem, env(safe-area-inset-left, 0));
@@ -912,51 +964,68 @@ html.morph-immersive-open body {
   .morphology-shell {
     border-radius: 0;
     margin-top: 0.25rem;
-    min-height: min(58vh, 480px);
-    min-height: min(58dvh, 480px);
+    min-height: min(72vh, 720px);
+    min-height: min(72dvh, 720px);
   }
 
   #morph-canvas-host,
   .morph-canvas-host {
-    height: min(58vh, 480px);
-    height: min(58dvh, 480px);
+    height: min(72vh, 720px);
+    height: min(72dvh, 720px);
+  }
+
+  .morph-ui-label {
+    display: none;
   }
 
   .morph-ui-panel {
-    padding-left: max(0.65rem, env(safe-area-inset-left, 0));
-    padding-right: max(0.65rem, env(safe-area-inset-right, 0));
-    padding-bottom: max(0.85rem, env(safe-area-inset-bottom, 0));
+    padding: 0.45rem max(0.5rem, env(safe-area-inset-left, 0)) max(0.5rem, env(safe-area-inset-bottom, 0))
+      max(0.5rem, env(safe-area-inset-right, 0));
   }
 
   .morph-ui-row {
     flex-direction: column;
     align-items: stretch;
+    gap: 0.35rem;
+    max-width: none;
   }
 
   .morph-ui-row--toggle {
     flex-direction: row;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: center;
+    align-items: center;
+    gap: 0.35rem;
+    margin-bottom: 0;
   }
 
-  .morph-view-btn,
-  .morph-fs-btn {
-    min-height: 2.75rem;
-    padding: 0.5rem 0.9rem;
+  .morph-view-btn--icon,
+  .morph-fs-btn--icon {
+    flex: 0 0 auto;
+    min-width: 2.5rem;
+    min-height: 2.45rem;
+    padding: 0.28rem 0.42rem;
+    font-size: 1.45rem;
+    touch-action: manipulation;
+  }
+
+  .morph-view-btn:not(.morph-view-btn--icon),
+  .morph-fs-btn:not(.morph-fs-btn--icon) {
+    min-height: 2.45rem;
+    padding: 0.4rem 0.65rem;
     touch-action: manipulation;
   }
 
   .morph-select {
     width: 100%;
     max-width: none;
-    min-height: 2.75rem;
+    min-height: 2.35rem;
     font-size: 1rem;
   }
 
+  /* Long hint lives in page copy; hiding here frees most of the viewport for the WebGL view */
   .morph-hint {
-    font-size: 0.72rem;
-    text-align: left;
-    max-width: none;
+    display: none;
   }
 
   .morph-highlights {

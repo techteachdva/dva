@@ -26,11 +26,35 @@ contentClasses: morphology-page
     <div class="morph-ui-panel">
       <div class="morph-ui-row morph-ui-row--toggle" role="group" aria-label="Visualization mode">
         <span class="morph-ui-label">View</span>
-        <button type="button" id="morph-btn-3d" class="morph-view-btn morph-view-btn--active" aria-pressed="true">
-          3D garden
+        <button
+          type="button"
+          id="morph-btn-3d"
+          class="morph-view-btn morph-view-btn--icon morph-view-btn--active"
+          aria-pressed="true"
+          title="3D garden"
+          aria-label="3D garden view"
+        >
+          🌳
         </button>
-        <button type="button" id="morph-btn-2d" class="morph-view-btn" aria-pressed="false">Whiteboard</button>
-        <button type="button" id="morph-btn-fs" class="morph-fs-btn" title="Full screen">Fullscreen</button>
+        <button
+          type="button"
+          id="morph-btn-2d"
+          class="morph-view-btn morph-view-btn--icon"
+          aria-pressed="false"
+          title="Whiteboard"
+          aria-label="Whiteboard view"
+        >
+          ✔
+        </button>
+        <button
+          type="button"
+          id="morph-btn-fs"
+          class="morph-fs-btn morph-fs-btn--icon"
+          title="Full screen"
+          aria-label="Full screen"
+        >
+          🖥️
+        </button>
       </div>
       <div class="morph-ui-row">
         <label for="morph-word-select">Word tree</label>
