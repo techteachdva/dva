@@ -247,8 +247,8 @@ html.morph-immersive-open body {
 .morphology-shell--immersive .morph-ui-panel {
   flex: 0 0 auto !important;
   touch-action: manipulation;
-  padding-top: 0.35rem !important;
-  padding-bottom: max(0.35rem, env(safe-area-inset-bottom, 0)) !important;
+  padding-top: 0.2rem !important;
+  padding-bottom: max(0.22rem, env(safe-area-inset-bottom, 0)) !important;
   background: linear-gradient(to top, rgba(10, 14, 26, 0.92) 70%, rgba(10, 14, 26, 0) 100%) !important;
 }
 
@@ -395,7 +395,7 @@ html.morph-immersive-open body {
   right: 0;
   bottom: 0;
   z-index: 5;
-  padding: 0.55rem 0.85rem 0.75rem;
+  padding: 0.32rem 0.6rem max(0.28rem, env(safe-area-inset-bottom, 0));
   background: linear-gradient(to top, rgba(10, 14, 26, 0.78) 42%, rgba(10, 14, 26, 0) 100%);
   backdrop-filter: blur(7px) saturate(1.05);
   -webkit-backdrop-filter: blur(7px) saturate(1.05);
@@ -415,7 +415,7 @@ html.morph-immersive-open body {
 .morph-ui-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.32rem;
   align-items: center;
   justify-content: center;
   max-width: 56rem;
@@ -423,25 +423,25 @@ html.morph-immersive-open body {
 }
 
 .morph-ui-row--toggle {
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.16rem;
 }
 
 .morph-ui-label {
-  font-size: 0.72rem;
+  font-size: 0.66rem;
   text-transform: uppercase;
   letter-spacing: 0.14em;
   color: var(--morph-chrome);
   font-weight: 800;
-  margin-right: 0.25rem;
+  margin-right: 0.22rem;
 }
 
 .morph-view-btn {
   font-family: inherit;
-  font-size: 0.78rem;
+  font-size: 0.71rem;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  padding: 0.45rem 0.85rem;
+  padding: 0.34rem 0.68rem;
   border-radius: 10px;
   border: 1px solid rgba(120, 200, 190, 0.38);
   background: rgba(12, 24, 44, 0.82);
@@ -474,12 +474,12 @@ html.morph-immersive-open body {
 
 /* Icon-only view / whiteboard toggles (tree, checkmark) */
 .morph-view-btn--icon {
-  font-size: 1.35rem;
+  font-size: 1.08rem;
   line-height: 1;
   letter-spacing: 0;
   text-transform: none;
-  padding: 0.4rem 0.55rem;
-  min-width: 2.6rem;
+  padding: 0.26rem 0.42rem;
+  min-width: 2.28rem;
 }
 
 /* Checkmark (whiteboard surface): dark on light surfaces, light on dark chrome */
@@ -501,12 +501,12 @@ html.morph-immersive-open body {
 }
 
 .morph-fs-btn--icon {
-  font-size: 1.2rem;
+  font-size: 1rem;
   line-height: 1;
   letter-spacing: 0;
   text-transform: none;
-  padding: 0.4rem 0.55rem;
-  min-width: 2.6rem;
+  padding: 0.26rem 0.42rem;
+  min-width: 2.28rem;
   color: #cbd5e1;
 }
 
@@ -529,17 +529,17 @@ html.morph-immersive-open body {
 
 .morph-fs-btn {
   font-family: inherit;
-  font-size: 0.72rem;
+  font-size: 0.66rem;
   font-weight: 800;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  padding: 0.45rem 0.75rem;
+  padding: 0.34rem 0.6rem;
   border-radius: 10px;
   border: 1px solid rgba(148, 163, 184, 0.42);
   background: rgba(15, 23, 42, 0.58);
   color: #cbd5e1;
   cursor: pointer;
-  margin-left: 0.25rem;
+  margin-left: 0.22rem;
   transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease, transform 0.15s ease,
     box-shadow 0.2s ease;
 }
@@ -836,39 +836,138 @@ html.morph-immersive-open body {
   outline: 1px solid rgba(125, 211, 252, 0.2);
 }
 
-/* Mini-lesson docked inside the WebGL host while fullscreen / immersive (word isolate) */
+/* Mini-lesson: two-panel layout below main canvas (narrow viewports stack columns) */
+
+.morph-detail:not(.morph-detail--viewer-dock) .morph-detail-lesson--flank {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.85rem 1rem;
+  align-items: start;
+}
+
+@media (max-width: 34rem) {
+  .morph-detail:not(.morph-detail--viewer-dock) .morph-detail-lesson--flank {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Mini-lesson docked inside host while fullscreen / immersive — wings flank the centered tree */
 #morph-canvas-host .morph-detail.morph-detail--viewer-dock,
 .morph-canvas-host .morph-detail.morph-detail--viewer-dock {
   position: absolute;
   z-index: 30;
-  left: 0.5rem;
-  right: 0.5rem;
-  bottom: 0.5rem;
+  inset: 0.35rem 0.38rem clamp(4.95rem, 17.5vmin, 7.35rem); /* clears bottom Arrange / Surface toolbars */
   max-width: none;
   width: auto;
   margin: 0;
-  max-height: min(42vh, 22rem);
-  overflow-y: auto;
+  max-height: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.4rem;
+  padding: 0;
+  overflow: visible;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  background: transparent;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  border-radius: 0;
+  pointer-events: none;
   -webkit-overflow-scrolling: touch;
-  font-size: 0.88rem;
-  line-height: 1.48;
-  box-shadow: 0 -8px 36px rgba(0, 0, 0, 0.45);
-  border-radius: 10px;
-  pointer-events: auto;
 }
 
-.morphology-shell--wb .morph-detail.morph-detail--viewer-dock {
-  background: rgba(255, 255, 255, 0.96);
-  border-color: rgba(100, 116, 139, 0.45);
-  color: #0f172a;
-  box-shadow: 0 -8px 32px rgba(15, 23, 42, 0.14);
+.morph-detail--viewer-dock .morph-detail-lesson--flank {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: space-between;
+  align-items: stretch;
+}
+
+.morph-detail--viewer-dock > .morph-lesson.morph-lesson--single {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  align-self: center;
+  width: min(100%, clamp(26rem, 92vw, 42rem));
+  pointer-events: auto;
+  padding: 0.55rem 0.62rem;
+  border-radius: 10px;
+  backdrop-filter: blur(8px);
+  background: rgba(10, 16, 32, 0.72);
+  border: 1px solid rgba(125, 211, 252, 0.32);
+  box-shadow: 0 4px 26px rgba(0, 0, 0, 0.32);
+}
+
+.morphology-shell--wb .morph-detail--viewer-dock > .morph-lesson.morph-lesson--single {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(100, 116, 139, 0.42);
+}
+
+.morph-detail--viewer-dock .morph-lesson-wing {
+  flex: 0 1 clamp(12.75rem, 26vw, 21.5rem);
+  max-height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 0.55rem 0.62rem;
+  pointer-events: auto;
+  border-radius: 10px;
+  backdrop-filter: blur(8px);
+  background: rgba(10, 16, 32, 0.72);
+  border: 1px solid rgba(125, 211, 252, 0.32);
+  box-shadow: 0 4px 26px rgba(0, 0, 0, 0.32);
+}
+
+.morph-detail--viewer-dock .morph-word-note {
+  flex: 0 1 auto;
+  max-height: min(26vh, 10.5rem);
+  overflow-x: hidden;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0.42rem 0.55rem 0.52rem;
+  pointer-events: auto;
+  align-self: center;
+  width: min(100%, clamp(26rem, 88vw, 44rem));
+  border-radius: 10px;
+  backdrop-filter: blur(6px);
+  background: rgba(10, 16, 32, 0.78);
+  border: 1px dashed rgba(255, 106, 213, 0.4);
+}
+
+.morph-detail--viewer-dock .morph-lesson__h {
+  font-size: 0.98rem;
+}
+
+.morph-detail--viewer-dock .morph-lesson__sec h4 {
+  font-size: 0.71rem;
+}
+
+.morph-detail--viewer-dock .morph-lesson-wing .morph-lesson__sec:first-of-type {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.morphology-shell--wb .morph-detail.morph-detail--viewer-dock .morph-lesson-wing {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(100, 116, 139, 0.42);
+}
+
+.morphology-shell--wb .morph-detail.morph-detail--viewer-dock .morph-word-note {
+  background: rgba(255, 255, 255, 0.94);
+  border-color: rgba(100, 116, 139, 0.42);
 }
 
 .morphology-shell--wb .morph-detail.morph-detail--viewer-dock .morph-lesson__h {
   color: #0f172a;
 }
 
-.morphology-shell--wb .morph-detail.morph-detail--viewer-dock .morph-chapter-note {
+.morphology-shell--wb .morph-detail.morph-detail--viewer-dock .morph-chapter-note,
+.morphology-shell--wb .morph-detail.morph-detail--viewer-dock .morph-word-note {
   border-top-color: rgba(100, 116, 139, 0.35);
 }
 
@@ -934,13 +1033,15 @@ html.morph-immersive-open body {
   margin: 0.28rem 0;
 }
 
-.morph-chapter-note {
+.morph-chapter-note,
+.morph-word-note {
   margin: 1rem 0 0;
   padding-top: 0.85rem;
   border-top: 1px dashed rgba(255, 106, 213, 0.35);
 }
 
-.morph-chapter-note__h {
+.morph-chapter-note__h,
+.morph-word-note__h {
   margin: 0 0 0.4rem;
   font-size: 0.78rem;
   text-transform: uppercase;
@@ -948,9 +1049,21 @@ html.morph-immersive-open body {
   opacity: 0.85;
 }
 
-.morph-chapter-note__body {
+.morph-chapter-note__body,
+.morph-word-note__body {
   font-size: 0.92rem;
   line-height: 1.55;
+}
+
+.morph-detail--viewer-dock .morph-word-note__h {
+  margin-top: 0;
+}
+
+.morph-detail--viewer-dock .morph-chapter-note,
+.morph-detail--viewer-dock .morph-word-note {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
 }
 
 /* Two-row Arrange / Surface toolbars */

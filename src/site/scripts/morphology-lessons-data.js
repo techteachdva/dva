@@ -11,12 +11,13 @@ export const AFFIX_ORIGIN_HINT = {
   "pfx:de-": "Latin <em>de-</em> ‘away; reversal; reversal of state’ in many scholarly words.",
   "pfx:pre-": "Latin <em>præ-</em> (English <em>pre-</em>) ‘before’.",
   "pfx:trans-": "Latin <em>trans-</em> ‘across; through’.",
-  "sfx:-tion": "French / Latin feminine abstract suffix <strong>-tion</strong> naming an act, result, or state (cf. textbook Table 4.2). Usually stacks <em>outside</em> derivation that built a stem.",
+  "sfx:-tion":
+    "French / Latin feminine abstract suffix <strong>-tion</strong> naming an act, result, or state. Usually stacks <em>outside</em> derivation that built a stem.",
   "sfx:-ation": "Abstract noun suffix <strong>-ation</strong> (compare <em>-tion</em>) — very common in academic nouns.",
-  "sfx:-ment": "French <em>-ment</em> abstract nominalizer (Table 4.2).",
-  "sfx:-al": "Relational / adjectival <strong>-al</strong> ‘pertaining to’ (Table 4.2).",
+  "sfx:-ment": "French <em>-ment</em> abstract nominalizer.",
+  "sfx:-al": "Relational / adjectival <strong>-al</strong> ‘pertaining to’.",
   "sfx:-ous": "Adjectival <strong>-ous</strong> from Latin <em>-ōsus</em> (full of; having the quality of).",
-  "sfx:-able": "Capacity / possibility <strong>-able</strong> ‘able to be’ (Table 4.2).",
+  "sfx:-able": "Capacity / possibility <strong>-able</strong> ‘able to be’.",
   "sfx:-ize": "Verb-forming <strong>-ize</strong> (also <em>-ise</em>) — ‘make; treat as; convert to’.",
   "sfx:-ity": "Abstract noun <strong>-ity</strong> from adjective stems (compare <em>odd → oddity</em>).",
   "sfx:-er": "Agent / instrument <strong>-er</strong> (who/what does X) — highly productive in English.",
@@ -34,7 +35,7 @@ export const MORPH_DEEP_NOTES = {
     etymology: [
       { segment: "pre-", origin: "Latin <em>præ-</em> ‘before’." },
       { segment: "sent", origin: "Bound stem ‘feel / place’ (cf. <em>consent, sentence</em>)." },
-      { segment: "-ation", origin: "Abstract nominalizer (see Table 4.2)." },
+      { segment: "-ation", origin: "Abstract nominalizer (-ation)." },
     ],
     formation:
       "Derivational chain: affix + stem → stem is further embedded before the outer suffix. This is <strong>layering</strong>, not inflection for tense.",
@@ -42,7 +43,7 @@ export const MORPH_DEEP_NOTES = {
   },
   hallway: {
     summary:
-      "A clear <strong>compound</strong>: two free morphemes (§4.6). The right-hand element often sets the basic word class (path-like noun).",
+      "A clear <strong>compound</strong>: two free morphemes. The right-hand element often sets the basic word class (path-like noun).",
     etymology: [
       { segment: "hall", origin: "Old English <em>heall</em> ‘large covered space’." },
       { segment: "way", origin: "Old English <em>weg</em> ‘path’ — still a free word." },
@@ -58,12 +59,12 @@ export const MORPH_DEEP_NOTES = {
       "Classic pattern: <strong>bound root</strong> + Latinate adjectival <strong>-al</strong>. The root is not a stand-alone modern English word.",
     etymology: [
       { segment: "fin-", origin: "Latin <em>finis</em> family — ‘end, limit’ (cf. <em>finite, finish</em>)." },
-      { segment: "-al", origin: "Relational suffix (Table 4.2)." },
+      { segment: "-al", origin: "Relational suffix (-al)." },
     ],
     tense: "Adjective — compare adverb <em>finally</em> built with another layer (not on this tree).",
   },
   sourdough: {
-    summary: "Compound of two content morphemes (§4.6). Stress and spelling are one word; meaning is compositional.",
+    summary: "Compound of two content morphemes. Stress and spelling are one word; meaning is compositional.",
     etymology: [
       { segment: "sour", origin: "Germanic adjective stem." },
       { segment: "dough", origin: "Old English <em>dāg</em> — still recognizable." },
@@ -96,8 +97,8 @@ export const MORPH_DEEP_NOTES = {
     summary:
       "Layers: negative prefix + stem built on <em>hospital</em> + adjectival <strong>-able</strong>. Good for discussing <strong>allomorphs</strong> of negation (il-, im-, in-, ir-).",
     etymology: [
-      { segment: "in-", origin: "Latin negative ‘not’ (Table 4.2)." },
-      { segment: "-able", origin: "‘Capable of being’ — derivational (Table 4.2)." },
+      { segment: "in-", origin: "Latin negative ‘not’." },
+      { segment: "-able", origin: "‘Capable of being’ — derivational (-able)." },
     ],
     tense: "Adjective — not inflected for tense; compare related word family <em>hospital, hospitality, hospitalize</em>.",
   },
@@ -107,7 +108,7 @@ export const MORPH_DEEP_NOTES = {
     etymology: [
       { segment: "de-", origin: "Latin ‘away; reversal’ in this stem’s history." },
       { segment: "marc-", origin: "Stem ‘boundary’ (learners know <em>mark</em> — teach cognate idea, not identity)." },
-      { segment: "-ation", origin: "Abstract noun (Table 4.2)." },
+      { segment: "-ation", origin: "Abstract noun (-ation)." },
     ],
     spelling: [
       {
@@ -153,7 +154,7 @@ export const MORPH_DEEP_NOTES = {
   },
   "unlockable-b": {
     summary:
-      "Same surface string, different brackets: unlock + able → ‘able to be unlocked.’ Compare consciously with Unlockable-a in §4 readings.",
+      "Same surface string, different brackets: unlock + able → ‘able to be unlocked.’ Compare consciously with Unlockable-a above.",
     tense: "Adjective built from prefixed verb stem + <strong>-able</strong> — derivation, not tense inflection.",
   },
   belief: {
@@ -235,7 +236,7 @@ export const MORPH_DEEP_NOTES = {
     embedded: [{ text: "finish", note: "Verb stem appears whole before suffix." }],
   },
   teacher: {
-    summary: "<strong>teach</strong> + agentive <strong>-er</strong> — textbook example of derivation creating noun from verb stem.",
+    summary: "<strong>teach</strong> + agentive <strong>-er</strong> — a clear case of derivation creating a noun from a verb stem.",
     embedded: [{ text: "teach", note: "Free verb shrunk to stem before vowel lengthening/teach-er pattern." }],
     tense: "Derivative noun — plurality with regular <em>-s</em>.",
   },
@@ -246,7 +247,7 @@ export const MORPH_DEEP_NOTES = {
     embedded: [{ text: "happy", note: "Free adjective carries main lexical meaning." }],
   },
   baseball: {
-    summary: "<strong>Noun+noun compound</strong> naming an object/category (§4.6). Discuss stress vs phrase <em>base ball</em> if time allows.",
+    summary: "<strong>Noun+noun compound</strong> naming an object/category. Discuss stress vs phrase <em>base ball</em> if time allows.",
     embedded: [
       { text: "base", note: "Content morpheme — polyseme with other senses." },
       { text: "ball", note: "Content morpheme." },
@@ -274,7 +275,7 @@ export const MORPH_DEEP_NOTES = {
   },
   invisible: {
     summary:
-      "Negative + stem + adjectival endings — overlaps with morphology of <strong>in-/im-/il-/ir-</strong> (Table 4.2).",
+      "Negative + stem + adjectival endings — overlaps with morphology of <strong>in-/im-/il-/ir-</strong>.",
     etymology: [
       { segment: "in-", origin: "Latin negative aligning with assimilated forms elsewhere." },
       { segment: "-ible", origin: "Allomorph cousin of <strong>-able</strong> after certain stems." },
@@ -297,60 +298,64 @@ export const MORPH_DEEP_NOTES = {
 };
 
 /**
- * @param {object} w — word record from Morphology Garden
- * @param {Record<string, { mesh?: unknown; wordId: string }[]>} morphemeRegistry
+ * Ordered HTML fragments for one mini-lesson (head + sections).
+ * Split across two columns flanking the tree in fullscreen docked isolate view.
  */
-export function renderMorphLessonHtml(w, morphemeRegistry) {
+function morphLessonPieces(w, morphemeRegistry) {
   const deep = MORPH_DEEP_NOTES[w.id];
-  const parts = [];
-  parts.push(`<div class="morph-lesson">`);
-  parts.push(`<h3 class="morph-lesson__h">Mini-lesson: <em>${w.label}</em></h3>`);
+  const pieces = [];
 
-  parts.push(`<div class="morph-lesson__bracket">${w.bracket}</div>`);
-
+  const headParts = [];
+  headParts.push(`<h3 class="morph-lesson__h">Mini-lesson: <em>${w.label}</em></h3>`);
+  headParts.push(`<div class="morph-lesson__bracket">${w.bracket}</div>`);
   if (deep?.summary) {
-    parts.push(`<p class="morph-lesson__lead">${deep.summary}</p>`);
+    headParts.push(`<p class="morph-lesson__lead">${deep.summary}</p>`);
   } else if (w.note) {
-    parts.push(`<p class="morph-lesson__lead">${stripPara(w.note)}</p>`);
+    headParts.push(`<p class="morph-lesson__lead">${stripPara(w.note)}</p>`);
   }
+  pieces.push(headParts.join(""));
 
   if (deep?.formation) {
-    parts.push(`<section class="morph-lesson__sec"><h4>Structure &amp; derivation</h4><p>${deep.formation}</p></section>`);
+    pieces.push(
+      `<section class="morph-lesson__sec"><h4>Structure &amp; derivation</h4><p>${deep.formation}</p></section>`
+    );
   }
 
   if (deep?.etymology?.length) {
-    parts.push(`<section class="morph-lesson__sec"><h4>Etymology cues</h4><ul class="morph-lesson__ul">`);
+    let b = `<section class="morph-lesson__sec"><h4>Etymology cues</h4><ul class="morph-lesson__ul">`;
     for (const e of deep.etymology) {
-      parts.push(`<li><strong>${escapeHtml(e.segment)}</strong> — ${e.origin || ""}`);
-      if (e.note) parts.push(` <span class="morph-lesson__note">${escapeHtml(e.note)}</span>`);
-      parts.push(`</li>`);
+      b += `<li><strong>${escapeHtml(e.segment)}</strong> — ${e.origin || ""}`;
+      if (e.note) b += ` <span class="morph-lesson__note">${escapeHtml(e.note)}</span>`;
+      b += `</li>`;
     }
-    parts.push(`</ul></section>`);
+    b += `</ul></section>`;
+    pieces.push(b);
   }
 
   if (deep?.spelling?.length) {
-    parts.push(`<section class="morph-lesson__sec morph-lesson__sec--callout"><h4>Spelling / stem shift</h4><ul>`);
+    let b = `<section class="morph-lesson__sec morph-lesson__sec--callout"><h4>Spelling / stem shift</h4><ul>`;
     for (const s of deep.spelling) {
-      parts.push(
-        `<li><code>${escapeHtml(s.from)}</code> → <code>${escapeHtml(s.to)}</code> — ${escapeHtml(s.note)}</li>`
-      );
+      b += `<li><code>${escapeHtml(s.from)}</code> → <code>${escapeHtml(s.to)}</code> — ${escapeHtml(s.note)}</li>`;
     }
-    parts.push(`</ul></section>`);
+    b += `</ul></section>`;
+    pieces.push(b);
   }
 
   if (deep?.embedded?.length) {
-    parts.push(`<section class="morph-lesson__sec"><h4>Smaller words inside</h4><ul>`);
+    let b = `<section class="morph-lesson__sec"><h4>Smaller words inside</h4><ul>`;
     for (const emb of deep.embedded) {
-      parts.push(`<li><strong>${escapeHtml(emb.text)}</strong> — ${escapeHtml(emb.note)}</li>`);
+      b += `<li><strong>${escapeHtml(emb.text)}</strong> — ${escapeHtml(emb.note)}</li>`;
     }
-    parts.push(`</ul></section>`);
+    b += `</ul></section>`;
+    pieces.push(b);
   }
 
   if (deep?.tense) {
-    parts.push(`<section class="morph-lesson__sec"><h4>Inflection &amp; word-class</h4><p>${deep.tense}</p></section>`);
+    pieces.push(
+      `<section class="morph-lesson__sec"><h4>Inflection &amp; word-class</h4><p>${deep.tense}</p></section>`
+    );
   }
 
-  /** Cross-word morphemes (shared keys) — teaching hook */
   const keys = [];
   walkKeys(w.tree, keys);
   const uniqKeys = [...new Set(keys)].filter(Boolean);
@@ -369,13 +374,30 @@ export function renderMorphLessonHtml(w, morphemeRegistry) {
     );
   }
   if (sharedBullets.length) {
-    parts.push(
+    pieces.push(
       `<section class="morph-lesson__sec"><h4>Links to other words in this set</h4><ul class="morph-lesson__ul">${sharedBullets.join("")}</ul></section>`
     );
   }
 
-  parts.push(`</div>`);
-  return parts.join("");
+  return pieces;
+}
+
+/**
+ * @param {object} w — word record from Morphology Garden
+ * @param {Record<string, { mesh?: unknown; wordId: string }[]>} morphemeRegistry
+ */
+export function renderMorphLessonHtml(w, morphemeRegistry) {
+  const pieces = morphLessonPieces(w, morphemeRegistry);
+  if (!pieces.length) return "";
+
+  if (pieces.length === 1) {
+    return `<div class="morph-lesson morph-lesson--single">${pieces[0]}</div>`;
+  }
+
+  const mid = Math.ceil(pieces.length / 2);
+  const leftInner = `<div class="morph-lesson-wing morph-lesson-wing--left">${pieces.slice(0, mid).join("")}</div>`;
+  const rightInner = `<div class="morph-lesson-wing morph-lesson-wing--right">${pieces.slice(mid).join("")}</div>`;
+  return `<div class="morph-detail-lesson morph-detail-lesson--flank">${leftInner}${rightInner}</div>`;
 }
 
 /** @type {(id: string) => string} */

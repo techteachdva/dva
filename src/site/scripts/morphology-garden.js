@@ -125,7 +125,7 @@ const ALL_WORD_DATA = [
     id: "presentation",
     label: "Presentation",
     bracket: "[[pre- + sent] + -ation]",
-    note: "Like <em>statement</em> + <strong>-ment</strong> in the textbook, <strong>-ation</strong> is a derivational suffix that helps form an abstract noun (Table 4.2). The stem is not a separate modern English word, which is why many roots in academic vocabulary are <strong>bound morphemes</strong> (§4.3).",
+    note: "Like pairing <em>statement</em> + <strong>-ment</strong> with naming an abstract outcome, <strong>-ation</strong> is a derivational suffix that often forms abstract nouns. The stem is not a separate modern English word, which is why many roots in academic vocabulary are <strong>bound morphemes</strong>.",
     position: [29, 0, 24],
     tree: {
       text: "presentation",
@@ -163,7 +163,7 @@ const ALL_WORD_DATA = [
     id: "hallway",
     label: "Hallway",
     bracket: "[hall + way]",
-    note: "<strong>Compounding</strong> joins two existing words (§4.6). In English, the <strong>rightmost</strong> element often determines the word class of the whole—here <em>hallway</em> patterns like <em>way</em> (a path), not like <em>hall</em> alone.",
+    note: "<strong>Compounding</strong> joins two existing words. In English, the <strong>rightmost</strong> element often determines the word class of the whole—here <em>hallway</em> patterns like <em>way</em> (a path), not like <em>hall</em> alone.",
     position: [-34, 0, 19],
     tree: {
       text: "hallway",
@@ -188,7 +188,7 @@ const ALL_WORD_DATA = [
     id: "final",
     label: "Final",
     bracket: "[fin + -al]",
-    note: "The suffix <strong>-al</strong> is one of the textbook’s derivational suffixes meaning ‘pertaining to’ (Table 4.2, as in <em>national</em>, <em>seasonal</em>). Here it attaches to a <strong>bound root</strong> <em>fin-</em> ‘end,’ parallel to the book’s examples like <em>ept</em> in <em>inept</em> (§4.3).",
+    note: "The suffix <strong>-al</strong> is a common derivational suffix meaning ‘pertaining to,’ as in <em>national</em>, <em>seasonal</em>. Here it attaches to a <strong>bound root</strong> <em>fin-</em> (‘end’)—not used as an independent English word.",
     position: [-19, 0, -29],
     tree: {
       text: "final",
@@ -214,7 +214,7 @@ const ALL_WORD_DATA = [
     id: "sourdough",
     label: "Sourdough",
     bracket: "[sour + dough]",
-    note: "Another compound of two <strong>content morphemes</strong> (open-class items; §4.3). The textbook reminds us that compounds may be written solid, with a hyphen, or as separate words (§4.6)—here both parts are merged in spelling.",
+    note: "Another compound of two <strong>content morphemes</strong> (open-class items). Compounds may be written solid, with a hyphen, or as separate words—here both parts are merged in spelling.",
     position: [14, 0, -34],
     tree: {
       text: "sourdough",
@@ -239,7 +239,7 @@ const ALL_WORD_DATA = [
     id: "before",
     label: "Before",
     bracket: "[be- + fore]",
-    note: "As a <strong>function morpheme</strong> in use, <em>before</em> behaves as a closed-class preposition or adverb. Morphologically, many textbooks still separate <strong>be-</strong> + <strong>fore</strong> for teaching (compare the book’s discussion of how complex words are built from roots and affixes in §4.2).",
+    note: "As a <strong>function morpheme</strong> in use, <em>before</em> behaves as a closed-class preposition or adverb. Morphologically, analyses often separate <strong>be-</strong> + <strong>fore</strong> for teaching to show how complex words are built from roots and affixes.",
     position: [-38, 0, -10],
     tree: {
       text: "before",
@@ -264,7 +264,7 @@ const ALL_WORD_DATA = [
     id: "rainbow",
     label: "Rainbow",
     bracket: "[rain + bow]",
-    note: "Compound noun: <em>rain</em> + <em>bow</em> (§4.6). The book’s stress contrast (<em>blúebird</em> vs. <em>blue bírd</em>) is a useful reminder that compounds are not just long spelling—they have their own pronunciation patterns.",
+    note: "Compound noun: <em>rain</em> + <em>bow</em>. Contrasts like compound stress (<em>blúebird</em>) versus phrasal stress (<em>blue bírd</em>) are a reminder that compounds are more than concatenated spelling—they have pronunciation patterns.",
     position: [38, 0, -14],
     tree: {
       text: "rainbow",
@@ -289,7 +289,7 @@ const ALL_WORD_DATA = [
     id: "inhospitable",
     label: "Inhospitable",
     bracket: "[in- + [hospit + -able]]",
-    note: "The textbook groups <strong>il-, im-, in-, ir-</strong> as variants of a negative prefix (Table 4.2). <strong>-able</strong> ‘capable of being’ is derivational (Table 4.2). Together they illustrate how derivational affixes change meaning and often word class (§4.3).",
+    note: "<strong>Il-, im-, in-, ir-</strong> are common variants of a negative Latinate prefix. <strong>-able</strong> ‘capable of being’ is derivational. Together they show how derivational affixes change meaning and often word class.",
     position: [-24, 0, 34],
     tree: {
       text: "inhospitable",
@@ -326,7 +326,7 @@ const ALL_WORD_DATA = [
     id: "demarcation",
     label: "Demarcation",
     bracket: "[[de- + mark] + -ation]",
-    note: "Table 4.2 lists several negative / reversal prefixes (e.g. <strong>dis-</strong>, <strong>un-</strong>, <strong>in-</strong>); <strong>de-</strong> fits the same teaching point—derivational prefixes that reshape meaning before suffixes like <strong>-ation</strong> attach. That order (derivation before inflection) is stressed in §4.3.",
+    note: "Negative and reversal prefixes (e.g. <strong>dis-</strong>, <strong>un-</strong>, <strong>in-</strong>) reshuffle meaning before suffixes such as <strong>-ation</strong> attach — <strong>de-</strong> behaves similarly here. Derivational layers stack before bare inflection (like plural <strong>-s</strong>) at the outer edge.",
     position: [43, 0, 29],
     tree: {
       text: "demarcation",
@@ -364,7 +364,7 @@ const ALL_WORD_DATA = [
     id: "dehumanization",
     label: "Dehumanization",
     bracket: "[[de- + [human + -ize]] + -ation]",
-    note: "Stacks like <strong>-ize</strong> + <strong>-ation</strong> mirror the textbook pattern: <strong>-ize</strong> ‘become’ builds a verb stem, then <strong>-ation</strong> forms an abstract noun (Tables 4.2–4.3 show how such suffixes differ from inflectional <strong>-s</strong> or <strong>-ed</strong>).",
+    note: "Stacks like <strong>-ize</strong> + <strong>-ation</strong> mirror a productive pattern in English academic vocabulary: <strong>-ize</strong> verbalizes (‘make/become’), then <strong>-ation</strong> forms an abstract noun—unlike bare inflectional <strong>-s</strong> or <strong>-ed</strong>.",
     position: [48, 0, -24],
     tree: {
       text: "dehumanization",
@@ -414,7 +414,7 @@ const ALL_WORD_DATA = [
     id: "resistance",
     label: "Resistance",
     bracket: "[[re- + sist] + -ance]",
-    note: "The suffix <strong>-ance</strong> nominalizes the verb stem (parallel in function to nominal <strong>-ment</strong> in the book’s examples such as <em>argument</em>). <strong>re-</strong> is listed among productive prefixes in Table 4.2; here it patterns with ‘back / against’ more than ‘again’ (compare <em>rewrite</em> vs. <em>resist</em>).",
+    note: "The suffix <strong>-ance</strong> nominalizes the verb stem (parallel in function to nominal <strong>-ment</strong>, as with <em>argument</em>). <strong>re-</strong> is productive; here it patterns with ‘back / against’ more than simple ‘again’ (compare <em>rewrite</em> vs. <em>resist</em>).",
     position: [-43, 0, 24],
     tree: {
       text: "resistance",
@@ -452,7 +452,7 @@ const ALL_WORD_DATA = [
     id: "revolution",
     label: "Revolution",
     bracket: "[[re- + volu] + -tion]",
-    note: "Another <strong>re-</strong> + stem + <strong>-tion</strong> pattern, parallel to how the textbook discusses Latinate derivation in long academic words (§4.2–4.3). <strong>-tion</strong> is in the same family of nominalizing suffixes as <strong>-ation</strong>.",
+    note: "Another <strong>re-</strong> + stem + <strong>-tion</strong> pattern common in Latinate academic words. <strong>-tion</strong> is in the same family of nominalizing suffixes as <strong>-ation</strong>.",
     position: [-48, 0, -19],
     tree: {
       text: "revolution",
@@ -490,7 +490,7 @@ const ALL_WORD_DATA = [
     id: "unlockable-a",
     label: "Unlockable (not able to be locked)",
     bracket: "[un- + [lock + -able]]",
-    note: "Table 4.2 lists <strong>un-</strong> as ‘not, opposite of.’ Here <strong>un-</strong> attaches to the adjective <em>lockable</em>, so the reading is ‘not lockable’—i.e. <strong>not able to be locked</strong>. Bracketing [[un- [lock -able]]] matches that scope (compare §4.2 on how affixes combine).",
+    note: "<strong>Un-</strong> often spells ‘not, opposite of.’ Here <strong>un-</strong> attaches to the adjective <em>lockable</em>, so the reading is ‘not lockable’—i.e. <strong>not able to be locked</strong>. Bracketing [[un- [lock -able]]] reflects that scope and how affixes combine.",
     context:
       "Fire-safety rules meant the side door stayed <strong>unlockable</strong>: it <strong>could not be locked</strong> during store hours, even though managers wanted tighter security.",
     position: [5, 0, 38],
@@ -569,7 +569,7 @@ const ALL_WORD_DATA = [
     id: "belief",
     label: "Belief",
     bracket: "[be- + lief]",
-    note: "A textbook-style <strong>bound root</strong> analysis: <strong>be-</strong> patterns with other <em>be-</em> + stem words (compare <em>before</em>, <em>believe</em>). The second piece is not a free modern English word on its own.",
+    note: "A canonical <strong>bound root</strong> analysis: <strong>be-</strong> patterns with other <em>be-</em> + stem words (compare <em>before</em>, <em>believe</em>). The second piece is not a free modern English word on its own.",
     position: [11, 0, 50],
     tree: {
       text: "belief",
@@ -619,7 +619,7 @@ const ALL_WORD_DATA = [
     id: "endure",
     label: "Endure",
     bracket: "[en- + dure]",
-    note: "The productive <strong>en-</strong> / <strong>em-</strong> pattern (Table 4.2 family) attaches to stems to form verbs such as <em>enable</em>, <em>enrich</em>. The stem here is a Latinate <strong>bound root</strong>.",
+    note: "The productive <strong>en-</strong> / <strong>em-</strong> pattern attaches to stems to form verbs such as <em>enable</em>, <em>enrich</em>. The stem here is a Latinate <strong>bound root</strong>.",
     position: [-54, 0, 6],
     tree: {
       text: "endure",
@@ -856,7 +856,7 @@ const ALL_WORD_DATA = [
     id: "finisher",
     label: "Finisher",
     bracket: "[finish + -er]",
-    note: "Derivational <strong>-er</strong> forming an agent noun from a verb stem—compare textbook examples like <em>teacher</em> from <em>teach</em>. Contrast with comparative <strong>-er</strong> on <em>wiser</em>.",
+    note: "Derivational <strong>-er</strong> forming an agent noun from a verb stem—compare pairs like <em>teach · teacher</em>. Contrast with comparative <strong>-er</strong> on <em>wiser</em>.",
     position: [44, 0, 34],
     tree: {
       text: "finisher",
@@ -1357,7 +1357,7 @@ function masterWtKey(key) {
   return key.startsWith("Master") ? 1 : 0;
 }
 
-/** Vertical gap between apex (whole word) and each branching row — textbook trees read top → down. */
+/** Vertical gap between apex (whole word) and each branching row — trees read top → down. */
 const TREE_DEPTH_STEP = 5.35;
 /** Base horizontal reach for the first branching ring (narrower ⇒ tighter “triangle” silhouette). */
 const TREE_LAYOUT_RADIUS0 = 11;
@@ -1992,7 +1992,7 @@ function init(host, detailEl, selectEl, shellEl) {
   assignMasterTreeLayout(sceneCenter);
 
   /**
-   * Whiteboard framing: textbook-style side elevation (−x direction looks toward vocabulary), not orbital 3D.
+   * Whiteboard framing: side elevation (−x direction looks toward vocabulary), not orbital 3D.
    * `masterBoost` pushes the camera farther back for dense link layouts.
    */
   function wbSideCameraPair(/** @type {boolean} */ masterBoost) {
@@ -2419,7 +2419,7 @@ function init(host, detailEl, selectEl, shellEl) {
     configureLessonWordLookup((id) => WORDS.find((x) => x.id === id)?.label || id);
     const lessonHtml = renderMorphLessonHtml(w, morphemeRegistry);
     let html = lessonHtml;
-    html += `<section class="morph-chapter-note"><h4 class="morph-chapter-note__h">Textbook excerpt (Park-Johnson &amp; Shin, Ch.&nbsp;4)</h4><div class="morph-chapter-note__body">${w.note}</div>`;
+    html += `<section class="morph-word-note"><h4 class="morph-word-note__h">Morphology note</h4><div class="morph-word-note__body">${w.note}</div>`;
     if (w.context) html += `<p class="morph-context">${w.context}</p>`;
     html += `</section>`;
     detailEl.innerHTML = html;
@@ -2448,13 +2448,13 @@ function init(host, detailEl, selectEl, shellEl) {
       }
       detailEl.classList.remove("morph-detail--word-focus");
       morphDockDetailToViewer();
-      detailEl.innerHTML = `<p><strong>Master Tree (🔗 links).</strong> Every word packs into hubs so all shared morphemes stay visible together. Switch <strong>Arrangement ▸ Master</strong> for this linked layout; switch <strong>Surface ▸ 📋 Whiteboard</strong> for a flat projector view or <strong>🌐 3D</strong> so bridges arch in depth. Magenta ribbons connect identical morphemes across words—those <em>spatial</em> links are deliberately stronger in 3D. Hover spheres for gloss; pick a word in the menu for the chapter note and morphology mini-lesson.</p>`;
+      detailEl.innerHTML = `<p><strong>Master Tree (🔗 links).</strong> Every word packs into hubs so all shared morphemes stay visible together. Switch <strong>Arrangement ▸ Master</strong> for this linked layout; switch <strong>Surface ▸ 📋 Whiteboard</strong> for a flat projector view or <strong>🌐 3D</strong> so bridges arch in depth. Magenta ribbons connect identical morphemes across words—those <em>spatial</em> links are deliberately stronger in 3D. Hover spheres for gloss; pick a word in the menu for its morphology mini-lesson and notes.</p>`;
       return;
     }
     if (!selectEl || selectEl.value === GARDEN_SELECT) {
       detailEl.classList.remove("morph-detail--word-focus");
       morphDockDetailToViewer();
-      detailEl.innerHTML = `<p><strong>Garden (🌳)</strong> — every tree in textbook space. Toggle <strong>Surface ▸ ✔ Whiteboard</strong> for diagram-style side-elevation (narrow lens, tilted silhouette, pan/zoom) vs <strong>🌐 3D</strong> orbital depth.</p><p><strong>Tips:</strong> isolate one word from the menu for a focused tree, mini-lesson, and camera zoom; hover morphemes for gloss.</p>`;
+      detailEl.innerHTML = `<p><strong>Garden (🌳)</strong> — every tree spaced in open layout for overview. Toggle <strong>Surface ▸ ✔ Whiteboard</strong> for diagram-style side-elevation (narrow lens, tilted silhouette, pan/zoom) vs <strong>🌐 3D</strong> orbital depth.</p><p><strong>Tips:</strong> isolate one word from the menu for a focused tree, mini-lesson, and camera zoom; hover morphemes for gloss.</p>`;
       return;
     }
     fillDetail(selectEl.value);
@@ -3008,7 +3008,7 @@ function init(host, detailEl, selectEl, shellEl) {
 
       const swayMul = (1 - u) * (1 - masterWeight * 0.92);
       const sway = swayMul * Math.sin(clock.elapsedTime * 0.1 + w.pos3d.x * 0.02) * 0.028;
-      // Whiteboard: very mild pitch only — planar trees stay textbook-upright (+Y) on the board.
+      // Whiteboard: very mild pitch only — planar trees stay upright (+Y) on the board.
       const wbElev = smoothstep((u - 0.54) / 0.42);
       g.rotation.order = "YXZ";
       g.rotation.z = 0;
