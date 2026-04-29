@@ -33,6 +33,7 @@ const morphInspectTargetVec = new THREE.Vector3();
 const _morphCamDir = new THREE.Vector3();
 const _morphToNode = new THREE.Vector3();
 const _morphFitBox = new THREE.Box3();
+const _morphFitSphere = new THREE.Sphere();
 const _morphFitCenter = new THREE.Vector3();
 const _morphFitSize = new THREE.Vector3();
 const _morphSoloCtrScratch = new THREE.Vector3();
@@ -2217,13 +2218,42 @@ function init(host, detailEl, selectEl, shellEl) {
   function syncCam3dToWord(id) {
     const g = wordGroups[id];
     if (!g) return;
+
+    scene.updateMatrixWorld(true);
     _morphFitBox.setFromObject(g);
-    _morphFitBox.expandByScalar(5);
-    const c = _morphFitBox.getCenter(_morphFitCenter);
-    const sz = _morphFitBox.getSize(_morphFitSize);
-    const ext = Math.max(sz.x, sz.y, sz.z, 14);
-    cam3dTarget.copy(c);
-    cam3dPos.copy(c).add(new THREE.Vector3(ext * 0.48, ext * 0.36, ext * 0.68));
+
+    const isSolo = g.parent === soloStage;
+    _morphFitBox.expandByScalar(isSolo ? 16 : 5);
+
+    if (!isSolo) {
+      const c = _morphFitBox.getCenter(_morphFitCenter);
+      const sz = _morphFitBox.getSize(_morphFitSize);
+      const ext = Math.max(sz.x, sz.y, sz.z, 14);
+      cam3dTarget.copy(c);
+      cam3dPos.copy(c).add(new THREE.Vector3(ext * 0.48, ext * 0.36, ext * 0.68));
+      return;
+    }
+
+    /** Fit spherical hull of bounded tree box to Perspective frustum edges (solo view). */
+    _morphFitBox.getBoundingSphere(_morphFitSphere);
+    let rEff = Math.max(_morphFitSphere.radius, 14);
+    rEff *= 1.1;
+
+    const vDeg =
+      camera.isPerspectiveCamera
+        ? THREE.MathUtils.clamp(camera.fov, 17, CAMERA_FOV_3D + 14)
+        : CAMERA_FOV_3D;
+    const vRad = THREE.MathUtils.degToRad(vDeg);
+    const asp = camera.aspect || 1;
+    const th = Math.tan(vRad / 2);
+    /** Three.js PerspectiveCamera maps vertical aperture to aspect-scaled horizontal width. */
+    const distY = rEff / th;
+    const distX = rEff / (th * asp);
+    const pull = Math.max(distX, distY, rEff * 3.05 + 6);
+
+    cam3dTarget.copy(_morphFitSphere.center);
+    const dir = new THREE.Vector3(1.06, 0.55, 0.92).normalize();
+    cam3dPos.copy(cam3dTarget).addScaledVector(dir, pull);
   }
 
   function startCameraFit() {
