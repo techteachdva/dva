@@ -11,6 +11,7 @@ import { rand, randInt, pick } from "../engine/rng.js";
 import {
   applyDamage, matchupMultiplier, matchupLabel,
   recordDirectHpHit, recordDirectArmorHit,
+  activePlasmMode, plasmElementMult,
 } from "../content/player.js";
 import {
   pointInRect,
@@ -54,6 +55,12 @@ import { GameOverScene } from "./gameover.js";
 
 const COLS_X = [W * 0.22, W * 0.36, W * 0.50, W * 0.64, W * 0.78];
 const NUM_COLS = COLS_X.length;
+
+/** Offset top fangs so they descend into the gaps between bottom molars (visual only). */
+const LANE_PITCH = COLS_X[1] - COLS_X[0];
+function topFangDrawX(col) {
+  return COLS_X[col] + LANE_PITCH * 0.5;
+}
 
 // Vertical anchors for the teeth / hero.
 const TOP_TOOTH_Y    = 110;     // where the top teeth hang from (root)
@@ -576,7 +583,7 @@ export class MawBossScene {
     screenShake(8, 0.25);
     if (SFX.crunch) SFX.crunch(); else SFX.thud();
     this.particles.burst(
-      COLS_X[tt.col], TOP_CHOMP_Y - 20, "#ffd0d4", 22, 260, 0.55,
+      topFangDrawX(tt.col), TOP_CHOMP_Y - 20, "#ffd0d4", 22, 260, 0.55,
     );
 
     this.resolveChompPatternHooks(tt, cadMul);
@@ -729,7 +736,16 @@ export class MawBossScene {
     const pm = p.pactMods || {};
     switch (idx) {
       case 0: {
-        // v0.16 Wizard pays +manaCostBonus on every weapon use.
+        if (p.loadoutId === "plasmids" && l.attack?.plasmCycle && l.plasmModes?.length) {
+          if (p.cooldowns.attack > 0) { SFX.deny(); this.pushLog(`${l.attack.name} is recharging...`); break; }
+          p.plasmModeIndex = (((p.plasmModeIndex || 0) + 1) % l.plasmModes.length);
+          const nm = activePlasmMode(l, p.plasmModeIndex);
+          p.cooldowns.attack = l.attack.cooldown * (pm.attackCdMult || 1);
+          this.pushLog(`Gene mode → ${nm?.label ?? "?"} — bolt: ${nm?.boltName ?? "?"}`);
+          SFX.click();
+          break;
+        }
+
         const manaCost = l.attack.manaCost + (p.manaCostBonus || 0);
         if (p.cooldowns.attack > 0) { SFX.deny(); this.pushLog(`${l.attack.name} is recharging...`); return; }
         if (p.mana < manaCost) { SFX.deny(); this.pushLog("Not enough mana!"); return; }
@@ -739,6 +755,27 @@ export class MawBossScene {
         break;
       }
       case 1: {
+        if (p.loadoutId === "plasmids" && l.special?.plasmBolt && l.plasmModes?.length) {
+          const mode = activePlasmMode(l, p.plasmModeIndex ?? 0);
+          if (!mode) break;
+          const manaCost = mode.manaCost + (p.manaCostBonus || 0);
+          if (p.cooldowns.special > 0) { SFX.deny(); this.pushLog(`${mode.boltName} is recharging...`); break; }
+          if (p.mana < manaCost) { SFX.deny(); this.pushLog("Not enough mana!"); break; }
+          p.mana -= manaCost;
+          p.cooldowns.special = mode.cooldown * (pm.specialCdMult || 1);
+          const boltMove = {
+            name: mode.boltName,
+            dmg: mode.dmg,
+            sfx: mode.sfx || "cast",
+            multiLane: false,
+            lifestealPct: 0,
+            poisonPct: 0,
+            poisonTime: 0,
+          };
+          this.strikeCurrentLane(boltMove, "special", p, { plasmElement: mode.plasmElement });
+          break;
+        }
+
         const manaCost = l.special.manaCost + (p.manaCostBonus || 0);
         if (p.cooldowns.special > 0) { SFX.deny(); this.pushLog(`${l.special.name} is recharging...`); return; }
         if (p.mana < manaCost) { SFX.deny(); this.pushLog("Not enough mana!"); return; }
@@ -801,15 +838,16 @@ export class MawBossScene {
   // Apply a weapon strike to the bottom tooth in the player's lane.
   // Multi-lane weapons (Bile Whip) additionally hit the immediate
   // neighbors for 50% of the damage.
-  strikeCurrentLane(move, kind, p) {
+  strikeCurrentLane(move, kind, p, extras = {}) {
     const mult = this.matchupMult || 1;
     const pm = p.pactMods || {};
     const dmgMult = (pm.dmgMult || 1) *
       (kind === "special" ? (pm.specialDmgMult || 1) : (pm.attackDmgMult || 1));
     const isCrit = Math.random() < (pm.critChance || 0);
     const critMult = isCrit ? 1.6 : 1;
+    const elemMult = extras.plasmElement ? plasmElementMult(extras.plasmElement, "teeth") : 1;
     const raw = randInt(move.dmg[0], move.dmg[1]);
-    const centerDmg = Math.max(1, Math.round(raw * mult * dmgMult * critMult));
+    const centerDmg = Math.max(1, Math.round(raw * mult * dmgMult * critMult * elemMult));
 
     const centerTooth = this.bottomTeeth[this.col];
     if (!centerTooth) return;
@@ -1077,7 +1115,7 @@ export class MawBossScene {
   }
 
   drawOneTopTooth(ctx, tt) {
-    const x = COLS_X[tt.col];
+    const x = topFangDrawX(tt.col);
     const baseY = TOP_TOOTH_Y;
     // Tip descends from TOP_TOOTH_TIP (rest) toward TOP_CHOMP_Y at chomp=1.
     const tipY = TOP_TOOTH_TIP + (TOP_CHOMP_Y - TOP_TOOTH_TIP) * tt.chomp;
@@ -1405,14 +1443,24 @@ export class MawBossScene {
   drawActionBar(ctx, game) {
     const p = game.player;
     const l = p.loadout;
-    const items = [
-      { key: "Q/1", name: l.attack.name,  info: `DMG ${l.attack.dmg[0]}-${l.attack.dmg[1]}  MP ${l.attack.manaCost + (p.manaCostBonus || 0)}`,
-        cd: p.cooldowns.attack,  cdMax: l.attack.cooldown * (p.pactMods?.attackCdMult || 1) },
-      { key: "E/2", name: l.special.name, info: `DMG ${l.special.dmg[0]}-${l.special.dmg[1]}  MP ${l.special.manaCost + (p.manaCostBonus || 0)}`,
-        cd: p.cooldowns.special, cdMax: l.special.cooldown * (p.pactMods?.specialCdMult || 1) },
-      { key: "R/3", name: "Dodge",  info: "+MP, brief i-frames",       cd: 0, cdMax: 0 },
-      { key: "F/4", name: "Brace",  info: "halve next chomp",           cd: 0, cdMax: 0 },
-    ];
+    const plMode = p.loadoutId === "plasmids" ? activePlasmMode(l, p.plasmModeIndex ?? 0) : null;
+    const items = plMode
+      ? [
+        { key: "Q/1", name: `${plMode.label} (cycle)`,  info: `${l.attack.name} — ${l.attack.cooldown.toFixed(2)}s`,
+          cd: p.cooldowns.attack,  cdMax: l.attack.cooldown * (p.pactMods?.attackCdMult || 1) },
+        { key: "E/2", name: plMode.boltName, info: `DMG ${plMode.dmg[0]}-${plMode.dmg[1]}  MP ${plMode.manaCost + (p.manaCostBonus || 0)}`,
+          cd: p.cooldowns.special, cdMax: plMode.cooldown * (p.pactMods?.specialCdMult || 1) },
+        { key: "R/3", name: "Dodge",  info: "+MP, brief i-frames",       cd: 0, cdMax: 0 },
+        { key: "F/4", name: "Brace",  info: "halve next chomp",           cd: 0, cdMax: 0 },
+      ]
+      : [
+        { key: "Q/1", name: l.attack.name,  info: `DMG ${l.attack.dmg[0]}-${l.attack.dmg[1]}  MP ${l.attack.manaCost + (p.manaCostBonus || 0)}`,
+          cd: p.cooldowns.attack,  cdMax: l.attack.cooldown * (p.pactMods?.attackCdMult || 1) },
+        { key: "E/2", name: l.special.name, info: `DMG ${l.special.dmg[0]}-${l.special.dmg[1]}  MP ${l.special.manaCost + (p.manaCostBonus || 0)}`,
+          cd: p.cooldowns.special, cdMax: l.special.cooldown * (p.pactMods?.specialCdMult || 1) },
+        { key: "R/3", name: "Dodge",  info: "+MP, brief i-frames",       cd: 0, cdMax: 0 },
+        { key: "F/4", name: "Brace",  info: "halve next chomp",           cd: 0, cdMax: 0 },
+      ];
     const barY = H - 86;
     const barH = 68;
     const cardW = (W - 48 - 24 * (items.length - 1)) / items.length;
@@ -1477,7 +1525,9 @@ export class MawBossScene {
       msg = `${downNow}/${NUM_COLS} molars down. Keep the pressure on every lane!`;
       color = "#e6f0a0";
     } else {
-      msg = "Move [A/D], swing [Q/1] or [E/2] at the tooth in your lane.";
+      msg = p.loadoutId === "plasmids"
+        ? "Move [A/D]; [Q/1] cycle gene mode · [E/2] Gene Bolt hits the tooth in your lane."
+        : "Move [A/D], swing [Q/1] or [E/2] at the tooth in your lane.";
       color = COLORS.bone;
     }
 

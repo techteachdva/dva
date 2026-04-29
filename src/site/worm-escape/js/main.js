@@ -163,8 +163,8 @@ const loop = new Loop(
       ctx.fillRect(0, 0, W, H);
       drawBanner(ctx, "CHEAT ENTRY", W / 2, 140, 32, COLORS.wormHi, COLORS.blood);
       drawPanel(ctx, W / 2 - 420, 200, 840, 360);
-      drawText(ctx, "Type a cheat, ENTER to submit, ESC closes.", W / 2, 226, {
-        size: 18, color: COLORS.boneDim, align: "center",
+      drawText(ctx, "Type a cheat · ENTER submit · ESC closes   (jackson/dez/acererack/bossnow/loredump)", W / 2, 226, {
+        size: 16, color: COLORS.boneDim, align: "center", maxWidth: W - 48,
       });
       const line = "> " + (game.cheatInput || "") + "_";
       drawText(ctx, line, W / 2, 280, {

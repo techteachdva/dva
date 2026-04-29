@@ -2,6 +2,7 @@ import { CHAMBERS } from "../content/chambers.js";
 import { makePlayer } from "../content/player.js";
 import { loadSave, saveGame } from "./storage.js";
 import { TongueBossScene } from "../scenes/tongueBoss.js";
+import { EncyclopediaScene } from "../scenes/encyclopedia.js";
 
 export function jumpToFinalBossFight(game) {
   const mawIdx = CHAMBERS.findIndex((c) => c.isMaw);
@@ -46,6 +47,14 @@ export function applyCheatLine(rawLine, game) {
   }
   if (c === "bossnow") {
     return jumpToFinalBossFight(game);
+  }
+
+  if (c === "loredump") {
+    if (game.scenes?.current instanceof EncyclopediaScene) {
+      return { ok: false, msg: "Codex already hogging screen — ESC to close first." };
+    }
+    game.scenes.push(new EncyclopediaScene(), game);
+    return { ok: true, msg: "THE INNER GUTS CODEX is opening nerd." };
   }
 
   return { ok: false, msg: `Unknown cheat: "${c}".` };

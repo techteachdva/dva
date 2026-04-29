@@ -6,6 +6,7 @@ import {
 } from "../engine/render.js";
 import { SFX } from "../engine/audio.js";
 import { BUILDS, LOADOUTS, makePlayer } from "../content/player.js";
+import { resolveSynergy } from "../content/synergies.js";
 import { loadSave } from "../engine/storage.js";
 import { ClimbScene } from "./climb.js";
 import { pointInRect } from "../engine/pointer.js";
@@ -406,7 +407,7 @@ export class CreateScene {
     else if (this.step === 1) this.renderLoadoutSelect(ctx, game);
     else this.renderConfirm(ctx);
 
-    drawText(ctx, "A/D wheel · click cards · SPACE confirm · BACKSPACE back · M mute · Alt+Enter fullscreen · \\ cheats", W / 2, H - 26, {
+    drawText(ctx, "A/D wheel · click cards · SPACE confirm · BACKSPACE back · M mute · Alt+Enter fullscreen · \\ cheats (loredump codex)", W / 2, H - 26, {
       size: 15, color: COLORS.boneDim, align: "center",
     });
   }
@@ -450,7 +451,7 @@ export class CreateScene {
 
       ctx.save();
       ctx.globalAlpha = alpha[k];
-      this.drawCard(ctx, x, y, cardW, cardH, isCenter && unlocked);
+      this.drawCard(ctx, x, y, cardW, cardH, isCenter && unlocked, false);
 
       const cx = x + cardW / 2;
       const nameSize = isCenter ? 24 : 21;
@@ -574,6 +575,7 @@ export class CreateScene {
     const N = this.weaponChoices.length;
     if (N === 0) return;
 
+    const buildForSyn = this.buildIdsOrdered[this.buildWheelIdx];
     const center = ((this.loadIdx % N) + N) % N;
 
     /** Three slots — simple modulo wheel (same for random pool and full browse). */
@@ -605,16 +607,18 @@ export class CreateScene {
       const l = LOADOUTS[id];
       if (!l) continue;
 
+      const syn = resolveSynergy(buildForSyn, id);
       const x = xs[k];
       const y = yBase + yOff[k];
       const cardW = ws[k];
       const isCenter = k === 1;
       const unlocked = this.isLoadoutUnlocked(wi);
       const selected = wi === center;
+      const synGlow = !!syn && unlocked;
 
       ctx.save();
       ctx.globalAlpha = al[k];
-      this.drawCard(ctx, x, y, cardW, 470, isCenter && unlocked && selected);
+      this.drawCard(ctx, x, y, cardW, 470, isCenter && unlocked && selected, synGlow);
 
       const textMax = cardW - 16;
       const hasCombat = !!(l.attack && l.special);
@@ -632,8 +636,17 @@ export class CreateScene {
         glow: (selected && isCenter && unlocked) ? COLORS.blood : null,
         maxWidth: textMax,
       });
+      if (syn && unlocked) {
+        drawText(ctx, "SYNERGY", x + cardW / 2, y + 48, {
+          size: isCenter ? 12 : 10,
+          color: "#ffd966",
+          align: "center",
+          bold: true,
+          glow: "#ffd966",
+        });
+      }
 
-      this.drawWeaponIcon(ctx, x + cardW / 2, y + 140, l);
+      this.drawWeaponIcon(ctx, x + cardW / 2, y + (syn && unlocked ? 152 : 140), l);
 
       drawText(ctx, l.blurb, x + cardW / 2, y + 232, {
         size: blurbSize, color: COLORS.boneDim, align: "center", maxWidth: textMax,
@@ -718,15 +731,26 @@ export class CreateScene {
     const loadId = this.weaponChoices[this.loadIdx];
     const l = loadId ? LOADOUTS[loadId] : null;
     if (!b || !l) return;
+    const syn = resolveSynergy(buildId, loadId);
+
     drawPanel(ctx, 220, 170, W - 440, 500);
     drawText(ctx, "READY TO GET DIGESTED?", W / 2, 210, {
       size: 28, color: COLORS.bile, align: "center", bold: true, glow: COLORS.blood,
     });
 
+    if (syn) {
+      drawText(ctx, "SYNERGY FORGED", W / 2, 252, {
+        size: 22, color: "#ffd966", align: "center", bold: true, glow: "#a06000",
+      });
+      drawText(ctx, syn.title, W / 2, 282, {
+        size: 17, color: COLORS.bone, align: "center", bold: true, maxWidth: W - 200,
+      });
+    }
+
     ctx.save();
-    ctx.translate(W / 2, 400);
+    ctx.translate(W / 2, syn ? 410 : 392);
     ctx.scale(7, 7);
-    drawHero(ctx, 0, 0, 1, this.t * 6, b.id);
+    drawHero(ctx, 0, 0, 1, this.t * 6, b.id, syn?.id ?? null);
     ctx.restore();
 
     drawText(ctx, `${b.name} wielding ${l.name}`, W / 2, 530, {
@@ -738,6 +762,9 @@ export class CreateScene {
     drawText(ctx, `"${l.blurb}"`, W / 2, 590, {
       size: 16, color: COLORS.boneDim, align: "center",
     });
+    if (syn) {
+      drawWrappedCenter(ctx, W / 2, 612, [syn.blurb], 14, 5, { color: COLORS.boneDim });
+    }
 
     const blink = Math.sin(this.t * 5) > 0;
     if (blink) {
@@ -747,7 +774,7 @@ export class CreateScene {
     }
   }
 
-  drawCard(ctx, x, y, w, h, selected) {
+  drawCard(ctx, x, y, w, h, selected, synergyHighlight = false) {
     ctx.save();
     // Backdrop with gradient
     const g = ctx.createLinearGradient(x, y, x, y + h);
@@ -759,10 +786,11 @@ export class CreateScene {
     ctx.fillStyle = "rgba(255,255,255,0.04)";
     ctx.fillRect(x + 2, y + 2, w - 4, 3);
     // Border
-    ctx.strokeStyle = selected ? COLORS.bile : COLORS.boneDim;
-    ctx.lineWidth = selected ? 3 : 2;
-    if (selected) {
-      ctx.shadowColor = COLORS.bile;
+    // Border — synergies get a gold rim even on side cards; selection still wins.
+    ctx.strokeStyle = selected ? COLORS.bile : synergyHighlight ? "#ffd966" : COLORS.boneDim;
+    ctx.lineWidth = selected ? 3 : synergyHighlight ? 3 : 2;
+    if (selected || synergyHighlight) {
+      ctx.shadowColor = selected ? COLORS.bile : "#ffd966";
       ctx.shadowBlur = 16;
     }
     ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);

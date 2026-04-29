@@ -42,11 +42,10 @@ const HERO_DEATH_Y = HERO_Y + 28;    // bile touches this Y -> submerged
 //                      Hurts a little if you have no armor.
 //
 //   POWER-UPS (telegraphed in gold) want you INTO their column:
-//     - feather      : feather of flying - instant upward boost in climb progress.
-//     - burger       : cheeseburger - heals HP. Does not touch armor.
-//     - ring         : ring of armor - RARE and glows. Grants (or refills) 50
-//                      points of armor and unlocks bile-submersion grace for
-//                      the rest of the chamber.
+//     - feather      : feather of flying — instant upward boost.
+//     - burger       : cheeseburger — heals HP.
+//     - ring         : ring of armor — grants armor.
+//     - manaFlask    : condensed mana — restores a chunk of MP.
 //
 // `weight` is the random pick weight within its category. `rarity` on power-ups
 // further tilts picks within the power-up pool (ring is especially rare).
@@ -75,7 +74,8 @@ const DEBRIS_KINDS = [
 // it's worth chasing but still shows up maybe once or twice per run.
 const POWERUPS = [
   { kind: "feather", color: "#eaf6ff", sizeR: [14, 14], damageType: "power", effect: "boost", boost: 220, weight: 15 },
-  { kind: "burger",  color: "#ffbb55", sizeR: [15, 15], damageType: "power", effect: "heal",  heal:  30,  weight: 12 },
+  { kind: "burger",  color: "#ffbb55", sizeR: [15, 15], damageType: "power", effect: "heal",  heal:  30,  weight: 11 },
+  { kind: "manaFlask", color: "#5ec8ff", sizeR: [12, 14], damageType: "power", effect: "manaFrac", frac: 0.42, weight: 9 },
   { kind: "ring",    color: "#ffd966", sizeR: [12, 12], damageType: "power", effect: "armor", armor: 50, weight: 2,  glow: true },
 ];
 
@@ -333,6 +333,8 @@ export class ClimbScene {
         this.spawnTelegraph(ch, usedCols, pm);
         usedCols.push(this._lastSpawnedCol);
       }
+      if (Math.random() < 0.115) this.spawnTelegraph(ch, usedCols, pm);
+
       // Optional bonus spawn when multiDebrisChance rolls true.
       if (Math.random() < (ch.multiDebrisChance || 0)) {
         this.spawnTelegraph(ch, usedCols, pm);
@@ -413,11 +415,16 @@ export class ClimbScene {
   // already used this cycle). Falls back to any column if every column is
   // already used.
   pickColumn(avoidCols) {
-    const freeCols = [];
+    const base = [];
     for (let i = 0; i < NUM_COLS; i++) {
-      if (!avoidCols || !avoidCols.includes(i)) freeCols.push(i);
+      if (!avoidCols || !avoidCols.includes(i)) base.push(i);
     }
-    const pool = freeCols.length ? freeCols : [...Array(NUM_COLS).keys()];
+    let pool = base.length ? base : [...Array(NUM_COLS).keys()];
+    if (Math.random() < 0.3) {
+      const wantOdd = Math.random() < 0.5;
+      const filt = pool.filter((c) => (c % 2 === (wantOdd ? 1 : 0)));
+      if (filt.length) pool = filt;
+    }
     return pool[Math.floor(Math.random() * pool.length)];
   }
 
@@ -449,7 +456,9 @@ export class ClimbScene {
       : this.weightedPick(DEBRIS_KINDS);
 
     this.telegraphs.push({
-      col, t: 0, wait: 1.1, kind,
+      col, t: 0,
+      wait: rand(0.88, 1.35),
+      kind,
       speed: ch.debrisSpeed * rand(0.9, 1.3),
       power: kind.damageType === "power",
     });
@@ -492,6 +501,18 @@ export class ClimbScene {
           SFX.confirm();
           if (p.score) p.score.powerUpsCollected++;
           this.particles.burst(d.x, d.y, "#ffbb55", 22, 220, 0.55);
+          break;
+        }
+        case "manaFrac": {
+          const frac = typeof kind.frac === "number" ? kind.frac : 0.42;
+          const add = Math.max(8, Math.round(p.manaMax * frac));
+          const before = p.mana;
+          p.mana = Math.min(p.manaMax, p.mana + add);
+          const got = p.mana - before;
+          this.showToast(`+Mana flask (+${got} MP)`, 1.35);
+          SFX.confirm();
+          if (p.score) p.score.powerUpsCollected++;
+          this.particles.burst(d.x, d.y, "#5ec8ff", 24, 240, 0.65);
           break;
         }
         case "armor": {
@@ -855,6 +876,7 @@ export class ClimbScene {
       const glowPulse = 0.75 + 0.25 * Math.sin(this.t * 6 + d.x);
       const glowColor = d.kind.kind === "ring"  ? "rgba(255, 217, 102, "
                        : d.kind.kind === "burger" ? "rgba(255, 187, 85, "
+                       : d.kind.kind === "manaFlask" ? "rgba(140, 210, 255, "
                        : "rgba(200, 230, 255, ";
       const g = ctx.createRadialGradient(d.x, d.y, 2, d.x, d.y, d.r * 3.2);
       g.addColorStop(0, glowColor + (0.6 * glowPulse) + ")");
@@ -879,6 +901,7 @@ export class ClimbScene {
       case "meat":    this.drawMeat(ctx, d); break;
       case "feather": this.drawFeather(ctx, d); break;
       case "burger":  this.drawBurger(ctx, d); break;
+      case "manaFlask": this.drawManaFlask(ctx, d); break;
       case "ring":    this.drawRingOfArmor(ctx, d); break;
       default:        this.drawRock(ctx, d);
     }
@@ -1202,6 +1225,24 @@ export class ClimbScene {
       ctx.ellipse(sx, sy, 2, 1, 0.4, 0, Math.PI * 2);
       ctx.fill();
     }
+  }
+
+  drawManaFlask(ctx, d) {
+    const R = d.r;
+    ctx.save();
+    ctx.fillStyle = shade(d.kind.color, 0.85);
+    ctx.strokeStyle = "rgba(0,0,0,0.55)";
+    ctx.lineWidth = 1.2;
+    roundRect(ctx, -R * 0.55, -R * 1.1, R * 1.1, R * 1.8, 4);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "rgba(180, 230, 255, 0.75)";
+    ctx.beginPath();
+    ctx.ellipse(0, R * 0.15, R * 0.35, R * 0.55, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#8a5a2a";
+    ctx.fillRect(-R * 0.2, -R * 1.18, R * 0.4, R * 0.16);
+    ctx.restore();
   }
 
   drawRingOfArmor(ctx, d) {

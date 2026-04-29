@@ -14,6 +14,11 @@ function scaleLoadoutCooldowns(l, mult = GLOBAL_ATTACK_CD_MULT) {
   l.attack.cooldown *= mult;
   l.special.cooldown *= mult;
   if (l.cryoThird && l.cryoThird.cooldown) l.cryoThird.cooldown *= mult;
+  if (l.plasmModes) {
+    for (const pm of l.plasmModes) {
+      if (pm.cooldown) pm.cooldown *= mult;
+    }
+  }
 }
 
 // Player model, builds, and loadouts.
@@ -205,6 +210,7 @@ export const BUILDS = {
   },
 };
 
+// When you retune swings / cooldowns, update content/encyclopediaData.js so the in-game Codex stays honest.
 export const LOADOUTS = {
   sword: {
     id: "sword",
@@ -251,15 +257,15 @@ export const LOADOUTS = {
     weakVs:   "teeth",   // -40% vs tooth beast (ice shatters on enamel)
   },
   // v0.12 BILE WHIP - unlocked by clearing Gullet climb hitless.
-  // Its attack hits ALL THREE combat lanes at once (the sphincter guardian
-  // stays in one lane but this matters against Shielded elites whose
-  // shield-break condition is number-of-hits). Each "lane" takes reduced
-  // damage individually, but the total is competitive with single hits.
+  // Its attack hits THREE staggered columns at once (spread across the
+  // 5-column arena; the guardian still occupies one lane at a time).
+  // Each column takes reduced damage individually, but total output is
+  // competitive with single hits — great for breaking SHIELDED elites.
   bileWhip: {
     id: "bileWhip",
     name: "BILE WHIP",
     icon: "whip",
-    blurb: "Lashes all three lanes. Wet, theatrical, effective.",
+    blurb: "Lashes far-left, center, and far-right columns in one crack. Wet, theatrical, effective.",
     attack:  { name: "Triple Lash", dmg: [9, 13],  cooldown: 0.70, manaCost: 0,  sfx: "slash",  multiLane: true },
     special: { name: "Coil Lash",   dmg: [32, 44], cooldown: 2.8,  manaCost: 10, sfx: "crunch", multiLane: false },
     color: "#b5f05a",
@@ -458,13 +464,33 @@ export const LOADOUTS = {
     id: "plasmids",
     name: "ADAM PLASMIDS",
     icon: "plasmids",
-    blurb: "Triple helix payloads: fire rot, fry ooze, lock jawlines.",
-    attack:  { name: "Incinerate",  dmg: [8, 13],  cooldown: 0.75, manaCost: 4, sfx: "cast",
-      plasmElement: "fire" },
-    special: { name: "Tesla Burst", dmg: [26, 36], cooldown: 3.0,  manaCost: 18, sfx: "cast",
-      plasmElement: "shock", shockStun: 2.5 },
-    cryoThird: { name: "Cryo Shear",  dmg: [14, 20], cooldown: 1.15, manaCost: 5, sfx: "cast",
-      plasmElement: "cryo", slowMul: 0.45, slowT: 1.5 },
+    blurb: "Dial helix payloads: FIRE / SHOCK / CRYO — then unleash the bolt.",
+    // [Q/1]: rotate active element. [E/2]: fire a Gene Bolt using that mode.
+    attack: {
+      name: "Cycle Gene Mode",
+      dmg: [0, 0],
+      cooldown: 0.18,
+      manaCost: 0,
+      sfx: "click",
+      plasmCycle: true,
+    },
+    special: {
+      name: "Gene Bolt",
+      dmg: [8, 13],
+      cooldown: 0.72,
+      manaCost: 4,
+      sfx: "cast",
+      plasmBolt: true,
+    },
+    /** Order: fire → shock → cryo (cycled with attack). Bolt stats come from active mode at fire time. */
+    plasmModes: [
+      { key: "fire", label: "FIRE", boltName: "Incinerate Bolt", dmg: [8, 13], cooldown: 0.72,
+        manaCost: 4, sfx: "cast", plasmElement: "fire" },
+      { key: "shock", label: "SHOCK", boltName: "Tesla Burst Bolt", dmg: [24, 34], cooldown: 3.05,
+        manaCost: 18, sfx: "cast", plasmElement: "shock", shockStun: 2.5 },
+      { key: "cryo", label: "ICE", boltName: "Cryo Shear Bolt", dmg: [14, 20], cooldown: 1.15,
+        manaCost: 5, sfx: "cast", plasmElement: "cryo", slowMul: 0.45, slowT: 1.5 },
+    ],
     color: "#59f0dc",
     strongVs: "flesh",
     weakVs:   "teeth",
@@ -482,16 +508,26 @@ export function matchupMultiplier(loadoutId, enemyArt) {
   return 1;
 }
 
-/** Plasmids (and similar): per-move matchup — fire shocks flesh, flops on bile… */
+/** Plasmids: element vs enemy art — all modes are neutral vs teeth (maw finale). */
 export function plasmElementMult(element, enemyArt) {
+  if (!element || !enemyArt) return 1;
+  if (enemyArt === "teeth") return 1;
   const rows = {
-    fire: { flesh: 1.6, bile: 0.6 },
-    shock:{ bile:  1.6, zombie: 0.6 },
-    cryo: { teeth: 1.6, flesh: 0.6 },
+    fire: { flesh: 1.55, bile: 0.55, zombie: 1.25, tentacle: 1.2 },
+    shock: { bile: 1.55, zombie: 0.55, tentacle: 1.3, flesh: 1.08 },
+    cryo: { flesh: 0.56, bile: 1.22, zombie: 1.12, tentacle: 0.92 },
   };
   const row = rows[element];
-  if (!row || !enemyArt) return 1;
+  if (!row) return 1;
   return row[enemyArt] ?? 1;
+}
+
+/** Effective ADAM bolt template for combat / UI (wizard build uses loadout.special as placeholder). */
+export function activePlasmMode(loadout, plasmModeIndex = 0) {
+  const modes = loadout?.plasmModes;
+  if (!modes?.length) return null;
+  const i = ((plasmModeIndex || 0) % modes.length + modes.length) % modes.length;
+  return modes[i];
 }
 
 export function matchupLabel(mult) {
@@ -644,6 +680,10 @@ export function makePlayer(buildId, loadoutId, gameCheats = null) {
   }
 
   applySynergy(p, buildId, loadoutId);
+
+  if (loadoutId === "plasmids") {
+    p.plasmModeIndex = 0;
+  }
 
   if (loadoutId === "engineerWrench") {
     const spec = LOADOUTS.engineerWrench.special;

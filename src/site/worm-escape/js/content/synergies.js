@@ -86,7 +86,7 @@ export const SYNERGIES = {
   turretSummoner: {
     id: "turretSummoner",
     title: "TURRET SUMMONER",
-    blurb: "Wizard + Engineer Wrench. Feeble swings; brilliant, short-lived sentries.",
+    blurb: "Wizard + Engineer Wrench. Light taps can thread spare sentry kits; Deploy Sentry anchors the real build.",
     heroTint: "turretSummoner",
     apply(p) {
       p.pactMods.attackDmgMult *= 0.62;
@@ -112,7 +112,7 @@ export const SYNERGIES = {
 const KEY = (b, w) => `${b}:${w}`;
 
 /** Maps buildId + loadoutId -> synergy id */
-const TABLE = {
+export const SYNERGY_TABLE = {
   [KEY("iron", "sword")]: "chainSword",
   [KEY("swift", "fists")]: "monk",
   [KEY("swift", "blunderbuss")]: "scout",
@@ -122,8 +122,16 @@ const TABLE = {
   [KEY("iron", "hammer")]: "heavyHitter",
 };
 
+/** For codex / tools: `{ buildId, loadoutId, synergyId }[]`. */
+export function listSynergyPairings() {
+  return Object.entries(SYNERGY_TABLE).map(([k, synergyId]) => {
+    const [buildId, loadoutId] = k.split(":");
+    return { buildId, loadoutId, synergyId };
+  });
+}
+
 export function resolveSynergy(buildId, loadoutId) {
-  const sid = TABLE[KEY(buildId, loadoutId)];
+  const sid = SYNERGY_TABLE[KEY(buildId, loadoutId)];
   return sid ? SYNERGIES[sid] : null;
 }
 

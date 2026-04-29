@@ -14,12 +14,19 @@ import {
   columnIndexFromX,
   stepTowardIndex,
 } from "../engine/pointer.js";
-import { applyDamage, matchupMultiplier, matchupLabel, recordDirectHpHit, recordDirectArmorHit, plasmElementMult } from "../content/player.js";
+import {
+  applyDamage, matchupMultiplier, matchupLabel, recordDirectHpHit, recordDirectArmorHit,
+  plasmElementMult, activePlasmMode,
+} from "../content/player.js";
 import { TransitionScene } from "./transition.js";
 import { PactScene } from "./pact.js";
 import { GameOverScene } from "./gameover.js";
 
-const LANES = [W * 0.33, W * 0.5, W * 0.67];
+/** Five tactical columns — guardian and player must align to land strikes (unless weapon skips lanes). */
+const NUM_COMBAT_LANES = 5;
+const LAST_COMBAT_LANE = NUM_COMBAT_LANES - 1;
+const LANES = [W * 0.14, W * 0.32, W * 0.5, W * 0.68, W * 0.86];
+const GUARDIAN_LANE_NAMES = ["FAR LEFT", "LEFT", "CENTER", "RIGHT", "FAR RIGHT"];
 const FLOOR_Y = 620;
 const HERO_Y = 600;
 
@@ -81,9 +88,9 @@ export class CombatScene {
     this.floaters = [];
 
     this.t = 0;
-    this.lane = 1;
-    this.heroX = LANES[1];
-    this.targetX = LANES[1];
+    this.lane = 2;
+    this.heroX = LANES[2];
+    this.targetX = LANES[2];
     this.anim = 0;
     this.laneCd = 0;
 
@@ -117,9 +124,9 @@ export class CombatScene {
     this.comboHitTimer = 0;
 
     // Guardian occupies a tactical column; it shuffles to force repositioning.
-    this.enemyLane = randInt(0, 2);
+    this.enemyLane = randInt(0, LAST_COMBAT_LANE);
     this.enemyLaneTimer = rand(5, 11);
-    this.enemyAttackLane = 1;
+    this.enemyAttackLane = 2;
 
     // Enrage state - triggers at enemy.hp < hpMax * enrageAt. Kicks off
     // tighter cadence, optional paired acid gouts, and +damage.
@@ -172,38 +179,6 @@ export class CombatScene {
       b = POTION_KEY_POOL[randInt(0, POTION_KEY_POOL.length - 1)];
     }
     return [a, b === a ? POTION_KEY_POOL.find((k) => k !== a) ?? "z" : b];
-  }
-
-  tryPlasmCryo(p, game) {
-    const l = p.loadout;
-    const cryo = l?.cryoThird;
-    const pm = p.pactMods || {};
-    if (p.loadoutId !== "plasmids" || !cryo) return false;
-
-    const mc = cryo.manaCost + (p.manaCostBonus || 0);
-    if (p.cooldowns.tertiary > 0) {
-      SFX.deny();
-      this.pushLog(`${cryo.name} is recharging...`);
-      return true;
-    }
-    if (p.mana < mc) {
-      SFX.deny();
-      this.pushLog("Not enough mana!");
-      return true;
-    }
-    p.mana -= mc;
-    p.cooldowns.tertiary = cryo.cooldown * (pm.specialCdMult || 1);
-    const dmg = randInt(cryo.dmg[0], cryo.dmg[1]);
-    this.dealToEnemy(dmg, cryo.name, cryo.sfx, p, {
-      kind: "special",
-      plasmElement: cryo.plasmElement,
-    });
-    this.enemy.slowMul = cryo.slowMul || 0.5;
-    this.enemy.slowT = cryo.slowT || 1.5;
-    this.pushLog(`${cryo.name} — frost webbing stacks!`);
-    SFX.cast();
-    this.turnLocked = 0.42;
-    return true;
   }
 
   pushLog(line) {
@@ -365,7 +340,7 @@ export class CombatScene {
       if (game.input.wasPressed("ArrowLeft", "a") && this.lane > 0) {
         this.lane--;
         movedLane = true;
-      } else if (game.input.wasPressed("ArrowRight", "d") && this.lane < 2) {
+      } else if (game.input.wasPressed("ArrowRight", "d") && this.lane < LAST_COMBAT_LANE) {
         this.lane++;
         movedLane = true;
       } else if (game.input.wasPressed("Mouse0")) {
@@ -419,9 +394,6 @@ export class CombatScene {
         if (this.enemy.stunT > 0) this.enemy.stunT -= dt;
         this.updateAcidGouts(dt, p);
         this.updateEnemyMelee(dt, p);
-        if (game.input.wasPressed("t") && this.turnLocked <= 0) {
-          this.tryPlasmCryo(p, game);
-        }
         this.handleMenu(dt, game);
       } else {
         this.updatePotionMiniGame(dt, game);
@@ -463,7 +435,7 @@ export class CombatScene {
       this.eliteGoutTimer -= dt;
       if (this.eliteGoutTimer <= 0) {
         this.eliteGoutTimer = rand(3.2, 4.6);
-        const lane = randInt(0, 2);
+        const lane = randInt(0, LAST_COMBAT_LANE);
         this.telegraphs.push({ lane, t: 0, wait: p.dodgeWindow + 0.05 });
       }
     }
@@ -585,19 +557,18 @@ export class CombatScene {
     this.enemyLaneTimer -= dt;
     if (this.enemyLaneTimer > 0) return;
     let nl = this.enemyLane;
-    for (let tries = 0; tries < 4 && nl === this.enemyLane; tries++) {
-      nl = randInt(0, 2);
+    for (let tries = 0; tries < 7 && nl === this.enemyLane; tries++) {
+      nl = randInt(0, LAST_COMBAT_LANE);
     }
     this.enemyLane = nl;
     this.enemyLaneTimer = rand(4.2, 10.5);
-    const lab = ["LEFT", "CENTER", "RIGHT"][this.enemyLane];
+    const lab = GUARDIAN_LANE_NAMES[this.enemyLane];
     this.pushLog(`The guardian surges into the ${lab} lane — match it to strike true!`);
     SFX.dodge();
   }
 
   tickTurretDPS(dt, p) {
-    const specWeapon = p.loadout?.special;
-    if (!specWeapon?.sentryBuild || !p.turretFleet || !p.turretSpec) return;
+    if (!p.turretFleet || !p.turretSpec) return;
     const fleet = p.turretFleet;
     const interval = p.turretSpec.interval || 0.5;
     const mag = p.turretMagicMult ?? 1;
@@ -643,6 +614,26 @@ export class CombatScene {
     }
   }
 
+  /**
+   * Deploy a wrench sentry into the current column. Returns false if no hardpoints left.
+   */
+  tryEnqueueSentryDeploy(p, { buildTime, dmgRange, logLine, sound = "confirm" }) {
+    if (!p.turretFleet || !p.turretSpec) return false;
+    const cap = Math.max(1, p.turretFleetMax || 1);
+    if (p.turretFleet.length >= cap) return false;
+    p.turretFleet.push({
+      buildLeft: buildTime,
+      online: false,
+      nextPulse: 0,
+      dmgRange,
+      lane: this.lane,
+    });
+    this.pushLog(logLine || "SENTRY ASSEMBLING...");
+    const play = sound === false ? null : (SFX[sound] ? SFX[sound] : SFX.confirm);
+    if (play) play();
+    return true;
+  }
+
   tickChainShred(dt, p) {
     const dps = p.chainSwordDps || 0;
     if (!dps || this.phase !== "fight" || this.enemy.hp <= 0) return;
@@ -674,13 +665,15 @@ export class CombatScene {
       // Enraged: tighten the cadence aggressively.
       if (this.enraged) { mn *= 0.65; mx *= 0.65; }
       this.goutsTimer = rand(mn, mx);
-      const lane = randInt(0, 2);
+      const lane = randInt(0, LAST_COMBAT_LANE);
       this.telegraphs.push({ lane, t: 0, wait: p.dodgeWindow + 0.15 });
       // Paired gout: at low HP the enemy sometimes fires TWO at once in
       // different lanes so the player has to pick AND commit.
       if (this.enraged && Math.random() < 0.45) {
-        let other = (lane + 1 + randInt(0, 1)) % 3;
-        if (other === lane) other = (other + 1) % 3;
+        let other = lane;
+        for (let t = 0; t < 12 && other === lane; t++) {
+          other = randInt(0, LAST_COMBAT_LANE);
+        }
         this.telegraphs.push({ lane: other, t: 0, wait: p.dodgeWindow + 0.15 });
       }
     }
@@ -746,7 +739,7 @@ export class CombatScene {
     const enrageBonus = this.enraged ? 1.2 : 1;
     let dmg = Math.round(rawDmg * scale * enrageBonus);
     let braceNote = "";
-    const laneLab = ["LEFT", "MID", "RIGHT"];
+    const laneLab = GUARDIAN_LANE_NAMES;
 
     // Lane-targeted melee (jab + combo strokes) miss if you're not occupying the threatened column.
     if (moveType !== "heavy") {
@@ -850,15 +843,15 @@ export class CombatScene {
         this.pushLog(this.enemy.flavorHeavy || `${this.enemy.name} winds up a HEAVY slam! BRACE (F)!`);
       } else if (move === "combo") {
         this.enemyTellTime = 0.8 + p.dodgeWindow * 0.6;
-        this.enemyAttackLane = randInt(0, 2);
-        const L = ["LEFT", "MID", "RIGHT"][this.enemyAttackLane];
+        this.enemyAttackLane = randInt(0, LAST_COMBAT_LANE);
+        const L = GUARDIAN_LANE_NAMES[this.enemyAttackLane];
         this.pushLog(this.enemy.flavorCombo ||
-          `${this.enemy.name} coils for THREE cuts along the ${L} flank — DODGE or BRACE!`);
+          `${this.enemy.name} coils for THREE cuts along the ${L} column — DODGE or BRACE!`);
       } else {
         this.enemyTellTime = 0.9 + p.dodgeWindow * 0.8;
-        this.enemyAttackLane = randInt(0, 2);
-        const L = ["LEFT", "MID", "RIGHT"][this.enemyAttackLane];
-        this.pushLog(`${this.enemy.name} hunts the ${L} lane! (${L}: evade sideways or brace.)`);
+        this.enemyAttackLane = randInt(0, LAST_COMBAT_LANE);
+        const L = GUARDIAN_LANE_NAMES[this.enemyAttackLane];
+        this.pushLog(`${this.enemy.name} hunts the ${L} column! (${L}: slide to match or brace.)`);
       }
       this.enemyTellTime = Math.max(0.3, this.enemyTellTime);
     }
@@ -927,6 +920,17 @@ export class CombatScene {
     const pm = p.pactMods || {};
     switch (idx) {
       case 0: {
+        if (p.loadoutId === "plasmids" && l.attack?.plasmCycle && l.plasmModes?.length) {
+          if (p.cooldowns.attack > 0) { SFX.deny(); this.pushLog(`${l.attack.name} is recharging...`); break; }
+          p.plasmModeIndex = (((p.plasmModeIndex || 0) + 1) % l.plasmModes.length);
+          const nm = activePlasmMode(l, p.plasmModeIndex);
+          p.cooldowns.attack = l.attack.cooldown * (pm.attackCdMult || 1);
+          this.pushLog(`Gene mode → ${nm?.label ?? "?"} — bolt: ${nm?.boltName ?? "?"}`);
+          SFX.click();
+          this.turnLocked = 0.12;
+          break;
+        }
+
         // v0.16 Wizard: every attack costs an extra few MP on top of base.
         const manaCost = l.attack.manaCost + (p.manaCostBonus || 0);
         if (p.cooldowns.attack > 0) { SFX.deny(); this.pushLog(`${l.attack.name} is recharging...`); return; }
@@ -954,34 +958,74 @@ export class CombatScene {
           plasmElement: l.attack.plasmElement || undefined,
         };
         this.dealToEnemy(dmg, l.attack.name, l.attack.sfx, p, opts);
+        if (p.synergyId === "turretSummoner" && l.special?.sentryBuild && p.turretFleet) {
+          const ts = p.turretSpec || {};
+          const baseBt = ts.buildTime ?? l.special.buildTime ?? 3;
+          const roll = Math.random();
+          if (roll < 0.34) {
+            this.tryEnqueueSentryDeploy(p, {
+              buildTime: Math.max(1.35, baseBt * 0.55),
+              dmgRange: [...(ts.dmgRange || l.special.sentryDmg || [9, 14])],
+              logLine: "Arc-wrench harmonics — spare sentry kit spools up!",
+              sound: "grab",
+            });
+          }
+        }
         this.turnLocked = 0.28;
         break;
       }
       case 1: {
+        if (p.loadoutId === "plasmids" && l.special?.plasmBolt && l.plasmModes?.length) {
+          const mode = activePlasmMode(l, p.plasmModeIndex ?? 0);
+          if (!mode) break;
+          const manaCost = mode.manaCost + (p.manaCostBonus || 0);
+          if (p.cooldowns.special > 0) { SFX.deny(); this.pushLog(`${mode.boltName} is recharging...`); break; }
+          if (p.mana < manaCost) { SFX.deny(); this.pushLog("Not enough mana!"); break; }
+          p.mana -= manaCost;
+          p.cooldowns.special = mode.cooldown * (pm.specialCdMult || 1);
+          const dmg = randInt(mode.dmg[0], mode.dmg[1]);
+          const opts = {
+            kind: "special",
+            hexDetonate: false,
+            multiLane: false,
+            movePoisonPct: p.synergyId === "grimReaper" ? 0 : 0,
+            movePoisonTime: 0,
+            dotLabel: "POISON",
+            lifestealPct: 0,
+            plasmElement: mode.plasmElement,
+          };
+          this.dealToEnemy(dmg, mode.boltName, mode.sfx || "cast", p, opts);
+          if (mode.shockStun) {
+            this.enemy.stunT = Math.max(this.enemy.stunT || 0, mode.shockStun || 2.5);
+          }
+          if (mode.plasmElement === "cryo" || mode.slowMul) {
+            this.enemy.slowMul = mode.slowMul || 0.45;
+            this.enemy.slowT = Math.max(this.enemy.slowT || 0, mode.slowT || 1.5);
+          }
+          this.turnLocked = 0.45;
+          break;
+        }
+
         const manaCost = l.special.manaCost + (p.manaCostBonus || 0);
         if (p.cooldowns.special > 0) { SFX.deny(); this.pushLog(`${l.special.name} is recharging...`); return; }
         if (p.mana < manaCost) { SFX.deny(); this.pushLog("Not enough mana!"); return; }
         // Engineer wrench: sentry deploy — consumes special; no melee strike.
         if (l.special.sentryBuild && p.turretFleet) {
-          const cap = Math.max(1, p.turretFleetMax || 1);
-          if (p.turretFleet.length >= cap) {
+          const ts = p.turretSpec || {};
+          const bt = ts.buildTime ?? l.special.buildTime ?? 3;
+          const dmgR = [...(ts.dmgRange || l.special.sentryDmg || [9, 14])];
+          const ok = this.tryEnqueueSentryDeploy(p, {
+            buildTime: bt,
+            dmgRange: dmgR,
+            logLine: "TURRET ASSEMBLING...",
+          });
+          if (!ok) {
             SFX.deny();
             this.pushLog("No free turret hardpoints — wait for batteries to expire.");
             return;
           }
           p.mana -= manaCost;
           p.cooldowns.special = l.special.cooldown * (pm.specialCdMult || 1);
-          const ts = p.turretSpec || {};
-          const bt = ts.buildTime ?? l.special.buildTime ?? 3;
-          p.turretFleet.push({
-            buildLeft: bt,
-            online: false,
-            nextPulse: 0,
-            dmgRange: [...(ts.dmgRange || l.special.sentryDmg || [9, 14])],
-            lane: this.lane,
-          });
-          this.pushLog("TURRET ASSEMBLING...");
-          SFX.confirm();
           this.turnLocked = 0.35;
           break;
         }
@@ -1117,21 +1161,22 @@ export class CombatScene {
     // balanced similar to a single hit but triggers 3 marks / 3 shield breaks
     // / 3 poison stacks - very strong against SHIELDED elites.
     if (multiLane) {
-      const LANE_OFFS = [-160, 0, 160];
+      const TRI_LANE_IX = [0, 2, 4];
       let firstRoll = true;
-      for (let i = 0; i < LANE_OFFS.length; i++) {
+      for (let i = 0; i < TRI_LANE_IX.length; i++) {
+        const laneIx = TRI_LANE_IX[i];
         const { dmg, isCrit, execOn } = this.rollHitDamage(rawDmg, {
           kind: opts.kind, counterOn: firstRoll && hadCounter, hitMult,
         }, p);
         firstRoll = false;
         this.applyHit(dmg, {
-          name: i === 0 ? name : `${name} (lane ${i + 1})`,
+          name: i === 0 ? name : `${name} (col ${i + 1})`,
           sfx,
           p,
           hadCounter: i === 0 && hadCounter,
           isCrit, execOn,
           lane: i,
-          laneX: W / 2 + LANE_OFFS[i],
+          laneX: LANES[laneIx],
           lifestealPct: fxCtx.lifestealPct,
         });
         // Each lane arms a shield-break event against shielded elites.
@@ -1424,16 +1469,10 @@ export class CombatScene {
     ctx.fill();
     ctx.stroke();
 
-    // Blue liquid volume (ellipse cut from bottom upward by st.liquid)
-    const fillTop = bulbH * 0.96 - st.liquid * (bulbH * 0.78);
-    const liqGrad = ctx.createLinearGradient(-bulbW * 0.5, bulbH * 0.96, bulbW * 0.5, fillTop - 28);
-    liqGrad.addColorStop(0, "#0a2848");
-    liqGrad.addColorStop(0.45, "#1e6dff");
-    liqGrad.addColorStop(1, "#6ec8ff");
-    ctx.fillStyle = liqGrad;
-    ctx.beginPath();
-    ctx.rect(-bulbW * 0.55, fillTop - 4, bulbW * 1.1, bulbH + 30);
-    ctx.clip();
+    const neckRimY = -neckH - bulbH * 0.48;
+    const basinFloorY = bulbH * 1.08;
+    // Surface drops from rim (full) toward the bulb heel (empty) — pour exits the cork end you tilt toward.
+    const surfaceY = neckRimY + (1 - st.liquid) * (basinFloorY - neckRimY);
     ctx.beginPath();
     ctx.moveTo(-neckW / 2, -neckH - bulbH * 0.5);
     ctx.lineTo(-bulbW * 0.38, bulbH * 0.12);
@@ -1442,6 +1481,14 @@ export class CombatScene {
     ctx.quadraticCurveTo(rBase, bulbH * 0.58, bulbW * 0.38, bulbH * 0.12);
     ctx.lineTo(neckW / 2, -neckH - bulbH * 0.5);
     ctx.closePath();
+    ctx.clip();
+    const liqGrad = ctx.createLinearGradient(0, neckRimY, 0, basinFloorY);
+    liqGrad.addColorStop(0, "#6ec8ff");
+    liqGrad.addColorStop(0.5, "#1e6dff");
+    liqGrad.addColorStop(1, "#0a2848");
+    ctx.fillStyle = liqGrad;
+    ctx.beginPath();
+    ctx.rect(-bulbW * 0.62, surfaceY - 2, bulbW * 1.24, basinFloorY - surfaceY + 20);
     ctx.fill();
     ctx.restore();
 
@@ -1475,14 +1522,22 @@ export class CombatScene {
 
     ctx.restore();
 
-    // Pour dribble sparks when tipping
-    if (st.phase === "pour" && st.tilt > 0.42 && st.liquid > 0.05) {
-      const px = cx + Math.sin(tilt) * 112 + rand(-15, 15);
-      const py = cy + Math.cos(tilt) * 36 + bulbH * 0.25;
-      ctx.fillStyle = `rgba(100, 200, 255, ${0.3 + st.liquid * 0.55})`;
-      for (let i = 0; i < 4; i++) {
+    // Pour dribble — streams from cork / rim (neck) when tilted, not the heel of the flask.
+    if (st.phase === "pour" && st.tilt > 0.35 && st.liquid > 0.05) {
+      const ly = -neckH - bulbH * 0.48 - 20;
+      const jug = tilt * 1.06;
+      const px = cx - ly * Math.sin(-jug);
+      const py = cy + ly * Math.cos(-jug);
+      ctx.fillStyle = `rgba(140, 220, 255, ${0.35 + st.liquid * 0.5})`;
+      for (let i = 0; i < 5; i++) {
         ctx.beginPath();
-        ctx.arc(px + rand(-22, 8), py + rand(40, 90) + i * 12, rand(3, 6), 0, Math.PI * 2);
+        ctx.arc(
+          px + Math.sin(jug + 1.35) * 24 + rand(-14, 8),
+          py + Math.cos(jug + 1.35) * 24 + rand(24, 90) + i * 13,
+          rand(2, 7),
+          0,
+          Math.PI * 2,
+        );
         ctx.fill();
       }
     }
@@ -1575,8 +1630,7 @@ export class CombatScene {
   }
 
   drawEnemy(ctx) {
-    const lanePx = ((this.enemyLane ?? 1) - 1) * 88;
-    const cx = W / 2 + lanePx;
+    const cx = LANES[this.enemyLane ?? 2];
     const cy = 340;
     const sx = this.enemyShake > 0 ? (Math.random() - 0.5) * 6 : 0;
     const sy = this.enemyShake > 0 ? (Math.random() - 0.5) * 4 : 0;
@@ -2067,7 +2121,7 @@ export class CombatScene {
     ctx.stroke();
 
     // Lane markers
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < NUM_COMBAT_LANES; i++) {
       const active = i === this.lane;
       drawSphere(ctx, LANES[i], H - 40, active ? 9 : 5,
         active ? COLORS.bile : "rgba(180,180,180,0.3)",
@@ -2278,7 +2332,7 @@ export class CombatScene {
   /** One line above bottom action buttons (keyboard + lane hint). */
   drawHelperStrip(ctx) {
     drawText(ctx,
-      "Pause [P]  · lanes [A]/[D] · Q/1 · E/2 · R/3 Mana vial · T Cryo (plasm) · F/4 Brace",
+      "Pause [P]  · lanes [A]/[D] · Q1 / E2 / R3 vial / F4 brace · Plasmids: Q cycles · E Gene Bolt",
       W / 2, ACTION_BAR_TOP - 14, {
         size: 13, color: COLORS.boneDim, align: "center", baseline: "bottom",
         maxWidth: W - 24,
@@ -2299,12 +2353,19 @@ export class CombatScene {
       text = "COMBO INCOMING!"; color = "#ffdc3c"; glow = "#a06800";
     } else if (this.enemyTelling) {
       text = "ENEMY WINDING UP!"; color = "#ff9070"; glow = "#ff4030";
-    } else if (p.mana < l.attack.manaCost + (p.manaCostBonus || 0)) {
-      text = "OUT OF MP — MANA VIAL [R / 3]"; color = "#62aaff"; glow = "#143c80";
-    } else if (p.cooldowns.attack <= 0 || p.cooldowns.special <= 0) {
-      text = "YOUR TURN - ATTACK!"; color = "#b5f05a"; glow = "#2a6a00";
     } else {
-      text = "ON COOLDOWN — MANA VIAL / BRACE"; color = "#7fc0ff"; glow = "#1a4080";
+      const boltMc = activePlasmMode(l, p.plasmModeIndex ?? 0)?.manaCost ?? 0;
+      const atkMcLine = l.attack.manaCost + (p.manaCostBonus || 0);
+      const mpLine = p.loadoutId === "plasmids"
+        ? boltMc + (p.manaCostBonus || 0)
+        : atkMcLine;
+      if (p.mana < mpLine) {
+        text = "OUT OF MP — MANA VIAL [R / 3]"; color = "#62aaff"; glow = "#143c80";
+      } else if (p.cooldowns.attack <= 0 || p.cooldowns.special <= 0) {
+        text = "YOUR TURN - ATTACK!"; color = "#b5f05a"; glow = "#2a6a00";
+      } else {
+        text = "ON COOLDOWN — MANA VIAL / BRACE"; color = "#7fc0ff"; glow = "#1a4080";
+      }
     }
     const pulse = 0.75 + 0.25 * Math.sin(this.t * 6);
     ctx.save();
@@ -2330,13 +2391,13 @@ export class CombatScene {
       if (this.enemyMoveType === "heavy") {
         hint = { text: "[F/4] BRACE - dodging won't help this one!", color: "#ffd0b0" };
       } else if (this.enemyMoveType === "combo") {
-        const L = ["LEFT", "MID", "RIGHT"][this.enemyAttackLane];
+        const L = GUARDIAN_LANE_NAMES[this.enemyAttackLane];
         hint = {
           text: `COMBO scours the ${L} column — move OFF it or [F/4] brace!`,
           color: "#fff0a0",
         };
       } else {
-        const L = ["LEFT", "MID", "RIGHT"][this.enemyAttackLane];
+        const L = GUARDIAN_LANE_NAMES[this.enemyAttackLane];
         hint = {
           text: `Hit lines up on ${L} — dodge to another column or [F/4] brace!`,
           color: "#ffc0c0",
@@ -2350,13 +2411,28 @@ export class CombatScene {
       hint = { text: "ACID LANDING ON YOU - [A]/[D] dodge!", color: "#bfff00" };
     } else if (p.hpMax > 0 && p.hp / p.hpMax < 0.35) {
       hint = { text: "Low HP! [R/3] mana vial  ·  [F/4] brace", color: "#ffa0a0" };
-    } else if (p.cooldowns.attack <= 0 && p.mana >= l.attack.manaCost + (p.manaCostBonus || 0)) {
+    } else if (
+      p.loadoutId === "plasmids"
+      && p.mana < ((activePlasmMode(l, p.plasmModeIndex ?? 0)?.manaCost ?? 0) + (p.manaCostBonus || 0))
+    ) {
       hint = {
-        text: `[Q/1] ${l.attack.name}  ·  [E/2] ${l.special.name}  ·  lanes [A]/[D]`,
+        text: "Out of MP for Gene Bolt — [R/3] vial  ·  [Q/1] cycles element",
+        color: "#7fc0ff",
+      };
+    } else if (
+      p.cooldowns.attack <= 0 &&
+      (p.loadoutId === "plasmids" || p.mana >= l.attack.manaCost + (p.manaCostBonus || 0))
+    ) {
+      const pm = activePlasmMode(l, p.plasmModeIndex ?? 0);
+      hint = {
+        text:
+          p.loadoutId === "plasmids"
+            ? `[Q/1] cycle mode  ·  [E/2] ${pm ? `${pm.label}: ${pm.boltName}` : l.special.name}  ·  lanes`
+            : `[Q/1] ${l.attack.name}  ·  [E/2] ${l.special.name}  ·  lanes [A]/[D]`,
         color: "#c8ffc0",
       };
-      if (l.cryoThird) hint.text += "  ·  [T] Plasm Cryo";
-    } else if (p.mana < l.attack.manaCost + (p.manaCostBonus || 0)) {
+      if (l.cryoThird && p.loadoutId !== "plasmids") hint.text += "  ·  [T] Cryo";
+    } else if (p.loadoutId !== "plasmids" && p.mana < l.attack.manaCost + (p.manaCostBonus || 0)) {
       hint = { text: "Out of MP! [R/3] Drink Mana Vial — pop cork, then tilt & pour!", color: "#7fc0ff" };
     }
     if (!hint) return;
@@ -2378,14 +2454,21 @@ export class CombatScene {
   drawMenu(ctx, game) {
     const p = game.player;
     const l = p.loadout;
-    const cryo = l.cryoThird;
     const rects = this.actionButtonRects();
-    const atkMc = l.attack.manaCost + (p.manaCostBonus || 0);
-    const specMc = l.special.manaCost + (p.manaCostBonus || 0);
+    const plMode = p.loadoutId === "plasmids" ? activePlasmMode(l, p.plasmModeIndex ?? 0) : null;
+    const atkMc = plMode ? 0 : l.attack.manaCost + (p.manaCostBonus || 0);
+    const specMc = plMode
+      ? plMode.manaCost + (p.manaCostBonus || 0)
+      : l.special.manaCost + (p.manaCostBonus || 0);
+    const specDmgTxt = plMode
+      ? `${plMode.dmg[0]}–${plMode.dmg[1]}`
+      : `${l.special.dmg[0]}–${l.special.dmg[1]}`;
+    const specCdMax = plMode ? plMode.cooldown : l.special.cooldown;
+    const cryo = (l.cryoThird && p.loadoutId !== "plasmids") ? l.cryoThird : null;
     const cryoCd = cryo ? (p.cooldowns.tertiary || 0) : 0;
     const potCd = this.potionDrinkCooldown > 0;
     const cryoMeta = cryo
-      ? `Plasm Cryo [T]: ${cryoCd > 0 ? cryoCd.toFixed(1) + "s" : "READY"} · `
+      ? `Cryo [T]: ${cryoCd > 0 ? cryoCd.toFixed(1) + "s" : "READY"} · `
       : "";
     const vialCdStr = potCd ? `${this.potionDrinkCooldown.toFixed(1)}s` : "READY";
 
@@ -2395,20 +2478,26 @@ export class CombatScene {
 
     const defs = [
       {
-        headline: "ATTACK 1",
-        sub: l.attack.name,
-        meta: `${l.attack.dmg[0]}–${l.attack.dmg[1]} dmg · ${atkMc} MP`,
-        locked: p.cooldowns.attack > 0 || p.mana < atkMc,
+        headline: plMode ? "MODE" : "ATTACK 1",
+        sub: plMode ? `${plMode.label} — rotates` : l.attack.name,
+        meta: plMode
+          ? `Next bolt: ${plMode.boltName}  ·  Q/1`
+          : `${l.attack.dmg[0]}–${l.attack.dmg[1]} dmg · ${atkMc} MP`,
+        locked: plMode
+          ? p.cooldowns.attack > 0
+          : p.cooldowns.attack > 0 || p.mana < atkMc,
         cd: p.cooldowns.attack,
         cdMax: l.attack.cooldown,
       },
       {
-        headline: "ATTACK 2",
-        sub: l.special.name,
-        meta: `${l.special.dmg[0]}–${l.special.dmg[1]} dmg · ${specMc} MP`,
-        locked: p.cooldowns.special > 0 || p.mana < specMc,
+        headline: plMode ? "GENE BOLT" : "ATTACK 2",
+        sub: plMode ? plMode.boltName : l.special.name,
+        meta: `${specDmgTxt} dmg · ${specMc} MP`,
+        locked: plMode
+          ? p.cooldowns.special > 0 || p.mana < specMc
+          : p.cooldowns.special > 0 || p.mana < specMc,
         cd: p.cooldowns.special,
-        cdMax: l.special.cooldown,
+        cdMax: specCdMax,
       },
       {
         headline: "MANA VIAL",
