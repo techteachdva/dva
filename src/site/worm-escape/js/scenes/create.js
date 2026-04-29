@@ -141,6 +141,9 @@ export class CreateScene {
   rollLoadouts(count = 3, cheatBrowseAll = false) {
     const cheat = cheatBrowseAll;
     let unlocked = ALL_LOADOUT_IDS.filter((id) => {
+      const def = LOADOUTS[id];
+      if (!def) return false;
+      if (!cheat && def.climbOnly) return false;
       if (cheat) return true;
       const flag = LOADOUT_UNLOCK[id];
       if (!flag) return true;
@@ -366,13 +369,13 @@ export class CreateScene {
     else this.renderConfirm(ctx);
 
     drawText(ctx, "A/D wheel · click cards · SPACE confirm · BACKSPACE back · M mute · Alt+Enter fullscreen · \\ cheats", W / 2, H - 26, {
-      size: 13, color: COLORS.boneDim, align: "center",
+      size: 15, color: COLORS.boneDim, align: "center",
     });
   }
 
   renderBuildSelect(ctx) {
     drawText(ctx, "STEP 1 / 2  -  PICK YOUR BUILD  (3-card wheel — center = choice)", W / 2, 130, {
-      size: 15, color: COLORS.bone, align: "center", maxWidth: W - 40,
+      size: 17, color: COLORS.bone, align: "center", maxWidth: W - 40,
     });
 
     const ids = this.buildIdsOrdered;
@@ -413,7 +416,7 @@ export class CreateScene {
 
       const textMax = cardW - 14;
       drawText(ctx, b.name, x + cardW / 2, y + 26, {
-        size: isCenter ? 22 : 18,
+        size: isCenter ? 24 : 20,
         bold: true,
         color: !unlocked ? "#555" : (isCenter ? COLORS.bile : COLORS.bone),
         align: "center",
@@ -421,7 +424,7 @@ export class CreateScene {
         maxWidth: textMax,
       });
       drawText(ctx, b.blurb, x + cardW / 2, y + 52, {
-        size: 11, color: COLORS.boneDim, align: "center", maxWidth: textMax,
+        size: 14, color: COLORS.boneDim, align: "center", maxWidth: textMax,
       });
 
       ctx.save();
@@ -432,19 +435,28 @@ export class CreateScene {
 
       const statsY = y + 302;
       const barMax = 150;
-      this.drawStatRow(ctx, x + 12, statsY + 0, "HP", b.hp, barMax, COLORS.blood);
-      this.drawStatRow(ctx, x + 12, statsY + 22, "MANA", b.mana, barMax, COLORS.mana);
-      this.drawStatRow(ctx, x + 12, statsY + 44, "ARMOR", b.armor, barMax, "#c0c4cc");
-      this.drawStatRow(ctx, x + 12, statsY + 66, "CLIMB", Math.round(b.climbSpeed * 100), barMax, COLORS.bile);
-      this.drawStatRow(ctx, x + 12, statsY + 88, "ACID RES", Math.round((1 - b.acidResist) * 100), 100, COLORS.gold);
-
-      drawText(ctx, "PERKS:", x + 12, statsY + 114, { size: 10, color: COLORS.bile, bold: true });
       const perks = getBuildPerkLines(id);
-      perks.forEach((line, idx) => {
-        drawText(ctx, line, x + 12, statsY + 128 + idx * 13, {
-          size: 9, color: COLORS.bone, maxWidth: textMax,
+      if (isCenter) {
+        this.drawStatRow(ctx, x + 12, statsY + 0, "HP", b.hp, barMax, COLORS.blood);
+        this.drawStatRow(ctx, x + 12, statsY + 22, "MANA", b.mana, barMax, COLORS.mana);
+        this.drawStatRow(ctx, x + 12, statsY + 44, "ARMOR", b.armor, barMax, "#c0c4cc");
+        this.drawStatRow(ctx, x + 12, statsY + 66, "CLIMB", Math.round(b.climbSpeed * 100), barMax, COLORS.bile);
+        this.drawStatRow(ctx, x + 12, statsY + 88, "ACID RES", Math.round((1 - b.acidResist) * 100), 100, COLORS.gold);
+
+        drawText(ctx, "PERKS:", x + 12, statsY + 114, { size: 14, color: COLORS.bile, bold: true });
+        perks.forEach((line, idx) => {
+          drawText(ctx, line, x + 12, statsY + 132 + idx * 18, {
+            size: 13, color: COLORS.bone, maxWidth: textMax,
+          });
         });
-      });
+      } else {
+        drawText(ctx, "PERKS:", x + 12, y + 278, { size: 14, color: COLORS.bile, bold: true });
+        perks.forEach((line, idx) => {
+          drawText(ctx, line, x + 12, y + 298 + idx * 18, {
+            size: 13, color: COLORS.bone, maxWidth: textMax,
+          });
+        });
+      }
 
       if (!unlocked) {
         this.drawLockedOverlay(ctx, x, y, cardW, 480, BUILD_UNLOCK_HINT[id] || "LOCKED");
@@ -453,7 +465,7 @@ export class CreateScene {
     }
 
     drawText(ctx, `Class ${center + 1} / ${N}`, W / 2, H - 52, {
-      size: 12, color: COLORS.boneDim, align: "center", italic: true,
+      size: 14, color: COLORS.boneDim, align: "center", italic: true,
     });
   }
 
@@ -477,18 +489,18 @@ export class CreateScene {
       size: 18, color: "#ffd966", align: "center", bold: true, glow: "#ffd966",
     });
     drawText(ctx, hint, cx, cy + 70, {
-      size: 12, color: COLORS.bone, align: "center",
+      size: 14, color: COLORS.bone, align: "center",
     });
     ctx.restore();
   }
 
   drawStatRow(ctx, x, y, label, value, maxBar, color) {
-    drawText(ctx, label, x, y, { size: 11, color: COLORS.bone });
+    drawText(ctx, label, x, y, { size: 13, color: COLORS.bone });
     const barX = x + 70;
     const barW = 130;
     const pct = Math.min(1, value / (maxBar * 1.0));
     drawBar(ctx, barX, y - 2, barW, 14, pct, { fill: color });
-    drawText(ctx, String(value), barX + barW + 6, y, { size: 11, color: COLORS.bone });
+    drawText(ctx, String(value), barX + barW + 6, y, { size: 13, color: COLORS.bone });
   }
 
   renderLoadoutSelect(ctx, game) {
@@ -498,7 +510,7 @@ export class CreateScene {
       ? `STEP 2 / 2  —  FULL POOL (DEZ)  (${rerollHint})`
       : `STEP 2 / 2  —  PICK A WEAPON  (3 random — ${rerollHint})`;
     drawText(ctx, head, W / 2, 130, {
-      size: browseAll ? 14 : 15, color: COLORS.bone, align: "center", maxWidth: W - 80,
+      size: browseAll ? 16 : 17, color: COLORS.bone, align: "center", maxWidth: W - 80,
     });
 
     const N = this.weaponChoices.length;
@@ -506,18 +518,15 @@ export class CreateScene {
 
     const center = ((this.loadIdx % N) + N) % N;
 
-    /** Three slots for the wheel — always clamp to valid indices (fixes DEZ/browse when N≥1). */
-    const idxTriple = browseAll
-      ? [
-          N <= 1 ? 0 : (center - 1 + N) % N,
-          N <= 1 ? 0 : center % N,
-          N <= 1 ? 0 : (center + 1) % N,
-        ]
-      : [
-          Math.min(0, Math.max(0, N - 1)),
-          Math.min(1, Math.max(0, N - 1)),
-          Math.min(2, Math.max(0, N - 1)),
-        ];
+    /** Three slots — simple modulo wheel (same for random pool and full browse). */
+    const idxTriple =
+      N <= 1
+        ? [0, 0, 0]
+        : [
+            (center - 1 + N) % N,
+            center % N,
+            (center + 1) % N,
+          ];
 
     const cardWc = 268;
     const cardWs = 220;
@@ -550,8 +559,15 @@ export class CreateScene {
       this.drawCard(ctx, x, y, cardW, 470, isCenter && unlocked && selected);
 
       const textMax = cardW - 16;
+      const hasCombat = !!(l.attack && l.special);
+      const blurbSize = isCenter ? 14 : 13;
+      const szTag = isCenter ? 12 : 11;
+      const szBody = isCenter ? 14 : 13;
+      const szDim = isCenter ? 13 : 12;
+      const labelSz = isCenter ? 13 : 12;
+
       drawText(ctx, l.name, x + cardW / 2, y + 26, {
-        size: isCenter ? 19 : 17,
+        size: isCenter ? 21 : 18,
         bold: true,
         color: !unlocked ? "#555" : (selected && isCenter ? COLORS.bile : COLORS.bone),
         align: "center",
@@ -562,36 +578,70 @@ export class CreateScene {
       this.drawWeaponIcon(ctx, x + cardW / 2, y + 140, l);
 
       drawText(ctx, l.blurb, x + cardW / 2, y + 232, {
-        size: 11, color: COLORS.boneDim, align: "center", maxWidth: textMax,
+        size: blurbSize, color: COLORS.boneDim, align: "center", maxWidth: textMax,
       });
 
       const lx = x + 14;
-      drawText(ctx, "ATTACK:", lx, y + 268, { size: 12, color: COLORS.bile, bold: true });
-      drawText(ctx, l.attack.name, lx, y + 284, { size: 13, color: COLORS.bone, maxWidth: textMax });
-      drawText(ctx, `DMG ${l.attack.dmg[0]}-${l.attack.dmg[1]}`, lx, y + 300, { size: 11, color: COLORS.boneDim });
-      drawText(ctx, `CD ${l.attack.cooldown}s  MP ${l.attack.manaCost}`, lx, y + 314, { size: 11, color: COLORS.boneDim });
-      let tagY = y + 328;
-      if (l.attack.multiLane)    { drawText(ctx, "MULTI-LANE",   lx, tagY, { size: 10, color: "#b5f05a", bold: true }); tagY += 12; }
-      if (l.attack.hexMark)      { drawText(ctx, "PLACES HEX",   lx, tagY, { size: 10, color: "#d978ff", bold: true }); tagY += 12; }
-      if (l.attack.lifestealPct) { drawText(ctx, "LIFESTEAL",    lx, tagY, { size: 10, color: "#7fffa0", bold: true }); tagY += 12; }
-      if (l.attack.poisonPct)    { drawText(ctx, l.attack.dotLabel || "BLEED", lx, tagY, { size: 10, color: "#ff8080", bold: true }); tagY += 12; }
+      if (!isCenter) {
+        let sy = y + 268;
+        if (l.climbOnly) {
+          drawText(ctx, "CLIMB LOADOUT", lx, sy, { size: labelSz, color: "#c9a8ff", bold: true, maxWidth: textMax });
+          sy += 18;
+          const mimic = l.combatAs && LOADOUTS[l.combatAs] ? LOADOUTS[l.combatAs].name : (l.combatAs || "—");
+          drawText(ctx, `Fights as: ${mimic}`, lx, sy, { size: szDim, color: COLORS.boneDim, maxWidth: textMax });
+          sy += 22;
+        }
+        drawText(ctx, "STRONG vs " + ART_LABEL[l.strongVs], lx, sy, {
+          size: szBody, color: "#ffd966", bold: true, maxWidth: textMax,
+        });
+        sy += 18;
+        drawText(ctx, "WEAK vs " + ART_LABEL[l.weakVs], lx, sy, {
+          size: szBody, color: "#8a9aff", bold: true, maxWidth: textMax,
+        });
+      } else if (!hasCombat) {
+        drawText(ctx, "NO WEAPON (CLIMB)", lx, y + 268, { size: labelSz, color: COLORS.bile, bold: true });
+        const mimic = l.combatAs && LOADOUTS[l.combatAs] ? LOADOUTS[l.combatAs].name : (l.combatAs || "fists");
+        drawText(ctx, `Bare combat: ${mimic}`, lx, y + 288, { size: szDim, color: COLORS.bone, maxWidth: textMax });
+        let py = y + 312;
+        if (l.voidClimbMult) {
+          drawText(ctx, `Void climb ×${l.voidClimbMult}`, lx, py, { size: szDim, color: COLORS.boneDim });
+          py += 18;
+        }
+        drawText(ctx, "STRONG vs " + ART_LABEL[l.strongVs], lx, py, {
+          size: szBody, color: "#ffd966", bold: true, maxWidth: textMax,
+        });
+        py += 18;
+        drawText(ctx, "WEAK vs " + ART_LABEL[l.weakVs], lx, py, {
+          size: szBody, color: "#8a9aff", bold: true, maxWidth: textMax,
+        });
+      } else {
+        drawText(ctx, "ATTACK:", lx, y + 268, { size: labelSz, color: COLORS.bile, bold: true });
+        drawText(ctx, l.attack.name, lx, y + 286, { size: szBody, color: COLORS.bone, maxWidth: textMax });
+        drawText(ctx, `DMG ${l.attack.dmg[0]}-${l.attack.dmg[1]}`, lx, y + 304, { size: szDim, color: COLORS.boneDim });
+        drawText(ctx, `CD ${l.attack.cooldown}s  MP ${l.attack.manaCost}`, lx, y + 320, { size: szDim, color: COLORS.boneDim });
+        let tagY = y + 336;
+        if (l.attack.multiLane)    { drawText(ctx, "MULTI-LANE",   lx, tagY, { size: szTag, color: "#b5f05a", bold: true }); tagY += 14; }
+        if (l.attack.hexMark)      { drawText(ctx, "PLACES HEX",   lx, tagY, { size: szTag, color: "#d978ff", bold: true }); tagY += 14; }
+        if (l.attack.lifestealPct) { drawText(ctx, "LIFESTEAL",    lx, tagY, { size: szTag, color: "#7fffa0", bold: true }); tagY += 14; }
+        if (l.attack.poisonPct)    { drawText(ctx, l.attack.dotLabel || "BLEED", lx, tagY, { size: szTag, color: "#ff8080", bold: true }); tagY += 14; }
 
-      drawText(ctx, "SPECIAL:", lx, y + 352, { size: 12, color: COLORS.bile, bold: true });
-      drawText(ctx, l.special.name, lx, y + 368, { size: 13, color: COLORS.bone, maxWidth: textMax });
-      drawText(ctx, `DMG ${l.special.dmg[0]}-${l.special.dmg[1]}`, lx, y + 384, { size: 11, color: COLORS.boneDim });
-      drawText(ctx, `CD ${l.special.cooldown}s  MP ${l.special.manaCost}`, lx, y + 398, { size: 11, color: COLORS.boneDim });
-      let tagY2 = y + 412;
-      if (l.special.hexDetonate)   { drawText(ctx, "DETONATES HEX", lx, tagY2, { size: 10, color: "#d978ff", bold: true }); tagY2 += 12; }
-      if (l.special.misfireChance) { drawText(ctx, `1-IN-6 FIRE`,  lx, tagY2, { size: 10, color: "#ffb060", bold: true }); tagY2 += 12; }
-      if (l.special.lifestealPct)  { drawText(ctx, "LIFESTEAL",    lx, tagY2, { size: 10, color: "#7fffa0", bold: true }); tagY2 += 12; }
-      if (l.special.poisonPct)     { drawText(ctx, l.special.dotLabel || "BLEED", lx, tagY2, { size: 10, color: "#ff8080", bold: true }); tagY2 += 12; }
+        drawText(ctx, "SPECIAL:", lx, y + 364, { size: labelSz, color: COLORS.bile, bold: true });
+        drawText(ctx, l.special.name, lx, y + 382, { size: szBody, color: COLORS.bone, maxWidth: textMax });
+        drawText(ctx, `DMG ${l.special.dmg[0]}-${l.special.dmg[1]}`, lx, y + 400, { size: szDim, color: COLORS.boneDim });
+        drawText(ctx, `CD ${l.special.cooldown}s  MP ${l.special.manaCost}`, lx, y + 416, { size: szDim, color: COLORS.boneDim });
+        let tagY2 = y + 432;
+        if (l.special.hexDetonate)   { drawText(ctx, "DETONATES HEX", lx, tagY2, { size: szTag, color: "#d978ff", bold: true }); tagY2 += 14; }
+        if (l.special.misfireChance) { drawText(ctx, `1-IN-6 FIRE`,  lx, tagY2, { size: szTag, color: "#ffb060", bold: true }); tagY2 += 14; }
+        if (l.special.lifestealPct)  { drawText(ctx, "LIFESTEAL",    lx, tagY2, { size: szTag, color: "#7fffa0", bold: true }); tagY2 += 14; }
+        if (l.special.poisonPct)     { drawText(ctx, l.special.dotLabel || "BLEED", lx, tagY2, { size: szTag, color: "#ff8080", bold: true }); tagY2 += 14; }
 
-      drawText(ctx, "STRONG vs " + ART_LABEL[l.strongVs], lx, y + 444, {
-        size: 11, color: "#ffd966", bold: true, maxWidth: textMax,
-      });
-      drawText(ctx, "WEAK vs " + ART_LABEL[l.weakVs], lx, y + 458, {
-        size: 11, color: "#8a9aff", bold: true, maxWidth: textMax,
-      });
+        drawText(ctx, "STRONG vs " + ART_LABEL[l.strongVs], lx, y + 448, {
+          size: szBody, color: "#ffd966", bold: true, maxWidth: textMax,
+        });
+        drawText(ctx, "WEAK vs " + ART_LABEL[l.weakVs], lx, y + 466, {
+          size: szBody, color: "#8a9aff", bold: true, maxWidth: textMax,
+        });
+      }
 
       if (!unlocked) this.drawLockedOverlay(ctx, x, y, cardW, 470, LOADOUT_UNLOCK_HINT[id] || "LOCKED");
       ctx.restore();
@@ -599,7 +649,7 @@ export class CreateScene {
 
     if (browseAll) {
       drawText(ctx, `Weapon ${center + 1} / ${N}`, W / 2, H - 52, {
-        size: 12, color: COLORS.boneDim, align: "center",
+        size: 14, color: COLORS.boneDim, align: "center",
       });
     }
   }
@@ -625,10 +675,10 @@ export class CreateScene {
       size: 22, color: COLORS.bone, align: "center", bold: true,
     });
     drawText(ctx, `"${b.blurb}"`, W / 2, 566, {
-      size: 14, color: COLORS.boneDim, align: "center",
+      size: 16, color: COLORS.boneDim, align: "center",
     });
     drawText(ctx, `"${l.blurb}"`, W / 2, 590, {
-      size: 14, color: COLORS.boneDim, align: "center",
+      size: 16, color: COLORS.boneDim, align: "center",
     });
 
     const blink = Math.sin(this.t * 5) > 0;
@@ -1234,6 +1284,108 @@ export class CreateScene {
       ctx.closePath();
       ctx.fill();
       ctx.restore();
+    } else if (loadout.id === "voidWalker") {
+      const g = ctx.createRadialGradient(0, -20, 2, 0, -18, 44);
+      g.addColorStop(0, "#c9a8ff");
+      g.addColorStop(0.45, "#4a2890");
+      g.addColorStop(0.82, "#120814");
+      g.addColorStop(1, "rgba(10,6,14,0.15)");
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(0, -18, 40, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#b080ff";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.strokeStyle = "rgba(200,170,255,0.5)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(0, -18, 28, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.strokeStyle = "rgba(160,210,255,0.4)";
+      ctx.beginPath();
+      ctx.moveTo(-18, -6);
+      ctx.lineTo(18, -30);
+      ctx.moveTo(-12, -36);
+      ctx.lineTo(12, -4);
+      ctx.stroke();
+    } else if (loadout.id === "engineerWrench") {
+      ctx.fillStyle = "#9aa0ac";
+      ctx.beginPath();
+      ctx.moveTo(-6, -8);
+      ctx.lineTo(-38, -8);
+      ctx.lineTo(-44, -2);
+      ctx.lineTo(-44, 6);
+      ctx.lineTo(-38, 12);
+      ctx.lineTo(-6, 12);
+      ctx.quadraticCurveTo(4, 12, 6, 58);
+      ctx.lineTo(-6, 66);
+      ctx.lineTo(-8, -2);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = "rgba(0,0,0,0.6)";
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+      ctx.fillStyle = "#ffd966";
+      ctx.fillRect(-2, 54, 4, 4);
+      ctx.strokeStyle = "rgba(255,217,102,0.6)";
+      ctx.beginPath();
+      ctx.arc(-40, 2, 3, 0, Math.PI * 2);
+      ctx.arc(-40, 4, 2.5, 0, Math.PI * 2);
+      ctx.stroke();
+    } else if (loadout.id === "chair") {
+      ctx.fillStyle = "#5a3820";
+      ctx.fillRect(-36, -32, 72, 6);
+      ctx.strokeStyle = "rgba(0,0,0,0.55)";
+      ctx.strokeRect(-36, -32, 72, 6);
+      ctx.fillStyle = "#6b4426";
+      ctx.strokeStyle = "#2a1810";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-34, -26); ctx.lineTo(-28, 28); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(34, -26); ctx.lineTo(28, 28); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(-30, -32); ctx.lineTo(30, -32); ctx.stroke();
+      ctx.strokeStyle = "rgba(160,140,110,0.6)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(-20, -30); ctx.lineTo(22, -30); ctx.stroke();
+    } else if (loadout.id === "plasmids") {
+      ctx.save();
+      ctx.shadowColor = "#59f0dc";
+      ctx.shadowBlur = 14;
+      const g = ctx.createLinearGradient(-14, -50, 8, 20);
+      g.addColorStop(0, "#b8fff8");
+      g.addColorStop(1, "#0a6060");
+      ctx.fillStyle = g;
+      roundRect(ctx, -10, -40, 22, 64, 3);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(0,0,0,0.6)";
+      ctx.lineWidth = 1.5;
+      roundRect(ctx, -10.5, -40.5, 23, 65, 3);
+      ctx.stroke();
+      ctx.restore();
+      ctx.fillStyle = "rgba(200,255,255,0.85)";
+      ctx.fillRect(-4, -30, 8, 8);
+      ctx.fillStyle = "rgba(180,240,220,0.7)";
+      ctx.beginPath();
+      ctx.arc(0, 10, 3, 0, Math.PI * 2);
+      ctx.arc(7, -8, 2, 0, Math.PI * 2);
+      ctx.arc(-6, -2, 2, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.strokeStyle = "#7a7288";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0, -14, 32, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = COLORS.boneDim;
+      drawText(ctx, "?", 0, -10, {
+        size: 28,
+        bold: true,
+        align: "center",
+      });
     }
     ctx.restore();
   }

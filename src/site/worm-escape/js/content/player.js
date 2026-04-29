@@ -653,6 +653,10 @@ export function makePlayer(buildId, loadoutId, gameCheats = null) {
 
   applySynergy(p, buildId, loadoutId);
 
+  if (p.sentry) {
+    p.sentry.magicMult = p.sentryMagicMult ?? p.sentry.magicMult ?? 1;
+  }
+
   return p;
 }
 

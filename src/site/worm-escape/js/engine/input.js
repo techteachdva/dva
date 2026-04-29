@@ -7,6 +7,9 @@ export class Input {
     this.down = new Set();
     this.pressed = new Set();
     this.released = new Set();
+    // Reliable edge detection using e.code (some layouts mis-report e.key for \\).
+    this._codesDown = new Set();
+    this.codesPressed = new Set();
 
     // Mouse state - always populated even without a canvas so callers can
     // read .mouseX / .mouseY without guarding.
@@ -32,6 +35,8 @@ export class Input {
       const k = this._norm(keyChar);
       if (!this.down.has(k)) this.pressed.add(k);
       this.down.add(k);
+      if (!this._codesDown.has(e.code)) this.codesPressed.add(e.code);
+      this._codesDown.add(e.code);
       if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " ", "Space"].includes(e.key)) {
         e.preventDefault();
       }
@@ -51,12 +56,15 @@ export class Input {
       const k = this._norm(keyChar);
       this.down.delete(k);
       this.released.add(k);
+      this._codesDown.delete(e.code);
     });
 
     window.addEventListener("blur", () => {
       this.down.clear();
       this.pressed.clear();
       this.released.clear();
+      this._codesDown.clear();
+      this.codesPressed.clear();
     });
 
     // Mouse plumbing (only attached if a canvas was supplied).
@@ -75,6 +83,13 @@ export class Input {
 
       const onDown = (e) => {
         if (e.button === 0) e.preventDefault();
+        try {
+          this.canvas.focus({ preventScroll: true });
+        } catch (_) {
+          try {
+            this.canvas.focus();
+          } catch (_) { /* noop */ }
+        }
         const k = `Mouse${e.button}`;
         if (!this.down.has(k)) this.pressed.add(k);
         this.down.add(k);
@@ -116,14 +131,23 @@ export class Input {
     return keys.some((k) => this.released.has(this._norm(k)));
   }
 
+  wasCodePressed(...codes) {
+    return codes.some((c) => this.codesPressed.has(c));
+  }
+
   /** Drop keys from this frame's "just pressed" set (e.g. global UI consumed the click). */
   consumePress(...keys) {
     for (const key of keys) this.pressed.delete(this._norm(key));
+  }
+
+  consumeCodePress(...codes) {
+    for (const code of codes) this.codesPressed.delete(code);
   }
 
   // Call at END of every frame.
   endFrame() {
     this.pressed.clear();
     this.released.clear();
+    this.codesPressed.clear();
   }
 }

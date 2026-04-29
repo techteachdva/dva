@@ -32,6 +32,13 @@ const FULLSCREEN_BTN = { x: 8, y: 6, w: 136, h: 28 };
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 ctx.imageSmoothingEnabled = false;
+try {
+  canvas.focus({ preventScroll: true });
+} catch (_) {
+  try {
+    canvas.focus();
+  } catch (_) { /* noop */ }
+}
 
 const game = {
   ctx,
@@ -127,7 +134,10 @@ const loop = new Loop(
       game.input.consumePress("m");
     }
 
-    if (!game.cheatMenuOpen && game.input.wasPressed("\\")) {
+    const cheatPulse =
+      game.input.wasPressed("\\") ||
+      game.input.wasCodePressed("Backslash", "IntlBackslash");
+    if (!game.cheatMenuOpen && cheatPulse) {
       game.cheatMenuOpen = true;
       game.cheatInput = "";
       game.cheatFlash = "";
@@ -154,18 +164,18 @@ const loop = new Loop(
       drawBanner(ctx, "CHEAT ENTRY", W / 2, 140, 32, COLORS.wormHi, COLORS.blood);
       drawPanel(ctx, W / 2 - 420, 200, 840, 360);
       drawText(ctx, "Type a cheat, ENTER to submit, ESC closes.", W / 2, 226, {
-        size: 16, color: COLORS.boneDim, align: "center",
+        size: 18, color: COLORS.boneDim, align: "center",
       });
       const line = "> " + (game.cheatInput || "") + "_";
       drawText(ctx, line, W / 2, 280, {
-        size: 22,
+        size: 24,
         color: COLORS.bile,
         align: "center",
         bold: true,
         maxWidth: W - 120,
       });
       drawText(ctx, "ENTER submit   ESC exits", W / 2, 392, {
-        size: 12, color: COLORS.boneDim, align: "center",
+        size: 14, color: COLORS.boneDim, align: "center",
       });
     } else if (game.cheatFlashT > 0 && game.cheatFlash) {
       ctx.fillStyle = "rgba(0,0,0,0.5)";

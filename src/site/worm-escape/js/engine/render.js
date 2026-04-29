@@ -676,6 +676,11 @@ export function drawHero(ctx, x, y, facing = 1, anim = 0, build = "swift") {
   if (build === "iron")        { capeBase = "#394155"; capeHi = "#5a6680"; }
   else if (build === "viper")  { capeBase = "#1f3a1a"; capeHi = "#3f7a36"; }
   else if (build === "wizard") { capeBase = "#231548"; capeHi = "#5a3aa0"; }
+  else if (build === "balanced") { capeBase = "#4a5568"; capeHi = "#6b7a93"; }
+  else if (build === "tryHard") { capeBase = "#5a2418"; capeHi = "#c43a26"; }
+  else if (build === "gambler") { capeBase = "#1a3824"; capeHi = "#2f8a54"; }
+  else if (build === "tamer")   { capeBase = "#3d3020"; capeHi = "#7a6138"; }
+  else if (build === "necromancer") { capeBase = "#120818"; capeHi = "#3d2050"; }
   ctx.save();
   ctx.translate(0, bob);
   // Cape shadow
@@ -716,6 +721,11 @@ export function drawHero(ctx, x, y, facing = 1, anim = 0, build = "swift") {
   if (build === "iron")        { legBack = "#4a3020"; legFront = "#5a3820"; }
   else if (build === "viper")  { legBack = "#1a2a18"; legFront = "#2a4a26"; }
   else if (build === "wizard") { legBack = "#1f1538"; legFront = "#2f2050"; }
+  else if (build === "balanced") { legBack = "#383e48"; legFront = "#4f5662"; }
+  else if (build === "tryHard") { legBack = "#502018"; legFront = "#682820"; }
+  else if (build === "gambler") { legBack = "#1f3028"; legFront = "#2f5042"; }
+  else if (build === "tamer")   { legBack = "#3a3018"; legFront = "#524628"; }
+  else if (build === "necromancer") { legBack = "#201028"; legFront = "#382040"; }
   drawPlate(ctx, 1, 11, 6, 9 - leg, 1.5, legBack);
   drawPlate(ctx, -7, 11, 6, 9 + leg, 1.5, legFront);
   // Boots
@@ -726,7 +736,37 @@ export function drawHero(ctx, x, y, facing = 1, anim = 0, build = "swift") {
   // --- Torso (body) ---
   ctx.save();
   ctx.translate(0, bob);
-  if (build === "wizard") {
+  if (build === "necromancer") {
+    drawPlate(ctx, -12, -9, 24, 24, 5, "#221028");
+    ctx.strokeStyle = "rgba(200,230,230,0.35)";
+    ctx.lineWidth = 0.7;
+    for (let i = 0; i < 4; i++) {
+      ctx.beginPath();
+      ctx.moveTo(-11, -8 + i * 5);
+      ctx.lineTo(11, -8 + i * 5);
+      ctx.stroke();
+    }
+    ctx.fillStyle = "#e8eef0";
+    ctx.beginPath();
+    ctx.arc(0, 0, 3.2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(0,0,0,0.6)";
+    ctx.lineWidth = 0.9;
+    ctx.stroke();
+    ctx.fillStyle = "#1a0810";
+    ctx.fillRect(-12, 7, 24, 4);
+    ctx.fillStyle = "#ffd966";
+    ctx.fillRect(-6, -3, 2, 2);
+    ctx.fillRect(2, -3, 2, 2);
+    ctx.strokeStyle = "#7a8898";
+    ctx.globalAlpha = 0.85;
+    ctx.beginPath();
+    ctx.moveTo(-9, -3);
+    ctx.lineTo(-3, -3); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(9, -3); ctx.lineTo(3, -3); ctx.stroke();
+    ctx.globalAlpha = 1;
+  } else if (build === "wizard") {
     // Long arcane robe with embroidered trim.
     drawPlate(ctx, -12, -9, 24, 24, 5, "#3a2470");
     // Robe trim highlight
@@ -803,8 +843,60 @@ export function drawHero(ctx, x, y, facing = 1, anim = 0, build = "swift") {
     // Pauldrons
     drawSphere(ctx, -12, -7, 5, "#8a909c", { highlight: "rgba(255,255,255,0.6)", rim: "rgba(255,255,255,0.35)" });
     drawSphere(ctx,  12, -7, 5, "#8a909c", { highlight: "rgba(255,255,255,0.6)", rim: "rgba(255,255,255,0.35)" });
+  } else if (build === "tryHard") {
+    drawPlate(ctx, -8, -8, 16, 19, 3, "#6a3828");
+    ctx.strokeStyle = "rgba(200,56,42,0.85)";
+    ctx.lineWidth = 1.8;
+    roundRect(ctx, -8.5, -8.5, 17, 20, 3.5); ctx.stroke();
+    drawPlate(ctx, -11, 7, 22, 4, 1, "#3a1a14");
+    ctx.fillStyle = "#ffd966";
+    ctx.fillRect(-2, 8, 4, 2);
+    ctx.fillStyle = "rgba(255,220,200,0.55)";
+    ctx.fillRect(5, 2, 4, 8);
+    ctx.fillRect(-9, 2, 4, 8);
+  } else if (build === "gambler") {
+    drawPlate(ctx, -10, -9, 20, 21, 4, "#26563a");
+    ctx.fillStyle = "#ffd966";
+    ctx.beginPath();
+    ctx.moveTo(0, -3);
+    ctx.lineTo(-3, 1);
+    ctx.lineTo(3, 1);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "rgba(0,0,0,0.45)";
+    ctx.stroke();
+    drawPlate(ctx, -11, 7, 22, 4, 1, "#1a3018");
+    ctx.fillStyle = "#ffd966";
+    ctx.fillRect(-2, 8, 4, 2);
+    for (let i = 0; i < 3; i++) {
+      ctx.fillStyle = i % 2 === 0 ? "#d42a2a" : "#111";
+      ctx.fillRect(-8 + i * 3, 12, 2, 2);
+    }
+  } else if (build === "tamer") {
+    drawPlate(ctx, -10, -9, 20, 21, 4, "#a08050");
+    ctx.strokeStyle = "rgba(60,44,28,0.5)";
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(-8, -2); ctx.lineTo(8, -2); ctx.stroke();
+    drawPlate(ctx, -11, 7, 22, 4, 1, "#3a2814");
+    ctx.fillStyle = "#ffd966";
+    ctx.fillRect(-2, 8, 4, 2);
+    ctx.strokeStyle = "#4a3016";
+    ctx.lineWidth = 1.4;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.arc(-16, 10, 6, 0.2, 1.4);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(-18, 12, 5, 0.1, 1.2);
+    ctx.stroke();
+  } else if (build === "balanced") {
+    drawPlate(ctx, -10, -9, 20, 21, 4, "#5a6578");
+    ctx.fillStyle = "#7a8aa0";
+    ctx.fillRect(-8, -6, 16, 2);
+    drawPlate(ctx, -11, 7, 22, 4, 1, "#2a3038");
+    ctx.fillStyle = "#ffd966";
+    ctx.fillRect(-2, 8, 4, 2);
   } else {
-    // Swift: leather doublet
     drawPlate(ctx, -10, -9, 20, 21, 4, "#b88a4a");
     // Belt
     drawPlate(ctx, -11, 7, 22, 4, 1, "#3a1f0f");
@@ -930,8 +1022,107 @@ export function drawHero(ctx, x, y, facing = 1, anim = 0, build = "swift") {
     ctx.strokeStyle = "rgba(0,0,0,0.6)";
     ctx.lineWidth = 1;
     ctx.stroke();
+  } else if (build === "necromancer") {
+    drawSphere(ctx, 0, -14, 7, "#c8bcd8", { highlight: "rgba(255,240,255,0.8)", rim: "rgba(140,100,180,0.45)" });
+    ctx.fillStyle = "#120618";
+    ctx.beginPath();
+    ctx.arc(0, -15, 9.2, Math.PI, 0, true);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "#381850";
+    ctx.lineWidth = 1.2;
+    ctx.stroke();
+    ctx.fillStyle = "#8a4ad4";
+    ctx.shadowColor = "#d080ff";
+    ctx.shadowBlur = 5;
+    ctx.fillRect(-4, -15, 2.2, 2.2);
+    ctx.fillRect(1.2, -15, 2.2, 2.2);
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = "#0a0408";
+    ctx.beginPath();
+    ctx.arc(-3, -14.8, 1, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath();
+    ctx.arc(2.8, -14.8, 1, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = "rgba(200,200,220,0.4)";
+    ctx.lineWidth = 0.6;
+    ctx.beginPath();
+    ctx.moveTo(-4, -11); ctx.quadraticCurveTo(0, -8, 4, -11); ctx.stroke();
+  } else if (build === "balanced") {
+    drawSphere(ctx, 0, -14, 7, COLORS.skin, { highlight: "rgba(255,227,176,0.9)", rim: "rgba(255,200,150,0.4)" });
+    ctx.fillStyle = "#363d4a";
+    ctx.beginPath();
+    ctx.arc(0, -14, 8.5, Math.PI, 0, true);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "#2a3340";
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+    ctx.fillStyle = "#1a0a0a";
+    ctx.fillRect(-3, -15, 2, 2);
+    ctx.fillRect(1, -15, 2, 2);
+    ctx.fillStyle = "rgba(255,255,255,0.75)";
+    ctx.fillRect(-3, -15, 1, 1);
+    ctx.fillRect(1, -15, 1, 1);
+    ctx.fillStyle = "#2a3440";
+    ctx.fillRect(-7, -20, 14, 3);
+    ctx.strokeStyle = "#ffd966";
+    ctx.strokeRect(-8, -20.5, 15, 4);
+  } else if (build === "tryHard") {
+    drawSphere(ctx, 0, -14, 6.6, COLORS.skin, { highlight: "rgba(255,227,176,0.9)", rim: "rgba(255,200,150,0.4)" });
+    ctx.fillStyle = "#c83228";
+    ctx.fillRect(-8, -20, 16, 3);
+    ctx.fillStyle = "#1a0a0a";
+    ctx.fillRect(-3.2, -15.8, 1.9, 1.9);
+    ctx.fillRect(1.1, -15.8, 1.9, 1.9);
+    ctx.strokeStyle = "rgba(0,0,0,0.5)";
+    ctx.lineWidth = 0.6;
+    ctx.beginPath();
+    ctx.moveTo(-2, -11); ctx.lineTo(2, -11); ctx.stroke();
+    ctx.strokeStyle = "rgba(240,210,210,0.8)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(-14, -6); ctx.lineTo(-6, -12); ctx.stroke();
+  } else if (build === "gambler") {
+    drawSphere(ctx, 0, -14, 7, "#e8c8a8", { highlight: "rgba(255,240,215,0.85)", rim: "rgba(200,170,140,0.5)" });
+    ctx.fillStyle = "#1f4028";
+    ctx.beginPath();
+    ctx.moveTo(-9, -17);
+    ctx.quadraticCurveTo(0, -26, 9, -17);
+    ctx.quadraticCurveTo(8, -12, -8, -12);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "#ffd966";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+    ctx.fillStyle = "#1a0a0a";
+    ctx.fillRect(-4, -15.2, 2, 2.2);
+    ctx.fillRect(1.8, -15.2, 2, 2.2);
+    ctx.fillStyle = "#ffd966";
+    ctx.globalAlpha = 0.95;
+    ctx.fillRect(-1, -21, 2, 2);
+    ctx.globalAlpha = 1;
+  } else if (build === "tamer") {
+    drawSphere(ctx, 0, -14, 7, COLORS.skin, { highlight: "rgba(255,227,176,0.9)", rim: "rgba(255,200,150,0.35)" });
+    ctx.fillStyle = "#786040";
+    ctx.beginPath();
+    ctx.moveTo(-10, -16);
+    ctx.lineTo(-2, -24);
+    ctx.lineTo(8, -16);
+    ctx.quadraticCurveTo(10, -10, -10, -12);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "rgba(0,0,0,0.45)";
+    ctx.stroke();
+    ctx.fillStyle = "#2a4860";
+    ctx.globalAlpha = 0.92;
+    ctx.fillRect(-3, -15, 2, 1.8);
+    ctx.fillRect(1, -15, 2, 1.8);
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = "rgba(40,110,220,0.8)";
+    ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.arc(-2, -14.9, 0.65, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(2, -14.9, 0.65, 0, Math.PI * 2); ctx.stroke();
   } else {
-    // Head: sphere-shaded skin
     drawSphere(ctx, 0, -14, 7, COLORS.skin, { highlight: "rgba(255,227,176,0.9)", rim: "rgba(255,200,150,0.4)" });
     // Hood outline behind head
     ctx.fillStyle = "#2a1a0a";
@@ -966,6 +1157,26 @@ export function drawHero(ctx, x, y, facing = 1, anim = 0, build = "swift") {
     ctx.fillStyle = "#3f7a36";
     roundRect(ctx, 8, -5, 5, 10, 1);
     ctx.fill();
+  } else if (build === "necromancer") {
+    ctx.fillStyle = "#2a1438";
+    roundRect(ctx, 8, -5, 5, 10, 1);
+    ctx.fill();
+  } else if (build === "balanced") {
+    ctx.fillStyle = "#4a5668";
+    roundRect(ctx, 8, -5, 5, 10, 1);
+    ctx.fill();
+  } else if (build === "tryHard") {
+    ctx.fillStyle = "#5a3828";
+    roundRect(ctx, 8, -5, 5, 10, 1);
+    ctx.fill();
+  } else if (build === "gambler") {
+    ctx.fillStyle = "#26563a";
+    roundRect(ctx, 8, -5, 5, 10, 1);
+    ctx.fill();
+  } else if (build === "tamer") {
+    ctx.fillStyle = "#905040";
+    roundRect(ctx, 8, -5, 5, 10, 1);
+    ctx.fill();
   } else {
     ctx.fillStyle = "#b88a4a";
     roundRect(ctx, 8, -5, 5, 10, 1);
@@ -976,6 +1187,11 @@ export function drawHero(ctx, x, y, facing = 1, anim = 0, build = "swift") {
   if (build === "iron")        gloveColor = "#5a5f6a";
   else if (build === "wizard") gloveColor = "#1a0f30";
   else if (build === "viper")  gloveColor = "#0e1a0c";
+  else if (build === "necromancer") gloveColor = "#1a0820";
+  else if (build === "balanced") gloveColor = "#282e38";
+  else if (build === "tryHard") gloveColor = "#402018";
+  else if (build === "gambler") gloveColor = "#142822";
+  else if (build === "tamer")   gloveColor = "#3a2614";
   ctx.fillStyle = gloveColor;
   ctx.fillRect(9, 4, 5, 4);
   // Wizard: faint glowing orb floating above hand
@@ -987,6 +1203,16 @@ export function drawHero(ctx, x, y, facing = 1, anim = 0, build = "swift") {
     ctx.fillStyle = "rgba(180, 140, 255, 0.9)";
     ctx.beginPath();
     ctx.arc(13, -2, 2.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  } else if (build === "necromancer") {
+    const pulse = 0.55 + 0.45 * Math.abs(Math.sin(anim * 0.7));
+    ctx.save();
+    ctx.shadowColor = "#a060d0";
+    ctx.shadowBlur = 6 * pulse;
+    ctx.fillStyle = "rgba(120, 80, 160, 0.85)";
+    ctx.beginPath();
+    ctx.arc(13, -2, 2.1, 0, Math.PI * 2);
     ctx.fill();
     ctx.restore();
   }
