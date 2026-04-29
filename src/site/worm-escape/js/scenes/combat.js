@@ -32,6 +32,11 @@ const ACTION_GAP = 8;
 /** Tight against the enemy name/HP HUD — keeps the center guardian art clear. */
 const LOG_RECT = { x: 978, y: 212, w: 286, h: 296 };
 
+/** Random potion mini-game letters (excluding Q,E,R,F combat row). */
+const POTION_KEY_POOL = "ZXCVBNHJKIOPUY".split("").map((c) => c.toLowerCase());
+const POTION_DRINK_CD_SEC = 22;
+const POTION_MINIGAME_TIME_SEC = 11;
+
 // Per-chamber damage multiplier applied to every source of damage the
 // PLAYER receives (acid gouts, melee hits, heavy slams, combo jabs).
 // Stomach baseline, Gullet +45%. Same curve as climb hazards.
@@ -153,6 +158,52 @@ export class CombatScene {
     this.bloatedExploded = false;
     // Shield-broken flash timer (one-shot visual for Shielded elites).
     this.shieldBrokenT = 0;
+
+    /** @type {null|{ corkKey:string, pourKey:string, phase:string, corkPop:boolean, tilt:number, liquid:number, timeLeft:number, hintFlash:number }} */
+    this.potionState = null;
+    /** Seconds until another mana potion can be started */
+    this.potionDrinkCooldown = 0;
+  }
+
+  pickTwoDistinctPotionKeys() {
+    let a = POTION_KEY_POOL[randInt(0, POTION_KEY_POOL.length - 1)];
+    let b = POTION_KEY_POOL[randInt(0, POTION_KEY_POOL.length - 1)];
+    for (let i = 0; i < 20 && b === a; i++) {
+      b = POTION_KEY_POOL[randInt(0, POTION_KEY_POOL.length - 1)];
+    }
+    return [a, b === a ? POTION_KEY_POOL.find((k) => k !== a) ?? "z" : b];
+  }
+
+  tryPlasmCryo(p, game) {
+    const l = p.loadout;
+    const cryo = l?.cryoThird;
+    const pm = p.pactMods || {};
+    if (p.loadoutId !== "plasmids" || !cryo) return false;
+
+    const mc = cryo.manaCost + (p.manaCostBonus || 0);
+    if (p.cooldowns.tertiary > 0) {
+      SFX.deny();
+      this.pushLog(`${cryo.name} is recharging...`);
+      return true;
+    }
+    if (p.mana < mc) {
+      SFX.deny();
+      this.pushLog("Not enough mana!");
+      return true;
+    }
+    p.mana -= mc;
+    p.cooldowns.tertiary = cryo.cooldown * (pm.specialCdMult || 1);
+    const dmg = randInt(cryo.dmg[0], cryo.dmg[1]);
+    this.dealToEnemy(dmg, cryo.name, cryo.sfx, p, {
+      kind: "special",
+      plasmElement: cryo.plasmElement,
+    });
+    this.enemy.slowMul = cryo.slowMul || 0.5;
+    this.enemy.slowT = cryo.slowT || 1.5;
+    this.pushLog(`${cryo.name} — frost webbing stacks!`);
+    SFX.cast();
+    this.turnLocked = 0.42;
+    return true;
   }
 
   pushLog(line) {
@@ -160,7 +211,96 @@ export class CombatScene {
     if (this.log.length > 10) this.log.shift();
   }
 
-  /** Four touch rows for Attack 1 — Attack 2 — Dodge — Brace (canvas space). */
+  tryEnterManaPotion(p) {
+    if (this.phase !== "fight" || this.enemy.hp <= 0) return;
+    if (this.potionState) return;
+    if (this.potionDrinkCooldown > 0) {
+      SFX.deny();
+      this.pushLog(`Another mana vial in ${this.potionDrinkCooldown.toFixed(1)}s...`);
+      return;
+    }
+    if (p.mana >= p.manaMax) {
+      SFX.deny();
+      this.pushLog("Mana is already topped off.");
+      return;
+    }
+    const [corkKey, pourKey] = this.pickTwoDistinctPotionKeys();
+    this.potionState = {
+      corkKey,
+      pourKey,
+      phase: "cork",
+      corkPop: false,
+      tilt: 0,
+      liquid: 1,
+      timeLeft: POTION_MINIGAME_TIME_SEC,
+      hintFlash: 0,
+    };
+    this.pushLog("POP the cork — then POUR!");
+    SFX.confirm();
+  }
+
+  endManaPotionSuccess(p) {
+    p.mana = p.manaMax;
+    this.potionDrinkCooldown = POTION_DRINK_CD_SEC;
+    this.potionState = null;
+    this.pushLog("Cold blue tonic hits — mana surges!");
+    SFX.jump();
+    this.turnLocked = 0.28;
+    this.hitFlash = 0;
+  }
+
+  endManaPotionFail() {
+    this.potionDrinkCooldown = 9;
+    this.potionState = null;
+    this.pushLog("The vial slips — mana lost!");
+    SFX.deny();
+    this.turnLocked = 0.2;
+  }
+
+  updatePotionMiniGame(dt, game) {
+    const st = this.potionState;
+    if (!st) return;
+    const inp = game.input;
+
+    if (this.paused) return;
+
+    st.timeLeft -= dt;
+    if (st.hintFlash > 0) st.hintFlash -= dt;
+
+    if (st.timeLeft <= 0) {
+      this.endManaPotionFail();
+      return;
+    }
+
+    if (st.phase === "cork") {
+      for (const k of POTION_KEY_POOL) {
+        if (k === st.corkKey) continue;
+        if (inp.wasPressed(k)) {
+          st.hintFlash = 0.4;
+          st.timeLeft -= 0.72;
+          SFX.deny();
+          break;
+        }
+      }
+      if (inp.wasPressed(st.corkKey)) {
+        st.corkPop = true;
+        st.phase = "pour";
+        st.tilt = 0;
+        SFX.grab();
+      }
+    } else if (st.phase === "pour") {
+      if (inp.isDown(st.pourKey)) {
+        st.tilt = Math.min(1, st.tilt + dt * 3.4);
+        const drain = dt * st.tilt * st.tilt * 0.92 + dt * st.tilt * 0.12;
+        st.liquid = Math.max(0, st.liquid - drain);
+        if (st.liquid <= 0.04) this.endManaPotionSuccess(game.player);
+      } else {
+        st.tilt = Math.max(0, st.tilt - dt * 0.95);
+      }
+    }
+  }
+
+  /** Four touch rows for Attack 1 — Attack 2 — Potion — Brace (canvas space). */
   actionButtonRects() {
     const top = ACTION_BAR_TOP + 14;
     const innerH = ACTION_BAR_H - 26;
@@ -220,7 +360,7 @@ export class CombatScene {
     // v0.10 INPUT FIX: wasPressed for one-lane-per-keystroke. A tap moves
     // exactly one lane; holding the key does NOT slide across all three.
     this.laneCd -= dt;
-    if (this.laneCd <= 0 && this.phase === "fight") {
+    if (!this.potionState && this.laneCd <= 0 && this.phase === "fight") {
       let movedLane = false;
       if (game.input.wasPressed("ArrowLeft", "a") && this.lane > 0) {
         this.lane--;
@@ -250,20 +390,21 @@ export class CombatScene {
     // scales with chamber difficulty. Corrosion tracks into totalHpLost
     // but NOT hitsTaken (it's a continuous tick, not a distinct hit).
     const corrScale = CHAMBER_DMG_SCALE[this.chamberIdx] || 1;
-    p.acidTimer -= dt * p.acidResist;
-    if (p.acidTimer <= 0) {
-      if (p.armor > 0) {
-        const lost = Math.min(p.armor, 4 * corrScale * dt);
-        p.armor = Math.max(0, p.armor - lost);
-        recordDirectArmorHit(p, lost, { countAsHit: false });
-      } else {
-        const lost = 2 * corrScale * dt;
-        p.hp -= lost;
-        recordDirectHpHit(p, lost, { countAsHit: false });
-        this.hitFlash = Math.max(this.hitFlash, 0.15);
+    if (!this.potionState) {
+      p.acidTimer -= dt * p.acidResist;
+      if (p.acidTimer <= 0) {
+        if (p.armor > 0) {
+          const lost = Math.min(p.armor, 4 * corrScale * dt);
+          p.armor = Math.max(0, p.armor - lost);
+          recordDirectArmorHit(p, lost, { countAsHit: false });
+        } else {
+          const lost = 2 * corrScale * dt;
+          p.hp -= lost;
+          recordDirectHpHit(p, lost, { countAsHit: false });
+          this.hitFlash = Math.max(this.hitFlash, 0.15);
+        }
       }
     }
-
     if (this.phase === "intro") {
       this.introT += dt;
       if (this.introT > 1.6) this.phase = "fight";
@@ -271,16 +412,22 @@ export class CombatScene {
 
     if (this.phase === "fight") {
       this.updateCooldowns(dt, p);
-      this.updateEnemyLaneShuffle(dt);
-      this.tickTurretDPS(dt, p);
-      this.tickChainShred(dt, p);
-      if (this.enemy.stunT > 0) this.enemy.stunT -= dt;
-      this.updateAcidGouts(dt, p);
-      this.updateEnemyMelee(dt, p);
-      this.handleMenu(dt, game);
+      if (!this.potionState) {
+        this.updateEnemyLaneShuffle(dt);
+        this.tickTurretDPS(dt, p);
+        this.tickChainShred(dt, p);
+        if (this.enemy.stunT > 0) this.enemy.stunT -= dt;
+        this.updateAcidGouts(dt, p);
+        this.updateEnemyMelee(dt, p);
+        if (game.input.wasPressed("t") && this.turnLocked <= 0) {
+          this.tryPlasmCryo(p, game);
+        }
+        this.handleMenu(dt, game);
+      } else {
+        this.updatePotionMiniGame(dt, game);
+      }
     }
-
-    if (this.braceTime > 0) this.braceTime -= dt;
+    if (this.braceTime > 0 && !this.potionState) this.braceTime -= dt;
     if (this.hitFlash > 0) this.hitFlash = Math.max(0, this.hitFlash - dt);
     if (this.enemyFlash > 0) this.enemyFlash = Math.max(0, this.enemyFlash - dt);
     if (this.enemyShake > 0) this.enemyShake -= dt;
@@ -293,7 +440,7 @@ export class CombatScene {
     // Poison tick - drip damage-over-time from VIPER / HEX-EYED attacks.
     // Does NOT trigger on-kill effects (unlike a direct hit). Cosmetic
     // poison bubbles every ~0.3s while active.
-    if (this.enemy.hp > 0 && (this.enemy.poisonT || 0) > 0) {
+    if (!this.potionState && this.enemy.hp > 0 && (this.enemy.poisonT || 0) > 0) {
       const dps = this.enemy.poisonDps || 0;
       this.enemy.hp = Math.max(0, this.enemy.hp - dps * dt);
       this.enemy.poisonT -= dt;
@@ -312,7 +459,7 @@ export class CombatScene {
     }
 
     // Fanged elite: extra acid gouts outside the normal cadence.
-    if (this.eliteTwist === "FANGED" && this.phase === "fight") {
+    if (!this.potionState && this.eliteTwist === "FANGED" && this.phase === "fight") {
       this.eliteGoutTimer -= dt;
       if (this.eliteGoutTimer <= 0) {
         this.eliteGoutTimer = rand(3.2, 4.6);
@@ -322,7 +469,7 @@ export class CombatScene {
     }
 
     // Enrage trigger: one-shot state change when HP falls below threshold.
-    if (!this.enraged && this.enemy.hp > 0
+    if (!this.enraged && !this.potionState && this.enemy.hp > 0
         && this.enemy.hp < this.enemy.hpMax * (this.enemy.enrageAt || 0.5)) {
       this.enraged = true;
       this.enrageFlashT = 1.4;
@@ -335,7 +482,7 @@ export class CombatScene {
     // Shielded Elite: once per fight at the threshold, raise a shield that
     // drops damage to 1 and requires 3 perfect-brace hits to break. After
     // shieldDuration seconds it drops automatically.
-    if (this.eliteTwist === "SHIELDED" && !this.enemy.shieldUsed
+    if (this.eliteTwist === "SHIELDED" && !this.potionState && !this.enemy.shieldUsed
         && this.enemy.hp < this.enemy.hpMax * (this.enemy.shieldTriggerFrac || 0.75)) {
       this.enemy.shielded = true;
       this.enemy.shieldUsed = true;
@@ -345,7 +492,7 @@ export class CombatScene {
       SFX.thud();
       this.particles.burst(W / 2, FLOOR_Y - 200, "#9adaff", 40, 320, 0.9);
     }
-    if (this.enemy.shielded) {
+    if (this.enemy.shielded && !this.potionState) {
       this.enemy.shieldCooldown -= dt;
       if (this.enemy.shieldCooldown <= 0) {
         this.enemy.shielded = false;
@@ -430,6 +577,7 @@ export class CombatScene {
     p.cooldowns.special = Math.max(0, p.cooldowns.special - dt);
     if (p.cooldowns.tertiary != null) p.cooldowns.tertiary = Math.max(0, p.cooldowns.tertiary - dt);
     if (p.dodgeRollCooldown > 0) p.dodgeRollCooldown = Math.max(0, p.dodgeRollCooldown - dt);
+    if (this.potionDrinkCooldown > 0) this.potionDrinkCooldown = Math.max(0, this.potionDrinkCooldown - dt);
   }
 
   updateEnemyLaneShuffle(dt) {
@@ -717,6 +865,7 @@ export class CombatScene {
   }
 
   hitCombatBlockingUi(mx, my) {
+    if (this.potionState) return true;
     if (my < 116 || my >= ACTION_BAR_TOP) return true;
     if (pointInRect(mx, my, 16, 16, 260, 110)) return true;
     const enemyRows =
@@ -730,20 +879,30 @@ export class CombatScene {
   }
 
   handleMenu(dt, game) {
+    const p = game.player;
+
+    const rects = this.actionButtonRects();
+    const mx = game.input.mouseX, my = game.input.mouseY;
+    let clickedPotion = false;
+    if (game.input.wasPressed("Mouse0")) {
+      const pr = rects[2];
+      if (pointInRect(mx, my, pr.x, pr.y, pr.w, pr.h)) clickedPotion = true;
+    }
+    const wantManaPotion = game.input.wasPressed("3", "r") || clickedPotion;
+
+    // Even during turn-lock you can slam [R]/[3] (or tap the mana button) to clutch-drink.
     if (this.turnLocked > 0) {
       this.turnLocked -= dt;
+      if (wantManaPotion) this.tryEnterManaPotion(p);
       return;
     }
-    const p = game.player;
 
     if (game.input.wasPressed("ArrowUp", "w")) { this.menuIdx = (this.menuIdx + 3) % 4; SFX.click(); }
     if (game.input.wasPressed("ArrowDown", "s")) { this.menuIdx = (this.menuIdx + 1) % 4; SFX.click(); }
 
     const choose = (idx) => { this.menuIdx = idx; this.execute(idx, p, game); };
 
-    const mx = game.input.mouseX, my = game.input.mouseY;
     if (game.input.wasPressed("Mouse0")) {
-      const rects = this.actionButtonRects();
       for (let i = 0; i < 4; i++) {
         const r = rects[i];
         if (pointInRect(mx, my, r.x, r.y, r.w, r.h)) {
@@ -857,45 +1016,9 @@ export class CombatScene {
         this.turnLocked = 0.45;
         break;
       }
-      case 2: {
-        const cryo = l.cryoThird;
-        if (p.loadoutId === "plasmids" && cryo) {
-          const mc = cryo.manaCost + (p.manaCostBonus || 0);
-          if (p.cooldowns.tertiary > 0) {
-            SFX.deny(); this.pushLog(`${cryo.name} is recharging...`); return;
-          }
-          if (p.mana < mc) { SFX.deny(); this.pushLog("Not enough mana!"); return; }
-          p.mana -= mc;
-          p.cooldowns.tertiary = cryo.cooldown * (pm.specialCdMult || 1);
-          const dmg = randInt(cryo.dmg[0], cryo.dmg[1]);
-          this.dealToEnemy(dmg, cryo.name, cryo.sfx, p, {
-            kind: "special",
-            plasmElement: cryo.plasmElement,
-          });
-          this.enemy.slowMul = cryo.slowMul || 0.5;
-          this.enemy.slowT = cryo.slowT || 1.5;
-          this.pushLog(`${cryo.name} — frost webbing stacks!`);
-          SFX.cast();
-          this.turnLocked = 0.42;
-          break;
-        }
-        if ((p.dodgeRollCooldown || 0) > 0) {
-          SFX.deny(); this.pushLog("Dodge needs a heartbeat to recover."); return;
-        }
-        const dir = Math.random() < 0.5 ? -1 : 1;
-        const nl = Math.max(0, Math.min(2, this.lane + dir));
-        this.lane = nl;
-        this.targetX = LANES[nl];
-        const rollMp = 3 + (p.whizidRollMana || 0);
-        p.mana = Math.min(p.manaMax, p.mana + rollMp);
-        p.dodgeRollCooldown = 1.22;
-        this.pushLog(dir < 0
-          ? `You tumble LEFT (-1 lane). +${rollMp} MP.`
-          : `You tumble RIGHT (+1 lane). +${rollMp} MP.`);
-        SFX.dodge();
-        this.turnLocked = 0.32;
+      case 2:
+        this.tryEnterManaPotion(p);
         break;
-      }
       case 3: {
         this.braceTime = 1.8;
         // Perfect Brace: if you hit BRACE within the last 0.5s of an enemy
@@ -1230,7 +1353,147 @@ export class CombatScene {
     }
 
     this.drawUI(ctx, game);
+    if (this.potionState) this.drawPotionMiniGame(ctx, game);
     if (this.paused) this.drawPause(ctx);
+  }
+
+  /** Modal pop-cork → tilt-pour minigame; combat input is routed here while active. */
+  drawPotionMiniGame(ctx, game) {
+    const st = this.potionState;
+    const p = game.player;
+    if (!st) return;
+
+    ctx.save();
+    ctx.fillStyle = "rgba(8, 2, 12, 0.62)";
+    ctx.fillRect(0, 0, W, H);
+
+    const panelX = W / 2 - 274;
+    const panelY = H / 2 - 246;
+    const panelW = 548;
+    const panelH = 428;
+
+    ctx.fillStyle = "rgba(18, 8, 28, 0.96)";
+    roundRect(ctx, panelX + 6, panelY + 8, panelW - 12, panelH - 16, 16);
+    ctx.fill();
+    ctx.strokeStyle = st.hintFlash > 0 ? "rgba(255,80,80,0.9)" : "rgba(180, 140, 220, 0.45)";
+    ctx.lineWidth = st.hintFlash > 0 ? 3.5 : 2;
+    roundRect(ctx, panelX + 6, panelY + 8, panelW - 12, panelH - 16, 16);
+    ctx.stroke();
+
+    drawText(ctx, "MANA VIAL", W / 2, panelY + 44, {
+      size: 28, align: "center", bold: true, color: COLORS.bile,
+      glow: "#204040",
+    });
+    const phaseLbl = st.phase === "cork"
+      ? `Pop cork → press  [ ${st.corkKey.toUpperCase()} ]`
+      : `Pour out → HOLD  [ ${st.pourKey.toUpperCase()} ]  to tilt`;
+    drawText(ctx, phaseLbl, W / 2, panelY + 84, {
+      size: 16, align: "center", color: COLORS.bone, maxWidth: panelW - 40,
+      bold: true,
+    });
+    drawText(ctx,
+      `TIME  ${Math.max(0, st.timeLeft).toFixed(1)}s  ·  MP  ${Math.floor(p.mana)}/${Math.floor(p.manaMax)}`,
+      W / 2, panelY + 116, {
+        size: 14, align: "center", color: COLORS.boneDim,
+      });
+
+    const cx = W / 2;
+    const cy = panelY + 248;
+    ctx.save();
+
+    ctx.translate(cx, cy);
+    const tilt = st.tilt * 0.95;
+    ctx.rotate(-tilt);
+
+    const neckW = 32;
+    const bulbW = 70;
+    const neckH = 44;
+    const bulbH = 96;
+    const rBase = bulbW / 2;
+    ctx.beginPath();
+    ctx.moveTo(-neckW / 2, -neckH - bulbH * 0.5);
+    ctx.lineTo(-bulbW * 0.38, bulbH * 0.12);
+    ctx.quadraticCurveTo(-rBase, bulbH * 0.58, -rBase * 0.92, bulbH * 0.96);
+    ctx.lineTo(rBase * 0.92, bulbH * 0.96);
+    ctx.quadraticCurveTo(rBase, bulbH * 0.58, bulbW * 0.38, bulbH * 0.12);
+    ctx.lineTo(neckW / 2, -neckH - bulbH * 0.5);
+    ctx.closePath();
+    ctx.strokeStyle = "rgba(220, 230, 255, 0.55)";
+    ctx.lineWidth = 2;
+    ctx.fillStyle = "rgba(40, 55, 90, 0.22)";
+    ctx.fill();
+    ctx.stroke();
+
+    // Blue liquid volume (ellipse cut from bottom upward by st.liquid)
+    const fillTop = bulbH * 0.96 - st.liquid * (bulbH * 0.78);
+    const liqGrad = ctx.createLinearGradient(-bulbW * 0.5, bulbH * 0.96, bulbW * 0.5, fillTop - 28);
+    liqGrad.addColorStop(0, "#0a2848");
+    liqGrad.addColorStop(0.45, "#1e6dff");
+    liqGrad.addColorStop(1, "#6ec8ff");
+    ctx.fillStyle = liqGrad;
+    ctx.beginPath();
+    ctx.rect(-bulbW * 0.55, fillTop - 4, bulbW * 1.1, bulbH + 30);
+    ctx.clip();
+    ctx.beginPath();
+    ctx.moveTo(-neckW / 2, -neckH - bulbH * 0.5);
+    ctx.lineTo(-bulbW * 0.38, bulbH * 0.12);
+    ctx.quadraticCurveTo(-rBase, bulbH * 0.58, -rBase * 0.92, bulbH * 0.96);
+    ctx.lineTo(rBase * 0.92, bulbH * 0.96);
+    ctx.quadraticCurveTo(rBase, bulbH * 0.58, bulbW * 0.38, bulbH * 0.12);
+    ctx.lineTo(neckW / 2, -neckH - bulbH * 0.5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // Second pass: redraw glass rim on top so liquid stays under glass silhouette
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(-tilt);
+    ctx.strokeStyle = "rgba(235, 245, 255, 0.75)";
+    ctx.lineWidth = 1.25;
+    ctx.beginPath();
+    ctx.moveTo(-neckW / 2, -neckH - bulbH * 0.5);
+    ctx.lineTo(-bulbW * 0.38, bulbH * 0.12);
+    ctx.quadraticCurveTo(-rBase, bulbH * 0.58, -rBase * 0.92, bulbH * 0.96);
+    ctx.arc(0, bulbH * 0.88, rBase * 0.92, Math.PI - 0.06, Math.PI * 2 + 0.06);
+    ctx.quadraticCurveTo(rBase, bulbH * 0.58, bulbW * 0.38, bulbH * 0.12);
+    ctx.lineTo(neckW / 2, -neckH - bulbH * 0.5);
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(130, 200, 255, 0.55)";
+    ctx.beginPath();
+    ctx.ellipse(0, -neckH - bulbH * 0.48 - 6, neckW / 2 + 10, 6, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Cork occludes neck opening until popped
+    if (!st.corkPop) {
+      ctx.fillStyle = "#8a5f3e";
+      roundRect(ctx, -14, -neckH - bulbH * 0.5 - 22, 28, 20, 4);
+      ctx.fill();
+      ctx.fillStyle = "#c69b6a";
+      ctx.fillRect(-8, -neckH - bulbH * 0.5 - 18, 16, 4);
+    }
+
+    ctx.restore();
+
+    // Pour dribble sparks when tipping
+    if (st.phase === "pour" && st.tilt > 0.42 && st.liquid > 0.05) {
+      const px = cx + Math.sin(tilt) * 112 + rand(-15, 15);
+      const py = cy + Math.cos(tilt) * 36 + bulbH * 0.25;
+      ctx.fillStyle = `rgba(100, 200, 255, ${0.3 + st.liquid * 0.55})`;
+      for (let i = 0; i < 4; i++) {
+        ctx.beginPath();
+        ctx.arc(px + rand(-22, 8), py + rand(40, 90) + i * 12, rand(3, 6), 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    drawText(ctx, "Freeze the battlefield — combat waits on you!", W / 2, panelY + panelH - 62, {
+      size: 12, align: "center", color: COLORS.boneDim, maxWidth: panelW - 40,
+    });
+    drawText(ctx, "Pause combat [P]", W / 2, panelY + panelH - 36, {
+      size: 12, align: "center", color: "#8899aa",
+    });
+    ctx.restore();
   }
 
   drawSphincter(ctx) {
@@ -2015,7 +2278,7 @@ export class CombatScene {
   /** One line above bottom action buttons (keyboard + lane hint). */
   drawHelperStrip(ctx) {
     drawText(ctx,
-      "Pause [P]  · tap arena lanes to hop  ·  Q/1 · E/2 · R/3 · F/4",
+      "Pause [P]  · lanes [A]/[D] · Q/1 · E/2 · R/3 Mana vial · T Cryo (plasm) · F/4 Brace",
       W / 2, ACTION_BAR_TOP - 14, {
         size: 13, color: COLORS.boneDim, align: "center", baseline: "bottom",
         maxWidth: W - 24,
@@ -2036,10 +2299,12 @@ export class CombatScene {
       text = "COMBO INCOMING!"; color = "#ffdc3c"; glow = "#a06800";
     } else if (this.enemyTelling) {
       text = "ENEMY WINDING UP!"; color = "#ff9070"; glow = "#ff4030";
+    } else if (p.mana < l.attack.manaCost + (p.manaCostBonus || 0)) {
+      text = "OUT OF MP — MANA VIAL [R / 3]"; color = "#62aaff"; glow = "#143c80";
     } else if (p.cooldowns.attack <= 0 || p.cooldowns.special <= 0) {
       text = "YOUR TURN - ATTACK!"; color = "#b5f05a"; glow = "#2a6a00";
     } else {
-      text = "ON COOLDOWN - DODGE / BRACE"; color = "#7fc0ff"; glow = "#1a4080";
+      text = "ON COOLDOWN — MANA VIAL / BRACE"; color = "#7fc0ff"; glow = "#1a4080";
     }
     const pulse = 0.75 + 0.25 * Math.sin(this.t * 6);
     ctx.save();
@@ -2084,11 +2349,15 @@ export class CombatScene {
     } else if (this.telegraphs.some((tg) => tg.lane === this.lane && tg.t >= tg.wait - 0.45)) {
       hint = { text: "ACID LANDING ON YOU - [A]/[D] dodge!", color: "#bfff00" };
     } else if (p.hpMax > 0 && p.hp / p.hpMax < 0.35) {
-      hint = { text: "Low HP! [R/3] Dodge for MP, [F/4] Brace for safety", color: "#ffa0a0" };
+      hint = { text: "Low HP! [R/3] mana vial  ·  [F/4] brace", color: "#ffa0a0" };
     } else if (p.cooldowns.attack <= 0 && p.mana >= l.attack.manaCost + (p.manaCostBonus || 0)) {
-      hint = { text: `[Q/1] ${l.attack.name}  -  [E/2] ${l.special.name}  -  dodge with [A]/[D]`, color: "#c8ffc0" };
+      hint = {
+        text: `[Q/1] ${l.attack.name}  ·  [E/2] ${l.special.name}  ·  lanes [A]/[D]`,
+        color: "#c8ffc0",
+      };
+      if (l.cryoThird) hint.text += "  ·  [T] Plasm Cryo";
     } else if (p.mana < l.attack.manaCost + (p.manaCostBonus || 0)) {
-      hint = { text: "Out of MP! Press [R/3] Dodge Roll to recover.", color: "#7fc0ff" };
+      hint = { text: "Out of MP! [R/3] Drink Mana Vial — pop cork, then tilt & pour!", color: "#7fc0ff" };
     }
     if (!hint) return;
     const pulse = 0.5 + 0.5 * Math.sin(this.t * 7);
@@ -2113,16 +2382,16 @@ export class CombatScene {
     const rects = this.actionButtonRects();
     const atkMc = l.attack.manaCost + (p.manaCostBonus || 0);
     const specMc = l.special.manaCost + (p.manaCostBonus || 0);
-    const rollCd = (p.dodgeRollCooldown || 0);
     const cryoCd = cryo ? (p.cooldowns.tertiary || 0) : 0;
+    const potCd = this.potionDrinkCooldown > 0;
+    const cryoMeta = cryo
+      ? `Plasm Cryo [T]: ${cryoCd > 0 ? cryoCd.toFixed(1) + "s" : "READY"} · `
+      : "";
+    const vialCdStr = potCd ? `${this.potionDrinkCooldown.toFixed(1)}s` : "READY";
 
     drawPanel(ctx, 0, ACTION_BAR_TOP, W, ACTION_BAR_H);
     ctx.fillStyle = "rgba(12, 4, 16, 0.5)";
     ctx.fillRect(0, ACTION_BAR_TOP, W, ACTION_BAR_H);
-
-    const dodgeMeta = cryo
-      ? `Cryo ${cryoCd > 0 ? cryoCd.toFixed(1) + "s" : "ready"} · roll ${rollCd > 0 ? rollCd.toFixed(1) + "s" : "ready"}`
-      : `Roll ${rollCd > 0 ? rollCd.toFixed(1) + "s" : "ready"}`;
 
     const defs = [
       {
@@ -2142,12 +2411,12 @@ export class CombatScene {
         cdMax: l.special.cooldown,
       },
       {
-        headline: "DODGE",
-        sub: cryo ? `${cryo.name} or tumble` : "Tumble (+3 MP)",
-        meta: dodgeMeta,
-        locked: false,
-        cd: 0,
-        cdMax: 0,
+        headline: "MANA VIAL",
+        sub: "Pop cork · tilt pour (full refill)",
+        meta: `${cryoMeta}Vial refill: ${vialCdStr}`,
+        locked: !!this.potionState || potCd || p.mana >= p.manaMax,
+        cd: potCd ? this.potionDrinkCooldown : 0,
+        cdMax: potCd ? POTION_DRINK_CD_SEC : 0,
       },
       {
         headline: "BRACE",
