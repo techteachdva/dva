@@ -72,10 +72,17 @@ html, body {
   overflow: hidden;
 }
 
+/* Fit the 1280×800 canvas entirely in the viewport — width and height both
+   must shrink together. If only max-height caps the box, fixed width ×
+   aspect-ratio can still exceed 100vh and the canvas bottom is clipped
+   (combat buttons cut off). */
+#stage:-webkit-full-screen,
 #stage:fullscreen {
+  box-sizing: border-box;
   width: min(100vw, calc(100vh * 1280 / 800));
-  max-height: 100vh;
-  height: auto;
+  height: min(100vh, calc(100vw * 800 / 1280));
+  max-height: none;
+  margin: auto;
 }
 
 #game {
