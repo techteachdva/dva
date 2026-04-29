@@ -35,9 +35,15 @@ const ACTION_BAR_TOP = H - 128;
 const ACTION_BAR_H = 128;
 const ACTION_PAD_X = 10;
 const ACTION_GAP = 8;
-/** Floating combat log — center-right between arena and enemy HUD (clicks pass through for lane swaps). */
-/** Tight against the enemy name/HP HUD — keeps the center guardian art clear. */
-const LOG_RECT = { x: 978, y: 212, w: 286, h: 296 };
+/** Compact combat log: top-center strip only — never overlays lane guardians (arena ~cy 340). */
+const LOG_DISPLAY_LINES = 3;
+const LOG_LINE_MAX_CHARS = 78;
+
+function truncateLogLine(s, maxChars = LOG_LINE_MAX_CHARS) {
+  const str = String(s ?? "");
+  if (str.length <= maxChars) return str;
+  return str.slice(0, Math.max(0, maxChars - 1)) + "…";
+}
 
 /** Random potion mini-game letters (excluding Q,E,R,F combat row). */
 const POTION_KEY_POOL = "ZXCVBNHJKIOPUY".split("").map((c) => c.toLowerCase());
@@ -2214,6 +2220,9 @@ export class CombatScene {
       ctx.restore();
     }
 
+    // Narrow top-center log (after player corner UI) — short lines, does not cover the five lanes.
+    this.drawLog(ctx);
+
     // Top-right: enemy HP. v0.14 layout - panel grows taller when there
     // are extra badge rows (elite twist, enraged, matchup) so no two
     // rows ever overlap.
@@ -2268,8 +2277,6 @@ export class CombatScene {
 
     // Bottom action bar — large touch lanes (handleMenu picks via actionButtonRects)
     this.drawMenu(ctx, game);
-    // Floating log center-right — does NOT block clicks (lanes pass through LOG_RECT hitbox)
-    this.drawLog(ctx);
 
     // Enemy melee telegraph banner - styled differently per move type so
     // the player learns to read the tell at a glance.
@@ -2564,16 +2571,24 @@ export class CombatScene {
   }
 
   drawLog(ctx) {
-    const { x, y, w, h } = LOG_RECT;
-    drawPanel(ctx, x, y, w, h);
-    drawText(ctx, "COMBAT LOG", x + 14, y + 12, { size: 14, color: COLORS.bile, bold: true });
-    const lineGap = 19;
-    const maxLines = Math.min(this.log.length, Math.max(1, Math.floor((h - 54) / lineGap)));
-    const slice = this.log.slice(-maxLines);
+    const lh = 70;
+    const lw = Math.min(620, Math.floor(W * 0.484));
+    const x = (W - lw) >> 1;
+    const y = 6;
+    drawPanel(ctx, x, y, lw, lh);
+    drawText(ctx, "COMBAT LOG", x + 10, y + 14, {
+      size: 10, color: COLORS.bile, bold: true, baseline: "middle",
+    });
+    const lineGap = 15;
+    const bodyTop = y + 30;
+    const maxLines = Math.min(LOG_DISPLAY_LINES, this.log.length || 1);
+    const slice = this.log.slice(-maxLines).map(truncateLogLine);
     slice.forEach((line, i) => {
-      drawText(ctx, line, x + 14, y + 38 + i * lineGap, {
-        size: 12, color: COLORS.bone,
-        maxWidth: w - 28,
+      drawText(ctx, line, x + 10, bodyTop + i * lineGap, {
+        size: 11,
+        color: COLORS.bone,
+        baseline: "top",
+        maxWidth: lw - 20,
       });
     });
   }
