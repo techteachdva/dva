@@ -12,6 +12,9 @@ import { applyCheatLine } from "./engine/cheatActions.js";
 // in the filename must be percent-encoded for the request to resolve.
 initBGM("Level%20Up.mp3", { volume: 0.35, loop: true });
 
+/** Shown lower-right — bump alongside meaningful releases / CHANGELOG. */
+const GAME_VERSION = "v0.16.1";
+
 const stageEl = document.getElementById("stage");
 
 function toggleFullscreen() {
@@ -126,9 +129,11 @@ const loop = new Loop(
       }
     }
 
-    // Global mute toggle (M). Processed BEFORE scenes consume inputs,
-    // but wasPressed persists across the frame so scenes still see it if needed.
-    if (game.input.wasPressed("m")) {
+    // Global mute toggle (M). Skip while cheat overlay is open so phrases can include "m".
+    if (
+      !game.cheatMenuOpen &&
+      game.input.wasPressed("m")
+    ) {
       const nowMuted = toggleMute();
       if (!nowMuted) SFX.click();
       game.input.consumePress("m");
@@ -163,9 +168,18 @@ const loop = new Loop(
       ctx.fillRect(0, 0, W, H);
       drawBanner(ctx, "CHEAT ENTRY", W / 2, 140, 32, COLORS.wormHi, COLORS.blood);
       drawPanel(ctx, W / 2 - 420, 200, 840, 360);
-      drawText(ctx, "Type a cheat · ENTER submit · ESC closes   (jackson/dez/acererack/bossnow/loredump)", W / 2, 226, {
-        size: 16, color: COLORS.boneDim, align: "center", maxWidth: W - 48,
-      });
+      drawText(
+        ctx,
+        "This terminal swallowed the manual. Whisper something that sounds plausible — ENTER to beg; ESC to leave empty-handed.",
+        W / 2,
+        216,
+        {
+          size: 15,
+          color: COLORS.boneDim,
+          align: "center",
+          maxWidth: W - 120,
+        },
+      );
       const line = "> " + (game.cheatInput || "") + "_";
       drawText(ctx, line, W / 2, 280, {
         size: 24,
@@ -174,7 +188,7 @@ const loop = new Loop(
         bold: true,
         maxWidth: W - 120,
       });
-      drawText(ctx, "ENTER submit   ESC exits", W / 2, 392, {
+      drawText(ctx, "ENTER · ESC", W / 2, 392, {
         size: 14, color: COLORS.boneDim, align: "center",
       });
     } else if (game.cheatFlashT > 0 && game.cheatFlash) {
@@ -218,6 +232,15 @@ const loop = new Loop(
       });
       ctx.restore();
     }
+
+    drawText(ctx, GAME_VERSION, W - 12, H - 8, {
+      size: 11,
+      color: "rgba(233,220,193,0.42)",
+      align: "right",
+      baseline: "bottom",
+      bold: true,
+      outline: false,
+    });
 
     ctx.restore();
   }

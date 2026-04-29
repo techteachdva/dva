@@ -407,7 +407,7 @@ export class CreateScene {
     else if (this.step === 1) this.renderLoadoutSelect(ctx, game);
     else this.renderConfirm(ctx);
 
-    drawText(ctx, "A/D wheel · click cards · SPACE confirm · BACKSPACE back · M mute · Alt+Enter fullscreen · \\ cheats (loredump codex)", W / 2, H - 26, {
+    drawText(ctx, "A/D wheel · click cards · SPACE confirm · BACKSPACE back · M mute · Alt+Enter fullscreen · \\ cheat terminal", W / 2, H - 26, {
       size: 15, color: COLORS.boneDim, align: "center",
     });
   }

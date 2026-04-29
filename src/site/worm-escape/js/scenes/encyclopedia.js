@@ -1,5 +1,5 @@
 /**
- * INNER GUTS CODEX — opened via cheat `loredump`.
+ * INNER GUTS CODEX — opened via cheat `lore` (alias: loredump).
  * ═══════════════════════════════════════════════════════════════════════════
  * Mirror gameplay edits in ../content/encyclopediaData.js so this stays truthful.
  */

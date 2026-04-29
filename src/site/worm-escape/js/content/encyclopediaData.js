@@ -350,15 +350,12 @@ function buildMechanicEntries() {
     id: "mech:cheats-help",
     category: "mechanic",
     title: "Cheat keypad",
-    subtitle: '\\ key opens cheats',
+    subtitle: '\\ key opens this terminal — it never prints hints',
     facts: [
-      "jackson — unlock NECROMANCER build",
-      "dez — full weapon pool shuffle at forge",
-      'acererack — toggle invuln (nickname "oops all plot armor")',
-      "bossnow — yeet swift+sword hero into MAW finale",
-      "loredump — you found this encyclopedia nerd",
+      "Back-row contraband expects you to overhear names elsewhere — not read them off marble.",
+      "If this shelf cracked open for you, you already whispered something the worm swallowed without complaining.",
     ],
-    flavor: 'Cheats rhymed on purpose except "bossnow". That one skips lunch duty.',
+    flavor: "The keypad itself is coy; a full roster on the billboard would have been vulgar.",
   });
 
   out.push({

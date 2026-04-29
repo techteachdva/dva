@@ -49,7 +49,7 @@ export function applyCheatLine(rawLine, game) {
     return jumpToFinalBossFight(game);
   }
 
-  if (c === "loredump") {
+  if (c === "lore" || c === "loredump") {
     if (game.scenes?.current instanceof EncyclopediaScene) {
       return { ok: false, msg: "Codex already hogging screen — ESC to close first." };
     }
