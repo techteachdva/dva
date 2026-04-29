@@ -2307,12 +2307,12 @@ export class CombatScene {
       });
     }
 
-    // Enrage flash across the top of the screen.
+    // Enrage flash (below compact combat log strip so glyphs do not paint over it).
     if (this.enrageFlashT > 0) {
       const a = Math.min(1, this.enrageFlashT / 1.4);
       ctx.save();
       ctx.globalAlpha = a;
-      drawBanner(ctx, "ENRAGED!", W / 2, 90, 36, "#ff5050", "#400010");
+      drawBanner(ctx, "ENRAGED!", W / 2, 108, 36, "#ff5050", "#400010");
       ctx.restore();
     }
 
@@ -2571,18 +2571,23 @@ export class CombatScene {
   }
 
   drawLog(ctx) {
-    const lh = 70;
+    // Height fits 3 single-line rows (drawText ellipsis) under the heading without clipping.
+    const lh = 80;
     const lw = Math.min(620, Math.floor(W * 0.484));
     const x = (W - lw) >> 1;
-    const y = 6;
+    const y = 4;
     drawPanel(ctx, x, y, lw, lh);
-    drawText(ctx, "COMBAT LOG", x + 10, y + 14, {
+    drawText(ctx, "COMBAT LOG", x + 10, y + 16, {
       size: 10, color: COLORS.bile, bold: true, baseline: "middle",
     });
-    const lineGap = 15;
-    const bodyTop = y + 30;
-    const maxLines = Math.min(LOG_DISPLAY_LINES, this.log.length || 1);
-    const slice = this.log.slice(-maxLines).map(truncateLogLine);
+    const lineGap = 14;
+    const bodyTop = y + 34;
+    const maxLines =
+      this.log.length === 0 ? 0 : Math.min(LOG_DISPLAY_LINES, this.log.length);
+    const slice =
+      maxLines <= 0
+        ? []
+        : this.log.slice(-maxLines).map((line) => truncateLogLine(line));
     slice.forEach((line, i) => {
       drawText(ctx, line, x + 10, bodyTop + i * lineGap, {
         size: 11,
