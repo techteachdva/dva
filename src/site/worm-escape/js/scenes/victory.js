@@ -216,7 +216,7 @@ export class VictoryScene {
     ctx.translate(W * 0.18, heroY);
     ctx.scale(3.2, 3.2);
     ctx.rotate(Math.sin(this.t * 4) * 0.1);
-    drawHero(ctx, 0, 0, 1, this.t * 10, p ? p.buildId : "swift");
+      drawHero(ctx, 0, 0, 1, this.t * 10, p ? p.buildId : "swift", p?.synergyId);
     ctx.restore();
 
     this.particles.render(ctx);

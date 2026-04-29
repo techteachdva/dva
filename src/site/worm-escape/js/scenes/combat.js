@@ -111,6 +111,11 @@ export class CombatScene {
     this.comboHitsLeft = 0;
     this.comboHitTimer = 0;
 
+    // Guardian occupies a tactical column; it shuffles to force repositioning.
+    this.enemyLane = randInt(0, 2);
+    this.enemyLaneTimer = rand(5, 11);
+    this.enemyAttackLane = 1;
+
     // Enrage state - triggers at enemy.hp < hpMax * enrageAt. Kicks off
     // tighter cadence, optional paired acid gouts, and +damage.
     this.enraged = false;
@@ -186,6 +191,9 @@ export class CombatScene {
     }
     if (this.eliteKill) {
       this.pushLog(`!! ELITE [${this.eliteTwist}] - this one is different.`);
+    }
+    if (p.synergyTitle) {
+      this.pushLog(`SYNERGY ACTIVE: ${p.synergyTitle}`);
     }
   }
 
@@ -263,7 +271,9 @@ export class CombatScene {
 
     if (this.phase === "fight") {
       this.updateCooldowns(dt, p);
-      this.tickSentryDPS(dt, p);
+      this.updateEnemyLaneShuffle(dt);
+      this.tickTurretDPS(dt, p);
+      this.tickChainShred(dt, p);
       if (this.enemy.stunT > 0) this.enemy.stunT -= dt;
       this.updateAcidGouts(dt, p);
       this.updateEnemyMelee(dt, p);
@@ -287,11 +297,16 @@ export class CombatScene {
       const dps = this.enemy.poisonDps || 0;
       this.enemy.hp = Math.max(0, this.enemy.hp - dps * dt);
       this.enemy.poisonT -= dt;
+      const rot = this.enemy.poisonLabel === "ROT";
+      const col = rot ? "#d060ff" : "#9bff80";
       if (Math.random() < dt * 6) {
         this.particles.burst(
           W / 2 + rand(-40, 40),
           FLOOR_Y - 220 + rand(-30, 30),
-          "#9bff80", 3, 80, 0.45,
+          col,
+          rot ? 5 : 3,
+          rot ? 120 : 80,
+          0.45,
         );
       }
     }
@@ -417,27 +432,91 @@ export class CombatScene {
     if (p.dodgeRollCooldown > 0) p.dodgeRollCooldown = Math.max(0, p.dodgeRollCooldown - dt);
   }
 
-  tickSentryDPS(dt, p) {
-    const spec = p.loadout?.special;
-    if (!spec?.sentryBuild) return;
-    const s = p.sentry;
-    if (!s) return;
-    if (!s.online && (s.buildLeft || 0) > 0) {
-      s.buildLeft -= dt;
-      if (s.buildLeft <= 0) {
-        s.online = true;
-        s.nextPulse = 0.2;
-        this.pushLog("SENTRY ONLINE — pew pew!");
-        SFX.confirm();
-      }
-      return;
+  updateEnemyLaneShuffle(dt) {
+    if (this.phase !== "fight" || this.enemy.hp <= 0) return;
+    this.enemyLaneTimer -= dt;
+    if (this.enemyLaneTimer > 0) return;
+    let nl = this.enemyLane;
+    for (let tries = 0; tries < 4 && nl === this.enemyLane; tries++) {
+      nl = randInt(0, 2);
     }
-    if (!s.online || !s.dmgRange) return;
-    s.nextPulse = (s.nextPulse || 0) - dt;
-    if (s.nextPulse > 0) return;
-    s.nextPulse = s.interval || 0.5;
-    const burst = randInt(s.dmgRange[0], s.dmgRange[1]) * (s.magicMult || 1);
-    this.dealToEnemy(Math.max(4, burst), "SENTRY BOLT", "cast", p, { kind: "special" });
+    this.enemyLane = nl;
+    this.enemyLaneTimer = rand(4.2, 10.5);
+    const lab = ["LEFT", "CENTER", "RIGHT"][this.enemyLane];
+    this.pushLog(`The guardian surges into the ${lab} lane — match it to strike true!`);
+    SFX.dodge();
+  }
+
+  tickTurretDPS(dt, p) {
+    const specWeapon = p.loadout?.special;
+    if (!specWeapon?.sentryBuild || !p.turretFleet || !p.turretSpec) return;
+    const fleet = p.turretFleet;
+    const interval = p.turretSpec.interval || 0.5;
+    const mag = p.turretMagicMult ?? 1;
+    const summoner = p.synergyId === "turretSummoner";
+
+    for (let i = fleet.length - 1; i >= 0; i--) {
+      const tu = fleet[i];
+      if ((tu.buildLeft || 0) > 0) {
+        tu.buildLeft -= dt;
+        if (tu.buildLeft <= 0) {
+          tu.online = true;
+          tu.nextPulse = 0.15;
+          if (summoner) tu.fireLeft = 3;
+          this.pushLog(`SENTRY ONLINE [lane ${tu.lane + 1}] — fire!`);
+          SFX.confirm();
+        }
+        continue;
+      }
+      if (!tu.online) continue;
+
+      if (summoner) {
+        tu.fireLeft = Math.max(0, (tu.fireLeft || 0) - dt);
+        if ((tu.fireLeft || 0) <= 0) {
+          this.pushLog("Sentry battery exhausted.");
+          fleet.splice(i, 1);
+          continue;
+        }
+      }
+
+      tu.nextPulse = (tu.nextPulse || 0) - dt;
+      if (tu.nextPulse > 0) continue;
+      tu.nextPulse = interval;
+
+      const dmgR = tu.dmgRange || p.turretSpec.dmgRange;
+      const burst = randInt(dmgR[0], dmgR[1]) * mag;
+      this.dealToEnemy(
+        Math.max(3, burst),
+        "SENTRY BOLT",
+        "cast",
+        p,
+        { kind: "special", skipLaneCheck: true },
+      );
+    }
+  }
+
+  tickChainShred(dt, p) {
+    const dps = p.chainSwordDps || 0;
+    if (!dps || this.phase !== "fight" || this.enemy.hp <= 0) return;
+    if (this.lane !== this.enemyLane) return;
+
+    this.chainPulseT = (this.chainPulseT || 0) + dt;
+    if (this.chainPulseT < 0.16) return;
+    const pulses = Math.floor(this.chainPulseT / 0.16);
+    this.chainPulseT -= pulses * 0.16;
+    const amt = pulses * (dps * 0.16) * (((p.pactMods && p.pactMods.dmgMult) || 1));
+
+    const chunk = Math.max(4, Math.floor(amt));
+    this.dealToEnemy(chunk, "CHAIN TEETH", "slash", p, {
+      kind: "attack",
+      skipLaneCheck: true,
+      chainShredBurst: true,
+    });
+    this.chainLogTimer = (this.chainLogTimer || 0) + dt * pulses;
+    if (this.chainLogTimer > 2.4) {
+      this.chainLogTimer = 0;
+      this.pushLog("Chainsword teeth chew into the flank!");
+    }
   }
 
   updateAcidGouts(dt, p) {
@@ -519,6 +598,18 @@ export class CombatScene {
     const enrageBonus = this.enraged ? 1.2 : 1;
     let dmg = Math.round(rawDmg * scale * enrageBonus);
     let braceNote = "";
+    const laneLab = ["LEFT", "MID", "RIGHT"];
+
+    // Lane-targeted melee (jab + combo strokes) miss if you're not occupying the threatened column.
+    if (moveType !== "heavy") {
+      if (this.lane !== this.enemyAttackLane) {
+        this.pushLog(`${laneLab[this.enemyAttackLane]} strike SWISHES wide — wrong lane.`);
+        SFX.thud();
+        screenShake(3, 0.08);
+        return;
+      }
+    }
+
     if (this.braceTime > 0) {
       dmg = Math.floor(dmg * 0.35);
       braceNote = "(BRACED) ";
@@ -611,10 +702,15 @@ export class CombatScene {
         this.pushLog(this.enemy.flavorHeavy || `${this.enemy.name} winds up a HEAVY slam! BRACE (F)!`);
       } else if (move === "combo") {
         this.enemyTellTime = 0.8 + p.dodgeWindow * 0.6;
-        this.pushLog(this.enemy.flavorCombo || `${this.enemy.name} readies a TRIPLE STRIKE! BRACE (F)!`);
+        this.enemyAttackLane = randInt(0, 2);
+        const L = ["LEFT", "MID", "RIGHT"][this.enemyAttackLane];
+        this.pushLog(this.enemy.flavorCombo ||
+          `${this.enemy.name} coils for THREE cuts along the ${L} flank — DODGE or BRACE!`);
       } else {
         this.enemyTellTime = 0.9 + p.dodgeWindow * 0.8;
-        this.pushLog(this.enemy.name + " winds up a strike! BRACE (F)!");
+        this.enemyAttackLane = randInt(0, 2);
+        const L = ["LEFT", "MID", "RIGHT"][this.enemyAttackLane];
+        this.pushLog(`${this.enemy.name} hunts the ${L} lane! (${L}: evade sideways or brace.)`);
       }
       this.enemyTellTime = Math.max(0.3, this.enemyTellTime);
     }
@@ -688,8 +784,12 @@ export class CombatScene {
           kind: "attack",
           multiLane: !!l.attack.multiLane,
           hexMark: !!l.attack.hexMark,
-          movePoisonPct: l.attack.poisonPct || 0,
-          movePoisonTime: l.attack.poisonTime || 0,
+          movePoisonPct: p.synergyId === "grimReaper"
+            ? 0
+            : (l.attack.poisonPct || 0),
+          movePoisonTime: p.synergyId === "grimReaper"
+            ? 0
+            : (l.attack.poisonTime || 0),
           dotLabel: l.attack.dotLabel || "POISON",
           lifestealPct: l.attack.lifestealPct || 0,
           plasmElement: l.attack.plasmElement || undefined,
@@ -703,11 +803,25 @@ export class CombatScene {
         if (p.cooldowns.special > 0) { SFX.deny(); this.pushLog(`${l.special.name} is recharging...`); return; }
         if (p.mana < manaCost) { SFX.deny(); this.pushLog("Not enough mana!"); return; }
         // Engineer wrench: sentry deploy — consumes special; no melee strike.
-        if (l.special.sentryBuild && p.sentry && !p.sentry.online && (p.sentry.buildLeft || 0) <= 0) {
+        if (l.special.sentryBuild && p.turretFleet) {
+          const cap = Math.max(1, p.turretFleetMax || 1);
+          if (p.turretFleet.length >= cap) {
+            SFX.deny();
+            this.pushLog("No free turret hardpoints — wait for batteries to expire.");
+            return;
+          }
           p.mana -= manaCost;
           p.cooldowns.special = l.special.cooldown * (pm.specialCdMult || 1);
-          p.sentry.buildLeft = (p.sentry.deployTime ?? l.special.buildTime ?? 3);
-          this.pushLog("SENTRY ASSEMBLING... hold the line...");
+          const ts = p.turretSpec || {};
+          const bt = ts.buildTime ?? l.special.buildTime ?? 3;
+          p.turretFleet.push({
+            buildLeft: bt,
+            online: false,
+            nextPulse: 0,
+            dmgRange: [...(ts.dmgRange || l.special.sentryDmg || [9, 14])],
+            lane: this.lane,
+          });
+          this.pushLog("TURRET ASSEMBLING...");
           SFX.confirm();
           this.turnLocked = 0.35;
           break;
@@ -728,8 +842,12 @@ export class CombatScene {
           kind: "special",
           multiLane: !!l.special.multiLane,
           hexDetonate: !!l.special.hexDetonate,
-          movePoisonPct: l.special.poisonPct || 0,
-          movePoisonTime: l.special.poisonTime || 0,
+          movePoisonPct: p.synergyId === "grimReaper"
+            ? 0
+            : (l.special.poisonPct || 0),
+          movePoisonTime: p.synergyId === "grimReaper"
+            ? 0
+            : (l.special.poisonTime || 0),
           dotLabel: l.special.dotLabel || "POISON",
           lifestealPct: l.special.lifestealPct || 0,
           plasmElement: l.special.plasmElement || undefined,
@@ -768,9 +886,12 @@ export class CombatScene {
         const nl = Math.max(0, Math.min(2, this.lane + dir));
         this.lane = nl;
         this.targetX = LANES[nl];
-        p.mana = Math.min(p.manaMax, p.mana + 3);
+        const rollMp = 3 + (p.whizidRollMana || 0);
+        p.mana = Math.min(p.manaMax, p.mana + rollMp);
         p.dodgeRollCooldown = 1.22;
-        this.pushLog(dir < 0 ? "You tumble LEFT (-1 lane). +3 MP." : "You tumble RIGHT (+1 lane). +3 MP.");
+        this.pushLog(dir < 0
+          ? `You tumble LEFT (-1 lane). +${rollMp} MP.`
+          : `You tumble RIGHT (+1 lane). +${rollMp} MP.`);
         SFX.dodge();
         this.turnLocked = 0.32;
         break;
@@ -863,6 +984,11 @@ export class CombatScene {
     this.perfectBraceReady = false;
     if (hadCounter && p && p.score) p.score.counterStrikes++;
 
+    let dmgPayload = rawDmg;
+    if (!multiLane && !opts.skipLaneCheck && this.phase === "fight") {
+      if (this.lane !== this.enemyLane) dmgPayload *= 0.37;
+    }
+
     // --- Multi-lane (BILE WHIP) ---
     // Fire three separate damage events at reduced damage each. The total is
     // balanced similar to a single hit but triggers 3 marks / 3 shield breaks
@@ -895,19 +1021,24 @@ export class CombatScene {
 
     // --- Hex staff detonate: consume all marks as a big single hit. ---
     // --- Default single-lane hit ---
-    const { dmg, isCrit, execOn, consumedMarks } = this.rollHitDamage(rawDmg, {
+    const { dmg, isCrit, execOn, consumedMarks } = this.rollHitDamage(dmgPayload, {
       kind: opts.kind, consumeMarks: hexDet, counterOn: hadCounter,
       hitMult,
     }, p);
     this.applyHit(dmg, { name, sfx, p, hadCounter, isCrit, execOn, consumedMarks,
-      lifestealPct: fxCtx.lifestealPct });
-    this.applyOnHitEffects(p, { hexMark, hexDet, ...fxCtx });
-    SFX[sfx] ? SFX[sfx]() : SFX.hit();
+      lifestealPct: fxCtx.lifestealPct,
+      suppressLog: !!opts.chainShredBurst });
+    if (!opts.chainShredBurst) {
+      this.applyOnHitEffects(p, { hexMark, hexDet, ...fxCtx });
+      SFX[sfx] ? SFX[sfx]() : SFX.hit();
+    } else if (Math.random() < 0.18) {
+      SFX.slash();
+    }
   }
 
   // Centralized "a damage number actually lands" path. Handles enemy HP,
   // log line, shake, particles, floater, blood decals, shield-break counter.
-  applyHit(dmg, { name, hadCounter, isCrit, execOn, consumedMarks, lane, laneX, p, lifestealPct = 0 }) {
+  applyHit(dmg, { name, hadCounter, isCrit, execOn, consumedMarks, lane, laneX, p, lifestealPct = 0, suppressLog = false }) {
     const mult = this.matchupMult || 1;
     const lbl = this.matchupLabel;
     // --- Shielded elite: damage is clamped to 1 while shield is up, but
@@ -937,17 +1068,24 @@ export class CombatScene {
     else if (consumedMarks > 0) line = `HEX DETONATE (${consumedMarks} marks)! ${line}`;
     else if (lbl && mult > 1) line = `${lbl.text} ${line}`;
     else if (lbl)             line = `${line} (${lbl.text})`;
-    this.pushLog(line);
+    if (!suppressLog) {
+      this.pushLog(line);
+    }
 
     // Feedback
-    screenShake(mult > 1 ? 9 : 5, 0.15);
+    screenShake((suppressLog && !isCrit) ? 3 : mult > 1 ? 9 : 5, suppressLog ? 0.06 : 0.15);
     const burstColor = isCrit ? "#ff40c0"
       : (mult > 1 ? "#ffd966" : (mult < 1 ? "#8a9aff" : COLORS.blood));
+    const burstScale = suppressLog ? 0.45 : 1;
     this.particles.burst(laneX ?? W / 2, FLOOR_Y - 200, burstColor,
-      mult > 1 ? 28 : 16, mult > 1 ? 280 : 220, 0.55);
+      (mult > 1 ? 28 : 16) * burstScale,
+      (mult > 1 ? 280 : 220) * burstScale,
+      0.55,
+    );
 
     // Floating damage number (each lane gets its own spot).
-    this.floaters.push({
+    if (!suppressLog || Math.random() < 0.2) {
+      this.floaters.push({
       x: (laneX ?? W / 2) + rand(-30, 30),
       y: FLOOR_Y - 240 + (lane ? lane * 6 : 0),
       vy: -70,
@@ -956,7 +1094,8 @@ export class CombatScene {
       color: isCrit ? "#ff40c0"
         : (mult > 1 ? "#ffd966" : (mult < 1 ? "#8a9aff" : "#ffffff")),
       size: mult > 1 || isCrit ? 28 : 22,
-    });
+      });
+    }
 
     // Blood decal cluster.
     const count = mult > 1 || isCrit ? 3 : 2;
@@ -998,10 +1137,8 @@ export class CombatScene {
   // detonate (consumes marks). Called once per attack regardless of multi-lane.
   applyOnHitEffects(p, { hexMark, hexDet, movePoisonPct = 0, movePoisonTime = 0, dotLabel = "POISON" }) {
     const pm = (p && p.pactMods) || {};
-    // Combine build-wide poison (Viper, Hex-Eyed pact) with per-weapon
-    // poison/bleed (Bone Spear, Cursed Scythe, Rusty Chainsaw rev). The
-    // strongest of the two wins for both DPS and remaining duration.
-    let mpExtra = movePoisonPct * (p.synergyDecay ? 2.65 : 1);
+    let mpExtra = movePoisonPct || 0;
+    if (p.synergyDecay && p.synergyId !== "grimReaper") mpExtra *= 2.65;
     const poisonPct  = Math.max(pm.poisonPct  ?? 0, mpExtra);
     const poisonTime = Math.max(pm.poisonTime ?? 0, movePoisonTime);
     if (poisonPct > 0 && poisonTime > 0) {
@@ -1010,6 +1147,13 @@ export class CombatScene {
         poisonPct * this.enemy.hpMax);
       this.enemy.poisonLabel = dotLabel;
       this.poisonFlashT = 0.6;
+    }
+    if (p.synergyId === "grimReaper") {
+      const rf = 0.072;
+      this.enemy.poisonLabel = "ROT";
+      this.enemy.poisonT = Math.max(this.enemy.poisonT || 0, 8);
+      this.enemy.poisonDps = Math.max(this.enemy.poisonDps || 0, rf * this.enemy.hpMax);
+      this.poisonFlashT = Math.max(this.poisonFlashT || 0, 0.75);
     }
     if (hexMark) {
       this.hexMarks = Math.min((this.hexMarks || 0) + 1, 3);
@@ -1039,7 +1183,7 @@ export class CombatScene {
     ctx.save();
     ctx.translate(this.heroX, HERO_Y);
     ctx.scale(2.8, 2.8);
-    drawHero(ctx, 0, 0, 1, this.anim, p.buildId);
+    drawHero(ctx, 0, 0, 1, this.anim, p.buildId, p.synergyId);
     if (this.braceTime > 0) {
       ctx.strokeStyle = "rgba(255, 217, 102, 0.8)";
       ctx.lineWidth = 1.4;
@@ -1168,7 +1312,8 @@ export class CombatScene {
   }
 
   drawEnemy(ctx) {
-    const cx = W / 2;
+    const lanePx = ((this.enemyLane ?? 1) - 1) * 88;
+    const cx = W / 2 + lanePx;
     const cy = 340;
     const sx = this.enemyShake > 0 ? (Math.random() - 0.5) * 6 : 0;
     const sy = this.enemyShake > 0 ? (Math.random() - 0.5) * 4 : 0;
@@ -1736,6 +1881,22 @@ export class CombatScene {
       labelColor: "#111",
     });
 
+    if (p.synergyTitle) {
+      ctx.save();
+      ctx.fillStyle = "rgba(40, 26, 54, 0.55)";
+      roundRect(ctx, pad, tY + 28, 260, 24, 8);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(255, 210, 140, 0.45)";
+      ctx.lineWidth = 1.2;
+      roundRect(ctx, pad, tY + 28, 260, 24, 8);
+      ctx.stroke();
+      drawText(ctx, p.synergyTitle, pad + 130, tY + 40, {
+        size: 12, color: "#ffe6b0", align: "center", bold: true,
+        glow: "#ffd080", maxWidth: 252,
+      });
+      ctx.restore();
+    }
+
     // Top-right: enemy HP. v0.14 layout - panel grows taller when there
     // are extra badge rows (elite twist, enraged, matchup) so no two
     // rows ever overlap.
@@ -1904,9 +2065,17 @@ export class CombatScene {
       if (this.enemyMoveType === "heavy") {
         hint = { text: "[F/4] BRACE - dodging won't help this one!", color: "#ffd0b0" };
       } else if (this.enemyMoveType === "combo") {
-        hint = { text: "[F/4] BRACE to cover all three hits!", color: "#fff0a0" };
+        const L = ["LEFT", "MID", "RIGHT"][this.enemyAttackLane];
+        hint = {
+          text: `COMBO scours the ${L} column — move OFF it or [F/4] brace!`,
+          color: "#fff0a0",
+        };
       } else {
-        hint = { text: "[A]/[D] to dodge lanes OR [F/4] BRACE", color: "#ffc0c0" };
+        const L = ["LEFT", "MID", "RIGHT"][this.enemyAttackLane];
+        hint = {
+          text: `Hit lines up on ${L} — dodge to another column or [F/4] brace!`,
+          color: "#ffc0c0",
+        };
       }
     } else if (this.comboHitsLeft > 0) {
       hint = { text: `[F/4] BRACE NOW - ${this.comboHitsLeft} hit(s) left!`, color: "#fff0a0" };

@@ -613,26 +613,18 @@ export function makePlayer(buildId, loadoutId, gameCheats = null) {
       executeThreshold: 0,    // enemy HP% below which execute bonus applies
       executeBonus: 1,        // damage multiplier for execute
     },
-    sentry: null,
     plasmCryoSlow: null,
     synergyDecay: false,
+    grimReaperRot: false,
+    chainSwordDps: 0,
+    whizidRollMana: 0,
     synergyHeroTint: null,
     synergyId: null,
     synergyTitle: null,
+    turretFleet: null,
+    turretFleetMax: 0,
+    turretMagicMult: 1,
   };
-
-  if (loadoutId === "engineerWrench") {
-    const spec = LOADOUTS.engineerWrench.special;
-    p.sentry = {
-      active: false,
-      buildLeft: 0,
-      nextPulse: 0,
-      dmgRange: spec.sentryDmg || [9, 14],
-      interval: spec.sentryInterval || 0.5,
-      deployTime: spec.buildTime ?? 3,
-      magicMult: p.sentryMagicMult || 1,
-    };
-  }
 
   // Class gimmicks
   if (b.tryHardGimmick) {
@@ -653,8 +645,20 @@ export function makePlayer(buildId, loadoutId, gameCheats = null) {
 
   applySynergy(p, buildId, loadoutId);
 
-  if (p.sentry) {
-    p.sentry.magicMult = p.sentryMagicMult ?? p.sentry.magicMult ?? 1;
+  if (loadoutId === "engineerWrench") {
+    const spec = LOADOUTS.engineerWrench.special;
+    p.turretFleet = [];
+    p.turretFleetMax = p.synergyId === "turretSummoner" ? 2 : 1;
+    p.turretSpec = {
+      buildTime: spec.buildTime ?? 3,
+      dmgRange: [...(spec.sentryDmg || [9, 14])],
+      interval: spec.sentryInterval || 0.5,
+    };
+    p.turretMagicMult = p.turretMagicMult ?? 1;
+  }
+
+  if (p.turretFleet) {
+    p.turretMagicMult = p.turretMagicMult ?? 1;
   }
 
   return p;

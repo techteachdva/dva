@@ -678,7 +678,7 @@ export function drawPlate(ctx, x, y, w, h, r, baseColor, opts = {}) {
 
 // ---- hero render: 3D-ish cel-shaded chonk ----
 //  scale: rendered at 1x; caller scales via ctx.scale() if needed.
-export function drawHero(ctx, x, y, facing = 1, anim = 0, build = "swift") {
+export function drawHero(ctx, x, y, facing = 1, anim = 0, build = "swift", synergyId = null) {
   ctx.save();
   ctx.translate(x, y);
   ctx.scale(facing, 1);
@@ -1237,6 +1237,96 @@ export function drawHero(ctx, x, y, facing = 1, anim = 0, build = "swift") {
   }
   ctx.restore();
 
+  if (synergyId) {
+    const bobSy = Math.abs(Math.sin(anim)) * 0.8;
+    drawHeroSynergyLayer(ctx, anim, bobSy, synergyId);
+  }
+
+  ctx.restore();
+}
+
+/** Glinting weapon / tool held in the right hand when a class+weapon synergy is active. */
+function drawHeroSynergyLayer(ctx, anim, bob, synergyId) {
+  ctx.save();
+  ctx.translate(4, bob);
+  const t = anim * 5;
+  ctx.globalAlpha = 0.88;
+  for (let i = 0; i < 14; i++) {
+    const ang = (i / 14) * Math.PI * 2 + t * 0.4;
+    const pr = 26 + (i % 3) * 3;
+    ctx.fillStyle = `rgba(255, 250, 230, ${0.05 + (i % 4) * 0.04})`;
+    ctx.beginPath();
+    ctx.arc(Math.cos(ang) * pr, -10 + Math.sin(ang * 1.3) * pr * 0.4, 1.1, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.shadowColor = "rgba(255,230,200,0.9)";
+  ctx.shadowBlur = 6;
+  ctx.strokeStyle = "rgba(255,255,255,0.45)";
+  ctx.lineWidth = 1.2;
+
+  if (synergyId === "chainSword") {
+    ctx.fillStyle = "#3a1020";
+    roundRect(ctx, 12, -6, 26, 10, 2);
+    ctx.fill();
+    ctx.strokeRect(12, -6, 26, 10);
+    ctx.strokeStyle = "#c01a1a";
+    for (let i = 0; i < 12; i++) {
+      ctx.beginPath();
+      ctx.moveTo(13 + i * 2.1, -4);
+      ctx.lineTo(14 + i * 2.1, 3);
+      ctx.stroke();
+    }
+  } else if (synergyId === "monk") {
+    ctx.fillStyle = "#ffd9a4";
+    ctx.beginPath();
+    ctx.arc(19, 4, 8, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(255,200,140,0.85)";
+    ctx.stroke();
+  } else if (synergyId === "scout") {
+    ctx.fillStyle = "#654";
+    roundRect(ctx, 14, -3, 28, 9, 3);
+    ctx.fill();
+    ctx.fillStyle = "#8a3";
+    ctx.fillRect(39, 2, 8, 6);
+  } else if (synergyId === "grimReaper") {
+    ctx.strokeStyle = "#a040d0";
+    ctx.beginPath();
+    ctx.arc(26, 0, 12, -0.4, 1.9);
+    ctx.stroke();
+    ctx.fillStyle = "#1a0a20";
+    ctx.beginPath();
+    ctx.moveTo(10, -4);
+    ctx.lineTo(18, 22);
+    ctx.lineTo(14, 23);
+    ctx.closePath();
+    ctx.fill();
+  } else if (synergyId === "whizid") {
+    ctx.fillStyle = "#40e0d8";
+    ctx.beginPath();
+    ctx.moveTo(16, 12);
+    ctx.lineTo(30, -4);
+    ctx.lineTo(38, 10);
+    ctx.closePath();
+    ctx.fill();
+  } else if (synergyId === "turretSummoner") {
+    ctx.fillStyle = "#8899aa";
+    roundRect(ctx, 16, -2, 10, 14, 3);
+    ctx.fill();
+    ctx.fillStyle = "#ffa020";
+    ctx.beginPath();
+    ctx.arc(34, 10, 5, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (synergyId === "heavyHitter") {
+    ctx.fillStyle = "#5a4836";
+    ctx.beginPath();
+    ctx.moveTo(12, 14);
+    ctx.lineTo(24, -10);
+    ctx.lineTo(30, -8);
+    ctx.lineTo(20, 14);
+    ctx.closePath();
+    ctx.fill();
+  }
   ctx.restore();
 }
 

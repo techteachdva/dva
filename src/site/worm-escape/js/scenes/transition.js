@@ -71,7 +71,7 @@ export class TransitionScene {
     ctx.save();
     ctx.translate(W / 2, 360);
     ctx.scale(4, 4);
-    drawHero(ctx, 0, 0, 1, this.t * 6, p.buildId);
+    drawHero(ctx, 0, 0, 1, this.t * 6, p.buildId, p.synergyId);
     ctx.restore();
 
     // Stats

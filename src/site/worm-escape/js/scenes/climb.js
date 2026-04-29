@@ -634,7 +634,7 @@ export class ClimbScene {
     ctx.save();
     ctx.translate(this.heroX, HERO_Y);
     ctx.scale(2.8, 2.8);
-    drawHero(ctx, 0, 0, 1, this.anim, p.buildId);
+    drawHero(ctx, 0, 0, 1, this.anim, p.buildId, p.synergyId);
     ctx.restore();
 
     // Ring-of-armor equip pulse (brief golden ring bursting outward).
