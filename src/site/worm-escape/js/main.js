@@ -26,8 +26,8 @@ function toggleFullscreen() {
   }
 }
 
-/** Global control; drawn after scenes — hit test must match the render pass. */
-const FULLSCREEN_BTN = { x: 8, y: 6, w: 136, h: 28 };
+/** Global fullscreen toggle — tucked right of hero stats stack, left of combat enemy HUD (~W−280). */
+const FULLSCREEN_BTN = { x: W - 280 - 8 - 140, y: 8, w: 140, h: 30 };
 
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");

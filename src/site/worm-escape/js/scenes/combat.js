@@ -29,7 +29,8 @@ const ACTION_BAR_H = 128;
 const ACTION_PAD_X = 10;
 const ACTION_GAP = 8;
 /** Floating combat log — center-right between arena and enemy HUD (clicks pass through for lane swaps). */
-const LOG_RECT = { x: 682, y: 208, w: 294, h: 320 };
+/** Tight against the enemy name/HP HUD — keeps the center guardian art clear. */
+const LOG_RECT = { x: 978, y: 212, w: 286, h: 296 };
 
 // Per-chamber damage multiplier applied to every source of damage the
 // PLAYER receives (acid gouts, melee hits, heavy slams, combo jabs).
