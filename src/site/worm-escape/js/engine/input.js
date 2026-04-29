@@ -79,6 +79,15 @@ export class Input {
         this.mouseX = (e.clientX - rect.left) * sx;
         this.mouseY = (e.clientY - rect.top)  * sy;
       };
+      const setFromClient = (clientX, clientY) => {
+        const rect = this.canvas.getBoundingClientRect();
+        const sx = this.canvas.width / rect.width;
+        const sy = this.canvas.height / rect.height;
+        this._rawMouseX = clientX;
+        this._rawMouseY = clientY;
+        this.mouseX = (clientX - rect.left) * sx;
+        this.mouseY = (clientY - rect.top) * sy;
+      };
       window.addEventListener("mousemove", onMove);
 
       const onDown = (e) => {
@@ -103,6 +112,46 @@ export class Input {
       // (if any) don't produce spurious combat events.
       this.canvas.addEventListener("mousedown", onDown);
       window.addEventListener("mouseup", onUp);
+      this.canvas.addEventListener(
+        "touchstart",
+        (e) => {
+          if (!e.changedTouches || e.changedTouches.length < 1) return;
+          const t = e.changedTouches[0];
+          e.preventDefault();
+          setFromClient(t.clientX, t.clientY);
+          try {
+            this.canvas.focus({ preventScroll: true });
+          } catch (_) {
+            try {
+              this.canvas.focus();
+            } catch (_) { /* noop */ }
+          }
+          if (!this.down.has("Mouse0")) this.pressed.add("Mouse0");
+          this.down.add("Mouse0");
+        },
+        { passive: false },
+      );
+      this.canvas.addEventListener(
+        "touchmove",
+        (e) => {
+          if (!e.touches || e.touches.length < 1) return;
+          e.preventDefault();
+          const t = e.touches[0];
+          setFromClient(t.clientX, t.clientY);
+        },
+        { passive: false },
+      );
+      this.canvas.addEventListener(
+        "touchend",
+        (e) => {
+          e.preventDefault();
+          if (this.down.has("Mouse0")) {
+            this.down.delete("Mouse0");
+            this.released.add("Mouse0");
+          }
+        },
+        { passive: false },
+      );
       // Suppress the browser's right-click context menu inside the game.
       this.canvas.addEventListener("contextmenu", (e) => e.preventDefault());
     }

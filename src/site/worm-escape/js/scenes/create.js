@@ -2,12 +2,23 @@ import {
   W, H, COLORS,
   drawFleshBackground, drawVeins, drawText, drawBanner, drawPanel,
   drawHero, drawBar, drawSphere, drawPlate, drawDropShadow, roundRect,
+  wrapText,
 } from "../engine/render.js";
 import { SFX } from "../engine/audio.js";
 import { BUILDS, LOADOUTS, makePlayer } from "../content/player.js";
 import { loadSave } from "../engine/storage.js";
 import { ClimbScene } from "./climb.js";
 import { pointInRect } from "../engine/pointer.js";
+
+/** Forge step 1 build wheel geometry — kept in sync with renderBuildSelect + hitBuildWheel. */
+const BUILD_WHEEL = {
+  cardWc: 300,
+  cardWs: 252,
+  gap: 18,
+  yBase: 146,
+  yOff: [26, 0, 26],
+  cardH: 566,
+};
 
 // v0.16 Full weapon pool. Weapons gated by `LOADOUT_UNLOCK` are filtered out
 // of the random roll if the unlock isn't owned.
@@ -117,6 +128,34 @@ function getBuildPerkLines(id) {
   return map[id] || ["- Forge your own legend."];
 }
 
+/** Center-aligned wrapped paragraphs (no ellipsis). Returns height used (px). */
+function drawWrappedCenter(ctx, cx, y0, lines, size, lineGap, drawOpts = {}) {
+  const g = lineGap ?? Math.max(4, Math.round(size * 0.35));
+  lines.forEach((ln, i) => {
+    drawText(ctx, ln, cx, y0 + i * (size + g), {
+      ...drawOpts,
+      size,
+      align: "center",
+      maxWidth: null,
+    });
+  });
+  return lines.length ? lines.length * (size + g) - g : 0;
+}
+
+/** Left-aligned wrapped paragraph. Returns height used (px). */
+function drawWrappedLeft(ctx, lx, y0, lines, size, lineGap, drawOpts = {}) {
+  const g = lineGap ?? Math.max(4, Math.round(size * 0.35));
+  lines.forEach((ln, i) => {
+    drawText(ctx, ln, lx, y0 + i * (size + g), {
+      ...drawOpts,
+      size,
+      align: "left",
+      maxWidth: null,
+    });
+  });
+  return lines.length ? lines.length * (size + g) - g : 0;
+}
+
 export class CreateScene {
   constructor() {
     this.t = 0;
@@ -187,7 +226,7 @@ export class CreateScene {
   }
 
   hitBuildWheel(mx, my) {
-    const cardWc = 270, cardWs = 214, gap = 20, yBase = 172, cardH = 480;
+    const { cardWc, cardWs, gap, yBase, yOff, cardH } = BUILD_WHEEL;
     const totalW = cardWs + gap + cardWc + gap + cardWs;
     const originX = (W - totalW) / 2;
     const xs = [
@@ -196,7 +235,6 @@ export class CreateScene {
       originX + cardWs + gap + cardWc + gap,
     ];
     const ws = [cardWs, cardWc, cardWs];
-    const yOff = [24, 0, 24];
     for (let k = 0; k < 3; k++) {
       if (pointInRect(mx, my, xs[k], yBase + yOff[k], ws[k], cardH))
         return k === 0 ? "left" : k === 1 ? "center" : "right";
@@ -374,19 +412,16 @@ export class CreateScene {
   }
 
   renderBuildSelect(ctx) {
-    drawText(ctx, "STEP 1 / 2  -  PICK YOUR BUILD  (3-card wheel — center = choice)", W / 2, 130, {
+    drawText(ctx, "STEP 1 / 2  -  PICK YOUR BUILD  (3-card wheel — center = choice)", W / 2, 124, {
       size: 17, color: COLORS.bone, align: "center", maxWidth: W - 40,
     });
 
+    const { cardWc, cardWs, gap, yBase, yOff, cardH } = BUILD_WHEEL;
     const ids = this.buildIdsOrdered;
     const N = ids.length;
     const center = this.buildWheelIdx;
     const slotIdx = [(center - 1 + N) % N, center, (center + 1) % N];
 
-    const cardWc = 270;
-    const cardWs = 214;
-    const gap = 20;
-    const yBase = 172;
     const totalW = cardWs + gap + cardWc + gap + cardWs;
     const originX = (W - totalW) / 2;
 
@@ -396,8 +431,10 @@ export class CreateScene {
       originX + cardWs + gap + cardWc + gap,
     ];
     const ws = [cardWs, cardWc, cardWs];
-    const yOff = [24, 0, 24];
     const alpha = [0.78, 1, 0.78];
+
+    const padL = 12;
+    const padText = (cw) => cw - padL - 12;
 
     for (let k = 0; k < 3; k++) {
       const id = ids[slotIdx[k]];
@@ -409,57 +446,78 @@ export class CreateScene {
       const cardW = ws[k];
       const isCenter = k === 1;
       const unlocked = this.isBuildIdUnlocked(id);
+      const textMaxInner = padText(cardW);
 
       ctx.save();
       ctx.globalAlpha = alpha[k];
-      this.drawCard(ctx, x, y, cardW, 480, isCenter && unlocked);
+      this.drawCard(ctx, x, y, cardW, cardH, isCenter && unlocked);
 
-      const textMax = cardW - 14;
-      drawText(ctx, b.name, x + cardW / 2, y + 26, {
-        size: isCenter ? 24 : 20,
+      const cx = x + cardW / 2;
+      const nameSize = isCenter ? 24 : 21;
+      const blurbSize = 14;
+      const perkSize = 13;
+      const gapName = 5;
+      const gapBlurb = 6;
+      const gapPerk = 5;
+
+      let yCur = y + 18;
+      const nameColor = !unlocked ? "#555" : (isCenter ? COLORS.bile : COLORS.bone);
+      const nameLines = wrapText(ctx, b.name, textMaxInner, nameSize, { bold: true });
+      yCur += drawWrappedCenter(ctx, cx, yCur, nameLines, nameSize, gapName, {
         bold: true,
-        color: !unlocked ? "#555" : (isCenter ? COLORS.bile : COLORS.bone),
-        align: "center",
+        color: nameColor,
         glow: (isCenter && unlocked) ? COLORS.blood : null,
-        maxWidth: textMax,
       });
-      drawText(ctx, b.blurb, x + cardW / 2, y + 52, {
-        size: 14, color: COLORS.boneDim, align: "center", maxWidth: textMax,
-      });
+      yCur += 10;
 
+      const blurbLines = wrapText(ctx, b.blurb, textMaxInner, blurbSize, {});
+      yCur += drawWrappedCenter(ctx, cx, yCur, blurbLines, blurbSize, gapBlurb, {
+        color: COLORS.boneDim,
+      });
+      yCur += 12;
+
+      const heroCy = yCur + (isCenter ? 78 : 74);
       ctx.save();
-      ctx.translate(x + cardW / 2, y + 198);
-      ctx.scale(isCenter ? 3.65 : 3.25, isCenter ? 3.65 : 3.25);
+      ctx.translate(cx, heroCy);
+      ctx.scale(isCenter ? 3.65 : 3.28, isCenter ? 3.65 : 3.28);
       drawHero(ctx, 0, 0, 1, this.t * 6, id);
       ctx.restore();
 
-      const statsY = y + 302;
-      const barMax = 150;
       const perks = getBuildPerkLines(id);
-      if (isCenter) {
-        this.drawStatRow(ctx, x + 12, statsY + 0, "HP", b.hp, barMax, COLORS.blood);
-        this.drawStatRow(ctx, x + 12, statsY + 22, "MANA", b.mana, barMax, COLORS.mana);
-        this.drawStatRow(ctx, x + 12, statsY + 44, "ARMOR", b.armor, barMax, "#c0c4cc");
-        this.drawStatRow(ctx, x + 12, statsY + 66, "CLIMB", Math.round(b.climbSpeed * 100), barMax, COLORS.bile);
-        this.drawStatRow(ctx, x + 12, statsY + 88, "ACID RES", Math.round((1 - b.acidResist) * 100), 100, COLORS.gold);
+      const lx = x + padL;
+      let contentY = heroCy + (isCenter ? 102 : 98);
 
-        drawText(ctx, "PERKS:", x + 12, statsY + 114, { size: 14, color: COLORS.bile, bold: true });
-        perks.forEach((line, idx) => {
-          drawText(ctx, line, x + 12, statsY + 132 + idx * 18, {
-            size: 13, color: COLORS.bone, maxWidth: textMax,
-          });
+      if (isCenter) {
+        const statsY = contentY;
+        this.drawStatRow(ctx, lx, statsY, "HP", b.hp, 150, COLORS.blood);
+        this.drawStatRow(ctx, lx, statsY + 22, "MANA", b.mana, 150, COLORS.mana);
+        this.drawStatRow(ctx, lx, statsY + 44, "ARMOR", b.armor, 150, "#c0c4cc");
+        this.drawStatRow(ctx, lx, statsY + 66, "CLIMB", Math.round(b.climbSpeed * 100), 150, COLORS.bile);
+        this.drawStatRow(ctx, lx, statsY + 88, "ACID RES", Math.round((1 - b.acidResist) * 100), 100, COLORS.gold);
+
+        drawText(ctx, "PERKS:", lx, statsY + 114, {
+          size: 14, color: COLORS.bile, bold: true,
         });
+        let py = statsY + 132;
+        for (const perk of perks) {
+          const perkLines = wrapText(ctx, perk, textMaxInner, perkSize, {});
+          const h = drawWrappedLeft(ctx, lx, py, perkLines, perkSize, gapPerk, { color: COLORS.bone });
+          py += h + (perkLines.length ? 8 : 0);
+        }
       } else {
-        drawText(ctx, "PERKS:", x + 12, y + 278, { size: 14, color: COLORS.bile, bold: true });
-        perks.forEach((line, idx) => {
-          drawText(ctx, line, x + 12, y + 298 + idx * 18, {
-            size: 13, color: COLORS.bone, maxWidth: textMax,
-          });
+        drawText(ctx, "PERKS:", lx, contentY, {
+          size: 14, color: COLORS.bile, bold: true,
         });
+        let py = contentY + 18;
+        for (const perk of perks) {
+          const perkLines = wrapText(ctx, perk, textMaxInner, perkSize, {});
+          const h = drawWrappedLeft(ctx, lx, py, perkLines, perkSize, gapPerk, { color: COLORS.bone });
+          py += h + (perkLines.length ? 8 : 0);
+        }
       }
 
       if (!unlocked) {
-        this.drawLockedOverlay(ctx, x, y, cardW, 480, BUILD_UNLOCK_HINT[id] || "LOCKED");
+        this.drawLockedOverlay(ctx, x, y, cardW, cardH, BUILD_UNLOCK_HINT[id] || "LOCKED");
       }
       ctx.restore();
     }

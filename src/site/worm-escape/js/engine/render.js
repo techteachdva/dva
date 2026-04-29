@@ -391,14 +391,33 @@ export function measureText(ctx, text, opts = {}) {
 export function wrapText(ctx, text, maxWidth, size = 16, opts = {}) {
   ctx.save();
   setFont(ctx, size, opts);
-  const words = String(text).split(" ");
+  const words = String(text).split(/\s+/).filter(Boolean);
+  const breakWord = (w) => {
+    if (!maxWidth || maxWidth <= 0 || ctx.measureText(w).width <= maxWidth) return [w];
+    const out = [];
+    let piece = "";
+    for (const ch of w) {
+      const t = piece + ch;
+      if (ctx.measureText(t).width > maxWidth && piece) {
+        out.push(piece);
+        piece = ch;
+      } else {
+        piece = t;
+      }
+    }
+    if (piece) out.push(piece);
+    return out.length ? out : [w];
+  };
+  const pieces = [];
+  for (const w of words) pieces.push(...breakWord(w));
+
   const lines = [];
   let line = "";
-  for (const w of words) {
-    const test = line ? line + " " + w : w;
+  for (const part of pieces) {
+    const test = line ? line + " " + part : part;
     if (ctx.measureText(test).width > maxWidth) {
       if (line) lines.push(line);
-      line = w;
+      line = part;
     } else {
       line = test;
     }

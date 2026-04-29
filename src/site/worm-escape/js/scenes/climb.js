@@ -198,9 +198,12 @@ export class ClimbScene {
       if (game.input.wasPressed("ArrowLeft", "a") && this.col > 0) hop = -1;
       else if (game.input.wasPressed("ArrowRight", "d") && this.col < NUM_COLS - 1) hop = 1;
       else if (game.input.wasPressed("Mouse0")) {
-        if (!this.hitClimbBlockingUi(mx, my) && my >= HERO_Y) {
-          const target = columnIndexFromX(mx, COLS_X);
-          hop = stepTowardIndex(this.col, target);
+        if (!this.hitClimbBlockingUi(mx, my)) {
+          const arenaTop = 96;
+          if (my >= arenaTop && my < H - 36) {
+            const target = columnIndexFromX(mx, COLS_X);
+            hop = stepTowardIndex(this.col, target);
+          }
         }
       }
       if (hop !== 0 && this.col + hop >= 0 && this.col + hop < NUM_COLS) {

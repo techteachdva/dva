@@ -84,6 +84,8 @@ html, body {
   height: auto;
   aspect-ratio: 1280 / 800;
   vertical-align: top;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
   image-rendering: pixelated;
   image-rendering: -moz-crisp-edges;
   image-rendering: crisp-edges;

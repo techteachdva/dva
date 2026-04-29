@@ -23,6 +23,14 @@ const LANES = [W * 0.33, W * 0.5, W * 0.67];
 const FLOOR_Y = 620;
 const HERO_Y = 600;
 
+/** Bottom action strip + floating log layout (fullscreen-safe touch targets ~120px tall). */
+const ACTION_BAR_TOP = H - 128;
+const ACTION_BAR_H = 128;
+const ACTION_PAD_X = 10;
+const ACTION_GAP = 8;
+/** Floating combat log — center-right between arena and enemy HUD (clicks pass through for lane swaps). */
+const LOG_RECT = { x: 682, y: 208, w: 294, h: 320 };
+
 // Per-chamber damage multiplier applied to every source of damage the
 // PLAYER receives (acid gouts, melee hits, heavy slams, combo jabs).
 // Stomach baseline, Gullet +45%. Same curve as climb hazards.
@@ -143,7 +151,21 @@ export class CombatScene {
 
   pushLog(line) {
     this.log.push(line);
-    if (this.log.length > 4) this.log.shift();
+    if (this.log.length > 10) this.log.shift();
+  }
+
+  /** Four touch rows for Attack 1 — Attack 2 — Dodge — Brace (canvas space). */
+  actionButtonRects() {
+    const top = ACTION_BAR_TOP + 14;
+    const innerH = ACTION_BAR_H - 26;
+    const usableW = W - ACTION_PAD_X * 2 - ACTION_GAP * 3;
+    const btnW = usableW / 4;
+    const rects = [];
+    for (let i = 0; i < 4; i++) {
+      const x = ACTION_PAD_X + i * (btnW + ACTION_GAP);
+      rects.push({ x, y: top, w: btnW, h: innerH });
+    }
+    return rects;
   }
 
   enter(game) {
@@ -598,11 +620,15 @@ export class CombatScene {
   }
 
   hitCombatBlockingUi(mx, my) {
-    if (my < 116 || my >= H - 190) return true;
+    if (my < 116 || my >= ACTION_BAR_TOP) return true;
     if (pointInRect(mx, my, 16, 16, 260, 110)) return true;
-    if (pointInRect(mx, my, W - 280, 16, 264, 150)) return true;
-    if (pointInRect(mx, my, 16, H - 190, 560, 174)) return true;
-    if (pointInRect(mx, my, W - 576, H - 190, 560, 174)) return true;
+    const enemyRows =
+      1 +
+      (this.matchupLabel ? 1 : 0) +
+      (this.eliteKill ? 1 : 0) +
+      (this.enraged ? 1 : 0);
+    const enemyPanelH = 56 + Math.max(0, enemyRows - 1) * 16;
+    if (pointInRect(mx, my, W - 280, 16, 264, enemyPanelH + 6)) return true;
     return false;
   }
 
@@ -620,14 +646,12 @@ export class CombatScene {
 
     const mx = game.input.mouseX, my = game.input.mouseY;
     if (game.input.wasPressed("Mouse0")) {
-      const ax = 16, ay = H - 190, aw = 560;
-      if (pointInRect(mx, my, ax, ay, aw, 174)) {
-        for (let i = 0; i < 4; i++) {
-          const row = ay + 38 + i * 30;
-          if (pointInRect(mx, my, ax + 4, row - 5, aw - 8, 28)) {
-            choose(i);
-            return;
-          }
+      const rects = this.actionButtonRects();
+      for (let i = 0; i < 4; i++) {
+        const r = rects[i];
+        if (pointInRect(mx, my, r.x, r.y, r.w, r.h)) {
+          choose(i);
+          return;
         }
       }
     }
@@ -1763,8 +1787,9 @@ export class CombatScene {
       });
     }
 
-    // Bottom menu + log
+    // Bottom action bar — large touch lanes (handleMenu picks via actionButtonRects)
     this.drawMenu(ctx, game);
+    // Floating log center-right — does NOT block clicks (lanes pass through LOG_RECT hitbox)
     this.drawLog(ctx);
 
     // Enemy melee telegraph banner - styled differently per move type so
@@ -1822,6 +1847,17 @@ export class CombatScene {
     // v0.10 UX: action badge + context hint + help bar
     this.drawActionBadge(ctx, game);
     this.drawContextHint(ctx, game);
+    this.drawHelperStrip(ctx);
+  }
+
+  /** One line above bottom action buttons (keyboard + lane hint). */
+  drawHelperStrip(ctx) {
+    drawText(ctx,
+      "Pause [P]  · tap arena lanes to hop  ·  Q/1 · E/2 · R/3 · F/4",
+      W / 2, ACTION_BAR_TOP - 14, {
+        size: 13, color: COLORS.boneDim, align: "center", baseline: "bottom",
+        maxWidth: W - 24,
+      });
   }
 
   // Top-center action badge so new players can see at a glance what state
@@ -1903,82 +1939,115 @@ export class CombatScene {
   drawMenu(ctx, game) {
     const p = game.player;
     const l = p.loadout;
-    const x = 16, y = H - 190;
-    const w = 560, h = 174;
-    drawPanel(ctx, x, y, w, h);
-    drawText(ctx, "ACTIONS", x + 14, y + 12, { size: 13, color: COLORS.boneDim });
+    const cryo = l.cryoThird;
+    const rects = this.actionButtonRects();
+    const atkMc = l.attack.manaCost + (p.manaCostBonus || 0);
+    const specMc = l.special.manaCost + (p.manaCostBonus || 0);
+    const rollCd = (p.dodgeRollCooldown || 0);
+    const cryoCd = cryo ? (p.cooldowns.tertiary || 0) : 0;
 
-    const items = [
-      { key: "Q/1", name: l.attack.name,
-        info: `DMG ${l.attack.dmg[0]}-${l.attack.dmg[1]}  MP ${l.attack.manaCost + (p.manaCostBonus || 0)}`,
+    drawPanel(ctx, 0, ACTION_BAR_TOP, W, ACTION_BAR_H);
+    ctx.fillStyle = "rgba(12, 4, 16, 0.5)";
+    ctx.fillRect(0, ACTION_BAR_TOP, W, ACTION_BAR_H);
+
+    const dodgeMeta = cryo
+      ? `Cryo ${cryoCd > 0 ? cryoCd.toFixed(1) + "s" : "ready"} · roll ${rollCd > 0 ? rollCd.toFixed(1) + "s" : "ready"}`
+      : `Roll ${rollCd > 0 ? rollCd.toFixed(1) + "s" : "ready"}`;
+
+    const defs = [
+      {
+        headline: "ATTACK 1",
+        sub: l.attack.name,
+        meta: `${l.attack.dmg[0]}–${l.attack.dmg[1]} dmg · ${atkMc} MP`,
+        locked: p.cooldowns.attack > 0 || p.mana < atkMc,
         cd: p.cooldowns.attack,
-        locked: p.cooldowns.attack > 0 || p.mana < l.attack.manaCost + (p.manaCostBonus || 0),
         cdMax: l.attack.cooldown,
       },
-      { key: "E/2", name: l.special.name,
-        info: `DMG ${l.special.dmg[0]}-${l.special.dmg[1]}  MP ${l.special.manaCost + (p.manaCostBonus || 0)}`,
+      {
+        headline: "ATTACK 2",
+        sub: l.special.name,
+        meta: `${l.special.dmg[0]}–${l.special.dmg[1]} dmg · ${specMc} MP`,
+        locked: p.cooldowns.special > 0 || p.mana < specMc,
         cd: p.cooldowns.special,
-        locked: p.cooldowns.special > 0 || p.mana < l.special.manaCost + (p.manaCostBonus || 0),
         cdMax: l.special.cooldown,
       },
-      { key: "R/3", name: "Dodge Roll", info: "+8 MP, reposition", cd: 0, locked: false, cdMax: 0 },
-      { key: "F/4", name: "Brace",      info: "Reduce next hit. Time it late for +50% counter!", cd: 0, locked: false, cdMax: 0 },
+      {
+        headline: "DODGE",
+        sub: cryo ? `${cryo.name} or tumble` : "Tumble (+3 MP)",
+        meta: dodgeMeta,
+        locked: false,
+        cd: 0,
+        cdMax: 0,
+      },
+      {
+        headline: "BRACE",
+        sub: "Mitigate / perfect guard",
+        meta: "Late timing → counter bonus on next hit",
+        locked: false,
+        cd: 0,
+        cdMax: 0,
+      },
     ];
 
-    items.forEach((it, i) => {
-      const row = y + 38 + i * 30;
-      const selected = i === this.menuIdx;
-      if (selected) {
-        ctx.fillStyle = "rgba(155, 255, 102, 0.14)";
-        ctx.fillRect(x + 4, row - 5, w - 8, 28);
-        // Accent left edge
-        ctx.fillStyle = COLORS.bile;
-        ctx.fillRect(x + 4, row - 5, 3, 28);
-      }
-      const col = it.locked ? COLORS.boneDim : (selected ? COLORS.bile : COLORS.bone);
-      // Reserve space for the cooldown bar (90px) when it exists, plus
-      // padding, so the info column truncates cleanly instead of spilling
-      // into the bar.
-      const cdReserve = it.cdMax > 0 ? 110 : 16;
-      const nameMax = 240 - 74 - 6;
-      const infoMax = w - 240 - cdReserve;
-      drawText(ctx, `[${it.key}]`, x + 14, row, { size: 13, color: col, bold: true });
-      drawText(ctx, it.name,      x + 74, row, {
-        size: 14, color: col, bold: selected, maxWidth: nameMax,
+    for (let i = 0; i < 4; i++) {
+      const r = rects[i];
+      const def = defs[i];
+      const sel = i === this.menuIdx;
+      const cx = r.x + r.w / 2;
+      ctx.save();
+      roundRect(ctx, r.x + 2, r.y + 2, r.w - 4, r.h - 4, 10);
+      ctx.fillStyle = def.locked
+        ? "rgba(38, 38, 44, 0.9)"
+        : sel
+          ? "rgba(55, 85, 38, 0.55)"
+          : "rgba(26, 14, 30, 0.92)";
+      ctx.fill();
+      ctx.strokeStyle = sel ? COLORS.bile : "rgba(255,255,255,0.22)";
+      ctx.lineWidth = sel ? 3 : 1.5;
+      ctx.stroke();
+
+      const headCol = def.locked ? COLORS.boneDim : COLORS.bile;
+      drawText(ctx, def.headline, cx, r.y + 22, {
+        size: 20, color: headCol, align: "center", bold: true, baseline: "middle",
       });
-      drawText(ctx, it.info,      x + 240, row, {
-        size: 12, color: COLORS.boneDim, maxWidth: infoMax,
+      drawText(ctx, def.sub, cx, r.y + 50, {
+        size: 14,
+        color: def.locked ? "#666" : COLORS.bone,
+        align: "center",
+        bold: true,
+        baseline: "middle",
+        maxWidth: r.w - 14,
       });
-      // Cooldown bar (if applicable)
-      if (it.cdMax > 0) {
-        const bw = 90;
-        const bx = x + w - bw - 14;
-        drawBar(ctx, bx, row - 2, bw, 14, it.cd > 0 ? 1 - it.cd / it.cdMax : 1, {
-          fill: it.cd > 0 ? "#5a6a7a" : COLORS.bile,
-          label: it.cd > 0 ? `${it.cd.toFixed(1)}s` : "READY",
+      drawText(ctx, def.meta, cx, r.y + 78, {
+        size: 11, color: COLORS.boneDim, align: "center", baseline: "middle",
+        maxWidth: r.w - 12,
+      });
+      if (def.cdMax > 0) {
+        const ready = def.cd <= 0;
+        const denom = def.cdMax;
+        drawBar(ctx, r.x + 12, r.y + r.h - 28, r.w - 24, 14, ready ? 1 : Math.max(0, 1 - def.cd / denom), {
+          fill: ready ? COLORS.bile : "#5a6a7a",
+          label: ready ? "READY" : `${def.cd.toFixed(1)}s`,
           labelColor: "#111",
         });
       }
-    });
+      ctx.restore();
+    }
   }
 
   drawLog(ctx) {
-    const x = W - 576, y = H - 190;
-    const w = 560, h = 174;
+    const { x, y, w, h } = LOG_RECT;
     drawPanel(ctx, x, y, w, h);
-    drawText(ctx, "COMBAT LOG", x + 14, y + 12, { size: 13, color: COLORS.boneDim });
-    this.log.forEach((line, i) => {
-      drawText(ctx, line, x + 14, y + 40 + i * 26, {
-        size: 13, color: COLORS.bone,
+    drawText(ctx, "COMBAT LOG", x + 14, y + 12, { size: 14, color: COLORS.bile, bold: true });
+    const lineGap = 19;
+    const maxLines = Math.min(this.log.length, Math.max(1, Math.floor((h - 54) / lineGap)));
+    const slice = this.log.slice(-maxLines);
+    slice.forEach((line, i) => {
+      drawText(ctx, line, x + 14, y + 38 + i * lineGap, {
+        size: 12, color: COLORS.bone,
         maxWidth: w - 28,
       });
     });
-    // v0.14 legibility: help string trimmed to fit inside the 560-wide
-    // panel so it never runs off the bottom-right of the screen.
-    drawText(ctx,
-      "[Q/1–F/4] row click · Attack / Special · Dodge · Brace · click arena lane to hop · [P] Pause",
-      x + 14, y + h - 22,
-      { size: 12, color: COLORS.bone, maxWidth: w - 28 });
   }
 
   drawPause(ctx) {
