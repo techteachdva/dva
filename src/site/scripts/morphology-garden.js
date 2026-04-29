@@ -1746,6 +1746,40 @@ const INTRO_SPIN_TURNS = 3.35;
 const INTRO_RING_RADIUS = 54;
 
 function init(host, detailEl, selectEl, shellEl) {
+  /** Restore point when #morph-detail is docked over the canvas in fullscreen. */
+  const morphDetailSlot = {
+    parent: /** @type {HTMLElement | null} */ (detailEl?.parentElement ?? null),
+    next: /** @type {Element | null} */ (detailEl?.nextElementSibling ?? null),
+  };
+
+  function morphDockDetailToViewer() {
+    if (!detailEl || !host) return;
+    const pageFlowParent = morphDetailSlot.parent;
+    const fsApi =
+      typeof document !== "undefined"
+        ? document.fullscreenElement ||
+          /** @type {Document & { webkitFullscreenElement?: Element | null }} */ (document)
+            .webkitFullscreenElement
+        : null;
+    const inFs =
+      !!fsApi || document.documentElement.classList.contains("morph-immersive-open");
+    const wantsDock = inFs && detailEl.classList.contains("morph-detail--word-focus");
+
+    if (wantsDock && detailEl.parentElement !== host) {
+      host.appendChild(detailEl);
+      detailEl.classList.add("morph-detail--viewer-dock");
+    } else if (!wantsDock && detailEl.classList.contains("morph-detail--viewer-dock")) {
+      detailEl.classList.remove("morph-detail--viewer-dock");
+      if (pageFlowParent) {
+        if (morphDetailSlot.next && morphDetailSlot.next.parentNode === pageFlowParent) {
+          pageFlowParent.insertBefore(detailEl, morphDetailSlot.next);
+        } else {
+          pageFlowParent.appendChild(detailEl);
+        }
+      }
+    }
+  }
+
   const runIntroCinematic = !REDUCED_MOTION && USE_TYPO_INTRO && !morphIntroPlayedThisSession();
   assignGrid2d();
   assignWhiteboardCircle();
@@ -2390,8 +2424,18 @@ function init(host, detailEl, selectEl, shellEl) {
     html += `</section>`;
     detailEl.innerHTML = html;
     detailEl.classList.add("morph-detail--word-focus");
+    morphDockDetailToViewer();
     requestAnimationFrame(() => {
-      detailEl?.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
+      const inFs =
+        !!(
+          typeof document !== "undefined" &&
+          (document.fullscreenElement ||
+            /** @type {Document & { webkitFullscreenElement?: Element | null }} */ (document)
+              .webkitFullscreenElement)
+        ) || document.documentElement.classList.contains("morph-immersive-open");
+      if (!inFs) {
+        detailEl?.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
+      }
     });
   }
 
@@ -2403,11 +2447,13 @@ function init(host, detailEl, selectEl, shellEl) {
         return;
       }
       detailEl.classList.remove("morph-detail--word-focus");
+      morphDockDetailToViewer();
       detailEl.innerHTML = `<p><strong>Master Tree (🔗 links).</strong> Every word packs into hubs so all shared morphemes stay visible together. Switch <strong>Arrangement ▸ Master</strong> for this linked layout; switch <strong>Surface ▸ 📋 Whiteboard</strong> for a flat projector view or <strong>🌐 3D</strong> so bridges arch in depth. Magenta ribbons connect identical morphemes across words—those <em>spatial</em> links are deliberately stronger in 3D. Hover spheres for gloss; pick a word in the menu for the chapter note and morphology mini-lesson.</p>`;
       return;
     }
     if (!selectEl || selectEl.value === GARDEN_SELECT) {
       detailEl.classList.remove("morph-detail--word-focus");
+      morphDockDetailToViewer();
       detailEl.innerHTML = `<p><strong>Garden (🌳)</strong> — every tree in textbook space. Toggle <strong>Surface ▸ ✔ Whiteboard</strong> for diagram-style side-elevation (narrow lens, tilted silhouette, pan/zoom) vs <strong>🌐 3D</strong> orbital depth.</p><p><strong>Tips:</strong> isolate one word from the menu for a focused tree, mini-lesson, and camera zoom; hover morphemes for gloss.</p>`;
       return;
     }
@@ -3174,6 +3220,7 @@ function init(host, detailEl, selectEl, shellEl) {
     const root = document.documentElement;
     if (fsTarget) fsTarget.classList.toggle("morphology-shell--immersive", on);
     root.classList.toggle("morph-immersive-open", on);
+    morphDockDetailToViewer();
     requestAnimationFrame(() => resizeCanvasToHost());
   }
 
@@ -3210,6 +3257,7 @@ function init(host, detailEl, selectEl, shellEl) {
       try {
         await requestFullscreenApi(el);
         syncFsButton();
+        morphDockDetailToViewer();
         window.scrollTo(0, 0);
         resizeCanvasToHost();
         return;
@@ -3227,6 +3275,7 @@ function init(host, detailEl, selectEl, shellEl) {
     const onFsEvent = () => {
       if (!getFullscreenElement()) setMorphImmersiveCss(false);
       syncFsButton();
+      morphDockDetailToViewer();
       resizeCanvasToHost();
     };
     document.addEventListener("fullscreenchange", onFsEvent);

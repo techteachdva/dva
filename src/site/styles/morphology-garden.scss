@@ -570,7 +570,7 @@ html.morph-immersive-open body {
   left: 50%;
   top: 44%;
   transform: translate(-50%, -50%);
-  z-index: 25;
+  z-index: 40;
   max-width: min(92vw, 24rem);
   pointer-events: auto;
 }
@@ -834,6 +834,42 @@ html.morph-immersive-open body {
   border-color: rgba(125, 211, 252, 0.55);
   box-shadow: 0 10px 38px rgba(0, 140, 220, 0.12);
   outline: 1px solid rgba(125, 211, 252, 0.2);
+}
+
+/* Mini-lesson docked inside the WebGL host while fullscreen / immersive (word isolate) */
+#morph-canvas-host .morph-detail.morph-detail--viewer-dock,
+.morph-canvas-host .morph-detail.morph-detail--viewer-dock {
+  position: absolute;
+  z-index: 30;
+  left: 0.5rem;
+  right: 0.5rem;
+  bottom: 0.5rem;
+  max-width: none;
+  width: auto;
+  margin: 0;
+  max-height: min(42vh, 22rem);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  font-size: 0.88rem;
+  line-height: 1.48;
+  box-shadow: 0 -8px 36px rgba(0, 0, 0, 0.45);
+  border-radius: 10px;
+  pointer-events: auto;
+}
+
+.morphology-shell--wb .morph-detail.morph-detail--viewer-dock {
+  background: rgba(255, 255, 255, 0.96);
+  border-color: rgba(100, 116, 139, 0.45);
+  color: #0f172a;
+  box-shadow: 0 -8px 32px rgba(15, 23, 42, 0.14);
+}
+
+.morphology-shell--wb .morph-detail.morph-detail--viewer-dock .morph-lesson__h {
+  color: #0f172a;
+}
+
+.morphology-shell--wb .morph-detail.morph-detail--viewer-dock .morph-chapter-note {
+  border-top-color: rgba(100, 116, 139, 0.35);
 }
 
 .morph-detail .morph-bracket {
