@@ -33,8 +33,8 @@ const DEFAULT_SAVE = {
     blunderbuss:   false,
     cursedScythe:  false,
     rustyChainsaw: false,
-    cat:           false,
-    anyElite:      false,
+    cat: false,
+    necromancerBuild: false,
   },
   stats: {
     runs: 0,

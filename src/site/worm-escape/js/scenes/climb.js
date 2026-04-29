@@ -295,7 +295,8 @@ export class ClimbScene {
       const [tMin, tMax] = ch.debrisInterval;
       // Pact modifier: Tide Watcher raises the interval (slower debris).
       const rateMult = (p.pactMods && p.pactMods.debrisRateMult) || 1;
-      this.debrisTimer = rand(tMin * rateMult, tMax * rateMult);
+      const voidM = (p.voidDebrisIntervalMult ?? 1);
+      this.debrisTimer = rand(tMin * rateMult * voidM, tMax * rateMult * voidM);
       // Base spawn count per cycle scales with the chamber.
       const baseCount = ch.spawnCount || 1;
       const usedCols = [];

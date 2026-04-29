@@ -9,7 +9,7 @@ import { CHAMBERS } from "../content/chambers.js";
 import { ENEMIES } from "../content/enemies.js";
 import { rollElite, applyElite } from "../content/elites.js";
 import { pick, rand, randInt } from "../engine/rng.js";
-import { applyDamage, matchupMultiplier, matchupLabel, recordDirectHpHit, recordDirectArmorHit } from "../content/player.js";
+import { applyDamage, matchupMultiplier, matchupLabel, recordDirectHpHit, recordDirectArmorHit, plasmElementMult } from "../content/player.js";
 import { TransitionScene } from "./transition.js";
 import { PactScene } from "./pact.js";
 import { GameOverScene } from "./gameover.js";
@@ -41,6 +41,7 @@ export class CombatScene {
       ...ed, hp, hpMax: hp,
       attackDmg: ed.attackDmg ? [...ed.attackDmg] : undefined,
       heavyDmg:  ed.heavyDmg  ? [...ed.heavyDmg]  : undefined,
+      stunT: 0,
     };
     // Elite roll - if the chamber promotes the guardian to an Elite, wrap
     // it with the stat bumps and a twist. Elite state is read all over
@@ -172,6 +173,7 @@ export class CombatScene {
     this.t += dt;
     this.anim += dt * 4;
     const p = game.player;
+    if (typeof game.invulnerable === "boolean") p.invulnerable = game.invulnerable;
     if (p.score) p.score.timeSpent += dt;
 
     // Lane lerp
@@ -221,6 +223,8 @@ export class CombatScene {
 
     if (this.phase === "fight") {
       this.updateCooldowns(dt, p);
+      this.tickSentryDPS(dt, p);
+      if (this.enemy.stunT > 0) this.enemy.stunT -= dt;
       this.updateAcidGouts(dt, p);
       this.updateEnemyMelee(dt, p);
       this.handleMenu(dt, game);
@@ -369,6 +373,31 @@ export class CombatScene {
   updateCooldowns(dt, p) {
     p.cooldowns.attack  = Math.max(0, p.cooldowns.attack  - dt);
     p.cooldowns.special = Math.max(0, p.cooldowns.special - dt);
+    if (p.cooldowns.tertiary != null) p.cooldowns.tertiary = Math.max(0, p.cooldowns.tertiary - dt);
+    if (p.dodgeRollCooldown > 0) p.dodgeRollCooldown = Math.max(0, p.dodgeRollCooldown - dt);
+  }
+
+  tickSentryDPS(dt, p) {
+    const spec = p.loadout?.special;
+    if (!spec?.sentryBuild) return;
+    const s = p.sentry;
+    if (!s) return;
+    if (!s.online && (s.buildLeft || 0) > 0) {
+      s.buildLeft -= dt;
+      if (s.buildLeft <= 0) {
+        s.online = true;
+        s.nextPulse = 0.2;
+        this.pushLog("SENTRY ONLINE — pew pew!");
+        SFX.confirm();
+      }
+      return;
+    }
+    if (!s.online || !s.dmgRange) return;
+    s.nextPulse = (s.nextPulse || 0) - dt;
+    if (s.nextPulse > 0) return;
+    s.nextPulse = s.interval || 0.5;
+    const burst = randInt(s.dmgRange[0], s.dmgRange[1]) * (s.magicMult || 1);
+    this.dealToEnemy(Math.max(4, burst), "SENTRY BOLT", "cast", p, { kind: "special" });
   }
 
   updateAcidGouts(dt, p) {
@@ -469,9 +498,15 @@ export class CombatScene {
   }
 
   updateEnemyMelee(dt, p) {
+    if ((this.enemy.stunT || 0) > 0) return;
+    if ((this.enemy.slowT || 0) > 0) {
+      this.enemy.slowT = Math.max(0, this.enemy.slowT - dt);
+    }
+    const slow = (this.enemy.slowT || 0) > 0 ? (this.enemy.slowMul || 0.55) : 1;
+
     // --- Combo sequence in progress ---
     if (this.comboHitsLeft > 0) {
-      this.comboHitTimer -= dt;
+      this.comboHitTimer -= dt * slow;
       if (this.comboHitTimer <= 0) {
         const raw = randInt(this.enemy.attackDmg[0], this.enemy.attackDmg[1]) * 0.55;
         this.landEnemyMelee(p, raw, "combo");
@@ -487,7 +522,7 @@ export class CombatScene {
 
     // --- Tell in progress ---
     if (this.enemyTelling) {
-      this.enemyTellTime -= dt;
+      this.enemyTellTime -= dt * slow;
       if (this.enemyTellTime <= 0) {
         // Tell ends -> move resolves.
         const move = this.enemyMoveType;
@@ -514,7 +549,7 @@ export class CombatScene {
     }
 
     // --- Between turns: countdown and pick next move ---
-    this.enemyTurnTimer -= dt;
+    this.enemyTurnTimer -= dt * slow;
     if (this.enemyTurnTimer <= 0) {
       const move = this.planEnemyMove();
       this.enemyMoveType = move;
@@ -585,11 +620,11 @@ export class CombatScene {
           kind: "attack",
           multiLane: !!l.attack.multiLane,
           hexMark: !!l.attack.hexMark,
-          // v0.16 per-attack poison/bleed and lifesteal (read by applyOnHitEffects/applyHit).
           movePoisonPct: l.attack.poisonPct || 0,
           movePoisonTime: l.attack.poisonTime || 0,
           dotLabel: l.attack.dotLabel || "POISON",
           lifestealPct: l.attack.lifestealPct || 0,
+          plasmElement: l.attack.plasmElement || undefined,
         };
         this.dealToEnemy(dmg, l.attack.name, l.attack.sfx, p, opts);
         this.turnLocked = 0.28;
@@ -599,9 +634,18 @@ export class CombatScene {
         const manaCost = l.special.manaCost + (p.manaCostBonus || 0);
         if (p.cooldowns.special > 0) { SFX.deny(); this.pushLog(`${l.special.name} is recharging...`); return; }
         if (p.mana < manaCost) { SFX.deny(); this.pushLog("Not enough mana!"); return; }
+        // Engineer wrench: sentry deploy — consumes special; no melee strike.
+        if (l.special.sentryBuild && p.sentry && !p.sentry.online && (p.sentry.buildLeft || 0) <= 0) {
+          p.mana -= manaCost;
+          p.cooldowns.special = l.special.cooldown * (pm.specialCdMult || 1);
+          p.sentry.buildLeft = (p.sentry.deployTime ?? l.special.buildTime ?? 3);
+          this.pushLog("SENTRY ASSEMBLING... hold the line...");
+          SFX.confirm();
+          this.turnLocked = 0.35;
+          break;
+        }
         p.mana -= manaCost;
-        // v0.16 RUSTY CHAINSAW: special is unreliable. On misfire we refund
-        // half mana, lock out for half the normal cooldown, and bail out.
+        // v0.16 RUSTY CHAINSAW:
         if (l.special.misfireChance && Math.random() < l.special.misfireChance) {
           p.mana = Math.min(p.manaMax, p.mana + Math.floor(manaCost / 2));
           p.cooldowns.special = (l.special.cooldown * 0.5) * (pm.specialCdMult || 1);
@@ -620,16 +664,47 @@ export class CombatScene {
           movePoisonTime: l.special.poisonTime || 0,
           dotLabel: l.special.dotLabel || "POISON",
           lifestealPct: l.special.lifestealPct || 0,
+          plasmElement: l.special.plasmElement || undefined,
         };
         this.dealToEnemy(dmg, l.special.name, l.special.sfx, p, opts);
+        if (l.special.shockStun) this.enemy.stunT = Math.max(this.enemy.stunT || 0, l.special.shockStun || 2.5);
         this.turnLocked = 0.45;
         break;
       }
       case 2: {
-        p.mana = Math.min(p.manaMax, p.mana + 8);
-        this.pushLog("You roll! Caught your breath (+8 MP).");
+        const cryo = l.cryoThird;
+        if (p.loadoutId === "plasmids" && cryo) {
+          const mc = cryo.manaCost + (p.manaCostBonus || 0);
+          if (p.cooldowns.tertiary > 0) {
+            SFX.deny(); this.pushLog(`${cryo.name} is recharging...`); return;
+          }
+          if (p.mana < mc) { SFX.deny(); this.pushLog("Not enough mana!"); return; }
+          p.mana -= mc;
+          p.cooldowns.tertiary = cryo.cooldown * (pm.specialCdMult || 1);
+          const dmg = randInt(cryo.dmg[0], cryo.dmg[1]);
+          this.dealToEnemy(dmg, cryo.name, cryo.sfx, p, {
+            kind: "special",
+            plasmElement: cryo.plasmElement,
+          });
+          this.enemy.slowMul = cryo.slowMul || 0.5;
+          this.enemy.slowT = cryo.slowT || 1.5;
+          this.pushLog(`${cryo.name} — frost webbing stacks!`);
+          SFX.cast();
+          this.turnLocked = 0.42;
+          break;
+        }
+        if ((p.dodgeRollCooldown || 0) > 0) {
+          SFX.deny(); this.pushLog("Dodge needs a heartbeat to recover."); return;
+        }
+        const dir = Math.random() < 0.5 ? -1 : 1;
+        const nl = Math.max(0, Math.min(2, this.lane + dir));
+        this.lane = nl;
+        this.targetX = LANES[nl];
+        p.mana = Math.min(p.manaMax, p.mana + 3);
+        p.dodgeRollCooldown = 1.22;
+        this.pushLog(dir < 0 ? "You tumble LEFT (-1 lane). +3 MP." : "You tumble RIGHT (+1 lane). +3 MP.");
         SFX.dodge();
-        this.turnLocked = 0.22;
+        this.turnLocked = 0.32;
         break;
       }
       case 3: {
@@ -661,31 +736,43 @@ export class CombatScene {
   // Compute the final damage amount for ONE hit event, taking pact mods,
   // weapon matchup, perfect brace, hex marks, execute threshold, and random
   // crit into account. Returns { dmg, isCrit, executed }.
-  rollHitDamage(rawDmg, { kind = "attack", consumeMarks = false, counterOn = false } = {}, p = null) {
+  rollHitDamage(rawDmg, {
+    kind = "attack",
+    consumeMarks = false,
+    counterOn = false,
+    hitMult: hitMultPass,
+  } = {}, p = null) {
     const pm = (p && p.pactMods) || {};
-    const mult = this.matchupMult || 1;
+    const mult = typeof hitMultPass === "number" ? hitMultPass : (this.matchupMult || 1);
+    let base = rawDmg;
+    if (pm.gamblerVariance && typeof rawDmg === "number") {
+      base = Math.max(
+        1,
+        Math.round(rawDmg * (0.25 + Math.random() * (3.5 - 0.25))),
+      );
+    }
     const counterMult = counterOn ? (pm.counterMult || 1.5) : 1;
-    // Basic / special slant
     const kindMult = kind === "special"
       ? (pm.specialDmgMult || 1)
       : (pm.attackDmgMult || 1);
     const dmgMult = pm.dmgMult || 1;
-    // Execute bonus - below HP threshold, damage spikes.
     const hpFrac = this.enemy.hp / this.enemy.hpMax;
-    const execOn = pm.executeThreshold && hpFrac <= pm.executeThreshold;
+    const execOn = !!(pm.executeThreshold && hpFrac <= pm.executeThreshold);
     const execMult = execOn ? (pm.executeBonus || 1) : 1;
-    // Random crit from pacts (devastating multiplier treated like matchup).
-    const isCrit = (pm.critChance || 0) > 0 && Math.random() < (pm.critChance || 0);
-    const critMult = isCrit ? 1.6 : 1;
-    // Hex marks: the HEX STAFF special detonates all current marks for a
-    // +20% burst per mark (then clears them). Attacks only CONSUME marks
-    // (consume up to 3 of them into a +20%/each buff on the current hit).
+    const tamerMult = (pm.tamerCull && hpFrac <= (pm.tamerCullThreshold ?? 0.38))
+      ? (pm.tamerCullMult || 1.85) : 1;
+    let isCrit = (pm.critChance || 0) > 0 && Math.random() < (pm.critChance || 0);
+    let critMult = isCrit ? 1.6 : 1;
+    if (critMult >= 1.5 && p?.synergyId === "scout" && Math.random() < 0.5) {
+      critMult *= 2;
+      isCrit = true;
+    }
     let markMult = 1;
     if (this.hexMarks > 0) {
       markMult = 1 + (consumeMarks ? this.hexMarks * 0.6 : Math.min(this.hexMarks, 1) * 0.2);
     }
     const dmg = Math.max(1, Math.round(
-      rawDmg * mult * counterMult * kindMult * dmgMult * execMult * critMult * markMult,
+      base * mult * counterMult * kindMult * dmgMult * execMult * tamerMult * critMult * markMult,
     ));
     return { dmg, isCrit, execOn, consumedMarks: consumeMarks ? this.hexMarks : 0 };
   }
@@ -694,6 +781,8 @@ export class CombatScene {
     const multiLane = !!opts.multiLane;
     const hexMark   = !!opts.hexMark;
     const hexDet    = !!opts.hexDetonate;
+    let hitMult = this.matchupMult;
+    if (opts.plasmElement) hitMult = plasmElementMult(opts.plasmElement, this.enemy.art);
     // v0.16 per-attack on-hit effects. Wired through to applyHit/applyOnHitEffects.
     const fxCtx = {
       movePoisonPct:  opts.movePoisonPct  || 0,
@@ -715,7 +804,7 @@ export class CombatScene {
       let firstRoll = true;
       for (let i = 0; i < LANE_OFFS.length; i++) {
         const { dmg, isCrit, execOn } = this.rollHitDamage(rawDmg, {
-          kind: opts.kind, counterOn: firstRoll && hadCounter,
+          kind: opts.kind, counterOn: firstRoll && hadCounter, hitMult,
         }, p);
         firstRoll = false;
         this.applyHit(dmg, {
@@ -740,6 +829,7 @@ export class CombatScene {
     // --- Default single-lane hit ---
     const { dmg, isCrit, execOn, consumedMarks } = this.rollHitDamage(rawDmg, {
       kind: opts.kind, consumeMarks: hexDet, counterOn: hadCounter,
+      hitMult,
     }, p);
     this.applyHit(dmg, { name, sfx, p, hadCounter, isCrit, execOn, consumedMarks,
       lifestealPct: fxCtx.lifestealPct });
@@ -843,7 +933,8 @@ export class CombatScene {
     // Combine build-wide poison (Viper, Hex-Eyed pact) with per-weapon
     // poison/bleed (Bone Spear, Cursed Scythe, Rusty Chainsaw rev). The
     // strongest of the two wins for both DPS and remaining duration.
-    const poisonPct  = Math.max(pm.poisonPct  ?? 0, movePoisonPct);
+    let mpExtra = movePoisonPct * (p.synergyDecay ? 2.65 : 1);
+    const poisonPct  = Math.max(pm.poisonPct  ?? 0, mpExtra);
     const poisonTime = Math.max(pm.poisonTime ?? 0, movePoisonTime);
     if (poisonPct > 0 && poisonTime > 0) {
       this.enemy.poisonT = Math.max(this.enemy.poisonT || 0, poisonTime);

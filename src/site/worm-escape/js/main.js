@@ -23,6 +23,8 @@ const game = {
   player: null,
   chamberIndex: 0,
   W, H,
+  invulnerable: false,
+  pickAnyWeapon: false,
 };
 
 game.scenes.push(new IntroScene(), game);

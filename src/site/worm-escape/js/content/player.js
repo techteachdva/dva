@@ -1,4 +1,20 @@
 import { getPact } from "./pacts.js";
+import { applySynergy } from "./synergies.js";
+
+// v0.17 Global outbound attack pacing — lengthen all weapon timers so
+// button-mash wins are harder. Applied once per-run via cloneLoadout().
+export const GLOBAL_ATTACK_CD_MULT = 1.38;
+
+function cloneLoadout(lo) {
+  return JSON.parse(JSON.stringify(lo));
+}
+
+function scaleLoadoutCooldowns(l, mult = GLOBAL_ATTACK_CD_MULT) {
+  if (!l || !l.attack) return;
+  l.attack.cooldown *= mult;
+  l.special.cooldown *= mult;
+  if (l.cryoThird && l.cryoThird.cooldown) l.cryoThird.cooldown *= mult;
+}
 
 // Player model, builds, and loadouts.
 //
@@ -92,6 +108,100 @@ export const BUILDS = {
     manaShieldRatio: 2,      // 2 MP absorbs 1 dmg
     spellAmpMult: 1.4,       // global +40% outgoing damage
     manaCostBonus: 2,        // every attack costs +2 MP on top of base
+  },
+  // --- v0.17 Core class picks (always selectable) ---
+  balanced: {
+    id: "balanced",
+    name: "BALANCED",
+    blurb: "Jack of all guts. No extreme highs — no hopeless lows.",
+    hp: 105,
+    mana: 52,
+    armor: 12,
+    armorSoak: 0.35,
+    climbSpeed: 1.14,
+    hopCooldown: 0.095,
+    laneSwapCd: 0.10,
+    dodgeWindow: 0.56,
+    acidResist: 0.82,
+    tankHits: 1,
+    poisonPct: 0,
+    poisonTime: 0,
+  },
+  tryHard: {
+    id: "tryHard",
+    name: "TRY-HARD",
+    blurb: "All gas, paper skin. DOUBLE speed & damage — 10 HP and a dream.",
+    hp: 10,
+    mana: 52,
+    armor: 0,
+    armorSoak: 0,
+    climbSpeed: 1.76,
+    hopCooldown: 0.046,
+    laneSwapCd: 0.05,
+    dodgeWindow: 0.58,
+    acidResist: 1.05,
+    tankHits: 0,
+    tryHardGimmick: true,
+    poisonPct: 0,
+    poisonTime: 0,
+  },
+  gambler: {
+    id: "gambler",
+    name: "GAMBLER",
+    blurb: "Lady Luck kisses or slaps — each hit rolls ¼× to 3.5× pain.",
+    hp: 88,
+    mana: 62,
+    armor: 0,
+    armorSoak: 0,
+    climbSpeed: 1.32,
+    hopCooldown: 0.086,
+    laneSwapCd: 0.08,
+    dodgeWindow: 0.58,
+    acidResist: 0.95,
+    tankHits: 0,
+    gamblerGimmick: true,
+    poisonPct: 0,
+    poisonTime: 0,
+  },
+  tamer: {
+    id: "tamer",
+    name: "TAMER",
+    blurb: "Soft strikes — finishers sting when the prey is bloodied.",
+    hp: 95,
+    mana: 58,
+    armor: 8,
+    armorSoak: 0.22,
+    climbSpeed: 1.22,
+    hopCooldown: 0.098,
+    laneSwapCd: 0.10,
+    dodgeWindow: 0.56,
+    acidResist: 0.88,
+    tankHits: 1,
+    tamerGimmick: true,
+    poisonPct: 0,
+    poisonTime: 0,
+  },
+  // Cheat-unlocked (typing "jackson" on forge screen). Death-mage vibe.
+  necromancer: {
+    id: "necromancer",
+    name: "THE NECROMANCER",
+    blurb: "Speaks bone. Mana drinks life before flesh is touched.",
+    hp: 55,
+    mana: 95,
+    armor: 0,
+    armorSoak: 0,
+    climbSpeed: 1.05,
+    hopCooldown: 0.11,
+    laneSwapCd: 0.11,
+    dodgeWindow: 0.52,
+    acidResist: 0.82,
+    tankHits: 0,
+    manaShield: true,
+    manaShieldRatio: 1.65,
+    spellAmpMult: 1.25,
+    manaCostBonus: 1,
+    poisonPct: 0,
+    poisonTime: 0,
   },
 };
 
@@ -305,6 +415,60 @@ export const LOADOUTS = {
     strongVs: "tentacle",
     weakVs:   "zombie",
   },
+  // v0.17 — Engineer wrench (sentry DPS handled in combat.js).
+  engineerWrench: {
+    id: "engineerWrench",
+    name: "ENGINEER'S WRENCH",
+    icon: "wrench",
+    blurb: "Light taps. Big metal friend does the real work.",
+    attack:  { name: "Light Tap",   dmg: [7, 11],  cooldown: 0.58, manaCost: 1,  sfx: "thud" },
+    special: { name: "Deploy Sentry", dmg: [2, 4], cooldown: 5.2, manaCost: 8, sfx: "confirm",
+      sentryBuild: true, buildTime: 3, sentryDmg: [9, 14], sentryInterval: 0.5 },
+    color: "#9aa0ac",
+    strongVs: "teeth",
+    weakVs:   "tentacle",
+  },
+  // The Void — climb mobility; combat uses Bare Fists (combatAs).
+  voidWalker: {
+    id: "voidWalker",
+    name: "THE VOID",
+    icon: "void",
+    combatAs: "fists",
+    blurb: "Run between worlds. No weapon — only echoes in the dark.",
+    voidClimbMult: 2.5,
+    voidDebrisIntervalMult: 0.52,
+    climbOnly: true,
+    color: "#1a0520",
+    strongVs: "flesh",
+    weakVs:   "teeth",
+  },
+  chair: {
+    id: "chair",
+    name: "FOLDING CHAIR",
+    icon: "chair",
+    blurb: "Audience participation. Hits like a disqualification.",
+    chairClimbMult: 1.5,
+    attack:  { name: "Chair Slam",    dmg: [28, 38], cooldown: 1.05, manaCost: 10, sfx: "crunch" },
+    special: { name: "Oak Execution", dmg: [46, 62], cooldown: 3.9,  manaCost: 22, sfx: "thud" },
+    color: "#8b5a2b",
+    strongVs: "zombie",
+    weakVs:   "teeth",
+  },
+  plasmids: {
+    id: "plasmids",
+    name: "ADAM PLASMIDS",
+    icon: "plasmids",
+    blurb: "Triple helix payloads: fire rot, fry ooze, lock jawlines.",
+    attack:  { name: "Incinerate",  dmg: [8, 13],  cooldown: 0.75, manaCost: 4, sfx: "cast",
+      plasmElement: "fire" },
+    special: { name: "Tesla Burst", dmg: [26, 36], cooldown: 3.0,  manaCost: 18, sfx: "cast",
+      plasmElement: "shock", shockStun: 2.5 },
+    cryoThird: { name: "Cryo Shear",  dmg: [14, 20], cooldown: 1.15, manaCost: 5, sfx: "cast",
+      plasmElement: "cryo", slowMul: 0.45, slowT: 1.5 },
+    color: "#59f0dc",
+    strongVs: "flesh",
+    weakVs:   "teeth",
+  },
 };
 
 // Multiplier returned when loadout `lId` attacks enemy art type `art`.
@@ -312,9 +476,22 @@ export const LOADOUTS = {
 export function matchupMultiplier(loadoutId, enemyArt) {
   const l = LOADOUTS[loadoutId];
   if (!l) return 1;
+  if (l.combatAs) return matchupMultiplier(l.combatAs, enemyArt);
   if (l.strongVs === enemyArt) return 1.6;
   if (l.weakVs   === enemyArt) return 0.6;
   return 1;
+}
+
+/** Plasmids (and similar): per-move matchup — fire shocks flesh, flops on bile… */
+export function plasmElementMult(element, enemyArt) {
+  const rows = {
+    fire: { flesh: 1.6, bile: 0.6 },
+    shock:{ bile:  1.6, zombie: 0.6 },
+    cryo: { teeth: 1.6, flesh: 0.6 },
+  };
+  const row = rows[element];
+  if (!row || !enemyArt) return 1;
+  return row[enemyArt] ?? 1;
 }
 
 export function matchupLabel(mult) {
@@ -323,12 +500,41 @@ export function matchupLabel(mult) {
   return null;
 }
 
-export function makePlayer(buildId, loadoutId) {
+export function makePlayer(buildId, loadoutId, gameCheats = null) {
   const b = BUILDS[buildId];
-  const l = LOADOUTS[loadoutId];
-  return {
+  const def = LOADOUTS[loadoutId];
+  if (!b || !def) throw new Error("Unknown build/loadout");
+
+  // Resolve combat loadout (Void uses Bare Fists in fights).
+  let l = cloneLoadout(def);
+  if (def.combatAs && LOADOUTS[def.combatAs]) {
+    const inner = cloneLoadout(LOADOUTS[def.combatAs]);
+    l = {
+      ...inner,
+      id: def.id,
+      name: def.name,
+      blurb: def.blurb || inner.blurb,
+      color: def.color || inner.color,
+      icon: def.icon || inner.icon,
+      chairClimbMult: def.chairClimbMult,
+      cryoThird: def.cryoThird,
+      sentryDeploy: def.special?.sentryBuild ? def.special : null,
+      plasmCryoPlan: def.cryoThird,
+    };
+  }
+  scaleLoadoutCooldowns(l);
+
+  let climbSpeed = b.climbSpeed * (def.chairClimbMult || 1);
+  if (def.voidClimbMult) climbSpeed *= def.voidClimbMult;
+  const hopCd = def.voidClimbMult
+    ? b.hopCooldown / Math.max(0.01, def.voidClimbMult)
+    : b.hopCooldown;
+
+  const p = {
     buildId,
     loadoutId,
+    surfaceLoadoutId: loadoutId,
+    surfaceLoadoutName: LOADOUTS[loadoutId]?.name ?? l.name,
     name: b.name,
     hp: b.hp,
     hpMax: b.hp,
@@ -337,8 +543,8 @@ export function makePlayer(buildId, loadoutId) {
     armor: b.armor,
     armorMax: b.armor,
     armorSoak: b.armorSoak,
-    climbSpeed: b.climbSpeed,
-    hopCooldown: b.hopCooldown,
+    climbSpeed,
+    hopCooldown: hopCd,
     laneSwapCd: b.laneSwapCd,
     dodgeWindow: b.dodgeWindow,
     acidResist: b.acidResist,
@@ -346,21 +552,18 @@ export function makePlayer(buildId, loadoutId) {
     tankHitsMax: b.tankHits,
     build: b,
     loadout: l,
+    voidDebrisIntervalMult: def.voidDebrisIntervalMult ?? 1,
     acidTimer: 75,
     acidTimerMax: 75,
-    // Bile-submersion grace: while the hero is literally under the rising bile,
-    // armor is eaten at 1 point per second. Ironhide (60 armor) therefore gets
-    // ~60 seconds of emergency grace to claw back out. Swift (0 armor) drowns
-    // fast. Once armor hits 0 while submerged, HP melts at `bileHpDrain` /s.
     bileHpDrain: 24,
     chamberIndex: 0,
-    cooldowns: { attack: 0, special: 0 },
-    // v0.16 Wizard build flags. Stored on the player so combat scenes can
-    // read them without having to peek into the build descriptor every frame.
+    cooldowns: { attack: 0, special: 0, tertiary: 0 },
+    dodgeRollCooldown: 0,
+    invulnerable: !!(gameCheats && gameCheats.invulnerable),
     manaShield:      !!b.manaShield,
     manaShieldRatio: b.manaShieldRatio || 2,
     spellAmpMult:    b.spellAmpMult || 1,
-    manaCostBonus:   b.manaCostBonus || 0,
+    manaCostBonus:   b.manaCostBonus ?? 0,
     // --- v0.10 Score tracking ---
     // Every time the hero takes damage (climb debris, acid gout, melee,
     // bile submersion) we bump `hitsTaken`. Individual scenes also
@@ -410,7 +613,47 @@ export function makePlayer(buildId, loadoutId) {
       executeThreshold: 0,    // enemy HP% below which execute bonus applies
       executeBonus: 1,        // damage multiplier for execute
     },
+    sentry: null,
+    plasmCryoSlow: null,
+    synergyDecay: false,
+    synergyHeroTint: null,
+    synergyId: null,
+    synergyTitle: null,
   };
+
+  if (loadoutId === "engineerWrench") {
+    const spec = LOADOUTS.engineerWrench.special;
+    p.sentry = {
+      active: false,
+      buildLeft: 0,
+      nextPulse: 0,
+      dmgRange: spec.sentryDmg || [9, 14],
+      interval: spec.sentryInterval || 0.5,
+      deployTime: spec.buildTime ?? 3,
+      magicMult: p.sentryMagicMult || 1,
+    };
+  }
+
+  // Class gimmicks
+  if (b.tryHardGimmick) {
+    p.pactMods.dmgMult *= 2;
+    p.pactMods.specialDmgMult *= 2;
+    p.climbSpeed *= 2;
+  }
+  if (b.gamblerGimmick) {
+    p.pactMods.gamblerVariance = true;
+  }
+  if (b.tamerGimmick) {
+    p.pactMods.tamerCull = true;
+    p.pactMods.tamerCullThreshold = 0.38;
+    p.pactMods.tamerCullMult = 1.85;
+    p.pactMods.attackDmgMult *= 0.72;
+    p.pactMods.specialDmgMult *= 0.72;
+  }
+
+  applySynergy(p, buildId, loadoutId);
+
+  return p;
 }
 
 // Apply a pact by id. Safe to call multiple times; updates tracking on
@@ -431,6 +674,7 @@ export function resetChamber(p) {
   p.acidTimer = p.acidTimerMax;
   p.cooldowns.attack = 0;
   p.cooldowns.special = 0;
+  if (p.cooldowns.tertiary !== undefined) p.cooldowns.tertiary = 0;
   // Mana regen between chambers. Some pacts zero this out (Marathon Lungs).
   const regen = p.pactMods ? p.pactMods.manaRegen : 25;
   p.mana = Math.min(p.manaMax, p.mana + regen);
@@ -445,6 +689,7 @@ export function resetChamber(p) {
 // Also updates score.hitsTaken / totalHpLost / totalArmorLost when the
 // player has a `score` object (post-v0.10 saves always do).
 export function applyDamage(p, amount) {
+  if (p.invulnerable) return { armorTaken: 0, hpTaken: 0, manaTaken: 0 };
   // Pacts like Glass Gauntlets / Feed Frenzy amplify incoming damage.
   const inMult = p.pactMods ? p.pactMods.incomingDmgMult : 1;
   let remaining = amount * inMult;

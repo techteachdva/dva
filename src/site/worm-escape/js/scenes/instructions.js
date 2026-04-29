@@ -22,6 +22,7 @@ export class InstructionsScene {
     this.t += dt;
     if (game.input.wasPressed(" ", "Space", "Enter")) {
       SFX.confirm();
+      game.pickAnyWeapon = false;
       game.scenes.replace(new CreateScene(), game);
     }
   }

@@ -62,9 +62,9 @@ const HERO_Y         = H - 140;
 const TOOTH_HP_MAX        = 90;     // each bottom tooth's health pool
 const TOOTH_RESPAWN_SECS  = 60;     // how long a knocked-out tooth stays down
 const TOOTH_RESPAWN_FRAC  = 0.5;    // comes back at 50% HP
-const CHOMP_TELEGRAPH_MIN = 1.1;    // seconds between "uhoh" flash and slam
-const CHOMP_COOLDOWN_MIN  = 2.2;    // fast-cycle minimum time between chomps
-const CHOMP_COOLDOWN_MAX  = 3.6;    // baseline time between chomps
+const CHOMP_TELEGRAPH_MIN = 0.95;    // slightly tighter telegraphs in the finale
+const CHOMP_COOLDOWN_MIN  = 1.55;
+const CHOMP_COOLDOWN_MAX  = 3.05;
 const CHOMP_DMG_RANGE     = [16, 26];
 const PERFECT_BRACE_WINDOW = 0.4;   // seconds before impact where brace = counter
 
@@ -122,12 +122,18 @@ export class MawBossScene {
     this.dodgeIFrameT = 0;
     this.dodgeFlashT = 0;
 
+    // Scripted boss patterns (wave / pincer / feint) fire on this cadence when idle.
+    this.bossPattern = null; // null | { kind, ... }
+    this.nextPatternIn = rand(8, 15);
+
     // Chomp scheduler: time until we pick a top tooth to telegraph.
     this.nextChompIn = rand(1.8, 2.6);
     // Big "slam" is a rarer full-row bite where ALL top teeth chomp
     // together. You can only survive with a brace.
     this.nextSlamIn = rand(22, 32);
     this.slamTelegraph = null; // null or seconds-to-slam
+
+    this.patternPauseSlamUntil = null; // slam timing soft-gate during scripted patterns
 
     this.t = 0;
     this.anim = 0;
@@ -142,6 +148,8 @@ export class MawBossScene {
     this.bloodDecals = [];
     this.log = [];
 
+    this.game = null;
+
     this.matchupMult = 1;
     this.matchupLabel = null;
   }
@@ -152,6 +160,7 @@ export class MawBossScene {
   }
 
   enter(game) {
+    this.game = game;
     const p = game.player;
     // Teeth are BONE - every hit against them is matched by the weapon's
     // vs-teeth matchup if present. Hammer does great work here. Frost
@@ -183,6 +192,7 @@ export class MawBossScene {
     this.anim += dt * 4;
     const p = game.player;
     if (p.score) p.score.timeSpent += dt;
+    if (typeof game.invulnerable === "boolean") p.invulnerable = game.invulnerable;
 
     if (this.phase === "intro") {
       this.introT += dt;
@@ -243,6 +253,9 @@ export class MawBossScene {
   updateCooldowns(dt, p) {
     if (p.cooldowns.attack > 0)  p.cooldowns.attack  = Math.max(0, p.cooldowns.attack  - dt);
     if (p.cooldowns.special > 0) p.cooldowns.special = Math.max(0, p.cooldowns.special - dt);
+    if ((p.dodgeRollCooldown || 0) > 0) {
+      p.dodgeRollCooldown = Math.max(0, p.dodgeRollCooldown - dt);
+    }
   }
 
   updateTeeth(dt) {
@@ -294,6 +307,22 @@ export class MawBossScene {
       if (tt.cooldown > 0) tt.cooldown = Math.max(0, tt.cooldown - dt);
 
       if (tt.telegraph !== null) {
+        if (tt.feintBuddy != null && !tt.feintSwapped && tt.telegraph <= 0.42) {
+          const buddyIdx = tt.feintBuddy;
+          tt.feintSwapped = true;
+          tt.telegraph = null;
+          tt.feintBuddy = null;
+          tt.cooldown = 0.55;
+          const buddy = this.topTeeth[buddyIdx];
+          if (buddy && buddy.telegraph === null && buddy.cooldown <= 0) {
+            buddy.telegraph = 0.39;
+            buddy.flashT = 0.5;
+            buddy.feintBuddy = null;
+            this.pushLog("FEINT — the flash was a lure! SNAP on the neighbor column!");
+            SFX.click();
+          }
+          continue;
+        }
         tt.telegraph -= dt;
         // Approach the chomp - pre-dip visual before the actual strike.
         tt.chomp = Math.max(tt.chomp, 0.15 + 0.10 * Math.sin(this.anim * 14));
@@ -306,24 +335,31 @@ export class MawBossScene {
 
   // The boss's attack logic: picks top teeth to telegraph and chomp.
   updateChomps(dt, p, game) {
-    // Cadence tightens as more bottom teeth get knocked out. With 0 down
-    // the fight is breezy; with 3-4 down it is a panic.
-    const downCount = this.bottomTeeth.filter(t => t.knockedOut).length;
+    const downCount = this.bottomTeeth.filter((t) => t.knockedOut).length;
     const cadenceMul = Math.max(0.55, 1 - 0.13 * downCount);
 
-    // Single-lane chomp scheduling.
-    this.nextChompIn -= dt;
-    if (this.nextChompIn <= 0 && this.slamTelegraph === null) {
-      this.startChomp();
-      this.nextChompIn = rand(CHOMP_COOLDOWN_MIN, CHOMP_COOLDOWN_MAX) * cadenceMul;
+    this.tryScheduleBossPattern(dt, cadenceMul);
+    this.tickBossPattern(dt, cadenceMul, p);
+
+    if (!this.bossPattern) {
+      this.nextChompIn -= dt;
+      if (this.nextChompIn <= 0 && this.slamTelegraph === null) {
+        this.startChomp();
+        this.nextChompIn = rand(CHOMP_COOLDOWN_MIN, CHOMP_COOLDOWN_MAX) * cadenceMul;
+      }
     }
 
-    // Full-row slam (less frequent, more devastating).
     this.nextSlamIn -= dt;
-    if (this.nextSlamIn <= 0 && this.slamTelegraph === null) {
+    if (
+      this.nextSlamIn <= 0
+      && this.slamTelegraph === null
+      && !this.bossPattern
+      && !(this.patternPauseSlamUntil && this.t < this.patternPauseSlamUntil)
+    ) {
       this.startFullSlam();
       this.nextSlamIn = rand(24, 36) * cadenceMul;
     }
+
     if (this.slamTelegraph !== null) {
       this.slamTelegraph -= dt;
       for (const tt of this.topTeeth) {
@@ -343,7 +379,170 @@ export class MawBossScene {
     }
   }
 
+  endBossPattern(cadenceMul) {
+    this.bossPattern = null;
+    this.nextChompIn = rand(CHOMP_COOLDOWN_MIN, CHOMP_COOLDOWN_MAX) * cadenceMul;
+    this.patternPauseSlamUntil = null;
+    this.nextPatternIn = rand(11, 22);
+  }
+
+  tryScheduleBossPattern(dt, cadenceMul) {
+    if (
+      this.bossPattern
+      || this.slamTelegraph !== null
+      || this.phase !== "fight"
+    ) {
+      return;
+    }
+    this.nextPatternIn -= dt;
+    if (this.nextPatternIn > 0) return;
+    const kinds = ["wave", "wave", "pincer", "feint"]; // heavier wave weight
+    const kind = kinds[randInt(0, kinds.length - 1)];
+    if (kind === "wave") this.beginWaveBossPattern(cadenceMul);
+    else if (kind === "pincer") this.beginPincerBossPattern(cadenceMul);
+    else this.beginFeintBossPattern(cadenceMul);
+
+    const bp = this.bossPattern;
+    if (bp) {
+      bp.startedAt = this.t;
+      bp.cadMul = cadenceMul;
+      this.patternPauseSlamUntil = this.t + 24;
+      this.pushLog(kind === "wave"
+        ? "The maw RIDGES — a snapping wave along the arches!"
+        : kind === "pincer"
+        ? "THREE FANGS at once — pincered from BOTH ends!"
+        : "Something glimmers… was that a FEINT?");
+    }
+  }
+
+  tickBossPattern(dt, cadenceMul, p) {
+    const bp = this.bossPattern;
+    if (!bp) return;
+
+    if (bp.kind === "wave") {
+      if (bp.pending) return;
+
+      bp.wait -= dt;
+      if (bp.wait > 0) return;
+
+      const ei = bp.emitIndex ?? 0;
+      if (ei >= bp.sequence.length) {
+        this.endBossPattern(bp.cadMul ?? cadenceMul);
+        return;
+      }
+
+      const col = bp.sequence[ei];
+      const tt = this.topTeeth[col];
+      if (tt.telegraph !== null || tt.cooldown > 0.05 || tt.chomp > 0.08) {
+        bp.wait += 0.03;
+        return;
+      }
+
+      tt.telegraph = 0.48;
+      tt.flashT = 0.35;
+      bp.pending = true;
+      bp.wait = 999;
+      SFX.click();
+      return;
+    }
+
+    if (bp.kind === "pincer" || bp.kind === "feint") {
+      const stale = bp.createdAt !== undefined && this.t - bp.createdAt > 18;
+      if (stale && !bp.pending) this.endBossPattern(bp.cadMul ?? cadenceMul);
+    }
+  }
+
+  resolveChompPatternHooks(tt, cadMul) {
+    const bp = this.bossPattern;
+    if (!bp) return;
+
+    if (bp.kind === "wave") {
+      bp.pending = false;
+      bp.wait = 0.07;
+      bp.emitIndex = (bp.emitIndex ?? 0) + 1;
+      const ei = bp.emitIndex ?? 0;
+      if (ei >= bp.sequence.length) this.endBossPattern(bp.cadMul ?? cadMul);
+      return;
+    }
+
+    if (bp.kind === "pincer") {
+      const col = tt.col;
+      if (bp.cols && bp.cols.includes(col)) {
+        bp.left = (bp.left ?? 0) - 1;
+      }
+      if (bp.left !== undefined && bp.left <= 0) this.endBossPattern(bp.cadMul ?? cadMul);
+      return;
+    }
+
+    if (bp.kind === "feint") {
+      const col = tt.col;
+      if (!bp.resolved && col === bp.real) {
+        bp.resolved = true;
+        this.endBossPattern(bp.cadMul ?? cadMul);
+      }
+    }
+  }
+
+  beginWaveBossPattern(cadenceMul) {
+    const sequence = [];
+    for (let i = 0; i < NUM_COLS; i++) sequence.push(i);
+    for (let i = NUM_COLS - 2; i >= 0; i--) sequence.push(i);
+
+    this.bossPattern = {
+      kind: "wave",
+      sequence,
+      emitIndex: 0,
+      wait: 0.42,
+      pending: false,
+      cadMul: cadenceMul,
+    };
+  }
+
+  beginPincerBossPattern(cadenceMul) {
+    const cols = [0, 2, 4];
+    for (const c of cols) {
+      const tt = this.topTeeth[c];
+      if (tt.telegraph !== null || tt.cooldown > 0) {
+        tt.cooldown = Math.max(tt.cooldown, 0); // unblock if wedged — rare
+      }
+      tt.telegraph = 1.12;
+      tt.flashT = 0.42;
+    }
+    this.bossPattern = {
+      kind: "pincer",
+      left: cols.length,
+      cols,
+      pending: false,
+      createdAt: this.t,
+      cadMul: cadenceMul,
+    };
+    SFX.thud();
+  }
+
+  beginFeintBossPattern(cadenceMul) {
+    let fake = randInt(0, NUM_COLS - 1);
+    let real = randInt(0, NUM_COLS - 1);
+    let guard = 0;
+    while (real === fake && guard++ < 12) real = randInt(0, NUM_COLS - 1);
+
+    const fakeTT = this.topTeeth[fake];
+    fakeTT.feintBuddy = real;
+    fakeTT.feintSwapped = false;
+    fakeTT.telegraph = 1.12;
+
+    this.bossPattern = {
+      kind: "feint",
+      fake,
+      real,
+      resolved: false,
+      pending: false,
+      createdAt: this.t,
+      cadMul: cadenceMul,
+    };
+  }
+
   startChomp() {
+    if (this.bossPattern) return;
     // Pick any top tooth not already mid-telegraph / mid-chomp.
     const eligible = this.topTeeth.filter(t => t.telegraph === null && t.cooldown <= 0);
     if (eligible.length === 0) return;
@@ -354,6 +553,7 @@ export class MawBossScene {
   }
 
   startFullSlam() {
+    if (this.bossPattern) return;
     this.slamTelegraph = 1.6; // longer telegraph - this one is survivable only by bracing
     for (const tt of this.topTeeth) tt.flashT = 0.35;
     this.pushLog("!!! THE WHOLE MAW IS CLOSING - BRACE [F/4] !!!");
@@ -361,6 +561,8 @@ export class MawBossScene {
   }
 
   resolveChomp(tt, p) {
+    const cadMul = this.bossPattern?.cadMul ?? 1;
+
     const inLane = this.col === tt.col && this.dodgeIFrameT <= 0;
     tt.chomp = 1.0;
     tt.telegraph = null;
@@ -370,6 +572,8 @@ export class MawBossScene {
     this.particles.burst(
       COLS_X[tt.col], TOP_CHOMP_Y - 20, "#ffd0d4", 22, 260, 0.55,
     );
+
+    this.resolveChompPatternHooks(tt, cadMul);
 
     if (!inLane) {
       this.pushLog(`A top tooth chomps column ${tt.col + 1} - you sidestepped it.`);
@@ -452,6 +656,7 @@ export class MawBossScene {
   }
 
   applyHitToPlayer(amount, p) {
+    if (this.game && this.game.invulnerable) return;
     const pm = p.pactMods || {};
     const scaled = Math.max(1, Math.round(amount * (pm.incomingDmgMult || 1)));
     applyDamage(p, scaled);
@@ -516,13 +721,21 @@ export class MawBossScene {
         break;
       }
       case 2: {
-        // Dodge roll - short i-frames + MP gain. Great panic button when
-        // you can't reach a safer lane in time.
-        p.mana = Math.min(p.manaMax, p.mana + 8);
-        this.dodgeIFrameT = 0.35;
-        this.dodgeFlashT = 0.5;
+        if ((p.dodgeRollCooldown || 0) > 0) {
+          SFX.deny();
+          this.pushLog("Dodge needs a heartbeat to recover.");
+          return;
+        }
+        const dir = Math.random() < 0.5 ? -1 : 1;
+        this.col = Math.max(0, Math.min(NUM_COLS - 1, this.col + dir));
+        p.mana = Math.min(p.manaMax, p.mana + 3);
+        p.dodgeRollCooldown = 1.22;
+        this.dodgeIFrameT = 0.14;
+        this.dodgeFlashT = 0.45;
         SFX.dodge();
-        this.pushLog("You ROLL between the fangs (+8 MP, brief i-frames).");
+        this.pushLog(dir < 0
+          ? "You twitch LEFT (+3 MP)."
+          : "You twitch RIGHT (+3 MP).");
         break;
       }
       case 3: {

@@ -5,28 +5,31 @@ import {
 } from "../engine/render.js";
 import { SFX } from "../engine/audio.js";
 import { BUILDS, LOADOUTS, makePlayer } from "../content/player.js";
-import { loadSave } from "../engine/storage.js";
+import { loadSave, saveGame } from "../engine/storage.js";
 import { ClimbScene } from "./climb.js";
 
-const BUILD_IDS = ["swift", "iron", "viper", "wizard"];
+const BUILD_IDS = ["balanced", "tryHard", "gambler", "tamer", "swift", "iron", "viper", "wizard", "necromancer"];
 
 // v0.16 Full weapon pool. Weapons gated by `LOADOUT_UNLOCK` are filtered out
 // of the random roll if the unlock isn't owned. The shown 4 are a *random*
 // subset of the unlocked pool, so each run feels different.
 const ALL_LOADOUT_IDS = [
-  // Default (no gate)
   "sword", "hammer", "emberStaff", "frostWand",
   "fryingPan", "saber", "fists", "club",
-  // Gated unlocks
   "bileWhip", "hexStaff",
   "megaphone", "boneSpear", "blunderbuss",
   "cursedScythe", "rustyChainsaw", "cat",
+  "engineerWrench", "voidWalker", "chair", "plasmids",
 ];
 
 // v0.12 Unlock gating.
 // Keys map a build / loadout id -> save.unlocks flag that must be true.
 // If a build/loadout isn't in this map, it's always available.
-const BUILD_UNLOCK  = { viper: "viperBuild", wizard: "wizardBuild" };
+const BUILD_UNLOCK  = {
+  viper: "viperBuild",
+  wizard: "wizardBuild",
+  necromancer: "necromancerBuild",
+};
 const LOADOUT_UNLOCK = {
   bileWhip:      "bileWhip",
   hexStaff:      "hexStaff",
@@ -40,6 +43,7 @@ const LOADOUT_UNLOCK = {
 const BUILD_UNLOCK_HINT  = {
   viper:  "UNLOCK: Clear any run with any build.",
   wizard: "UNLOCK: Clear a run with VIPER.",
+  necromancer: "TYPE JACKSON on this screen (cheat) or wait for future unlock.",
 };
 const LOADOUT_UNLOCK_HINT = {
   bileWhip:      "UNLOCK: Clear the Gullet climb hitless.",
@@ -81,19 +85,51 @@ export class CreateScene {
     // the player navigates. Fresh-save defaults are graceful: everything
     // locked except the base entries.
     this.save = loadSave();
-    // v0.16 Roll 4 random UNLOCKED weapons for this run. If somehow fewer
-    // than 4 are unlocked we just show whatever we have. The pool is set
-    // once per scene-entry so flipping back/forth is stable.
-    this.loadoutIds = this.rollLoadouts(4);
+    this.rerollsLeft = 1;
+    this.unlockAllWeapons = false;
+    this.cheatBuf = "";
+    // v0.17 Random weapon picks for this forge session (may be entire pool with DEZ).
+    this.weaponChoices = this.rollLoadouts(4, false);
   }
 
-  rollLoadouts(count = 4) {
+  rollLoadouts(count = 4, cheatBrowseAll = false) {
+    const cheat = cheatBrowseAll;
     const unlocked = ALL_LOADOUT_IDS.filter((id) => {
+      if (cheat) return true;
       const flag = LOADOUT_UNLOCK[id];
       if (!flag) return true;
       return !!(this.save && this.save.unlocks && this.save.unlocks[flag]);
     });
-    return shuffled(unlocked).slice(0, count);
+    return shuffled(unlocked).slice(0, Math.min(count, unlocked.length || 4));
+  }
+
+  processCheats(game) {
+    const az = "abcdefghijklmnopqrstuvwxyz";
+    for (const ch of az) {
+      if (game.input.wasPressed(ch)) this.cheatBuf += ch;
+    }
+    if (this.cheatBuf.length > 64) this.cheatBuf = this.cheatBuf.slice(-64);
+    const b = this.cheatBuf.toLowerCase();
+    if (b.includes("jackson")) {
+      this.save.unlocks.necromancerBuild = true;
+      saveGame(this.save);
+      this.cheatBuf = "";
+      if (typeof SFX.victory === "function") SFX.victory();
+    }
+    if (b.includes("dez")) {
+      game.pickAnyWeapon = true;
+      this.unlockAllWeapons = true;
+      this.weaponChoices = this.rollLoadouts(999, true);
+      this.loadIdx = 0;
+      this.rerollsLeft = 1;
+      this.cheatBuf = "";
+      if (typeof SFX.confirm === "function") SFX.confirm();
+    }
+    if (b.includes("acererack")) {
+      game.invulnerable = !game.invulnerable;
+      this.cheatBuf = "";
+      if (typeof SFX.click === "function") SFX.click();
+    }
   }
 
   // Is the build / loadout at this index currently unlocked?
@@ -108,7 +144,8 @@ export class CreateScene {
     // After v0.16 the random roll already filters out locked loadouts, so
     // this should always return true. Kept for defensive symmetry with
     // builds (and to leave the door open for showing a locked teaser).
-    const id = this.loadoutIds[idx];
+    const id = this.weaponChoices[idx];
+    if (this.unlockAllWeapons) return true;
     const flag = LOADOUT_UNLOCK[id];
     if (!flag) return true;
     return !!(this.save && this.save.unlocks && this.save.unlocks[flag]);
@@ -116,6 +153,7 @@ export class CreateScene {
 
   update(dt, game) {
     this.t += dt;
+    this.processCheats(game);
 
     if (this.step === 0) {
       if (game.input.wasPressed("ArrowRight", "d")) {
@@ -134,7 +172,7 @@ export class CreateScene {
         }
       }
     } else if (this.step === 1) {
-      const N = this.loadoutIds.length;
+      const N = this.weaponChoices.length;
       if (N === 0) return; // shouldn't happen but be safe
       if (game.input.wasPressed("ArrowLeft", "a")) {
         this.loadIdx = (this.loadIdx - 1 + N) % N;
@@ -144,11 +182,18 @@ export class CreateScene {
         this.loadIdx = (this.loadIdx + 1) % N;
         SFX.click();
       }
-      // v0.16 Reroll the random weapon options.
+      // One reroll per forge session — then you're committed to what's offered.
       if (game.input.wasPressed("r", "R", "Tab")) {
-        this.loadoutIds = this.rollLoadouts(4);
-        this.loadIdx = 0;
-        SFX.click();
+        if (this.rerollsLeft <= 0) {
+          if (typeof SFX.deny === "function") SFX.deny();
+        } else {
+          this.rerollsLeft--;
+          const cheatBrowse = this.unlockAllWeapons;
+          const n = cheatBrowse ? ALL_LOADOUT_IDS.length : 4;
+          this.weaponChoices = this.rollLoadouts(n, cheatBrowse);
+          this.loadIdx = 0;
+          if (typeof SFX.click === "function") SFX.click();
+        }
       }
       if (game.input.wasPressed(" ", "Space", "Enter")) {
         if (!this.isLoadoutUnlocked(this.loadIdx)) {
@@ -166,8 +211,9 @@ export class CreateScene {
       if (game.input.wasPressed(" ", "Space", "Enter")) {
         SFX.confirm();
         const buildId = BUILD_IDS[this.buildIdx];
-        const loadId = this.loadoutIds[this.loadIdx];
-        game.player = makePlayer(buildId, loadId);
+        const loadId = this.weaponChoices[this.loadIdx];
+        game.pickAnyWeapon = false;
+        game.player = makePlayer(buildId, loadId, game);
         game.chamberIndex = 0;
         game.scenes.replace(new ClimbScene(0), game);
       }
@@ -187,7 +233,7 @@ export class CreateScene {
     drawBanner(ctx, "FORGE YOUR HERO", W / 2, 72, 44, COLORS.bile, COLORS.blood);
 
     if (this.step === 0) this.renderBuildSelect(ctx);
-    else if (this.step === 1) this.renderLoadoutSelect(ctx);
+    else if (this.step === 1) this.renderLoadoutSelect(ctx, game);
     else this.renderConfirm(ctx);
 
     drawText(ctx, "LEFT/RIGHT to choose   SPACE to confirm   BACKSPACE back   M mute", W / 2, H - 26, {
@@ -297,20 +343,62 @@ export class CreateScene {
     drawText(ctx, String(value), barX + barW + 6, y, { size: 11, color: COLORS.bone });
   }
 
-  renderLoadoutSelect(ctx) {
-    drawText(ctx, "STEP 2 / 2  -  PICK YOUR LOADOUT  (4 random weapons - press R to reroll)", W / 2, 130, {
-      size: 15, color: COLORS.bone, align: "center", maxWidth: W - 80,
+  renderLoadoutSelect(ctx, game) {
+    const browseAll = !!(game && game.pickAnyWeapon);
+    const rerollHint = this.rerollsLeft > 0 ? "press R once to reroll" : "no rerolls left — pick one";
+    const head = browseAll
+      ? `STEP 2 / 2  -  FULL ARSENAL (DEZ)  (${rerollHint})`
+      : `STEP 2 / 2  -  PICK YOUR LOADOUT  (4 random — ${rerollHint})`;
+    drawText(ctx, head, W / 2, 130, {
+      size: browseAll ? 14 : 15, color: COLORS.bone, align: "center", maxWidth: W - 80,
     });
 
-    // v0.16 Show only the 4 RANDOM weapons that were rolled on entry.
-    // Cards can be larger now since we have fewer of them.
-    const N = this.loadoutIds.length;
+    const N = this.weaponChoices.length;
     const cardW = 260, cardH = 470;
     const gap = 18;
+
+    if (browseAll) {
+      const id = this.weaponChoices[this.loadIdx];
+      const l = LOADOUTS[id];
+      if (!l) return;
+      const x = (W - cardW) / 2;
+      const y = 166;
+      const unlocked = this.isLoadoutUnlocked(this.loadIdx);
+      this.drawCard(ctx, x, y, cardW, cardH, true);
+      drawText(ctx, `${l.name}  (${this.loadIdx + 1} / ${N})`, x + cardW / 2, y + 22, {
+        size: 18, bold: true, color: unlocked ? COLORS.bile : "#555",
+        align: "center", glow: unlocked ? COLORS.blood : null, maxWidth: cardW - 20,
+      });
+      this.drawWeaponIcon(ctx, x + cardW / 2, y + 150, l);
+      drawText(ctx, l.blurb, x + cardW / 2, y + 240, {
+        size: 12, color: COLORS.boneDim, align: "center", maxWidth: cardW - 20,
+      });
+      const lx = x + 14;
+      drawText(ctx, "ATTACK:", lx, y + 268, { size: 12, color: COLORS.bile, bold: true });
+      drawText(ctx, l.attack.name, lx, y + 284, { size: 13, color: COLORS.bone, maxWidth: cardW - 20 });
+      drawText(ctx, `DMG ${l.attack.dmg[0]}-${l.attack.dmg[1]}`, lx, y + 300, { size: 11, color: COLORS.boneDim });
+      drawText(ctx, `CD ${l.attack.cooldown}s  MP ${l.attack.manaCost}`, lx, y + 314, { size: 11, color: COLORS.boneDim });
+
+      drawText(ctx, "SPECIAL:", lx, y + 350, { size: 12, color: COLORS.bile, bold: true });
+      drawText(ctx, l.special.name, lx, y + 366, { size: 13, color: COLORS.bone, maxWidth: cardW - 20 });
+      drawText(ctx, `DMG ${l.special.dmg[0]}-${l.special.dmg[1]}`, lx, y + 382, { size: 11, color: COLORS.boneDim });
+      drawText(ctx, `CD ${l.special.cooldown}s  MP ${l.special.manaCost}`, lx, y + 396, { size: 11, color: COLORS.boneDim });
+
+      drawText(ctx, "STRONG vs " + ART_LABEL[l.strongVs], lx, y + 442, {
+        size: 11, color: "#ffd966", bold: true, maxWidth: cardW - 20,
+      });
+      drawText(ctx, "WEAK vs " + ART_LABEL[l.weakVs], lx, y + 456, {
+        size: 11, color: "#8a9aff", bold: true, maxWidth: cardW - 20,
+      });
+      if (!unlocked) this.drawLockedOverlay(ctx, x, y, cardW, cardH,
+        LOADOUT_UNLOCK_HINT[id] || "LOCKED");
+      return;
+    }
+
     const totalW = cardW * N + gap * (N - 1);
     const startX = (W - totalW) / 2;
 
-    this.loadoutIds.forEach((id, i) => {
+    this.weaponChoices.forEach((id, i) => {
       const l = LOADOUTS[id];
       if (!l) return;
       const x = startX + i * (cardW + gap);
@@ -355,7 +443,6 @@ export class CreateScene {
       if (l.special.lifestealPct)  { drawText(ctx, "LIFESTEAL",    lx, tagY2, { size: 10, color: "#7fffa0", bold: true }); tagY2 += 12; }
       if (l.special.poisonPct)     { drawText(ctx, l.special.dotLabel || "BLEED", lx, tagY2, { size: 10, color: "#ff8080", bold: true }); tagY2 += 12; }
 
-      // Matchup hints - which guardian art type this weapon excels/fails vs
       drawText(ctx, "STRONG vs " + ART_LABEL[l.strongVs], lx, y + 442, {
         size: 11, color: "#ffd966", bold: true, maxWidth: textMax,
       });
@@ -370,7 +457,7 @@ export class CreateScene {
 
   renderConfirm(ctx) {
     const b = BUILDS[BUILD_IDS[this.buildIdx]];
-    const l = LOADOUTS[this.loadoutIds[this.loadIdx]];
+    const l = LOADOUTS[this.weaponChoices[this.loadIdx]];
     drawPanel(ctx, 220, 170, W - 440, 500);
     drawText(ctx, "READY TO GET DIGESTED?", W / 2, 210, {
       size: 28, color: COLORS.bile, align: "center", bold: true, glow: COLORS.blood,
@@ -850,44 +937,51 @@ export class CreateScene {
       ctx.moveTo(-2, 68); ctx.lineTo(2, 68);
       ctx.stroke();
     } else if (loadout.id === "rustyChainsaw") {
-      // Body / housing
+      // Engine housing (rear) — overlaps the bar so blade meets body cleanly.
       ctx.fillStyle = "#c25a2a";
-      roundRect(ctx, -22, 0, 44, 36, 5);
+      roundRect(ctx, -26, -4, 52, 40, 5);
       ctx.fill();
       ctx.strokeStyle = "rgba(0,0,0,0.7)";
       ctx.lineWidth = 1.6;
       ctx.stroke();
-      // Pull-cord handle
-      ctx.fillStyle = "#1a0a0a";
-      roundRect(ctx, -10, 36, 20, 18, 3);
+
+      const barBottomY = 2;
+      const barLen = 74;
+      // Guide bar merges into housing (metal strip from engine into cutting edge).
+      ctx.fillStyle = "#9a9aa6";
+      roundRect(ctx, -4, -barLen + barBottomY - 10, 50, barLen + 10, 3);
       ctx.fill();
+      ctx.strokeStyle = "rgba(0,0,0,0.55)";
+      ctx.strokeRect(-4, -barLen + barBottomY - 10, 50, barLen + 10);
+
+      // Chain teeth — along the top arc of bar
+      ctx.fillStyle = "#3a3f48";
+      for (let k = 0; k < 8; k++) {
+        const ty = -barLen + barBottomY - 14 + Math.floor(k * 8.5);
+        const tx = -1 + (k % 3) * 3;
+        ctx.beginPath();
+        ctx.moveTo(tx, ty);
+        ctx.lineTo(tx + 5, ty - 5);
+        ctx.lineTo(tx + 10, ty + 4);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      ctx.fillStyle = "#1a0a1a";
+      roundRect(ctx, -14, -4, 28, 20, 3);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(0,0,0,0.6)";
       ctx.stroke();
-      // Cord
+
       ctx.strokeStyle = "#e8c870";
       ctx.lineWidth = 1.4;
       ctx.beginPath();
       ctx.moveTo(-6, 12);
-      ctx.lineTo(-18, 22);
+      ctx.lineTo(-20, 24);
       ctx.stroke();
-      // Bar (chainsaw guide)
-      ctx.fillStyle = "#9a9aa6";
-      roundRect(ctx, -3, -64, 50, 12, 3);
-      ctx.fill();
-      ctx.stroke();
-      // Chain teeth (jagged saw teeth on top of bar)
-      ctx.fillStyle = "#3a3f48";
-      for (let k = 0; k < 8; k++) {
-        const tx = -1 + k * 6;
-        ctx.beginPath();
-        ctx.moveTo(tx, -64);
-        ctx.lineTo(tx + 3, -70);
-        ctx.lineTo(tx + 6, -64);
-        ctx.closePath();
-        ctx.fill();
-      }
-      // Rust spots
+
       ctx.fillStyle = "rgba(60,30,10,0.6)";
-      for (const sp of [[-12, 10], [8, 18], [16, 6]]) {
+      for (const sp of [[-14, 6], [8, 10], [16, -2]]) {
         ctx.beginPath();
         ctx.arc(sp[0], sp[1], 3, 0, Math.PI * 2);
         ctx.fill();
