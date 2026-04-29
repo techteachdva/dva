@@ -48,7 +48,7 @@ export class GameOverScene {
   }
   update(dt, game) {
     this.t += dt;
-    if (this.t > 0.5 && game.input.wasPressed(" ", "Space", "Enter", "Escape", "r")) {
+    if (this.t > 0.5 && game.input.wasPressed(" ", "Space", "Enter", "Escape", "r", "Mouse0")) {
       SFX.confirm();
       game.scenes.replace(new IntroScene(), game);
     }

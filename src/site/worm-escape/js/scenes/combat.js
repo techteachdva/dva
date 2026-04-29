@@ -9,6 +9,11 @@ import { CHAMBERS } from "../content/chambers.js";
 import { ENEMIES } from "../content/enemies.js";
 import { rollElite, applyElite } from "../content/elites.js";
 import { pick, rand, randInt } from "../engine/rng.js";
+import {
+  pointInRect,
+  columnIndexFromX,
+  stepTowardIndex,
+} from "../engine/pointer.js";
 import { applyDamage, matchupMultiplier, matchupLabel, recordDirectHpHit, recordDirectArmorHit, plasmElementMult } from "../content/player.js";
 import { TransitionScene } from "./transition.js";
 import { PactScene } from "./pact.js";
@@ -184,14 +189,26 @@ export class CombatScene {
     // v0.10 INPUT FIX: wasPressed for one-lane-per-keystroke. A tap moves
     // exactly one lane; holding the key does NOT slide across all three.
     this.laneCd -= dt;
-    if (this.laneCd <= 0) {
+    if (this.laneCd <= 0 && this.phase === "fight") {
+      let movedLane = false;
       if (game.input.wasPressed("ArrowLeft", "a") && this.lane > 0) {
         this.lane--;
-        this.targetX = LANES[this.lane];
-        this.laneCd = p.laneSwapCd;
-        SFX.dodge();
+        movedLane = true;
       } else if (game.input.wasPressed("ArrowRight", "d") && this.lane < 2) {
         this.lane++;
+        movedLane = true;
+      } else if (game.input.wasPressed("Mouse0")) {
+        const mx = game.input.mouseX, my = game.input.mouseY;
+        if (!this.hitCombatBlockingUi(mx, my)) {
+          const targetLane = columnIndexFromX(mx, LANES);
+          const step = stepTowardIndex(this.lane, targetLane);
+          if (step !== 0) {
+            this.lane += step;
+            movedLane = true;
+          }
+        }
+      }
+      if (movedLane) {
         this.targetX = LANES[this.lane];
         this.laneCd = p.laneSwapCd;
         SFX.dodge();
@@ -491,7 +508,10 @@ export class CombatScene {
     }
     SFX.hit();
     screenShake(moveType === "heavy" ? 16 : 10, moveType === "heavy" ? 0.45 : 0.3);
-    let line = braceNote + pick(this.enemy.flavorHit);
+    const flavorPick = pick(this.enemy.flavorHit || []);
+    const flavorLine =
+      flavorPick ?? "Pain explodes across you!";
+    let line = braceNote + flavorLine;
     if (moveType === "heavy") line = braceNote + "HEAVY SLAM! " + line;
     line += ` (-${Math.ceil(hpTaken)} HP${armorTaken ? `, -${Math.ceil(armorTaken)} ARM` : ""})`;
     this.pushLog(line);
@@ -577,6 +597,15 @@ export class CombatScene {
     }
   }
 
+  hitCombatBlockingUi(mx, my) {
+    if (my < 116 || my >= H - 190) return true;
+    if (pointInRect(mx, my, 16, 16, 260, 110)) return true;
+    if (pointInRect(mx, my, W - 280, 16, 264, 150)) return true;
+    if (pointInRect(mx, my, 16, H - 190, 560, 174)) return true;
+    if (pointInRect(mx, my, W - 576, H - 190, 560, 174)) return true;
+    return false;
+  }
+
   handleMenu(dt, game) {
     if (this.turnLocked > 0) {
       this.turnLocked -= dt;
@@ -588,6 +617,20 @@ export class CombatScene {
     if (game.input.wasPressed("ArrowDown", "s")) { this.menuIdx = (this.menuIdx + 1) % 4; SFX.click(); }
 
     const choose = (idx) => { this.menuIdx = idx; this.execute(idx, p, game); };
+
+    const mx = game.input.mouseX, my = game.input.mouseY;
+    if (game.input.wasPressed("Mouse0")) {
+      const ax = 16, ay = H - 190, aw = 560;
+      if (pointInRect(mx, my, ax, ay, aw, 174)) {
+        for (let i = 0; i < 4; i++) {
+          const row = ay + 38 + i * 30;
+          if (pointInRect(mx, my, ax + 4, row - 5, aw - 8, 28)) {
+            choose(i);
+            return;
+          }
+        }
+      }
+    }
 
     // v0.13: Q/E/R/F are alternate keybinds for the four actions. This
     // matches the new TongueBossScene layout and keeps your hand on the
@@ -756,7 +799,7 @@ export class CombatScene {
       ? (pm.specialDmgMult || 1)
       : (pm.attackDmgMult || 1);
     const dmgMult = pm.dmgMult || 1;
-    const hpFrac = this.enemy.hp / this.enemy.hpMax;
+    const hpFrac = this.enemy.hp / Math.max(1, this.enemy.hpMax || 1);
     const execOn = !!(pm.executeThreshold && hpFrac <= pm.executeThreshold);
     const execMult = execOn ? (pm.executeBonus || 1) : 1;
     const tamerMult = (pm.tamerCull && hpFrac <= (pm.tamerCullThreshold ?? 0.38))
@@ -1834,7 +1877,7 @@ export class CombatScene {
       hint = { text: "Press [Q/1] or [E/2] to CASH IN your counter!", color: "#ffd966" };
     } else if (this.telegraphs.some((tg) => tg.lane === this.lane && tg.t >= tg.wait - 0.45)) {
       hint = { text: "ACID LANDING ON YOU - [A]/[D] dodge!", color: "#bfff00" };
-    } else if (p.hp / p.hpMax < 0.35) {
+    } else if (p.hpMax > 0 && p.hp / p.hpMax < 0.35) {
       hint = { text: "Low HP! [R/3] Dodge for MP, [F/4] Brace for safety", color: "#ffa0a0" };
     } else if (p.cooldowns.attack <= 0 && p.mana >= l.attack.manaCost + (p.manaCostBonus || 0)) {
       hint = { text: `[Q/1] ${l.attack.name}  -  [E/2] ${l.special.name}  -  dodge with [A]/[D]`, color: "#c8ffc0" };
@@ -1933,7 +1976,7 @@ export class CombatScene {
     // v0.14 legibility: help string trimmed to fit inside the 560-wide
     // panel so it never runs off the bottom-right of the screen.
     drawText(ctx,
-      "[Q/1] Attack  [E/2] Special  [R/3] Dodge  [F/4] Brace  -  [A]/[D] Lane  [P] Pause",
+      "[Q/1–F/4] row click · Attack / Special · Dodge · Brace · click arena lane to hop · [P] Pause",
       x + 14, y + h - 22,
       { size: 12, color: COLORS.bone, maxWidth: w - 28 });
   }

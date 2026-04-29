@@ -52,7 +52,7 @@ export class IntroScene {
     this.pulse += dt;
     const total = STORY.join("\n").length;
 
-    if (game.input.wasPressed(" ", "Space", "Enter")) {
+    if (game.input.wasPressed(" ", "Space", "Enter", "Mouse0")) {
       if (this.reveal < total) {
         this.reveal = total;
         SFX.click();

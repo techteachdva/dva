@@ -20,7 +20,7 @@ export class InstructionsScene {
 
   update(dt, game) {
     this.t += dt;
-    if (game.input.wasPressed(" ", "Space", "Enter")) {
+    if (game.input.wasPressed(" ", "Space", "Enter", "Mouse0")) {
       SFX.confirm();
       game.scenes.replace(new CreateScene(), game);
     }

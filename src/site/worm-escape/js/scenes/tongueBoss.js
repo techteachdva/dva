@@ -12,6 +12,11 @@ import {
   applyDamage, matchupMultiplier, matchupLabel,
   recordDirectHpHit, recordDirectArmorHit,
 } from "../content/player.js";
+import {
+  pointInRect,
+  columnIndexFromX,
+  stepTowardIndex,
+} from "../engine/pointer.js";
 import { VictoryScene } from "./victory.js";
 import { GameOverScene } from "./gameover.js";
 
@@ -547,6 +552,7 @@ export class MawBossScene {
     const eligible = this.topTeeth.filter(t => t.telegraph === null && t.cooldown <= 0);
     if (eligible.length === 0) return;
     const tt = pick(eligible);
+    if (!tt) return;
     tt.telegraph = CHOMP_TELEGRAPH_MIN;
     tt.flashT = 0.25;
     SFX.click();
@@ -665,6 +671,37 @@ export class MawBossScene {
 
   handleInput(dt, game) {
     const p = game.player;
+    const mx = game.input.mouseX, my = game.input.mouseY;
+
+    const barY = H - 86, barH = 68;
+    const nCard = 4;
+    const cardW = (W - 48 - 24 * (nCard - 1)) / nCard;
+    const logY = H - 86 - 72 - 6;
+    const pPanelH = p.armorMax > 0 ? 116 : 88;
+
+    if (game.input.wasPressed("Mouse0")) {
+      for (let i = 0; i < nCard; i++) {
+        const x = 24 + i * (cardW + 24);
+        if (pointInRect(mx, my, x, barY, cardW, barH)) {
+          this.execute(i, p, game);
+          return;
+        }
+      }
+      if (pointInRect(mx, my, 24, logY, W - 48, 72)) return;
+      if (pointInRect(mx, my, 18, 18, 300, pPanelH)) return;
+      if (pointInRect(mx, my, W - 338, 18, 320, 102)) return;
+      if (my < 130) return;
+      if (this.laneSwapT <= 0) {
+        const target = columnIndexFromX(mx, COLS_X);
+        const step = stepTowardIndex(this.col, target);
+        if (step !== 0) {
+          this.col += step;
+          this.laneSwapT = p.laneSwapCd || 0.08;
+          SFX.click();
+        }
+      }
+      return;
+    }
 
     // Lane movement (discrete-press only; hopCooldown gates repeat).
     const moveCd = p.laneSwapCd || 0.08;
@@ -685,7 +722,6 @@ export class MawBossScene {
     else if (game.input.wasPressed("e", "E", "2")) this.execute(1, p, game);
     else if (game.input.wasPressed("r", "R", "3")) this.execute(2, p, game);
     else if (game.input.wasPressed("f", "F", "4")) this.execute(3, p, game);
-    else if (game.input.wasPressed("Mouse0"))      this.execute(0, p, game);
   }
 
   execute(idx, p) {
@@ -1476,7 +1512,7 @@ export class MawBossScene {
     }
     // Footer help strip - compact.
     drawText(ctx,
-      "[A/D] Move   [Q/1] Attack   [E/2] Special   [R/3] Dodge   [F/4] Brace   [P] Pause",
+      "[A/D] Move · click lane / lower arena · [Q/1–F/4] or click action cards · [P] Pause",
       x + 12, y + h - 16, {
         size: 12, color: COLORS.boneDim, maxWidth: w - 28,
       });

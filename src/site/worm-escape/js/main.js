@@ -2,6 +2,7 @@ import { Loop } from "./engine/loop.js";
 import { Input } from "./engine/input.js";
 import { SceneManager } from "./engine/scenes.js";
 import { applyShake, W, H, COLORS, drawText, drawPanel, drawBanner } from "./engine/render.js";
+import { pointInRect } from "./engine/pointer.js";
 import { toggleMute, isMuted, SFX, initBGM } from "./engine/audio.js";
 import { IntroScene } from "./scenes/intro.js";
 import { applyCheatLine } from "./engine/cheatActions.js";
@@ -25,6 +26,9 @@ function toggleFullscreen() {
   }
 }
 
+/** Global control; drawn after scenes — hit test must match the render pass. */
+const FULLSCREEN_BTN = { x: 8, y: 6, w: 136, h: 28 };
+
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 ctx.imageSmoothingEnabled = false;
@@ -45,8 +49,6 @@ const game = {
   cheatFlash: "",
   cheatFlashT: 0,
   cheatSaveRefresh: false,
-  /** Edge-detect ZXNM cheat chord previous frame */
-  _cheatChordLast: false,
 };
 
 game.scenes.push(new IntroScene(), game);
@@ -75,7 +77,10 @@ function updateCheatMenu(game) {
     const res = applyCheatLine(game.cheatInput, game);
     game.cheatFlash = res.msg;
     game.cheatFlashT = res.ok ? 3.6 : 2.4;
-    if (res.ok) game.cheatInput = "";
+    if (res.ok) {
+      game.cheatInput = "";
+      game.cheatMenuOpen = false;
+    }
   }
 }
 
@@ -84,13 +89,34 @@ const loop = new Loop(
     game.t += dt;
     if (game.cheatFlashT > 0) game.cheatFlashT -= dt;
 
-    // Fullscreen: Alt+Enter (F is reserved for brace in combat).
+    // Fullscreen: Alt+Enter, "=", or the top-left button (see render pass).
     const altEnter =
       (game.input.isDown("Alt") || game.input.isDown("Meta")) &&
       game.input.wasPressed("Enter");
-    if (altEnter && document.fullscreenEnabled !== false) {
-      toggleFullscreen();
-      SFX.click();
+    if (document.fullscreenEnabled !== false) {
+      if (altEnter) {
+        toggleFullscreen();
+        SFX.click();
+        game.input.consumePress("Enter");
+      } else if (game.input.wasPressed("=", "NumpadEqual")) {
+        toggleFullscreen();
+        SFX.click();
+        game.input.consumePress("=", "NumpadEqual");
+      } else if (
+        game.input.wasPressed("Mouse0")
+        && pointInRect(
+          game.input.mouseX,
+          game.input.mouseY,
+          FULLSCREEN_BTN.x,
+          FULLSCREEN_BTN.y,
+          FULLSCREEN_BTN.w,
+          FULLSCREEN_BTN.h,
+        )
+      ) {
+        toggleFullscreen();
+        SFX.click();
+        game.input.consumePress("Mouse0");
+      }
     }
 
     // Global mute toggle (M). Processed BEFORE scenes consume inputs,
@@ -98,20 +124,14 @@ const loop = new Loop(
     if (game.input.wasPressed("m")) {
       const nowMuted = toggleMute();
       if (!nowMuted) SFX.click();
+      game.input.consumePress("m");
     }
 
-    // ZXNM chord — open cheat overlay (rising edge; close with ESC).
-    if (!game.cheatMenuOpen) {
-      const chordHeld = game.input.allHeld("z", "x", "n", "m");
-      if (chordHeld && !game._cheatChordLast) {
-        game.cheatMenuOpen = true;
-        game.cheatInput = "";
-        game.cheatFlash = "";
-        SFX.click();
-      }
-      game._cheatChordLast = chordHeld;
-    } else {
-      game._cheatChordLast = false;
+    if (!game.cheatMenuOpen && game.input.wasPressed("\\")) {
+      game.cheatMenuOpen = true;
+      game.cheatInput = "";
+      game.cheatFlash = "";
+      SFX.click();
     }
 
     if (game.cheatMenuOpen) {
@@ -144,11 +164,8 @@ const loop = new Loop(
         bold: true,
         maxWidth: W - 120,
       });
-      drawText(ctx, "jackson  •  dez  •  acererack  •  bossnow", W / 2, 408, {
-        size: 14, color: COLORS.gold, align: "center",
-      });
-      drawText(ctx, "(Hold ZXNM together to toggle this)", W / 2, H - 40, {
-        size: 12, color: COLORS.boneDim, align: "center", italic: true,
+      drawText(ctx, "ENTER submit   ESC exits", W / 2, 392, {
+        size: 12, color: COLORS.boneDim, align: "center",
       });
     } else if (game.cheatFlashT > 0 && game.cheatFlash) {
       ctx.fillStyle = "rgba(0,0,0,0.5)";
@@ -156,6 +173,21 @@ const loop = new Loop(
       drawText(ctx, game.cheatFlash, W / 2, H - 58, {
         size: 14, color: COLORS.gold, align: "center", bold: true,
         maxWidth: W - 100,
+      });
+    }
+
+    // Fullscreen control (above scene HUD; drawn after cheat overlay so it stays clickable).
+    if (document.fullscreenEnabled !== false) {
+      const { x, y, w, h } = FULLSCREEN_BTN;
+      drawPanel(ctx, x, y, w, h);
+      const fs = !!document.fullscreenElement;
+      drawText(ctx, fs ? "EXIT (=)" : "FULLSCREEN (=)", x + w / 2, y + h / 2, {
+        size: 12,
+        color: fs ? "#ffcc88" : COLORS.bone,
+        align: "center",
+        baseline: "middle",
+        bold: true,
+        maxWidth: w - 10,
       });
     }
 
@@ -183,4 +215,12 @@ const loop = new Loop(
 
 loop.start();
 
-window.__game = game;
+// Dev helper only — avoid exposing live game state on public deploys / file opens.
+try {
+  const h = typeof location !== "undefined" ? location.hostname : "";
+  if (/^(localhost|127\.0\.0\.1)$/i.test(String(h))) {
+    window.__game = game;
+  }
+} catch (_) {
+  /* noop */
+}

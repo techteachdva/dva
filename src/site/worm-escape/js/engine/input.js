@@ -24,22 +24,39 @@ export class Input {
     // just clamps to the canvas edge.
 
     window.addEventListener("keydown", (e) => {
-      const k = this._norm(e.key);
+      let keyChar = e.key;
+      // Backslash key (US + many international layouts report different e.key).
+      if (e.code === "Backslash" || e.code === "IntlBackslash") {
+        keyChar = "\\";
+      }
+      const k = this._norm(keyChar);
       if (!this.down.has(k)) this.pressed.add(k);
       this.down.add(k);
       if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " ", "Space"].includes(e.key)) {
         e.preventDefault();
       }
+      if (e.code === "Backslash" || e.code === "IntlBackslash") {
+        e.preventDefault();
+      }
+      if (e.key === "=" || e.code === "Equal" || e.code === "NumpadEqual") {
+        e.preventDefault();
+      }
     });
 
     window.addEventListener("keyup", (e) => {
-      const k = this._norm(e.key);
+      let keyChar = e.key;
+      if (e.code === "Backslash" || e.code === "IntlBackslash") {
+        keyChar = "\\";
+      }
+      const k = this._norm(keyChar);
       this.down.delete(k);
       this.released.add(k);
     });
 
     window.addEventListener("blur", () => {
       this.down.clear();
+      this.pressed.clear();
+      this.released.clear();
     });
 
     // Mouse plumbing (only attached if a canvas was supplied).
@@ -57,6 +74,7 @@ export class Input {
       window.addEventListener("mousemove", onMove);
 
       const onDown = (e) => {
+        if (e.button === 0) e.preventDefault();
         const k = `Mouse${e.button}`;
         if (!this.down.has(k)) this.pressed.add(k);
         this.down.add(k);
@@ -96,6 +114,11 @@ export class Input {
 
   wasReleased(...keys) {
     return keys.some((k) => this.released.has(this._norm(k)));
+  }
+
+  /** Drop keys from this frame's "just pressed" set (e.g. global UI consumed the click). */
+  consumePress(...keys) {
+    for (const key of keys) this.pressed.delete(this._norm(key));
   }
 
   // Call at END of every frame.

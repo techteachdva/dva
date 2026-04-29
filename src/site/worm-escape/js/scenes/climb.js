@@ -7,6 +7,11 @@ import {
 import { SFX } from "../engine/audio.js";
 import { CHAMBERS } from "../content/chambers.js";
 import { randInt, rand, pick } from "../engine/rng.js";
+import {
+  pointInRect,
+  columnIndexFromX,
+  stepTowardIndex,
+} from "../engine/pointer.js";
 import { applyDamage, recordDirectHpHit, recordDirectArmorHit } from "../content/player.js";
 import { CombatScene } from "./combat.js";
 import { TongueBossScene } from "./tongueBoss.js";
@@ -152,6 +157,15 @@ export class ClimbScene {
     this.toastTime = time;
   }
 
+  hitClimbBlockingUi(mx, my) {
+    if (my > H - 34) return true;
+    if (mx < 290 && my < 130) return true;
+    const rW = 320, rX = W - 16 - rW;
+    if (pointInRect(mx, my, rX, 16, rW, 100)) return true;
+    if (pointInRect(mx, my, W / 2 - 400, 72, 800, 54)) return true;
+    return false;
+  }
+
   update(dt, game) {
     if (this.done) return;
 
@@ -178,14 +192,19 @@ export class ClimbScene {
     // no longer tears across multiple columns at once. hopCooldown is
     // kept as a small anti-spam gate tied to build flavor (Iron is chunky).
     this.hopCooldown -= dt;
+    const mx = game.input.mouseX, my = game.input.mouseY;
     if (!stunned && this.hopCooldown <= 0) {
-      if (game.input.wasPressed("ArrowLeft", "a") && this.col > 0) {
-        this.col--;
-        this.targetX = COLS_X[this.col];
-        this.hopCooldown = p.hopCooldown;
-        SFX.grab();
-      } else if (game.input.wasPressed("ArrowRight", "d") && this.col < NUM_COLS - 1) {
-        this.col++;
+      let hop = 0;
+      if (game.input.wasPressed("ArrowLeft", "a") && this.col > 0) hop = -1;
+      else if (game.input.wasPressed("ArrowRight", "d") && this.col < NUM_COLS - 1) hop = 1;
+      else if (game.input.wasPressed("Mouse0")) {
+        if (!this.hitClimbBlockingUi(mx, my) && my >= HERO_Y) {
+          const target = columnIndexFromX(mx, COLS_X);
+          hop = stepTowardIndex(this.col, target);
+        }
+      }
+      if (hop !== 0 && this.col + hop >= 0 && this.col + hop < NUM_COLS) {
+        this.col += hop;
         this.targetX = COLS_X[this.col];
         this.hopCooldown = p.hopCooldown;
         SFX.grab();
@@ -201,9 +220,15 @@ export class ClimbScene {
     if (stunned) {
       // While stunned we slip a bit - captures the "dazed and sliding" feel.
       this.progress = Math.max(0, this.progress - slipRate * 0.8 * dt);
-    } else if (game.input.isDown("ArrowUp", "w")) {
+    } else if (
+      game.input.isDown("ArrowUp", "w")
+      || (game.input.isDown("Mouse0") && my < HERO_Y && !this.hitClimbBlockingUi(mx, my))
+    ) {
       this.progress += climbBase * dt;
-    } else if (game.input.isDown("ArrowDown", "s")) {
+    } else if (
+      game.input.isDown("ArrowDown", "s")
+      || (game.input.isDown("Mouse0") && my >= HERO_Y + 42 && !this.hitClimbBlockingUi(mx, my))
+    ) {
       // brace: hold position (no slip, no climb)
     } else {
       this.progress -= slipRate * dt;
@@ -375,7 +400,10 @@ export class ClimbScene {
       return;
     }
 
-    this.anim += dt * (game.input.isDown("ArrowUp", "w") ? 10 : 3);
+    const climbingAnim =
+      game.input.isDown("ArrowUp", "w")
+      || (game.input.isDown("Mouse0") && my < HERO_Y && !this.hitClimbBlockingUi(mx, my));
+    this.anim += dt * (climbingAnim ? 10 : 3);
   }
 
   // Pick a column, preferring ones not in `avoidCols` (array of col ints
@@ -1328,16 +1356,20 @@ export class ClimbScene {
   // Shows what the hero is CURRENTLY doing so new players can see at a glance
   // whether their input is registering ("CLIMBING!" vs "SLIPPING...").
   drawActionBadge(ctx, game) {
-    const p = game.player;
-    const bileCloseY = HERO_DEATH_Y - this.bileHeight; // how far bile is below hero
+    const mx = game.input.mouseX, my = game.input.mouseY;
+    const uiBlock = this.hitClimbBlockingUi(mx, my);
+    const mouseClimb =
+      game.input.isDown("Mouse0") && my < HERO_Y && !uiBlock;
+    const mouseBrace =
+      game.input.isDown("Mouse0") && my >= HERO_Y + 42 && !uiBlock;
     let text, color, glow;
     if (this.stunT > 0) {
       text = "STUNNED!"; color = "#ff9070"; glow = "#ff4030";
     } else if (this.submerged) {
       text = "SUBMERGED!"; color = "#bfff00"; glow = "#2a6a00";
-    } else if (game.input.isDown("ArrowUp", "w")) {
+    } else if (game.input.isDown("ArrowUp", "w") || mouseClimb) {
       text = "CLIMBING UP!"; color = "#b5f05a"; glow = "#2a6a00";
-    } else if (game.input.isDown("ArrowDown", "s")) {
+    } else if (game.input.isDown("ArrowDown", "s") || mouseBrace) {
       text = "BRACING"; color = "#ffd966"; glow = "#8a5000";
     } else {
       text = "SLIPPING..."; color = "#ff9a9a"; glow = "#600000";
@@ -1418,7 +1450,7 @@ export class ClimbScene {
     ctx.save();
     ctx.fillStyle = "rgba(0,0,0,0.55)";
     ctx.fillRect(0, H - 30, W, 30);
-    const line = "[UP/W] Climb   [A]/[D] or [LEFT/RIGHT] Hop Lane   [DOWN/S] Brace   [P/ESC] Pause";
+    const line = "[UP/W] / click above hero & hold to climb   [A]/[D] lanes or click under hero   [DOWN/S] brace   [P] Pause";
     drawText(ctx, line, W / 2, H - 15, {
       size: 13, color: COLORS.bone, align: "center", baseline: "middle", bold: true,
       maxWidth: W - 40,

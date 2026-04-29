@@ -166,7 +166,7 @@ export class VictoryScene {
     const fullyShown = this.score
       ? this.revealT > this.score.parts.length * perRow + 0.6
       : true;
-    if (fullyShown && game.input.wasPressed(" ", "Space", "Enter", "Escape", "r")) {
+    if (fullyShown && game.input.wasPressed(" ", "Space", "Enter", "Escape", "r", "Mouse0")) {
       SFX.confirm();
       game.scenes.replace(new IntroScene(), game);
     }

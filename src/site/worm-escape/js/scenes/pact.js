@@ -6,6 +6,7 @@ import { SFX } from "../engine/audio.js";
 import { rollPactChoices } from "../content/pacts.js";
 import { applyPact } from "../content/player.js";
 import { TransitionScene } from "./transition.js";
+import { pointInRect } from "../engine/pointer.js";
 
 // v0.12 PactScene - after every boss kill and before the chamber
 // transition, the player picks ONE of 3 (or 4, vs elites) trade-off
@@ -55,6 +56,24 @@ export class PactScene {
       SFX.click();
     } else if (game.input.wasPressed(" ", "Space", "Enter")) {
       this.confirm(game);
+    } else if (game.input.wasPressed("Mouse0")) {
+      const n = this.choices.length;
+      if (n === 0) return;
+      const gap = 24;
+      const cardW = n >= 4 ? 260 : 320;
+      const cardH = 440;
+      const totalW = cardW * n + gap * (n - 1);
+      const startX = (W - totalW) / 2;
+      const y = 160;
+      const mx = game.input.mouseX, my = game.input.mouseY;
+      for (let i = 0; i < n; i++) {
+        const x = startX + i * (cardW + gap);
+        if (pointInRect(mx, my, x, y, cardW, cardH)) {
+          this.idx = i;
+          this.confirm(game);
+          break;
+        }
+      }
     } else if (game.input.wasPressed("1") && this.choices[0]) { this.idx = 0; this.confirm(game); }
     else if (game.input.wasPressed("2") && this.choices[1]) { this.idx = 1; this.confirm(game); }
     else if (game.input.wasPressed("3") && this.choices[2]) { this.idx = 2; this.confirm(game); }

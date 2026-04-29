@@ -417,7 +417,10 @@ export function drawBar(ctx, x, y, w, h, pct, opts = {}) {
     label = null,
     labelColor = COLORS.bone,
   } = opts;
-  const p = Math.max(0, Math.min(1, pct));
+  let p =
+    typeof pct === "number" && Number.isFinite(pct)
+      ? Math.max(0, Math.min(1, pct))
+      : 0;
   ctx.save();
   // Back
   ctx.fillStyle = back;

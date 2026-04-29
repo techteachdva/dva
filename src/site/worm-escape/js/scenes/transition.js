@@ -36,7 +36,7 @@ export class TransitionScene {
   update(dt, game) {
     this.t += dt;
     if (this.nextIdx >= CHAMBERS.length) return;
-    if (this.t > 0.5 && game.input.wasPressed(" ", "Space", "Enter")) {
+    if (this.t > 0.5 && game.input.wasPressed(" ", "Space", "Enter", "Mouse0")) {
       SFX.confirm();
       game.chamberIndex = this.nextIdx;
       game.scenes.replace(new ClimbScene(this.nextIdx), game);

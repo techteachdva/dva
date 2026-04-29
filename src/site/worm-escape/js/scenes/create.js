@@ -7,6 +7,7 @@ import { SFX } from "../engine/audio.js";
 import { BUILDS, LOADOUTS, makePlayer } from "../content/player.js";
 import { loadSave } from "../engine/storage.js";
 import { ClimbScene } from "./climb.js";
+import { pointInRect } from "../engine/pointer.js";
 
 // v0.16 Full weapon pool. Weapons gated by `LOADOUT_UNLOCK` are filtered out
 // of the random roll if the unlock isn't owned.
@@ -139,13 +140,19 @@ export class CreateScene {
 
   rollLoadouts(count = 3, cheatBrowseAll = false) {
     const cheat = cheatBrowseAll;
-    const unlocked = ALL_LOADOUT_IDS.filter((id) => {
+    let unlocked = ALL_LOADOUT_IDS.filter((id) => {
       if (cheat) return true;
       const flag = LOADOUT_UNLOCK[id];
       if (!flag) return true;
       return !!(this.save && this.save.unlocks && this.save.unlocks[flag]);
     });
-    return shuffled(unlocked).slice(0, Math.min(count, unlocked.length || 3));
+    if (!unlocked.length) {
+      unlocked = ["sword", "hammer", "club"];
+    }
+    return shuffled(unlocked).slice(
+      0,
+      Math.min(count, Math.max(unlocked.length, 1)),
+    );
   }
 
   refreshFromGameCheats(game) {
@@ -174,6 +181,42 @@ export class CreateScene {
     const flag = LOADOUT_UNLOCK[id];
     if (!flag) return true;
     return !!(this.save && this.save.unlocks && this.save.unlocks[flag]);
+  }
+
+  hitBuildWheel(mx, my) {
+    const cardWc = 270, cardWs = 214, gap = 20, yBase = 172, cardH = 480;
+    const totalW = cardWs + gap + cardWc + gap + cardWs;
+    const originX = (W - totalW) / 2;
+    const xs = [
+      originX,
+      originX + cardWs + gap,
+      originX + cardWs + gap + cardWc + gap,
+    ];
+    const ws = [cardWs, cardWc, cardWs];
+    const yOff = [24, 0, 24];
+    for (let k = 0; k < 3; k++) {
+      if (pointInRect(mx, my, xs[k], yBase + yOff[k], ws[k], cardH))
+        return k === 0 ? "left" : k === 1 ? "center" : "right";
+    }
+    return null;
+  }
+
+  hitLoadoutWheel(mx, my) {
+    const cardWc = 268, cardWs = 220, gap = 18, yBase = 174, cardH = 470;
+    const totalW = cardWs + gap + cardWc + gap + cardWs;
+    const originX = (W - totalW) / 2;
+    const xs = [
+      originX,
+      originX + cardWs + gap,
+      originX + cardWs + gap + cardWc + gap,
+    ];
+    const ws = [cardWs, cardWc, cardWs];
+    const yOff = [22, 0, 22];
+    for (let k = 0; k < 3; k++) {
+      if (pointInRect(mx, my, xs[k], yBase + yOff[k], ws[k], cardH))
+        return k === 0 ? "left" : k === 1 ? "center" : "right";
+    }
+    return null;
   }
 
   update(dt, game) {
@@ -206,11 +249,32 @@ export class CreateScene {
           this.step = 1;
         }
       }
+      if (game.input.wasPressed("Mouse0")) {
+        const mx = game.input.mouseX, my = game.input.mouseY;
+        if (my < H - 52) {
+          const z = this.hitBuildWheel(mx, my);
+          const nB = this.buildIdsOrdered.length;
+          if (z === "left") {
+            this.buildWheelIdx = (this.buildWheelIdx - 1 + nB) % nB;
+            SFX.click();
+          } else if (z === "right") {
+            this.buildWheelIdx = (this.buildWheelIdx + 1) % nB;
+            SFX.click();
+          } else if (z === "center") {
+            const bid = this.buildIdsOrdered[this.buildWheelIdx];
+            if (!this.isBuildIdUnlocked(bid)) SFX.deny();
+            else {
+              SFX.confirm();
+              this.step = 1;
+            }
+          }
+        }
+      }
     } else if (this.step === 1) {
       const N = this.weaponChoices.length;
-      if (N === 0) return; // shouldn't happen but be safe
+      if (N === 0) return;
       if (game.input.wasPressed("ArrowLeft", "a")) {
-        this.loadIdx = (this.loadIdx - 1 + N) % N;
+        this.loadIdx = ((this.loadIdx - 1) % N + N) % N;
         SFX.click();
       }
       if (game.input.wasPressed("ArrowRight", "d")) {
@@ -238,15 +302,45 @@ export class CreateScene {
           this.step = 2;
         }
       }
+      if (game.input.wasPressed("Mouse0")) {
+        const mx = game.input.mouseX, my = game.input.mouseY;
+        if (my < H - 52) {
+          const z = this.hitLoadoutWheel(mx, my);
+          if (z === "left") {
+            this.loadIdx = ((this.loadIdx - 1) % N + N) % N;
+            SFX.click();
+          } else if (z === "right") {
+            this.loadIdx = (this.loadIdx + 1) % N;
+            SFX.click();
+          } else if (z === "center") {
+            if (!this.isLoadoutUnlocked(this.loadIdx)) SFX.deny();
+            else {
+              SFX.confirm();
+              this.step = 2;
+            }
+          }
+        }
+      }
       if (game.input.wasPressed("Backspace", "Escape")) {
         SFX.deny();
         this.step = 0;
       }
     } else if (this.step === 2) {
-      if (game.input.wasPressed(" ", "Space", "Enter")) {
+      if (
+        game.input.wasPressed(" ", "Space", "Enter")
+        || (
+          game.input.wasPressed("Mouse0")
+          && pointInRect(game.input.mouseX, game.input.mouseY, 220, 170, W - 440, 500)
+          && game.input.mouseY < H - 36
+        )
+      ) {
         SFX.confirm();
         const buildId = this.buildIdsOrdered[this.buildWheelIdx];
         const loadId = this.weaponChoices[this.loadIdx];
+        if (!buildId || loadId == null || !LOADOUTS[loadId]) {
+          if (typeof SFX.deny === "function") SFX.deny();
+          return;
+        }
         game.pickAnyWeapon = false;
         game.player = makePlayer(buildId, loadId, game);
         game.chamberIndex = 0;
@@ -271,7 +365,7 @@ export class CreateScene {
     else if (this.step === 1) this.renderLoadoutSelect(ctx, game);
     else this.renderConfirm(ctx);
 
-    drawText(ctx, "A/D wheel   SPACE confirm   BACKSPACE back   M mute   Alt+Enter fullscreen   ZXNM cheats", W / 2, H - 26, {
+    drawText(ctx, "A/D wheel · click cards · SPACE confirm · BACKSPACE back · M mute · Alt+Enter fullscreen · \\ cheats", W / 2, H - 26, {
       size: 13, color: COLORS.boneDim, align: "center",
     });
   }
@@ -410,10 +504,20 @@ export class CreateScene {
     const N = this.weaponChoices.length;
     if (N === 0) return;
 
-    const center = this.loadIdx;
-    const idxTriple = browseAll && N > 1
-      ? [(center - 1 + N) % N, center, (center + 1) % N]
-      : [0, 1, 2];
+    const center = ((this.loadIdx % N) + N) % N;
+
+    /** Three slots for the wheel — always clamp to valid indices (fixes DEZ/browse when N≥1). */
+    const idxTriple = browseAll
+      ? [
+          N <= 1 ? 0 : (center - 1 + N) % N,
+          N <= 1 ? 0 : center % N,
+          N <= 1 ? 0 : (center + 1) % N,
+        ]
+      : [
+          Math.min(0, Math.max(0, N - 1)),
+          Math.min(1, Math.max(0, N - 1)),
+          Math.min(2, Math.max(0, N - 1)),
+        ];
 
     const cardWc = 268;
     const cardWs = 220;
@@ -503,7 +607,9 @@ export class CreateScene {
   renderConfirm(ctx) {
     const buildId = this.buildIdsOrdered[this.buildWheelIdx];
     const b = BUILDS[buildId];
-    const l = LOADOUTS[this.weaponChoices[this.loadIdx]];
+    const loadId = this.weaponChoices[this.loadIdx];
+    const l = loadId ? LOADOUTS[loadId] : null;
+    if (!b || !l) return;
     drawPanel(ctx, 220, 170, W - 440, 500);
     drawText(ctx, "READY TO GET DIGESTED?", W / 2, 210, {
       size: 28, color: COLORS.bile, align: "center", bold: true, glow: COLORS.blood,
