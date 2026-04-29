@@ -5,14 +5,11 @@ import {
 } from "../engine/render.js";
 import { SFX } from "../engine/audio.js";
 import { BUILDS, LOADOUTS, makePlayer } from "../content/player.js";
-import { loadSave, saveGame } from "../engine/storage.js";
+import { loadSave } from "../engine/storage.js";
 import { ClimbScene } from "./climb.js";
 
-const BUILD_IDS = ["balanced", "tryHard", "gambler", "tamer", "swift", "iron", "viper", "wizard", "necromancer"];
-
 // v0.16 Full weapon pool. Weapons gated by `LOADOUT_UNLOCK` are filtered out
-// of the random roll if the unlock isn't owned. The shown 4 are a *random*
-// subset of the unlocked pool, so each run feels different.
+// of the random roll if the unlock isn't owned.
 const ALL_LOADOUT_IDS = [
   "sword", "hammer", "emberStaff", "frostWand",
   "fryingPan", "saber", "fists", "club",
@@ -43,7 +40,7 @@ const LOADOUT_UNLOCK = {
 const BUILD_UNLOCK_HINT  = {
   viper:  "UNLOCK: Clear any run with any build.",
   wizard: "UNLOCK: Clear a run with VIPER.",
-  necromancer: "TYPE JACKSON on this screen (cheat) or wait for future unlock.",
+  necromancer: "Defeat the dungeon — or use cheat JACKSON.",
 };
 const LOADOUT_UNLOCK_HINT = {
   bileWhip:      "UNLOCK: Clear the Gullet climb hitless.",
@@ -75,24 +72,72 @@ const ART_LABEL = {
   bile:     "BILE OOZES",
 };
 
+/** Short perk blurbs for forge cards (matches BUILDS gimmicks). */
+function getBuildPerkLines(id) {
+  const map = {
+    balanced: [
+      "- Reliable stats — no harsh tradeoffs",
+      "- Good learn-the-ropes baseline",
+    ],
+    tryHard: [
+      "- 2× DAMAGE and 2× climb speed",
+      "- Max HP locked at 10",
+    ],
+    gambler: [
+      "- Damage per hit rolls between ¼× and 3.5×",
+      "- High variance swings",
+    ],
+    tamer: [
+      "- Bonus damage when prey is wounded",
+      "- Weaker raw hits without finishers",
+    ],
+    swift: [
+      "- Lightning hops between columns",
+      "- Widest acid-gout dodge window",
+      "- High base mana pool",
+    ],
+    iron: [
+      "- Armor absorbs most chip damage",
+      "- Debris soak + acid resistance",
+    ],
+    viper: [
+      "- Poison on every attack",
+      "- Balanced climb and modest armor soak",
+    ],
+    wizard: [
+      "- Huge mana + mana shield",
+      "- +outgoing spell damage, fragile body",
+    ],
+    necromancer: [
+      "- Death-mage: mana shield + heavy spell amp",
+      "- Unlocked via cheat JACKSON only",
+    ],
+  };
+  return map[id] || ["- Forge your own legend."];
+}
+
 export class CreateScene {
   constructor() {
     this.t = 0;
     this.step = 0;
-    this.buildIdx = 0;
+    this.buildWheelIdx = 0;
     this.loadIdx = 0;
-    // Snapshot unlock state once on scene entry so the UI is stable while
-    // the player navigates. Fresh-save defaults are graceful: everything
-    // locked except the base entries.
     this.save = loadSave();
+    this.buildIdsOrdered = this.computeBuildWheelIds();
     this.rerollsLeft = 1;
     this.unlockAllWeapons = false;
-    this.cheatBuf = "";
-    // v0.17 Random weapon picks for this forge session (may be entire pool with DEZ).
-    this.weaponChoices = this.rollLoadouts(4, false);
+    this.dezPoolApplied = false;
+    this.weaponChoices = this.rollLoadouts(3, false);
   }
 
-  rollLoadouts(count = 4, cheatBrowseAll = false) {
+  computeBuildWheelIds() {
+    const u = this.save?.unlocks || {};
+    const ids = ["balanced", "tryHard", "gambler", "tamer", "swift", "iron", "viper", "wizard"];
+    if (u.necromancerBuild) ids.push("necromancer");
+    return ids;
+  }
+
+  rollLoadouts(count = 3, cheatBrowseAll = false) {
     const cheat = cheatBrowseAll;
     const unlocked = ALL_LOADOUT_IDS.filter((id) => {
       if (cheat) return true;
@@ -100,41 +145,21 @@ export class CreateScene {
       if (!flag) return true;
       return !!(this.save && this.save.unlocks && this.save.unlocks[flag]);
     });
-    return shuffled(unlocked).slice(0, Math.min(count, unlocked.length || 4));
+    return shuffled(unlocked).slice(0, Math.min(count, unlocked.length || 3));
   }
 
-  processCheats(game) {
-    const az = "abcdefghijklmnopqrstuvwxyz";
-    for (const ch of az) {
-      if (game.input.wasPressed(ch)) this.cheatBuf += ch;
-    }
-    if (this.cheatBuf.length > 64) this.cheatBuf = this.cheatBuf.slice(-64);
-    const b = this.cheatBuf.toLowerCase();
-    if (b.includes("jackson")) {
-      this.save.unlocks.necromancerBuild = true;
-      saveGame(this.save);
-      this.cheatBuf = "";
-      if (typeof SFX.victory === "function") SFX.victory();
-    }
-    if (b.includes("dez")) {
-      game.pickAnyWeapon = true;
-      this.unlockAllWeapons = true;
-      this.weaponChoices = this.rollLoadouts(999, true);
-      this.loadIdx = 0;
-      this.rerollsLeft = 1;
-      this.cheatBuf = "";
-      if (typeof SFX.confirm === "function") SFX.confirm();
-    }
-    if (b.includes("acererack")) {
-      game.invulnerable = !game.invulnerable;
-      this.cheatBuf = "";
-      if (typeof SFX.click === "function") SFX.click();
-    }
+  refreshFromGameCheats(game) {
+    if (!game?.cheatSaveRefresh) return;
+    this.save = loadSave();
+    this.buildIdsOrdered = this.computeBuildWheelIds();
+    this.buildWheelIdx = Math.min(
+      this.buildWheelIdx,
+      Math.max(0, this.buildIdsOrdered.length - 1),
+    );
+    game.cheatSaveRefresh = false;
   }
 
-  // Is the build / loadout at this index currently unlocked?
-  isBuildUnlocked(idx) {
-    const id = BUILD_IDS[idx];
+  isBuildIdUnlocked(id) {
     const flag = BUILD_UNLOCK[id];
     if (!flag) return true;
     return !!(this.save && this.save.unlocks && this.save.unlocks[flag]);
@@ -153,18 +178,28 @@ export class CreateScene {
 
   update(dt, game) {
     this.t += dt;
-    this.processCheats(game);
+    this.refreshFromGameCheats(game);
+
+    if (game.pickAnyWeapon && !this.dezPoolApplied) {
+      this.dezPoolApplied = true;
+      this.unlockAllWeapons = true;
+      this.weaponChoices = this.rollLoadouts(999, true);
+      this.loadIdx = 0;
+      this.rerollsLeft = 1;
+    }
 
     if (this.step === 0) {
+      const nB = this.buildIdsOrdered.length;
       if (game.input.wasPressed("ArrowRight", "d")) {
-        this.buildIdx = (this.buildIdx + 1) % BUILD_IDS.length;
+        this.buildWheelIdx = (this.buildWheelIdx + 1) % nB;
         SFX.click();
       } else if (game.input.wasPressed("ArrowLeft", "a")) {
-        this.buildIdx = (this.buildIdx - 1 + BUILD_IDS.length) % BUILD_IDS.length;
+        this.buildWheelIdx = (this.buildWheelIdx - 1 + nB) % nB;
         SFX.click();
       }
       if (game.input.wasPressed(" ", "Space", "Enter")) {
-        if (!this.isBuildUnlocked(this.buildIdx)) {
+        const bid = this.buildIdsOrdered[this.buildWheelIdx];
+        if (!this.isBuildIdUnlocked(bid)) {
           SFX.deny();
         } else {
           SFX.confirm();
@@ -189,7 +224,7 @@ export class CreateScene {
         } else {
           this.rerollsLeft--;
           const cheatBrowse = this.unlockAllWeapons;
-          const n = cheatBrowse ? ALL_LOADOUT_IDS.length : 4;
+          const n = cheatBrowse ? ALL_LOADOUT_IDS.length : 3;
           this.weaponChoices = this.rollLoadouts(n, cheatBrowse);
           this.loadIdx = 0;
           if (typeof SFX.click === "function") SFX.click();
@@ -210,7 +245,7 @@ export class CreateScene {
     } else if (this.step === 2) {
       if (game.input.wasPressed(" ", "Space", "Enter")) {
         SFX.confirm();
-        const buildId = BUILD_IDS[this.buildIdx];
+        const buildId = this.buildIdsOrdered[this.buildWheelIdx];
         const loadId = this.weaponChoices[this.loadIdx];
         game.pickAnyWeapon = false;
         game.player = makePlayer(buildId, loadId, game);
@@ -236,76 +271,95 @@ export class CreateScene {
     else if (this.step === 1) this.renderLoadoutSelect(ctx, game);
     else this.renderConfirm(ctx);
 
-    drawText(ctx, "LEFT/RIGHT to choose   SPACE to confirm   BACKSPACE back   M mute", W / 2, H - 26, {
+    drawText(ctx, "A/D wheel   SPACE confirm   BACKSPACE back   M mute   Alt+Enter fullscreen   ZXNM cheats", W / 2, H - 26, {
       size: 13, color: COLORS.boneDim, align: "center",
     });
   }
 
   renderBuildSelect(ctx) {
-    drawText(ctx, "STEP 1 / 2  -  PICK YOUR BUILD  (you get ONE virtue)", W / 2, 130, {
-      size: 16, color: COLORS.bone, align: "center",
+    drawText(ctx, "STEP 1 / 2  -  PICK YOUR BUILD  (3-card wheel — center = choice)", W / 2, 130, {
+      size: 15, color: COLORS.bone, align: "center", maxWidth: W - 40,
     });
 
-    // v0.16 4 builds. Tighter cards, smaller portrait, narrower stat bars.
-    const cardW = 260, cardH = 480;
-    const gap = 18;
-    const totalW = cardW * BUILD_IDS.length + gap * (BUILD_IDS.length - 1);
-    const startX = (W - totalW) / 2;
+    const ids = this.buildIdsOrdered;
+    const N = ids.length;
+    const center = this.buildWheelIdx;
+    const slotIdx = [(center - 1 + N) % N, center, (center + 1) % N];
 
-    BUILD_IDS.forEach((id, i) => {
+    const cardWc = 270;
+    const cardWs = 214;
+    const gap = 20;
+    const yBase = 172;
+    const totalW = cardWs + gap + cardWc + gap + cardWs;
+    const originX = (W - totalW) / 2;
+
+    const xs = [
+      originX,
+      originX + cardWs + gap,
+      originX + cardWs + gap + cardWc + gap,
+    ];
+    const ws = [cardWs, cardWc, cardWs];
+    const yOff = [24, 0, 24];
+    const alpha = [0.78, 1, 0.78];
+
+    for (let k = 0; k < 3; k++) {
+      const id = ids[slotIdx[k]];
       const b = BUILDS[id];
-      const x = startX + i * (cardW + gap);
-      const y = 170;
-      const selected = i === this.buildIdx;
-      const unlocked = this.isBuildUnlocked(i);
-      this.drawCard(ctx, x, y, cardW, cardH, selected);
+      if (!b) continue;
 
-      const textMax = cardW - 18;
-      drawText(ctx, b.name, x + cardW / 2, y + 30, {
-        size: 22, bold: true,
-        color: !unlocked ? "#555" : (selected ? COLORS.bile : COLORS.bone),
+      const x = xs[k];
+      const y = yBase + yOff[k];
+      const cardW = ws[k];
+      const isCenter = k === 1;
+      const unlocked = this.isBuildIdUnlocked(id);
+
+      ctx.save();
+      ctx.globalAlpha = alpha[k];
+      this.drawCard(ctx, x, y, cardW, 480, isCenter && unlocked);
+
+      const textMax = cardW - 14;
+      drawText(ctx, b.name, x + cardW / 2, y + 26, {
+        size: isCenter ? 22 : 18,
+        bold: true,
+        color: !unlocked ? "#555" : (isCenter ? COLORS.bile : COLORS.bone),
         align: "center",
-        glow: (selected && unlocked) ? COLORS.blood : null,
+        glow: (isCenter && unlocked) ? COLORS.blood : null,
         maxWidth: textMax,
       });
-      drawText(ctx, b.blurb, x + cardW / 2, y + 60, {
-        size: 12, color: COLORS.boneDim, align: "center", maxWidth: textMax,
+      drawText(ctx, b.blurb, x + cardW / 2, y + 52, {
+        size: 11, color: COLORS.boneDim, align: "center", maxWidth: textMax,
       });
 
-      // Hero portrait (smaller now, but each build draws distinctly).
       ctx.save();
-      ctx.translate(x + cardW / 2, y + 200);
-      ctx.scale(3.8, 3.8);
+      ctx.translate(x + cardW / 2, y + 198);
+      ctx.scale(isCenter ? 3.65 : 3.25, isCenter ? 3.65 : 3.25);
       drawHero(ctx, 0, 0, 1, this.t * 6, id);
       ctx.restore();
 
-      // Stat rows
-      const statsY = y + 306;
+      const statsY = y + 302;
       const barMax = 150;
-      this.drawStatRow(ctx, x + 14, statsY +  0,  "HP",       b.hp,      barMax, COLORS.blood);
-      this.drawStatRow(ctx, x + 14, statsY + 22,  "MANA",     b.mana,    barMax, COLORS.mana);
-      this.drawStatRow(ctx, x + 14, statsY + 44,  "ARMOR",    b.armor,   barMax, "#c0c4cc");
-      this.drawStatRow(ctx, x + 14, statsY + 66,  "CLIMB",    Math.round(b.climbSpeed * 100), barMax, COLORS.bile);
-      this.drawStatRow(ctx, x + 14, statsY + 88,  "ACID RES", Math.round((1 - b.acidResist) * 100), 100, COLORS.gold);
+      this.drawStatRow(ctx, x + 12, statsY + 0, "HP", b.hp, barMax, COLORS.blood);
+      this.drawStatRow(ctx, x + 12, statsY + 22, "MANA", b.mana, barMax, COLORS.mana);
+      this.drawStatRow(ctx, x + 12, statsY + 44, "ARMOR", b.armor, barMax, "#c0c4cc");
+      this.drawStatRow(ctx, x + 12, statsY + 66, "CLIMB", Math.round(b.climbSpeed * 100), barMax, COLORS.bile);
+      this.drawStatRow(ctx, x + 12, statsY + 88, "ACID RES", Math.round((1 - b.acidResist) * 100), 100, COLORS.gold);
 
-      // Perk list
-      drawText(ctx, "PERKS:", x + 14, statsY + 114, { size: 11, color: COLORS.bile, bold: true });
-      const perks = id === "swift"
-        ? ["- Lightning hops between columns", "- Widest acid-gout dodge window", "- Highest base mana pool"]
-        : id === "iron"
-        ? ["- Armor absorbs 75% of damage", "- 2 free debris tanks per chamber", "- Acid ticks 65% slower"]
-        : id === "viper"
-        ? ["- Every attack poisons (3s, 5%/s)", "- 30% armor soak", "- Balanced climb speed"]
-        : ["- HUGE mana pool (110 MP)", "- Mana shields HP at 2:1 until empty", "- +40% damage, +2 MP per attack", "- Frail: 60 HP, no armor"];
-      perks.forEach((line, k) => {
-        drawText(ctx, line, x + 14, statsY + 132 + k * 14, {
-          size: 10, color: COLORS.bone, maxWidth: textMax,
+      drawText(ctx, "PERKS:", x + 12, statsY + 114, { size: 10, color: COLORS.bile, bold: true });
+      const perks = getBuildPerkLines(id);
+      perks.forEach((line, idx) => {
+        drawText(ctx, line, x + 12, statsY + 128 + idx * 13, {
+          size: 9, color: COLORS.bone, maxWidth: textMax,
         });
       });
 
-      // Locked overlay
-      if (!unlocked) this.drawLockedOverlay(ctx, x, y, cardW, cardH,
-        BUILD_UNLOCK_HINT[id] || "LOCKED");
+      if (!unlocked) {
+        this.drawLockedOverlay(ctx, x, y, cardW, 480, BUILD_UNLOCK_HINT[id] || "LOCKED");
+      }
+      ctx.restore();
+    }
+
+    drawText(ctx, `Class ${center + 1} / ${N}`, W / 2, H - 52, {
+      size: 12, color: COLORS.boneDim, align: "center", italic: true,
     });
   }
 
@@ -347,79 +401,64 @@ export class CreateScene {
     const browseAll = !!(game && game.pickAnyWeapon);
     const rerollHint = this.rerollsLeft > 0 ? "press R once to reroll" : "no rerolls left — pick one";
     const head = browseAll
-      ? `STEP 2 / 2  -  FULL ARSENAL (DEZ)  (${rerollHint})`
-      : `STEP 2 / 2  -  PICK YOUR LOADOUT  (4 random — ${rerollHint})`;
+      ? `STEP 2 / 2  —  FULL POOL (DEZ)  (${rerollHint})`
+      : `STEP 2 / 2  —  PICK A WEAPON  (3 random — ${rerollHint})`;
     drawText(ctx, head, W / 2, 130, {
       size: browseAll ? 14 : 15, color: COLORS.bone, align: "center", maxWidth: W - 80,
     });
 
     const N = this.weaponChoices.length;
-    const cardW = 260, cardH = 470;
+    if (N === 0) return;
+
+    const center = this.loadIdx;
+    const idxTriple = browseAll && N > 1
+      ? [(center - 1 + N) % N, center, (center + 1) % N]
+      : [0, 1, 2];
+
+    const cardWc = 268;
+    const cardWs = 220;
     const gap = 18;
+    const yBase = 174;
+    const totalW = cardWs + gap + cardWc + gap + cardWs;
+    const originX = (W - totalW) / 2;
 
-    if (browseAll) {
-      const id = this.weaponChoices[this.loadIdx];
+    const xs = [originX, originX + cardWs + gap, originX + cardWs + gap + cardWc + gap];
+    const ws = [cardWs, cardWc, cardWs];
+    const yOff = [22, 0, 22];
+    const al = [0.8, 1, 0.8];
+
+    for (let k = 0; k < 3; k++) {
+      const wi = idxTriple[k];
+      const id = this.weaponChoices[wi];
+      if (!id) continue;
       const l = LOADOUTS[id];
-      if (!l) return;
-      const x = (W - cardW) / 2;
-      const y = 166;
-      const unlocked = this.isLoadoutUnlocked(this.loadIdx);
-      this.drawCard(ctx, x, y, cardW, cardH, true);
-      drawText(ctx, `${l.name}  (${this.loadIdx + 1} / ${N})`, x + cardW / 2, y + 22, {
-        size: 18, bold: true, color: unlocked ? COLORS.bile : "#555",
-        align: "center", glow: unlocked ? COLORS.blood : null, maxWidth: cardW - 20,
-      });
-      this.drawWeaponIcon(ctx, x + cardW / 2, y + 150, l);
-      drawText(ctx, l.blurb, x + cardW / 2, y + 240, {
-        size: 12, color: COLORS.boneDim, align: "center", maxWidth: cardW - 20,
-      });
-      const lx = x + 14;
-      drawText(ctx, "ATTACK:", lx, y + 268, { size: 12, color: COLORS.bile, bold: true });
-      drawText(ctx, l.attack.name, lx, y + 284, { size: 13, color: COLORS.bone, maxWidth: cardW - 20 });
-      drawText(ctx, `DMG ${l.attack.dmg[0]}-${l.attack.dmg[1]}`, lx, y + 300, { size: 11, color: COLORS.boneDim });
-      drawText(ctx, `CD ${l.attack.cooldown}s  MP ${l.attack.manaCost}`, lx, y + 314, { size: 11, color: COLORS.boneDim });
+      if (!l) continue;
 
-      drawText(ctx, "SPECIAL:", lx, y + 350, { size: 12, color: COLORS.bile, bold: true });
-      drawText(ctx, l.special.name, lx, y + 366, { size: 13, color: COLORS.bone, maxWidth: cardW - 20 });
-      drawText(ctx, `DMG ${l.special.dmg[0]}-${l.special.dmg[1]}`, lx, y + 382, { size: 11, color: COLORS.boneDim });
-      drawText(ctx, `CD ${l.special.cooldown}s  MP ${l.special.manaCost}`, lx, y + 396, { size: 11, color: COLORS.boneDim });
+      const x = xs[k];
+      const y = yBase + yOff[k];
+      const cardW = ws[k];
+      const isCenter = k === 1;
+      const unlocked = this.isLoadoutUnlocked(wi);
+      const selected = wi === center;
 
-      drawText(ctx, "STRONG vs " + ART_LABEL[l.strongVs], lx, y + 442, {
-        size: 11, color: "#ffd966", bold: true, maxWidth: cardW - 20,
-      });
-      drawText(ctx, "WEAK vs " + ART_LABEL[l.weakVs], lx, y + 456, {
-        size: 11, color: "#8a9aff", bold: true, maxWidth: cardW - 20,
-      });
-      if (!unlocked) this.drawLockedOverlay(ctx, x, y, cardW, cardH,
-        LOADOUT_UNLOCK_HINT[id] || "LOCKED");
-      return;
-    }
+      ctx.save();
+      ctx.globalAlpha = al[k];
+      this.drawCard(ctx, x, y, cardW, 470, isCenter && unlocked && selected);
 
-    const totalW = cardW * N + gap * (N - 1);
-    const startX = (W - totalW) / 2;
-
-    this.weaponChoices.forEach((id, i) => {
-      const l = LOADOUTS[id];
-      if (!l) return;
-      const x = startX + i * (cardW + gap);
-      const y = 170;
-      const selected = i === this.loadIdx;
-      const unlocked = this.isLoadoutUnlocked(i);
-      this.drawCard(ctx, x, y, cardW, cardH, selected);
-
-      const textMax = cardW - 20;
-      drawText(ctx, l.name, x + cardW / 2, y + 28, {
-        size: 18, bold: true,
-        color: !unlocked ? "#555" : (selected ? COLORS.bile : COLORS.bone),
+      const textMax = cardW - 16;
+      drawText(ctx, l.name, x + cardW / 2, y + 26, {
+        size: isCenter ? 19 : 17,
+        bold: true,
+        color: !unlocked ? "#555" : (selected && isCenter ? COLORS.bile : COLORS.bone),
         align: "center",
-        glow: (selected && unlocked) ? COLORS.blood : null,
+        glow: (selected && isCenter && unlocked) ? COLORS.blood : null,
         maxWidth: textMax,
       });
 
-      this.drawWeaponIcon(ctx, x + cardW / 2, y + 150, l);
+      this.drawWeaponIcon(ctx, x + cardW / 2, y + 140, l);
 
-      drawText(ctx, l.blurb, x + cardW / 2, y + 240, {
-        size: 12, color: COLORS.boneDim, align: "center", maxWidth: textMax,
+      drawText(ctx, l.blurb, x + cardW / 2, y + 232, {
+        size: 11, color: COLORS.boneDim, align: "center", maxWidth: textMax,
       });
 
       const lx = x + 14;
@@ -433,30 +472,37 @@ export class CreateScene {
       if (l.attack.lifestealPct) { drawText(ctx, "LIFESTEAL",    lx, tagY, { size: 10, color: "#7fffa0", bold: true }); tagY += 12; }
       if (l.attack.poisonPct)    { drawText(ctx, l.attack.dotLabel || "BLEED", lx, tagY, { size: 10, color: "#ff8080", bold: true }); tagY += 12; }
 
-      drawText(ctx, "SPECIAL:", lx, y + 350, { size: 12, color: COLORS.bile, bold: true });
-      drawText(ctx, l.special.name, lx, y + 366, { size: 13, color: COLORS.bone, maxWidth: textMax });
-      drawText(ctx, `DMG ${l.special.dmg[0]}-${l.special.dmg[1]}`, lx, y + 382, { size: 11, color: COLORS.boneDim });
-      drawText(ctx, `CD ${l.special.cooldown}s  MP ${l.special.manaCost}`, lx, y + 396, { size: 11, color: COLORS.boneDim });
-      let tagY2 = y + 410;
+      drawText(ctx, "SPECIAL:", lx, y + 352, { size: 12, color: COLORS.bile, bold: true });
+      drawText(ctx, l.special.name, lx, y + 368, { size: 13, color: COLORS.bone, maxWidth: textMax });
+      drawText(ctx, `DMG ${l.special.dmg[0]}-${l.special.dmg[1]}`, lx, y + 384, { size: 11, color: COLORS.boneDim });
+      drawText(ctx, `CD ${l.special.cooldown}s  MP ${l.special.manaCost}`, lx, y + 398, { size: 11, color: COLORS.boneDim });
+      let tagY2 = y + 412;
       if (l.special.hexDetonate)   { drawText(ctx, "DETONATES HEX", lx, tagY2, { size: 10, color: "#d978ff", bold: true }); tagY2 += 12; }
       if (l.special.misfireChance) { drawText(ctx, `1-IN-6 FIRE`,  lx, tagY2, { size: 10, color: "#ffb060", bold: true }); tagY2 += 12; }
       if (l.special.lifestealPct)  { drawText(ctx, "LIFESTEAL",    lx, tagY2, { size: 10, color: "#7fffa0", bold: true }); tagY2 += 12; }
       if (l.special.poisonPct)     { drawText(ctx, l.special.dotLabel || "BLEED", lx, tagY2, { size: 10, color: "#ff8080", bold: true }); tagY2 += 12; }
 
-      drawText(ctx, "STRONG vs " + ART_LABEL[l.strongVs], lx, y + 442, {
+      drawText(ctx, "STRONG vs " + ART_LABEL[l.strongVs], lx, y + 444, {
         size: 11, color: "#ffd966", bold: true, maxWidth: textMax,
       });
-      drawText(ctx, "WEAK vs " + ART_LABEL[l.weakVs], lx, y + 456, {
+      drawText(ctx, "WEAK vs " + ART_LABEL[l.weakVs], lx, y + 458, {
         size: 11, color: "#8a9aff", bold: true, maxWidth: textMax,
       });
 
-      if (!unlocked) this.drawLockedOverlay(ctx, x, y, cardW, cardH,
-        LOADOUT_UNLOCK_HINT[id] || "LOCKED");
-    });
+      if (!unlocked) this.drawLockedOverlay(ctx, x, y, cardW, 470, LOADOUT_UNLOCK_HINT[id] || "LOCKED");
+      ctx.restore();
+    }
+
+    if (browseAll) {
+      drawText(ctx, `Weapon ${center + 1} / ${N}`, W / 2, H - 52, {
+        size: 12, color: COLORS.boneDim, align: "center",
+      });
+    }
   }
 
   renderConfirm(ctx) {
-    const b = BUILDS[BUILD_IDS[this.buildIdx]];
+    const buildId = this.buildIdsOrdered[this.buildWheelIdx];
+    const b = BUILDS[buildId];
     const l = LOADOUTS[this.weaponChoices[this.loadIdx]];
     drawPanel(ctx, 220, 170, W - 440, 500);
     drawText(ctx, "READY TO GET DIGESTED?", W / 2, 210, {

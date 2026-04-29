@@ -85,6 +85,11 @@ export class Input {
     return keys.some((k) => this.down.has(this._norm(k)));
   }
 
+  /** True when every listed key is currently held (for chords). */
+  allHeld(...keys) {
+    return keys.every((k) => this.down.has(this._norm(k)));
+  }
+
   wasPressed(...keys) {
     return keys.some((k) => this.pressed.has(this._norm(k)));
   }
