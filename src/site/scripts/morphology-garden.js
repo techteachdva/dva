@@ -35,6 +35,7 @@ const _morphToNode = new THREE.Vector3();
 const _morphFitBox = new THREE.Box3();
 const _morphFitCenter = new THREE.Vector3();
 const _morphFitSize = new THREE.Vector3();
+const _morphSoloCtrScratch = new THREE.Vector3();
 const _keyPanFwd = new THREE.Vector3();
 const _keyPanRight = new THREE.Vector3();
 const _keyOrbitOff = new THREE.Vector3();
@@ -1851,12 +1852,70 @@ function init(host, detailEl, selectEl, shellEl) {
   grid.position.y = -22;
   scene.add(grid);
 
+  const gardenRoot = new THREE.Group();
+  gardenRoot.name = "morph-garden-root";
+  scene.add(gardenRoot);
+
+  const soloStage = new THREE.Group();
+  soloStage.name = "morph-solo-stage";
+  soloStage.visible = false;
+  scene.add(soloStage);
+
   const wordGroups = {};
   for (const w of WORDS) {
     const g = buildWordGroup(w);
     g.position.copy(w.pos3d);
-    scene.add(g);
+    gardenRoot.add(g);
     wordGroups[w.id] = g;
+  }
+
+  /** @type {string | null} */
+  let morphGardenSoloWordId = null;
+
+  /** Garden + one word picked: dedicate a separate subgraph so only that tree renders (not “everything hidden in place”). */
+  function morphGardenSoloShouldUse() {
+    return !!(
+      selectEl &&
+      selectEl.value !== "" &&
+      selectEl.value !== GARDEN_SELECT &&
+      vk().startsWith("Garden")
+    );
+  }
+
+  /** Reparent solo tree into `soloStage` (single-object scene cell) vs all trees under `gardenRoot`. */
+  function morphApplyGardenSoloStage() {
+    const want = morphGardenSoloShouldUse() ? /** @type {string} */ (selectEl?.value) : null;
+    if (want === morphGardenSoloWordId) return;
+
+    if (morphGardenSoloWordId) {
+      const prev = wordGroups[morphGardenSoloWordId];
+      const wPrev = WORDS.find((x) => x.id === morphGardenSoloWordId);
+      if (prev) {
+        gardenRoot.attach(prev);
+        if (wPrev) prev.position.copy(posForViewKey(wPrev, vk()));
+        prev.updateMatrixWorld(true);
+      }
+    }
+
+    morphGardenSoloWordId = want;
+
+    if (want) {
+      const g = wordGroups[want];
+      if (g) {
+        soloStage.attach(g);
+        scene.updateMatrixWorld(true);
+        _morphFitBox.setFromObject(g);
+        _morphFitBox.getCenter(_morphSoloCtrScratch);
+        const lc = soloStage.worldToLocal(_morphSoloCtrScratch.clone());
+        g.position.sub(lc);
+        g.updateMatrixWorld(true);
+      }
+      soloStage.visible = true;
+      gardenRoot.visible = false;
+    } else {
+      soloStage.visible = false;
+      gardenRoot.visible = true;
+    }
   }
 
   const bridges = buildBridgeLines(scene);
@@ -2263,6 +2322,7 @@ function init(host, detailEl, selectEl, shellEl) {
       }
     }
     rebuildGardenHints(garden ? null : selectEl?.value || null);
+    morphApplyGardenSoloStage();
   }
 
   function flyToActiveView() {
@@ -2825,7 +2885,11 @@ function init(host, detailEl, selectEl, shellEl) {
     const u = smoothstep(blend);
     scene.background.copy(bg3d).lerp(bg2d, u);
 
-    grid.visible = u < 0.35;
+    const isolateWord =
+      !!(selectEl && selectEl.value !== "" && selectEl.value !== GARDEN_SELECT);
+    const gardenSolo = morphGardenSoloShouldUse();
+
+    grid.visible = !gardenSolo && !isolateWord && u < 0.35;
     ambient3d.intensity = 0.38 * (1 - u);
     key3d.intensity = 1.1 * (1 - u);
     rim3d.intensity = 0.85 * (1 - u);
@@ -2833,6 +2897,7 @@ function init(host, detailEl, selectEl, shellEl) {
     ambient2d.visible = u > 0.2;
     key2d.visible = u > 0.2;
 
+    host.classList.toggle("morph-canvas-host--solo", soloStage.visible);
     host.classList.toggle("morph-canvas-host--wb", u > 0.88);
     if (shellEl) shellEl.classList.toggle("morphology-shell--wb", u > 0.88);
 
@@ -2841,8 +2906,6 @@ function init(host, detailEl, selectEl, shellEl) {
     const masterWeight =
       masterWtKey(layoutKeyFrom) * (1 - layoutEase) + masterWtKey(layoutKeyTo) * layoutEase;
     const bridgeOpacity = masterWeight * 0.85 + (1 - masterWeight) * gardenBridgeOpacity;
-    const isolateWord =
-      !!(selectEl && selectEl.value !== "" && selectEl.value !== GARDEN_SELECT);
     const isolate3d = isolateWord && u < 0.38 && masterWeight < 0.45;
     bridges.children.forEach((line) => {
       if (isolateWord) {
@@ -2857,10 +2920,15 @@ function init(host, detailEl, selectEl, shellEl) {
     gardenHints.visible = !isolateWord && isolate3d && u < 0.26;
 
     const le = Math.max(0, Math.min(1, layoutEase));
+    const sid = morphGardenSoloWordId;
     for (const w of WORDS) {
       const g = wordGroups[w.id];
       if (!g) continue;
-      g.position.lerpVectors(posForViewKey(w, layoutKeyFrom), posForViewKey(w, layoutKeyTo), le);
+      if (sid && w.id === sid && g.parent === soloStage) {
+        g.position.set(0, 0, 0);
+      } else {
+        g.position.lerpVectors(posForViewKey(w, layoutKeyFrom), posForViewKey(w, layoutKeyTo), le);
+      }
 
       const swayMul = (1 - u) * (1 - masterWeight * 0.92);
       const sway = swayMul * Math.sin(clock.elapsedTime * 0.1 + w.pos3d.x * 0.02) * 0.028;
