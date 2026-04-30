@@ -10,6 +10,7 @@ import { resolveSynergy } from "../content/synergies.js";
 import { loadSave } from "../engine/storage.js";
 import { ClimbScene } from "./climb.js";
 import { pointInRect } from "../engine/pointer.js";
+import { tryDrawRasterWeaponArt } from "../engine/weaponArt.js";
 
 /** Forge step 1 build wheel geometry — kept in sync with renderBuildSelect + hitBuildWheel. */
 const BUILD_WHEEL = {
@@ -798,6 +799,7 @@ export class CreateScene {
   }
 
   drawWeaponIcon(ctx, cx, cy, loadout) {
+    if (tryDrawRasterWeaponArt(ctx, loadout.id, cx, cy, 135)) return;
     ctx.save();
     ctx.translate(cx, cy);
     if (loadout.id === "sword") {

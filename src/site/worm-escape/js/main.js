@@ -6,11 +6,13 @@ import { pointInRect } from "./engine/pointer.js";
 import { toggleMute, isMuted, SFX, initBGM } from "./engine/audio.js";
 import { IntroScene } from "./scenes/intro.js";
 import { applyCheatLine } from "./engine/cheatActions.js";
+import { preloadWeaponArt } from "./engine/weaponArt.js";
 
 // Loop the "Level Up" track as background music. The file lives next to
 // index.html (path relative to the HTML page, not this JS file). Spaces
 // in the filename must be percent-encoded for the request to resolve.
 initBGM("Level%20Up.mp3", { volume: 0.35, loop: true });
+void preloadWeaponArt();
 
 /** Shown lower-right — bump alongside meaningful releases / CHANGELOG. */
 const GAME_VERSION = "v0.16.1";
