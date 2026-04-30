@@ -45,8 +45,19 @@ function truncateLogLine(s, maxChars = LOG_LINE_MAX_CHARS) {
   return str.slice(0, Math.max(0, maxChars - 1)) + "…";
 }
 
-/** Random potion mini-game letters (excluding Q,E,R,F combat row). */
-const POTION_KEY_POOL = "ZXCVBNHJKIOPUY".split("").map((c) => c.toLowerCase());
+/** Single-letter keys bound elsewhere — never used for cork/pour random prompts. */
+const POTION_KEY_FORBIDDEN = new Set([
+  // Combat: move (A/D/W/S), row (Q/E/R/F + 1–4), menus (W/S), potion entry (R/3).
+  "a", "d", "e", "f", "q", "r", "s", "w", "1", "2", "3", "4",
+  // Global (main.js): pause, mute, cheats, fullscreen (=).
+  "m", "p", "\\", "=",
+  // Documented third (Cryo) on some loadouts.
+  "t",
+]);
+
+const POTION_KEY_POOL = "abcdefghijklmnopqrstuvwxyz"
+  .split("")
+  .filter((c) => !POTION_KEY_FORBIDDEN.has(c));
 const POTION_DRINK_CD_SEC = 22;
 const POTION_MINIGAME_TIME_SEC = 11;
 
@@ -952,6 +963,8 @@ export class CombatScene {
         const opts = {
           kind: "attack",
           multiLane: !!l.attack.multiLane,
+          multiLaneLanes: l.attack.multiLaneLanes,
+          multiLanePerLaneScale: l.attack.multiLanePerLaneScale,
           hexMark: !!l.attack.hexMark,
           movePoisonPct: p.synergyId === "grimReaper"
             ? 0
@@ -1050,6 +1063,8 @@ export class CombatScene {
         const opts = {
           kind: "special",
           multiLane: !!l.special.multiLane,
+          multiLaneLanes: l.special.multiLaneLanes,
+          multiLanePerLaneScale: l.special.multiLanePerLaneScale,
           hexDetonate: !!l.special.hexDetonate,
           movePoisonPct: p.synergyId === "grimReaper"
             ? 0
@@ -1154,46 +1169,67 @@ export class CombatScene {
     };
 
     const hadCounter = this.perfectBraceReady;
+    const fight = this.phase === "fight";
+    const skipLane = !!opts.skipLaneCheck;
+
+    // Must share a column with the guardian unless skipLaneCheck (sentries) or
+    // multiLane covers the guardian's lane. Wrong lane = no damage, hex, or DOT.
+    if (fight && !skipLane && this.enemy && this.enemy.hp > 0) {
+      if (multiLane) {
+        const lanesHit = opts.multiLaneLanes ?? [0, 2, 4];
+        if (!lanesHit.includes(this.enemyLane)) {
+          const lab = GUARDIAN_LANE_NAMES[this.enemyLane];
+          const reach = lanesHit.map((ix) => GUARDIAN_LANE_NAMES[ix]).join(" · ");
+          this.pushLog(`${name} finds no target — guardian is ${lab}; this swing only reaches ${reach}.`);
+          SFX.deny();
+          return;
+        }
+      } else if (this.lane !== this.enemyLane) {
+        this.pushLog(
+          `${name} swishes wide — slide to the ${GUARDIAN_LANE_NAMES[this.enemyLane]} column to connect.`,
+        );
+        SFX.deny();
+        return;
+      }
+    }
+
+    // Confirmed hit: consume perfect-brace counter (lane check passed).
     this.perfectBraceReady = false;
     if (hadCounter && p && p.score) p.score.counterStrikes++;
 
-    let dmgPayload = rawDmg;
-    if (!multiLane && !opts.skipLaneCheck && this.phase === "fight") {
-      if (this.lane !== this.enemyLane) dmgPayload *= 0.37;
-    }
-
-    // --- Multi-lane (BILE WHIP) ---
-    // Fire three separate damage events at reduced damage each. The total is
-    // balanced similar to a single hit but triggers 3 marks / 3 shield breaks
-    // / 3 poison stacks - very strong against SHIELDED elites.
+    // --- Multi-lane (weapon declares multiLane + multiLaneLanes) ---
+    // Only runs when guardian stands in one of those lanes (checked above).
+    // Collapse into one damage roll so total potency matches prior multi-roll tuning.
     if (multiLane) {
-      const TRI_LANE_IX = [0, 2, 4];
-      let firstRoll = true;
-      for (let i = 0; i < TRI_LANE_IX.length; i++) {
-        const laneIx = TRI_LANE_IX[i];
-        const { dmg, isCrit, execOn } = this.rollHitDamage(rawDmg, {
-          kind: opts.kind, counterOn: firstRoll && hadCounter, hitMult,
-        }, p);
-        firstRoll = false;
-        this.applyHit(dmg, {
-          name: i === 0 ? name : `${name} (col ${i + 1})`,
-          sfx,
-          p,
-          hadCounter: i === 0 && hadCounter,
-          isCrit, execOn,
-          lane: i,
-          laneX: LANES[laneIx],
-          lifestealPct: fxCtx.lifestealPct,
-        });
-        // Each lane arms a shield-break event against shielded elites.
-        if (this.enemy && this.enemy.shielded) this.enemy.perfectBraceHits = 0;
-      }
+      const lanesHit = opts.multiLaneLanes ?? [0, 2, 4];
+      const perLaneScale =
+        typeof opts.multiLanePerLaneScale === "number"
+          ? opts.multiLanePerLaneScale
+          : 1 / 3;
+      const totalScaledRaw = Math.max(
+        1,
+        Math.round(rawDmg * perLaneScale * lanesHit.length),
+      );
+      const { dmg, isCrit, execOn } = this.rollHitDamage(totalScaledRaw, {
+        kind: opts.kind, counterOn: hadCounter, hitMult,
+      }, p);
+      this.applyHit(dmg, {
+        name,
+        sfx,
+        p,
+        hadCounter,
+        isCrit,
+        execOn,
+        lane: 0,
+        laneX: LANES[this.enemyLane],
+        lifestealPct: fxCtx.lifestealPct,
+      });
       this.applyOnHitEffects(p, { hexMark, hexDet, ...fxCtx });
       SFX[sfx] ? SFX[sfx]() : SFX.hit();
       return;
     }
 
-    // --- Hex staff detonate: consume all marks as a big single hit. ---
+    let dmgPayload = rawDmg;
     // --- Default single-lane hit ---
     const { dmg, isCrit, execOn, consumedMarks } = this.rollHitDamage(dmgPayload, {
       kind: opts.kind, consumeMarks: hexDet, counterOn: hadCounter,

@@ -258,16 +258,18 @@ export const LOADOUTS = {
   },
   // v0.12 BILE WHIP - unlocked by clearing Gullet climb hitless.
   // Its attack hits THREE staggered columns at once (spread across the
-  // 5-column arena; the guardian still occupies one lane at a time).
-  // Each column takes reduced damage individually, but total output is
-  // competitive with single hits — great for breaking SHIELDED elites.
+  // 5-column arena; ~one hit's worth of damage total, tuned per-lane).
+  // Each strand is light; the bundle is what hurts vs this enemy's lane.
+  // Hits only if the guardian is in columns 0, 2, or 4 (see multiLaneLanes).
   bileWhip: {
     id: "bileWhip",
     name: "BILE WHIP",
     icon: "whip",
-    blurb: "Lashes far-left, center, and far-right columns in one crack. Wet, theatrical, effective.",
-    attack:  { name: "Triple Lash", dmg: [9, 13],  cooldown: 0.70, manaCost: 0,  sfx: "slash",  multiLane: true },
-    special: { name: "Coil Lash",   dmg: [32, 44], cooldown: 2.8,  manaCost: 10, sfx: "crunch", multiLane: false },
+    blurb: "Lashes far-left, center, and far-right in one crack. Only connects when the guardian straddles one of those columns.",
+    // Columns 0 / 2 / 4 — far-left, center, far-right (guardian must stand there).
+    attack:  { name: "Triple Lash", dmg: [8, 12],  cooldown: 0.86, manaCost: 2,  sfx: "slash",
+      multiLane: true, multiLaneLanes: [0, 2, 4], multiLanePerLaneScale: 0.34 },
+    special: { name: "Coil Lash",   dmg: [26, 36], cooldown: 3.05,  manaCost: 11, sfx: "crunch", multiLane: false },
     color: "#b5f05a",
     strongVs: "flesh",
     weakVs:   "teeth",
@@ -294,8 +296,8 @@ export const LOADOUTS = {
     name: "FRYING PAN",
     icon: "pan",
     blurb: "BONK. Heavy. Slightly greasy. Surprisingly murderous.",
-    attack:  { name: "Bonk",       dmg: [18, 26], cooldown: 0.78, manaCost: 0,  sfx: "thud" },
-    special: { name: "Skillet Slam", dmg: [30, 42], cooldown: 2.6, manaCost: 8, sfx: "crunch" },
+    attack:  { name: "Bonk",       dmg: [15, 22], cooldown: 0.90, manaCost: 0,  sfx: "thud" },
+    special: { name: "Skillet Slam", dmg: [26, 36], cooldown: 2.85, manaCost: 9, sfx: "crunch" },
     color: "#9aa0ac",
     strongVs: "teeth",
     weakVs:   "flesh",

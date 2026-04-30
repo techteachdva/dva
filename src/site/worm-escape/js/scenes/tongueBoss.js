@@ -837,7 +837,7 @@ export class MawBossScene {
 
   // Apply a weapon strike to the bottom tooth in the player's lane.
   // Multi-lane weapons (Bile Whip) additionally hit the immediate
-  // neighbors for 50% of the damage.
+  // neighbors for a fractional splash (matches combat pacing).
   strikeCurrentLane(move, kind, p, extras = {}) {
     const mult = this.matchupMult || 1;
     const pm = p.pactMods || {};
@@ -863,7 +863,10 @@ export class MawBossScene {
     this.dealToTooth(centerTooth, centerDmg, `${tag} ${move.name}!`.trim(), kind, p);
 
     let totalDealt = centerDmg;
-    // Multi-lane weapons sweep adjacent teeth for half damage.
+    const multiSplashFrac = typeof move.multiLaneSplashFrac === "number"
+      ? move.multiLaneSplashFrac
+      : 0.38;
+    // Multi-lane weapons sweep adjacent teeth for splash damage.
     if (move.multiLane) {
       const spread = [-1, 1];
       for (const dx of spread) {
@@ -871,7 +874,7 @@ export class MawBossScene {
         if (nc < 0 || nc >= NUM_COLS) continue;
         const nt = this.bottomTeeth[nc];
         if (!nt || nt.knockedOut) continue;
-        const splash = Math.max(1, Math.round(centerDmg * 0.5));
+        const splash = Math.max(1, Math.round(centerDmg * multiSplashFrac));
         this.dealToTooth(nt, splash, `Splash lash!`, kind, p);
         totalDealt += splash;
       }
@@ -1063,7 +1066,7 @@ export class MawBossScene {
     }
 
     this.drawHUD(ctx, game);
-    this.drawContextHint(ctx);
+    this.drawContextHint(ctx, game);
     this.drawLog(ctx);
 
     if (this.paused) {
@@ -1498,7 +1501,8 @@ export class MawBossScene {
     }
   }
 
-  drawContextHint(ctx) {
+  drawContextHint(ctx, game) {
+    const p = game.player;
     // Small smart hint just under the HUD. Tells the player what to do NOW.
     const downNow = this.bottomTeeth.filter(t => t.knockedOut).length;
     let msg = "";
