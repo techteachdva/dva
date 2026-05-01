@@ -1,5 +1,5 @@
 /**
- * Morphology Garden — 3D + animated whiteboard view, shared morpheme bridges.
+ * Morphology Garden — 2D whiteboard explorer with optional dev-only 3D (backslash).
  */
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
@@ -44,6 +44,8 @@ const _yAxisUp = new THREE.Vector3(0, 1, 0);
 
 const REDUCED_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const TRANSITION_SEC = REDUCED_MOTION ? 0.01 : 1.48;
+/** Press `\` — toggles explorer-only spatial 3D (hidden from mainstream UI); default stays 2D whiteboard */
+let morphDevSpatial3d = false;
 /** Skip tiny DOM writes when LOD opacity barely changes */
 const LOD_OPACITY_EPS = 0.02;
 
@@ -2039,22 +2041,23 @@ let morphTourCtl = /** @type {{ open: () => void; autoTry: (delayMs?: number) =>
 });
 
 /**
- * Spotlight-style guided UI tour (tier controls, layouts, canvas, shortcuts).
+ * Guided UI tour — mounted on `document.body` so it appears above fullscreen immersive shells.
  * @returns {{ open: () => void, autoTry: (delayMs?: number) => void }}
  */
-function morphInstallGuidedTour(/** @type {HTMLElement | null} */ pageEl) {
+function morphInstallGuidedTour() {
   const dead = /** @type {const} */ ({
     open: () => {},
     autoTry: () => {},
   });
-  if (!(pageEl instanceof HTMLElement)) return dead;
+  if (typeof document === "undefined" || !(document.body instanceof HTMLElement)) return dead;
 
+  const root = document;
   /** @typedef {{ title: string; body: string; target?: string | null }} MorphTourStep */
   const STEPS = /** @type {MorphTourStep[]} */ ([
     {
       title: "Welcome",
       body:
-        "This explorer shows how words split into morphemes. This short tour walks through the toolbar and canvas—you can replay it anytime with <strong>Guided tour</strong> beside Help.",
+        "Words are built from meaningful parts — <strong>morphemes</strong>. This walkthrough uses the flat <strong>board</strong> (trees, glosses, magenta links). Replay any time via <strong>📖 Guided tour</strong>.",
       target: null,
     },
     {
@@ -2064,13 +2067,8 @@ function morphInstallGuidedTour(/** @type {HTMLElement | null} */ pageEl) {
     },
     {
       title: "Arrange",
-      body: "<strong>Garden</strong> spaces every tree openly. <strong>Links</strong> concentrates shared morphemes into hubs with magenta ribbons. <strong>Compare</strong> shows exactly two trees and only their shared bridges.",
+      body: "<strong>Garden</strong> spaces trees openly on the board. <strong>Links</strong> tightens hubs where morphemes repeat. <strong>Compare</strong> pins exactly two trees. Use <strong>🖥️</strong> here for fullscreen too.",
       target: ".morph-ui-row--arrange",
-    },
-    {
-      title: "Surface",
-      body: "<strong>3D</strong> lets you orbit—bridges arc in depth. <strong>Whiteboard</strong> lays trees out like diagram projection—pan and zoom.",
-      target: ".morph-ui-row--surface",
     },
     {
       title: "Pick a tree",
@@ -2078,14 +2076,14 @@ function morphInstallGuidedTour(/** @type {HTMLElement | null} */ pageEl) {
       target: "#morph-word-row",
     },
     {
-      title: "Explore the canopy",
-      body: "<strong>Hover</strong> a sphere for a gloss—<strong>drag</strong> to orbit or pan—<strong>scroll</strong> to zoom—<strong>double-click</strong> a node to frame that word tree—<kbd>F</kbd> fit — <kbd>R</kbd> reset.",
+      title: "Board & links",
+      body: "<strong>Hover</strong> a sphere for gloss · <strong>drag</strong> to pan · <strong>scroll</strong> or pinch to zoom · <strong>double-click</strong> a sphere to fit that tree on the board · <kbd>F</kbd> fit · <kbd>R</kbd> reset.",
       target: "#morph-canvas-host",
     },
     {
-      title: "Notes & cheatsheet",
+      title: "Notes & help",
       body:
-        "Morphology paragraphs live in the panel under the explorer. ❓ opens the full reference overlay; Escape closes dialogs and overlays. Full-screen (🖥️) is available from the Arrange row.",
+        "Mini-lessons and morphology notes scroll just under the board. <strong>❓ Help</strong> is the full cheatsheet (<kbd>Escape</kbd> closes overlays). Optional: developers can press <kbd>\\</kbd> to try orbital 3D.",
       target: "#morph-detail",
     },
   ]);
@@ -2118,7 +2116,7 @@ function morphInstallGuidedTour(/** @type {HTMLElement | null} */ pageEl) {
         </div>
       </div>
     `;
-    pageEl.appendChild(wrap);
+    document.body.appendChild(wrap);
 
     wrap.querySelector(".morph-guided-tour__backdrop")?.addEventListener("click", () => morphTourHide(true));
     wrap.querySelector(".morph-guided-tour__skip")?.addEventListener("click", () => morphTourHide(true));
@@ -2137,6 +2135,26 @@ function morphInstallGuidedTour(/** @type {HTMLElement | null} */ pageEl) {
     return STEPS[activeIx];
   }
 
+  function morphClampTourCard(/** @type {HTMLElement | null | undefined} */ cardEl, /** @type {number} */ prefTopPx) {
+    if (!cardEl) return;
+    const vv = window.visualViewport;
+    const top0 = vv ? vv.offsetTop : 0;
+    const vh = vv ? vv.height : window.innerHeight;
+    const vw = vv ? vv.width : window.innerWidth;
+    const m = 12;
+    const cardW = cardEl.offsetWidth || 340;
+    const cardH = cardEl.offsetHeight || 220;
+    const ox = vv ? vv.offsetLeft : 0;
+    const left = THREE.MathUtils.clamp(ox + (vw - cardW) / 2, ox + 14, ox + vw - cardW - 14);
+    cardEl.style.left = `${left}px`;
+    let top = prefTopPx;
+    const minTop = top0 + m;
+    const maxTop = Math.max(minTop + 48, top0 + vh - cardH - m);
+    if (top > maxTop) top = maxTop;
+    if (top < minTop) top = minTop;
+    cardEl.style.top = `${top}px`;
+  }
+
   function morphTourReflow() {
     if (!wrap || wrap.classList.contains("morph-guided-tour--hidden")) return;
     const step = morphTourCurrent();
@@ -2147,16 +2165,20 @@ function morphInstallGuidedTour(/** @type {HTMLElement | null} */ pageEl) {
     if (!step.target) {
       spotlight.style.display = "none";
       spotlight.removeAttribute("data-morph-visible");
-      if (cardEl && cardEl instanceof HTMLElement) {
+      requestAnimationFrame(() => {
+        if (!cardEl) return;
         cardEl.style.transform = "none";
-        const cardW = cardEl.offsetWidth || 360;
-        cardEl.style.left = `${Math.max(12, (window.innerWidth - cardW) / 2)}px`;
-        cardEl.style.top = `${Math.round(window.innerHeight * 0.34)}px`;
-      }
+        const vv = window.visualViewport;
+        const cardH = cardEl.offsetHeight || 200;
+        const vh = vv ? vv.height : window.innerHeight;
+        const top0 = vv ? vv.offsetTop : 0;
+        const pref = top0 + Math.max(56, Math.min(Math.round(vh * 0.22), Math.round(vh * 0.5 - cardH / 2)));
+        morphClampTourCard(cardEl, pref);
+      });
       return;
     }
 
-    const el = pageEl.querySelector(step.target);
+    const el = root.querySelector(step.target);
     const rect = el?.getBoundingClientRect();
     if (!el || rect.width < 4 || rect.height < 4) {
       spotlight.style.display = "none";
@@ -2176,16 +2198,20 @@ function morphInstallGuidedTour(/** @type {HTMLElement | null} */ pageEl) {
     spotlight.style.width = `${sw}px`;
     spotlight.style.height = `${sh}px`;
 
-    if (cardEl && cardEl instanceof HTMLElement) {
+    requestAnimationFrame(() => {
+      if (!(cardEl instanceof HTMLElement)) return;
       cardEl.style.transform = "none";
-      const cardH = cardEl.offsetHeight || 160;
-      const below = rect.bottom + 18 + cardH <= window.innerHeight - 22;
-      if (below) cardEl.style.top = `${Math.min(rect.bottom + 18, window.innerHeight - cardH - 16)}px`;
-      else cardEl.style.top = `${Math.max(16, rect.top - cardH - 18)}px`;
-      const cardW = cardEl.offsetWidth || 340;
-      const cx = rect.left + rect.width / 2 - cardW / 2;
-      cardEl.style.left = `${THREE.MathUtils.clamp(cx, 12, window.innerWidth - cardW - 12)}px`;
-    }
+      void cardEl.offsetHeight;
+      const vv = window.visualViewport;
+      const vTop = vv ? vv.offsetTop : 0;
+      const vBot = vv ? vv.offsetTop + vv.height : window.innerHeight;
+      const innerH = Math.max(vBot - vTop, window.innerHeight * 0.5);
+      const ch = cardEl.offsetHeight || 120;
+      let prefTop = rect.bottom + 16;
+      if (prefTop + ch > vBot - 14) prefTop = rect.top - ch - 16;
+      if (prefTop < vTop + 12) prefTop = vTop + 12 + Math.max(0, Math.round(innerH * 0.08));
+      morphClampTourCard(cardEl, prefTop);
+    });
   }
 
   /** @param {KeyboardEvent} ev */
@@ -2225,7 +2251,6 @@ function morphInstallGuidedTour(/** @type {HTMLElement | null} */ pageEl) {
       }
       activeIx = THREE.MathUtils.clamp(activeIx + delta, 0, STEPS.length - 1);
     }
-    morphTourReflow();
     const step = STEPS[activeIx];
     const ttl = wrap.querySelector(".morph-guided-tour__title");
     const bd = wrap.querySelector(".morph-guided-tour__body");
@@ -2238,6 +2263,9 @@ function morphInstallGuidedTour(/** @type {HTMLElement | null} */ pageEl) {
     if (pg) pg.textContent = `Step ${activeIx + 1} of ${STEPS.length}`;
     if (backBt instanceof HTMLButtonElement) backBt.disabled = activeIx === 0;
     if (nextBt instanceof HTMLButtonElement) nextBt.textContent = activeIx >= STEPS.length - 1 ? "Finish" : "Next";
+
+    morphTourReflow();
+    requestAnimationFrame(() => morphTourReflow());
   }
 
   function morphTourOpenFromStart() {
@@ -2307,9 +2335,7 @@ function init(host, detailEl, selectEl, shellEl) {
   }
 
   const runIntroCinematic = !REDUCED_MOTION && USE_TYPO_INTRO && !morphIntroPlayedThisSession();
-  morphTourCtl = morphInstallGuidedTour(
-    typeof document !== "undefined" ? document.querySelector(".morphology-page") : null
-  );
+  morphTourCtl = morphInstallGuidedTour();
   if (!runIntroCinematic) morphTourCtl.autoTry(650);
 
   assignGrid2d();
@@ -2333,6 +2359,8 @@ function init(host, detailEl, selectEl, shellEl) {
   const CAMERA_FOV_3D = 48;
   const camera = new THREE.PerspectiveCamera(CAMERA_FOV_3D, host.clientWidth / host.clientHeight, 0.1, 600);
   camera.userData.morphBaseFov = CAMERA_FOV_3D;
+  /** Default board uses orthographic framing (pure width / height staging). */
+  const boardOrthoCamera = new THREE.OrthographicCamera(-180, 180, 180, -180, 0.06, 900);
   const introStartPos = new THREE.Vector3(8, 58, 118);
   const focusCenter = new THREE.Vector3(0, -12, 0);
   const cam3dPos = new THREE.Vector3(22, 28, 76);
@@ -2355,7 +2383,8 @@ function init(host, detailEl, selectEl, shellEl) {
   labelRenderer.domElement.style.pointerEvents = "none";
   host.appendChild(labelRenderer.domElement);
 
-  const controls = new OrbitControls(camera, renderer.domElement);
+  /** @type {OrbitControls | null} */
+  let controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
   controls.dampingFactor = 0.092;
   controls.minDistance = 8;
@@ -2368,11 +2397,91 @@ function init(host, detailEl, selectEl, shellEl) {
   controls.target.copy(cam3dTarget);
   controls.enabled = false;
 
+  function morphIsOrthoBoard() {
+    return !!controls && controls.object === boardOrthoCamera;
+  }
+
+  function morphBindOrbitTo(/** @type {THREE.Camera} */ cam) {
+    if (!controls) {
+      controls = new OrbitControls(cam, renderer.domElement);
+    } else {
+      controls.dispose();
+      controls = new OrbitControls(cam, renderer.domElement);
+    }
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.092;
+    controls.enablePan = true;
+    controls.enableZoom = true;
+    controls.zoomSpeed = morphIsOrthoBoard() ? 0.52 : 0.48;
+    controls.minPolarAngle = Math.PI * 0.08;
+    controls.maxPolarAngle = Math.PI * 0.92;
+    controls.minDistance = morphIsOrthoBoard() ? 0.01 : 8;
+    controls.maxDistance = morphIsOrthoBoard() ? 1e9 : 300;
+    refreshControlsForViewMode(viewBlend, masterWtKey(vk()));
+  }
+
+  /** Fit orthographic extents to whichever trees are visible (XZ spread, frontal view along +Z). */
+  function syncBoardOrthoCamera() {
+    if (!controls || controls.object !== boardOrthoCamera) return;
+    scene.updateMatrixWorld(true);
+    _morphFitBox.makeEmpty();
+    let any = false;
+    for (const w of WORDS) {
+      const g = wordGroups[w.id];
+      if (!g?.visible) continue;
+      const b = new THREE.Box3().setFromObject(g);
+      if (!b.isEmpty()) {
+        _morphFitBox.union(b);
+        any = true;
+      }
+    }
+    if (!any) _morphFitBox.setFromCenterAndSize(sceneCenter, new THREE.Vector3(136, 80, 136));
+    const c = _morphFitBox.getCenter(_morphFitCenter);
+    const s = _morphFitBox.getSize(_morphFitSize);
+    const pad = 1.26;
+    const fw = Math.max(s.x * pad, 92);
+    const fh = Math.max(s.y * pad, 64);
+    const aspect = Math.max(camera.aspect, 0.35);
+    const frustumHalfH = Math.max(fh * 0.52, fw / aspect * 0.52, 62);
+    const frustumHalfW = frustumHalfH * aspect;
+    boardOrthoCamera.left = -frustumHalfW;
+    boardOrthoCamera.right = frustumHalfW;
+    boardOrthoCamera.top = frustumHalfH;
+    boardOrthoCamera.bottom = -frustumHalfH;
+    const back = Math.max(s.z, fw * 0.35, 118) + 118;
+    boardOrthoCamera.position.set(c.x, c.y, c.z + back);
+    boardOrthoCamera.up.set(0, 1, 0);
+    boardOrthoCamera.lookAt(c.x, c.y, c.z);
+    controls.target.copy(c);
+    boardOrthoCamera.updateProjectionMatrix();
+  }
+
+  /** Switch from intro / spatial perspective rigs to planar board controls */
+  function morphEnterPlanarBoardPresentation() {
+    if (!vk().endsWith("Wb")) return;
+    viewBlend = 1;
+    morphBindOrbitTo(boardOrthoCamera);
+    controls.target.copy(cam3dTarget);
+    syncBoardOrthoCamera();
+    controls.enabled = introDone;
+  }
+
   function morphZoomClampBlend(uSurf) {
     return smoothstep(THREE.MathUtils.clamp((uSurf - 0.7) / 0.26, 0, 1));
   }
 
   function refreshControlsForViewMode(blend, masterWeight = 0) {
+    if (!controls) return;
+    if (morphIsOrthoBoard()) {
+      controls.enablePan = true;
+      controls.enableZoom = true;
+      controls.enableRotate = false;
+      controls.rotateSpeed = 0;
+      controls.zoomSpeed = 0.52;
+      controls.minDistance = 0.01;
+      controls.maxDistance = 1e9;
+      return;
+    }
     const u = smoothstep(blend);
     controls.enablePan = true;
     controls.enableZoom = true;
@@ -2677,7 +2786,7 @@ function init(host, detailEl, selectEl, shellEl) {
   computeMasterCamera();
 
   /** @type {'Garden3d'|'GardenWb'|'Master3d'|'MasterWb'|'Compare3d'|'CompareWb'} */
-  let viewKey = "Garden3d";
+  let viewKey = "GardenWb";
 
   /** Effective target key while tweening layout/surface */
   function vk() {
@@ -2819,7 +2928,7 @@ function init(host, detailEl, selectEl, shellEl) {
     grid.visible = true;
   }
 
-  let viewBlend = 0;
+  let viewBlend = 1;
 
   /** Framing distances must follow the lens the user sees — matches whiteboard FOV narrow without using the live varying value mid-tween jitter */
   function morphEffectiveFramingFov() {
@@ -3011,6 +3120,11 @@ function init(host, detailEl, selectEl, shellEl) {
 
   function startCameraFit() {
     if (!introDone || transition) return;
+    if (morphIsOrthoBoard()) {
+      cameraFitTween = null;
+      syncBoardOrthoCamera();
+      return;
+    }
     cameraFitTween = {
       wallSec0: morphWallSec(),
       dur: REDUCED_MOTION ? 0.01 : 0.92,
@@ -3022,10 +3136,11 @@ function init(host, detailEl, selectEl, shellEl) {
   }
 
   function morphApplyFlyCamera(dt) {
-    if (transition) return;
+    if (transition || morphIsOrthoBoard()) return;
     const moveSpeed = (vk().startsWith("Master") ? 44 : 54) * dt;
     const orbitSpeed = (vk().startsWith("Master") ? 0.92 : 1.12) * dt;
-    camera.getWorldDirection(_keyPanFwd);
+    const cam = controls.object;
+    cam.getWorldDirection(_keyPanFwd);
     _keyPanFwd.y = 0;
     if (_keyPanFwd.lengthSq() > 1e-8) _keyPanFwd.normalize();
     else _keyPanFwd.set(0, 0, -1);
@@ -3034,34 +3149,34 @@ function init(host, detailEl, selectEl, shellEl) {
     else _keyPanRight.set(1, 0, 0);
 
     if (morphKeysDown.has("KeyW")) {
-      camera.position.addScaledVector(_keyPanFwd, moveSpeed);
+      cam.position.addScaledVector(_keyPanFwd, moveSpeed);
       controls.target.addScaledVector(_keyPanFwd, moveSpeed);
     }
     if (morphKeysDown.has("KeyS")) {
-      camera.position.addScaledVector(_keyPanFwd, -moveSpeed);
+      cam.position.addScaledVector(_keyPanFwd, -moveSpeed);
       controls.target.addScaledVector(_keyPanFwd, -moveSpeed);
     }
     if (morphKeysDown.has("KeyA")) {
-      camera.position.addScaledVector(_keyPanRight, -moveSpeed);
+      cam.position.addScaledVector(_keyPanRight, -moveSpeed);
       controls.target.addScaledVector(_keyPanRight, -moveSpeed);
     }
     if (morphKeysDown.has("KeyD")) {
-      camera.position.addScaledVector(_keyPanRight, moveSpeed);
+      cam.position.addScaledVector(_keyPanRight, moveSpeed);
       controls.target.addScaledVector(_keyPanRight, moveSpeed);
     }
 
     const yaw =
       (morphKeysDown.has("ArrowLeft") ? 1 : 0) + (morphKeysDown.has("ArrowRight") ? -1 : 0);
     if (yaw !== 0) {
-      _keyOrbitOff.copy(camera.position).sub(controls.target);
+      _keyOrbitOff.copy(cam.position).sub(controls.target);
       _keyOrbitOff.applyAxisAngle(_yAxisUp, yaw * orbitSpeed);
-      camera.position.copy(controls.target).add(_keyOrbitOff);
+      cam.position.copy(controls.target).add(_keyOrbitOff);
     }
     const pitchMove =
       (morphKeysDown.has("ArrowUp") ? 1 : 0) + (morphKeysDown.has("ArrowDown") ? -1 : 0);
     if (pitchMove !== 0) {
       const elev = pitchMove * moveSpeed * 0.88;
-      camera.position.y += elev;
+      cam.position.y += elev;
       controls.target.y += elev * 0.38;
     }
   }
@@ -3266,7 +3381,7 @@ function init(host, detailEl, selectEl, shellEl) {
       }
       detailEl.classList.remove("morph-detail--word-focus");
       morphDockDetailToViewer();
-      detailEl.innerHTML = `<p><strong>Compare (⚖)</strong> — choose two <em>different</em> words with the selectors below. Trees sit side by side; magenta bridges still link shared morphemes. Switch <strong>Surface</strong> for 3D depth or whiteboard projection.</p>`;
+      detailEl.innerHTML = `<p><strong>Compare (⚖)</strong> — choose two <em>different</em> words with the selectors below. Both trees sit on the flat board side by side; magenta bridges trace morphemes the pair shares.</p>`;
       return;
     }
     if (vk().startsWith("Master")) {
@@ -3276,13 +3391,13 @@ function init(host, detailEl, selectEl, shellEl) {
       }
       detailEl.classList.remove("morph-detail--word-focus");
       morphDockDetailToViewer();
-      detailEl.innerHTML = `<p><strong>Master Tree (🔗 links).</strong> Every word packs into hubs so all shared morphemes stay visible together. Switch <strong>Arrangement ▸ Master</strong> for this linked layout; switch <strong>Surface ▸ 📋 Whiteboard</strong> for a flat projector view or <strong>🌐 3D</strong> so bridges arch in depth. Magenta ribbons connect identical morphemes across words—those <em>spatial</em> links are deliberately stronger in 3D. Hover spheres for gloss; pick a word in the menu for its morphology mini-lesson and notes.</p>`;
+      detailEl.innerHTML = `<p><strong>Master Tree (🔗 links).</strong> Words pack into hubs so shared morphemes stay visible across the vocabulary you loaded. Magenta ribbons mark identical chunks. Hover spheres for gloss; pick a lemma in <strong>Word tree</strong> for miniature lessons plus morphology notes.</p>`;
       return;
     }
     if (!selectEl || selectEl.value === GARDEN_SELECT) {
       detailEl.classList.remove("morph-detail--word-focus");
       morphDockDetailToViewer();
-      detailEl.innerHTML = `<p><strong>Garden (🌳)</strong> — every tree spaced in open layout for overview. Toggle <strong>Surface ▸ ✔ Whiteboard</strong> for diagram-style side-elevation (narrow lens, tilted silhouette, pan/zoom) vs <strong>🌐 3D</strong> orbital depth.</p><p><strong>Tips:</strong> isolate one word from the menu for a focused tree, mini-lesson, and camera zoom; hover morphemes for gloss.</p>`;
+      detailEl.innerHTML = `<p><strong>Garden (🌳)</strong> — every lemma keeps its spacing on the overview board while magenta bridges whisper which morphemes echo elsewhere.</p><p><strong>Tips:</strong> isolate one word from <strong>Word tree</strong> for a tighter diagram with mini-lessons and morphology notes underneath; hover any sphere for a gloss.</p>`;
       return;
     }
     fillDetail(selectEl.value);
@@ -3365,6 +3480,17 @@ function init(host, detailEl, selectEl, shellEl) {
     if (!g) return;
     clearWbPrune(g);
     hideMorphemePop();
+
+    morphInspectActive = false;
+    controls.autoRotate = false;
+    autoRotateAnchorUuid = null;
+
+    if (morphIsOrthoBoard()) {
+      cameraFitTween = null;
+      syncBoardOrthoCamera();
+      controls.update();
+      return;
+    }
 
     mesh.getWorldPosition(_orbitDblClickTarget);
     const o = computeCamFitFromWordGroup(g, {
@@ -3528,7 +3654,7 @@ function init(host, detailEl, selectEl, shellEl) {
     }
     pointerNdc.x = ((clientX - rect.left) / rect.width) * 2 - 1;
     pointerNdc.y = -((clientY - rect.top) / rect.height) * 2 + 1;
-    raycaster.setFromCamera(pointerNdc, camera);
+    raycaster.setFromCamera(pointerNdc, /** @type {THREE.Camera} */ (controls.object));
     scene.updateMatrixWorld(true);
     const meshes = [];
     for (const w of WORDS) {
@@ -3685,12 +3811,36 @@ function init(host, detailEl, selectEl, shellEl) {
     const tag = ae?.tagName;
     const inField =
       tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA" || ae?.isContentEditable;
-    if (morphFlyKeyCodes.has(ev.code) && smoothstep(viewBlend) < 0.12 && !inField) {
+    if (inField) return;
+    if (morphFlyKeyCodes.has(ev.code) && smoothstep(viewBlend) < 0.12 && !morphIsOrthoBoard()) {
       morphKeysDown.add(ev.code);
       if (ev.key === "ArrowUp" || ev.key === "ArrowDown" || ev.key === "ArrowLeft" || ev.key === "ArrowRight")
         ev.preventDefault();
     }
-    if (inField) return;
+    if (ev.key === "\\") {
+      ev.preventDefault();
+      morphDevSpatial3d = !morphDevSpatial3d;
+      cameraFitTween = null;
+      transition = null;
+      const base = vk().startsWith("Master") ? "Master" : vk().startsWith("Compare") ? "Compare" : "Garden";
+      const destKey = morphDevSpatial3d ? `${base}3d` : `${base}Wb`;
+      viewKey = destKey;
+      viewBlend = morphDevSpatial3d ? 0 : 1;
+      applyScopeVisibility(destKey);
+      fillDetailFromSelect();
+      morphSyncArrangeUi();
+      setViewButtons();
+      flyToActiveView();
+      if (destKey.endsWith("Wb")) morphEnterPlanarBoardPresentation();
+      else {
+        morphBindOrbitTo(camera);
+        camera.position.copy(cam3dPos);
+        controls.target.copy(cam3dTarget);
+      }
+      refreshControlsForViewMode(viewBlend, masterWtKey(viewKey));
+      controls.update();
+      return;
+    }
     if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
     const k = ev.key.toLowerCase();
     if (k === "f") {
@@ -3722,8 +3872,6 @@ function init(host, detailEl, selectEl, shellEl) {
   const btnArrGarden = document.getElementById("morph-btn-arr-garden");
   const btnArrMaster = document.getElementById("morph-btn-arr-master");
   const btnArrCompare = document.getElementById("morph-btn-arr-compare");
-  const btnSurf3d = document.getElementById("morph-btn-surf-3d");
-  const btnSurfWb = document.getElementById("morph-btn-surf-wb");
 
   function setViewButtons() {
     const k = transition?.toKey ?? viewKey;
@@ -3738,14 +3886,6 @@ function init(host, detailEl, selectEl, shellEl) {
     if (btnArrCompare) {
       btnArrCompare.classList.toggle("morph-view-btn--active", k.startsWith("Compare"));
       btnArrCompare.setAttribute("aria-pressed", k.startsWith("Compare").toString());
-    }
-    if (btnSurf3d) {
-      btnSurf3d.classList.toggle("morph-view-btn--active", k.endsWith("3d"));
-      btnSurf3d.setAttribute("aria-pressed", k.endsWith("3d").toString());
-    }
-    if (btnSurfWb) {
-      btnSurfWb.classList.toggle("morph-view-btn--active", k.endsWith("Wb"));
-      btnSurfWb.setAttribute("aria-pressed", k.endsWith("Wb").toString());
     }
   }
 
@@ -3776,7 +3916,7 @@ function init(host, detailEl, selectEl, shellEl) {
 
     applyScopeVisibility(toKey);
 
-    const cam0 = camera.position.clone();
+    const cam0 = /** @type {THREE.Camera} */ (controls.object).position.clone();
     const tgt0 = controls.target.clone();
     const end = camerasForTransitionEnd(toKey);
 
@@ -3805,19 +3945,6 @@ function init(host, detailEl, selectEl, shellEl) {
   btnArrCompare?.addEventListener("click", () => {
     const wb = vk().endsWith("Wb");
     transitionToKey(wb ? "CompareWb" : "Compare3d");
-  });
-  btnSurf3d?.addEventListener("click", () => {
-    const wbTail = vk().endsWith("Wb");
-    if (!wbTail) return;
-    if (vk().startsWith("Master")) transitionToKey("Master3d");
-    else if (vk().startsWith("Compare")) transitionToKey("Compare3d");
-    else transitionToKey("Garden3d");
-  });
-  btnSurfWb?.addEventListener("click", () => {
-    if (vk().endsWith("Wb")) return;
-    if (vk().startsWith("Master")) transitionToKey("MasterWb");
-    else if (vk().startsWith("Compare")) transitionToKey("CompareWb");
-    else transitionToKey("GardenWb");
   });
 
   function applyVisualTheme(
@@ -3894,14 +4021,14 @@ function init(host, detailEl, selectEl, shellEl) {
         g.position.lerpVectors(posForViewKey(w, layoutKeyFrom), posForViewKey(w, layoutKeyTo), le);
       }
 
-      const swayMul = (1 - u) * (1 - masterWeight * 0.92);
+      const flatPlanar = u > 0.94;
+      const swayMul = flatPlanar ? 0 : (1 - u) * (1 - masterWeight * 0.92);
       const sway = swayMul * Math.sin(clock.elapsedTime * 0.1 + w.pos3d.x * 0.02) * 0.028;
-      // Whiteboard: very mild pitch only — planar trees stay upright (+Y) on the board.
       const wbElev = smoothstep((u - 0.54) / 0.42);
       g.rotation.order = "YXZ";
       g.rotation.z = 0;
-      g.rotation.x = wbElev * 0.1;
-      g.rotation.y = sway * (1 - wbElev * 0.5);
+      g.rotation.x = flatPlanar ? 0 : wbElev * 0.1;
+      g.rotation.y = flatPlanar ? 0 : sway * (1 - wbElev * 0.5);
 
       const dim = 0.08 * u;
       const tNow = clock.elapsedTime;
@@ -3999,16 +4126,16 @@ function init(host, detailEl, selectEl, shellEl) {
   `;
   }
 
+  let introDone = !runIntroCinematic;
+
   if (!runIntroCinematic) {
     finishIntroGroups();
     flyToActiveView();
-    camera.position.copy(cam3dPos);
-    controls.target.copy(cam3dTarget);
+    morphEnterPlanarBoardPresentation();
     controls.enabled = true;
     controls.update();
   }
 
-  let introDone = !runIntroCinematic;
   let introT = 0;
 
   let introSpinAngle = 0;
@@ -4045,9 +4172,7 @@ function init(host, detailEl, selectEl, shellEl) {
     }
     finishIntroGroups();
     flyToActiveView();
-    camera.position.copy(cam3dPos);
-    controls.target.copy(cam3dTarget);
-    controls.enabled = true;
+    morphEnterPlanarBoardPresentation();
     controls.update();
     morphTourCtl.autoTry(750);
   }
@@ -4066,6 +4191,8 @@ function init(host, detailEl, selectEl, shellEl) {
     camera.updateProjectionMatrix();
     renderer.setSize(w, h);
     labelRenderer.setSize(w, h);
+    boardOrthoCamera.updateProjectionMatrix();
+    if (introDone && morphIsOrthoBoard()) syncBoardOrthoCamera();
   }
   window.addEventListener("resize", resizeCanvasToHost);
   if (typeof ResizeObserver !== "undefined") {
@@ -4346,20 +4473,34 @@ function init(host, detailEl, selectEl, shellEl) {
       const bf = blendForViewKey(transition.fromKey);
       const bt = blendForViewKey(transition.toKey);
       viewBlend = bf + (bt - bf) * e;
-      camera.position.lerpVectors(transition.cam0, transition.cam1, e);
-      controls.target.lerpVectors(transition.tgt0, transition.tgt1, e);
+      const planarLayoutOnly =
+        transition.fromKey.endsWith("Wb") && transition.toKey.endsWith("Wb");
+      if (!planarLayoutOnly) {
+        camera.position.lerpVectors(transition.cam0, transition.cam1, e);
+        controls.target.lerpVectors(transition.tgt0, transition.tgt1, e);
+      }
       const ended =
         elapsed >= TRANSITION_SEC - 1e-6 || k >= 1 - 1e-9 || !Number.isFinite(elapsed);
       if (ended) {
-        viewBlend = blendForViewKey(transition.toKey);
+        const toKey = transition.toKey;
+        const cam1copy = transition.cam1.clone();
+        const tgt1copy = transition.tgt1.clone();
+        viewBlend = blendForViewKey(toKey);
         layoutEase = 1;
-        layoutKeyFrom = transition.toKey;
-        layoutKeyTo = transition.toKey;
-        viewKey = transition.toKey;
-        camera.position.copy(transition.cam1);
-        controls.target.copy(transition.tgt1);
+        layoutKeyFrom = toKey;
+        layoutKeyTo = toKey;
+        viewKey = toKey;
         transition = null;
         setViewButtons();
+        if (toKey.endsWith("Wb")) {
+          if (!(controls.object instanceof THREE.OrthographicCamera)) morphEnterPlanarBoardPresentation();
+          else syncBoardOrthoCamera();
+        } else {
+          morphBindOrbitTo(camera);
+          camera.position.copy(cam1copy);
+          controls.target.copy(tgt1copy);
+        }
+        refreshControlsForViewMode(viewBlend, masterWtKey(viewKey));
       }
     }
 
@@ -4368,11 +4509,16 @@ function init(host, detailEl, selectEl, shellEl) {
       const d = Math.max(1e-5, cameraFitTween.dur);
       const ck = Math.min(1, elapsedF / d);
       const ce = easeInOutCubic(ck);
-      camera.position.lerpVectors(cameraFitTween.cam0, cameraFitTween.cam1, ce);
-      controls.target.lerpVectors(cameraFitTween.tgt0, cameraFitTween.tgt1, ce);
-      if (ck >= 1 || elapsedF >= cameraFitTween.dur - 1e-8) {
-        camera.position.copy(cameraFitTween.cam1);
-        controls.target.copy(cameraFitTween.tgt1);
+      if (!morphIsOrthoBoard()) {
+        camera.position.lerpVectors(cameraFitTween.cam0, cameraFitTween.cam1, ce);
+        controls.target.lerpVectors(cameraFitTween.tgt0, cameraFitTween.tgt1, ce);
+        if (ck >= 1 || elapsedF >= cameraFitTween.dur - 1e-8) {
+          camera.position.copy(cameraFitTween.cam1);
+          controls.target.copy(cameraFitTween.tgt1);
+          cameraFitTween = null;
+        }
+      } else {
+        syncBoardOrthoCamera();
         cameraFitTween = null;
       }
     }
@@ -4420,7 +4566,7 @@ function init(host, detailEl, selectEl, shellEl) {
           }
         }
       } else {
-        const camP = camera.position;
+        const camP = /** @type {THREE.Camera} */ (controls.object).position;
         const focusT = morphFocusMesh ? clock.elapsedTime - morphFocusT0 : 100;
         const focusPulse = focusT < 0.33 ? 1 - smoothstep(focusT / 0.3) : 0;
         const focusWordId = morphFocusMesh?.userData?.wordId ?? null;
@@ -4493,8 +4639,9 @@ function init(host, detailEl, selectEl, shellEl) {
 
     controls.update();
     if (introDone && bridges.visible) updateBridgeLines(bridges, viewBlend);
-    renderer.render(scene, camera);
-    labelRenderer.render(scene, camera);
+    const renderCam = /** @type {THREE.Camera} */ (controls.object);
+    renderer.render(scene, renderCam);
+    labelRenderer.render(scene, renderCam);
   }
   animate();
 }

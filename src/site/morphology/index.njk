@@ -21,7 +21,7 @@ contentClasses: morphology-page
       id="morph-canvas-host"
       class="morph-canvas-host"
       role="img"
-      aria-label="Morpheme trees: use Arrange / Surface — garden, links, or compare; then 3D or whiteboard"
+      aria-label="Flat morpheme diagrams: Arrange for garden, linked hubs, or compare two words"
     ></div>
     <div class="morph-ui-panel">
       <div class="morph-ui-row morph-ui-row--meta" role="group" aria-label="Word tier vocabulary set">
@@ -92,29 +92,6 @@ contentClasses: morphology-page
           🖥️
         </button>
       </div>
-      <div class="morph-ui-row morph-ui-row--toggle morph-ui-row--surface" role="group" aria-label="3D spatial or flat whiteboard">
-        <span class="morph-ui-label">Surface</span>
-        <button
-          type="button"
-          id="morph-btn-surf-3d"
-          class="morph-view-btn morph-view-btn--icon morph-view-btn--active"
-          aria-pressed="true"
-          title="Depth — orbital camera; bridges arc between trees"
-          aria-label="Three-dimensional surface"
-        >
-          🌐
-        </button>
-        <button
-          type="button"
-          id="morph-btn-surf-wb"
-          class="morph-view-btn morph-view-btn--icon"
-          aria-pressed="false"
-          title="Whiteboard — projector layout"
-          aria-label="Whiteboard surface"
-        >
-          ✔
-        </button>
-      </div>
       <div id="morph-word-row" class="morph-ui-row">
         <label for="morph-word-select">Word tree</label>
         <select id="morph-word-select" class="morph-select" aria-describedby="morph-hint"></select>
@@ -126,9 +103,9 @@ contentClasses: morphology-page
         <select id="morph-compare-b" class="morph-select morph-select--compare" title="Second word in compare mode"></select>
       </div>
       <p id="morph-hint" class="morph-hint morph-hint--compact">
-        <strong>Tip:</strong> Use <strong>Arrange → Links</strong> for morpheme webs, or <strong>⚖ Compare</strong> for two trees; <strong>Surface</strong> swaps 3D depth for a projector board — combine freely.
-        Hover morphemes for gloss. Press <strong>📖 Guided tour</strong> for a quick walkthrough or <strong>❓ Help</strong> for the full reference ·
-        <kbd>F</kbd> fit · <kbd>R</kbd> reset · <kbd>Space</kbd> orbit drift.
+        <strong>Tip:</strong> The board is always <strong>two-dimensional</strong>—pan and zoom the diagram. Try <strong>Arrange → 🔗</strong> for shared-morpheme hubs or <strong>⚖</strong> to compare exactly two words side by side.
+        Hover morphemes for gloss. Use <strong>📖 Guided tour</strong> or <strong>❓ Help</strong> for shortcuts ·
+        <kbd>F</kbd> fit · <kbd>R</kbd> reset<span class="visually-hidden"> (Space toggles orbit only in the experimental 3D mode from backslash)</span>.
       </p>
     </div>
 
@@ -153,65 +130,48 @@ contentClasses: morphology-page
             </p>
           </section>
           <section class="morph-help__sec">
-            <h3>Arrange &amp; surface</h3>
+            <h3>Flat board &amp; Arrange</h3>
             <p class="morph-help__sub">
-              The top row chooses <strong>layout</strong>; the bottom row chooses <strong>presentation</strong>. Combine them freely —
-              for example Links + Whiteboard, or Garden + 3D.
+              The explorer opens on a <strong>planar board</strong>: morpheme trees and magenta bridges are staged in width and height (pan and zoom handle navigation). Use <strong>Arrange</strong> to change how words are laid out.
             </p>
             <ul>
               <li>
-                <strong>🌳 Garden</strong> — Trees stay in fixed overview positions; magenta bridges show morphemes that repeat
-                elsewhere.
+                <strong>🌳 Garden</strong> — Every tree keeps open spacing; magenta bridges show recurring morphemes.
               </li>
               <li>
-                <strong>🔗 Links (master)</strong> — Compresses vocabulary into hubs so recurring morphemes are easy to chase;
-                magenta connectors show identities across clusters.
+                <strong>🔗 Links</strong> — Pulls vocabulary into hubs so shared morphemes stay easy to notice; bridges still connect matching spheres.
               </li>
               <li>
-                <strong>⚖ Compare</strong> — Pick two words from the tier set; both trees stay visible side by side while
-                magenta bridges still link any morphemes the words share.
+                <strong>⚖ Compare</strong> — Pin two different words; only their shared morphemes bridge.
               </li>
               <li>
-                <strong>✔ Whiteboard</strong> — Side-elevation / schematic framing: cameras sit off to the side, trees tilt
-                toward profile, field-of-view narrows, and orbit is swapped for pan-zoom so it behaves like projecting a diagram—not
-                a locked 3D spin.
-              </li>
-              <li>
-                <strong>🌐 3D</strong> — Adds depth: bridges can pass <em>over</em> or <em>under</em> unrelated trees instead of slicing
-                across them; orbit gives a tactile sense of proximity between words.
+                <strong>🖥️ Full screen</strong> — Fills the viewport (or immersive mode on mobile Safari) so the diagram and chrome stay legible when teaching.
               </li>
             </ul>
-          </section>
-          <section class="morph-help__sec">
-            <h3>Why keep 3D?</h3>
-            <p>
-              If 2D had no gaps, spatial mode would waste pixels and attention. Here, 3D is not lipstick: it hides line-crossings,
-              restores parallax for telling which bridge belongs to what, and stacks “overview → zoom” as real distance — you skim
-              far away (apex silhouettes), then swoop toward one tree for morphology detail. Prefer whiteboard for board work; grab
-              3D when the story is relationships <em>between</em> distant words.
+            <p class="morph-help__sub">
+              <strong>Maintainer shortcut:</strong> press <kbd>\</kbd> to toggle the legacy <em>orbital 3D</em> camera (not surfaced in the toolbar). Return to the slash key to come back to the default board.
             </p>
           </section>
           <section class="morph-help__sec">
             <h3>Mouse / touch</h3>
             <ul>
-              <li><strong>Hover</strong> a morpheme sphere for a tooltip (gloss, category, and other words using that morpheme).</li>
-              <li><strong>Drag</strong> to orbit (3D) or pan (whiteboard).</li>
-              <li><strong>Scroll / pinch</strong> to zoom.</li>
-              <li><strong>Click</strong> a morpheme to ease the camera target toward it.</li>
-              <li><strong>Double-click</strong> zooms and frames the entire word tree with that node as focus (every view).</li>
-              <li><strong>Shift + double-click</strong> (3D garden/master) toggles slow auto-orbit around the last focused node.</li>
+              <li><strong>Hover</strong> a morpheme sphere for tooltip glosses, categories, and sibling lemmas that share it.</li>
+              <li><strong>Drag</strong> to pan across the board (or orbit when <kbd>\</kbd> 3D mode is on).</li>
+              <li><strong>Scroll / pinch</strong> to zoom the diagram.</li>
+              <li><strong>Click</strong> a morpheme to ease the camera toward that node.</li>
+              <li><strong>Double-click</strong> refits the framing so the surrounding word tree dominates the view.</li>
+              <li><strong>Shift + double-click</strong> (3D mode only) toggles slow auto-orbit around the focused node.</li>
             </ul>
           </section>
           <section class="morph-help__sec">
             <h3>Keyboard</h3>
             <ul>
-              <li><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd> — glide the camera on the ground plane (3D).</li>
-              <li><kbd>↑</kbd> <kbd>↓</kbd> — raise / lower camera.</li>
-              <li><kbd>←</kbd> <kbd>→</kbd> — orbit sideways.</li>
-              <li><kbd>F</kbd> — fit the current view (garden overview or selected word).</li>
-              <li><kbd>R</kbd> — reset camera for the current mode.</li>
-              <li><kbd>Space</kbd> — toggle orbit drift (when a node is focused).</li>
-              <li><kbd>Escape</kbd> — close this help panel (or exit full-screen / immersive mode).</li>
+              <li><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd>, arrows — glide / orbit (only in experimental 3D via <kbd>\</kbd>).</li>
+              <li><kbd>F</kbd> — fit the garden, links, isolate, or compare layout into view.</li>
+              <li><kbd>R</kbd> — reset framing for the active arrange mode.</li>
+              <li><kbd>Space</kbd> — toggle orbit drift while 3D experimental mode is enabled.</li>
+              <li><kbd>\\</kbd> — toggle the hidden spatial 3D camera; default teaching mode stays flat.</li>
+              <li><kbd>Escape</kbd> — leave this help drawer, immersive mode, or fullscreen.</li>
             </ul>
           </section>
           <section class="morph-help__sec">
