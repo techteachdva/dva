@@ -850,6 +850,102 @@ html.morph-immersive-open body {
   }
 }
 
+.morph-detail-compare__col {
+  border-radius: 10px;
+  padding: 0.55rem 0.62rem;
+  backdrop-filter: blur(8px);
+}
+
+.morphology-page:has(.morphology-shell:not(.morphology-shell--wb)) .morph-detail-compare .morph-detail-compare__col {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
+}
+
+.morphology-page:has(.morphology-shell--wb) .morph-detail-compare .morph-detail-compare__col {
+  background: rgba(12, 20, 36, 0.92);
+  border: 1px solid rgba(125, 211, 252, 0.32);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+}
+
+.morphology-page:has(.morphology-shell:not(.morphology-shell--wb)) .morph-detail-compare .morph-lesson__h {
+  color: #0f172a;
+}
+
+.morphology-page:has(.morphology-shell:not(.morphology-shell--wb)) .morph-detail-compare .morph-lesson__bracket {
+  color: #92400e;
+}
+
+.morphology-page:has(.morphology-shell:not(.morphology-shell--wb)) .morph-detail-compare .morph-lesson__lead,
+.morphology-page:has(.morphology-shell:not(.morphology-shell--wb)) .morph-detail-compare .morph-lesson__sec {
+  color: #334155;
+  border-top-color: rgba(15, 23, 42, 0.12);
+}
+
+.morphology-page:has(.morphology-shell:not(.morphology-shell--wb)) .morph-detail-compare .morph-lesson__sec h4 {
+  color: #0f172a;
+}
+
+.morphology-page:has(.morphology-shell--wb) .morph-detail-compare .morph-lesson__lead,
+.morphology-page:has(.morphology-shell--wb) .morph-detail-compare .morph-lesson__sec {
+  border-top-color: rgba(148, 197, 255, 0.2);
+  color: #e2e8f0;
+}
+
+.morphology-page:has(.morphology-shell--wb) .morph-detail-compare .morph-lesson__sec h4 {
+  color: rgba(226, 244, 255, 0.92);
+}
+
+.morphology-page:has(.morphology-shell--wb) .morph-detail-compare .morph-word-note__body,
+.morphology-page:has(.morphology-shell--wb) .morph-detail-compare .morph-word-note__h {
+  color: rgba(248, 250, 252, 0.95);
+}
+
+.morph-detail-compare .morph-word-note {
+  margin-top: 0.65rem;
+  padding-top: 0.55rem;
+  border-top: 1px dashed rgba(148, 163, 184, 0.45);
+}
+
+.morphology-page:has(.morphology-shell:not(.morphology-shell--wb)) .morph-detail-compare .morph-lesson__h {
+  color: #0f172a;
+}
+
+.morphology-page:has(.morphology-shell:not(.morphology-shell--wb)) .morph-detail-compare .morph-lesson__bracket {
+  color: #92400e;
+}
+
+.morphology-page:has(.morphology-shell:not(.morphology-shell--wb)) .morph-detail-compare .morph-lesson__lead,
+.morphology-page:has(.morphology-shell:not(.morphology-shell--wb)) .morph-detail-compare .morph-lesson__sec {
+  color: #334155;
+  border-top-color: rgba(15, 23, 42, 0.12);
+}
+
+.morphology-page:has(.morphology-shell:not(.morphology-shell--wb)) .morph-detail-compare .morph-lesson__sec h4 {
+  color: #0f172a;
+}
+
+.morphology-page:has(.morphology-shell--wb) .morph-detail-compare .morph-lesson__lead,
+.morphology-page:has(.morphology-shell--wb) .morph-detail-compare .morph-lesson__sec {
+  border-top-color: rgba(148, 197, 255, 0.2);
+  color: #e2e8f0;
+}
+
+.morphology-page:has(.morphology-shell--wb) .morph-detail-compare .morph-lesson__sec h4 {
+  color: rgba(226, 244, 255, 0.92);
+}
+
+.morphology-page:has(.morphology-shell--wb) .morph-detail-compare .morph-word-note__body,
+.morphology-page:has(.morphology-shell--wb) .morph-detail-compare .morph-word-note__h {
+  color: rgba(248, 250, 252, 0.95);
+}
+
+.morph-detail-compare .morph-word-note {
+  margin-top: 0.65rem;
+  padding-top: 0.55rem;
+  border-top: 1px dashed rgba(148, 163, 184, 0.45);
+}
+
 .morph-detail-compare__col .morph-detail-lesson--flank {
   grid-template-columns: 1fr;
 }
@@ -880,6 +976,84 @@ html.morph-immersive-open body {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.85rem 1rem;
   align-items: start;
+}
+
+.morphology-page:has(.morphology-shell:not(.morphology-shell--wb))
+  .morph-detail:not(.morph-detail--viewer-dock)
+  .morph-lesson-wing {
+  padding: 0.52rem 0.58rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.06);
+}
+
+.morphology-page:has(.morphology-shell:not(.morphology-shell--wb))
+  .morph-detail:not(.morph-detail--viewer-dock)
+  .morph-lesson-wing
+  .morph-lesson__h {
+  color: #0f172a;
+}
+
+.morphology-page:has(.morphology-shell:not(.morphology-shell--wb))
+  .morph-detail:not(.morph-detail--viewer-dock)
+  .morph-lesson-wing
+  .morph-lesson__bracket {
+  color: #92400e;
+}
+
+.morphology-page:has(.morphology-shell:not(.morphology-shell--wb))
+  .morph-detail:not(.morph-detail--viewer-dock)
+  .morph-lesson-wing
+  .morph-lesson__lead,
+.morphology-page:has(.morphology-shell:not(.morphology-shell--wb))
+  .morph-detail:not(.morph-detail--viewer-dock)
+  .morph-lesson-wing
+  .morph-lesson__sec {
+  color: #334155;
+  border-top-color: rgba(15, 23, 42, 0.1);
+}
+
+.morphology-page:has(.morphology-shell--wb)
+  .morph-detail:not(.morph-detail--viewer-dock)
+  .morph-lesson-wing {
+  padding: 0.52rem 0.58rem;
+  border-radius: 10px;
+  background: rgba(12, 20, 36, 0.92);
+  border: 1px solid rgba(125, 211, 252, 0.3);
+}
+
+.morphology-page:has(.morphology-shell--wb)
+  .morph-detail:not(.morph-detail--viewer-dock)
+  .morph-lesson-wing
+  .morph-lesson__sec {
+  border-top-color: rgba(148, 197, 255, 0.15);
+}
+
+.morph-detail:not(.morph-detail--viewer-dock) > .morph-lesson.morph-lesson--single {
+  padding: 0.55rem 0.62rem;
+  border-radius: 10px;
+}
+
+.morphology-page:has(.morphology-shell:not(.morphology-shell--wb))
+  .morph-detail:not(.morph-detail--viewer-dock)
+  > .morph-lesson.morph-lesson--single {
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.morphology-page:has(.morphology-shell:not(.morphology-shell--wb))
+  .morph-detail:not(.morph-detail--viewer-dock)
+  > .morph-lesson.morph-lesson--single
+  .morph-lesson__h {
+  color: #0f172a;
+}
+
+.morphology-page:has(.morphology-shell--wb)
+  .morph-detail:not(.morph-detail--viewer-dock)
+  > .morph-lesson.morph-lesson--single {
+  background: rgba(12, 20, 36, 0.92);
+  border: 1px solid rgba(125, 211, 252, 0.3);
 }
 
 @media (max-width: 34rem) {
@@ -934,15 +1108,16 @@ html.morph-immersive-open body {
   pointer-events: auto;
   padding: 0.55rem 0.62rem;
   border-radius: 10px;
-  backdrop-filter: blur(8px);
-  background: rgba(10, 16, 32, 0.72);
-  border: 1px solid rgba(125, 211, 252, 0.32);
-  box-shadow: 0 4px 26px rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.28);
 }
 
 .morphology-shell--wb .morph-detail--viewer-dock > .morph-lesson.morph-lesson--single {
-  background: rgba(255, 255, 255, 0.92);
-  border-color: rgba(100, 116, 139, 0.42);
+  background: rgba(10, 16, 32, 0.9);
+  border: 1px solid rgba(125, 211, 252, 0.38);
+  box-shadow: 0 6px 28px rgba(0, 0, 0, 0.4);
 }
 
 .morph-detail--viewer-dock .morph-lesson-wing {
@@ -953,10 +1128,10 @@ html.morph-immersive-open body {
   padding: 0.55rem 0.62rem;
   pointer-events: auto;
   border-radius: 10px;
-  backdrop-filter: blur(8px);
-  background: rgba(10, 16, 32, 0.72);
-  border: 1px solid rgba(125, 211, 252, 0.32);
-  box-shadow: 0 4px 26px rgba(0, 0, 0, 0.32);
+  backdrop-filter: blur(10px);
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.28);
 }
 
 .morph-detail--viewer-dock .morph-word-note {
@@ -970,9 +1145,9 @@ html.morph-immersive-open body {
   align-self: center;
   width: min(100%, clamp(26rem, 88vw, 44rem));
   border-radius: 10px;
-  backdrop-filter: blur(6px);
-  background: rgba(10, 16, 32, 0.78);
-  border: 1px dashed rgba(255, 106, 213, 0.4);
+  backdrop-filter: blur(10px);
+  background: rgba(252, 250, 255, 0.96);
+  border: 1px dashed rgba(100, 116, 139, 0.35);
 }
 
 .morph-detail--viewer-dock .morph-lesson__h {
@@ -989,23 +1164,118 @@ html.morph-immersive-open body {
   border-top: none;
 }
 
+.morphology-shell:not(.morphology-shell--wb) .morph-detail.morph-detail--viewer-dock .morph-lesson__h {
+  color: #0f172a;
+}
+
+.morphology-shell:not(.morphology-shell--wb) .morph-detail.morph-detail--viewer-dock .morph-lesson__bracket {
+  color: #92400e;
+}
+
+.morphology-shell:not(.morphology-shell--wb) .morph-detail.morph-detail--viewer-dock .morph-lesson__lead {
+  color: #334155;
+}
+
+.morphology-shell:not(.morphology-shell--wb) .morph-detail.morph-detail--viewer-dock .morph-lesson__sec {
+  border-top-color: rgba(15, 23, 42, 0.1);
+}
+
+.morphology-shell:not(.morphology-shell--wb) .morph-detail.morph-detail--viewer-dock .morph-lesson__sec h4 {
+  color: #1e293b;
+}
+
+.morphology-shell:not(.morphology-shell--wb) .morph-detail.morph-detail--viewer-dock .morph-word-note__body,
+.morphology-shell:not(.morphology-shell--wb) .morph-detail.morph-detail--viewer-dock .morph-word-note__h {
+  color: #1e293b;
+}
+
+.morphology-shell:not(.morphology-shell--wb) .morph-detail.morph-detail--viewer-dock .morph-chapter-note,
+.morphology-shell:not(.morphology-shell--wb) .morph-detail.morph-detail--viewer-dock .morph-word-note {
+  border-top-color: rgba(148, 163, 184, 0.4);
+}
+
 .morphology-shell--wb .morph-detail.morph-detail--viewer-dock .morph-lesson-wing {
-  background: rgba(255, 255, 255, 0.92);
-  border-color: rgba(100, 116, 139, 0.42);
+  background: rgba(10, 16, 32, 0.9);
+  border-color: rgba(125, 211, 252, 0.38);
+  box-shadow: 0 6px 28px rgba(0, 0, 0, 0.4);
 }
 
 .morphology-shell--wb .morph-detail.morph-detail--viewer-dock .morph-word-note {
-  background: rgba(255, 255, 255, 0.94);
-  border-color: rgba(100, 116, 139, 0.42);
+  background: rgba(8, 12, 26, 0.92);
+  border-color: rgba(255, 106, 213, 0.38);
 }
 
 .morphology-shell--wb .morph-detail.morph-detail--viewer-dock .morph-lesson__h {
+  color: var(--morph-gold);
+}
+
+.morphology-shell--wb .morph-detail.morph-detail--viewer-dock .morph-lesson__bracket {
+  color: rgba(226, 244, 255, 0.88);
+}
+
+.morphology-shell--wb .morph-detail.morph-detail--viewer-dock .morph-lesson__lead,
+.morphology-shell--wb .morph-detail.morph-detail--viewer-dock .morph-lesson__sec {
+  border-top-color: rgba(148, 197, 255, 0.18);
+}
+
+.morphology-shell--wb .morph-detail.morph-detail--viewer-dock .morph-lesson__sec h4 {
+  color: rgba(210, 240, 255, 0.95);
+}
+
+.morphology-shell--wb .morph-detail--viewer-dock > .morph-lesson.morph-lesson--single .morph-lesson__lead,
+.morphology-shell--wb .morph-detail--viewer-dock > .morph-lesson.morph-lesson--single .morph-lesson__sec {
+  border-top-color: rgba(148, 197, 255, 0.18);
+  color: #e2e8f0;
+}
+
+.morphology-shell--wb .morph-detail--viewer-dock > .morph-lesson.morph-lesson--single .morph-lesson__sec h4 {
+  color: rgba(210, 240, 255, 0.95);
+}
+
+.morphology-shell:not(.morphology-shell--wb)
+  .morph-detail--viewer-dock
+  > .morph-lesson.morph-lesson--single
+  .morph-lesson__lead {
+  color: #334155;
+}
+
+.morphology-shell:not(.morphology-shell--wb)
+  .morph-detail--viewer-dock
+  > .morph-lesson.morph-lesson--single
+  .morph-lesson__sec {
+  border-top-color: rgba(15, 23, 42, 0.1);
+}
+
+.morphology-shell:not(.morphology-shell--wb)
+  .morph-detail--viewer-dock
+  > .morph-lesson.morph-lesson--single
+  .morph-lesson__sec
+  h4 {
+  color: #1e293b;
+}
+
+.morphology-shell:not(.morphology-shell--wb)
+  .morph-detail--viewer-dock
+  > .morph-lesson.morph-lesson--single
+  .morph-lesson__h {
   color: #0f172a;
+}
+
+.morphology-shell:not(.morphology-shell--wb)
+  .morph-detail--viewer-dock
+  > .morph-lesson.morph-lesson--single
+  .morph-lesson__bracket {
+  color: #92400e;
+}
+
+.morphology-shell--wb .morph-detail.morph-detail--viewer-dock .morph-word-note__body,
+.morphology-shell--wb .morph-detail.morph-detail--viewer-dock .morph-word-note__h {
+  color: rgba(248, 250, 252, 0.94);
 }
 
 .morphology-shell--wb .morph-detail.morph-detail--viewer-dock .morph-chapter-note,
 .morphology-shell--wb .morph-detail.morph-detail--viewer-dock .morph-word-note {
-  border-top-color: rgba(100, 116, 139, 0.35);
+  border-top-color: rgba(255, 106, 213, 0.28);
 }
 
 .morph-detail .morph-bracket {

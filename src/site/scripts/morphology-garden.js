@@ -2103,6 +2103,7 @@ function init(host, detailEl, selectEl, shellEl) {
   controls.maxDistance = 300;
   controls.enablePan = true;
   controls.enableZoom = true;
+  controls.zoomSpeed = 0.48;
   controls.minPolarAngle = Math.PI * 0.08;
   controls.maxPolarAngle = Math.PI * 0.92;
   controls.target.copy(cam3dTarget);
@@ -2239,6 +2240,7 @@ function init(host, detailEl, selectEl, shellEl) {
       const g = wordGroups[id];
       const w = WORDS.find((x) => x.id === id);
       if (g && w) {
+        delete g.userData.compareCentroidLocal;
         gardenRoot.attach(g);
         g.position.copy(w.pos3d);
         g.updateMatrixWorld(true);
@@ -2252,12 +2254,23 @@ function init(host, detailEl, selectEl, shellEl) {
     const wa = WORDS.find((x) => x.id === pa);
     const wb = WORDS.find((x) => x.id === pb);
     if (!wa || !wb) return;
+    /* Slots in compareStage local space (stage at scene origin): two trees, shared bridges only between them */
     const sep3d = 74 * POS3D_SCALE;
-    wa.posCompare3d.set(sceneCenter.x - sep3d * 0.5, sceneCenter.y, sceneCenter.z);
-    wb.posCompare3d.set(sceneCenter.x + sep3d * 0.5, sceneCenter.y, sceneCenter.z);
+    wa.posCompare3d.set(-sep3d * 0.5, 0, 0);
+    wb.posCompare3d.set(sep3d * 0.5, 0, 0);
     const sepW = WB_CIRCLE_RADIUS * 1.05;
     wa.posCompareWb.set(-sepW * 0.5, -10, 0);
     wb.posCompareWb.set(sepW * 0.5, -10, 0);
+  }
+
+  /** BBox center of {@code g} when placed at origin, in {@code parent} local space — keep tree visually centered on its compare slot while positions lerp during transitions */
+  function morphCompareCentroidInParent(g, parent) {
+    g.position.set(0, 0, 0);
+    g.updateMatrixWorld(true);
+    const box = new THREE.Box3().setFromObject(g);
+    if (box.isEmpty()) return new THREE.Vector3(0, 0, 0);
+    const cenW = box.getCenter(new THREE.Vector3());
+    return parent.worldToLocal(cenW);
   }
 
   /** Garden + WB 3d: pairs two picker words inside `compareStage`; exclusive with solo isolate. */
@@ -2325,11 +2338,11 @@ function init(host, detailEl, selectEl, shellEl) {
 
     compareStage.attach(ga);
     compareStage.attach(gb);
-    scene.updateMatrixWorld(true);
+    ga.userData.compareCentroidLocal = morphCompareCentroidInParent(ga, compareStage);
+    gb.userData.compareCentroidLocal = morphCompareCentroidInParent(gb, compareStage);
     morphCompareAttachedPair = [pa, pb];
     compareStage.visible = true;
     gardenRoot.visible = false;
-
     ga.updateMatrixWorld(true);
     gb.updateMatrixWorld(true);
   }
@@ -2552,6 +2565,14 @@ function init(host, detailEl, selectEl, shellEl) {
   }
 
   let viewBlend = 0;
+
+  /** Framing distances must follow the lens the user sees — matches whiteboard FOV narrow without using the live varying value mid-tween jitter */
+  function morphEffectiveFramingFov() {
+    const base = /** @type {number} */ (camera.userData?.morphBaseFov ?? CAMERA_FOV_3D);
+    const u = smoothstep(viewBlend);
+    return THREE.MathUtils.lerp(base, 19, u);
+  }
+
   /** @type {{ wallSec0: number, fromKey: string, toKey: string, cam0: THREE.Vector3, tgt0: THREE.Vector3, cam1: THREE.Vector3, tgt1: THREE.Vector3 } | null} */
   let transition = null;
   /** @type {string | null} */
@@ -2662,10 +2683,7 @@ function init(host, detailEl, selectEl, shellEl) {
     let rEff = Math.max(_morphFitSphere.radius, 14);
     rEff *= 1.1;
 
-    const vDeg =
-      camera.isPerspectiveCamera
-        ? THREE.MathUtils.clamp(camera.fov, 17, CAMERA_FOV_3D + 14)
-        : CAMERA_FOV_3D;
+    const vDeg = THREE.MathUtils.clamp(morphEffectiveFramingFov(), 17, CAMERA_FOV_3D + 18);
     const vRad = THREE.MathUtils.degToRad(vDeg);
     const asp = camera.aspect || 1;
     const th = Math.tan(vRad / 2);
@@ -2707,25 +2725,40 @@ function init(host, detailEl, selectEl, shellEl) {
       cam3dPos.set(sceneCenter.x + 8, sceneCenter.y + 48, sceneCenter.z + 142);
       return;
     }
-    box.expandByScalar(12);
-    const c = box.getCenter(_morphFitCenter);
-    const sz = box.getSize(_morphFitSize);
-    const ext = Math.max(sz.x, sz.y, sz.z, 18);
-    cam3dTarget.copy(c);
+    box.expandByScalar(isolatedTreePadForCompare(box));
+    box.getBoundingSphere(_morphFitSphere);
+    let rEff = Math.max(_morphFitSphere.radius, 14);
+    rEff *= 1.08;
+    const vRad = THREE.MathUtils.degToRad(THREE.MathUtils.clamp(morphEffectiveFramingFov(), 17, CAMERA_FOV_3D + 18));
+    const asp = camera.aspect || 1;
+    const th = Math.tan(vRad / 2);
+    const distY = rEff / th;
+    const distX = rEff / (th * asp);
+    let pull = Math.max(distX, distY, rEff * 2.95 + 8);
+
+    const center = _morphFitSphere.center;
+    cam3dTarget.copy(center);
+    const dir = new THREE.Vector3(1.06, 0.55, 0.92).normalize();
+    cam3dPos.copy(center).addScaledVector(dir, pull);
     const wb = smoothstep(viewBlend) > 0.85;
-    const offset = new THREE.Vector3(ext * 0.48, ext * 0.36, ext * 0.68);
-    cam3dPos.copy(c).add(offset);
-    const minCamDist = wb ? Math.max(46, controls.minDistance * 1.08) : Math.max(16, controls.minDistance * 1.05);
+    const minCamDist = wb ? Math.max(44, controls.minDistance * 1.06) : Math.max(14, controls.minDistance * 1.04);
     if (cam3dPos.distanceTo(cam3dTarget) < minCamDist) {
       cam3dPos.sub(cam3dTarget).normalize().multiplyScalar(minCamDist).add(cam3dTarget);
     }
+  }
+
+  /** Tight framing for two-tree compare vs loose garden boxing */
+  function isolatedTreePadForCompare(/** @type {THREE.Box3} */ bx) {
+    const sz = bx.getSize(_morphFitSize);
+    const longest = Math.max(sz.x, sz.y, sz.z, 22);
+    return THREE.MathUtils.clamp(longest * 0.08 + 6, 9, 20);
   }
 
   function startCameraFit() {
     if (!introDone || transition) return;
     cameraFitTween = {
       wallSec0: morphWallSec(),
-      dur: REDUCED_MOTION ? 0.01 : 0.52,
+      dur: REDUCED_MOTION ? 0.01 : 0.92,
       cam0: camera.position.clone(),
       tgt0: controls.target.clone(),
       cam1: cam3dPos.clone(),
@@ -3091,7 +3124,7 @@ function init(host, detailEl, selectEl, shellEl) {
     autoRotateAnchorUuid = null;
     cameraFitTween = {
       wallSec0: morphWallSec(),
-      dur: REDUCED_MOTION ? 0.01 : 0.52,
+      dur: REDUCED_MOTION ? 0.01 : 0.92,
       cam0: camera.position.clone(),
       tgt0: controls.target.clone(),
       cam1: cam3dPos.clone(),
@@ -3552,6 +3585,7 @@ function init(host, detailEl, selectEl, shellEl) {
     key2d.visible = u > 0.2;
 
     host.classList.toggle("morph-canvas-host--solo", soloStage.visible);
+    host.classList.toggle("morph-canvas-host--compare", compareOn);
     host.classList.toggle("morph-canvas-host--wb", u > 0.88);
     if (shellEl) shellEl.classList.toggle("morphology-shell--wb", u > 0.88);
 
@@ -3567,6 +3601,20 @@ function init(host, detailEl, selectEl, shellEl) {
         if (line.material) line.material.opacity = 0;
         return;
       }
+      if (compareOn && morphCompareAttachedPair) {
+        const [cidA, cidB] = morphCompareAttachedPair;
+        const wida = line.userData.a?.userData?.wordId;
+        const widb = line.userData.b?.userData?.wordId;
+        const bridgesThisPair =
+          wida &&
+          widb &&
+          ((wida === cidA && widb === cidB) || (wida === cidB && widb === cidA));
+        if (!bridgesThisPair) {
+          line.visible = false;
+          if (line.material) line.material.opacity = 0;
+          return;
+        }
+      }
       if (line.material) line.material.opacity = isolate3d ? 0 : bridgeOpacity;
       line.visible = (!isolate3d && u < 0.92) || masterWeight > 0.08;
     });
@@ -3580,6 +3628,9 @@ function init(host, detailEl, selectEl, shellEl) {
       if (!g) continue;
       if (sid && w.id === sid && g.parent === soloStage) {
         g.position.set(0, 0, 0);
+      } else if (compareOn && g.parent === compareStage && g.userData.compareCentroidLocal) {
+        _posFrom.lerpVectors(posForViewKey(w, layoutKeyFrom), posForViewKey(w, layoutKeyTo), le);
+        g.position.copy(_posFrom).sub(/** @type {THREE.Vector3} */ (g.userData.compareCentroidLocal));
       } else {
         g.position.lerpVectors(posForViewKey(w, layoutKeyFrom), posForViewKey(w, layoutKeyTo), le);
       }
@@ -4066,7 +4117,7 @@ function init(host, detailEl, selectEl, shellEl) {
       const elapsedF = morphWallSec() - cameraFitTween.wallSec0;
       const d = Math.max(1e-5, cameraFitTween.dur);
       const ck = Math.min(1, elapsedF / d);
-      const ce = easeOutCubic(ck);
+      const ce = easeInOutCubic(ck);
       camera.position.lerpVectors(cameraFitTween.cam0, cameraFitTween.cam1, ce);
       controls.target.lerpVectors(cameraFitTween.tgt0, cameraFitTween.tgt1, ce);
       if (ck >= 1 || elapsedF >= cameraFitTween.dur - 1e-8) {
