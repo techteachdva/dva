@@ -21,7 +21,7 @@ contentClasses: morphology-page
       id="morph-canvas-host"
       class="morph-canvas-host"
       role="img"
-      aria-label="Morpheme trees: use Arrange / Surface toggles — garden vs master-links, then 3D vs whiteboard"
+      aria-label="Morpheme trees: use Arrange / Surface — garden, links, or compare; then 3D or whiteboard"
     ></div>
     <div class="morph-ui-panel">
       <div class="morph-ui-row morph-ui-row--meta" role="group" aria-label="Curriculum level">
@@ -41,7 +41,7 @@ contentClasses: morphology-page
           ❓
         </button>
       </div>
-      <div class="morph-ui-row morph-ui-row--toggle morph-ui-row--arrange" role="group" aria-label="Garden or master links layout">
+      <div class="morph-ui-row morph-ui-row--toggle morph-ui-row--arrange" role="group" aria-label="Garden, links, or compare two words">
         <span class="morph-ui-label">Arrange</span>
         <button
           type="button"
@@ -62,6 +62,16 @@ contentClasses: morphology-page
           aria-label="Master tree by links"
         >
           🔗
+        </button>
+        <button
+          type="button"
+          id="morph-btn-arr-compare"
+          class="morph-view-btn morph-view-btn--icon"
+          aria-pressed="false"
+          title="Compare — two word trees side by side; shared morphemes still bridge"
+          aria-label="Compare two words"
+        >
+          ⚖
         </button>
         <button
           type="button"
@@ -96,12 +106,18 @@ contentClasses: morphology-page
           ✔
         </button>
       </div>
-      <div class="morph-ui-row">
+      <div id="morph-word-row" class="morph-ui-row">
         <label for="morph-word-select">Word tree</label>
         <select id="morph-word-select" class="morph-select" aria-describedby="morph-hint"></select>
       </div>
+      <div id="morph-compare-row" class="morph-compare-row morph-ui-row" hidden aria-hidden="true">
+        <label for="morph-compare-a">Compare A</label>
+        <select id="morph-compare-a" class="morph-select morph-select--compare" title="First word in compare mode"></select>
+        <label for="morph-compare-b">Compare B</label>
+        <select id="morph-compare-b" class="morph-select morph-select--compare" title="Second word in compare mode"></select>
+      </div>
       <p id="morph-hint" class="morph-hint morph-hint--compact">
-        <strong>Tip:</strong> Use <strong>Arrange → Links</strong> for morpheme webs; <strong>Surface</strong> swaps 3D depth for a projector board — both pair independently.
+        <strong>Tip:</strong> Use <strong>Arrange → Links</strong> for morpheme webs, or <strong>⚖ Compare</strong> for two trees; <strong>Surface</strong> swaps 3D depth for a projector board — combine freely.
         Hover morphemes for gloss. Press <strong>❓ Help</strong> for controls ·
         <kbd>F</kbd> fit · <kbd>R</kbd> reset · <kbd>Space</kbd> orbit drift.
       </p>
@@ -139,6 +155,10 @@ contentClasses: morphology-page
               <li>
                 <strong>🔗 Links (master)</strong> — Compresses vocabulary into hubs so recurring morphemes are easy to chase;
                 magenta connectors show identities across clusters.
+              </li>
+              <li>
+                <strong>⚖ Compare</strong> — Pick two words from the level set; both trees stay visible side by side while
+                magenta bridges still link any morphemes the words share.
               </li>
               <li>
                 <strong>✔ Whiteboard</strong> — Side-elevation / schematic framing: cameras sit off to the side, trees tilt

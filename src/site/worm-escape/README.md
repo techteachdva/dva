@@ -66,3 +66,11 @@ worm-escape/
 ```
 
 See `CHANGELOG.txt` for version history.
+
+Music by
+"Level Up" Kevin MacLeod (incompetech.com)
+Licensed under Creative Commons: By Attribution 4.0 License
+http://creativecommons.org/licenses/by/4.0/
+
+Art by
+Dez

@@ -120,6 +120,15 @@ function cloneWordList(arr) {
   return JSON.parse(JSON.stringify(arr));
 }
 
+/**
+ * Where to extend this activity (hand-editing vocabulary):
+ *
+ * • Word records + bracket trees: `ALL_WORD_DATA` below (every word needs `id`, `label`, `bracket`,
+ *   `note`, `position:[x,y,z]` garden coordinates, `tree` nesting with optional `morphemeKey`).
+ * • Which band gets which lemmas: `CURRICULUM_IDS` (each key is a Set of ids from ALL_WORD_DATA).
+ * • Isolate mini-lesson blurbs: ../morphology-lessons-data.js `MORPH_DEEP_NOTES` keyed by the same ids.
+ */
+
 const ALL_WORD_DATA = [
   {
     id: "presentation",
@@ -1165,6 +1174,256 @@ const ALL_WORD_DATA = [
       ],
     },
   },
+  {
+    id: "teaching",
+    label: "Teaching",
+    bracket: "[teach + -ing]",
+    note: "Inflectional <strong>-ing</strong> on a verb stem — here it turns the verb <em>teach</em> into a noun naming the activity (contrast agentive <em>teacher</em> in the same family).",
+    position: [18, 0, 58],
+    tree: {
+      text: "teaching",
+      gloss: "noun: the act or profession of instructing",
+      children: [
+        {
+          text: "teach",
+          gloss: "free morpheme: to instruct",
+          morphemeKey: "lex:teach",
+          children: [],
+        },
+        {
+          text: "-ing",
+          gloss: "suffix: verb → noun or participle (inflectional in many grammars)",
+          morphemeKey: "sfx:-ing",
+          children: [],
+        },
+      ],
+    },
+  },
+  {
+    id: "playful",
+    label: "Playful",
+    bracket: "[play + -ful]",
+    note: "Adjectival <strong>-ful</strong> stacks on a noun/verb stem to mean ‘full of; characterized by’ — compare <em>careful</em> in this set.",
+    position: [-28, 0, 58],
+    tree: {
+      text: "playful",
+      gloss: "adjective: fond of play; lighthearted",
+      children: [
+        {
+          text: "play",
+          gloss: "free morpheme: game; to amuse oneself",
+          morphemeKey: "lex:play",
+          children: [],
+        },
+        {
+          text: "-ful",
+          gloss: "suffix: full of; characterized by",
+          morphemeKey: "sfx:-ful",
+          children: [],
+        },
+      ],
+    },
+  },
+  {
+    id: "snowball",
+    label: "Snowball",
+    bracket: "[snow + ball]",
+    note: "Endocentric compound like <em>baseball</em>: right-hand head <em>ball</em> names the object class; <em>snow</em> narrows the kind.",
+    position: [32, 0, 52],
+    tree: {
+      text: "snowball",
+      gloss: "noun: packed snow thrown as a ball",
+      children: [
+        {
+          text: "snow",
+          gloss: "free morpheme: frozen precipitation",
+          morphemeKey: "lex:snow",
+          children: [],
+        },
+        {
+          text: "ball",
+          gloss: "free morpheme: sphere; game object",
+          morphemeKey: "lex:ball",
+          children: [],
+        },
+      ],
+    },
+  },
+  {
+    id: "disable",
+    label: "Disable",
+    bracket: "[dis- + able]",
+    note: "Negative <strong>dis-</strong> + adjective stem <em>able</em> — parallel in shape to <em>enable</em>, and the <strong>-able</strong> family links to <em>readable</em>.",
+    position: [-52, 0, -18],
+    tree: {
+      text: "disable",
+      gloss: "verb: make unable; switch off",
+      children: [
+        {
+          text: "dis-",
+          gloss: "prefix: not; reversal (Latinate)",
+          morphemeKey: "pfx:dis-",
+          children: [],
+        },
+        {
+          text: "able",
+          gloss: "adjective stem: capable (cf. -able derivations)",
+          morphemeKey: "sfx:-able",
+          children: [],
+        },
+      ],
+    },
+  },
+  {
+    id: "nationalism",
+    label: "Nationalism",
+    bracket: "[[nation + -al] + -ism]",
+    note: "Layered Latinate abstract: relational <strong>-al</strong> on <em>nation</em>, then ideological <strong>-ism</strong> — compare <em>national</em> in the same band.",
+    position: [48, 0, -42],
+    tree: {
+      text: "nationalism",
+      gloss: "noun: doctrine or feeling centered on the nation",
+      children: [
+        {
+          text: "-ism",
+          gloss: "suffix: doctrine; movement; quality (derivational)",
+          morphemeKey: "sfx:-ism",
+          children: [
+            {
+              text: "national",
+              gloss: "adjective: of a nation",
+              children: [
+                {
+                  text: "nation",
+                  gloss: "free morpheme: country; people",
+                  morphemeKey: "lex:nation",
+                  children: [],
+                },
+                {
+                  text: "-al",
+                  gloss: "suffix: pertaining to (derivational)",
+                  morphemeKey: "sfx:-al",
+                  children: [],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    id: "international",
+    label: "International",
+    bracket: "[inter- + [nation + -al]]",
+    note: "Prefix <strong>inter-</strong> ‘between’ scopes over <em>national</em> — so the whole adjective is ‘between nations.’ Shares <em>nation</em> + <strong>-al</strong> with <em>national</em> and <em>nationalism</em>.",
+    position: [-44, 0, 46],
+    tree: {
+      text: "international",
+      gloss: "adjective: between or among nations",
+      children: [
+        {
+          text: "inter-",
+          gloss: "prefix: between; among (Latinate)",
+          morphemeKey: "pfx:inter-",
+          children: [],
+        },
+        {
+          text: "national",
+          gloss: "adjective stem: of a nation",
+          children: [
+            {
+              text: "nation",
+              gloss: "free morpheme: country; people",
+              morphemeKey: "lex:nation",
+              children: [],
+            },
+            {
+              text: "-al",
+              gloss: "suffix: pertaining to (derivational)",
+              morphemeKey: "sfx:-al",
+              children: [],
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    id: "portable",
+    label: "Portable",
+    bracket: "[port + -able]",
+    note: "Transparent <strong>port</strong> ‘carry’ + <strong>-able</strong> ‘able to be’ — same bound root as <em>transport</em>, same suffix family as <em>readable</em> / <em>inhospitable</em>.",
+    position: [42, 0, 16],
+    tree: {
+      text: "portable",
+      gloss: "adjective: able to be carried",
+      children: [
+        {
+          text: "port",
+          gloss: "bound root: carry (as in transport)",
+          morphemeKey: "root:port",
+          children: [],
+        },
+        {
+          text: "-able",
+          gloss: "suffix: able to be (derivational)",
+          morphemeKey: "sfx:-able",
+          children: [],
+        },
+      ],
+    },
+  },
+  {
+    id: "reuse",
+    label: "Reuse",
+    bracket: "[re- + use]",
+    note: "Productive <strong>re-</strong> ‘again; back’ on a Germanic verb stem — rhymes structurally with <em>revolution</em>’s prefix use in this list.",
+    position: [-46, 0, -32],
+    tree: {
+      text: "reuse",
+      gloss: "verb: use again",
+      children: [
+        {
+          text: "re-",
+          gloss: "prefix: again, back (Latinate pattern)",
+          morphemeKey: "pfx:re-",
+          children: [],
+        },
+        {
+          text: "use",
+          gloss: "free morpheme: employ; application",
+          morphemeKey: "lex:use",
+          children: [],
+        },
+      ],
+    },
+  },
+  {
+    id: "illegal",
+    label: "Illegal",
+    bracket: "[il- + legal]",
+    note: "Assimilated negative prefix (here <strong>il-</strong> before <em>l</em>) patterns with <strong>in-/im-/ir-</strong> — compare <em>invisible</em> and <em>inhospitable</em> for the same teaching point.",
+    position: [-52, 0, 14],
+    tree: {
+      text: "illegal",
+      gloss: "adjective: against the law",
+      children: [
+        {
+          text: "il-",
+          gloss: "prefix: not (assimilated allomorph of in-)",
+          morphemeKey: "pfx:in-",
+          children: [],
+        },
+        {
+          text: "legal",
+          gloss: "free morpheme: lawful; permitted",
+          morphemeKey: "lex:legal",
+          children: [],
+        },
+      ],
+    },
+  },
 ];
 
 const CURRICULUM_IDS = {
@@ -1181,6 +1440,9 @@ const CURRICULUM_IDS = {
     "unhappy",
     "teacher",
     "toothbrush",
+    "teaching",
+    "playful",
+    "snowball",
   ]),
   middle: new Set([
     "final",
@@ -1195,6 +1457,9 @@ const CURRICULUM_IDS = {
     "readable",
     "preview",
     "baseball",
+    "disable",
+    "nationalism",
+    "international",
   ]),
   high: new Set([
     "presentation",
@@ -1209,6 +1474,9 @@ const CURRICULUM_IDS = {
     "invisible",
     "predict",
     "transport",
+    "portable",
+    "reuse",
+    "illegal",
   ]),
 };
 
@@ -1228,6 +1496,8 @@ function assignGrid2d() {
       w.position[2] * POS3D_SCALE
     );
     if (!w.pos2d) w.pos2d = new THREE.Vector3();
+    if (!w.posCompare3d) w.posCompare3d = new THREE.Vector3();
+    if (!w.posCompareWb) w.posCompareWb = new THREE.Vector3();
   });
 }
 
@@ -1345,6 +1615,7 @@ function assignMasterTreeLayout(sceneCenter) {
  * Combined layout (“Garden…” / “Master…”) × surface (“…3d” = spatial rendering, “…Wb” = whiteboard skins).
  */
 function posForViewKey(w, key) {
+  if (key.startsWith("Compare")) return key.endsWith("Wb") ? w.posCompareWb : w.posCompare3d;
   if (key.startsWith("Master")) return w.posMaster;
   return key.endsWith("Wb") ? w.pos2d : w.pos3d;
 }
@@ -1354,6 +1625,7 @@ function blendForViewKey(key) {
 }
 
 function masterWtKey(key) {
+  if (key.startsWith("Compare")) return 0;
   return key.startsWith("Master") ? 1 : 0;
 }
 
@@ -1896,6 +2168,11 @@ function init(host, detailEl, selectEl, shellEl) {
   soloStage.visible = false;
   scene.add(soloStage);
 
+  const compareStage = new THREE.Group();
+  compareStage.name = "morph-compare-stage";
+  compareStage.visible = false;
+  scene.add(compareStage);
+
   const wordGroups = {};
   for (const w of WORDS) {
     const g = buildWordGroup(w);
@@ -1908,18 +2185,18 @@ function init(host, detailEl, selectEl, shellEl) {
   let morphGardenSoloWordId = null;
 
   /** Garden + one word picked: dedicate a separate subgraph so only that tree renders (not “everything hidden in place”). */
-  function morphGardenSoloShouldUse() {
+  function morphGardenSoloShouldUse(layoutKeyEffective = vk()) {
     return !!(
       selectEl &&
       selectEl.value !== "" &&
       selectEl.value !== GARDEN_SELECT &&
-      vk().startsWith("Garden")
+      layoutKeyEffective.startsWith("Garden")
     );
   }
 
   /** Reparent solo tree into `soloStage` (single-object scene cell) vs all trees under `gardenRoot`. */
-  function morphApplyGardenSoloStage() {
-    const want = morphGardenSoloShouldUse() ? /** @type {string} */ (selectEl?.value) : null;
+  function morphApplyGardenSoloStage(layoutKeyEffective = vk()) {
+    const want = morphGardenSoloShouldUse(layoutKeyEffective) ? /** @type {string} */ (selectEl?.value) : null;
     if (want === morphGardenSoloWordId) return;
 
     if (morphGardenSoloWordId) {
@@ -1927,7 +2204,7 @@ function init(host, detailEl, selectEl, shellEl) {
       const wPrev = WORDS.find((x) => x.id === morphGardenSoloWordId);
       if (prev) {
         gardenRoot.attach(prev);
-        if (wPrev) prev.position.copy(posForViewKey(wPrev, vk()));
+        if (wPrev) prev.position.copy(posForViewKey(wPrev, layoutKeyEffective));
         prev.updateMatrixWorld(true);
       }
     }
@@ -1949,8 +2226,112 @@ function init(host, detailEl, selectEl, shellEl) {
       gardenRoot.visible = false;
     } else {
       soloStage.visible = false;
-      gardenRoot.visible = true;
+      gardenRoot.visible = !compareStage.visible;
     }
+  }
+
+  /** @type {[string, string] | null} Two word ids docked side-by-side in Compare arrange. */
+  let morphCompareAttachedPair = null;
+
+  function detachCompareTrees() {
+    if (!morphCompareAttachedPair) return;
+    for (const id of morphCompareAttachedPair) {
+      const g = wordGroups[id];
+      const w = WORDS.find((x) => x.id === id);
+      if (g && w) {
+        gardenRoot.attach(g);
+        g.position.copy(w.pos3d);
+        g.updateMatrixWorld(true);
+      }
+    }
+    morphCompareAttachedPair = null;
+    compareStage.visible = false;
+  }
+
+  function refreshCompareSlotPositions(pa, pb) {
+    const wa = WORDS.find((x) => x.id === pa);
+    const wb = WORDS.find((x) => x.id === pb);
+    if (!wa || !wb) return;
+    const sep3d = 74 * POS3D_SCALE;
+    wa.posCompare3d.set(sceneCenter.x - sep3d * 0.5, sceneCenter.y, sceneCenter.z);
+    wb.posCompare3d.set(sceneCenter.x + sep3d * 0.5, sceneCenter.y, sceneCenter.z);
+    const sepW = WB_CIRCLE_RADIUS * 1.05;
+    wa.posCompareWb.set(-sepW * 0.5, -10, 0);
+    wb.posCompareWb.set(sepW * 0.5, -10, 0);
+  }
+
+  /** Garden + WB 3d: pairs two picker words inside `compareStage`; exclusive with solo isolate. */
+  function morphApplyCompareStage(layoutKeyEffective = vk()) {
+    if (!layoutKeyEffective.startsWith("Compare")) {
+      detachCompareTrees();
+      return;
+    }
+    const cmpSelA = document.getElementById("morph-compare-a");
+    const cmpSelB = document.getElementById("morph-compare-b");
+    /** @type {string} */
+    let pa =
+      cmpSelA?.value ||
+      WORDS[0]?.id ||
+      "";
+    /** @type {string} */
+    let pb =
+      cmpSelB?.value ||
+      WORDS[Math.min(1, Math.max(0, WORDS.length - 1))]?.id ||
+      "";
+    const valid = WORDS.some((x) => x.id === pa) && WORDS.some((x) => x.id === pb);
+    if (!valid || !pa || !pb) {
+      detachCompareTrees();
+      gardenRoot.visible = true;
+      return;
+    }
+    if (pa === pb && WORDS.length > 1) {
+      pb = WORDS.find((x) => x.id !== pa)?.id || pb;
+      if (cmpSelB && pb) cmpSelB.value = pb;
+    }
+    if (pa === pb) {
+      detachCompareTrees();
+      gardenRoot.visible = true;
+      return;
+    }
+
+    refreshCompareSlotPositions(pa, pb);
+    const ga0 = wordGroups[pa];
+    const gb0 = wordGroups[pb];
+    const sameAttached =
+      morphCompareAttachedPair?.[0] === pa &&
+      morphCompareAttachedPair?.[1] === pb &&
+      compareStage.visible &&
+      ga0 &&
+      gb0 &&
+      compareStage.children.indexOf(ga0) >= 0 &&
+      compareStage.children.indexOf(gb0) >= 0;
+    if (sameAttached) {
+      compareStage.visible = true;
+      gardenRoot.visible = false;
+      soloStage.visible = false;
+      return;
+    }
+
+    detachCompareTrees();
+    morphGardenSoloWordId = null;
+    soloStage.visible = false;
+
+    const ga = ga0;
+    const gb = gb0;
+    if (!ga || !gb) {
+      gardenRoot.visible = true;
+      return;
+    }
+
+    compareStage.attach(ga);
+    compareStage.attach(gb);
+    scene.updateMatrixWorld(true);
+    morphCompareAttachedPair = [pa, pb];
+    compareStage.visible = true;
+    gardenRoot.visible = false;
+
+    ga.updateMatrixWorld(true);
+    gb.updateMatrixWorld(true);
   }
 
   const bridges = buildBridgeLines(scene);
@@ -2027,7 +2408,7 @@ function init(host, detailEl, selectEl, shellEl) {
 
   computeMasterCamera();
 
-  /** @type {'Garden3d'|'GardenWb'|'Master3d'|'MasterWb'} Active camera/layout key after last completed transition */
+  /** @type {'Garden3d'|'GardenWb'|'Master3d'|'MasterWb'|'Compare3d'|'CompareWb'} */
   let viewKey = "Garden3d";
 
   /** Effective target key while tweening layout/surface */
@@ -2249,26 +2630,34 @@ function init(host, detailEl, selectEl, shellEl) {
     controls.update();
   }
 
-  function syncCam3dToWord(id) {
-    const g = wordGroups[id];
-    if (!g) return;
-
+  function computeCamFitFromWordGroup(
+    /** @type {THREE.Object3D} */ g,
+    /** @type {{ orbitBiasMesh?: THREE.Vector3; orbitBiasWeight?: number }} */ opts = {}
+  ) {
     scene.updateMatrixWorld(true);
     _morphFitBox.setFromObject(g);
+    /** Treat solo isolate and side-by-side compare trees like “single-shot” framing (bounding sphere). */
+    const isFocusedTree = g.parent === soloStage || g.parent === compareStage;
+    _morphFitBox.expandByScalar(isFocusedTree ? 16 : 5);
 
-    const isSolo = g.parent === soloStage;
-    _morphFitBox.expandByScalar(isSolo ? 16 : 5);
+    const biasPt = opts.orbitBiasMesh;
+    const biasW = THREE.MathUtils.clamp(opts.orbitBiasWeight ?? 0, 0, 1);
 
-    if (!isSolo) {
+    if (!isFocusedTree) {
       const c = _morphFitBox.getCenter(_morphFitCenter);
       const sz = _morphFitBox.getSize(_morphFitSize);
       const ext = Math.max(sz.x, sz.y, sz.z, 14);
-      cam3dTarget.copy(c);
-      cam3dPos.copy(c).add(new THREE.Vector3(ext * 0.48, ext * 0.36, ext * 0.68));
-      return;
+      const tgt = biasPt && biasW > 0 ? c.clone().lerp(biasPt, biasW) : c;
+      const wb = smoothstep(viewBlend) > 0.85;
+      const offsetDir = new THREE.Vector3(ext * 0.48, ext * 0.36, ext * 0.68);
+      const cam = tgt.clone().add(offsetDir);
+      const minCamDist = wb ? Math.max(46, controls.minDistance * 1.08) : Math.max(16, controls.minDistance * 1.05);
+      if (cam.distanceTo(tgt) < minCamDist) {
+        cam.sub(tgt).normalize().multiplyScalar(minCamDist).add(tgt);
+      }
+      return { tgt, cam };
     }
 
-    /** Fit spherical hull of bounded tree box to Perspective frustum edges (solo view). */
     _morphFitBox.getBoundingSphere(_morphFitSphere);
     let rEff = Math.max(_morphFitSphere.radius, 14);
     rEff *= 1.1;
@@ -2280,14 +2669,56 @@ function init(host, detailEl, selectEl, shellEl) {
     const vRad = THREE.MathUtils.degToRad(vDeg);
     const asp = camera.aspect || 1;
     const th = Math.tan(vRad / 2);
-    /** Three.js PerspectiveCamera maps vertical aperture to aspect-scaled horizontal width. */
     const distY = rEff / th;
     const distX = rEff / (th * asp);
     const pull = Math.max(distX, distY, rEff * 3.05 + 6);
 
-    cam3dTarget.copy(_morphFitSphere.center);
+    const center = _morphFitSphere.center.clone();
+    const tgt = biasPt && biasW > 0 ? center.lerp(biasPt, biasW) : center;
     const dir = new THREE.Vector3(1.06, 0.55, 0.92).normalize();
-    cam3dPos.copy(cam3dTarget).addScaledVector(dir, pull);
+    const cam = tgt.clone().addScaledVector(dir, pull);
+    return { tgt, cam };
+  }
+
+  function syncCam3dToWord(id) {
+    const g = wordGroups[id];
+    if (!g) return;
+    const o = computeCamFitFromWordGroup(g, {});
+    cam3dTarget.copy(o.tgt);
+    cam3dPos.copy(o.cam);
+  }
+
+  function syncCam3dCompare() {
+    scene.updateMatrixWorld(true);
+    const box = new THREE.Box3();
+    let any = false;
+    for (const ch of compareStage.children) {
+      if (!ch.visible) continue;
+      const b = new THREE.Box3().setFromObject(ch);
+      if (!b.isEmpty()) {
+        if (!any) {
+          box.copy(b);
+          any = true;
+        } else box.union(b);
+      }
+    }
+    if (!any) {
+      cam3dTarget.copy(sceneCenter);
+      cam3dPos.set(sceneCenter.x + 8, sceneCenter.y + 48, sceneCenter.z + 142);
+      return;
+    }
+    box.expandByScalar(12);
+    const c = box.getCenter(_morphFitCenter);
+    const sz = box.getSize(_morphFitSize);
+    const ext = Math.max(sz.x, sz.y, sz.z, 18);
+    cam3dTarget.copy(c);
+    const wb = smoothstep(viewBlend) > 0.85;
+    const offset = new THREE.Vector3(ext * 0.48, ext * 0.36, ext * 0.68);
+    cam3dPos.copy(c).add(offset);
+    const minCamDist = wb ? Math.max(46, controls.minDistance * 1.08) : Math.max(16, controls.minDistance * 1.05);
+    if (cam3dPos.distanceTo(cam3dTarget) < minCamDist) {
+      cam3dPos.sub(cam3dTarget).normalize().multiplyScalar(minCamDist).add(cam3dTarget);
+    }
   }
 
   function startCameraFit() {
@@ -2352,7 +2783,9 @@ function init(host, detailEl, selectEl, shellEl) {
     cameraFitTween = null;
     controls.autoRotate = false;
     autoRotateAnchorUuid = null;
-    if (vk().endsWith("Wb")) {
+    if (vk().startsWith("Compare")) {
+      syncCam3dCompare();
+    } else if (vk().endsWith("Wb")) {
       const wb = wbSideCameraPair(vk().startsWith("Master"));
       cam3dPos.copy(wb.cam);
       cam3dTarget.copy(wb.tgt);
@@ -2368,28 +2801,52 @@ function init(host, detailEl, selectEl, shellEl) {
     startCameraFit();
   }
 
-  function applyScopeVisibility() {
+  function applyScopeVisibility(layoutKeyEffective = vk()) {
     const garden = isGardenScope();
     const isolate =
       !!(selectEl && selectEl.value !== "" && selectEl.value !== GARDEN_SELECT);
+    const compareOn = layoutKeyEffective.startsWith("Compare");
+
+    morphApplyCompareStage(layoutKeyEffective);
+
+    const compareIdsOk =
+      !!(morphCompareAttachedPair?.[0] && morphCompareAttachedPair?.[1]);
+
+    morphApplyGardenSoloStage(layoutKeyEffective);
+
+    const masterAll = layoutKeyEffective.startsWith("Master") && !isolate;
 
     for (const w of WORDS) {
       const g = wordGroups[w.id];
       if (!g) continue;
-      g.visible = garden || !!(selectEl && w.id === selectEl.value);
+
+      let vis = garden || !!(selectEl && w.id === selectEl.value);
+
+      if (compareOn && compareIdsOk) {
+        vis = !!(w.id === morphCompareAttachedPair?.[0] || w.id === morphCompareAttachedPair?.[1]);
+      } else if (masterAll) {
+        vis = true;
+      }
+      g.visible = vis;
     }
-    // Master/links layout normally needs every hub visible (“all trees” picker). Respect an explicit single-word isolate.
-    if (vk().startsWith("Master") && !isolate) {
+    // Master/links layout normally needs every hub visible (“all trees” picker).
+    // Compare mode shows exactly two graphs; isolation / compare override the hub visibility rules.
+    if (masterAll && !compareOn) {
       for (const w of WORDS) {
         const g = wordGroups[w.id];
         if (g) g.visible = true;
       }
     }
-    rebuildGardenHints(garden ? null : selectEl?.value || null);
-    morphApplyGardenSoloStage();
+    rebuildGardenHints(
+      compareOn ? null : garden ? null : selectEl?.value || null
+    );
   }
 
   function flyToActiveView() {
+    if (vk().startsWith("Compare")) {
+      syncCam3dCompare();
+      return;
+    }
     if (isGardenScope()) flyToOverview();
     else if (selectEl) flyToWord(selectEl.value);
   }
@@ -2439,8 +2896,91 @@ function init(host, detailEl, selectEl, shellEl) {
     });
   }
 
+  function fillCompareDetail(/** @type {string} */ idA, /** @type {string} */ idB) {
+    const wa = WORDS.find((x) => x.id === idA);
+    const wb = WORDS.find((x) => x.id === idB);
+    if (!wa || !wb || !detailEl) return;
+    configureLessonWordLookup((id) => WORDS.find((x) => x.id === id)?.label || id);
+    const la = renderMorphLessonHtml(wa, morphemeRegistry);
+    const lb = renderMorphLessonHtml(wb, morphemeRegistry);
+    let html = `<div class="morph-detail-compare">`;
+    html += `<div class="morph-detail-compare__col">${la}<section class="morph-word-note"><h4 class="morph-word-note__h">Morphology note</h4><div class="morph-word-note__body">${wa.note}</div>`;
+    if (wa.context) html += `<p class="morph-context">${wa.context}</p>`;
+    html += `</section></div>`;
+    html += `<div class="morph-detail-compare__col">${lb}<section class="morph-word-note"><h4 class="morph-word-note__h">Morphology note</h4><div class="morph-word-note__body">${wb.note}</div>`;
+    if (wb.context) html += `<p class="morph-context">${wb.context}</p>`;
+    html += `</section></div></div>`;
+    detailEl.innerHTML = html;
+    detailEl.classList.add("morph-detail--word-focus");
+    morphDockDetailToViewer();
+    requestAnimationFrame(() => {
+      const inFs =
+        !!(
+          typeof document !== "undefined" &&
+          (document.fullscreenElement ||
+            /** @type {Document & { webkitFullscreenElement?: Element | null }} */ (document)
+              .webkitFullscreenElement)
+        ) || document.documentElement.classList.contains("morph-immersive-open");
+      if (!inFs) {
+        detailEl?.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
+      }
+    });
+  }
+
+  function morphPopulateCompareSelectors() {
+    const cmpA = /** @type {HTMLSelectElement | null} */ (document.getElementById("morph-compare-a"));
+    const cmpB = /** @type {HTMLSelectElement | null} */ (document.getElementById("morph-compare-b"));
+    if (!cmpA || !cmpB) return;
+    const opts = WORDS.map((w) => `<option value="${w.id}">${w.label}</option>`).join("");
+    cmpA.innerHTML = opts;
+    cmpB.innerHTML = opts;
+    cmpA.value = WORDS[0]?.id ?? "";
+    if (WORDS.length > 1) {
+      cmpB.value = WORDS[1]?.id ?? cmpA.value;
+      if (cmpB.value === cmpA.value)
+        cmpB.value = WORDS.find((w) => w.id !== cmpA.value)?.id ?? cmpA.value;
+    } else cmpB.value = cmpA.value;
+  }
+
+  function morphSyncCompareChange() {
+    applyScopeVisibility();
+    if (introDone && !transition && vk().startsWith("Compare")) {
+      syncCam3dCompare();
+      startCameraFit();
+    }
+    fillDetailFromSelect();
+  }
+
+  function morphSyncArrangeUi() {
+    const k = transition?.toKey ?? viewKey;
+    const cmpOn = k.startsWith("Compare");
+    const rowWord = document.getElementById("morph-word-row");
+    const rowCmp = document.getElementById("morph-compare-row");
+    if (rowWord) {
+      rowWord.toggleAttribute("hidden", cmpOn);
+      rowWord.setAttribute("aria-hidden", cmpOn ? "true" : "false");
+    }
+    if (rowCmp) {
+      rowCmp.toggleAttribute("hidden", !cmpOn);
+      rowCmp.setAttribute("aria-hidden", cmpOn ? "false" : "true");
+    }
+    shellEl?.classList.toggle("morphology-shell--arrange-compare", cmpOn);
+  }
+
   function fillDetailFromSelect() {
     if (!detailEl) return;
+    if (vk().startsWith("Compare")) {
+      const pa = document.getElementById("morph-compare-a")?.value || "";
+      const pb = document.getElementById("morph-compare-b")?.value || "";
+      if (pa && pb && pa !== pb) {
+        fillCompareDetail(pa, pb);
+        return;
+      }
+      detailEl.classList.remove("morph-detail--word-focus");
+      morphDockDetailToViewer();
+      detailEl.innerHTML = `<p><strong>Compare (⚖)</strong> — choose two <em>different</em> words with the selectors below. Trees sit side by side; magenta bridges still link shared morphemes. Switch <strong>Surface</strong> for 3D depth or whiteboard projection.</p>`;
+      return;
+    }
     if (vk().startsWith("Master")) {
       if (selectEl && selectEl.value !== GARDEN_SELECT) {
         fillDetail(selectEl.value);
@@ -2489,7 +3029,18 @@ function init(host, detailEl, selectEl, shellEl) {
     morphPop.querySelectorAll(".morph-morpheme-pop__pick").forEach((btn) => {
       btn.addEventListener("click", () => {
         const sid = btn.getAttribute("data-morph-sel");
-        if (selectEl && sid) {
+        if (!sid) {
+          hideMorphemePop();
+          return;
+        }
+        if (vk().startsWith("Compare")) {
+          const cmpA = /** @type {HTMLSelectElement | null} */ (document.getElementById("morph-compare-a"));
+          const cmpB = /** @type {HTMLSelectElement | null} */ (document.getElementById("morph-compare-b"));
+          const curA = cmpA?.value;
+          if (curA && curA !== sid && cmpB) cmpB.value = sid;
+          else if (cmpA) cmpA.value = sid;
+          morphSyncCompareChange();
+        } else if (selectEl) {
           selectEl.value = sid;
           selectEl.dispatchEvent(new Event("change", { bubbles: true }));
         }
@@ -2527,18 +3078,13 @@ function init(host, detailEl, selectEl, shellEl) {
     clearWbPrune(g);
     hideMorphemePop();
 
-    _morphFitBox.setFromObject(g);
-    _morphFitBox.expandByScalar(5);
-    const c = _morphFitBox.getCenter(_morphFitCenter);
-    const sz = _morphFitBox.getSize(_morphFitSize);
-    const ext = Math.max(sz.x, sz.y, sz.z, 14);
     mesh.getWorldPosition(_orbitDblClickTarget);
-    cam3dTarget.copy(c).lerp(_orbitDblClickTarget, 0.4);
-    const wb = smoothstep(viewBlend) > 0.85;
-    const offset = new THREE.Vector3(ext * 0.52, ext * 0.38, ext * 0.72);
-    const minCamDist = wb ? Math.max(46, controls.minDistance * 1.08) : Math.max(16, controls.minDistance * 1.05);
-    if (offset.length() < minCamDist) offset.multiplyScalar(minCamDist / offset.length());
-    cam3dPos.copy(cam3dTarget).add(offset);
+    const o = computeCamFitFromWordGroup(g, {
+      orbitBiasMesh: _orbitDblClickTarget.clone(),
+      orbitBiasWeight: 0.38,
+    });
+    cam3dTarget.copy(o.tgt);
+    cam3dPos.copy(o.cam);
 
     morphInspectActive = false;
     controls.autoRotate = false;
@@ -2646,16 +3192,25 @@ function init(host, detailEl, selectEl, shellEl) {
       for (const w of WORDS) clearWbPrune(wordGroups[w.id]);
       applyScopeVisibility();
       fillDetailFromSelect();
-      if ((vk().startsWith("Garden") || vk().startsWith("Master")) && !transition) {
-        if (introDone) {
-          if (isGardenScope()) syncCamGardenOverview();
-          else if (selectEl) syncCam3dToWord(selectEl.value);
-          startCameraFit();
-        } else if (vk().startsWith("Garden")) {
-          flyToActiveView();
+      if (!transition && introDone) {
+        if (vk().startsWith("Compare")) {
+          syncCam3dCompare();
+        } else if (isGardenScope()) {
+          syncCamGardenOverview();
+        } else if (selectEl) {
+          syncCam3dToWord(selectEl.value);
         }
+        if (vk().startsWith("Garden") || vk().startsWith("Master") || vk().startsWith("Compare")) {
+          startCameraFit();
+        }
+      } else if (!transition && !introDone && vk().startsWith("Garden")) {
+        flyToActiveView();
       }
     });
+    morphPopulateCompareSelectors();
+    document.getElementById("morph-compare-a")?.addEventListener("change", () => morphSyncCompareChange());
+    document.getElementById("morph-compare-b")?.addEventListener("change", () => morphSyncCompareChange());
+    morphSyncArrangeUi();
     applyScopeVisibility();
     fillDetailFromSelect();
     flyToOverview();
@@ -2847,8 +3402,9 @@ function init(host, detailEl, selectEl, shellEl) {
     if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
     const k = ev.key.toLowerCase();
     if (k === "f") {
-      if ((vk().startsWith("Garden") || vk().startsWith("Master")) && !transition) {
-        if (isGardenScope()) syncCamGardenOverview();
+      if ((vk().startsWith("Garden") || vk().startsWith("Master") || vk().startsWith("Compare")) && !transition) {
+        if (vk().startsWith("Compare")) syncCam3dCompare();
+        else if (isGardenScope()) syncCamGardenOverview();
         else if (selectEl) syncCam3dToWord(selectEl.value);
         startCameraFit();
       }
@@ -2873,6 +3429,7 @@ function init(host, detailEl, selectEl, shellEl) {
 
   const btnArrGarden = document.getElementById("morph-btn-arr-garden");
   const btnArrMaster = document.getElementById("morph-btn-arr-master");
+  const btnArrCompare = document.getElementById("morph-btn-arr-compare");
   const btnSurf3d = document.getElementById("morph-btn-surf-3d");
   const btnSurfWb = document.getElementById("morph-btn-surf-wb");
 
@@ -2886,6 +3443,10 @@ function init(host, detailEl, selectEl, shellEl) {
       btnArrMaster.classList.toggle("morph-view-btn--active", k.startsWith("Master"));
       btnArrMaster.setAttribute("aria-pressed", k.startsWith("Master").toString());
     }
+    if (btnArrCompare) {
+      btnArrCompare.classList.toggle("morph-view-btn--active", k.startsWith("Compare"));
+      btnArrCompare.setAttribute("aria-pressed", k.startsWith("Compare").toString());
+    }
     if (btnSurf3d) {
       btnSurf3d.classList.toggle("morph-view-btn--active", k.endsWith("3d"));
       btnSurf3d.setAttribute("aria-pressed", k.endsWith("3d").toString());
@@ -2897,6 +3458,10 @@ function init(host, detailEl, selectEl, shellEl) {
   }
 
   function camerasForTransitionEnd(/** @type {string} */ key) {
+    if (key.startsWith("Compare")) {
+      syncCam3dCompare();
+      return { cam: cam3dPos.clone(), tgt: cam3dTarget.clone() };
+    }
     if (key.endsWith("Wb")) {
       const wb = wbSideCameraPair(key.startsWith("Master"));
       return { cam: wb.cam.clone(), tgt: wb.tgt.clone() };
@@ -2917,6 +3482,8 @@ function init(host, detailEl, selectEl, shellEl) {
     controls.autoRotate = false;
     autoRotateAnchorUuid = null;
 
+    applyScopeVisibility(toKey);
+
     const cam0 = camera.position.clone();
     const tgt0 = controls.target.clone();
     const end = camerasForTransitionEnd(toKey);
@@ -2930,9 +3497,9 @@ function init(host, detailEl, selectEl, shellEl) {
       cam1: end.cam,
       tgt1: end.tgt,
     };
-    applyScopeVisibility();
     fillDetailFromSelect();
     setViewButtons();
+    morphSyncArrangeUi();
   }
 
   btnArrGarden?.addEventListener("click", () => {
@@ -2943,13 +3510,22 @@ function init(host, detailEl, selectEl, shellEl) {
     const wb = vk().endsWith("Wb");
     transitionToKey(wb ? "MasterWb" : "Master3d");
   });
+  btnArrCompare?.addEventListener("click", () => {
+    const wb = vk().endsWith("Wb");
+    transitionToKey(wb ? "CompareWb" : "Compare3d");
+  });
   btnSurf3d?.addEventListener("click", () => {
-    const m = vk().startsWith("Master");
-    transitionToKey(m ? "Master3d" : "Garden3d");
+    const wbTail = vk().endsWith("Wb");
+    if (!wbTail) return;
+    if (vk().startsWith("Master")) transitionToKey("Master3d");
+    else if (vk().startsWith("Compare")) transitionToKey("Compare3d");
+    else transitionToKey("Garden3d");
   });
   btnSurfWb?.addEventListener("click", () => {
-    const m = vk().startsWith("Master");
-    transitionToKey(m ? "MasterWb" : "GardenWb");
+    if (vk().endsWith("Wb")) return;
+    if (vk().startsWith("Master")) transitionToKey("MasterWb");
+    else if (vk().startsWith("Compare")) transitionToKey("CompareWb");
+    else transitionToKey("GardenWb");
   });
 
   function applyVisualTheme(
@@ -2962,10 +3538,12 @@ function init(host, detailEl, selectEl, shellEl) {
     scene.background.copy(bg3d).lerp(bg2d, u);
 
     const isolateWord =
-      !!(selectEl && selectEl.value !== "" && selectEl.value !== GARDEN_SELECT);
+      !!(selectEl && selectEl.value !== "" && selectEl.value !== GARDEN_SELECT) &&
+      !vk().startsWith("Compare");
     const gardenSolo = morphGardenSoloShouldUse();
+    const compareOn = vk().startsWith("Compare");
 
-    grid.visible = !gardenSolo && !isolateWord && u < 0.35;
+    grid.visible = !gardenSolo && !isolateWord && !compareOn && u < 0.35;
     ambient3d.intensity = 0.38 * (1 - u);
     key3d.intensity = 1.1 * (1 - u);
     rim3d.intensity = 0.85 * (1 - u);

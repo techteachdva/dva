@@ -836,6 +836,43 @@ html.morph-immersive-open body {
   outline: 1px solid rgba(125, 211, 252, 0.2);
 }
 
+/* Compare mode: two stacked mini-lessons below the canvas */
+.morph-detail-compare {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem 1.35rem;
+  align-items: start;
+}
+
+@media (max-width: 44rem) {
+  .morph-detail-compare {
+    grid-template-columns: 1fr;
+  }
+}
+
+.morph-detail-compare__col .morph-detail-lesson--flank {
+  grid-template-columns: 1fr;
+}
+
+.morph-compare-row {
+  gap: 0.45rem 1rem;
+}
+
+.morph-compare-row label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--morph-chrome);
+}
+
+.morph-compare-row .morph-select--compare {
+  min-width: 8.5rem;
+  flex: 1 1 7rem;
+}
+
+.morphology-shell--wb .morph-compare-row label {
+  color: #0f172a;
+}
+
 /* Mini-lesson: two-panel layout below main canvas (narrow viewports stack columns) */
 
 .morph-detail:not(.morph-detail--viewer-dock) .morph-detail-lesson--flank {

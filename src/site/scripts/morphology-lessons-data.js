@@ -295,6 +295,84 @@ export const MORPH_DEEP_NOTES = {
       { segment: "port", origin: "Latin ‘carry’ — compare <em>portage, import</em>." },
     ],
   },
+  teaching: {
+    summary:
+      "<strong>teach</strong> + <strong>-ing</strong> — a classroom-friendly hinge between verb grammar and noun vocabulary: <em>-ing</em> can mark participles/gerunds and related derived nouns depending on framing.",
+    etymology: [
+      { segment: "teach", origin: "Germanic verb stem — compare <em>teacher</em> in this set (+ agentive <strong>-er</strong>)." },
+      { segment: "-ing", origin: "Productive verbal suffix layer — pair with tense inflection on finite verbs separately." },
+    ],
+    tense: "Contrast finite verb agreement/tense with this nominal use built on the same stem.",
+  },
+  playful: {
+    summary:
+      "<strong>play</strong> + adjectival <strong>-ful</strong> (‘full of; characterized by’) — transparently related to noun/verb <em>play</em> and parallels <em>careful</em>.",
+    etymology: [
+      { segment: "play", origin: "Germanic content morpheme." },
+      { segment: "-ful", origin: AFFIX_ORIGIN_HINT["sfx:-ful"] },
+    ],
+  },
+  snowball: {
+    summary:
+      "<strong>snow</strong> + <strong>ball</strong> endocentric compound — class is ‘ball,’ modifier narrows materials; parallels other object compounds in athletics vocabulary.",
+    embedded: [
+      { text: "snow", note: "Free noun modifier." },
+      { text: "ball", note: "Head noun — also bridges to <em>baseball</em> in elementary band." },
+    ],
+  },
+  disable: {
+    summary:
+      "<strong>dis-</strong> + stem built on <strong>able</strong> — teach alongside <em>enable</em> and the <strong>-able</strong> adjective family (<em>readable, portable</em>).",
+    etymology: [
+      { segment: "dis-", origin: "Latinate separation/negation — patterns vary by base; contrast Germanic <strong>un-</strong> pairs." },
+      { segment: "able", origin: "Adjective stem echoed in suffix <strong>-able</strong>." },
+    ],
+  },
+  nationalism: {
+    summary:
+      "Layered abstract noun: relational <strong>-al</strong> on <em>nation</em>, then ideological <strong>-ism</strong>; compare sibling adjective <em>national</em> and prefixed <em>international</em>.",
+    etymology: [
+      { segment: "nation", origin: "Latinate noun base ‘people / country.’" },
+      { segment: "-al", origin: AFFIX_ORIGIN_HINT["sfx:-al"] },
+      { segment: "-ism", origin: "Doctrine / ideology / movement suffix (<strong>-ism</strong>)." },
+    ],
+    formation:
+      "<strong>nation → national → nationalism</strong> shows stacking outward: inner layers build the stem the outer ideology suffix names.",
+  },
+  international: {
+    summary:
+      "<strong>inter-</strong> ‘between’ scopes over adjective <em>national</em> built from <strong>nation + -al</strong> — a clear prefix-scope lesson beside <em>nation / nationalism</em>.",
+    etymology: [
+      { segment: "inter-", origin: "Latin ‘between / among.’" },
+      { segment: "nation", origin: "Shared base across <em>national, nationalism</em>." },
+      { segment: "-al", origin: AFFIX_ORIGIN_HINT["sfx:-al"] },
+    ],
+  },
+  portable: {
+    summary:
+      "Bound stem <strong>port</strong> ‘carry’ + <strong>-able</strong> — same root strand as <em>transport</em>; suffix family ties to readability / possibility adjectives.",
+    etymology: [
+      { segment: "port", origin: "Latin ‘carry’ — compare explicit trans- framing in <em>transport</em>." },
+      { segment: "-able", origin: AFFIX_ORIGIN_HINT["sfx:-able"] },
+    ],
+  },
+  reuse: {
+    summary:
+      "<strong>re-</strong> ‘again; back’ on Germanic verb <em>use</em> — productive prefix for ecology / drafting vocabulary (<em>rewrite, rethink</em>).",
+    etymology: [
+      { segment: "re-", origin: AFFIX_ORIGIN_HINT["pfx:re-"] },
+      { segment: "use", origin: "Germanic verb/noun stem still free in modern English." },
+    ],
+  },
+  illegal: {
+    summary:
+      "Assimilated negative prefix <strong>il-</strong> + <strong>legal</strong> — classic allomorph drill with <em>im-, in-, ir-</em>; compare <em>inhospitable, invisible</em> in richer sets.",
+    etymology: [
+      { segment: "il-", origin: AFFIX_ORIGIN_HINT["pfx:in-"] },
+      { segment: "legal", origin: "Latinate stem ‘law’ via French — bound in many classroom analyses though modern <em>legal</em> is free." },
+    ],
+    formation: "Assimilation adjusts the consonant of the prefix to match the following segment — good spelling anchor, not ornament.",
+  },
 };
 
 /**
