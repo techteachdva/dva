@@ -2041,7 +2041,9 @@ let morphTourCtl = /** @type {{ open: () => void; autoTry: (delayMs?: number) =>
 });
 
 /**
- * Guided UI tour — mounted on `document.body` so it appears above fullscreen immersive shells.
+ * Guided UI tour — usually on `document.body` (above CSS immersive shell via z-index). When the page
+ * uses the Fullscreen API on the morphology shell/host, reparent into `fullscreenElement` so steps
+ * and spotlight render on the fullscreen layer, not the page underneath.
  * @returns {{ open: () => void, autoTry: (delayMs?: number) => void }}
  */
 function morphInstallGuidedTour() {
@@ -2128,6 +2130,26 @@ function morphInstallGuidedTour() {
     window.visualViewport?.addEventListener?.("scroll", morphTourReflow);
   }
 
+  function morphTourFullscreenElement() {
+    return (
+      document.fullscreenElement ||
+      /** @type {Document & { webkitFullscreenElement?: Element | null }} */ (document).webkitFullscreenElement ||
+      null
+    );
+  }
+
+  /** Keep the overlay under the morphology fullscreen subtree when element fullscreen is active. */
+  function morphTourSyncMountParent() {
+    if (!wrap) return;
+    const fe = morphTourFullscreenElement();
+    const morphHost = document.getElementById("morph-canvas-host");
+    const parent =
+      fe instanceof HTMLElement && morphHost instanceof HTMLElement && fe.contains(morphHost)
+        ? fe
+        : document.body;
+    if (wrap.parentElement !== parent) parent.appendChild(wrap);
+  }
+
   let activeIx = 0;
 
   /** @returns {MorphTourStep | undefined} */
@@ -2157,6 +2179,7 @@ function morphInstallGuidedTour() {
 
   function morphTourReflow() {
     if (!wrap || wrap.classList.contains("morph-guided-tour--hidden")) return;
+    morphTourSyncMountParent();
     const step = morphTourCurrent();
     const spotlight = /** @type {HTMLElement | null} */ (document.getElementById("morph-guided-tour-spotlight"));
     const cardEl = wrap.querySelector(".morph-guided-tour__card");
@@ -2214,6 +2237,14 @@ function morphInstallGuidedTour() {
     });
   }
 
+  function morphTourOnFullscreenMaybe() {
+    morphTourSyncMountParent();
+    morphTourReflow();
+  }
+
+  document.addEventListener("fullscreenchange", morphTourOnFullscreenMaybe);
+  document.addEventListener("webkitfullscreenchange", morphTourOnFullscreenMaybe);
+
   /** @param {KeyboardEvent} ev */
   function morphTourOnKeydown(ev) {
     if (!wrap || wrap.classList.contains("morph-guided-tour--hidden")) return;
@@ -2229,6 +2260,7 @@ function morphInstallGuidedTour() {
   function morphTourHide(markDone = false) {
     if (!wrap) return;
     wrap.classList.add("morph-guided-tour--hidden");
+    document.body.appendChild(wrap);
     document.body.style.overflow = "";
     if (markDone) {
       try {
@@ -2274,6 +2306,7 @@ function morphInstallGuidedTour() {
       typeof document !== "undefined" ? document.activeElement : null
     );
     activeIx = 0;
+    morphTourSyncMountParent();
     wrap.classList.remove("morph-guided-tour--hidden");
     document.body.style.overflow = "hidden";
     morphTourStep(0);
