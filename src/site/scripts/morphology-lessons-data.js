@@ -317,7 +317,7 @@ export const MORPH_DEEP_NOTES = {
       "<strong>snow</strong> + <strong>ball</strong> endocentric compound — class is ‘ball,’ modifier narrows materials; parallels other object compounds in athletics vocabulary.",
     embedded: [
       { text: "snow", note: "Free noun modifier." },
-      { text: "ball", note: "Head noun — also bridges to <em>baseball</em> in elementary band." },
+      { text: "ball", note: "Head noun — also bridges to <em>baseball</em> in the Tier 1 set." },
     ],
   },
   disable: {

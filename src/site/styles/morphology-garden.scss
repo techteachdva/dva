@@ -1699,10 +1699,11 @@ html.morph-immersive-open body {
 }
 
 .morph-select--curriculum {
-  max-width: min(100%, 13rem);
+  max-width: min(100%, 19rem);
 }
 
-.morph-help-btn {
+.morph-help-btn,
+.morph-tour-btn {
   font: inherit;
   font-size: 1.25rem;
   line-height: 1;
@@ -1715,23 +1716,165 @@ html.morph-immersive-open body {
   transition: border-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
 }
 
-.morph-help-btn:hover {
+.morph-help-btn:hover,
+.morph-tour-btn:hover {
   border-color: rgba(255, 208, 96, 0.55);
   box-shadow: 0 0 16px rgba(255, 106, 213, 0.25);
 }
 
-.morph-help-btn:focus-visible {
+.morph-help-btn:focus-visible,
+.morph-tour-btn:focus-visible {
   outline: 2px solid var(--morph-gold);
   outline-offset: 2px;
 }
 
-.morph-help-btn:active {
+.morph-help-btn:active,
+.morph-tour-btn:active {
   transform: scale(0.96);
 }
 
-.morphology-shell--wb .morph-help-btn {
+.morphology-shell--wb .morph-help-btn,
+.morphology-shell--wb .morph-tour-btn {
   background: #fff;
   border-color: #94a3b8;
+}
+
+/* First-run spotlight tour (replay: 📖) */
+.morph-guided-tour {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483100;
+  pointer-events: none;
+}
+
+.morph-guided-tour--hidden {
+  display: none;
+}
+
+.morph-guided-tour:not(.morph-guided-tour--hidden) {
+  pointer-events: auto;
+}
+
+.morph-guided-tour__backdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  background: rgba(4, 8, 18, 0.45);
+}
+
+.morph-guided-tour__spotlight {
+  position: fixed;
+  z-index: 1;
+  box-sizing: border-box;
+  border-radius: 12px;
+  pointer-events: none;
+  box-shadow:
+    0 0 0 2px rgba(200, 244, 255, 0.42),
+    0 0 0 9999px rgba(4, 8, 18, 0.62);
+}
+
+.morph-guided-tour__card {
+  position: fixed;
+  z-index: 2;
+  width: min(22.5rem, calc(100vw - 26px));
+  padding: 1rem 1.1rem 0.85rem;
+  border-radius: 14px;
+  background: rgba(12, 20, 36, 0.97);
+  border: 1px solid rgba(0, 255, 200, 0.35);
+  color: #e2e8f0;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55);
+}
+
+.morph-guided-tour__title {
+  margin: 0 0 0.5rem;
+  font-size: 1.08rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--morph-chrome, #c8f4ff);
+}
+
+.morph-guided-tour__body {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.52;
+}
+
+.morph-guided-tour__body kbd {
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: 0.82em;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  border: 1px solid rgba(200, 244, 255, 0.35);
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.morph-guided-tour__prog {
+  margin: 0.65rem 0 0.75rem;
+  font-size: 0.74rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(200, 244, 255, 0.55);
+}
+
+.morph-guided-tour__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+  justify-content: flex-end;
+}
+
+.morph-guided-tour__footer button {
+  font: inherit;
+  cursor: pointer;
+  border-radius: 9px;
+  padding: 0.42rem 0.85rem;
+  font-size: 0.86rem;
+  font-weight: 600;
+  transition:
+    transform 0.12s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.morph-guided-tour__skip {
+  margin-right: auto;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  background: transparent;
+  color: rgba(226, 232, 240, 0.9);
+}
+
+.morph-guided-tour__skip:hover {
+  border-color: rgba(255, 208, 96, 0.55);
+}
+
+.morph-guided-tour__back,
+.morph-guided-tour__next {
+  border: 1px solid rgba(120, 200, 190, 0.45);
+  background: rgba(12, 24, 44, 0.92);
+  color: var(--morph-chrome, #c8f4ff);
+}
+
+.morph-guided-tour__next {
+  border-color: rgba(255, 106, 213, 0.45);
+  box-shadow: 0 0 14px rgba(255, 106, 213, 0.2);
+}
+
+.morph-guided-tour__back:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+.morph-guided-tour__footer button:focus-visible {
+  outline: 2px solid var(--morph-gold, #ffd060);
+  outline-offset: 2px;
+}
+
+.morph-guided-tour__footer button:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
 /* Hover tooltip (above fullscreen shell when needed) */

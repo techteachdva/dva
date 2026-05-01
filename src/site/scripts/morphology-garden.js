@@ -63,6 +63,12 @@ function registerMorpheme(key, mesh, wordId) {
   morphemeRegistry[key].push({ mesh, wordId });
 }
 
+const LEGACY_BAND_TO_TIER = /** @type {Record<string, "tier1" | "tier2" | "tier3">} */ ({
+  elementary: "tier1",
+  middle: "tier2",
+  high: "tier3",
+});
+
 /**
  * Thinkmap Visual Thesaurus is proprietary (see visualthesaurus.com); no open-source app code.
  * Manual highlights useful patterns we echo: center-focused exploration, hover definitions, clear help.
@@ -70,12 +76,14 @@ function registerMorpheme(key, mesh, wordId) {
 function getStoredMorphCurriculum() {
   try {
     const q = new URLSearchParams(window.location.search).get("set");
-    if (q === "elementary" || q === "middle" || q === "high") return q;
-    const v = localStorage.getItem("morphCurriculum");
-    if (v === "elementary" || v === "middle" || v === "high") return v;
+    const raw = /** @type {string} */ ((q ?? localStorage.getItem("morphCurriculum")) || "");
+    const fromLegacy = LEGACY_BAND_TO_TIER[raw];
+    if (fromLegacy) return fromLegacy;
+    if (raw === "tier1" || raw === "tier2" || raw === "tier3") return raw;
   } catch (_) {}
-  return "elementary";
+  return "tier1";
 }
+
 
 /** Intro runs once per browser tab session so curriculum reload / in-page navigation does not replay it */
 const MORPH_INTRO_SESSION_KEY = "morphGardenIntroPlayed";
@@ -125,7 +133,8 @@ function cloneWordList(arr) {
  *
  * • Word records + bracket trees: `ALL_WORD_DATA` below (every word needs `id`, `label`, `bracket`,
  *   `note`, `position:[x,y,z]` garden coordinates, `tree` nesting with optional `morphemeKey`).
- * • Which band gets which lemmas: `CURRICULUM_IDS` (each key is a Set of ids from ALL_WORD_DATA).
+ * • Which tier set gets which lemmas: `WORD_TIER_IDS` (tier1 / tier2 / tier3 Beck-style word tiers —
+ *   common vocabulary, academic high-utility, low-frequency domain-specific).
  * • Isolate mini-lesson blurbs: ../morphology-lessons-data.js `MORPH_DEEP_NOTES` keyed by the same ids.
  */
 
@@ -1426,63 +1435,66 @@ const ALL_WORD_DATA = [
   },
 ];
 
-const CURRICULUM_IDS = {
-  elementary: new Set([
+const WORD_TIER_IDS = {
+  /** Tier 1 — common, everyday / high-frequency words (speech & basal reading vocabulary) */
+  tier1: new Set([
     "hallway",
     "rainbow",
     "sourdough",
     "before",
+    "teacher",
+    "toothbrush",
+    "playful",
+    "unhappy",
+    "baseball",
+    "snowball",
+    "teaching",
+    "believe",
     "freedom",
     "kingdom",
     "wisdom",
-    "believe",
-    "unwise",
-    "unhappy",
-    "teacher",
-    "toothbrush",
-    "teaching",
-    "playful",
-    "snowball",
   ]),
-  middle: new Set([
+  /** Tier 2 — high-utility academic / mature language tied to many subjects */
+  tier2: new Set([
     "final",
     "belief",
+    "unwise",
     "wiser",
     "finisher",
     "enable",
     "endure",
     "resistance",
-    "national",
     "careful",
     "readable",
     "preview",
-    "baseball",
+    "convince",
+    "portable",
+    "reuse",
+    "illegal",
     "disable",
-    "nationalism",
+    "national",
     "international",
   ]),
-  high: new Set([
+  /** Tier 3 — low-frequency, technically or domain-heavy abstract vocabulary */
+  tier3: new Set([
     "presentation",
     "inhospitable",
     "demarcation",
     "dehumanization",
     "revolution",
-    "convince",
     "constitution",
     "unlockable-a",
     "unlockable-b",
     "invisible",
-    "predict",
     "transport",
-    "portable",
-    "reuse",
-    "illegal",
+    "nationalism",
+    "predict",
   ]),
 };
 
 const ACTIVE_CURRICULUM_KEY = getStoredMorphCurriculum();
 const WORDS = cloneWordList(
-  ALL_WORD_DATA.filter((w) => CURRICULUM_IDS[ACTIVE_CURRICULUM_KEY]?.has(w.id))
+  ALL_WORD_DATA.filter((w) => WORD_TIER_IDS[ACTIVE_CURRICULUM_KEY]?.has(w.id))
 );
 
 /** Wider 3D garden; whiteboard uses a circle (garden) or single centered tree (isolate) */
@@ -2017,6 +2029,248 @@ const INTRO_SPIN_TURNS = 3.35;
 /** Ring radius when trees peel out from the singularity (world XZ) */
 const INTRO_RING_RADIUS = 54;
 
+/** localStorage flag — omit automatic first-run spotlight tour when "1". */
+const MORPH_GUIDED_TOUR_KEY = "morphGuidedTourDone";
+
+/** Set in `init`; replay / auto-start use this handle. */
+let morphTourCtl = /** @type {{ open: () => void; autoTry: (delayMs?: number) => void }} */ ({
+  open: () => {},
+  autoTry: () => {},
+});
+
+/**
+ * Spotlight-style guided UI tour (tier controls, layouts, canvas, shortcuts).
+ * @returns {{ open: () => void, autoTry: (delayMs?: number) => void }}
+ */
+function morphInstallGuidedTour(/** @type {HTMLElement | null} */ pageEl) {
+  const dead = /** @type {const} */ ({
+    open: () => {},
+    autoTry: () => {},
+  });
+  if (!(pageEl instanceof HTMLElement)) return dead;
+
+  /** @typedef {{ title: string; body: string; target?: string | null }} MorphTourStep */
+  const STEPS = /** @type {MorphTourStep[]} */ ([
+    {
+      title: "Welcome",
+      body:
+        "This explorer shows how words split into morphemes. This short tour walks through the toolbar and canvas—you can replay it anytime with <strong>Guided tour</strong> beside Help.",
+      target: null,
+    },
+    {
+      title: "Word tier",
+      body: "<strong>Tier 1</strong> = common everyday vocabulary. <strong>Tier 2</strong> = high-utility academic words used across subjects. <strong>Tier 3</strong> = lower-frequency or domain-heavy words (technical and abstract meanings). Changing tier reloads the word set.",
+      target: ".morph-ui-row--meta",
+    },
+    {
+      title: "Arrange",
+      body: "<strong>Garden</strong> spaces every tree openly. <strong>Links</strong> concentrates shared morphemes into hubs with magenta ribbons. <strong>Compare</strong> shows exactly two trees and only their shared bridges.",
+      target: ".morph-ui-row--arrange",
+    },
+    {
+      title: "Surface",
+      body: "<strong>3D</strong> lets you orbit—bridges arc in depth. <strong>Whiteboard</strong> lays trees out like diagram projection—pan and zoom.",
+      target: ".morph-ui-row--surface",
+    },
+    {
+      title: "Pick a tree",
+      body: "Use <strong>Word tree</strong> to isolate one word (mini-lesson + notes appear below) or keep <strong>All words — garden</strong> for overview. In Compare, two selectors replace this row.",
+      target: "#morph-word-row",
+    },
+    {
+      title: "Explore the canopy",
+      body: "<strong>Hover</strong> a sphere for a gloss—<strong>drag</strong> to orbit or pan—<strong>scroll</strong> to zoom—<strong>double-click</strong> a node to frame that word tree—<kbd>F</kbd> fit — <kbd>R</kbd> reset.",
+      target: "#morph-canvas-host",
+    },
+    {
+      title: "Notes & cheatsheet",
+      body:
+        "Morphology paragraphs live in the panel under the explorer. ❓ opens the full reference overlay; Escape closes dialogs and overlays. Full-screen (🖥️) is available from the Arrange row.",
+      target: "#morph-detail",
+    },
+  ]);
+
+  /** @type {HTMLDivElement | null} */
+  let wrap =
+    typeof document !== "undefined"
+      ? /** @type {HTMLDivElement | null} */ (document.getElementById("morph-guided-tour"))
+      : null;
+  /** @type {HTMLElement | null} */
+  let morphTourStoredFocus = null;
+  if (!wrap) {
+    wrap = document.createElement("div");
+    wrap.id = "morph-guided-tour";
+    wrap.className = "morph-guided-tour morph-guided-tour--hidden";
+    wrap.setAttribute("role", "dialog");
+    wrap.setAttribute("aria-modal", "true");
+    wrap.setAttribute("aria-labelledby", "morph-guided-tour-title");
+    wrap.innerHTML = `
+      <div class="morph-guided-tour__backdrop"></div>
+      <div id="morph-guided-tour-spotlight" class="morph-guided-tour__spotlight" aria-hidden="true"></div>
+      <div class="morph-guided-tour__card">
+        <h2 id="morph-guided-tour-title" class="morph-guided-tour__title"></h2>
+        <div class="morph-guided-tour__body"></div>
+        <div class="morph-guided-tour__prog" aria-live="polite"></div>
+        <div class="morph-guided-tour__footer">
+          <button type="button" class="morph-guided-tour__skip">Skip</button>
+          <button type="button" class="morph-guided-tour__back">Back</button>
+          <button type="button" class="morph-guided-tour__next">Next</button>
+        </div>
+      </div>
+    `;
+    pageEl.appendChild(wrap);
+
+    wrap.querySelector(".morph-guided-tour__backdrop")?.addEventListener("click", () => morphTourHide(true));
+    wrap.querySelector(".morph-guided-tour__skip")?.addEventListener("click", () => morphTourHide(true));
+    wrap.querySelector(".morph-guided-tour__back")?.addEventListener("click", () => morphTourStep(-1));
+    wrap.querySelector(".morph-guided-tour__next")?.addEventListener("click", () => morphTourStep(1));
+    window.addEventListener("keydown", morphTourOnKeydown);
+    window.addEventListener("resize", morphTourReflow);
+    window.visualViewport?.addEventListener?.("resize", morphTourReflow);
+    window.visualViewport?.addEventListener?.("scroll", morphTourReflow);
+  }
+
+  let activeIx = 0;
+
+  /** @returns {MorphTourStep | undefined} */
+  function morphTourCurrent() {
+    return STEPS[activeIx];
+  }
+
+  function morphTourReflow() {
+    if (!wrap || wrap.classList.contains("morph-guided-tour--hidden")) return;
+    const step = morphTourCurrent();
+    const spotlight = /** @type {HTMLElement | null} */ (document.getElementById("morph-guided-tour-spotlight"));
+    const cardEl = wrap.querySelector(".morph-guided-tour__card");
+    if (!spotlight || !step) return;
+
+    if (!step.target) {
+      spotlight.style.display = "none";
+      spotlight.removeAttribute("data-morph-visible");
+      if (cardEl && cardEl instanceof HTMLElement) {
+        cardEl.style.transform = "none";
+        const cardW = cardEl.offsetWidth || 360;
+        cardEl.style.left = `${Math.max(12, (window.innerWidth - cardW) / 2)}px`;
+        cardEl.style.top = `${Math.round(window.innerHeight * 0.34)}px`;
+      }
+      return;
+    }
+
+    const el = pageEl.querySelector(step.target);
+    const rect = el?.getBoundingClientRect();
+    if (!el || rect.width < 4 || rect.height < 4) {
+      spotlight.style.display = "none";
+      spotlight.removeAttribute("data-morph-visible");
+      return;
+    }
+
+    spotlight.style.display = "";
+    spotlight.setAttribute("data-morph-visible", "true");
+    const pad = Math.min(28, rect.width * 0.06, rect.height * 0.06);
+    const sLeft = rect.left - pad * 0.5;
+    const sTop = rect.top - pad * 0.5;
+    const sw = rect.width + pad;
+    const sh = rect.height + pad;
+    spotlight.style.left = `${sLeft}px`;
+    spotlight.style.top = `${sTop}px`;
+    spotlight.style.width = `${sw}px`;
+    spotlight.style.height = `${sh}px`;
+
+    if (cardEl && cardEl instanceof HTMLElement) {
+      cardEl.style.transform = "none";
+      const cardH = cardEl.offsetHeight || 160;
+      const below = rect.bottom + 18 + cardH <= window.innerHeight - 22;
+      if (below) cardEl.style.top = `${Math.min(rect.bottom + 18, window.innerHeight - cardH - 16)}px`;
+      else cardEl.style.top = `${Math.max(16, rect.top - cardH - 18)}px`;
+      const cardW = cardEl.offsetWidth || 340;
+      const cx = rect.left + rect.width / 2 - cardW / 2;
+      cardEl.style.left = `${THREE.MathUtils.clamp(cx, 12, window.innerWidth - cardW - 12)}px`;
+    }
+  }
+
+  /** @param {KeyboardEvent} ev */
+  function morphTourOnKeydown(ev) {
+    if (!wrap || wrap.classList.contains("morph-guided-tour--hidden")) return;
+    if (ev.key === "Escape") {
+      ev.preventDefault();
+      morphTourHide(true);
+      return;
+    }
+    if (ev.key === "ArrowRight") morphTourStep(1);
+    if (ev.key === "ArrowLeft") morphTourStep(-1);
+  }
+
+  function morphTourHide(markDone = false) {
+    if (!wrap) return;
+    wrap.classList.add("morph-guided-tour--hidden");
+    document.body.style.overflow = "";
+    if (markDone) {
+      try {
+        localStorage.setItem(MORPH_GUIDED_TOUR_KEY, "1");
+      } catch (_) {
+        /* ignore */
+      }
+    }
+    morphTourStoredFocus?.focus?.();
+    morphTourStoredFocus = null;
+  }
+
+  /** @param {number} delta */
+  function morphTourStep(delta) {
+    if (!wrap) return;
+    if (delta !== 0) {
+      if (delta > 0 && activeIx >= STEPS.length - 1) {
+        morphTourHide(true);
+        return;
+      }
+      activeIx = THREE.MathUtils.clamp(activeIx + delta, 0, STEPS.length - 1);
+    }
+    morphTourReflow();
+    const step = STEPS[activeIx];
+    const ttl = wrap.querySelector(".morph-guided-tour__title");
+    const bd = wrap.querySelector(".morph-guided-tour__body");
+    const pg = wrap.querySelector(".morph-guided-tour__prog");
+    const backBt = wrap.querySelector(".morph-guided-tour__back");
+    const nextBt = wrap.querySelector(".morph-guided-tour__next");
+
+    if (ttl) ttl.textContent = `${activeIx + 1}. ${step.title}`;
+    if (bd) bd.innerHTML = step.body;
+    if (pg) pg.textContent = `Step ${activeIx + 1} of ${STEPS.length}`;
+    if (backBt instanceof HTMLButtonElement) backBt.disabled = activeIx === 0;
+    if (nextBt instanceof HTMLButtonElement) nextBt.textContent = activeIx >= STEPS.length - 1 ? "Finish" : "Next";
+  }
+
+  function morphTourOpenFromStart() {
+    if (!wrap) return;
+    morphTourStoredFocus = /** @type {HTMLElement | null} */ (
+      typeof document !== "undefined" ? document.activeElement : null
+    );
+    activeIx = 0;
+    wrap.classList.remove("morph-guided-tour--hidden");
+    document.body.style.overflow = "hidden";
+    morphTourStep(0);
+
+    wrap.querySelector(".morph-guided-tour__next")?.focus();
+  }
+
+  function morphTourAutoTry(ms) {
+    try {
+      if (localStorage.getItem(MORPH_GUIDED_TOUR_KEY) === "1") return;
+    } catch (_) {
+      /* ignore */
+    }
+    window.setTimeout(() => {
+      if (localStorage.getItem(MORPH_GUIDED_TOUR_KEY) === "1") return;
+      morphTourOpenFromStart();
+    }, ms);
+  }
+
+  return {
+    open: morphTourOpenFromStart,
+    autoTry: morphTourAutoTry,
+  };
+}
+
 function init(host, detailEl, selectEl, shellEl) {
   /** Restore point when #morph-detail is docked over the canvas in fullscreen. */
   const morphDetailSlot = {
@@ -2053,6 +2307,11 @@ function init(host, detailEl, selectEl, shellEl) {
   }
 
   const runIntroCinematic = !REDUCED_MOTION && USE_TYPO_INTRO && !morphIntroPlayedThisSession();
+  morphTourCtl = morphInstallGuidedTour(
+    typeof document !== "undefined" ? document.querySelector(".morphology-page") : null
+  );
+  if (!runIntroCinematic) morphTourCtl.autoTry(650);
+
   assignGrid2d();
   assignWhiteboardCircle();
   Object.keys(morphemeRegistry).forEach((k) => delete morphemeRegistry[k]);
@@ -3190,12 +3449,16 @@ function init(host, detailEl, selectEl, shellEl) {
     else closeMorphHelp();
   });
 
+  document.getElementById("morph-tour-btn")?.addEventListener("click", () => {
+    morphTourCtl.open();
+  });
+
   const curriculumEl = document.getElementById("morph-curriculum");
   if (curriculumEl) {
     curriculumEl.value = ACTIVE_CURRICULUM_KEY;
     curriculumEl.addEventListener("change", () => {
       const v = curriculumEl.value;
-      if (v !== "elementary" && v !== "middle" && v !== "high") return;
+      if (v !== "tier1" && v !== "tier2" && v !== "tier3") return;
       try {
         localStorage.setItem("morphCurriculum", v);
         const url = new URL(window.location.href);
@@ -3786,6 +4049,7 @@ function init(host, detailEl, selectEl, shellEl) {
     controls.target.copy(cam3dTarget);
     controls.enabled = true;
     controls.update();
+    morphTourCtl.autoTry(750);
   }
 
   setViewButtons();

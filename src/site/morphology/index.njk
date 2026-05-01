@@ -24,13 +24,22 @@ contentClasses: morphology-page
       aria-label="Morpheme trees: use Arrange / Surface — garden, links, or compare; then 3D or whiteboard"
     ></div>
     <div class="morph-ui-panel">
-      <div class="morph-ui-row morph-ui-row--meta" role="group" aria-label="Curriculum level">
-        <label for="morph-curriculum">Level</label>
-        <select id="morph-curriculum" class="morph-select morph-select--curriculum" title="Word trees by grade band">
-          <option value="elementary">Elementary</option>
-          <option value="middle">Middle school</option>
-          <option value="high">High school</option>
+      <div class="morph-ui-row morph-ui-row--meta" role="group" aria-label="Word tier vocabulary set">
+        <label for="morph-curriculum">Word tier</label>
+        <select id="morph-curriculum" class="morph-select morph-select--curriculum" title="Word trees by vocabulary tier (Beck-style)">
+          <option value="tier1">Tier 1 — common, everyday words</option>
+          <option value="tier2">Tier 2 — high-utility / academic words</option>
+          <option value="tier3">Tier 3 — low-frequency, domain-specific words</option>
         </select>
+        <button
+          type="button"
+          id="morph-tour-btn"
+          class="morph-tour-btn"
+          aria-label="Start guided tour of controls and canvas"
+          title="Guided tour"
+        >
+          📖
+        </button>
         <button
           type="button"
           id="morph-help-btn"
@@ -118,7 +127,7 @@ contentClasses: morphology-page
       </div>
       <p id="morph-hint" class="morph-hint morph-hint--compact">
         <strong>Tip:</strong> Use <strong>Arrange → Links</strong> for morpheme webs, or <strong>⚖ Compare</strong> for two trees; <strong>Surface</strong> swaps 3D depth for a projector board — combine freely.
-        Hover morphemes for gloss. Press <strong>❓ Help</strong> for controls ·
+        Hover morphemes for gloss. Press <strong>📖 Guided tour</strong> for a quick walkthrough or <strong>❓ Help</strong> for the full reference ·
         <kbd>F</kbd> fit · <kbd>R</kbd> reset · <kbd>Space</kbd> orbit drift.
       </p>
     </div>
@@ -135,10 +144,12 @@ contentClasses: morphology-page
         <h2 id="morph-help-title" class="morph-help__title">Digital morphemes — how to use</h2>
         <div class="morph-help__body">
           <section class="morph-help__sec">
-            <h3>Levels</h3>
+            <h3>Word tiers</h3>
             <p>
-              Use <strong>Level</strong> to load <strong>Elementary</strong>, <strong>Middle school</strong>, or
-              <strong>High school</strong> word sets (saved in this browser). The page reloads when you change level.
+              Use <strong>Word tier</strong> to load <strong>Tier 1</strong> (common everyday words),
+              <strong>Tier 2</strong> (high-utility academic vocabulary), or
+              <strong>Tier 3</strong> (lower-frequency, content-area words such as <em>photosynthesis</em> or
+              <em>equilateral</em>). Your choice is saved in this browser; changing tier reloads the page.
             </p>
           </section>
           <section class="morph-help__sec">
@@ -157,7 +168,7 @@ contentClasses: morphology-page
                 magenta connectors show identities across clusters.
               </li>
               <li>
-                <strong>⚖ Compare</strong> — Pick two words from the level set; both trees stay visible side by side while
+                <strong>⚖ Compare</strong> — Pick two words from the tier set; both trees stay visible side by side while
                 magenta bridges still link any morphemes the words share.
               </li>
               <li>
