@@ -2098,7 +2098,7 @@ function init(host, detailEl, selectEl, shellEl) {
 
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
-  controls.dampingFactor = 0.062;
+  controls.dampingFactor = 0.092;
   controls.minDistance = 8;
   controls.maxDistance = 300;
   controls.enablePan = true;
@@ -2108,34 +2108,30 @@ function init(host, detailEl, selectEl, shellEl) {
   controls.maxPolarAngle = Math.PI * 0.92;
   controls.target.copy(cam3dTarget);
   controls.enabled = false;
-  /** Hysteresis for min/max distance (OrbitControls has no userData — do not store state there). */
-  let wbZoomLimitsActive = false;
+
+  function morphZoomClampBlend(uSurf) {
+    return smoothstep(THREE.MathUtils.clamp((uSurf - 0.7) / 0.26, 0, 1));
+  }
 
   function refreshControlsForViewMode(blend, masterWeight = 0) {
     const u = smoothstep(blend);
     controls.enablePan = true;
     controls.enableZoom = true;
     controls.enableRotate = u < 0.12;
-    const enterWbZoom = u > 0.92;
-    const exitWbZoom = u < 0.78;
-    if (enterWbZoom && !wbZoomLimitsActive) {
-      wbZoomLimitsActive = true;
-      controls.minDistance = 40;
-      controls.maxDistance = 520;
-    } else if (exitWbZoom && wbZoomLimitsActive) {
-      wbZoomLimitsActive = false;
-      controls.minDistance = 8;
-      controls.maxDistance = 300;
-    }
+    /* Smooth ramps — hysteresis snaps were fighting OrbitControls' clampDistance every frame → “clunky” zoom */
+    const zb = morphZoomClampBlend(u);
+    controls.minDistance = THREE.MathUtils.lerp(8, 41, zb);
+    controls.maxDistance = THREE.MathUtils.lerp(300, 520, zb);
+    /* Softer discrete wheel steps (orbit multiplies zoomSpeed into pow(0.95, …) per notch) */
     if (u > 0.88) {
-      controls.rotateSpeed = 0.88;
-      controls.zoomSpeed = 0.92;
+      controls.rotateSpeed = 0.82;
+      controls.zoomSpeed = 0.38;
     } else {
       const gardenRot = 0.64;
       const masterRot = 0.4;
       controls.rotateSpeed = gardenRot + (masterRot - gardenRot) * masterWeight;
-      const gardenZoom = 0.82;
-      const masterZoom = 0.72;
+      const gardenZoom = 0.35;
+      const masterZoom = 0.32;
       controls.zoomSpeed = gardenZoom + (masterZoom - gardenZoom) * masterWeight;
     }
   }
@@ -4100,16 +4096,6 @@ function init(host, detailEl, selectEl, shellEl) {
         controls.target.copy(transition.tgt1);
         transition = null;
         setViewButtons();
-        const ue = smoothstep(viewBlend);
-        if (ue > 0.9) {
-          wbZoomLimitsActive = true;
-          controls.minDistance = 40;
-          controls.maxDistance = 520;
-        } else {
-          wbZoomLimitsActive = false;
-          controls.minDistance = 8;
-          controls.maxDistance = 300;
-        }
       }
     }
 
@@ -4238,7 +4224,7 @@ function init(host, detailEl, selectEl, shellEl) {
     // does not overwrite transforms. Brief camera-fit tweens leave controls ON (otherwise many sessions
     // lost input parity if ticks fall behind — whiteboard stays dead).
     const scriptingLayoutOnly = !!transition;
-    controls.enableDamping = !!(introDone && !scriptingLayoutOnly && !cameraFitTween);
+    controls.enableDamping = !!(introDone && !scriptingLayoutOnly);
     controls.enabled = !!(introDone && !scriptingLayoutOnly);
 
     controls.update();
