@@ -2365,7 +2365,7 @@ function init(host, detailEl, selectEl, shellEl) {
   const focusCenter = new THREE.Vector3(0, -12, 0);
   const cam3dPos = new THREE.Vector3(22, 28, 76);
   const cam3dTarget = focusCenter.clone();
-  camera.position.copy(REDUCED_MOTION || !runIntroCinematic ? cam3dPos : introStartPos);
+  camera.position.copy(cam3dPos);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -2905,7 +2905,7 @@ function init(host, detailEl, selectEl, shellEl) {
   function finishIntroGroups() {
     for (const w of WORDS) {
       const g = wordGroups[w.id];
-      g.position.copy(w.pos3d);
+      g.position.copy(posForViewKey(w, viewKey));
       g.scale.setScalar(1);
       g.rotation.y = 0;
       for (const mesh of g.userData.meshes) {
@@ -3947,6 +3947,27 @@ function init(host, detailEl, selectEl, shellEl) {
     transitionToKey(wb ? "CompareWb" : "Compare3d");
   });
 
+  /** Scene backdrop + WB lighting / chrome — does not reposition trees or bridges (typo intro drives those manually). */
+  function morphApplyBackdropBlend(/** @type {number} */ blend) {
+    const u = smoothstep(blend);
+    scene.background.copy(bg3d).lerp(bg2d, u);
+
+    ambient3d.intensity = 0.38 * (1 - u);
+    key3d.intensity = 1.1 * (1 - u);
+    rim3d.intensity = 0.85 * (1 - u);
+    fill3d.intensity = 0.5 * (1 - u);
+    ambient2d.visible = u > 0.2;
+    key2d.visible = u > 0.2;
+
+    const compareOn = vk().startsWith("Compare");
+    host.classList.toggle("morph-canvas-host--solo", soloStage.visible);
+    host.classList.toggle("morph-canvas-host--compare", compareOn);
+    host.classList.toggle("morph-canvas-host--wb", u > 0.88);
+    if (shellEl) shellEl.classList.toggle("morphology-shell--wb", u > 0.88);
+
+    if (bridges.userData) bridges.userData.arc3d = u < 0.42;
+  }
+
   function applyVisualTheme(
     blend,
     layoutEase = 1,
@@ -4156,6 +4177,9 @@ function init(host, detailEl, selectEl, shellEl) {
     introOverlay.appendChild(skipBtn);
     host.appendChild(introOverlay);
     skipBtn.addEventListener("click", endIntro);
+    flyToActiveView();
+    morphEnterPlanarBoardPresentation();
+    morphApplyBackdropBlend(1);
   }
 
   function endIntro() {
@@ -4192,7 +4216,7 @@ function init(host, detailEl, selectEl, shellEl) {
     renderer.setSize(w, h);
     labelRenderer.setSize(w, h);
     boardOrthoCamera.updateProjectionMatrix();
-    if (introDone && morphIsOrthoBoard()) syncBoardOrthoCamera();
+    if ((introDone || runIntroCinematic) && morphIsOrthoBoard()) syncBoardOrthoCamera();
   }
   window.addEventListener("resize", resizeCanvasToHost);
   if (typeof ResizeObserver !== "undefined") {
@@ -4314,9 +4338,6 @@ function init(host, detailEl, selectEl, shellEl) {
     if (!introDone && runIntroCinematic) {
       const t = introT;
       if (t < TYPO_LETTER_SEC) {
-        const drift = Math.min(1, t / TYPO_LETTER_SEC);
-        camera.position.lerpVectors(introStartPos, cam3dPos, drift * 0.26);
-        controls.target.lerpVectors(SINGULARITY, sceneCenter, drift * 0.2);
         for (const w of WORDS) {
           for (const line of wordGroups[w.id].userData.lines) {
             updateInternalTreeLine(line);
@@ -4324,35 +4345,29 @@ function init(host, detailEl, selectEl, shellEl) {
         }
         const fade = smoothstep((t - TYPO_LETTER_SEC * 0.5) / (TYPO_LETTER_SEC * 0.42));
         if (introOverlay) introOverlay.style.opacity = String(1 - fade * 0.25);
+        syncBoardOrthoCamera();
       } else {
         const t2 = t - TYPO_LETTER_SEC;
         const k = Math.min(1, t2 / TYPO_SETTLE_SEC);
         const e = easeOutCubic(k);
         if (introOverlay)
           introOverlay.style.opacity = String(Math.max(0, 0.75 - smoothstep((t2 - 0.15) / 1.85)));
-        if (!introSettle.captured) {
-          introSettle.captured = true;
-          introSettle.fromPos.copy(camera.position);
-          introSettle.fromTarget.copy(controls.target);
-          flyToActiveView();
-        }
         for (const w of WORDS) {
           const g = wordGroups[w.id];
-          g.position.lerpVectors(SINGULARITY, w.pos3d, e);
+          g.position.lerpVectors(SINGULARITY, posForViewKey(w, viewKey), e);
           g.scale.setScalar(0.06 + 0.94 * e);
           for (const line of g.userData.lines) {
             if (line.material) line.material.opacity = 0.72 * e;
             updateInternalTreeLine(line);
           }
         }
-        camera.position.lerpVectors(introSettle.fromPos, cam3dPos, e);
-        controls.target.lerpVectors(introSettle.fromTarget, cam3dTarget, e);
         const bloomBridge = smoothstep((k - 0.12) / 0.5);
         bridges.visible = bloomBridge > 0.03;
         bridges.children.forEach((line) => {
           if (line.material) line.material.opacity = 0.62 * bloomBridge;
         });
         grid.visible = k > 0.05;
+        syncBoardOrthoCamera();
         if (k >= 1) endIntro();
       }
     } else if (!introDone && !REDUCED_MOTION && !USE_TYPO_INTRO) {
@@ -4638,7 +4653,7 @@ function init(host, detailEl, selectEl, shellEl) {
     controls.enabled = !!(introDone && !scriptingLayoutOnly);
 
     controls.update();
-    if (introDone && bridges.visible) updateBridgeLines(bridges, viewBlend);
+    if (bridges.visible) updateBridgeLines(bridges, viewBlend);
     const renderCam = /** @type {THREE.Camera} */ (controls.object);
     renderer.render(scene, renderCam);
     labelRenderer.render(scene, renderCam);
