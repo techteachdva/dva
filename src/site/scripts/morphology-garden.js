@@ -285,7 +285,7 @@ function assignMasterTreeLayout(sceneCenter) {
   const ix0 = (cols - 1) * 0.5;
   const iz0 = (rows - 1) * 0.5;
 
-  components.forEach((comp, ci) => {
+    components.forEach((comp, ci) => {
     const row = Math.floor(ci / cols);
     const col = ci % cols;
     const cx = sceneCenter.x + (col - ix0) * MASTER_HUB_SPACING;
@@ -297,14 +297,47 @@ function assignMasterTreeLayout(sceneCenter) {
       let ox = 0;
       let oz = 0;
       if (m > 1) {
+        /* Legacy hub spiral — kept small hubs only; Master view overwrites with sunflower layout below. */
         const ang = j * MASTER_GOLDEN_ANGLE + ci * 1.05;
-        const rad = MASTER_WORD_RADIUS * (0.28 + (0.72 * (j + 0.6)) / m);
+        const maxR = Math.max(MASTER_WORD_RADIUS * 2.4, 36 * Math.sqrt(m));
+        const rad = maxR * Math.sqrt((j + 0.5) / m);
         ox = Math.cos(ang) * rad;
         oz = Math.sin(ang) * rad;
       }
       const yy = baseY + (j % 3) * 0.85 + (ci % 2) * 0.4;
       w.posMaster.set(cx + ox, yy, cz + oz);
     });
+  });
+}
+
+/**
+ * Place lemmas for Linked Trees (Master) on a golden-angle sunflower disk so whole diagrams stay separated.
+ * Radius scales ~√n so area grows with lemma count (avoids stacking when the bank is large).
+ * @param {Set<string>} ids
+ * @param {THREE.Vector3} sceneCenter
+ */
+function assignMasterSunflowerLayout(ids, sceneCenter) {
+  const list = [...ids].sort();
+  const n = list.length;
+  const baseY = sceneCenter.y - 5;
+  const cx = sceneCenter.x;
+  const cz = sceneCenter.z;
+  if (n === 0) return;
+  if (n === 1) {
+    const w = WORDS.find((x) => x.id === list[0]);
+    if (w?.posMaster) w.posMaster.set(cx, baseY, cz);
+    return;
+  }
+  const maxR = Math.max(96, 52 * Math.sqrt(n));
+  list.forEach((wid, j) => {
+    const w = WORDS.find((x) => x.id === wid);
+    if (!w?.posMaster) return;
+    const r = maxR * Math.sqrt((j + 0.5) / n);
+    const ang = j * MASTER_GOLDEN_ANGLE;
+    const ox = Math.cos(ang) * r;
+    const oz = Math.sin(ang) * r;
+    const yy = baseY + ((j % 6) - 2.5) * 1.05;
+    w.posMaster.set(cx + ox, yy, cz + oz);
   });
 }
 
@@ -413,6 +446,8 @@ function relaxPlanarTreePositions(positions, iterations = 42) {
     for (let i = 0; i < positions.length; i++) {
       positions[i].x += forces[i].fx * alpha;
       positions[i].y += forces[i].fy * alpha;
+      if (!Number.isFinite(positions[i].x)) positions[i].x = orig[i].x;
+      if (!Number.isFinite(positions[i].y)) positions[i].y = orig[i].y;
     }
   }
 }
@@ -1681,6 +1716,9 @@ function init(host, detailEl, selectEl, shellEl) {
 
   assignMasterTreeLayout(sceneCenter);
 
+  /** Invalidate when Focus changes so Linked Trees re-run sunflower packing */
+  let masterSunflowerSig = "";
+
   /**
    * Whiteboard framing: side elevation (−x direction looks toward vocabulary), not orbital 3D.
    * `masterBoost` pushes the camera farther back for dense link layouts.
@@ -2184,11 +2222,22 @@ function init(host, detailEl, selectEl, shellEl) {
       linkedFromMorpheme = morphLinkedWordIdsFromMorphemeKey(parsedSel.key);
     }
 
-    const linkedIds =
+    let linkedIds =
       !introDone ? null :
       compareOn || !layoutKeyEffective.startsWith("Master") ? null :
       linkedFromMorpheme ??
       (focusWordId ? morphLinkedWordIdsFromFocus(focusWordId) : null);
+    if (linkedIds && linkedIds.size === 0) linkedIds = null;
+
+    if (introDone && layoutKeyEffective.startsWith("Master")) {
+      const packIds =
+        linkedIds && linkedIds.size > 0 ? linkedIds : new Set(WORDS.map((w) => w.id));
+      const sig = `${packIds.size}:${[...packIds].sort().join(",")}`;
+      if (sig !== masterSunflowerSig) {
+        masterSunflowerSig = sig;
+        assignMasterSunflowerLayout(packIds, sceneCenter);
+      }
+    }
 
     for (const w of WORDS) {
       const g = wordGroups[w.id];
@@ -2205,10 +2254,23 @@ function init(host, detailEl, selectEl, shellEl) {
         vis = !!(w.id === morphCompareAttachedPair?.[0] || w.id === morphCompareAttachedPair?.[1]);
       } else if (compareOn && comparePickValid) {
         vis = w.id === cmpResolved.wa || w.id === cmpResolved.wb;
-      } else if (linkedIds) {
+      } else if (compareOn) {
+        /* Compare is on but the pair is not on stage yet — still show lemmas so the canvas is not empty */
+        vis = true;
+      } else if (linkedIds && linkedIds.size > 0) {
         vis = linkedIds.has(w.id);
+      } else if (layoutKeyEffective.startsWith("Garden")) {
+        /* Isolated tree (word or morpheme): solo picks resolve to one lemma; otherwise show the full ring */
+        if (morphGardenSoloShouldUse(layoutKeyEffective)) {
+          const sid = morphSoloWordIdFromSelect(selectEl?.value ?? "");
+          vis = !!sid && w.id === sid;
+        } else {
+          vis = true;
+        }
       } else if (focusWordId) {
         vis = w.id === focusWordId;
+      } else if (layoutKeyEffective.startsWith("Master")) {
+        vis = true;
       }
 
       g.visible = vis;
@@ -2220,7 +2282,10 @@ function init(host, detailEl, selectEl, shellEl) {
         morphSoloWordIdFromSelect(selectEl?.value ?? "") :
         null
     );
-    if (layoutKeyEffective.startsWith("Master") && introDone) computeMasterCamera();
+    if (layoutKeyEffective.startsWith("Master") && introDone) {
+      computeMasterCamera();
+      if (morphIsOrthoBoard()) syncBoardOrthoCamera();
+    }
   }
 
   function flyToActiveView() {
