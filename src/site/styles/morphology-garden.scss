@@ -1940,6 +1940,182 @@ html.morph-immersive-open body {
   }
 }
 
+/* ----------------------------------------------------------------------- */
+/*  Fullscreen lesson typography — readable on the new side-panel surface  */
+/*  Overrides legacy overlay-era color rules that assumed a contrasting    */
+/*  pill (white over dark canvas / dark over whiteboard).                  */
+/* ----------------------------------------------------------------------- */
+
+/* === DARK theme (default canvas): side panel is dark → text must be LIGHT === */
+.morphology-shell:fullscreen:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock,
+.morphology-shell:-webkit-full-screen:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock,
+.morphology-shell--immersive:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock {
+  color: rgba(232, 244, 255, 0.96) !important;
+}
+
+.morphology-shell:fullscreen:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock .morph-lesson__h,
+.morphology-shell:-webkit-full-screen:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock .morph-lesson__h,
+.morphology-shell--immersive:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock .morph-lesson__h {
+  color: var(--morph-gold, #ffd060) !important;
+}
+
+.morphology-shell:fullscreen:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock .morph-lesson__bracket,
+.morphology-shell:-webkit-full-screen:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock .morph-lesson__bracket,
+.morphology-shell--immersive:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock .morph-lesson__bracket {
+  color: rgba(220, 244, 255, 0.86) !important;
+}
+
+.morphology-shell:fullscreen:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock .morph-lesson__lead,
+.morphology-shell:-webkit-full-screen:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock .morph-lesson__lead,
+.morphology-shell--immersive:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock .morph-lesson__lead {
+  color: rgba(232, 244, 255, 0.96) !important;
+}
+
+.morphology-shell:fullscreen:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock .morph-lesson__sec,
+.morphology-shell:-webkit-full-screen:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock .morph-lesson__sec,
+.morphology-shell--immersive:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock .morph-lesson__sec {
+  color: rgba(228, 240, 252, 0.94) !important;
+  border-top-color: rgba(148, 197, 255, 0.22) !important;
+}
+
+.morphology-shell:fullscreen:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock .morph-lesson__sec h4,
+.morphology-shell:-webkit-full-screen:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock .morph-lesson__sec h4,
+.morphology-shell--immersive:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock .morph-lesson__sec h4 {
+  color: rgba(210, 240, 255, 0.95) !important;
+}
+
+.morphology-shell:fullscreen:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock .morph-word-note,
+.morphology-shell:fullscreen:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock .morph-chapter-note,
+.morphology-shell:-webkit-full-screen:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock .morph-word-note,
+.morphology-shell:-webkit-full-screen:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock .morph-chapter-note,
+.morphology-shell--immersive:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock .morph-word-note,
+.morphology-shell--immersive:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock .morph-chapter-note {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border-color: rgba(255, 106, 213, 0.4) !important;
+  border-radius: 8px;
+  padding: 0.45rem 0.6rem !important;
+}
+
+.morphology-shell:fullscreen:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock .morph-word-note__h,
+.morphology-shell:fullscreen:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock .morph-word-note__body,
+.morphology-shell:-webkit-full-screen:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock .morph-word-note__h,
+.morphology-shell:-webkit-full-screen:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock .morph-word-note__body,
+.morphology-shell--immersive:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock .morph-word-note__h,
+.morphology-shell--immersive:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock .morph-word-note__body {
+  color: rgba(232, 244, 255, 0.96) !important;
+}
+
+/* Compare-mode column cards on dark side panel */
+.morphology-shell:fullscreen:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock .morph-detail-compare__col,
+.morphology-shell:-webkit-full-screen:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock .morph-detail-compare__col,
+.morphology-shell--immersive:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock .morph-detail-compare__col {
+  color: rgba(232, 244, 255, 0.96) !important;
+}
+
+.morphology-shell:fullscreen:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock .morph-lesson-wing,
+.morphology-shell:fullscreen:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock .morph-detail__body > .morph-lesson.morph-lesson--single,
+.morphology-shell:-webkit-full-screen:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock .morph-lesson-wing,
+.morphology-shell:-webkit-full-screen:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock .morph-detail__body > .morph-lesson.morph-lesson--single,
+.morphology-shell--immersive:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock .morph-lesson-wing,
+.morphology-shell--immersive:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock .morph-detail__body > .morph-lesson.morph-lesson--single {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(125, 211, 252, 0.22) !important;
+  box-shadow: none !important;
+  color: rgba(232, 244, 255, 0.96) !important;
+  backdrop-filter: none !important;
+}
+
+/* Text-tools (A−/A/A+) at top of the side panel — light on dark */
+.morphology-shell:fullscreen:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock .morph-detail__text-tools-label,
+.morphology-shell:-webkit-full-screen:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock .morph-detail__text-tools-label,
+.morphology-shell--immersive:not(.morphology-shell--wb) > .morph-detail.morph-detail--viewer-dock .morph-detail__text-tools-label {
+  color: rgba(220, 244, 255, 0.85) !important;
+}
+
+/* === WHITEBOARD theme (white canvas): side panel is white → text must be DARK === */
+.morphology-shell--wb:fullscreen > .morph-detail.morph-detail--viewer-dock,
+.morphology-shell--wb:-webkit-full-screen > .morph-detail.morph-detail--viewer-dock,
+.morphology-shell--wb.morphology-shell--immersive > .morph-detail.morph-detail--viewer-dock {
+  color: #0f172a !important;
+}
+
+.morphology-shell--wb:fullscreen > .morph-detail.morph-detail--viewer-dock .morph-lesson__h,
+.morphology-shell--wb:-webkit-full-screen > .morph-detail.morph-detail--viewer-dock .morph-lesson__h,
+.morphology-shell--wb.morphology-shell--immersive > .morph-detail.morph-detail--viewer-dock .morph-lesson__h {
+  color: #0f172a !important;
+}
+
+.morphology-shell--wb:fullscreen > .morph-detail.morph-detail--viewer-dock .morph-lesson__bracket,
+.morphology-shell--wb:-webkit-full-screen > .morph-detail.morph-detail--viewer-dock .morph-lesson__bracket,
+.morphology-shell--wb.morphology-shell--immersive > .morph-detail.morph-detail--viewer-dock .morph-lesson__bracket {
+  color: #92400e !important;
+}
+
+.morphology-shell--wb:fullscreen > .morph-detail.morph-detail--viewer-dock .morph-lesson__lead,
+.morphology-shell--wb:-webkit-full-screen > .morph-detail.morph-detail--viewer-dock .morph-lesson__lead,
+.morphology-shell--wb.morphology-shell--immersive > .morph-detail.morph-detail--viewer-dock .morph-lesson__lead {
+  color: #1e293b !important;
+}
+
+.morphology-shell--wb:fullscreen > .morph-detail.morph-detail--viewer-dock .morph-lesson__sec,
+.morphology-shell--wb:-webkit-full-screen > .morph-detail.morph-detail--viewer-dock .morph-lesson__sec,
+.morphology-shell--wb.morphology-shell--immersive > .morph-detail.morph-detail--viewer-dock .morph-lesson__sec {
+  color: #1e293b !important;
+  border-top-color: rgba(15, 23, 42, 0.12) !important;
+}
+
+.morphology-shell--wb:fullscreen > .morph-detail.morph-detail--viewer-dock .morph-lesson__sec h4,
+.morphology-shell--wb:-webkit-full-screen > .morph-detail.morph-detail--viewer-dock .morph-lesson__sec h4,
+.morphology-shell--wb.morphology-shell--immersive > .morph-detail.morph-detail--viewer-dock .morph-lesson__sec h4 {
+  color: #334155 !important;
+}
+
+.morphology-shell--wb:fullscreen > .morph-detail.morph-detail--viewer-dock .morph-word-note,
+.morphology-shell--wb:fullscreen > .morph-detail.morph-detail--viewer-dock .morph-chapter-note,
+.morphology-shell--wb:-webkit-full-screen > .morph-detail.morph-detail--viewer-dock .morph-word-note,
+.morphology-shell--wb:-webkit-full-screen > .morph-detail.morph-detail--viewer-dock .morph-chapter-note,
+.morphology-shell--wb.morphology-shell--immersive > .morph-detail.morph-detail--viewer-dock .morph-word-note,
+.morphology-shell--wb.morphology-shell--immersive > .morph-detail.morph-detail--viewer-dock .morph-chapter-note {
+  background: #f8fafc !important;
+  border-color: rgba(15, 23, 42, 0.12) !important;
+  border-radius: 8px;
+  padding: 0.45rem 0.6rem !important;
+}
+
+.morphology-shell--wb:fullscreen > .morph-detail.morph-detail--viewer-dock .morph-word-note__h,
+.morphology-shell--wb:fullscreen > .morph-detail.morph-detail--viewer-dock .morph-word-note__body,
+.morphology-shell--wb:-webkit-full-screen > .morph-detail.morph-detail--viewer-dock .morph-word-note__h,
+.morphology-shell--wb:-webkit-full-screen > .morph-detail.morph-detail--viewer-dock .morph-word-note__body,
+.morphology-shell--wb.morphology-shell--immersive > .morph-detail.morph-detail--viewer-dock .morph-word-note__h,
+.morphology-shell--wb.morphology-shell--immersive > .morph-detail.morph-detail--viewer-dock .morph-word-note__body {
+  color: #1e293b !important;
+}
+
+.morphology-shell--wb:fullscreen > .morph-detail.morph-detail--viewer-dock .morph-detail-compare__col,
+.morphology-shell--wb:-webkit-full-screen > .morph-detail.morph-detail--viewer-dock .morph-detail-compare__col,
+.morphology-shell--wb.morphology-shell--immersive > .morph-detail.morph-detail--viewer-dock .morph-detail-compare__col {
+  color: #1e293b !important;
+}
+
+.morphology-shell--wb:fullscreen > .morph-detail.morph-detail--viewer-dock .morph-lesson-wing,
+.morphology-shell--wb:fullscreen > .morph-detail.morph-detail--viewer-dock .morph-detail__body > .morph-lesson.morph-lesson--single,
+.morphology-shell--wb:-webkit-full-screen > .morph-detail.morph-detail--viewer-dock .morph-lesson-wing,
+.morphology-shell--wb:-webkit-full-screen > .morph-detail.morph-detail--viewer-dock .morph-detail__body > .morph-lesson.morph-lesson--single,
+.morphology-shell--wb.morphology-shell--immersive > .morph-detail.morph-detail--viewer-dock .morph-lesson-wing,
+.morphology-shell--wb.morphology-shell--immersive > .morph-detail.morph-detail--viewer-dock .morph-detail__body > .morph-lesson.morph-lesson--single {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: none !important;
+  color: #0f172a !important;
+  backdrop-filter: none !important;
+}
+
+.morphology-shell--wb:fullscreen > .morph-detail.morph-detail--viewer-dock .morph-detail__text-tools-label,
+.morphology-shell--wb:-webkit-full-screen > .morph-detail.morph-detail--viewer-dock .morph-detail__text-tools-label,
+.morphology-shell--wb.morphology-shell--immersive > .morph-detail.morph-detail--viewer-dock .morph-detail__text-tools-label {
+  color: #334155 !important;
+}
+
 /* Two-row Arrange / Surface toolbars */
 
 .morph-ui-row--surface {
