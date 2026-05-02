@@ -64,25 +64,37 @@
         return doc.documentElement.textContent;
     }
 
-    function renderGraph(graphData, id, delay, fullScreen) {
+    function resolveGraphMount(mountOrEl) {
+        if (mountOrEl == null) {
+            return null;
+        }
+        if (typeof mountOrEl === "string") {
+            return document.getElementById(mountOrEl);
+        }
+        return mountOrEl.nodeType === 1 ? mountOrEl : null;
+    }
+
+    function renderGraph(graphData, mountOrEl, delay, fullScreen) {
         if (graphData == null) {
             return;
         }
-        const el = document.getElementById(id);
+        if (typeof ForceGraph !== "function") {
+            return;
+        }
+        const el = resolveGraphMount(mountOrEl);
         if (!el) {
             return;
         }
         if (!graphData.nodes || graphData.nodes.length === 0) {
             return;
         }
-        width = el.offsetWidth;
-        height = el.offsetHeight;
+        const width = Math.max(1, el.offsetWidth || el.parentElement?.offsetWidth || 320);
+        const height = Math.max(1, el.offsetHeight || el.parentElement?.offsetHeight || 320);
         const highlightNodes = new Set();
         let hoverNode = null;
         const color = getCssVar("--graph-main");
         const mutedColor = getCssVar("--graph-muted");
-        let Graph = ForceGraph()
-        (el)
+        const Graph = ForceGraph()(el)
             .graphData(graphData)
             .nodeId('id')
             .nodeLabel('title')
@@ -159,12 +171,13 @@
         return Graph;
     }
 
-    function renderLocalGraph(graphData, depth, fullScreen) {
+    function renderLocalGraph(graphData, depth, fullScreen, mountEl) {
         if (window.graph){
             window.graph._destructor();
         }
         const data = filterLocalGraphData(graphData, depth);
-        return renderGraph(data, 'link-graph', null, fullScreen);
+        const mount = resolveGraphMount(mountEl) || resolveGraphMount("link-graph");
+        return renderGraph(data, mount, null, fullScreen);
     }
 
     function filterFullGraphData(graphData) {
@@ -218,8 +231,8 @@
                 </div>
         </div>
     </div>
-    <div x-effect="window.graph = renderLocalGraph(graphData, depth, fullScreen)">
-        <div id="link-graph"></div>
+    <div x-effect="$nextTick(() => { const m = $refs.localGraphMount; if (m && graphData) window.graph = renderLocalGraph(graphData, depth, fullScreen, m); })">
+        <div id="link-graph" x-ref="localGraphMount"></div>
     </div>
     <div x-show="showFullGraph" id="full-graph" class="show" style="display: none;">
         <span id="full-graph-close" x-on:click="fullGraph = closefullGraph(fullGraph); showFullGraph = false;"><i icon-name="x" aria-hidden="true"></i></span><div id="full-graph-container"></div>
