@@ -307,18 +307,34 @@ export class MawBossScene {
   // ======================== UPDATE ========================
   update(dt, game) {
     if (this.done) return;
+    const p = game.player;
+    if (!p) return;
+
+    const vialOpen = this.phase === "fight" && this.potionState != null;
+
     if (game.input.wasPressed("p", "Escape")) {
-      // Don't pause mid vial cork/pour — same frame would freeze timers and paint PAUSED above the modal.
-      if (!(this.phase === "fight" && this.potionState)) {
+      if (!vialOpen) {
         this.paused = !this.paused;
         SFX.click();
       }
     }
+
+    // Cork/pour MUST run before the global pause bail-out — otherwise [P]/ESC freezes
+    // timeLeft/isDown pour input and strands the modal (same class of bug as pause-with-vial UX).
+    if (vialOpen) {
+      tickManaPotionMiniGame(
+        this.potionState,
+        dt,
+        game.input,
+        () => this.endManaPotionSuccess(p),
+        () => this.endManaPotionFail(),
+      );
+    }
+
     if (this.paused) return;
 
     this.t += dt;
     this.anim += dt * 4;
-    const p = game.player;
     if (p.score) p.score.timeSpent += dt;
     if (typeof game.invulnerable === "boolean") p.invulnerable = game.invulnerable;
 
@@ -335,17 +351,7 @@ export class MawBossScene {
       if (this.potionDrinkCooldown > 0) {
         this.potionDrinkCooldown = Math.max(0, this.potionDrinkCooldown - dt);
       }
-      if (this.potionState) {
-        if (!this.paused) {
-          tickManaPotionMiniGame(
-            this.potionState,
-            dt,
-            game.input,
-            () => this.endManaPotionSuccess(p),
-            () => this.endManaPotionFail(),
-          );
-        }
-      } else {
+      if (!this.potionState) {
         this.updateTeeth(dt, p);
         this.updateChomps(dt, p, game);
         this.handleInput(dt, game);
@@ -870,11 +876,15 @@ export class MawBossScene {
       }
     }
 
-    // Attacks.
+    // Attacks + mana slot (Digit3/Numpad3: some setups never surface "3" in e.key cleanly).
     if      (game.input.wasPressed("q", "Q", "1")) this.execute(0, p, game);
     else if (game.input.wasPressed("e", "E", "2")) this.execute(1, p, game);
-    else if (game.input.wasPressed("r", "R", "3")) this.execute(2, p, game);
-    else if (game.input.wasPressed("f", "F", "4")) this.execute(3, p, game);
+    else if (
+      game.input.wasPressed("r", "R", "3")
+      || game.input.wasCodePressed("Digit3", "Numpad3")
+    ) {
+      this.execute(2, p, game);
+    } else if (game.input.wasPressed("f", "F", "4")) this.execute(3, p, game);
     else if (game.input.wasPressed("x", "X")) this.doDodgeTwitch(p);
   }
 

@@ -44,14 +44,34 @@ export function tickManaPotionMiniGame(st, dt, inp, onSuccess, onFail) {
         break;
       }
     }
-    if (inp.wasPressed(st.corkKey)) {
+    const corkPulse =
+      inp.wasPressed(st.corkKey)
+      || (
+        typeof st.corkKey === "string"
+        && st.corkKey.length === 1
+        && /^[a-z]$/i.test(st.corkKey)
+        && typeof inp.wasCodePressed === "function"
+        && inp.wasCodePressed(`Key${st.corkKey.toUpperCase()}`)
+      );
+    if (corkPulse) {
       st.corkPop = true;
       st.phase = "pour";
       st.tilt = 0;
       SFX.grab();
     }
   } else if (st.phase === "pour") {
-    if (inp.isDown(st.pourKey)) {
+    // Hold-to-pour: match e.key and e.code — some keyboards/layouts omit the letter from `down` reliably.
+    let pouring = inp.isDown(st.pourKey);
+    if (
+      !pouring &&
+      typeof st.pourKey === "string" &&
+      st.pourKey.length === 1 &&
+      /^[a-z]$/i.test(st.pourKey) &&
+      typeof inp.isCodeDown === "function"
+    ) {
+      pouring = inp.isCodeDown(`Key${st.pourKey.toUpperCase()}`);
+    }
+    if (pouring) {
       st.tilt = Math.min(1, st.tilt + dt * 3.4);
       const drain = dt * st.tilt * st.tilt * 0.92 + dt * st.tilt * 0.12;
       st.liquid = Math.max(0, st.liquid - drain);

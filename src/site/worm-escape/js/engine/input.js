@@ -184,6 +184,11 @@ export class Input {
     return codes.some((c) => this.codesPressed.has(c));
   }
 
+  /** Held state by physical KeyboardEvent.code (useful alongside isDown when e.key lies). */
+  isCodeDown(...codes) {
+    return codes.some((c) => this._codesDown.has(c));
+  }
+
   /** Drop keys from this frame's "just pressed" set (e.g. global UI consumed the click). */
   consumePress(...keys) {
     for (const key of keys) this.pressed.delete(this._norm(key));

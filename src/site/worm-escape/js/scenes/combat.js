@@ -248,18 +248,6 @@ export class CombatScene {
     this.turnLocked = 0.2;
   }
 
-  updatePotionMiniGame(dt, game) {
-    if (!this.potionState || this.paused) return;
-    tickManaPotionMiniGame(
-      this.potionState,
-      dt,
-      game.input,
-      () => this.endManaPotionSuccess(game.player),
-      () => this.endManaPotionFail(),
-    );
-  }
-
-
 
   /** Four touch rows for Attack 1 — Attack 2 — Potion — Brace (canvas space). */
   actionButtonRects() {
@@ -322,18 +310,31 @@ export class CombatScene {
 
   update(dt, game) {
     if (this.done) return;
+    const p = game.player;
+
+    const vialOpen = this.phase === "fight" && !!this.potionState;
 
     if (game.input.wasPressed("p", "Escape")) {
-      if (!(this.phase === "fight" && this.potionState)) {
+      if (!vialOpen) {
         this.paused = !this.paused;
         SFX.click();
       }
     }
+
+    if (vialOpen) {
+      tickManaPotionMiniGame(
+        this.potionState,
+        dt,
+        game.input,
+        () => this.endManaPotionSuccess(game.player),
+        () => this.endManaPotionFail(),
+      );
+    }
+
     if (this.paused) return;
 
     this.t += dt;
     this.anim += dt * 4;
-    const p = game.player;
     if (typeof game.invulnerable === "boolean") p.invulnerable = game.invulnerable;
     if (p.score) p.score.timeSpent += dt;
 
@@ -405,8 +406,6 @@ export class CombatScene {
         this.updateAcidGouts(dt, p, game);
         this.updateEnemyMelee(dt, p, game);
         this.handleMenu(dt, game);
-      } else {
-        this.updatePotionMiniGame(dt, game);
       }
     }
     if (this.braceTime > 0 && !this.potionState) this.braceTime -= dt;
@@ -907,7 +906,10 @@ export class CombatScene {
       const pr = rects[2];
       if (pointInRect(mx, my, pr.x, pr.y, pr.w, pr.h)) clickedPotion = true;
     }
-    const wantManaPotion = game.input.wasPressed("3", "r") || clickedPotion;
+    const manaPulse =
+      game.input.wasPressed("3", "r")
+      || game.input.wasCodePressed("Digit3", "Numpad3");
+    const wantManaPotion = manaPulse || clickedPotion;
 
     // Even during turn-lock you can slam [R]/[3] (or tap the mana button) to clutch-drink.
     if (this.turnLocked > 0) {
@@ -936,7 +938,7 @@ export class CombatScene {
     // left-hand home row while the right hand works the mouse.
     if      (game.input.wasPressed("1", "q")) choose(0);
     else if (game.input.wasPressed("2", "e")) choose(1);
-    else if (game.input.wasPressed("3", "r")) choose(2);
+    else if (manaPulse) choose(2);
     else if (game.input.wasPressed("4", "f")) choose(3);
     else if (game.input.wasPressed(" ", "Space", "Enter")) choose(this.menuIdx);
   }
