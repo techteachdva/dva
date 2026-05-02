@@ -26,7 +26,6 @@ import { EndlessCrashScene } from "./endlessCrash.js";
 import {
   pickTwoDistinctPotionKeys,
   POTION_DRINK_CD_SEC,
-  POTION_DRINK_CD_SEC,
   tickManaPotionMiniGame,
   drawManaPotionModal,
 } from "../engine/manaPotion.js";
