@@ -324,8 +324,10 @@ export class CombatScene {
     if (this.done) return;
 
     if (game.input.wasPressed("p", "Escape")) {
-      this.paused = !this.paused;
-      SFX.click();
+      if (!(this.phase === "fight" && this.potionState)) {
+        this.paused = !this.paused;
+        SFX.click();
+      }
     }
     if (this.paused) return;
 

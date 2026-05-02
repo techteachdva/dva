@@ -79,6 +79,11 @@ function topFangDrawX(col) {
   return COLS_X[col] + LANE_PITCH * 0.5;
 }
 
+/** Hero stand slightly left of each bottom molar — matches how top teeth hang over gaps so lane reads cleanly. */
+function heroStandX(col) {
+  return COLS_X[col] - LANE_PITCH * 0.2;
+}
+
 // Vertical anchors for the teeth / hero.
 const TOP_TOOTH_Y    = 110;     // where the top teeth hang from (root)
 const TOP_TOOTH_TIP  = 250;     // where a top tooth's TIP sits at rest
@@ -303,8 +308,11 @@ export class MawBossScene {
   update(dt, game) {
     if (this.done) return;
     if (game.input.wasPressed("p", "Escape")) {
-      this.paused = !this.paused;
-      SFX.click();
+      // Don't pause mid vial cork/pour — same frame would freeze timers and paint PAUSED above the modal.
+      if (!(this.phase === "fight" && this.potionState)) {
+        this.paused = !this.paused;
+        SFX.click();
+      }
     }
     if (this.paused) return;
 
@@ -752,7 +760,7 @@ export class MawBossScene {
     this.pushLog(`${tag} Column ${tt.col + 1} chomp hits for ${finalDmg}.`);
 
     this.floaters.push({
-      x: COLS_X[tt.col] + rand(-16, 16),
+      x: heroStandX(tt.col) + rand(-16, 16),
       y: HERO_Y - 20,
       vy: -70, life: 1.0, max: 1.0,
       text: `-${finalDmg}`, size: hadCounter ? 26 : 22,
@@ -1022,7 +1030,7 @@ export class MawBossScene {
       const actual = p.hp - before;
       if (actual > 0) {
         this.floaters.push({
-          x: COLS_X[this.col] + rand(-10, 10),
+          x: heroStandX(this.col) + rand(-10, 10),
           y: 600,
           vy: -50, life: 1.2, max: 1.2,
           text: `+${actual}`, size: 18,
@@ -1256,6 +1264,16 @@ export class MawBossScene {
       ctx.lineTo(x, H - 40);
       ctx.stroke();
     }
+    // Stance spline: slight left offset — lines up mentally with descending top fangs.
+    const hx = heroStandX(this.col);
+    ctx.strokeStyle = "rgba(255, 235, 190, 0.55)";
+    ctx.lineWidth = 2.5;
+    ctx.setLineDash([8, 7]);
+    ctx.beginPath();
+    ctx.moveTo(hx, 160);
+    ctx.lineTo(hx, H - 88);
+    ctx.stroke();
+    ctx.setLineDash([]);
     ctx.restore();
   }
 
@@ -1490,7 +1508,7 @@ export class MawBossScene {
 
   drawHero(ctx, game) {
     const p = game.player;
-    const x = COLS_X[this.col];
+    const x = heroStandX(this.col);
     const y = HERO_Y + Math.sin(this.heroBob) * 2;
 
     drawDropShadow(ctx, x, y + 26, 30, 10, 0.55);
@@ -1603,7 +1621,7 @@ export class MawBossScene {
       ? [
         {
           key: "Q/1",
-          name: plMode.boltName.slice(0, 22),
+          name: String(plMode.boltName ?? "Bolt").slice(0, 22),
           info: `${plMode.dmg[0]}–${plMode.dmg[1]} · ${plMode.manaCost + mb} MP`,
           cd: p.cooldowns.attack,
           cdMax: plMode.cooldown * pam,
