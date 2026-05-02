@@ -92,6 +92,10 @@ export class Input {
 
       const onDown = (e) => {
         if (e.button === 0) e.preventDefault();
+        // Must sync coords on press — mousemove may never have fired for this
+        // pixel (first click, tap without move, or click-hold without drag).
+        // Without this, mouseX/Y stay at 0,0 and bottom HUD hits (mana vial) miss.
+        setFromClient(e.clientX, e.clientY);
         try {
           this.canvas.focus({ preventScroll: true });
         } catch (_) {

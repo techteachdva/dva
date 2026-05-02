@@ -16,12 +16,12 @@ contentClasses: morphology-page
     </p>
   </header>
 
-  <div class="morphology-shell" id="morphology-shell">
+  <div class="morphology-shell" id="morphology-shell" role="region" aria-label="Morphology diagrams and controls">
     <div
       id="morph-canvas-host"
       class="morph-canvas-host"
       role="img"
-      aria-label="Flat morpheme diagrams: isolated tree, linked lemmas, or compare two words"
+      aria-label="Flat morpheme diagrams: isolated tree, linked trees, or compare trees"
     ></div>
     <div class="morph-ui-panel">
       <div class="morph-ui-row morph-ui-row--meta" role="group" aria-label="Vocabulary note">
@@ -45,15 +45,15 @@ contentClasses: morphology-page
           ❓
         </button>
       </div>
-      <div class="morph-ui-row morph-ui-row--toggle morph-ui-row--arrange" role="group" aria-label="Isolated tree, linked lemmas, or compare two words">
+      <div class="morph-ui-row morph-ui-row--toggle morph-ui-row--arrange" role="group" aria-label="Isolated tree, linked trees, or compare trees">
         <span class="morph-ui-label">Arrange</span>
         <button
           type="button"
           id="morph-btn-arr-garden"
           class="morph-view-btn morph-view-btn--icon morph-view-btn--active"
           aria-pressed="true"
-          title="Isolated tree — one lemma centred on the board"
-          aria-label="Isolated tree arrangement"
+          title="Isolated Tree"
+          aria-label="Isolated Tree"
         >
           🌳
         </button>
@@ -62,8 +62,8 @@ contentClasses: morphology-page
           id="morph-btn-arr-master"
           class="morph-view-btn morph-view-btn--icon"
           aria-pressed="false"
-          title="Links — lemmas sharing morphemes with your picked word"
-          aria-label="Linked lemmas arrangement"
+          title="Linked Trees"
+          aria-label="Linked Trees"
         >
           🔗
         </button>
@@ -72,8 +72,8 @@ contentClasses: morphology-page
           id="morph-btn-arr-compare"
           class="morph-view-btn morph-view-btn--icon"
           aria-pressed="false"
-          title="Dual — compare two lemmas with one shared-morph lesson"
-          aria-label="Dual compare arrangement"
+          title="Compare Trees"
+          aria-label="Compare Trees"
         >
           ⚖
         </button>
@@ -88,8 +88,8 @@ contentClasses: morphology-page
         </button>
       </div>
       <div id="morph-word-row" class="morph-ui-row">
-        <label for="morph-word-select">Word tree</label>
-        <select id="morph-word-select" class="morph-select" aria-describedby="morph-hint"></select>
+        <label for="morph-word-select">Focus</label>
+        <select id="morph-word-select" class="morph-select" aria-describedby="morph-hint" title="Lemma or morpheme"></select>
       </div>
       <div id="morph-compare-row" class="morph-compare-row morph-ui-row" hidden aria-hidden="true">
         <label for="morph-compare-a">Compare A</label>
@@ -100,7 +100,7 @@ contentClasses: morphology-page
       <div
         class="morph-ui-row morph-ui-row--lesson-zoom morph-lesson-zoom-bar"
         role="toolbar"
-        aria-label="Mini-lesson text size (full screen)"
+        aria-label="Mini-lesson text size (duplicate toolbar when the diagram fills the screen)"
       >
         <span class="morph-ui-label">Lesson</span>
         <button
@@ -132,7 +132,7 @@ contentClasses: morphology-page
         </button>
       </div>
       <p id="morph-hint" class="morph-hint morph-hint--compact">
-        <strong>Tip:</strong> The board is <strong>2D</strong>—pan/zoom freely. 🌳 is your single-word lab; 🔗 unfolds every lemma in the set that shares morphemes with that pick; ⚖ contrasts two lemmas and one dual mini-lesson. Over the diagram, the scroll wheel <strong>moves the page</strong> so you can reach the chapter highlights and back (zoom when the page cannot scroll further, or <kbd>Ctrl</kbd>/<kbd>⌘</kbd> + scroll anytime). Hover for gloss ·
+        <strong>Tip:</strong> The board is <strong>2D</strong>—drag to pan. 🌳 <strong>Isolated Tree</strong>; 🔗 <strong>Linked Trees</strong>; ⚖ <strong>Compare Trees</strong>. Wheel over the diagram <strong>scrolls the page</strong> when there is room (reach the “Five ideas” section); use <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+wheel to zoom the diagram, or wheel when the page cannot scroll further. In fullscreen, wheel over the docked lesson scrolls <strong>lesson text</strong>. Lesson text size: <strong>A−</strong> <strong>A</strong> <strong>A+</strong> or keys <kbd>[</kbd> <kbd>]</kbd>. Hover spheres for gloss ·
         <kbd>F</kbd> fit · <kbd>R</kbd> reset<span class="visually-hidden"> (Space toggles orbit only in the experimental 3D mode from backslash)</span>.
       </p>
     </div>
@@ -165,13 +165,13 @@ contentClasses: morphology-page
             </p>
             <ul>
               <li>
-                <strong>🌳 Isolated tree</strong> — One centred diagram with deep mini-lessons and morphology notes.
+                <strong>🌳 Isolated Tree</strong> — One centered diagram with deep mini-lessons and morphology notes.
               </li>
               <li>
-                <strong>🔗 Links</strong> — Every lemma visible shares at least one labelled morpheme with the word you chose in <strong>Word tree</strong>; magenta bridges stay honest to that narrower set.
+                <strong>🔗 Linked Trees</strong> — Shows lemmas that share morphemes with your focus pick (word <em>or</em> morpheme); magenta bridges stay within that visible set.
               </li>
               <li>
-                <strong>⚖ Dual</strong> — Two lemmas side-by-side plus a unified lesson keyed to overlaps (sparks underneath stay word-specific).</li>
+                <strong>⚖ Compare Trees</strong> — Two selections side by side plus a unified lesson keyed to overlaps (exit tickets stay word-specific).</li>
               <li>
                 <strong>🖥️ Full screen</strong> — Fills the viewport (or immersive mode on mobile Safari) so the diagram and chrome stay legible when teaching.
               </li>
@@ -185,7 +185,9 @@ contentClasses: morphology-page
             <ul>
               <li><strong>Hover</strong> a morpheme sphere for tooltip glosses, categories, and sibling lemmas that share it.</li>
               <li><strong>Drag</strong> to pan across the board (or orbit when <kbd>\</kbd> 3D mode is on).</li>
-              <li><strong>Scroll / pinch</strong> to zoom the diagram.</li>
+              <li>
+                <strong>Scroll wheel</strong> over the diagram moves the page when you can still scroll (to reach content below); hold <kbd>Ctrl</kbd> / <kbd>⌘</kbd> while scrolling to zoom the board, or scroll when the page is already at the top or bottom.
+              </li>
               <li><strong>Click</strong> a morpheme to ease the camera toward that node.</li>
               <li><strong>Double-click</strong> refits the framing so the surrounding word tree dominates the view.</li>
               <li><strong>Shift + double-click</strong> (3D mode only) toggles slow auto-orbit around the focused node.</li>
@@ -200,13 +202,14 @@ contentClasses: morphology-page
               <li><kbd>Space</kbd> — toggle orbit drift while 3D experimental mode is enabled.</li>
               <li><kbd>\\</kbd> — toggle the hidden spatial 3D camera; default teaching mode stays flat.</li>
               <li><kbd>Escape</kbd> — leave this help drawer, immersive mode, or fullscreen.</li>
+              <li><kbd>[</kbd> / <kbd>]</kbd> — decrease / increase mini-lesson text size when a lesson is showing (not while typing in a control).</li>
+              <li><kbd>Alt</kbd>+<kbd>0</kbd> — reset lesson text size to default.</li>
             </ul>
           </section>
           <section class="morph-help__sec">
-            <h3>Word menu &amp; details</h3>
+            <h3>Focus menu &amp; details</h3>
             <p>
-              <strong>Word tree</strong> is the focus knob for isolated view and linked view. Dual mode swaps in two selectors
-              so you can juxtapose lemmas when you want tighter contrast paired with one shared-mini-lesson.
+              <strong>Focus</strong> lists lemmas and morpheme tags. Isolated Tree uses one lemma’s diagram; Linked Trees fans out every lemma that matches your word or morpheme pick. Compare Trees swaps in two selectors (each can be a word or a morpheme).
             </p>
             <p class="morph-help__sub">
               <strong>Mini-lesson text size:</strong> use <strong>A−</strong> / <strong>A</strong> / <strong>A+</strong> above the lesson (inline on the page and when docked in full screen). Keys <kbd>[</kbd> smaller and <kbd>]</kbd> larger; <kbd>Alt</kbd>+<kbd>0</kbd> resets. Your choice is saved in this browser.
@@ -219,8 +222,15 @@ contentClasses: morphology-page
   </div>
 
   <div id="morph-detail" class="morph-detail">
-    <div class="morph-detail__text-tools" role="toolbar" aria-label="Mini-lesson text size">
-      <span class="morph-detail__text-tools-label">Lesson text</span>
+    <p id="morph-lesson-zoom-live" class="visually-hidden" aria-live="polite" aria-atomic="true"></p>
+    <div
+      id="morph-detail-text-toolbar"
+      class="morph-detail__text-tools"
+      role="toolbar"
+      aria-label="Mini-lesson text size"
+      aria-controls="morph-detail-body"
+    >
+      <span id="morph-detail-text-tools-label" class="morph-detail__text-tools-label">Lesson text</span>
       <button type="button" id="morph-lesson-text-smaller" class="morph-text-size-btn" title="Smaller text (keyboard [ )" aria-label="Decrease mini-lesson text size">A−</button>
       <button type="button" id="morph-lesson-text-reset" class="morph-text-size-btn" title="Default size (Alt+0)" aria-label="Reset mini-lesson text size">A</button>
       <button type="button" id="morph-lesson-text-larger" class="morph-text-size-btn" title="Larger text (keyboard ] )" aria-label="Increase mini-lesson text size">A+</button>

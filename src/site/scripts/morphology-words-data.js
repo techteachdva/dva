@@ -7,6 +7,8 @@
  * - `tree` / `bracket` / `morphemeKey` tags: diagram + pink “same chunk” links across words
  */
 
+import { MORPHEME_CATALOG } from "./morphology-morpheme-catalog.js";
+
 /** @typedef {"tier1"|"tier2"|"tier3"} MorphTier */
 
 /**
@@ -1201,8 +1203,187 @@ const _MORPHOLOGY_WORDS_RAW = /** @type {const} */ ([
   },
 ]);
 
-const _positions = morphRingPositions(_MORPHOLOGY_WORDS_RAW.length);
-export const MORPHOLOGY_WORD_LIST = _MORPHOLOGY_WORDS_RAW.map((w, i) => ({
+function morphSlug(s) {
+  return String(s)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "x";
+}
+
+function morphAffixTailFromKey(key) {
+  const m = key.match(/^(pfx|sfx|root|lex):(.+)$/);
+  return m ? m[2] : "";
+}
+
+/**
+ * Minimal tree for catalog “outside” drill lemmas — supports magenta bridge linking.
+ * @param {string} surface
+ * @param {{ key: string, morpheme: string }} row
+ */
+function morphCatalogStubTree(surface, row) {
+  const lower = surface.trim().toLowerCase();
+  const glossWord = `word: ${surface}`;
+  const key = row.key;
+
+  if (key.startsWith("pfx:")) {
+    const tail = morphAffixTailFromKey(key);
+    const bare = tail.replace(/-$/, "").toLowerCase();
+    if (bare && lower.startsWith(bare)) {
+      const rest = lower.slice(bare.length);
+      const display = tail.endsWith("-") ? tail : `${bare}-`;
+      return {
+        text: lower,
+        gloss: glossWord,
+        children: [
+          { text: display, gloss: "prefix", morphemeKey: key, children: [] },
+          { text: rest || "∅", gloss: "stem", children: [] },
+        ],
+      };
+    }
+    return {
+      text: lower,
+      gloss: glossWord,
+      morphemeKey: key,
+      children: [],
+    };
+  }
+
+  if (key.startsWith("sfx:")) {
+    const sufToken = morphAffixTailFromKey(key);
+    const sufBare = sufToken.replace(/^-/, "");
+
+    if (key === "sfx:-s") {
+      if (lower.endsWith("ies") && lower.length > 4) {
+        const stem = `${lower.slice(0, -3)}y`;
+        return {
+          text: lower,
+          gloss: glossWord,
+          children: [
+            { text: stem, gloss: "stem", children: [] },
+            { text: "-ies", gloss: "suffix", morphemeKey: key, children: [] },
+          ],
+        };
+      }
+      if (lower.endsWith("es") && lower.length > 3) {
+        const stem = lower.slice(0, -2);
+        return {
+          text: lower,
+          gloss: glossWord,
+          children: [
+            { text: stem, gloss: "stem", children: [] },
+            { text: "-es", gloss: "suffix", morphemeKey: key, children: [] },
+          ],
+        };
+      }
+      if (lower.endsWith("s") && lower.length > 2) {
+        const stem = lower.slice(0, -1);
+        return {
+          text: lower,
+          gloss: glossWord,
+          children: [
+            { text: stem, gloss: "stem", children: [] },
+            { text: "-s", gloss: "suffix", morphemeKey: key, children: [] },
+          ],
+        };
+      }
+    }
+
+    if (key === "sfx:-ing" && lower.endsWith("ing") && lower.length > 4) {
+      let stem = lower.slice(0, -3);
+      if (stem.length >= 2 && stem.charAt(stem.length - 1) === stem.charAt(stem.length - 2)) {
+        stem = stem.slice(0, -1);
+      }
+      return {
+        text: lower,
+        gloss: glossWord,
+        children: [
+          { text: stem || lower, gloss: "stem", children: [] },
+          { text: "-ing", gloss: "suffix", morphemeKey: key, children: [] },
+        ],
+      };
+    }
+
+    if (sufBare && lower.endsWith(sufBare)) {
+      const stem = lower.slice(0, lower.length - sufBare.length);
+      const sufDisplay = sufToken.startsWith("-") ? sufToken : `-${sufToken}`;
+      return {
+        text: lower,
+        gloss: glossWord,
+        children: [
+          { text: stem || lower, gloss: "stem", children: [] },
+          { text: sufDisplay, gloss: "suffix", morphemeKey: key, children: [] },
+        ],
+      };
+    }
+  }
+
+  if (key.startsWith("root:")) {
+    const rootTxt = morphAffixTailFromKey(key);
+    const idx = lower.indexOf(rootTxt);
+    if (idx >= 0) {
+      const before = lower.slice(0, idx);
+      const after = lower.slice(idx + rootTxt.length);
+      /** @type {object[]} */
+      const ch = [];
+      if (before) ch.push({ text: before, gloss: "combining form", children: [] });
+      ch.push({ text: rootTxt, gloss: "root", morphemeKey: key, children: [] });
+      if (after) ch.push({ text: after, gloss: "combining form", children: [] });
+      return { text: lower, gloss: glossWord, children: ch };
+    }
+  }
+
+  return {
+    text: lower,
+    gloss: glossWord,
+    morphemeKey: key,
+    children: [],
+  };
+}
+
+function morphExpandCatalogOutsideExamples(raw, catalog) {
+  const seenId = new Set(raw.map((w) => w.id));
+  const seenSurface = new Set(
+    raw.map((w) => {
+      const t = w.tree?.text;
+      return typeof t === "string" ? t.trim().toLowerCase() : "";
+    })
+  );
+  /** @type {object[]} */
+  const extra = [];
+  for (const row of catalog) {
+    for (const surf of row.outsideExamples || []) {
+      const lw = surf.trim().toLowerCase();
+      if (!lw || seenSurface.has(lw)) continue;
+      const tree = morphCatalogStubTree(surf, row);
+      let id = `ex-${morphSlug(row.key)}-${morphSlug(surf)}`;
+      while (seenId.has(id)) id += "-x";
+      seenId.add(id);
+      seenSurface.add(lw);
+      extra.push({
+        id,
+        label: surf.charAt(0).toUpperCase() + surf.slice(1),
+        tier: /** @type {MorphTier} */ ("tier2"),
+        focusMorpheme: row.morpheme,
+        bracket: `[${surf}]`,
+        note: `<strong>Chart practice:</strong> Compare this word with other lemmas that use <strong>${row.morpheme}</strong>.`,
+        tree,
+        deep: {
+          summary: `<strong>Outside-example drill:</strong> ${row.meaning} (${row.origin}).`,
+          etymology: [{ segment: row.morpheme, origin: row.origin }],
+        },
+      });
+    }
+  }
+  return [...raw, ...extra];
+}
+
+const _MORPHOLOGY_WORDS_EXPANDED = morphExpandCatalogOutsideExamples(
+  /** @type {typeof _MORPHOLOGY_WORDS_RAW} */ (_MORPHOLOGY_WORDS_RAW),
+  MORPHEME_CATALOG
+);
+
+const _positions = morphRingPositions(_MORPHOLOGY_WORDS_EXPANDED.length);
+export const MORPHOLOGY_WORD_LIST = _MORPHOLOGY_WORDS_EXPANDED.map((w, i) => ({
   ...w,
   position: /** @type {[number, number, number]} */ (_positions[i]),
 }));
