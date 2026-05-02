@@ -1779,6 +1779,167 @@ html.morph-immersive-open body {
   line-height: 1.58;
 }
 
+/* ----------------------------------------------------------------------- */
+/*  Fullscreen / immersive: side-by-side layout                            */
+/*  Shell becomes a CSS grid: viewer left, lesson right, ui-panel across.  */
+/* ----------------------------------------------------------------------- */
+
+.morphology-shell:fullscreen,
+.morphology-shell:-webkit-full-screen,
+.morphology-shell--immersive {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) clamp(20rem, 34vw, 34rem) !important;
+  grid-template-rows: minmax(0, 1fr) auto !important;
+  grid-template-areas:
+    "viewer lesson"
+    "panel  panel" !important;
+  flex-direction: row !important;
+}
+
+.morphology-shell:fullscreen > #morph-canvas-host,
+.morphology-shell:fullscreen > .morph-canvas-host,
+.morphology-shell:-webkit-full-screen > #morph-canvas-host,
+.morphology-shell:-webkit-full-screen > .morph-canvas-host,
+.morphology-shell--immersive > #morph-canvas-host,
+.morphology-shell--immersive > .morph-canvas-host {
+  grid-area: viewer !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-height: none !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+}
+
+.morphology-shell:fullscreen > .morph-detail.morph-detail--viewer-dock,
+.morphology-shell:-webkit-full-screen > .morph-detail.morph-detail--viewer-dock,
+.morphology-shell--immersive > .morph-detail.morph-detail--viewer-dock {
+  grid-area: lesson !important;
+  position: relative !important;
+  inset: auto !important;
+  width: auto !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0.85rem 1rem 1.1rem !important;
+  pointer-events: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  gap: 0.55rem !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+  background: rgba(10, 14, 26, 0.92);
+  border: none;
+  border-left: 1px solid rgba(200, 244, 255, 0.18);
+  border-radius: 0;
+  box-shadow: -10px 0 24px rgba(0, 0, 0, 0.25);
+  font-size: clamp(1rem, 0.92rem + 0.35vw, 1.18rem);
+  line-height: 1.55;
+}
+
+.morphology-shell--wb:fullscreen > .morph-detail.morph-detail--viewer-dock,
+.morphology-shell--wb:-webkit-full-screen > .morph-detail.morph-detail--viewer-dock,
+.morphology-shell--wb.morphology-shell--immersive > .morph-detail.morph-detail--viewer-dock {
+  background: #ffffff;
+  color: #0f172a;
+  border-left-color: #e2e8f0;
+  box-shadow: -8px 0 22px rgba(15, 23, 42, 0.10);
+}
+
+.morphology-shell:fullscreen > .morph-detail.morph-detail--viewer-dock .morph-detail__text-tools,
+.morphology-shell:-webkit-full-screen > .morph-detail.morph-detail--viewer-dock .morph-detail__text-tools,
+.morphology-shell--immersive > .morph-detail.morph-detail--viewer-dock .morph-detail__text-tools {
+  flex: 0 0 auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+}
+
+.morphology-shell:fullscreen > .morph-detail.morph-detail--viewer-dock .morph-detail__body,
+.morphology-shell:-webkit-full-screen > .morph-detail.morph-detail--viewer-dock .morph-detail__body,
+.morphology-shell--immersive > .morph-detail.morph-detail--viewer-dock .morph-detail__body {
+  flex: 1 1 0% !important;
+  min-height: 0 !important;
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.55rem !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  overscroll-behavior: contain !important;
+  padding-right: 0.3rem !important;
+  pointer-events: auto !important;
+}
+
+/* Compare lessons stack vertically inside the right panel (not flank-row) */
+.morphology-shell:fullscreen > .morph-detail.morph-detail--viewer-dock .morph-detail-compare,
+.morphology-shell:-webkit-full-screen > .morph-detail.morph-detail--viewer-dock .morph-detail-compare,
+.morphology-shell--immersive > .morph-detail.morph-detail--viewer-dock .morph-detail-compare {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.55rem !important;
+  width: 100% !important;
+}
+
+.morphology-shell:fullscreen > .morph-detail.morph-detail--viewer-dock .morph-detail-lesson--flank,
+.morphology-shell:-webkit-full-screen > .morph-detail.morph-detail--viewer-dock .morph-detail-lesson--flank,
+.morphology-shell--immersive > .morph-detail.morph-detail--viewer-dock .morph-detail-lesson--flank {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.5rem !important;
+}
+
+.morphology-shell:fullscreen > .morph-detail.morph-detail--viewer-dock .morph-lesson-wing,
+.morphology-shell:-webkit-full-screen > .morph-detail.morph-detail--viewer-dock .morph-lesson-wing,
+.morphology-shell--immersive > .morph-detail.morph-detail--viewer-dock .morph-lesson-wing,
+.morphology-shell:fullscreen > .morph-detail.morph-detail--viewer-dock .morph-detail__body > .morph-lesson.morph-lesson--single,
+.morphology-shell:-webkit-full-screen > .morph-detail.morph-detail--viewer-dock .morph-detail__body > .morph-lesson.morph-lesson--single,
+.morphology-shell--immersive > .morph-detail.morph-detail--viewer-dock .morph-detail__body > .morph-lesson.morph-lesson--single {
+  flex: 0 0 auto !important;
+  width: 100% !important;
+  max-width: none !important;
+  align-self: stretch !important;
+  padding: 0.65rem 0.75rem !important;
+}
+
+/* UI panel spans the bottom row across both columns */
+.morphology-shell:fullscreen > .morph-ui-panel,
+.morphology-shell:-webkit-full-screen > .morph-ui-panel,
+.morphology-shell--immersive > .morph-ui-panel {
+  grid-area: panel !important;
+  width: 100% !important;
+}
+
+/* Narrow viewport in fullscreen — stack lesson under viewer instead of side-by-side */
+@media (max-width: 60rem) {
+  .morphology-shell:fullscreen,
+  .morphology-shell:-webkit-full-screen,
+  .morphology-shell--immersive {
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: minmax(0, 1fr) minmax(0, 38vh) auto !important;
+    grid-template-areas:
+      "viewer"
+      "lesson"
+      "panel" !important;
+  }
+
+  .morphology-shell:fullscreen > .morph-detail.morph-detail--viewer-dock,
+  .morphology-shell:-webkit-full-screen > .morph-detail.morph-detail--viewer-dock,
+  .morphology-shell--immersive > .morph-detail.morph-detail--viewer-dock {
+    border-left: none;
+    border-top: 1px solid rgba(200, 244, 255, 0.18);
+    box-shadow: 0 -8px 22px rgba(0, 0, 0, 0.25);
+  }
+
+  .morphology-shell--wb:fullscreen > .morph-detail.morph-detail--viewer-dock,
+  .morphology-shell--wb:-webkit-full-screen > .morph-detail.morph-detail--viewer-dock,
+  .morphology-shell--wb.morphology-shell--immersive > .morph-detail.morph-detail--viewer-dock {
+    border-top-color: #e2e8f0;
+    box-shadow: 0 -8px 22px rgba(15, 23, 42, 0.10);
+  }
+}
+
 /* Two-row Arrange / Surface toolbars */
 
 .morph-ui-row--surface {
@@ -2172,7 +2333,7 @@ html.morph-immersive-open body {
 .morph-chart__table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 56rem;
+  min-width: 64rem;
   font-size: 0.92rem;
 }
 
@@ -2277,6 +2438,62 @@ html.morph-immersive-open body {
 
 .morph-chart__muted {
   opacity: 0.65;
+}
+
+.morph-chart__type {
+  display: inline-block;
+  font: inherit;
+  font-weight: 800;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid currentColor;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.morph-chart__type--prefix {
+  color: #c4b5fd;
+  background: rgba(76, 29, 149, 0.35);
+  border-color: rgba(167, 139, 250, 0.55);
+}
+.morph-chart__type--suffix {
+  color: #fcd34d;
+  background: rgba(120, 53, 15, 0.35);
+  border-color: rgba(251, 191, 36, 0.55);
+}
+.morph-chart__type--root {
+  color: #6ee7b7;
+  background: rgba(6, 78, 59, 0.4);
+  border-color: rgba(52, 211, 153, 0.55);
+}
+.morph-chart__type--lexeme {
+  color: #93c5fd;
+  background: rgba(30, 58, 138, 0.4);
+  border-color: rgba(96, 165, 250, 0.55);
+}
+
+.morphology-page:has(.morphology-shell--wb) .morph-chart__type--prefix {
+  color: #6d28d9;
+  background: #ede9fe;
+  border-color: #c4b5fd;
+}
+.morphology-page:has(.morphology-shell--wb) .morph-chart__type--suffix {
+  color: #92400e;
+  background: #fef3c7;
+  border-color: #fcd34d;
+}
+.morphology-page:has(.morphology-shell--wb) .morph-chart__type--root {
+  color: #065f46;
+  background: #d1fae5;
+  border-color: #6ee7b7;
+}
+.morphology-page:has(.morphology-shell--wb) .morph-chart__type--lexeme {
+  color: #1e40af;
+  background: #dbeafe;
+  border-color: #93c5fd;
 }
 
 .morph-help-btn,

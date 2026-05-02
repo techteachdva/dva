@@ -84,6 +84,22 @@ function morphemeKeyShort(k) {
   return k.replace(/^(pfx|sfx|root|lex):/, "");
 }
 
+/** Human-readable type label derived from the catalog key (catalog rows may also set `type` to override). */
+function morphemeTypeLabel(key, /** @type {string=} */ override) {
+  if (override) return override;
+  if (typeof key !== "string") return "Morpheme";
+  if (key.startsWith("pfx:")) return "Prefix";
+  if (key.startsWith("sfx:")) return "Suffix";
+  if (key.startsWith("root:")) return "Root";
+  if (key.startsWith("lex:")) return "Lexeme";
+  return "Morpheme";
+}
+
+/** Modifier string for badge styling (matches morph-chart__type--<slug>). */
+function morphemeTypeSlug(label) {
+  return String(label).toLowerCase().replace(/[^a-z0-9]+/g, "-");
+}
+
 function morphemeCatalogRow(key) {
   return MORPHEME_CATALOG.find((r) => r.key === key);
 }
@@ -953,10 +969,12 @@ function init() {
   const detailHomeParent = detailEl?.parentElement ?? null;
   const detailHomeNext = detailEl?.nextElementSibling ?? null;
 
+  /* Dock the lesson as a sibling of the canvas host so the shell becomes a 2-column grid:
+     [ viewer | lesson ] with the toolbar panel spanning the bottom. */
   function dockDetailIntoShell() {
-    if (!detailEl || !host) return;
-    if (detailEl.parentElement === host) return;
-    host.appendChild(detailEl);
+    if (!detailEl || !shellEl) return;
+    if (detailEl.parentElement === shellEl) return;
+    shellEl.appendChild(detailEl);
     detailEl.classList.add("morph-detail--viewer-dock");
   }
   function restoreDetailHome() {
@@ -1153,8 +1171,11 @@ function installMorphemeChart(onPickWord, onPickKey) {
       .join("");
     const wikt = r.wiktionary || r.morpheme;
     const wiktUrl = `https://en.wiktionary.org/wiki/${encodeURIComponent(wikt)}`;
+    const typeLabel = morphemeTypeLabel(r.key, r.type);
+    const typeSlug = morphemeTypeSlug(typeLabel);
     return `<tr>
       <td><button class="morph-chart__morpheme" data-morph-pick-key="${escapeHtml(r.key)}">${escapeHtml(r.morpheme)}</button></td>
+      <td><span class="morph-chart__type morph-chart__type--${escapeHtml(typeSlug)}">${escapeHtml(typeLabel)}</span></td>
       <td>${escapeHtml(r.origin)}</td>
       <td>${escapeHtml(r.meaning)}</td>
       <td>${buttons ? `<ul class="morph-chart__words">${buttons}</ul>` : `<span class="morph-chart__muted">—</span>`}</td>
@@ -1164,7 +1185,7 @@ function installMorphemeChart(onPickWord, onPickKey) {
   }).join("");
 
   mount.innerHTML = `<div class="morph-chart__wrap"><table class="morph-chart__table">
-    <thead><tr><th>Morpheme</th><th>Origin</th><th>Meaning</th><th>Words in this bank</th><th>Outside examples</th><th>Wiktionary</th></tr></thead>
+    <thead><tr><th>Morpheme</th><th>Type</th><th>Origin</th><th>Meaning</th><th>Words in this bank</th><th>Outside examples</th><th>Wiktionary</th></tr></thead>
     <tbody>${rows}</tbody>
   </table></div>`;
 

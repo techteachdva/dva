@@ -6,11 +6,15 @@
  * - `meaning`: classroom-usable gloss
  * - `outsideExamples`: a few examples NOT in the word bank (helps you extend the lesson)
  * - `wiktionary`: the page title to link to (defaults to `morpheme` if omitted)
+ * - `type` (optional): override the auto-derived type label shown in the chart's "Type" column
+ *   ("Prefix", "Suffix", "Root", "Lexeme", or any custom string e.g. "Combining form").
+ *   If omitted, the column is derived from the `key` prefix (`pfx:` → Prefix, `sfx:` → Suffix,
+ *   `root:` → Root, `lex:` → Lexeme).
  *
  * `key` MUST match the `morphemeKey` used in word trees (e.g. "pfx:un-", "sfx:-ed", "root:port").
  */
 
-/** @typedef {{ key: string, morpheme: string, origin: string, meaning: string, outsideExamples: string[], wiktionary?: string }} MorphemeCatalogRow */
+/** @typedef {{ key: string, morpheme: string, origin: string, meaning: string, outsideExamples: string[], wiktionary?: string, type?: string }} MorphemeCatalogRow */
 
 /** @type {MorphemeCatalogRow[]} */
 export const MORPHEME_CATALOG = [
