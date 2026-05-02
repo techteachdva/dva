@@ -518,22 +518,34 @@ function init() {
   const helpBtn = document.getElementById("morph-help-btn");
   const helpEl = document.getElementById("morph-help");
 
-  /* ---- populate selectors ------------------------------------------- */
+  /* ---- populate selectors (alphabetical) ----------------------------- */
+  const WORDS_ALPHA = [...WORDS].sort((a, b) =>
+    String(a.label).localeCompare(String(b.label), undefined, { sensitivity: "base", numeric: true })
+  );
   function fillWordSelect(/** @type {HTMLSelectElement | null} */ sel) {
     if (!sel) return;
-    sel.innerHTML = WORDS.map((w) => `<option value="${escapeHtml(w.id)}">${escapeHtml(w.label)}</option>`).join("");
+    sel.innerHTML = WORDS_ALPHA.map(
+      (w) => `<option value="${escapeHtml(w.id)}">${escapeHtml(w.label)}</option>`
+    ).join("");
   }
   function fillMorphSelect(/** @type {HTMLSelectElement | null} */ sel) {
     if (!sel) return;
-    const keys = allMorphemeKeysInBank();
-    const opts = keys.map((k) => {
+    const items = allMorphemeKeysInBank().map((k) => {
       const row = morphemeCatalogRow(k);
       const count = wordIdsForMorphemeKey(k).length;
-      const lbl = row ? `${row.morpheme} — ${row.meaning} (${count})` : `${morphemeKeyShort(k)} (${count})`;
-      const v = `${MORPH_SELECT_PREFIX}${encodeURIComponent(k)}`;
-      return `<option value="${escapeHtml(v)}">${escapeHtml(lbl)}</option>`;
+      const text = row?.morpheme ?? morphemeKeyShort(k);
+      const meaning = row?.meaning ?? "";
+      const lbl = meaning ? `${text} — ${meaning} (${count})` : `${text} (${count})`;
+      const sortKey = String(text).replace(/^[-]+/, "").toLocaleLowerCase();
+      return { key: k, text, lbl, sortKey };
     });
-    sel.innerHTML = opts.join("");
+    items.sort((a, b) => a.sortKey.localeCompare(b.sortKey, undefined, { sensitivity: "base", numeric: true }));
+    sel.innerHTML = items
+      .map((it) => {
+        const v = `${MORPH_SELECT_PREFIX}${encodeURIComponent(it.key)}`;
+        return `<option value="${escapeHtml(v)}">${escapeHtml(it.lbl)}</option>`;
+      })
+      .join("");
   }
   fillWordSelect(wordSelect);
   fillWordSelect(compareASel);
@@ -936,6 +948,29 @@ function init() {
     fsBtn.setAttribute("aria-pressed", isFullscreen().toString());
     fsBtn.title = isFullscreen() ? "Exit full screen" : "Full screen";
   }
+
+  /* Save where #morph-detail lived in the DOM so we can restore it on fullscreen exit. */
+  const detailHomeParent = detailEl?.parentElement ?? null;
+  const detailHomeNext = detailEl?.nextElementSibling ?? null;
+
+  function dockDetailIntoShell() {
+    if (!detailEl || !host) return;
+    if (detailEl.parentElement === host) return;
+    host.appendChild(detailEl);
+    detailEl.classList.add("morph-detail--viewer-dock");
+  }
+  function restoreDetailHome() {
+    if (!detailEl) return;
+    detailEl.classList.remove("morph-detail--viewer-dock");
+    if (!detailHomeParent) return;
+    if (detailEl.parentElement === detailHomeParent) return;
+    if (detailHomeNext && detailHomeNext.parentElement === detailHomeParent) {
+      detailHomeParent.insertBefore(detailEl, detailHomeNext);
+    } else {
+      detailHomeParent.appendChild(detailEl);
+    }
+  }
+
   fsBtn?.addEventListener("click", () => {
     const target = shellEl || host;
     if (!target) return;
@@ -949,6 +984,8 @@ function init() {
   });
   document.addEventListener("fullscreenchange", () => {
     setFsLabel();
+    if (isFullscreen()) dockDetailIntoShell();
+    else restoreDetailHome();
     setTimeout(resizeCanvasToHost, 60);
   });
 
