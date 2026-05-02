@@ -1395,7 +1395,7 @@ function init(host, detailEl, selectEl, shellEl) {
     refreshControlsForViewMode(viewBlend, masterWtKey(vk()));
   }
 
-  /** Fit orthographic extents to whichever trees are visible (XZ spread, frontal view along +Z). */
+  /** Fit orthographic extents to whichever trees are visible (frontal view along −Z from +Z). */
   function syncBoardOrthoCamera() {
     if (!controls || controls.object !== boardOrthoCamera) return;
     scene.updateMatrixWorld(true);
@@ -1413,18 +1413,17 @@ function init(host, detailEl, selectEl, shellEl) {
     if (!any) _morphFitBox.setFromCenterAndSize(sceneCenter, new THREE.Vector3(136, 80, 136));
     const c = _morphFitBox.getCenter(_morphFitCenter);
     const s = _morphFitBox.getSize(_morphFitSize);
-    const pad = 1.26;
-    const fw = Math.max(s.x * pad, 92);
-    const fh = Math.max(s.y * pad, 64);
-    const aspect = Math.max(camera.aspect, 0.35);
-    const frustumHalfH = Math.max(fh * 0.52, fw / aspect * 0.52, 62);
-    const frustumHalfW = frustumHalfH * aspect;
-    boardOrthoCamera.left = -frustumHalfW;
-    boardOrthoCamera.right = frustumHalfW;
-    boardOrthoCamera.top = frustumHalfH;
-    boardOrthoCamera.bottom = -frustumHalfH;
-    const back = Math.max(s.z, fw * 0.35, 118) + 118;
-    boardOrthoCamera.position.set(c.x, c.y, c.z + back);
+    const pad = 1.14;
+    const aspect = Math.max(host.clientWidth / Math.max(host.clientHeight, 1), 0.25);
+    /* half-height H ⇒ visible height 2H, width 2H·aspect — fit both axes */
+    const halfFrustum = Math.max((s.y * pad) / 2, (s.x * pad) / (2 * aspect), 26);
+    boardOrthoCamera.left = -halfFrustum * aspect;
+    boardOrthoCamera.right = halfFrustum * aspect;
+    boardOrthoCamera.top = halfFrustum;
+    boardOrthoCamera.bottom = -halfFrustum;
+    boardOrthoCamera.zoom = 1;
+    const zMargin = Math.max(s.z * 0.55 + 32, 56);
+    boardOrthoCamera.position.set(c.x, c.y, c.z + zMargin);
     boardOrthoCamera.up.set(0, 1, 0);
     boardOrthoCamera.lookAt(c.x, c.y, c.z);
     controls.target.copy(c);
@@ -1449,7 +1448,7 @@ function init(host, detailEl, selectEl, shellEl) {
     if (!controls) return;
     if (morphIsOrthoBoard()) {
       controls.enablePan = true;
-      controls.enableZoom = true;
+      controls.enableZoom = false;
       controls.enableRotate = false;
       controls.rotateSpeed = 0;
       controls.zoomSpeed = 0.52;
@@ -2071,8 +2070,11 @@ function init(host, detailEl, selectEl, shellEl) {
           controls.target.copy(cam3dTarget);
         }
       } else if (smoothstep(viewBlend) > 0.85) {
-        camera.position.copy(cam3dPos);
-        controls.target.copy(cam3dTarget);
+        if (morphIsOrthoBoard()) syncBoardOrthoCamera();
+        else {
+          camera.position.copy(cam3dPos);
+          controls.target.copy(cam3dTarget);
+        }
       }
     }
     controls.update();
@@ -2381,6 +2383,12 @@ function init(host, detailEl, selectEl, shellEl) {
   function flyToActiveView() {
     if (vk().startsWith("Compare")) {
       syncCam3dCompare();
+      if (morphIsOrthoBoard()) syncBoardOrthoCamera();
+      else {
+        camera.position.copy(cam3dPos);
+        controls.target.copy(cam3dTarget);
+      }
+      controls.update();
       return;
     }
     if (!introDone) {
@@ -2394,6 +2402,18 @@ function init(host, detailEl, selectEl, shellEl) {
         flyToWord(gid);
       } else {
         syncCamGardenOverview();
+        if (morphIsOrthoBoard()) syncBoardOrthoCamera();
+        else if (transition === null) {
+          if (vk().endsWith("3d")) {
+            if (viewBlend < 0.06) {
+              camera.position.copy(cam3dPos);
+              controls.target.copy(cam3dTarget);
+            }
+          } else if (smoothstep(viewBlend) > 0.85) {
+            camera.position.copy(cam3dPos);
+            controls.target.copy(cam3dTarget);
+          }
+        }
       }
       controls.update();
       return;
@@ -2402,6 +2422,11 @@ function init(host, detailEl, selectEl, shellEl) {
       computeMasterCamera();
       cam3dPos.copy(cam3dMaster);
       cam3dTarget.copy(cam3dTargetMaster);
+      if (morphIsOrthoBoard()) syncBoardOrthoCamera();
+      else {
+        camera.position.copy(cam3dPos);
+        controls.target.copy(cam3dTarget);
+      }
       controls.update();
       return;
     }
@@ -2420,8 +2445,11 @@ function init(host, detailEl, selectEl, shellEl) {
           controls.target.copy(cam3dTarget);
         }
       } else if (wb) {
-        camera.position.copy(cam3dPos);
-        controls.target.copy(cam3dTarget);
+        if (morphIsOrthoBoard()) syncBoardOrthoCamera();
+        else {
+          camera.position.copy(cam3dPos);
+          controls.target.copy(cam3dTarget);
+        }
       }
     }
     controls.update();
