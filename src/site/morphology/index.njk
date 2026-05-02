@@ -12,7 +12,7 @@ contentClasses: morphology-page
     <h1 class="morph-page-title">Morphology: The Analysis of Words</h1>
     <p class="morphology-tagline">
       Highlight reel from Park-Johnson &amp; Shin (2020), <em>Linguistics for Language Teachers</em>, Chapter 4.
-      <strong>Explore the trees first</strong>—then read the five key ideas below.
+      <strong>Open with one lemma</strong>—the intro settles on a random pick; use <strong>Word tree</strong> to steer. Five key teaching ideas stay below once you dive in.
     </p>
   </header>
 
@@ -21,7 +21,7 @@ contentClasses: morphology-page
       id="morph-canvas-host"
       class="morph-canvas-host"
       role="img"
-      aria-label="Flat morpheme diagrams: Arrange for garden, linked hubs, or compare two words"
+      aria-label="Flat morpheme diagrams: isolated tree, linked lemmas, or compare two words"
     ></div>
     <div class="morph-ui-panel">
       <div class="morph-ui-row morph-ui-row--meta" role="group" aria-label="Word tier vocabulary set">
@@ -50,15 +50,15 @@ contentClasses: morphology-page
           ❓
         </button>
       </div>
-      <div class="morph-ui-row morph-ui-row--toggle morph-ui-row--arrange" role="group" aria-label="Garden, links, or compare two words">
+      <div class="morph-ui-row morph-ui-row--toggle morph-ui-row--arrange" role="group" aria-label="Isolated tree, linked lemmas, or compare two words">
         <span class="morph-ui-label">Arrange</span>
         <button
           type="button"
           id="morph-btn-arr-garden"
           class="morph-view-btn morph-view-btn--icon morph-view-btn--active"
           aria-pressed="true"
-          title="Garden — every word tree spaced by vocabulary"
-          aria-label="Garden arrangement"
+          title="Isolated tree — one lemma centred on the board"
+          aria-label="Isolated tree arrangement"
         >
           🌳
         </button>
@@ -67,8 +67,8 @@ contentClasses: morphology-page
           id="morph-btn-arr-master"
           class="morph-view-btn morph-view-btn--icon"
           aria-pressed="false"
-          title="Links — hubs by shared morphemes across words"
-          aria-label="Master tree by links"
+          title="Links — lemmas sharing morphemes with your picked word"
+          aria-label="Linked lemmas arrangement"
         >
           🔗
         </button>
@@ -77,9 +77,8 @@ contentClasses: morphology-page
           id="morph-btn-arr-compare"
           class="morph-view-btn morph-view-btn--icon"
           aria-pressed="false"
-          title="Compare — two word trees side by side; shared morphemes still bridge"
-          aria-label="Compare two words"
-        >
+          title="Dual — compare two lemmas with one shared-morph lesson"
+          aria-label="Dual compare arrangement"
           ⚖
         </button>
         <button
@@ -103,8 +102,7 @@ contentClasses: morphology-page
         <select id="morph-compare-b" class="morph-select morph-select--compare" title="Second word in compare mode"></select>
       </div>
       <p id="morph-hint" class="morph-hint morph-hint--compact">
-        <strong>Tip:</strong> The board is always <strong>two-dimensional</strong>—pan and zoom the diagram. Try <strong>Arrange → 🔗</strong> for shared-morpheme hubs or <strong>⚖</strong> to compare exactly two words side by side.
-        Hover morphemes for gloss. Use <strong>📖 Guided tour</strong> or <strong>❓ Help</strong> for shortcuts ·
+        <strong>Tip:</strong> The board is <strong>2D</strong>—pan/zoom freely. 🌳 is your single-word lab; 🔗 unfolds anything in the tier that braids morphemes with that pick; ⚖ contrasts two lemmas and one dual mini-lesson. Hover for gloss ·
         <kbd>F</kbd> fit · <kbd>R</kbd> reset<span class="visually-hidden"> (Space toggles orbit only in the experimental 3D mode from backslash)</span>.
       </p>
     </div>
@@ -132,18 +130,17 @@ contentClasses: morphology-page
           <section class="morph-help__sec">
             <h3>Flat board &amp; Arrange</h3>
             <p class="morph-help__sub">
-              The explorer opens on a <strong>planar board</strong>: morpheme trees and magenta bridges are staged in width and height (pan and zoom handle navigation). Use <strong>Arrange</strong> to change how words are laid out.
+              The explorer opens after a brief intro cinematic: one lemma takes the spotlight with its mini-lesson. Use <strong>Arrange</strong> when you’re ready for different vantage points on the vocabulary tray loaded from <strong>Word tier</strong>.
             </p>
             <ul>
               <li>
-                <strong>🌳 Garden</strong> — Every tree keeps open spacing; magenta bridges show recurring morphemes.
+                <strong>🌳 Isolated tree</strong> — One centred diagram with deep mini-lessons and morphology notes.
               </li>
               <li>
-                <strong>🔗 Links</strong> — Pulls vocabulary into hubs so shared morphemes stay easy to notice; bridges still connect matching spheres.
+                <strong>🔗 Links</strong> — Every lemma visible shares at least one labelled morpheme with the word you chose in <strong>Word tree</strong>; magenta bridges stay honest to that narrower set.
               </li>
               <li>
-                <strong>⚖ Compare</strong> — Pin two different words; only their shared morphemes bridge.
-              </li>
+                <strong>⚖ Dual</strong> — Two lemmas side-by-side plus a unified lesson keyed to overlaps (sparks underneath stay word-specific).</li>
               <li>
                 <strong>🖥️ Full screen</strong> — Fills the viewport (or immersive mode on mobile Safari) so the diagram and chrome stay legible when teaching.
               </li>
@@ -167,7 +164,7 @@ contentClasses: morphology-page
             <h3>Keyboard</h3>
             <ul>
               <li><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd>, arrows — glide / orbit (only in experimental 3D via <kbd>\</kbd>).</li>
-              <li><kbd>F</kbd> — fit the garden, links, isolate, or compare layout into view.</li>
+              <li><kbd>F</kbd> — fit isolate, linked, or dual layout into view.</li>
               <li><kbd>R</kbd> — reset framing for the active arrange mode.</li>
               <li><kbd>Space</kbd> — toggle orbit drift while 3D experimental mode is enabled.</li>
               <li><kbd>\\</kbd> — toggle the hidden spatial 3D camera; default teaching mode stays flat.</li>
@@ -177,8 +174,8 @@ contentClasses: morphology-page
           <section class="morph-help__sec">
             <h3>Word menu &amp; details</h3>
             <p>
-              <strong>Word tree</strong> chooses one tree or <strong>All words — garden</strong>. Isolating opens a morphology
-              mini-lesson (etymology cues, overlaps, tense notes) followed by a morphology note for the word tree.
+              <strong>Word tree</strong> is the focus knob for isolated view and linked view. Dual mode swaps in two selectors
+              so you can juxtapose lemmas when you want tighter contrast paired with one shared-mini-lesson.
             </p>
           </section>
         </div>

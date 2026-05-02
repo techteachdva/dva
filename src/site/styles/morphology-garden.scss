@@ -1078,8 +1078,8 @@ html.morph-immersive-open body {
   gap: 0.4rem;
   padding: 0;
   overflow: visible;
-  font-size: 0.82rem;
-  line-height: 1.45;
+  font-size: clamp(1rem, 0.92rem + 1.85vmin, 1.38rem);
+  line-height: 1.52;
   background: transparent;
   border: none;
   outline: none;
@@ -1087,6 +1087,25 @@ html.morph-immersive-open body {
   border-radius: 0;
   pointer-events: none;
   -webkit-overflow-scrolling: touch;
+}
+
+/* Smart board / full-screen API: readability bump inside the fullscreen element tree */
+.morphology-shell--immersive #morph-canvas-host .morph-detail.morph-detail--viewer-dock,
+.morphology-shell:-webkit-full-screen #morph-canvas-host .morph-detail.morph-detail--viewer-dock,
+.morphology-shell:fullscreen #morph-canvas-host .morph-detail.morph-detail--viewer-dock {
+  font-size: clamp(1.12rem, 0.96rem + 2.95vmin, 1.72rem);
+  line-height: 1.55;
+}
+
+.morph-detail--viewer-dock .morph-detail-compare .morph-detail-compare__col {
+  font-size: inherit;
+}
+
+.morph-detail--viewer-dock .morph-lesson__bracket-caption {
+  font-size: 0.92em;
+  font-weight: 700;
+  margin: 0 0 0.12rem;
+  opacity: 0.92;
 }
 
 .morph-detail--viewer-dock .morph-detail-lesson--flank {
@@ -1151,11 +1170,20 @@ html.morph-immersive-open body {
 }
 
 .morph-detail--viewer-dock .morph-lesson__h {
-  font-size: 0.98rem;
+  font-size: clamp(1.2rem, 1.06rem + 1.65vmin, 1.82rem);
+}
+
+.morph-detail--viewer-dock .morph-lesson__bracket {
+  font-size: clamp(0.95rem, 0.88rem + 1vmin, 1.25rem);
+}
+
+.morph-detail--viewer-dock .morph-lesson__sec {
+  font-size: 1em;
 }
 
 .morph-detail--viewer-dock .morph-lesson__sec h4 {
-  font-size: 0.71rem;
+  font-size: clamp(0.92rem, 0.85rem + 1.1vmin, 1.38rem);
+  letter-spacing: 0.08em;
 }
 
 .morph-detail--viewer-dock .morph-lesson-wing .morph-lesson__sec:first-of-type {
@@ -1364,6 +1392,7 @@ html.morph-immersive-open body {
 
 .morph-detail--viewer-dock .morph-word-note__h {
   margin-top: 0;
+  font-size: clamp(0.98rem, 0.9rem + 1vmin, 1.32rem);
 }
 
 .morph-detail--viewer-dock .morph-chapter-note,
@@ -1371,6 +1400,11 @@ html.morph-immersive-open body {
   margin-top: 0;
   padding-top: 0;
   border-top: none;
+}
+
+.morph-detail--viewer-dock .morph-word-note__body {
+  font-size: clamp(1rem, 0.92rem + 1.05vmin, 1.48rem);
+  line-height: 1.58;
 }
 
 /* Two-row Arrange / Surface toolbars */

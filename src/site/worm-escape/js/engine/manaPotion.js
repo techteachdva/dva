@@ -82,6 +82,29 @@ export function tickManaPotionMiniGame(st, dt, inp, onSuccess, onFail) {
   }
 }
 
+/**
+ * Keeps cork/pour input alive while global UI eats the scene update loop
+ * (e.g. cheat terminal open). CombatScene + MawBossScene expose the same hooks.
+ */
+export function tickManaVialIfScene(scene, dt, inp, player) {
+  if (!scene?.potionState || scene.phase !== "fight" || !player) return;
+  tickManaPotionMiniGame(
+    scene.potionState,
+    dt,
+    inp,
+    () => {
+      if (typeof scene.endManaPotionSuccess === "function") {
+        scene.endManaPotionSuccess(player);
+      }
+    },
+    () => {
+      if (typeof scene.endManaPotionFail === "function") {
+        scene.endManaPotionFail();
+      }
+    },
+  );
+}
+
 /** Full-screen mana vial modal (combat waits while open). */
 export function drawManaPotionModal(ctx, st, COLORS, player = null) {
   if (!st) return;

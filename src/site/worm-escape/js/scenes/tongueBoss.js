@@ -209,7 +209,9 @@ export class MawBossScene {
       this.pushLog(`Mana vial recharging (${this.potionDrinkCooldown.toFixed(1)}s).`);
       return;
     }
-    if (p.mana >= p.manaMax) {
+    const mp = Number(p.mana) || 0;
+    const mm = Number(p.manaMax) || 0;
+    if (mm > 0 && mp >= mm - 1e-9) {
       SFX.deny();
       this.pushLog("Mana already full!");
       return;

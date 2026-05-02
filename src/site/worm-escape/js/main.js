@@ -6,6 +6,7 @@ import { pointInRect } from "./engine/pointer.js";
 import { toggleMute, isMuted, SFX, initBGM } from "./engine/audio.js";
 import { IntroScene } from "./scenes/intro.js";
 import { applyCheatLine } from "./engine/cheatActions.js";
+import { tickManaVialIfScene } from "./engine/manaPotion.js";
 import { preloadWeaponArt } from "./engine/weaponArt.js";
 
 // Loop the "Level Up" track as background music. The file lives next to
@@ -164,6 +165,7 @@ const loop = new Loop(
     }
 
     if (game.cheatMenuOpen) {
+      tickManaVialIfScene(game.scenes?.current, dt, game.input, game.player);
       updateCheatMenu(game);
     } else {
       game.scenes.update(dt, game);

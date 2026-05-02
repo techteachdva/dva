@@ -13,9 +13,10 @@ export function preparePlayerForMawCheatDrop(p) {
   p.hp = p.hpMax;
   if (p.armorMax > 0) p.armor = p.armorMax;
   p.tankHitsLeft = p.tankHitsMax;
+  const maxMp = Number(p.manaMax) || 0;
   const cap =
-    p.manaMax <= 1 ? 0 : Math.min(p.manaMax - 1, Math.floor(p.manaMax * MAW_TEST_MANA_FRAC));
-  p.mana = cap;
+    maxMp <= 1 ? 0 : Math.min(maxMp - 1, Math.floor(maxMp * MAW_TEST_MANA_FRAC));
+  p.mana = Math.max(0, Math.floor(Number.isFinite(cap) ? cap : 0));
   if (p.cooldowns) {
     p.cooldowns.attack = 0;
     p.cooldowns.special = 0;

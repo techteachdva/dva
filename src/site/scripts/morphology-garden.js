@@ -4,7 +4,11 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
-import { configureLessonWordLookup, renderMorphLessonHtml } from "./morphology-lessons-data.js";
+import {
+  configureLessonWordLookup,
+  renderMorphLessonHtml,
+  renderMorphDualLessonHtml,
+} from "./morphology-lessons-data.js";
 
 /** Reused vectors — avoids per-frame allocations in bridge updates */
 const _vBridgeA = new THREE.Vector3();
@@ -48,9 +52,6 @@ const TRANSITION_SEC = REDUCED_MOTION ? 0.01 : 1.48;
 let morphDevSpatial3d = false;
 /** Skip tiny DOM writes when LOD opacity barely changes */
 const LOD_OPACITY_EPS = 0.02;
-
-/** Select “all trees” instead of isolating one */
-const GARDEN_SELECT = "__garden__";
 
 /** Whiteboard: trees on a circle (garden) vs one tree centered (isolate) */
 /** Wider spacing on the whiteboard ring so neighboring trees / labels overlap less */
@@ -2069,12 +2070,12 @@ function morphInstallGuidedTour() {
     },
     {
       title: "Arrange",
-      body: "<strong>Garden</strong> spaces trees openly on the board. <strong>Links</strong> tightens hubs where morphemes repeat. <strong>Compare</strong> pins exactly two trees. Use <strong>🖥️</strong> here for fullscreen too.",
+      body: "<strong>🌳 Isolated tree</strong> pins one lemma in the centre (mini-lesson + notes below). <strong>🔗 Links</strong> lays out lemmas that share morphemes with your pick. <strong>⚖ Dual</strong> stacks two picks with one combined lesson for what they share. Use <strong>🖥️</strong> for fullscreen.",
       target: ".morph-ui-row--arrange",
     },
     {
       title: "Pick a tree",
-      body: "Use <strong>Word tree</strong> to isolate one word (mini-lesson + notes appear below) or keep <strong>All words — garden</strong> for overview. In Compare, two selectors replace this row.",
+      body: "<strong>Word tree</strong> chooses the focus lemma for isolated view and linked view. In <strong>⚖ Dual</strong>, two selectors replace this row.",
       target: "#morph-word-row",
     },
     {
@@ -2368,6 +2369,8 @@ function init(host, detailEl, selectEl, shellEl) {
   }
 
   const runIntroCinematic = !REDUCED_MOTION && USE_TYPO_INTRO && !morphIntroPlayedThisSession();
+  /** Declared early so picker / visibility hooks can safely read TDZ-before-use while intro cinematic runs */
+  let introDone = !runIntroCinematic;
   morphTourCtl = morphInstallGuidedTour();
   if (!runIntroCinematic) morphTourCtl.autoTry(650);
 
@@ -2582,56 +2585,90 @@ function init(host, detailEl, selectEl, shellEl) {
   /** @type {string | null} */
   let morphGardenSoloWordId = null;
 
-  /** Single-word pick outside Compare: centered solo stage (Garden or Links/Master)—not scattered on the overview layout. */
+  /** Solo centre stage: only Garden “isolated tree” layout after intro—not Master linked hubs. */
   function morphGardenSoloShouldUse(layoutKeyEffective = vk()) {
+    if (!introDone) return false;
     if (layoutKeyEffective.startsWith("Compare")) return false;
     const pick =
-      selectEl &&
-      selectEl.value !== "" &&
-      selectEl.value !== GARDEN_SELECT;
-    return !!(pick && (layoutKeyEffective.startsWith("Garden") || layoutKeyEffective.startsWith("Master")));
+      !!(selectEl && selectEl.value !== "" && WORDS.some((x) => x.id === selectEl.value));
+    return !!(pick && layoutKeyEffective.startsWith("Garden"));
+  }
+
+  /** Keep exactly one scene band active: full garden hub, solo isolate centered, or paired compare subtree. */
+  function morphSyncStageRootsVisibility(layoutKeyEffective = vk()) {
+    const [cidA, cidB] = morphCompareAttachedPair || [];
+    const ga = cidA ? wordGroups[cidA] : undefined;
+    const gb = cidB ? wordGroups[cidB] : undefined;
+    const compareAttachedPhysically =
+      !!ga &&
+      !!gb &&
+      ga.parent === compareStage &&
+      gb.parent === compareStage;
+    const compareReady = layoutKeyEffective.startsWith("Compare") && compareAttachedPhysically;
+
+    const sid = morphGardenSoloWordId;
+    const sg = sid ? wordGroups[sid] : undefined;
+    const soloAttachedPhysically = !!sg && sg.parent === soloStage;
+    const soloReady =
+      morphGardenSoloShouldUse(layoutKeyEffective) && !!sid && soloAttachedPhysically;
+
+    if (compareReady) {
+      gardenRoot.visible = false;
+      soloStage.visible = false;
+      compareStage.visible = true;
+      return;
+    }
+    if (soloReady) {
+      gardenRoot.visible = false;
+      compareStage.visible = false;
+      soloStage.visible = true;
+      return;
+    }
+    compareStage.visible = false;
+    soloStage.visible = false;
+    gardenRoot.visible = true;
   }
 
   /** Reparent solo tree into `soloStage` (single-object scene cell) vs all trees under `gardenRoot`. */
   function morphApplyGardenSoloStage(layoutKeyEffective = vk()) {
     const want = morphGardenSoloShouldUse(layoutKeyEffective) ? /** @type {string} */ (selectEl?.value) : null;
-    if (want === morphGardenSoloWordId) return;
 
-    if (morphGardenSoloWordId) {
-      const prev = wordGroups[morphGardenSoloWordId];
-      const wPrev = WORDS.find((x) => x.id === morphGardenSoloWordId);
-      if (prev) {
-        gardenRoot.attach(prev);
-        if (wPrev) prev.position.copy(posForViewKey(wPrev, layoutKeyEffective));
-        prev.updateMatrixWorld(true);
+    if (want !== morphGardenSoloWordId) {
+      if (morphGardenSoloWordId) {
+        const prev = wordGroups[morphGardenSoloWordId];
+        const wPrev = WORDS.find((x) => x.id === morphGardenSoloWordId);
+        if (prev) {
+          gardenRoot.attach(prev);
+          if (wPrev) prev.position.copy(posForViewKey(wPrev, layoutKeyEffective));
+          prev.updateMatrixWorld(true);
+        }
       }
-    }
 
-    morphGardenSoloWordId = want;
+      morphGardenSoloWordId = want;
 
-    if (want) {
-      const g = wordGroups[want];
-      if (g) {
-        soloStage.attach(g);
-        scene.updateMatrixWorld(true);
-        _morphFitBox.setFromObject(g);
-        _morphFitBox.getCenter(_morphSoloCtrScratch);
-        const lc = soloStage.worldToLocal(_morphSoloCtrScratch.clone());
-        g.position.sub(lc);
-        g.updateMatrixWorld(true);
+      if (want) {
+        const g = wordGroups[want];
+        if (g) {
+          soloStage.attach(g);
+          scene.updateMatrixWorld(true);
+          _morphFitBox.setFromObject(g);
+          _morphFitBox.getCenter(_morphSoloCtrScratch);
+          const lc = soloStage.worldToLocal(_morphSoloCtrScratch.clone());
+          g.position.sub(lc);
+          g.updateMatrixWorld(true);
+        }
+        soloStage.visible = true;
+        gardenRoot.visible = false;
+      } else {
+        soloStage.visible = false;
       }
-      soloStage.visible = true;
-      gardenRoot.visible = false;
-    } else {
-      soloStage.visible = false;
-      gardenRoot.visible = !compareStage.visible;
     }
   }
 
   /** @type {[string, string] | null} Two word ids docked side-by-side in Compare arrange. */
   let morphCompareAttachedPair = null;
 
-  function detachCompareTrees() {
+  function detachCompareTrees(/** @type {string} */ layoutKeyEffective = vk()) {
     if (!morphCompareAttachedPair) return;
     for (const id of morphCompareAttachedPair) {
       const g = wordGroups[id];
@@ -2639,7 +2676,7 @@ function init(host, detailEl, selectEl, shellEl) {
       if (g && w) {
         delete g.userData.compareCentroidLocal;
         gardenRoot.attach(g);
-        g.position.copy(posForViewKey(w, vk()));
+        g.position.copy(posForViewKey(w, layoutKeyEffective));
         g.updateMatrixWorld(true);
       }
     }
@@ -2673,7 +2710,7 @@ function init(host, detailEl, selectEl, shellEl) {
   /** Garden + WB 3d: pairs two picker words inside `compareStage`; exclusive with solo isolate. */
   function morphApplyCompareStage(layoutKeyEffective = vk()) {
     if (!layoutKeyEffective.startsWith("Compare")) {
-      detachCompareTrees();
+      detachCompareTrees(layoutKeyEffective);
       return;
     }
     const cmpSelA = document.getElementById("morph-compare-a");
@@ -2690,7 +2727,7 @@ function init(host, detailEl, selectEl, shellEl) {
       "";
     const valid = WORDS.some((x) => x.id === pa) && WORDS.some((x) => x.id === pb);
     if (!valid || !pa || !pb) {
-      detachCompareTrees();
+      detachCompareTrees(layoutKeyEffective);
       gardenRoot.visible = true;
       return;
     }
@@ -2699,7 +2736,7 @@ function init(host, detailEl, selectEl, shellEl) {
       if (cmpSelB && pb) cmpSelB.value = pb;
     }
     if (pa === pb) {
-      detachCompareTrees();
+      detachCompareTrees(layoutKeyEffective);
       gardenRoot.visible = true;
       return;
     }
@@ -2722,7 +2759,7 @@ function init(host, detailEl, selectEl, shellEl) {
       return;
     }
 
-    detachCompareTrees();
+    detachCompareTrees(layoutKeyEffective);
     morphGardenSoloWordId = null;
     soloStage.visible = false;
 
@@ -2800,7 +2837,8 @@ function init(host, detailEl, selectEl, shellEl) {
     const box = new THREE.Box3();
     const pad = new THREE.Vector3(20, 14, 20);
     for (const w of WORDS) {
-      if (!w.posMaster) continue;
+      const g = wordGroups[w.id];
+      if (!w.posMaster || !g?.visible) continue;
       box.expandByPoint(w.posMaster.clone().add(pad));
       box.expandByPoint(w.posMaster.clone().sub(pad));
     }
@@ -2821,9 +2859,28 @@ function init(host, detailEl, selectEl, shellEl) {
   /** @type {'Garden3d'|'GardenWb'|'Master3d'|'MasterWb'|'Compare3d'|'CompareWb'} */
   let viewKey = "GardenWb";
 
-  /** Effective target key while tweening layout/surface */
+  /** Layout / camera helpers read the target key mid-transition */
   function vk() {
     return transition?.toKey ?? viewKey;
+  }
+
+  /** Lemma ids sharing at least one morpheme registry key with `focusId` (includes the focus lemma). */
+  function morphLinkedWordIdsFromFocus(/** @type {string} */ focusId) {
+    const ok = WORDS.some((x) => x.id === focusId);
+    /** @type {Set<string>} */
+    const out = new Set();
+    if (!ok) return out;
+    out.add(focusId);
+    const wFocus = WORDS.find((x) => x.id === focusId);
+    if (!wFocus) return out;
+    const keys = /** @type {Set<string>} */ (new Set());
+    collectMorphemeKeys(wFocus.tree, keys);
+    for (const k of keys) {
+      const arr = morphemeRegistry[k];
+      if (!arr) continue;
+      for (const e of arr) out.add(e.wordId);
+    }
+    return out;
   }
 
   function rebuildGardenHints(focusWordId) {
@@ -2938,9 +2995,13 @@ function init(host, detailEl, selectEl, shellEl) {
   function finishIntroGroups() {
     for (const w of WORDS) {
       const g = wordGroups[w.id];
-      g.position.copy(posForViewKey(w, viewKey));
+      if (!g) continue;
+      const skipLayout = g.parent === soloStage || g.parent === compareStage;
+      if (!skipLayout) {
+        g.position.copy(posForViewKey(w, viewKey));
+        g.rotation.y = 0;
+      }
       g.scale.setScalar(1);
-      g.rotation.y = 0;
       for (const mesh of g.userData.meshes) {
         const fp = mesh.userData.introFinalPos;
         if (fp) mesh.position.copy(fp);
@@ -2994,6 +3055,10 @@ function init(host, detailEl, selectEl, shellEl) {
   /** @type {{ wallSec0: number, dur: number, cam0: THREE.Vector3, tgt0: THREE.Vector3, cam1: THREE.Vector3, tgt1: THREE.Vector3 } | null} */
   let cameraFitTween = null;
 
+  /** Typo-intro → isolate: interpolate WB circle layout into centred lemma (`morphFinalizeIntroLanding`). */
+  /** @type {null | { wallSec0: number, dur: number, focusId: string, ring: Record<string, THREE.Vector3>, iso: Record<string, THREE.Vector3> }} */
+  let morphIntroRingToIsolateTween = null;
+
   const morphFlyKeyCodes = new Set([
     "KeyW",
     "KeyA",
@@ -3009,12 +3074,6 @@ function init(host, detailEl, selectEl, shellEl) {
 
   /** Magenta bridges in garden layouts; Master view lerps opacity toward ~0.85 via `masterWeight`. */
   const gardenBridgeOpacity = 0.62;
-
-  function isGardenScope() {
-    if (!selectEl) return true;
-    const v = selectEl.value;
-    return v === GARDEN_SELECT || v === "";
-  }
 
   function syncCam3dToOverview() {
     cam3dTarget.copy(sceneCenter);
@@ -3152,7 +3211,7 @@ function init(host, detailEl, selectEl, shellEl) {
   }
 
   function startCameraFit() {
-    if (!introDone || transition) return;
+    if (!introDone || transition || morphIntroRingToIsolateTween) return;
     if (morphIsOrthoBoard()) {
       cameraFitTween = null;
       syncBoardOrthoCamera();
@@ -3230,19 +3289,16 @@ function init(host, detailEl, selectEl, shellEl) {
       cam3dPos.copy(cam3dMaster);
       cam3dTarget.copy(cam3dTargetMaster);
     } else {
-      if (isGardenScope()) syncCamGardenOverview();
-      else if (selectEl && selectEl.value !== GARDEN_SELECT) syncCam3dToWord(selectEl.value);
+      /* Garden: intro stays wide; afterward frame the lone isolate tree when present */
+      if (!introDone) syncCamGardenOverview();
+      else if (selectEl?.value && wordGroups[selectEl.value]) syncCam3dToWord(selectEl.value);
       else syncCamGardenOverview();
     }
     startCameraFit();
   }
 
   function applyScopeVisibility(layoutKeyEffective = vk()) {
-    const garden = isGardenScope();
-    const isolate =
-      !!(selectEl && selectEl.value !== "" && selectEl.value !== GARDEN_SELECT);
     const compareOn = layoutKeyEffective.startsWith("Compare");
-
     morphApplyCompareStage(layoutKeyEffective);
 
     const compareIdsOk =
@@ -3250,32 +3306,45 @@ function init(host, detailEl, selectEl, shellEl) {
 
     morphApplyGardenSoloStage(layoutKeyEffective);
 
-    const masterAll = layoutKeyEffective.startsWith("Master") && !isolate;
+    morphSyncStageRootsVisibility(layoutKeyEffective);
+
+    const focusId =
+      selectEl?.value && WORDS.some((w) => w.id === selectEl.value) ? selectEl.value : "";
+    const linkedIds =
+      !introDone ? null :
+      compareOn || !layoutKeyEffective.startsWith("Master") ? null :
+      morphLinkedWordIdsFromFocus(focusId);
 
     for (const w of WORDS) {
       const g = wordGroups[w.id];
       if (!g) continue;
 
-      let vis = garden || !!(selectEl && w.id === selectEl.value);
+      /** @type {boolean} */
+      let vis = false;
 
-      if (compareOn && compareIdsOk) {
-        vis = !!(w.id === morphCompareAttachedPair?.[0] || w.id === morphCompareAttachedPair?.[1]);
-      } else if (masterAll) {
+      if (!introDone) {
         vis = true;
+      } else if (morphIntroRingToIsolateTween) {
+        vis = true;
+      } else if (compareOn && compareIdsOk) {
+        vis = !!(w.id === morphCompareAttachedPair?.[0] || w.id === morphCompareAttachedPair?.[1]);
+      } else if (linkedIds) {
+        vis = linkedIds.has(w.id);
+      } else if (focusId) {
+        vis = w.id === focusId;
       }
+
       g.visible = vis;
     }
-    // Master/links layout normally needs every hub visible (“all trees” picker).
-    // Compare mode shows exactly two graphs; isolation / compare override the hub visibility rules.
-    if (masterAll && !compareOn) {
-      for (const w of WORDS) {
-        const g = wordGroups[w.id];
-        if (g) g.visible = true;
-      }
-    }
     rebuildGardenHints(
-      compareOn ? null : garden ? null : selectEl?.value || null
+      !compareOn &&
+        introDone &&
+        morphGardenSoloShouldUse(layoutKeyEffective) &&
+        focusId ?
+        focusId :
+        null
     );
+    if (layoutKeyEffective.startsWith("Master") && introDone) computeMasterCamera();
   }
 
   function flyToActiveView() {
@@ -3283,10 +3352,30 @@ function init(host, detailEl, selectEl, shellEl) {
       syncCam3dCompare();
       return;
     }
-    if (isGardenScope()) flyToOverview();
-    else if (selectEl) flyToWord(selectEl.value);
+    if (!introDone) {
+      syncCamGardenOverview();
+      controls.update();
+      return;
+    }
+    if (vk().startsWith("Garden")) {
+      if (selectEl?.value && wordGroups[selectEl.value]) {
+        flyToWord(selectEl.value);
+      } else {
+        syncCamGardenOverview();
+      }
+      controls.update();
+      return;
+    }
+    if (vk().startsWith("Master")) {
+      computeMasterCamera();
+      cam3dPos.copy(cam3dMaster);
+      cam3dTarget.copy(cam3dTargetMaster);
+      controls.update();
+      return;
+    }
+    syncCamGardenOverview();
+    controls.update();
   }
-
   function flyToWord(id) {
     if (!wordGroups[id]) return;
     syncCam3dToWord(id);
@@ -3306,13 +3395,12 @@ function init(host, detailEl, selectEl, shellEl) {
     controls.update();
   }
 
-  function fillDetail(wordId) {
+  function fillDetail(/** @type {string} */ wordId, /** @type {string} */ leadHtml = "") {
     const w = WORDS.find((x) => x.id === wordId);
     if (!w || !detailEl) return;
     configureLessonWordLookup((id) => WORDS.find((x) => x.id === id)?.label || id);
     const lessonHtml = renderMorphLessonHtml(w, morphemeRegistry);
-    /** Lead with visuals-oriented mini-lesson; below is one short facilitator prompt aligned to the bracket tree. */
-    let html = lessonHtml;
+    let html = (leadHtml || "") + lessonHtml;
     html += `<section class="morph-word-note"><h4 class="morph-word-note__h">Exit ticket spark</h4><div class="morph-word-note__body">${w.note}</div>`;
     if (w.context) html += `<p class="morph-context">${w.context}</p>`;
     html += `</section>`;
@@ -3338,13 +3426,10 @@ function init(host, detailEl, selectEl, shellEl) {
     const wb = WORDS.find((x) => x.id === idB);
     if (!wa || !wb || !detailEl) return;
     configureLessonWordLookup((id) => WORDS.find((x) => x.id === id)?.label || id);
-    const la = renderMorphLessonHtml(wa, morphemeRegistry);
-    const lb = renderMorphLessonHtml(wb, morphemeRegistry);
-    let html = `<div class="morph-detail-compare">`;
-    html += `<div class="morph-detail-compare__col">${la}<section class="morph-word-note"><h4 class="morph-word-note__h">Exit ticket spark</h4><div class="morph-word-note__body">${wa.note}</div>`;
+    const dual = renderMorphDualLessonHtml(wa, wb, morphemeRegistry);
+    let html = `<div class="morph-detail-compare">${dual}<div class="morph-detail-dual-sparks"><section class="morph-word-note"><h4 class="morph-word-note__h">Exit ticket · ${morphEscapeHtml(wa.label)}</h4><div class="morph-word-note__body">${wa.note}</div>`;
     if (wa.context) html += `<p class="morph-context">${wa.context}</p>`;
-    html += `</section></div>`;
-    html += `<div class="morph-detail-compare__col">${lb}<section class="morph-word-note"><h4 class="morph-word-note__h">Exit ticket spark</h4><div class="morph-word-note__body">${wb.note}</div>`;
+    html += `</section><section class="morph-word-note"><h4 class="morph-word-note__h">Exit ticket · ${morphEscapeHtml(wb.label)}</h4><div class="morph-word-note__body">${wb.note}</div>`;
     if (wb.context) html += `<p class="morph-context">${wb.context}</p>`;
     html += `</section></div></div>`;
     detailEl.innerHTML = html;
@@ -3406,6 +3491,20 @@ function init(host, detailEl, selectEl, shellEl) {
 
   function fillDetailFromSelect() {
     if (!detailEl) return;
+    if (morphIntroRingToIsolateTween) {
+      detailEl.classList.remove("morph-detail--word-focus");
+      morphDockDetailToViewer();
+      const wl = WORDS.find((x) => x.id === morphIntroRingToIsolateTween.focusId)?.label ?? "";
+      detailEl.innerHTML = `<p><strong>Settling…</strong> Easing into <em>${morphEscapeHtml(wl)}</em> — other lemmas drift aside while we frame one tree.</p>`;
+      return;
+    }
+    if (!introDone && runIntroCinematic) {
+      detailEl.classList.remove("morph-detail--word-focus");
+      morphDockDetailToViewer();
+      detailEl.innerHTML =
+        `<p><strong>Morphology space</strong> — The intro cinematic is assembling every lemma on the board. When it finishes you’ll drop into one tree plus its mini-lesson.</p>`;
+      return;
+    }
     if (vk().startsWith("Compare")) {
       const pa = document.getElementById("morph-compare-a")?.value || "";
       const pb = document.getElementById("morph-compare-b")?.value || "";
@@ -3419,19 +3518,24 @@ function init(host, detailEl, selectEl, shellEl) {
       return;
     }
     if (vk().startsWith("Master")) {
-      if (selectEl && selectEl.value !== GARDEN_SELECT) {
-        fillDetail(selectEl.value);
+      const fid = selectEl?.value ?? "";
+      if (!fid || !WORDS.some((x) => x.id === fid)) {
+        detailEl.classList.remove("morph-detail--word-focus");
+        morphDockDetailToViewer();
+        detailEl.innerHTML = `<p><strong>🔗 Links</strong> — Pick a focus lemma in <strong>Word tree</strong>. The board shows lemmas that share at least one morpheme chunk with your pick.</p>`;
         return;
       }
-      detailEl.classList.remove("morph-detail--word-focus");
-      morphDockDetailToViewer();
-      detailEl.innerHTML = `<p><strong>Master Tree (🔗 links).</strong> Words pack into hubs so shared morphemes stay visible across the vocabulary you loaded. Magenta ribbons mark identical chunks. Hover spheres for gloss; pick a lemma in <strong>Word tree</strong> for miniature lessons plus morphology notes.</p>`;
+      const wLab = WORDS.find((x) => x.id === fid)?.label || fid;
+      fillDetail(
+        fid,
+        `<p class="morph-focus-lead"><strong>🔗 Links</strong> — You’re centred on lemmas that braid with <strong>${morphEscapeHtml(String(wLab))}</strong> through at least one shared morpheme. Magenta arcs mark matching spheres.</p>`
+      );
       return;
     }
-    if (!selectEl || selectEl.value === GARDEN_SELECT) {
+    if (!selectEl?.value || !WORDS.some((x) => x.id === selectEl.value)) {
       detailEl.classList.remove("morph-detail--word-focus");
       morphDockDetailToViewer();
-      detailEl.innerHTML = `<p><strong>Garden (🌳)</strong> — every lemma keeps its spacing on the overview board while magenta bridges whisper which morphemes echo elsewhere.</p><p><strong>Tips:</strong> isolate one word from <strong>Word tree</strong> for a tighter diagram with mini-lessons and morphology notes underneath; hover any sphere for a gloss.</p>`;
+      detailEl.innerHTML = `<p><strong>Word tree</strong> — Pick a lemma to load its isolate bracket tree and lesson.</p>`;
       return;
     }
     fillDetail(selectEl.value);
@@ -3460,7 +3564,7 @@ function init(host, detailEl, selectEl, shellEl) {
       .map((w) => `<li><button type="button" class="morph-morpheme-pop__pick" data-morph-sel="${w.id}">${w.label}</button></li>`)
       .join("");
     const shortKey = key.replace(/^(pfx|sfx|root|lex):/, "");
-    morphPop.innerHTML = `<div class="morph-morpheme-pop__inner"><h3 class="morph-morpheme-pop__h">Also in the garden: <code>${shortKey}</code></h3><ul class="morph-morpheme-pop__list">${items}</ul><button type="button" class="morph-morpheme-pop__close">Close</button></div>`;
+    morphPop.innerHTML = `<div class="morph-morpheme-pop__inner"><h3 class="morph-morpheme-pop__h">Also shares this chunk: <code>${morphEscapeHtml(shortKey)}</code></h3><ul class="morph-morpheme-pop__list">${items}</ul><button type="button" class="morph-morpheme-pop__close">Close</button></div>`;
     morphPop.classList.remove("morph-morpheme-pop--hidden");
     morphPop.querySelector(".morph-morpheme-pop__close")?.addEventListener("click", hideMorphemePop);
     morphPop.querySelectorAll(".morph-morpheme-pop__pick").forEach((btn) => {
@@ -3633,24 +3737,26 @@ function init(host, detailEl, selectEl, shellEl) {
 
   const firstWordId = WORDS[0]?.id;
   if (selectEl) {
-    selectEl.innerHTML =
-      `<option value="${GARDEN_SELECT}">All words — garden</option>` +
-      WORDS.map((w) => `<option value="${w.id}">${w.label}</option>`).join("");
-    selectEl.value = GARDEN_SELECT;
+    const morphRandomPickId =
+      WORDS.length > 0 ? WORDS[Math.floor(Math.random() * WORDS.length)].id : "";
+    selectEl.innerHTML = WORDS.map((w) => `<option value="${w.id}">${w.label}</option>`).join("");
+    if (morphRandomPickId) selectEl.value = morphRandomPickId;
+    else if (firstWordId) selectEl.value = firstWordId;
     selectEl.addEventListener("change", () => {
       hideMorphemePop();
-      if (isGardenScope()) assignWhiteboardCircle();
-      else assignWhiteboardIsolate(selectEl.value);
+      if (vk().startsWith("Garden") && introDone && selectEl.value) assignWhiteboardIsolate(selectEl.value);
       for (const w of WORDS) clearWbPrune(wordGroups[w.id]);
       applyScopeVisibility();
       fillDetailFromSelect();
       if (!transition && introDone) {
         if (vk().startsWith("Compare")) {
           syncCam3dCompare();
-        } else if (isGardenScope()) {
-          syncCamGardenOverview();
-        } else if (selectEl) {
+        } else if (vk().startsWith("Garden")) {
           syncCam3dToWord(selectEl.value);
+        } else if (vk().startsWith("Master")) {
+          computeMasterCamera();
+          cam3dPos.copy(cam3dMaster);
+          cam3dTarget.copy(cam3dTargetMaster);
         }
         if (vk().startsWith("Garden") || vk().startsWith("Master") || vk().startsWith("Compare")) {
           startCameraFit();
@@ -3663,9 +3769,19 @@ function init(host, detailEl, selectEl, shellEl) {
     document.getElementById("morph-compare-a")?.addEventListener("change", () => morphSyncCompareChange());
     document.getElementById("morph-compare-b")?.addEventListener("change", () => morphSyncCompareChange());
     morphSyncArrangeUi();
-    applyScopeVisibility();
-    fillDetailFromSelect();
-    flyToOverview();
+    if (!runIntroCinematic) {
+      if (selectEl.value) assignWhiteboardIsolate(selectEl.value);
+      finishIntroGroups();
+      applyScopeVisibility();
+      fillDetailFromSelect();
+      flyToActiveView();
+      morphEnterPlanarBoardPresentation();
+      controls.enabled = true;
+      controls.update();
+    } else {
+      applyScopeVisibility();
+      fillDetailFromSelect();
+    }
   } else if (firstWordId) {
     flyToWord(firstWordId);
   }
@@ -3674,7 +3790,7 @@ function init(host, detailEl, selectEl, shellEl) {
   const fsTarget = shellEl || host;
 
   function morphPickMeshAt(clientX, clientY) {
-    if (!introDone || transition) return null;
+    if (!introDone || transition || morphIntroRingToIsolateTween) return null;
     const rect = renderer.domElement.getBoundingClientRect();
     if (
       rect.width <= 0 ||
@@ -3880,8 +3996,15 @@ function init(host, detailEl, selectEl, shellEl) {
     if (k === "f") {
       if ((vk().startsWith("Garden") || vk().startsWith("Master") || vk().startsWith("Compare")) && !transition) {
         if (vk().startsWith("Compare")) syncCam3dCompare();
-        else if (isGardenScope()) syncCamGardenOverview();
-        else if (selectEl) syncCam3dToWord(selectEl.value);
+        else if (vk().startsWith("Master")) {
+          computeMasterCamera();
+          cam3dPos.copy(cam3dMaster);
+          cam3dTarget.copy(cam3dTargetMaster);
+        } else if (vk().startsWith("Garden")) {
+          if (!introDone) syncCamGardenOverview();
+          else if (selectEl?.value && wordGroups[selectEl.value]) syncCam3dToWord(selectEl.value);
+          else syncCamGardenOverview();
+        }
         startCameraFit();
       }
       return;
@@ -4011,13 +4134,20 @@ function init(host, detailEl, selectEl, shellEl) {
     const u = smoothstep(blend);
     scene.background.copy(bg3d).lerp(bg2d, u);
 
-    const isolateWord =
-      !!(selectEl && selectEl.value !== "" && selectEl.value !== GARDEN_SELECT) &&
-      !vk().startsWith("Compare");
-    const gardenSolo = morphGardenSoloShouldUse();
+    const isolateWord = morphGardenSoloShouldUse();
+    const gardenSolo = isolateWord;
     const compareOn = vk().startsWith("Compare");
 
-    grid.visible = !gardenSolo && !isolateWord && !compareOn && u < 0.35;
+    const masterBridgeScope =
+      introDone &&
+      !compareOn &&
+      vk().startsWith("Master") &&
+      selectEl?.value &&
+      WORDS.some((x) => x.id === selectEl.value) ?
+        morphLinkedWordIdsFromFocus(selectEl.value) :
+        null;
+
+    grid.visible = !gardenSolo && !compareOn && u < 0.35;
     ambient3d.intensity = 0.38 * (1 - u);
     key3d.intensity = 1.1 * (1 - u);
     rim3d.intensity = 0.85 * (1 - u);
@@ -4051,6 +4181,20 @@ function init(host, detailEl, selectEl, shellEl) {
           widb &&
           ((wida === cidA && widb === cidB) || (wida === cidB && widb === cidA));
         if (!bridgesThisPair) {
+          line.visible = false;
+          if (line.material) line.material.opacity = 0;
+          return;
+        }
+      }
+      if (masterBridgeScope) {
+        const wida = line.userData.a?.userData?.wordId;
+        const widb = line.userData.b?.userData?.wordId;
+        if (
+          !wida ||
+          !widb ||
+          !masterBridgeScope.has(wida) ||
+          !masterBridgeScope.has(widb)
+        ) {
           line.visible = false;
           if (line.material) line.material.opacity = 0;
           return;
@@ -4181,16 +4325,6 @@ function init(host, detailEl, selectEl, shellEl) {
   `;
   }
 
-  let introDone = !runIntroCinematic;
-
-  if (!runIntroCinematic) {
-    finishIntroGroups();
-    flyToActiveView();
-    morphEnterPlanarBoardPresentation();
-    controls.enabled = true;
-    controls.update();
-  }
-
   let introT = 0;
 
   let introSpinAngle = 0;
@@ -4199,6 +4333,89 @@ function init(host, detailEl, selectEl, shellEl) {
     fromPos: new THREE.Vector3(),
     fromTarget: new THREE.Vector3(),
   };
+
+
+  const POST_INTRO_ISOLATE_SEC = REDUCED_MOTION ? 0.015 : 1.08;
+
+  function morphFinalizeIntroLanding() {
+    if (introDone) return;
+    morphIntroRingToIsolateTween = null;
+    morphIntroMarkPlayed();
+    introDone = true;
+    if (selectEl?.value) assignWhiteboardIsolate(selectEl.value);
+    finishIntroGroups();
+    applyScopeVisibility();
+    fillDetailFromSelect();
+    flyToActiveView();
+    morphEnterPlanarBoardPresentation();
+    controls.update();
+    morphTourCtl.autoTry(750);
+  }
+
+  function morphBeginRingToIsolateTween(/** @type {string} */ focusId) {
+    morphIntroRingToIsolateTween = null;
+    /** @type {Record<string, THREE.Vector3>} */
+    const ring = {};
+    /** @type {Record<string, THREE.Vector3>} */
+    const iso = {};
+    for (const w of WORDS) ring[w.id] = w.pos2d.clone();
+    assignWhiteboardIsolate(focusId);
+    for (const w of WORDS) iso[w.id] = w.pos2d.clone();
+    for (const w of WORDS) w.pos2d.copy(ring[w.id]);
+
+    scene.updateMatrixWorld(true);
+    for (const w of WORDS) {
+      const g = wordGroups[w.id];
+      if (g) {
+        g.position.copy(posForViewKey(w, viewKey));
+        g.scale.setScalar(1);
+      }
+    }
+
+    morphIntroRingToIsolateTween = {
+      wallSec0: morphWallSec(),
+      dur: POST_INTRO_ISOLATE_SEC,
+      focusId,
+      ring,
+      iso,
+    };
+  }
+
+  function endIntro(/** @type {{ snap?: boolean } | undefined} */ opts) {
+    /** @type {{ snap?: boolean }} */
+    const o = opts || {};
+    if (introDone) return;
+    if (morphIntroRingToIsolateTween) {
+      if (!o.snap) return;
+      morphIntroRingToIsolateTween = null;
+    }
+
+    if (introOverlay) {
+      introOverlay.style.opacity = "0";
+      introOverlay.style.pointerEvents = "none";
+      window.setTimeout(() => {
+        introOverlay?.remove();
+        introOverlay = null;
+      }, 380);
+    }
+
+    const wantsSmooth =
+      !o.snap &&
+      !REDUCED_MOTION &&
+      runIntroCinematic &&
+      vk().startsWith("Garden") &&
+      vk().endsWith("Wb") &&
+      !!(selectEl?.value && WORDS.some((w) => w.id === /** @type {string} */ (selectEl.value)));
+
+    if (wantsSmooth && selectEl) {
+      morphBeginRingToIsolateTween(/** @type {string} */ (selectEl.value));
+      fillDetailFromSelect();
+      syncBoardOrthoCamera();
+      return;
+    }
+
+    morphFinalizeIntroLanding();
+  }
 
   if (runIntroCinematic) {
     introOverlay = document.createElement("div");
@@ -4210,29 +4427,10 @@ function init(host, detailEl, selectEl, shellEl) {
     skipBtn.textContent = "Skip intro";
     introOverlay.appendChild(skipBtn);
     host.appendChild(introOverlay);
-    skipBtn.addEventListener("click", endIntro);
+    skipBtn.addEventListener("click", () => endIntro({ snap: true }));
     flyToActiveView();
     morphEnterPlanarBoardPresentation();
     morphApplyBackdropBlend(1);
-  }
-
-  function endIntro() {
-    if (introDone) return;
-    morphIntroMarkPlayed();
-    introDone = true;
-    if (introOverlay) {
-      introOverlay.style.opacity = "0";
-      introOverlay.style.pointerEvents = "none";
-      window.setTimeout(() => {
-        introOverlay?.remove();
-        introOverlay = null;
-      }, 380);
-    }
-    finishIntroGroups();
-    flyToActiveView();
-    morphEnterPlanarBoardPresentation();
-    controls.update();
-    morphTourCtl.autoTry(750);
   }
 
   setViewButtons();
@@ -4369,7 +4567,7 @@ function init(host, detailEl, selectEl, shellEl) {
     const dt = Math.min(clock.getDelta(), 0.064);
     introT += dt;
 
-    if (!introDone && runIntroCinematic) {
+    if (!introDone && runIntroCinematic && !morphIntroRingToIsolateTween) {
       const t = introT;
       if (t < TYPO_LETTER_SEC) {
         for (const w of WORDS) {
@@ -4404,6 +4602,59 @@ function init(host, detailEl, selectEl, shellEl) {
         syncBoardOrthoCamera();
         if (k >= 1) endIntro();
       }
+    } else if (morphIntroRingToIsolateTween) {
+      const tw = morphIntroRingToIsolateTween;
+      const elapsed = morphWallSec() - tw.wallSec0;
+      const raw = tw.dur > 1e-6 ? Math.min(1, elapsed / tw.dur) : 1;
+      const u = easeInOutCubic(raw);
+      const fid = tw.focusId;
+
+      const dim = smoothstep(Math.max(0, (raw - 0.38) / 0.56));
+      for (const w of WORDS) {
+        const r = tw.ring[w.id];
+        const i = tw.iso[w.id];
+        if (!r || !i) continue;
+        w.pos2d.lerpVectors(r, i, u);
+        const g = wordGroups[w.id];
+        if (!g) continue;
+        g.position.copy(posForViewKey(w, viewKey));
+        const isFocus = w.id === fid;
+        g.scale.setScalar(
+          isFocus ? THREE.MathUtils.lerp(1, 1.02, smoothstep(raw)) : THREE.MathUtils.lerp(1, 0.07, dim)
+        );
+      }
+
+      const dimLines = smoothstep(Math.max(0, (raw - 0.3) / 0.62));
+      for (const w of WORDS) {
+        const g = wordGroups[w.id];
+        if (!g) continue;
+        const isFocus = w.id === fid;
+        for (const line of g.userData.lines) {
+          if (line.material) {
+            line.material.opacity =
+              isFocus ? THREE.MathUtils.lerp(0.72, 0.94, smoothstep(raw)) : 0.74 * (1 - 0.94 * dimLines);
+          }
+          updateInternalTreeLine(line);
+        }
+      }
+
+      const bridgeFade = smoothstep(Math.max(0, (raw - 0.1) / 0.76));
+      const showBrid = raw < 0.9 && bridgeFade > 0.025;
+      bridges.visible = showBrid;
+      bridges.children.forEach((line) => {
+        if (!line.material) return;
+        if (showBrid) {
+          line.visible = true;
+          line.material.opacity = 0.62 * (1 - bridgeFade * 0.98);
+        } else {
+          line.visible = false;
+          line.material.opacity = 0;
+        }
+      });
+      grid.visible = raw < 0.96;
+      syncBoardOrthoCamera();
+
+      if (raw >= 1 - 1e-6) morphFinalizeIntroLanding();
     } else if (!introDone && !REDUCED_MOTION && !USE_TYPO_INTRO) {
       if (introT < introPhaseAEnd) {
         for (const row of introSpawnList) {

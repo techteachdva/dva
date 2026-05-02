@@ -517,6 +517,57 @@ export function renderMorphLessonHtml(w, morphemeRegistry) {
   return `<div class="morph-detail-lesson morph-detail-lesson--flank">${leftInner}${rightInner}</div>`;
 }
 
+/**
+ * Combined mini-lesson for dual compare layout: centred on overlapping morpheme keys between two lemmas.
+ * @param {object} wa
+ * @param {object} wb
+ * @param {Record<string, { mesh?: unknown; wordId: string }[]>} morphemeRegistry
+ */
+export function renderMorphDualLessonHtml(wa, wb, morphemeRegistry) {
+  const ka = [];
+  walkKeys(wa.tree, ka);
+  const kb = [];
+  walkKeys(wb.tree, kb);
+  const kbSet = new Set(kb);
+  const sharedKeys = [...new Set(ka)].filter(Boolean).filter((k) => kbSet.has(k));
+  sharedKeys.sort();
+
+  let html =
+    `<div class="morph-lesson morph-lesson--dual"><h3 class="morph-lesson__h">Dual focus · ` +
+    `<em>${escapeHtml(wa.label)}</em> &amp; <em>${escapeHtml(wb.label)}</em></h3>`;
+
+  if (!sharedKeys.length) {
+    html +=
+      `<p class="morph-lesson__lead">No labelled morpheme keys overlap between these bracket trees yet—stay with the magenta bridges anyway; they reveal any geometry the animator wired between shared spheres.</p></div>`;
+    return html;
+  }
+
+  html += `<p class="morph-lesson__lead">These chunks are tagged on <em>both</em> trees—the board draws magenta arcs across them so learners see the morphology echo in two words at once.</p>`;
+  html += `<section class="morph-lesson__sec morph-lesson__sec--overlap"><h4>What both words share</h4><ul class="morph-lesson__ul">`;
+
+  for (const key of sharedKeys) {
+    const shortKey = key.replace(/^(pfx|sfx|root|lex):/, "");
+    let glossHtml = AFFIX_ORIGIN_HINT[key];
+    if (!glossHtml) {
+      glossHtml = `Bracket tag <strong>${escapeHtml(shortKey)}</strong> hooks both lemmas—linger on hover glosses to contrast how each definition fits its tree.`;
+    }
+    const reg = morphemeRegistry[key];
+    const regOthers = reg
+      ? [...new Set(reg.map((x) => x.wordId))]
+          .filter((id) => id !== wa.id && id !== wb.id)
+          .map((id) => WORDS_LOOKUP_LABEL(id))
+          .filter(Boolean)
+      : [];
+    const sibling =
+      regOthers.length > 0 ?
+        `<span class="morph-lesson__meta"> Also tagged in other loaded words: ${regOthers.map((x) => `<em>${escapeHtml(x)}</em>`).join(", ")}.</span>` :
+        "";
+    html += `<li>${glossHtml}${sibling}</li>`;
+  }
+  html += `</ul></section></div>`;
+  return html;
+}
+
 /** @type {(id: string) => string} */
 let WORDS_LOOKUP_LABEL = () => "";
 
