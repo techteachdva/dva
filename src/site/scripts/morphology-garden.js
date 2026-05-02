@@ -460,12 +460,29 @@ function init() {
   controls.dampingFactor = 0.14;
   controls.screenSpacePanning = true;
 
+  /**
+   * Toggle group visibility AND every CSS2D label inside.
+   * `CSS2DRenderer` doesn't propagate parent visibility — when a group flips to invisible, its
+   * `CSS2DObject` children keep their last-rendered DOM transform unless we hide them ourselves.
+   */
+  function setWordGroupVisible(/** @type {THREE.Group} */ g, /** @type {boolean} */ vis) {
+    g.visible = vis;
+    for (const child of g.children) {
+      if (child.isCSS2DObject && child.element) {
+        child.element.style.display = vis ? "" : "none";
+      }
+    }
+  }
+
   /* ---- build all word groups + bridges (eagerly — small bank) -------- */
   /** @type {Record<string, THREE.Group>} */
   const wordGroups = {};
   for (const w of WORDS) {
     const g = buildWordGroup(w);
-    g.visible = false;
+    setWordGroupVisible(g, false);
+    /* Park hidden groups far offscreen so any one-frame CSS-label race never paints inside the camera. */
+    g.position.set(1e6, 1e6, 0);
+    g.updateMatrixWorld(true);
     scene.add(g);
     wordGroups[w.id] = g;
   }
@@ -627,9 +644,17 @@ function init() {
 
   /* ---- visibility ---------------------------------------------------- */
   function applyMode() {
-    /* Hide everything */
-    for (const id of Object.keys(wordGroups)) wordGroups[id].visible = false;
-    for (const line of bridges.children) line.visible = false;
+    /* Hide everything (groups + labels), park hidden trees offscreen so they cannot ghost-render. */
+    for (const id of Object.keys(wordGroups)) {
+      const g = wordGroups[id];
+      setWordGroupVisible(g, false);
+      g.position.set(1e6, 1e6, 0);
+      g.updateMatrixWorld(true);
+    }
+    for (const line of bridges.children) {
+      line.visible = false;
+      line.geometry.setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+    }
 
     if (mode === "word") {
       visibleIds = selectedWordId ? [selectedWordId] : [];
@@ -643,15 +668,14 @@ function init() {
     }
 
     for (const id of visibleIds) {
-      if (wordGroups[id]) wordGroups[id].visible = true;
+      if (wordGroups[id]) setWordGroupVisible(wordGroups[id], true);
     }
 
     if (visibleIds.length === 1) placeAtOriginCentered(wordGroups[visibleIds[0]]);
     else if (visibleIds.length >= 2) layoutGrid(visibleIds);
 
-    /* Bridge visibility: only show bridges where BOTH endpoints are in visibleIds.
-       In compare mode, also restrict to bridges between the pair (any matching morpheme).
-       In morpheme mode, restrict to bridges of the selected morpheme key. */
+    /* Bridges: show only those with BOTH endpoints in visibleIds.
+       Morpheme mode further restricts to the chosen morpheme key. */
     const visSet = new Set(visibleIds);
     for (const line of bridges.children) {
       const ud = line.userData;
