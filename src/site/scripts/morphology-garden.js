@@ -3495,7 +3495,7 @@ function init(host, detailEl, selectEl, shellEl) {
       detailEl.classList.remove("morph-detail--word-focus");
       morphDockDetailToViewer();
       const wl = WORDS.find((x) => x.id === morphIntroRingToIsolateTween.focusId)?.label ?? "";
-      detailEl.innerHTML = `<p><strong>Settling…</strong> Easing into <em>${morphEscapeHtml(wl)}</em> — other lemmas drift aside while we frame one tree.</p>`;
+      detailEl.innerHTML = `<p><strong>Settling…</strong> Easing into <em>${morphIntroEsc(wl)}</em> — other lemmas drift aside while we frame one tree.</p>`;
       return;
     }
     if (!introDone && runIntroCinematic) {
@@ -4338,8 +4338,8 @@ function init(host, detailEl, selectEl, shellEl) {
   const POST_INTRO_ISOLATE_SEC = REDUCED_MOTION ? 0.015 : 1.08;
 
   function morphFinalizeIntroLanding() {
-    if (introDone) return;
     morphIntroRingToIsolateTween = null;
+    if (introDone) return;
     morphIntroMarkPlayed();
     introDone = true;
     if (selectEl?.value) assignWhiteboardIsolate(selectEl.value);
@@ -4654,7 +4654,7 @@ function init(host, detailEl, selectEl, shellEl) {
       grid.visible = raw < 0.96;
       syncBoardOrthoCamera();
 
-      if (raw >= 1 - 1e-6) morphFinalizeIntroLanding();
+      if (raw >= 1 - 1e-6 || elapsed >= tw.dur - 1e-4) morphFinalizeIntroLanding();
     } else if (!introDone && !REDUCED_MOTION && !USE_TYPO_INTRO) {
       if (introT < introPhaseAEnd) {
         for (const row of introSpawnList) {
@@ -4823,7 +4823,12 @@ function init(host, detailEl, selectEl, shellEl) {
       }
     }
 
-    if (introDone) applyVisualTheme(viewBlend, layoutEase, layoutKeyFrom, layoutKeyTo);
+    if (introDone) {
+      applyVisualTheme(viewBlend, layoutEase, layoutKeyFrom, layoutKeyTo);
+    } else {
+      /* Typo intro + ring→isolate tween keep introDone false; without this, scene chrome / 2D lights never refresh and the board can read as blank. */
+      morphApplyBackdropBlend(smoothstep(viewBlend));
+    }
 
     if (introDone && morphInspectActive && !transition && !cameraFitTween) {
       controls.target.lerp(morphInspectTargetVec, 0.11);
