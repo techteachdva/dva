@@ -71,6 +71,8 @@ const game = {
   bubblegumMode: false,
   rowanWeirdWeapons: false,
   lemonBoost: false,
+  /** `'gygax' | 'bossnow'` queued when Maw cheats run before forge. */
+  pendingMawCheat: null,
 };
 
 game.scenes.push(new IntroScene(), game);

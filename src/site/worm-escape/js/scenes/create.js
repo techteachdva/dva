@@ -9,6 +9,7 @@ import { BUILDS, LOADOUTS, makePlayer } from "../content/player.js";
 import { resolveSynergy } from "../content/synergies.js";
 import { loadSave } from "../engine/storage.js";
 import { ClimbScene } from "./climb.js";
+import { tryConsumePendingMawCheatAfterForge } from "../engine/mawCheatWarp.js";
 import { pointInRect } from "../engine/pointer.js";
 import { tryDrawRasterWeaponArt } from "../engine/weaponArt.js";
 
@@ -405,9 +406,10 @@ export class CreateScene {
         }
         game.pickAnyWeapon = false;
         const saveEnd = loadSave();
+        game.player = makePlayer(buildId, loadId, game);
+        if (tryConsumePendingMawCheatAfterForge(game)) return;
         game.endlessMode = !!(game.endlessSelected && saveEnd?.unlocks?.endlessUnlocked);
         game.wormTier = 1;
-        game.player = makePlayer(buildId, loadId, game);
         game.chamberIndex = 0;
         game.scenes.replace(new ClimbScene(0), game);
       }

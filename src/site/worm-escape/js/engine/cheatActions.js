@@ -1,9 +1,12 @@
-import { CHAMBERS } from "../content/chambers.js";
-import { makePlayer } from "../content/player.js";
 import { markCheatKnownInSave } from "../content/cheatsKnowledge.js";
 import { loadSave, saveGame } from "./storage.js";
 import { TongueBossScene } from "../scenes/tongueBoss.js";
 import { EncyclopediaScene } from "../scenes/encyclopedia.js";
+import { CreateScene } from "../scenes/create.js";
+import {
+  findMawChamberIndex,
+  preparePlayerForMawCheatDrop,
+} from "./mawCheatWarp.js";
 
 /** Typing a cheat successfully also bookmarks its Inner Guts Codex dossier. */
 function revealCheatDossierIfNew(game, cheatId) {
@@ -15,41 +18,55 @@ function revealCheatDossierIfNew(game, cheatId) {
 }
 
 export function jumpToSixthLayerMawBoss(game) {
-  const mawIdx = CHAMBERS.findIndex((c) => c.isMaw);
+  const mawIdx = findMawChamberIndex();
   if (mawIdx < 0) return { ok: false, msg: "No Maw chamber in data." };
 
-  const p = makePlayer("swift", "sword", game);
-  p.hp = p.hpMax;
-  p.mana = p.manaMax;
-  if (p.armorMax > 0) p.armor = p.armorMax;
-  p.tankHitsLeft = p.tankHitsMax;
-  game.player = p;
+  if (!game.player) {
+    game.pendingMawCheat = "gygax";
+    game.scenes.replace(new CreateScene(), game);
+    game.cheatMenuOpen = false;
+    revealCheatDossierIfNew(game, "gygax");
+    return {
+      ok: true,
+      msg: "Gygax queued — forge your hero; you wake in THE MAW (layer 6).",
+    };
+  }
+
+  const p = game.player;
+  preparePlayerForMawCheatDrop(p);
   game.chamberIndex = mawIdx;
   game.endlessMode = true;
   game.wormTier = 6;
   game.scenes.replace(new TongueBossScene(mawIdx), game);
   game.cheatMenuOpen = false;
   revealCheatDossierIfNew(game, "gygax");
-  return { ok: true, msg: "Gygax — THE MAW · worm layer 6 (test)." };
+  return { ok: true, msg: "Gygax — THE MAW · worm layer 6 (your hero)." };
 }
 
 export function jumpToFinalBossFight(game) {
-  const mawIdx = CHAMBERS.findIndex((c) => c.isMaw);
+  const mawIdx = findMawChamberIndex();
   if (mawIdx < 0) return { ok: false, msg: "No Maw chamber in data." };
 
-  const p = makePlayer("swift", "sword", game);
-  p.hp = p.hpMax;
-  p.mana = p.manaMax;
-  if (p.armorMax > 0) p.armor = p.armorMax;
-  p.tankHitsLeft = p.tankHitsMax;
-  game.player = p;
+  if (!game.player) {
+    game.pendingMawCheat = "bossnow";
+    game.scenes.replace(new CreateScene(), game);
+    game.cheatMenuOpen = false;
+    revealCheatDossierIfNew(game, "bossnow");
+    return {
+      ok: true,
+      msg: "BOSSNOW queued — forge your hero, then dropped into THE MAW.",
+    };
+  }
+
+  const p = game.player;
+  preparePlayerForMawCheatDrop(p);
   game.chamberIndex = mawIdx;
   game.endlessMode = false;
   game.wormTier = 1;
   game.scenes.replace(new TongueBossScene(mawIdx), game);
   game.cheatMenuOpen = false;
   revealCheatDossierIfNew(game, "bossnow");
-  return { ok: true, msg: "Dropped into THE MAW." };
+  return { ok: true, msg: "Dropped into THE MAW (your hero)." };
 }
 
 /**

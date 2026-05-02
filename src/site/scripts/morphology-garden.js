@@ -2582,14 +2582,14 @@ function init(host, detailEl, selectEl, shellEl) {
   /** @type {string | null} */
   let morphGardenSoloWordId = null;
 
-  /** Garden + one word picked: dedicate a separate subgraph so only that tree renders (not “everything hidden in place”). */
+  /** Single-word pick outside Compare: centered solo stage (Garden or Links/Master)—not scattered on the overview layout. */
   function morphGardenSoloShouldUse(layoutKeyEffective = vk()) {
-    return !!(
+    if (layoutKeyEffective.startsWith("Compare")) return false;
+    const pick =
       selectEl &&
       selectEl.value !== "" &&
-      selectEl.value !== GARDEN_SELECT &&
-      layoutKeyEffective.startsWith("Garden")
-    );
+      selectEl.value !== GARDEN_SELECT;
+    return !!(pick && (layoutKeyEffective.startsWith("Garden") || layoutKeyEffective.startsWith("Master")));
   }
 
   /** Reparent solo tree into `soloStage` (single-object scene cell) vs all trees under `gardenRoot`. */
@@ -2639,7 +2639,7 @@ function init(host, detailEl, selectEl, shellEl) {
       if (g && w) {
         delete g.userData.compareCentroidLocal;
         gardenRoot.attach(g);
-        g.position.copy(w.pos3d);
+        g.position.copy(posForViewKey(w, vk()));
         g.updateMatrixWorld(true);
       }
     }
@@ -3311,8 +3311,9 @@ function init(host, detailEl, selectEl, shellEl) {
     if (!w || !detailEl) return;
     configureLessonWordLookup((id) => WORDS.find((x) => x.id === id)?.label || id);
     const lessonHtml = renderMorphLessonHtml(w, morphemeRegistry);
+    /** Lead with visuals-oriented mini-lesson; below is one short facilitator prompt aligned to the bracket tree. */
     let html = lessonHtml;
-    html += `<section class="morph-word-note"><h4 class="morph-word-note__h">Morphology note</h4><div class="morph-word-note__body">${w.note}</div>`;
+    html += `<section class="morph-word-note"><h4 class="morph-word-note__h">Exit ticket spark</h4><div class="morph-word-note__body">${w.note}</div>`;
     if (w.context) html += `<p class="morph-context">${w.context}</p>`;
     html += `</section>`;
     detailEl.innerHTML = html;
@@ -3340,10 +3341,10 @@ function init(host, detailEl, selectEl, shellEl) {
     const la = renderMorphLessonHtml(wa, morphemeRegistry);
     const lb = renderMorphLessonHtml(wb, morphemeRegistry);
     let html = `<div class="morph-detail-compare">`;
-    html += `<div class="morph-detail-compare__col">${la}<section class="morph-word-note"><h4 class="morph-word-note__h">Morphology note</h4><div class="morph-word-note__body">${wa.note}</div>`;
+    html += `<div class="morph-detail-compare__col">${la}<section class="morph-word-note"><h4 class="morph-word-note__h">Exit ticket spark</h4><div class="morph-word-note__body">${wa.note}</div>`;
     if (wa.context) html += `<p class="morph-context">${wa.context}</p>`;
     html += `</section></div>`;
-    html += `<div class="morph-detail-compare__col">${lb}<section class="morph-word-note"><h4 class="morph-word-note__h">Morphology note</h4><div class="morph-word-note__body">${wb.note}</div>`;
+    html += `<div class="morph-detail-compare__col">${lb}<section class="morph-word-note"><h4 class="morph-word-note__h">Exit ticket spark</h4><div class="morph-word-note__body">${wb.note}</div>`;
     if (wb.context) html += `<p class="morph-context">${wb.context}</p>`;
     html += `</section></div></div>`;
     detailEl.innerHTML = html;
