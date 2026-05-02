@@ -12,7 +12,7 @@ contentClasses: morphology-page
     <h1 class="morph-page-title">Morphology: The Analysis of Words</h1>
     <p class="morphology-tagline">
       Highlight reel from Park-Johnson &amp; Shin (2020), <em>Linguistics for Language Teachers</em>, Chapter 4.
-      <strong>Open with one lemma</strong>—the intro settles on a random pick; use <strong>Word tree</strong> to steer. Five key teaching ideas stay below once you dive in.
+      After the intro, the explorer opens on a <strong>random bank pick</strong>—use <strong>Focus</strong> to choose a lemma or morpheme tag. Five teaching ideas stay below when you scroll.
     </p>
   </header>
 
@@ -21,7 +21,7 @@ contentClasses: morphology-page
       id="morph-canvas-host"
       class="morph-canvas-host"
       role="img"
-      aria-label="Flat morpheme diagrams: isolated tree, linked trees, or compare trees"
+      aria-label="Morphology board: diagrams auto-fit in view; drag to pan"
     ></div>
     <div class="morph-ui-panel">
       <div class="morph-ui-row morph-ui-row--meta" role="group" aria-label="Vocabulary note">
@@ -62,7 +62,12 @@ contentClasses: morphology-page
           </div>
           <div id="morph-word-row" class="morph-ui-row morph-word-row--isolate">
             <label for="morph-word-select">Focus</label>
-            <select id="morph-word-select" class="morph-select" aria-describedby="morph-hint" title="Lemma or morpheme"></select>
+            <select
+              id="morph-word-select"
+              class="morph-select"
+              aria-describedby="morph-hint"
+              title="Lemma = one tree; morpheme tag = every matching word on the ring"
+            ></select>
           </div>
         </div>
         <div class="morph-toolbar__col morph-toolbar__col--compare">
@@ -161,8 +166,11 @@ contentClasses: morphology-page
         </button>
       </div>
       <p id="morph-hint" class="morph-hint morph-hint--compact">
-        <strong>Tip:</strong> The board is <strong>2D</strong>—drag to pan. 🌳 <strong>Isolated Tree</strong>; 🔗 <strong>Linked Trees</strong>; ⚖ <strong>Compare Trees</strong>. Wheel over the diagram <strong>scrolls the page</strong> when there is room (reach the “Five ideas” section); use <kbd>Ctrl</kbd>/<kbd>⌘</kbd>+wheel to zoom the diagram, or wheel when the page cannot scroll further. In fullscreen, wheel over the docked lesson scrolls <strong>lesson text</strong>. Lesson text size: <strong>A−</strong> <strong>A</strong> <strong>A+</strong> or keys <kbd>[</kbd> <kbd>]</kbd>. Hover spheres for gloss ·
-        <kbd>F</kbd> fit · <kbd>R</kbd> reset<span class="visually-hidden"> (Space toggles orbit only in the experimental 3D mode from backslash)</span>.
+        <strong>Board:</strong> trees <strong>auto-fit</strong> at the largest size that keeps the whole diagram in view—<strong>drag</strong> to pan.
+        <strong>Modes:</strong> 🌳 one lemma · 🔗 shared-morpheme hubs · ⚖ two trees.
+        <strong>Wheel</strong> usually <strong>scrolls the page</strong> (lesson &amp; “Five ideas”); in fullscreen, wheel over the lesson scrolls <strong>lesson text</strong>.
+        Lesson size: <strong>A−</strong> <strong>A</strong> <strong>A+</strong> or <kbd>[</kbd> <kbd>]</kbd>.
+        <kbd>F</kbd> refit · <kbd>R</kbd> reset · hover gloss · double-click refit · optional <kbd>\\</kbd> = 3D zoom<span class="visually-hidden"> · Space toggles orbit in 3D only</span>.
       </p>
     </div>
 
@@ -190,7 +198,7 @@ contentClasses: morphology-page
           <section class="morph-help__sec">
             <h3>Flat board &amp; Arrange</h3>
             <p class="morph-help__sub">
-              The explorer opens after a brief intro cinematic: one lemma takes the spotlight with its mini-lesson. Use <strong>Arrange</strong> when you’re ready for different vantage points on the full vocabulary set.
+              After the intro, the <strong>flat board</strong> keeps reframing so visible trees fill the view without clipping—drag to pan, <kbd>F</kbd> or double-click to refit. Use <strong>Arrange</strong> when you want isolate, linked hubs, or compare.
             </p>
             <ul>
               <li>
@@ -213,12 +221,15 @@ contentClasses: morphology-page
             <h3>Mouse / touch</h3>
             <ul>
               <li><strong>Hover</strong> a morpheme sphere for tooltip glosses, categories, and sibling lemmas that share it.</li>
-              <li><strong>Drag</strong> to pan across the board (or orbit when <kbd>\</kbd> 3D mode is on).</li>
+              <li><strong>Drag</strong> to pan on the flat board (or orbit when <kbd>\</kbd> 3D mode is on).</li>
               <li>
-                <strong>Scroll wheel</strong> over the diagram moves the page when you can still scroll (to reach content below); hold <kbd>Ctrl</kbd> / <kbd>⌘</kbd> while scrolling to zoom the board, or scroll when the page is already at the top or bottom.
+                <strong>Flat board zoom</strong> is automatic—the scene fills the view as tightly as possible while keeping the whole visible tree in frame. Use <kbd>F</kbd> or double-click to refit after panning.
               </li>
-              <li><strong>Click</strong> a morpheme to ease the camera toward that node.</li>
-              <li><strong>Double-click</strong> refits the framing so the surrounding word tree dominates the view.</li>
+              <li>
+                <strong>Scroll wheel</strong> over the diagram usually moves the <strong>page</strong> so you can reach the mini-lesson and “Five ideas.” At the top or bottom of the page, wheel behavior may fall through (optional <kbd>\</kbd> 3D uses zoom).
+              </li>
+              <li><strong>Click</strong> pins a tooltip; picks can jump Focus to another lemma.</li>
+              <li><strong>Double-click</strong> refits framing for that tree.</li>
               <li><strong>Shift + double-click</strong> (3D mode only) toggles slow auto-orbit around the focused node.</li>
             </ul>
           </section>

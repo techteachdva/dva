@@ -1,6 +1,6 @@
 import {
   W, H, COLORS,
-  drawFleshBackground, drawVeins, drawText, drawBanner, drawPanel, drawBar, drawHero,
+  drawBackdropCached, drawText, drawBanner, drawPanel, drawBar, drawHero,
 } from "../engine/render.js";
 import { SFX } from "../engine/audio.js";
 import { CHAMBERS } from "../content/chambers.js";
@@ -45,8 +45,7 @@ export class TransitionScene {
 
   render(ctx, game) {
     const p = game.player;
-    drawFleshBackground(ctx, this.t, 1.0);
-    drawVeins(ctx, this.t, this.nextIdx);
+    drawBackdropCached(ctx, this.t, this.t, 1.0, null, this.nextIdx);
     ctx.fillStyle = "rgba(0,0,0,0.55)";
     ctx.fillRect(0, 0, W, H);
 

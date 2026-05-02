@@ -1,6 +1,6 @@
 import {
   W, H, COLORS,
-  drawFleshBackground, drawVeins, drawText, drawBanner, drawPanel, roundRect,
+  drawBackdropCached, drawText, drawBanner, drawPanel, roundRect,
 } from "../engine/render.js";
 import { SFX } from "../engine/audio.js";
 import { CreateScene } from "./create.js";
@@ -34,8 +34,7 @@ export class InstructionsScene {
   }
 
   render(ctx, game) {
-    drawFleshBackground(ctx, this.t, 1.0);
-    drawVeins(ctx, this.t, 1);
+    drawBackdropCached(ctx, this.t, this.t, 1.0, null, 1);
     ctx.fillStyle = "rgba(0,0,0,0.6)";
     ctx.fillRect(0, 0, W, H);
 

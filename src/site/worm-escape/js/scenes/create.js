@@ -1,6 +1,6 @@
 import {
   W, H, COLORS,
-  drawFleshBackground, drawVeins, drawText, drawBanner, drawPanel,
+  drawBackdropCached, drawText, drawBanner, drawPanel,
   drawHero, drawBar, drawSphere, drawPlate, drawDropShadow, roundRect,
   wrapText,
 } from "../engine/render.js";
@@ -421,8 +421,7 @@ export class CreateScene {
   }
 
   render(ctx, game) {
-    drawFleshBackground(ctx, this.t, 1.0);
-    drawVeins(ctx, this.t, 3);
+    drawBackdropCached(ctx, this.t, this.t, 1.0, null, 3);
     ctx.fillStyle = "rgba(0,0,0,0.6)";
     ctx.fillRect(0, 0, W, H);
 

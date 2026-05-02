@@ -1,6 +1,6 @@
 import {
   W, H, COLORS,
-  drawFleshBackground, drawVeins, drawAcid, drawText, drawPanel, drawBar, drawBanner,
+  drawBackdropCached, drawAcid, drawText, drawPanel, drawBar, drawBanner,
   drawHero, drawSphere, drawPlate, drawDropShadow, ParticleSystem, screenShake, shade,
   roundRect,
 } from "../engine/render.js";
@@ -694,8 +694,8 @@ export class ClimbScene {
     const ch = this.chamber;
 
     const pal = resolveEndlessPalette(game, ch.palette, ch.wormTint);
-    drawFleshBackground(ctx, this.t + this.progress * 0.002, pal.wormTint, pal.palette);
-    drawVeins(ctx, this.t + this.progress * 0.002, this.chamberIdx + 1);
+    const tBg = this.t + this.progress * 0.002;
+    drawBackdropCached(ctx, tBg, tBg, pal.wormTint, pal.palette, this.chamberIdx + 1);
 
     this.drawWall(ctx);
     // v0.13 final chamber: frame the climb with massive fangs drooling

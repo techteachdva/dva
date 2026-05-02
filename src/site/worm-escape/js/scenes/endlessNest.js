@@ -1,6 +1,6 @@
 import {
   W, H, COLORS,
-  drawFleshBackground, drawVeins, drawText, drawBanner, drawPanel,
+  drawBackdropCached, drawText, drawBanner, drawPanel,
 } from "../engine/render.js";
 import { SFX } from "../engine/audio.js";
 import {
@@ -36,8 +36,7 @@ export class NestWormScene {
   render(ctx, game) {
     const ch0 = CHAMBERS[0];
     const { palette, wormTint } = resolveEndlessPalette(game, ch0.palette, ch0.wormTint);
-    drawFleshBackground(ctx, this.t, wormTint * 1.05, palette);
-    drawVeins(ctx, this.t, 2);
+    drawBackdropCached(ctx, this.t, this.t, wormTint * 1.05, palette, 2);
     ctx.fillStyle = "rgba(0,0,0,0.72)";
     ctx.fillRect(0, 0, W, H);
 

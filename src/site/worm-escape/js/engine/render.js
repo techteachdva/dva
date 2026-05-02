@@ -60,7 +60,7 @@ export function applyShake(ctx, dt) {
 // If `palette` is provided, it overrides the base flesh colors:
 //   { deep, mid, bruise, bump } - lets chambers shift from blackish purple
 //   (deep guts) to reddish pink (near the mouth).
-export function drawFleshBackground(ctx, t, tint = 1, palette = null) {
+function drawFleshBackgroundCore(ctx, t, tint = 1, palette = null) {
   const pulse = (Math.sin(t * 1.6) * 0.5 + 0.5) * 0.12 + 0.88;
   const deep   = palette?.deep   || COLORS.wormDeep;
   const mid    = palette?.mid    || COLORS.worm;
@@ -112,7 +112,7 @@ export function drawFleshBackground(ctx, t, tint = 1, palette = null) {
 }
 
 // ---- veins overlay (with small shadow offset to look raised) ----
-export function drawVeins(ctx, t, seedOffset = 0) {
+function drawVeinsCore(ctx, t, seedOffset = 0) {
   ctx.save();
   // Shadow layer
   ctx.strokeStyle = "rgba(0, 0, 0, 0.35)";
@@ -180,6 +180,54 @@ export function drawVeins(ctx, t, seedOffset = 0) {
     ctx.stroke();
   }
   ctx.restore();
+}
+
+/** Uncached API (encyclopedia / tools that draw flesh alone). */
+export function drawFleshBackground(ctx, t, tint = 1, palette = null) {
+  drawFleshBackgroundCore(ctx, t, tint, palette);
+}
+
+export function drawVeins(ctx, t, seedOffset = 0) {
+  drawVeinsCore(ctx, t, seedOffset);
+}
+
+function backdropPaletteKey(palette) {
+  if (!palette) return "";
+  return [palette.deep, palette.mid, palette.bruise, palette.bump].join("|");
+}
+
+let _backdropCanvas = null;
+let _backdropKey = "";
+
+/**
+ * Renders flesh + veins to an offscreen canvas when (quantized) params change,
+ * then blits — avoids ~60–90ms of gradient/loop work every frame when only
+ * gameplay sprites moved.
+ */
+export function drawBackdropCached(ctx, tFlesh, tVeins, tint = 1, palette = null, veinSeed = 0) {
+  const qf = Math.floor(tFlesh * 4);
+  const qv = Math.floor(tVeins * 4);
+  const pk = backdropPaletteKey(palette);
+  const key = `${qf}|${qv}|${tint}|${pk}|${veinSeed}`;
+  if (typeof document === "undefined") {
+    drawFleshBackgroundCore(ctx, tFlesh, tint, palette);
+    drawVeinsCore(ctx, tVeins, veinSeed);
+    return;
+  }
+  if (!_backdropCanvas) {
+    _backdropCanvas = document.createElement("canvas");
+    _backdropCanvas.width = W;
+    _backdropCanvas.height = H;
+  }
+  const bctx = _backdropCanvas.getContext("2d");
+  if (key !== _backdropKey) {
+    _backdropKey = key;
+    bctx.setTransform(1, 0, 0, 1, 0, 0);
+    bctx.clearRect(0, 0, W, H);
+    drawFleshBackgroundCore(bctx, tFlesh, tint, palette);
+    drawVeinsCore(bctx, tVeins, veinSeed);
+  }
+  ctx.drawImage(_backdropCanvas, 0, 0);
 }
 
 // ---- acid pool (bottom wave) - now with foam layer + inner glow ----
@@ -282,15 +330,29 @@ function setFont(ctx, size, { bold = false, italic = false, font = "sans" } = {}
 
 // Truncate `text` to fit within `maxWidth` (in px) for the currently-set
 // font. Returns the possibly-shortened string. Appends an ellipsis.
+const TRUNC_CACHE = new Map();
+const TRUNC_CACHE_CAP = 500;
+
 function truncateToWidth(ctx, text, maxWidth) {
   if (maxWidth == null || maxWidth <= 0) return text;
-  if (ctx.measureText(text).width <= maxWidth) return text;
+  const font = ctx.font || "";
+  const key = `${font}\x00${maxWidth}\x00${text}`;
+  const hit = TRUNC_CACHE.get(key);
+  if (hit !== undefined) return hit;
+  if (ctx.measureText(text).width <= maxWidth) {
+    if (TRUNC_CACHE.size >= TRUNC_CACHE_CAP) TRUNC_CACHE.clear();
+    TRUNC_CACHE.set(key, text);
+    return text;
+  }
   const ell = "\u2026";
   let s = text;
   while (s.length > 1 && ctx.measureText(s + ell).width > maxWidth) {
     s = s.slice(0, -1);
   }
-  return s + ell;
+  const out = s + ell;
+  if (TRUNC_CACHE.size >= TRUNC_CACHE_CAP) TRUNC_CACHE.clear();
+  TRUNC_CACHE.set(key, out);
+  return out;
 }
 
 export function drawText(ctx, text, x, y, opts = {}) {

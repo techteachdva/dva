@@ -1,6 +1,6 @@
 import {
   W, H, COLORS,
-  drawFleshBackground, drawVeins, drawText, drawBanner, drawPanel, drawHero, ParticleSystem,
+  drawText, drawBanner, drawPanel, drawHero, ParticleSystem,
   roundRect,
 } from "../engine/render.js";
 import { SFX } from "../engine/audio.js";

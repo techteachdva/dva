@@ -1,6 +1,6 @@
 import {
   W, H, COLORS,
-  drawFleshBackground, drawVeins, drawText, drawBanner, drawPanel, roundRect,
+  drawBackdropCached, drawText, drawBanner, drawPanel, roundRect,
 } from "../engine/render.js";
 import { SFX } from "../engine/audio.js";
 import { rollPactChoices } from "../content/pacts.js";
@@ -107,8 +107,7 @@ export class PactScene {
   }
 
   render(ctx, game) {
-    drawFleshBackground(ctx, this.t, 1.0);
-    drawVeins(ctx, this.t, this.completedChamberIdx + 9);
+    drawBackdropCached(ctx, this.t, this.t, 1.0, null, this.completedChamberIdx + 9);
     ctx.fillStyle = "rgba(0,0,0,0.70)";
     ctx.fillRect(0, 0, W, H);
 

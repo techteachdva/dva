@@ -1,6 +1,6 @@
 import {
   W, H, COLORS,
-  drawFleshBackground, drawVeins, drawText, drawBanner, drawPanel, drawBar,
+  drawBackdropCached, drawText, drawBanner, drawPanel, drawBar,
   drawHero, drawDropShadow,
   ParticleSystem, screenShake, shade, roundRect,
 } from "../engine/render.js";
@@ -26,6 +26,7 @@ import { EndlessCrashScene } from "./endlessCrash.js";
 import {
   pickTwoDistinctPotionKeys,
   POTION_DRINK_CD_SEC,
+  POTION_MINIGAME_TIME_SEC,
   tickManaPotionMiniGame,
   drawManaPotionModal,
 } from "../engine/manaPotion.js";
@@ -1182,8 +1183,7 @@ export class MawBossScene {
   render(ctx, game) {
     const ch = this.chamber;
     const pal = resolveEndlessPalette(game, ch.palette, ch.wormTint);
-    drawFleshBackground(ctx, this.t, pal.wormTint * 1.05, pal.palette);
-    drawVeins(ctx, this.t, this.chamberIdx + 11);
+    drawBackdropCached(ctx, this.t, this.t, pal.wormTint * 1.05, pal.palette, this.chamberIdx + 11);
 
     // Distant daylight through any knocked-out gaps. Done before teeth so
     // teeth occlude where they're still standing.
@@ -1780,8 +1780,8 @@ export class MawBossScene {
       color = "#e6f0a0";
     } else {
       msg = p.loadoutId === "plasmids"
-        ? "Move [A/D]; [Q/1] Gene Bolt · [E/2] cycle element · [R/3] mana vial · [X] dodge twitch."
-        : "Move [A/D]; swing [Q/1] / [E/2] · [R/3] mana vial · [X] dodge.";
+        ? "Move [A/D]; [Q/1] bolt · [E/2] cycle · [R/3] or mana card opens vial (random letters) · [X] dodge twitch."
+        : "Move [A/D]; [Q/E] or cards attack · [R/3] or mana card = vial (random cork/pour keys) · [X] dodge.";
       color = COLORS.bone;
     }
 
@@ -1816,7 +1816,7 @@ export class MawBossScene {
     }
     // Footer help strip - compact.
     drawText(ctx,
-      "[A/D] lanes · bottom cards · [R/3] mana vial · [X] dodge · [P] pause",
+      "[A/D] lanes · [R/3]/mana card = vial · [X] dodge · [P] pause",
       x + 12, y + h - 16, {
         size: 12, color: COLORS.boneDim, maxWidth: w - 28,
       });

@@ -898,12 +898,12 @@ function morphInstallGuidedTour() {
     },
     {
       title: "Focus picker",
-      body: "The page opens with a <strong>random morpheme</strong> from the bank. <strong>Focus</strong> lists lemmas plus morpheme tags — pick a <strong>word</strong> for one tree in isolate mode; pick a <strong>morpheme</strong> and switch to <strong>Links</strong> to fan out lemmas that share it. In <strong>Compare</strong>, two selectors replace this row (each can be a word or morpheme chunk).",
+      body: "Opens with a <strong>random bank pick</strong> (often a morpheme tag). <strong>Focus</strong> lists lemmas and tags — choose a <strong>word</strong> for one centered tree; choose a <strong>morpheme</strong> to ring every matching lemma (Garden). <strong>🔗 Linked Trees</strong> lays those links out as a hub; <strong>Compare</strong> uses two selectors here instead (each can be word or morpheme).",
       target: "#morph-word-row",
     },
     {
       title: "Board & links",
-      body: "<strong>Hover</strong> a sphere for gloss · <strong>drag</strong> to pan · <strong>scroll</strong> or pinch to zoom · <strong>double-click</strong> a sphere to fit that tree on the board · <kbd>F</kbd> fit · <kbd>R</kbd> reset.",
+      body: "<strong>Hover</strong> spheres for gloss · <strong>drag</strong> to pan · the flat board <strong>auto-fits</strong> the visible tree(s) at the tightest zoom that keeps everything in frame · <strong>double-click</strong> refits · <kbd>F</kbd> fit · <kbd>R</kbd> reset. The wheel usually <strong>scrolls the page</strong>; press <kbd>\\</kbd> for optional 3D zoom.",
       target: "#morph-canvas-host",
     },
     {
@@ -1413,16 +1413,17 @@ function init(host, detailEl, selectEl, shellEl) {
     if (!any) _morphFitBox.setFromCenterAndSize(sceneCenter, new THREE.Vector3(136, 80, 136));
     const c = _morphFitBox.getCenter(_morphFitCenter);
     const s = _morphFitBox.getSize(_morphFitSize);
-    const pad = 1.06;
+    /* Minimal padding = largest on-screen tree; slight Y slack helps apex labels */
+    const padX = 1.025;
+    const padY = 1.045;
     const aspect = Math.max(host.clientWidth / Math.max(host.clientHeight, 1), 0.25);
-    /* half-height H ⇒ visible height 2H, width 2H·aspect — fit both axes (tight = largest safe zoom) */
-    const halfFrustum = Math.max((s.y * pad) / 2, (s.x * pad) / (2 * aspect), 18);
+    const halfFrustum = Math.max((s.y * padY) / 2, (s.x * padX) / (2 * aspect), 12);
     boardOrthoCamera.left = -halfFrustum * aspect;
     boardOrthoCamera.right = halfFrustum * aspect;
     boardOrthoCamera.top = halfFrustum;
     boardOrthoCamera.bottom = -halfFrustum;
     boardOrthoCamera.zoom = 1;
-    const zMargin = Math.max(s.z * 0.55 + 32, 56);
+    const zMargin = Math.max(s.z * 0.5 + 28, 48);
     boardOrthoCamera.position.set(c.x, c.y, c.z + zMargin);
     boardOrthoCamera.up.set(0, 1, 0);
     boardOrthoCamera.lookAt(c.x, c.y, c.z);
@@ -3243,8 +3244,8 @@ function init(host, detailEl, selectEl, shellEl) {
     controls.update();
   }
 
-  /** Tall canvas + OrbitControls otherwise consume every wheel notch as board zoom — never scrolling the note.
-   * Delegate wheel to the document scroll container while there is room; at top/bottom fall through so zoom still works. */
+  /** Flat board uses ortho auto-fit (no wheel zoom). Delegate wheel to page scroll while there is room;
+   * at scroll ends, events may reach underlying handlers — experimental 3D mode (<kbd>\\</kbd>) still zooms. */
   renderer.domElement.addEventListener(
     "wheel",
     (ev) => {

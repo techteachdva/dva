@@ -185,7 +185,7 @@
   position: relative;
   width: 100%;
   /* Canvas-first: shell hugs viewer; page copy scrolls below */
-  min-height: min(52vh, 560px);
+  min-height: min(68vh, 720px);
   margin-top: 0.5rem;
   background: radial-gradient(ellipse 120% 80% at 50% 20%, #152238 0%, var(--morph-bg) 55%);
   border-radius: 12px;
@@ -277,7 +277,7 @@ html.morph-immersive-open body {
 .morph-canvas-host {
   display: block;
   width: 100%;
-  height: min(74vh, 840px);
+  height: min(82vh, 960px);
   touch-action: none;
   position: relative;
   transition: background 0.28s ease;
@@ -888,12 +888,12 @@ html.morph-immersive-open body {
 }
 
 .morph-hint {
-  font-size: 0.74rem;
-  color: rgba(200, 244, 255, 0.58);
+  font-size: 0.8rem;
+  color: rgba(200, 244, 255, 0.72);
   text-align: center;
   margin-top: 0.45rem;
-  max-width: 34rem;
-  line-height: 1.45;
+  max-width: 42rem;
+  line-height: 1.5;
   margin-left: auto;
   margin-right: auto;
 }
@@ -2872,14 +2872,14 @@ html.morph-immersive-open body {
   .morphology-shell {
     border-radius: 0;
     margin-top: 0.25rem;
-    min-height: min(62vh, 680px);
-    min-height: min(62dvh, 680px);
+    min-height: min(70vh, 760px);
+    min-height: min(70dvh, 760px);
   }
 
   #morph-canvas-host,
   .morph-canvas-host {
-    height: min(68vh, 720px);
-    height: min(68dvh, 720px);
+    height: min(74vh, 820px);
+    height: min(74dvh, 820px);
   }
 
   .morph-ui-label {

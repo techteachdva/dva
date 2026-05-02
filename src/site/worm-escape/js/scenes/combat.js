@@ -1,6 +1,6 @@
 import {
   W, H, COLORS,
-  drawFleshBackground, drawVeins, drawText, drawBanner, drawPanel, drawBar,
+  drawBackdropCached, drawText, drawBanner, drawPanel, drawBar,
   drawHero, drawSphere, drawPlate, drawDropShadow,
   ParticleSystem, screenShake, shade, roundRect,
 } from "../engine/render.js";
@@ -1427,8 +1427,7 @@ export class CombatScene {
     const ch = this.chamber;
 
     const pal = resolveEndlessPalette(game, ch.palette, ch.wormTint);
-    drawFleshBackground(ctx, this.t, pal.wormTint * 1.05, pal.palette);
-    drawVeins(ctx, this.t, this.chamberIdx + 5);
+    drawBackdropCached(ctx, this.t, this.t, pal.wormTint * 1.05, pal.palette, this.chamberIdx + 5);
 
     this.drawSphincter(ctx);
     this.drawEnemy(ctx, game);

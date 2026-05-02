@@ -4,8 +4,10 @@ import { rand, randInt } from "./rng.js";
 import { SFX } from "./audio.js";
 import { drawText, roundRect } from "./render.js";
 
+// Letters/keys used by combat, maw, pause, UI, or specials — never assign as cork/pour.
+// Includes `x` (maw dodge-twitch) so the vial minigame never shows "press [X]" over that binding.
 export const POTION_KEY_FORBIDDEN = new Set([
-  "a", "d", "e", "f", "q", "r", "s", "w", "1", "2", "3", "4",
+  "a", "d", "e", "f", "q", "r", "s", "w", "x", "1", "2", "3", "4",
   "m", "p", "\\", "=",
   "t",
 ]);
@@ -18,12 +20,17 @@ export const POTION_DRINK_CD_SEC = 22;
 export const POTION_MINIGAME_TIME_SEC = 11;
 
 export function pickTwoDistinctPotionKeys() {
-  let a = POTION_KEY_POOL[randInt(0, POTION_KEY_POOL.length - 1)];
-  let b = POTION_KEY_POOL[randInt(0, POTION_KEY_POOL.length - 1)];
-  for (let i = 0; i < 20 && b === a; i++) {
-    b = POTION_KEY_POOL[randInt(0, POTION_KEY_POOL.length - 1)];
+  const pool = POTION_KEY_POOL;
+  if (pool.length < 2) {
+    return ["b", "c"];
   }
-  return [a, b === a ? POTION_KEY_POOL.find((k) => k !== a) ?? "z" : b];
+  let a = pool[randInt(0, pool.length - 1)];
+  let b = pool[randInt(0, pool.length - 1)];
+  for (let i = 0; i < 24 && b === a; i++) {
+    b = pool[randInt(0, pool.length - 1)];
+  }
+  if (b === a) b = pool.find((k) => k !== a) ?? "c";
+  return [a, b];
 }
 
 export function tickManaPotionMiniGame(st, dt, inp, onSuccess, onFail) {
@@ -148,10 +155,13 @@ export function drawManaPotionModal(ctx, st, COLORS, player = null) {
     size: 16, align: "center", color: COLORS.bone, maxWidth: panelW - 40,
     bold: true,
   });
+  drawText(ctx, "Letters here never reuse attack/move/dodge keys ([X] is dodge in the maw).", W / 2, panelY + 106, {
+    size: 11, align: "center", color: COLORS.boneDim, maxWidth: panelW - 48,
+  });
 
   drawText(ctx,
     `TIME  ${Math.max(0, st.timeLeft).toFixed(1)}s  ·  MP  ${Math.floor(pMana)}/${Math.floor(pManaMax)}`,
-    W / 2, panelY + 116, {
+    W / 2, panelY + 126, {
       size: 14, align: "center", color: COLORS.boneDim,
     });
 

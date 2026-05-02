@@ -7,7 +7,7 @@
 import {
   W, H, COLORS,
   drawText, drawPanel, drawBanner, wrapText, roundRect,
-  drawHero, drawFleshBackground, drawVeins,
+  drawHero, drawBackdropCached,
 } from "../engine/render.js";
 import { pointInRect } from "../engine/pointer.js";
 import { SFX } from "../engine/audio.js";
@@ -425,8 +425,7 @@ export class EncyclopediaScene {
         ctx.save();
         roundRect(ctx, detailX + 18, py + 6, detailW - 54, 52, 9);
         ctx.clip();
-        drawFleshBackground(ctx, this._codexAnim, 1, null);
-        drawVeins(ctx, this._codexAnim * 1.8, 4);
+        drawBackdropCached(ctx, this._codexAnim, this._codexAnim * 1.8, 1, null, 4);
         ctx.restore();
       } else if (pick.category === "enemy") {
         portraitPad = 64;

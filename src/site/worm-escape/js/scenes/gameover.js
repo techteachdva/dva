@@ -1,6 +1,6 @@
 import {
   W, H, COLORS,
-  drawFleshBackground, drawVeins, drawText, drawBanner, drawPanel, roundRect,
+  drawBackdropCached, drawText, drawBanner, drawPanel, roundRect,
 } from "../engine/render.js";
 import { SFX } from "../engine/audio.js";
 import { loadSave, recordRun, findScoreRank } from "../engine/storage.js";
@@ -56,8 +56,7 @@ export class GameOverScene {
     }
   }
   render(ctx, game) {
-    drawFleshBackground(ctx, this.t, 0.7);
-    drawVeins(ctx, this.t, 7);
+    drawBackdropCached(ctx, this.t, this.t, 0.7, null, 7);
     ctx.fillStyle = "rgba(80, 0, 0, 0.55)";
     ctx.fillRect(0, 0, W, H);
 
