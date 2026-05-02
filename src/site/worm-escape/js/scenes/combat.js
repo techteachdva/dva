@@ -2369,6 +2369,8 @@ export class CombatScene {
   drawMenu(ctx, game) {
     const p = game.player;
     const l = p.loadout;
+    const plMode =
+      p.loadoutId === "plasmids" ? activePlasmMode(l, p.plasmModeIndex ?? 0) : null;
     const rects = this.actionButtonRects();
     const pm = p.pactMods || {};
     const mcb = (p.manaCostBonus || 0);
