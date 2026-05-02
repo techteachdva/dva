@@ -2694,9 +2694,14 @@ function init(host, detailEl, selectEl, shellEl) {
       if (morphGardenSoloWordId) {
         const prev = wordGroups[morphGardenSoloWordId];
         const wPrev = WORDS.find((x) => x.id === morphGardenSoloWordId);
-        if (prev) {
+        /** Do not yank a tree off `compareStage` — compare is applied before this; the isolate pick may be compare A or B. */
+        const keepForCompare =
+          layoutKeyEffective.startsWith("Compare") &&
+          morphCompareAttachedPair &&
+          morphCompareAttachedPair.includes(morphGardenSoloWordId);
+        if (prev && wPrev && !keepForCompare) {
           gardenRoot.attach(prev);
-          if (wPrev) prev.position.copy(posForViewKey(wPrev, layoutKeyEffective));
+          prev.position.copy(posForViewKey(wPrev, layoutKeyEffective));
           prev.updateMatrixWorld(true);
         }
       }
@@ -3360,6 +3365,15 @@ function init(host, detailEl, selectEl, shellEl) {
 
     const compareIdsOk =
       !!(morphCompareAttachedPair?.[0] && morphCompareAttachedPair?.[1]);
+    const cmpA = document.getElementById("morph-compare-a")?.value ?? "";
+    const cmpB = document.getElementById("morph-compare-b")?.value ?? "";
+    const comparePickValid =
+      compareOn &&
+      !!cmpA &&
+      !!cmpB &&
+      cmpA !== cmpB &&
+      WORDS.some((x) => x.id === cmpA) &&
+      WORDS.some((x) => x.id === cmpB);
 
     morphApplyGardenSoloStage(layoutKeyEffective);
 
@@ -3385,6 +3399,8 @@ function init(host, detailEl, selectEl, shellEl) {
         vis = true;
       } else if (compareOn && compareIdsOk) {
         vis = !!(w.id === morphCompareAttachedPair?.[0] || w.id === morphCompareAttachedPair?.[1]);
+      } else if (compareOn && comparePickValid) {
+        vis = w.id === cmpA || w.id === cmpB;
       } else if (linkedIds) {
         vis = linkedIds.has(w.id);
       } else if (focusId) {
