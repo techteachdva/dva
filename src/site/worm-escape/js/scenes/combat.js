@@ -336,6 +336,8 @@ export class CombatScene {
       );
     }
 
+    this.tryOpenManaVialInputWhilePaused(game);
+
     if (this.paused) return;
 
     this.t += dt;
@@ -901,6 +903,29 @@ export class CombatScene {
     return false;
   }
 
+  /**
+   * Boss fights: handleMenu is skipped while paused, so [R]/[3]/mana button
+   * must still open the vial. Clears pause when a vial actually opens.
+   */
+  tryOpenManaVialInputWhilePaused(game) {
+    if (this.phase !== "fight" || this.enemy.hp <= 0) return;
+    if (this.potionState || this.potionDrinkCooldown > 0) return;
+    const p = game.player;
+    const manaPulse =
+      game.input.wasPressed("3", "r")
+      || game.input.wasCodePressed("Digit3", "Numpad3", "KeyR");
+    let clickedMana = false;
+    if (game.input.wasPressed("Mouse0")) {
+      const pr = this.actionButtonRects()[2];
+      const mx = game.input.mouseX;
+      const my = game.input.mouseY;
+      if (pointInRect(mx, my, pr.x, pr.y, pr.w, pr.h)) clickedMana = true;
+    }
+    if (!manaPulse && !clickedMana) return;
+    this.tryEnterManaPotion(p);
+    if (this.potionState) this.paused = false;
+  }
+
   handleMenu(dt, game) {
     const p = game.player;
 
@@ -1463,8 +1488,8 @@ export class CombatScene {
     }
 
     this.drawUI(ctx, game);
-    if (this.potionState) this.drawPotionMiniGame(ctx, game);
     if (this.paused) this.drawPause(ctx);
+    if (this.potionState) this.drawPotionMiniGame(ctx, game);
   }
 
   /** Modal pop-cork → tilt-pour minigame; combat input is routed here while active. */

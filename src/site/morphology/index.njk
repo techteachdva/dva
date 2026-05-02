@@ -24,13 +24,8 @@ contentClasses: morphology-page
       aria-label="Flat morpheme diagrams: isolated tree, linked lemmas, or compare two words"
     ></div>
     <div class="morph-ui-panel">
-      <div class="morph-ui-row morph-ui-row--meta" role="group" aria-label="Word tier vocabulary set">
-        <label for="morph-curriculum">Word tier</label>
-        <select id="morph-curriculum" class="morph-select morph-select--curriculum" title="Word trees by vocabulary tier (Beck-style)">
-          <option value="tier1">Tier 1 — common, everyday words</option>
-          <option value="tier2">Tier 2 — high-utility / academic words</option>
-          <option value="tier3">Tier 3 — low-frequency, domain-specific words</option>
-        </select>
+      <div class="morph-ui-row morph-ui-row--meta" role="group" aria-label="Vocabulary note">
+        <span class="morph-curriculum-note" title="Edit per-word tier tags in morphology-words-data.js">One vocabulary set · tier shown inside each mini-lesson</span>
         <button
           type="button"
           id="morph-tour-btn"
@@ -137,7 +132,7 @@ contentClasses: morphology-page
         </button>
       </div>
       <p id="morph-hint" class="morph-hint morph-hint--compact">
-        <strong>Tip:</strong> The board is <strong>2D</strong>—pan/zoom freely. 🌳 is your single-word lab; 🔗 unfolds anything in the tier that braids morphemes with that pick; ⚖ contrasts two lemmas and one dual mini-lesson. Over the diagram, the scroll wheel <strong>moves the page</strong> so you can reach the chapter highlights and back (zoom when the page cannot scroll further, or <kbd>Ctrl</kbd>/<kbd>⌘</kbd> + scroll anytime). Hover for gloss ·
+        <strong>Tip:</strong> The board is <strong>2D</strong>—pan/zoom freely. 🌳 is your single-word lab; 🔗 unfolds every lemma in the set that shares morphemes with that pick; ⚖ contrasts two lemmas and one dual mini-lesson. Over the diagram, the scroll wheel <strong>moves the page</strong> so you can reach the chapter highlights and back (zoom when the page cannot scroll further, or <kbd>Ctrl</kbd>/<kbd>⌘</kbd> + scroll anytime). Hover for gloss ·
         <kbd>F</kbd> fit · <kbd>R</kbd> reset<span class="visually-hidden"> (Space toggles orbit only in the experimental 3D mode from backslash)</span>.
       </p>
     </div>
@@ -154,18 +149,19 @@ contentClasses: morphology-page
         <h2 id="morph-help-title" class="morph-help__title">Digital morphemes — how to use</h2>
         <div class="morph-help__body">
           <section class="morph-help__sec">
-            <h3>Word tiers</h3>
+            <h3>Vocabulary tiers (Beck-style)</h3>
             <p>
-              Use <strong>Word tier</strong> to load <strong>Tier 1</strong> (common everyday words),
-              <strong>Tier 2</strong> (high-utility academic vocabulary), or
-              <strong>Tier 3</strong> (lower-frequency, content-area words such as <em>photosynthesis</em> or
-              <em>equilateral</em>). Your choice is saved in this browser; changing tier reloads the page.
+              The site loads <strong>one</strong> vocabulary set. Each lemma is tagged
+              <strong>Tier 1</strong> (common everyday),
+              <strong>Tier 2</strong> (academic / cross-subject), or
+              <strong>Tier 3</strong> (lower-frequency or domain-heavy). The mini-lesson states the tier and points you to
+              <code>morphology-words-data.js</code> if you want to reclassify a word.
             </p>
           </section>
           <section class="morph-help__sec">
             <h3>Flat board &amp; Arrange</h3>
             <p class="morph-help__sub">
-              The explorer opens after a brief intro cinematic: one lemma takes the spotlight with its mini-lesson. Use <strong>Arrange</strong> when you’re ready for different vantage points on the vocabulary tray loaded from <strong>Word tier</strong>.
+              The explorer opens after a brief intro cinematic: one lemma takes the spotlight with its mini-lesson. Use <strong>Arrange</strong> when you’re ready for different vantage points on the full vocabulary set.
             </p>
             <ul>
               <li>

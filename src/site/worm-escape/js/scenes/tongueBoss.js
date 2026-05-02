@@ -333,6 +333,10 @@ export class MawBossScene {
       );
     }
 
+    // Opening the vial must work even while paused — otherwise handleInput never runs
+    // (paused bail-out below) and [R]/mana-card clicks appear to do nothing / only dim the screen.
+    this.tryOpenManaVialInput(game);
+
     if (this.paused) return;
 
     this.t += dt;
@@ -829,6 +833,36 @@ export class MawBossScene {
     this.hitFlash = Math.max(this.hitFlash, 0.35);
   }
 
+  /**
+   * [R]/[3]/physical keys + third action-card click — duplicated before pause bail-out
+   * in update() so mana vials work while the fight is paused.
+   */
+  tryOpenManaVialInput(game) {
+    if (this.phase !== "fight" || this.done || this.potionState || this.potionDrinkCooldown > 0) {
+      return;
+    }
+    const p = game.player;
+    if (!p) return;
+    const manaPulse =
+      game.input.wasPressed("r", "R", "3")
+      || game.input.wasCodePressed("Digit3", "Numpad3", "KeyR");
+    const barY = H - 86;
+    const barH = 68;
+    const nCard = 4;
+    const cardW = (W - 48 - 24 * (nCard - 1)) / nCard;
+    const manaCardIndex = 2;
+    let clickedMana = false;
+    if (game.input.wasPressed("Mouse0")) {
+      const mx = game.input.mouseX;
+      const my = game.input.mouseY;
+      const x = 24 + manaCardIndex * (cardW + 24);
+      if (pointInRect(mx, my, x, barY, cardW, barH)) clickedMana = true;
+    }
+    if (!manaPulse && !clickedMana) return;
+    this.tryEnterManaPotion(p);
+    if (this.potionState) this.paused = false;
+  }
+
   handleInput(dt, game) {
     if (this.potionState) return;
     const p = game.player;
@@ -1231,10 +1265,6 @@ export class MawBossScene {
     this.drawContextHint(ctx, game);
     this.drawLog(ctx);
 
-    if (this.potionState) {
-      drawManaPotionModal(ctx, this.potionState, COLORS, game.player);
-    }
-
     if (this.paused) {
       ctx.fillStyle = "rgba(0,0,0,0.65)";
       ctx.fillRect(0, 0, W, H);
@@ -1242,6 +1272,10 @@ export class MawBossScene {
       drawText(ctx, "[P] or [ESC] to resume", W / 2, H / 2 + 34, {
         size: 18, color: COLORS.boneDim, align: "center",
       });
+    }
+
+    if (this.potionState) {
+      drawManaPotionModal(ctx, this.potionState, COLORS, game.player);
     }
   }
 

@@ -1952,6 +1952,22 @@ html.morph-immersive-open body {
   margin-bottom: 0.15rem;
 }
 
+.morph-curriculum-note {
+  margin-right: auto;
+  max-width: min(100%, 20rem);
+  font-size: 0.8rem;
+  line-height: 1.32;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: rgba(200, 244, 255, 0.88);
+  opacity: 0.92;
+}
+
+.morphology-page:has(.morphology-shell--wb) .morph-curriculum-note {
+  color: #334155;
+  opacity: 0.95;
+}
+
 .morph-select--curriculum {
   max-width: min(100%, 19rem);
 }
