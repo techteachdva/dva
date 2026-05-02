@@ -11,6 +11,7 @@ import {
 } from "./morphology-lessons-data.js";
 
 import { MORPHOLOGY_WORD_LIST } from "./morphology-words-data.js";
+import { MORPHEME_CATALOG } from "./morphology-morpheme-catalog.js";
 
 
 /** Reused vectors — avoids per-frame allocations in bridge updates */
@@ -2293,6 +2294,110 @@ function init(host, detailEl, selectEl, shellEl) {
     });
   }
 
+  function morphCollectKeys(node, /** @type {Set<string>} */ out) {
+    if (!node) return;
+    if (node.morphemeKey) out.add(node.morphemeKey);
+    for (const c of node.children || []) morphCollectKeys(c, out);
+  }
+
+  function morphBuildMorphemeChart() {
+    const mount = /** @type {HTMLElement | null} */ (document.getElementById("morph-morpheme-chart"));
+    if (!mount) return;
+
+    /** @type {Map<string, { labels: string[], ids: string[] }>} */
+    const keyToWords = new Map();
+    for (const w of WORDS) {
+      const ks = new Set();
+      morphCollectKeys(w.tree, ks);
+      for (const k of ks) {
+        if (!keyToWords.has(k)) keyToWords.set(k, { labels: [], ids: [] });
+        keyToWords.get(k).labels.push(w.label);
+        keyToWords.get(k).ids.push(w.id);
+      }
+    }
+
+    const rows = MORPHEME_CATALOG.map((r) => {
+      const pack = keyToWords.get(r.key);
+      const ids = pack ? [...new Set(pack.ids)] : [];
+      const labels = ids.map((id) => WORDS.find((w) => w.id === id)?.label).filter(Boolean);
+      const wordButtons = labels.length
+        ? `<ul class="morph-chart__words">${ids
+            .map((id) => WORDS.find((w) => w.id === id))
+            .filter(Boolean)
+            .map(
+              (w) =>
+                `<li><button type="button" class="morph-chart__word" data-morph-sel="${morphEscapeHtml(
+                  w.id
+                )}">${morphEscapeHtml(w.label)}</button></li>`
+            )
+            .join("")}</ul>`
+        : `<span class="morph-chart__muted">—</span>`;
+
+      const outside = r.outsideExamples?.length
+        ? r.outsideExamples.map(morphEscapeHtml).join(", ")
+        : "—";
+      const wiktTitle = r.wiktionary || r.morpheme;
+      const wiktHref = `https://en.wiktionary.org/wiki/${encodeURIComponent(wiktTitle)}`;
+      const wiktLabel = `wikt:${wiktTitle}`;
+
+      return `<tr>
+        <td><button type="button" class="morph-chart__morpheme" data-morph-key="${morphEscapeHtml(
+          r.key
+        )}" title="Show lemmas sharing this morpheme">${morphEscapeHtml(r.morpheme)}</button></td>
+        <td>${morphEscapeHtml(r.origin)}</td>
+        <td>${morphEscapeHtml(r.meaning)}</td>
+        <td>${wordButtons}</td>
+        <td>${outside}</td>
+        <td><a class="morph-chart__wikt" href="${morphEscapeHtml(wiktHref)}" target="_blank" rel="noreferrer noopener">${morphEscapeHtml(
+          wiktLabel
+        )}</a></td>
+      </tr>`;
+    }).join("");
+
+    mount.innerHTML = `<div class="morph-chart__wrap">
+      <table class="morph-chart__table">
+        <thead>
+          <tr>
+            <th>Morpheme</th>
+            <th>Origin</th>
+            <th>Meaning</th>
+            <th>Words in this bank</th>
+            <th>Outside examples</th>
+            <th>Wiktionary</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+
+    mount.addEventListener("click", (ev) => {
+      const t = /** @type {HTMLElement | null} */ (ev.target instanceof HTMLElement ? ev.target : null);
+      if (!t) return;
+      const mor = t.closest?.(".morph-chart__morpheme");
+      if (mor instanceof HTMLElement) {
+        const key = mor.getAttribute("data-morph-key");
+        if (key) showMorphemePop(key);
+        return;
+      }
+      const wbtn = t.closest?.(".morph-chart__word");
+      if (wbtn instanceof HTMLElement) {
+        const sid = wbtn.getAttribute("data-morph-sel");
+        if (!sid) return;
+        if (vk().startsWith("Compare")) {
+          const cmpA = /** @type {HTMLSelectElement | null} */ (document.getElementById("morph-compare-a"));
+          const cmpB = /** @type {HTMLSelectElement | null} */ (document.getElementById("morph-compare-b"));
+          const curA = cmpA?.value;
+          if (curA && curA !== sid && cmpB) cmpB.value = sid;
+          else if (cmpA) cmpA.value = sid;
+          morphSyncCompareChange();
+        } else if (selectEl) {
+          selectEl.value = sid;
+          selectEl.dispatchEvent(new Event("change", { bubbles: true }));
+        }
+      }
+    });
+  }
+
   function morphEscapeHtml(s) {
     return String(s)
       .replace(/&/g, "&amp;")
@@ -2306,8 +2411,12 @@ function init(host, detailEl, selectEl, shellEl) {
   morphTooltipEl.setAttribute("role", "tooltip");
   document.body.appendChild(morphTooltipEl);
 
+  /** When true, the tooltip is click-pinned and interactive. */
+  let morphTooltipPinned = false;
+
   function hideMorphTooltip() {
     morphTooltipEl.classList.add("morph-node-tooltip--hidden");
+    morphTooltipEl.classList.remove("morph-node-tooltip--pinned");
     morphTooltipEl.innerHTML = "";
   }
 
@@ -2364,23 +2473,79 @@ function init(host, detailEl, selectEl, shellEl) {
     return `<p class="morph-node-tooltip__also"><strong>Also in:</strong> ${labels.map(morphEscapeHtml).join(", ")}</p>`;
   }
 
-  function showMorphTooltip(mesh, clientX, clientY) {
+  function showMorphTooltip(mesh, clientX, clientY, /** @type {{ pinned?: boolean }=} */ opts) {
     const tip = mesh?.userData?.morphTooltip;
     if (!tip) {
       hideMorphTooltip();
       return;
     }
+    const pinned = Boolean(opts?.pinned);
     const also = tip.morphemeKey ? morphTooltipAlsoHtml(tip.morphemeKey, mesh.userData.wordId) : "";
+
+    let picks = "";
+    if (pinned && tip.morphemeKey) {
+      const list = morphemeRegistry[tip.morphemeKey];
+      const ids = list ? [...new Set(list.map((x) => x.wordId))].filter((id) => id !== mesh.userData.wordId) : [];
+      const rows = ids
+        .map((id) => WORDS.find((w) => w.id === id))
+        .filter(Boolean)
+        .map(
+          (w) =>
+            `<li><button type="button" class="morph-node-tooltip__pick" data-morph-sel="${morphEscapeHtml(
+              w.id
+            )}">${morphEscapeHtml(w.label)}</button></li>`
+        )
+        .join("");
+      if (rows) {
+        const shortKey = tip.morphemeKey.replace(/^(pfx|sfx|root|lex):/, "");
+        picks = `<div class="morph-node-tooltip__picks"><p class="morph-node-tooltip__also"><strong>Shared chunk:</strong> <code>${morphEscapeHtml(
+          shortKey
+        )}</code> · click a word to jump</p><ul class="morph-node-tooltip__picklist">${rows}</ul></div>`;
+      }
+    }
+
     morphTooltipEl.innerHTML = `<div class="morph-node-tooltip__inner">
       <p class="morph-node-tooltip__word">${morphEscapeHtml(tip.wordLabel)}</p>
       <p class="morph-node-tooltip__head"><span class="morph-node-tooltip__cat">${morphEscapeHtml(tip.category)}</span> · <strong>${morphEscapeHtml(tip.morpheme)}</strong></p>
       <p class="morph-node-tooltip__gloss">${morphEscapeHtml(tip.gloss)}</p>
-      ${also}</div>`;
+      ${also}
+      ${picks}
+      ${pinned ? `<button type="button" class="morph-node-tooltip__close">Close</button>` : ""}
+      </div>`;
     morphTooltipEl.classList.remove("morph-node-tooltip--hidden");
+    morphTooltipEl.classList.toggle("morph-node-tooltip--pinned", pinned);
     morphTooltipEl.classList.toggle(
       "morph-node-tooltip--wb",
       Boolean(shellEl?.classList.contains("morphology-shell--wb"))
     );
+
+    if (pinned) {
+      morphTooltipPinned = true;
+      morphTooltipEl.querySelector(".morph-node-tooltip__close")?.addEventListener("click", () => {
+        morphTooltipPinned = false;
+        hideMorphTooltip();
+      });
+      morphTooltipEl.querySelectorAll(".morph-node-tooltip__pick").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const sid = btn.getAttribute("data-morph-sel");
+          if (!sid) return;
+          if (vk().startsWith("Compare")) {
+            const cmpA = /** @type {HTMLSelectElement | null} */ (document.getElementById("morph-compare-a"));
+            const cmpB = /** @type {HTMLSelectElement | null} */ (document.getElementById("morph-compare-b"));
+            const curA = cmpA?.value;
+            if (curA && curA !== sid && cmpB) cmpB.value = sid;
+            else if (cmpA) cmpA.value = sid;
+            morphSyncCompareChange();
+          } else if (selectEl) {
+            selectEl.value = sid;
+            selectEl.dispatchEvent(new Event("change", { bubbles: true }));
+          }
+          morphTooltipPinned = false;
+          hideMorphTooltip();
+        });
+      });
+    }
+
     requestAnimationFrame(() => {
       const pad = 10;
       const rect = morphTooltipEl.getBoundingClientRect();
@@ -2419,6 +2584,8 @@ function init(host, detailEl, selectEl, shellEl) {
   document.getElementById("morph-tour-btn")?.addEventListener("click", () => {
     morphTourCtl.open();
   });
+
+  morphBuildMorphemeChart();
 
   const firstWordId = WORDS[0]?.id;
   if (selectEl) {
@@ -2589,7 +2756,15 @@ function init(host, detailEl, selectEl, shellEl) {
     if (morphClickTimer != null) window.clearTimeout(morphClickTimer);
     morphClickTimer = window.setTimeout(() => {
       morphClickTimer = null;
+      const mesh = morphPickMeshAt(ev.clientX, ev.clientY);
+      if (!mesh) {
+        morphTooltipPinned = false;
+        hideMorphTooltip();
+        morphHandleSinglePick(ev.clientX, ev.clientY);
+        return;
+      }
       morphHandleSinglePick(ev.clientX, ev.clientY);
+      showMorphTooltip(mesh, ev.clientX, ev.clientY, { pinned: true });
     }, 300);
   });
 
@@ -2619,6 +2794,7 @@ function init(host, detailEl, selectEl, shellEl) {
 
   renderer.domElement.addEventListener("pointermove", (ev) => {
     if (!introDone || transition) return;
+    if (morphTooltipPinned) return;
     morphHoverLastX = ev.clientX;
     morphHoverLastY = ev.clientY;
     if (morphHoverRaf != null) return;
@@ -2634,7 +2810,7 @@ function init(host, detailEl, selectEl, shellEl) {
 
   renderer.domElement.addEventListener("pointerleave", () => {
     morphHoverMesh = null;
-    hideMorphTooltip();
+    if (!morphTooltipPinned) hideMorphTooltip();
     renderer.domElement.style.cursor = "";
   });
 
@@ -3646,12 +3822,19 @@ function init(host, detailEl, selectEl, shellEl) {
               isApex ? 0.78 : 0.72,
               1.1
             );
+            const orthoZoom =
+              controls.object instanceof THREE.OrthographicCamera ? controls.object.zoom : 1;
+            /* Ortho board zoom does not change camera distance, so explicitly scale labels with zoom. */
+            const zoomBoost =
+              controls.object instanceof THREE.OrthographicCamera
+                ? THREE.MathUtils.clamp(Math.pow(Math.max(0.2, orthoZoom), 0.42), 0.9, 2.35)
+                : 1;
             const focusLabBoost =
               morphFocusMesh === mesh && focusT < 0.32
                 ? 1 + 0.12 * (1 - smoothstep(focusT / 0.3))
                 : 1;
             const s0 = lab.userData.lodScale0 ?? 1;
-            lab.scale.setScalar(s0 * distScale * focusLabBoost);
+            lab.scale.setScalar(s0 * distScale * zoomBoost * focusLabBoost);
           }
         }
       }
