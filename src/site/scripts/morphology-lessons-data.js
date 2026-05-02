@@ -64,7 +64,7 @@ function morphLessonPieces(w, morphemeRegistry) {
             ? "Tier 3 — lower-frequency or domain-heavy"
             : String(w.tier);
     headParts.push(
-      `<section class="morph-lesson__sec morph-lesson__sec--tier"><h4>Vocabulary tier</h4><p><strong>${escapeHtml(tierLabel)}</strong>. To change this tag, edit the <code>tier</code> field on lemma <code>${escapeHtml(w.id)}</code> in <code>morphology-words-data.js</code>.</p></section>`
+      `<section class="morph-lesson__sec morph-lesson__sec--tier"><h4>Vocabulary tier</h4><p><strong>${escapeHtml(tierLabel)}</strong>.</p></section>`
     );
   }
   pieces.push(headParts.join(""));
