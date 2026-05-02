@@ -79,9 +79,9 @@ function topFangDrawX(col) {
   return COLS_X[col] + LANE_PITCH * 0.5;
 }
 
-/** Hero stand slightly left of each bottom molar — matches how top teeth hang over gaps so lane reads cleanly. */
+/** Hero stand slightly right of each bottom molar (lane column anchor). */
 function heroStandX(col) {
-  return COLS_X[col] - LANE_PITCH * 0.2;
+  return COLS_X[col] + LANE_PITCH * 0.2;
 }
 
 // Vertical anchors for the teeth / hero.
@@ -211,11 +211,7 @@ export class MawBossScene {
     }
     const mp = Number(p.mana) || 0;
     const mm = Number(p.manaMax) || 0;
-    if (mm > 0 && mp >= mm - 1e-9) {
-      SFX.deny();
-      this.pushLog("Mana already full!");
-      return;
-    }
+    const alreadyFull = mm > 0 && mp >= mm - 1e-9;
     const [corkKey, pourKey] = pickTwoDistinctPotionKeys();
     this.potionState = {
       corkKey,
@@ -227,7 +223,11 @@ export class MawBossScene {
       timeLeft: POTION_MINIGAME_TIME_SEC,
       hintFlash: 0,
     };
-    this.pushLog("POP the cork — tilt with the pour key!");
+    this.pushLog(
+      alreadyFull
+        ? "POP the cork — MP brimming; tilt with the pour key!"
+        : "POP the cork — tilt with the pour key!",
+    );
     SFX.confirm();
   }
 
@@ -883,7 +883,7 @@ export class MawBossScene {
     else if (game.input.wasPressed("e", "E", "2")) this.execute(1, p, game);
     else if (
       game.input.wasPressed("r", "R", "3")
-      || game.input.wasCodePressed("Digit3", "Numpad3")
+      || game.input.wasCodePressed("Digit3", "Numpad3", "KeyR")
     ) {
       this.execute(2, p, game);
     } else if (game.input.wasPressed("f", "F", "4")) this.execute(3, p, game);

@@ -146,7 +146,7 @@ const ALL_WORD_DATA = [
     id: "presentation",
     label: "Presentation",
     bracket: "[[pre- + sent] + -ation]",
-    note: "Like pairing <em>statement</em> + <strong>-ment</strong> with naming an abstract outcome, <strong>-ation</strong> is a derivational suffix that often forms abstract nouns. The stem is not a separate modern English word, which is why many roots in academic vocabulary are <strong>bound morphemes</strong>.",
+    note: "<strong>Takeaway:</strong> <strong>-ation</strong> turns this stem into a noun for an action or result (like <em>information</em>). The middle isn’t a word you use alone—that’s normal in formal English.",
     position: [29, 0, 24],
     tree: {
       text: "presentation",
@@ -184,7 +184,7 @@ const ALL_WORD_DATA = [
     id: "hallway",
     label: "Hallway",
     bracket: "[hall + way]",
-    note: "<strong>Compounding</strong> joins two existing words. In English, the <strong>rightmost</strong> element often determines the word class of the whole—here <em>hallway</em> patterns like <em>way</em> (a path), not like <em>hall</em> alone.",
+    note: "<strong>Takeaway:</strong> Two words glued into one idea: <em>hall</em> + <em>way</em>. The whole thing behaves like a path or route—the second chunk shapes what kind of “way” it is.",
     position: [-34, 0, 19],
     tree: {
       text: "hallway",
@@ -209,7 +209,7 @@ const ALL_WORD_DATA = [
     id: "final",
     label: "Final",
     bracket: "[fin + -al]",
-    note: "The suffix <strong>-al</strong> is a common derivational suffix meaning ‘pertaining to,’ as in <em>national</em>, <em>seasonal</em>. Here it attaches to a <strong>bound root</strong> <em>fin-</em> (‘end’)—not used as an independent English word.",
+    note: "<strong>Takeaway:</strong> <strong>-al</strong> makes “related to ___.” Here <em>fin-</em> means “end” (think <em>finish</em>) even though you don’t say <em>fin</em> alone.",
     position: [-19, 0, -29],
     tree: {
       text: "final",
@@ -235,7 +235,7 @@ const ALL_WORD_DATA = [
     id: "sourdough",
     label: "Sourdough",
     bracket: "[sour + dough]",
-    note: "Another compound of two <strong>content morphemes</strong> (open-class items). Compounds may be written solid, with a hyphen, or as separate words—here both parts are merged in spelling.",
+    note: "<strong>Takeaway:</strong> You can see both ingredients: <strong>sour</strong> + <strong>dough</strong>. The meaning is literally “sour dough.”",
     position: [14, 0, -34],
     tree: {
       text: "sourdough",
@@ -260,7 +260,7 @@ const ALL_WORD_DATA = [
     id: "before",
     label: "Before",
     bracket: "[be- + fore]",
-    note: "As a <strong>function morpheme</strong> in use, <em>before</em> behaves as a closed-class preposition or adverb. Morphologically, analyses often separate <strong>be-</strong> + <strong>fore</strong> for teaching to show how complex words are built from roots and affixes.",
+    note: "<strong>Takeaway:</strong> In real life it’s one small glue word (before lunch). For morphology you can still split <strong>be-</strong> + <strong>fore</strong> (“ahead”) to see how it was built.",
     position: [-38, 0, -10],
     tree: {
       text: "before",
@@ -285,7 +285,7 @@ const ALL_WORD_DATA = [
     id: "rainbow",
     label: "Rainbow",
     bracket: "[rain + bow]",
-    note: "Compound noun: <em>rain</em> + <em>bow</em>. Contrasts like compound stress (<em>blúebird</em>) versus phrasal stress (<em>blue bírd</em>) are a reminder that compounds are more than concatenated spelling—they have pronunciation patterns.",
+    note: "<strong>Takeaway:</strong> <strong>Rain</strong> + <strong>bow</strong> (arc). One compound word—often said with different stress than “rain … bow” as separate words.",
     position: [38, 0, -14],
     tree: {
       text: "rainbow",
@@ -310,7 +310,7 @@ const ALL_WORD_DATA = [
     id: "inhospitable",
     label: "Inhospitable",
     bracket: "[in- + [hospit + -able]]",
-    note: "<strong>Il-, im-, in-, ir-</strong> are common variants of a negative Latinate prefix. <strong>-able</strong> ‘capable of being’ is derivational. Together they show how derivational affixes change meaning and often word class.",
+    note: "<strong>Takeaway:</strong> “Not welcoming.” The spelling can be <strong>in-, im-, il-, ir-</strong>—they’re still “not.” <strong>-able</strong> means “can be ___ed,” tied here to <em>host / hospitality</em>.",
     position: [-24, 0, 34],
     tree: {
       text: "inhospitable",
@@ -347,7 +347,7 @@ const ALL_WORD_DATA = [
     id: "demarcation",
     label: "Demarcation",
     bracket: "[[de- + mark] + -ation]",
-    note: "Negative and reversal prefixes (e.g. <strong>dis-</strong>, <strong>un-</strong>, <strong>in-</strong>) reshuffle meaning before suffixes such as <strong>-ation</strong> attach — <strong>de-</strong> behaves similarly here. Derivational layers stack before bare inflection (like plural <strong>-s</strong>) at the outer edge.",
+    note: "<strong>Takeaway:</strong> A boundary or line between zones/ideas. Prefix + “mark” + noun ending <strong>-ation</strong>—suffixes stack inward before you add plain plurals like <strong>-s</strong> on the outside.",
     position: [43, 0, 29],
     tree: {
       text: "demarcation",
@@ -385,7 +385,7 @@ const ALL_WORD_DATA = [
     id: "dehumanization",
     label: "Dehumanization",
     bracket: "[[de- + [human + -ize]] + -ation]",
-    note: "Stacks like <strong>-ize</strong> + <strong>-ation</strong> mirror a productive pattern in English academic vocabulary: <strong>-ize</strong> verbalizes (‘make/become’), then <strong>-ation</strong> forms an abstract noun—unlike bare inflectional <strong>-s</strong> or <strong>-ed</strong>.",
+    note: "<strong>Takeaway:</strong> “Removing humanity” as an idea-noun. English often does <strong>-ize</strong> (make into) then <strong>-ation</strong> (the thing/process)—different from just adding <strong>-s</strong> or <strong>-ed</strong> on the edge.",
     position: [48, 0, -24],
     tree: {
       text: "dehumanization",
@@ -435,7 +435,7 @@ const ALL_WORD_DATA = [
     id: "resistance",
     label: "Resistance",
     bracket: "[[re- + sist] + -ance]",
-    note: "The suffix <strong>-ance</strong> nominalizes the verb stem (parallel in function to nominal <strong>-ment</strong>, as with <em>argument</em>). <strong>re-</strong> is productive; here it patterns with ‘back / against’ more than simple ‘again’ (compare <em>rewrite</em> vs. <em>resist</em>).",
+    note: "<strong>Takeaway:</strong> “Push-back” or refusal boiled down to a noun. <strong>re-</strong> here often feels “against” (like <em>resist</em>), not just “again.” <strong>-ance</strong> names the quality or state.",
     position: [-43, 0, 24],
     tree: {
       text: "resistance",
@@ -473,7 +473,7 @@ const ALL_WORD_DATA = [
     id: "revolution",
     label: "Revolution",
     bracket: "[[re- + volu] + -tion]",
-    note: "Another <strong>re-</strong> + stem + <strong>-tion</strong> pattern common in Latinate academic words. <strong>-tion</strong> is in the same family of nominalizing suffixes as <strong>-ation</strong>.",
+    note: "<strong>Takeaway:</strong> Big turning-point word—science or history. Same rough recipe as other formal nouns: <strong>re-</strong> + stem + <strong>-tion</strong> (same job as <strong>-ation</strong>).",
     position: [-48, 0, -19],
     tree: {
       text: "revolution",
@@ -511,7 +511,7 @@ const ALL_WORD_DATA = [
     id: "unlockable-a",
     label: "Unlockable (not able to be locked)",
     bracket: "[un- + [lock + -able]]",
-    note: "<strong>Un-</strong> often spells ‘not, opposite of.’ Here <strong>un-</strong> attaches to the adjective <em>lockable</em>, so the reading is ‘not lockable’—i.e. <strong>not able to be locked</strong>. Bracketing [[un- [lock -able]]] reflects that scope and how affixes combine.",
+    note: "<strong>Takeaway:</strong> Means “you can’t lock it.” <strong>Un-</strong> wraps the whole adjective <em>lockable</em>: [[un- [lock · able]]], not “un + lock” first.",
     context:
       "Fire-safety rules meant the side door stayed <strong>unlockable</strong>: it <strong>could not be locked</strong> during store hours, even though managers wanted tighter security.",
     position: [5, 0, 38],
@@ -550,7 +550,7 @@ const ALL_WORD_DATA = [
     id: "unlockable-b",
     label: "Unlockable (able to be unlocked)",
     bracket: "[[un- + lock] + -able]",
-    note: "Same surface string, different structure: <strong>-able</strong> attaches to the verb <em>unlock</em>, so the paraphrase is ‘able to be unlocked.’ This is a compact classroom example of why morphology cares about <strong>constituent structure</strong>, not just letters.",
+    note: "<strong>Takeaway:</strong> Same letters, different meaning: “can be unlocked.” Here <strong>-able</strong> hooks to <strong>unlock</strong> first: [[unlock] · able]. Brackets beat spelling alone.",
     context:
       "After the update, my old phone was finally <strong>unlockable</strong>: Face ID meant we <strong>could unlock it</strong> without the forgotten passcode.",
     position: [19, 0, 43],
@@ -590,7 +590,7 @@ const ALL_WORD_DATA = [
     id: "belief",
     label: "Belief",
     bracket: "[be- + lief]",
-    note: "A canonical <strong>bound root</strong> analysis: <strong>be-</strong> patterns with other <em>be-</em> + stem words (compare <em>before</em>, <em>believe</em>). The second piece is not a free modern English word on its own.",
+    note: "<strong>Takeaway:</strong> What you believe—the noun. It goes with <strong>believe</strong>; you don’t peel off tidy modern chunks—learn the pair together for spelling.",
     position: [11, 0, 50],
     tree: {
       text: "belief",
@@ -615,7 +615,7 @@ const ALL_WORD_DATA = [
     id: "believe",
     label: "Believe",
     bracket: "[be- + lieve]",
-    note: "Parallel to <em>belief</em>: same <strong>be-</strong> prefix family, different bound stem. Useful for showing how <strong>related words</strong> can share a formative without sharing every morpheme.",
+    note: "<strong>Takeaway:</strong> Verb partner to <strong>belief</strong>. Related spellings, same neighborhood—compare vowels when you proofread.",
     position: [-11, 0, 50],
     tree: {
       text: "believe",
@@ -640,7 +640,7 @@ const ALL_WORD_DATA = [
     id: "endure",
     label: "Endure",
     bracket: "[en- + dure]",
-    note: "The productive <strong>en-</strong> / <strong>em-</strong> pattern attaches to stems to form verbs such as <em>enable</em>, <em>enrich</em>. The stem here is a Latinate <strong>bound root</strong>.",
+    note: "<strong>Takeaway:</strong> “Last through something hard.” <strong>En-</strong> (+ verb stem) shows up in <em>enable</em>, <em>enrich</em>—same “make / put into” flavor.",
     position: [-54, 0, 6],
     tree: {
       text: "endure",
@@ -665,7 +665,7 @@ const ALL_WORD_DATA = [
     id: "enable",
     label: "Enable",
     bracket: "[en- + able]",
-    note: "Shares the same <strong>en-</strong> prefix frame as <em>endure</em>. The stem <em>able</em> ties the word to the <strong>-able</strong> family (compare <em>inhospitable</em>, <em>unlockable</em>).",
+    note: "<strong>Takeaway:</strong> “Make able” or turn something on. Same opening as <strong>endure</strong>; <strong>able</strong> links it to <em>readable</em> / <em>disable</em>—same “can / capable” family.",
     position: [-58, 0, -22],
     tree: {
       text: "enable",
@@ -689,7 +689,7 @@ const ALL_WORD_DATA = [
     id: "freedom",
     label: "Freedom",
     bracket: "[free + -dom]",
-    note: "The noun-forming suffix <strong>-dom</strong> (‘state, realm, condition’) builds an abstract noun on an adjective or noun stem—parallel examples include <em>wisdom</em> and <em>kingdom</em>.",
+    note: "<strong>Takeaway:</strong> The state of being free—noun built from <strong>free</strong> + <strong>-dom</strong> (“condition / realm”). Same suffix as <em>wisdom</em> and <em>kingdom</em>.",
     position: [54, 0, 6],
     tree: {
       text: "freedom",
@@ -714,7 +714,7 @@ const ALL_WORD_DATA = [
     id: "wisdom",
     label: "Wisdom",
     bracket: "[wise + -dom]",
-    note: "Shares <strong>-dom</strong> with <em>freedom</em> and <strong>wise</strong> with <em>wiser</em> and <em>unwise</em>—a compact word-family cluster for teaching derivational networks.",
+    note: "<strong>Takeaway:</strong> Deep good judgment—noun from <strong>wise</strong> + <strong>-dom</strong>. Same suffix as <strong>freedom</strong>; ties to <em>wiser</em> / <em>unwise</em>.",
     position: [36, 0, 44],
     tree: {
       text: "wisdom",
@@ -739,7 +739,7 @@ const ALL_WORD_DATA = [
     id: "kingdom",
     label: "Kingdom",
     bracket: "[king + -dom]",
-    note: "Another <strong>-dom</strong> noun. The left element is a free noun stem; the right element fixes the ‘realm / domain’ reading—useful for comparing compound-like stress and structure with <em>freedom</em>.",
+    note: "<strong>Takeaway:</strong> A country ruled by a king/queen—or any realm. <strong>King</strong> + <strong>-dom</strong>, same pattern as <strong>freedom</strong>.",
     position: [-6, 0, 54],
     tree: {
       text: "kingdom",
@@ -764,7 +764,7 @@ const ALL_WORD_DATA = [
     id: "wiser",
     label: "Wiser",
     bracket: "[wise + -er]",
-    note: "Inflectional <strong>-er</strong> comparative on an adjective stem. The same written <strong>-er</strong> also appears in <strong>agentive</strong> derivations (e.g. <em>finisher</em>)—a classic classroom contrast.",
+    note: "<strong>Takeaway:</strong> “More wise.” Here <strong>-er</strong> compares (<em>wise → wiser</em>). Same letters as <em>teacher</em>, but there <strong>-er</strong> means “person who ___s.”",
     position: [6, 0, -52],
     tree: {
       text: "wiser",
@@ -789,7 +789,7 @@ const ALL_WORD_DATA = [
     id: "unwise",
     label: "Unwise",
     bracket: "[un- + wise]",
-    note: "Shares <strong>un-</strong> with the <em>unlockable</em> trees and <strong>wise</strong> with <em>wisdom</em> / <em>wiser</em>.",
+    note: "<strong>Takeaway:</strong> “Not wise.” <strong>Un-</strong> flips the adjective—same prefix flavor as <em>unhappy</em>; pairs with <em>wisdom</em> / <em>wiser</em>.",
     position: [26, 0, -40],
     tree: {
       text: "unwise",
@@ -814,7 +814,7 @@ const ALL_WORD_DATA = [
     id: "constitution",
     label: "Constitution",
     bracket: "[[con- + stitut] + -tion]",
-    note: "Latinate bracketing: <strong>con-</strong> + <strong>stitut</strong> ‘set, place’ + nominalizing <strong>-tion</strong>. Bridges to <em>convince</em> on the prefix and to <em>revolution</em> on <strong>-tion</strong>.",
+    note: "<strong>Takeaway:</strong> The rules or makeup of something—the founding document or how a body is built. Same opening as <strong>convince</strong>; ends with <strong>-tion</strong> like <strong>revolution</strong>.",
     position: [-34, 0, -46],
     tree: {
       text: "constitution",
@@ -852,7 +852,7 @@ const ALL_WORD_DATA = [
     id: "convince",
     label: "Convince",
     bracket: "[con- + vince]",
-    note: "Shares <strong>con-</strong> with <em>constitution</em>. The bound stem is not a free modern English word—typical of Latinate vocabulary in academic registers.",
+    note: "<strong>Takeaway:</strong> To persuade or win someone over. Same <strong>con-</strong> start as <strong>constitution</strong>; middle chunk isn’t a word you say alone—common in formal vocabulary.",
     position: [-26, 0, 40],
     tree: {
       text: "convince",
@@ -877,7 +877,7 @@ const ALL_WORD_DATA = [
     id: "finisher",
     label: "Finisher",
     bracket: "[finish + -er]",
-    note: "Derivational <strong>-er</strong> forming an agent noun from a verb stem—compare pairs like <em>teach · teacher</em>. Contrast with comparative <strong>-er</strong> on <em>wiser</em>.",
+    note: "<strong>Takeaway:</strong> Someone/something that finishes (race, task). <strong>Finish</strong> + <strong>-er</strong> = “doer”—different job than <strong>-er</strong> in <em>wiser</em>.",
     position: [44, 0, 34],
     tree: {
       text: "finisher",
@@ -902,7 +902,7 @@ const ALL_WORD_DATA = [
     id: "teacher",
     label: "Teacher",
     bracket: "[teach + -er]",
-    note: "Agentive <strong>-er</strong> (person who): compare <em>finisher</em> and comparative <em>wiser</em> in other trees.",
+    note: "<strong>Takeaway:</strong> A person who teaches—<strong>teach</strong> + <strong>-er</strong>. Same suffix job as <em>finisher</em>; different from comparative <em>wiser</em>.",
     position: [22, 0, 48],
     tree: {
       text: "teacher",
@@ -927,7 +927,7 @@ const ALL_WORD_DATA = [
     id: "unhappy",
     label: "Unhappy",
     bracket: "[un- + happy]",
-    note: "Productive <strong>un-</strong> ‘not’ on an adjective stem—same prefix family as <em>unwise</em>.",
+    note: "<strong>Takeaway:</strong> “Not happy.” <strong>Un-</strong> + adjective—same “not” glue as <em>unwise</em>.",
     position: [-20, 0, 48],
     tree: {
       text: "unhappy",
@@ -952,7 +952,7 @@ const ALL_WORD_DATA = [
     id: "baseball",
     label: "Baseball",
     bracket: "[base + ball]",
-    note: "Compound noun: two free morphemes, like <em>rainbow</em> and <em>hallway</em>.",
+    note: "<strong>Takeaway:</strong> Two nouns in one: <strong>base</strong> + <strong>ball</strong>. Same compound idea as <strong>rainbow</strong> / <strong>hallway</strong>.",
     position: [34, 0, 40],
     tree: {
       text: "baseball",
@@ -977,7 +977,7 @@ const ALL_WORD_DATA = [
     id: "toothbrush",
     label: "Toothbrush",
     bracket: "[tooth + brush]",
-    note: "Endocentric compound: a brush for teeth—stress and class often follow the right element.",
+    note: "<strong>Takeaway:</strong> A brush for teeth—<strong>tooth</strong> + <strong>brush</strong>. Say <em>toothbrushes</em> (whole word + -es), not “teethbrushes.”",
     position: [-32, 0, 44],
     tree: {
       text: "toothbrush",
@@ -1002,7 +1002,7 @@ const ALL_WORD_DATA = [
     id: "national",
     label: "National",
     bracket: "[nation + -al]",
-    note: "Derivational <strong>-al</strong> ‘pertaining to’—same suffix family as <em>final</em>.",
+    note: "<strong>Takeaway:</strong> “About a nation.” <strong>Nation</strong> + <strong>-al</strong> (“related to”)—same suffix idea as <strong>final</strong>.",
     position: [40, 0, -38],
     tree: {
       text: "national",
@@ -1028,7 +1028,7 @@ const ALL_WORD_DATA = [
     id: "careful",
     label: "Careful",
     bracket: "[care + -ful]",
-    note: "Suffix <strong>-ful</strong> ‘full of, tending to’ builds adjectives from noun stems.",
+    note: "<strong>Takeaway:</strong> “Full of care.” <strong>Care</strong> + <strong>-ful</strong>. Pair with <strong>careless</strong> (<strong>-less</strong> = without).",
     position: [-40, 0, -36],
     tree: {
       text: "careful",
@@ -1053,7 +1053,7 @@ const ALL_WORD_DATA = [
     id: "readable",
     label: "Readable",
     bracket: "[read + -able]",
-    note: "Same <strong>-able</strong> pattern as <em>unlockable</em>—able to be read.",
+    note: "<strong>Takeaway:</strong> “Can be read” (clear handwriting or text). <strong>Read</strong> + <strong>-able</strong>—same pattern as <em>unlockable</em>.",
     position: [8, 0, -50],
     tree: {
       text: "readable",
@@ -1078,7 +1078,7 @@ const ALL_WORD_DATA = [
     id: "preview",
     label: "Preview",
     bracket: "[pre- + view]",
-    note: "Shares <strong>pre-</strong> ‘before’ with <em>presentation</em>—see before the full thing.",
+    note: "<strong>Takeaway:</strong> To look at something early—a trailer, sample, or skim. <strong>Pre-</strong> “before” + <strong>view</strong> “see,” like <em>presentation</em>’s <strong>pre-</strong>.",
     position: [-8, 0, -50],
     tree: {
       text: "preview",
@@ -1103,7 +1103,7 @@ const ALL_WORD_DATA = [
     id: "invisible",
     label: "Invisible",
     bracket: "[in- + vis + -ible]",
-    note: "Bound stem <em>vis</em> ‘see’ plus adjective-forming <strong>-ible</strong> (parallel to <strong>-able</strong>).",
+    note: "<strong>Takeaway:</strong> “Can’t be seen.” <strong>in-</strong> “not” + stem about seeing + <strong>-ible</strong> (same job as <strong>-able</strong>).",
     position: [50, 0, 8],
     tree: {
       text: "invisible",
@@ -1140,7 +1140,7 @@ const ALL_WORD_DATA = [
     id: "predict",
     label: "Predict",
     bracket: "[pre- + dict]",
-    note: "Latin-style ‘say beforehand’—<strong>pre-</strong> plus bound stem <em>dict</em> ‘say.’",
+    note: "<strong>Takeaway:</strong> To say what will happen before it happens. <strong>pre-</strong> + <strong>dict</strong> “say” (like <em>dictionary</em> / <em>verdict</em>).",
     position: [-50, 0, 8],
     tree: {
       text: "predict",
@@ -1165,7 +1165,7 @@ const ALL_WORD_DATA = [
     id: "transport",
     label: "Transport",
     bracket: "[trans- + port]",
-    note: "Carry ‘across’—<strong>trans-</strong> ‘across, through’ with <em>port</em> ‘carry.’",
+    note: "<strong>Takeaway:</strong> To carry people or things across (verb or noun). <strong>trans-</strong> “across” + <strong>port</strong> “carry”—same <em>port</em> as <strong>portable</strong>.",
     position: [46, 0, -8],
     tree: {
       text: "transport",
@@ -1190,7 +1190,7 @@ const ALL_WORD_DATA = [
     id: "teaching",
     label: "Teaching",
     bracket: "[teach + -ing]",
-    note: "Inflectional <strong>-ing</strong> on a verb stem — here it turns the verb <em>teach</em> into a noun naming the activity (contrast agentive <em>teacher</em> in the same family).",
+    note: "<strong>Takeaway:</strong> The work or act of teaching—or “she is teaching.” <strong>-ing</strong> can name an activity (<em>Teaching is hard</em>) or mark ongoing action (<em>is teaching</em>). Compare noun <em>teacher</em>.",
     position: [18, 0, 58],
     tree: {
       text: "teaching",
@@ -1215,7 +1215,7 @@ const ALL_WORD_DATA = [
     id: "playful",
     label: "Playful",
     bracket: "[play + -ful]",
-    note: "Adjectival <strong>-ful</strong> stacks on a noun/verb stem to mean ‘full of; characterized by’ — compare <em>careful</em> in this set.",
+    note: "<strong>Takeaway:</strong> “Full of play” or joking around. <strong>Play</strong> + <strong>-ful</strong>—same suffix idea as <strong>careful</strong>.",
     position: [-28, 0, 58],
     tree: {
       text: "playful",
@@ -1240,7 +1240,7 @@ const ALL_WORD_DATA = [
     id: "snowball",
     label: "Snowball",
     bracket: "[snow + ball]",
-    note: "Endocentric compound like <em>baseball</em>: right-hand head <em>ball</em> names the object class; <em>snow</em> narrows the kind.",
+    note: "<strong>Takeaway:</strong> Like <strong>baseball</strong>: <strong>snow</strong> + <strong>ball</strong>. Second word names the kind of thing; first word narrows it.",
     position: [32, 0, 52],
     tree: {
       text: "snowball",
@@ -1265,7 +1265,7 @@ const ALL_WORD_DATA = [
     id: "disable",
     label: "Disable",
     bracket: "[dis- + able]",
-    note: "Negative <strong>dis-</strong> + adjective stem <em>able</em> — parallel in shape to <em>enable</em>, and the <strong>-able</strong> family links to <em>readable</em>.",
+    note: "<strong>Takeaway:</strong> To turn off ability or access—opposite of <strong>enable</strong>. <strong>dis-</strong> + <strong>able</strong> stem; same “can” family as <strong>readable</strong>.",
     position: [-52, 0, -18],
     tree: {
       text: "disable",
@@ -1290,7 +1290,7 @@ const ALL_WORD_DATA = [
     id: "nationalism",
     label: "Nationalism",
     bracket: "[[nation + -al] + -ism]",
-    note: "Layered Latinate abstract: relational <strong>-al</strong> on <em>nation</em>, then ideological <strong>-ism</strong> — compare <em>national</em> in the same band.",
+    note: "<strong>Takeaway:</strong> Strong loyalty to one country’s interests above others—or belief that your nation should come first. Built in layers: <strong>nation → national → nationalism</strong> with <strong>-ism</strong> (“movement / belief”).",
     position: [48, 0, -42],
     tree: {
       text: "nationalism",
@@ -1328,7 +1328,7 @@ const ALL_WORD_DATA = [
     id: "international",
     label: "International",
     bracket: "[inter- + [nation + -al]]",
-    note: "Prefix <strong>inter-</strong> ‘between’ scopes over <em>national</em> — so the whole adjective is ‘between nations.’ Shares <em>nation</em> + <strong>-al</strong> with <em>national</em> and <em>nationalism</em>.",
+    note: "<strong>Takeaway:</strong> Between or among countries—cross-border. <strong>inter-</strong> “among” + <strong>national</strong>; same building blocks as <strong>national</strong> / <strong>nationalism</strong>.",
     position: [-44, 0, 46],
     tree: {
       text: "international",
@@ -1365,7 +1365,7 @@ const ALL_WORD_DATA = [
     id: "portable",
     label: "Portable",
     bracket: "[port + -able]",
-    note: "Transparent <strong>port</strong> ‘carry’ + <strong>-able</strong> ‘able to be’ — same bound root as <em>transport</em>, same suffix family as <em>readable</em> / <em>inhospitable</em>.",
+    note: "<strong>Takeaway:</strong> Light enough to carry around. <strong>port</strong> “carry” + <strong>-able</strong>—same pieces as <strong>transport</strong> and <strong>readable</strong>.",
     position: [42, 0, 16],
     tree: {
       text: "portable",
@@ -1390,7 +1390,7 @@ const ALL_WORD_DATA = [
     id: "reuse",
     label: "Reuse",
     bracket: "[re- + use]",
-    note: "Productive <strong>re-</strong> ‘again; back’ on a Germanic verb stem — rhymes structurally with <em>revolution</em>’s prefix use in this list.",
+    note: "<strong>Takeaway:</strong> Use again instead of throwing away. <strong>re-</strong> “again” + <strong>use</strong>—simple prefix on a word you already know.",
     position: [-46, 0, -32],
     tree: {
       text: "reuse",
@@ -1415,7 +1415,7 @@ const ALL_WORD_DATA = [
     id: "illegal",
     label: "Illegal",
     bracket: "[il- + legal]",
-    note: "Assimilated negative prefix (here <strong>il-</strong> before <em>l</em>) patterns with <strong>in-/im-/ir-</strong> — compare <em>invisible</em> and <em>inhospitable</em> for the same teaching point.",
+    note: "<strong>Takeaway:</strong> Against the law. <strong>il-</strong> is still “not”—English picks <strong>il-</strong> before <strong>l</strong> (<em>illegal</em>) like <strong>im-</strong> before <strong>p</strong> (<em>impossible</em>). Same idea as <strong>invisible</strong> / <strong>inhospitable</strong>.",
     position: [-52, 0, 14],
     tree: {
       text: "illegal",

@@ -1,32 +1,36 @@
 /**
- * Mini-lessons for Morphology Garden — written for grades 6–10 and demo teaching from a panel or smart board.
- * Tone: rigorous ideas, plain words, hooks first (Visual Thesaurus–style branching, minus their proprietary UX).
+ * Mini-lessons for Morphology Garden — written for students (about grades 6–10): say what the pieces mean,
+ * why the word is built that way, and how that helps reading and spelling—not presenter jargon.
  * @typedef {{ segment: string, origin?: string, note?: string }} EtymoPart
  */
 
-/** Short crib for recurring affixes / suffixes referenced in lesson bullets. */
+/** Plain-language glosses for morpheme tags used in lesson lists. */
 export const AFFIX_ORIGIN_HINT = {
   "pfx:in-":
-    '<strong>in-</strong> (often <strong>im-, il-, ir-</strong>): “not / without”—spelling swaps to kiss the next consonant (<em>illegal, impossible, irregular</em>).',
-  "pfx:re-": '<strong>re-</strong>: “again” or “back / against”—hear it in <em>rewrite, rethink, resist</em>.',
-  "pfx:un-": '<strong>un-</strong>: “undo” or “not”—likes Germanic stems (<em>unhappy, unzip</em>). Different flavor from Latin-ish <strong>in-</strong>.',
-  "pfx:de-": '<strong>de-</strong>: often “reverse, remove, down”—shows up on school-book verbs and nouns alike.',
-  "pfx:pre-": '<strong>pre-</strong>: “before” (<em>preset, preview, predict</em>).',
-  "pfx:trans-": '<strong>trans-</strong>: “across, through”—think <em>translate, transplant</em>.',
+    '<strong>in-</strong> (and <strong>im-, il-, ir-</strong> before certain letters): adds “not” or “without.” Examples: <em>illegal, impossible, irregular</em>.',
+  "pfx:re-":
+    '<strong>re-</strong>: “again,” or sometimes “back” or “against.” Examples: <em>rewrite, rethink, resist</em>.',
+  "pfx:un-":
+    '<strong>un-</strong>: “not” or “reverse.” Common on everyday words: <em>unhappy, unzip</em>. Not the same family as Latin-type <strong>in-</strong>.',
+  "pfx:de-": '<strong>de-</strong>: often “remove,” “reverse,” or “down.” Example: <em>decode</em>.',
+  "pfx:pre-": '<strong>pre-</strong>: “before.” Examples: <em>preview, predict</em>.',
+  "pfx:trans-": '<strong>trans-</strong>: “across” or “through.” Examples: <em>transport, translate</em>.',
   "sfx:-tion":
-    '<strong>-tion / -ation</strong>: noun jacket for “act, outcome, thing that happens”—stacks onto stems that already behaved like verbs.',
-  "sfx:-ation": '<strong>-ation</strong>: same family as <strong>-tion</strong>; very productive in textbook English.',
-  "sfx:-ment": '<strong>-ment</strong>: turns verbs into nouns—“result of ___ing” (<em>development</em>).',
-  "sfx:-al": '<strong>-al</strong>: “relating to” (<em>nation → national</em>).',
-  "sfx:-ous": '<strong>-ous</strong>: “full of / tending to”—adjective maker (<em>dangerous</em>).',
-  "sfx:-able": '<strong>-able</strong>: “capable of being ___ed”—hear echoes of “able” inside the word (<em>breakable</em>).',
-  "sfx:-ize": '<strong>-ize</strong>: verb maker—“cause to become / treat like” (<em>hospital → hospitalize</em>).',
-  "sfx:-ity": '<strong>-ity</strong>: abstract noun jacket on adjectives (<em>sincere → sincerity</em>).',
-  "sfx:-er": '<strong>-er</strong>: either “comparison” (<em>bigger</em>) or “doer thing” (<em>teacher</em>)—students learn to infer from grammar.',
-  "sfx:-ful": '<strong>-ful</strong>: “full of / tending toward” (<em>playful</em>).',
-  "sfx:-less": '<strong>-less</strong>: Germanic chip meaning “without” (<em>hopeless</em>).',
+    '<strong>-tion / -ation</strong>: turns a verb-ish stem into a noun naming an act, process, or result. Example: <em>inform → information</em>.',
+  "sfx:-ation": '<strong>-ation</strong>: same job as <strong>-tion</strong>—noun built from a stem.',
+  "sfx:-ment": '<strong>-ment</strong>: noun suffix—“the result or product of ___ing.” Example: <em>develop → development</em>.',
+  "sfx:-al": '<strong>-al</strong>: “related to” or “like a ___.” Example: <em>nation → national</em>.',
+  "sfx:-ous": '<strong>-ous</strong>: “full of” or “having lots of ___.” Example: <em>dangerous</em>.',
+  "sfx:-able":
+    '<strong>-able</strong>: “can be ___ed” or “capable of being ___ed.” Example: <em>read → readable</em>.',
+  "sfx:-ize": '<strong>-ize</strong>: turns a word into a verb meaning “make into” or “treat as.” Example: <em>hospital → hospitalize</em>.',
+  "sfx:-ity": '<strong>-ity</strong>: turns many adjectives into abstract nouns. Example: <em>sincere → sincerity</em>.',
+  "sfx:-er":
+    '<strong>-er</strong>: two big jobs—(1) “more ___” on short adjectives (<em>wiser</em>), or (2) “person or thing that ___s” (<em>teacher</em>). Use sentence grammar to tell which.',
+  "sfx:-ful": '<strong>-ful</strong>: “full of” or “having.” Example: <em>careful</em>.',
+  "sfx:-less": '<strong>-less</strong>: “without.” Example: <em>hopeless</em>.',
   "sfx:-dom":
-    '<strong>-dom</strong>: state or realm—turns nouns/adjectives into “condition / territory” nouns (<em>freedom, kingdom</em>).',
+    '<strong>-dom</strong>: turns a word into a noun about a state or realm. Examples: <em>freedom, kingdom</em>.',
 };
 
 /**
@@ -35,382 +39,382 @@ export const AFFIX_ORIGIN_HINT = {
 export const MORPH_DEEP_NOTES = {
   presentation: {
     summary:
-      "You’re unpacking a TED-talk noun: Latin-style pieces snap together (<strong>pre- ‘before’ + sent/stem + -ation noun coat</strong>) to name showing or handing something over. Invite students to act it—<em>I’ll pre‑sent (= put before)</em> my slides.",
+      "<strong>What you learn:</strong> A <em>presentation</em> is the act of showing or handing something over (like slides or a report). The word builds from <strong>pre-</strong> “before” + a stem related to “put/send” + <strong>-ation</strong>, which turns it into a noun for an event or thing.",
     etymology: [
       { segment: "pre-", origin: AFFIX_ORIGIN_HINT["pfx:pre-"] },
-      { segment: "sent", origin: "Bound stem—“put/feel/send” energy you also hear compressed in <em>consent, sentence</em>." },
+      { segment: "sent", origin: "Stem related to “put” or “send”—same family as <em>consent</em> and <em>sentence</em>." },
       { segment: "-ation", origin: AFFIX_ORIGIN_HINT["sfx:-ation"] },
     ],
-    tense: "<strong>Type</strong> noun. <strong>Not</strong> an -ed tense stack—students contrast with verbs they already know (“she presents”).",
+    tense: "Here it’s a <strong>noun</strong> (the presentation). Don’t confuse that with the verb <em>she presents</em>, where <strong>-s</strong> is added on the outside.",
   },
   hallway: {
     summary:
-      "Straight-up compound (<strong>hall + way</strong>): two bricks you’d still say alone. Teach stress as one footprint, meaning as “hall-shaped path”—great on a smart board tracing each brick’s glow.",
+      "<strong>What you learn:</strong> A compound word: <strong>hall</strong> + <strong>way</strong>. Both parts are normal English words; pressed together they mean a passage or corridor—not “a hall’s method,” but one idea: a path-like hall.",
     etymology: [
-      { segment: "hall", origin: "Older English noun for broad indoor space—not fancy." },
-      { segment: "way", origin: "Path/track—students already own this word." },
+      { segment: "hall", origin: "Large indoor space." },
+      { segment: "way", origin: "Path or route." },
     ],
     embedded: [
-      { text: "hall", note: "Students can chant it aloud on its own." },
-      { text: "way", note: "Head noun vibes: keeps the “path-ish” noun class." },
+      { text: "hall", note: "You can say <em>hall</em> on its own." },
+      { text: "way", note: "The second part names what kind of path it is." },
     ],
   },
   final: {
     summary:
-      "Looks short, behaves scholastic—<strong>fin-</strong> “end/limit” is glued to relational <strong>-al</strong> ‘relating to limits.’ Invite “fin-ish / fin-ish line” echo so the bound root sticks.",
+      "<strong>What you learn:</strong> <strong>Final</strong> means “last” or “deciding.” <strong>Fin-</strong> carries “end” or “limit” (think <em>finish</em>), and <strong>-al</strong> makes an adjective: “about an end or limit.”",
     etymology: [
-      { segment: "fin-", origin: "Latin ‘end/limit’ family—paired with verbs like <em>finish</em> in kid talk." },
+      { segment: "fin-", origin: "Root idea of “end” or “limit”—related to <em>finish</em>." },
       { segment: "-al", origin: AFFIX_ORIGIN_HINT["sfx:-al"] },
     ],
-    tense: "Adjective—not the same beast as noun <em>finale</em>; talk about endings in stories/sports timers.",
+    tense: "An adjective (final exam, final score). Not the same as the noun <em>finale</em>, which is about a last performance.",
   },
   sourdough: {
     summary:
-      "<strong>sour</strong> + <strong>dough</strong>: kitchen vocabulary that still screams its recipe. Taste-test analogy: morphology is reading the nutritional label sideways.",
+      "<strong>What you learn:</strong> Another compound: <strong>sour</strong> + <strong>dough</strong>. The meaning is literally in the pieces—tangy dough used as starter for bread.",
     etymology: [
-      { segment: "sour", origin: "Simple adjective—they name the tang." },
-      { segment: "dough", origin: "Noun—they name the goo." },
+      { segment: "sour", origin: "The taste." },
+      { segment: "dough", origin: "The moist flour mixture." },
     ],
     embedded: [
-      { text: "sour", note: "Open-class content word." },
-      { text: "dough", note: "Head noun—you’re naming a dough-ball type." },
+      { text: "sour", note: "Adjective you already use." },
+      { text: "dough", note: "The head noun: what kind of dough? Sour dough." },
     ],
   },
   before: {
     summary:
-      "Function-word lesson: fluent readers rarely slow down, BUT you can spotlight <strong>be-</strong> + <strong>fore</strong> ‘ahead’ exactly like peeling <em>foreshadow, forecast</em> later.",
+      "<strong>What you learn:</strong> An older English pattern: <strong>be-</strong> + <strong>fore</strong> “in front / ahead.” That “ahead” idea still shows up in <em>foreshadow</em> and <em>forecast</em>.",
     etymology: [
-      { segment: "be-", origin: "Fossil prefix slot—paired with verbs/adverbs in clusters (<em>become</em>)." },
-      { segment: "fore", origin: "‘Front / ahead’—compare <em>forehead</em> if they giggle responsibly." },
+      { segment: "be-", origin: "Old prefix that shows up in words like <em>because</em> and <em>before</em>." },
+      { segment: "fore", origin: "Ahead or in front—compare <em>forehead</em>." },
     ],
   },
   rainbow: {
     summary:
-      "Compound candy: meteorology + arc geometry. Hover each bubble on board to show meanings composing—students draw their own arcs while narrating chunks.",
+      "<strong>What you learn:</strong> <strong>Rain</strong> + <strong>bow</strong> (arc). It names an arc of colors in the sky after rain—the second part is “bow” like a curved shape, not necessarily a hair ribbon.",
     etymology: [
-      { segment: "rain", origin: "Water cycle vocab—everyone owns it." },
-      { segment: "bow", origin: 'Curve—not the hair ribbon unless you riff on polysemy ("shoot a rainbow").' },
+      { segment: "rain", origin: "Water falling from clouds." },
+      { segment: "bow", origin: "Here: a curved band or arc." },
     ],
     embedded: [
-      { text: "rain", note: "Left modifier tightening which bow." },
-      { text: "bow", note: "Right-head naming the geometric family." },
+      { text: "rain", note: "First part narrows the meaning." },
+      { text: "bow", note: "Second part: what kind of arc—rain-shaped." },
     ],
   },
   inhospitable: {
     summary:
-      "NEG + stem + possibility suffix: Latin-flavored negatives shift spellings (<strong>in-, il-, ir-, im-</strong>). Ask “Where’s the host?” (<em>hospit-al-ity</em>) so <strong>-able</strong> snaps on as “able to be hosted.”",
+      "<strong>What you learn:</strong> “Not welcoming.” The word ties to <em>hospital</em> / <em>hospitality</em> (hosting a guest). <strong>in-</strong> = “not,” and <strong>-able</strong> = “able to be ___ed”—here, able to be hosted or treated as a guest.",
     etymology: [
       { segment: "in-", origin: AFFIX_ORIGIN_HINT["pfx:in-"] },
       { segment: "-able", origin: AFFIX_ORIGIN_HINT["sfx:-able"] },
     ],
-    tense: "Adjective—pair with humane geography examples (weather vs people).",
+    tense: "An adjective. You can say a place or a person is inhospitable.",
   },
   demarcation: {
     summary:
-      "Abstract civics/engineering noun: <strong>de-</strong> peels back / marks off + stem echoing borders + noun coat <strong>-ation</strong>. Smart-board move—sketch dotted lines while narrating prefixes.",
+      "<strong>What you learn:</strong> A line or boundary that separates two areas or ideas. <strong>de-</strong> often signals “off” or “down,” the middle echoes <em>mark</em>, and <strong>-ation</strong> makes a noun for the act or result of marking a boundary.",
     etymology: [
       { segment: "de-", origin: AFFIX_ORIGIN_HINT["pfx:de-"] },
-      { segment: "mark/marc-", origin: "Stem about marks—students know <em>mark</em> as cognate-ish cousin." },
+      { segment: "mark/marc-", origin: "Related to marking a line—think <em>mark</em> as in “make a mark.”" },
       { segment: "-ation", origin: AFFIX_ORIGIN_HINT["sfx:-ation"] },
     ],
     spelling: [
       {
         from: "mark",
         to: "marc-",
-        note: 'Latinate spine vs everyday <em>mark</em>: same ancestry, different spelling costume—celebrate predictable pattern, no shame.',
+        note: "English keeps the ‘k’ sound but uses a Latinate spelling <strong>marc-</strong> inside words like this—not random; it’s a pattern you’ll see in formal vocabulary.",
       },
     ],
   },
   dehumanization: {
     summary:
-      "Dense stack ripe for pacing with arrows on board: rip away humanity (<strong>de-</strong>) verbified (<strong>-ize</strong>), then nouned (<strong>-ation</strong>) for the concept name. Emotional truth + grammatical clarity can coexist.",
+      "<strong>What you learn:</strong> The process of stripping away someone’s full humanity or treating them as less than human. Built as: <strong>de-</strong> (remove or reverse) + <strong>human</strong> + <strong>-ize</strong> (make into) + <strong>-ation</strong> (noun for a process).",
     etymology: [
       { segment: "de-", origin: AFFIX_ORIGIN_HINT["pfx:de-"] },
       { segment: "-ize", origin: AFFIX_ORIGIN_HINT["sfx:-ize"] },
       { segment: "-ation", origin: AFFIX_ORIGIN_HINT["sfx:-ation"] },
     ],
-    tense: "Noun labeling a process—that’s distinct from tossing <strong>-ed</strong> onto a storyline verb.",
+    tense: "A noun naming a process. Compare to a past-tense verb like <em>They were dehumanized</em>—different job in the sentence.",
   },
   resistance: {
     summary:
-      "<strong>re- ‘back/against’ + sist ‘stand’ + -ance ‘state’</strong>—literal “standing back pushes.” History class hook: resisting policy vs resisting friction.",
+      "<strong>What you learn:</strong> Pushing back or refusing to go along. Morpheme-wise: <strong>re-</strong> “back / against” + <strong>sist</strong> “stand” (as in <em>insist</em>) + <strong>-ance</strong>, a noun ending for a state or quality.",
     etymology: [
       { segment: "re-", origin: AFFIX_ORIGIN_HINT["pfx:re-"] },
-      { segment: "sist", origin: 'Bound root—“stand”; cousin to <em>insist</em>, <em>consist</em>.' },
-      { segment: "-ance", origin: 'Abstract noun cloak—students map to <strong>-tion</strong> nouns mentally.' },
+      { segment: "sist", origin: 'Stem meaning “stand”—same family as <em>insist</em> and <em>consist</em>.' },
+      { segment: "-ance", origin: 'Noun suffix for an abstract state—similar role to <strong>-tion</strong> in other words.' },
     ],
   },
   revolution: {
     summary:
-      "Spin + overturn energy: Latin root about rolling returns with noun coat <strong>-tion</strong>. Works for science orbit talk or civic “revolution”—same core idea of cyclic turn.",
+      "<strong>What you learn:</strong> A big change or a full turn—history books use it for overthrowing a system; science uses it for something revolving. Same pieces: <strong>re-</strong> + root about rolling/turning + <strong>-tion</strong> noun.",
     etymology: [
       { segment: "re-", origin: AFFIX_ORIGIN_HINT["pfx:re-"] },
-      { segment: "volu", origin: 'Rolling / volume family—movement imagery helps.' },
+      { segment: "volu", origin: "Root idea of roll or turn—related to words like <em>revolve</em>." },
       { segment: "-tion", origin: AFFIX_ORIGIN_HINT["sfx:-tion"] },
     ],
   },
   "unlockable-a": {
     summary:
-      "Ambiguity grenade 🎓: <strong>un- scopes over lockable → ‘not capable of being locked’</strong>. Write brackets BIG on smart board—the tree already shows layering truth.",
-    embedded: [{ text: "lock", note: 'Inner chunk still visible inside <em>lockable</em>.' }],
-    tense: "Adjective; compare conversational paraphrases (“you can’t lock it”) vs morphology brackets.",
+      "<strong>What you learn:</strong> This reading means “<strong>not</strong> able to be locked”—the <strong>un-</strong> attaches to the whole adjective <em>lockable</em>, not to the bare verb <em>lock</em>. So: not (lockable).",
+    embedded: [{ text: "lock", note: "Still visible inside <em>lockable</em>." }],
+    tense: "Adjective. Say it in plain English: “You can’t lock it” matches this bracketing.",
     formation:
-      "[un [lock-able]]—the negative hugs the finished adjective, not just the naked verb stem.",
+      "Brackets: <strong>[ un [ lock-able ] ]</strong>. The negative wraps the whole “able to be locked” idea.",
   },
   "unlockable-b": {
     summary:
-      "Same letters, DIFFERENT story: outer <strong>-able</strong> latches onto the verb phrase <strong>unlock</strong> ⇒ ‘possible to unlock.’ Puzzle race: teammates defend each bracket on whiteboards.",
-    tense: 'Adjective; hook: “Can you unlock it?” sentences vs “Is it unlocked-able?” clumsiness—they feel the mismatch.',
-    formation: "[ [un-lock] able ] versus unlockable-A—celebrate English’s commitment to ambiguity.",
+      "<strong>What you learn:</strong> Same spelling as the other tree, but a different structure: “able to be <strong>unlocked</strong>.” Here <strong>-able</strong> hooks onto <strong>unlock</strong> first: possible to open what was locked.",
+    tense: "Adjective. Ask: “Can someone unlock it?”—that question fits this structure better than the other reading.",
+    formation: "Brackets: <strong>[ [ un-lock ] able ]</strong>. Compare to the other <em>unlockable</em> tree: English allows both meanings; brackets show which one you mean.",
   },
   belief: {
     summary:
-      "Noun partner to <strong>believe</strong>; fossil <strong>be-</strong> + bound stem—not pieced from modern freebies. Invite kids to memorize the family rhyme “i before e except seize belief weirdness…” only if science teacher approves 😉.",
-    etymology: [{ segment: "be- / lief", origin: 'Ancient stem cluster—students focus on <em>cousin verbs</em> instead of brute forcing Old English trivia.' }],
+      "<strong>What you learn:</strong> The noun for what you hold to be true. It doesn’t break cleanly into modern everyday chunks like “be + lief”; pair it with the verb <strong>believe</strong> and notice the vowel shift—that pairing helps spelling.",
+    etymology: [{ segment: "be- / lief", origin: 'Old English leftovers bundled together—remember it next to <em>believe</em>, not as separate mini-words.' }],
   },
   believe: {
     summary:
-      "Verb stem parallels <em>belief</em>; teach morphology + spelling friends together—same neighborhood, tweaked vowels.",
-    tense: '<strong>Add -s / -ed / -ing</strong> outside for grammar time—derivative core stays intact.',
+      "<strong>What you learn:</strong> To accept something as true. Morphology lines up with <strong>belief</strong>; English keeps related words sounding similar but spells them differently.",
+    tense: "Verb—add <strong>-s, -ed, -ing</strong> on the outside for tense (<em>believes, believed, believing</em>).",
   },
   endure: {
     summary:
-      "<strong>en- ‘in/into/make’</strong> + <strong>dure ‘hard lasting’</strong> → “stretch through toughness.” Tie to perseverance language without sounding like a pamphlet.",
+      "<strong>What you learn:</strong> To last through something hard. <strong>En-</strong> acts like “in” or “make,” and the stem links to “hard” / lasting—same root flavor as <em>durable</em>.",
     etymology: [
-      { segment: "en-", origin: 'Energetic prefix—paired with verbs like <em>enable</em> elsewhere in this tray.' },
-      { segment: "dure", origin: '<em>Durable</em> adjective echoes the same hardness root.' },
+      { segment: "en-", origin: 'Prefix that shows up on verbs like <em>enable</em> and <em>enrich</em>.' },
+      { segment: "dure", origin: 'Stem about hardness or lasting—compare <em>durable</em>.' },
     ],
-    tense: "Finite verb endings ride on outer edge—the inner pieces stay stable.",
+    tense: "Verb—endings like <strong>-ed</strong> and <strong>-ing</strong> attach outside the stem bundle.",
   },
   enable: {
     summary:
-      "Literally-ish “make able”—prefix + adjective lump that English treats as verb fuel. Classroom beat: disability rights frame vs gamer “enable cheats.” Same morphemes, humane discussion.",
+      "<strong>What you learn:</strong> To make something possible or to switch something on. Built like “make able”: <strong>en-</strong> + <strong>able</strong>. Contrast <strong>disable</strong>—same core, opposite prefix.",
     etymology: [
-      { segment: "en-", origin: "<strong>En-</strong> verb forge—paired with stamina vibe in “endure/enrich/enlist.”" },
-      { segment: "able", origin: "-able clan—compare <em>disable</em> for dramatic flip tone." },
+      { segment: "en-", origin: 'Often turns adjectives or nouns into verbs (enable, enrich).' },
+      { segment: "able", origin: 'Same “can / capable” idea as in <em>ability</em>; opposite vibe to <em>disable</em>.' },
     ],
-    tense: "Verb—you’ll hear third-person -s regularly.",
+    tense: "Verb (<em>This enables…</em>).",
   },
   freedom: {
     summary:
-      "<strong>-dom</strong> turns content words into “realm / condition” nouns (<em>kings, wisdom crowds</em>). Emotional hook + grammatical hook share one slide.",
+      "<strong>What you learn:</strong> The state of being free. <strong>-dom</strong> builds nouns for states or realms from another word—here, from <strong>free</strong>.",
     etymology: [
-      { segment: "free", origin: "Kid-owned adjective + political meaning layers." },
-      { segment: "-dom", origin: "Germanic abstract noun hoodie—celebrate trio with sibling words below." },
+      { segment: "free", origin: "Means “not controlled” or “no cost,” depending on context." },
+      { segment: "-dom", origin: AFFIX_ORIGIN_HINT["sfx:-dom"] },
     ],
-    embedded: [{ text: "free", note: "Still say it solo in conversation." }],
+    embedded: [{ text: "free", note: "You still say <em>free</em> alone." }],
   },
   wisdom: {
     summary:
-      "Same <strong>-dom</strong> factory; vowel trims before suffix—shows English sandpaper smoothing stems before gluing endings.",
+      "<strong>What you learn:</strong> Deep good judgment or knowledge. Same suffix as <strong>freedom</strong>: <strong>-dom</strong> names a quality or state. The vowel shortens from <em>wise</em> before <strong>-dom</strong>.",
     etymology: [
-      { segment: "wis", origin: "<em>Wise</em> family shaved for suffix comfort." },
+      { segment: "wis", origin: "Related to <em>wise</em>; spelling trims before the suffix." },
       { segment: "-dom", origin: AFFIX_ORIGIN_HINT["sfx:-dom"] },
     ],
-    spelling: [{ from: "wise", to: "wis-", note: "Predictable squeeze before <strong>-dom</strong>—not random memorization fodder alone." }],
+    spelling: [{ from: "wise", to: "wis-", note: "English often shortens the vowel before <strong>-dom</strong>—not random; it’s a pattern." }],
   },
   kingdom: {
     summary:
-      "Concrete crown + realm suffix = geography-friendly noun students already picture from fantasy maps.",
+      "<strong>What you learn:</strong> A country ruled by a king or queen, or any realm. <strong>King</strong> + <strong>-dom</strong> (state/realm noun)—same suffix family as <strong>freedom</strong>.",
     etymology: [
-      { segment: "king", origin: "Straight noun." },
-      { segment: "-dom", origin: "Abstract realm suffix parallels <em>freedom</em> rhythm." },
+      { segment: "king", origin: "Ruler." },
+      { segment: "-dom", origin: "Builds a noun for a realm or condition." },
     ],
-    embedded: [{ text: "king", note: "Free noun pre-glue." }],
+    embedded: [{ text: "king", note: "Free-standing word before <strong>-dom</strong> glues on." }],
   },
   wiser: {
     summary:
-      "Two meanings of spelled <strong>-er</strong>: here comparative adjective—“more wise.” Pair with noun agents (<em>teacher</em>) to train ear vs eye.",
-    tense: "Comparative adjective—not the agentive derivation path.",
+      "<strong>What you learn:</strong> “More wise.” Here <strong>-er</strong> marks comparison—not “a person who wise,” but “more than before.” Compare <strong>teacher</strong>, where <strong>-er</strong> means “one who teaches.”",
+    tense: "Comparative adjective: wise → wiser → wisest.",
   },
   unwise: {
     summary:
-      "Germanic prefix <strong>un-</strong> snaps on graded adjectives—students stack antonym poetry (<em>unwise remarks</em>) fast.",
+      "<strong>What you learn:</strong> Not wise—a poor choice or judgment. <strong>Un-</strong> negates the adjective <strong>wise</strong>.",
     etymology: [{ segment: "un-", origin: AFFIX_ORIGIN_HINT["pfx:un-"] }],
-    tense: "Gradable—plays with comparative/superlative talk.",
+    tense: "Adjective—you can grade it: more unwise / most unwise (or switch to “less wise”).",
   },
   constitution: {
     summary:
-      "Civics + science body talk share this mold: prefix <strong>con- together</strong> + <strong>stitut establish</strong> + noun cloak <strong>-tion</strong>—establishing makeup or founding paper.",
+      "<strong>What you learn:</strong> Can mean the founding rules of a country or how something is physically built. Pieces: <strong>con-</strong> “together” + stem about setting up + <strong>-tion</strong> noun.",
     etymology: [
-      { segment: "con-", origin: "With-together shading (Latin-ish)—opening chunk parallel to convince." },
-      { segment: "stitut", origin: "Place-set stem—students can link institute / institution aloud." },
+      { segment: "con-", origin: "Together or completely—same opening flavor as <em>connect</em>." },
+      { segment: "stitut", origin: "About setting up or placing—think <em>institute</em>." },
       { segment: "-tion", origin: AFFIX_ORIGIN_HINT["sfx:-tion"] },
     ],
   },
   convince: {
     summary:
-      "Win-over verb: Latin-ish prefix plus bound stem—conquer with argument. Role-play mini trial; label morphemes on sticky notes dragged on smart glass.",
+      "<strong>What you learn:</strong> To persuade someone by argument. The pieces suggest “win completely together”—prefix <strong>con-</strong> + stem related to conquering or overcoming.",
     etymology: [
-      { segment: "con-", origin: "Together intensity—paired with noun cousin <em>constitution</em> only in vibe, morphemes still separable lesson." },
-      { segment: "vince", origin: "Conquer-overcome stem—rarely appears solo in casual English anymore." },
+      { segment: "con-", origin: "Together / completely—similar opening to other Latin-style words." },
+      { segment: "vince", origin: "Stem about conquering or overcoming—you rarely see it alone in modern English." },
     ],
-    tense: "Verb endings -s/-ed predictable—focus morphology on derivation first.",
+    tense: "Verb—add <strong>-s / -ed</strong> on the outside when you conjugate.",
   },
   finisher: {
     summary:
-      "Doing suffix <strong>-er</strong>: “thing/person finishing.” Sports shout-outs land instantly—students narrate championships using the same chunking.",
-    embedded: [{ text: "finish", note: 'Verb plastered cleanly before suffix.' }],
+      "<strong>What you learn:</strong> Someone or something that finishes (e.g. a race). <strong>-er</strong> here means “doer,” not “more”: finish + er.",
+    embedded: [{ text: "finish", note: "Verb stem before <strong>-er</strong>." }],
   },
   teacher: {
     summary:
-      "Hero word of the lesson plan: noun-of-doer glued to daily profession—pair selfies with morphology labels for smiles + rigor.",
-    embedded: [{ text: "teach", note: "Verb stripped to stem before hoodie <strong>-er</strong>." }],
-    tense: "Pluralize whole word with <strong>-s</strong>—inner pieces stay snug.",
+      "<strong>What you learn:</strong> A person who teaches. Same <strong>-er</strong> pattern as <strong>finisher</strong>: verb stem + <strong>-er</strong> = “one who ___s.”",
+    embedded: [{ text: "teach", note: "Verb stem; add <strong>-er</strong> for the job title." }],
+    tense: "Plural: <strong>teachers</strong>—the <strong>-s</strong> goes on the whole word.",
   },
   unhappy: {
     summary:
-      "<strong>Un-</strong> + vibe adjective—“not joyful.” Emotional literacy + morphology share one breath—invite gentle tone when discussing classmates’ moods.",
+      "<strong>What you learn:</strong> Not happy. <strong>Un-</strong> flips the adjective—same prefix family as <strong>unkind</strong>, not the Latin <strong>in-</strong>.",
     etymology: [{ segment: "un-", origin: AFFIX_ORIGIN_HINT["pfx:un-"] }],
-    embedded: [{ text: "happy", note: 'Head of meaning—students supply antonym sentences quickly.' }],
+    embedded: [{ text: "happy", note: "Core meaning; <strong>un-</strong> negates it." }],
   },
   baseball: {
     summary:
-      "Sports compound noun—two everyday nouns weld; stress pattern differs from noun phrase aloud (smart-board karaoke optional).",
+      "<strong>What you learn:</strong> Compound noun: <strong>base</strong> + <strong>ball</strong>. Two everyday words stuck together name one thing—the stress sounds different from saying “a base ball” as separate words.",
     embedded: [
-      { text: "base", note: "Diamond terminology hook." },
-      { text: "ball", note: 'Right-hand head—“ball-ness” dominates category.' },
+      { text: "base", note: "Field sense here." },
+      { text: "ball", note: "Second part names the kind of ball." },
     ],
   },
   toothbrush: {
     summary:
-      "Hygiene compound; plural lesson bonus: plural marker lands on WHOLE toothbrush (<strong>two toothbrushes</strong>) even though plural <em>teeth</em> exists alone.",
+      "<strong>What you learn:</strong> <strong>Tooth</strong> + <strong>brush</strong>. Odd plural: we say <em>toothbrushes</em> (add <strong>-es</strong> to the whole word), not “teethbrushes,” because the compound is one unit.",
     embedded: [
       {
         text: "tooth",
-        note: "Compound glue keeps singular tooth inside—students love this weirdness.",
+        note: "Stays singular inside the compound even when you own several brushes.",
       },
-      { text: "brush", note: 'Tool noun head.' },
+      { text: "brush", note: "The tool head." },
     ],
   },
   national: {
     summary:
-      "<strong>nation + -al</strong> ⇒ “about a nation”—social studies cartography minute on same slide as tree.",
+      "<strong>What you learn:</strong> About a whole country or people. <strong>Nation</strong> + <strong>-al</strong> (“relating to”).",
     etymology: [{ segment: "-al", origin: AFFIX_ORIGIN_HINT["sfx:-al"] }],
   },
   careful: {
     summary:
-      "<strong>-ful</strong> “full of” rides on noun <em>care</em>; contrast roadmap with sibling <strong>-less careless</strong> for instant symmetry drawing.",
+      "<strong>What you learn:</strong> Full of care or paying attention. <strong>Care</strong> + <strong>-ful</strong> (“full of”). Opposite vibe: <strong>careless</strong> uses <strong>-less</strong> (“without”).",
     etymology: [
-      { segment: "care", origin: 'Everyday noun/verb—they supply sentences.' },
+      { segment: "care", origin: "Noun or verb you already know." },
       { segment: "-ful", origin: AFFIX_ORIGIN_HINT["sfx:-ful"] },
     ],
   },
   readable: {
     summary:
-      "Legibility handshake: readable handwriting / readable graphs—students test each other’s fonts while chanting <strong>-able</strong>.",
+      "<strong>What you learn:</strong> Easy enough to read—handwriting, fonts, or text on a screen. <strong>Read</strong> + <strong>-able</strong> (“can be read”).",
     etymology: [
-      { segment: "read", origin: 'Verb root still feels alive.' },
+      { segment: "read", origin: "Verb stem." },
       { segment: "-able", origin: AFFIX_ORIGIN_HINT["sfx:-able"] },
     ],
   },
   preview: {
     summary:
-      "<strong>pre- peek</strong>—media literacy gold: trailers, skim-reading, hypotheses before demos.",
+      "<strong>What you learn:</strong> To see or show something early—a trailer, a sample chapter, a sneak peek. <strong>Pre-</strong> “before” + <strong>view</strong> “see.”",
     etymology: [
       { segment: "pre-", origin: AFFIX_ORIGIN_HINT["pfx:pre-"] },
-      { segment: "view", origin: "Still a solo word—“see remotely” echoes." },
+      { segment: "view", origin: "See or look—still a word on its own." },
     ],
   },
   invisible: {
     summary:
-      "Negative + SEE stem + <strong>-ible</strong> buddy of <strong>-able</strong>—fantasy + science goggles moment (IR cameras, wavelengths).",
+      "<strong>What you learn:</strong> Cannot be seen. <strong>in-</strong> “not” + stem related to sight + <strong>-ible</strong> (same job as <strong>-able</strong> after certain stems).",
     etymology: [
       { segment: "in-", origin: AFFIX_ORIGIN_HINT["pfx:in-"] },
-      { segment: "-ible", origin: "Variant coat after stems like <strong>vis</strong>—“capable-of-being-X’d.”" },
+      { segment: "-ible", origin: "Same kind of ending as <strong>-able</strong>: “able to be ___ed.”" },
     ],
   },
   predict: {
     summary:
-      "Literally “say beforehand”—forecast vocabulary for math graphs + story foreshadowing. Latin root echoes in dictionary / verdict talk.",
+      "<strong>What you learn:</strong> Say what will happen before it happens. <strong>Pre-</strong> “before” + <strong>dict</strong> “say” (same root flavor as <em>dictionary</em> or <em>verdict</em>).",
     etymology: [
       { segment: "pre-", origin: AFFIX_ORIGIN_HINT["pfx:pre-"] },
-      { segment: "dict", origin: '“Say/tell”—link to bilingual kids who hear <em>diction</em> in music playlists.' },
+      { segment: "dict", origin: 'Stem meaning “say” or “tell.”' },
     ],
   },
   transport: {
     summary:
-      "STEM mobility verb/noun duo: haul across pathways—pairs with noun <em>portable</em> in tray for reinforcement.",
+      "<strong>What you learn:</strong> Carry people or things across a distance—verb or noun. <strong>Trans-</strong> “across” + <strong>port</strong> “carry” (same <em>port</em> as <strong>portable</strong>).",
     etymology: [
       { segment: "trans-", origin: AFFIX_ORIGIN_HINT["pfx:trans-"] },
-      { segment: "port", origin: 'Carrier root—students map shipping icons mentally.' },
+      { segment: "port", origin: 'Carry—think import / export / portable.' },
     ],
   },
   teaching: {
     summary:
-      "<strong>-ing</strong> can name the activity/job itself—verb stem still audible. Classroom meta: dissect the word ABOUT teaching WHILE teaching. Very on brand.",
+      "<strong>What you learn:</strong> The activity or profession of teaching—or the present participle of <strong>teach</strong>. <strong>-ing</strong> can name an action (<em>Teaching is hard</em>) or mark an ongoing verb (<em>She is teaching</em>).",
     etymology: [
-      { segment: "teach", origin: '<em>Teacher</em> sibling—same orchard, different branching.' },
-      { segment: "-ing", origin: 'Nominal/participial chameleon suffix—mention sentence jobs lightly.' },
+      { segment: "teach", origin: "Verb stem—same family as <strong>teacher</strong>." },
+      { segment: "-ing", origin: "Either builds a noun from the verb or marks progressive tense." },
     ],
-    tense: "Different box from conjugated verbs in sentences—helps separate inflection chatter from derivation.",
+    tense: "Notice sentence job: noun phrase vs ongoing verb.",
   },
   playful: {
     summary:
-      "Adjective hoodie <strong>-ful</strong> on playground noun <strong>play</strong>—“full of play.” Pair with earnest discussion of recess policy for giggles.",
+      "<strong>What you learn:</strong> Full of play or joking around. <strong>Play</strong> + <strong>-ful</strong> (“full of”).",
     etymology: [
-      { segment: "play", origin: "<em>Noun verb fun zone</em>." },
+      { segment: "play", origin: "Noun or verb for games or light joking." },
       { segment: "-ful", origin: AFFIX_ORIGIN_HINT["sfx:-ful"] },
     ],
   },
   snowball: {
     summary:
-      "Winter compound echoes <em>baseball</em> scaffold—students invent silly compounds live (<em>snow-phone??</em>) to feel headedness humorously.",
+      "<strong>What you learn:</strong> Like <strong>baseball</strong>: <strong>snow</strong> + <strong>ball</strong>. First part narrows meaning—what kind of ball? Snow.",
     embedded: [
-      { text: "snow", note: "Modifier narrowing which ball archetype." },
-      { text: "ball", note: "<em>Balls</em> category head." },
+      { text: "snow", note: "Modifier." },
+      { text: "ball", note: "Head: ball made of snow." },
     ],
   },
   disable: {
     summary:
-      "Flip of <strong>enable</strong> mood—Latinate-ish <strong>dis- away/not</strong> + same <strong>able</strong> stem silhouette. Accessible tech empathy convo optional but recommended.",
+      "<strong>What you learn:</strong> Turn off or take away ability—often for tools or access (same contrast as <strong>enable</strong>). <strong>dis-</strong> “not / opposite” + <strong>able</strong> stem.",
     etymology: [
-      { segment: "dis-", origin: "Apart / negate shading—loves Latinate STEM bases." },
-      { segment: "able", origin: 'Same stem shape as noun adjective hybrids students already map.' },
+      { segment: "dis-", origin: "Opposite or removal—common on Latin-based stems." },
+      { segment: "able", origin: "Same core as <em>ability</em>; opposite prefix from <em>enable</em>." },
     ],
   },
   nationalism: {
     summary:
-      "Layer cake: nation → relational adjective → ideology noun <strong>-ism</strong>; draw stair steps horizontally on panel for literal stair metaphor.",
+      "<strong>What you learn:</strong> Strong loyalty to one’s own nation, or the belief that your nation should come first. Built in layers: <strong>nation</strong> → <strong>national</strong> → <strong>nationalism</strong> with <strong>-ism</strong> (belief system or movement).",
     etymology: [
-      { segment: "nation", origin: "People / country noun base reused in nationalism / national / international slides." },
+      { segment: "nation", origin: "A people or country." },
       { segment: "-al", origin: AFFIX_ORIGIN_HINT["sfx:-al"] },
-      { segment: "-ism", origin: '“Belief movement / worldview” hoodie—paired gently with citizenship ethics talk.' },
+      { segment: "-ism", origin: 'Noun ending for an ideology or movement.' },
     ],
-    formation: "Outward stacking—each layer names a richer concept while keeping inner chunks audible.",
+    formation: "Each suffix wraps the bigger bundle: nation → national → nationalism.",
   },
   international: {
     summary:
-      "<strong>inter- among + national relating-to-nations</strong>—global competency buzzword unpacked honestly: pattern practice + cultural humility.",
+      "<strong>What you learn:</strong> Between or among nations—cross-border. <strong>inter-</strong> “among” + <strong>nation</strong> + <strong>-al</strong>.",
     etymology: [
-      { segment: "inter-", origin: "Between / mutual shading—paired with sporty intermission memory hook." },
-      { segment: "nation / -al", origin: '<em>Nationalism / national</em> scaffold pieces visible again.' },
+      { segment: "inter-", origin: "Between or among—think internet, interact." },
+      { segment: "nation / -al", origin: 'Same pieces as <em>national</em> and <em>nationalism</em>.' },
     ],
   },
   portable: {
     summary:
-      "Carry-able adjectives power maker spaces / device policies—students lift imaginary laptops while chanting <strong>port-able</strong>.",
+      "<strong>What you learn:</strong> Able to be carried—laptops, chargers, folding chairs. <strong>Port</strong> “carry” + <strong>-able</strong> (“can be ___ed”).",
     etymology: [
-      { segment: "port", origin: 'Carrier root reunited with Greek/Latin voyaging vocabulary (<em>import</em> preview).' },
+      { segment: "port", origin: 'Carry—same root as <em>transport</em> and <em>import</em>.' },
       { segment: "-able", origin: AFFIX_ORIGIN_HINT["sfx:-able"] },
     ],
   },
   reuse: {
     summary:
-      "Eco-friendly Germanic verb + classy <strong>re-again</strong> prefix—climate club poster word with transparent math (use count).",
+      "<strong>What you learn:</strong> Use again. <strong>Re-</strong> “again” + <strong>use</strong>—straightforward build.",
     etymology: [
       { segment: "re-", origin: AFFIX_ORIGIN_HINT["pfx:re-"] },
-      { segment: "use", origin: "Still boldly free morpheme." },
+      { segment: "use", origin: "Verb you already know alone." },
     ],
   },
   illegal: {
     summary:
-      "Assimilated negation hugs <strong>legal</strong> after <strong>l</strong>—spelling conspiracy students decode as pattern literacy, NOT shame.",
+      "<strong>What you learn:</strong> Against the law. The negative prefix matches the next letter: before <strong>l</strong> it spells <strong>il-</strong> instead of <strong>in-</strong>—same “not” meaning as <strong>impossible</strong> or <strong>irregular</strong>.",
     etymology: [
       { segment: "il-", origin: AFFIX_ORIGIN_HINT["pfx:in-"] },
-      { segment: "legal", origin: 'Courtroom adjective noun students hear on streaming court shows.' },
+      { segment: "legal", origin: 'About the law.' },
     ],
-    formation: "Prefix consonant politely matches next sound—anchors spelling pattern drills.",
+    formation: "Pattern: <strong>il-</strong> + legal—it’s grammar of spelling, not a different meaning from other <strong>in-</strong> negatives.",
   },
 };
 
@@ -423,8 +427,8 @@ function morphLessonPieces(w, morphemeRegistry) {
   const pieces = [];
 
   const headParts = [];
-  headParts.push(`<h3 class="morph-lesson__h">Explorer map · <em>${w.label}</em></h3>`);
-  headParts.push(`<p class="morph-lesson__bracket-caption">Bracket read (how the chunks nest):</p>`);
+  headParts.push(`<h3 class="morph-lesson__h"><em>${w.label}</em> — how it breaks apart</h3>`);
+  headParts.push(`<p class="morph-lesson__bracket-caption">How the pieces nest (outer brackets = bigger meaning units):</p>`);
   headParts.push(`<div class="morph-lesson__bracket" translate="no">${w.bracket}</div>`);
   if (deep?.summary) headParts.push(`<p class="morph-lesson__lead">${deep.summary}</p>`);
   else if (w.note) headParts.push(`<p class="morph-lesson__lead">${stripPara(w.note)}</p>`);
@@ -432,13 +436,13 @@ function morphLessonPieces(w, morphemeRegistry) {
 
   if (deep?.formation) {
     pieces.push(
-      `<section class="morph-lesson__sec"><h4>Why the bracket shape matters</h4><p>${deep.formation}</p></section>`
+      `<section class="morph-lesson__sec"><h4>Why the nesting matters</h4><p>${deep.formation}</p></section>`
     );
   }
 
   if (deep?.etymology?.length) {
     let b =
-      `<section class="morph-lesson__sec"><h4>Chunk meanings (memory hooks)</h4><ul class="morph-lesson__ul">`;
+      `<section class="morph-lesson__sec"><h4>What each piece means</h4><ul class="morph-lesson__ul">`;
     for (const e of deep.etymology) {
       b += `<li><strong>${escapeHtml(e.segment)}</strong> — ${e.origin || ""}`;
       if (e.note) b += ` <span class="morph-lesson__note">${escapeHtml(e.note)}</span>`;
@@ -449,7 +453,7 @@ function morphLessonPieces(w, morphemeRegistry) {
   }
 
   if (deep?.spelling?.length) {
-    let b = `<section class="morph-lesson__sec morph-lesson__sec--callout"><h4>Spelling anchor</h4><ul>`;
+    let b = `<section class="morph-lesson__sec morph-lesson__sec--callout"><h4>Spelling tip</h4><ul>`;
     for (const s of deep.spelling) {
       b += `<li><code>${escapeHtml(s.from)}</code> → <code>${escapeHtml(s.to)}</code> — ${escapeHtml(s.note)}</li>`;
     }
@@ -459,7 +463,7 @@ function morphLessonPieces(w, morphemeRegistry) {
 
   if (deep?.embedded?.length) {
     let b =
-      `<section class="morph-lesson__sec"><h4>Smaller windows you already say aloud</h4><ul>`;
+      `<section class="morph-lesson__sec"><h4>Smaller words inside this word</h4><ul>`;
     for (const emb of deep.embedded) {
       b += `<li><strong>${escapeHtml(emb.text)}</strong> — ${escapeHtml(emb.note)}</li>`;
     }
@@ -468,7 +472,7 @@ function morphLessonPieces(w, morphemeRegistry) {
   }
 
   if (deep?.tense) {
-    pieces.push(`<section class="morph-lesson__sec"><h4>Word-class / endings (quick grammar compass)</h4><p>${deep.tense}</p></section>`);
+    pieces.push(`<section class="morph-lesson__sec"><h4>What kind of word is this?</h4><p>${deep.tense}</p></section>`);
   }
 
   const keys = [];
@@ -485,14 +489,14 @@ function morphLessonPieces(w, morphemeRegistry) {
     if (!others.length) continue;
     const shortKey = k.replace(/^(pfx|sfx|root|lex):/, "");
     sharedBullets.push(
-      `<li><strong>${escapeHtml(shortKey)}</strong> also rides along with: ${others.map((x) => `<em>${escapeHtml(x)}</em>`).join(", ")} in this vocabulary tray.</li>`
+      `<li>The piece <strong>${escapeHtml(shortKey)}</strong> also appears in: ${others.map((x) => `<em>${escapeHtml(x)}</em>`).join(", ")} (same word list).</li>`
     );
   }
   if (sharedBullets.length) {
     pieces.push(
-      `<section class="morph-lesson__sec morph-lesson__sec--web"><h4>Neighboring branches (same morpheme, other words loaded here)</h4><ul class="morph-lesson__ul">${sharedBullets.join(
+      `<section class="morph-lesson__sec morph-lesson__sec--web"><h4>Same piece in other words (in this list)</h4><ul class="morph-lesson__ul">${sharedBullets.join(
         ""
-      )}</ul><p class="morph-lesson__meta">Similar to hopping related nodes on a branching thesaurus map—stay inside the magenta links on the board to explore.</p></section>`
+      )}</ul><p class="morph-lesson__meta">Follow the pink links on the diagram to jump between words that share a chunk.</p></section>`
     );
   }
 
@@ -533,23 +537,23 @@ export function renderMorphDualLessonHtml(wa, wb, morphemeRegistry) {
   sharedKeys.sort();
 
   let html =
-    `<div class="morph-lesson morph-lesson--dual"><h3 class="morph-lesson__h">Dual focus · ` +
+    `<div class="morph-lesson morph-lesson--dual"><h3 class="morph-lesson__h">Comparing ` +
     `<em>${escapeHtml(wa.label)}</em> &amp; <em>${escapeHtml(wb.label)}</em></h3>`;
 
   if (!sharedKeys.length) {
     html +=
-      `<p class="morph-lesson__lead">No labelled morpheme keys overlap between these bracket trees yet—stay with the magenta bridges anyway; they reveal any geometry the animator wired between shared spheres.</p></div>`;
+      `<p class="morph-lesson__lead">These two words don’t share a labelled chunk in this vocabulary list. If you still see pink lines between spheres on the diagram, those show links the view draws between shared pieces.</p></div>`;
     return html;
   }
 
-  html += `<p class="morph-lesson__lead">These chunks are tagged on <em>both</em> trees—the board draws magenta arcs across them so learners see the morphology echo in two words at once.</p>`;
+  html += `<p class="morph-lesson__lead">Below are pieces that show up on <em>both</em> trees. Pink arcs on the diagram connect matching chunks so you can see one morpheme doing similar work in two words.</p>`;
   html += `<section class="morph-lesson__sec morph-lesson__sec--overlap"><h4>What both words share</h4><ul class="morph-lesson__ul">`;
 
   for (const key of sharedKeys) {
     const shortKey = key.replace(/^(pfx|sfx|root|lex):/, "");
     let glossHtml = AFFIX_ORIGIN_HINT[key];
     if (!glossHtml) {
-      glossHtml = `Bracket tag <strong>${escapeHtml(shortKey)}</strong> hooks both lemmas—linger on hover glosses to contrast how each definition fits its tree.`;
+      glossHtml = `This piece <strong>${escapeHtml(shortKey)}</strong> is tagged on both words—hover the diagram for glosses and see how the meaning fits each tree.`;
     }
     const reg = morphemeRegistry[key];
     const regOthers = reg

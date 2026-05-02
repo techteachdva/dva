@@ -210,12 +210,13 @@ export class CombatScene {
       this.pushLog(`Another mana vial in ${this.potionDrinkCooldown.toFixed(1)}s...`);
       return;
     }
-    if (p.mana >= p.manaMax) {
-      SFX.deny();
-      this.pushLog("Mana is already topped off.");
-      return;
-    }
+    // Do not block when MP is full: resetChamber() tops mana before most boss
+    // fights, so denying here made vials appear broken. Mini-game still runs;
+    // success refills to max (no-op if already full).
     const [corkKey, pourKey] = pickTwoDistinctPotionKeys();
+    const mm = Number(p.manaMax) || 0;
+    const mp = Number(p.mana) || 0;
+    const alreadyFull = mm > 0 && mp >= mm - 1e-9;
     this.potionState = {
       corkKey,
       pourKey,
@@ -226,7 +227,11 @@ export class CombatScene {
       timeLeft: POTION_MINIGAME_TIME_SEC,
       hintFlash: 0,
     };
-    this.pushLog("POP the cork — then POUR!");
+    this.pushLog(
+      alreadyFull
+        ? "POP the cork — MP brimming; pour to steady your hands!"
+        : "POP the cork — then POUR!",
+    );
     SFX.confirm();
   }
 
@@ -908,7 +913,7 @@ export class CombatScene {
     }
     const manaPulse =
       game.input.wasPressed("3", "r")
-      || game.input.wasCodePressed("Digit3", "Numpad3");
+      || game.input.wasCodePressed("Digit3", "Numpad3", "KeyR");
     const wantManaPotion = manaPulse || clickedPotion;
 
     // Even during turn-lock you can slam [R]/[3] (or tap the mana button) to clutch-drink.
@@ -2417,7 +2422,7 @@ export class CombatScene {
           headline: "MANA VIAL",
           sub: "Pop cork · tilt pour (full refill)",
           meta: `${cryoMeta}Vial refill: ${vialCdStr}`,
-          locked: !!this.potionState || potCd || p.mana >= p.manaMax,
+          locked: !!this.potionState || potCd,
           cd: potCd ? this.potionDrinkCooldown : 0,
           cdMax: potCd ? POTION_DRINK_CD_SEC : 0,
         },
@@ -2452,7 +2457,7 @@ export class CombatScene {
           headline: "MANA VIAL",
           sub: "Pop cork · tilt pour (full refill)",
           meta: `${cryoMeta}Vial refill: ${vialCdStr}`,
-          locked: !!this.potionState || potCd || p.mana >= p.manaMax,
+          locked: !!this.potionState || potCd,
           cd: potCd ? this.potionDrinkCooldown : 0,
           cdMax: potCd ? POTION_DRINK_CD_SEC : 0,
         },
