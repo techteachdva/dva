@@ -184,7 +184,8 @@
 .morphology-shell {
   position: relative;
   width: 100%;
-  min-height: min(88vh, 960px);
+  /* Leave vertical room for intro copy, mini-lesson, and chapter highlights without trapping scroll */
+  min-height: min(58vh, 680px);
   margin-top: 0.5rem;
   background: radial-gradient(ellipse 120% 80% at 50% 20%, #152238 0%, var(--morph-bg) 55%);
   border-radius: 12px;
@@ -245,7 +246,14 @@ html.morph-immersive-open body {
 }
 
 .morphology-shell--immersive .morph-ui-panel {
+  /* Stay in flex column layout — absolute positioning removes the bar from flow and can hide it under the canvas */
+  position: relative !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
   flex: 0 0 auto !important;
+  width: 100% !important;
+  z-index: 25 !important;
   touch-action: manipulation;
   padding-top: 0.2rem !important;
   padding-bottom: max(0.22rem, env(safe-area-inset-bottom, 0)) !important;
@@ -260,15 +268,72 @@ html.morph-immersive-open body {
   background: linear-gradient(to top, rgba(255, 255, 255, 0.96) 75%, rgba(255, 255, 255, 0) 100%) !important;
 }
 
+.morphology-shell--wb:fullscreen .morph-ui-panel,
+.morphology-shell--wb:-webkit-full-screen .morph-ui-panel {
+  background: linear-gradient(to top, rgba(255, 255, 255, 0.96) 75%, rgba(255, 255, 255, 0) 100%) !important;
+}
+
 #morph-canvas-host,
 .morph-canvas-host {
   display: block;
   width: 100%;
-  height: min(88vh, 960px);
+  height: min(58vh, 680px);
   touch-action: none;
   position: relative;
   transition: background 0.28s ease;
   contain: layout style;
+}
+
+/* Fullscreen API: same toolbar fix as immersive CSS fallback (shell may not get --immersive) */
+.morphology-shell:fullscreen .morph-ui-panel,
+.morphology-shell:-webkit-full-screen .morph-ui-panel {
+  position: relative !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  flex: 0 0 auto !important;
+  width: 100% !important;
+  z-index: 25 !important;
+}
+
+.morphology-shell:fullscreen,
+.morphology-shell:-webkit-full-screen {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.morphology-shell:fullscreen .morph-canvas-host,
+.morphology-shell:-webkit-full-screen .morph-canvas-host {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+}
+
+/* Bottom lesson zoom — only needed when chrome is duplicated away from inline #morph-detail */
+.morph-lesson-zoom-bar {
+  display: none !important;
+}
+
+.morphology-shell--immersive .morph-lesson-zoom-bar,
+.morphology-shell:fullscreen .morph-lesson-zoom-bar,
+.morphology-shell:-webkit-full-screen .morph-lesson-zoom-bar {
+  display: flex !important;
+}
+
+.morph-text-size-btn--bar {
+  min-width: 2.35rem;
+}
+
+.morphology-shell--wb .morph-text-size-btn--bar {
+  background: rgba(255, 255, 255, 0.95);
+  color: #0f172a;
+  border-color: rgba(15, 23, 42, 0.22);
+}
+
+.morphology-shell--wb .morph-text-size-btn--bar:hover {
+  background: #fff;
+  border-color: rgba(15, 23, 42, 0.35);
 }
 
 .morph-canvas-host canvas {
@@ -680,7 +745,7 @@ html.morph-immersive-open body {
 
 .morphology-shell--wb .morph-ui-row label,
 .morphology-shell--wb .morph-ui-label {
-  color: #475569;
+  color: #334155;
 }
 
 .morph-select {
@@ -1095,6 +1160,65 @@ html.morph-immersive-open body {
   border-top-color: rgba(148, 197, 255, 0.15);
 }
 
+/* Whiteboard surface: mini-lesson panels are dark — keep body copy light for contrast */
+.morphology-page:has(.morphology-shell--wb)
+  .morph-detail:not(.morph-detail--viewer-dock)
+  .morph-lesson-wing
+  .morph-lesson__h {
+  color: var(--morph-gold);
+}
+
+.morphology-page:has(.morphology-shell--wb)
+  .morph-detail:not(.morph-detail--viewer-dock)
+  .morph-lesson-wing
+  .morph-lesson__bracket {
+  color: rgba(226, 244, 255, 0.94);
+}
+
+.morphology-page:has(.morphology-shell--wb)
+  .morph-detail:not(.morph-detail--viewer-dock)
+  .morph-lesson-wing
+  .morph-lesson__lead,
+.morphology-page:has(.morphology-shell--wb)
+  .morph-detail:not(.morph-detail--viewer-dock)
+  .morph-lesson-wing
+  .morph-lesson__sec,
+.morphology-page:has(.morphology-shell--wb)
+  .morph-detail:not(.morph-detail--viewer-dock)
+  .morph-lesson-wing
+  .morph-lesson__ul {
+  color: #e8edf5;
+}
+
+.morphology-page:has(.morphology-shell--wb)
+  .morph-detail:not(.morph-detail--viewer-dock)
+  .morph-lesson-wing
+  .morph-lesson__sec h4 {
+  color: rgba(210, 240, 255, 0.96);
+}
+
+.morphology-page:has(.morphology-shell--wb)
+  .morph-detail:not(.morph-detail--viewer-dock)
+  .morph-detail__body > .morph-lesson.morph-lesson--single
+  .morph-lesson__lead,
+.morphology-page:has(.morphology-shell--wb)
+  .morph-detail:not(.morph-detail--viewer-dock)
+  .morph-detail__body > .morph-lesson.morph-lesson--single
+  .morph-lesson__sec,
+.morphology-page:has(.morphology-shell--wb)
+  .morph-detail:not(.morph-detail--viewer-dock)
+  .morph-detail__body > .morph-lesson.morph-lesson--single
+  .morph-lesson__ul {
+  color: #e8edf5;
+}
+
+.morphology-page:has(.morphology-shell--wb)
+  .morph-detail:not(.morph-detail--viewer-dock)
+  .morph-detail__body > .morph-lesson.morph-lesson--single
+  .morph-lesson__sec h4 {
+  color: rgba(210, 240, 255, 0.96);
+}
+
 .morph-detail:not(.morph-detail--viewer-dock) .morph-detail__body > .morph-lesson.morph-lesson--single {
   padding: 0.55rem 0.62rem;
   border-radius: 10px;
@@ -1132,7 +1256,7 @@ html.morph-immersive-open body {
 .morph-canvas-host .morph-detail.morph-detail--viewer-dock {
   position: absolute;
   z-index: 30;
-  inset: 0.35rem 0.38rem clamp(4.95rem, 17.5vmin, 7.35rem); /* clears bottom Arrange / Surface toolbars */
+  inset: 0.35rem 0.38rem clamp(6.25rem, 22vmin, 9.5rem); /* clears bottom toolbars + lesson zoom row */
   max-width: none;
   width: auto;
   margin: 0;
@@ -2231,14 +2355,14 @@ html.morph-immersive-open body {
   .morphology-shell {
     border-radius: 0;
     margin-top: 0.25rem;
-    min-height: min(72vh, 720px);
-    min-height: min(72dvh, 720px);
+    min-height: min(52vh, 620px);
+    min-height: min(52dvh, 620px);
   }
 
   #morph-canvas-host,
   .morph-canvas-host {
-    height: min(72vh, 720px);
-    height: min(72dvh, 720px);
+    height: min(52vh, 620px);
+    height: min(52dvh, 620px);
   }
 
   .morph-ui-label {

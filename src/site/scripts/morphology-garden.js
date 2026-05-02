@@ -2388,6 +2388,15 @@ function init(host, detailEl, selectEl, shellEl) {
   morphLessonZoomInBt?.addEventListener("click", () => morphBumpLessonZoom(MORPH_LESSON_ZOOM_STEP));
   morphLessonZoomResetBt?.addEventListener("click", () => morphApplyLessonZoom(1));
 
+  shellEl?.querySelectorAll("[data-morph-lesson-zoom]").forEach((bt) => {
+    bt.addEventListener("click", () => {
+      const mode = bt.getAttribute("data-morph-lesson-zoom");
+      if (mode === "smaller") morphBumpLessonZoom(1 / MORPH_LESSON_ZOOM_STEP);
+      else if (mode === "larger") morphBumpLessonZoom(MORPH_LESSON_ZOOM_STEP);
+      else if (mode === "reset") morphApplyLessonZoom(1);
+    });
+  });
+
   function morphDockDetailToViewer() {
     if (!detailEl || !host) return;
     const pageFlowParent = morphDetailSlot.parent;

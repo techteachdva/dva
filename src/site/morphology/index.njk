@@ -79,6 +79,7 @@ contentClasses: morphology-page
           aria-pressed="false"
           title="Dual — compare two lemmas with one shared-morph lesson"
           aria-label="Dual compare arrangement"
+        >
           ⚖
         </button>
         <button
@@ -100,6 +101,40 @@ contentClasses: morphology-page
         <select id="morph-compare-a" class="morph-select morph-select--compare" title="First word in compare mode"></select>
         <label for="morph-compare-b">Compare B</label>
         <select id="morph-compare-b" class="morph-select morph-select--compare" title="Second word in compare mode"></select>
+      </div>
+      <div
+        class="morph-ui-row morph-ui-row--lesson-zoom morph-lesson-zoom-bar"
+        role="toolbar"
+        aria-label="Mini-lesson text size (full screen)"
+      >
+        <span class="morph-ui-label">Lesson</span>
+        <button
+          type="button"
+          class="morph-text-size-btn morph-text-size-btn--bar"
+          data-morph-lesson-zoom="smaller"
+          title="Smaller lesson text ( [ )"
+          aria-label="Decrease mini-lesson text size"
+        >
+          A−
+        </button>
+        <button
+          type="button"
+          class="morph-text-size-btn morph-text-size-btn--bar"
+          data-morph-lesson-zoom="reset"
+          title="Default lesson text size ( Alt+0 )"
+          aria-label="Reset mini-lesson text size"
+        >
+          A
+        </button>
+        <button
+          type="button"
+          class="morph-text-size-btn morph-text-size-btn--bar"
+          data-morph-lesson-zoom="larger"
+          title="Larger lesson text ( ] )"
+          aria-label="Increase mini-lesson text size"
+        >
+          A+
+        </button>
       </div>
       <p id="morph-hint" class="morph-hint morph-hint--compact">
         <strong>Tip:</strong> The board is <strong>2D</strong>—pan/zoom freely. 🌳 is your single-word lab; 🔗 unfolds anything in the tier that braids morphemes with that pick; ⚖ contrasts two lemmas and one dual mini-lesson. Over the diagram, the scroll wheel <strong>moves the page</strong> so you can reach the chapter highlights and back (zoom when the page cannot scroll further, or <kbd>Ctrl</kbd>/<kbd>⌘</kbd> + scroll anytime). Hover for gloss ·
