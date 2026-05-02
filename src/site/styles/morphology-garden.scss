@@ -818,6 +818,9 @@ html.morph-immersive-open body {
 }
 
 .morph-detail {
+  --morph-lesson-zoom: 1;
+  scroll-margin-top: 5.25rem;
+  scroll-margin-bottom: 1rem;
   max-width: 44rem;
   margin: 1.25rem auto 0;
   padding: 1rem 1.25rem;
@@ -828,6 +831,68 @@ html.morph-immersive-open body {
   line-height: 1.5;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
   transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.morph-detail__text-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem 0.5rem;
+  margin: 0 0 0.65rem;
+}
+
+.morph-detail__text-tools-label {
+  margin-right: auto;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.75;
+  color: var(--morph-chrome, #c8f4ff);
+}
+
+.morph-text-size-btn {
+  min-width: 2.35rem;
+  padding: 0.22rem 0.45rem;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  line-height: 1.2;
+  cursor: pointer;
+  border: 1px solid rgba(125, 211, 252, 0.38);
+  background: rgba(15, 23, 42, 0.65);
+  color: rgba(226, 244, 255, 0.95);
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease;
+}
+
+.morph-text-size-btn:hover {
+  background: rgba(30, 41, 59, 0.88);
+  border-color: rgba(125, 211, 252, 0.55);
+}
+
+.morph-text-size-btn:active {
+  transform: scale(0.97);
+}
+
+.morph-detail__body {
+  zoom: var(--morph-lesson-zoom, 1);
+}
+
+.morphology-page:has(.morphology-shell--wb) .morph-text-size-btn {
+  background: rgba(255, 255, 255, 0.92);
+  color: #0f172a;
+  border-color: rgba(15, 23, 42, 0.22);
+}
+
+.morphology-page:has(.morphology-shell--wb) .morph-text-size-btn:hover {
+  background: #fff;
+  border-color: rgba(15, 23, 42, 0.35);
+}
+
+.morphology-page:has(.morphology-shell--wb) .morph-detail__text-tools-label {
+  color: #334155;
+  opacity: 0.85;
 }
 
 .morph-detail--word-focus {
@@ -1030,28 +1095,28 @@ html.morph-immersive-open body {
   border-top-color: rgba(148, 197, 255, 0.15);
 }
 
-.morph-detail:not(.morph-detail--viewer-dock) > .morph-lesson.morph-lesson--single {
+.morph-detail:not(.morph-detail--viewer-dock) .morph-detail__body > .morph-lesson.morph-lesson--single {
   padding: 0.55rem 0.62rem;
   border-radius: 10px;
 }
 
 .morphology-page:has(.morphology-shell:not(.morphology-shell--wb))
   .morph-detail:not(.morph-detail--viewer-dock)
-  > .morph-lesson.morph-lesson--single {
+  .morph-detail__body > .morph-lesson.morph-lesson--single {
   background: rgba(255, 255, 255, 0.96);
   border: 1px solid rgba(15, 23, 42, 0.08);
 }
 
 .morphology-page:has(.morphology-shell:not(.morphology-shell--wb))
   .morph-detail:not(.morph-detail--viewer-dock)
-  > .morph-lesson.morph-lesson--single
+  .morph-detail__body > .morph-lesson.morph-lesson--single
   .morph-lesson__h {
   color: #0f172a;
 }
 
 .morphology-page:has(.morphology-shell--wb)
   .morph-detail:not(.morph-detail--viewer-dock)
-  > .morph-lesson.morph-lesson--single {
+  .morph-detail__body > .morph-lesson.morph-lesson--single {
   background: rgba(12, 20, 36, 0.92);
   border: 1px solid rgba(125, 211, 252, 0.3);
 }
@@ -1089,6 +1154,22 @@ html.morph-immersive-open body {
   -webkit-overflow-scrolling: touch;
 }
 
+.morph-canvas-host .morph-detail.morph-detail--viewer-dock .morph-detail__text-tools {
+  flex: 0 0 auto;
+  pointer-events: auto;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.12rem 0.28rem 0;
+  margin-bottom: 0.2rem;
+}
+
+.morph-canvas-host .morph-detail.morph-detail--viewer-dock .morph-detail__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
 /* Smart board / full-screen API: readability bump inside the fullscreen element tree */
 .morphology-shell--immersive #morph-canvas-host .morph-detail.morph-detail--viewer-dock,
 .morphology-shell:-webkit-full-screen #morph-canvas-host .morph-detail.morph-detail--viewer-dock,
@@ -1117,7 +1198,7 @@ html.morph-immersive-open body {
   align-items: stretch;
 }
 
-.morph-detail--viewer-dock > .morph-lesson.morph-lesson--single {
+.morph-detail--viewer-dock .morph-detail__body > .morph-lesson.morph-lesson--single {
   flex: 1 1 auto;
   min-height: 0;
   overflow-x: hidden;
@@ -1133,7 +1214,7 @@ html.morph-immersive-open body {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.28);
 }
 
-.morphology-shell--wb .morph-detail--viewer-dock > .morph-lesson.morph-lesson--single {
+.morphology-shell--wb .morph-detail--viewer-dock .morph-detail__body > .morph-lesson.morph-lesson--single {
   background: rgba(10, 16, 32, 0.9);
   border: 1px solid rgba(125, 211, 252, 0.38);
   box-shadow: 0 6px 28px rgba(0, 0, 0, 0.4);
@@ -1250,33 +1331,33 @@ html.morph-immersive-open body {
   color: rgba(210, 240, 255, 0.95);
 }
 
-.morphology-shell--wb .morph-detail--viewer-dock > .morph-lesson.morph-lesson--single .morph-lesson__lead,
-.morphology-shell--wb .morph-detail--viewer-dock > .morph-lesson.morph-lesson--single .morph-lesson__sec {
+.morphology-shell--wb .morph-detail--viewer-dock .morph-detail__body > .morph-lesson.morph-lesson--single .morph-lesson__lead,
+.morphology-shell--wb .morph-detail--viewer-dock .morph-detail__body > .morph-lesson.morph-lesson--single .morph-lesson__sec {
   border-top-color: rgba(148, 197, 255, 0.18);
   color: #e2e8f0;
 }
 
-.morphology-shell--wb .morph-detail--viewer-dock > .morph-lesson.morph-lesson--single .morph-lesson__sec h4 {
+.morphology-shell--wb .morph-detail--viewer-dock .morph-detail__body > .morph-lesson.morph-lesson--single .morph-lesson__sec h4 {
   color: rgba(210, 240, 255, 0.95);
 }
 
 .morphology-shell:not(.morphology-shell--wb)
   .morph-detail--viewer-dock
-  > .morph-lesson.morph-lesson--single
+  .morph-detail__body > .morph-lesson.morph-lesson--single
   .morph-lesson__lead {
   color: #334155;
 }
 
 .morphology-shell:not(.morphology-shell--wb)
   .morph-detail--viewer-dock
-  > .morph-lesson.morph-lesson--single
+  .morph-detail__body > .morph-lesson.morph-lesson--single
   .morph-lesson__sec {
   border-top-color: rgba(15, 23, 42, 0.1);
 }
 
 .morphology-shell:not(.morphology-shell--wb)
   .morph-detail--viewer-dock
-  > .morph-lesson.morph-lesson--single
+  .morph-detail__body > .morph-lesson.morph-lesson--single
   .morph-lesson__sec
   h4 {
   color: #1e293b;
@@ -1284,14 +1365,14 @@ html.morph-immersive-open body {
 
 .morphology-shell:not(.morphology-shell--wb)
   .morph-detail--viewer-dock
-  > .morph-lesson.morph-lesson--single
+  .morph-detail__body > .morph-lesson.morph-lesson--single
   .morph-lesson__h {
   color: #0f172a;
 }
 
 .morphology-shell:not(.morphology-shell--wb)
   .morph-detail--viewer-dock
-  > .morph-lesson.morph-lesson--single
+  .morph-detail__body > .morph-lesson.morph-lesson--single
   .morph-lesson__bracket {
   color: #92400e;
 }

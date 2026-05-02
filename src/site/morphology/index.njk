@@ -102,7 +102,7 @@ contentClasses: morphology-page
         <select id="morph-compare-b" class="morph-select morph-select--compare" title="Second word in compare mode"></select>
       </div>
       <p id="morph-hint" class="morph-hint morph-hint--compact">
-        <strong>Tip:</strong> The board is <strong>2D</strong>—pan/zoom freely. 🌳 is your single-word lab; 🔗 unfolds anything in the tier that braids morphemes with that pick; ⚖ contrasts two lemmas and one dual mini-lesson. Hover for gloss ·
+        <strong>Tip:</strong> The board is <strong>2D</strong>—pan/zoom freely. 🌳 is your single-word lab; 🔗 unfolds anything in the tier that braids morphemes with that pick; ⚖ contrasts two lemmas and one dual mini-lesson. Over the diagram, the scroll wheel <strong>moves the page</strong> so you can reach the chapter highlights and back (zoom when the page cannot scroll further, or <kbd>Ctrl</kbd>/<kbd>⌘</kbd> + scroll anytime). Hover for gloss ·
         <kbd>F</kbd> fit · <kbd>R</kbd> reset<span class="visually-hidden"> (Space toggles orbit only in the experimental 3D mode from backslash)</span>.
       </p>
     </div>
@@ -177,6 +177,9 @@ contentClasses: morphology-page
               <strong>Word tree</strong> is the focus knob for isolated view and linked view. Dual mode swaps in two selectors
               so you can juxtapose lemmas when you want tighter contrast paired with one shared-mini-lesson.
             </p>
+            <p class="morph-help__sub">
+              <strong>Mini-lesson text size:</strong> use <strong>A−</strong> / <strong>A</strong> / <strong>A+</strong> above the lesson (inline on the page and when docked in full screen). Keys <kbd>[</kbd> smaller and <kbd>]</kbd> larger; <kbd>Alt</kbd>+<kbd>0</kbd> resets. Your choice is saved in this browser.
+            </p>
           </section>
         </div>
         <button type="button" class="morph-help__close">Close</button>
@@ -184,7 +187,15 @@ contentClasses: morphology-page
     </div>
   </div>
 
-  <div id="morph-detail" class="morph-detail" aria-live="polite"></div>
+  <div id="morph-detail" class="morph-detail">
+    <div class="morph-detail__text-tools" role="toolbar" aria-label="Mini-lesson text size">
+      <span class="morph-detail__text-tools-label">Lesson text</span>
+      <button type="button" id="morph-lesson-text-smaller" class="morph-text-size-btn" title="Smaller text (keyboard [ )" aria-label="Decrease mini-lesson text size">A−</button>
+      <button type="button" id="morph-lesson-text-reset" class="morph-text-size-btn" title="Default size (Alt+0)" aria-label="Reset mini-lesson text size">A</button>
+      <button type="button" id="morph-lesson-text-larger" class="morph-text-size-btn" title="Larger text (keyboard ] )" aria-label="Increase mini-lesson text size">A+</button>
+    </div>
+    <div id="morph-detail-body" class="morph-detail__body" aria-live="polite"></div>
+  </div>
 
   <section class="morph-highlights" aria-labelledby="morph-highlights-title">
     <h2 id="morph-highlights-title" class="morph-highlights-title">Five ideas from the chapter</h2>

@@ -2309,7 +2309,8 @@ function morphInstallGuidedTour() {
     activeIx = 0;
     morphTourSyncMountParent();
     wrap.classList.remove("morph-guided-tour--hidden");
-    document.body.style.overflow = "hidden";
+    /* Do not set body overflow:hidden — it disables page scroll and must match tour hide(); a fixed
+       full-viewport modal + backdrop already captures interaction without trapping the document. */
     morphTourStep(0);
 
     wrap.querySelector(".morph-guided-tour__next")?.focus();
@@ -2339,6 +2340,53 @@ function init(host, detailEl, selectEl, shellEl) {
     parent: /** @type {HTMLElement | null} */ (detailEl?.parentElement ?? null),
     next: /** @type {Element | null} */ (detailEl?.nextElementSibling ?? null),
   };
+
+  /** Mini-lesson HTML (toolbar stays outside this node). */
+  const lessonHtmlTarget =
+    /** @type {HTMLElement | null} */ (document.getElementById("morph-detail-body")) ?? detailEl;
+
+  const MORPH_LESSON_ZOOM_KEY = "morphLessonTextZoom";
+  const MORPH_LESSON_ZOOM_MIN = 0.72;
+  const MORPH_LESSON_ZOOM_MAX = 1.65;
+  const MORPH_LESSON_ZOOM_STEP = 1.09;
+
+  function morphReadStoredLessonZoom() {
+    try {
+      const s = localStorage.getItem(MORPH_LESSON_ZOOM_KEY);
+      if (s == null) return 1;
+      const n = parseFloat(s);
+      return Number.isFinite(n) ? THREE.MathUtils.clamp(n, MORPH_LESSON_ZOOM_MIN, MORPH_LESSON_ZOOM_MAX) : 1;
+    } catch (_) {
+      return 1;
+    }
+  }
+
+  let morphLessonZoom = morphReadStoredLessonZoom();
+
+  function morphApplyLessonZoom(/** @type {number} */ z) {
+    const u = THREE.MathUtils.clamp(z, MORPH_LESSON_ZOOM_MIN, MORPH_LESSON_ZOOM_MAX);
+    morphLessonZoom = u;
+    detailEl?.style.setProperty("--morph-lesson-zoom", String(u));
+    try {
+      localStorage.setItem(MORPH_LESSON_ZOOM_KEY, String(u));
+    } catch (_) {
+      /* ignore */
+    }
+    return u;
+  }
+
+  if (detailEl) morphApplyLessonZoom(morphLessonZoom);
+
+  function morphBumpLessonZoom(/** @type {number} */ factor) {
+    morphApplyLessonZoom(morphLessonZoom * factor);
+  }
+
+  const morphLessonZoomOutBt = document.getElementById("morph-lesson-text-smaller");
+  const morphLessonZoomInBt = document.getElementById("morph-lesson-text-larger");
+  const morphLessonZoomResetBt = document.getElementById("morph-lesson-text-reset");
+  morphLessonZoomOutBt?.addEventListener("click", () => morphBumpLessonZoom(1 / MORPH_LESSON_ZOOM_STEP));
+  morphLessonZoomInBt?.addEventListener("click", () => morphBumpLessonZoom(MORPH_LESSON_ZOOM_STEP));
+  morphLessonZoomResetBt?.addEventListener("click", () => morphApplyLessonZoom(1));
 
   function morphDockDetailToViewer() {
     if (!detailEl || !host) return;
@@ -3397,14 +3445,14 @@ function init(host, detailEl, selectEl, shellEl) {
 
   function fillDetail(/** @type {string} */ wordId, /** @type {string} */ leadHtml = "") {
     const w = WORDS.find((x) => x.id === wordId);
-    if (!w || !detailEl) return;
+    if (!w || !detailEl || !lessonHtmlTarget) return;
     configureLessonWordLookup((id) => WORDS.find((x) => x.id === id)?.label || id);
     const lessonHtml = renderMorphLessonHtml(w, morphemeRegistry);
     let html = (leadHtml || "") + lessonHtml;
     html += `<section class="morph-word-note"><h4 class="morph-word-note__h">Exit ticket spark</h4><div class="morph-word-note__body">${w.note}</div>`;
     if (w.context) html += `<p class="morph-context">${w.context}</p>`;
     html += `</section>`;
-    detailEl.innerHTML = html;
+    lessonHtmlTarget.innerHTML = html;
     detailEl.classList.add("morph-detail--word-focus");
     morphDockDetailToViewer();
     requestAnimationFrame(() => {
@@ -3416,7 +3464,8 @@ function init(host, detailEl, selectEl, shellEl) {
               .webkitFullscreenElement)
         ) || document.documentElement.classList.contains("morph-immersive-open");
       if (!inFs) {
-        detailEl?.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
+        /* `block: "start"` hid the whole board above the fold; `nearest` scrolls only if needed. */
+        detailEl?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
       }
     });
   }
@@ -3424,7 +3473,7 @@ function init(host, detailEl, selectEl, shellEl) {
   function fillCompareDetail(/** @type {string} */ idA, /** @type {string} */ idB) {
     const wa = WORDS.find((x) => x.id === idA);
     const wb = WORDS.find((x) => x.id === idB);
-    if (!wa || !wb || !detailEl) return;
+    if (!wa || !wb || !detailEl || !lessonHtmlTarget) return;
     configureLessonWordLookup((id) => WORDS.find((x) => x.id === id)?.label || id);
     const dual = renderMorphDualLessonHtml(wa, wb, morphemeRegistry);
     let html = `<div class="morph-detail-compare">${dual}<div class="morph-detail-dual-sparks"><section class="morph-word-note"><h4 class="morph-word-note__h">Exit ticket · ${morphEscapeHtml(wa.label)}</h4><div class="morph-word-note__body">${wa.note}</div>`;
@@ -3432,7 +3481,7 @@ function init(host, detailEl, selectEl, shellEl) {
     html += `</section><section class="morph-word-note"><h4 class="morph-word-note__h">Exit ticket · ${morphEscapeHtml(wb.label)}</h4><div class="morph-word-note__body">${wb.note}</div>`;
     if (wb.context) html += `<p class="morph-context">${wb.context}</p>`;
     html += `</section></div></div>`;
-    detailEl.innerHTML = html;
+    lessonHtmlTarget.innerHTML = html;
     detailEl.classList.add("morph-detail--word-focus");
     morphDockDetailToViewer();
     requestAnimationFrame(() => {
@@ -3444,7 +3493,7 @@ function init(host, detailEl, selectEl, shellEl) {
               .webkitFullscreenElement)
         ) || document.documentElement.classList.contains("morph-immersive-open");
       if (!inFs) {
-        detailEl?.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
+        detailEl?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
       }
     });
   }
@@ -3495,14 +3544,16 @@ function init(host, detailEl, selectEl, shellEl) {
       detailEl.classList.remove("morph-detail--word-focus");
       morphDockDetailToViewer();
       const wl = WORDS.find((x) => x.id === morphIntroRingToIsolateTween.focusId)?.label ?? "";
-      detailEl.innerHTML = `<p><strong>Settling…</strong> Easing into <em>${morphIntroEsc(wl)}</em> — other lemmas drift aside while we frame one tree.</p>`;
+      if (lessonHtmlTarget)
+        lessonHtmlTarget.innerHTML = `<p><strong>Settling…</strong> Easing into <em>${morphIntroEsc(wl)}</em> — other lemmas drift aside while we frame one tree.</p>`;
       return;
     }
     if (!introDone && runIntroCinematic) {
       detailEl.classList.remove("morph-detail--word-focus");
       morphDockDetailToViewer();
-      detailEl.innerHTML =
-        `<p><strong>Morphology space</strong> — The intro cinematic is assembling every lemma on the board. When it finishes you’ll drop into one tree plus its mini-lesson.</p>`;
+      if (lessonHtmlTarget)
+        lessonHtmlTarget.innerHTML =
+          `<p><strong>Morphology space</strong> — The intro cinematic is assembling every lemma on the board. When it finishes you’ll drop into one tree plus its mini-lesson.</p>`;
       return;
     }
     if (vk().startsWith("Compare")) {
@@ -3514,7 +3565,8 @@ function init(host, detailEl, selectEl, shellEl) {
       }
       detailEl.classList.remove("morph-detail--word-focus");
       morphDockDetailToViewer();
-      detailEl.innerHTML = `<p><strong>Compare (⚖)</strong> — choose two <em>different</em> words with the selectors below. Both trees sit on the flat board side by side; magenta bridges trace morphemes the pair shares.</p>`;
+      if (lessonHtmlTarget)
+        lessonHtmlTarget.innerHTML = `<p><strong>Compare (⚖)</strong> — choose two <em>different</em> words with the selectors below. Both trees sit on the flat board side by side; magenta bridges trace morphemes the pair shares.</p>`;
       return;
     }
     if (vk().startsWith("Master")) {
@@ -3522,7 +3574,8 @@ function init(host, detailEl, selectEl, shellEl) {
       if (!fid || !WORDS.some((x) => x.id === fid)) {
         detailEl.classList.remove("morph-detail--word-focus");
         morphDockDetailToViewer();
-        detailEl.innerHTML = `<p><strong>🔗 Links</strong> — Pick a focus lemma in <strong>Word tree</strong>. The board shows lemmas that share at least one morpheme chunk with your pick.</p>`;
+        if (lessonHtmlTarget)
+          lessonHtmlTarget.innerHTML = `<p><strong>🔗 Links</strong> — Pick a focus lemma in <strong>Word tree</strong>. The board shows lemmas that share at least one morpheme chunk with your pick.</p>`;
         return;
       }
       const wLab = WORDS.find((x) => x.id === fid)?.label || fid;
@@ -3535,7 +3588,8 @@ function init(host, detailEl, selectEl, shellEl) {
     if (!selectEl?.value || !WORDS.some((x) => x.id === selectEl.value)) {
       detailEl.classList.remove("morph-detail--word-focus");
       morphDockDetailToViewer();
-      detailEl.innerHTML = `<p><strong>Word tree</strong> — Pick a lemma to load its isolate bracket tree and lesson.</p>`;
+      if (lessonHtmlTarget)
+        lessonHtmlTarget.innerHTML = `<p><strong>Word tree</strong> — Pick a lemma to load its isolate bracket tree and lesson.</p>`;
       return;
     }
     fillDetail(selectEl.value);
@@ -3871,6 +3925,27 @@ function init(host, detailEl, selectEl, shellEl) {
     controls.update();
   }
 
+  /** Tall canvas + OrbitControls otherwise consume every wheel notch as board zoom — never scrolling the note.
+   * Delegate wheel to the document scroll container while there is room; at top/bottom fall through so zoom still works. */
+  renderer.domElement.addEventListener(
+    "wheel",
+    (ev) => {
+      if (!introDone) return;
+      if (ev.ctrlKey || ev.metaKey) return;
+      const root = document.scrollingElement ?? document.documentElement;
+      const maxScroll = Math.max(0, root.scrollHeight - root.clientHeight);
+      const top = root.scrollTop;
+      const atTop = top <= 1;
+      const atBottom = top >= maxScroll - 1;
+      if (ev.deltaY < 0 && atTop) return;
+      if (ev.deltaY > 0 && atBottom) return;
+      root.scrollTop = Math.min(maxScroll, Math.max(0, top + ev.deltaY));
+      ev.preventDefault();
+      ev.stopImmediatePropagation();
+    },
+    { passive: false, capture: true }
+  );
+
   renderer.domElement.addEventListener("click", (ev) => {
     if (!introDone || transition) return;
     if (ev.detail === 2) {
@@ -3962,6 +4037,21 @@ function init(host, detailEl, selectEl, shellEl) {
     const inField =
       tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA" || ae?.isContentEditable;
     if (inField) return;
+    if (detailEl?.classList.contains("morph-detail--word-focus") && (ev.key === "[" || ev.key === "]")) {
+      if (ev.key === "[") morphBumpLessonZoom(1 / MORPH_LESSON_ZOOM_STEP);
+      else morphBumpLessonZoom(MORPH_LESSON_ZOOM_STEP);
+      ev.preventDefault();
+      return;
+    }
+    if (
+      detailEl?.classList.contains("morph-detail--word-focus") &&
+      ev.altKey &&
+      (ev.key === "0" || ev.code === "Numpad0" || ev.code === "Digit0")
+    ) {
+      morphApplyLessonZoom(1);
+      ev.preventDefault();
+      return;
+    }
     if (morphFlyKeyCodes.has(ev.code) && smoothstep(viewBlend) < 0.12 && !morphIsOrthoBoard()) {
       morphKeysDown.add(ev.code);
       if (ev.key === "ArrowUp" || ev.key === "ArrowDown" || ev.key === "ArrowLeft" || ev.key === "ArrowRight")
@@ -4342,6 +4432,7 @@ function init(host, detailEl, selectEl, shellEl) {
     if (introDone) return;
     morphIntroMarkPlayed();
     introDone = true;
+    if (typeof document !== "undefined") document.body.style.overflow = "";
     if (selectEl?.value) assignWhiteboardIsolate(selectEl.value);
     finishIntroGroups();
     applyScopeVisibility();
