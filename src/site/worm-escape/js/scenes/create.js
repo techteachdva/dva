@@ -30,8 +30,14 @@ const ALL_LOADOUT_IDS = [
   "bileWhip", "hexStaff",
   "megaphone", "boneSpear", "blunderbuss",
   "cursedScythe", "rustyChainsaw", "cat",
-  "engineerWrench", "voidWalker", "chair", "plasmids",
+  "engineerWrench", "voidWalker", "chair", "plasmids", "nezZapper",
 ];
+
+// Cheat ROWAN — no longswords, sabers, spears, fists, blunt basics, or stock staves/wands.
+const ROWAN_DENIED_LOADOUT_IDS = new Set([
+  "sword", "saber", "boneSpear", "hammer", "club", "fists",
+  "emberStaff", "frostWand", "hexStaff",
+]);
 
 // v0.12 Unlock gating.
 // Keys map a build / loadout id -> save.unlocks flag that must be true.
@@ -98,12 +104,12 @@ function getBuildPerkLines(id) {
       "- Max HP locked at 10",
     ],
     gambler: [
-      "- Damage per hit rolls between ¼× and 3.5×",
-      "- High variance swings",
+      "- Damage per hit rolls between ½× and 3×",
+      "- Extreme variance swings",
     ],
     tamer: [
-      "- Bonus damage when prey is wounded",
-      "- Weaker raw hits without finishers",
+      "- Each guardian fall or shattered molar stacks +10 to HP/mana/armor pools",
+      "- Small escalating damage aura as the body count rises",
     ],
     swift: [
       "- Lightning hops between columns",
@@ -169,7 +175,8 @@ export class CreateScene {
     this.rerollsLeft = 1;
     this.unlockAllWeapons = false;
     this.dezPoolApplied = false;
-    this.weaponChoices = this.rollLoadouts(3, false);
+    this.rowanPoolApplied = false;
+    this.weaponChoices = this.rollLoadouts(3, false, false);
   }
 
   computeBuildWheelIds() {
@@ -179,19 +186,21 @@ export class CreateScene {
     return ids;
   }
 
-  rollLoadouts(count = 3, cheatBrowseAll = false) {
+  rollLoadouts(count = 3, cheatBrowseAll = false, rowanWeirdOnly = false) {
     const cheat = cheatBrowseAll;
+    const allowClimbOnly = !!(cheat || rowanWeirdOnly);
     let unlocked = ALL_LOADOUT_IDS.filter((id) => {
       const def = LOADOUTS[id];
       if (!def) return false;
-      if (!cheat && def.climbOnly) return false;
+      if (rowanWeirdOnly && ROWAN_DENIED_LOADOUT_IDS.has(id)) return false;
+      if (!allowClimbOnly && def.climbOnly) return false;
       if (cheat) return true;
       const flag = LOADOUT_UNLOCK[id];
       if (!flag) return true;
       return !!(this.save && this.save.unlocks && this.save.unlocks[flag]);
     });
     if (!unlocked.length) {
-      unlocked = ["sword", "hammer", "club"];
+      unlocked = rowanWeirdOnly ? ["fryingPan", "chair", "plasmids"] : ["sword", "hammer", "club"];
     }
     return shuffled(unlocked).slice(
       0,
@@ -269,7 +278,12 @@ export class CreateScene {
     if (game.pickAnyWeapon && !this.dezPoolApplied) {
       this.dezPoolApplied = true;
       this.unlockAllWeapons = true;
-      this.weaponChoices = this.rollLoadouts(999, true);
+      this.weaponChoices = this.rollLoadouts(999, true, false);
+      this.loadIdx = 0;
+      this.rerollsLeft = 1;
+    } else if (game.rowanWeirdWeapons && !this.rowanPoolApplied && !this.unlockAllWeapons) {
+      this.rowanPoolApplied = true;
+      this.weaponChoices = this.rollLoadouts(999, false, true);
       this.loadIdx = 0;
       this.rerollsLeft = 1;
     }
@@ -331,8 +345,13 @@ export class CreateScene {
         } else {
           this.rerollsLeft--;
           const cheatBrowse = this.unlockAllWeapons;
-          const n = cheatBrowse ? ALL_LOADOUT_IDS.length : 3;
-          this.weaponChoices = this.rollLoadouts(n, cheatBrowse);
+          const rowanHere = !!(game.rowanWeirdWeapons && this.rowanPoolApplied);
+          const n = cheatBrowse
+            ? ALL_LOADOUT_IDS.length
+            : rowanHere
+              ? 999
+              : 3;
+          this.weaponChoices = this.rollLoadouts(n, cheatBrowse, rowanHere);
           this.loadIdx = 0;
           if (typeof SFX.click === "function") SFX.click();
         }
@@ -385,6 +404,9 @@ export class CreateScene {
           return;
         }
         game.pickAnyWeapon = false;
+        const saveEnd = loadSave();
+        game.endlessMode = !!(game.endlessSelected && saveEnd?.unlocks?.endlessUnlocked);
+        game.wormTier = 1;
         game.player = makePlayer(buildId, loadId, game);
         game.chamberIndex = 0;
         game.scenes.replace(new ClimbScene(0), game);
@@ -406,7 +428,7 @@ export class CreateScene {
 
     if (this.step === 0) this.renderBuildSelect(ctx);
     else if (this.step === 1) this.renderLoadoutSelect(ctx, game);
-    else this.renderConfirm(ctx);
+    else this.renderConfirm(ctx, game);
 
     drawText(ctx, "A/D wheel · click cards · SPACE confirm · BACKSPACE back · M mute · Alt+Enter fullscreen · \\ cheat terminal", W / 2, H - 26, {
       size: 15, color: COLORS.boneDim, align: "center",
@@ -565,12 +587,16 @@ export class CreateScene {
 
   renderLoadoutSelect(ctx, game) {
     const browseAll = !!(game && game.pickAnyWeapon);
+    const browseRowanWide = !!(game && game.rowanWeirdWeapons && this.rowanPoolApplied);
     const rerollHint = this.rerollsLeft > 0 ? "press R once to reroll" : "no rerolls left — pick one";
     const head = browseAll
       ? `STEP 2 / 2  —  FULL POOL (DEZ)  (${rerollHint})`
-      : `STEP 2 / 2  —  PICK A WEAPON  (3 random — ${rerollHint})`;
+      : browseRowanWide
+        ? `STEP 2 / 2  —  ROWAN’S ARMORY (WEIRD ONLY)  (${rerollHint})`
+        : `STEP 2 / 2  —  PICK A WEAPON  (3 random — ${rerollHint})`;
     drawText(ctx, head, W / 2, 130, {
-      size: browseAll ? 16 : 17, color: COLORS.bone, align: "center", maxWidth: W - 80,
+      size: browseAll || browseRowanWide ? 16 : 17,
+      color: COLORS.bone, align: "center", maxWidth: W - 80,
     });
 
     const N = this.weaponChoices.length;
@@ -719,14 +745,14 @@ export class CreateScene {
       ctx.restore();
     }
 
-    if (browseAll) {
+    if (browseAll || browseRowanWide) {
       drawText(ctx, `Weapon ${center + 1} / ${N}`, W / 2, H - 52, {
         size: 14, color: COLORS.boneDim, align: "center",
       });
     }
   }
 
-  renderConfirm(ctx) {
+  renderConfirm(ctx, game) {
     const buildId = this.buildIdsOrdered[this.buildWheelIdx];
     const b = BUILDS[buildId];
     const loadId = this.weaponChoices[this.loadIdx];
@@ -738,12 +764,20 @@ export class CreateScene {
     drawText(ctx, "READY TO GET DIGESTED?", W / 2, 210, {
       size: 28, color: COLORS.bile, align: "center", bold: true, glow: COLORS.blood,
     });
+    if (game?.endlessMode) {
+      drawText(ctx, "ENDLESS — six nested escapes. Palette shifts; danger climbs each worm.", W / 2, 242, {
+        size: 15, color: COLORS.gold, align: "center", bold: true,
+        glow: COLORS.blood,
+        maxWidth: W - 240,
+      });
+    }
 
     if (syn) {
-      drawText(ctx, "SYNERGY FORGED", W / 2, 252, {
+      const synHeadY = game?.endlessMode ? 268 : 252;
+      drawText(ctx, "SYNERGY FORGED", W / 2, synHeadY, {
         size: 22, color: "#ffd966", align: "center", bold: true, glow: "#a06000",
       });
-      drawText(ctx, syn.title, W / 2, 282, {
+      drawText(ctx, syn.title, W / 2, synHeadY + 30, {
         size: 17, color: COLORS.bone, align: "center", bold: true, maxWidth: W - 200,
       });
     }

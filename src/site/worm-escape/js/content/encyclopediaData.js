@@ -119,7 +119,7 @@ function summarizeLoadout(id, lo) {
   lines.push(`GLOBAL_NOTE • Listed cooldowns × ${GLOBAL_ATTACK_CD_MULT.toFixed(2)} in real combat (GLOBAL_ATTACK_CD_MULT).`);
 
   if (atk) {
-    const tag = atk.multiLane ? " [MULTI-LANE]" : atk.hexMark ? " [MARK]" : atk.plasmCycle ? " [PLASM ROTATE]" : "";
+    const tag = atk.multiLane ? " [MULTI-LANE]" : atk.hexMark ? " [MARK]" : atk.plasmBolt ? " [PLASM Q]" : atk.plasmCycle ? " [PLASM ROTATE]" : "";
     lines.push(`ATTACK • ${atk.name}${tag} — dmg ${atk.dmg[0]}-${atk.dmg[1]}, CD ${scaledCd(atk.cooldown)}s, ${atk.manaCost} MP`);
     const tags = [];
     if (atk.lifestealPct) tags.push(`${Math.round(atk.lifestealPct * 100)}% lifesteal`);
@@ -132,13 +132,14 @@ function summarizeLoadout(id, lo) {
   if (spec) {
     let extra = "";
     if (spec.sentryBuild) extra = ` [SENTRY BUILD ${spec.buildTime ?? "?"}s, DPS ${JSON.stringify(spec.sentryDmg || [])}]`;
+    if (spec.plasmCycle) extra += " [gene mode cycle]";
     if (spec.misfireChance) extra += ` [~${Math.round((1 - spec.misfireChance) * 100)}% real rev]`;
     lines.push(`SPECIAL • ${spec.name}${extra} — dmg ${spec.dmg[0]}-${spec.dmg[1]}, CD ${scaledCd(spec.cooldown)}s, ${spec.manaCost} MP`);
   }
 
   if (lo.plasmModes?.length) {
     lines.push("");
-    lines.push(`PLASM • Q rotates ${lo.plasmModes.length} payloads; E fires active bolt`);
+    lines.push(`PLASM • Q / [1] fires the active gene bolt · E / [2] cycles FIRE → SHOCK → CRYO`);
     lo.plasmModes.forEach((m) => {
       lines.push(`  • ${m.label}: ${m.boltName} — ${m.dmg[0]}-${m.dmg[1]}, CD ${scaledCd(m.cooldown)}s, ${m.manaCost} MP, elt ${m.plasmElement}`);
     });
@@ -164,8 +165,8 @@ function buildClassEntries() {
     ];
     if (b.poisonPct) facts.push(`Viper gimmick poison: ${Math.round((b.poisonPct || 0) * 100)}% enemy max HP / s for ${b.poisonTime}s after hits`);
     if (b.tryHardGimmick) facts.push("Try-hard: dmg & climb speed multiplied elsewhere (stats screen shows base).");
-    if (b.gamblerGimmick) facts.push("Gambler: each outgoing hit dmg rolls ×0.25–3.5-ish (RNG).");
-    if (b.tamerGimmick) facts.push("Tamer: finisher dmg bonus when foes are wounded.");
+    if (b.gamblerGimmick) facts.push("Gambler: each outgoing hit dmg rolls roughly ×0.5–×3 (RNG).");
+    if (b.tamerGimmick) facts.push("Tamer: +10 HP cap, +10 mana cap, +10 armor cap, heal 10 HP, and ~+3.5% global damage multiplier per foe slain.");
     if (b.manaShield) {
       facts.push(
         `Caster kit: Mana shield drains MP before armor/HP (${b.manaShieldRatio ?? "?"} MP per 1 dmg), outgoing spell amp ×${b.spellAmpMult}, +${b.manaCostBonus} mana tax baked into weapon buttons.`,
@@ -352,8 +353,9 @@ function buildMechanicEntries() {
     title: "Cheat keypad",
     subtitle: '\\ key opens this terminal — it never prints hints',
     facts: [
-      "Back-row contraband expects you to overhear names elsewhere — not read them off marble.",
-      "If this shelf cracked open for you, you already whispered something the worm swallowed without complaining.",
+      '\\ still opens contraband, but victorious runs also populate the CHEATS tab.',
+      'Title screen INNER GUTS CODEX chip opens lore without wiping your save preview.',
+      "Exact passphrases stay locked until RNG blesses them after a WIN — poke the CHEATS tab.",
     ],
     flavor: "The keypad itself is coy; a full roster on the billboard would have been vulgar.",
   });
@@ -392,10 +394,10 @@ function buildMechanicEntries() {
     title: "Maw finale (tooth rave)",
     subtitle: "`tongueBoss.js` boss wall",
     facts: [
-      "Five lanes, five molars HP mini-boss. Knock all out inside timeout windows.",
-      "Top teeth chomp columns; slam attack exists; brace/perfection matters.",
-      "Codex tip: matchup vs teeth applies to melee math; visuals offset top molars weirdly zipper-style.",
-      "Knocked teeth respawn sluggishly — juggling timers is intentionally sweaty.",
+      "Five lanes vs five molars; top teeth slam telegraphed; brace & perfect-timing counters still matter.",
+      "Bottom bar: Q/E/F like combat · R/[3] = mana vial mini-game (same as sphincter fights).",
+      "X dodge-twitch hops a lane (+3 MP) with a short invulnerability flash — separate from mana vials.",
+      "Matchup vs TEETH weapon tags still applies · knocked molars respawn slowly (juggle timings).",
     ],
     flavor:
       '"Whack five teeth at once" is honestly the coolest science fair hypothesis ever pitched by a bile worm.',

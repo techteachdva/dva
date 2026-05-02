@@ -6,6 +6,8 @@
 // (private browsing, old browsers, iframe sandbox) we return in-memory
 // defaults and silently no-op on writes, so gameplay is never blocked.
 
+import { CHEAT_CODEX_DETAILS, grantRandomCheatKnowledge } from "../content/cheatsKnowledge.js";
+
 const SAVE_KEY = "wormEscape.save.v1";
 
 // Unlock keys - kept as a flat shape so checks stay trivial.
@@ -19,6 +21,7 @@ const SAVE_KEY = "wormEscape.save.v1";
 //   cursedScythe : v0.16 unlocked after winning as VIPER.
 //   rustyChainsaw: v0.16 unlocked after defeating any Elite boss.
 //   cat          : v0.16 unlocked after winning as WIZARD.
+//   endlessUnlocked : true after beating the game once — enables Endless toggle (instructions screen).
 //   anyElite     : informational flag (used for changelog/unlock text).
 const DEFAULT_SAVE = {
   version: 1,
@@ -35,6 +38,7 @@ const DEFAULT_SAVE = {
     rustyChainsaw: false,
     cat: false,
     necromancerBuild: false,
+    endlessUnlocked: false,
   },
   stats: {
     runs: 0,
@@ -42,6 +46,8 @@ const DEFAULT_SAVE = {
     elitesKilled: 0,
     hitlessChambersCleared: 0,
   },
+  /** Unlocked cheat codex passphrase ids (`cheatsKnowledge.js`) — victories grant one at random */
+  knownCheats: [],
 };
 
 // Cheap deep-clone for the default object so callers can mutate freely.
@@ -79,6 +85,7 @@ export function loadSave() {
       unlocks: { ...base.unlocks, ...(parsed.unlocks || {}) },
       stats:   { ...base.stats,   ...(parsed.stats   || {}) },
       highScores: Array.isArray(parsed.highScores) ? parsed.highScores : [],
+      knownCheats: Array.isArray(parsed.knownCheats) ? parsed.knownCheats.slice() : [],
     };
   } catch (e) {
     return cloneDefault();
@@ -135,6 +142,13 @@ export function recordRun(save, result) {
   // Unlocks - one-shot; only flag as "new" the first time each is triggered.
   // ============= WIN ANY RUN =============
   if (result.win) {
+    if (!save.unlocks.endlessUnlocked) {
+      save.unlocks.endlessUnlocked = true;
+      newUnlocks.push({
+        id: "endlessUnlocked",
+        label: "ENDLESS MODE unlocked! Toggle with [E] on the instructions screen.",
+      });
+    }
     if (!save.unlocks.viperBuild) {
       save.unlocks.viperBuild = true;
       newUnlocks.push({ id: "viperBuild", label: "NEW BUILD: VIPER unlocked!" });
@@ -185,6 +199,17 @@ export function recordRun(save, result) {
     if (!save.unlocks.rustyChainsaw) {
       save.unlocks.rustyChainsaw = true;
       newUnlocks.push({ id: "rustyChainsaw", label: "NEW WEAPON: RUSTY CHAINSAW unlocked!" });
+    }
+  }
+
+  if (result.win) {
+    const cheatId = grantRandomCheatKnowledge(save);
+    if (cheatId) {
+      const title = CHEAT_CODEX_DETAILS[cheatId]?.title ?? cheatId;
+      newUnlocks.push({
+        id: `cheatCodex:${cheatId}`,
+        label: `INNER GUTS CODEX: cheat dossier unlocked — "${title}" (${CHEAT_CODEX_DETAILS[cheatId]?.code ?? cheatId}).`,
+      });
     }
   }
 

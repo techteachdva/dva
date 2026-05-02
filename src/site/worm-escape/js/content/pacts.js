@@ -264,6 +264,61 @@ export const PACTS = [
       p.pactMods.dmgMult *= 0.85;
     },
   },
+
+  // ---- v0.18 pact wave ----
+  {
+    id: "fast_hands",
+    name: "FAST HANDS",
+    blurb: "Flash strikes — half muscle, half paper.",
+    pros: ["all ability cooldowns cut in half"],
+    cons: ["all ability damage roughly halved"],
+    tags: ["combat"],
+    apply: (p) => {
+      p.pactMods.fastHandsHalf = true;
+      p.pactMods.attackCdMult *= 0.5;
+      p.pactMods.specialCdMult *= 0.5;
+      p.pactMods.attackDmgMult *= 0.5;
+      p.pactMods.specialDmgMult *= 0.5;
+      p.pactMods.dmgMult *= 0.5;
+    },
+  },
+  {
+    id: "all_in_red",
+    name: "ALL-IN ON RED",
+    blurb: "Bleed stamina into the duel — soften every finishing blow.",
+    pros: ["+55 max HP (healed)"],
+    cons: ["-20 damage on each strike (after rolls)"],
+    tags: ["combat", "stats"],
+    apply: (p) => {
+      p.hpMax += 55;
+      p.hp = Math.min(p.hpMax, p.hp + 55);
+      p.pactMods.outgoingFlat = (p.pactMods.outgoingFlat || 0) - 20;
+    },
+  },
+  {
+    id: "all_in_black",
+    name: "ALL-IN ON BLACK",
+    blurb: "Borrow life for murder math.",
+    pros: ["+25 damage on each strike (after rolls)"],
+    cons: ["-50 max HP"],
+    tags: ["combat", "stats"],
+    apply: (p) => {
+      p.hpMax = Math.max(1, p.hpMax - 50);
+      p.hp = Math.min(p.hp, p.hpMax);
+      p.pactMods.outgoingFlat = (p.pactMods.outgoingFlat || 0) + 25;
+    },
+  },
+  {
+    id: "split_fifty_fifty",
+    name: "50 / 50",
+    blurb: "The abyss flips its coin once per swing.",
+    pros: ["each strike rolls +15 damage OR −15"],
+    cons: ["Damage spikes both directions—plan heals around blanks"],
+    tags: ["combat"],
+    apply: (p) => {
+      p.pactMods.flipDamage5050 = true;
+    },
+  },
 ];
 
 // Quick lookup by id.

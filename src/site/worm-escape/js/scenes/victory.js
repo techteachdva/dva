@@ -80,7 +80,11 @@ function calcScore(p) {
       s.hitlessChambers * WEIGHTS.hitlessChamber);
   }
 
-  const total = parts.reduce((a, b) => a + b.value, 0);
+  if (s.usedAcerCheat) {
+    push("Acererack invulnerability surcharge", -1000000);
+  }
+
+  const total = Math.max(0, parts.reduce((a, b) => a + b.value, 0));
   return { parts, total };
 }
 
@@ -97,6 +101,7 @@ function grade(total) {
 export class VictoryScene {
   constructor() {
     this.t = 0;
+    this.abruptFinale = false;
     this.particles = new ParticleSystem();
     this.nextEmit = 0;
     this.score = null;
@@ -113,6 +118,8 @@ export class VictoryScene {
 
   enter(game) {
     const p = game.player;
+    this.abruptFinale = !!game.victoryAbruptReveal;
+    if (game.victoryAbruptReveal) game.victoryAbruptReveal = false;
     this.score = calcScore(p);
     this.grade = grade(this.score.total);
     // Persist the run + compute unlocks.
@@ -132,12 +139,17 @@ export class VictoryScene {
     this.save = updated;
     this.newUnlocks = newUnlocks;
     this.myRank = findScoreRank(updated, entry);
+
+    if (this.abruptFinale) {
+      this.revealT = 999999;
+      this.displayTotal = this.score.total;
+    }
   }
 
   update(dt, game) {
     this.t += dt;
     this.nextEmit -= dt;
-    if (this.nextEmit <= 0) {
+    if (!this.abruptFinale && this.nextEmit <= 0) {
       this.nextEmit = 0.07;
       const cx = W / 2 + (Math.random() - 0.5) * 260;
       const cy = H * 0.32 + (Math.random() - 0.5) * 80;
@@ -221,7 +233,15 @@ export class VictoryScene {
 
     this.particles.render(ctx);
 
-    drawBanner(ctx, "YOU BURST FREE!", W / 2, 70, 50, COLORS.bile, COLORS.blood);
+    drawBanner(
+      ctx,
+      this.abruptFinale ? "STACK UNWOUND (?)" : "YOU BURST FREE!",
+      W / 2,
+      70,
+      44,
+      this.abruptFinale ? COLORS.gold : COLORS.bile,
+      COLORS.blood,
+    );
 
     // --- Scoreboard panel ---
     this.drawScoreboard(ctx);

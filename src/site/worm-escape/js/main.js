@@ -15,7 +15,7 @@ initBGM("Level%20Up.mp3", { volume: 0.35, loop: true });
 void preloadWeaponArt();
 
 /** Shown lower-right — bump alongside meaningful releases / CHANGELOG. */
-const GAME_VERSION = "v0.16.1";
+const GAME_VERSION = "v0.20.1";
 
 const stageEl = document.getElementById("stage");
 
@@ -55,12 +55,22 @@ const game = {
   chamberIndex: 0,
   W, H,
   invulnerable: false,
+  endlessMode: false,
+  wormTier: 1,
+  endlessSelected: false,
+  victoryAbruptReveal: false,
   pickAnyWeapon: false,
   cheatMenuOpen: false,
   cheatInput: "",
   cheatFlash: "",
   cheatFlashT: 0,
   cheatSaveRefresh: false,
+  easyMode: false,
+  hardMode: false,
+  jillyMode: false,
+  bubblegumMode: false,
+  rowanWeirdWeapons: false,
+  lemonBoost: false,
 };
 
 game.scenes.push(new IntroScene(), game);

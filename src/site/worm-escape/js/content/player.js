@@ -102,7 +102,7 @@ export const BUILDS = {
     mana: 110,
     armor: 0,
     armorSoak: 0,
-    climbSpeed: 1.10,
+    climbSpeed: 1.15,
     hopCooldown: 0.12,
     laneSwapCd: 0.12,
     dodgeWindow: 0.50,
@@ -123,7 +123,7 @@ export const BUILDS = {
     mana: 52,
     armor: 12,
     armorSoak: 0.35,
-    climbSpeed: 1.14,
+    climbSpeed: 1.21,
     hopCooldown: 0.095,
     laneSwapCd: 0.10,
     dodgeWindow: 0.56,
@@ -153,7 +153,7 @@ export const BUILDS = {
   gambler: {
     id: "gambler",
     name: "GAMBLER",
-    blurb: "Lady Luck kisses or slaps — each hit rolls ¼× to 3.5× pain.",
+    blurb: "Lady Luck kisses or slaps — each hit rolls ~½× to 3× pain.",
     hp: 88,
     mana: 62,
     armor: 0,
@@ -171,7 +171,7 @@ export const BUILDS = {
   tamer: {
     id: "tamer",
     name: "TAMER",
-    blurb: "Soft strikes — finishers sting when the prey is bloodied.",
+    blurb: "Blood price for strength — each kill piles +HP, +Mana, +Armor, +damage.",
     hp: 95,
     mana: 58,
     armor: 8,
@@ -267,9 +267,10 @@ export const LOADOUTS = {
     icon: "whip",
     blurb: "Lashes far-left, center, and far-right in one crack. Only connects when the guardian straddles one of those columns.",
     // Columns 0 / 2 / 4 — far-left, center, far-right (guardian must stand there).
-    attack:  { name: "Triple Lash", dmg: [8, 12],  cooldown: 0.86, manaCost: 2,  sfx: "slash",
-      multiLane: true, multiLaneLanes: [0, 2, 4], multiLanePerLaneScale: 0.34 },
-    special: { name: "Coil Lash",   dmg: [26, 36], cooldown: 3.05,  manaCost: 11, sfx: "crunch", multiLane: false },
+    attack:  { name: "Triple Lash", dmg: [30, 40], cooldown: 0.86, manaCost: 2,  sfx: "slash",
+      multiLane: true, multiLaneLanes: [0, 2, 4],
+      multiLanePerLaneScale: 0.097 },
+    special: { name: "Coil Lash",   dmg: [24, 28], cooldown: 3.05,  manaCost: 11, sfx: "crunch", multiLane: false },
     color: "#b5f05a",
     strongVs: "flesh",
     weakVs:   "teeth",
@@ -284,7 +285,7 @@ export const LOADOUTS = {
     icon: "staff-hex",
     blurb: "Mark them. Wait. Detonate. Repeat.",
     attack:  { name: "Hex Bolt",    dmg: [10, 14], cooldown: 0.55, manaCost: 3,  sfx: "cast", hexMark: true },
-    special: { name: "Runic Bolt",  dmg: [22, 30], cooldown: 2.6,  manaCost: 12, sfx: "cast", hexDetonate: true },
+    special: { name: "Runic Bolt",  dmg: [22, 30], cooldown: 1.68,  manaCost: 6, sfx: "cast", hexDetonate: true },
     color: "#d978ff",
     strongVs: "tentacle",
     weakVs:   "zombie",
@@ -296,8 +297,8 @@ export const LOADOUTS = {
     name: "FRYING PAN",
     icon: "pan",
     blurb: "BONK. Heavy. Slightly greasy. Surprisingly murderous.",
-    attack:  { name: "Bonk",       dmg: [15, 22], cooldown: 0.90, manaCost: 0,  sfx: "thud" },
-    special: { name: "Skillet Slam", dmg: [26, 36], cooldown: 2.85, manaCost: 9, sfx: "crunch" },
+    attack:  { name: "Bonk",       dmg: [15, 22], cooldown: 1.06, manaCost: 0,  sfx: "thud" },
+    special: { name: "Skillet Slam", dmg: [26, 36], cooldown: 3.25, manaCost: 9, sfx: "crunch" },
     color: "#9aa0ac",
     strongVs: "teeth",
     weakVs:   "flesh",
@@ -347,8 +348,9 @@ export const LOADOUTS = {
     name: "BATTLE MEGAPHONE",
     icon: "megaphone",
     blurb: "Yelling, but tactical. Rattles eardrums and resolve.",
-    attack:  { name: "Sonic Yell",  dmg: [9, 13],   cooldown: 0.40, manaCost: 2,  sfx: "cast" },
-    special: { name: "Riot Boom",   dmg: [24, 34],  cooldown: 2.4,  manaCost: 11, sfx: "cast" },
+    attack:  { name: "Sonic Yell",  dmg: [12, 17],   cooldown: 0.40, manaCost: 2,  sfx: "cast" },
+    special: { name: "Riot Boom",   dmg: [37, 48],  cooldown: 2.4,  manaCost: 11,
+      sfx: "cast", riotSelfHp: 10 },
     color: "#ffd966",
     strongVs: "tentacle",
     weakVs:   "bile",
@@ -361,9 +363,9 @@ export const LOADOUTS = {
     name: "BONE SPEAR",
     icon: "boneSpear",
     blurb: "Splintered shaft, jagged tip. Every hit drinks blood.",
-    attack:  { name: "Jab",         dmg: [11, 15], cooldown: 0.42, manaCost: 1,  sfx: "slash",
+    attack:  { name: "Jab",         dmg: [9, 14], cooldown: 0.42, manaCost: 1,  sfx: "slash",
                poisonPct: 0.04, poisonTime: 3, dotLabel: "BLEED" },
-    special: { name: "Lunge",       dmg: [24, 32], cooldown: 2.0,  manaCost: 9,  sfx: "slash",
+    special: { name: "Lunge",       dmg: [24, 39], cooldown: 2.0,  manaCost: 9,  sfx: "slash",
                poisonPct: 0.07, poisonTime: 4, dotLabel: "BLEED" },
     color: "#e8d6b0",
     strongVs: "flesh",
@@ -396,8 +398,8 @@ export const LOADOUTS = {
     strongVs: "zombie",
     weakVs:   "bile",
   },
-  // RUSTY CHAINSAW - special is unreliable. 5/6 chance to misfire (no
-  // damage, half cooldown), 1/6 chance to deal massive damage and apply
+  // RUSTY CHAINSAW - special is unreliable. 3/4 chance to misfire (no
+  // damage, half cooldown refunded), 1/4 mega rev.
   // a long bleed DoT. Unlock: defeat any Elite.
   rustyChainsaw: {
     id: "rustyChainsaw",
@@ -405,8 +407,8 @@ export const LOADOUTS = {
     icon: "chainsaw",
     blurb: "Old engine. Mostly sputters. When it doesn't... pray.",
     attack:  { name: "Saw Swing",   dmg: [14, 20], cooldown: 0.65, manaCost: 0,  sfx: "slash" },
-    special: { name: "REV UP",      dmg: [60, 80], cooldown: 6.0,  manaCost: 8,  sfx: "crunch",
-               misfireChance: 5/6, poisonPct: 0.10, poisonTime: 6, dotLabel: "BLEED" },
+    special: { name: "REV UP",      dmg: [70, 90], cooldown: 4.0,  manaCost: 8,  sfx: "crunch",
+               misfireChance: 0.75, poisonPct: 0.10, poisonTime: 6, dotLabel: "BLEED" },
     color: "#c25a2a",
     strongVs: "flesh",
     weakVs:   "teeth",
@@ -429,9 +431,9 @@ export const LOADOUTS = {
     name: "ENGINEER'S WRENCH",
     icon: "wrench",
     blurb: "Light taps. Big metal friend does the real work.",
-    attack:  { name: "Light Tap",   dmg: [7, 11],  cooldown: 0.58, manaCost: 1,  sfx: "thud" },
+    attack:  { name: "Light Tap",   dmg: [22, 26], cooldown: 0.58, manaCost: 1,  sfx: "thud" },
     special: { name: "Deploy Sentry", dmg: [2, 4], cooldown: 5.2, manaCost: 8, sfx: "confirm",
-      sentryBuild: true, buildTime: 3, sentryDmg: [9, 14], sentryInterval: 0.5 },
+      sentryBuild: true, buildTime: 7, sentryDmg: [8, 11], sentryInterval: 0.5 },
     color: "#9aa0ac",
     strongVs: "teeth",
     weakVs:   "tentacle",
@@ -443,7 +445,7 @@ export const LOADOUTS = {
     icon: "void",
     combatAs: "fists",
     blurb: "Run between worlds. No weapon — only echoes in the dark.",
-    voidClimbMult: 2.5,
+    voidClimbMult: 2.5 / 1.5,
     voidDebrisIntervalMult: 0.52,
     climbOnly: true,
     color: "#1a0520",
@@ -462,21 +464,23 @@ export const LOADOUTS = {
     strongVs: "zombie",
     weakVs:   "teeth",
   },
+  nezZapper: {
+    id: "nezZapper",
+    name: "NEZ ZAPPER",
+    icon: "zapper",
+    blurb: "Compact lightning rig. Stitch with ZAP! — bank BeeU! for jaws.",
+    attack: { name: "ZAP!", dmg: [17, 24], cooldown: 0.50, manaCost: 5, sfx: "cast" },
+    special: { name: "BeeU!", dmg: [98, 125], cooldown: 9.25, manaCost: 14, sfx: "crunch" },
+    color: "#8ae8ff",
+    strongVs: "bile",
+    weakVs:   "teeth",
+  },
   plasmids: {
     id: "plasmids",
     name: "ADAM PLASMIDS",
     icon: "plasmids",
-    blurb: "Dial helix payloads: FIRE / SHOCK / CRYO — then unleash the bolt.",
-    // [Q/1]: rotate active element. [E/2]: fire a Gene Bolt using that mode.
+    blurb: "Helix payloads: FIRE / SHOCK / CRYO — Q fires bolts; E cycles modes.",
     attack: {
-      name: "Cycle Gene Mode",
-      dmg: [0, 0],
-      cooldown: 0.18,
-      manaCost: 0,
-      sfx: "click",
-      plasmCycle: true,
-    },
-    special: {
       name: "Gene Bolt",
       dmg: [8, 13],
       cooldown: 0.72,
@@ -484,7 +488,15 @@ export const LOADOUTS = {
       sfx: "cast",
       plasmBolt: true,
     },
-    /** Order: fire → shock → cryo (cycled with attack). Bolt stats come from active mode at fire time. */
+    special: {
+      name: "Cycle Gene Mode",
+      dmg: [0, 0],
+      cooldown: 0.18,
+      manaCost: 0,
+      sfx: "click",
+      plasmCycle: true,
+    },
+    /** Order: fire → shock → cryo (cycled with SPECIAL / E). ATK fires active bolt stats. */
     plasmModes: [
       { key: "fire", label: "FIRE", boltName: "Incinerate Bolt", dmg: [8, 13], cooldown: 0.72,
         manaCost: 4, sfx: "cast", plasmElement: "fire" },
@@ -568,6 +580,10 @@ export function makePlayer(buildId, loadoutId, gameCheats = null) {
     ? b.hopCooldown / Math.max(0.01, def.voidClimbMult)
     : b.hopCooldown;
 
+  if (gameCheats?.lemonBoost) {
+    climbSpeed += 0.25;
+  }
+
   const p = {
     buildId,
     loadoutId,
@@ -623,6 +639,7 @@ export function makePlayer(buildId, loadoutId, gameCheats = null) {
       gullethitless: false,   // specifically the Gullet chamber cleared hitless
       elitesKilled: 0,        // number of Elite sphincter guardians slain
       pactsTaken: [],         // array of pact ids chosen this run (display + scoring)
+      usedAcerCheat: false,   // acererack invulnerability cheat — −1M to final scored total
     },
     // v0.12 Pacts - array of ids the player has taken. `pactMods` holds
     // all live tuning values pacts (and builds) want to nudge. Pre-init
@@ -650,6 +667,10 @@ export function makePlayer(buildId, loadoutId, gameCheats = null) {
       lifestealOnKill: 0,     // HP healed when enemy dies
       executeThreshold: 0,    // enemy HP% below which execute bonus applies
       executeBonus: 1,        // damage multiplier for execute
+      outgoingFlat: 0,        // pact flat damage additive (before RNG crits)
+      fastHandsHalf: false,   // half CDs + half dmg (Fast Hands pact)
+      flipDamage5050: false, // ±15 dmg coin flip pact
+      tamerKillGrowth: false, // +stats on kill rework
     },
     plasmCryoSlow: null,
     synergyDecay: false,
@@ -674,14 +695,14 @@ export function makePlayer(buildId, loadoutId, gameCheats = null) {
     p.pactMods.gamblerVariance = true;
   }
   if (b.tamerGimmick) {
-    p.pactMods.tamerCull = true;
-    p.pactMods.tamerCullThreshold = 0.38;
-    p.pactMods.tamerCullMult = 1.85;
-    p.pactMods.attackDmgMult *= 0.72;
-    p.pactMods.specialDmgMult *= 0.72;
+    p.pactMods.tamerKillGrowth = true;
   }
 
   applySynergy(p, buildId, loadoutId);
+
+  if (loadoutId === "voidWalker") {
+    p.pactMods.dmgMult *= 1.22;
+  }
 
   if (loadoutId === "plasmids") {
     p.plasmModeIndex = 0;
@@ -704,6 +725,18 @@ export function makePlayer(buildId, loadoutId, gameCheats = null) {
   }
 
   return p;
+}
+
+/** Tamer rework: stacking survival + damage on each foe killed (regular combat bosses). */
+export function applyTamerKillGrowth(p) {
+  if (!p?.pactMods?.tamerKillGrowth || !p.score) return;
+  p.hpMax += 10;
+  p.hp = Math.min(p.hpMax, p.hp + 10);
+  p.manaMax += 10;
+  p.mana = Math.min(p.manaMax, p.mana + 10);
+  p.armorMax = (p.armorMax || 0) + 10;
+  p.armor = Math.min(p.armorMax, (p.armor || 0) + 10);
+  p.pactMods.dmgMult *= 1.035;
 }
 
 // Apply a pact by id. Safe to call multiple times; updates tracking on
@@ -738,7 +771,7 @@ export function resetChamber(p) {
 // Returns { armorTaken, hpTaken } for logging/visuals.
 // Also updates score.hitsTaken / totalHpLost / totalArmorLost when the
 // player has a `score` object (post-v0.10 saves always do).
-export function applyDamage(p, amount) {
+export function applyDamage(p, amount, { countHitScore = true } = {}) {
   if (p.invulnerable) return { armorTaken: 0, hpTaken: 0, manaTaken: 0 };
   // Pacts like Glass Gauntlets / Feed Frenzy amplify incoming damage.
   const inMult = p.pactMods ? p.pactMods.incomingDmgMult : 1;
@@ -767,9 +800,11 @@ export function applyDamage(p, amount) {
   const hpTaken = Math.min(p.hp, remaining);
   p.hp = Math.max(0, p.hp - remaining);
   if (p.score) {
-    if (armorTaken > 0 || hpTaken > 0 || manaTaken > 0) p.score.hitsTaken++;
     p.score.totalHpLost += hpTaken;
     p.score.totalArmorLost += armorTaken;
+    if (countHitScore && (armorTaken > 0 || hpTaken > 0 || manaTaken > 0)) {
+      p.score.hitsTaken++;
+    }
   }
   return { armorTaken, hpTaken, manaTaken };
 }
@@ -779,6 +814,7 @@ export function applyDamage(p, amount) {
 // where we don't go through applyDamage but still want the counters
 // updated.
 export function recordDirectHpHit(p, hpAmount, { countAsHit = true } = {}) {
+  if (p.invulnerable) return;
   if (!p.score) return;
   if (hpAmount <= 0) return;
   p.score.totalHpLost += hpAmount;
@@ -787,6 +823,7 @@ export function recordDirectHpHit(p, hpAmount, { countAsHit = true } = {}) {
 
 // Same as above but for armor only (mace clang on armor).
 export function recordDirectArmorHit(p, armorAmount, { countAsHit = true } = {}) {
+  if (p.invulnerable) return;
   if (!p.score) return;
   if (armorAmount <= 0) return;
   p.score.totalArmorLost += armorAmount;

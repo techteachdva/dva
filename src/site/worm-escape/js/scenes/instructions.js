@@ -4,6 +4,7 @@ import {
 } from "../engine/render.js";
 import { SFX } from "../engine/audio.js";
 import { CreateScene } from "./create.js";
+import { loadSave } from "../engine/storage.js";
 
 // v0.11 - One-page gameplay briefing shown right after the intro story and
 // before character creation. Designed to fit inside the 1280x800 canvas
@@ -13,13 +14,19 @@ export class InstructionsScene {
     this.t = 0;
   }
 
-  enter() {
+  enter(game) {
     this.t = 0;
+    this.save = loadSave();
+    if (game.endlessSelected == null) game.endlessSelected = false;
     SFX.click();
   }
 
   update(dt, game) {
     this.t += dt;
+    if (this.save?.unlocks?.endlessUnlocked && game.input.wasPressed("e", "E")) {
+      game.endlessSelected = !game.endlessSelected;
+      SFX.click();
+    }
     if (game.input.wasPressed(" ", "Space", "Enter", "Mouse0")) {
       SFX.confirm();
       game.scenes.replace(new CreateScene(), game);
@@ -98,6 +105,16 @@ export class InstructionsScene {
     const stripY = y2 + rowH + gapY;
     const stripW = panelW - gapX * 2;
     this.drawPactElitesStrip(ctx, stripX, stripY, stripW, stripH);
+
+    if (this.save?.unlocks?.endlessUnlocked) {
+      const on = !!game.endlessSelected;
+      drawText(ctx, `[E] Endless Mode: ${on ? "ON (six worms — escalate to victory)" : "OFF (classic escape)"}`, W / 2, H - 94, {
+        size: 15,
+        color: on ? COLORS.gold : COLORS.boneDim,
+        align: "center",
+        bold: on,
+      });
+    }
 
     // Footer prompt - blinks to draw the eye
     const blink = Math.sin(this.t * 5) > 0;

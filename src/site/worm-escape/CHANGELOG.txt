@@ -3,6 +3,75 @@ GUTS & GLORY: ESCAPE THE PURPLE WORM
 Changelog
 
 ---------------------------------------------------------------------
+v0.20.1 — Codex dossiers bookmark on cheat use
+---------------------------------------------------------------------
+SAVE / LORE:
+- Successfully typing a registered cheat phrase on the backslash keypad also unlocks its Inner Guts Codex dossier (`save.knownCheats`; `markCheatKnownInSave` in `cheatsKnowledge.js` / `cheatActions.js`). Cheats still execute when a row is locked — this only persists lore visibility.
+- `lore` / `loredump`: bookmark saved before pushing the Encyclopedia scene (`cheatActions.js`) so Codex merge on enter sees the updated `save.knownCheats` (`encyclopedia.js`).
+
+---------------------------------------------------------------------
+v0.20.0 — Cheats tier + Codex shelf
+---------------------------------------------------------------------
+CHEATS (backslash keypad):
+- `wyrm` / `dragon`: easier vs harder bias (incoming damage + bile chewing + guardian/molar HP);
+  mutually exclusive toggles (`js/content/gameBalance.js`, Combat / Climb / Maw hooks).
+- `jilly`: climb debris swaps spawn rates & visuals — gold tells often nasty (×2 hazard payload),
+  red tells may hide real pickups (`js/scenes/climb.js`).
+- `bubblegum`: twin guardian fights per sphincter climb, then four chained 3-card pact seals (`pact.js` + combat win routing).
+- `rowan`: forge weapon step only rolls rowdy gear (no swords/sabers/spears/stock staves/basic hammers/clubs/fists); browse-sized wheel (`create.js`).
+- `lemon`: +0.25 climb speed multiplier when the hero is forged (`makePlayer`).
+
+SAVE / LORE:
+- `save.knownCheats[]` — each full VICTORY adds ONE random dossier reveal; see v0.20.1 for keypad unlocks (`cheatsKnowledge.js`).
+- INNER GUTS CODEX CHEATS tab (Digit7 shortcut), merge on `enter()`, fixed Tab-scope bug (`encyclopedia.js`).
+- Title screen “INNER GUTS CODEX (cheats) — CLICK” chip opens the Codex (`intro.js`).
+
+---------------------------------------------------------------------
+v0.19.0 — Endless nested worms (+ cheats)
+---------------------------------------------------------------------
+ENDLESS MODE:
+- Unlock `endlessUnlocked` on first full victory; on the Instructions screen press [E] to toggle
+  Endless for the next forge run (six worm layers, escalating danger + tinted flesh/enemy filters).
+
+MAW LOOP:
+- Beating THE MAW in Endless loops with a nesting message → full heal → climb again from Chamber 1.
+- Completing worm layer 6 runs a glitch + recursion text gag, then an abrupt Victory / final score reveal.
+
+TECH:
+- `endlessStyle.js`: palette + incoming-damage bile scaling + chew/chomp tuning hook for Maw/Combat.
+- New scenes `endlessNest.js`, `endlessCrash.js`.
+- Cheat `gygax`: drop onto THE MAW as worm tier 6 (tests finale).
+- Cheat `acererack`: incoming damage suppressed via `invulnerable`; acid/bile/timer corrosion guarded;
+  −1,000,000 on final/win score breakdown if you ever toggled Acererack ON mid-run (`usedAcerCheat`).
+- `bossnow` resets endless run flags before the warp.
+
+---------------------------------------------------------------------
+v0.18.0 — Major Balance, NEZ Zapper, Weapon Art Refresh, Lore UX
+---------------------------------------------------------------------
+WEAPONS & ART:
+- Wired every transparent PNG presently under img/weapons/ (battle_megaphone,
+  gnarled_club, chainsaw, cursed_scythe, engineer_wrench, nez_zapper,
+  plasmids, legacy blunderbuss/chair). Cache bumped (?v=2).
+- NEW NEZ ZAPPER: ZAP! quick shocks + BeeU! banked nova; randomized forge pool entry.
+
+PLASMIDS REBIND:
+- Q / [1] fires the active Gene Bolt; E / [2] cycles FIRE→SHOCK→CRYO (updated HUD,
+  Maw finale, Inner Guts Codex helper copy, CombatScene action pills).
+
+FINALE / MAW:
+- Mana vials on R / [3]; dodge twitch on X. Bleed stacking on molars clamps at 3
+  stacks like core combat.
+
+TAMER:
+- Stacks trigger per shattered molar (including bleed knockouts routed through knockOutTooth).
+
+CODEX / LORE UI:
+- Search uses a single-letter pass plus dedicated Digit0–6 tab shortcuts (no double
+  characters). Portrait lanes for raster weapons + class bust shots + worm shader for rules.
+
+SEE ALSO: encyclopediaData.js + player.js mirror the detailed stat deltas from this sprint.
+
+---------------------------------------------------------------------
 v0.1.0 - Foundation Laid (The Worm Hungers)
 ---------------------------------------------------------------------
 - Set up modular project structure (js/engine, js/scenes, content).

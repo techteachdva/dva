@@ -27,7 +27,9 @@ export class GameOverScene {
       (s.hitlessChambers || 0) * 200 +
       (s.elitesKilled || 0) * 300 +
       (s.powerUpsCollected || 0) * 30;
-    this.finalScore = Math.max(0, Math.floor(partial));
+    let fs = Math.max(0, Math.floor(partial));
+    if (p?.score?.usedAcerCheat) fs = Math.max(0, fs - 1000000);
+    this.finalScore = fs;
 
     const save = loadSave();
     const result = {

@@ -10,6 +10,7 @@ import { ENEMIES } from "../content/enemies.js";
 import { rand, randInt, pick } from "../engine/rng.js";
 import {
   applyDamage, matchupMultiplier, matchupLabel,
+  applyTamerKillGrowth,
   recordDirectHpHit, recordDirectArmorHit,
   activePlasmMode, plasmElementMult,
 } from "../content/player.js";
@@ -20,6 +21,22 @@ import {
 } from "../engine/pointer.js";
 import { VictoryScene } from "./victory.js";
 import { GameOverScene } from "./gameover.js";
+import { NestWormScene } from "./endlessNest.js";
+import { EndlessCrashScene } from "./endlessCrash.js";
+import {
+  pickTwoDistinctPotionKeys,
+  POTION_DRINK_CD_SEC,
+  POTION_DRINK_CD_SEC,
+  tickManaPotionMiniGame,
+  drawManaPotionModal,
+} from "../engine/manaPotion.js";
+import { applyOutboundStrikeDice } from "../engine/strikeDamageMods.js";
+import {
+  endlessDangerMult,
+  healPlayerBetweenEndlessLoops,
+  resolveEndlessPalette,
+} from "../content/endlessStyle.js";
+import { runEnemyHpMult, runIncomingDamageMult } from "../content/gameBalance.js";
 
 // =====================================================================
 //  v0.15 FINAL BOSS - The Worm's MAW (whack-a-tooth)
@@ -46,9 +63,10 @@ import { GameOverScene } from "./gameover.js";
 // Keybinds (shared with CombatScene):
 //   [A] / [ArrowLeft]   move one column left
 //   [D] / [ArrowRight]  move one column right
-//   [Q] / [1]           Attack  (tooth in current lane, +neighbors if weapon multi-lane)
-//   [E] / [2]           Special
-//   [R] / [3]           Dodge roll  (brief i-frame + MP gain)
+//   [Q] / [1]           Gene Bolt — hits tooth in lane (Plasmids) / primary attack
+//   [E] / [2]           Cycle FIRE↔SHOCK↔CRYO on Plasmids / otherwise special strike
+//   [R] / [3]           Mana vial (same mini-game as sphincter fights)
+//   [X]                 Dodge twitch  (lane hop + tiny MP gain + brief i-frame)
 //   [F] / [4]           Brace      (mitigates chomp; perfect = counter)
 //   [P] / [Esc]         Pause
 // =====================================================================
@@ -107,6 +125,10 @@ export class MawBossScene {
       });
     }
 
+    /** Chomp damage ranges — scaled in enter() during Endless tiers. */
+    this.endlessChompLo = [CHOMP_DMG_RANGE[0], CHOMP_DMG_RANGE[1]];
+    this.endlessChompHi = [CHOMP_DMG_RANGE[1], CHOMP_DMG_RANGE[1] + 14];
+
     // 5 top teeth - the aggressors. They don't HP-track; they only
     // attack. A given top tooth tracks its own chomp animation state.
     this.topTeeth = [];
@@ -133,6 +155,10 @@ export class MawBossScene {
     this.perfectFlashT = 0;
     this.dodgeIFrameT = 0;
     this.dodgeFlashT = 0;
+
+    /** Mana vials — aligned with CombatScene semantics. */
+    this.potionState = null;
+    this.potionDrinkCooldown = 0;
 
     // Scripted boss patterns (wave / pincer / feint) fire on this cadence when idle.
     this.bossPattern = null; // null | { kind, ... }
@@ -171,6 +197,67 @@ export class MawBossScene {
     if (this.log.length > 4) this.log.shift();
   }
 
+  tryEnterManaPotion(p) {
+    if (this.phase !== "fight" || this.done) return;
+    if (this.potionState) return;
+    if (this.potionDrinkCooldown > 0) {
+      SFX.deny();
+      this.pushLog(`Mana vial recharging (${this.potionDrinkCooldown.toFixed(1)}s).`);
+      return;
+    }
+    if (p.mana >= p.manaMax) {
+      SFX.deny();
+      this.pushLog("Mana already full!");
+      return;
+    }
+    const [corkKey, pourKey] = pickTwoDistinctPotionKeys();
+    this.potionState = {
+      corkKey,
+      pourKey,
+      phase: "cork",
+      corkPop: false,
+      tilt: 0,
+      liquid: 1,
+      timeLeft: POTION_MINIGAME_TIME_SEC,
+      hintFlash: 0,
+    };
+    this.pushLog("POP the cork — tilt with the pour key!");
+    SFX.confirm();
+  }
+
+  endManaPotionSuccess(p) {
+    p.mana = p.manaMax;
+    this.potionDrinkCooldown = POTION_DRINK_CD_SEC;
+    this.potionState = null;
+    this.pushLog("Liquid lightning — mana SURGES!");
+    SFX.jump();
+  }
+
+  endManaPotionFail() {
+    this.potionDrinkCooldown = 9;
+    this.potionState = null;
+    this.pushLog("Phial shattered— try again shortly.");
+    SFX.deny();
+  }
+
+  doDodgeTwitch(p) {
+    if ((p.dodgeRollCooldown || 0) > 0) {
+      SFX.deny();
+      this.pushLog("Dodge needs a heartbeat to recover.");
+      return;
+    }
+    const dir = Math.random() < 0.5 ? -1 : 1;
+    this.col = Math.max(0, Math.min(NUM_COLS - 1, this.col + dir));
+    p.mana = Math.min(p.manaMax, p.mana + 3);
+    p.dodgeRollCooldown = 1.22;
+    this.dodgeIFrameT = 0.14;
+    this.dodgeFlashT = 0.45;
+    SFX.dodge();
+    this.pushLog(dir < 0
+      ? "You twitch LEFT (+3 MP)."
+      : "You twitch RIGHT (+3 MP).");
+  }
+
   enter(game) {
     this.game = game;
     const p = game.player;
@@ -188,6 +275,28 @@ export class MawBossScene {
       this.pushLog(lbl.text === "DEVASTATING!"
         ? `Your ${p.loadout.name} is PERFECT for cracking bone!`
         : `Your ${p.loadout.name} feels ${lbl.text.toLowerCase()} against enamel...`);
+    }
+
+    const edm = game.endlessMode ? endlessDangerMult(game) : 1;
+    const hpBal = runEnemyHpMult(game);
+    const toothMult = edm * hpBal;
+    if (toothMult !== 1) {
+      for (const tooth of this.bottomTeeth) {
+        const nh = Math.round(tooth.hp * toothMult);
+        tooth.hp = nh;
+        tooth.hpMax = nh;
+        tooth.hpDisplay = nh;
+      }
+    }
+    if (edm > 1) {
+      this.endlessChompLo = [
+        Math.round(CHOMP_DMG_RANGE[0] * edm),
+        Math.round(CHOMP_DMG_RANGE[1] * edm),
+      ];
+      this.endlessChompHi = [
+        Math.round(CHOMP_DMG_RANGE[1] * edm),
+        Math.round((CHOMP_DMG_RANGE[1] + 14) * edm),
+      ];
     }
   }
 
@@ -216,10 +325,25 @@ export class MawBossScene {
 
     if (this.phase === "fight") {
       this.updateCooldowns(dt, p);
-      this.updateTeeth(dt);
-      this.updateChomps(dt, p, game);
-      this.handleInput(dt, game);
-      this.checkWinCondition(game);
+      if (this.potionDrinkCooldown > 0) {
+        this.potionDrinkCooldown = Math.max(0, this.potionDrinkCooldown - dt);
+      }
+      if (this.potionState) {
+        if (!this.paused) {
+          tickManaPotionMiniGame(
+            this.potionState,
+            dt,
+            game.input,
+            () => this.endManaPotionSuccess(p),
+            () => this.endManaPotionFail(),
+          );
+        }
+      } else {
+        this.updateTeeth(dt, p);
+        this.updateChomps(dt, p, game);
+        this.handleInput(dt, game);
+        this.checkWinCondition(game);
+      }
     }
 
     if (this.phase === "win") {
@@ -228,6 +352,19 @@ export class MawBossScene {
         this.done = true;
         if (p.score) p.score.bossesDefeated = (p.score.bossesDefeated || 0) + 1;
         SFX.victory();
+        if (game.endlessMode && game.wormTier === 6) {
+          healPlayerBetweenEndlessLoops(p);
+          game.victoryAbruptReveal = true;
+          game.scenes.replace(new EndlessCrashScene(), game);
+          return;
+        }
+        if (game.endlessMode) {
+          game.wormTier += 1;
+          healPlayerBetweenEndlessLoops(p);
+          game.chamberIndex = 0;
+          game.scenes.replace(new NestWormScene(), game);
+          return;
+        }
         game.scenes.replace(new VictoryScene(), game);
         return;
       }
@@ -270,7 +407,7 @@ export class MawBossScene {
     }
   }
 
-  updateTeeth(dt) {
+  updateTeeth(dt, p) {
     for (const t of this.bottomTeeth) {
       t.wobble += dt * 2.5;
       t.flashT = Math.max(0, t.flashT - dt);
@@ -287,7 +424,7 @@ export class MawBossScene {
             "#ff6a6a", 2, 60, 0.4,
           );
         }
-        if (t.hp === 0) this.knockOutTooth(t);
+        if (t.hp === 0) this.knockOutTooth(t, p);
       }
       // HP bar lerp toward real HP.
       t.hpDisplay += (t.hp - t.hpDisplay) * Math.min(1, dt * 6);
@@ -302,7 +439,7 @@ export class MawBossScene {
           t.knockedOut = false;
           t.flashT = 0.6;
           t.shakeT = 0.5;
-          t.dotT = 0; t.dotDps = 0;
+          t.dotT = 0; t.dotDps = 0; t.bleedStacks = 0;
           this.pushLog(`COLUMN ${t.col + 1}: the molar ERUPTS back up at 50% HP!`);
           SFX.thud();
           screenShake(6, 0.2);
@@ -594,7 +731,7 @@ export class MawBossScene {
     }
 
     // In-lane - resolve with brace mitigation + perfect brace counter.
-    const rawDmg = randInt(CHOMP_DMG_RANGE[0], CHOMP_DMG_RANGE[1]);
+    const rawDmg = randInt(this.endlessChompLo[0], this.endlessChompLo[1]);
     const braced = this.braceTime > 0;
     let finalDmg = rawDmg;
     if (braced) finalDmg = Math.max(1, Math.round(rawDmg * 0.5));
@@ -638,7 +775,7 @@ export class MawBossScene {
       return;
     }
 
-    const rawDmg = randInt(CHOMP_DMG_RANGE[1], CHOMP_DMG_RANGE[1] + 14);
+    const rawDmg = randInt(this.endlessChompHi[0], this.endlessChompHi[1]);
     const braced = this.braceTime > 0;
     const hadCounter = this.perfectBraceReady;
     let finalDmg = rawDmg;
@@ -669,14 +806,16 @@ export class MawBossScene {
   }
 
   applyHitToPlayer(amount, p) {
-    if (this.game && this.game.invulnerable) return;
+    if (p.invulnerable) return;
     const pm = p.pactMods || {};
-    const scaled = Math.max(1, Math.round(amount * (pm.incomingDmgMult || 1)));
+    const cheatM = runIncomingDamageMult(this.game);
+    const scaled = Math.max(1, Math.round(amount * (pm.incomingDmgMult || 1) * cheatM));
     applyDamage(p, scaled);
     this.hitFlash = Math.max(this.hitFlash, 0.35);
   }
 
   handleInput(dt, game) {
+    if (this.potionState) return;
     const p = game.player;
     const mx = game.input.mouseX, my = game.input.mouseY;
 
@@ -729,6 +868,7 @@ export class MawBossScene {
     else if (game.input.wasPressed("e", "E", "2")) this.execute(1, p, game);
     else if (game.input.wasPressed("r", "R", "3")) this.execute(2, p, game);
     else if (game.input.wasPressed("f", "F", "4")) this.execute(3, p, game);
+    else if (game.input.wasPressed("x", "X")) this.doDodgeTwitch(p);
   }
 
   execute(idx, p) {
@@ -736,13 +876,24 @@ export class MawBossScene {
     const pm = p.pactMods || {};
     switch (idx) {
       case 0: {
-        if (p.loadoutId === "plasmids" && l.attack?.plasmCycle && l.plasmModes?.length) {
-          if (p.cooldowns.attack > 0) { SFX.deny(); this.pushLog(`${l.attack.name} is recharging...`); break; }
-          p.plasmModeIndex = (((p.plasmModeIndex || 0) + 1) % l.plasmModes.length);
-          const nm = activePlasmMode(l, p.plasmModeIndex);
-          p.cooldowns.attack = l.attack.cooldown * (pm.attackCdMult || 1);
-          this.pushLog(`Gene mode → ${nm?.label ?? "?"} — bolt: ${nm?.boltName ?? "?"}`);
-          SFX.click();
+        if (p.loadoutId === "plasmids" && l.attack?.plasmBolt && l.plasmModes?.length) {
+          const mode = activePlasmMode(l, p.plasmModeIndex ?? 0);
+          if (!mode) break;
+          const manaCost = mode.manaCost + (p.manaCostBonus || 0);
+          if (p.cooldowns.attack > 0) { SFX.deny(); this.pushLog(`${mode.boltName} is recharging...`); break; }
+          if (p.mana < manaCost) { SFX.deny(); this.pushLog("Not enough mana!"); break; }
+          p.mana -= manaCost;
+          p.cooldowns.attack = mode.cooldown * (pm.attackCdMult || 1);
+          const boltMove = {
+            name: mode.boltName,
+            dmg: mode.dmg,
+            sfx: mode.sfx || "cast",
+            multiLane: false,
+            lifestealPct: 0,
+            poisonPct: 0,
+            poisonTime: 0,
+          };
+          this.strikeCurrentLane(boltMove, "attack", p, { plasmElement: mode.plasmElement });
           break;
         }
 
@@ -755,24 +906,13 @@ export class MawBossScene {
         break;
       }
       case 1: {
-        if (p.loadoutId === "plasmids" && l.special?.plasmBolt && l.plasmModes?.length) {
-          const mode = activePlasmMode(l, p.plasmModeIndex ?? 0);
-          if (!mode) break;
-          const manaCost = mode.manaCost + (p.manaCostBonus || 0);
-          if (p.cooldowns.special > 0) { SFX.deny(); this.pushLog(`${mode.boltName} is recharging...`); break; }
-          if (p.mana < manaCost) { SFX.deny(); this.pushLog("Not enough mana!"); break; }
-          p.mana -= manaCost;
-          p.cooldowns.special = mode.cooldown * (pm.specialCdMult || 1);
-          const boltMove = {
-            name: mode.boltName,
-            dmg: mode.dmg,
-            sfx: mode.sfx || "cast",
-            multiLane: false,
-            lifestealPct: 0,
-            poisonPct: 0,
-            poisonTime: 0,
-          };
-          this.strikeCurrentLane(boltMove, "special", p, { plasmElement: mode.plasmElement });
+        if (p.loadoutId === "plasmids" && l.special?.plasmCycle && l.plasmModes?.length) {
+          if (p.cooldowns.special > 0) { SFX.deny(); this.pushLog(`${l.special.name} is on cooldown...`); break; }
+          p.plasmModeIndex = (((p.plasmModeIndex || 0) + 1) % l.plasmModes.length);
+          const nm = activePlasmMode(l, p.plasmModeIndex);
+          p.cooldowns.special = l.special.cooldown * (pm.specialCdMult || 1);
+          this.pushLog(`Gene → ${nm?.label ?? "?"} • next Q bolt: ${nm?.boltName ?? "?"}`);
+          SFX.click();
           break;
         }
 
@@ -794,21 +934,7 @@ export class MawBossScene {
         break;
       }
       case 2: {
-        if ((p.dodgeRollCooldown || 0) > 0) {
-          SFX.deny();
-          this.pushLog("Dodge needs a heartbeat to recover.");
-          return;
-        }
-        const dir = Math.random() < 0.5 ? -1 : 1;
-        this.col = Math.max(0, Math.min(NUM_COLS - 1, this.col + dir));
-        p.mana = Math.min(p.manaMax, p.mana + 3);
-        p.dodgeRollCooldown = 1.22;
-        this.dodgeIFrameT = 0.14;
-        this.dodgeFlashT = 0.45;
-        SFX.dodge();
-        this.pushLog(dir < 0
-          ? "You twitch LEFT (+3 MP)."
-          : "You twitch RIGHT (+3 MP).");
+        this.tryEnterManaPotion(p);
         break;
       }
       case 3: {
@@ -847,7 +973,8 @@ export class MawBossScene {
     const critMult = isCrit ? 1.6 : 1;
     const elemMult = extras.plasmElement ? plasmElementMult(extras.plasmElement, "teeth") : 1;
     const raw = randInt(move.dmg[0], move.dmg[1]);
-    const centerDmg = Math.max(1, Math.round(raw * mult * dmgMult * critMult * elemMult));
+    const diced = applyOutboundStrikeDice(raw, pm);
+    const centerDmg = Math.max(1, Math.round(diced * mult * dmgMult * critMult * elemMult));
 
     const centerTooth = this.bottomTeeth[this.col];
     if (!centerTooth) return;
@@ -861,6 +988,11 @@ export class MawBossScene {
     SFX[move.sfx] ? SFX[move.sfx]() : SFX.hit();
     const tag = isCrit ? "CRITICAL!" : (mult > 1 ? (this.matchupLabel?.text || "") : "");
     this.dealToTooth(centerTooth, centerDmg, `${tag} ${move.name}!`.trim(), kind, p);
+    const riot = typeof move.riotSelfHp === "number" ? move.riotSelfHp : 0;
+    if (riot > 0 && !p.invulnerable) {
+      applyDamage(p, riot, { countHitScore: false });
+      this.pushLog(`Shout tears your throat — ${riot} HP.`);
+    }
 
     let totalDealt = centerDmg;
     const multiSplashFrac = typeof move.multiLaneSplashFrac === "number"
@@ -916,10 +1048,19 @@ export class MawBossScene {
           }
         }
       }
+      const lbl = move.dotLabel || "POISON";
       for (const t of targets) {
-        t.dotT = Math.max(t.dotT || 0, pTime);
-        t.dotDps = Math.max(t.dotDps || 0, pPct * t.hpMax);
-        t.dotLabel = move.dotLabel || "BLEED";
+        if (lbl === "BLEED") {
+          const bs = Math.min(3, (t.bleedStacks || 0) + 1);
+          t.bleedStacks = bs;
+          t.dotT = Math.max(t.dotT || 0, pTime);
+          t.dotDps = (pPct * t.hpMax * bs) / 3;
+          t.dotLabel = "BLEED";
+        } else {
+          t.dotT = Math.max(t.dotT || 0, pTime);
+          t.dotDps = Math.max(t.dotDps || 0, pPct * t.hpMax);
+          t.dotLabel = lbl;
+        }
       }
     }
   }
@@ -958,6 +1099,7 @@ export class MawBossScene {
   }
 
   knockOutTooth(tooth, p) {
+    if (p) applyTamerKillGrowth(p);
     tooth.knockedOut = true;
     tooth.knockedT = 0;
     tooth.respawnIn = TOOTH_RESPAWN_SECS;
@@ -986,7 +1128,8 @@ export class MawBossScene {
   // ======================== RENDER ========================
   render(ctx, game) {
     const ch = this.chamber;
-    drawFleshBackground(ctx, this.t, ch.wormTint * 1.05, ch.palette);
+    const pal = resolveEndlessPalette(game, ch.palette, ch.wormTint);
+    drawFleshBackground(ctx, this.t, pal.wormTint * 1.05, pal.palette);
     drawVeins(ctx, this.t, this.chamberIdx + 11);
 
     // Distant daylight through any knocked-out gaps. Done before teeth so
@@ -1068,6 +1211,10 @@ export class MawBossScene {
     this.drawHUD(ctx, game);
     this.drawContextHint(ctx, game);
     this.drawLog(ctx);
+
+    if (this.potionState) {
+      drawManaPotionModal(ctx, this.potionState, COLORS, game.player);
+    }
 
     if (this.paused) {
       ctx.fillStyle = "rgba(0,0,0,0.65)";
@@ -1446,23 +1593,63 @@ export class MawBossScene {
   drawActionBar(ctx, game) {
     const p = game.player;
     const l = p.loadout;
+    const pam = p.pactMods?.attackCdMult || 1;
+    const psm = p.pactMods?.specialCdMult || 1;
     const plMode = p.loadoutId === "plasmids" ? activePlasmMode(l, p.plasmModeIndex ?? 0) : null;
+    const mb = (p.manaCostBonus || 0);
+    const potCd = this.potionDrinkCooldown > 0;
+    const vialCdStr = potCd ? `${this.potionDrinkCooldown.toFixed(1)}s` : "READY";
+
     const items = plMode
       ? [
-        { key: "Q/1", name: `${plMode.label} (cycle)`,  info: `${l.attack.name} — ${l.attack.cooldown.toFixed(2)}s`,
-          cd: p.cooldowns.attack,  cdMax: l.attack.cooldown * (p.pactMods?.attackCdMult || 1) },
-        { key: "E/2", name: plMode.boltName, info: `DMG ${plMode.dmg[0]}-${plMode.dmg[1]}  MP ${plMode.manaCost + (p.manaCostBonus || 0)}`,
-          cd: p.cooldowns.special, cdMax: plMode.cooldown * (p.pactMods?.specialCdMult || 1) },
-        { key: "R/3", name: "Dodge",  info: "+MP, brief i-frames",       cd: 0, cdMax: 0 },
-        { key: "F/4", name: "Brace",  info: "halve next chomp",           cd: 0, cdMax: 0 },
+        {
+          key: "Q/1",
+          name: plMode.boltName.slice(0, 22),
+          info: `${plMode.dmg[0]}–${plMode.dmg[1]} · ${plMode.manaCost + mb} MP`,
+          cd: p.cooldowns.attack,
+          cdMax: plMode.cooldown * pam,
+        },
+        {
+          key: "E/2",
+          name: l.special?.name ?? "Cycle",
+          info: `Next: ${plMode.label} · tap to rotate mode`,
+          cd: p.cooldowns.special,
+          cdMax: (l.special?.cooldown || 0) * psm,
+        },
+        {
+          key: "R/3",
+          name: "Mana Vial",
+          info: potCd ? `Recharging ${vialCdStr}` : "Pop cork · pour (full MP)",
+          cd: potCd ? this.potionDrinkCooldown : 0,
+          cdMax: potCd ? POTION_DRINK_CD_SEC : 0,
+        },
+        {
+          key: "F/4",
+          name: "Brace",
+          info: "Halve chomp · perfect = counter",
+          cd: 0,
+          cdMax: 0,
+        },
       ]
       : [
-        { key: "Q/1", name: l.attack.name,  info: `DMG ${l.attack.dmg[0]}-${l.attack.dmg[1]}  MP ${l.attack.manaCost + (p.manaCostBonus || 0)}`,
-          cd: p.cooldowns.attack,  cdMax: l.attack.cooldown * (p.pactMods?.attackCdMult || 1) },
-        { key: "E/2", name: l.special.name, info: `DMG ${l.special.dmg[0]}-${l.special.dmg[1]}  MP ${l.special.manaCost + (p.manaCostBonus || 0)}`,
-          cd: p.cooldowns.special, cdMax: l.special.cooldown * (p.pactMods?.specialCdMult || 1) },
-        { key: "R/3", name: "Dodge",  info: "+MP, brief i-frames",       cd: 0, cdMax: 0 },
-        { key: "F/4", name: "Brace",  info: "halve next chomp",           cd: 0, cdMax: 0 },
+        { key: "Q/1", name: l.attack.name,  info: `${l.attack.dmg[0]}–${l.attack.dmg[1]} · ${l.attack.manaCost + mb} MP`,
+          cd: p.cooldowns.attack,  cdMax: l.attack.cooldown * pam },
+        { key: "E/2", name: l.special.name, info: `${l.special.dmg[0]}–${l.special.dmg[1]} · ${l.special.manaCost + mb} MP`,
+          cd: p.cooldowns.special, cdMax: l.special.cooldown * psm },
+        {
+          key: "R/3",
+          name: "Mana Vial",
+          info: potCd ? `Recharging ${vialCdStr}` : "Pop cork · pour (full MP)",
+          cd: potCd ? this.potionDrinkCooldown : 0,
+          cdMax: potCd ? POTION_DRINK_CD_SEC : 0,
+        },
+        {
+          key: "F/4",
+          name: "Brace",
+          info: "Halve chomp · perfect = counter",
+          cd: 0,
+          cdMax: 0,
+        },
       ];
     const barY = H - 86;
     const barH = 68;
@@ -1530,8 +1717,8 @@ export class MawBossScene {
       color = "#e6f0a0";
     } else {
       msg = p.loadoutId === "plasmids"
-        ? "Move [A/D]; [Q/1] cycle gene mode · [E/2] Gene Bolt hits the tooth in your lane."
-        : "Move [A/D], swing [Q/1] or [E/2] at the tooth in your lane.";
+        ? "Move [A/D]; [Q/1] Gene Bolt · [E/2] cycle element · [R/3] mana vial · [X] dodge twitch."
+        : "Move [A/D]; swing [Q/1] / [E/2] · [R/3] mana vial · [X] dodge.";
       color = COLORS.bone;
     }
 
@@ -1566,7 +1753,7 @@ export class MawBossScene {
     }
     // Footer help strip - compact.
     drawText(ctx,
-      "[A/D] Move · click lane / lower arena · [Q/1–F/4] or click action cards · [P] Pause",
+      "[A/D] lanes · bottom cards · [R/3] mana vial · [X] dodge · [P] pause",
       x + 12, y + h - 16, {
         size: 12, color: COLORS.boneDim, maxWidth: w - 28,
       });

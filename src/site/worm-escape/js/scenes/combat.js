@@ -16,11 +16,26 @@ import {
 } from "../engine/pointer.js";
 import {
   applyDamage, matchupMultiplier, matchupLabel, recordDirectHpHit, recordDirectArmorHit,
+  applyTamerKillGrowth,
   plasmElementMult, activePlasmMode,
 } from "../content/player.js";
 import { TransitionScene } from "./transition.js";
 import { PactScene } from "./pact.js";
 import { GameOverScene } from "./gameover.js";
+import {
+  pickTwoDistinctPotionKeys,
+  POTION_DRINK_CD_SEC,
+  POTION_MINIGAME_TIME_SEC,
+  tickManaPotionMiniGame,
+  drawManaPotionModal,
+} from "../engine/manaPotion.js";
+import { applyOutboundStrikeDice } from "../engine/strikeDamageMods.js";
+import {
+  endlessDangerMult,
+  endlessEnemyCssFilter,
+  resolveEndlessPalette,
+} from "../content/endlessStyle.js";
+import { runEnemyHpMult, runIncomingDamageMult } from "../content/gameBalance.js";
 
 /** Five tactical columns — guardian and player must align to land strikes (unless weapon skips lanes). */
 const NUM_COMBAT_LANES = 5;
@@ -45,22 +60,6 @@ function truncateLogLine(s, maxChars = LOG_LINE_MAX_CHARS) {
   return str.slice(0, Math.max(0, maxChars - 1)) + "…";
 }
 
-/** Single-letter keys bound elsewhere — never used for cork/pour random prompts. */
-const POTION_KEY_FORBIDDEN = new Set([
-  // Combat: move (A/D/W/S), row (Q/E/R/F + 1–4), menus (W/S), potion entry (R/3).
-  "a", "d", "e", "f", "q", "r", "s", "w", "1", "2", "3", "4",
-  // Global (main.js): pause, mute, cheats, fullscreen (=).
-  "m", "p", "\\", "=",
-  // Documented third (Cryo) on some loadouts.
-  "t",
-]);
-
-const POTION_KEY_POOL = "abcdefghijklmnopqrstuvwxyz"
-  .split("")
-  .filter((c) => !POTION_KEY_FORBIDDEN.has(c));
-const POTION_DRINK_CD_SEC = 22;
-const POTION_MINIGAME_TIME_SEC = 11;
-
 // Per-chamber damage multiplier applied to every source of damage the
 // PLAYER receives (acid gouts, melee hits, heavy slams, combo jabs).
 // Stomach baseline, Gullet +45%. Same curve as climb hazards.
@@ -74,8 +73,10 @@ const CHAMBER_DMG_SCALE = [1.0, 1.18, 1.32, 1.45];
 //          (so you basically have to time brace so it covers the last 2+).
 
 export class CombatScene {
-  constructor(chamberIdx) {
+  constructor(chamberIdx, opts = {}) {
     this.chamberIdx = chamberIdx;
+    /** Bubblegum cheat: guardian fight 1 of 2 in the same valve */
+    this.bubbleFightIndex = opts.bubbleFightIndex ?? 1;
     this.chamber = CHAMBERS[chamberIdx];
     const ed = ENEMIES[this.chamber.guardian];
     const hp = Math.floor(ed.hp * (1 + chamberIdx * 0.15));
@@ -189,13 +190,11 @@ export class CombatScene {
     this.potionDrinkCooldown = 0;
   }
 
-  pickTwoDistinctPotionKeys() {
-    let a = POTION_KEY_POOL[randInt(0, POTION_KEY_POOL.length - 1)];
-    let b = POTION_KEY_POOL[randInt(0, POTION_KEY_POOL.length - 1)];
-    for (let i = 0; i < 20 && b === a; i++) {
-      b = POTION_KEY_POOL[randInt(0, POTION_KEY_POOL.length - 1)];
-    }
-    return [a, b === a ? POTION_KEY_POOL.find((k) => k !== a) ?? "z" : b];
+  painMult(game) {
+    const base = CHAMBER_DMG_SCALE[this.chamberIdx] || 1;
+    const e = game?.endlessMode ? endlessDangerMult(game) : 1;
+    const cheatM = runIncomingDamageMult(game);
+    return base * e * cheatM;
   }
 
   pushLog(line) {
@@ -216,7 +215,7 @@ export class CombatScene {
       this.pushLog("Mana is already topped off.");
       return;
     }
-    const [corkKey, pourKey] = this.pickTwoDistinctPotionKeys();
+    const [corkKey, pourKey] = pickTwoDistinctPotionKeys();
     this.potionState = {
       corkKey,
       pourKey,
@@ -250,47 +249,17 @@ export class CombatScene {
   }
 
   updatePotionMiniGame(dt, game) {
-    const st = this.potionState;
-    if (!st) return;
-    const inp = game.input;
-
-    if (this.paused) return;
-
-    st.timeLeft -= dt;
-    if (st.hintFlash > 0) st.hintFlash -= dt;
-
-    if (st.timeLeft <= 0) {
-      this.endManaPotionFail();
-      return;
-    }
-
-    if (st.phase === "cork") {
-      for (const k of POTION_KEY_POOL) {
-        if (k === st.corkKey) continue;
-        if (inp.wasPressed(k)) {
-          st.hintFlash = 0.4;
-          st.timeLeft -= 0.72;
-          SFX.deny();
-          break;
-        }
-      }
-      if (inp.wasPressed(st.corkKey)) {
-        st.corkPop = true;
-        st.phase = "pour";
-        st.tilt = 0;
-        SFX.grab();
-      }
-    } else if (st.phase === "pour") {
-      if (inp.isDown(st.pourKey)) {
-        st.tilt = Math.min(1, st.tilt + dt * 3.4);
-        const drain = dt * st.tilt * st.tilt * 0.92 + dt * st.tilt * 0.12;
-        st.liquid = Math.max(0, st.liquid - drain);
-        if (st.liquid <= 0.04) this.endManaPotionSuccess(game.player);
-      } else {
-        st.tilt = Math.max(0, st.tilt - dt * 0.95);
-      }
-    }
+    if (!this.potionState || this.paused) return;
+    tickManaPotionMiniGame(
+      this.potionState,
+      dt,
+      game.input,
+      () => this.endManaPotionSuccess(game.player),
+      () => this.endManaPotionFail(),
+    );
   }
+
+
 
   /** Four touch rows for Attack 1 — Attack 2 — Potion — Brace (canvas space). */
   actionButtonRects() {
@@ -326,6 +295,28 @@ export class CombatScene {
     }
     if (p.synergyTitle) {
       this.pushLog(`SYNERGY ACTIVE: ${p.synergyTitle}`);
+    }
+
+    const hpBal = runEnemyHpMult(game);
+    if (hpBal !== 1) {
+      const nhBal = Math.max(1, Math.round(this.enemy.hp * hpBal));
+      this.enemy.hp = nhBal;
+      this.enemy.hpMax = nhBal;
+      this.enemyHpDisplay = nhBal;
+    }
+
+    if (game.endlessMode) {
+      const m = endlessDangerMult(game);
+      const nh = Math.round(this.enemy.hp * m);
+      this.enemy.hp = nh;
+      this.enemy.hpMax = nh;
+      this.enemyHpDisplay = nh;
+      const sr = (r) => (!r ? r : [
+        Math.max(1, Math.round(r[0] * m)),
+        Math.max(1, Math.round(r[1] * m)),
+      ]);
+      if (this.enemy.attackDmg) this.enemy.attackDmg = sr(this.enemy.attackDmg);
+      if (this.enemy.heavyDmg) this.enemy.heavyDmg = sr(this.enemy.heavyDmg);
     }
   }
 
@@ -381,8 +372,8 @@ export class CombatScene {
     // Acid timer keeps ticking in combat too, and the corrosion itself
     // scales with chamber difficulty. Corrosion tracks into totalHpLost
     // but NOT hitsTaken (it's a continuous tick, not a distinct hit).
-    const corrScale = CHAMBER_DMG_SCALE[this.chamberIdx] || 1;
-    if (!this.potionState) {
+    const corrScale = this.painMult(game);
+    if (!this.potionState && !p.invulnerable) {
       p.acidTimer -= dt * p.acidResist;
       if (p.acidTimer <= 0) {
         if (p.armor > 0) {
@@ -409,8 +400,8 @@ export class CombatScene {
         this.tickTurretDPS(dt, p);
         this.tickChainShred(dt, p);
         if (this.enemy.stunT > 0) this.enemy.stunT -= dt;
-        this.updateAcidGouts(dt, p);
-        this.updateEnemyMelee(dt, p);
+        this.updateAcidGouts(dt, p, game);
+        this.updateEnemyMelee(dt, p, game);
         this.handleMenu(dt, game);
       } else {
         this.updatePotionMiniGame(dt, game);
@@ -526,11 +517,13 @@ export class CombatScene {
         if (healed > 0) this.pushLog(`BLOOD TITHE: +${Math.ceil(healed)} HP stolen.`);
       }
 
+      applyTamerKillGrowth(p);
+
       // Bloated elite: death explosion. Brace just before killing blow to halve it.
       if (this.eliteTwist === "BLOATED" && !this.bloatedExploded) {
         this.bloatedExploded = true;
         const raw = this.braceTime > 0 ? 10 : 25;
-        const dmg = Math.round(raw * (CHAMBER_DMG_SCALE[this.chamberIdx] || 1));
+        const dmg = Math.round(raw * this.painMult(game));
         const { hpTaken, armorTaken } = applyDamage(p, dmg);
         screenShake(22, 0.55);
         this.particles.burst(W / 2, FLOOR_Y - 200, "#ff6a30", 70, 420, 1.1);
@@ -552,11 +545,25 @@ export class CombatScene {
       if (this.winTimer <= 0) {
         this.done = true;
         // v0.12 route: Combat -> Pact picker -> Transition -> next Climb.
-        // Elite kills grant a 4-card choice as a spoil.
-        game.scenes.replace(
-          new PactScene(this.chamberIdx, { eliteReward: !!this.eliteKill }),
-          game,
-        );
+        // Bubblegum: second guardian same valve, then four 3-card pact seals (no Elite 4-spread bonus).
+        // Elite kills grant a 4-card choice as a spoil when Bubblegum is off.
+        const ch = CHAMBERS[this.chamberIdx];
+        const bubbleHere =
+          !!(game.bubblegumMode && !ch?.isMaw && ch?.guardian);
+        if (bubbleHere && this.bubbleFightIndex < 2) {
+          game.scenes.replace(
+            new CombatScene(this.chamberIdx, { bubbleFightIndex: 2 }),
+            game,
+          );
+          return;
+        }
+        /** @type {{ eliteReward: boolean, bubbleSequential?: number }} */
+        const pactOpts = { eliteReward: !!this.eliteKill };
+        if (bubbleHere && this.bubbleFightIndex >= 2) {
+          pactOpts.bubbleSequential = 4;
+          pactOpts.eliteReward = false;
+        }
+        game.scenes.replace(new PactScene(this.chamberIdx, pactOpts), game);
       }
     }
   }
@@ -675,7 +682,7 @@ export class CombatScene {
     }
   }
 
-  updateAcidGouts(dt, p) {
+  updateAcidGouts(dt, p, game) {
     this.goutsTimer -= dt;
     if (this.goutsTimer <= 0) {
       let [mn, mx] = this.enemy.acidInterval;
@@ -705,7 +712,7 @@ export class CombatScene {
 
     for (const g of this.gouts) g.y += g.vy * dt;
 
-    const scale = CHAMBER_DMG_SCALE[this.chamberIdx] || 1;
+    const scale = this.painMult(game);
     const enrageBonus = this.enraged ? 1.2 : 1;
     for (const g of this.gouts) {
       if (g._hit) continue;
@@ -751,8 +758,8 @@ export class CombatScene {
 
   // Apply a single melee hit from the current move type. `hitDmg` is the
   // already-rolled raw number. Handles brace, perfect-brace, logging.
-  landEnemyMelee(p, rawDmg, moveType) {
-    const scale = CHAMBER_DMG_SCALE[this.chamberIdx] || 1;
+  landEnemyMelee(p, rawDmg, moveType, game) {
+    const scale = this.painMult(game);
     const enrageBonus = this.enraged ? 1.2 : 1;
     let dmg = Math.round(rawDmg * scale * enrageBonus);
     let braceNote = "";
@@ -789,7 +796,7 @@ export class CombatScene {
     this.pushLog(line);
   }
 
-  updateEnemyMelee(dt, p) {
+  updateEnemyMelee(dt, p, game) {
     if ((this.enemy.stunT || 0) > 0) return;
     if ((this.enemy.slowT || 0) > 0) {
       this.enemy.slowT = Math.max(0, this.enemy.slowT - dt);
@@ -801,7 +808,7 @@ export class CombatScene {
       this.comboHitTimer -= dt * slow;
       if (this.comboHitTimer <= 0) {
         const raw = randInt(this.enemy.attackDmg[0], this.enemy.attackDmg[1]) * 0.55;
-        this.landEnemyMelee(p, raw, "combo");
+        this.landEnemyMelee(p, raw, "combo", game);
         this.comboHitsLeft--;
         this.comboHitTimer = 0.42;
         if (this.comboHitsLeft === 0) {
@@ -821,18 +828,18 @@ export class CombatScene {
         if (move === "heavy") {
           // Heavy slam ignores lane-dodging entirely.
           const raw = randInt(this.enemy.heavyDmg[0], this.enemy.heavyDmg[1]);
-          this.landEnemyMelee(p, raw, "heavy");
+          this.landEnemyMelee(p, raw, "heavy", game);
           this.enemyTurnTimer = rand(3.2, 4.2) * (this.enraged ? 0.7 : 1);
         } else if (move === "combo") {
           // Start triple strike - first hit lands immediately, next ones via
           // the comboHitsLeft loop above.
           const raw = randInt(this.enemy.attackDmg[0], this.enemy.attackDmg[1]) * 0.55;
-          this.landEnemyMelee(p, raw, "combo");
+          this.landEnemyMelee(p, raw, "combo", game);
           this.comboHitsLeft = 2;
           this.comboHitTimer = 0.42;
         } else {
           const raw = randInt(this.enemy.attackDmg[0], this.enemy.attackDmg[1]);
-          this.landEnemyMelee(p, raw, "jab");
+          this.landEnemyMelee(p, raw, "jab", game);
           this.enemyTurnTimer = rand(2.6, 3.4) * (this.enraged ? 0.7 : 1);
         }
         this.enemyTelling = false;
@@ -937,14 +944,34 @@ export class CombatScene {
     const pm = p.pactMods || {};
     switch (idx) {
       case 0: {
-        if (p.loadoutId === "plasmids" && l.attack?.plasmCycle && l.plasmModes?.length) {
-          if (p.cooldowns.attack > 0) { SFX.deny(); this.pushLog(`${l.attack.name} is recharging...`); break; }
-          p.plasmModeIndex = (((p.plasmModeIndex || 0) + 1) % l.plasmModes.length);
-          const nm = activePlasmMode(l, p.plasmModeIndex);
-          p.cooldowns.attack = l.attack.cooldown * (pm.attackCdMult || 1);
-          this.pushLog(`Gene mode → ${nm?.label ?? "?"} — bolt: ${nm?.boltName ?? "?"}`);
-          SFX.click();
-          this.turnLocked = 0.12;
+        if (p.loadoutId === "plasmids" && l.attack?.plasmBolt && l.plasmModes?.length) {
+          const mode = activePlasmMode(l, p.plasmModeIndex ?? 0);
+          if (!mode) break;
+          const manaCost = mode.manaCost + (p.manaCostBonus || 0);
+          if (p.cooldowns.attack > 0) { SFX.deny(); this.pushLog(`${mode.boltName} is recharging...`); break; }
+          if (p.mana < manaCost) { SFX.deny(); this.pushLog("Not enough mana!"); break; }
+          p.mana -= manaCost;
+          p.cooldowns.attack = mode.cooldown * (pm.attackCdMult || 1);
+          const dmg = randInt(mode.dmg[0], mode.dmg[1]);
+          const opts = {
+            kind: "attack",
+            hexMark: false,
+            multiLane: false,
+            movePoisonPct: p.synergyId === "grimReaper" ? 0 : 0,
+            movePoisonTime: 0,
+            dotLabel: "POISON",
+            lifestealPct: 0,
+            plasmElement: mode.plasmElement,
+          };
+          this.dealToEnemy(dmg, mode.boltName, mode.sfx || "cast", p, opts);
+          if (mode.shockStun) {
+            this.enemy.stunT = Math.max(this.enemy.stunT || 0, mode.shockStun || 2.5);
+          }
+          if (mode.plasmElement === "cryo" || mode.slowMul) {
+            this.enemy.slowMul = mode.slowMul || 0.45;
+            this.enemy.slowT = Math.max(this.enemy.slowT || 0, mode.slowT || 1.5);
+          }
+          this.turnLocked = 0.45;
           break;
         }
 
@@ -994,34 +1021,14 @@ export class CombatScene {
         break;
       }
       case 1: {
-        if (p.loadoutId === "plasmids" && l.special?.plasmBolt && l.plasmModes?.length) {
-          const mode = activePlasmMode(l, p.plasmModeIndex ?? 0);
-          if (!mode) break;
-          const manaCost = mode.manaCost + (p.manaCostBonus || 0);
-          if (p.cooldowns.special > 0) { SFX.deny(); this.pushLog(`${mode.boltName} is recharging...`); break; }
-          if (p.mana < manaCost) { SFX.deny(); this.pushLog("Not enough mana!"); break; }
-          p.mana -= manaCost;
-          p.cooldowns.special = mode.cooldown * (pm.specialCdMult || 1);
-          const dmg = randInt(mode.dmg[0], mode.dmg[1]);
-          const opts = {
-            kind: "special",
-            hexDetonate: false,
-            multiLane: false,
-            movePoisonPct: p.synergyId === "grimReaper" ? 0 : 0,
-            movePoisonTime: 0,
-            dotLabel: "POISON",
-            lifestealPct: 0,
-            plasmElement: mode.plasmElement,
-          };
-          this.dealToEnemy(dmg, mode.boltName, mode.sfx || "cast", p, opts);
-          if (mode.shockStun) {
-            this.enemy.stunT = Math.max(this.enemy.stunT || 0, mode.shockStun || 2.5);
-          }
-          if (mode.plasmElement === "cryo" || mode.slowMul) {
-            this.enemy.slowMul = mode.slowMul || 0.45;
-            this.enemy.slowT = Math.max(this.enemy.slowT || 0, mode.slowT || 1.5);
-          }
-          this.turnLocked = 0.45;
+        if (p.loadoutId === "plasmids" && l.special?.plasmCycle && l.plasmModes?.length) {
+          if (p.cooldowns.special > 0) { SFX.deny(); this.pushLog(`${l.special.name} is on cooldown...`); break; }
+          p.plasmModeIndex = (((p.plasmModeIndex || 0) + 1) % l.plasmModes.length);
+          const nm = activePlasmMode(l, p.plasmModeIndex);
+          p.cooldowns.special = l.special.cooldown * (pm.specialCdMult || 1);
+          this.pushLog(`Gene mode → ${nm?.label ?? "?"} — next bolt Q: ${nm?.boltName ?? "?"}`);
+          SFX.click();
+          this.turnLocked = 0.12;
           break;
         }
 
@@ -1077,6 +1084,11 @@ export class CombatScene {
           plasmElement: l.special.plasmElement || undefined,
         };
         this.dealToEnemy(dmg, l.special.name, l.special.sfx, p, opts);
+        const riot = typeof l.special.riotSelfHp === "number" ? l.special.riotSelfHp : 0;
+        if (riot > 0 && !p.invulnerable) {
+          applyDamage(p, riot, { countHitScore: false });
+          this.pushLog(`Amplifier screams back — −${riot} HP (riot feedback).`);
+        }
         if (l.special.shockStun) this.enemy.stunT = Math.max(this.enemy.stunT || 0, l.special.shockStun || 2.5);
         this.turnLocked = 0.45;
         break;
@@ -1121,13 +1133,8 @@ export class CombatScene {
   } = {}, p = null) {
     const pm = (p && p.pactMods) || {};
     const mult = typeof hitMultPass === "number" ? hitMultPass : (this.matchupMult || 1);
-    let base = rawDmg;
-    if (pm.gamblerVariance && typeof rawDmg === "number") {
-      base = Math.max(
-        1,
-        Math.round(rawDmg * (0.25 + Math.random() * (3.5 - 0.25))),
-      );
-    }
+    let base = typeof rawDmg === "number" ? rawDmg : 0;
+    base = applyOutboundStrikeDice(Math.round(base), pm);
     const counterMult = counterOn ? (pm.counterMult || 1.5) : 1;
     const kindMult = kind === "special"
       ? (pm.specialDmgMult || 1)
@@ -1136,8 +1143,6 @@ export class CombatScene {
     const hpFrac = this.enemy.hp / Math.max(1, this.enemy.hpMax || 1);
     const execOn = !!(pm.executeThreshold && hpFrac <= pm.executeThreshold);
     const execMult = execOn ? (pm.executeBonus || 1) : 1;
-    const tamerMult = (pm.tamerCull && hpFrac <= (pm.tamerCullThreshold ?? 0.38))
-      ? (pm.tamerCullMult || 1.85) : 1;
     let isCrit = (pm.critChance || 0) > 0 && Math.random() < (pm.critChance || 0);
     let critMult = isCrit ? 1.6 : 1;
     if (critMult >= 1.5 && p?.synergyId === "scout" && Math.random() < 0.5) {
@@ -1149,7 +1154,7 @@ export class CombatScene {
       markMult = 1 + (consumeMarks ? this.hexMarks * 0.6 : Math.min(this.hexMarks, 1) * 0.2);
     }
     const dmg = Math.max(1, Math.round(
-      base * mult * counterMult * kindMult * dmgMult * execMult * tamerMult * critMult * markMult,
+      base * mult * counterMult * kindMult * dmgMult * execMult * critMult * markMult,
     ));
     return { dmg, isCrit, execOn, consumedMarks: consumeMarks ? this.hexMarks : 0 };
   }
@@ -1353,10 +1358,18 @@ export class CombatScene {
     const poisonTime = Math.max(pm.poisonTime ?? 0, movePoisonTime);
     if (poisonPct > 0 && poisonTime > 0) {
       this.enemy.poisonT = Math.max(this.enemy.poisonT || 0, poisonTime);
-      this.enemy.poisonDps = Math.max(this.enemy.poisonDps || 0,
-        poisonPct * this.enemy.hpMax);
-      this.enemy.poisonLabel = dotLabel;
-      this.poisonFlashT = 0.6;
+      if (dotLabel === "BLEED") {
+        const bs = Math.min(3, (this.enemy.bleedStacks || 0) + 1);
+        this.enemy.bleedStacks = bs;
+        this.enemy.poisonDps = (poisonPct * this.enemy.hpMax * bs) / 3;
+        this.enemy.poisonLabel = dotLabel;
+        this.poisonFlashT = 0.65;
+      } else {
+        this.enemy.poisonDps = Math.max(this.enemy.poisonDps || 0,
+          poisonPct * this.enemy.hpMax);
+        this.enemy.poisonLabel = dotLabel;
+        this.poisonFlashT = 0.6;
+      }
     }
     if (p.synergyId === "grimReaper") {
       const rf = 0.072;
@@ -1379,11 +1392,12 @@ export class CombatScene {
     const p = game.player;
     const ch = this.chamber;
 
-    drawFleshBackground(ctx, this.t, ch.wormTint * 1.05, ch.palette);
+    const pal = resolveEndlessPalette(game, ch.palette, ch.wormTint);
+    drawFleshBackground(ctx, this.t, pal.wormTint * 1.05, pal.palette);
     drawVeins(ctx, this.t, this.chamberIdx + 5);
 
     this.drawSphincter(ctx);
-    this.drawEnemy(ctx);
+    this.drawEnemy(ctx, game);
     this.drawLanes(ctx);
 
     for (const tg of this.telegraphs) this.drawTelegraph(ctx, tg);
@@ -1446,151 +1460,7 @@ export class CombatScene {
 
   /** Modal pop-cork → tilt-pour minigame; combat input is routed here while active. */
   drawPotionMiniGame(ctx, game) {
-    const st = this.potionState;
-    const p = game.player;
-    if (!st) return;
-
-    ctx.save();
-    ctx.fillStyle = "rgba(8, 2, 12, 0.62)";
-    ctx.fillRect(0, 0, W, H);
-
-    const panelX = W / 2 - 274;
-    const panelY = H / 2 - 246;
-    const panelW = 548;
-    const panelH = 428;
-
-    ctx.fillStyle = "rgba(18, 8, 28, 0.96)";
-    roundRect(ctx, panelX + 6, panelY + 8, panelW - 12, panelH - 16, 16);
-    ctx.fill();
-    ctx.strokeStyle = st.hintFlash > 0 ? "rgba(255,80,80,0.9)" : "rgba(180, 140, 220, 0.45)";
-    ctx.lineWidth = st.hintFlash > 0 ? 3.5 : 2;
-    roundRect(ctx, panelX + 6, panelY + 8, panelW - 12, panelH - 16, 16);
-    ctx.stroke();
-
-    drawText(ctx, "MANA VIAL", W / 2, panelY + 44, {
-      size: 28, align: "center", bold: true, color: COLORS.bile,
-      glow: "#204040",
-    });
-    const phaseLbl = st.phase === "cork"
-      ? `Pop cork → press  [ ${st.corkKey.toUpperCase()} ]`
-      : `Pour out → HOLD  [ ${st.pourKey.toUpperCase()} ]  to tilt`;
-    drawText(ctx, phaseLbl, W / 2, panelY + 84, {
-      size: 16, align: "center", color: COLORS.bone, maxWidth: panelW - 40,
-      bold: true,
-    });
-    drawText(ctx,
-      `TIME  ${Math.max(0, st.timeLeft).toFixed(1)}s  ·  MP  ${Math.floor(p.mana)}/${Math.floor(p.manaMax)}`,
-      W / 2, panelY + 116, {
-        size: 14, align: "center", color: COLORS.boneDim,
-      });
-
-    const cx = W / 2;
-    const cy = panelY + 248;
-    ctx.save();
-
-    ctx.translate(cx, cy);
-    const tilt = st.tilt * 0.95;
-    ctx.rotate(-tilt);
-
-    const neckW = 32;
-    const bulbW = 70;
-    const neckH = 44;
-    const bulbH = 96;
-    const rBase = bulbW / 2;
-    ctx.beginPath();
-    ctx.moveTo(-neckW / 2, -neckH - bulbH * 0.5);
-    ctx.lineTo(-bulbW * 0.38, bulbH * 0.12);
-    ctx.quadraticCurveTo(-rBase, bulbH * 0.58, -rBase * 0.92, bulbH * 0.96);
-    ctx.lineTo(rBase * 0.92, bulbH * 0.96);
-    ctx.quadraticCurveTo(rBase, bulbH * 0.58, bulbW * 0.38, bulbH * 0.12);
-    ctx.lineTo(neckW / 2, -neckH - bulbH * 0.5);
-    ctx.closePath();
-    ctx.strokeStyle = "rgba(220, 230, 255, 0.55)";
-    ctx.lineWidth = 2;
-    ctx.fillStyle = "rgba(40, 55, 90, 0.22)";
-    ctx.fill();
-    ctx.stroke();
-
-    const neckRimY = -neckH - bulbH * 0.48;
-    const basinFloorY = bulbH * 1.08;
-    // Surface drops from rim (full) toward the bulb heel (empty) — pour exits the cork end you tilt toward.
-    const surfaceY = neckRimY + (1 - st.liquid) * (basinFloorY - neckRimY);
-    ctx.beginPath();
-    ctx.moveTo(-neckW / 2, -neckH - bulbH * 0.5);
-    ctx.lineTo(-bulbW * 0.38, bulbH * 0.12);
-    ctx.quadraticCurveTo(-rBase, bulbH * 0.58, -rBase * 0.92, bulbH * 0.96);
-    ctx.lineTo(rBase * 0.92, bulbH * 0.96);
-    ctx.quadraticCurveTo(rBase, bulbH * 0.58, bulbW * 0.38, bulbH * 0.12);
-    ctx.lineTo(neckW / 2, -neckH - bulbH * 0.5);
-    ctx.closePath();
-    ctx.clip();
-    const liqGrad = ctx.createLinearGradient(0, neckRimY, 0, basinFloorY);
-    liqGrad.addColorStop(0, "#6ec8ff");
-    liqGrad.addColorStop(0.5, "#1e6dff");
-    liqGrad.addColorStop(1, "#0a2848");
-    ctx.fillStyle = liqGrad;
-    ctx.beginPath();
-    ctx.rect(-bulbW * 0.62, surfaceY - 2, bulbW * 1.24, basinFloorY - surfaceY + 20);
-    ctx.fill();
-    ctx.restore();
-
-    // Second pass: redraw glass rim on top so liquid stays under glass silhouette
-    ctx.save();
-    ctx.translate(cx, cy);
-    ctx.rotate(-tilt);
-    ctx.strokeStyle = "rgba(235, 245, 255, 0.75)";
-    ctx.lineWidth = 1.25;
-    ctx.beginPath();
-    ctx.moveTo(-neckW / 2, -neckH - bulbH * 0.5);
-    ctx.lineTo(-bulbW * 0.38, bulbH * 0.12);
-    ctx.quadraticCurveTo(-rBase, bulbH * 0.58, -rBase * 0.92, bulbH * 0.96);
-    ctx.arc(0, bulbH * 0.88, rBase * 0.92, Math.PI - 0.06, Math.PI * 2 + 0.06);
-    ctx.quadraticCurveTo(rBase, bulbH * 0.58, bulbW * 0.38, bulbH * 0.12);
-    ctx.lineTo(neckW / 2, -neckH - bulbH * 0.5);
-    ctx.stroke();
-    ctx.strokeStyle = "rgba(130, 200, 255, 0.55)";
-    ctx.beginPath();
-    ctx.ellipse(0, -neckH - bulbH * 0.48 - 6, neckW / 2 + 10, 6, 0, 0, Math.PI * 2);
-    ctx.stroke();
-
-    // Cork occludes neck opening until popped
-    if (!st.corkPop) {
-      ctx.fillStyle = "#8a5f3e";
-      roundRect(ctx, -14, -neckH - bulbH * 0.5 - 22, 28, 20, 4);
-      ctx.fill();
-      ctx.fillStyle = "#c69b6a";
-      ctx.fillRect(-8, -neckH - bulbH * 0.5 - 18, 16, 4);
-    }
-
-    ctx.restore();
-
-    // Pour dribble — streams from cork / rim (neck) when tilted, not the heel of the flask.
-    if (st.phase === "pour" && st.tilt > 0.35 && st.liquid > 0.05) {
-      const ly = -neckH - bulbH * 0.48 - 20;
-      const jug = tilt * 1.06;
-      const px = cx - ly * Math.sin(-jug);
-      const py = cy + ly * Math.cos(-jug);
-      ctx.fillStyle = `rgba(140, 220, 255, ${0.35 + st.liquid * 0.5})`;
-      for (let i = 0; i < 5; i++) {
-        ctx.beginPath();
-        ctx.arc(
-          px + Math.sin(jug + 1.35) * 24 + rand(-14, 8),
-          py + Math.cos(jug + 1.35) * 24 + rand(24, 90) + i * 13,
-          rand(2, 7),
-          0,
-          Math.PI * 2,
-        );
-        ctx.fill();
-      }
-    }
-
-    drawText(ctx, "Freeze the battlefield — combat waits on you!", W / 2, panelY + panelH - 62, {
-      size: 12, align: "center", color: COLORS.boneDim, maxWidth: panelW - 40,
-    });
-    drawText(ctx, "Pause combat [P]", W / 2, panelY + panelH - 36, {
-      size: 12, align: "center", color: "#8899aa",
-    });
-    ctx.restore();
+    drawManaPotionModal(ctx, this.potionState, COLORS, game.player);
   }
 
   drawSphincter(ctx) {
@@ -1671,7 +1541,7 @@ export class CombatScene {
     ctx.stroke();
   }
 
-  drawEnemy(ctx) {
+  drawEnemy(ctx, game) {
     const cx = LANES[this.enemyLane ?? 2];
     const cy = 340;
     const sx = this.enemyShake > 0 ? (Math.random() - 0.5) * 6 : 0;
@@ -1702,6 +1572,8 @@ export class CombatScene {
       ctx.restore();
     }
     ctx.translate(cx + sx, cy + sy);
+    const ef = game && endlessEnemyCssFilter(game);
+    if (ef) ctx.filter = ef;
     if (this.enemyFlash > 0) {
       ctx.shadowColor = "#ffffff";
       ctx.shadowBlur = 26;
@@ -2375,7 +2247,7 @@ export class CombatScene {
   /** One line above bottom action buttons (keyboard + lane hint). */
   drawHelperStrip(ctx) {
     drawText(ctx,
-      "Pause [P]  · lanes [A]/[D] · Q1 / E2 / R3 vial / F4 brace · Plasmids: Q cycles · E Gene Bolt",
+      "Pause [P]  · lanes [A]/[D] · Q/E/R/F combat row · Plasmids: Q Gene Bolt · E cycles element",
       W / 2, ACTION_BAR_TOP - 14, {
         size: 13, color: COLORS.boneDim, align: "center", baseline: "bottom",
         maxWidth: W - 24,
@@ -2459,7 +2331,7 @@ export class CombatScene {
       && p.mana < ((activePlasmMode(l, p.plasmModeIndex ?? 0)?.manaCost ?? 0) + (p.manaCostBonus || 0))
     ) {
       hint = {
-        text: "Out of MP for Gene Bolt — [R/3] vial  ·  [Q/1] cycles element",
+        text: "Out of MP for Gene Bolt — [R/3] vial  ·  [E/2] cycles element mode",
         color: "#7fc0ff",
       };
     } else if (
@@ -2470,7 +2342,7 @@ export class CombatScene {
       hint = {
         text:
           p.loadoutId === "plasmids"
-            ? `[Q/1] cycle mode  ·  [E/2] ${pm ? `${pm.label}: ${pm.boltName}` : l.special.name}  ·  lanes`
+            ? `[Q/1] ${pm ? `${pm.label}: ${pm.boltName}` : "Gene Bolt"}  ·  [E/2] cycle mode  ·  lanes`
             : `[Q/1] ${l.attack.name}  ·  [E/2] ${l.special.name}  ·  lanes [A]/[D]`,
         color: "#c8ffc0",
       };
@@ -2498,15 +2370,10 @@ export class CombatScene {
     const p = game.player;
     const l = p.loadout;
     const rects = this.actionButtonRects();
-    const plMode = p.loadoutId === "plasmids" ? activePlasmMode(l, p.plasmModeIndex ?? 0) : null;
-    const atkMc = plMode ? 0 : l.attack.manaCost + (p.manaCostBonus || 0);
-    const specMc = plMode
-      ? plMode.manaCost + (p.manaCostBonus || 0)
-      : l.special.manaCost + (p.manaCostBonus || 0);
-    const specDmgTxt = plMode
-      ? `${plMode.dmg[0]}–${plMode.dmg[1]}`
-      : `${l.special.dmg[0]}–${l.special.dmg[1]}`;
-    const specCdMax = plMode ? plMode.cooldown : l.special.cooldown;
+    const pm = p.pactMods || {};
+    const mcb = (p.manaCostBonus || 0);
+    const atkMc = l.attack.manaCost + mcb;
+    const specMc = l.special.manaCost + mcb;
     const cryo = (l.cryoThird && p.loadoutId !== "plasmids") ? l.cryoThird : null;
     const cryoCd = cryo ? (p.cooldowns.tertiary || 0) : 0;
     const potCd = this.potionDrinkCooldown > 0;
@@ -2519,46 +2386,80 @@ export class CombatScene {
     ctx.fillStyle = "rgba(12, 4, 16, 0.5)";
     ctx.fillRect(0, ACTION_BAR_TOP, W, ACTION_BAR_H);
 
-    const defs = [
-      {
-        headline: plMode ? "MODE" : "ATTACK 1",
-        sub: plMode ? `${plMode.label} — rotates` : l.attack.name,
-        meta: plMode
-          ? `Next bolt: ${plMode.boltName}  ·  Q/1`
-          : `${l.attack.dmg[0]}–${l.attack.dmg[1]} dmg · ${atkMc} MP`,
-        locked: plMode
-          ? p.cooldowns.attack > 0
-          : p.cooldowns.attack > 0 || p.mana < atkMc,
-        cd: p.cooldowns.attack,
-        cdMax: l.attack.cooldown,
-      },
-      {
-        headline: plMode ? "GENE BOLT" : "ATTACK 2",
-        sub: plMode ? plMode.boltName : l.special.name,
-        meta: `${specDmgTxt} dmg · ${specMc} MP`,
-        locked: plMode
-          ? p.cooldowns.special > 0 || p.mana < specMc
-          : p.cooldowns.special > 0 || p.mana < specMc,
-        cd: p.cooldowns.special,
-        cdMax: specCdMax,
-      },
-      {
-        headline: "MANA VIAL",
-        sub: "Pop cork · tilt pour (full refill)",
-        meta: `${cryoMeta}Vial refill: ${vialCdStr}`,
-        locked: !!this.potionState || potCd || p.mana >= p.manaMax,
-        cd: potCd ? this.potionDrinkCooldown : 0,
-        cdMax: potCd ? POTION_DRINK_CD_SEC : 0,
-      },
-      {
-        headline: "BRACE",
-        sub: "Mitigate / perfect guard",
-        meta: "Late timing → counter bonus on next hit",
-        locked: false,
-        cd: 0,
-        cdMax: 0,
-      },
-    ];
+    /** @type {object[]} */
+    let defs;
+    if (plMode) {
+      const boltMc = plMode.manaCost + mcb;
+      defs = [
+        {
+          headline: "GENE BOLT",
+          sub: plMode.boltName,
+          meta: `${plMode.dmg[0]}–${plMode.dmg[1]} dmg · ${boltMc} MP · Q/1`,
+          locked: p.cooldowns.attack > 0 || p.mana < boltMc,
+          cd: p.cooldowns.attack,
+          cdMax: plMode.cooldown * (pm.attackCdMult || 1),
+        },
+        {
+          headline: "CYCLE MODE",
+          sub: l.special.name,
+          meta: "Rotates FIRE → SHOCK → CRYO · E/2",
+          locked: p.cooldowns.special > 0,
+          cd: p.cooldowns.special,
+          cdMax: l.special.cooldown * (pm.specialCdMult || 1),
+        },
+        {
+          headline: "MANA VIAL",
+          sub: "Pop cork · tilt pour (full refill)",
+          meta: `${cryoMeta}Vial refill: ${vialCdStr}`,
+          locked: !!this.potionState || potCd || p.mana >= p.manaMax,
+          cd: potCd ? this.potionDrinkCooldown : 0,
+          cdMax: potCd ? POTION_DRINK_CD_SEC : 0,
+        },
+        {
+          headline: "BRACE",
+          sub: "Mitigate / perfect guard",
+          meta: "Late timing → counter bonus on next hit",
+          locked: false,
+          cd: 0,
+          cdMax: 0,
+        },
+      ];
+    } else {
+      defs = [
+        {
+          headline: "ATTACK 1",
+          sub: l.attack.name,
+          meta: `${l.attack.dmg[0]}–${l.attack.dmg[1]} dmg · ${atkMc} MP`,
+          locked: p.cooldowns.attack > 0 || p.mana < atkMc,
+          cd: p.cooldowns.attack,
+          cdMax: l.attack.cooldown * (pm.attackCdMult || 1),
+        },
+        {
+          headline: "ATTACK 2",
+          sub: l.special.name,
+          meta: `${l.special.dmg[0]}–${l.special.dmg[1]} dmg · ${specMc} MP`,
+          locked: p.cooldowns.special > 0 || p.mana < specMc,
+          cd: p.cooldowns.special,
+          cdMax: l.special.cooldown * (pm.specialCdMult || 1),
+        },
+        {
+          headline: "MANA VIAL",
+          sub: "Pop cork · tilt pour (full refill)",
+          meta: `${cryoMeta}Vial refill: ${vialCdStr}`,
+          locked: !!this.potionState || potCd || p.mana >= p.manaMax,
+          cd: potCd ? this.potionDrinkCooldown : 0,
+          cdMax: potCd ? POTION_DRINK_CD_SEC : 0,
+        },
+        {
+          headline: "BRACE",
+          sub: "Mitigate / perfect guard",
+          meta: "Late timing → counter bonus on next hit",
+          locked: false,
+          cd: 0,
+          cdMax: 0,
+        },
+      ];
+    }
 
     for (let i = 0; i < 4; i++) {
       const r = rects[i];

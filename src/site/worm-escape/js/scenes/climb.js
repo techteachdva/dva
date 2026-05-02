@@ -13,9 +13,14 @@ import {
   stepTowardIndex,
 } from "../engine/pointer.js";
 import { applyDamage, recordDirectHpHit, recordDirectArmorHit } from "../content/player.js";
+import {
+  endlessDangerMult,
+  resolveEndlessPalette,
+} from "../content/endlessStyle.js";
 import { CombatScene } from "./combat.js";
 import { TongueBossScene } from "./tongueBoss.js";
 import { GameOverScene } from "./gameover.js";
+import { runBileRiseMult, runIncomingDamageMult } from "../content/gameBalance.js";
 
 // Five hand-hold columns on the veiny wall. Hero is fixed in screen Y;
 // the wall scrolls. Bile rises from the bottom of the screen in absolute pixels.
@@ -179,6 +184,8 @@ export class ClimbScene {
     this.t += dt;
     const p = game.player;
     const ch = this.chamber;
+    const cheatPain = runIncomingDamageMult(game);
+    if (typeof game.invulnerable === "boolean") p.invulnerable = game.invulnerable;
     if (p.score) p.score.timeSpent += dt;
 
     // Decrement timers that gate the climber each frame.
@@ -241,18 +248,22 @@ export class ClimbScene {
     // --- Bile rises ---
     // Pact modifier: Tide Watcher slows bile, Ring Forger speeds it up.
     const bileMult = (p.pactMods && p.pactMods.bileRiseMult) || 1;
-    this.bileHeight += ch.bileRiseRate * bileMult * dt;
+    const bileRiseMul = game.endlessMode ? endlessDangerMult(game) : 1;
+    const cheatBile = runBileRiseMult(game);
+    this.bileHeight += ch.bileRiseRate * bileMult * bileRiseMul * cheatBile * dt;
 
     // --- Acid timer (atmospheric corrosion, even above bile) ---
-    p.acidTimer -= dt * p.acidResist;
-    if (p.acidTimer <= 0) {
-      if (p.armor > 0) {
-        p.armor = Math.max(0, p.armor - 5 * dt);
-        this.markHit();
-      } else {
-        p.hp -= 3 * dt;
-        this.flash = Math.max(this.flash, 0.15);
-        this.markHit();
+    if (!p.invulnerable) {
+      p.acidTimer -= dt * p.acidResist;
+      if (p.acidTimer <= 0) {
+        if (p.armor > 0) {
+          p.armor = Math.max(0, p.armor - 5 * cheatPain * dt);
+          this.markHit();
+        } else {
+          p.hp -= 3 * cheatPain * dt;
+          this.flash = Math.max(this.flash, 0.15);
+          this.markHit();
+        }
       }
     }
 
@@ -276,31 +287,35 @@ export class ClimbScene {
           2.0
         );
       }
-      if (p.armor > 0) {
-        p.armor = Math.max(0, p.armor - dt); // 1 point per second
-        this.markHit();
-        // Occasional armor-fizz particles + red-tint flash pulse
-        this.flash = Math.max(this.flash, 0.12 + Math.sin(this.t * 12) * 0.04);
-        if (Math.random() < 0.4) {
-          this.particles.burst(
-            this.heroX + rand(-14, 14),
-            HERO_Y + 6,
-            "#ffe08a", 4, 70, 0.4,
-          );
-        }
-      } else {
-        this.drownT += dt;
-        const bileDmg = (p.bileHpDrain || 24) * (CHAMBER_DMG_SCALE[this.chamberIdx] || 1) * dt;
-        p.hp -= bileDmg;
-        recordDirectHpHit(p, bileDmg, { countAsHit: false });
-        this.flash = Math.max(this.flash, 0.35);
-        this.markHit();
-        if (Math.random() < 0.5) {
-          this.particles.burst(
-            this.heroX + rand(-16, 16),
-            HERO_Y + 6,
-            COLORS.blood, 6, 140, 0.45,
-          );
+      if (!p.invulnerable) {
+        if (p.armor > 0) {
+          p.armor = Math.max(0, p.armor - cheatPain * dt); // scaled bile armor chew
+          this.markHit();
+          // Occasional armor-fizz particles + red-tint flash pulse
+          this.flash = Math.max(this.flash, 0.12 + Math.sin(this.t * 12) * 0.04);
+          if (Math.random() < 0.4) {
+            this.particles.burst(
+              this.heroX + rand(-14, 14),
+              HERO_Y + 6,
+              "#ffe08a", 4, 70, 0.4,
+            );
+          }
+        } else {
+          this.drownT += dt;
+          const ed = game.endlessMode ? endlessDangerMult(game) : 1;
+          const bileDmg = (p.bileHpDrain || 24)
+            * (CHAMBER_DMG_SCALE[this.chamberIdx] || 1) * ed * cheatPain * dt;
+          p.hp -= bileDmg;
+          recordDirectHpHit(p, bileDmg, { countAsHit: false });
+          this.flash = Math.max(this.flash, 0.35);
+          this.markHit();
+          if (Math.random() < 0.5) {
+            this.particles.burst(
+              this.heroX + rand(-16, 16),
+              HERO_Y + 6,
+              COLORS.blood, 6, 140, 0.45,
+            );
+          }
         }
       }
       // Panic bubbles
@@ -330,14 +345,14 @@ export class ClimbScene {
       const usedCols = [];
       const pm = p.pactMods || null;
       for (let i = 0; i < baseCount; i++) {
-        this.spawnTelegraph(ch, usedCols, pm);
+        this.spawnTelegraph(ch, usedCols, pm, game);
         usedCols.push(this._lastSpawnedCol);
       }
-      if (Math.random() < 0.115) this.spawnTelegraph(ch, usedCols, pm);
+      if (Math.random() < 0.115) this.spawnTelegraph(ch, usedCols, pm, game);
 
       // Optional bonus spawn when multiDebrisChance rolls true.
       if (Math.random() < (ch.multiDebrisChance || 0)) {
-        this.spawnTelegraph(ch, usedCols, pm);
+        this.spawnTelegraph(ch, usedCols, pm, game);
       }
     }
     for (const tg of this.telegraphs) tg.t += dt;
@@ -400,7 +415,10 @@ export class ClimbScene {
       if (ch.isMaw || ch.guardian === "wormMaw" || ch.guardian === "wormTongue") {
         game.scenes.replace(new TongueBossScene(this.chamberIdx), game);
       } else {
-        game.scenes.replace(new CombatScene(this.chamberIdx), game);
+        const bub = game.bubblegumMode
+          ? { bubbleFightIndex: 1 }
+          : {};
+        game.scenes.replace(new CombatScene(this.chamberIdx, bub), game);
       }
       return;
     }
@@ -442,38 +460,69 @@ export class ClimbScene {
 
   // Spawn one telegraph. `avoidCols` is an optional array of columns already
   // spoken for this cycle so we spread the spawns out naturally.
-  spawnTelegraph(ch, avoidCols = [], pactMods = null) {
+  spawnTelegraph(ch, avoidCols = [], pactMods = null, game = null) {
     const col = this.pickColumn(avoidCols);
     this._lastSpawnedCol = col;
 
-    // Roll power-up chance per chamber (rarer in later chambers, and the
-    // ring of armor is especially rare inside the power-up pool). Feed
-    // Frenzy pact doubles this ramp.
     const puMult = (pactMods && pactMods.powerUpRateMult) || 1;
-    const isPowerUp = Math.random() < ((ch.powerUpRarity || 0) * puMult);
-    const kind = isPowerUp
-      ? this.weightedPick(POWERUPS)
-      : this.weightedPick(DEBRIS_KINDS);
+    const basePu = (ch.powerUpRarity || 0) * puMult;
+
+    let kind;
+    let telePower;
+    if (game?.jillyMode) {
+      const looksLikePowerTel = Math.random() < (1 - Math.min(0.95, basePu));
+      const powVisual = this.weightedPick(POWERUPS);
+      const hazardDoubled = () => {
+        const h = { ...this.weightedPick(DEBRIS_KINDS) };
+        h.dmg = Math.round((h.dmg || 0) * 2);
+        if (typeof h.stun === "number") h.stun *= 2;
+        return h;
+      };
+      if (looksLikePowerTel) {
+        kind = {
+          ...powVisual,
+          jillyTrap: true,
+          jillyHazardPayload: hazardDoubled(),
+        };
+        telePower = true;
+      } else {
+        const hz = this.weightedPick(DEBRIS_KINDS);
+        kind = {
+          ...hz,
+          jillyGift: true,
+          jillyPowerPayload: this.weightedPick(POWERUPS),
+        };
+        telePower = false;
+      }
+    } else {
+      const isPowerUp = Math.random() < basePu;
+      kind = isPowerUp ? this.weightedPick(POWERUPS) : this.weightedPick(DEBRIS_KINDS);
+      telePower = kind.damageType === "power";
+    }
 
     this.telegraphs.push({
-      col, t: 0,
+      col,
+      t: 0,
       wait: rand(0.88, 1.35),
       kind,
       speed: ch.debrisSpeed * rand(0.9, 1.3),
-      power: kind.damageType === "power",
+      power: telePower,
     });
   }
 
   handleDebrisHit(game, d) {
     const p = game.player;
     const kind = d.kind;
+    const cheatPain = runIncomingDamageMult(game);
+    const isPowerPickup =
+      !!(kind.jillyGift || (!kind.jillyTrap && kind.damageType === "power"));
 
-    // --- Power-ups first: catching them is a GOOD thing. ---
-    if (kind.damageType === "power") {
-      switch (kind.effect) {
+    if (isPowerPickup) {
+      const pu = kind.jillyGift ? kind.jillyPowerPayload : kind;
+      switch (pu.effect) {
         case "boost": {
           // Feather of flying: instant upward boost in climb progress.
-          const boost = kind.boost || 200;
+          const boost = pu.boost || 200;
           this.progress += boost;
           this.showToast("+FEATHER OF FLYING! Whoosh!", 1.4);
           SFX.confirm();
@@ -494,7 +543,7 @@ export class ClimbScene {
         case "heal": {
           // Feed Frenzy pact: +burgerBonusHp on top of the base heal.
           const bonus = (p.pactMods && p.pactMods.burgerBonusHp) || 0;
-          const totalHeal = (kind.heal || 30) + bonus;
+          const totalHeal = (pu.heal || 30) + bonus;
           const healed = Math.min(totalHeal, p.hpMax - p.hp);
           p.hp = Math.min(p.hpMax, p.hp + totalHeal);
           this.showToast(`+CHEESEBURGER! (+${Math.ceil(healed)} HP)`, 1.4);
@@ -504,7 +553,7 @@ export class ClimbScene {
           break;
         }
         case "manaFrac": {
-          const frac = typeof kind.frac === "number" ? kind.frac : 0.42;
+          const frac = typeof pu.frac === "number" ? pu.frac : 0.42;
           const add = Math.max(8, Math.round(p.manaMax * frac));
           const before = p.mana;
           p.mana = Math.min(p.manaMax, p.mana + add);
@@ -517,7 +566,7 @@ export class ClimbScene {
         }
         case "armor": {
           // Ring of armor: grants a 50 point armor shield.
-          const grant = kind.armor || 50;
+          const grant = pu.armor || 50;
           p.armorMax = Math.max(p.armorMax, grant);
           p.armor = Math.min(p.armorMax, p.armor + grant);
           if (p.armorSoak <= 0) p.armorSoak = 0.5;
@@ -533,19 +582,23 @@ export class ClimbScene {
       return;
     }
 
+    const hz = kind.jillyTrap ? kind.jillyHazardPayload : kind;
+    if (p.invulnerable && hz.damageType !== "power") return;
+
     // --- Hazards: resolve by damage type ---
     // Apply per-chamber scaling so the Gullet hits ~45% harder than the Stomach.
-    // Feed Frenzy pact multiplies incoming debris on top of that.
-    const scale = CHAMBER_DMG_SCALE[this.chamberIdx] || 1;
+    // Feed Frenzy pact multiplies incoming debris on top of that (wyrm/dragon too).
+    const endlessM = game.endlessMode ? endlessDangerMult(game) : 1;
+    const scale = (CHAMBER_DMG_SCALE[this.chamberIdx] || 1) * endlessM * cheatPain;
     const debrisMult = (p.pactMods && p.pactMods.debrisDmgMult) || 1;
-    const dmg = Math.round((kind.dmg || 0) * scale * debrisMult);
+    const dmg = Math.round((hz.dmg || 0) * scale * debrisMult);
     // Any hazard contact flips hitless off.
     this.markHit();
     let armorTaken = 0, hpTaken = 0;
     let partColor = COLORS.blood;
     let shake = 10;
 
-    switch (kind.damageType) {
+    switch (hz.damageType) {
       case "armor-absorb": {
         // Tank pips eat a whole hit first (Iron's "free soak" perk).
         if (p.tankHitsLeft > 0) {
@@ -573,7 +626,7 @@ export class ClimbScene {
         recordDirectHpHit(p, hpTaken);
         partColor = COLORS.blood;
         shake = 12;
-        this.showToast(`${kind.kind.toUpperCase()} STAB! (-${Math.ceil(hpTaken)} HP)`, 1.1);
+        this.showToast(`${hz.kind.toUpperCase()} STAB! (-${Math.ceil(hpTaken)} HP)`, 1.1);
         break;
       }
       case "armor-direct": {
@@ -586,7 +639,7 @@ export class ClimbScene {
           partColor = "#d4d8e0";
           this.showToast(`MACE CLANG! (-${Math.ceil(eaten)} ARM)`, 1.1);
         } else {
-          this.stunT = Math.max(this.stunT, kind.stun || 1.3);
+          this.stunT = Math.max(this.stunT, hz.stun || 1.3);
           const bonusHp = Math.floor(dmg * 0.4);
           hpTaken = Math.min(p.hp, bonusHp);
           p.hp = Math.max(0, p.hp - bonusHp);
@@ -640,7 +693,8 @@ export class ClimbScene {
     const p = game.player;
     const ch = this.chamber;
 
-    drawFleshBackground(ctx, this.t + this.progress * 0.002, ch.wormTint, ch.palette);
+    const pal = resolveEndlessPalette(game, ch.palette, ch.wormTint);
+    drawFleshBackground(ctx, this.t + this.progress * 0.002, pal.wormTint, pal.palette);
     drawVeins(ctx, this.t + this.progress * 0.002, this.chamberIdx + 1);
 
     this.drawWall(ctx);
@@ -863,10 +917,11 @@ export class ClimbScene {
   }
 
   drawDebris(ctx, d) {
-    const isPower = d.kind.damageType === "power";
+    const haloPick = !!(d.kind.jillyTrap
+      || (d.kind.damageType === "power" && !d.kind.jillyGift));
     ctx.save();
     // Shadow (skip for power-ups so they feel airy / floaty)
-    if (!isPower) {
+    if (!haloPick) {
       ctx.fillStyle = "rgba(0,0,0,0.45)";
       ctx.beginPath();
       ctx.ellipse(d.x + 2, d.y + 4, d.r * 0.9, d.r * 0.3, 0, 0, Math.PI * 2);

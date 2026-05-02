@@ -7,12 +7,20 @@
 import {
   W, H, COLORS,
   drawText, drawPanel, drawBanner, wrapText, roundRect,
+  drawHero, drawFleshBackground, drawVeins,
 } from "../engine/render.js";
 import { pointInRect } from "../engine/pointer.js";
 import { SFX } from "../engine/audio.js";
+import { tryDrawRasterWeaponArt } from "../engine/weaponArt.js";
 import { buildCodexEntries } from "../content/encyclopediaData.js";
+import { buildCheatsCodexRows } from "../content/cheatsKnowledge.js";
+import { loadSave } from "../engine/storage.js";
 
-const CODEX_SOURCE = buildCodexEntries();
+let _BASE_CODEX = null;
+function baseCodex() {
+  if (!_BASE_CODEX) _BASE_CODEX = buildCodexEntries();
+  return _BASE_CODEX;
+}
 
 const CATEGORY_ORDER = [
   { key: "all", label: "★ ALL", predicate: () => true },
@@ -21,13 +29,14 @@ const CATEGORY_ORDER = [
   { key: "enemy", label: "ENEMIES", predicate: (e) => e.category === "enemy" },
   { key: "synergy", label: "SYNERGY", predicate: (e) => e.category === "synergy" },
   { key: "mechanic", label: "RULES+", predicate: (e) => e.category === "mechanic" },
+  { key: "cheats", label: "CHEATS", predicate: (e) => e.category === "cheats" },
 ];
 
 function flattenBlob(e) {
   return `${e.title} ${e.subtitle} ${e.facts.join(" ")} ${e.flavor}`.toLowerCase();
 }
 
-/** @typedef {typeof CODEX_SOURCE[number]} CodexRow */
+/** @typedef {import("../content/encyclopediaData.js").CodexEntry} CodexRow */
 
 export class EncyclopediaScene {
   constructor() {
@@ -39,13 +48,17 @@ export class EncyclopediaScene {
     /** @type {string} */
     this.filterStr = "";
 
+    /** @type {CodexRow[]} merged base codex + cheat lore (filled in enter) */
+    this.codexRows = [];
     /** @type {CodexRow[]} */
-    this._filtered = CODEX_SOURCE.slice();
+    this._filtered = [];
 
     /** @type {Array<{ key: string, x: number, y: number, w: number, h: number }>} */
     this.tabRects = [];
     /** @type {Array<{ index: number, x: number, y: number, w: number, h: number }>} */
     this.listRowRects = [];
+    /** Bobbing pose for miniature class art */
+    this._codexAnim = 0;
   }
 
   rebuildFilter() {
@@ -53,7 +66,7 @@ export class EncyclopediaScene {
     const q = this.filterStr.trim().toLowerCase();
 
     /** @type {CodexRow[]} */
-    let next = CODEX_SOURCE.filter((e) => catDef.predicate(e));
+    let next = (this.codexRows || []).filter((e) => catDef.predicate(e));
     if (q) next = next.filter((e) => flattenBlob(e).includes(q));
     next.sort((a, b) => {
       const order = CATEGORY_ORDER.map((x) => x.key);
@@ -71,7 +84,10 @@ export class EncyclopediaScene {
     this.detailScrollLine = 0;
   }
 
-  enter() {
+  enter(game) {
+    void game;
+    const save = loadSave();
+    this.codexRows = [...baseCodex(), ...buildCheatsCodexRows(save.knownCheats || [])];
     this.rebuildFilter();
   }
 
@@ -114,8 +130,9 @@ export class EncyclopediaScene {
     return lines;
   }
 
-  update(_dt, game) {
+  update(dt, game) {
     const inp = game.input;
+    this._codexAnim += dt;
 
     if (inp.wasPressed("Escape")) {
       game.scenes.pop(game);
@@ -123,15 +140,48 @@ export class EncyclopediaScene {
       return;
     }
 
-    /** filter typing */
-    const chars =
-      "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789`'-/:;,!?.*@#%+><_=\\";
+    /** filter typing (avoid A–Z twice: KeyboardInput collapses shifted letters into one lowercase pulse). */
+    const symChars = "`'-/:;,!?.*@#%+><_=\\";
     let dirty = false;
-    for (const ch of chars) {
+
+    for (let n = 0; n <= 7; n++) {
+      const code = `Digit${n}`;
+      if (inp.wasCodePressed(code)) {
+        const tab = CATEGORY_ORDER[n];
+        if (tab && this.catKey !== tab.key) {
+          this.catKey = tab.key;
+          this.rebuildFilter();
+          SFX.click();
+        }
+        inp.consumeCodePress(code);
+        inp.consumePress(String(n));
+      }
+    }
+
+    for (let i = 0; i < 26; i++) {
+      const ch = String.fromCharCode(97 + i);
       if (inp.wasPressed(ch)) {
         this.filterStr += ch;
         dirty = true;
       }
+    }
+    for (const ch of symChars) {
+      if (inp.wasPressed(ch)) {
+        this.filterStr += ch;
+        dirty = true;
+      }
+    }
+    for (let k = 0; k <= 9; k++) {
+      if (inp.wasCodePressed(`Numpad${k}`)) {
+        this.filterStr += String(k);
+        dirty = true;
+      }
+    }
+    // Main-row 8–9 only (Digit0–Digit7 reserve tab hotkeys incl. CHEATS).
+    for (const k of [8, 9]) {
+      if (!inp.wasCodePressed(`Digit${k}`)) continue;
+      this.filterStr += String(k);
+      dirty = true;
     }
     if (inp.wasPressed(" ") || inp.wasPressed("Space")) {
       this.filterStr += " ";
@@ -155,17 +205,6 @@ export class EncyclopediaScene {
       SFX.click();
     }
 
-    for (let n = 0; n <= 6; n++) {
-      const tab = CATEGORY_ORDER[n];
-      if (!tab) break;
-      if (inp.wasPressed(String(n)) && this.catKey !== tab.key) {
-        this.catKey = tab.key;
-        this.rebuildFilter();
-        SFX.click();
-      }
-    }
-
-    /** layout matches render constants */
     const rowH = 22;
     const rowGap = 6;
     const listTopGuess = Math.floor(H * 0.30);
@@ -250,7 +289,7 @@ export class EncyclopediaScene {
     ctx.fillRect(0, 0, W, H);
 
     drawBanner(ctx, "THE INNER GUTS CODEX", W / 2, 54, 30, COLORS.bile, COLORS.blood);
-    drawText(ctx, '\\ cheat summoned this nerd shelf · ESC exit · TAB or 0–6 tabs · FILTER types words · PgUp/PgDn detail · [ ] list chunk', W / 2, 94, {
+    drawText(ctx, '\\ cheat summoned this nerd shelf · ESC exit · TAB or top-row Digit0–Digit7 tabs · FILTER: a–z matches lore · digits: numpad (or main 89) · PgUp/PgDn scroll detail · [ ] list chunk', W / 2, 94, {
       size: 12,
       color: COLORS.boneDim,
       align: "center",
@@ -361,12 +400,56 @@ export class EncyclopediaScene {
 
     const pick = filt[this.selIndex] || null;
 
+    const lineStride = 16;
+
+    /** Thumbnail lane for weapons (PNG roster), classes (`drawHero` idle), shaders for mechanics — enemies get a tinted blob cue. */
+    let portraitPad = 0;
+    if (pick) {
+      const cxArt = detailX + detailW / 2 - 12;
+      const py = listTop + 14;
+      if (pick.category === "weapon") {
+        const lid = pick.id.startsWith("weapon:") ? pick.id.slice("weapon:".length) : "";
+        if (lid && tryDrawRasterWeaponArt(ctx, lid, cxArt, py + 48, 100)) portraitPad = 112;
+      } else if (pick.category === "class") {
+        const bid = pick.id.startsWith("class:") ? pick.id.slice("class:".length) : "";
+        if (bid) {
+          portraitPad = 96;
+          ctx.save();
+          ctx.translate(cxArt, py + 38);
+          ctx.scale(1.78, 1.78);
+          drawHero(ctx, 0, 0, 1, this._codexAnim * 2.6, bid, null);
+          ctx.restore();
+        }
+      } else if (pick.category === "mechanic") {
+        portraitPad = 72;
+        ctx.save();
+        roundRect(ctx, detailX + 18, py + 6, detailW - 54, 52, 9);
+        ctx.clip();
+        drawFleshBackground(ctx, this._codexAnim, 1, null);
+        drawVeins(ctx, this._codexAnim * 1.8, 4);
+        ctx.restore();
+      } else if (pick.category === "enemy") {
+        portraitPad = 64;
+        const g = ctx.createRadialGradient(cxArt - 8, py + 28, 2, cxArt + 14, py + 36, 48);
+        g.addColorStop(0, COLORS.skinHi);
+        g.addColorStop(0.45, COLORS.skin);
+        g.addColorStop(1, COLORS.wormDeep);
+        ctx.fillStyle = g;
+        ctx.beginPath();
+        ctx.ellipse(cxArt + 10, py + 36, 46, 40, -0.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(255,255,255,0.15)";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+    }
+
     ctx.save();
     ctx.beginPath();
-    ctx.rect(detailX + 4, listTop + 18, detailW - 8, listInner - 32);
+    const textBandTop = listTop + 18 + portraitPad;
+    const textBandH = Math.max(lineStride * 3, listInner - 32 - portraitPad);
+    ctx.rect(detailX + 4, textBandTop, detailW - 8, textBandH);
     ctx.clip();
-
-    const lineStride = 16;
 
     if (!pick) {
       drawText(ctx, "(zero matches… delete some keystrokes nerd)", detailX + 16, listTop + 80, {
@@ -384,7 +467,7 @@ export class EncyclopediaScene {
     /** scroll clamp AFTER wrap count known */
     const maxVisibleLines = Math.max(
       3,
-      Math.floor((listInner - 54) / lineStride),
+      Math.floor((listInner - 54 - portraitPad) / lineStride),
     );
     const maxScr = Math.max(0, wrapped.length - maxVisibleLines);
     this.detailScrollLine = Math.max(
@@ -392,7 +475,7 @@ export class EncyclopediaScene {
       Math.min(this.detailScrollLine, maxScr),
     );
 
-    let gy = listTop + 22;
+    let gy = textBandTop + 6;
     for (
       let i = this.detailScrollLine;
       i < wrapped.length && gy < listBot - lineStride;
@@ -438,6 +521,7 @@ function CATEGORY_COLOR(cat) {
     case "enemy": return "#ff7a74";
     case "synergy": return "#e49cff";
     case "mechanic": return "#8effc2";
+    case "cheats": return "#ff93d4";
     default: return COLORS.boneDim;
   }
 }

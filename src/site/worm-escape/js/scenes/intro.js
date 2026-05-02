@@ -1,10 +1,12 @@
 import {
   W, H, COLORS,
-  drawFleshBackground, drawVeins, drawText, drawBanner, drawPanel,
+  drawFleshBackground, drawVeins, drawText, drawBanner, drawPanel, roundRect,
 } from "../engine/render.js";
 import { SFX } from "../engine/audio.js";
 import { loadSave } from "../engine/storage.js";
 import { InstructionsScene } from "./instructions.js";
+import { EncyclopediaScene } from "./encyclopedia.js";
+import { pointInRect } from "../engine/pointer.js";
 
 // Total possible persistent unlocks - keep this in sync with DEFAULT_SAVE.unlocks.
 // v0.16: viperBuild, wizardBuild, bileWhip, hexStaff, megaphone, boneSpear,
@@ -17,6 +19,9 @@ const UNLOCK_KEYS = [
   "megaphone", "boneSpear", "blunderbuss",
   "cursedScythe", "rustyChainsaw", "cat",
 ];
+
+// Title screen Codex launcher (CHEATS shelf includes victory-unlocked dossiers).
+const CODEX_BTN = { x: W - 308, y: H - 128, w: 288, h: 48 };
 
 const STORY = [
   "Oh FART NUGGETS!",
@@ -51,6 +56,16 @@ export class IntroScene {
     this.t += dt;
     this.pulse += dt;
     const total = STORY.join("\n").length;
+
+    const mx = game.input.mouseX, my = game.input.mouseY;
+    if (
+      game.input.wasPressed("Mouse0") &&
+      pointInRect(mx, my, CODEX_BTN.x, CODEX_BTN.y, CODEX_BTN.w, CODEX_BTN.h)
+    ) {
+      SFX.click();
+      game.scenes.push(new EncyclopediaScene(), game);
+      return;
+    }
 
     if (game.input.wasPressed(" ", "Space", "Enter", "Mouse0")) {
       if (this.reveal < total) {
@@ -111,6 +126,18 @@ export class IntroScene {
         size: 13, color: COLORS.boneDim, align: "center",
       });
     }
+
+    ctx.save();
+    roundRect(ctx, CODEX_BTN.x, CODEX_BTN.y, CODEX_BTN.w, CODEX_BTN.h, 8);
+    ctx.fillStyle = "rgba(26,18,62,0.82)";
+    ctx.fill();
+    ctx.strokeStyle = COLORS.bileGlow;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    drawText(ctx, "INNER GUTS CODEX (cheats) — CLICK", CODEX_BTN.x + CODEX_BTN.w / 2, CODEX_BTN.y + CODEX_BTN.h / 2, {
+      size: 13, color: "#fffefb", align: "center", baseline: "middle", bold: true,
+    });
+    ctx.restore();
 
     this.drawWormFrame(ctx);
   }

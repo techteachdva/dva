@@ -2,13 +2,31 @@
 // Paths resolve relative to index.html.
 
 const IMG_DIR = "img/weapons/";
-const LOADOUT_SRC = Object.freeze({
+const CACHE_BUSTER = "?v=2";
+
+/** Maps loadout id -> filename under img/weapons/. */
+export const LOADOUT_SRC = Object.freeze({
+  sword: null,
+  hammer: null,
+  emberStaff: null,
+  frostWand: null,
+  bileWhip: null,
+  hexStaff: null,
+  fryingPan: null,
+  saber: null,
+  fists: null,
+  club: "gnarled_club.png",
+  megaphone: "battle_megaphone.png",
+  boneSpear: null,
   blunderbuss: "blunderbuss.png",
-  rustyChainsaw: "rustyChainsaw.png",
-  cursedScythe: "cursedScythe.png",
-  engineerWrench: "engineerWrench.png",
+  cursedScythe: "cursed_scythe.png",
+  rustyChainsaw: "chainsaw.png",
+  cat: null,
+  engineerWrench: "engineer_wrench.png",
+  voidWalker: null,
   chair: "chair.png",
-  club: "club.png",
+  nezZapper: "nez_zapper.png",
+  plasmids: "plasmids.png",
 });
 
 const cache = new Map();
@@ -35,7 +53,7 @@ function loadOne(loadoutId) {
       inflight.delete(loadoutId);
       resolve();
     };
-    img.src = `${IMG_DIR}${file}?v=1`;
+    img.src = `${IMG_DIR}${file}${CACHE_BUSTER}`;
   });
   inflight.set(loadoutId, p);
   return p;
@@ -43,7 +61,7 @@ function loadOne(loadoutId) {
 
 /** Kick off loading for every keyed weapon; resolves when attempts finish (missing files are benign). */
 export function preloadWeaponArt() {
-  return Promise.all(Object.keys(LOADOUT_SRC).map(loadOne));
+  return Promise.all(Object.keys(LOADOUT_SRC).filter((k) => LOADOUT_SRC[k]).map(loadOne));
 }
 
 export function hasRasterWeaponArt(loadoutId) {

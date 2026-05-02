@@ -9,15 +9,15 @@ import { TransitionScene } from "./transition.js";
 import { pointInRect } from "../engine/pointer.js";
 
 // v0.12 PactScene - after every boss kill and before the chamber
-// transition, the player picks ONE of 3 (or 4, vs elites) trade-off
-// pacts. Each pact immediately mutates the player object for the rest
-// of the run. Taken pacts are excluded from future rolls so every choice
-// is unique per run (18 pacts, only 4 max in a full run; plenty of
-// rerollability).
+// transition, the player seals trade-off pacts. Bubblegum cheat forces
+// four separate 3-card rounds here instead of a single Elite 4-spread bonus.
 export class PactScene {
   constructor(completedChamberIdx, opts = {}) {
     this.completedChamberIdx = completedChamberIdx;
     this.eliteReward = !!opts.eliteReward;
+    /** Bubblegum: multiple 3-choice seals in one scene before transition */
+    this.bubbleChains = Math.max(0, Math.floor(opts.bubbleSequential ?? 0));
+    this.sealsLeft = 1;
     this.t = 0;
     this.idx = 0;
     this.choices = [];
@@ -28,7 +28,9 @@ export class PactScene {
   enter(game) {
     const p = game.player;
     const taken = (p && p.pacts) ? p.pacts : [];
-    const n = this.eliteReward ? 4 : 3;
+    const bubbleOn = this.bubbleChains >= 2;
+    this.sealsLeft = bubbleOn ? this.bubbleChains : 1;
+    const n = bubbleOn ? 3 : (this.eliteReward ? 4 : 3);
     this.choices = rollPactChoices(n, taken);
     if (this.choices.length === 0) {
       // Edge case: all 18 pacts already taken. Skip straight to transition.
@@ -44,6 +46,21 @@ export class PactScene {
     if (this.picked) {
       this.confirmT += dt;
       if (this.confirmT > 1.1) {
+        const pInner = game.player;
+        const takenInner = (pInner && pInner.pacts) ? pInner.pacts : [];
+        this.sealsLeft--;
+        if (this.sealsLeft > 0) {
+          this.choices = rollPactChoices(3, takenInner);
+          if (this.choices.length === 0) {
+            game.scenes.replace(new TransitionScene(this.completedChamberIdx), game);
+            return;
+          }
+          this.idx = 0;
+          this.picked = null;
+          this.confirmT = 0;
+          SFX.click();
+          return;
+        }
         game.scenes.replace(new TransitionScene(this.completedChamberIdx), game);
       }
       return;
@@ -95,12 +112,19 @@ export class PactScene {
     ctx.fillStyle = "rgba(0,0,0,0.70)";
     ctx.fillRect(0, 0, W, H);
 
-    drawBanner(ctx, this.eliteReward ? "ELITE BONUS - CHOOSE A PACT" : "SEAL A PACT",
-      W / 2, 70, 40, COLORS.bile, COLORS.blood);
-    drawText(ctx, this.eliteReward
-      ? "The guardian was Elite. Pick 1 of 4."
-      : "The worm rewards the worthy. Pick 1 of 3.",
-      W / 2, 114, { size: 15, color: COLORS.bone, align: "center" });
+    const bubbleActive = this.bubbleChains >= 2;
+    const sealIdx = bubbleActive ? (this.bubbleChains - this.sealsLeft + 1) : 1;
+
+    drawBanner(ctx, bubbleActive
+      ? `BUBBLEGUM (${sealIdx}/${this.bubbleChains})`
+      : (this.eliteReward ? "ELITE BONUS - CHOOSE A PACT" : "SEAL A PACT"),
+    W / 2, 70, bubbleActive ? 34 : 40, COLORS.bile, COLORS.blood);
+    drawText(ctx, bubbleActive
+      ? `Pick 1 of 3 — pact ${sealIdx} of ${this.bubbleChains} (sweetened valve tax).`
+      : (this.eliteReward
+        ? "The guardian was Elite. Pick 1 of 4."
+        : "The worm rewards the worthy. Pick 1 of 3."),
+    W / 2, 114, { size: 15, color: COLORS.bone, align: "center" });
 
     const n = this.choices.length;
     const gap = 24;
