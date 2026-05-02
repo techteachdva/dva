@@ -3041,3 +3041,296 @@ html.morph-immersive-open body {
     }
   }
 }
+
+/* ===================================================================== */
+/*  Rebuild — three-mode toolbar (Word / Morpheme / Compare)             */
+/* ===================================================================== */
+
+.morphology-shell--wb .morph-ui-panel {
+  background: linear-gradient(to top, rgba(255, 255, 255, 0.95) 55%, rgba(255, 255, 255, 0) 100%);
+  padding: 0.45rem 0.75rem max(0.55rem, env(safe-area-inset-bottom, 0));
+}
+
+.morph-mode-toolbar {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.55rem;
+  max-width: 48rem;
+  margin: 0 auto 0.5rem;
+}
+
+.morph-mode-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.05rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 14px;
+  border: 1.5px solid #cbd5e1;
+  background: #ffffff;
+  color: #0f172a;
+  cursor: pointer;
+  transition: border-color 0.18s ease, background-color 0.18s ease, transform 0.12s ease,
+    box-shadow 0.18s ease;
+  font: inherit;
+  line-height: 1.05;
+  min-height: 3.45rem;
+}
+
+.morph-mode-btn:hover {
+  border-color: #64748b;
+  background: #f8fafc;
+}
+
+.morph-mode-btn:focus-visible {
+  outline: 2px solid #ff6ad5;
+  outline-offset: 2px;
+}
+
+.morph-mode-btn--active {
+  border-color: #ff6ad5;
+  background: linear-gradient(180deg, #fff5fb 0%, #ffe8f6 100%);
+  box-shadow: 0 4px 14px rgba(255, 106, 213, 0.16);
+}
+
+.morph-mode-btn__icon {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.morph-mode-btn__label {
+  margin-top: 0.18rem;
+  font-size: 0.96rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+.morph-mode-btn__sub {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #64748b;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.morph-mode-btn--active .morph-mode-btn__sub {
+  color: #b8246d;
+}
+
+.morph-pick-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 0.25rem;
+}
+
+.morph-pick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  width: 100%;
+  max-width: 32rem;
+}
+
+.morph-pick label {
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: #475569;
+}
+
+.morph-pick .morph-select {
+  width: 100%;
+  max-width: 100%;
+  font-size: 0.96rem;
+  padding: 0.5rem 2rem 0.5rem 0.75rem;
+  background: #fff;
+  color: #0f172a;
+  border: 1.5px solid #94a3b8;
+  border-radius: 10px;
+}
+
+.morph-pick .morph-select:focus-visible {
+  outline: 2px solid #ff6ad5;
+  outline-offset: 2px;
+  border-color: #ff6ad5;
+}
+
+.morph-pick__hint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #475569;
+  text-align: center;
+  line-height: 1.4;
+  max-width: 30rem;
+}
+
+.morph-pick--compare {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  max-width: 40rem;
+  align-items: stretch;
+}
+
+.morph-pick--compare .morph-pick__col {
+  flex: 1 1 14rem;
+  min-width: 11rem;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.2rem;
+}
+
+.morph-pick--compare label {
+  text-align: left;
+}
+
+/* Hide legacy toolbar columns — markup gone but old rules linger */
+.morph-ui-toolbar { display: none !important; }
+.morph-word-row--isolate { display: none !important; }
+.morph-compare-row { display: none !important; }
+.morph-links-morpheme-row { display: none !important; }
+.morph-cluster--isolate, .morph-cluster--compare, .morph-cluster--links { display: none !important; }
+
+/* Compact meta row above the toolbar — help + fullscreen icons inline */
+.morph-ui-row--meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 0.4rem;
+  max-width: 48rem;
+  font-size: 0.78rem;
+  color: #475569;
+}
+
+.morph-curriculum-note {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #475569;
+  letter-spacing: 0.01em;
+}
+
+.morph-help-btn,
+.morph-fs-btn {
+  background: #fff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 0.32rem 0.58rem;
+  font-size: 1.05rem;
+  cursor: pointer;
+  transition: border-color 0.16s ease, background-color 0.16s ease;
+  line-height: 1;
+}
+
+.morph-help-btn:hover,
+.morph-fs-btn:hover {
+  border-color: #64748b;
+  background: #f8fafc;
+}
+
+.morph-fs-btn[aria-pressed="true"] {
+  border-color: #ff6ad5;
+  background: linear-gradient(180deg, #fff5fb 0%, #ffe8f6 100%);
+}
+
+/* Hint readable on whiteboard */
+.morphology-shell--wb .morph-hint {
+  color: #475569;
+  font-size: 0.82rem;
+  max-width: 46rem;
+}
+
+/* Tooltip — minimal, readable on the whiteboard */
+.morph-node-tooltip {
+  position: fixed;
+  z-index: 90;
+  pointer-events: none;
+  background: rgba(15, 23, 42, 0.95);
+  color: #f8fafc;
+  padding: 0.5rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.35);
+  max-width: 18rem;
+  font-size: 0.85rem;
+  line-height: 1.35;
+  transition: opacity 0.12s ease;
+}
+
+.morph-node-tooltip--hidden {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.morph-node-tooltip__pos {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #ffd060;
+  margin-bottom: 0.18rem;
+}
+
+.morph-node-tooltip__text {
+  font-size: 1.02rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+.morph-node-tooltip__gloss {
+  margin-top: 0.18rem;
+  color: #e2e8f0;
+}
+
+.morph-node-tooltip__word {
+  margin-top: 0.28rem;
+  font-size: 0.78rem;
+  color: #cbd5e1;
+}
+
+/* Lesson primer/morpheme word picks */
+.morph-link-pick {
+  background: #fff;
+  border: 1.5px solid #cbd5e1;
+  color: #0f172a;
+  border-radius: 8px;
+  padding: 0.28rem 0.58rem;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: border-color 0.16s ease, background-color 0.16s ease;
+}
+
+.morph-link-pick:hover {
+  border-color: #ff6ad5;
+  background: #fff5fb;
+}
+
+.morph-lesson__ul--picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.morph-lesson__ul--picks li {
+  list-style: none;
+  margin: 0;
+}
+
+/* Mobile: stack mode buttons in two rows on very narrow screens */
+@media (max-width: 28rem) {
+  .morph-mode-btn__sub { display: none; }
+  .morph-mode-btn { padding: 0.4rem 0.4rem; min-height: 2.85rem; }
+  .morph-mode-btn__icon { font-size: 1.2rem; }
+  .morph-mode-btn__label { font-size: 0.86rem; }
+  .morph-pick--compare { flex-direction: column; }
+}

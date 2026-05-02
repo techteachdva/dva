@@ -11,8 +11,7 @@ contentClasses: morphology-page
   <header class="morphology-top">
     <h1 class="morph-page-title">Morphology: The Analysis of Words</h1>
     <p class="morphology-tagline">
-      Highlight reel from Park-Johnson &amp; Shin (2020), <em>Linguistics for Language Teachers</em>, Chapter 4.
-      After the intro, the explorer opens on a <strong>random bank pick</strong>—use <strong>Focus</strong> to choose a lemma or morpheme tag. Five teaching ideas stay below when you scroll.
+      A clean explorer for word morphology — pick a <strong>word</strong> for one tree, a <strong>morpheme</strong> to see every word in the bank that contains it, or <strong>compare</strong> two words side-by-side. Highlight reel from Park-Johnson &amp; Shin (2020), <em>Linguistics for Language Teachers</em>, Ch. 4.
     </p>
   </header>
 
@@ -21,120 +20,102 @@ contentClasses: morphology-page
       id="morph-canvas-host"
       class="morph-canvas-host"
       role="img"
-      aria-label="Morphology board: diagrams auto-fit in view; drag to pan"
+      aria-label="Morphology board: drag to pan; only the selected tree(s) are shown"
     ></div>
+
     <div class="morph-ui-panel">
-      <div class="morph-ui-row morph-ui-row--meta" role="group" aria-label="Vocabulary note">
-        <span class="morph-curriculum-note" title="Edit per-word tier tags in morphology-words-data.js">One vocabulary set · tier shown inside each mini-lesson</span>
-        <button
-          type="button"
-          id="morph-tour-btn"
-          class="morph-tour-btn"
-          aria-label="Start guided tour of controls and canvas"
-          title="Guided tour"
-        >
-          📖
-        </button>
+      <div class="morph-ui-row morph-ui-row--meta" role="group" aria-label="View aids">
+        <span class="morph-curriculum-note" title="One vocabulary set; tier shown inside each mini-lesson">Tier shown inside each mini-lesson</span>
         <button
           type="button"
           id="morph-help-btn"
           class="morph-help-btn"
-          aria-label="Help: controls and views"
+          aria-label="Help: how to use this explorer"
           title="Help"
         >
           ❓
         </button>
+        <button
+          type="button"
+          id="morph-btn-fs"
+          class="morph-fs-btn morph-fs-btn--icon"
+          title="Full screen"
+          aria-label="Full screen"
+        >
+          🖥️
+        </button>
       </div>
-      <div class="morph-ui-toolbar" role="group" aria-label="Isolated tree, linked trees, or compare trees">
-        <div class="morph-toolbar__col morph-toolbar__col--isolate">
-          <div class="morph-ui-row morph-ui-row--arrange morph-cluster morph-cluster--isolate" role="group" aria-label="Isolated tree">
-            <span class="morph-ui-label">Isolate</span>
-            <button
-              type="button"
-              id="morph-btn-arr-garden"
-              class="morph-view-btn morph-view-btn--icon morph-view-btn--active"
-              aria-pressed="true"
-              title="Isolated Tree"
-              aria-label="Isolated Tree"
-            >
-              🌳
-            </button>
-          </div>
-          <div id="morph-word-row" class="morph-ui-row morph-word-row--isolate">
-            <label for="morph-word-select">Focus</label>
-            <select
-              id="morph-word-select"
-              class="morph-select"
-              aria-describedby="morph-hint"
-              title="Lemma = one tree; morpheme tag = every matching word on the ring"
-            ></select>
-          </div>
+
+      <div class="morph-mode-toolbar" role="tablist" aria-label="Choose what to show">
+        <button
+          type="button"
+          id="morph-mode-word"
+          class="morph-mode-btn morph-mode-btn--active"
+          role="tab"
+          aria-pressed="true"
+          aria-controls="morph-pick-word"
+          title="Show one word's morpheme tree (key 1)"
+        >
+          <span class="morph-mode-btn__icon" aria-hidden="true">🌳</span>
+          <span class="morph-mode-btn__label">Word</span>
+          <span class="morph-mode-btn__sub">single tree</span>
+        </button>
+        <button
+          type="button"
+          id="morph-mode-morpheme"
+          class="morph-mode-btn"
+          role="tab"
+          aria-pressed="false"
+          aria-controls="morph-pick-morpheme"
+          title="Link every word that shares one morpheme (key 2)"
+        >
+          <span class="morph-mode-btn__icon" aria-hidden="true">🔗</span>
+          <span class="morph-mode-btn__label">Morpheme</span>
+          <span class="morph-mode-btn__sub">linked words</span>
+        </button>
+        <button
+          type="button"
+          id="morph-mode-compare"
+          class="morph-mode-btn"
+          role="tab"
+          aria-pressed="false"
+          aria-controls="morph-pick-compare"
+          title="Compare two word trees with shared-morpheme links (key 3)"
+        >
+          <span class="morph-mode-btn__icon" aria-hidden="true">⚖</span>
+          <span class="morph-mode-btn__label">Compare</span>
+          <span class="morph-mode-btn__sub">two trees</span>
+        </button>
+      </div>
+
+      <div class="morph-pick-area" role="region" aria-label="Mode selector">
+        <div id="morph-pick-word" class="morph-pick">
+          <label for="morph-word-select">Pick a word</label>
+          <select id="morph-word-select" class="morph-select"></select>
         </div>
-        <div class="morph-toolbar__col morph-toolbar__col--compare">
-          <div class="morph-ui-row morph-ui-row--arrange morph-cluster morph-cluster--compare" role="group" aria-label="Compare trees">
-            <span class="morph-ui-label">Compare</span>
-            <button
-              type="button"
-              id="morph-btn-arr-compare"
-              class="morph-view-btn morph-view-btn--icon"
-              aria-pressed="false"
-              title="Compare Trees"
-              aria-label="Compare Trees"
-            >
-              ⚖
-            </button>
-          </div>
-          <div id="morph-compare-row" class="morph-compare-stack morph-compare-row morph-ui-row" hidden aria-hidden="true">
-            <div class="morph-compare-pair">
-              <label for="morph-compare-a">Compare A</label>
-              <select id="morph-compare-a" class="morph-select morph-select--compare" title="First word in compare mode"></select>
-            </div>
-            <div class="morph-compare-pair">
-              <label for="morph-compare-b">Compare B</label>
-              <select id="morph-compare-b" class="morph-select morph-select--compare" title="Second word in compare mode"></select>
-            </div>
-          </div>
+
+        <div id="morph-pick-morpheme" class="morph-pick" hidden aria-hidden="true">
+          <label for="morph-morpheme-select">Pick a morpheme</label>
+          <select id="morph-morpheme-select" class="morph-select"></select>
+          <p class="morph-pick__hint">Every word in the bank that contains this morpheme appears on the board with magenta links between matching pieces.</p>
         </div>
-        <div class="morph-toolbar__col morph-toolbar__col--links">
-          <div class="morph-ui-row morph-ui-row--arrange morph-cluster morph-cluster--links" role="group" aria-label="Linked trees">
-            <span class="morph-ui-label">Links</span>
-            <button
-              type="button"
-              id="morph-btn-arr-master"
-              class="morph-view-btn morph-view-btn--icon"
-              aria-pressed="false"
-              title="Linked Trees"
-              aria-label="Linked Trees"
-            >
-              🔗
-            </button>
+
+        <div id="morph-pick-compare" class="morph-pick morph-pick--compare" hidden aria-hidden="true">
+          <div class="morph-pick__col">
+            <label for="morph-compare-a">Word A</label>
+            <select id="morph-compare-a" class="morph-select"></select>
           </div>
-          <div id="morph-links-morpheme-row" class="morph-ui-row morph-links-morpheme-row" hidden aria-hidden="true">
-            <label for="morph-links-morpheme">Morpheme</label>
-            <select
-              id="morph-links-morpheme"
-              class="morph-select morph-select--links"
-              aria-describedby="morph-hint"
-              title="Choose a morpheme to explore linked lemmas"
-            ></select>
-          </div>
-          <div class="morph-ui-row morph-fs-slot">
-            <button
-              type="button"
-              id="morph-btn-fs"
-              class="morph-fs-btn morph-fs-btn--icon"
-              title="Full screen"
-              aria-label="Full screen"
-            >
-              🖥️
-            </button>
+          <div class="morph-pick__col">
+            <label for="morph-compare-b">Word B</label>
+            <select id="morph-compare-b" class="morph-select"></select>
           </div>
         </div>
       </div>
+
       <div
         class="morph-ui-row morph-ui-row--lesson-zoom morph-lesson-zoom-bar"
         role="toolbar"
-        aria-label="Mini-lesson text size (duplicate toolbar when the diagram fills the screen)"
+        aria-label="Mini-lesson text size (only shown in fullscreen)"
       >
         <span class="morph-ui-label">Lesson</span>
         <button
@@ -143,34 +124,25 @@ contentClasses: morphology-page
           data-morph-lesson-zoom="smaller"
           title="Smaller lesson text ( [ )"
           aria-label="Decrease mini-lesson text size"
-        >
-          A−
-        </button>
+        >A−</button>
         <button
           type="button"
           class="morph-text-size-btn morph-text-size-btn--bar"
           data-morph-lesson-zoom="reset"
           title="Default lesson text size ( Alt+0 )"
           aria-label="Reset mini-lesson text size"
-        >
-          A
-        </button>
+        >A</button>
         <button
           type="button"
           class="morph-text-size-btn morph-text-size-btn--bar"
           data-morph-lesson-zoom="larger"
           title="Larger lesson text ( ] )"
           aria-label="Increase mini-lesson text size"
-        >
-          A+
-        </button>
+        >A+</button>
       </div>
-      <p id="morph-hint" class="morph-hint morph-hint--compact">
-        <strong>Board:</strong> trees <strong>auto-fit</strong> at the largest size that keeps the whole diagram in view—<strong>drag</strong> to pan.
-        <strong>Modes:</strong> 🌳 one lemma · 🔗 shared-morpheme hubs · ⚖ two trees.
-        <strong>Wheel</strong> usually <strong>scrolls the page</strong> (lesson &amp; “Five ideas”); in fullscreen, wheel over the lesson scrolls <strong>lesson text</strong>.
-        Lesson size: <strong>A−</strong> <strong>A</strong> <strong>A+</strong> or <kbd>[</kbd> <kbd>]</kbd>.
-        <kbd>F</kbd> refit · <kbd>R</kbd> reset · hover gloss · double-click refit · optional <kbd>\\</kbd> = 3D zoom<span class="visually-hidden"> · Space toggles orbit in 3D only</span>.
+
+      <p id="morph-hint" class="morph-hint">
+        <strong>Drag</strong> to pan · the board <strong>auto-fits</strong> the visible tree(s) · <strong>hover</strong> spheres for gloss · <strong>click</strong> a sphere to jump to its morpheme link · <kbd>1</kbd>/<kbd>2</kbd>/<kbd>3</kbd> = modes · <kbd>F</kbd>/<kbd>R</kbd> refit · double-click refits.
       </p>
     </div>
 
@@ -183,76 +155,41 @@ contentClasses: morphology-page
     >
       <button type="button" class="morph-help__backdrop" aria-label="Close help"></button>
       <div class="morph-help__panel">
-        <h2 id="morph-help-title" class="morph-help__title">Digital morphemes — how to use</h2>
+        <h2 id="morph-help-title" class="morph-help__title">How to use the morphology explorer</h2>
         <div class="morph-help__body">
           <section class="morph-help__sec">
-            <h3>Vocabulary tiers (Beck-style)</h3>
-            <p>
-              The site loads <strong>one</strong> vocabulary set. Each lemma is tagged
-              <strong>Tier 1</strong> (common everyday),
-              <strong>Tier 2</strong> (academic / cross-subject), or
-              <strong>Tier 3</strong> (lower-frequency or domain-heavy). The mini-lesson states the tier and points you to
-              <code>morphology-words-data.js</code> if you want to reclassify a word.
-            </p>
-          </section>
-          <section class="morph-help__sec">
-            <h3>Flat board &amp; Arrange</h3>
-            <p class="morph-help__sub">
-              After the intro, the <strong>flat board</strong> keeps reframing so visible trees fill the view without clipping—drag to pan, <kbd>F</kbd> or double-click to refit. Use <strong>Arrange</strong> when you want isolate, linked hubs, or compare.
-            </p>
+            <h3>Three modes</h3>
             <ul>
-              <li>
-                <strong>🌳 Isolated Tree</strong> — One centered diagram with deep mini-lessons and morphology notes.
-              </li>
-              <li>
-                <strong>🔗 Linked Trees</strong> — Shows lemmas that share morphemes with your focus pick (word <em>or</em> morpheme); magenta bridges stay within that visible set.
-              </li>
-              <li>
-                <strong>⚖ Compare Trees</strong> — Two selections side by side plus a unified lesson keyed to overlaps (exit tickets stay word-specific).</li>
-              <li>
-                <strong>🖥️ Full screen</strong> — Fills the viewport (or immersive mode on mobile Safari) so the diagram and chrome stay legible when teaching.
-              </li>
+              <li><strong>🌳 Word</strong> — one word's tree. The mini-lesson below explains how the pieces nest, what each affix does, and why it matters for reading and spelling.</li>
+              <li><strong>🔗 Morpheme</strong> — pick any morpheme tag (prefix, suffix, root, or lexeme); every word in the bank that contains it appears on the board with magenta links between matching pieces. The lesson becomes a primer on that morpheme: its origin, meaning, and Wiktionary link.</li>
+              <li><strong>⚖ Compare</strong> — two word trees side-by-side. Magenta arcs trace the morphemes they share; the lesson is a dual “what these have in common” card.</li>
             </ul>
-            <p class="morph-help__sub">
-              <strong>Maintainer shortcut:</strong> press <kbd>\</kbd> to toggle the legacy <em>orbital 3D</em> camera (not surfaced in the toolbar). Return to the slash key to come back to the default board.
-            </p>
           </section>
           <section class="morph-help__sec">
             <h3>Mouse / touch</h3>
             <ul>
-              <li><strong>Hover</strong> a morpheme sphere for tooltip glosses, categories, and sibling lemmas that share it.</li>
-              <li><strong>Drag</strong> to pan on the flat board (or orbit when <kbd>\</kbd> 3D mode is on).</li>
-              <li>
-                <strong>Flat board zoom</strong> is automatic—the scene fills the view as tightly as possible while keeping the whole visible tree in frame. Use <kbd>F</kbd> or double-click to refit after panning.
-              </li>
-              <li>
-                <strong>Scroll wheel</strong> over the diagram usually moves the <strong>page</strong> so you can reach the mini-lesson and “Five ideas.” At the top or bottom of the page, wheel behavior may fall through (optional <kbd>\</kbd> 3D uses zoom).
-              </li>
-              <li><strong>Click</strong> pins a tooltip; picks can jump Focus to another lemma.</li>
-              <li><strong>Double-click</strong> refits framing for that tree.</li>
-              <li><strong>Shift + double-click</strong> (3D mode only) toggles slow auto-orbit around the focused node.</li>
+              <li><strong>Drag</strong> the board to pan. The viewer auto-fits the visible trees so you don’t need to zoom manually.</li>
+              <li><strong>Hover</strong> a sphere for its gloss, category, and parent word.</li>
+              <li><strong>Click</strong> a morpheme sphere — if that morpheme appears in 2+ words, jumps to <strong>Morpheme</strong> mode for that piece.</li>
+              <li><strong>Double-click</strong> anywhere — refit the camera.</li>
             </ul>
           </section>
           <section class="morph-help__sec">
             <h3>Keyboard</h3>
             <ul>
-              <li><kbd>W</kbd> <kbd>A</kbd> <kbd>S</kbd> <kbd>D</kbd>, arrows — glide / orbit (only in experimental 3D via <kbd>\</kbd>).</li>
-              <li><kbd>F</kbd> — fit isolate, linked, or dual layout into view.</li>
-              <li><kbd>R</kbd> — reset framing for the active arrange mode.</li>
-              <li><kbd>Space</kbd> — toggle orbit drift while 3D experimental mode is enabled.</li>
-              <li><kbd>\\</kbd> — toggle the hidden spatial 3D camera; default teaching mode stays flat.</li>
-              <li><kbd>Escape</kbd> — leave this help drawer, immersive mode, or fullscreen.</li>
-              <li><kbd>[</kbd> / <kbd>]</kbd> — decrease / increase mini-lesson text size when a lesson is showing (not while typing in a control).</li>
-              <li><kbd>Alt</kbd>+<kbd>0</kbd> — reset lesson text size to default.</li>
+              <li><kbd>1</kbd> Word · <kbd>2</kbd> Morpheme · <kbd>3</kbd> Compare</li>
+              <li><kbd>F</kbd> or <kbd>R</kbd> — refit camera</li>
+              <li><kbd>[</kbd> / <kbd>]</kbd> — smaller / larger mini-lesson text · <kbd>Alt</kbd>+<kbd>0</kbd> resets</li>
+              <li><kbd>Escape</kbd> — close help</li>
             </ul>
           </section>
           <section class="morph-help__sec">
-            <h3>Focus menu &amp; details</h3>
+            <h3>Vocabulary tiers</h3>
             <p>
-              <strong>Focus</strong> lists lemmas and morpheme tags. Isolated Tree uses one lemma’s diagram; Linked Trees fans out every lemma that matches your word or morpheme pick. Compare Trees swaps in two selectors (each can be a word or a morpheme).
-            </p>
-            <p class="morph-help__sub">
-              <strong>Mini-lesson text size:</strong> use <strong>A−</strong> / <strong>A</strong> / <strong>A+</strong> above the lesson (inline on the page and when docked in full screen). Keys <kbd>[</kbd> smaller and <kbd>]</kbd> larger; <kbd>Alt</kbd>+<kbd>0</kbd> resets. Your choice is saved in this browser.
+              The site loads <strong>one</strong> vocabulary set. Each lemma is tagged
+              <strong>Tier 1</strong> (everyday), <strong>Tier 2</strong> (academic / cross-subject), or
+              <strong>Tier 3</strong> (lower-frequency / domain-heavy). The mini-lesson states the tier and points to
+              <code>morphology-words-data.js</code> if you want to retag a word.
             </p>
           </section>
         </div>
@@ -341,8 +278,9 @@ contentClasses: morphology-page
   <section class="morph-chart" aria-labelledby="morph-chart-title">
     <h2 id="morph-chart-title" class="morph-chart__title">Word bank morpheme chart</h2>
     <p class="morph-chart__sub">
-      Click a <strong>morpheme</strong> to see all lemmas in the bank that share it. Click a <strong>word</strong> to jump the viewer.
-      (Edit origins/meanings and Wiktionary links in <code>morphology-morpheme-catalog.js</code>.)
+      Click a <strong>morpheme</strong> to switch to <strong>Morpheme</strong> mode and see all linked words. Click a
+      <strong>word</strong> to load it in <strong>Word</strong> mode.
+      (Edit origins and Wiktionary links in <code>morphology-morpheme-catalog.js</code>.)
     </p>
     <div id="morph-morpheme-chart" class="morph-chart__mount" aria-live="polite"></div>
   </section>
