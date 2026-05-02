@@ -17,7 +17,7 @@
                 }
                 return acc;
             }, {});
-        return existing, n_remaining;
+        return { existing, remaining: n_remaining };
     }
 
     function filterLocalGraphData(graphData, depth) {
@@ -28,18 +28,23 @@
         let links = JSON.parse(JSON.stringify(graphData.links));
         let currentLink = decodeURI(window.location.pathname);
         let currentNode = remaining[currentLink] || Object.values(remaining).find((v) => v.home);
+        if (!currentNode) {
+            return { nodes: [], links: [] };
+        }
         delete remaining[currentNode.url];
         if (!currentNode.home) {
             let home = Object.values(remaining).find((v) => v.home);
-            delete remaining[home.url];
+            if (home) delete remaining[home.url];
         }
         currentNode.current = true;
         let existing = {};
         existing[currentNode.url] = currentNode;
         for (let i = 0; i < depth; i++) {
-            existing, remaining = getNextLevelNeighbours(existing, remaining);
+            const { existing: ex, remaining: rem } = getNextLevelNeighbours(existing, remaining);
+            existing = ex;
+            remaining = rem;
         }
-        nodes = Object.values(existing);
+        let nodes = Object.values(existing);
         if (!currentNode.home) {
             nodes = nodes.filter(n => !n.home);
         }
@@ -64,6 +69,12 @@
             return;
         }
         const el = document.getElementById(id);
+        if (!el) {
+            return;
+        }
+        if (!graphData.nodes || graphData.nodes.length === 0) {
+            return;
+        }
         width = el.offsetWidth;
         height = el.offsetHeight;
         const highlightNodes = new Set();
@@ -207,7 +218,9 @@
                 </div>
         </div>
     </div>
-    <div x-effect="window.graph = renderLocalGraph(graphData, depth, fullScreen)" id="link-graph" ></div>
+    <div x-effect="window.graph = renderLocalGraph(graphData, depth, fullScreen)">
+        <div id="link-graph"></div>
+    </div>
     <div x-show="showFullGraph" id="full-graph" class="show" style="display: none;">
         <span id="full-graph-close" x-on:click="fullGraph = closefullGraph(fullGraph); showFullGraph = false;"><i icon-name="x" aria-hidden="true"></i></span><div id="full-graph-container"></div>
     </div>

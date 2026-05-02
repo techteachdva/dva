@@ -184,8 +184,8 @@
 .morphology-shell {
   position: relative;
   width: 100%;
-  /* Leave vertical room for intro copy, mini-lesson, and chapter highlights without trapping scroll */
-  min-height: min(58vh, 680px);
+  /* Canvas-first: shell hugs viewer; page copy scrolls below */
+  min-height: min(52vh, 560px);
   margin-top: 0.5rem;
   background: radial-gradient(ellipse 120% 80% at 50% 20%, #152238 0%, var(--morph-bg) 55%);
   border-radius: 12px;
@@ -277,7 +277,7 @@ html.morph-immersive-open body {
 .morph-canvas-host {
   display: block;
   width: 100%;
-  height: min(58vh, 680px);
+  height: min(74vh, 840px);
   touch-action: none;
   position: relative;
   transition: background 0.28s ease;
@@ -460,7 +460,7 @@ html.morph-immersive-open body {
   right: 0;
   bottom: 0;
   z-index: 5;
-  padding: 0.32rem 0.6rem max(0.28rem, env(safe-area-inset-bottom, 0));
+  padding: 0.18rem 0.42rem max(0.14rem, env(safe-area-inset-bottom, 0));
   background: linear-gradient(to top, rgba(10, 14, 26, 0.78) 42%, rgba(10, 14, 26, 0) 100%);
   backdrop-filter: blur(7px) saturate(1.05);
   -webkit-backdrop-filter: blur(7px) saturate(1.05);
@@ -495,17 +495,17 @@ html.morph-immersive-open body {
 .morph-ui-toolbar {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  gap: 0.65rem 1.35rem;
+  gap: 0.28rem 0.75rem;
   align-items: end;
   max-width: 58rem;
   margin: 0 auto;
-  padding-bottom: 0.08rem;
+  padding-bottom: 0;
 }
 
 .morph-toolbar__col {
   display: flex;
   flex-direction: column;
-  gap: 0.38rem;
+  gap: 0.18rem;
   min-width: 0;
 }
 
@@ -543,7 +543,7 @@ html.morph-immersive-open body {
 .morph-compare-stack {
   flex-direction: column;
   align-items: stretch;
-  gap: 0.42rem;
+  gap: 0.28rem;
   width: 100%;
   max-width: 22rem;
 }
@@ -551,8 +551,18 @@ html.morph-immersive-open body {
 .morph-compare-pair {
   display: flex;
   flex-direction: column;
-  gap: 0.18rem;
+  gap: 0.1rem;
   align-items: stretch;
+  flex: 0 0 auto;
+}
+
+.morph-compare-stack .morph-select--compare {
+  flex: 0 1 auto;
+  min-height: 1.72rem;
+  max-height: 2.05rem;
+  padding: 0.18rem 1.55rem 0.18rem 0.52rem;
+  font-size: 0.8rem;
+  line-height: 1.18;
 }
 
 .morph-compare-pair label {
@@ -638,12 +648,12 @@ html.morph-immersive-open body {
 
 /* Icon-only view / whiteboard toggles (tree, checkmark) */
 .morph-view-btn--icon {
-  font-size: 1.42rem;
+  font-size: 1.22rem;
   line-height: 1;
   letter-spacing: 0;
   text-transform: none;
-  padding: 0.34rem 0.52rem;
-  min-width: 2.85rem;
+  padding: 0.22rem 0.38rem;
+  min-width: 2.45rem;
 }
 
 /* Checkmark (whiteboard surface): dark on light surfaces, light on dark chrome */
@@ -665,12 +675,12 @@ html.morph-immersive-open body {
 }
 
 .morph-fs-btn--icon {
-  font-size: 1.38rem;
+  font-size: 1.2rem;
   line-height: 1;
   letter-spacing: 0;
   text-transform: none;
-  padding: 0.34rem 0.48rem;
-  min-width: 2.75rem;
+  padding: 0.22rem 0.38rem;
+  min-width: 2.4rem;
   color: #cbd5e1;
 }
 
@@ -1384,7 +1394,8 @@ html.morph-immersive-open body {
 .morph-canvas-host .morph-detail.morph-detail--viewer-dock {
   position: absolute;
   z-index: 30;
-  inset: 0.35rem 0.38rem clamp(6.25rem, 22vmin, 9.5rem); /* clears bottom toolbars + lesson zoom row */
+  /* Tighter bottom inset — compact toolbar + zoom row; maximizes WebGL area */
+  inset: 0.28rem 0.35rem clamp(4.35rem, 15vmin, 6.75rem);
   max-width: none;
   width: auto;
   margin: 0;
@@ -2861,14 +2872,14 @@ html.morph-immersive-open body {
   .morphology-shell {
     border-radius: 0;
     margin-top: 0.25rem;
-    min-height: min(52vh, 620px);
-    min-height: min(52dvh, 620px);
+    min-height: min(62vh, 680px);
+    min-height: min(62dvh, 680px);
   }
 
   #morph-canvas-host,
   .morph-canvas-host {
-    height: min(52vh, 620px);
-    height: min(52dvh, 620px);
+    height: min(68vh, 720px);
+    height: min(68dvh, 720px);
   }
 
   .morph-ui-label {
@@ -2876,8 +2887,8 @@ html.morph-immersive-open body {
   }
 
   .morph-ui-panel {
-    padding: 0.45rem max(0.5rem, env(safe-area-inset-left, 0)) max(0.5rem, env(safe-area-inset-bottom, 0))
-      max(0.5rem, env(safe-area-inset-right, 0));
+    padding: 0.28rem max(0.45rem, env(safe-area-inset-left, 0)) max(0.38rem, env(safe-area-inset-bottom, 0))
+      max(0.45rem, env(safe-area-inset-right, 0));
   }
 
   .morph-ui-row {
@@ -2947,6 +2958,12 @@ html.morph-immersive-open body {
     max-width: none;
     min-height: 2.35rem;
     font-size: 1rem;
+  }
+
+  .morph-compare-stack .morph-select--compare {
+    min-height: 1.78rem;
+    max-height: 2.15rem;
+    font-size: 0.92rem;
   }
 
   /* Long hint lives in page copy; hiding here frees most of the viewport for the WebGL view */

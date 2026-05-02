@@ -147,7 +147,7 @@ function morphParseSelectValue(val) {
 function morphSelectIsValid(val) {
   const p = morphParseSelectValue(val);
   if (p.kind === "word") return WORDS.some((w) => w.id === p.id);
-  if (p.kind === "morpheme") return !!(morphemeRegistry[p.key]?.length);
+  if (p.kind === "morpheme") return morphemeRegistry[p.key] !== undefined;
   return false;
 }
 
@@ -156,25 +156,33 @@ function morphSoloWordIdFromSelect(val) {
   if (p.kind === "word") return WORDS.some((w) => w.id === p.id) ? p.id : null;
   if (p.kind === "morpheme") {
     const arr = morphemeRegistry[p.key];
-    if (!arr?.length) return null;
-    const ids = [...new Set(arr.map((x) => x.wordId))].sort();
+    if (arr?.length) {
+      const ids = [...new Set(arr.map((x) => x.wordId))].sort();
+      return ids[0] ?? null;
+    }
+    const ids = [...wordIdsContainingMorphemeKey(p.key)].sort();
     return ids[0] ?? null;
   }
   return null;
 }
 
-function morphLinkedWordIdsFromMorphemeKey(key) {
-  const arr = morphemeRegistry[key];
+/** Lemma ids whose tree JSON contains `key` — works before meshes exist (lazy trees). */
+function wordIdsContainingMorphemeKey(key) {
   const out = new Set();
-  if (!arr?.length) return out;
-  for (const e of arr) out.add(e.wordId);
+  for (const w of WORDS) {
+    const ks = new Set();
+    collectMorphemeKeys(w.tree, ks);
+    if (ks.has(key)) out.add(w.id);
+  }
   return out;
 }
 
+function morphLinkedWordIdsFromMorphemeKey(key) {
+  return wordIdsContainingMorphemeKey(key);
+}
+
 function morphWordIdsSortedForKey(key) {
-  const arr = morphemeRegistry[key];
-  if (!arr?.length) return [];
-  return [...new Set(arr.map((x) => x.wordId))].sort();
+  return [...wordIdsContainingMorphemeKey(key)].sort();
 }
 
 function morphCatalogRowForKey(key) {
@@ -222,6 +230,17 @@ const MASTER_GOLDEN_ANGLE = 2.39996322972865332;
 function collectMorphemeKeys(node, /** @type {Set<string>} */ out) {
   if (node.morphemeKey) out.add(node.morphemeKey);
   for (const c of node.children || []) collectMorphemeKeys(c, out);
+}
+
+/** Empty registry buckets per key so pickers work before any mesh is built */
+function seedMorphemeRegistryShellFromWords() {
+  for (const w of WORDS) {
+    const ks = new Set();
+    collectMorphemeKeys(w.tree, ks);
+    for (const k of ks) {
+      if (!morphemeRegistry[k]) morphemeRegistry[k] = [];
+    }
+  }
 }
 
 /**
@@ -673,9 +692,43 @@ function buildWordGroup(word) {
   return group;
 }
 
-function buildBridgeLines(scene) {
-  const bridges = new THREE.Group();
-  bridges.name = "morpheme-bridges";
+/** Apex-first staggered scale + edge fade-in (skipped when reduced motion). */
+function morphInitTreeGrowth(group) {
+  if (REDUCED_MOTION) return;
+  const order = [...group.userData.meshes].sort((a, b) => {
+    const da = a.userData.treeDepth ?? 0;
+    const db = b.userData.treeDepth ?? 0;
+    if (da !== db) return da - db;
+    return b.position.y - a.position.y;
+  });
+  const stagger = 0.038;
+  const burst = 0.22;
+  group.userData.morphGrowth = {
+    elapsed: 0,
+    meshOrder: order,
+    meshIndex: new Map(order.map((m, i) => [m, i])),
+    stagger,
+    burst,
+    done: false,
+  };
+  for (const m of order) {
+    m.scale.setScalar(0.001);
+    if (m.userData.label) m.userData.label.visible = false;
+  }
+  for (const line of group.userData.lines) {
+    line.visible = false;
+    if (line.material) line.material.opacity = 0;
+  }
+}
+
+function populateMorphBridges(bridges) {
+  while (bridges.children.length) {
+    const ln = bridges.children[0];
+    bridges.remove(ln);
+    ln.geometry?.dispose();
+    const m = ln.material;
+    if (m && !Array.isArray(m)) m.dispose();
+  }
   const mat = new THREE.LineBasicMaterial({
     color: 0xff4dd4,
     transparent: true,
@@ -684,7 +737,7 @@ function buildBridgeLines(scene) {
 
   for (const key of Object.keys(morphemeRegistry)) {
     const arr = morphemeRegistry[key];
-    if (arr.length < 2) continue;
+    if (!arr || arr.length < 2) continue;
     for (let i = 0; i < arr.length; i++) {
       for (let j = i + 1; j < arr.length; j++) {
         if (arr[i].wordId === arr[j].wordId) continue;
@@ -697,6 +750,12 @@ function buildBridgeLines(scene) {
       }
     }
   }
+}
+
+function buildBridgeLines(scene) {
+  const bridges = new THREE.Group();
+  bridges.name = "morpheme-bridges";
+  populateMorphBridges(bridges);
   scene.add(bridges);
   return bridges;
 }
@@ -1256,6 +1315,7 @@ function init(host, detailEl, selectEl, shellEl) {
   assignGrid2d();
   assignWhiteboardCircle();
   Object.keys(morphemeRegistry).forEach((k) => delete morphemeRegistry[k]);
+  seedMorphemeRegistryShellFromWords();
 
   const scene = new THREE.Scene();
   const bg3d = new THREE.Color(0x0a0e1a);
@@ -1453,13 +1513,8 @@ function init(host, detailEl, selectEl, shellEl) {
   compareStage.visible = false;
   scene.add(compareStage);
 
-  const wordGroups = {};
-  for (const w of WORDS) {
-    const g = buildWordGroup(w);
-    g.position.copy(w.pos3d);
-    gardenRoot.add(g);
-    wordGroups[w.id] = g;
-  }
+  /** Built on demand — only visible lemmas allocate meshes */
+  const wordGroups = /** @type {Record<string, THREE.Group>} */ ({});
 
   /** @type {string | null} */
   let morphGardenSoloWordId = null;
@@ -1532,6 +1587,8 @@ function init(host, detailEl, selectEl, shellEl) {
       morphGardenSoloWordId = want;
 
       if (want) {
+        const wObj = WORDS.find((x) => x.id === want);
+        if (wObj) ensureWordGroupBuilt(wObj);
         const g = wordGroups[want];
         if (g) {
           soloStage.attach(g);
@@ -1683,6 +1740,17 @@ function init(host, detailEl, selectEl, shellEl) {
   const bridges = buildBridgeLines(scene);
   bridges.userData = { arc3d: true };
 
+  function ensureWordGroupBuilt(w) {
+    if (wordGroups[w.id]) return wordGroups[w.id];
+    const g = buildWordGroup(w);
+    morphInitTreeGrowth(g);
+    g.position.copy(posForViewKey(w, vk()));
+    gardenRoot.add(g);
+    wordGroups[w.id] = g;
+    populateMorphBridges(bridges);
+    return g;
+  }
+
   const gardenHints = new THREE.Group();
   gardenHints.name = "garden-hints";
   gardenHints.visible = false;
@@ -1766,7 +1834,7 @@ function init(host, detailEl, selectEl, shellEl) {
     return transition?.toKey ?? viewKey;
   }
 
-  /** Lemma ids sharing at least one morpheme registry key with `focusId` (includes the focus lemma). */
+  /** Lemma ids sharing at least one morpheme key with `focusId` (tree JSON — works before meshes exist). */
   function morphLinkedWordIdsFromFocus(/** @type {string} */ focusId) {
     const ok = WORDS.some((x) => x.id === focusId);
     /** @type {Set<string>} */
@@ -1777,10 +1845,16 @@ function init(host, detailEl, selectEl, shellEl) {
     if (!wFocus) return out;
     const keys = /** @type {Set<string>} */ (new Set());
     collectMorphemeKeys(wFocus.tree, keys);
-    for (const k of keys) {
-      const arr = morphemeRegistry[k];
-      if (!arr) continue;
-      for (const e of arr) out.add(e.wordId);
+    for (const w of WORDS) {
+      if (w.id === focusId) continue;
+      const ks = new Set();
+      collectMorphemeKeys(w.tree, ks);
+      for (const k of keys) {
+        if (ks.has(k)) {
+          out.add(w.id);
+          break;
+        }
+      }
     }
     return out;
   }
@@ -1880,12 +1954,7 @@ function init(host, detailEl, selectEl, shellEl) {
       });
     }
   } else {
-    for (const w of WORDS) {
-      const g = wordGroups[w.id];
-      g.position.copy(w.pos3d);
-      g.scale.setScalar(1);
-      g.rotation.y = 0;
-    }
+    /* Lazy word groups — positions applied when each lemma is first shown */
   }
 
   bridges.visible = false;
@@ -2202,6 +2271,21 @@ function init(host, detailEl, selectEl, shellEl) {
 
   function applyScopeVisibility(layoutKeyEffective = vk()) {
     const compareOn = layoutKeyEffective.startsWith("Compare");
+    const cmpEarly = morphCompareResolvedPair();
+    if (compareOn && cmpEarly.valid && cmpEarly.wa && cmpEarly.wb) {
+      const waObj = WORDS.find((x) => x.id === cmpEarly.wa);
+      const wbObj = WORDS.find((x) => x.id === cmpEarly.wb);
+      if (waObj) ensureWordGroupBuilt(waObj);
+      if (wbObj) ensureWordGroupBuilt(wbObj);
+    }
+    if (morphGardenSoloShouldUse(layoutKeyEffective)) {
+      const sid = morphSoloWordIdFromSelect(selectEl?.value ?? "");
+      if (sid) {
+        const wo = WORDS.find((x) => x.id === sid);
+        if (wo) ensureWordGroupBuilt(wo);
+      }
+    }
+
     morphApplyCompareStage(layoutKeyEffective);
 
     const compareIdsOk =
@@ -2243,9 +2327,6 @@ function init(host, detailEl, selectEl, shellEl) {
     }
 
     for (const w of WORDS) {
-      const g = wordGroups[w.id];
-      if (!g) continue;
-
       /** @type {boolean} */
       let vis = false;
 
@@ -2280,7 +2361,9 @@ function init(host, detailEl, selectEl, shellEl) {
         vis = false;
       }
 
-      g.visible = vis;
+      if (vis) ensureWordGroupBuilt(w);
+      const g = wordGroups[w.id];
+      if (g) g.visible = vis;
     }
     rebuildGardenHints(
       !compareOn &&
@@ -3506,8 +3589,10 @@ function init(host, detailEl, selectEl, shellEl) {
       g.rotation.x = flatPlanar ? 0 : wbElev * 0.1;
       g.rotation.y = flatPlanar ? 0 : sway * (1 - wbElev * 0.5);
 
+      const growing = g.userData.morphGrowth && !g.userData.morphGrowth.done;
       const dim = 0.08 * u;
       const tNow = clock.elapsedTime;
+      if (growing) continue;
       for (const mesh of g.userData.meshes) {
         const m = mesh.material;
         m.metalness = 0.5 * (1 - u) + 0.12 * u;
@@ -3561,6 +3646,53 @@ function init(host, detailEl, selectEl, shellEl) {
     }
 
     refreshControlsForViewMode(blend, masterWeight);
+  }
+
+  function morphAdvanceTreeGrowth(dt) {
+    for (const w of WORDS) {
+      const g = wordGroups[w.id];
+      if (!g?.visible || !g.userData.morphGrowth || g.userData.morphGrowth.done) continue;
+      const mg = g.userData.morphGrowth;
+      mg.elapsed += dt;
+      const order = mg.meshOrder;
+      const n = order.length;
+      const { stagger, burst } = mg;
+      const idxMap = mg.meshIndex;
+      for (let i = 0; i < n; i++) {
+        const m = order[i];
+        const ta = THREE.MathUtils.clamp((mg.elapsed - i * stagger) / burst, 0, 1);
+        const sc = ta <= 0 ? 0.001 : easeOutBack(ta);
+        m.scale.setScalar(sc);
+        if (m.userData.label) m.userData.label.visible = sc > 0.28;
+      }
+      for (const line of g.userData.lines) {
+        const a = line.userData.a;
+        const b = line.userData.b;
+        const ia = idxMap.get(a) ?? 0;
+        const ib = idxMap.get(b) ?? 0;
+        const need = Math.max(ia, ib);
+        const lineT = THREE.MathUtils.clamp(
+          (mg.elapsed - need * stagger - burst * 0.48) / (burst * 0.52),
+          0,
+          1
+        );
+        line.visible = lineT > 0.04;
+        if (line.material) line.material.opacity = 0.92 * lineT;
+        updateInternalTreeLine(line);
+      }
+      if (mg.elapsed > (n + 1) * stagger + burst + 0.55) {
+        mg.done = true;
+        for (const m of order) {
+          m.scale.setScalar(1);
+          if (m.userData.label) m.userData.label.visible = true;
+        }
+        for (const line of g.userData.lines) {
+          line.visible = true;
+          if (line.material) line.material.opacity = 0.9;
+          updateInternalTreeLine(line);
+        }
+      }
+    }
   }
 
   /* Intro overlay — letters branch into words + mini morpheme trees, then 3D settle (once per session) */
@@ -4089,6 +4221,7 @@ function init(host, detailEl, selectEl, shellEl) {
 
     if (introDone) {
       applyVisualTheme(viewBlend, layoutEase, layoutKeyFrom, layoutKeyTo);
+      morphAdvanceTreeGrowth(dt);
     } else {
       /* Typo intro + ring→isolate tween keep introDone false; without this, scene chrome / 2D lights never refresh and the board can read as blank. */
       morphApplyBackdropBlend(smoothstep(viewBlend));
@@ -4113,6 +4246,7 @@ function init(host, detailEl, selectEl, shellEl) {
         for (const w of WORDS) {
           const grp = wordGroups[w.id];
           if (!grp?.visible) continue;
+          if (grp.userData.morphGrowth && !grp.userData.morphGrowth.done) continue;
           for (const mesh of grp.userData.meshes) {
             const lab = mesh.userData.label;
             const els = lab?.userData?.lodEls;
@@ -4142,6 +4276,7 @@ function init(host, detailEl, selectEl, shellEl) {
         for (const w of WORDS) {
           const grp = wordGroups[w.id];
           if (!grp?.visible) continue;
+          if (grp.userData.morphGrowth && !grp.userData.morphGrowth.done) continue;
           for (const mesh of grp.userData.meshes) {
             const lab = mesh.userData.label;
             const els = lab?.userData?.lodEls;
