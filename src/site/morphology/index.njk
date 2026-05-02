@@ -45,57 +45,86 @@ contentClasses: morphology-page
           ❓
         </button>
       </div>
-      <div class="morph-ui-row morph-ui-row--toggle morph-ui-row--arrange" role="group" aria-label="Isolated tree, linked trees, or compare trees">
-        <span class="morph-ui-label">Arrange</span>
-        <button
-          type="button"
-          id="morph-btn-arr-garden"
-          class="morph-view-btn morph-view-btn--icon morph-view-btn--active"
-          aria-pressed="true"
-          title="Isolated Tree"
-          aria-label="Isolated Tree"
-        >
-          🌳
-        </button>
-        <button
-          type="button"
-          id="morph-btn-arr-master"
-          class="morph-view-btn morph-view-btn--icon"
-          aria-pressed="false"
-          title="Linked Trees"
-          aria-label="Linked Trees"
-        >
-          🔗
-        </button>
-        <button
-          type="button"
-          id="morph-btn-arr-compare"
-          class="morph-view-btn morph-view-btn--icon"
-          aria-pressed="false"
-          title="Compare Trees"
-          aria-label="Compare Trees"
-        >
-          ⚖
-        </button>
-        <button
-          type="button"
-          id="morph-btn-fs"
-          class="morph-fs-btn morph-fs-btn--icon"
-          title="Full screen"
-          aria-label="Full screen"
-        >
-          🖥️
-        </button>
-      </div>
-      <div id="morph-word-row" class="morph-ui-row">
-        <label for="morph-word-select">Focus</label>
-        <select id="morph-word-select" class="morph-select" aria-describedby="morph-hint" title="Lemma or morpheme"></select>
-      </div>
-      <div id="morph-compare-row" class="morph-compare-row morph-ui-row" hidden aria-hidden="true">
-        <label for="morph-compare-a">Compare A</label>
-        <select id="morph-compare-a" class="morph-select morph-select--compare" title="First word in compare mode"></select>
-        <label for="morph-compare-b">Compare B</label>
-        <select id="morph-compare-b" class="morph-select morph-select--compare" title="Second word in compare mode"></select>
+      <div class="morph-ui-toolbar" role="group" aria-label="Isolated tree, linked trees, or compare trees">
+        <div class="morph-toolbar__col morph-toolbar__col--isolate">
+          <div class="morph-ui-row morph-ui-row--arrange morph-cluster morph-cluster--isolate" role="group" aria-label="Isolated tree">
+            <span class="morph-ui-label">Isolate</span>
+            <button
+              type="button"
+              id="morph-btn-arr-garden"
+              class="morph-view-btn morph-view-btn--icon morph-view-btn--active"
+              aria-pressed="true"
+              title="Isolated Tree"
+              aria-label="Isolated Tree"
+            >
+              🌳
+            </button>
+          </div>
+          <div id="morph-word-row" class="morph-ui-row morph-word-row--isolate">
+            <label for="morph-word-select">Focus</label>
+            <select id="morph-word-select" class="morph-select" aria-describedby="morph-hint" title="Lemma or morpheme"></select>
+          </div>
+        </div>
+        <div class="morph-toolbar__col morph-toolbar__col--compare">
+          <div class="morph-ui-row morph-ui-row--arrange morph-cluster morph-cluster--compare" role="group" aria-label="Compare trees">
+            <span class="morph-ui-label">Compare</span>
+            <button
+              type="button"
+              id="morph-btn-arr-compare"
+              class="morph-view-btn morph-view-btn--icon"
+              aria-pressed="false"
+              title="Compare Trees"
+              aria-label="Compare Trees"
+            >
+              ⚖
+            </button>
+          </div>
+          <div id="morph-compare-row" class="morph-compare-stack morph-compare-row morph-ui-row" hidden aria-hidden="true">
+            <div class="morph-compare-pair">
+              <label for="morph-compare-a">Compare A</label>
+              <select id="morph-compare-a" class="morph-select morph-select--compare" title="First word in compare mode"></select>
+            </div>
+            <div class="morph-compare-pair">
+              <label for="morph-compare-b">Compare B</label>
+              <select id="morph-compare-b" class="morph-select morph-select--compare" title="Second word in compare mode"></select>
+            </div>
+          </div>
+        </div>
+        <div class="morph-toolbar__col morph-toolbar__col--links">
+          <div class="morph-ui-row morph-ui-row--arrange morph-cluster morph-cluster--links" role="group" aria-label="Linked trees">
+            <span class="morph-ui-label">Links</span>
+            <button
+              type="button"
+              id="morph-btn-arr-master"
+              class="morph-view-btn morph-view-btn--icon"
+              aria-pressed="false"
+              title="Linked Trees"
+              aria-label="Linked Trees"
+            >
+              🔗
+            </button>
+          </div>
+          <div id="morph-links-morpheme-row" class="morph-ui-row morph-links-morpheme-row" hidden aria-hidden="true">
+            <label for="morph-links-morpheme">Morpheme</label>
+            <select
+              id="morph-links-morpheme"
+              class="morph-select morph-select--links"
+              aria-describedby="morph-hint"
+              title="Choose a morpheme to explore linked lemmas"
+            ></select>
+          </div>
+          <div class="morph-ui-row morph-fs-slot">
+            <button
+              type="button"
+              id="morph-btn-fs"
+              class="morph-fs-btn morph-fs-btn--icon"
+              title="Full screen"
+              aria-label="Full screen"
+            >
+              🖥️
+            </button>
+          </div>
+        </div>
       </div>
       <div
         class="morph-ui-row morph-ui-row--lesson-zoom morph-lesson-zoom-bar"

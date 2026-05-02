@@ -775,7 +775,10 @@ function updateInternalTreeLine(line) {
 
 const SINGULARITY = new THREE.Vector3(0, -8, 0);
 /** Letter overlay + trees peel to garden (≤ ~12s) vs legacy long cinematic */
-const USE_TYPO_INTRO = !REDUCED_MOTION;
+/** Letter / settle / ring WebGL intros — off for fast first paint and responsive input */
+const USE_TYPO_INTRO = false;
+/** Alternate mesh spawn + orbit intro when typo intro is off — off by default */
+const USE_LEGACY_MESH_INTRO = false;
 /** Title phase (letters + overlay mini-trees) then 3D garden settle — keep total under ~15s */
 const TYPO_LETTER_SEC = 4.65;
 const TYPO_SETTLE_SEC = 3.15;
@@ -831,12 +834,12 @@ function morphInstallGuidedTour() {
     },
     {
       title: "Arrange",
-      body: "<strong>🌳 Isolated Tree</strong> pins one lemma in the center (mini-lesson below). <strong>🔗 Linked Trees</strong> fans out every lemma that shares morphemes with your pick—or every lemma tagged with a chosen morpheme. <strong>⚖ Compare Trees</strong> pairs two selections side by side with one dual mini-lesson for overlaps. Use <strong>🖥️</strong> for fullscreen.",
-      target: ".morph-ui-row--arrange",
+      body: "<strong>Isolate</strong> (<strong>🌳</strong>) pins one lemma in the center. <strong>Compare</strong> (<strong>⚖</strong>) pairs two picks side by side. <strong>Links</strong> (<strong>🔗</strong>) fans out lemmas that share morphemes — use the morpheme menu under Links in linked mode. <strong>🖥️</strong> toggles fullscreen.",
+      target: ".morph-ui-toolbar",
     },
     {
       title: "Focus picker",
-      body: "<strong>Focus</strong> lists lemmas plus morphemes from the bank. Pick a <strong>word</strong> for one tree in isolate mode; pick a <strong>morpheme</strong> and switch to <strong>🔗</strong> to see every lemma that contains it. In <strong>⚖ Compare Trees</strong>, two selectors replace this row (each can be a word or a morpheme chunk).",
+      body: "The page opens with a <strong>random morpheme</strong> from the bank. <strong>Focus</strong> lists lemmas plus morpheme tags — pick a <strong>word</strong> for one tree in isolate mode; pick a <strong>morpheme</strong> and switch to <strong>Links</strong> to fan out lemmas that share it. In <strong>Compare</strong>, two selectors replace this row (each can be a word or morpheme chunk).",
       target: "#morph-word-row",
     },
     {
@@ -1245,11 +1248,10 @@ function init(host, detailEl, selectEl, shellEl) {
     }
   }
 
-  const runIntroCinematic = !REDUCED_MOTION && USE_TYPO_INTRO && !morphIntroPlayedThisSession();
-  /** Declared early so picker / visibility hooks can safely read TDZ-before-use while intro cinematic runs */
-  let introDone = !runIntroCinematic;
+  const runIntroCinematic = false;
+  /** Scene + chrome stay interactive immediately (no cinematic gate) */
+  let introDone = true;
   morphTourCtl = morphInstallGuidedTour();
-  if (!runIntroCinematic) morphTourCtl.autoTry(650);
 
   assignGrid2d();
   assignWhiteboardCircle();
@@ -1836,7 +1838,7 @@ function init(host, detailEl, selectEl, shellEl) {
       }
     }
     introPhaseAEnd = 0;
-  } else if (!REDUCED_MOTION && !USE_TYPO_INTRO) {
+  } else if (USE_LEGACY_MESH_INTRO && !REDUCED_MOTION && !USE_TYPO_INTRO) {
     const allMeshes = [];
     for (const w of WORDS) {
       const g = wordGroups[w.id];
@@ -2230,8 +2232,9 @@ function init(host, detailEl, selectEl, shellEl) {
     if (linkedIds && linkedIds.size === 0) linkedIds = null;
 
     if (introDone && layoutKeyEffective.startsWith("Master")) {
+      /* No linked scope ⇒ empty pack — do not sunflower-layout the entire bank while every tree is hidden */
       const packIds =
-        linkedIds && linkedIds.size > 0 ? linkedIds : new Set(WORDS.map((w) => w.id));
+        linkedIds && linkedIds.size > 0 ? linkedIds : new Set();
       const sig = `${packIds.size}:${[...packIds].sort().join(",")}`;
       if (sig !== masterSunflowerSig) {
         masterSunflowerSig = sig;
@@ -2255,22 +2258,26 @@ function init(host, detailEl, selectEl, shellEl) {
       } else if (compareOn && comparePickValid) {
         vis = w.id === cmpResolved.wa || w.id === cmpResolved.wb;
       } else if (compareOn) {
-        /* Compare is on but the pair is not on stage yet — still show lemmas so the canvas is not empty */
-        vis = true;
+        /* Pair not staged yet — show at most the two lemmas implied by the selectors (never the whole bank) */
+        vis =
+          (!!cmpResolved.wa && w.id === cmpResolved.wa) ||
+          (!!cmpResolved.wb && w.id === cmpResolved.wb);
       } else if (linkedIds && linkedIds.size > 0) {
         vis = linkedIds.has(w.id);
       } else if (layoutKeyEffective.startsWith("Garden")) {
-        /* Isolated tree (word or morpheme): solo picks resolve to one lemma; otherwise show the full ring */
+        /* Isolated tree: one lemma; deliberate empty focus ⇒ full ring; stale/invalid focus ⇒ hide */
         if (morphGardenSoloShouldUse(layoutKeyEffective)) {
           const sid = morphSoloWordIdFromSelect(selectEl?.value ?? "");
           vis = !!sid && w.id === sid;
-        } else {
+        } else if (!selectEl?.value) {
           vis = true;
+        } else {
+          vis = false;
         }
       } else if (focusWordId) {
         vis = w.id === focusWordId;
       } else if (layoutKeyEffective.startsWith("Master")) {
-        vis = true;
+        vis = false;
       }
 
       g.visible = vis;
@@ -2420,6 +2427,32 @@ function init(host, detailEl, selectEl, shellEl) {
     } else cmpB.value = cmpA.value;
   }
 
+  function morphPopulateLinksMorphemeSelect() {
+    const el = /** @type {HTMLSelectElement | null} */ (document.getElementById("morph-links-morpheme"));
+    if (!el) return;
+    const morphKeys = [...new Set(Object.keys(morphemeRegistry))].sort();
+    const morphOpts = morphKeys
+      .map((k) => {
+        const short = k.replace(/^(pfx|sfx|root|lex):/, "");
+        const lab = short.length > 44 ? `${short.slice(0, 42)}…` : short;
+        return `<option value="${MORPH_SELECT_PREFIX}${encodeURIComponent(k)}">${lab}</option>`;
+      })
+      .join("");
+    el.innerHTML = `<option value="">Investigate morpheme…</option>${morphOpts}`;
+  }
+
+  function morphSyncLinksMorphemeFromFocus() {
+    const linksSel = /** @type {HTMLSelectElement | null} */ (document.getElementById("morph-links-morpheme"));
+    if (!linksSel || !selectEl) return;
+    const p = morphParseSelectValue(selectEl.value);
+    if (p.kind === "morpheme" && morphemeRegistry[p.key]?.length) {
+      const v = `${MORPH_SELECT_PREFIX}${encodeURIComponent(p.key)}`;
+      if ([...linksSel.options].some((o) => o.value === v)) linksSel.value = v;
+    } else {
+      linksSel.value = "";
+    }
+  }
+
   function morphSyncCompareChange() {
     applyScopeVisibility();
     if (introDone && !transition && vk().startsWith("Compare")) {
@@ -2432,8 +2465,10 @@ function init(host, detailEl, selectEl, shellEl) {
   function morphSyncArrangeUi() {
     const k = transition?.toKey ?? viewKey;
     const cmpOn = k.startsWith("Compare");
+    const masterOn = k.startsWith("Master");
     const rowWord = document.getElementById("morph-word-row");
     const rowCmp = document.getElementById("morph-compare-row");
+    const rowLinksMorph = document.getElementById("morph-links-morpheme-row");
     if (rowWord) {
       rowWord.toggleAttribute("hidden", cmpOn);
       rowWord.setAttribute("aria-hidden", cmpOn ? "true" : "false");
@@ -2442,7 +2477,12 @@ function init(host, detailEl, selectEl, shellEl) {
       rowCmp.toggleAttribute("hidden", !cmpOn);
       rowCmp.setAttribute("aria-hidden", cmpOn ? "false" : "true");
     }
+    if (rowLinksMorph) {
+      rowLinksMorph.toggleAttribute("hidden", !masterOn);
+      rowLinksMorph.setAttribute("aria-hidden", masterOn ? "false" : "true");
+    }
     shellEl?.classList.toggle("morphology-shell--arrange-compare", cmpOn);
+    if (masterOn) morphSyncLinksMorphemeFromFocus();
   }
 
   function fillDetailFromSelect() {
@@ -2859,18 +2899,75 @@ function init(host, detailEl, selectEl, shellEl) {
 
   morphBuildMorphemeChart();
 
+  /** Brief MORPHOLOGY title on the canvas, then auto-open guided tour (Skip dismisses tour start). */
+  function morphScheduleOpenSequence() {
+    try {
+      if (localStorage.getItem(MORPH_GUIDED_TOUR_KEY) === "1") return;
+    } catch (_) {
+      /* ignore */
+    }
+    let dismissed = false;
+    const card = document.createElement("div");
+    card.className = "morph-open-title";
+    card.setAttribute("role", "dialog");
+    card.setAttribute("aria-modal", "true");
+    card.setAttribute("aria-labelledby", "morph-open-title-heading");
+    card.innerHTML = `
+      <div class="morph-open-title__inner">
+        <p class="morph-open-title__kicker">Ch. 4 · The Analysis of Words</p>
+        <h2 id="morph-open-title-heading" class="morph-open-title__h">MORPHOLOGY</h2>
+        <p class="morph-open-title__sub">Interactive word trees</p>
+        <div class="morph-open-title__actions">
+          <button type="button" class="morph-open-title__skip">Skip</button>
+        </div>
+      </div>`;
+    host.appendChild(card);
+    requestAnimationFrame(() => card.classList.add("morph-open-title--visible"));
+
+    const dismiss = () => {
+      if (dismissed) return;
+      dismissed = true;
+      card.classList.remove("morph-open-title--visible");
+      card.classList.add("morph-open-title--out");
+      window.setTimeout(() => card.remove(), 260);
+    };
+
+    card.querySelector(".morph-open-title__skip")?.addEventListener("click", () => {
+      dismiss();
+    });
+
+    const holdMs = REDUCED_MOTION ? 90 : 380;
+    window.setTimeout(() => {
+      if (dismissed) return;
+      try {
+        if (localStorage.getItem(MORPH_GUIDED_TOUR_KEY) === "1") {
+          dismiss();
+          return;
+        }
+      } catch (_) {
+        /* ignore */
+      }
+      dismiss();
+      window.requestAnimationFrame(() => morphTourCtl.open());
+    }, holdMs);
+  }
+
   const firstWordId = WORDS[0]?.id;
   if (selectEl) {
-    const morphRandomPickId =
-      WORDS.length > 0 ? WORDS[Math.floor(Math.random() * WORDS.length)].id : "";
+    const morphKeys = Object.keys(morphemeRegistry).filter((k) => morphemeRegistry[k]?.length);
+    const morphRandomPick =
+      morphKeys.length > 0
+        ? `${MORPH_SELECT_PREFIX}${encodeURIComponent(morphKeys[Math.floor(Math.random() * morphKeys.length)])}`
+        : "";
     selectEl.innerHTML = morphOptionHtmlForSelectors();
-    if (morphRandomPickId) selectEl.value = morphRandomPickId;
+    if (morphRandomPick) selectEl.value = morphRandomPick;
     else if (firstWordId) selectEl.value = firstWordId;
     selectEl.addEventListener("change", () => {
       hideMorphemePop();
       const iso = morphSoloWordIdFromSelect(selectEl.value);
       if (vk().startsWith("Garden") && introDone && iso) assignWhiteboardIsolate(iso);
       for (const w of WORDS) clearWbPrune(wordGroups[w.id]);
+      morphSyncLinksMorphemeFromFocus();
       applyScopeVisibility();
       fillDetailFromSelect();
       if (!transition && introDone) {
@@ -2892,23 +2989,27 @@ function init(host, detailEl, selectEl, shellEl) {
       }
     });
     morphPopulateCompareSelectors();
+    morphPopulateLinksMorphemeSelect();
     document.getElementById("morph-compare-a")?.addEventListener("change", () => morphSyncCompareChange());
     document.getElementById("morph-compare-b")?.addEventListener("change", () => morphSyncCompareChange());
+    const linksMorphSel = /** @type {HTMLSelectElement | null} */ (document.getElementById("morph-links-morpheme"));
+    linksMorphSel?.addEventListener("change", () => {
+      if (!selectEl || !vk().startsWith("Master") || !linksMorphSel.value) return;
+      selectEl.value = linksMorphSel.value;
+      selectEl.dispatchEvent(new Event("change", { bubbles: true }));
+    });
     morphSyncArrangeUi();
-    if (!runIntroCinematic) {
-      const i0 = morphSoloWordIdFromSelect(selectEl.value);
-      if (i0) assignWhiteboardIsolate(i0);
-      finishIntroGroups();
-      applyScopeVisibility();
-      fillDetailFromSelect();
-      flyToActiveView();
-      morphEnterPlanarBoardPresentation();
-      controls.enabled = true;
-      controls.update();
-    } else {
-      applyScopeVisibility();
-      fillDetailFromSelect();
-    }
+    const i0 = morphSoloWordIdFromSelect(selectEl.value);
+    if (i0) assignWhiteboardIsolate(i0);
+    morphSyncLinksMorphemeFromFocus();
+    finishIntroGroups();
+    applyScopeVisibility();
+    fillDetailFromSelect();
+    flyToActiveView();
+    morphEnterPlanarBoardPresentation();
+    controls.enabled = true;
+    controls.update();
+    morphScheduleOpenSequence();
   } else if (firstWordId) {
     flyToWord(firstWordId);
   }
@@ -3596,22 +3697,6 @@ function init(host, detailEl, selectEl, shellEl) {
     morphFinalizeIntroLanding();
   }
 
-  if (runIntroCinematic) {
-    introOverlay = document.createElement("div");
-    introOverlay.className = "morph-intro morph-intro--typo";
-    introOverlay.innerHTML = buildIntroOverlayHtml();
-    const skipBtn = document.createElement("button");
-    skipBtn.type = "button";
-    skipBtn.className = "morph-skip";
-    skipBtn.textContent = "Skip intro";
-    introOverlay.appendChild(skipBtn);
-    host.appendChild(introOverlay);
-    skipBtn.addEventListener("click", () => endIntro({ snap: true }));
-    flyToActiveView();
-    morphEnterPlanarBoardPresentation();
-    morphApplyBackdropBlend(1);
-  }
-
   setViewButtons();
 
   const introTmp0 = new THREE.Vector3();
@@ -3627,7 +3712,7 @@ function init(host, detailEl, selectEl, shellEl) {
     renderer.setSize(w, h);
     labelRenderer.setSize(w, h);
     boardOrthoCamera.updateProjectionMatrix();
-    if ((introDone || runIntroCinematic) && morphIsOrthoBoard()) syncBoardOrthoCamera();
+    if (morphIsOrthoBoard()) syncBoardOrthoCamera();
   }
   window.addEventListener("resize", resizeCanvasToHost);
   if (typeof ResizeObserver !== "undefined") {

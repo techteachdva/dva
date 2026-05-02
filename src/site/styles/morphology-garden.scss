@@ -491,6 +491,105 @@ html.morph-immersive-open body {
   margin-bottom: 0.16rem;
 }
 
+/* Isolate | Compare | Links — three-column toolbar above Focus / compare selectors */
+.morph-ui-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 0.65rem 1.35rem;
+  align-items: end;
+  max-width: 58rem;
+  margin: 0 auto;
+  padding-bottom: 0.08rem;
+}
+
+.morph-toolbar__col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.38rem;
+  min-width: 0;
+}
+
+.morph-toolbar__col--isolate {
+  justify-self: start;
+  align-items: flex-start;
+}
+
+.morph-toolbar__col--compare {
+  justify-self: center;
+  align-items: center;
+  text-align: center;
+}
+
+.morph-toolbar__col--links {
+  justify-self: end;
+  align-items: flex-end;
+  text-align: right;
+}
+
+.morph-cluster--isolate .morph-ui-row,
+.morph-cluster--compare .morph-ui-row,
+.morph-cluster--links .morph-ui-row {
+  justify-content: center;
+}
+
+.morph-cluster--isolate .morph-ui-row {
+  justify-content: flex-start;
+}
+
+.morph-cluster--links .morph-ui-row {
+  justify-content: flex-end;
+}
+
+.morph-compare-stack {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.42rem;
+  width: 100%;
+  max-width: 22rem;
+}
+
+.morph-compare-pair {
+  display: flex;
+  flex-direction: column;
+  gap: 0.18rem;
+  align-items: stretch;
+}
+
+.morph-compare-pair label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--morph-chrome);
+}
+
+.morphology-shell--wb .morph-compare-pair label {
+  color: #0f172a;
+}
+
+.morph-links-morpheme-row {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.2rem;
+}
+
+.morph-links-morpheme-row label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--morph-chrome);
+}
+
+.morphology-shell--wb .morph-links-morpheme-row label {
+  color: #0f172a;
+}
+
+.morph-fs-slot {
+  justify-content: flex-end;
+}
+
+.morph-select--links {
+  min-width: 10rem;
+  max-width: 100%;
+}
+
 .morph-ui-label {
   font-size: 0.66rem;
   text-transform: uppercase;
@@ -1104,22 +1203,27 @@ html.morph-immersive-open body {
   grid-template-columns: 1fr;
 }
 
-.morph-compare-row {
+.morph-compare-row,
+.morph-compare-stack {
   gap: 0.45rem 1rem;
 }
 
-.morph-compare-row label {
+.morph-compare-row label,
+.morph-compare-stack > .morph-compare-pair > label {
   font-size: 0.78rem;
   font-weight: 700;
   color: var(--morph-chrome);
 }
 
-.morph-compare-row .morph-select--compare {
+.morph-compare-row .morph-select--compare,
+.morph-compare-stack .morph-select--compare {
   min-width: 8.5rem;
   flex: 1 1 7rem;
+  width: 100%;
 }
 
-.morphology-shell--wb .morph-compare-row label {
+.morphology-shell--wb .morph-compare-row label,
+.morphology-shell--wb .morph-compare-stack > .morph-compare-pair > label {
   color: #0f172a;
 }
 
@@ -2201,6 +2305,121 @@ html.morph-immersive-open body {
   border-color: #94a3b8;
 }
 
+/* Brief title card on load — fast substitute for long WebGL intro */
+.morph-open-title {
+  position: absolute;
+  inset: 0;
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  background: radial-gradient(
+    ellipse 95% 75% at 50% 38%,
+    rgba(21, 34, 56, 0.94) 0%,
+    rgba(7, 11, 20, 0.97) 62%
+  );
+  opacity: 0;
+  transition: opacity 0.26s ease-out;
+}
+
+.morph-open-title--visible {
+  opacity: 1;
+}
+
+.morph-open-title--out {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.morph-open-title__inner {
+  text-align: center;
+  padding: 1.2rem 1.35rem;
+  max-width: 22rem;
+}
+
+.morph-open-title__kicker {
+  margin: 0 0 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(200, 244, 255, 0.88);
+}
+
+.morph-open-title__h {
+  margin: 0;
+  font-size: clamp(1.6rem, 5vw, 2.4rem);
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  color: #fff;
+  text-shadow: 0 2px 28px rgba(0, 200, 255, 0.28);
+}
+
+.morph-open-title__sub {
+  margin: 0.45rem 0 1rem;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  opacity: 0.9;
+  color: rgba(200, 244, 255, 0.95);
+}
+
+.morph-open-title__actions {
+  display: flex;
+  justify-content: center;
+}
+
+.morph-open-title__skip {
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.42rem 1.1rem;
+  border-radius: 999px;
+  border: 1px solid rgba(120, 200, 190, 0.45);
+  background: rgba(12, 24, 44, 0.88);
+  color: var(--morph-chrome);
+  cursor: pointer;
+  transition: border-color 0.18s ease, color 0.18s ease, transform 0.14s ease;
+}
+
+.morph-open-title__skip:hover {
+  border-color: rgba(255, 208, 96, 0.55);
+  color: #fff;
+}
+
+.morph-open-title__skip:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.morphology-shell--wb .morph-open-title {
+  background: radial-gradient(
+    ellipse 95% 75% at 50% 38%,
+    rgba(255, 255, 255, 0.96) 0%,
+    rgba(241, 245, 249, 0.98) 55%
+  );
+}
+
+.morphology-shell--wb .morph-open-title__kicker {
+  color: #475569;
+}
+
+.morphology-shell--wb .morph-open-title__h {
+  color: #0f172a;
+  text-shadow: none;
+}
+
+.morphology-shell--wb .morph-open-title__sub {
+  color: #334155;
+}
+
+.morphology-shell--wb .morph-open-title__skip {
+  border-color: rgba(148, 163, 184, 0.65);
+  background: rgba(255, 255, 255, 0.92);
+  color: #0f172a;
+}
+
 /* First-run spotlight tour (replay: 📖) */
 .morph-guided-tour {
   position: fixed;
@@ -2666,6 +2885,35 @@ html.morph-immersive-open body {
     align-items: stretch;
     gap: 0.35rem;
     max-width: none;
+  }
+
+  .morph-ui-toolbar {
+    grid-template-columns: 1fr;
+    gap: 0.55rem;
+    align-items: stretch;
+  }
+
+  .morph-toolbar__col--isolate,
+  .morph-toolbar__col--compare,
+  .morph-toolbar__col--links {
+    justify-self: stretch;
+    align-items: stretch;
+    text-align: left;
+  }
+
+  .morph-toolbar__col--compare {
+    align-items: stretch;
+    text-align: left;
+  }
+
+  .morph-cluster--isolate .morph-ui-row,
+  .morph-cluster--compare .morph-ui-row,
+  .morph-cluster--links .morph-ui-row {
+    justify-content: flex-start;
+  }
+
+  .morph-fs-slot {
+    justify-content: flex-start;
   }
 
   .morph-ui-row--toggle {
