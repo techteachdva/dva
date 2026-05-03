@@ -950,6 +950,7 @@ html.morph-immersive-open body {
   background: rgba(255, 255, 255, 0.05);
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.14);
   overflow: hidden;
+  min-width: 0;
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease;
@@ -978,6 +979,7 @@ html.morph-immersive-open body {
   width: 100%;
   margin: 0;
   padding: 1.25rem 1.15rem 1.25rem 1.2rem;
+  box-sizing: border-box;
   border: none;
   background: transparent;
   color: inherit;
@@ -985,7 +987,6 @@ html.morph-immersive-open body {
   text-align: left;
   cursor: pointer;
   line-height: 1.4;
-  min-height: 5.25rem;
 }
 
 .morph-highlight-card__toggle:hover {
@@ -1027,7 +1028,8 @@ html.morph-immersive-open body {
   font-size: 1.35rem;
   font-weight: 850;
   letter-spacing: 0.02em;
-  line-height: 1.2;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
   color: var(--morph-chrome, #c8f4ff);
 }
 
@@ -1040,6 +1042,7 @@ html.morph-immersive-open body {
   font-size: 1.05rem;
   font-weight: 550;
   line-height: 1.5;
+  overflow-wrap: anywhere;
   opacity: 0.92;
   color: rgba(226, 232, 240, 0.94);
 }
@@ -1084,12 +1087,13 @@ html.morph-immersive-open body {
 }
 
 .morph-highlight-card__prose {
-  padding: 0.85rem 1rem 1.05rem;
-  max-height: min(70vh, 28rem);
-  overflow-y: auto;
-  font-size: 0.92rem;
+  padding: 0.85rem 1.15rem 1.15rem;
+  font-size: 0.95rem;
   line-height: 1.58;
   color: rgba(241, 245, 249, 0.94);
+  overflow: visible;
+  max-height: none;
+  overflow-wrap: anywhere;
 }
 
 .morphology-page:has(.morphology-shell--wb) .morph-highlight-card__prose {
@@ -3860,7 +3864,6 @@ html.morph-immersive-open body {
 
   .morph-highlight-card__toggle {
     padding: 1.1rem 1rem;
-    min-height: 4.75rem;
   }
 
   .morph-highlight-card__title {
@@ -3879,8 +3882,7 @@ html.morph-immersive-open body {
   }
 
   .morph-highlight-card__prose {
-    max-height: min(65vh, 26rem);
-    font-size: 0.9rem;
+    font-size: 0.92rem;
   }
 
   .morph-detail {
