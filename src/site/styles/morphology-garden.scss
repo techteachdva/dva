@@ -3247,6 +3247,341 @@ html.morph-immersive-open body {
   background: rgba(15, 23, 42, 0.35);
 }
 
+.morph-help__lead {
+  margin: 0 0 0.75rem;
+  font-size: 0.98rem;
+  line-height: 1.55;
+  color: rgba(226, 232, 240, 0.95);
+}
+
+.morphology-shell--wb .morph-help__lead {
+  color: #1e293b;
+}
+
+.morph-help__tour-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.85rem;
+  margin: 0 0 1.1rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  background: rgba(255, 106, 213, 0.12);
+  border: 1px solid rgba(255, 106, 213, 0.35);
+}
+
+.morphology-shell--wb .morph-help__tour-row {
+  background: rgba(219, 39, 119, 0.08);
+  border-color: rgba(219, 39, 119, 0.28);
+}
+
+.morph-help__tour-btn {
+  font: inherit;
+  font-weight: 750;
+  font-size: 0.95rem;
+  padding: 0.45rem 0.95rem;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  color: #0f172a;
+  background: linear-gradient(165deg, #fde68a, #fbbf24);
+  box-shadow: 0 2px 0 rgba(180, 83, 9, 0.35);
+}
+
+.morph-help__tour-btn:hover {
+  filter: brightness(1.05);
+}
+
+.morph-help__tour-btn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.morph-help__tour-hint {
+  font-size: 0.86rem;
+  opacity: 0.88;
+  line-height: 1.4;
+  color: rgba(226, 232, 240, 0.88);
+}
+
+.morphology-shell--wb .morph-help__tour-hint {
+  color: #475569;
+}
+
+.morph-help__url-tip {
+  margin: 0 0 1rem;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  opacity: 0.9;
+  color: rgba(203, 213, 225, 0.95);
+}
+
+.morphology-shell--wb .morph-help__url-tip {
+  color: #64748b;
+}
+
+.morph-help__url-tip code {
+  font-size: 0.84em;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.morphology-shell--wb .morph-help__url-tip code {
+  background: rgba(15, 23, 42, 0.08);
+}
+
+.morph-tour-link {
+  display: inline-block;
+  margin: 0.55rem 0 0;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #7dd3fc;
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+  cursor: pointer;
+}
+
+.morph-tour-link:hover {
+  color: #bae6fd;
+}
+
+.morphology-page:has(.morphology-shell--wb) .morph-tour-link {
+  color: #0369a1;
+}
+
+.morphology-page:has(.morphology-shell--wb) .morph-tour-link:hover {
+  color: #0c4a6e;
+}
+
+/* Guided tour — dim veil + floating card; highlighted regions glow above the veil */
+.morphology-shell--tutorial {
+  overflow: visible !important;
+  z-index: 8;
+}
+
+.morph-tutorial {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 0 0.75rem max(0.75rem, env(safe-area-inset-bottom, 0));
+  pointer-events: none;
+}
+
+.morph-tutorial--hidden {
+  display: none !important;
+}
+
+.morph-tutorial__veil {
+  position: absolute;
+  inset: 0;
+  background: rgba(6, 10, 22, 0.55);
+  pointer-events: auto;
+}
+
+.morphology-page:has(.morphology-shell--wb) .morph-tutorial__veil {
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.morph-tutorial__panel {
+  position: relative;
+  z-index: 1;
+  width: min(34rem, 100%);
+  max-height: min(52vh, 22rem);
+  overflow: auto;
+  pointer-events: auto;
+  padding: 1rem 1.1rem 1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(125, 211, 252, 0.45);
+  background: linear-gradient(165deg, #0f172a 0%, #1e293b 100%);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.06),
+    0 18px 48px rgba(0, 0, 0, 0.55);
+  color: #e2e8f0;
+}
+
+.morphology-page:has(.morphology-shell--wb) .morph-tutorial__panel {
+  background: linear-gradient(165deg, #ffffff 0%, #f1f5f9 100%);
+  border-color: rgba(14, 116, 144, 0.35);
+  color: #0f172a;
+  box-shadow:
+    0 0 0 1px rgba(15, 23, 42, 0.06),
+    0 18px 48px rgba(15, 23, 42, 0.18);
+}
+
+.morph-tutorial__step {
+  margin: 0 0 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #7dd3fc;
+}
+
+.morphology-page:has(.morphology-shell--wb) .morph-tutorial__step {
+  color: #0e7490;
+}
+
+.morph-tutorial__title {
+  margin: 0 0 0.5rem;
+  font-size: 1.22rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1.25;
+  color: #f8fafc;
+}
+
+.morphology-page:has(.morphology-shell--wb) .morph-tutorial__title {
+  color: #0f172a;
+}
+
+.morph-tutorial__desc {
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: rgba(226, 232, 240, 0.95);
+}
+
+.morphology-page:has(.morphology-shell--wb) .morph-tutorial__desc {
+  color: #334155;
+}
+
+.morph-tutorial__desc p {
+  margin: 0 0 0.65rem;
+}
+
+.morph-tutorial__desc p:last-child {
+  margin-bottom: 0;
+}
+
+.morph-tutorial__desc ul,
+.morph-tutorial__desc ol {
+  margin: 0.35rem 0 0.65rem 1.2rem;
+  padding: 0;
+}
+
+.morph-tutorial__desc li {
+  margin: 0.35rem 0;
+}
+
+.morph-tutorial__desc strong {
+  color: #fef08a;
+}
+
+.morphology-page:has(.morphology-shell--wb) .morph-tutorial__desc strong {
+  color: #a16207;
+}
+
+.morph-tutorial__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  justify-content: flex-end;
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.morphology-page:has(.morphology-shell--wb) .morph-tutorial__actions {
+  border-top-color: rgba(15, 23, 42, 0.12);
+}
+
+.morph-tutorial__btn {
+  font: inherit;
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 0.42rem 0.85rem;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.morph-tutorial__btn--ghost {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(148, 163, 184, 0.35);
+  color: #e2e8f0;
+}
+
+.morphology-page:has(.morphology-shell--wb) .morph-tutorial__btn--ghost {
+  background: #fff;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+.morph-tutorial__btn--ghost:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.morphology-page:has(.morphology-shell--wb) .morph-tutorial__btn--ghost:hover {
+  background: #f8fafc;
+}
+
+.morph-tutorial__btn--primary {
+  background: linear-gradient(165deg, #f472b6, #db2777);
+  color: #fff;
+  border-color: rgba(190, 24, 93, 0.5);
+  box-shadow: 0 2px 0 rgba(157, 23, 77, 0.45);
+}
+
+.morph-tutorial__btn--primary:hover {
+  filter: brightness(1.06);
+}
+
+.morph-tutorial__btn:focus-visible {
+  outline: 2px solid #7dd3fc;
+  outline-offset: 2px;
+}
+
+.morph-tutorial-highlight {
+  position: relative;
+  z-index: 100001 !important;
+  isolation: isolate;
+  border-radius: 10px;
+  box-shadow:
+    inset 0 0 0 3px rgba(253, 224, 71, 0.95),
+    inset 0 0 22px rgba(244, 114, 182, 0.22),
+    0 0 0 2px rgba(244, 114, 182, 0.55),
+    0 0 36px 8px rgba(125, 211, 252, 0.45);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .morph-tutorial-highlight {
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .morph-tutorial-highlight {
+    animation: morph-tour-glow 2.2s ease-in-out infinite;
+  }
+
+  @keyframes morph-tour-glow {
+    0%,
+    100% {
+      box-shadow:
+        inset 0 0 0 3px rgba(253, 224, 71, 0.95),
+        inset 0 0 18px rgba(244, 114, 182, 0.18),
+        0 0 0 2px rgba(244, 114, 182, 0.45),
+        0 0 28px 6px rgba(125, 211, 252, 0.35);
+    }
+
+    50% {
+      box-shadow:
+        inset 0 0 0 3px rgba(253, 224, 71, 1),
+        inset 0 0 28px rgba(244, 114, 182, 0.32),
+        0 0 0 3px rgba(244, 114, 182, 0.75),
+        0 0 48px 12px rgba(125, 211, 252, 0.55);
+    }
+  }
+}
+
 /* Phones and small tablets: shorter canvas (dynamic viewport), safe areas, compact icon bar */
 @media (max-width: 40rem) {
   .morphology-top {

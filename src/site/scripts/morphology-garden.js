@@ -25,6 +25,9 @@ import { MORPHEME_CATALOG } from "./morphology-morpheme-catalog.js";
 
 const REDUCED_MOTION = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+/** @type {{ open: () => void; close: () => void; isOpen: () => boolean } | null} */
+let morphTutorialCtl = null;
+
 const MORPH_SELECT_PREFIX = "__morph__:";
 
 const TREE_DEPTH_STEP = 6.15;
@@ -521,6 +524,167 @@ function morphemePrimerHtml(key, linkedWordIds) {
     </p>`);
 
   return `<div class="morph-lesson morph-lesson--single morph-lesson--morpheme">${sections.join("")}</div>`;
+}
+
+/* ----------------------------------------------------------------------- */
+/*  Guided tour (student-facing; highlights page regions)                  */
+/* ----------------------------------------------------------------------- */
+
+const MORPH_TUTORIAL_STEPS = [
+  {
+    title: "Welcome to the word explorer",
+    html: `<p>This page is a <strong>hands-on map</strong> of how English words are built. Long words are not random letters — they are often <strong>prefix + base + suffix</strong> (and sometimes two bases glued together).</p><p>Use this tour to learn where each tool lives. When a step mentions a part of the page, that part will <strong>light up</strong> so you cannot miss it.</p>`,
+    highlights: ["#morph-page-intro"],
+  },
+  {
+    title: "The big board",
+    html: `<p>This is the <strong>drawing space</strong> for word trees. Each bubble is a morpheme (a meaningful chunk). Lines show how they connect.</p><p><strong>Drag</strong> with your finger or mouse to slide the board around. The page <strong>auto-fits</strong> the tree so you always see the whole picture — you do not need to zoom in and out.</p>`,
+    highlights: ["#morph-canvas-host"],
+  },
+  {
+    title: "Pick how you want to learn",
+    html: `<p>Three buttons, three superpowers:</p><ul><li><strong>Word</strong> — study <em>one</em> word deeply.</li><li><strong>Morpheme</strong> — see <em>every word in the bank</em> that shares the same chunk (for example the same prefix or suffix).</li><li><strong>Compare</strong> — put <em>two</em> words side by side and spot what they share.</li></ul><p>Try all three — they are the fastest way to notice patterns.</p>`,
+    highlights: [".morph-mode-toolbar"],
+  },
+  {
+    title: "Menus that load the board",
+    html: `<p>Under the three buttons you will see <strong>dropdowns</strong> that match the mode you picked.</p><p>In <strong>Word</strong> mode, pick any word from the list. In <strong>Morpheme</strong> mode, pick a morpheme to load every linked word. In <strong>Compare</strong> mode, pick word A and word B.</p>`,
+    highlights: [".morph-pick-area"],
+  },
+  {
+    title: "Quick reminder strip",
+    html: `<p>This line is your <strong>cheat sheet</strong> for controls: panning, refitting the view, keyboard shortcuts, and what clicks do on the board.</p><p>If you forget a shortcut, glance here first.</p>`,
+    highlights: ["#morph-hint"],
+  },
+  {
+    title: "Mini-lesson card",
+    html: `<p>Under the explorer (or <strong>beside</strong> it in full screen) you will find the <strong>mini-lesson</strong>. It explains the word or morpheme you selected — meaning, word sums, spelling tips, and questions you can actually discuss in class.</p><p>Use the <strong>A−</strong> <strong>A</strong> <strong>A+</strong> buttons to change text size if you want it bigger or smaller.</p>`,
+    highlights: ["#morph-detail"],
+  },
+  {
+    title: "Help, full screen, and lesson size",
+    html: `<p>The <strong>❓ Help</strong> button opens a longer reference anytime (you can open it again after this tour).</p><p><strong>🖥️ Full screen</strong> is great for a projector or smart board: the board moves to one side and the lesson to the other so both stay readable.</p><p>When you go full screen, a <strong>Lesson</strong> text-size row appears in the bar too (same job as the A− / A / A+ buttons above the lesson card).</p>`,
+    highlights: [".morph-ui-row--meta"],
+  },
+  {
+    title: "Five big ideas (read at your pace)",
+    html: `<p>Scroll down when you want reading that ties the chapter to what you see in the trees — morphemes vs syllables, roots and affixes, free and bound bases, and more.</p><p>There is no rush: you can come back to this section anytime.</p>`,
+    highlights: ["#morph-highlights-section"],
+  },
+  {
+    title: "Word bank chart",
+    html: `<p>This table lists morphemes in the bank. Each row shows the <strong>Type</strong> (Prefix, Suffix, Root, or Lexeme), a plain-language meaning, which words use it here, and a link to Wiktionary if you want to go deeper.</p><p><strong>Click a morpheme</strong> in the first column to jump into <strong>Morpheme</strong> mode on the board. <strong>Click a word</strong> in the list to open <strong>Word</strong> mode.</p>`,
+    highlights: ["#morph-chart-section"],
+  },
+  {
+    title: "You are ready — here is what to try next",
+    html: `<p><strong>Try this next:</strong></p><ol><li>Stay in <strong>Word</strong> mode and pick a word you use in science or social studies. Read its mini-lesson out loud with a partner.</li><li>Switch to <strong>Morpheme</strong> mode and pick a suffix you like (<strong>-tion</strong>, <strong>-ly</strong>, <strong>-less</strong>…). Count how many words light up on the board.</li><li>Click a bubble on the tree. If it appears in more than one word, the page will jump you into <strong>Morpheme</strong> mode automatically.</li><li>When you present or teach, use <strong>full screen</strong> so everyone can see both the tree and the lesson.</li></ol><p>Have fun digging — patterns are easier when you can <em>see</em> them.</p>`,
+    highlights: [],
+  },
+];
+
+/**
+ * @param {{ shellEl: HTMLElement | null; helpEl: HTMLElement | null }} opts
+ */
+function installMorphTutorial(opts) {
+  const { shellEl, helpEl } = opts;
+  const root = document.getElementById("morph-tutorial");
+  const stepEl = document.getElementById("morph-tutorial-step");
+  const titleEl = document.getElementById("morph-tutorial-heading");
+  const descEl = document.getElementById("morph-tutorial-desc");
+  const btnBack = document.getElementById("morph-tutorial-back");
+  const btnNext = document.getElementById("morph-tutorial-next");
+  const btnSkip = document.getElementById("morph-tutorial-skip");
+  const panel = document.getElementById("morph-tutorial-panel");
+  const openHeader = document.getElementById("morph-tour-open-header");
+  const openHelp = document.getElementById("morph-tour-open-help");
+
+  if (!root || !stepEl || !titleEl || !descEl || !btnBack || !btnNext || !btnSkip || !panel) {
+    return { open() {}, close() {}, isOpen: () => false };
+  }
+
+  let stepIndex = 0;
+  /** @type {HTMLElement[]} */
+  let highlighted = [];
+
+  function clearHighlights() {
+    for (const el of highlighted) el.classList.remove("morph-tutorial-highlight");
+    highlighted = [];
+    shellEl?.classList.remove("morphology-shell--tutorial");
+  }
+
+  function applyHighlights(/** @type {string[]} */ selectors) {
+    clearHighlights();
+    if (!selectors.length) return;
+    shellEl?.classList.add("morphology-shell--tutorial");
+    for (const sel of selectors) {
+      const el = document.querySelector(sel);
+      if (el instanceof HTMLElement) {
+        el.classList.add("morph-tutorial-highlight");
+        highlighted.push(el);
+      }
+    }
+    const first = highlighted[0];
+    if (first && !REDUCED_MOTION) {
+      first.scrollIntoView({ block: "center", behavior: "smooth", inline: "nearest" });
+    } else if (first) {
+      first.scrollIntoView({ block: "center", inline: "nearest" });
+    }
+  }
+
+  function renderStep() {
+    const step = MORPH_TUTORIAL_STEPS[stepIndex];
+    const n = MORPH_TUTORIAL_STEPS.length;
+    stepEl.textContent = `Step ${stepIndex + 1} of ${n}`;
+    titleEl.textContent = step.title;
+    descEl.innerHTML = step.html;
+    applyHighlights(step.highlights || []);
+    btnBack.disabled = stepIndex === 0;
+    btnBack.hidden = stepIndex === 0;
+    const last = stepIndex === n - 1;
+    btnNext.textContent = last ? "Finish" : "Next";
+    btnSkip.style.display = last ? "none" : "";
+  }
+
+  function open() {
+    helpEl?.classList.add("morph-help--hidden");
+    root.classList.remove("morph-tutorial--hidden");
+    stepIndex = 0;
+    renderStep();
+    btnNext.focus();
+  }
+
+  function close() {
+    clearHighlights();
+    root.classList.add("morph-tutorial--hidden");
+    document.getElementById("morph-help-btn")?.focus?.();
+  }
+
+  function isOpen() {
+    return !root.classList.contains("morph-tutorial--hidden");
+  }
+
+  const helpBtn = document.getElementById("morph-help-btn");
+
+  btnBack.addEventListener("click", () => {
+    if (stepIndex > 0) {
+      stepIndex -= 1;
+      renderStep();
+    }
+  });
+  btnNext.addEventListener("click", () => {
+    if (stepIndex < MORPH_TUTORIAL_STEPS.length - 1) {
+      stepIndex += 1;
+      renderStep();
+    } else {
+      close();
+    }
+  });
+  btnSkip.addEventListener("click", () => close());
+  openHeader?.addEventListener("click", () => open());
+  openHelp?.addEventListener("click", () => open());
+
+  return { open, close, isOpen };
 }
 
 /* ----------------------------------------------------------------------- */
@@ -1057,7 +1221,10 @@ function init() {
       ev.preventDefault();
       applyMode();
     } else if (ev.key === "Escape") {
-      if (helpEl && !helpEl.classList.contains("morph-help--hidden")) {
+      if (morphTutorialCtl?.isOpen()) {
+        ev.preventDefault();
+        morphTutorialCtl.close();
+      } else if (helpEl && !helpEl.classList.contains("morph-help--hidden")) {
         helpEl.classList.add("morph-help--hidden");
       }
     } else if (ev.key === "1") setMode("word");
@@ -1124,6 +1291,16 @@ function init() {
   helpBtn?.addEventListener("click", () => helpEl?.classList.toggle("morph-help--hidden"));
   helpEl?.querySelector(".morph-help__close")?.addEventListener("click", () => helpEl.classList.add("morph-help--hidden"));
   helpEl?.querySelector(".morph-help__backdrop")?.addEventListener("click", () => helpEl.classList.add("morph-help--hidden"));
+
+  morphTutorialCtl = installMorphTutorial({ shellEl, helpEl });
+  try {
+    const q = new URLSearchParams(window.location.search);
+    if (q.get("tour") === "1" || q.get("tutorial") === "1") {
+      requestAnimationFrame(() => morphTutorialCtl?.open());
+    }
+  } catch {
+    /* ignore */
+  }
 
   /* ---- lesson zoom -------------------------------------------------- */
   installLessonZoom(detailEl, shellEl);

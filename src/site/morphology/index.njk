@@ -8,10 +8,13 @@ contentClasses: morphology-page
 <link rel="stylesheet" href="/styles/morphology-garden.css" />
 
 <div class="morphology-page">
-  <header class="morphology-top">
+  <header class="morphology-top" id="morph-page-intro">
     <h1 class="morph-page-title">Morphology: The Analysis of Words</h1>
     <p class="morphology-tagline">
       A clean explorer for word morphology — pick a <strong>word</strong> for one tree, a <strong>morpheme</strong> to see every word in the bank that contains it, or <strong>compare</strong> two words side-by-side. Highlight reel from Park-Johnson &amp; Shin (2020), <em>Linguistics for Language Teachers</em>, Ch. 4.
+      <button type="button" class="morph-tour-link" id="morph-tour-open-header" aria-label="Start the guided tour of this page">
+        Take the guided tour
+      </button>
     </p>
   </header>
 
@@ -23,7 +26,7 @@ contentClasses: morphology-page
       aria-label="Morphology board: drag to pan; only the selected tree(s) are shown"
     ></div>
 
-    <div class="morph-ui-panel">
+    <div class="morph-ui-panel" id="morph-ui-panel">
       <div class="morph-ui-row morph-ui-row--meta" role="group" aria-label="View aids">
         <span class="morph-curriculum-note" title="One vocabulary set; tier shown inside each mini-lesson">Tier shown inside each mini-lesson</span>
         <button
@@ -155,41 +158,63 @@ contentClasses: morphology-page
     >
       <button type="button" class="morph-help__backdrop" aria-label="Close help"></button>
       <div class="morph-help__panel">
-        <h2 id="morph-help-title" class="morph-help__title">How to use the morphology explorer</h2>
+        <h2 id="morph-help-title" class="morph-help__title">Help &amp; tips</h2>
         <div class="morph-help__body">
+          <p class="morph-help__lead">
+            New here? The <strong>guided tour</strong> walks through each part of the page and lights up what it is talking about.
+          </p>
+          <p class="morph-help__tour-row">
+            <button type="button" class="morph-help__tour-btn" id="morph-tour-open-help">Start guided tour</button>
+            <span class="morph-help__tour-hint">You can also open it from the line under the page title.</span>
+          </p>
+          <p class="morph-help__url-tip">
+            Tip for class links: add <code>?tour=1</code> to this page’s web address to open the tour automatically when the page loads.
+          </p>
           <section class="morph-help__sec">
-            <h3>Three modes</h3>
+            <h3>Three ways to explore</h3>
             <ul>
-              <li><strong>🌳 Word</strong> — one word's tree. The mini-lesson below explains how the pieces nest, what each affix does, and why it matters for reading and spelling.</li>
-              <li><strong>🔗 Morpheme</strong> — pick any morpheme tag (prefix, suffix, root, or lexeme); every word in the bank that contains it appears on the board with magenta links between matching pieces. The lesson becomes a Structured Word Inquiry primer: meaning, etymology, <strong>word sums</strong> showing how it builds, decoding tip, spelling rule, words in this bank, contrasting morphemes to <strong>compare with</strong>, student inquiry prompts, and a 30-second teaching move.</li>
-              <li><strong>⚖ Compare</strong> — two word trees side-by-side. Magenta arcs trace the morphemes they share; the lesson is a dual “what these have in common” card.</li>
+              <li><strong>🌳 Word</strong> — one word at a time. You get a single tree on the board and a <strong>mini-lesson</strong> under it (or beside it in full screen) with word sums, tips, and questions.</li>
+              <li><strong>🔗 Morpheme</strong> — pick one prefix, suffix, root, or lexeme. Every word in the bank that uses that chunk appears on the board, with <strong>magenta links</strong> between matching pieces. The lesson card switches to a morpheme “mini-lesson” (meaning, etymology, word sums, spelling note, examples, and <strong>Compare with</strong> links).</li>
+              <li><strong>⚖ Compare</strong> — choose two words. Two trees sit side by side; shared morphemes are linked the same way.</li>
             </ul>
           </section>
           <section class="morph-help__sec">
-            <h3>Mouse / touch</h3>
+            <h3>Board &amp; mouse</h3>
             <ul>
-              <li><strong>Drag</strong> the board to pan. The viewer auto-fits the visible trees so you don’t need to zoom manually.</li>
-              <li><strong>Hover</strong> a sphere for its gloss, category, and parent word.</li>
-              <li><strong>Click</strong> a morpheme sphere — if that morpheme appears in 2+ words, jumps to <strong>Morpheme</strong> mode for that piece.</li>
-              <li><strong>Double-click</strong> anywhere — refit the camera.</li>
+              <li>Only the trees for your current mode are drawn — nothing extra hiding in the background.</li>
+              <li><strong>Drag</strong> to pan. The view <strong>auto-fits</strong> so the whole tree stays in frame (no manual zoom).</li>
+              <li><strong>Hover</strong> a sphere for a quick gloss (meaning, type, word).</li>
+              <li><strong>Click</strong> a sphere: if that morpheme appears in <strong>two or more</strong> words, you jump to <strong>Morpheme</strong> mode for it. Otherwise you open that word in <strong>Word</strong> mode.</li>
+              <li><strong>Double-click</strong> the board (or press <kbd>F</kbd> / <kbd>R</kbd>) to refit the frame.</li>
             </ul>
           </section>
           <section class="morph-help__sec">
-            <h3>Keyboard</h3>
+            <h3>Full screen &amp; lesson text</h3>
+            <ul>
+              <li><strong>🖥️ Full screen</strong> — uses the whole screen. The <strong>board is on the left</strong> and the <strong>mini-lesson on the right</strong> so both are easy to read on a projector or tablet.</li>
+              <li><strong>Lesson text size</strong> — use <strong>A−</strong> / <strong>A</strong> / <strong>A+</strong> above the lesson (and the extra copy in full screen). Keys: <kbd>[</kbd> smaller, <kbd>]</kbd> larger, <kbd>Alt</kbd>+<kbd>0</kbd> reset.</li>
+            </ul>
+          </section>
+          <section class="morph-help__sec">
+            <h3>Keyboard shortcuts</h3>
             <ul>
               <li><kbd>1</kbd> Word · <kbd>2</kbd> Morpheme · <kbd>3</kbd> Compare</li>
-              <li><kbd>F</kbd> or <kbd>R</kbd> — refit camera</li>
-              <li><kbd>[</kbd> / <kbd>]</kbd> — smaller / larger mini-lesson text · <kbd>Alt</kbd>+<kbd>0</kbd> resets</li>
-              <li><kbd>Escape</kbd> — close help</li>
+              <li><kbd>F</kbd> or <kbd>R</kbd> — refit the board</li>
+              <li><kbd>Escape</kbd> — closes this help window (or the guided tour if it is open)</li>
             </ul>
           </section>
           <section class="morph-help__sec">
-            <h3>Vocabulary tiers</h3>
+            <h3>Below the board</h3>
+            <ul>
+              <li><strong>Five ideas from the chapter</strong> — short readings that connect to the trees.</li>
+              <li><strong>Word bank morpheme chart</strong> — sortable-style table: morpheme, <strong>Type</strong> (Prefix / Suffix / Root / Lexeme), origin, meaning, words in this bank, outside examples, Wiktionary. Click a <strong>morpheme</strong> to jump into Morpheme mode; click a <strong>word</strong> to open Word mode.</li>
+            </ul>
+          </section>
+          <section class="morph-help__sec">
+            <h3>For teachers editing content</h3>
             <p>
-              The site loads <strong>one</strong> vocabulary set. Each lemma is tagged
-              <strong>Tier 1</strong> (everyday), <strong>Tier 2</strong> (academic / cross-subject), or
-              <strong>Tier 3</strong> (lower-frequency / domain-heavy). The mini-lesson states the tier and points to
-              <code>morphology-words-data.js</code> if you want to retag a word.
+              Word trees and tiers live in <code>morphology-words-data.js</code>. Morpheme chart rows and mini-lessons live in
+              <code>morphology-morpheme-catalog.js</code>.
             </p>
           </section>
         </div>
@@ -215,7 +240,7 @@ contentClasses: morphology-page
     <div id="morph-detail-body" class="morph-detail__body" aria-live="polite"></div>
   </div>
 
-  <section class="morph-highlights" aria-labelledby="morph-highlights-title">
+  <section class="morph-highlights" id="morph-highlights-section" aria-labelledby="morph-highlights-title">
     <h2 id="morph-highlights-title" class="morph-highlights-title">Five ideas from the chapter</h2>
     <p class="morph-highlights-intro">
       These are the chapter’s through-lines for teachers—not section titles. Each one is illustrated somewhere in the
@@ -275,7 +300,7 @@ contentClasses: morphology-page
     </p>
   </section>
 
-  <section class="morph-chart" aria-labelledby="morph-chart-title">
+  <section class="morph-chart" id="morph-chart-section" aria-labelledby="morph-chart-title">
     <h2 id="morph-chart-title" class="morph-chart__title">Word bank morpheme chart</h2>
     <p class="morph-chart__sub">
       Click a <strong>morpheme</strong> to switch to <strong>Morpheme</strong> mode and see all linked words. Click a
@@ -285,6 +310,27 @@ contentClasses: morphology-page
     </p>
     <div id="morph-morpheme-chart" class="morph-chart__mount" aria-live="polite"></div>
   </section>
+
+  <div
+    id="morph-tutorial"
+    class="morph-tutorial morph-tutorial--hidden"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="morph-tutorial-heading"
+    aria-describedby="morph-tutorial-desc"
+  >
+    <div class="morph-tutorial__veil" aria-hidden="true"></div>
+    <div class="morph-tutorial__panel" id="morph-tutorial-panel">
+      <p class="morph-tutorial__step" id="morph-tutorial-step" aria-live="polite">Step 1 of 1</p>
+      <h2 class="morph-tutorial__title" id="morph-tutorial-heading" tabindex="-1">Tour</h2>
+      <div class="morph-tutorial__desc" id="morph-tutorial-desc"></div>
+      <div class="morph-tutorial__actions">
+        <button type="button" class="morph-tutorial__btn morph-tutorial__btn--ghost" id="morph-tutorial-skip">Skip tour</button>
+        <button type="button" class="morph-tutorial__btn morph-tutorial__btn--ghost" id="morph-tutorial-back">Back</button>
+        <button type="button" class="morph-tutorial__btn morph-tutorial__btn--primary" id="morph-tutorial-next">Next</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <script type="importmap">
