@@ -568,7 +568,7 @@ const MORPH_TUTORIAL_STEPS = [
   },
   {
     title: "Five big ideas (read at your pace)",
-    html: `<p>Scroll down when you want reading that ties the chapter to what you see in the trees — morphemes vs syllables, roots and affixes, free and bound bases, and more.</p><p>There is no rush: you can come back to this section anytime.</p>`,
+    html: `<p>Below the lesson card, five <strong>clickable highlight cards</strong> sum up big ideas from the chapter. Each card shows a title and a short teaser; click it again to expand the full notes.</p><p>There is no rush — you can open one, two, or all five as you explore.</p>`,
     highlights: ["#morph-highlights-section"],
     panelDock: "top",
   },
@@ -1570,11 +1570,37 @@ function installMorphemeChart(onPickWord, onPickKey) {
 }
 
 /* ----------------------------------------------------------------------- */
+/*  Chapter highlight cards (expand/collapse)                              */
+/* ----------------------------------------------------------------------- */
+
+function installMorphHighlightCards() {
+  const section = document.getElementById("morph-highlights-section");
+  if (!section) return;
+  section.querySelectorAll("[data-morph-hl-card]").forEach((card) => {
+    const btn = card.querySelector("[data-morph-hl-toggle]");
+    const panel = card.querySelector("[data-morph-hl-panel]");
+    if (!(btn instanceof HTMLButtonElement) || !(panel instanceof HTMLElement)) return;
+    btn.addEventListener("click", () => {
+      const open = !card.classList.contains("morph-highlight-card--open");
+      card.classList.toggle("morph-highlight-card--open", open);
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+      if (open) panel.removeAttribute("hidden");
+      else panel.setAttribute("hidden", "");
+    });
+  });
+}
+
+/* ----------------------------------------------------------------------- */
 /*  Boot                                                                   */
 /* ----------------------------------------------------------------------- */
 
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", init);
-} else {
+function bootMorphologyPage() {
   init();
+  installMorphHighlightCards();
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", bootMorphologyPage);
+} else {
+  bootMorphologyPage();
 }
