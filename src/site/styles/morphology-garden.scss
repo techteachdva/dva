@@ -3367,13 +3367,25 @@ html.morph-immersive-open body {
 .morph-tutorial {
   position: fixed;
   inset: 0;
-  z-index: 100000;
+  /* Above page chrome (chart, sticky headers, help) but below node tooltips */
+  z-index: 2147483620;
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
   align-items: center;
   padding: 0 0.75rem max(0.75rem, env(safe-area-inset-bottom, 0));
   pointer-events: none;
+}
+
+/* Lower-page steps: park the card at the top so the highlighted section stays visible below it */
+.morph-tutorial--dock-top {
+  justify-content: flex-start;
+  padding-top: max(0.5rem, env(safe-area-inset-top, 0));
+  padding-bottom: 0.75rem;
+}
+
+.morph-tutorial--dock-top .morph-tutorial__panel {
+  max-height: min(40vh, 19rem);
 }
 
 .morph-tutorial--hidden {
@@ -3383,6 +3395,7 @@ html.morph-immersive-open body {
 .morph-tutorial__veil {
   position: absolute;
   inset: 0;
+  z-index: 0;
   background: rgba(6, 10, 22, 0.55);
   pointer-events: auto;
 }
@@ -3393,7 +3406,7 @@ html.morph-immersive-open body {
 
 .morph-tutorial__panel {
   position: relative;
-  z-index: 1;
+  z-index: 2;
   width: min(34rem, 100%);
   max-height: min(52vh, 22rem);
   overflow: auto;
@@ -3541,7 +3554,8 @@ html.morph-immersive-open body {
 
 .morph-tutorial-highlight {
   position: relative;
-  z-index: 100001 !important;
+  /* Above in-shell UI (e.g. z-index:5 toolbar) but always below #morph-tutorial (2147483620) */
+  z-index: 10 !important;
   isolation: isolate;
   border-radius: 10px;
   box-shadow:

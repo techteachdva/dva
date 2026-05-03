@@ -570,11 +570,13 @@ const MORPH_TUTORIAL_STEPS = [
     title: "Five big ideas (read at your pace)",
     html: `<p>Scroll down when you want reading that ties the chapter to what you see in the trees — morphemes vs syllables, roots and affixes, free and bound bases, and more.</p><p>There is no rush: you can come back to this section anytime.</p>`,
     highlights: ["#morph-highlights-section"],
+    panelDock: "top",
   },
   {
     title: "Word bank chart",
     html: `<p>This table lists morphemes in the bank. Each row shows the <strong>Type</strong> (Prefix, Suffix, Root, or Lexeme), a plain-language meaning, which words use it here, and a link to Wiktionary if you want to go deeper.</p><p><strong>Click a morpheme</strong> in the first column to jump into <strong>Morpheme</strong> mode on the board. <strong>Click a word</strong> in the list to open <strong>Word</strong> mode.</p>`,
     highlights: ["#morph-chart-section"],
+    panelDock: "top",
   },
   {
     title: "You are ready — here is what to try next",
@@ -606,6 +608,8 @@ function installMorphTutorial(opts) {
   let stepIndex = 0;
   /** @type {HTMLElement[]} */
   let highlighted = [];
+  /** @type {ReturnType<typeof setTimeout> | null} */
+  let layoutTimer = null;
 
   function clearHighlights() {
     for (const el of highlighted) el.classList.remove("morph-tutorial-highlight");
@@ -624,12 +628,71 @@ function installMorphTutorial(opts) {
         highlighted.push(el);
       }
     }
-    const first = highlighted[0];
-    if (first && !REDUCED_MOTION) {
-      first.scrollIntoView({ block: "center", behavior: "smooth", inline: "nearest" });
-    } else if (first) {
-      first.scrollIntoView({ block: "center", inline: "nearest" });
+  }
+
+  /** Scroll the window so the tour panel and highlighted region both fit in the viewport. */
+  function syncTutorialScroll() {
+    if (root.classList.contains("morph-tutorial--hidden")) return;
+    const dockTop = root.classList.contains("morph-tutorial--dock-top");
+    const target = highlighted[0];
+    const behavior = REDUCED_MOTION ? "auto" : "smooth";
+
+    /* Bottom-docked card: center the highlight first, then nudge so it clears the panel. */
+    if (target && !dockTop) {
+      target.scrollIntoView({ block: "center", behavior, inline: "nearest" });
     }
+
+    const runNudge = () => {
+      const pr = panel.getBoundingClientRect();
+      const margin = 12;
+      if (!Number.isFinite(pr.height) || pr.height < 24) return;
+
+      if (dockTop) {
+        const bandTop = pr.bottom + margin;
+        if (target) {
+          const r = target.getBoundingClientRect();
+          let delta = 0;
+          /* Positive scrollY moves content up → target moves down in the viewport */
+          if (r.top < bandTop) delta += bandTop - r.top + 4;
+          if (r.bottom > window.innerHeight - margin) delta += r.bottom - (window.innerHeight - margin) + 8;
+          if (delta !== 0) window.scrollBy({ top: delta, behavior: REDUCED_MOTION ? "auto" : "smooth" });
+        }
+        if (pr.top < margin) {
+          window.scrollBy({ top: pr.top - margin, behavior: REDUCED_MOTION ? "auto" : "smooth" });
+        }
+      } else {
+        const reserveBottom = pr.height + margin * 2;
+        const marginTop = 56;
+        if (target) {
+          const r = target.getBoundingClientRect();
+          let dy = 0;
+          if (r.bottom > window.innerHeight - reserveBottom) {
+            dy += r.bottom - (window.innerHeight - reserveBottom) + 10;
+          }
+          if (r.top < marginTop) dy += r.top - marginTop - 6;
+          if (dy !== 0) window.scrollBy({ top: dy, behavior: REDUCED_MOTION ? "auto" : "smooth" });
+        } else {
+          panel.scrollIntoView({ block: "nearest", behavior: "auto" });
+        }
+      }
+    };
+
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        runNudge();
+        if (!REDUCED_MOTION) {
+          window.setTimeout(runNudge, 280);
+        }
+      });
+    });
+  }
+
+  function queueTutorialLayout() {
+    if (layoutTimer) clearTimeout(layoutTimer);
+    layoutTimer = setTimeout(() => {
+      layoutTimer = null;
+      syncTutorialScroll();
+    }, REDUCED_MOTION ? 0 : 50);
   }
 
   function renderStep() {
@@ -638,7 +701,10 @@ function installMorphTutorial(opts) {
     stepEl.textContent = `Step ${stepIndex + 1} of ${n}`;
     titleEl.textContent = step.title;
     descEl.innerHTML = step.html;
+    panel.scrollTop = 0;
+    root.classList.toggle("morph-tutorial--dock-top", step.panelDock === "top");
     applyHighlights(step.highlights || []);
+    queueTutorialLayout();
     btnBack.disabled = stepIndex === 0;
     btnBack.hidden = stepIndex === 0;
     const last = stepIndex === n - 1;
@@ -655,7 +721,12 @@ function installMorphTutorial(opts) {
   }
 
   function close() {
+    if (layoutTimer) {
+      clearTimeout(layoutTimer);
+      layoutTimer = null;
+    }
     clearHighlights();
+    root.classList.remove("morph-tutorial--dock-top");
     root.classList.add("morph-tutorial--hidden");
     document.getElementById("morph-help-btn")?.focus?.();
   }
@@ -663,8 +734,6 @@ function installMorphTutorial(opts) {
   function isOpen() {
     return !root.classList.contains("morph-tutorial--hidden");
   }
-
-  const helpBtn = document.getElementById("morph-help-btn");
 
   btnBack.addEventListener("click", () => {
     if (stepIndex > 0) {
@@ -683,6 +752,10 @@ function installMorphTutorial(opts) {
   btnSkip.addEventListener("click", () => close());
   openHeader?.addEventListener("click", () => open());
   openHelp?.addEventListener("click", () => open());
+
+  window.addEventListener("resize", () => {
+    if (isOpen()) queueTutorialLayout();
+  });
 
   return { open, close, isOpen };
 }
