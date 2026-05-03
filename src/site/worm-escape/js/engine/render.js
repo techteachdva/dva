@@ -63,7 +63,7 @@ export function applyShake(ctx, dt) {
 //   { deep, mid, bruise, bump } - lets chambers shift from blackish purple
 //   (deep guts) to reddish pink (near the mouth).
 function drawFleshBackgroundCore(ctx, t, tint = 1, palette = null) {
-  const pf = visualMods.pinkFloyd ? Math.sin(visualMods.t * 1.1) * 0.22 : 0;
+  const pf = visualMods.pinkFloyd ? Math.sin(visualMods.t * 1.1) * 0.32 : 0;
   const pulse = (Math.sin(t * 1.6) * 0.5 + 0.5) * 0.12 + 0.88 + pf;
   const deep   = palette?.deep   || COLORS.wormDeep;
   const mid    = palette?.mid    || COLORS.worm;
@@ -217,7 +217,8 @@ export function drawBackdropCached(ctx, tFlesh, tVeins, tint = 1, palette = null
   const qf = Math.floor(tFlesh * 4);
   const qv = Math.floor(tVeins * 4);
   const pk = backdropPaletteKey(palette);
-  const pfQ = visualMods.pinkFloyd ? Math.floor(visualMods.t * 6) : "x";
+  // Pink Floyd: quantize slowly so the offscreen backdrop is not rebuilt 6×/s (very expensive).
+  const pfQ = visualMods.pinkFloyd ? Math.floor(visualMods.t * 1.5) : "x";
   const key = `${qf}|${qv}|${tint}|${pk}|${veinSeed}|${pfQ}`;
   if (typeof document === "undefined") {
     drawFleshBackgroundCore(ctx, tFlesh, tint, palette);
@@ -239,9 +240,9 @@ export function drawBackdropCached(ctx, tFlesh, tVeins, tint = 1, palette = null
   }
   ctx.save();
   if (visualMods.pinkFloyd) {
-    const skew = 0.012 * Math.sin(visualMods.t * 1.8);
-    const sx = 1 + 0.018 * Math.sin(visualMods.t * 0.9);
-    const sy = 1 + 0.018 * Math.cos(visualMods.t * 1.1);
+    const skew = 0.022 * Math.sin(visualMods.t * 2.2);
+    const sx = 1 + 0.028 * Math.sin(visualMods.t * 1.1);
+    const sy = 1 + 0.028 * Math.cos(visualMods.t * 1.35);
     ctx.translate(W / 2, H / 2);
     ctx.transform(sx, skew, -skew, sy, 0, 0);
     ctx.translate(-W / 2, -H / 2);
@@ -294,8 +295,9 @@ export function drawAcid(ctx, t, level /* 0..1 fraction of screen */) {
   ctx.fillStyle = caustic;
   ctx.fillRect(0, yTop, W, 60);
 
-  // Bubbles (layered for depth)
-  for (let i = 0; i < 28; i++) {
+  // Bubbles (layered for depth) — fewer when Pink Floyd (many other full-screen passes run)
+  const bubbleCount = pf ? 16 : 28;
+  for (let i = 0; i < bubbleCount; i++) {
     const bx = ((i * 61 + t * (30 + i * 3)) % W);
     const by = yTop + 10 + ((i * 13 + t * 80 * (0.5 + (i % 5) * 0.2)) % Math.max(10, H - yTop - 10));
     const br = 2 + (i % 5);
@@ -317,13 +319,16 @@ export function drawAcid(ctx, t, level /* 0..1 fraction of screen */) {
     ctx.beginPath(); ctx.arc(bx - br * 0.4, by - br * 0.4, br * 0.35, 0, Math.PI * 2); ctx.fill();
   }
 
-  // Bright foam top (with glow)
-  ctx.shadowColor = "rgba(215,255,155,0.8)";
-  ctx.shadowBlur = 12;
+  // Bright foam top (shadowBlur is very costly; skip under Pink Floyd — sheen covers glow)
+  if (!pf) {
+    ctx.shadowColor = "rgba(215,255,155,0.8)";
+    ctx.shadowBlur = 12;
+  }
   ctx.strokeStyle = "rgba(240,255,200,0.9)";
-  ctx.lineWidth = 3;
+  ctx.lineWidth = pf ? 2.5 : 3;
   ctx.beginPath();
-  for (let x = 0; x <= W; x += 8) {
+  const step = pf ? 10 : 8;
+  for (let x = 0; x <= W; x += step) {
     const y = yTop
       + Math.sin((x + t * 220) * 0.03) * 5 * wav
       + Math.sin((x + t * 140 + pfT * 80) * 0.08) * 3 * wav
@@ -331,35 +336,54 @@ export function drawAcid(ctx, t, level /* 0..1 fraction of screen */) {
     if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
   }
   ctx.stroke();
+  ctx.shadowBlur = 0;
   ctx.restore();
 }
 
-/** Full-screen psychedelic wash (cheat `pinkfloyd`). Draw after scene, before HUD if desired. */
+/** Full-screen psychedelic wash (cheat `pinkfloyd`). Draw after scene + trails. */
 export function drawPinkFloydScreenSheen(ctx) {
   if (!visualMods.pinkFloyd) return;
   const tm = visualMods.t;
   ctx.save();
   ctx.globalCompositeOperation = "screen";
   for (let k = 0; k < 4; k++) {
-    const hx = (W * (0.2 + k * 0.22) + Math.sin(tm * 0.7 + k) * 90) % W;
-    const hy = (H * (0.25 + k * 0.18) + Math.cos(tm * 0.55 + k * 1.7) * 70) % H;
-    const r = 220 + k * 60 + Math.sin(tm + k) * 40;
-    const hue = (tm * 38 + k * 72) % 360;
+    const hx = (W * (0.08 + k * 0.14) + Math.sin(tm * 0.85 + k * 0.9) * 120) % W;
+    const hy = (H * (0.12 + k * 0.11) + Math.cos(tm * 0.62 + k * 1.4) * 95) % H;
+    const r = 140 + k * 55 + Math.sin(tm * 1.3 + k) * 55;
+    const hue = (tm * 52 + k * 51) % 360;
     const g = ctx.createRadialGradient(hx, hy, 0, hx, hy, r);
-    g.addColorStop(0, `hsla(${hue}, 90%, 58%, 0.14)`);
-    g.addColorStop(0.55, `hsla(${(hue + 40) % 360}, 85%, 50%, 0.06)`);
+    g.addColorStop(0, `hsla(${hue}, 96%, 58%, 0.2)`);
+    g.addColorStop(0.45, `hsla(${(hue + 55) % 360}, 92%, 52%, 0.1)`);
     g.addColorStop(1, "rgba(0,0,0,0)");
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
   }
   ctx.globalCompositeOperation = "soft-light";
   const sweep = ctx.createLinearGradient(0, 0, W, H);
-  const h0 = (tm * 22) % 360;
-  sweep.addColorStop(0, `hsla(${h0}, 100%, 50%, 0.12)`);
-  sweep.addColorStop(0.5, `hsla(${(h0 + 120) % 360}, 90%, 55%, 0.1)`);
-  sweep.addColorStop(1, `hsla(${(h0 + 240) % 360}, 95%, 52%, 0.11)`);
+  const h0 = (tm * 38) % 360;
+  sweep.addColorStop(0, `hsla(${h0}, 100%, 52%, 0.16)`);
+  sweep.addColorStop(0.35, `hsla(${(h0 + 100) % 360}, 98%, 48%, 0.14)`);
+  sweep.addColorStop(0.7, `hsla(${(h0 + 200) % 360}, 95%, 54%, 0.13)`);
+  sweep.addColorStop(1, `hsla(${(h0 + 280) % 360}, 100%, 50%, 0.15)`);
   ctx.fillStyle = sweep;
   ctx.fillRect(0, 0, W, H);
+
+  ctx.globalCompositeOperation = "color-dodge";
+  const sweep2 = ctx.createLinearGradient(W, 0, 0, H);
+  const h1 = (tm * -30 + 90) % 360;
+  sweep2.addColorStop(0, `hsla(${h1}, 100%, 62%, 0.08)`);
+  sweep2.addColorStop(0.5, `hsla(${(h1 + 140) % 360}, 100%, 58%, 0.1)`);
+  sweep2.addColorStop(1, `hsla(${(h1 + 60) % 360}, 95%, 55%, 0.07)`);
+  ctx.fillStyle = sweep2;
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.globalCompositeOperation = "overlay";
+  const warp = 0.04 + 0.03 * Math.sin(tm * 2.1);
+  ctx.fillStyle = `hsla(${(tm * 120) % 360}, 85%, 50%, ${warp})`;
+  for (let q = 0; q < 2; q++) {
+    const yy = ((tm * 40 + q * 160) % (H + 80)) - 40;
+    ctx.fillRect(0, yy, W, 22 + q * 6);
+  }
   ctx.restore();
 }
 
@@ -495,6 +519,23 @@ export function drawText(ctx, text, x, y, opts = {}) {
   // Final fill pass on top.
   ctx.fillStyle = color;
   ctx.fillText(str, x, y);
+
+  // Skip tiny UI strings (hundreds/frame); avoid shadowBlur (GPU killer on text).
+  if (visualMods.pinkFloyd && size >= 14) {
+    const tm = visualMods.t;
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.shadowBlur = 0;
+    for (let k = 0; k < 2; k++) {
+      const h = (tm * 110 + x * 0.08 + y * 0.06 + k * 110) % 360;
+      ctx.strokeStyle = `hsla(${h}, 95%, 72%, ${0.2 - k * 0.06})`;
+      ctx.lineWidth = Math.max(1, 1.2 + k * 0.4);
+      ctx.strokeText(str, x + (k - 0.5) * 0.8, y + (k - 0.5) * 0.5);
+    }
+    ctx.fillStyle = `hsla(${(tm * 130 + x) % 360}, 100%, 70%, 0.1)`;
+    ctx.fillText(str, x, y);
+    ctx.restore();
+  }
   ctx.restore();
 }
 
@@ -579,6 +620,18 @@ export function drawBar(ctx, x, y, w, h, pct, opts = {}) {
   ctx.strokeStyle = border;
   ctx.lineWidth = 2;
   ctx.strokeRect(x, y, w, h);
+  if (visualMods.pinkFloyd && p > 0.08) {
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    const tm = visualMods.t;
+    const hue = (tm * 88 + x * 0.5) % 360;
+    const g2 = ctx.createLinearGradient(x, y, x + w, y + h);
+    g2.addColorStop(0, `hsla(${hue}, 100%, 58%, 0.22)`);
+    g2.addColorStop(1, `hsla(${(hue + 140) % 360}, 95%, 52%, 0.16)`);
+    ctx.fillStyle = g2;
+    ctx.fillRect(x + 2, y + 2, (w - 4) * p, h - 4);
+    ctx.restore();
+  }
   if (label) {
     // If the label is a dark color (e.g. "#111" on colored bars), pair it
     // with a LIGHT outline so the text pops. Otherwise use the default
@@ -633,13 +686,16 @@ export class ParticleSystem {
     this.ps = this.ps.filter((p) => p.life > 0);
   }
   render(ctx) {
+    const pf = visualMods.pinkFloyd;
     for (const p of this.ps) {
       const a = Math.max(0, p.life / p.max);
       ctx.save();
       ctx.globalAlpha = a;
-      // Soft glow
-      ctx.shadowColor = p.color;
-      ctx.shadowBlur = 8;
+      // Soft glow (shadows are costly; skip under Pink Floyd when many FX layers run)
+      if (!pf) {
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 8;
+      }
       ctx.fillStyle = p.color;
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
@@ -676,12 +732,28 @@ export function drawPanel(ctx, x, y, w, h, opts = {}) {
   // Top inner highlight
   ctx.fillStyle = "rgba(255,255,255,0.03)";
   ctx.fillRect(x + 2, y + 2, w - 4, 2);
-  // Border with glow
-  ctx.shadowColor = borderGlow;
-  ctx.shadowBlur = 10;
+  // Border with glow (skip expensive shadow when Pink Floyd — extra rainbow strokes follow)
+  if (!visualMods.pinkFloyd) {
+    ctx.shadowColor = borderGlow;
+    ctx.shadowBlur = 10;
+  }
   ctx.strokeStyle = border;
   ctx.lineWidth = 2;
   ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+  if (visualMods.pinkFloyd) {
+    const tm = visualMods.t;
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.shadowBlur = 0;
+    const hue = (tm * 62 + x * 0.25 + y * 0.2) % 360;
+    ctx.strokeStyle = `hsla(${hue}, 100%, 68%, 0.38)`;
+    ctx.lineWidth = 2.5;
+    ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+    ctx.strokeStyle = `hsla(${(hue + 180) % 360}, 95%, 58%, 0.24)`;
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(x + 4, y + 4, w - 8, h - 8);
+    ctx.restore();
+  }
   ctx.restore();
 }
 
@@ -1471,18 +1543,39 @@ export function drawBanner(ctx, text, cx, y, size = 40, color = COLORS.bile, glo
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.font = `bold ${size}px "Courier New", monospace`;
-  // Outer glow
-  ctx.shadowColor = glow;
-  ctx.shadowBlur = 24;
-  ctx.fillStyle = color;
-  ctx.fillText(text, cx, y);
-  // Second pass (brighter core) to amp it up
-  ctx.shadowBlur = 10;
-  ctx.fillText(text, cx, y);
+  if (visualMods.pinkFloyd) {
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = color;
+    ctx.fillText(text, cx, y);
+    ctx.fillStyle = "rgba(255,255,255,0.22)";
+    ctx.fillText(text, cx, y);
+  } else {
+    // Outer glow
+    ctx.shadowColor = glow;
+    ctx.shadowBlur = 24;
+    ctx.fillStyle = color;
+    ctx.fillText(text, cx, y);
+    // Second pass (brighter core) to amp it up
+    ctx.shadowBlur = 10;
+    ctx.fillText(text, cx, y);
+  }
   // Outline
   ctx.shadowBlur = 0;
   ctx.strokeStyle = "rgba(0,0,0,0.85)";
   ctx.lineWidth = 2;
   ctx.strokeText(text, cx, y);
+  if (visualMods.pinkFloyd) {
+    const tm = visualMods.t;
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.shadowBlur = 0;
+    for (let k = 0; k < 2; k++) {
+      const h = (tm * 75 + k * 110 + cx * 0.05) % 360;
+      ctx.strokeStyle = `hsla(${h}, 98%, 68%, ${0.28 - k * 0.08})`;
+      ctx.lineWidth = 2.2;
+      ctx.strokeText(text, cx + (k - 0.5) * 1.1, y + (k - 0.5) * 0.7);
+    }
+    ctx.restore();
+  }
   ctx.restore();
 }

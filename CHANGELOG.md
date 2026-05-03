@@ -1,5 +1,46 @@
 ## Unreleased
 
+### Morphology Garden — Deep recursive decomposition
+
+Every word tree now decomposes to its smallest meaningful parts. The trigger was `antisocial` displaying as `ANTI + SOCIAL` instead of `ANTI + SOCI + AL`; that single bug exposed a much broader weakness — the auto-generated trees for catalog "outside examples" only ever peeled one affix.
+
+- **`morphCatalogStubTree` rewritten as a recursive peel/match decomposer** in `morphology-words-data.js`. The function now:
+  - Builds three cached spec lists (`morphPrefixSpecs`, `morphSuffixSpecs`, `morphRootSpecs`) over the whole catalog, including assimilated variants for `pfx:ad-` (ac-, af-, ag-, al-, an-, ap-, ar-, as-, at-) and `pfx:in-` / `pfx:in-toward` (im-, il-, ir-).
+  - Builds a lexicon (`morphBuildLexCache`) from every leaf of the hand-curated `_MORPHOLOGY_WORDS_RAW` trees so known free and bound bases (e.g., `happy`, `nation`, `sist`, `nect`) anchor the residue check.
+  - Picks prefix/suffix candidates with `morphPickPrefix(stem, depth, focusKey)` and `morphPickSuffix(stem, depth, focusKey)` that honor the focus morpheme on tie-breaks and gate aggressive peels at depth.
+- **Spelling-rule reversals** (`morphReverseSuffixChange`) restore `y` for `happi → happy`, undouble final consonants for short bases (`stopp → stop`, `runn → run`, `sunn → sun`, `swimm → swim`, `mudd → mud`), and only fire when the result is a known stem or matches a CVC/CCVC shape (`MORPH_COMMON_SHORT_BASES`, `_MORPH_SHORT_BASE_RE`).
+- **Residue scoring** (`morphResidueScore` + memoized `morphCanReachRecognized`) prevents over-peeling. Single-letter suffix variants (`-s`, `-y`, `-e`) are only allowed if the residue actually scores as recognizable, and `sfx:-s` is forbidden at depth > 0 (plural `-s` is always outermost). The plural `-s` peel that was producing nonsense like `viru + -s` for `antivirus` is gone.
+- **Suffix-noise guard** (`morphResidueIsAlmostAllSuffix`) blocks prefix peels whose remaining residue is mostly suffix material, so `reaction` no longer mis-peels as `re- + ac- + tion` and `colorful` no longer becomes `col- + orful`.
+- **Catalog enrichment** in `morphology-morpheme-catalog.js`:
+  - **New suffix entries** with full SWI-style pedagogical content (etymology, wordSums, decodingTip, teachingTip, inquiryPrompts, confusedWith, outsideExamples): `sfx:-ic`, `sfx:-ive`, `sfx:-ous`, `sfx:-ity`, `sfx:-ate`, `sfx:-ant`, `sfx:-ence`.
+  - **New prefix entry**: `pfx:per-`.
+  - **New root entry**: `root:act` (fixes broken bridge in *react / overreact / interact / inactive / activate / activity / actor / deactivate*).
+  - **Suffix variant overrides** (`variantOverrides`) so `sfx:-tion` peels as `-ation / -ition / -ion` (no false `-tion` / `-sion` chunks) and `sfx:-ive` peels iteratively as `-ive / -iv` to allow `activate → act + -iv + -ate` and `activity → act + -iv + -ity`.
+- **Hand-curated tree fixes** in `morphology-words-data.js`:
+  - `invisible` — `morphemeKey` for the suffix node corrected from `sfx:-ible` (no entry) to `sfx:-able` (the unified catalog row).
+  - `disconnect` — split `con-` from the base: `dis- + con- + nect`.
+  - `misunderstand` — split `under` from `stand`: `mis- + under + stand`.
+  - `describe` — silent `-e` marker added: `de- + scrib + -e`.
+- **Result** — verified across the whole 200+-word auto-generated corpus (audit script: `verify-decomp-all.mjs`). Representative wins:
+  - `antisocial → anti- + soci + -al` (the original bug)
+  - `antibiotic → anti- + biot + -ic`
+  - `deactivate → de- + act + -iv + -ate` (4 morphemes)
+  - `activity → act + -iv + -ity`
+  - `inactive → in- + act + -ive`
+  - `overreact → over- + re- + act`
+  - `impossible → im- + poss + -ible`
+  - `illegal → il- + leg + -al`
+  - `nonfiction → non- + fict + -ion`
+  - `prehistoric → pre- + histor + -ic`
+  - `carefully → care + -ful + -ly`
+  - `unhappiness → un- + happy + -ness`
+  - `difference → dif- + fer + -ence`
+  - `description → de- + script + -ion`
+  - `instruction → in- + struct + -ion`
+  - `construction → con- + struct + -ion`
+  - `information → in- + form + -ation`
+  - `perspective → per- + spect + -ive`
+
 ### Morphology Garden — SWI-style mini-lesson rewrite
 
 Every morpheme entry in `morphology-morpheme-catalog.js` now carries pedagogical content modeled on Bowers & Kirby's **Structured Word Inquiry**. The morpheme-mode primer is no longer a definition card — it's a smart-board-ready inquiry lesson.

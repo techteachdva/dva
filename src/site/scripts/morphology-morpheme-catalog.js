@@ -371,6 +371,203 @@ export const MORPHEME_CATALOG = [
     outsideExamples: ["careless", "endless", "tasteless", "priceless"],
     wiktionary: "-less",
   },
+  {
+    key: "sfx:-ic",
+    morpheme: "-ic",
+    origin: "Greek / Latin",
+    meaning: "adjective-maker — \"relating to\" or \"characterized by\"",
+    etymology: "From Greek -ikos via Latin -icus 'relating to'; pervasive in scientific and academic vocabulary.",
+    wordSums: [
+      "atom + ic → atomic",
+      "histor + ic → historic",
+      "magnet + ic → magnetic",
+    ],
+    decodingTip:
+      "-ic turns nouns into adjectives meaning 'of / relating to ___': atom → atomic, magnet → magnetic, hero → heroic.",
+    teachingTip:
+      "Science-class scavenger hunt: 30 seconds to list 5 -ic adjectives from any subject. Students paraphrase each as 'relating to ___'.",
+    inquiryPrompts: [
+      "What's the difference between 'historic' (-ic) and 'historical' (-al)? Both describe history — when do we use each?",
+      "Why doesn't every noun take -ic? Try 'tablic', 'chairic'. What kinds of nouns invite this suffix?",
+    ],
+    confusedWith: ["sfx:-al", "sfx:-ous", "sfx:-tic"],
+    outsideExamples: ["atomic", "scientific", "magnetic", "historic"],
+    wiktionary: "-ic",
+  },
+  {
+    key: "sfx:-tic",
+    morpheme: "-tic",
+    origin: "Greek (via Latin)",
+    meaning: "adjective-maker — \"relating to\" (same family as -ic, often after stems that end in t)",
+    etymology:
+      "From Greek -ikos (cf. -ic); in many English words the surface spelling is **-tic** after a stem-final **t** (e.g. *semantics*, *aquatic*) or in modern scientific coinages (*antibiotic*).",
+    wordSums: [
+      "anti + bio + tic → antibiotic (against + life + relating to)",
+      "aqua + tic → aquatic (water + relating to)",
+      "magnet + ic → magnetic (same suffix family as -ic — the t belongs to magnet)",
+    ],
+    decodingTip:
+      "When you see **-tic** at the end of an adjective, try reading it as 'relating to ___' — same job as **-ic**, but the spelling often shows a **t** before **-ic** because of the base (optic, aquatic, semantic).",
+    spellingNote:
+      "Do not chop every word three letters from the end: in **magnetic**, the **t** belongs to **magnet**, not to a separate **-tic** chunk. Ask whether the letters before **-tic** form a base you recognize.",
+    teachingTip:
+      "Two-column sort: words where **-tic** peels cleanly (anti + bio + tic → antibiotic) vs words where **-ic** is the suffix and **t** is part of the base (magnet + ic → magnetic). Students defend each sort with a word sum.",
+    inquiryPrompts: [
+      "Why is **antibiotic** often taught as **anti + bio + tic**, but **magnetic** as **magnet + ic**? What does the spelling of the base tell you?",
+      "Collect three **-tic** adjectives from science class. For each, write the word sum and check whether **-tic** or **-ic** is the better suffix label.",
+    ],
+    confusedWith: ["sfx:-ic", "sfx:-ate", "sfx:-ive"],
+    outsideExamples: ["antibiotic"],
+    wiktionary: "-ic",
+  },
+  {
+    key: "sfx:-ive",
+    morpheme: "-ive",
+    origin: "Latin (via French)",
+    meaning: "adjective-maker — \"tending to\" or \"having the nature of\"",
+    etymology: "From Latin -īvus 'having the quality of'; entered English through French (active, passive).",
+    wordSums: [
+      "act + ive → active",
+      "create + ive → creat(e) + ive → creative (drop silent e)",
+      "perspect + ive → perspective",
+    ],
+    decodingTip:
+      "-ive marks an adjective meaning 'tending to ___' or 'having the nature of ___': active = tending to act, creative = tending to create.",
+    spellingNote:
+      "Drop silent e before -ive: create → creative, decide → decisive (with Latin alternation).",
+    teachingTip:
+      "Verb → adjective rapid-fire: read out 8 verbs (act, react, create, decide, prevent, react). Students call out the -ive adjective and use it in a sentence.",
+    inquiryPrompts: [
+      "Why is 'destructive' destructive? Trace destruct + ive — what 'tendency' does it name?",
+      "Compare 'active' and 'action'. Same root + different suffix — what does each suffix do?",
+    ],
+    confusedWith: ["sfx:-al", "sfx:-ic", "sfx:-tic", "sfx:-ant"],
+    outsideExamples: ["active", "creative", "perspective", "inclusive"],
+    wiktionary: "-ive",
+  },
+  {
+    key: "sfx:-ous",
+    morpheme: "-ous, -ious",
+    origin: "Latin (via French)",
+    meaning: "adjective-maker — \"full of\" or \"having lots of\"",
+    etymology: "From Latin -ōsus 'full of'; entered English through French (famous, dangerous).",
+    wordSums: [
+      "danger + ous → dangerous",
+      "fame + ous → fam(e) + ous → famous (drop silent e)",
+      "vary + ous → vari + ous → various (consonant + y → i)",
+    ],
+    decodingTip:
+      "-ous = 'full of' (Latinate cousin of Anglo-Saxon -y). dangerous = full of danger; famous = full of fame.",
+    spellingNote:
+      "Drop silent e before -ous (fame → famous). Consonant + y → change y to i (vary → various). Keep e to preserve soft c or g (courage → courageous).",
+    teachingTip:
+      "Substitution test: replace 'X-ous' with 'full of X' in a sentence. If the meaning fits, the suffix is doing its 'full of' job.",
+    inquiryPrompts: [
+      "What's the difference between 'dangery' (Anglo-Saxon -y) and 'dangerous' (Latinate -ous)? Why does English prefer -ous here?",
+      "Find a -ous word where 'full of' doesn't quite fit. What's happening?",
+    ],
+    confusedWith: ["sfx:-y", "sfx:-ful", "sfx:-ic"],
+    outsideExamples: ["dangerous", "famous", "various", "generous"],
+    wiktionary: "-ous",
+  },
+  {
+    key: "sfx:-ity",
+    morpheme: "-ity, -ty",
+    origin: "Latin (via French)",
+    meaning: "abstract noun-maker — \"the state or quality of being ___\" (Latin twin of -ness)",
+    etymology: "From Latin -itās via French; the Latin counterpart to native -ness.",
+    wordSums: [
+      "active + ity → activ(e) + ity → activity (drop silent e)",
+      "real + ity → reality",
+      "sincere + ity → sincer(e) + ity → sincerity",
+    ],
+    decodingTip:
+      "-ity is the Latin twin of -ness: both name an abstract state. Latin-stem adjectives prefer -ity (sincerity, equality); Anglo-Saxon adjectives prefer -ness (kindness).",
+    spellingNote:
+      "Drop silent e before -ity (active → activity). Sometimes a vowel inserts: able → abil-ity (the spelling shift exposes the Latin verb stem).",
+    teachingTip:
+      "Latin / Anglo pair-up: equality / fairness, sincerity / honesty, ability / readiness. Students articulate why each language picked which suffix.",
+    inquiryPrompts: [
+      "Why 'sincerity' (-ity) but 'kindness' (-ness)? Trace each adjective's language family.",
+      "What does it mean to have 'ability'? Build the word sum: able → abil + ity.",
+    ],
+    confusedWith: ["sfx:-ness", "sfx:-ment", "sfx:-tion"],
+    outsideExamples: ["activity", "reality", "sincerity", "ability"],
+    wiktionary: "-ity",
+  },
+  {
+    key: "sfx:-ate",
+    morpheme: "-ate",
+    origin: "Latin",
+    meaning: "verb-maker — \"to make / cause to be ___\" (also adjective: \"having ___\")",
+    etymology: "From Latin -ātus / -āre, the past participle and infinitive endings of first-conjugation verbs.",
+    wordSums: [
+      "active + ate → activ(e) + ate → activate (drop silent e)",
+      "demonstr + ate → demonstrate",
+      "celebrate → celebr + ate",
+    ],
+    decodingTip:
+      "-ate usually marks a verb meaning 'cause to be ___' or 'do the ___ action': activate = make active; demonstrate = show by example.",
+    teachingTip:
+      "Adjective → verb: active → activate, separate → separate (notice the same letters can be adj or verb!). Stress shifts often signal the part of speech.",
+    inquiryPrompts: [
+      "Read 'separate' (sep-uh-RATE) as a verb and 'separate' (SEP-er-it) as an adjective. Same letters — how does stress carry the morphology?",
+      "Why 'deactivate' but 'undo'? When does English reach for de- + -ate?",
+    ],
+    confusedWith: ["sfx:-ize", "sfx:-ive"],
+    outsideExamples: ["activate", "demonstrate", "celebrate", "calculate"],
+    wiktionary: "-ate",
+  },
+  {
+    key: "sfx:-ant",
+    morpheme: "-ant, -ent",
+    origin: "Latin (via French)",
+    meaning: "noun (\"one who ___s\") or adjective (\"___ing\") — Latin participial endings",
+    etymology: "From Latin present participle -ant- (1st conjugation) and -ent- (2nd / 3rd / 4th); both forms entered English via French.",
+    wordSums: [
+      "assist + ant → assistant (one who assists)",
+      "differ + ent → different (the ___ing one)",
+      "import + ant → important",
+    ],
+    decodingTip:
+      "-ant / -ent names the doer or the action-in-progress: an assistant assists; an applicant applies; something important imports (carries weight).",
+    spellingNote:
+      "-ant attaches to Latin 1st-conjugation stems (assist → assistant), -ent to 2nd / 3rd (differ → different, depend → dependent). Same morpheme; spelling traces the original Latin verb.",
+    teachingTip:
+      "Verb → person rapid-fire: assist / assistant, apply / applicant, immigrate / immigrant. Students articulate the 'one who ___s' meaning.",
+    inquiryPrompts: [
+      "Why 'assistant' (-ant) but 'student' (-ent)? Trace each verb's Latin family.",
+      "Is the -ant in 'pleasant' the same morpheme as the -ant in 'assistant'? Both describe — but one's a doer, one's an adjective. Discuss.",
+    ],
+    confusedWith: ["sfx:-er", "sfx:-ive", "sfx:-ence"],
+    outsideExamples: ["assistant", "different", "important", "applicant"],
+    wiktionary: "-ant",
+  },
+  {
+    key: "sfx:-ence",
+    morpheme: "-ence, -ance",
+    origin: "Latin (via French)",
+    meaning: "abstract noun — \"state, quality, or act of ___\" (the noun twin of -ant / -ent)",
+    etymology: "From Latin -entia / -antia 'state of being'; the noun forms of -ent / -ant adjectives. Entered English through French.",
+    wordSums: [
+      "differ + ence → difference",
+      "import + ance → importance",
+      "evid + ence → evidence",
+    ],
+    decodingTip:
+      "If you can say '___ant / ___ent' (different, important), you can usually say '___ance / ___ence' (difference, importance). The pair names the quality and the state of having it.",
+    spellingNote:
+      "-ance pairs with -ant (assistant / assistance), -ence with -ent (different / difference). Same Latin verb family decides which form.",
+    teachingTip:
+      "Pair chart: adjective (-ant/-ent) on the left, noun (-ance/-ence) on the right. Fill in 6 pairs (assistant / assistance, different / difference, present / presence).",
+    inquiryPrompts: [
+      "Why 'difference' (-ence) but 'importance' (-ance)? Match each to its Latin verb conjugation.",
+      "Compare 'patient' (adjective) and 'patience' (noun). One root, two morphological roles.",
+    ],
+    confusedWith: ["sfx:-ant", "sfx:-ity", "sfx:-ness"],
+    outsideExamples: ["difference", "importance", "evidence", "patience"],
+    wiktionary: "-ence",
+  },
 
   // --- Prefixes ---
   {
@@ -709,9 +906,9 @@ export const MORPHEME_CATALOG = [
     meaning: "\"against\" or \"opposite\"",
     etymology: "From Greek anti 'against, opposite'; common in modern coinages (antibiotic, antivirus, antibody).",
     wordSums: [
-      "anti + biotic → antibiotic (against life — kills harmful bacteria)",
+      "anti + bio + tic → antibiotic (against + life + relating to — kills harmful bacteria)",
       "anti + virus → antivirus",
-      "anti + social → antisocial",
+      "anti + soci + al → antisocial",
     ],
     decodingTip:
       "anti- = against. anti- words usually name something that opposes or counteracts. antifreeze = against freezing.",
@@ -820,8 +1017,56 @@ export const MORPHEME_CATALOG = [
     outsideExamples: ["export", "eject", "exclude", "exit"],
     wiktionary: "ex-",
   },
+  {
+    key: "pfx:per-",
+    morpheme: "per-",
+    origin: "Latin",
+    meaning: "\"through\", \"thoroughly\", or \"completely\"",
+    etymology: "From Latin per 'through, by means of, throughout'; the same root as the preposition 'per' in 'miles per hour'.",
+    wordSums: [
+      "per + fect → perfect (made thoroughly / completely)",
+      "per + mit → permit (let through)",
+      "per + spect + ive → perspective (look through)",
+    ],
+    decodingTip:
+      "per- = through / thoroughly. perfect = thoroughly made; permit = let through; persist = stand through; perspective = look through.",
+    teachingTip:
+      "Through-test: ask 'through what?' for each per- word. perfect = through to completion; persist = through difficulty; pervade = throughout the space.",
+    inquiryPrompts: [
+      "Trace 'perspective' as per + spect + ive. What 'through' is the looking doing?",
+      "Compare per- (through) and trans- (across). What's the spatial difference?",
+    ],
+    confusedWith: ["pfx:trans-", "pfx:pre-"],
+    outsideExamples: ["perfect", "permit", "persist", "pervade"],
+    wiktionary: "per-",
+  },
 
   // --- Roots / stems ---
+  {
+    key: "root:act",
+    morpheme: "act, ag",
+    origin: "Latin",
+    meaning: "do; drive; lead",
+    etymology: "From Latin agere 'do, drive, lead' (past participle āctus). The act- form shows up after consonants; ag- before vowels.",
+    wordSums: [
+      "act + ion → action",
+      "re + act → react",
+      "act + or → actor (one who acts)",
+      "inter + act → interact (act between)",
+      "de + act + ive + ate → deactivate",
+    ],
+    decodingTip:
+      "act = do or perform. action = a thing done; actor = one who does; interact = do between people; agent (ag- form) = one who drives.",
+    teachingTip:
+      "'act' is a free base: it stands alone AND combines. Build a matrix: prefixes (re-, inter-, de-, en-, trans-) + act + suffixes (-ion, -or, -ive, -ivity).",
+    inquiryPrompts: [
+      "Why is 'agent' spelled with ag- but 'actor' with act-? Hint: look at what comes next.",
+      "Compare 'react' and 'interact'. Same root, different prefix — what's the difference in social meaning?",
+    ],
+    confusedWith: ["root:fact"],
+    outsideExamples: ["action", "react", "actor", "interact", "deactivate"],
+    wiktionary: "act",
+  },
   {
     key: "root:form",
     morpheme: "form",

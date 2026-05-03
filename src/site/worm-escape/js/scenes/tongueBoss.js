@@ -37,6 +37,7 @@ import {
   resolveEndlessPalette,
 } from "../content/endlessStyle.js";
 import { runEnemyHpMult, runIncomingDamageMult } from "../content/gameBalance.js";
+import { recordPinkFloydTrail } from "../engine/pinkFloydVfx.js";
 
 // =====================================================================
 //  v0.15 FINAL BOSS - The Worm's MAW (whack-a-tooth)
@@ -408,6 +409,10 @@ export class MawBossScene {
     this.particles.update(dt);
 
     this.heroBob += dt * 2.5;
+    if (game.pinkFloydMode) {
+      const hx = heroStandX(this.col);
+      recordPinkFloydTrail(game, hx, HERO_Y + Math.sin(this.heroBob) * 2);
+    }
 
     if (p.hp <= 0 && !this.done) {
       this.done = true;

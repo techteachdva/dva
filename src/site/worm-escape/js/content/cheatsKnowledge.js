@@ -118,8 +118,9 @@ export const CHEAT_CODEX_DETAILS = {
     code: "bubblegum",
     title: "Bubblegum",
     facts: [
-      "Each sphincter climb: TWO guardian fights before the pact desk; then four separate 3-card pact seals.",
+      "Each sphincter climb: TWO guardian fights back-to-back — beat the first (normal colors), then DOUBLE TROUBLE, then a hue-twisted twin with an inverted palette.",
       "THE MAW stays a single showdown (bubble doesn’t twin the finale).",
+      "After both falls: four separate 3-card pact seals (elite 4-card reward is suppressed).",
     ],
     flavor: "Stretchy. Sticky. Unfair negotiation practice.",
   },
@@ -156,8 +157,10 @@ export const CHEAT_CODEX_DETAILS = {
     code: "pinkfloyd",
     title: "Pink Floyd",
     facts: [
-      "Psychedelic full-screen wash, skewed cached flesh backdrop, rainbow vein hues, wilder bile waves.",
-      "Combat action tiles and climb acid bubbles pick up a slow rainbow chrome.",
+      "Skewed flesh backdrop, rainbow veins & bile, stronger screen washes (screen / soft-light / color-dodge / overlay sweeps).",
+      "Rainbow chroma on most UI text, panels, and HP bars; combat action tiles get a double neon stroke.",
+      "Motion trails follow the hero in climb, sphincter combat, and THE MAW; sparkles + edge starbursts layer on top.",
+      "The whole canvas gets a slow hue-rotate + saturate + micro-skew filter (disabled while \\ cheat terminal is open for readability).",
     ],
     flavor: "Comfortably numb is not on the playlist. The playlist is the worm.",
   },

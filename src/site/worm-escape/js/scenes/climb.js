@@ -21,6 +21,7 @@ import { CombatScene } from "./combat.js";
 import { TongueBossScene } from "./tongueBoss.js";
 import { GameOverScene } from "./gameover.js";
 import { runBileRiseMult, runIncomingDamageMult } from "../content/gameBalance.js";
+import { recordPinkFloydTrail } from "../engine/pinkFloydVfx.js";
 
 // Five hand-hold columns on the veiny wall. Hero is fixed in screen Y;
 // the wall scrolls. Bile rises from the bottom of the screen in absolute pixels.
@@ -223,6 +224,7 @@ export class ClimbScene {
     // Smooth lerp hero X - Swift snaps faster than Iron
     const lerpSpeed = p.buildId === "swift" ? 16 : 10;
     this.heroX += (this.targetX - this.heroX) * Math.min(1, dt * lerpSpeed);
+    if (game.pinkFloydMode) recordPinkFloydTrail(game, this.heroX, HERO_Y);
 
     // --- Climb up (blocked while stunned) ---
     const climbBase = 200 * p.climbSpeed;

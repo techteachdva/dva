@@ -37,6 +37,7 @@ import {
 } from "../content/endlessStyle.js";
 import { runEnemyHpMult, runIncomingDamageMult } from "../content/gameBalance.js";
 import { visualMods } from "../engine/visualMods.js";
+import { recordPinkFloydTrail } from "../engine/pinkFloydVfx.js";
 
 /** Five tactical columns — guardian and player must align to land strikes (unless weapon skips lanes). */
 const NUM_COMBAT_LANES = 5;
@@ -61,6 +62,21 @@ function truncateLogLine(s, maxChars = LOG_LINE_MAX_CHARS) {
   return str.slice(0, Math.max(0, maxChars - 1)) + "…";
 }
 
+/** RGB complement for bubblegum twin HP bar / accents (#rrggbb only). */
+function complementHexColor(hex) {
+  if (typeof hex !== "string" || !hex.startsWith("#")) return hex;
+  const n = hex.slice(1);
+  if (n.length !== 6) return hex;
+  const r = parseInt(n.slice(0, 2), 16);
+  const g = parseInt(n.slice(2, 4), 16);
+  const b = parseInt(n.slice(4, 6), 16);
+  if ([r, g, b].some((x) => Number.isNaN(x))) return hex;
+  return `rgb(${255 - r}, ${255 - g}, ${255 - b})`;
+}
+
+/** Canvas filter stack for bubblegum fight 2 — complementary hues vs the normal sprite. */
+const BUBBLE_TWIN_ENEMY_FILTER = "hue-rotate(180deg) saturate(1.42) contrast(1.06)";
+
 // Per-chamber damage multiplier applied to every source of damage the
 // PLAYER receives (acid gouts, melee hits, heavy slams, combo jabs).
 // Stomach baseline, Gullet +45%. Same curve as climb hazards.
@@ -78,6 +94,8 @@ export class CombatScene {
     this.chamberIdx = chamberIdx;
     /** Bubblegum cheat: guardian fight 1 of 2 in the same valve */
     this.bubbleFightIndex = opts.bubbleFightIndex ?? 1;
+    /** Bubblegum fight 2: inverted color pass on the guardian sprite + UI accents. */
+    this.bubblePaletteInvert = !!opts.bubblePaletteInvert;
     this.chamber = CHAMBERS[chamberIdx];
     const ed = ENEMIES[this.chamber.guardian];
     const hp = Math.floor(ed.hp * (1 + chamberIdx * 0.15));
@@ -163,8 +181,16 @@ export class CombatScene {
     this.phase = "intro";
     this.introT = 0;
     this.winTimer = 0;
+    /** Bubblegum: interstitial after fight 1 before loading the hue-twisted twin. */
+    this.bubbleDoubleT = 0;
     this.paused = false;
     this.done = false;
+
+    if (this.bubbleFightIndex === 2 && this.bubblePaletteInvert) {
+      this.phase = "fight";
+      this.introT = 0;
+      this.pushLog("A twisted twin spills out — palette flipped, malice intact.");
+    }
 
     // v0.12 Hex staff mark stack (0-3). Builds on attack hits; special
     // detonates them for a big per-mark damage bonus.
@@ -341,6 +367,23 @@ export class CombatScene {
 
     if (this.paused) return;
 
+    if (this.phase === "bubbleDouble") {
+      this.bubbleDoubleT -= dt;
+      this.t += dt;
+      this.anim += dt * 4;
+      this.particles.update(dt);
+      if (this.bubbleDoubleT <= 0) {
+        game.scenes.replace(
+          new CombatScene(this.chamberIdx, {
+            bubbleFightIndex: 2,
+            bubblePaletteInvert: true,
+          }),
+          game,
+        );
+      }
+      return;
+    }
+
     this.t += dt;
     this.anim += dt * 4;
     if (typeof game.invulnerable === "boolean") p.invulnerable = game.invulnerable;
@@ -349,6 +392,9 @@ export class CombatScene {
     // Lane lerp
     const lerpSpeed = p.buildId === "swift" ? 18 : 11;
     this.heroX += (this.targetX - this.heroX) * Math.min(1, dt * lerpSpeed);
+    if (game.pinkFloydMode && (this.phase === "fight" || this.phase === "win")) {
+      recordPinkFloydTrail(game, this.heroX, HERO_Y);
+    }
 
     // Lane swapping (cooldown by build).
     // v0.10 INPUT FIX: wasPressed for one-lane-per-keystroke. A tap moves
@@ -552,20 +598,22 @@ export class CombatScene {
     if (this.phase === "win") {
       this.winTimer -= dt;
       if (this.winTimer <= 0) {
-        this.done = true;
-        // v0.12 route: Combat -> Pact picker -> Transition -> next Climb.
-        // Bubblegum: second guardian same valve, then four 3-card pact seals (no Elite 4-spread bonus).
-        // Elite kills grant a 4-card choice as a spoil when Bubblegum is off.
         const ch = CHAMBERS[this.chamberIdx];
         const bubbleHere =
           !!(game.bubblegumMode && !ch?.isMaw && ch?.guardian);
-        if (bubbleHere && this.bubbleFightIndex < 2) {
-          game.scenes.replace(
-            new CombatScene(this.chamberIdx, { bubbleFightIndex: 2 }),
-            game,
-          );
+        if (bubbleHere && this.bubbleFightIndex === 1) {
+          this.phase = "bubbleDouble";
+          this.bubbleDoubleT = 2.85;
+          screenShake(12, 0.35);
+          SFX.hit();
+          this.pushLog("DOUBLE TROUBLE!");
           return;
         }
+
+        this.done = true;
+        // v0.12 route: Combat -> Pact picker -> Transition -> next Climb.
+        // Bubblegum: second guardian same valve (hue-twisted twin), then four 3-card pact seals (no Elite 4-spread bonus).
+        // Elite kills grant a 4-card choice as a spoil when Bubblegum is off.
         /** @type {{ eliteReward: boolean, bubbleSequential?: number }} */
         const pactOpts = { eliteReward: !!this.eliteKill };
         if (bubbleHere && this.bubbleFightIndex >= 2) {
@@ -1488,6 +1536,23 @@ export class CombatScene {
     }
 
     this.drawUI(ctx, game);
+
+    if (this.phase === "bubbleDouble") {
+      const dim = 0.42 + 0.18 * Math.sin(this.t * 6);
+      ctx.fillStyle = `rgba(8, 0, 18, ${dim})`;
+      ctx.fillRect(0, 0, W, H);
+      const pulse = 0.5 + 0.5 * Math.sin(this.t * 10);
+      const glowHue = (this.t * 140) % 360;
+      drawBanner(ctx, "DOUBLE TROUBLE", W / 2, H / 2 - 52, 56, `hsl(${glowHue}, 92%, 62%)`, COLORS.blood);
+      drawText(ctx, "A hue-twisted twin forces the ring…", W / 2, H / 2 + 28, {
+        size: 20,
+        color: `rgba(255, 245, 255, ${0.75 + pulse * 0.2})`,
+        align: "center",
+        bold: true,
+        glow: `hsl(${(glowHue + 40) % 360}, 80%, 70%)`,
+        maxWidth: W - 80,
+      });
+    }
     if (this.paused) this.drawPause(ctx);
     if (this.potionState) this.drawPotionMiniGame(ctx, game);
   }
@@ -1607,7 +1672,9 @@ export class CombatScene {
     }
     ctx.translate(cx + sx, cy + sy);
     const ef = game && endlessEnemyCssFilter(game);
-    if (ef) ctx.filter = ef;
+    const twinF = this.bubblePaletteInvert ? BUBBLE_TWIN_ENEMY_FILTER : "";
+    const filterParts = [ef, twinF].filter(Boolean);
+    ctx.filter = filterParts.length ? filterParts.join(" ") : "none";
     if (this.enemyFlash > 0) {
       ctx.shadowColor = "#ffffff";
       ctx.shadowBlur = 26;
@@ -2175,10 +2242,12 @@ export class CombatScene {
       (this.enraged ? 1 : 0);
     const enemyPanelH = 56 + Math.max(0, enemyPanelRows - 1) * 16;
     drawPanel(ctx, W - 280, pad, 264, enemyPanelH);
-    drawText(ctx, this.enemy.name, W - 148, pad + 16, {
-      size: 16, color: this.eliteKill ? COLORS.gold : COLORS.bile,
+    const twinTag = this.bubblePaletteInvert ? " (TWIN)" : "";
+    drawText(ctx, this.enemy.name + twinTag, W - 148, pad + 16, {
+      size: 16,
+      color: this.bubblePaletteInvert ? "#ffb0f8" : (this.eliteKill ? COLORS.gold : COLORS.bile),
       align: "center", bold: true,
-      glow: this.eliteKill ? COLORS.gold : null,
+      glow: this.bubblePaletteInvert ? "#ff6ad6" : (this.eliteKill ? COLORS.gold : null),
       maxWidth: 248,
     });
     // HP bar right below the name.
@@ -2187,7 +2256,7 @@ export class CombatScene {
       label: null,
     });
     drawBar(ctx, W - 270, pad + 34, 244, 18, this.enemyHpDisplay / this.enemy.hpMax, {
-      fill: this.enemy.color,
+      fill: this.bubblePaletteInvert ? complementHexColor(this.enemy.color) : this.enemy.color,
       label: `${Math.ceil(this.enemyHpDisplay)} / ${this.enemy.hpMax}`,
       labelColor: "#111",
     });
@@ -2540,14 +2609,19 @@ export class CombatScene {
         });
       }
       if (game.pinkFloydMode) {
-        const hue = ((visualMods.t * 18 + i * 72) % 360);
-        ctx.shadowColor = `hsl(${hue}, 100%, 58%)`;
-        ctx.shadowBlur = 12 + 7 * Math.sin(visualMods.t * 1.4 + i * 1.1);
-        ctx.strokeStyle = `hsl(${hue}, 88%, 70%)`;
+        const hue = ((visualMods.t * 26 + i * 72) % 360);
+        ctx.save();
+        ctx.globalCompositeOperation = "lighter";
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = `hsl(${hue}, 92%, 72%)`;
         ctx.lineWidth = 3.2;
         roundRect(ctx, r.x + 2, r.y + 2, r.w - 4, r.h - 4, 10);
         ctx.stroke();
-        ctx.shadowBlur = 0;
+        ctx.strokeStyle = `hsl(${(hue + 140) % 360}, 95%, 68%)`;
+        ctx.lineWidth = 2;
+        roundRect(ctx, r.x + 5, r.y + 5, r.w - 10, r.h - 10, 8);
+        ctx.stroke();
+        ctx.restore();
       }
       ctx.restore();
     }

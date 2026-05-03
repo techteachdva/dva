@@ -6,6 +6,13 @@ import {
   drawPinkFloydScreenSheen,
 } from "./engine/render.js";
 import { syncVisualModsFromGame } from "./engine/visualMods.js";
+import {
+  tickPinkFloydTrail,
+  drawPinkFloydTrails,
+  drawPinkFloydAmbientSparkles,
+  drawPinkFloydEdgeBursts,
+  applyPinkFloydCanvasCss,
+} from "./engine/pinkFloydVfx.js";
 import { pointInRect } from "./engine/pointer.js";
 import { toggleMute, isMuted, SFX, initBGM } from "./engine/audio.js";
 import { IntroScene } from "./scenes/intro.js";
@@ -175,6 +182,7 @@ const loop = new Loop(
     } else {
       game.scenes.update(dt, game);
     }
+    tickPinkFloydTrail(game);
     game.input.endFrame();
   },
   (dt) => {
@@ -185,6 +193,9 @@ const loop = new Loop(
     applyShake(ctx, dt);
     game.scenes.render(ctx, game);
     if (!game.cheatMenuOpen && game.pinkFloydMode) {
+      drawPinkFloydTrails(ctx, game);
+      drawPinkFloydAmbientSparkles(ctx);
+      drawPinkFloydEdgeBursts(ctx);
       drawPinkFloydScreenSheen(ctx);
     }
 
@@ -266,6 +277,8 @@ const loop = new Loop(
       bold: true,
       outline: false,
     });
+
+    applyPinkFloydCanvasCss(canvas, game, game.cheatMenuOpen);
 
     ctx.restore();
   }

@@ -1,4 +1,5 @@
 import { markCheatKnownInSave } from "../content/cheatsKnowledge.js";
+import { clearPinkFloydTrail } from "./pinkFloydVfx.js";
 import { loadSave, saveGame } from "./storage.js";
 import { TongueBossScene } from "../scenes/tongueBoss.js";
 import { EncyclopediaScene } from "../scenes/encyclopedia.js";
@@ -86,6 +87,7 @@ export function applyCheatLine(rawLine, game) {
     game.lemonBoost = false;
     game.pickAnyWeapon = false;
     game.pinkFloydMode = false;
+    clearPinkFloydTrail(game);
     game.pendingMawCheat = null;
     revealCheatDossierIfNew(game, "nocheats");
     return {
@@ -114,11 +116,12 @@ export function applyCheatLine(rawLine, game) {
 
   if (c === "pinkfloyd") {
     game.pinkFloydMode = !game.pinkFloydMode;
+    if (!game.pinkFloydMode) clearPinkFloydTrail(game);
     revealCheatDossierIfNew(game, "pinkfloyd");
     return {
       ok: true,
       msg: game.pinkFloydMode
-        ? "Pink Floyd — prismatic wash, warped flesh, rainbow bile & action chrome ON."
+        ? "Pink Floyd — ultra trip: trails, edge bursts, sparkles, rainbow UI, canvas warp & soak ON."
         : "Pink Floyd — psychedelic visuals OFF.",
     };
   }
