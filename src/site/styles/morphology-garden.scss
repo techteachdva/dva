@@ -978,6 +978,7 @@ html.morph-immersive-open body {
   align-items: flex-start;
   gap: 0.85rem 1rem;
   width: 100%;
+  max-width: 100%;
   margin: 0;
   padding: 1.35rem 1.25rem 1.35rem 1.25rem;
   box-sizing: border-box;
@@ -989,6 +990,9 @@ html.morph-immersive-open body {
   text-align: left;
   cursor: pointer;
   line-height: 1.45;
+  /* Allow title + teaser to wrap inside the flex row (avoid min-width:auto overflow) */
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 /* Collapsed: give the header enough vertical room so title + teaser never feel cramped */
@@ -1029,21 +1033,25 @@ html.morph-immersive-open body {
 }
 
 .morph-highlight-card__head {
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-width: 0;
+  max-width: 100%;
   display: flex;
   flex-direction: column;
+  align-items: stretch;
   gap: 0.65rem;
   overflow: visible;
 }
 
 .morph-highlight-card__title {
   display: block;
+  min-width: 0;
+  max-width: 100%;
   font-size: 1.42rem;
   font-weight: 850;
   letter-spacing: 0.02em;
   line-height: 1.38;
-  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
   word-break: break-word;
   color: var(--morph-chrome, #c8f4ff);
 }
@@ -1054,13 +1062,15 @@ html.morph-immersive-open body {
 
 .morph-highlight-card__teaser {
   display: block;
+  min-width: 0;
+  max-width: 100%;
   font-size: 1.08rem;
-  font-weight: 550;
+  font-weight: 500;
   line-height: 1.52;
-  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
   word-break: break-word;
-  opacity: 0.92;
-  color: rgba(226, 232, 240, 0.94);
+  /* High contrast on dark card: neutral near-white vs cyan title */
+  color: #f1f5f9;
 }
 
 /* When open, hide the teaser so it does not stack on / visually collide with the first lines of the panel */
@@ -1069,7 +1079,8 @@ html.morph-immersive-open body {
 }
 
 .morphology-page:has(.morphology-shell--wb) .morph-highlight-card__teaser {
-  color: #475569;
+  /* Secondary body: clearly lighter than near-black title, still strong on white */
+  color: #334155;
 }
 
 .morph-highlight-card__chev {
