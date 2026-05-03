@@ -15,6 +15,8 @@ import { tryDrawRasterWeaponArt } from "../engine/weaponArt.js";
 import { buildCodexEntries } from "../content/encyclopediaData.js";
 import { buildCheatsCodexRows } from "../content/cheatsKnowledge.js";
 import { loadSave } from "../engine/storage.js";
+import { getPact } from "../content/pacts.js";
+import { drawEnemyCodexSprite, drawPactCodexBadge, getEnemyByCodexId } from "../engine/codexMiniArt.js";
 
 let _BASE_CODEX = null;
 function baseCodex() {
@@ -34,6 +36,27 @@ const CATEGORY_ORDER = [
 
 function flattenBlob(e) {
   return `${e.title} ${e.subtitle} ${e.facts.join(" ")} ${e.flavor}`.toLowerCase();
+}
+
+/** Shared list + detail panel metrics (update + render must match). */
+function codexListLayout() {
+  const ty = 118;
+  const th = 36;
+  const filterTop = ty + th + 8;
+  const listLeft = 18;
+  const listW = 344;
+  const listTop = filterTop + 56;
+  const listBot = H - 42;
+  const listInner = listBot - listTop;
+  const detailX = listLeft + listW + 48;
+  const detailW = W - detailX - 34;
+  return { ty, th, filterTop, listLeft, listW, listTop, listBot, listInner, detailX, detailW };
+}
+
+function codexVisibleListRows(listInner) {
+  const rowH = 22;
+  const rowGap = 6;
+  return Math.max(4, Math.floor((listInner - 38) / (rowH + rowGap)));
 }
 
 /** @typedef {import("../content/encyclopediaData.js").CodexEntry} CodexRow */
@@ -205,14 +228,8 @@ export class EncyclopediaScene {
       SFX.click();
     }
 
-    const rowH = 22;
-    const rowGap = 6;
-    const listTopGuess = Math.floor(H * 0.30);
-    const listBotGuess = H - 38;
-    const visibleRows = Math.max(
-      4,
-      Math.floor(((listBotGuess - listTopGuess) - 40) / (rowH + rowGap)),
-    );
+    const lay = codexListLayout();
+    const visibleRows = codexVisibleListRows(lay.listInner);
 
     const filt = this._filtered;
     const moveSel = (d) => {
@@ -242,10 +259,24 @@ export class EncyclopediaScene {
     if (inp.wasCodePressed("PageDown")) this.detailScrollLine += 6;
 
     if (inp.wasPressed("[") || inp.wasCodePressed("BracketLeft")) {
-      this.listScrollRow = Math.max(0, this.listScrollRow - 1);
+      this.listScrollRow = Math.max(0, this.listScrollRow - 3);
     }
     if (inp.wasPressed("]") || inp.wasCodePressed("BracketRight")) {
-      this.listScrollRow++;
+      this.listScrollRow += 3;
+    }
+
+    const wd = inp.wheelDy || 0;
+    if (Math.abs(wd) > 0.5) {
+      const mx = inp.mouseX;
+      const my = inp.mouseY;
+      const overList = pointInRect(mx, my, lay.listLeft, lay.listTop - 6, lay.listW + 42, lay.listInner + 24);
+      const overDetail = pointInRect(mx, my, lay.detailX - 16, lay.listTop - 6, lay.detailW + 32, lay.listInner + 24);
+      const wheelLines = Math.max(1, Math.min(8, Math.round(Math.abs(wd) / 90)));
+      if (overList && filt.length) {
+        this.listScrollRow += wd > 0 ? wheelLines : -wheelLines;
+      } else if (overDetail && filt.length) {
+        this.detailScrollLine += wd > 0 ? wheelLines : -wheelLines;
+      }
     }
 
     this.clampListScroll(visibleRows);
@@ -280,6 +311,7 @@ export class EncyclopediaScene {
     this.listRowRects.length = 0;
 
     const filt = this._filtered;
+    const lay = codexListLayout();
 
     ctx.save();
     const bg = ctx.createLinearGradient(0, 0, 0, H);
@@ -289,7 +321,7 @@ export class EncyclopediaScene {
     ctx.fillRect(0, 0, W, H);
 
     drawBanner(ctx, "THE INNER GUTS CODEX", W / 2, 54, 30, COLORS.bile, COLORS.blood);
-    drawText(ctx, '\\ cheat summoned this nerd shelf · ESC exit · TAB or top-row Digit0–Digit7 tabs · FILTER: a–z matches lore · digits: numpad (or main 89) · PgUp/PgDn scroll detail · [ ] list chunk', W / 2, 94, {
+    drawText(ctx, '\\ cheat summoned this nerd shelf · ESC exit · TAB or top-row Digit0–Digit7 tabs · FILTER: a–z matches lore · digits: numpad (or main 89) · wheel over list/detail scrolls · PgUp/PgDn detail · [ ] list page', W / 2, 94, {
       size: 12,
       color: COLORS.boneDim,
       align: "center",
@@ -324,7 +356,7 @@ export class EncyclopediaScene {
       tx += tw + 8;
     }
 
-    const filterTop = ty + th + 8;
+    const { filterTop, listLeft, listW, listTop, listBot, listInner, detailX, detailW } = lay;
     drawPanel(ctx, 16, filterTop, W - 32, 42);
     drawText(ctx, "> " + this.filterStr + "_", 28, filterTop + 14, {
       size: 16,
@@ -339,12 +371,6 @@ export class EncyclopediaScene {
       color: COLORS.boneDim,
     });
 
-    const listLeft = 18;
-    const listW = 344;
-    const listTop = filterTop + 56;
-    const listBot = H - 42;
-    const listInner = listBot - listTop;
-
     ctx.fillStyle = "rgba(0, 0, 0, 0.4)";
     roundRect(ctx, 12, listTop - 6, listW + 42, listInner + 24, 12);
     ctx.fill();
@@ -352,11 +378,7 @@ export class EncyclopediaScene {
     const rowH = 22;
     const rowGap = 6;
 
-    /** visible listing rows calculation */
-    const visibleRows = Math.max(
-      4,
-      Math.floor((listInner - 38) / (rowH + rowGap)),
-    );
+    const visibleRows = codexVisibleListRows(listInner);
     this.clampListScroll(visibleRows);
 
     let ry = listTop + 18;
@@ -390,8 +412,27 @@ export class EncyclopediaScene {
       ry += rowH + rowGap;
     }
 
-    const detailX = listLeft + listW + 48;
-    const detailW = W - detailX - 34;
+    const totalRows = filt.length;
+    const maxListScr = Math.max(0, totalRows - visibleRows);
+    if (maxListScr > 0) {
+      const trackX = listLeft + listW - 8;
+      const trackY0 = listTop + 8;
+      const trackH = listInner - 16;
+      ctx.fillStyle = "rgba(0,0,0,0.45)";
+      roundRect(ctx, trackX, trackY0, 10, trackH, 4);
+      ctx.fill();
+      const thumbMin = 22;
+      const thumbH = Math.max(thumbMin, Math.floor((visibleRows / totalRows) * trackH));
+      const travel = Math.max(1, trackH - thumbH);
+      const thumbY = trackY0 + Math.floor((this.listScrollRow / maxListScr) * travel);
+      ctx.fillStyle = "rgba(120,200,255,0.55)";
+      roundRect(ctx, trackX + 1, thumbY, 8, thumbH, 3);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,0.2)";
+      ctx.lineWidth = 1;
+      roundRect(ctx, trackX + 1.5, thumbY + 0.5, 7, thumbH - 1, 3);
+      ctx.stroke();
+    }
 
     roundRect(ctx, detailX - 16, listTop - 6, detailW + 32, listInner + 24, 16);
     ctx.strokeStyle = "rgba(253,229,173,0.25)";
@@ -402,7 +443,7 @@ export class EncyclopediaScene {
 
     const lineStride = 16;
 
-    /** Thumbnail lane for weapons (PNG roster), classes (`drawHero` idle), shaders for mechanics — enemies get a tinted blob cue. */
+    /** Thumbnails: weapon PNGs, class hero, synergy-tinted hero, enemy silhouettes, pact sigil badges. */
     let portraitPad = 0;
     if (pick) {
       const cxArt = detailX + detailW / 2 - 12;
@@ -420,26 +461,42 @@ export class EncyclopediaScene {
           drawHero(ctx, 0, 0, 1, this._codexAnim * 2.6, bid, null);
           ctx.restore();
         }
-      } else if (pick.category === "mechanic") {
-        portraitPad = 72;
-        ctx.save();
-        roundRect(ctx, detailX + 18, py + 6, detailW - 54, 52, 9);
-        ctx.clip();
-        drawBackdropCached(ctx, this._codexAnim, this._codexAnim * 1.8, 1, null, 4);
-        ctx.restore();
+      } else if (pick.category === "synergy") {
+        const sid = pick.id.startsWith("synergy:") ? pick.id.slice(9) : "";
+        let buildId = "";
+        if (pick.subtitle && pick.subtitle.includes(" × ")) {
+          const parts = pick.subtitle.split(" × ");
+          buildId = (parts[0] || "").trim();
+        }
+        if (buildId && sid) {
+          portraitPad = 102;
+          ctx.save();
+          ctx.translate(cxArt, py + 42);
+          ctx.scale(1.85, 1.85);
+          drawHero(ctx, 0, 0, 1, this._codexAnim * 2.6, buildId, sid);
+          ctx.restore();
+        }
       } else if (pick.category === "enemy") {
-        portraitPad = 64;
-        const g = ctx.createRadialGradient(cxArt - 8, py + 28, 2, cxArt + 14, py + 36, 48);
-        g.addColorStop(0, COLORS.skinHi);
-        g.addColorStop(0.45, COLORS.skin);
-        g.addColorStop(1, COLORS.wormDeep);
-        ctx.fillStyle = g;
-        ctx.beginPath();
-        ctx.ellipse(cxArt + 10, py + 36, 46, 40, -0.2, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = "rgba(255,255,255,0.15)";
-        ctx.lineWidth = 2;
-        ctx.stroke();
+        const en = getEnemyByCodexId(pick.id);
+        portraitPad = 92;
+        if (en) drawEnemyCodexSprite(ctx, en.art, en.color, cxArt, py + 48, 1.15);
+        else portraitPad = 48;
+      } else if (pick.category === "mechanic") {
+        const pactSlug =
+          pick.id.startsWith("mech:pact-") && pick.id !== "mech:pact-ranks-overview"
+            ? pick.id.slice("mech:pact-".length)
+            : "";
+        if (pactSlug && getPact(pactSlug)) {
+          portraitPad = 100;
+          drawPactCodexBadge(ctx, pactSlug, cxArt, py + 48, this._codexAnim);
+        } else {
+          portraitPad = 72;
+          ctx.save();
+          roundRect(ctx, detailX + 18, py + 6, detailW - 54, 52, 9);
+          ctx.clip();
+          drawBackdropCached(ctx, this._codexAnim, this._codexAnim * 1.8, 1, null, 4);
+          ctx.restore();
+        }
       }
     }
 

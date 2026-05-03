@@ -672,6 +672,11 @@ export function makePlayer(buildId, loadoutId, gameCheats = null) {
       flipDamage5050: false, // ±flipDamageAmt dmg coin flip pact
       flipDamageAmt: 0,      // magnitude when flipDamage5050 (default 15 in strike dice)
       tamerKillGrowth: false, // +stats on kill rework
+      // Silly pacts (see pacts.js silly_* ids)
+      sillyBileShortcutPending: false,
+      sillyBileShortcutRank: 0,
+      sillyMirrorH: false,
+      sillyMirrorV: false,
     },
     plasmCryoSlow: null,
     synergyDecay: false,
@@ -753,7 +758,21 @@ export function applyPact(p, pactId) {
   p.pactRanks[pactId] = next;
   p.pacts.push(pactId);
   if (p.score) p.score.pactsTaken = [...p.pacts];
+  clampPlayerResources(p);
   return true;
+}
+
+/** Keep HP/MP/armor within max pools after pact edits or chamber resets. */
+export function clampPlayerResources(p) {
+  if (!p) return;
+  p.hpMax = Math.max(1, Math.floor(Number(p.hpMax) || 1));
+  p.manaMax = Math.max(0, Math.floor(Number(p.manaMax) || 0));
+  p.hp = Math.max(0, Math.min(p.hp, p.hpMax));
+  p.mana = Math.max(0, Math.min(p.mana, p.manaMax));
+  if (p.armorMax != null && p.armorMax >= 0) {
+    p.armorMax = Math.max(0, Math.floor(p.armorMax));
+    p.armor = Math.max(0, Math.min(p.armor || 0, p.armorMax));
+  }
 }
 
 export function resetChamber(p) {
@@ -769,6 +788,7 @@ export function resetChamber(p) {
   p.hp = Math.min(p.hpMax, p.hp + 25);
   // Armor repairs partially
   if (p.armorMax > 0) p.armor = Math.min(p.armorMax, p.armor + 20);
+  clampPlayerResources(p);
 }
 
 // Apply a damage instance against a player's armor+HP, honoring armorSoak.

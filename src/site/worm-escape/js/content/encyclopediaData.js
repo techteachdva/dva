@@ -319,17 +319,33 @@ function buildMechanicEntries() {
     });
   });
 
+  out.push({
+    id: "mech:pact-ranks-overview",
+    category: "mechanic",
+    title: "Pacts — ranks & re-seals",
+    subtitle: "Same pact id can seal again until rank 3 — see pacts.js",
+    facts: [
+      "After each sphincter guardian you pick one pact (3 cards normally, 4 if the guardian was Elite, or Bubblegum’s four separate 3-card rounds after twin fights).",
+      "Each pact id tracks rank 1 → 2 → 3. Re-choosing that pact applies apply(p, rank): buffs scale up a notch and drawbacks ease slightly at ranks 2 and 3.",
+      "The random pool still offers a pact until that id reaches rank 3, then it is excluded for the rest of the run.",
+      "`player.pactRanks` stores current rank per id; `player.pacts` is an ordered log of every seal (ids may repeat). Scoreboard ‘Pacts Survived’ still uses seal count × chambers cleared × the pact weight.",
+      "Pact picker UI shows NEXT SEAL · RANK n/3 when you already hold that pact at rank ≥ 1.",
+    ],
+    flavor:
+      "The worm initials the contract in triplicate. Same fine print, bigger crayon each time.",
+  });
+
   PACTS.forEach((p) => {
     out.push({
       id: `mech:pact-${p.id}`,
       category: "mechanic",
       title: p.name,
-      subtitle: `Pact (${p.tags?.join(", ") || "mixed"})`,
+      subtitle: `Pact (${p.tags?.join(", ") || "mixed"}) — ranks 1–3`,
       facts: [
         p.blurb,
         ...(p.pros || []).map((x) => ` + ${x}`),
         ...(p.cons || []).map((x) => ` − ${x}`),
-        "Applied on each seal via applyPact (ranks 1–3 per pact id); see pacts.js apply(p, rank).",
+        "Each seal calls applyPact → apply(p, rank) with rank 1, 2, or 3 for this id (see pacts.js). Higher rank = stronger benefit line + milder cost line for that pact.",
       ],
       flavor:
         `Think of '${p.name}' like trading cafeteria desserts: glorious sugar crash included.`,
@@ -356,6 +372,9 @@ function buildMechanicEntries() {
       '\\ still opens contraband, but victorious runs also populate the CHEATS tab.',
       'Title screen INNER GUTS CODEX chip opens lore without wiping your save preview.',
       "Exact passphrases stay locked until RNG blesses them after a WIN — poke the CHEATS tab.",
+      "End-of-run score (Victory breakdown + Game Over partials) reads runtime flags when the run ends. Type nocheats before the finale if you want those rows cleared.",
+      "Benefit-style toggles subtract; harder-mode toggles add. Implemented in engine/cheatScore.js — approximate rows: Easy forge (Dez / pick-any) −2400 · Pink Floyd +1700 · Jilly −2100 · Bubblegum −2800 · Wyrm easy −3400 · Dragon hard +2600 · Rowan −900 · Lemon −700 (stacks if multiple are ON).",
+      "Acererack invulnerability is still its own −1,000,000 line when first turned ON during the run (separate from the table above).",
     ],
     flavor: "The keypad itself is coy; a full roster on the billboard would have been vulgar.",
   });

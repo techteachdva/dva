@@ -16,6 +16,8 @@ export class Input {
     this.canvas = canvas || null;
     this.mouseX = 0;
     this.mouseY = 0;
+    /** Accumulated wheel delta Y this frame (canvas wheel events). Cleared in endFrame(). */
+    this.wheelDy = 0;
     // Raw page coords (before scaling) - kept for debugging.
     this._rawMouseX = 0;
     this._rawMouseY = 0;
@@ -158,6 +160,16 @@ export class Input {
       );
       // Suppress the browser's right-click context menu inside the game.
       this.canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+
+      this.canvas.addEventListener(
+        "wheel",
+        (e) => {
+          e.preventDefault();
+          const dy = Math.sign(e.deltaY) * Math.min(160, Math.abs(e.deltaY));
+          this.wheelDy += dy;
+        },
+        { passive: false },
+      );
     }
   }
 
@@ -207,5 +219,6 @@ export class Input {
     this.pressed.clear();
     this.released.clear();
     this.codesPressed.clear();
+    this.wheelDy = 0;
   }
 }

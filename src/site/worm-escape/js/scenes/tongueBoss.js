@@ -31,6 +31,7 @@ import {
   drawManaPotionModal,
 } from "../engine/manaPotion.js";
 import { applyOutboundStrikeDice } from "../engine/strikeDamageMods.js";
+import { sillyMirrorCol5, sillySwappedHorizontalLaneDelta } from "../engine/sillyPactInput.js";
 import {
   endlessDangerMult,
   healPlayerBetweenEndlessLoops,
@@ -893,7 +894,8 @@ export class MawBossScene {
       if (pointInRect(mx, my, W - 338, 18, 320, 102)) return;
       if (my < 130) return;
       if (this.laneSwapT <= 0) {
-        const target = columnIndexFromX(mx, COLS_X);
+        let target = columnIndexFromX(mx, COLS_X);
+        if (p.pactMods && p.pactMods.sillyMirrorH) target = sillyMirrorCol5(target);
         const step = stepTowardIndex(this.col, target);
         if (step !== 0) {
           this.col += step;
@@ -906,12 +908,14 @@ export class MawBossScene {
 
     // Lane movement (discrete-press only; hopCooldown gates repeat).
     const moveCd = p.laneSwapCd || 0.08;
+    const revH = !!(p.pactMods && p.pactMods.sillyMirrorH);
     if (this.laneSwapT <= 0) {
-      if (game.input.wasPressed("ArrowLeft", "a") && this.col > 0) {
+      const hop = sillySwappedHorizontalLaneDelta(game.input, this.col, NUM_COLS - 1, revH);
+      if (hop === -1) {
         this.col -= 1;
         this.laneSwapT = moveCd;
         SFX.click();
-      } else if (game.input.wasPressed("ArrowRight", "d") && this.col < NUM_COLS - 1) {
+      } else if (hop === 1) {
         this.col += 1;
         this.laneSwapT = moveCd;
         SFX.click();

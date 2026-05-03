@@ -525,6 +525,64 @@ export const PACTS = [
       else p.pactMods.flipDamageAmt = 26;
     },
   },
+
+  // ---- Silly pacts (unexpected trade-offs) ----
+  {
+    id: "silly_bile_express",
+    name: "BILE EXPRESS",
+    blurb: "Skip part of the gut-commute — the worm still collects its toll.",
+    pros: ["Rank 1–2: big head start up the wall", "Rank 3: skip the whole climb"],
+    cons: ["MP & max HP shrink when the shortcut fires (next climb entry)"],
+    tags: ["climb"],
+    apply(p, rank) {
+      p.pactMods.sillyBileShortcutPending = true;
+      p.pactMods.sillyBileShortcutRank = rank;
+    },
+  },
+  {
+    id: "silly_jitterbug_lease",
+    name: "JITTERBUG LEASE",
+    blurb: "Rent speed from your mana pool — feet first, brain later.",
+    pros: ["Faster wall climb & lane hops (stronger each rank)"],
+    cons: ["Shrinks max MP each rank"],
+    tags: ["climb", "combat"],
+    apply(p, rank) {
+      if (rank === 1) {
+        p.climbSpeed *= 1.15;
+        p.hopCooldown *= 0.94;
+        p.laneSwapCd *= 0.94;
+        p.manaMax = Math.max(6, Math.round(p.manaMax * 0.9));
+        p.mana = Math.min(p.mana, p.manaMax);
+      } else if (rank === 2) {
+        p.climbSpeed *= 1.42 / 1.15;
+        p.hopCooldown *= 0.90;
+        p.laneSwapCd *= 0.90;
+        p.manaMax = Math.max(6, Math.round(p.manaMax * (0.75 / 0.9)));
+        p.mana = Math.min(p.mana, p.manaMax);
+      } else {
+        p.climbSpeed *= 2.0 / 1.42;
+        p.hopCooldown *= 0.64;
+        p.laneSwapCd *= 0.64;
+        p.manaMax = Math.max(4, Math.round(p.manaMax * (0.5 / 0.75)));
+        p.mana = Math.min(p.mana, p.manaMax);
+      }
+    },
+  },
+  {
+    id: "silly_worm_mirror",
+    name: "WORM MIRROR",
+    blurb: "The map lies; your blade does not. Mostly.",
+    pros: ["Rank 1: +10% damage; A/D lanes flipped", "Rank 2+: W/S climb & brace flipped too", "Rank 3: ~2× total damage"],
+    cons: ["Muscle memory weeps"],
+    tags: ["climb", "combat"],
+    apply(p, rank) {
+      p.pactMods.sillyMirrorH = true;
+      if (rank >= 2) p.pactMods.sillyMirrorV = true;
+      if (rank === 1) p.pactMods.dmgMult *= 1.1;
+      else if (rank === 2) p.pactMods.dmgMult *= 1.22;
+      else p.pactMods.dmgMult *= 1.52;
+    },
+  },
 ];
 
 const PACT_BY_ID = Object.fromEntries(PACTS.map((p) => [p.id, p]));

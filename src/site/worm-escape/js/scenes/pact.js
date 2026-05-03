@@ -2,6 +2,7 @@ import {
   W, H, COLORS,
   drawBackdropCached, drawText, drawBanner, drawPanel, roundRect,
 } from "../engine/render.js";
+import { getPactCardVisual, drawPactSigil } from "../engine/pactSigils.js";
 import { SFX } from "../engine/audio.js";
 import { rollPactChoices } from "../content/pacts.js";
 import { applyPact } from "../content/player.js";
@@ -108,16 +109,24 @@ export class PactScene {
 
   render(ctx, game) {
     drawBackdropCached(ctx, this.t, this.t, 1.0, null, this.completedChamberIdx + 9);
-    ctx.fillStyle = "rgba(0,0,0,0.70)";
+    ctx.fillStyle = "rgba(0,0,0,0.78)";
     ctx.fillRect(0, 0, W, H);
+    // Subtle arcade scanlines
+    ctx.save();
+    ctx.globalAlpha = 0.08;
+    for (let y = 0; y < H; y += 4) {
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, y, W, 2);
+    }
+    ctx.restore();
 
     const bubbleActive = this.bubbleChains >= 2;
     const sealIdx = bubbleActive ? (this.bubbleChains - this.sealsLeft + 1) : 1;
 
     drawBanner(ctx, bubbleActive
-      ? `BUBBLEGUM (${sealIdx}/${this.bubbleChains})`
-      : (this.eliteReward ? "ELITE BONUS - CHOOSE A PACT" : "SEAL A PACT"),
-    W / 2, 70, bubbleActive ? 34 : 40, COLORS.bile, COLORS.blood);
+      ? `◆ BUBBLEGUM (${sealIdx}/${this.bubbleChains}) ◆`
+      : (this.eliteReward ? "◆ ELITE BONUS — PACT SELECT ◆" : "◆ SEAL A PACT — ARCADE MODE ◆"),
+    W / 2, 68, bubbleActive ? 32 : 36, COLORS.bile, COLORS.blood);
     drawText(ctx, bubbleActive
       ? `Pick 1 of 3 — pact ${sealIdx} of ${this.bubbleChains} (sweetened valve tax).`
       : (this.eliteReward
@@ -172,113 +181,110 @@ export class PactScene {
   drawCard(ctx, pact, x, y, w, h, selected, chosen, num, pactRanks) {
     const cur = (pactRanks && pactRanks[pact.id]) || 0;
     const nextRank = Math.min(3, cur + 1);
-    ctx.save();
+    const vis = getPactCardVisual(pact.id);
+    const t = this.t;
 
-    // Card backdrop
-    const g = ctx.createLinearGradient(x, y, x, y + h);
-    g.addColorStop(0, chosen ? "rgba(120, 70, 10, 0.95)" : selected ? "rgba(40,14,50,0.95)" : "rgba(14,5,20,0.85)");
-    g.addColorStop(1, "rgba(6,2,10,0.95)");
+    ctx.save();
+    // CRT cabinet inner shadow
+    ctx.fillStyle = "rgba(0,0,0,0.45)";
+    roundRect(ctx, x + 6, y + 8, w, h, 12);
+    ctx.fill();
+
+    const g = ctx.createLinearGradient(x, y, x + w, y + h);
+    if (chosen) {
+      g.addColorStop(0, "rgba(120,70,10,0.92)");
+      g.addColorStop(1, "rgba(40,20,4,0.98)");
+    } else if (selected) {
+      g.addColorStop(0, vis.secondary);
+      g.addColorStop(0.45, "rgba(20,8,28,0.94)");
+      g.addColorStop(1, vis.primary + "33");
+    } else {
+      g.addColorStop(0, vis.secondary);
+      g.addColorStop(0.5, "rgba(12,6,18,0.92)");
+      g.addColorStop(1, "rgba(4,2,10,0.96)");
+    }
     ctx.fillStyle = g;
     roundRect(ctx, x, y, w, h, 10);
     ctx.fill();
 
-    // Border
-    ctx.strokeStyle = chosen ? COLORS.gold : (selected ? COLORS.bile : COLORS.boneDim);
-    ctx.lineWidth = chosen ? 4 : (selected ? 3 : 2);
-    if (selected || chosen) {
-      ctx.shadowColor = chosen ? COLORS.gold : COLORS.bile;
-      ctx.shadowBlur = 18;
-    }
-    roundRect(ctx, x + 0.5, y + 0.5, w - 1, h - 1, 10);
+    // Phosphor edge sheen
+    const sh = ctx.createLinearGradient(x, y, x, y + 40);
+    sh.addColorStop(0, vis.primary + "55");
+    sh.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = sh;
+    roundRect(ctx, x + 2, y + 2, w - 4, 36, 8);
+    ctx.fill();
+
+    // Pixel-double border (retro bezel)
+    const edge = chosen ? COLORS.gold : (selected ? vis.border : "rgba(255,255,255,0.22)");
+    ctx.strokeStyle = edge;
+    ctx.lineWidth = 4;
+    roundRect(ctx, x + 1, y + 1, w - 2, h - 2, 10);
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(0,0,0,0.55)";
+    ctx.lineWidth = 2;
+    roundRect(ctx, x + 4, y + 4, w - 8, h - 8, 8);
     ctx.stroke();
     ctx.restore();
 
-    // Number badge
+    // Slot number — arcade insert coin slot
     ctx.save();
-    ctx.fillStyle = selected ? COLORS.bile : COLORS.boneDim;
-    ctx.beginPath();
-    ctx.arc(x + 26, y + 26, 16, 0, Math.PI * 2);
+    ctx.fillStyle = "#0a0610";
+    roundRect(ctx, x + 10, y + 10, 40, 32, 4);
     ctx.fill();
-    drawText(ctx, String(num), x + 26, y + 26, {
-      size: 18, bold: true, color: "#120616", align: "center", baseline: "middle",
+    ctx.strokeStyle = vis.border;
+    ctx.lineWidth = 2;
+    roundRect(ctx, x + 10.5, y + 10.5, 39, 31, 4);
+    ctx.stroke();
+    drawText(ctx, String(num), x + 30, y + 26, {
+      size: 20, bold: true, color: vis.glow, align: "center", baseline: "middle",
       shadow: false,
     });
     ctx.restore();
 
-    const textMax = w - 32;
-    // Title
-    drawText(ctx, pact.name, x + w / 2, y + 30, {
-      size: 22, bold: true, color: selected ? COLORS.bile : COLORS.bone,
-      align: "center", glow: selected ? COLORS.blood : null,
+    const textMax = w - 36;
+    drawText(ctx, pact.name, x + w / 2, y + 34, {
+      size: 20, bold: true, color: selected ? vis.glow : COLORS.bone,
+      align: "center", glow: selected ? vis.primary : null,
       maxWidth: textMax,
     });
-    // Blurb
-    drawText(ctx, pact.blurb, x + w / 2, y + 64, {
-      size: 13, color: COLORS.boneDim, align: "center",
+    drawText(ctx, pact.blurb, x + w / 2, y + 62, {
+      size: 12, color: COLORS.boneDim, align: "center",
       maxWidth: textMax,
     });
     if (cur > 0) {
-      drawText(ctx, `NEXT SEAL · RANK ${nextRank}/3  (re-forging this pact)`, x + w / 2, y + 86, {
-        size: 11, color: COLORS.bileGlow, align: "center", bold: true,
+      drawText(ctx, `▲ RANK UP → ${nextRank}/3`, x + w / 2, y + 84, {
+        size: 11, color: vis.primary, align: "center", bold: true,
         maxWidth: textMax,
       });
     }
 
-    // Decorative seal in the middle of the card - a wax-sigil.
-    const sealY = y + 170;
-    this.drawSeal(ctx, x + w / 2, sealY, selected, pact.tags);
-
-    // Pros/cons
-    const rowsY = y + h - 200;
-    const rowMax = w - 32;
-    drawText(ctx, "GAINS", x + 16, rowsY, { size: 12, color: "#8fe97a", bold: true });
-    pact.pros.forEach((line, i) => {
-      drawText(ctx, "+ " + line, x + 16, rowsY + 20 + i * 18, {
-        size: 12, color: "#b5f05a", maxWidth: rowMax,
-      });
-    });
-    const cy = rowsY + 20 + pact.pros.length * 18 + 14;
-    drawText(ctx, "COSTS", x + 16, cy, { size: 12, color: "#ff9090", bold: true });
-    pact.cons.forEach((line, i) => {
-      drawText(ctx, "- " + line, x + 16, cy + 20 + i * 18, {
-        size: 12, color: "#ff9090", maxWidth: rowMax,
-      });
-    });
-  }
-
-  // Small circular seal sigil drawn at the center of each pact card so the
-  // cards feel tactile / occult. The color shifts with the tag set.
-  drawSeal(ctx, cx, cy, selected, tags) {
-    const tag = tags && tags[0];
-    const color = tag === "combat" ? "#c21a1a"
-                : tag === "climb"  ? "#7fe3ff"
-                : tag === "stats"  ? "#ffd966"
-                :                    COLORS.bile;
+    const sealY = y + 178;
     ctx.save();
-    ctx.translate(cx, cy);
-    // Outer ring
-    ctx.strokeStyle = selected ? COLORS.bile : color;
-    ctx.lineWidth = 2.5;
-    ctx.beginPath(); ctx.arc(0, 0, 44, 0, Math.PI * 2); ctx.stroke();
-    // Inner ring
-    ctx.beginPath(); ctx.arc(0, 0, 28, 0, Math.PI * 2); ctx.stroke();
-    // Runic marks - 5-pointed polygon
+    ctx.fillStyle = "rgba(0,0,0,0.35)";
     ctx.beginPath();
-    for (let k = 0; k < 5; k++) {
-      const a = (k / 5) * Math.PI * 2 - Math.PI / 2;
-      const r = 20 + Math.sin(this.t * 3 + k) * 2;
-      const px = Math.cos(a) * r;
-      const py = Math.sin(a) * r;
-      if (k === 0) ctx.moveTo(px, py);
-      else ctx.lineTo(px, py);
-    }
-    ctx.closePath();
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1.8;
+    ctx.arc(x + w / 2, sealY, 58, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = vis.border;
+    ctx.lineWidth = 3;
     ctx.stroke();
-    // Core dot
-    ctx.fillStyle = color;
-    ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
+    drawPactSigil(ctx, x + w / 2, sealY, pact.id, t, { scale: 1.05, selected: selected || chosen });
+
+    const rowsY = y + h - 198;
+    const rowMax = w - 28;
+    drawText(ctx, "▶ BUFF", x + 14, rowsY, { size: 11, color: "#7fff9a", bold: true });
+    pact.pros.forEach((line, i) => {
+      drawText(ctx, "» " + line, x + 14, rowsY + 18 + i * 17, {
+        size: 11, color: "#b5f05a", maxWidth: rowMax,
+      });
+    });
+    const cy = rowsY + 18 + pact.pros.length * 17 + 10;
+    drawText(ctx, "▼ DEBT", x + 14, cy, { size: 11, color: "#ff7a7a", bold: true });
+    pact.cons.forEach((line, i) => {
+      drawText(ctx, "« " + line, x + 14, cy + 18 + i * 17, {
+        size: 11, color: "#ffaaaa", maxWidth: rowMax,
+      });
+    });
   }
 }

@@ -39,6 +39,7 @@ export const CHEAT_CODEX_DETAILS = {
     facts: [
       "Unlocks NECROMANCER in the forge (persists in save).",
       "Does not require beating the game.",
+      "No automatic score row for jackson alone — pick NECROMANCER and play like any other class unless other cheats are ON.",
     ],
     flavor: "They say he left a rib in every dungeon. The worm found three.",
   },
@@ -48,6 +49,7 @@ export const CHEAT_CODEX_DETAILS = {
     facts: [
       "Next forge session uses the full weapon pool (DEZ browse).",
       "Toggle again does nothing special — re-forge to use it.",
+      "If pick-any forge is ON when you finish the run: −2400 on Victory / Game Over score (same bucket as MrPhil’s forge browse).",
     ],
     flavor: "Inventory goblin energy. Smells like rerolls and hubris.",
   },
@@ -56,7 +58,7 @@ export const CHEAT_CODEX_DETAILS = {
     title: "Acererack",
     facts: [
       "Toggles invulnerability to damage, acid, bile, and corrosion ticks.",
-      "First time you turn it ON this run: −1,000,000 on final score (win or loss tally).",
+      "First time you turn it ON this run: −1,000,000 on final score (win or loss tally) — separate from the smaller rows in engine/cheatScore.js.",
     ],
     flavor: "Lich king of nope. The scoreboard still remembers you cheated.",
   },
@@ -66,6 +68,7 @@ export const CHEAT_CODEX_DETAILS = {
     facts: [
       "Drops you into THE MAW at worm layer 6 (Endless palette + scaling) for testing.",
       "Builds a fresh Swift + sword test hero.",
+      "No dedicated score row for gygax alone — only the usual cheat flags (wyrm, pinkfloyd, etc.) add lines if they are ON at run end.",
     ],
     flavor: "Roll for initiative vs five molars. Nat 1 still hurts.",
   },
@@ -75,6 +78,7 @@ export const CHEAT_CODEX_DETAILS = {
     facts: [
       "Warps to THE MAW finale with a test Swift + sword hero.",
       "Clears Endless-layer flags first so pacing matches a normal cheat drop.",
+      "No dedicated score row for bossnow alone — other toggles still apply if left ON (see Codex Mechanics / Cheat keypad).",
     ],
     flavor: "Speedrunner cosplay. Teeth applaud your impatience.",
   },
@@ -84,6 +88,7 @@ export const CHEAT_CODEX_DETAILS = {
     facts: [
       "Opens the Inner Guts Codex overlay (aliases: lore, loredump).",
       "Same shelf as the title-screen Codex button — now with cheat dossiers.",
+      "No score impact — pure UI. Mechanics tab documents pact ranks and cheat score rows.",
     ],
     flavor: "Meta-reading the manual while inside the appendix.",
   },
@@ -93,6 +98,7 @@ export const CHEAT_CODEX_DETAILS = {
     facts: [
       "Easier bias: incoming damage ×0.5, bile/acid chewing ×0.5, guardians & MAW molars ×0.5 HP.",
       "Mutually exclusive with dragon (typing one clears the other). Toggle to OFF.",
+      "If easy bias is ON at run end: −3400 on Victory / Game Over score.",
     ],
     flavor: "Baby’s first parasite. Almost polite.",
   },
@@ -102,6 +108,7 @@ export const CHEAT_CODEX_DETAILS = {
     facts: [
       "Hard bias: incoming damage ×2, bile/armor-chewing ×2, guardians & molars ×2 HP.",
       "Mutually exclusive with wyrm. Toggle OFF from the keypad.",
+      "If hard bias is ON at run end: +2600 on Victory / Game Over score.",
     ],
     flavor: "Soulsborne but the hollow is a esophagus.",
   },
@@ -111,6 +118,7 @@ export const CHEAT_CODEX_DETAILS = {
     facts: [
       "Climbing only: the roll for “power-up vs hazard” uses (1 − chamber power-up chance) instead of the normal chance.",
       "Telegraph color and falling art still match the real effect — only spawn frequencies swap.",
+      "If Jilly is ON at run end: −2100 on Victory / Game Over score.",
     ],
     flavor: "The worm serves a balanced diet; Jilly swaps the kitchen’s portion sizes.",
   },
@@ -121,6 +129,7 @@ export const CHEAT_CODEX_DETAILS = {
       "Each sphincter climb: TWO guardian fights back-to-back — beat the first (normal colors), then DOUBLE TROUBLE, then a hue-twisted twin with an inverted palette.",
       "THE MAW stays a single showdown (bubble doesn’t twin the finale).",
       "After both falls: four separate 3-card pact seals (elite 4-card reward is suppressed).",
+      "If Bubblegum is ON at run end: −2800 on Victory / Game Over score (extra pacts & twin fights).",
     ],
     flavor: "Stretchy. Sticky. Unfair negotiation practice.",
   },
@@ -131,6 +140,7 @@ export const CHEAT_CODEX_DETAILS = {
       "Forge step 2 only offers “weird” loadouts — pans, chairs, megaphones, chainsaws, cats, sci‑fi toys, bile whips, etc.",
       "Ban list: swords, sabers, spears (bone spear), fists, club, hammer, Ember/Frost staffs, Hex staff.",
       "Lets THE VOID browse as climb gear; unlock flags still gate locked icons until you earn them.",
+      "If Rowan is ON at run end: −900 on Victory / Game Over score.",
     ],
     flavor: "No boring pointy sticks. If it belongs in a kitchen, toolbox, circus, or lab, Rowan approved.",
   },
@@ -141,6 +151,7 @@ export const CHEAT_CODEX_DETAILS = {
       "Adds +0.25 to the hero’s climb speed multiplier when `makePlayer` runs (chairs / void multipliers stack first).",
       "Does not shorten hop cooldowns or combat lane swaps — wall climb pacing only.",
       "Toggle OFF from the keypad; re-forge mid-run cheats for test heroes.",
+      "If Lemon is ON at run end: −700 on Victory / Game Over score.",
     ],
     flavor: "Pucker up — the bile tide still rises, but your boots taste faster.",
   },
@@ -150,6 +161,7 @@ export const CHEAT_CODEX_DETAILS = {
     facts: [
       "Clears runtime cheat flags: wyrm/dragon, jilly, bubblegum, rowan, lemon, dez browse, invulnerability, pinkfloyd, pending Maw warps.",
       "Does not remove NECROMANCER or other permanent save unlocks.",
+      "Clears the runtime flags that add Victory / Game Over score rows (cheatScore.js); use before finishing if you want a clean tally (Acererack’s −1M surcharge still sticks if it was already flagged on the player).",
     ],
     flavor: "Hard reset on the fun dial — the worm pretends it never saw the fine print.",
   },
@@ -161,6 +173,7 @@ export const CHEAT_CODEX_DETAILS = {
       "Rainbow chroma on most UI text, panels, and HP bars; combat action tiles get a double neon stroke.",
       "Motion trails follow the hero in climb, sphincter combat, and THE MAW; sparkles + edge starbursts layer on top.",
       "The whole canvas gets a slow hue-rotate + saturate + micro-skew filter (disabled while \\ cheat terminal is open for readability).",
+      "If Pink Floyd visuals are ON at run end: +1700 on Victory / Game Over score (difficulty-style bonus).",
     ],
     flavor: "Comfortably numb is not on the playlist. The playlist is the worm.",
   },
@@ -170,6 +183,7 @@ export const CHEAT_CODEX_DETAILS = {
     facts: [
       "One-shot: enables wyrm-style easy bias, jilly climb rate swap, bubblegum, rowan forge, lemon, dez browse, and pinkfloyd visuals.",
       "Does not run bossnow, gygax, jackson, acererack, or lore — forge / play normally after typing.",
+      "Score rows stack from cheatScore.js if all of that stays ON: easy forge −2400, Pink Floyd +1700, Jilly −2100, Bubblegum −2800, Wyrm −3400, Rowan −900, Lemon −700 (net is still heavily negative).",
     ],
     flavor: "Maximum chaos, minimum paperwork — leave the DM screen at home.",
   },

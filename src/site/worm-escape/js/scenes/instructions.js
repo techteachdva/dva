@@ -168,10 +168,10 @@ export class InstructionsScene {
     drawText(ctx, "PACTS", col1, y + 54, {
       size: 13, color: COLORS.bone, bold: true,
     });
-    drawText(ctx, "After each boss, pick 1 of 3 (or 4)", col1, y + 72, {
+    drawText(ctx, "After each boss, pick 1 of 3 (or 4).", col1, y + 72, {
       size: 12, color: COLORS.bone,
     });
-    drawText(ctx, "tradeoff cards. Pros AND cons.", col1, y + 86, {
+    drawText(ctx, "Same pact can rank 1→3: bigger buff, softer cost.", col1, y + 86, {
       size: 12, color: COLORS.boneDim,
     });
 

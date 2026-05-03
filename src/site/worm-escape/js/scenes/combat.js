@@ -30,6 +30,7 @@ import {
   drawManaPotionModal,
 } from "../engine/manaPotion.js";
 import { applyOutboundStrikeDice } from "../engine/strikeDamageMods.js";
+import { sillyMirrorCol5, sillySwappedHorizontalLaneDelta } from "../engine/sillyPactInput.js";
 import {
   endlessDangerMult,
   endlessEnemyCssFilter,
@@ -402,16 +403,19 @@ export class CombatScene {
     this.laneCd -= dt;
     if (!this.potionState && this.laneCd <= 0 && this.phase === "fight") {
       let movedLane = false;
-      if (game.input.wasPressed("ArrowLeft", "a") && this.lane > 0) {
+      const revH = !!(p.pactMods && p.pactMods.sillyMirrorH);
+      const hop = sillySwappedHorizontalLaneDelta(game.input, this.lane, LAST_COMBAT_LANE, revH);
+      if (hop === -1) {
         this.lane--;
         movedLane = true;
-      } else if (game.input.wasPressed("ArrowRight", "d") && this.lane < LAST_COMBAT_LANE) {
+      } else if (hop === 1) {
         this.lane++;
         movedLane = true;
       } else if (game.input.wasPressed("Mouse0")) {
         const mx = game.input.mouseX, my = game.input.mouseY;
         if (!this.hitCombatBlockingUi(mx, my)) {
-          const targetLane = columnIndexFromX(mx, LANES);
+          let targetLane = columnIndexFromX(mx, LANES);
+          if (revH) targetLane = sillyMirrorCol5(targetLane);
           const step = stepTowardIndex(this.lane, targetLane);
           if (step !== 0) {
             this.lane += step;

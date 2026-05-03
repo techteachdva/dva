@@ -12,7 +12,10 @@ import {
   columnIndexFromX,
   stepTowardIndex,
 } from "../engine/pointer.js";
-import { applyDamage, recordDirectHpHit, recordDirectArmorHit } from "../content/player.js";
+import {
+  applyDamage, recordDirectHpHit, recordDirectArmorHit, clampPlayerResources,
+} from "../content/player.js";
+import { sillyMirrorCol5, sillySwappedHorizontalLaneDelta } from "../engine/sillyPactInput.js";
 import {
   endlessDangerMult,
   resolveEndlessPalette,
@@ -150,6 +153,44 @@ export class ClimbScene {
       this.showToast("RING FORGER: Free Ring of Armor conjured!", 2.2);
       if (p.score) { p.score.powerUpsCollected++; p.score.ringsCollected++; }
     }
+
+    // Silly pact: BILE EXPRESS — fire on next climb entry (HP/MP clamped for combat handoff).
+    const pm0 = p.pactMods;
+    if (pm0 && pm0.sillyBileShortcutPending) {
+      const r = pm0.sillyBileShortcutRank || 1;
+      pm0.sillyBileShortcutPending = false;
+      pm0.sillyBileShortcutRank = 0;
+      this.hitlessChamber = false;
+      const ch = this.chamber;
+      if (r >= 3) {
+        p.mana = 0;
+        p.hpMax = Math.max(1, Math.floor(p.hpMax * 0.5));
+        p.hp = Math.min(p.hp, p.hpMax);
+        this.showToast("BILE EXPRESS III — you skipped the climb. The worm took its cut.", 3.2);
+        clampPlayerResources(p);
+        if (ch.isMaw || ch.guardian === "wormMaw" || ch.guardian === "wormTongue") {
+          game.scenes.replace(new TongueBossScene(this.chamberIdx), game);
+        } else {
+          const bub = game.bubblegumMode ? { bubbleFightIndex: 1 } : {};
+          game.scenes.replace(new CombatScene(this.chamberIdx, bub), game);
+        }
+        return;
+      }
+      if (r === 2) {
+        p.mana = Math.floor(p.mana * 0.22);
+        p.hpMax = Math.max(1, Math.floor(p.hpMax * 0.78));
+        p.hp = Math.min(p.hp, p.hpMax);
+        this.progress = ch.climbHeight * 0.88;
+        this.showToast("BILE EXPRESS II — most of the wall melts away. You paid dearly.", 2.8);
+      } else {
+        p.mana = Math.floor(p.mana * 0.62);
+        p.hpMax = Math.max(1, Math.floor(p.hpMax * 0.94));
+        p.hp = Math.min(p.hp, p.hpMax);
+        this.progress = ch.climbHeight * 0.42;
+        this.showToast("BILE EXPRESS I — a greasy hop up the meat.", 2.4);
+      }
+      clampPlayerResources(p);
+    }
   }
 
   // v0.12 small helper so every damage branch flips the hitless flag in
@@ -203,13 +244,14 @@ export class ClimbScene {
     const mx = game.input.mouseX, my = game.input.mouseY;
     if (!stunned && this.hopCooldown <= 0) {
       let hop = 0;
-      if (game.input.wasPressed("ArrowLeft", "a") && this.col > 0) hop = -1;
-      else if (game.input.wasPressed("ArrowRight", "d") && this.col < NUM_COLS - 1) hop = 1;
-      else if (game.input.wasPressed("Mouse0")) {
+      const revH = !!(p.pactMods && p.pactMods.sillyMirrorH);
+      hop = sillySwappedHorizontalLaneDelta(game.input, this.col, NUM_COLS - 1, revH);
+      if (hop === 0 && game.input.wasPressed("Mouse0")) {
         if (!this.hitClimbBlockingUi(mx, my)) {
           const arenaTop = 96;
           if (my >= arenaTop && my < H - 36) {
-            const target = columnIndexFromX(mx, COLS_X);
+            let target = columnIndexFromX(mx, COLS_X);
+            if (revH) target = sillyMirrorCol5(target);
             hop = stepTowardIndex(this.col, target);
           }
         }
@@ -229,18 +271,23 @@ export class ClimbScene {
     // --- Climb up (blocked while stunned) ---
     const climbBase = 200 * p.climbSpeed;
     const slipRate = 28;
+    const revV = !!(p.pactMods && p.pactMods.sillyMirrorV);
+    const mouseUp = game.input.isDown("Mouse0") && my < HERO_Y && !this.hitClimbBlockingUi(mx, my);
+    const mouseBrace = game.input.isDown("Mouse0") && my >= HERO_Y + 42 && !this.hitClimbBlockingUi(mx, my);
+    const keyClimb = revV
+      ? game.input.isDown("ArrowDown", "s")
+      : game.input.isDown("ArrowUp", "w");
+    const keyBrace = revV
+      ? game.input.isDown("ArrowUp", "w")
+      : game.input.isDown("ArrowDown", "s");
+    const climbHeld = keyClimb || (revV ? mouseBrace : mouseUp);
+    const braceHeld = keyBrace || (revV ? mouseUp : mouseBrace);
     if (stunned) {
       // While stunned we slip a bit - captures the "dazed and sliding" feel.
       this.progress = Math.max(0, this.progress - slipRate * 0.8 * dt);
-    } else if (
-      game.input.isDown("ArrowUp", "w")
-      || (game.input.isDown("Mouse0") && my < HERO_Y && !this.hitClimbBlockingUi(mx, my))
-    ) {
+    } else if (climbHeld) {
       this.progress += climbBase * dt;
-    } else if (
-      game.input.isDown("ArrowDown", "s")
-      || (game.input.isDown("Mouse0") && my >= HERO_Y + 42 && !this.hitClimbBlockingUi(mx, my))
-    ) {
+    } else if (braceHeld) {
       // brace: hold position (no slip, no climb)
     } else {
       this.progress -= slipRate * dt;
@@ -425,9 +472,7 @@ export class ClimbScene {
       return;
     }
 
-    const climbingAnim =
-      game.input.isDown("ArrowUp", "w")
-      || (game.input.isDown("Mouse0") && my < HERO_Y && !this.hitClimbBlockingUi(mx, my));
+    const climbingAnim = climbHeld;
     this.anim += dt * (climbingAnim ? 10 : 3);
   }
 
@@ -1417,7 +1462,7 @@ export class ClimbScene {
     // --- v0.10 UX: action badge + contextual flashing hint + help bar ---
     this.drawActionBadge(ctx, game);
     this.drawContextHint(ctx, game);
-    this.drawHelpBar(ctx);
+    this.drawHelpBar(ctx, game);
 
     // Toast
     if (this.toast && this.toastTime > 0) {
@@ -1431,20 +1476,24 @@ export class ClimbScene {
   // Shows what the hero is CURRENTLY doing so new players can see at a glance
   // whether their input is registering ("CLIMBING!" vs "SLIPPING...").
   drawActionBadge(ctx, game) {
+    const p = game.player;
     const mx = game.input.mouseX, my = game.input.mouseY;
     const uiBlock = this.hitClimbBlockingUi(mx, my);
-    const mouseClimb =
-      game.input.isDown("Mouse0") && my < HERO_Y && !uiBlock;
-    const mouseBrace =
-      game.input.isDown("Mouse0") && my >= HERO_Y + 42 && !uiBlock;
+    const mouseUp = game.input.isDown("Mouse0") && my < HERO_Y && !uiBlock;
+    const mouseDn = game.input.isDown("Mouse0") && my >= HERO_Y + 42 && !uiBlock;
+    const revV = !!(p.pactMods && p.pactMods.sillyMirrorV);
+    const keyClimb = revV ? game.input.isDown("ArrowDown", "s") : game.input.isDown("ArrowUp", "w");
+    const keyBrace = revV ? game.input.isDown("ArrowUp", "w") : game.input.isDown("ArrowDown", "s");
+    const climbHeld = keyClimb || (revV ? mouseDn : mouseUp);
+    const braceHeld = keyBrace || (revV ? mouseUp : mouseDn);
     let text, color, glow;
     if (this.stunT > 0) {
       text = "STUNNED!"; color = "#ff9070"; glow = "#ff4030";
     } else if (this.submerged) {
       text = "SUBMERGED!"; color = "#bfff00"; glow = "#2a6a00";
-    } else if (game.input.isDown("ArrowUp", "w") || mouseClimb) {
+    } else if (climbHeld) {
       text = "CLIMBING UP!"; color = "#b5f05a"; glow = "#2a6a00";
-    } else if (game.input.isDown("ArrowDown", "s") || mouseBrace) {
+    } else if (braceHeld) {
       text = "BRACING"; color = "#ffd966"; glow = "#8a5000";
     } else {
       text = "SLIPPING..."; color = "#ff9a9a"; glow = "#600000";
@@ -1521,11 +1570,17 @@ export class ClimbScene {
   }
 
   // Persistent control-scheme bar at the very bottom of the screen.
-  drawHelpBar(ctx) {
+  drawHelpBar(ctx, game) {
     ctx.save();
     ctx.fillStyle = "rgba(0,0,0,0.55)";
     ctx.fillRect(0, H - 30, W, 30);
-    const line = "[UP/W] / click above hero & hold to climb   [A]/[D] lanes or click under hero   [DOWN/S] brace   [P] Pause";
+    const pm = game?.player?.pactMods;
+    let line = "[UP/W] / click above hero & hold to climb   [A]/[D] lanes or click under hero   [DOWN/S] brace   [P] Pause";
+    if (pm?.sillyMirrorV) {
+      line = "[WORM MIRROR] Vertical + horizontal inputs flipped — read the wall, not the legend.   [P] Pause";
+    } else if (pm?.sillyMirrorH) {
+      line = "[WORM MIRROR] [A]/[D] & mouse lanes flipped — climb/brace unchanged.   [P] Pause";
+    }
     drawText(ctx, line, W / 2, H - 15, {
       size: 13, color: COLORS.bone, align: "center", baseline: "middle", bold: true,
       maxWidth: W - 40,
