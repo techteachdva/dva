@@ -5,6 +5,7 @@ import {
 import { SFX } from "../engine/audio.js";
 import { loadSave, recordRun, findScoreRank } from "../engine/storage.js";
 import { IntroScene } from "./intro.js";
+import { getCheatScoreAdjustments } from "../engine/cheatScore.js";
 
 export class GameOverScene {
   constructor(reason) {
@@ -29,6 +30,9 @@ export class GameOverScene {
       (s.powerUpsCollected || 0) * 30;
     let fs = Math.max(0, Math.floor(partial));
     if (p?.score?.usedAcerCheat) fs = Math.max(0, fs - 1000000);
+    for (const row of getCheatScoreAdjustments(game)) {
+      fs = Math.max(0, fs + row.value);
+    }
     this.finalScore = fs;
 
     const save = loadSave();

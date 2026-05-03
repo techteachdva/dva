@@ -10,7 +10,10 @@ export function applyOutboundStrikeDice(baseInt, pm) {
     b = Math.max(1, Math.round(b + pmSafe.outgoingFlat));
   }
   if (pmSafe.flipDamage5050) {
-    b = Math.max(1, Math.round(b + (Math.random() < 0.5 ? 15 : -15)));
+    const coin = Number.isFinite(pmSafe.flipDamageAmt) && pmSafe.flipDamageAmt > 0
+      ? pmSafe.flipDamageAmt
+      : 15;
+    b = Math.max(1, Math.round(b + (Math.random() < 0.5 ? coin : -coin)));
   }
   return Math.max(1, b);
 }

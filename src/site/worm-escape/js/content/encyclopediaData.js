@@ -329,7 +329,7 @@ function buildMechanicEntries() {
         p.blurb,
         ...(p.pros || []).map((x) => ` + ${x}`),
         ...(p.cons || []).map((x) => ` − ${x}`),
-        "Applied once inside makePlayer pact hook — see pact.js helper comments.",
+        "Applied on each seal via applyPact (ranks 1–3 per pact id); see pacts.js apply(p, rank).",
       ],
       flavor:
         `Think of '${p.name}' like trading cafeteria desserts: glorious sugar crash included.`,

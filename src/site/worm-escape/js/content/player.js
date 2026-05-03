@@ -641,10 +641,10 @@ export function makePlayer(buildId, loadoutId, gameCheats = null) {
       pactsTaken: [],         // array of pact ids chosen this run (display + scoring)
       usedAcerCheat: false,   // acererack invulnerability cheat — −1M to final scored total
     },
-    // v0.12 Pacts - array of ids the player has taken. `pactMods` holds
-    // all live tuning values pacts (and builds) want to nudge. Pre-init
-    // to safe neutrals so consumers can blindly read-multiply/add.
+    // v0.12+ Pacts — `pacts` logs each seal (same id may repeat up to rank 3).
+    // `pactRanks[id]` is current rank (1–3) for that pact.
     pacts: [],
+    pactRanks: {},
     pactMods: {
       dmgMult: b.spellAmpMult || 1,  // global outgoing damage (Wizard pre-amps to 1.4)
       attackDmgMult: 1,       // basic attack only
@@ -669,7 +669,8 @@ export function makePlayer(buildId, loadoutId, gameCheats = null) {
       executeBonus: 1,        // damage multiplier for execute
       outgoingFlat: 0,        // pact flat damage additive (before RNG crits)
       fastHandsHalf: false,   // half CDs + half dmg (Fast Hands pact)
-      flipDamage5050: false, // ±15 dmg coin flip pact
+      flipDamage5050: false, // ±flipDamageAmt dmg coin flip pact
+      flipDamageAmt: 0,      // magnitude when flipDamage5050 (default 15 in strike dice)
       tamerKillGrowth: false, // +stats on kill rework
     },
     plasmCryoSlow: null,
@@ -739,16 +740,19 @@ export function applyTamerKillGrowth(p) {
   p.pactMods.dmgMult *= 1.035;
 }
 
-// Apply a pact by id. Safe to call multiple times; updates tracking on
-// the player so the scoreboard can list "Pacts taken this run".
+// Apply a pact by id. Each pact can rank up to 3 (repeat offers); `apply(p, rank)` stacks.
 export function applyPact(p, pactId) {
   if (!p || !pactId) return false;
   const pact = getPact(pactId);
   if (!pact) return false;
-  if (p.pacts.includes(pactId)) return false;
+  if (!p.pactRanks) p.pactRanks = {};
+  const prev = p.pactRanks[pactId] || 0;
+  if (prev >= 3) return false;
+  const next = prev + 1;
+  pact.apply(p, next);
+  p.pactRanks[pactId] = next;
   p.pacts.push(pactId);
   if (p.score) p.score.pactsTaken = [...p.pacts];
-  pact.apply(p);
   return true;
 }
 

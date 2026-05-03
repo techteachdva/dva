@@ -6,6 +6,7 @@ import {
 import { SFX } from "../engine/audio.js";
 import { loadSave, recordRun, findScoreRank } from "../engine/storage.js";
 import { IntroScene } from "./intro.js";
+import { getCheatScoreAdjustments } from "../engine/cheatScore.js";
 
 // --- v0.10 Scoring ---
 // A proper end-of-run scoreboard. Rewards:
@@ -34,7 +35,7 @@ const WEIGHTS = {
   hitlessChamber:   300,  // each chamber cleared without taking a hit
 };
 
-function calcScore(p) {
+function calcScore(p, game = null) {
   const s = p.score || {};
   const parts = [];
   const push = (label, value) => parts.push({ label, value });
@@ -82,6 +83,10 @@ function calcScore(p) {
 
   if (s.usedAcerCheat) {
     push("Acererack invulnerability surcharge", -1000000);
+  }
+
+  for (const row of getCheatScoreAdjustments(game)) {
+    push(row.label, row.value);
   }
 
   const total = Math.max(0, parts.reduce((a, b) => a + b.value, 0));
@@ -159,7 +164,7 @@ export class VictoryScene {
     const p = game.player;
     this.abruptFinale = !!game.victoryAbruptReveal;
     if (game.victoryAbruptReveal) game.victoryAbruptReveal = false;
-    this.score = calcScore(p);
+    this.score = calcScore(p, game);
     this.grade = grade(this.score.total, !!game.endlessMode);
     // Persist the run + compute unlocks.
     const save = loadSave();

@@ -27,11 +27,11 @@ export class PactScene {
 
   enter(game) {
     const p = game.player;
-    const taken = (p && p.pacts) ? p.pacts : [];
+    const ranks = (p && p.pactRanks) ? p.pactRanks : {};
     const bubbleOn = this.bubbleChains >= 2;
     this.sealsLeft = bubbleOn ? this.bubbleChains : 1;
     const n = bubbleOn ? 3 : (this.eliteReward ? 4 : 3);
-    this.choices = rollPactChoices(n, taken);
+    this.choices = rollPactChoices(n, ranks);
     if (this.choices.length === 0) {
       // Edge case: all 18 pacts already taken. Skip straight to transition.
       game.scenes.replace(new TransitionScene(this.completedChamberIdx), game);
@@ -47,10 +47,10 @@ export class PactScene {
       this.confirmT += dt;
       if (this.confirmT > 1.1) {
         const pInner = game.player;
-        const takenInner = (pInner && pInner.pacts) ? pInner.pacts : [];
+        const ranksInner = (pInner && pInner.pactRanks) ? pInner.pactRanks : {};
         this.sealsLeft--;
         if (this.sealsLeft > 0) {
-          this.choices = rollPactChoices(3, takenInner);
+          this.choices = rollPactChoices(3, ranksInner);
           if (this.choices.length === 0) {
             game.scenes.replace(new TransitionScene(this.completedChamberIdx), game);
             return;
@@ -134,12 +134,13 @@ export class PactScene {
     const startX = (W - totalW) / 2;
     const y = 160;
 
+    const pr = (game.player && game.player.pactRanks) ? game.player.pactRanks : {};
     for (let i = 0; i < n; i++) {
       const c = this.choices[i];
       const x = startX + i * (cardW + gap);
       const selected = (i === this.idx) && !this.picked;
       const chosen   = (this.picked && this.choices[i] === this.picked);
-      this.drawCard(ctx, c, x, y, cardW, cardH, selected, chosen, i + 1);
+      this.drawCard(ctx, c, x, y, cardW, cardH, selected, chosen, i + 1, pr);
     }
 
     if (this.picked) {
@@ -168,7 +169,9 @@ export class PactScene {
     }
   }
 
-  drawCard(ctx, pact, x, y, w, h, selected, chosen, num) {
+  drawCard(ctx, pact, x, y, w, h, selected, chosen, num, pactRanks) {
+    const cur = (pactRanks && pactRanks[pact.id]) || 0;
+    const nextRank = Math.min(3, cur + 1);
     ctx.save();
 
     // Card backdrop
@@ -214,6 +217,12 @@ export class PactScene {
       size: 13, color: COLORS.boneDim, align: "center",
       maxWidth: textMax,
     });
+    if (cur > 0) {
+      drawText(ctx, `NEXT SEAL · RANK ${nextRank}/3  (re-forging this pact)`, x + w / 2, y + 86, {
+        size: 11, color: COLORS.bileGlow, align: "center", bold: true,
+        maxWidth: textMax,
+      });
+    }
 
     // Decorative seal in the middle of the card - a wax-sigil.
     const sealY = y + 170;
