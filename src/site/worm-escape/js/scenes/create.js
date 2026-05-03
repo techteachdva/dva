@@ -23,6 +23,9 @@ const BUILD_WHEEL = {
   cardH: 566,
 };
 
+/** Top-right on the forge — toggles `game.endlessSelected` when Endless is unlocked. */
+const ENDLESS_FORGE_BTN = { x: W - 236, y: 94, w: 208, h: 38 };
+
 // v0.16 Full weapon pool. Weapons gated by `LOADOUT_UNLOCK` are filtered out
 // of the random roll if the unlock isn't owned.
 const ALL_LOADOUT_IDS = [
@@ -276,6 +279,23 @@ export class CreateScene {
     this.t += dt;
     this.refreshFromGameCheats(game);
 
+    if (
+      game.input.wasPressed("Mouse0")
+      && this.save?.unlocks?.endlessUnlocked
+      && pointInRect(
+        game.input.mouseX,
+        game.input.mouseY,
+        ENDLESS_FORGE_BTN.x,
+        ENDLESS_FORGE_BTN.y,
+        ENDLESS_FORGE_BTN.w,
+        ENDLESS_FORGE_BTN.h,
+      )
+    ) {
+      game.endlessSelected = !game.endlessSelected;
+      SFX.click();
+      game.input.consumePress("Mouse0");
+    }
+
     if (game.pickAnyWeapon && !this.dezPoolApplied) {
       this.dezPoolApplied = true;
       this.unlockAllWeapons = true;
@@ -426,6 +446,7 @@ export class CreateScene {
     ctx.fillRect(0, 0, W, H);
 
     drawBanner(ctx, "FORGE YOUR HERO", W / 2, 72, 44, COLORS.bile, COLORS.blood);
+    this.drawEndlessForgeButton(ctx, game);
 
     if (this.step === 0) this.renderBuildSelect(ctx);
     else if (this.step === 1) this.renderLoadoutSelect(ctx, game);
@@ -433,6 +454,19 @@ export class CreateScene {
 
     drawText(ctx, "A/D wheel · click cards · SPACE confirm · BACKSPACE back · M mute · Alt+Enter fullscreen · \\ cheat terminal", W / 2, H - 26, {
       size: 15, color: COLORS.boneDim, align: "center",
+    });
+  }
+
+  drawEndlessForgeButton(ctx, game) {
+    if (!this.save?.unlocks?.endlessUnlocked) return;
+    const on = !!game.endlessSelected;
+    const b = ENDLESS_FORGE_BTN;
+    drawPanel(ctx, b.x, b.y, b.w, b.h);
+    drawText(ctx, "ENDLESS MODE", b.x + b.w / 2, b.y + 10, {
+      size: 12, color: COLORS.bile, bold: true, align: "center", baseline: "middle",
+    });
+    drawText(ctx, on ? "ON  ·  six nested worms" : "OFF  ·  classic escape", b.x + b.w / 2, b.y + 27, {
+      size: 11, color: on ? COLORS.gold : COLORS.boneDim, align: "center", baseline: "middle",
     });
   }
 

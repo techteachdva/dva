@@ -76,6 +76,53 @@ export function applyCheatLine(rawLine, game) {
   const c = rawLine.trim().toLowerCase();
   if (!c) return { ok: false, msg: "Empty." };
 
+  if (c === "nocheats") {
+    game.invulnerable = false;
+    game.easyMode = false;
+    game.hardMode = false;
+    game.jillyMode = false;
+    game.bubblegumMode = false;
+    game.rowanWeirdWeapons = false;
+    game.lemonBoost = false;
+    game.pickAnyWeapon = false;
+    game.pinkFloydMode = false;
+    game.pendingMawCheat = null;
+    revealCheatDossierIfNew(game, "nocheats");
+    return {
+      ok: true,
+      msg: "Nocheats — runtime cheat toggles cleared (Jackson NECROMANCER unlock in save is untouched).",
+    };
+  }
+
+  if (c === "mrphil") {
+    game.pickAnyWeapon = true;
+    game.easyMode = true;
+    game.hardMode = false;
+    game.jillyMode = true;
+    game.bubblegumMode = true;
+    game.rowanWeirdWeapons = true;
+    game.lemonBoost = true;
+    game.invulnerable = false;
+    game.pinkFloydMode = true;
+    revealCheatDossierIfNew(game, "mrphil");
+    return {
+      ok: true,
+      msg:
+        "MrPhil — wyrm bias, jilly climb rates, bubblegum, rowan forge, lemon climb, dez browse, pinkfloyd trip (no bossnow/gygax).",
+    };
+  }
+
+  if (c === "pinkfloyd") {
+    game.pinkFloydMode = !game.pinkFloydMode;
+    revealCheatDossierIfNew(game, "pinkfloyd");
+    return {
+      ok: true,
+      msg: game.pinkFloydMode
+        ? "Pink Floyd — prismatic wash, warped flesh, rainbow bile & action chrome ON."
+        : "Pink Floyd — psychedelic visuals OFF.",
+    };
+  }
+
   if (c === "jackson") {
     const save = loadSave();
     save.unlocks.necromancerBuild = true;
@@ -142,8 +189,8 @@ export function applyCheatLine(rawLine, game) {
     return {
       ok: true,
       msg: game.jillyMode
-        ? "Jilly — climbs swap hazard/power visuals & rarity; traps hit ×2 harder."
-        : "Jilly — twisted climb OFF.",
+        ? "Jilly — climb swaps hazard vs power-up spawn rates (telegraphs still match the real drop)."
+        : "Jilly — swapped climb rates OFF.",
     };
   }
   if (c === "bubblegum") {

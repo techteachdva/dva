@@ -1,6 +1,8 @@
 // Canvas helpers: flesh backgrounds, veins, acid, glow text, screen shake, particles.
 // Style: cel-shaded + rim-lit, top-left light source, drop shadows for volume.
 
+import { visualMods } from "./visualMods.js";
+
 export const W = 1280;
 export const H = 800;
 
@@ -61,7 +63,8 @@ export function applyShake(ctx, dt) {
 //   { deep, mid, bruise, bump } - lets chambers shift from blackish purple
 //   (deep guts) to reddish pink (near the mouth).
 function drawFleshBackgroundCore(ctx, t, tint = 1, palette = null) {
-  const pulse = (Math.sin(t * 1.6) * 0.5 + 0.5) * 0.12 + 0.88;
+  const pf = visualMods.pinkFloyd ? Math.sin(visualMods.t * 1.1) * 0.22 : 0;
+  const pulse = (Math.sin(t * 1.6) * 0.5 + 0.5) * 0.12 + 0.88 + pf;
   const deep   = palette?.deep   || COLORS.wormDeep;
   const mid    = palette?.mid    || COLORS.worm;
   const bruise = palette?.bruise || "rgba(168, 85, 182, 0.16)";
@@ -114,6 +117,9 @@ function drawFleshBackgroundCore(ctx, t, tint = 1, palette = null) {
 // ---- veins overlay (with small shadow offset to look raised) ----
 function drawVeinsCore(ctx, t, seedOffset = 0) {
   ctx.save();
+  const pf = visualMods.pinkFloyd;
+  const pfT = visualMods.t;
+  const wobble = pf ? 1.45 + 0.35 * Math.sin(pfT * 2.4) : 1;
   // Shadow layer
   ctx.strokeStyle = "rgba(0, 0, 0, 0.35)";
   ctx.lineWidth = 3;
@@ -126,13 +132,16 @@ function drawVeinsCore(ctx, t, seedOffset = 0) {
     ctx.moveTo(x, y);
     while (y < H + 10) {
       y += 18;
-      x += Math.sin((y + i * 30 + t * 20) * 0.04) * 14;
+      x += Math.sin((y + i * 30 + t * 20) * 0.04) * 14 * wobble;
       ctx.lineTo(x, y);
     }
     ctx.stroke();
   }
   // Main vein
-  ctx.strokeStyle = "rgba(160, 40, 60, 0.75)";
+  const hueMain = pf ? ((pfT * 55 + seedOffset * 17) % 360) : 340;
+  ctx.strokeStyle = pf
+    ? `hsla(${hueMain}, 75%, 58%, 0.82)`
+    : "rgba(160, 40, 60, 0.75)";
   ctx.lineWidth = 2;
   for (let i = 0; i < 6; i++) {
     const baseX = ((i * 173 + seedOffset * 37) % W);
@@ -142,7 +151,7 @@ function drawVeinsCore(ctx, t, seedOffset = 0) {
     ctx.moveTo(x, y);
     while (y < H + 10) {
       y += 18;
-      x += Math.sin((y + i * 30 + t * 20) * 0.04) * 14;
+      x += Math.sin((y + i * 30 + t * 20) * 0.04) * 14 * wobble;
       ctx.lineTo(x, y);
     }
     ctx.stroke();
@@ -174,7 +183,7 @@ function drawVeinsCore(ctx, t, seedOffset = 0) {
     ctx.moveTo(x, y);
     while (y < H + 10) {
       y += 12;
-      x += Math.sin((y + i * 17 + t * 30) * 0.08) * 6;
+      x += Math.sin((y + i * 17 + t * 30) * 0.08) * 6 * wobble;
       ctx.lineTo(x, y);
     }
     ctx.stroke();
@@ -208,7 +217,8 @@ export function drawBackdropCached(ctx, tFlesh, tVeins, tint = 1, palette = null
   const qf = Math.floor(tFlesh * 4);
   const qv = Math.floor(tVeins * 4);
   const pk = backdropPaletteKey(palette);
-  const key = `${qf}|${qv}|${tint}|${pk}|${veinSeed}`;
+  const pfQ = visualMods.pinkFloyd ? Math.floor(visualMods.t * 6) : "x";
+  const key = `${qf}|${qv}|${tint}|${pk}|${veinSeed}|${pfQ}`;
   if (typeof document === "undefined") {
     drawFleshBackgroundCore(ctx, tFlesh, tint, palette);
     drawVeinsCore(ctx, tVeins, veinSeed);
@@ -227,13 +237,25 @@ export function drawBackdropCached(ctx, tFlesh, tVeins, tint = 1, palette = null
     drawFleshBackgroundCore(bctx, tFlesh, tint, palette);
     drawVeinsCore(bctx, tVeins, veinSeed);
   }
+  ctx.save();
+  if (visualMods.pinkFloyd) {
+    const skew = 0.012 * Math.sin(visualMods.t * 1.8);
+    const sx = 1 + 0.018 * Math.sin(visualMods.t * 0.9);
+    const sy = 1 + 0.018 * Math.cos(visualMods.t * 1.1);
+    ctx.translate(W / 2, H / 2);
+    ctx.transform(sx, skew, -skew, sy, 0, 0);
+    ctx.translate(-W / 2, -H / 2);
+  }
   ctx.drawImage(_backdropCanvas, 0, 0);
+  ctx.restore();
 }
 
 // ---- acid pool (bottom wave) - now with foam layer + inner glow ----
 export function drawAcid(ctx, t, level /* 0..1 fraction of screen */) {
   if (level <= 0) return;
   const yTop = H - H * level;
+  const pf = visualMods.pinkFloyd;
+  const pfT = visualMods.t;
   ctx.save();
 
   // Deep shadow under the surface (gives depth)
@@ -250,13 +272,14 @@ export function drawAcid(ctx, t, level /* 0..1 fraction of screen */) {
   g.addColorStop(0.7, "rgba(90,200,50,0.97)");
   g.addColorStop(1, "rgba(30,90,20,1)");
   ctx.fillStyle = g;
+  const wav = pf ? 1.65 : 1;
   ctx.beginPath();
   ctx.moveTo(0, yTop + 20);
   for (let x = 0; x <= W; x += 8) {
     const y = yTop
-      + Math.sin((x + t * 220) * 0.03) * 5
-      + Math.sin((x + t * 140) * 0.08) * 3
-      + Math.sin((x + t * 60) * 0.12) * 1.5;
+      + Math.sin((x + t * 220) * 0.03) * 5 * wav
+      + Math.sin((x + t * 140 + pfT * 80) * 0.08) * 3 * wav
+      + Math.sin((x + t * 60) * 0.12) * 1.5 * wav;
     ctx.lineTo(x, y);
   }
   ctx.lineTo(W, H);
@@ -276,14 +299,21 @@ export function drawAcid(ctx, t, level /* 0..1 fraction of screen */) {
     const bx = ((i * 61 + t * (30 + i * 3)) % W);
     const by = yTop + 10 + ((i * 13 + t * 80 * (0.5 + (i % 5) * 0.2)) % Math.max(10, H - yTop - 10));
     const br = 2 + (i % 5);
+    const hue = pf ? ((i * 47 + pfT * 28) % 360) : 100;
     // Shadow
-    ctx.fillStyle = "rgba(30, 90, 20, 0.5)";
+    ctx.fillStyle = pf
+      ? `hsla(${(hue + 40) % 360}, 70%, 18%, 0.55)`
+      : "rgba(30, 90, 20, 0.5)";
     ctx.beginPath(); ctx.arc(bx + 1, by + 1, br, 0, Math.PI * 2); ctx.fill();
     // Body
-    ctx.fillStyle = "rgba(200,255,160,0.7)";
+    ctx.fillStyle = pf
+      ? `hsla(${hue}, 85%, 62%, 0.82)`
+      : "rgba(200,255,160,0.7)";
     ctx.beginPath(); ctx.arc(bx, by, br, 0, Math.PI * 2); ctx.fill();
     // Specular
-    ctx.fillStyle = "rgba(255,255,255,0.9)";
+    ctx.fillStyle = pf
+      ? `hsla(${(hue + 55) % 360}, 100%, 88%, 0.95)`
+      : "rgba(255,255,255,0.9)";
     ctx.beginPath(); ctx.arc(bx - br * 0.4, by - br * 0.4, br * 0.35, 0, Math.PI * 2); ctx.fill();
   }
 
@@ -295,12 +325,41 @@ export function drawAcid(ctx, t, level /* 0..1 fraction of screen */) {
   ctx.beginPath();
   for (let x = 0; x <= W; x += 8) {
     const y = yTop
-      + Math.sin((x + t * 220) * 0.03) * 5
-      + Math.sin((x + t * 140) * 0.08) * 3
-      + Math.sin((x + t * 60) * 0.12) * 1.5;
+      + Math.sin((x + t * 220) * 0.03) * 5 * wav
+      + Math.sin((x + t * 140 + pfT * 80) * 0.08) * 3 * wav
+      + Math.sin((x + t * 60) * 0.12) * 1.5 * wav;
     if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
   }
   ctx.stroke();
+  ctx.restore();
+}
+
+/** Full-screen psychedelic wash (cheat `pinkfloyd`). Draw after scene, before HUD if desired. */
+export function drawPinkFloydScreenSheen(ctx) {
+  if (!visualMods.pinkFloyd) return;
+  const tm = visualMods.t;
+  ctx.save();
+  ctx.globalCompositeOperation = "screen";
+  for (let k = 0; k < 4; k++) {
+    const hx = (W * (0.2 + k * 0.22) + Math.sin(tm * 0.7 + k) * 90) % W;
+    const hy = (H * (0.25 + k * 0.18) + Math.cos(tm * 0.55 + k * 1.7) * 70) % H;
+    const r = 220 + k * 60 + Math.sin(tm + k) * 40;
+    const hue = (tm * 38 + k * 72) % 360;
+    const g = ctx.createRadialGradient(hx, hy, 0, hx, hy, r);
+    g.addColorStop(0, `hsla(${hue}, 90%, 58%, 0.14)`);
+    g.addColorStop(0.55, `hsla(${(hue + 40) % 360}, 85%, 50%, 0.06)`);
+    g.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+  }
+  ctx.globalCompositeOperation = "soft-light";
+  const sweep = ctx.createLinearGradient(0, 0, W, H);
+  const h0 = (tm * 22) % 360;
+  sweep.addColorStop(0, `hsla(${h0}, 100%, 50%, 0.12)`);
+  sweep.addColorStop(0.5, `hsla(${(h0 + 120) % 360}, 90%, 55%, 0.1)`);
+  sweep.addColorStop(1, `hsla(${(h0 + 240) % 360}, 95%, 52%, 0.11)`);
+  ctx.fillStyle = sweep;
+  ctx.fillRect(0, 0, W, H);
   ctx.restore();
 }
 

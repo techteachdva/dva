@@ -398,30 +398,129 @@ function updateInternalTreeLine(line) {
 /*  Lesson HTML                                                            */
 /* ----------------------------------------------------------------------- */
 
+/**
+ * Morpheme primer — renders the SWI-style mini-lesson for a single morpheme.
+ * Sections render only when the underlying catalog field is present, so this scales
+ * gracefully as authors add or remove pedagogical content per entry.
+ *
+ * Pedagogical structure (Bowers & Kirby, Structured Word Inquiry):
+ *   1. Meaning first ("What it does")
+ *   2. Etymology (where the morpheme came from)
+ *   3. Structure ("Word sums" — explicit decomposition with + and →)
+ *   4. Decoding strategy (student-facing heuristic)
+ *   5. Spelling / phonology note (suffix-changing rules, assimilation, allomorphs)
+ *   6. Bank words (live links to the word trees on the board)
+ *   7. Examples beyond the bank
+ *   8. Family — related / contrasting morphemes ("Compare with")
+ *   9. Inquiry prompts ("Try this")
+ *  10. Teaching tip (smart-board-ready classroom move)
+ *  11. Wiktionary deep dive
+ */
 function morphemePrimerHtml(key, linkedWordIds) {
   const row = morphemeCatalogRow(key);
   const short = morphemeKeyShort(key);
+  const typeLabel = morphemeTypeLabel(key, row?.type);
+  const typeSlug = morphemeTypeSlug(typeLabel);
+
+  const wikt = row?.wiktionary || row?.morpheme || short;
+  const wiktUrl = `https://en.wiktionary.org/wiki/${encodeURIComponent(wikt)}`;
+
+  const sections = [];
+
+  sections.push(`<header class="morph-lesson__head">
+      <h3 class="morph-lesson__h">
+        <span class="morph-lesson__morpheme"><em translate="no">${escapeHtml(row?.morpheme ?? short)}</em></span>
+        <span class="morph-chart__type morph-chart__type--${escapeHtml(typeSlug)}">${escapeHtml(typeLabel)}</span>
+      </h3>
+      ${row ? `<p class="morph-lesson__bracket-caption"><strong>Origin:</strong> ${escapeHtml(row.origin)}</p>` : ""}
+    </header>`);
+
+  if (row?.meaning) {
+    sections.push(`<p class="morph-lesson__lead"><strong>What it does:</strong> ${escapeHtml(row.meaning)}.</p>`);
+  }
+
+  if (row?.etymology) {
+    sections.push(`<p class="morph-lesson__etymology"><strong>Etymology:</strong> ${escapeHtml(row.etymology)}</p>`);
+  }
+
+  if (row?.wordSums?.length) {
+    const items = row.wordSums.map((s) => `<li><code class="morph-wordsum">${escapeHtml(s)}</code></li>`).join("");
+    sections.push(`<section class="morph-lesson__sec morph-lesson__sec--wordsums">
+        <h4>Word sums — how it builds</h4>
+        <ul class="morph-lesson__wordsums">${items}</ul>
+      </section>`);
+  }
+
+  if (row?.decodingTip) {
+    sections.push(`<section class="morph-lesson__sec morph-lesson__sec--decode">
+        <h4>Decoding tip</h4>
+        <p>${escapeHtml(row.decodingTip)}</p>
+      </section>`);
+  }
+
+  if (row?.spellingNote) {
+    sections.push(`<section class="morph-lesson__sec morph-lesson__sec--spelling">
+        <h4>Spelling note</h4>
+        <p>${escapeHtml(row.spellingNote)}</p>
+      </section>`);
+  }
+
   const labels = linkedWordIds
     .map((id) => WORDS.find((w) => w.id === id))
     .filter(Boolean)
     .map((w) => `<li><button class="morph-link-pick" data-morph-pick-word="${escapeHtml(w.id)}">${escapeHtml(w.label)}</button></li>`)
     .join("");
+  sections.push(`<section class="morph-lesson__sec">
+      <h4>Words on the board (${linkedWordIds.length})</h4>
+      ${labels ? `<ul class="morph-lesson__ul morph-lesson__ul--picks">${labels}</ul>` : `<p>No words in this bank are tagged with this morpheme yet.</p>`}
+      <p class="morph-lesson__meta">Click any word to switch to <strong>Word</strong> mode and load its tree + lesson.</p>
+    </section>`);
 
-  const wikt = row?.wiktionary || row?.morpheme || short;
-  const wiktUrl = `https://en.wiktionary.org/wiki/${encodeURIComponent(wikt)}`;
-  const hint = AFFIX_ORIGIN_HINT[key];
+  if (row?.outsideExamples?.length) {
+    sections.push(`<section class="morph-lesson__sec">
+        <h4>More examples beyond this bank</h4>
+        <p>${row.outsideExamples.map(escapeHtml).join(", ")}</p>
+      </section>`);
+  }
 
-  return `<div class="morph-lesson morph-lesson--single">
-    <h3 class="morph-lesson__h">Morpheme: <em translate="no">${escapeHtml(row?.morpheme ?? short)}</em></h3>
-    ${row ? `<p class="morph-lesson__lead"><strong>Origin:</strong> ${escapeHtml(row.origin)} · <strong>Meaning:</strong> ${escapeHtml(row.meaning)}</p>` : ""}
-    ${hint ? `<p class="morph-lesson__lead">${hint}</p>` : ""}
-    ${row?.outsideExamples?.length ? `<p class="morph-lesson__meta"><strong>More examples (outside this bank):</strong> ${row.outsideExamples.map(escapeHtml).join(", ")}</p>` : ""}
-    <p class="morph-lesson__meta"><a class="morph-chart__wikt" href="${escapeHtml(wiktUrl)}" target="_blank" rel="noreferrer noopener">Open <code translate="no">${escapeHtml(wikt)}</code> on Wiktionary &nearr;</a></p>
-    <section class="morph-lesson__sec"><h4>Words on the board (${linkedWordIds.length})</h4>
-      ${labels ? `<ul class="morph-lesson__ul morph-lesson__ul--picks">${labels}</ul>` : `<p>No words in this bank tagged with this morpheme yet.</p>`}
-      <p class="morph-lesson__meta">Click any word above to switch to <strong>Word</strong> mode and load its lesson.</p>
-    </section>
-  </div>`;
+  if (row?.confusedWith?.length) {
+    const buttons = row.confusedWith
+      .map((relKey) => {
+        const r = morphemeCatalogRow(relKey);
+        if (!r) return "";
+        return `<li><button class="morph-link-pick morph-link-pick--key" data-morph-pick-key="${escapeHtml(relKey)}"><span translate="no">${escapeHtml(r.morpheme)}</span></button> <span class="morph-lesson__meta">${escapeHtml(r.meaning)}</span></li>`;
+      })
+      .filter(Boolean)
+      .join("");
+    if (buttons) {
+      sections.push(`<section class="morph-lesson__sec morph-lesson__sec--family">
+          <h4>Compare with</h4>
+          <ul class="morph-lesson__ul morph-lesson__ul--family">${buttons}</ul>
+          <p class="morph-lesson__meta">Click a morpheme to load its lesson side-by-side in <strong>Morpheme</strong> mode.</p>
+        </section>`);
+    }
+  }
+
+  if (row?.inquiryPrompts?.length) {
+    const items = row.inquiryPrompts.map((p) => `<li>${escapeHtml(p)}</li>`).join("");
+    sections.push(`<section class="morph-lesson__sec morph-lesson__sec--inquiry">
+        <h4>Try this — student inquiry</h4>
+        <ol class="morph-lesson__ul morph-lesson__ul--inquiry">${items}</ol>
+      </section>`);
+  }
+
+  if (row?.teachingTip) {
+    sections.push(`<section class="morph-lesson__sec morph-lesson__sec--teach">
+        <h4>Teach it — 30-second classroom move</h4>
+        <p>${escapeHtml(row.teachingTip)}</p>
+      </section>`);
+  }
+
+  sections.push(`<p class="morph-lesson__meta">
+      <a class="morph-chart__wikt" href="${escapeHtml(wiktUrl)}" target="_blank" rel="noreferrer noopener">Open <code translate="no">${escapeHtml(wikt)}</code> on Wiktionary &nearr;</a>
+    </p>`);
+
+  return `<div class="morph-lesson morph-lesson--single morph-lesson--morpheme">${sections.join("")}</div>`;
 }
 
 /* ----------------------------------------------------------------------- */
@@ -739,13 +838,27 @@ function init() {
   /* Lesson body delegates clicks for word picks (works for both morpheme primer and dual compare). */
   lessonHtmlTarget?.addEventListener("click", (ev) => {
     const t = /** @type {HTMLElement | null} */ (ev.target instanceof HTMLElement ? ev.target : null);
-    const btn = t?.closest?.("[data-morph-pick-word]");
-    if (btn instanceof HTMLElement) {
-      const id = btn.getAttribute("data-morph-pick-word");
+    if (!t) return;
+
+    const wordBtn = t.closest?.("[data-morph-pick-word]");
+    if (wordBtn instanceof HTMLElement) {
+      const id = wordBtn.getAttribute("data-morph-pick-word");
       if (id && WORDS.some((w) => w.id === id)) {
         selectedWordId = id;
         if (wordSelect) wordSelect.value = id;
         setMode("word");
+      }
+      return;
+    }
+
+    /* "Compare with" buttons in the morpheme primer jump to that morpheme's lesson. */
+    const keyBtn = t.closest?.("[data-morph-pick-key]");
+    if (keyBtn instanceof HTMLElement) {
+      const k = keyBtn.getAttribute("data-morph-pick-key");
+      if (k) {
+        selectedMorpheme = k;
+        if (morphSelect) morphSelect.value = `${MORPH_SELECT_PREFIX}${encodeURIComponent(k)}`;
+        setMode("morpheme");
       }
     }
   });

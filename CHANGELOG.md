@@ -1,5 +1,22 @@
 ## Unreleased
 
+### Morphology Garden — SWI-style mini-lesson rewrite
+
+Every morpheme entry in `morphology-morpheme-catalog.js` now carries pedagogical content modeled on Bowers & Kirby's **Structured Word Inquiry**. The morpheme-mode primer is no longer a definition card — it's a smart-board-ready inquiry lesson.
+
+- **New optional fields on every catalog entry** (52 morphemes, all populated):
+  - `etymology` — one-sentence historical origin.
+  - `wordSums` — explicit decomposition with `+` between morphemes and `→` to the result, including suffix-changing rules (e.g. `hope + ed → hop(e) + ed → hoped`, `un + happy + ness → unhappiness`).
+  - `decodingTip` — student-facing "if you see X, ask Y" heuristic.
+  - `spellingNote` — assimilation / drop-e / doubling / y→i rule for that morpheme.
+  - `teachingTip` — 30–60-second smart-board move (sort, T-chart, paraphrase test, etc.).
+  - `inquiryPrompts` — 2–3 open student questions matching SWI's "Four Questions" spirit.
+  - `confusedWith` — array of related morpheme keys; renders a clickable **Compare with** panel that hops directly to that morpheme's lesson.
+- **`morphemePrimerHtml` rewritten** to surface every field that's present, in this pedagogical order: header (morpheme + type badge + origin) → meaning → etymology → word sums → decoding tip → spelling note → words on the board → outside examples → compare with → try-this prompts → teaching tip → Wiktionary.
+- **Compare-with buttons** are wired through the lesson body click handler — clicking a related morpheme switches **Morpheme** mode to that morpheme's lesson without leaving the board.
+- **New SCSS sections** with color-coded left borders for skim-ability: gold (decode), cyan (spelling), purple (inquiry), green (teach), rose (family). Word sums render in a monospaced "boxed" treatment that reads well on smart-board projection.
+- Help modal copy updated to describe the new lesson scope.
+
 ### Morphology Garden — Ground-up rebuild
 
 The viewer was rewritten from scratch around three explicit modes that map 1:1 to the picker UI. The previous implementation (intro cinematic, view transitions, dual cameras, master/sunflower hub, dev 3D mode, click-pinned tooltips, ring-to-isolate tween, lazy tree builds, etc.) is gone.

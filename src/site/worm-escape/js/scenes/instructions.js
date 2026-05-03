@@ -107,11 +107,12 @@ export class InstructionsScene {
 
     if (this.save?.unlocks?.endlessUnlocked) {
       const on = !!game.endlessSelected;
-      drawText(ctx, `[E] Endless Mode: ${on ? "ON (six worms — escalate to victory)" : "OFF (classic escape)"}`, W / 2, H - 94, {
-        size: 15,
+      drawText(ctx, `[E] or forge “ENDLESS MODE” button: ${on ? "ON (six worms — escalate to victory)" : "OFF (classic escape)"}`, W / 2, H - 94, {
+        size: 14,
         color: on ? COLORS.gold : COLORS.boneDim,
         align: "center",
         bold: on,
+        maxWidth: W - 40,
       });
     }
 

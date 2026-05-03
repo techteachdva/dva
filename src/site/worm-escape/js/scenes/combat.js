@@ -36,6 +36,7 @@ import {
   resolveEndlessPalette,
 } from "../content/endlessStyle.js";
 import { runEnemyHpMult, runIncomingDamageMult } from "../content/gameBalance.js";
+import { visualMods } from "../engine/visualMods.js";
 
 /** Five tactical columns — guardian and player must align to land strikes (unless weapon skips lanes). */
 const NUM_COMBAT_LANES = 5;
@@ -2537,6 +2538,16 @@ export class CombatScene {
           label: ready ? "READY" : `${def.cd.toFixed(1)}s`,
           labelColor: "#111",
         });
+      }
+      if (game.pinkFloydMode) {
+        const hue = ((visualMods.t * 18 + i * 72) % 360);
+        ctx.shadowColor = `hsl(${hue}, 100%, 58%)`;
+        ctx.shadowBlur = 12 + 7 * Math.sin(visualMods.t * 1.4 + i * 1.1);
+        ctx.strokeStyle = `hsl(${hue}, 88%, 70%)`;
+        ctx.lineWidth = 3.2;
+        roundRect(ctx, r.x + 2, r.y + 2, r.w - 4, r.h - 4, 10);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
       }
       ctx.restore();
     }

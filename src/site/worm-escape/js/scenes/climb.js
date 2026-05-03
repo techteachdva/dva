@@ -467,38 +467,14 @@ export class ClimbScene {
     const puMult = (pactMods && pactMods.powerUpRateMult) || 1;
     const basePu = (ch.powerUpRarity || 0) * puMult;
 
-    let kind;
-    let telePower;
-    if (game?.jillyMode) {
-      const looksLikePowerTel = Math.random() < (1 - Math.min(0.95, basePu));
-      const powVisual = this.weightedPick(POWERUPS);
-      const hazardDoubled = () => {
-        const h = { ...this.weightedPick(DEBRIS_KINDS) };
-        h.dmg = Math.round((h.dmg || 0) * 2);
-        if (typeof h.stun === "number") h.stun *= 2;
-        return h;
-      };
-      if (looksLikePowerTel) {
-        kind = {
-          ...powVisual,
-          jillyTrap: true,
-          jillyHazardPayload: hazardDoubled(),
-        };
-        telePower = true;
-      } else {
-        const hz = this.weightedPick(DEBRIS_KINDS);
-        kind = {
-          ...hz,
-          jillyGift: true,
-          jillyPowerPayload: this.weightedPick(POWERUPS),
-        };
-        telePower = false;
-      }
-    } else {
-      const isPowerUp = Math.random() < basePu;
-      kind = isPowerUp ? this.weightedPick(POWERUPS) : this.weightedPick(DEBRIS_KINDS);
-      telePower = kind.damageType === "power";
-    }
+    const cappedPu = Math.min(0.95, basePu);
+    const rollPower = game?.jillyMode
+      ? Math.random() < (1 - cappedPu)
+      : Math.random() < cappedPu;
+    const kind = rollPower
+      ? this.weightedPick(POWERUPS)
+      : this.weightedPick(DEBRIS_KINDS);
+    const telePower = kind.damageType === "power";
 
     this.telegraphs.push({
       col,
@@ -514,11 +490,10 @@ export class ClimbScene {
     const p = game.player;
     const kind = d.kind;
     const cheatPain = runIncomingDamageMult(game);
-    const isPowerPickup =
-      !!(kind.jillyGift || (!kind.jillyTrap && kind.damageType === "power"));
+    const isPowerPickup = kind.damageType === "power";
 
     if (isPowerPickup) {
-      const pu = kind.jillyGift ? kind.jillyPowerPayload : kind;
+      const pu = kind;
       switch (pu.effect) {
         case "boost": {
           // Feather of flying: instant upward boost in climb progress.
@@ -582,7 +557,7 @@ export class ClimbScene {
       return;
     }
 
-    const hz = kind.jillyTrap ? kind.jillyHazardPayload : kind;
+    const hz = kind;
     if (p.invulnerable && hz.damageType !== "power") return;
 
     // --- Hazards: resolve by damage type ---
@@ -917,8 +892,7 @@ export class ClimbScene {
   }
 
   drawDebris(ctx, d) {
-    const haloPick = !!(d.kind.jillyTrap
-      || (d.kind.damageType === "power" && !d.kind.jillyGift));
+    const haloPick = d.kind.damageType === "power";
     ctx.save();
     // Shadow (skip for power-ups so they feel airy / floaty)
     if (!haloPick) {

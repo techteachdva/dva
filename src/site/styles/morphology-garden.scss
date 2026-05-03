@@ -2467,27 +2467,27 @@ html.morph-immersive-open body {
   padding: 0 1.25rem 2rem;
 }
 
+/* Chart sits on the main-site page background (outside the morphology shell),
+   so its text needs to follow the Obsidian light/dark theme — not the canvas. */
 .morph-chart__title {
   margin: 0 0 0.4rem;
   font-size: 1.15rem;
   font-weight: 900;
   letter-spacing: 0.02em;
-  color: rgba(226, 244, 255, 0.95);
-}
-
-.morphology-page:has(.morphology-shell--wb) .morph-chart__title {
-  color: #0f172a;
+  color: var(--text-normal, #0f172a);
 }
 
 .morph-chart__sub {
   margin: 0 0 0.9rem;
-  opacity: 0.9;
-  line-height: 1.45;
-  color: rgba(226, 244, 255, 0.9);
+  line-height: 1.55;
+  color: var(--text-normal, #0f172a);
+  opacity: 0.85;
 }
 
-.morphology-page:has(.morphology-shell--wb) .morph-chart__sub {
-  color: #0f172a;
+.morph-chart__sub strong,
+.morph-chart__sub code {
+  color: var(--text-normal, #0f172a);
+  opacity: 1;
 }
 
 .morph-chart__wrap {
@@ -3719,6 +3719,148 @@ html.morph-immersive-open body {
 .morph-lesson__ul--picks li {
   list-style: none;
   margin: 0;
+}
+
+/* ----------------------------------------------------------------------- */
+/*  Morpheme primer — SWI pedagogical sections                             */
+/* ----------------------------------------------------------------------- */
+
+.morph-lesson--morpheme .morph-lesson__head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin: 0 0 0.6rem;
+}
+
+.morph-lesson--morpheme .morph-lesson__head .morph-lesson__h {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+  margin: 0;
+}
+
+.morph-lesson__morpheme {
+  font-size: 1.45em;
+  font-style: italic;
+}
+
+.morph-lesson__etymology {
+  font-size: 0.94em;
+  margin: 0 0 0.7rem;
+  opacity: 0.92;
+  line-height: 1.5;
+}
+
+/* Word sums — monospace, boxed for emphasis */
+.morph-lesson__wordsums {
+  list-style: none;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.morph-lesson__wordsums li {
+  margin: 0;
+  list-style: none;
+}
+
+.morph-wordsum {
+  display: inline-block;
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: 0.95em;
+  font-weight: 600;
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(125, 211, 252, 0.28);
+  color: inherit;
+  white-space: pre-wrap;
+  line-height: 1.45;
+}
+
+.morphology-page:has(.morphology-shell--wb) .morph-wordsum {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #0f172a;
+}
+
+/* Section accent variants — each lesson section gets a colored left border for skim-ability */
+.morph-lesson__sec--decode {
+  border-left: 3px solid var(--morph-gold, #ffd060);
+  padding-left: 0.7rem;
+  margin-top: 0.85rem;
+}
+
+.morph-lesson__sec--spelling {
+  border-left: 3px solid #7dd3fc;
+  padding-left: 0.7rem;
+  margin-top: 0.85rem;
+}
+
+.morph-lesson__sec--inquiry {
+  border-left: 3px solid #c4b5fd;
+  padding-left: 0.7rem;
+  margin-top: 0.85rem;
+}
+
+.morph-lesson__sec--teach {
+  border-left: 3px solid #6ee7b7;
+  padding-left: 0.7rem;
+  margin-top: 0.85rem;
+}
+
+.morph-lesson__sec--family {
+  border-left: 3px solid #fb7185;
+  padding-left: 0.7rem;
+  margin-top: 0.85rem;
+}
+
+.morph-lesson__sec--wordsums {
+  margin-top: 0.85rem;
+}
+
+/* Inquiry list: ordered for clarity */
+.morph-lesson__ul--inquiry {
+  margin: 0.35rem 0 0;
+  padding-left: 1.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.morph-lesson__ul--inquiry li {
+  list-style: decimal;
+  margin: 0;
+  line-height: 1.55;
+}
+
+/* Compare-with: morpheme jump buttons */
+.morph-lesson__ul--family {
+  margin: 0.35rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.morph-lesson__ul--family li {
+  list-style: none;
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.morph-link-pick--key {
+  font-weight: 800;
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: 0.95em;
+  white-space: nowrap;
 }
 
 /* Mobile: stack mode buttons in two rows on very narrow screens */

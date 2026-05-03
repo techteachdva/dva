@@ -88,14 +88,53 @@ function calcScore(p) {
   return { parts, total };
 }
 
-function grade(total) {
-  if (total >= 4000) return { rank: "S+", label: "Worm-Slayer Eternal",   color: "#ffd966" };
-  if (total >= 3200) return { rank: "S",  label: "Worm-Slayer",           color: "#ffd966" };
-  if (total >= 2500) return { rank: "A",  label: "Heroic",                color: "#bfff00" };
-  if (total >= 1800) return { rank: "B",  label: "Seasoned",              color: "#7fc0ff" };
-  if (total >= 1100) return { rank: "C",  label: "Bruised but Breathing", color: "#f6ecd0" };
-  if (total >= 500)  return { rank: "D",  label: "Scraped Through",       color: "#e0b090" };
-  return                        { rank: "E",  label: "Barely Ejected",       color: "#ff9070" };
+/** S++ floor — ladder is 21 evenly spaced tiers from F … S++ (20 intervals). */
+export const RANK_S_PLUS_PLUS_MIN = 86150;
+
+const RANK_LETTERS = ["F", "E", "D", "C", "B", "A", "S"];
+const RANK_SUFFIX = ["", "+", "++"];
+/** @type {{ rank: string, label: string, color: string }[]} */
+const RANK_TABLE = [];
+const RANK_LABELS = [
+  "Giblet Tourist", "Still Digesting", "Stubborn Chunk", "Refuses to Dissolve",
+  "Acid Survivor", "Climbing Curiosity", "Wallflower No More", "Seasoned Scraper",
+  "Gut Navigator", "Chamber Veteran", "Sphincter Specialist", "Worm-Wise Wanderer",
+  "Guardian Grounder", "Heroic Ascender", "Legend in the Making", "Mythic Morsel",
+  "Worm-Slayer Ascendant", "Worm-Slayer Supreme", "Worm-Slayer Eternal",
+  "Nested Nightmare", "Cosmic Colonic",
+];
+const RANK_COLORS = [
+  "#ff6b5c", "#ff7858", "#ff8554", "#ff9650", "#ffa84c", "#ffb848",
+  "#ffc844", "#d4e060", "#b8e878", "#9cf090", "#7fe8a8", "#6ae0c0",
+  "#5ad4d8", "#52c4ec", "#5ab4fc", "#6aa6ff", "#7a98ff", "#8c8cff",
+  "#ffd966", "#ffe699", "#fff4cc",
+];
+for (let li = 0; li < 7; li++) {
+  for (let si = 0; si < 3; si++) {
+    const idx = li * 3 + si;
+    RANK_TABLE.push({
+      rank: RANK_LETTERS[li] + RANK_SUFFIX[si],
+      label: RANK_LABELS[idx] || "Ranked",
+      color: RANK_COLORS[idx] || "#f6ecd0",
+    });
+  }
+}
+
+function minScoreForRankIndex(i) {
+  return Math.floor((RANK_S_PLUS_PLUS_MIN * i) / 20);
+}
+
+/**
+ * @param {number} total
+ * @param {boolean} endlessMode — S / S+ / S++ only register in Endless; classic runs cap at A++.
+ */
+function grade(total, endlessMode) {
+  let best = 0;
+  for (let i = 0; i <= 20; i++) {
+    if (total >= minScoreForRankIndex(i)) best = i;
+  }
+  if (!endlessMode && best >= 18) best = 17;
+  return { ...RANK_TABLE[best] };
 }
 
 export class VictoryScene {
@@ -121,7 +160,7 @@ export class VictoryScene {
     this.abruptFinale = !!game.victoryAbruptReveal;
     if (game.victoryAbruptReveal) game.victoryAbruptReveal = false;
     this.score = calcScore(p);
-    this.grade = grade(this.score.total);
+    this.grade = grade(this.score.total, !!game.endlessMode);
     // Persist the run + compute unlocks.
     const save = loadSave();
     const result = {

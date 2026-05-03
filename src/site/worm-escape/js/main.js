@@ -1,7 +1,11 @@
 import { Loop } from "./engine/loop.js";
 import { Input } from "./engine/input.js";
 import { SceneManager } from "./engine/scenes.js";
-import { applyShake, W, H, COLORS, drawText, drawPanel, drawBanner } from "./engine/render.js";
+import {
+  applyShake, W, H, COLORS, drawText, drawPanel, drawBanner,
+  drawPinkFloydScreenSheen,
+} from "./engine/render.js";
+import { syncVisualModsFromGame } from "./engine/visualMods.js";
 import { pointInRect } from "./engine/pointer.js";
 import { toggleMute, isMuted, SFX, initBGM } from "./engine/audio.js";
 import { IntroScene } from "./scenes/intro.js";
@@ -72,6 +76,7 @@ const game = {
   bubblegumMode: false,
   rowanWeirdWeapons: false,
   lemonBoost: false,
+  pinkFloydMode: false,
   /** `'gygax' | 'bossnow'` queued when Maw cheats run before forge. */
   pendingMawCheat: null,
 };
@@ -176,8 +181,12 @@ const loop = new Loop(
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, W, H);
+    syncVisualModsFromGame(game);
     applyShake(ctx, dt);
     game.scenes.render(ctx, game);
+    if (!game.cheatMenuOpen && game.pinkFloydMode) {
+      drawPinkFloydScreenSheen(ctx);
+    }
 
     if (game.cheatMenuOpen) {
       ctx.fillStyle = "rgba(10, 4, 12, 0.88)";

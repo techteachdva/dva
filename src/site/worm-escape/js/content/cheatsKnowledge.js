@@ -13,6 +13,9 @@ export const ALL_CHEAT_IDS = [
   "bubblegum",
   "rowan",
   "lemon",
+  "nocheats",
+  "pinkfloyd",
+  "mrphil",
 ];
 
 /**
@@ -106,10 +109,10 @@ export const CHEAT_CODEX_DETAILS = {
     code: "jilly",
     title: "Jilly",
     facts: [
-      "Climbing debris: rarity flips — gold telegraphs are common, hazards rare.",
-      "Looks swap: gold pickups can splat as double-damage hazards; red tells may hide real power-ups.",
+      "Climbing only: the roll for “power-up vs hazard” uses (1 − chamber power-up chance) instead of the normal chance.",
+      "Telegraph color and falling art still match the real effect — only spawn frequencies swap.",
     ],
-    flavor: "Candy shell, poison nougat. Sometimes the nougat heals you. Good luck.",
+    flavor: "The worm serves a balanced diet; Jilly swaps the kitchen’s portion sizes.",
   },
   bubblegum: {
     code: "bubblegum",
@@ -139,6 +142,33 @@ export const CHEAT_CODEX_DETAILS = {
       "Toggle OFF from the keypad; re-forge mid-run cheats for test heroes.",
     ],
     flavor: "Pucker up — the bile tide still rises, but your boots taste faster.",
+  },
+  nocheats: {
+    code: "nocheats",
+    title: "Nocheats",
+    facts: [
+      "Clears runtime cheat flags: wyrm/dragon, jilly, bubblegum, rowan, lemon, dez browse, invulnerability, pinkfloyd, pending Maw warps.",
+      "Does not remove NECROMANCER or other permanent save unlocks.",
+    ],
+    flavor: "Hard reset on the fun dial — the worm pretends it never saw the fine print.",
+  },
+  pinkfloyd: {
+    code: "pinkfloyd",
+    title: "Pink Floyd",
+    facts: [
+      "Psychedelic full-screen wash, skewed cached flesh backdrop, rainbow vein hues, wilder bile waves.",
+      "Combat action tiles and climb acid bubbles pick up a slow rainbow chrome.",
+    ],
+    flavor: "Comfortably numb is not on the playlist. The playlist is the worm.",
+  },
+  mrphil: {
+    code: "mrphil",
+    title: "MrPhil",
+    facts: [
+      "One-shot: enables wyrm-style easy bias, jilly climb rate swap, bubblegum, rowan forge, lemon, dez browse, and pinkfloyd visuals.",
+      "Does not run bossnow, gygax, jackson, acererack, or lore — forge / play normally after typing.",
+    ],
+    flavor: "Maximum chaos, minimum paperwork — leave the DM screen at home.",
   },
 };
 
