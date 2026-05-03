@@ -1206,20 +1206,112 @@ const _MORPHOLOGY_WORDS_RAW = /** @type {const} */ ([
       text: "biology",
       gloss: "noun: study of life",
       children: [
-        {
-          text: "-logy",
-          gloss: "suffix: study of",
-          morphemeKey: "sfx:-logy",
-          children: [{ text: "bio", gloss: "life", morphemeKey: "root:bio", children: [] }],
-        },
+        { text: "bio", gloss: "combining form: life", morphemeKey: "root:bio", children: [] },
+        { text: "-logy", gloss: "suffix: study of", morphemeKey: "sfx:-logy", children: [] },
       ],
     },
     deep: {
       summary:
-        "<strong>What you learn:</strong> <strong>-logy</strong> names a discipline—literally “words/study of ___.” Science courses stack these (<em>geology, psychology</em>).",
+        "<strong>What you learn:</strong> <strong>Biology</strong> is built from two meaningful pieces: <strong>bio</strong> (life) and <strong>-logy</strong> (study of). Together they mean <em>the study of life</em>. The same pattern shows up in geology, psychology, zoology, and more.",
       etymology: [
-        { segment: "bio", origin: "Life." },
-        { segment: "-logy", origin: "Study / science of — recognizable ending on course titles." },
+        { segment: "bio", origin: "Life — the same combining chunk as in biography and antibiotic." },
+        { segment: "-logy", origin: "Study or science of — from Greek *logos* ‘reason, word’; names a school subject or field." },
+      ],
+    },
+  },
+  {
+    id: "gcf-geology",
+    label: "Geology",
+    tier: "tier2",
+    focusMorpheme: "-logy (study of)",
+    bracket: "[geo + -logy]",
+    note: "<strong>Exit ticket:</strong> In one sentence, what does <em>geology</em> study?",
+    tree: {
+      text: "geology",
+      gloss: "noun: study of the earth",
+      children: [
+        { text: "geo", gloss: "combining form: earth", morphemeKey: "root:geo", children: [] },
+        { text: "-logy", gloss: "suffix: study of", morphemeKey: "sfx:-logy", children: [] },
+      ],
+    },
+    deep: {
+      summary:
+        "<strong>What you learn:</strong> <strong>Geology</strong> = <strong>geo</strong> (earth, ground) + <strong>-logy</strong> (study of). It is the science that studies rocks, landforms, and how the planet changes over time.",
+      etymology: [
+        { segment: "geo", origin: "Earth / land — Greek root you also see in geography and geometry." },
+        { segment: "-logy", origin: "Study of — turns the topic into a field-of-study word." },
+      ],
+    },
+  },
+  {
+    id: "gcf-psychology",
+    label: "Psychology",
+    tier: "tier2",
+    focusMorpheme: "-ology (study of)",
+    bracket: "[psych + -ology]",
+    note: "<strong>Exit ticket:</strong> Without looking it up, what two morphemes make <em>psychology</em>?",
+    tree: {
+      text: "psychology",
+      gloss: "noun: study of the mind",
+      children: [
+        { text: "psych", gloss: "combining form: mind", morphemeKey: "root:psych", children: [] },
+        { text: "-ology", gloss: "suffix: study of", morphemeKey: "sfx:-logy", children: [] },
+      ],
+    },
+    deep: {
+      summary:
+        "<strong>What you learn:</strong> <strong>Psychology</strong> splits into <strong>psych</strong> (mind — from Greek *psukhē*, breath / soul / mind) and <strong>-ology</strong> (study of). So the word means <em>the study of the mind</em> — thoughts, feelings, and behavior. English spells it <strong>psych + ology</strong>, not *psychlogy*.",
+      etymology: [
+        { segment: "psych", origin: "Mind / spirit — the combining form you also see in psychic and psychiatrist." },
+        { segment: "-ology", origin: "Study of — same morpheme as -logy; the o links the stem to the suffix in spelling." },
+      ],
+    },
+  },
+  {
+    id: "gcf-zoology",
+    label: "Zoology",
+    tier: "tier2",
+    focusMorpheme: "-logy (study of)",
+    bracket: "[zoo + -logy]",
+    note: "<strong>Exit ticket:</strong> What does <em>zoo</em> mean in <strong>zoology</strong> (hint: not just the park)?",
+    tree: {
+      text: "zoology",
+      gloss: "noun: study of animals",
+      children: [
+        { text: "zoo", gloss: "combining form: animal", morphemeKey: "root:zoo", children: [] },
+        { text: "-logy", gloss: "suffix: study of", morphemeKey: "sfx:-logy", children: [] },
+      ],
+    },
+    deep: {
+      summary:
+        "<strong>What you learn:</strong> <strong>Zoology</strong> = <strong>zoo</strong> (animal — from Greek *zōion* ‘living being’) + <strong>-logy</strong> (study of). It is the branch of biology that focuses on animals — their bodies, behavior, and diversity. A <em>zoo</em> (short for zoological garden) uses the same animal root.",
+      etymology: [
+        { segment: "zoo", origin: "Animal — Greek *zōion*; connects to zoo and zoological." },
+        { segment: "-logy", origin: "Study of — names the science or school subject built on the first chunk." },
+      ],
+    },
+  },
+  {
+    id: "gcf-etymology",
+    label: "Etymology",
+    tier: "tier2",
+    focusMorpheme: "-ology (study of)",
+    bracket: "[etym + -ology]",
+    note: "<strong>Exit ticket:</strong> Why does <em>etymology</em> fit this page’s name (morphology / analysis of words)?",
+    tree: {
+      text: "etymology",
+      gloss: "noun: study of word origins",
+      children: [
+        { text: "etym", gloss: "combining form: true sense", morphemeKey: "root:etym", children: [] },
+        { text: "-ology", gloss: "suffix: study of", morphemeKey: "sfx:-logy", children: [] },
+      ],
+    },
+    deep: {
+      summary:
+        "<strong>What you learn:</strong> <strong>Etymology</strong> = <strong>etym</strong> (true or original sense — Greek *etumos* ‘true’) + <strong>-ology</strong> (study of). So it means <em>the study of where words came from and what they really meant at first</em> — exactly what you do when you prove a word sum with evidence.",
+      etymology: [
+        { segment: "etym", origin: "True / original meaning — the ‘truth’ half of the compound." },
+        { segment: "-ology", origin: "Study of — the discipline suffix; same family as -logy in biology." },
       ],
     },
   },
