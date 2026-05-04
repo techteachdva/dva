@@ -26,129 +26,6 @@ contentClasses: morphology-page
       aria-label="Morphology board: drag to pan; only the selected tree(s) are shown"
     ></div>
 
-    <div class="morph-ui-panel" id="morph-ui-panel">
-      <div class="morph-ui-row morph-ui-row--meta" role="group" aria-label="View aids">
-        <span class="morph-curriculum-note" title="One vocabulary set; tier shown inside each mini-lesson">Tier shown inside each mini-lesson</span>
-        <button
-          type="button"
-          id="morph-help-btn"
-          class="morph-help-btn"
-          aria-label="Help: how to use this explorer"
-          title="Help"
-        >
-          ❓
-        </button>
-        <button
-          type="button"
-          id="morph-btn-fs"
-          class="morph-fs-btn morph-fs-btn--icon"
-          title="Full screen"
-          aria-label="Full screen"
-        >
-          🖥️
-        </button>
-      </div>
-
-      <div class="morph-mode-toolbar" role="tablist" aria-label="Choose what to show">
-        <button
-          type="button"
-          id="morph-mode-word"
-          class="morph-mode-btn morph-mode-btn--active"
-          role="tab"
-          aria-pressed="true"
-          aria-controls="morph-pick-word"
-          title="Show one word's morpheme tree (key 1)"
-        >
-          <span class="morph-mode-btn__icon" aria-hidden="true">🌳</span>
-          <span class="morph-mode-btn__label">Word</span>
-          <span class="morph-mode-btn__sub">single tree</span>
-        </button>
-        <button
-          type="button"
-          id="morph-mode-morpheme"
-          class="morph-mode-btn"
-          role="tab"
-          aria-pressed="false"
-          aria-controls="morph-pick-morpheme"
-          title="Link every word that shares one morpheme (key 2)"
-        >
-          <span class="morph-mode-btn__icon" aria-hidden="true">🔗</span>
-          <span class="morph-mode-btn__label">Morpheme</span>
-          <span class="morph-mode-btn__sub">linked words</span>
-        </button>
-        <button
-          type="button"
-          id="morph-mode-compare"
-          class="morph-mode-btn"
-          role="tab"
-          aria-pressed="false"
-          aria-controls="morph-pick-compare"
-          title="Compare two word trees with shared-morpheme links (key 3)"
-        >
-          <span class="morph-mode-btn__icon" aria-hidden="true">⚖</span>
-          <span class="morph-mode-btn__label">Compare</span>
-          <span class="morph-mode-btn__sub">two trees</span>
-        </button>
-      </div>
-
-      <div class="morph-pick-area" role="region" aria-label="Mode selector">
-        <div id="morph-pick-word" class="morph-pick">
-          <label for="morph-word-select">Pick a word</label>
-          <select id="morph-word-select" class="morph-select"></select>
-        </div>
-
-        <div id="morph-pick-morpheme" class="morph-pick" hidden aria-hidden="true">
-          <label for="morph-morpheme-select">Pick a morpheme</label>
-          <select id="morph-morpheme-select" class="morph-select"></select>
-          <p class="morph-pick__hint">Every word in the bank that contains this morpheme appears on the board with magenta links between matching pieces.</p>
-        </div>
-
-        <div id="morph-pick-compare" class="morph-pick morph-pick--compare" hidden aria-hidden="true">
-          <div class="morph-pick__col">
-            <label for="morph-compare-a">Word A</label>
-            <select id="morph-compare-a" class="morph-select"></select>
-          </div>
-          <div class="morph-pick__col">
-            <label for="morph-compare-b">Word B</label>
-            <select id="morph-compare-b" class="morph-select"></select>
-          </div>
-        </div>
-      </div>
-
-      <div
-        class="morph-ui-row morph-ui-row--lesson-zoom morph-lesson-zoom-bar"
-        role="toolbar"
-        aria-label="Mini-lesson text size (only shown in fullscreen)"
-      >
-        <span class="morph-ui-label">Lesson</span>
-        <button
-          type="button"
-          class="morph-text-size-btn morph-text-size-btn--bar"
-          data-morph-lesson-zoom="smaller"
-          title="Smaller lesson text ( [ )"
-          aria-label="Decrease mini-lesson text size"
-        >A−</button>
-        <button
-          type="button"
-          class="morph-text-size-btn morph-text-size-btn--bar"
-          data-morph-lesson-zoom="reset"
-          title="Default lesson text size ( Alt+0 )"
-          aria-label="Reset mini-lesson text size"
-        >A</button>
-        <button
-          type="button"
-          class="morph-text-size-btn morph-text-size-btn--bar"
-          data-morph-lesson-zoom="larger"
-          title="Larger lesson text ( ] )"
-          aria-label="Increase mini-lesson text size"
-        >A+</button>
-      </div>
-
-      <p id="morph-hint" class="morph-hint">
-        <strong>Drag</strong> to pan · the board <strong>auto-fits</strong> the visible tree(s) · <strong>hover</strong> spheres for gloss · <strong>click</strong> a sphere to jump to its morpheme link · <kbd>1</kbd>/<kbd>2</kbd>/<kbd>3</kbd> = modes · <kbd>F</kbd>/<kbd>R</kbd> refit · double-click refits.
-      </p>
-    </div>
-
     <div
       id="morph-help"
       class="morph-help morph-help--hidden"
@@ -206,6 +83,7 @@ contentClasses: morphology-page
           <section class="morph-help__sec">
             <h3>Below the board</h3>
             <ul>
+              <li><strong>Controls</strong> — Word / Morpheme / Compare, the pick lists, and help sit in a strip <strong>directly under the board</strong> on the normal page (in <strong>full screen</strong> they move into the bottom bar with the board).</li>
               <li><strong>Five ideas from the chapter</strong> — clickable cards with a short blurb; open a card to read the full notes (they tie the chapter to the trees).</li>
               <li><strong>Word bank morpheme chart</strong> — sortable-style table: morpheme, <strong>Type</strong> (Prefix / Suffix / Root / Lexeme), origin, meaning, words in this bank, outside examples, Wiktionary. Click a <strong>morpheme</strong> to jump into Morpheme mode; click a <strong>word</strong> to open Word mode.</li>
             </ul>
@@ -221,6 +99,129 @@ contentClasses: morphology-page
         <button type="button" class="morph-help__close">Close</button>
       </div>
     </div>
+  </div>
+
+  <div class="morph-ui-panel morph-ui-panel--dock-below" id="morph-ui-panel">
+    <div class="morph-ui-row morph-ui-row--meta" role="group" aria-label="View aids">
+      <span class="morph-curriculum-note" title="One vocabulary set; tier shown inside each mini-lesson">Tier shown inside each mini-lesson</span>
+      <button
+        type="button"
+        id="morph-help-btn"
+        class="morph-help-btn"
+        aria-label="Help: how to use this explorer"
+        title="Help"
+      >
+        ❓
+      </button>
+      <button
+        type="button"
+        id="morph-btn-fs"
+        class="morph-fs-btn morph-fs-btn--icon"
+        title="Full screen"
+        aria-label="Full screen"
+      >
+        🖥️
+      </button>
+    </div>
+
+    <div class="morph-mode-toolbar" role="tablist" aria-label="Choose what to show">
+      <button
+        type="button"
+        id="morph-mode-word"
+        class="morph-mode-btn morph-mode-btn--active"
+        role="tab"
+        aria-pressed="true"
+        aria-controls="morph-pick-word"
+        title="Show one word's morpheme tree (key 1)"
+      >
+        <span class="morph-mode-btn__icon" aria-hidden="true">🌳</span>
+        <span class="morph-mode-btn__label">Word</span>
+        <span class="morph-mode-btn__sub">single tree</span>
+      </button>
+      <button
+        type="button"
+        id="morph-mode-morpheme"
+        class="morph-mode-btn"
+        role="tab"
+        aria-pressed="false"
+        aria-controls="morph-pick-morpheme"
+        title="Link every word that shares one morpheme (key 2)"
+      >
+        <span class="morph-mode-btn__icon" aria-hidden="true">🔗</span>
+        <span class="morph-mode-btn__label">Morpheme</span>
+        <span class="morph-mode-btn__sub">linked words</span>
+      </button>
+      <button
+        type="button"
+        id="morph-mode-compare"
+        class="morph-mode-btn"
+        role="tab"
+        aria-pressed="false"
+        aria-controls="morph-pick-compare"
+        title="Compare two word trees with shared-morpheme links (key 3)"
+      >
+        <span class="morph-mode-btn__icon" aria-hidden="true">⚖</span>
+        <span class="morph-mode-btn__label">Compare</span>
+        <span class="morph-mode-btn__sub">two trees</span>
+      </button>
+    </div>
+
+    <div class="morph-pick-area" role="region" aria-label="Mode selector">
+      <div id="morph-pick-word" class="morph-pick">
+        <label for="morph-word-select">Pick a word</label>
+        <select id="morph-word-select" class="morph-select"></select>
+      </div>
+
+      <div id="morph-pick-morpheme" class="morph-pick" hidden aria-hidden="true">
+        <label for="morph-morpheme-select">Pick a morpheme</label>
+        <select id="morph-morpheme-select" class="morph-select"></select>
+        <p class="morph-pick__hint">Every word in the bank that contains this morpheme appears on the board with magenta links between matching pieces.</p>
+      </div>
+
+      <div id="morph-pick-compare" class="morph-pick morph-pick--compare" hidden aria-hidden="true">
+        <div class="morph-pick__col">
+          <label for="morph-compare-a">Word A</label>
+          <select id="morph-compare-a" class="morph-select"></select>
+        </div>
+        <div class="morph-pick__col">
+          <label for="morph-compare-b">Word B</label>
+          <select id="morph-compare-b" class="morph-select"></select>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="morph-ui-row morph-ui-row--lesson-zoom morph-lesson-zoom-bar"
+      role="toolbar"
+      aria-label="Mini-lesson text size (only shown in fullscreen)"
+    >
+      <span class="morph-ui-label">Lesson</span>
+      <button
+        type="button"
+        class="morph-text-size-btn morph-text-size-btn--bar"
+        data-morph-lesson-zoom="smaller"
+        title="Smaller lesson text ( [ )"
+        aria-label="Decrease mini-lesson text size"
+      >A−</button>
+      <button
+        type="button"
+        class="morph-text-size-btn morph-text-size-btn--bar"
+        data-morph-lesson-zoom="reset"
+        title="Default lesson text size ( Alt+0 )"
+        aria-label="Reset mini-lesson text size"
+      >A</button>
+      <button
+        type="button"
+        class="morph-text-size-btn morph-text-size-btn--bar"
+        data-morph-lesson-zoom="larger"
+        title="Larger lesson text ( ] )"
+        aria-label="Increase mini-lesson text size"
+      >A+</button>
+    </div>
+
+    <p id="morph-hint" class="morph-hint">
+      <strong>Drag</strong> to pan · the board <strong>auto-fits</strong> the visible tree(s) · <strong>hover</strong> spheres for gloss · <strong>click</strong> a sphere to jump to its morpheme link · <kbd>1</kbd>/<kbd>2</kbd>/<kbd>3</kbd> = modes · <kbd>F</kbd>/<kbd>R</kbd> refit · double-click refits.
+    </p>
   </div>
 
   <div id="morph-detail" class="morph-detail">

@@ -673,7 +673,7 @@ const MORPH_TUTORIAL_STEPS = [
   },
   {
     title: "Mini-lesson card",
-    html: `<p>Under the explorer (or <strong>beside</strong> it in full screen) you will find the <strong>mini-lesson</strong>. It explains the word or morpheme you selected — meaning, word sums, spelling tips, and questions you can actually discuss in class.</p><p>Use the <strong>A−</strong> <strong>A</strong> <strong>A+</strong> buttons to change text size if you want it bigger or smaller.</p>`,
+    html: `<p>Below the <strong>control strip</strong> you will find the <strong>mini-lesson</strong>. It explains the word or morpheme you selected — meaning, word sums, spelling tips, and questions you can actually discuss in class. In <strong>full screen</strong>, the lesson moves <strong>beside</strong> the board.</p><p>Use the <strong>A−</strong> <strong>A</strong> <strong>A+</strong> buttons to change text size if you want it bigger or smaller.</p>`,
     highlights: ["#morph-detail"],
   },
   {
@@ -1445,6 +1445,10 @@ function init() {
   const detailHomeParent = detailEl?.parentElement ?? null;
   const detailHomeNext = detailEl?.nextElementSibling ?? null;
 
+  const uiPanelEl = /** @type {HTMLElement | null} */ (document.getElementById("morph-ui-panel"));
+  const uiPanelHomeParent = uiPanelEl?.parentElement ?? null;
+  const uiPanelHomeNext = uiPanelEl?.nextElementSibling ?? null;
+
   /* Dock the lesson as a sibling of the canvas host so the shell becomes a 2-column grid:
      [ viewer | lesson ] with the toolbar panel spanning the bottom. */
   function dockDetailIntoShell() {
@@ -1465,6 +1469,24 @@ function init() {
     }
   }
 
+  /* Toolbar lives under the board on the normal page; it must be a direct child of the shell for fullscreen CSS grid. */
+  function dockUIPanelIntoShell() {
+    if (!uiPanelEl || !shellEl) return;
+    if (uiPanelEl.parentElement === shellEl) return;
+    const helpMount = shellEl.querySelector("#morph-help");
+    if (helpMount) shellEl.insertBefore(uiPanelEl, helpMount);
+    else shellEl.appendChild(uiPanelEl);
+  }
+  function restoreUIPanelHome() {
+    if (!uiPanelEl || !uiPanelHomeParent) return;
+    if (uiPanelEl.parentElement === uiPanelHomeParent) return;
+    if (uiPanelHomeNext && uiPanelHomeNext.parentElement === uiPanelHomeParent) {
+      uiPanelHomeParent.insertBefore(uiPanelEl, uiPanelHomeNext);
+    } else {
+      uiPanelHomeParent.appendChild(uiPanelEl);
+    }
+  }
+
   fsBtn?.addEventListener("click", () => {
     const target = shellEl || host;
     if (!target) return;
@@ -1476,12 +1498,19 @@ function init() {
       req?.();
     }
   });
-  document.addEventListener("fullscreenchange", () => {
+  function onFullscreenChange() {
     setFsLabel();
-    if (isFullscreen()) dockDetailIntoShell();
-    else restoreDetailHome();
+    if (isFullscreen()) {
+      dockUIPanelIntoShell();
+      dockDetailIntoShell();
+    } else {
+      restoreDetailHome();
+      restoreUIPanelHome();
+    }
     setTimeout(resizeCanvasToHost, 60);
-  });
+  }
+  document.addEventListener("fullscreenchange", onFullscreenChange);
+  document.addEventListener("webkitfullscreenchange", onFullscreenChange);
 
   /* ---- help modal --------------------------------------------------- */
   helpBtn?.addEventListener("click", () => helpEl?.classList.toggle("morph-help--hidden"));
@@ -1528,6 +1557,10 @@ function init() {
 
   /* ---- initial render ----------------------------------------------- */
   setFsLabel();
+  if (isFullscreen()) {
+    dockUIPanelIntoShell();
+    dockDetailIntoShell();
+  }
   setMode("word");
 
   /* ---- animate ------------------------------------------------------ */
@@ -1556,6 +1589,7 @@ function init() {
 
 function installLessonZoom(detailEl, shellEl) {
   if (!detailEl) return;
+  const pageEl = shellEl?.closest(".morphology-page");
   const KEY = "morphLessonTextZoom";
   const MIN = 0.72;
   const MAX = 1.65;
@@ -1600,7 +1634,7 @@ function installLessonZoom(detailEl, shellEl) {
     btn("morph-lesson-text-smaller", "smaller");
     btn("morph-lesson-text-larger", "larger");
     btn("morph-lesson-text-reset", "reset");
-    shellEl?.querySelectorAll("[data-morph-lesson-zoom]").forEach((node) => {
+    pageEl?.querySelectorAll("[data-morph-lesson-zoom]").forEach((node) => {
       if (!(node instanceof HTMLButtonElement)) return;
       const m = node.getAttribute("data-morph-lesson-zoom");
       if (m === "smaller") node.disabled = atMin;
@@ -1611,7 +1645,7 @@ function installLessonZoom(detailEl, shellEl) {
   document.getElementById("morph-lesson-text-smaller")?.addEventListener("click", () => bump(1 / STEP));
   document.getElementById("morph-lesson-text-larger")?.addEventListener("click", () => bump(STEP));
   document.getElementById("morph-lesson-text-reset")?.addEventListener("click", () => apply(1));
-  shellEl?.querySelectorAll("[data-morph-lesson-zoom]").forEach((node) => {
+  pageEl?.querySelectorAll("[data-morph-lesson-zoom]").forEach((node) => {
     if (!(node instanceof HTMLElement)) return;
     const m = node.getAttribute("data-morph-lesson-zoom");
     node.addEventListener("click", () => {
