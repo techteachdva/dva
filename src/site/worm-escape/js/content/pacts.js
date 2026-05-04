@@ -1,7 +1,7 @@
 // v0.12+ Pact data - offered after every boss kill.
 //
 // Each pact is a TRADE-OFF. Pacts may be taken up to 3 times (ranks 1→3):
-// higher rank = slightly stronger buff and slightly softer drawback.
+// higher rank = stronger buff and softer drawback; rank 3 is meant to feel like a capstone.
 // `p.pactRanks[id]` holds the current rank; `p.pacts` logs each seal (ids may repeat).
 //
 // Live modifiers are read from p.pactMods (see makePlayer in player.js).
@@ -23,8 +23,8 @@ export const PACTS = [
         p.pactMods.dmgMult *= 1.08;
         p.hpMax = Math.max(1, Math.round(p.hpMax * (0.92 / 0.85)));
       } else {
-        p.pactMods.dmgMult *= 1.06;
-        p.hpMax = Math.max(1, Math.round(p.hpMax * (0.97 / 0.92)));
+        p.pactMods.dmgMult *= 1.09;
+        p.hpMax = Math.max(1, Math.round(p.hpMax * (0.98 / 0.92)));
       }
       p.hp = Math.min(p.hp, p.hpMax);
     },
@@ -44,8 +44,8 @@ export const PACTS = [
         p.pactMods.critChance += 0.10;
         p.pactMods.attackCdMult *= (1.11 / 1.15);
       } else {
-        p.pactMods.critChance += 0.08;
-        p.pactMods.attackCdMult *= (1.08 / 1.11);
+        p.pactMods.critChance += 0.12;
+        p.pactMods.attackCdMult *= (1.06 / 1.11);
       }
     },
   },
@@ -64,8 +64,8 @@ export const PACTS = [
         p.pactMods.counterMult += 0.15;
         p.pactMods.dmgMult *= (0.93 / 0.9);
       } else {
-        p.pactMods.counterMult += 0.12;
-        p.pactMods.dmgMult *= (0.96 / 0.93);
+        p.pactMods.counterMult += 0.2;
+        p.pactMods.dmgMult *= (0.98 / 0.93);
       }
     },
   },
@@ -86,9 +86,9 @@ export const PACTS = [
         p.pactMods.specialCdMult *= 0.97;
         p.pactMods.attackDmgMult *= (0.86 / 0.8);
       } else {
-        p.pactMods.specialDmgMult *= 1.06;
-        p.pactMods.specialCdMult *= 0.98;
-        p.pactMods.attackDmgMult *= (0.90 / 0.86);
+        p.pactMods.specialDmgMult *= 1.1;
+        p.pactMods.specialCdMult *= 0.96;
+        p.pactMods.attackDmgMult *= (0.92 / 0.86);
       }
     },
   },
@@ -111,9 +111,9 @@ export const PACTS = [
         p.hopCooldown *= 0.97;
         p.armorSoak = Math.min(0.95, p.armorSoak + 0.06);
       } else {
-        p.climbSpeed *= 1.04;
-        p.hopCooldown *= 0.98;
-        p.armorSoak = Math.min(0.95, p.armorSoak + 0.05);
+        p.climbSpeed *= 1.08;
+        p.hopCooldown *= 0.95;
+        p.armorSoak = Math.min(0.95, p.armorSoak + 0.08);
       }
     },
   },
@@ -134,9 +134,10 @@ export const PACTS = [
         p.hp = Math.min(p.hpMax, p.hp + 18);
         p.climbSpeed *= (0.95 / 0.90);
       } else {
-        p.hpMax += 12;
-        p.hp = Math.min(p.hpMax, p.hp + 12);
-        p.climbSpeed *= (0.98 / 0.95);
+        p.hpMax += 22;
+        p.hp = Math.min(p.hpMax, p.hp + 22);
+        // Rank 3: full climb speed — you paid for the tank fantasy in triplicate.
+        p.climbSpeed *= (1.0 / 0.95);
       }
     },
   },
@@ -157,9 +158,9 @@ export const PACTS = [
         p.acidTimer = Math.min(p.acidTimerMax, p.acidTimer + 4);
         p.pactMods.dmgMult *= (0.90 / 0.85);
       } else {
-        p.acidTimerMax = Math.round(p.acidTimerMax * 1.05);
+        p.acidTimerMax = Math.round(p.acidTimerMax * 1.1);
         p.acidTimer = p.acidTimerMax;
-        p.pactMods.dmgMult *= (0.93 / 0.90);
+        p.pactMods.dmgMult *= (0.96 / 0.90);
       }
     },
   },
@@ -182,10 +183,10 @@ export const PACTS = [
         p.climbSpeed *= 1.03;
         p.pactMods.manaRegen = (p.pactMods.manaRegen || 0) + 6;
       } else {
-        p.acidTimerMax += 6;
+        p.acidTimerMax += 12;
         p.acidTimer = p.acidTimerMax;
-        p.climbSpeed *= 1.02;
-        p.pactMods.manaRegen = (p.pactMods.manaRegen || 0) + 10;
+        p.climbSpeed *= 1.05;
+        p.pactMods.manaRegen = (p.pactMods.manaRegen || 0) + 14;
       }
     },
   },
@@ -208,9 +209,9 @@ export const PACTS = [
         p.hpMax = Math.max(1, Math.round(p.hpMax * (0.90 / 0.85)));
         p.hp = Math.min(p.hp, p.hpMax);
       } else {
-        p.pactMods.bileRiseMult *= 0.94;
-        p.pactMods.debrisRateMult *= (1.24 / 1.20);
-        p.hpMax = Math.max(1, Math.round(p.hpMax * (0.93 / 0.90)));
+        p.pactMods.bileRiseMult *= 0.92;
+        p.pactMods.debrisRateMult *= (1.28 / 1.20);
+        p.hpMax = Math.max(1, Math.round(p.hpMax * (0.95 / 0.90)));
         p.hp = Math.min(p.hp, p.hpMax);
       }
     },
@@ -231,7 +232,7 @@ export const PACTS = [
         p.pactMods.bileRiseMult *= (1.10 / 1.15);
       } else {
         p.pactMods.freeRingPending = true;
-        p.pactMods.bileRiseMult *= (1.06 / 1.10);
+        p.pactMods.bileRiseMult *= (1.02 / 1.10);
       }
     },
   },
@@ -258,11 +259,11 @@ export const PACTS = [
         p.climbSpeed *= (0.94 / 0.90);
         p.laneSwapCd *= (1.07 / 1.10);
       } else {
-        p.armorSoak = Math.min(0.95, p.armorSoak + 0.05);
-        p.armorMax += 6;
-        p.armor += 6;
-        p.climbSpeed *= (0.97 / 0.94);
-        p.laneSwapCd *= (1.05 / 1.07);
+        p.armorSoak = Math.min(0.95, p.armorSoak + 0.08);
+        p.armorMax += 12;
+        p.armor += 12;
+        p.climbSpeed *= (0.99 / 0.94);
+        p.laneSwapCd *= (1.03 / 1.07);
       }
     },
   },
@@ -287,10 +288,10 @@ export const PACTS = [
         p.hpMax = Math.max(1, Math.round(p.hpMax * (0.90 / 0.85)));
         p.hp = Math.min(p.hp, p.hpMax);
       } else {
-        p.dodgeWindow *= 1.04;
-        p.manaMax = Math.round(p.manaMax * 1.04);
-        p.mana = Math.min(p.manaMax, p.mana + 6);
-        p.hpMax = Math.max(1, Math.round(p.hpMax * (0.93 / 0.90)));
+        p.dodgeWindow *= 1.08;
+        p.manaMax = Math.round(p.manaMax * 1.06);
+        p.mana = Math.min(p.manaMax, p.mana + 12);
+        p.hpMax = Math.max(1, Math.round(p.hpMax * (0.95 / 0.90)));
         p.hp = Math.min(p.hp, p.hpMax);
       }
     },
@@ -314,10 +315,10 @@ export const PACTS = [
         p.hpMax = Math.max(1, p.hpMax + 6);
         p.hp = Math.min(p.hpMax, p.hp + 6);
       } else {
-        p.pactMods.lifestealOnKill += 6;
-        p.pactMods.dmgMult *= 1.04;
-        p.hpMax = Math.max(1, p.hpMax + 5);
-        p.hp = Math.min(p.hpMax, p.hp + 5);
+        p.pactMods.lifestealOnKill += 12;
+        p.pactMods.dmgMult *= 1.07;
+        p.hpMax = Math.max(1, p.hpMax + 12);
+        p.hp = Math.min(p.hpMax, p.hp + 12);
       }
     },
   },
@@ -340,9 +341,9 @@ export const PACTS = [
         p.pactMods.poisonTime = Math.max(p.pactMods.poisonTime || 0, 3.4);
         p.pactMods.dmgMult *= (0.93 / 0.90);
       } else {
-        p.pactMods.poisonPct = Math.max(p.pactMods.poisonPct || 0, 0.046);
-        p.pactMods.poisonTime = Math.max(p.pactMods.poisonTime || 0, 3.8);
-        p.pactMods.dmgMult *= (0.96 / 0.93);
+        p.pactMods.poisonPct = Math.max(p.pactMods.poisonPct || 0, 0.056);
+        p.pactMods.poisonTime = Math.max(p.pactMods.poisonTime || 0, 4.25);
+        p.pactMods.dmgMult *= (0.99 / 0.93);
       }
     },
   },
@@ -363,9 +364,9 @@ export const PACTS = [
         p.pactMods.burgerBonusHp += 6;
         p.pactMods.debrisDmgMult *= (1.07 / 1.10);
       } else {
-        p.pactMods.powerUpRateMult *= 1.08;
-        p.pactMods.burgerBonusHp += 5;
-        p.pactMods.debrisDmgMult *= (1.05 / 1.07);
+        p.pactMods.powerUpRateMult *= 1.14;
+        p.pactMods.burgerBonusHp += 9;
+        p.pactMods.debrisDmgMult *= (1.03 / 1.07);
       }
     },
   },
@@ -386,9 +387,9 @@ export const PACTS = [
         p.pactMods.specialDmgMult *= 1.06;
         p.pactMods.incomingDmgMult *= (1.12 / 1.15);
       } else {
-        p.pactMods.counterMult += 0.10;
-        p.pactMods.specialDmgMult *= 1.05;
-        p.pactMods.incomingDmgMult *= (1.09 / 1.12);
+        p.pactMods.counterMult += 0.16;
+        p.pactMods.specialDmgMult *= 1.1;
+        p.pactMods.incomingDmgMult *= (1.06 / 1.12);
       }
     },
   },
@@ -409,9 +410,9 @@ export const PACTS = [
         p.pactMods.heavyTellBonus += 0.08;
         p.pactMods.manaRegen = Math.round((p.pactMods.manaRegen ?? 12) * 1.35);
       } else {
-        p.dodgeWindow += 0.06;
-        p.pactMods.heavyTellBonus += 0.06;
-        p.pactMods.manaRegen = Math.round((p.pactMods.manaRegen || 12) * 1.28);
+        p.dodgeWindow += 0.12;
+        p.pactMods.heavyTellBonus += 0.1;
+        p.pactMods.manaRegen = Math.round((p.pactMods.manaRegen || 12) * 1.42);
       }
     },
   },
@@ -432,9 +433,9 @@ export const PACTS = [
         p.pactMods.executeBonus *= 1.06;
         p.pactMods.dmgMult *= (0.90 / 0.85);
       } else {
-        p.pactMods.executeThreshold = Math.min(0.48, p.pactMods.executeThreshold + 0.03);
-        p.pactMods.executeBonus *= 1.05;
-        p.pactMods.dmgMult *= (0.94 / 0.90);
+        p.pactMods.executeThreshold = Math.min(0.52, p.pactMods.executeThreshold + 0.04);
+        p.pactMods.executeBonus *= 1.1;
+        p.pactMods.dmgMult *= (0.97 / 0.90);
       }
     },
   },
@@ -459,9 +460,9 @@ export const PACTS = [
         p.pactMods.specialDmgMult *= 1.10;
         p.pactMods.dmgMult *= 1.08;
       } else {
-        p.pactMods.attackDmgMult *= 1.08;
-        p.pactMods.specialDmgMult *= 1.08;
-        p.pactMods.dmgMult *= 1.06;
+        p.pactMods.attackDmgMult *= 1.14;
+        p.pactMods.specialDmgMult *= 1.14;
+        p.pactMods.dmgMult *= 1.1;
       }
     },
   },
@@ -482,9 +483,9 @@ export const PACTS = [
         p.hp = Math.min(p.hpMax, p.hp + 22);
         p.pactMods.outgoingFlat = (p.pactMods.outgoingFlat || 0) + 8;
       } else {
-        p.hpMax += 16;
-        p.hp = Math.min(p.hpMax, p.hp + 16);
-        p.pactMods.outgoingFlat = (p.pactMods.outgoingFlat || 0) + 7;
+        p.hpMax += 28;
+        p.hp = Math.min(p.hpMax, p.hp + 28);
+        p.pactMods.outgoingFlat = (p.pactMods.outgoingFlat || 0) + 11;
       }
     },
   },
@@ -505,9 +506,9 @@ export const PACTS = [
         p.hp = Math.min(p.hpMax, p.hp + 12);
         p.pactMods.outgoingFlat = (p.pactMods.outgoingFlat || 0) + 8;
       } else {
-        p.hpMax = Math.max(1, p.hpMax + 10);
-        p.hp = Math.min(p.hpMax, p.hp + 10);
-        p.pactMods.outgoingFlat = (p.pactMods.outgoingFlat || 0) + 6;
+        p.hpMax = Math.max(1, p.hpMax + 18);
+        p.hp = Math.min(p.hpMax, p.hp + 18);
+        p.pactMods.outgoingFlat = (p.pactMods.outgoingFlat || 0) + 11;
       }
     },
   },
@@ -522,7 +523,7 @@ export const PACTS = [
       p.pactMods.flipDamage5050 = true;
       if (rank === 1) p.pactMods.flipDamageAmt = 15;
       else if (rank === 2) p.pactMods.flipDamageAmt = 20;
-      else p.pactMods.flipDamageAmt = 26;
+      else p.pactMods.flipDamageAmt = 34;
     },
   },
 
@@ -561,9 +562,9 @@ export const PACTS = [
         p.mana = Math.min(p.mana, p.manaMax);
       } else {
         p.climbSpeed *= 2.0 / 1.42;
-        p.hopCooldown *= 0.64;
-        p.laneSwapCd *= 0.64;
-        p.manaMax = Math.max(4, Math.round(p.manaMax * (0.5 / 0.75)));
+        p.hopCooldown *= 0.62;
+        p.laneSwapCd *= 0.62;
+        p.manaMax = Math.max(4, Math.round(p.manaMax * (0.58 / 0.75)));
         p.mana = Math.min(p.mana, p.manaMax);
       }
     },
