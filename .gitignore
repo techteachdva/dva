@@ -18,8 +18,3 @@ src/site/dungeonclass/*.pck
 **/.DS_Store
 # Local build artifact (optional download)
 src/site/crystalwizards/index.side.wasm
-
-# Worm Escape — Electron/desktop build output (never commit; GitHub rejects >100MB)
-src/site/worm-escape/desktop/release/
-src/site/worm-escape/desktop/pack-out/
-src/site/worm-escape/desktop/node_modules/
