@@ -2723,6 +2723,54 @@ html.morph-immersive-open body {
   color: #334155;
 }
 
+.morph-chart__sort {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.morph-chart__sort:hover {
+  color: #fff;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+.morphology-page:has(.morphology-shell--wb) .morph-chart__sort:hover {
+  color: #0f172a;
+}
+
+.morph-chart__table th[aria-sort="ascending"] .morph-chart__sort::after,
+.morph-chart__table th[aria-sort="descending"] .morph-chart__sort::after {
+  content: "";
+  width: 0.45rem;
+  height: 0.45rem;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  opacity: 0.9;
+  transform: rotate(45deg);
+}
+
+.morph-chart__table th[aria-sort="descending"] .morph-chart__sort::after {
+  transform: rotate(-135deg);
+}
+
+.morph-chart__sort:focus-visible {
+  outline: 2px solid var(--morph-gold);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
 .morph-chart__morpheme {
   font: inherit;
   font-weight: 900;

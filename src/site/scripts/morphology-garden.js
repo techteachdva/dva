@@ -1648,36 +1648,111 @@ function installMorphemeChart(onPickWord, onPickKey) {
     }
   }
 
-  const rows = MORPHEME_CATALOG.map((r) => {
+  const data = MORPHEME_CATALOG.map((r) => {
     const ids = [...new Set(keyToWords.get(r.key)?.ids ?? [])];
-    const buttons = ids
+    const words = ids
       .map((id) => WORDS.find((w) => w.id === id))
-      .filter(Boolean)
+      .filter(Boolean);
+    const wordsHtml = words
       .map((w) => `<li><button class="morph-chart__word" data-morph-pick-word="${escapeHtml(w.id)}">${escapeHtml(w.label)}</button></li>`)
       .join("");
+
     const wikt = wiktionaryTitleForRow(r, morphemeKeyShort(r.key));
     const wiktUrl = wikt ? `https://en.wiktionary.org/wiki/${encodeURIComponent(wikt)}` : "";
     const typeLabel = morphemeTypeLabel(r.key, r.type);
     const typeSlug = morphemeTypeSlug(typeLabel);
-    return `<tr>
-      <td><button class="morph-chart__morpheme" data-morph-pick-key="${escapeHtml(r.key)}">${escapeHtml(r.morpheme)}</button></td>
-      <td><span class="morph-chart__type morph-chart__type--${escapeHtml(typeSlug)}">${escapeHtml(typeLabel)}</span></td>
-      <td>${escapeHtml(r.origin)}</td>
-      <td>${escapeHtml(r.meaning)}</td>
-      <td>${buttons ? `<ul class="morph-chart__words">${buttons}</ul>` : `<span class="morph-chart__muted">—</span>`}</td>
-      <td>${r.outsideExamples?.length ? r.outsideExamples.map(escapeHtml).join(", ") : "—"}</td>
-      <td>${wikt && wiktUrl ? `<a class="morph-chart__wikt" href="${escapeHtml(wiktUrl)}" target="_blank" rel="noreferrer noopener">wikt:${escapeHtml(wikt)}</a>` : `<span class="morph-chart__muted">—</span>`}</td>
-    </tr>`;
-  }).join("");
+    const outsideTxt = r.outsideExamples?.length ? r.outsideExamples.join(", ") : "";
 
-  mount.innerHTML = `<div class="morph-chart__wrap"><table class="morph-chart__table">
-    <thead><tr><th>Morpheme</th><th>Type</th><th>Origin</th><th>Meaning</th><th>Words in this bank</th><th>Outside examples</th><th>Wiktionary</th></tr></thead>
-    <tbody>${rows}</tbody>
-  </table></div>`;
+    return {
+      key: r.key,
+      morpheme: r.morpheme,
+      typeLabel,
+      typeSlug,
+      origin: r.origin,
+      meaning: r.meaning,
+      wordsCount: words.length,
+      wordsHtml,
+      outsideTxt,
+      outsideCount: r.outsideExamples?.length ?? 0,
+      wikt,
+      wiktUrl,
+    };
+  });
+
+  /** @type {{ key: string, dir: 1|-1 }} */
+  let sort = { key: "morpheme", dir: 1 };
+
+  function cmpText(a, b) {
+    return String(a).localeCompare(String(b), undefined, { sensitivity: "base", numeric: true });
+  }
+
+  function render() {
+    const sorted = [...data].sort((a, b) => {
+      let c = 0;
+      if (sort.key === "morpheme") c = cmpText(a.morpheme, b.morpheme);
+      else if (sort.key === "type") c = cmpText(a.typeLabel, b.typeLabel);
+      else if (sort.key === "origin") c = cmpText(a.origin, b.origin);
+      else if (sort.key === "meaning") c = cmpText(a.meaning, b.meaning);
+      else if (sort.key === "words") c = (a.wordsCount - b.wordsCount) || cmpText(a.morpheme, b.morpheme);
+      else if (sort.key === "outside") c = (a.outsideCount - b.outsideCount) || cmpText(a.morpheme, b.morpheme);
+      else if (sort.key === "wikt") c = cmpText(a.wikt, b.wikt);
+      return c * sort.dir;
+    });
+
+    const rows = sorted
+      .map((x) => {
+        const wordsCell = x.wordsHtml ? `<ul class="morph-chart__words">${x.wordsHtml}</ul>` : `<span class="morph-chart__muted">—</span>`;
+        const outsideCell = x.outsideTxt ? escapeHtml(x.outsideTxt) : "—";
+        const wiktCell =
+          x.wikt && x.wiktUrl
+            ? `<a class="morph-chart__wikt" href="${escapeHtml(x.wiktUrl)}" target="_blank" rel="noreferrer noopener">wikt:${escapeHtml(x.wikt)}</a>`
+            : `<span class="morph-chart__muted">—</span>`;
+        return `<tr>
+          <td><button class="morph-chart__morpheme" data-morph-pick-key="${escapeHtml(x.key)}">${escapeHtml(x.morpheme)}</button></td>
+          <td><span class="morph-chart__type morph-chart__type--${escapeHtml(x.typeSlug)}">${escapeHtml(x.typeLabel)}</span></td>
+          <td>${escapeHtml(x.origin)}</td>
+          <td>${escapeHtml(x.meaning)}</td>
+          <td>${wordsCell}</td>
+          <td>${outsideCell}</td>
+          <td>${wiktCell}</td>
+        </tr>`;
+      })
+      .join("");
+
+    const aria = (k) => (sort.key === k ? (sort.dir === 1 ? "ascending" : "descending") : "none");
+    const th = (k, label) =>
+      `<th scope="col" aria-sort="${aria(k)}"><button type="button" class="morph-chart__sort" data-morph-sort="${escapeHtml(k)}">${escapeHtml(label)}</button></th>`;
+
+    mount.innerHTML = `<div class="morph-chart__wrap"><table class="morph-chart__table">
+      <thead><tr>
+        ${th("morpheme", "Morpheme")}
+        ${th("type", "Type")}
+        ${th("origin", "Origin")}
+        ${th("meaning", "Meaning")}
+        ${th("words", "Words in this bank")}
+        ${th("outside", "Outside examples")}
+        ${th("wikt", "Wiktionary")}
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>`;
+  }
+
+  render();
 
   mount.addEventListener("click", (ev) => {
     const t = /** @type {HTMLElement | null} */ (ev.target instanceof HTMLElement ? ev.target : null);
     if (!t) return;
+
+    const sortBtn = t.closest?.("[data-morph-sort]");
+    if (sortBtn instanceof HTMLElement) {
+      const k = sortBtn.getAttribute("data-morph-sort") || "";
+      if (!k) return;
+      if (sort.key === k) sort.dir = /** @type {1|-1} */ (sort.dir === 1 ? -1 : 1);
+      else sort = { key: k, dir: 1 };
+      render();
+      return;
+    }
+
     const word = t.closest?.("[data-morph-pick-word]");
     if (word instanceof HTMLElement) {
       const id = word.getAttribute("data-morph-pick-word");
