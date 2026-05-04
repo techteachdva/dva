@@ -24,7 +24,7 @@
  * - `confusedWith` (optional): array of other catalog `key`s — surfaces a "Compare with" panel that
  *   lets students hop directly to the related morpheme's lesson.
  * - `outsideExamples`: a few extra examples NOT in the word bank (extends the lesson).
- * - `wiktionary`: page title to link (defaults to `morpheme` if omitted).
+ * - `wiktionary`: page title to link (defaults to the first surface form if omitted). Set to `null` to suppress the link.
  *
  * Add or revise entries here without touching the renderer — every field renders only if present.
  */
@@ -35,7 +35,7 @@
  *   origin: string,
  *   meaning: string,
  *   outsideExamples: string[],
- *   wiktionary?: string,
+ *   wiktionary?: string | null,
  *   type?: string,
  *   etymology?: string,
  *   wordSums?: string[],
@@ -1041,6 +1041,31 @@ export const MORPHEME_CATALOG = [
     wiktionary: "per-",
   },
 
+  // --- Free bases (lexemes) ---
+  {
+    key: "lex:care",
+    morpheme: "care",
+    origin: "Anglo-Saxon (Germanic)",
+    meaning: "attention; concern; careful thinking about something",
+    etymology:
+      "From Old English *caru* ‘care, sorrow, concern’. In modern English it often names attention (take care) or concern (care about).",
+    wordSums: [
+      "care + ful → careful (having care)",
+      "care + ful + ly → carefully",
+      "care + less → careless (without care)",
+    ],
+    decodingTip:
+      "When care is a base, the suffix usually flips the attitude: -ful = 'having care', -less = 'without care'. Ask: what kind of care does the word describe?",
+    teachingTip:
+      "Quick contrast sort: careful / careless. Students define each without using the word itself, then connect them back to the base meaning of care.",
+    inquiryPrompts: [
+      "Is 'careful' always positive? Compare: careful scientist vs careful liar. How does context steer the tone?",
+      "What does 'carelessly' add beyond 'careless'? Write two sentences and compare.",
+    ],
+    outsideExamples: ["caregiver", "daycare", "carefree", "self-care"],
+    wiktionary: "care",
+  },
+
   // --- Roots / stems ---
   {
     key: "root:act",
@@ -1332,6 +1357,7 @@ export const MORPHEME_CATALOG = [
     morpheme: "fact / fac / fect / fic",
     origin: "Latin",
     meaning: "make; do",
+    wiktionary: "facere",
     etymology: "From Latin facere / factus 'to make, do'; one of the most productive Latin roots in English.",
     wordSums: [
       "fact + ory → factory (place that makes)",
@@ -1357,6 +1383,7 @@ export const MORPHEME_CATALOG = [
     morpheme: "ten / tain / tin",
     origin: "Latin",
     meaning: "hold; keep",
+    wiktionary: "tenere",
     etymology: "From Latin tenēre 'to hold'; entered English through Old French tenir.",
     wordSums: [
       "con + tain → contain (hold together)",
@@ -1403,6 +1430,7 @@ export const MORPHEME_CATALOG = [
     morpheme: "cap / ceive / cept / cip",
     origin: "Latin",
     meaning: "take; catch; seize",
+    wiktionary: "capere",
     etymology: "From Latin capere / captus 'to take, seize'; one of the trickiest roots because it shape-shifts across borrowings.",
     wordSums: [
       "re + ceive → receive (take back)",
@@ -1428,6 +1456,7 @@ export const MORPHEME_CATALOG = [
     morpheme: "sta / sist / stat / stit",
     origin: "Latin",
     meaning: "stand",
+    wiktionary: "stare",
     etymology: "From Latin stāre / status 'to stand'; the root of stand, stay, and status.",
     wordSums: [
       "con + sist → consist (stand together)",
@@ -1451,6 +1480,7 @@ export const MORPHEME_CATALOG = [
     morpheme: "pos / pon / posit",
     origin: "Latin",
     meaning: "place; put",
+    wiktionary: "ponere",
     etymology: "From Latin pōnere / positus 'to place, put'.",
     wordSums: [
       "com + pose → compose (put together)",
@@ -1474,6 +1504,7 @@ export const MORPHEME_CATALOG = [
     morpheme: "plic / ply",
     origin: "Latin",
     meaning: "fold; bend",
+    wiktionary: "plicare",
     etymology: "From Latin plicāre / plicātus 'to fold, bend'.",
     wordSums: [
       "multi + ply → multiply (many folds)",
@@ -1494,6 +1525,30 @@ export const MORPHEME_CATALOG = [
   },
 
   // --- Greek combining forms ---
+  {
+    key: "root:bio",
+    morpheme: "bio",
+    origin: "Greek",
+    type: "Combining form",
+    meaning: "life; living things",
+    etymology: "From Greek *bios* ‘life’. In English it shows up as a combining form in science and academic words.",
+    wordSums: [
+      "bio + graph + y → biography (written life story)",
+      "bio + logy → biology (study of life)",
+      "bio + tic → biotic (relating to life)",
+    ],
+    decodingTip:
+      "When you see bio-, ask 'life of what?'. It often points to living systems (biology, biotic, biodegradable).",
+    teachingTip:
+      "Science anchor: put biotic on one side of the board and abiotic on the other. Students explain ‘living’ vs ‘nonliving’ and then add two more bio- words with meanings.",
+    inquiryPrompts: [
+      "Why do we say 'biology' but 'biography'? What does -logy do vs -graphy?",
+      "Find a new bio- word outside class (biometric, biome, biography). What does it literally mean?",
+    ],
+    confusedWith: ["root:geo", "root:graph", "sfx:-logy"],
+    outsideExamples: ["biotic", "biodegradable", "biomass", "biome"],
+    wiktionary: "bio-",
+  },
   {
     key: "root:graph",
     morpheme: "graph / gram",

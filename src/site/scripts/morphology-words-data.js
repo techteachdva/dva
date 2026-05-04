@@ -1196,6 +1196,27 @@ const _MORPHOLOGY_WORDS_RAW = /** @type {const} */ ([
     },
   },
   {
+    id: "gcf-tic",
+    label: "Biotic",
+    tier: "tier2",
+    focusMorpheme: "-tic (relating to)",
+    bracket: "[bio + -tic]",
+    note: "<strong>Exit ticket:</strong> In ecology, what is the difference between <em>biotic</em> (living) and <em>abiotic</em> (nonliving)?",
+    tree: {
+      text: "biotic",
+      gloss: "adjective: relating to living things",
+      children: [
+        { text: "bio", gloss: "combining form: life", morphemeKey: "root:bio", children: [] },
+        { text: "-tic", gloss: "suffix family: relating to", morphemeKey: "sfx:-tic", children: [] },
+      ],
+    },
+    deep: {
+      summary:
+        "<strong>What you learn:</strong> <strong>Biotic</strong> is built from <strong>bio</strong> (life) + <strong>-tic</strong> (relating to). In science reading it helps you spot “living / life” language quickly.",
+      tense: "Adjective in science/ecology; often paired with <em>abiotic</em> in classroom talk.",
+    },
+  },
+  {
     id: "gcf-logy",
     label: "Biology",
     tier: "tier2",

@@ -38,6 +38,86 @@ const WORDS = JSON.parse(JSON.stringify(MORPHOLOGY_WORD_LIST));
 /** @type {Record<string, Array<{mesh: THREE.Mesh, wordId: string}>>} */
 const morphemeRegistry = {};
 
+/**
+ * Morpheme-picker allowlist for the “Pick a morpheme” dropdown.
+ * Only keys in this set can appear, and only when they link to 2+ words.
+ *
+ * (This keeps the linked-words view focused on high-payoff morphemes rather than
+ * singletons like lex:cat.)
+ */
+const MORPH_PICK_ALLOW = new Set([
+  // Suffixes
+  "sfx:-able", // -able, -ible
+  "sfx:-al",
+  "sfx:-ant", // -ant, -ent
+  "sfx:-ate",
+  "sfx:-ed",
+  "sfx:-ence", // -ence, -ance
+  "sfx:-er", // -er, -or
+  "sfx:-ing",
+  "sfx:-tion", // -ion, -tion
+  "sfx:-ity", // -ity, -ty
+  "sfx:-ive",
+  "sfx:-less",
+  "sfx:-logy", // -logy, -ology
+  "sfx:-ly",
+  "sfx:-ment",
+  "sfx:-ness",
+  "sfx:-ous", // -ous, -ious
+  "sfx:-s", // -s, -es
+  "sfx:-tic",
+  "sfx:-y",
+
+  // Prefixes
+  "pfx:ad-", // includes assimilated forms like ag-, ap-, at-, …
+  "pfx:anti-",
+  "pfx:con-",
+  "pfx:de-",
+  "pfx:dis-", // includes dif-
+  "pfx:ex-", // includes e-, ef-
+  "pfx:fore-",
+  "pfx:in-toward", // in-, im- (in/into)
+  "pfx:in-", // in-, im-, il-, ir- (not/without)
+  "pfx:inter-",
+  "pfx:mid-",
+  "pfx:mis-",
+  "pfx:non-",
+  "pfx:over-",
+  "pfx:per-",
+  "pfx:pre-",
+  "pfx:re-",
+  "pfx:sub-",
+  "pfx:trans-",
+  "pfx:un-",
+
+  // Roots / stems / combining forms
+  "root:act",
+  "root:bio",
+  "root:ceive", // cap / ceive / cept / cip
+  "root:dict", // dict, dic
+  "root:duct", // duct, duc, duce
+  "root:fect", // fact, fac, fect, fic
+  "root:fer",
+  "root:form",
+  "root:geo",
+  "root:graph", // graph, gram
+  "root:mit", // mit, miss
+  "root:ply", // plic, ply
+  "root:port",
+  "root:posit", // pos, pon, posit
+  "root:rupt",
+  "root:scrib", // scrib, script
+  "root:sist", // sta, sist, stat, stit
+  "root:spect", // spect, spec, spic
+  "root:struct", // struct, stru
+  "root:tain", // ten, tain, tin
+  "root:tract",
+  "root:vis", // vis, vid
+
+  // Lexemes called out explicitly
+  "lex:care",
+]);
+
 /* ----------------------------------------------------------------------- */
 /*  Helpers                                                                */
 /* ----------------------------------------------------------------------- */
@@ -48,6 +128,39 @@ function escapeHtml(s) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
+}
+
+function wiktionaryTitleFromText(raw) {
+  if (raw == null) return "";
+  let s = String(raw).trim();
+  if (!s) return "";
+
+  // Drop parenthetical notes like "(not)" or "(in/into)".
+  s = s.replace(/\s*\([^)]*\)\s*/g, " ").trim();
+
+  // Split on common alternation separators and keep the first usable surface.
+  // Examples:
+  // - "pos / pon / posit" -> "pos"
+  // - "-ous, -ious" -> "-ous"
+  // - "in-, im-, il-, ir- (not)" -> "in-"
+  const parts = s
+    .split(/[\/,;]|—/g)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  s = (parts[0] || s).trim();
+
+  // If the first chunk still contains multiple whitespace tokens, take the first.
+  s = s.split(/\s+/g).filter(Boolean)[0] || "";
+
+  return s;
+}
+
+function wiktionaryTitleForRow(row, shortFallback) {
+  // Allow authors to explicitly suppress Wiktionary by setting wiktionary: null.
+  if (row && "wiktionary" in row && row.wiktionary === null) return "";
+  const explicit = row?.wiktionary;
+  const base = explicit || row?.morpheme || shortFallback || "";
+  return wiktionaryTitleFromText(base);
 }
 
 function collectMorphemeKeys(node, /** @type {Set<string>} */ out) {
@@ -425,8 +538,8 @@ function morphemePrimerHtml(key, linkedWordIds) {
   const typeLabel = morphemeTypeLabel(key, row?.type);
   const typeSlug = morphemeTypeSlug(typeLabel);
 
-  const wikt = row?.wiktionary || row?.morpheme || short;
-  const wiktUrl = `https://en.wiktionary.org/wiki/${encodeURIComponent(wikt)}`;
+  const wikt = wiktionaryTitleForRow(row, short);
+  const wiktUrl = wikt ? `https://en.wiktionary.org/wiki/${encodeURIComponent(wikt)}` : "";
 
   const sections = [];
 
@@ -519,9 +632,11 @@ function morphemePrimerHtml(key, linkedWordIds) {
       </section>`);
   }
 
-  sections.push(`<p class="morph-lesson__meta">
+  if (wikt && wiktUrl) {
+    sections.push(`<p class="morph-lesson__meta">
       <a class="morph-chart__wikt" href="${escapeHtml(wiktUrl)}" target="_blank" rel="noreferrer noopener">Open <code translate="no">${escapeHtml(wikt)}</code> on Wiktionary &nearr;</a>
     </p>`);
+  }
 
   return `<div class="morph-lesson morph-lesson--single morph-lesson--morpheme">${sections.join("")}</div>`;
 }
@@ -882,7 +997,11 @@ function init() {
   }
   function fillMorphSelect(/** @type {HTMLSelectElement | null} */ sel) {
     if (!sel) return;
-    const items = allMorphemeKeysInBank().map((k) => {
+    const items = allMorphemeKeysInBank()
+      .filter((k) => MORPH_PICK_ALLOW.has(k))
+      // Hide single-occurrence morphemes (e.g. lex:cat) so Morpheme mode stays “linked”.
+      .filter((k) => wordIdsForMorphemeKey(k).length >= 2)
+      .map((k) => {
       const row = morphemeCatalogRow(k);
       const count = wordIdsForMorphemeKey(k).length;
       const text = row?.morpheme ?? morphemeKeyShort(k);
@@ -909,7 +1028,9 @@ function init() {
   if (compareBSel && compareB) compareBSel.value = compareB;
   if (morphSelect) {
     /* Pre-pick a morpheme that has multiple words so Morpheme mode is interesting on first click. */
-    const keys = allMorphemeKeysInBank().filter((k) => wordIdsForMorphemeKey(k).length >= 2);
+    const keys = allMorphemeKeysInBank().filter(
+      (k) => MORPH_PICK_ALLOW.has(k) && wordIdsForMorphemeKey(k).length >= 2
+    );
     selectedMorpheme = keys[0] ?? allMorphemeKeysInBank()[0] ?? null;
     if (selectedMorpheme) morphSelect.value = `${MORPH_SELECT_PREFIX}${encodeURIComponent(selectedMorpheme)}`;
   }
@@ -1132,7 +1253,9 @@ function init() {
     }
     /* If morpheme has 0 visible bank words, fall back */
     if (mode === "morpheme" && (!selectedMorpheme || wordIdsForMorphemeKey(selectedMorpheme).length === 0)) {
-      const fallback = allMorphemeKeysInBank().find((k) => wordIdsForMorphemeKey(k).length >= 1);
+      const fallback = allMorphemeKeysInBank().find(
+        (k) => MORPH_PICK_ALLOW.has(k) && wordIdsForMorphemeKey(k).length >= 2
+      );
       selectedMorpheme = fallback ?? null;
       if (morphSelect && selectedMorpheme) morphSelect.value = `${MORPH_SELECT_PREFIX}${encodeURIComponent(selectedMorpheme)}`;
     }
@@ -1272,7 +1395,7 @@ function init() {
     const m = pickMesh(ev.clientX, ev.clientY);
     if (!m) return;
     const key = m.userData.morphemeKey;
-    if (key && wordIdsForMorphemeKey(key).length >= 2) {
+    if (key && MORPH_PICK_ALLOW.has(key) && wordIdsForMorphemeKey(key).length >= 2) {
       selectedMorpheme = key;
       if (morphSelect) morphSelect.value = `${MORPH_SELECT_PREFIX}${encodeURIComponent(key)}`;
       setMode("morpheme");
@@ -1532,8 +1655,8 @@ function installMorphemeChart(onPickWord, onPickKey) {
       .filter(Boolean)
       .map((w) => `<li><button class="morph-chart__word" data-morph-pick-word="${escapeHtml(w.id)}">${escapeHtml(w.label)}</button></li>`)
       .join("");
-    const wikt = r.wiktionary || r.morpheme;
-    const wiktUrl = `https://en.wiktionary.org/wiki/${encodeURIComponent(wikt)}`;
+    const wikt = wiktionaryTitleForRow(r, morphemeKeyShort(r.key));
+    const wiktUrl = wikt ? `https://en.wiktionary.org/wiki/${encodeURIComponent(wikt)}` : "";
     const typeLabel = morphemeTypeLabel(r.key, r.type);
     const typeSlug = morphemeTypeSlug(typeLabel);
     return `<tr>
@@ -1543,7 +1666,7 @@ function installMorphemeChart(onPickWord, onPickKey) {
       <td>${escapeHtml(r.meaning)}</td>
       <td>${buttons ? `<ul class="morph-chart__words">${buttons}</ul>` : `<span class="morph-chart__muted">—</span>`}</td>
       <td>${r.outsideExamples?.length ? r.outsideExamples.map(escapeHtml).join(", ") : "—"}</td>
-      <td><a class="morph-chart__wikt" href="${escapeHtml(wiktUrl)}" target="_blank" rel="noreferrer noopener">wikt:${escapeHtml(wikt)}</a></td>
+      <td>${wikt && wiktUrl ? `<a class="morph-chart__wikt" href="${escapeHtml(wiktUrl)}" target="_blank" rel="noreferrer noopener">wikt:${escapeHtml(wikt)}</a>` : `<span class="morph-chart__muted">—</span>`}</td>
     </tr>`;
   }).join("");
 
