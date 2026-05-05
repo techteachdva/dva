@@ -33,7 +33,10 @@
 .arcade-cabinet__scene {
   position: relative;
   perspective: 1000px;
+  -webkit-perspective: 1000px;
   perspective-origin: 38% 36%;
+  /* Needed so nested preserve-3d reaches the cuboid in WebKit */
+  transform-style: preserve-3d;
   min-height: 520px;
   display: flex;
   align-items: center;
@@ -65,9 +68,14 @@
   position: relative;
   z-index: 1;
   transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
+  /*
+   * Never put filter/backdrop-filter on this node: in Chrome/Safari/Firefox, a non-none filter
+   * on an ancestor flattens transform-style:preserve-3d descendants into one bitmap — the cab
+   * will look like a flat card. Cast shadow via face box-shadows + .arcade-cabinet__shadow-floor instead.
+   */
   /* Stronger yaw shows the deep side panel (reads as cabinet side, not a door jamb) */
   transform: rotateY(-46deg) rotateX(6deg);
-  filter: drop-shadow(18px 32px 26px rgba(0, 0, 0, 0.48));
 }
 
 .arcade-cuboid {
@@ -75,6 +83,7 @@
   width: var(--cab-w);
   height: var(--cab-h);
   transform-style: preserve-3d;
+  -webkit-transform-style: preserve-3d;
 }
 
 .arcade-cuboid__face {
@@ -98,7 +107,10 @@
   display: flex;
   flex-direction: column;
   border: 2px solid rgba(35, 35, 42, 0.95);
+  /* Outer shadow replaces drop-shadow on parent (filter breaks 3D) */
   box-shadow:
+    16px 36px 28px rgba(0, 0, 0, 0.38),
+    8px 18px 16px rgba(0, 0, 0, 0.28),
     inset 1px 1px 0 rgba(255, 255, 255, 0.12),
     inset -2px -2px 6px rgba(0, 0, 0, 0.35);
   background: linear-gradient(145deg, #222228 0%, #121218 100%);
@@ -119,6 +131,7 @@
   border: 2px solid rgba(22, 18, 14, 0.98);
   border-left: 2px solid rgba(255, 230, 190, 0.14);
   box-shadow:
+    12px 32px 22px rgba(0, 0, 0, 0.32),
     inset -6px 0 14px rgba(0, 0, 0, 0.42),
     inset 2px 0 0 rgba(255, 255, 255, 0.07);
   background:
@@ -188,6 +201,7 @@
   border: 2px solid rgba(35, 30, 26, 0.95);
   border-bottom: none;
   box-shadow:
+    10px 14px 18px rgba(0, 0, 0, 0.28),
     inset 1px 1px 0 rgba(255, 255, 255, 0.1),
     inset -3px -2px 10px rgba(0, 0, 0, 0.35);
   background:
