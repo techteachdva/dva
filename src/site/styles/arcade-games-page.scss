@@ -1,12 +1,9 @@
-/* Games page — /games/ arcade cabinets (loaded only from that note) */
+/* Games page — isometric 3D arcade cabinets (/games/) */
 
 .arcade-games-page {
-  --cabinet-frame: #1a1a1e;
-  --cabinet-shadow: rgba(0, 0, 0, 0.55);
-  --screen-bezel: #0d0d10;
-  max-width: 1200px;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: 0.5rem 0 2rem;
+  padding: 0.5rem 0 3rem;
 }
 
 .arcade-games-page__intro {
@@ -16,67 +13,158 @@
   opacity: 0.92;
 }
 
+/* --- 3D scene: perspective + “isometric-ish” yaw/pitch --- */
 .arcade-games-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
-  gap: 2rem;
-  align-items: stretch;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 2.5rem 1.5rem;
+  align-items: start;
 }
 
 .arcade-cabinet {
+  --cab-w: 230px;
+  --cab-h: 420px;
+  --cab-d: 76px;
+  --cab-half-z: calc(var(--cab-d) / 2);
+  --cab-half-x: calc(var(--cab-w) / 2);
+}
+
+.arcade-cabinet__scene {
   position: relative;
+  perspective: 1100px;
+  perspective-origin: 42% 38%;
+  min-height: 480px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 0.5rem 2.5rem;
+}
+
+.arcade-cabinet__shadow-floor {
+  position: absolute;
+  left: 50%;
+  bottom: 1.25rem;
+  width: 220px;
+  height: 44px;
+  margin-left: -110px;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(0, 0, 0, 0.45) 0%,
+    rgba(0, 0, 0, 0.18) 55%,
+    transparent 72%
+  );
+  transform: rotateX(72deg);
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(3px);
+}
+
+.arcade-cabinet__tilt {
+  position: relative;
+  z-index: 1;
+  transform-style: preserve-3d;
+  transform: rotateY(-32deg) rotateX(8deg);
+  filter: drop-shadow(16px 28px 22px rgba(0, 0, 0, 0.45));
+}
+
+.arcade-cuboid {
+  position: relative;
+  width: var(--cab-w);
+  height: var(--cab-h);
+  transform-style: preserve-3d;
+}
+
+.arcade-cuboid__face {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  backface-visibility: hidden;
+  box-sizing: border-box;
+  transform-style: preserve-3d;
+}
+
+/* Front face — screen block on top, control / art panel below */
+.arcade-cuboid__face--front {
+  width: var(--cab-w);
+  height: var(--cab-h);
+  margin-left: calc(var(--cab-w) / -2);
+  margin-top: calc(var(--cab-h) / -2);
+  transform: rotateY(0deg) translateZ(var(--cab-half-z));
+  border-radius: 6px 6px 10px 10px;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
-  border-radius: 10px 10px 16px 16px;
-  overflow: hidden;
+  border: 2px solid rgba(35, 35, 42, 0.95);
   box-shadow:
-    0 12px 28px var(--cabinet-shadow),
-    0 2px 0 rgba(255, 255, 255, 0.06) inset;
-  border: 3px solid #2d2d33;
-  background: var(--cabinet-frame);
-  min-height: 320px;
+    inset 1px 1px 0 rgba(255, 255, 255, 0.12),
+    inset -2px -2px 6px rgba(0, 0, 0, 0.35);
+  background: linear-gradient(145deg, #222228 0%, #121218 100%);
+}
+
+/* Right face — side art */
+.arcade-cuboid__face--right {
+  width: var(--cab-d);
+  height: var(--cab-h);
+  margin-left: calc(var(--cab-d) / -2);
+  margin-top: calc(var(--cab-h) / -2);
+  transform: rotateY(90deg) translateZ(var(--cab-half-x));
+  border-radius: 0 6px 10px 0;
+  overflow: hidden;
+  border: 2px solid rgba(25, 25, 30, 0.98);
+  border-left: 1px solid rgba(0, 0, 0, 0.6);
+  box-shadow:
+    inset -3px 0 8px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  background: #14141a;
+}
+
+.arcade-cabinet__side-art {
+  position: absolute;
+  inset: 0;
+}
+
+/* Upper: marquee + CRT; lower: front panel art */
+.arcade-cabinet__bezel {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 8px 10px 10px;
+  background: linear-gradient(180deg, #0e0e12 0%, #08080c 100%);
+  border-bottom: 3px solid rgba(0, 0, 0, 0.55);
 }
 
 .arcade-cabinet__marquee {
-  padding: 0.65rem 1rem;
+  padding: 0.4rem 0.5rem;
   text-align: center;
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
-  font-size: 0.72rem;
-  border-bottom: 2px solid rgba(0, 0, 0, 0.35);
-}
-
-.arcade-cabinet__art {
-  flex: 1;
-  min-height: 120px;
-  position: relative;
-  overflow: hidden;
-}
-
-.arcade-cabinet__lower {
-  padding: 0.75rem 0.85rem 1rem;
-  background: linear-gradient(180deg, #141418 0%, #0e0e11 100%);
-  border-top: 2px solid rgba(0, 0, 0, 0.4);
-}
-
-.arcade-cabinet__bezel {
-  position: relative;
-  border-radius: 6px;
-  padding: 10px;
-  background: var(--screen-bezel);
-  box-shadow:
-    0 0 0 2px #1f1f24,
-    inset 0 0 20px rgba(0, 0, 0, 0.85);
+  font-size: 0.62rem;
+  border-radius: 4px;
+  margin-top: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .arcade-cabinet__screen {
   position: relative;
-  border-radius: 4px;
-  min-height: 5.5rem;
+  border-radius: 5px;
+  min-height: 5.25rem;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+  padding: 10px 8px;
+  box-shadow:
+    inset 0 0 0 2px #1a1a20,
+    inset 0 4px 24px rgba(0, 0, 0, 0.75);
+}
+
+.arcade-cabinet__front-art {
+  flex: 1 1 auto;
+  min-height: 118px;
+  position: relative;
   overflow: hidden;
 }
 
@@ -86,9 +174,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.65rem 1.1rem;
+  padding: 0.55rem 1rem;
   font-weight: 700;
-  font-size: 1rem;
+  font-size: 0.95rem;
   text-decoration: none !important;
   border-radius: 4px;
   transition: transform 0.2s ease, box-shadow 0.25s ease, filter 0.25s ease;
@@ -97,7 +185,7 @@
 }
 
 .arcade-cabinet__screen-link:focus-visible {
-  outline: 2px solid #fff;
+  outline: 2px solid rgb(255, 255, 255);
   outline-offset: 3px;
 }
 
@@ -169,78 +257,16 @@
   transform: scale(1.03);
 }
 
-/* Tech Escape */
+/* ========== Tech Escape ========== */
 .arcade-cabinet--tech .arcade-cabinet__marquee {
   background: linear-gradient(90deg, #0a1628 0%, #0d2844 50%, #0a1628 100%);
   color: #7ee8ff;
   text-shadow: 0 0 12px rgba(100, 220, 255, 0.6);
 }
 
-.arcade-cabinet--tech .arcade-cabinet__art {
-  background:
-    linear-gradient(90deg, rgba(0, 255, 200, 0.08) 1px, transparent 1px),
-    linear-gradient(180deg, rgba(0, 255, 200, 0.08) 1px, transparent 1px),
-    radial-gradient(circle at 20% 30%, rgba(0, 255, 200, 0.15) 0%, transparent 45%),
-    radial-gradient(circle at 80% 70%, rgba(100, 200, 255, 0.12) 0%, transparent 40%),
-    linear-gradient(165deg, #050810 0%, #0a1525 40%, #061018 100%);
-  background-size:
-    24px 24px,
-    24px 24px,
-    auto,
-    auto,
-    auto;
-}
-
-.arcade-cabinet--tech .arcade-cabinet__art::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(
-      90deg,
-      transparent 48%,
-      rgba(0, 255, 200, 0.25) 49%,
-      rgba(0, 255, 200, 0.25) 51%,
-      transparent 52%
-    ),
-    linear-gradient(
-      0deg,
-      transparent 48%,
-      rgba(80, 200, 255, 0.2) 49%,
-      rgba(80, 200, 255, 0.2) 51%,
-      transparent 52%
-    );
-  opacity: 0.35;
-  mask-image: radial-gradient(ellipse 80% 60% at 50% 45%, black 20%, transparent 70%);
-}
-
-.arcade-cabinet--tech .arcade-cabinet__art::after {
-  content: "";
-  position: absolute;
-  width: 56px;
-  height: 56px;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%) rotate(45deg);
-  border: 2px solid rgba(0, 220, 255, 0.45);
-  border-radius: 8px;
-  box-shadow:
-    0 0 20px rgba(0, 200, 255, 0.35),
-    inset 0 0 12px rgba(0, 255, 220, 0.15);
-  background: repeating-linear-gradient(
-    -45deg,
-    rgba(0, 60, 80, 0.4) 0 4px,
-    rgba(0, 30, 50, 0.5) 4px 8px
-  );
-}
-
 .arcade-cabinet--tech .arcade-cabinet__screen {
   background:
-    repeating-linear-gradient(
-      0deg,
-      rgba(0, 255, 180, 0.04) 0 2px,
-      rgba(0, 0, 0, 0.15) 2px 4px
-    ),
+    repeating-linear-gradient(0deg, rgba(0, 255, 180, 0.04) 0 2px, rgba(0, 0, 0, 0.15) 2px 4px),
     radial-gradient(ellipse at 50% 20%, rgba(0, 255, 220, 0.12), transparent 55%),
     #020508;
 }
@@ -254,49 +280,117 @@
   box-shadow: 0 0 24px rgba(0, 220, 255, 0.2);
 }
 
-/* Dungeon Class */
+.arcade-cabinet--tech .arcade-cabinet__front-art {
+  background:
+    linear-gradient(90deg, rgba(0, 255, 200, 0.07) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(0, 255, 200, 0.07) 1px, transparent 1px),
+    radial-gradient(circle at 30% 40%, rgba(0, 255, 200, 0.12) 0%, transparent 50%),
+    linear-gradient(165deg, #050810 0%, #0a1525 50%, #061018 100%);
+  background-size: 20px 20px, 20px 20px, auto, auto;
+}
+
+.arcade-cabinet--tech .arcade-cabinet__front-art::after {
+  content: "";
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%) rotate(45deg);
+  border: 2px solid rgba(0, 220, 255, 0.4);
+  border-radius: 8px;
+  box-shadow:
+    0 0 18px rgba(0, 200, 255, 0.3),
+    inset 0 0 10px rgba(0, 255, 220, 0.12);
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(0, 60, 80, 0.35) 0 4px,
+    rgba(0, 30, 50, 0.45) 4px 8px
+  );
+}
+
+.arcade-cabinet--tech .arcade-cabinet__side-art {
+  background:
+    linear-gradient(180deg, rgba(0, 255, 200, 0.12) 0%, transparent 40%),
+    repeating-linear-gradient(
+      0deg,
+      rgba(0, 180, 220, 0.15) 0 1px,
+      transparent 1px 14px
+    ),
+    linear-gradient(90deg, #060a10 0%, #0a1520 50%, #05080e 100%);
+}
+
+.arcade-cabinet--tech .arcade-cabinet__side-art::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 8px;
+  top: 18%;
+  bottom: 22%;
+  border: 1px solid rgba(0, 220, 255, 0.25);
+  border-radius: 4px;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0 6px,
+    rgba(0, 255, 200, 0.2) 6px 7px
+  );
+  opacity: 0.7;
+}
+
+/* ========== Dungeon ========== */
 .arcade-cabinet--dungeon .arcade-cabinet__marquee {
   background: linear-gradient(180deg, #3a2f28 0%, #2a221c 100%);
   color: #e8d4b8;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
 }
 
-.arcade-cabinet--dungeon .arcade-cabinet__art {
+.arcade-cabinet--dungeon .arcade-cabinet__screen {
   background:
-    linear-gradient(335deg, rgba(255, 255, 255, 0.06) 25%, transparent 25%) 0 0 / 18px 18px,
-    linear-gradient(155deg, rgba(0, 0, 0, 0.18) 25%, transparent 25%) 0 0 / 18px 18px,
-    linear-gradient(335deg, rgba(0, 0, 0, 0.12) 23%, transparent 23%) 9px 9px / 18px 18px,
-    linear-gradient(155deg, rgba(255, 255, 255, 0.05) 23%, transparent 23%) 9px 9px / 18px 18px,
+    radial-gradient(ellipse at 50% 0%, rgba(255, 180, 80, 0.08), transparent 50%),
+    linear-gradient(180deg, #1a1512 0%, #0d0a08 100%);
+}
+
+.arcade-cabinet--dungeon .arcade-cabinet__screen-link {
+  color: #f0e6d4 !important;
+  background: rgba(40, 32, 26, 0.85);
+  border: 1px solid rgba(180, 140, 90, 0.45);
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.arcade-cabinet--dungeon .arcade-cabinet__front-art {
+  background:
+    linear-gradient(335deg, rgba(255, 255, 255, 0.06) 25%, transparent 25%) 0 0 / 16px 16px,
+    linear-gradient(155deg, rgba(0, 0, 0, 0.18) 25%, transparent 25%) 0 0 / 16px 16px,
     linear-gradient(180deg, #4a4238 0%, #2e2820 100%);
 }
 
-.arcade-cabinet--dungeon .arcade-cabinet__art::before,
-.arcade-cabinet--dungeon .arcade-cabinet__art::after {
+.arcade-cabinet--dungeon .arcade-cabinet__front-art::before,
+.arcade-cabinet--dungeon .arcade-cabinet__front-art::after {
   content: "";
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  width: 28px;
-  height: 72px;
-  border-radius: 4px 4px 2px 2px;
+  width: 22px;
+  height: 62px;
+  border-radius: 3px 3px 2px 2px;
   background: linear-gradient(90deg, #3d3530, #2a2420 45%, #3d3530);
-  box-shadow: inset 0 -8px 0 rgba(0, 0, 0, 0.35);
+  box-shadow: inset 0 -6px 0 rgba(0, 0, 0, 0.35);
   z-index: 1;
 }
 
-.arcade-cabinet--dungeon .arcade-cabinet__art::before {
-  left: 8px;
+.arcade-cabinet--dungeon .arcade-cabinet__front-art::before {
+  left: 14px;
 }
 
-.arcade-cabinet--dungeon .arcade-cabinet__art::after {
-  right: 8px;
+.arcade-cabinet--dungeon .arcade-cabinet__front-art::after {
+  right: 14px;
 }
 
 .arcade-cabinet--dungeon .torch-flame {
   position: absolute;
-  top: 18px;
-  width: 22px;
-  height: 36px;
+  top: 12px;
+  width: 20px;
+  height: 32px;
   border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
   background: radial-gradient(
     circle at 50% 80%,
@@ -307,18 +401,18 @@
   );
   filter: blur(0.3px);
   box-shadow:
-    0 0 20px rgba(255, 120, 40, 0.75),
-    0 0 40px rgba(255, 80, 0, 0.35);
+    0 0 18px rgba(255, 120, 40, 0.75),
+    0 0 36px rgba(255, 80, 0, 0.35);
   animation: torch-flicker 2s ease-in-out infinite;
   z-index: 2;
 }
 
 .arcade-cabinet--dungeon .torch-flame--left {
-  left: 11px;
+  left: 15px;
 }
 
 .arcade-cabinet--dungeon .torch-flame--right {
-  right: 11px;
+  right: 15px;
 }
 
 @keyframes torch-flicker {
@@ -337,101 +431,27 @@
   }
 }
 
-.arcade-cabinet--dungeon .arcade-cabinet__screen {
+.arcade-cabinet--dungeon .arcade-cabinet__side-art {
   background:
-    radial-gradient(ellipse at 50% 0%, rgba(255, 180, 80, 0.08), transparent 50%),
-    linear-gradient(180deg, #1a1512 0%, #0d0a08 100%);
+    linear-gradient(165deg, rgba(255, 255, 255, 0.04) 25%, transparent 25%) 0 0 / 12px 12px,
+    linear-gradient(180deg, #353028 0%, #1c1814 100%);
 }
 
-.arcade-cabinet--dungeon .arcade-cabinet__screen-link {
-  color: #f0e6d4 !important;
-  background: rgba(40, 32, 26, 0.85);
-  border: 1px solid rgba(180, 140, 90, 0.45);
-  font-family: Georgia, "Times New Roman", serif;
+.arcade-cabinet--dungeon .arcade-cabinet__side-art::after {
+  content: "";
+  position: absolute;
+  inset: 12% 18%;
+  border-radius: 4px;
+  border: 2px solid rgba(90, 75, 60, 0.5);
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.4);
+  background: linear-gradient(180deg, rgba(255, 160, 60, 0.08), transparent);
 }
 
-/* Crystal Wizards */
+/* ========== Crystal Wizards ========== */
 .arcade-cabinet--crystal .arcade-cabinet__marquee {
   background: linear-gradient(90deg, #2a1838 0%, #1e2048 50%, #2a1838 100%);
   color: #e8e0ff;
   text-shadow: 0 0 10px rgba(200, 180, 255, 0.5);
-}
-
-.arcade-cabinet--crystal .arcade-cabinet__art {
-  background: #120818;
-}
-
-.arcade-cabinet--crystal .crystal-facet {
-  position: absolute;
-  opacity: 0.92;
-  mix-blend-mode: screen;
-}
-
-.arcade-cabinet--crystal .crystal-facet--r {
-  width: 55%;
-  height: 48%;
-  left: -5%;
-  top: 10%;
-  background: linear-gradient(125deg, rgba(255, 60, 80, 0.75) 0%, rgba(120, 20, 40, 0.3) 100%);
-  clip-path: polygon(0 0, 100% 20%, 70% 100%, 0 85%);
-  box-shadow: inset 0 0 30px rgba(255, 100, 120, 0.4);
-}
-
-.arcade-cabinet--crystal .crystal-facet--g {
-  width: 50%;
-  height: 55%;
-  right: -8%;
-  top: 0;
-  background: linear-gradient(200deg, rgba(60, 255, 140, 0.65) 0%, rgba(20, 80, 50, 0.35) 100%);
-  clip-path: polygon(30% 0, 100% 0, 100% 100%, 0 70%);
-  box-shadow: inset 0 0 28px rgba(100, 255, 160, 0.35);
-}
-
-.arcade-cabinet--crystal .crystal-facet--b {
-  width: 52%;
-  height: 48%;
-  left: 10%;
-  bottom: -5%;
-  background: linear-gradient(15deg, rgba(80, 160, 255, 0.7) 0%, rgba(30, 40, 120, 0.45) 100%);
-  clip-path: polygon(0 15%, 90% 0, 100% 90%, 20% 100%);
-  box-shadow: inset 0 0 26px rgba(120, 200, 255, 0.45);
-}
-
-.arcade-cabinet--crystal .crystal-facet--y {
-  width: 38%;
-  height: 42%;
-  left: 50%;
-  top: 38%;
-  transform: translateX(-50%);
-  background: linear-gradient(160deg, rgba(255, 240, 80, 0.85) 0%, rgba(200, 140, 20, 0.4) 100%);
-  clip-path: polygon(50% 0, 100% 35%, 80% 100%, 20% 100%, 0 35%);
-  box-shadow: inset 0 0 22px rgba(255, 230, 120, 0.5);
-}
-
-.arcade-cabinet--crystal .arcade-cabinet__art::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    125deg,
-    transparent 40%,
-    rgba(255, 255, 255, 0.12) 50%,
-    transparent 60%
-  );
-  animation: crystal-glint 4s ease-in-out infinite;
-  pointer-events: none;
-}
-
-@keyframes crystal-glint {
-  0%,
-  100% {
-    opacity: 0.3;
-    transform: translateX(-10%);
-  }
-  50% {
-    opacity: 0.7;
-    transform: translateX(10%);
-  }
 }
 
 .arcade-cabinet--crystal .arcade-cabinet__screen {
@@ -455,67 +475,133 @@
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
 }
 
-/* Purple Worm */
+.arcade-cabinet--crystal .arcade-cabinet__front-art {
+  background: #120818;
+}
+
+.arcade-cabinet--crystal .crystal-facet {
+  position: absolute;
+  opacity: 0.88;
+  mix-blend-mode: screen;
+}
+
+.arcade-cabinet--crystal .crystal-facet--r {
+  width: 50%;
+  height: 45%;
+  left: -2%;
+  top: 8%;
+  background: linear-gradient(125deg, rgba(255, 60, 80, 0.7) 0%, rgba(120, 20, 40, 0.25) 100%);
+  clip-path: polygon(0 0, 100% 20%, 70% 100%, 0 85%);
+}
+
+.arcade-cabinet--crystal .crystal-facet--g {
+  width: 46%;
+  height: 52%;
+  right: -4%;
+  top: 0;
+  background: linear-gradient(200deg, rgba(60, 255, 140, 0.6) 0%, rgba(20, 80, 50, 0.3) 100%);
+  clip-path: polygon(30% 0, 100% 0, 100% 100%, 0 70%);
+}
+
+.arcade-cabinet--crystal .crystal-facet--b {
+  width: 48%;
+  height: 44%;
+  left: 8%;
+  bottom: -2%;
+  background: linear-gradient(15deg, rgba(80, 160, 255, 0.65) 0%, rgba(30, 40, 120, 0.4) 100%);
+  clip-path: polygon(0 15%, 90% 0, 100% 90%, 20% 100%);
+}
+
+.arcade-cabinet--crystal .crystal-facet--y {
+  width: 34%;
+  height: 38%;
+  left: 50%;
+  top: 36%;
+  transform: translateX(-50%);
+  background: linear-gradient(160deg, rgba(255, 240, 80, 0.8) 0%, rgba(200, 140, 20, 0.35) 100%);
+  clip-path: polygon(50% 0, 100% 35%, 80% 100%, 20% 100%, 0 35%);
+}
+
+.arcade-cabinet--crystal .arcade-cabinet__front-art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(125deg, transparent 40%, rgba(255, 255, 255, 0.1) 50%, transparent 60%);
+  animation: crystal-glint 4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes crystal-glint {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: translateX(-8%);
+  }
+  50% {
+    opacity: 0.65;
+    transform: translateX(8%);
+  }
+}
+
+.arcade-cabinet--crystal .arcade-cabinet__side-art {
+  background: linear-gradient(180deg, #1a0c28 0%, #0c0614 100%);
+}
+
+.arcade-cabinet--crystal .arcade-cabinet__side-art::before {
+  content: "";
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  top: 12%;
+  bottom: 15%;
+  background: linear-gradient(
+    160deg,
+    rgba(255, 60, 100, 0.35) 0%,
+    rgba(60, 255, 140, 0.25) 33%,
+    rgba(80, 160, 255, 0.3) 66%,
+    rgba(255, 230, 80, 0.35) 100%
+  );
+  clip-path: polygon(15% 0, 100% 12%, 85% 100%, 0 88%);
+  opacity: 0.85;
+}
+
+/* ========== Purple Worm ========== */
 .arcade-cabinet--worm .arcade-cabinet__marquee {
   background: linear-gradient(180deg, #3a1a4a 0%, #1e0a28 100%);
   color: #e8c8ff;
   text-shadow: 0 0 10px rgba(200, 120, 255, 0.55);
 }
 
-.arcade-cabinet--worm .arcade-cabinet__art {
+.arcade-cabinet--worm .arcade-cabinet__screen {
+  background:
+    radial-gradient(ellipse at 50% 70%, rgba(120, 40, 160, 0.45) 0%, rgba(30, 5, 45, 0.95) 45%, #050008 100%);
+  box-shadow:
+    inset 0 0 0 2px #1a1a22,
+    inset 0 0 40px rgba(80, 20, 100, 0.5);
+}
+
+.arcade-cabinet--worm .arcade-cabinet__screen-link {
+  color: #f5e0ff !important;
+  background: rgba(50, 15, 70, 0.85);
+  border: 1px solid rgba(200, 120, 230, 0.5);
+}
+
+.arcade-cabinet--worm .arcade-cabinet__front-art {
   background: radial-gradient(ellipse at 50% 100%, #4a2080 0%, #1a0628 55%, #0c0214 100%);
-}
-
-.arcade-cabinet--worm .worm-teeth {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 22px;
-  display: flex;
-  justify-content: space-between;
-  padding: 0 4px;
-  pointer-events: none;
-  z-index: 2;
-}
-
-.arcade-cabinet--worm .worm-teeth--top {
-  top: 0;
-  align-items: flex-start;
-}
-
-.arcade-cabinet--worm .worm-teeth--bottom {
-  bottom: 0;
-  align-items: flex-end;
-}
-
-.arcade-cabinet--worm .worm-tooth {
-  width: 0;
-  height: 0;
-  border-left: 7px solid transparent;
-  border-right: 7px solid transparent;
-  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.5));
-}
-
-.arcade-cabinet--worm .worm-teeth--top .worm-tooth {
-  border-top: 18px solid #c9a8e0;
-}
-
-.arcade-cabinet--worm .worm-teeth--bottom .worm-tooth {
-  border-bottom: 18px solid #b898d8;
 }
 
 .arcade-cabinet--worm .worm-glow {
   position: absolute;
   left: 50%;
-  top: 55%;
+  top: 42%;
   transform: translate(-50%, -50%);
-  width: 120px;
-  height: 90px;
+  width: 100px;
+  height: 72px;
   border-radius: 50%;
   background: radial-gradient(
     ellipse at 50% 50%,
-    rgba(180, 80, 220, 0.35) 0%,
-    rgba(80, 20, 100, 0.2) 45%,
+    rgba(180, 80, 220, 0.3) 0%,
+    rgba(80, 20, 100, 0.15) 45%,
     transparent 70%
   );
   animation: worm-pulse 3s ease-in-out infinite;
@@ -534,21 +620,73 @@
   }
 }
 
-.arcade-cabinet--worm .arcade-cabinet__screen {
-  background:
-    radial-gradient(
-      ellipse at 50% 70%,
-      rgba(120, 40, 160, 0.45) 0%,
-      rgba(30, 5, 45, 0.95) 45%,
-      #050008 100%
-    );
-  box-shadow: inset 0 0 40px rgba(80, 20, 100, 0.5);
+.arcade-cabinet--worm .worm-teeth {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 16px;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 6px;
+  pointer-events: none;
+  z-index: 2;
 }
 
-.arcade-cabinet--worm .arcade-cabinet__screen-link {
-  color: #f5e0ff !important;
-  background: rgba(50, 15, 70, 0.85);
-  border: 1px solid rgba(200, 120, 230, 0.5);
+.arcade-cabinet--worm .worm-teeth--top {
+  top: 4px;
+  align-items: flex-start;
+}
+
+.arcade-cabinet--worm .worm-teeth--bottom {
+  bottom: 6px;
+  align-items: flex-end;
+}
+
+.arcade-cabinet--worm .worm-tooth {
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.5));
+}
+
+.arcade-cabinet--worm .worm-teeth--top .worm-tooth {
+  border-top: 14px solid #c9a8e0;
+}
+
+.arcade-cabinet--worm .worm-teeth--bottom .worm-tooth {
+  border-bottom: 14px solid #b898d8;
+}
+
+.arcade-cabinet--worm .arcade-cabinet__side-art {
+  background: linear-gradient(90deg, #2a1040 0%, #140820 50%, #1a0c30 100%);
+}
+
+.arcade-cabinet--worm .arcade-cabinet__side-art::before {
+  content: "";
+  position: absolute;
+  left: -20%;
+  top: 15%;
+  width: 140%;
+  height: 55%;
+  border-radius: 50%;
+  background: radial-gradient(ellipse at center, rgba(140, 60, 180, 0.35) 0%, transparent 65%);
+}
+
+.arcade-cabinet--worm .arcade-cabinet__side-art::after {
+  content: "";
+  position: absolute;
+  bottom: 18%;
+  left: 8%;
+  right: 8%;
+  height: 22%;
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(200, 140, 230, 0.25) 0 4px,
+    transparent 4px 10px
+  );
+  border-radius: 4px;
+  opacity: 0.6;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -562,7 +700,7 @@
   .torch-flame {
     animation: none !important;
   }
-  .arcade-cabinet--crystal .arcade-cabinet__art::after {
+  .arcade-cabinet--crystal .arcade-cabinet__front-art::after {
     animation: none !important;
   }
   .worm-glow {
