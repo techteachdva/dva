@@ -1,5 +1,9 @@
 ---
 dg-publish: true
+tags:
+  - gardenEntry
+permalink: /games/
+noteIcon:
 ---
 [Tech Escape][https://techescape.abacusai.app/]
 

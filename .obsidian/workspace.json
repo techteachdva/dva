@@ -13,26 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "src/site/notes/Games Mr. Phil has made.md",
+                "file": "src/site/notes/Mr. Phil's Digital Garden.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Games Mr. Phil has made"
-            }
-          },
-          {
-            "id": "927585c98489d28e",
-            "type": "leaf",
-            "state": {
-              "type": "markdown",
-              "state": {
-                "file": "src/site/notes/Peda_Go_Gee.md",
-                "mode": "source",
-                "source": false
-              },
-              "icon": "lucide-file",
-              "title": "Peda_Go_Gee"
+              "title": "Mr. Phil's Digital Garden"
             }
           }
         ]
@@ -197,9 +183,14 @@
   },
   "active": "ef04fab9155606a1",
   "lastOpenFiles": [
-    "src/site/notes/Mr. Phil's Digital Garden.md",
-    "src/site/notes/Peda_Go_Gee.md",
     "src/site/notes/Games Mr. Phil has made.md",
+    "src/site/notes/Mr. Phil's Digital Garden.md",
+    "src/site/notes/Media Arts.md",
+    "src/site/notes/Dungeon Class.md",
+    "src/site/notes/Escape Tech Game.md",
+    "src/site/notes/Pixel Art Museum.md",
+    "src/site/notes/Peda_Go_Gee.md",
+    "src/site/notes/5-12 Methods. Literature and Reading..md",
     "src/site/img/user/Pictures/DaVinci_Full_Button_2Color.png",
     "src/site/img/user/Pictures/CARROLL.png",
     "src/site/img/user/Pictures/Bubblegum.jpeg",
