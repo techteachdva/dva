@@ -1,7 +1,5 @@
 ---
 dg-publish: true
-tags:
-  - gardenEntry
 permalink: /games/
 noteIcon:
 ---
