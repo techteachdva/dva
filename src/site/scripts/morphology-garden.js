@@ -30,6 +30,9 @@ let morphTutorialCtl = null;
 
 const MORPH_SELECT_PREFIX = "__morph__:";
 
+/** First paint: Morpheme mode with this key when it appears on multiple bank trees (fallback otherwise). */
+const MORPH_DEFAULT_LANDING_KEY = "sfx:-able";
+
 const TREE_DEPTH_STEP = 6.15;
 const TREE_LAYOUT_RADIUS0 = 13.5;
 
@@ -878,7 +881,7 @@ function init() {
 
   /* ---- mode state ---------------------------------------------------- */
   /** @type {"word" | "morpheme" | "compare"} */
-  let mode = "word";
+  let mode = "morpheme";
   /** @type {string | null} */ let selectedWordId = WORDS[0]?.id ?? null;
   /** @type {string | null} */ let selectedMorpheme = null;
   /** @type {string | null} */ let compareA = WORDS[0]?.id ?? null;
@@ -943,9 +946,12 @@ function init() {
   if (compareASel && compareA) compareASel.value = compareA;
   if (compareBSel && compareB) compareBSel.value = compareB;
   if (morphSelect) {
-    /* Default to a morpheme that appears in several bank trees when possible. */
+    /* Prefer -able for first paint (linked grid); otherwise first morpheme that hits multiple trees. */
     const keysMulti = MORPHEME_CATALOG.map((r) => r.key).filter((k) => wordIdsForMorphemeKey(k).length >= 2);
-    selectedMorpheme = keysMulti[0] ?? MORPHEME_CATALOG[0]?.key ?? null;
+    selectedMorpheme =
+      wordIdsForMorphemeKey(MORPH_DEFAULT_LANDING_KEY).length >= 2
+        ? MORPH_DEFAULT_LANDING_KEY
+        : keysMulti[0] ?? MORPHEME_CATALOG[0]?.key ?? null;
     if (selectedMorpheme) morphSelect.value = `${MORPH_SELECT_PREFIX}${encodeURIComponent(selectedMorpheme)}`;
   }
 
@@ -1474,7 +1480,8 @@ function init() {
     dockUIPanelIntoShell();
     dockDetailIntoShell();
   }
-  setMode("word");
+  /* Landing view: morpheme grid (e.g. -able), not a single word like the alphabetically first lemma. */
+  setMode("morpheme");
 
   /* ---- animate ------------------------------------------------------ */
   function animate() {
