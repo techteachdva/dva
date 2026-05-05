@@ -16,56 +16,58 @@
 /* --- 3D scene: perspective + “isometric-ish” yaw/pitch --- */
 .arcade-games-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr));
   gap: 2.5rem 1.5rem;
   align-items: start;
 }
 
 .arcade-cabinet {
-  --cab-w: 230px;
-  --cab-h: 420px;
-  --cab-d: 76px;
+  /* Williams / Midway style uprights: width ~24–26", depth often ~28–32" (depth ≥ width is common) */
+  --cab-w: 216px;
+  --cab-h: 388px;
+  --cab-d: 264px;
   --cab-half-z: calc(var(--cab-d) / 2);
   --cab-half-x: calc(var(--cab-w) / 2);
 }
 
 .arcade-cabinet__scene {
   position: relative;
-  perspective: 1100px;
-  perspective-origin: 42% 38%;
-  min-height: 480px;
+  perspective: 1000px;
+  perspective-origin: 38% 36%;
+  min-height: 520px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem 0.5rem 2.5rem;
+  padding: 1rem 0.75rem 2.75rem;
 }
 
 .arcade-cabinet__shadow-floor {
   position: absolute;
   left: 50%;
-  bottom: 1.25rem;
-  width: 220px;
-  height: 44px;
-  margin-left: -110px;
+  bottom: 1.1rem;
+  width: 300px;
+  height: 48px;
+  margin-left: -150px;
   border-radius: 50%;
   background: radial-gradient(
     ellipse at center,
-    rgba(0, 0, 0, 0.45) 0%,
-    rgba(0, 0, 0, 0.18) 55%,
+    rgba(0, 0, 0, 0.48) 0%,
+    rgba(0, 0, 0, 0.2) 55%,
     transparent 72%
   );
   transform: rotateX(72deg);
   pointer-events: none;
   z-index: 0;
-  filter: blur(3px);
+  filter: blur(4px);
 }
 
 .arcade-cabinet__tilt {
   position: relative;
   z-index: 1;
   transform-style: preserve-3d;
-  transform: rotateY(-32deg) rotateX(8deg);
-  filter: drop-shadow(16px 28px 22px rgba(0, 0, 0, 0.45));
+  /* Stronger yaw shows the deep side panel (reads as cabinet side, not a door jamb) */
+  transform: rotateY(-46deg) rotateX(6deg);
+  filter: drop-shadow(18px 32px 26px rgba(0, 0, 0, 0.48));
 }
 
 .arcade-cuboid {
@@ -102,26 +104,96 @@
   background: linear-gradient(145deg, #222228 0%, #121218 100%);
 }
 
-/* Right face — side art */
+/*
+ * Right face — typical cab side: laminate “wood”, vertical grain, louver vent, black vinyl kick.
+ * Reference: classic upright footprint is deep; narrow depth looks like a door edge in 3D.
+ */
 .arcade-cuboid__face--right {
   width: var(--cab-d);
   height: var(--cab-h);
   margin-left: calc(var(--cab-d) / -2);
   margin-top: calc(var(--cab-h) / -2);
   transform: rotateY(90deg) translateZ(var(--cab-half-x));
-  border-radius: 0 6px 10px 0;
+  border-radius: 0 7px 12px 0;
   overflow: hidden;
-  border: 2px solid rgba(25, 25, 30, 0.98);
-  border-left: 1px solid rgba(0, 0, 0, 0.6);
+  border: 2px solid rgba(22, 18, 14, 0.98);
+  border-left: 2px solid rgba(255, 230, 190, 0.14);
   box-shadow:
-    inset -3px 0 8px rgba(0, 0, 0, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  background: #14141a;
+    inset -6px 0 14px rgba(0, 0, 0, 0.42),
+    inset 2px 0 0 rgba(255, 255, 255, 0.07);
+  background:
+    linear-gradient(90deg, rgba(255, 245, 220, 0.18) 0px, rgba(255, 245, 220, 0.06) 3px, transparent 9px),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.28) 0%, transparent 14%),
+    repeating-linear-gradient(
+      93deg,
+      rgba(56, 44, 34, 0.65) 0 3px,
+      rgba(78, 62, 48, 0.72) 3px 8px,
+      rgba(52, 42, 34, 0.68) 8px 11px
+    ),
+    linear-gradient(180deg, #7a6250 0%, #554438 35%, #3d3128 68%, #2e2620 100%);
+}
+
+/* Black vinyl kick + rubber feet strip */
+.arcade-cuboid__face--right::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 12%;
+  background: linear-gradient(180deg, #151311 0%, #0a0908 100%);
+  border-top: 2px solid rgba(0, 0, 0, 0.55);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.05);
+  z-index: 3;
+  pointer-events: none;
 }
 
 .arcade-cabinet__side-art {
   position: absolute;
   inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Louver vent — common mid-cabinet detail (cooling / PSU area on many real sides) */
+.arcade-cabinet__side-vents {
+  position: absolute;
+  left: 9%;
+  right: 12%;
+  top: 24%;
+  height: 19%;
+  z-index: 2;
+  border-radius: 3px;
+  background: repeating-linear-gradient(
+    180deg,
+    rgba(12, 10, 8, 0.96) 0 6px,
+    rgba(38, 32, 26, 0.92) 6px 7px
+  );
+  box-shadow:
+    inset 0 4px 12px rgba(0, 0, 0, 0.65),
+    0 1px 0 rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+
+/* Top face — reads as a shallow “deck”; sells volume vs flat plane */
+.arcade-cuboid__face--top {
+  width: var(--cab-w);
+  height: var(--cab-d);
+  margin-left: calc(var(--cab-w) / -2);
+  margin-top: calc(var(--cab-d) / -2);
+  transform: rotateX(90deg) translateZ(calc(var(--cab-h) / 2));
+  border-radius: 7px 10px 0 0;
+  overflow: hidden;
+  border: 2px solid rgba(35, 30, 26, 0.95);
+  border-bottom: none;
+  box-shadow:
+    inset 1px 1px 0 rgba(255, 255, 255, 0.1),
+    inset -3px -2px 10px rgba(0, 0, 0, 0.35);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.09) 0%, transparent 45%),
+    linear-gradient(180deg, #5c4a3e 0%, #3d322a 55%, #2a231d 100%);
+  backface-visibility: hidden;
 }
 
 /* Upper: marquee + CRT; lower: front panel art */
@@ -311,30 +383,30 @@
 
 .arcade-cabinet--tech .arcade-cabinet__side-art {
   background:
-    linear-gradient(180deg, rgba(0, 255, 200, 0.12) 0%, transparent 40%),
-    repeating-linear-gradient(
-      0deg,
-      rgba(0, 180, 220, 0.15) 0 1px,
-      transparent 1px 14px
-    ),
-    linear-gradient(90deg, #060a10 0%, #0a1520 50%, #05080e 100%);
+    linear-gradient(180deg, rgba(0, 255, 220, 0.18) 0%, transparent 38%),
+    repeating-linear-gradient(0deg, rgba(0, 200, 255, 0.11) 0 1px, transparent 1px 12px),
+    linear-gradient(100deg, rgba(0, 60, 90, 0.35) 0%, transparent 55%);
+  mix-blend-mode: soft-light;
+  opacity: 0.92;
 }
 
+/* Access door / service panel look — lower on side, under vent band */
 .arcade-cabinet--tech .arcade-cabinet__side-art::before {
   content: "";
   position: absolute;
-  left: 12px;
-  right: 8px;
-  top: 18%;
-  bottom: 22%;
-  border: 1px solid rgba(0, 220, 255, 0.25);
+  left: 10%;
+  right: 10%;
+  top: 50%;
+  bottom: 16%;
+  border: 1px solid rgba(0, 220, 255, 0.3);
   border-radius: 4px;
   background: repeating-linear-gradient(
     90deg,
-    transparent 0 6px,
-    rgba(0, 255, 200, 0.2) 6px 7px
+    transparent 0 5px,
+    rgba(0, 255, 200, 0.12) 5px 6px
   );
-  opacity: 0.7;
+  opacity: 0.65;
+  mix-blend-mode: screen;
 }
 
 /* ========== Dungeon ========== */
@@ -433,18 +505,21 @@
 
 .arcade-cabinet--dungeon .arcade-cabinet__side-art {
   background:
-    linear-gradient(165deg, rgba(255, 255, 255, 0.04) 25%, transparent 25%) 0 0 / 12px 12px,
-    linear-gradient(180deg, #353028 0%, #1c1814 100%);
+    linear-gradient(165deg, rgba(255, 255, 255, 0.06) 25%, transparent 25%) 0 0 / 11px 11px,
+    linear-gradient(180deg, rgba(60, 48, 38, 0.45) 0%, transparent 60%);
+  mix-blend-mode: multiply;
+  opacity: 0.88;
 }
 
 .arcade-cabinet--dungeon .arcade-cabinet__side-art::after {
   content: "";
   position: absolute;
-  inset: 12% 18%;
+  inset: 46% 14% 18% 14%;
   border-radius: 4px;
-  border: 2px solid rgba(90, 75, 60, 0.5);
-  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.4);
-  background: linear-gradient(180deg, rgba(255, 160, 60, 0.08), transparent);
+  border: 2px solid rgba(90, 75, 60, 0.45);
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.35);
+  background: linear-gradient(180deg, rgba(255, 140, 50, 0.06), transparent);
+  mix-blend-mode: soft-light;
 }
 
 /* ========== Crystal Wizards ========== */
@@ -544,25 +619,28 @@
 }
 
 .arcade-cabinet--crystal .arcade-cabinet__side-art {
-  background: linear-gradient(180deg, #1a0c28 0%, #0c0614 100%);
+  background: linear-gradient(180deg, rgba(60, 30, 90, 0.35) 0%, transparent 70%);
+  mix-blend-mode: soft-light;
+  opacity: 0.95;
 }
 
 .arcade-cabinet--crystal .arcade-cabinet__side-art::before {
   content: "";
   position: absolute;
-  left: 10%;
-  right: 10%;
-  top: 12%;
-  bottom: 15%;
+  left: 8%;
+  right: 8%;
+  top: 48%;
+  bottom: 14%;
   background: linear-gradient(
-    160deg,
-    rgba(255, 60, 100, 0.35) 0%,
-    rgba(60, 255, 140, 0.25) 33%,
-    rgba(80, 160, 255, 0.3) 66%,
-    rgba(255, 230, 80, 0.35) 100%
+    165deg,
+    rgba(255, 60, 100, 0.28) 0%,
+    rgba(60, 255, 140, 0.22) 33%,
+    rgba(80, 160, 255, 0.26) 66%,
+    rgba(255, 230, 80, 0.28) 100%
   );
-  clip-path: polygon(15% 0, 100% 12%, 85% 100%, 0 88%);
-  opacity: 0.85;
+  clip-path: polygon(12% 0, 100% 10%, 88% 100%, 0 90%);
+  opacity: 0.75;
+  mix-blend-mode: screen;
 }
 
 /* ========== Purple Worm ========== */
@@ -659,34 +737,38 @@
 }
 
 .arcade-cabinet--worm .arcade-cabinet__side-art {
-  background: linear-gradient(90deg, #2a1040 0%, #140820 50%, #1a0c30 100%);
+  background: linear-gradient(95deg, rgba(90, 40, 120, 0.4) 0%, transparent 55%);
+  mix-blend-mode: soft-light;
+  opacity: 0.92;
 }
 
 .arcade-cabinet--worm .arcade-cabinet__side-art::before {
   content: "";
   position: absolute;
-  left: -20%;
-  top: 15%;
-  width: 140%;
-  height: 55%;
+  left: -15%;
+  top: 44%;
+  width: 130%;
+  height: 48%;
   border-radius: 50%;
-  background: radial-gradient(ellipse at center, rgba(140, 60, 180, 0.35) 0%, transparent 65%);
+  background: radial-gradient(ellipse at center, rgba(140, 60, 180, 0.28) 0%, transparent 68%);
+  mix-blend-mode: screen;
 }
 
 .arcade-cabinet--worm .arcade-cabinet__side-art::after {
   content: "";
   position: absolute;
-  bottom: 18%;
+  bottom: 15%;
   left: 8%;
   right: 8%;
-  height: 22%;
+  height: 20%;
   background: repeating-linear-gradient(
     90deg,
-    rgba(200, 140, 230, 0.25) 0 4px,
+    rgba(200, 140, 230, 0.22) 0 4px,
     transparent 4px 10px
   );
   border-radius: 4px;
-  opacity: 0.6;
+  opacity: 0.55;
+  mix-blend-mode: multiply;
 }
 
 @media (prefers-reduced-motion: reduce) {

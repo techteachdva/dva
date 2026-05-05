@@ -9,7 +9,7 @@ title: Games Mr. Phil has made
 
 <div class="arcade-games-page">
 
-<p class="arcade-games-page__intro">Each cabinet is shown at an angle so you see the front and one side. Tap the screen to play.</p>
+<p class="arcade-games-page__intro">Classic upright cabinets are usually almost as deep as they are wide—so you see a broad side panel, not a thin edge. Tap the screen to play.</p>
 
 <div class="arcade-games-grid">
 
@@ -29,7 +29,9 @@ title: Games Mr. Phil has made
           </div>
           <div class="arcade-cuboid__face arcade-cuboid__face--right">
             <div class="arcade-cabinet__side-art" aria-hidden="true"></div>
+            <div class="arcade-cabinet__side-vents" aria-hidden="true"></div>
           </div>
+          <div class="arcade-cuboid__face arcade-cuboid__face--top" aria-hidden="true"></div>
         </div>
       </div>
     </div>
@@ -54,7 +56,9 @@ title: Games Mr. Phil has made
           </div>
           <div class="arcade-cuboid__face arcade-cuboid__face--right">
             <div class="arcade-cabinet__side-art" aria-hidden="true"></div>
+            <div class="arcade-cabinet__side-vents" aria-hidden="true"></div>
           </div>
+          <div class="arcade-cuboid__face arcade-cuboid__face--top" aria-hidden="true"></div>
         </div>
       </div>
     </div>
@@ -81,7 +85,9 @@ title: Games Mr. Phil has made
           </div>
           <div class="arcade-cuboid__face arcade-cuboid__face--right">
             <div class="arcade-cabinet__side-art" aria-hidden="true"></div>
+            <div class="arcade-cabinet__side-vents" aria-hidden="true"></div>
           </div>
+          <div class="arcade-cuboid__face arcade-cuboid__face--top" aria-hidden="true"></div>
         </div>
       </div>
     </div>
@@ -113,7 +119,9 @@ title: Games Mr. Phil has made
           </div>
           <div class="arcade-cuboid__face arcade-cuboid__face--right">
             <div class="arcade-cabinet__side-art" aria-hidden="true"></div>
+            <div class="arcade-cabinet__side-vents" aria-hidden="true"></div>
           </div>
+          <div class="arcade-cuboid__face arcade-cuboid__face--top" aria-hidden="true"></div>
         </div>
       </div>
     </div>
