@@ -2,6 +2,7 @@
 {"dg-publish":true,"permalink":"/mr-phil-s-digital-garden/","tags":["gardenEntry"],"noteIcon":""}
 ---
 
+
 Welcome to Mr. Phil's Digital Garden.
 
 [[QR Code Hub\|QR Code Hub]]
@@ -17,22 +18,18 @@ Welcome to Mr. Phil's Digital Garden.
 [[Pixel Art Museum\|Pixel Art Museum]]
 
 
-GAMES
-[[Escape Tech Game\|Escape Tech Game]]
 
-[[Dungeon Class\|Dungeon Class]]
 
-[[Crystal Wizards\|Crystal Wizards]]
 
-[[Purple Worm Escape\|Purple Worm Escape]]
+[[Games Mr. Phil has made]]
+
+
 
 
 
 Class Projects
 
 [[5-12 Methods. Literature and Reading.\|5-12 Methods. Literature and Reading.]]
-
-
 
 [[Peda_Go_Gee\|Peda_Go_Gee]]
 
