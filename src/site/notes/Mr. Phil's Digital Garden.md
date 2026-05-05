@@ -21,7 +21,7 @@ Welcome to Mr. Phil's Digital Garden.
 
 
 
-[[Games Mr. Phil has made]]
+[[Games Mr. Phil has made\|Games Mr. Phil has made]]
 
 
 
