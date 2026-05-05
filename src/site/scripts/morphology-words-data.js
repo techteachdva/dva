@@ -9,6 +9,20 @@
 
 import { MORPHEME_CATALOG } from "./morphology-morpheme-catalog.js";
 
+/** @type {Map<string, (typeof MORPHEME_CATALOG)[number]>|null} */
+let morphCatalogRowCache = null;
+function morphCatalogRow(/** @type {string} */ key) {
+  if (!morphCatalogRowCache) morphCatalogRowCache = new Map(MORPHEME_CATALOG.map((r) => [r.key, r]));
+  return morphCatalogRowCache.get(key);
+}
+
+/**
+ * One-line glosses for free bases used in trees but not fully described in MORPHEME_CATALOG
+ * (chart stays lighter; stubs and tooltips still read well).
+ */
+/** Glosses for free bases not yet described in MORPHEME_CATALOG (prefer catalog rows). */
+const LEX_GLOSS_SUPPLEMENT = /** @type {const} */ ({});
+
 /** @typedef {"tier1"|"tier2"|"tier3"} MorphTier */
 
 /**
@@ -563,7 +577,7 @@ const _MORPHOLOGY_WORDS_RAW = /** @type {const} */ ([
       gloss: "noun/verb: look beforehand",
       children: [
         { text: "pre-", gloss: "prefix: before", morphemeKey: "pfx:pre-", children: [] },
-        { text: "view", gloss: "see", morphemeKey: "lex:view", children: [] },
+        { text: "view", gloss: "noun/verb stem: see; look at", morphemeKey: "lex:view", children: [] },
       ],
     },
     deep: {
@@ -951,6 +965,80 @@ const _MORPHOLOGY_WORDS_RAW = /** @type {const} */ ([
       summary:
         "<strong>What you learn:</strong> <strong>Dict</strong> carries “say/tell”—dictionary (sayings of words), verdict (true saying). Pair with prefixes to steer meaning (<em>predict = say beforehand</em>).",
       tense: "Legal/civic contexts often—tier lifts because of register.",
+    },
+  },
+  {
+    id: "lex-dictionary",
+    label: "Dictionary",
+    tier: "tier2",
+    focusMorpheme: "dict / dic (say, speak)",
+    bracket: "[dict + -ion + -ary]",
+    note: "<strong>Exit ticket:</strong> Explain <em>dictionary</em> as something <strong>relating to</strong> (<strong>-ary</strong>) the abstract “saying” built on <strong>dict + -ion</strong> (<em>diction</em>).",
+    tree: {
+      text: "dictionary",
+      gloss: "noun: reference book of words and their senses",
+      children: [
+        { text: "dict", gloss: "bound base: say, speak", morphemeKey: "root:dict", children: [] },
+        { text: "-ion", gloss: "suffix: abstract noun — act, process, or result", morphemeKey: "sfx:-tion", children: [] },
+        { text: "-ary", gloss: "suffix: relating to; belonging to", morphemeKey: "sfx:-ary", children: [] },
+      ],
+    },
+    deep: {
+      summary:
+        "<strong>What you learn:</strong> <em>Dictionary</em> sums as <strong>dict + -ion + -ary</strong>: a thing <strong>relating to</strong> (<strong>-ary</strong>) the <strong>diction</strong> (“what is said”) built on <strong>dict</strong> (“say/speak”) — a book of word-sayings.",
+      etymology: [
+        { segment: "dict", origin: "Latin <em>dīcere</em> ‘say, speak’ — same spine as <em>verdict, dictate, predict</em>." },
+        { segment: "-ion", origin: "Nominalizing suffix: here names the abstract noun family (<em>diction</em> / what is said)." },
+        { segment: "-ary", origin: "Relational suffix — pertaining to the base noun." },
+      ],
+    },
+  },
+  {
+    id: "lex-contradict",
+    label: "Contradict",
+    tier: "tier2",
+    focusMorpheme: "dict / dic (say, speak)",
+    bracket: "[contra- + dict]",
+    note: "<strong>Exit ticket:</strong> Paraphrase <em>contradict</em> without using the word — use “against” and “say.”",
+    tree: {
+      text: "contradict",
+      gloss: "verb: say against; assert the opposite of",
+      children: [
+        { text: "contra-", gloss: "prefix: against, opposite", morphemeKey: "pfx:contra-", children: [] },
+        { text: "dict", gloss: "bound base: say, speak", morphemeKey: "root:dict", children: [] },
+      ],
+    },
+    deep: {
+      summary:
+        "<strong>What you learn:</strong> <strong>contra-</strong> means <strong>against</strong>; <strong>dict</strong> means <strong>say</strong>. Together: “say against” — opposing a claim in words.",
+      etymology: [
+        { segment: "contra-", origin: "Latin <em>contrā</em> ‘against, opposite.’" },
+        { segment: "dict", origin: "Latin ‘say, speak’ — same base as <em>dictionary</em> and <em>predict</em>." },
+      ],
+    },
+  },
+  {
+    id: "lex-uniform",
+    label: "Uniform",
+    tier: "tier2",
+    focusMorpheme: "form (shape, form)",
+    bracket: "[uni + form]",
+    note: "<strong>Exit ticket:</strong> How does <em>uni-</em> (one) change the meaning of <em>form</em> (shape)?",
+    tree: {
+      text: "uniform",
+      gloss: "adjective/noun: one shape; not varying",
+      children: [
+        { text: "uni", gloss: "bound base: one", morphemeKey: "root:uni", children: [] },
+        { text: "form", gloss: "shape; structure", morphemeKey: "root:form", children: [] },
+      ],
+    },
+    deep: {
+      summary:
+        "<strong>What you learn:</strong> <strong>Uniform</strong> = <strong>uni</strong> (one) + <strong>form</strong> (shape) — literally “one shape,” so parts match instead of varying.",
+      etymology: [
+        { segment: "uni", origin: "Latin <em>ūnus</em> ‘one’ — same family as <em>unite, universe</em>." },
+        { segment: "form", origin: "Latin <em>forma</em> ‘shape, figure’ — same base as <em>information, transform</em>." },
+      ],
     },
   },
   {
@@ -1367,6 +1455,26 @@ let _morphSuffixSpecsCache = null;
 let _morphRootSpecsCache = null;
 /** @type {Map<string, string>|null} */
 let _morphLexCache = null;
+/** @type {Map<string, string>|null} */
+let _morphLexGlossByKeyCache = null;
+
+function morphBuildLexGlossByKey() {
+  /** @type {Map<string, string>} */
+  const gloss = new Map();
+  for (const w of _MORPHOLOGY_WORDS_RAW) morphWalkLexGloss(w.tree, gloss);
+  return gloss;
+}
+
+function morphWalkLexGloss(node, /** @type {Map<string, string>} */ map) {
+  if (!node) return;
+  const k = node.morphemeKey;
+  const g = String(node.gloss || "").trim();
+  if (k && k.startsWith("lex:") && g && !/^free base$/i.test(g)) {
+    const prev = map.get(k);
+    if (!prev || g.length > prev.length) map.set(k, g);
+  }
+  for (const c of node.children || []) morphWalkLexGloss(c, map);
+}
 
 function morphPrefixSpecs() {
   if (_morphPrefixSpecsCache) return _morphPrefixSpecsCache;
@@ -1421,7 +1529,7 @@ function morphSuffixSpecs() {
     "sfx:-ant": ["ant", "ent"],
     "sfx:-ence": ["ence", "ance"],
     "sfx:-ous": ["ous", "ious"],
-    "sfx:-ity": ["ity", "ty"],
+    "sfx:-ity": ["ibility", "ety", "ity", "ty"],
     // Avoid conflated variants like -ative / -itive so the decomposer peels
     // iteratively (creative → creat + -ive; informative → in- + form + -ate + -ive).
     // "iv" lets us still peel the latent -ive after another suffix has stripped
@@ -1469,12 +1577,37 @@ function morphRootSpecs() {
   return out;
 }
 
+function morphRegisterLexemesFromCatalog(/** @type {Map<string, string>} */ lex) {
+  for (const r of MORPHEME_CATALOG) {
+    if (!r.key?.startsWith("lex:")) continue;
+    /** @type {Set<string>} */
+    const forms = new Set();
+    const mor = String(r.morpheme || "").trim();
+    if (mor) {
+      for (const chunk of mor.split(/[,/|]/)) {
+        const m = chunk.trim().toLowerCase().match(/^([a-z]+(?:-[a-z]+)?)/);
+        if (m) forms.add(m[1]);
+      }
+    }
+    const tail = String(r.key).slice(4);
+    if (tail) {
+      if (!tail.includes("-")) forms.add(tail.toLowerCase());
+      else forms.add(tail.split("-")[0].toLowerCase());
+    }
+    for (const f of forms) {
+      if (f.length < 2) continue;
+      if (!lex.has(f)) lex.set(f, r.key);
+    }
+  }
+}
+
 function morphBuildLexCache() {
   /** @type {Map<string, string>} */
   const lex = new Map();
   for (const w of _MORPHOLOGY_WORDS_RAW) {
     morphWalkLex(w.tree, lex);
   }
+  morphRegisterLexemesFromCatalog(lex);
   return lex;
 }
 
@@ -1498,6 +1631,11 @@ function morphLexLookup(text) {
   return _morphLexCache.get(text);
 }
 
+function morphLexGlossFromCuratedTrees(/** @type {string} */ morphemeKey) {
+  if (!_morphLexGlossByKeyCache) _morphLexGlossByKeyCache = morphBuildLexGlossByKey();
+  return _morphLexGlossByKeyCache.get(morphemeKey) || null;
+}
+
 function morphIsKnownStem(stem) {
   if (!stem) return false;
   for (const r of morphRootSpecs()) {
@@ -1515,10 +1653,16 @@ function morphIsKnownStem(stem) {
  */
 function morphReverseSuffixChange(stem, suffixVariant) {
   if (!stem || stem.length < 2) return stem;
-  // If the bare residue is already a recognized morpheme, leave it alone.
-  if (morphIsKnownStem(stem)) return stem;
+  /* Do not return early on morphIsKnownStem(stem): a bound root (calcul) may still
+   * need suffix-driven repair to a full lexeme (calcul + ate → calculate). */
 
   const sufBare = String(suffixVariant).replace(/^-/, "");
+
+  /* Latin / Latinate -ate verbs: calcul + ate → calculate, celebr + ate → celebrate (not calcul + silent e). */
+  if (sufBare === "ate" && stem.length >= 3) {
+    const fused = `${stem}ate`;
+    if (morphIsKnownStem(fused)) return fused;
+  }
 
   if (stem.endsWith("i")) {
     const before = stem.charAt(stem.length - 2);
@@ -1526,6 +1670,56 @@ function morphReverseSuffixChange(stem, suffixVariant) {
       const candidate = stem.slice(0, -1) + "y";
       if (morphIsKnownStem(candidate)) return candidate;
     }
+  }
+
+  /* Silent e: mak+ing → make; creat+ive → create; fam+ous → fame; sincer+ity → sincere; demonstr+ate → demonstrate. */
+  if (
+    (sufBare === "er" ||
+      sufBare === "or" ||
+      sufBare === "ing" ||
+      sufBare === "ed" ||
+      sufBare === "est" ||
+      sufBare === "ive" ||
+      sufBare === "iv" ||
+      sufBare === "ous" ||
+      sufBare === "ate" ||
+      sufBare === "ity") &&
+    stem.length >= 3 &&
+    !stem.endsWith("e")
+  ) {
+    if (morphIsKnownStem(`${stem}e`)) return `${stem}e`;
+  }
+
+  /* able + ity → ability (…il + ity → …le when the -le base is known). */
+  if (sufBare === "ity" && stem.length >= 4 && stem.endsWith("il")) {
+    const leForm = stem.slice(0, -2) + "le";
+    if (morphIsKnownStem(leForm)) return leForm;
+  }
+
+  /* cultur+al → culture, natur+al → nature (adjective -al after a stem that gained silent e). */
+  if (sufBare === "al" && stem.length >= 4 && !stem.endsWith("e")) {
+    if (morphIsKnownStem(`${stem}e`)) return `${stem}e`;
+  }
+
+  /* argu+ment → argue; valu+able → value; pati+ence → patient (silent e or -ent base). */
+  if (sufBare === "ment" || sufBare === "able" || sufBare === "ible" || sufBare === "ence" || sufBare === "ance") {
+    if (stem.length >= 3 && !stem.endsWith("e") && morphIsKnownStem(`${stem}e`)) return `${stem}e`;
+    if (stem.length >= 3 && morphIsKnownStem(`${stem}ent`)) return `${stem}ent`;
+  }
+
+  /* beauti+ful → beauty (y → i before -ful / -less, reversed when the -y base is known). */
+  if (
+    (sufBare === "ful" || sufBare === "less") &&
+    stem.endsWith("i") &&
+    stem.length >= 4
+  ) {
+    const yForm = stem.slice(0, -1) + "y";
+    if (morphIsKnownStem(yForm)) return yForm;
+  }
+
+  /* confid+ent → confident; stud+ent → student (Latin -ent / -ant). */
+  if ((sufBare === "ent" || sufBare === "ant") && stem.length >= 3 && morphIsKnownStem(`${stem}ent`)) {
+    return `${stem}ent`;
   }
 
   if (stem.length >= 3) {
@@ -1670,10 +1864,30 @@ function morphPickSuffix(stem, depth, focusKey) {
     // root:posit "pos" variant.
     if (depth > 0 && s.row.key === "sfx:-s") continue;
     for (const v of s.variants) {
+      /* Final -y in …ity is -ity, not adjective -y (reality, city, ability). */
+      if (s.row.key === "sfx:-y" && v === "y" && stem.length >= 4 && stem.endsWith("ity")) continue;
+      /* …iness words: the -y is part of the spelling before -ness, not adjective -y (readiness, business). */
+      if (s.row.key === "sfx:-y" && v === "y" && stem.includes("iness")) continue;
+      /* Do not strip adjective -y from a whole lexeme (ready → read + -y is a false peel). */
+      if (s.row.key === "sfx:-y" && v === "y") {
+        const whole = morphLexLookup(stem);
+        if (whole?.startsWith("lex:") && morphLexCanonicalStem(whole) === stem) continue;
+      }
+      /* legal, regal, local… are whole bases ending in -al, not *leg + -al. */
+      if (s.row.key === "sfx:-al" && morphLexLookup(stem)) continue;
+      /* caregiver and similar whole lemmas in the lexicon should not lose -er. */
+      if (s.row.key === "sfx:-er" && (v === "er" || v === "or") && depth === 0 && morphLexLookup(stem)) continue;
       // Require at least 3 characters of residue so we don't strip a base to a stub.
       if (stem.length - v.length < 3) continue;
       if (!stem.endsWith(v)) continue;
       const raw = stem.slice(0, stem.length - v.length);
+      /* Whole-word lexemes (fiction, nation) are not *fict* + -ion or *natur* + -al peels. */
+      if (s.row.key === "sfx:-tion") {
+        const whole = morphLexLookup(stem);
+        if (whole?.startsWith("lex:") && morphLexCanonicalStem(whole) === stem) continue;
+      }
+      /* theology + -ology wrongly yields "the"; prefer -logy peel (theo + logy). */
+      if (s.row.key === "sfx:-logy" && v === "ology" && raw === "the") continue;
       const residue = morphReverseSuffixChange(raw, v);
       // -tic shares letters with -ic; only peel -tic when the residue is a
       // recognizable stem (e.g. bio + tic → biotic), not arbitrary tails like
@@ -1683,7 +1897,7 @@ function morphPickSuffix(stem, depth, focusKey) {
         if (rs < 40 && !morphCanReachRecognized(residue, 2)) continue;
       }
       const score = morphResidueScore(residue) + v.length;
-      candidates.push({ spec: s, variant: v, residue, score });
+      candidates.push({ spec: s, variant: v, residue, score, raw });
     }
   }
   if (!candidates.length) return null;
@@ -1701,6 +1915,16 @@ function morphPickSuffix(stem, depth, focusKey) {
 }
 
 function morphPickPrefix(stem, depth, focusKey) {
+  /* Stub with focus lex:*: once residue is the whole lexeme (re- + construct), do not peel
+   * pfx:con- off "construct" — that would steal lex:construct from the chart row. */
+  if (
+    typeof focusKey === "string" &&
+    focusKey.startsWith("lex:") &&
+    stem === morphLexCanonicalStem(focusKey) &&
+    morphLexLookup(stem) === focusKey
+  ) {
+    return null;
+  }
   /** @type {Array<{spec: any, variant: string, residue: string, score: number}>} */
   const candidates = [];
   for (const p of morphPrefixSpecs()) {
@@ -1708,6 +1932,8 @@ function morphPickPrefix(stem, depth, focusKey) {
       if (stem.length - v.length < 3) continue;
       if (!stem.startsWith(v)) continue;
       const residue = stem.slice(v.length);
+      /* Avoid re- + *ity false splits (reality = real + -ity, not re- + ality). */
+      if (p.row.key === "pfx:re-" && v === "re" && residue.length >= 4 && residue.endsWith("ity")) continue;
       // Reject if residue is just suffix-tail noise (e.g. ad- "ac" + "tion").
       if (morphResidueIsAlmostAllSuffix(residue)) continue;
       const score = morphResidueScore(residue) + v.length;
@@ -1726,8 +1952,46 @@ function morphPickPrefix(stem, depth, focusKey) {
   return best;
 }
 
+/** Canonical surface for a catalog lexeme row (first morpheme token, else first key segment). */
+function morphLexCanonicalStem(/** @type {string} */ lexKey) {
+  if (typeof lexKey !== "string" || !lexKey.startsWith("lex:")) return "";
+  const row = morphCatalogRow(lexKey);
+  const mor = String(row?.morpheme || "").trim().toLowerCase();
+  if (mor) {
+    const chunk = mor.split(/[,/|]/)[0].trim();
+    const m = chunk.match(/^([a-z]+(?:-[a-z]+)?)/);
+    if (m) return m[1];
+  }
+  const tail = lexKey.slice(4);
+  if (!tail.includes("-")) return tail.toLowerCase();
+  return tail.split("-")[0].toLowerCase();
+}
+
+function morphLexStemNode(/** @type {string} */ stem, /** @type {string} */ lexKey) {
+  const row = morphCatalogRow(lexKey);
+  const fromCat = row?.meaning != null ? String(row.meaning).trim().split(/[;,]/)[0].trim().replace(/"/g, "") : "";
+  const fromTree = morphLexGlossFromCuratedTrees(lexKey);
+  const fromSup = /** @type {Record<string, string>} */ (LEX_GLOSS_SUPPLEMENT)[lexKey];
+  const bit = fromCat || fromTree || fromSup;
+  const gloss =
+    bit ? `${lexKey.startsWith("root:") ? "root" : "free base"}: ${bit}` :
+      lexKey.startsWith("root:") ? "bound base" :
+      "free base";
+  return {
+    text: stem,
+    gloss,
+    morphemeKey: lexKey,
+    children: [],
+  };
+}
+
 function morphClassifyStem(stem) {
   if (!stem) return null;
+  /* Whole-word lexemes (lex:calculate, lex:nature, …) win over shorter Latin roots (calcul, natur). */
+  const lexKeyPrefer = morphLexLookup(stem);
+  if (lexKeyPrefer?.startsWith("lex:") && morphLexCanonicalStem(lexKeyPrefer) === stem) {
+    return morphLexStemNode(stem, lexKeyPrefer);
+  }
   for (const r of morphRootSpecs()) {
     if (r.variants.includes(stem)) {
       const meaning = String(r.row.meaning || "").split(/[;,.]/)[0].trim();
@@ -1741,12 +2005,7 @@ function morphClassifyStem(stem) {
   }
   const lexKey = morphLexLookup(stem);
   if (lexKey) {
-    return {
-      text: stem,
-      gloss: lexKey.startsWith("root:") ? "bound base" : "free base",
-      morphemeKey: lexKey,
-      children: [],
-    };
+    return morphLexStemNode(stem, lexKey);
   }
   if (morphIsCommonShortBase(stem)) {
     return {
@@ -1756,6 +2015,24 @@ function morphClassifyStem(stem) {
     };
   }
   return null;
+}
+
+/**
+ * @param {any} row — MORPHEME_CATALOG row
+ * @param {"prefix" | "suffix"} role
+ */
+function morphCatalogAffixGloss(row, role) {
+  const raw = row?.meaning != null ? String(row.meaning).trim() : "";
+  if (!raw) return role === "prefix" ? "prefix" : "suffix";
+  const stripped = raw.replace(/^['"\s]+|['"\s]+$/g, "").replace(/\\"/g, '"');
+  const short = stripped
+    .split(/[.;]/)[0]
+    .trim()
+    .replace(/^['"]+|['"]+$/g, "")
+    .replace(/"/g, "")
+    .trim();
+  if (!short) return role === "prefix" ? "prefix" : "suffix";
+  return role === "prefix" ? `prefix: ${short}` : `suffix: ${short}`;
 }
 
 /**
@@ -1774,13 +2051,15 @@ function morphCatalogStubTree(surface, row) {
   /** @type {object[]} */
   const suffixSegs = [];
   let stem = lower;
+  /** When suffix repair returns the full surface (e.g. calcul+ate → calculate), classify the lemma, not the bound fragment. */
+  let stemSegOverride = /** @type {ReturnType<typeof morphClassifyStem>} */ (null);
 
   for (let g = 0; g < 5 && stem.length > 2; g++) {
     const pick = morphPickPrefix(stem, g, focusKey);
     if (!pick) break;
     prefixSegs.push({
       text: `${pick.variant}-`,
-      gloss: "prefix",
+      gloss: morphCatalogAffixGloss(pick.spec.row, "prefix"),
       morphemeKey: pick.spec.row.key,
       children: [],
     });
@@ -1788,19 +2067,26 @@ function morphCatalogStubTree(surface, row) {
   }
 
   for (let g = 0; g < 5 && stem.length > 2; g++) {
+    const beforeStem = stem;
     const pick = morphPickSuffix(stem, g, focusKey);
     if (!pick) break;
     const sufText = pick.variant.startsWith("-") ? pick.variant : `-${pick.variant}`;
     suffixSegs.unshift({
       text: sufText,
-      gloss: "suffix",
+      gloss: morphCatalogAffixGloss(pick.spec.row, "suffix"),
       morphemeKey: pick.spec.row.key,
       children: [],
     });
     stem = pick.residue;
+    const raw = typeof pick.raw === "string" ? pick.raw : "";
+    if (raw && pick.residue === beforeStem && pick.residue !== raw) {
+      stemSegOverride = morphClassifyStem(beforeStem);
+      break;
+    }
   }
 
-  const stemSeg = morphClassifyStem(stem) || {
+  const stemSeg = stemSegOverride ||
+    morphClassifyStem(stem) || {
     text: stem || lower,
     gloss: "stem",
     children: [],
@@ -1810,7 +2096,22 @@ function morphCatalogStubTree(surface, row) {
   const children = [...prefixSegs, stemSeg, ...suffixSegs];
 
   if (children.length === 1 && !children[0].morphemeKey) {
-    children[0].morphemeKey = focusKey;
+    const only = children[0];
+    const seg = String(only.text || "")
+      .trim()
+      .toLowerCase()
+      .replace(/^-+|-+$/g, "");
+    /* Do not tag the whole surface word with the lesson morpheme when decomposition failed. */
+    if (seg && seg !== lower) {
+      only.morphemeKey = focusKey;
+      const fr = morphCatalogRow(focusKey);
+      const m = fr?.meaning != null ? String(fr.meaning).trim().split(/[;,]/)[0].trim().replace(/"/g, "") : "";
+      if (m && only.gloss === "stem") only.gloss = fr?.key?.startsWith("root:") ? `root: ${m}` : only.gloss;
+    } else if (only.gloss === "stem") {
+      const fr = morphCatalogRow(focusKey);
+      const m = fr?.meaning != null ? String(fr.meaning).trim().split(/[;,]/)[0].trim().replace(/"/g, "") : "";
+      if (m) only.gloss = `word (lesson focus: ${fr?.morpheme ?? focusKey} — ${m})`;
+    }
   }
 
   return {

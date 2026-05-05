@@ -29,6 +29,34 @@
   padding: 1.25rem 1.5rem 0.75rem;
 }
 
+.morph-page-scope {
+  margin: 0 0 0.85rem;
+  font-size: 1.05rem;
+  line-height: 1.55;
+  opacity: 0.95;
+}
+
+.morph-page-stats {
+  margin: 0 0 1rem;
+  padding: 0.65rem 0 0.65rem 1.25rem;
+  list-style: disc;
+  font-size: 0.98rem;
+  line-height: 1.5;
+  opacity: 0.92;
+  border-top: 1px solid rgba(200, 244, 255, 0.14);
+  border-bottom: 1px solid rgba(200, 244, 255, 0.14);
+}
+
+.morph-page-stats li {
+  margin: 0.35rem 0;
+  padding-left: 0.15rem;
+}
+
+.morph-page-stats strong {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
 .morphology-tagline {
   margin: 0.5rem 0 0;
   font-size: 1.02rem;
@@ -3883,6 +3911,15 @@ html.morph-immersive-open body {
 
   .morphology-page .morph-page-title {
     font-size: 1.4rem;
+  }
+
+  .morph-page-scope {
+    font-size: 0.98rem;
+  }
+
+  .morph-page-stats {
+    font-size: 0.92rem;
+    padding-left: 1rem;
   }
 
   .morphology-tagline {

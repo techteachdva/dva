@@ -14,12 +14,22 @@ export const AFFIX_ORIGIN_HINT = {
     '<strong>un-</strong>: “not” or “reverse.” Common on everyday words: <em>unhappy, unzip</em>. Not the same family as Latin-type <strong>in-</strong>.',
   "pfx:de-": '<strong>de-</strong>: often “remove,” “reverse,” or “down.” Example: <em>decode</em>.',
   "pfx:pre-": '<strong>pre-</strong>: “before.” Examples: <em>preview, predict</em>.',
+  "pfx:contra-":
+    '<strong>contra-</strong>: “against” or “opposite.” Example: <em>contradict</em> = speak against; <em>contrary</em> = running opposite to.',
   "pfx:trans-": '<strong>trans-</strong>: “across” or “through.” Examples: <em>transport, translate</em>.',
   "sfx:-tion":
     '<strong>-tion / -ation</strong>: turns a verb-ish stem into a noun naming an act, process, or result. Example: <em>inform → information</em>.',
   "sfx:-ation": '<strong>-ation</strong>: same job as <strong>-tion</strong>—noun built from a stem.',
   "sfx:-ment": '<strong>-ment</strong>: noun suffix—“the result or product of ___ing.” Example: <em>develop → development</em>.',
   "sfx:-al": '<strong>-al</strong>: “related to” or “like a ___.” Example: <em>nation → national</em>.',
+  "sfx:-ary":
+    '<strong>-ary</strong>: “relating to” or “belonging to” (often after an abstract noun stem). Example: <em>dict + ion + ary → dictionary</em> (pertaining to “sayings” / wording).',
+  "sfx:-y-noun":
+    '<strong>-y</strong> (abstract noun): in Greek compounds like <em>biology, biography</em>, the final <strong>-y</strong> helps name a discipline or story-type — not the everyday adjective <strong>-y</strong> (<em>rainy</em>).',
+  "root:nect":
+    '<strong>nect</strong>: bind or tie — same spine as <em>connect</em> (bind together) and <em>disconnect</em>.',
+  "root:tele": '<strong>tele-</strong>: far; at a distance. Examples: <em>television, telephone, telescope</em>.',
+  "root:uni": '<strong>uni-</strong>: one; single. Examples: <em>uniform, unite, universe</em>.',
   "sfx:-ous": '<strong>-ous</strong>: “full of” or “having lots of ___.” Example: <em>dangerous</em>.',
   "sfx:-able":
     '<strong>-able</strong>: “can be ___ed” or “capable of being ___ed.” Example: <em>read → readable</em>.',

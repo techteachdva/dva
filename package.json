@@ -14,7 +14,9 @@
         "download-pck": "node scripts/download-pck.js",
         "inject-signaling": "node scripts/inject-signaling-url.js",
         "build": "npm-run-all get-theme build:sass download-pck download-crystalwizards inject-signaling build:eleventy",
-        "download-crystalwizards": "node scripts/download-crystalwizards.js"
+        "download-crystalwizards": "node scripts/download-crystalwizards.js",
+        "audit:morphology": "node scripts/audit-morphology-bank.mjs",
+        "audit:morphology:lenient": "node scripts/audit-morphology-bank.mjs --lenient"
     },
     "keywords": [],
     "author": "",

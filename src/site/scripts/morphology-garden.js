@@ -49,6 +49,7 @@ const MORPH_PICK_ALLOW = new Set([
   // Suffixes
   "sfx:-able", // -able, -ible
   "sfx:-al",
+  "sfx:-ary",
   "sfx:-ant", // -ant, -ent
   "sfx:-ate",
   "sfx:-ed",
@@ -72,6 +73,7 @@ const MORPH_PICK_ALLOW = new Set([
   "pfx:ad-", // includes assimilated forms like ag-, ap-, at-, …
   "pfx:anti-",
   "pfx:con-",
+  "pfx:contra-",
   "pfx:de-",
   "pfx:dis-", // includes dif-
   "pfx:ex-", // includes e-, ef-
@@ -96,6 +98,10 @@ const MORPH_PICK_ALLOW = new Set([
   "root:ceive", // cap / ceive / cept / cip
   "root:dict", // dict, dic
   "root:duct", // duct, duc, duce
+  "root:nect",
+  "root:tele",
+  "root:uni",
+  "sfx:-y-noun",
   "root:fect", // fact, fac, fect, fic
   "root:fer",
   "root:form",
