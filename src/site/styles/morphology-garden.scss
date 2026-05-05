@@ -977,7 +977,16 @@ html.morph-immersive-open body {
 }
 
 .morphology-shell--wb .morph-hint {
-  color: #64748b;
+  color: #0f172a;
+  font-size: 0.85rem;
+  font-weight: 500;
+  opacity: 1;
+  max-width: 46rem;
+}
+
+.morphology-shell--wb .morph-hint strong {
+  color: #020617;
+  font-weight: 800;
 }
 
 .morph-hint kbd {
@@ -989,8 +998,10 @@ html.morph-immersive-open body {
 }
 
 .morphology-shell--wb .morph-hint kbd {
-  border-color: #cbd5e1;
-  background: rgba(241, 245, 249, 0.95);
+  color: #0f172a;
+  border-color: #94a3b8;
+  background: #e2e8f0;
+  font-weight: 600;
 }
 
 .morph-highlights {
@@ -4330,13 +4341,6 @@ html.morph-immersive-open body {
 .morph-fs-btn[aria-pressed="true"] {
   border-color: #ff6ad5;
   background: linear-gradient(180deg, #fff5fb 0%, #ffe8f6 100%);
-}
-
-/* Hint readable on whiteboard */
-.morphology-shell--wb .morph-hint {
-  color: #475569;
-  font-size: 0.82rem;
-  max-width: 46rem;
 }
 
 /* Tooltip — minimal, readable on the whiteboard */

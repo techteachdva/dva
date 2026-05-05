@@ -38,92 +38,6 @@ const WORDS = JSON.parse(JSON.stringify(MORPHOLOGY_WORD_LIST));
 /** @type {Record<string, Array<{mesh: THREE.Mesh, wordId: string}>>} */
 const morphemeRegistry = {};
 
-/**
- * Morpheme-picker allowlist for the “Pick a morpheme” dropdown.
- * Only keys in this set can appear, and only when they link to 2+ words.
- *
- * (This keeps the linked-words view focused on high-payoff morphemes rather than
- * singletons like lex:cat.)
- */
-const MORPH_PICK_ALLOW = new Set([
-  // Suffixes
-  "sfx:-able", // -able, -ible
-  "sfx:-al",
-  "sfx:-ary",
-  "sfx:-ant", // -ant, -ent
-  "sfx:-ate",
-  "sfx:-ed",
-  "sfx:-ence", // -ence, -ance
-  "sfx:-er", // -er, -or
-  "sfx:-ing",
-  "sfx:-tion", // -ion, -tion
-  "sfx:-ity", // -ity, -ty
-  "sfx:-ive",
-  "sfx:-less",
-  "sfx:-logy", // -logy, -ology
-  "sfx:-ly",
-  "sfx:-ment",
-  "sfx:-ness",
-  "sfx:-ous", // -ous, -ious
-  "sfx:-s", // -s, -es
-  "sfx:-tic",
-  "sfx:-y",
-
-  // Prefixes
-  "pfx:ad-", // includes assimilated forms like ag-, ap-, at-, …
-  "pfx:anti-",
-  "pfx:con-",
-  "pfx:contra-",
-  "pfx:de-",
-  "pfx:dis-", // includes dif-
-  "pfx:ex-", // includes e-, ef-
-  "pfx:fore-",
-  "pfx:in-toward", // in-, im- (in/into)
-  "pfx:in-", // in-, im-, il-, ir- (not/without)
-  "pfx:inter-",
-  "pfx:mid-",
-  "pfx:mis-",
-  "pfx:non-",
-  "pfx:over-",
-  "pfx:per-",
-  "pfx:pre-",
-  "pfx:re-",
-  "pfx:sub-",
-  "pfx:trans-",
-  "pfx:un-",
-
-  // Roots / stems / combining forms
-  "root:act",
-  "root:bio",
-  "root:ceive", // cap / ceive / cept / cip
-  "root:dict", // dict, dic
-  "root:duct", // duct, duc, duce
-  "root:nect",
-  "root:tele",
-  "root:uni",
-  "sfx:-y-noun",
-  "root:fect", // fact, fac, fect, fic
-  "root:fer",
-  "root:form",
-  "root:geo",
-  "root:graph", // graph, gram
-  "root:mit", // mit, miss
-  "root:ply", // plic, ply
-  "root:port",
-  "root:posit", // pos, pon, posit
-  "root:rupt",
-  "root:scrib", // scrib, script
-  "root:sist", // sta, sist, stat, stit
-  "root:spect", // spect, spec, spic
-  "root:struct", // struct, stru
-  "root:tain", // ten, tain, tin
-  "root:tract",
-  "root:vis", // vis, vid
-
-  // Lexemes called out explicitly
-  "lex:care",
-]);
-
 /* ----------------------------------------------------------------------- */
 /*  Helpers                                                                */
 /* ----------------------------------------------------------------------- */
@@ -1003,18 +917,14 @@ function init() {
   }
   function fillMorphSelect(/** @type {HTMLSelectElement | null} */ sel) {
     if (!sel) return;
-    const items = allMorphemeKeysInBank()
-      .filter((k) => MORPH_PICK_ALLOW.has(k))
-      // Hide single-occurrence morphemes (e.g. lex:cat) so Morpheme mode stays “linked”.
-      .filter((k) => wordIdsForMorphemeKey(k).length >= 2)
-      .map((k) => {
-      const row = morphemeCatalogRow(k);
+    const items = MORPHEME_CATALOG.map((row) => {
+      const k = row.key;
       const count = wordIdsForMorphemeKey(k).length;
-      const text = row?.morpheme ?? morphemeKeyShort(k);
-      const meaning = row?.meaning ?? "";
+      const text = row.morpheme ?? morphemeKeyShort(k);
+      const meaning = row.meaning ?? "";
       const lbl = meaning ? `${text} — ${meaning} (${count})` : `${text} (${count})`;
       const sortKey = String(text).replace(/^[-]+/, "").toLocaleLowerCase();
-      return { key: k, text, lbl, sortKey };
+      return { key: k, lbl, sortKey };
     });
     items.sort((a, b) => a.sortKey.localeCompare(b.sortKey, undefined, { sensitivity: "base", numeric: true }));
     sel.innerHTML = items
@@ -1033,11 +943,9 @@ function init() {
   if (compareASel && compareA) compareASel.value = compareA;
   if (compareBSel && compareB) compareBSel.value = compareB;
   if (morphSelect) {
-    /* Pre-pick a morpheme that has multiple words so Morpheme mode is interesting on first click. */
-    const keys = allMorphemeKeysInBank().filter(
-      (k) => MORPH_PICK_ALLOW.has(k) && wordIdsForMorphemeKey(k).length >= 2
-    );
-    selectedMorpheme = keys[0] ?? allMorphemeKeysInBank()[0] ?? null;
+    /* Default to a morpheme that appears in several bank trees when possible. */
+    const keysMulti = MORPHEME_CATALOG.map((r) => r.key).filter((k) => wordIdsForMorphemeKey(k).length >= 2);
+    selectedMorpheme = keysMulti[0] ?? MORPHEME_CATALOG[0]?.key ?? null;
     if (selectedMorpheme) morphSelect.value = `${MORPH_SELECT_PREFIX}${encodeURIComponent(selectedMorpheme)}`;
   }
 
@@ -1259,10 +1167,9 @@ function init() {
     }
     /* If morpheme has 0 visible bank words, fall back */
     if (mode === "morpheme" && (!selectedMorpheme || wordIdsForMorphemeKey(selectedMorpheme).length === 0)) {
-      const fallback = allMorphemeKeysInBank().find(
-        (k) => MORPH_PICK_ALLOW.has(k) && wordIdsForMorphemeKey(k).length >= 2
-      );
-      selectedMorpheme = fallback ?? null;
+      const fallback =
+        MORPHEME_CATALOG.map((r) => r.key).find((k) => wordIdsForMorphemeKey(k).length >= 2) ?? MORPHEME_CATALOG[0]?.key ?? null;
+      selectedMorpheme = fallback;
       if (morphSelect && selectedMorpheme) morphSelect.value = `${MORPH_SELECT_PREFIX}${encodeURIComponent(selectedMorpheme)}`;
     }
     applyMode();
@@ -1401,7 +1308,7 @@ function init() {
     const m = pickMesh(ev.clientX, ev.clientY);
     if (!m) return;
     const key = m.userData.morphemeKey;
-    if (key && MORPH_PICK_ALLOW.has(key) && wordIdsForMorphemeKey(key).length >= 2) {
+    if (key && morphemeCatalogRow(key)) {
       selectedMorpheme = key;
       if (morphSelect) morphSelect.value = `${MORPH_SELECT_PREFIX}${encodeURIComponent(key)}`;
       setMode("morpheme");
