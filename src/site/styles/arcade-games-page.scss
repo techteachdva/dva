@@ -366,61 +366,172 @@
   box-shadow: 0 0 24px rgba(0, 220, 255, 0.2);
 }
 
+/* Control deck: dense PCB field + central processor tile */
 .arcade-cabinet--tech .arcade-cabinet__front-art {
   background:
-    linear-gradient(90deg, rgba(0, 255, 200, 0.07) 1px, transparent 1px),
-    linear-gradient(180deg, rgba(0, 255, 200, 0.07) 1px, transparent 1px),
-    radial-gradient(circle at 30% 40%, rgba(0, 255, 200, 0.12) 0%, transparent 50%),
-    linear-gradient(165deg, #050810 0%, #0a1525 50%, #061018 100%);
-  background-size: 20px 20px, 20px 20px, auto, auto;
+    radial-gradient(circle at 15% 20%, rgba(0, 255, 220, 0.08) 0%, transparent 40%),
+    radial-gradient(circle at 85% 75%, rgba(80, 160, 255, 0.1) 0%, transparent 35%),
+    linear-gradient(105deg, transparent 0%, rgba(0, 220, 255, 0.04) 45%, transparent 90%),
+    repeating-linear-gradient(
+      12deg,
+      rgba(0, 255, 200, 0.03) 0 1px,
+      transparent 1px 14px
+    ),
+    linear-gradient(90deg, rgba(0, 255, 200, 0.06) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(0, 255, 200, 0.06) 1px, transparent 1px),
+    linear-gradient(165deg, #03060c 0%, #071422 45%, #040a12 100%);
+  background-size:
+    auto,
+    auto,
+    auto,
+    auto,
+    18px 18px,
+    18px 18px,
+    auto;
+}
+
+.arcade-cabinet--tech .arcade-cabinet__front-art::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.35;
+  background:
+    linear-gradient(90deg, rgba(0, 220, 255, 0.45) 0 1px, transparent 1px) 0 0 / 100% 100%,
+    linear-gradient(0deg, rgba(0, 220, 255, 0.35) 0 1px, transparent 1px) 12% 18% / 76% 40%,
+    linear-gradient(118deg, transparent 40%, rgba(0, 255, 200, 0.15) 50%, transparent 60%);
+  pointer-events: none;
 }
 
 .arcade-cabinet--tech .arcade-cabinet__front-art::after {
   content: "";
   position: absolute;
-  width: 48px;
-  height: 48px;
+  z-index: 1;
+  width: 56px;
+  height: 56px;
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%) rotate(45deg);
-  border: 2px solid rgba(0, 220, 255, 0.4);
-  border-radius: 8px;
+  border: 2px solid rgba(0, 220, 255, 0.55);
+  border-radius: 10px;
   box-shadow:
-    0 0 18px rgba(0, 200, 255, 0.3),
-    inset 0 0 10px rgba(0, 255, 220, 0.12);
-  background: repeating-linear-gradient(
-    -45deg,
-    rgba(0, 60, 80, 0.35) 0 4px,
-    rgba(0, 30, 50, 0.45) 4px 8px
-  );
+    0 0 22px rgba(0, 200, 255, 0.45),
+    0 0 0 1px rgba(0, 255, 240, 0.12),
+    inset 0 0 14px rgba(0, 255, 220, 0.18);
+  background:
+    radial-gradient(circle at 35% 35%, rgba(0, 255, 220, 0.25) 0%, transparent 45%),
+    repeating-linear-gradient(
+      -45deg,
+      rgba(0, 70, 95, 0.5) 0 3px,
+      rgba(0, 35, 55, 0.55) 3px 7px
+    );
+}
+
+/* Side panel: midnight skyline + neon grid + floating wafer art */
+.arcade-cabinet--tech .arcade-cuboid__face--right {
+  background: linear-gradient(180deg, #020508 0%, #061222 55%, #030910 100%);
+  border-left: 2px solid rgba(0, 220, 255, 0.28);
 }
 
 .arcade-cabinet--tech .arcade-cabinet__side-art {
+  opacity: 1;
+  mix-blend-mode: normal;
   background:
-    linear-gradient(180deg, rgba(0, 255, 220, 0.18) 0%, transparent 38%),
-    repeating-linear-gradient(0deg, rgba(0, 200, 255, 0.11) 0 1px, transparent 1px 12px),
-    linear-gradient(100deg, rgba(0, 60, 90, 0.35) 0%, transparent 55%);
-  mix-blend-mode: soft-light;
-  opacity: 0.92;
+    radial-gradient(ellipse 120% 80% at 50% 18%, rgba(40, 140, 220, 0.35) 0%, transparent 55%),
+    radial-gradient(circle at 28% 22%, rgba(180, 240, 255, 0.12) 0%, transparent 25%),
+    radial-gradient(circle at 72% 30%, rgba(100, 200, 255, 0.1) 0%, transparent 22%),
+    linear-gradient(
+      180deg,
+      rgba(0, 30, 55, 0.95) 0%,
+      rgba(4, 18, 38, 0.85) 42%,
+      rgba(2, 10, 22, 0.98) 100%
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(0, 220, 255, 0.07) 0 1px,
+      transparent 1px 22px
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(0, 255, 200, 0.05) 0 1px,
+      transparent 1px 18px
+    ),
+    /* stylized city silhouette */
+    linear-gradient(180deg, transparent 0 58%, rgba(2, 8, 20, 0.98) 58.5%),
+    linear-gradient(90deg, transparent 0 8%, rgba(0, 180, 220, 0.12) 8.2%, transparent 8.5%),
+    linear-gradient(90deg, transparent 0 22%, rgba(0, 200, 255, 0.18) 22.3%, transparent 22.8%),
+    linear-gradient(90deg, transparent 0 38%, rgba(0, 160, 200, 0.14) 38.4%, transparent 39%),
+    linear-gradient(90deg, transparent 0 55%, rgba(0, 220, 240, 0.16) 55.3%, transparent 56%),
+    linear-gradient(90deg, transparent 0 72%, rgba(0, 140, 200, 0.13) 72.4%, transparent 73%),
+    linear-gradient(90deg, transparent 0 88%, rgba(0, 200, 255, 0.15) 88.3%, transparent 89%);
 }
 
-/* Access door / service panel look — lower on side, under vent band */
 .arcade-cabinet--tech .arcade-cabinet__side-art::before {
   content: "";
   position: absolute;
-  left: 10%;
-  right: 10%;
-  top: 50%;
-  bottom: 16%;
-  border: 1px solid rgba(0, 220, 255, 0.3);
-  border-radius: 4px;
-  background: repeating-linear-gradient(
-    90deg,
-    transparent 0 5px,
-    rgba(0, 255, 200, 0.12) 5px 6px
+  left: 50%;
+  top: 36%;
+  width: 78%;
+  height: 34%;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background:
+    conic-gradient(
+      from 0deg at 50% 50%,
+      rgba(0, 255, 220, 0.15),
+      rgba(0, 160, 255, 0.12),
+      rgba(0, 255, 200, 0.15),
+      rgba(80, 200, 255, 0.12),
+      rgba(0, 255, 220, 0.15)
+    ),
+    radial-gradient(circle at 50% 50%, rgba(0, 40, 60, 0.6) 0%, transparent 70%);
+  box-shadow:
+    0 0 40px rgba(0, 220, 255, 0.25),
+    inset 0 0 30px rgba(0, 100, 140, 0.4);
+  opacity: 0.95;
+}
+
+.arcade-cabinet--tech .arcade-cabinet__side-art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    transparent 0 52%,
+    rgba(0, 255, 200, 0.03) 52%,
+    transparent 53%
   );
-  opacity: 0.65;
-  mix-blend-mode: screen;
+  background-size: 100% 9px;
+  animation: tech-side-scan 4.5s linear infinite;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+@keyframes tech-side-scan {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 0 9px;
+  }
+}
+
+.arcade-cabinet--tech .arcade-cabinet__side-vents {
+  background: repeating-linear-gradient(
+    180deg,
+    rgba(4, 20, 35, 0.98) 0 5px,
+    rgba(0, 180, 220, 0.35) 5px 6px
+  );
+  box-shadow:
+    inset 0 3px 14px rgba(0, 220, 255, 0.15),
+    0 0 12px rgba(0, 220, 255, 0.2);
+  border-color: rgba(0, 220, 255, 0.35);
+}
+
+.arcade-cabinet--tech .arcade-cuboid__face--top {
+  background:
+    linear-gradient(105deg, rgba(0, 220, 255, 0.08) 0%, transparent 50%),
+    linear-gradient(180deg, #1a3048 0%, #0c1828 100%);
 }
 
 /* ========== Dungeon ========== */
@@ -443,11 +554,19 @@
   font-family: Georgia, "Times New Roman", serif;
 }
 
+/* Mossy dungeon wall + iron gate silhouette */
 .arcade-cabinet--dungeon .arcade-cabinet__front-art {
   background:
-    linear-gradient(335deg, rgba(255, 255, 255, 0.06) 25%, transparent 25%) 0 0 / 16px 16px,
-    linear-gradient(155deg, rgba(0, 0, 0, 0.18) 25%, transparent 25%) 0 0 / 16px 16px,
-    linear-gradient(180deg, #4a4238 0%, #2e2820 100%);
+    radial-gradient(ellipse at 50% 100%, rgba(40, 55, 35, 0.35) 0%, transparent 55%),
+    radial-gradient(circle at 50% 55%, rgba(255, 140, 60, 0.06) 0%, transparent 45%),
+    linear-gradient(180deg, transparent 0 36%, rgba(28, 20, 14, 0.82) 36.5%, transparent 37.5%),
+    linear-gradient(90deg, transparent 0 41%, rgba(22, 16, 11, 0.72) 41.6%, transparent 42.2%),
+    linear-gradient(90deg, transparent 0 49.2%, rgba(22, 16, 11, 0.68) 49.8%, transparent 50.4%),
+    linear-gradient(90deg, transparent 0 58%, rgba(22, 16, 11, 0.72) 58.6%, transparent 59.2%),
+    linear-gradient(335deg, rgba(255, 255, 255, 0.07) 25%, transparent 25%) 0 0 / 14px 14px,
+    linear-gradient(155deg, rgba(0, 0, 0, 0.22) 25%, transparent 25%) 0 0 / 14px 14px,
+    linear-gradient(180deg, #524840 0%, #3a3328 45%, #252018 100%);
+  box-shadow: inset 0 -8px 24px rgba(0, 0, 0, 0.35);
 }
 
 .arcade-cabinet--dungeon .arcade-cabinet__front-art::before,
@@ -456,20 +575,22 @@
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  width: 22px;
-  height: 62px;
+  width: 24px;
+  height: 64px;
   border-radius: 3px 3px 2px 2px;
-  background: linear-gradient(90deg, #3d3530, #2a2420 45%, #3d3530);
-  box-shadow: inset 0 -6px 0 rgba(0, 0, 0, 0.35);
-  z-index: 1;
+  background: linear-gradient(90deg, #454038, #2e2822 48%, #454038);
+  box-shadow:
+    inset 0 -7px 0 rgba(0, 0, 0, 0.4),
+    inset 1px 0 0 rgba(255, 200, 120, 0.06);
+  z-index: 2;
 }
 
 .arcade-cabinet--dungeon .arcade-cabinet__front-art::before {
-  left: 14px;
+  left: 12px;
 }
 
 .arcade-cabinet--dungeon .arcade-cabinet__front-art::after {
-  right: 14px;
+  right: 12px;
 }
 
 .arcade-cabinet--dungeon .torch-flame {
@@ -517,23 +638,88 @@
   }
 }
 
+/* Side: moonlit castle wall mural */
+.arcade-cabinet--dungeon .arcade-cuboid__face--right {
+  background: linear-gradient(180deg, #1c1510 0%, #2a2218 55%, #181210 100%);
+  border-left: 2px solid rgba(200, 160, 100, 0.15);
+}
+
 .arcade-cabinet--dungeon .arcade-cabinet__side-art {
+  opacity: 1;
+  mix-blend-mode: normal;
   background:
-    linear-gradient(165deg, rgba(255, 255, 255, 0.06) 25%, transparent 25%) 0 0 / 11px 11px,
-    linear-gradient(180deg, rgba(60, 48, 38, 0.45) 0%, transparent 60%);
-  mix-blend-mode: multiply;
-  opacity: 0.88;
+    radial-gradient(circle at 22% 14%, rgba(255, 245, 210, 0.85) 0%, rgba(255, 230, 180, 0.2) 8%, transparent 12%),
+    radial-gradient(circle at 22% 14%, rgba(255, 255, 255, 0.15) 0%, transparent 15%),
+    linear-gradient(180deg, rgba(15, 12, 22, 0.65) 0%, transparent 28%),
+    /* battlements */
+    linear-gradient(180deg, transparent 0 10%, rgba(35, 28, 22, 0.95) 10.2%, transparent 10.6%),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 9%,
+      rgba(45, 38, 32, 0.9) 9% 10.5%,
+      transparent 10.5% 19%,
+      rgba(45, 38, 32, 0.88) 19% 20.5%,
+      transparent 20.5% 100%
+    ),
+    linear-gradient(180deg, rgba(20, 16, 12, 0.9) 0%, rgba(40, 32, 26, 0.85) 100%),
+    linear-gradient(165deg, rgba(255, 255, 255, 0.05) 25%, transparent 25%) 0 0 / 10px 10px,
+    linear-gradient(180deg, #4a3d34 0%, #2a2218 100%);
+}
+
+.arcade-cabinet--dungeon .arcade-cabinet__side-art::before {
+  content: "";
+  position: absolute;
+  left: 8%;
+  right: 10%;
+  top: 32%;
+  bottom: 22%;
+  border-radius: 4px 4px 2px 2px;
+  border: 3px solid rgba(60, 48, 38, 0.8);
+  box-shadow:
+    inset 0 0 20px rgba(0, 0, 0, 0.55),
+    inset 0 4px 0 rgba(255, 160, 80, 0.08);
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.35) 0 2px,
+      rgba(25, 20, 16, 0.6) 2px 14px
+    ),
+    linear-gradient(180deg, rgba(80, 50, 30, 0.25), transparent);
 }
 
 .arcade-cabinet--dungeon .arcade-cabinet__side-art::after {
   content: "";
   position: absolute;
-  inset: 46% 14% 18% 14%;
-  border-radius: 4px;
-  border: 2px solid rgba(90, 75, 60, 0.45);
-  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.35);
-  background: linear-gradient(180deg, rgba(255, 140, 50, 0.06), transparent);
-  mix-blend-mode: soft-light;
+  left: 14%;
+  width: 3px;
+  top: 40%;
+  bottom: 28%;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    rgba(255, 200, 100, 0.12) 30%,
+    rgba(255, 200, 100, 0.12) 70%,
+    transparent 100%
+  );
+  box-shadow:
+    38px 0 0 rgba(255, 200, 100, 0.1),
+    76px 0 0 rgba(255, 200, 100, 0.08);
+  opacity: 0.9;
+}
+
+.arcade-cabinet--dungeon .arcade-cabinet__side-vents {
+  background: repeating-linear-gradient(
+    180deg,
+    rgba(18, 14, 10, 0.96) 0 5px,
+    rgba(55, 42, 32, 0.85) 5px 6px
+  );
+  border-color: rgba(80, 60, 45, 0.6);
+}
+
+.arcade-cabinet--dungeon .arcade-cuboid__face--top {
+  background:
+    linear-gradient(180deg, rgba(80, 60, 45, 0.35) 0%, transparent 40%),
+    linear-gradient(180deg, #4a3d34 0%, #2e261e 100%);
 }
 
 /* ========== Crystal Wizards ========== */
@@ -565,7 +751,11 @@
 }
 
 .arcade-cabinet--crystal .arcade-cabinet__front-art {
-  background: #120818;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(180, 100, 220, 0.2) 0%, transparent 45%),
+    radial-gradient(ellipse at 70% 80%, rgba(80, 200, 255, 0.15) 0%, transparent 40%),
+    radial-gradient(circle at 50% 50%, rgba(40, 20, 70, 0.5) 0%, transparent 65%),
+    #120818;
 }
 
 .arcade-cabinet--crystal .crystal-facet {
@@ -632,29 +822,91 @@
   }
 }
 
+.arcade-cabinet--crystal .arcade-cuboid__face--right {
+  background: radial-gradient(ellipse at 50% 0%, rgba(80, 60, 140, 0.4) 0%, #0c0618 45%);
+  border-left: 2px solid rgba(200, 180, 255, 0.2);
+}
+
+/* Side: cavern of faceted crystals — R / G / B / Y shards + sparkle field */
 .arcade-cabinet--crystal .arcade-cabinet__side-art {
-  background: linear-gradient(180deg, rgba(60, 30, 90, 0.35) 0%, transparent 70%);
-  mix-blend-mode: soft-light;
-  opacity: 0.95;
+  opacity: 1;
+  mix-blend-mode: normal;
+  background:
+    radial-gradient(circle at 20% 25%, rgba(255, 80, 120, 0.35) 0%, transparent 25%),
+    radial-gradient(circle at 78% 18%, rgba(80, 255, 160, 0.3) 0%, transparent 22%),
+    radial-gradient(circle at 55% 42%, rgba(100, 180, 255, 0.35) 0%, transparent 28%),
+    radial-gradient(circle at 35% 68%, rgba(255, 240, 100, 0.32) 0%, transparent 26%),
+    radial-gradient(circle at 50% 88%, rgba(255, 60, 160, 0.15) 0%, transparent 35%),
+    repeating-radial-gradient(circle at 50% 40%, transparent 0 3px, rgba(255, 255, 255, 0.04) 3px 4px),
+    linear-gradient(180deg, #1a0c2a 0%, #120818 70%, #0a0412 100%);
 }
 
 .arcade-cabinet--crystal .arcade-cabinet__side-art::before {
   content: "";
   position: absolute;
-  left: 8%;
-  right: 8%;
-  top: 48%;
-  bottom: 14%;
+  left: 50%;
+  top: 28%;
+  width: 72%;
+  height: 48%;
+  transform: translateX(-50%);
+  clip-path: polygon(50% 0%, 100% 38%, 82% 100%, 18% 100%, 0% 38%);
+  background:
+    conic-gradient(
+      from 220deg at 50% 60%,
+      rgba(255, 80, 120, 0.55) 0deg,
+      rgba(255, 220, 100, 0.45) 90deg,
+      rgba(80, 255, 160, 0.5) 180deg,
+      rgba(100, 180, 255, 0.55) 270deg,
+      rgba(255, 80, 120, 0.55) 360deg
+    ),
+    linear-gradient(180deg, rgba(20, 10, 40, 0.3), rgba(10, 5, 20, 0.85));
+  box-shadow:
+    0 0 35px rgba(200, 160, 255, 0.35),
+    inset 0 0 40px rgba(255, 255, 255, 0.08);
+  opacity: 0.95;
+}
+
+.arcade-cabinet--crystal .arcade-cabinet__side-art::after {
+  content: "";
+  position: absolute;
+  inset: 0;
   background: linear-gradient(
-    165deg,
-    rgba(255, 60, 100, 0.28) 0%,
-    rgba(60, 255, 140, 0.22) 33%,
-    rgba(80, 160, 255, 0.26) 66%,
-    rgba(255, 230, 80, 0.28) 100%
+    125deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.2) 48%,
+    transparent 58%
   );
-  clip-path: polygon(12% 0, 100% 10%, 88% 100%, 0 90%);
-  opacity: 0.75;
-  mix-blend-mode: screen;
+  animation: crystal-side-prism 5s ease-in-out infinite;
+  pointer-events: none;
+  opacity: 0.45;
+}
+
+@keyframes crystal-side-prism {
+  0%,
+  100% {
+    transform: translateX(-8%) rotate(0deg);
+    opacity: 0.35;
+  }
+  50% {
+    transform: translateX(8%) rotate(0deg);
+    opacity: 0.55;
+  }
+}
+
+.arcade-cabinet--crystal .arcade-cabinet__side-vents {
+  background: repeating-linear-gradient(
+    180deg,
+    rgba(30, 15, 50, 0.96) 0 4px,
+    rgba(100, 80, 180, 0.35) 4px 5px
+  );
+  border-color: rgba(180, 140, 255, 0.35);
+  box-shadow: inset 0 2px 12px rgba(200, 160, 255, 0.12);
+}
+
+.arcade-cabinet--crystal .arcade-cuboid__face--top {
+  background:
+    conic-gradient(from 40deg, rgba(255, 100, 140, 0.2), rgba(100, 255, 180, 0.15), rgba(120, 180, 255, 0.2), rgba(255, 230, 100, 0.18), rgba(255, 100, 140, 0.2)),
+    linear-gradient(180deg, #2a1a40 0%, #140820 100%);
 }
 
 /* ========== Purple Worm ========== */
@@ -679,7 +931,15 @@
 }
 
 .arcade-cabinet--worm .arcade-cabinet__front-art {
-  background: radial-gradient(ellipse at 50% 100%, #4a2080 0%, #1a0628 55%, #0c0214 100%);
+  background:
+    radial-gradient(ellipse at 50% 35%, rgba(200, 120, 255, 0.2) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 120%, rgba(60, 20, 90, 0.9) 0%, transparent 55%),
+    repeating-linear-gradient(
+      95deg,
+      rgba(80, 40, 120, 0.08) 0 2px,
+      transparent 2px 16px
+    ),
+    radial-gradient(ellipse at 50% 100%, #4a2080 0%, #1a0628 55%, #0c0214 100%);
 }
 
 .arcade-cabinet--worm .worm-glow {
@@ -687,14 +947,14 @@
   left: 50%;
   top: 42%;
   transform: translate(-50%, -50%);
-  width: 100px;
-  height: 72px;
+  width: 110px;
+  height: 78px;
   border-radius: 50%;
   background: radial-gradient(
     ellipse at 50% 50%,
-    rgba(180, 80, 220, 0.3) 0%,
-    rgba(80, 20, 100, 0.15) 45%,
-    transparent 70%
+    rgba(220, 140, 255, 0.35) 0%,
+    rgba(120, 60, 180, 0.2) 45%,
+    transparent 72%
   );
   animation: worm-pulse 3s ease-in-out infinite;
   pointer-events: none;
@@ -750,39 +1010,78 @@
   border-bottom: 14px solid #b898d8;
 }
 
+/* Side: colossal worm coiling through purple depths */
+.arcade-cabinet--worm .arcade-cuboid__face--right {
+  background: linear-gradient(180deg, #120418 0%, #2a0c38 40%, #080210 100%);
+  border-left: 2px solid rgba(200, 120, 220, 0.22);
+}
+
 .arcade-cabinet--worm .arcade-cabinet__side-art {
-  background: linear-gradient(95deg, rgba(90, 40, 120, 0.4) 0%, transparent 55%);
-  mix-blend-mode: soft-light;
-  opacity: 0.92;
+  opacity: 1;
+  mix-blend-mode: normal;
+  background:
+    radial-gradient(ellipse 100% 70% at 50% 45%, rgba(120, 40, 160, 0.45) 0%, transparent 60%),
+    radial-gradient(ellipse 80% 50% at 10% 75%, rgba(60, 20, 80, 0.7) 0%, transparent 45%),
+    radial-gradient(ellipse 70% 45% at 92% 30%, rgba(100, 50, 140, 0.5) 0%, transparent 40%),
+    repeating-linear-gradient(
+      12deg,
+      rgba(40, 15, 60, 0.25) 0 18px,
+      rgba(20, 8, 35, 0.35) 18px 36px
+    ),
+    linear-gradient(180deg, #1e0a2a 0%, #0d0518 100%);
 }
 
 .arcade-cabinet--worm .arcade-cabinet__side-art::before {
   content: "";
   position: absolute;
-  left: -15%;
-  top: 44%;
-  width: 130%;
-  height: 48%;
-  border-radius: 50%;
-  background: radial-gradient(ellipse at center, rgba(140, 60, 180, 0.28) 0%, transparent 68%);
-  mix-blend-mode: screen;
+  left: -8%;
+  top: 12%;
+  width: 116%;
+  height: 78%;
+  border-radius: 45% 55% 48% 52% / 52% 48% 51% 49%;
+  background:
+    radial-gradient(ellipse at 35% 45%, rgba(180, 100, 200, 0.35) 0%, transparent 35%),
+    radial-gradient(ellipse at 70% 55%, rgba(100, 40, 140, 0.4) 0%, transparent 40%),
+    repeating-linear-gradient(
+      -18deg,
+      rgba(60, 25, 90, 0.5) 0 14px,
+      rgba(40, 15, 70, 0.55) 14px 28px
+    ),
+    linear-gradient(160deg, rgba(120, 60, 160, 0.25) 0%, transparent 50%);
+  box-shadow:
+    inset -20px 0 40px rgba(0, 0, 0, 0.45),
+    0 0 50px rgba(140, 60, 180, 0.25);
+  opacity: 0.92;
 }
 
 .arcade-cabinet--worm .arcade-cabinet__side-art::after {
   content: "";
   position: absolute;
-  bottom: 15%;
-  left: 8%;
-  right: 8%;
-  height: 20%;
+  left: 22%;
+  top: 28%;
+  width: 18%;
+  height: 12%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 80, 120, 0.6) 0%, rgba(120, 30, 80, 0.4) 45%, transparent 70%);
+  box-shadow:
+    42px 18px 0 -2px rgba(255, 100, 140, 0.35),
+    85px -8px 0 -4px rgba(255, 120, 160, 0.28);
+  opacity: 0.85;
+}
+
+.arcade-cabinet--worm .arcade-cabinet__side-vents {
   background: repeating-linear-gradient(
-    90deg,
-    rgba(200, 140, 230, 0.22) 0 4px,
-    transparent 4px 10px
+    180deg,
+    rgba(25, 8, 40, 0.97) 0 5px,
+    rgba(100, 50, 130, 0.4) 5px 6px
   );
-  border-radius: 4px;
-  opacity: 0.55;
-  mix-blend-mode: multiply;
+  border-color: rgba(160, 80, 200, 0.4);
+}
+
+.arcade-cabinet--worm .arcade-cuboid__face--top {
+  background:
+    radial-gradient(ellipse at 40% 0%, rgba(140, 80, 180, 0.35) 0%, transparent 55%),
+    linear-gradient(180deg, #3a1850 0%, #180820 100%);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -797,6 +1096,12 @@
     animation: none !important;
   }
   .arcade-cabinet--crystal .arcade-cabinet__front-art::after {
+    animation: none !important;
+  }
+  .arcade-cabinet--tech .arcade-cabinet__side-art::after {
+    animation: none !important;
+  }
+  .arcade-cabinet--crystal .arcade-cabinet__side-art::after {
     animation: none !important;
   }
   .worm-glow {
