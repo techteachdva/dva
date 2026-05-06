@@ -11,6 +11,7 @@ export const ALL_CHEAT_IDS = [
   "dragon",
   "greatwyrm",
   "dealz",
+  "credits",
   "jilly",
   "bubblegum",
   "rowan",
@@ -123,6 +124,16 @@ export const CHEAT_CODEX_DETAILS = {
       "Toggle OFF to restore normal 3-card (or 4-card elite) offers.",
     ],
     flavor: "Wholesale curses. Retail soul prices may vary.",
+  },
+  credits: {
+    code: "credits",
+    title: "Credits",
+    facts: [
+      "Unlocks the Credits screen and opens it immediately.",
+      "Credits also unlock automatically after your first victory on Normal difficulty or harder.",
+      "No direct score impact (except the usual difficulty rows if Wyrm/Dragon/Greatwyrm are active).",
+    ],
+    flavor: "Signed in bile ink. Licensed in daylight.",
   },
   greatwyrm: {
     code: "greatwyrm",

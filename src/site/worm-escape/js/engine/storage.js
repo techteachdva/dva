@@ -39,6 +39,7 @@ const DEFAULT_SAVE = {
     cat: false,
     necromancerBuild: false,
     endlessUnlocked: false,
+    creditsUnlocked: false,
   },
   stats: {
     runs: 0,
@@ -164,6 +165,11 @@ export function recordRun(save, result) {
     if (!save.unlocks.blunderbuss) {
       save.unlocks.blunderbuss = true;
       newUnlocks.push({ id: "blunderbuss", label: "NEW WEAPON: BRASS BLUNDERBUSS unlocked!" });
+    }
+    // Credits unlock on Normal difficulty or harder (i.e. not Wyrm easy bias).
+    if (!result.easyMode && !save.unlocks.creditsUnlocked) {
+      save.unlocks.creditsUnlocked = true;
+      newUnlocks.push({ id: "creditsUnlocked", label: "CREDITS unlocked! (Title screen)" });
     }
   }
   // ============= WIN AS VIPER =============

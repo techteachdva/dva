@@ -7,22 +7,25 @@ import { loadSave } from "../engine/storage.js";
 import { InstructionsScene } from "./instructions.js";
 import { EncyclopediaScene } from "./encyclopedia.js";
 import { TutorialScene } from "./tutorial.js";
+import { CreditsScene } from "./credits.js";
 import { pointInRect } from "../engine/pointer.js";
 
 // Total possible persistent unlocks - keep this in sync with DEFAULT_SAVE.unlocks.
 // v0.16: viperBuild, wizardBuild, bileWhip, hexStaff, megaphone, boneSpear,
 // blunderbuss, cursedScythe, rustyChainsaw, cat = 10
-const UNLOCK_TOTAL = 10;
+const UNLOCK_TOTAL = 11;
 // Order kept matching DEFAULT_SAVE.unlocks (excluding the informational
 // `anyElite` flag which is implied by hexStaff/rustyChainsaw).
 const UNLOCK_KEYS = [
   "viperBuild", "wizardBuild", "bileWhip", "hexStaff",
   "megaphone", "boneSpear", "blunderbuss",
   "cursedScythe", "rustyChainsaw", "cat",
+  "creditsUnlocked",
 ];
 
 // Title screen Codex launcher (CHEATS shelf includes victory-unlocked dossiers).
 const CODEX_BTN = { x: W - 308, y: H - 128, w: 288, h: 48 };
+const CREDITS_BTN = { x: W - 308, y: H - 184, w: 288, h: 44 };
 
 // Centered under the story panel — full-game guided tour.
 const TUTORIAL_BTN = { x: (W - 320) / 2, y: 684, w: 320, h: 44 };
@@ -64,13 +67,17 @@ export class IntroScene {
     const mx = game.input.mouseX, my = game.input.mouseY;
     const storyDone = this.reveal >= STORY.join("\n").length;
 
-    if (
-      game.input.wasPressed("Mouse0") &&
-      pointInRect(mx, my, CODEX_BTN.x, CODEX_BTN.y, CODEX_BTN.w, CODEX_BTN.h)
-    ) {
-      SFX.click();
-      game.scenes.push(new EncyclopediaScene(), game);
-      return;
+    if (game.input.wasPressed("Mouse0")) {
+      if (pointInRect(mx, my, CODEX_BTN.x, CODEX_BTN.y, CODEX_BTN.w, CODEX_BTN.h)) {
+        SFX.click();
+        game.scenes.push(new EncyclopediaScene(), game);
+        return;
+      }
+      if (this.save?.unlocks?.creditsUnlocked && pointInRect(mx, my, CREDITS_BTN.x, CREDITS_BTN.y, CREDITS_BTN.w, CREDITS_BTN.h)) {
+        SFX.click();
+        game.scenes.push(new CreditsScene(), game);
+        return;
+      }
     }
 
     if (
@@ -165,6 +172,20 @@ export class IntroScene {
       size: 13, color: "#fffefb", align: "center", baseline: "middle", bold: true,
     });
     ctx.restore();
+
+    if (this.save?.unlocks?.creditsUnlocked) {
+      ctx.save();
+      roundRect(ctx, CREDITS_BTN.x, CREDITS_BTN.y, CREDITS_BTN.w, CREDITS_BTN.h, 8);
+      ctx.fillStyle = "rgba(26,18,62,0.70)";
+      ctx.fill();
+      ctx.strokeStyle = COLORS.gold;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      drawText(ctx, "CREDITS — CLICK", CREDITS_BTN.x + CREDITS_BTN.w / 2, CREDITS_BTN.y + CREDITS_BTN.h / 2, {
+        size: 13, color: "#fffefb", align: "center", baseline: "middle", bold: true,
+      });
+      ctx.restore();
+    }
 
     this.drawWormFrame(ctx);
   }

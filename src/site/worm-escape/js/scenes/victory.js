@@ -158,6 +158,7 @@ export class VictoryScene {
     this.save = null;
     this.newUnlocks = [];
     this.myRank = -1;          // index into save.highScores (-1 if off-list)
+    this.easyEncourage = false;
   }
 
   enter(game) {
@@ -166,6 +167,15 @@ export class VictoryScene {
     this.abruptFinale = !!game.victoryAbruptReveal;
     if (game.victoryAbruptReveal) game.victoryAbruptReveal = false;
     this.score = calcScore(p, game);
+    // If the player cleared the run on Wyrm (easy bias), dock the final score and
+    // give a friendly nudge to step up.
+    if (game?.easyMode && this.score) {
+      const base = Math.max(0, Math.floor(this.score.total));
+      const dock = Math.max(0, Math.floor(base * 0.35));
+      if (dock > 0) this.score.parts.push({ label: "Easy Mode dock (practice run)", value: -dock });
+      this.score.total = Math.max(0, base - dock);
+      this.easyEncourage = true;
+    }
     this.grade = grade(this.score.total, !!game.endlessMode);
     // Persist the run + compute unlocks.
     const save = loadSave();
@@ -179,6 +189,7 @@ export class VictoryScene {
       hitlessChambers: p.score ? p.score.hitlessChambers : 0,
       gullethitless:   p.score ? !!p.score.gullethitless : false,
       elitesKilled:    p.score ? p.score.elitesKilled || 0 : 0,
+      easyMode: !!game?.easyMode,
     };
     const { save: updated, newUnlocks, entry } = recordRun(save, result);
     this.save = updated;
@@ -309,6 +320,16 @@ export class VictoryScene {
       if (blink) {
         drawText(ctx, ">> SPACE or R to start a new tale <<", W / 2, H - 18, {
           size: 16, color: COLORS.bone, align: "center", bold: true,
+        });
+      }
+    }
+
+    // Encouraging note for Easy wins.
+    if (this.easyEncourage) {
+      const shown = this.score ? (this.revealT > this.score.parts.length * 0.35 + 0.4) : true;
+      if (shown) {
+        drawText(ctx, "You're ready to take on normal difficulty!", W / 2, H - 48, {
+          size: 18, color: COLORS.bile, align: "center", bold: true, glow: COLORS.blood,
         });
       }
     }

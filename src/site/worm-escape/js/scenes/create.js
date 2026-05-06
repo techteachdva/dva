@@ -95,6 +95,10 @@ const LOADOUT_UNLOCK_HINT = {
   cat:           "UNLOCK: Clear a run with WIZARD.",
 };
 
+const UNLOCKABLES_PANEL = { x: 18, y: 152, w: 190, h: 528 };
+
+function yn(b) { return b ? "YES" : "NO"; }
+
 // Fisher-Yates shuffle. Returns a NEW array; doesn't mutate input.
 function shuffled(arr) {
   const a = arr.slice();
@@ -490,6 +494,7 @@ export class CreateScene {
 
     drawBanner(ctx, "FORGE YOUR HERO", W / 2, 64, 44, COLORS.bile, COLORS.blood);
     this.drawForgeDifficultyRow(ctx, game);
+    this.drawUnlockablesHud(ctx);
 
     if (this.step === 0) this.renderBuildSelect(ctx);
     else if (this.step === 1) this.renderLoadoutSelect(ctx, game);
@@ -498,6 +503,67 @@ export class CreateScene {
     drawText(ctx, "A/D wheel · click cards · SPACE confirm · BACKSPACE back · M mute · Alt+Enter fullscreen · \\ cheat terminal", W / 2, H - 26, {
       size: 15, color: COLORS.boneDim, align: "center",
     });
+  }
+
+  drawUnlockablesHud(ctx) {
+    const save = this.save || loadSave();
+    const u = save?.unlocks || {};
+    const b = UNLOCKABLES_PANEL;
+    drawPanel(ctx, b.x, b.y, b.w, b.h);
+    drawText(ctx, "UNLOCKABLES", b.x + b.w / 2, b.y + 16, {
+      size: 14, color: COLORS.bile, align: "center", bold: true,
+    });
+    drawText(ctx, "Win runs to grow the Forge.", b.x + b.w / 2, b.y + 34, {
+      size: 10, color: COLORS.boneDim, align: "center", maxWidth: b.w - 12,
+    });
+
+    const rows = [
+      { key: "viperBuild", label: "BUILD: VIPER" },
+      { key: "wizardBuild", label: "BUILD: WIZARD" },
+      { key: "necromancerBuild", label: "BUILD: NECROMANCER" },
+      { key: "bileWhip", label: "WEAPON: BILE WHIP" },
+      { key: "hexStaff", label: "WEAPON: HEX STAFF" },
+      { key: "megaphone", label: "WEAPON: MEGAPHONE" },
+      { key: "boneSpear", label: "WEAPON: BONE SPEAR" },
+      { key: "blunderbuss", label: "WEAPON: BLUNDERBUSS" },
+      { key: "cursedScythe", label: "WEAPON: CURSED SCYTHE" },
+      { key: "rustyChainsaw", label: "WEAPON: RUSTY CHAINSAW" },
+      { key: "cat", label: "WEAPON: ANGRY CAT" },
+      { key: "endlessUnlocked", label: "MODE: ENDLESS" },
+      { key: "creditsUnlocked", label: "CREDITS" },
+    ];
+
+    const unlockedCount = rows.reduce((n, r) => n + (u[r.key] ? 1 : 0), 0);
+    drawText(ctx, `${unlockedCount}/${rows.length} owned`, b.x + b.w / 2, b.y + 54, {
+      size: 11, color: unlockedCount === rows.length ? COLORS.gold : COLORS.boneDim, align: "center", bold: unlockedCount === rows.length,
+    });
+
+    let y = b.y + 76;
+    for (const r of rows) {
+      const ok = !!u[r.key];
+      const c = ok ? COLORS.gold : COLORS.boneDim;
+      drawText(ctx, ok ? "✓" : "·", b.x + 12, y, { size: 14, color: c, bold: ok });
+      drawText(ctx, r.label, b.x + 28, y + 1, { size: 11, color: ok ? COLORS.bone : COLORS.boneDim, bold: ok, maxWidth: b.w - 40 });
+      y += 18;
+      if (y > b.y + b.h - 110) break;
+    }
+
+    // Contextual hints by current step.
+    const hintY = b.y + b.h - 92;
+    drawText(ctx, "HINTS", b.x + 12, hintY, { size: 12, color: COLORS.bile, bold: true });
+    const hintLines = [];
+    if (!u.viperBuild) hintLines.push("Win any run → VIPER.");
+    if (u.viperBuild && !u.wizardBuild) hintLines.push("Win as VIPER → WIZARD.");
+    if (!u.bileWhip) hintLines.push("Gullet hitless → BILE WHIP.");
+    if (!u.hexStaff) hintLines.push("Defeat an ELITE → HEX STAFF.");
+    if (!u.endlessUnlocked) hintLines.push("Any victory → ENDLESS toggle.");
+    if (!u.creditsUnlocked) hintLines.push("Normal+ victory → CREDITS.");
+    if (!hintLines.length) hintLines.push("You own everything. Glorious.");
+    let yy = hintY + 18;
+    for (const ln of hintLines.slice(0, 4)) {
+      drawText(ctx, ln, b.x + 12, yy, { size: 10, color: COLORS.boneDim, maxWidth: b.w - 24 });
+      yy += 14;
+    }
   }
 
   drawForgeDifficultyRow(ctx, game) {

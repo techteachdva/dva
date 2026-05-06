@@ -1,9 +1,12 @@
 import {
   W, H, COLORS,
   drawBackdropCached, drawText, drawPanel, drawBanner, roundRect, wrapText, drawBar,
+  drawAcid, drawHero, drawSphere, shade,
 } from "../engine/render.js";
 import { SFX } from "../engine/audio.js";
 import { pointInRect } from "../engine/pointer.js";
+import { drawRunIdentityStrip } from "../engine/runHud.js";
+import { drawPactSigil } from "../engine/pactSigils.js";
 
 const STEPS = [
   {
@@ -147,253 +150,316 @@ export class TutorialScene {
     return iy + 34;
   }
 
-  drawFakeTitle(ctx, ix, iy0, iw, ih, pulse) {
-    const cy = iy0 + 8;
-    drawBanner(ctx, "GUTS & GLORY", ix + iw / 2, cy + 18, 16, COLORS.bile, COLORS.blood);
-    drawText(ctx, "escape the purple worm", ix + iw / 2, cy + 44, {
-      size: 11, color: COLORS.boneDim, align: "center",
-    });
-    const px = ix + 28, py = cy + 58, pw = iw - 56, ph = ih - cy - 58 - 56;
-    drawPanel(ctx, px, py, pw, ph);
-    for (let i = 0; i < 5; i++) {
-      const alpha = 0.25 + (i / 5) * 0.35;
-      ctx.fillStyle = `rgba(233,220,193,${alpha})`;
-      const lw = pw - 36 - i * 12;
-      ctx.fillRect(px + 18, py + 22 + i * 14, lw, 4);
-    }
-    roundRect(ctx, ix + (iw - 220) / 2, iy0 + ih - 40, 220, 30, 8);
-    ctx.fillStyle = "rgba(26,18,62,0.95)";
-    ctx.fill();
-    ctx.strokeStyle = COLORS.bileGlow;
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-    drawText(ctx, "GUIDED TUTORIAL", ix + iw / 2, iy0 + ih - 25, {
-      size: 11, color: COLORS.bile, align: "center", bold: true,
-    });
-    drawText(ctx, "▼ bile / worm frame on real title ▼", ix + iw / 2, iy0 + ih - 6, {
-      size: 9, color: COLORS.boneDim, align: "center",
-    });
+  drawAcidInRect(ctx, rx, ry, rw, rh, t, frac01) {
+    const level = Math.max(0, Math.min(1, frac01));
+    if (level <= 0) return;
+    // drawAcid is tied to global canvas coords (W/H). Translate so the
+    // rect bottom aligns with canvas bottom, then clip to the rect.
+    ctx.save();
+    ctx.beginPath();
+    roundRect(ctx, rx, ry, rw, rh, 10);
+    ctx.clip();
+    ctx.translate(0, (ry + rh) - H);
+    drawAcid(ctx, t, (rh * level) / H);
+    ctx.restore();
   }
 
-  drawFakeMeta(ctx, ix, iy0, iw, ih, pulse) {
-    drawPanel(ctx, ix + 20, iy0 + 10, iw - 40, 120);
-    drawText(ctx, "Story beats…", ix + 32, iy0 + 28, { size: 12, color: COLORS.bone, bold: true });
-    for (let i = 0; i < 4; i++) {
-      ctx.fillStyle = "rgba(233,220,193,0.35)";
-      ctx.fillRect(ix + 32, iy0 + 48 + i * 16, iw - 80 - i * 18, 5);
+  drawMiniBackdrop(ctx, rx, ry, rw, rh, tint = 1) {
+    ctx.save();
+    ctx.beginPath();
+    roundRect(ctx, rx, ry, rw, rh, 10);
+    ctx.clip();
+    const g = ctx.createLinearGradient(rx, ry, rx, ry + rh);
+    g.addColorStop(0, shade(COLORS.wormDeep, 0.95 * tint));
+    g.addColorStop(0.45, shade(COLORS.worm, 0.95 * tint));
+    g.addColorStop(1, shade(COLORS.ink, 1));
+    ctx.fillStyle = g;
+    ctx.fillRect(rx, ry, rw, rh);
+    // Subtle bruises/bump highlights like the real backdrop.
+    for (let i = 0; i < 5; i++) {
+      const cx = rx + (0.15 + i * 0.2) * rw;
+      const cy = ry + (0.25 + (i % 2) * 0.22) * rh;
+      const rr = 70 + i * 14;
+      const gg = ctx.createRadialGradient(cx - 10, cy - 10, 2, cx, cy, rr);
+      gg.addColorStop(0, "rgba(210, 107, 223, 0.16)");
+      gg.addColorStop(1, "rgba(0,0,0,0)");
+      ctx.fillStyle = gg;
+      ctx.beginPath();
+      ctx.arc(cx, cy, rr, 0, Math.PI * 2);
+      ctx.fill();
     }
-    const cx = ix + iw - 100, cyy = iy0 + ih - 52;
-    roundRect(ctx, cx - 70, cyy, 140, 36, 8);
+    ctx.restore();
+  }
+
+  drawFakeTitle(ctx, ix, iy0, iw, ih, pulse) {
+    const rx = ix + 14, ry = iy0 + 10, rw = iw - 28, rh = ih - 20;
+    this.drawMiniBackdrop(ctx, rx, ry, rw, rh, 1.03);
+    // Title banners (real style).
+    drawBanner(ctx, "GUTS & GLORY", ix + iw / 2, ry + 54, 24, COLORS.bile, COLORS.blood);
+    drawBanner(ctx, "escape the purple worm", ix + iw / 2, ry + 84, 12, COLORS.bone, COLORS.worm);
+
+    // Story panel + tutorial button + acid at bottom.
+    const px = rx + 18, py = ry + 110, pw = rw - 36, ph = rh - 190;
+    drawPanel(ctx, px, py, pw, ph);
+    for (let i = 0; i < 6; i++) {
+      const alpha = 0.18 + (i / 6) * 0.24;
+      ctx.fillStyle = `rgba(233,220,193,${alpha})`;
+      const lw = pw - 40 - i * 14;
+      ctx.fillRect(px + 20, py + 26 + i * 18, lw, 5);
+    }
+    const bW = 240, bH = 32;
+    const bx = ix + (iw - bW) / 2, by = ry + rh - 112;
+    roundRect(ctx, bx, by, bW, bH, 10);
     ctx.fillStyle = "rgba(26,18,62,0.9)";
     ctx.fill();
     ctx.strokeStyle = COLORS.bileGlow;
+    ctx.lineWidth = 2;
     ctx.stroke();
-    drawText(ctx, "CODEX", cx, cyy + 20, { size: 11, color: COLORS.bone, align: "center", bold: true });
-    drawText(ctx, "Difficulty row lives on FORGE next step →", ix + iw / 2, iy0 + 138, {
-      size: 11, color: COLORS.gold, align: "center", maxWidth: iw - 24,
+    drawText(ctx, "GUIDED TUTORIAL", bx + bW / 2, by + bH / 2, {
+      size: 12, color: "#fffefb", align: "center", baseline: "middle", bold: true,
     });
-    ctx.fillStyle = `rgba(155,255,102,${0.12 + pulse * 0.08})`;
-    roundRect(ctx, ix + 24, iy0 + 158, iw - 48, 36, 8);
+    this.drawAcidInRect(ctx, rx, ry, rw, rh, this.t, 0.18 + pulse * 0.03);
+  }
+
+  drawFakeMeta(ctx, ix, iy0, iw, ih, pulse) {
+    const rx = ix + 14, ry = iy0 + 10, rw = iw - 28, rh = ih - 20;
+    this.drawMiniBackdrop(ctx, rx, ry, rw, rh, 1.0);
+    const px = rx + 18, py = ry + 86, pw = rw - 36, ph = rh - 170;
+    drawPanel(ctx, px, py, pw, ph);
+    drawText(ctx, "TOP RUN:  4120  [A]", px + 18, py + 18, { size: 11, color: COLORS.gold, bold: true });
+    drawText(ctx, "UNLOCKS:  4/10", px + 18, py + 38, { size: 10, color: COLORS.boneDim });
+    for (let i = 0; i < 6; i++) {
+      ctx.fillStyle = "rgba(233,220,193,0.24)";
+      ctx.fillRect(px + 18, py + 62 + i * 16, pw - 40 - i * 10, 4);
+    }
+    // Codex button (real placement vibe).
+    const cx = rx + rw - 110, cy = ry + rh - 66;
+    roundRect(ctx, cx - 78, cy, 156, 32, 8);
+    ctx.fillStyle = "rgba(26,18,62,0.82)";
     ctx.fill();
-    drawText(ctx, "[WORM] [GREAT] [ANCIENT] [ENDLESS]", ix + iw / 2, iy0 + 178, {
-      size: 10, color: COLORS.boneDim, align: "center",
-    });
+    ctx.strokeStyle = COLORS.bileGlow;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    drawText(ctx, "INNER GUTS CODEX", cx, cy + 17, { size: 10, color: "#fffefb", align: "center", bold: true });
+    // Acid lip at bottom.
+    this.drawAcidInRect(ctx, rx, ry, rw, rh, this.t, 0.14 + pulse * 0.02);
   }
 
   drawFakeForge(ctx, ix, iy0, iw, ih, pulse) {
-    const rowY = iy0 + 16;
-    const bw = 78, gap = 6, x0 = ix + (iw - (bw * 4 + gap * 3)) / 2;
+    const rx = ix + 14, ry = iy0 + 10, rw = iw - 28, rh = ih - 20;
+    this.drawMiniBackdrop(ctx, rx, ry, rw, rh, 1.0);
+    drawBanner(ctx, "FORGE YOUR HERO", ix + iw / 2, ry + 32, 16, COLORS.bile, COLORS.blood);
+
+    // Difficulty row (more like the real forge chips).
+    const rowY = ry + 56;
+    const bw = 74, gap = 6, x0 = ix + (iw - (bw * 4 + gap * 3)) / 2;
     for (let i = 0; i < 4; i++) {
       const on = i === 0;
       const x = x0 + i * (bw + gap);
-      roundRect(ctx, x, rowY, bw, 22, 5);
-      ctx.fillStyle = on ? "rgba(80,55,20,0.9)" : "rgba(18,12,28,0.85)";
+      roundRect(ctx, x, rowY, bw, 20, 6);
+      ctx.fillStyle = on ? "rgba(60,40,10,0.88)" : "rgba(18,12,28,0.78)";
       ctx.fill();
-      ctx.strokeStyle = on ? COLORS.gold : "rgba(155,255,102,0.25)";
+      ctx.strokeStyle = on ? COLORS.gold : COLORS.bileGlow;
+      ctx.lineWidth = on ? 2.2 : 1.2;
       ctx.stroke();
     }
-    drawText(ctx, "Forge difficulty strip", ix + iw / 2, rowY + 34, {
-      size: 10, color: COLORS.boneDim, align: "center",
-    });
 
-    const cardW = 92, cardH = 168, cGap = 10;
+    // Class cards with tiny hero art using drawHero.
+    const cardW = 98, cardH = 176, cGap = 12;
     const cx0 = ix + (iw - (cardW * 3 + cGap * 2)) / 2;
-    const cTop = rowY + 52;
+    const cTop = rowY + 30;
     for (let k = 0; k < 3; k++) {
       const x = cx0 + k * (cardW + cGap);
       const center = k === 1;
       ctx.save();
-      ctx.globalAlpha = center ? 1 : 0.72;
-      roundRect(ctx, x, cTop, cardW, cardH, 8);
+      ctx.globalAlpha = center ? 1 : 0.75;
+      roundRect(ctx, x, cTop, cardW, cardH, 10);
       const g = ctx.createLinearGradient(x, cTop, x, cTop + cardH);
-      g.addColorStop(0, center ? "rgba(55,22,68,0.95)" : "rgba(28,10,38,0.9)");
-      g.addColorStop(1, "rgba(8,2,12,0.95)");
+      g.addColorStop(0, center ? "rgba(40,14,50,0.95)" : "rgba(14,5,20,0.85)");
+      g.addColorStop(1, "rgba(6,2,10,0.95)");
       ctx.fillStyle = g;
       ctx.fill();
-      ctx.strokeStyle = center ? COLORS.gold : "rgba(155,255,102,0.2)";
-      ctx.lineWidth = center ? 3 : 1.5;
+      ctx.strokeStyle = center ? COLORS.gold : COLORS.bileGlow;
+      ctx.lineWidth = center ? 2.8 : 1.4;
       ctx.stroke();
       ctx.restore();
-      drawText(ctx, center ? "CLASS" : "···", x + cardW / 2, cTop + 28, {
-        size: center ? 12 : 10, color: COLORS.bone, align: "center", bold: center,
+      drawText(ctx, center ? "SWIFTFOOT" : "…", x + cardW / 2, cTop + 18, {
+        size: 10, color: COLORS.bone, align: "center", bold: center,
       });
-      ctx.fillStyle = "rgba(240,200,160,0.35)";
-      ctx.fillRect(x + 10, cTop + 48, cardW - 20, 56);
-      drawText(ctx, k === 1 ? "★ pick ★" : "", x + cardW / 2, cTop + 118, {
-        size: 9, color: COLORS.bile, align: "center",
-      });
+      ctx.save();
+      ctx.translate(x + cardW / 2, cTop + 92);
+      ctx.scale(2.1, 2.1);
+      drawHero(ctx, 0, 0, 1, this.t * 2.5, center ? "swift" : "iron", null, "sword");
+      ctx.restore();
     }
-    drawText(ctx, "3-card wheel · center confirms", ix + iw / 2, cTop + cardH + 18, {
-      size: 11, color: COLORS.boneDim, align: "center",
-    });
-  }
 
-  drawFakeClimb(ctx, ix, iy0, iw, ih, pulse) {
-    const pad = 16;
-    const innerH = ih - 24;
-    const bileH = Math.floor(innerH * 0.22);
-    const topY = iy0 + ih - bileH;
-    const g = ctx.createLinearGradient(ix + pad, topY, ix + pad, iy0 + ih);
-    g.addColorStop(0, "rgba(60,180,40,0.15)");
-    g.addColorStop(0.5, "rgba(120,220,60,0.45)");
-    g.addColorStop(1, "rgba(200,255,80,0.75)");
-    ctx.fillStyle = g;
-    ctx.fillRect(ix + pad, topY, iw - pad * 2, bileH);
-
-    const cols = 5;
-    const colW = (iw - pad * 2) / cols;
-    const hx = ix + pad + 2 * colW + colW * 0.5;
-    const hy = topY - 42 + Math.sin(this.t * 2.2) * 3;
-    for (let c = 0; c < cols; c++) {
-      const x = ix + pad + c * colW + colW * 0.35;
-      ctx.fillStyle = "rgba(210,130,240,0.12)";
-      ctx.fillRect(x - 8, iy0 + 20, 16, topY - iy0 - 24);
-      for (let j = 0; j < 4; j++) {
-        const yy = iy0 + 36 + j * 34 + (this.t * 40 + c * 17) % 28;
-        if (yy > topY - 20) continue;
-        ctx.fillStyle = "rgba(200,120,220,0.5)";
-        ctx.beginPath();
-        ctx.ellipse(x, yy, 12, 6, 0, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      if (c === 2) {
-        ctx.fillStyle = "rgba(110,255,90,0.75)";
-        ctx.beginPath();
-        ctx.ellipse(x, topY - 70, 10, 12, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = "#2a6a18";
-        ctx.stroke();
-      }
-    }
-    ctx.fillStyle = "#f0c88a";
-    ctx.beginPath();
-    ctx.arc(hx, hy, 9, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = "#4a3020";
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    const tx = ix + pad + colW * 1.5;
-    ctx.fillStyle = `rgba(255,70,70,${0.45 + pulse * 0.25})`;
-    ctx.beginPath();
-    ctx.moveTo(tx, iy0 + 28);
-    ctx.lineTo(tx + 20, iy0 + 88);
-    ctx.lineTo(tx - 20, iy0 + 88);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = `rgba(255,217,102,${0.35 + pulse * 0.2})`;
-    ctx.beginPath();
-    ctx.moveTo(tx + colW * 2.2, iy0 + 32);
-    ctx.lineTo(tx + colW * 2.2 + 16, iy0 + 82);
-    ctx.lineTo(tx + colW * 2.2 - 16, iy0 + 82);
-    ctx.closePath();
-    ctx.fill();
-
-    ctx.fillStyle = "rgba(90,72,58,0.95)";
-    ctx.beginPath();
-    ctx.arc(ix + pad + colW * 0.5, iy0 + 52, 14, 0, Math.PI * 2);
-    ctx.fill();
-
-    drawText(ctx, "hero · telegraphs · pustule · bile", ix + iw / 2, iy0 + ih - 8, {
-      size: 9, color: COLORS.boneDim, align: "center",
-    });
-  }
-
-  drawFakeCombat(ctx, ix, iy0, iw, ih, pulse) {
-    const lx = ix + 18;
-    let y = iy0 + 12;
-    roundRect(ctx, lx, y, 168, 52, 6);
-    ctx.fillStyle = "rgba(14,8,22,0.92)";
-    ctx.fill();
-    ctx.strokeStyle = "rgba(155,255,102,0.2)";
-    ctx.stroke();
-    drawText(ctx, "HERO", lx + 8, y + 8, { size: 9, color: COLORS.bile, bold: true });
-    drawText(ctx, "CLASS · WEAPON", lx + 8, y + 22, { size: 9, color: COLORS.bone });
-    drawText(ctx, "PACTS ···", lx + 8, y + 36, { size: 8, color: COLORS.boneDim });
-    y += 58;
-    drawBar(ctx, lx, y, 164, 12, 0.72, { fill: COLORS.blood, label: "HP", labelColor: "#111" });
-    y += 18;
-    drawBar(ctx, lx, y, 164, 12, 0.55, { fill: COLORS.mana, label: "MP", labelColor: "#111" });
-    y += 18;
-    drawBar(ctx, lx, y, 164, 12, 0.4, { fill: COLORS.bile, label: "ACID", labelColor: "#111" });
-
-    const rx = ix + iw - 178;
-    drawPanel(ctx, rx, iy0 + 12, 162, 56);
-    drawText(ctx, "GUARDIAN", rx + 81, iy0 + 28, {
-      size: 11, color: COLORS.bile, align: "center", bold: true,
-    });
-    drawBar(ctx, rx + 8, iy0 + 42, 146, 12, 0.65, {
-      fill: "#4a1010", label: null,
-    });
-
-    const arenaTop = iy0 + 118;
-    const laneW = (iw - 36) / 5;
-    for (let L = 0; L < 5; L++) {
-      const ax = ix + 18 + L * laneW;
-      ctx.fillStyle = L === 2 ? "rgba(155,255,102,0.08)" : "rgba(40,20,50,0.25)";
-      ctx.fillRect(ax + 2, arenaTop, laneW - 4, 100);
-      ctx.strokeStyle = "rgba(0,0,0,0.35)";
-      ctx.strokeRect(ax + 2, arenaTop, laneW - 4, 100);
-    }
-    ctx.fillStyle = "#c21a1a";
-    ctx.beginPath();
-    ctx.arc(ix + iw / 2 + 40, arenaTop + 50, 18, 0, Math.PI * 2);
-    ctx.fill();
-    drawText(ctx, "lanes · you · foe", ix + iw / 2, arenaTop + 108, {
+    drawText(ctx, "wheel cards · weapon step next", ix + iw / 2, ry + rh - 18, {
       size: 10, color: COLORS.boneDim, align: "center",
     });
   }
 
+  drawFakeClimb(ctx, ix, iy0, iw, ih, pulse) {
+    const rx = ix + 14, ry = iy0 + 10, rw = iw - 28, rh = ih - 20;
+    this.drawMiniBackdrop(ctx, rx, ry, rw, rh, 1.0);
+
+    // Wall columns (closer to climb.js look: cylinder + holds).
+    const cols = 5;
+    const colW = rw / cols;
+    const arenaTop = ry + 44;
+    for (let c = 0; c < cols; c++) {
+      const x = rx + c * colW + colW * 0.5;
+      const cg = ctx.createLinearGradient(x - 24, 0, x + 24, 0);
+      cg.addColorStop(0, "rgba(210,130,240,0.04)");
+      cg.addColorStop(0.5, "rgba(210,130,240,0.12)");
+      cg.addColorStop(1, "rgba(0,0,0,0.10)");
+      ctx.fillStyle = cg;
+      ctx.fillRect(x - 24, arenaTop, 48, rh - 84);
+      for (let j = 0; j < 6; j++) {
+        const yy = arenaTop + 18 + j * 44 + ((this.t * 50 + c * 23) % 38);
+        if (yy > ry + rh - 90) continue;
+        const grd = ctx.createRadialGradient(x - 6, yy - 4, 2, x, yy, 16);
+        grd.addColorStop(0, "rgba(210,107,223,0.35)");
+        grd.addColorStop(1, "rgba(60,20,80,0.35)");
+        ctx.fillStyle = grd;
+        ctx.beginPath();
+        ctx.ellipse(x, yy, 16, 7, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(0,0,0,0.55)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+    }
+
+    // Telegraph wedges, boulder, pustule.
+    const tx = rx + colW * 1.5;
+    ctx.fillStyle = `rgba(255,70,70,${0.35 + pulse * 0.25})`;
+    ctx.beginPath();
+    ctx.moveTo(tx, ry + 2);
+    ctx.lineTo(tx + 18, ry + 64);
+    ctx.lineTo(tx - 18, ry + 64);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = `rgba(255,217,102,${0.28 + pulse * 0.2})`;
+    ctx.beginPath();
+    ctx.moveTo(tx + colW * 2.15, ry + 6);
+    ctx.lineTo(tx + colW * 2.15 + 14, ry + 56);
+    ctx.lineTo(tx + colW * 2.15 - 14, ry + 56);
+    ctx.closePath();
+    ctx.fill();
+    // Boulder (sphere-ish rock)
+    drawSphere(ctx, rx + colW * 0.55, ry + 56, 18, "#4a4036", {
+      highlight: "rgba(255,255,255,0.35)",
+      rim: "rgba(220,220,240,0.18)",
+      outline: "rgba(0,0,0,0.7)",
+    });
+    // Pustule
+    ctx.fillStyle = "rgba(110,255,90,0.7)";
+    ctx.beginPath();
+    ctx.ellipse(rx + colW * 2.5, ry + 128, 10, 13, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(35, 95, 28, 0.95)";
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+
+    // Hero (real drawHero) + bile.
+    ctx.save();
+    ctx.translate(rx + colW * 2.5, ry + rh - 118);
+    ctx.scale(2.4, 2.4);
+    drawHero(ctx, 0, 0, 1, this.t * 6, "swift", null, "sword");
+    ctx.restore();
+    this.drawAcidInRect(ctx, rx, ry, rw, rh, this.t, 0.26 + pulse * 0.03);
+  }
+
+  drawFakeCombat(ctx, ix, iy0, iw, ih, pulse) {
+    const rx = ix + 14, ry = iy0 + 10, rw = iw - 28, rh = ih - 20;
+    this.drawMiniBackdrop(ctx, rx, ry, rw, rh, 0.95);
+    // Use the real identity strip renderer with a fake player.
+    const fakeP = {
+      buildId: "swift",
+      build: { name: "SWIFTFOOT" },
+      loadoutId: "sword",
+      surfaceLoadoutName: "SWORD",
+      pacts: ["tide_watcher", "ring_forger", "pact_of_vipers"],
+      pactRanks: { tide_watcher: 2, ring_forger: 1, pact_of_vipers: 1 },
+    };
+    const bottom = drawRunIdentityStrip(ctx, fakeP, ry + 8);
+    const barTop = bottom + 8;
+    drawBar(ctx, rx + 10, barTop, 200, 14, 0.78, { fill: COLORS.blood, label: "HP", labelColor: "#111" });
+    drawBar(ctx, rx + 10, barTop + 18, 200, 14, 0.58, { fill: COLORS.mana, label: "MP", labelColor: "#111" });
+    drawBar(ctx, rx + 10, barTop + 36, 200, 14, 0.44, { fill: COLORS.bile, label: "ACID", labelColor: "#111" });
+
+    // Enemy HUD panel (combat-style).
+    drawPanel(ctx, rx + rw - 210, ry + 8, 196, 56);
+    drawText(ctx, "SPHINCTER GUARDIAN", rx + rw - 112, ry + 24, {
+      size: 11, color: COLORS.bile, align: "center", bold: true, maxWidth: 186,
+    });
+    drawBar(ctx, rx + rw - 200, ry + 40, 176, 14, 0.68, { fill: "#4a1010", label: "", labelColor: "#111" });
+
+    // Lanes + hero + enemy using real hero renderer (scaled).
+    const arenaTop = ry + 128;
+    const laneW = (rw - 24) / 5;
+    for (let L = 0; L < 5; L++) {
+      const ax = rx + 12 + L * laneW;
+      ctx.fillStyle = L === 2 ? "rgba(155,255,102,0.06)" : "rgba(40,20,50,0.18)";
+      ctx.fillRect(ax + 2, arenaTop, laneW - 4, 112);
+      ctx.strokeStyle = "rgba(0,0,0,0.35)";
+      ctx.strokeRect(ax + 2, arenaTop, laneW - 4, 112);
+    }
+    ctx.save();
+    ctx.translate(rx + rw * 0.35, arenaTop + 92);
+    ctx.scale(2.2, 2.2);
+    drawHero(ctx, 0, 0, 1, this.t * 6, "swift", null, "sword");
+    ctx.restore();
+    drawSphere(ctx, rx + rw * 0.72, arenaTop + 86, 20, COLORS.blood, {
+      highlight: "rgba(255,200,200,0.75)",
+      rim: "rgba(255,120,120,0.35)",
+      outline: "rgba(40,0,0,0.7)",
+    });
+  }
+
   drawFakePacts(ctx, ix, iy0, iw, ih, pulse) {
-    const cardW = 100, cardH = ih - 36, gap = 14;
+    const rx = ix + 14, ry = iy0 + 10, rw = iw - 28, rh = ih - 20;
+    this.drawMiniBackdrop(ctx, rx, ry, rw, rh, 1.0);
+    drawBanner(ctx, "SEAL A PACT", ix + iw / 2, ry + 30, 16, COLORS.bile, COLORS.blood);
+
+    const ids = ["tide_watcher", "ring_forger", "pact_of_vipers"];
+    const cardW = 106, cardH = rh - 76, gap = 14;
     const x0 = ix + (iw - (cardW * 3 + gap * 2)) / 2;
-    const cTop = iy0 + 20;
+    const cTop = ry + 52;
     for (let k = 0; k < 3; k++) {
       const x = x0 + k * (cardW + gap);
       const sel = k === 1;
       roundRect(ctx, x, cTop, cardW, cardH, 10);
-      ctx.fillStyle = sel ? "rgba(50,28,62,0.95)" : "rgba(20,10,28,0.9)";
+      const g = ctx.createLinearGradient(x, cTop, x, cTop + cardH);
+      g.addColorStop(0, sel ? "rgba(40,14,50,0.95)" : "rgba(14,5,20,0.88)");
+      g.addColorStop(1, "rgba(6,2,10,0.95)");
+      ctx.fillStyle = g;
       ctx.fill();
       ctx.strokeStyle = sel ? COLORS.gold : "rgba(155,255,102,0.22)";
-      ctx.lineWidth = sel ? 2.5 : 1.2;
+      ctx.lineWidth = sel ? 2.8 : 1.2;
       ctx.stroke();
-      drawText(ctx, "PACT", x + cardW / 2, cTop + 22, {
-        size: 11, color: COLORS.bone, align: "center", bold: true,
+
+      drawText(ctx, "PACT", x + cardW / 2, cTop + 16, {
+        size: 11, color: sel ? COLORS.bile : COLORS.boneDim, align: "center", bold: true,
       });
-      drawText(ctx, "rank II", x + cardW / 2, cTop + 40, {
-        size: 9, color: COLORS.bile, align: "center",
+      drawText(ctx, sel ? "rank II" : "rank I", x + cardW / 2, cTop + 34, {
+        size: 10, color: COLORS.boneDim, align: "center",
       });
-      ctx.strokeStyle = `rgba(155,255,102,${0.35 + pulse * 0.2})`;
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(x + cardW / 2, cTop + cardH * 0.55, 26, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.fillStyle = "rgba(233,220,193,0.2)";
-      for (let r = 0; r < 3; r++) {
-        ctx.fillRect(x + 12, cTop + cardH - 52 + r * 14, cardW - 24, 6);
-      }
+      // Real sigil art
+      drawPactSigil(ctx, x + cardW / 2, cTop + Math.floor(cardH * 0.55), ids[k], this.t, {
+        scale: 0.85,
+        selected: sel,
+      });
+      // Buff/debt line placeholders
+      const yy = cTop + cardH - 54;
+      drawText(ctx, "▶ BUFF", x + 12, yy, { size: 10, color: "#7fff9a", bold: true });
+      ctx.fillStyle = "rgba(181,240,90,0.25)";
+      ctx.fillRect(x + 12, yy + 14, cardW - 24, 6);
+      drawText(ctx, "▼ DEBT", x + 12, yy + 26, { size: 10, color: "#ff7a7a", bold: true });
+      ctx.fillStyle = "rgba(255,170,170,0.22)";
+      ctx.fillRect(x + 12, yy + 40, cardW - 24, 6);
     }
-    drawText(ctx, "pick one · seals stack to III", ix + iw / 2, iy0 + ih - 6, {
+    drawText(ctx, "bigger text + clear sigils", ix + iw / 2, ry + rh - 12, {
       size: 10, color: COLORS.boneDim, align: "center",
     });
   }

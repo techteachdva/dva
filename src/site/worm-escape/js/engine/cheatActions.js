@@ -4,6 +4,7 @@ import { loadSave, saveGame } from "./storage.js";
 import { TongueBossScene } from "../scenes/tongueBoss.js";
 import { EncyclopediaScene } from "../scenes/encyclopedia.js";
 import { CreateScene } from "../scenes/create.js";
+import { CreditsScene } from "../scenes/credits.js";
 import {
   findMawChamberIndex,
   preparePlayerForMawCheatDrop,
@@ -115,6 +116,18 @@ export function applyCheatLine(rawLine, game) {
       msg:
         "MrPhil — wyrm bias, jilly climb rates, bubblegum, rowan forge, lemon climb, dez browse, pinkfloyd trip (no bossnow/gygax).",
     };
+  }
+
+  if (c === "credits") {
+    const save = loadSave();
+    if (!save.unlocks) save.unlocks = {};
+    save.unlocks.creditsUnlocked = true;
+    saveGame(save);
+    game.cheatSaveRefresh = true;
+    revealCheatDossierIfNew(game, "credits");
+    game.scenes.push(new CreditsScene(), game);
+    game.cheatMenuOpen = false;
+    return { ok: true, msg: "Credits unlocked — opening credits." };
   }
 
   if (c === "pinkfloyd") {
