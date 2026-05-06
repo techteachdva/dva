@@ -4,7 +4,7 @@ import {
   drawHero, drawSphere, drawPlate, drawDropShadow, ParticleSystem, screenShake, shade,
   roundRect,
 } from "../engine/render.js";
-import { SFX } from "../engine/audio.js";
+import { SFX, setBGM } from "../engine/audio.js";
 import { CHAMBERS } from "../content/chambers.js";
 import { randInt, rand, pick } from "../engine/rng.js";
 import {
@@ -23,7 +23,10 @@ import {
 import { CombatScene } from "./combat.js";
 import { TongueBossScene } from "./tongueBoss.js";
 import { GameOverScene } from "./gameover.js";
-import { runBileRiseMult, runIncomingDamageMult } from "../content/gameBalance.js";
+import {
+  runBileRiseMult, runIncomingDamageMult,
+  runDebrisIntervalMult, runPlayerClimbMult,
+} from "../content/gameBalance.js";
 import { recordPinkFloydTrail } from "../engine/pinkFloydVfx.js";
 
 // Five hand-hold columns on the veiny wall. Hero is fixed in screen Y;
@@ -133,9 +136,12 @@ export class ClimbScene {
     // v0.12 hitless chamber tracking: any damage taken flips this off.
     // Surfaced to the scoreboard + saves the Gullet-hitless unlock flag.
     this.hitlessChamber = true;
+    /** Hot Dog pact: double-tap down timing */
+    this.downTapPrevT = -99;
   }
 
   enter(game) {
+    setBGM("music/climbing_music.mp3", { volume: 0.45, loop: true, restart: true });
     const p = game.player;
     p.chamberIndex = this.chamberIdx;
     p.acidTimer = this.chamber.acidTimer;
@@ -227,6 +233,19 @@ export class ClimbScene {
     const p = game.player;
     const ch = this.chamber;
     const cheatPain = runIncomingDamageMult(game);
+
+    if ((p.happyCamperRestedT || 0) > 0) p.happyCamperRestedT -= dt;
+    if ((p.hotDogEatCd || 0) > 0) p.hotDogEatCd -= dt;
+
+    const rotHeal = p.pactMods?.rottingHeal;
+    if (rotHeal) {
+      const tickT = p.pactMods.rottingTick || 8;
+      p.rottingAcc = (p.rottingAcc || 0) + dt;
+      while (p.rottingAcc >= tickT) {
+        p.rottingAcc -= tickT;
+        p.hp = Math.min(p.hpMax, p.hp + rotHeal);
+      }
+    }
     if (typeof game.invulnerable === "boolean") p.invulnerable = game.invulnerable;
     if (p.score) p.score.timeSpent += dt;
 
@@ -269,7 +288,12 @@ export class ClimbScene {
     if (game.pinkFloydMode) recordPinkFloydTrail(game, this.heroX, HERO_Y);
 
     // --- Climb up (blocked while stunned) ---
-    const climbBase = 200 * p.climbSpeed;
+    let climbMul = runPlayerClimbMult(game);
+    if (p.pactMods?.happyCamper) {
+      if ((p.happyCamperRestedT || 0) > 0) climbMul *= 1.3;
+      else if (this.chamberIdx < 2 || p.hp < p.hpMax * 0.88) climbMul *= 0.65;
+    }
+    const climbBase = 200 * p.climbSpeed * climbMul;
     const slipRate = 28;
     const revV = !!(p.pactMods && p.pactMods.sillyMirrorV);
     const mouseUp = game.input.isDown("Mouse0") && my < HERO_Y && !this.hitClimbBlockingUi(mx, my);
@@ -381,14 +405,35 @@ export class ClimbScene {
       this.submergeFlashT = 0;
     }
 
+    // Hot Dog pact: quick double-tap [DOWN] / [S] (respect silly mirror) snacks between braces.
+    if (p.pactMods?.hotDogPact && (p.hotDogEatCd || 0) <= 0 && !stunned) {
+      const revVFood = !!(p.pactMods && p.pactMods.sillyMirrorV);
+      const tapDown = revVFood
+        ? game.input.wasPressed("ArrowUp", "w")
+        : game.input.wasPressed("ArrowDown", "s");
+      if (tapDown) {
+        if (this.t - this.downTapPrevT < 0.39 && this.downTapPrevT >= 0) {
+          const bonus = p.pactMods.hotDogHpBonus || 15;
+          p.hpMax += bonus;
+          p.hp = p.hpMax;
+          p.hotDogEatCd = 52;
+          this.showToast("HOT DOG!!! Max HP feast!", 2.1);
+          SFX.confirm();
+          this.downTapPrevT = -99;
+        } else {
+          this.downTapPrevT = this.t;
+        }
+      }
+    }
+
     // --- Debris telegraphs + spawns (5 columns, per-chamber density) ---
     this.debrisTimer -= dt;
     if (this.debrisTimer <= 0) {
       const [tMin, tMax] = ch.debrisInterval;
       // Pact modifier: Tide Watcher raises the interval (slower debris).
       const rateMult = (p.pactMods && p.pactMods.debrisRateMult) || 1;
-      const voidM = (p.voidDebrisIntervalMult ?? 1);
-      this.debrisTimer = rand(tMin * rateMult * voidM, tMax * rateMult * voidM);
+      const ultraSp = runDebrisIntervalMult(game);
+      this.debrisTimer = rand(tMin * rateMult * ultraSp, tMax * rateMult * ultraSp);
       // Base spawn count per cycle scales with the chamber.
       const baseCount = ch.spawnCount || 1;
       const usedCols = [];

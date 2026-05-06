@@ -10,6 +10,7 @@ let muted = false;
 let bgm = null;
 let bgmStarted = false;
 let bgmVolume = 0.35;
+let bgmSrc = null;
 
 function ensure() {
   if (!ctx) {
@@ -41,11 +42,52 @@ window.addEventListener("click", () => { ensure(); kickBgm(); }, { capture: true
 export function initBGM(src, { volume = 0.35, loop = true } = {}) {
   if (bgm) return bgm;
   bgmVolume = volume;
+  bgmSrc = src;
   bgm = new Audio(src);
   bgm.loop = loop;
   bgm.preload = "auto";
   bgm.volume = muted ? 0 : bgmVolume;
   return bgm;
+}
+
+/**
+ * Swap the background music track (keeps the same Audio element).
+ * Safe to call anytime; will attempt playback on the next user gesture.
+ */
+export function setBGM(src, { volume = bgmVolume, loop = true, restart = true } = {}) {
+  if (!bgm) {
+    initBGM(src, { volume, loop });
+    kickBgm();
+    return;
+  }
+
+  bgmVolume = Math.max(0, Math.min(1, volume));
+  bgm.loop = loop;
+  bgm.volume = muted ? 0 : bgmVolume;
+
+  if (!src || src === bgmSrc) return;
+
+  try {
+    bgm.pause();
+  } catch (e) {
+    /* ignore */
+  }
+  if (restart) {
+    try {
+      bgm.currentTime = 0;
+    } catch (e) {
+      /* ignore */
+    }
+  }
+  bgmSrc = src;
+  bgm.src = src;
+  try {
+    bgm.load();
+  } catch (e) {
+    /* ignore */
+  }
+  bgmStarted = false;
+  kickBgm();
 }
 
 export function setBgmVolume(v) {

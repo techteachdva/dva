@@ -9,6 +9,7 @@ export const ALL_CHEAT_IDS = [
   "lore",
   "wyrm",
   "dragon",
+  "greatwyrm",
   "jilly",
   "bubblegum",
   "rowan",
@@ -97,7 +98,7 @@ export const CHEAT_CODEX_DETAILS = {
     title: "Wyrm",
     facts: [
       "Easier bias: incoming damage ×0.5, bile/acid chewing ×0.5, guardians & MAW molars ×0.5 HP.",
-      "Mutually exclusive with dragon (typing one clears the other). Toggle to OFF.",
+      "Mutually exclusive with dragon / greatwyrm. Toggle to OFF.",
       "If easy bias is ON at run end: −3400 on Victory / Game Over score.",
     ],
     flavor: "Baby’s first parasite. Almost polite.",
@@ -107,10 +108,20 @@ export const CHEAT_CODEX_DETAILS = {
     title: "Dragon",
     facts: [
       "Hard bias: incoming damage ×2, bile/armor-chewing ×2, guardians & molars ×2 HP.",
-      "Mutually exclusive with wyrm. Toggle OFF from the keypad.",
+      "Mutually exclusive with wyrm / greatwyrm. Toggle OFF from the keypad.",
       "If hard bias is ON at run end: +2600 on Victory / Game Over score.",
     ],
     flavor: "Soulsborne but the hollow is a esophagus.",
+  },
+  greatwyrm: {
+    code: "greatwyrm",
+    title: "Greatwyrm",
+    facts: [
+      "Ancient Worm bias: same incoming/enemy HP scaling as Dragon, plus cruel climb cadence, faster debris cycles, and you must clear the full worm TWICE before victory.",
+      "Mutually exclusive with wyrm / dragon.",
+      "Greatwyrm ON at run end: +4200 score bonus (see cheatScore.js).",
+    ],
+    flavor: "The worm wears a worm. Time doubles; mercy does not.",
   },
   jilly: {
     code: "jilly",
@@ -139,7 +150,6 @@ export const CHEAT_CODEX_DETAILS = {
     facts: [
       "Forge step 2 only offers “weird” loadouts — pans, chairs, megaphones, chainsaws, cats, sci‑fi toys, bile whips, etc.",
       "Ban list: swords, sabers, spears (bone spear), fists, club, hammer, Ember/Frost staffs, Hex staff.",
-      "Lets THE VOID browse as climb gear; unlock flags still gate locked icons until you earn them.",
       "If Rowan is ON at run end: −900 on Victory / Game Over score.",
     ],
     flavor: "No boring pointy sticks. If it belongs in a kitchen, toolbox, circus, or lab, Rowan approved.",

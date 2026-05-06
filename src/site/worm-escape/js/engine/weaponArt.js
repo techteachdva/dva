@@ -23,7 +23,6 @@ export const LOADOUT_SRC = Object.freeze({
   rustyChainsaw: "chainsaw.png",
   cat: null,
   engineerWrench: "engineer_wrench.png",
-  voidWalker: null,
   chair: "chair.png",
   nezZapper: "nez_zapper.png",
   plasmids: "plasmids.png",

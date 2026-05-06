@@ -2,7 +2,7 @@ import {
   W, H, COLORS,
   drawBackdropCached, drawText, drawBanner, drawPanel, roundRect,
 } from "../engine/render.js";
-import { SFX } from "../engine/audio.js";
+import { SFX, setBGM } from "../engine/audio.js";
 import { loadSave, recordRun, findScoreRank } from "../engine/storage.js";
 import { IntroScene } from "./intro.js";
 import { getCheatScoreAdjustments } from "../engine/cheatScore.js";
@@ -18,6 +18,7 @@ export class GameOverScene {
     this.finalScore = 0;
   }
   enter(game) {
+    setBGM("music/death_screen_music.mp3", { volume: 0.45, loop: true, restart: true });
     const p = game.player;
     // Lightly-scored losses: award progress partials so the leaderboard
     // isn't entirely wins. Matches the Victory scoring shape loosely.

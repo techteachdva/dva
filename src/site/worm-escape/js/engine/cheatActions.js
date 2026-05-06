@@ -81,6 +81,7 @@ export function applyCheatLine(rawLine, game) {
     game.invulnerable = false;
     game.easyMode = false;
     game.hardMode = false;
+    game.ultraHardMode = false;
     game.jillyMode = false;
     game.bubblegumMode = false;
     game.rowanWeirdWeapons = false;
@@ -100,6 +101,7 @@ export function applyCheatLine(rawLine, game) {
     game.pickAnyWeapon = true;
     game.easyMode = true;
     game.hardMode = false;
+    game.ultraHardMode = false;
     game.jillyMode = true;
     game.bubblegumMode = true;
     game.rowanWeirdWeapons = true;
@@ -170,7 +172,10 @@ export function applyCheatLine(rawLine, game) {
 
   if (c === "wyrm") {
     game.easyMode = !game.easyMode;
-    if (game.easyMode) game.hardMode = false;
+    if (game.easyMode) {
+      game.hardMode = false;
+      game.ultraHardMode = false;
+    }
     revealCheatDossierIfNew(game, "wyrm");
     return {
       ok: true,
@@ -179,11 +184,28 @@ export function applyCheatLine(rawLine, game) {
   }
   if (c === "dragon") {
     game.hardMode = !game.hardMode;
-    if (game.hardMode) game.easyMode = false;
+    if (game.hardMode) {
+      game.easyMode = false;
+      game.ultraHardMode = false;
+    }
     revealCheatDossierIfNew(game, "dragon");
     return {
       ok: true,
       msg: game.hardMode ? "Dragon — HARD bias ON (more pain, bile, beefier guardians)." : "Dragon — hard bias OFF.",
+    };
+  }
+  if (c === "greatwyrm") {
+    game.ultraHardMode = !game.ultraHardMode;
+    if (game.ultraHardMode) {
+      game.easyMode = false;
+      game.hardMode = false;
+    }
+    revealCheatDossierIfNew(game, "greatwyrm");
+    return {
+      ok: true,
+      msg: game.ultraHardMode
+        ? "Greatwyrm — ANCIENT WORM ON (double classic lap, cruel cadence, debris storm)."
+        : "Greatwyrm — ultra bias OFF.",
     };
   }
   if (c === "jilly") {

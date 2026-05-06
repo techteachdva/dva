@@ -4,7 +4,7 @@ import {
   drawHero, drawDropShadow,
   ParticleSystem, screenShake, shade, roundRect,
 } from "../engine/render.js";
-import { SFX } from "../engine/audio.js";
+import { SFX, setBGM } from "../engine/audio.js";
 import { CHAMBERS } from "../content/chambers.js";
 import { ENEMIES } from "../content/enemies.js";
 import { rand, randInt, pick } from "../engine/rng.js";
@@ -269,6 +269,7 @@ export class MawBossScene {
 
   enter(game) {
     this.game = game;
+    setBGM("music/tooth_maw_music.mp3", { volume: 0.45, loop: true, restart: true });
     const p = game.player;
     // Teeth are BONE - every hit against them is matched by the weapon's
     // vs-teeth matchup if present. Hammer does great work here. Frost

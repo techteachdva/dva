@@ -527,6 +527,104 @@ export const PACTS = [
     },
   },
 
+  {
+    id: "rotting",
+    name: "ROTTING",
+    blurb: "Regeneration with teeth.",
+    pros: ["HoT each rank", "per-rank heal rises"],
+    cons: ["Shaves max HP %"],
+    tags: ["combat", "stats"],
+    apply(p, rank) {
+      const pct = rank === 1 ? 0.05 : rank === 2 ? 0.045 : 0.04;
+      p.hpMax = Math.max(1, Math.round(p.hpMax * (1 - pct)));
+      p.hp = Math.min(p.hp, p.hpMax);
+      p.pactMods.rottingHeal = rank === 1 ? 10 : rank === 2 ? 12 : 15;
+      p.pactMods.rottingTick = rank === 3 ? 7.2 : 8;
+    },
+  },
+  {
+    id: "hopefull",
+    name: "HOPEFULL",
+    blurb: "Heavy soul. Light sword-arm.",
+    pros: ["Big flat survivability stats", "damage tax softens on rank up"],
+    cons: ["−25% outgoing damage at r1"],
+    tags: ["combat", "stats"],
+    apply(p, rank) {
+      if (rank === 1) {
+        p.pactMods.dmgMult *= 0.75;
+        p.hpMax += 35;
+        p.hp = Math.min(p.hpMax, p.hp + 35);
+        p.manaMax += 35;
+        p.mana += 35;
+        p.armorMax += 35;
+        p.armor = Math.min(p.armorMax, p.armor + 35);
+        p.climbSpeed *= 1.07;
+        p.dodgeWindow += 0.06;
+        p.pactMods.manaRegen += 10;
+      } else if (rank === 2) {
+        p.pactMods.dmgMult *= 1.06;
+        p.hpMax += 18;
+        p.hp = Math.min(p.hpMax, p.hp + 18);
+        p.manaMax += 18;
+        p.mana = Math.min(p.manaMax, p.mana + 18);
+        p.climbSpeed *= 1.03;
+        p.dodgeWindow += 0.03;
+      } else {
+        p.pactMods.dmgMult *= 1.07;
+        p.hpMax += 18;
+        p.hp = Math.min(p.hpMax, p.hp + 18);
+        p.manaMax += 18;
+        p.mana = Math.min(p.manaMax, p.mana + 18);
+        p.climbSpeed *= 1.03;
+        p.dodgeWindow += 0.03;
+      }
+    },
+  },
+  {
+    id: "happy_camper",
+    name: "HAPPY CAMPER",
+    blurb: "Trail snacks between bosses.",
+    pros: ["Every 2 guardians: overheal + climb zeal", "rank scales overheal"],
+    cons: ["Sluggish on ’early gut’ floors unless rested"],
+    tags: ["climb", "stats"],
+    apply(p, rank) {
+      p.pactMods.happyCamper = true;
+      p.pactMods.happyCamperOverheal = rank === 1 ? 60 : rank === 2 ? 72 : 84;
+    },
+  },
+  {
+    id: "hot_dog",
+    name: "HOT DOG VENDOR",
+    blurb: "Street meat calls.",
+    pros: ["Snack restores you (+max HP)", "more relish each rank"],
+    cons: ["Greasy fingers: −climb speed"],
+    tags: ["climb", "stats"],
+    apply(p, rank) {
+      p.pactMods.hotDogPact = true;
+      p.pactMods.hotDogHpBonus = rank === 1 ? 15 : rank === 2 ? 18 : 22;
+      p.pactMods.hotDogClimbPenalty = rank === 1 ? 0.1 : rank === 2 ? 0.085 : 0.07;
+      p.climbSpeed = Math.max(0.35, p.climbSpeed - (rank === 1 ? 0.1 : rank === 2 ? 0.085 : 0.07));
+    },
+  },
+  {
+    id: "slow_but_steady",
+    name: "SLOW BUT STEADY",
+    blurb: "Let bile wait.",
+    pros: ["Acid clock slackens", "less debris", "chunk HP"],
+    cons: ["Slower climb"],
+    tags: ["climb", "stats"],
+    apply(p, rank) {
+      const hpAdd = rank === 1 ? 65 : rank === 2 ? 42 : 38;
+      p.hpMax += hpAdd;
+      p.hp += hpAdd;
+      p.climbSpeed = Math.max(0.38, p.climbSpeed - 0.5);
+      const bileEase = rank === 1 ? 0.6 : rank === 2 ? 0.68 : 0.74;
+      p.pactMods.bileRiseMult *= bileEase;
+      const debrisEase = rank === 1 ? 1.35 : rank === 2 ? 1.22 : 1.18;
+      p.pactMods.debrisRateMult *= debrisEase;
+    },
+  },
+
   // ---- Silly pacts (unexpected trade-offs) ----
   {
     id: "silly_bile_express",

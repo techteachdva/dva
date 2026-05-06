@@ -3,6 +3,24 @@ GUTS & GLORY: ESCAPE THE PURPLE WORM
 Changelog
 
 ---------------------------------------------------------------------
+v0.21.0 — Modes, pacts, plasmids & UI polish
+---------------------------------------------------------------------
+RUN MODES (title bar after story; cheat-unlocked):
+- [WORM] / [GREAT WORM] / [ANCIENT] difficulty chips (from save.knownCheats) + Endless toggle.
+- New keypad cheat `greatwyrm` — Ancient Worm (ultra) bias: double classic lap before victory, cruel climb cadence, faster debris; score bonus in `cheatScore.js`. Excludes Endless runs (`transition.js`).
+
+PACTS:
+- New: Rotting, Hopefull, Happy Camper, Hot Dog Vendor, Slow but Steady (`pacts.js` + sigils in `pactSigils.js`) with runtime hooks in `climb.js` / `combat.js`.
+- Pact picker: two-step “Take this Pact?” modal, larger cards, animated shine (`pact.js`).
+
+BALANCE:
+- Plasmids: −1.5s effective cooldowns + +13 bolt damage after global pacing (`player.js`).
+- Rusty Chainsaw misfire 1/3. Wizard climb speed buff. Grim Reaper synergy +climb (`player.js` / `synergies.js`).
+- Compupu: heat bar in combat UI (`combat.js`).
+
+FORGE: card glint pass on weapon cards (`create.js`).
+
+---------------------------------------------------------------------
 v0.20.1 — Codex dossiers bookmark on cheat use
 ---------------------------------------------------------------------
 SAVE / LORE:

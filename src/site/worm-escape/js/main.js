@@ -20,14 +20,12 @@ import { applyCheatLine } from "./engine/cheatActions.js";
 import { tickManaVialIfScene } from "./engine/manaPotion.js";
 import { preloadWeaponArt } from "./engine/weaponArt.js";
 
-// Loop the "Level Up" track as background music. The file lives next to
-// index.html (path relative to the HTML page, not this JS file). Spaces
-// in the filename must be percent-encoded for the request to resolve.
-initBGM("Level%20Up.mp3", { volume: 0.35, loop: true });
+// Main menu music — loops until Forge initializes (CreateScene swaps it).
+initBGM("music/main_screen_music.mp3", { volume: 0.45, loop: true });
 void preloadWeaponArt();
 
 /** Shown lower-right — bump alongside meaningful releases / CHANGELOG. */
-const GAME_VERSION = "v0.20.1";
+const GAME_VERSION = "v0.21.0";
 
 const stageEl = document.getElementById("stage");
 
@@ -79,6 +77,8 @@ const game = {
   cheatSaveRefresh: false,
   easyMode: false,
   hardMode: false,
+  /** Ancient Worm — brutal climb cadence + double classic lap (see `transition.js`). */
+  ultraHardMode: false,
   jillyMode: false,
   bubblegumMode: false,
   rowanWeirdWeapons: false,

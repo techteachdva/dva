@@ -25,6 +25,9 @@ export function getCheatScoreAdjustments(game) {
   if (game.hardMode) {
     o.push({ label: "Dragon hard bias bonus", value: 2600 });
   }
+  if (game.ultraHardMode) {
+    o.push({ label: "Greatwyrm ancient bias bonus", value: 4200 });
+  }
   if (game.rowanWeirdWeapons) {
     o.push({ label: "Rowan rowdy-only forge", value: -900 });
   }

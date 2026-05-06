@@ -4,7 +4,7 @@ import {
   drawHero, drawBar, drawSphere, drawPlate, drawDropShadow, roundRect,
   wrapText,
 } from "../engine/render.js";
-import { SFX } from "../engine/audio.js";
+import { SFX, setBGM } from "../engine/audio.js";
 import { BUILDS, LOADOUTS, makePlayer } from "../content/player.js";
 import { resolveSynergy } from "../content/synergies.js";
 import { loadSave } from "../engine/storage.js";
@@ -34,7 +34,9 @@ const ALL_LOADOUT_IDS = [
   "bileWhip", "hexStaff",
   "megaphone", "boneSpear", "blunderbuss",
   "cursedScythe", "rustyChainsaw", "cat",
-  "engineerWrench", "voidWalker", "chair", "plasmids", "nezZapper",
+  "engineerWrench",
+  "compupu", "daggerOfSacrifice", "fireBrand", "cane",
+  "chair", "plasmids", "nezZapper",
 ];
 
 // Cheat ROWAN — no longswords, sabers, spears, fists, blunt basics, or stock staves/wands.
@@ -181,6 +183,12 @@ export class CreateScene {
     this.dezPoolApplied = false;
     this.rowanPoolApplied = false;
     this.weaponChoices = this.rollLoadouts(3, false, false);
+  }
+
+  enter(game) {
+    void game;
+    // Forge music begins when the Forge initializes.
+    setBGM("music/forge_music.mp3", { volume: 0.45, loop: true, restart: true });
   }
 
   computeBuildWheelIds() {
@@ -431,6 +439,7 @@ export class CreateScene {
         game.endlessMode = !!(game.endlessSelected && saveEnd?.unlocks?.endlessUnlocked);
         game.wormTier = 1;
         game.chamberIndex = 0;
+        game.ultraClassicLap = 0;
         game.scenes.replace(new ClimbScene(0), game);
       }
       if (game.input.wasPressed("Backspace", "Escape")) {
@@ -736,10 +745,6 @@ export class CreateScene {
         const mimic = l.combatAs && LOADOUTS[l.combatAs] ? LOADOUTS[l.combatAs].name : (l.combatAs || "fists");
         drawText(ctx, `Bare combat: ${mimic}`, lx, y + 288, { size: szDim, color: COLORS.bone, maxWidth: textMax });
         let py = y + 312;
-        if (l.voidClimbMult) {
-          drawText(ctx, `Void climb ×${l.voidClimbMult}`, lx, py, { size: szDim, color: COLORS.boneDim });
-          py += 18;
-        }
         drawText(ctx, "STRONG vs " + ART_LABEL[l.strongVs], lx, py, {
           size: szBody, color: "#ffd966", bold: true, maxWidth: textMax,
         });
@@ -864,6 +869,16 @@ export class CreateScene {
       ctx.shadowBlur = 16;
     }
     ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+    ctx.restore();
+
+    const glint = ctx.createLinearGradient(x, y, x + w * 1.05, y + h * 0.4);
+    const gx = 0.05 + 0.07 * Math.sin(this.t * 2.6 + (selected ? 1.2 : 0));
+    glint.addColorStop(0, `rgba(255,255,255,${gx})`);
+    glint.addColorStop(0.55, "rgba(255,255,255,0)");
+    ctx.save();
+    ctx.globalCompositeOperation = "lighter";
+    ctx.fillStyle = glint;
+    ctx.fillRect(x + 3, y + 3, w - 6, Math.min(160, h * 0.34));
     ctx.restore();
   }
 
@@ -1441,31 +1456,6 @@ export class CreateScene {
       ctx.closePath();
       ctx.fill();
       ctx.restore();
-    } else if (loadout.id === "voidWalker") {
-      const g = ctx.createRadialGradient(0, -20, 2, 0, -18, 44);
-      g.addColorStop(0, "#c9a8ff");
-      g.addColorStop(0.45, "#4a2890");
-      g.addColorStop(0.82, "#120814");
-      g.addColorStop(1, "rgba(10,6,14,0.15)");
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.arc(0, -18, 40, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = "#b080ff";
-      ctx.lineWidth = 2;
-      ctx.stroke();
-      ctx.strokeStyle = "rgba(200,170,255,0.5)";
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.arc(0, -18, 28, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.strokeStyle = "rgba(160,210,255,0.4)";
-      ctx.beginPath();
-      ctx.moveTo(-18, -6);
-      ctx.lineTo(18, -30);
-      ctx.moveTo(-12, -36);
-      ctx.lineTo(12, -4);
-      ctx.stroke();
     } else if (loadout.id === "engineerWrench") {
       ctx.fillStyle = "#9aa0ac";
       ctx.beginPath();
@@ -1508,6 +1498,86 @@ export class CreateScene {
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(-20, -30); ctx.lineTo(22, -30); ctx.stroke();
+    } else if (loadout.id === "compupu") {
+      // Little retro computer: screen glow + keyboard.
+      ctx.save();
+      ctx.shadowColor = "#6ee7ff";
+      ctx.shadowBlur = 16;
+      ctx.fillStyle = "#102030";
+      roundRect(ctx, -34, -46, 68, 44, 6);
+      ctx.fill();
+      ctx.fillStyle = "#6ee7ff";
+      roundRect(ctx, -26, -38, 52, 28, 4);
+      ctx.fill();
+      ctx.restore();
+      ctx.fillStyle = "#26344a";
+      roundRect(ctx, -40, -2, 80, 18, 6);
+      ctx.fill();
+      ctx.fillStyle = "rgba(255,255,255,0.55)";
+      for (let i = 0; i < 7; i++) ctx.fillRect(-32 + i * 10, 2, 6, 2);
+      ctx.strokeStyle = "rgba(0,0,0,0.55)";
+      ctx.lineWidth = 1.5;
+      roundRect(ctx, -34.5, -46.5, 69, 45, 6);
+      ctx.stroke();
+    } else if (loadout.id === "daggerOfSacrifice") {
+      // Red dagger with a ritual glint.
+      ctx.save();
+      ctx.shadowColor = "#ff4444";
+      ctx.shadowBlur = 14;
+      ctx.fillStyle = "#f2f2f2";
+      ctx.beginPath();
+      ctx.moveTo(0, -58);
+      ctx.lineTo(10, -18);
+      ctx.lineTo(0, -10);
+      ctx.lineTo(-10, -18);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+      ctx.fillStyle = "#c21a1a";
+      ctx.fillRect(-16, -18, 32, 6);
+      ctx.fillStyle = "#401010";
+      ctx.fillRect(-4, -12, 8, 58);
+      ctx.strokeStyle = "rgba(0,0,0,0.6)";
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(-4, -12, 8, 58);
+    } else if (loadout.id === "fireBrand") {
+      // Fiery sword: orange blade + ember sparks.
+      ctx.save();
+      ctx.shadowColor = "#ff9933";
+      ctx.shadowBlur = 18;
+      const g = ctx.createLinearGradient(0, -66, 0, 20);
+      g.addColorStop(0, "#fff4cc");
+      g.addColorStop(0.45, "#ffb060");
+      g.addColorStop(1, "#c21a1a");
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.moveTo(0, -74);
+      ctx.lineTo(10, -32);
+      ctx.lineTo(0, 18);
+      ctx.lineTo(-10, -32);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+      ctx.fillStyle = "#402010";
+      ctx.fillRect(-3, 18, 6, 40);
+      ctx.fillStyle = "rgba(255,200,80,0.85)";
+      for (let i = 0; i < 6; i++) ctx.fillRect(-18 + i * 6, -6 + (i % 2) * 6, 2, 2);
+    } else if (loadout.id === "cane") {
+      // Cane hook.
+      ctx.strokeStyle = "#d2b48c";
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.moveTo(-6, -62);
+      ctx.quadraticCurveTo(18, -62, 18, -42);
+      ctx.lineTo(18, 56);
+      ctx.stroke();
+      ctx.strokeStyle = "rgba(0,0,0,0.55)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(-6, -62);
+      ctx.quadraticCurveTo(18, -62, 18, -42);
+      ctx.lineTo(18, 56);
+      ctx.stroke();
     } else if (loadout.id === "plasmids") {
       ctx.save();
       ctx.shadowColor = "#59f0dc";

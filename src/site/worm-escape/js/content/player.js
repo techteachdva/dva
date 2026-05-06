@@ -102,7 +102,7 @@ export const BUILDS = {
     mana: 110,
     armor: 0,
     armorSoak: 0,
-    climbSpeed: 1.15,
+    climbSpeed: 1.32,
     hopCooldown: 0.12,
     laneSwapCd: 0.12,
     dodgeWindow: 0.50,
@@ -408,7 +408,7 @@ export const LOADOUTS = {
     blurb: "Old engine. Mostly sputters. When it doesn't... pray.",
     attack:  { name: "Saw Swing",   dmg: [14, 20], cooldown: 0.65, manaCost: 0,  sfx: "slash" },
     special: { name: "REV UP",      dmg: [70, 90], cooldown: 4.0,  manaCost: 8,  sfx: "crunch",
-               misfireChance: 0.75, poisonPct: 0.10, poisonTime: 6, dotLabel: "BLEED" },
+               misfireChance: 1 / 3, poisonPct: 0.10, poisonTime: 6, dotLabel: "BLEED" },
     color: "#c25a2a",
     strongVs: "flesh",
     weakVs:   "teeth",
@@ -438,19 +438,57 @@ export const LOADOUTS = {
     strongVs: "teeth",
     weakVs:   "tentacle",
   },
-  // The Void — climb mobility; combat uses Bare Fists (combatAs).
-  voidWalker: {
-    id: "voidWalker",
-    name: "THE VOID",
-    icon: "void",
-    combatAs: "fists",
-    blurb: "Run between worlds. No weapon — only echoes in the dark.",
-    voidClimbMult: 2.5 / 1.5,
-    voidDebrisIntervalMult: 0.52,
-    climbOnly: true,
-    color: "#1a0520",
+  // COMPUPU — hyper-fast special with a heat rhythm window. Spam it wrong and you fry yourself.
+  compupu: {
+    id: "compupu",
+    name: "COMPUPU",
+    icon: "compupu",
+    blurb: "Turbo cooldowns. Rhythm heat window. Overheat stuns you and bites your HP.",
+    attack:  { name: "Keyboard Clack", dmg: [10, 16], cooldown: 0.52, manaCost: 1, sfx: "thud" },
+    special: { name: "Overclock Pulse", dmg: [18, 28], cooldown: 0.38, manaCost: 7, sfx: "cast" },
+    color: "#6ee7ff",
+    strongVs: "tentacle",
+    weakVs:   "bile",
+  },
+  // DAGGER OF SACRIFICE — fast suffering stabs, one revenge backstab + heal, and a G-key invuln ritual.
+  daggerOfSacrifice: {
+    id: "daggerOfSacrifice",
+    name: "DAGGER OF SACRIFICE",
+    icon: "dagger",
+    blurb: "Bleeds fast. Pays in HP. Backstab heals 27% max HP. [G] 3s impervious (9s CD).",
+    attack:  { name: "Stab of Suffering", dmg: [7, 11], cooldown: 0.32, manaCost: 5, sfx: "slash" },
+    special: { name: "Backstab of Revenge", dmg: [46, 66], cooldown: 5.2, manaCost: 18, sfx: "crunch",
+      healPctMax: 0.27 },
+    color: "#ff6a6a",
+    strongVs: "zombie",
+    weakVs:   "bile",
+  },
+  // FIRE BRAND — same DoT pipeline, labeled BURN.
+  fireBrand: {
+    id: "fireBrand",
+    name: "FIRE BRAND",
+    icon: "fireBrand",
+    blurb: "Slow heavy swings. BURN stacks on every cut.",
+    attack:  { name: "Searing Brand", dmg: [20, 30], cooldown: 1.10, manaCost: 9, sfx: "slash",
+      poisonPct: 0.05, poisonTime: 3.5, dotLabel: "BURN" },
+    special: { name: "Inferno Verdict", dmg: [70, 95], cooldown: 4.6, manaCost: 26, sfx: "crunch",
+      poisonPct: 0.08, poisonTime: 5.0, dotLabel: "BURN" },
+    color: "#ff9933",
     strongVs: "flesh",
     weakVs:   "teeth",
+  },
+  // CANE — smack + trip (stun).
+  cane: {
+    id: "cane",
+    name: "GENTLEMAN'S CANE",
+    icon: "cane",
+    blurb: "Smack fast. Trip them and steal tempo.",
+    attack:  { name: "Smack", dmg: [14, 20], cooldown: 0.56, manaCost: 2, sfx: "thud" },
+    special: { name: "Trip", dmg: [10, 14], cooldown: 3.0, manaCost: 10, sfx: "confirm",
+      shockStun: 1.8 },
+    color: "#d2b48c",
+    strongVs: "bile",
+    weakVs:   "tentacle",
   },
   chair: {
     id: "chair",
@@ -574,11 +612,22 @@ export function makePlayer(buildId, loadoutId, gameCheats = null) {
   }
   scaleLoadoutCooldowns(l);
 
+  // Plasmids buff: −1.5s from gene abilities + flat damage on bolts (post-global pacing).
+  if (loadoutId === "plasmids") {
+    const trim = (x) => Math.max(0.06, x - 1.5);
+    l.attack.cooldown = trim(l.attack.cooldown);
+    l.special.cooldown = trim(l.special.cooldown);
+    if (l.plasmModes) {
+      for (const pm of l.plasmModes) {
+        pm.cooldown = trim(pm.cooldown);
+        pm.dmg = [pm.dmg[0] + 13, pm.dmg[1] + 13];
+      }
+    }
+    l.attack.dmg = [l.attack.dmg[0] + 13, l.attack.dmg[1] + 13];
+  }
+
   let climbSpeed = b.climbSpeed * (def.chairClimbMult || 1);
-  if (def.voidClimbMult) climbSpeed *= def.voidClimbMult;
-  const hopCd = def.voidClimbMult
-    ? b.hopCooldown / Math.max(0.01, def.voidClimbMult)
-    : b.hopCooldown;
+  const hopCd = b.hopCooldown;
 
   if (gameCheats?.lemonBoost) {
     climbSpeed += 0.25;
@@ -606,13 +655,24 @@ export function makePlayer(buildId, loadoutId, gameCheats = null) {
     tankHitsMax: b.tankHits,
     build: b,
     loadout: l,
-    voidDebrisIntervalMult: def.voidDebrisIntervalMult ?? 1,
     acidTimer: 75,
     acidTimerMax: 75,
     bileHpDrain: 24,
     chamberIndex: 0,
     cooldowns: { attack: 0, special: 0, tertiary: 0 },
     dodgeRollCooldown: 0,
+    // Weapon-specific actives / temporary states (e.g. Dagger of Sacrifice ritual).
+    weaponActiveCd: 0,
+    weaponInvulnT: 0,
+    // Compupu heat rhythm.
+    compupuHeat: 0,
+    compupuStunT: 0,
+    /** Pact: Rotting — accumulator for HoT tick */
+    rottingAcc: 0,
+    /** Pact: Happy Camper — seconds of “rested” climb bonus */
+    happyCamperRestedT: 0,
+    /** Pact: Hot Dog — snack cooldown */
+    hotDogEatCd: 0,
     invulnerable: !!(gameCheats && gameCheats.invulnerable),
     manaShield:      !!b.manaShield,
     manaShieldRatio: b.manaShieldRatio || 2,
@@ -706,8 +766,10 @@ export function makePlayer(buildId, loadoutId, gameCheats = null) {
 
   applySynergy(p, buildId, loadoutId);
 
-  if (loadoutId === "voidWalker") {
-    p.pactMods.dmgMult *= 1.22;
+  // Weapon-specific build hooks.
+  if (loadoutId === "daggerOfSacrifice" && buildId !== "tryHard") {
+    p.hpMax = Math.max(1, p.hpMax - 20);
+    p.hp = Math.min(p.hp, p.hpMax);
   }
 
   if (loadoutId === "plasmids") {
@@ -796,7 +858,9 @@ export function resetChamber(p) {
 // Also updates score.hitsTaken / totalHpLost / totalArmorLost when the
 // player has a `score` object (post-v0.10 saves always do).
 export function applyDamage(p, amount, { countHitScore = true } = {}) {
-  if (p.invulnerable) return { armorTaken: 0, hpTaken: 0, manaTaken: 0 };
+  if (p.invulnerable || (p.weaponInvulnT && p.weaponInvulnT > 0)) {
+    return { armorTaken: 0, hpTaken: 0, manaTaken: 0 };
+  }
   // Pacts like Glass Gauntlets / Feed Frenzy amplify incoming damage.
   const inMult = p.pactMods ? p.pactMods.incomingDmgMult : 1;
   let remaining = amount * inMult;
@@ -838,7 +902,7 @@ export function applyDamage(p, amount, { countHitScore = true } = {}) {
 // where we don't go through applyDamage but still want the counters
 // updated.
 export function recordDirectHpHit(p, hpAmount, { countAsHit = true } = {}) {
-  if (p.invulnerable) return;
+  if (p.invulnerable || (p.weaponInvulnT && p.weaponInvulnT > 0)) return;
   if (!p.score) return;
   if (hpAmount <= 0) return;
   p.score.totalHpLost += hpAmount;
@@ -847,7 +911,7 @@ export function recordDirectHpHit(p, hpAmount, { countAsHit = true } = {}) {
 
 // Same as above but for armor only (mace clang on armor).
 export function recordDirectArmorHit(p, armorAmount, { countAsHit = true } = {}) {
-  if (p.invulnerable) return;
+  if (p.invulnerable || (p.weaponInvulnT && p.weaponInvulnT > 0)) return;
   if (!p.score) return;
   if (armorAmount <= 0) return;
   p.score.totalArmorLost += armorAmount;

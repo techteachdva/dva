@@ -3,7 +3,7 @@ import {
   drawText, drawBanner, drawPanel, drawHero, ParticleSystem,
   roundRect,
 } from "../engine/render.js";
-import { SFX } from "../engine/audio.js";
+import { SFX, setBGM } from "../engine/audio.js";
 import { loadSave, recordRun, findScoreRank } from "../engine/storage.js";
 import { IntroScene } from "./intro.js";
 import { getCheatScoreAdjustments } from "../engine/cheatScore.js";
@@ -161,6 +161,7 @@ export class VictoryScene {
   }
 
   enter(game) {
+    setBGM("music/win_screen_music.mp3", { volume: 0.45, loop: true, restart: true });
     const p = game.player;
     this.abruptFinale = !!game.victoryAbruptReveal;
     if (game.victoryAbruptReveal) game.victoryAbruptReveal = false;

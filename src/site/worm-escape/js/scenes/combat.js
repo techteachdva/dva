@@ -4,7 +4,7 @@ import {
   drawHero, drawSphere, drawPlate, drawDropShadow,
   ParticleSystem, screenShake, shade, roundRect,
 } from "../engine/render.js";
-import { SFX } from "../engine/audio.js";
+import { SFX, setBGM } from "../engine/audio.js";
 import { CHAMBERS } from "../content/chambers.js";
 import { ENEMIES } from "../content/enemies.js";
 import { rollElite, applyElite } from "../content/elites.js";
@@ -36,7 +36,9 @@ import {
   endlessEnemyCssFilter,
   resolveEndlessPalette,
 } from "../content/endlessStyle.js";
-import { runEnemyHpMult, runIncomingDamageMult } from "../content/gameBalance.js";
+import {
+  runEnemyHpMult, runIncomingDamageMult, runPlayerMoveMult,
+} from "../content/gameBalance.js";
 import { visualMods } from "../engine/visualMods.js";
 import { recordPinkFloydTrail } from "../engine/pinkFloydVfx.js";
 
@@ -297,6 +299,7 @@ export class CombatScene {
   }
 
   enter(game) {
+    setBGM("music/fight_music.mp3", { volume: 0.45, loop: true, restart: true });
     const p = game.player;
     const mult = matchupMultiplier(p.loadoutId, this.enemy.art);
     const lbl = matchupLabel(mult);
@@ -390,8 +393,47 @@ export class CombatScene {
     if (typeof game.invulnerable === "boolean") p.invulnerable = game.invulnerable;
     if (p.score) p.score.timeSpent += dt;
 
+    // --- Weapon actives / timers ---
+    if (p.weaponActiveCd > 0) p.weaponActiveCd = Math.max(0, p.weaponActiveCd - dt);
+    if (p.weaponInvulnT > 0) p.weaponInvulnT = Math.max(0, p.weaponInvulnT - dt);
+    if (p.compupuStunT > 0) p.compupuStunT = Math.max(0, p.compupuStunT - dt);
+
+    // Compupu heat rhythm: cool down continuously.
+    if (p.loadoutId === "compupu") {
+      const cool = (p.compupuStunT > 0) ? 6 : 14;
+      p.compupuHeat = Math.max(0, Math.min(100, (p.compupuHeat || 0) - cool * dt));
+    }
+
+    // Rotting pact HoT (matches climb tick).
+    const rotHeal = p.pactMods?.rottingHeal;
+    if (rotHeal) {
+      const tickT = p.pactMods.rottingTick || 8;
+      p.rottingAcc = (p.rottingAcc || 0) + dt;
+      while (p.rottingAcc >= tickT) {
+        p.rottingAcc -= tickT;
+        p.hp = Math.min(p.hpMax, p.hp + rotHeal);
+      }
+    }
+
+    if ((p.happyCamperRestedT || 0) > 0) p.happyCamperRestedT = Math.max(0, p.happyCamperRestedT - dt);
+    if ((p.hotDogEatCd || 0) > 0) p.hotDogEatCd = Math.max(0, p.hotDogEatCd - dt);
+
+    // Dagger of Sacrifice ritual (G): 3s invuln, 9s cooldown.
+    if (p.loadoutId === "daggerOfSacrifice") {
+      const want = game.input.wasPressed("g") || game.input.wasCodePressed("KeyG");
+      if (want && p.weaponActiveCd <= 0) {
+        p.weaponInvulnT = 3.0;
+        p.weaponActiveCd = 9.0;
+        this.pushLog("RITUAL: Impervious for 3 seconds.");
+        SFX.confirm();
+        screenShake(2, 0.12);
+        this.particles.burst(this.heroX, HERO_Y - 24, "#ff6060", 18, 220, 0.6);
+      }
+    }
+
     // Lane lerp
-    const lerpSpeed = p.buildId === "swift" ? 18 : 11;
+    const moveM = runPlayerMoveMult(game);
+    const lerpSpeed = (p.buildId === "swift" ? 18 : 11) * moveM;
     this.heroX += (this.targetX - this.heroX) * Math.min(1, dt * lerpSpeed);
     if (game.pinkFloydMode && (this.phase === "fight" || this.phase === "win")) {
       recordPinkFloydTrail(game, this.heroX, HERO_Y);
@@ -596,6 +638,13 @@ export class CombatScene {
         p.score.bossesDefeated++;
         p.score.chambersCleared++;
         if (this.eliteKill) p.score.elitesKilled = (p.score.elitesKilled || 0) + 1;
+      }
+      if (p.pactMods?.happyCamper && p.score?.bossesDefeated > 0 && p.score.bossesDefeated % 2 === 0) {
+        const ov = p.pactMods.happyCamperOverheal || 60;
+        p.hp = Math.min(p.hpMax + ov, p.hp + ov);
+        p.happyCamperRestedT = 95;
+        this.pushLog(`HAPPY CAMPER: Trail feast! +${ov} overheal & climb zeal.`);
+        SFX.confirm();
       }
       this.winTimer = 2.2;
     }
@@ -995,7 +1044,7 @@ export class CombatScene {
     const wantManaPotion = manaPulse || clickedPotion;
 
     // Even during turn-lock you can slam [R]/[3] (or tap the mana button) to clutch-drink.
-    if (this.turnLocked > 0) {
+    if (this.turnLocked > 0 || (p.compupuStunT || 0) > 0) {
       this.turnLocked -= dt;
       if (wantManaPotion) this.tryEnterManaPotion(p);
       return;
@@ -1154,6 +1203,29 @@ export class CombatScene {
         }
         p.cooldowns.special = l.special.cooldown * (pm.specialCdMult || 1);
         const dmg = randInt(l.special.dmg[0], l.special.dmg[1]);
+        // COMPUPU: heat rhythm safe window (bonus damage + lower heat) — miss it and you risk overheat.
+        if (p.loadoutId === "compupu") {
+          const heat0 = p.compupuHeat || 0;
+          const center = 45 + Math.sin((game.t || 0) * 2.2) * 12; // moving target for arcade rhythm
+          const halfW = 10;
+          const inBand = heat0 >= (center - halfW) && heat0 <= (center + halfW);
+          const heatGain = inBand ? 18 : (heat0 < center ? 28 : 34);
+          p.compupuHeat = Math.max(0, Math.min(100, heat0 + heatGain));
+          if (inBand) {
+            this.pushLog("COMPUPU: SAFE WINDOW! (clean pulse)");
+          } else {
+            this.pushLog("COMPUPU: heat spikes...");
+          }
+          // Overheat: self-hit + stun.
+          if (p.compupuHeat >= 100) {
+            const self = Math.round(Math.max(8, p.hpMax * 0.12));
+            applyDamage(p, self, { countHitScore: false });
+            p.compupuStunT = 1.25;
+            this.pushLog(`OVERHEAT! −${self} HP (stunned)`);
+            SFX.deny();
+            screenShake(5, 0.22);
+          }
+        }
         const opts = {
           kind: "special",
           multiLane: !!l.special.multiLane,
@@ -1170,7 +1242,20 @@ export class CombatScene {
           lifestealPct: l.special.lifestealPct || 0,
           plasmElement: l.special.plasmElement || undefined,
         };
+        // Damage tweak for Compupu safe-window: apply a hit multiplier instead of modifying weapon stats.
+        if (p.loadoutId === "compupu") {
+          const center = 45 + Math.sin((game.t || 0) * 2.2) * 12;
+          const halfW = 10;
+          const heat0 = p.compupuHeat || 0;
+          opts.hitMult = (heat0 >= (center - halfW) && heat0 <= (center + halfW)) ? 1.25 : 1.0;
+        }
         this.dealToEnemy(dmg, l.special.name, l.special.sfx, p, opts);
+        // Dagger of Sacrifice: fixed heal after the strike.
+        if (l.special.healPctMax) {
+          const heal = Math.max(1, Math.round(p.hpMax * l.special.healPctMax));
+          p.hp = Math.min(p.hpMax, p.hp + heal);
+          this.pushLog(`REVENGE: +${heal} HP`);
+        }
         const riot = typeof l.special.riotSelfHp === "number" ? l.special.riotSelfHp : 0;
         if (riot > 0 && !p.invulnerable) {
           applyDamage(p, riot, { countHitScore: false });
@@ -1252,6 +1337,7 @@ export class CombatScene {
     const hexDet    = !!opts.hexDetonate;
     let hitMult = this.matchupMult;
     if (opts.plasmElement) hitMult = plasmElementMult(opts.plasmElement, this.enemy.art);
+    if (typeof opts.hitMult === "number") hitMult = opts.hitMult;
     // v0.16 per-attack on-hit effects. Wired through to applyHit/applyOnHitEffects.
     const fxCtx = {
       movePoisonPct:  opts.movePoisonPct  || 0,
@@ -2210,8 +2296,18 @@ export class CombatScene {
         fill: "#c0c4cc", label: `ARM ${Math.ceil(p.armor)}/${p.armorMax}`, labelColor: "#111",
       });
     }
-    const tY = p.armorMax > 0 ? pad + 78 : pad + 52;
-    drawBar(ctx, pad, tY, 260, 20, Math.max(0, p.acidTimer) / p.acidTimerMax, {
+    let rowY = p.armorMax > 0 ? pad + 78 : pad + 52;
+    if (p.loadoutId === "compupu") {
+      const hm = (p.compupuHeat || 0) / 100;
+      const hot = hm > 0.82;
+      drawBar(ctx, pad, rowY, 260, 18, hm, {
+        fill: hot ? "#ff5533" : "#44c8ff",
+        label: hot ? `HEAT ${Math.round(p.compupuHeat)} — OVERHEAT RISK!` : `HEAT ${Math.round(p.compupuHeat)} / 100`,
+        labelColor: "#111",
+      });
+      rowY += 24;
+    }
+    drawBar(ctx, pad, rowY, 260, 20, Math.max(0, p.acidTimer) / p.acidTimerMax, {
       fill: COLORS.bile,
       label: p.acidTimer > 0 ? `ACID TIMER ${Math.ceil(p.acidTimer)}s` : "CORRODING!",
       labelColor: "#111",
@@ -2220,13 +2316,13 @@ export class CombatScene {
     if (p.synergyTitle) {
       ctx.save();
       ctx.fillStyle = "rgba(40, 26, 54, 0.55)";
-      roundRect(ctx, pad, tY + 28, 260, 24, 8);
+      roundRect(ctx, pad, rowY + 28, 260, 24, 8);
       ctx.fill();
       ctx.strokeStyle = "rgba(255, 210, 140, 0.45)";
       ctx.lineWidth = 1.2;
       roundRect(ctx, pad, tY + 28, 260, 24, 8);
       ctx.stroke();
-      drawText(ctx, p.synergyTitle, pad + 130, tY + 40, {
+      drawText(ctx, p.synergyTitle, pad + 130, rowY + 40, {
         size: 12, color: "#ffe6b0", align: "center", bold: true,
         glow: "#ffd080", maxWidth: 252,
       });

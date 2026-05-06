@@ -109,7 +109,6 @@ function summarizeLoadout(id, lo) {
   /** @type {string[]} */
   const lines = [];
   lines.push(lo.blurb || "");
-  if (lo.voidClimbMult) lines.push(`Climb gimmick • void climb ×${lo.voidClimbMult}`);
   if (lo.chairClimbMult) lines.push(`Climb gimmick • chair ×${lo.chairClimbMult}`);
   if (lo.combatAs) lines.push(`Combat uses LOADOUT '${lo.combatAs}' internally (still shows as '${id}' in menus).`);
 

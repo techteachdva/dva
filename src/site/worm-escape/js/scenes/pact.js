@@ -3,11 +3,21 @@ import {
   drawBackdropCached, drawText, drawBanner, drawPanel, roundRect,
 } from "../engine/render.js";
 import { getPactCardVisual, drawPactSigil } from "../engine/pactSigils.js";
-import { SFX } from "../engine/audio.js";
+import { SFX, setBGM } from "../engine/audio.js";
 import { rollPactChoices } from "../content/pacts.js";
 import { applyPact } from "../content/player.js";
 import { TransitionScene } from "./transition.js";
 import { pointInRect } from "../engine/pointer.js";
+
+function layoutPactCards(n) {
+  const gap = n >= 4 ? 16 : 22;
+  const cardW = n >= 4 ? 286 : 346;
+  const cardH = Math.min(580, H - 168);
+  const totalW = cardW * n + gap * (n - 1);
+  const startX = (W - totalW) / 2;
+  const y = 78;
+  return { gap, cardW, cardH, totalW, startX, y };
+}
 
 // v0.12 PactScene - after every boss kill and before the chamber
 // transition, the player seals trade-off pacts. Bubblegum cheat forces
@@ -24,9 +34,12 @@ export class PactScene {
     this.choices = [];
     this.picked = null;
     this.confirmT = 0;
+    /** Two-step seal: modal gate so mis-clicks never commit */
+    this.confirmModal = false;
   }
 
   enter(game) {
+    setBGM("music/pact_screen_music.mp3", { volume: 0.45, loop: true, restart: true });
     const p = game.player;
     const ranks = (p && p.pactRanks) ? p.pactRanks : {};
     const bubbleOn = this.bubbleChains >= 2;
@@ -34,11 +47,11 @@ export class PactScene {
     const n = bubbleOn ? 3 : (this.eliteReward ? 4 : 3);
     this.choices = rollPactChoices(n, ranks);
     if (this.choices.length === 0) {
-      // Edge case: all 18 pacts already taken. Skip straight to transition.
       game.scenes.replace(new TransitionScene(this.completedChamberIdx), game);
       return;
     }
     this.idx = 0;
+    this.confirmModal = false;
     SFX.click();
   }
 
@@ -59,6 +72,7 @@ export class PactScene {
           this.idx = 0;
           this.picked = null;
           this.confirmT = 0;
+          this.confirmModal = false;
           SFX.click();
           return;
         }
@@ -66,44 +80,83 @@ export class PactScene {
       }
       return;
     }
+
+    const n = this.choices.length;
+    if (n === 0) return;
+    const L = layoutPactCards(n);
+
+    if (this.confirmModal) {
+      if (game.input.wasPressed("Escape")) {
+        this.confirmModal = false;
+        SFX.click();
+        return;
+      }
+      const padX = W / 2 - 220;
+      const padY = H / 2 - 38;
+      const yes = { x: padX, y: padY + 58, w: 200, h: 44 };
+      const no = { x: padX + 240, y: padY + 58, w: 200, h: 44 };
+      if (game.input.wasPressed(" ", "Space", "Enter")) {
+        this.sealPact(game);
+        return;
+      }
+      if (game.input.wasPressed("Mouse0")) {
+        const mx = game.input.mouseX, my = game.input.mouseY;
+        if (pointInRect(mx, my, yes.x, yes.y, yes.w, yes.h)) {
+          this.sealPact(game);
+        } else if (pointInRect(mx, my, no.x, no.y, no.w, no.h)) {
+          this.confirmModal = false;
+          SFX.click();
+        }
+      }
+      return;
+    }
+
     if (game.input.wasPressed("ArrowLeft", "a")) {
-      this.idx = (this.idx - 1 + this.choices.length) % this.choices.length;
+      this.idx = (this.idx - 1 + n) % n;
       SFX.click();
     } else if (game.input.wasPressed("ArrowRight", "d")) {
-      this.idx = (this.idx + 1) % this.choices.length;
+      this.idx = (this.idx + 1) % n;
       SFX.click();
     } else if (game.input.wasPressed(" ", "Space", "Enter")) {
-      this.confirm(game);
+      this.confirmModal = true;
+      SFX.click();
     } else if (game.input.wasPressed("Mouse0")) {
-      const n = this.choices.length;
-      if (n === 0) return;
-      const gap = 24;
-      const cardW = n >= 4 ? 260 : 320;
-      const cardH = 440;
-      const totalW = cardW * n + gap * (n - 1);
-      const startX = (W - totalW) / 2;
-      const y = 160;
       const mx = game.input.mouseX, my = game.input.mouseY;
       for (let i = 0; i < n; i++) {
-        const x = startX + i * (cardW + gap);
-        if (pointInRect(mx, my, x, y, cardW, cardH)) {
-          this.idx = i;
-          this.confirm(game);
+        const x = L.startX + i * (L.cardW + L.gap);
+        if (pointInRect(mx, my, x, L.y, L.cardW, L.cardH)) {
+          if (this.idx === i) {
+            this.confirmModal = true;
+            SFX.click();
+          } else {
+            this.idx = i;
+            SFX.click();
+          }
           break;
         }
       }
-    } else if (game.input.wasPressed("1") && this.choices[0]) { this.idx = 0; this.confirm(game); }
-    else if (game.input.wasPressed("2") && this.choices[1]) { this.idx = 1; this.confirm(game); }
-    else if (game.input.wasPressed("3") && this.choices[2]) { this.idx = 2; this.confirm(game); }
-    else if (game.input.wasPressed("4") && this.choices[3]) { this.idx = 3; this.confirm(game); }
+    } else if (game.input.wasPressed("1") && this.choices[0]) {
+      this.idx = 0;
+      SFX.click();
+    } else if (game.input.wasPressed("2") && this.choices[1]) {
+      this.idx = 1;
+      SFX.click();
+    } else if (game.input.wasPressed("3") && this.choices[2]) {
+      this.idx = 2;
+      SFX.click();
+    } else if (game.input.wasPressed("4") && this.choices[3]) {
+      this.idx = 3;
+      SFX.click();
+    }
   }
 
-  confirm(game) {
+  sealPact(game) {
     const pact = this.choices[this.idx];
     if (!pact) return;
     applyPact(game.player, pact.id);
     this.picked = pact;
     this.confirmT = 0;
+    this.confirmModal = false;
     SFX.confirm();
   }
 
@@ -111,7 +164,6 @@ export class PactScene {
     drawBackdropCached(ctx, this.t, this.t, 1.0, null, this.completedChamberIdx + 9);
     ctx.fillStyle = "rgba(0,0,0,0.78)";
     ctx.fillRect(0, 0, W, H);
-    // Subtle arcade scanlines
     ctx.save();
     ctx.globalAlpha = 0.08;
     for (let y = 0; y < H; y += 4) {
@@ -126,29 +178,24 @@ export class PactScene {
     drawBanner(ctx, bubbleActive
       ? `◆ BUBBLEGUM (${sealIdx}/${this.bubbleChains}) ◆`
       : (this.eliteReward ? "◆ ELITE BONUS — PACT SELECT ◆" : "◆ SEAL A PACT — ARCADE MODE ◆"),
-    W / 2, 68, bubbleActive ? 32 : 36, COLORS.bile, COLORS.blood);
+    W / 2, 52, bubbleActive ? 30 : 34, COLORS.bile, COLORS.blood);
     drawText(ctx, bubbleActive
       ? `Pick 1 of 3 — pact ${sealIdx} of ${this.bubbleChains} (sweetened valve tax).`
       : (this.eliteReward
         ? "The guardian was Elite. Pick 1 of 4."
         : "The worm rewards the worthy. Pick 1 of 3."),
-    W / 2, 114, { size: 15, color: COLORS.bone, align: "center" });
+    W / 2, 96, { size: 16, color: COLORS.bone, align: "center" });
 
     const n = this.choices.length;
-    const gap = 24;
-    // Cards shrink slightly for 4-card (elite) mode.
-    const cardW = n >= 4 ? 260 : 320;
-    const cardH = 440;
-    const totalW = cardW * n + gap * (n - 1);
-    const startX = (W - totalW) / 2;
-    const y = 160;
+    const L = layoutPactCards(n);
+    const { gap, cardW, cardH, startX, y } = L;
 
     const pr = (game.player && game.player.pactRanks) ? game.player.pactRanks : {};
     for (let i = 0; i < n; i++) {
       const c = this.choices[i];
       const x = startX + i * (cardW + gap);
       const selected = (i === this.idx) && !this.picked;
-      const chosen   = (this.picked && this.choices[i] === this.picked);
+      const chosen = (this.picked && this.choices[i] === this.picked);
       this.drawCard(ctx, c, x, y, cardW, cardH, selected, chosen, i + 1, pr);
     }
 
@@ -164,15 +211,46 @@ export class PactScene {
         size: 14, color: COLORS.boneDim, align: "center",
       });
       ctx.restore();
+    } else if (this.confirmModal) {
+      const padX = W / 2 - 220;
+      const padY = H / 2 - 38;
+      ctx.save();
+      ctx.fillStyle = "rgba(8,4,16,0.92)";
+      roundRect(ctx, padX - 12, padY - 12, 464, 140, 14);
+      ctx.fill();
+      ctx.strokeStyle = COLORS.bile;
+      ctx.lineWidth = 3;
+      roundRect(ctx, padX - 12, padY - 12, 464, 140, 14);
+      ctx.stroke();
+      ctx.restore();
+      const pact = this.choices[this.idx];
+      drawText(ctx, "Take this Pact?", W / 2, padY + 18, {
+        size: 26, color: COLORS.bone, align: "center", bold: true, glow: COLORS.blood,
+      });
+      if (pact) {
+        drawText(ctx, pact.name, W / 2, padY + 48, {
+          size: 17, color: COLORS.bile, align: "center", bold: true, maxWidth: 420,
+        });
+      }
+      const yes = { x: padX, y: padY + 58, w: 200, h: 44 };
+      const no = { x: padX + 240, y: padY + 58, w: 200, h: 44 };
+      drawPanel(ctx, yes.x, yes.y, yes.w, yes.h);
+      drawPanel(ctx, no.x, no.y, no.w, no.h);
+      drawText(ctx, "YES — SEAL IT", yes.x + yes.w / 2, yes.y + yes.h / 2, {
+        size: 18, color: "#b5f05a", align: "center", baseline: "middle", bold: true,
+      });
+      drawText(ctx, "KEEP CHOOSING", no.x + no.w / 2, no.y + no.h / 2, {
+        size: 18, color: COLORS.bone, align: "center", baseline: "middle", bold: true,
+      });
     } else {
       const blink = Math.sin(this.t * 5) > 0;
-      drawText(ctx, "[LEFT/RIGHT] or [1-4] to choose   [SPACE/ENTER] to seal",
+      drawText(ctx, "[LEFT/RIGHT] choose card · click twice same card · [SPACE] confirm",
         W / 2, H - 48, {
-        size: 14, color: COLORS.boneDim, align: "center",
+        size: 15, color: COLORS.boneDim, align: "center",
       });
       if (blink) {
-        drawText(ctx, ">> SEAL A PACT <<", W / 2, H - 22, {
-          size: 16, color: COLORS.bile, align: "center", bold: true,
+        drawText(ctx, ">> SELECT, THEN CONFIRM <<", W / 2, H - 22, {
+          size: 17, color: COLORS.bile, align: "center", bold: true,
         });
       }
     }
@@ -183,9 +261,13 @@ export class PactScene {
     const nextRank = Math.min(3, cur + 1);
     const vis = getPactCardVisual(pact.id);
     const t = this.t;
+    const pop = (selected && !chosen) ? 1 + 0.018 * Math.sin(t * 5.5) : 1;
 
     ctx.save();
-    // CRT cabinet inner shadow
+    ctx.translate(x + w / 2, y + h / 2);
+    ctx.scale(pop, pop);
+    ctx.translate(-(x + w / 2), -(y + h / 2));
+
     ctx.fillStyle = "rgba(0,0,0,0.45)";
     roundRect(ctx, x + 6, y + 8, w, h, 12);
     ctx.fill();
@@ -207,15 +289,22 @@ export class PactScene {
     roundRect(ctx, x, y, w, h, 10);
     ctx.fill();
 
-    // Phosphor edge sheen
-    const sh = ctx.createLinearGradient(x, y, x, y + 40);
+    const sweep = ctx.createLinearGradient(x, y, x + w * 1.1, y + h * 0.35);
+    const swA = 0.07 + 0.06 * Math.sin(t * 2.8);
+    sweep.addColorStop(0, `rgba(255,255,255,${swA})`);
+    sweep.addColorStop(0.45, "rgba(255,255,255,0)");
+    sweep.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = sweep;
+    roundRect(ctx, x + 2, y + 2, w - 4, h - 4, 9);
+    ctx.fill();
+
+    const sh = ctx.createLinearGradient(x, y, x, y + 52);
     sh.addColorStop(0, vis.primary + "55");
     sh.addColorStop(1, "rgba(0,0,0,0)");
     ctx.fillStyle = sh;
-    roundRect(ctx, x + 2, y + 2, w - 4, 36, 8);
+    roundRect(ctx, x + 2, y + 2, w - 4, 44, 8);
     ctx.fill();
 
-    // Pixel-double border (retro bezel)
     const edge = chosen ? COLORS.gold : (selected ? vis.border : "rgba(255,255,255,0.22)");
     ctx.strokeStyle = edge;
     ctx.lineWidth = 4;
@@ -227,63 +316,62 @@ export class PactScene {
     ctx.stroke();
     ctx.restore();
 
-    // Slot number — arcade insert coin slot
     ctx.save();
     ctx.fillStyle = "#0a0610";
-    roundRect(ctx, x + 10, y + 10, 40, 32, 4);
+    roundRect(ctx, x + 10, y + 10, 44, 36, 4);
     ctx.fill();
     ctx.strokeStyle = vis.border;
     ctx.lineWidth = 2;
-    roundRect(ctx, x + 10.5, y + 10.5, 39, 31, 4);
+    roundRect(ctx, x + 10.5, y + 10.5, 43, 35, 4);
     ctx.stroke();
-    drawText(ctx, String(num), x + 30, y + 26, {
-      size: 20, bold: true, color: vis.glow, align: "center", baseline: "middle",
+    drawText(ctx, String(num), x + 32, y + 28, {
+      size: 22, bold: true, color: vis.glow, align: "center", baseline: "middle",
       shadow: false,
     });
     ctx.restore();
 
     const textMax = w - 36;
-    drawText(ctx, pact.name, x + w / 2, y + 34, {
-      size: 20, bold: true, color: selected ? vis.glow : COLORS.bone,
+    drawText(ctx, pact.name, x + w / 2, y + 38, {
+      size: 24, bold: true, color: selected ? vis.glow : COLORS.bone,
       align: "center", glow: selected ? vis.primary : null,
       maxWidth: textMax,
     });
-    drawText(ctx, pact.blurb, x + w / 2, y + 62, {
-      size: 12, color: COLORS.boneDim, align: "center",
+    drawText(ctx, pact.blurb, x + w / 2, y + 70, {
+      size: 14, color: COLORS.boneDim, align: "center",
       maxWidth: textMax,
     });
     if (cur > 0) {
-      drawText(ctx, `▲ RANK UP → ${nextRank}/3`, x + w / 2, y + 84, {
-        size: 11, color: vis.primary, align: "center", bold: true,
+      drawText(ctx, `▲ RANK UP → ${nextRank}/3`, x + w / 2, y + 94, {
+        size: 13, color: vis.primary, align: "center", bold: true,
         maxWidth: textMax,
       });
     }
 
-    const sealY = y + 178;
+    const sealY = y + 198;
     ctx.save();
     ctx.fillStyle = "rgba(0,0,0,0.35)";
     ctx.beginPath();
-    ctx.arc(x + w / 2, sealY, 58, 0, Math.PI * 2);
+    ctx.arc(x + w / 2, sealY, 62, 0, Math.PI * 2);
     ctx.fill();
     ctx.strokeStyle = vis.border;
     ctx.lineWidth = 3;
     ctx.stroke();
     ctx.restore();
-    drawPactSigil(ctx, x + w / 2, sealY, pact.id, t, { scale: 1.05, selected: selected || chosen });
+    drawPactSigil(ctx, x + w / 2, sealY, pact.id, t, { scale: 1.08, selected: selected || chosen });
 
-    const rowsY = y + h - 198;
+    const rowsY = y + h - 214;
     const rowMax = w - 28;
-    drawText(ctx, "▶ BUFF", x + 14, rowsY, { size: 11, color: "#7fff9a", bold: true });
+    drawText(ctx, "▶ BUFF", x + 14, rowsY, { size: 13, color: "#7fff9a", bold: true });
     pact.pros.forEach((line, i) => {
-      drawText(ctx, "» " + line, x + 14, rowsY + 18 + i * 17, {
-        size: 11, color: "#b5f05a", maxWidth: rowMax,
+      drawText(ctx, "» " + line, x + 14, rowsY + 20 + i * 19, {
+        size: 13, color: "#b5f05a", maxWidth: rowMax,
       });
     });
-    const cy = rowsY + 18 + pact.pros.length * 17 + 10;
-    drawText(ctx, "▼ DEBT", x + 14, cy, { size: 11, color: "#ff7a7a", bold: true });
+    const cy = rowsY + 20 + pact.pros.length * 19 + 10;
+    drawText(ctx, "▼ DEBT", x + 14, cy, { size: 13, color: "#ff7a7a", bold: true });
     pact.cons.forEach((line, i) => {
-      drawText(ctx, "« " + line, x + 14, cy + 18 + i * 17, {
-        size: 11, color: "#ffaaaa", maxWidth: rowMax,
+      drawText(ctx, "« " + line, x + 14, cy + 20 + i * 19, {
+        size: 13, color: "#ffaaaa", maxWidth: rowMax,
       });
     });
   }

@@ -67,6 +67,7 @@ export const SYNERGIES = {
       p.synergyDecay = true;
       p.grimReaperRot = true;
       p.pactMods.dmgMult *= 0.92;
+      p.climbSpeed *= 1.14;
     },
   },
   whizid: {

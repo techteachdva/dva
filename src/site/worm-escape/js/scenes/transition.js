@@ -26,6 +26,14 @@ export class TransitionScene {
 
   enter(game) {
     if (this.nextIdx >= CHAMBERS.length) {
+      // Ultra (Ancient Worm): classic run plays all chambers twice before victory.
+      if (game.ultraHardMode && !game.endlessMode && (game.ultraClassicLap || 0) === 0) {
+        game.ultraClassicLap = 1;
+        resetChamber(game.player);
+        game.chamberIndex = 0;
+        game.scenes.replace(new ClimbScene(0), game);
+        return;
+      }
       SFX.victory();
       game.scenes.replace(new VictoryScene(), game);
       return;

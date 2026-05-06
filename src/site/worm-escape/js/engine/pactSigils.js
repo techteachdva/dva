@@ -38,6 +38,11 @@ export const PACT_CARD_VISUAL = {
   silly_bile_express: { primary: "#66ffee", secondary: "#042018", glow: "#ccffff", border: "#22bbaa", sigil: "rocketSkip" },
   silly_jitterbug_lease: { primary: "#ff66dd", secondary: "#180818", glow: "#ffccee", border: "#cc22aa", sigil: "lightningBoot" },
   silly_worm_mirror: { primary: "#aaaaff", secondary: "#080818", glow: "#ddddff", border: "#6666cc", sigil: "mirrorSplit" },
+  rotting: { primary: "#6bcc66", secondary: "#081408", glow: "#c8ffc4", border: "#3a8c32", sigil: "rotSwirl" },
+  hopefull: { primary: "#ffe8aa", secondary: "#181004", glow: "#fff8dc", border: "#e8c040", sigil: "sunHands" },
+  happy_camper: { primary: "#ff8844", secondary: "#180804", glow: "#ffd0a0", border: "#cc5522", sigil: "campfire" },
+  hot_dog: { primary: "#ff4466", secondary: "#200408", glow: "#ffaacc", border: "#dd2244", sigil: "hotDog" },
+  slow_but_steady: { primary: "#8899aa", secondary: "#080c12", glow: "#dde8f0", border: "#556677", sigil: "mountainPath" },
 };
 
 export function getPactCardVisual(id) {
@@ -451,6 +456,88 @@ const SIGIL_DRAW = {
     ctx.fillRect(2, -28, 24, 56);
     ctx.strokeRect(-26, -28, 24, 56);
     ctx.strokeRect(2, -28, 24, 56);
+  },
+  rotSwirl(ctx, v, t, _sel) {
+    ctx.strokeStyle = v.primary;
+    ctx.lineWidth = 2.5;
+    for (let i = 0; i < 3; i++) {
+      ctx.beginPath();
+      ctx.arc(0, 0, 26 - i * 8, t * 1.5 + i, t * 1.5 + i + Math.PI * 1.2);
+      ctx.stroke();
+    }
+    ctx.fillStyle = v.glow + "44";
+    ctx.beginPath();
+    ctx.arc(0, 0, 8, 0, Math.PI * 2);
+    ctx.fill();
+  },
+  sunHands(ctx, v, _t, _sel) {
+    ctx.strokeStyle = v.border;
+    ctx.fillStyle = v.primary;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, -10, 14, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.strokeStyle = v.glow;
+    ctx.beginPath();
+    ctx.moveTo(-22, 18);
+    ctx.quadraticCurveTo(-10, 8, 0, 22);
+    ctx.quadraticCurveTo(10, 8, 22, 18);
+    ctx.stroke();
+  },
+  campfire(ctx, v, t, _sel) {
+    ctx.fillStyle = v.primary;
+    let i = 0;
+    for (const x of [-12, 0, 12]) {
+      ctx.beginPath();
+      ctx.moveTo(x, 22);
+      ctx.lineTo(x + Math.sin(t * 6 + i) * 4, -18);
+      ctx.lineTo(x + 6, 22);
+      ctx.closePath();
+      ctx.fill();
+      i++;
+    }
+    ctx.strokeStyle = v.border;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-24, 22);
+    ctx.lineTo(24, 22);
+    ctx.stroke();
+  },
+  hotDog(ctx, v, _t, _sel) {
+    ctx.fillStyle = "#d94";
+    ctx.strokeStyle = v.border;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(0, 2, 28, 11, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#633";
+    ctx.beginPath();
+    ctx.arc(-18, 10, 7, 0, Math.PI * 2);
+    ctx.arc(18, 10, 7, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = v.primary;
+    ctx.fillRect(-8, -14, 16, 8);
+  },
+  mountainPath(ctx, v, _t, _sel) {
+    ctx.strokeStyle = v.primary;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(-28, 22);
+    ctx.lineTo(-10, 8);
+    ctx.lineTo(4, 14);
+    ctx.lineTo(28, -18);
+    ctx.stroke();
+    ctx.fillStyle = "rgba(220,235,250,0.35)";
+    ctx.beginPath();
+    ctx.moveTo(-28, 22);
+    ctx.lineTo(-10, 8);
+    ctx.lineTo(4, 14);
+    ctx.lineTo(28, -18);
+    ctx.lineTo(28, 22);
+    ctx.closePath();
+    ctx.fill();
   },
   sigilStar(ctx, v, t, _sel) {
     ctx.strokeStyle = v.primary;
