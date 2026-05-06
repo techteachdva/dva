@@ -691,9 +691,12 @@ export function getPact(id) { return PACT_BY_ID[id] || null; }
  * @param {number} n - number of cards
  * @param {Record<string, number>} pactRanks - per-pact rank already sealed (1–3); omit or {} for none
  */
-export function rollPactChoices(n = 3, pactRanks = {}) {
+export function rollPactChoices(n = 3, pactRanks = {}, game = null) {
   const ranks = pactRanks || {};
   const pool = PACTS.filter((p) => (ranks[p.id] || 0) < 3);
+  if (game?.dealzPacts) {
+    return pool.slice();
+  }
   const result = [];
   const poolCopy = [...pool];
   while (result.length < n && poolCopy.length > 0) {

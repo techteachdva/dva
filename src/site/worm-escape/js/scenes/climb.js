@@ -28,17 +28,27 @@ import {
   runDebrisIntervalMult, runPlayerClimbMult,
 } from "../content/gameBalance.js";
 import { recordPinkFloydTrail } from "../engine/pinkFloydVfx.js";
+import { drawRunIdentityStrip } from "../engine/runHud.js";
 
-// Five hand-hold columns on the veiny wall. Hero is fixed in screen Y;
-// the wall scrolls. Bile rises from the bottom of the screen in absolute pixels.
+// Five hand-hold columns on the veiny wall. Hero screen Y shifts upward as you
+// climb; the wall scrolls. Bile rises from the bottom of the screen in absolute pixels.
 //
 // Columns are spread across the middle 60% of the screen so hopping between
 // the outer columns takes real time even for Swiftfoot.
 
 const COLS_X = [W * 0.22, W * 0.36, W * 0.50, W * 0.64, W * 0.78];
 const NUM_COLS = COLS_X.length;
-const HERO_Y = H - 180;              // hero fixed 180 px above bottom
-const HERO_DEATH_Y = HERO_Y + 28;    // bile touches this Y -> submerged
+/** Bile surface at or above hero anchor + this offset counts as submerged. */
+const HERO_BILE_DEATH_OFFSET = 28;
+
+// Rare mega-hazard: blocks a column for a few seconds after it lands.
+const BOULDER_KIND = {
+  kind: "boulder",
+  color: "#4a4034",
+  sizeR: [40, 54],
+  dmg: 18,
+  damageType: "crush",
+};
 
 // Falling objects are split into two categories:
 //
@@ -107,13 +117,31 @@ export class ClimbScene {
     this.debris = [];
     this.telegraphs = [];
     this.debrisTimer = 1.2;
+    this.boulderTimer = 4.5 + Math.random() * 5;
+    this.columnCrush = [];
+    this.pustules = [];
+    this._lastProgress = 0;
+    const ch0 = this.chamber;
+    for (let c = 0; c < NUM_COLS; c++) {
+      const slots = 2 + (this.chamberIdx % 3);
+      for (let s = 0; s < slots; s++) {
+        if (Math.random() > 0.42) continue;
+        const mid = rand(ch0.climbHeight * 0.1, ch0.climbHeight * 0.88);
+        this.pustules.push({
+          col: c,
+          prog0: mid - 38,
+          prog1: mid + 38,
+          popped: false,
+        });
+      }
+    }
 
     // Bile: rises in pixels from the BOTTOM of the screen.
     // bileY = H - bileHeight. Starts exactly at H (invisible, 0 height).
     this.bileHeight = 0;
 
-    // Bile-submersion grace mechanic: while the bile surface is above
-    // HERO_DEATH_Y, this timer counts up. Armor absorbs the bite for
+    // Bile-submersion grace mechanic: while the bile surface is above the
+    // hero's feet, this timer counts up. Armor absorbs the bite for
     // 1 second per point of armor; afterward HP drains. Swift (0 armor)
     // basically has a 0.5s grace window from splash-damage immunity.
     this.submerged = false;
@@ -138,6 +166,7 @@ export class ClimbScene {
     this.hitlessChamber = true;
     /** Hot Dog pact: double-tap down timing */
     this.downTapPrevT = -99;
+    this.renderHeroY = H - 168;
   }
 
   enter(game) {
@@ -205,6 +234,27 @@ export class ClimbScene {
     this.hitlessChamber = false;
   }
 
+  /** Vertical anchor for the hero sprite (moves up as climb progress rises). */
+  heroScreenY() {
+    const ch = this.chamber;
+    const f = Math.min(1, this.progress / Math.max(1, ch.climbHeight));
+    const lo = H - 168;
+    const hi = H - 318;
+    return lo - f * (lo - hi);
+  }
+
+  spawnBoulderTelegraph(ch, avoidCols = []) {
+    const col = this.pickColumn(avoidCols);
+    this.telegraphs.push({
+      col,
+      t: 0,
+      wait: rand(1.12, 1.58),
+      kind: BOULDER_KIND,
+      speed: ch.debrisSpeed * rand(0.48, 0.68),
+      power: false,
+    });
+  }
+
   showToast(text, time) {
     this.toast = text;
     this.toastTime = time;
@@ -212,7 +262,7 @@ export class ClimbScene {
 
   hitClimbBlockingUi(mx, my) {
     if (my > H - 34) return true;
-    if (mx < 290 && my < 130) return true;
+    if (mx < 440 && my < 212) return true;
     const rW = 320, rX = W - 16 - rW;
     if (pointInRect(mx, my, rX, 16, rW, 100)) return true;
     if (pointInRect(mx, my, W / 2 - 400, 72, 800, 54)) return true;
@@ -233,6 +283,7 @@ export class ClimbScene {
     const p = game.player;
     const ch = this.chamber;
     const cheatPain = runIncomingDamageMult(game);
+    this.columnCrush = this.columnCrush.filter((o) => o.untilT > this.t);
 
     if ((p.happyCamperRestedT || 0) > 0) p.happyCamperRestedT -= dt;
     if ((p.hotDogEatCd || 0) > 0) p.hotDogEatCd -= dt;
@@ -285,7 +336,6 @@ export class ClimbScene {
     // Smooth lerp hero X - Swift snaps faster than Iron
     const lerpSpeed = p.buildId === "swift" ? 16 : 10;
     this.heroX += (this.targetX - this.heroX) * Math.min(1, dt * lerpSpeed);
-    if (game.pinkFloydMode) recordPinkFloydTrail(game, this.heroX, HERO_Y);
 
     // --- Climb up (blocked while stunned) ---
     let climbMul = runPlayerClimbMult(game);
@@ -296,8 +346,9 @@ export class ClimbScene {
     const climbBase = 200 * p.climbSpeed * climbMul;
     const slipRate = 28;
     const revV = !!(p.pactMods && p.pactMods.sillyMirrorV);
-    const mouseUp = game.input.isDown("Mouse0") && my < HERO_Y && !this.hitClimbBlockingUi(mx, my);
-    const mouseBrace = game.input.isDown("Mouse0") && my >= HERO_Y + 42 && !this.hitClimbBlockingUi(mx, my);
+    const hyPrev = this.heroScreenY();
+    const mouseUp = game.input.isDown("Mouse0") && my < hyPrev && !this.hitClimbBlockingUi(mx, my);
+    const mouseBrace = game.input.isDown("Mouse0") && my >= hyPrev + 42 && !this.hitClimbBlockingUi(mx, my);
     const keyClimb = revV
       ? game.input.isDown("ArrowDown", "s")
       : game.input.isDown("ArrowUp", "w");
@@ -306,9 +357,15 @@ export class ClimbScene {
       : game.input.isDown("ArrowDown", "s");
     const climbHeld = keyClimb || (revV ? mouseBrace : mouseUp);
     const braceHeld = keyBrace || (revV ? mouseUp : mouseBrace);
+    const crushCol = this.columnCrush.some((o) => o.col === this.col);
     if (stunned) {
       // While stunned we slip a bit - captures the "dazed and sliding" feel.
       this.progress = Math.max(0, this.progress - slipRate * 0.8 * dt);
+    } else if (crushCol) {
+      // Fallen boulder wedged in this column — you slide unless you fight hard.
+      this.progress -= slipRate * 1.4 * dt;
+      if (this.progress < 0) this.progress = 0;
+      if (climbHeld) this.progress += climbBase * dt * 0.24;
     } else if (climbHeld) {
       this.progress += climbBase * dt;
     } else if (braceHeld) {
@@ -317,6 +374,9 @@ export class ClimbScene {
       this.progress -= slipRate * dt;
       if (this.progress < 0) this.progress = 0;
     }
+
+    this.renderHeroY = this.heroScreenY();
+    if (game.pinkFloydMode) recordPinkFloydTrail(game, this.heroX, this.renderHeroY);
 
     // --- Bile rises ---
     // Pact modifier: Tide Watcher slows bile, Ring Forger speeds it up.
@@ -340,14 +400,29 @@ export class ClimbScene {
       }
     }
 
+    // Pustule venom — direct HP drain, ignores armor.
+    if ((p.climbVenomT || 0) > 0 && !p.invulnerable) {
+      p.climbVenomT -= dt;
+      const dps = p.climbVenomDps || 0;
+      const dot = dps * cheatPain * dt;
+      if (dot > 0) {
+        p.hp -= dot;
+        recordDirectHpHit(p, dot);
+        this.markHit();
+        this.flash = Math.max(this.flash, 0.1);
+      }
+      if (p.climbVenomT <= 0) p.climbVenomDps = 0;
+    }
+
     // --- Bile submersion (used to be instant death) ---
     // Armor acts as a bile-survival buffer: it corrodes at 1pt/sec while
     // submerged. Once armor is gone, HP drains fast. Swift has 0 armor,
     // so they get almost no grace; Iron (60 armor) gets ~60s of buffer,
     // which is plenty of time to claw their way up above the surface.
     const bileTopY = H - this.bileHeight;
+    const deathLineY = this.renderHeroY + HERO_BILE_DEATH_OFFSET;
     const wasSubmerged = this.submerged;
-    this.submerged = bileTopY <= HERO_DEATH_Y;
+    this.submerged = bileTopY <= deathLineY;
     if (this.submerged) {
       this.submergeFlashT += dt;
       if (!wasSubmerged) {
@@ -369,7 +444,7 @@ export class ClimbScene {
           if (Math.random() < 0.4) {
             this.particles.burst(
               this.heroX + rand(-14, 14),
-              HERO_Y + 6,
+              this.renderHeroY + 6,
               "#ffe08a", 4, 70, 0.4,
             );
           }
@@ -385,7 +460,7 @@ export class ClimbScene {
           if (Math.random() < 0.5) {
             this.particles.burst(
               this.heroX + rand(-16, 16),
-              HERO_Y + 6,
+              this.renderHeroY + 6,
               COLORS.blood, 6, 140, 0.45,
             );
           }
@@ -395,7 +470,7 @@ export class ClimbScene {
       if (Math.random() < 0.6) {
         this.particles.emit({
           x: this.heroX + rand(-22, 22),
-          y: HERO_Y + rand(0, 18),
+          y: this.renderHeroY + rand(0, 18),
           vx: rand(-20, 20), vy: rand(-120, -50),
           life: 0.6, max: 0.6, size: 2 + Math.random() * 2,
           color: "rgba(220,255,170,0.9)", gravity: -30,
@@ -427,6 +502,12 @@ export class ClimbScene {
     }
 
     // --- Debris telegraphs + spawns (5 columns, per-chamber density) ---
+    this.boulderTimer -= dt;
+    if (this.boulderTimer <= 0) {
+      this.boulderTimer = 7.5 + Math.random() * 11;
+      this.spawnBoulderTelegraph(ch, []);
+    }
+
     this.debrisTimer -= dt;
     if (this.debrisTimer <= 0) {
       const [tMin, tMax] = ch.debrisInterval;
@@ -453,21 +534,45 @@ export class ClimbScene {
     this.telegraphs = this.telegraphs.filter((tg) => {
       if (tg.t >= tg.wait) {
         const r = rand(tg.kind.sizeR[0], tg.kind.sizeR[1]);
-        this.debris.push({
-          x: COLS_X[tg.col] + rand(-14, 14),
+        const isB = tg.kind.kind === "boulder";
+        const piece = {
+          x: COLS_X[tg.col] + (isB ? rand(-10, 10) : rand(-14, 14)),
           y: -r, vy: tg.speed, r,
-          kind: tg.kind, rot: rand(0, Math.PI * 2), vrot: rand(-6, 6),
-        });
+          kind: tg.kind,
+          rot: rand(0, Math.PI * 2),
+          vrot: isB ? rand(-1.8, 1.8) : rand(-6, 6),
+        };
+        if (isB) piece.boulderCol = tg.col;
+        this.debris.push(piece);
         return false;
       }
       return true;
     });
 
     // Move debris + collisions
-    for (const d of this.debris) { d.y += d.vy * dt; d.rot += d.vrot * dt; }
-    const heroBox = { x: this.heroX - 18, y: HERO_Y - 32, w: 36, h: 54 };
     for (const d of this.debris) {
-      if (d._hit) continue;
+      if (d._shelved) continue;
+      d.y += d.vy * dt;
+      d.rot += d.vrot * dt;
+      if (d.kind?.kind === "boulder" && !d._hit && d.y >= this.renderHeroY + d.r * 0.32) {
+        d._shelved = true;
+        d.vy = 0;
+        d.vrot = 0;
+        d.y = this.renderHeroY + 36;
+        const col = d.boulderCol;
+        if (col != null) {
+          d.x = COLS_X[col];
+          this.columnCrush.push({ col, untilT: this.t + 5.5 });
+        }
+        d.shelveUntil = this.t + 5.5;
+        SFX.thud();
+        screenShake(11, 0.24);
+        this.showToast("BOULDER! Column jammed — fight the slide or hop away!", 2.1);
+      }
+    }
+    const heroBox = { x: this.heroX - 18, y: this.renderHeroY - 32, w: 36, h: 54 };
+    for (const d of this.debris) {
+      if (d._hit || d._shelved) continue;
       const cx = Math.max(heroBox.x, Math.min(d.x, heroBox.x + heroBox.w));
       const cy = Math.max(heroBox.y, Math.min(d.y, heroBox.y + heroBox.h));
       const dx = d.x - cx, dy = d.y - cy;
@@ -476,7 +581,23 @@ export class ClimbScene {
         this.handleDebrisHit(game, d);
       }
     }
-    this.debris = this.debris.filter((d) => !d._hit && d.y < H + 40);
+    this.debris = this.debris.filter((d) => {
+      if (d._shelved && this.t > (d.shelveUntil || 0)) return false;
+      return !d._hit && (d._shelved || d.y < H + 60);
+    });
+
+    for (const pu of this.pustules) {
+      if (pu.popped) continue;
+      if (this.col !== pu.col) continue;
+      if (this.progress < pu.prog0 || this.progress > pu.prog1) continue;
+      pu.popped = true;
+      p.climbVenomT = Math.max(p.climbVenomT || 0, 5.8);
+      p.climbVenomDps = Math.max(p.climbVenomDps || 0, 5);
+      this.showToast("ACID PUSTULE! Venom eats HP — armor cannot stop it.", 2.35);
+      SFX.acid();
+      this.particles.burst(this.heroX, this.renderHeroY, "#7aff42", 22, 240, 0.55);
+      this.flash = Math.max(this.flash, 0.22);
+    }
 
     this.particles.update(dt);
     if (this.flash > 0) this.flash = Math.max(0, this.flash - dt);
@@ -599,7 +720,7 @@ export class ClimbScene {
           for (let i = 0; i < 10; i++) {
             this.particles.emit({
               x: this.heroX + rand(-14, 14),
-              y: HERO_Y + rand(-10, 20),
+              y: this.renderHeroY + rand(-10, 20),
               vx: rand(-30, 30), vy: rand(-320, -200),
               life: 0.9, max: 0.9, size: 3,
               color: "rgba(240,250,255,0.95)", gravity: -40,
@@ -666,6 +787,17 @@ export class ClimbScene {
     let shake = 10;
 
     switch (hz.damageType) {
+      case "crush": {
+        const hpD = Math.min(p.hp, Math.max(1, Math.round(11 * scale * debrisMult)));
+        p.hp = Math.max(0, p.hp - hpD);
+        recordDirectHpHit(p, hpD);
+        this.progress = Math.max(0, this.progress - (200 + Math.random() * 110));
+        partColor = "#6a5040";
+        shake = 16;
+        this.showToast("BOULDER! Smashed down the wall toward the bile!", 2.0);
+        SFX.thud();
+        break;
+      }
       case "armor-absorb": {
         // Tank pips eat a whole hit first (Iron's "free soak" perk).
         if (p.tankHitsLeft > 0) {
@@ -743,11 +875,13 @@ export class ClimbScene {
       }
     }
 
-    SFX.hit();
+    if (hz.damageType !== "crush") SFX.hit();
     screenShake(shake, 0.22);
     this.flash = 0.35;
     this.particles.burst(d.x, d.y, partColor, 16, 200, 0.5);
-    this.progress = Math.max(0, this.progress - 60);
+    if (hz.damageType !== "crush") {
+      this.progress = Math.max(0, this.progress - 60);
+    }
   }
 
   die(game, reason) {
@@ -765,6 +899,7 @@ export class ClimbScene {
     drawBackdropCached(ctx, tBg, tBg, pal.wormTint, pal.palette, this.chamberIdx + 1);
 
     this.drawWall(ctx);
+    this.drawPustules(ctx);
     // v0.13 final chamber: frame the climb with massive fangs drooling
     // from the sides. Decorative only - doesn't affect gameplay.
     if (ch.isMaw) this.drawMawFangs(ctx);
@@ -774,9 +909,9 @@ export class ClimbScene {
 
     // Hero
     ctx.save();
-    ctx.translate(this.heroX, HERO_Y);
+    ctx.translate(this.heroX, this.renderHeroY);
     ctx.scale(2.8, 2.8);
-    drawHero(ctx, 0, 0, 1, this.anim, p.buildId, p.synergyId);
+    drawHero(ctx, 0, 0, 1, this.anim, p.buildId, p.synergyId, p.loadoutId);
     ctx.restore();
 
     // Ring-of-armor equip pulse (brief golden ring bursting outward).
@@ -788,7 +923,7 @@ export class ClimbScene {
       ctx.shadowColor = "#ffd966";
       ctx.shadowBlur = 20;
       ctx.beginPath();
-      ctx.arc(this.heroX, HERO_Y, 40 + (1 - a) * 120, 0, Math.PI * 2);
+      ctx.arc(this.heroX, this.renderHeroY, 40 + (1 - a) * 120, 0, Math.PI * 2);
       ctx.stroke();
       ctx.restore();
     }
@@ -796,7 +931,7 @@ export class ClimbScene {
     // Stun stars spinning over the hero's head.
     if (this.stunT > 0) {
       ctx.save();
-      const cx = this.heroX, cy = HERO_Y - 90;
+      const cx = this.heroX, cy = this.renderHeroY - 90;
       for (let i = 0; i < 4; i++) {
         const a = this.t * 4 + (i / 4) * Math.PI * 2;
         const sx = cx + Math.cos(a) * 22;
@@ -839,6 +974,31 @@ export class ClimbScene {
     this.drawUI(ctx, game);
 
     if (this.paused) this.drawPause(ctx);
+  }
+
+  /** Acid pustules — visible blisters on the column that pop into DoT. */
+  drawPustules(ctx) {
+    for (const pu of this.pustules) {
+      if (pu.popped) continue;
+      const x = COLS_X[pu.col];
+      const mid = (pu.prog0 + pu.prog1) * 0.5;
+      const gy = this.renderHeroY + (mid - this.progress) * 0.2;
+      if (gy < 36 || gy > H - 72) continue;
+      const pulse = 0.85 + 0.15 * Math.sin(this.t * 5 + pu.col);
+      ctx.save();
+      ctx.fillStyle = `rgba(110, 255, 90, ${0.55 * pulse})`;
+      ctx.beginPath();
+      ctx.ellipse(x, gy, 13, 17, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "rgba(35, 95, 28, 0.95)";
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+      ctx.fillStyle = "rgba(200, 255, 160, 0.35)";
+      ctx.beginPath();
+      ctx.ellipse(x - 4, gy - 5, 4, 3, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
   }
 
   // v0.13 THE MAW decoration: massive fangs hanging from the left and
@@ -1015,6 +1175,7 @@ export class ClimbScene {
       case "bone":    this.drawBone(ctx, d); break;
       case "tooth":   this.drawTooth(ctx, d); break;
       case "goblin":  this.drawGoblinHead(ctx, d); break;
+      case "boulder": this.drawBoulder(ctx, d); break;
       case "rock":    this.drawRock(ctx, d); break;
       case "dagger":  this.drawDagger(ctx, d); break;
       case "sword":   this.drawSword(ctx, d); break;
@@ -1117,6 +1278,33 @@ export class ClimbScene {
     ctx.beginPath();
     ctx.moveTo(-d.r * 0.3, -d.r * 0.4);
     ctx.lineTo(d.r * 0.2, d.r * 0.3);
+    ctx.stroke();
+  }
+
+  drawBoulder(ctx, d) {
+    const R = d.r * 1.05;
+    const g = ctx.createRadialGradient(-R * 0.35, -R * 0.35, 3, 0, 0, R);
+    g.addColorStop(0, "#8a7a6a");
+    g.addColorStop(0.55, "#4a4036");
+    g.addColorStop(1, "#1a1814");
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.moveTo(-R * 0.95, R * 0.1);
+    ctx.lineTo(-R * 0.35, -R * 0.92);
+    ctx.lineTo(R * 0.55, -R * 0.55);
+    ctx.lineTo(R * 0.98, R * 0.35);
+    ctx.lineTo(R * 0.2, R * 0.95);
+    ctx.lineTo(-R * 0.75, R * 0.82);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = "rgba(0,0,0,0.82)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(255,255,255,0.12)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(-R * 0.2, -R * 0.35);
+    ctx.lineTo(R * 0.35, R * 0.15);
     ctx.stroke();
   }
 
@@ -1407,10 +1595,11 @@ export class ClimbScene {
     const x = COLS_X[tg.col];
     const frac = tg.t / tg.wait;
     const pulse = 0.5 + 0.5 * Math.sin(this.t * 24);
+    const isBoulder = tg.kind?.kind === "boulder";
     const isPower = tg.power;
-    const col1 = isPower ? "rgba(255, 217, 102," : "rgba(255, 70, 70,";
-    const glow = isPower ? "#ffd966" : "#ff3030";
-    const icon = isPower ? "+" : "!";
+    const col1 = isPower ? "rgba(255, 217, 102," : isBoulder ? "rgba(160, 110, 70," : "rgba(255, 70, 70,";
+    const glow = isPower ? "#ffd966" : isBoulder ? "#d4a060" : "#ff3030";
+    const icon = isPower ? "+" : isBoulder ? "▣" : "!";
 
     ctx.save();
     const grd = ctx.createLinearGradient(x, 0, x, 150);
@@ -1446,19 +1635,22 @@ export class ClimbScene {
     const ch = this.chamber;
     const pad = 16;
 
+    const stripBottom = drawRunIdentityStrip(ctx, p, pad);
+    const barTop = stripBottom + 10;
+
     // Top-left: HP / Mana / Armor / Acid-timer
-    drawBar(ctx, pad, pad,        260, 20, p.hp / p.hpMax, {
+    drawBar(ctx, pad, barTop,        260, 20, p.hp / p.hpMax, {
       fill: COLORS.blood, label: `HP  ${Math.ceil(p.hp)}/${p.hpMax}`,
     });
-    drawBar(ctx, pad, pad + 26,   260, 20, p.mana / p.manaMax, {
+    drawBar(ctx, pad, barTop + 26,   260, 20, p.mana / p.manaMax, {
       fill: COLORS.mana,  label: `MP  ${Math.ceil(p.mana)}/${p.manaMax}`,
     });
     if (p.armorMax > 0) {
-      drawBar(ctx, pad, pad + 52, 260, 20, p.armor / p.armorMax, {
+      drawBar(ctx, pad, barTop + 52, 260, 20, p.armor / p.armorMax, {
         fill: "#c0c4cc", label: `ARM ${Math.ceil(p.armor)}/${p.armorMax}`, labelColor: "#111",
       });
     }
-    const tY = p.armorMax > 0 ? pad + 78 : pad + 52;
+    const tY = p.armorMax > 0 ? barTop + 78 : barTop + 52;
     drawBar(ctx, pad, tY, 260, 20, Math.max(0, p.acidTimer) / p.acidTimerMax, {
       fill: COLORS.bile,
       label: p.acidTimer > 0
@@ -1524,8 +1716,9 @@ export class ClimbScene {
     const p = game.player;
     const mx = game.input.mouseX, my = game.input.mouseY;
     const uiBlock = this.hitClimbBlockingUi(mx, my);
-    const mouseUp = game.input.isDown("Mouse0") && my < HERO_Y && !uiBlock;
-    const mouseDn = game.input.isDown("Mouse0") && my >= HERO_Y + 42 && !uiBlock;
+    const hy = this.renderHeroY;
+    const mouseUp = game.input.isDown("Mouse0") && my < hy && !uiBlock;
+    const mouseDn = game.input.isDown("Mouse0") && my >= hy + 42 && !uiBlock;
     const revV = !!(p.pactMods && p.pactMods.sillyMirrorV);
     const keyClimb = revV ? game.input.isDown("ArrowDown", "s") : game.input.isDown("ArrowUp", "w");
     const keyBrace = revV ? game.input.isDown("ArrowUp", "w") : game.input.isDown("ArrowDown", "s");
@@ -1589,7 +1782,7 @@ export class ClimbScene {
       }
       // Priority 3: gentle prompts based on progress.
       if (!hint) {
-        const bileNearby = this.bileHeight > H - HERO_Y - 200;
+        const bileNearby = this.bileHeight > H - this.renderHeroY - 200;
         if (this.progress < 30 && this.t > 0.8) {
           hint = { text: "HOLD [UP] / [W] TO CLIMB THE WALL", color: "#bfff00", bg: "rgba(20,50,10,0.7)" };
         } else if (bileNearby) {

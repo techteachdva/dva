@@ -1572,7 +1572,7 @@ export class MawBossScene {
     ctx.save();
     ctx.translate(x, y);
     ctx.scale(2.4, 2.4);
-    drawHero(ctx, 0, 0, 1, this.anim, p?.buildId || "swift", p?.synergyId);
+    drawHero(ctx, 0, 0, 1, this.anim, p?.buildId || "swift", p?.synergyId, p?.loadoutId);
     ctx.restore();
 
     // Brace halo

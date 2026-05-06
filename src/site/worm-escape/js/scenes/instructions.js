@@ -82,8 +82,8 @@ export class InstructionsScene {
                    ""],
       ["CONTROLS", "[UP/W] climb   [DOWN/S] brace   [P/ESC] pause",
                    "[LEFT/RIGHT] or [A/D] hop ONE column (5 total)"],
-      ["HAZARDS",  "Rocks/bones (armor soaks), daggers/swords (pierce HP),",
-                   "maces (hit armor, STUN if bare), meat (bounces)."],
+      ["HAZARDS",  "Rocks/bones, daggers/swords (pierce), maces (STUN), meat,",
+                   "BOULDERS (jam a column), green PUSTULES (venom through armor)."],
       ["POWER-UPS","GOLD telegraphs = catch them! Feather (climb boost),",
                    "Cheeseburger (heal HP), Ring of Armor (RARE!)"],
     ], { accent: "#b5f05a" });
@@ -107,7 +107,7 @@ export class InstructionsScene {
 
     if (this.save?.unlocks?.endlessUnlocked) {
       const on = !!game.endlessSelected;
-      drawText(ctx, `[E] or forge “ENDLESS MODE” button: ${on ? "ON (six worms — escalate to victory)" : "OFF (classic escape)"}`, W / 2, H - 94, {
+      drawText(ctx, `[E] or Forge difficulty row — ENDLESS: ${on ? "ON (six worms — escalate to victory)" : "OFF (classic escape)"}`, W / 2, H - 94, {
         size: 14,
         color: on ? COLORS.gold : COLORS.boneDim,
         align: "center",

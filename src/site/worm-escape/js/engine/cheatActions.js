@@ -82,6 +82,7 @@ export function applyCheatLine(rawLine, game) {
     game.easyMode = false;
     game.hardMode = false;
     game.ultraHardMode = false;
+    game.dealzPacts = false;
     game.jillyMode = false;
     game.bubblegumMode = false;
     game.rowanWeirdWeapons = false;
@@ -192,6 +193,16 @@ export function applyCheatLine(rawLine, game) {
     return {
       ok: true,
       msg: game.hardMode ? "Dragon — HARD bias ON (more pain, bile, beefier guardians)." : "Dragon — hard bias OFF.",
+    };
+  }
+  if (c === "dealz") {
+    game.dealzPacts = !game.dealzPacts;
+    revealCheatDossierIfNew(game, "dealz");
+    return {
+      ok: true,
+      msg: game.dealzPacts
+        ? "Dealz — pact screen lists EVERY upgradable seal (paged)."
+        : "Dealz — normal random pact offers restored.",
     };
   }
   if (c === "greatwyrm") {

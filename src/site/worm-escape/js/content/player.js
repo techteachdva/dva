@@ -673,6 +673,9 @@ export function makePlayer(buildId, loadoutId, gameCheats = null) {
     happyCamperRestedT: 0,
     /** Pact: Hot Dog — snack cooldown */
     hotDogEatCd: 0,
+    /** Climb-only: acid pustule DoT ticks HP directly (ignores armor). */
+    climbVenomT: 0,
+    climbVenomDps: 0,
     invulnerable: !!(gameCheats && gameCheats.invulnerable),
     manaShield:      !!b.manaShield,
     manaShieldRatio: b.manaShieldRatio || 2,

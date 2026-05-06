@@ -6,12 +6,8 @@ import { SFX } from "../engine/audio.js";
 import { loadSave } from "../engine/storage.js";
 import { InstructionsScene } from "./instructions.js";
 import { EncyclopediaScene } from "./encyclopedia.js";
+import { TutorialScene } from "./tutorial.js";
 import { pointInRect } from "../engine/pointer.js";
-
-function cheatKnown(save, cheatId) {
-  const k = save?.knownCheats;
-  return Array.isArray(k) && k.includes(cheatId);
-}
 
 // Total possible persistent unlocks - keep this in sync with DEFAULT_SAVE.unlocks.
 // v0.16: viperBuild, wizardBuild, bileWhip, hexStaff, megaphone, boneSpear,
@@ -28,13 +24,8 @@ const UNLOCK_KEYS = [
 // Title screen Codex launcher (CHEATS shelf includes victory-unlocked dossiers).
 const CODEX_BTN = { x: W - 308, y: H - 128, w: 288, h: 48 };
 
-const ROW_Y = H - 178;
-const BTN = { w: 156, h: 36, gap: 10 };
-function rowBtn(i) {
-  const total = BTN.w * 4 + BTN.gap * 3;
-  const x0 = (W - total) / 2;
-  return { x: x0 + i * (BTN.w + BTN.gap), y: ROW_Y, w: BTN.w, h: BTN.h };
-}
+// Centered under the story panel — full-game guided tour.
+const TUTORIAL_BTN = { x: (W - 320) / 2, y: 684, w: 320, h: 44 };
 
 const STORY = [
   "Oh FART NUGGETS!",
@@ -71,12 +62,7 @@ export class IntroScene {
     const total = STORY.join("\n").length;
 
     const mx = game.input.mouseX, my = game.input.mouseY;
-    const save = this.save;
-    const uk = save?.knownCheats || [];
-    const showWorm = cheatKnown(save, "wyrm") || game.easyMode;
-    const showDragon = cheatKnown(save, "dragon") || game.hardMode;
-    const showAncient = cheatKnown(save, "greatwyrm") || game.ultraHardMode;
-    const showEndless = !!save?.unlocks?.endlessUnlocked;
+    const storyDone = this.reveal >= STORY.join("\n").length;
 
     if (
       game.input.wasPressed("Mouse0") &&
@@ -87,32 +73,14 @@ export class IntroScene {
       return;
     }
 
-    if (game.input.wasPressed("Mouse0") && this.reveal >= STORY.join("\n").length) {
-      for (let i = 0; i < 4; i++) {
-        const b = rowBtn(i);
-        if (!pointInRect(mx, my, b.x, b.y, b.w, b.h)) continue;
-        if (i === 0 && !showWorm) { SFX.deny(); return; }
-        if (i === 1 && !showDragon) { SFX.deny(); return; }
-        if (i === 2 && !showAncient) { SFX.deny(); return; }
-        if (i === 3 && !showEndless) { SFX.deny(); return; }
-        SFX.click();
-        if (i === 0) {
-          game.easyMode = true;
-          game.hardMode = false;
-          game.ultraHardMode = false;
-        } else if (i === 1) {
-          game.hardMode = true;
-          game.easyMode = false;
-          game.ultraHardMode = false;
-        } else if (i === 2) {
-          game.ultraHardMode = true;
-          game.easyMode = false;
-          game.hardMode = false;
-        } else if (i === 3) {
-          game.endlessSelected = !game.endlessSelected;
-        }
-        return;
-      }
+    if (
+      storyDone
+      && game.input.wasPressed("Mouse0")
+      && pointInRect(mx, my, TUTORIAL_BTN.x, TUTORIAL_BTN.y, TUTORIAL_BTN.w, TUTORIAL_BTN.h)
+    ) {
+      SFX.click();
+      game.scenes.push(new TutorialScene(), game);
+      return;
     }
 
     if (game.input.wasPressed(" ", "Space", "Enter", "Mouse0")) {
@@ -164,10 +132,22 @@ export class IntroScene {
     if (this.reveal >= total) {
       const blink = Math.sin(this.pulse * 5) > 0;
       if (blink) {
-        drawText(ctx, ">> PRESS SPACE TO FORGE YOUR HERO <<", W / 2, H - 70, {
+        drawText(ctx, ">> PRESS SPACE TO FORGE YOUR HERO <<", W / 2, H - 118, {
           size: 20, color: COLORS.bile, align: "center", bold: true, glow: COLORS.blood,
         });
       }
+      ctx.save();
+      roundRect(ctx, TUTORIAL_BTN.x, TUTORIAL_BTN.y, TUTORIAL_BTN.w, TUTORIAL_BTN.h, 10);
+      ctx.fillStyle = "rgba(26,18,62,0.88)";
+      ctx.fill();
+      ctx.strokeStyle = COLORS.bileGlow;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.restore();
+      drawText(ctx, "GUIDED TUTORIAL — full run walkthrough", TUTORIAL_BTN.x + TUTORIAL_BTN.w / 2, TUTORIAL_BTN.y + TUTORIAL_BTN.h / 2, {
+        size: 15, color: "#fffefb", align: "center", baseline: "middle", bold: true,
+        maxWidth: TUTORIAL_BTN.w - 16,
+      });
     } else {
       drawText(ctx, "(SPACE to skip)", W / 2, H - 70, {
         size: 13, color: COLORS.boneDim, align: "center",
@@ -185,53 +165,6 @@ export class IntroScene {
       size: 13, color: "#fffefb", align: "center", baseline: "middle", bold: true,
     });
     ctx.restore();
-
-    const storyDone = this.reveal >= STORY.join("\n").length;
-    if (storyDone) {
-      const save = this.save;
-      const labels = [
-        { label: "[WORM]", sub: "easy", ok: cheatKnown(save, "wyrm") || game.easyMode, on: game.easyMode },
-        { label: "[GREAT WORM]", sub: "hard", ok: cheatKnown(save, "dragon") || game.hardMode, on: game.hardMode },
-        { label: "[ANCIENT]", sub: "ultra", ok: cheatKnown(save, "greatwyrm") || game.ultraHardMode, on: game.ultraHardMode },
-        { label: "ENDLESS", sub: game.endlessSelected ? "ON" : "OFF", ok: !!save?.unlocks?.endlessUnlocked, on: !!game.endlessSelected },
-      ];
-      for (let i = 0; i < 4; i++) {
-        const b = rowBtn(i);
-        const row = labels[i];
-        const pulse = 0.65 + 0.35 * Math.sin(this.pulse * 6 + i * 0.4);
-        ctx.save();
-        ctx.globalAlpha = row.ok ? 1 : 0.38;
-        ctx.fillStyle = row.on ? "rgba(60,40,10,0.88)" : "rgba(18,12,28,0.78)";
-        roundRect(ctx, b.x, b.y, b.w, b.h, 8);
-        ctx.fill();
-        ctx.strokeStyle = row.on ? COLORS.gold : (row.ok ? COLORS.bileGlow : "#444");
-        ctx.lineWidth = row.on ? 3 : 2;
-        roundRect(ctx, b.x + 0.5, b.y + 0.5, b.w - 1, b.h - 1, 8);
-        ctx.stroke();
-        if (row.ok && row.on) {
-          ctx.fillStyle = `rgba(255,220,140,${0.12 * pulse})`;
-          roundRect(ctx, b.x + 3, b.y + 3, b.w - 6, 10, 6);
-          ctx.fill();
-        }
-        ctx.restore();
-        drawText(ctx, row.label, b.x + b.w / 2, b.y + 13, {
-          size: i === 3 ? 11 : 12,
-          color: row.ok ? COLORS.bone : COLORS.boneDim,
-          align: "center",
-          bold: true,
-          maxWidth: b.w - 4,
-        });
-        drawText(ctx, row.sub, b.x + b.w / 2, b.y + 28, {
-          size: 10,
-          color: row.on ? COLORS.gold : COLORS.boneDim,
-          align: "center",
-          maxWidth: b.w - 4,
-        });
-      }
-      drawText(ctx, "Unlock with cheats: wyrm · dragon · greatwyrm  ·  Endless after first victory", W / 2, ROW_Y - 18, {
-        size: 11, color: COLORS.boneDim, align: "center", maxWidth: W - 40,
-      });
-    }
 
     this.drawWormFrame(ctx);
   }

@@ -871,7 +871,87 @@ export function drawPlate(ctx, x, y, w, h, r, baseColor, opts = {}) {
 
 // ---- hero render: 3D-ish cel-shaded chonk ----
 //  scale: rendered at 1x; caller scales via ctx.scale() if needed.
-export function drawHero(ctx, x, y, facing = 1, anim = 0, build = "swift", synergyId = null) {
+/** Held weapon readout beside right glove (local hero space). */
+export function drawHeroWeaponGlyph(ctx, loadoutId, anim = 0) {
+  if (!loadoutId) return;
+  const id = String(loadoutId);
+  const sway = Math.sin(anim * 2) * 0.35;
+  ctx.save();
+  ctx.translate(13 + sway, -4);
+  const stroke = "rgba(0,0,0,0.65)";
+  const blade = (c) => {
+    ctx.fillStyle = c;
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = 0.9;
+    ctx.beginPath();
+    ctx.moveTo(0, -26);
+    ctx.lineTo(3, 16);
+    ctx.lineTo(-1, 16);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "#4a3020";
+    ctx.fillRect(-2, 14, 5, 9);
+  };
+  const blunt = (c) => {
+    ctx.fillStyle = c;
+    ctx.strokeStyle = stroke;
+    ctx.fillRect(-5, -18, 10, 22);
+    ctx.strokeRect(-5.5, -18.5, 11, 23);
+    ctx.fillStyle = "#3a2010";
+    ctx.fillRect(-2, 4, 5, 10);
+  };
+  const staff = (c) => {
+    ctx.strokeStyle = c;
+    ctx.lineWidth = 2.2;
+    ctx.beginPath();
+    ctx.moveTo(0, -28);
+    ctx.lineTo(0, 18);
+    ctx.stroke();
+    ctx.fillStyle = "#ffd966";
+    ctx.beginPath();
+    ctx.arc(0, -28, 4, 0, Math.PI * 2);
+    ctx.fill();
+  };
+  const gun = () => {
+    ctx.fillStyle = "#6a5a48";
+    ctx.fillRect(-8, -4, 22, 7);
+    ctx.fillRect(10, -2, 6, 4);
+    ctx.strokeStyle = stroke;
+    ctx.strokeRect(-8.5, -4.5, 23, 8);
+  };
+  const ranged = new Set(["blunderbuss", "megaphone", "nezZapper", "cat"]);
+  const staves = new Set([
+    "emberStaff", "frostWand", "hexStaff", "bileWhip", "engineerWrench",
+    "compupu", "plasmids", "cane", "chair",
+  ]);
+  const blades = new Set([
+    "sword", "saber", "boneSpear", "cursedScythe", "daggerOfSacrifice",
+  ]);
+  const bluntSet = new Set(["hammer", "club", "fryingPan", "rustyChainsaw", "fireBrand"]);
+
+  if (id === "fists") {
+    ctx.fillStyle = "#c49a6a";
+    ctx.beginPath();
+    ctx.arc(0, 2, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = stroke;
+    ctx.stroke();
+  } else if (ranged.has(id)) {
+    gun();
+  } else if (staves.has(id) || id.endsWith("Staff") || id.endsWith("Wand")) {
+    staff(id === "frostWand" ? "#7fe3ff" : id === "emberStaff" || id === "fireBrand" ? "#ff7a2a" : "#9bff66");
+  } else if (bluntSet.has(id)) {
+    blunt(id === "fireBrand" ? "#c24a18" : "#8a8078");
+  } else if (blades.has(id)) {
+    blade(id === "cursedScythe" ? "#a048c8" : "#d8dde8");
+  } else {
+    blade("#c8ccd4");
+  }
+  ctx.restore();
+}
+
+export function drawHero(ctx, x, y, facing = 1, anim = 0, build = "swift", synergyId = null, loadoutId = null) {
   ctx.save();
   ctx.translate(x, y);
   ctx.scale(facing, 1);
@@ -1406,6 +1486,9 @@ export function drawHero(ctx, x, y, facing = 1, anim = 0, build = "swift", syner
   else if (build === "tamer")   gloveColor = "#3a2614";
   ctx.fillStyle = gloveColor;
   ctx.fillRect(9, 4, 5, 4);
+  if (loadoutId) {
+    drawHeroWeaponGlyph(ctx, loadoutId, anim);
+  }
   // Wizard: faint glowing orb floating above hand
   if (build === "wizard") {
     const pulse = 0.6 + 0.4 * Math.abs(Math.sin(anim * 0.6));

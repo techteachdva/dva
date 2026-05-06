@@ -9,6 +9,8 @@ import { applyPact } from "../content/player.js";
 import { TransitionScene } from "./transition.js";
 import { pointInRect } from "../engine/pointer.js";
 
+const DEALZ_PER_PAGE = 6;
+
 function layoutPactCards(n) {
   const gap = n >= 4 ? 16 : 22;
   const cardW = n >= 4 ? 286 : 346;
@@ -17,6 +19,18 @@ function layoutPactCards(n) {
   const startX = (W - totalW) / 2;
   const y = 78;
   return { gap, cardW, cardH, totalW, startX, y };
+}
+
+/** 3×2 grid for cheat dealz full-list picker */
+function layoutDealzGrid() {
+  const cols = 3;
+  const cardW = 214;
+  const cardH = 318;
+  const gap = 14;
+  const totalW = cols * cardW + (cols - 1) * gap;
+  const startX = (W - totalW) / 2;
+  const y = 96;
+  return { cols, cardW, cardH, gap, startX, y };
 }
 
 // v0.12 PactScene - after every boss kill and before the chamber
@@ -36,6 +50,8 @@ export class PactScene {
     this.confirmT = 0;
     /** Two-step seal: modal gate so mis-clicks never commit */
     this.confirmModal = false;
+    /** Full pact list mode (cheat dealz) */
+    this._dealzMode = false;
   }
 
   enter(game) {
@@ -45,11 +61,12 @@ export class PactScene {
     const bubbleOn = this.bubbleChains >= 2;
     this.sealsLeft = bubbleOn ? this.bubbleChains : 1;
     const n = bubbleOn ? 3 : (this.eliteReward ? 4 : 3);
-    this.choices = rollPactChoices(n, ranks);
+    this.choices = rollPactChoices(n, ranks, game);
     if (this.choices.length === 0) {
       game.scenes.replace(new TransitionScene(this.completedChamberIdx), game);
       return;
     }
+    this._dealzMode = !!(game.dealzPacts && this.choices.length > 0);
     this.idx = 0;
     this.confirmModal = false;
     SFX.click();
@@ -64,7 +81,7 @@ export class PactScene {
         const ranksInner = (pInner && pInner.pactRanks) ? pInner.pactRanks : {};
         this.sealsLeft--;
         if (this.sealsLeft > 0) {
-          this.choices = rollPactChoices(3, ranksInner);
+          this.choices = rollPactChoices(3, ranksInner, game);
           if (this.choices.length === 0) {
             game.scenes.replace(new TransitionScene(this.completedChamberIdx), game);
             return;
@@ -73,6 +90,7 @@ export class PactScene {
           this.picked = null;
           this.confirmT = 0;
           this.confirmModal = false;
+          this._dealzMode = !!(game.dealzPacts && this.choices.length > 0);
           SFX.click();
           return;
         }
@@ -83,7 +101,21 @@ export class PactScene {
 
     const n = this.choices.length;
     if (n === 0) return;
-    const L = layoutPactCards(n);
+
+    if (this._dealzMode) {
+      const pages = Math.max(1, Math.ceil(n / DEALZ_PER_PAGE));
+      const curPage = Math.floor(this.idx / DEALZ_PER_PAGE);
+      if (game.input.wasPressed("[", "BracketLeft") && curPage > 0) {
+        this.idx = (curPage - 1) * DEALZ_PER_PAGE;
+        SFX.click();
+      }
+      if (game.input.wasPressed("]", "BracketRight") && curPage < pages - 1) {
+        this.idx = Math.min(n - 1, (curPage + 1) * DEALZ_PER_PAGE);
+        SFX.click();
+      }
+    }
+
+    const L = this._dealzMode ? layoutDealzGrid() : layoutPactCards(n);
 
     if (this.confirmModal) {
       if (game.input.wasPressed("Escape")) {
@@ -122,17 +154,39 @@ export class PactScene {
       SFX.click();
     } else if (game.input.wasPressed("Mouse0")) {
       const mx = game.input.mouseX, my = game.input.mouseY;
-      for (let i = 0; i < n; i++) {
-        const x = L.startX + i * (L.cardW + L.gap);
-        if (pointInRect(mx, my, x, L.y, L.cardW, L.cardH)) {
-          if (this.idx === i) {
-            this.confirmModal = true;
-            SFX.click();
-          } else {
-            this.idx = i;
-            SFX.click();
+      if (this._dealzMode) {
+        const start = Math.floor(this.idx / DEALZ_PER_PAGE) * DEALZ_PER_PAGE;
+        for (let slot = 0; slot < DEALZ_PER_PAGE; slot++) {
+          const gi = start + slot;
+          if (gi >= n) break;
+          const row = Math.floor(slot / 3);
+          const col = slot % 3;
+          const x = L.startX + col * (L.cardW + L.gap);
+          const y = L.y + row * (L.cardH + L.gap);
+          if (pointInRect(mx, my, x, y, L.cardW, L.cardH)) {
+            if (this.idx === gi) {
+              this.confirmModal = true;
+              SFX.click();
+            } else {
+              this.idx = gi;
+              SFX.click();
+            }
+            break;
           }
-          break;
+        }
+      } else {
+        for (let i = 0; i < n; i++) {
+          const x = L.startX + i * (L.cardW + L.gap);
+          if (pointInRect(mx, my, x, L.y, L.cardW, L.cardH)) {
+            if (this.idx === i) {
+              this.confirmModal = true;
+              SFX.click();
+            } else {
+              this.idx = i;
+              SFX.click();
+            }
+            break;
+          }
         }
       }
     } else if (game.input.wasPressed("1") && this.choices[0]) {
@@ -179,24 +233,43 @@ export class PactScene {
       ? `◆ BUBBLEGUM (${sealIdx}/${this.bubbleChains}) ◆`
       : (this.eliteReward ? "◆ ELITE BONUS — PACT SELECT ◆" : "◆ SEAL A PACT — ARCADE MODE ◆"),
     W / 2, 52, bubbleActive ? 30 : 34, COLORS.bile, COLORS.blood);
+    const n = this.choices.length;
+    const dealzOn = this._dealzMode && n > 0;
     drawText(ctx, bubbleActive
       ? `Pick 1 of 3 — pact ${sealIdx} of ${this.bubbleChains} (sweetened valve tax).`
-      : (this.eliteReward
-        ? "The guardian was Elite. Pick 1 of 4."
-        : "The worm rewards the worthy. Pick 1 of 3."),
+      : (dealzOn
+        ? `DEALZ — every upgradable pact · page ${Math.floor(this.idx / DEALZ_PER_PAGE) + 1}/${Math.max(1, Math.ceil(n / DEALZ_PER_PAGE))} · [ ] flip`
+        : (this.eliteReward
+          ? "The guardian was Elite. Pick 1 of 4."
+          : "The worm rewards the worthy. Pick 1 of 3.")),
     W / 2, 96, { size: 16, color: COLORS.bone, align: "center" });
 
-    const n = this.choices.length;
-    const L = layoutPactCards(n);
-    const { gap, cardW, cardH, startX, y } = L;
-
     const pr = (game.player && game.player.pactRanks) ? game.player.pactRanks : {};
-    for (let i = 0; i < n; i++) {
-      const c = this.choices[i];
-      const x = startX + i * (cardW + gap);
-      const selected = (i === this.idx) && !this.picked;
-      const chosen = (this.picked && this.choices[i] === this.picked);
-      this.drawCard(ctx, c, x, y, cardW, cardH, selected, chosen, i + 1, pr);
+    if (dealzOn) {
+      const DG = layoutDealzGrid();
+      const start = Math.floor(this.idx / DEALZ_PER_PAGE) * DEALZ_PER_PAGE;
+      for (let slot = 0; slot < DEALZ_PER_PAGE; slot++) {
+        const gi = start + slot;
+        if (gi >= n) break;
+        const row = Math.floor(slot / 3);
+        const col = slot % 3;
+        const x = DG.startX + col * (DG.cardW + DG.gap);
+        const y = DG.y + row * (DG.cardH + DG.gap);
+        const c = this.choices[gi];
+        const selected = (gi === this.idx) && !this.picked;
+        const chosen = (this.picked && this.choices[gi] === this.picked);
+        this.drawCard(ctx, c, x, y, DG.cardW, DG.cardH, selected, chosen, gi + 1, pr, { compact: true });
+      }
+    } else {
+      const L = layoutPactCards(n);
+      const { gap, cardW, cardH, startX, y } = L;
+      for (let i = 0; i < n; i++) {
+        const c = this.choices[i];
+        const x = startX + i * (cardW + gap);
+        const selected = (i === this.idx) && !this.picked;
+        const chosen = (this.picked && this.choices[i] === this.picked);
+        this.drawCard(ctx, c, x, y, cardW, cardH, selected, chosen, i + 1, pr, { compact: false });
+      }
     }
 
     if (this.picked) {
@@ -256,7 +329,8 @@ export class PactScene {
     }
   }
 
-  drawCard(ctx, pact, x, y, w, h, selected, chosen, num, pactRanks) {
+  drawCard(ctx, pact, x, y, w, h, selected, chosen, num, pactRanks, opts = {}) {
+    const compact = !!opts.compact;
     const cur = (pactRanks && pactRanks[pact.id]) || 0;
     const nextRank = Math.min(3, cur + 1);
     const vis = getPactCardVisual(pact.id);
@@ -325,53 +399,59 @@ export class PactScene {
     roundRect(ctx, x + 10.5, y + 10.5, 43, 35, 4);
     ctx.stroke();
     drawText(ctx, String(num), x + 32, y + 28, {
-      size: 22, bold: true, color: vis.glow, align: "center", baseline: "middle",
+      size: compact ? 18 : 24, bold: true, color: vis.glow, align: "center", baseline: "middle",
       shadow: false,
     });
     ctx.restore();
 
     const textMax = w - 36;
-    drawText(ctx, pact.name, x + w / 2, y + 38, {
-      size: 24, bold: true, color: selected ? vis.glow : COLORS.bone,
+    const nmSz = compact ? 19 : 28;
+    const blurbSz = compact ? 14 : 17;
+    const rankSz = compact ? 13 : 15;
+    const bodySz = compact ? 14 : 16;
+    const bodyGap = compact ? 17 : 23;
+    drawText(ctx, pact.name, x + w / 2, y + (compact ? 34 : 42), {
+      size: nmSz, bold: true, color: selected ? vis.glow : COLORS.bone,
       align: "center", glow: selected ? vis.primary : null,
       maxWidth: textMax,
     });
-    drawText(ctx, pact.blurb, x + w / 2, y + 70, {
-      size: 14, color: COLORS.boneDim, align: "center",
+    drawText(ctx, pact.blurb, x + w / 2, y + (compact ? 54 : 78), {
+      size: blurbSz, color: COLORS.boneDim, align: "center",
       maxWidth: textMax,
     });
     if (cur > 0) {
-      drawText(ctx, `▲ RANK UP → ${nextRank}/3`, x + w / 2, y + 94, {
-        size: 13, color: vis.primary, align: "center", bold: true,
+      drawText(ctx, `▲ RANK UP → ${nextRank}/3`, x + w / 2, y + (compact ? 72 : 102), {
+        size: rankSz, color: vis.primary, align: "center", bold: true,
         maxWidth: textMax,
       });
     }
 
-    const sealY = y + 198;
+    const sealY = y + (compact ? 128 : 210);
+    const sealR = compact ? 40 : 62;
     ctx.save();
     ctx.fillStyle = "rgba(0,0,0,0.35)";
     ctx.beginPath();
-    ctx.arc(x + w / 2, sealY, 62, 0, Math.PI * 2);
+    ctx.arc(x + w / 2, sealY, sealR, 0, Math.PI * 2);
     ctx.fill();
     ctx.strokeStyle = vis.border;
     ctx.lineWidth = 3;
     ctx.stroke();
     ctx.restore();
-    drawPactSigil(ctx, x + w / 2, sealY, pact.id, t, { scale: 1.08, selected: selected || chosen });
+    drawPactSigil(ctx, x + w / 2, sealY, pact.id, t, { scale: compact ? 0.72 : 1.08, selected: selected || chosen });
 
-    const rowsY = y + h - 214;
+    const rowsY = y + h - (compact ? 118 : 248);
     const rowMax = w - 28;
-    drawText(ctx, "▶ BUFF", x + 14, rowsY, { size: 13, color: "#7fff9a", bold: true });
+    drawText(ctx, "▶ BUFF", x + 14, rowsY, { size: bodySz, color: "#7fff9a", bold: true });
     pact.pros.forEach((line, i) => {
-      drawText(ctx, "» " + line, x + 14, rowsY + 20 + i * 19, {
-        size: 13, color: "#b5f05a", maxWidth: rowMax,
+      drawText(ctx, "» " + line, x + 14, rowsY + bodyGap + i * (bodyGap + 1), {
+        size: bodySz, color: "#b5f05a", maxWidth: rowMax,
       });
     });
-    const cy = rowsY + 20 + pact.pros.length * 19 + 10;
-    drawText(ctx, "▼ DEBT", x + 14, cy, { size: 13, color: "#ff7a7a", bold: true });
+    const cy = rowsY + bodyGap + pact.pros.length * (bodyGap + 1) + 8;
+    drawText(ctx, "▼ DEBT", x + 14, cy, { size: bodySz, color: "#ff7a7a", bold: true });
     pact.cons.forEach((line, i) => {
-      drawText(ctx, "« " + line, x + 14, cy + 20 + i * 19, {
-        size: 13, color: "#ffaaaa", maxWidth: rowMax,
+      drawText(ctx, "« " + line, x + 14, cy + bodyGap + i * (bodyGap + 1), {
+        size: bodySz, color: "#ffaaaa", maxWidth: rowMax,
       });
     });
   }

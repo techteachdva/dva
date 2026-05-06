@@ -18,13 +18,29 @@ const BUILD_WHEEL = {
   cardWc: 300,
   cardWs: 252,
   gap: 18,
-  yBase: 146,
+  yBase: 158,
   yOff: [26, 0, 26],
   cardH: 566,
 };
 
-/** Top-right on the forge — toggles `game.endlessSelected` when Endless is unlocked. */
-const ENDLESS_FORGE_BTN = { x: W - 236, y: 94, w: 208, h: 38 };
+// Difficulty + Endless (same rules as title screen; moved into Forge).
+const FORGE_DIFF_ROW_Y = 102;
+const FORGE_DIFF_BTN = { w: 148, h: 34, gap: 8 };
+function forgeDiffHit(i) {
+  const total = FORGE_DIFF_BTN.w * 4 + FORGE_DIFF_BTN.gap * 3;
+  const x0 = (W - total) / 2;
+  return {
+    x: x0 + i * (FORGE_DIFF_BTN.w + FORGE_DIFF_BTN.gap),
+    y: FORGE_DIFF_ROW_Y,
+    w: FORGE_DIFF_BTN.w,
+    h: FORGE_DIFF_BTN.h,
+  };
+}
+
+function cheatKnown(save, cheatId) {
+  const k = save?.knownCheats;
+  return Array.isArray(k) && k.includes(cheatId);
+}
 
 // v0.16 Full weapon pool. Weapons gated by `LOADOUT_UNLOCK` are filtered out
 // of the random roll if the unlock isn't owned.
@@ -266,7 +282,7 @@ export class CreateScene {
   }
 
   hitLoadoutWheel(mx, my) {
-    const cardWc = 268, cardWs = 220, gap = 18, yBase = 174, cardH = 470;
+    const cardWc = 268, cardWs = 220, gap = 18, yBase = 186, cardH = 470;
     const totalW = cardWs + gap + cardWc + gap + cardWs;
     const originX = (W - totalW) / 2;
     const xs = [
@@ -287,21 +303,39 @@ export class CreateScene {
     this.t += dt;
     this.refreshFromGameCheats(game);
 
-    if (
-      game.input.wasPressed("Mouse0")
-      && this.save?.unlocks?.endlessUnlocked
-      && pointInRect(
-        game.input.mouseX,
-        game.input.mouseY,
-        ENDLESS_FORGE_BTN.x,
-        ENDLESS_FORGE_BTN.y,
-        ENDLESS_FORGE_BTN.w,
-        ENDLESS_FORGE_BTN.h,
-      )
-    ) {
-      game.endlessSelected = !game.endlessSelected;
-      SFX.click();
-      game.input.consumePress("Mouse0");
+    if (game.input.wasPressed("Mouse0")) {
+      const mx = game.input.mouseX, my = game.input.mouseY;
+      for (let i = 0; i < 4; i++) {
+        const b = forgeDiffHit(i);
+        if (!pointInRect(mx, my, b.x, b.y, b.w, b.h)) continue;
+        const save = this.save;
+        const showWorm = cheatKnown(save, "wyrm") || game.easyMode;
+        const showDragon = cheatKnown(save, "dragon") || game.hardMode;
+        const showAncient = cheatKnown(save, "greatwyrm") || game.ultraHardMode;
+        const showEndless = !!save?.unlocks?.endlessUnlocked;
+        if (i === 0 && !showWorm) { SFX.deny(); game.input.consumePress("Mouse0"); break; }
+        if (i === 1 && !showDragon) { SFX.deny(); game.input.consumePress("Mouse0"); break; }
+        if (i === 2 && !showAncient) { SFX.deny(); game.input.consumePress("Mouse0"); break; }
+        if (i === 3 && !showEndless) { SFX.deny(); game.input.consumePress("Mouse0"); break; }
+        SFX.click();
+        if (i === 0) {
+          game.easyMode = true;
+          game.hardMode = false;
+          game.ultraHardMode = false;
+        } else if (i === 1) {
+          game.hardMode = true;
+          game.easyMode = false;
+          game.ultraHardMode = false;
+        } else if (i === 2) {
+          game.ultraHardMode = true;
+          game.easyMode = false;
+          game.hardMode = false;
+        } else if (i === 3) {
+          game.endlessSelected = !game.endlessSelected;
+        }
+        game.input.consumePress("Mouse0");
+        break;
+      }
     }
 
     if (game.pickAnyWeapon && !this.dezPoolApplied) {
@@ -454,8 +488,8 @@ export class CreateScene {
     ctx.fillStyle = "rgba(0,0,0,0.6)";
     ctx.fillRect(0, 0, W, H);
 
-    drawBanner(ctx, "FORGE YOUR HERO", W / 2, 72, 44, COLORS.bile, COLORS.blood);
-    this.drawEndlessForgeButton(ctx, game);
+    drawBanner(ctx, "FORGE YOUR HERO", W / 2, 64, 44, COLORS.bile, COLORS.blood);
+    this.drawForgeDifficultyRow(ctx, game);
 
     if (this.step === 0) this.renderBuildSelect(ctx);
     else if (this.step === 1) this.renderLoadoutSelect(ctx, game);
@@ -466,21 +500,48 @@ export class CreateScene {
     });
   }
 
-  drawEndlessForgeButton(ctx, game) {
-    if (!this.save?.unlocks?.endlessUnlocked) return;
-    const on = !!game.endlessSelected;
-    const b = ENDLESS_FORGE_BTN;
-    drawPanel(ctx, b.x, b.y, b.w, b.h);
-    drawText(ctx, "ENDLESS MODE", b.x + b.w / 2, b.y + 10, {
-      size: 12, color: COLORS.bile, bold: true, align: "center", baseline: "middle",
+  drawForgeDifficultyRow(ctx, game) {
+    const save = this.save;
+    const labels = [
+      { label: "[WORM]", sub: "easy", ok: cheatKnown(save, "wyrm") || game.easyMode, on: game.easyMode },
+      { label: "[GREAT WORM]", sub: "hard", ok: cheatKnown(save, "dragon") || game.hardMode, on: game.hardMode },
+      { label: "[ANCIENT]", sub: "ultra", ok: cheatKnown(save, "greatwyrm") || game.ultraHardMode, on: game.ultraHardMode },
+      { label: "ENDLESS", sub: game.endlessSelected ? "ON" : "OFF", ok: !!save?.unlocks?.endlessUnlocked, on: !!game.endlessSelected },
+    ];
+    drawText(ctx, "Difficulty  ·  unlock via cheats wyrm · dragon · greatwyrm  ·  Endless after a victory", W / 2, FORGE_DIFF_ROW_Y - 16, {
+      size: 11, color: COLORS.boneDim, align: "center", maxWidth: W - 40,
     });
-    drawText(ctx, on ? "ON  ·  six nested worms" : "OFF  ·  classic escape", b.x + b.w / 2, b.y + 27, {
-      size: 11, color: on ? COLORS.gold : COLORS.boneDim, align: "center", baseline: "middle",
-    });
+    for (let i = 0; i < 4; i++) {
+      const b = forgeDiffHit(i);
+      const row = labels[i];
+      ctx.save();
+      ctx.globalAlpha = row.ok ? 1 : 0.38;
+      ctx.fillStyle = row.on ? "rgba(60,40,10,0.88)" : "rgba(18,12,28,0.78)";
+      roundRect(ctx, b.x, b.y, b.w, b.h, 8);
+      ctx.fill();
+      ctx.strokeStyle = row.on ? COLORS.gold : (row.ok ? COLORS.bileGlow : "#444");
+      ctx.lineWidth = row.on ? 3 : 2;
+      roundRect(ctx, b.x + 0.5, b.y + 0.5, b.w - 1, b.h - 1, 8);
+      ctx.stroke();
+      ctx.restore();
+      drawText(ctx, row.label, b.x + b.w / 2, b.y + 12, {
+        size: i === 3 ? 10 : 11,
+        color: row.ok ? COLORS.bone : COLORS.boneDim,
+        align: "center",
+        bold: true,
+        maxWidth: b.w - 4,
+      });
+      drawText(ctx, row.sub, b.x + b.w / 2, b.y + 26, {
+        size: 9,
+        color: row.on ? COLORS.gold : COLORS.boneDim,
+        align: "center",
+        maxWidth: b.w - 4,
+      });
+    }
   }
 
   renderBuildSelect(ctx) {
-    drawText(ctx, "STEP 1 / 2  -  PICK YOUR BUILD  (3-card wheel — center = choice)", W / 2, 124, {
+    drawText(ctx, "STEP 1 / 2  -  PICK YOUR BUILD  (3-card wheel — center = choice)", W / 2, 138, {
       size: 17, color: COLORS.bone, align: "center", maxWidth: W - 40,
     });
 
@@ -548,7 +609,7 @@ export class CreateScene {
       ctx.save();
       ctx.translate(cx, heroCy);
       ctx.scale(isCenter ? 3.65 : 3.28, isCenter ? 3.65 : 3.28);
-      drawHero(ctx, 0, 0, 1, this.t * 6, id);
+      drawHero(ctx, 0, 0, 1, this.t * 6, id, null, null);
       ctx.restore();
 
       const perks = getBuildPerkLines(id);
@@ -662,7 +723,7 @@ export class CreateScene {
     const cardWc = 268;
     const cardWs = 220;
     const gap = 18;
-    const yBase = 174;
+    const yBase = 186;
     const totalW = cardWs + gap + cardWc + gap + cardWs;
     const originX = (W - totalW) / 2;
 
@@ -825,7 +886,7 @@ export class CreateScene {
     ctx.save();
     ctx.translate(W / 2, syn ? 410 : 392);
     ctx.scale(7, 7);
-    drawHero(ctx, 0, 0, 1, this.t * 6, b.id, syn?.id ?? null);
+    drawHero(ctx, 0, 0, 1, this.t * 6, b.id, syn?.id ?? null, loadId);
     ctx.restore();
 
     drawText(ctx, `${b.name} wielding ${l.name}`, W / 2, 530, {

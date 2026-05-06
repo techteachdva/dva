@@ -79,6 +79,8 @@ const game = {
   hardMode: false,
   /** Ancient Worm — brutal climb cadence + double classic lap (see `transition.js`). */
   ultraHardMode: false,
+  /** Cheat dealz — pact picker lists every upgradable seal (paged UI). */
+  dealzPacts: false,
   jillyMode: false,
   bubblegumMode: false,
   rowanWeirdWeapons: false,

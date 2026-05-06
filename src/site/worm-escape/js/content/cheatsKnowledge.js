@@ -10,6 +10,7 @@ export const ALL_CHEAT_IDS = [
   "wyrm",
   "dragon",
   "greatwyrm",
+  "dealz",
   "jilly",
   "bubblegum",
   "rowan",
@@ -112,6 +113,16 @@ export const CHEAT_CODEX_DETAILS = {
       "If hard bias is ON at run end: +2600 on Victory / Game Over score.",
     ],
     flavor: "Soulsborne but the hollow is a esophagus.",
+  },
+  dealz: {
+    code: "dealz",
+    title: "Dealz",
+    facts: [
+      "Pact picker lists every seal you can still rank up (not a random subset).",
+      "Large grids are paged — use [ and ] to flip pages while testing.",
+      "Toggle OFF to restore normal 3-card (or 4-card elite) offers.",
+    ],
+    flavor: "Wholesale curses. Retail soul prices may vary.",
   },
   greatwyrm: {
     code: "greatwyrm",

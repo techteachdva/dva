@@ -22,6 +22,7 @@ import {
 import { TransitionScene } from "./transition.js";
 import { PactScene } from "./pact.js";
 import { GameOverScene } from "./gameover.js";
+import { drawRunIdentityStrip } from "../engine/runHud.js";
 import {
   pickTwoDistinctPotionKeys,
   POTION_DRINK_CD_SEC,
@@ -1579,7 +1580,7 @@ export class CombatScene {
     ctx.save();
     ctx.translate(this.heroX, HERO_Y);
     ctx.scale(2.8, 2.8);
-    drawHero(ctx, 0, 0, 1, this.anim, p.buildId, p.synergyId);
+    drawHero(ctx, 0, 0, 1, this.anim, p.buildId, p.synergyId, p.loadoutId);
     if (this.braceTime > 0) {
       ctx.strokeStyle = "rgba(255, 217, 102, 0.8)";
       ctx.lineWidth = 1.4;
@@ -2284,19 +2285,22 @@ export class CombatScene {
     const l = p.loadout;
     const pad = 16;
 
+    const stripBottom = drawRunIdentityStrip(ctx, p, pad);
+    const barTop = stripBottom + 10;
+
     // Top-left: player bars
-    drawBar(ctx, pad, pad,      260, 20, p.hp / p.hpMax, {
+    drawBar(ctx, pad, barTop,      260, 20, p.hp / p.hpMax, {
       fill: COLORS.blood, label: `HP  ${Math.ceil(p.hp)}/${p.hpMax}`,
     });
-    drawBar(ctx, pad, pad + 26, 260, 20, p.mana / p.manaMax, {
+    drawBar(ctx, pad, barTop + 26, 260, 20, p.mana / p.manaMax, {
       fill: COLORS.mana, label: `MP  ${Math.ceil(p.mana)}/${p.manaMax}`,
     });
     if (p.armorMax > 0) {
-      drawBar(ctx, pad, pad + 52, 260, 20, p.armor / p.armorMax, {
+      drawBar(ctx, pad, barTop + 52, 260, 20, p.armor / p.armorMax, {
         fill: "#c0c4cc", label: `ARM ${Math.ceil(p.armor)}/${p.armorMax}`, labelColor: "#111",
       });
     }
-    let rowY = p.armorMax > 0 ? pad + 78 : pad + 52;
+    let rowY = p.armorMax > 0 ? barTop + 78 : barTop + 52;
     if (p.loadoutId === "compupu") {
       const hm = (p.compupuHeat || 0) / 100;
       const hot = hm > 0.82;
@@ -2320,7 +2324,7 @@ export class CombatScene {
       ctx.fill();
       ctx.strokeStyle = "rgba(255, 210, 140, 0.45)";
       ctx.lineWidth = 1.2;
-      roundRect(ctx, pad, tY + 28, 260, 24, 8);
+      roundRect(ctx, pad, rowY + 28, 260, 24, 8);
       ctx.stroke();
       drawText(ctx, p.synergyTitle, pad + 130, rowY + 40, {
         size: 12, color: "#ffe6b0", align: "center", bold: true,
