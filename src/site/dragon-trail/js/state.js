@@ -177,6 +177,62 @@ const GameState = {
         this.save(0);
     },
 
+    // Legacy System -----------------------------------------------------------
+    // Stores summaries of previous runs so new characters can discover them.
+
+    loadLegacy() {
+        try {
+            const raw = localStorage.getItem('dt_legacy');
+            return raw ? JSON.parse(raw) : [];
+        } catch (e) {
+            return [];
+        }
+    },
+
+    saveLegacy(cause = 'unknown') {
+        try {
+            const legacy = this.loadLegacy();
+            const entry = {
+                name: this.data.player.name || 'Unknown',
+                deathMile: this.data.journey.totalMilesTraveled,
+                deathCause: cause,
+                deathDay: this.data.time.day,
+                deathMonth: this.data.time.month,
+                deathYear: this.data.time.year,
+                score: this.data.score,
+                companionName: this.data.companion ? this.data.companion.name : null,
+                weaponName: this.data.player.equippedWeapon ? this.data.player.equippedWeapon.name : null,
+                biome: this.data.journey.currentBiome,
+                timestamp: Date.now()
+            };
+            legacy.unshift(entry);
+            if (legacy.length > 20) legacy.pop();
+            localStorage.setItem('dt_legacy', JSON.stringify(legacy));
+        } catch (e) {
+            console.warn('Legacy save failed:', e);
+        }
+    },
+
+    getLegacyAtMile(mile) {
+        const legacy = this.loadLegacy();
+        return legacy.filter(entry => entry.deathMile === mile);
+    },
+
+    getLegacyItems() {
+        const legacy = this.loadLegacy();
+        const items = [];
+        for (const entry of legacy) {
+            if (entry.weaponName && Math.random() < 0.4) {
+                items.push({ type: 'weapon', name: entry.weaponName, owner: entry.name, mile: entry.deathMile });
+            }
+        }
+        return items;
+    },
+
+    clearLegacy() {
+        localStorage.removeItem('dt_legacy');
+    },
+
     // Utility getters ----------------------------------------------------------
 
     get player() { return this.data.player; },

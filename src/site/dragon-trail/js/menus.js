@@ -576,7 +576,7 @@ async function handleGame() {
 async function checkWinCondition() {
     if (GameState.player.health <= 0) {
         Terminal.println('\nYou have succumbed to your injuries...', 'red');
-        await handleGameOver();
+        await handleGameOver('combat');
         return;
     }
     if (GameState.journey.totalMilesTraveled >= Config.TOTAL_MILES && !GameState.journey.dragonEncountered) {
@@ -584,7 +584,8 @@ async function checkWinCondition() {
     }
 }
 
-async function handleGameOver() {
+async function handleGameOver(cause = 'unknown') {
+    GameState.saveLegacy(cause);
     Audio.stopMusic();
     Terminal.clear();
     await Terminal.showAsciiArt('game_over', 'red', true);

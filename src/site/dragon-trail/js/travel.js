@@ -73,7 +73,7 @@ async function advanceDays(days) {
         Resources.modify('water', -1);
         if (GameState.resources.food <= 0 || GameState.resources.water <= 0) {
             Terminal.println('You have run out of supplies and perished!', 'red');
-            await handleGameOver();
+            await handleGameOver('starvation');
             return;
         }
     }
@@ -138,7 +138,7 @@ async function travel() {
         Resources.modify('water', -1);
         if (GameState.resources.food <= 0 || GameState.resources.water <= 0) {
             Terminal.println('You have run out of supplies and perished!', 'red');
-            await handleGameOver();
+            await handleGameOver('starvation');
             Audio.stopMusic();
             return;
         }
@@ -152,6 +152,8 @@ async function travel() {
         await triggerRandomEncounter(null, GameState.data.time.day);
 
         Terminal.println(`Day ${GameState.data.time.day}: Traveled ${miles} miles through ${GameState.journey.currentBiome}. Total: ${GameState.journey.totalMilesTraveled}/${Config.TOTAL_MILES}`, 'green');
+
+        await checkLegacyAtCurrentMile();
 
         if (GameState.data.encounterTriggered) {
             break;
@@ -183,6 +185,39 @@ async function handleTravel() {
     Terminal.println(`Traveled ${miles} miles. Total: ${GameState.journey.totalMilesTraveled}/${Config.TOTAL_MILES}`, 'green');
     await checkMiniBossEncounter();
     Audio.stopMusic();
+}
+
+async function checkLegacyAtCurrentMile() {
+    const mile = GameState.journey.totalMilesTraveled;
+    const legacyEntries = GameState.getLegacyAtMile(mile);
+    for (const entry of legacyEntries) {
+        Terminal.println('\n', 'dim');
+        Terminal.println(`You come across a weathered grave marker at mile ${mile}...`, 'cyan');
+        Terminal.println(`  "Here lies ${entry.name}"`, 'white');
+        Terminal.println(`  "${getLegacyEpitaph(entry)}"`, 'dim');
+        if (entry.companionName) {
+            Terminal.println(`  "Beloved companion: ${entry.companionName}"`, 'dim');
+        }
+        if (entry.weaponName && Math.random() < 0.5) {
+            Terminal.println(`\nYou find their ${entry.weaponName} half-buried in the dirt.`, 'yellow');
+            const foundWeapon = GameState.data.items.weapons.find(w => w.name === entry.weaponName);
+            if (foundWeapon) {
+                GameState.player.weapons.push(foundWeapon);
+                Terminal.println(`You recovered the ${entry.weaponName}!`, 'green');
+            }
+        }
+        await Terminal.pause();
+    }
+}
+
+function getLegacyEpitaph(entry) {
+    const epitaphs = {
+        'combat': ['Slain by beasts', 'Fell in battle', 'Died with sword in hand'],
+        'starvation': ['Perished hungry', 'Taken by the wild', 'Ran out of road'],
+        'unknown': ['Gone too soon', 'The trail claims another', 'Rest now, wanderer']
+    };
+    const list = epitaphs[entry.deathCause] || epitaphs['unknown'];
+    return Utils.choice(list);
 }
 
 async function handlePostMinibossMerchant() {
