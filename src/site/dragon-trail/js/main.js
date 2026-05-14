@@ -14,91 +14,89 @@ GAME_OVER^GAME_OVER^GAME_OVER^GAME_OVER^GAME_OVER^GAME_OVER^GAME_OVER^GAME_OVER^
     `,
 
     writtenby: `
-    DM_ZEMO-DM_ZEMO-DM_ZEMO-DM_ZEMO-DM_ZEMO-DM_ZEMO-DM_ZEMO-DM_ZEMO
+    DM.ZEMO-DM.ZEMO-DM.ZEMO-DM.ZEMO-DM.ZEMO-DM.ZEMO-DM.ZEMO-DM.ZEMO
       DDDDDD  MMM   MMM    ZZZZZZZZ EEEEEEEE  MMM   MMM   OOOOOOO
       DD   D  M  M M  M         ZZ  EE        M  M M  M   O     O
       DD   D  M   M   M       ZZ    EEEEE     M   M   M   O     O
       DD   D  M       M     ZZ      EE        M       M   O     O
       DDDDDD  M       M [] ZZZZZZZZ EEEEEEEE  M       M   OOOOOOO
-    DM_ZEMO-DM_ZEMO-DM_ZEMO-DM_ZEMO-DM_ZEMO-DM_ZEMO-DM_ZEMO-DM_ZEMO
+    DM.ZEMO-DM.ZEMO-DM.ZEMO-DM.ZEMO-DM.ZEMO-DM.ZEMO-DM.ZEMO-DM.ZEMO
     `,
 
     title: `
-XXXXXXXXXXX XXXXX
-X   XXXXX   XXXXX
-    XXXXX      XXXXXXX    XXXXXX
-    XXXXX     XXXXX XXXX  XXXXXXXX
-    XXXXX     XXXXX XXXX XXXXXXXX
-    XXXXX     XXXXX      XXXXXXX
-    XXXXX    XXXX XXXXX XXXXXXXX
-   XXXXXX    XXXX XXXXX  XXXXXXX
+███████████ █████
+░█░░░███░░░█░░███
+░   ░███  ░  ░███████    ██████
+    ░███     ░███░░███  ███░░███
+    ░███     ░███ ░███ ░███████
+    ░███     ░███ ░███ ░███░░░
+    █████    ████ █████░░██████
+   ░░░░░    ░░░░ ░░░░░  ░░░░░░
 
- XXXXXXXXXX
-XXXXX   XXXXX
- XXXXX   XXXXX XXXXXXXX   XXXXXX    XXXXXXX  XXXXXX  XXXXXXXX
- XXXXX    XXXXX XXXX XXXX XXXXXXXX  XXXXXXXX XXXXXXXX XXXX XXXX
- XXXXX    XXXXX XXXXX XXXX   XXXXXXXX XXXXX XXXXXXXX XXXXX XXXX
- XXXXX    XXXXX XXXXX      XXXXXXXX XXXXX XXXXXXXX XXXXX XXXX
- XXXXXXXX   XXXXX    XXXXXXXX XXXXXXXX XXXXXXXX XXXX XXXXX
-XXXXXXXXX   XXXXXXX      XXXXXXXX  XXXXXXXX XXXXXX  XXXX XXXXX
-                                  XXXX XXXX
-                                 XXXXXXX
-                                  XXXXXX
- XXXXXXXXXXX                      XXXX  XXXX
-X   XXXXX   X                     XXX  XXXX
-    XXXXX      XXXXXXXX   XXXXXX   XXXX  XXXX
-    XXXXX     XXXXX XXXX XXXXXXXX  XXXX  XXXX
-    XXXXX     XXXXX XXXX   XXXXXXXX  XXXX  XXXX
-    XXXXX     XXXXX      XXXXXXXX  XXXX  XXXX
-    XXXXX    XXXXX    XXXXXXXX XXXXX XXXXX
-   XXXXXX    XXXXXX      XXXXXXXX XXXXX XXXXX
-    `,
+
+
+ ██████████
+░░███░░░░███
+ ░███   ░░███ ████████   ██████    ███████  ██████  ████████
+ ░███    ░███░░███░░███ ░░░░░███  ███░░███ ███░░███░░███░░███
+ ░███    ░███ ░███ ░░░   ███████ ░███ ░███░███ ░███ ░███ ░███
+ ░███    ███  ░███      ███░░███ ░███ ░███░███ ░███ ░███ ░███
+ ██████████   █████    ░░████████░░███████░░██████  ████ █████
+░░░░░░░░░░   ░░░░░      ░░░░░░░░  ░░░░░███ ░░░░░░  ░░░░ ░░░░░
+                                  ███ ░███
+                                 ░░██████
+                                  ░░░░░░
+ ███████████                      ███  ████
+░█░░░███░░░█                     ░░░  ░░███
+░   ░███  ░  ████████   ██████   ████  ░███
+    ░███    ░░███░░███ ░░░░░███ ░░███  ░███
+    ░███     ░███ ░░░   ███████  ░███  ░███
+    ░███     ░███      ███░░███  ░███  ░███
+    █████    █████    ░░████████ █████ █████
+   ░░░░░    ░░░░░      ░░░░░░░░ ░░░░░ ░░░░░                  `,
 
     status: `
-     XXXXXXXXX   XXXXX               XXXXX
-     XXXXX XXXXX  XXXX               XXXX
-    XXXXX    XXX  XXXXXXX    XXXXXX   XXXXXXX   XXXXX XXXX  XXXXX
-    XXXXXXXXXX XXXXXX    XXXXXXXX XXXXXX   XXXX XXXX  XXXXX
-     XXXXXXXXXXXX  XXXXX      XXXXXXX   XXXXX     XXXX XXXX XXXXXX
-     XXXX    XXXX  XXXXX XXX XXXXXXXX   XXXXX XXX XXXX XXXX  XXXXXX
-     XXXXXXXXXX   XXXXXXX XXXXXXXXXX  XXXXXXX  XXXXXXXXX XXXXXX
-      XXXXXXXXXX     XXXXX   XXXXXXXXX    XXXXX    XXXXXXXXX XXXXXX
-    `,
+     █████████   █████               █████
+     ███░░░░░███ ░░███               ░░███
+    ░███    ░░░  ███████    ██████   ███████   █████ ████  █████
+    ░░█████████ ░░░███░    ░░░░░███ ░░░███░   ░░███ ░███  ███░░
+     ░░░░░░░░███  ░███      ███████   ░███     ░███ ░███ ░░█████
+     ███    ░███  ░███ ███ ███░░███   ░███ ███ ░███ ░███  ░░░░███
+     ░░█████████   ░░█████ ░░████████  ░░█████  ░░████████ ██████
+      ░░░░░░░░░     ░░░░░   ░░░░░░░░    ░░░░░    ░░░░░░░░ ░░░░░░  `,
 
     travel: `
-     XXXXXXXXXXX                                          XXXX
-    X   XXXXX   X                                         XXXX
-        XXXXX      XXXXXXXX   XXXXXX   XXXXX XXXXX  XXXXXX  XXXX
-        XXXXX     XXXXX XXXX XXXXXXXX  XXXX  XXXX  XXXXXXXX  XXXX
-        XXXXX     XXXXX XXXX   XXXXXXXX  XXXX  XXXX XXXXXXXX  XXXX
-        XXXXX     XXXXX      XXXXXXXX  XXXX  XXXX  XXXXXXX   XXXX
-        XXXXX    XXXXX    XXXXXXXX  XXXXXXX   XXXXXXXX  XXXXX
-        XXXXXX    XXXXXX      XXXXXXXX    XXXXX     XXXXXX  XXXXX
-    `,
+     ███████████                                          ████
+    ░█░░░███░░░█                                         ░░███
+    ░   ░███  ░  ████████   ██████   █████ █████  ██████  ░███
+        ░███    ░░███░░███ ░░░░░███ ░░███ ░░███  ███░░███ ░███
+        ░███     ░███ ░░░   ███████  ░███  ░███ ░███████  ░███
+        ░███     ░███      ███░░███  ░░███ ███  ░███░░░   ░███
+        █████    █████    ░░████████  ░░█████   ░░██████  █████
+        ░░░░░    ░░░░░      ░░░░░░░░    ░░░░░     ░░░░░░  ░░░░░ `,
 
     hourglasses: `
     --------------------------------------------------------------------
-      \\       /  \\       /  \\       /  \\       /  \\       /  \\       /
-       \\     /    \\     /    \\     /    \\     /    \\     /    \\     /
-        \\   /      \\   /      \\   /      \\   /      \\   /      \\   /
-         \\ /        \\ /        \\ /        \\ /        \\ /        \\ /
-          X          X          X          X          X          X
-         / \\        / \\        / \\        / \\        / \\        / \\
-        /   \\      /   \\      /   \\      /   \\      /   \\      /   \\
-       /     \\    /     \\    /     \\    /     \\    /     \\    /     \\
-      /       \\  /       \\  /       \\  /       \\  /       \\  /       \\
+      \\°°°°°°°/  \\°°°°°°°/  \\       /  \\       /  \\       /  \\       /
+       \\°°°°°/    \\°°°°°/    \\°°°°°/    \\     /    \\     /    \\     /
+        \\°°°/      \\°°°/      \\°°°/      \\°°°/      \\   /      \\   /
+         \\°/        \\°/        \\°/        \\°/        \\°/        \\ /
+          0          0          0          0          0          0
+         / \\        / \\        / \\        / \\        / \\        /°\\
+        /   \\      /   \\      /   \\      /   \\      /°°°\\      /°°°\\
+       /     \\    /     \\    /     \\    /°°°°°\\    /°°°°°\\    /°°°°°\\
+      /       \\  /       \\  /°°°°°°°\\  /°°°°°°°\\  /°°°°°°°\\  /°°°°°°°\\
     --------------------------------------------------------------------`,
 
     hunt: `
-    XXXXX   XXXXX                        XXXXX
-    XXXX   XXXX                        XXXX
-     XXXX    XXXX  XXXXX XXXX XXXXXXXX   XXXXXXX
-     XXXXXXXXXXXX XXXX XXXX XXXX XXXX XXXX  XXXXXX
-     XXXX   XXXXX  XXXX XXXX  XXXXX XXXX   XXXX
-     XXXX    XXXX  XXXX XXXX  XXXXX XXXX   XXXX XXX
-    XXXXX   XXXXX XXXXXXXX XXXX XXXXX  XXXXXX
-    XXXXX   XXXXX   XXXXXXXX XXXX XXXXX    XXXXX
-    `,
+    █████   █████                        █████
+    ░░███   ░░███                        ░░███
+     ░███    ░███  █████ ████ ████████   ███████
+     ░███████████ ░░███ ░███ ░░███░░███ ░░░███░
+     ░███░░░░░███  ░███ ░███  ░███ ░███   ░███
+     ░███    ░███  ░███ ░███  ░███ ░███   ░███ ███
+    █████   █████ ░░████████ ████ █████  ░░█████
+    ░░░░░   ░░░░░   ░░░░░░░░ ░░░░ ░░░░░    ░░░░░  `,
 
     small_game: `
      __    __
@@ -128,15 +126,14 @@ X   XXXXX   X                     XXX  XXXX
     You Catch Multiple Deer!`,
 
     scout: `
-    XXXXXXXXX                                XXXXX
-    XXXXX XXXXX                              XXXX
-    XXXXX    XXX   XXXXXX   XXXXXX  XXXXX XXXX XXXXXXX
-    XXXXXXXXXX  XXXXXXXX XXXXXXXX XXXX  XXXX  XXXXXX
-     XXXXXXXXXXXX XXXXX XXXX XXXXXXXX XXXX  XXXX   XXXX
-     XXXX    XXXXX XXXX  XXXXXXXX XXXX  XXXX   XXXX XXX
-    XXXXXXXXXX XXXXXXXX XXXXXXXX  XXXXXXXX  XXXXXX
-      XXXXXXXXXX   XXXXXX   XXXXXX    XXXXXXXX    XXXXX
-    `,
+    █████████                                █████
+    ███░░░░░███                              ░░███
+    ░███    ░░░   ██████   ██████  █████ ████ ███████
+    ░░█████████  ███░░███ ███░░███░░███ ░███ ░░░███░
+     ░░░░░░░░███░███ ░░░ ░███ ░███ ░███ ░███   ░███
+     ███    ░███░███  ███░███ ░███ ░███ ░███   ░███ ███
+    ░░█████████ ░░██████ ░░██████  ░░████████  ░░█████
+      ░░░░░░░░░   ░░░░░░   ░░░░░░    ░░░░░░░░    ░░░░░  `,
 
     mount: `
           /\\
@@ -150,26 +147,24 @@ X   XXXXX   X                     XXX  XXXX
 __/___/_______/___/__\\___\\__________________________________________________`,
 
     rest: `
-    XXXXXXXXXXX                     XXXXX
-    XXXX   XXXXX                   XXXX
-     XXXX    XXXX   XXXXXX   XXXXX  XXXXXXX
-     XXXXXXXXXX   XXXXXXXX XXXXX  XXXXXX
-     XXXX   XXXXX XXXXXXX XXXXXXXX   XXXX
-     XXXX    XXXX XXXXXXX   XXXXXXX  XXXX XXX
-    XXXXX   XXXXX XXXXXXXX  XXXXXX   XXXXXX
-    XXXXX   XXXXX  XXXXXX  XXXXXXX     XXXXX
-    `,
+    ███████████                     █████
+    ░░███░░░░░███                   ░░███
+     ░███    ░███   ██████   █████  ███████
+     ░██████████   ███░░███ ███░░  ░░░███░
+     ░███░░░░░███ ░███████ ░░█████   ░███
+     ░███    ░███ ░███░░░   ░░░░███  ░███ ███
+    █████   █████░░██████  ██████   ░░█████
+    ░░░░░   ░░░░░  ░░░░░░  ░░░░░░     ░░░░░  `,
 
     cook: `
-      XXXXXXXXX                    XXXXX
-      XXXXX XXXXX                  XXXX
-     XXXX     XXX   XXXXXX   XXXXXX  XXXX XXXXX
-    XXXXX          XXXXXXXX XXXXXXXX XXXX XXXX
-    XXXXX         XXXXX XXXXXXXX XXXXXXXX
-    XXXX     XXX XXXXX XXXXXXXX XXXX XXXX XXXX
-    XXXXXXXXXX XXXXXXXX XXXXXXXX  XXXX XXXXX
-     XXXXXXXXXX   XXXXXX   XXXXXX  XXXX  XXXXX
-    `,
+      █████████                    █████
+      ███░░░░░███                  ░░███
+     ███     ░░░   ██████   ██████  ░███ █████
+    ░███          ███░░███ ███░░███ ░███░░███
+    ░███         ░███ ░███░███ ░███ ░██████░
+    ░░███     ███░███ ░███░███ ░███ ░███░░███
+    ░░█████████ ░░██████ ░░██████  ████ █████
+     ░░░░░░░░░   ░░░░░░   ░░░░░░  ░░░░ ░░░░░ `,
 
     dragonart: `
                          _====-_      _-====__
@@ -193,19 +188,19 @@ __/___/_______/___/__\\___\\__________________________________________________`,
      \\__0/    \\,,,,,,,,,,,,,,/`,
 
     main_menu: `
-           /|\\
-        #####
-     ###       ###
-   ##    N    ##
-  #   *   |   *   #
- #         |         #
-<#W--------+--------E#> WHAT WOULD YOU LIKE TO DO?
- #         |         #
-  #   *   |   *   #
-   ##    S    ##
-     ###       ###
-        #####
-           \\|/
+           /│\\
+        ▓▓▓▓▓▓▓▓▓
+     ▓▓▓░░░░░░░░░▓▓▓
+   ▓▓░░░    N    ░░░▓▓
+  ▓░░   *   │   *   ░░▓
+ ▓░         │         ░▓
+<▓░W────────+────────E░▓> WHAT WOULD YOU LIKE TO DO?
+ ▓░         │         ░▓
+  ▓░░   *   │   *   ░░▓
+   ▓▓░░░    S    ░░░▓▓
+     ▓▓▓░░░░░░░░░▓▓▓
+        ▓▓▓▓▓▓▓▓▓
+           \\│/
     `,
 
     help: `
