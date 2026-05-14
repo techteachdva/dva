@@ -194,10 +194,22 @@ class TerminalEngine {
     async showAsciiArt(artKey, color = 'white', animate = false) {
         const art = ASCII_ART[artKey];
         if (!art) return;
+
+        const pre = document.createElement('pre');
+        pre.className = 'ascii-art';
+        if (color) pre.classList.add(`color-${color}`);
+        pre.classList.add('bright');
+        this.output.appendChild(pre);
+
         if (animate) {
-            await this.typewrite(art, color, true);
+            for (let i = 0; i < art.length; i++) {
+                pre.textContent += art[i];
+                this.scrollToBottom();
+                await Utils.delay(this.typingSpeed);
+            }
         } else {
-            this.println(art, color, true);
+            pre.textContent = art;
+            this.scrollToBottom();
         }
     }
 

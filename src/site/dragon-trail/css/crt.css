@@ -466,6 +466,46 @@ body {
     }
 }
 
+/* Fullscreen mode */
+body.is-fullscreen {
+    align-items: flex-start;
+    justify-content: flex-start;
+}
+body.is-fullscreen .crt-monitor {
+    width: 100vw;
+    height: 100vh;
+    max-width: 100vw;
+    max-height: 100vh;
+    padding: 0;
+    border-radius: 0;
+}
+body.is-fullscreen .crt-screen {
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+}
+body.is-fullscreen .terminal {
+    font-size: clamp(14px, 2.2vh, 20px);
+    padding: 2vh 3vw;
+}
+body.is-fullscreen .controls-panel {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+    background: rgba(20,20,20,0.9);
+}
+
+/* ASCII Art */
+.ascii-art {
+    display: block;
+    white-space: pre;
+    font-size: 10px;
+    line-height: 1.1;
+    animation: shimmer 4s ease-in-out infinite;
+    overflow-x: auto;
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
     .scanlines,

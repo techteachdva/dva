@@ -538,9 +538,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Control buttons
     document.getElementById('btn-fullscreen').addEventListener('click', () => {
         if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen();
+            document.documentElement.requestFullscreen().then(() => {
+                document.body.classList.add('is-fullscreen');
+            }).catch(() => {});
         } else {
-            document.exitFullscreen();
+            document.exitFullscreen().then(() => {
+                document.body.classList.remove('is-fullscreen');
+            }).catch(() => {});
+        }
+    });
+    document.addEventListener('fullscreenchange', () => {
+        if (!document.fullscreenElement) {
+            document.body.classList.remove('is-fullscreen');
         }
     });
 
