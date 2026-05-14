@@ -1,0 +1,501 @@
+/* Dragon Trail Web - Game-Specific Styling */
+
+/* Health Bar */
+.health-bar-container {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 4px 0;
+}
+
+.health-bar {
+    width: 120px;
+    height: 12px;
+    background: rgba(0,0,0,0.5);
+    border: 1px solid rgba(51,255,51,0.3);
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+}
+
+.health-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #33ff33, #66ff66);
+    box-shadow: 0 0 6px rgba(51,255,51,0.4);
+    transition: width 0.5s ease-out;
+}
+
+.health-bar-fill.low {
+    background: linear-gradient(90deg, #ff3333, #ff6666);
+    box-shadow: 0 0 6px rgba(255,51,51,0.4);
+    animation: healthPulse 1s ease-in-out infinite;
+}
+
+@keyframes healthPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.health-bar-text {
+    font-size: 12px;
+    color: var(--crt-fg);
+    min-width: 60px;
+}
+
+/* Progress Bar (Miles) */
+.progress-container {
+    margin: 8px 0;
+}
+
+.progress-label {
+    font-size: 12px;
+    color: var(--crt-fg-dim);
+    margin-bottom: 2px;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: rgba(0,0,0,0.5);
+    border: 1px solid rgba(51,255,51,0.2);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--crt-fg-dim), var(--crt-fg-bright));
+    box-shadow: 0 0 4px rgba(51,255,51,0.3);
+    transition: width 1s ease-out;
+}
+
+/* Resource Display */
+.resource-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 4px;
+    margin: 8px 0;
+}
+
+.resource-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 6px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(51,255,51,0.1);
+    border-radius: 2px;
+    font-size: 13px;
+}
+
+.resource-icon {
+    width: 14px;
+    height: 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+}
+
+.resource-name {
+    color: var(--crt-fg-dim);
+    font-size: 11px;
+}
+
+.resource-value {
+    color: var(--crt-fg-bright);
+    font-weight: bold;
+    margin-left: auto;
+}
+
+/* Equipped Items */
+.equipment-panel {
+    margin: 8px 0;
+    padding: 8px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(51,255,51,0.15);
+    border-radius: 4px;
+}
+
+.equipment-slot {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 2px 0;
+    font-size: 13px;
+}
+
+.equipment-label {
+    color: var(--crt-fg-dim);
+    min-width: 60px;
+}
+
+.equipment-value {
+    color: var(--crt-fg);
+}
+
+.equipment-value.empty {
+    color: var(--crt-fg-dim);
+    font-style: italic;
+}
+
+/* Menu Screen */
+.menu-screen {
+    text-align: center;
+    padding: 20px 0;
+}
+
+.menu-title {
+    font-size: 24px;
+    color: var(--crt-fg-bright);
+    text-shadow: 0 0 12px rgba(51,255,51,0.5);
+    margin-bottom: 16px;
+}
+
+.menu-options {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    max-width: 300px;
+    margin: 0 auto;
+}
+
+.menu-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 12px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(51,255,51,0.2);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+}
+
+.menu-option:hover,
+.menu-option.selected {
+    background: rgba(51,255,51,0.1);
+    border-color: var(--crt-fg);
+    box-shadow: 0 0 8px rgba(51,255,51,0.2);
+}
+
+.menu-key {
+    color: var(--crt-amber);
+    font-weight: bold;
+    min-width: 24px;
+    text-align: center;
+}
+
+.menu-desc {
+    color: var(--crt-fg);
+}
+
+/* Combat UI */
+.combat-status {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin: 12px 0;
+    padding: 8px;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,51,51,0.2);
+    border-radius: 4px;
+}
+
+.combat-side {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.combat-name {
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.combat-enemy .combat-name {
+    color: var(--crt-red);
+    text-shadow: 0 0 4px var(--crt-red-glow);
+}
+
+.combat-player .combat-name {
+    color: var(--crt-fg-bright);
+}
+
+/* Attack Options in Combat */
+.attack-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin: 12px 0;
+    max-width: 400px;
+}
+
+.attack-option {
+    padding: 6px 10px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(51,255,51,0.2);
+    border-radius: 4px;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+
+.attack-option:hover,
+.attack-option.selected {
+    background: rgba(51,255,51,0.1);
+    border-color: var(--crt-fg);
+}
+
+.attack-option.cooldown {
+    opacity: 0.5;
+    border-color: rgba(255,255,0,0.3);
+}
+
+.attack-name {
+    color: var(--crt-fg-bright);
+    font-weight: bold;
+}
+
+.attack-desc {
+    color: var(--crt-fg-dim);
+    font-size: 11px;
+}
+
+/* Inventory Grid */
+.inventory-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin: 12px 0;
+    max-width: 320px;
+}
+
+.inventory-slot {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(51,255,51,0.2);
+    border-radius: 4px;
+    font-size: 11px;
+    transition: all 0.2s;
+}
+
+.inventory-slot.has-item {
+    border-color: rgba(51,255,51,0.4);
+    background: rgba(51,255,51,0.05);
+}
+
+.inventory-slot.empty {
+    opacity: 0.4;
+}
+
+/* Shop Items */
+.shop-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px;
+    margin: 4px 0;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(51,255,51,0.15);
+    border-radius: 4px;
+}
+
+.shop-item:hover {
+    border-color: rgba(51,255,51,0.4);
+    background: rgba(51,255,51,0.05);
+}
+
+.shop-index {
+    color: var(--crt-amber);
+    font-weight: bold;
+    min-width: 20px;
+}
+
+.shop-name {
+    color: var(--crt-fg);
+    flex: 1;
+}
+
+.shop-stats {
+    color: var(--crt-fg-dim);
+    font-size: 11px;
+}
+
+.shop-cost {
+    color: var(--crt-yellow);
+    font-weight: bold;
+}
+
+/* Save Slots */
+.save-slots {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 12px 0;
+    max-width: 350px;
+}
+
+.save-slot {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 14px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(51,255,51,0.2);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.save-slot:hover,
+.save-slot.selected {
+    background: rgba(51,255,51,0.1);
+    border-color: var(--crt-fg);
+}
+
+.save-slot-number {
+    color: var(--crt-amber);
+    font-weight: bold;
+    font-size: 18px;
+    min-width: 30px;
+    text-align: center;
+}
+
+.save-slot-info {
+    flex: 1;
+}
+
+.save-slot-name {
+    color: var(--crt-fg);
+    font-weight: bold;
+}
+
+.save-slot-details {
+    color: var(--crt-fg-dim);
+    font-size: 11px;
+}
+
+.save-slot-empty {
+    color: var(--crt-fg-dim);
+    font-style: italic;
+}
+
+/* Event Notification */
+.event-notification {
+    padding: 8px 12px;
+    margin: 8px 0;
+    background: rgba(0,0,0,0.4);
+    border-left: 3px solid var(--crt-cyan);
+    border-radius: 0 4px 4px 0;
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from { transform: translateX(-20px); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+.event-notification.negative {
+    border-left-color: var(--crt-red);
+}
+
+.event-notification.positive {
+    border-left-color: var(--crt-fg);
+}
+
+/* Map Display */
+.map-display {
+    font-size: 10px;
+    line-height: 1.1;
+    white-space: pre;
+    color: var(--crt-fg-dim);
+    margin: 8px 0;
+    padding: 8px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(51,255,51,0.1);
+    border-radius: 4px;
+    overflow-x: auto;
+}
+
+.map-current {
+    color: var(--crt-fg-bright);
+    text-shadow: 0 0 4px rgba(51,255,51,0.4);
+}
+
+/* Companion Display */
+.companion-panel {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 8px 0;
+    padding: 6px 10px;
+    background: rgba(51,102,255,0.1);
+    border: 1px solid rgba(51,102,255,0.3);
+    border-radius: 4px;
+}
+
+.companion-name {
+    color: var(--crt-blue);
+    font-weight: bold;
+}
+
+.companion-stats {
+    color: var(--crt-fg-dim);
+    font-size: 12px;
+}
+
+/* Game Over Screen */
+.game-over-screen {
+    text-align: center;
+    animation: fadeIn 1s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.game-over-title {
+    font-size: 28px;
+    color: var(--crt-red);
+    text-shadow: 0 0 20px var(--crt-red-glow);
+    margin-bottom: 16px;
+}
+
+/* Scroll indicator */
+.scroll-indicator {
+    text-align: center;
+    color: var(--crt-fg-dim);
+    font-size: 11px;
+    padding: 4px;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.8; }
+}
+
+/* Inline Elements */
+.inline-bar {
+    display: inline-block;
+    width: 60px;
+    height: 8px;
+    background: rgba(0,0,0,0.5);
+    border: 1px solid rgba(51,255,51,0.2);
+    border-radius: 2px;
+    overflow: hidden;
+    vertical-align: middle;
+    margin: 0 4px;
+}
+
+.inline-bar-fill {
+    height: 100%;
+    background: var(--crt-fg);
+    transition: width 0.3s;
+}

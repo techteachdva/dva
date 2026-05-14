@@ -5,7 +5,8 @@
   "devCommand": "npm run start",
   "redirects": [
     { "source": "/crystalwizards", "destination": "/crystalwizards/", "permanent": true },
-    { "source": "/uriel", "destination": "/uriel/", "permanent": true }
+    { "source": "/uriel", "destination": "/uriel/", "permanent": true },
+    { "source": "/dragon-trail", "destination": "/dragon-trail/", "permanent": true }
   ],
   "headers": [
     {

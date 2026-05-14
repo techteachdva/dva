@@ -1,0 +1,479 @@
+/* Dragon Trail Web - CRT Terminal Effects */
+
+:root {
+    --crt-bg: #0a0a0f;
+    --crt-fg: #33ff33;
+    --crt-fg-dim: #1a801a;
+    --crt-fg-bright: #66ff66;
+    --crt-amber: #ffb000;
+    --crt-red: #ff3333;
+    --crt-red-glow: rgba(255, 51, 51, 0.6);
+    --crt-blue: #3366ff;
+    --crt-cyan: #00ffff;
+    --crt-magenta: #ff33ff;
+    --crt-yellow: #ffff33;
+    --crt-white: #f0f0f0;
+    --phosphor-glow: 0 0 4px currentColor, 0 0 8px currentColor, 0 0 12px rgba(51, 255, 51, 0.3);
+    --font-terminal: 'VT323', 'Fira Code', 'Courier New', monospace;
+    --scanline-color: rgba(0, 0, 0, 0.15);
+    --scanline-spacing: 4px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: #050505;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    overflow: hidden;
+    font-family: var(--font-terminal);
+}
+
+/* CRT Wrapper */
+#crt-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Monitor Bezel */
+.crt-monitor {
+    position: relative;
+    background: linear-gradient(145deg, #2a2a2a, #1a1a1a);
+    border-radius: 20px;
+    padding: 18px 18px 36px 18px;
+    box-shadow:
+        0 20px 60px rgba(0,0,0,0.8),
+        inset 0 1px 0 rgba(255,255,255,0.1),
+        inset 0 -1px 0 rgba(0,0,0,0.3);
+    max-width: 95vw;
+    max-height: 90vh;
+}
+
+.monitor-bezel {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 16px 0 16px;
+    color: #888;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.monitor-brand {
+    color: #aaa;
+    text-shadow: 0 0 4px rgba(255,255,255,0.2);
+}
+
+.monitor-power {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.power-led {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #33ff33;
+    box-shadow: 0 0 6px #33ff33, 0 0 12px rgba(51,255,51,0.4);
+    animation: powerPulse 3s ease-in-out infinite;
+}
+
+@keyframes powerPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* CRT Screen */
+.crt-screen {
+    position: relative;
+    width: 800px;
+    height: 600px;
+    background: var(--crt-bg);
+    border-radius: 60px / 20px;
+    overflow: hidden;
+    box-shadow:
+        inset 0 0 80px rgba(0,0,0,0.7),
+        inset 0 0 20px rgba(51,255,51,0.05);
+}
+
+/* Scanlines */
+.scanlines {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent var(--scanline-spacing),
+        var(--scanline-color) var(--scanline-spacing),
+        var(--scanline-color) calc(var(--scanline-spacing) + 1px)
+    );
+    pointer-events: none;
+    z-index: 100;
+    animation: scanlineScroll 8s linear infinite;
+}
+
+@keyframes scanlineScroll {
+    0% { background-position: 0 0; }
+    100% { background-position: 0 var(--scanline-spacing); }
+}
+
+/* Screen Curve / Vignette */
+.screen-curve {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(
+        ellipse at center,
+        transparent 50%,
+        rgba(0,0,0,0.3) 80%,
+        rgba(0,0,0,0.6) 100%
+    );
+    pointer-events: none;
+    z-index: 101;
+    border-radius: inherit;
+}
+
+.vignette {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    box-shadow: inset 0 0 100px rgba(0,0,0,0.5);
+    pointer-events: none;
+    z-index: 102;
+    border-radius: inherit;
+}
+
+/* Flicker */
+.flicker {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(51, 255, 51, 0.01);
+    pointer-events: none;
+    z-index: 103;
+    animation: flicker 0.15s infinite;
+    opacity: 0;
+}
+
+@keyframes flicker {
+    0% { opacity: 0.0; }
+    5% { opacity: 0.02; }
+    10% { opacity: 0.0; }
+    15% { opacity: 0.01; }
+    20% { opacity: 0.0; }
+    50% { opacity: 0.0; }
+    52% { opacity: 0.015; }
+    55% { opacity: 0.0; }
+    80% { opacity: 0.0; }
+    85% { opacity: 0.01; }
+    90% { opacity: 0.0; }
+    100% { opacity: 0.0; }
+}
+
+/* Phosphor Overlay */
+.phosphor-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(
+        ellipse at center,
+        rgba(51, 255, 51, 0.03) 0%,
+        transparent 70%
+    );
+    pointer-events: none;
+    z-index: 104;
+    mix-blend-mode: screen;
+}
+
+/* Terminal */
+.terminal {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    padding: 24px 32px;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    font-family: var(--font-terminal);
+    font-size: 16px;
+    line-height: 1.4;
+    color: var(--crt-fg);
+    text-shadow: var(--phosphor-glow);
+    overflow: hidden;
+}
+
+.terminal-output {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    padding-bottom: 8px;
+}
+
+.terminal-output::-webkit-scrollbar {
+    width: 6px;
+}
+
+.terminal-output::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.3);
+}
+
+.terminal-output::-webkit-scrollbar-thumb {
+    background: rgba(51, 255, 51, 0.3);
+    border-radius: 3px;
+}
+
+.terminal-input-line {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    min-height: 28px;
+    flex-shrink: 0;
+}
+
+.terminal-prompt {
+    color: var(--crt-fg-bright);
+    font-weight: bold;
+    text-shadow: 0 0 8px var(--crt-fg);
+    flex-shrink: 0;
+}
+
+.terminal-input {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--crt-fg);
+    font-family: var(--font-terminal);
+    font-size: 16px;
+    flex: 1;
+    caret-color: transparent;
+    text-shadow: var(--phosphor-glow);
+}
+
+.terminal-cursor {
+    display: inline-block;
+    color: var(--crt-fg);
+    animation: blink 1s step-end infinite;
+    margin-left: 2px;
+    text-shadow: var(--phosphor-glow);
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+/* Color Classes */
+.color-red { color: var(--crt-red); text-shadow: 0 0 4px var(--crt-red-glow), 0 0 8px var(--crt-red-glow); }
+.color-green { color: var(--crt-fg-bright); text-shadow: 0 0 4px rgba(51,255,51,0.4); }
+.color-yellow { color: var(--crt-yellow); text-shadow: 0 0 4px rgba(255,255,51,0.4); }
+.color-blue { color: var(--crt-blue); text-shadow: 0 0 4px rgba(51,102,255,0.4); }
+.color-cyan { color: var(--crt-cyan); text-shadow: 0 0 4px rgba(0,255,255,0.4); }
+.color-magenta { color: var(--crt-magenta); text-shadow: 0 0 4px rgba(255,51,255,0.4); }
+.color-white { color: var(--crt-white); text-shadow: 0 0 4px rgba(240,240,240,0.3); }
+.color-amber { color: var(--crt-amber); text-shadow: 0 0 4px rgba(255,176,0,0.4); }
+.color-dim { color: var(--crt-fg-dim); }
+
+/* Bright modifier */
+.bright { font-weight: 600; }
+
+/* ASCII Art Animations */
+@keyframes shimmer {
+    0% { opacity: 0.8; filter: brightness(1); }
+    50% { opacity: 1; filter: brightness(1.2); }
+    100% { opacity: 0.8; filter: brightness(1); }
+}
+
+.ascii-art {
+    display: block;
+    white-space: pre;
+    font-size: 10px;
+    line-height: 1.1;
+    animation: shimmer 4s ease-in-out infinite;
+}
+
+/* Controls Panel */
+.controls-panel {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(20,20,20,0.8);
+    border: 1px solid rgba(51,255,51,0.2);
+    border-radius: 8px;
+    padding: 8px 16px;
+    backdrop-filter: blur(4px);
+}
+
+.control-btn {
+    background: rgba(0,0,0,0.5);
+    border: 1px solid rgba(51,255,51,0.3);
+    color: var(--crt-fg-dim);
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.control-btn:hover {
+    border-color: var(--crt-fg);
+    color: var(--crt-fg);
+    box-shadow: 0 0 8px rgba(51,255,51,0.3);
+}
+
+.control-btn.active {
+    border-color: var(--crt-fg);
+    color: var(--crt-fg);
+    background: rgba(51,255,51,0.1);
+}
+
+/* Audio Visualizer */
+.audio-visualizer {
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+    height: 20px;
+    padding: 0 8px;
+}
+
+.audio-visualizer .bar {
+    width: 3px;
+    background: var(--crt-fg-dim);
+    border-radius: 1px;
+    transition: height 0.1s;
+    min-height: 2px;
+}
+
+.audio-visualizer.active .bar {
+    background: var(--crt-fg);
+    box-shadow: 0 0 4px var(--crt-fg);
+}
+
+/* Overlays */
+.combat-overlay,
+.minigame-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 200;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hidden {
+    display: none !important;
+}
+
+.combat-overlay.hidden,
+.minigame-overlay.hidden {
+    display: none;
+}
+
+/* Enemy Sprite Area */
+.enemy-sprite {
+    position: absolute;
+    top: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 8px;
+    line-height: 1.05;
+    white-space: pre;
+    text-align: center;
+    animation: enemyFloat 3s ease-in-out infinite;
+}
+
+@keyframes enemyFloat {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50% { transform: translateX(-50%) translateY(-8px); }
+}
+
+/* Combat Effects */
+.combat-effects {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+}
+
+.screen-shake {
+    animation: shake 0.3s ease-in-out;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translate(0,0); }
+    20% { transform: translate(-4px, 2px); }
+    40% { transform: translate(4px, -2px); }
+    60% { transform: translate(-2px, -4px); }
+    80% { transform: translate(2px, 4px); }
+}
+
+.flash-red {
+    animation: flashRed 0.3s ease-out;
+}
+
+@keyframes flashRed {
+    0% { background: rgba(255,0,0,0.3); }
+    100% { background: transparent; }
+}
+
+.flash-green {
+    animation: flashGreen 0.3s ease-out;
+}
+
+@keyframes flashGreen {
+    0% { background: rgba(0,255,0,0.2); }
+    100% { background: transparent; }
+}
+
+/* Minigame Canvas */
+#minigame-canvas {
+    background: rgba(0,0,0,0.85);
+    border: 2px solid var(--crt-fg);
+    border-radius: 8px;
+    box-shadow: 0 0 20px rgba(51,255,51,0.2);
+}
+
+/* Responsive */
+@media (max-width: 850px) {
+    .crt-screen {
+        width: 100vw;
+        height: 70vh;
+        border-radius: 30px / 10px;
+    }
+    .terminal {
+        font-size: 14px;
+        padding: 16px 20px;
+    }
+    .crt-monitor {
+        padding: 12px 12px 28px 12px;
+    }
+}
+
+@media (max-height: 700px) {
+    .crt-screen {
+        height: 80vh;
+    }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .scanlines,
+    .flicker,
+    .terminal-cursor,
+    .ascii-art,
+    .power-led,
+    .enemy-sprite {
+        animation: none;
+    }
+}
