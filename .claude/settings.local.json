@@ -10,7 +10,9 @@
       "Bash(grep -v '^[0-9]*:\\\\s*[\\\\/,{}]`')",
       "Bash(grep -v '^[0-9]*:\\\\s*\\\\w.*:`')",
       "Bash(grep -v '^[0-9]*:\\\\s*\\\\w.*`,')",
-      "Bash(grep -v '^[0-9]*:\\\\s*$')"
+      "Bash(grep -v '^[0-9]*:\\\\s*$')",
+      "Bash(rtk git *)",
+      "Bash(git reset *)"
     ]
   }
 }
