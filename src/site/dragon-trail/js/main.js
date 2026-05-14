@@ -220,6 +220,10 @@ __/___/_______/___/__\\___\\__________________________________________________`,
     `
 };
 
+if (typeof EXTRA_ASCII_ART !== 'undefined') {
+    Object.assign(ASCII_ART, EXTRA_ASCII_ART);
+}
+
 // Section 14: Cheat Code Handlers ---------------------------------------------
 
 async function handleCheat(code) {
@@ -335,6 +339,7 @@ async function handleHunt() {
     await advanceDays(daysHunting);
     Terminal.println(`\nHunting took ${daysHunting} days.`);
     Terminal.println(`Current food: ${GameState.resources.food} lbs`);
+    GameState.addJournalEntry(`Spent ${daysHunting} days hunting in the ${GameState.journey.currentBiome}.`);
     await Terminal.pause();
 }
 
@@ -401,44 +406,186 @@ async function handleScout() {
         Terminal.println('\nYour scouting efforts yielded nothing.', 'red');
         await triggerScoutingEvent();
     }
-
+    GameState.addJournalEntry(`Scouted for ${targetResource} in the ${GameState.journey.currentBiome}.`);
     await Terminal.pause();
 }
 
-async function handleRest() {
+async function handleCamp() {
     Audio.playMusic('rest');
     Terminal.clear();
-    await Terminal.showAsciiArt('rest', 'magenta');
+    await Terminal.showAsciiArt('interaction_campfire', 'yellow', true);
 
     if (GameState.resources.food <= 0) {
-        Terminal.println('You do not have enough food to rest! Hunt or cook to gather more food.', 'red');
+        Terminal.println('You do not have enough food to make camp! Hunt or cook to gather more food.', 'red');
         await Terminal.pause();
         return;
     }
     if (GameState.resources.woodCords <= 0) {
-        Terminal.println('You do not have enough wood to rest! Find wood or trade to restock.', 'red');
+        Terminal.println('You do not have enough wood to make camp! Find wood or trade to restock.', 'red');
         await Terminal.pause();
         return;
     }
 
-    if (GameState.player.health < Config.MAX_HEALTH_LEVEL) {
-        GameState.resources.food -= 1;
-        GameState.resources.woodCords -= 1;
-        await MiniGames.restMini();
-
+    let camping = true;
+    while (camping) {
+        Terminal.clear();
+        await Terminal.showAsciiArt('interaction_campfire', 'yellow', true);
+        Terminal.println(`\n--- Camp ---`);
+        Terminal.println(`Food: ${GameState.resources.food} | Wood: ${GameState.resources.woodCords} | Herbs: ${GameState.resources.herbs}`);
+        Terminal.println(`Health: ${GameState.player.health}/${GameState.player.maxHealth}`);
         if (GameState.companion) {
-            GameState.companion.heal();
-            Terminal.println(`${GameState.companion.name} is fully healed!`, 'green');
+            Terminal.println(`${GameState.companion.name}: ${GameState.companion.hp}/${GameState.companion.maxHp} | Mood: ${GameState.companion.getMood()}`);
         }
+        Terminal.println('\n1. Rest (Heal + sleep)');
+        Terminal.println('2. Cook (Herbs -> food / potions)');
+        Terminal.println('3. Talk (Speak with companion)');
+        Terminal.println('4. Tend Wounds (Use herbs to heal)');
+        Terminal.println('5. Guard Duty (Less rest, watch for danger)');
+        Terminal.println('0. Break Camp');
 
-        await advanceDays(1);
-        Terminal.println(`Rested for 1 day. Health: ${GameState.player.health}`, 'green');
-        Terminal.println(`Food: ${GameState.resources.food} lbs, Wood Cords: ${GameState.resources.woodCords}`);
-    } else {
-        Terminal.println('You are already at full health.');
+        const choice = await Terminal.inputNumber('Choose: ', 0, 5);
+        switch (choice) {
+            case 1: {
+                if (GameState.player.health >= GameState.player.maxHealth && (!GameState.companion || GameState.companion.hp >= GameState.companion.maxHp)) {
+                    Terminal.println('Everyone is already at full health.', 'yellow');
+                    await Terminal.pause();
+                    break;
+                }
+                GameState.resources.food -= 1;
+                GameState.resources.woodCords -= 1;
+                await MiniGames.restMini();
+                if (GameState.companion) {
+                    GameState.companion.heal();
+                    Terminal.println(`${GameState.companion.name} rests by the fire, fully healed.`, 'green');
+                }
+                await advanceDays(1);
+                Terminal.println(`You rested for the night. Health: ${GameState.player.health}`, 'green');
+                GameState.addJournalEntry(`Rested at camp for the night.`);
+                camping = false;
+                break;
+            }
+            case 2: {
+                await handleCook();
+                break;
+            }
+            case 3: {
+                await handleCampTalk();
+                break;
+            }
+            case 4: {
+                await handleTendWounds();
+                break;
+            }
+            case 5: {
+                await handleGuardDuty();
+                camping = false;
+                break;
+            }
+            case 0: {
+                Terminal.println('You pack up camp and continue your journey.', 'cyan');
+                camping = false;
+                break;
+            }
+        }
     }
-
     await Terminal.pause();
+}
+
+async function handleCampTalk() {
+    const companion = GameState.companion;
+    if (!companion) {
+        Terminal.println('You sit alone by the fire, talking to yourself.', 'dim');
+        await Terminal.pause();
+        return;
+    }
+    const dialogues = {
+        'Optimistic': [
+            'The stars are beautiful tonight. We are going to make it, I know it!',
+            'I have a good feeling about tomorrow. The dragon does not stand a chance!',
+            'Remember: every step forward is a victory. Do not give up!'
+        ],
+        'Greedy': [
+            'So... when we slay the dragon, what is the treasure split again?',
+            'I saw some shiny rocks earlier. Probably worthless, but still...',
+            'If we find gold on the road, I call dibs on the first pick.'
+        ],
+        'Brave': [
+            'I will take first watch. Nothing gets past me.',
+            'Let the beasts come. I fear no claw nor fang.',
+            'When we face the dragon, I will be right beside you.'
+        ],
+        'Paranoid': [
+            'Did you hear that? No? Good. Means they are being stealthy.',
+            'We should move camp. This spot feels... exposed.',
+            'Trust no one. Especially not smiling merchants.'
+        ],
+        'Loyal': [
+            'No matter what happens, I will not leave your side.',
+            'You have my spear and my life. Both are yours to command.',
+            'I followed you this far. I will follow you to the end.'
+        ],
+        'Cynical': [
+            'So we are just... walking toward a dragon. Sure. Great plan.',
+            'The fire is warm. Enjoy it. Probably the last warmth we will feel.',
+            'Optimism is just denial with better branding.'
+        ]
+    };
+    const lines = dialogues[companion.personality] || dialogues['Optimistic'];
+    Terminal.println(`\n${companion.name} looks at you across the fire.`, 'cyan');
+    Terminal.println(`"${Utils.choice(lines)}"`, 'white');
+    companion.modifyRelationship(+5);
+    Terminal.println(`Your bond with ${companion.name} deepens.`, 'green');
+    GameState.addJournalEntry(`Spoke with ${companion.name} by the campfire.`);
+    await Terminal.pause();
+}
+
+async function handleTendWounds() {
+    if (GameState.resources.herbs <= 0) {
+        Terminal.println('You have no herbs to tend wounds.', 'red');
+        await Terminal.pause();
+        return;
+    }
+    const maxHerbs = GameState.resources.herbs;
+    const herbs = await Terminal.inputNumber(`How many herbs to use? (1-${maxHerbs}): `, 1, maxHerbs);
+    const heal = herbs * Utils.randInt(8, 15);
+    const oldHp = GameState.player.health;
+    GameState.player.health = Math.min(GameState.player.maxHealth, GameState.player.health + heal);
+    Resources.modify('herbs', -herbs);
+    const actualHeal = GameState.player.health - oldHp;
+    Terminal.println(`You apply a poultice and restore ${actualHeal} HP.`, 'green');
+    if (GameState.companion && GameState.companion.hp < GameState.companion.maxHp) {
+        const cheal = Math.floor(heal / 2);
+        GameState.companion.hp = Math.min(GameState.companion.maxHp, GameState.companion.hp + cheal);
+        Terminal.println(`${GameState.companion.name} benefits from the treatment too. (+${cheal} HP)`, 'green');
+    }
+    GameState.addJournalEntry(`Tended wounds at camp, using ${herbs} herbs.`);
+    await Terminal.pause();
+}
+
+async function handleGuardDuty() {
+    GameState.resources.food -= 1;
+    GameState.resources.woodCords -= 1;
+    const oldHp = GameState.player.health;
+    const heal = Utils.randInt(10, 25);
+    GameState.player.health = Math.min(GameState.player.maxHealth, GameState.player.health + heal);
+    Terminal.println('You sleep lightly, one hand on your weapon.', 'yellow');
+    Terminal.println(`Recovered ${GameState.player.health - oldHp} HP.`, 'green');
+    if (GameState.companion) {
+        const cheal = Utils.randInt(5, 15);
+        GameState.companion.hp = Math.min(GameState.companion.maxHp, GameState.companion.hp + cheal);
+        Terminal.println(`${GameState.companion.name} keeps watch. (+${cheal} HP)`, 'green');
+    }
+    if (Math.random() < 0.3) {
+        const found = Utils.choice(['supplies', 'food', 'herbs', 'gold']);
+        const amt = found === 'gold' ? Utils.randInt(5, 15) : Utils.randInt(1, 3);
+        if (found === 'gold') Resources.modifyGold(amt);
+        else Resources.modify(found, amt);
+        Terminal.println(`During your watch you spot ${found === 'gold' ? `${amt} gold` : `${amt} ${found}`} nearby!`, 'green');
+    } else {
+        Terminal.println('The night passes without incident.', 'cyan');
+    }
+    GameState.addJournalEntry(`Kept guard duty at camp.`);
+    await advanceDays(1);
 }
 
 async function handleCook() {
@@ -484,7 +631,7 @@ async function handleCook() {
         GameState.combat.potions += potionsGained;
         Terminal.println(`Used ${herbsToCook} herbs and ${suppliesToCook} supplies. Gained ${potionsGained} potions.`, 'green');
     }
-
+    GameState.addJournalEntry(`Cooked at camp.`);
     await Terminal.pause();
 }
 

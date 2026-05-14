@@ -57,13 +57,17 @@ class Armor {
 
 // Section 5: Entity Classes ----------------------------------------------------
 
+const COMPANION_PERSONALITIES = ['Optimistic', 'Greedy', 'Brave', 'Paranoid', 'Loyal', 'Cynical'];
+
 class Companion {
-    constructor(name, hp, dpr, gpCost) {
+    constructor(name, hp, dpr, gpCost, personality = null) {
         this.name = name;
         this.hp = hp;
         this.maxHp = hp;
         this.dpr = dpr;
         this.gpCost = gpCost;
+        this.personality = personality || Utils.choice(COMPANION_PERSONALITIES);
+        this.relationship = 50; // 0-100
     }
 
     attack() {
@@ -82,6 +86,18 @@ class Companion {
         this.hp = this.maxHp;
     }
 
+    modifyRelationship(delta) {
+        this.relationship = Utils.clamp(this.relationship + delta, 0, 100);
+    }
+
+    getMood() {
+        if (this.relationship >= 80) return 'Devoted';
+        if (this.relationship >= 60) return 'Friendly';
+        if (this.relationship >= 40) return 'Neutral';
+        if (this.relationship >= 20) return 'Wary';
+        return 'Hostile';
+    }
+
     toDict() {
         return {
             __type__: 'Companion',
@@ -89,13 +105,16 @@ class Companion {
             hp: this.hp,
             maxHp: this.maxHp,
             dpr: this.dpr,
-            gpCost: this.gpCost
+            gpCost: this.gpCost,
+            personality: this.personality,
+            relationship: this.relationship
         };
     }
 
     static fromDict(d) {
-        const c = new Companion(d.name, d.hp, d.dpr, d.gpCost);
+        const c = new Companion(d.name, d.hp, d.dpr, d.gpCost, d.personality);
         c.maxHp = d.maxHp || d.hp;
+        c.relationship = d.relationship ?? 50;
         return c;
     }
 }
@@ -111,6 +130,7 @@ class Enemy {
         this.minDamage = dprRange[0];
         this.maxDamage = dprRange[1];
         this.xp = xp;
+        this.stunned = false;
         this.loot = this.generateLoot(xp);
     }
 
@@ -131,12 +151,16 @@ class Enemy {
     }
 
     regularAttack(playerAc) {
-        const hit = Utils.rollD20() + this.atkModifier * 2;
+        const roll = Utils.rollD20();
+        if (roll === 20) return this.minDamage * 2;
+        const hit = roll + this.atkModifier * 2;
         return hit >= playerAc ? this.minDamage : 0;
     }
 
     mediumAttack(playerAc) {
-        const hit = Utils.rollD20() + this.atkModifier;
+        const roll = Utils.rollD20();
+        if (roll === 20) return this.maxDamage + 5;
+        const hit = roll + this.atkModifier;
         if (hit >= playerAc) {
             return Utils.randInt(this.minDamage, this.maxDamage);
         }
@@ -144,12 +168,15 @@ class Enemy {
     }
 
     bigAttack(playerAc) {
-        const hit = Utils.rollD20() + Math.floor(this.atkModifier / 2);
+        const roll = Utils.rollD20();
+        if (roll === 20) return this.maxDamage * 2;
+        const hit = roll + Math.floor(this.atkModifier / 2);
         return hit >= playerAc ? this.maxDamage : 0;
     }
 
     attack(playerAc, playerDefending) {
-        const attackChoice = Utils.choice(['regularAttack', 'mediumAttack', 'bigAttack']);
+        const attackChoice = this._nextAttack || Utils.choice(['regularAttack', 'mediumAttack', 'bigAttack']);
+        this._nextAttack = null;
         const damage = this[attackChoice](playerAc);
         return damage;
     }

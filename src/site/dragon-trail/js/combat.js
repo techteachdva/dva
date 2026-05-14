@@ -22,6 +22,7 @@ async function handleCombat(enemy, companion) {
     let playerDefended = false;
     let initialEnemyHp = enemy.hp;
     let fled = false;
+    let companionHp = companion ? companion.hp : 0;
 
     while (enemy.hp > 0 && playerHp > 0) {
         Terminal.clear();
@@ -33,23 +34,56 @@ async function handleCombat(enemy, companion) {
         enemy.hp = result.enemyHp;
         playerDefended = result.playerDefended;
         if (companion) companion.hp = result.companionHp;
+        if (enemy.stunned) {
+            Terminal.println(`\nThe ${enemy.name} is stunned and cannot act!`, 'magenta');
+            enemy.stunned = false;
+            await Terminal.pause();
+            continue;
+        }
 
         fled = result.fled;
         if (fled) {
             break;
         }
 
+        // Companion auto-attack
+        if (companion && companion.isAlive() && enemy.hp > 0) {
+            const companionDmg = companion.attack();
+            enemy.hp -= companionDmg;
+            Terminal.println(`${companion.name} strikes the ${enemy.name} for ${companionDmg} damage!`, 'cyan');
+        }
+
         // Enemy turn
         if (enemy.hp > 0) {
+            await enemyTelegraph(enemy);
             const playerAc = GameState.player.acBonus + getPlayerAc();
             const enemyDamage = enemy.attack(playerAc, playerDefended);
             if (companion && companion.isAlive()) {
                 companion.takeDamage(enemyDamage);
+                companion.modifyRelationship(+5); // gratitude for taking hits
                 Terminal.println(`${companion.name} absorbs ${enemyDamage} damage!`, 'yellow');
+                if (companion.hp <= 0) {
+                    Terminal.println(`${companion.name} has fallen!`, 'red');
+                    companion.modifyRelationship(-30);
+                } else if (companion.hp < companion.maxHp * 0.25) {
+                    Terminal.println(`${companion.name} is critically wounded!`, 'red');
+                    companion.modifyRelationship(-10);
+                }
             } else {
                 playerHp -= enemyDamage;
                 Terminal.println(`The ${enemy.name} attacks you for ${enemyDamage} damage!`, 'red');
+                if (enemyDamage > 15) Terminal.shakeScreen();
             }
+        }
+
+        // Companion sacrifice check
+        if (companion && companion.isAlive() && playerHp <= 0 && companion.relationship >= 80) {
+            playerHp = 1;
+            companion.hp = 0;
+            Terminal.println(`\n${companion.name} throws themselves in front of you!`, 'magenta');
+            Terminal.println(`They take the fatal blow. You survive with 1 HP.`, 'red');
+            Terminal.println(`${companion.name} dies in your arms.`, 'red');
+            await Terminal.pause();
         }
 
         // Cooldowns
@@ -62,16 +96,35 @@ async function handleCombat(enemy, companion) {
     // Result
     if (fled) {
         Terminal.println('You got away safely.', 'green');
+        GameState.addJournalEntry(`Fled from a ${enemy.name} at mile ${GameState.journey.totalMilesTraveled}.`);
+        if (Math.random() < 0.4) {
+            const nemesisHp = Math.floor(enemy.maxHp * 0.6);
+            GameState.data.nemeses.push({
+                name: `Wounded ${enemy.name}`,
+                ac: enemy.ac,
+                hp: nemesisHp,
+                maxHp: nemesisHp,
+                atkModifier: enemy.atkModifier + 1,
+                dprRange: enemy.dprRange,
+                xp: Math.floor(enemy.xp * 0.8)
+            });
+            Terminal.println(`The ${enemy.name} limps away, vengeful...`, 'red');
+        }
         await Terminal.pause();
     } else if (enemy.hp <= 0) {
         Terminal.println(`You defeated the ${enemy.name}!`, 'green');
         const xp = Math.floor(4.5 * initialEnemyHp);
         GameState.data.score += xp;
         Terminal.println(`You gained ${xp} XP!`, 'green');
+        GameState.addJournalEntry(`Defeated a ${enemy.name} and gained ${xp} XP.`);
+        if (companion && companion.isAlive()) {
+            companion.modifyRelationship(+10);
+            Terminal.println(`${companion.name} looks proud of the victory.`, 'cyan');
+        }
         await handleLoot(enemy.loot);
     } else if (playerHp <= 0) {
         Terminal.println(`You were defeated by the ${enemy.name}!`, 'red');
-        await handleGameOver();
+        await handleGameOver('combat');
         return;
     }
 
@@ -133,6 +186,10 @@ async function handlePlayerTurn(choice, enemy, playerDefended, playerHp, atkModi
                 GameState.player.stunSplosionCooldown = 5;
                 const stunDamage = playerAttack(enemy.ac, 'stunsplosion');
                 enemyHp -= stunDamage;
+                if (stunDamage > 0) {
+                    enemy.stunned = true;
+                    Terminal.println(`The ${enemy.name} reels from the blast! Stunned!`, 'magenta');
+                }
             }
             break;
         case 6: // Use Potion
@@ -164,16 +221,20 @@ function playerAttack(enemyAc, attackType) {
     const baseDamage = weapon ? weapon.damageRange : [1, 3];
     const toHit = weapon ? weapon.toHitBonus : 0;
     const roll = Utils.rollD20();
-    const total = roll + GameState.player.survival + toHit;
-    Terminal.println(`Player attack roll: ${roll} + Survival: ${GameState.player.survival} + To Hit: ${toHit} = ${total}`);
-    if (total >= enemyAc) {
+    const weatherMod = typeof getWeatherCombatMod === 'function' ? getWeatherCombatMod() : 0;
+    const total = roll + GameState.player.survival + toHit + weatherMod;
+    const isCrit = roll === 20;
+    Terminal.println(`Player attack roll: ${roll} + Survival: ${GameState.player.survival} + To Hit: ${toHit} + Weather: ${weatherMod} = ${total}`);
+    if (isCrit || total >= enemyAc) {
         let damage;
-        if (attackType === 'melee') damage = Utils.randInt(...baseDamage);
-        else if (attackType === 'ranged') damage = Utils.randInt(10, 25);
-        else if (attackType === 'magic') damage = Utils.randInt(10, 40);
-        else if (attackType === 'stunsplosion') damage = Utils.randInt(50, 70);
-        else if (attackType === 'defend') damage = Utils.randInt(10, 20);
-        Terminal.println(`Hit! Dealt ${damage} damage.`, 'green');
+        if (attackType === 'melee') damage = isCrit ? baseDamage[1] + 5 : Utils.randInt(...baseDamage);
+        else if (attackType === 'ranged') damage = isCrit ? 35 : Utils.randInt(10, 25);
+        else if (attackType === 'magic') damage = isCrit ? 55 : Utils.randInt(10, 40);
+        else if (attackType === 'stunsplosion') damage = isCrit ? 90 : Utils.randInt(50, 70);
+        else if (attackType === 'defend') damage = isCrit ? 30 : Utils.randInt(10, 20);
+        const label = isCrit ? 'CRITICAL HIT!' : 'Hit!';
+        Terminal.println(`${label} Dealt ${damage} damage.`, isCrit ? 'magenta' : 'green');
+        if (isCrit) Terminal.shakeScreen();
         return damage;
     } else {
         Terminal.println('Miss!', 'yellow');
@@ -320,6 +381,33 @@ function getMiniBossAc() {
     return acTable[survival] || 23;
 }
 
+async function enemyTelegraph(enemy) {
+    const attackType = Utils.choice(['regularAttack', 'mediumAttack', 'bigAttack']);
+    enemy._nextAttack = attackType;
+    const typeLabels = {
+        regularAttack: 'quick jab',
+        mediumAttack: 'balanced strike',
+        bigAttack: 'heavy swing'
+    };
+    const telegraphs = {
+        regularAttack: [
+            `The ${enemy.name} feints left and darts in for a quick jab!`,
+            `The ${enemy.name} snaps forward with a rapid strike!`
+        ],
+        mediumAttack: [
+            `The ${enemy.name} winds up for a balanced strike!`,
+            `The ${enemy.name} shifts its weight, preparing a solid blow!`
+        ],
+        bigAttack: [
+            `The ${enemy.name} raises its weapon high for a devastating swing!`,
+            `The ${enemy.name} roars and commits to a heavy overhead blow!`
+        ]
+    };
+    Terminal.println(`\n${Utils.choice(telegraphs[attackType])}`, 'red');
+    Terminal.println(`[Telegraph: ${typeLabels[attackType]}]`, 'yellow');
+    await Utils.delay(400);
+}
+
 async function handleLoot(loot) {
     if (loot.length === 0) return;
     Terminal.println('\nLoot obtained:', 'green');
@@ -344,7 +432,7 @@ async function printStatus(enemy, playerHp, companion) {
     Terminal.println(`Your HP: ${playerHp}`, 'green');
     Terminal.println(`Potions: ${GameState.combat.potions}`);
     if (companion && companion.isAlive()) {
-        Terminal.println(`${companion.name} HP: ${companion.hp}/${companion.maxHp}`, 'yellow');
+        Terminal.println(`${companion.name} HP: ${companion.hp}/${companion.maxHp} | ${companion.personality} | Mood: ${companion.getMood()}`, 'yellow');
     }
     Terminal.println('\nEquipped:');
     const weapon = GameState.player.equippedWeapon;

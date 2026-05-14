@@ -296,13 +296,14 @@ async function handleHelp() {
     Terminal.println('2. Travel - Move toward the dragon');
     Terminal.println('3. Hunt - Gather food');
     Terminal.println('4. Scout - Explore the area');
-    Terminal.println('5. Rest - Recover health');
+    Terminal.println('5. Camp - Rest, cook, talk, and tend wounds');
     Terminal.println('6. Cook - Prepare meals');
     Terminal.println('7. Help - This screen');
     Terminal.println('8. Credits - Game credits');
     Terminal.println('9. Save - Save your game');
     Terminal.println('10. Load - Load a saved game');
-    Terminal.println('11. Quit - Exit to main menu');
+    Terminal.println('11. Journal - Read your travel log');
+    Terminal.println('12. Quit - Exit to main menu');
     Terminal.println('0. Fight the Dragon - When available');
     Terminal.println('\nTips: Keep food and water stocked. Buy better gear. Watch your health!');
     if (typeof HighScores !== 'undefined') await HighScores.display();
@@ -366,7 +367,7 @@ function generateCompanions(count = 3) {
 function displayCompanionMenu(companions) {
     Terminal.println('\n--- Available Companions ---');
     companions.forEach((c, i) => {
-        Terminal.println(`${i + 1}. ${c.name} | HP: ${c.hp} | DPR: ${c.dpr} | Cost: ${c.gpCost} GP`);
+        Terminal.println(`${i + 1}. ${c.name} | HP: ${c.hp} | DPR: ${c.dpr} | Cost: ${c.gpCost} GP | Personality: ${c.personality}`);
     });
     Terminal.println('0. None');
 }
@@ -382,7 +383,18 @@ async function handleCompanionPurchase(companions) {
     if (GameState.resources.gold >= companion.gpCost) {
         Resources.modifyGold(-companion.gpCost);
         GameState.data.companion = companion;
+        GameState.addJournalEntry(`Hired ${companion.name} the ${companion.personality} companion for ${companion.gpCost} GP.`);
         Terminal.println(`${companion.name} joins your party!`, 'green');
+        Terminal.println(`They seem ${companion.personality.toLowerCase()}.`, 'cyan');
+        if (companion.personality === 'Greedy') {
+            Terminal.println('They keep eyeing your coin purse...', 'yellow');
+        } else if (companion.personality === 'Brave') {
+            Terminal.println('They stand tall, eager for the road ahead.', 'green');
+        } else if (companion.personality === 'Paranoid') {
+            Terminal.println('They keep glancing at the shadows.', 'yellow');
+        } else if (companion.personality === 'Optimistic') {
+            Terminal.println('They smile, confident you will succeed.', 'green');
+        }
     } else {
         Terminal.println('Not enough gold!', 'red');
     }
@@ -393,6 +405,7 @@ async function updateGameStatus() {
     Terminal.clear();
     await Terminal.showAsciiArt('status', 'green', true);
     Terminal.println(`\nDate: ${GameState.data.time.day} ${GameState.data.time.month}, Year ${GameState.data.time.year}`);
+    Terminal.println(`Weather: ${GameState.data.weather.condition}`);
     Terminal.println(`Biome: ${GameState.journey.currentBiome}`);
     Terminal.println(`Miles: ${GameState.journey.totalMilesTraveled} / ${Config.TOTAL_MILES} (Remaining: ${Config.TOTAL_MILES - GameState.journey.totalMilesTraveled})`);
 
@@ -516,6 +529,11 @@ async function handleGameStart() {
         Terminal.println('You received a Rusty Sword.', 'green');
     }
 
+    GameState.addJournalEntry(`Began the journey as ${GameState.player.name}, survival skill ${GameState.player.survival}.`);
+    if (GameState.companion) {
+        GameState.addJournalEntry(`Hired ${GameState.companion.name} the ${GameState.companion.personality} companion.`);
+    }
+
     await Terminal.pause();
     await handlePurchase();
 }
@@ -527,9 +545,9 @@ async function handleGame() {
         await Terminal.showAsciiArt('main_menu', 'yellow', false);
         Terminal.println('\nWhat would you like to do?');
         Terminal.println(' (1) Status    (2) Travel    (3) Hunt');
-        Terminal.println(' (4) Scout     (5) Rest      (6) Cook');
+        Terminal.println(' (4) Scout     (5) Camp      (6) Cook');
         Terminal.println(' (7) Help      (8) Credits   (9) Save');
-        Terminal.println(' (10) Load     (11) Quit');
+        Terminal.println(' (10) Load     (11) Journal   (12) Quit');
         if (GameState.journey.dragonEncountered) {
             Terminal.println(' (0) FIGHT THE DRAGON!', 'red', true);
         }
@@ -548,13 +566,14 @@ async function handleGame() {
             case '2': await travel(); await triggerEnvironmentalEvent(); break;
             case '3': await handleHunt(); break;
             case '4': await handleScout(); await triggerEnvironmentalEvent(); break;
-            case '5': await handleRest(); break;
+            case '5': await handleCamp(); break;
             case '6': await handleCook(); break;
             case '7': await handleHelp(); break;
             case '8': await handleCredits(); break;
             case '9': await handleSaveMenu(); break;
             case '10': await handleLoadMenu(); break;
-            case '11': await handleGameOver(); break;
+            case '11': GameState.displayJournal(); await Terminal.pause(); break;
+            case '12': await handleGameOver(); break;
             case '0':
                 if (GameState.journey.dragonEncountered) await handleBossFight();
                 break;

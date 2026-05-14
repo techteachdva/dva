@@ -10,6 +10,7 @@ const GameState = {
     getDefaultState() {
         return {
             time: { day: 1, month: Config.MONTHS[0], year: 0 },
+            weather: { condition: 'Clear', duration: 0 },
             resources: {
                 food: 10, water: 8, waterskins: 1, herbs: 1, supplies: 10,
                 wood: 3, woodCords: 1, gold: 0
@@ -18,7 +19,8 @@ const GameState = {
                 totalMilesTraveled: 0,
                 dragonEncountered: false,
                 currentBiome: Utils.choice(Config.BIOMES),
-                miniBossDefeated: false
+                miniBossDefeated: false,
+                crossroadsMet: { 250: false, 500: false, 750: false }
             },
             player: {
                 name: '',
@@ -37,6 +39,8 @@ const GameState = {
                 atkBonus: 0
             },
             combat: { potions: 0 },
+            nemeses: [],
+            journal: [],
             seed: 0,
             lastEncounterDay: 0,
             encounterChance: 0.01,
@@ -231,6 +235,34 @@ const GameState = {
 
     clearLegacy() {
         localStorage.removeItem('dt_legacy');
+    },
+
+    // Journal System -----------------------------------------------------------
+
+    addJournalEntry(text) {
+        const entry = {
+            day: this.data.time.day,
+            month: this.data.time.month,
+            year: this.data.time.year,
+            mile: this.data.journey.totalMilesTraveled,
+            biome: this.data.journey.currentBiome,
+            text: text
+        };
+        this.data.journal.push(entry);
+    },
+
+    displayJournal() {
+        if (this.data.journal.length === 0) {
+            Terminal.println('\nYour journal is empty.', 'dim');
+            return;
+        }
+        Terminal.println('\n--- Travel Journal ---', 'cyan');
+        const recent = this.data.journal.slice(-20);
+        for (const entry of recent) {
+            const dateStr = `Day ${entry.day} ${entry.month}, Year ${entry.year}`;
+            Terminal.println(`\n[${dateStr}] Mile ${entry.mile} - ${entry.biome}`, 'yellow');
+            Terminal.println(`  ${entry.text}`, 'white');
+        }
     },
 
     // Utility getters ----------------------------------------------------------
