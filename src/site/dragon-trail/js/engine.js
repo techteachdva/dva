@@ -19,7 +19,7 @@ class TerminalEngine {
         this.isWaitingForInput = false;
         this.currentResolve = null;
         this.currentPrompt = '';
-        this.typingSpeed = 12; // ms per character
+        this.typingSpeed = 3; // ms per character
         this.scrollOnPrint = true;
 
         this.setupInputListener();
@@ -202,10 +202,11 @@ class TerminalEngine {
         this.output.appendChild(pre);
 
         if (animate) {
-            for (let i = 0; i < art.length; i++) {
-                pre.textContent += art[i];
+            const lines = art.split('\n');
+            for (const line of lines) {
+                pre.textContent += line + '\n';
                 this.scrollToBottom();
-                await Utils.delay(this.typingSpeed);
+                await Utils.delay(this.typingSpeed * 2);
             }
         } else {
             pre.textContent = art;
