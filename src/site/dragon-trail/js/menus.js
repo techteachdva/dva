@@ -490,11 +490,20 @@ async function handleGameStart() {
 
     Terminal.println('\nWelcome to Dragon Trail, ' + GameState.player.name + '!', 'green');
     Terminal.println('How to play: Travel 1000 miles, fight the dragon, survive.', 'cyan');
+    Terminal.println('');
+    Terminal.println('TIP: Your birth name determines your starting fortune!', 'yellow');
+    Terminal.println('Different names grant different amounts of starting gold.', 'yellow');
     await Terminal.pause();
 
     const startGold = 50 + Utils.randInt(1, 100);
     Resources.modifyGold(startGold);
     Terminal.println(`You received ${startGold} starting gold.`, 'green');
+    Terminal.println('');
+    Terminal.println('You can spend gold to hire a companion and buy supplies.', 'cyan');
+    Terminal.println('Companions fight alongside you and absorb enemy damage.', 'cyan');
+    Terminal.println('Supplies include food, water, weapons, and armor.', 'cyan');
+    Terminal.println('Stock up now — prices change based on your name!', 'cyan');
+    await Terminal.pause();
 
     const companions = generateCompanions(3);
     displayCompanionMenu(companions);

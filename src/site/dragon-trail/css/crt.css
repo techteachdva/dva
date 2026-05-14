@@ -13,7 +13,7 @@
     --crt-magenta: #ff33ff;
     --crt-yellow: #ffff33;
     --crt-white: #f0f0f0;
-    --phosphor-glow: 0 0 4px currentColor, 0 0 8px currentColor, 0 0 12px rgba(51, 255, 51, 0.3);
+    --phosphor-glow: 0 0 1px currentColor, 0 0 3px rgba(51, 255, 51, 0.15);
     --font-terminal: 'VT323', 'Fira Code', 'Courier New', monospace;
     --scanline-color: rgba(0, 0, 0, 0.15);
     --scanline-spacing: 4px;
@@ -201,8 +201,8 @@ body {
     display: flex;
     flex-direction: column;
     font-family: var(--font-terminal);
-    font-size: 16px;
-    line-height: 1.4;
+    font-size: 18px;
+    line-height: 1.5;
     color: var(--crt-fg);
     text-shadow: var(--phosphor-glow);
     overflow: hidden;
@@ -242,7 +242,7 @@ body {
 .terminal-prompt {
     color: var(--crt-fg-bright);
     font-weight: bold;
-    text-shadow: 0 0 8px var(--crt-fg);
+    text-shadow: 0 0 3px rgba(51,255,51,0.3);
     flex-shrink: 0;
 }
 
@@ -252,7 +252,7 @@ body {
     outline: none;
     color: var(--crt-fg);
     font-family: var(--font-terminal);
-    font-size: 16px;
+    font-size: 18px;
     flex: 1;
     caret-color: transparent;
     text-shadow: var(--phosphor-glow);
@@ -272,14 +272,14 @@ body {
 }
 
 /* Color Classes */
-.color-red { color: var(--crt-red); text-shadow: 0 0 4px var(--crt-red-glow), 0 0 8px var(--crt-red-glow); }
-.color-green { color: var(--crt-fg-bright); text-shadow: 0 0 4px rgba(51,255,51,0.4); }
-.color-yellow { color: var(--crt-yellow); text-shadow: 0 0 4px rgba(255,255,51,0.4); }
-.color-blue { color: var(--crt-blue); text-shadow: 0 0 4px rgba(51,102,255,0.4); }
-.color-cyan { color: var(--crt-cyan); text-shadow: 0 0 4px rgba(0,255,255,0.4); }
-.color-magenta { color: var(--crt-magenta); text-shadow: 0 0 4px rgba(255,51,255,0.4); }
-.color-white { color: var(--crt-white); text-shadow: 0 0 4px rgba(240,240,240,0.3); }
-.color-amber { color: var(--crt-amber); text-shadow: 0 0 4px rgba(255,176,0,0.4); }
+.color-red { color: var(--crt-red); text-shadow: 0 0 2px rgba(255,51,51,0.3); }
+.color-green { color: var(--crt-fg-bright); text-shadow: 0 0 2px rgba(51,255,51,0.25); }
+.color-yellow { color: var(--crt-yellow); text-shadow: 0 0 2px rgba(255,255,51,0.25); }
+.color-blue { color: var(--crt-blue); text-shadow: 0 0 2px rgba(51,102,255,0.25); }
+.color-cyan { color: var(--crt-cyan); text-shadow: 0 0 2px rgba(0,255,255,0.25); }
+.color-magenta { color: var(--crt-magenta); text-shadow: 0 0 2px rgba(255,51,255,0.25); }
+.color-white { color: var(--crt-white); text-shadow: 0 0 2px rgba(240,240,240,0.2); }
+.color-amber { color: var(--crt-amber); text-shadow: 0 0 2px rgba(255,176,0,0.25); }
 .color-dim { color: var(--crt-fg-dim); }
 
 /* Bright modifier */
@@ -295,8 +295,8 @@ body {
 .ascii-art {
     display: block;
     white-space: pre;
-    font-size: 10px;
-    line-height: 1.1;
+    font-size: 14px;
+    line-height: 1.15;
     animation: shimmer 4s ease-in-out infinite;
 }
 
@@ -452,7 +452,7 @@ body {
         border-radius: 30px / 10px;
     }
     .terminal {
-        font-size: 14px;
+        font-size: 16px;
         padding: 16px 20px;
     }
     .crt-monitor {
@@ -485,7 +485,7 @@ body.is-fullscreen .crt-screen {
     border-radius: 0;
 }
 body.is-fullscreen .terminal {
-    font-size: clamp(14px, 2.2vh, 20px);
+    font-size: clamp(16px, 2.5vh, 24px);
     padding: 2vh 3vw;
 }
 body.is-fullscreen .controls-panel {
@@ -500,8 +500,8 @@ body.is-fullscreen .controls-panel {
 .ascii-art {
     display: block;
     white-space: pre;
-    font-size: 10px;
-    line-height: 1.1;
+    font-size: 14px;
+    line-height: 1.15;
     animation: shimmer 4s ease-in-out infinite;
     overflow-x: auto;
 }
