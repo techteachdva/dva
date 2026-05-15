@@ -53,7 +53,7 @@ Wright organizes game components into three topologies, ordered by flexibility:
 **Dragon Trail mapping:**
 - **Agents** = Companions (alive/dead/changing HP), wandering merchants, random encounters
 - **Networks** = Biome adjacency (MARINE → WETLAND → TROPICAL_RAINFOREST), resource interdependencies (food → rest → health → survival)
-- **Layers** = The fixed 1000-mile distance, the day/month/year time system, the survival skill cap of 8
+- **Layers** = The fixed 1000-mile distance, the day/month/year time system, the difficulty/skill selection at character creation
 
 ---
 
@@ -68,7 +68,8 @@ Phil Carroll is a tabletop RPG designer, dungeon master, and digital game creato
 > "LISTEN TO YOUR PLAYERS. They will give you countless pieces of information about what they find fun and what they care about in the story. Focus on the fun, feed their hearts with what they desire. And then when you have them hooked, poke them. But not too much."
 
 **Dragon Trail application:**
-- The survival skill input (0-8) lets players self-select difficulty — we listen to their preferred challenge level
+- The difficulty selection screen presents four named options with transparent descriptions — we listen to their preferred challenge level and explain exactly what changes
+- The skill selection screen offers seven character traits that affect every system — players choose an identity, not just a number
 - Companion choice is emotional investment — players pick the name/stats that resonate
 - The "cheat codes" (bubblegum, rowan, smudge, jillybean) are the "poke" — hidden fun for explorers, not required
 - If players hoard resources, the game pokes with inventory weight limits and auto-drop
@@ -127,7 +128,7 @@ Carroll admires NetHack's permadeath not because it's cruel, but because it make
 - Food/water depletion is a slow permadeath — players see it coming and can act
 - Checkpoints don't exist in the wilderness — death means game over, not respawn
 - The "Game Over" screen shows final score, miles traveled, and high scores — the run mattered
-- Hardcore players can challenge themselves: no companions, survival 0, minimal supplies
+- Hardcore players can challenge themselves: "I've played NetHack. Do your Worst." (difficulty 3), survival 0, minimal supplies, no companion
 
 ### 2.6 Resource Management as Constant Tension
 
@@ -149,7 +150,7 @@ Carroll's Hunger Die system makes survival a constantly depleting resource. The 
 
 **Dragon Trail application:**
 - The tutorial/help screen is always available (command 7) — permission to be a beginner
-- Survival 0 is valid — the game doesn't mock low skill, it adapts (lower AC, harder enemies)
+- "I'm just a baby. Easy please." is valid — the game doesn't mock low skill, it adapts (higher AC, easier enemies, slower mini-games)
 - The first shop visit teaches pricing without punishment — if you buy nothing, that's a valid choice
 - Cheat codes exist for players who want to experiment without consequence
 
@@ -162,7 +163,7 @@ Carroll's Hunger Die system makes survival a constantly depleting resource. The 
 **Dragon Trail application:**
 - 13 biomes exist but only a subset appear per playthrough — no bloat
 - The encounter table is massive but filtered by biome — only relevant enemies appear
-- The "how to play" intro is 2 sentences — vital info only
+- The intro is 3 sentences of premise + difficulty descriptions + skill descriptions — verbose but never opaque
 - Save/load system has 3 slots — enough for experimentation, not enough to encourage save-scumming
 
 ---
@@ -312,19 +313,40 @@ Identical outcomes, different phrasing, different choices:
 - Within 2 minutes, the player has made 4 meaningful choices
 - The first travel shows the day counter, biome, and miles — foreshadowing the 1000-mile goal
 
-### 5.2 Difficulty Levels
+### 5.2 Difficulty Levels (v5.2)
 
 **Source: Sid Meier**
 
 > "A number of years ago I gave a talk on difficulty levels and was very convincingly made the point that four difficulty levels were the perfect number... I was wrong about that. Apparently we need nine difficulty levels."
 
-**Dragon Trail application:**
-- Survival skill 0-8 = 9 self-selected difficulty levels
-- Survival 0: AC 13, carry 55 lbs, mini-boss AC 23 (harder enemies)
-- Survival 8: AC 17, carry 130 lbs, mini-boss AC 15 (easier enemies)
-- This is perceived progress — even though the game doesn't explicitly label "Easy/Hard," the player feels the difference
+**Dragon Trail v5.2 application:** Four named difficulties replace the opaque survival skill slider. Each difficulty is transparent about what it changes, presented with verbose descriptions at character creation.
 
-### 5.3 Explaining Setbacks
+| Difficulty | Internal | Survival | Start Rel | Rel Gain | Found Obj | Carry Cap | Food/Water | To-Hit | Dmg Taken | Mini-Game Speed |
+|---|---|---|---|---|---|---|---|---|---|---|
+| I'm just a baby. Easy please. | 0 | 8 | 65 | +50% | 12% | 140 | -0.5/day | +2 | -20% | Slowest |
+| Thank you sir may I have a shMedium? | 1 | 5 | 50 | Normal | 8% | 100 | Normal | +1 | Normal | Normal |
+| Don't Patronize Me, Bring The Difficult | 2 | 2 | 40 | -25% | 6% | 70 | +1 extra / 3 days | 0 | +10% | Fast |
+| I've played NetHack. Do your Worst. | 3 | 0 | 30 | -50% | 4% | 55 | +1 extra / day | -1 | +25% | Fastest |
+
+**Design principle:** Difficulty is not just a number — it is a contract. The player knows exactly what they are signing up for. The names are memorable, the descriptions are verbose, and every system (combat, travel, camping, merchants, mini-games, weather) responds to the chosen difficulty.
+
+### 5.3 Character Skills (Traits) — v5.2
+
+Seven character creation choices affect gameplay across all systems. Skills are chosen after difficulty and name, making character creation a three-step identity build: difficulty (challenge), name (identity), skill (playstyle).
+
+| Skill | Effect | Systems Affected |
+|---|---|---|
+| **Sated** | Food/water consumption during travel reduced by 1 per tick | Travel, advanceDays |
+| **Outdoors Type** | Scouting for wood/water yields +50% bonus; finds extra wood on environmental events | Scout, environmental events |
+| **Hunter** | Hunting mini-game gets +2 modifier bonus; scouting for food yields +50% | Hunt, scout |
+| **Storyteller** | Campfire talk gives +10 relationship (instead of +5); companion starts with +10 relationship | Camp talk, companion purchase |
+| **Penny-Pincher** | Start with +50 GP; all shop prices reduced by 15% | Starting gold, shop prices |
+| **Smooth-Talker** | Merchant trade rates improved by 25%; special dialogues with traders | Trade, purchase |
+| **Potion Seller** | At camp, can brew 1d6 potions for free once per camp session; can sell potions to any merchant for 3x base price | Camp cook, merchant sell |
+
+**Design principle:** Skills are not passive bonuses — they unlock new options. Potion Seller adds a new camp action. Smooth-Talker adds new trader dialogue. Storyteller changes relationship math. Each skill creates a different *experience* of the same systems.
+
+### 5.4 Explaining Setbacks
 
 **Source: Sid Meier**
 
@@ -446,16 +468,21 @@ The monitor bezel, power LED, and scanlines are not decoration — they are the 
 3. Be emotionally invested ("I named my character and picked a companion")
 4. Know what the game promises ("1000 miles, a dragon at the end, and survival matters")
 
-**Intro sequence:**
+**Intro sequence (v5.2):**
 ```
-[Title ASCII art] → "Enter your name" → 
-"Survival skill (0-8)" → 
+[Title ASCII art] → 
+"A dragon has awoken. You are walking toward it. What happens first is up to you." → 
+[Difficulty selection: 4 named options with verbose descriptions] → 
+"Enter your name" → 
+[Skill selection: 7 traits with descriptions] → 
 "Welcome to Dragon Trail, [name]!" → 
 "Your birth name determines your starting fortune..." → 
 "You received [gold] starting gold." → 
 "You can spend gold to hire a companion..." → 
 [Companion menu] → [Shop] → [First travel]
 ```
+
+**Design change rationale:** The original "Survival skill (0-8)" was opaque. Players did not know what survival did, why it mattered, or how it felt. The v5.2 intro explains the premise in 3 sentences, presents difficulty as a named choice with transparent consequences, and lets players pick a skill that defines their playstyle. Within 3 minutes, the player has made 6 meaningful choices.
 
 ### 8.2 World Progression as Curriculum
 
@@ -472,43 +499,49 @@ The monitor bezel, power LED, and scanlines are not decoration — they are the 
 
 ### 8.3 Combat Design Patterns
 
-**Current system analysis:**
+**Current system (v5.2) analysis:**
 - Turn-based menu: Melee / Ranged / Defend / Magic / StunSplosion / Potion / Flee
-- Roll d20 + survival + weapon toHit vs enemy AC
+- Roll d20 + survival + weapon toHit + difficulty modifier vs enemy AC
 - Enemy attacks automatically; companion absorbs damage if alive
+- Companion auto-attacks each turn (implemented in v5.2)
+- Critical hits on natural 20 (2x damage) and natural 1 (miss) — implemented
+- Enemy telegraph messages before every attack — 15+ multi-sentence telegraphs
+- Screen shake on damage, flash red on big hits, flash green on heals
+- StunSplosion actually stuns (skips enemy's next turn)
+- Difficulty modifiers: Easy (+2 to-hit, -20% damage taken), NetHack (-1 to-hit, +25% damage taken)
+- Companion relationship changes scaled by difficulty (Easy = +50% rel gain, NetHack = -50%)
 
 **Improvement roadmap:**
 
 | Priority | Improvement | Rationale |
 |----------|-------------|-----------|
-| **Immediate** | StunSplosion should actually stun (skip enemy's next turn) | The name promises it; delivers only damage |
-| **Immediate** | Add critical hits (natural 20 = 2x damage) | Adds excitement and "story moments" |
-| **Immediate** | Companion auto-attacks each turn | Companion feels useful, not just a sponge |
-| **Short-term** | Enemy telegraph messages before attacks | "The Manticore rears back!" creates tension |
-| **Short-term** | Screen shake on big hits | Visual feedback for damage |
 | **Medium-term** | Give attacks identity (melee = reliable, ranged = safe, magic = high variance) | Meaningful choices, not just different numbers |
 | **Medium-term** | Companion command menu (attack/defend/heal) | Player agency over companion |
 | **Long-term** | Combo system (melee → ranged = bonus damage) | Rewards tactical thinking |
 | **Long-term** | Enemy rage mode (< 25% HP = +2 attack, flashes red) | Makes low-HP enemies scary |
 
-### 8.4 Resource Loop Design
+### 8.4 Resource Loop Design (v5.2)
 
 **The core loop:**
 ```
-Travel → Consumes food/water → 
-  Hunt → Consumes supplies, gains food → 
-    Scout → Consumes food/health, gains resources → 
+Travel → Consumes food/water (scaled by difficulty + Sated trait) → 
+  Hunt → Consumes supplies, gains food (Hunter trait bonus) → 
+    Scout → Consumes food/health, gains resources (Outdoors Type bonus) → 
       Rest → Consumes food/wood, restores health → 
-        [Repeat until 1000 miles or death]
+        Camp Talk → Raises companion relationship (Storyteller bonus) → 
+          Cook → Brew potions for free (Potion Seller trait, once per camp) → 
+            [Repeat until 1000 miles or death]
 ```
 
-**Tension points:**
-- Every travel day is a resource tax
-- Every rest is a resource investment for health
-- Every hunt is a gamble (wrong weapon = wasted supplies)
-- Every scout is a risk (low food/health = can't scout)
+**Difficulty-scaled tension points:**
+- Easy: 50% chance to consume 0 food or water per travel day; +50% companion relationship gains
+- NetHack: +1 extra food/water consumed every day; -50% relationship gains; -1 to-hit; +25% damage taken
+- Every travel day is a resource tax, but the tax rate is chosen by the player at the start
+- Every rest is a resource investment for health, but Sated reduces the cost
+- Every hunt is a gamble, but Hunter adds a flat +2 modifier to the mini-game
+- Every scout is a risk, but Outdoors Type yields +50% wood/water
 
-**Design principle:** No action is free. Every choice has a cost. This creates the "resource management as drama" that Carroll advocates.
+**Design principle:** No action is free. Every choice has a cost. Skills change the cost structure without removing it. This creates the "resource management as drama" that Carroll advocates.
 
 ### 8.5 The Shop as Emotional Beat
 
@@ -548,6 +581,39 @@ The shop appears:
 - Beating your previous score is intrinsic motivation
 - Seeing a friend's name creates social pressure (in a good way)
 
+### 8.8 Audio Design — v5.2
+
+**Music (Dragon Trail 3.0 originals, loaded from sibling project):**
+
+| Track | Source File | Used For |
+|---|---|---|
+| Earth Prelude | `dragon_trail3.0/Music/Earth Prelude.mp3` | Main menu |
+| Evening | `dragon_trail3.0/Music/Evening.mp3` | Travel, Rest |
+| Machinations | `dragon_trail3.0/Music/Machinations.mp3` | Hunt, Gear shop |
+| Lotus | `dragon_trail3.0/Music/Lotus.mp3` | Scout |
+| Final Battle of the Dark Wizards | `dragon_trail3.0/Music/Final Battle of the Dark Wizards.mp3` | Boss fight |
+| Exotic Battle | `dragon_trail3.0/Music/Exotic Battle.mp3` | Mini-boss fight |
+| The Pyre | `dragon_trail3.0/Music/The Pyre.mp3` | Random encounters |
+
+**Synthesized SFX (Web Audio API):**
+
+| Sound | Trigger | Design |
+|---|---|---|
+| **Typing tick** | Every character in typewriter mode | Randomized square wave, 800-1200 Hz, 15ms, 0.03 volume |
+| **Enter boop** | Player presses Enter to submit input | 880 Hz sine, 60ms, 0.08 volume — a confirmation tone |
+| **Good encounter** | Positive environmental event | Ascending chime triad (784, 1047, 1319 Hz) — bright, rewarding |
+| **Bad encounter** | Negative environmental event | Descending drone triad (200, 150, 100 Hz) sawtooth — ominous, low |
+| **Hit** | Mini-game weak hit | Low-pass filtered noise burst, 0.15 volume, decay envelope |
+| **Miss** | Mini-game miss | Frequency sweep 600→200 Hz, 0.15s, falling tone |
+| **Victory** | Mini-game bullseye | Ascending arpeggio (523, 659, 784, 1047 Hz) — celebratory |
+| **Defeat** | Game over | Descending sawtooth (400→200 Hz) — somber |
+| **Potion** | Drink potion | Frequency ramp 400→1200 Hz, 0.4s — magical rising tone |
+| **Error** | Invalid input | 150 Hz sawtooth, 100ms — low, harsh buzz |
+| **Menu select** | Menu navigation | 660 Hz sine, 40ms — subtle click |
+| **XP sound** | Level up | 880→1100 Hz sine, two-tone — achievement |
+
+**Design principle:** Audio is not decoration — it is feedback. Every sound communicates state. Good/bad encounter sounds give players an emotional read on environmental events before they even finish reading the text. Typing ticks sell the terminal fantasy. The music tracks create mood without demanding attention.
+
 ---
 
 ## APPENDIX A: CROSS-REFERENCE INDEX
@@ -555,25 +621,27 @@ The shop appears:
 | Concept | Sources | Dragon Trail Implementation |
 |---------|---------|----------------------------|
 | Possibility Space | Will Wright | 1000-mile journey with procedural encounters |
-| Listen to Your Players | Phil Carroll | Survival skill self-selection, companion choice |
-| Never Say No | Phil Carroll | Auto-drop, barter system, solo viability |
-| Failure as Drama | Phil Carroll | Traceable deaths, chosen failure (rest costs) |
-| 3D Characters | Phil Carroll | Named companions with randomized stats |
-| Permadeath as Tension | Phil Carroll | Food/water depletion, game over screen |
-| Resource Management | Phil Carroll | Food/wood/herbs/supplies as depleting resources |
-| Permission to Be Imperfect | Phil Carroll | Help screen always available, cheat codes |
-| Only Prep What Is Necessary | Phil Carroll | Biome subset per run, 3 save slots |
-| Unholy Alliance | Sid Meier | Fair combat, telegraphed dangers, consistent aesthetic |
-| Loss Aversion | Engelstein | "Consumed" not "lost," gain-framed rewards |
-| Winner Paradox | Sid Meier | Dragon is beatable, score celebrates effort |
-| First 15 Minutes | Sid Meier | Title → name → skill → gold → companion → shop → travel |
-| Emergence | Will Wright | Resource death spirals, emergent strategies |
-| ASCII Aesthetic | Terminal tradition | CRT monitor, scanlines, phosphor glow |
-| Difficulty Levels | Sid Meier | Survival 0-8 = 9 self-selected tiers |
-| Explaining Setbacks | Sid Meier | Death messages traceable to choices |
-| Framing | Engelstein | "Earned XP" not "enemy had HP left" |
+| Listen to Your Players | Phil Carroll | Named difficulty self-selection, skill choice, companion choice |
+| Never Say No | Phil Carroll | Auto-drop, barter system, solo viability, Potion Seller free brew |
+| Failure as Drama | Phil Carroll | Traceable deaths, chosen failure (rest costs), difficulty-scaled setbacks |
+| 3D Characters | Phil Carroll | Named companions with randomized stats, relationship system |
+| Permadeath as Tension | Phil Carroll | Food/water depletion, game over screen, difficulty-scaled survival |
+| Resource Management | Phil Carroll | Food/wood/herbs/supplies as depleting resources, skill-modified costs |
+| Permission to Be Imperfect | Phil Carroll | Help screen always available, cheat codes, Easy difficulty with full transparency |
+| Only Prep What Is Necessary | Phil Carroll | Biome subset per run, 3 save slots, verbose but focused intro |
+| Unholy Alliance | Sid Meier | Fair combat, telegraphed dangers, consistent aesthetic, audio feedback |
+| Loss Aversion | Engelstein | "Consumed" not "lost," gain-framed rewards, good/bad encounter sounds |
+| Winner Paradox | Sid Meier | Dragon is beatable, score celebrates effort, all difficulties winnable |
+| First 15 Minutes | Sid Meier | Title → premise text → difficulty → name → skill → gold → companion → shop → travel |
+| Emergence | Will Wright | Resource death spirals, emergent strategies, skill × difficulty interactions |
+| ASCII Aesthetic | Terminal tradition | CRT monitor, scanlines, phosphor glow, typing ticks |
+| Difficulty Levels | Sid Meier | 4 named difficulties with transparent mechanical descriptions |
+| Character Skills | Phil Carroll | 7 traits that modify every system without removing cost |
+| Explaining Setbacks | Sid Meier | Death messages traceable to choices, difficulty makes every choice heavier |
+| Framing | Engelstein | "Earned XP" not "enemy had HP left," good encounter chimes vs bad encounter drones |
 | Moral Clarity | Sid Meier | Dragon = bad, player = hero, companions = allies |
-| Suspension of Disbelief | Sid Meier | Consistent terminal aesthetic, named enemies |
+| Suspension of Disbelief | Sid Meier | Consistent terminal aesthetic, named enemies, CRT monitor as character |
+| Audio Feedback | Sound design | Music tracks from Dragon Trail 3.0, synthesized SFX for every action |
 
 ---
 
@@ -606,4 +674,4 @@ The shop appears:
 ---
 
 *Document modeled after the Physix Master Design Document, adapted for Dragon Trail's ASCII terminal survival RPG design.*
-*Last updated: 2026-05-14*
+*Last updated: 2026-05-14 — Dragon Trail v5.2: Difficulty, Skills, Text Expansion, and Audio overhaul.*
