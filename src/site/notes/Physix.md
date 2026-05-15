@@ -1,6 +1,6 @@
 ---
 dg-publish: true
-permalink: /physix/
+permalink: /notes/physix/
 noteIcon: ""
 ---
 
