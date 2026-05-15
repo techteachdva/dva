@@ -1,0 +1,156 @@
+[gd_scene format=3 uid="uid://cbaigijng15kp"]
+
+[ext_resource type="Script" uid="uid://de8dtbilwtoo6" path="res://scripts/player.gd" id="1"]
+
+[sub_resource type="PhysicsMaterial" id="BallPhysics"]
+friction = 0.85
+bounce = 0.35
+
+[sub_resource type="SphereMesh" id="SphereMesh_ball"]
+
+[sub_resource type="StandardMaterial3D" id="BallMat"]
+albedo_color = Color(1, 0.35, 0, 1)
+metallic = 0.6
+roughness = 0.15
+emission_enabled = true
+emission = Color(1, 0.2, 0, 1)
+emission_energy_multiplier = 2.0
+clearcoat_enabled = true
+clearcoat = 0.4
+clearcoat_roughness = 0.2
+
+[sub_resource type="SphereShape3D" id="SphereShape_ball"]
+
+[sub_resource type="ParticleProcessMaterial" id="JumpPartMat"]
+direction = Vector3(0, 1, 0)
+spread = 65.0
+initial_velocity_min = 3.5
+initial_velocity_max = 6.0
+scale_min = 0.08
+scale_max = 0.18
+color = Color(1, 0.55, 0.05, 1)
+
+[sub_resource type="ParticleProcessMaterial" id="LandPartMat"]
+direction = Vector3(0, 0.4, 0)
+spread = 180.0
+flatness = 0.8
+initial_velocity_min = 2.5
+initial_velocity_max = 5.0
+scale_min = 0.06
+scale_max = 0.14
+color = Color(1, 0.6, 0.1, 0.85)
+
+[sub_resource type="ParticleProcessMaterial" id="SpeedTrailMat"]
+emission_shape = 1
+emission_sphere_radius = 0.35
+direction = Vector3(0, 0, 1)
+spread = 8.0
+initial_velocity_min = 2.0
+initial_velocity_max = 6.0
+scale_min = 0.04
+scale_max = 0.12
+color = Color(0.4, 0.9, 1, 0.45)
+
+[sub_resource type="StandardMaterial3D" id="TrailMeshMat"]
+transparency = 1
+blend_mode = 1
+shading_mode = 0
+albedo_color = Color(0.5, 0.95, 1, 0.5)
+
+[sub_resource type="BoxMesh" id="SpeedTrailMesh"]
+material = SubResource("TrailMeshMat")
+size = Vector3(0.04, 0.04, 0.6)
+
+[sub_resource type="BoxMesh" id="JumpPartMesh"]
+size = Vector3(0.08, 0.08, 0.08)
+
+[sub_resource type="BoxMesh" id="LandPartMesh"]
+size = Vector3(0.06, 0.06, 0.06)
+
+[sub_resource type="ParticleProcessMaterial" id="SlamChargeMat"]
+emission_shape = 1
+emission_sphere_radius = 0.6
+direction = Vector3(0, 1, 0)
+spread = 180.0
+initial_velocity_min = -3.0
+initial_velocity_max = -1.0
+scale_min = 0.05
+scale_max = 0.12
+color = Color(0.8, 0.2, 1, 0.7)
+
+[sub_resource type="BoxMesh" id="SlamChargeMesh"]
+size = Vector3(0.05, 0.05, 0.05)
+
+[sub_resource type="ParticleProcessMaterial" id="SlamTrailMat"]
+emission_shape = 1
+emission_sphere_radius = 0.4
+direction = Vector3(0, -1, 0)
+spread = 25.0
+initial_velocity_min = 4.0
+initial_velocity_max = 10.0
+scale_min = 0.06
+scale_max = 0.18
+color = Color(1, 0.3, 0, 0.6)
+
+[sub_resource type="BoxMesh" id="SlamTrailMesh"]
+size = Vector3(0.06, 0.4, 0.06)
+
+[node name="Player" type="RigidBody3D" unique_id=1613551751]
+physics_material_override = SubResource("BallPhysics")
+script = ExtResource("1")
+steer_force = 20.0
+jump_impulse = 6.0
+jump_hold_time_max = 0.2
+max_forward_speed = 40.0
+speed_ramp_rate = 1.5
+
+[node name="BallMesh" type="MeshInstance3D" parent="." unique_id=1430702907]
+mesh = SubResource("SphereMesh_ball")
+surface_material_override/0 = SubResource("BallMat")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1079546725]
+shape = SubResource("SphereShape_ball")
+
+[node name="GroundRay" type="RayCast3D" parent="." unique_id=1554273565]
+target_position = Vector3(0, -2, 0)
+
+[node name="JumpParticles" type="GPUParticles3D" parent="." unique_id=1262895039]
+emitting = false
+amount = 12
+lifetime = 0.55
+one_shot = true
+explosiveness = 0.95
+process_material = SubResource("JumpPartMat")
+draw_pass_1 = SubResource("JumpPartMesh")
+
+[node name="LandParticles" type="GPUParticles3D" parent="." unique_id=1811966923]
+emitting = false
+amount = 18
+lifetime = 0.4
+one_shot = true
+explosiveness = 1.0
+process_material = SubResource("LandPartMat")
+draw_pass_1 = SubResource("LandPartMesh")
+
+[node name="SpeedTrail" type="GPUParticles3D" parent="." unique_id=1811966924]
+emitting = false
+amount = 32
+lifetime = 0.4
+process_material = SubResource("SpeedTrailMat")
+draw_pass_1 = SubResource("SpeedTrailMesh")
+
+[node name="SlamChargeParticles" type="GPUParticles3D" parent="." unique_id=1811966925]
+emitting = false
+amount = 24
+lifetime = 0.3
+one_shot = true
+explosiveness = 1.0
+process_material = SubResource("SlamChargeMat")
+draw_pass_1 = SubResource("SlamChargeMesh")
+
+[node name="SlamTrailParticles" type="GPUParticles3D" parent="." unique_id=1811966926]
+emitting = false
+amount = 40
+lifetime = 0.35
+process_material = SubResource("SlamTrailMat")
+draw_pass_1 = SubResource("SlamTrailMesh")

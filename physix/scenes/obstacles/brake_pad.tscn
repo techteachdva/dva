@@ -1,0 +1,39 @@
+[gd_scene format=3 uid="uid://b8igt05y58017"]
+
+[ext_resource type="Script" uid="uid://b5k3ahf6akhom" path="res://scripts/obstacles/speed_boost.gd" id="Script"]
+
+[sub_resource type="BoxMesh" id="Mesh"]
+size = Vector3(7.5, 0.12, 3)
+
+[sub_resource type="StandardMaterial3D" id="Mat"]
+albedo_color = Color(1, 0, 0, 1)
+roughness = 0.3
+emission_enabled = true
+emission = Color(0.9, 0.55, 0, 1)
+emission_energy_multiplier = 1.4
+
+[sub_resource type="BoxShape3D" id="TriggerShape"]
+size = Vector3(7.5, 0.6, 3)
+
+[node name="BrakePad" type="Area3D" unique_id=309250050]
+script = ExtResource("Script")
+is_brake_pad = true
+
+[node name="BrakeMesh" type="MeshInstance3D" parent="." unique_id=740759258]
+mesh = SubResource("Mesh")
+surface_material_override/0 = SubResource("Mat")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=1272262511]
+shape = SubResource("TriggerShape")
+
+[node name="OmniLight3D" type="OmniLight3D" parent="." unique_id=1921296526]
+light_color = Color(1, 0.7, 0, 1)
+light_energy = 2.0
+
+[node name="NameLabel" type="Label3D" parent="." unique_id=661188550]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+pixel_size = 0.012
+billboard = 1
+modulate = Color(1, 0.8, 0.1, 0.9)
+text = "◀◀  BRAKE"
+font_size = 40

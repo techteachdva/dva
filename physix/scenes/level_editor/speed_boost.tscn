@@ -1,0 +1,16 @@
+[gd_scene format=3]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_boost"]
+size = Vector3(6, 0.5, 3)
+
+[sub_resource type="BoxMesh" id="BoxMesh_boost"]
+size = Vector3(6, 0.05, 3)
+
+[node name="SpeedBoost" type="Area3D"]
+
+[node name="Shape" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_boost")
+
+[node name="Mesh" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_boost")
+metadata/mat_type = "boost"

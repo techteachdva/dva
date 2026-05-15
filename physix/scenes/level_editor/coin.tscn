@@ -1,0 +1,19 @@
+[gd_scene format=3]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_coin"]
+top_radius = 0.35
+bottom_radius = 0.35
+height = 0.08
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_coin"]
+radius = 0.6
+
+[node name="Coin" type="Area3D"]
+monitoring = true
+
+[node name="Mesh" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.3711e-08, -1, 0, 1, -4.3711e-08, 0, 0, 0)
+mesh = SubResource("CylinderMesh_coin")
+
+[node name="Shape" type="CollisionShape3D" parent="."]
+shape = SubResource("SphereShape3D_coin")

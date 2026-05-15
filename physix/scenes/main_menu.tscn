@@ -1,0 +1,181 @@
+[gd_scene format=3 uid="uid://dyyofb8gcldw5"]
+
+[ext_resource type="Script" uid="uid://nckr337t0sob" path="res://scripts/main_menu.gd" id="1"]
+[ext_resource type="FontFile" uid="uid://7snai8jayruf" path="res://assets/fonts/iomanoid.regular.otf" id="Iomanoid"]
+[ext_resource type="Shader" uid="uid://b8jufqovros1n" path="res://assets/shaders/lava_lamp_2d.gdshader" id="LavaMenu"]
+
+[sub_resource type="ShaderMaterial" id="MenuLavaMat"]
+shader = ExtResource("LavaMenu")
+shader_parameter/base_color = Color(0.15, 0.08, 0.25, 1)
+shader_parameter/speed = 0.18
+shader_parameter/rainbow_mode = true
+
+[node name="MainMenu" type="Control" unique_id=1960849282]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1")
+
+[node name="Background" type="ColorRect" parent="." unique_id=662698001]
+material = SubResource("MenuLavaMat")
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="Center" type="CenterContainer" parent="." unique_id=1123631685]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBox" type="VBoxContainer" parent="Center" unique_id=1774865930]
+layout_mode = 2
+alignment = 1
+
+[node name="TaglineLabel" type="Label" parent="Center/VBox" unique_id=265699314]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "Speed  x  Challenge  =  Fun"
+
+[node name="Spacer" type="Control" parent="Center/VBox" unique_id=240185754]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+
+[node name="PlayBtn" type="Button" parent="Center/VBox" unique_id=1514568725]
+custom_minimum_size = Vector2(260, 52)
+layout_mode = 2
+text = "New Game"
+
+[node name="ContinueBtn" type="Button" parent="Center/VBox" unique_id=1788134474]
+custom_minimum_size = Vector2(260, 52)
+layout_mode = 2
+text = "Continue"
+
+[node name="LoadCustomBtn" type="Button" parent="Center/VBox" unique_id=888888888]
+custom_minimum_size = Vector2(260, 52)
+layout_mode = 2
+text = "Load Custom Level"
+
+[node name="EditorBtn" type="Button" parent="Center/VBox" unique_id=1078943796]
+custom_minimum_size = Vector2(260, 52)
+layout_mode = 2
+text = "Level Editor"
+
+[node name="CreditsBtn" type="Button" parent="Center/VBox" unique_id=673720790]
+custom_minimum_size = Vector2(260, 52)
+layout_mode = 2
+text = "Credits"
+
+[node name="ShopBtn" type="Button" parent="Center/VBox" unique_id=2048102951]
+custom_minimum_size = Vector2(260, 52)
+layout_mode = 2
+text = "Shop / Inventory"
+
+[node name="QuitBtn" type="Button" parent="Center/VBox" unique_id=1471622943]
+custom_minimum_size = Vector2(260, 52)
+layout_mode = 2
+text = "Quit"
+
+[node name="OptionsBtn" type="Button" parent="Center/VBox" unique_id=999999999]
+custom_minimum_size = Vector2(260, 52)
+layout_mode = 2
+text = "Options"
+
+[node name="TitleLabel" type="Label" parent="." unique_id=810648070]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -181.99997
+offset_right = 126.0
+offset_bottom = 99.0
+grow_horizontal = 2
+scale = Vector2(1.2, 1.2)
+theme_override_colors/font_color = Color(0.32941177, 0.13725491, 0.42352942, 1)
+theme_override_colors/font_outline_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("Iomanoid")
+theme_override_font_sizes/font_size = 72
+text = "PHYSIX"
+horizontal_alignment = 1
+
+[node name="TitleLabelStatic" type="Label" parent="." unique_id=183643070]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -181.0
+offset_top = -3.0
+offset_right = 127.0
+offset_bottom = 96.0
+grow_horizontal = 2
+scale = Vector2(1.2, 1.2)
+theme_override_colors/font_color = Color(0.32941177, 0.13725491, 0.42352942, 1)
+theme_override_colors/font_outline_color = Color(1, 1, 1, 1)
+theme_override_fonts/font = ExtResource("Iomanoid")
+theme_override_font_sizes/font_size = 72
+text = "PHYSIX"
+horizontal_alignment = 1
+
+[node name="CreditsPanel" type="Panel" parent="." unique_id=136451172]
+visible = false
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -250.0
+offset_right = 300.0
+offset_bottom = 250.0
+
+[node name="Margin" type="MarginContainer" parent="CreditsPanel" unique_id=381497324]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+
+[node name="VBox" type="VBoxContainer" parent="CreditsPanel/Margin" unique_id=375473801]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="CreditsPanel/Margin/VBox" unique_id=1242989668]
+layout_mode = 2
+text = "CREDITS"
+horizontal_alignment = 1
+
+[node name="Scroll" type="ScrollContainer" parent="CreditsPanel/Margin/VBox" unique_id=568779142]
+layout_mode = 2
+size_flags_vertical = 3
+follow_focus = true
+horizontal_scroll_mode = 0
+
+[node name="Text" type="RichTextLabel" parent="CreditsPanel/Margin/VBox/Scroll" unique_id=1785232241]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+bbcode_enabled = true
+text = "Loading..."
+fit_content = true
+
+[node name="CloseBtn" type="Button" parent="CreditsPanel/Margin/VBox" unique_id=191428066]
+layout_mode = 2
+text = "Back"
+
+[node name="VersionLabel" type="Label" parent="." unique_id=1960267026]
+layout_mode = 0
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -80.0
+offset_top = -30.0
+text = "v0.1.0"
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=1002081296]

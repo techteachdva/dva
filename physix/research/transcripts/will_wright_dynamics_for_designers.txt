@@ -1,0 +1,1727 @@
+[Music]
+okay there we go that sounds better all
+right I think we're going to start a few
+things at the beginning uh first of all
+thank you all to my talk um also turn
+off all cellphones yada yada yada um I
+want to ask how many of you people went
+to RAF con's talk yesterday about small
+worlds and social
+systems good okay it was an excellent
+talk um purposely I'm going to avoid
+most of that stuff on the that if you're
+interested you would have gone to his
+talk um he also kind of made a point of
+how fast he was going to go through his
+talk and perhaps we have different
+definitions of fast but uh this talk is
+going to go really fast um so I kind of
+apologized for how fast I'm going to get
+through this talk part of it was when I
+picked the topic I think I
+underestimated the breadth of it um
+probably bit off a little more than I
+could chew but I'm going to post these
+slides on the net I'll give you the
+address at the end of the talk so if you
+want to basically inflict this on
+yourself at a later date at a more
+leisurely Pace then feel free to
+download it um also how many of you came
+to this talk looking for hard-hitting
+pragmatic advice on how to make better
+games that's a shame uh my talks aren't
+like that um like my games they tend to
+be rather kind of aimless and open-ended
+so um just kind of take that for what
+it's worth okay so let's get started
+here um the official title of my talk is
+Dynamics for designers uh but this is
+kind of The Unofficial title of my talk
+um and this is kind of The Unofficial
+subtitle of
+it basically we work together in teams
+put together content programming um to
+make games um the player takes our game
+goes into this possibility space and
+they explore all these branches all
+these things and that's that's the
+essence of gameplay as players come into
+these worlds that kind of expand into
+this space now recent games I think the
+trend is heading toward open-ended
+emerging games games that have a much
+richer possibility space
+um and it's kind of interesting as a
+player you can come into one of these
+spaces and any person can in a very
+short period of time get a sense for how
+big that space is what the boundaries
+are I remember the first time I played
+Grand Theft Auto 3 you know at first it
+was you know people walking around in
+cars and no big deal I've seen this
+before but about five minutes into that
+game it was like whoa this is pretty
+cool you know just through a few
+interactions they was able to in it the
+size that possibility space and I think
+any player can do this um so our typical
+approach to building larger more Dynam
+spaces has been to enlist Legions of
+developers creating them and I think
+they can only carry us so far and I
+think we're hitting those limits right
+now so really this talk is about how we
+use emergence to engineer larger
+possibility spaces with simpler
+components now a couple definitions here
+really quick um I use structure to mean
+kind of the snapshot of a system what
+are the constituent parts that if you
+just froze it in time you could look at
+and say that's the structure of a System
+Dynamics are the way those parts
+interact through time um either the way
+they interact or the cyclic
+relationships life cycle even
+catastrophic changes that can occur to a
+system through time and models I use
+very widely um to mean both the models
+we build in the computer and also the
+models that we build in our heads
+something very unique about humans is
+that we model the world around us all
+the time we're always imagining what's
+going to happen next what if I do a
+instead of B what's the outcome going to
+be in fact science really is a modeling
+activity you know science is all about
+how do we look at the world around us
+and compress it into the simp most
+elegant rules that we possibly can I can
+measure you know the course of the
+planets and accumulate vast reams of
+data on that but that data can actually
+be compressed down into Newton's laws of
+gravity very
+elegantly and up to now science has
+basically used um kind of traditional
+math as its primary modeling method um
+and it's been able to do amazing things
+you know but it's hit some real limits
+as of late especially as we start
+understanding and trying to understand
+more complex interesting systems and so
+recently uh since the Advent of the
+computer simulation has kind of emerged
+is an alternate method for building
+these models um they're fundamentally
+pretty different math is really more of
+a linear process we have these fairly
+elaborate equations and we run the
+numbers through turn the crank get
+answers simulation really is a more
+parallel process um it's generally
+simpler ideas simpler components
+interacting together in kind of parallel
+to create a lot of the same things and
+in fact simulation is turning out to be
+able to handle things that traditional
+math had real difficulty with with
+things like economic systems and
+biological systems there's kind of an
+interesting parallel here between story
+and gameplay story is a way that we can
+transmit experience to one another it's
+a communication form but it's very
+linear I can give you you know a linear
+path through a possibility space and
+then you can kind of you know elaborate
+remember that in your head um gameplay
+is a way to communicate a possibility
+space through parallel you know user is
+actually put into the space and they can
+take all these parallel branches through
+it and actually feel the size of that
+possibility
+space just to illustrate kind of the
+differences between the two modeling
+techniques um traditional math if we had
+let's say a square mile of land and we
+planted some crops on it um standard
+math would probably go in here measure
+the size of each of these things that
+ellipsoid would be you know kind of
+problematic and there would be kind of a
+long equation that you'd run all the
+numbers through to calculate what area
+of this plot of land was covered by
+Fields um using modeling techniques we'
+probably do something much stupider we'd
+start throwing darts at it randomly um
+and after we threw a certain number of
+darts we would then measure how how many
+of the darts landed in a field and how
+many landed outside of a field and that
+ratio would tell us you know what
+percentage of the area here was occupied
+by crops as we throw more darts we get a
+more accurate answer and as you can see
+this in some sense on the surface is a
+kind of a stupid approach but using the
+power of a computer this can actually
+give you very good
+results this is called by the way the
+Monte Carlo technique for kind of
+obvious reasons this is a stochastic
+method uh which is kind of in simulation
+stochastic means there's some amount of
+Randomness involved the same run the
+model won't always get the same exact
+result
+so basically as designers we have these
+Dynamic spaces there's this vast you
+know landscape of dynamic spaces that we
+can put into our games and we cut off
+little chunks of that space with rule
+sets that we build our games around um
+so as a designer one of the things I
+like to do is explore this space and
+figure out which Dynamics are out there
+that would make for interesting gameplay
+so part of this talk I'm going to be
+using prototypes to show you examples of
+how we map the space the way I do
+prototypes basically is the same as
+paratroopers we just Dro these little
+paratroop that you know we think might
+be interesting spots on the landscape
+when they land you know we can kind of
+start playing with the Prototype and
+seeing how interesting was that space
+actually and then start iterating the
+Prototype uphill you know into more
+interesting regions and so the
+prototypes in some sense are kind of
+hill climbing things in local regions of
+this Dynamic
+space now I like to use Dynamics um
+almost like Legos for me they're these
+little components that you stick
+together and you combine them in
+interesting ways to make novel new
+things um and like most people when I
+have Legos at home I have a big box and
+I just basically pile all my Legos into
+it when I want to play with them I dump
+the box out and start sorting through
+them and looking for things um I've
+actually got a friend and for him Legos
+is like a religion or something and he
+approaches Legos in an entirely
+different way he's got this huge like
+tackle box and he sorts his Legos by
+color and by size and everything he's
+extremely meticulous about it it's kind
+of scary but uh when he just had a kid
+so I'm wondering how long that's going
+to last but but so when I decided to do
+this talk I decided to take my little
+unsorted box of Legos and see if I could
+put some structure around it you know
+all these dynamics that I just kind of
+use instinctively could I figure out
+some way to arrange them that made sense
+and so kind of what I came up with is
+this three-sided Cube um and this is
+kind of how the talk is roughly
+organized um one side of this cube is
+topologies these are kind of the way
+things are
+connected um these are the three that I
+primarily use agents networks and layers
+now those basic get changed through
+Dynamics any one of these Dynamics can
+apply to any one of these
+topologies and the third side of this is
+basically kind of the glue it's what I
+call paradigms um these are the
+different ways in which these Dynamics
+are mapped to the topologies and these
+basically have kind of a historical
+order and I'm going to go kind of in the
+order that they were invented starting
+with cybernetics working up to network
+Theory um but looking at this cubing
+know what is the most logical way to
+kind of present this information because
+it is all cross intersecting it very
+dense and unfortunately the best thing I
+came up with was something kind of like
+this so so forgive me um we'll start
+with
+topologies uh topologies really um talk
+about the relationships between objects
+they can be functional relationships
+spatial over time um this top line up
+here you know could be a story with
+chapters uh this could be a Choose Your
+Own Adventure game you know with
+branching points through time this
+bottom topology might represent a level
+based game where you're basically it's
+kind of open-ended between the levels
+but at the end of each level you have to
+find the red key to get through the door
+so it collapses back to these kind of
+pinch
+points now basically the way I've
+organized this is I've put these
+topologies in order of flexibility
+agents I think of is things that have
+very flexible relationships that change
+very often Through Time networks are a
+little bit more persistent um they can
+add and break links but they're a little
+more persistent than agent relationships
+and networks are probably the least
+persistent I mean the most assistant
+those are you know you always have the
+same Neighbors on a given spot um you
+can look at something like people
+represented in games and I think people
+in The Sims are best thought of in terms
+of an agent the way they move around and
+they're fairly fluid with each other in
+The Sims Online I tend to actually think
+of the players in terms of networks
+because they establish these long-term
+boundaries these you know relationships
+they group together at houses or clubs
+whatever and people in Sim City in fact
+are just statistical clouds so they're
+in fact represented with a
+two-dimensional array which is a layer
+so
+every part of your game can kind of be
+represented I think you know in some way
+with one of these topologies you can
+pick almost any game component and
+understand it in terms of one of these
+topologies um now the Dynamics which are
+applied to these um are a bit more
+varied and they don't sort quite as
+easily first one I want to talk about
+just very briefly is growth um you can
+have growth of Agents you know they can
+grow in
+size um or they can grow in number on
+networks you can add more nodes to a
+network or you can add more links
+between the existing nodes
+and in layers you typically get forms of
+propagation that tend to center around a
+certain spot and spread outward under
+some rule set um growth comes in many
+forms but they all share a lot of the
+same characteristics you know if you're
+on the highway and it's starting to get
+nighttime it's getting a little bit
+darker a few cars have their lights on
+gets a little bit darker a few more cars
+have their lights on then pretty soon
+everybody has their lights on except for
+a few cars there's this very rapid phase
+transition that occurs that's frequently
+referred to as the Tipping Point um this
+is the shape of that curve and a lot of
+calculus is actually built around trying
+to build curves like this naturalistic
+curves that can map to nature but in
+fact we can get the same curves using
+very stupid simple simulation Dynamics
+um this thing above these grid is time
+steps in a simulation and the rule here
+is for every cell try to add another
+cell nearby on the next time step and so
+it doubles basically up to the point
+where it starts running out of room and
+that simulation will generate pretty
+much the same
+curve this is a curve of human
+population groups growth and you can see
+it's going to take the same shape and we
+don't know where it's going to top out
+here but that's kind of you know one of
+the interesting questions that
+simulation's been trying to answer over
+the
+years this is another curve um just to
+show you that a very simple rule set can
+generate almost any shaped curve you
+want here this could represent you know
+the pull of gravity or rocket trajectory
+and the rule above is just throw random
+darts at the grid and if they hit make a
+new cell and it'll give you a curve just
+like
+that now propagation um is really a form
+of movement it can be movement of
+material information or patterns through
+a system uh take a road for example you
+have cars on a road moving cargo down
+the road information can be transmitted
+down the road but we've also got
+patterns that are in some sense
+independent of what's in the agents
+going down the road and I talk I mean
+traffic compression patterns where some
+cars will slow down and the cars behind
+them will slow down and if you kind of
+Zoom way out in the traffic helicopter
+you'll see what look like sound waves
+propagating down the highway and that's
+a pattern that's propagating through
+this um p and things frequently
+propagate through networks um that's
+main the main reason for networks to
+exist
+actually through layers um there's a
+medium usually that propagation occurs
+through um we think of it as propagating
+through space but it's also of course
+propagating through time um there's
+something that physicists use called
+light cone uh and this is a view of time
+where the future is on the top the past
+is on the bottom and now is in the
+middle and this is basically showing
+what you can impact from you know where
+you are in this space time into the
+future and what you could have impacted
+into the past um you can actually
+understand a certain game where let's
+say you have to complete a level in a
+certain period of time um and what the
+player is doing really is they're trying
+to keep the goal State inside the cone
+at any point if that goal State leaves
+the cone in the future side that means
+there's no way they can get to it it's
+outside their kind of Event Horizon so
+this is u a good way for looking at
+games way back in terms of the
+propagation of the players decisions and
+the Players Point in the space space
+Vector fields are another type of
+propagation where it's a directed
+propagation usually from a layer and it
+can be directing uh agents or other
+things I'm going to show you the first
+demo here um this demo was created by Ed
+Goldman and it just kind of
+illustrates here we
+go so basic this is a very simple system
+um where I can push things around with
+the mouse now what we have here is we
+have a layer underneath which is the
+vector layer as I move the mouse around
+um not only am I pushing the agents on
+top of this but I'm also propagating
+patterns through the underlying field so
+here we're seeing propagation of the
+agents above the layer and we're seeing
+propagations of the flow patterns
+underneath the layer um but systems like
+this can give you very natural organic
+very complex Behavior again using you
+know just extremely simple rules and
+those are the type of things that we
+really need to be I think leveraging
+more in games
+when we did Tim Earth we actually had a
+vector flow model for the ocean currents
+and um we turned it on we got this cold
+current off the coast of Chile and you
+can't imagine how excited I got about
+that I mean it was just you know I'm
+sure you can't imagine how excited I got
+about that um because it was an emergent
+Dynamic you know I didn't plan for that
+to happen and if it surprises the
+designer it's pretty cool but when it
+surprises the programmer and I was the
+one that programmed this then it's very
+cool because even the programmer wasn't
+foreseeing the interesting Dynamics
+coming out of the components that you
+were in fact
+building um propagation can also be used
+to understand uh communities um there's
+a certain type of like horizontal
+propagation that can happen through a
+community we see this a lot in something
+like the Sims online or even the offline
+version of the community when there's a
+new future that we drop into the game it
+takes time for it to propagate usually
+from the hardcore to the more casual
+players and not only is it kind of
+moving from one to the other but it's
+kind of changing the wave of the impact
+that this feature has you know with the
+hardcore players they get totally into
+it and they just totally you know use it
+24 hours a day and as it moves toward
+the Casual players they think it's kind
+of cool but not as cool as a hardcore
+people thought and so the wave link I
+mean the wave is amplitude is actually
+getting shorter as it hits the Casual
+players but at the same time it's also
+getting a longer wavelength the Casual
+players don't get into it as intensely
+but they actually play with it a lot
+longer and so understanding the way
+these patterns can change you know as
+they propagate is kind of important
+especially in Social systems there was
+one thing we had in the game where The
+Sims Online doesn't have fire in it or
+so we thought but uh the fans found this
+one object that if they did this was a
+rocket launcher and they launch rockets
+over and over and over they could
+finally start a fire and slowly the word
+started to spread to the fans and they
+started having these fire parties and
+they would get together and you know
+when they started a fire they got so
+excited about it you know but uh it was
+interesting to track the propagation of
+that through the community there's
+another type of propagation that occur
+primarily through networks which is
+vertical propagation um Marvin Minsky
+actually used used this in his one of
+his models of the way the mind works
+that we have these kind of agents in our
+brain these very low-level agents and if
+they cannot resolve you know their
+inputs they send it up to the next
+highest level and if that agent cannot
+resolve the inputs it sends it to a
+higher level it's almost like corporate
+delegation where you know let's push it
+up to the vice president type of thing
+but this is a form of vertical
+propagation through like an information
+system so a lot of these systems
+actually are striving for a balance
+between the global propagation of
+material or information and local
+there's a balance between the two um and
+this more recently has been uh much
+better understood in terms of network
+Theory and scale-free networks which
+I'll kind of mention later on ants are
+kind of an interesting example I have
+like an ant example for almost anything
+by the way uh they have this local uh
+communication where they drop pheromones
+and they can change nearby ants States
+they can you know smell a pheromone and
+say oh food's nearby or it's time to
+attack or time to do nesting Instinct
+and so they have this very elaborate
+horizontal propagation of information
+through pheromones but they do this
+other thing called triaxis which happen
+what happens is an ant will come up to
+another one and basically vomit up food
+and then the other ant slurps it up and
+so ants in fact have two stomachs when
+how cool is that I mean so they have
+this private stomach which is where they
+actually digest and they have this
+social stomach that they share the food
+with every other ant now what this ends
+up being it's they're Global variables
+it's how they do it's like a global
+bulon board system for the entire Colony
+um for instance the queen generates this
+very particular chemical that no other
+ant produces and she does Traxis just
+like all the other ants and what happens
+is over the course of maybe 2 hours that
+little Tracer chemical will distribute
+disseminate through the entire colony
+and if that chemical ever evaporates
+because the Queens died or was been lost
+somehow the entire ant colony instantly
+knows that they've lost their Queen and
+then they actually start a whole new
+Behavior promoting a new Queen so ants
+actually have a balance of communication
+here between the global and local the
+way they propagate information
+um another form of propagation is
+through agents um maybe thought in terms
+of pollination we see that actually as
+more overt game Dynamics even uh in
+recent titles like this one where you're
+going around an animal crossing and a
+lot of times you're Gathering things
+bringing them to somebody else you can
+bring a card to somebody else's Animal
+Crossing and give them a fruit tree and
+for the game players themselves that
+propagation through agents is a major
+part of the game playay um in The Sims
+fan Community you know they've been
+propagating skins and whatnot for years
+and 80% of it Britney Spear stuff but um
+for them it's like a metag game on top
+of the Sims and it's a big part of the
+experience now grouping um is the next
+Dynamic I want going to cover here
+grouping generally is driven by
+competitive pressures um groups of
+Agents or networks or whatnot will come
+together and start cooperating to be
+able to compete on a higher level it's
+dependent upon economies of scale the
+group of agents that are Co grouping
+together have to be more efficient than
+the individuals were alone um it's
+enabled by certain communication and
+control structures they need to
+coordinate their activities and
+eventually down the road it encourage
+you to
+specialization um when we group similar
+items we tend to call that
+classification um in a lot of games you
+have groups of people like in an RTS I
+can treat these little individual
+soldiers and tell them to go off and do
+things but I can also group them
+together which achieves a higher level
+of abstraction I can now think of this
+whole little group of people as one
+thing that I can direct and so my
+command structure becomes leverag
+um I jump up to a higher level of
+abstraction I call this level
+jumping other games like Command and
+Conquer generals this one the graphics
+were so pretty I've been playing this
+lately um I don't even bother grouping
+them like that I just make one huge
+group and then put them all into battle
+and sit back and watch and so the uh the
+Humes take the Brun of the attack and
+then the tanks show up and then the
+Infantry infantry shows up at the end of
+the battle but uh ants actually have a
+really cool grouping algorithm um one of
+the things that they do is they keep
+their Lara sorted by age and frequently
+things will happen where the larva get
+disordered because they had to move the
+colony or something but uh they do it
+through just seemingly random Behavior
+they just randomly walk around pick up
+larvae and put them down and over time
+they end up perfectly sorted and they
+investigated this and what they found
+out was that ants if they find a larvae
+in an area giving off a particular scent
+and that area has none of that scent
+around it they'll tend to pick it up and
+if they happen to be carrying a larvae
+with a particular scent and they get
+into an area that's high in that scent
+you know from other larvae they'll tend
+to put it down and basically those
+simple rules over time will sort
+amazingly efficiently and so it's
+another great example of emergence that
+basically Nature has discovered before
+us um part of grouping is attraction you
+know what's binding these things
+together um flocking algorithms and
+schooling algorithms both are dependent
+on global and local communication you
+know don't bump into your neighbor but
+stay somewhere near the herd um I'm
+going to show you another prototype here
+really quick this one was created by
+Jason Shankle in Maxis it's called
+particle
+men now this uh initially is kind of a
+gravity
+model
+and what we have is a little SE of
+particles here moving around they're
+gravitationally attracting each other
+when they get close enough they can
+actually fuse and become a larger
+particle so you're seeing kind of the
+larger particles have deeper gravity
+Wells that's what the green grid
+represents um I can actually go in
+directly with this with this tool this
+is like a handy dandy SpaceTime tool and
+so as I move this around I'm actually
+kind of hurting these things but um
+extremely simple rules for the way these
+things group you know but because they
+confuse it you know brings up very
+interesting kind of Dynamics there are
+kind of a number of things I can kind of
+illustrate with
+this this is a system of particles
+where basically each particle is still
+individually acting on the force of
+gravity and they were set up in just
+such a way so they had a rotational
+velocity so in fact every particle is
+doing an elliptical orbit around that
+gravity well um but they give the
+illusion of this you know oscillating
+ring now one of the coolest things about
+Dynamics like this um is the fact that
+when you see a system like this you
+can't help but want to perturb it and
+screw it up so like one little touch of
+space time and then I can watch what
+happened to the system and these systems
+don't just say okay I'm broken and they
+turn off they actually um become
+dysfunctional in very interesting kind
+of complex ways and so if we can put
+these systems in our games you know you
+know that's the first thing our players
+are going to do with them is sit there
+and see how badly they can screw up the
+system and experience a very vast and
+interesting set of failure
+States I show you another model here
+where in this model it's not even so
+much about the particles it's more about
+the boundaries between the particles um
+we have particles here and now they're
+not gravitationally interacting with
+each other they're only interacting my
+tool so if I click the tool here I can
+actually pull particles around and in
+doing so there's a boundary that's
+created basically by fields that the
+particles emit um and the summation of
+those fields around the particles
+defines this boundary so in fact here
+I'm kind of manipulating this
+threedimensional shape by pulling the
+particles around and so this is kind of
+a form of grouping where the boundary is
+more important than the constituents of
+the group um we see that actually in a
+lot of game Dynamics also
+game of Go really you know ends up being
+much more about boundaries you know it's
+not really about who captured the most
+pieces at all um or how many pieces you
+have on the board it's about the
+territories that you've captured so
+sometimes the boundaries are the group
+or the most important part of the group
+some groups are built upon similar items
+grouping together but at some level they
+start generally transforming into
+specialized groups groups of individual
+individual things that are specialized
+for a particular task um this usually
+happens when the coordination efforts
+between the members of a group um is
+less than the inefficiencies of going it
+alone um it's also specialization is
+really enabled by communication um
+Advanced life animals and whatnot were
+really enabled by things like the neuron
+which allowed specialized cells to
+communicate over very long distances and
+open a much wider possibility space um
+one of the most important things about
+specialization is it breeds networks
+most of the networks around us are the
+results of trying to keep specialized
+systems operating and they were invented
+by specialized systems around us this is
+a kind of a map of the Auto industry
+this might be Toyota in the Middle with
+motor manufacturers U chassis
+manufacturer and then smaller and
+smaller part suppliers but they're all
+interdependent but at the same time
+they're kind of competing there's in
+fact a balance that occurs in the
+specialized networks between cooperation
+and competition and you know that
+balance is actually very critical and
+it's always there are usually mechanisms
+in there for maintaining that balance in
+a specialized system there also
+different types of special ization going
+on concurrently in a city you're
+actually specializing your time you
+might live in one place you might work
+in another um you might eat over here go
+over here for a movie so your time is
+being specialized as an agent in the
+system but at the same time the land use
+of that city is specialized by its
+functional need you know you have the
+places where you know people where
+factories are producing
+things places where people are going to
+be entertained and it's the mapping of
+these two specializations together and
+then all the networks in the city can be
+understood in terms of these
+specializations trans supporting
+material and
+information on games we see this of
+course all the time you know especially
+in RTS type games where there's growth
+specialization and networks um and the
+player is really directing this activity
+and the player is encouraged to build
+that
+specialization um we see it also in fan
+communities fan communities or
+specialized networks of nodes there's a
+critical mass that you kind of have to
+reach at each component level for this
+specialization to occur and that's one
+of the things we really want to
+encourage when we're trying to build a
+fan Community is getting a critical mass
+for every node so that we can kind of
+Mer to that next level of specialization
+but even in this there is that balance
+between cooperation and competition um
+the web Masters you know in some ways
+are cooperating doing web rings and all
+that but they're also competing for
+content and it's true of almost every
+one of these
+nodes one of the things that you do in a
+specialized network is you have to make
+allocation decisions you know who do I
+give to what when um and when the player
+is running that specialized Network that
+becomes one of the primary decisions the
+player is faced with and a lot of these
+type of uh Dynamics are interesting not
+only in terms of simulated system but in
+terms of what is the strateg Strategic
+consideration of a player another one is
+allocation of time which we call
+Priority I've got a limited amount of
+time how am I going to allocate it um
+Space Invaders is kind of an easy
+example of that these little things are
+coming down at me blasting at me how am
+I going to spend my time which one do I
+shoot first and basically this game is a
+game of
+priority this is my cat Houdini he's got
+extra
+toes so another one is mapping and um
+mapping is kind of forming temporary
+networks um usually for some functional
+performance reason uh it's almost like
+specialization in a way but it's really
+a much more temporary phenomena um
+Tetris is almost kind of a mapping game
+where these blocks fall from the top and
+you very quickly have to map them to the
+best slot on the bottom that will give
+you the highest functional score in
+Tetris um a lot of fighting games are
+mapping games when I play this I love
+this game this is Godzilla Destroy All
+Monsters it's kind of a fighting game
+but you know my opponent picks Godzilla
+so I pick Mecha Godzilla there's a
+mapping against my opponent um there's
+also a mapping of what weapons I use
+against them um and in this game it
+basically once you realize that you can
+pick up the buildings and throw them it
+doesn't matter who you pick because all
+the battles end up being throwing
+buildings back and forth but uh State
+machines basically do internal mapping
+and you know State machines are all
+about mapping themselves to current
+circumstances there's an environmental
+situation the state machine kind of
+recognizes that and then has a fixed
+number of responses they try to map the
+correct resp response to give you know
+the appropriate behavior for that
+environment and uh State machines also
+happen very much more overtly at the
+gameplay level um this is Battlefield 42
+and whenever I play this game I think of
+this game in terms of a mapping game I
+come into the game and which vehicle am
+I going to pick today and that vehicle
+call I pick you know is going to be very
+dependent on what battle is going on but
+of course half the time it ends up being
+the Jeep because that is it's so cool
+they designed a game here where the Jeep
+is more interesting than the battleship
+um and different players will actually
+make different mapping decisions in this
+game so for a given situation each
+player they might feel better they might
+have more skill with the vehicle or they
+want to go after this particular guy
+who's in another vehicle or whatever but
+with a different situation they'll make
+different mapping decisions and the
+mapping decisions aren't just individual
+to them in the situation but also to
+what the other members of their team
+have picked if nobody on your P team has
+picked an airplane and you need one then
+people will change their decisions and
+so it's kind of an interesting mapping
+decision you make playing this game as
+to which vehicle you're going to go jump
+in done um there's this I just have to
+tell you this really quick it's kind of
+off topic but there's this cool level in
+Battlefield 42 where I think it's Market
+Garden you get in a German Jeep and you
+drive fast as you can through the battle
+just weaving and avoiding everything and
+you go way back into the Americans back
+line where all the American airfields
+are and there's this flat field with the
+airplanes and then these wide bowls up
+on the side and it's like a skate park
+you get on the Jeep and you go up one
+side and down up the other side in the
+meantime the Americans are spawning in
+this flat area so it's kind like up
+there Splat Splat Splat up there Splat
+Splat Splat and I thought this was
+interesting because for me all a sudden
+in my mind it just clicked that this was
+beautiful combination of Grand Theft
+Auto Tony Hawk Pro Skater and
+Battlefield 42 and it was just that's a
+great level it really is in online games
+we have a lot of mapping decisions to
+make um one of the primary ones is made
+by the players themselves you come into
+a game and there are all these other
+players and who do I go hang out with or
+interact with um right now this is
+pretty much happen stance
+but I think one of the more interesting
+things about the future of online games
+is we're getting to the point where we
+can now start helping them make those
+mappings more and more accurately you
+know when I come into a game of let's
+say 100,000 people there's probably one
+or two people in that game that I would
+just totally hit it off with and if we
+can somehow facilitate the navigation of
+me finding that person um I'm just going
+to have a blast with your game if I pick
+the right person to play with um one of
+the reasons things we're doing is we're
+taking uh metrics that we're collecting
+on the social interactions that people
+are doing in the game and trying to
+figure out if we can use that as a basis
+for making these mapping
+decisions now you're probably at this
+point in the talk asking what's the
+point of all this uh but kind of back to
+the original point is that what we
+really want with all of these Dynamics
+is to engineer emergence so I want to
+talk a little bit about how these
+components work together and at some
+point become really much more than some
+of their
+parts imagine a situation where we have
+a number of Agents sitting here
+competing in some format um at some
+point some of the agents realize that
+they can start cooperating and in
+cooperating they get a competitive
+advantage against the other agents um at
+that point you know they're almost like
+a metan node now now as that happens you
+know they start out competing all the
+individual agents that are not you know
+grouping together um and at some point a
+new level of cooperation of competition
+emerges between these higher level
+agents basically this keeps going on and
+on and uh basically you can end up with
+these very nested sets of specialized
+systems interacting and at every level
+they're both competing with individuals
+and operating that balance again um we
+still have the same original topologies
+we have agents we have networks we have
+layers um a lot of uh the natural world
+around us can be understood in terms of
+this emergence uh basically we have
+physics at the low level you know which
+emerges up to chemistry biology and then
+up to really interesting stuff at each
+one of these levels of emergence um the
+possibilities get richer so chemistry
+has a much richer set of possibilities
+than physics biology has a much richer
+set of possibilities than chry and the
+same thing is true of games with a game
+like Grand Theft Auto you know it has an
+underlying physics model built on top of
+that are the way the vehicles and the
+people behave um from that are built
+missions and then from the missions are
+built this whole overall Story game Arc
+so it's a wonderful example of emergence
+in the system and so at every level that
+you can achieve upwards in that your
+players are rewarded with a much richer
+possibility set that they can explore um
+this is kind of a toy example called Sim
+war and by the way you wouldn't know
+cannot imagine how many times people
+have suggested that we do some more uh
+like it hasn't been done a million times
+already but in this game we basically
+have production units offense and
+defense um those are the only units in
+the game very simple rules each unit has
+a cost um the military units can blow up
+the factory there's a 50-50 chance
+between the military units but the uh
+defensive units cost a lot less than the
+offensive okay that's the rules of this
+simple kind of toy game now at the
+beginning of this game I'm the black
+player you know I'm going to decide what
+do I do now what I had to do is
+obviously is depending on what the red
+player does you know if I think the red
+player is going to send offensive units
+after me I'm better off building
+defensive units which are much cheaper
+to defend on the other hand if I think
+the red player is going to go for
+production my best strategy is to build
+some tanks and go in and blow them away
+early um on the other hand if he's going
+to build defensive units then I want to
+not even bother attacking and build up
+my production faster than he does so
+there's this kind of uh orthagonal
+design here you know basically known as
+Paper Rock Scissors that's really nice
+because there's no strategic convergence
+um there's no one strategy that wins and
+it's envir entirely a mapping decision
+if I map correctly to the other players
+intentions at the outside of outside of
+a game like this um I can either lose or
+win very easily if I pick the right
+mapping otherwise as the game progresses
+and more more units enter into it um
+it's not going to be resolved so quickly
+and it becomes a much more kind of fuzzy
+issue but think about all the decisions
+that the player has to make just in
+deciding what to produce next first of
+all I have to decide am I going to go
+for short short-term try to win early
+with military units or longterm go for
+production am I going to go for high
+risk High reward Again by going with
+military or low risk low reward by going
+with production and defense um there's
+an allocation decision I have to make
+you know what am I spinning on these
+different units there's order what order
+do I produce these things in there's
+supplier networks that kind of evolve
+out of this game there boundaries that
+are formed you know as we start fighting
+and it gets a little bit more uh static
+so I think it was Sid Meer that said
+that you know the role of a game
+designer really is to give the player a
+very rich set of decisions to make in
+playing the game um and in this case we
+took this very simple little rule set
+and I'm showing
+how all these considerations collapse
+into that one simple decision what do I
+build next and that implies kind of a um
+a strategic emergence of the game which
+is kind of a different type of emergence
+a little bit separate from the Dynamics
+themselves it's more in the rule
+set um I'm going to recap here just a
+little bit um what I've how these
+components interact kind of in one model
+as I understand it is that we have
+competition in a system which drives
+growth uh growth eventually starts
+giving rise to grouping uh for
+competitive reasons um grouping is
+enabled by control structures and they
+give rise to boundaries that delineate
+the
+groups um eventually specialization
+emerges from the grouping here um
+specialization relies upon propagation
+of material information in the
+and through networks these networks feed
+back into the group and control
+structures that were pre-existing the
+propagation actually involves making
+allocation decisions of who you know
+what node gets what um the networks
+involve mapping decision how to connect
+these nodes together which is the map of
+the system and then at some point the
+system can kind of transcend to the next
+level and that's the nesting or the
+jumping you know level jumping that we
+saw earlier at that point the entire
+competition can start over again at a
+higher level so this is kind of one view
+over how a lot of the Dynamics typically
+interrelate in interesting
+systems um now the last thing I want to
+talk about here is paradigms um these
+are the way that these systems have been
+understood through time and they're
+interesting to see them in their
+historical order because uh I think
+they're very you can understand them
+much easier if you understand understand
+what the world model was when they were
+uh designed
+um paradigms really are not reality and
+it's pretty important to remember that
+um we have two theories in physics we
+have relativity Theory which explains
+the behavior of large scale things
+gravity planets whatnot and we have
+quantum mechanics which explains you
+know very small things both of these
+theories are excellent they fit reality
+so well it's amazing but the thing is
+that they're incompatible with each
+other they don't talk the same language
+they just will not plug into each other
+so because of that it's pretty obvious
+that these are not reality you know they
+might do a good job of representing
+their areas of reality but reality is
+something else entirely different
+underneath these theories these
+paradigms
+and what's kind of ironic here is that
+neither one of these theories can really
+adequately describe a duck they which
+you know or any life form or interesting
+complex system you know and that's where
+Calculus is really kind of hit a brick
+wall or traditional math techniques you
+know as we approach these more elaborate
+interesting systems um that's where
+simulation has really shown to have the
+upper
+hand um again kind of looking at how you
+know the point in time changes you view
+uh I'm going to take a quick look at
+futurism here and I think there's some
+lessons to be learned here futurism this
+is kind of historical futurism where we
+go back to the turn of the century Fritz
+Lang's Metropolis his view of what the
+future was going to be was heavily
+weighed by what was happening in his
+here and now so at that point in time
+skyscrapers were being invented so he
+understood the future as oh it's going
+to be a world of
+skyscrapers um when the interstate
+system was first built you know this is
+kind of a view of the future that we
+would have and this actually was came
+pretty close to being true we have this
+like SUV looking thing that's really
+topheavy and the people in the car
+they're obviously not driving they're
+like having a cocktail party or
+something but but that's unfortunately
+pretty close to reality I think um when
+nuclear power was invented you know that
+atom bomb they said okay in 10 years
+we'll have Atomic powered airplanes and
+cars this is actually a Ford design the
+Ford nucleon and it was nice of them to
+put the reactor a good 5et behind the
+pasture compartment
+but and
+this this was when the chemical industry
+was big and I guess the the future was
+everybody wearing badly fitting
+polyester suits or something this is the
+DuPont's wonderful world of chemistry
+musical um when 2001 came out uh you
+know it just seemed like a no-brainer
+that by 2001 we'd be living on the moon
+and have these giant space stations and
+stuff um and more recently you know the
+computer Revolution internet around us
+now we have a lot of these kind of
+dystopian views of the future with you
+know us wired all over the place um
+basically the first Paradigm in
+simulation I want to talk about very
+briefly here is cyber ICS uh this came
+out more like in the 40s as we were
+trying to study um biological systems
+and understand control structures uh a
+lot of control theory came out of this
+um the thermostat in your house is
+basically a cybernetic system uh it has
+an input which is the temperature sensor
+it regulates and then sends output to
+your furnace to try to keep a certain
+level um basically as soon as our
+machines were getting complex enough to
+need simple nervous systems that's when
+cybernetics the came along things like
+autopilots were Prime examples um they
+found that they could change these
+simple feedback things together and get
+much more elaborate kind of control
+seeking behavior um a lot of analog
+Electronics kind of resulted from this
+approach there even were analog
+computers back when and um these things
+were really finicky and hard to work
+with but um they were pretty interesting
+that they were taking that approach in
+an analog format it really hit a brick
+wall because at some point so many
+stages deep into the system and there's
+no way you could tune it and this was
+way before they understood complexity
+Theory which was kind of limiting the
+usefulness of this they didn't
+understand the theoretical limitations
+of these at the time the next big
+Paradigm that kind of came along was
+this thing called System Dynamics
+invented by again J forest or this the
+same guy who invented the magnetic core
+memory now System Dynamics understands
+everything in the world in terms of two
+paradigms stocks and flows everything
+around you is either a stock or a flow
+so in this population model um
+population is a stock and birth and
+death rates are flows if the birth rate
+is higher than the death rate the
+population will accumulate over time
+this model kind of came out of the
+chemical industry as near as I can tell
+uh it was getting very large around the
+time that he invented this and in fact
+if you look at a typical System Dynamics
+model um it shows a lot of uh similarity
+to chemical flow
+models um the thing about System
+Dynamics is you can seemingly apply it
+to anything which really excited a lot
+of people at the time um I was surfing
+the web and I actually found this System
+Dynamics model of uh some individual
+this is how he attained religious
+Enlightenment and so this is a model if
+you things on there is like the tress of
+his prayer his fear of death psychic
+energy factor and then he had runs to
+the model and you can see that his tress
+of Mind was increasing over time even
+though his prayer quality was kind of in
+the cyclic range but you can apply these
+models to anything which is makes them
+kind of
+interesting
+um there was an influential book that uh
+Jay Forester wrote along with this
+couple The Meadows called limits to
+growth back in the60s and they had this
+thing called the world Dynamic model
+where it was model the way the entire
+world worked in uh System Dynamics and
+they were predicting that there would be
+vast famine and horrible things
+happening around 1985 they were running
+this in 1960 um what they didn't realize
+again was chaos theory could have told
+them basically the system was too
+chaotic to predict that far in advance
+they just got a few factors off by like
+10% and because of that the
+amplification of those factors through
+the system their model was nowhere near
+reality when it came around to it cular
+automa is one of my favorites um this
+was actually the idea that you have a
+grid of cells and they interact with
+very simple rules fixed discrete time
+steps this was basically invented by a
+guy named vanman um and this was one of
+the really first true to digital
+computation methods that came up and one
+of the cool things about this is the
+emergence out of cular automous systems
+um I'm going to show you another
+prototype
+here this one's called biome there's
+actually a very influential simulation
+that vman did that probably most of you
+have seen I'm sure called
+life how many of you played with life V
+or actually Conway's life not V
+Normans uh
+okay but basically um it's extremely
+simple system you have a cell can be
+alive or dead um and I'll show you a
+pattern here this is called the r
+pamono in fact these elaborate tonies of
+these patterns and certain people myself
+included have gotten just obsessed with
+this game for long periods of time I
+won't tell you how much time I wasted
+playing with it this but there are only
+two simple rules to life and it says
+that you look at your neighbors and
+count them if you have three or four
+neighbors in your life you remain alive
+otherwise you die if you're an empty
+cell and you have four neighbors exactly
+you come to life that's the entire rule
+set and what's interesting is the
+elaborate complicated emergent
+structures that can come out of those
+Simple Rules this is one of the the best
+examples that people just kind of stood
+back and started to understand the idea
+of emergence how could these simple
+incredibly simple little rules give rise
+to these things that were almost like
+ecosystems you can actually study life
+for years and some people have um their
+websites just do a web search and you'll
+find how intensely some people have
+studied this ecosystem this little World
+um there are other things you can do uh
+we can change the rule structures just
+slightly so that the cells don't have to
+have just one state um in this case
+they're it's a multi-state that's what
+the different colors represent these
+little things are gliding around and
+they're leaving trails and the trails
+have kind of a stas stochastic
+evaporation behind them we used a
+technique like this in Sim life the
+creatures moved around and there was a
+CA layer underneath them that left basic
+basically sent trails and other
+creatures could track the Cent trails
+and follow them and eat them they could
+follow the sent Trail accurately enough
+so um you can get fairly uh flexible
+with CA I'll show you another one really
+quick here which is a
+uh model of a forest growing and of
+course a forest first thing you want to
+do is burn it down so I'll put a fire in
+um so this is a
+uh basically a fire fire spreading model
+propagation of fire through a forest
+you'll notice on the inside the forest
+is regrowing now um again you know the
+rule structures for these are just you
+know remarkably simple as a matter of
+fact in terms of prototyping what we do
+with these things is we try to make them
+very easy to
+um script so this is the entire rule set
+for the force fire simulator and in fact
+most of the rules really are right there
+and anybody can write this in a text
+file and so when we do a prototype like
+this the Prototype you know is kind of
+Ground Zero and then we sit there and
+write a lot of different rule sets and
+explore all these different states of
+you know where we can get to with this
+prototype um I'll load one more here to
+show you the uh uses of a
+two-dimensional s autonoma um this is
+kind of a model roughly simulating um
+National Borders or bacteriological
+cultures any type of system like this
+where the borders um are being slowly
+mutated over time based on some
+underlying rule set in this one there
+actually is a separate layer underneath
+and this is the layer that keeps
+resolves the conflicts of on the borders
+up here and so these layers the layer
+under here is basically saying who's
+winning the battle up here and in fact
+layering CA together turns out to be a
+very powerful technique um Sim City in
+fact can be thought of as a
+threedimensional cular autonoma we have
+layers for different things on top of
+that we have also objects that are kind
+of outside the ca but within the ca
+layers we've seen lots of emergence
+there's a when we first did the second
+Sim City Sim City 2000 um we turned it
+on and over some time people started
+saying oh wow it's really cool the way
+you programmed in inner city Decay and I
+went back and looked at it and in fact
+yeah really big cities eventually the
+land value would collapse people would
+start moving out and it would really
+look like inner city Decay but we never
+programmed that into the system in fact
+it turned out it was kind of a positive
+feedback between the these rules and it
+was a natural result of the emergence of
+these different layers that were able to
+read each other and so these layers
+aren't just you know calculating what's
+in their layer but also looking at
+layers above and below them to get their
+new values um some like Sim City really
+is a hybrid model we have CA layers
+underneath that do a lot of the local
+propagation of information but on top of
+that we have something that's closer to
+a traditional U System Dynamics model
+which is influencing you know which
+Industries are growing um more the
+long-term Global things and so really
+it's the balance between the global
+System Dynamics model and the local
+cular autonoma model in Sim City that
+gives it the interesting
+Behavior now chaos theory is more recent
+um and Chaos Theory itself is fairly
+simple I mean it basically just says
+that um I can roll a ball down here or I
+can move the ball over just a little bit
+and it'll go to entirely different
+direction certain systems have this
+property that if I change the initial
+conditions a little bit um it can have a
+vast change in the output of the system
+um on the other hand if I invert that
+bowl and drop two balls in from
+different directions they'll end up in
+the same spot so this is a very stable
+system um a lot of the interesting stuff
+that came out of chaos theory in fact
+was more visualization oriented
+um ways to visualize phas space I'm
+going to kind of skip ahead a little bit
+here these are different phase space
+diagrams these are ways to visualize
+systems um through time and space at the
+same time and get a sense of them um
+this is actually kind of a phase space
+diagram of the Sims players um going
+through gamespace a statistical
+description of how many of them spent
+money on their house how many friends
+they had how much money they were
+accumulating and so it's kind of a cloud
+of the possibility space that the
+players were uh inhabiting and we can
+look at the densest areas where the most
+players were um one thing that kind of
+came out of chaos theory is the idea
+that there's this Continuum between
+disordered systems and highly ordered
+systems um and the most complex systems
+that we know of are chaotic and exist
+right in the middle of this
+range they chaos system I mean chaos
+theory was really trying to form a
+general uh theory of complexity but for
+the most part it failed um but a lot of
+the tools that came out of Chaos Theory
+proven to be very useful the next system
+I want to talk about are complex
+adaptive systems and these are the
+systems that a lot of these things we're
+trying to really study and these are
+things like industry biology economics
+these are systems that have defied most
+readily anal most traditional analysis
+up to now um you can look at something
+like a watch and it's obviously a very
+complex system but it's not adaptive
+it's very brittle you know if you bend
+one little gear in there it's going to
+break biological systems on the other
+hand you know are very flexible they can
+take a lot of abuse and go back and heal
+themselves and repair um some systems
+you know we've made attempts to do that
+through things like redundancy the
+Russian Space Program if you'll notice
+the Rockets always have all these
+nozzles one of the reasons was that they
+couldn't build a very efficient U turbo
+pump for the Rockets they had you know
+like 20% failure rate but they had a
+brilliant solution and they just
+designed 30% more engine than they
+needed and they had every turbo pump
+drive two opposite nozzles so if a turb
+pump went out the rocket was still
+balanced so it was a way to make the
+things still work you know and
+overcoming it was a lot cheaper to solve
+the problem that way than to get to the
+engineering tolerances they needed to
+build better Rocket
+Motors so these adaptive systems are
+very much like cybernetic systems where
+they have kind of an input and an output
+and there's a feedback loop what
+differentiates them is that there's an
+internal rule set um there's some sort
+of internal mapping where learning is
+going on and they're trying to improve
+their performance over time unlike
+cybernetic systems which had fixed
+performance over time um some of the
+Technologies for doing this like genetic
+algorithms neural networks Etc um
+adaptive
+Landscapes kind of came from biology but
+they've been applied to adaptive systems
+and this is the idea that these systems
+are doing hill climbing over time these
+systems were able to increase their
+performance by trying small pertubations
+of their current mapping measuring you
+know is it better to be here or is it
+better to be here you know in a game it
+might be I'm going to try the tank this
+time next time I'm going to try the Jeep
+and next time the airplane and if I did
+really well in the tank I'm going to
+pick the tank next time and maybe try a
+different type of tank and so it's
+excessive approxim of performance and
+this really is a concept of biology and
+evolution um gameplay I used that a lot
+this is a tremendously useful model for
+me of a player going through a
+possibility space encountering
+challenges basically trying to do H
+climbing in the challenge space of the
+game this is kind of a gameplay map for
+The Sims that you know the way we
+thought about it where there was a
+social material Dimensions to success
+but really you had to balance the two
+and go right up the middle uh to achieve
+the highest levels of success so this
+brings us to network Theory um like I
+said I'm not going to cover this too
+deep but um it's important to know that
+uh networks come in all shapes and sizes
+but we're finding that the most
+interesting networks around us share a
+very interesting property which is um
+called the scale of the network the
+internet is a prime example um before I
+kind of go into that I'm going to show
+you another demo how networks can be
+used um kind of in
+emergence this demo was written by H
+chold Jing gold that uh was an intern
+for me
+at Maxis um actually we'll start with a
+simple system here now in this system we
+have specialized agents
+um and in this case we have red green
+and blue I can put down some agents here
+you can see they start spouting little
+particles now when the particles hit
+another agent they'll actually form a
+connection and certain behaviors result
+from this they'll still actually share
+they're propagating information and
+material through these Networks s that
+are forming
+spontaneously um I can actually turn up
+the node creation rate I can actually
+make nodes spontaneously
+appear very rapidly and we'll see the
+behavior of the
+system now the number of nodes links
+that I'm allowing here is two I can cut
+that back to one and the system gets
+more uh less viscous much more free
+flowing if I turn the number of
+connections up to five these things
+start glaming together they become like
+molasses and start forming these larger
+associations
+um a system like that is very
+interesting in terms of its emergence
+how one little thing can totally change
+the character of the entire system let
+me show you a couple more models in this
+um this is a model of a creature now we
+have different specialized nodes in this
+one these little blue things on the
+edges are eye stocks that are looking
+for food the green things are movement
+nodes and this middle thing is a mouth
+so this is like a little octopus guy
+crawling around looking for food I can
+move all the food up here and then he'll
+eventually kind of sense it and move
+over there um
+these nodes also have to be fit you'll
+notice that some nodes are larger than
+others the mouth converts the incoming
+particles into energy and sends it bck
+out through the network and there's an
+allocation decision made at every node
+whether you know do I keep the food or
+pass it on down the network and uh if if
+it's around away from food too long
+these nodes will starve and start to die
+and as they die I mean a death of a node
+in this thing can really debilitate the
+creature so certain ones can be more
+robust they can have two stomachs two
+eyes but uh this is an example of using
+networks specialization propagation all
+these things to kind of create an
+emergent system uh show you another one
+here these guys are like little cile
+creatures um and they eat light
+particles and they have their own little
+kind of cyclic light uh life cycle going
+on here um just to illustrate the the
+center node here is actually a
+specialized node where they do most of
+their processing if I go into a creature
+here and I kill it it's Central node
+you'll see that the other ones can't
+survive they were dependent on that
+Central node they'll eventually kind of
+Wither away and die um and the same is
+true of these guys up here if they don't
+get enough food if I stop feeding them
+light particles in the system they will
+die very rapidly but you can see how
+these systems have a very lifelike
+property to them um and they're very
+non-intuitive as you start playing with
+these things uh I'll show you another
+one really quick here um this is a
+interesting guy in
+that it eats primarily on the inside of
+the network is where it's most likely to
+get fed new particles um and so what
+happens is that as its outer layers are
+withering and dying they get P inside to
+eat so this creature is continually
+turning itself inside out to eat and
+that's the the G process of this thing
+um and this is totally emergent this fa
+you know very complex life cycle
+behavior is totally emergent from a few
+Simple Rules
+interacting so let me speed up a little
+bit more here um about networks one of
+the important things is there's a power
+law distribution which means that a few
+nodes have a lot of uh links and if most
+nodes have very few links and that's how
+these networks balance kind of between
+the local and Global uh
+communication um you can look at any
+game like Sims online and you see this
+power LW distribution um the most
+popular players people in these networks
+can also leave uh comments for each
+other this is the most popular player we
+have in our biggest city um Raph coer
+actually was telling me uh in his talk
+that he thought we shouldn't be
+visualizing this because other uh
+companies would want to come in and
+steal our best players um one thing
+about her is that she's you know
+connected with all these different
+little groups and decides decided to
+start a mafia in our game and she has
+her own alternate topology and they even
+have these price lists for what it takes
+to do a hit or Raid on somebody else and
+they're doing griefing in a very
+interesting way because all the
+communication takes place out of game so
+we can't track them they don't want the
+feds listening in so um so uh Raph if
+you want her she's yours uh please take
+her um and this is stuff that Raph
+covered in his talk yesterday about the
+value of weak links in the system but um
+um I think my time is up I want to give
+special thanks to these guys who worked
+on the prototypes I showed you today and
+this is the address where you can find
+this talk on the web and thank you for
+coming everybody

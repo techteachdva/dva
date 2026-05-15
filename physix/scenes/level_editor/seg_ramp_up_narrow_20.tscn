@@ -1,0 +1,44 @@
+[gd_scene format=3]
+
+
+[sub_resource type="BoxMesh" id="BoxMesh_Seg_RampUpNarrow20T"]
+size = Vector3(6.0, 0.4, 20.0)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_Seg_RampUpNarrow20T"]
+size = Vector3(6.0, 0.4, 20.0)
+
+[sub_resource type="BoxMesh" id="BoxMesh_Seg_RampUpNarrow20W"]
+size = Vector3(0.3, 1.5, 20.0)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_Seg_RampUpNarrow20W"]
+size = Vector3(0.3, 1.5, 20.0)
+
+[node name="Seg_RampUpNarrow20" type="StaticBody3D"]
+transform = Transform3D(1, 0, 0, 0, 0.9923, -0.1240, 0, 0.1240, 0.9923, 0, 1.25, 0)
+
+[node name="SegMesh" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_Seg_RampUpNarrow20T")
+metadata/mat_type = "track"
+
+[node name="SegShape" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_Seg_RampUpNarrow20T")
+
+[node name="Wall_L" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -3.15, 0.95, 0)
+
+[node name="WallMesh" type="MeshInstance3D" parent="Wall_L"]
+mesh = SubResource("BoxMesh_Seg_RampUpNarrow20W")
+metadata/mat_type = "wall"
+
+[node name="WallShape" type="CollisionShape3D" parent="Wall_L"]
+shape = SubResource("BoxShape3D_Seg_RampUpNarrow20W")
+
+[node name="Wall_R" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 3.15, 0.95, 0)
+
+[node name="WallMesh" type="MeshInstance3D" parent="Wall_R"]
+mesh = SubResource("BoxMesh_Seg_RampUpNarrow20W")
+metadata/mat_type = "wall"
+
+[node name="WallShape" type="CollisionShape3D" parent="Wall_R"]
+shape = SubResource("BoxShape3D_Seg_RampUpNarrow20W")

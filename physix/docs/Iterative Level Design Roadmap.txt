@@ -1,0 +1,394 @@
+ITERATIVE LEVEL DESIGN ROADMAP
+Physix — Ghost-Driven Design Workflow
+Version 1.0 | May 11, 2026
+
+==============================================================================
+OVERVIEW
+==============================================================================
+
+This document describes the complete 5-phase workflow for designing,
+testing, and refining Physix levels using a combination of automated bot
+testing and human playtest ghost data.
+
+The goal: every level must be (1) technically completable, (2) fun to play,
+(3) challenging but fair, and (4) force meaningful steering decisions.
+
+==============================================================================
+PHASE 1: BOT SANITY CHECK (Automated)
+==============================================================================
+
+PURPOSE
+-------
+Filter out broken levels before a human ever touches them. The bot answers:
+"Does the level load? Is the finish reachable? Are there impossible gaps?
+Do physics edge cases cause infinite death loops?"
+
+WHEN TO RUN
+-----------
+- After any batch level generation or redesign
+- Before human playtesting begins
+- After fixing known geometry bugs
+
+HOW TO RUN
+----------
+1. Launch the game in Godot editor (F5) or exported debug build
+2. From the Main Menu, type the cheat code:  lives
+   (This gives you 100 lives so the bot doesn't game-over mid-test)
+3. Start any level (e.g., World 1-1)
+4. In the top-right HUD, click:  [Run Bot Test]
+   (Only visible in debug builds)
+5. The bot will automatically cycle through all 42 levels:
+   - 36 base levels (1-1 through 6-6)
+   - 6 bonus levels (B-1 through B-6)
+6. Each level gets 90 seconds max. Results print to the Output panel
+
+PASS / FAIL CRITERIA
+--------------------
+A level is marked BROKEN if any of the following occur:
+
+| Condition | Threshold | Meaning |
+|-----------|-----------|---------|
+| TIMEOUT | 90s elapsed, no finish | Bot is stuck in a loop or geometry is impassable |
+| DEATHS | > 5 deaths in one run | Geometry is unfair or has unavoidable death traps |
+| COINS | < 10% collection | Coins are physically unreachable (floating, off-map) |
+| NO FINISH | Bot never triggers finish zone | Finish zone is misaligned or missing |
+
+OUTPUT FORMAT
+-------------
+Console prints one line per level:
+
+  [OK]    1-1 | 1★ | 12.5s | deaths=0 | coins=6/6
+  [WARN]  2-3 | 0★ | 45.2s | deaths=3 | coins=2/6
+  [BROKEN] 3-5 | TIMEOUT | 90.0s | deaths=12 | coins=0/6
+
+After all 42 levels, a summary block prints:
+
+  ==== BOT SANITY CHECK COMPLETE ====
+  Passed: 38/42
+  Warnings: 3 (needs redesign)
+  Broken: 1 (needs manual repair)
+  Full report saved to: user://test_results.json
+
+WHAT TO DO WITH RESULTS
+------------------------
+- BROKEN levels → Skip to manual repair (edit JSON directly, do NOT analyze)
+- WARNING levels → Flag for Phase 2 human playtest (they might just be hard)
+- PASSED levels → Proceed to Phase 2
+
+TIME ESTIMATE
+-------------
+~45 minutes for all 42 levels (90s timeout × 42 = 63 minutes worst case,
+but most levels finish in 10-30s)
+
+==============================================================================
+PHASE 2: HUMAN PLAYTEST (You)
+==============================================================================
+
+PURPOSE
+-------
+Generate rich ghost data that captures the "fun factor" of a level. The
+analyzer uses this data to decide whether a level is too straight, too flat,
+too easy, or unfairly hard. Only a human can provide this signal.
+
+THE 5-RUN PROTOCOL (per level)
+------------------------------
+
+| Run # | Style | Purpose | What It Reveals |
+|-------|-------|---------|-----------------|
+| 1 | Cold run — first attempt, no retries | Simulates a new player's raw experience | Death clusters, frustration points, blind jumps |
+| 2 | Optimal — 3-star, all coins, best time | The "expert demonstration" path | Where the intended line is, how much steering the designed path requires |
+| 3 | Optimal — repeat for consistency | Confirms run 2 wasn't a fluke | Validates that the level has a learnable, repeatable path |
+| 4 | Slow/stress test — deliberately go slow, miss coins, take wide turns | Safety margin check | Can a bad player still finish? Or is one mistake = death? |
+| 5 | Reckless — max speed, never brake, ram walls | Chaos test | Where does the level break? Are there unavoidable deaths at high speed? |
+
+Add runs 6-8 ONLY if Run 1 or Run 5 had 2+ deaths at the same spot.
+
+WHICH LEVELS TO PLAY
+--------------------
+Priority order:
+1. All levels flagged WARNING in Phase 1
+2. All newly generated or redesigned levels
+3. Levels from the current world being polished
+4. Spot-check 2-3 levels per remaining world
+
+You do NOT need to play all 42 levels in one session. Play in batches.
+
+GHOST DATA AUTO-SAVES
+---------------------
+- Ghost files write to: %APPDATA%/Godot/app_userdata/Physix/ghosts/
+- File naming: w{world}_l{level}.json
+- Only saves if the run is a new best time
+- Old ghosts are NOT overwritten by worse runs
+
+HOW TO VERIFY A GHOST WAS SAVED
+--------------------------------
+After finishing a level, check the Output panel:
+
+  [GhostManager] Saved ghost for 2-1 | time=12.45s | 124 samples
+
+If you see "Ghost not saved — not a new best time", that's fine. The old
+(best) ghost is still there and is likely better data anyway.
+
+TIME ESTIMATE
+-------------
+- 6 levels × 5 runs × ~40s average = 20 minutes per world
+- 6 worlds = ~2 hours for full coverage
+- Realistic: play 1 world (30 min) → analyze → redesign → validate
+
+==============================================================================
+PHASE 3: ANALYZER REDESIGN (Automated)
+==============================================================================
+
+PURPOSE
+-------
+Read human ghost data, compute metrics, and automatically patch level JSON
+to fix identified problems (too straight, too flat, unfair deaths, bad coins).
+
+WHEN TO RUN
+-----------
+After completing the 5-run protocol on a level and you feel something was
+off — boring, unfair, too easy, coins unreachable, etc.
+
+HOW TO RUN
+----------
+1. Make sure you are IN the level you want to analyze
+2. Click the top-right HUD button:  [Analyze Ghost]
+   (Only visible in debug builds)
+3. The analyzer reads your ghost data, computes metrics, and either:
+   a) Prints "is good. No changes." (level passes)
+   b) Prints "REDESIGNED: [reasons]" and patches the JSON
+
+VALIDATION GUARDS (what prevents corruption)
+-------------------------------------------
+- Minimum 30 samples and 3 seconds of play time required
+- Rejects all-zero ghost data (empty/broken files)
+- Will not redesign if you haven't meaningfully played the level
+- Flat-speed redesign refuses to split segments shorter than 20 units
+- Straight-track redesign skips jump segments and very short/long segments
+
+POSSIBLE REDESIGN OUTPUTS
+--------------------------
+
+| Console Message | Meaning | Action Required |
+|-----------------|---------|-----------------|
+| "too_straight" | Lateral variance < 1.8 | S-curve + gap injected mid-level |
+| "flat_speed" | Speed CV < 0.25 | Uphill→downhill ramp pair inserted |
+| "death_cluster" | 2+ deaths at same Z | Checkpoint added 15m before, track widened |
+| "coin_balance" | Collection rate < 50% or > 95% | Coins moved closer to or further from racing line |
+
+IMPORTANT: ONE redesign per click. The analyzer only injects ONE S-curve
+and ONE ramp pair per run. If the level still feels off after playing the
+redesigned version, click Analyze Ghost again.
+
+WHAT THE ANALYZER DOES NOT DO
+-----------------------------
+- It does NOT redesign levels you haven't played (rejected by guard)
+- It does NOT create checkpoints mid-jump or on narrow ice
+- It does NOT move the finish zone
+- It does NOT delete obstacles — only adds safety checkpoints
+- It does NOT redesign based on bot data (bot has no ghost file)
+
+TIME ESTIMATE
+-------------
+Instant. Analysis takes < 100ms. The heavy work is playing the level again
+to validate the redesign.
+
+==============================================================================
+PHASE 4: BOT RE-VALIDATION (Automated)
+==============================================================================
+
+PURPOSE
+-------
+Confirm that the human-driven redesign didn't accidentally break the level.
+The bot checks: no timeouts, deaths < 3, completion rate > 90%.
+
+WHEN TO RUN
+-----------
+Immediately after Phase 3 redesigns a level. Run the bot on the SPECIFIC
+redesigned level before moving to human validation.
+
+HOW TO RUN
+----------
+Option A: Full harness (all levels)
+  1. Click [Run Bot Test] from any level
+  2. Wait for the full 42-level sweep
+  3. Check if your redesigned level is still marked [OK]
+
+Option B: Single level (faster)
+  1. Open the Godot remote debugger console
+  2. Type:  TestHarness.start_test_run()
+  3. Wait for the level to load and the bot to finish
+  4. Check the output for that specific level key
+
+PASS CRITERIA FOR REDESIGNED LEVELS
+------------------------------------
+| Metric | Threshold | Meaning |
+|--------|-----------|---------|
+| Status | "COMPLETED" | Bot reached the finish |
+| Time | < 60s | Not timing out |
+| Deaths | <= 2 | Human-friendly difficulty |
+| Stars | >= 1 | At least finishable |
+
+FAIL CRITERIA
+-------------
+If the bot fails the redesigned level:
+- TIMEOUT → The redesign created an impossible gap or disconnected segment
+- DEATHS > 3 → The redesign made the level too hard (narrow landing, sharp turn)
+- NO COMPLETION → Geometry is broken (finish zone misaligned)
+
+WHAT TO DO IF BOT FAILS
+------------------------
+1. Manually inspect the level JSON for obvious errors:
+   - z0 == z1 (zero-length segment)
+   - Gap between segments > 20 units
+   - Finish z is before the last segment's z1
+2. Restore from a backup if available
+3. Or: run Phase 3 again with a different ghost (slower run = easier redesign)
+
+TIME ESTIMATE
+-------------
+- Single level: ~15-30s
+- Full harness: ~45 minutes
+
+==============================================================================
+PHASE 5: HUMAN VALIDATION (You)
+==============================================================================
+
+PURPOSE
+-------
+The final arbiter: did the redesign make the level more fun? Only you can
+answer this. The bot can clear the level, the metrics look good, but if it
+feels boring or unfair, it's not done.
+
+THE VALIDATION QUESTIONS
+------------------------
+After playing the redesigned level once (cold run), answer:
+
+1. Did I have to steer left/right at least 3 times?
+   → If no, the level is still too straight. Play again and re-analyze.
+
+2. Did my speed ever drop to "crawling" then spike to "fast"?
+   → If speed was flat the whole time, the level lacks momentum economy.
+     Play again and re-analyze.
+
+3. Did I die at least once but feel like it was MY fault?
+   → If deaths felt random or unavoidable, the level is unfair.
+     The analyzer should have caught this — check if death cluster triggered.
+
+4. Were coins placed so that I had to CHOOSE between speed and collection?
+   → If all coins were on the main path and trivial to get, they're too easy.
+     Re-analyze if coin_rate > 0.95.
+
+5. Did I want to play it again immediately to beat my time?
+   → This is the ultimate fun signal. If yes, the level is ready.
+
+PASS / SHIP CRITERIA
+--------------------
+A level is ready for production when ALL of the following are true:
+
+- Bot clears it with <= 2 deaths
+- Analyzer reports "is good. No changes." on the latest ghost
+- Human playtest: you steered meaningfully, speed varied, coins were tempting,
+  and you wanted to replay
+- No zero-length segments, no gaps > 20 units, finish is past the last segment
+
+THE ITERATION LOOP
+------------------
+
+    Human Play (Phase 2)
+           |
+           v
+    Analyze Ghost (Phase 3)
+           |
+           v
+    Bot Re-Validate (Phase 4)
+           |
+           v
+    Human Validate (Phase 5)
+           |
+    +------+------+
+    |             |
+    v             v
+  SHIP IT      NOT FUN YET
+    |             |
+    |             v
+    |        Play Again (Phase 2)
+    |             |
+    +-------------+
+
+Most levels need 2-3 iterations. Simple levels might ship on iteration 1.
+World 6 mastery levels might need 4-5.
+
+TIME ESTIMATE
+-------------
+- 1 iteration (play + analyze + bot check + validate): ~3 minutes
+- 3 iterations per level: ~10 minutes
+- 42 levels × 10 min = 7 hours total (spread across multiple sessions)
+
+==============================================================================
+QUICK REFERENCE: CHEAT CODES
+==============================================================================
+
+Type these on the Main Menu screen:
+
+  coins   → +100 coins (saves progress)
+  lives   → +100 lives (saves progress)
+  jilly   → Unlock all levels (saves progress)
+
+==============================================================================
+QUICK REFERENCE: FILE LOCATIONS
+==============================================================================
+
+Level JSON files:
+  C:/Users/phili/OneDrive/Desktop/Physix/levels/{world}-{level}.json
+
+Ghost data (after playing):
+  %APPDATA%/Godot/app_userdata/Physix/ghosts/w{world}_l{level}.json
+
+Test results (after bot run):
+  %APPDATA%/Godot/app_userdata/Physix/test_results.json
+
+Analyzer script:
+  scripts/autoloads/ghost_analyzer.gd
+
+Test harness script:
+  scripts/test_harness.gd
+
+Bot controller:
+  scripts/bot_controller.gd
+
+==============================================================================
+TROUBLESHOOTING
+==============================================================================
+
+Q: "Analyze Ghost" button is grayed out / not visible
+A: You are not in a debug build. Run the game from the Godot editor (F5).
+
+Q: Analyzer says "Ghost too short — play the level first" even though I played
+A: The ghost file might be from an old, aborted run. Delete the ghost file
+   and play the level again. Ghost files live in:
+   %APPDATA%/Godot/app_userdata/Physix/ghosts/
+
+Q: Analyzer redesigned the level but now the bot times out
+A: The redesign created an impossible gap. Check the JSON for:
+   - z0 == z1 on any segment
+   - Large gaps between consecutive segment z1 and z0
+   Restore the level from git or a backup.
+
+Q: I accidentally clicked Analyze Ghost 10 times and now the level is a mess
+A: The analyzer saves over the same file each time, but each run injects
+   only one change. If the level is corrupted, restore from git:
+   git checkout levels/{world}-{level}.json
+
+Q: Can I analyze a level without playing it?
+A: No. The analyzer requires meaningful human ghost data. If you haven't
+   played it, the guard will reject and print a warning.
+
+Q: The bot clears a level easily but I find it hard
+A: The bot uses predictive raycasts and perfect timing. Human difficulty
+   and bot difficulty are not the same. Trust your own experience. If you
+   find it hard, the level might need a checkpoint or wider track.
+
+==============================================================================
+END OF DOCUMENT
+==============================================================================

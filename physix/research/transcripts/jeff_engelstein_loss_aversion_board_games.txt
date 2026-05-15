@@ -1,0 +1,1581 @@
+my name is Jeff angle Steen and thank
+you for joining me today to talk a
+little bit about one of my favorite
+hobbies collecting interesting
+psychological trivia and tricks and I've
+become obsessed over the last five or
+ten years about loss aversion and all of
+the aspects that it has in human
+psychology so I'm excited to share some
+of that with you today so first a little
+bit about myself so I am a board game
+designer I've done about ten games now
+some of my big bigger ones were space
+cadets dragon and flagon fog of war was
+just recently released and I've a my
+first licensed game the expanse coming
+out which I'm excited about probably
+around June since this is a video game
+conference I will say that I also have
+to publish video games for the Apple 2
+which you probably can't get any more
+star blaster and panic button both
+published in around 1982-83 something
+like that so and some of you also may
+know me from my podcast I am on the
+diced our podcast I do the game tech
+segment there and also the long-form
+about an hour long podcast called the
+dolla G which talks about game design
+and gets into the nuts and bolts
+specifically around board game design
+although we do get into a lot of topics
+and I also teach a board game design at
+the NYU game center for about I've done
+that for about two years so it's a game
+conference so I'm going to be playing a
+bunch of games throughout this
+throughout this lecture so why don't we
+start by this one I usually do live and
+grab somebody but in the interest of
+time I planted a stooge in the audience
+sorry a volunteer in the audience mr.
+Rob dabio before the conference before
+this talk I asked Rob I made him an
+offer I said I asked him if he had ten
+or twenty dollars he did say that he had
+a twenty dollar bill and I offered to
+make him a wager that I would put up $20
+he can put up 20
+I flip a coin he could call it in the
+air and the winner would take the $40
+and I asked him if that was a wager that
+he would like to take and you said so I
+asked him to go with his gut and he said
+he said no he said he would not take
+that bet that the $20 was his that was
+the lunch money that you had set aside
+for today and I made him a couple of
+other offers I said would you do it if I
+put up 21 dollars against your twenty
+dollars would you do it if I went up to
+22 dollars and he said that he would do
+it at twenty-five dollars if I recall
+correctly yes twenty-five dollars
+against my twenty dollars he would take
+that bet and that gets to the two really
+the the base illustration of a concept
+called loss aversion and just kind of in
+a nutshell what it's saying is that
+getting something feels good gaining
+twenty dollars feels good losing twenty
+dollars feels bad okay but losing the
+twenty dollars feels worse than gaining
+the twenty dollars feels good I've been
+trying to come up with a more elegant
+way to say that for a long time and I
+have failed so I'm just going to stick
+with that you know if you're looking in
+graphical form again gaining your ten or
+twenty dollars makes you happy and
+losing the ten dollars makes you unhappy
+but in a arbitrary scale more unhappy
+studies have shown we're gonna get a
+little bit into the details of how we
+know these numbers but studies have
+shown that losses are about two times as
+intense as gains the first research on
+this was done by Kahneman and Tversky
+back in the 80s they were two Israeli
+psychologists and they did a lot of
+really really interesting work about how
+people are really not acting rationally
+and act irrationally and they were
+approaching things in terms of what they
+called in economics there was a
+principal called Homo economicus which
+is that all of the studies of economics
+was based around the idea that people
+acted absolutely rationally and
+perfectly in their own interests and
+they found a lot of ways that people do
+not and this is one of the biggies
+ultimate
+they did win the Nobel Prize for this
+work actually Kahneman was awarded the
+Nobel Prize Tversky had passed away a
+couple of years before they were awarded
+it and as far as I know he is the only
+non economist to win the the Nobel Prize
+in Economics for this work so what are
+the purpose of this talk and what I'm
+hoping that you're going to bring out of
+it is that when I teach my game design
+students one of the questions that we
+always talk about early is do you start
+with the mechanic or do you start with a
+theme or you know how do you want to
+start and I always recommend that they
+start with an experience that they want
+to give the players or they start with
+an emotion that they want to give the
+players and for those of you that were
+here for the talk prior to mine about
+pandemic legacy you know learned a lot
+about the the beats and the emotional
+rollercoaster that was specifically kind
+of pre-programmed for the players and
+the way that they interacted with that
+and as a game designer as game
+developers we want to manipulate the
+players emotions so some of these are
+you know tools about things that are
+gonna make the players upset things are
+gonna make the players happy you don't
+want to necessarily avoid loss aversion
+sometimes you can use it in a very
+effective way to manipulate the players
+again going back to pandemic legacy or
+risk legacy when that game first came
+out one of the very first things that it
+made you do was tear up a card or
+sticker here was a card right card yes
+you had to tear up a card and that's a
+very emotional thing for players not
+both because it kind of goes against the
+social taboo of destroying the game but
+because it's tapping into that that idea
+of loss this is something that I bought
+this is something that I own and the
+first thing that the game is asking me
+to do is take a piece of it and rip it
+up so the idea is that by leveraging
+Judas you can get the players to the
+point that you want them to get at in
+that case by having them tear something
+up it was telling them that you know
+you're invested in this and it's gonna
+be an emotional experience okay this one
+is an all play it's this game by the way
+in these games in these little
+demonstrations it will go a lot smoother
+if you don't try to out think what's
+being asked
+just look inside yourself and go with
+your first reaction and think about what
+you would answer if you were what your
+feelings are because that's the way your
+players are gonna react they're not
+going to necessarily see that there that
+it's manipulative or that is being
+framed in a particular way so just just
+kind of go with that so here's two
+choices that you've got choice a I will
+give you $3,000 and then choice B you
+have an 80% chance to win $4,000 or a
+20% chance to get nothing and the
+question is would you take choice a or
+choice B and just as a little hint I
+will take tell you that the average
+winnings on choice B is $3,200 just to
+take the math out of it so how many of
+you would take choice a and how many
+would take B okay almost all of you in
+actuality when people are surveyed on
+this about 80% will choose choice a and
+I've now from an economic standpoint
+going back to our homoeconomicus choice
+B is better overall for you to do yet
+people choose a we'll talk a little bit
+about the reasons into that in a second
+but let's jump to two other choices now
+choice a you're guaranteed to lose
+$3,000 and in choice B you have an 80%
+chance of losing $4,000 but a 20% chance
+of losing nothing so in this case how
+many people would choose choice a and
+how many would choose choice B okay we
+have a very average crowd here this is
+good
+so 72% of people surveyed on this will
+choose B and again those of you that
+shows a and the first one to be in the
+second one you have made choices that
+are against your economic interests in
+both cases but most people will go with
+that
+the general rule is that people will
+take a shore but people will gamble to
+avoid a loss that's a really really
+important concept and you sure you're
+already thinking about some of the game
+play implications of the way that that
+works
+so to kind of just look into a little
+bit of a game example I know this is a
+board game talk and this is a card from
+hearthstone which is not a board game
+but I'm counting it as a board game
+counting is a card game that can do some
+fancy things that regular card games
+can't do this is a card from the hunter
+class called tracking and the text on
+the card in case it's not clear says
+look at the top three cards of your deck
+draw one and discard the others so you
+basically see you'll draw the top three
+cards of your deck you see one of them
+and the other two are gone from the game
+forever and this card if you go onto
+hearthpwn or you go on two sites that
+talk about hearthstone this card is not
+usually well-received especially by new
+players I pulled some comments out about
+tracking I see the use of tracking but
+psychologically I voice dislike the idea
+of burning two cards to get 1/3 if I put
+a card in my deck and means I want to
+use it not to discard it in favor of
+something else or the bottom one
+tracking burn to other cards to draw one
+and possibly lose key parts of your deck
+this is tapping into that idea of it's
+it's giving anxiety to players they're
+worrying about okay I'm gonna draw three
+cards and that's a problem but the
+reality is from quickly mathematical
+standpoint is that it really discarding
+two cards from your deck only becomes an
+issue if you get all the way to the end
+of your deck the way hearthstone works
+you have 30 cards at the at the end of
+the 30 cards if you have to draw some
+more cards you start taking damage so
+yeah I mean discarding cards can be a
+little bit of a problem but for those
+who haven't played hearthstone if you're
+a hunter and you've reached the end of
+your deck you're probably in trouble
+anyway so mostly it doesn't really
+factor into the game but psychologically
+people are seeing those cards and seeing
+those goods cards and knowing I'm never
+gonna get to play them again here's an
+alternative reworking that I've run by
+other people and most people are happier
+with this phrase with this wording of
+the tracking effect look at the top 3
+cards of your deck keep one and shuffle
+the other two back into your deck then
+discard the bottom two cards in your
+deck without looking at them
+now it's basically the same effect you
+get one card of your choice and two
+other cards are gone from your deck but
+because they're at the bottom of your
+deck most people feel psychologically
+well they're at the bottom of my deck I
+was never gonna see those cards anyway
+the reality is is that this is actually
+a worse effect for you then the real
+tracking effect because in the actual
+tracking effect you know two of the
+cards that are never gonna come up and
+so if you're planning your tactics or
+whatever you know that you you're never
+going to draw that and so you can work
+around that and this you don't know what
+you've lost
+but people psychologically are happier
+with this effect here's another case
+study that comes in to loss aversion
+level draining in RPGs I gave this
+presentation to my class about a month a
+couple weeks ago and when I put the
+level draining slide up there was an
+audible moan that went through the class
+again these are some quotes from from
+some D&D forums about draining levels
+and I've you can read that but I've
+highlighted some of the other stuff in
+there on the bottom there is little you
+can do in D&D to viscerally terrify
+players but for whatever reason level
+draining does it and a couple of more
+quotes this is all from the same thread
+all versions of D&D have some form of
+raised dead not all versions have
+restoration many players would rather
+die than lose 50% of their XP which I
+have verified with my daughter she
+agreed with that maybe this is a more
+emotional than sensible reaction but
+many players feel that way and my
+favorite quote of the whole thing on the
+bottom there but what I've always liked
+about level drain is just how personal
+that loss can be as if part of the
+characters life truly was just ripped
+away forever lessening them for it
+that's a real visceral emotional
+response to to losing something and
+people don't even really like said have
+that effect a lot of times if their
+players if their characters die it's the
+ending of a story it says in some
+service but level draining as a
+different different aspect to it and
+interestingly if you look at D&D and
+what they've done over the years with
+level draining in Advanced Dungeons &
+Dragons
+the first version I got into level
+draining was there was an undead ability
+and there was no save against level
+draining he got hit by a white or a
+litter or something you were screwed in
+the 3rd edition there was a saving role
+that was allowed at least but if it
+failed you lost the level then in 4th
+edition they completely got rid of level
+draining and if you go to Pathfinder
+which is kind of like sort of an
+offshoot of 3rd edition they didn't make
+that many changes from 3rd edition D&D
+but one of the ones that they did was
+they got rid of level draining so it's
+obviously over the years that this was
+recognized as something that was not
+something that players wanted that put
+them into an emotional state that they
+found uncomfortable so giving something
+to a player and then taking it away is
+really emotional and that goes back to
+that idea of from risk legacy of forcing
+the players to tear up a card in the
+very beginning better not to have given
+them that card in the first place or
+just have them randomly draw one and
+leave the other one in the box you know
+it has it has the same effect from a
+mechanical standpoint but it does not
+have the same effect from an emotional
+standpoint like to take a quick detour
+into a game show that my family
+including my in-laws will no longer
+watch with me
+Deal or No Deal I'm assuming most of you
+are familiar with the show but for those
+of you that are not there's a bunch of
+suitcases that all have varying values
+of money in them ranging from $1.00 to a
+million dollars you pick one case at
+random that you're going to keep and
+then you gradually open the cases
+showing the money so you know what you
+didn't get and then at various points in
+the game there's a banker that comes on
+very shadowy figure and he gives offers
+you money for your case now from a
+purely mathematical standpoint there's
+you know you know the expectation value
+of that case you know the average value
+of all the cases that are left and the
+expectation value that remains is you
+know the average of that is what you
+should all should get for it if it's
+less than that you're
+leaving money on the table but the
+reality is in the show is that the
+banker always offers less than the
+expectation value it's actually really
+interesting if you track the show is the
+first rounds they offer way way less
+than the expectation value and they
+gradually approach it to just they don't
+want people walking away in the
+beginning of the game but why does
+anybody take the offer if there's if
+they're leaving that money on the table
+and this goes back to that first one of
+the first examples that we did which is
+captured in a psychological theory
+called utility theory and that goes to
+the idea that if I'm offering you a
+million dollars or two million dollars
+as far as you're concerned it's probably
+not going to getting the two million
+dollars it's not going to change your
+life as much as getting that first
+million dollars it's going to is going
+to be so in your mind they're about the
+same amount of money and that's really
+what Deal or No Deal is playing on this
+is playing on people's okay this case
+you know the guys offering me one
+hundred and twenty thousand dollars but
+it could be a million dollars so for me
+personally where is that falling on my
+utility spectrum and that's what's
+interesting to watch it's interesting to
+watch people struggle with that idea of
+you know it's not just the number it's
+not just going for the biggest number
+but it's the utility and how that's
+going to apply to your life now if we go
+back to that first example that I gave
+you guys about the chance to get $3,000
+and the 80% chance to get $4,000 our
+brains are not great at math for the
+most part most people see $3,000
+thousand dollars and put them in the
+same box in their brain so really for
+most people from a utility Theory
+standpoint this problem is really I'm
+guaranteed to get X or I have an 80%
+chance to get X and in that case I'm
+always going to take the one that's
+guaranteed to get X the fact that is
+$3,200 doesn't really apply that the
+expectation value is higher so that's
+just another way of looking at looking
+at these things and we'll talk a little
+bit in a bit about about bigger numbers
+as well okay
+this example is is for those of you
+they're here again for the pandemic
+legacy talk this is actually it was a
+real study that was done that I did not
+choose because I did not know that I was
+going to be directly after the pandemic
+legacy talk but this is the problem a
+deadly disease is rapidly spreading if
+nothing is done then 600 people will die
+so a cure has been developed but you
+have two choices of which cure you're
+gonna do you can either do choice a
+number 600 people will die if nothing is
+done so choice a is that 200 people will
+be saved and choice B is a one-third
+chance that all 600 will be saved and a
+two-thirds chance that nobody will be
+saved so how many people here would do
+trace egg and how many would do B okay
+when surveyed about three-quarters of
+people will do a 200 people will be
+saved let's do another problem
+same situation deadly disease is rapidly
+spreading if nothing is done 600 people
+will die in this case you could take
+choice C 400 people will die or if you
+pick your D then there's a one-third
+chance that nobody dies but a two-thirds
+chance that 600 people die so who will
+take C a lot fewer people and it would
+take D okay so in this case 78% choose D
+so most people are with you guys so
+these are the four choices put together
+here so choice a B C and D now since 600
+people are going to die choice a and
+choice C 200 people will be saved 400
+people die or exactly the same and
+choice B and choice D are also exactly
+the same so did anybody here pick a for
+the first one in D for the second one
+that's very common a lot of people do
+that
+and this leads to a concept that's
+called framing what is a gain or what is
+a loss and this is another great
+manipulation tool for player psychology
+if you say 200 people will be saved
+that's a positive positive emotion
+people like that 200 people will be
+saved and the other one is all
+probabilities the other one is 400
+people will die
+okay so again we're going back to that
+idea that people will take a gain a
+Shore gained over gambling to gain more
+but people will gamble to avoid a shore
+loss and that's exactly what's happening
+here except in this case the outcomes
+are exactly the same it's not you know
+losing money versus gaining money it's
+but if you express it as saving people
+or express it as people dying then
+people will approach it differently and
+we will have a different response to it
+so in a board game context this can be
+used a lot of different ways one of my
+new games which is coming out in the
+spring is called pit crew and it's about
+the players
+it's a team-based game where each team
+is trying to repair their race car and
+get it back out onto the track as
+quickly as possible against the other
+teams if you make mistakes it's a
+real-time game you're trying to do
+things as fast as possible if you make
+mistakes you get penalty points and we
+looked at a couple of different ways to
+do this originally the way that we did
+it is you got points for doing good
+things and if you've got penalty points
+you lost points and we found that when
+this is aimed at families and in a
+family game is if you had a lot of kids
+playing and stuff like that they didn't
+like losing the points if they made
+mistakes on the cars there's also a
+strategy to intentionally make mistakes
+to get back you know get your car out
+faster because the first team that's out
+can get a bonus and can earn extra
+things so what we did instead when we
+kind of saw that is we flipped it around
+and we said okay if you get a penalty
+you don't lose points but all the other
+teams gain points and it was easy
+because it was a score track and
+we'll just could move their tokens up on
+the track and that worked really really
+well people enjoyed that
+it it it opened it up it took away the
+negative feelings
+okay penalty points aam on there it's
+fine it also fortuitously enabled us to
+make the score track look like a race
+track so you have a little car running
+around the race track and just
+metaphorically race cars don't usually
+go backwards so you push the other cars
+forward but it really just changed the
+whole dynamic of the game and the way
+that people approach the penalty points
+that it helped your opponents instead of
+hurting you
+I mentioned the expanse game that we
+that's coming out in that there is a
+mechanic where you can keep an event
+there's event cards and you can save one
+for later but if you choose to save one
+for later it costs you a victory point
+or there's other things you can do in
+the game that cost you victory points
+and I considered applying the same kind
+of idea that instead of costing you
+victory points it could give bonuses to
+all the other players but in that case
+emotionally I wanted the players to feel
+invested that they were really
+committing something into getting this
+this event and saving it so in that case
+we chose to have it apply as a specific
+penalties on players where you actually
+have to give up victory points in order
+to do this action in general we have
+seen a shifting away from losses and
+players losing things over the years I
+mean the old-school games you know from
+the that we all grew up with monopoly
+and risk are very much about loss but
+they're very much about a specific type
+of loss where you gain and then you lose
+okay so in monopoly you start with no
+properties and money you get properties
+and you get hopefully a little more
+money and then for everybody except for
+the winner you lose everything
+same thing for risk risk you start with
+with territories and you'll take more
+territories you build up an empire and
+then it's taken away and that
+classically will give you all of those
+negative feelings about losing stuff
+whereas the the newer games and what the
+Euro games really brought to the table
+in the 90s was this idea of constantly
+building in the sylla's of Catan
+everybody starts with more than what
+they ended up with nobody is losing
+stuff once you build a city you get it
+even the the bonuses that you get
+largest army if you get the largest army
+card you don't lose it because your army
+is defeated and you shrink you lose it
+because people got bigger armies than
+you same thing with the longest road if
+you have a long road well people can cut
+off your road if they build a settlement
+in the middle but that's kind of an edge
+case but for the most part if you got
+the longest road people are only going
+to take it away from you by building an
+even longer road okay so given loss
+aversion why do people play in casinos
+ultimately they have to overcome this in
+a big way I mean the $20 bet that I made
+with with Rob in the beginning was
+basically a roulette spin was basically
+blackjack and there's a couple of
+different techniques that they use the
+first is chips what first thing you have
+to do when you walk into a casino is you
+have to exchange your money for an
+abstract token and a lot of studies have
+shown that when people start exchanging
+tokens instead of exchanging money that
+they don't ascribe the same value to it
+it gets abstracted and they get some
+Strack 'td and they don't assign as much
+value to it and casino specifically will
+try to make it difficult for you to
+convert to you know it's easy to eat for
+one-way trip but you can't go back the
+other way also once you convert to chips
+if you sit down a blackjack table I can
+give 200 hours to a blackjack dealer and
+help me a stack of chips but if I want
+to turn my chips back in the money I
+have to can't do it right there I got to
+pick up and I got to walk across but the
+other big thing is also jackpots people
+are really bad at dealing with big
+numbers and small probabilities and the
+casinos are starting to take advantage
+of that most of the games now if you go
+if you've been to casinos lately
+blackjack tables a lot of these new
+games they all have these little jackpot
+bonus bets
+it's very common people like that people
+like the idea that they're going to get
+a lot of money and that helps them
+overcome this idea of loss aversion
+basically the lottery as an example to
+put it into the same frame that we've
+been using on these other things is that
+choice a is I'm guaranteed to lose
+nothing
+choice B is I've got a ninety nine point
+nine and a ten percent she has to lose a
+dollar or a really really tiny chance to
+gain a half a million dollars okay and
+again the expectation value trace B here
+is negative but this is a bet that
+people make all the time
+whereas that $20 bet people won't make
+it so what's going on here is that
+people are really bad at that number
+that point zero zero zero zero zero one
+percent you know the the and and the
+lotteries are all taking advantage of
+that powerball used to be about a
+hundred million to one odds to win and
+they keep changing the game every couple
+of years and now it's like 300 million
+to one to win because they like these
+big jackpots and if people think point
+zero zero zero zero one percent she has
+to win or point zero zero zero zero zero
+one percent she has to win mentally they
+put that in the same bucket just like
+the three thousand dollars in the four
+thousand dollars or the 1 million
+dollars in the two million dollars once
+probabilities get really high a million
+to one two hundred million one three
+hundred million to one people have no
+idea of what that is okay this is one of
+my famous favorite studies from 2012 the
+Chicago teacher bonus study they gave
+they went into his classroom in Chicago
+and they gave three different bonus
+plans to different different groups of
+teachers one was just the control group
+no bonus plan the other one was a more
+traditional merit-based bonus plan which
+they gave the students tested the 80 or
+in the end of the year and if they got
+to a certain level then the teachers got
+a bonus then group three got $10,000 the
+beginning of the year and they told them
+if the students don't reach this test
+score you have to give it back and of
+the three groups only group number three
+actually showed any improvement in test
+scores so you know there's a couple of
+issues with this study and I always
+teach you these things with a grain of
+salt you know there's always a novelty
+factor and it's time to go into details
+on that here but typically just changing
+things up doing something different will
+make people react differently you can
+implement in a large scale actually
+tried to do this in my company and I
+decided that it was just never going to
+work but the the point remains that
+giving something to people you know just
+most people when they see this idea of
+getting a bonus that's a start of the
+year and you have to give it back if you
+don't
+form it's very stressful even though
+again financially it's really the same
+thing you know if you just put it aside
+and you put it in a box you can make it
+the same as group number two but people
+just don't do that so in a game as a
+game example if you're doing a pick up
+and deliver board game just as a little
+twist on it is you could have your
+players get paid in advance you pick up
+a contract card and it says you get you
+know a hundred dollars for this card but
+you have to deliver this good in three
+turns if you don't deliver the good in
+three turns you have to give the hundred
+dollars back same idea is a really basic
+thing but just that little bit of a
+twist is gonna change the emotional
+investment of the players okay you
+volunteer you sir this is what I'm gonna
+do I have here because I always travel
+with dice
+I've a red dye and I have every right
+dye okay I'm gonna put the red dye in
+one cup and a white go in the other Cup
+and you have to try to guess you're
+trying to find the red dye okay there's
+no trick here I'm just gonna mix them up
+okay if you are correct you will win $5
+there we go so which one would you like
+to pick oh you can tell oh she's I need
+to get opaque ups okay well I should
+give you five dollars just for playing
+the odds okay well you pick a cup most
+people when I do this demonstration when
+I use the correct materials is this
+backlighting what I usually do is I will
+offer somebody to pick a cup and they
+pick a cup and I will say okay if you
+stick with this cup and it is correct I
+will give you five dollars okay or if
+you want to you can switch to the other
+one and I give them an opportunity to
+switch to the other Cup and you know
+again if you switch
+you'll win the $5 either way most people
+a vast vast number of people will not
+switch away from their initial choice so
+the next thing is I will offer $6 they
+will win $6 if they switch in there
+right $5 if they stay $7 $8 $9 people
+don't like to switch their choice and
+this is a concept that's called regret
+and there's been a lot of studies about
+this and this specific dye in the cup
+study used with actual opaque cups love
+to remember that for next time they find
+that when the values are equal $5 if you
+stay with your original pick that 10% of
+people will switch if you triple the
+value of the offer if I say $15 if you
+switch on your right $5 if you stay 50%
+of people will switch and if you go to
+10 times 90 that's when you can get 90%
+of people to switch I was surprised at
+how high it went on these things but
+most people do not like to switch so
+switching to a wrong choice feels three
+times as bad as making the wrong choice
+originally and this goes back you
+remember in the beginning I said that
+the loss feels twice as bad as the gain
+this is one of the studies that kind of
+feeds into this so the old advice that
+you get on a multiple-choice test to
+stick with your initial answer if you
+pick a and later on you have second your
+second-guessing yourself don't switch I
+really believe that it is mostly because
+you don't want to feel worse so if you
+pick a and you switch to C and then a
+was right you're gonna feel worse than
+if you picked a stuck with a and it
+turned out C was right
+most people will try to avoid this so
+from okay we'll come back to that in a
+second okay so this game I can play with
+these cups so in this case although I'm
+not actually gonna play it I'm gonna
+offer you what I'm gonna do is I'm gonna
+roll a die well the game is that a die
+is going to be rolled and you have to
+decide whether it's even or odd
+that's your pick so you have a choice of
+two different games to play one of which
+we could actually play with this one is
+you make your pick whether it's even or
+odd and then I roll the die choice B is
+I roll the die I look at it I put under
+cup but I don't tell you what it is and
+then I ask you to make your pick so how
+many people would rather take game a in
+this example and how many people would
+rather have B okay so again you guys are
+pretty much in line about two-thirds and
+people choose egg and this is a concept
+that's called competence that's somewhat
+related to regret and the definition of
+competence is the amount that you know
+in proportion to whatever can be known
+and this was originally these studies
+and this idea was put forth by Tversky
+and Heath that's the same Tversky of
+Kahneman and Tversky so in the first
+example where I'm just gonna you guess
+and then I roll you know everything that
+there is to know in the world about this
+problem but on the second one where I
+roll and it's under the cup and it's
+sitting there there's information that
+exists that you don't have access to so
+you feel less comfortable making the
+choice so in in a game perspective a
+very simple game if you have one player
+that's playing an attack card punch or
+kick and another play is playing a
+defense card block punch block kick okay
+would you rather play your card first
+play your card second I haven't actually
+done this study but I'm pretty confident
+that most people from my experience just
+anecdotally are happier playing the card
+first when they make a choice like that
+and then the other person will stare
+them down and try to figure it out but
+certainly if you want to put the
+pressure on the other person picking
+your card first is going to be an easier
+choice
+so relating to this is the idea of
+choice theory so giving players too many
+choices is not a good thing and there's
+been a lot of studies have shown in
+spite of the number of salad dressings
+that are available in the supermarket
+that when your choices get to about more
+than seven people's decision-making
+ability goes away and gets much much
+worse people avoid making a decision
+rather than making a rather than making
+a wrong one
+there was a study done on 401 k's that
+as they presented people with more
+options for where they put their
+investments fewer and fewer people
+participated in the plan from a game
+perspective this is a game called
+struggle of Empires done by Martin
+Wallace which is a really terrific game
+those who haven't played it but one of
+the things that Wallace did which wasn't
+so great is there's the special ability
+tiles that you can select from and the
+very first thing you have to do in the
+game is you have to pick one of these
+tiles is what your special power is
+going to be and they're all available to
+started the game and there's about
+thirty of them and it's a really
+overwhelming choice it's great once you
+get into the game and next time you play
+it and you know what all these options
+are but for new players its paralyzing
+you have to go through all of these
+cards and they're basically you know
+people later posted online it was like
+look if you're playing this game these
+are the three that you want to present
+you know for new players pick one of
+these three and then they'll go with it
+having this many choices especially for
+a new player that doesn't understand the
+context was a big mistake and you know
+fed right into this concept of regret
+and loss aversion
+so the endowment effect is another
+really interesting offshoot of this and
+the idea of the endowment effect is that
+when you give something to somebody that
+they ascribe it more value than if it
+was just off to the side or they didn't
+have it the the classic study that they
+did on this is they had participants do
+something and just in the beginning of
+it they gave him a mug as a prize for it
+I gave him a candy bar as a prize for it
+and they then at the end of the study
+asked people if they wanted to switch to
+the other prize most people wouldn't
+switch even if they asked them
+beforehand would you rather have a mug
+or out of a candy bar and they got the
+one they didn't want once they got that
+and they had it that it was um it was
+something that they just wanted to stick
+with and this comes up a lot in games so
+before we get to games let me just talk
+about this so this is the the Rifleman's
+creed which i think is for the army i
+apologize if i'm wrong on that but the
+idea is that you take an object and you
+personify it for the person who has it
+and the endowment effect is something
+that happens naturally but there are
+techniques that you can use to emphasize
+it the rightfulness creed is one thing
+that does that another game that does
+that really effectively in the video
+game world is portal in the game portal
+for those that haven't played it there's
+lots of cubes that are round that you
+pushed onto buttons and stuff like that
+but at one point you are literally
+endowed with a special cube called the
+companion cube which is a cube that has
+hearts on the side and you're told that
+for the whole level you have to carry it
+through the level and then you you just
+very immediately naturally get attached
+to the level to attach the cube and they
+do certain tricks they say certain
+things are at the level to get you more
+and more attached to it it never says
+anything it never does anything it just
+sits there but you get this attachment
+and then at the very end of the level
+famously you have to I everyone's played
+portal right so spoiler
+you have to incinerate the companion
+cube you have to literally take it and
+throw it into the incinerator and
+there's stories from the developers
+about how people have agonized over this
+and have waited you know tried to do
+other things that see what they could do
+avoid it and it's just such a great
+example of a way to take this and use it
+as a way to manipulate the player
+experience and the emotions that they're
+feeling you know you can even do this in
+a board game and I don't think board
+games have really done this but you
+could certainly take you know include it
+in a really cute little stuffed animal
+or something that goes to a certain
+player for doing something and then
+other player you know try to take away
+from it and take take it away from them
+you know usually those those type of
+tokens or totems represent the players
+themselves so we tend not to take them
+away the really cool stuff but there are
+certainly things that that could be done
+with that but you could give your player
+or something give them a pet give him a
+sidekick
+give him something and then threaten to
+take it away and that's gonna really up
+the emotional stakes because of all of
+this psychology that we talked about
+okay the last thing I'd like to talk
+about the last effect that I like to
+talk about is called the endowed
+Progress effect this is one of my
+personal favorites so this was a car
+wash study that was done in 2006 these
+the team went to a car wash and they
+gave half the people that came in the
+car wash they gave him the first ticket
+and said if you punch it eight times I
+will you'll get a free car wash and the
+second group the other half they gave
+the second ticket which had ten punches
+on it and but two of them were already
+punched they said if you come back with
+you know the whole thing punched you get
+a free car wash so both cases you have
+to come back to the car wash eight more
+times and what they found was that the
+first ticket was redeemed completely
+nineteen percent of the time and the
+second one almost doubled that twice as
+many people completed the second ticket
+than the first they had to do the same
+amount of effort but they were given
+some progress they were given they were
+given what was called endowed progress
+and it had a very strong psychological
+effect on people
+people were on a journey already and
+they once you're on that journey you
+kind of have to take effort to walk away
+from it but you also you know you're
+already given something and you're
+worried that you're going to lose it so
+it ties into all of that psychology so
+there's a board game actually that uses
+this pretty famously although I'm not
+sure if he was really intended to but in
+the Settlers of Catan or Catan I guess
+is called now I will never get used to
+that but you have to get ten victory
+points to win and the players start with
+two victory points so this is exactly
+the same case as the second carwash
+coupon where you got to get ten points
+but you've got your first two punches so
+you're already on the road to success
+the south of Catan actually came out
+before the car wash study was done
+obviously so I'm sure that it wasn't
+influenced by that but I think it's
+really interesting to to see the way
+that that players were already moved
+down the road you know it would have
+been easy to say you have to get eight
+additional points or had a little
+scoring track or something like that but
+that's not what the game does the game
+says you got to get ten points but
+everybody starts at two so again all of
+these things come out of this concept of
+loss aversion and you know over the
+years I've learned more and more about
+you know learn about these different
+psychologies and it's it's just
+fascinating how it always come back to
+that basic idea that losing stuff feels
+bad and feels worse than getting it does
+in the first place so framing regret the
+endowment effects all of this stuff
+comes into play so it's it's a really
+you know when you're aware of it it's
+both interesting in your own life when
+you see how it's affecting you and
+things that you can do but also in terms
+of game design of using it really as a
+tool as a scalpel to push the players
+into the emotional state that you're
+looking for them to to experience so
+that's why I have prepared thank you
+very much and be happy to take any
+questions
+I think there's two microphones if
+anybody has any questions yes so I feel
+like I'm the only person ever who didn't
+get attached to the companion Cuban
+portal yeah and and just to kind of keep
+it in the sort of the universe of what
+your you've been talking about I feel
+like the reason that I didn't is because
+the game up until that point I I more
+felt like the game was framing what I
+was doing as a relationship with GLaDOS
+now more than you know than the
+companion cube and so this was like an
+instance of you know of kind of a point
+in that relationship so I guess if I
+were to take that and turn it into a
+question I would say what do you think
+about like how can framing kind of
+backfire
+I guess well first off I will say that
+my my niece who's a lot younger than my
+kids came over about a year ago and my
+kids insisted on playing portal with her
+and she like immediately took the
+companion cube and threw it in the fire
+and they were my kids were horrified
+that's how could you do that and felt
+that she immediately needed to be sent
+for some sort of psychological
+counseling but you know I the key is to
+draw the line between you know it's it's
+you don't want to see the the wizard
+behind the man behind the curtain okay
+you want to do it in a way that's subtle
+and if people start to feel that they're
+being manipulated they're gonna push
+back against it and that's why you know
+even at the beginning of this talk and I
+talk about it's just like go with your
+gut don't try to out think it I think if
+people are doing that or in a different
+place in a mindset then you know you can
+have a problem so you want to use the
+tools I think you want to use them
+sparingly and you know you can get into
+a situation yet where people backfire
+and we didn't talk about a little bit
+you know even there's a lot of
+techniques like this that are used in
+free-to-play games or freemium type
+games where you're trying to get people
+to buy other stuff and if it's done in a
+real heavy-handed way it's gonna turn
+people off yeah I guess this is related
+to loss aversion for often like oblique
+multiplayer games where you may be
+adversarial towards other players but
+you know that may that may just be
+optional and perhaps not when you can
+attribute the loss of something you care
+about to the game itself that's a fairly
+neutral feeling like there's no villain
+there necessarily unless the game has an
+antagonist which is a non-player
+character when you're playing a
+multiplayer game and perhaps sometimes
+you're you're attempting to of loss tied
+to another player or attempting to be
+the like the reason that someone else
+loses something this this is something
+that I'm interested to explore and like
+have you have you kind of done any
+studies which involve like averting loss
+player two player versus player two game
+I think that to a certain extent
+specifically study that or looked at
+that I I my my initial instinct is that
+yeah I mean there certainly is like if
+you look at monopoly or there's there's
+plenty of games where players are taking
+stuff away from other players and that's
+really the objective of the game and I
+think that it triggers this stuff but I
+think if it's from from a systemic way
+if it's done from the point of view of
+the game I think it can be a little bit
+more intimidating you've almost like
+walking into a casino and there's this
+you know you're playing against the
+house is different than if you're at a
+poker table and you're playing against
+another player so I think the idea of
+Authority also kind of factors into it
+in some sense but I think that it's so
+so I think that you you want to have the
+I think having the game do it is more
+effective than having other players do
+it I think that the game telling you to
+take a card and tear it up is perhaps
+more I don't know maybe not more
+effective than you know having another
+player is allowed to reach into your
+hand and pull out a card and rip it up
+depends on the reaction yeah yeah it
+depends on your relationship with your
+friends but you know I I think that they
+think there's a little bit of a subtle
+distinction there in terms of how they
+trigger things hi
+with the card game example you mentioned
+how there's cards that kind of have a
+negative reaction even though gameplay
+wise they might be more beneficial than
+some other options and many people who
+play a lot of card games will actually
+kind of internalize those you know it
+doesn't matter how many cards you pitch
+it only matters about the cards you need
+to win etc etc do you find the people
+who get into that mindset typically only
+have that effect those particular
+situations with those card games or do
+you find that they also in other risk
+aversion situations have maybe a lower
+threshold there I think first off you
+can totally be habituated away from loss
+aversion and there's tons of studies
+that have been done like on stockbrokers
+that and maybe initially when they start
+you know like like the the casual person
+that's buying and selling stock will
+have an issue with you know holding on
+for stock for too long to avoid the loss
+of version and the loss of selling the
+stock but with a stock broker they start
+out with a little bit of loss aversion
+but if you just do it day in and day out
+and day in and day out you get over it
+the tracking is ample and hearthstone
+you know once you play the game a lot
+you've you get past that and you see the
+utility of the card I am not aware of
+any studies specifically that says if
+you know if you're a stockbroker and
+you're used to doing this and you
+transplant into a different environment
+about whether that goes with you I would
+with with no real evidence I would
+speculate that it probably does to a
+certain extent but you you but the first
+part is you can definitely you know you
+will be habituated out of loss aversion
+if you're if you're paying attention to
+it or doing it over and over again thank
+you yeah oh sorry yeah that's quite high
+so I was just going to ask a lot of what
+you talked about and the studies that
+you referenced focus on specific sort of
+small scale choices within a
+juh hole so you know like the level
+draining being a mechanic within you
+know what obviously a wider game so I
+was wondering how you feel loss aversion
+applies across perhaps a game as a whole
+so the time investment or the sense of
+loss if you didn't you know accumulate
+your victory points before everybody
+else or you know that that level I'm
+sorry I'm not sure I totally understand
+the question you mean like on a that the
+whole game is kind of built around yeah
+it seemed like everything that was
+mentioned in the talk was about the
+specific steps within the whole yeah but
+I was wondering whether there was kind
+of a broader loss aversion that applies
+once all of these things are folded in
+and it gets more complicated or more
+well yeah I mean I I think that you can
+certainly take aspects of this and you
+know loss aversion you know I perhaps
+you know at its sharpest is going to be
+you know that that critical pivot point
+in in a game or an experience whether
+it's throwing away the companion cube or
+Floyd the robot and planetfall where you
+know you you you lose a companion or
+something like that and you feel the
+loss immediately but you know I think
+you could and there have been some games
+like brothers and others that try to
+take that concept of loss and and
+explore it but have to you have to go
+through that setup phase to kind of to
+tweak it and then kind of go from there
+okay cool thank you sure hi going back
+to your example with the 3000 against
+the 4000 I was wondering if we modified
+the $4,000 option so that even with a
+lower expected value or a higher
+expected value if the instead of getting
+nothing the partial time you just get
+less so if it was $1,000 and 5000 as the
+two possible outcomes against the shore
+3,000 if it would be different and I
+don't know yeah I think that's a really
+interesting point I you know nothing
+zero
+there's just some numbers that are
+really just go off into different areas
+of people's brains and and nothing is
+one of
+a hundred percent is something you know
+or like you know so if I tell you that
+there's a hundred percent chance that
+something's gonna happen versus a 99.99%
+chance something's gonna happen you know
+you don't focus on the fact it's 99.999%
+you focus on the fact that there's a
+chance that it may not happen and then
+you're really gonna get hosed so you
+know a hundred percent a guaranteed sure
+thing is a totally different kind of
+part of your brain so and it's the same
+thing with zero dollars and you even see
+that at you know at trade shows and
+stuff like that you know just yesterday
+over in the other hall this booth was
+giving away view masters their little 3d
+view master clicky things I don't need a
+view master but I got it because it was
+there on the table was free if they
+charge a penny for the view master I
+never would have gotten it but I stood
+online I will talk to the guy I wanted
+the view master because it was free so I
+think yeah I mean having that there's
+certain things that are treated in a
+very free is different than a penny and
+99.9 a nine is different than a hundred
+and you can use that as part of the
+manipulation sure thank you hi I was
+just wondering if you have any reading
+recommendations about incorporating this
+either into games or even just broader
+like behavioral psychology I mean the
+best book on this is written by Kahneman
+recently a couple years ago called
+Thinking Fast and Slow I can't recommend
+that book highly enough that's it's it's
+it covers a lot of this territory and
+goes even into deeper deeper types of
+stuff talk he talks about endings which
+is really just a whole other talk where
+he talks about colonoscopies and how
+that applies to whether you enjoy an
+experience or not which is a whole other
+game development talk
+spoiler alert the ending is really
+really important so yeah I would
+definitely recommend that book Thinking
+Fast and Slow thanks a lot sure yeah
+hi I was curious when you're talking
+about the example of say the companion
+cube and giving the players something
+and then taking it away what is or do
+you have any ideas or studies about like
+the effect of then giving that that back
+to the player essentially like if the
+companion cube for example showed up
+like three
+later what would the emotional effects
+be on the player you want the holiday
+the Hollywood ending from when a
+dramatically a singed companion cube
+comes comes into the last scene of the
+game as it's brought back yeah you know
+I mean I think that there's there's
+certain expectations and movies and
+storytelling in general that a lot of
+times that those sometimes those
+characters come back and that's used to
+varying effects in different different
+genres you know in the movies you know I
+guess obi-wan comes back again at the
+end of Episode six as a ghost but at
+least he's there and stuff like that III
+think it may give the player a little
+bit of a sense of completeness but I
+don't think it's really necessary to get
+the effect you know they should have no
+expectation that it's gonna come back
+and you should really convince them that
+they're really gone otherwise it kind of
+cheapens the effect if they think they
+could get it back that's a different
+situation because you've lost something
+but you know but I can I have a method
+of getting it back so okay thank you hi
+yeah so you started your talk with the
+example of kind of making a bet on a
+50/50 chance right with the coin with
+the coin toss yes I'm interested in in
+lots of multiplayer games now you know
+there is the concept of a zero-sum
+scenario where you're where you're
+betting something against your opponent
+and I'm wondering if you look for
+instance at the trophy mechanic in clash
+Royale right where if you win you gain
+certain trait and amount of trophies and
+if you lose you actually it takes them
+away from you now that's not it's not
+always the same number using your
+understanding of kind of loss aversion
+and and how to you know optimize the
+player's psychology through this process
+I'm wondering if you have any kind of
+view on how to design such a trophy
+system in that way yeah in terms of what
+you take away and what you give yeah I
+think that I'm not familiar with clash
+Royale but I there's a similar thing you
+know I showed the hearthstone example
+and I think that that Blizzard a really
+nice job with their ranked system in
+horse town with a couple of tricks to do
+that we're first off if there's the win
+streak mechanic so if you you know if
+you win a couple of games in a row you
+get bonus stars and the other thing is
+that also when you lose stars there's
+when you go
+up a level in hoarse tone there's when
+you go when you get to level four or
+I've never made it to levels rank for it
+but for me rank nineteen when you're at
+ranked 18 and you go to 18 if you lose
+immediately after getting to 18 you stay
+at 18 there's like a weird little half
+level thing inside there so from 19 you
+go up to like 18 and then you go down
+like 18 zero and if you lose again you
+go you drop down to the same step under
+19 so I think that in that case they
+also try to soften the blow because
+they're trying to be friendly or they
+want people to do it and gradually you
+know with the win streak thing you'll
+you know if you play long enough and
+you're it's a coin flip over and over
+again eventually you'll get enough wind
+streaks to advance through the ranks so
+yeah I think there's definitely
+manipulations that you can do in there
+to try to keep the you know keep the
+players engaged and not get too
+discouraged I think we got two minutes
+left so I guess we can get these last
+two questions
+yeah really quick so for the Cuban
+portals for example the way it was
+described almost as if it was like a
+good design for the game actually make
+the game better and in the talk it
+seemed a lot about and when you take
+something away it hurts more and when
+you give it it's not worth this much to
+like the net gain being negative and not
+when is it a good game design idea to
+actually do the mechanic of giving
+something and taking it away and would
+you ever do it with real money a game
+sure there's games that do it with real
+money but yeah I I think it depends on
+the effect that you're looking for in
+the player like I said when I was doing
+a family game of which was pit crew was
+aimed at younger kids I didn't want to
+do that
+I specifically soften the edges so that
+other people were getting instead of
+them losing I didn't want to take things
+away from them but if you want that
+emotional beat if you're trying to get
+that emotional state and give the
+experience to the players of you know
+this is you know that that's kind of a
+point in Portal where it's just really
+obvious that something weird is going on
+with this computer in the beginning the
+computer is your friend to steal a line
+from paranoia and you know then you
+gradually get the feeling that things
+are not what they seem and so it's an
+important point to get across really
+clearly that hey
+you know this this is not something
+that's looking at for your best interest
+so I think that that's why it's it's
+important in that interestingly the that
+does the developers the reason that they
+kind of did it it wasn't although it
+wasn't initially as an emotional thing
+they just the problem initially they had
+was players kept forgetting to bring the
+cube at them and then we get into all
+these weird spots and they just they and
+they were looking for a way to get the
+players to remember to get the cube so
+they put the hearts on it and they first
+they had the computer say make sure you
+remember in periodically to the levels
+they make sure remember and they just
+kept ramping it up until they like cross
+this threshold where it stopped just
+being reminders and created a true
+emotional attachment to it thank you so
+I've been thinking a lot about the
+relationship between player loss
+aversion and wanting to reward players
+and give them reward mechanics there's a
+free-to-play game that has a reward
+wheel and so it's like hey every day if
+you come and play you can get a reward
+and the some most of the things in the
+reward wheel are tiny and some of them
+are really awesome so you keep coming
+back to want to spend the wheel to get
+the awesome thing but they kind of mess
+it up because they give everybody an
+equal slot size on the wheel but the
+wheels rigged like clearly you don't
+have a one in six chance of winning the
+awesome thing and in fact that's
+telegraphed by the fact that you spin
+the wheel and it will like zoom past the
+expensive thing and then slow down and
+stop inside it rotates in this way that
+makes it really obvious I don't think on
+purpose to the the player that they're
+they're being messed with and so even
+though I only get a benefit from
+spinning the wheel every day it's my
+least favorite part of the game yeah
+there's a bunch of other really good
+mechanics but so I'm I'm experiencing
+loss aversion for something that I don't
+even have because I have the perceived
+value being equal because the way it's
+represented and then I'm having that
+taken away cuz I know better they could
+have fixed that by either giving the the
+more expensive things a smaller slot so
+that I perceived my chance is smaller or
+by really hiding the fact that it can't
+come up so that I just feel unlucky I
+mean I would I would hate that less than
+knowing that I'm being manipulated in
+the way that it does
+that's a little harder in boardgames
+because you can't hide it as well right
+like you can't have a wheel that spins
+that actually calculates where it's
+going to end up and then gives me even
+spend and makes it feel natural if you
+want to reward players with a variable
+reward in a board game how would you do
+it without making them feel bad it's
+it's a lot harder to do because like you
+say it's I mean the problem of the board
+game is everything is there and one of
+you know even in the legacy game you
+know the packets that are available on
+what you need to do to get there so
+there's not really true true totally
+hidden content so right it is
+challenging to do I'm not sure off the
+top of my head at how you would do it
+and you know that that other Mechanica
+talking about is interesting in fact
+slot machines had a slot machine
+designer on the on our podcast a couple
+of months ago and we talked about this
+and they map on the video slots you know
+they decide what the final thing is
+going to be at my end or this before
+everything starts animating and they
+specifically program in the near miss
+they program in so that right off the
+line that scores you see the winning
+thing which is a very powerful
+psychological ploy which actually
+starting to get outlawed now there's
+some jurisdictions or nala to do that in
+slot machines so yeah there's there's
+ways to do that that are better than
+others that won't piss off the players
+so if there's any other questions I will
+be around afterwards but thank you so
+much for your attention
+really appreciated
+you

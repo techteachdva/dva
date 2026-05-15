@@ -1,0 +1,40 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/obstacles/moving_platform.gd" id="Script"]
+
+[sub_resource type="BoxMesh" id="Mesh"]
+size = Vector3(3.5, 0.4, 4.0)
+
+[sub_resource type="BoxShape3D" id="CollShape"]
+size = Vector3(3.5, 0.4, 4.0)
+
+[sub_resource type="StandardMaterial3D" id="Mat"]
+albedo_color             = Color(0.15, 0.5, 1.0, 1.0)
+emission_enabled         = true
+emission                 = Color(0.05, 0.3, 0.9, 1.0)
+emission_energy_multiplier = 1.0
+roughness                = 0.35
+metallic                 = 0.3
+
+; move_axis: Vector3(1,0,0)=side-to-side  Vector3(0,1,0)=up-down
+[node name="MovingPlatform" type="AnimatableBody3D"]
+script        = ExtResource("Script")
+move_distance = 4.0
+move_axis     = Vector3(1.0, 0.0, 0.0)
+move_speed    = 2.5
+pause_time    = 0.6
+
+[node name="PlatMesh" type="MeshInstance3D" parent="."]
+mesh                        = SubResource("Mesh")
+surface_material_override/0 = SubResource("Mat")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("CollShape")
+
+[node name="PauseTimer" type="Timer" parent="."]
+one_shot = true
+
+[node name="OmniLight3D" type="OmniLight3D" parent="."]
+light_color  = Color(0.2, 0.55, 1.0, 1.0)
+omni_range   = 4.5
+light_energy = 1.8

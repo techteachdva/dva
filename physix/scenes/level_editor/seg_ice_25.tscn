@@ -1,0 +1,49 @@
+[gd_scene format=3]
+
+
+[sub_resource type="BoxMesh" id="BoxMesh_Seg_Ice25T"]
+size = Vector3(10.0, 0.4, 25.0)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_Seg_Ice25T"]
+size = Vector3(10.0, 0.4, 25.0)
+
+[sub_resource type="BoxMesh" id="BoxMesh_Seg_Ice25W"]
+size = Vector3(0.3, 1.5, 25.0)
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_Seg_Ice25W"]
+size = Vector3(0.3, 1.5, 25.0)
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_ice"]
+friction = 0.005
+bounce = 0.05
+
+[node name="Seg_Ice25" type="StaticBody3D"]
+physics_material_override = SubResource("PhysicsMaterial_ice")
+transform = Transform3D(1, 0, 0, 0, 1.0000, -0.0000, 0, 0.0000, 1.0000, 0, 0.0, 0)
+
+[node name="SegMesh" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_Seg_Ice25T")
+metadata/mat_type = "ice"
+
+[node name="SegShape" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape3D_Seg_Ice25T")
+
+[node name="Wall_L" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -5.15, 0.95, 0)
+
+[node name="WallMesh" type="MeshInstance3D" parent="Wall_L"]
+mesh = SubResource("BoxMesh_Seg_Ice25W")
+metadata/mat_type = "wall"
+
+[node name="WallShape" type="CollisionShape3D" parent="Wall_L"]
+shape = SubResource("BoxShape3D_Seg_Ice25W")
+
+[node name="Wall_R" type="StaticBody3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 5.15, 0.95, 0)
+
+[node name="WallMesh" type="MeshInstance3D" parent="Wall_R"]
+mesh = SubResource("BoxMesh_Seg_Ice25W")
+metadata/mat_type = "wall"
+
+[node name="WallShape" type="CollisionShape3D" parent="Wall_R"]
+shape = SubResource("BoxShape3D_Seg_Ice25W")

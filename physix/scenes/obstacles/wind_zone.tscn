@@ -1,0 +1,45 @@
+[gd_scene format=3 uid="uid://ckhgfuuf32p3m"]
+
+[ext_resource type="Script" uid="uid://p0cqoa3dy264" path="res://scripts/obstacles/wind_zone.gd" id="Script"]
+
+[sub_resource type="BoxMesh" id="Mesh"]
+size = Vector3(8, 3, 10)
+
+[sub_resource type="StandardMaterial3D" id="Mat"]
+transparency = 1
+albedo_color = Color(0.6, 0.9, 1, 0.08)
+emission_enabled = true
+emission = Color(1, 0.91288316, 0.113884635, 1)
+emission_energy_multiplier = 0.25
+
+[sub_resource type="BoxShape3D" id="TriggerShape"]
+size = Vector3(8, 3, 10)
+
+[node name="WindZone" type="Area3D" unique_id=1149581563]
+script = ExtResource("Script")
+wind_force = 15.0
+gust_enabled = false
+
+[node name="WindMesh" type="MeshInstance3D" parent="." unique_id=457610541]
+mesh = SubResource("Mesh")
+surface_material_override/0 = SubResource("Mat")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="." unique_id=2103829216]
+shape = SubResource("TriggerShape")
+
+[node name="OmniLight3D" type="OmniLight3D" parent="." unique_id=1260426150]
+light_color = Color(0.8101892, 0.7723943, 0, 1)
+light_energy = 1.8
+omni_range = 7.0
+
+[node name="WindLabel" type="Label3D" parent="." unique_id=1152501067]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.9, 0)
+pixel_size = 0.012
+billboard = 1
+modulate = Color(0.6, 0.95, 1, 0.9)
+text = "≋ WIND"
+font_size = 48
+
+[node name="WindParticles" type="GPUParticles3D" parent="." unique_id=1388789177]
+amount = 40
+lifetime = 1.2

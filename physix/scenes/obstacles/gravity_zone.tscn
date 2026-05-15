@@ -1,0 +1,48 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/obstacles/gravity_zone.gd" id="Script"]
+
+[sub_resource type="BoxMesh" id="Mesh"]
+size = Vector3(8.0, 2.5, 8.0)
+
+[sub_resource type="BoxShape3D" id="TriggerShape"]
+size = Vector3(8.0, 2.5, 8.0)
+
+; Semi-transparent so player can see through it
+[sub_resource type="StandardMaterial3D" id="Mat"]
+albedo_color             = Color(0.1, 0.5, 1.0, 0.08)
+emission_enabled         = true
+emission                 = Color(0.0, 0.3, 1.0, 1.0)
+emission_energy_multiplier = 0.3
+transparency             = 1
+cull_mode                = 0
+
+; zone_type: 0=BOOST 1=REDUCE 2=REVERSE 3=ZERO — set in Inspector per instance
+[node name="GravityZone" type="Area3D"]
+script              = ExtResource("Script")
+zone_type           = 1
+gravity_multiplier  = 2.0
+
+[node name="ZoneMesh" type="MeshInstance3D" parent="."]
+mesh                        = SubResource("Mesh")
+surface_material_override/0 = SubResource("Mat")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("TriggerShape")
+
+[node name="OmniLight3D" type="OmniLight3D" parent="."]
+light_color  = Color(0.2, 0.5, 1.0, 1.0)
+omni_range   = 8.0
+light_energy = 2.0
+
+[node name="ZoneLabel" type="Label3D" parent="."]
+position   = Vector3(0.0, 1.6, 0.0)
+text       = "↑ LOW-G"
+font_size  = 48
+pixel_size = 0.012
+billboard  = 1
+modulate   = Color(0.4, 0.8, 1.0, 0.95)
+
+[node name="GravParticles" type="GPUParticles3D" parent="."]
+amount    = 30
+lifetime  = 1.8
