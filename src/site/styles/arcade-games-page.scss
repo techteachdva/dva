@@ -242,9 +242,36 @@
   justify-content: center;
   overflow: hidden;
   padding: 10px 8px;
+  cursor: pointer;
   box-shadow:
     inset 0 0 0 2px #1a1a20,
     inset 0 4px 24px rgba(0, 0, 0, 0.75);
+}
+
+/* CRT glass overlay: scanlines + reflection + vignette */
+.arcade-cabinet__screen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    /* reflection sweep */
+    linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, transparent 35%),
+    /* scanlines */
+    repeating-linear-gradient(0deg, transparent 0 1px, rgba(0, 0, 0, 0.22) 1px 2px),
+    /* subtle vignette */
+    radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(0, 0, 0, 0.35) 100%);
+  mix-blend-mode: overlay;
+  transition: background 0.3s ease;
+}
+
+.arcade-cabinet__screen:hover::after {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.14) 0%, transparent 40%),
+    repeating-linear-gradient(0deg, transparent 0 1px, rgba(0, 0, 0, 0.22) 1px 2px),
+    radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(0, 0, 0, 0.35) 100%);
 }
 
 .arcade-cabinet__front-art {
@@ -254,17 +281,138 @@
   overflow: hidden;
 }
 
-.arcade-cabinet__screen-link {
+/* ========== Control Panel ========== */
+.arcade-cabinet__control-panel {
+  flex: 0 0 auto;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 4px 12px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, transparent 8%),
+    linear-gradient(180deg, #1c1c22 0%, #121218 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.4);
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.35),
+    0 1px 0 rgba(255, 255, 255, 0.04);
   position: relative;
+}
+
+/* Slight slant to sell the angled control deck */
+.arcade-cabinet__control-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, transparent 30%);
+  pointer-events: none;
+}
+
+.arcade-cabinet__joystick {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.25) 0%, transparent 50%),
+    linear-gradient(145deg, #3a3a44 0%, #1e1e26 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 2px 3px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  position: relative;
+}
+
+/* joystick shaft */
+.arcade-cabinet__joystick::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: linear-gradient(145deg, #555560, #2a2a34);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
+}
+
+.arcade-cabinet__btn {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.35);
+  box-shadow:
+    0 2px 3px rgba(0, 0, 0, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  position: relative;
+}
+
+.arcade-cabinet__btn--a {
+  background: radial-gradient(circle at 35% 35%, rgba(255, 80, 80, 0.5) 0%, #8a2020 100%);
+}
+.arcade-cabinet__btn--b {
+  background: radial-gradient(circle at 35% 35%, rgba(80, 255, 80, 0.45) 0%, #208a20 100%);
+}
+.arcade-cabinet__btn--c {
+  background: radial-gradient(circle at 35% 35%, rgba(80, 140, 255, 0.45) 0%, #20408a 100%);
+}
+
+/* ========== Coin Door ========== */
+.arcade-coin-door {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  width: 110px;
+  height: 56px;
+  border-radius: 4px;
+  background:
+    linear-gradient(90deg, #4a4a52 0%, #606068 25%, #4a4a52 50%, #55555d 75%, #4a4a52 100%);
+  border: 2px solid #33333a;
+  box-shadow:
+    0 3px 6px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
   z-index: 2;
-  display: inline-flex;
+}
+
+.arcade-coin-door__slot {
+  width: 24px;
+  height: 5px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #1a1a1e 0%, #0a0a0c 100%);
+  border: 1px solid #222228;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.arcade-coin-door__label {
+  font-size: 0.45rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #a0a0a8;
+  text-shadow: 0 1px 1px rgba(0, 0, 0, 0.6);
+  line-height: 1;
+}
+
+.arcade-cabinet__screen-link {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
   align-items: center;
   justify-content: center;
   padding: 0.55rem 1rem;
   font-weight: 700;
   font-size: 0.95rem;
   text-decoration: none !important;
-  border-radius: 4px;
+  border-radius: inherit;
   transition: transform 0.2s ease, box-shadow 0.25s ease, filter 0.25s ease;
   text-align: center;
   line-height: 1.25;
@@ -343,7 +491,99 @@
   transform: scale(1.03);
 }
 
+/* ========== Back Face (closes the cuboid) ========== */
+.arcade-cuboid__face--back {
+  width: var(--cab-w);
+  height: var(--cab-h);
+  margin-left: calc(var(--cab-w) / -2);
+  margin-top: calc(var(--cab-h) / -2);
+  transform: rotateY(180deg) translateZ(var(--cab-half-z));
+  border-radius: 6px 6px 10px 10px;
+  overflow: hidden;
+  border: 2px solid rgba(35, 35, 42, 0.95);
+  background: linear-gradient(145deg, #1a1a20 0%, #0e0e12 100%);
+  box-shadow:
+    inset 2px 0 8px rgba(0, 0, 0, 0.45),
+    inset -1px 0 0 rgba(255, 255, 255, 0.04);
+}
+
+/* ========== T-Molding (colored edge strips) ========== */
+.arcade-cuboid__face--front {
+  border-left: 3px solid var(--t-mold-front, rgba(255, 255, 255, 0.08));
+}
+
+.arcade-cuboid__face--right {
+  border-left: 3px solid var(--t-mold-side, rgba(255, 230, 190, 0.14));
+}
+
+/* ========== Screen Flicker (CRT refresh hum) ========== */
+@keyframes screen-flicker {
+  0%, 100% { opacity: 0.98; filter: brightness(1); }
+  10% { opacity: 1; filter: brightness(1.02); }
+  20% { opacity: 0.99; filter: brightness(0.98); }
+  30% { opacity: 1; filter: brightness(1.01); }
+  40% { opacity: 0.97; filter: brightness(1.03); }
+  50% { opacity: 1; filter: brightness(1); }
+  60% { opacity: 0.98; filter: brightness(0.99); }
+  70% { opacity: 1; filter: brightness(1.02); }
+  80% { opacity: 0.99; filter: brightness(1); }
+  90% { opacity: 1; filter: brightness(0.98); }
+}
+
+.arcade-cabinet__screen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 50%, transparent 60%, rgba(0, 0, 0, 0.25) 100%);
+  animation: screen-flicker 0.12s steps(2, end) infinite;
+  mix-blend-mode: multiply;
+}
+
+/* Stop flicker when player hovers (screen stabilizes on engagement) */
+.arcade-cabinet__screen:hover::before {
+  animation: none;
+  opacity: 0.6;
+}
+
+/* ========== Marquee Lightbox ========== */
+.arcade-cabinet__marquee {
+  box-shadow:
+    inset 0 0 8px rgba(255, 255, 255, 0.06),
+    0 1px 0 rgba(0, 0, 0, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+/* inner glow strip */
+.arcade-cabinet__marquee::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: inset 0 0 12px rgba(255, 255, 255, 0.08);
+  opacity: 0.6;
+}
+
+/* subtle marquee pulse */
+@keyframes marquee-pulse {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.08); }
+}
+
+.arcade-cabinet__marquee {
+  animation: marquee-pulse 3s ease-in-out infinite;
+}
+
 /* ========== Tech Escape ========== */
+.arcade-cabinet--tech {
+  --t-mold-front: rgba(0, 255, 220, 0.55);
+  --t-mold-side: rgba(0, 220, 255, 0.45);
+}
+
 .arcade-cabinet--tech .arcade-cabinet__marquee {
   background: linear-gradient(90deg, #0a1628 0%, #0d2844 50%, #0a1628 100%);
   color: #7ee8ff;
@@ -535,6 +775,11 @@
 }
 
 /* ========== Dungeon ========== */
+.arcade-cabinet--dungeon {
+  --t-mold-front: rgba(200, 160, 100, 0.55);
+  --t-mold-side: rgba(180, 140, 90, 0.45);
+}
+
 .arcade-cabinet--dungeon .arcade-cabinet__marquee {
   background: linear-gradient(180deg, #3a2f28 0%, #2a221c 100%);
   color: #e8d4b8;
@@ -723,6 +968,11 @@
 }
 
 /* ========== Crystal Wizards ========== */
+.arcade-cabinet--crystal {
+  --t-mold-front: rgba(200, 160, 255, 0.55);
+  --t-mold-side: rgba(180, 140, 255, 0.45);
+}
+
 .arcade-cabinet--crystal .arcade-cabinet__marquee {
   background: linear-gradient(90deg, #2a1838 0%, #1e2048 50%, #2a1838 100%);
   color: #e8e0ff;
@@ -910,6 +1160,11 @@
 }
 
 /* ========== Purple Worm ========== */
+.arcade-cabinet--worm {
+  --t-mold-front: rgba(200, 120, 220, 0.55);
+  --t-mold-side: rgba(180, 100, 200, 0.45);
+}
+
 .arcade-cabinet--worm .arcade-cabinet__marquee {
   background: linear-gradient(180deg, #3a1a4a 0%, #1e0a28 100%);
   color: #e8c8ff;
@@ -1085,6 +1340,11 @@
 }
 
 /* ========== Dragon Trail ========== */
+.arcade-cabinet--dragon {
+  --t-mold-front: rgba(100, 255, 120, 0.55);
+  --t-mold-side: rgba(80, 200, 100, 0.45);
+}
+
 .arcade-cabinet--dragon .arcade-cabinet__marquee {
   background: linear-gradient(180deg, #1a2a18 0%, #0e1a0c 100%);
   color: #b8f0a8;
@@ -1283,6 +1543,12 @@
     animation: none !important;
   }
   .arcade-cabinet--dragon .arcade-cabinet__side-art::before {
+    animation: none !important;
+  }
+  .arcade-cabinet__screen::before {
+    animation: none !important;
+  }
+  .arcade-cabinet__marquee {
     animation: none !important;
   }
 }

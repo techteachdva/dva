@@ -25,13 +25,26 @@ title: Games Mr. Phil has made
               </div>
               <div class="arcade-cabinet__marquee">Tech Escape</div>
             </div>
-            <div class="arcade-cabinet__front-art" aria-hidden="true"></div>
+            <div class="arcade-cabinet__control-panel" aria-hidden="true">
+              <span class="arcade-cabinet__joystick"></span>
+              <span class="arcade-cabinet__btn arcade-cabinet__btn--a"></span>
+              <span class="arcade-cabinet__btn arcade-cabinet__btn--b"></span>
+              <span class="arcade-cabinet__btn arcade-cabinet__btn--c"></span>
+            </div>
+            <div class="arcade-cabinet__front-art" aria-hidden="true">
+              <div class="arcade-coin-door">
+                <span class="arcade-coin-door__slot"></span>
+                <span class="arcade-coin-door__slot"></span>
+                <span class="arcade-coin-door__label">1 COIN 1 PLAY</span>
+              </div>
+            </div>
           </div>
           <div class="arcade-cuboid__face arcade-cuboid__face--right">
             <div class="arcade-cabinet__side-art" aria-hidden="true"></div>
             <div class="arcade-cabinet__side-vents" aria-hidden="true"></div>
           </div>
           <div class="arcade-cuboid__face arcade-cuboid__face--top" aria-hidden="true"></div>
+          <div class="arcade-cuboid__face arcade-cuboid__face--back" aria-hidden="true"></div>
         </div>
       </div>
     </div>
@@ -49,9 +62,20 @@ title: Games Mr. Phil has made
               </div>
               <div class="arcade-cabinet__marquee">Dungeon Class</div>
             </div>
+            <div class="arcade-cabinet__control-panel" aria-hidden="true">
+              <span class="arcade-cabinet__joystick"></span>
+              <span class="arcade-cabinet__btn arcade-cabinet__btn--a"></span>
+              <span class="arcade-cabinet__btn arcade-cabinet__btn--b"></span>
+              <span class="arcade-cabinet__btn arcade-cabinet__btn--c"></span>
+            </div>
             <div class="arcade-cabinet__front-art" aria-hidden="true">
               <span class="torch-flame torch-flame--left"></span>
               <span class="torch-flame torch-flame--right"></span>
+              <div class="arcade-coin-door">
+                <span class="arcade-coin-door__slot"></span>
+                <span class="arcade-coin-door__slot"></span>
+                <span class="arcade-coin-door__label">1 COIN 1 PLAY</span>
+              </div>
             </div>
           </div>
           <div class="arcade-cuboid__face arcade-cuboid__face--right">
@@ -59,6 +83,7 @@ title: Games Mr. Phil has made
             <div class="arcade-cabinet__side-vents" aria-hidden="true"></div>
           </div>
           <div class="arcade-cuboid__face arcade-cuboid__face--top" aria-hidden="true"></div>
+          <div class="arcade-cuboid__face arcade-cuboid__face--back" aria-hidden="true"></div>
         </div>
       </div>
     </div>
@@ -76,11 +101,22 @@ title: Games Mr. Phil has made
               </div>
               <div class="arcade-cabinet__marquee">Crystal Wizards</div>
             </div>
+            <div class="arcade-cabinet__control-panel" aria-hidden="true">
+              <span class="arcade-cabinet__joystick"></span>
+              <span class="arcade-cabinet__btn arcade-cabinet__btn--a"></span>
+              <span class="arcade-cabinet__btn arcade-cabinet__btn--b"></span>
+              <span class="arcade-cabinet__btn arcade-cabinet__btn--c"></span>
+            </div>
             <div class="arcade-cabinet__front-art" aria-hidden="true">
               <span class="crystal-facet crystal-facet--r"></span>
               <span class="crystal-facet crystal-facet--g"></span>
               <span class="crystal-facet crystal-facet--b"></span>
               <span class="crystal-facet crystal-facet--y"></span>
+              <div class="arcade-coin-door">
+                <span class="arcade-coin-door__slot"></span>
+                <span class="arcade-coin-door__slot"></span>
+                <span class="arcade-coin-door__label">1 COIN 1 PLAY</span>
+              </div>
             </div>
           </div>
           <div class="arcade-cuboid__face arcade-cuboid__face--right">
@@ -88,6 +124,7 @@ title: Games Mr. Phil has made
             <div class="arcade-cabinet__side-vents" aria-hidden="true"></div>
           </div>
           <div class="arcade-cuboid__face arcade-cuboid__face--top" aria-hidden="true"></div>
+          <div class="arcade-cuboid__face arcade-cuboid__face--back" aria-hidden="true"></div>
         </div>
       </div>
     </div>
@@ -105,6 +142,12 @@ title: Games Mr. Phil has made
               </div>
               <div class="arcade-cabinet__marquee">Purple Worm Escape</div>
             </div>
+            <div class="arcade-cabinet__control-panel" aria-hidden="true">
+              <span class="arcade-cabinet__joystick"></span>
+              <span class="arcade-cabinet__btn arcade-cabinet__btn--a"></span>
+              <span class="arcade-cabinet__btn arcade-cabinet__btn--b"></span>
+              <span class="arcade-cabinet__btn arcade-cabinet__btn--c"></span>
+            </div>
             <div class="arcade-cabinet__front-art" aria-hidden="true">
               <div class="worm-glow"></div>
               <div class="worm-teeth worm-teeth--top">
@@ -115,6 +158,11 @@ title: Games Mr. Phil has made
                 <span class="worm-tooth"></span><span class="worm-tooth"></span><span class="worm-tooth"></span>
                 <span class="worm-tooth"></span><span class="worm-tooth"></span>
               </div>
+              <div class="arcade-coin-door">
+                <span class="arcade-coin-door__slot"></span>
+                <span class="arcade-coin-door__slot"></span>
+                <span class="arcade-coin-door__label">1 COIN 1 PLAY</span>
+              </div>
             </div>
           </div>
           <div class="arcade-cuboid__face arcade-cuboid__face--right">
@@ -122,6 +170,7 @@ title: Games Mr. Phil has made
             <div class="arcade-cabinet__side-vents" aria-hidden="true"></div>
           </div>
           <div class="arcade-cuboid__face arcade-cuboid__face--top" aria-hidden="true"></div>
+          <div class="arcade-cuboid__face arcade-cuboid__face--back" aria-hidden="true"></div>
         </div>
       </div>
     </div>
@@ -139,12 +188,23 @@ title: Games Mr. Phil has made
               </div>
               <div class="arcade-cabinet__marquee">Dragon Trail v5.2</div>
             </div>
+            <div class="arcade-cabinet__control-panel" aria-hidden="true">
+              <span class="arcade-cabinet__joystick"></span>
+              <span class="arcade-cabinet__btn arcade-cabinet__btn--a"></span>
+              <span class="arcade-cabinet__btn arcade-cabinet__btn--b"></span>
+              <span class="arcade-cabinet__btn arcade-cabinet__btn--c"></span>
+            </div>
             <div class="arcade-cabinet__front-art" aria-hidden="true">
               <div class="dragon-eye"></div>
               <div class="dragon-scales">
                 <span class="dragon-scale"></span><span class="dragon-scale"></span><span class="dragon-scale"></span>
                 <span class="dragon-scale"></span><span class="dragon-scale"></span><span class="dragon-scale"></span>
                 <span class="dragon-scale"></span><span class="dragon-scale"></span><span class="dragon-scale"></span>
+              </div>
+              <div class="arcade-coin-door">
+                <span class="arcade-coin-door__slot"></span>
+                <span class="arcade-coin-door__slot"></span>
+                <span class="arcade-coin-door__label">1 COIN 1 PLAY</span>
               </div>
             </div>
           </div>
@@ -153,6 +213,7 @@ title: Games Mr. Phil has made
             <div class="arcade-cabinet__side-vents" aria-hidden="true"></div>
           </div>
           <div class="arcade-cuboid__face arcade-cuboid__face--top" aria-hidden="true"></div>
+          <div class="arcade-cuboid__face arcade-cuboid__face--back" aria-hidden="true"></div>
         </div>
       </div>
     </div>
