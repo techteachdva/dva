@@ -96,8 +96,8 @@ body {
 /* CRT Screen */
 .crt-screen {
     position: relative;
-    width: 800px;
-    height: 600px;
+    width: 920px;
+    height: 690px;
     background: var(--crt-bg);
     border-radius: 60px / 20px;
     overflow: hidden;
@@ -201,7 +201,7 @@ body {
     display: flex;
     flex-direction: column;
     font-family: var(--font-terminal);
-    font-size: 18px;
+    font-size: 20px;
     line-height: 1.5;
     color: var(--crt-fg);
     text-shadow: var(--phosphor-glow);
@@ -252,7 +252,7 @@ body {
     outline: none;
     color: var(--crt-fg);
     font-family: var(--font-terminal);
-    font-size: 18px;
+    font-size: 20px;
     flex: 1;
     caret-color: transparent;
     text-shadow: var(--phosphor-glow);
@@ -295,9 +295,10 @@ body {
 .ascii-art {
     display: block;
     white-space: pre;
-    font-size: 14px;
+    font-size: 16px;
     line-height: 1.15;
     animation: shimmer 4s ease-in-out infinite;
+    overflow-x: auto;
 }
 
 /* Controls Panel */
@@ -445,15 +446,18 @@ body {
 }
 
 /* Responsive */
-@media (max-width: 850px) {
+@media (max-width: 980px) {
     .crt-screen {
         width: 100vw;
         height: 70vh;
         border-radius: 30px / 10px;
     }
     .terminal {
-        font-size: 16px;
+        font-size: 18px;
         padding: 16px 20px;
+    }
+    .terminal-input {
+        font-size: 18px;
     }
     .crt-monitor {
         padding: 12px 12px 28px 12px;
@@ -485,8 +489,14 @@ body.is-fullscreen .crt-screen {
     border-radius: 0;
 }
 body.is-fullscreen .terminal {
-    font-size: clamp(16px, 2.5vh, 24px);
+    font-size: clamp(20px, 3.5vh, 32px);
     padding: 2vh 3vw;
+}
+body.is-fullscreen .terminal-input {
+    font-size: clamp(20px, 3.5vh, 32px);
+}
+body.is-fullscreen .ascii-art {
+    font-size: clamp(14px, 2.5vh, 22px);
 }
 body.is-fullscreen .controls-panel {
     position: fixed;
@@ -494,16 +504,6 @@ body.is-fullscreen .controls-panel {
     right: 20px;
     z-index: 1000;
     background: rgba(20,20,20,0.9);
-}
-
-/* ASCII Art */
-.ascii-art {
-    display: block;
-    white-space: pre;
-    font-size: 14px;
-    line-height: 1.15;
-    animation: shimmer 4s ease-in-out infinite;
-    overflow-x: auto;
 }
 
 /* Reduced motion */
