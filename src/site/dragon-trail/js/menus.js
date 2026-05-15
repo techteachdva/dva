@@ -514,6 +514,30 @@ async function handleGameStart() {
     Terminal.println('To begin: choose your difficulty, name your wanderer, pick a skill, hire a companion, and then — travel.', 'green');
     await Terminal.pause();
 
+    const saves = GameState.listSaves();
+    const hasSave = saves.some(s => s.name);
+    if (hasSave) {
+        const loadChoice = await Terminal.inputYesNo('A saved journey awaits. Do you want to load a save file');
+        if (loadChoice) {
+            Terminal.println('\n--- Load Game ---');
+            for (let i = 1; i <= 3; i++) {
+                const s = saves.find(x => x.slot === i);
+                if (s && s.name) {
+                    Terminal.println(`${i}. ${s.name} - Day ${s.day}, ${s.miles} miles`);
+                } else {
+                    Terminal.println(`${i}. [Empty]`);
+                }
+            }
+            Terminal.println('0. Back');
+            const slot = await Terminal.inputNumber('Choose slot: ', 0, 3);
+            if (slot > 0 && GameState.load(slot)) {
+                Terminal.println(`\nWelcome back, ${GameState.player.name}. The trail remembers you.`, 'green');
+                await Terminal.pause();
+                return;
+            }
+        }
+    }
+
     Terminal.println('\n--- Choose Your Difficulty ---', 'magenta', true);
     Terminal.println('1. I\'m just a baby. Easy please.');
     Terminal.println('   Generous companions, abundant finds, slower mini-games, lighter hunger, +140 carry, +2 combat aim, -20% damage taken.', 'green');
