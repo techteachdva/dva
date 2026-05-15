@@ -1,0 +1,12 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/levels/bonus/bonus_level.tscn" id="1"]
+
+[node name="Bonus2" instance=ExtResource("1")]
+world_number = 2
+level_number = 0
+track_length = 150.0
+coin_count = 35
+boost_count = 4
+par_time = 14.0
+level_name = "Ice Sprint"

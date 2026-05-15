@@ -1,0 +1,133 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://scripts/game_level.gd" id="GameLevel"]
+[ext_resource type="Script" path="res://scripts/level_generator.gd" id="LevelGen"]
+[ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="PlayerScene"]
+[ext_resource type="Script" path="res://scripts/hud.gd" id="HUDScript"]
+
+[node name="Level_4_6" type="Node3D"]
+script = ExtResource("GameLevel")
+level_name   = "The Sixth Gear"
+world_number = 4
+level_number = 6
+par_time = 66.0
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 0.766, 0.643, 0.0, -0.643, 0.766, 5.0, 12.0, 48.0)
+shadow_enabled = true
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 0.94, -0.342, 0.0, 0.342, 0.94, 0.0, 6.0, 54.0)
+fov = 75.0
+
+[node name="Player" parent="." instance=ExtResource("PlayerScene")]
+transform = Transform3D(1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.5, 0.0)
+
+[node name="TrackRoot" type="Node3D" parent="."]
+script = ExtResource("LevelGen")
+
+[node name="RespawnTimer" type="Timer" parent="."]
+one_shot = true
+wait_time = 1.8
+
+[node name="HUD" type="CanvasLayer" parent="."]
+script = ExtResource("HUDScript")
+[node name="TopBar" type="HBoxContainer" parent="HUD"]
+anchor_right = 1.0
+offset_bottom = 48
+theme_override_constants/separation = 20
+[node name="ScoreLabel" type="Label" parent="HUD/TopBar"]
+size_flags_horizontal = 3
+text = "Score  0000000"
+theme_override_font_sizes/font_size = 18
+[node name="TimerLabel" type="Label" parent="HUD/TopBar"]
+size_flags_horizontal = 3
+text = "00:00.00"
+theme_override_font_sizes/font_size = 18
+[node name="LivesLabel" type="Label" parent="HUD/TopBar"]
+size_flags_horizontal = 3
+text = "❤  x3"
+theme_override_font_sizes/font_size = 18
+[node name="CoinsLabel" type="Label" parent="HUD/TopBar"]
+size_flags_horizontal = 3
+text = "🪙  x0"
+theme_override_font_sizes/font_size = 18
+[node name="SpeedBar" type="ProgressBar" parent="HUD"]
+anchor_top = 1.0
+anchor_bottom = 1.0
+anchor_right = 1.0
+offset_top = -18
+[node name="ComboLabel" type="Label" parent="HUD"]
+anchor_left = 0.5
+offset_left = -120
+anchor_top = 0.28
+visible = false
+theme_override_font_sizes/font_size = 36
+text = "COMBO  x1!"
+[node name="IntroPanel" type="Panel" parent="HUD"]
+anchor_left = 0.1
+anchor_right = 0.9
+anchor_top = 0.1
+anchor_bottom = 0.28
+visible = false
+[node name="IntroText" type="Label" parent="HUD/IntroPanel"]
+anchor_left = 0.05
+anchor_right = 0.95
+anchor_top = 0.1
+anchor_bottom = 0.9
+autowrap_mode = 3
+theme_override_font_sizes/font_size = 18
+[node name="PausePanel" type="Panel" parent="HUD"]
+anchor_left = 0.3
+anchor_right = 0.7
+anchor_top = 0.22
+anchor_bottom = 0.78
+visible = false
+[node name="PauseLabel" type="Label" parent="HUD/PausePanel"]
+anchor_left = 0.5
+anchor_top = 0.35
+text = "PAUSED"
+theme_override_font_sizes/font_size = 44
+[node name="CompletePanel" type="Panel" parent="HUD"]
+anchor_left = 0.33
+anchor_right = 0.67
+anchor_top = 0.15
+anchor_bottom = 0.90
+visible = false
+[node name="CompleteTitle" type="Label" parent="HUD/CompletePanel"]
+anchor_left = 0.5
+anchor_top = 0.06
+text = "LEVEL COMPLETE!"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 34
+[node name="StarsLabel" type="Label" parent="HUD/CompletePanel"]
+anchor_left = 0.5
+anchor_top = 0.22
+text = "☆☆☆"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 52
+[node name="TimeLabel" type="Label" parent="HUD/CompletePanel"]
+anchor_left = 0.5
+anchor_top = 0.36
+text = "Time: 00:00"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 20
+[node name="RankLabel" type="Label" parent="HUD/CompletePanel"]
+anchor_left = 0.5
+anchor_top = 0.46
+text = "Rank: A"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 26
+visible = false
+[node name="GameOverPanel" type="Panel" parent="HUD"]
+anchor_left = 0.28
+anchor_right = 0.72
+anchor_top = 0.28
+anchor_bottom = 0.72
+visible = false
+[node name="GameOverLabel" type="Label" parent="HUD/GameOverPanel"]
+anchor_left = 0.5
+anchor_top = 0.38
+text = "GAME OVER"
+theme_override_font_sizes/font_size = 44

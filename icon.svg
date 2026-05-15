@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- Background -->
+  <rect width="128" height="128" rx="16" fill="#1a1a2e"/>
+  <!-- Slope -->
+  <polygon points="10,110 118,110 118,50" fill="#2d4a7a" opacity="0.8"/>
+  <!-- Slope surface line -->
+  <line x1="10" y1="110" x2="118" y2="50" stroke="#4a9eff" stroke-width="3"/>
+  <!-- Ball -->
+  <circle cx="55" cy="72" r="14" fill="#ff6b35"/>
+  <circle cx="55" cy="72" r="14" fill="none" stroke="#ffaa44" stroke-width="2"/>
+  <!-- Ball shine -->
+  <circle cx="50" cy="67" r="4" fill="white" opacity="0.4"/>
+  <!-- Trail -->
+  <circle cx="75" cy="78" r="8" fill="#ff6b35" opacity="0.4"/>
+  <circle cx="90" cy="83" r="5" fill="#ff6b35" opacity="0.2"/>
+  <!-- Title text -->
+  <text x="64" y="125" font-family="Arial Black, sans-serif" font-size="14" font-weight="bold"
+        fill="#4a9eff" text-anchor="middle" letter-spacing="3">PHYSIX</text>
+</svg>

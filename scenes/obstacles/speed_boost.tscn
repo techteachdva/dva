@@ -1,0 +1,57 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/obstacles/speed_boost.gd" id="Script"]
+
+[sub_resource type="BoxMesh" id="Mesh"]
+size = Vector3(7.5, 0.12, 3.0)
+
+[sub_resource type="BoxShape3D" id="TriggerShape"]
+size = Vector3(7.5, 0.6, 3.0)
+
+[sub_resource type="StandardMaterial3D" id="Mat"]
+albedo_color             = Color(0.1, 1.0, 0.25, 1.0)
+emission_enabled         = true
+emission                 = Color(0.0, 0.85, 0.15, 1.0)
+emission_energy_multiplier = 1.6
+roughness                = 0.2
+
+[sub_resource type="ParticleProcessMaterial" id="TrailMat"]
+direction            = Vector3(0.0, 1.0, 0.0)
+spread               = 20.0
+initial_velocity_min = 1.0
+initial_velocity_max = 2.5
+scale_min            = 0.05
+scale_max            = 0.15
+color                = Color(0.2, 1.0, 0.4, 0.7)
+
+; Drop into a level and set boost_strength / boost_direction in Inspector.
+[node name="SpeedBoost" type="Area3D"]
+script          = ExtResource("Script")
+boost_strength  = 18.0
+boost_direction = Vector3(0.0, 0.15, -1.0)
+is_brake_pad    = false
+
+[node name="BoostMesh" type="MeshInstance3D" parent="."]
+mesh                        = SubResource("Mesh")
+surface_material_override/0 = SubResource("Mat")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("TriggerShape")
+
+[node name="OmniLight3D" type="OmniLight3D" parent="."]
+light_color  = Color(0.1, 1.0, 0.3, 1.0)
+omni_range   = 5.0
+light_energy = 2.5
+
+[node name="NameLabel" type="Label3D" parent="."]
+position   = Vector3(0.0, 0.8, 0.0)
+text       = "▶  BOOST"
+font_size  = 40
+pixel_size = 0.012
+billboard  = 1
+modulate   = Color(0.2, 1.0, 0.4, 0.9)
+
+[node name="TrailParticles" type="GPUParticles3D" parent="."]
+amount           = 20
+lifetime         = 0.8
+process_material = SubResource("TrailMat")

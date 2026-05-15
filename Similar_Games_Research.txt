@@ -1,0 +1,364 @@
+================================================================================
+  SIMILAR GAMES RESEARCH - Level Design & Difficulty Analysis
+  Compiled for Physix (Godot 4 Physics-Based Slope Game)
+================================================================================
+
+TABLE OF CONTENTS
+-----------------
+1. Game Overview & Research Scope
+2. Slope Game Analysis
+3. Snow Rider 3D Analysis
+4. Rolling Sky Analysis
+5. General Physics-Based Rolling Game Best Practices
+6. Key Takeaways & Recommendations for Physix
+
+================================================================================
+1. GAME OVERVIEW & RESEARCH SCOPE
+================================================================================
+
+Games Analyzed:
+- Slope (Y8/Addicting Games, endless runner)
+- Snow Rider 3D (2020 web endless runner)
+- Rolling Sky (Cheetah Games, rhythm-tile runner)
+- Rollance (physics-focused mobile ball-roller)
+
+All four games share the core "descend a slope while dodging obstacles"
+mechanic with physics-driven momentum. Their design solutions for difficulty,
+progression, and obstacle vocabulary provide a blueprint for refining Physix.
+
+================================================================================
+2. SLOPE GAME ANALYSIS
+================================================================================
+
+Core Mechanics
+--------------
+- Endless procedural descent. No levels, no finish line.
+- Ball accelerates continuously via gravity.
+- Controls: Left/Right arrow keys only. No jump. No brake.
+- Death is instant on any collision.
+- Score = distance traveled.
+
+Difficulty Scaling
+------------------
+The primary difficulty mechanic is GRADUAL SPEED INCREASE:
+- Early phase (0-30 points): Low speed, forgiving turns.
+- Mid phase (30-100): Speed requires constant micro-adjustments.
+- High phase (100-200): Oversteering is the #1 cause of death.
+- Expert (200+): Frame-perfect reactions required.
+
+This creates an organic skill-matching system without manual difficulty
+settings. The player is always in a "flow state" where challenge matches
+improving reflexes.
+
+Obstacle Vocabulary (Pattern Language)
+---------------------------------------
+Slope uses a fixed set of recurring obstacle ARRANGEMENTS rather than
+fully random chaos:
+
+  Slants        - Angled platforms that launch the ball unpredictably.
+                  High-level players avoid center, ride side ramps.
+  Speedtunnels  - Ramped tunnels that accelerate the ball further.
+  Snakes        - Winding narrow paths requiring smooth arcs.
+  Tunnels       - Enclosed passages with ramps.
+                  Advanced players use "skips" to drop between sections.
+  Treblocks     - Block fields with tiny gaps.
+                  Frame-perfect "Treblock Skips" exist for speedrunners.
+  Verts         - Vertical barriers that BEGIN MOVING 3 seconds after
+                  spawning. High-score runners intentionally crash into
+                  idle Verts to execute "Vert Slowdowns" (controlled stop
+                  to regain control at extreme speed).
+  RNG Blocks    - Randomly generated block fields.
+                  CRITICAL DESIGN DETAIL: they NEVER spawn on the extreme
+                  right edge, making the right edge the safest high-speed
+                  line.
+
+Key Design Insight:
+Every obstacle has exploitable properties that reward deep system mastery.
+The game is 100% skill-based with no power-ups or luck.
+
+Visual Design
+-------------
+- Neon high-contrast palette (no visual noise).
+- Clean geometry so depth perception and timing are the only skills tested.
+- Minimalist aesthetic serves the mechanics.
+
+Sources:
+- https://speakrights.com/why-the-game-slope-is-so-addictive/
+- https://vexgame.net/blog/slope-game-guide-tips-high-score
+- https://slope.fandom.com/wiki/Tricks
+- https://slope.fandom.com/wiki/Slants
+
+================================================================================
+3. SNOW RIDER 3D ANALYSIS
+================================================================================
+
+Core Mechanics
+--------------
+- Endless procedural sled descent (late 2020 web game).
+- Automatic forward momentum (gravity-driven, no acceleration button).
+- Controls: Left/Right steering; Up/Space to jump.
+- Death = collision OR falling off cliff.
+- Score = pure distance.
+
+Difficulty Scaling
+------------------
+- Dynamic difficulty tied to survival time.
+- After ~20-40 seconds, speed crosses a threshold where players must shift
+  from coin collection to pure survival.
+- High-level play = reading terrain patterns seconds ahead.
+- "Wide arc" turns are safer than sharp flicks at high speed.
+
+Obstacle Catalog
+----------------
+  Trees / Tall Pines    - Clusters that block forward view.
+  Rocks / Boulders      - Force tight weaving, create narrow lanes.
+  Snowmen               - Tall figures with tiny gaps.
+  Rolling Snowballs     - Moving hazards with shifting gaps.
+  Wooden Fences         - Long barriers that trick depth perception.
+  Roots & Stumps        - Low hazards requiring jumps.
+  Gaps & Cliffs         - Sudden drops, sometimes hidden behind trees.
+  Cabin Structures      - Large solid objects that break up path width.
+
+Visual Clarity
+--------------
+- High-contrast winter theme: crisp white snow vs brown/tan obstacles.
+- Mountain walls frame the play area.
+- Center position is tactically dominant.
+
+Risk/Reward Placement
+---------------------
+- Gift boxes (currency for sled cosmetics) are deliberately placed in
+  dangerous spots: between trees, near cliff edges, after tight passages.
+- Forces players to choose between safe passage and cosmetic unlocks.
+
+Sources:
+- https://ridersnow3d.com/snow-rider-3d-complete-player-guide/
+- https://snowrider-3d.org/
+
+================================================================================
+4. ROLLING SKY ANALYSIS
+================================================================================
+
+Core Mechanics
+--------------
+- Tap-to-steer ball across 5-lane tiled paths.
+- Not a pure physics sim, but uses momentum and timing heavily.
+- Levels are HAND-CRAFTED (not procedural), set to music.
+
+Difficulty Rating System
+-------------------------
+6-tier star system:
+  1 - Very Easy  (Cloud, Sunny, Massif)
+  2 - Easy       (Sky, Laser, Football Field)
+  3 - Normal     (Forest, Candy, Kung Fu)
+  4 - Hard       (Volcano, City, Tetris)
+  5 - Very Hard  (Deep Space, Egypt, Halloween)
+  6 - Extremely Hard (Cube, Happy Birthday, Halloween Night)
+
+Community uses DECIMAL ratings (5.8, 6.9) for "perfect way" difficulty
+(collecting all diamonds and crowns).
+
+Dual-Layered Difficulty:
+- "Easy way" = survive to the end.
+- "Perfect way" = collect all collectibles while surviving.
+- A 1-star level can have a 2-star+ perfect path.
+
+Obstacle Design
+---------------
+General Obstacles (reused across levels):
+  Riser, Air Crusher, Hammers, Lasers, Wheels, Blocks (1x1 to 1x3),
+  Floaters, Slashers, Trees.
+
+Themed Obstacles (unique to level themes):
+  Halloween: Tombstone (bumper-type), Pumpkin Laser
+  Deep Space: Space Riser, Space Wheel, Space Gate
+  Christmas: Gift Riser, Candy Cane Slasher, Bell Archway
+  Kung Fu: Panda Fighter, Shinto Gate, Baton Slasher
+
+Key Design Mechanics
+--------------------
+- Cycling Jumps: Jump pads move across lanes in fixed sequences
+  (1->3->5->2->4), requiring rhythmic pattern memorization.
+- Hitbox Precision: Obstacles rated by Area x Height (1x1, 1x3, 3x3).
+- Speed Variation: Some levels are easier purely due to slower speed.
+- Diagonal Movement: Higher difficulties require diagonal tile movements.
+- Short but Hard: Some of the shortest levels are the hardest
+  (Clown Park, Football Field).
+
+Sources:
+- https://rolling-sky.fandom.com/wiki/Level_Menu
+- https://rolling-sky.fandom.com/wiki/Obstacle
+- https://rolling-sky-series.fandom.com/wiki/Level_Difficulty_Comparison
+
+================================================================================
+5. PHYSICS-BASED ROLLING GAME BEST PRACTICES
+================================================================================
+
+From developer postmortems of Rollance, Crumble, and other titles:
+
+Design Philosophy: Commit to Physics Identity
+---------------------------------------------
+- Decide early: realistic physics vs arcade physics.
+- Realistic physics takes at least 2x longer to tune but creates emergent
+  gameplay players cannot find elsewhere.
+- Rollance succeeded by focusing on realistic ball physics, attracting a
+  loyal, high-retention audience.
+
+Difficulty Progression: Underestimate the Learning Curve
+----------------------------------------------------------
+- Players do NOT master momentum quickly. Early levels must be VERY forgiving.
+- Flatten the early curve: wider platforms, fewer punishment drops,
+  more recovery routes.
+- Smooth curve with intermittent spikes (like Getting Over It / Jump King).
+- Before demanding perfect timing, teach the concept in a forgiving context.
+
+Momentum as Primary Currency
+-----------------------------
+- Verticality must be built around momentum shaping, not just positioning.
+- Sloped terrain and curved walls should redirect rolling momentum into
+  upward lift naturally.
+- Every significant punishment needs a possible save mechanism.
+- Fall-catcher zones (concave slopes, side flippers, bumpers) catch
+  failing players.
+- "Every save needs to feel like a win."
+
+Checkpoint & Failure Design
+---------------------------
+- Physics games have high randomness. Optional checkpoints reduce
+  frustration for casual players.
+- Lock prestige rewards (ranks, S+ medals) when checkpoints are used.
+- Preserve hardcore experience while keeping game accessible.
+- Core playtesting question: "Did the player feel they failed because of
+  the game, or because they weren't good enough yet?"
+
+Content Variety via Physics
+---------------------------
+- Expand through physics mechanics (materials, surfaces, friction zones)
+  rather than scripted events.
+- Rollance added ball material switching (wood, metal, paper) and saw
+  major metric improvements.
+- Avoid visual clutter; cosmetic skins may not resonate if they distract
+  from physical feedback.
+
+Playtesting & Metrics
+---------------------
+- Extensive playtesting is non-negotiable for physics games.
+- Observe where players restart, where they audibly react, how long
+  they stay in each zone.
+- Rollance expanded from 20 to 50+ levels. Result:
+  * Day 1 retention: +10 percentage points
+  * Day 30 retention: 4.2%
+  * Average daily playtime: 15 minutes
+
+Production Best Practices
+-------------------------
+- Budget for physics complexity (2x production time vs scripted levels).
+- Plan iterative tuning of surface friction, ball mass, gravity, collision.
+- Adaptive graphics presets maintain smooth framerate (boosts LTV ~20%).
+- Granular difficulty settings (time scale, recovery windows) widen audience.
+
+Sources:
+- https://www.bruteforcegame.com/post/how-to-roll-a-ball-devlog-09
+- https://pocketgamer.biz/how-doubling-down-on-physics-expertise-helped-rollance-stand-out
+- https://game-designers.net/four-tricks-to-improve-game-balance-in-your-game-design
+- https://www.gamedeveloper.com/programming/rolling-a-ball-harder-than-you-thought-part-2-
+
+================================================================================
+6. KEY TAKEAWAYS & RECOMMENDATIONS FOR PHYSIX
+================================================================================
+
+IMMEDIATE IMPROVEMENTS
+----------------------
+1. SPEED SCALING
+   - Current levels have fixed forward speed. Add a small automatic
+     acceleration over time (or per section) so later parts of a level
+     feel faster than the beginning. This is Slope's #1 difficulty tool.
+
+2. OBSTACLE PATTERN LANGUAGE
+   - Instead of placing random bumpers and wind zones, design RECURRING
+     ARRANGEMENTS that players can learn to recognize:
+     * "Snake" - alternating left/right bumpers in sequence
+     * "Tunnel" - wind zones on both sides creating a narrow safe corridor
+     * "Slalom" - ice patches between bumpers requiring careful steering
+     * "Gauntlet" - rapid-fire bumper sequence with tiny gaps
+   - Rolling Sky shows that hand-crafted obstacle sequences feel fairer
+     than pure randomness.
+
+3. RISK/REWARD COIN PLACEMENT
+   - Place coins in dangerous positions: near bumpers, in narrow passages,
+     after speed boosters where momentum makes collection harder.
+   - Snow Rider 3D's gift box placement is the model here.
+
+4. THEME-BASED OBSTACLE VARIATIONS
+   - Rolling Sky reuses the same HITBOX LOGIC across levels but reskins
+     the visuals per world. Physix can do the same:
+     * World 1 (Beginner): Simple blocks, gentle curves
+     * World 2 (Friction): Ice patches, low-friction surfaces
+     * World 3 (Gravity): Gravity zones with visual color coding
+     * World 4 (Momentum): Heavy bumpers, moving platforms
+     * World 5 (Quantum): All mechanics combined + invisibility/teleport?
+
+DIFFICULTY PROGRESSION
+----------------------
+5. WIDER EARLY PLATFORMS, NARROW LATE PASSAGES
+   - Best practice: start with track width 8-10, gradually narrow to 6
+     or even 5 in late-game sections. Combined with curves, this creates
+     genuine choke points.
+
+6. OPTIONAL CHECKPOINTS
+   - Add visible checkpoint zones that players pass through.
+   - If they die, respawn at last checkpoint (lives still consumed).
+   - Hardcore players can aim for "No-Checkpoint" medals.
+
+7. DUAL-LAYER DIFFICULTY
+   - Easy path = finish the level.
+   - Perfect path = collect all coins while finishing.
+   - Star rating should depend on coins collected AND time AND deaths.
+
+8. SAVE MECHANICS (Fall-Catchers)
+   - In curved sections where players might fly off, add gentle concave
+     slopes or side rails that catch the ball and bounce it back toward
+     center rather than instant death.
+   - "Every significant punishment needs a possible save."
+
+LONG-TERM CONTENT
+-----------------
+9. MATERIAL SWITCHING (SHOP ITEM)
+   - Rollance saw metric improvements with ball materials:
+     * Rubber = high friction, low bounce
+     * Metal = heavy, maintains momentum
+     * Glass = slippery, fragile (one hit = break?)
+     * Bouncy ball = high bounce off bumpers
+   - This is a natural shop expansion that actually changes physics.
+
+10. PROCEDURAL BONUS LEVELS
+    - The current bonus levels are straight lines. Make them procedural:
+      generate obstacle sequences from the pattern vocabulary.
+    - Slope and Snow Rider both use procedural generation to ensure
+      replayability.
+
+11. SPEED-BASED STAR RATINGS
+    - Current star formula is mostly time + coins + deaths.
+    - Add a "speed maintained" bonus: if the player stays above a
+      threshold speed for long sections, bonus points.
+
+VISUAL & AUDIO
+--------------
+12. HIGH-CONTRAST OBSTACLE COLOR CODING
+    - Every obstacle type should have a consistent color:
+      * Bumpers = red
+      * Wind zones = cyan
+      * Ice = light blue
+      * Gravity zones = purple
+      * Boost pads = green
+      * Moving platforms = orange
+    - Players should be able to identify hazards instantly at high speed.
+
+13. MUSIC-SYNCED OBSTACLES (Rolling Sky Model)
+    - In later worlds, moving platforms and cycling hazards could
+      animate to the music beat. This creates a rhythm-game feel and
+      makes patterns predictable.
+
+================================================================================
+END OF DOCUMENT
+================================================================================

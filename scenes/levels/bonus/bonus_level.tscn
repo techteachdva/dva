@@ -1,0 +1,167 @@
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script"      path="res://scripts/bonus_level.gd"     id="BonusLevel"]
+[ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id="PlayerScene"]
+[ext_resource type="Script"      path="res://scripts/hud.gd"             id="HUDScript"]
+[ext_resource type="Script"      path="res://scripts/level_generator.gd" id="LevelGen"]
+
+[sub_resource type="ProceduralSkyMaterial" id="SkyMat"]
+sky_top_color = Color(0.15, 0.45, 0.75, 1.0)
+sky_horizon_color = Color(0.55, 0.75, 0.9, 1.0)
+ground_bottom_color = Color(0.05, 0.08, 0.15, 1.0)
+ground_horizon_color = Color(0.15, 0.25, 0.4, 1.0)
+sun_angle_max = 40.0
+sun_curve = 0.15
+
+[sub_resource type="Sky" id="Sky"]
+sky_material = SubResource("SkyMat")
+
+[sub_resource type="Environment" id="WorldEnv"]
+background_mode = 2
+sky = SubResource("Sky")
+ambient_light_source = 3
+ambient_light_color = Color(0.4, 0.5, 0.65, 1.0)
+ambient_light_energy = 0.6
+tonemap_mode = 2
+tonemap_exposure = 1.1
+glow_enabled = true
+glow_intensity = 0.4
+glow_strength = 0.8
+glow_bloom = 0.05
+fog_enabled = true
+fog_density = 0.008
+fog_sky_affect = 0.3
+
+[node name="BonusLevel" type="Node3D"]
+script = ExtResource("BonusLevel")
+level_name   = "Bonus Rush"
+world_number = 1
+level_number = 0
+par_time     = 25.0
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("WorldEnv")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.766, 0.643, 0, -0.643, 0.766, 5, 12, 8)
+light_energy = 1.3
+shadow_enabled = true
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.94, -0.342, 0, 0.342, 0.94, 0, 6, 9)
+fov = 75.0
+
+[node name="Player" parent="." instance=ExtResource("PlayerScene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+
+[node name="TrackRoot" type="Node3D" parent="."]
+script = ExtResource("LevelGen")
+
+[node name="RespawnTimer" type="Timer" parent="."]
+one_shot  = true
+wait_time = 1.8
+
+[node name="HUD" type="CanvasLayer" parent="."]
+script = ExtResource("HUDScript")
+[node name="TopBar" type="HBoxContainer" parent="HUD"]
+anchor_right = 1.0
+offset_bottom = 48
+theme_override_constants/separation = 20
+[node name="ScoreLabel" type="Label" parent="HUD/TopBar"]
+size_flags_horizontal = 3
+text = "Score  0000000"
+theme_override_font_sizes/font_size = 18
+[node name="TimerLabel" type="Label" parent="HUD/TopBar"]
+size_flags_horizontal = 3
+text = "00:00.00"
+theme_override_font_sizes/font_size = 18
+[node name="LivesLabel" type="Label" parent="HUD/TopBar"]
+size_flags_horizontal = 3
+text = "❤  x3"
+theme_override_font_sizes/font_size = 18
+[node name="CoinsLabel" type="Label" parent="HUD/TopBar"]
+size_flags_horizontal = 3
+text = "🪙  x0"
+theme_override_font_sizes/font_size = 18
+[node name="SpeedBar" type="ProgressBar" parent="HUD"]
+anchor_top = 1.0
+anchor_bottom = 1.0
+anchor_right = 1.0
+offset_top = -18
+[node name="ComboLabel" type="Label" parent="HUD"]
+anchor_left = 0.5
+offset_left = -120
+anchor_top = 0.28
+visible = false
+theme_override_font_sizes/font_size = 36
+text = "COMBO  x1!"
+[node name="IntroPanel" type="Panel" parent="HUD"]
+anchor_left = 0.1
+anchor_right = 0.9
+anchor_top = 0.1
+anchor_bottom = 0.28
+visible = false
+[node name="IntroText" type="Label" parent="HUD/IntroPanel"]
+anchor_left = 0.05
+anchor_right = 0.95
+anchor_top = 0.1
+anchor_bottom = 0.9
+autowrap_mode = 3
+theme_override_font_sizes/font_size = 18
+[node name="PausePanel" type="Panel" parent="HUD"]
+anchor_left = 0.3
+anchor_right = 0.7
+anchor_top = 0.22
+anchor_bottom = 0.78
+visible = false
+[node name="PauseLabel" type="Label" parent="HUD/PausePanel"]
+anchor_left = 0.5
+anchor_top = 0.35
+text = "PAUSED"
+theme_override_font_sizes/font_size = 44
+[node name="CompletePanel" type="Panel" parent="HUD"]
+anchor_left = 0.33
+anchor_right = 0.67
+anchor_top = 0.15
+anchor_bottom = 0.90
+visible = false
+[node name="CompleteTitle" type="Label" parent="HUD/CompletePanel"]
+anchor_left = 0.5
+anchor_top = 0.06
+text = "LEVEL COMPLETE!"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 34
+horizontal_alignment = 1
+[node name="StarsLabel" type="Label" parent="HUD/CompletePanel"]
+anchor_left = 0.5
+anchor_top = 0.22
+text = "☆☆☆"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 52
+horizontal_alignment = 1
+[node name="TimeLabel" type="Label" parent="HUD/CompletePanel"]
+anchor_left = 0.5
+anchor_top = 0.36
+text = "Time: 00:00"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+[node name="RankLabel" type="Label" parent="HUD/CompletePanel"]
+anchor_left = 0.5
+anchor_top = 0.46
+text = "Rank: A"
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 26
+visible = false
+horizontal_alignment = 1
+[node name="GameOverPanel" type="Panel" parent="HUD"]
+anchor_left = 0.28
+anchor_right = 0.72
+anchor_top = 0.28
+anchor_bottom = 0.72
+visible = false
+[node name="GameOverLabel" type="Label" parent="HUD/GameOverPanel"]
+anchor_left = 0.5
+anchor_top = 0.38
+text = "GAME OVER"
+theme_override_font_sizes/font_size = 44

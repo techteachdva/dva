@@ -1,0 +1,6 @@
+[gd_scene format=3 uid="uid://dema7hfchgdib"]
+
+[ext_resource type="Script" uid="uid://inpv7v1hwjw6" path="res://scripts/prototype_halfpipe.gd" id="1"]
+
+[node name="PrototypeHalfpipe" type="Node3D" unique_id=450081161]
+script = ExtResource("1")

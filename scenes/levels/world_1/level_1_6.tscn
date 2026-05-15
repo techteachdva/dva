@@ -1,0 +1,185 @@
+[gd_scene format=3 uid="uid://p1orl3fms8fx"]
+
+[ext_resource type="PackedScene" path="res://scenes/obstacles/checkpoint.tscn" id="4_eghgm"]
+[ext_resource type="Script" uid="uid://y4fsh0buhxrb" path="res://scripts/obstacles/checkpoint.gd" id="4_gy66g"]
+[ext_resource type="Script" uid="uid://dtomn7mp2jh8n" path="res://scripts/game_level.gd" id="GameLevel"]
+[ext_resource type="Script" uid="uid://br4lujuxnkmgw" path="res://scripts/hud.gd" id="HUDScript"]
+[ext_resource type="Script" uid="uid://b5gnsxeeciugt" path="res://scripts/level_generator.gd" id="LevelGen"]
+[ext_resource type="PackedScene" uid="uid://cbaigijng15kp" path="res://scenes/player/player.tscn" id="PlayerScene"]
+
+[node name="Level_1_6" type="Node3D" unique_id=141909319]
+script = ExtResource("GameLevel")
+level_name = "Gauntlet 1-6"
+par_time = 27.1
+level_number = 6
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=2088093065]
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=1212138280]
+transform = Transform3D(1, 0, 0, 0, 0.766, 0.643, 0, -0.643, 0.766, 5, 12, 48)
+shadow_enabled = true
+
+[node name="Camera3D" type="Camera3D" parent="." unique_id=616283497]
+transform = Transform3D(1, 0, 0, 0, 0.94, -0.342, 0, 0.342, 0.94, 0, 6, 54)
+
+[node name="Player" parent="." unique_id=831827298 instance=ExtResource("PlayerScene")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+
+[node name="TrackRoot" type="Node3D" parent="." unique_id=1473548900]
+transform = Transform3D(1, 0, 0, 0, 0.9702957, -0.2419219, 0, 0.2419219, 0.9702957, 0, 0, 0)
+script = ExtResource("LevelGen")
+
+[node name="RespawnTimer" type="Timer" parent="." unique_id=805187370]
+wait_time = 1.8
+one_shot = true
+
+[node name="HUD" type="CanvasLayer" parent="." unique_id=1417015114]
+script = ExtResource("HUDScript")
+
+[node name="TopBar" type="HBoxContainer" parent="HUD" unique_id=1058806056]
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 48.0
+theme_override_constants/separation = 20
+
+[node name="ScoreLabel" type="Label" parent="HUD/TopBar" unique_id=429057609]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 18
+text = "Score  0000000"
+
+[node name="TimerLabel" type="Label" parent="HUD/TopBar" unique_id=1439519131]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 18
+text = "00:00.00"
+
+[node name="LivesLabel" type="Label" parent="HUD/TopBar" unique_id=1566647365]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 18
+text = "❤  x3"
+
+[node name="CoinsLabel" type="Label" parent="HUD/TopBar" unique_id=558950623]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 18
+text = "🪙  x0"
+
+[node name="SpeedBar" type="ProgressBar" parent="HUD" unique_id=616555098]
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -18.0
+
+[node name="ComboLabel" type="Label" parent="HUD" unique_id=1029617537]
+visible = false
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 0.28
+anchor_right = 0.5
+anchor_bottom = 0.28
+offset_left = -120.0
+theme_override_font_sizes/font_size = 36
+text = "COMBO  x1!"
+
+[node name="IntroPanel" type="Panel" parent="HUD" unique_id=1557676845]
+visible = false
+anchors_preset = -1
+anchor_left = 0.1
+anchor_top = 0.1
+anchor_right = 0.9
+anchor_bottom = 0.28
+
+[node name="IntroText" type="Label" parent="HUD/IntroPanel" unique_id=1634903779]
+layout_mode = 0
+anchor_left = 0.05
+anchor_top = 0.1
+anchor_right = 0.95
+anchor_bottom = 0.9
+theme_override_font_sizes/font_size = 18
+autowrap_mode = 3
+
+[node name="PausePanel" type="Panel" parent="HUD" unique_id=174460406]
+visible = false
+anchors_preset = -1
+anchor_left = 0.3
+anchor_top = 0.22
+anchor_right = 0.7
+anchor_bottom = 0.78
+
+[node name="PauseLabel" type="Label" parent="HUD/PausePanel" unique_id=1248183104]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 0.35
+anchor_right = 0.5
+anchor_bottom = 0.35
+theme_override_font_sizes/font_size = 44
+text = "PAUSED"
+
+[node name="CompletePanel" type="Panel" parent="HUD"]
+visible = false
+anchors_preset = -1
+anchor_left = 0.33
+anchor_top = 0.15
+anchor_right = 0.67
+anchor_bottom = 0.90
+
+[node name="CompleteTitle" type="Label" parent="HUD/CompletePanel" unique_id=1398561343]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 0.06
+anchor_right = 0.5
+anchor_bottom = 0.16
+theme_override_font_sizes/font_size = 34
+text = "LEVEL COMPLETE!"
+horizontal_alignment = 1
+
+[node name="StarsLabel" type="Label" parent="HUD/CompletePanel" unique_id=994421703]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 0.22
+anchor_right = 0.5
+anchor_bottom = 0.32
+theme_override_font_sizes/font_size = 52
+text = "☆☆☆"
+horizontal_alignment = 1
+
+[node name="TimeLabel" type="Label" parent="HUD/CompletePanel" unique_id=13337241]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 0.36
+anchor_right = 0.5
+anchor_bottom = 0.44
+theme_override_font_sizes/font_size = 20
+text = "Time: 00:00"
+horizontal_alignment = 1
+
+[node name="RankLabel" type="Label" parent="HUD/CompletePanel" unique_id=1713003915]
+visible = false
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 0.46
+anchor_right = 0.5
+anchor_bottom = 0.54
+theme_override_font_sizes/font_size = 26
+text = "Rank: A"
+horizontal_alignment = 1
+
+[node name="GameOverPanel" type="Panel" parent="HUD" unique_id=1096601620]
+visible = false
+anchors_preset = -1
+anchor_left = 0.28
+anchor_top = 0.28
+anchor_right = 0.72
+anchor_bottom = 0.72
+
+[node name="GameOverLabel" type="Label" parent="HUD/GameOverPanel" unique_id=922966832]
+layout_mode = 0
+anchor_left = 0.5
+anchor_top = 0.38
+anchor_right = 0.5
+anchor_bottom = 0.38
+theme_override_font_sizes/font_size = 44
+text = "GAME OVER"

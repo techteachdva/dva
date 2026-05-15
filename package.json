@@ -1,0 +1,9 @@
+{
+  "name": "physix-web",
+  "version": "1.0.0",
+  "description": "Physix web hosting — downloads Godot binaries from GitHub Releases at build time",
+  "scripts": {
+    "build": "node scripts/download-physix.js"
+  },
+  "devDependencies": {}
+}

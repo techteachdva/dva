@@ -1,0 +1,78 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/shop.gd" id="1"]
+
+; ════════════════════════════════════════════════════════════════════════════
+; Shop Panel — overlaid on world map for buying cosmetics, music, and buffs
+; ════════════════════════════════════════════════════════════════════════════
+
+[node name="ShopPanel" type="Control"]
+script        = ExtResource("1")
+anchor_left   = 0.5
+anchor_right  = 0.5
+anchor_top    = 0.5
+anchor_bottom = 0.5
+offset_left   = -320
+offset_right  = 320
+offset_top    = -240
+offset_bottom = 240
+visible       = false
+
+[node name="Panel" type="Panel" parent="."]
+anchor_left   = 0.0
+anchor_right  = 1.0
+anchor_top    = 0.0
+anchor_bottom = 1.0
+
+[node name="Margin" type="MarginContainer" parent="Panel"]
+anchor_left   = 0.0
+anchor_right  = 1.0
+anchor_top    = 0.0
+anchor_bottom = 1.0
+offset_left   = 12
+offset_right  = -12
+offset_top    = 12
+offset_bottom = -12
+
+[node name="VBox" type="VBoxContainer" parent="Panel/Margin"]
+layout_mode   = 2
+
+[node name="Title" type="Label" parent="Panel/Margin/VBox"]
+layout_mode   = 2
+theme_override_font_sizes/font_size = 28
+text          = "🛒  SHOP"
+horizontal_alignment = 1
+
+[node name="CoinLabel" type="Label" parent="Panel/Margin/VBox"]
+layout_mode   = 2
+theme_override_font_sizes/font_size = 18
+text          = "🪙  0"
+horizontal_alignment = 1
+
+[node name="TabBar" type="TabBar" parent="Panel/Margin/VBox"]
+layout_mode   = 2
+tab_count     = 4
+tab_0/title   = "Skins"
+tab_1/title   = "Themes"
+tab_2/title   = "Music"
+tab_3/title   = "Materials"
+
+[node name="Scroll" type="ScrollContainer" parent="Panel/Margin/VBox"]
+layout_mode   = 2
+size_flags_vertical = 3
+
+[node name="Grid" type="GridContainer" parent="Panel/Margin/VBox/Scroll"]
+layout_mode   = 2
+size_flags_horizontal = 3
+columns       = 2
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 10
+
+[node name="HBox" type="HBoxContainer" parent="Panel/Margin/VBox"]
+layout_mode   = 2
+alignment     = 1
+
+[node name="CloseBtn" type="Button" parent="Panel/Margin/VBox/HBox"]
+layout_mode   = 2
+custom_minimum_size = Vector2(120, 40)
+text          = "Close"

@@ -1,0 +1,1651 @@
+[Music]
+so this talk is from querian to
+homogeneous points lines and planes such
+as the ones that we have down
+here uh in the previous talk which I'm
+afraid to say is a little bit of a
+prerequisite for this talk we were
+talking a lot about caterans so rotation
+composition which we Implement using
+querian multiplication and we unified
+that in a sense with translation
+composition we unified it into a thing
+that we call dual querian multiplication
+another word for this is rigid transform
+composition because it's uh whenever you
+move and rotate something so you it's
+like it's a rigid object you're not
+squashing or stretching or scaling it
+one thing that I didn't talk about in
+that previous lecture is this function
+which uh in 3js at least it's called set
+from unit vectors it's when you have uh
+you've got like a vector going this way
+and a vector going this way and you want
+you ask for the querian that takes you
+from here to here like this um but
+there's a reason that I didn't talk
+about this one it's because I wanted to
+leave it for this talk because it turns
+out that there's a way of
+unifying this and this one you can even
+unify them with other things that you
+want so taking angles and distances and
+projections of let's say the distance
+from a point to a plane or the
+projection of a point onto a plane or
+the uh taking the angle between a line
+and a plane um and it also unifies it
+all with intersection of planes and
+lines what is this magical thing up here
+which could do all of these things
+together it's one function and it is
+called reflection
+composition and I would claim that a
+large number of video game engines
+contain little pieces of reflection
+composition the closest that they come
+to having actual reflection composition
+is in this function um but yes
+reflection composition is a very very
+fundamental thing going on with a lot of
+lot of geometry that we do for video
+games so we're thinking about points
+lines and planes and we're going to
+think about planes as being planer
+Reflections and then lines do things
+called line Reflections and points do
+thing called things called Point
+Reflections to which you say oh God why
+would I care about this stuff I mean
+even a reflection you don't see that
+that often in a game uh and you know I
+tried using once and it didn't work out
+that well for me the normal map went
+weird I wasn't sure how to fix it but
+these are these are these objects which
+I'm going to introduce are they don't
+cost you anything to represent them
+because you actually represent them
+using the same technique that you
+already used to represent planes so it's
+X XYZ and D that we used to represent a
+plane and a point is going to going to
+be X YZ and W and then a line well that
+is uh it's part of a dual quitan it's
+the line part of a dual quitan um but by
+thinking about these exotic objects
+these Point Reflections and line
+Reflections we're going to be able to
+see how all of this nice functionality
+gets into this thing called reflection
+composition all right I'm also going to
+give you lots of video gamey examples
+you know we're not just doing pure math
+here so we're look at going to look at
+Loft and dead space and halflife and a
+lightsaber fighting thing um and we're
+going to look at several problems which
+are all going to be turned into problems
+that concern points lines and planes
+this is going to be a long time coming
+though um I'm afraid to say that you're
+going to have to learn a bunch of maths
+in this talk and then this is there's
+going to be like an orgasm of usefulness
+right where you learn how to actually
+use the math in your game um but yes in
+order to get there uh which we start by
+saying everything is Reflections and in
+order to climb to the top of the
+mountain which is being able to write a
+compact game math library from scratch
+maybe some of you can already do this
+but I bet that using reflection
+composition it can be even more compact
+youve got a lot of things coming at you
+along the
+way um and the way that we're going to
+walk through these things is first we're
+going to talk about querian as
+compositions of two planer
+Reflections then we're going to talk
+about the math of General Reflections
+and why normal vectors are points at
+Infinity slightly strange sounding thing
+to say here but it's
+true then in section three this is all
+the usefulness we're going to do video
+game case studies so getting angles
+distances intersections and projections
+of things that you
+want and then we'll look at the fully
+General formulas that compile to fast
+specific formulas um and this is going
+to be again back to being a bit math
+heavy because we're going to try to
+generalize across points lines and
+planes so it's not very easily
+visualizable well it is visualizable but
+you visualize it with specific examples
+but yes anyway so part one querian are
+compositions of two planer
+Reflections uh and the motivating video
+gaming example that we have temporarily
+is a snowboarding game you want to make
+a game about snowboarding and to make a
+game about snowboarding you're probably
+going to be very concerned with the
+plane that is defined by this snowboard
+and the plane that is defined by the
+ground uh in this case this snowboarder
+is about to land on the ground and you
+might want to do various things at that
+specific point when it's when they're
+going to land so keeping this in
+mind uh we're going to think about
+representing planes so if you've never
+seen this representation of a plane
+before don't worry you've got X you've
+got y you've got Z and you've got D
+going to leave D alone for a second and
+just think about this one so if you
+imagine the normal ve the well the
+vector in the X Direction um so x 1 yal
+0 zal 0 then that Vector is the normal
+to this plane It's s a right angle to
+this plane um if you consider this plane
+so we've got X is equal to two uh this
+plane and this plane actually have the
+same geometric
+interpretation right um and so you
+actually don't need to think very much
+about how about these vectors again very
+similar to the Eran case you'll be
+distracted by the length of the vector
+it just doesn't matter that much so
+here's our basis we've got various
+different planes through the origin
+we've got the X plane through the origin
+the Y plane through the origin and the Z
+plane through the
+origin uh you can think of this as the
+plane like I say whose normal is in the
+X Direction points on this plane have x
+equal to zero which is a little bit
+confusing right the points have x equal
+to zero but this plane has this plane is
+the X xal 1 or xal 2 plane that's a
+little bit s strange sounding but you
+can kind of get used to it and then this
+is the Y plane where it's got uh the
+plane whose normal is in the y direction
+points on it have y equals z PL the
+plane whose normal is in the Z
+Direction uh and by the way uh other
+people including Eric uh call the call
+this one E1 this one E2 and this one E3
+and if you read more about the uh you'll
+encounter this a lot if you well you'll
+encounter this exclusively if you read
+Around the stuff that I'm talking about
+today but for the sake of argument
+because this is already in a video game
+engine I want to talk in terms of the X
+plane the Y plane and the Z plane and
+later on the D plane anyway yes mixing
+and weighted averaging is still addition
+like remember this so we use this to
+think about querian if you add two
+querian together and they have equal
+amounts then you get a quitan that's
+directly in between them just like if
+you add blue and red you get purple but
+you've got to be careful with that
+amount because you might get it's a
+different color um if you add two planes
+together by which I mean adding the X
+part and the X part the Y part and the Y
+part and the Z part and D part and the D
+part and the D part um if these two
+planes have amounts that are equal to
+one another then you'll get a plane
+that's directly in between
+them all right planer Reflections at an
+angle allow us to construct line
+Reflections this is the kind and the
+first of the more exotic objects that
+I'm talking about here but they're very
+important so here we've got a plan of
+reflection that is the plane of this
+mirror and like any mirror it's taking
+this backwards writing and it's turning
+it into forwards writing uh
+yeah here is a line
+reflection it's one Construction in the
+real world this isn't a computer screen
+or
+anything this is a real mirror or it's a
+certain kind of mirror you'll notice
+that this hand is a it's a left hand and
+this hand the other hand oh dear me the
+other hand is also a left hand all right
+so it's not like an ordinary mirror
+which reverses writing it's a special
+new kind of mirror the way that this
+mirror is constructed is that you have
+actually two mirrors kind of looks like
+there are four but there are actually
+just two um and you have them at a
+perfect right angle which makes it so
+that you get this interesting kind of uh
+non-h handedness reversing uh mirror
+over here but you still have actually
+this mirror this is an ordinary mirror
+reflection and this is an ordinary
+mirror reflection and what you have here
+is the reflection of a reflection all
+right uh this mirror is in some very uh
+important sense defined by this line
+This is the line of intersection of the
+two mirrors which uh I had to put it in
+there because they've been very very
+careful about removing that but yes this
+is a line and if you imag and you can
+see that any object is related to its
+reflection in this interesting kind of
+Mirror by a 180 degree rotation around
+this line it's a 180 degree rotation
+around a line H does that remind us of
+anything o well yes it should remind you
+of something it should remind you of
+this particular querian this querian is
+a
+180° rotation around the Y AIS right if
+you write it as a dual querian it looks
+like this because it's rotating from Z
+to X right it's going around here it's
+rotating from Z to
+X and okay let me try and prove that to
+you by using my hands okay so we start
+with a hand like this we're going to do
+a mirror reflection in here so we get
+this and then we're going to do a mirror
+reflection in here so this is at a right
+angle to this plane so we start out with
+this we do a mirror reflection then we
+reflect to this so we start out with
+this reflect reflect we get to here that
+is a
+180° rotation prove that to yourself as
+many times as you need to fully absorb
+it all right here are two planes two
+mirror planes which are not at a perfect
+right angle to one another I was in this
+hotel room and I think they've gone for
+this effect but they haven't quite
+managed it because there's two copies of
+me I want to compare this one and this
+one so this one I just told you the
+mirrors are at a right angle it's a 180
+degree turn what that means is that this
+is a Pure Line reflection we say uh and
+it's got no identity if you write it as
+a as a dual cerian it's a Pure Line it's
+not got any identity component it's got
+this component in here and that it
+defines the line of the Dual Quan it's a
+180 yeah this one so we're thinking
+about the reflection of me to this side
+this is again it's a special kind of
+handedness reversing uh handedness
+preserving uh rotation where the writing
+on my shirt is not backwards uh but this
+one it's not quite a 180 it's a 175
+degree turn let's say um so it's got
+some amount of identity if you represent
+it as a dual querian there's also this
+one this guy here this is another
+reflection of me um and it minus
+175° querian it's got some amount of
+idenity again and it goes the other way
+clearly uh which means that as a dual
+querian it's got the same amount of w
+and the line is the same except that
+it's been multiplied by minus one so
+we've taken the 0.99 and we've gotten Z
+minus 0.99 because we've gone from going
+clockwise to counterclockwise or the
+other way around I'm not sure okay but I
+promised you practical video gameing
+example we've got two planes here you're
+thinking about this snowboarder Landing
+from a big jump that they've just done
+in your video game we're going to label
+these planes A and B and we're going to
+write M we're going to Define m this
+thing M as being a multiplied by B in
+this reflection composition kind of
+way these are mirror these are planes
+which means that they are planer
+Reflections so the composition of two
+planer Reflections is a dual
+Quan
+um and suppose that you wanted to get
+the line of intersection of these two
+planes right even so this this line
+turns out to be the line part of this
+dual querian which makes sense right so
+we and you might want this line because
+in your video game about snowboarding
+you want to land and you want to put a
+uh a nice you know marking in the snow
+to tell the player where they landed um
+and this line will help you get that so
+we've kind of gotten what we want from
+reflecting in a then reflecting in B
+even though this snowboard you know it's
+not a mirror and the snow and the ground
+beneath them that's not a mirror either
+so these are two planes and we're
+treating them as mirrors in terms of our
+mathematics in order to get this line uh
+so long as we have this thing called
+reflection composition implemented in
+our engine
+we can get this line uh but we don't
+have to actually think of we don't
+actually have to think about these
+things as being mirrors even though
+they're not mirrors treating them as
+mirrors is helpful okay suppose that
+instead you wanted the angle between
+these two planes because maybe you're
+Landing in your snowboarding game and uh
+if you land at the wrong angle then you
+you're going to Tumble over right it's
+not a proper Landing so you're going to
+play in the tumble animation and maybe
+you lose the race or something so you
+want this angle once again it this angle
+is available to you if you get this this
+dual Quan if you compose a reflection a
+with a reflection in B you get a dual
+ceran and it turns out that this angle
+is equal to the arct tangent two of the
+square root of the sum of the squares of
+these parts of this dual querian and the
+identity part of the Dual Quan all right
+this is weird sounding this has come out
+of nowhere I H I haven't introduced this
+don't worry if this you're like why why
+the hell does that work work I'm going
+to go through it very carefully
+soon okay but sometimes we want to think
+of planes that are displaced from the
+origin we want to about think about
+planes that are not through the origin
+one reason that we might want to think
+about this is we might want to think
+about parallel planes so this snowboard
+I would say is approximately parallel to
+the ground down here to which you might
+say well that that's a pretty unlikely
+situation um but notice that if you're
+actually if you're going along the
+ground your should be is in some sense
+paral it's either close to or it's
+exactly parallel with the ground so this
+isn't that unlikely of a situation in
+the snowboarding game another reason
+that uh we might want to think about
+parallel planes is because many games
+happen on grids so for example if you're
+building a city on a grid you will if if
+you think about the plane that's defined
+by the front of this building and the
+plane that's def defined by the front of
+this building these planes are clearly
+parallel to each other
+okay so in order to think about parallel
+planes or planes displaced through from
+the origin
+we need to think about a certain extra
+kind of plane right this plane if you uh
+if you used to this kind of way of
+representing planes you might look at
+this and say uh that's not a plane man
+that's a really weird kind of thing I
+mean what like Okay so we've got xal 0 y
+equal 0 Z equal to Z which means that
+this plane is like it's not facing in
+any direction right that doesn't sound
+like a plane but what you're telling me
+that it's somehow got D like you we
+often think about d as represent
+distance so it's got some distance from
+the origin but it's not facing in any
+direction what is that well let me show
+you what it is it's
+basically
+this okay that sounds really weird I
+mean that isn't even a plane that's a
+freaking sphere right it's the sky
+sphere that you surround the player with
+in order to give them the impression
+that they're looking at the sky well I
+put to you that not exactly this sphere
+but a thing like this sphere is that
+plane
+that we've got there X is z y is z z is
+z d is
+one this is the sky and I put to you if
+you can think of the sky as being a
+great big sphere surrounding you but
+it's a sphere that's so big that's so
+very very big that if you imagine like
+oh I've got a sphere like this if I
+measure like the curvature of this
+sphere then it's got some curvature if I
+increase the size of my sphere like this
+then uh and I measur this curvature well
+this is a little bit less curved than
+the smaller sphere that I had if you
+take the limit we say uh you're talking
+about a sphere that is so big that if
+you went up to it you would measure no
+curvature on it all right so it's a
+surface with no curvature that sounds
+like a plane so I put to you that this
+thing is a plane there's another word
+for it which is the plane at
+Infinity why on Earth do we care about
+this though well in a in a video game
+engine you can actually represent a
+plane like this and you can use it to
+represent more useful planes so here
+we've
+got uh I'm putting into I'm I'm creating
+a plane here this is my plane and uh I'm
+initially putting in D equal to zero
+right which means that this plane here
+is the X plane that's not very
+surprising right so this is the X plane
+it's normal Vector points in the X
+Direction
+um and but if I increase this number
+here what I'm doing is that I am putting
+some amount of of plane at Infinity in
+there I was about to say sphere at
+Infinity I shouldn't say that it's a
+plane at Infinity that just happens to
+feel a little bit like a sphere so a
+plane that's displaced from the origin I
+claim is some amount of plane that is
+through the origin mixed with some
+amount of plane through through plane at
+Infinity
+okay oh I didn't want to do that I
+looked very surprised in that momentary
+image you got that okay um here's how
+you make a plane in unity I haven't
+tried it but uh in my opinion if it's
+not already true if you give this a
+value of 0 0 0 in the normal but you
+give it some D um I claim that this
+should give you a valid plane because
+this is and has always been some amount
+of Planet Infinity or some amount of sky
+that you use to displace from the origin
+if you if it's equal to zero youve got a
+plane through the origin with that
+normal Vector if it's equal to not if
+it's not equal to zero um then yes you
+have a plane that isn't through the
+origin potentially a plane at Infinity
+if the normal is equal to 0 0 0 all
+right the composition of two Reflections
+in parallel planes is a translation
+which is a dual qu
+uh let me demonstrate that to you so
+here's my hand let's say that this is
+our starting point we're going to
+reflect in this plane reflect we're
+going to now reflect in this plane which
+is parallel to this plane and we get
+this oh okay so started here reflect
+reflect uh that is a translation we've
+gone from here to
+here prove it to yourself as many times
+as you
+need here's a clip from just a great
+movie I love this movie How Could anyone
+not like this movie I don't
+know so what happened there well we
+started out with the reflection planes
+at some angle the there's the reflection
+plane that we've got here we've got a
+reflection plane that's behind Leo um if
+you look at the lines that you know def
+some lines defined by these reflection
+planes those lines meet at some specific
+place um and what you're seeing is a
+rotated reflection of Leonardo
+DiCaprio but eventually we got to the
+case where the planes are parallel we've
+got parallel mirrors and now it's the
+case that these lines do not meet each
+other because they're par or rather they
+may be meters
+Infinity
+um and that gives us a translation we've
+got translated reflections of Leonardo
+DiCaprio a a practical place where you
+see this in the real world not
+necessarily in video games is periscopes
+uh maybe if you're using a lot of Ray
+tracing I don't know you might Implement
+a periscope this way uh but yes the
+Periscope uses two parallel mirrors to
+uh translate um what's above the
+submarine down to the level where you
+are looking at it okay we're interested
+in our snowboarding game though we def
+we maybe want to know for
+example uh the distance between these
+two planes and once again if we take
+Reflections in these two planes well of
+course we get a translation we get it as
+a dual querian most likely
+um and if you want to get that distance
+you can also get it from the parts of
+that dual querian there's a little bit
+of uh extra complexity here because if
+you have two planes that are at an angle
+to one another then by definition they
+sort of don't have a distance all right
+so if they have an angle they don't have
+a distance um and if
+they but if their angle is zero then
+they can have a distance it could be a
+distance of zero because they could be
+the same plane um but
+yes another thing you might want to get
+from this if you take ref C in these two
+planes you might want to get for some
+reason the line at infinity and that can
+be read off from this dual quenan as
+well it turns out okay querian and dual
+querian are applied to planes using
+composition and inverses so I've used
+this function before I've uh for example
+used it to apply Quan to the cow model
+that you saw all of the vertices in that
+cow model but it's time to open up this
+black box all right so oh we're thinking
+about Dumbledore and Harry har Potter
+Dumbledore in this situation is trying
+to empathize with Harry Potter we're not
+interested in what happens in the actual
+story we're not interested in Harry's
+dead parents we are interested in
+Dumbledore being a geometer and asking
+himself hm this mirror reflection plane
+that he can see he can go like I wonder
+what it looks like from Harry's point of
+view I wonder what that mirror looks
+like from Harry's point of
+view uh and note that this mirror
+reflection plane is of for of
+transformation it's a mirror plane that
+does mirror Reflections
+obviously okay and Dumbledore knows
+where Harry is so he can uh he can get T
+he has t which is the uh transformation
+from Harry to Dumbledore and he may have
+this as a dual
+querian he can also very easily get T
+inverse because to if you've got a dual
+querian if you want the Dual Quan that's
+in the opposite goes the opposite way
+the inverse of that dual Quan it's just
+some minus sign so if you've got T you
+can get T inverse very easily and this
+is how we write T inverse which is
+Dumbledore to
+Harry we want to know how to apply T to
+P1 all right we want to get uh that
+plane Dumbledore wants to know where
+that plane is from Harry's point of view
+which is to say that he wants you know
+let's guess that it's somewhere here we
+can label it P2 Dumbledore wants to get
+P2 um and note that P2 will also be a
+transformation whether or not it is used
+to transform anything if Dumbledore is
+only interested in like oh I'm going to
+intersect this plane with some lines or
+I'm going to project I want to know how
+distant this plane is from some other
+thing um regardless of what he wants to
+do with it he could use it as a plane of
+reflection so it is a
+transformation okay can we use that for
+anything well consider what if
+Dumbledore had a point and he wanted to
+apply P2 to it well what he could do
+would be to apply T inverse and then
+reflect in P1 which he already has and
+then apply
+T okay that gives him what that gives
+him the point reflected in this plane
+that he doesn't have but in a sense he
+does have that plane that plane is T
+composed with P one mult uh composed
+with t inverse it turns out by the
+argument that I've just given you
+and since he could do that he doesn't
+really need to think about that point he
+doesn't need to think about that point
+he could have chosen a point anywhere
+else and this sequence of
+Transformations would have given him the
+reflection in P2 which is to say that
+you can figure out P2 just by using
+composition and
+inverses okay part two the math of
+General Reflections and why normals are
+points at Infinity so we want to think
+about Point Reflections another one of
+these exotic objects
+so suppose we start with a line
+reflection like this and we add another
+reflection plane down here what do we
+get well get something that's like
+this quite a beautiful thing here I
+would
+say note that the camera's Reflection
+from where which is where we're looking
+at this thing is always on the exact
+opposite side um of the point in the
+middle of these mirrors uh from where
+the actual from uh the camera
+obviously um
+yeah another way of looking at a point
+reflection is like this uh but this is
+slightly cheating because this is 2D
+we're interested in point Reflections in
+3D which work a bit
+differently
+um does anybody remember this from
+school yeah love it right turns out that
+this is a point
+reflection oh she looks very excited
+she's just learned that this is a point
+reflection um it's a point reflection
+because look if I take if I've got a
+little ball bearing in between this in
+this specific Place between my two
+fingers here if I walk from this
+fingertip to the ball bearing and then I
+come out the other side by the same
+distance I will get to my other
+fingertip and this H what my the the
+fingertip the same fingertip on my other
+hand uh and you can do the same thing
+with any fingertip you can kind of see
+this from the construction of this thing
+so right now my hands are clearly
+reflected from one another and then I
+rotate 180 de which might remind you of
+a line reflection and then I put them
+together and there's my I've seen it
+called the worm and I've seen it called
+the Seesaw should probably think of a
+well we should standardize this because
+it's really important all right how dual
+querian are applied to points and lines
+this is really important because uh you
+know video games are mostly about
+vertices but sorry
+Graphics programming is significantly
+about vertices we want to be able to
+apply if we've got some dual concern you
+we want to apply it to a point might
+also want to apply it to a line as well
+well consider the Harry and Dumbledore
+situation again but suppose that instead
+of a plain Harry oh and Dumbledore still
+has the Harry to Dumbledore
+transformation instead of a plane Harry
+is looking at a point if we think of
+this point as being oh and Dumbledore
+wants to get that point from Harry's
+point of view if we think of that Point
+as being a plane reflection sorry a
+plane reflection a point reflection if
+we think of that point as being a point
+reflection it turns out that literally
+every single thing that I said to you
+about the plane reflection case applies
+in this case so Dumbledore can uh if he
+wants to get this point reflection he
+can uh apply the inverse of the the uh
+har to Dumbledore transformation reflect
+in that point reflection and then apply
+T if Harry's looking at a line similarly
+you think about it as a line reflection
+and again the argument works so this is
+our formula this is called the sandwich
+product for obvious reasons to apply a
+transform T to an object B where you
+know I say an object all objects here
+are also transforms a plane is always a
+transform whether or not you use it to
+transform anything um and you're
+thinking about as a transform here if
+you apply T to B you can think of it as
+an object if you like you use sandwich
+product whether it's a point or a line
+or a plane or indeed a dual querian you
+can apply a dual Quan to a dual Quan
+this way or a quan to a querian whatever
+okay dividing by a point which is a
+point reflection is like dividing by a
+line where a line is a 180 degree
+rotation or a line reflection okay what
+do I oh first a reminder of why we want
+to divide by things so B multiplied by a
+means transform by B but transform by a
+first
+B divided by a means transformed by B
+but transformed by the opposite of a
+first and we saw that in the case of
+these
+rotations okay so we saw that if you do
+a 180 and then another 180 so you square
+this you take the square of a line you
+compose the line reflection with itself
+you get minus one start here end up here
+that's minus
+one from this you can derive okay we've
+got a * AAL minus1 because minus1 is
+where my arm is kinked
+up uh a * AAL minus one divide both
+sides of this equation by B by a and you
+get that 1/ a is equal to the which is
+the inverse of a is equal to minus a
+quite
+simply and you can apply this logic to
+point Reflections as well it turns out
+so let's say I'm starting here and I'm
+and a point reflection is what a point
+reflection is you reflect in a plane
+then you reflect in a plane and you
+reflect in a plane these two plane
+Reflections we can think of as a
+180 so we're going to reflect in here
+we're going to do a 180 so squaring a
+point reflection we're going to start
+here reflect 180 that's the point
+reflection applied to my
+hand then reflect and 180 again and it's
+the 180 going in the same way we get
+minus one reflect 180 reflect 180 all
+right
+points at Infinity also known as
+directions also known as normals this is
+another kind of
+Point uh We've looked at this picture
+quite a lot we've seen that uh dual
+cians can involve these lines in the sky
+uh We've also thought about the pl the
+sky itself which is the plane at
+Infinity these were the lines at
+Infinity but what about the
+Stars these Stars act like points at
+Infinity I
+claim and having a have a look at this
+animation
+so this is an animation where we're
+moving right we're moving in this car we
+are if we look at the telegraph poles
+they're passing Us by very fast if we
+look at the mint windmills they're also
+passing Us by uh the further away
+windmills are passing Us by a lot slower
+and the mountains well the mountains are
+probably moving a little bit and the
+clouds maybe even as well but the Stars
+should not move Stars shouldn't move no
+matter how translate I claim some video
+games involve stars in this way so this
+is Kerbal Space Program um and Kerbal
+Space Program sorry about that uh Kerbal
+Space Program handles stars in the right
+way so as you're blasting off the Earth
+will be moving away from you but the
+stars are going to stay in place but
+I've seen some video games where the
+stars move they really shouldn't move
+when you translate camel tree for
+example does this um
+okay stars are points at Infinity which
+means that you can point at them oh
+sorry this is an experiment you can do
+at home point at a star Move Yourself
+around all right move yourself around as
+much as you like so long as you're
+pointing in the same direction and you
+will find that you are still pointing at
+the same star all
+right therefore points in the sky can be
+thought of as directions because if you
+rotate yourself you're changing your
+idea of left and right your rotation
+that will change where the star is from
+your point of view you will no longer be
+pointing at it but translations don't
+that's what defines a
+direction normals are examples of these
+points at Infinity I claim so this is a
+normal map and this is an ordinary
+vertex and as a uh most game developers
+know there's a fundamental difference
+between this kind of uh vector and a uh
+a normal normals don't care where the
+origin is right these arrows I mean in
+general you're supposed to say that a
+vector starts from the origin but these
+arrows are allowed to be anywhere
+because they're normal vectors vertex
+positions very much do care where the
+origin
+is uh to really Hammer that home you can
+have a surface like this and I claim
+that uh the normal Vector at that point
+is pointing at a certain star in the sky
+uh which you can point at and imagine
+like your arm is coming from that point
+in the surface and you can move yourself
+around okay how do we represent points
+in code though when some of them are
+points at
+Infinity so here is how we represent
+points in a Shader we've got X part Y
+part Z part and W part and yes this is
+very confusing and annoying because
+that's what a querian had as well XYZ W
+so Quan looks exactly like a point but
+yeah just remember that this is a
+fundamentally different kind of thing
+from a quitan
+uh a normal Vector in the context of
+this is or rather a direction you can
+also call it a vanishing point um a
+normal Vector in this context has W
+equal to zero right this is these parts
+Define the direction that it's going in
+but the W part is equal to zero a
+position or a Vertex which can be used
+as a point reflection will have W equal
+to usually one but technically any other
+value would be allowed you can dial W up
+and down and that'll move you towards
+and away from the
+origin but the fundamental thing is that
+it can't be zero so if it's if it's zero
+then it's a uh then it's a direction
+whereas if it's not zero then it's a
+position or a Vertex okay addition as
+ever is weighted averaging so if you got
+a point here and a point here if you
+want to get the point that's directly in
+between these two points you can add
+them that's going to work if the two
+points are coming in there in the same
+amount uh which is defined in a specific
+way but it's again exactly like this
+color mixing thing all right Roto
+Reflections and trans flections what the
+hell is that uh so this is a roto
+reflection my hands being like this so
+my this is like the Clapping pose which
+I hope to see lots of later um if my
+hands are like this so the sort of
+preying pose then this is a reflection
+right I have this hand I reflect and I
+get that hand
+right this is the point reflection so in
+between my wrists there's a point and
+this hand is related to this hand by a
+point
+reflection so you consider the clap to
+be somewhere in between a reflection and
+a point reflection that might remind you
+a bit of the querian because a querian
+was some amount of identity and some
+amount of 180 degree rotation and an
+arbitrary querian that wasn't Identity
+or 180 degree turn was some mixture of
+identity and of identity and 180 all
+right there's also trans flections these
+are the situation of I reflect and then
+I
+translate uh yeah I reflect then
+translate as opposed to reflecting and
+then rotating and with a
+transflection uh the point the the point
+reflection so to speak in this context
+is a point at Infinity which is a bit
+weird but it's again analogous to the
+situation that if you have a Quan
+uh or rather a dual catonian where the
+line is infinitely far away then that is
+a translation
+okay why do we care about these things
+though why do we care about Flector
+which is the general word for uh Roto
+Reflections and trans flections the
+answer is because the planes and points
+inside them may be things that you want
+so if we want to get the intersection
+the the place where the this uh you know
+laser site intersects uh the plane
+defined by this uh rectangle it doesn't
+actually intersect the rectangle but it
+intersects the plane defined with by
+this rectangle here which you might care
+about a lot if you want to get that
+point you will find it we'll see later
+on inside of a roto
+reflection um and if you want to get say
+the point on this branch that is as
+close as possible to Lara's hand this is
+something that you'll extract from a
+[Music]
+transflection so we probably should
+represent these in code but it's very
+easy you just haveen have to have a
+little bit of well a plane and a point
+right uh and this is what defines a
+Flector let's recap our understanding of
+querian to see a bit more about how
+we're going to extract these things so
+plain angle distance from querian is
+something that we did
+earlier uh we want uh if we reflect in a
+mirror and then reflect back in the same
+mirror you take that takes you back to
+the start so if we've got Robert dairo
+here that's Robert Deniro's reflection
+and if we reflect Robert Dao's
+reflection we get back to Robert
+daero Robert Dao's relationship with
+Robert daero is the identity transform
+therefore a plan of reflection composed
+with itself is the identity querian
+right planes this for this reason we
+sort of say they Square to one so uh the
+identity trans querian there's no axis
+to speak of but we've got a lot of
+identity in there it's got W equal to 1
+or something else but not W equal to
+zero anyway and nothing else uh okay
+reflecting in a mirror and then in a
+very different mirror I.E an orthogonal
+mirror will get you a 180 degree querian
+um by orthogonal I just mean at a right
+angle if you've never heard this term
+before in this situation we saw that we
+had two mirrors that were at a perfect
+right angle to one another and
+reflecting in one mirror and then in the
+other gave us the reflection that was
+back here but this is a special kind of
+reflection this is the line reflection
+so multiplying a Plane by a plane that's
+at a right angle to it will give you
+this Quan it'll give you an in a l a
+querian that is completely a line
+querian so it's a 180 degree
+rotation in general a transform such as
+a querian has some amount of identity
+and some amount of line in and in
+specific relative amounts so the angle
+we saw was controlled by those relative
+amounts we wanted to get the angle and
+the distance of two planes we made our
+quern our dual querian by reflecting in
+those two planes and then we extracted
+our distance and our angle by you by
+taking the different
+amounts of identity or amount of line we
+had two different ways of of taking uh
+of extracting something else that gave
+us our information that we needed to
+calculate our angle on and our distance
+uh but all of these came from that dual
+qu they came from the line part of the
+Dual
+ceran okay so since we care about
+extracting these things points lines and
+planes from uh transform so much we
+should probably develop some notation
+for it uh and there's a very elegant
+notation for doing this so for Flector
+for so if you got M and M is a Flector
+or a dual querian there's a specific
+Shand not ation for extracting things
+and it uses this concept called the
+grade in this specific context not
+exactly in the context that Eric will be
+talking about later uh but in this
+context a plane has grade one and the
+reason that it's got grade one is
+because you can make a plane with one
+planer reflection that sounds like a
+boring thing to say but a line if you
+want to extract the line part of M if M
+was the Dual querian for example then
+you'd extract that
+with this and we put a two here because
+a line can be created with uh
+Reflections in two orthogonal mirrors a
+point which you might extract from a
+roto reflection or a transflection would
+be a grade three so because it's uh the
+intersection of three planes or rather
+it's the uh it's a refle a point
+reflection is a reflection in three
+planes how about this well this is the
+identity transform so if you have a dual
+Quan and you want to extract the amount
+of identity in there which you may want
+to do uh that that's written this way
+and it's got a zero here because the
+identity transform is a reflection in no
+mirrors at all and then the funny one is
+uh the screw motion it's it's not that
+common to extract this but it's not
+unheard of um the screw of a dual Quan
+you extract with the grade four it's the
+grade four part of this dual Quan here's
+why so reflect and reflect so that gives
+me a 180 Dee rotation and then reflect
+and reflect that's a translation so a
+rotation and translation which is a
+screw motion is four Reflections right
+one two 3
+four okay to really Hammer that home if
+you had for example an ordinary querian
+and you wanted to extract only the line
+part the notation for this would be to
+just say I want the two thing here with
+the angle brackets and that'll give me
+this querian uh so you can see that this
+is the same as this but the W part is
+zeroed out it's only got a line part you
+might care about this again for example
+because you want to find the
+intersection line of two planes like
+from in your snowboarding
+example if you wanted only the identity
+part of the Quan only the W part the
+notation for that would be zero here
+because the identity is zero Reflections
+and yeah that gives you this Quan which
+has some amount of identity part but no
+line part that's been zeroed out all
+right
+figuring out what amount of point line
+and plane you have in there this is very
+important um there's a notation for the
+for extracting the length of a vector
+which is this so uh vx2 plus V y^2 plus
+vz^ s whole thing square rooted that
+gives you the length of the vector right
+and we write that for some reason with
+two uh with vertical lines on either
+side of v um incidentally you might uh
+you can ask the question where do you
+kind of get VX from and it's it's stored
+it's stored on your computer but how do
+you get it geometrically um I obviously
+it's a walk by some amount along the uh
+x- axis uh but note that you can only
+see that this point uh intersects the
+xaxis there or is related to that part
+of the x-axis by thinking about the
+plane that runs through this point and
+uh is has normal Vector in the X
+Direction um so this point is in some
+sense the in you get the VY the VZ from
+thinking about uh the intersection of
+these two planes and the intersection of
+this plane so the idea of a point as the
+intersection of three planes might not
+be as unfamiliar to you as you think so
+the amount of point line or plane
+reflection inside M
+notation so we've got two different ways
+of getting
+it this is the one that we use to get
+the amount of let's say let's say it's a
+we're thinking about a point so point to
+the intersection of three planes so
+we're looking for the uh grade three
+part of M if it's a point at Infinity
+then we have this notation and the way
+that I think about it is that this empty
+circle represents that big old Sky
+sphere right um the empty circle is the
+sky sphere so like a point at Infinity
+if you want the amount of point at
+Infinity inside M then you then that's
+what this thing means and uh if you've
+got something that isn't at Infinity
+then this is the notation for the amount
+of plane amount of line amount of Point
+uh that's in there and it's a filled
+Circle because we're looking at stuff
+that's inside that Skys sphere all right
+looking at this in the case of a dual
+ceran so here's the grade two part of
+the Dual cian this is a line part of the
+DU
+dualan uh this is uh how you would
+extract the amount of line that's in
+there if we're talking about a line that
+isn't at infinity and that's the way
+that we write this this is the amount of
+line that isn't at Infinity inside M
+this is the amount of line that is at
+Infinity inside M so this will give you
+a single just a number you can extract
+the you can just take these read these
+floats off take the square root of the
+sum of their squares and you will get
+this thing which is the amount of Linus
+Infinity that is inside M uh another way
+of writing these by the way there's some
+authors who write things differently
+like uh they write the filled Circle one
+as having nothing here at all and then
+for the this one they put an infinity
+sign
+here uh and if you want the identity
+part of the quitan then you know you
+just read off the W part and if you want
+the screw inous part then it's like this
+all
+right how about for a Flector a Flector
+is an easier case so you've got a plane
+that's right there uh that's the M the
+grade one part of M uh there's the grade
+three part of M so the amount of line
+the amount of Point reflection that's
+inside of the Flector
+uh these are the different ways of
+extracting the amount of Point
+reflection that isn't as in oh this is
+the amount of uh planer reflection that
+isn't at Infinity that's inside M this
+is the amount of Point reflection that
+is at Infinity that's inside M and this
+is the amount of Point reflection that
+isn't at Infinity inside of M all right
+so part three finally we're getting to
+some video games right we're looking at
+case studies we're going to get angles
+distances intersections and projections
+as well it's going to be very fast
+because we've got so much Machinery
+built up so plane line we're thinking
+about a plane and a line in this
+situation we're interested in how the
+laser sight Cuts this uh rectangle that
+we've got here uh we're going to turn
+the laser sight and this rectangle into
+a plane and a line and this is an
+infinitely extended plane so it's not
+the plane that's defin it's not it's not
+limited to this
+rectangle yeah it's a infinitely
+extended plane but we're interested in
+for example where to get that
+intersection how to get that
+intersection first we're going to label
+the line as a and the plane as B the
+line is the middle six it's the it's a
+dual querian it's a line uh if you
+wanted to do a a 180 rotation around
+this line that would be the same thing
+as this that would be this dual Quan so
+uh it's the line part of a dual Quan and
+this plane is obviously represented in
+this way uh we Define m equals A over B
+which we know how to do because uh we've
+seen to divide most things uh and then
+we're going
+to well oh well m is a roto reflection
+or a transflection by the way it's going
+to be a roto reflection if the line is
+not orthogonal to the is not parallel to
+the plane it's a transflection if they
+are parallel
+whatever this point of intersection
+turns out to be the grade three part of
+M with M having been defined that way
+and the interesting thing about this is
+that this is true even if a and b are
+parallel so if you have a plane and a
+line and they're parallel to one another
+you might be compelled to say oh like
+they don't intersect each other if you
+if you call the intersection function
+with these two objects it should give
+you nothing well no that's not true it
+should give you a normal Vector it
+should give you a point at
+Infinity maybe you want the angle
+between the line and the plane uh the
+way to get that angle is with this
+formula and again it involves the amount
+of Point reflection reflection that's
+inside of M where m is a roto reflection
+say and the amount of planer reflection
+inside of M where um yeah again m is a
+plan is a roto
+reflection there's only going to be a
+distance between uh the line and the
+plane again in the case where the line
+is parallel to the
+plane and so uh this yeah this is
+conditional upon the angle but it's
+still the ratio of two amounts of Point
+reflection and plan reflection and oh
+and obviously another situation where a
+video game developer cares a lot about
+the angle between a plane and a line is
+in lighting calculations okay plane
+Point here we've got dead space in this
+part you're going around on the surface
+of a great big
+spaceship um you've got a the ground
+beneath you probably defined by a plane
+your character's position is a point uh
+what can we do with this well suppose
+that you wanted a let's label these as a
+and b um and Define m m equals A over B
+because that's turned out to be a useful
+thing to do in the past um suppose that
+you wanted the line that is orthogonal
+to a sorry it's at a right angle to a
+and it passes through b well it turns
+out that this is the line part of M
+surprise surprise what else would it be
+though of course it's going to be a line
+part of some dual
+querian suppose you want project ection
+so you've got a point into a plane again
+and you want to project the point onto
+the plane well this is the uh line part
+well it's the grade it's the line part
+of M which is the grade two part of M
+they're the same thing divided by a it
+turns
+out maybe you want the distance between
+the point and the plane uh turns out
+that this is given by this formula which
+where we're taking the amount of screw
+inside of M and the amount of line
+inside of M these formulas are looking
+pretty Sim similar aren't they you can
+ask the question as well is the point to
+the left or to the right or is it
+embedded inside of the plane right so is
+it if here is my plane is it here or is
+it here or is it like you know in my
+plane
+um that is going to turn out that turns
+out to be the sign of uh the screw of M
+this is a slightly weird thing to think
+about um it's may be deserving of
+something in itself but uh it's it's a
+really it's quite interesting and you
+can actually apply this concept to lots
+of other situations that I won't go into
+so uh you want to know maybe for example
+you've got two lines and you want to
+know uh whether these two lines are
+Loosely clockwise to to each other
+whether they're like this or like this
+um yeah you can similarly extract that
+from this scrutinous part okay line and
+point though so here we're talking about
+Lara she's reaching out to grab grab a
+branch the branch is defined by uh a
+line the line we're going to label a her
+hand going to label with B we're going
+to Define m equal A over B you must be
+getting sick of this by now maybe you
+want the point on the line that's as
+close as possible to her hand turns out
+that that is the projection of this
+point onto this line and that is the uh
+plane part the planer reflection part of
+M divided by a the planer reflection
+part uh M by the way is going to be a
+transflection um maybe you also want the
+distance between her hand and the line
+well that's given by this formula again
+it's the ratio of the amounts of point
+point of uh pointed Infinity inside of M
+and the plane inside M the amount of
+plane inside of M
+sorry okay line and line here we've got
+lightsabers I'm not going to draw lines
+on them because it's a bit
+obvious uh these are again represented
+as the middle six floats of dual
+querian uh we Define m equals A over B
+uh where you know a is one of the
+lightsabers and B is the other it's the
+line defined by the lightsaber and B is
+the other line defined by the lightsaber
+if you want the angle between the
+lightsabers then that's this formula if
+you want the distance between the
+lightsabers that's this
+formula uh maybe you also want to have
+like let's say the lightsabers are like
+this and you want to have like some
+crackling energy going from here to here
+uh in order to get that you use you can
+use this formula I'm sorry I should have
+put in the uh multiplication sign so
+it's the so if you if you want to get
+the uh line that's at a right angle to
+these two lines then that turns out to
+be the Orange Line multiplied by the
+purple line and minus the purple line uh
+multiplied by the Orange Line and that
+gets you this line which is at a right
+angle to both
+lines okay fully General formulas and
+recap uh this part is going to have much
+fewer pictures than the other parts I'm
+very very sorry to say um yeah because
+we're trying to go across points and
+lines and planes but yeah okay distance
+angle intersection and projection of
+anything and anything else where we're
+talking about points lines and planes uh
+intersection so if you take if you've
+got uh the grade of a and the grade of B
+so let's say that um so a line is grade
+two because you can make it with two
+planer Reflections and a plane is grade
+one so that's uh one because that's one
+plane of reflection so the grade of a
+line and a the grade of a plane is 2 + 1
+= 3 and if you take the uh composition
+of A and B and then you take the grade G
+part of of that uh G was equal to three
+so it's the grade three part of a
+composed with B well that's our point so
+the intersection of a plane a plane and
+a line is a point the intersection of a
+plane and a plane is a
+line angle and distance from anything to
+anything so this is looking very gnarly
+at this point um but for what it does
+I'd say that it's it's not bad right um
+here we're taking uh so we've got uh A
+and B where A and B are points lines or
+PLS so they've got some grade which is
+one two or three um you do grade A minus
+Grade B and then you take its absolute
+value and you assign that to G um and
+then the angle between them is going to
+be about the is going to be related to
+the amounts of these graded parts of M
+in the there and the distance is going
+to be related to these graded parts of
+them in there of M of M in there um yeah
+uh and this is sorry this is uh this is
+not that fast and not that compatible
+because you can ask the question well
+the arct tan what if this what if this
+is equal to zero the arct tangent of 1
+divided 0 is in some sense well defined
+it's 90
+degrees um the arct tangent of infinity
+is 90 degre but the only way to
+guarantee that you'll get the right
+answer is to use arct tangent 2
+okay orthogonal to a thing and
+overlapping another thing the example
+that we had of this is uh the line
+that's orthogonal to at a right angle to
+the plane and it passes through this
+point um but there's lots of situations
+where you might need where you can get
+this so for example if you have a plane
+and you have a line you can get the
+plane that is orthogonal to this plane
+and passes through this line right and
+you can get that whe whether the pl
+whether the line is all is uh parallel
+to the plane or not
+that turns out to be this expression so
+you can get the unique plane that's
+orthogonal to a plane and overlaps a
+line the unique line that is orthogonal
+to a plane and overlaps a point unique
+plane that's orthogonal to a line and
+overlaps the point blah blah blah and
+then it turns out that this is a
+generalization of the dot product in a
+way that I don't really
+understand uh but that's our that's why
+we write this thing as uh the dot uh as
+the dot product
+uh um and you if you take this and you
+divide it by B it turns out you get
+projection you can project a plane onto
+a line you can project a plane onto a
+point a line onto a plane a point onto a
+plane all with this one formula isn't it
+great interpolation bis sectors and
+transforms from A to
+B all right addition is always weighted
+averaging across everything that we've
+said uh this is sort and this is sort of
+what we mean by the term homogeneous by
+the
+way uh so this lets you interpolate
+points lines planes and Transformations
+so you can interpolate any plane to any
+other plane you can interpolate any
+point to any other point and you can
+interpolate any line to any other line
+it's
+great this formula gives you the the the
+thing that's exactly halfway between two
+things by distance and angle so suppose
+you've got two points and you want the
+point that's directly in between them
+and you or you've got a plane and you
+want the plane that's guaranteed to be
+directly in between them well first
+you've got to normalize your A and B and
+that's what this little symbol here
+means uh you can Define the
+normalization of a as being a multiplied
+by one over the square root of the dot
+of A and B and bear in mind that this is
+just a float in this situation this is a
+single number and so you can do this
+very quickly with fast inverse square
+root um uh okay therefore generalizing
+that you've got the idea of a halfway
+rotation or trans translation sorry how
+much time do I have
+left okay normalization uh if you
+normalize M and you add one you get uh a
+a rotation that's halfway from uh the
+identity to M you can also write this as
+the square root of M because if you
+multiply it by itself then you get M
+normalized uh transform from A to B
+feels like it should be the same thing
+as transform composition but there is a
+caveat here so if you want to go from A
+to B it turns out you've got to take the
+square root of B over a and the reason
+that for that is because if you've got
+uh two planes at 90 degrees then this is
+actually a 180 degree rotation so you
+need to take the halfway rotation of
+this to get the angle between these two
+mirror planes um and this finally gives
+us this set from unit vectors thing that
+I talked about at the beginning where
+you want to get the quion that goes from
+here to here um you just think of those
+as the normal vectors of planes you take
+the composition of the the reflection
+composition of those two planes that
+gives you a querian then you got to take
+its square root okay
+conclusion this is a cheat sheet says
+everything that I've just
+said uh all of our code here can be
+deduced from these very very simple
+rules these are the fundamental uh equa
+these the fundamental definition of the
+algebra that I've just put forward so
+all of these reflection planes which are
+through the origin they Square to one
+which is the identity because that you
+reflect and you reflect back you get the
+identity and then uh the Planet Infinity
+squares to zero because you can't
+reflect past infinity and then reflect
+back again similarly you can't
+uh do a 180 around a line in at infinity
+and come back again that doesn't make
+any sense you can translate in a way
+that's uh preserve that's uh defined by
+the axis that's a lineus Infinity but
+you can't go all the way around Al
+lineus Infinity similarly you can't
+reflect in the planus
+Infinity if you follow up on this you'll
+find that uh this is how you comp
+compose dual Quan for example there's
+other things for composing flexions and
+planes and points um it's a bit gnarly
+looking but it's actually faster than
+4x4 matrix
+multiplication uh and all of this has
+been geometric algebra uh but this is a
+term that's may be worth clarifying uh
+so what there are many algebraic systems
+for computational geometry and the cross
+product is one of those algebraic
+systems that you learn in school um but
+what I've been talking to you about
+today is called 3D ukian plane-based
+geometric algebra and it's defined by
+what we call cl3 comma 0 comma 1 um it's
+called that because it's got three
+elements that square basis elements that
+square to one and it's got one basis
+element that squares to
+zero uh a thing that Eric has talked
+about many times is uh 3D projective
+geometric algebra which is able to do
+even cooler stuff it's able to do camera
+Transformations and it's able to do for
+example take the uh if you got two
+points you maybe want the line that
+joins those two points or if you've got
+a line and a point you want the plane
+that joins those uh and he can so what
+I've been talking about is a subset of
+what uh of what he talks about so it's
+what uh it's what it gets called
+anti-space uh 3D conformal geometric
+algebra as I understand it he's about to
+to to to give us some stuff about that
+yep brilliant uh 3D conformal geometric
+algebra lets you do even more stuff
+including some with spheres and then
+there's this thing which is uh well you
+can call it Vector space geometric
+algebra um it's
+cl3 uh so it's a subset of what I've
+been talking about U and yeah the
+problem it's fine but the problem is
+that people sometimes say geometric
+algebra and all that they mean is this
+when geometric algebra really means all
+of this stuff and another word for it by
+the way is Clifford algebra um and uh if
+you want to learn more specifically just
+about 3D ukian plane-based geometric
+Algebra I recommend this lecture by the
+odor and he uses lots of mathematical
+rigor which is what something that I
+don't very much use um this is a link to
+lots of other things that you might have
+heard of if you studied mathematics or
+physics in University you might have
+heard of these things if you didn't
+don't worry you don't need these
+Concepts but yeah just to say these are
+labels different labels that you can
+give to the same things that I've been
+talking
+about uh and one of the fun ones is uh
+Spinners by the way that's somewhere in
+here yeah quorans and dual querian are
+Spinners one thing that you might have
+noticed that I've been doing a lot of in
+this lecture is taking vectors and then
+making them Fade Out and replacing them
+with something else with the exception
+of the translation Vector sort of though
+I've added this uh line in
+here um and the reason for that is
+because vectors are not that good of an
+idea I mean it depends on what you mean
+by Vector um but if you define a vector
+as the thing that goes into and comes
+out of the cross product it's a terrible
+idea the cross product can transforms in
+an inconsistent way um it's a
+mathematical dead end because it doesn't
+have any connection well doesn't have a
+proper connection to group Theory um and
+it gives you some something that if you
+you put in a and b But A and B are like
+Like A and B could be planes and then
+the output what what that you really
+want is the intersection of those two
+planes um so yeah I think that when uh
+when somebody uses the cross product the
+universe should scream type error uh and
+it remains to thank the many many people
+who have made it so I understand the
+stuff well enough to give a lecture on
+it um and uh please get in touch with me
+I'd I love talking about this kind of
+thing and I've got even more toys that I
+didn't get to talk talk about today
+optical illusions as well all right
+thank you very much
+[Music]

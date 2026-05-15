@@ -1,0 +1,16 @@
+res://levels/1-1.json
+res://scripts/bot_controller.gd
+res://scripts/main_menu.gd
+res://scripts/world_map.gd
+res://scripts/autoloads/audio_manager.gd
+res://scripts/autoloads/level_manager.gd
+res://assets/shaders/lava_lamp_2d.gdshader
+res://scripts/game_level.gd
+res://scripts/hud.gd
+res://scripts/level_factory.gd
+res://scripts/main.gd
+res://scripts/sky_sphere.gd
+res://scripts/track_builder.gd
+res://scripts/autoloads/camera_shaker.gd
+res://scripts/autoloads/screen_flash.gd
+res://scripts/ui/options_panel.gd

@@ -1,0 +1,19 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" uid="uid://ghostball" path="res://scripts/ghost_ball.gd" id="GhostBallScript"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_ghost"]
+
+[sub_resource type="StandardMaterial3D" id="GhostMat"]
+albedo_color = Color(0.2, 0.6, 1.0, 0.35)
+transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+metallic = 0.4
+roughness = 0.2
+emission_enabled = true
+emission = Color(0.1, 0.4, 0.9, 1.0)
+emission_energy_multiplier = 1.2
+
+[node name="GhostBall" type="MeshInstance3D"]
+script = ExtResource("GhostBallScript")
+mesh = SubResource("SphereMesh_ghost")
+surface_material_override/0 = SubResource("GhostMat")

@@ -1,0 +1,217 @@
+{
+  "name": "Field Lines",
+  "slope": 9,
+  "par_time": 46,
+  "segments": [
+    {
+      "z0": 0,
+      "z1": -40,
+      "w": 10,
+      "x": 0
+    },
+    {
+      "z0": -40,
+      "z1": -70,
+      "w": 8,
+      "x": 3,
+      "ramp": 2
+    },
+    {
+      "z0": -70,
+      "z1": -90,
+      "w": 7,
+      "x": 3,
+      "y": 2,
+      "jump": true
+    },
+    {
+      "z0": -106,
+      "z1": -136,
+      "w": 7,
+      "x": 3
+    },
+    {
+      "z0": -136,
+      "z1": -166,
+      "w": 7,
+      "x": -3,
+      "ramp": -2.5
+    },
+    {
+      "z0": -166,
+      "z1": -186,
+      "w": 6,
+      "x": -3,
+      "jump": true
+    },
+    {
+      "z0": -202,
+      "z1": -232,
+      "w": 6,
+      "x": -3
+    },
+    {
+      "z0": -232,
+      "z1": -262,
+      "w": 6,
+      "x": 3,
+      "ramp": 2.5
+    },
+    {
+      "z0": -262,
+      "z1": -282,
+      "w": 6,
+      "x": 3,
+      "jump": true
+    },
+    {
+      "z0": -298,
+      "z1": -328,
+      "w": 7,
+      "x": 0
+    },
+    {
+      "z0": -328,
+      "z1": -353,
+      "w": 7,
+      "x": 0,
+      "ramp": -1.5
+    },
+    {
+      "z0": -353,
+      "z1": -373,
+      "w": 8,
+      "x": 0,
+      "y": 0.5
+    }
+  ],
+  "coins": [],
+  "obstacles": [
+    {
+      "kind": "checkpoint",
+      "z": -130,
+      "x": 3
+    },
+    {
+      "kind": "checkpoint",
+      "z": -250,
+      "x": -3
+    },
+    {
+      "kind": "magnet",
+      "z": -60,
+      "x": 0,
+      "type": "attract",
+      "strength": 18,
+      "length": 70
+    },
+    {
+      "kind": "magnet",
+      "z": -140,
+      "x": 0,
+      "type": "repel",
+      "strength": 20,
+      "length": 70
+    },
+    {
+      "kind": "magnet",
+      "z": -220,
+      "x": 0,
+      "type": "attract",
+      "strength": 18,
+      "length": 70
+    },
+    {
+      "kind": "magnet",
+      "z": -300,
+      "x": 0,
+      "type": "repel",
+      "strength": 20,
+      "length": 70
+    },
+    {
+      "kind": "speed_boost",
+      "z": -50,
+      "x": 0,
+      "strength": 12
+    },
+    {
+      "kind": "brake_pad",
+      "z": -180,
+      "x": 0
+    },
+    {
+      "kind": "brake_pad",
+      "z": -340,
+      "x": 0
+    },
+    {
+      "kind": "hoop_checkpoint",
+      "z": -130,
+      "x": 3,
+      "y": 3.8
+    },
+    {
+      "kind": "hoop_bonus",
+      "z": -80.0,
+      "x": 5.5,
+      "y": 4.0,
+      "boost": 28.0
+    },
+    {
+      "kind": "hoop_bonus",
+      "z": -176.0,
+      "x": -5.5,
+      "y": 4.0,
+      "boost": 28.0
+    },
+    {
+      "kind": "hoop_bonus",
+      "z": -272.0,
+      "x": 5.5,
+      "y": 3.5,
+      "boost": 24.0
+    },
+    {
+      "kind": "hoop_bonus",
+      "z": -151.0,
+      "x": -6.0,
+      "y": 3.0,
+      "boost": 24.0
+    },
+    {
+      "kind": "hoop_bonus",
+      "z": -55.0,
+      "x": 6.5,
+      "y": 2.5,
+      "boost": 28.0
+    },
+    {
+      "kind": "hoop_bonus",
+      "z": -121.0,
+      "x": 0.0,
+      "y": 2.5,
+      "boost": 28.0
+    },
+    {
+      "kind": "hoop_bonus",
+      "z": -217.0,
+      "x": -0.5,
+      "y": 2.5,
+      "boost": 28.0
+    },
+    {
+      "kind": "hoop_bonus",
+      "z": -340.5,
+      "x": -3.0,
+      "y": 2.5,
+      "boost": 28.0
+    }
+  ],
+  "finish_z": -373,
+  "medal_times": {
+    "bronze": 42.5,
+    "silver": 24.0,
+    "gold": 15.5
+  }
+}

@@ -1,0 +1,1907 @@
+ladies and Gentlemen please welcome
+event director of the game developers
+conference Megan
+[Laughter]
+scavio Good morning and welcome to the
+game developers conference uh the
+gentleman about to take this stage to
+present this morning's keynote doesn't
+really need much of an introduction as
+the Creator of some of the greatest
+games ever made from railroad Tycoon
+through Pirates to the civilization
+series he has already taken on taking
+his place on the list of Legendary game
+design icons and he's not done yet so
+please join me in welcoming the director
+of creative development at fraxis and
+the father of computer gaming Mr Sid
+Meyer thank you very much thank
+you thank you thank
+[Applause]
+you thank you very much it's great to be
+here
+um the uh the title of this talk is uh
+the psychology of game
+design uh everything you know is wrong
+um I was going to call it you you know
+um people are funny gamers are goofy uh
+it's all in your head or everything you
+know is uh questionable but I thought
+everything you know is wrong um kind of
+get the juices flowing maybe get a
+little more interaction um the uh the
+premise of this talk is that um is there
+any way to get the slides up in the back
+of the uh back of the hall um is that
+game play game design uh is a
+psychological experience gameplay is a
+psychological experience um when I
+design a game a lot of my games are
+based on um historical topics uh the
+history of civilization railroads
+Pirates and the and the way I would
+generally approach those topics is you
+know make it realistic make it true make
+it about uh you know the more historical
+uh I can make the game the better it
+would be the more railro the game is the
+better the more piratey it is the better
+um
+and what I found in in taking that
+approach was that a lot of what I
+thought I knew was wrong and um the
+reason was because I really hadn't um
+taken into account what really happens
+in the player's head and once that
+became an important part of kind of my
+design process uh things started to
+become a lot clearer so um the premise
+here is that uh by acknowledging that
+that the game gameplay is really a a
+psychological experience we can um
+uh save us ourselves a lot of time in
+certain areas it makes certain parts of
+the process um easier certain makes
+other parts of the process more
+difficult but at the end of the day I
+think we we end up with with a better
+gain um in the proc as we as we kind of
+uh explore this idea we're going to kind
+of run into a few psychological Concepts
+um ego Mania so one of them we'll have
+to explore basically if you play
+Civilization you are an egomaniac I mean
+it it says right on the box you know
+build a civilization to stand the test
+of time and you're there like oh yeah I
+can do that I can do that no problem so
+you are an egomaniac okay uh we'll also
+be uh looking into uh paranoia uh
+delusion and um self-destructive
+Behavior this is ways that players
+actually kind of make the game Less Fun
+for themselves things they do to to um
+to kind of detract from the of the game
+and and ways that as a designer we can
+uh try and minimize those uh preempt
+those and and try and prevent that from
+happening so those are some of the
+things we'll be looking at uh in the
+course of this uh talk so the first area
+where psychology really kind of plays an
+important role in in in game design um
+something I call the the winner Paradox
+um in real life you don't always win
+there are um what 28 teams in the
+National Football League and only one of
+them gets to win the Super Bowl um there
+are 25 teams in the
+NBA uh you know they all go to the
+playoffs I guess but um at the end of
+the day there's only one team that gets
+to hold the golden trophy of NBA
+champion or whatever whatever that is so
+in in the real world um win the winner
+you don't always win um however in the
+world
+games you pretty much always win um and
+the psychological phenomenon is that the
+player doesn't really complain about
+that doesn't object that's not a problem
+I don't get letters saying you know dear
+Sid I loved your game but I won way too
+much um and this is actually true of
+other forms of of entertainment uh you
+know Rambo we know at the end of the
+movie he's going to come out all right
+uh Sherlock Holmes always solves the
+mystery by the end of the of uh of of
+the of the chapter so I think this is
+kind of fundamental to entertainment but
+it's certainly something that that we're
+aware of um in designing video games
+that the player um we're looking the
+player's looking for a satisfactory
+conclusion that might not always U
+include winning but but very often it
+does um and this idea of kind of a
+satisfactory conclusion to the game I
+think is is something to really keep in
+mind uh in in the design process um
+some of the tools that we have at our
+disposal to to create this journey for
+the player through the game um reward
+and and Punishment in other words you
+know good things happening to the player
+not so good things happening to the
+player there's an interesting dichotomy
+in how these are are deployed in games
+um when you reward the player um you
+know you discovered uh this cool place
+on the map here's 100 gold um the player
+you know glad L accepts that doesn't
+question you know did I did I really
+earn that is do I deserve that uh
+players are are very much inclined to to
+accept anything you give them uh gladly
+and feel it was their own um clever play
+their own uh incredible strategy that
+earned them that that cool reward on the
+other hand um if something bad happens
+to the
+player your game is broken there's
+something horribly wrong the game is
+cheating uh it's it's really important
+to uh to be very careful with the
+setbacks that the player experiences is
+the game it's important that the player
+understand why those things happened and
+especially how to prevent that from
+happening uh the next time uh and
+anytime you can kind of plant that seed
+of the next time in the player's head
+you're you're well on your way to this
+idea of replayability that the player's
+going to play again next time I'm going
+to try something different maybe that
+might not happen so uh a big part of the
+value of of these games is in their
+replayability so any opportunity that
+you have to uh plant the seed of
+replayability I think is is is important
+and by really carefully handling the
+idea of punishment and setbacks where
+where you explain what why it happened
+and how it how it can be prevented the
+next time uh that's very important um in
+terms of rewards another key thing that
+that we think about is the first 15
+minutes one of our rules of game design
+is that the first 15 minutes have to be
+uh really compelling really fun kind of
+almost a foreshadowing of all the cool
+stuff that's going to happen later in
+the game and these rewards are really a
+way of of U making the player feel
+comfortable in this world uh letting
+them know that they're on the right
+track they're you know they're they're
+on their way cool stuff is happening and
+even cooler stuff is going to be
+happening later on and these the early
+rewards you can almost not reward the
+player enough in in the very early
+stages of the game to kind of get them
+invested get them committed get them to
+be uh part of the world that you're
+creating um now this doesn't negate the
+value of difficulty levels uh I'm not
+I've advocating uh an elastic uh
+difficulty that kind of always uh pushes
+the player forward and never provides
+any challenges
+um uh a number of years ago um I gave a
+talk on on difficulty levels and and was
+very
+convincingly uh made the point that four
+difficult levels were the perfect number
+of difficulty levels there needed to be
+one for um introducing the player to the
+game where the where the player could
+basically always win one for the Casual
+player one for the U the player who's
+really experienced and then the fourth
+difficulty level which would be the
+ultimate Challenge uh I was wrong about
+that um apparently we need uh nine
+difficulty levels the latest
+civilization 4 has uh nine difficulty
+levels and it really points out how um
+this this idea of progress and
+advancement uh is is so rewarding for
+the player the reason we have these
+difficulty levels is to give the player
+this feeling that there's always another
+challenge out there that they've
+mastered this level they're ready to
+move on to the to the next uh level and
+that's another reward is this idea of uh
+of getting to the next level in the game
+um so you want your player to feel that
+they are above above average they're
+doing well and they're going to do even
+better as they go deeper into the game I
+think that um again if you kind of
+follow the first 15minute rule it's very
+important that um you kind of start the
+player off with a very positive uh
+experience uh the Unholy Alliance uh
+this is a concept that I want to
+trademark I think this is a really cool
+idea I missed out on The Uncanny Valley
+um and I never trademarked interesting
+decisions but uh un holy Alliance I
+think is a as a a
+concept that um in many ways uh defines
+the relationship between the player and
+the designer um the the Unholy Alliance
+is an agreement that the player and the
+designer make with each other I'm going
+to pretend certain things you're going
+to pretend certain things and together
+we'll have a great experience um so one
+of the things that that we present we
+pretend as designers is that the player
+is is good you're really good that's
+that's kind of a um a mantra from us
+that we want the player to feel good
+about the play experience and and
+themselves as they're
+playing and one example um perhaps of
+where this kind of went off the tracks
+is in the the history of flight
+simulators going back a number of years
+uh early on they were um kind of easy to
+play uh very accessible you shoot down a
+lot of planes you'd have a lot of fun
+um and then we got to where every
+succeeding iteration of flight
+simulators became a little more
+realistic a little more complex a little
+more of a
+simulation and um and pretty soon the
+player went from I'm good to I'm not
+good I'm I'm
+confused I'm I'm my plane is on FL fire
+and I'm falling out of the sky and and
+the fun kind of went out of them and I
+think we have to uh be be be aware of
+this phenomenon that um
+uh it's all about the player the player
+is the star of of the game U their
+experien is what's key what's uh what's
+critical and keeping them feeling good
+about themselves is is certainly an
+important part of the experience that we
+provide for them um another part of this
+Unholy Alliance is the player's role the
+player really needs to be willing to
+suspend uh their disbelief they need to
+inhabit that character they need to take
+on that that role that you're providing
+them whether it's a king of a great
+civilization or managing a railroad or
+being a cool pirate uh the player has to
+uh be willing to suspend their disbelief
+that's part uh they're part of the of
+the of the bargain um when uh when we go
+to a movie my my my wife and I ask her
+after we've seen a movie you know how
+did you like the movie A lot of times
+she'll say well you know I came out of
+that movie twice or I never got into
+that movie or never came out of the
+movie um very aware of the the value of
+suspending your disbelief to to uh to
+enjoy the experience or to make it uh
+more compelling so so part of our job is
+to help the player to to suspend their
+disbelief um and I think in some ways um
+those of us that are oldtime designers
+have a little bit of an advantage there
+in that we we worked in the good old
+days of of 16 color graphics and things
+like that where we we really had to work
+hard to uh to get the player to believe
+that what was happening on the screen
+was uh the management of a great Empire
+or or or building a railroad system or
+things like that so um I think I think
+having that experience was helpful in
+really understanding uh some of the
+challenges of of getting the player to
+suspend their their
+disbelief
+um one of the other agreements that we
+make I think in in this Unholy alliance
+with the player is um the the idea of
+moral Clarity and let let me give you an
+example uh here's a a screenshot from uh
+a Civilization Revolution where we're
+negotiating with with the great genas
+Khan um and one of the comments that I
+got back from from my from play testers
+was um these leaders um you know are
+very kind of cranky and aggressive you
+know I'm I might be winning the battle
+against them they might be down to their
+last City
+and they're still kind of up there
+saying you know hey you know you're
+you'll never take me down I'm the
+greatest civilization of all time you
+know come on attack me I I are you you
+know and and they said well you know
+that just doesn't seem seem right they
+should they shouldn't have that attitude
+if I'm if I'm winning and and my my
+question was well you know what what
+would you like them to say do you want
+them to say oh you know please don't
+hurt me we we have only one city left
+and there's women and children there and
+you know please leave me alone um to me
+that's like a moral dilemma you know I
+mean I want to win I want to capture
+their city it's genas Khan for goodness
+sake um but I'm faced with a moral moral
+dilemma um I think it's more satisfying
+and we and that's something we
+discovered it's more satisfying to win
+against um bad genas cranky
+genas um than it is if if you know there
+was some kind of a a moral Cloud over
+the actions that that you were taking
+um mad is a concept called uh mutually
+assured
+destruction um how many of you remember
+the Cold War let's hear it for the Cold
+War okay
+uh uh the idea of mutually assure
+destruction was that you know we had all
+these nuclear weapons and the Russians
+had all these nuclear weapons that we
+could just blow each other up anytime we
+wanted to but the reason we didn't
+because we knew the other side had all
+these uh nuclear weapons and there's an
+amazing parallel to that in in the
+relationship between um game designers
+and the player um the player can
+actually destroy the experience at any
+time they want to they can quit the game
+they can uh you know play in a way in a
+different way they can they can sheet
+they can do all sorts of stuff to kind
+of destroy the experience
+and uh as a game designer we can we can
+uh mess up the game as well we we can
+kind of lose the threat of the fantasy
+there was a game that we were working on
+at micropro uh many years ago that kind
+of Illustrated this to me it was an
+adventure game and and basically um you
+kind of started at the beginning of the
+road and you had ventured your way on
+down till you got to the castle and you
+know
+finally got to see the king and and and
+had gone through this great adventure
+and when you got to the king
+all of a sudden it was revealed to you
+that the king who you thought was a good
+guy is or actually a bad guy and and
+everything was turned around and you had
+to go back down the path you just uh
+come to back to the beginning to do the
+real thing that you were supposed to do
+in the first place so um to me that was
+um us messing up the game I mean
+basically you know I can imagine the
+design meetings you know imagine the
+look on the player's face when they
+realize that all this work they done has
+to be was in vain and the surprise and
+the the you know the amazing design you
+know they'll think what an amazing
+design to surprise me like I said no
+that's not what they're going to think
+they're going to think I just wasted
+eight hours on this stupid game and so
+they would at that point they would
+mutually assuredly destruct the game I
+believe and and so there are ways I
+think again that that that we need to be
+careful that we're true to um the the
+the story of the game and and and and
+and value of the players uh time another
+part of this Alliance I think that we
+make with players is in the area of um
+of style uh things that
+convey uh what what the spirit of your
+game is you know what what's if if you
+start the game off and it's kind of you
+know have kind of a lightharted uh music
+Atmosphere cartoony Graphics you know
+and all of a sudden people's heads start
+exploding then you you you haven't uh
+you haven't lived up to the alliance you
+you you know you're you're you're not
+giving the player what you promised them
+you know on the other hand if you um you
+know if you have dark forur boating
+graph Sound and Music and and and ends
+up being a very simple game again you
+you you you you kind of are are fooling
+the player and uh you know if if I'm if
+I'm playing a game that starts off light
+and happy and and and uh and and
+cartoony and all of a sudden you know
+terrible things start to happen you know
+that's that's when the player uh you
+know loses their suspension of disbelief
+um and turns off your game and moves on
+so I think um the the only way to kind
+of maintain this suspension of disbelief
+which is critical to keeping the player
+in the game is to really um uh make that
+a priority and and and use things like
+humor Style music Atmosphere all these
+all these tools to uh to be consistent
+and and keep the player in in your
+world so probably where it became most
+clear to me that
+um uh player psychology has absolutely
+nothing to do with rational thought was
+um in the process of putting together
+the battle system in in Civilization
+Revolution um my background is in
+mathematics and science and programming
+and I think of myself as a logical
+person um and what we did in C uh
+Revolution was we would show you before
+a battle what the O what the odds were
+in this example um our attacker here has
+a
+1.5 and the uh the defender The
+Barbarians have a a
+0.5 um they they would have a one
+barbarians are basically one but since
+they're uncivilized they take a 50%
+penalty for that so they're only
+0.5 and part of the part of the fun of
+being a designer is kind of throwing
+those little things into the game you
+know uncivilized minus 50% ah take that
+uh so in this case as a mathematician
+this would be a 3 to1 Battle 1.5 to to
+2.5 you know 3 to one the attacker
+should win three times the defender
+should win one time out of four uh very
+clear very simple you know that's what
+mathematics says that's the way it
+should work um that's not the way our
+players saw it um basically at a certain
+point players feel they going to win the
+battle and um they would come to me and
+said you know I had this battle it was 3
+to one and I
+lost I was like well yeah you know 3 to
+one uh you're going to lose every once
+in a while said no no you don't
+understand it was 3 to one three three
+is big one is small I I had the big
+number I you know shouldn't I shouldn't
+I have won so I realized okay there's
+something going on here
+um so we adjusted our system um by
+actually breaking the battle up into
+kind of more Atomic little battles to
+make the the results come out more uh
+than the player expected um and then I
+watched some more players playing and
+um this time the player had had one
+against three the player had one the
+little tiny one and the the the AI had
+the big gigantic three um and I watched
+and and lo and behold the player won the
+battle and I said doesn't that feel
+wrong to you that that that you with
+your little tiny one won against the
+huge three and they said no doesn't feel
+well at all uh I had you know clever
+tactics and strategy clean living it it
+all adds up to me winning uh so we
+realized that something was going on
+there psychologically that that isn't
+exactly mathematics I'm not sure what it
+is but it's not
+mathematics so we made a few adjustments
+and said okay now now are you happy with
+uh the way combat works and we found
+that there is this point and it's kind
+of around 3: to1 4: one where people do
+expect to pretty much win every time so
+so so okay we said okay that's fine we
+can we can live with that um anything
+else you know
+um they said well there's just one
+little thing
+um I'm okay you know here's a 2:1 battle
+are you okay with you know winning most
+of the time but every now and then
+losing a 2 to1 the player said yeah yeah
+yeah you know two to one I'm I'm I'm I'm
+okay with that two to one I should I
+should win most of the time but every
+now and then I can lose so okay good um
+so what's your problem well I had this
+20 to 10 battle and I
+lost it was 20 to
+10 I said yeah 20 10 I had 10 more than
+the 10 I had 20 but it's that I said you
+know it's not 2 to 1 20 no that's 20 to
+10 that's a whole different whole
+different odds than 2 to one okay so we
+um we actually adjusted you know okay I
+can see you have 10 more so that's a lot
+okay
+cool okay so now you know maybe they
+just went gave the game back now are you
+happy well kind of but let me tell you
+what
+happened I had this two to1
+battle and I lost which is okay you know
+we've had this discussion I understand
+now that every now and then I'm going to
+lose a 2 to1 battle but right after that
+I had another 2 to1 battle and I lost
+again how can that
+be how can I lose two two to1 battles I
+mean one I can understand
+the computer's have to get me obviously
+um okay so we actually take into account
+the results of previous
+battles uh now when we do our our combat
+calculations and um then the player was
+very happy um and and we don't really do
+this just to make the player happy but
+it's really uh um when when something
+happens in a battle like this that that
+feels wrong we we start to lose that
+suspension of disbelief the player comes
+out of the game and um and starts to you
+know uh pay attention to other things
+that are going on not what's in the game
+so it's all part of the process of of
+really trying to maintain the suspension
+of disbelief as the player is playing
+the game and uh something really kind of
+uh clear and instructive about this
+process I think you know the interaction
+between logic and science and math and
+psychology uh kind of really became
+clear to me in this process and you know
+I think it it it it all makes sense but
+it's
+it's very uh counterintuitive and I
+think one of the things about um really
+including the psychological part of
+things in in in game thinking and design
+is it's going to run into a number of
+counter counter counterintuitive things
+and we'll see a little more of that
+later but um there there are many times
+where that actually can work to your
+advantage uh it's not always uh quite
+the process that we just uh went
+through um so this part is called my my
+bad
+uh times when I really screwed up and
+kind of came to realize that it was
+because my brain was too logical and
+scientific and I hadn't really included
+a lot of the psychological aspects of uh
+what goes on in in games um the first
+bad bad thing I did in life was uh to
+make uh civilization a real time game
+the original prototype of of
+civilization was real time uh kind of
+inspired by uh Sim City and that genre
+of games where you're kind of watching
+something grow um you know Sim C I think
+it inspired a lot of designers to to
+Branch out uh in in kind of construction
+oriented games growth games um but what
+we found with the uh the real-time
+version of of civilization was that the
+um the player really uh became an
+observer uh was was watching what's
+going on was was really
+um just an observer and the kind of the
+the Mantra that we had in mind for for
+civilization was it's good to be king um
+and we found that that when we made it a
+turn-based game all of a sudden you know
+lights went off uh all of a sudden the
+player was no longer an observer they
+were the the star of the game they were
+the the key uh key ingredient and and
+they made things happen um kind of
+ironic since Civ is now the poster child
+for for turn-based gaming but uh Civ uh
+actually started off as a real-time game
+and that was my that was my bad sorry
+about that um another um bad thing that
+I did um in the original civilization
+design was to uh include this idea of
+Rise and Fall um you know wouldn't it be
+cool if you built this uh cool
+civilization and then you know you had
+this kind of setback and it started to
+crumble you know and just before it
+disappeared you rescued it and you came
+back to win even more strong and
+powerfully than you did before wouldn't
+that be an awesome
+experience um no it U not really what we
+found was that that just at the at the
+the cusp of the crumble most players
+would reload a save game and they would
+never experience the the Glorious rise
+that we had uh in mind for them so uh
+civilization is basically um a game
+about progress It's a game about rise
+rise and War rise uh um and not so much
+the
+fall um another Badness that I
+perpetrated um was in the original
+civilization Tech Tree um the idea that
+I had in mind was that technology would
+be this um interesting path of kind of
+Discovery through the darkness and you
+would kind of never know where the
+different Paths of Technology would lead
+you know it seemed to me totally wacky
+that um you would be thinking you know
+back in 3000 BC okay if I discover iron
+you know someday I'm going to have
+gunpowder and nuclear weapons you know
+um so we randomized the tech tree we did
+a lot of things to make that process uh
+kind of
+mysterious uh but once players realized
+you know generally the second time they
+played that there was Gunpowder out
+there their only goal was you know how
+do I get to gunpowder most quickly you
+know give me give me uh the road you
+know don't randomize don't don't
+mysterious size this thing I know
+there's gunpowder out there you know you
+can't fool me um
+and we we understood that players want
+to be in control they really want to
+know what's going on and um the kind of
+broader lesson from this for me was that
+uh any any kind of Randomness really
+needs to be treated with a lot of care
+um we also had the idea in the original
+civilization of these kind of great
+natural disasters you know wouldn't it
+be cool to have like volcano croca
+blowing up or the uh the plague and all
+these kind of famous world events
+happening in in the game um yeah kind of
+randomly um no it wouldn't um again
+whenever anything random happens to the
+player um paranoia strikes in paranoia
+was one of our early um uh psychological
+feelings uh the player feels that the
+computer did that rolled that random
+number just to make their life more
+difficult or they were just about to win
+um
+so random events have to be treated very
+very carefully uh because if they're
+significant um uh basically the player
+will find the worst and and and and most
+paranoid explanation for what just
+happened in the game uh Randomness at a
+at a low level certainly um helps a lot
+to variety replayability things like
+that but really need to be careful with
+Randomness um at a at a really
+significant uh
+level um the um I'm going to skip the
+cover action rule that's kind of boring
+um the the dinos game was another
+mistake that I made
+um while back I I I gave a talk called
+uh you know Dinosaurs the three glorious
+failures um basically that was a game
+that I thought would be very cool tried
+to create uh did three different
+versions one was a RTS type game one was
+more of a strategy game one was actually
+a card game um and none of them really
+kind of jelled together and and and I
+was disappointed I thought dinosaurs are
+very cool and we got may be able to make
+a cool game about this but it it it
+never really uh came together for
+reasons I I'm not quite sure of yet but
+um what's what's interesting to me
+though is
+that after civilization that's almost
+the best known game when I talk to
+people when I run into people you know
+besid civilization the other question is
+where's the dino game you know so this
+game that I never made is like the
+second most interesting game for for for
+gamers so um that was my bad but I'll
+um oh life is not over yet um and
+civilization Network this is a new game
+that we're working on uh civilization
+for the Facebook platform um a lot of
+kind of fun game Concepts that that we
+get to play with here uh you know uh
+people playing on kind of an interesting
+schu SCH you know maybe a little bit of
+time a day a little more time a day uh
+kind of making the game interesting if
+you're playing at the same time as other
+players or if you're playing at
+different times with other players uh
+the idea that you're playing with
+friends so that you won that we can
+really focus a lot on Cooperative
+gameplay also include competitive
+gameplay individual gameplay all
+different kinds of gameplay mixed
+together so this is really kind of a fun
+uh Fun World to take civilization into
+and one of the ideas that we that we
+played with here was uh the idea of
+being able to give gold to other players
+you know it was like wouldn't it be neat
+wouldn't this really kind of lead to all
+sorts of interesting uh possibilities if
+we if we put into the game the the
+ability to give gold to other players
+could say you know I'll give you this
+much gold if you do this for me or you
+know I feel sorry for you uh you know
+I'm going to give you 300 gold um or you
+know hey please give me some gold you
+know whatever um there' be this
+fascinating U kind of diplom diplomatic
+negotiating Dynamic that would that
+would arise in the
+game um what we found however was that
+nobody ever gave gold to anybody else no
+just the thought did not cross their
+mind to give gold to other people um I
+don't know what this says about the
+human condition or the future of mankind
+but it's kind of a sad sad commentary I
+think uh another another bad idea that
+that that I
+had okay one of the things that I I kind
+of uh promised in the uh the blur to
+this presentation was to explain how to
+uh make uh save millions of dollars in
+in in game design and so if you're
+interested in that part of the
+presentation this would be the time to
+pay attention
+um one of the techniques I think that's
+very very uh important in making AAA
+games on a on a Sho string is to really
+use the player's imagination as as a
+very key tool um no matter how good your
+graphics are no matter how cool your
+technology is what's happening in the
+player's mind the player can always
+visualize something uh more compelling
+more Dynamic uh so so the goal of
+everything we do is to make something
+happen in the player's imagination that
+is uh that is really cool and and often
+we don't have to literally show
+everything in the game to make that
+happen if if the player can imagine
+what's going on you know imagine what
+Napoleon is doing when he's not actually
+on the screen uh imagine what's going on
+behind the scenes then uh we save uh a
+lot of money by not having to create all
+those assets and do all those things and
+one example again from uh Civilization
+Revolution is uh is the screen here um
+it says foreign rulers seek your favor
+the Sultan of Zanzibar sends you a
+caravan of exotic gifts including seven
+dancing
+bears the the princip here is something
+I call go with the flow in other words
+um if it's something the player is
+already inclined to believe if it's
+something the player that wants to
+believe it's very easy to make that
+happen in the in the player's
+imagination the player looks at this and
+says oh oh yeah foreign foreign leaders
+should be seeking my favor um and uh you
+know exotic gifts cool they should be
+sending me and seven you know dancing
+bears that's that's very cool so it's
+it's happening up you know in your mind
+the Bears are dancing it's all happening
+up there uh because you know I'm in kind
+inclined to agree with this sentiment
+right here and um we actually don't have
+any dancing bears there there's no real
+there's no Sultan of Zanzibar there's no
+caravan but by going with the flow we've
+saved ourselves millions of dollars in
+not having to create all these models
+and textures and assets and all this
+kind of stuff uh because the player is
+going to is going to wants to believe
+this and um all we have done is
+basically put up uh ACH box now that
+allows us to save our our our resources
+our time our energy for the things that
+that are kind of harder to sell the
+things that the player might not be so
+inclined to believe or or kind of want
+to see uh brought to to to to life with
+all sorts of cool graphical
+stuff um another technique for saving
+millions and millions of dollars in
+designing games is to to use uh take
+advantage of what the player already
+knows
+um players bring lots of their own
+information to games and they don't have
+to uh a lot of that doesn't have to be
+reinforced uh literally P you know
+pirates for example a game where uh
+people bring a lot of um of their own
+knowledge to the game so if you know
+they see a a swordsman with a black
+curly mustache you know they probably
+know that that's going to be the evil U
+meta villain that they're going to have
+to sword fight and and and we don't need
+a whole lot of backstory to explain you
+know how he got that way and what his
+childhood was like etc etc uh black
+curly mustache you know okay bad guy
+time for a sword fight um millions of
+dollars saved in backstory um so these
+are just a couple of techniques by which
+um you can kind of focus I think your
+energy and your resources on uh what's
+going to be really impressive what's
+going to be new and what's going to be
+hard to sell in the game and and and
+take advantage of of of things that the
+player kind of going to almost
+automatically
+provide uh through their own uh
+imagination let's talk about artificial
+intelligence uh for a moment um AI is
+often a place where psychology really
+comes strongly into into play because um
+the AI kind of represents your opponent
+the enemy and whenever you're in in a
+kind of conflict situation um your
+psychological juices are are are are
+flowing even more strongly you know
+you're really committed and invested in
+that in that conflict and so um a lot of
+uh players project a lot onto the onto
+the AI because they feel this this
+competitive situation and there's
+there's a number of different
+philosophies about AI um and and you my
+point of view is not necessarily the
+only point of view there may be other
+other points of view but I look at um AI
+I as one element in creating an
+integrated uh overall experience for the
+player um in in a in a single player
+game um like most of the games we're
+talking about the again the key the star
+of the game the key experience is the
+experience that the player is is is is
+having um and so a AI is kind of a tool
+to to craft that experience to customize
+it to make it uh seem even more uh real
+to the player um there's point of view
+which is that the AI should act like
+another player another person should
+have humanish characteristics and should
+feel like another another player um I
+don't actually subscribe to that
+philosophy there's there's a couple
+things that that I've seen that that
+make me shy away from that I'm not
+saying it's absolutely the wrong idea
+but um in my experience um if an AI has
+human characteristics one thing we you
+know talk about is um I want it to
+surprise me I want it to be tricky and
+clever um no I don't I don't think when
+AI does that most players feel that uh
+it's it's being stupid it's being uh
+it's it's dumb because there's a fine
+line between uh between clever and dumb
+and the player is inclined to uh to see
+the AI as being dumb um if the if the
+player if the AI does something really
+brilliant the player will assume that
+the AI peaked behind the scenes and
+looked at my numbers and looked where my
+stuff was was and and and cheated
+basically um so there's a lot of kind of
+psychological um stuff that goes on uh
+if the AI acts in ways that are that are
+kind of out of out of the norm and and
+they generally uh lead to the player
+kind of jumping out losing that
+suspension of disbelief and trying and
+kind of blaming the AI for for um uh
+what's going on in the game so um in the
+way that I approach AI is to is to make
+it almost a um a metric kind of a a
+solid competition against which you play
+but which you can uh kind of feel and
+and your advancement as you as you go on
+you you you get this real sense of of
+progress there's this Improvement metric
+that the the AI is kind of predictable
+kind of solid and steady and and you're
+the one doing the brilliant things and
+the clever things and and and getting
+better and better versus the the AI
+another thing that AI can do is give you
+uh feedback uh when you're talking to
+the the leaders in in Civilization they
+often comment uh upon what you're doing
+and how you know whether it's good or
+bad or whether they like it or don't
+like it um when we're playing a s a
+single player game uh kind of feedback
+um validation is really important
+because you're kind of the only person
+there and and these AI characters are
+kind of your only friends at that point
+in time so having them acknowledge what
+you're doing be aware of it is really
+validating for the player and is uh
+something something we found in Civil re
+Revolution was really important that
+that the more the more that the other
+leaders in the game kind of reflected on
+what you were doing and and reacted the
+more that the more the player felt that
+that uh somebody understood them you
+know kind of oh you you know what I'm
+going through and and the the um they
+weren't just kind of playing in a vacuum
+they were playing in a interesting uh
+World okay
+um talked a little bit earlier about
+self-destructive behavior um ways that
+the player actually can can damage their
+their gameplay experience um and one of
+the the responsibilities that we think
+we I think we have as designers is to
+protect the player uh from themselves
+and there are a couple ways where places
+where this really becomes an issue um
+one is how do you handle the idea of
+load and and save um I've watched people
+play
+Civilization where before every battle
+they save the game if they don't win
+they reload that saved game play the
+battle again save it until they win the
+game to me that's not really playing the
+game that I designed that's not the
+experience uh that that that I think is
+most interesting it really doesn't
+require to have a flexible strategy it
+doesn't kind of require to think uh
+think ahead if you know you're going to
+win every battle the game I think is a
+lot less fun um so in Civilization
+Revolution we actually save the random
+number
+um with the save file so that if you
+reload the save file you get the same
+result in your battle you know hahaha
+that'll you know that'll teach you I
+guess people did find a way to get
+around that but um by providing the
+player perhaps too easy access to
+loading and saving you you may actually
+be diminishing the experience for the
+player and that is something to think
+about in game design um in in Pirates we
+actually only allow you to load and save
+the game when you're in a port um
+as you as you Voyage around um you need
+to live with the consequences of that of
+that Voyage um and and by and kind of by
+building it into the fantasy of the game
+I think it's a little less obvious that
+we are trying to uh kind of control your
+load save Behavior but that's something
+to think about is finding ways to to
+build your load save restrictions kind
+of into the the fantasy the story uh of
+the
+game
+um another um area where I think we can
+we can damage the the gameplay
+experience for the player is in
+providing them too many options settings
+uh things that they can kind of
+customize in the middle of the game uh
+there's all sorts of good things that
+the player should be able to customize
+you know whether you think the joystick
+works this way whether you're
+left-handed or right-handed you all
+those things are are key but there's
+been a a tendency that I think has kind
+of Gone Away more recently but to kind
+of open up all sorts of gameplay play
+decisions to the player and to me you
+know that that's kind of that's kind of
+wrong we're we're as designers we're
+here to make the game and and not to
+kind of hand it over to the player and
+say you know I'm not sure how this game
+should work you know you you figure it
+out so kind of being careful with the
+types of things that you open up to
+player uh is is U is one thing to think
+about um another is is cheat codes again
+it's I think it's a way that players can
+um can actually uh damage the the
+gameplay experience for themselves um I
+remember when we were working on
+civilization 2 uh I looked at uh Ryan RS
+brought the the game and I looked at it
+and there on the main menu was cheat you
+know it was like play a quick game play
+a random map uh play a game cheat and I
+said you know Brian cheat you know on
+the main menu said yeah it's cool you
+know you can bring in tanks in the
+Middle Ages and run over people and you
+know people it's cool and and I don't
+disagree that it's is cool in fact I
+watched my my son when he was playing
+you know have a wonderful time bringing
+in all these tanks and running rough
+shot over the the Pikeman in the Middle
+Ages but I like but Brian you know just
+the main menu can't we just bury it one
+or two levels deeper cuz you know I kind
+of want the players to play the real
+game first before they start
+experimenting with the cheats and the
+Egg the Easter eggs and things like that
+so
+um um The Good the good good news is
+that this this cheating idea actually
+led directly to the idea of modding uh
+which is very powerful uh certainly uh
+was civilization 2 was was was a
+breakthrough for for civilization and
+and added incredible amount of variety
+and energy to the civilization Series
+this is a a picture from the fall from
+Heaven uh and
+so there there's a happy ending to the
+story of of of cheats um and and modding
+has been a very cool cool addition kind
+of allowing players to exercise their uh
+their inner designer and and become part
+of the the community process so um
+cheating not so sure but modding is
+definitely a cool
+thing
+um so another kind of psychological
+skill I think that we need to develop as
+designers is um listening to the to the
+player um I'm kind of assuming at this
+point that you've bought into the idea
+that
+uh game design is an iterative process
+you know starting with the Prototype and
+kind of building on that uh getting a
+lot of play getting a lot of
+feedback um build building a game over
+time and if you do that you're going to
+spend a lot of time talking to the
+players the people that are playing your
+game getting their feedback and and
+taking advantage of that to make your
+game better um but what I found in that
+process is that it's it's it's really
+not that useful to kind of uh take
+literally what your players are saying
+to you um there are um different
+different kind of ways that player
+players will react to to the game um one
+is to kind of provide you with Solutions
+you know uh I think you should take this
+out I think you should change this um I
+think you know this should work this
+way uh some occasionally that's useful
+but a lot of times that really doesn't
+take into account um other parts of the
+game that that would break it etc etc
+and it's tempting to kind of discard
+that you know that that's not going to
+work I know that's not going to work we
+might have even tried that um but I
+think it's important as a as a designer
+to get get some real value out of that
+to drill down to what is motivating that
+solution what is what is wrong what is
+what is the kind of thing that the
+player is feeling or doing that is
+unsatisfying that leads them to to kind
+of suggest the solution and a lot of
+times you can find something that uh is
+consistent with with your game design
+and your game ideas that will solve that
+problem for them it might not be the
+exact solution that they proposed but it
+will solve the problem and everybody
+everybody's happy um another type of um
+comment that you might get back is is
+kind of the opposite of that it's it's
+an emotion you know it doesn't feel
+right it I'm frustrated I'm confused I
+you know again no very little
+information and again it's kind of our
+job as designers to figure out what is
+it what is it that's causing that
+emotion you know what what can I change
+um to to make that emotion go away if
+it's a bad emotion or or to strengthen
+that if it is a um if it's a positive
+emotion
+um another important
+oops don't look at that slide
+um the last thing I think is important
+about talking to your players is is
+knowing their individual
+personalities um a lot of times it's
+very helpful in in in deciphering
+decoding what they're saying because a
+certain player you know might not like
+that type of game and is never going to
+be happy uh there are there are certain
+players we call uh Mr anecdotal who will
+be convinced something has happened that
+you know is impossible but you know
+we'll just kind of harp on that one
+thing that that that there are people
+that are very generous you know kind of
+afraid to say anything bad about the
+game you almost have to force them I
+know you hated something about it come
+tell me tell me what it is um so kind of
+knowing the personal ities of uh your
+players is is important in again in
+deciphering um what they're really
+trying to tell you and uh kind of really
+tapping into this resources which is
+really invaluable uh the gameplay
+experience of of your testers as you're
+playing the
+game so what is the point of all this
+you might be
+asking
+um kind of like to wrap it up with this
+idea of the epic journey I think this is
+what we're trying to create for the
+player is an an Epic
+Journey I think I should trademark this
+one too epic journey keep that in um you
+know there's so many genres so many
+styles of games so many different ways
+of gaming but I think in a way they they
+can kind of all be encapsulated in this
+idea of an an Epic Journey and how do we
+use psychology to make our journey more
+epic and our epic more Journey like you
+might be asking um here are a couple of
+tools um that we have to make that
+happen um I come back again and again to
+the idea of interesting decisions um
+that's really the core the the the the
+basic fundamental pieces of your game
+are these decisions that you're giving
+the player and um the process the
+journey is the process of exploring all
+these decisions and seeing how they
+relate to each other and and and playing
+through them so um think about the
+decisions that you're giving your player
+um are they ones that that that
+encourage them to project to think into
+the future you know if I do this what is
+going to happen do they have interesting
+um kind of not taken paths and the most
+the coolest decisions are the ones where
+the player chooses path a but they're
+kind of saying well next time you know
+that path B looks kind of interesting
+too so I'm going to play I'm going to
+play next time and try that other path
+those are the really powerful decisions
+if you can if you can build them into
+your game you you're you're you're uh
+well on your way to creating the epic
+epic
+journey
+um learning in progress um this is
+fundamental to the journey the idea that
+you are constantly progressing you're
+constantly um at a better place than you
+were before you're smarter than you were
+before you're more powerful um it's kind
+of fundamental but it's easy to lose
+track of this I think that you cannot uh
+reward and acknow and and and reflect
+this progress too much in a game it's
+very important for the player to know
+how they're doing what progress you know
+what value has this last half hour this
+last hour been to me in terms of of of
+of playing um you I think World of
+Warcraft is a great job of this you know
+the the level system you makes it very
+clear uh the kind of progress you made
+and and their their ways of building
+this idea which is very powerful uh into
+into your
+game one more turn this is another way
+of of making the journey epic um it's
+concept that that we relate back to
+civilization but it applies to almost
+every game the idea that the player is
+constantly kind of leaning forward
+they're anticipating things that are
+going to happen later theyve they
+they're looking forward to their plans
+coming together they're wondering what's
+around the next Corner uh you can
+foreshadow you can you can kind of uh
+just let people know that cool stuff is
+going to going to happen soon and it
+draws them very much into this um one
+more turn
+phenomenon and it it kind of all comes
+back to this idea of of replayability
+that if you if you create a a fantastic
+Journey um and the player comes to end
+of that Journey they suddenly realize
+that that this is only one segment of
+this Epic Journey this this journey is
+much more epic than they even thought
+because it's only this has only been a
+part the Epic was a part it's like epic
+squared or epic cubed or or multi this
+journey is multi- epic um and
+replayability kind of plants that seed
+and and and and makes that happen for
+your game so these are some tools some
+psychological tools that uh that that
+make your game the coolest epic journey
+of all
+time so now you know
+everything thank you
+[Applause]
+[Music]
+[Music]
+we have a little bit of time for
+questions um there are some folks with
+microphones um I'm sure much of what
+I've said has been wrong and you're
+going to correct me on it um but I'd be
+happy to take any questions or thoughts
+uh if there's anybody who would like to
+ask a
+question look for some someone with a
+green raise your hand and look for
+somebody with a green shirt and a
+microphone right
+[Music]
+here what do you normally tell your
+animators designers artists exactly how
+you want uh the art for particular games
+to feel like what do you what do you how
+do you explain to them what you have in
+your in Your
+Vision uh the question is how do I
+explain to animators and artists what I
+what my vision is what I want them to do
+um there's a couple Dimensions to that a
+lot of times I will actually build a
+prototype myself using um pieces from
+other games and things like that that
+kind of uh create the big picture so
+they know what what how how what they're
+going to what they're doing fits into uh
+the bigger picture one of the issues I
+think with art is often it's easy to get
+kind of a keyhold and only focus on the
+one thing that you're making um the
+other thing I think is important is to
+kind of let your artist be be artists be
+creative um create you know put a pretty
+big box around what you want and let
+them surprise you with something that's
+even cooler than than than you imagin so
+um you know one is having a prototype
+that they can always go back to if it's
+if the question is you know how does
+this fit into the game what is it
+supposed to do uh but then you know let
+them be artists I think that um games as
+a as a collaborative medium uh really
+need to take advantage of all the
+talents that you have uh available to
+work on it so I I try to let the artists
+uh you know be as creative as they can
+as they can
+be question
+here hi um uh you sort of talked about
+player egoism and that sort of approach
+to that players come come approach games
+with and I guess I'm having a hard time
+uh like figuring out like do you think
+that you know this egoistic approach to
+games is kind of prefigured by the
+themes that that you give them like you
+know you're going to build a
+civilization you're going to become a
+railroad tycoon or do you sort of pick
+these themes because you anticipate that
+this is what players like how players
+want want to feel with when they play a
+game I think one of the the fundamental
+attractions of gaming is that you can go
+to places that you can't go in in real
+life that you can inhab inhabit
+characters that you probably don't have
+the opportunity to do in real life and I
+think it's you know it's kind of the
+Walter midi fantasy I I get to be um a
+dashing swashbuckling pirate you know I
+get to to run a great civilization so we
+definitely look for topics that are that
+are epic that are big that that kind of
+really empower the player and make them
+much larger than life because I think
+that's what that's what you're looking
+for in a gameplay experience is is
+something to kind of take you out of the
+real world and into a into a cooler
+World take you out of your real life
+into a cooler life take you out of maybe
+your real character into a into a cooler
+character so um epic is definitely part
+of our our our thinking in putting
+together these game worlds because they
+are um I think at the end of the day you
+know that that Journey just feels cooler
+if it's been through thousands of years
+of history or through the the hard the
+Spanish main ending up with that that
+horribly evil guy with a mustache you
+know Etc so yes we definitely choose
+kind of Epic uh larger than life
+situations because I think it makes a a
+more compelling game and it Al Taps into
+a lot of common knowledge and and and
+and and fantasy which we we can then use
+in in building the
+[Music]
+game question over here hey uh with the
+limited amount of time that people have
+to play games like as an adult wouldn't
+it make more sense to uh like make a
+single Epic Journey rather than having
+them play through it like two to the end
+times um I think people appreciate um
+the Val of replayability I mean there's
+sequels out there you know so if you if
+you had a great experience with a game
+you you often want to do it again you
+know it's I I don't think people um uh
+people do have a limited amount of time
+to play games but I think they select
+what games they want to play uh in that
+limited amount of time and and it's even
+more important for that reason that that
+they're playing a game that they like so
+replayability kind of allows you to play
+a game that you know you're going to
+like uh with that limited amount of time
+that you have
+here hello um I have a question about
+the flight simulator point you made
+earlier yes um I've worked on racing
+games for a while and the last one we
+released was Midnight Club 4 last year
+which critically got slammed because
+everybody thought it was too hard and we
+worked really hard to make it so you
+didn't have to win to progress and
+succeed in the game but the conception
+was that people were really really
+frustrated when they weren't coming in
+first all the time and I was wondering
+if you had any advice there solutions
+for trying to condition the player to
+accept that they're not going to win all
+the time you are definitely uh walking
+uphill there walking into the wind it's
+I think the expectation is out there
+that that you're going to win I think
+you have to do a lot of work to to make
+it fun you know not to win the certainly
+realism and authenticity are are cool
+things but
+um you have to work hard to I think to
+sell that idea
+um uh even you know even I mean I'm a
+big Gran Turismo fan and but even that
+game I think you you still end up
+winning uh very often even though it
+kind of has the uh the real feel of of
+of
+authenticity um you know good luck but
+but that's that's a tough that's a tough
+one over
+here hi you were talking about how um
+it's really good to present the player
+with choices and um when it comes to a
+lot of games lately they've been do a
+lot of the moral choices like good or
+evil is it more positive to do that and
+have the player expect a certain outcome
+or would you rather see games start
+moving into the morally gray area where
+it's more
+uncertain that's a good question I I am
+not a fan of of morally gray games I
+think that um this Alliance this Unholy
+Alliance that we made with the player to
+me uh excludes that unless you're very
+clear upfront that this is a game about
+gray moral choices because the the
+you're asking the player to invest this
+time one of the analogies I use is like
+like uh showing up in your first day of
+high school you know you're kind of
+wondering what are the rules here what
+who are the cool people who you know
+what how does this this this place work
+and you're so you're kind of very
+vulnerable early in the game and you
+want to kind of be uh encouraged and and
+and kind of know that this time that
+you're investing and spending is is
+taking you down the right path and these
+you know the idea the morally great
+choices and things like that I think it
+always plants the idea in the player's
+mind that you know I might be on the
+wrong track here and all this time I'm
+investing now this might be just taking
+me off in the wrong direction and that's
+a I think that's a that's an opportunity
+for the player to kind of say you know
+maybe I should try something else so I
+think you have to be very clear if your
+game is about morally gray ambiguous
+choices that you you know that you're
+going to all make sure that wherever
+they go something interesting is going
+to happen that they're not kind of going
+to be allowed to go off on some deadend
+uh path because they made a poor moral
+choice
+here uh given the number of trends that
+you have seen come and go during the
+course of your career what would you
+guess would be the next uh big Trend in
+gaming where do you see the Avant guard
+idea coming from in the
+future um it it's a really cool time I
+think to be a game designer we certainly
+have seen um the indie games movement uh
+put a lot of new energy into into gaming
+you know we have have new platforms uh
+whether it's Facebook or or or the the
+live or places browser games a lot of
+places where uh the whole kind of big
+budget thing has has gone away and
+opened up a lot of new opportunities for
+um for gaming you know where do I see
+gaming going I think this is the year of
+civilization frankly um
+[Applause]
+[Music]
+um I think there's a civilization five
+maybe coming this year and civilization
+Network so you know in the immediate
+future I think this is the year of
+civilization but uh F looking further
+out um there's so much energy and
+dynamism I think in this industry that
+it's it's part of I think what keeps us
+you know every day looking looking to
+see what's new and that's part of the
+big part of the excitement I think of
+being part of this industry thank you
+over here no okay hi uh throughout your
+presentation you've talked a lot about
+how people hate failure in voo games and
+um avoid it I would like you to speak a
+little bit more on how you can make a
+video game that just keeps getting
+better and better or if that is possible
+um and how you personally avoid the
+feeling of losing or failure in in the
+video
+game um I think almost every video game
+is built on the idea of of of progress
+um now that doesn't mean that progress
+is free or automatic or guaranteed um
+but the player wants the basic
+experience to be one of getting better
+learning progressing um but the more
+that feels earned the more satisfying it
+is so in order for that to feel earned
+there has to be uh the potential of a of
+a negative outcome the potential of
+something bad happen happening and and
+when that happens uh I think one of the
+key points is that the play understand
+why it happened and what the player can
+do to prevent that from happening the
+next time I think that that that's a
+win-win in many ways because the players
+is now thinking about another way of
+playing about playing again but you've
+also added to the value of the the next
+piece of progress because it was one in
+spite of this adversary adversity so
+managing the kind of reward and
+Punishment uh process uh is is really
+fundamental to to game design
+over
+here over here hello hi he uh you talked
+earlier about trying to maintain the
+players's idea of winning always wanting
+to win and the the whole problems um
+arising with the load save issues and a
+lot of times when I was playing Civ um
+even though I'd win the game it much be
+became a point about trying to beat my
+own score and in order to do that I had
+to take much more of an edge by you know
+and it did come down to that whole load
+save issues I hated it when I lost a
+Wonder or there was something else I
+needed to get me to the next point so my
+question you is how do you accommodate
+your design when the players not just
+trying to beat the machine but beat
+themselves I think that's another
+another dimension of progress in one way
+that that you feel that progress against
+your own own score you know whether you
+lose the whether you use the load save
+mechanism to do that or not it's kind of
+your own moral choice I think you know I
+mean games give you many many ways to
+play and you get to pick the one that's
+hopefully most satisfying to you um you
+know some of the talk about
+self-destructive Behavior was was was
+kind of oriented towards you know maybe
+there's some things we shouldn't make
+that easy because at the end of the day
+you you might not feel as good about
+your Victory if you use some of these
+things and in in uh Civ Revolution we we
+uh we actually had these kind of Iron
+Man modes or or you know we would
+actually keep track of the number of
+load saves that you did and that would
+be uh mentioned along with your score so
+you could kind of you know by doing it
+um without loading and saving for
+example that would actually be something
+that would be noted on there and you
+know let you feel even better about your
+your final
+score hi Sid over here all the way to
+your
+left um in regards to the Social Network
+gaming um there is a rampant kind of
+issue with cloning of games so there's
+like 12 farm games and you 22 Island
+games and 73 uh Sim games now how do you
+foresee the protection of of your your
+IP or your your kind of your big
+civilization Network cuz it's an issue
+for everyone who's developing on social
+networks that's that's definitely an
+issue um I think my role is to make the
+best game that I can make um we're doing
+we're playing the game almost daily
+right now and we're putting in all sorts
+of cool stuff so you know I think the
+way that we try and deal with that is to
+make the best way that we guess best
+best game that we can and and and in
+that way make it very difficult to
+duplicate CU someone would have to go
+through that same testing experience and
+and trying all the same dead ends that
+we tried that didn't work before the
+before getting to kind of the the what
+what does work um you I think that
+question is is my role as as a designer
+is just to make the best game I can make
+uh what the industry does is it's kind
+of out of my hands but uh I I love my
+job so I'm not not complaining know that
+already
+right here hi uh thanks for the talk
+loved it um my question is about player
+expectations do you always have to Aces
+to these have you ever purposefully
+flown in the face of what the player
+expects and um you're about the example
+of the math and the soldiers 3 versus
+one is there a deeper immersion achieved
+if a player's belief is rectified and he
+gains a feeling that he understands the
+the player or the the mechanic rather
+than just having a vague notion of math
+that he was using
+before um I think the the fundamental
+purpose for for dealing with the uh the
+combat odds situation the way we did was
+to not give the player a reason to to
+jump out of the game to suspend uh their
+disbelief that was kind of our primary
+primary goal um what I kind of realized
+um though in going through that process
+was that in some ways the player is
+actually right about what they're
+feeling that um in in a in a computer
+game you know we we say the odds are 3
+to one but the player isn't actually
+rolling the dice you know that they
+don't actually see that process that's
+all happening somehow in some mysterious
+background code that some designer wrote
+you know that they may or may not trust
+and and so that they're kind of at the
+mercy of the designer so if if if bad
+things happen there that they can't see
+the reason for this paranoia is really
+going to kick in so that by making the
+odds uh the outcomes kind of conformed
+to what the players expectations were we
+kind of damped down this paranoia and
+also keep them keep them in the game uh
+so uh it was that was kind of the
+thinking process that we went through uh
+you we we don't always try and meet the
+players expectations exactly I mean
+there have to be surprises have to be
+new things um you know I put ballroom
+dancing into the new Pirates game that
+was a surprise to a lot of people might
+have been one of the things on the my
+bad list but um so we do try and
+surprise players but um not in kind of
+fundamental things that that determine
+their success or
+failure hi thank you a great talk kind
+of a followup to that question in the
+way that your nine difficulty levels
+work uh does the math get more honest at
+the higher difficulty levels and second
+follow-up question your personal
+preferences in gaming uh do you enjoy
+games that are unabashedly difficult
+like Demon
+Souls um the first question was uh how
+are the difficulty levels implemented um
+that's there's no simple answer to that
+question I think that um again AI
+difficulty to me is a full range of
+tools that we use to create a customized
+experience for the player you know the
+first difficulty level um is one that
+basically uh takes you on a tour through
+the game you know you're you're probably
+going to win at the end but you're going
+to get to see all the cool stuff that
+happens and you'll you'll understand
+that that the next time it'll be more
+difficult and you know with Civ in
+particular the highest difficulty level
+is um you know something that has to
+totally kick your butt every time or
+else you don't feel satisfied it's it's
+a point of Honor just to survive you
+know the the highest level so um we're
+we're customizing those difficulty
+experiences using all sorts of of
+different of different tools um do I
+enjoy games that are very are very
+difficult
+um generally not I guess the problem for
+me is um I I pick up a game and if I'm
+not really having fun in the first 15 or
+or or 20 minutes uh I'm I'm going to say
+you know I'm not going to really invest
+the the 10 or 20 hours it's probably
+going to take to start to get some fun
+out of this game or really explore it so
+I'm I guess a pretty typical consumer in
+that in that fashion
+over here um during your uh slide
+presentation on my bad and the design
+mistakes there was a brief me mention of
+an Espionage game mechanic that you
+didn't feel was very interesting to talk
+about can you briefly uh summarize what
+that was and what you learned uh yeah
+that was we call that the covert action
+rule covert action is a game I wrote uh
+many many years ago um and basically it
+was an Espionage game and there was this
+kind of interestingly complex mystery
+that you were trying to unravel with uh
+people in different cities doing
+different things to do dastardly uh
+things to the world and in the process
+of unraveling that mystery you would go
+into these action sequences where you'd
+sneak through a building and open safes
+and clues and guards would chase you and
+you'd follow cars around and you'd un un
+break codes and and and unravel these
+circuits all sorts of cool action
+sequences and puzzles and and based on
+our Pirates experience we thought that
+was very cool the pirates for us was a
+really neat combination of action and
+role playing and strategy and all this
+kind of stuff working together uh but
+what we found was that um there were
+really two games fighting very hard
+against each other that uh you were in
+the mystery part of the game and you
+trying to put together the clues and
+figure things out and you say okay I
+need to go to Cairo you know and break
+into this building and and that's the
+next you know it's going to take me to
+the next step of this mystery and you do
+that and You' kind of have this cool
+action sequence and you'd pop out of the
+building at the end you know maybe 5 or
+10 minutes later and I was like you know
+what was I what was that mran what was I
+why did I go into that building and you
+know kind of the the two games are not
+necessarily better than one was the the
+the the the rule we call the covert
+action rule is that the the center of
+gravity of your game kind of has to be
+in one place everything else kind of
+supports that enhances that but you got
+to figure out is a center of gravity in
+the action is it in the strategy uh you
+know where how does that all work and
+and and we kind of when we look back at
+at Pirates
+we we realize that the center of gravity
+of that game is kind of in the strategy
+that the the um the chip battles the
+sword fights Etc are kind of quick and
+and and clear enough that you you don't
+lose a threat of of what's going on um
+when you when you come back to the the
+strategy game I think we have time for
+one more question is there someone yes
+thank you uh when I was much younger I
+had a lot of time to devote to playing
+your games I I loved the detail and as
+getting older and I'm getting all these
+responsibilities I'm finding the detail
+overwhelming so I'm wondering is is a
+situation like mine the the Aging gamer
+is that playing a role in your game
+development process and how are you if
+so how are you dealing with it uh I i'
+have to say yes I mean I'm I'm an aging
+gamer myself um and and I think there uh
+we have certainly evolve from from a
+kind of a a hardcore based hardcore
+gamer based uh industry to to now we're
+seeing all these diverse audiences for
+for games and I think in in a way
+Civilization Revolution was was kind of
+my response to uh complex complexity of
+games I think there there are players
+that that don't have you know 10 or 20
+hours of 40 hours 10 15 whatever amount
+of time it takes to fully enjoy the
+fabulous Civilization PC experience uh
+but you don't always have that uh you
+might have a you you know and you might
+want to play a game with uh someone
+who's not that deeply into civilization
+so Civ Revolution was um an experience
+that was was geared towards that that
+audience and it was something that I
+found very interesting to design it kind
+of tapped into in many ways kind of
+where I was in terms of gaming I wanted
+to sample a a lot of different games um
+and so you know I think we're we we're
+seeing this incredible diversity of of
+games these days I mean from games that
+take only a few minutes to play games
+that you play every a little bit of time
+every day games that you sit down with
+and totally devour that take you know
+tens and tens of hours I mean it's a
+great time to be a gamer it's a great
+time to be in this industry because we
+have all this variety all these
+possibilities but there's definitely I
+know an aging gamer demographic there's
+a Casual Gamer demographic there's
+hardcore Gamers there's all sorts of of
+Gamers and once a year we all get to get
+together here in San Francisco and
+celebrate ourselves so thank you again
+for coming and it's been been a pleasure
