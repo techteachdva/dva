@@ -611,7 +611,7 @@ async function handleGameStart() {
 
 async function handleGame() {
     while (true) {
-        Audio.playMusic('travel');
+        Audio.stopMusic();
         Terminal.clear();
         await Terminal.showAsciiArt('main_menu', 'yellow', false);
         Terminal.println('\nWhat would you like to do?');
