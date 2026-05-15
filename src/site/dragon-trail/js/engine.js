@@ -29,6 +29,7 @@ class TerminalEngine {
         this.inputEl.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
+                if (typeof Audio !== 'undefined') Audio.beep(880, 60, 'sine', 0.08);
                 const value = this.inputEl.value;
                 this.inputEl.value = '';
                 this.appendToOutput(this.currentPrompt + ' ' + value + '\n');
@@ -80,6 +81,7 @@ class TerminalEngine {
         for (let i = 0; i < text.length; i++) {
             span.textContent += text[i];
             this.scrollToBottom();
+            if (typeof Audio !== 'undefined') Audio.typeSound();
             await Utils.delay(this.typingSpeed);
         }
     }

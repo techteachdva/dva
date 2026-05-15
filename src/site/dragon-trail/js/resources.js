@@ -1,11 +1,11 @@
 // Dragon Trail Web - Resource Management System
 
 const Resources = {
-    // Carry capacity based on survival skill
+    // Carry capacity based on difficulty
     getCarryCapacity() {
-        const survival = GameState.player.survival;
-        const capacities = { 8: 130, 7: 125, 6: 120, 5: 110, 4: 100, 3: 90, 2: 80, 1: 70, 0: 55 };
-        return capacities[survival] || 55;
+        const difficulty = GameState.data.difficulty;
+        const capacities = { 0: 140, 1: 100, 2: 70, 3: 55 };
+        return capacities[difficulty] || 100;
     },
 
     // Player AC based on survival skill

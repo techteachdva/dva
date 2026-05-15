@@ -138,6 +138,24 @@ const AudioSystem = {
         this.beep(660, 40, 'sine', 0.06);
     },
 
+    // Good environmental encounter sound (bright chime)
+    goodEncounterSound() {
+        if (!this.ctx || this.sfxMuted) return;
+        const notes = [784, 1047, 1319];
+        notes.forEach((freq, i) => {
+            setTimeout(() => this.beep(freq, 150, 'sine', 0.1), i * 80);
+        });
+    },
+
+    // Bad environmental encounter sound (low drone)
+    badEncounterSound() {
+        if (!this.ctx || this.sfxMuted) return;
+        const notes = [200, 150, 100];
+        notes.forEach((freq, i) => {
+            setTimeout(() => this.beep(freq, 250, 'sawtooth', 0.1), i * 100);
+        });
+    },
+
     // Music playback via HTML5 Audio
     playMusic(trackName) {
         if (this.musicMuted) return;

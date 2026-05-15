@@ -110,6 +110,7 @@ const MiniGames = {
     async huntMini(gameBonus) {
         let modifier = 0;
         const survival = GameState.player.survival;
+        const hunterBonus = GameState.data.skill === 'Hunter' ? 2 : 0;
         const result = await this.targetPractice(
             'HUNTING MINI-GAME',
             'Hit! You catch your prey!',
@@ -117,10 +118,10 @@ const MiniGames = {
         );
 
         if (result === 1) {
-            modifier = Math.floor(Utils.randInt(2, 3) * (1 + survival * 0.1)) + gameBonus;
+            modifier = Math.floor(Utils.randInt(2, 3) * (1 + survival * 0.1)) + gameBonus + hunterBonus;
             Terminal.println(`Mini-game bonus: ${modifier} lbs of food!`, 'green');
         } else if (result === 0) {
-            modifier = Math.floor(Utils.randInt(1, 2) * (1 + survival * 0.05)) + gameBonus;
+            modifier = Math.floor(Utils.randInt(1, 2) * (1 + survival * 0.05)) + gameBonus + hunterBonus;
             Terminal.println(`Mini-game bonus: ${modifier} lbs of food (weak hit).`, 'yellow');
         } else {
             Terminal.println('You failed to catch any prey.', 'red');

@@ -172,17 +172,31 @@ async function handlePurchase() {
         }
     }
 
+    if (GameState.data.skill === 'Potion Seller' && GameState.combat.potions > 0) {
+        const sellChoice = await Terminal.inputYesNo(`\nYou have ${GameState.combat.potions} potions. Sell some? (3x base price)`);
+        if (sellChoice) {
+            const maxSell = GameState.combat.potions;
+            const qty = await Terminal.inputNumber(`How many? (1-${maxSell}): `, 1, maxSell);
+            const pricePer = Math.floor((GameState.data.itemCosts.potion || 10) * 3);
+            const total = qty * pricePer;
+            GameState.combat.potions -= qty;
+            Resources.modifyGold(total);
+            Terminal.println(`You sold ${qty} potions for ${total} GP.`, 'green');
+        }
+    }
     Audio.stopMusic();
 }
 
 async function handleTrade(traderType, fair = true) {
     Terminal.println(`\nTrader offers: ${traderType.replace(/_/g, ' ')}`);
     let rate, qty, have, need, giveKey, getKey;
+    const smoothMult = GameState.data.skill === 'Smooth-Talker' ? 0.75 : 1.0;
 
     switch (traderType) {
         case 'food_for_supplies':
-            rate = fair ? 2 : 3;
+            rate = Math.max(1, Math.floor((fair ? 2 : 3) * smoothMult));
             Terminal.println(`Trade ${rate} food for 1 supply.`);
+            if (GameState.data.skill === 'Smooth-Talker') Terminal.println('Your smooth talking softens the trader\'s terms.', 'cyan');
             qty = await Terminal.inputNumber('How many supplies to receive? ', 0, 999);
             have = GameState.resources.food;
             need = qty * rate;
@@ -195,8 +209,9 @@ async function handleTrade(traderType, fair = true) {
             }
             break;
         case 'supplies_for_food':
-            rate = fair ? 1 : 2;
+            rate = Math.max(1, Math.floor((fair ? 1 : 2) * smoothMult));
             Terminal.println(`Trade ${rate} supplies for 1 food.`);
+            if (GameState.data.skill === 'Smooth-Talker') Terminal.println('The trader seems unusually generous.', 'cyan');
             qty = await Terminal.inputNumber('How many food to receive? ', 0, 999);
             have = GameState.resources.supplies;
             need = qty * rate;
@@ -209,8 +224,9 @@ async function handleTrade(traderType, fair = true) {
             }
             break;
         case 'gold_for_food':
-            rate = fair ? 2 : 5;
+            rate = Math.max(1, Math.floor((fair ? 2 : 5) * smoothMult));
             Terminal.println(`Buy food at ${rate} GP each.`);
+            if (GameState.data.skill === 'Smooth-Talker') Terminal.println('The merchant lowers the price with a smile.', 'cyan');
             qty = await Terminal.inputNumber('How many food? ', 0, 999);
             need = qty * rate;
             if (GameState.resources.gold >= need) {
@@ -222,8 +238,9 @@ async function handleTrade(traderType, fair = true) {
             }
             break;
         case 'gold_for_water':
-            rate = fair ? 3 : 6;
+            rate = Math.max(1, Math.floor((fair ? 3 : 6) * smoothMult));
             Terminal.println(`Buy water at ${rate} GP each.`);
+            if (GameState.data.skill === 'Smooth-Talker') Terminal.println('Your charm cuts through the merchant\s greed.', 'cyan');
             qty = await Terminal.inputNumber('How many water? ', 0, 999);
             need = qty * rate;
             if (GameState.resources.gold >= need) {
@@ -305,7 +322,12 @@ async function handleHelp() {
     Terminal.println('11. Journal - Read your travel log');
     Terminal.println('12. Quit - Exit to main menu');
     Terminal.println('0. Fight the Dragon - When available');
-    Terminal.println('\nTips: Keep food and water stocked. Buy better gear. Watch your health!');
+    Terminal.println('\nTips:');
+    Terminal.println('- Keep food and water stocked. Higher difficulties drain them faster.');
+    Terminal.println('- Your chosen skill and difficulty shape every system: combat, shopping, camping, and travel.');
+    Terminal.println('- Companions fight and carry, but their loyalty changes based on difficulty.');
+    Terminal.println('- Better gear means survival. Better tactics mean victory.');
+    Terminal.println('- Save often. The trail does not forgive mistakes.');
     if (typeof HighScores !== 'undefined') await HighScores.display();
     await Terminal.pause();
 }
@@ -382,10 +404,14 @@ async function handleCompanionPurchase(companions) {
     const companion = companions[choice - 1];
     if (GameState.resources.gold >= companion.gpCost) {
         Resources.modifyGold(-companion.gpCost);
+        const baseRel = GameState.data._startingRel || 50;
+        const storytellerBonus = GameState.data.skill === 'Storyteller' ? 10 : 0;
+        companion.relationship = baseRel + storytellerBonus;
         GameState.data.companion = companion;
         GameState.addJournalEntry(`Hired ${companion.name} the ${companion.personality} companion for ${companion.gpCost} GP.`);
         Terminal.println(`${companion.name} joins your party!`, 'green');
         Terminal.println(`They seem ${companion.personality.toLowerCase()}.`, 'cyan');
+        Terminal.println(`Starting relationship: ${companion.relationship} (${companion.getMood()})`, 'yellow');
         if (companion.personality === 'Greedy') {
             Terminal.println('They keep eyeing your coin purse...', 'yellow');
         } else if (companion.personality === 'Brave') {
@@ -483,6 +509,33 @@ async function handleGameStart() {
 
     Audio.playMusic('main_menu');
 
+    Terminal.println('\nThe Dragon Trail is a thousand-mile path of suffering, wonder, and inevitability.', 'cyan');
+    Terminal.println('Your goal is simple: walk to the dragon\'s lair and slay the beast before the wilds claim you.', 'cyan');
+    Terminal.println('To begin: choose your difficulty, name your wanderer, pick a skill, hire a companion, and then — travel.', 'green');
+    await Terminal.pause();
+
+    Terminal.println('\n--- Choose Your Difficulty ---', 'magenta', true);
+    Terminal.println('1. I\'m just a baby. Easy please.');
+    Terminal.println('   Generous companions, abundant finds, slower mini-games, lighter hunger, +140 carry, +2 combat aim, -20% damage taken.', 'green');
+    Terminal.println('2. Thank you sir may I have a shMedium?');
+    Terminal.println('   Fair companions, normal finds, standard mini-games, normal hunger, +100 carry, +1 combat aim, normal damage.', 'yellow');
+    Terminal.println('3. Don\'t Patronize Me, Bring The Difficult');
+    Terminal.println('   Distant companions, rare finds, faster mini-games, extra hunger every 3 days, +70 carry, normal aim, +10% damage.', 'red');
+    Terminal.println('4. I\'ve played NetHack. Do your Worst.');
+    Terminal.println('   Hostile companions, scarce finds, brutal mini-games, extra hunger daily, +55 carry, -1 combat aim, +25% damage.', 'red');
+
+    const diffChoice = await Terminal.inputNumber('Choose difficulty (1-4): ', 1, 4);
+    const difficultyMap = { 1: 0, 2: 1, 3: 2, 4: 3 };
+    const survivalMap = { 1: 8, 2: 5, 3: 2, 4: 0 };
+    const startRelMap = { 1: 65, 2: 50, 3: 40, 4: 30 };
+    GameState.data.difficulty = difficultyMap[diffChoice];
+    GameState.player.survival = survivalMap[diffChoice];
+    GameState.data._startingRel = startRelMap[diffChoice];
+
+    const diffNames = ['Easy', 'Medium', 'Hard', 'NetHack'];
+    Terminal.println(`\nDifficulty set to: ${diffNames[GameState.data.difficulty]}`, 'cyan');
+    await Terminal.pause();
+
     const name = (await Terminal.input('Enter your name: ')).trim();
     GameState.player.name = name || 'Wanderer';
 
@@ -490,8 +543,19 @@ async function handleGameStart() {
     GameState.data.seed = seed;
     const rng = Utils.seededRandom(seed);
 
-    const survival = await Terminal.inputNumber('Survival skill (0-8): ', 0, 8);
-    GameState.player.survival = survival;
+    Terminal.println('\n--- Choose Your Skill ---', 'magenta', true);
+    Terminal.println('1. Sated — You need less food and water on the road. Hunger and thirst advance slower.');
+    Terminal.println('2. Outdoors Type — You find more wood and water when scouting. The land provides for you.');
+    Terminal.println('3. Hunter — Easier hunting mini-games and bonus food from scouting. You read tracks like a book.');
+    Terminal.println('4. Storyteller — Campfire conversations deepen bonds faster. Your tales warm hearts as well as hands.');
+    Terminal.println('5. Penny-Pincher — Start with +50 GP and enjoy 15% discounts at all shops.');
+    Terminal.println('6. Smooth-Talker — Merchants give you better trade rates. Your silver tongue turns copper into gold.');
+    Terminal.println('7. Potion Seller — Brew 1d6 free potions once per camp. Sell potions to any merchant for triple price.');
+
+    const skillChoice = await Terminal.inputNumber('Choose skill (1-7): ', 1, 7);
+    const skills = ['Sated', 'Outdoors Type', 'Hunter', 'Storyteller', 'Penny-Pincher', 'Smooth-Talker', 'Potion Seller'];
+    GameState.data.skill = skills[skillChoice - 1];
+    Terminal.println(`\nSkill chosen: ${GameState.data.skill}`, 'cyan');
 
     const costVariance = 0.7 + rng() * 0.6;
     for (const key in GameState.data.itemCosts) {
@@ -500,19 +564,26 @@ async function handleGameStart() {
             GameState.data.itemCosts[key] = Math.floor(base * costVariance);
         }
     }
+    if (GameState.data.skill === 'Smooth-Talker') {
+        for (const key in GameState.data.itemCosts) {
+            GameState.data.itemCosts[key] = Math.floor(GameState.data.itemCosts[key] * 0.75);
+        }
+        Terminal.println('Your charm already lowers prices around here...', 'green');
+    }
+    if (GameState.data.skill === 'Penny-Pincher') {
+        for (const key in GameState.data.itemCosts) {
+            GameState.data.itemCosts[key] = Math.floor(GameState.data.itemCosts[key] * 0.85);
+        }
+        Terminal.println('You haggle with invisible merchants before even entering the shop. Prices drop.', 'green');
+    }
 
-    Terminal.println('\nWelcome to Dragon Trail, ' + GameState.player.name + '!', 'green');
-    Terminal.println('How to play: Travel 1000 miles, fight the dragon, survive.', 'cyan');
-    Terminal.println('');
-    Terminal.println('TIP: Your birth name determines your starting fortune!', 'yellow');
-    Terminal.println('Different names grant different amounts of starting gold.', 'yellow');
-    await Terminal.pause();
-
-    const startGold = 50 + Utils.randInt(1, 100);
+    let startGold = 50 + Utils.randInt(1, 100);
+    if (GameState.data.skill === 'Penny-Pincher') startGold += 50;
     Resources.modifyGold(startGold);
     Terminal.println(`You received ${startGold} starting gold.`, 'green');
-    Terminal.println('');
-    Terminal.println('You can spend gold to hire a companion and buy supplies.', 'cyan');
+    await Terminal.pause();
+
+    Terminal.println('\nYou can spend gold to hire a companion and buy supplies.', 'cyan');
     Terminal.println('Companions fight alongside you and absorb enemy damage.', 'cyan');
     Terminal.println('Supplies include food, water, weapons, and armor.', 'cyan');
     Terminal.println('Stock up now — prices change based on your name!', 'cyan');
@@ -529,7 +600,7 @@ async function handleGameStart() {
         Terminal.println('You received a Rusty Sword.', 'green');
     }
 
-    GameState.addJournalEntry(`Began the journey as ${GameState.player.name}, survival skill ${GameState.player.survival}.`);
+    GameState.addJournalEntry(`Began the journey as ${GameState.player.name} on ${diffNames[GameState.data.difficulty]} difficulty with skill ${GameState.data.skill}.`);
     if (GameState.companion) {
         GameState.addJournalEntry(`Hired ${GameState.companion.name} the ${GameState.companion.personality} companion.`);
     }

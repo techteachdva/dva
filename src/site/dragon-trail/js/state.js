@@ -38,6 +38,9 @@ const GameState = {
                 acBonus: 0,
                 atkBonus: 0
             },
+            difficulty: 1,
+            skill: null,
+            skillData: {},
             combat: { potions: 0 },
             nemeses: [],
             journal: [],

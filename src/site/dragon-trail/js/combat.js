@@ -57,17 +57,21 @@ async function handleCombat(enemy, companion) {
         if (enemy.hp > 0) {
             await enemyTelegraph(enemy);
             const playerAc = GameState.player.acBonus + getPlayerAc();
-            const enemyDamage = enemy.attack(playerAc, playerDefended);
+            let enemyDamage = enemy.attack(playerAc, playerDefended);
+            const difficultyDamageMods = { 0: 0.8, 1: 1.0, 2: 1.1, 3: 1.25 };
+            enemyDamage = Math.floor(enemyDamage * (difficultyDamageMods[GameState.data.difficulty] || 1.0));
+            const relMods = { 0: 1.5, 1: 1.0, 2: 0.75, 3: 0.5 };
+            const relMod = relMods[GameState.data.difficulty] || 1.0;
             if (companion && companion.isAlive()) {
                 companion.takeDamage(enemyDamage);
-                companion.modifyRelationship(+5); // gratitude for taking hits
+                companion.modifyRelationship(Math.floor(5 * relMod)); // gratitude for taking hits
                 Terminal.println(`${companion.name} absorbs ${enemyDamage} damage!`, 'yellow');
                 if (companion.hp <= 0) {
                     Terminal.println(`${companion.name} has fallen!`, 'red');
-                    companion.modifyRelationship(-30);
+                    companion.modifyRelationship(Math.floor(-30 * relMod));
                 } else if (companion.hp < companion.maxHp * 0.25) {
                     Terminal.println(`${companion.name} is critically wounded!`, 'red');
-                    companion.modifyRelationship(-10);
+                    companion.modifyRelationship(Math.floor(-10 * relMod));
                 }
             } else {
                 playerHp -= enemyDamage;
@@ -118,7 +122,9 @@ async function handleCombat(enemy, companion) {
         Terminal.println(`You gained ${xp} XP!`, 'green');
         GameState.addJournalEntry(`Defeated a ${enemy.name} and gained ${xp} XP.`);
         if (companion && companion.isAlive()) {
-            companion.modifyRelationship(+10);
+            const relMods = { 0: 1.5, 1: 1.0, 2: 0.75, 3: 0.5 };
+            const relMod = relMods[GameState.data.difficulty] || 1.0;
+            companion.modifyRelationship(Math.floor(10 * relMod));
             Terminal.println(`${companion.name} looks proud of the victory.`, 'cyan');
         }
         await handleLoot(enemy.loot);
@@ -222,9 +228,10 @@ function playerAttack(enemyAc, attackType) {
     const toHit = weapon ? weapon.toHitBonus : 0;
     const roll = Utils.rollD20();
     const weatherMod = typeof getWeatherCombatMod === 'function' ? getWeatherCombatMod() : 0;
-    const total = roll + GameState.player.survival + toHit + weatherMod;
+    const diffMod = { 0: 2, 1: 1, 2: 0, 3: -1 }[GameState.data.difficulty] || 0;
+    const total = roll + GameState.player.survival + toHit + weatherMod + diffMod;
     const isCrit = roll === 20;
-    Terminal.println(`Player attack roll: ${roll} + Survival: ${GameState.player.survival} + To Hit: ${toHit} + Weather: ${weatherMod} = ${total}`);
+    Terminal.println(`Player attack roll: ${roll} + Survival: ${GameState.player.survival} + To Hit: ${toHit} + Weather: ${weatherMod} + Difficulty: ${diffMod} = ${total}`);
     if (isCrit || total >= enemyAc) {
         let damage;
         if (attackType === 'melee') damage = isCrit ? baseDamage[1] + 5 : Utils.randInt(...baseDamage);
@@ -391,16 +398,25 @@ async function enemyTelegraph(enemy) {
     };
     const telegraphs = {
         regularAttack: [
-            `The ${enemy.name} feints left and darts in for a quick jab!`,
-            `The ${enemy.name} snaps forward with a rapid strike!`
+            `The ${enemy.name} feints left and darts in for a quick jab! You barely track the motion.`,
+            `The ${enemy.name} snaps forward with a rapid strike! Its limbs blur with sudden speed.`,
+            `The ${enemy.name} hisses and lashes out in a flurry of clawed swipes! Each one is shallow but stinging.`,
+            `The ${enemy.name} drops low and sweeps at your legs! A testing strike, probing your stance.`,
+            `The ${enemy.name} spits and lunges with a stabbing thrust! You see the point glint in the light.`
         ],
         mediumAttack: [
-            `The ${enemy.name} winds up for a balanced strike!`,
-            `The ${enemy.name} shifts its weight, preparing a solid blow!`
+            `The ${enemy.name} winds up for a balanced strike! You can feel the weight behind the motion.`,
+            `The ${enemy.name} shifts its weight, preparing a solid blow! The ground seems to tremble slightly.`,
+            `The ${enemy.name} circles once and then commits to a sweeping arc! The air whistles with the force.`,
+            `The ${enemy.name} braces its legs and drives forward with a shoulder-led slam! You see the intent in its eyes.`,
+            `The ${enemy.name} clenches its fists and delivers a thunderous hook! The sound of rushing air fills your ears.`
         ],
         bigAttack: [
-            `The ${enemy.name} raises its weapon high for a devastating swing!`,
-            `The ${enemy.name} roars and commits to a heavy overhead blow!`
+            `The ${enemy.name} raises its weapon high for a devastating swing! Shadows stretch beneath the looming blow.`,
+            `The ${enemy.name} roars and commits to a heavy overhead blow! You feel the pressure in your chest before the strike lands.`,
+            `The ${enemy.name} rears back, muscles coiling like a drawn bowstring! The earth cracks under its shifting weight.`,
+            `The ${enemy.name} throws its entire body into a wild, crushing haymaker! Everything about the motion screams abandon.`,
+            `The ${enemy.name} lets loose a howl of bloodlust and leaps! For a moment, it blots out the sun entirely.`
         ]
     };
     Terminal.println(`\n${Utils.choice(telegraphs[attackType])}`, 'red');

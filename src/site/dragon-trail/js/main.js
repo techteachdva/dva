@@ -390,16 +390,19 @@ async function handleScout() {
         minor: totalRoll >= 10 + difficultyModifier
     };
 
+    let skillMult = 1.0;
+    if (GameState.data.skill === 'Outdoors Type' && (targetResource === 'wood' || targetResource === 'water')) skillMult = 1.5;
+    if (GameState.data.skill === 'Hunter' && targetResource === 'food') skillMult = 1.5;
     if (successLevels.high) {
-        const amount = Utils.randInt(6, 8);
+        const amount = Math.floor(Utils.randInt(6, 8) * skillMult);
         Terminal.println(`\nYou found a plentiful supply of ${targetResource}! +${amount}`, 'green');
         collectResource(targetResource, amount);
     } else if (successLevels.moderate) {
-        const amount = Utils.randInt(4, 6);
+        const amount = Math.floor(Utils.randInt(4, 6) * skillMult);
         Terminal.println(`\nYou found some ${targetResource}! +${amount}`, 'green');
         collectResource(targetResource, amount);
     } else if (successLevels.minor) {
-        const amount = Utils.randInt(2, 3);
+        const amount = Math.floor(Utils.randInt(2, 3) * skillMult);
         Terminal.println(`\nYou found a small amount of ${targetResource}! +${amount}`, 'yellow');
         collectResource(targetResource, amount);
     } else {
@@ -426,6 +429,7 @@ async function handleCamp() {
         return;
     }
 
+    GameState.data.skillData.potionSellerUsedThisCamp = false;
     let camping = true;
     while (camping) {
         Terminal.clear();
@@ -533,8 +537,9 @@ async function handleCampTalk() {
     const lines = dialogues[companion.personality] || dialogues['Optimistic'];
     Terminal.println(`\n${companion.name} looks at you across the fire.`, 'cyan');
     Terminal.println(`"${Utils.choice(lines)}"`, 'white');
-    companion.modifyRelationship(+5);
-    Terminal.println(`Your bond with ${companion.name} deepens.`, 'green');
+    const talkBonus = GameState.data.skill === 'Storyteller' ? 10 : 5;
+    companion.modifyRelationship(talkBonus);
+    Terminal.println(`Your bond with ${companion.name} deepens. (+${talkBonus})`, 'green');
     GameState.addJournalEntry(`Spoke with ${companion.name} by the campfire.`);
     await Terminal.pause();
 }
@@ -602,9 +607,13 @@ async function handleCook() {
     Terminal.println(`You have ${GameState.resources.herbs} herbs and ${GameState.resources.supplies} supplies.`);
     Terminal.println('1. Cook herbs for food');
     Terminal.println('2. Cook herbs and supplies for potions');
+    if (GameState.data.skill === 'Potion Seller' && !GameState.data.skillData.potionSellerUsedThisCamp) {
+        Terminal.println('3. Brew free potions (Potion Seller skill, once per camp)');
+    }
     Terminal.println('0. Cancel');
 
-    const choice = await Terminal.inputNumber('What would you like to cook? (0-2): ', 0, 2);
+    const maxCookChoice = (GameState.data.skill === 'Potion Seller' && !GameState.data.skillData.potionSellerUsedThisCamp) ? 3 : 2;
+    const choice = await Terminal.inputNumber('What would you like to cook? (0-' + maxCookChoice + '): ', 0, maxCookChoice);
     if (choice === 0) return;
 
     if (choice === 1) {
@@ -630,6 +639,12 @@ async function handleCook() {
         Resources.modify('supplies', -suppliesToCook);
         GameState.combat.potions += potionsGained;
         Terminal.println(`Used ${herbsToCook} herbs and ${suppliesToCook} supplies. Gained ${potionsGained} potions.`, 'green');
+    } else if (choice === 3) {
+        const freePotions = Utils.randInt(1, 6);
+        GameState.combat.potions += freePotions;
+        GameState.data.skillData.potionSellerUsedThisCamp = true;
+        Terminal.println(`You brew a batch from memory and instinct. ${freePotions} potions bubble to life!`, 'magenta');
+        Terminal.println('The cauldron steams with arcane fragrance. Your trade secret remains safe.', 'cyan');
     }
     GameState.addJournalEntry(`Cooked at camp.`);
     await Terminal.pause();
