@@ -34,6 +34,24 @@ const ENVIRONMENTAL_EVENTS = [
     { name: 'Collapsed Mine', type: 'positive', description: 'The mouth of an old mine gapes in the hillside, supported by beams that have not rotted yet. You venture a few paces inside and find tools left by miners who struck a thin vein and moved on. A rusted pick, a leather helmet, and a small pouch of silver dust that a jeweler would pay handsomely for.', effect: async () => { Resources.modifyGold(Utils.randInt(10, 25)); } }
 ];
 
+const UNEVENTFUL_TRAVEL_PHRASES = [
+    'Your journey was brisk and particularly uneventful. The time flew by.',
+    'The trail stretched ahead, empty and patient. Not even the wind disturbed your passage.',
+    'Hours passed in a comfortable blur of footfalls and birdcalls. You begin to think the wilds have forgotten you.',
+    'The miles melted beneath your boots without complaint. It is the kind of day that makes you believe in luck.',
+    'Not a soul, not a beast, not a storm cloud crossed your path. The world held its breath while you walked.',
+    'You whistle a tune your mother used to hum. The hills do not answer, but they do not interrupt either.',
+    'A heron follows you for half a day, gliding from pond to pond, never close enough to touch. You decide it is a good omen.',
+    'The sun climbs, peaks, and descends without incident. You make camp early, almost disappointed.',
+    'You find a stretch of trail so smooth it might have been paved by forgotten hands. You walk it gratefully, savoring the rare peace.',
+    'A rabbit watches you pass from the safety of a thicket. Its nose twitches. You nod to it like an old friend.',
+    'Clouds drift overhead in shapes that remind you of home: a cottage, a dog, a loaf of bread. You do not remember the last time you thought of bread.',
+    'The silence is so complete you can hear your own heartbeat. It is steady. It is strong. You are still alive.',
+    'You pass a milestone carved with a face you do not recognize. Someone laughed here once, long ago. You smile in their memory.',
+    'A warm rain begins as you crest a hill, but it passes in minutes, leaving only the scent of wet stone and gratitude.',
+    'Your shadow stretches long across the trail, keeping perfect pace. It is the most loyal companion you have ever had.'
+];
+
 const BIOME_EVENT_CHAINS = {
     'Forest': [
         { name: 'Whispering Woods', desc: 'The trees seem to speak your name. Not the wind, not the creak of branches, but actual syllables formed from the rustle of leaves. You turn and ask who is there, and the forest laughs in a thousand green voices. You flee with scratches you do not remember receiving.', effect: async () => { Resources.modifyHealth(-3); } },
@@ -607,6 +625,19 @@ async function travel() {
 
     await checkMiniBossEncounter();
     await checkCrossroads();
+
+    if (!GameState.data.encounterTriggered && !GameState.data.pendingEnemy) {
+        const biomeKey = `biome_${GameState.journey.currentBiome.toLowerCase().replace(/\s+/g, '_')}`;
+        if (typeof EXTRA_ASCII_ART !== 'undefined' && EXTRA_ASCII_ART[biomeKey]) {
+            await Terminal.showAsciiArt(biomeKey, 'cyan', true);
+        } else {
+            await Terminal.showAsciiArt('travel', 'cyan', true);
+        }
+        Terminal.println(`\n${Utils.choice(UNEVENTFUL_TRAVEL_PHRASES)}`, 'green');
+    }
+
+    Terminal.println(`\nTravel complete. Total miles: ${GameState.journey.totalMilesTraveled}/${Config.TOTAL_MILES}`);
+    await Terminal.pause();
     Audio.stopMusic();
 }
 
@@ -630,6 +661,16 @@ async function handleTravel() {
     await triggerRandomEncounter(null, GameState.data.time.day);
     Terminal.println(`Traveled ${miles} miles. Total: ${GameState.journey.totalMilesTraveled}/${Config.TOTAL_MILES}`, 'green');
     await checkMiniBossEncounter();
+    if (!GameState.data.encounterTriggered && !GameState.data.pendingEnemy) {
+        const biomeKey = `biome_${GameState.journey.currentBiome.toLowerCase().replace(/\s+/g, '_')}`;
+        if (typeof EXTRA_ASCII_ART !== 'undefined' && EXTRA_ASCII_ART[biomeKey]) {
+            await Terminal.showAsciiArt(biomeKey, 'cyan', true);
+        } else {
+            await Terminal.showAsciiArt('travel', 'cyan', true);
+        }
+        Terminal.println(`\n${Utils.choice(UNEVENTFUL_TRAVEL_PHRASES)}`, 'green');
+    }
+    await Terminal.pause();
     Audio.stopMusic();
 }
 
