@@ -42,6 +42,15 @@ async function handlePurchase() {
         Terminal.println(`\nGold: ${gold} GP`);
         Terminal.println(`Carry Weight: ${carryWeight}/${capacity} lbs`);
 
+        Terminal.println('\n--- Your Inventory ---');
+        const r = GameState.resources;
+        const c = GameState.combat;
+        Terminal.println(`Food: ${r.food} | Water: ${r.water} | Herbs: ${r.herbs} | Supplies: ${r.supplies} | Wood: ${r.wood} | Potions: ${c.potions}`);
+        const eqW = GameState.player.equippedWeapon;
+        Terminal.println(`Weapon: ${eqW ? eqW.name : 'None'}`);
+        const eqA = Object.values(GameState.player.equippedArmor).filter(x => x);
+        Terminal.println(`Armor: ${eqA.length ? eqA.map(a => a.name).join(', ') : 'None'}`);
+
         if (gold <= 0) {
             Terminal.println('\nYou are out of gold!', 'red');
             await Terminal.pause();
