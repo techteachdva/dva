@@ -10,6 +10,7 @@ const AudioSystem = {
     dataArray: null,
     visualizerBars: null,
     visualizerInterval: null,
+    lastScrollTime: 0,
 
     // Initialize Web Audio API
     init() {
@@ -41,11 +42,93 @@ const AudioSystem = {
         osc.stop(this.ctx.currentTime + duration / 1000);
     },
 
-    // Typing sound (randomized clicks)
+    // Typing sound — mechanical keyboard switch click
     typeSound() {
         if (!this.ctx || this.sfxMuted) return;
-        const freq = Utils.randInt(800, 1200);
-        this.beep(freq, 15, 'square', 0.03);
+        const bufferSize = this.ctx.sampleRate * 0.005;
+        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+            data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.35));
+        }
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = buffer;
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.value = Utils.randInt(2800, 3800);
+        filter.Q.value = 0.9;
+        const gain = this.ctx.createGain();
+        gain.gain.setValueAtTime(0.03, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.006);
+        noise.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx.destination);
+        noise.start();
+    },
+
+    // Satisfying computer "boop" on Enter
+    enterBeep() {
+        if (!this.ctx || this.sfxMuted) return;
+        // Main boop: square wave softened by lowpass filter
+        const osc = this.ctx.createOscillator();
+        const filter = this.ctx.createBiquadFilter();
+        const gain = this.ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.value = 880;
+        filter.type = 'lowpass';
+        filter.frequency.value = 2600;
+        filter.Q.value = 0.6;
+        gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.1);
+        osc.connect(filter);
+        filter.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.1);
+        // Subtle harmonic overtone for richness
+        const osc2 = this.ctx.createOscillator();
+        const gain2 = this.ctx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.value = 1320;
+        gain2.gain.setValueAtTime(0.035, this.ctx.currentTime);
+        gain2.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.07);
+        osc2.connect(gain2);
+        gain2.connect(this.ctx.destination);
+        osc2.start();
+        osc2.stop(this.ctx.currentTime + 0.07);
+    },
+
+    // Subtle tick when new text prints to the terminal
+    printSound() {
+        if (!this.ctx || this.sfxMuted) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = 1200;
+        gain.gain.setValueAtTime(0.012, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.008);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.008);
+    },
+
+    // Subtle mechanical tick when the view scrolls
+    scrollSound() {
+        if (!this.ctx || this.sfxMuted) return;
+        const now = Date.now();
+        if (now - this.lastScrollTime < 60) return;
+        this.lastScrollTime = now;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = 2400;
+        gain.gain.setValueAtTime(0.008, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.005);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.005);
     },
 
     // Combat hit sound (noise burst)

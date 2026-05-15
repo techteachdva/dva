@@ -29,7 +29,7 @@ class TerminalEngine {
         this.inputEl.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                if (typeof Audio !== 'undefined') Audio.beep(880, 60, 'sine', 0.08);
+                if (typeof Audio !== 'undefined') Audio.enterBeep();
                 const value = this.inputEl.value;
                 this.inputEl.value = '';
                 this.appendToOutput(this.currentPrompt + ' ' + value + '\n');
@@ -59,6 +59,7 @@ class TerminalEngine {
             return this.typewrite(text, color, bright);
         }
         this.appendToOutput(this.formatText(text, color, bright));
+        if (typeof Audio !== 'undefined') Audio.printSound();
         this.scrollToBottom();
     }
 
@@ -122,6 +123,7 @@ class TerminalEngine {
         if (this.scrollOnPrint) {
             this.output.scrollTop = this.output.scrollHeight;
         }
+        if (typeof Audio !== 'undefined') Audio.scrollSound();
     }
 
     /**
