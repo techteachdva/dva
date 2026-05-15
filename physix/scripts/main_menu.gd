@@ -61,20 +61,22 @@ func _ready() -> void:
 # ── Button Styling (inverted against lava background) ─────────────────────────
 
 func _style_buttons() -> void:
-	var icons := {
-		"PlayBtn":       "▶  ",
-		"ContinueBtn":   "▶  ",
-		"LoadCustomBtn": "▼  ",
-		"EditorBtn":     "⚒  ",
-		"CreditsBtn":    "ⓘ  ",
-		"ShopBtn":       "★  ",
-		"OptionsBtn":    "≡  ",
-		"QuitBtn":       "✕  ",
+	var icon_paths := {
+		"PlayBtn":       "res://assets/icons/play.png",
+		"ContinueBtn":   "res://assets/icons/continue.png",
+		"LoadCustomBtn": "res://assets/icons/custom.png",
+		"EditorBtn":     "res://assets/icons/editor.png",
+		"CreditsBtn":    "res://assets/icons/credits.png",
+		"ShopBtn":       "res://assets/icons/shop.png",
+		"OptionsBtn":    "res://assets/icons/options.png",
+		"QuitBtn":       "res://assets/icons/quit.png",
 	}
 	for btn: Button in _menu_buttons:
-		var prefix: String = icons.get(btn.name, "")
-		if not btn.text.begins_with(prefix):
-			btn.text = prefix + btn.text
+		var path: String = icon_paths.get(btn.name, "")
+		if not path.is_empty():
+			btn.icon = load(path)
+			btn.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
+			btn.expand_icon = false
 		btn.custom_minimum_size = Vector2(320, 52)
 		btn.add_theme_font_size_override("font_size", 28)
 		# Text colors — bright, readable
