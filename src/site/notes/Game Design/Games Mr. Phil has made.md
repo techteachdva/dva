@@ -9,7 +9,7 @@ title: Games Mr. Phil has made
 
 <div class="arcade-games-page">
 
-<p class="arcade-games-page__intro">Classic upright cabinets are usually almost as deep as they are wide—so you see a broad side panel, not a thin edge. Tap the screen to play.</p>
+<p class="arcade-games-page__intro">Welcome to The Arcade!</p>
 
 <div class="arcade-games-grid">
 
@@ -229,7 +229,7 @@ title: Games Mr. Phil has made
            -#################\  / "" \  /#################-
           -###################\/((()))\/###################-
          _#/|##########/\######\ (()) /#####/\##########|\#_
-         |/ |#/#\#/#\/\  \#/#\#/ \ () /\#/#\#/  \/\#/#\#/#\#| \|
+        |/ |#/#\#/#\/\  \#/#\#/ \ () /\#/#\#/  \/\#/#\#/#\#| \|
           \ |/  V  V      V  V   \VV/  V  V      V  V  \| /
                 </pre>
               </div>

@@ -7,6 +7,7 @@ const tocPlugin = require("eleventy-plugin-nesting-toc");
 const { parse } = require("node-html-parser");
 const htmlMinifier = require("html-minifier-terser");
 const pluginRss = require("@11ty/eleventy-plugin-rss");
+const { globSync } = require("glob");
 
 const { headerToId, namedHeadingsFilter } = require("./src/helpers/utils");
 const {
@@ -49,22 +50,33 @@ function getAnchorAttributes(filePath, linkTitle) {
   let deadLink = false;
   try {
     const startPath = "./src/site/notes/";
-    const fullPath = fileName.endsWith(".md")
-      ? `${startPath}${fileName}`
-      : `${startPath}${fileName}.md`;
-    const file = fs.readFileSync(fullPath, "utf8");
-    const frontMatter = matter(file);
-    if (frontMatter.data.permalink) {
-      permalink = frontMatter.data.permalink;
+    let fullPath = "";
+    const candidates = globSync(`${startPath}**/${fileName}`, { nodir: true });
+    if (candidates.length > 0) {
+      fullPath = candidates[0];
+    } else if (!fileName.endsWith(".md")) {
+      const candidatesMd = globSync(`${startPath}**/${fileName}.md`, { nodir: true });
+      if (candidatesMd.length > 0) {
+        fullPath = candidatesMd[0];
+      }
     }
-    if (
-      frontMatter.data.tags &&
-      frontMatter.data.tags.indexOf("gardenEntry") != -1
-    ) {
-      permalink = "/";
-    }
-    if (frontMatter.data.noteIcon) {
-      noteIcon = frontMatter.data.noteIcon;
+    if (fullPath) {
+      const file = fs.readFileSync(fullPath, "utf8");
+      const frontMatter = matter(file);
+      if (frontMatter.data.permalink) {
+        permalink = frontMatter.data.permalink;
+      }
+      if (
+        frontMatter.data.tags &&
+        frontMatter.data.tags.indexOf("gardenEntry") != -1
+      ) {
+        permalink = "/";
+      }
+      if (frontMatter.data.noteIcon) {
+        noteIcon = frontMatter.data.noteIcon;
+      }
+    } else {
+      deadLink = true;
     }
   } catch {
     deadLink = true;

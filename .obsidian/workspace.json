@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "src/site/notes/Mr. Phil's Digital Garden.md",
+                "file": "VERCEL_FIXES.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Mr. Phil's Digital Garden"
+              "title": "VERCEL_FIXES"
             }
           }
         ]
@@ -78,7 +78,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 396.5
   },
   "right": {
     "id": "f3759709cb5bb294",
@@ -171,33 +171,43 @@
   },
   "left-ribbon": {
     "hiddenItems": {
-      "digitalgarden:Digital Garden Publication Center": false,
       "switcher:Open quick switcher": false,
       "graph:Open graph view": false,
       "canvas:Create new canvas": false,
       "daily-notes:Open today's daily note": false,
       "templates:Insert template": false,
       "command-palette:Open command palette": false,
-      "bases:Create new base": false
+      "bases:Create new base": false,
+      "digitalgarden:Digital Garden Publication Center": false
     }
   },
   "active": "ef04fab9155606a1",
   "lastOpenFiles": [
-    "src/site/notes/Games Mr. Phil has made.md",
-    "src/site/notes/Mr. Phil's Digital Garden.md",
-    "src/site/notes/Media Arts.md",
-    "src/site/notes/Dungeon Class.md",
-    "src/site/notes/Escape Tech Game.md",
-    "src/site/notes/Pixel Art Museum.md",
-    "src/site/notes/Peda_Go_Gee.md",
-    "src/site/notes/5-12 Methods. Literature and Reading..md",
-    "src/site/img/user/Pictures/DaVinci_Full_Button_2Color.png",
+    "README.md",
+    "DEPLOYMENT_FIXES.md",
+    "CHANGELOG.md",
+    "dist/apple-touch-icon.png",
+    "dist/icon-512.png",
+    "dist/favicon.svg",
+    "dist/icon-192.png",
+    "src/site/favicon.svg",
     "src/site/img/user/Pictures/CARROLL.png",
-    "src/site/img/user/Pictures/Bubblegum.jpeg",
-    "src/site/img/default-note-icon.svg",
-    "src/site/img/outgoing.svg",
-    "src/site/img/tree-3.svg",
-    "src/site/img/tree-2.svg",
-    "src/site/img/tree-1.svg"
+    "src/site/img/user/Pixel Art/Jackson L. Encryption Pixel 1.gif",
+    "src/site/img/user/desiderata-original-text.jpg",
+    "src/site/img/user/firmament.jpg",
+    "src/site/img/user/fluency.png",
+    "src/site/notes/QR Code Hub.md",
+    "src/site/notes/Mr. Phil's Digital Garden.md",
+    "src/site/notes/Crystal Wizards.md",
+    "src/site/notes/Desiderata.md",
+    "src/site/notes/Dungeon Class.md",
+    "src/site/notes/Game Design.md",
+    "src/site/notes/Escape Tech Game.md",
+    "src/site/notes/Purple Worm Escape.md",
+    "src/site/notes/5-12 Methods. Literature and Reading..md",
+    "src/site/notes/Games Mr. Phil has made.md",
+    "src/site/notes/Media Arts.md",
+    "src/site/notes/Pixel Art Museum.md",
+    "src/site/notes/Peda_Go_Gee.md"
   ]
 }

@@ -14,7 +14,13 @@
       "Bash(rtk git *)",
       "Bash(git reset *)",
       "Bash(rtk ls *)",
-      "Bash(rtk read *)"
+      "Bash(rtk read *)",
+      "Bash(rtk npx *)",
+      "Bash(cp \"C:/Users/phili/OneDrive/Desktop/code/helper/src_game/dragon_trail/dragon_trail3.0/Music/Earth Prelude.mp3\" \"C:/Users/phili/OneDrive/Desktop/dva/src/site/dragon-trail/music/Earth_Prelude.mp3\")",
+      "Bash(cp \"C:/Users/phili/OneDrive/Desktop/code/helper/src_game/dragon_trail/dragon_trail3.0/Music/Evening.mp3\" \"C:/Users/phili/OneDrive/Desktop/dva/src/site/dragon-trail/music/Evening.mp3\")",
+      "Bash(cp \"C:/Users/phili/OneDrive/Desktop/code/helper/src_game/dragon_trail/dragon_trail3.0/Music/Exotic Battle.mp3\" \"C:/Users/phili/OneDrive/Desktop/dva/src/site/dragon-trail/music/Exotic_Battle.mp3\")",
+      "Bash(cp \"C:/Users/phili/OneDrive/Desktop/code/helper/src_game/dragon_trail/dragon_trail3.0/Music/Final Battle of the Dark Wizards.mp3\" \"C:/Users/phili/OneDrive/Desktop/dva/src/site/dragon-trail/music/Final_Battle_of_the_Dark_Wizards.mp3\")",
+      "Bash(cp \"C:/Users/phili/OneDrive/Desktop/code/helper/src_game/dragon_trail/dragon_trail3.0/Music/Lotus.mp3\" \"C:/Users/phili/OneDrive/Desktop/dva/src/site/dragon-trail/music/Lotus.mp3\")"
     ]
   }
 }
