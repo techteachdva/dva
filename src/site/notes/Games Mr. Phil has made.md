@@ -127,8 +127,6 @@ title: Games Mr. Phil has made
               <span class="crystal-facet crystal-facet--g"></span>
               <span class="crystal-facet crystal-facet--b"></span>
               <span class="crystal-facet crystal-facet--y"></span>
-              <span class="crystal-facet crystal-facet--r2"></span>
-              <span class="crystal-facet crystal-facet--b2"></span>
               <div class="crystal-cluster"></div>
               <div class="arcade-coin-door">
                 <span class="arcade-coin-door__slot"></span>

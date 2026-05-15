@@ -23,9 +23,9 @@
 
 .arcade-cabinet {
   /* Williams / Midway style uprights: width ~24–26", depth often ~28–32" (depth ≥ width is common) */
-  --cab-w: 216px;
-  --cab-h: 388px;
-  --cab-d: 264px;
+  --cab-w: 432px;
+  --cab-h: 776px;
+  --cab-d: 528px;
   --cab-half-z: calc(var(--cab-d) / 2);
   --cab-half-x: calc(var(--cab-w) / 2);
 }
@@ -37,7 +37,7 @@
   perspective-origin: 38% 36%;
   /* Needed so nested preserve-3d reaches the cuboid in WebKit */
   transform-style: preserve-3d;
-  min-height: 520px;
+  min-height: 1040px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -48,9 +48,9 @@
   position: absolute;
   left: 50%;
   bottom: 1.1rem;
-  width: 300px;
-  height: 48px;
-  margin-left: -150px;
+  width: 600px;
+  height: 96px;
+  margin-left: -300px;
   border-radius: 50%;
   background: radial-gradient(
     ellipse at center,
@@ -276,7 +276,7 @@
 
 .arcade-cabinet__front-art {
   flex: 1 1 auto;
-  min-height: 118px;
+  min-height: 236px;
   position: relative;
   overflow: hidden;
 }
@@ -1080,10 +1080,10 @@
 .crystal-cluster {
   position: absolute;
   left: 50%;
-  top: 35%;
+  top: 32%;
   transform: translateX(-50%);
-  width: 80px;
-  height: 80px;
+  width: 90px;
+  height: 110px;
   background:
     conic-gradient(
       from 200deg at 50% 55%,
@@ -1095,12 +1095,44 @@
       rgba(255, 80, 120, 0.5) 360deg
     ),
     linear-gradient(180deg, rgba(30, 15, 55, 0.4), rgba(10, 5, 25, 0.85));
-  clip-path: polygon(50% 0%, 85% 35%, 70% 100%, 30% 100%, 15% 35%);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
   box-shadow:
-    0 0 40px rgba(200, 160, 255, 0.35),
-    inset 0 0 30px rgba(255, 255, 255, 0.06);
+    0 0 50px rgba(200, 160, 255, 0.45),
+    inset 0 0 30px rgba(255, 255, 255, 0.08);
   z-index: 3;
-  animation: crystal-pulse 4s ease-in-out infinite;
+  animation: crystal-pulse 3s ease-in-out infinite;
+}
+
+/* Diamond table on center cluster */
+.crystal-cluster::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 10%;
+  transform: translateX(-50%);
+  width: 50%;
+  height: 25%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.05) 100%);
+  clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+  pointer-events: none;
+}
+
+/* Sparkle glints on center crystal */
+.crystal-cluster::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.6) 0%, transparent 8%),
+    radial-gradient(circle at 70% 40%, rgba(255, 255, 255, 0.4) 0%, transparent 6%),
+    radial-gradient(circle at 50% 70%, rgba(255, 255, 255, 0.5) 0%, transparent 7%);
+  animation: crystal-sparkle-glint 2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes crystal-sparkle-glint {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
 }
 
 @keyframes crystal-pulse {
@@ -1114,70 +1146,107 @@
   z-index: 2;
 }
 
+.crystal-facet {
+  position: absolute;
+  z-index: 2;
+}
+
+/* Cut diamond shape: hexagonal with flat table top */
 .crystal-facet--r {
-  left: 12%;
-  top: 18%;
-  width: 28px;
-  height: 38px;
-  background: linear-gradient(145deg, #ff3860, #c2253c);
-  clip-path: polygon(50% 0%, 100% 35%, 80% 100%, 20% 100%, 0% 35%);
-  box-shadow: 0 0 18px rgba(255, 80, 120, 0.4);
+  left: 10%;
+  top: 16%;
+  width: 32px;
+  height: 44px;
+  background: linear-gradient(180deg, #ff6b8a 0%, #ff3860 35%, #c2253c 70%, #8a1c2e 100%);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  box-shadow: 0 0 22px rgba(255, 80, 120, 0.45);
   animation: crystal-float 3s ease-in-out infinite;
 }
 
+/* Diamond table (flat top facet) */
+.crystal-facet--r::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 12%;
+  transform: translateX(-50%);
+  width: 55%;
+  height: 28%;
+  background: linear-gradient(180deg, rgba(255, 200, 210, 0.5) 0%, rgba(255, 120, 150, 0.2) 100%);
+  clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+  pointer-events: none;
+}
+
 .crystal-facet--g {
-  right: 10%;
-  top: 14%;
-  width: 24px;
-  height: 34px;
-  background: linear-gradient(145deg, #51cf66, #2b8a3e);
-  clip-path: polygon(50% 0%, 100% 40%, 70% 100%, 30% 100%, 0% 40%);
-  box-shadow: 0 0 18px rgba(80, 255, 160, 0.35);
+  right: 8%;
+  top: 12%;
+  width: 28px;
+  height: 40px;
+  background: linear-gradient(180deg, #8af0a0 0%, #51cf66 35%, #2b8a3e 70%, #1e662d 100%);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  box-shadow: 0 0 22px rgba(80, 255, 160, 0.4);
   animation: crystal-float 3.5s ease-in-out infinite 0.5s;
 }
 
+.crystal-facet--g::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 12%;
+  transform: translateX(-50%);
+  width: 55%;
+  height: 28%;
+  background: linear-gradient(180deg, rgba(200, 255, 210, 0.5) 0%, rgba(120, 255, 160, 0.2) 100%);
+  clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+  pointer-events: none;
+}
+
 .crystal-facet--b {
-  left: 18%;
-  bottom: 28%;
-  width: 26px;
-  height: 36px;
-  background: linear-gradient(145deg, #339af0, #1864ab);
-  clip-path: polygon(50% 0%, 100% 30%, 85% 100%, 15% 100%, 0% 30%);
-  box-shadow: 0 0 18px rgba(100, 180, 255, 0.4);
+  left: 14%;
+  bottom: 24%;
+  width: 30px;
+  height: 42px;
+  background: linear-gradient(180deg, #8ac4ff 0%, #339af0 35%, #1864ab 70%, #104878 100%);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  box-shadow: 0 0 22px rgba(100, 180, 255, 0.45);
   animation: crystal-float 3.2s ease-in-out infinite 1s;
 }
 
+.crystal-facet--b::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 12%;
+  transform: translateX(-50%);
+  width: 55%;
+  height: 28%;
+  background: linear-gradient(180deg, rgba(200, 230, 255, 0.5) 0%, rgba(120, 180, 255, 0.2) 100%);
+  clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+  pointer-events: none;
+}
+
 .crystal-facet--y {
-  right: 14%;
-  bottom: 32%;
-  width: 22px;
-  height: 30px;
-  background: linear-gradient(145deg, #fcc419, #e67700);
-  clip-path: polygon(50% 0%, 100% 35%, 75% 100%, 25% 100%, 0% 35%);
-  box-shadow: 0 0 18px rgba(255, 220, 100, 0.35);
+  right: 10%;
+  bottom: 28%;
+  width: 26px;
+  height: 36px;
+  background: linear-gradient(180deg, #ffe066 0%, #fcc419 35%, #e67700 70%, #b35900 100%);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  box-shadow: 0 0 22px rgba(255, 220, 100, 0.4);
   animation: crystal-float 3.8s ease-in-out infinite 0.3s;
 }
 
-.crystal-facet--r2 {
-  left: 42%;
-  top: 8%;
-  width: 18px;
-  height: 24px;
-  background: linear-gradient(145deg, #ff6b6b, #c92a2a);
-  clip-path: polygon(50% 0%, 100% 40%, 60% 100%, 40% 100%, 0% 40%);
-  box-shadow: 0 0 14px rgba(255, 100, 100, 0.3);
-  animation: crystal-float 2.8s ease-in-out infinite 0.8s;
-}
-
-.crystal-facet--b2 {
-  right: 38%;
-  bottom: 18%;
-  width: 20px;
-  height: 26px;
-  background: linear-gradient(145deg, #74c0fc, #1971c2);
-  clip-path: polygon(50% 0%, 100% 35%, 70% 100%, 30% 100%, 0% 35%);
-  box-shadow: 0 0 14px rgba(120, 200, 255, 0.3);
-  animation: crystal-float 3.4s ease-in-out infinite 1.2s;
+.crystal-facet--y::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 12%;
+  transform: translateX(-50%);
+  width: 55%;
+  height: 28%;
+  background: linear-gradient(180deg, rgba(255, 240, 180, 0.5) 0%, rgba(255, 220, 100, 0.2) 100%);
+  clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+  pointer-events: none;
 }
 
 @keyframes crystal-float {
@@ -1408,14 +1477,14 @@
   height: 20px;
   background:
     linear-gradient(180deg, #f0f0f5 0%, #c8c8d0 40%, #a0a0a8 100%);
-  clip-path: polygon(50% 0, 0 100%, 100% 100%);
+  clip-path: polygon(0 0, 100% 0, 50% 100%);
   box-shadow:
     0 0 4px rgba(200, 220, 255, 0.4),
     inset 0 1px 2px rgba(255, 255, 255, 0.6);
 }
 
 .worm-teeth--bottom .worm-tooth {
-  clip-path: polygon(0 0, 100% 0, 50% 100%);
+  clip-path: polygon(50% 0, 0 100%, 100% 100%);
   background:
     linear-gradient(180deg, #a0a0a8 0%, #c8c8d0 60%, #f0f0f5 100%);
 }
@@ -1596,17 +1665,17 @@
 .dragon-crt-frame {
   position: absolute;
   left: 50%;
-  top: 50%;
+  top: 48%;
   transform: translate(-50%, -50%);
-  width: 180px;
-  height: 130px;
+  width: 380px;
+  height: 280px;
   background: #0a0f08;
-  border: 4px solid #1a2014;
-  border-radius: 4px;
+  border: 6px solid #1a2014;
+  border-radius: 6px;
   box-shadow:
-    inset 0 0 20px rgba(0, 0, 0, 0.8),
-    0 0 12px rgba(100, 200, 80, 0.15),
-    0 4px 8px rgba(0, 0, 0, 0.4);
+    inset 0 0 30px rgba(0, 0, 0, 0.8),
+    0 0 18px rgba(100, 200, 80, 0.15),
+    0 6px 14px rgba(0, 0, 0, 0.4);
   z-index: 2;
   overflow: hidden;
 }
@@ -1617,7 +1686,7 @@
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  box-shadow: inset 0 0 12px rgba(140, 255, 120, 0.08);
+  box-shadow: inset 0 0 18px rgba(140, 255, 120, 0.08);
   pointer-events: none;
   z-index: 4;
 }
@@ -1631,13 +1700,13 @@
   margin: 0;
   padding: 0;
   font-family: ui-monospace, "Cascadia Code", "Segoe UI Mono", monospace;
-  font-size: 2.6px;
-  line-height: 3px;
+  font-size: 6px;
+  line-height: 6.5px;
   color: #b8f0a8;
   white-space: pre;
   text-shadow:
-    0 0 2px rgba(140, 255, 120, 0.6),
-    0 0 4px rgba(100, 220, 80, 0.3);
+    0 0 3px rgba(140, 255, 120, 0.7),
+    0 0 8px rgba(100, 220, 80, 0.4);
   z-index: 3;
   animation: crt-flicker 4s ease-in-out infinite;
   pointer-events: none;
@@ -1797,8 +1866,8 @@
 /* Ball rolling down the slope */
 .physix-ball {
   position: absolute;
-  left: 48%;
-  top: 32%;
+  left: 26%;
+  top: 18%;
   width: 20px;
   height: 20px;
   border-radius: 50%;
@@ -1812,16 +1881,16 @@
 }
 
 @keyframes physix-roll {
-  0% { left: 48%; top: 32%; transform: rotate(0deg); }
-  50% { left: 58%; top: 42%; transform: rotate(180deg); }
-  100% { left: 48%; top: 32%; transform: rotate(360deg); }
+  0% { left: 26%; top: 18%; transform: rotate(0deg); }
+  50% { left: 52%; top: 38%; transform: rotate(360deg); }
+  100% { left: 26%; top: 18%; transform: rotate(720deg); }
 }
 
 /* Velocity lines trailing the ball */
 .physix-velocity-lines {
   position: absolute;
-  left: 30%;
-  top: 38%;
+  left: 22%;
+  top: 20%;
   z-index: 3;
   pointer-events: none;
 }
@@ -1835,13 +1904,13 @@
   animation: physix-trail 3s ease-in-out infinite;
 }
 
-.physix-vline:nth-child(1) { width: 18px; left: 0; top: 0; animation-delay: 0s; }
-.physix-vline:nth-child(2) { width: 14px; left: -4px; top: 6px; animation-delay: 0.1s; }
-.physix-vline:nth-child(3) { width: 10px; left: -8px; top: 12px; animation-delay: 0.2s; }
+.physix-vline:nth-child(1) { width: 18px; left: 0; top: 0; transform: rotate(-28deg); animation-delay: 0s; }
+.physix-vline:nth-child(2) { width: 14px; left: -8px; top: 5px; transform: rotate(-28deg); animation-delay: 0.1s; }
+.physix-vline:nth-child(3) { width: 10px; left: -14px; top: 10px; transform: rotate(-28deg); animation-delay: 0.2s; }
 
 @keyframes physix-trail {
-  0%, 100% { opacity: 0.3; transform: translateX(0); }
-  50% { opacity: 0.7; transform: translateX(8px); }
+  0%, 100% { opacity: 0.3; transform: translateX(0) rotate(-28deg); }
+  50% { opacity: 0.7; transform: translateX(12px) rotate(-28deg); }
 }
 
 /* Physics formula floating in the corner */
