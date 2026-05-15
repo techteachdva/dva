@@ -127,6 +127,37 @@ title: Games Mr. Phil has made
     </div>
   </article>
 
+  <article class="arcade-cabinet arcade-cabinet--dragon" aria-label="Dragon Trail arcade cabinet">
+    <div class="arcade-cabinet__scene">
+      <div class="arcade-cabinet__shadow-floor" aria-hidden="true"></div>
+      <div class="arcade-cabinet__tilt">
+        <div class="arcade-cuboid">
+          <div class="arcade-cuboid__face arcade-cuboid__face--front">
+            <div class="arcade-cabinet__bezel">
+              <div class="arcade-cabinet__screen">
+                <a class="arcade-cabinet__screen-link external-link" href="https://dva-nu.vercel.app/dragon-trail/" target="_blank" rel="noopener noreferrer">Dragon Trail</a>
+              </div>
+              <div class="arcade-cabinet__marquee">Dragon Trail v5.2</div>
+            </div>
+            <div class="arcade-cabinet__front-art" aria-hidden="true">
+              <div class="dragon-eye"></div>
+              <div class="dragon-scales">
+                <span class="dragon-scale"></span><span class="dragon-scale"></span><span class="dragon-scale"></span>
+                <span class="dragon-scale"></span><span class="dragon-scale"></span><span class="dragon-scale"></span>
+                <span class="dragon-scale"></span><span class="dragon-scale"></span><span class="dragon-scale"></span>
+              </div>
+            </div>
+          </div>
+          <div class="arcade-cuboid__face arcade-cuboid__face--right">
+            <div class="arcade-cabinet__side-art" aria-hidden="true"></div>
+            <div class="arcade-cabinet__side-vents" aria-hidden="true"></div>
+          </div>
+          <div class="arcade-cuboid__face arcade-cuboid__face--top" aria-hidden="true"></div>
+        </div>
+      </div>
+    </div>
+  </article>
+
 </div>
 
 </div>
