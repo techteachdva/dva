@@ -11,7 +11,7 @@ const VERSION := "0.3.0"
 @onready var editor_btn:   Button = $Center/VBox/EditorBtn
 @onready var credits_btn:  Button = $Center/VBox/CreditsBtn
 @onready var shop_btn:     Button = $Center/VBox/ShopBtn
-	@onready var options_btn:  Button = $Center/VBox/OptionsBtn
+@onready var options_btn:  Button = $Center/VBox/OptionsBtn
 @onready var quit_btn:     Button = $Center/VBox/QuitBtn
 @onready var version_lbl:  Label  = $VersionLabel
 @onready var credits_panel: Panel  = $CreditsPanel
@@ -62,20 +62,20 @@ func _ready() -> void:
 
 func _style_buttons() -> void:
 	var icons := {
-		play_btn:       "▶  ",
-		continue_btn:   "⏵  ",
-		load_custom_btn:"📋  ",
-		editor_btn:     "⚒  ",
-		credits_btn:  "ⓘ  ",
-		shop_btn:     "🛒  ",
-		options_btn:  "⚙  ",
-		quit_btn:     "✕  ",
+		"PlayBtn":       "▶  ",
+		"ContinueBtn":   "▶  ",
+		"LoadCustomBtn": "▼  ",
+		"EditorBtn":     "⚒  ",
+		"CreditsBtn":    "ⓘ  ",
+		"ShopBtn":       "★  ",
+		"OptionsBtn":    "≡  ",
+		"QuitBtn":       "✕  ",
 	}
 	for btn: Button in _menu_buttons:
-		var prefix: String = icons.get(btn, "")
+		var prefix: String = icons.get(btn.name, "")
 		if not btn.text.begins_with(prefix):
 			btn.text = prefix + btn.text
-		btn.custom_minimum_size = Vector2(320, 68)
+		btn.custom_minimum_size = Vector2(320, 52)
 		btn.add_theme_font_size_override("font_size", 28)
 		# Text colors — bright, readable
 		btn.add_theme_color_override("font_color", Color(0.95, 0.93, 1.0, 1.0))
