@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
-	<head>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
-		<title>Physix</title>
-		<style>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
+	<title>Physix</title>
+	<style>
 html, body, #canvas {
 	margin: 0;
 	padding: 0;
@@ -89,30 +89,74 @@ body {
 	text-align: center;
 	z-index: 1;
 }
-		</style>
-		<link id="-gd-engine-icon" rel="icon" type="image/png" href="physix.icon.png" />
-<link rel="apple-touch-icon" href="physix.apple-touch-icon.png"/>
+	</style>
+	<link id="-gd-engine-icon" rel="icon" type="image/png" href="index.icon.png" />
+<link rel="apple-touch-icon" href="index.apple-touch-icon.png"/>
+<link rel="manifest" href="index.manifest.json">
 
-	</head>
-	<body>
-		<canvas id="canvas">
-			Your browser does not support the canvas tag.
-		</canvas>
+</head>
+<body>
+	<canvas id="canvas">
+		Your browser does not support the canvas tag.
+	</canvas>
 
-		<noscript>
-			Your browser does not support JavaScript.
-		</noscript>
+	<noscript>
+		Your browser does not support JavaScript.
+	</noscript>
 
-		<div id="status">
-			<img id="status-splash" class="show-image--true fullsize--true use-filter--false" src="physix.png" alt="">
-			<progress id="status-progress"></progress>
-			<div id="status-notice"></div>
-		</div>
+	<div id="status">
+		<img id="status-splash" class="show-image--true fullsize--true use-filter--false" src="physix.png" alt="">
+		<progress id="status-progress"></progress>
+		<div id="status-notice"></div>
+	</div>
 
-		<script src="physix.js"></script>
-		<script>
-const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"physix","experimentalVK":false,"fileSizes":{"physix.pck":62039976,"physix.wasm":35749181},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4};
-const GODOT_THREADS_ENABLED = false;
+	<!-- AudioContext wrapper MUST run before physix.js loads so the engine
+		 caches the wrapped constructor instead of the native one. -->
+	<script>
+(function() {
+	const OriginalAudioContext = window.AudioContext || window.webkitAudioContext;
+	if (!OriginalAudioContext) return;
+
+	// Keep a reference to all contexts we create so we can resume them later
+	const _godotAudioContexts = [];
+	window.__godotAudioContexts = _godotAudioContexts;
+
+	window.AudioContext = function(...args) {
+		const ctx = new OriginalAudioContext(...args);
+		_godotAudioContexts.push(ctx);
+		return ctx;
+	};
+	window.AudioContext.prototype = OriginalAudioContext.prototype;
+	for (const key of Object.getOwnPropertyNames(OriginalAudioContext)) {
+		if (key !== 'prototype' && key !== 'length' && key !== 'name') {
+			window.AudioContext[key] = OriginalAudioContext[key];
+		}
+	}
+	if (window.webkitAudioContext) {
+		window.webkitAudioContext = window.AudioContext;
+	}
+
+	// Resume every context we know about on first genuine interaction
+	const resumeAll = function() {
+		for (const ctx of _godotAudioContexts) {
+			if (ctx.state === 'suspended') {
+				ctx.resume().catch(() => {});
+			}
+		}
+		document.removeEventListener('click', resumeAll);
+		document.removeEventListener('touchstart', resumeAll);
+		document.removeEventListener('keydown', resumeAll);
+	};
+	document.addEventListener('click', resumeAll);
+	document.addEventListener('touchstart', resumeAll);
+	document.addEventListener('keydown', resumeAll);
+})();
+	</script>
+
+	<script src="physix.js"></script>
+	<script>
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"index","experimentalVK":false,"fileSizes":{"index.pck":62062144,"index.wasm":1509558},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":"index.service.worker.js"};
+const GODOT_THREADS_ENABLED = true;
 const engine = new Engine(GODOT_CONFIG);
 
 (function () {
@@ -174,7 +218,6 @@ const engine = new Engine(GODOT_CONFIG);
 			} catch (err) {
 				serviceWorkerRegistrationPromise = Promise.reject(new Error('Service worker registration failed.'));
 			}
-			// There's a chance that installing the service worker would fix the issue
 			Promise.race([
 				serviceWorkerRegistrationPromise.then((registration) => {
 					if (registration != null) {
@@ -182,18 +225,15 @@ const engine = new Engine(GODOT_CONFIG);
 					}
 					return registration;
 				}).then(() => engine.installServiceWorker()),
-				// For some reason, `getRegistration()` can stall
 				new Promise((resolve) => {
 					setTimeout(() => resolve(), 2000);
 				}),
 			]).then(() => {
-				// Reload if there was no error.
 				window.location.reload();
 			}).catch((err) => {
 				console.error('Error while registering service worker:', err);
 			});
 		} else {
-			// Display the message as usual
 			const missingMsg = 'Error\nThe following features required to run Godot projects on the Web are missing:\n';
 			displayFailureNotice(missingMsg + missing.join('\n'));
 		}
@@ -214,7 +254,7 @@ const engine = new Engine(GODOT_CONFIG);
 		}, displayFailureNotice);
 	}
 }());
-		</script>
-	</body>
+	</script>
+</body>
 </html>
 
