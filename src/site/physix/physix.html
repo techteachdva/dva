@@ -110,46 +110,53 @@ body {
 		<div id="status-notice"></div>
 	</div>
 
-	<script src="physix.js"></script>
+	<!-- AudioContext wrapper MUST run before physix.js loads so the engine
+		 caches the wrapped constructor instead of the native one. -->
 	<script>
-// === Transparent Audio Unlock =================================================
-// Browsers require a user gesture before AudioContext can run. Godot's
-// AudioWorklet mixer creates its context during engine init. We wrap the
-// native AudioContext constructor so any context created by Godot (or
-// anything else) automatically gains one-shot interaction listeners that
-// resume it the moment the player clicks, taps, or presses a key. No overlay,
-// no extra step — the first natural interaction unlocks audio silently.
 (function() {
 	const OriginalAudioContext = window.AudioContext || window.webkitAudioContext;
 	if (!OriginalAudioContext) return;
 
+	// Keep a reference to all contexts we create so we can resume them later
+	const _godotAudioContexts = [];
+	window.__godotAudioContexts = _godotAudioContexts;
+
 	window.AudioContext = function(...args) {
 		const ctx = new OriginalAudioContext(...args);
-		if (ctx.state === 'suspended') {
-			const unlock = function() {
-				ctx.resume().catch(() => {});
-				document.removeEventListener('click', unlock);
-				document.removeEventListener('touchstart', unlock);
-				document.removeEventListener('keydown', unlock);
-			};
-			document.addEventListener('click', unlock);
-			document.addEventListener('touchstart', unlock);
-			document.addEventListener('keydown', unlock);
-		}
+		_godotAudioContexts.push(ctx);
 		return ctx;
 	};
 	window.AudioContext.prototype = OriginalAudioContext.prototype;
-	// Copy static methods
 	for (const key of Object.getOwnPropertyNames(OriginalAudioContext)) {
 		if (key !== 'prototype' && key !== 'length' && key !== 'name') {
 			window.AudioContext[key] = OriginalAudioContext[key];
 		}
 	}
-})();
-// =============================================================================
+	if (window.webkitAudioContext) {
+		window.webkitAudioContext = window.AudioContext;
+	}
 
-const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"physix","experimentalVK":false,"fileSizes":{"physix.pck":62060560,"physix.wasm":1605674},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":"physix.service.worker.js"};
-const GODOT_THREADS_ENABLED = true;
+	// Resume every context we know about on first genuine interaction
+	const resumeAll = function() {
+		for (const ctx of _godotAudioContexts) {
+			if (ctx.state === 'suspended') {
+				ctx.resume().catch(() => {});
+			}
+		}
+		document.removeEventListener('click', resumeAll);
+		document.removeEventListener('touchstart', resumeAll);
+		document.removeEventListener('keydown', resumeAll);
+	};
+	document.addEventListener('click', resumeAll);
+	document.addEventListener('touchstart', resumeAll);
+	document.addEventListener('keydown', resumeAll);
+})();
+	</script>
+
+	<script src="physix.js"></script>
+	<script>
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"physix","experimentalVK":false,"fileSizes":{"physix.pck":62060624,"physix.wasm":1509558},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":"physix.service.worker.js"};
+const GODOT_THREADS_ENABLED = false;
 const engine = new Engine(GODOT_CONFIG);
 
 (function () {
