@@ -46,6 +46,20 @@ const Utils = {
     },
 
     /**
+     * Seeded random choice from array.
+     */
+    seededChoice(arr, rng) {
+        return arr[Math.floor(rng() * arr.length)];
+    },
+
+    /**
+     * Seeded random integer in range [min, max].
+     */
+    seededRandInt(min, max, rng) {
+        return Math.floor(rng() * (max - min + 1)) + min;
+    },
+
+    /**
      * Shuffle array in-place (Fisher-Yates).
      */
     shuffle(arr) {

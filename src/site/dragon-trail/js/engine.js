@@ -121,7 +121,9 @@ class TerminalEngine {
 
     scrollToBottom() {
         if (this.scrollOnPrint) {
-            this.output.scrollTop = this.output.scrollHeight;
+            requestAnimationFrame(() => {
+                this.output.scrollTop = this.output.scrollHeight;
+            });
         }
         if (typeof Audio !== 'undefined') Audio.scrollSound();
     }

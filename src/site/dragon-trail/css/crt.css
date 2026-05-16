@@ -191,6 +191,27 @@ body {
     mix-blend-mode: screen;
 }
 
+/* Scanlines-off: clean terminal mode */
+body.scanlines-off .scanlines {
+    display: none !important;
+}
+body.scanlines-off .flicker {
+    animation: none;
+}
+body.scanlines-off .phosphor-overlay {
+    opacity: 0;
+}
+body.scanlines-off .vignette {
+    box-shadow: none;
+}
+body.scanlines-off .terminal {
+    color: #3f3;
+    text-shadow: none;
+}
+body.scanlines-off .terminal-output::-webkit-scrollbar-thumb {
+    background: rgba(51, 255, 51, 0.5);
+}
+
 /* Terminal */
 .terminal {
     position: relative;
@@ -214,7 +235,7 @@ body {
     overflow-x: hidden;
     white-space: pre-wrap;
     word-wrap: break-word;
-    padding-bottom: 8px;
+    padding-bottom: 40px;
 }
 
 .terminal-output::-webkit-scrollbar {

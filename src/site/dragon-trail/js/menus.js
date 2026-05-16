@@ -575,6 +575,7 @@ async function handleGameStart() {
     const seed = Utils.convertSeedToInt(GameState.player.name);
     GameState.data.seed = seed;
     const rng = Utils.seededRandom(seed);
+    GameState.data.rng = rng;
 
     Terminal.println('\n--- Choose Your Skill ---', 'magenta', true);
     Terminal.println('1. Sated — You need less food and water on the road. Hunger and thirst advance slower.');

@@ -146,6 +146,10 @@ const GameState = {
             }
             const payload = JSON.parse(raw);
             this.data = this.deserialize(payload);
+            // Re-seed the RNG from the stored seed since functions can't be serialized
+            if (this.data.seed !== undefined) {
+                this.data.rng = Utils.seededRandom(this.data.seed);
+            }
             Terminal.println(`Game loaded from slot ${slot}.`, 'green');
             return true;
         } catch (e) {

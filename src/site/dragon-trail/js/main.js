@@ -321,7 +321,12 @@ async function handleHunt() {
     if (selectedWeapon === wildGameTypes[actualGame].weapon) {
         const bonus = await MiniGames.huntMini(wildGameTypes[actualGame].bonus);
         if (bonus > 0) {
-            const foodGained = Config.FOOD_PER_HUNT + bonus;
+            let foodGained = Config.FOOD_PER_HUNT + bonus;
+            if (GameState.data.nextHuntBonus) {
+                foodGained += GameState.data.nextHuntBonus;
+                Terminal.println(`The whispers guided you to richer hunting grounds. +${GameState.data.nextHuntBonus} bonus food!`, 'green');
+                GameState.data.nextHuntBonus = 0;
+            }
             GameState.resources.food += foodGained;
             Terminal.println(`Success! You caught ${actualGame} game!`);
             Terminal.println(`You gained ${foodGained} lbs of food!`);
@@ -716,8 +721,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     document.getElementById('btn-scanlines').addEventListener('click', (e) => {
-        const scanlines = document.querySelector('.scanlines');
-        scanlines.style.display = scanlines.style.display === 'none' ? 'block' : 'none';
+        document.body.classList.toggle('scanlines-off');
         e.currentTarget.classList.toggle('active');
     });
 

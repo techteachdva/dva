@@ -362,14 +362,15 @@ function getRandomDragon(biome) {
     }];
 }
 
-function getRandomEncounter(biome, encounterType) {
+function getRandomEncounter(biome, encounterType, rng) {
     const candidates = ENCOUNTER_DATA.filter(row =>
         row.biome.toUpperCase() === biome.toUpperCase() &&
         row.type.toUpperCase() === encounterType.toUpperCase()
     );
     if (candidates.length === 0) return null;
-    const data = Utils.choice(candidates);
-    const enemyHp = Array.isArray(data.hp) ? Utils.randInt(...data.hp) : data.hp;
+    const useRng = rng || Math.random;
+    const data = Utils.seededChoice(candidates, useRng);
+    const enemyHp = Array.isArray(data.hp) ? Utils.seededRandInt(data.hp[0], data.hp[1], useRng) : data.hp;
     const dprRange = Array.isArray(data.dpr) ? data.dpr : [data.dpr, data.dpr];
     const xp = Math.floor(4.5 * enemyHp);
     return new Enemy(data.name, data.ac, enemyHp, data.atk, dprRange, xp);

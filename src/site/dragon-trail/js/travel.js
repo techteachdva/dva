@@ -52,6 +52,118 @@ const UNEVENTFUL_TRAVEL_PHRASES = [
     'Your shadow stretches long across the trail, keeping perfect pace. It is the most loyal companion you have ever had.'
 ];
 
+const NON_ENCOUNTERS = [
+    {
+        title: 'Rabbit Warren',
+        art: 'nonenc_rabbit',
+        desc: 'You spot a warren of rabbits at the edge of a thicket. Their ears twitch in unison as you approach, and dozens of noses poke from burrows that honeycomb the hillside. The babies are fat and fearless, and the adults watch you with eyes like polished amber. You could hunt them, or you could walk on and let them live.',
+        choices: [
+            { label: 'Hunt the rabbits', effect: async () => { const food = Utils.randInt(3, 6); Resources.modify('food', food); Terminal.println(`You catch ${food} lbs of rabbit meat.`, 'green'); } },
+            { label: 'Move on peacefully', effect: async () => { Terminal.println('You nod to the rabbits and continue. They return to their business.', 'cyan'); } }
+        ]
+    },
+    {
+        title: 'Old Signpost',
+        art: 'nonenc_signpost',
+        desc: 'A weathered signpost leans at a drunken angle, its paint blistered and its wood silver with age. One arrow points toward "The Dragon\'s Maw" and another toward "Safe Haven — 3 days." Neither destination exists on any map you have ever seen. The nails that hold the arrows look freshly hammered.',
+        choices: [
+            { label: 'Follow the Safe Haven arrow', effect: async () => { travelMiles(15); Terminal.println('You find a hidden grove with clean water. +15 miles.', 'green'); } },
+            { label: 'Ignore it and press on', effect: async () => { Terminal.println('The signpost creaks behind you, though there is no wind.', 'dim'); } }
+        ]
+    },
+    {
+        title: 'Mushroom Ring',
+        art: 'nonenc_mushroom_ring',
+        desc: 'A perfect circle of mushrooms grows in a meadow, each cap broad as a dinner plate and spotted with red. The grass inside the ring is darker, softer, and somehow warmer than the grass outside. Your grandmother told you never to step inside a fairy ring. Your stomach tells you the mushrooms might be edible.',
+        choices: [
+            { label: 'Harvest the mushrooms', effect: async () => { const herbs = Utils.randInt(2, 4); Resources.modify('herbs', herbs); Terminal.println(`You harvest ${herbs} medicinal mushrooms.`, 'green'); } },
+            { label: 'Step inside the ring', effect: async () => { Resources.modifyHealth(-5); Terminal.println('The world spins. You wake outside the ring, bruised and bewildered. -5 HP.', 'red'); } },
+            { label: 'Walk around it', effect: async () => { Terminal.println('You give the ring a wide berth. Better safe than sorcerous.', 'cyan'); } }
+        ]
+    },
+    {
+        title: 'Abandoned Campfire',
+        art: 'nonenc_campfire',
+        desc: 'Ashes still warm. A pot of stew, untouched, hangs over a bed of coals that glow like a dragon\'s eye. Whoever left here did so in a hurry, perhaps frightened by something in the dark. The stew smells of thyme and venison, and your stomach growls in response.',
+        choices: [
+            { label: 'Eat the stew', effect: async () => { Resources.modify('food', 4); Terminal.println('The stew is rich and filling. +4 food.', 'green'); } },
+            { label: 'Gather the coals and move on', effect: async () => { Resources.modify('wood', 3); Terminal.println('You take the hot coals and kindling. +3 wood.', 'yellow'); } }
+        ]
+    },
+    {
+        title: 'Singing Stream',
+        art: 'nonenc_stream',
+        desc: 'A stream threads between mossy stones, and as the water passes over a particular arrangement of rocks, it produces notes: a melody you almost recognize from childhood. The water is so clear you can count the pebbles on the bottom. Drinking from it tastes like honey and something older than honey.',
+        choices: [
+            { label: 'Fill all containers', effect: async () => { Resources.modify('water', 16); Terminal.println('The water is cold and pure. +16 water.', 'green'); } },
+            { label: 'Sit and listen', effect: async () => { Resources.modifyHealth(5); Terminal.println('The melody soothes your soul. +5 HP.', 'cyan'); } }
+        ]
+    },
+    {
+        title: 'Petrified Tree',
+        art: 'nonenc_petrified_tree',
+        desc: 'A tree stands alone on the ridge, but it is not wood. Every branch, every leaf, every knot has turned to stone, preserved in a moment of midsummer bloom by magic or catastrophe. The bark is warm to the touch, and when you press your ear to the trunk you hear a heartbeat that is not yours.',
+        choices: [
+            { label: 'Chip off a piece', effect: async () => { Resources.modifyGold(Utils.randInt(5, 12)); Terminal.println('A gem merchant would pay well for this. You pocket a shard.', 'green'); } },
+            { label: 'Leave an offering', effect: async () => { Resources.modify('food', -1); Resources.modifyHealth(8); Terminal.println('You leave a ration at its roots. The warmth spreads through you. +8 HP.', 'cyan'); } }
+        ]
+    },
+    {
+        title: 'Lost Doll',
+        art: 'nonenc_doll',
+        desc: 'A wooden doll sits against a stone, its paint faded, one arm missing. It wears a dress made from a handkerchief embroidered with initials you do not recognize. Something about its smile is too knowing, too patient. You wonder how long it has been waiting here, and what — or who — it is waiting for.',
+        choices: [
+            { label: 'Take it', effect: async () => { Resources.modify('supplies', 1); Terminal.println('You tuck the doll into your pack. It feels lighter than it should.', 'yellow'); } },
+            { label: 'Leave it', effect: async () => { Terminal.println('You walk past. When you glance back, the doll is gone.', 'dim'); } }
+        ]
+    },
+    {
+        title: 'Message in a Bottle',
+        art: 'nonenc_bottle',
+        desc: 'A corked bottle bobs in a puddle, though it has not rained in days. Inside is a scrap of parchment with three words: "Turn back now." The handwriting is yours. You do not remember writing it, and the ink is still wet.',
+        choices: [
+            { label: 'Drink the water inside', effect: async () => { Resources.modify('water', 4); Terminal.println('The water tastes of salt and memory. +4 water.', 'green'); } },
+            { label: 'Smash the bottle', effect: async () => { Terminal.println('The glass shatters. The note burns to ash before it hits the ground.', 'red'); } }
+        ]
+    },
+    {
+        title: 'Bone Cache',
+        art: 'nonenc_bones',
+        desc: 'A mound of earth has been recently disturbed, and the bones protruding from it are too large for deer, too small for bear. They are arranged in a pattern: a spiral, a star, a warning. Beneath the bones you find a leather pouch heavy with silver dust and a rusted knife that still holds an edge.',
+        choices: [
+            { label: 'Take the loot', effect: async () => { Resources.modifyGold(Utils.randInt(10, 20)); Terminal.println('The silver dust glitters in your palm. +gold.', 'green'); } },
+            { label: 'Bury the bones properly', effect: async () => { Resources.modifyHealth(5); Terminal.println('You say a few words and cover them with earth. The weight on your chest lifts. +5 HP.', 'cyan'); } }
+        ]
+    },
+    {
+        title: 'Hollow Log',
+        art: 'nonenc_honey_log',
+        desc: 'A fallen oak has rotted hollow, and bees have claimed the cavity as their kingdom. The hum is audible from ten paces away, and the scent of dark honey wraps around you like a cloak. You can see combs through a crack in the trunk, golden and dripping.',
+        choices: [
+            { label: 'Smoke out the bees and harvest', effect: async () => { Resources.modify('food', Utils.randInt(4, 7)); Terminal.println('The honey is dark and rich. +food.', 'green'); } },
+            { label: 'Let them be', effect: async () => { Terminal.println('You pass the log without disturbing the hive. The hum follows you for a mile.', 'cyan'); } }
+        ]
+    },
+    {
+        title: 'Traveler Graffiti',
+        art: 'nonenc_graffiti',
+        desc: 'The wall of a crumbling ruin is covered in graffiti left by a hundred travelers. Names, dates, crude maps, and warnings. One inscription reads: "The merchant at mile 340 sells poison as potions." Another says: "The dragon sleeps at noon." You add your own mark beneath them all.',
+        choices: [
+            { label: 'Copy the warnings into your journal', effect: async () => { GameState.addJournalEntry('Copied traveler graffiti: merchant warning, dragon sleep hint.'); Terminal.println('The warnings are etched into your memory.', 'green'); } },
+            { label: 'Ignore and move on', effect: async () => { Terminal.println('Graffiti is just gossip carved in stone.', 'cyan'); } }
+        ]
+    },
+    {
+        title: 'Distant Smoke Signal',
+        art: 'nonenc_smoke',
+        desc: 'A column of smoke rises from a valley to the north, thick and deliberate. Someone is burning green wood, which means they are either inexperienced or desperate. The smoke forms shapes: first a sword, then a question mark, then a hand reaching upward.',
+        choices: [
+            { label: 'Investigate the signal', effect: async () => { Resources.modify('supplies', 2); Resources.modify('wood', 3); Terminal.println('You find a stranded caravan. They share supplies in exchange for directions. +2 supplies, +3 wood.', 'green'); } },
+            { label: 'Avoid it', effect: async () => { Terminal.println('You turn south. The smoke dissipates as if it never existed.', 'dim'); } }
+        ]
+    }
+];
+
 const BIOME_EVENT_CHAINS = {
     'Forest': [
         { name: 'Whispering Woods', desc: 'The trees seem to speak your name. Not the wind, not the creak of branches, but actual syllables formed from the rustle of leaves. You turn and ask who is there, and the forest laughs in a thousand green voices. You flee with scratches you do not remember receiving.', effect: async () => { Resources.modifyHealth(-3); } },
@@ -143,13 +255,14 @@ const SCOUTING_EVENTS = [
 ];
 
 function changeWeather() {
+    const rng = GameState.data.rng || Math.random;
     const biome = GameState.journey.currentBiome.toLowerCase();
     let candidates = [...WEATHER_TYPES];
     if (biome.includes('desert')) candidates = candidates.filter(w => w.name !== 'Snow' && w.name !== 'Rain');
     if (biome.includes('tundra') || biome.includes('mountain')) candidates = candidates.filter(w => w.name !== 'Heat Wave');
     if (biome.includes('swamp')) candidates = candidates.filter(w => w.name !== 'Snow');
-    const next = Utils.choice(candidates);
-    GameState.data.weather = { condition: next.name, duration: Utils.randInt(1, 3) };
+    const next = Utils.seededChoice(candidates, rng);
+    GameState.data.weather = { condition: next.name, duration: Utils.seededRandInt(1, 3, rng) };
     Terminal.println(`\nThe weather changes: ${next.name}. ${next.desc}`, 'cyan');
     GameState.addJournalEntry(`Weather changed to ${next.name}.`);
 }
@@ -352,9 +465,10 @@ async function handleCrossroads(milestone) {
 }
 
 async function triggerRandomEncounter(encounterNamesOnDays, day) {
-    const roll = Math.random();
+    const rng = GameState.data.rng || Math.random;
+    const roll = rng();
     const currentDay = day || GameState.data.time.day;
-    if (GameState.data.nemeses.length > 0 && Math.random() < 0.12) {
+    if (GameState.data.nemeses.length > 0 && rng() < 0.12) {
         const nemesisData = GameState.data.nemeses.shift();
         const nemesis = new Enemy(nemesisData.name, nemesisData.ac, nemesisData.hp, nemesisData.atkModifier, nemesisData.dprRange, nemesisData.xp);
         Terminal.println(`\n*** A wounded enemy ambushes you! ***`, 'red', true);
@@ -369,8 +483,8 @@ async function triggerRandomEncounter(encounterNamesOnDays, day) {
         GameState.data.encounterChance = 0.01;
         const biome = GameState.journey.currentBiome;
         const types = ['FLORA', 'FAUNA', 'HUMANOID', 'TYPICAL'];
-        const encounterType = Utils.choice(types);
-        const enemy = getRandomEncounter(biome, encounterType);
+        const encounterType = Utils.seededChoice(types, rng);
+        const enemy = getRandomEncounter(biome, encounterType, rng);
         if (enemy) {
             GameState.data.pendingEnemy = enemy;
             GameState.data.encounterTriggered = true;
@@ -404,7 +518,51 @@ const FOUND_OBJECTS = [
     { name: 'Stone Dice', desc: 'A pair of dice carved from granite, the pips inlaid with silver. They are too heavy for games, too crude for art. You roll them once and they both show snake eyes. You do not roll them again, but you keep them because throwing them away feels like a dare.', effect: () => { Resources.modifyGold(5); } }
 ];
 
-const WHISPERS = {
+const FORESHADOW_WHISPERS = {
+    encounter: [
+        'You find claw marks on a tree taller than a house. Something big hunts here.',
+        'A merchant\'s bell lies in the mud, still polished. Someone passed recently.',
+        'The wind carries a scent of sulfur and scales. You are not the only predator on this road.',
+        'Fresh blood darkens the trail ahead. It is not human, but it is recent.',
+        'You hear armor clinking in the distance, then silence, then armor again.',
+        'A campfire still smolders, but the ashes are shaped like a skull.',
+        'The birds have stopped singing. They know something you do not.'
+    ],
+    biome: [
+        'The trees thin ahead. You smell salt on a wind that should be dry.',
+        'The ground grows soft beneath your boots. Water waits in the dark.',
+        'The air thins and the cold bites deeper. Stone and ice are coming.',
+        'Grass gives way to sand. The horizon turns the color of a forge.',
+        'The canopy thickens until noon looks like dusk. Something watches from the branches.',
+        'The trail winds upward into mist and memory. The mountains claim all who enter.',
+        'Snow begins to fall though the sky was clear an hour ago. The tundra does not ask permission.'
+    ],
+    merchant: [
+        'A scrap of silk caught on a thorn bears a merchant\'s stamp: a crow inside a diamond.',
+        'You find a dropped copper coin, freshly minted. A trader passed here today.',
+        'The smell of cinnamon and camel wool hangs in the air. A caravan is near.',
+        'A broken cart wheel leans against a boulder. The merchant cannot have gone far on foot.',
+        'A trail of dropped trinkets leads east: beads, buttons, a bead of sealing wax.'
+    ],
+    hunt: [
+        'Rabbit droppings, still warm, dot the path like breadcrumbs.',
+        'A game trail cuts through the undergrowth. The prints are deep and recent.',
+        'You hear the drumming of a grouse in the thicket ahead. It does not know you are downwind.',
+        'Fresh mud on the bank holds the perfect print of a deer\'s split hoof.',
+        'The bushes rustle with a rhythm too regular for wind. Something is feeding.',
+        'A plume of feathers marks where an owl struck. The prey is nearby, wounded and hiding.'
+    ],
+    humor: [
+        'A squirrel drops an acorn on your head. You decide not to fight it.',
+        'You whistle a marching tune. Your companion asks you to stop. You whistle louder.',
+        'A cloud looks exactly like your grandmother frowning. You cannot unsee it.',
+        'Your boot comes untied seventeen times today. You consider going barefoot.',
+        'A butterfly lands on your nose and stays there for a full minute. You walk cross-eyed.',
+        'You tell a joke so old even the crows groan. One of them coughs up a feather.'
+    ]
+};
+
+const ATMOSPHERIC_WHISPERS = {
     'Forest': [
         'The wind through the leaves sounds almost like laughter. You cannot find its source.',
         'Something large moves in the canopy above. The branches sway, but no bird takes flight.',
@@ -504,9 +662,37 @@ const WHISPERS = {
 };
 
 function printWhispers() {
-    const biome = GameState.journey.currentBiome;
-    const list = WHISPERS[biome] || WHISPERS['default'];
-    let whispers = [...list];
+    const rng = GameState.data.rng || Math.random;
+    const roll = rng();
+    let whisper;
+    let category = 'atmospheric';
+
+    if (roll < 0.20) {
+        category = 'encounter';
+        whisper = Utils.seededChoice(FORESHADOW_WHISPERS.encounter, rng);
+    } else if (roll < 0.40) {
+        category = 'biome';
+        whisper = Utils.seededChoice(FORESHADOW_WHISPERS.biome, rng);
+    } else if (roll < 0.55) {
+        category = 'merchant';
+        whisper = Utils.seededChoice(FORESHADOW_WHISPERS.merchant, rng);
+    } else if (roll < 0.80) {
+        category = 'hunt';
+        whisper = Utils.seededChoice(FORESHADOW_WHISPERS.hunt, rng);
+        GameState.data.nextHuntBonus = 2;
+    } else {
+        category = 'humor';
+        whisper = Utils.seededChoice(FORESHADOW_WHISPERS.humor, rng);
+    }
+
+    // Fall back to atmospheric biome whispers 30% of the time regardless
+    if (rng() < 0.30) {
+        const biome = GameState.journey.currentBiome;
+        const list = ATMOSPHERIC_WHISPERS[biome] || ATMOSPHERIC_WHISPERS['default'];
+        whisper = Utils.seededChoice(list, rng);
+    }
+
+    let whispers = [whisper];
     if (GameState.player.health < 30) {
         whispers.push('Your wounds throb in time with a distant drum.');
         whispers.push('You cough blood into your hand. No one sees.');
@@ -517,13 +703,14 @@ function printWhispers() {
     if (GameState.data.time.day > 25) {
         whispers.push('The moon is wrong. You are certain of it.');
     }
-    Terminal.println(`\n${Utils.choice(whispers)}`, 'dim');
+    Terminal.println(`\n${Utils.seededChoice(whispers, rng)}`, 'dim');
 }
 
 async function checkFoundObject() {
+    const rng = GameState.data.rng || Math.random;
     const foundChances = { 0: 0.12, 1: 0.08, 2: 0.06, 3: 0.04 };
-    if (Math.random() < (foundChances[GameState.data.difficulty] || 0.08)) {
-        const obj = Utils.choice(FOUND_OBJECTS);
+    if (rng() < (foundChances[GameState.data.difficulty] || 0.08)) {
+        const obj = Utils.seededChoice(FOUND_OBJECTS, rng);
         Terminal.println(`\nYou found something: ${obj.name}`, 'green');
         Terminal.println(obj.desc, 'white');
         GameState.addJournalEntry(`Found ${obj.name}: ${obj.desc}`);
@@ -533,9 +720,10 @@ async function checkFoundObject() {
 }
 
 async function triggerBiomeEventChain() {
+    const rng = GameState.data.rng || Math.random;
     const biome = GameState.journey.currentBiome;
     const chain = BIOME_EVENT_CHAINS[biome];
-    if (!chain || Math.random() > 0.15) return;
+    if (!chain || rng() > 0.15) return;
     for (const event of chain) {
         Terminal.println(`\n${event.name}: ${event.desc}`, 'cyan');
         GameState.addJournalEntry(`Experienced ${event.name} in the ${biome}.`);
@@ -545,8 +733,9 @@ async function triggerBiomeEventChain() {
 }
 
 async function triggerEnvironmentalEvent() {
-    if (Math.random() < 0.23) {
-        const event = Utils.choice(ENVIRONMENTAL_EVENTS);
+    const rng = GameState.data.rng || Math.random;
+    if (rng() < 0.23) {
+        const event = Utils.seededChoice(ENVIRONMENTAL_EVENTS, rng);
         Terminal.println(`\n${event.name}: ${event.description}`, 'yellow');
         GameState.addJournalEntry(`Experienced ${event.name}: ${event.description}`);
         if (event.type === 'positive' && typeof Audio !== 'undefined') Audio.goodEncounterSound();
@@ -557,8 +746,9 @@ async function triggerEnvironmentalEvent() {
 }
 
 async function triggerScoutingEvent() {
-    if (Math.random() < 0.23) {
-        const event = Utils.choice(SCOUTING_EVENTS);
+    const rng = GameState.data.rng || Math.random;
+    if (rng() < 0.23) {
+        const event = Utils.seededChoice(SCOUTING_EVENTS, rng);
         Terminal.println(`\n${event.name}: ${event.description}`, 'yellow');
         await event.effect();
         await Terminal.pause();
@@ -568,6 +758,7 @@ async function triggerScoutingEvent() {
 async function travel() {
     Audio.playMusic('travel');
     Terminal.clear();
+    const rng = GameState.data.rng || Math.random;
     const biomeKey = `biome_${GameState.journey.currentBiome.toLowerCase().replace(/\s+/g, '_')}`;
     if (typeof EXTRA_ASCII_ART !== 'undefined' && EXTRA_ASCII_ART[biomeKey]) {
         await Terminal.showAsciiArt(biomeKey, 'cyan', true);
@@ -576,17 +767,17 @@ async function travel() {
     }
 
     if (GameState.data.weather.duration <= 0) changeWeather();
-    const days = Utils.randInt(Config.MIN_DAYS_PER_TRAVEL, Config.MAX_DAYS_PER_TRAVEL);
+    const days = Utils.seededRandInt(Config.MIN_DAYS_PER_TRAVEL, Config.MAX_DAYS_PER_TRAVEL, rng);
     for (let d = 0; d < days; d++) {
         if (GameState.data.weather.duration <= 0) changeWeather();
         GameState.data.weather.duration--;
-        let miles = Utils.randInt(Config.MIN_MILES_PER_TRAVEL, Config.MAX_MILES_PER_TRAVEL);
+        let miles = Utils.seededRandInt(Config.MIN_MILES_PER_TRAVEL, Config.MAX_MILES_PER_TRAVEL, rng);
         const weatherOk = applyWeatherEffects();
         if (!weatherOk) miles = Math.floor(miles / 2);
         travelMiles(miles);
 
         let foodCost = 1, waterCost = 1;
-        if (GameState.data.difficulty === 0) { if (Math.random() < 0.5) foodCost = 0; if (Math.random() < 0.5) waterCost = 0; }
+        if (GameState.data.difficulty === 0) { if (rng() < 0.5) foodCost = 0; if (rng() < 0.5) waterCost = 0; }
         if (GameState.data.difficulty >= 2 && d > 0 && d % 3 === 0) { foodCost++; if (GameState.data.difficulty === 3) waterCost++; }
         if (GameState.data.skill === 'Sated') { foodCost = Math.max(0, foodCost - 1); waterCost = Math.max(0, waterCost - 1); }
         if (foodCost > 0) Resources.modify('food', -foodCost);
@@ -600,7 +791,7 @@ async function travel() {
 
         await advanceTime();
 
-        if (Math.random() < 0.3) {
+        if (rng() < 0.3) {
             const oldBiome = GameState.journey.currentBiome;
             GameState.journey.currentBiome = getNextBiome();
             if (oldBiome !== GameState.journey.currentBiome) {
@@ -611,7 +802,7 @@ async function travel() {
         await triggerRandomEncounter(null, GameState.data.time.day);
 
         Terminal.println(`Day ${GameState.data.time.day}: Traveled ${miles} miles through ${GameState.journey.currentBiome}. Total: ${GameState.journey.totalMilesTraveled}/${Config.TOTAL_MILES}`, 'green');
-        if (Math.random() < 0.35) printWhispers();
+        if (rng() < 0.35) printWhispers();
 
         await checkLegacyAtCurrentMile();
         await checkCrossroads();
@@ -627,13 +818,7 @@ async function travel() {
     await checkCrossroads();
 
     if (!GameState.data.encounterTriggered && !GameState.data.pendingEnemy) {
-        const biomeKey = `biome_${GameState.journey.currentBiome.toLowerCase().replace(/\s+/g, '_')}`;
-        if (typeof EXTRA_ASCII_ART !== 'undefined' && EXTRA_ASCII_ART[biomeKey]) {
-            await Terminal.showAsciiArt(biomeKey, 'cyan', true);
-        } else {
-            await Terminal.showAsciiArt('travel', 'cyan', true);
-        }
-        Terminal.println(`\n${Utils.choice(UNEVENTFUL_TRAVEL_PHRASES)}`, 'green');
+        await handleNonEncounter();
     }
 
     Terminal.println(`\nTravel complete. Total miles: ${GameState.journey.totalMilesTraveled}/${Config.TOTAL_MILES}`);
@@ -641,10 +826,31 @@ async function travel() {
     Audio.stopMusic();
 }
 
+async function handleNonEncounter() {
+    const rng = GameState.data.rng || Math.random;
+    const pool = NON_ENCOUNTERS.filter(ne => !ne.biome || ne.biome === GameState.journey.currentBiome);
+    const pick = Utils.seededChoice(pool.length > 0 ? pool : NON_ENCOUNTERS, rng);
+    if (pick.art && typeof EXTRA_ASCII_ART !== 'undefined' && EXTRA_ASCII_ART[pick.art]) {
+        await Terminal.showAsciiArt(pick.art, 'cyan', true);
+    }
+    Terminal.println(`\n${pick.title}`, 'yellow', true);
+    Terminal.println(pick.desc, 'white');
+    if (pick.choices && pick.choices.length > 0) {
+        for (let i = 0; i < pick.choices.length; i++) {
+            Terminal.println(`${i + 1}. ${pick.choices[i].label}`, 'cyan');
+        }
+        const choice = await Terminal.inputNumber('Choose: ', 1, pick.choices.length);
+        await pick.choices[choice - 1].effect();
+    } else {
+        await Terminal.pause();
+    }
+}
+
 async function handleTravel() {
     Audio.playMusic('travel');
     Terminal.clear();
-    const miles = Utils.randInt(Config.MIN_MILES_PER_TRAVEL, Config.MAX_MILES_PER_TRAVEL);
+    const rng = GameState.data.rng || Math.random;
+    const miles = Utils.seededRandInt(Config.MIN_MILES_PER_TRAVEL, Config.MAX_MILES_PER_TRAVEL, rng);
     travelMiles(miles);
     Resources.modify('food', -1);
     Resources.modify('water', -1);
@@ -655,20 +861,14 @@ async function handleTravel() {
         return;
     }
     await advanceTime();
-    if (Math.random() < 0.3) {
+    if (rng() < 0.3) {
         GameState.journey.currentBiome = getNextBiome();
     }
     await triggerRandomEncounter(null, GameState.data.time.day);
     Terminal.println(`Traveled ${miles} miles. Total: ${GameState.journey.totalMilesTraveled}/${Config.TOTAL_MILES}`, 'green');
     await checkMiniBossEncounter();
     if (!GameState.data.encounterTriggered && !GameState.data.pendingEnemy) {
-        const biomeKey = `biome_${GameState.journey.currentBiome.toLowerCase().replace(/\s+/g, '_')}`;
-        if (typeof EXTRA_ASCII_ART !== 'undefined' && EXTRA_ASCII_ART[biomeKey]) {
-            await Terminal.showAsciiArt(biomeKey, 'cyan', true);
-        } else {
-            await Terminal.showAsciiArt('travel', 'cyan', true);
-        }
-        Terminal.println(`\n${Utils.choice(UNEVENTFUL_TRAVEL_PHRASES)}`, 'green');
+        await handleNonEncounter();
     }
     await Terminal.pause();
     Audio.stopMusic();
@@ -688,7 +888,8 @@ async function checkLegacyAtCurrentMile() {
         if (entry.companionName) {
             Terminal.println(`  "Beloved companion: ${entry.companionName}"`, 'dim');
         }
-        if (entry.weaponName && Math.random() < 0.5) {
+        const rng = GameState.data.rng || Math.random;
+        if (entry.weaponName && rng() < 0.5) {
             Terminal.println(`\nYou find their ${entry.weaponName} half-buried in the dirt.`, 'yellow');
             const foundWeapon = GameState.data.items.weapons.find(w => w.name === entry.weaponName);
             if (foundWeapon) {
@@ -734,8 +935,9 @@ function getLegacyEpitaph(entry) {
             'Their story ended here. Yours continues. Walk faster.'
         ]
     };
+    const rng = GameState.data.rng || Math.random;
     const list = epitaphs[entry.deathCause] || epitaphs['unknown'];
-    return Utils.choice(list);
+    return Utils.seededChoice(list, rng);
 }
 
 async function handlePostMinibossMerchant() {
