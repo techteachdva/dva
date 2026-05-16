@@ -80,6 +80,11 @@ const HOOP_HEIGHTS: Dictionary = {
 	"high":   {"name": "High Hoop",   "offset": 3.0},
 }
 
+const START_RUNWAY_LENGTH := 30.0
+const END_RUNWAY_LENGTH := 30.0
+const RUNWAY_WIDTH := 10.0
+const FINISH_ZONE_HALF_HEIGHT := 3.0
+
 # ── Nodes ─────────────────────────────────────────────────────────────────────
 @onready var editor_camera: Camera3D = $EditorCamera
 @onready var editor_ui: CanvasLayer = $EditorUI
@@ -227,19 +232,27 @@ func _select_segment(index: int) -> void:
 #  TRACK BUILDING
 # ═══════════════════════════════════════════════════════════════════════════════
 
+func _get_all_track_segments() -> Array[Dictionary]:
+	var all_segs: Array[Dictionary] = []
+	all_segs.append({
+		"type": "start_runway", "length": START_RUNWAY_LENGTH, "width": RUNWAY_WIDTH,
+		"ramp": 0, "bank": 0, "ice": false,
+	})
+	for seg: Dictionary in _segments:
+		all_segs.append(seg.duplicate())
+	all_segs.append({
+		"type": "end_runway", "length": END_RUNWAY_LENGTH, "width": RUNWAY_WIDTH,
+		"ramp": 0, "bank": 0, "ice": false,
+	})
+	return all_segs
+
+
 func _rebuild_track() -> void:
 	# Clear existing track geometry
 	for child: Node in track_root.get_children():
 		child.queue_free()
 
-	# Build start runway + body + end runway as a single segments array
-	var all_segs: Array[Dictionary] = []
-	# Start runway
-	all_segs.append({"type": "start_runway", "length": 30, "width": 10, "ramp": 0, "bank": 0, "ice": false})
-	for seg: Dictionary in _segments:
-		all_segs.append(seg.duplicate())
-	# End runway
-	all_segs.append({"type": "end_runway", "length": 30, "width": 10, "ramp": 0, "bank": 0, "ice": false})
+	var all_segs: Array[Dictionary] = _get_all_track_segments()
 
 	var total_length := 0.0
 	for seg: Dictionary in all_segs:
@@ -248,6 +261,7 @@ func _rebuild_track() -> void:
 
 	var current_z: float = 0.0
 	var current_y: float = 0.0
+	var last_seg_x: float = 0.0
 	var index: int = 0
 
 	for seg: Dictionary in all_segs:
@@ -259,14 +273,16 @@ func _rebuild_track() -> void:
 		var is_gap: bool = seg.get("type", "") == "gap"
 
 		var cz := current_z - length / 2.0
-		var center_y := current_y + ramp * 0.5
+		var seg_x: float = seg.get("x", 0.0)
+		var seg_y: float = current_y + seg.get("y", 0.0)
+		var center_y := seg_y + ramp * 0.5
 		var ramp_angle := atan(ramp / length) if absf(ramp) > 0.01 else 0.0
 		var bank_angle := deg_to_rad(bank)
 
 		if not is_gap:
 			var body := StaticBody3D.new()
 			body.name = "Seg_%d" % index
-			body.position = Vector3(0, center_y, cz)
+			body.position = Vector3(seg_x, center_y, cz)
 			body.rotation = Vector3(ramp_angle, 0, bank_angle)
 			track_root.add_child(body)
 			body.owner = level_root
@@ -319,13 +335,18 @@ func _rebuild_track() -> void:
 				wcol.owner = level_root
 
 		current_z -= length
-		current_y += ramp
+		current_y = seg_y + ramp
+		last_seg_x = seg_x
 		index += 1
 
-	# Finish zone at the end
+	# Finish zone snaps to the trailing edge of the end runway at track height
 	var finish := Area3D.new()
 	finish.name = "FinishZone"
-	finish.position = Vector3(0, 3.0, current_z)
+	finish.position = Vector3(
+		last_seg_x,
+		current_y + FINISH_ZONE_HALF_HEIGHT,
+		current_z,
+	)
 	track_root.add_child(finish)
 	finish.owner = level_root
 
@@ -770,7 +791,8 @@ func _place_at_ray(ray: Dictionary) -> void:
 		pos.y = _get_track_surface_y(pos) + 1.5
 		node = _place_coin(pos)
 	elif selected_tool == "finish":
-		node = _place_finish(pos)
+		_rebuild_track()
+		return
 	elif selected_tool in ["snake", "gauntlet", "slalom", "tunnel"]:
 		node = _place_pattern(selected_tool, pos)
 	else:
@@ -1243,6 +1265,7 @@ func _on_save() -> void:
 	dialog.file_selected.connect(func(path: String):
 		var data := LevelSerializer.export_level(level_root)
 		data["segs"] = _segments.duplicate(true)
+		data["mid_only"] = true
 		var file := FileAccess.open(path, FileAccess.WRITE)
 		if file:
 			file.store_string(JSON.stringify(data))
@@ -1263,13 +1286,16 @@ func _on_load() -> void:
 			var text: String = file.get_as_text()
 			var parsed: Variant = JSON.parse_string(text)
 			if parsed is Dictionary:
-				LevelSerializer.import_level(parsed, level_root)
+				LevelSerializer.import_level(parsed, level_root, false)
 				var loaded_segs: Variant = parsed.get("segs", [])
 				if loaded_segs is Array and not loaded_segs.is_empty():
 					_segments = []
 					for seg: Variant in loaded_segs:
 						if seg is Dictionary:
 							if seg.has("type"):
+								var seg_type: String = seg.get("type", "")
+								if seg_type in ["start_runway", "end_runway"]:
+									continue
 								_segments.append(seg)
 							elif seg.has("t") and seg["t"] == "floor":
 								_segments.append({"type": "straight", "length": seg.get("l", 100), "width": 8, "ramp": 0, "bank": 0, "ice": false})
@@ -1332,13 +1358,16 @@ func _on_import_code() -> void:
 	var json: String = bytes.get_string_from_utf8()
 	var parsed: Variant = JSON.parse_string(json)
 	if parsed is Dictionary:
-		LevelSerializer.import_level(parsed, level_root)
+		LevelSerializer.import_level(parsed, level_root, false)
 		var loaded_segs: Variant = parsed.get("segs", [])
 		if loaded_segs is Array and not loaded_segs.is_empty():
 			_segments = []
 			for seg: Variant in loaded_segs:
 				if seg is Dictionary:
 					if seg.has("type"):
+						var seg_type: String = seg.get("type", "")
+						if seg_type in ["start_runway", "end_runway"]:
+							continue
 						_segments.append(seg)
 					elif seg.has("t") and seg["t"] == "floor":
 						_segments.append({"type": "straight", "length": seg.get("l", 100), "width": 8, "ramp": 0, "bank": 0, "ice": false})
@@ -1370,11 +1399,11 @@ func _rebuild_floor() -> void:
 
 
 func _update_grid() -> void:
-	var total_length := 60.0
-	for seg: Dictionary in _segments:
+	var all_segs: Array[Dictionary] = _get_all_track_segments()
+	var total_length := 0.0
+	var max_width := RUNWAY_WIDTH
+	for seg: Dictionary in all_segs:
 		total_length += seg.get("length", 20.0)
-	var max_width := 10.0
-	for seg: Dictionary in _segments:
 		max_width = maxf(max_width, seg.get("width", 8.0))
 	var mesh := grid_visual.mesh as PlaneMesh
 	if mesh == null:
@@ -1382,4 +1411,5 @@ func _update_grid() -> void:
 		grid_visual.mesh = mesh
 	mesh.size = Vector2(max_width + 4.0, total_length + 4.0)
 	mesh.center_offset = Vector3(0, 0, -total_length / 2.0)
+	grid_visual.position = track_root.position
 	grid_visual.visible = true

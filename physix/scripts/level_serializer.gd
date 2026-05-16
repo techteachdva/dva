@@ -23,6 +23,11 @@ const OBSTACLE_SCENES: Dictionary = {
 
 const COIN_SCENE := "res://scenes/coin.tscn"
 
+const START_RUNWAY_LENGTH := 30.0
+const END_RUNWAY_LENGTH := 30.0
+const RUNWAY_WIDTH := 10.0
+const FINISH_ZONE_HALF_HEIGHT := 3.0
+
 # ── Export: scene tree → compact dictionary ─────────────────────────────────
 
 static func export_level(level_root: Node3D) -> Dictionary:
@@ -43,6 +48,8 @@ static func export_level(level_root: Node3D) -> Dictionary:
 		var finish: Node = track_root.get_node_or_null("FinishZone")
 		if finish:
 			data["fz"] = snappedf(finish.position.z, 0.01)
+			data["fy"] = snappedf(finish.position.y, 0.01)
+			data["fx"] = snappedf(finish.position.x, 0.01)
 
 	return data
 
@@ -56,8 +63,10 @@ static func export_level_code(level_root: Node3D) -> String:
 
 # ── Import: compact dictionary → scene tree ─────────────────────────────────
 
-static func import_level(data: Dictionary, target: Node3D) -> void:
-	var version: String = data.get("v", "")
+static func import_level(data: Dictionary, target: Node3D, build_track: bool = true) -> void:
+	var version: String = str(data.get("v", FORMAT_VERSION))
+	if version.is_empty():
+		version = FORMAT_VERSION
 	if not version.begins_with("px"):
 		push_error("Unsupported level format: %s" % version)
 		return
@@ -69,13 +78,20 @@ static func import_level(data: Dictionary, target: Node3D) -> void:
 	var track_root: Node3D = _ensure_track_root(target)
 	_clear_track_children(track_root)
 
-	var track_width: float = data.get("tw", 8.0)
-	var segs: Array[Dictionary] = data.get("segs", [])
-	_build_floor_and_walls(track_root, segs, track_width)
-	var finish_z: float = data.get("fz", _calculate_end_z(segs))
-	_build_finish(track_root, finish_z)
-	_build_obstacles(track_root, data.get("obs", []))
-	_build_coins(track_root, data.get("coins", []))
+	var track_width: float = float(data.get("tw", 8.0))
+	if build_track:
+		var segs: Array[Dictionary] = _segs_from_variant(data.get("segs", []))
+		if data.get("mid_only", false):
+			segs = _ensure_runway_bookends(segs)
+		if segs.is_empty():
+			segs = _ensure_runway_bookends([])
+		var end_state: Dictionary = _build_floor_and_walls(track_root, segs, track_width)
+		var finish_z: float = float(data.get("fz", end_state.get("z", 0.0)))
+		var finish_y: float = float(data.get("fy", end_state.get("y", FINISH_ZONE_HALF_HEIGHT)))
+		var finish_x: float = float(data.get("fx", end_state.get("x", 0.0)))
+		_build_finish(track_root, finish_z, finish_y, finish_x)
+	_build_obstacles(track_root, _dict_array_from_variant(data.get("obs", [])))
+	_build_coins(track_root, _dict_array_from_variant(data.get("coins", [])))
 
 	# Re-apply materials via TrackBuilder
 	var builder: Node = track_root.get_node_or_null("TrackBuilder")
@@ -299,6 +315,19 @@ static func _clear_track_children(track_root: Node3D) -> void:
 		child.queue_free()
 
 
+static func _segs_from_variant(raw: Variant) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	if raw is Array:
+		for item: Variant in raw:
+			if item is Dictionary:
+				out.append(item)
+	return out
+
+
+static func _dict_array_from_variant(raw: Variant) -> Array[Dictionary]:
+	return _segs_from_variant(raw)
+
+
 static func _calculate_end_z(segs: Array[Dictionary]) -> float:
 	var z: float = 0.0
 	for seg: Dictionary in segs:
@@ -306,9 +335,31 @@ static func _calculate_end_z(segs: Array[Dictionary]) -> float:
 	return z
 
 
-static func _build_floor_and_walls(track_root: Node3D, segs: Array[Dictionary], track_width: float) -> void:
+static func _ensure_runway_bookends(segs: Array) -> Array[Dictionary]:
+	var result: Array[Dictionary] = []
+	for seg: Variant in segs:
+		if seg is Dictionary:
+			var seg_type: String = seg.get("type", "")
+			if seg_type in ["start_runway", "end_runway"]:
+				continue
+			result.append(seg)
+	if result.is_empty() or result[0].get("type", "") != "start_runway":
+		result.insert(0, {
+			"type": "start_runway", "length": START_RUNWAY_LENGTH, "width": RUNWAY_WIDTH,
+			"ramp": 0.0, "bank": 0.0, "ice": false,
+		})
+	if result.is_empty() or result[-1].get("type", "") != "end_runway":
+		result.append({
+			"type": "end_runway", "length": END_RUNWAY_LENGTH, "width": RUNWAY_WIDTH,
+			"ramp": 0.0, "bank": 0.0, "ice": false,
+		})
+	return result
+
+
+static func _build_floor_and_walls(track_root: Node3D, segs: Array[Dictionary], track_width: float) -> Dictionary:
 	if segs.is_empty():
 		segs = [{"type": "straight", "length": 300.0, "width": track_width, "ramp": 0.0, "bank": 0.0, "ice": false}]
+		segs = _ensure_runway_bookends(segs)
 
 	var total_length := 0.0
 	for seg: Dictionary in segs:
@@ -317,6 +368,7 @@ static func _build_floor_and_walls(track_root: Node3D, segs: Array[Dictionary], 
 
 	var current_z: float = 0.0
 	var current_y: float = 0.0
+	var last_seg_x: float = 0.0
 	var index: int = 0
 
 	for seg: Dictionary in segs:
@@ -325,22 +377,24 @@ static func _build_floor_and_walls(track_root: Node3D, segs: Array[Dictionary], 
 		if type.is_empty() and old_type == "floor":
 			type = "straight"
 
-		var length: float = seg.get("length", seg.get("l", 100.0))
-		var width: float = seg.get("width", seg.get("w", track_width))
+		var length: float = maxf(float(seg.get("length", seg.get("l", 100.0))), 0.1)
+		var width: float = float(seg.get("width", seg.get("w", track_width)))
 		var ramp: float = seg.get("ramp", 0.0)
 		var bank: float = seg.get("bank", 0.0)
 		var is_ice: bool = seg.get("ice", false)
 		var is_gap: bool = type == "gap"
 
 		var cz := current_z - length / 2.0
-		var center_y := current_y + ramp * 0.5
+		var seg_x: float = seg.get("x", 0.0)
+		var seg_y: float = current_y + seg.get("y", 0.0)
+		var center_y := seg_y + ramp * 0.5
 		var ramp_angle := atan(ramp / length) if absf(ramp) > 0.01 else 0.0
 		var bank_angle := deg_to_rad(bank)
 
 		if not is_gap:
 			var body := StaticBody3D.new()
 			body.name = "Seg_%d" % index
-			body.position = Vector3(0, center_y, cz)
+			body.position = Vector3(seg_x, center_y, cz)
 			body.rotation = Vector3(ramp_angle, 0, bank_angle)
 			track_root.add_child(body)
 			body.owner = track_root.owner
@@ -393,14 +447,21 @@ static func _build_floor_and_walls(track_root: Node3D, segs: Array[Dictionary], 
 				wcol.owner = track_root.owner
 
 		current_z -= length
-		current_y += ramp
+		current_y = seg_y + ramp
+		last_seg_x = seg_x
 		index += 1
 
+	return {
+		"z": current_z,
+		"y": current_y + FINISH_ZONE_HALF_HEIGHT,
+		"x": last_seg_x,
+	}
 
-static func _build_finish(track_root: Node3D, finish_z: float) -> void:
+
+static func _build_finish(track_root: Node3D, finish_z: float, finish_y: float = 3.0, finish_x: float = 0.0) -> void:
 	var finish := Area3D.new()
 	finish.name = "FinishZone"
-	finish.position = Vector3(0, 3.0, finish_z)
+	finish.position = Vector3(finish_x, finish_y, finish_z)
 	track_root.add_child(finish)
 	finish.owner = track_root.owner
 
