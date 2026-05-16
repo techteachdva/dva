@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 /**
- * Downloads Physix index.pck, index.wasm, and optional index.side.wasm during build.
- * Mirrors Crystal Wizards / Dungeon Class — binaries stay off GitHub; CI pulls from Releases.
+ * Downloads Physix binaries during build into src/site/physix/.
+ * Expected filenames match GODOT_CONFIG in physix.html (executable "physix"):
+ *   physix.pck, physix.wasm, optional physix.side.wasm
  *
- * Vercel (or local) env:
- *   PHYSIX_PCK_URL = https://.../index.pck (or GitHub Release asset URL)
- *   PHYSIX_WASM_URL = https://.../index.wasm
- *   PHYSIX_SIDE_WASM_URL = https://.../index.side.wasm (optional; required if export uses GDExtensions side module)
+ * Release assets on GitHub may be named index.pck / index.wasm — that is fine;
+ * URLs point to those files; this script saves them as physix.* locally.
+ *
+ * Vercel env:
+ *   PHYSIX_PCK_URL, PHYSIX_WASM_URL, PHYSIX_SIDE_WASM_URL (optional)
  */
 
 const fs = require('fs');
@@ -69,13 +71,13 @@ function download(url, redirectCount = 0) {
 
   if (PCK_URL) {
     try {
-      console.log('Downloading Physix index.pck...');
+      console.log('Downloading Physix pack → physix.pck ...');
       const buf = await download(PCK_URL);
       if (buf.length < 1000) {
         throw new Error(`File too small (${buf.length} bytes). Likely LFS pointer or 404.`);
       }
-      fs.writeFileSync(path.join(OUT_DIR, 'index.pck'), buf);
-      console.log(`Wrote index.pck (${(buf.length / 1024 / 1024).toFixed(1)} MB).`);
+      fs.writeFileSync(path.join(OUT_DIR, 'physix.pck'), buf);
+      console.log(`Wrote physix.pck (${(buf.length / 1024 / 1024).toFixed(1)} MB).`);
     } catch (err) {
       console.error('download-physix pck:', err.message);
     }
@@ -83,13 +85,13 @@ function download(url, redirectCount = 0) {
 
   if (WASM_URL) {
     try {
-      console.log('Downloading Physix index.wasm...');
+      console.log('Downloading Physix wasm → physix.wasm ...');
       const buf = await download(WASM_URL);
       if (buf.length < 1000) {
         throw new Error(`File too small (${buf.length} bytes).`);
       }
-      fs.writeFileSync(path.join(OUT_DIR, 'index.wasm'), buf);
-      console.log(`Wrote index.wasm (${(buf.length / 1024 / 1024).toFixed(1)} MB).`);
+      fs.writeFileSync(path.join(OUT_DIR, 'physix.wasm'), buf);
+      console.log(`Wrote physix.wasm (${(buf.length / 1024 / 1024).toFixed(1)} MB).`);
     } catch (err) {
       console.error('download-physix wasm:', err.message);
     }
@@ -97,15 +99,15 @@ function download(url, redirectCount = 0) {
 
   if (SIDE_WASM_URL) {
     try {
-      console.log('Downloading Physix index.side.wasm...');
+      console.log('Downloading Physix side wasm → physix.side.wasm ...');
       const buf = await download(SIDE_WASM_URL);
       if (buf.length < 1000) {
         throw new Error(`File too small (${buf.length} bytes).`);
       }
-      fs.writeFileSync(path.join(OUT_DIR, 'index.side.wasm'), buf);
-      console.log(`Wrote index.side.wasm (${(buf.length / 1024).toFixed(1)} KB).`);
+      fs.writeFileSync(path.join(OUT_DIR, 'physix.side.wasm'), buf);
+      console.log(`Wrote physix.side.wasm (${(buf.length / 1024).toFixed(1)} KB).`);
     } catch (err) {
-      console.error('download-physix index.side.wasm:', err.message);
+      console.error('download-physix physix.side.wasm:', err.message);
     }
   }
 

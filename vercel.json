@@ -9,6 +9,9 @@
     { "source": "/dragon-trail", "destination": "/dragon-trail/", "permanent": true },
     { "source": "/physix", "destination": "/physix/", "permanent": true }
   ],
+  "rewrites": [
+    { "source": "/physix/", "destination": "/physix/physix.html" }
+  ],
   "headers": [
     {
       "source": "/crystalwizards/(.*)",
