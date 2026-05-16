@@ -2,6 +2,10 @@
 
 This folder holds the Godot HTML5 export files for Vercel hosting.
 
+## dva site (`src/site/physix/`)
+
+The main **dva** Eleventy site copies the web build from here (or you sync `physix.html` / `physix.js` manually). The checked-in `src/site/physix/physix.html` adds **“Click to play”** before `startGame()` so browsers unlock audio (menu music). If you replace that HTML from a fresh Godot export, **re-apply that flow** or music will stay silent on the web until the user has triggered audio another way.
+
 ## Setup
 
 1. In Godot, go to **Project > Export** and add a **Web** preset.
