@@ -4,7 +4,7 @@
 // Incrementing CACHE_VERSION will kick off the install event and force
 // previously cached resources to be updated from the network.
 /** @type {string} */
-const CACHE_VERSION = '1778903344|1277346877';
+const CACHE_VERSION = '1778957273|5505195232';
 /** @type {string} */
 const CACHE_PREFIX = 'Physix-sw-cache-';
 const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION;
@@ -17,7 +17,7 @@ const ENSURE_CROSSORIGIN_ISOLATION_HEADERS = true;
 const CACHED_FILES = ["physix.html","physix.js","physix.offline.html","physix.icon.png","physix.apple-touch-icon.png","physix.audio.worklet.js","physix.audio.position.worklet.js"];
 // Files that we might not want the user to preload, and will only be cached on first load.
 /** @type {string[]} */
-const CACHEABLE_FILES = ["physix.wasm","physix.pck","physix.side.wasm"];
+const CACHEABLE_FILES = ["physix.wasm","physix.pck"];
 const FULL_CACHE = CACHED_FILES.concat(CACHEABLE_FILES);
 
 self.addEventListener('install', (event) => {

@@ -4,8 +4,6 @@
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
 	<title>Physix</title>
-	<!-- Patch AudioContext before Godot loads; resume helper matches Crystal Wizards web build. -->
-	<script>(function(){if(typeof window==='undefined'||!window.AudioContext)return;window.__godotAudioContexts=[];var O=window.AudioContext||window.webkitAudioContext;function P(opts){var c=arguments.length?new O(opts):new O();window.__godotAudioContexts.push(c);return c}P.prototype=O.prototype;window.AudioContext=window.webkitAudioContext=P;window.__resumeAllAudioContexts=function(){var a=window.__godotAudioContexts||[];for(var i=0;i<a.length;i++)try{if(a[i]&&typeof a[i].resume==='function'&&a[i].state==='suspended')a[i].resume()}catch(e){}}})();</script>
 	<style>
 html, body, #canvas {
 	margin: 0;
@@ -91,22 +89,6 @@ body {
 	text-align: center;
 	z-index: 1;
 }
-
-#physix-play-btn {
-	display: none;
-	position: relative;
-	z-index: 2;
-	margin-top: 1rem;
-	padding: 0.65rem 1.75rem;
-	font-size: 1.1rem;
-	font-weight: bold;
-	color: #0a0a12;
-	background: #7b9cff;
-	border: none;
-	border-radius: 8px;
-	cursor: pointer;
-	touch-action: manipulation;
-}
 	</style>
 	<link id="-gd-engine-icon" rel="icon" type="image/png" href="physix.icon.png" />
 <link rel="apple-touch-icon" href="physix.apple-touch-icon.png"/>
@@ -126,12 +108,54 @@ body {
 		<img id="status-splash" class="show-image--true fullsize--true use-filter--false" src="physix.png" alt="">
 		<progress id="status-progress"></progress>
 		<div id="status-notice"></div>
-		<button type="button" id="physix-play-btn">Click to play</button>
 	</div>
+
+	<!-- AudioContext wrapper MUST run before physix.js loads so the engine
+		 caches the wrapped constructor instead of the native one. -->
+	<script>
+(function() {
+	const OriginalAudioContext = window.AudioContext || window.webkitAudioContext;
+	if (!OriginalAudioContext) return;
+
+	// Keep a reference to all contexts we create so we can resume them later
+	const _godotAudioContexts = [];
+	window.__godotAudioContexts = _godotAudioContexts;
+
+	window.AudioContext = function(...args) {
+		const ctx = new OriginalAudioContext(...args);
+		_godotAudioContexts.push(ctx);
+		return ctx;
+	};
+	window.AudioContext.prototype = OriginalAudioContext.prototype;
+	for (const key of Object.getOwnPropertyNames(OriginalAudioContext)) {
+		if (key !== 'prototype' && key !== 'length' && key !== 'name') {
+			window.AudioContext[key] = OriginalAudioContext[key];
+		}
+	}
+	if (window.webkitAudioContext) {
+		window.webkitAudioContext = window.AudioContext;
+	}
+
+	// Resume every context we know about on first genuine interaction
+	const resumeAll = function() {
+		for (const ctx of _godotAudioContexts) {
+			if (ctx.state === 'suspended') {
+				ctx.resume().catch(() => {});
+			}
+		}
+		document.removeEventListener('click', resumeAll);
+		document.removeEventListener('touchstart', resumeAll);
+		document.removeEventListener('keydown', resumeAll);
+	};
+	document.addEventListener('click', resumeAll);
+	document.addEventListener('touchstart', resumeAll);
+	document.addEventListener('keydown', resumeAll);
+})();
+	</script>
 
 	<script src="physix.js"></script>
 	<script>
-const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"physix","experimentalVK":false,"fileSizes":{"physix.pck":62062144,"physix.wasm":1509558},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":"physix.service.worker.js"};
+const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"physix","experimentalVK":false,"fileSizes":{"physix.pck":62112984,"physix.wasm":37695054},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":"physix.service.worker.js"};
 const GODOT_THREADS_ENABLED = true;
 const engine = new Engine(GODOT_CONFIG);
 
@@ -139,7 +163,6 @@ const engine = new Engine(GODOT_CONFIG);
 	const statusOverlay = document.getElementById('status');
 	const statusProgress = document.getElementById('status-progress');
 	const statusNotice = document.getElementById('status-notice');
-	const playBtn = document.getElementById('physix-play-btn');
 
 	let initializing = true;
 	let statusMode = '';
@@ -156,9 +179,6 @@ const engine = new Engine(GODOT_CONFIG);
 		statusOverlay.style.visibility = 'visible';
 		statusProgress.style.display = mode === 'progress' ? 'block' : 'none';
 		statusNotice.style.display = mode === 'notice' ? 'block' : 'none';
-		if (playBtn) {
-			playBtn.style.display = mode === 'tap' ? 'block' : 'none';
-		}
 		statusMode = mode;
 	}
 
@@ -218,68 +238,20 @@ const engine = new Engine(GODOT_CONFIG);
 			displayFailureNotice(missingMsg + missing.join('\n'));
 		}
 	} else {
-		/* Browsers block audio until a user gesture. Defer startGame until click (same idea as Crystal Wizards). */
-		let runStarted = false;
-		function beginRun() {
-			if (runStarted) {
-				return;
-			}
-			runStarted = true;
-			try {
-				if (typeof window.__resumeAllAudioContexts === 'function') {
-					window.__resumeAllAudioContexts();
+		setStatusMode('progress');
+		engine.startGame({
+			'onProgress': function (current, total) {
+				if (current > 0 && total > 0) {
+					statusProgress.value = current;
+					statusProgress.max = total;
+				} else {
+					statusProgress.removeAttribute('value');
+					statusProgress.removeAttribute('max');
 				}
-			} catch (e) {}
-			try {
-				if (window.AudioContext) {
-					const c = new AudioContext();
-					if (c.state === 'suspended') {
-						c.resume();
-					}
-				}
-			} catch (e) {}
-			setStatusMode('progress');
-			engine.startGame({
-				'onProgress': function (current, total) {
-					if (current > 0 && total > 0) {
-						statusProgress.value = current;
-						statusProgress.max = total;
-					} else {
-						statusProgress.removeAttribute('value');
-						statusProgress.removeAttribute('max');
-					}
-				},
-			}).then(() => {
-				setStatusMode('hidden');
-				try {
-					if (typeof window.__resumeAllAudioContexts === 'function') {
-						window.__resumeAllAudioContexts();
-					}
-				} catch (e) {}
-				const canvas = document.getElementById('canvas');
-				if (canvas) {
-					const once = function () {
-						canvas.removeEventListener('click', once, true);
-						canvas.removeEventListener('touchend', once, true);
-						try {
-							if (typeof window.__resumeAllAudioContexts === 'function') {
-								window.__resumeAllAudioContexts();
-							}
-						} catch (e2) {}
-					};
-					canvas.addEventListener('click', once, true);
-					canvas.addEventListener('touchend', once, true);
-				}
-			}, displayFailureNotice);
-		}
-		setStatusMode('tap');
-		if (playBtn) {
-			playBtn.addEventListener('click', beginRun);
-			playBtn.addEventListener('touchend', function (e) {
-				e.preventDefault();
-				beginRun();
-			});
-		}
+			},
+		}).then(() => {
+			setStatusMode('hidden');
+		}, displayFailureNotice);
 	}
 }());
 	</script>
