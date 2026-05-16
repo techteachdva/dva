@@ -13,8 +13,9 @@
         "get-theme": "node src/site/get-theme.js",
         "download-pck": "node scripts/download-pck.js",
         "inject-signaling": "node scripts/inject-signaling-url.js",
-        "build": "npm-run-all get-theme build:sass download-pck download-crystalwizards inject-signaling build:eleventy",
+        "build": "npm-run-all get-theme build:sass download-pck download-crystalwizards download-physix inject-signaling build:eleventy",
         "download-crystalwizards": "node scripts/download-crystalwizards.js",
+        "download-physix": "node scripts/download-physix.js",
         "audit:morphology": "node scripts/audit-morphology-bank.mjs",
         "audit:morphology:lenient": "node scripts/audit-morphology-bank.mjs --lenient"
     },

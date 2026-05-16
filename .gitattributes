@@ -1,1 +1,1 @@
-# LFS removed - .pck and .wasm are downloaded at build time via CRYSTALWIZARDS_*_URL and DUNGEONCLASS_PCK_URL
+# LFS removed — large .pck/.wasm are fetched at build time (see scripts/download-*.js and Vercel env *_URL vars).
