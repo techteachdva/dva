@@ -1,5 +1,31 @@
 ## Unreleased
 
+### Arcade Cabinet Graphics Overhaul
+- **Games page (`/games/`)** — All 6 arcade cabinets redesigned with game-specific front art:
+  - Tech Escape: glitched terminal code overlay with VHS glitch animation
+  - Dungeon Class: wooden dungeon door with iron bands, torches on stone sconces, glowing keyhole
+  - Crystal Wizards: 4 diamond-cut crystal facets (red, blue, green, yellow) with center rainbow crystal cluster
+  - Purple Worm Escape: giant toothy mouth with inverted teeth pointing inward, dripping slime, pulsing throat glow
+  - Dragon Trail: larger CRT frame with ASCII dragon art from v5 game files, green phosphor glow, CRT flicker
+  - Physix: ball positioned ON the slope rolling down, velocity trail lines aligned to slope angle
+- All cabinets now display at double the previous size (CSS vars scaled up)
+
+### Dragon Trail v5 Major Glitch Fix + Travel Enhancement
+- **Scanlines toggle** now switches between CRT mode and clean terminal mode (visible text style change)
+- **Terminal scroll-to-bottom** fixed with `requestAnimationFrame` so the last line is always visible
+- **Non-Encounters** — 12 new travel interludes with ASCII art, descriptions, and player choice menus (e.g., Rabbit Warren, Mushroom Ring, Abandoned Campfire, Message in a Bottle)
+- **Whispers overhauled** — now foreshadow upcoming encounters, biomes, merchants, or hunting opportunities
+  - Hunt whispers grant a real +2 food bonus on the next hunt
+- **World seed integration** — the RNG derived from the player's name now deterministically controls:
+  - Weather selection, encounter generation, biome transitions, found objects, biome events, whispers, non-encounters
+  - Same name = same early-game sequence across playthroughs
+- Added seeded RNG helpers: `Utils.seededChoice()`, `Utils.seededRandInt()`
+- Save/load properly restores the seeded RNG state
+
+---
+
+## Unreleased
+
 ### Morphology Garden — Deep recursive decomposition
 
 Every word tree now decomposes to its smallest meaningful parts. The trigger was `antisocial` displaying as `ANTI + SOCIAL` instead of `ANTI + SOCI + AL`; that single bug exposed a much broader weakness — the auto-generated trees for catalog "outside examples" only ever peeled one affix.
