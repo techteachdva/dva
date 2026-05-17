@@ -1,0 +1,296 @@
+================================================================================
+GODOT WEB AUDIO + DVA DEPLOY — FIRST-TIME SETUP GUIDE
+================================================================================
+Repository : techteachdva/dva  (Vercel static site, multiple Godot games)
+Reference  : Physix (/physix/) — working template as of 2026
+Also see   : docs/PHYSIX_DEPLOY.md (game-specific paths and env vars)
+             src/site/crystalwizards/index.html (minimal shell, audio works)
+             src/site/physix/physix.shell.html (full shell with JS unlock)
+
+This document is for NEW Godot 4.x games hosted on dva. Follow it before
+your first web export so music and SFX work on the live site the first time.
+
+================================================================================
+1. WHY WEB AUDIO IS DIFFERENT
+================================================================================
+
+Browsers block audio until the user interacts (click / tap / key). Godot's web
+export uses the Web Audio API (AudioWorklets). On dva, large binaries (.pck,
+.wasm) live on GitHub Releases; Vercel serves a custom HTML shell. All of that
+must be wired together — missing one piece often means SILENT audio with no
+obvious console error.
+
+================================================================================
+2. GODOT EXPORT PRESET (DO THIS BEFORE WRITING AUDIO CODE)
+================================================================================
+
+Use the same class of build as Crystal Wizards / Physix, not a minimal export.
+
+Required export options (Godot 4.6 Web):
+  - extensions_support = true   (GDExtension / Jolt — produces side module)
+  - thread_support = true       (multi-threaded; better for audio)
+  - ensure_cross_origin_isolation_headers = true
+
+Export output folder (example for a game named "mygame"):
+  dva/src/site/mygame/_godot_export/
+
+Custom HTML shell in the GODOT project (not the generated export HTML):
+  mygame/web/custom_shell.html  →  copied into dva as mygame.shell.html
+
+Godot 4.6 normal file sizes (DO NOT panic at a 1–2 MB .wasm):
+  mygame.wasm         ~1–2 MB    (loader stub)
+  mygame.side.wasm    ~35–40 MB  (main engine — REQUIRED for audio)
+  mygame.pck          ~50+ MB    (game data)
+
+If .side.wasm is missing or tiny, audio and the game will break on Vercel.
+
+Never commit .pck / .wasm / .side.wasm to git. Upload them to a GitHub Release.
+
+================================================================================
+3. VERCEL HEADERS (REQUIRED)
+================================================================================
+
+In dva/vercel.json, add COOP + COEP for your game path (copy Physix block):
+
+  "source": "/mygame/(.*)",
+  "headers": [
+    { "key": "Cross-Origin-Opener-Policy", "value": "same-origin" },
+    { "key": "Cross-Origin-Embedder-Policy", "value": "require-corp" }
+  ]
+
+Without cross-origin isolation, SharedArrayBuffer / threaded audio may fail.
+In the browser console on the live page, crossOriginIsolated should be true.
+
+================================================================================
+4. HTML SHELL (dva) — BROWSER SIDE
+================================================================================
+
+Edit ONLY the shell template, e.g. src/site/mygame/mygame.shell.html.
+Build generates mygame.html — never commit Godot's exported HTML as mygame.html.
+
+A) AudioContext patch (in <head>, before Godot loads)
+   Track every AudioContext Godot creates and expose resume helper:
+
+   window.__godotAudioContexts = [];
+   (wrap AudioContext constructor — see physix.shell.html lines 11)
+
+   window.__resumeAllAudioContexts = function() { ... resume suspended ... };
+
+B) "Click to play" overlay
+   User must click BEFORE or AS engine starts. Pattern:
+   - Play button click → resume AudioContext → startGame()
+   - After startGame().then → call pumpAudioResume() again
+
+C) pumpAudioResume() helper (in shell <script>)
+   function pumpAudioResume() {
+     if (window.__resumeAllAudioContexts) window.__resumeAllAudioContexts();
+     if (window.mygameGodotUnlock) window.mygameGodotUnlock();  // see §5
+   }
+
+D) Canvas gestures
+   After load, keep calling pumpAudioResume on canvas click/touchend
+   (not only once — first in-game click must unlock Godot too).
+
+E) Copy from working shells
+   - Minimal:  src/site/crystalwizards/index.html
+   - Full:     src/site/physix/physix.shell.html
+
+================================================================================
+5. GODOT — AUDIO MANAGER AUTOLOAD (RECOMMENDED PATTERN)
+================================================================================
+
+Create a singleton (e.g. scripts/autoloads/audio_manager.gd) registered in
+project.godot. Reference implementation: Physix AudioManager.
+
+A) Buses
+   - Ensure Music and SFX buses exist; send both to Master.
+   - On web startup, unmute Master / Music / SFX (saved settings can be 0).
+
+B) One AudioStreamPlayer for music; short-lived players for SFX.
+
+C) Web playback type (Godot 4.6, threaded export)
+   Use AudioServer enum — NOT AudioStreamPlayer.PLAYBACK_TYPE_* (parse error):
+
+     _music.playback_type = AudioServer.PLAYBACK_TYPE_STREAM
+
+   Same for one-shot SFX players on web. Wrong constant = script won't load.
+
+   Alternative: leave default SAMPLE mode but do NOT duplicate() streams on
+   web (breaks sample bank). Physix uses STREAM + cached streams.
+
+D) Preload streams on web in _ready():
+     for path in all_music_and_sfx_paths:
+       _stream_cache[path] = load(path)
+
+E) User gesture gate (web only)
+   - _web_gesture_ok = false until first click.
+   - on_web_gesture(): set flag, resume JS audio, start pending music.
+   - Call on_web_gesture() from menu buttons AND _unhandled_input (mouse/touch/key).
+
+F) JavaScriptBridge unlock — CRITICAL (easy to get wrong)
+
+   WRONG (silent audio, no obvious error):
+     var id = JavaScriptBridge.create_callback(func)
+     JavaScriptBridge.eval("window.foo = function(){ GodotJSBridge.call(id) }")
+
+   RIGHT:
+     var _js_unlock_cb  # keep member reference so GC doesn't drop it
+     _js_unlock_cb = JavaScriptBridge.create_callback(_on_js_unlock)
+
+     func _on_js_unlock(args: Array) -> void:   # exactly one Array arg
+       on_web_gesture()
+
+     func _register_web_unlock_bridge() -> void:
+       var win = JavaScriptBridge.get_interface("window")
+       win.mygameGodotUnlock = _js_unlock_cb   # assign callable object
+
+   Do NOT type-hint JavaScriptObject on desktop — causes parse errors in editor.
+
+   Shell calls window.mygameGodotUnlock() from pumpAudioResume().
+
+G) Resume browser audio from GDScript:
+     JavaScriptBridge.eval(
+       "try{if(window.__resumeAllAudioContexts)window.__resumeAllAudioContexts();}catch(e){}",
+       true)
+
+H) Volumes
+   Clamp saved music/sfx volume to at least 0.05 on web so "0" in storage
+   doesn't silence the game forever.
+
+================================================================================
+6. SCENE TREE — UI MUST NOT LIVE UNDER Node3D
+================================================================================
+
+Menus and HUD must be under CanvasLayer (or a 2D root), NOT under Node3D.
+
+  WRONG:  Main/World (Node3D) → MainMenu (Control)
+  RIGHT:  Main/GUI (CanvasLayer) → MainMenu (Control)
+
+Physix Main.gd uses _mount_scene(): Control and Node2D → GUI; 3D levels → World.
+Without this, menu clicks may not reliably unlock web audio.
+
+================================================================================
+7. MENU / FIRST SCREEN
+================================================================================
+
+On main menu _ready():
+  AudioManager.play_music("menu")   # may queue until gesture on web
+
+On every menu button / gui_input / _input (web):
+  AudioManager.on_web_gesture()
+  AudioManager.play_sfx("menu_select")
+
+First live test: click Play on HTML overlay → wait for menu → click any button.
+You should hear menu_select SFX, then menu music.
+
+================================================================================
+8. GITHUB RELEASE + VERCEL BUILD WORKFLOW
+================================================================================
+
+After each Godot web export to _godot_export/:
+
+  cd C:\Users\phili\OneDrive\Desktop\dva
+
+  # Copy JS + worklets + icons into src/site/mygame/ (not HTML)
+  .\scripts\sync-physix-export.ps1
+      (adapt script or duplicate for new game name)
+
+  # Upload all six binaries from ONE export to release tag
+  .\scripts\upload-physix-release.ps1 `
+    -ExportDir "C:\...\dva\src\site\mygame\_godot_export" `
+    -Tag v1.0
+
+  Files that must match (same export, same tag):
+    mygame.pck
+    mygame.wasm
+    mygame.side.wasm
+    mygame.js
+    mygame.audio.worklet.js
+    mygame.audio.position.worklet.js
+
+  git add src/site/mygame/mygame.shell.html mygame.js worklets icons
+  git commit -m "Update mygame web shell and JS"
+  git push
+
+Vercel build downloads .pck / .wasm / .side.wasm from the release.
+If you only upload release assets but don't push, redeploy Vercel anyway
+(empty commit or dashboard Redeploy).
+
+Prerequisite: gh auth login
+
+================================================================================
+9. NEW GAME CHECKLIST (COPY FOR EACH PROJECT)
+================================================================================
+
+[ ] Export preset: extensions + threads + COI headers
+[ ] Export to dva/.../_godot_export/ only
+[ ] custom_shell.html with AudioContext patch + Play button + pumpAudioResume
+[ ] Shell assigns mygameGodotUnlock via JavaScriptBridge (§5F)
+[ ] AudioManager autoload with web gesture + AudioServer.PLAYBACK_TYPE_STREAM
+[ ] UI scenes on CanvasLayer, not Node3D
+[ ] vercel.json COOP/COEP for /mygame/*
+[ ] download script + validate shell script in package.json build
+[ ] .gitignore for *.pck, *.wasm, *.side.wasm
+[ ] Upload all 6 release files; verify .side.wasm ~35–40 MB
+[ ] git push shell + JS; confirm Vercel build passes
+[ ] Hard refresh / clear service worker on live URL
+[ ] Test: HTML Play → menu click → hear SFX + music
+
+================================================================================
+10. TROUBLESHOOTING (SILENT AUDIO)
+================================================================================
+
+Symptom: Game loads, no sound, no error
+  → Missing or wrong physix.side.wasm on release (check Network tab: 200, ~40MB)
+  → Old .pck cached (service worker — hard refresh)
+  → JS unlock never registered (wrong create_callback pattern)
+  → Menu under Node3D (gesture never reaches AudioManager)
+  → Saved volume 0 in local storage
+  → Mixed wasm/JS from different exports (re-upload all six files)
+
+Symptom: Parse error on audio_manager.gd
+  → Use AudioServer.PLAYBACK_TYPE_STREAM not AudioStreamPlayer.PLAYBACK_TYPE_*
+  → Remove JavaScriptObject type hints
+
+Symptom: LinkError emscripten_webgl_create_context
+  → physix.js does not match physix.wasm / side.wasm — re-export and re-upload all
+
+Symptom: Engine is not defined / $GODOT_* in HTML
+  → Committed Godot export HTML instead of shell; use *.shell.html + restore script
+
+Console checks on live /mygame/:
+  typeof window.mygameGodotUnlock === "function"
+  window.crossOriginIsolated === true
+
+================================================================================
+11. OPTIONAL PROJECT SETTINGS
+================================================================================
+
+Project Settings → Audio → General (advanced):
+  default_playback_type.web — only change if you know why. Physix sets STREAM
+  per-player in code for threaded builds.
+
+Import MP3/OGG/WAV with normal defaults. WAV + MP3 both work if playback type
+and shell are correct.
+
+================================================================================
+12. FILES TO COPY WHEN STARTING A NEW GAME
+================================================================================
+
+From Physix / dva (rename mygame → your prefix):
+
+  Godot project:
+    web/custom_shell.html          (AudioContext + Play + unlock pump)
+    scripts/autoloads/audio_manager.gd
+    scripts/main.gd                (_mount_scene pattern)
+
+  dva repo:
+    src/site/mygame/mygame.shell.html
+    scripts/download-physix.js     (clone → download-mygame.js)
+    scripts/restore-physix-shell.js
+    scripts/validate-physix-shell.js
+    scripts/upload-physix-release.ps1
+    scripts/sync-physix-export.ps1
+    vercel.json entry + rewrites
+
+End of guide.

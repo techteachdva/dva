@@ -1,5 +1,7 @@
 # Physix deploy (dva → Vercel)
 
+**New Godot games / web audio:** see [GODOT_WEB_AUDIO.txt](./GODOT_WEB_AUDIO.txt) for a first-time checklist (shell, AudioManager, releases, common silent-audio fixes).
+
 ## Layout
 
 | Path | Purpose |

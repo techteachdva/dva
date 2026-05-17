@@ -27,7 +27,7 @@ Write-Host "Export folder: $dir"
 foreach ($name in $files) {
     $path = Join-Path $dir $name
     if (-not (Test-Path $path)) {
-        throw "Missing $name — export Web from Godot (extensions_support=true) first."
+        throw "Missing $name - export Web from Godot (extensions_support=true) first."
     }
 }
 
@@ -35,14 +35,16 @@ $wasm = Get-Item (Join-Path $dir "physix.wasm")
 $sidePath = Join-Path $dir "physix.side.wasm"
 $wasmMb = [math]::Round($wasm.Length / 1MB, 1)
 Write-Host "physix.wasm size: $wasmMb MB"
+
 if (Test-Path $sidePath) {
     $sideMb = [math]::Round((Get-Item $sidePath).Length / 1MB, 1)
     Write-Host "physix.side.wasm size: $sideMb MB"
     if ($sideMb -lt 10) {
-        throw "physix.side.wasm is only $sideMb MB — export again with extensions_support enabled."
+        throw "physix.side.wasm is only $sideMb MB - export again with extensions_support enabled."
     }
-} elseif ($wasmMb -lt 10) {
-    throw "Missing physix.side.wasm and physix.wasm is only $wasmMb MB — enable extensions_support and re-export."
+}
+elseif ($wasmMb -lt 10) {
+    throw "Missing physix.side.wasm and physix.wasm is only $wasmMb MB - enable extensions_support and re-export."
 }
 
 Write-Host "Creating/updating release $Tag on $Repo ..."
@@ -66,4 +68,4 @@ foreach ($name in $files) {
 }
 
 Write-Host "Done. Verify:"
-Write-Host "  https://github.com/$Repo/releases/tag/$Tag"
+Write-Host ('  https://github.com/' + $Repo + '/releases/tag/' + $Tag)

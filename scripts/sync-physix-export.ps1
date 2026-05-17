@@ -18,5 +18,5 @@ foreach ($name in @("physix.js", "physix.audio.worklet.js", "physix.audio.positi
     Copy-Item $from (Join-Path $dst $name) -Force
     Write-Host "Copied $name"
 }
-Write-Host "Done. Do NOT copy physix.html from Godot — edit physix.shell.html only; Vercel restores physix.html at build."
-Write-Host "Upload these to GitHub Release v1.0 (same export batch): physix.pck, physix.wasm, physix.side.wasm, physix.js, physix.audio.worklet.js, physix.audio.position.worklet.js"
+Write-Host 'Done. Do NOT copy physix.html from Godot - edit physix.shell.html only; Vercel restores physix.html at build.'
+Write-Host 'Upload to GitHub Release v1.0 from the same export: physix.pck, physix.wasm, physix.side.wasm, physix.js, physix.audio.worklet.js, physix.audio.position.worklet.js'
