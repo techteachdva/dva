@@ -6,14 +6,16 @@
 |------|---------|
 | `src/site/physix/` | Static web shell served at `/physix/` |
 | `scripts/download-physix.js` | Vercel build: downloads release binaries → `physix.pck` / `physix.wasm` |
-| Godot export preset | `../dva/src/site/physix/physix.html` (from Physix project) |
+| Godot export preset | `../dva/src/site/physix/_godot_export/physix.html` (does **not** overwrite `physix.html`) |
+| `scripts/validate-physix-shell.js` | Fails CI/Vercel build if `physix.html` still has `$GODOT_*` placeholders |
 
 ## After Godot Web export
 
-1. Export to `dva/src/site/physix/` (or copy `physix.js` + `physix.audio.*.js` from `Physix/exports/`).
-2. **Do not replace** `physix.html` entirely — keep AudioContext patch, **Click to play**, and `serviceWorker` in `GODOT_CONFIG`.
-3. Update `fileSizes` in `physix.html` to match the new `.pck` / `.wasm` byte sizes (from the export HTML or file properties).
-4. Commit JS/shell/manifest/worker files only (not `.pck` / `.wasm`).
+1. Export Web from Godot (writes to `_godot_export/`, not `physix.html`).
+2. Run `.\scripts\sync-physix-export.ps1` to copy `physix.js`, worklets, and icons into `src/site/physix/`.
+3. **Never** commit `physix.html` containing `$GODOT_BASENAME` — that breaks the site (`404` on `$GODOT_BASENAME.js`, `Engine is not defined`). The deployed shell must use `<script src="physix.js"></script>`.
+4. Update `fileSizes` in the checked-in `physix.html` if pck/wasm sizes changed.
+5. Commit JS/icons/shell only (not `.pck` / `.wasm`).
 
 Or run from `dva` repo root:
 
@@ -31,12 +33,21 @@ Upload **`physix.pck`** and **`physix.wasm`** from the same export to [releases]
 
 ## Vercel environment variables
 
-```
-PHYSIX_PCK_URL=https://github.com/techteachdva/dva/releases/download/v1.0/physix.pck
-PHYSIX_WASM_URL=https://github.com/techteachdva/dva/releases/download/v1.0/physix.wasm
-```
+In **Vercel → Project → Settings → Environment Variables**, set **full HTTPS URLs** (no quotes, not `localhost`, not a path-only value):
 
-URLs can point to `index.pck` / `index.wasm` on the release; the build script always writes `physix.pck` / `physix.wasm` locally.
+| Name | Example value |
+|------|----------------|
+| `PHYSIX_PCK_URL` | `https://github.com/techteachdva/dva/releases/download/v1.0/physix.pck` |
+| `PHYSIX_WASM_URL` | `https://github.com/techteachdva/dva/releases/download/v1.0/physix.wasm` |
+| `PHYSIX_SIDE_WASM_URL` | (optional) same release tag, `physix.side.wasm` if present |
+
+Apply to **Production**, **Preview**, and **Development** if you deploy from all of them.
+
+**Common build error:** `connect ECONNREFUSED 127.0.0.1:80` means the env var points at localhost (often copied from a local `.env`). Delete or replace those values with the GitHub URLs above. The download script also falls back to the v1.0 release URLs when it detects localhost.
+
+**Optional:** leave all three unset — the build uses the same default GitHub URLs. Set `PHYSIX_SKIP_DOWNLOAD=true` only if you commit binaries locally (not recommended).
+
+Release asset names can be `index.pck` / `index.wasm`; the URL must be the real download link. The build script always saves files as `physix.pck` / `physix.wasm` in `src/site/physix/`.
 
 ## `.gitignore`
 

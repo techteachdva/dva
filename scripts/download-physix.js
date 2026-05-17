@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 /**
  * Downloads Physix binaries during build into src/site/physix/.
- * Expected filenames match GODOT_CONFIG in physix.html (executable "physix"):
- *   physix.pck, physix.wasm, optional physix.side.wasm
+ * Saves as physix.pck / physix.wasm / physix.side.wasm (matches physix.html executable name).
  *
- * Release assets on GitHub may be named index.pck / index.wasm — that is fine;
- * URLs point to those files; this script saves them as physix.* locally.
+ * Vercel environment variables (full https URL, no quotes):
+ *   PHYSIX_PCK_URL
+ *   PHYSIX_WASM_URL
+ *   PHYSIX_SIDE_WASM_URL (optional)
  *
- * Vercel env:
- *   PHYSIX_PCK_URL, PHYSIX_WASM_URL, PHYSIX_SIDE_WASM_URL (optional)
+ * If unset or set to localhost, defaults to GitHub Release v1.0 assets.
  */
 
 const fs = require('fs');
@@ -18,40 +18,115 @@ const http = require('http');
 const { URL } = require('url');
 
 const OUT_DIR = path.join(__dirname, '..', 'src', 'site', 'physix');
-const PCK_URL = process.env.PHYSIX_PCK_URL;
-const WASM_URL = process.env.PHYSIX_WASM_URL;
-const SIDE_WASM_URL = process.env.PHYSIX_SIDE_WASM_URL;
 
-if (!PCK_URL && !WASM_URL && !SIDE_WASM_URL) {
-  console.log(
-    'PHYSIX_PCK_URL, PHYSIX_WASM_URL, PHYSIX_SIDE_WASM_URL not set — skipping (place binaries locally or game fails unless files exist).'
-  );
-  process.exit(0);
+const DEFAULT_RELEASE = 'https://github.com/techteachdva/dva/releases/download/v1.0';
+const DEFAULTS = {
+  pck: `${DEFAULT_RELEASE}/physix.pck`,
+  wasm: `${DEFAULT_RELEASE}/physix.wasm`,
+  side: `${DEFAULT_RELEASE}/physix.side.wasm`,
+};
+
+const BLOCKED_HOSTS = new Set(['localhost', '127.0.0.1', '0.0.0.0', '[::1]']);
+
+function isBlockedHost(hostname) {
+  return BLOCKED_HOSTS.has(String(hostname).toLowerCase());
+}
+
+/**
+ * Normalize env URL: trim, strip quotes, add https:// if missing.
+ * @returns {string|null}
+ */
+function normalizeUrl(raw) {
+  if (raw == null) {
+    return null;
+  }
+  let value = String(raw).trim();
+  if (!value) {
+    return null;
+  }
+  if (
+    (value.startsWith('"') && value.endsWith('"')) ||
+    (value.startsWith("'") && value.endsWith("'"))
+  ) {
+    value = value.slice(1, -1).trim();
+  }
+  if (!/^https?:\/\//i.test(value)) {
+    value = `https://${value.replace(/^\/+/, '')}`;
+  }
+  const parsed = new URL(value);
+  if (!['http:', 'https:'].includes(parsed.protocol)) {
+    throw new Error(`unsupported protocol ${parsed.protocol}`);
+  }
+  return parsed.href;
+}
+
+/**
+ * Pick env URL or GitHub default; never use localhost (common misconfigured Vercel .env).
+ */
+function resolveAssetUrl(envValue, fallback, label) {
+  if (envValue == null || String(envValue).trim() === '') {
+    console.log(`${label} not set — using default:\n  ${fallback}`);
+    return fallback;
+  }
+  try {
+    const href = normalizeUrl(envValue);
+    const host = new URL(href).hostname;
+    if (isBlockedHost(host)) {
+      console.warn(
+        `${label} is "${String(envValue).trim()}" (host ${host}) — cannot use localhost on Vercel.\n` +
+          `  Using default:\n  ${fallback}\n` +
+          `  Fix in Vercel → Settings → Environment Variables: set full GitHub release URLs.`
+      );
+      return fallback;
+    }
+    console.log(`${label} → ${href}`);
+    return href;
+  } catch (err) {
+    console.warn(`${label} invalid ("${String(envValue).trim()}"): ${err.message}`);
+    console.warn(`  Using default:\n  ${fallback}`);
+    return fallback;
+  }
 }
 
 function download(url, redirectCount = 0) {
-  const MAX_REDIRECTS = 5;
+  const MAX_REDIRECTS = 8;
   if (redirectCount > MAX_REDIRECTS) {
     return Promise.reject(new Error('Too many redirects'));
   }
   return new Promise((resolve, reject) => {
-    const parsed = new URL(url);
+    let parsed;
+    try {
+      parsed = new URL(url);
+    } catch (err) {
+      reject(new Error(`Invalid URL: ${url}`));
+      return;
+    }
+    if (isBlockedHost(parsed.hostname)) {
+      reject(new Error(`Refusing to download from localhost: ${url}`));
+      return;
+    }
     const client = parsed.protocol === 'https:' ? https : http;
     const opts = {
       hostname: parsed.hostname,
       path: parsed.pathname + parsed.search,
       method: 'GET',
-      headers: { 'User-Agent': 'Node-download-physix (Vercel build)' },
+      headers: {
+        'User-Agent': 'Node-download-physix (Vercel build)',
+        Accept: '*/*',
+      },
     };
-    if (parsed.port) opts.port = parsed.port;
+    if (parsed.port) {
+      opts.port = parsed.port;
+    }
     const req = client.request(opts, (res) => {
-      const loc = res.headers.location;
-      if (loc && (res.statusCode === 301 || res.statusCode === 302)) {
+      const status = res.statusCode || 0;
+      if (status >= 300 && status < 400 && res.headers.location) {
+        const loc = res.headers.location;
         const next = loc.startsWith('http') ? loc : new URL(loc, url).href;
         return download(next, redirectCount + 1).then(resolve, reject);
       }
-      if (res.statusCode !== 200) {
-        reject(new Error(`Download failed: ${res.statusCode} ${res.statusMessage} for ${url}`));
+      if (status !== 200) {
+        reject(new Error(`HTTP ${status} for ${url}`));
         return;
       }
       const chunks = [];
@@ -64,65 +139,70 @@ function download(url, redirectCount = 0) {
   });
 }
 
+async function fetchAsset(url, destPath, label) {
+  console.log(`Downloading ${label} → ${path.basename(destPath)} ...`);
+  const buf = await download(url);
+  if (buf.length < 1000) {
+    throw new Error(`File too small (${buf.length} bytes). Likely 404 or LFS pointer.`);
+  }
+  fs.writeFileSync(destPath, buf);
+  console.log(`Wrote ${path.basename(destPath)} (${(buf.length / 1024 / 1024).toFixed(1)} MB).`);
+  return buf.length;
+}
+
 (async () => {
   if (!fs.existsSync(OUT_DIR)) {
     fs.mkdirSync(OUT_DIR, { recursive: true });
   }
 
-  let failed = false;
-
-  if (PCK_URL) {
-    try {
-      console.log('Downloading Physix pack → physix.pck ...');
-      const buf = await download(PCK_URL);
-      if (buf.length < 1000) {
-        throw new Error(`File too small (${buf.length} bytes). Likely LFS pointer or 404.`);
-      }
-      fs.writeFileSync(path.join(OUT_DIR, 'physix.pck'), buf);
-      console.log(`Wrote physix.pck (${(buf.length / 1024 / 1024).toFixed(1)} MB).`);
-    } catch (err) {
-      console.error('download-physix pck:', err.message);
-      failed = true;
-    }
+  const skip =
+    String(process.env.PHYSIX_SKIP_DOWNLOAD || '').toLowerCase() === '1' ||
+    String(process.env.PHYSIX_SKIP_DOWNLOAD || '').toLowerCase() === 'true';
+  if (skip) {
+    console.log('PHYSIX_SKIP_DOWNLOAD set — skipping binary download.');
+    process.exit(0);
   }
 
-  if (WASM_URL) {
+  const pckUrl = resolveAssetUrl(process.env.PHYSIX_PCK_URL, DEFAULTS.pck, 'PHYSIX_PCK_URL');
+  const wasmUrl = resolveAssetUrl(process.env.PHYSIX_WASM_URL, DEFAULTS.wasm, 'PHYSIX_WASM_URL');
+  const sideEnv = process.env.PHYSIX_SIDE_WASM_URL;
+  const sideUrl =
+    sideEnv && String(sideEnv).trim()
+      ? resolveAssetUrl(sideEnv, DEFAULTS.side, 'PHYSIX_SIDE_WASM_URL')
+      : null;
+
+  let failed = false;
+
+  try {
+    await fetchAsset(pckUrl, path.join(OUT_DIR, 'physix.pck'), 'pack');
+  } catch (err) {
+    console.error('download-physix pck:', err.message);
+    failed = true;
+  }
+
+  try {
+    const wasmBytes = await fetchAsset(wasmUrl, path.join(OUT_DIR, 'physix.wasm'), 'wasm');
+    if (wasmBytes < 5 * 1024 * 1024) {
+      console.warn(
+        `WARNING: physix.wasm is ${(wasmBytes / 1024 / 1024).toFixed(1)} MB — with extensions_support expect ~35–40 MB.`
+      );
+    }
+  } catch (err) {
+    console.error('download-physix wasm:', err.message);
+    failed = true;
+  }
+
+  if (sideUrl) {
     try {
-      console.log('Downloading Physix wasm → physix.wasm ...');
-      const buf = await download(WASM_URL);
-      if (buf.length < 1000) {
-        throw new Error(`File too small (${buf.length} bytes).`);
-      }
-      if (buf.length < 5 * 1024 * 1024) {
-        console.warn(
-          `WARNING: physix.wasm is ${(buf.length / 1024 / 1024).toFixed(1)} MB — with extensions_support, expect ~35–40 MB (Crystal Wizards size). Re-export Physix Web with GDExtension enabled.`
-        );
-      }
-      fs.writeFileSync(path.join(OUT_DIR, 'physix.wasm'), buf);
-      console.log(`Wrote physix.wasm (${(buf.length / 1024 / 1024).toFixed(1)} MB).`);
+      await fetchAsset(sideUrl, path.join(OUT_DIR, 'physix.side.wasm'), 'side wasm');
     } catch (err) {
-      console.error('download-physix wasm:', err.message);
-      failed = true;
+      console.warn('download-physix side wasm (optional):', err.message);
     }
   }
 
   if (failed) {
     process.exit(1);
   }
-
-  if (SIDE_WASM_URL) {
-    try {
-      console.log('Downloading Physix side wasm → physix.side.wasm ...');
-      const buf = await download(SIDE_WASM_URL);
-      if (buf.length < 1000) {
-        throw new Error(`File too small (${buf.length} bytes).`);
-      }
-      fs.writeFileSync(path.join(OUT_DIR, 'physix.side.wasm'), buf);
-      console.log(`Wrote physix.side.wasm (${(buf.length / 1024).toFixed(1)} KB).`);
-    } catch (err) {
-      console.error('download-physix physix.side.wasm:', err.message);
-    }
-  }
-
+  console.log('Physix binaries ready in src/site/physix/');
   process.exit(0);
 })();

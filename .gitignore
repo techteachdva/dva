@@ -26,6 +26,9 @@ src/site/physix/index.pck
 src/site/physix/index.wasm
 physix/exports/*.pck
 physix/exports/*.wasm
+src/site/physix/_godot_export/*.pck
+src/site/physix/_godot_export/*.wasm
+src/site/physix/_godot_export/*.side.wasm
 **/.DS_Store
 # Local build artifact (optional download)
 src/site/crystalwizards/index.side.wasm
