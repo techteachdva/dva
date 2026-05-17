@@ -29,4 +29,5 @@ Restore: git checkout -- src/site/physix/physix.html
 "@
     }
 }
-Write-Host "Done. Do NOT copy physix.html from Godot export — only JS/worklets/icons."
+Write-Host "Done. Do NOT copy physix.html from Godot export."
+Write-Host "Upload these to GitHub Release v1.0 (same export batch): physix.pck, physix.wasm, physix.side.wasm, physix.js, physix.audio.worklet.js, physix.audio.position.worklet.js"

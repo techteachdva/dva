@@ -25,7 +25,12 @@ Or run from `dva` repo root:
 
 ## GitHub Release (required for Vercel)
 
-Upload **`physix.pck`**, **`physix.wasm`**, and **`physix.side.wasm`** from the **same** Web export to [releases](https://github.com/techteachdva/dva/releases) (e.g. tag `v1.0`). Missing `physix.side.wasm` causes silent audio (no errors in the game).
+Upload **all six** files from the **same** Web export to [releases](https://github.com/techteachdva/dva/releases) (e.g. tag `v1.0`):
+
+- `physix.pck`, `physix.wasm`, `physix.side.wasm`
+- `physix.js`, `physix.audio.worklet.js`, `physix.audio.position.worklet.js`
+
+Vercel downloads these at build time so `physix.js` always matches `physix.wasm`. Mixing an old `physix.js` from git with new wasm on the release causes `LinkError: emscripten_webgl_create_context`. Missing `physix.side.wasm` causes silent audio.
 
 **Sanity check (match Crystal Wizards):** With `extensions_support=true` (required for web audio worklets), `physix.wasm` is ~35–40 MB and you may need **`physix.side.wasm`** on the release + `PHYSIX_SIDE_WASM_URL` in Vercel. A ~1–2 MB wasm is an old non-extensions build and audio will not work.
 

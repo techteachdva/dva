@@ -1,14 +1,13 @@
 #!/usr/bin/env node
 /**
- * Downloads Physix binaries during build into src/site/physix/.
- * Saves as physix.pck / physix.wasm / physix.side.wasm (matches physix.html executable name).
+ * Downloads Physix web export assets into src/site/physix/.
+ * All files must come from the SAME Godot Web export (same upload to GitHub Release).
  *
- * Vercel environment variables (full https URL, no quotes):
- *   PHYSIX_PCK_URL
- *   PHYSIX_WASM_URL
- *   PHYSIX_SIDE_WASM_URL (optional)
+ * Vercel env (optional, full https URLs):
+ *   PHYSIX_PCK_URL, PHYSIX_WASM_URL, PHYSIX_SIDE_WASM_URL
+ *   PHYSIX_JS_URL, PHYSIX_AUDIO_WORKLET_URL, PHYSIX_AUDIO_POSITION_WORKLET_URL
  *
- * If unset or set to localhost, defaults to GitHub Release v1.0 assets.
+ * Defaults: https://github.com/techteachdva/dva/releases/download/v1.0/...
  */
 
 const fs = require('fs');
@@ -24,6 +23,9 @@ const DEFAULTS = {
   pck: `${DEFAULT_RELEASE}/physix.pck`,
   wasm: `${DEFAULT_RELEASE}/physix.wasm`,
   side: `${DEFAULT_RELEASE}/physix.side.wasm`,
+  js: `${DEFAULT_RELEASE}/physix.js`,
+  audioWorklet: `${DEFAULT_RELEASE}/physix.audio.worklet.js`,
+  audioPositionWorklet: `${DEFAULT_RELEASE}/physix.audio.position.worklet.js`,
 };
 
 const BLOCKED_HOSTS = new Set(['localhost', '127.0.0.1', '0.0.0.0', '[::1]']);
@@ -32,10 +34,6 @@ function isBlockedHost(hostname) {
   return BLOCKED_HOSTS.has(String(hostname).toLowerCase());
 }
 
-/**
- * Normalize env URL: trim, strip quotes, add https:// if missing.
- * @returns {string|null}
- */
 function normalizeUrl(raw) {
   if (raw == null) {
     return null;
@@ -60,9 +58,6 @@ function normalizeUrl(raw) {
   return parsed.href;
 }
 
-/**
- * Pick env URL or GitHub default; never use localhost (common misconfigured Vercel .env).
- */
 function resolveAssetUrl(envValue, fallback, label) {
   if (envValue == null || String(envValue).trim() === '') {
     console.log(`${label} not set — using default:\n  ${fallback}`);
@@ -74,8 +69,7 @@ function resolveAssetUrl(envValue, fallback, label) {
     if (isBlockedHost(host)) {
       console.warn(
         `${label} is "${String(envValue).trim()}" (host ${host}) — cannot use localhost on Vercel.\n` +
-          `  Using default:\n  ${fallback}\n` +
-          `  Fix in Vercel → Settings → Environment Variables: set full GitHub release URLs.`
+          `  Using default:\n  ${fallback}`
       );
       return fallback;
     }
@@ -139,15 +133,70 @@ function download(url, redirectCount = 0) {
   });
 }
 
-async function fetchAsset(url, destPath, label) {
+function formatSize(bytes) {
+  if (bytes >= 1024 * 1024) {
+    return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+  }
+  return `${(bytes / 1024).toFixed(1)} KB`;
+}
+
+async function fetchAsset(url, destPath, label, minBytes = 1000) {
   console.log(`Downloading ${label} → ${path.basename(destPath)} ...`);
   const buf = await download(url);
-  if (buf.length < 1000) {
+  if (buf.length < minBytes) {
     throw new Error(`File too small (${buf.length} bytes). Likely 404 or LFS pointer.`);
   }
   fs.writeFileSync(destPath, buf);
-  console.log(`Wrote ${path.basename(destPath)} (${(buf.length / 1024 / 1024).toFixed(1)} MB).`);
+  console.log(`Wrote ${path.basename(destPath)} (${formatSize(buf.length)}).`);
   return buf.length;
+}
+
+function updateHtmlFileSizes() {
+  const htmlPath = path.join(OUT_DIR, 'physix.html');
+  if (!fs.existsSync(htmlPath)) {
+    return;
+  }
+  let html = fs.readFileSync(htmlPath, 'utf8');
+  if (html.includes('$GODOT')) {
+    return;
+  }
+  const sizes = {};
+  for (const name of ['physix.pck', 'physix.wasm', 'physix.side.wasm']) {
+    const filePath = path.join(OUT_DIR, name);
+    if (fs.existsSync(filePath)) {
+      sizes[name] = fs.statSync(filePath).size;
+    }
+  }
+  if (Object.keys(sizes).length === 0) {
+    return;
+  }
+  const replaced = html.replace(/"fileSizes":\{[^}]*\}/, `"fileSizes":${JSON.stringify(sizes)}`);
+  if (replaced !== html) {
+    fs.writeFileSync(htmlPath, replaced);
+    console.log('Updated physix.html fileSizes from downloaded assets.');
+  }
+}
+
+function validateWasmJsPair(wasmBytes) {
+  const jsPath = path.join(OUT_DIR, 'physix.js');
+  if (!fs.existsSync(jsPath)) {
+    throw new Error('Missing physix.js after download');
+  }
+  const js = fs.readFileSync(jsPath, 'utf8');
+  const extensionsWasm = wasmBytes >= 5 * 1024 * 1024;
+  const jsExpectsSide = js.includes('.side.wasm');
+
+  if (extensionsWasm && !jsExpectsSide) {
+    throw new Error(
+      'physix.wasm is an extensions build (~35–40 MB) but physix.js does not load .side.wasm.\n' +
+        'Upload physix.js from the SAME Godot export as physix.wasm (not an old export folder).'
+    );
+  }
+  if (!extensionsWasm && jsExpectsSide) {
+    console.warn(
+      'WARNING: physix.js expects .side.wasm but physix.wasm is small — mismatched export pair.'
+    );
+  }
 }
 
 (async () => {
@@ -159,33 +208,70 @@ async function fetchAsset(url, destPath, label) {
     String(process.env.PHYSIX_SKIP_DOWNLOAD || '').toLowerCase() === '1' ||
     String(process.env.PHYSIX_SKIP_DOWNLOAD || '').toLowerCase() === 'true';
   if (skip) {
-    console.log('PHYSIX_SKIP_DOWNLOAD set — skipping binary download.');
+    console.log('PHYSIX_SKIP_DOWNLOAD set — skipping download.');
     process.exit(0);
   }
 
-  const pckUrl = resolveAssetUrl(process.env.PHYSIX_PCK_URL, DEFAULTS.pck, 'PHYSIX_PCK_URL');
-  const wasmUrl = resolveAssetUrl(process.env.PHYSIX_WASM_URL, DEFAULTS.wasm, 'PHYSIX_WASM_URL');
-  const sideUrl = resolveAssetUrl(
-    process.env.PHYSIX_SIDE_WASM_URL,
-    DEFAULTS.side,
-    'PHYSIX_SIDE_WASM_URL'
-  );
+  const urls = {
+    pck: resolveAssetUrl(process.env.PHYSIX_PCK_URL, DEFAULTS.pck, 'PHYSIX_PCK_URL'),
+    wasm: resolveAssetUrl(process.env.PHYSIX_WASM_URL, DEFAULTS.wasm, 'PHYSIX_WASM_URL'),
+    side: resolveAssetUrl(process.env.PHYSIX_SIDE_WASM_URL, DEFAULTS.side, 'PHYSIX_SIDE_WASM_URL'),
+    js: resolveAssetUrl(process.env.PHYSIX_JS_URL, DEFAULTS.js, 'PHYSIX_JS_URL'),
+    audioWorklet: resolveAssetUrl(
+      process.env.PHYSIX_AUDIO_WORKLET_URL,
+      DEFAULTS.audioWorklet,
+      'PHYSIX_AUDIO_WORKLET_URL'
+    ),
+    audioPositionWorklet: resolveAssetUrl(
+      process.env.PHYSIX_AUDIO_POSITION_WORKLET_URL,
+      DEFAULTS.audioPositionWorklet,
+      'PHYSIX_AUDIO_POSITION_WORKLET_URL'
+    ),
+  };
 
   let failed = false;
   let wasmBytes = 0;
 
+  const jsAssets = [
+    { url: urls.js, file: 'physix.js', label: 'loader JS', minBytes: 50000 },
+    {
+      url: urls.audioWorklet,
+      file: 'physix.audio.worklet.js',
+      label: 'audio worklet',
+      minBytes: 200,
+    },
+    {
+      url: urls.audioPositionWorklet,
+      file: 'physix.audio.position.worklet.js',
+      label: 'audio position worklet',
+      minBytes: 200,
+    },
+  ];
+
+  for (const asset of jsAssets) {
+    try {
+      await fetchAsset(asset.url, path.join(OUT_DIR, asset.file), asset.label, asset.minBytes);
+    } catch (err) {
+      console.error(`download-physix ${asset.file}:`, err.message);
+      console.error(
+        `Upload ${asset.file} from the same Godot Web export to the GitHub release (v1.0).`
+      );
+      failed = true;
+    }
+  }
+
   try {
-    await fetchAsset(pckUrl, path.join(OUT_DIR, 'physix.pck'), 'pack');
+    await fetchAsset(urls.pck, path.join(OUT_DIR, 'physix.pck'), 'pack');
   } catch (err) {
     console.error('download-physix pck:', err.message);
     failed = true;
   }
 
   try {
-    wasmBytes = await fetchAsset(wasmUrl, path.join(OUT_DIR, 'physix.wasm'), 'wasm');
+    wasmBytes = await fetchAsset(urls.wasm, path.join(OUT_DIR, 'physix.wasm'), 'wasm');
     if (wasmBytes < 5 * 1024 * 1024) {
       console.warn(
-        `WARNING: physix.wasm is ${(wasmBytes / 1024 / 1024).toFixed(1)} MB — with extensions_support expect ~35–40 MB (audio worklets need this + physix.side.wasm).`
+        `WARNING: physix.wasm is ${formatSize(wasmBytes)} — with extensions_support expect ~35–40 MB.`
       );
     }
   } catch (err) {
@@ -193,32 +279,28 @@ async function fetchAsset(url, destPath, label) {
     failed = true;
   }
 
-  const jsPath = path.join(OUT_DIR, 'physix.js');
-  const needsSideWasm =
-    fs.existsSync(jsPath) && fs.readFileSync(jsPath, 'utf8').includes('.side.wasm');
-
-  if (needsSideWasm || wasmBytes >= 5 * 1024 * 1024) {
+  if (wasmBytes >= 5 * 1024 * 1024) {
     try {
-      await fetchAsset(sideUrl, path.join(OUT_DIR, 'physix.side.wasm'), 'side wasm');
+      await fetchAsset(urls.side, path.join(OUT_DIR, 'physix.side.wasm'), 'side wasm');
     } catch (err) {
-      console.error(
-        'download-physix side wasm (required for web audio with extensions_support):',
-        err.message
-      );
-      console.error(
-        'Upload physix.side.wasm from the same Godot export to the GitHub release (tag v1.0).'
-      );
+      console.error('download-physix side wasm:', err.message);
       failed = true;
     }
-  } else {
-    console.warn(
-      'Skipping physix.side.wasm — main wasm looks like a non-extensions build; web audio may not work.'
-    );
+  }
+
+  if (!failed) {
+    try {
+      validateWasmJsPair(wasmBytes);
+      updateHtmlFileSizes();
+    } catch (err) {
+      console.error('download-physix validate:', err.message);
+      failed = true;
+    }
   }
 
   if (failed) {
     process.exit(1);
   }
-  console.log('Physix binaries ready in src/site/physix/');
+  console.log('Physix export assets ready in src/site/physix/ (JS + wasm from same release).');
   process.exit(0);
 })();
