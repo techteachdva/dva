@@ -165,13 +165,14 @@ async function fetchAsset(url, destPath, label) {
 
   const pckUrl = resolveAssetUrl(process.env.PHYSIX_PCK_URL, DEFAULTS.pck, 'PHYSIX_PCK_URL');
   const wasmUrl = resolveAssetUrl(process.env.PHYSIX_WASM_URL, DEFAULTS.wasm, 'PHYSIX_WASM_URL');
-  const sideEnv = process.env.PHYSIX_SIDE_WASM_URL;
-  const sideUrl =
-    sideEnv && String(sideEnv).trim()
-      ? resolveAssetUrl(sideEnv, DEFAULTS.side, 'PHYSIX_SIDE_WASM_URL')
-      : null;
+  const sideUrl = resolveAssetUrl(
+    process.env.PHYSIX_SIDE_WASM_URL,
+    DEFAULTS.side,
+    'PHYSIX_SIDE_WASM_URL'
+  );
 
   let failed = false;
+  let wasmBytes = 0;
 
   try {
     await fetchAsset(pckUrl, path.join(OUT_DIR, 'physix.pck'), 'pack');
@@ -181,10 +182,10 @@ async function fetchAsset(url, destPath, label) {
   }
 
   try {
-    const wasmBytes = await fetchAsset(wasmUrl, path.join(OUT_DIR, 'physix.wasm'), 'wasm');
+    wasmBytes = await fetchAsset(wasmUrl, path.join(OUT_DIR, 'physix.wasm'), 'wasm');
     if (wasmBytes < 5 * 1024 * 1024) {
       console.warn(
-        `WARNING: physix.wasm is ${(wasmBytes / 1024 / 1024).toFixed(1)} MB — with extensions_support expect ~35–40 MB.`
+        `WARNING: physix.wasm is ${(wasmBytes / 1024 / 1024).toFixed(1)} MB — with extensions_support expect ~35–40 MB (audio worklets need this + physix.side.wasm).`
       );
     }
   } catch (err) {
@@ -192,12 +193,27 @@ async function fetchAsset(url, destPath, label) {
     failed = true;
   }
 
-  if (sideUrl) {
+  const jsPath = path.join(OUT_DIR, 'physix.js');
+  const needsSideWasm =
+    fs.existsSync(jsPath) && fs.readFileSync(jsPath, 'utf8').includes('.side.wasm');
+
+  if (needsSideWasm || wasmBytes >= 5 * 1024 * 1024) {
     try {
       await fetchAsset(sideUrl, path.join(OUT_DIR, 'physix.side.wasm'), 'side wasm');
     } catch (err) {
-      console.warn('download-physix side wasm (optional):', err.message);
+      console.error(
+        'download-physix side wasm (required for web audio with extensions_support):',
+        err.message
+      );
+      console.error(
+        'Upload physix.side.wasm from the same Godot export to the GitHub release (tag v1.0).'
+      );
+      failed = true;
     }
+  } else {
+    console.warn(
+      'Skipping physix.side.wasm — main wasm looks like a non-extensions build; web audio may not work.'
+    );
   }
 
   if (failed) {
