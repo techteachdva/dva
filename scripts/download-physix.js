@@ -151,32 +151,6 @@ async function fetchAsset(url, destPath, label, minBytes = 1000) {
   return buf.length;
 }
 
-function updateHtmlFileSizes() {
-  const htmlPath = path.join(OUT_DIR, 'physix.html');
-  if (!fs.existsSync(htmlPath)) {
-    return;
-  }
-  let html = fs.readFileSync(htmlPath, 'utf8');
-  if (html.includes('$GODOT')) {
-    return;
-  }
-  const sizes = {};
-  for (const name of ['physix.pck', 'physix.wasm', 'physix.side.wasm']) {
-    const filePath = path.join(OUT_DIR, name);
-    if (fs.existsSync(filePath)) {
-      sizes[name] = fs.statSync(filePath).size;
-    }
-  }
-  if (Object.keys(sizes).length === 0) {
-    return;
-  }
-  const replaced = html.replace(/"fileSizes":\{[^}]*\}/, `"fileSizes":${JSON.stringify(sizes)}`);
-  if (replaced !== html) {
-    fs.writeFileSync(htmlPath, replaced);
-    console.log('Updated physix.html fileSizes from downloaded assets.');
-  }
-}
-
 function validateWasmJsPair(wasmBytes) {
   const jsPath = path.join(OUT_DIR, 'physix.js');
   if (!fs.existsSync(jsPath)) {
@@ -304,7 +278,6 @@ function validateWasmJsPair(wasmBytes) {
   if (!failed) {
     try {
       validateWasmJsPair(wasmBytes);
-      updateHtmlFileSizes();
     } catch (err) {
       console.error('download-physix validate:', err.message);
       failed = true;

@@ -13,9 +13,8 @@
 
 1. Export Web from Godot (writes to `_godot_export/`, not `physix.html`).
 2. Run `.\scripts\sync-physix-export.ps1` to copy `physix.js`, worklets, and icons into `src/site/physix/`.
-3. **Never** commit `physix.html` containing `$GODOT_BASENAME` — that breaks the site (`404` on `$GODOT_BASENAME.js`, `Engine is not defined`). The deployed shell must use `<script src="physix.js"></script>`.
-4. Update `fileSizes` in the checked-in `physix.html` if pck/wasm sizes changed.
-5. Commit JS/icons/shell only (not `.pck` / `.wasm`).
+3. **Never** copy Godot’s `physix.html` into `src/site/physix/` — only edit **`physix.shell.html`**. Vercel runs `restore-physix-shell` to generate `physix.html` before deploy.
+4. Commit `physix.shell.html` + JS/worklets/icons (not `.pck` / `.wasm`).
 
 Or run from `dva` repo root:
 
