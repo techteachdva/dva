@@ -14,10 +14,18 @@ _site/
 # Game assets - downloaded at build from GitHub Releases (avoid LFS budget)
 src/site/crystalwizards/index.pck
 src/site/crystalwizards/index.wasm
+src/site/crystalwizards/index.side.wasm
 src/site/dungeonclass/*.pck
+# Physix (executable name is "physix" — not index.*)
+src/site/physix/*.pck
+src/site/physix/*.wasm
 src/site/physix/physix.pck
 src/site/physix/physix.wasm
 src/site/physix/physix.side.wasm
+src/site/physix/index.pck
+src/site/physix/index.wasm
+physix/exports/*.pck
+physix/exports/*.wasm
 **/.DS_Store
 # Local build artifact (optional download)
 src/site/crystalwizards/index.side.wasm

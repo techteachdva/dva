@@ -69,6 +69,8 @@ function download(url, redirectCount = 0) {
     fs.mkdirSync(OUT_DIR, { recursive: true });
   }
 
+  let failed = false;
+
   if (PCK_URL) {
     try {
       console.log('Downloading Physix pack → physix.pck ...');
@@ -80,6 +82,7 @@ function download(url, redirectCount = 0) {
       console.log(`Wrote physix.pck (${(buf.length / 1024 / 1024).toFixed(1)} MB).`);
     } catch (err) {
       console.error('download-physix pck:', err.message);
+      failed = true;
     }
   }
 
@@ -90,11 +93,21 @@ function download(url, redirectCount = 0) {
       if (buf.length < 1000) {
         throw new Error(`File too small (${buf.length} bytes).`);
       }
+      if (buf.length < 5 * 1024 * 1024) {
+        console.warn(
+          `WARNING: physix.wasm is ${(buf.length / 1024 / 1024).toFixed(1)} MB — with extensions_support, expect ~35–40 MB (Crystal Wizards size). Re-export Physix Web with GDExtension enabled.`
+        );
+      }
       fs.writeFileSync(path.join(OUT_DIR, 'physix.wasm'), buf);
       console.log(`Wrote physix.wasm (${(buf.length / 1024 / 1024).toFixed(1)} MB).`);
     } catch (err) {
       console.error('download-physix wasm:', err.message);
+      failed = true;
     }
+  }
+
+  if (failed) {
+    process.exit(1);
   }
 
   if (SIDE_WASM_URL) {

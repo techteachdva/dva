@@ -2,258 +2,140 @@
 <html lang="en">
 <head>
 	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
+	<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, viewport-fit=cover">
+	<meta name="mobile-web-app-capable" content="yes">
 	<title>Physix</title>
-	<style>
-html, body, #canvas {
-	margin: 0;
-	padding: 0;
-	border: 0;
-}
-
-body {
-	color: white;
-	background-color: black;
-	overflow: hidden;
-	touch-action: none;
-}
-
-#canvas {
-	display: block;
-}
-
-#canvas:focus {
-	outline: none;
-}
-
-#status, #status-splash, #status-progress {
-	position: absolute;
-	left: 0;
-	right: 0;
-}
-
-#status, #status-splash {
-	top: 0;
-	bottom: 0;
-}
-
-#status {
-	background-color: #242424;
-	display: flex;
-	flex-direction: column;
-	justify-content: center;
-	align-items: center;
-	visibility: hidden;
-}
-
-#status-splash {
-	max-height: 100%;
-	max-width: 100%;
-	margin: auto;
-}
-
-#status-splash.show-image--false {
-	display: none;
-}
-
-#status-splash.fullsize--true {
-	height: 100%;
-	width: 100%;
-	object-fit: contain;
-}
-
-#status-splash.use-filter--false {
-	image-rendering: pixelated;
-}
-
-#status-progress, #status-notice {
-	display: none;
-}
-
-#status-progress {
-	bottom: 10%;
-	width: 50%;
-	margin: 0 auto;
-}
-
-#status-notice {
-	background-color: #5b3943;
-	border-radius: 0.5rem;
-	border: 1px solid #9b3943;
-	color: #e0e0e0;
-	font-family: 'Noto Sans', 'Droid Sans', Arial, sans-serif;
-	line-height: 1.3;
-	margin: 0 2rem;
-	overflow: hidden;
-	padding: 1rem;
-	text-align: center;
-	z-index: 1;
-}
-	</style>
 	<link id="-gd-engine-icon" rel="icon" type="image/png" href="physix.icon.png" />
 <link rel="apple-touch-icon" href="physix.apple-touch-icon.png"/>
 <link rel="manifest" href="physix.manifest.json">
 
+	<script>(function(){if(typeof window==='undefined'||!window.AudioContext)return;window.__godotAudioContexts=[];var O=window.AudioContext||window.webkitAudioContext;function P(opts){var c=arguments.length?new O(opts):new O();window.__godotAudioContexts.push(c);return c}P.prototype=O.prototype;window.AudioContext=window.webkitAudioContext=P;window.__resumeAllAudioContexts=function(){var a=window.__godotAudioContexts||[];for(var i=0;i<a.length;i++)try{if(a[i]&&typeof a[i].resume==='function'&&a[i].state==='suspended')a[i].resume()}catch(e){}}})();</script>
+	<style>
+		body { margin: 0; background: #0a0a12; touch-action: manipulation; overflow: hidden; }
+		#canvas { display: block; width: 100%; height: 100%; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+		#gd-loading { position: fixed; inset: 0; background: #242424; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; font-family: system-ui, -apple-system, sans-serif; }
+		#gd-loading.hidden { display: none !important; }
+		#gd-loading .spinner { width: 48px; height: 48px; border: 4px solid rgba(255,255,255,0.2); border-top-color: #7b9cff; border-radius: 50%; animation: gd-spin 0.9s linear infinite; }
+		#gd-loading .text { color: #c8d4f0; font-size: 18px; margin-top: 20px; }
+		#gd-loading .bar-wrap { width: 240px; height: 6px; background: rgba(255,255,255,0.15); border-radius: 3px; margin-top: 16px; overflow: hidden; }
+		#gd-loading .bar { height: 100%; background: #7b9cff; width: 0%; transition: width 0.15s; }
+		#gd-play-btn { margin-top: 20px; padding: 12px 32px; font-size: 18px; background: #7b9cff; color: #0a0a12; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; touch-action: manipulation; }
+		@keyframes gd-spin { to { transform: rotate(360deg); } }
+	</style>
 </head>
 <body>
-	<canvas id="canvas">
-		Your browser does not support the canvas tag.
-	</canvas>
-
-	<noscript>
-		Your browser does not support JavaScript.
-	</noscript>
-
-	<div id="status">
-		<img id="status-splash" class="show-image--true fullsize--true use-filter--false" src="physix.png" alt="">
-		<progress id="status-progress"></progress>
-		<div id="status-notice"></div>
+	<div id="gd-loading">
+		<div class="spinner"></div>
+		<div class="text" id="gd-loading-text">Click to play</div>
+		<div class="bar-wrap"><div class="bar" id="gd-progress-bar"></div></div>
+		<button type="button" id="gd-play-btn">Play</button>
 	</div>
-
-	<!-- AudioContext wrapper MUST run before physix.js loads so the engine
-		 caches the wrapped constructor instead of the native one. -->
+	<canvas id="canvas" tabindex="0"></canvas>
+	<script src="$GODOT_BASENAME.js"></script>
 	<script>
-(function() {
-	const OriginalAudioContext = window.AudioContext || window.webkitAudioContext;
-	if (!OriginalAudioContext) return;
-
-	// Keep a reference to all contexts we create so we can resume them later
-	const _godotAudioContexts = [];
-	window.__godotAudioContexts = _godotAudioContexts;
-
-	window.AudioContext = function(...args) {
-		const ctx = new OriginalAudioContext(...args);
-		_godotAudioContexts.push(ctx);
-		return ctx;
-	};
-	window.AudioContext.prototype = OriginalAudioContext.prototype;
-	for (const key of Object.getOwnPropertyNames(OriginalAudioContext)) {
-		if (key !== 'prototype' && key !== 'length' && key !== 'name') {
-			window.AudioContext[key] = OriginalAudioContext[key];
-		}
-	}
-	if (window.webkitAudioContext) {
-		window.webkitAudioContext = window.AudioContext;
-	}
-
-	// Resume every context we know about on first genuine interaction
-	const resumeAll = function() {
-		for (const ctx of _godotAudioContexts) {
-			if (ctx.state === 'suspended') {
-				ctx.resume().catch(() => {});
+(function () {
+	var path = location.pathname;
+	var basePath = path ? (location.origin + path.substring(0, path.lastIndexOf('/') + 1)) : '';
+	var config = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"physix","experimentalVK":false,"fileSizes":{"physix.pck":62112984,"physix.wasm":37695054},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":"physix.service.worker.js"};
+	if (basePath) {
+		var name = (config.executable || '$GODOT_BASENAME').split('/').pop();
+		config.executable = basePath + name;
+		config.mainPack = basePath + name + '.pck';
+		if (config.fileSizes) {
+			config.fileSizes[config.executable + '.wasm'] = config.fileSizes[name + '.wasm'] || config.fileSizes['$GODOT_BASENAME.wasm'] || 0;
+			config.fileSizes[config.mainPack] = config.fileSizes[name + '.pck'] || config.fileSizes['$GODOT_BASENAME.pck'] || 0;
+			var side = config.fileSizes[name + '.side.wasm'] || config.fileSizes['$GODOT_BASENAME.side.wasm'];
+			if (side) {
+				config.fileSizes[config.executable + '.side.wasm'] = side;
 			}
 		}
-		document.removeEventListener('click', resumeAll);
-		document.removeEventListener('touchstart', resumeAll);
-		document.removeEventListener('keydown', resumeAll);
-	};
-	document.addEventListener('click', resumeAll);
-	document.addEventListener('touchstart', resumeAll);
-	document.addEventListener('keydown', resumeAll);
-})();
-	</script>
-
-	<script src="physix.js"></script>
-	<script>
-const GODOT_CONFIG = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"physix","experimentalVK":false,"fileSizes":{"physix.pck":62112984,"physix.wasm":37695054},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":"physix.service.worker.js"};
-const GODOT_THREADS_ENABLED = true;
-const engine = new Engine(GODOT_CONFIG);
-
-(function () {
-	const statusOverlay = document.getElementById('status');
-	const statusProgress = document.getElementById('status-progress');
-	const statusNotice = document.getElementById('status-notice');
-
-	let initializing = true;
-	let statusMode = '';
-
-	function setStatusMode(mode) {
-		if (statusMode === mode || !initializing) {
-			return;
-		}
-		if (mode === 'hidden') {
-			statusOverlay.remove();
-			initializing = false;
-			return;
-		}
-		statusOverlay.style.visibility = 'visible';
-		statusProgress.style.display = mode === 'progress' ? 'block' : 'none';
-		statusNotice.style.display = mode === 'notice' ? 'block' : 'none';
-		statusMode = mode;
 	}
+	var engine = new Engine(config);
+	var loading = document.getElementById('gd-loading');
+	var progressBar = document.getElementById('gd-progress-bar');
+	var loadingText = document.getElementById('gd-loading-text');
+	var playBtn = document.getElementById('gd-play-btn');
 
-	function setStatusNotice(text) {
-		while (statusNotice.lastChild) {
-			statusNotice.removeChild(statusNotice.lastChild);
-		}
-		const lines = text.split('\n');
-		lines.forEach((line) => {
-			statusNotice.appendChild(document.createTextNode(line));
-			statusNotice.appendChild(document.createElement('br'));
+	function startGame() {
+		playBtn.style.display = 'none';
+		loadingText.textContent = 'Loading Physix...';
+		engine.startGame({
+			onProgress: function (cur, tot) {
+				if (tot > 0 && progressBar) {
+					progressBar.style.width = (100 * cur / tot) + '%';
+				}
+			},
+		}).then(function () {
+			loading.classList.add('hidden');
+			try {
+				if (typeof window.__resumeAllAudioContexts === 'function') {
+					window.__resumeAllAudioContexts();
+				}
+			} catch (e) {}
+			var canvas = document.getElementById('canvas');
+			if (canvas) {
+				var once = function () {
+					canvas.removeEventListener('click', once, true);
+					canvas.removeEventListener('touchend', once, true);
+					try {
+						if (typeof window.__resumeAllAudioContexts === 'function') {
+							window.__resumeAllAudioContexts();
+						}
+					} catch (e2) {}
+				};
+				canvas.addEventListener('click', once, true);
+				canvas.addEventListener('touchend', once, true);
+			}
+		}).catch(function (err) {
+			if (loading) {
+				loading.querySelector('.text').textContent = 'Failed to load. Refresh to try again.';
+			}
+			playBtn.style.display = 'block';
+			console.error('Godot startGame failed:', err);
 		});
 	}
 
-	function displayFailureNotice(err) {
-		console.error(err);
-		if (err instanceof Error) {
-			setStatusNotice(err.message);
-		} else if (typeof err === 'string') {
-			setStatusNotice(err);
-		} else {
-			setStatusNotice('An unknown error occurred.');
-		}
-		setStatusMode('notice');
-		initializing = false;
-	}
-
-	const missing = Engine.getMissingFeatures({
-		threads: GODOT_THREADS_ENABLED,
-	});
-
-	if (missing.length !== 0) {
-		if (GODOT_CONFIG['serviceWorker'] && GODOT_CONFIG['ensureCrossOriginIsolationHeaders'] && 'serviceWorker' in navigator) {
-			let serviceWorkerRegistrationPromise;
+	function onPlayClick() {
+		if (window.AudioContext) {
 			try {
-				serviceWorkerRegistrationPromise = navigator.serviceWorker.getRegistration();
-			} catch (err) {
-				serviceWorkerRegistrationPromise = Promise.reject(new Error('Service worker registration failed.'));
-			}
-			Promise.race([
-				serviceWorkerRegistrationPromise.then((registration) => {
-					if (registration != null) {
-						return Promise.reject(new Error('Service worker already exists.'));
-					}
-					return registration;
-				}).then(() => engine.installServiceWorker()),
-				new Promise((resolve) => {
-					setTimeout(() => resolve(), 2000);
-				}),
-			]).then(() => {
-				window.location.reload();
-			}).catch((err) => {
-				console.error('Error while registering service worker:', err);
-			});
-		} else {
-			const missingMsg = 'Error\nThe following features required to run Godot projects on the Web are missing:\n';
-			displayFailureNotice(missingMsg + missing.join('\n'));
-		}
-	} else {
-		setStatusMode('progress');
-		engine.startGame({
-			'onProgress': function (current, total) {
-				if (current > 0 && total > 0) {
-					statusProgress.value = current;
-					statusProgress.max = total;
-				} else {
-					statusProgress.removeAttribute('value');
-					statusProgress.removeAttribute('max');
+				var ctx = new AudioContext();
+				if (ctx.state === 'suspended') {
+					ctx.resume();
 				}
-			},
-		}).then(() => {
-			setStatusMode('hidden');
-		}, displayFailureNotice);
+			} catch (e) {}
+		}
+		function resumeOnNext() {
+			document.removeEventListener('click', resumeOnNext, true);
+			document.removeEventListener('touchend', resumeOnNext, true);
+			document.removeEventListener('keydown', resumeOnNext, true);
+			var c = document.getElementById('canvas');
+			if (c) {
+				c.removeEventListener('click', resumeOnNext, true);
+				c.removeEventListener('touchend', resumeOnNext, true);
+			}
+			try {
+				if (typeof window.__resumeAllAudioContexts === 'function') {
+					window.__resumeAllAudioContexts();
+				}
+			} catch (e) {}
+		}
+		document.addEventListener('click', resumeOnNext, true);
+		document.addEventListener('touchend', resumeOnNext, true);
+		document.addEventListener('keydown', resumeOnNext, true);
+		var canvas = document.getElementById('canvas');
+		if (canvas) {
+			canvas.addEventListener('click', resumeOnNext, true);
+			canvas.addEventListener('touchend', resumeOnNext, true);
+		}
+		startGame();
 	}
-}());
+
+	playBtn.addEventListener('click', onPlayClick);
+	playBtn.addEventListener('touchend', function (e) {
+		e.preventDefault();
+		onPlayClick();
+	});
+})();
 	</script>
 </body>
 </html>

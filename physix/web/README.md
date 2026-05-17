@@ -1,34 +1,22 @@
 # Physix Web Export
 
-This folder holds the Godot HTML5 export files for Vercel hosting.
+Godot exports land in **`dva/src/site/physix/`** (see Physix project export preset).
 
-## dva site (`src/site/physix/`)
+## After exporting from Godot
 
-The main **dva** Eleventy site copies the web build from here (or you sync `physix.html` / `physix.js` manually). The checked-in `src/site/physix/physix.html` adds **“Click to play”** before `startGame()` so browsers unlock audio (menu music). If you replace that HTML from a fresh Godot export, **re-apply that flow** or music will stay silent on the web until the user has triggered audio another way.
+1. Export **Web** to `../dva/src/site/physix/physix.html` (relative to the Physix Godot project).
+2. **Keep** the checked-in `physix.html` shell: AudioContext patch, **Click to play**, and `serviceWorker` in `GODOT_CONFIG`. If Godot overwrites `physix.html`, merge those pieces back from git.
+3. Update `fileSizes` in `GODOT_CONFIG` to match the new export (pck/wasm byte counts in the fresh export HTML).
+4. Commit the small files: `physix.js`, `physix.audio.*.js`, `physix.manifest.json`, `physix.service.worker.js`, icons, etc.
+5. **Do not commit** `physix.pck` or `physix.wasm` — they are in `.gitignore`.
 
-## Setup
+## Vercel / GitHub Release
 
-1. In Godot, go to **Project > Export** and add a **Web** preset.
-2. Make sure **Extensions > GDExtension** is unchecked (or ensure Jolt works on web).
-3. Export to this `web/` folder.
-4. Commit the small files (`index.html`, `index.js`, any `.worker.js`, `.audio.worklet.js`) to git.
-5. **Do NOT commit** `index.pck` or `index.wasm` — they are ignored by `.gitignore`.
+1. Upload `physix.pck` and `physix.wasm` to a **GitHub Release** on `techteachdva/dva`.
+2. In Vercel → Environment Variables:
+   - `PHYSIX_PCK_URL` — direct download URL to the `.pck` asset
+   - `PHYSIX_WASM_URL` — direct download URL to the `.wasm` asset
+   - `PHYSIX_SIDE_WASM_URL` — optional, if the export uses extensions / side module
+3. `npm run build` runs `scripts/download-physix.js`, which saves them as `physix.pck` / `physix.wasm` under `src/site/physix/`.
 
-## Hosting on Vercel
-
-1. Upload your `index.pck` and `index.wasm` to a **GitHub Release** (or any direct-download URL).
-2. In the Vercel dashboard, set these environment variables:
-   - `PHYSIX_PCK_URL` — direct URL to the `.pck` file
-   - `PHYSIX_WASM_URL` — direct URL to the `.wasm` file
-3. Push this repo to GitHub and link it to Vercel.
-4. Vercel will run `npm run build`, which executes `scripts/download-physix.js` to pull the binaries into `web/` before deploying.
-
-## Local Testing
-
-You can test the download script locally:
-
-```bash
-PHYSIX_PCK_URL=https://... PHYSIX_WASM_URL=https://... npm run build
-```
-
-Then serve `web/` with any static server.
+Release asset names can be `index.pck` / `index.wasm`; URLs only need to point at the files — the build script renames them locally to `physix.*`.
