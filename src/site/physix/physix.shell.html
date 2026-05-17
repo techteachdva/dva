@@ -61,6 +61,9 @@
 			if (window.__resumeAllAudioContexts) {
 				window.__resumeAllAudioContexts();
 			}
+			if (window.physixGodotUnlock) {
+				window.physixGodotUnlock();
+			}
 		} catch (e) {}
 	}
 
@@ -89,20 +92,15 @@
 			},
 		}).then(function () {
 			loading.classList.add('hidden');
+			pumpAudioResume();
 			startAudioPump();
 			var canvas = document.getElementById('canvas');
 			if (canvas) {
-				var once = function () {
-					canvas.removeEventListener('click', once, true);
-					canvas.removeEventListener('touchend', once, true);
-					try {
-						if (typeof window.__resumeAllAudioContexts === 'function') {
-							window.__resumeAllAudioContexts();
-						}
-					} catch (e2) {}
+				var onCanvasGesture = function () {
+					pumpAudioResume();
 				};
-				canvas.addEventListener('click', once, true);
-				canvas.addEventListener('touchend', once, true);
+				canvas.addEventListener('click', onCanvasGesture, true);
+				canvas.addEventListener('touchend', onCanvasGesture, true);
 			}
 		}).catch(function (err) {
 			if (loading) {
@@ -133,11 +131,7 @@
 				c.removeEventListener('click', resumeOnNext, true);
 				c.removeEventListener('touchend', resumeOnNext, true);
 			}
-			try {
-				if (typeof window.__resumeAllAudioContexts === 'function') {
-					window.__resumeAllAudioContexts();
-				}
-			} catch (e) {}
+			pumpAudioResume();
 		}
 		document.addEventListener('click', resumeOnNext, true);
 		document.addEventListener('touchend', resumeOnNext, true);
