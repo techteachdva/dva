@@ -18,4 +18,15 @@ foreach ($name in @("physix.js", "physix.audio.worklet.js", "physix.audio.positi
     Copy-Item $from (Join-Path $dst $name) -Force
     Write-Host "Copied $name"
 }
-Write-Host "Done. Do NOT overwrite src/site/physix/physix.html with Godot export — only update fileSizes there if needed."
+$html = Join-Path $dst "physix.html"
+if (Test-Path $html) {
+    $content = Get-Content $html -Raw
+    if ($content -match '\$GODOT') {
+        Write-Error @"
+physix.html contains Godot placeholders (`$GODOT_*). You copied the wrong file.
+Keep src/site/physix/physix.html (the hand-maintained shell). Godot export goes to _godot_export/ only.
+Restore: git checkout -- src/site/physix/physix.html
+"@
+    }
+}
+Write-Host "Done. Do NOT copy physix.html from Godot export — only JS/worklets/icons."
