@@ -17,6 +17,9 @@
         "validate-physix-shell": "node scripts/validate-physix-shell.js",
         "download-crystalwizards": "node scripts/download-crystalwizards.js",
         "download-physix": "node scripts/download-physix.js",
+        "check:physix-binaries": "node scripts/check-physix-binaries-staged.js",
+        "untrack:physix": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/untrack-physix-binaries.ps1",
+        "upload:physix-release": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/upload-physix-release.ps1",
         "audit:morphology": "node scripts/audit-morphology-bank.mjs",
         "audit:morphology:lenient": "node scripts/audit-morphology-bank.mjs --lenient"
     },

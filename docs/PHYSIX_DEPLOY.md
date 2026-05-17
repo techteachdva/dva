@@ -23,6 +23,26 @@ Or run from `dva` repo root:
 .\scripts\sync-physix-export.ps1
 ```
 
+## Godot 4.6 file sizes (normal)
+
+With **extensions_support** + **thread_support**, Godot 4.6 often produces:
+
+| File | Typical size |
+|------|----------------|
+| `physix.wasm` | **~1–2 MB** (loader stub) |
+| `physix.side.wasm` | **~35–40 MB** (main engine) |
+| `physix.pck` | **~50–65 MB** |
+
+A **1 MB `physix.wasm` is correct** if `physix.side.wasm` is large. Vercel must download **both** from the release. A missing or tiny `physix.side.wasm` breaks the game/audio.
+
+```powershell
+# After Godot Web export (extensions on):
+.\scripts\upload-physix-release.ps1 -ExportDir "C:\Users\phili\OneDrive\Desktop\Physix\exports"
+# or: -ExportDir "C:\Users\phili\OneDrive\Desktop\dva\src\site\physix\_godot_export"
+```
+
+Requires [GitHub CLI](https://cli.github.com/) (`gh auth login`). Retries uploads; more reliable than the browser.
+
 ## GitHub Release (required for Vercel)
 
 Upload **all six** files from the **same** Web export to [releases](https://github.com/techteachdva/dva/releases) (e.g. tag `v1.0`):
@@ -32,7 +52,7 @@ Upload **all six** files from the **same** Web export to [releases](https://gith
 
 Vercel downloads these at build time so `physix.js` always matches `physix.wasm`. Mixing an old `physix.js` from git with new wasm on the release causes `LinkError: emscripten_webgl_create_context`. Missing `physix.side.wasm` causes silent audio.
 
-**Sanity check (match Crystal Wizards):** With `extensions_support=true` (required for web audio worklets), `physix.wasm` is ~35–40 MB and you may need **`physix.side.wasm`** on the release + `PHYSIX_SIDE_WASM_URL` in Vercel. A ~1–2 MB wasm is an old non-extensions build and audio will not work.
+**Sanity check:** `physix.js` must reference `.side.wasm`, and **`physix.side.wasm` on the release must be ~35–40 MB**. Do not replace `physix.wasm` with a huge monolithic file from an older Godot export mental model.
 
 **Export preset (Physix project):** `variant/extensions_support=true`, `variant/thread_support=true`, `ensure_cross_origin_isolation_headers=true` — same class of build as Crystal Wizards, not the minimal Dungeon Class shell.
 
@@ -54,6 +74,24 @@ Apply to **Production**, **Preview**, and **Development** if you deploy from all
 
 Release asset names can be `index.pck` / `index.wasm`; the URL must be the real download link. The build script always saves files as `physix.pck` / `physix.wasm` in `src/site/physix/`.
 
-## `.gitignore`
+## `.gitignore` (do not commit binaries)
 
-Binaries under `src/site/physix/*.pck` and `*.wasm` must stay ignored so git never stores them (Vercel fetches at build time).
+`physix.pck`, `physix.wasm`, and `physix.side.wasm` are ignored. Vercel downloads them from the GitHub release at build time.
+
+If GitHub warns about a 50+ MB `physix.pck` on push, the file was **tracked before** it was ignored. Fix once:
+
+```powershell
+cd C:\Users\phili\OneDrive\Desktop\dva
+npm run untrack:physix
+git add .gitignore scripts/
+git commit -m "Stop tracking Physix binaries; keep on GitHub release only"
+git push
+```
+
+Optional: block future accidents (run once per clone):
+
+```powershell
+git config core.hooksPath .githooks
+```
+
+Then `git commit` runs `check:physix-binaries` and rejects staged `.pck` / `.wasm` files.

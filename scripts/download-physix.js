@@ -183,18 +183,32 @@ function validateWasmJsPair(wasmBytes) {
     throw new Error('Missing physix.js after download');
   }
   const js = fs.readFileSync(jsPath, 'utf8');
-  const extensionsWasm = wasmBytes >= 5 * 1024 * 1024;
   const jsExpectsSide = js.includes('.side.wasm');
+  const sidePath = path.join(OUT_DIR, 'physix.side.wasm');
+  const sideBytes = fs.existsSync(sidePath) ? fs.statSync(sidePath).size : 0;
 
-  if (extensionsWasm && !jsExpectsSide) {
-    throw new Error(
-      'physix.wasm is an extensions build (~35–40 MB) but physix.js does not load .side.wasm.\n' +
-        'Upload physix.js from the SAME Godot export as physix.wasm (not an old export folder).'
+  // Godot 4.6 + extensions: main physix.wasm is often ~1–2 MB; engine bulk is physix.side.wasm (~35–40 MB).
+  if (jsExpectsSide) {
+    if (sideBytes < 10 * 1024 * 1024) {
+      throw new Error(
+        'physix.js loads .side.wasm but release physix.side.wasm is missing or too small.\n' +
+          'Upload physix.side.wasm from the same Godot export (expect ~35–40 MB).'
+      );
+    }
+    if (wasmBytes > 20 * 1024 * 1024 && sideBytes < 1024 * 1024) {
+      throw new Error(
+        'physix.wasm looks like a monolithic build but physix.js expects physix.side.wasm — re-export and upload both from the same run.'
+      );
+    }
+    console.log(
+      `Extensions layout OK: physix.wasm ${formatSize(wasmBytes)}, physix.side.wasm ${formatSize(sideBytes)}.`
     );
+    return;
   }
-  if (!extensionsWasm && jsExpectsSide) {
-    console.warn(
-      'WARNING: physix.js expects .side.wasm but physix.wasm is small — mismatched export pair.'
+
+  if (wasmBytes < 5 * 1024 * 1024) {
+    throw new Error(
+      `physix.wasm is ${formatSize(wasmBytes)} and physix.js does not reference .side.wasm — enable extensions_support and re-export.`
     );
   }
 }
@@ -269,17 +283,16 @@ function validateWasmJsPair(wasmBytes) {
 
   try {
     wasmBytes = await fetchAsset(urls.wasm, path.join(OUT_DIR, 'physix.wasm'), 'wasm');
-    if (wasmBytes < 5 * 1024 * 1024) {
-      console.warn(
-        `WARNING: physix.wasm is ${formatSize(wasmBytes)} — with extensions_support expect ~35–40 MB.`
-      );
-    }
   } catch (err) {
     console.error('download-physix wasm:', err.message);
     failed = true;
   }
 
-  if (wasmBytes >= 5 * 1024 * 1024) {
+  const jsExpectsSide =
+    fs.existsSync(path.join(OUT_DIR, 'physix.js')) &&
+    fs.readFileSync(path.join(OUT_DIR, 'physix.js'), 'utf8').includes('.side.wasm');
+
+  if (!failed && jsExpectsSide) {
     try {
       await fetchAsset(urls.side, path.join(OUT_DIR, 'physix.side.wasm'), 'side wasm');
     } catch (err) {

@@ -1,0 +1,3 @@
+#!/bin/sh
+# Enable once: git config core.hooksPath .githooks
+node scripts/check-physix-binaries-staged.js
