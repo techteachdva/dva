@@ -6,8 +6,9 @@
 	<meta name="mobile-web-app-capable" content="yes">
 	<title>Physix</title>
 	<link id="-gd-engine-icon" rel="icon" type="image/png" href="physix.icon.png" />
-	<link rel="apple-touch-icon" href="physix.apple-touch-icon.png" />
-	<link rel="manifest" href="physix.manifest.json" />
+<link rel="apple-touch-icon" href="physix.apple-touch-icon.png"/>
+<link rel="manifest" href="physix.manifest.json">
+
 	<script>(function(){if(typeof window==='undefined'||!window.AudioContext)return;window.__godotAudioContexts=[];var O=window.AudioContext||window.webkitAudioContext;function P(opts){var c=arguments.length?new O(opts):new O();window.__godotAudioContexts.push(c);return c}P.prototype=O.prototype;window.AudioContext=window.webkitAudioContext=P;window.__resumeAllAudioContexts=function(){var a=window.__godotAudioContexts||[];for(var i=0;i<a.length;i++)try{if(a[i]&&typeof a[i].resume==='function'&&a[i].state==='suspended')a[i].resume()}catch(e){}}})();</script>
 	<style>
 		body { margin: 0; background: #0a0a12; touch-action: manipulation; overflow: hidden; }
@@ -30,20 +31,20 @@
 		<button type="button" id="gd-play-btn">Play</button>
 	</div>
 	<canvas id="canvas" tabindex="0"></canvas>
-	<script src="physix.js"></script>
+	<script src="$GODOT_BASENAME.js"></script>
 	<script>
 (function () {
 	var path = location.pathname;
 	var basePath = path ? (location.origin + path.substring(0, path.lastIndexOf('/') + 1)) : '';
-	var config = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"physix","experimentalVK":false,"fileSizes":{"physix.pck":0,"physix.wasm":0,"physix.side.wasm":0},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":"physix.service.worker.js"};
+	var config = {"args":[],"canvasResizePolicy":2,"emscriptenPoolSize":8,"ensureCrossOriginIsolationHeaders":true,"executable":"physix","experimentalVK":false,"fileSizes":{"physix.pck":97930432,"physix.wasm":1509558},"focusCanvas":true,"gdextensionLibs":[],"godotPoolSize":4,"serviceWorker":"physix.service.worker.js"};
 	if (basePath) {
-		var name = (config.executable || 'physix').split('/').pop();
+		var name = (config.executable || '$GODOT_BASENAME').split('/').pop();
 		config.executable = basePath + name;
 		config.mainPack = basePath + name + '.pck';
 		if (config.fileSizes) {
-			config.fileSizes[config.executable + '.wasm'] = config.fileSizes[name + '.wasm'] || config.fileSizes['physix.wasm'] || 0;
-			config.fileSizes[config.mainPack] = config.fileSizes[name + '.pck'] || config.fileSizes['physix.pck'] || 0;
-			var side = config.fileSizes[name + '.side.wasm'] || config.fileSizes['physix.side.wasm'];
+			config.fileSizes[config.executable + '.wasm'] = config.fileSizes[name + '.wasm'] || config.fileSizes['$GODOT_BASENAME.wasm'] || 0;
+			config.fileSizes[config.mainPack] = config.fileSizes[name + '.pck'] || config.fileSizes['$GODOT_BASENAME.pck'] || 0;
+			var side = config.fileSizes[name + '.side.wasm'] || config.fileSizes['$GODOT_BASENAME.side.wasm'];
 			if (side) {
 				config.fileSizes[config.executable + '.side.wasm'] = side;
 			}
@@ -56,6 +57,7 @@
 	var playBtn = document.getElementById('gd-play-btn');
 	var audioPumpTimer = null;
 	var loadAllowed = false;
+	var jsBasename = '$GODOT_BASENAME.js';
 
 	function isSafariLike() {
 		var ua = navigator.userAgent;
@@ -69,7 +71,7 @@
 	}
 
 	function detectThreadedBuild(cb) {
-		var scriptEl = document.querySelector('script[src*="physix.js"]');
+		var scriptEl = document.querySelector('script[src*="' + jsBasename + '"]');
 		if (!scriptEl || !scriptEl.src) {
 			cb(false);
 			return;
@@ -103,7 +105,7 @@
 		}
 		if (requiresThreads && isSafariLike()) {
 			showBlocked(
-				'Safari cannot run this Physix build (threading). Use Chrome or Firefox, or update the site after a new export.'
+				'Safari cannot run this build (threading). Use Chrome or Firefox, or re-export with thread_support off.'
 			);
 			return;
 		}
@@ -117,7 +119,7 @@
 			var msg = reason && reason.message ? reason.message : String(reason || '');
 			if (/Out of bounds|blocking on the main thread|pthread/i.test(msg)) {
 				showBlocked(
-					'Physix hit a browser threading error. Try Chrome or Firefox, or hard-refresh after the site updates.'
+					'Threading error in this browser. Try Chrome or Firefox, or re-export with thread_support off.'
 				);
 			}
 		}
@@ -174,26 +176,21 @@
 			},
 		}).then(function () {
 			loading.classList.add('hidden');
+			pumpAudioResume();
 			startAudioPump();
 			var canvas = document.getElementById('canvas');
 			if (canvas) {
-				var once = function () {
-					canvas.removeEventListener('click', once, true);
-					canvas.removeEventListener('touchend', once, true);
-					try {
-						if (typeof window.__resumeAllAudioContexts === 'function') {
-							window.__resumeAllAudioContexts();
-						}
-					} catch (e2) {}
+				var onCanvasGesture = function () {
+					pumpAudioResume();
 				};
-				canvas.addEventListener('click', once, true);
-				canvas.addEventListener('touchend', once, true);
+				canvas.addEventListener('click', onCanvasGesture, true);
+				canvas.addEventListener('touchend', onCanvasGesture, true);
 			}
 		}).catch(function (err) {
 			var msg = err && err.message ? err.message : String(err || '');
 			if (/Out of bounds|blocking on the main thread|pthread/i.test(msg)) {
 				showBlocked(
-					'Physix hit a browser threading error. Try Chrome or Firefox, or hard-refresh after the site updates.'
+					'Threading error in this browser. Try Chrome or Firefox, or re-export with thread_support off.'
 				);
 			} else if (loading) {
 				loading.querySelector('.text').textContent = 'Failed to load. Refresh to try again.';
@@ -201,7 +198,7 @@
 				playBtn.disabled = false;
 				loadAllowed = true;
 			}
-			console.error('Physix startGame failed:', err);
+			console.error('Godot startGame failed:', err);
 		});
 	}
 
@@ -228,11 +225,7 @@
 				c.removeEventListener('click', resumeOnNext, true);
 				c.removeEventListener('touchend', resumeOnNext, true);
 			}
-			try {
-				if (typeof window.__resumeAllAudioContexts === 'function') {
-					window.__resumeAllAudioContexts();
-				}
-			} catch (e) {}
+			pumpAudioResume();
 		}
 		document.addEventListener('click', resumeOnNext, true);
 		document.addEventListener('touchend', resumeOnNext, true);
@@ -254,3 +247,4 @@
 	</script>
 </body>
 </html>
+

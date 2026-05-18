@@ -148,10 +148,23 @@ func _bootstrap_web_audio() -> void:
 func _resume_browser_audio() -> void:
 	if not _is_web:
 		return
-	JavaScriptBridge.eval(
-		"try{if(window.__resumeAllAudioContexts)window.__resumeAllAudioContexts();}catch(e){}",
-		true
-	)
+	var js := """
+try {
+    if (window.__resumeAllAudioContexts) {
+        window.__resumeAllAudioContexts();
+    }
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if (AC) {
+        var candidates = [window.godotAudioContext, window.__audioContext];
+        for (var k in window) {
+            if (window[k] instanceof AC && window[k].state === 'suspended') {
+                window[k].resume();
+            }
+        }
+    }
+} catch(e) {}
+"""
+	JavaScriptBridge.eval(js, true)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not _is_web or _web_gesture_ok:
@@ -196,6 +209,7 @@ func play_music(track: String, fade_sec: float = 0.6, force: bool = false) -> vo
 		_resume_browser_audio()
 		if not _web_gesture_ok:
 			_pending_track = track if force else _resolve_track(track)
+			return
 	var resolved := track if force else _resolve_track(track)
 	if resolved == _current_track and _music.playing:
 		return
