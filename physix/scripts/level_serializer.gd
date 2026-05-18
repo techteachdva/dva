@@ -13,20 +13,19 @@ const OBSTACLE_SCENES: Dictionary = {
 	"brake":  "res://scenes/obstacles/brake_pad.tscn",
 	"grav":   "res://scenes/obstacles/gravity_zone.tscn",
 	"wind":   "res://scenes/obstacles/wind_zone.tscn",
+	"magnet": "res://scenes/obstacles/magnet_zone.tscn",
 	"ice":    "res://scenes/obstacles/ice_patch.tscn",
 	"move":   "res://scenes/obstacles/moving_platform.tscn",
-	"cp":     "res://scenes/obstacles/checkpoint.tscn",
 	"tutorial": "res://scenes/obstacles/tutorial_trigger.tscn",
-	"hoop_cp": "res://scenes/obstacles/hoop.tscn",
-	"hoop_bonus": "res://scenes/obstacles/hoop.tscn",
 }
 
 const COIN_SCENE := "res://scenes/coin.tscn"
 
-const START_RUNWAY_LENGTH := 30.0
-const END_RUNWAY_LENGTH := 30.0
-const RUNWAY_WIDTH := 10.0
-const FINISH_ZONE_HALF_HEIGHT := 3.0
+# Runway dimensions: TrackConstants (scripts/editor/track_constants.gd)
+const START_RUNWAY_LENGTH := TrackConstants.START_RUNWAY_LENGTH
+const END_RUNWAY_LENGTH := TrackConstants.END_RUNWAY_LENGTH
+const RUNWAY_WIDTH := TrackConstants.RUNWAY_WIDTH
+const FINISH_ZONE_HALF_HEIGHT := TrackConstants.FINISH_ZONE_HALF_HEIGHT
 
 # ── Export: scene tree → compact dictionary ─────────────────────────────────
 
@@ -76,7 +75,10 @@ static func import_level(data: Dictionary, target: Node3D, build_track: bool = t
 	target.set("physics_fact", data.get("pf", ""))
 
 	var track_root: Node3D = _ensure_track_root(target)
-	_clear_track_children(track_root)
+	if build_track:
+		_clear_track_children(track_root)
+	else:
+		_clear_obstacles_and_coins(track_root)
 
 	var track_width: float = float(data.get("tw", 8.0))
 	if build_track:
@@ -103,15 +105,18 @@ static func import_level(data: Dictionary, target: Node3D, build_track: bool = t
 		builder._apply_materials(track_root)
 
 
-static func import_level_code(code: String, target: Node3D) -> void:
+static func import_level_code(code: String, target: Node3D, build_track: bool = true) -> void:
 	var bytes: PackedByteArray = Marshalls.base64_to_raw(code.strip_edges())
 	var json: String = bytes.get_string_from_utf8()
 	if json.is_empty():
 		push_error("Failed to decode level code")
 		return
 	var parsed: Variant = JSON.parse_string(json)
+	if parsed == null:
+		push_error("Invalid level code JSON")
+		return
 	if parsed is Dictionary:
-		import_level(parsed, target)
+		import_level(parsed, target, build_track)
 	else:
 		push_error("Invalid level code JSON")
 
@@ -226,6 +231,12 @@ static func _export_obstacles(track_root: Node) -> Array[Dictionary]:
 		var wd: Variant = child.get("wind_direction")
 		if wd != null:
 			entry["wd"] = _vec3_array(wd)
+		var mt: Variant = child.get("magnet_type")
+		if mt != null:
+			entry["mt"] = int(mt)
+		var mg: Variant = child.get("strength")
+		if mg != null:
+			entry["mg"] = snappedf(mg, 0.1)
 		var md: Variant = child.get("move_distance")
 		if md != null:
 			entry["md"] = snappedf(md, 0.1)
@@ -252,12 +263,8 @@ static func _export_obstacles(track_root: Node) -> Array[Dictionary]:
 			if shape_node and shape_node.shape is BoxShape3D:
 				entry["l"] = snappedf(shape_node.shape.size.z, 0.1)
 				entry["w"] = snappedf(shape_node.shape.size.x, 0.1)
-		if type_key == "hoop":
-			var hoop_type: Variant = child.get("hoop_type")
-			if hoop_type != null and int(hoop_type) == 0:
-				entry["t"] = "hoop_cp"
-			else:
-				entry["t"] = "hoop_bonus"
+		if type_key == "hoop" or child is Hoop:
+			entry["t"] = "hoop"
 			var boost: Variant = child.get("boost_strength")
 			if boost != null:
 				entry["s"] = snappedf(boost, 0.1)
@@ -286,11 +293,12 @@ static func _obstacle_type_key(node: Node) -> String:
 		if path.contains("brake_pad"):    return "brake"
 		if path.contains("gravity_zone"): return "grav"
 		if path.contains("wind_zone"):    return "wind"
+		if path.contains("magnet_zone"):  return "magnet"
 		if path.contains("ice_patch"):    return "ice"
 		if path.contains("moving_platform"): return "move"
-		if path.contains("checkpoint"):   return "cp"
 		if path.contains("tutorial_trigger"): return "tutorial"
-		if path.contains("hoop"):         return "hoop"
+		if path.contains("hoop") or path.contains("checkpoint"):
+			return "hoop"
 	return ""
 
 
@@ -311,8 +319,38 @@ static func _ensure_track_root(level_root: Node3D) -> Node3D:
 
 
 static func _clear_track_children(track_root: Node3D) -> void:
+	var to_remove: Array[Node] = []
 	for child: Node in track_root.get_children():
+		to_remove.append(child)
+	for child: Node in to_remove:
+		track_root.remove_child(child)
+		child.free()
+
+
+static func _is_track_geometry_node(child: Node) -> bool:
+	var n: String = child.name
+	if n == "TrackBuilder" or n == "FinishZone" or n == "Runway" or n == "Floor":
+		return true
+	if child is StaticBody3D and n.begins_with("Seg_"):
+		return true
+	return false
+
+
+static func _clear_obstacles_and_coins(track_root: Node3D) -> void:
+	for child: Node in track_root.get_children():
+		if _is_track_geometry_node(child):
+			continue
 		child.queue_free()
+
+
+static func import_obstacles_and_coins(data: Dictionary, target: Node3D) -> void:
+	var track_root: Node3D = _ensure_track_root(target)
+	_clear_obstacles_and_coins(track_root)
+	_build_obstacles(track_root, _dict_array_from_variant(data.get("obs", [])))
+	_build_coins(track_root, _dict_array_from_variant(data.get("coins", [])))
+	var builder: Node = track_root.get_node_or_null("TrackBuilder")
+	if builder != null and builder.has_method("_apply_materials"):
+		builder._apply_materials(track_root)
 
 
 static func _segs_from_variant(raw: Variant) -> Array[Dictionary]:
@@ -484,6 +522,9 @@ static func _build_finish(track_root: Node3D, finish_z: float, finish_y: float =
 static func _build_obstacles(track_root: Node3D, obs: Array[Dictionary]) -> void:
 	for entry: Dictionary in obs:
 		var type_key: String = entry.get("t", "")
+		if type_key == "hoop":
+			_spawn_hoop(track_root, entry)
+			continue
 		var scene_path: String = OBSTACLE_SCENES.get(type_key, "")
 		if scene_path.is_empty():
 			continue
@@ -501,15 +542,6 @@ static func _build_obstacles(track_root: Node3D, obs: Array[Dictionary]) -> void
 			node.set("boost_strength", entry["s"])
 		if type_key == "brake":
 			node.set("is_brake_pad", true)
-		if type_key.begins_with("hoop"):
-			var hoop_script = preload("res://scripts/obstacles/hoop.gd")
-			if node is hoop_script:
-				if type_key == "hoop_cp":
-					node.hoop_type = hoop_script.HoopType.CHECKPOINT
-				else:
-					node.hoop_type = hoop_script.HoopType.BONUS
-				if entry.has("s"):
-					node.boost_strength = entry["s"]
 		if entry.has("zt"):
 			node.set("zone_type", entry["zt"])
 		if entry.has("gm"):
@@ -518,6 +550,10 @@ static func _build_obstacles(track_root: Node3D, obs: Array[Dictionary]) -> void
 			node.set("wind_force", entry["wf"])
 		if entry.has("wd"):
 			node.set("wind_direction", _array_to_vec3(entry["wd"]))
+		if entry.has("mt"):
+			node.set("magnet_type", entry["mt"])
+		if entry.has("mg"):
+			node.set("strength", entry["mg"])
 		if type_key == "ice" and (entry.has("l") or entry.has("w")):
 			var shape_node: Node = node.get_node_or_null("CollisionShape3D")
 			if shape_node and shape_node.shape is BoxShape3D:
@@ -546,6 +582,17 @@ static func _build_obstacles(track_root: Node3D, obs: Array[Dictionary]) -> void
 		node.owner = track_root.owner
 
 
+static func _spawn_hoop(track_root: Node3D, entry: Dictionary) -> void:
+	var hoop := Hoop.new()
+	hoop.name = "Hoop"
+	hoop.transform.origin = _array_to_vec3(entry.get("p", [0, 0, 0]))
+	var boost: float = float(entry.get("s", 28.0))
+	hoop.boost_strength = boost
+	hoop.build_visuals()
+	track_root.add_child(hoop)
+	hoop.owner = track_root.owner
+
+
 static func _build_coins(track_root: Node3D, coins: Array[Dictionary]) -> void:
 	if coins.is_empty():
 		return
@@ -567,7 +614,7 @@ static func _build_coins(track_root: Node3D, coins: Array[Dictionary]) -> void:
 		coin.owner = track_root.owner
 
 
-static func _array_to_vec3(arr: Array[float]) -> Vector3:
-	if arr.size() >= 3:
+static func _array_to_vec3(arr: Variant) -> Vector3:
+	if arr is Array and arr.size() >= 3:
 		return Vector3(float(arr[0]), float(arr[1]), float(arr[2]))
 	return Vector3.ZERO

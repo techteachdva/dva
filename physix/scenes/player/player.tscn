@@ -30,6 +30,9 @@ scale_min = 0.08
 scale_max = 0.18
 color = Color(1, 0.55, 0.05, 1)
 
+[sub_resource type="BoxMesh" id="JumpPartMesh"]
+size = Vector3(0.08, 0.08, 0.08)
+
 [sub_resource type="ParticleProcessMaterial" id="LandPartMat"]
 direction = Vector3(0, 0.4, 0)
 spread = 180.0
@@ -39,6 +42,9 @@ initial_velocity_max = 5.0
 scale_min = 0.06
 scale_max = 0.14
 color = Color(1, 0.6, 0.1, 0.85)
+
+[sub_resource type="BoxMesh" id="LandPartMesh"]
+size = Vector3(0.06, 0.06, 0.06)
 
 [sub_resource type="ParticleProcessMaterial" id="SpeedTrailMat"]
 emission_shape = 1
@@ -60,12 +66,6 @@ albedo_color = Color(0.5, 0.95, 1, 0.5)
 [sub_resource type="BoxMesh" id="SpeedTrailMesh"]
 material = SubResource("TrailMeshMat")
 size = Vector3(0.04, 0.04, 0.6)
-
-[sub_resource type="BoxMesh" id="JumpPartMesh"]
-size = Vector3(0.08, 0.08, 0.08)
-
-[sub_resource type="BoxMesh" id="LandPartMesh"]
-size = Vector3(0.06, 0.06, 0.06)
 
 [sub_resource type="ParticleProcessMaterial" id="SlamChargeMat"]
 emission_shape = 1
@@ -99,6 +99,7 @@ size = Vector3(0.06, 0.4, 0.06)
 physics_material_override = SubResource("BallPhysics")
 script = ExtResource("1")
 steer_force = 20.0
+max_lateral_speed = 20.0
 jump_impulse = 6.0
 jump_hold_time_max = 0.2
 max_forward_speed = 40.0

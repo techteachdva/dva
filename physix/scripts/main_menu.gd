@@ -1,6 +1,6 @@
 extends Control
 
-const VERSION := "0.3.0"
+const VERSION := "0.4.0"
 
 @onready var title_lbl:         Label  = $TitleLabel
 @onready var title_static_lbl: Label  = $TitleLabelStatic
@@ -10,13 +10,14 @@ const VERSION := "0.3.0"
 @onready var load_custom_btn: Button = $Center/VBox/LoadCustomBtn
 @onready var editor_btn:   Button = $Center/VBox/EditorBtn
 @onready var credits_btn:  Button = $Center/VBox/CreditsBtn
-@onready var shop_btn:     Button = $Center/VBox/ShopBtn
 @onready var options_btn:  Button = $Center/VBox/OptionsBtn
 @onready var quit_btn:     Button = $Center/VBox/QuitBtn
 @onready var version_lbl:  Label  = $VersionLabel
+var game_over_panel: Panel
 @onready var credits_panel: Panel  = $CreditsPanel
 @onready var credits_text: RichTextLabel = $CreditsPanel/Margin/VBox/Scroll/Text
 @onready var credits_close: Button = $CreditsPanel/Margin/VBox/CloseBtn
+@onready var center_menu: Control = $Center
 
 var _cheat_buffer: String = ""
 
@@ -27,27 +28,28 @@ func _ready() -> void:
 	version_lbl.text        = "v" + VERSION
 	continue_btn.visible    = FileAccess.file_exists(LevelManager.SAVE_FILE)
 
-	# Load shop panel once (matches old _add_shop_button behavior)
-	var shop_panel: Node = load("res://scenes/ui/shop_panel.tscn").instantiate()
-	add_child(shop_panel)
-
 	# Wire signals
 	play_btn.pressed.connect(_on_play)
 	continue_btn.pressed.connect(_on_continue)
 	load_custom_btn.pressed.connect(_on_custom_level)
 	editor_btn.pressed.connect(_on_editor)
 	credits_btn.pressed.connect(_on_credits)
-	shop_btn.pressed.connect(_on_shop)
 	options_btn.pressed.connect(_on_options)
 	quit_btn.pressed.connect(_on_quit)
 	credits_close.pressed.connect(_on_credits_close)
+	_ensure_game_over_panel()
 	credits_text.meta_clicked.connect(_on_credits_link)
 
 	# Build ordered button list for staggered animation
-	_menu_buttons = [play_btn, continue_btn, load_custom_btn, editor_btn, credits_btn, shop_btn, options_btn, quit_btn]
+	_menu_buttons = [play_btn, continue_btn, load_custom_btn, editor_btn, credits_btn, options_btn, quit_btn]
 
 	# Style every menu button consistently
 	_style_buttons()
+	_setup_credits_panel()
+
+	if OS.has_feature("web"):
+		mouse_filter = Control.MOUSE_FILTER_STOP
+		gui_input.connect(_on_menu_gui_input)
 
 	if get_node_or_null("/root/AudioManager") != null:
 		AudioManager.playback_mode = LevelManager.get_music_mode()
@@ -58,25 +60,40 @@ func _ready() -> void:
 	_animate_intro()
 
 
+func _on_menu_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed:
+		_notify_web_audio_gesture()
+	elif event is InputEventScreenTouch and event.pressed:
+		_notify_web_audio_gesture()
+
+
+func _notify_web_audio_gesture() -> void:
+	if get_node_or_null("/root/AudioManager") != null:
+		AudioManager.on_web_gesture()
+
+
 # ── Button Styling (inverted against lava background) ─────────────────────────
 
 func _style_buttons() -> void:
-	var icon_paths := {
-		"PlayBtn":       "res://assets/icons/play.png",
-		"ContinueBtn":   "res://assets/icons/continue.png",
-		"LoadCustomBtn": "res://assets/icons/custom.png",
-		"EditorBtn":     "res://assets/icons/editor.png",
-		"CreditsBtn":    "res://assets/icons/credits.png",
-		"ShopBtn":       "res://assets/icons/shop.png",
-		"OptionsBtn":    "res://assets/icons/options.png",
-		"QuitBtn":       "res://assets/icons/quit.png",
-	}
 	for btn: Button in _menu_buttons:
-		var path: String = icon_paths.get(btn.name, "")
-		if not path.is_empty():
-			btn.icon = load(path)
+		var tex: Texture2D = GameIcons.get_menu_texture(btn.name)
+		if tex == null:
+			var legacy_paths := {
+				"PlayBtn": "res://assets/icons/play.png",
+				"ContinueBtn": "res://assets/icons/continue.png",
+				"LoadCustomBtn": "res://assets/icons/custom.png",
+				"EditorBtn": "res://assets/icons/editor.png",
+				"CreditsBtn": "res://assets/icons/credits.png",
+				"OptionsBtn": "res://assets/icons/options.png",
+				"QuitBtn": "res://assets/icons/quit.png",
+			}
+			var path: String = legacy_paths.get(btn.name, "")
+			if not path.is_empty() and ResourceLoader.exists(path):
+				tex = load(path) as Texture2D
+		if tex:
+			btn.icon = tex
 			btn.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
-			btn.expand_icon = false
+			btn.expand_icon = true
 		btn.custom_minimum_size = Vector2(320, 52)
 		btn.add_theme_font_size_override("font_size", 28)
 		# Text colors — bright, readable
@@ -110,46 +127,33 @@ func _make_btn_style(bg: Color, border: Color, border_width: int = 2) -> StyleBo
 	return s
 
 
-# ── Tween-based intro (top-to-bottom staggered reveal) ────────────────────────
+# ── Tween-based intro (top-to-bottom staggered fade, ≤2s total) ─────────────────
 
 func _animate_intro() -> void:
-	# Start invisible
+	const INTRO_TOTAL := 2.0
+	const BTN_FADE := 0.30
+
 	modulate.a = 0.0
-	title_lbl.position.y -= 55
+	var title_y := title_lbl.position.y
+	title_lbl.position.y = title_y - 20.0
 	tagline_lbl.modulate.a = 0.0
 	for btn: Button in _menu_buttons:
 		btn.modulate.a = 0.0
 
-	var tw := create_tween().set_parallel(false)
+	var btn_count := _menu_buttons.size()
+	var stagger := (INTRO_TOTAL - BTN_FADE) / maxf(1.0, float(btn_count - 1))
 
-	# 1. Fade in whole UI
-	tw.tween_property(self, "modulate:a", 1.0, 0.175)
+	var tw := create_tween().set_parallel(true)
+	tw.tween_property(self, "modulate:a", 1.0, 0.35)
+	tw.tween_property(title_lbl, "position:y", title_y, 0.42) \
+		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
+	tw.tween_property(tagline_lbl, "modulate:a", 1.0, 0.35).set_delay(0.04)
 
-	# 2. Title drops with bounce
-	tw.tween_property(title_lbl, "position:y", title_lbl.position.y + 55, 0.225) \
-		.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BOUNCE)
+	for i: int in range(btn_count):
+		tw.tween_property(_menu_buttons[i], "modulate:a", 1.0, BTN_FADE) \
+			.set_delay(0.06 + float(i) * stagger) \
+			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_SINE)
 
-	# 3. Tagline fades
-	tw.tween_property(tagline_lbl, "modulate:a", 1.0, 0.125)
-
-	# 4. Buttons roll out top-to-bottom with stagger (slide + rotate + fade)
-	var base_delay := 0.075
-	var stagger := 0.025
-	for i: int in range(_menu_buttons.size()):
-		var btn := _menu_buttons[i]
-		btn.pivot_offset = btn.size * 0.5
-		btn.position.x -= 50
-		btn.rotation = -0.06
-		tw.tween_property(btn, "position:x", btn.position.x + 50, 0.14) \
-			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK) \
-			.set_delay(base_delay + i * stagger)
-		tw.tween_property(btn, "rotation", 0.0, 0.14) \
-			.set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK) \
-			.set_delay(base_delay + i * stagger)
-		tw.tween_property(btn, "modulate:a", 1.0, 0.11) \
-			.set_delay(base_delay + i * stagger + 0.01)
-
-	# 5. Gentle title pulse — only the animated label
 	var pulse := create_tween().set_loops()
 	pulse.tween_property(title_lbl, "theme_override_font_sizes/font_size", 76, 0.65) \
 		.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
@@ -161,12 +165,16 @@ func _animate_intro() -> void:
 
 func _on_play() -> void:
 	_play_menu_select()
-	LevelManager.reset_progress()
 	GameManager.reset_for_new_game()
+	LevelManager.reset_progress()
 	_fade_to(Main.instance.load_world_map)
 
 func _on_continue() -> void:
 	_play_menu_select()
+	LevelManager.apply_session_to_game_manager()
+	if LevelManager.is_session_game_over() or GameManager.lives <= 0:
+		_show_game_over_panel()
+		return
 	_fade_to(Main.instance.load_world_map)
 
 func _on_custom_level() -> void:
@@ -179,26 +187,108 @@ func _on_editor() -> void:
 
 func _on_credits() -> void:
 	_play_menu_select()
-	var lines: Array[String] = []
-	var music_file := FileAccess.open("res://assets/sounds/music/music_credits.txt", FileAccess.READ)
-	if music_file:
-		lines.append(_html_to_bbcode(music_file.get_as_text()))
-	else:
-		lines.append("[b]Music Credits[/b]\nMusic credits file not found.")
-	lines.append("\n")
-	var sfx_file := FileAccess.open("res://assets/sounds/sfx/sfx_credits.txt", FileAccess.READ)
-	if sfx_file:
-		lines.append(_html_to_bbcode(sfx_file.get_as_text()))
-	else:
-		lines.append("[b]Sound Effects Credits[/b]\nSFX credits file not found.")
-	credits_text.text = "\n".join(lines)
+	credits_text.text = CreditsContent.combined_bbcode()
+	credits_text.fit_content = false
+	center_menu.visible = false
+	title_lbl.visible = false
+	title_static_lbl.visible = false
 	credits_panel.visible = true
+	credits_panel.move_to_front()
+	call_deferred("_layout_credits_text")
 
-func _on_shop() -> void:
-	_play_menu_select()
-	var shop: Node = get_node_or_null("ShopPanel")
-	if shop:
-		shop.open()
+func _layout_credits_text() -> void:
+	await get_tree().process_frame
+	credits_text.fit_content = true
+	var content_h: float = maxf(credits_text.get_content_height(), 120.0)
+	credits_text.custom_minimum_size = Vector2(0.0, content_h)
+	credits_text.fit_content = false
+
+func _ensure_game_over_panel() -> void:
+	game_over_panel = get_node_or_null("GameOverPanel") as Panel
+	if game_over_panel != null:
+		game_over_panel.visible = false
+		return
+	game_over_panel = Panel.new()
+	game_over_panel.name = "GameOverPanel"
+	game_over_panel.visible = false
+	game_over_panel.anchor_left = 0.25
+	game_over_panel.anchor_right = 0.75
+	game_over_panel.anchor_top = 0.28
+	game_over_panel.anchor_bottom = 0.72
+	game_over_panel.z_index = 90
+	add_child(game_over_panel)
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.06, 0.05, 0.12, 0.96)
+	style.border_color = Color(0.85, 0.25, 0.3, 0.95)
+	style.border_width_left = 3
+	style.border_width_top = 3
+	style.border_width_right = 3
+	style.border_width_bottom = 3
+	style.corner_radius_top_left = 12
+	style.corner_radius_top_right = 12
+	style.corner_radius_bottom_left = 12
+	style.corner_radius_bottom_right = 12
+	game_over_panel.add_theme_stylebox_override("panel", style)
+	var title := Label.new()
+	title.name = "TitleLabel"
+	title.text = "GAME OVER"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.anchor_left = 0.08
+	title.anchor_right = 0.92
+	title.anchor_top = 0.1
+	title.anchor_bottom = 0.28
+	title.add_theme_font_size_override("font_size", 36)
+	game_over_panel.add_child(title)
+	var msg := Label.new()
+	msg.name = "MessageLabel"
+	msg.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	msg.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	msg.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	msg.anchor_left = 0.08
+	msg.anchor_right = 0.92
+	msg.anchor_top = 0.3
+	msg.anchor_bottom = 0.52
+	msg.add_theme_font_size_override("font_size", 17)
+	game_over_panel.add_child(msg)
+	var shop_btn_go := Button.new()
+	shop_btn_go.name = "GoShopBtn"
+	shop_btn_go.text = "World Map & Shop"
+	shop_btn_go.anchor_left = 0.15
+	shop_btn_go.anchor_right = 0.85
+	shop_btn_go.anchor_top = 0.58
+	shop_btn_go.offset_bottom = 44.0
+	shop_btn_go.add_theme_font_size_override("font_size", 20)
+	shop_btn_go.pressed.connect(_on_game_over_go_shop)
+	game_over_panel.add_child(shop_btn_go)
+	var dismiss := Button.new()
+	dismiss.name = "DismissBtn"
+	dismiss.text = "Stay on Menu"
+	dismiss.anchor_left = 0.15
+	dismiss.anchor_right = 0.85
+	dismiss.anchor_top = 0.72
+	dismiss.offset_bottom = 44.0
+	dismiss.add_theme_font_size_override("font_size", 18)
+	dismiss.pressed.connect(_on_game_over_dismiss)
+	game_over_panel.add_child(dismiss)
+
+func _setup_credits_panel() -> void:
+	credits_panel.z_index = 100
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.08, 0.1, 0.14, 0.96)
+	style.corner_radius_top_left = 12
+	style.corner_radius_top_right = 12
+	style.corner_radius_bottom_left = 12
+	style.corner_radius_bottom_right = 12
+	style.border_width_left = 2
+	style.border_width_top = 2
+	style.border_width_right = 2
+	style.border_width_bottom = 2
+	style.border_color = Color(0.35, 0.55, 0.85, 0.9)
+	credits_panel.add_theme_stylebox_override("panel", style)
+	credits_text.add_theme_color_override("default_color", Color(0.92, 0.94, 0.98))
+	credits_text.add_theme_color_override("font_selected_color", Color(0.55, 0.75, 1.0))
+	credits_text.add_theme_color_override("font_outline_color", Color(0.05, 0.06, 0.08))
+	credits_text.add_theme_constant_override("outline_size", 2)
 
 func _on_options() -> void:
 	_play_menu_select()
@@ -222,9 +312,33 @@ func _fade_to(callback: Callable) -> void:
 	tw.tween_property(self, "modulate:a", 0.0, 0.28)
 	tw.tween_callback(callback)
 
+func _show_game_over_panel() -> void:
+	if game_over_panel == null:
+		return
+	game_over_panel.visible = true
+	game_over_panel.move_to_front()
+	var msg := game_over_panel.get_node_or_null("MessageLabel") as Label
+	if msg:
+		msg.text = "You have no lives left.\nBuy a life in the Shop (10 coins), then press Continue again."
+
+func _on_game_over_go_shop() -> void:
+	_play_menu_select()
+	if game_over_panel:
+		game_over_panel.visible = false
+	GameManager.set_meta("open_shop_on_map", true)
+	_fade_to(Main.instance.load_world_map)
+
+func _on_game_over_dismiss() -> void:
+	_play_menu_select()
+	if game_over_panel:
+		game_over_panel.visible = false
+
 func _on_credits_close() -> void:
 	_play_menu_select()
 	credits_panel.visible = false
+	center_menu.visible = true
+	title_lbl.visible = true
+	title_static_lbl.visible = true
 
 func _html_to_bbcode(html: String) -> String:
 	var re := RegEx.new()
@@ -236,6 +350,7 @@ func _on_credits_link(meta: Variant) -> void:
 		OS.shell_open(meta)
 
 func _play_menu_select() -> void:
+	_notify_web_audio_gesture()
 	if get_node_or_null("/root/AudioManager") != null:
 		AudioManager.play_sfx("menu_select")
 
@@ -243,6 +358,11 @@ func _play_menu_select() -> void:
 # ── Cheat codes ───────────────────────────────────────────────────────────────
 
 func _input(event: InputEvent) -> void:
+	if OS.has_feature("web"):
+		if event is InputEventMouseButton and event.pressed:
+			_notify_web_audio_gesture()
+		elif event is InputEventScreenTouch and event.pressed:
+			_notify_web_audio_gesture()
 	if credits_panel.visible:
 		if event.is_action_pressed("ui_cancel") or (event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE):
 			_on_credits_close()
@@ -282,6 +402,7 @@ func _give_coins(amount: int) -> void:
 func _give_lives(amount: int) -> void:
 	GameManager.lives += amount
 	GameManager.lives_changed.emit(GameManager.lives)
+	LevelManager.clear_session_game_over()
 	LevelManager.save_progress()
 	_show_cheat_feedback("+%d lives!" % amount)
 

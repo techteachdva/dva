@@ -40,22 +40,23 @@ layout_mode   = 2
 [node name="Title" type="Label" parent="Panel/Margin/VBox"]
 layout_mode   = 2
 theme_override_font_sizes/font_size = 28
-text          = "🛒  SHOP"
+text          = "SHOP"
 horizontal_alignment = 1
 
 [node name="CoinLabel" type="Label" parent="Panel/Margin/VBox"]
 layout_mode   = 2
 theme_override_font_sizes/font_size = 18
-text          = "🪙  0"
+text          = "0"
 horizontal_alignment = 1
 
 [node name="TabBar" type="TabBar" parent="Panel/Margin/VBox"]
 layout_mode   = 2
-tab_count     = 4
-tab_0/title   = "Skins"
-tab_1/title   = "Themes"
-tab_2/title   = "Music"
-tab_3/title   = "Materials"
+tab_count     = 5
+tab_0/title   = "Supplies"
+tab_1/title   = "Skins"
+tab_2/title   = "Themes"
+tab_3/title   = "Music"
+tab_4/title   = "Materials"
 
 [node name="Scroll" type="ScrollContainer" parent="Panel/Margin/VBox"]
 layout_mode   = 2

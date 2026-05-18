@@ -56,11 +56,8 @@ def magnet(z, x, mag_type="attract", strength=18, length=60):
 def moving_platform(z, x, axis=(1,0,0), dist=3, speed=2.5):
     return {"kind": "moving_platform", "z": z, "x": x, "axis": {"x": axis[0], "y": axis[1], "z": axis[2]}, "dist": dist, "speed": speed}
 
-def hoop_bonus(z, x, y, boost=18):
-    return {"kind": "hoop_bonus", "z": z, "x": x, "y": y, "boost": boost}
-
-def hoop_checkpoint(z, x, y):
-    return {"kind": "hoop_checkpoint", "z": z, "x": x, "y": y}
+def hoop(z, x, y, boost=18):
+    return {"kind": "hoop", "z": z, "x": x, "y": y, "boost": boost}
 
 def zigzag(start_z, length, width, xs, gap, ramp_h=2.5, jump_every=2):
     """Generate a zigzag sequence: segments at alternating x positions with gaps."""
@@ -165,8 +162,8 @@ def generate_world_1():
         [
             checkpoint(-140, 2), checkpoint(-220, -2),
             speed_boost(-50, 0, 16), speed_boost(-140, 2, 14),
-            hoop_bonus(-85, 0, 7.0, 18), hoop_bonus(-176, 2, 6.5, 18),
-            hoop_checkpoint(-131, 2, 3.3),
+            hoop(-85, 0, 7.0, 18), hoop(-176, 2, 6.5, 18),
+            hoop(-131, 2, 3.3),
         ],
         -400
     )
@@ -195,7 +192,7 @@ def generate_world_1():
         [
             checkpoint(-130, 2), checkpoint(-210, 0),
             speed_boost(-50, 0, 14), brake_pad(-120, 0),
-            hoop_checkpoint(-134, 4, 3.8),
+            hoop(-134, 4, 3.8),
         ],
         -320
     )
@@ -226,7 +223,7 @@ def generate_world_1():
         [
             checkpoint(-130, 3), checkpoint(-210, -3),
             speed_boost(-50, 0, 14), brake_pad(-120, 3),
-            brake_pad(-240, 3), hoop_bonus(-90, 3, 5.0, 16),
+            brake_pad(-240, 3), hoop(-90, 3, 5.0, 16),
         ],
         -370
     )
@@ -362,7 +359,7 @@ def generate_world_2():
             checkpoint(-140, 2), checkpoint(-260, -2),
             speed_boost(-50, 0, 18), brake_pad(-120, 2),
             brake_pad(-240, -2), bumper(-180, -2, 18),
-            hoop_bonus(-85, 0, 6.5, 18),
+            hoop(-85, 0, 6.5, 18),
         ],
         -400
     )
@@ -398,7 +395,7 @@ def generate_world_2():
             checkpoint(-140, 2), checkpoint(-280, -2), checkpoint(-380, 3),
             speed_boost(-50, 0, 14), brake_pad(-120, 2),
             brake_pad(-250, -2), brake_pad(-360, 3),
-            hoop_checkpoint(-129, 2, 3.3),
+            hoop(-129, 2, 3.3),
         ],
         -450
     )
@@ -474,7 +471,7 @@ def generate_world_2():
             brake_pad(-240, -2), brake_pad(-360, 0),
             spike(-100, 2, 5, 2), spike(-180, -2, 5, 2),
             spike(-260, -2, 5, 2), spike(-340, 0, 5, 2),
-            hoop_bonus(-85, 0, 6.5, 18), hoop_checkpoint(-192, -2, 3.3),
+            hoop(-85, 0, 6.5, 18), hoop(-192, -2, 3.3),
         ],
         -450
     )
@@ -669,7 +666,7 @@ def generate_world_3():
             brake_pad(-240, -3), brake_pad(-350, 0),
             bumper(-220, -3, 18), spike(-100, 3, 5, 2),
             spike(-180, -3, 5, 2), spike(-280, 3, 5, 2),
-            hoop_checkpoint(-138, 3, 3.8), hoop_bonus(-180, -3, 5.3, 18),
+            hoop(-138, 3, 3.8), hoop(-180, -3, 5.3, 18),
         ],
         -410
     )
@@ -820,7 +817,7 @@ def generate_world_4():
             bumper(-140, 0, 18), bumper(-160, -2, 18), bumper(-160, 2, 18),
             bumper(-200, -2, 20), bumper(-220, 0, 20),
             speed_boost(-50, 0, 16), gravity(-130, 0, 1, 2.0, 80),
-            hoop_bonus(-85, 0, 6.5, 18), hoop_checkpoint(-126, 0, 3.3),
+            hoop(-85, 0, 6.5, 18), hoop(-126, 0, 3.3),
         ],
         -343
     )
@@ -896,7 +893,7 @@ def generate_world_4():
             speed_boost(-50, 0, 16), brake_pad(-280, 0),
             spike(-85, 0, 5, 2), spike(-165, 2, 5, 2),
             spike(-245, -2, 5, 2),
-            hoop_checkpoint(-126, 0, 3.8), hoop_bonus(-151, 2, 5.3, 18),
+            hoop(-126, 0, 3.8), hoop(-151, 2, 5.3, 18),
         ],
         -343
     )
@@ -1052,7 +1049,7 @@ def generate_world_5():
             bumper(-180, 2, 20), bumper(-200, -2, 20),
             speed_boost(-50, 0, 16), speed_boost(-180, 2, 18),
             brake_pad(-280, 0),
-            hoop_checkpoint(-130, 0, 3.6), hoop_bonus(-191, 2, 5.3, 18),
+            hoop(-130, 0, 3.6), hoop(-191, 2, 5.3, 18),
         ],
         -383
     )
@@ -1173,7 +1170,7 @@ def generate_world_5():
             speed_boost(-45, 0, 14), brake_pad(-260, 0),
             spike(-90, 2, 5, 2), spike(-170, -2, 5, 2),
             spike(-250, -3, 5, 2),
-            hoop_checkpoint(-130, 2, 3.8), hoop_bonus(-80, 2, 5.3, 16),
+            hoop(-130, 2, 3.8), hoop(-80, 2, 5.3, 16),
         ],
         -423
     )
@@ -1275,7 +1272,7 @@ def generate_world_6():
             magnet(-220, 0, "attract", 18, 70), magnet(-300, 0, "repel", 20, 70),
             speed_boost(-50, 0, 12), brake_pad(-180, 0),
             brake_pad(-340, 0),
-            hoop_checkpoint(-130, 3, 3.8), hoop_bonus(-60, 0, 3.8, 16),
+            hoop(-130, 3, 3.8), hoop(-60, 0, 3.8, 16),
         ],
         -373
     )
@@ -1350,7 +1347,7 @@ def generate_world_6():
             speed_boost(-45, 0, 14), brake_pad(-280, 0),
             spike(-90, 0, 5, 2), spike(-170, 2, 5, 2),
             spike(-250, -2, 5, 2), spike(-330, 0, 5, 2),
-            hoop_checkpoint(-80, 0, 4.3), hoop_bonus(-130, 0, 4.8, 18),
+            hoop(-80, 0, 4.3), hoop(-130, 0, 4.8, 18),
         ],
         -383
     )
@@ -1401,7 +1398,7 @@ def generate_world_6():
             speed_boost(-480, 0, 18), brake_pad(-120, 2),
             brake_pad(-240, 3), brake_pad(-380, 0),
             brake_pad(-520, 0),
-            hoop_checkpoint(-150, -2, 4.3), hoop_bonus(-270, 3, 5.3, 18),
+            hoop(-150, -2, 4.3), hoop(-270, 3, 5.3, 18),
         ],
         -560
     )

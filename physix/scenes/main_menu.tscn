@@ -71,20 +71,15 @@ custom_minimum_size = Vector2(260, 52)
 layout_mode = 2
 text = "Credits"
 
-[node name="ShopBtn" type="Button" parent="Center/VBox" unique_id=2048102951]
+[node name="OptionsBtn" type="Button" parent="Center/VBox" unique_id=999999999]
 custom_minimum_size = Vector2(260, 52)
 layout_mode = 2
-text = "Shop / Inventory"
+text = "Options"
 
 [node name="QuitBtn" type="Button" parent="Center/VBox" unique_id=1471622943]
 custom_minimum_size = Vector2(260, 52)
 layout_mode = 2
 text = "Quit"
-
-[node name="OptionsBtn" type="Button" parent="Center/VBox" unique_id=999999999]
-custom_minimum_size = Vector2(260, 52)
-layout_mode = 2
-text = "Options"
 
 [node name="TitleLabel" type="Label" parent="." unique_id=810648070]
 layout_mode = 1
@@ -92,8 +87,9 @@ anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
 offset_left = -181.99997
+offset_top = 10.0
 offset_right = 126.0
-offset_bottom = 99.0
+offset_bottom = 85.0
 grow_horizontal = 2
 scale = Vector2(1.2, 1.2)
 theme_override_colors/font_color = Color(0.32941177, 0.13725491, 0.42352942, 1)
@@ -109,9 +105,9 @@ anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
 offset_left = -181.0
-offset_top = -3.0
+offset_top = 10.0
 offset_right = 127.0
-offset_bottom = 96.0
+offset_bottom = 85.0
 grow_horizontal = 2
 scale = Vector2(1.2, 1.2)
 theme_override_colors/font_color = Color(0.32941177, 0.13725491, 0.42352942, 1)
@@ -162,7 +158,8 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 bbcode_enabled = true
 text = "Loading..."
-fit_content = true
+fit_content = false
+scroll_active = true
 
 [node name="CloseBtn" type="Button" parent="CreditsPanel/Margin/VBox" unique_id=191428066]
 layout_mode = 2

@@ -98,25 +98,8 @@ const CAM_NUDGE      := 0.18      # how much the camera shifts toward selection 
 const CAM_PAN_TIME   := 0.35
 const CAM_PAN_EASE   := Tween.EASE_OUT
 const CAM_PAN_TRANS  := Tween.TRANS_QUAD
-
-const FACTS: Array[String] = [
-	"Newton's First Law: an object in motion stays in motion — that's why your ball keeps rolling!",
-	"Friction is a force that slows things down. Ice patches have almost zero friction!",
-	"Gravity pulls everything toward Earth's center at 9.8 m/s². Gravity zones can change that!",
-	"Momentum = mass × velocity. A heavier metal ball has more momentum!",
-	"Wind is just fast-moving air molecules pushing on objects. Wind zones apply sideways force!",
-	"Potential energy becomes kinetic energy as you roll downhill. Higher = faster!",
-	"Godot 4 uses a physics engine to simulate forces 60 times per second!",
-	"3D games use X, Y, and Z axes. In Physix, Z is forward and Y is up!",
-	"Raycasting shoots an invisible laser to check what's below the ball!",
-	"Delta time makes movement smooth on any computer frame rate!",
-	"Shaders and materials control how things look — the ball skin changes color and glow!",
-	"Physix was designed by Phil Carroll, also known as DM Zemo!",
-	"Every level teaches one physics concept. World 1 is gravity, World 2 is friction!",
-	"The 'Unholy Alliance' is a game design idea: player and designer secretly work together!",
-	"Each world's color theme matches its physics concept: blue for ice, purple for gravity!",
-]
-
+const MIN_MAP_ZOOM   := 0.45
+const MAX_MAP_ZOOM   := 2.2
 const MUSIC_TRACKS: Array[Dictionary] = [
 	{"id": "menu",   "name": "Main Theme",    "locked": false},
 	{"id": "world_1","name": "World 1 Theme", "locked": false},
@@ -140,7 +123,7 @@ const MUSIC_TRACKS: Array[Dictionary] = [
 @onready var level_desc:   Label    = $UI/LevelPanel/LevelDesc
 @onready var hint_lbl:     Label    = $UI/HintLabel
 @onready var camera:       Camera2D = $Camera2D
-@onready var shop_btn:     Button   = $UI/ShopBtn
+@onready var shop_btn:     Button   = $UI/SidebarPanel/ShopBtn
 @onready var shop_panel: Control = $UI/ShopPanel
 @onready var ball_preview:  Panel    = $UI/SidebarPanel/BallPreview
 @onready var lives_panel:   Panel    = $UI/SidebarPanel/LivesPanel
@@ -150,16 +133,16 @@ const MUSIC_TRACKS: Array[Dictionary] = [
 @onready var stars_panel:    Panel    = $UI/SidebarPanel/StarsPanel
 @onready var stars_lbl:      Label    = $UI/SidebarPanel/StarsPanel/StarsLabel
 @onready var music_btn:     Button   = $UI/SidebarPanel/MusicBtn
-@onready var options_btn:    Button   = /SidebarPanel/OptionsBtn
+@onready var options_btn:    Button   = $UI/SidebarPanel/OptionsBtn
 @onready var fact_lbl:     Label    = $UI/FactPanel/FactLabel
 @onready var music_panel:  Panel    = $UI/MusicPanel
 @onready var music_title:  Label    = $UI/MusicPanel/MusicTitle
 @onready var close_music_btn: Button = $UI/MusicPanel/CloseMusicBtn
 @onready var dive_transition: CanvasLayer = $LevelDiveTransition
 
-var settings_panel: Panel
-var music_slider: HSlider
-var sfx_slider: HSlider
+var path_anim_offset: float = 0.0
+var _path_redraw_accum: float = 0.0
+const PATH_REDRAW_INTERVAL: float = 0.05
 
 var selected_world: int = 1
 var selected_level: int = 1
@@ -175,16 +158,22 @@ var _adjacency: Dictionary = {}  # key -> Array of neighboring keys
 # Cheat buffer for world-map typing
 var _cheat_buffer: String = ""
 
-# Right-click drag panning
+# Map pan/zoom (Camera2D does not affect Node2D under CanvasLayer — use MapRoot transform)
+var map_root: Node2D
+var _map_draw_layer: Node2D
+var _map_pan: Vector2 = Vector2.ZERO
+var _map_zoom: float = 1.0
 var _panning: bool = false
-var _pan_last_mouse: Vector2 = Vector2.ZERO
+var _pan_mouse_start: Vector2 = Vector2.ZERO
+var _pan_offset_start: Vector2 = Vector2.ZERO
 
 func _ready() -> void:
+	set_process_input(true)
+	set_process_unhandled_input(true)
+	_setup_map_view_root()
+	camera.enabled = false
 	avatar.draw.connect(_draw_avatar)
 	move_hint_layer.draw.connect(_draw_move_hints)
-	# Center camera on the giant hex so the whole map is visible
-	camera.position = MAP_CENTER
-	camera.zoom = Vector2(1.0, 1.0)
 	_spawn_lava_hexes()
 	_build_map()
 	_build_adjacency()
@@ -192,23 +181,115 @@ func _ready() -> void:
 	_move_selector(selected_world, selected_level, true)
 	LevelManager.level_unlocked.connect(func(_w: int, _l: int): _refresh_all_nodes())
 	LevelManager.world_unlocked.connect(_on_world_unlocked)
+	LevelManager.music_unlocked.connect(_on_music_unlocked)
 	_update_available_moves()
-	shop_btn.text = "🛒  Shop / Inventory"
+	LevelManager.apply_session_to_game_manager()
+	if LevelManager.is_session_game_over() or GameManager.lives <= 0:
+		call_deferred("_prompt_out_of_lives")
+	if GameManager.has_meta("open_shop_on_map"):
+		GameManager.remove_meta("open_shop_on_map")
+		call_deferred("_on_shop_pressed")
+	shop_btn.text = "Shop"
 	shop_btn.pressed.connect(_on_shop_pressed)
 	music_btn.pressed.connect(_on_music_pressed)
 	options_btn.pressed.connect(_on_options_pressed)
 	close_music_btn.pressed.connect(_on_music_pressed)
 	_populate_sidebar()
+	_style_hud_panels()
+	_update_controls_hint()
+	UiIconLayout.ensure_texture_child($UI/Panel, "StarCounterIcon", "star", Vector2(20, 20))
 	_show_random_fact()
-	_build_settings_panel()
+	_setup_sidebar_button_icons()
 	if get_node_or_null("/root/AudioManager") != null:
 		AudioManager.playback_mode = LevelManager.get_music_mode()
 		AudioManager.loop_enabled = LevelManager.is_music_loop_enabled()
 		AudioManager.single_track = LevelManager.get_equipped_music()
 		AudioManager.play_music("menu")
 
+func _setup_map_view_root() -> void:
+	map_root = Node2D.new()
+	map_root.name = "MapRoot"
+	add_child(map_root)
+	move_child(map_root, 0)
+	for node_name: String in ["BGLayer", "ParallaxBackground", "PathLayer", "NodeLayer", "MoveHintLayer", "Avatar"]:
+		var node: Node = get_node(node_name)
+		remove_child(node)
+		map_root.add_child(node)
+	_map_draw_layer = Node2D.new()
+	_map_draw_layer.name = "MapDrawLayer"
+	_map_draw_layer.z_index = -5
+	map_root.add_child(_map_draw_layer)
+	map_root.move_child(_map_draw_layer, 0)
+	_map_draw_layer.draw.connect(_draw_map_content)
+	_apply_map_view(true)
+
+
+func _apply_map_view(instant: bool = false) -> void:
+	if map_root == null:
+		return
+	var vp_half: Vector2 = get_viewport_rect().size * 0.5
+	var target_pos: Vector2 = vp_half - MAP_CENTER * _map_zoom + _map_pan
+	map_root.scale = Vector2(_map_zoom, _map_zoom)
+	if instant:
+		map_root.position = target_pos
+	else:
+		var tw := create_tween().set_ease(CAM_PAN_EASE).set_trans(CAM_PAN_TRANS)
+		tw.tween_property(map_root, "position", target_pos, CAM_PAN_TIME)
+	var para: ParallaxBackground = map_root.get_node_or_null("ParallaxBackground") as ParallaxBackground
+	if para != null:
+		para.scroll_base_offset = -_map_pan * 0.25
+
+
+func _apply_zoom(factor: float, focal: Vector2 = Vector2.ZERO) -> void:
+	if map_root == null:
+		return
+	var focus: Vector2 = focal
+	if focus == Vector2.ZERO:
+		focus = get_viewport_rect().size * 0.5
+	var map_coord: Vector2 = (focus - map_root.position) / _map_zoom
+	_map_zoom = clampf(_map_zoom * factor, MIN_MAP_ZOOM, MAX_MAP_ZOOM)
+	var vp_half: Vector2 = get_viewport_rect().size * 0.5
+	map_root.position = focus - map_coord * _map_zoom
+	_map_pan = map_root.position - vp_half + MAP_CENTER * _map_zoom
+	map_root.scale = Vector2(_map_zoom, _map_zoom)
+	var para: ParallaxBackground = map_root.get_node_or_null("ParallaxBackground") as ParallaxBackground
+	if para != null:
+		para.scroll_base_offset = -_map_pan * 0.25
+
+
+func _style_hud_panels() -> void:
+	var panel_style := _hud_panel_style(Color(0.05, 0.08, 0.12, 0.94), Color(0.25, 0.55, 0.78, 0.9))
+	for path: String in ["UI/Panel", "UI/LevelPanel", "UI/SidebarPanel", "UI/FactPanel"]:
+		var panel: Panel = get_node_or_null(path) as Panel
+		if panel:
+			panel.add_theme_stylebox_override("panel", panel_style)
+
+
+func _hud_panel_style(bg: Color, border: Color) -> StyleBoxFlat:
+	var s := StyleBoxFlat.new()
+	s.bg_color = bg
+	s.border_color = border
+	s.border_width_left = 2
+	s.border_width_top = 2
+	s.border_width_right = 2
+	s.border_width_bottom = 2
+	s.corner_radius_top_left = 10
+	s.corner_radius_top_right = 10
+	s.corner_radius_bottom_left = 10
+	s.corner_radius_bottom_right = 10
+	s.shadow_color = Color(0, 0, 0, 0.45)
+	s.shadow_size = 6
+	return s
+
+
+func _update_controls_hint() -> void:
+	var controls: Label = get_node_or_null("UI/Controls") as Label
+	if controls:
+		controls.text = "Right/Middle drag: pan map  |  Scroll: zoom  |  Arrows + Enter: play  |  Esc: options  |  S: shop"
+
+
 func _spawn_lava_hexes() -> void:
-	var bg: Node2D = $BGLayer
+	var bg: Node2D = map_root.get_node("BGLayer") if map_root else $BGLayer
 	var shader: Shader = preload("res://assets/shaders/lava_lamp_2d.gdshader")
 	for world: int in LevelManager.WORLDS:
 		var world_data: Dictionary = LevelManager.WORLDS[world]
@@ -244,8 +325,28 @@ func _spawn_lava_hexes() -> void:
 	bonus_poly.material = bonus_mat
 	bg.add_child(bonus_poly)
 
+func _require_lives_to_launch() -> bool:
+	if GameManager.lives > 0 and not LevelManager.is_session_game_over():
+		LevelManager.clear_session_game_over()
+		LevelManager.save_progress()
+		return true
+	is_launching = false
+	set_process_input(true)
+	hint_lbl.text = "Out of lives! Open Shop to buy a life, then Continue from the main menu."
+	hint_lbl.visible = true
+	var timer := get_tree().create_timer(3.0)
+	timer.timeout.connect(func() -> void:
+		if is_inside_tree():
+			hint_lbl.visible = false
+	, CONNECT_ONE_SHOT)
+	return false
+
+func _prompt_out_of_lives() -> void:
+	hint_lbl.text = "Out of lives — buy one in the Shop (10 coins), then use Continue on the main menu."
+	hint_lbl.visible = true
+
 func _on_shop_pressed() -> void:
-	shop_panel.open()
+	shop_panel.open(0)
 
 func _populate_sidebar() -> void:
 	# Ball preview — match equipped skin color
@@ -263,52 +364,74 @@ func _populate_sidebar() -> void:
 	ball_style.corner_radius_bottom_right = 40
 	ball_preview.add_theme_stylebox_override("panel", ball_style)
 
-	# Lives panel (circular, red-pink)
-	var lives_style := StyleBoxFlat.new()
-	lives_style.bg_color = Color(0.92, 0.22, 0.30, 0.90)
-	lives_style.corner_radius_top_left = 32
-	lives_style.corner_radius_top_right = 32
-	lives_style.corner_radius_bottom_left = 32
-	lives_style.corner_radius_bottom_right = 32
-	lives_panel.add_theme_stylebox_override("panel", lives_style)
-	lives_lbl.text = "❤\nx%d" % GameManager.lives
-	lives_lbl.add_theme_font_size_override("font_size", 22)
-	lives_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	lives_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	var sidebar_cyan := _sidebar_panel_style()
+	lives_panel.add_theme_stylebox_override("panel", sidebar_cyan)
+	coins_panel.add_theme_stylebox_override("panel", sidebar_cyan.duplicate())
+	stars_panel.add_theme_stylebox_override("panel", sidebar_cyan.duplicate())
 
-	# Coins panel (circular, gold)
-	var coins_style := StyleBoxFlat.new()
-	coins_style.bg_color = Color(0.95, 0.72, 0.12, 0.90)
-	coins_style.corner_radius_top_left = 32
-	coins_style.corner_radius_top_right = 32
-	coins_style.corner_radius_bottom_left = 32
-	coins_style.corner_radius_bottom_right = 32
-	coins_panel.add_theme_stylebox_override("panel", coins_style)
-	coins_lbl.text = "🪙\nx%d" % GameManager.coins
-	coins_lbl.add_theme_font_size_override("font_size", 22)
-	coins_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	coins_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	var stat_font := Color(0.95, 0.98, 1.0)
+	lives_lbl.text = "x%d" % GameManager.lives
+	lives_lbl.add_theme_font_size_override("font_size", 20)
+	lives_lbl.add_theme_color_override("font_color", stat_font)
+	UiIconLayout.stat_label_with_icon(lives_panel, lives_lbl, "heart", lives_lbl.text)
 
-	# Stars panel (circular, yellow)
-	var stars_style := StyleBoxFlat.new()
-	stars_style.bg_color = Color(0.95, 0.82, 0.15, 0.90)
-	stars_style.corner_radius_top_left = 32
-	stars_style.corner_radius_top_right = 32
-	stars_style.corner_radius_bottom_left = 32
-	stars_style.corner_radius_bottom_right = 32
-	stars_panel.add_theme_stylebox_override("panel", stars_style)
-	stars_lbl.text = "⭐\n%d" % GameManager.total_stars
-	stars_lbl.add_theme_font_size_override("font_size", 22)
-	stars_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	stars_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	coins_lbl.text = "x%d" % GameManager.coins
+	coins_lbl.add_theme_font_size_override("font_size", 20)
+	coins_lbl.add_theme_color_override("font_color", stat_font)
+	UiIconLayout.stat_label_with_icon(coins_panel, coins_lbl, "coin", coins_lbl.text)
+
+	stars_lbl.text = "%d" % GameManager.total_stars
+	stars_lbl.add_theme_font_size_override("font_size", 20)
+	stars_lbl.add_theme_color_override("font_color", stat_font)
+	UiIconLayout.stat_label_with_icon(stars_panel, stars_lbl, "star", stars_lbl.text)
+
+func _setup_sidebar_button_icons() -> void:
+	var music_tex := GameIcons.get_menu_texture("MusicBtn")
+	if music_tex:
+		music_btn.icon = music_tex
+		music_btn.expand_icon = true
+		music_btn.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		music_btn.text = " Music"
+
+	var shop_tex := GameIcons.get_menu_texture("ShopBtn")
+	if shop_tex:
+		shop_btn.icon = shop_tex
+		shop_btn.expand_icon = true
+		shop_btn.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		shop_btn.text = " Shop"
+
+	var options_tex := GameIcons.get_menu_texture("OptionsBtn")
+	if options_tex:
+		options_btn.icon = options_tex
+		options_btn.expand_icon = true
+		options_btn.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		options_btn.text = " Options"
+
+func _sidebar_panel_style() -> StyleBoxFlat:
+	var s := StyleBoxFlat.new()
+	s.bg_color = Color(0.06, 0.58, 0.78, 0.94)
+	s.border_color = Color(0.35, 0.88, 1.0, 0.85)
+	s.border_width_top = 2
+	s.border_width_bottom = 2
+	s.border_width_left = 2
+	s.border_width_right = 2
+	s.corner_radius_top_left = 32
+	s.corner_radius_top_right = 32
+	s.corner_radius_bottom_left = 32
+	s.corner_radius_bottom_right = 32
+	return s
 
 func _show_random_fact() -> void:
-	var fact: String = FACTS[randi() % FACTS.size()]
-	fact_lbl.text = "💡  " + fact
+	fact_lbl.text = GameplayFacts.format_did_you_know(LevelManager.pop_next_fact())
+
+func _on_music_unlocked(_track_id: String) -> void:
+	if music_panel.visible:
+		_build_music_menu()
 
 func _on_music_pressed() -> void:
 	music_panel.visible = not music_panel.visible
 	if music_panel.visible:
+		music_panel.add_theme_stylebox_override("panel", _hud_panel_style(Color(0.04, 0.06, 0.1, 0.97), Color(0.35, 0.62, 0.88, 0.95)))
 		_build_music_menu()
 
 func _build_music_menu() -> void:
@@ -326,7 +449,7 @@ func _build_music_menu() -> void:
 	default_btn.offset_top = y_off
 	default_btn.offset_bottom = y_off + 34
 	if LevelManager.get_music_mode() == "default":
-		default_btn.text += "  ✓"
+		default_btn.text += "  >"
 	default_btn.pressed.connect(_on_music_mode_selected.bind("default"))
 	music_panel.add_child(default_btn)
 	y_off += 40
@@ -351,7 +474,7 @@ func _build_music_menu() -> void:
 	random_btn.offset_top = y_off
 	random_btn.offset_bottom = y_off + 34
 	if LevelManager.get_music_mode() == "random":
-		random_btn.text += "  ✓"
+		random_btn.text += "  >"
 	random_btn.pressed.connect(_on_music_mode_selected.bind("random"))
 	music_panel.add_child(random_btn)
 	y_off += 36
@@ -368,12 +491,12 @@ func _build_music_menu() -> void:
 		var is_unlocked: bool = not locked or LevelManager.is_music_unlocked(track["id"])
 		btn.disabled = not is_unlocked
 		if not is_unlocked:
-			btn.text += "  🔒"
+			btn.text += "  [LOCKED]"
 			btn.modulate = Color(0.5, 0.5, 0.5, 1)
 		var mode_is_track := LevelManager.get_music_mode() == "track"
 		var equipped := LevelManager.get_equipped_music()
 		if mode_is_track and equipped == track["id"]:
-			btn.text += "  ✓"
+			btn.text += "  >"
 		btn.pressed.connect(_on_music_track_selected.bind(track["id"]))
 		music_panel.add_child(btn)
 		y_off += 36
@@ -407,23 +530,33 @@ func _on_music_track_selected(track_id: String) -> void:
 		AudioManager.play_music(track_id)
 	_build_music_menu()
 
-func _build_settings_panel() -> void:
-	# Replaced by OptionsPanel
-	pass
-
 func _ensure_options_panel() -> void:
-	var opts: Node = .get_node_or_null("OptionsPanel")
+	var ui: CanvasLayer = $UI
+	var opts: Node = ui.get_node_or_null("OptionsPanel")
 	if opts == null:
 		opts = preload("res://scripts/ui/options_panel.gd").new()
 		opts.name = "OptionsPanel"
 		opts.closed.connect(_on_options_closed)
-		.add_child(opts)
+		if opts.has_signal("main_menu_requested"):
+			opts.main_menu_requested.connect(_on_back_to_menu)
+		ui.add_child(opts)
 
 func _on_options_pressed() -> void:
 	if get_node_or_null("/root/AudioManager") != null:
 		AudioManager.play_sfx("menu_select")
 	_ensure_options_panel()
-	/OptionsPanel.open()
+	var opts := $UI.get_node_or_null("OptionsPanel")
+	if opts != null:
+		if opts is CanvasItem:
+			(opts as CanvasItem).z_index = 50
+		if opts.has_method("open"):
+			opts.open()
+
+func _map_modals_open() -> bool:
+	if shop_panel.visible or music_panel.visible:
+		return true
+	var opts := $UI.get_node_or_null("OptionsPanel")
+	return opts != null and opts.visible
 
 func _on_options_closed() -> void:
 	pass
@@ -441,7 +574,7 @@ func _on_quit_game() -> void:
 # ── Map construction ──────────────────────────────────────────────────────────
 
 func _build_map() -> void:
-	queue_redraw()
+	_redraw_map_layer()
 	for world: int in LevelManager.WORLDS:
 		var world_data: Dictionary = LevelManager.WORLDS[world]
 		for lvl: int in range(1, world_data.levels + 1):
@@ -454,7 +587,8 @@ func _build_map() -> void:
 			node.setup(world, lvl,
 				LevelManager.get_level_stars(world, lvl),
 				LevelManager.is_level_unlocked(world, lvl),
-				world_data.color)
+				world_data.color,
+				LevelManager.get_best_time(world, lvl))
 			node.pressed.connect(_on_node_pressed.bind(world, lvl))
 			node_map[key] = node
 	# Bonus nodes B-1 through B-6
@@ -511,6 +645,8 @@ func _launch_secret() -> void:
 		return
 	is_launching = true
 	set_process_input(false)
+	if not _require_lives_to_launch():
+		return
 	GameManager.current_world = 0
 	GameManager.current_level = selected_level
 
@@ -519,21 +655,16 @@ func _launch_secret() -> void:
 	if selected_node:
 		var node_tween := create_tween()
 		node_tween.tween_property(selected_node, "scale", Vector2(1.25, 1.25), 0.3).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
-		var cam_tween := create_tween().set_parallel()
-		cam_tween.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_QUAD)
-		cam_tween.tween_property(camera, "zoom", Vector2(1.6, 1.6), 0.55)
-		cam_tween.tween_property(camera, "position", selected_node.global_position + Vector2(40, 40), 0.55)
+		_tween_map_focus_on_key(key, 0.55)
 		await get_tree().create_timer(0.15).timeout
-		var hex_screen_pos: Vector2 = selected_node.global_position - camera.global_position
-		hex_screen_pos *= camera.zoom
-		hex_screen_pos += get_viewport().get_visible_rect().size * 0.5
+		var hex_screen_pos: Vector2 = _hex_center_screen(selected_node, key)
 		var hex_color: Color = selected_node.world_color if selected_node.get("world_color") != null else Color(0.8, 0.2, 0.9)
 		dive_transition.start(hex_screen_pos, hex_color, func():
 			Main.instance.load_secret_level(0, selected_level)
 		)
 	else:
 		var tween := create_tween().set_parallel()
-		tween.tween_property(camera, "zoom", Vector2(2.0, 2.0), 0.5)
+		_tween_map_zoom_out(tween, 0.5)
 		tween.tween_property(self, "modulate:a", 0.0, 0.6).set_ease(Tween.EASE_IN)
 		await tween.finished
 		Main.instance.load_secret_level(0, selected_level)
@@ -563,20 +694,31 @@ func _is_bonus_unlocked(world: int) -> bool:
 			return false
 	return true
 
-var path_anim_offset: float = 0.0
-
-func _draw() -> void:
+func _draw_map_content() -> void:
 	_draw_map_backdrop()
 	_world_regions_draw()
 	_path_lines_draw()
 
 func _draw_map_backdrop() -> void:
-	# Soft circular backdrop — no straight edges, covers whole map
-	draw_circle(CENTER, 720, Color(0.06, 0.07, 0.11, 0.92))
-	# Very faint rim
-	draw_circle(CENTER, 720, Color(0.12, 0.14, 0.22, 0.25))
+	if _map_draw_layer == null:
+		return
+	# Layered vignette disc + subtle inner glow
+	_map_draw_layer.draw_circle(CENTER, 760, Color(0.03, 0.04, 0.07, 0.55))
+	_map_draw_layer.draw_circle(CENTER, 700, Color(0.05, 0.07, 0.12, 0.88))
+	_map_draw_layer.draw_circle(CENTER, 640, Color(0.07, 0.09, 0.15, 0.35))
+	_map_draw_layer.draw_circle(CENTER, 700, Color(0.18, 0.32, 0.48, 0.12), false, 3.0)
+	# Soft map grid
+	var grid_col := Color(0.35, 0.5, 0.65, 0.07)
+	for gx: int in range(-4, 5):
+		var x := CENTER.x + float(gx) * 120.0
+		_map_draw_layer.draw_line(Vector2(x, CENTER.y - 720), Vector2(x, CENTER.y + 720), grid_col, 1.0)
+	for gy: int in range(-4, 5):
+		var y := CENTER.y + float(gy) * 120.0
+		_map_draw_layer.draw_line(Vector2(CENTER.x - 720, y), Vector2(CENTER.x + 720, y), grid_col, 1.0)
 
 func _world_regions_draw() -> void:
+	if _map_draw_layer == null:
+		return
 	# Lava-lamp hex fills are now Polygon2D nodes created in _ready.
 	# Only draw borders here (they change brightness with selection).
 	for world: int in LevelManager.WORLDS:
@@ -588,13 +730,14 @@ func _world_regions_draw() -> void:
 
 		var hex_pts := _hex_outline(center, radius, 6)
 		var border_col := base_color.lightened(0.35)
-		border_col.a = 0.50 if is_active else 0.22
-		draw_polyline(hex_pts + PackedVector2Array([hex_pts[0]]), border_col, 1.5)
+		border_col.a = 0.65 if is_active else 0.24
+		var line_w := 2.5 if is_active else 1.5
+		_map_draw_layer.draw_polyline(hex_pts + PackedVector2Array([hex_pts[0]]), border_col, line_w)
 
 	# Center Bonus Hub border
 	var bonus_pts := _hex_outline(CENTER, 52, 6)
-	var hub_border := Color(1.0, 0.92, 0.35, 0.45)
-	draw_polyline(bonus_pts + PackedVector2Array([bonus_pts[0]]), hub_border, 1.5)
+	var hub_border := Color(1.0, 0.92, 0.35, 0.55)
+	_map_draw_layer.draw_polyline(bonus_pts + PackedVector2Array([bonus_pts[0]]), hub_border, 2.0)
 
 func _hex_outline(center: Vector2, radius: float, sides: int) -> PackedVector2Array:
 	var pts := PackedVector2Array()
@@ -637,6 +780,8 @@ func _bezier_length(pts: Array[Vector2]) -> float:
 	return len_
 
 func _path_lines_draw() -> void:
+	if _map_draw_layer == null:
+		return
 	for path: Array in PATHS:
 		var a_key: String = path[0]
 		var b_key: String = path[1]
@@ -668,11 +813,11 @@ func _path_lines_draw() -> void:
 		if is_unlocked:
 			# Glow underneath
 			var glow_col := Color(0.9, 0.85, 0.4, 0.12 * path_alpha)
-			draw_polyline(pts, glow_col, 6.0)
-			draw_polyline(pts, glow_col, 4.0)
+			_map_draw_layer.draw_polyline(pts, glow_col, 6.0)
+			_map_draw_layer.draw_polyline(pts, glow_col, 4.0)
 			# Bright core
 			var core := Color(0.95, 0.9, 0.5, 0.9 * path_alpha)
-			draw_polyline(pts, core, 3.0)
+			_map_draw_layer.draw_polyline(pts, core, 3.0)
 			# Animated dashes
 			var dash_len := 12.0
 			var gap_len := 8.0
@@ -689,7 +834,7 @@ func _path_lines_draw() -> void:
 				var seg_a := _bezier_point(a, ctrl_pt, b, t0)
 				var seg_b := _bezier_point(a, ctrl_pt, b, t1)
 				var dash_col := Color(1, 1, 1, 0.55 * path_alpha)
-				draw_line(seg_a, seg_b, dash_col, 2.0)
+				_map_draw_layer.draw_line(seg_a, seg_b, dash_col, 2.0)
 		else:
 			# Locked path — subtle dashed line following the curve
 			var steps := int(dist / 14.0)
@@ -699,22 +844,41 @@ func _path_lines_draw() -> void:
 				var seg_a := _bezier_point(a, ctrl_pt, b, t0)
 				var seg_b := _bezier_point(a, ctrl_pt, b, t1)
 				var locked_col := Color(0.3, 0.3, 0.35, 0.5 * path_alpha)
-				draw_line(seg_a, seg_b, locked_col, 2.0)
+				_map_draw_layer.draw_line(seg_a, seg_b, locked_col, 2.0)
+
+func _redraw_map_layer() -> void:
+	if _map_draw_layer != null:
+		_map_draw_layer.queue_redraw()
+
+
+func _update_map_pan_drag() -> void:
+	if _map_modals_open():
+		_panning = false
+		return
+	var want_pan := Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT) or Input.is_mouse_button_pressed(MOUSE_BUTTON_MIDDLE)
+	var mouse := get_viewport().get_mouse_position()
+	if want_pan:
+		if not _panning:
+			_panning = true
+			_pan_mouse_start = mouse
+			_pan_offset_start = _map_pan
+		else:
+			_map_pan = _pan_offset_start + (mouse - _pan_mouse_start)
+			_apply_map_view(true)
+	else:
+		_panning = false
+
 
 func _process(delta: float) -> void:
 	avatar_bounce += delta * 6.0
 	path_anim_offset += delta * 40.0
 	avatar.queue_redraw()
-	queue_redraw()
+	_path_redraw_accum += delta
+	if _path_redraw_accum >= PATH_REDRAW_INTERVAL:
+		_path_redraw_accum = 0.0
+		_redraw_map_layer()
 
-	# Right-click drag panning (screen-space to avoid camera feedback loop)
-	if _panning:
-		var mouse := get_viewport().get_mouse_position()
-		var delta_pos: Vector2 = (mouse - _pan_last_mouse) / camera.zoom
-		camera.position -= delta_pos
-		camera.position.x = clampf(camera.position.x, camera.limit_left + get_viewport_rect().size.x * 0.5 / camera.zoom.x, camera.limit_right - get_viewport_rect().size.x * 0.5 / camera.zoom.x)
-		camera.position.y = clampf(camera.position.y, camera.limit_top + get_viewport_rect().size.y * 0.5 / camera.zoom.y, camera.limit_bottom - get_viewport_rect().size.y * 0.5 / camera.zoom.y)
-		_pan_last_mouse = mouse
+	_update_map_pan_drag()
 
 func _is_path_unlocked(key: String) -> bool:
 	if key == "BONUS":
@@ -754,28 +918,31 @@ func _world_radius(world: int) -> float:
 # ── Input ─────────────────────────────────────────────────────────────────────
 
 func _unhandled_input(event: InputEvent) -> void:
+	if _map_modals_open():
+		return
 	if event is InputEventMouseButton:
-		if event.button_index == MOUSE_BUTTON_WHEEL_UP and event.pressed:
-			camera.zoom = camera.zoom * 1.1
-			camera.zoom = camera.zoom.clamp(Vector2(0.3, 0.3), Vector2(3.0, 3.0))
+		var mb := event as InputEventMouseButton
+		if mb.button_index == MOUSE_BUTTON_WHEEL_UP and mb.pressed:
+			_apply_zoom(1.1, mb.position)
 			get_viewport().set_input_as_handled()
-		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN and event.pressed:
-			camera.zoom = camera.zoom / 1.1
-			camera.zoom = camera.zoom.clamp(Vector2(0.3, 0.3), Vector2(3.0, 3.0))
+		elif mb.button_index == MOUSE_BUTTON_WHEEL_DOWN and mb.pressed:
+			_apply_zoom(1.0 / 1.1, mb.position)
 			get_viewport().set_input_as_handled()
 
 func _input(event: InputEvent) -> void:
-	# Right-click drag panning — handle early so UI nodes don't steal it
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT:
-		if event.pressed:
-			_panning = true
-			_pan_last_mouse = get_viewport().get_mouse_position()
-		else:
-			_panning = false
-		get_viewport().set_input_as_handled()
-		return
+	if not _map_modals_open():
+		if event is InputEventMouseButton:
+			var mb := event as InputEventMouseButton
+			if mb.button_index == MOUSE_BUTTON_WHEEL_UP and mb.pressed:
+				_apply_zoom(1.1, mb.position)
+				get_viewport().set_input_as_handled()
+				return
+			if mb.button_index == MOUSE_BUTTON_WHEEL_DOWN and mb.pressed:
+				_apply_zoom(1.0 / 1.1, mb.position)
+				get_viewport().set_input_as_handled()
+				return
 
-	var opts_panel := .get_node_or_null("OptionsPanel")
+	var opts_panel := $UI.get_node_or_null("OptionsPanel")
 	if opts_panel != null and opts_panel.visible:
 		if event.is_action_pressed("ui_cancel"):
 			opts_panel._on_close()
@@ -806,9 +973,9 @@ func _input(event: InputEvent) -> void:
 		_on_shop_pressed()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_cancel"):
-		settings_panel.visible = true
 		shop_panel.visible = false
 		music_panel.visible = false
+		_on_options_pressed()
 		get_viewport().set_input_as_handled()
 	elif event is InputEventKey and event.pressed and not event.echo:
 		var ch := event.as_text().to_lower()
@@ -935,7 +1102,7 @@ func _on_node_pressed(world: int, level: int) -> void:
 	if is_launching:
 		return
 	if not LevelManager.is_level_unlocked(world, level):
-		hint_lbl.text    = "🔒 Earn more stars to unlock!"
+		hint_lbl.text    = "[LOCKED] Earn more stars to unlock!"
 		hint_lbl.visible = true
 		await get_tree().create_timer(2.0).timeout
 		if not is_inside_tree():
@@ -955,7 +1122,7 @@ func _on_bonus_pressed(world: int) -> void:
 	if is_launching:
 		return
 	if not _is_bonus_unlocked(world):
-		hint_lbl.text    = "🔒 Complete all levels in this world to unlock!"
+		hint_lbl.text    = "[LOCKED] Complete all levels in this world to unlock!"
 		hint_lbl.visible = true
 		await get_tree().create_timer(2.5).timeout
 		if not is_inside_tree():
@@ -990,6 +1157,9 @@ func _launch() -> void:
 		set_process_input(true)
 		return
 
+	if not _require_lives_to_launch():
+		return
+
 	GameManager.current_world = selected_world
 	GameManager.current_level = selected_level
 	var _path := LevelManager.get_level_scene_path(selected_world, selected_level)
@@ -1002,16 +1172,11 @@ func _launch() -> void:
 		var node_tween := create_tween()
 		node_tween.tween_property(selected_node, "scale", Vector2(1.25, 1.25), 0.3).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
 
-		var cam_tween := create_tween().set_parallel()
-		cam_tween.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_QUAD)
-		cam_tween.tween_property(camera, "zoom", Vector2(1.6, 1.6), 0.55)
-		cam_tween.tween_property(camera, "position", selected_node.global_position + Vector2(40, 40), 0.55)
+		_tween_map_focus_on_key(key, 0.55)
 
 		# Start holographic splash after a brief settle
 		await get_tree().create_timer(0.15).timeout
-		var hex_screen_pos: Vector2 = selected_node.global_position - camera.global_position
-		hex_screen_pos *= camera.zoom
-		hex_screen_pos += get_viewport().get_visible_rect().size * 0.5
+		var hex_screen_pos: Vector2 = _hex_center_screen(selected_node, key)
 		var hex_color: Color = selected_node.world_color if selected_node.get("world_color") != null else Color(1.0, 0.35, 0.0)
 		dive_transition.start(hex_screen_pos, hex_color, func():
 			Main.instance.load_level(selected_world, selected_level)
@@ -1019,7 +1184,7 @@ func _launch() -> void:
 	else:
 		# Fallback: gentle fade if node missing
 		var tween := create_tween().set_parallel()
-		tween.tween_property(camera, "zoom", Vector2(2.0, 2.0), 0.5)
+		_tween_map_zoom_out(tween, 0.5)
 		tween.tween_property(self, "modulate:a", 0.0, 0.6).set_ease(Tween.EASE_IN)
 		await tween.finished
 		Main.instance.load_level(selected_world, selected_level)
@@ -1028,6 +1193,8 @@ func _launch_bonus() -> void:
 	if not _is_bonus_unlocked(selected_world):
 		is_launching = false
 		set_process_input(true)
+		return
+	if not _require_lives_to_launch():
 		return
 
 	GameManager.current_world = selected_world
@@ -1039,26 +1206,65 @@ func _launch_bonus() -> void:
 	if selected_node:
 		var node_tween := create_tween()
 		node_tween.tween_property(selected_node, "scale", Vector2(1.25, 1.25), 0.3).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
-		var cam_tween := create_tween().set_parallel()
-		cam_tween.set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_QUAD)
-		cam_tween.tween_property(camera, "zoom", Vector2(1.6, 1.6), 0.55)
-		cam_tween.tween_property(camera, "position", selected_node.global_position + Vector2(40, 40), 0.55)
+		_tween_map_focus_on_key(key, 0.55)
 		await get_tree().create_timer(0.15).timeout
-		var hex_screen_pos: Vector2 = selected_node.global_position - camera.global_position
-		hex_screen_pos *= camera.zoom
-		hex_screen_pos += get_viewport().get_visible_rect().size * 0.5
+		var hex_screen_pos: Vector2 = _hex_center_screen(selected_node, key)
 		var hex_color: Color = selected_node.world_color if selected_node.get("world_color") != null else Color(1.0, 0.78, 0.05)
 		dive_transition.start(hex_screen_pos, hex_color, func():
 			Main.instance.load_bonus_level(selected_world)
 		)
 	else:
 		var tween := create_tween().set_parallel()
-		tween.tween_property(camera, "zoom", Vector2(2.0, 2.0), 0.5)
+		_tween_map_zoom_out(tween, 0.5)
 		tween.tween_property(self, "modulate:a", 0.0, 0.6).set_ease(Tween.EASE_IN)
 		await tween.finished
 		Main.instance.load_bonus_level(selected_world)
 
 # ── Selector / Avatar movement ──────────────────────────────────────────────────
+
+func _hex_center_screen(node: Node, key: String) -> Vector2:
+	if node != null:
+		return node.global_position + Vector2(40, 40)
+	var local_center: Vector2 = NODE_POSITIONS.get(key, MAP_CENTER) + Vector2(40, 40)
+	if map_root != null:
+		return map_root.position + local_center * _map_zoom
+	return local_center
+
+
+func _tween_map_focus_on_key(key: String, duration: float = 0.55) -> void:
+	var node_center: Vector2 = NODE_POSITIONS.get(key, MAP_CENTER) + Vector2(40, 40)
+	var end_zoom: float = clampf(_map_zoom * 1.35, MIN_MAP_ZOOM, MAX_MAP_ZOOM)
+	var end_pan: Vector2 = get_viewport_rect().size * 0.5 - node_center * end_zoom
+	var tw := create_tween().set_parallel().set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_QUAD)
+	tw.tween_method(
+		func(z: float) -> void:
+			_map_zoom = z
+			_apply_map_view(true),
+		_map_zoom,
+		end_zoom,
+		duration
+	)
+	tw.tween_method(
+		func(p: Vector2) -> void:
+			_map_pan = p
+			_apply_map_view(true),
+		_map_pan,
+		end_pan,
+		duration
+	)
+
+
+func _tween_map_zoom_out(tween: Tween, duration: float) -> void:
+	var end_zoom: float = clampf(_map_zoom * 1.75, MIN_MAP_ZOOM, MAX_MAP_ZOOM)
+	tween.tween_method(
+		func(z: float) -> void:
+			_map_zoom = z
+			_apply_map_view(true),
+		_map_zoom,
+		end_zoom,
+		duration
+	)
+
 
 func _move_selector(world: int, level: int, instant: bool = false) -> void:
 	var key := _get_key(world, level)
@@ -1083,11 +1289,14 @@ func _move_selector_to_key(key: String, instant: bool = false) -> void:
 			_avatar_tween.kill()
 		_avatar_tween = create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 		_avatar_tween.tween_property(avatar, "position", target, 0.25)
-	# Gentle camera nudge toward selected node — full map stays visible
+	# Gentle view nudge toward selected node — full map stays visible
 	var selected_pos: Vector2 = NODE_POSITIONS.get(key, MAP_CENTER) + Vector2(40, 40)
-	var cam_target := MAP_CENTER.lerp(selected_pos, CAM_NUDGE)
+	var vp_half: Vector2 = get_viewport_rect().size * 0.5
+	var focus_pan: Vector2 = vp_half - selected_pos * _map_zoom
+	var target_pan: Vector2 = _map_pan.lerp(focus_pan, CAM_NUDGE)
 	if instant:
-		camera.position = cam_target
+		_map_pan = target_pan
+		_apply_map_view(true)
 		if _cam_tween != null:
 			_cam_tween.kill()
 			_cam_tween = null
@@ -1095,7 +1304,14 @@ func _move_selector_to_key(key: String, instant: bool = false) -> void:
 		if _cam_tween != null:
 			_cam_tween.kill()
 		_cam_tween = create_tween().set_ease(CAM_PAN_EASE).set_trans(CAM_PAN_TRANS)
-		_cam_tween.tween_property(camera, "position", cam_target, CAM_PAN_TIME)
+		_cam_tween.tween_method(
+			func(p: Vector2) -> void:
+				_map_pan = p
+				_apply_map_view(true),
+			_map_pan,
+			target_pan,
+			CAM_PAN_TIME
+		)
 	# Update node selected state
 	for k: String in node_map:
 		var n: Node = node_map[k]
@@ -1185,30 +1401,31 @@ func _draw_arrowhead_on_layer(layer: Node2D, pos: Vector2, dir: Vector2, size: f
 func _update_ui() -> void:
 	var wd: Dictionary = LevelManager.WORLDS.get(selected_world, {})
 	world_lbl.text   = "World %d — %s" % [selected_world, wd.get("name", "")]
-	concept_lbl.text = "📐 %s" % wd.get("concept", "")
-	star_lbl.text    = "⭐ %d" % GameManager.total_stars
+	concept_lbl.text = "Concept: %s" % wd.get("concept", "")
+	star_lbl.text    = "%d" % GameManager.total_stars
 	_populate_sidebar()
 	if selected_world == 0 and selected_level > 0:
 		var secret_data: Dictionary = LevelManager.SECRET_LEVELS.get(selected_level, {})
-		level_lbl.text = "🔒 %s" % secret_data.get("name", "Secret")
+		level_lbl.text = "Secret: %s" % secret_data.get("name", "Secret")
 		level_desc.text = "Secret Level |  Press ENTER to play"
 	elif selected_level == 0:
 		var bonus_data: Dictionary = LevelManager.BONUS_LEVELS.get(selected_world, {})
-		level_lbl.text = "🎁 %s" % bonus_data.get("name", "Bonus")
+		level_lbl.text = "Bonus: %s" % bonus_data.get("name", "Bonus")
 		var completed: bool = LevelManager.is_bonus_completed(selected_world)
-		level_desc.text = "Bonus: %s  |  Reward: +🪙 %d  +❤ %d" % [
+		level_desc.text = "Bonus: %s  |  Reward: +$%d  +HP%d" % [
 			"COMPLETED" if completed else "AVAILABLE",
 			bonus_data.get("reward_coins", 10),
 			bonus_data.get("reward_lives", 1)
 		]
 	else:
 		var s := LevelManager.get_level_stars(selected_world, selected_level)
-		level_lbl.text   = "Level %d-%d   %s" % [
-			selected_world, selected_level,
-			"★".repeat(s) + "☆".repeat(3 - s)
-		]
+		level_lbl.text   = "Level %d-%d   %d/3 stars" % [selected_world, selected_level, s]
 		var status: String = "UNLOCKED" if LevelManager.is_level_unlocked(selected_world, selected_level) else "LOCKED"
-		level_desc.text = "Status: %s  |  Press ENTER to play" % status
+		var best := LevelManager.get_best_time(selected_world, selected_level)
+		var best_line := ""
+		if best < INF:
+			best_line = "  |  Best: %s" % LevelManager.format_time_display(best)
+		level_desc.text = "Status: %s%s  |  Press ENTER to play" % [status, best_line]
 
 func _refresh_all_nodes() -> void:
 	for key: String in node_map:
@@ -1239,13 +1456,14 @@ func _refresh_all_nodes() -> void:
 			var l := int(l_str)
 			node_map[key].refresh(
 				LevelManager.get_level_stars(w, l),
-				LevelManager.is_level_unlocked(w, l)
+				LevelManager.is_level_unlocked(w, l),
+				LevelManager.get_best_time(w, l)
 			)
-	queue_redraw()
+	_redraw_map_layer()
 	_update_available_moves()
 
 func _on_world_unlocked(world: int) -> void:
-	world_lbl.text = "🌟 World %d Unlocked!" % world
+	world_lbl.text = "World %d Unlocked!" % world
 	await get_tree().create_timer(2.5).timeout
 	if not is_inside_tree():
 		return

@@ -20,7 +20,7 @@ var level_deaths: int = 0
 var level_speed_sum: float = 0.0
 var level_speed_samples: int = 0
 
-# Checkpoints & medals
+# Checkpoints & level run stats
 var checkpoint_used: bool = false
 var perfect_path_eligible: bool = true
 
@@ -66,6 +66,10 @@ var active_buffs: Dictionary = {}
 # Temporary storage for editor test-play levels
 var editor_test_data: Dictionary = {}
 
+# Restores level editor state after Test play
+var editor_restore_pending: bool = false
+var editor_saved_session: Dictionary = {}
+
 func add_score(points: int) -> void:
 	score += points
 	score_changed.emit(score)
@@ -76,15 +80,20 @@ func add_coin() -> void:
 	coins_changed.emit(coins)
 	if coins % 100 == 0:
 		add_life()
+	_sync_session_save()
 
 func add_life() -> void:
 	lives += 1
 	lives_changed.emit(lives)
+	if get_node_or_null("/root/LevelManager") != null:
+		LevelManager.clear_session_game_over()
+	_sync_session_save()
 
 func spend_coins(amount: int) -> bool:
 	if coins >= amount:
 		coins -= amount
 		coins_changed.emit(coins)
+		_sync_session_save()
 		return true
 	return false
 
@@ -93,8 +102,28 @@ func lose_life() -> void:
 	level_deaths += 1
 	lives_changed.emit(lives)
 	perfect_path_eligible = false
+	_sync_session_save()
 	if lives <= 0:
+		if get_node_or_null("/root/LevelManager") != null:
+			LevelManager.set_session_game_over(true)
 		game_over.emit()
+
+func try_spend_life_for_retry() -> bool:
+	if lives <= 0:
+		if get_node_or_null("/root/LevelManager") != null:
+			LevelManager.set_session_game_over(true)
+		game_over.emit()
+		return false
+	lives -= 1
+	lives_changed.emit(lives)
+	_sync_session_save()
+	if lives <= 0 and get_node_or_null("/root/LevelManager") != null:
+		LevelManager.set_session_game_over(true)
+	return true
+
+func _sync_session_save() -> void:
+	if get_node_or_null("/root/LevelManager") != null:
+		LevelManager.sync_session_from_game_manager()
 
 func obstacle_cleared() -> void:
 	level_obstacles_cleared += 1
@@ -112,29 +141,16 @@ func get_avg_speed() -> float:
 		return 0.0
 	return level_speed_sum / float(level_speed_samples)
 
-func calculate_star_rating(time: float, coins_collected: int, total_coins: int, _obstacles: int, deaths: int, par_time: float, _max_speed: float = 32.0) -> int:
-	# Composite star rating — hoops + time + performance
+func calculate_star_rating() -> int:
 	var total_hoops := level_total_hoops
-	var _hoop_ratio: float = float(level_hoops_passed) / maxf(float(total_hoops), 1.0)
-	var time_ratio: float = time / maxf(par_time, 1.0)
-	var coin_ratio: float = float(coins_collected) / maxf(float(total_coins), 1.0)
-
+	var passed := level_hoops_passed
 	if total_hoops <= 0:
-		# No-hoop fallback: time + coins only
-		if time_ratio <= 1.0 and coin_ratio >= 0.8:
-			return 3
-		if time_ratio <= 1.5 and coin_ratio >= 0.4:
-			return 2
 		return 1
-
-	# 3 stars: all hoops + good time + clean run
-	if level_hoops_passed >= total_hoops and time_ratio <= 1.2 and deaths <= 1:
+	if passed >= total_hoops:
 		return 3
-
-	# 2 stars: most hoops + reasonable time
-	if level_hoops_passed >= maxi(int(total_hoops / 2.0), 1) and time_ratio <= 1.5:
+	var two_thirds := maxi(int(ceil(float(total_hoops) * 2.0 / 3.0)), 1)
+	if passed >= two_thirds:
 		return 2
-
 	return 1
 
 func calculate_rank(time: float, coins_collected: int, total_coins: int, obstacles: int, total_obstacles: int, deaths: int, par_time: float) -> String:

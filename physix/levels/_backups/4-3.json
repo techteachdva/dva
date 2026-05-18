@@ -235,14 +235,14 @@
       "length": 80
     },
     {
-      "kind": "hoop_bonus",
+      "kind": "hoop",
       "z": -85,
       "x": 0,
       "y": 6.5,
       "boost": 18
     },
     {
-      "kind": "hoop_checkpoint",
+      "kind": "hoop",
       "z": -126,
       "x": 0,
       "y": 3.3

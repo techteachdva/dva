@@ -23,8 +23,16 @@ static func _holo_shader(base: Color, fresnel: float = 2.2, emission: float = 1.
 	m.set_shader_parameter("emission_mult", emission)
 	return m
 
+static func _is_reduce_motion() -> bool:
+	var tree := Engine.get_main_loop()
+	if tree is SceneTree:
+		var lm: Node = tree.root.get_node_or_null("LevelManager")
+		if lm != null:
+			return lm.get_setting("reduce_motion", false)
+	return false
+
 static func track_material() -> Material:
-	if get_node_or_null("/root/LevelManager") != null and LevelManager.get_setting("reduce_motion", false):
+	if _is_reduce_motion():
 		return _get_or_create("track_plain", func():
 			var m := StandardMaterial3D.new()
 			m.albedo_color = Color(0.02, 0.02, 0.03, 1.0)
@@ -35,13 +43,13 @@ static func track_material() -> Material:
 			m.roughness = 0.25
 			return m
 		)
-	return _get_or_create("track", func():
-		# Dark, almost black holographic — prismatic edge-glow without nausea
-		return _holo_shader(Color(0.008, 0.008, 0.012, 1.0), 3.5, 0.2)
+	return _get_or_create("track_v2", func():
+		# Dark polished track with prismatic edge-glow (picked up by world glow)
+		return _holo_shader(Color(0.010, 0.010, 0.016, 1.0), 3.2, 0.42)
 	)
 
 static func wall_material() -> Material:
-	if get_node_or_null("/root/LevelManager") != null and LevelManager.get_setting("reduce_motion", false):
+	if _is_reduce_motion():
 		return _get_or_create("wall_plain", func():
 			var m := StandardMaterial3D.new()
 			m.albedo_color = Color(0.04, 0.04, 0.06, 0.5)
@@ -51,8 +59,8 @@ static func wall_material() -> Material:
 			m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 			return m
 		)
-	return _get_or_create("wall", func():
-		return _holo_shader(Color(0.04, 0.04, 0.06, 0.5))
+	return _get_or_create("wall_v2", func():
+		return _holo_shader(Color(0.05, 0.05, 0.08, 0.55), 2.8, 0.55)
 	)
 
 static func danger_material() -> StandardMaterial3D:
@@ -152,22 +160,52 @@ static func finish_material() -> StandardMaterial3D:
 static func themed_track_material(theme: String) -> Material:
 	match theme:
 		"theme_neon":
-			return _holo_shader(Color(0.012, 0.005, 0.012, 1.0), 3.5, 0.22)
+			return _holo_shader(Color(0.01, 0.08, 0.08, 1.0), 3.5, 0.6)
 		"theme_nature":
-			return _holo_shader(Color(0.005, 0.012, 0.005, 1.0), 3.5, 0.18)
+			return _get_or_create("track_nature", func():
+				var m := StandardMaterial3D.new()
+				m.albedo_texture = load("res://assets/themes/grass_track.png")
+				m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST_WITH_MIPMAPS
+				m.uv1_scale = Vector3(4, 4, 1)
+				m.roughness = 0.92
+				m.metallic = 0.0
+				return m
+			)
 		"theme_space":
-			return _holo_shader(Color(0.005, 0.005, 0.012, 1.0), 3.5, 0.20)
+			return _get_or_create("track_space", func():
+				var m := StandardMaterial3D.new()
+				m.albedo_color = Color(0.08, 0.08, 0.14, 1.0)
+				m.roughness = 0.35
+				m.metallic = 0.65
+				return m
+			)
 		_:
 			return track_material()
 
 static func themed_wall_material(theme: String) -> Material:
 	match theme:
 		"theme_neon":
-			return _holo_shader(Color(0.06, 0.02, 0.08, 0.5))
+			return _holo_shader(Color(0.08, 0.02, 0.10, 0.5), 2.8, 0.8)
 		"theme_nature":
-			return _holo_shader(Color(0.02, 0.06, 0.02, 0.5))
+			return _get_or_create("wall_nature", func():
+				var m := StandardMaterial3D.new()
+				m.albedo_texture = load("res://assets/themes/treeline_wall.png")
+				m.texture_filter = BaseMaterial3D.TEXTURE_FILTER_NEAREST_WITH_MIPMAPS
+				m.uv1_scale = Vector3(6, 1, 1)
+				m.roughness = 0.95
+				m.metallic = 0.0
+				m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+				return m
+			)
 		"theme_space":
-			return _holo_shader(Color(0.02, 0.02, 0.06, 0.5))
+			return _get_or_create("wall_space", func():
+				var m := StandardMaterial3D.new()
+				m.albedo_color = Color(0.24, 0.22, 0.20, 0.5)
+				m.roughness = 0.95
+				m.metallic = 0.1
+				m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+				return m
+			)
 		_:
 			return wall_material()
 

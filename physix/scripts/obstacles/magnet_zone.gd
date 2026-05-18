@@ -8,14 +8,15 @@ enum MagnetType { ATTRACT, REPEL, SWITCH }
 @export var zone_length: float     = 60.0
 
 const COLORS: Dictionary = {
-	MagnetType.ATTRACT: Color(0.10, 0.85, 0.90),   # Cyan / teal
-	MagnetType.REPEL:   Color(0.90, 0.15, 0.40),   # Magenta / red
+	MagnetType.ATTRACT: Color(0.15, 0.35, 1.00),   # Deep blue
+	MagnetType.REPEL:   Color(1.00, 0.15, 0.15),   # Bright red
 	MagnetType.SWITCH:  Color(0.70, 0.10, 0.90),   # Purple
 }
 
 const FIELD_SHADER := preload("res://assets/shaders/magnetic_field.gdshader")
 
 var _player_ref_count: int = 0
+var _player_inside: Node3D = null
 var _switch_timer: float = 0.0
 var _switch_state: bool = true   # true = attract, false = repel
 
@@ -67,16 +68,9 @@ func _add_field_visual() -> void:
 	add_child(mesh)
 
 func _physics_process(delta: float) -> void:
-	if _player_ref_count == 0:
+	if _player_inside == null:
 		return
-
-	var player: Node3D = null
-	for body: Node3D in get_overlapping_bodies():
-		if body.is_in_group("player"):
-			player = body
-			break
-	if player == null:
-		return
+	var player: Node3D = _player_inside
 
 	# Switch type alternates every 3 seconds
 	if magnet_type == MagnetType.SWITCH:
@@ -100,11 +94,16 @@ func _physics_process(delta: float) -> void:
 
 	player.apply_central_force(dir * strength)
 
-func _on_player_enter(_player: Node3D) -> void:
+func _on_player_enter(player: Node3D) -> void:
+	if _player_ref_count == 0:
+		_player_inside = player
 	_player_ref_count += 1
 
 func _on_player_exit(_player: Node3D) -> void:
 	_player_ref_count = maxi(_player_ref_count - 1, 0)
+	if _player_ref_count == 0:
+		_player_inside = null
 
 func _force_reset() -> void:
 	_player_ref_count = 0
+	_player_inside = null

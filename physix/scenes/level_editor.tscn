@@ -1,6 +1,7 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene load_steps=7 format=3]
 
-[ext_resource type="Script" path="res://scripts/level_editor.gd" id="1"]
+[ext_resource type="Script" path="res://scripts/editor/level_editor.gd" id="1"]
+[ext_resource type="Theme" path="res://assets/themes/editor_theme.tres" id="2"]
 
 [sub_resource type="PlaneMesh" id="GridMesh"]
 size = Vector2(12, 304)
@@ -27,102 +28,386 @@ transform = Transform3D(1, 0, 0, 0, 0.819, 0.574, 0, -0.574, 0.819, 0, 20, 30)
 fov = 75.0
 
 [node name="EditorUI" type="CanvasLayer" parent="."]
+theme = ExtResource("2")
+
+[node name="TopBarBg" type="Panel" parent="EditorUI"]
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 88.0
+mouse_filter = 2
+
+[node name="ModeButtons" type="HBoxContainer" parent="EditorUI"]
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -200.0
+offset_top = 50.0
+offset_right = 200.0
+offset_bottom = 82.0
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="TrackModeBtn" type="Button" parent="EditorUI/ModeButtons"]
+custom_minimum_size = Vector2(110, 30)
+layout_mode = 2
+toggle_mode = true
+button_pressed = true
+text = "Track"
+tooltip_text = "Edit track segments and 9-snap positions"
+
+[node name="ObstacleModeBtn" type="Button" parent="EditorUI/ModeButtons"]
+custom_minimum_size = Vector2(110, 30)
+layout_mode = 2
+toggle_mode = true
+text = "Obstacles"
+tooltip_text = "Place bumps, zones, coins, and patterns"
+
+[node name="CheckpointModeBtn" type="Button" parent="EditorUI/ModeButtons"]
+custom_minimum_size = Vector2(110, 30)
+layout_mode = 2
+toggle_mode = true
+text = "Checkpoints"
+tooltip_text = "Place hex hoop checkpoints"
 
 [node name="Toolbar" type="HBoxContainer" parent="EditorUI"]
+anchors_preset = 10
+anchor_right = 1.0
 offset_left = 10.0
-offset_top = 10.0
-offset_right = 1270.0
-offset_bottom = 50.0
+offset_top = 8.0
+offset_right = -10.0
+offset_bottom = 42.0
+theme_override_constants/separation = 8
 
 [node name="NewBtn" type="Button" parent="EditorUI/Toolbar"]
 layout_mode = 2
 text = "New"
+tooltip_text = "New empty level (Ctrl+N not bound)"
 
 [node name="SaveBtn" type="Button" parent="EditorUI/Toolbar"]
 layout_mode = 2
 text = "Save"
+tooltip_text = "Save level JSON (Ctrl+S)"
 
 [node name="LoadBtn" type="Button" parent="EditorUI/Toolbar"]
 layout_mode = 2
 text = "Load"
+tooltip_text = "Load level JSON"
 
 [node name="ExportBtn" type="Button" parent="EditorUI/Toolbar"]
 layout_mode = 2
-text = "Export Code"
+text = "Export"
+tooltip_text = "Export level code"
 
 [node name="ImportBtn" type="Button" parent="EditorUI/Toolbar"]
 layout_mode = 2
-text = "Import Code"
+text = "Import"
+tooltip_text = "Import level code"
 
 [node name="TestBtn" type="Button" parent="EditorUI/Toolbar"]
 layout_mode = 2
-text = "Test Play"
+text = "Test"
+tooltip_text = "Play-test current level"
+
+[node name="RandomBtn" type="Button" parent="EditorUI/Toolbar"]
+layout_mode = 2
+text = "Random"
+tooltip_text = "Factory random level (valid track, hoops, obstacles) — test or save"
 
 [node name="MenuBtn" type="Button" parent="EditorUI/Toolbar"]
 layout_mode = 2
 text = "Menu"
+tooltip_text = "Return to main menu"
+
+[node name="UndoBtn" type="Button" parent="EditorUI/Toolbar"]
+layout_mode = 2
+text = "Undo"
+tooltip_text = "Undo last action (Ctrl+Z)"
+
+[node name="HelpBtn" type="Button" parent="EditorUI/Toolbar"]
+layout_mode = 2
+text = "?"
+tooltip_text = "Keyboard shortcuts (F12)"
+
+[node name="DirtyLabel" type="Label" parent="EditorUI/Toolbar"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.55, 0.35, 1)
+theme_override_font_sizes/font_size = 13
+text = ""
 
 [node name="StatusLabel" type="Label" parent="EditorUI/Toolbar"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Tool: Select"
+text = "Mode: Track"
 horizontal_alignment = 2
 
 [node name="Palette" type="ScrollContainer" parent="EditorUI"]
+anchors_preset = 0
 offset_left = 10.0
-offset_top = 60.0
-offset_right = 150.0
-offset_bottom = 700.0
-follow_focus = true
+offset_top = 96.0
+offset_right = 158.0
+offset_bottom = 644.0
 horizontal_scroll_mode = 0
+
+[node name="PaletteBg" type="Panel" parent="EditorUI/Palette"]
+layout_mode = 2
+mouse_filter = 2
+theme_type_variation = &"EditorPalettePanel"
 
 [node name="Content" type="VBoxContainer" parent="EditorUI/Palette"]
 layout_mode = 2
-offset_right = 140.0
-offset_bottom = 640.0
 size_flags_horizontal = 3
 size_flags_vertical = 3
+theme_override_constants/separation = 4
 
-[node name="PropertiesPanel" type="VBoxContainer" parent="EditorUI"]
-offset_left = 1130.0
-offset_top = 60.0
-offset_right = 1270.0
-offset_bottom = 400.0
+[node name="PropertiesPanel" type="PanelContainer" parent="EditorUI"]
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -178.0
+offset_top = 96.0
+offset_right = -10.0
+offset_bottom = 476.0
+theme_type_variation = &"EditorPropsPanel"
 
-[node name="Title" type="Label" parent="EditorUI/PropertiesPanel"]
+[node name="PropsVBox" type="VBoxContainer" parent="EditorUI/PropertiesPanel"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="Title" type="Label" parent="EditorUI/PropertiesPanel/PropsVBox"]
 layout_mode = 2
 text = "Properties"
 horizontal_alignment = 1
 
+[node name="SegProps" type="VBoxContainer" parent="EditorUI/PropertiesPanel/PropsVBox"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="SegHeading" type="Label" parent="EditorUI/PropertiesPanel/PropsVBox/SegProps"]
+layout_mode = 2
+text = "Track Segment"
+horizontal_alignment = 1
+
+[node name="SegGrid" type="GridContainer" parent="EditorUI/PropertiesPanel/PropsVBox/SegProps"]
+layout_mode = 2
+columns = 2
+
+[node name="IndexLabel" type="Label" parent="EditorUI/PropertiesPanel/PropsVBox/SegProps/SegGrid"]
+layout_mode = 2
+text = "Index"
+
+[node name="IndexValue" type="Label" parent="EditorUI/PropertiesPanel/PropsVBox/SegProps/SegGrid"]
+layout_mode = 2
+text = "—"
+horizontal_alignment = 2
+
+[node name="TypeLabel" type="Label" parent="EditorUI/PropertiesPanel/PropsVBox/SegProps/SegGrid"]
+layout_mode = 2
+text = "Type"
+
+[node name="TypeValue" type="Label" parent="EditorUI/PropertiesPanel/PropsVBox/SegProps/SegGrid"]
+layout_mode = 2
+text = "—"
+horizontal_alignment = 2
+
+[node name="SnapLabel" type="Label" parent="EditorUI/PropertiesPanel/PropsVBox/SegProps/SegGrid"]
+layout_mode = 2
+text = "Snap"
+
+[node name="SnapValue" type="Label" parent="EditorUI/PropertiesPanel/PropsVBox/SegProps/SegGrid"]
+layout_mode = 2
+text = "—"
+horizontal_alignment = 2
+
+[node name="OffsetXLabel" type="Label" parent="EditorUI/PropertiesPanel/PropsVBox/SegProps/SegGrid"]
+layout_mode = 2
+text = "Offset X"
+
+[node name="OffsetXValue" type="Label" parent="EditorUI/PropertiesPanel/PropsVBox/SegProps/SegGrid"]
+layout_mode = 2
+text = "—"
+horizontal_alignment = 2
+
+[node name="OffsetYLabel" type="Label" parent="EditorUI/PropertiesPanel/PropsVBox/SegProps/SegGrid"]
+layout_mode = 2
+text = "Offset Y"
+
+[node name="OffsetYValue" type="Label" parent="EditorUI/PropertiesPanel/PropsVBox/SegProps/SegGrid"]
+layout_mode = 2
+text = "—"
+horizontal_alignment = 2
+
+[node name="Sep1" type="HSeparator" parent="EditorUI/PropertiesPanel/PropsVBox"]
+layout_mode = 2
+
+[node name="ObstacleProps" type="VBoxContainer" parent="EditorUI/PropertiesPanel/PropsVBox"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="ObsHeading" type="Label" parent="EditorUI/PropertiesPanel/PropsVBox/ObstacleProps"]
+layout_mode = 2
+text = "Object Transform"
+horizontal_alignment = 1
+
+[node name="ObsGrid" type="GridContainer" parent="EditorUI/PropertiesPanel/PropsVBox/ObstacleProps"]
+layout_mode = 2
+columns = 2
+
+[node name="PosXLabel" type="Label" parent="EditorUI/PropertiesPanel/PropsVBox/ObstacleProps/ObsGrid"]
+layout_mode = 2
+text = "Pos X"
+
+[node name="PosXSpin" type="SpinBox" parent="EditorUI/PropertiesPanel/PropsVBox/ObstacleProps/ObsGrid"]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+min_value = -9999.0
+max_value = 9999.0
+step = 0.1
+
+[node name="PosYLabel" type="Label" parent="EditorUI/PropertiesPanel/PropsVBox/ObstacleProps/ObsGrid"]
+layout_mode = 2
+text = "Pos Y"
+
+[node name="PosYSpin" type="SpinBox" parent="EditorUI/PropertiesPanel/PropsVBox/ObstacleProps/ObsGrid"]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+min_value = -9999.0
+max_value = 9999.0
+step = 0.1
+
+[node name="PosZLabel" type="Label" parent="EditorUI/PropertiesPanel/PropsVBox/ObstacleProps/ObsGrid"]
+layout_mode = 2
+text = "Pos Z"
+
+[node name="PosZSpin" type="SpinBox" parent="EditorUI/PropertiesPanel/PropsVBox/ObstacleProps/ObsGrid"]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+min_value = -9999.0
+max_value = 9999.0
+step = 0.1
+
+[node name="RotXLabel" type="Label" parent="EditorUI/PropertiesPanel/PropsVBox/ObstacleProps/ObsGrid"]
+layout_mode = 2
+text = "Rot X"
+
+[node name="RotXSpin" type="SpinBox" parent="EditorUI/PropertiesPanel/PropsVBox/ObstacleProps/ObsGrid"]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+min_value = -9999.0
+max_value = 9999.0
+step = 0.1
+
+[node name="RotYLabel" type="Label" parent="EditorUI/PropertiesPanel/PropsVBox/ObstacleProps/ObsGrid"]
+layout_mode = 2
+text = "Rot Y"
+
+[node name="RotYSpin" type="SpinBox" parent="EditorUI/PropertiesPanel/PropsVBox/ObstacleProps/ObsGrid"]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+min_value = -9999.0
+max_value = 9999.0
+step = 0.1
+
+[node name="RotZLabel" type="Label" parent="EditorUI/PropertiesPanel/PropsVBox/ObstacleProps/ObsGrid"]
+layout_mode = 2
+text = "Rot Z"
+
+[node name="RotZSpin" type="SpinBox" parent="EditorUI/PropertiesPanel/PropsVBox/ObstacleProps/ObsGrid"]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+min_value = -9999.0
+max_value = 9999.0
+step = 0.1
+
+[node name="Sep2" type="HSeparator" parent="EditorUI/PropertiesPanel/PropsVBox"]
+layout_mode = 2
+
+[node name="PropActions" type="HBoxContainer" parent="EditorUI/PropertiesPanel/PropsVBox"]
+layout_mode = 2
+theme_override_constants/separation = 6
+
+[node name="DeleteBtn" type="Button" parent="EditorUI/PropertiesPanel/PropsVBox/PropActions"]
+layout_mode = 2
+text = "Delete"
+
+[node name="FocusBtn" type="Button" parent="EditorUI/PropertiesPanel/PropsVBox/PropActions"]
+layout_mode = 2
+text = "Focus"
+
+[node name="SegTimeline" type="Panel" parent="EditorUI"]
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 168.0
+offset_top = -64.0
+offset_right = -178.0
+offset_bottom = -10.0
+mouse_filter = 2
+theme_type_variation = &"EditorTimelinePanel"
+
+[node name="SegTimelineScroll" type="ScrollContainer" parent="EditorUI/SegTimeline"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_scroll_mode = 2
+vertical_scroll_mode = 0
+
+[node name="SegTimelineContent" type="HBoxContainer" parent="EditorUI/SegTimeline/SegTimelineScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 4
+alignment = 1
+
 [node name="CodePanel" type="Panel" parent="EditorUI"]
 visible = false
-offset_left = 240.0
-offset_top = 140.0
-offset_right = 1040.0
-offset_bottom = 580.0
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -400.0
+offset_top = -220.0
+offset_right = 400.0
+offset_bottom = 220.0
 
 [node name="CodeEdit" type="TextEdit" parent="EditorUI/CodePanel"]
-layout_mode = 0
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 offset_left = 10.0
 offset_top = 10.0
-offset_right = 790.0
-offset_bottom = 390.0
+offset_right = -10.0
+offset_bottom = -44.0
+grow_horizontal = 2
+grow_vertical = 2
 wrap_mode = 1
 
 [node name="CopyBtn" type="Button" parent="EditorUI/CodePanel"]
 layout_mode = 0
 offset_left = 10.0
-offset_top = 400.0
+offset_top = 396.0
 offset_right = 120.0
-offset_bottom = 431.0
+offset_bottom = 427.0
 text = "Copy"
 
 [node name="CloseBtn" type="Button" parent="EditorUI/CodePanel"]
 layout_mode = 0
-offset_left = 680.0
-offset_top = 400.0
-offset_right = 790.0
-offset_bottom = 431.0
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -120.0
+offset_top = -38.0
+offset_right = -10.0
+offset_bottom = -7.0
+grow_horizontal = 0
+grow_vertical = 0
 text = "Close"
 
 [node name="EditorLevel" type="Node3D" parent="."]

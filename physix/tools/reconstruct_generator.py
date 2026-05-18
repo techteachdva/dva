@@ -251,8 +251,8 @@ func _build_obstacles(obstacles: Array) -> void:
 				_build_spike_trap(z, x, obs.get("width", 6.0), obs.get("length", 2.0))
 			"bumper":
 				_build_bumper(z, x, obs.get("force", 20.0))
-			"hoop_bonus", "hoop_cp":
-				_build_hoop(z, x, obs.get("y", 2.5), kind == "hoop_cp", obs.get("boost", 0.0))
+			"hoop":
+				_build_hoop(z, x, obs.get("y", 2.5), obs.get("boost", 0.0))
 
 func _build_checkpoint(z: float, x: float) -> void:
 	var cp := preload("res://scenes/obstacles/checkpoint.tscn").instantiate()
@@ -346,32 +346,13 @@ func _build_spike_trap(z: float, x: float, width: float, length: float) -> void:
 	mesh.set_meta("mat_type", "danger")
 	trap.add_child(mesh)
 
-func _build_hoop(z: float, x: float, y: float, is_checkpoint: bool, boost: float) -> void:
-	var hoop := Area3D.new()
+func _build_hoop(z: float, x: float, y: float, boost: float) -> void:
+	var hoop := preload("res://scripts/obstacles/hoop.gd").new() as Hoop
 	hoop.name = "Hoop"
 	hoop.position = Vector3(x, y, z)
-	hoop.set_meta("hoop_type", "checkpoint" if is_checkpoint else "bonus")
-	hoop.set_meta("hoop_boost", boost)
-	add_child(hoop)
-	var shape := CollisionShape3D.new()
-	var torus := TorusShape3D.new()
-	# Fallback: use a sphere if torus isn't available in your Godot build
-	# shape.shape = torus
-	var sphere := SphereShape3D.new()
-	sphere.radius = 1.2
-	shape.shape = sphere
-	hoop.add_child(shape)
-	var mesh := MeshInstance3D.new()
-	var torus_mesh := TorusMesh.new()
-	# Fallback if torus mesh isn't available
-	# mesh.mesh = torus_mesh
-	var cyl := CylinderMesh.new()
-	cyl.top_radius = 1.2
-	cyl.bottom_radius = 1.2
-	cyl.height = 0.2
-	mesh.mesh = cyl
-	mesh.set_meta("mat_type", "checkpoint" if is_checkpoint else "boost")
-	hoop.add_child(mesh)
+	hoop.boost_strength = boost if boost > 0.0 else 28.0
+	hoop.build_visuals()
+	_add_to_track(hoop)
 '''
 
 with open(path, "w", encoding="utf-8") as f:

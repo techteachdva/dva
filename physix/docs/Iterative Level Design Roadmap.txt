@@ -277,7 +277,7 @@ After playing the redesigned level once (cold run), answer:
 
 4. Were coins placed so that I had to CHOOSE between speed and collection?
    → If all coins were on the main path and trivial to get, they're too easy.
-     Re-analyze if coin_rate > 0.95.
+	 Re-analyze if coin_rate > 0.95.
 
 5. Did I want to play it again immediately to beat my time?
    → This is the ultimate fun signal. If yes, the level is ready.
@@ -295,26 +295,26 @@ A level is ready for production when ALL of the following are true:
 THE ITERATION LOOP
 ------------------
 
-    Human Play (Phase 2)
-           |
-           v
-    Analyze Ghost (Phase 3)
-           |
-           v
-    Bot Re-Validate (Phase 4)
-           |
-           v
-    Human Validate (Phase 5)
-           |
-    +------+------+
-    |             |
-    v             v
+	Human Play (Phase 2)
+		   |
+		   v
+	Analyze Ghost (Phase 3)
+		   |
+		   v
+	Bot Re-Validate (Phase 4)
+		   |
+		   v
+	Human Validate (Phase 5)
+		   |
+	+------+------+
+	|             |
+	v             v
   SHIP IT      NOT FUN YET
-    |             |
-    |             v
-    |        Play Again (Phase 2)
-    |             |
-    +-------------+
+	|             |
+	|             v
+	|        Play Again (Phase 2)
+	|             |
+	+-------------+
 
 Most levels need 2-3 iterations. Simple levels might ship on iteration 1.
 World 6 mastery levels might need 4-5.

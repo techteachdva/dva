@@ -35,10 +35,12 @@ void fragment() {
 	vec3 irid = spectral(fresnel * 2.0 + TIME * color_shift_speed + ripple);
 
 	vec3 color = base_color.rgb + irid * fresnel * emission_mult;
+	float rim = smoothstep(0.55, 1.0, fresnel);
 
 	ALBEDO = color;
-	EMISSION = irid * fresnel * emission_mult * 0.6;
-	METALLIC = 0.75;
-	ROUGHNESS = 0.18;
+	EMISSION = irid * fresnel * emission_mult * (0.65 + rim * 0.25);
+	METALLIC = 0.82;
+	ROUGHNESS = mix(0.22, 0.12, rim);
+	SPECULAR = 0.55 + rim * 0.2;
 	ALPHA = base_color.a;
 }

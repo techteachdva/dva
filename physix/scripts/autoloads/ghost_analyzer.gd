@@ -341,16 +341,16 @@ func _regenerate(world: int, level: int, seed_: int, forced_layout: int = -1) ->
 		layout_type = LevelFactory._pick_layout(world, level, rng)
 
 	var segments := LevelFactory._build_segments(layout_type, world, level, rng)
-	var obstacles := LevelFactory._build_obstacles(segments, logic_world, level, rng)
-	var hoops := LevelFactory._build_hoops(segments, obstacles, world, rng)
 	var finish_z := LevelFactory._compute_finish_z(segments)
+	var obstacles := LevelFactory._build_obstacles(segments, logic_world, level, rng)
+	var hoops := LevelFactory._build_hoops(segments, obstacles, world, rng, finish_z, false)
 	var par_time := LevelFactory._compute_par_time(segments)
 
 	var all_obstacles: Array[Dictionary] = []
 	all_obstacles.append_array(obstacles)
 	for h: Dictionary in hoops:
 		all_obstacles.append({
-			"kind": "hoop_checkpoint",
+			"kind": "hoop",
 			"z": h.z,
 			"x": h.x,
 			"y": h.y,
@@ -367,7 +367,7 @@ func _regenerate(world: int, level: int, seed_: int, forced_layout: int = -1) ->
 		"finish_z": finish_z,
 		"checkpoints": LevelFactory._hoop_z_positions(hoops),
 		"obstacles": all_obstacles,
-		"medal_times": LevelFactory._medal_times(par_time),
+		"time_tiers": LevelFactory._par_time_tiers(par_time),
 	}
 
 # ── Speed Profile Validation ────────────────────────────────────────────────────

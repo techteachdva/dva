@@ -244,8 +244,8 @@ func _build_obstacles(obstacles: Array) -> void:
 				_build_spike_trap(z, x, obs.get("width", 6.0), obs.get("length", 2.0))
 			"bumper":
 				_build_bumper(z, x, obs.get("force", 20.0))
-			"hoop_bonus", "hoop_cp", "hoop_checkpoint":
-				_build_hoop(z, x, obs.get("y", 2.5), kind == "hoop_cp" or kind == "hoop_checkpoint", obs.get("boost", 0.0))
+			"hoop":
+				_build_hoop(z, x, obs.get("y", 2.5), obs.get("boost", 0.0))
 
 func _build_checkpoint(z: float, x: float) -> void:
 	var cp := preload("res://scenes/obstacles/checkpoint.tscn").instantiate()
@@ -339,11 +339,10 @@ func _build_spike_trap(z: float, x: float, width: float, length: float) -> void:
 	mesh.set_meta("mat_type", "danger")
 	trap.add_child(mesh)
 
-func _build_hoop(z: float, x: float, y: float, is_checkpoint: bool, boost: float) -> void:
+func _build_hoop(z: float, x: float, y: float, boost: float) -> void:
 	var hoop := preload("res://scripts/obstacles/hoop.gd").new() as Hoop
 	hoop.name = "Hoop"
 	hoop.position = Vector3(x, y, z)
-	hoop.hoop_type = Hoop.HoopType.CHECKPOINT if is_checkpoint else Hoop.HoopType.BONUS
 	hoop.boost_strength = boost if boost > 0.0 else 28.0
 	add_child(hoop)
 	var shape := CollisionShape3D.new()

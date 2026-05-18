@@ -36,7 +36,7 @@ light_energy = 1.5
 
 [node name="IceLabel" type="Label3D" parent="."]
 position   = Vector3(0.0, 0.5, 0.0)
-text       = "❄ ICE"
+text       = "ICE"
 font_size  = 40
 pixel_size = 0.012
 billboard  = 1

@@ -42,7 +42,7 @@ text = "00:00.00"
 theme_override_font_sizes/font_size = 18
 [node name="LivesLabel" type="Label" parent="HUD/TopBar"]
 size_flags_horizontal = 3
-text = "❤  x3"
+text = "x3"
 theme_override_font_sizes/font_size = 18
 [node name="CoinsLabel" type="Label" parent="HUD/TopBar"]
 size_flags_horizontal = 3
@@ -99,7 +99,7 @@ theme_override_font_sizes/font_size = 34
 [node name="StarsLabel" type="Label" parent="HUD/CompletePanel"]
 anchor_left = 0.5
 anchor_top = 0.22
-text = "☆☆☆"
+text = "---"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 52
 [node name="TimeLabel" type="Label" parent="HUD/CompletePanel"]

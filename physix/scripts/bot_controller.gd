@@ -56,6 +56,8 @@ var _total_hoops: int = 0
 var _flow_state: String = "boredom"  # boredom|flow|frustration|anxiety
 var _flow_time: Dictionary = {"boredom": 0.0, "flow": 0.0, "frustration": 0.0, "anxiety": 0.0}
 var _obstacle_hits: Dictionary = {}  # {kind: count}
+var _hoops: Array[Hoop] = []
+var _obstacles: Array[Node] = []
 
 func _ready() -> void:
 	_player = get_parent() as RigidBody3D
@@ -66,23 +68,33 @@ func _ready() -> void:
 	_enabled = true
 	_gather_track_info()
 	_preprocess_segments()
-	_total_hoops = get_tree().get_nodes_in_group("hoops").size()
+	_cache_world_nodes()
+	_total_hoops = _hoops.size()
 	_connect_obstacle_signals()
 	_connect_hoop_signals()
 	if replay_mode and _timeline.is_empty():
 		push_warning("Bot replay_mode enabled but no timeline loaded")
 
+func _cache_world_nodes() -> void:
+	_hoops.clear()
+	_obstacles.clear()
+	for node: Node in get_tree().get_nodes_in_group("hoops"):
+		if node is Hoop:
+			_hoops.append(node)
+	for node: Node in get_tree().get_nodes_in_group("obstacles"):
+		_obstacles.append(node)
+
+
 func _connect_obstacle_signals() -> void:
-	for node in get_tree().get_nodes_in_group("obstacles"):
+	for node: Node in _obstacles:
 		if node.has_signal("obstacle_cleared"):
 			if not node.obstacle_cleared.is_connected(_on_obstacle_cleared):
 				node.obstacle_cleared.connect(_on_obstacle_cleared.bind(node))
 
 func _connect_hoop_signals() -> void:
-	for node in get_tree().get_nodes_in_group("hoops"):
-		if node is Hoop:
-			if not node.body_entered.is_connected(_on_hoop_body_entered):
-				node.body_entered.connect(_on_hoop_body_entered)
+	for hoop: Hoop in _hoops:
+		if not hoop.body_entered.is_connected(_on_hoop_body_entered):
+			hoop.body_entered.connect(_on_hoop_body_entered)
 
 func _on_obstacle_cleared(node: Node) -> void:
 	if not validate_mode:
@@ -197,7 +209,7 @@ func _replay_input(t: float) -> Dictionary:
 func _physics_process(delta: float) -> void:
 	if not _enabled or _player == null:
 		return
-	if _player.get("_dead") == true:
+	if _player.has_method("is_dead") and _player.is_dead():
 		return
 
 	_run_time += delta
@@ -363,15 +375,14 @@ func _compute_target_x(pos: Vector3) -> float:
 		total_weight += weight
 
 	# Checkpoint / hoop seeking: strongly bias toward upcoming hoop x positions
-	for node in get_tree().get_nodes_in_group("hoops"):
-		if node is Hoop:
-			var dz: float = node.global_position.z - pos.z
-			if dz < -look_ahead or dz > 2.0:
-				continue
-			var dist: float = absf(dz) + 0.1
-			var hoop_weight: float = 3.0 / dist  # strong bias, decays with distance
-			weighted_x += node.global_position.x * hoop_weight
-			total_weight += hoop_weight
+	for hoop: Hoop in _hoops:
+		var dz: float = hoop.global_position.z - pos.z
+		if dz < -look_ahead or dz > 2.0:
+			continue
+		var dist: float = absf(dz) + 0.1
+		var hoop_weight: float = 3.0 / dist
+		weighted_x += hoop.global_position.x * hoop_weight
+		total_weight += hoop_weight
 
 	if total_weight > 0.0:
 		return weighted_x / total_weight
@@ -425,9 +436,9 @@ func _predict_hoop_jump(pos: Vector3, vel: Vector3) -> Dictionary:
 	"""Check for upcoming hoops that are above ground level and jump to clear them."""
 	var result := {"should_jump": false, "time_to_hoop": 999.0}
 	var fwd_speed: float = maxf(absf(vel.z), 3.0)
-	for node in get_tree().get_nodes_in_group("hoops"):
-		if node is Hoop and not node.passed:
-			var hoop_pos: Vector3 = node.global_position
+	for hoop: Hoop in _hoops:
+		if not hoop.passed:
+			var hoop_pos: Vector3 = hoop.global_position
 			var dz: float = hoop_pos.z - pos.z
 			# Only look at hoops ahead of us, within lookahead distance
 			if dz < -2.0 or dz > look_ahead:
@@ -463,9 +474,7 @@ func _pot_steering(pos: Vector3, vel: Vector3) -> float:
 		return 0.0
 	var best: Node3D = null
 	var best_score: float = 1e9
-	for node in get_tree().get_nodes_in_group("obstacles"):
-		if not node.is_in_group("obstacles"):
-			continue
+	for node: Node in _obstacles:
 		if not node.name.begins_with("BreakablePot"):
 			continue
 		var local := _player.to_local(node.global_position)
@@ -531,7 +540,7 @@ func _get_current_track_width(pos: Vector3) -> float:
 
 func _get_nearest_obstacle_dist(pos: Vector3) -> float:
 	var best: float = 999.0
-	for node in get_tree().get_nodes_in_group("obstacles"):
+	for node: Node in _obstacles:
 		if node is Area3D or node is StaticBody3D:
 			best = minf(best, pos.distance_to(node.global_position))
 	return best

@@ -24,8 +24,12 @@ var _fwd_ray: RayCast3D
 
 func _ready() -> void:
 	_level = get_parent()
-	# Wait for the intro fact + countdown before taking control
-	await get_tree().create_timer(4.0).timeout
+	# Wait for intro tip + 3-2-1-GO countdown before taking control
+	var deadline_ms := Time.get_ticks_msec() + 15000
+	while is_instance_valid(_level) and not bool(_level.get("is_running")):
+		if Time.get_ticks_msec() > deadline_ms:
+			break
+		await get_tree().process_frame
 	_intro_done = true
 	_player = _level.get_node_or_null("Player")
 	if _player == null:

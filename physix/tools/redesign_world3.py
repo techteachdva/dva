@@ -239,8 +239,8 @@ W3["3-4"] = {
         {"kind": "gravity", "z": -72, "x": 0, "type": 2, "multiplier": 1, "length": 36},
         {"kind": "gravity", "z": -158, "x": 0, "type": 2, "multiplier": 1, "length": 36},
         {"kind": "speed_boost", "z": -15, "x": 0, "strength": 14},
-        {"kind": "hoop_bonus", "z": -95, "x": 0, "y": 7, "boost": 2},
-        {"kind": "hoop_bonus", "z": -181, "x": 0, "y": 6.5, "boost": 2},
+        {"kind": "hoop", "z": -95, "x": 0, "y": 7, "boost": 2},
+        {"kind": "hoop", "z": -181, "x": 0, "y": 6.5, "boost": 2},
     ],
     "finish_z": -292,
 }

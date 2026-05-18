@@ -48,6 +48,7 @@ func _ready() -> void:
 				break
 	if has_baked:
 		_apply_materials_to_level(self)
+		_build_start_wall()
 		return
 
 	var parent_level := get_parent()
@@ -115,16 +116,21 @@ func _to_dict_array(arr: Array) -> Array[Dictionary]:
 	return out
 
 func _build_level(layout: Dictionary) -> void:
-	# Clear old geometry except the generator node itself
-	for child: Node in get_children():
-		child.queue_free()
+	# Clear old geometry immediately (free, not queue_free) so physics
+	# raycasts in _build_hoop() don't hit stale collision from prior runs.
+	while get_child_count() > 0:
+		var child := get_child(0)
+		remove_child(child)
+		child.free()
 	var slope: float = layout.get("slope", 10.0)
 	self.rotation = Vector3(deg_to_rad(slope), 0, 0)
 	_build_segments(_to_dict_array(layout.get("segments", [])))
 	_build_coins(_to_dict_array(layout.get("coins", [])))
 	_build_finish(layout.get("finish_z", -200.0))
 	_build_obstacles(_to_dict_array(layout.get("obstacles", [])))
+	_build_start_wall()
 	_apply_materials_to_level(self)
+
 
 func _apply_materials_to_level(node: Node) -> void:
 	TRACK_MAT._apply_materials(node)
@@ -332,8 +338,8 @@ func _build_obstacles(obstacles: Array[Dictionary]) -> void:
 		var x: float = obs.get("x", 0.0)
 		var base_y: float = obs.get("seg_y", 0.0)
 		match kind:
-			"checkpoint":
-				_build_checkpoint(z, x)
+			"hoop":
+				_build_hoop(z, x, obs.get("y", 2.5), obs.get("boost", 0.0))
 			"speed_boost":
 				_build_speed_boost(z, x, obs.get("strength", 14.0), false, base_y)
 			"brake_pad":
@@ -356,14 +362,6 @@ func _build_obstacles(obstacles: Array[Dictionary]) -> void:
 				_build_bumper(z, x, obs.get("force", 20.0), base_y)
 			"pot":
 				_build_breakable_pot(z, x, base_y)
-			"hoop_bonus", "hoop_cp", "hoop_checkpoint":
-				_build_hoop(z, x, obs.get("y", 2.5), kind == "hoop_cp" or kind == "hoop_checkpoint", obs.get("boost", 0.0))
-
-func _build_checkpoint(z: float, x: float) -> void:
-	var cp := preload("res://scenes/obstacles/checkpoint.tscn").instantiate()
-	cp.position = Vector3(x, 1.0, z)
-	_add_to_track(cp)
-
 func _build_breakable_pot(z: float, x: float, base_y: float = 0.0) -> void:
 	var pot := preload("res://scenes/obstacles/breakable_pot.tscn").instantiate()
 	pot.position = Vector3(x, base_y + 0.35, z)
@@ -375,7 +373,7 @@ func _build_bumper(z: float, x: float, force: float, base_y: float = 0.0) -> voi
 	bumper.bump_force = force
 	_add_to_track(bumper)
 
-func _build_speed_boost(z: float, x: float, strength: float, is_brake: bool, base_y: float = 0.0) -> void:
+func _build_speed_boost(_z: float, _x: float, _strength: float, _is_brake: bool, _base_y: float = 0.0) -> void:
 	# Speed boost obstacles are deprecated; hoops now provide all forward momentum.
 	return
 
@@ -423,18 +421,22 @@ func _build_ice_patch(z: float, x: float, length: float, width: float, base_y: f
 	_add_to_track(ice)
 
 func _build_magnet(z: float, x: float, mag_type: String, strength: float, length: float) -> void:
-	# Inline magnet zone since there's no dedicated scene
-	var zone := Area3D.new()
+	var zone := preload("res://scenes/obstacles/magnet_zone.tscn").instantiate() as MagnetZone
 	zone.name = "MagnetZone"
 	zone.position = Vector3(x, 1.0, z)
-	zone.set_meta("magnet_type", mag_type)
-	zone.set_meta("magnet_strength", strength)
+	match mag_type:
+		"repel":
+			zone.magnet_type = MagnetZone.MagnetType.REPEL
+		_:
+			zone.magnet_type = MagnetZone.MagnetType.ATTRACT
+	zone.strength = strength
+	zone.zone_length = length
 	_add_to_track(zone)
-	var shape := CollisionShape3D.new()
-	var box := BoxShape3D.new()
-	box.size = Vector3(8, 3, length)
-	shape.shape = box
-	zone.add_child(shape)
+	for child: Node in zone.get_children():
+		if child is MeshInstance3D and child.mesh is BoxMesh:
+			child.mesh.size.z = length
+		if child is CollisionShape3D and child.shape is BoxShape3D:
+			child.shape.size.z = length
 
 func _build_spike_trap(z: float, x: float, width: float, length: float, base_y: float = 0.0) -> void:
 	var trap := SpikeTrap.new()
@@ -452,6 +454,22 @@ func _build_spike_trap(z: float, x: float, width: float, length: float, base_y: 
 	mesh.mesh = box_mesh
 	mesh.set_meta("mat_type", "danger")
 	trap.add_child(mesh)
+
+func _build_start_wall() -> void:
+	# Invisible wall right behind the start position prevents the ball from
+	# rolling backward off the track edge before the countdown finishes.
+	# Placed at z=+0.5 so it blocks the ball immediately; thick enough (1.0)
+	# to catch physics tunneling at low speeds.
+	var wall := StaticBody3D.new()
+	wall.name = "StartWall"
+	wall.position = Vector3(0.0, 2.0, 0.5)
+	_add_to_track(wall)
+
+	var shape := CollisionShape3D.new()
+	var box := BoxShape3D.new()
+	box.size = Vector3(16.0, 8.0, 1.0)
+	shape.shape = box
+	wall.add_child(shape)
 
 func _build_torus_mesh(major_radius: float, minor_radius: float, ring_segments: int = 24, tube_segments: int = 8) -> ArrayMesh:
 	var st := SurfaceTool.new()
@@ -495,51 +513,29 @@ func _torus_point(theta: float, phi: float, major: float, minor: float) -> Vecto
 func _torus_center(theta: float, major: float) -> Vector3:
 	return Vector3(major * cos(theta), major * sin(theta), 0.0)
 
-func _build_hoop(z: float, x: float, y: float, is_checkpoint: bool, boost: float) -> void:
-	var hoop := preload("res://scripts/obstacles/hoop.gd").new() as Hoop
+func _build_hoop(z: float, x: float, y: float, boost: float) -> void:
+	var hoop := Hoop.new()
 	hoop.name = "Hoop"
-	hoop.position = Vector3(x, y, z)
-	hoop.hoop_type = Hoop.HoopType.CHECKPOINT if is_checkpoint else Hoop.HoopType.BONUS
+	var place_y: float = y
+	var surface_y: float = _track_surface_y_at(Vector3(x, y, z))
+	if surface_y > -500.0:
+		place_y = maxf(y, surface_y + 0.35)
+	hoop.position = Vector3(x, place_y, z)
 	hoop.boost_strength = boost if boost > 0.0 else 28.0
+	hoop.build_visuals()
 	_add_to_track(hoop)
-	var shape := CollisionShape3D.new()
-	var sphere := SphereShape3D.new()
-	sphere.radius = 1.8
-	shape.shape = sphere
-	hoop.add_child(shape)
-	var mesh := MeshInstance3D.new()
-	mesh.mesh = _build_hex_hoop_mesh(1.8, 0.225)
-	mesh.set_meta("mat_type", "checkpoint" if is_checkpoint else "boost")
-	hoop.add_child(mesh)
 
-# Hexagonal hoop mesh — 6-sided major ring on-brand with Physix
-func _build_hex_hoop_mesh(major_radius: float, minor_radius: float, ring_segments: int = 6, tube_segments: int = 8) -> ArrayMesh:
-	var st := SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	for i in range(ring_segments):
-		var theta0 := float(i) / float(ring_segments) * TAU
-		var theta1 := float(i + 1) / float(ring_segments) * TAU
-		for j in range(tube_segments):
-			var phi0 := float(j) / float(tube_segments) * TAU
-			var phi1 := float(j + 1) / float(tube_segments) * TAU
-			var p00 := _torus_point(theta0, phi0, major_radius, minor_radius)
-			var p10 := _torus_point(theta1, phi0, major_radius, minor_radius)
-			var p11 := _torus_point(theta1, phi1, major_radius, minor_radius)
-			var p01 := _torus_point(theta0, phi1, major_radius, minor_radius)
 
-			st.set_normal((p00 - _torus_center(theta0, major_radius)).normalized())
-			st.add_vertex(p00)
-			st.set_normal((p10 - _torus_center(theta1, major_radius)).normalized())
-			st.add_vertex(p10)
-			st.set_normal((p11 - _torus_center(theta1, major_radius)).normalized())
-			st.add_vertex(p11)
-
-			st.set_normal((p00 - _torus_center(theta0, major_radius)).normalized())
-			st.add_vertex(p00)
-			st.set_normal((p11 - _torus_center(theta1, major_radius)).normalized())
-			st.add_vertex(p11)
-			st.set_normal((p01 - _torus_center(theta0, major_radius)).normalized())
-			st.add_vertex(p01)
-	var mesh := ArrayMesh.new()
-	st.commit(mesh)
-	return mesh
+func _track_surface_y_at(world_pos: Vector3) -> float:
+	var space := get_world_3d().direct_space_state
+	if space == null:
+		return -999.0
+	var query := PhysicsRayQueryParameters3D.new()
+	query.from = world_pos + Vector3(0, 40.0, 0)
+	query.to = world_pos + Vector3(0, -40.0, 0)
+	query.collide_with_areas = false
+	query.collide_with_bodies = true
+	var hit := space.intersect_ray(query)
+	if hit.is_empty():
+		return -999.0
+	return float(hit["position"].y)

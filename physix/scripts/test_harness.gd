@@ -66,7 +66,7 @@ func _load_next_level() -> void:
 		var path: String = LevelManager.get_level_scene_path(_current_world, _current_level)
 		var packed: PackedScene = load(path)
 		if packed == null:
-			print("  ✗ FAILED TO LOAD: %s" % path)
+			print("  X FAILED TO LOAD: %s" % path)
 			_advance()
 			return
 		_level_node = packed.instantiate()
@@ -89,7 +89,7 @@ func _load_next_level() -> void:
 			break
 
 	if game_level == null:
-		print("  ✗ GameLevel node not found")
+		print("  X GameLevel node not found")
 		_advance()
 		return
 
@@ -119,9 +119,9 @@ func _load_next_level() -> void:
 			player.add_child(_bot)
 			print("  Bot attached to player")
 		else:
-			print("  ⚠ Could not load bot script")
+			print("  ! Could not load bot script")
 	else:
-		print("  ⚠ Player not found, level will run without bot")
+		print("  ! Player not found, level will run without bot")
 
 	_start_time = Time.get_ticks_msec()
 	_timeout_timer.start(LEVEL_TIMEOUT_SEC)
@@ -139,7 +139,7 @@ func _on_level_timeout() -> void:
 		"total_coins": GameManager.level_total_coins,
 	}
 	_results.append(result)
-	print("  ⏱ TIMEOUT — %s | %.1fs | deaths=%d" % [key, elapsed, GameManager.level_deaths])
+	print("  [TIME] TIMEOUT — %s | %.1fs | deaths=%d" % [key, elapsed, GameManager.level_deaths])
 	if _level_node != null and is_instance_valid(_level_node):
 		_disconnect_level(_level_node)
 	_advance()
@@ -160,7 +160,7 @@ func _on_level_completed(_stars: int, _time: float, game_level: Node) -> void:
 		"total_coins": GameManager.level_total_coins,
 	}
 	_results.append(result)
-	print("  ✓ COMPLETED — %s | %d★ | %.1fs | deaths=%d" % [key, stars, elapsed, GameManager.level_deaths])
+	print("  OK COMPLETED — %s | %d* | %.1fs | deaths=%d" % [key, stars, elapsed, GameManager.level_deaths])
 	_disconnect_level(game_level)
 	_advance()
 
@@ -179,7 +179,7 @@ func _on_level_failed(game_level: Node) -> void:
 		"total_coins": GameManager.level_total_coins,
 	}
 	_results.append(result)
-	print("  ✗ FAILED — %s | %.1fs | deaths=%d" % [key, elapsed, GameManager.level_deaths])
+	print("  X FAILED — %s | %.1fs | deaths=%d" % [key, elapsed, GameManager.level_deaths])
 	_disconnect_level(game_level)
 	_advance()
 
@@ -236,8 +236,8 @@ func _finish_run() -> void:
 	print("Results: %d/%d levels passed | %d total deaths" % [passed, total, total_deaths])
 	print("\nDetailed Results:")
 	for r: Dictionary in _results:
-		var icon: String = "✓" if r["status"] == "completed" else "✗"
-		print("  %s %s | %d★ | %.1fs | deaths=%d" % [icon, r["level"], r.get("stars", 0), r.get("time", 0.0), r.get("deaths", 0)])
+		var icon: String = "OK" if r["status"] == "completed" else "X"
+		print("  %s %s | %d* | %.1fs | deaths=%d" % [icon, r["level"], r.get("stars", 0), r.get("time", 0.0), r.get("deaths", 0)])
 
 	# Save JSON
 	var json := JSON.stringify({"results": _results, "passed": passed, "total": total, "deaths": total_deaths}, "\t")

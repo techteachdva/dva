@@ -4,8 +4,7 @@ extends Panel
 # Instantiate under any CanvasLayer or Control node.
 
 signal closed()
-
-@onready var _vbox: VBoxContainer = $VBox
+signal main_menu_requested()
 
 var music_slider: HSlider
 var sfx_slider: HSlider
@@ -15,12 +14,20 @@ var show_fps_chk: CheckBox
 
 func _ready() -> void:
 	visible = false
-	_set_anchors_preset(Control.PRESET_CENTER)
-	custom_minimum_size = Vector2(400, 420)
-	size = Vector2(400, 420)
+	set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	anchor_left = 0.5
+	anchor_top = 0.5
+	anchor_right = 0.5
+	anchor_bottom = 0.5
+	offset_left = -210.0
+	offset_top = -230.0
+	offset_right = 210.0
+	offset_bottom = 230.0
+	custom_minimum_size = Vector2(420, 460)
+	mouse_filter = Control.MOUSE_FILTER_STOP
 
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.1, 0.12, 0.15, 0.95)
+	style.bg_color = Color(0.08, 0.10, 0.14, 1.0)
 	style.corner_radius_top_left = 12
 	style.corner_radius_top_right = 12
 	style.corner_radius_bottom_left = 12
@@ -43,7 +50,7 @@ func _ready() -> void:
 	add_child(vbox)
 
 	var title := Label.new()
-	title.text = "⚙  Options"
+	title.text = "Options"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 26)
 	vbox.add_child(title)
@@ -105,17 +112,38 @@ func _ready() -> void:
 
 	vbox.add_child(HSeparator.new())
 
+	var menu_btn := Button.new()
+	menu_btn.text = "Main Menu"
+	menu_btn.pressed.connect(_on_main_menu)
+	vbox.add_child(menu_btn)
+
 	var close_btn := Button.new()
 	close_btn.text = "Close"
 	close_btn.pressed.connect(_on_close)
 	vbox.add_child(close_btn)
 
+	var quit_btn := Button.new()
+	quit_btn.text = "Quit Game"
+	quit_btn.pressed.connect(_on_quit)
+	vbox.add_child(quit_btn)
+
 	_style_checkbox(reduce_motion_chk)
 	_style_checkbox(fullscreen_chk)
 	_style_checkbox(show_fps_chk)
+	_style_button(menu_btn)
 	_style_button(close_btn)
+	_style_button(quit_btn)
 
 func open() -> void:
+	set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	anchor_left = 0.5
+	anchor_top = 0.5
+	anchor_right = 0.5
+	anchor_bottom = 0.5
+	offset_left = -210.0
+	offset_top = -230.0
+	offset_right = 210.0
+	offset_bottom = 230.0
 	visible = true
 	# Refresh values from saved settings
 	if get_node_or_null("/root/AudioManager") != null:
@@ -124,10 +152,7 @@ func open() -> void:
 	reduce_motion_chk.button_pressed = _get_bool_setting("reduce_motion", false)
 	fullscreen_chk.button_pressed = _get_bool_setting("fullscreen", false)
 	show_fps_chk.button_pressed = _get_bool_setting("show_fps", false)
-	# Animate in
-	modulate.a = 0.0
-	var tw := create_tween()
-	tw.tween_property(self, "modulate:a", 1.0, 0.18)
+	modulate.a = 1.0
 
 func _on_music_changed(value: float) -> void:
 	if get_node_or_null("/root/AudioManager") != null:
@@ -158,11 +183,21 @@ func _on_show_fps_toggled(enabled: bool) -> void:
 	if fps_label != null:
 		fps_label.visible = enabled
 
+func _on_main_menu() -> void:
+	visible = false
+	modulate.a = 1.0
+	main_menu_requested.emit()
+	closed.emit()
+
+
 func _on_close() -> void:
 	var tw := create_tween()
 	tw.tween_property(self, "modulate:a", 0.0, 0.12)
 	tw.tween_property(self, "visible", false, 0.0)
 	closed.emit()
+
+func _on_quit() -> void:
+	get_tree().quit()
 
 func _get_bool_setting(key: String, default: bool) -> bool:
 	var val: Variant = LevelManager.get_setting(key)
@@ -210,7 +245,7 @@ func _style_button(btn: Button) -> void:
 	btn.add_theme_color_override("font_color", Color(0.95, 0.93, 1.0, 1.0))
 	btn.add_theme_color_override("font_hover_color", Color(1.0, 0.65, 0.25, 1.0))
 	var s := StyleBoxFlat.new()
-	s.bg_color = Color(0.06, 0.04, 0.10, 0.88)
+	s.bg_color = Color(0.12, 0.14, 0.20, 1.0)
 	s.border_color = Color(0.30, 0.25, 0.40)
 	s.border_width_top = 2
 	s.border_width_bottom = 2

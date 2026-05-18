@@ -13,6 +13,8 @@ var _start_pos: Vector3 = Vector3(0, 1.5, 0)
 var _test_camera: Camera3D
 var _timer_lbl: Label
 var _speed_bar: ProgressBar
+var _respawning: bool = false
+var _timer: Timer
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -27,10 +29,22 @@ func _ready() -> void:
 
 	LevelSerializer.import_level(GameManager.editor_test_data, self)
 
-	# Find player start position
-	var start_node: Node = _find_node_recursive(self, "PlayerStart")
-	if start_node != null:
-		_start_pos = start_node.global_position
+	# Find player start position — snap to the first track segment so the player doesn't fall into the void
+	var track_root: Node = _find_node_recursive(self, "TrackRoot")
+	if track_root != null:
+		var first_seg: Node = null
+		var first_index: int = 9999
+		for child: Node in track_root.get_children():
+			if child is StaticBody3D and child.name.begins_with("Seg_"):
+				var idx_str: String = child.name.substr(4)
+				var idx: int = idx_str.to_int()
+				if idx < first_index:
+					first_index = idx
+					first_seg = child
+			if child is StaticBody3D and child.name == "Floor":
+				first_seg = child
+		if first_seg != null:
+			_start_pos = first_seg.global_position + Vector3(0.0, 1.0, 0.0)
 	else:
 		_start_pos = Vector3(0, 1.5, 0)
 
@@ -109,35 +123,18 @@ func _on_finish_entered(body: Node3D) -> void:
 		return
 	_running = false
 	var total_coins := GameManager.level_total_coins
-	var stars := GameManager.calculate_star_rating(
-		_elapsed, GameManager.level_coins, total_coins,
-		GameManager.level_obstacles_cleared, GameManager.level_deaths,
-		GameManager.editor_test_data.get("pt", 45.0),
-		_player.max_forward_speed
-	)
+	var stars := GameManager.calculate_star_rating()
 	var rank := GameManager.calculate_rank(
 		_elapsed, GameManager.level_coins, total_coins,
 		GameManager.level_obstacles_cleared, GameManager.level_total_obstacles,
 		GameManager.level_deaths, GameManager.editor_test_data.get("pt", 45.0)
 	)
 
-	# Medals
-	var medals: Array[String] = []
-	if GameManager.level_deaths == 0:
-		medals.append("First Try")
-	if GameManager.level_coins >= total_coins and GameManager.level_obstacles_cleared >= GameManager.level_total_obstacles and _elapsed <= GameManager.editor_test_data.get("pt", 45.0) and GameManager.level_deaths == 0:
-		medals.append("Perfect Path")
-	if GameManager.get_avg_speed() >= _player.max_forward_speed * 0.75:
-		medals.append("Speed Demon")
-
-	_show_results(stars, rank, medals)
+	_show_results(stars, rank)
 	_timer.start(3.0)
 	await _timer.timeout
 	_return_to_origin()
 
-
-var _respawning: bool = false
-var _timer: Timer
 
 func _exit_tree() -> void:
 	if _timer != null:
@@ -253,7 +250,7 @@ func _update_hud() -> void:
 		_speed_bar.value = clampf((_player.linear_velocity.length() / _player.max_forward_speed) * 100.0, 0.0, 100.0)
 
 
-func _show_results(stars: int, rank: String, medals: Array[String] = []) -> void:
+func _show_results(stars: int, rank: String) -> void:
 	var panel := Panel.new()
 	panel.name = "ResultPanel"
 	panel.anchor_left = 0.3
@@ -263,38 +260,34 @@ func _show_results(stars: int, rank: String, medals: Array[String] = []) -> void
 	hud.add_child(panel)
 
 	var title := Label.new()
-	title.anchor_left = 0.5
-	title.anchor_right = 0.5
-	title.anchor_top = 0.1
+	title.anchor_left = 0.08
+	title.anchor_right = 0.92
+	title.anchor_top = 0.08
+	title.anchor_bottom = 0.22
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	title.add_theme_font_size_override("font_size", 36)
 	title.text = "LEVEL COMPLETE!" if stars > 0 else "GAME OVER"
 	panel.add_child(title)
 
 	var stars_lbl := Label.new()
-	stars_lbl.anchor_left = 0.5
-	stars_lbl.anchor_right = 0.5
-	stars_lbl.anchor_top = 0.35
+	stars_lbl.anchor_left = 0.08
+	stars_lbl.anchor_right = 0.92
+	stars_lbl.anchor_top = 0.30
+	stars_lbl.anchor_bottom = 0.48
 	stars_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	stars_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	stars_lbl.add_theme_font_size_override("font_size", 52)
-	stars_lbl.text = "★".repeat(stars) + "☆".repeat(3 - stars)
+	stars_lbl.text = "*".repeat(stars) + " ".repeat(3 - stars)
 	panel.add_child(stars_lbl)
 
 	var rank_lbl := Label.new()
-	rank_lbl.anchor_left = 0.5
-	rank_lbl.anchor_right = 0.5
-	rank_lbl.anchor_top = 0.55
+	rank_lbl.anchor_left = 0.08
+	rank_lbl.anchor_right = 0.92
+	rank_lbl.anchor_top = 0.52
+	rank_lbl.anchor_bottom = 0.68
 	rank_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	rank_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	rank_lbl.add_theme_font_size_override("font_size", 28)
 	rank_lbl.text = "Rank: %s" % rank
 	panel.add_child(rank_lbl)
-
-	if not medals.is_empty():
-		var medals_lbl := Label.new()
-		medals_lbl.anchor_left = 0.5
-		medals_lbl.anchor_right = 0.5
-		medals_lbl.anchor_top = 0.7
-		medals_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		medals_lbl.add_theme_font_size_override("font_size", 22)
-		medals_lbl.text = "Medals earned: %s" % ", ".join(medals)
-		panel.add_child(medals_lbl)

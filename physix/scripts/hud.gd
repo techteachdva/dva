@@ -2,6 +2,7 @@ extends CanvasLayer
 
 signal level_complete_action(action: String)
 signal pause_action(action: String)
+signal game_over_action(action: String)
 
 @onready var score_lbl:       Label       = $TopBar/ScoreLabel
 @onready var timer_lbl:       Label       = $TopBar/TimerLabel
@@ -27,6 +28,14 @@ var _speed_lbl: Label
 var _tutorial_panel: Panel
 var _tutorial_lbl: Label
 var _tutorial_timer: Timer
+var _complete_star_icons: HBoxContainer
+var _complete_run_time_lbl: Label
+var _complete_best_time_lbl: Label
+var _complete_new_fastest_lbl: Label
+
+var _countdown_dim: ColorRect
+var _countdown_lbl: Label
+var _countdown_tween: Tween
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -46,6 +55,25 @@ func _ready() -> void:
 	_ensure_hoops_label()
 	_ensure_debug_button()
 	_ensure_speed_label()
+	_ensure_countdown_ui()
+	_setup_topbar_icons()
+
+func _setup_topbar_icons() -> void:
+	_insert_icon_before(lives_lbl, "heart")
+	_insert_icon_before(coins_lbl, "coin")
+
+
+func _insert_icon_before(label: Label, kind: String) -> void:
+	var bar: Node = label.get_parent()
+	if bar == null:
+		return
+	var icon := TextureRect.new()
+	icon.name = "%sIcon" % label.name
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	UiIconLayout.configure_icon_rect(icon, kind, Vector2(22, 22))
+	bar.add_child(icon)
+	bar.move_child(icon, label.get_index())
+
 
 func _ensure_speed_label() -> void:
 	_speed_lbl = Label.new()
@@ -165,7 +193,7 @@ func _ensure_pause_buttons() -> void:
 		retry_btn.offset_right = 90
 		retry_btn.offset_bottom = 36
 		retry_btn.add_theme_font_size_override("font_size", 20)
-		retry_btn.text = "↻  Retry"
+		retry_btn.text = "Retry (−1 life)"
 		pause_panel.add_child(retry_btn)
 	if not retry_btn.pressed.is_connected(_on_pause_retry):
 		retry_btn.pressed.connect(_on_pause_retry)
@@ -181,16 +209,84 @@ func _ensure_pause_buttons() -> void:
 		return_btn.offset_right = 90
 		return_btn.offset_bottom = 36
 		return_btn.add_theme_font_size_override("font_size", 18)
-		return_btn.text = "↩  Return to World Map"
+		return_btn.text = "Return to World Map"
 		pause_panel.add_child(return_btn)
 	if not return_btn.pressed.is_connected(_on_return_to_world_map):
 		return_btn.pressed.connect(_on_return_to_world_map)
 
 func _on_pause_retry() -> void:
+	if GameManager.lives <= 1:
+		_show_retry_warning()
+		return
 	get_tree().paused = false
 	pause_panel.visible = false
 	pause_action.emit("retry")
 
+func _show_retry_warning() -> void:
+	var dlg := Panel.new()
+	dlg.name = "RetryWarningDialog"
+	dlg.set_anchors_preset(Control.PRESET_CENTER)
+	dlg.offset_left = -220
+	dlg.offset_right = 220
+	dlg.offset_top = -90
+	dlg.offset_bottom = 90
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.08, 0.04, 0.12, 0.96)
+	style.border_color = Color(0.9, 0.2, 0.2, 0.95)
+	style.border_width_left = 3
+	style.border_width_right = 3
+	style.border_width_top = 3
+	style.border_width_bottom = 3
+	style.corner_radius_top_left = 12
+	style.corner_radius_top_right = 12
+	style.corner_radius_bottom_left = 12
+	style.corner_radius_bottom_right = 12
+	dlg.add_theme_stylebox_override("panel", style)
+	add_child(dlg)
+
+	var lbl := Label.new()
+	lbl.anchor_left = 0.05
+	lbl.anchor_right = 0.95
+	lbl.anchor_top = 0.1
+	lbl.anchor_bottom = 0.45
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	lbl.add_theme_font_size_override("font_size", 22)
+	lbl.add_theme_color_override("font_color", Color(1.0, 0.35, 0.35))
+	lbl.text = "Only 1 Life Remaining!\nRetrying will end your run."
+	dlg.add_child(lbl)
+
+	var hbox := HBoxContainer.new()
+	hbox.anchor_left = 0.1
+	hbox.anchor_right = 0.9
+	hbox.anchor_top = 0.55
+	hbox.anchor_bottom = 0.88
+	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	hbox.add_theme_constant_override("separation", 16)
+	dlg.add_child(hbox)
+
+	var cancel_btn := Button.new()
+	cancel_btn.text = "Cancel"
+	cancel_btn.custom_minimum_size = Vector2(120, 40)
+	cancel_btn.add_theme_font_size_override("font_size", 20)
+	cancel_btn.pressed.connect(func() -> void:
+		dlg.queue_free()
+	)
+	hbox.add_child(cancel_btn)
+
+	var confirm_btn := Button.new()
+	confirm_btn.text = "Retry Anyway"
+	confirm_btn.custom_minimum_size = Vector2(160, 40)
+	confirm_btn.add_theme_font_size_override("font_size", 20)
+	confirm_btn.add_theme_color_override("font_color", Color(1.0, 0.4, 0.4))
+	confirm_btn.pressed.connect(func() -> void:
+		dlg.queue_free()
+		get_tree().paused = false
+		pause_panel.visible = false
+		pause_action.emit("retry")
+	)
+	hbox.add_child(confirm_btn)
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("pause"):
@@ -225,8 +321,8 @@ func update_speed(speed: float, max_speed: float) -> void:
 # ── Signal callbacks ──────────────────────────────────────────────────────────
 
 func update_score(val: int) -> void: score_lbl.text = "Score  %07d" % val
-func update_lives(val: int) -> void: lives_lbl.text = "❤  x%d" % val
-func update_coins(val: int) -> void: coins_lbl.text = "🪙  x%d" % val
+func update_lives(val: int) -> void: lives_lbl.text = "x%d" % val
+func update_coins(val: int) -> void: coins_lbl.text = "x%d" % val
 
 func update_hoops(passed: int, total: int) -> void:
 	var lbl: Label = get_node_or_null("TopBar/HoopsLabel")
@@ -236,7 +332,7 @@ func update_hoops(passed: int, total: int) -> void:
 		lbl.visible = false
 		return
 	lbl.visible = true
-	lbl.text = "🎯  %d/%d" % [passed, total]
+	lbl.text = "Chk %d/%d" % [passed, total]
 
 # ── Combo ─────────────────────────────────────────────────────────────────────
 
@@ -250,11 +346,79 @@ func register_combo() -> void:
 # ── Overlays ──────────────────────────────────────────────────────────────────
 
 func show_intro(text: String) -> void:
-	intro_text.text    = "💡 " + text
+	intro_text.text    = "Tip: " + text
 	intro_panel.visible = true
 
 func hide_intro() -> void:
 	intro_panel.visible = false
+
+func _ensure_countdown_ui() -> void:
+	if _countdown_lbl != null:
+		return
+	_countdown_dim = ColorRect.new()
+	_countdown_dim.name = "CountdownDim"
+	_countdown_dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_countdown_dim.color = Color(0.02, 0.02, 0.06, 0.42)
+	_countdown_dim.visible = false
+	_countdown_dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_countdown_dim)
+
+	_countdown_lbl = Label.new()
+	_countdown_lbl.name = "CountdownLabel"
+	_countdown_lbl.set_anchors_preset(Control.PRESET_CENTER)
+	_countdown_lbl.offset_left = -280.0
+	_countdown_lbl.offset_right = 280.0
+	_countdown_lbl.offset_top = -90.0
+	_countdown_lbl.offset_bottom = 90.0
+	_countdown_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_countdown_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_countdown_lbl.add_theme_font_size_override("font_size", 108)
+	_countdown_lbl.add_theme_color_override("font_color", Color(1.0, 0.96, 0.72))
+	_countdown_lbl.add_theme_color_override("font_outline_color", Color(0.08, 0.04, 0.18))
+	_countdown_lbl.add_theme_constant_override("outline_size", 14)
+	_countdown_lbl.visible = false
+	_countdown_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_countdown_lbl)
+
+func run_start_countdown() -> void:
+	_ensure_countdown_ui()
+	_countdown_dim.visible = true
+	_countdown_lbl.visible = true
+	await get_tree().create_timer(0.35).timeout
+	if not is_inside_tree():
+		return
+	var steps: Array[String] = ["3", "2", "1", "GO!"]
+	for step: String in steps:
+		var is_go := step == "GO!"
+		await _show_countdown_step(step, is_go)
+		if get_node_or_null("/root/AudioManager") != null:
+			AudioManager.play_sfx("boost" if is_go else "menu_select")
+		if is_go and get_node_or_null("/root/CameraShaker") != null:
+			CameraShaker.shake(0.22, 0.38)
+		var wait_sec := 0.65 if is_go else 0.92
+		await get_tree().create_timer(wait_sec).timeout
+		if not is_inside_tree():
+			return
+	_countdown_lbl.visible = false
+	_countdown_dim.visible = false
+
+func _show_countdown_step(text: String, is_go: bool) -> void:
+	if _countdown_tween != null and _countdown_tween.is_valid():
+		_countdown_tween.kill()
+	_countdown_lbl.text = text
+	var font_size := 132 if is_go else 108
+	_countdown_lbl.add_theme_font_size_override("font_size", font_size)
+	var col := Color(0.35, 1.0, 0.55) if is_go else Color(1.0, 0.96, 0.72)
+	_countdown_lbl.add_theme_color_override("font_color", col)
+	_countdown_lbl.modulate = Color(1, 1, 1, 0)
+	_countdown_lbl.scale = Vector2(1.55, 1.55)
+	await get_tree().process_frame
+	_countdown_lbl.pivot_offset = _countdown_lbl.size * 0.5
+	_countdown_tween = create_tween()
+	_countdown_tween.set_parallel(true)
+	_countdown_tween.tween_property(_countdown_lbl, "modulate:a", 1.0, 0.1)
+	_countdown_tween.tween_property(_countdown_lbl, "scale", Vector2.ONE, 0.24)\
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 func _build_tutorial_ui() -> void:
 	_tutorial_panel = Panel.new()
@@ -314,10 +478,24 @@ func _on_resume() -> void:
 
 func _on_return_to_world_map() -> void:
 	get_tree().paused = false
+	if get_node_or_null("/root/LevelManager") != null:
+		LevelManager.save_progress()
 	Main.instance.load_world_map()
 
-func show_level_complete(stars: int, time: float, rank: String = "", breakdown: String = "", medals: Array[String] = []) -> void:
+func show_level_complete(
+	stars: int,
+	run_time: float,
+	personal_best: float,
+	rank: String = "",
+	breakdown: String = "",
+	is_new_fastest: bool = false,
+	previous_best: float = INF,
+	all_checkpoints: bool = false
+) -> void:
 	complete_panel.visible = true
+	var medals_old := complete_panel.get_node_or_null("MedalsContainer")
+	if medals_old:
+		medals_old.queue_free()
 	# Dark, semi-transparent panel style
 	var panel_style := StyleBoxFlat.new()
 	panel_style.bg_color = Color(0.04, 0.04, 0.08, 0.92)
@@ -343,11 +521,13 @@ func show_level_complete(stars: int, time: float, rank: String = "", breakdown: 
 	var title_lbl: Label = complete_panel.get_node("CompleteTitle")
 	title_lbl.text = title_text
 	title_lbl.add_theme_font_size_override("font_size", 36)
-	complete_panel.get_node("StarsLabel").text = "★".repeat(stars) + "☆".repeat(3 - stars)
-	@warning_ignore("integer_division")
-	var m := int(time) / 60
-	var s := int(time) % 60
-	complete_panel.get_node("TimeLabel").text = "Time: %02d:%02d" % [m, s]
+	_layout_complete_label(title_lbl, 0.05, 0.14)
+	_update_complete_stars(stars)
+	_ensure_complete_time_labels()
+	_update_complete_times(run_time, personal_best, is_new_fastest, previous_best, all_checkpoints)
+	var time_lbl: Label = complete_panel.get_node_or_null("TimeLabel") as Label
+	if time_lbl:
+		time_lbl.visible = false
 	var rank_lbl := complete_panel.get_node_or_null("RankLabel")
 	if rank_lbl:
 		if rank.is_empty():
@@ -356,29 +536,103 @@ func show_level_complete(stars: int, time: float, rank: String = "", breakdown: 
 			rank_lbl.visible = true
 			var praise := _rank_praise(rank)
 			rank_lbl.text = "Rank: %s — %s" % [rank, praise]
+			_layout_complete_label(rank_lbl, 0.56, 0.07)
 	var breakdown_lbl := complete_panel.get_node_or_null("BreakdownLabel")
 	if not breakdown_lbl:
 		breakdown_lbl = Label.new()
 		breakdown_lbl.name = "BreakdownLabel"
-		breakdown_lbl.anchor_left = 0.1
-		breakdown_lbl.anchor_right = 0.9
-		breakdown_lbl.anchor_top = 0.54
-		breakdown_lbl.anchor_bottom = 0.66
-		breakdown_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		breakdown_lbl.vertical_alignment = VERTICAL_ALIGNMENT_TOP
-		breakdown_lbl.autowrap_mode = TextServer.AUTOWRAP_WORD
 		breakdown_lbl.add_theme_font_size_override("font_size", 18)
 		complete_panel.add_child(breakdown_lbl)
+	_layout_complete_label(breakdown_lbl, 0.64, 0.10)
 	breakdown_lbl.text = breakdown
 	breakdown_lbl.visible = not breakdown.is_empty()
-
-	# Medals display — styled badges
-	_ensure_medals_display(medals)
 
 	# Ensure action buttons exist
 	_ensure_complete_buttons()
 	for btn: Button in _complete_buttons:
 		btn.visible = true
+
+func _ensure_complete_time_labels() -> void:
+	if _complete_run_time_lbl == null:
+		var legacy := complete_panel.get_node_or_null("TimeLabel") as Label
+		if legacy != null:
+			_complete_run_time_lbl = legacy
+			_complete_run_time_lbl.name = "RunTimeLabel"
+		else:
+			_complete_run_time_lbl = Label.new()
+			_complete_run_time_lbl.name = "RunTimeLabel"
+			complete_panel.add_child(_complete_run_time_lbl)
+	if _complete_best_time_lbl == null:
+		_complete_best_time_lbl = complete_panel.get_node_or_null("BestTimeLabel") as Label
+		if _complete_best_time_lbl == null:
+			_complete_best_time_lbl = Label.new()
+			_complete_best_time_lbl.name = "BestTimeLabel"
+			complete_panel.add_child(_complete_best_time_lbl)
+	if _complete_new_fastest_lbl == null:
+		_complete_new_fastest_lbl = complete_panel.get_node_or_null("NewFastestLabel") as Label
+		if _complete_new_fastest_lbl == null:
+			_complete_new_fastest_lbl = Label.new()
+			_complete_new_fastest_lbl.name = "NewFastestLabel"
+			complete_panel.add_child(_complete_new_fastest_lbl)
+	_complete_run_time_lbl.visible = true
+	_complete_best_time_lbl.visible = true
+	_layout_complete_label(_complete_run_time_lbl, 0.32, 0.07)
+	_layout_complete_label(_complete_best_time_lbl, 0.40, 0.07)
+	_layout_complete_label(_complete_new_fastest_lbl, 0.48, 0.07)
+	_complete_run_time_lbl.add_theme_font_size_override("font_size", 24)
+	_complete_best_time_lbl.add_theme_font_size_override("font_size", 22)
+	_complete_new_fastest_lbl.add_theme_font_size_override("font_size", 26)
+
+func _update_complete_times(
+	run_time: float,
+	personal_best: float,
+	is_new_fastest: bool,
+	previous_best: float,
+	all_checkpoints: bool
+) -> void:
+	if _complete_run_time_lbl == null:
+		return
+	if all_checkpoints:
+		_complete_run_time_lbl.visible = true
+		_layout_complete_label(_complete_run_time_lbl, 0.32, 0.07)
+		_complete_run_time_lbl.text = "This run:  %s" % LevelManager.format_time_display(run_time, "0:00")
+		_complete_best_time_lbl.visible = true
+		_layout_complete_label(_complete_best_time_lbl, 0.40, 0.07)
+		_complete_best_time_lbl.text = "Personal best:  %s" % LevelManager.format_time_display(personal_best, "—")
+		if is_new_fastest:
+			_complete_new_fastest_lbl.visible = true
+			_layout_complete_label(_complete_new_fastest_lbl, 0.48, 0.07)
+			_complete_new_fastest_lbl.text = "New Fastest Time!"
+			_complete_new_fastest_lbl.add_theme_color_override("font_color", Color(1.0, 0.88, 0.2, 1.0))
+			if previous_best < INF and previous_best > run_time:
+				_complete_new_fastest_lbl.text = "New Fastest Time!  (was %s)" % LevelManager.format_time_display(previous_best)
+		else:
+			_complete_new_fastest_lbl.visible = false
+			_complete_new_fastest_lbl.text = ""
+	else:
+		_complete_run_time_lbl.visible = false
+		_complete_new_fastest_lbl.visible = false
+		_complete_new_fastest_lbl.text = ""
+		if personal_best < INF:
+			_complete_best_time_lbl.visible = true
+			_layout_complete_label(_complete_best_time_lbl, 0.34, 0.07)
+			_complete_best_time_lbl.text = "Personal best:  %s" % LevelManager.format_time_display(personal_best)
+		else:
+			_complete_best_time_lbl.visible = false
+			_complete_best_time_lbl.text = ""
+
+func _layout_complete_label(lbl: Label, top_ratio: float, height_ratio: float) -> void:
+	lbl.anchor_left = 0.06
+	lbl.anchor_right = 0.94
+	lbl.anchor_top = top_ratio
+	lbl.anchor_bottom = top_ratio + height_ratio
+	lbl.offset_left = 0.0
+	lbl.offset_right = 0.0
+	lbl.offset_top = 0.0
+	lbl.offset_bottom = 0.0
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
 func _ensure_complete_buttons() -> void:
 	if not _complete_buttons.is_empty():
@@ -387,8 +641,8 @@ func _ensure_complete_buttons() -> void:
 	container.name = "CompleteButtons"
 	container.anchor_left = 0.5
 	container.anchor_right = 0.5
-	container.anchor_top = 0.72
-	container.anchor_bottom = 0.88
+	container.anchor_top = 0.76
+	container.anchor_bottom = 0.92
 	container.offset_left = -110
 	container.offset_right = 110
 	container.offset_top = 0
@@ -397,7 +651,7 @@ func _ensure_complete_buttons() -> void:
 	container.add_theme_constant_override("separation", 8)
 	complete_panel.add_child(container)
 
-	var labels := ["↻  Retry", "🗺  World Map", "✕  Quit"]
+	var labels := ["Retry", "World Map", "Quit"]
 	var actions: Array[String] = ["retry", "world_map", "quit"]
 	for i: int in range(labels.size()):
 		var btn := Button.new()
@@ -427,71 +681,6 @@ func _ensure_complete_buttons() -> void:
 		container.add_child(btn)
 		_complete_buttons.append(btn)
 
-func _ensure_medals_display(medals: Array[String]) -> void:
-	var container := complete_panel.get_node_or_null("MedalsContainer") as HBoxContainer
-	if container != null:
-		container.visible = false
-		for child: Node in container.get_children():
-			child.queue_free()
-	if medals.is_empty():
-		return
-
-	if container == null:
-		container = HBoxContainer.new()
-		container.name = "MedalsContainer"
-		container.anchor_left = 0.5
-		container.anchor_right = 0.5
-		container.anchor_top = 0.68
-		container.anchor_bottom = 0.72
-		container.offset_left = -200
-		container.offset_right = 200
-		container.offset_top = 0
-		container.offset_bottom = 0
-		container.alignment = BoxContainer.ALIGNMENT_CENTER
-		container.add_theme_constant_override("separation", 8)
-		complete_panel.add_child(container)
-
-	for medal: String in medals:
-		var badge := Panel.new()
-		badge.custom_minimum_size = Vector2(0, 28)
-		var badge_style := StyleBoxFlat.new()
-		match medal:
-			"Fearless":
-				badge_style.bg_color = Color(0.9, 0.25, 0.25, 0.9)
-				badge_style.border_color = Color(1.0, 0.5, 0.5, 1.0)
-			"First Try":
-				badge_style.bg_color = Color(0.2, 0.7, 0.35, 0.9)
-				badge_style.border_color = Color(0.4, 0.9, 0.5, 1.0)
-			"Perfect Path":
-				badge_style.bg_color = Color(0.9, 0.7, 0.15, 0.9)
-				badge_style.border_color = Color(1.0, 0.9, 0.4, 1.0)
-			"Speed Demon":
-				badge_style.bg_color = Color(0.2, 0.5, 0.9, 0.9)
-				badge_style.border_color = Color(0.5, 0.7, 1.0, 1.0)
-			_:
-				badge_style.bg_color = Color(0.5, 0.5, 0.5, 0.9)
-				badge_style.border_color = Color(0.7, 0.7, 0.7, 1.0)
-		badge_style.border_width_top = 2
-		badge_style.border_width_bottom = 2
-		badge_style.border_width_left = 2
-		badge_style.border_width_right = 2
-		badge_style.corner_radius_top_left = 6
-		badge_style.corner_radius_top_right = 6
-		badge_style.corner_radius_bottom_left = 6
-		badge_style.corner_radius_bottom_right = 6
-		badge.add_theme_stylebox_override("panel", badge_style)
-
-		var lbl := Label.new()
-		lbl.text = "🏅 " + medal
-		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		lbl.add_theme_font_size_override("font_size", 14)
-		lbl.add_theme_color_override("font_color", Color(1.0, 1.0, 1.0, 1.0))
-		badge.add_child(lbl)
-		container.add_child(badge)
-
-	container.visible = true
-
 func _rank_praise(rank: String) -> String:
 	match rank:
 		"S+": return "Perfect run!"
@@ -503,5 +692,109 @@ func _rank_praise(rank: String) -> String:
 		"F":  return "You'll get it next time!"
 	return ""
 
+func _update_complete_stars(stars: int) -> void:
+	var stars_lbl: Label = complete_panel.get_node_or_null("StarsLabel") as Label
+	if stars_lbl:
+		stars_lbl.visible = false
+	if _complete_star_icons == null:
+		_complete_star_icons = HBoxContainer.new()
+		_complete_star_icons.name = "StarIcons"
+		_complete_star_icons.alignment = BoxContainer.ALIGNMENT_CENTER
+		_complete_star_icons.add_theme_constant_override("separation", 10)
+		_complete_star_icons.anchor_left = 0.5
+		_complete_star_icons.anchor_right = 0.5
+		_complete_star_icons.anchor_top = 0.20
+		_complete_star_icons.offset_left = -90.0
+		_complete_star_icons.offset_right = 90.0
+		_complete_star_icons.offset_top = 0.0
+		_complete_star_icons.offset_bottom = 56.0
+		complete_panel.add_child(_complete_star_icons)
+		for _i: int in range(3):
+			var icon := TextureRect.new()
+			UiIconLayout.configure_icon_rect(icon, "star_empty", Vector2(48, 48))
+			_complete_star_icons.add_child(icon)
+	for i: int in range(_complete_star_icons.get_child_count()):
+		var icon: TextureRect = _complete_star_icons.get_child(i) as TextureRect
+		if icon == null:
+			continue
+		var earned: bool = i < stars
+		icon.texture = GameIcons.get_texture("star" if earned else "star_empty")
+		icon.modulate = Color.WHITE if earned else Color(0.45, 0.45, 0.5)
+
+
+var _game_over_buttons: Array[Button] = []
+
 func show_game_over() -> void:
 	game_over_panel.visible = true
+	_style_game_over_panel()
+	_ensure_game_over_content()
+	for btn: Button in _game_over_buttons:
+		btn.visible = true
+
+func _style_game_over_panel() -> void:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.05, 0.04, 0.1, 0.94)
+	style.border_color = Color(0.75, 0.2, 0.25, 0.95)
+	style.border_width_left = 4
+	style.border_width_right = 4
+	style.border_width_top = 4
+	style.border_width_bottom = 4
+	style.corner_radius_top_left = 14
+	style.corner_radius_top_right = 14
+	style.corner_radius_bottom_left = 14
+	style.corner_radius_bottom_right = 14
+	game_over_panel.add_theme_stylebox_override("panel", style)
+
+func _ensure_game_over_content() -> void:
+	var title := game_over_panel.get_node_or_null("GameOverLabel") as Label
+	if title:
+		title.anchor_left = 0.08
+		title.anchor_right = 0.92
+		title.anchor_top = 0.12
+		title.anchor_bottom = 0.28
+		title.offset_left = 0.0
+		title.offset_right = 0.0
+		title.offset_top = 0.0
+		title.offset_bottom = 0.0
+		title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		title.text = "GAME OVER"
+		title.add_theme_font_size_override("font_size", 40)
+	var sub := game_over_panel.get_node_or_null("GameOverSubLabel") as Label
+	if sub == null:
+		sub = Label.new()
+		sub.name = "GameOverSubLabel"
+		game_over_panel.add_child(sub)
+	sub.anchor_left = 0.08
+	sub.anchor_right = 0.92
+	sub.anchor_top = 0.28
+	sub.anchor_bottom = 0.42
+	sub.offset_left = 0.0
+	sub.offset_right = 0.0
+	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	sub.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	sub.add_theme_font_size_override("font_size", 18)
+	sub.text = "Out of lives. Visit the shop on the world map to buy more, then Continue from the main menu."
+	if _game_over_buttons.is_empty():
+		var container := VBoxContainer.new()
+		container.name = "GameOverButtons"
+		container.anchor_left = 0.15
+		container.anchor_right = 0.85
+		container.anchor_top = 0.48
+		container.anchor_bottom = 0.88
+		container.add_theme_constant_override("separation", 10)
+		game_over_panel.add_child(container)
+		var specs: Array = [
+			["World Map & Shop", "world_map"],
+			["Main Menu", "menu"],
+		]
+		for spec: Array in specs:
+			var btn := Button.new()
+			btn.text = spec[0]
+			btn.custom_minimum_size = Vector2(0, 44)
+			btn.add_theme_font_size_override("font_size", 20)
+			var a: String = spec[1]
+			btn.pressed.connect(func(): game_over_action.emit(a))
+			container.add_child(btn)
+			_game_over_buttons.append(btn)

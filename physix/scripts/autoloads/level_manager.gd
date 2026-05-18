@@ -44,6 +44,7 @@ var save_data: Dictionary = {}
 
 signal level_unlocked(world: int, level: int)
 signal world_unlocked(world: int)
+signal music_unlocked(track_id: String)
 
 func _ready() -> void:
 	load_progress()
@@ -58,8 +59,14 @@ func is_level_unlocked(world: int, level: int) -> bool:
 		return is_secret_unlocked()
 	return save_data.get("unlocked", {}).get(_key(world, level), false)
 
+const WORLD_KEY_COSTS: Dictionary = {
+	2: 50, 3: 60, 4: 70, 5: 80, 6: 100,
+}
+
 func is_world_unlocked(world: int) -> bool:
 	if world == 1:
+		return true
+	if save_data.get("world_key_unlocks", {}).get(str(world), false):
 		return true
 	# To unlock a world, every level in the previous world must have at least 2 stars
 	var prev_world: int = world - 1
@@ -72,6 +79,23 @@ func is_world_unlocked(world: int) -> bool:
 			return false
 	return true
 
+func get_next_locked_world() -> int:
+	for world: int in range(2, 7):
+		if not is_world_unlocked(world):
+			return world
+	return -1
+
+func get_world_key_cost(world: int) -> int:
+	return int(WORLD_KEY_COSTS.get(world, 100))
+
+func unlock_world_with_key(world: int) -> void:
+	if world < 2 or world > 6:
+		return
+	save_data.get_or_add("world_key_unlocks", {})[str(world)] = true
+	_unlock(world, 1)
+	save_progress()
+	world_unlocked.emit(world)
+
 func get_level_stars(world: int, level: int) -> int:
 	return save_data.get("stars", {}).get(_key(world, level), 0)
 
@@ -80,6 +104,14 @@ func get_level_rank(world: int, level: int) -> String:
 
 func get_best_time(world: int, level: int) -> float:
 	return save_data.get("best_times", {}).get(_key(world, level), INF)
+
+func format_time_display(seconds: float, empty_label: String = "") -> String:
+	if seconds >= INF or seconds < 0.0:
+		return empty_label
+	@warning_ignore("integer_division")
+	var minutes := int(seconds) / 60
+	var secs := int(seconds) % 60
+	return "%d:%02d" % [minutes, secs]
 
 func set_best_time(world: int, level: int, time: float) -> bool:
 	var key := _key(world, level)
@@ -116,7 +148,8 @@ func complete_level(world: int, level: int, stars: int, rank: String = "") -> vo
 	var prev_stars: int = get_level_stars(world, level)
 	if stars > prev_stars:
 		save_data.get_or_add("stars", {})[_key(world, level)] = stars
-		GameManager.total_stars += stars - prev_stars
+	if get_node_or_null("/root/GameManager") != null:
+		GameManager.total_stars = recalculate_total_stars()
 
 	var prev_rank: String = get_level_rank(world, level)
 	var rank_order := ["F", "D", "C", "B", "A", "S", "S+"]
@@ -141,10 +174,83 @@ func complete_level(world: int, level: int, stars: int, rank: String = "") -> vo
 func reset_progress() -> void:
 	save_data = {}
 	_unlock(1, 1)
-	# Preserve shop purchases across resets? No — full reset clears everything.
+	init_new_session()
+	reset_facts_queue()
 	save_progress()
 
+func reset_facts_queue() -> void:
+	save_data.erase("facts_queue")
+
+func pop_next_fact() -> String:
+	var facts: Array[String] = GameplayFacts.ALL_FACTS
+	if facts.is_empty():
+		return ""
+	var queue: Array = save_data.get("facts_queue", [])
+	if queue.is_empty():
+		queue = _new_shuffled_fact_queue(facts.size())
+	var idx: int = int(queue.pop_front())
+	save_data["facts_queue"] = queue
+	save_progress()
+	return facts[idx]
+
+func _new_shuffled_fact_queue(count: int) -> Array:
+	var queue: Array = []
+	for i: int in range(count):
+		queue.append(i)
+	queue.shuffle()
+	return queue
+
+func init_new_session() -> void:
+	save_data["player_coins"] = 0
+	save_data["player_lives"] = 3
+	save_data["session_game_over"] = false
+	apply_session_to_game_manager()
+
+func ensure_session_defaults() -> void:
+	if not save_data.has("player_lives"):
+		save_data["player_coins"] = int(save_data.get("player_coins", 0))
+		save_data["player_lives"] = 3
+	if not save_data.has("session_game_over"):
+		save_data["session_game_over"] = false
+	apply_session_to_game_manager()
+
+func recalculate_total_stars() -> int:
+	var total := 0
+	for level_key: String in save_data.get("stars", {}).keys():
+		total += int(save_data["stars"][level_key])
+	return total
+
+func apply_session_to_game_manager() -> void:
+	if get_node_or_null("/root/GameManager") == null:
+		return
+	GameManager.coins = int(save_data.get("player_coins", 0))
+	GameManager.lives = int(save_data.get("player_lives", 3))
+	GameManager.total_stars = recalculate_total_stars()
+	GameManager.coins_changed.emit(GameManager.coins)
+	GameManager.lives_changed.emit(GameManager.lives)
+
+func sync_session_from_game_manager() -> void:
+	if get_node_or_null("/root/GameManager") == null:
+		return
+	save_data["player_coins"] = GameManager.coins
+	save_data["player_lives"] = GameManager.lives
+
+func is_session_game_over() -> bool:
+	return bool(save_data.get("session_game_over", false))
+
+func set_session_game_over(over: bool) -> void:
+	save_data["session_game_over"] = over
+	sync_session_from_game_manager()
+	save_progress()
+
+func clear_session_game_over() -> void:
+	if save_data.get("session_game_over", false):
+		save_data["session_game_over"] = false
+		sync_session_from_game_manager()
+		save_progress()
+
 func save_progress() -> void:
+	sync_session_from_game_manager()
 	var file := FileAccess.open(SAVE_FILE, FileAccess.WRITE)
 	if file:
 		file.store_string(JSON.stringify(save_data))
@@ -162,7 +268,9 @@ func load_progress() -> void:
 					# Corrupted save — back it up and start fresh
 					push_warning("Save file corrupted; backing up and resetting.")
 					DirAccess.rename_absolute(SAVE_FILE, SAVE_FILE + ".backup")
+	_migrate_music_unlocks()
 	_unlock(1, 1)
+	ensure_session_defaults()
 
 func _unlock(world: int, level: int) -> void:
 	var key := _key(world, level)
@@ -201,18 +309,63 @@ func equip_material(mat_id: String) -> void:
 	save_progress()
 
 func get_equipped_music() -> String:
-	return save_data.get("equipped_music", "")
+	var raw: String = save_data.get("equipped_music", "")
+	if raw.is_empty():
+		return ""
+	return music_track_id(raw)
 
-func equip_music(track_id: String) -> void:
-	save_data["equipped_music"] = track_id
+func equip_music(track_or_shop_id: String) -> void:
+	save_data["equipped_music"] = music_track_id(track_or_shop_id)
 	save_progress()
 
-func is_music_unlocked(track: String) -> bool:
-	return save_data.get("unlocked_music", {}).get(track, false)
+## Shop IDs use `music_chill`; music menu / AudioManager use `chill`.
+func music_track_id(track_or_shop_id: String) -> String:
+	if track_or_shop_id.is_empty():
+		return ""
+	if track_or_shop_id.begins_with("music_"):
+		return track_or_shop_id.substr(6)
+	return track_or_shop_id
 
-func unlock_music(track: String) -> void:
+func is_music_unlocked(track_or_shop_id: String) -> bool:
+	var track := music_track_id(track_or_shop_id)
+	var unlocked: Dictionary = save_data.get("unlocked_music", {})
+	if unlocked.get(track, false):
+		return true
+	if unlocked.get(track_or_shop_id, false):
+		return true
+	return has_shop_item(track_or_shop_id) or has_shop_item("music_%s" % track)
+
+func unlock_music(track_or_shop_id: String) -> void:
+	var track := music_track_id(track_or_shop_id)
 	save_data.get_or_add("unlocked_music", {})[track] = true
+	if track_or_shop_id.begins_with("music_"):
+		save_data["unlocked_music"].erase(track_or_shop_id)
+	var shop_id := track_or_shop_id if track_or_shop_id.begins_with("music_") else "music_%s" % track
+	save_data.get_or_add("shop_items", {})[shop_id] = true
 	save_progress()
+	music_unlocked.emit(track)
+
+func _migrate_music_unlocks() -> void:
+	var unlocked: Dictionary = save_data.get("unlocked_music", {})
+	var changed := false
+	var legacy_keys: Array[String] = []
+	for key: String in unlocked.keys():
+		if key.begins_with("music_"):
+			legacy_keys.append(key)
+	for key: String in legacy_keys:
+		var track := music_track_id(key)
+		if unlocked.get(key, false) and not unlocked.get(track, false):
+			unlocked[track] = true
+		unlocked.erase(key)
+		changed = true
+	if changed:
+		save_data["unlocked_music"] = unlocked
+	var equipped: String = save_data.get("equipped_music", "")
+	if equipped.begins_with("music_"):
+		save_data["equipped_music"] = music_track_id(equipped)
+		changed = true
+	if changed:
+		save_progress()
 
 func get_music_mode() -> String:
 	return save_data.get("music_mode", "default")
@@ -269,26 +422,6 @@ func get_level_collected_coins(world: int, level: int) -> int:
 
 func get_total_collected_coins() -> int:
 	return save_data.get("coins_collected", {}).size()
-
-# ── Medals ────────────────────────────────────────────────────────────────────
-
-func award_medal(world: int, level: int, medal_id: String) -> void:
-	var key := "%s-%s" % [_key(world, level), medal_id]
-	if not save_data.get("medals", {}).get(key, false):
-		save_data.get_or_add("medals", {})[key] = true
-		save_progress()
-
-func has_medal(world: int, level: int, medal_id: String) -> bool:
-	var key := "%s-%s" % [_key(world, level), medal_id]
-	return save_data.get("medals", {}).get(key, false)
-
-func get_level_medals(world: int, level: int) -> Array[String]:
-	var result: Array[String] = []
-	var prefix := _key(world, level) + "-"
-	for key: String in save_data.get("medals", {}).keys():
-		if key.begins_with(prefix):
-			result.append(key.substr(prefix.length()))
-	return result
 
 # ── Settings persistence ──────────────────────────────────────────────────────
 

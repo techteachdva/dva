@@ -417,13 +417,13 @@
       "length": 2
     },
     {
-      "kind": "hoop_checkpoint",
+      "kind": "hoop",
       "z": -130,
       "x": 2,
       "y": 3.8
     },
     {
-      "kind": "hoop_bonus",
+      "kind": "hoop",
       "z": -80,
       "x": 2,
       "y": 5.3,

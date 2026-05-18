@@ -271,9 +271,9 @@ offset_top = 340.0
 offset_right = 52.0
 offset_bottom = 375.0
 theme_override_font_sizes/font_size = 14
-text = "🎵 Music"
+text = "Music"
 
-[node name="OptionsBtn" type="Button" parent="UI/SidebarPanel" unique_id=888888888]
+[node name="ShopBtn" type="Button" parent="UI/SidebarPanel" unique_id=2036271017]
 layout_mode = 0
 anchor_left = 0.5
 anchor_right = 0.5
@@ -282,18 +282,18 @@ offset_top = 384.0
 offset_right = 52.0
 offset_bottom = 419.0
 theme_override_font_sizes/font_size = 14
-text = "⚙ Options"
+text = "Shop"
 
-[node name="ShopBtn" type="Button" parent="UI" unique_id=2036271017]
-anchors_preset = 1
-anchor_left = 1.0
-anchor_right = 1.0
-offset_left = -160.0
-offset_top = 12.0
-offset_right = -12.0
-offset_bottom = 48.0
-theme_override_font_sizes/font_size = 16
-text = "🛒  Shop / Inventory"
+[node name="OptionsBtn" type="Button" parent="UI/SidebarPanel" unique_id=888888888]
+layout_mode = 0
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -52.0
+offset_top = 428.0
+offset_right = 52.0
+offset_bottom = 463.0
+theme_override_font_sizes/font_size = 14
+text = "Options"
 
 [node name="ShopPanel" parent="UI" unique_id=2064870163 instance=ExtResource("2")]
 layout_mode = 3
@@ -346,7 +346,7 @@ offset_top = 12.0
 offset_right = 180.0
 offset_bottom = 40.0
 theme_override_font_sizes/font_size = 20
-text = "🎵 Select Music Track"
+text = "Select Music Track"
 horizontal_alignment = 1
 
 [node name="CloseMusicBtn" type="Button" parent="UI/MusicPanel" unique_id=686413443]
@@ -357,7 +357,7 @@ offset_left = -36.0
 offset_top = 8.0
 offset_right = -10.0
 offset_bottom = 36.0
-text = "✕"
+text = "Close"
 
 [node name="Controls" type="Label" parent="UI" unique_id=670218345]
 modulate = Color(0.6, 0.6, 0.6, 1)

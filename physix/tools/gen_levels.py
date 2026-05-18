@@ -54,11 +54,8 @@ def magnet(z, x, mag_type="attract", strength=18, length=60):
 def moving_platform(z, x, axis=(1,0,0), dist=3, speed=2.5):
     return {"kind": "moving_platform", "z": z, "x": x, "axis": {"x": axis[0], "y": axis[1], "z": axis[2]}, "dist": dist, "speed": speed}
 
-def hoop_bonus(z, x, y, boost=18):
-    return {"kind": "hoop_bonus", "z": z, "x": x, "y": y, "boost": boost}
-
-def hoop_checkpoint(z, x, y):
-    return {"kind": "hoop_checkpoint", "z": z, "x": x, "y": y}
+def hoop(z, x, y, boost=18):
+    return {"kind": "hoop", "z": z, "x": x, "y": y, "boost": boost}
 
 def fmt_value(v):
     if isinstance(v, dict):
@@ -146,7 +143,7 @@ levels["1-3"] = make_level(
      coin(-207, -2, 2.2), coin(-234, -2, 3.5), coin(-257, -2, 4.5), coin(-267, -2, 5.0),
      coin(-298, 0, 2.2), coin(-325, 0, 3.0), coin(-348, 0, 1.0), coin(-370, 0, 2.2), coin(-390, 0, 2.5)],
     [checkpoint(-140, 2), checkpoint(-220, -2), speed_boost(-50, 0, 16), speed_boost(-140, 2, 14),
-     hoop_bonus(-85, 0, 7.0, 18), hoop_bonus(-176, 2, 6.5, 18), hoop_checkpoint(-131, 2, 3.3)], -400)
+     hoop(-85, 0, 7.0, 18), hoop(-176, 2, 6.5, 18), hoop(-131, 2, 3.3)], -400)
 
 levels["1-4"] = make_level(
     "The Squeeze", 11.0, 45.0,
@@ -159,7 +156,7 @@ levels["1-4"] = make_level(
      coin(-119, 2, 2.2), coin(-149, 4, 3.0), coin(-174, 4, 3.5), coin(-191, 4, 4.0),
      coin(-213, 2, 2.2), coin(-243, 0, 2.2), coin(-268, 0, 3.0), coin(-290, 0, 3.5)],
     [checkpoint(-130, 2), checkpoint(-210, 0), speed_boost(-50, 0, 14), brake_pad(-120, 0),
-     hoop_checkpoint(-134, 4, 3.8)], -320)
+     hoop(-134, 4, 3.8)], -320)
 
 levels["1-5"] = make_level(
     "Switchback", 11.0, 48.0,
@@ -173,7 +170,7 @@ levels["1-5"] = make_level(
      coin(-214, -3, 2.2), coin(-243, 3, 3.5), coin(-268, 3, 4.0), coin(-307, 0, 2.2),
      coin(-340, 0, 2.5)],
     [checkpoint(-130, 3), checkpoint(-210, -3), speed_boost(-50, 0, 14), brake_pad(-120, 3),
-     brake_pad(-240, 3), hoop_bonus(-90, 3, 5.0, 16)], -370)
+     brake_pad(-240, 3), hoop(-90, 3, 5.0, 16)], -370)
 
 levels["1-6"] = make_level(
     "The Gauntlet", 12.0, 55.0,
@@ -235,7 +232,7 @@ levels["2-3"] = make_level(
      coin(-207, -2, 2.2), coin(-234, -2, 3.5), coin(-257, -2, 4.5), coin(-267, -2, 5.0),
      coin(-298, 0, 2.2), coin(-325, 0, 3.0), coin(-348, 0, 1.0), coin(-370, 0, 2.2), coin(-390, 0, 2.5)],
     [checkpoint(-140, 2), checkpoint(-260, -2), speed_boost(-50, 0, 18), brake_pad(-120, 2),
-     brake_pad(-240, -2), bumper(-180, -2, 18), hoop_bonus(-85, 0, 6.5, 18)], -400)
+     brake_pad(-240, -2), bumper(-180, -2, 18), hoop(-85, 0, 6.5, 18)], -400)
 
 levels["2-4"] = make_level(
     "Glacier Spiral", 11.0, 48.0,
@@ -253,7 +250,7 @@ levels["2-4"] = make_level(
      coin(-415, 0, 3.0), coin(-440, 0, 2.5)],
     [checkpoint(-140, 2), checkpoint(-280, -2), checkpoint(-380, 3),
      speed_boost(-50, 0, 14), brake_pad(-120, 2), brake_pad(-250, -2), brake_pad(-360, 3),
-     hoop_checkpoint(-129, 2, 3.3)], -450)
+     hoop(-129, 2, 3.3)], -450)
 
 levels["2-5"] = make_level(
     "Drift Gauntlet", 10.0, 50.0,
@@ -290,7 +287,7 @@ levels["2-6"] = make_level(
     [checkpoint(-140, 2), checkpoint(-260, -2), checkpoint(-380, 0),
      speed_boost(-50, 0, 16), brake_pad(-120, 2), brake_pad(-240, -2), brake_pad(-360, 0),
      spike(-100, 2, 5, 2), spike(-180, -2, 5, 2), spike(-260, -2, 5, 2), spike(-340, 0, 5, 2),
-     hoop_bonus(-85, 0, 6.5, 18), hoop_checkpoint(-192, -2, 3.3)], -450)
+     hoop(-85, 0, 6.5, 18), hoop(-192, -2, 3.3)], -450)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # WORLD 3
@@ -382,7 +379,7 @@ levels["3-5"] = make_level(
      gravity(-60, 0, 0, 2.5, 80), gravity(-170, 0, 1, 2.0, 80), gravity(-280, 0, 0, 2.5, 80), gravity(-360, 0, 1, 2.0, 80),
      speed_boost(-50, 0, 14), brake_pad(-120, 3), brake_pad(-240, -3), brake_pad(-350, 0),
      bumper(-220, -3, 18), spike(-100, 3, 5, 2), spike(-180, -3, 5, 2), spike(-280, 3, 5, 2),
-     hoop_checkpoint(-138, 3, 3.8), hoop_bonus(-180, -3, 5.3, 18)], -410)
+     hoop(-138, 3, 3.8), hoop(-180, -3, 5.3, 18)], -410)
 
 levels["3-6"] = make_level(
     "Gravity Maze", 10.0, 60.0,
@@ -454,7 +451,7 @@ levels["4-3"] = make_level(
     [checkpoint(-120, 0), checkpoint(-230, -2), bumper(-55, 0, 16), bumper(-75, -2, 16), bumper(-75, 2, 16),
      bumper(-140, 0, 18), bumper(-160, -2, 18), bumper(-160, 2, 18),
      bumper(-200, -2, 20), bumper(-220, 0, 20), speed_boost(-50, 0, 16), gravity(-130, 0, 1, 2.0, 80),
-     hoop_bonus(-85, 0, 6.5, 18), hoop_checkpoint(-126, 0, 3.3)], -343)
+     hoop(-85, 0, 6.5, 18), hoop(-126, 0, 3.3)], -343)
 
 levels["4-4"] = make_level(
     "Ricochet Run", 9.0, 54.0,
@@ -491,7 +488,7 @@ levels["4-5"] = make_level(
      bumper(-160, 0, 20), bumper(-180, -1.5, 20), bumper(-180, 1.5, 20),
      bumper(-200, 0, 22), bumper(-220, -1.5, 22), bumper(-220, 1.5, 22),
      speed_boost(-50, 0, 16), brake_pad(-280, 0), spike(-85, 0, 5, 2), spike(-165, 2, 5, 2),
-     spike(-245, -2, 5, 2), hoop_checkpoint(-126, 0, 3.8), hoop_bonus(-151, 2, 5.3, 18)], -343)
+     spike(-245, -2, 5, 2), hoop(-126, 0, 3.8), hoop(-151, 2, 5.3, 18)], -343)
 
 levels["4-6"] = make_level(
     "Bumper Hell", 10.0, 62.0,
@@ -574,7 +571,7 @@ levels["5-3"] = make_level(
      wind(-230, 0, 24, (-1,0,0), 60), wind(-230, 0, 24, (1,0,0), 60),
      bumper(-100, 0, 16), bumper(-120, -1.5, 18), bumper(-120, 1.5, 18),
      bumper(-180, 2, 20), bumper(-200, -2, 20), speed_boost(-50, 0, 16), speed_boost(-180, 2, 18),
-     brake_pad(-280, 0), hoop_checkpoint(-130, 0, 3.6), hoop_bonus(-191, 2, 5.3, 18)], -383)
+     brake_pad(-280, 0), hoop(-130, 0, 3.6), hoop(-191, 2, 5.3, 18)], -383)
 
 levels["5-4"] = make_level(
     "Gust Garden", 8.0, 52.0,
@@ -635,7 +632,7 @@ levels["5-6"] = make_level(
      bumper(-80, 1.5, 18), bumper(-80, -1.5, 18), bumper(-160, -2, 20), bumper(-180, 0, 20),
      bumper(-240, 1.5, 22), bumper(-240, -1.5, 22), speed_boost(-45, 0, 14), brake_pad(-260, 0),
      spike(-90, 2, 5, 2), spike(-170, -2, 5, 2), spike(-250, -3, 5, 2),
-     hoop_checkpoint(-130, 2, 3.8), hoop_bonus(-80, 2, 5.3, 16)], -423)
+     hoop(-130, 2, 3.8), hoop(-80, 2, 5.3, 16)], -423)
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # WORLD 6
@@ -683,7 +680,7 @@ levels["6-3"] = make_level(
     [checkpoint(-130, 3), checkpoint(-250, -3), magnet(-60, 0, "attract", 18, 70),
      magnet(-140, 0, "repel", 20, 70), magnet(-220, 0, "attract", 18, 70), magnet(-300, 0, "repel", 20, 70),
      speed_boost(-50, 0, 12), brake_pad(-180, 0), brake_pad(-340, 0),
-     hoop_checkpoint(-130, 3, 3.8), hoop_bonus(-60, 0, 3.8, 16)], -373)
+     hoop(-130, 3, 3.8), hoop(-60, 0, 3.8, 16)], -373)
 
 levels["6-4"] = make_level(
     "Polarity Shift", 9.0, 50.0,
@@ -719,7 +716,7 @@ levels["6-5"] = make_level(
      wind(-140, 0, 18, (1,0,0), 60), wind(-180, 0, 18, (-1,0,0), 60),
      bumper(-160, 1.5, 18), bumper(-160, -1.5, 18), speed_boost(-45, 0, 14), brake_pad(-280, 0),
      spike(-90, 0, 6, 2), spike(-170, 2, 5, 2), spike(-250, -2, 5, 2), spike(-330, 0, 5, 2),
-     hoop_checkpoint(-80, 0, 4.3), hoop_bonus(-130, 0, 4.8, 18)], -388)
+     hoop(-80, 0, 4.3), hoop(-130, 0, 4.8, 18)], -388)
 
 levels["6-6"] = make_level(
     "Entropy", 9.0, 64.0,
@@ -747,7 +744,7 @@ levels["6-6"] = make_level(
      bumper(-200, 0, 22), gravity(-280, 0, 0, 2.0, 80), gravity(-360, 0, 1, 2.0, 80),
      speed_boost(-45, 0, 16), speed_boost(-200, 0, 18), speed_boost(-380, 0, 18),
      brake_pad(-120, 2), brake_pad(-240, 3), brake_pad(-380, 0), brake_pad(-520, 0),
-     hoop_checkpoint(-130, 2, 3.8), hoop_bonus(-220, 3, 5.3, 18)], -565)
+     hoop(-130, 2, 3.8), hoop(-220, 3, 5.3, 18)], -565)
 
 parts = []
 for i in range(1, 7):

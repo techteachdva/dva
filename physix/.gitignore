@@ -1,0 +1,16 @@
+# Godot 4
+.import/
+export.cfg
+export_presets.cfg
+*.tmp
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Web export — large binaries fetched at build time
+web/*.pck
+web/*.wasm

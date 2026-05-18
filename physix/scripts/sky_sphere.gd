@@ -1,27 +1,28 @@
 extends MeshInstance3D
 
-const WORLD_COLORS := {
-	1: Color(1.0, 0.55, 0.1),    # warm amber — beginner
-	2: Color(0.2, 0.7, 1.0),      # ice blue
-	3: Color(0.7, 0.2, 1.0),      # gravity purple
-	4: Color(1.0, 0.2, 0.2),       # bumper red
-	5: Color(0.2, 0.9, 0.6),      # wind teal
-	6: Color(1.0, 0.9, 0.3),      # mastery gold
-}
-
 @export var world_number: int = 1
 @export var follow_target: Node3D = null
 
+var _reduce_motion: bool = false
+
 func _ready() -> void:
-	var mat: ShaderMaterial = material_override
+	_reduce_motion = LevelManager.get_setting("reduce_motion", false)
+	var mat: ShaderMaterial = material_override as ShaderMaterial
 	if mat == null:
 		return
-	var tint: Color = WORLD_COLORS.get(world_number, WORLD_COLORS[1])
-	mat.set_shader_parameter("base_color", tint)
+	LevelVisuals.configure_sky_material(mat, world_number, _reduce_motion)
+	# Slightly lower poly on low-end / reduce-motion path
+	if mesh is SphereMesh:
+		var sphere := mesh as SphereMesh
+		if _reduce_motion:
+			sphere.radial_segments = 32
+			sphere.rings = 16
+		else:
+			sphere.radial_segments = 48
+			sphere.rings = 24
 
 func _process(delta: float) -> void:
 	if follow_target != null:
 		global_position = follow_target.global_position
-	# Slow independent rotation so lava blobs drift regardless of camera yaw
-	if get_node_or_null("/root/LevelManager") != null and not LevelManager.get_setting("reduce_motion", false):
+	if not _reduce_motion:
 		rotate_y(delta * 0.015)

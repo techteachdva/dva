@@ -186,7 +186,7 @@ def generate(world, level, logic_world_override=None):
     par_time = compute_par_time(segments)
     all_obs = list(obstacles)
     for h in hoops:
-        all_obs.append({"kind": "hoop_checkpoint", "z": h["z"], "x": h["x"], "y": h["y"]})
+        all_obs.append({"kind": "hoop", "z": h["z"], "x": h["x"], "y": h["y"]})
     checkpoints = [h["z"] for h in hoops]
     name = f"Secret Gauntlet S-{level}" if world == 0 else f"{LAYOUT_NAMES.get(layout_type, 'Track')} {world}-{level}"
     return {"name": name, "slope": rng.randint(9, 14), "par_time": par_time, "segments": segments, "coins": [], "finish_z": finish_z, "checkpoints": checkpoints, "obstacles": all_obs, "medal_times": medal_times(par_time)}

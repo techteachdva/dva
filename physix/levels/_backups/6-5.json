@@ -292,13 +292,13 @@
       "length": 2
     },
     {
-      "kind": "hoop_checkpoint",
+      "kind": "hoop",
       "z": -80,
       "x": 0,
       "y": 4.3
     },
     {
-      "kind": "hoop_bonus",
+      "kind": "hoop",
       "z": -130,
       "x": 0,
       "y": 4.8,

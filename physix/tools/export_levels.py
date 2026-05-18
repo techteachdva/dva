@@ -83,7 +83,7 @@ def calculate_medal_times(level_key: str, level: dict) -> dict:
         kind = obs.get("kind", "")
         if kind == "speed_boost":
             num_speed_boosts += 1
-        elif kind in ("hoop_bonus", "hoop_cp", "hoop_checkpoint"):
+        elif kind == "hoop":
             num_hoops += 1
         elif kind == "wind":
             num_wind += 1

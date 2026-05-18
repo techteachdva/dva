@@ -6,80 +6,6 @@ extends Node3D
 @export var par_time:     float  = 45.0
 @export var use_checkpoints: bool = true
 
-# ── Randomized educational facts ──────────────────────────────────────────────
-# Middle-school-appropriate facts drawn from physics, game dev, AI/coding,
-# and behind-the-scenes design. Shown at the start of every level.
-
-const FACTS: Array[String] = [
-	# Physics & Science (20)
-	"Newton's First Law: an object in motion stays in motion — that's why your ball keeps rolling even when you stop pushing!",
-	"Friction is a force that slows things down. Ice patches have almost zero friction, just like real ice!",
-	"Gravity pulls everything toward Earth's center at 9.8 m/s². In Physix, gravity zones can change that pull!",
-	"Momentum = mass × velocity. A heavier metal ball has more momentum and is harder to stop.",
-	"Elastic collisions transfer kinetic energy. When you hit a bumper, your ball bounces with almost the same speed!",
-	"Action and reaction: every force has an equal and opposite partner. When you push the ball, it pushes back on the track!",
-	"Wind is just fast-moving air molecules pushing on objects. Wind zones apply a constant sideways force!",
-	"Potential energy becomes kinetic energy as you roll downhill. The higher you start, the faster you go!",
-	"Terminal velocity happens when air resistance equals gravity. Real skydivers stop accelerating around 120 mph!",
-	"Centripetal force keeps you moving in a circle. Without it, you'd fly off in a straight line!",
-	"The coefficient of restitution measures bounciness. A bouncy ball has a high COR, rubber has a low one!",
-	"Work = force × distance. Pushing your ball farther does more work and builds more speed!",
-	"Power is how fast work gets done. A speed boost pad adds power to your ball instantly!",
-	"Inertia is an object's resistance to changing speed. Heavy metal balls have more inertia than light ones!",
-	"A vector has both direction and magnitude. Your ball's velocity is a 3D vector pointing where it's going!",
-	"The normal force keeps you from falling through the floor. It's the floor pushing back up!",
-	"Torque is a twisting force. When your ball spins, friction creates torque that makes it rotate!",
-	"Fluid dynamics studies how liquids and gases move. Wind zones use simplified fluid force!",
-	"Chaos theory says tiny changes make huge differences. Two runs that start almost the same can end totally differently!",
-	"Superposition means forces add together. Gravity + wind + bumper = one big net force on your ball!",
-
-	# Game Development & Computer Science (15)
-	"Godot 4 uses a physics engine to simulate forces every frame — that's 60 calculations per second!",
-	"3D games use X, Y, and Z axes. In Physix, Z is forward, X is sideways, and Y is up!",
-	"Raycasting shoots an invisible laser to check what's below the ball. That's how the game knows if you're on the ground!",
-	"Collision shapes are invisible boxes and spheres around objects. They tell the physics engine what can hit what!",
-	"Delta time makes movement smooth on any computer. It measures exactly how long each frame took!",
-	"Linear interpolation (lerp) smoothly moves the camera. It blends two positions instead of jumping!",
-	"A scene graph is a tree of nodes. The TrackRoot holds all the track pieces as children!",
-	"Shaders and materials control how things look. The ball's skin changes its color, glow, and shininess!",
-	"State machines track what the player is doing. The game knows if you're jumping, falling, or on the ground!",
-	"Particle systems create sparkles and dust. They're made of tiny images that fade out over time!",
-	"Audio buses separate music from sound effects. You can turn down music without turning down jump sounds!",
-	"The level editor saves levels as tiny text strings using compression. You can copy-paste a whole level!",
-	"Base64 encoding turns binary numbers into letters and numbers you can share with friends!",
-	"The game uses JSON to store your progress. It's a text format that both humans and computers can read!",
-	"Version control tracks every change to the code. It's like a time machine for the game's files!",
-
-	# AI & Coding (15)
-	"Large Language Models read millions of books and websites to learn patterns. They predict what words come next!",
-	"Prompt engineering is asking AI questions clearly. Better instructions = better code and answers!",
-	"AI can write game code, but humans design the fun. The AI is the brush; Phil Carroll is the artist!",
-	"Machine learning finds patterns in data. It's how AI learned that balls bounce and gravity pulls down!",
-	"Tokens are chunks of text that AI reads. A paragraph might be 100 tokens; a whole book is millions!",
-	"AI-assisted coding is called 'vibe coding' when you describe what you want and the AI writes it for you!",
-	"Hallucinations are when AI makes up fake facts. That's why human designers always double-check the code!",
-	"Claude (the AI that helped build this) was trained on diverse data — games, science, math, and stories!",
-	"An algorithm is just a step-by-step recipe. The star-rating algorithm checks your speed, coins, and deaths!",
-	"Compression makes files smaller. The level codes use gzip to squeeze a whole level into a few lines!",
-	"Neural networks are loosely inspired by brains. They have layers of connected nodes that recognize patterns!",
-	"Debugging means finding and fixing mistakes. Even AI-written code has bugs that need human eyes!",
-	"Open-source means sharing code freely. Godot is open-source, so anyone can study how it works!",
-	"Iteration means trying, failing, and improving. This game was built through hundreds of AI-human conversations!",
-	"Autocomplete predicts what you'll type next. AI coding tools are like super-powered autocomplete for whole functions!",
-
-	# Meet the Maker — Phil Carroll aka DM Zemo (10)
-	"Physix was designed by Phil Carroll, also known as DM Zemo. He believes games should teach while they entertain!",
-	"The game started as a simple slope idea and grew into five worlds through AI-assisted design sessions!",
-	"Phil studied interactive storytelling and game psychology from legends like Sid Meier and Will Wright!",
-	"Every level teaches one physics concept. World 1 is gravity, World 2 is friction, and World 5 combines everything!",
-	"The 'Unholy Alliance' is a game design idea: the player and designer secretly work together to create fun!",
-	"Phil's blog at powerwordskill.com explores game design, psychology, and how AI changes creativity!",
-	"The game uses 'gain framing' — showing rewards instead of punishments — because science says it feels better!",
-	"The level editor was inspired by Polytrack, a game where players share levels through copy-paste codes!",
-	"Each world's color theme matches its physics concept: blue for ice, purple for gravity, green for nature!",
-	"The ball's skins aren't just cosmetic — metal changes physics! Real designers blend looks with mechanics!",
-]
-
 var elapsed_time:   float   = 0.0
 var is_running:     bool    = false
 var checkpoint_pos: Vector3
@@ -121,19 +47,27 @@ var finish_zone:   Area3D      = null
 
 # Cached node lookups to avoid repeated recursive searches
 var _coins_node: Node = null
+var _coin_spin_meshes: Array[MeshInstance3D] = []
 
 var _ghost_node: MeshInstance3D = null
+var _coin_sparkle: GPUParticles3D = null
+var _reduce_motion: bool = false
 
 # Finale / sunset-roll state
 var _in_finale: bool = false
+var _finish_triggered: bool = false
 var _finale_cam_pos: Vector3 = Vector3.ZERO
 var _finale_look: Vector3 = Vector3.ZERO
-const FINALE_DURATION: float = 4.0
-const FINALE_CAM_RISE: Vector3 = Vector3(0.0, 4.5, 12.0)
-const FINALE_LOOK: Vector3 = Vector3(0.0, 0.0, -400.0)
-
-func _ghost_mgr() -> Node:
-	return get_node_or_null("/root/GhostManager")
+var _finale_origin: Vector3 = Vector3.ZERO
+var _finale_track_fwd: Vector3 = Vector3(0.0, 0.0, -1.0)
+var _finale_track_up: Vector3 = Vector3.UP
+var _track_root: Node3D = null
+const FINALE_DURATION: float = 3.5
+const FINALE_CAM_BACK: float = 16.0
+const FINALE_CAM_UP: float = 5.5
+const FINALE_LOOK_AHEAD: float = 380.0
+const FINALE_PLANE_MARGIN: float = 10.0
+const FINISH_LATERAL_RADIUS: float = 16.0
 
 func _find_finish_zone() -> Area3D:
 	var found := _find_node_recursive(self, "FinishZone")
@@ -166,17 +100,26 @@ func _ready() -> void:
 	camera.global_position = start_pos + CAM_BASE_OFFSET
 	camera.look_at(start_pos + CAM_BASE_LOOK, Vector3.UP)
 	await get_tree().process_frame
+	_track_root = get_node_or_null("TrackRoot") as Node3D
 	finish_zone = _find_finish_zone()
 	if finish_zone != null:
-		finish_zone.body_entered.connect(_on_finish_entered)
+		if not finish_zone.body_entered.is_connected(_on_finish_entered):
+			finish_zone.body_entered.connect(_on_finish_entered)
+		finish_zone.monitoring = true
+		finish_zone.collision_mask = 1
 	_coins_node = _find_node_recursive(self, "Coins")
 	_connect_coins()
+	_cache_coin_spin_meshes()
+	_setup_coin_sparkle()
+	_reduce_motion = LevelManager.get_setting("reduce_motion", false)
 	GameManager.start_level()
 	_count_obstacles()
 	_count_hoops()
 	_spawn_catcher_rails()
-	if get_node_or_null("/root/AudioManager") != null:
-		AudioManager.play_music("world_%d" % world_number)
+	AudioManager.play_music("world_%d" % world_number)
+	LevelVisuals.setup(self, world_number, _reduce_motion)
+	# Re-apply track shaders after environment + material cache refresh
+	preload("res://scripts/track_builder.gd")._apply_materials(self)
 	_spawn_ghost()
 	_show_physics_fact()
 	_spawn_sky_sphere()
@@ -246,25 +189,32 @@ func _count_hoops() -> void:
 	GameManager.set_total_hoops(count)
 
 func _spawn_catcher_rails() -> void:
-	# Catcher rails are invisible safety nets only — level_generator builds proper per-segment walls.
-	# Width adapts to the widest possible track so the catcher always covers the edges.
-	var half_width: float = 7.0  # covers all track widths up to w=14 (bumper arena)
+	# Invisible safety nets along track edges — segmented to avoid huge physics broadphase boxes.
+	const HALF_WIDTH: float = 7.0
+	const SEG_LEN: float = 80.0
 	var track_root: Node = _find_node_recursive(self, "TrackRoot")
 	if track_root == null:
 		track_root = self
+	var finish_z: float = finish_zone.global_position.z if finish_zone != null else start_pos.z - 200.0
+	var track_len: float = clampf(absf(finish_z - start_pos.z) + 40.0, SEG_LEN, 480.0)
+	var seg_count: int = maxi(int(ceilf(track_len / SEG_LEN)), 1)
+	var mid_z: float = (start_pos.z + finish_z) * 0.5
 	for side: int in [-1, 1]:
-		var catcher := Area3D.new()
-		catcher.name = "CatcherRail%s" % ("L" if side == -1 else "R")
-		catcher.position = Vector3(side * (half_width + 0.8), -1.2, 0.0)
-		catcher.gravity_space_override = Area3D.SPACE_OVERRIDE_DISABLED
-		catcher.monitorable = false
-		track_root.add_child(catcher)
-		var shape := CollisionShape3D.new()
-		var box := BoxShape3D.new()
-		box.size = Vector3(1.0, 4.0, 3000.0)
-		shape.shape = box
-		catcher.add_child(shape)
-		catcher.body_entered.connect(_on_catcher_entered)
+		var x_pos: float = side * (HALF_WIDTH + 0.8)
+		for i: int in range(seg_count):
+			var seg_z: float = mid_z - track_len * 0.5 + SEG_LEN * (float(i) + 0.5)
+			var catcher := Area3D.new()
+			catcher.name = "CatcherRail%s_%d" % ["L" if side == -1 else "R", i]
+			catcher.position = Vector3(x_pos, -1.2, seg_z)
+			catcher.gravity_space_override = Area3D.SPACE_OVERRIDE_DISABLED
+			catcher.monitorable = false
+			track_root.add_child(catcher)
+			var shape := CollisionShape3D.new()
+			var box := BoxShape3D.new()
+			box.size = Vector3(1.0, 4.0, SEG_LEN)
+			shape.shape = box
+			catcher.add_child(shape)
+			catcher.body_entered.connect(_on_catcher_entered)
 
 func _on_catcher_entered(body: Node3D) -> void:
 	if body != player:
@@ -323,17 +273,17 @@ func _find_all_recursive(root: Node) -> Array[Node]:
 func _process(delta: float) -> void:
 	_follow_camera(delta)
 	_spin_coins(delta)
+	if is_running and not _in_finale:
+		_check_finish_plane_crossing()
 	if is_running:
 		elapsed_time += delta
-		if finish_zone != null and player.global_position.z < finish_zone.global_position.z:
-			_on_finish_entered(player)
-		var gm := _ghost_mgr()
-		if gm != null:
-			var steer := Input.get_axis("steer_left", "steer_right")
-			var jumping := Input.is_action_pressed("jump")
-			var braking := Input.is_action_pressed("brake")
-			var dead: bool = player.get("_dead") if player.get("_dead") != null else false
-			gm.record_sample(player.global_position, player.global_basis.get_rotation_quaternion(), player.linear_velocity, steer, jumping, braking, dead, delta)
+		var steer := Input.get_axis("steer_left", "steer_right")
+		var jumping := Input.is_action_pressed("jump")
+		var braking := Input.is_action_pressed("brake")
+		GhostManager.record_sample(
+			player.global_position, player.global_basis.get_rotation_quaternion(),
+			player.linear_velocity, steer, jumping, braking, player.is_dead(), delta
+		)
 		if _ghost_node != null:
 			_ghost_node.update_time(elapsed_time)
 		GameManager.add_speed_sample(player.linear_velocity.length())
@@ -341,27 +291,39 @@ func _process(delta: float) -> void:
 		hud.update_speed(player.linear_velocity.length(), player.max_forward_speed)
 		hud.update_hoops(GameManager.level_hoops_passed, GameManager.level_total_hoops)
 
-func _spin_coins(delta: float) -> void:
+func _cache_coin_spin_meshes() -> void:
+	_coin_spin_meshes.clear()
 	var coin_nodes: Array[Node] = []
 	if _coins_node != null:
-		coin_nodes = _coins_node.get_children()
+		coin_nodes.assign(_coins_node.get_children())
 	else:
 		for child: Node in _find_all_recursive(self):
 			if child is Area3D and child.name.begins_with("Coin"):
 				coin_nodes.append(child)
 	for child: Node in coin_nodes:
-		if child is Area3D and child.visible:
+		if child is Area3D:
 			for sub: Node in child.get_children():
 				if sub is MeshInstance3D:
-					sub.rotate_y(delta * 3.0)
+					_coin_spin_meshes.append(sub)
 					break
+
+
+func _spin_coins(delta: float) -> void:
+	if _coin_spin_meshes.is_empty():
+		return
+	var spin := delta * 3.0
+	for mesh: MeshInstance3D in _coin_spin_meshes:
+		if is_instance_valid(mesh) and mesh.visible:
+			mesh.rotate_y(spin)
 
 func _follow_camera(delta: float) -> void:
 	if _in_finale:
-		# Sunset roll: camera locks behind finish, watches ball shrink into horizon
-		camera.fov = lerpf(camera.fov, 60.0, CAM_FOV_SMOOTH * delta)
-		camera.global_position = camera.global_position.lerp(_finale_cam_pos, CAM_SMOOTH * delta * 0.5)
-		camera.look_at(_finale_look, Vector3.UP)
+		# Sunset roll: behind the finish line, watching the ball roll down the runway
+		_finale_look = _compute_finale_look()
+		camera.fov = lerpf(camera.fov, 58.0, CAM_FOV_SMOOTH * delta)
+		camera.global_position = camera.global_position.lerp(_finale_cam_pos, clampf(2.8 * delta, 0.0, 1.0))
+		if camera.global_position.distance_squared_to(_finale_look) > 0.01:
+			camera.look_at(_finale_look, _finale_track_up)
 		return
 
 	# Decay boost surge
@@ -380,13 +342,12 @@ func _follow_camera(delta: float) -> void:
 	_light_speed = lerpf(_light_speed, light_target, LIGHT_SMOOTH * delta)
 
 	# Apply boost surge + light speed to FOV and camera offsets
-	var reduce_motion: bool = get_node_or_null("/root/LevelManager") != null and LevelManager.get_setting("reduce_motion", false)
 	var surge_curve: float = pow(_boost_surge, 0.7)
 	var light_curve: float = pow(_light_speed, 0.6)
 	var target_fov: float = lerpf(CAM_BASE_FOV, CAM_MAX_FOV, curve)
 	var target_offset := CAM_BASE_OFFSET.lerp(CAM_MAX_OFFSET, curve)
 	var target_look := CAM_BASE_LOOK.lerp(CAM_MAX_LOOK, curve)
-	if not reduce_motion:
+	if not _reduce_motion:
 		target_fov += BOOST_FOV_SURGE * surge_curve
 		# Light speed adds massive FOV zoom
 		target_fov = lerpf(target_fov, LIGHT_FOV, light_curve)
@@ -407,17 +368,15 @@ func _follow_camera(delta: float) -> void:
 	var cam_weight: float = clampf(CAM_SMOOTH * delta, 0.0, 1.0)
 	camera.global_position = camera.global_position.lerp(target, cam_weight)
 	# Compose screenshake on top of follow position
-	if get_node_or_null("/root/CameraShaker") != null:
-		camera.global_position += CameraShaker.shake_offset
+	camera.global_position += CameraShaker.shake_offset
 	# Guard look_at against singularity (camera too close to look target)
 	if camera.global_position.distance_squared_to(look_target) > 0.01:
 		camera.look_at(look_target, Vector3.UP)
 
 func _spawn_ghost() -> void:
-	var gm := _ghost_mgr()
-	if gm == null or not gm.has_ghost(world_number, level_number):
+	if not GhostManager.has_ghost(world_number, level_number):
 		return
-	var g_data: Dictionary = gm.load_ghost(world_number, level_number)
+	var g_data: Dictionary = GhostManager.load_ghost(world_number, level_number)
 	var samples: Array[Dictionary] = []
 	var raw: Variant = g_data.get("samples", [])
 	if raw is Array:
@@ -443,38 +402,76 @@ func _spawn_ghost() -> void:
 	_ghost_node = ghost
 
 func _show_physics_fact() -> void:
-	var fact: String = FACTS[randi() % FACTS.size()]
-	hud.show_intro(fact)
-	var timer := get_tree().create_timer(6.0)
-	await timer.timeout
+	hud.show_intro(LevelManager.pop_next_fact())
+	await hud.run_start_countdown()
 	if not is_inside_tree():
 		return
 	hud.hide_intro()
 	is_running = true
-	var gm_rec := _ghost_mgr()
-	if gm_rec != null:
-		gm_rec.start_recording()
+	GhostManager.start_recording()
 	_show_level_tutorial()
 
-func _on_finish_entered(body: Node3D) -> void:
-	if body != player or not is_running or _in_finale:
+func _track_forward_global() -> Vector3:
+	if _track_root != null:
+		var dir := -_track_root.global_transform.basis.z
+		if dir.length_squared() > 0.0001:
+			return dir.normalized()
+	return Vector3(0.0, 0.0, -1.0)
+
+func _track_up_global() -> Vector3:
+	if _track_root != null:
+		var up := _track_root.global_transform.basis.y
+		if up.length_squared() > 0.0001:
+			return up.normalized()
+	return Vector3.UP
+
+func _compute_finale_look() -> Vector3:
+	# Down-track = where the ball rolls after the finish (into the runway / sunset).
+	var horizon := _finale_origin + _finale_track_fwd * FINALE_LOOK_AHEAD
+	var ball_lead := player.global_position + _finale_track_fwd * 18.0
+	return ball_lead.lerp(horizon, 0.4)
+
+func _setup_finale_camera() -> void:
+	_finale_origin = finish_zone.global_position if finish_zone != null else player.global_position
+	_finale_track_fwd = _track_forward_global()
+	_finale_track_up = _track_up_global()
+	# Camera sits just before the finish line (approach side), facing down-track.
+	_finale_cam_pos = _finale_origin - _finale_track_fwd * FINALE_CAM_BACK + _finale_track_up * FINALE_CAM_UP
+	_finale_look = _compute_finale_look()
+	camera.global_position = _finale_cam_pos
+	camera.look_at(_finale_look, _finale_track_up)
+
+func _check_finish_plane_crossing() -> void:
+	if _finish_triggered or _in_finale or finish_zone == null:
 		return
+	if _track_root == null:
+		return
+	var finish_local: Vector3 = _track_root.to_local(finish_zone.global_position)
+	var player_local: Vector3 = _track_root.to_local(player.global_position)
+	# Track forward is decreasing local Z (start near 0, finish negative).
+	if player_local.z > finish_local.z + FINALE_PLANE_MARGIN:
+		return
+	var lateral := Vector2(player_local.x - finish_local.x, player_local.y - finish_local.y)
+	if lateral.length() > FINISH_LATERAL_RADIUS:
+		return
+	_trigger_finish()
+
+func _trigger_finish() -> void:
+	if _finish_triggered or _in_finale or not is_running:
+		return
+	_on_finish_entered(player)
+
+func _on_finish_entered(body: Node3D) -> void:
+	if body != player or not is_running or _in_finale or _finish_triggered:
+		return
+	_finish_triggered = true
 	is_running = false
-	if get_node_or_null("/root/AudioManager") != null:
-		AudioManager.play_sfx("complete")
+	AudioManager.play_sfx("complete")
+	GhostManager.stop_recording()
 
-	var gm_stop := _ghost_mgr()
-	if gm_stop != null:
-		gm_stop.stop_recording()
-
-	# ── Sunset roll: lock camera and watch the ball roll into the horizon ──
+	# Sunset roll: lock camera; ball keeps physics and rolls down the runway
 	_in_finale = true
-	if finish_zone != null:
-		_finale_cam_pos = finish_zone.global_position + FINALE_CAM_RISE
-		_finale_look    = finish_zone.global_position + FINALE_LOOK
-	else:
-		_finale_cam_pos = player.global_position + FINALE_CAM_RISE
-		_finale_look    = player.global_position + FINALE_LOOK
+	_setup_finale_camera()
 
 	await get_tree().create_timer(FINALE_DURATION).timeout
 	if not is_inside_tree():
@@ -482,11 +479,7 @@ func _on_finish_entered(body: Node3D) -> void:
 
 	# ── Calculate results after the dramatic roll ──
 	var total_coins := GameManager.level_total_coins
-	var stars := GameManager.calculate_star_rating(
-		elapsed_time, GameManager.level_coins, total_coins,
-		GameManager.level_obstacles_cleared, GameManager.level_deaths, par_time,
-		player.max_forward_speed
-	)
+	var stars := GameManager.calculate_star_rating()
 	var rank := GameManager.calculate_rank(
 		elapsed_time, GameManager.level_coins, total_coins,
 		GameManager.level_obstacles_cleared, GameManager.level_total_obstacles, GameManager.level_deaths, par_time
@@ -497,45 +490,37 @@ func _on_finish_entered(body: Node3D) -> void:
 	if bot != null:
 		bot.report_run_result(true, elapsed_time)
 
-	# Medals
-	var medals: Array[String] = []
-	if use_checkpoints and not GameManager.checkpoint_used:
-		medals.append("Fearless")
-		LevelManager.award_medal(world_number, level_number, "no_checkpoint")
-	if GameManager.level_deaths == 0:
-		medals.append("First Try")
-		LevelManager.award_medal(world_number, level_number, "first_try")
-	if GameManager.perfect_path_eligible and GameManager.level_coins >= total_coins and GameManager.level_obstacles_cleared >= GameManager.level_total_obstacles and elapsed_time <= par_time:
-		medals.append("Perfect Path")
-		LevelManager.award_medal(world_number, level_number, "perfect_path")
-	if GameManager.get_avg_speed() >= player.max_forward_speed * 0.75:
-		medals.append("Speed Demon")
-		LevelManager.award_medal(world_number, level_number, "speed_demon")
-
-	var is_new_best := LevelManager.set_best_time(world_number, level_number, elapsed_time)
-	if is_new_best:
-		print("New best time for %d-%d: %.2f" % [world_number, level_number, elapsed_time])
-		var gm_save := _ghost_mgr()
-		if gm_save != null:
-			gm_save.save_ghost(world_number, level_number, elapsed_time)
+	var all_checkpoints := (
+		GameManager.level_total_hoops <= 0
+		or GameManager.level_hoops_passed >= GameManager.level_total_hoops
+	)
+	var previous_best := LevelManager.get_best_time(world_number, level_number)
+	var personal_best := previous_best
+	var is_new_fastest := false
+	if all_checkpoints:
+		is_new_fastest = LevelManager.set_best_time(world_number, level_number, elapsed_time)
+		personal_best = LevelManager.get_best_time(world_number, level_number)
+		if is_new_fastest:
+			print("New fastest time for %d-%d: %.2f" % [world_number, level_number, elapsed_time])
+			GhostManager.save_ghost(world_number, level_number, elapsed_time)
 	LevelManager.complete_level(world_number, level_number, stars, rank)
+	LevelManager.save_progress()
 	if level_number == 0:
 		LevelManager.complete_bonus(world_number)
 	level_completed.emit(stars, elapsed_time)
-	var breakdown := ""
+	var breakdown := "Checkpoints: %d / %d" % [
+		GameManager.level_hoops_passed, maxi(GameManager.level_total_hoops, 1)
+	]
 	if level_number == 0:
-		breakdown = "Coins: %d of %d collected" % [GameManager.level_coins, maxi(total_coins, 1)]
-	if GameManager.level_obstacles_cleared > 0:
-		breakdown += "\nObstacles cleared: %d" % GameManager.level_obstacles_cleared
-	if elapsed_time <= par_time:
-		breakdown += "\nBeat par time!"
-	elif elapsed_time <= par_time * 1.5:
-		breakdown += "\nWithin time limit"
-	hud.show_level_complete(stars, elapsed_time, rank, breakdown, medals)
+		breakdown += "\nCoins: %d / %d" % [GameManager.level_coins, maxi(total_coins, 1)]
+	hud.show_level_complete(
+		stars, elapsed_time, personal_best, rank, breakdown,
+		is_new_fastest, previous_best, all_checkpoints
+	)
 	var action: String = await hud.level_complete_action
 	match action:
 		"retry":
-			_restart_level()
+			_restart_level(false)
 		"world_map":
 			Main.instance.load_world_map()
 		"quit":
@@ -544,9 +529,12 @@ func _on_finish_entered(body: Node3D) -> void:
 func _on_pause_action(action: String) -> void:
 	match action:
 		"retry":
-			_restart_level()
+			_restart_level(true)
 
-func _restart_level() -> void:
+func _restart_level(cost_life: bool = true) -> void:
+	if cost_life:
+		if not GameManager.try_spend_life_for_retry():
+			return
 	if world_number == 0:
 		Main.instance.load_secret_level(world_number, level_number)
 	elif level_number == 0:
@@ -560,9 +548,7 @@ func _on_player_boosted(_surge: float, _duration: float) -> void:
 func _on_player_died() -> void:
 	if not is_running:
 		return
-	var gm_died := _ghost_mgr()
-	if gm_died != null:
-		gm_died.stop_recording()
+	GhostManager.stop_recording()
 	var bot := _get_bot()
 	if bot != null:
 		bot.on_player_died(player.global_position)
@@ -611,8 +597,6 @@ func _on_checkpoint_reached(pos: Vector3) -> void:
 	checkpoint_pos = pos
 	if use_checkpoints and not GameManager.checkpoint_used:
 		GameManager.checkpoint_used = true
-	if get_node_or_null("/root/AudioManager") != null:
-		AudioManager.play_sfx("checkpoint")
 	var bot := _get_bot()
 	if bot != null:
 		bot.on_checkpoint_reached()
@@ -625,18 +609,19 @@ func _get_bot() -> Node:
 
 func _on_game_over() -> void:
 	is_running = false
-	var gm_over := _ghost_mgr()
-	if gm_over != null:
-		gm_over.stop_recording()
+	GhostManager.stop_recording()
 	level_failed.emit()
+	LevelManager.set_session_game_over(true)
 	hud.show_game_over()
-	if get_node_or_null("/root/AudioManager") != null:
-		AudioManager.stop_music()
-	var timer := get_tree().create_timer(3.0)
-	await timer.timeout
+	AudioManager.stop_music()
+	var action: String = await hud.game_over_action
 	if not is_inside_tree():
 		return
-	Main.instance.load_main_menu()
+	match action:
+		"world_map":
+			Main.instance.load_world_map()
+		_:
+			Main.instance.load_main_menu()
 
 func _on_coin_collected(body: Node3D, coin: Area3D, coin_index: int) -> void:
 	if body != player or not coin.visible:
@@ -646,17 +631,17 @@ func _on_coin_collected(body: Node3D, coin: Area3D, coin_index: int) -> void:
 		coin.set_deferred("monitoring", false)
 	GameManager.add_coin()
 	LevelManager.collect_coin(world_number, level_number, coin_index)
-	if get_node_or_null("/root/AudioManager") != null:
-		AudioManager.play_sfx("coin")
+	AudioManager.play_sfx("coin")
 	_spawn_coin_sparkle(coin.global_position)
 
-func _spawn_coin_sparkle(pos: Vector3) -> void:
-	var particles := GPUParticles3D.new()
-	particles.position = pos
-	particles.amount = 10
-	particles.lifetime = 0.35
-	particles.one_shot = true
-	particles.explosiveness = 0.9
+func _setup_coin_sparkle() -> void:
+	_coin_sparkle = GPUParticles3D.new()
+	_coin_sparkle.name = "CoinSparklePool"
+	_coin_sparkle.amount = 10
+	_coin_sparkle.lifetime = 0.35
+	_coin_sparkle.one_shot = true
+	_coin_sparkle.explosiveness = 0.9
+	_coin_sparkle.emitting = false
 	var mat := ParticleProcessMaterial.new()
 	mat.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
 	mat.emission_sphere_radius = 0.15
@@ -668,11 +653,15 @@ func _spawn_coin_sparkle(pos: Vector3) -> void:
 	mat.scale_max = 0.1
 	mat.color = Color(1.0, 0.85, 0.1, 0.9)
 	mat.gravity = Vector3(0.0, -8.0, 0.0)
-	particles.process_material = mat
+	_coin_sparkle.process_material = mat
 	var mesh := BoxMesh.new()
 	mesh.size = Vector3(0.05, 0.05, 0.05)
-	particles.draw_pass_1 = mesh
-	add_child(particles)
-	particles.emitting = true
-	var tw := create_tween()
-	tw.tween_callback(particles.queue_free).set_delay(0.5)
+	_coin_sparkle.draw_pass_1 = mesh
+	add_child(_coin_sparkle)
+
+func _spawn_coin_sparkle(pos: Vector3) -> void:
+	if _coin_sparkle == null:
+		return
+	_coin_sparkle.global_position = pos
+	_coin_sparkle.restart()
+	_coin_sparkle.emitting = true
