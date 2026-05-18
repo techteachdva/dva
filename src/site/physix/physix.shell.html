@@ -55,6 +55,88 @@
 	var loadingText = document.getElementById('gd-loading-text');
 	var playBtn = document.getElementById('gd-play-btn');
 	var audioPumpTimer = null;
+	var loadAllowed = false;
+
+	function isSafariLike() {
+		var ua = navigator.userAgent;
+		var isIOS = /iPad|iPhone|iPod/.test(ua) ||
+			(navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+		var isMacSafari = /Macintosh/.test(ua) &&
+			/Version\/[\d.]+/.test(ua) &&
+			/Safari\//.test(ua) &&
+			!/Chrom(e|ium)|Edg\//.test(ua);
+		return isIOS || isMacSafari;
+	}
+
+	function detectThreadedBuild(cb) {
+		var scriptEl = document.querySelector('script[src*="physix.js"]');
+		if (!scriptEl || !scriptEl.src) {
+			cb(false);
+			return;
+		}
+		fetch(scriptEl.src)
+			.then(function (r) { return r.text(); })
+			.then(function (text) {
+				cb(text.indexOf('multi-threaded') !== -1);
+			})
+			.catch(function () { cb(false); });
+	}
+
+	function showBlocked(msg) {
+		loadAllowed = false;
+		playBtn.disabled = true;
+		playBtn.style.display = 'none';
+		if (loadingText) {
+			loadingText.textContent = msg;
+		}
+		var spinner = loading && loading.querySelector('.spinner');
+		if (spinner) {
+			spinner.style.display = 'none';
+		}
+	}
+
+	function checkEnvironment(requiresThreads, done) {
+		var missing = Engine.getMissingFeatures({ threads: requiresThreads });
+		if (missing.length > 0) {
+			showBlocked('Physix cannot run here: ' + missing.join('; ') + '.');
+			return;
+		}
+		if (requiresThreads && isSafariLike()) {
+			showBlocked(
+				'Safari cannot run this Physix build (threading). Use Chrome or Firefox, or update the site after a new export.'
+			);
+			return;
+		}
+		loadAllowed = true;
+		playBtn.disabled = false;
+		done();
+	}
+
+	function wireRuntimeErrors() {
+		function onFatal(reason) {
+			var msg = reason && reason.message ? reason.message : String(reason || '');
+			if (/Out of bounds|blocking on the main thread|pthread/i.test(msg)) {
+				showBlocked(
+					'Physix hit a browser threading error. Try Chrome or Firefox, or hard-refresh after the site updates.'
+				);
+			}
+		}
+		window.addEventListener('error', function (ev) { onFatal(ev.error || ev.message); });
+		window.addEventListener('unhandledrejection', function (ev) { onFatal(ev.reason); });
+	}
+
+	wireRuntimeErrors();
+	playBtn.disabled = true;
+	if (loadingText) {
+		loadingText.textContent = 'Checking browser...';
+	}
+	detectThreadedBuild(function (requiresThreads) {
+		checkEnvironment(requiresThreads, function () {
+			if (loadingText) {
+				loadingText.textContent = 'Click to play';
+			}
+		});
+	});
 
 	function pumpAudioResume() {
 		try {
@@ -103,15 +185,25 @@
 				canvas.addEventListener('touchend', onCanvasGesture, true);
 			}
 		}).catch(function (err) {
-			if (loading) {
+			var msg = err && err.message ? err.message : String(err || '');
+			if (/Out of bounds|blocking on the main thread|pthread/i.test(msg)) {
+				showBlocked(
+					'Physix hit a browser threading error. Try Chrome or Firefox, or hard-refresh after the site updates.'
+				);
+			} else if (loading) {
 				loading.querySelector('.text').textContent = 'Failed to load. Refresh to try again.';
+				playBtn.style.display = 'block';
+				playBtn.disabled = false;
+				loadAllowed = true;
 			}
-			playBtn.style.display = 'block';
 			console.error('Physix startGame failed:', err);
 		});
 	}
 
 	function onPlayClick() {
+		if (!loadAllowed) {
+			return;
+		}
 		pumpAudioResume();
 		startAudioPump();
 		if (window.AudioContext) {
