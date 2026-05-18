@@ -28,7 +28,7 @@ Use the same class of build as Crystal Wizards / Physix, not a minimal export.
 
 Required export options (Godot 4.6 Web):
   - extensions_support = true   (GDExtension / Jolt — produces side module)
-  - thread_support = true       (multi-threaded; better for audio)
+  - thread_support = true|false (Physix: false for Safari; Crystal Wizards: true)
   - ensure_cross_origin_isolation_headers = true
 
 Export output folder (example for a game named "mygame"):
@@ -222,7 +222,7 @@ Prerequisite: gh auth login
 9. NEW GAME CHECKLIST (COPY FOR EACH PROJECT)
 ================================================================================
 
-[ ] Export preset: extensions + threads + COI headers
+[ ] Export preset: extensions + COI headers (threads: off if Safari must work)
 [ ] Export to dva/.../_godot_export/ only
 [ ] custom_shell.html with AudioContext patch + Play button + pumpAudioResume
 [ ] Shell assigns mygameGodotUnlock via JavaScriptBridge (§5F)
@@ -257,6 +257,10 @@ Symptom: LinkError emscripten_webgl_create_context
 
 Symptom: Engine is not defined / $GODOT_* in HTML
   → Committed Godot export HTML instead of shell; use *.shell.html + restore script
+
+Symptom: Safari — "Blocking on the main thread" / pthread / Out of bounds memory
+  → Re-export with thread_support=false; upload new release; deploy shell with Safari checks
+  → Until redeployed, use Chrome or Firefox on macOS/iOS
 
 Console checks on live /mygame/:
   typeof window.mygameGodotUnlock === "function"

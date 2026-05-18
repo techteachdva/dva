@@ -24,9 +24,17 @@ Or run from `dva` repo root:
 .\scripts\sync-physix-export.ps1
 ```
 
+## Safari (macOS / iOS)
+
+Safari often crashes **multi-threaded** Godot 4.6 web builds (`Blocking on the main thread`, then `Out of bounds memory access` from pthreads). Physix uses **`thread_support=false`** in the Web export preset so the same binaries work in Safari and Chrome.
+
+After changing the preset, **re-export Web**, upload a **new** GitHub release (e.g. `v1.1`), point Vercel env URLs at that tag, and `git push` the updated `physix.shell.html`. Until then, Safari users see a clear shell message instead of a silent crash.
+
+The `WEBGL_polygon_mode` warning in Safari is harmless.
+
 ## Godot 4.6 file sizes (normal)
 
-With **extensions_support** + **thread_support**, Godot 4.6 often produces:
+With **extensions_support** (and **thread_support** off for Physix), Godot 4.6 often produces:
 
 | File | Typical size |
 |------|----------------|
@@ -55,7 +63,7 @@ Vercel downloads these at build time so `physix.js` always matches `physix.wasm`
 
 **Sanity check:** `physix.js` must reference `.side.wasm`, and **`physix.side.wasm` on the release must be ~35–40 MB**. Do not replace `physix.wasm` with a huge monolithic file from an older Godot export mental model.
 
-**Export preset (Physix project):** `variant/extensions_support=true`, `variant/thread_support=true`, `ensure_cross_origin_isolation_headers=true` — same class of build as Crystal Wizards, not the minimal Dungeon Class shell.
+**Export preset (Physix project):** `variant/extensions_support=true`, `variant/thread_support=false` (Safari-safe), `ensure_cross_origin_isolation_headers=true`. Crystal Wizards still uses threads; Physix does not.
 
 ## Vercel environment variables
 
