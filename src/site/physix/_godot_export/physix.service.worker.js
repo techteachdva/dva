@@ -4,7 +4,7 @@
 // Incrementing CACHE_VERSION will kick off the install event and force
 // previously cached resources to be updated from the network.
 /** @type {string} */
-const CACHE_VERSION = '1779147841|4059448854';
+const CACHE_VERSION = '1779149141|153021232';
 /** @type {string} */
 const CACHE_PREFIX = 'Physix-sw-cache-';
 const CACHE_NAME = CACHE_PREFIX + CACHE_VERSION;
