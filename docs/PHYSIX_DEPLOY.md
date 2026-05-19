@@ -13,7 +13,9 @@
 
 ## After Godot Web export
 
-1. Export Web from Godot (writes to `_godot_export/`, not `physix.html`).
+Use the **Web Release** export preset in Physix (not **Web**) for production — it omits editor, bot, level backups, and `LevelFactory` from the `.pck`. See `Physix/docs/EXPORT.md`.
+
+1. Export **Web Release** from Godot (writes to `_godot_export/`, not `physix.html`).
 2. Run `.\scripts\sync-physix-export.ps1` to copy `physix.js`, worklets, and icons into `src/site/physix/`.
 3. **Never** copy Godot’s `physix.html` into `src/site/physix/` — only edit **`physix.shell.html`**. Vercel runs `restore-physix-shell` to generate `physix.html` before deploy.
 4. Commit `physix.shell.html` + JS/worklets/icons (not `.pck` / `.wasm`).
