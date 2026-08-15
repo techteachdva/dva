@@ -1,0 +1,135 @@
+---
+title: Curtly Curt
+permalink: /x-k9-curtly/
+layout: false
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="theme-color" content="#0a0608" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Curtly Curt</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/styles/curtly-curt.css" />
+  </head>
+  <body class="cc-body">
+    <div class="cc-noise" aria-hidden="true"></div>
+    <div class="cc-glow cc-glow--left" aria-hidden="true"></div>
+    <div class="cc-glow cc-glow--right" aria-hidden="true"></div>
+
+    <div class="cc-shell">
+      <!-- Password gate -->
+      <section id="gate" class="cc-panel cc-panel--gate">
+        <div class="cc-sigil" aria-hidden="true">☠</div>
+        <h1 class="cc-logo">Curtly Curt</h1>
+        <p class="cc-tagline">How well do you know Curt J. Sullivan?</p>
+        <p class="cc-muted">This page is unlisted. Enter the passphrase to begin.</p>
+        <form id="gateForm" class="cc-gate-form" autocomplete="off">
+          <input
+            id="gateInput"
+            class="cc-input"
+            type="password"
+            placeholder="Passphrase"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <button class="cc-btn" type="submit">Enter the arena</button>
+        </form>
+        <p id="gateError" class="cc-error cc-hidden" role="alert">Wrong passphrase. Try again.</p>
+      </section>
+
+      <!-- Intro -->
+      <section id="intro" class="cc-panel cc-hidden">
+        <div class="cc-panel-h">
+          <div>
+            <div class="cc-eyebrow">Classified dossier</div>
+            <h1 class="cc-title">Curtly Curt</h1>
+          </div>
+          <div class="cc-badge">27 questions</div>
+        </div>
+        <div class="cc-panel-b">
+          <p class="cc-lead">
+            A brutal quiz about <strong>Curt J. Sullivan</strong> — Minneapolis menace, Berserk apostle,
+            miserable sorcerer, and certified <strong>egirl respecter</strong>.
+          </p>
+          <aside class="cc-steam" aria-label="Steam profile intel">
+            <div class="cc-steam-h">
+              <span class="cc-steam-icon" aria-hidden="true">▶</span>
+              Steam dossier
+            </div>
+            <dl class="cc-steam-grid">
+              <div><dt>Profile</dt><dd><a class="cc-steam-link" href="https://steamcommunity.com/id/saint_gut_free" target="_blank" rel="noopener noreferrer">saint_gut_free</a></dd></div>
+              <div><dt>Display name</dt><dd>egirl respecter</dd></div>
+              <div><dt>Also played as</dt><dd>cj snausages</dd></div>
+              <div><dt>Favorite game</dt><dd>FTL: Faster Than Light</dd></div>
+              <div><dt>Status</dt><dd class="cc-steam-status">im in my undies</dd></div>
+              <div><dt>Currently grinding</dt><dd>The Binding of Isaac: Rebirth</dd></div>
+            </dl>
+          </aside>
+          <ul class="cc-facts">
+            <li>True/False and multiple choice</li>
+            <li>Covers aliases, lore, politics, Steam library, and FTL deep cuts</li>
+            <li>No mercy. No hints. Maybe one.</li>
+          </ul>
+          <button id="startBtn" class="cc-btn cc-btn--lg" type="button">Begin the trial</button>
+        </div>
+      </section>
+
+      <!-- Quiz -->
+      <section id="quiz" class="cc-panel cc-hidden">
+        <div class="cc-panel-h">
+          <div class="cc-progress-wrap">
+            <div class="cc-progress-label">
+              <span id="qNum">1</span> / <span id="qTotal">27</span>
+            </div>
+            <div class="cc-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+              <div id="progressBar" class="cc-progress-fill"></div>
+            </div>
+          </div>
+          <div id="scorePill" class="cc-score-pill">0 correct</div>
+        </div>
+        <div class="cc-panel-b">
+          <div id="qCategory" class="cc-category">—</div>
+          <h2 id="qStem" class="cc-question">—</h2>
+          <div id="choices" class="cc-choices" role="group"></div>
+          <div id="feedback" class="cc-feedback cc-hidden" role="status"></div>
+          <div class="cc-actions">
+            <button id="nextBtn" class="cc-btn cc-hidden" type="button" disabled>Next question</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Results -->
+      <section id="results" class="cc-panel cc-hidden">
+        <div class="cc-panel-h">
+          <div>
+            <div class="cc-eyebrow">Final verdict</div>
+            <h1 class="cc-title" id="resultTitle">—</h1>
+          </div>
+        </div>
+        <div class="cc-panel-b">
+          <div class="cc-result-score">
+            <div class="cc-result-num" id="resultScore">—</div>
+            <div class="cc-result-of">out of <span id="resultTotal">27</span></div>
+          </div>
+          <p id="resultBlurb" class="cc-lead">—</p>
+          <div id="missedWrap" class="cc-missed cc-hidden">
+            <div class="cc-missed-h">You fumbled these:</div>
+            <ul id="missedList" class="cc-missed-list"></ul>
+          </div>
+          <div class="cc-actions cc-actions--results">
+            <button id="retryBtn" class="cc-btn" type="button">Run it back</button>
+          </div>
+          <p class="cc-footer-note">Made with respect for the miserable sorcerer himself.</p>
+          <p class="cc-footer-note"><a class="cc-steam-link" href="https://steamcommunity.com/id/saint_gut_free" target="_blank" rel="noopener noreferrer">View the sacred Steam profile</a></p>
+        </div>
+      </section>
+    </div>
+
+    <script src="/scripts/curtly-curt.js"></script>
+  </body>
+</html>
