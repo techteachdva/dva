@@ -46,7 +46,10 @@
         <div id="health-bags"></div>
       </div>
       <div class="meter" id="stamina-meter">
-        <div class="bar-label">STAMINA <span class="hint-key">SHIFT</span></div>
+        <div class="bar-label">
+          STAMINA <span class="hint-key">SHIFT</span>
+          <span id="soda-boost" class="boost-tag hidden">BOOSTED</span>
+        </div>
         <div class="bar-track"><div class="bar-fill" id="stamina-fill"></div></div>
       </div>
       <div class="meter" id="battery-meter">
@@ -59,8 +62,35 @@
       </div>
     </div>
 
+    <!--
+      Inventory. Each slot carries a letter key, a distinct SHAPE, and a count, so
+      it is readable without colour and without hovering anything.
+    -->
+    <div id="inventory-bar" class="inventory-bar"></div>
+
     <div id="hide-indicator" class="hidden">
       <span class="hide-dot"></span> HIDDEN &mdash; hold still
+    </div>
+
+    <!--
+      Captions. Sound is the danger telegraph in this game, so both caption
+      channels default to on and this sits where the eye already is.
+    -->
+    <div id="caption-stack" class="caption-stack hidden" role="status" aria-live="polite"></div>
+
+    <!-- Control legend, toggled with H -->
+    <div id="control-legend" class="control-legend">
+      <div class="legend-row"><span class="key">WASD</span> move</div>
+      <div class="legend-row"><span class="key">Arrows</span> look / turn</div>
+      <div class="legend-row"><span class="key">E</span> use terminal</div>
+      <div class="legend-row"><span class="key">F</span> flashlight</div>
+      <div class="legend-row"><span class="key">C</span> crouch</div>
+      <div class="legend-row"><span class="key">Shift</span> sprint (toggle)</div>
+      <div class="legend-row"><span class="key">Q</span> switch item</div>
+      <div class="legend-row"><span class="key">R</span> use item</div>
+      <div class="legend-row"><span class="key">G</span> throw item</div>
+      <div class="legend-row"><span class="key">H</span> hide this list</div>
+      <div class="legend-row"><span class="key">P</span> pause</div>
     </div>
 
     <!-- RGB split / static burst when a virus glitches out -->
@@ -78,36 +108,151 @@
     </div>
   </div>
 
+  <!-- ===================== First run: comfort + content notice =====================
+       Shown BEFORE any gameplay, once per device. Both safety toggles are here
+       rather than buried in a settings menu, because a student who needs them
+       needs them before the first dark corridor, not after it. If the operating
+       system already reports a reduced-motion preference, both arrive pre-set.
+       ============================================================================ -->
+  <div id="screen-firstrun" class="screen hidden">
+    <div class="screen-inner narrow scrollable">
+      <h2 class="panel-title">BEFORE YOU GO IN</h2>
+
+      <div class="notice-card">
+        <h3 class="notice-h">What this game contains</h3>
+        <p class="story">
+          Dark environments, chase sequences, and sudden loud sounds.
+          <strong>No blood or gore.</strong> You can change any of the settings
+          below at any time from the pause menu.
+        </p>
+      </div>
+
+      <div class="settings">
+        <label class="setting checkbox">
+          <input type="checkbox" id="fr-motion" />
+          <span>
+            <strong>Reduce Motion</strong>
+            <span class="setting-note">Stops camera shake, head bob, and sliding menus.
+              Enemies still move normally.</span>
+          </span>
+        </label>
+        <label class="setting checkbox">
+          <input type="checkbox" id="fr-flash" />
+          <span>
+            <strong>Reduce Flashing</strong>
+            <span class="setting-note">Holds the flashlight steady and removes static
+              bursts and strobes.</span>
+          </span>
+        </label>
+        <label class="setting checkbox">
+          <input type="checkbox" id="fr-captions" checked />
+          <span>
+            <strong>Sound Captions</strong>
+            <span class="setting-note">Prints what you can hear and which direction it
+              came from. Recommended.</span>
+          </span>
+        </label>
+        <label class="setting">
+          <span>Look speed <span class="setting-note">Turn this up later if it feels slow.</span></span>
+          <input type="range" id="fr-sens" min="25" max="300" step="5" value="80" />
+          <output id="fr-sens-out">0.80x</output>
+        </label>
+      </div>
+
+      <button id="btn-firstrun-done" class="big-btn">I AM READY</button>
+    </div>
+  </div>
+
+  <!-- ===================== Who is playing =====================
+       Local-only profiles. No account, no email, no server: a name in this
+       browser's storage, so a class can share a cart of Chromebooks and still
+       each keep their own Study Guide.
+       ========================================================== -->
+  <div id="screen-profile" class="screen hidden">
+    <div class="screen-inner narrow scrollable">
+      <h2 class="panel-title">WHO IS PLAYING?</h2>
+      <p class="story">
+        Pick your name to keep your Study Guide and your best times. This stays on
+        this computer only &mdash; nothing is sent anywhere.
+      </p>
+
+      <div id="profile-list" class="profile-list"></div>
+
+      <div class="profile-new">
+        <label class="setting">
+          <span>New name</span>
+          <input type="text" id="profile-name" maxlength="18" autocomplete="off"
+                 placeholder="First name or nickname" />
+        </label>
+        <button id="btn-profile-create" class="cb-btn">CREATE</button>
+      </div>
+
+      <div class="title-foot">
+        <button class="link-btn" id="btn-profile-guest">Play without saving</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== Study Guide =====================
+       Earned, not given. A missed prompt appears here immediately showing what
+       was picked and which standard it covers, but the correct answer stays
+       locked until the player answers that same prompt correctly on a later run.
+       ====================================================== -->
+  <div id="screen-guide" class="screen hidden">
+    <div class="screen-inner scrollable">
+      <h2 class="panel-title">STUDY GUIDE</h2>
+      <div id="guide-summary" class="guide-summary"></div>
+      <div class="guide-legend">
+        <span class="glegend"><span class="gchip is-mastered">MASTERED</span> answered correctly</span>
+        <span class="glegend"><span class="gchip is-locked">LOCKED</span> answer it right to unlock the explanation</span>
+      </div>
+      <div id="guide-body" class="guide-body"></div>
+      <div class="pause-buttons">
+        <button id="btn-guide-back" class="big-btn">BACK</button>
+        <button id="btn-guide-print" class="link-btn">Print this guide</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ===================== Title screen ===================== -->
   <div id="screen-title" class="screen">
     <div class="screen-inner">
       <div class="logo">
         <div class="logo-sub">DVA Media Arts &amp; Tech presents</div>
-        <h1 class="logo-title" data-text="TECH ESCAPE">TECH ESCAPE</h1>
+        <h1 class="logo-title" data-text="TECH ESCAPE 2.0">TECH ESCAPE 2.0</h1>
         <div class="logo-tag">The lab is closed. Something else is logged in.</div>
+      </div>
+
+      <div class="title-greeting">
+        <span id="title-player" class="title-player"></span>
+        <button class="link-btn" id="btn-switch-player">Not you?</button>
       </div>
 
       <div class="title-body">
         <p class="story">
           It is 9:47 PM. You stayed late to finish your project and the Tech Lab doors just locked behind you.
           The lights are dead. Four Chromebooks still glow in the dark &mdash; and something is
-          <em>skittering</em> between the tables.
+          <strong>skittering</strong> between the tables.
         </p>
         <p class="story">
-          Answer the questions on all <strong>4 Chromebooks</strong> to earn <strong>4 pieces of an encrypted code</strong>.
+          Clear the security check on all <strong>4 Chromebooks</strong> to earn <strong>4 pieces of an encrypted code</strong>.
           Crack each piece in the decryption scramble, then reach the <strong>3D printer</strong>, print the key,
           and get out before they find you.
         </p>
       </div>
 
+      <div id="level-select" class="level-select" role="radiogroup" aria-label="Floor"></div>
+
       <div class="title-controls">
         <div class="ctrl"><span class="key">W A S D</span> Move</div>
-        <div class="ctrl"><span class="key">MOUSE</span> Look</div>
-        <div class="ctrl"><span class="key">SHIFT</span> Sprint</div>
-        <div class="ctrl"><span class="key">C</span> or <span class="key">CTRL</span> Crouch / crawl</div>
+        <div class="ctrl"><span class="key">MOUSE</span> or <span class="key">ARROWS</span> Look</div>
+        <div class="ctrl"><span class="key">SHIFT</span> Sprint (tap to toggle)</div>
+        <div class="ctrl"><span class="key">C</span> Crouch / crawl</div>
         <div class="ctrl"><span class="key">F</span> Flashlight</div>
         <div class="ctrl"><span class="key">E</span> Use</div>
-        <div class="ctrl"><span class="key">ESC</span> Pause</div>
+        <div class="ctrl"><span class="key">Q</span> Switch item</div>
+        <div class="ctrl"><span class="key">R</span> Use item &middot; <span class="key">G</span> Throw</div>
+        <div class="ctrl"><span class="key">P</span> or <span class="key">ESC</span> Pause</div>
       </div>
 
       <div class="title-tips">
@@ -115,28 +260,50 @@
           the glowing tape means you can hide there. Nothing can reach you underneath.</p>
         <p><strong>Your flashlight is a weapon &mdash; but only against viruses.</strong>
           Hold the beam on a floating virus and it glitches out and teleports away. It comes back.
-          Burning one drains your battery fast, and the light <em>attracts</em> the mice.</p>
+          Burning one drains your battery fast, and the light <strong>attracts</strong> the mice.</p>
+        <p><strong>Hot cheetos are a decision.</strong> Eat a bag with <span class="key">R</span> to get
+          health back, or throw it with <span class="key">G</span> &mdash; every mouse nearby will stop
+          hunting you and crowd around it. Do not be standing there when the bag goes off.</p>
+        <p><strong>An anti-virus disc deletes a virus for good.</strong> They are rare. Throw one with
+          <span class="key">G</span>; if you miss, it clatters to the floor and you can go pick it back up.</p>
       </div>
 
+      <!--
+        The names stay flavourful, but each one now says what it actually DOES.
+        "Easy" carries a stigma when the person at the next desk can read your
+        screen, and a student cannot choose well from a label alone.
+      -->
       <div class="difficulty-select" role="radiogroup" aria-label="Difficulty">
         <button class="diff-btn" data-diff="chill">
           <span class="diff-name">FIELD TRIP</span>
-          <span class="diff-desc">Fewer hunters, kinder timers. Good for a first run.</span>
+          <span class="diff-desc">Enemies move slower, warn you sooner, and hold still while
+            you are at a terminal.</span>
         </button>
         <button class="diff-btn is-selected" data-diff="normal">
           <span class="diff-name">AFTER HOURS</span>
-          <span class="diff-desc">The intended haunt. Balanced and tense.</span>
+          <span class="diff-desc">The intended haunt. Enemies pause while you are at a
+            terminal, but nothing else waits.</span>
         </button>
         <button class="diff-btn" data-diff="nightmare">
           <span class="diff-name">SYSTEM CRASH</span>
-          <span class="diff-desc">They are fast, they are many, and the light is short.</span>
+          <span class="diff-desc">Faster, more of them, less light &mdash; and the lab keeps
+            hunting while you work.</span>
         </button>
       </div>
+
+      <label class="setting inline-setting">
+        <span>Tension</span>
+        <select id="set-tension">
+          <option value="standard">Standard</option>
+          <option value="mild">Mild &mdash; quieter scares, more warning, no death close-up</option>
+        </select>
+      </label>
 
       <button id="btn-start" class="big-btn">ENTER THE LAB</button>
 
       <div class="title-foot">
         <button class="link-btn" id="btn-settings">Settings</button>
+        <button class="link-btn" id="btn-guide">Study Guide</button>
         <button class="link-btn" id="btn-standards">What will I learn?</button>
       </div>
       <div class="perf-note" id="perf-note"></div>
@@ -145,14 +312,121 @@
 
   <!-- ===================== Pause / settings ===================== -->
   <div id="screen-pause" class="screen hidden">
-    <div class="screen-inner narrow">
+    <div class="screen-inner narrow scrollable">
       <h2 class="panel-title">PAUSED</h2>
+      <!--
+        Pressing Esc in Chrome releases Pointer Lock and that CANNOT be
+        intercepted, so the mouse is already free by the time this appears. The
+        resume button is therefore the loudest thing on the panel: a player who
+        cannot see how to get back into the game is a player whose session ends
+        here, and this is the single most common way browser first-person games
+        strand someone who does not play games.
+      -->
+      <p class="resume-note" id="pause-reason">Your mouse is free. Click <strong>RESUME</strong> to go back in.</p>
+
+      <div class="pause-buttons">
+        <button id="btn-resume" class="big-btn">RESUME</button>
+      </div>
+
+      <h3 class="pause-h">COMFORT</h3>
+      <div class="settings">
+        <label class="setting checkbox">
+          <input type="checkbox" id="set-motion" />
+          <span>
+            <strong>Reduce Motion</strong>
+            <span class="setting-note">No camera shake, head bob, or sliding menus.</span>
+          </span>
+        </label>
+        <label class="setting checkbox">
+          <input type="checkbox" id="set-flash" />
+          <span>
+            <strong>Reduce Flashing</strong>
+            <span class="setting-note">Steady flashlight, no static bursts or strobes.</span>
+          </span>
+        </label>
+        <label class="setting checkbox">
+          <input type="checkbox" id="set-captions" />
+          <span><strong>Sound Captions</strong>
+            <span class="setting-note">Prints sounds and the direction they came from.</span></span>
+        </label>
+        <label class="setting checkbox">
+          <input type="checkbox" id="set-subtitles" />
+          <span><strong>Subtitles</strong>
+            <span class="setting-note">Prints anything spoken.</span></span>
+        </label>
+        <label class="setting">
+          <span>Caption size</span>
+          <input type="range" id="set-caption-scale" min="100" max="200" step="10" />
+          <output id="out-caption-scale"></output>
+        </label>
+      </div>
+
+      <h3 class="pause-h">LOOKING AROUND</h3>
       <div class="settings">
         <label class="setting">
-          <span>Mouse sensitivity</span>
-          <input type="range" id="set-sens" min="20" max="240" step="5" />
+          <span>Look speed <span class="setting-note" id="device-note"></span></span>
+          <input type="range" id="set-sens" min="25" max="300" step="5" />
           <output id="out-sens"></output>
         </label>
+        <label class="setting">
+          <span>Left / right speed</span>
+          <input type="range" id="set-sens-x" min="25" max="200" step="5" />
+          <output id="out-sens-x"></output>
+        </label>
+        <label class="setting">
+          <span>Up / down speed</span>
+          <input type="range" id="set-sens-y" min="25" max="200" step="5" />
+          <output id="out-sens-y"></output>
+        </label>
+        <label class="setting checkbox">
+          <input type="checkbox" id="set-invert-x" />
+          <span>Invert left / right</span>
+        </label>
+        <label class="setting checkbox">
+          <input type="checkbox" id="set-invert-y" />
+          <span>Invert up / down</span>
+        </label>
+        <label class="setting">
+          <span>Camera</span>
+          <select id="set-camera">
+            <option value="mouse">Mouse look (default)</option>
+            <option value="keyboard">Keyboard only &mdash; arrow keys turn and look</option>
+          </select>
+        </label>
+        <label class="setting">
+          <span>Crosshair</span>
+          <select id="set-crosshair">
+            <option value="dot">Dot (recommended)</option>
+            <option value="full">Full crosshair</option>
+            <option value="off">Off</option>
+          </select>
+        </label>
+      </div>
+
+      <h3 class="pause-h">READING</h3>
+      <div class="settings">
+        <label class="setting">
+          <span>Text spacing</span>
+          <select id="set-text-preset">
+            <option value="standard">Standard</option>
+            <option value="wide">Wide spacing</option>
+            <option value="dyslexic">OpenDyslexic typeface</option>
+          </select>
+        </label>
+        <label class="setting">
+          <span>Text size</span>
+          <input type="range" id="set-text-scale" min="100" max="150" step="5" />
+          <output id="out-text-scale"></output>
+        </label>
+        <label class="setting checkbox">
+          <input type="checkbox" id="set-contrast" />
+          <span><strong>High-contrast interface</strong>
+            <span class="setting-note">Black and white only; shapes carry the meaning.</span></span>
+        </label>
+      </div>
+
+      <h3 class="pause-h">PICTURE &amp; SOUND</h3>
+      <div class="settings">
         <label class="setting">
           <span>Graphics quality</span>
           <select id="set-quality">
@@ -166,34 +440,63 @@
           <input type="range" id="set-bright" min="60" max="220" step="5" />
           <output id="out-bright"></output>
         </label>
+        <label class="setting">
+          <span>Film grain</span>
+          <input type="range" id="set-fx-grain" min="0" max="100" step="10" />
+          <output id="out-fx-grain"></output>
+        </label>
+        <label class="setting">
+          <span>Glitch effects</span>
+          <input type="range" id="set-fx-glitch" min="0" max="100" step="10" />
+          <output id="out-fx-glitch"></output>
+        </label>
         <label class="setting checkbox">
           <input type="checkbox" id="set-mute" />
           <span>Mute sound</span>
         </label>
-        <label class="setting checkbox">
-          <input type="checkbox" id="set-shake" />
-          <span>Reduce screen shake &amp; flashing</span>
-        </label>
       </div>
+
+      <h3 class="pause-h">DIFFICULTY</h3>
+      <!-- Changeable mid-run, with no penalty and no reset. A student who is
+           stuck should be able to keep playing, not have to start again. -->
+      <div class="difficulty-select compact" id="pause-difficulty" role="radiogroup"
+           aria-label="Difficulty">
+        <button class="diff-btn" data-diff="chill">
+          <span class="diff-name">FIELD TRIP</span>
+          <span class="diff-desc">Slower enemies, more warning.</span>
+        </button>
+        <button class="diff-btn" data-diff="normal">
+          <span class="diff-name">AFTER HOURS</span>
+          <span class="diff-desc">The intended haunt.</span>
+        </button>
+        <button class="diff-btn" data-diff="nightmare">
+          <span class="diff-name">SYSTEM CRASH</span>
+          <span class="diff-desc">No pauses, no mercy.</span>
+        </button>
+      </div>
+
       <h3 class="pause-h">CONTROLS</h3>
       <div class="title-controls compact">
         <div class="ctrl"><span class="key">W A S D</span> Move</div>
-        <div class="ctrl"><span class="key">MOUSE</span> Look</div>
-        <div class="ctrl"><span class="key">SHIFT</span> Sprint</div>
-        <div class="ctrl"><span class="key">C</span> / <span class="key">CTRL</span> Crouch &amp; crawl</div>
+        <div class="ctrl"><span class="key">ARROWS</span> Look / turn</div>
+        <div class="ctrl"><span class="key">SHIFT</span> Sprint (tap to toggle)</div>
+        <div class="ctrl"><span class="key">C</span> Crouch &amp; crawl</div>
         <div class="ctrl"><span class="key">F</span> Flashlight</div>
         <div class="ctrl"><span class="key">E</span> Use</div>
+        <div class="ctrl"><span class="key">Q</span> Switch item</div>
+        <div class="ctrl"><span class="key">R</span> Use item</div>
+        <div class="ctrl"><span class="key">G</span> Throw item</div>
+        <div class="ctrl"><span class="key">H</span> Control list</div>
       </div>
       <div class="pause-tips">
         <p><strong>Crawl to hide.</strong> Desks are solid while you stand. Crouch to fit under one &mdash;
           look for the glowing tape. You cannot stand up until you crawl back out.</p>
         <p><strong>Light burns viruses.</strong> Hold the beam on a floating virus for about half a second and
           it glitches away. It drains battery and it always comes back &mdash; and the mice are
-          <em>drawn</em> to your light instead.</p>
+          <strong>drawn</strong> to your light instead.</p>
       </div>
 
       <div class="pause-buttons">
-        <button id="btn-resume" class="big-btn">RESUME</button>
         <button id="btn-quit" class="link-btn">Quit to title</button>
       </div>
       <p class="tiny">Settings save automatically on this device.</p>
@@ -242,35 +545,52 @@
 
   <!-- ===================== Chromebook quiz ===================== -->
   <div id="screen-quiz" class="screen hidden">
-    <div class="laptop-frame">
-      <div class="laptop-bezel">
-        <div class="cb-screen">
-          <div class="cb-topbar">
-            <span class="cb-dot"></span>
-            <span id="quiz-terminal-name">TERMINAL</span>
-            <span id="quiz-progress" class="cb-progress">1 / 3</span>
-          </div>
-          <div class="cb-body">
-            <div id="quiz-standard" class="quiz-standard"></div>
-            <div id="quiz-question" class="quiz-question"></div>
-            <div id="quiz-multi-note" class="quiz-multi-note hidden">Select ALL correct answers.</div>
-            <div id="quiz-answers" class="quiz-answers" role="group"></div>
-            <div id="quiz-actions" class="quiz-actions">
-              <button id="quiz-submit" class="cb-btn hidden">SUBMIT</button>
-              <button id="quiz-next" class="cb-btn hidden">CONTINUE</button>
-              <button id="quiz-bail" class="cb-btn ghost">STEP AWAY (ESC)</button>
-            </div>
-            <div id="quiz-feedback" class="quiz-feedback hidden">
-              <div id="quiz-verdict" class="verdict"></div>
-              <div id="quiz-explain" class="explain"></div>
-            </div>
-          </div>
-          <div class="cb-footer">
-            <span id="quiz-warn" class="cb-warn">The lab is still moving. Do not stay too long.</span>
-          </div>
+    <!--
+      The panel fills roughly three quarters of the viewport. It was previously a
+      small laptop screen floating in the middle of a 1366x768 Chromebook display,
+      which left the prompt text physically small on the only hardware that
+      matters. Everything here is sized in ems off an 18px floor so a user
+      stylesheet or browser zoom scales it without clipping.
+    -->
+    <div id="quiz-panel" class="quiz-panel" role="dialog" aria-modal="true"
+         aria-labelledby="quiz-question">
+      <div class="quiz-head">
+        <div class="quiz-head-left">
+          <span class="cb-dot" aria-hidden="true"></span>
+          <span id="quiz-terminal-name" class="quiz-terminal">TERMINAL</span>
+        </div>
+        <div class="quiz-head-right">
+          <span id="quiz-standard" class="quiz-standard" title="Minnesota ITEM standard"></span>
+          <span id="quiz-fragment" class="quiz-fragment">FRAGMENT 1 OF 3</span>
         </div>
       </div>
-      <div class="laptop-base"></div>
+
+      <!-- Filled = answered, current = outlined. Correctness is deliberately
+           not encoded here. -->
+      <div id="quiz-segments" class="quiz-segments" aria-hidden="true"></div>
+
+      <div class="quiz-body">
+        <span id="quiz-mode-chip" class="quiz-mode-chip">SELECT ONE</span>
+        <h2 id="quiz-question" class="quiz-question"></h2>
+        <div id="quiz-answers" class="quiz-answers" role="radiogroup"></div>
+
+        <div id="quiz-feedback" class="quiz-feedback hidden">
+          <div id="quiz-verdict" class="verdict"></div>
+          <p id="quiz-explain" class="explain"></p>
+        </div>
+      </div>
+
+      <div class="quiz-foot">
+        <div id="quiz-actions" class="quiz-actions">
+          <button id="quiz-submit" class="cb-btn" type="button" disabled>CONFIRM</button>
+          <button id="quiz-next" class="cb-btn hidden" type="button">CONTINUE</button>
+          <button id="quiz-bail" class="cb-btn ghost" type="button">STEP AWAY (ESC)</button>
+        </div>
+        <span id="quiz-warn" class="cb-warn">The lab is still moving. Do not stay too long.</span>
+      </div>
+
+      <!-- ChromeVox ships on every Chromebook, so verdicts are announced -->
+      <div id="quiz-live" class="sr-only" role="status" aria-live="polite"></div>
     </div>
   </div>
 
@@ -343,8 +663,19 @@
   <!-- ===================== Loading ===================== -->
   <div id="screen-load" class="screen">
     <div class="screen-inner narrow">
-      <div class="boot-log" id="boot-log">BOOTING TECH LAB...</div>
-      <div class="bar-track"><div class="bar-fill" id="load-fill"></div></div>
+      <!--
+        Every line here reports something that actually happened during load, so
+        the wait is instrumental rather than decorative: the last line prints the
+        code format the player is about to go looking for.
+      -->
+      <div class="boot-log" id="boot-log" role="status" aria-live="polite"></div>
+      <div class="bar-track">
+        <!-- Determinate and tied to real stage completion; never faked -->
+        <div class="bar-fill" id="load-fill"></div>
+      </div>
+      <button id="boot-skip" class="boot-skip hidden" type="button">
+        Press Space to skip
+      </button>
     </div>
   </div>
 

@@ -8,11 +8,14 @@
  */
 
 import * as THREE from '../../vendor/three.module.js';
-import { MOUSE, CELL, COLORS } from '../config.js';
+import { MOUSE, CELL, COLORS, THROWN } from '../config.js';
 import { angleDelta, clamp } from '../util.js';
 import { audio } from '../audio.js';
+import { makeEntityGlyph } from './models.js';
 
-const STATE = { PATROL: 0, HUNT: 1, SEARCH: 2 };
+// FEED and FLEE both exist because of the cheetos bag: one is the distraction
+// the player paid for, the other is what the survivors do afterwards.
+const STATE = { PATROL: 0, HUNT: 1, SEARCH: 2, FEED: 3, FLEE: 4 };
 
 let sharedGeo = null;
 
@@ -55,6 +58,14 @@ export class EvilMouse {
     this._skitterTimer = rng.range(0, 1.2);
     this._repathTimer = 0;
     this._patrolFlow = null;
+
+    // Cheetos-bag state
+    this.dead = false;          // popped; the manager reaps it next frame
+    this.feeding = false;       // nose down in a bag, not hunting anyone
+    this.lure = null;
+    this.fleeTimer = 0;
+    this.fleeFrom = null;
+    this._munchTimer = 0;
 
     this.mesh = this._buildMesh();
     this.glow = {
@@ -100,11 +111,57 @@ export class EvilMouse {
     this._tail = tail;
     this._tailMat = tail.material;
 
+    // White outlined triangle pinned above the body. Enemies are the one thing
+    // a player must never mistake for loot, so they get a shape of their own
+    // that survives greyscale, distance, and a dead flashlight.
+    this._glyph = makeEntityGlyph('triangle', 0.62);
+    this._glyph.position.y = 0.78;
+    group.add(this._glyph);
+
     group.position.copy(this.pos);
     return group;
   }
 
   get hunting() { return this.state === STATE.HUNT; }
+
+  /** Ate a whole bag. Popped for good - this is the only way a mouse dies. */
+  pop() {
+    if (this.dead) return false;
+    this.dead = true;
+    this.feeding = false;
+    this.lure = null;
+    return true;
+  }
+
+  /** Saw the bag go off from a safe distance and wants no part of it. */
+  scare(fromX, fromZ, seconds) {
+    if (this.dead) return;
+    this.state = STATE.FLEE;
+    this.fleeFrom = { x: fromX, z: fromZ };
+    this.fleeTimer = seconds;
+    this.feeding = false;
+    this.lure = null;
+  }
+
+  /**
+   * Nearest armed cheetos bag worth abandoning the hunt for. Line of sight is
+   * preferred, but a bag around the corner still counts inside a short radius -
+   * they are following their nose, not their eyes.
+   */
+  _findLure(lures) {
+    let best = null;
+    let bestD = THROWN.bagLureRange;
+    for (const l of lures) {
+      const d = Math.hypot(l.pos.x - this.pos.x, l.pos.z - this.pos.z);
+      if (d >= bestD) continue;
+      const smellable = d < CELL * 1.5
+        || this.maze.lineOfSight(this.pos.x, this.pos.z, l.pos.x, l.pos.z);
+      if (!smellable) continue;
+      bestD = d;
+      best = l;
+    }
+    return best;
+  }
 
   /** Distance-and-sight test plus hearing plus the flashlight lure. */
   _senses(player, sightScale) {
@@ -130,10 +187,35 @@ export class EvilMouse {
     return this.maze.lineOfSight(this.pos.x, this.pos.z, player.pos.x, player.pos.z);
   }
 
-  update(dt, player, flow, others, diff) {
+  update(dt, player, flow, others, diff, lures = null) {
+    if (this.dead) return null;
     if (this.attackCooldown > 0) this.attackCooldown -= dt;
 
-    const detected = this._senses(player, diff.sightScale);
+    // ------------------------------------------------- snacks beat everything
+    // A landed bag outranks the hunt, and running away outranks the bag. Both
+    // are checked before the senses so a distracted mouse genuinely stops
+    // caring where the player is.
+    if (this.fleeTimer > 0) {
+      this.fleeTimer -= dt;
+      if (this.fleeTimer <= 0) {
+        this.state = STATE.PATROL;
+        this.patrolTarget = null;
+        this.fleeFrom = null;
+      }
+    }
+    this.lure = this.state === STATE.FLEE || !lures || !lures.length
+      ? null
+      : this._findLure(lures);
+    if (this.lure) this.state = STATE.FEED;
+    else if (this.state === STATE.FEED) {
+      // The bag it was eating just detonated somewhere else, or expired
+      this.state = STATE.PATROL;
+      this.patrolTarget = null;
+    }
+    this.feeding = false;
+
+    const distracted = this.state === STATE.FEED || this.state === STATE.FLEE;
+    const detected = !distracted && this._senses(player, diff.sightScale);
 
     if (detected) {
       if (this.state !== STATE.HUNT) {
@@ -169,7 +251,27 @@ export class EvilMouse {
     let aimX = null;
     let aimZ = null;
 
-    if (this.state === STATE.HUNT && flow) {
+    if (this.state === STATE.FEED && this.lure) {
+      const d = Math.hypot(this.lure.pos.x - this.pos.x, this.lure.pos.z - this.pos.z);
+      if (d <= THROWN.bagFeedRange) {
+        // Arrived. Stop dead and eat, which is the whole point of the throw.
+        this.feeding = true;
+        aimX = null;
+        aimZ = null;
+        this._munchTimer -= dt;
+        if (this._munchTimer <= 0) {
+          this._munchTimer = 0.22 + Math.random() * 0.2;
+          audio.munch(clamp(1 - this.pos.distanceTo(player.pos) / 18, 0, 1));
+        }
+      } else {
+        aimX = this.lure.pos.x;
+        aimZ = this.lure.pos.z;
+      }
+    } else if (this.state === STATE.FLEE && this.fleeFrom) {
+      // Straight away from the blast, which is exactly as smart as a mouse is
+      aimX = this.pos.x + (this.pos.x - this.fleeFrom.x);
+      aimZ = this.pos.z + (this.pos.z - this.fleeFrom.z);
+    } else if (this.state === STATE.HUNT && flow) {
       const [mx, mz] = this.maze.worldToCell(this.pos.x, this.pos.z);
       // Straight line when we can see the target, path otherwise
       if (this.maze.lineOfSight(this.pos.x, this.pos.z, player.pos.x, player.pos.z)) {
@@ -228,7 +330,11 @@ export class EvilMouse {
       }
     }
 
-    const baseSpeed = this.state === STATE.HUNT ? MOUSE.chaseSpeed : MOUSE.patrolSpeed;
+    // Fleeing is the fastest a mouse ever moves; hurrying to a bag is close
+    let baseSpeed = MOUSE.patrolSpeed;
+    if (this.state === STATE.HUNT) baseSpeed = MOUSE.chaseSpeed;
+    else if (this.state === STATE.FLEE) baseSpeed = MOUSE.chaseSpeed * 1.1;
+    else if (this.state === STATE.FEED) baseSpeed = MOUSE.chaseSpeed * 0.92;
     const speed = baseSpeed * diff.enemySpeedScale * this.speedScale * restFactor;
 
     if (aimX !== null) {
@@ -278,8 +384,11 @@ export class EvilMouse {
     // ------------------------------------------------------------- visuals
     this.mesh.position.set(this.pos.x, 0.3, this.pos.z);
     this.mesh.rotation.y = this.heading;
-    // Body squash while scurrying reads as tiny frantic legs
-    const scurry = Math.sin(performance.now() * 0.02) * (this.resting ? 0.01 : 0.05);
+    // Body squash while scurrying reads as tiny frantic legs; a feeding mouse
+    // bobs its head into the bag instead
+    const scurry = this.feeding
+      ? Math.sin(performance.now() * 0.026) * 0.09
+      : Math.sin(performance.now() * 0.02) * (this.resting ? 0.01 : 0.05);
     this.mesh.scale.set(1, 1 + scurry, 1 - scurry * 0.5);
     this._tail.rotation.x = Math.sin(performance.now() * 0.006) * 0.3;
 
@@ -287,6 +396,15 @@ export class EvilMouse {
     this._eyeMat.color.setHex(hot ? 0xff2233 : 0xa8323f);
     this.glow.pos.copy(this.pos);
     this.glow.intensity = hot ? 2.6 : 1.3;
+
+    // Keep the identity glyph facing the player and dim it while the mouse is
+    // busy eating, so a distracted enemy looks distracted
+    if (this._glyph) {
+      this._glyph.rotation.y = -this.heading + Math.atan2(
+        player.pos.x - this.pos.x, player.pos.z - this.pos.z,
+      ) + Math.PI;
+      this._glyph.material.opacity = distracted ? 0.45 : 1;
+    }
 
     // ------------------------------------------------------------- audio
     this._skitterTimer -= dt;
@@ -306,6 +424,8 @@ export class EvilMouse {
       && this.attackCooldown <= 0
       && player.alive
       && !player.hidden
+      // A mouse eating cheetos, or running from an explosion, is not biting you
+      && !distracted
     ) {
       this.attackCooldown = MOUSE.attackCooldown;
       return { hit: MOUSE.damage };

@@ -56,7 +56,8 @@ export class Lighting {
 
     this._flashOn = false;
     this._flashLevel = 0;
-    this._flicker = 0;
+    this._flickerPhase = 0;
+    this.reduceFlashing = false;
     this._sorted = [];
   }
 
@@ -78,17 +79,31 @@ export class Lighting {
    * @param {number} batteryPct 0..1, drives the dying-battery flicker
    */
   update(dt, playerPos, sources, batteryPct) {
-    // Flashlight intensity, with flicker as the battery dies
+    // Flashlight intensity, with a dying-battery waver
     let target = 0;
     if (this._flashOn && batteryPct > 0) {
       target = FLASHLIGHT.intensity * this.brightness;
-      if (batteryPct < 0.22) {
-        this._flicker -= dt;
-        if (this._flicker <= 0) {
-          this._flicker = 0.05 + Math.random() * 0.3 * (batteryPct / 0.22);
-          this._dip = Math.random() < 0.45;
-        }
-        if (this._dip) target *= 0.15 + Math.random() * 0.25;
+      if (batteryPct < 0.22 && !this.reduceFlashing) {
+        /*
+         * This used to cut the beam to 15-40% brightness at random intervals as
+         * short as 50ms - a full-screen luminance swing of 60% or more, up to 20
+         * times a second. That is a WCAG 2.3.1 failure and a real seizure risk on
+         * a laptop a metre from a student's face, and non-interference means it
+         * counts against the whole page no matter what else the game gets right.
+         *
+         * The replacement is an amplitude ripple that never drops below 92%.
+         * Under a 10% luminance delta nothing counts as a flash at any rate, so
+         * this is safe by construction rather than by tuning. Two slow sines beat
+         * against each other to keep it feeling unstable instead of mechanical -
+         * and a beam that breathes turns out to read as more ominous than one
+         * that strobes, because the player never gets the reset of full darkness.
+         */
+        this._flickerPhase += dt * FLASHLIGHT.flickerHz * Math.PI * 2;
+        const urgency = clamp(1 - batteryPct / 0.22, 0, 1);
+        const ripple = (
+          Math.sin(this._flickerPhase) + Math.sin(this._flickerPhase * 0.37)
+        ) * 0.5;
+        target *= 1 - FLASHLIGHT.flickerDepth * urgency * (0.5 + ripple * 0.5);
       }
     }
     this._flashLevel = lerp(this._flashLevel, target, 1 - Math.pow(0.0001, dt));

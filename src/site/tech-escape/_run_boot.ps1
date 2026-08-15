@@ -39,9 +39,14 @@ if ($consoleLines) {
 }
 
 $html = Get-Content $out -Raw
+$titleVisible = ($html -match 'screen-title" class="screen"') -and ($html -notmatch 'screen-title" class="screen hidden"')
+$firstrunVisible = ($html -match 'screen-firstrun" class="screen"') -and ($html -notmatch 'screen-firstrun" class="screen hidden"')
+$profileVisible = ($html -match 'screen-profile" class="screen"') -and ($html -notmatch 'screen-profile" class="screen hidden"')
+$lobbyVisible = $titleVisible -or $firstrunVisible -or $profileVisible
+
 $checks = @(
-  @{ name = "loading screen dismissed"; ok = ($html -notmatch 'id="screen-loading" class="screen"') },
-  @{ name = "title screen is showing";  ok = ($html -match 'id="screen-title" class="screen"' -and $html -notmatch 'id="screen-title" class="screen hidden"') },
+  @{ name = "loading screen dismissed"; ok = ($html -notmatch 'screen-load" class="screen"') },
+  @{ name = "lobby screen is showing"; ok = $lobbyVisible },
   @{ name = "crouch is documented in controls"; ok = ($html -match 'Crouch') },
   @{ name = "glitch overlay is in the DOM"; ok = ($html -match 'id="glitch-overlay"') },
   @{ name = "stance readout is in the HUD"; ok = ($html -match 'id="stance-value"') }

@@ -7,16 +7,25 @@
  * feel unfair rather than scary.
  */
 
-import { CELL, GRID } from '../config.js';
+import { CELL, LAYOUT } from '../config.js';
 
 const OPEN = 0;
 const SOLID = 1;
 
 export class Maze {
-  constructor(rng) {
+  /**
+   * @param {ReturnType<import('../util.js').makeRng>} rng
+   * @param {object} [opts] layout overrides from the current level; omitting it
+   *   reproduces the original single-layout lab exactly.
+   */
+  constructor(rng, opts = null) {
     this.rng = rng;
-    this.size = GRID;
-    this.half = (GRID - 1) / 2;
+    const cfg = { ...LAYOUT, ...(opts || null) };
+    // The carve algorithm walks two cells at a time, so an even size would
+    // leave a dead column against the border
+    this.size = cfg.size % 2 === 0 ? cfg.size + 1 : cfg.size;
+    this.layout = cfg;
+    this.half = (this.size - 1) / 2;
     this.grid = [];
     this._flow = null;
     this._flowTarget = -1;
@@ -59,9 +68,9 @@ export class Maze {
       stack.push([nx, ny]);
     }
 
-    this._addLoops(0.3);
-    this._carveRooms(4);
-    this._trimStubs();
+    this._addLoops(this.layout.loopChance);
+    this._carveRooms(this.layout.rooms);
+    if (this.layout.trimStubs !== false) this._trimStubs();
   }
 
   /** Removes interior wall segments to create loops and wider spaces. */
@@ -83,9 +92,12 @@ export class Maze {
   /** Opens a few larger work areas so the lab reads as a room, not just halls. */
   _carveRooms(count) {
     const N = this.size;
+    // A room can never be wide enough to eat the sealed border
+    const lo = Math.max(2, Math.min(this.layout.roomMin, N - 4));
+    const hi = Math.max(lo, Math.min(this.layout.roomMax, N - 4));
     for (let i = 0; i < count; i++) {
-      const w = this.rng.int(3, 5);
-      const h = this.rng.int(3, 5);
+      const w = this.rng.int(lo, hi);
+      const h = this.rng.int(lo, hi);
       const x0 = this.rng.int(1, N - 2 - w);
       const y0 = this.rng.int(1, N - 2 - h);
       for (let y = y0; y < y0 + h; y++) {

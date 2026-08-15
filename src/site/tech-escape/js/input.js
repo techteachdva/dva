@@ -15,6 +15,9 @@ const KEY_ALIASES = {
   ShiftLeft: 'sprint', ShiftRight: 'sprint',
   KeyE: 'use', Enter: 'use',
   KeyF: 'light',
+  KeyQ: 'cycleItem',
+  KeyR: 'useItem',
+  KeyG: 'throwItem',
   // Crouch is a toggle. Both keys are comfortable on a Chromebook, and neither
   // collides with Shift (sprint), so you can hold a direction and crouch freely.
   KeyC: 'crouch', ControlLeft: 'crouch', ControlRight: 'crouch',

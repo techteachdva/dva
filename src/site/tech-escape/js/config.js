@@ -8,7 +8,21 @@
 
 export const CELL = 4.4;          // width of one maze cell
 export const WALL_H = 3.5;        // wall height
-export const GRID = 21;           // maze is GRID x GRID cells (odd number)
+export const GRID = 21;           // default maze size; levels override it (odd number)
+
+/**
+ * Default layout knobs. A level in `meta/levels.js` overrides any of these to
+ * change the SHAPE of the lab rather than just its numbers, which is what makes
+ * one level feel different from the next.
+ */
+export const LAYOUT = {
+  size: GRID,
+  loopChance: 0.3,                // interior walls removed to create loops
+  rooms: 4,                       // larger open work areas carved out
+  roomMin: 3,
+  roomMax: 5,
+  trimStubs: true,
+};
 
 /**
  * Table geometry, shared by the mesh builder and the collider builder so the
@@ -59,6 +73,13 @@ export const PLAYER = {
   noiseWalk: 7.5,
   noiseSprint: 15.5,
   noiseCrouch: 2.5,
+  // Soda. A can is the answer to "I ran out of stamina in the worst hallway":
+  // it refills the bar, clears the exhaustion lock, and buys a window of cheap
+  // sprinting. Deliberately generous, because running away is never the wrong
+  // instinct for a scared player.
+  sodaBoostTime: 12,
+  sodaSprintScale: 1.14,
+  sodaDrainScale: 0.45,
 };
 
 export const FLASHLIGHT = {
@@ -67,6 +88,37 @@ export const FLASHLIGHT = {
   distance: 26,
   intensity: 34,
   color: 0xdfefff,
+  // The dying-battery waver. Because the flashlight modulates the ENTIRE screen,
+  // these two numbers are the difference between atmosphere and a WCAG 2.3.1
+  // seizure risk: at or below 2Hz with less than a 10% luminance delta, no rate
+  // of change counts as a flash at all.
+  flickerHz: 2,
+  flickerDepth: 0.08,             // dips to 92% brightness, never below
+};
+
+/**
+ * Hard limits on anything that changes the brightness of the whole screen.
+ *
+ * WCAG 2.3.1 is a non-interference criterion: it applies to the entire page
+ * regardless of what the rest of the game does right, and a general flash is
+ * defined as a luminance change of 10% or more. Three per second is the ceiling,
+ * so 334ms is the closest two opposing full-screen changes may ever be.
+ *
+ * These are engine limits, not preferences. They apply with every accessibility
+ * toggle switched off, because a student having a seizure is not a settings
+ * problem.
+ */
+export const FLASH_SAFETY = {
+  maxFlashesPerSecond: 3,
+  minGapMs: 334,
+  fullScreenDeltaLimit: 0.1,      // fraction of luminance; below this it is safe
+  // A single held noise frame instead of per-frame re-rolled static. Re-rolling
+  // at 60fps is uncontrolled high-frequency modulation across the whole screen.
+  staticHoldMs: 200,
+  staticMaxOpacity: 0.25,
+  // Anything faster than 3Hz has to stay inside a small region of the screen
+  localFlickerMaxPx: 250,
+  damageFadeMs: 250,
 };
 
 export const MOUSE = {
@@ -127,22 +179,101 @@ export const PICKUP = {
   spinSpeed: 1.4,
 };
 
+/**
+ * The inventory exists so loot becomes a decision instead of a pickup sound.
+ * A bag of cheetos is either health or a bomb; a disc is the only permanent
+ * answer to a virus. Stacks are small on purpose - hoarding is not a strategy.
+ */
+export const INVENTORY = {
+  order: ['cheetos', 'soda', 'antivirus'],
+  max: { cheetos: 3, soda: 2, antivirus: 2 },
+  // Held items are thrown from eye height with a gentle arc
+  throwSpeed: 12.5,
+  throwLift: 3.2,
+  gravity: 15,
+};
+
+/**
+ * Thrown items.
+ *
+ * A bag of hot cheetos does not simply explode: it LURES. Mice within range
+ * abandon the hunt, crowd the bag, and feed - which is the distraction window
+ * the player actually paid for. Then the bag goes off and anything still eating
+ * pops in a cloud of cheese dust. Funny first, useful second.
+ */
+export const THROWN = {
+  bagLureRange: 15,               // how far a landed bag pulls mice from
+  bagFeedRange: 1.15,             // close enough to be eating it
+  bagFuse: 4.2,                   // seconds from landing to detonation
+  bagBlastRadius: 2.5,            // mice inside this pop
+  bagScareRadius: 8,              // mice outside the blast flee instead
+  bagScareTime: 5.5,
+  bagPlayerShoveRadius: 3.4,      // cosmetic only: shake and an orange flash
+  // Anti-virus disc: flat, fast, and lethal to exactly one virus
+  discSpeed: 24,
+  discHitRadius: 1.5,
+  discLife: 2.6,
+  // Missing is not punished - the disc lands and can be picked back up
+  discRecoverable: true,
+  maxLive: 6,                     // hard cap on simultaneous projectiles
+};
+
 export const QUIZ = {
   questionsPerLaptop: 3,
   // Missing a question makes noise and spawns pressure but is not instant death
   wrongAnswerNoise: 22,
   wrongAnswerHealthCost: 0,
-  // The world keeps moving while you are at a laptop, just slower
-  timeScale: 0.32,
+  /**
+   * Terminals are the RELIEF beat: tension while you move, calm while you read.
+   * Being chased through a multiple-choice question is where most players quit,
+   * so on the two lower difficulties the lab genuinely stops. Only SYSTEM CRASH
+   * keeps hunting you while you answer.
+   *
+   * 0 means the world is frozen, not merely slowed.
+   */
+  timeScale: 0.32,                // fallback for an unknown difficulty key
+  timeScaleByDifficulty: { chill: 0, normal: 0, nightmare: 0.32 },
 };
 
 export const DECRYPT = {
   pairs: 6,
   scans: 8,                       // wrong-pair budget
   peekTime: 0.85,                 // seconds a mismatched pair stays visible
+  // The scramble is part of the same terminal visit, so it pauses the same way
   timeScale: 0.32,
+  timeScaleByDifficulty: { chill: 0, normal: 0, nightmare: 0.32 },
   // Shown on the cards
   glyphs: ['0', '1', '{', '}', '<', '>', '/', '#', '@', '&', '%', '$', '*', '+', '=', '~'],
+};
+
+/**
+ * Startup "code printing" animation. It is the first thing anyone sees, so it
+ * is paced to be READ: a typewriter slow enough to follow, a floor on total
+ * duration, and a skip for the impatient. A returning player inside
+ * `fastWindowHours` gets the short version instead of the full show.
+ */
+/**
+ * Loading-screen pacing, in reading terms rather than taste.
+ *
+ * Silent reading for grades 6-8 runs 150-204 words per minute, which is about
+ * 15-20 characters per second. 34 cps is comfortably faster than the quickest
+ * reader in the room without being a blur to the slowest, and the dwell numbers
+ * are what actually make the text readable - type speed alone never did.
+ *
+ * The 10 second ceiling is a hard cap the sequence measures itself against, not
+ * an estimate. A loading screen that overstays is a loading screen people learn
+ * to skip.
+ */
+export const BOOT = {
+  charsPerSecond: 34,
+  linePause: 1200,          // ms; floor for how long a finished line holds
+  minSeconds: 6.5,          // target total, within the 6-9s window
+  maxSeconds: 10,           // hard cap, enforced by elapsed-time checks
+  finalHold: 1.2,           // last line stays put this long before the title
+  fastCharsPerSecond: 90,   // returning the same day: brisk, still legible
+  fastMinSeconds: 2.2,
+  fastWindowHours: 5,
+  skipHintAfter: 1.5,
 };
 
 export const PRINTER = {
@@ -166,6 +297,8 @@ export const DIFFICULTY = {
     startHealth: 4,
     cheetos: 9,
     batteries: 10,
+    sodas: 5,
+    antivirus: 2,
     decryptScans: 11,
     sightScale: 0.82,
     escalationPerPiece: 0.5,
@@ -180,6 +313,8 @@ export const DIFFICULTY = {
     startHealth: 4,
     cheetos: 7,
     batteries: 8,
+    sodas: 4,
+    antivirus: 1,
     decryptScans: 8,
     sightScale: 1,
     escalationPerPiece: 1,
@@ -194,6 +329,8 @@ export const DIFFICULTY = {
     startHealth: 3,
     cheetos: 5,
     batteries: 6,
+    sodas: 3,
+    antivirus: 1,
     decryptScans: 6,
     sightScale: 1.15,
     escalationPerPiece: 1.5,
@@ -207,20 +344,79 @@ export const QUALITY = {
   high: { scale: 1, maxDpr: 1.5, fogDensity: 0.048, extraLights: 7, antialias: true },
 };
 
-export const COLORS = {
-  fog: 0x04060b,
-  floor: 0x171d28,
-  wall: 0x232b3a,
-  wallTrim: 0x2f3b4f,
-  ceiling: 0x0d1119,
-  table: 0x3a4152,
-  tableLeg: 0x22262f,
-  screenGlow: 0x6fe8ff,
-  virus: 0x9d5cff,
-  mouse: 0xff3b4d,
-  printer: 0x35e0ff,
-  exit: 0x52ff9f,
-  cheeto: 0xff5a1f,
-  battery: 0xffd94a,
-  key: 0xffe27a,
+/**
+ * World colours.
+ *
+ * This object is MUTATED by `applyPalette()` rather than replaced, because every
+ * module reads `COLORS.mouse` and friends at mesh-build time. Switching palette
+ * before a run is built is therefore all it takes to recolour the whole lab.
+ */
+export const COLORS = {};
+
+/**
+ * There is ONE palette, and it is safe for every form of colour vision
+ * deficiency. Per-CVD modes were considered and rejected: shape redundancy does
+ * the same job for every player at once, and a palette nobody has to opt into
+ * cannot be missed by the student who needs it.
+ *
+ * The old palette had only two luminance tiers, so when hue perception fails,
+ * everything inside a tier collapses together. Measured against the fog colour
+ * #04060b it put enemy red at 5.78 and pickup orange at 6.50 - close enough that
+ * under deuteranopia and protanopia "run away" and "pick this up" became the
+ * same colour, which is the worst confusion this game could produce.
+ *
+ * These values spread the same hues across FOUR luminance tiers, so they stay
+ * separable in full greyscale:
+ *
+ *   enemy  #FF5C6E   6.76 : 1
+ *   virus  #C79BFF   9.23 : 1
+ *   loot   #FFA23A  10.12 : 1
+ *   screen #7FE9FF  14.48 : 1
+ *   power  #FFE566  16.07 : 1
+ *   exit   #7CFFB2  16.22 : 1
+ *
+ * Colour is still only ever the SECOND cue. Every entity class has its own
+ * silhouette in world space and its own glyph in the HUD.
+ */
+const PALETTES = {
+  default: {
+    fog: 0x04060b,
+    floor: 0x171d28,
+    wall: 0x232b3a,
+    wallTrim: 0x2f3b4f,
+    ceiling: 0x0d1119,
+    table: 0x3a4152,
+    tableLeg: 0x22262f,
+    screenGlow: 0x7fe9ff,
+    virus: 0xc79bff,
+    mouse: 0xff5c6e,
+    printer: 0x7fe9ff,
+    exit: 0x7cffb2,
+    cheeto: 0xffa23a,
+    battery: 0xffe566,
+    soda: 0xff8cb0,
+    antivirus: 0xbfe9ff,
+    key: 0xffe566,
+  },
+  /** Optional HUD/world mode that drops hue entirely and leans on shape alone. */
+  highContrast: {
+    screenGlow: 0xffffff,
+    virus: 0xd8d8ff,
+    mouse: 0xffffff,
+    printer: 0xffffff,
+    exit: 0xffffff,
+    cheeto: 0xffffff,
+    battery: 0xffffff,
+    soda: 0xffffff,
+    antivirus: 0xffffff,
+    key: 0xffffff,
+  },
 };
+
+/** @param {'default'|'highContrast'} name */
+export function applyPalette(name) {
+  Object.assign(COLORS, PALETTES.default, PALETTES[name] || null);
+  return COLORS;
+}
+
+applyPalette('default');

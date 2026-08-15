@@ -7,15 +7,21 @@
  * enough and the virus GLITCHES - stutters violently, then teleports far across
  * the lab, dazed, before re-acquiring you and coming back.
  *
- * It is a reprieve, never a kill, and it costs battery. That is the trade the
- * player has to keep making: light to see, light to defend, but not both for
- * long. When the battery dies, crawling under a desk is still the way out.
+ * The flashlight is a reprieve, never a kill, and it costs battery. That is the
+ * trade the player has to keep making: light to see, light to defend, but not
+ * both for long. When the battery dies, crawling under a desk is still the way
+ * out.
+ *
+ * There is exactly one permanent answer: a thrown anti-virus disc. It is the
+ * rarest item in the building, and finding one turns a virus from a fact of life
+ * into a problem the player gets to solve.
  */
 
 import * as THREE from '../../vendor/three.module.js';
-import { VIRUS, COLORS } from '../config.js';
+import { VIRUS, COLORS, CELL } from '../config.js';
 import { clamp } from '../util.js';
 import { audio } from '../audio.js';
+import { makeEntityGlyph } from './models.js';
 
 let sharedGeo = null;
 
@@ -55,6 +61,9 @@ export class GhostVirus {
     this.stutterTimer = 0;      // violent jitter before it vanishes
     this.dazedTimer = 0;        // wandering, not yet hunting again
     this._burnAudioTimer = 0;
+
+    // Deleted by an anti-virus disc. Unlike a glitch, this one is permanent.
+    this.dead = false;
 
     this.mesh = this._buildMesh();
     this.glow = {
@@ -103,8 +112,24 @@ export class GhostVirus {
       group.add(s);
     }
 
+    // Hexagon marker: the virus half of the shape language. A player who cannot
+    // tell purple from red still always knows which enemy they are looking at.
+    this._glyph = makeEntityGlyph('hex', 0.7);
+    this._glyph.position.y = 0.95;
+    group.add(this._glyph);
+
     group.position.copy(this.pos);
     return group;
+  }
+
+  /** Struck by an anti-virus disc. Gone for the rest of the run. */
+  destroy() {
+    if (this.dead) return false;
+    this.dead = true;
+    this.hunting = false;
+    this.glow.active = false;
+    this.mesh.visible = false;
+    return true;
   }
 
   /**
@@ -156,6 +181,7 @@ export class GhostVirus {
   }
 
   update(dt, player, diff) {
+    if (this.dead) return null;
     if (this.attackCooldown > 0) this.attackCooldown -= dt;
     if (this._repelTimer > 0) this._repelTimer -= dt;
     if (this.glitchCooldown > 0) this.glitchCooldown -= dt;
@@ -284,7 +310,7 @@ export class GhostVirus {
     this.pos.z += this.vel.z * dt;
 
     // Stay inside the building even though interior walls mean nothing
-    const limit = (this.maze.size / 2 - 0.6) * 4.4;
+    const limit = (this.maze.size / 2 - 0.6) * CELL;
     this.pos.x = clamp(this.pos.x, -limit, limit);
     this.pos.z = clamp(this.pos.z, -limit, limit);
 
@@ -310,6 +336,18 @@ export class GhostVirus {
     this.mesh.rotation.x += dt * (this.burning ? 3 : 0.6);
     this._core.rotation.y -= dt * 3.4;
     this._core.rotation.z += dt * 1.7;
+
+    // The marker is parented to a tumbling body, so undo that rotation and keep
+    // it upright and square to the player
+    if (this._glyph) {
+      this._glyph.quaternion.copy(this.mesh.quaternion).invert();
+      this._glyph.rotateY(Math.atan2(
+        player.pos.x - this.pos.x, player.pos.z - this.pos.z,
+      ));
+      this._glyph.position.set(0, 0.95, 0).applyQuaternion(
+        this.mesh.quaternion.clone().invert(),
+      );
+    }
 
     // Angrier and brighter when hunting; dimmed while inside a wall
     const pulse = 0.8 + Math.sin(this._bobPhase * 3) * 0.2;

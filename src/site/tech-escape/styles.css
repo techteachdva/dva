@@ -4,24 +4,117 @@
    a school firewall. Tuned for 1366x768 Chromebook screens and up.
    ===================================================================== */
 
+/*
+  Colour, type and spacing tokens.
+
+  Every colour here is measured against the world background #04060b, and the set
+  is chosen so the six entity hues land on four DIFFERENT luminance tiers. The
+  earlier palette had two, which meant enemy red (5.78:1) and pickup orange
+  (6.50:1) were nearly the same brightness - and under deuteranopia or
+  protanopia, nearly the same colour. "Run" and "grab" looking alike is the worst
+  confusion this game could produce, so lightness now separates them even in
+  greyscale.
+
+  The information layer is deliberately separate from the atmosphere layer. Text
+  never has to be readable against the pitch-black room, because text always sits
+  on a #121A28 panel - which lets every glyph clear 7:1 while the lab stays as
+  dark as the horror needs it to be.
+*/
 :root {
-  --bg: #05070d;
-  --panel: #0b1220;
-  --panel-2: #101a2c;
-  --ink: #e6edf7;
-  --ink-dim: #93a4bf;
-  --cyan: #35e0ff;
-  --cyan-dim: #1a8fa8;
-  --green: #52ff9f;
-  --amber: #ffc857;
-  --red: #ff4d5e;
-  --violet: #b07cff;
-  --cheeto: #ff5a1f;
+  --bg: #04060b;
+
+  /* Panels: the surface that makes AAA contrast possible without lighting the
+     room. 92% opacity keeps a hint of the scene behind without costing legibility. */
+  --panel: #121a28;
+  --panel-2: #16202f;
+  --panel-alpha: rgba(18, 26, 40, 0.92);
+  --panel-border: #2a3850;
+  /* #2A3850 on black measures about 1.9:1, which fails WCAG 1.4.11 for a control
+     boundary, so anything interactive uses the lighter tier. */
+  --border-interactive: #3d4f6b;
+
+  /* Text */
+  --ink: #dce6f5;
+  --ink-dim: #a8b8d0;
+
+  /* Semantic. --error is a LIGHTER red than --enemy on purpose: a rejected
+     answer must never read as a monster in the room. */
+  --cyan: #7fe9ff;
+  --cyan-dim: #4d9fb5;
+  --green: #7cffb2;
+  --amber: #ffa23a;
+  --red: #ff5c6e;
+  --error: #ff8c99;
+  --violet: #c79bff;
+  --cheeto: #ffa23a;
+  --battery: #ffe566;
+
+  /* Entity colours, shared with the WebGL palette in js/config.js */
+  --enemy: #ff5c6e;
+  --virus: #c79bff;
+  --pickup: #ffa23a;
+  --screen: #7fe9ff;
+  --exit: #7cffb2;
 
   --mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", "Roboto Mono", Menlo, Consolas, monospace;
-  --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  /*
+    Atkinson Hyperlegible was designed for low vision and disambiguates I/l/1 and
+    O/0 - which matters more than usual here, because the prompts contain things
+    like 0x and 1GB where a misread character changes the meaning. If the woff2 is
+    not present the stack falls through to Verdana and Tahoma, both of which ship
+    on ChromeOS and both of which have generous letterforms and wide default
+    spacing.
+  */
+  --sans: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", Verdana, Tahoma, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  /* Type scale. 18px is the floor for anything a student reads as prose. */
+  --fs-body: 18px;
+  --fs-question: 26px;
+  --fs-answer: 20px;
+  --fs-caption: 22px;
+  --fs-label: 15px;
+
+  /* Overridden per text preset from js/meta/settings.js */
+  --text-letter: 0.02em;
+  --text-word: 0.16em;
+  --text-line: 1.5;
+  --text-scale: 1;
+  --caption-scale: 1;
+  --caption-bg-alpha: 0.75;
+  --fx-grain: 0.6;
+  --fx-vignette: 0.7;
+
+  /* Prose past about 65 characters per line loses the reader's place on return */
+  --measure: 62ch;
 
   --hud-pad: clamp(10px, 2vw, 26px);
+}
+
+/*
+  Screen-reader-only text. Used for live regions that must be announced but not
+  drawn, since ChromeVox is present on every Chromebook in the building.
+*/
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/*
+  One focus ring for the whole game: white, offset, with a dark inner ring so it
+  is visible against both the panel and the cyan selected state. A cyan focus ring
+  would vanish on exactly the element the player is most likely to be on.
+*/
+:where(button, [tabindex], input, select):focus-visible {
+  outline: 3px solid #ffffff;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 1px var(--bg) inset;
 }
 
 * { box-sizing: border-box; }
@@ -34,9 +127,42 @@ html, body {
   background: var(--bg);
   color: var(--ink);
   font-family: var(--sans);
+  /* 18px floor for everything a student reads as prose */
+  font-size: var(--fs-body);
+  line-height: var(--text-line);
+  letter-spacing: var(--text-letter);
+  word-spacing: var(--text-word);
+  /* Never justified: the uneven word gaps justification produces are exactly the
+     "rivers" that cost dyslexic readers their place on the line */
+  text-align: left;
   -webkit-font-smoothing: antialiased;
   overscroll-behavior: none;
 }
+
+/*
+  Emphasis is bold, always. Italics slant the letterforms and underlines cut
+  through descenders; both measurably slow readers who are already working hard,
+  and neither adds information that weight does not.
+*/
+em, i, cite, .em {
+  font-style: normal;
+  font-weight: 700;
+}
+
+u { text-decoration: none; font-weight: 700; }
+
+/*
+  Prose gets a maximum measure. Past roughly 65 characters the eye struggles to
+  find the start of the next line, and this game asks students to read
+  explanations under pressure.
+*/
+p { max-width: var(--measure); }
+
+/*
+  ALL-CAPS is reserved for labels of three words or less. The fiction leans on
+  terminal-speak, but capitals remove the word shapes that fluent reading depends
+  on, so no question, answer, or explanation is ever set in them.
+*/
 
 body { touch-action: none; }
 
@@ -58,6 +184,69 @@ body { touch-action: none; }
 .hidden { display: none !important; }
 
 button { font-family: inherit; }
+
+/* ==================== REDUCED MOTION / REDUCED FLASHING ====================
+
+   Two separate switches, because they address two different conditions.
+
+   Reduce Motion is for vestibular symptoms: it removes movement the player's body
+   did not ask for - shake, bob, sway, parallax, sliding panels - while KEEPING
+   animation that carries information, like enemies moving and progress filling.
+
+   Reduce Flashing is for photosensitivity: it removes rapid or large luminance
+   changes - flicker, static bursts, strobes - and replaces them with steady or
+   slowly-faded equivalents.
+
+   Neither is a superset of the other. A student with migraine triggers may want
+   camera shake gone but enjoy the glitch effects; a photosensitive student may
+   want the strobes gone and the camera left alone.
+   ========================================================================== */
+
+:root[data-reduce-motion="on"] * {
+  /* Anything left animating is capped rather than removed, so progress bars and
+     spinners still communicate. UI transitions collapse to a cross-fade. */
+  animation-duration: 0.15s !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.15s !important;
+  scroll-behavior: auto !important;
+}
+
+:root[data-reduce-motion="on"] .no-motion-hide { display: none !important; }
+
+/* Grain and scanlines are motion as much as texture, so they go static */
+:root[data-reduce-motion="on"] #grain,
+:root[data-reduce-motion="on"] .scanlines { animation: none !important; }
+
+:root[data-reduce-flashing="on"] #static-burst,
+:root[data-reduce-flashing="on"] .strobe { display: none !important; }
+
+:root[data-reduce-flashing="on"] #damage-flash {
+  /* A 250ms fade instead of an instant full-screen change */
+  transition: opacity 0.25s linear !important;
+  animation: none !important;
+}
+
+/* Honour the OS preference even before our own settings have loaded */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.15s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.15s !important;
+  }
+}
+
+/* High-contrast HUD: drop hue entirely and let shape carry every meaning */
+:root[data-contrast="high"] {
+  --ink: #ffffff;
+  --ink-dim: #e6e6e6;
+  --cyan: #ffffff;
+  --green: #ffffff;
+  --amber: #ffffff;
+  --error: #ffffff;
+  --panel-alpha: rgba(0, 0, 0, 0.96);
+  --panel-border: #ffffff;
+  --border-interactive: #ffffff;
+}
 
 /* ============================ SCREENS ============================ */
 
@@ -993,272 +1182,490 @@ body.reduce-fx .logo-title::after {
 
 body.reduce-fx #scanlines { display: none; }
 
-/* ============================ QUIZ (Chromebook) ============================ */
+/* ======================== TERMINAL SECURITY CHECK ========================
+
+   The rework of the old floating-laptop quiz. Three things drive the layout:
+
+   1. SIZE. It now fills about three quarters of the viewport. The previous
+      version drew a small laptop screen in the middle of a 1366x768 Chromebook,
+      so the prompt text ended up physically tiny on the only hardware this game
+      is played on.
+   2. ONE COLUMN, LEFT ALIGNED. Answer options in this bank routinely run past 24
+      characters, and a 2x2 grid of long options forces the eye to re-find the
+      start of each line. A single column with a fixed left edge does not.
+   3. REDUNDANCY EVERYWHERE. Selection is signalled by border, fill, glyph AND
+      font weight; slot identity by letter AND shape; verdicts by colour, icon
+      AND the words ACCEPTED / DENIED. Any single channel can fail - colour
+      vision, a washed-out projector, a greyscale print - and the panel still
+      works.
+
+   Everything is sized in em/ch off an 18px floor, so browser zoom and user
+   stylesheets (WCAG 1.4.12) scale it instead of clipping it.
+   ======================================================================== */
 
 #screen-quiz {
   background:
-    radial-gradient(ellipse at 50% 45%, rgba(30, 60, 90, 0.35) 0%, rgba(3, 5, 9, 0.93) 60%, #03050a 100%);
+    radial-gradient(ellipse at 50% 45%, rgba(30, 60, 90, 0.35) 0%, rgba(3, 5, 9, 0.95) 60%, #03050a 100%);
 }
 
-.laptop-frame {
-  width: min(880px, 100%);
-  max-height: 100%;
+.quiz-panel {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  animation: laptop-in 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.1);
+  /* ~75% of the viewport, with a floor so it stays usable on a small window and a
+     ceiling so it does not sprawl on a classroom projector */
+  width: min(1180px, 94vw);
+  height: min(760px, 92vh);
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  background: var(--panel-alpha);
+  box-shadow:
+    0 0 0 1px rgba(127, 233, 255, 0.08),
+    0 0 90px rgba(127, 233, 255, 0.1),
+    0 26px 70px rgba(0, 0, 0, 0.86);
+  overflow: hidden;
+  animation: quiz-in 0.22s ease-out;
 }
 
+@keyframes quiz-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.99); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Still used by the decrypt panel */
 @keyframes laptop-in {
   from { opacity: 0; transform: perspective(900px) rotateX(-14deg) scale(0.94); }
   to { opacity: 1; transform: perspective(900px) rotateX(0) scale(1); }
 }
 
-.laptop-bezel {
-  width: 100%;
-  padding: 13px 13px 20px;
-  border-radius: 12px 12px 4px 4px;
-  background: linear-gradient(180deg, #1c2434, #0d1420);
-  box-shadow:
-    0 0 0 1px rgba(147, 164, 191, 0.18),
-    0 0 60px rgba(53, 224, 255, 0.14),
-    0 22px 60px rgba(0, 0, 0, 0.8);
-}
+/* Reduced motion gets a cross-fade under 150ms and no movement */
+:root[data-reduce-motion="on"] .quiz-panel { animation: fade-in 0.14s linear; }
 
-.laptop-base {
-  width: 106%;
-  height: 13px;
-  border-radius: 0 0 12px 12px;
-  background: linear-gradient(180deg, #222d40, #0a0f18);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.7);
-}
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 
-.cb-screen {
-  display: flex;
-  flex-direction: column;
-  border-radius: 5px;
-  background: linear-gradient(180deg, #071019, #050a12);
-  box-shadow: inset 0 0 70px rgba(53, 224, 255, 0.1);
-  overflow: hidden;
-}
-
-.cb-topbar {
+.quiz-head {
   display: flex;
   align-items: center;
-  gap: 9px;
-  padding: 8px 13px;
-  border-bottom: 1px solid rgba(53, 224, 255, 0.2);
-  background: rgba(53, 224, 255, 0.05);
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px clamp(16px, 2.4vw, 30px);
+  border-bottom: 1px solid var(--panel-border);
+  background: rgba(127, 233, 255, 0.05);
   font-family: var(--mono);
-  font-size: 11px;
-  letter-spacing: 0.18em;
+  font-size: var(--fs-label);
+  letter-spacing: 0.14em;
   color: var(--cyan);
 }
 
-.cb-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--green);
-  box-shadow: 0 0 9px var(--green);
+.quiz-head-left,
+.quiz-head-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-.cb-progress { margin-left: auto; color: var(--ink-dim); letter-spacing: 0.12em; }
+.quiz-head-right { margin-left: auto; }
 
-.cb-body {
-  padding: clamp(14px, 2.6vh, 26px) clamp(14px, 3vw, 32px);
-  text-align: left;
+.quiz-terminal { color: var(--cyan); }
+
+/* Minnesota ITEM standard code, e.g. 8.3.3.1 */
+.quiz-standard {
+  padding: 3px 9px;
+  border: 1px solid var(--border-interactive);
+  border-radius: 4px;
+  font-size: 13px;
+  letter-spacing: 0.1em;
+  color: var(--ink-dim);
+}
+
+.quiz-fragment {
+  font-size: 13px;
+  letter-spacing: 0.16em;
+  color: var(--ink-dim);
+}
+
+/*
+  Segmented progress: one segment per prompt, filled once ANSWERED. It reports
+  position in the sequence and nothing else - no correctness, no accuracy, no
+  wrong-answer tally. A student's error rate should not be posted on a screen the
+  person at the next desk can read.
+*/
+.quiz-segments {
+  display: flex;
+  gap: 6px;
+  padding: 10px clamp(16px, 2.4vw, 30px) 0;
+}
+
+.seg {
+  flex: 1 1 0;
+  height: 8px;
+  border: 1px solid var(--border-interactive);
+  border-radius: 3px;
+  background: transparent;
+}
+
+.seg.is-done { background: var(--cyan); border-color: var(--cyan); }
+
+.seg.is-current {
+  border-color: #ffffff;
+  border-width: 2px;
+  background: rgba(127, 233, 255, 0.18);
+}
+
+.quiz-body {
+  flex: 1 1 auto;
+  padding: clamp(14px, 2.4vh, 26px) clamp(16px, 2.4vw, 30px);
   overflow-y: auto;
-  max-height: min(66vh, 560px);
   scrollbar-width: thin;
   scrollbar-color: var(--cyan-dim) transparent;
 }
 
-.quiz-standard {
+/*
+  SELECT ONE vs SELECT ALL THAT APPLY - N CORRECT. Always visible. Telling
+  students how many answers are expected is the difference between assessing
+  technology knowledge and assessing whether they have met this interface
+  convention before.
+*/
+.quiz-mode-chip {
+  display: inline-block;
+  margin-bottom: 14px;
+  padding: 6px 14px;
+  border: 1px solid var(--cyan);
+  border-radius: 999px;
+  background: rgba(127, 233, 255, 0.1);
   font-family: var(--mono);
-  font-size: 9.5px;
-  letter-spacing: 0.22em;
-  color: var(--violet);
-  text-transform: uppercase;
-  margin-bottom: 9px;
+  font-size: var(--fs-label);
+  letter-spacing: 0.14em;
+  color: var(--cyan);
+}
+
+.quiz-mode-chip.is-multi {
+  border-color: var(--amber);
+  background: rgba(255, 162, 58, 0.12);
+  color: var(--amber);
 }
 
 .quiz-question {
-  font-size: clamp(15px, 2.1vw, 20px);
-  font-weight: 600;
-  line-height: 1.5;
-  color: #f4f9ff;
-  margin-bottom: 12px;
-}
-
-.quiz-multi-note {
-  display: inline-block;
-  margin-bottom: 12px;
-  padding: 4px 10px;
-  border: 1px solid var(--amber);
-  border-radius: 4px;
-  font-family: var(--mono);
-  font-size: 10.5px;
-  letter-spacing: 0.14em;
-  color: var(--amber);
+  margin: 0 0 18px;
+  max-width: var(--measure);
+  font-size: calc(var(--fs-question) * var(--text-scale));
+  font-weight: 700;
+  line-height: var(--text-line);
+  letter-spacing: var(--text-letter);
+  word-spacing: var(--text-word);
+  text-align: left;
+  color: var(--ink);
 }
 
 .quiz-answers {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 15px;
+  gap: 12px;
+  max-width: var(--measure);
 }
 
+/*
+  56px minimum row height clears the WCAG 2.5.5 AAA target size of 44px with
+  room to spare, which matters on a trackpad far more than on a mouse.
+*/
 .answer {
   display: flex;
-  align-items: flex-start;
-  gap: 11px;
+  align-items: center;
+  gap: 12px;
   width: 100%;
-  padding: 11px 14px;
-  border: 1px solid rgba(147, 164, 191, 0.26);
-  border-radius: 7px;
-  background: rgba(16, 26, 44, 0.6);
+  min-height: 56px;
+  padding: 14px 18px;
+  border: 2px solid var(--border-interactive);
+  border-radius: 8px;
+  background: rgba(22, 32, 47, 0.75);
   color: var(--ink);
   font-family: var(--sans);
-  font-size: clamp(12.5px, 1.6vw, 15px);
-  line-height: 1.45;
+  font-size: calc(var(--fs-answer) * var(--text-scale));
+  font-weight: 400;
+  line-height: var(--text-line);
+  letter-spacing: var(--text-letter);
+  word-spacing: var(--text-word);
   text-align: left;
   cursor: pointer;
-  transition: border-color 0.14s, background 0.14s, transform 0.1s;
+  transition: border-color 0.14s, background 0.14s;
 }
 
 .answer:hover:not(:disabled) {
-  border-color: rgba(53, 224, 255, 0.6);
-  background: rgba(53, 224, 255, 0.09);
-  transform: translateX(3px);
+  border-color: var(--cyan);
+  background: rgba(127, 233, 255, 0.08);
 }
 
 .answer:disabled { cursor: default; }
 
-.answer-letter {
+.answer-badge {
   flex: 0 0 auto;
-  width: 22px;
-  height: 22px;
+  position: relative;
+  width: 34px;
+  height: 34px;
   display: grid;
   place-items: center;
-  border: 1px solid rgba(53, 224, 255, 0.45);
-  border-radius: 4px;
-  background: rgba(53, 224, 255, 0.1);
+}
+
+.answer-letter {
+  position: relative;
+  z-index: 1;
   font-family: var(--mono);
-  font-size: 11px;
+  font-size: 17px;
+  font-weight: 700;
   color: var(--cyan);
 }
 
-.answer.is-picked {
-  border-color: var(--cyan);
-  background: rgba(53, 224, 255, 0.16);
+/*
+  A fixed shape per slot: A triangle, B diamond, C circle, D square, in the same
+  order on every prompt. This is what makes "the second one" and "the diamond" the
+  same thought, and it is a selection channel that survives any colour deficiency.
+*/
+.answer-shape {
+  position: absolute;
+  inset: 0;
+  border: 2px solid var(--cyan);
+  background: rgba(127, 233, 255, 0.08);
 }
 
-.answer.is-picked .answer-letter {
+.answer[data-slot="triangle"] .answer-shape {
+  clip-path: polygon(50% 4%, 96% 96%, 4% 96%);
+  border: 0;
   background: var(--cyan);
-  color: #04121a;
+  opacity: 0.22;
+}
+
+.answer[data-slot="diamond"] .answer-shape {
+  clip-path: polygon(50% 2%, 98% 50%, 50% 98%, 2% 50%);
+  border: 0;
+  background: var(--cyan);
+  opacity: 0.22;
+}
+
+.answer[data-slot="circle"] .answer-shape { border-radius: 50%; }
+
+.answer[data-slot="square"] .answer-shape { border-radius: 4px; }
+
+.answer[data-slot="pentagon"] .answer-shape {
+  clip-path: polygon(50% 2%, 98% 38%, 80% 96%, 20% 96%, 2% 38%);
+  border: 0;
+  background: var(--cyan);
+  opacity: 0.22;
+}
+
+.answer-text { flex: 1 1 auto; }
+
+/*
+  The pick-one / pick-many glyph on the right. A circle is never used for
+  multi-select and a square is never used for single-select, so the shape alone
+  tells the player whether picking a second option replaces the first.
+*/
+.answer-mark {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  border: 2px solid var(--border-interactive);
+  background: transparent;
+}
+
+[role="radiogroup"] .answer-mark { border-radius: 50%; }
+[role="group"] .answer-mark { border-radius: 4px; }
+
+/*
+  Selected state carries FOUR channels at once: a 3px cyan border, a 12% cyan
+  fill, a filled glyph, and the label going bold. Any one of them can be missed.
+*/
+.answer.is-picked {
+  border-color: var(--cyan);
+  border-width: 3px;
+  background: rgba(127, 233, 255, 0.12);
   font-weight: 700;
 }
 
+.answer.is-picked .answer-mark {
+  border-color: var(--cyan);
+  background: var(--cyan);
+  box-shadow: inset 0 0 0 3px var(--panel);
+}
+
+[role="group"] .answer.is-picked .answer-mark {
+  /* A tick, so a checkbox never looks like a filled radio */
+  background:
+    linear-gradient(45deg, transparent 42%, var(--panel) 42%, var(--panel) 58%, transparent 58%),
+    var(--cyan);
+}
+
+.answer.is-picked .answer-shape { opacity: 0.5; }
+
+/* ACCEPTED. Solid border, tick, and the word - never colour alone. */
 .answer.is-right {
   border-color: var(--green);
-  background: rgba(82, 255, 159, 0.15);
+  border-style: solid;
+  background: rgba(124, 255, 178, 0.14);
+  font-weight: 700;
 }
 
-.answer.is-right .answer-letter { background: var(--green); color: #04140b; }
+.answer.is-right .answer-letter { color: var(--green); }
+.answer.is-right .answer-shape { border-color: var(--green); background: var(--green); opacity: 0.3; }
 
+.answer.is-right .answer-mark {
+  border-color: var(--green);
+  background: var(--green);
+  box-shadow: inset 0 0 0 3px var(--panel);
+}
+
+.answer.is-right::after {
+  content: "\2713";
+  font-size: 22px;
+  color: var(--green);
+}
+
+/*
+  DENIED. Dashed border in addition to the colour change, because solid-vs-dashed
+  is legible in greyscale and to every form of colour blindness.
+*/
 .answer.is-wrong {
-  border-color: var(--red);
-  background: rgba(255, 77, 94, 0.13);
+  border-color: var(--error);
+  border-style: dashed;
+  background: rgba(255, 140, 153, 0.1);
 }
 
-.answer.is-wrong .answer-letter { background: var(--red); color: #1a0206; }
+.answer.is-wrong .answer-letter { color: var(--error); }
+.answer.is-wrong .answer-shape { border-color: var(--error); }
 
-.answer.is-missed {
-  border-color: var(--amber);
-  border-style: dashed;
-  background: rgba(255, 200, 87, 0.1);
+.answer.is-wrong::after {
+  content: "\2717";
+  font-size: 22px;
+  color: var(--error);
+}
+
+.quiz-feedback {
+  margin-top: 20px;
+  padding: 16px 18px;
+  max-width: var(--measure);
+  border-left: 4px solid var(--cyan);
+  border-radius: 0 8px 8px 0;
+  background: rgba(127, 233, 255, 0.07);
+}
+
+:root[data-reduce-motion="off"] .quiz-feedback { animation: toast-in 0.2s ease-out; }
+
+.quiz-feedback.is-right { border-left-color: var(--green); background: rgba(124, 255, 178, 0.09); }
+.quiz-feedback.is-wrong { border-left-color: var(--error); background: rgba(255, 140, 153, 0.09); }
+
+.verdict {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-family: var(--mono);
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--cyan);
+}
+
+.verdict-icon { font-size: 25px; line-height: 1; }
+
+.quiz-feedback.is-right .verdict { color: var(--green); }
+.quiz-feedback.is-wrong .verdict { color: var(--error); }
+
+/*
+  The explanation. This is the single highest-value element in the game: an
+  explanation of the error is worth roughly 0.49 effect size against 0.32 for
+  showing the correct answer and 0.05 for a bare right/wrong marker. So it is
+  full body size, on every answer, and never abbreviated.
+*/
+.explain {
+  margin: 0;
+  max-width: var(--measure);
+  font-size: calc(var(--fs-body) * var(--text-scale));
+  line-height: var(--text-line);
+  letter-spacing: var(--text-letter);
+  word-spacing: var(--text-word);
+  text-align: left;
+  color: var(--ink);
+}
+
+.explain strong { color: #ffffff; }
+
+.quiz-foot {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 14px clamp(16px, 2.4vw, 30px);
+  border-top: 1px solid var(--panel-border);
+  background: rgba(0, 0, 0, 0.32);
 }
 
 .quiz-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 9px;
+  gap: 10px;
   align-items: center;
 }
 
 .cb-btn {
-  padding: 9px 22px;
-  border: 1px solid var(--cyan);
+  min-height: 48px;
+  padding: 12px 26px;
+  border: 2px solid var(--cyan);
   border-radius: 6px;
-  background: rgba(53, 224, 255, 0.14);
+  background: rgba(127, 233, 255, 0.14);
   color: #eafcff;
   font-family: var(--mono);
-  font-size: 12px;
-  letter-spacing: 0.16em;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
   cursor: pointer;
-  transition: background 0.14s, transform 0.12s;
+  transition: background 0.14s;
 }
 
-.cb-btn:hover { background: rgba(53, 224, 255, 0.26); transform: translateY(-1px); }
+.cb-btn:hover:not(:disabled) { background: rgba(127, 233, 255, 0.26); }
 
 .cb-btn.ghost {
-  border-color: rgba(147, 164, 191, 0.35);
+  border-color: var(--border-interactive);
   background: none;
   color: var(--ink-dim);
+}
+
+.cb-btn.ghost:hover {
+  border-color: var(--error);
+  color: var(--error);
+  background: rgba(255, 140, 153, 0.08);
+}
+
+.cb-btn:disabled { opacity: 0.45; cursor: default; }
+
+.cb-warn {
   margin-left: auto;
-}
-
-.cb-btn.ghost:hover { border-color: var(--red); color: var(--red); background: rgba(255, 77, 94, 0.08); }
-
-.cb-btn:disabled { opacity: 0.4; cursor: default; transform: none; }
-
-.quiz-feedback {
-  margin-top: 14px;
-  padding: 13px 15px;
-  border-left: 3px solid var(--cyan);
-  border-radius: 0 6px 6px 0;
-  background: rgba(53, 224, 255, 0.07);
-  animation: toast-in 0.24s ease-out;
-}
-
-.quiz-feedback.is-right { border-left-color: var(--green); background: rgba(82, 255, 159, 0.08); }
-.quiz-feedback.is-wrong { border-left-color: var(--red); background: rgba(255, 77, 94, 0.08); }
-
-.verdict {
-  font-family: var(--mono);
-  font-size: 13px;
-  letter-spacing: 0.16em;
-  margin-bottom: 6px;
-  color: var(--cyan);
-}
-
-.quiz-feedback.is-right .verdict { color: var(--green); }
-.quiz-feedback.is-wrong .verdict { color: var(--red); }
-
-.explain {
-  font-size: 13px;
-  line-height: 1.6;
+  max-width: 42ch;
+  font-size: 15px;
+  line-height: 1.4;
+  text-align: left;
   color: var(--ink-dim);
 }
 
-.explain strong { color: var(--ink); }
+.cb-warn.is-danger { color: var(--amber); font-weight: 700; }
 
-.cb-footer {
-  padding: 7px 13px;
-  border-top: 1px solid rgba(53, 224, 255, 0.16);
-  background: rgba(0, 0, 0, 0.35);
+/* No animation on the danger line: it is text, and blinking text is both a
+   readability problem and a flash source. Weight and colour carry it. */
+
+.cb-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 9px var(--green);
 }
 
-.cb-warn {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.14em;
-  color: rgba(255, 200, 87, 0.75);
+/* Short Chromebook viewports: give the answers the space instead of the chrome */
+@media (max-height: 700px) {
+  .quiz-panel { height: 96vh; }
+  .quiz-question { margin-bottom: 12px; }
+  .quiz-answers { gap: 9px; }
+  .answer { min-height: 56px; padding: 11px 16px; }
+  .quiz-mode-chip { margin-bottom: 10px; }
 }
-
-.cb-warn.is-danger { color: var(--red); animation: danger-pulse 0.7s infinite; }
 
 /* ============================ DECRYPT MINIGAME ============================ */
 
@@ -1669,4 +2076,294 @@ body.reduce-fx #scanlines { display: none; }
   .setting { grid-template-columns: 1fr; }
   .setting output { text-align: left; }
   .cb-btn.ghost { margin-left: 0; }
+}
+
+/* ============================ TECH ESCAPE 2.0 UI ============================ */
+
+.inventory-bar {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.inv-slot {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 6px;
+  min-width: 108px;
+  padding: 6px 10px;
+  border: 1px solid rgba(147, 164, 191, 0.25);
+  border-radius: 6px;
+  background: rgba(8, 12, 20, 0.72);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--ink-dim);
+  opacity: 0.55;
+}
+
+.inv-slot.has-item { opacity: 1; color: var(--ink); }
+.inv-slot.is-selected {
+  border-color: var(--cyan);
+  box-shadow: 0 0 12px rgba(53, 224, 255, 0.25);
+}
+
+.inv-shape {
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+}
+.inv-shape-bag { border-radius: 3px 3px 6px 6px; }
+.inv-shape-can { border-radius: 2px; height: 16px; width: 10px; }
+.inv-shape-disc { border-radius: 50%; border-width: 3px; width: 12px; height: 12px; }
+
+.caption-stack {
+  position: absolute;
+  left: 50%;
+  bottom: 18%;
+  transform: translateX(-50%);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: none;
+  max-width: min(92vw, 520px);
+}
+
+.caption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: rgba(4, 6, 11, calc(var(--caption-bg-alpha, 0.75)));
+  font-family: var(--mono);
+  font-size: calc(var(--fs-caption, 22px) * var(--caption-scale, 1));
+  line-height: 1.35;
+  color: #fff;
+}
+
+.caption-icon { flex-shrink: 0; }
+
+.notice-card {
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 226, 102, 0.35);
+  border-radius: 8px;
+  background: rgba(24, 18, 6, 0.55);
+}
+
+.notice-h {
+  margin: 0 0 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  color: var(--amber);
+}
+
+.profile-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.profile-row {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid rgba(53, 224, 255, 0.28);
+  border-radius: 8px;
+  background: rgba(8, 16, 28, 0.75);
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+}
+
+.profile-row:hover { border-color: var(--cyan); }
+.profile-name { font-family: var(--mono); font-size: 14px; letter-spacing: 0.1em; }
+.profile-meta { font-size: 11px; color: var(--ink-dim); }
+
+.profile-new {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.title-greeting {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.title-player {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  color: var(--cyan);
+}
+
+.level-select {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 10px;
+  margin: 16px 0;
+  max-width: 920px;
+}
+
+.level-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 12px;
+  border: 1px solid rgba(147, 164, 191, 0.28);
+  border-radius: 8px;
+  background: rgba(10, 14, 22, 0.8);
+  color: var(--ink-dim);
+  cursor: pointer;
+  text-align: left;
+}
+
+.level-card.is-selected {
+  border-color: var(--green);
+  box-shadow: 0 0 16px rgba(82, 255, 159, 0.2);
+  color: var(--ink);
+}
+
+.level-card.is-locked {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.level-code {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--amber);
+}
+
+.level-name {
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  color: var(--cyan);
+}
+
+.level-blurb, .level-best { font-size: 11px; line-height: 1.45; }
+
+.guide-summary {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.guide-stat {
+  flex: 1 1 120px;
+  padding: 10px;
+  border: 1px solid rgba(53, 224, 255, 0.25);
+  border-radius: 6px;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-dim);
+}
+
+.guide-stat strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 20px;
+  color: var(--cyan);
+}
+
+.guide-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+
+.gchip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+}
+
+.gchip.is-mastered {
+  background: rgba(82, 255, 159, 0.15);
+  color: var(--green);
+  border: 1px solid rgba(82, 255, 159, 0.4);
+}
+
+.gchip.is-locked {
+  background: rgba(255, 77, 94, 0.12);
+  color: var(--red);
+  border: 1px solid rgba(255, 77, 94, 0.35);
+}
+
+.guide-body { display: flex; flex-direction: column; gap: 18px; }
+
+.guide-topic h3 {
+  margin: 0 0 10px;
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  color: var(--cyan);
+}
+
+.guide-topic-sub { color: var(--ink-dim); font-weight: normal; }
+
+.guide-card {
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  border: 1px solid rgba(147, 164, 191, 0.22);
+  border-radius: 8px;
+  background: rgba(8, 12, 20, 0.65);
+}
+
+.guide-card.is-locked { border-color: rgba(255, 77, 94, 0.25); }
+.guide-card.is-mastered { border-color: rgba(82, 255, 159, 0.28); }
+
+.guide-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.guide-std {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--amber);
+}
+
+.guide-q { margin: 0 0 8px; font-size: 14px; line-height: 1.5; }
+.guide-picked { font-size: 12px; color: var(--ink-dim); }
+.guide-opts { margin: 8px 0; padding-left: 18px; font-size: 13px; }
+.guide-opts .is-correct { color: var(--green); }
+.guide-opts .is-picked { font-weight: bold; }
+.guide-why { font-size: 13px; line-height: 1.55; color: var(--ink); margin: 8px 0 0; }
+.guide-hint { font-size: 12px; color: var(--amber); margin: 8px 0 0; }
+
+.story.dim { color: var(--ink-dim); font-style: italic; }
+
+@media print {
+  .screen:not(#screen-guide) { display: none !important; }
+  #screen-guide { position: static !important; background: #fff !important; color: #000 !important; }
+  .guide-card { break-inside: avoid; border-color: #ccc !important; }
 }

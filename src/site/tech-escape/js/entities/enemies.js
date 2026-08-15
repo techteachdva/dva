@@ -25,6 +25,7 @@ export class EnemyManager {
     this.viruses = [];
     this.escalation = 0;
     this.swarming = false;
+    this.frozen = false;
 
     this._flow = null;
     this._flowTimer = 0;
@@ -98,9 +99,16 @@ export class EnemyManager {
   }
 
   /**
+   * @param {number} dt
+   * @param {object} player
+   * @param {Array<object>} [lures] armed cheetos bags the mice may divert to
    * @returns {{damage:number, batteryDrain:number, hunters:number, nearest:number}}
    */
-  update(dt, player) {
+  update(dt, player, lures = null) {
+    // Frozen enemies still idle and breathe on the spot - their animations run on
+    // wall-clock time - but no timer advances, so nothing closes in and nothing
+    // bites while the player is reading
+    const adt = this.frozen ? 0 : dt;
     const [pcx, pcy] = this.maze.worldToCell(player.pos.x, player.pos.z);
 
     // Rebuild the shared flow field on a timer or when the player moves cell
@@ -122,17 +130,33 @@ export class EnemyManager {
     let burnCharge = 0;
     let glitched = 0;
 
-    for (const m of this.mice) {
-      const ev = m.update(dt, player, this._flow, this.mice, this.diff);
-      if (ev?.hit) damage += ev.hit;
+    let feeding = 0;
+
+    // Reverse iteration so a mouse that popped this frame can be reaped in place
+    for (let i = this.mice.length - 1; i >= 0; i--) {
+      const m = this.mice[i];
+      if (m.dead) {
+        m.dispose(this.scene);
+        this.mice.splice(i, 1);
+        continue;
+      }
+      const ev = m.update(adt, player, this._flow, this.mice, this.diff, lures);
+      if (ev?.hit && !this.frozen) damage += ev.hit;
       if (m.hunting) hunters++;
+      if (m.feeding) feeding++;
       const d = Math.hypot(player.pos.x - m.pos.x, player.pos.z - m.pos.z);
       if (d < nearest) nearest = d;
     }
 
-    for (const v of this.viruses) {
-      const ev = v.update(dt, player, this.diff);
-      if (ev?.hit) {
+    for (let i = this.viruses.length - 1; i >= 0; i--) {
+      const v = this.viruses[i];
+      if (v.dead) {
+        v.dispose(this.scene);
+        this.viruses.splice(i, 1);
+        continue;
+      }
+      const ev = v.update(adt, player, this.diff);
+      if (ev?.hit && !this.frozen) {
         damage += ev.hit;
         batteryDrain += ev.batteryDrain || 0;
       }
@@ -146,7 +170,19 @@ export class EnemyManager {
       if (d < nearest) nearest = d;
     }
 
-    return { damage, batteryDrain, hunters, nearest, burning, burnCharge, glitched };
+    return {
+      damage, batteryDrain, hunters, nearest, burning, burnCharge, glitched, feeding,
+    };
+  }
+
+  /**
+   * Freezes every hunter in place. Used while the player is at a terminal on the
+   * two lower difficulties: reading a security prompt with something walking up
+   * behind you is a memory test with a jump scare attached, and the point of the
+   * terminal is the thinking.
+   */
+  setFrozen(frozen) {
+    this.frozen = !!frozen;
   }
 
   dispose() {

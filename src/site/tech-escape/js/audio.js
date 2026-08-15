@@ -420,6 +420,120 @@ class AudioEngine {
   deny() {
     this._tone({ freq: 200, freqEnd: 150, dur: 0.12, type: 'square', vol: 0.08 });
   }
+
+  /* ------------------------------------------------------------ inventory */
+
+  pickupSoda() {
+    // Aluminium ting, then the slosh of a can that is still full
+    this._tone({ freq: 1500, freqEnd: 1900, dur: 0.1, type: 'triangle', vol: 0.1 });
+    this._noise({ dur: 0.2, vol: 0.1, filter: 700, filterEnd: 260, q: 1.4, delay: 0.05 });
+  }
+
+  pickupDisc() {
+    // Rare item, so it gets the only genuinely pretty sound in the building
+    this._tone({ freq: 700, dur: 0.16, type: 'sine', vol: 0.13 });
+    this._tone({ freq: 1050, dur: 0.16, type: 'sine', vol: 0.12, delay: 0.09 });
+    this._tone({ freq: 1400, dur: 0.4, type: 'sine', vol: 0.11, delay: 0.18 });
+    this._noise({ dur: 0.5, vol: 0.05, filter: 6000, filterEnd: 9000, q: 0.7 });
+  }
+
+  eatCheetos() {
+    // Bag tears, then three crunches
+    this._noise({ dur: 0.22, vol: 0.16, filter: 5200, filterEnd: 2600, q: 1.1 });
+    for (let i = 0; i < 3; i++) {
+      this._noise({
+        dur: 0.09, vol: 0.15, filter: 2200 + Math.random() * 1400,
+        filterEnd: 800, q: 2.6, delay: 0.2 + i * 0.15,
+      });
+    }
+    this._tone({ freq: 300, freqEnd: 520, dur: 0.3, type: 'triangle', vol: 0.1, delay: 0.5 });
+  }
+
+  drinkSoda() {
+    // Tab crack, fizz, three gulps, and the exhale that sells the refreshment
+    this._tone({ freq: 2200, freqEnd: 900, dur: 0.06, type: 'square', vol: 0.12 });
+    this._noise({ dur: 0.9, vol: 0.1, filter: 7000, filterEnd: 3000, q: 0.6, delay: 0.05 });
+    for (let i = 0; i < 3; i++) {
+      this._tone({
+        freq: 260 - i * 30, freqEnd: 180 - i * 20, dur: 0.12,
+        type: 'sine', vol: 0.13, delay: 0.25 + i * 0.17,
+      });
+    }
+    this._noise({ dur: 0.35, vol: 0.07, filter: 1200, filterEnd: 400, q: 1, delay: 0.8 });
+  }
+
+  bagThrow() {
+    this._noise({ dur: 0.18, vol: 0.11, filter: 1800, filterEnd: 3800, q: 1.2 });
+  }
+
+  bagLand() {
+    // Crinkling foil hitting lino
+    this._noise({ dur: 0.14, vol: 0.14, filter: 4200, filterEnd: 1800, q: 1.8 });
+    this._tone({ freq: 160, freqEnd: 90, dur: 0.1, type: 'triangle', vol: 0.08 });
+  }
+
+  munch(volScale = 1) {
+    if (volScale <= 0.02) return;
+    this._noise({
+      dur: 0.07, vol: 0.11 * volScale, filter: 1800 + Math.random() * 1200,
+      filterEnd: 700, q: 3, delay: Math.random() * 0.03,
+    });
+  }
+
+  /**
+   * The bag going off. Deliberately a comic pop-and-fizz rather than an
+   * explosion: this is a snack detonating, and the game should let the player
+   * enjoy that.
+   */
+  bagPop(popped = 0) {
+    this._tone({ freq: 520, freqEnd: 70, dur: 0.36, type: 'square', vol: 0.2 });
+    this._noise({ dur: 0.45, vol: 0.26, filter: 5200, filterEnd: 320, q: 0.7 });
+    this._tone({ freq: 120, freqEnd: 48, dur: 0.5, type: 'sawtooth', vol: 0.16, delay: 0.02 });
+    // A rising cartoon squeak per casualty, capped so a swarm kill does not clip
+    for (let i = 0; i < Math.min(popped, 4); i++) {
+      this._tone({
+        freq: 900 + i * 140, freqEnd: 2100 + i * 160, dur: 0.13,
+        type: 'square', vol: 0.09, delay: 0.06 + i * 0.07,
+      });
+    }
+  }
+
+  discThrow() {
+    // Whirring frisbee: two close tones beating against each other
+    this._tone({ freq: 900, freqEnd: 1500, dur: 0.3, type: 'sine', vol: 0.1 });
+    this._tone({ freq: 912, freqEnd: 1520, dur: 0.3, type: 'sine', vol: 0.08, detune: 18 });
+    this._noise({ dur: 0.3, vol: 0.07, filter: 3200, filterEnd: 6200, q: 2 });
+  }
+
+  discClatter() {
+    // Missed. Plastic on hard floor, bouncing twice: it is still out there.
+    for (let i = 0; i < 3; i++) {
+      this._tone({
+        freq: 1700 - i * 200, freqEnd: 1200 - i * 200, dur: 0.05,
+        type: 'triangle', vol: 0.1 - i * 0.025, delay: i * 0.11,
+      });
+    }
+    this._noise({ dur: 0.2, vol: 0.07, filter: 5200, filterEnd: 2000, q: 2.4, delay: 0.22 });
+  }
+
+  /** A virus deleted for good. Reversed-sounding sweep up into silence. */
+  virusDeleted() {
+    this._tone({ freq: 200, freqEnd: 2600, dur: 0.42, type: 'sawtooth', vol: 0.16 });
+    this._tone({ freq: 206, freqEnd: 2650, dur: 0.42, type: 'square', vol: 0.09, detune: 25 });
+    this._noise({ dur: 0.5, vol: 0.18, filter: 400, filterEnd: 9000, q: 0.8 });
+    // Clean confirmation chord on the tail: the system says thank you
+    this._tone({ freq: 1046, dur: 0.3, type: 'sine', vol: 0.12, delay: 0.4 });
+    this._tone({ freq: 1568, dur: 0.34, type: 'sine', vol: 0.1, delay: 0.46 });
+  }
+
+  /** Hands are full / nothing selected. Quiet, never punishing. */
+  cantUse() {
+    this._tone({ freq: 240, freqEnd: 200, dur: 0.09, type: 'triangle', vol: 0.07 });
+  }
+
+  invSwitch() {
+    this._tone({ freq: 1300, dur: 0.04, type: 'square', vol: 0.05 });
+  }
 }
 
 export const audio = new AudioEngine();

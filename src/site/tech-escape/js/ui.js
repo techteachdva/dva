@@ -21,7 +21,9 @@ export const ui = {
       'health-bags', 'stamina-fill', 'battery-fill', 'battery-label',
       'hide-indicator', 'hint-line', 'glitch-overlay', 'stance-value',
       'toast-stack', 'danger-warning', 'damage-flash', 'crosshair',
-      'screen-title', 'screen-pause', 'screen-standards', 'screen-quiz',
+      'inventory-bar', 'caption-stack', 'control-legend',
+      'screen-title', 'screen-firstrun', 'screen-profile', 'screen-guide',
+      'screen-pause', 'screen-standards', 'screen-quiz',
       'screen-decrypt', 'screen-printer', 'screen-over', 'screen-win',
       'screen-load', 'screen-error', 'boot-log', 'load-fill', 'error-text',
       'over-title', 'over-flavor', 'over-stats', 'over-tip',
@@ -37,7 +39,8 @@ export const ui = {
   /** Hides every screen; pass a key to then show one. */
   showScreen(name) {
     const screens = [
-      'screen-title', 'screen-pause', 'screen-standards', 'screen-quiz',
+      'screen-title', 'screen-firstrun', 'screen-profile', 'screen-guide',
+      'screen-pause', 'screen-standards', 'screen-quiz',
       'screen-decrypt', 'screen-printer', 'screen-over', 'screen-win',
       'screen-load', 'screen-error',
     ];
@@ -224,6 +227,24 @@ export const ui = {
     if (on === this._dangerOn) return;
     this._dangerOn = on;
     this.el['danger-warning'].classList.toggle('hidden', !on);
+  },
+
+  /** Inventory HUD — shape glyphs for colourblind redundancy. */
+  updateInventoryBar(inventory) {
+    const host = this.el['inventory-bar'];
+    if (!host || !inventory) return;
+    host.innerHTML = inventory.slots().map((s) => `
+      <div class="inv-slot${s.selected ? ' is-selected' : ''}${s.count ? ' has-item' : ''}"
+           data-kind="${s.kind}" title="${s.useHint || s.throwHint || ''}">
+        <span class="inv-shape inv-shape-${s.shape}" aria-hidden="true"></span>
+        <span class="inv-label">${s.short}</span>
+        <span class="inv-count">${s.count}/${s.max}</span>
+      </div>`).join('');
+  },
+
+  setCaptionsVisible(on) {
+    const el = this.el['caption-stack'];
+    if (el) el.classList.toggle('hidden', !on);
   },
 
   flashDamage() {

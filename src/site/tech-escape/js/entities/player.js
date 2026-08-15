@@ -38,6 +38,8 @@ export class Player {
     // True when the player asked to stand but something is directly overhead
     this.stuckUnder = false;
     this.sprinting = false;
+    this.wantSprint = false;   // sprint is a toggle; this is the latched intent
+    this.sodaBoost = 0;        // seconds of caffeinated legs remaining
     this.exhausted = 0;
     this.regenDelay = 0;
     this.invuln = 0;
@@ -111,6 +113,22 @@ export class Player {
     return true;
   }
 
+  /**
+   * Drinking a soda. Stamina refills instantly and, for a while afterwards,
+   * sprinting is faster and burns slower - the difference between "I can run" and
+   * "I can outrun that", which is the fantasy the can is selling.
+   */
+  drinkSoda() {
+    this.stamina = PLAYER.staminaMax;
+    this.exhausted = 0;
+    this.regenDelay = 0;
+    this.sodaBoost = PLAYER.sodaBoostTime;
+    this.stats.sodasDrunk = (this.stats.sodasDrunk || 0) + 1;
+    return true;
+  }
+
+  get boosted() { return this.sodaBoost > 0; }
+
   takeDamage(amount) {
     if (this.invuln > 0 || !this.alive) return false;
     this.health = clamp(this.health - amount, 0, this.maxHealth);
@@ -155,18 +173,29 @@ export class Player {
     this.hidden = this.crouching && this.underTable();
 
     // ------------------------------------------------------------- stamina
-    const wantsSprint = controlsActive && input.held.sprint && !this.crouching && wantsMove;
+    if (this.sodaBoost > 0) this.sodaBoost -= dt;
+
+    // Sprint is a TOGGLE, not a hold. Holding Shift while steering with WASD and
+    // looking with a trackpad is three simultaneous motor tasks, and on a
+    // Chromebook that is the single most common reason a student simply stops
+    // running. Tapping it once is the same decision with none of the strain.
+    if (controlsActive && input.pressed('sprint')) this.wantSprint = !this.wantSprint;
+    // Letting go of the stick, crouching, or running dry all cancel the intent,
+    // so the toggle can never leave the player sprinting into a wall
+    if (!wantsMove || this.crouching) this.wantSprint = false;
     if (this.exhausted > 0) this.exhausted -= dt;
 
-    this.sprinting = wantsSprint && this.stamina > 0 && this.exhausted <= 0;
+    this.sprinting = this.wantSprint && wantsMove && !this.crouching
+      && this.stamina > 0 && this.exhausted <= 0;
 
     if (this.sprinting) {
-      this.stamina -= PLAYER.staminaDrain * dt;
+      this.stamina -= PLAYER.staminaDrain * (this.boosted ? PLAYER.sodaDrainScale : 1) * dt;
       this.regenDelay = PLAYER.staminaRegenDelay;
       if (this.stamina <= 0) {
         this.stamina = 0;
         this.exhausted = PLAYER.staminaExhaustLock;
         this.sprinting = false;
+        this.wantSprint = false;
       }
     } else {
       if (this.regenDelay > 0) this.regenDelay -= dt;
@@ -180,7 +209,9 @@ export class Player {
     // ------------------------------------------------------------ movement
     let speed = PLAYER.walkSpeed;
     if (this.crouching) speed = PLAYER.crouchSpeed * (this.hidden ? 0.72 : 1);
-    else if (this.sprinting) speed = PLAYER.sprintSpeed;
+    else if (this.sprinting) {
+      speed = PLAYER.sprintSpeed * (this.boosted ? PLAYER.sodaSprintScale : 1);
+    }
     // Wounded players move a little slower, which raises the stakes
     if (this.health === 1) speed *= 0.88;
 

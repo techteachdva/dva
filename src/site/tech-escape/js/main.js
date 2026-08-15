@@ -10,7 +10,7 @@
 import * as THREE from '../vendor/three.module.js';
 
 import {
-  CELL, QUALITY, DIFFICULTY, COLORS, PLAYER, QUIZ, DECRYPT, PRINTER, CODE_PARTS,
+  CELL, QUALITY, DIFFICULTY, COLORS, PLAYER, PICKUP, QUIZ, DECRYPT, PRINTER, CODE_PARTS,
 } from './config.js';
 import { clamp, makeRng, formatTime } from './util.js';
 import { input } from './input.js';
@@ -22,9 +22,19 @@ import { Lighting } from './world/lighting.js';
 import { Player } from './entities/player.js';
 import { EnemyManager } from './entities/enemies.js';
 import { PickupField } from './entities/pickups.js';
+import { ThrowField } from './entities/throwables.js';
+import { Inventory } from './entities/inventory.js';
+import { disposeModels } from './entities/models.js';
 import { Quiz } from './minigames/quiz.js';
 import { Decrypt } from './minigames/memory.js';
-import { drawQuestions, TERMINALS, QUESTION_COUNT } from './data/questions.js';
+import { TERMINALS, QUESTION_COUNT } from './data/questions.js';
+import { drawForTerminal, idsOf } from './meta/quizpool.js';
+import { saveStore } from './meta/save.js';
+import { settings, flashGuard } from './meta/settings.js';
+import { getLevel, layoutFor, runProfile } from './meta/levels.js';
+import { sessionUi } from './meta/session-ui.js';
+import { BootSequence } from './ui/boot.js';
+import { captions } from './ui/captions.js';
 
 const MODE = {
   LOADING: 'loading',
@@ -40,13 +50,14 @@ const MODE = {
 
 const INTERACT_RANGE = 2.6;
 const FRAGMENT_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-const SETTINGS_KEY = 'techescape.settings.v1';
 
 class Game {
   constructor() {
     this.mode = MODE.LOADING;
+    this.levelIndex = 0;
+    this._invUiRev = -1;
     this.settings = {
-      sensitivity: 100,
+      sensitivity: 80,
       quality: 'medium',
       brightness: 130,
       muted: false,
@@ -67,22 +78,23 @@ class Game {
 
   async boot() {
     ui.init();
+    settings.load();
+    captions.init();
+    saveStore.init();
     this._loadSettings();
 
     const canvas = document.getElementById('scene');
     if (!this._initRenderer(canvas)) return;
 
     input.init(canvas);
-    input.sensitivity = this.settings.sensitivity;
-
-    this._bindUi();
+    sessionUi.bind(this);
     this._applySettings();
 
+    this._bindUi();
     await this._bootSequence();
+    ui.showScreen(null);
 
-    this.mode = MODE.TITLE;
-    ui.showScreen('screen-title');
-    ui.setPerfNote(`${QUESTION_COUNT} questions loaded - renderer: ${this._rendererName}`);
+    await sessionUi.enterLobby();
     this._startLoop();
   }
 
@@ -142,40 +154,66 @@ class Game {
     this.camera.updateProjectionMatrix();
   }
 
+  /**
+   * The startup log. Five lines, each one reporting the result of work that
+   * genuinely just happened, and the last one printing the code format the player
+   * is about to spend the run collecting - so reading it is worth doing.
+   *
+   * Pacing, skipping and the 10 second ceiling all live in BootSequence.
+   */
   async _bootSequence() {
-    const lines = [
-      'DVA TECH LAB - NIGHT SHIFT MONITOR',
-      'checking door locks ............ LOCKED',
-      'checking overhead lights ....... OFFLINE',
-      'counting chromebooks ........... 4 AWAKE',
-      'scanning for movement .......... [REDACTED]',
-      'good luck.',
-    ];
-    const shown = [];
-    for (let i = 0; i < lines.length; i++) {
-      shown.push(lines[i]);
-      ui.bootLog(shown);
-      ui.setLoadProgress((i + 1) / lines.length);
-      await new Promise((r) => setTimeout(r, i === lines.length - 1 ? 420 : 190));
-    }
+    const boot = new BootSequence({
+      log: document.getElementById('boot-log'),
+      fill: document.getElementById('load-fill'),
+      skip: document.getElementById('boot-skip'),
+    });
+
+    await boot.run([
+      {
+        text: 'NIGHT SHIFT MONITOR ONLINE',
+        run: () => this._rendererName.slice(0, 18).toUpperCase(),
+      },
+      {
+        text: 'DOOR LOCKS ENGAGED, LIGHTS OFF',
+        run: () => 'CONFIRMED',
+      },
+      {
+        text: 'CHROMEBOOKS AWAKE',
+        run: () => `${TERMINALS.length} OF ${TERMINALS.length}`,
+      },
+      {
+        text: 'PROMPT BANK',
+        run: () => `${QUESTION_COUNT} READY`,
+      },
+      {
+        // The one line that is worth reading twice
+        text: 'EXIT CODE NEEDS',
+        run: () => `${CODE_PARTS} FRAGMENTS`,
+      },
+    ]);
   }
 
   // ============================================================== settings
 
   _loadSettings() {
-    try {
-      const raw = localStorage.getItem(SETTINGS_KEY);
-      if (raw) Object.assign(this.settings, JSON.parse(raw));
-    } catch (e) { /* first run, or storage blocked by policy */ }
+    this.settings.quality = settings.get('quality') || this.settings.quality;
+    this.settings.brightness = settings.get('brightness') ?? this.settings.brightness;
+    this.settings.muted = settings.get('muted') ?? this.settings.muted;
+    this.settings.reduceFx = settings.get('reduceFx') ?? this.settings.reduceFx;
+    this.settings.difficulty = settings.get('difficulty') || this.settings.difficulty;
+    this.settings.sensitivity = Math.round(settings.activeSensitivity * 100);
   }
 
   _saveSettings() {
-    try {
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify(this.settings));
-    } catch (e) { /* storage blocked; settings just will not persist */ }
+    settings.set('quality', this.settings.quality);
+    settings.set('brightness', this.settings.brightness);
+    settings.set('muted', this.settings.muted);
+    settings.set('reduceFx', this.settings.reduceFx);
+    settings.set('difficulty', this.settings.difficulty);
   }
 
   _applySettings() {
+    this._loadSettings();
     input.sensitivity = this.settings.sensitivity;
     audio.setMuted(this.settings.muted);
     document.body.classList.toggle('reduce-fx', this.settings.reduceFx);
@@ -185,25 +223,7 @@ class Game {
       this.scene.fog.density = QUALITY[this.settings.quality].fogDensity;
     }
     this._resize();
-
-    const el = {
-      sens: document.getElementById('set-sens'),
-      quality: document.getElementById('set-quality'),
-      bright: document.getElementById('set-bright'),
-      mute: document.getElementById('set-mute'),
-      shake: document.getElementById('set-shake'),
-    };
-    el.sens.value = this.settings.sensitivity;
-    el.quality.value = this.settings.quality;
-    el.bright.value = this.settings.brightness;
-    el.mute.checked = this.settings.muted;
-    el.shake.checked = this.settings.reduceFx;
-    document.getElementById('out-sens').textContent = this.settings.sensitivity;
-    document.getElementById('out-bright').textContent = `${this.settings.brightness}%`;
-
-    for (const btn of document.querySelectorAll('.diff-btn')) {
-      btn.classList.toggle('is-selected', btn.dataset.diff === this.settings.difficulty);
-    }
+    sessionUi._syncSettingsForm?.();
   }
 
   _bindUi() {
@@ -214,16 +234,6 @@ class Game {
       audio.uiClick();
       this.startRun();
     });
-
-    for (const btn of document.querySelectorAll('.diff-btn')) {
-      btn.addEventListener('click', () => {
-        audio.init();
-        audio.uiClick();
-        this.settings.difficulty = btn.dataset.diff;
-        this._saveSettings();
-        this._applySettings();
-      });
-    }
 
     on('btn-settings', 'click', () => {
       audio.uiClick();
@@ -277,46 +287,6 @@ class Game {
     on('printer-go', 'click', () => this._beginPrint());
     on('printer-close', 'click', () => this._closePrinter());
 
-    // Settings inputs
-    const sens = document.getElementById('set-sens');
-    sens.addEventListener('input', () => {
-      this.settings.sensitivity = Number(sens.value);
-      document.getElementById('out-sens').textContent = sens.value;
-      input.sensitivity = this.settings.sensitivity;
-      this._saveSettings();
-    });
-
-    const quality = document.getElementById('set-quality');
-    quality.addEventListener('change', () => {
-      this.settings.quality = quality.value;
-      this._saveSettings();
-      this._applySettings();
-      ui.toast('Graphics quality changed. Restart a run for full effect.', 'warn');
-    });
-
-    const bright = document.getElementById('set-bright');
-    bright.addEventListener('input', () => {
-      this.settings.brightness = Number(bright.value);
-      document.getElementById('out-bright').textContent = `${bright.value}%`;
-      if (this.world) this.world.lighting.setBrightness(this.settings.brightness / 100);
-      this._saveSettings();
-    });
-
-    const mute = document.getElementById('set-mute');
-    mute.addEventListener('change', () => {
-      this.settings.muted = mute.checked;
-      audio.setMuted(mute.checked);
-      this._saveSettings();
-    });
-
-    const shake = document.getElementById('set-shake');
-    shake.addEventListener('change', () => {
-      this.settings.reduceFx = shake.checked;
-      document.body.classList.toggle('reduce-fx', shake.checked);
-      if (this.world) this.world.player.reduceFx = shake.checked;
-      this._saveSettings();
-    });
-
     // Global keys
     window.addEventListener('keydown', (e) => {
       if (e.code === 'Escape') {
@@ -361,18 +331,20 @@ class Game {
   startRun() {
     this._teardownWorld();
 
-    const diff = DIFFICULTY[this.settings.difficulty];
+    const level = getLevel(this.levelIndex);
+    const baseDiff = DIFFICULTY[this.settings.difficulty];
+    const diff = runProfile(level, baseDiff);
     const seed = (Date.now() ^ Math.floor(Math.random() * 0xffffff)) >>> 0;
     const rng = makeRng(seed);
 
-    // Regenerate until the layout is fully walkable
-    let maze = new Maze(rng);
+    const layout = layoutFor(level);
+    let maze = new Maze(rng, layout);
     let attempts = 0;
     while (attempts++ < 10) {
       const open = maze.openCells();
       const [sx, sy] = open[0];
       if (maze.isFullyConnected(sx, sy)) break;
-      maze = new Maze(rng);
+      maze = new Maze(rng, layout);
     }
 
     const lab = new Lab(this.scene, maze, rng);
@@ -382,24 +354,18 @@ class Game {
     const reserve = (cells) => cells.forEach((c) => used.add(key(c)));
     const freeCells = () => open.filter((c) => !used.has(key(c)));
 
-    // Four terminals spread as far apart as the layout allows
-    const laptopCells = maze.spreadCells(CODE_PARTS, [], 7);
+    const laptopCells = maze.spreadCells(CODE_PARTS, [], level.terminalSeparation || 7);
     reserve(laptopCells);
 
-    // Printer sits away from the terminals so the last run is a real journey
     const printerCell = maze.spreadCells(1, laptopCells, 6)[0];
     reserve([printerCell]);
 
-    // Exit hugs the outer wall
     const border = freeCells().filter(([x, y]) => (
       x <= 2 || y <= 2 || x >= maze.size - 3 || y >= maze.size - 3
     ));
-    const exitCell = border.length
-      ? rng.pick(border)
-      : rng.pick(freeCells());
+    const exitCell = border.length ? rng.pick(border) : rng.pick(freeCells());
     reserve([exitCell]);
 
-    // The player starts far from the exit, so escaping means crossing the lab
     const startPool = freeCells().filter(
       (c) => Math.hypot(c[0] - exitCell[0], c[1] - exitCell[1]) > maze.size * 0.45,
     );
@@ -410,18 +376,18 @@ class Game {
     lab.buildPrinter(printerCell);
     lab.buildExit(exitCell);
 
-    // Tables to hide under: plenty, and never on top of a terminal
-    const tableCells = rng.shuffle(freeCells()).slice(0, Math.round(open.length * 0.22));
+    const tableCells = rng.shuffle(freeCells()).slice(0, Math.round(open.length * (level.tableDensity || 0.22)));
     reserve(tableCells);
     lab.buildTables(tableCells);
 
-    const propCells = rng.shuffle(freeCells()).slice(0, Math.round(open.length * 0.1));
+    const propCells = rng.shuffle(freeCells()).slice(0, Math.round(open.length * (level.propDensity || 0.1)));
     reserve(propCells);
     lab.buildProps(propCells);
 
+    const inventory = new Inventory();
     const pickups = new PickupField(this.scene, maze, rng);
-    // Props are solid floor to ceiling, so loot inside one would be unreachable.
-    // Table cells are fair game - crawling in for a battery is a good decision.
+    const throws = new ThrowField(this.scene, maze, rng);
+
     const propSet = new Set(propCells.map(key));
     const lootCells = rng.shuffle(open.filter(
       (c) => key(c) !== key(startCell) && !propSet.has(key(c)),
@@ -433,21 +399,28 @@ class Game {
     for (let i = 0; i < diff.batteries; i++) {
       pickups.spawn('battery', lootCells[li++ % lootCells.length]);
     }
+    for (let i = 0; i < (diff.sodas || 0); i++) {
+      pickups.spawn('soda', lootCells[li++ % lootCells.length]);
+    }
+    for (let i = 0; i < (diff.antivirus || 0); i++) {
+      pickups.spawn('antivirus', lootCells[li++ % lootCells.length]);
+    }
 
     const player = new Player(maze, lab, startCell, diff);
     player.reduceFx = this.settings.reduceFx;
-    // Start facing whichever direction has floor in front of you
     player.yaw = this._bestStartYaw(maze, startCell);
 
     const lighting = new Lighting(this.scene, this.camera, QUALITY[this.settings.quality]);
-    lighting.setBrightness(this.settings.brightness / 100);
+    lighting.setBrightness((this.settings.brightness / 100) * (level.brightnessScale || 1));
 
-    this.scene.fog = new THREE.FogExp2(COLORS.fog, QUALITY[this.settings.quality].fogDensity);
+    this.scene.fog = new THREE.FogExp2(
+      COLORS.fog,
+      QUALITY[this.settings.quality].fogDensity * (level.fogScale || 1),
+    );
 
     const enemies = new EnemyManager(this.scene, maze, rng, diff, lab.obstacles);
     enemies.spawnInitial(startCell);
 
-    // Each terminal guards a three character slice of the door code
     const fragments = [];
     for (let i = 0; i < CODE_PARTS; i++) {
       let f = '';
@@ -455,8 +428,12 @@ class Game {
       fragments.push(f);
     }
 
+    const progress = saveStore.active;
+    if (progress) progress.beginRun(this.levelIndex, this.settings.difficulty);
+
     this.world = {
-      seed, rng, maze, lab, player, lighting, enemies, pickups, diff,
+      seed, rng, maze, lab, player, lighting, enemies, pickups, throws, inventory, diff,
+      level, progress,
       fragments,
       earned: new Array(CODE_PARTS).fill(null),
       questionsAsked: 0,
@@ -474,14 +451,16 @@ class Game {
     };
 
     this.terminalCooldowns = [0, 0, 0, 0];
+    this._invUiRev = -1;
 
     ui.buildHealth(player.maxHealth);
     ui.setHealth(player.health);
     ui.setPieces(this.world.earned);
+    ui.updateInventoryBar(inventory);
     ui.clearToasts();
     ui.setHudVisible(true);
     ui.hideAllScreens();
-    ui.setObjective('Find a glowing Chromebook');
+    ui.setObjective(`${level.codename}: find a glowing Chromebook`);
     ui.setDanger(false);
     input.showTouchUi(true);
 
@@ -493,7 +472,7 @@ class Game {
     input.clearEdges();
     input.requestLock();
 
-    ui.toast('Four terminals. Four code pieces. Do not get cornered.', 'warn', 4200);
+    ui.toast(`${level.name} — four terminals, four code pieces. Do not get cornered.`, 'warn', 4200);
   }
 
   /** Points the player down the longest open run from their start cell. */
@@ -524,8 +503,10 @@ class Game {
     if (!this.world) return;
     this.world.enemies.dispose();
     this.world.pickups.dispose();
+    this.world.throws?.dispose();
     this.world.lighting.dispose();
     this.world.lab.dispose();
+    disposeModels();
     this.scene.fog = null;
     this.world = null;
   }
@@ -568,6 +549,8 @@ class Game {
     input.showTouchUi(false);
     ui.setHudVisible(false);
     ui.clearToasts();
+    sessionUi.renderTitleGreeting();
+    sessionUi.renderLevelSelect();
     ui.showScreen('screen-title');
   }
 
@@ -583,6 +566,25 @@ class Game {
     requestAnimationFrame(frame);
   }
 
+  _terminalsFrozen() {
+    const key = this.settings.difficulty;
+    const map = QUIZ.timeScaleByDifficulty;
+    return (this.mode === MODE.QUIZ || this.mode === MODE.DECRYPT)
+      && map[key] === 0;
+  }
+
+  _minigameTimeScale() {
+    const key = this.settings.difficulty;
+    if (this.mode === MODE.QUIZ) {
+      return QUIZ.timeScaleByDifficulty[key] ?? QUIZ.timeScale;
+    }
+    if (this.mode === MODE.DECRYPT) {
+      return DECRYPT.timeScaleByDifficulty[key] ?? DECRYPT.timeScale;
+    }
+    if (this.mode === MODE.PRINTER) return 0.25;
+    return 1;
+  }
+
   _tick(dt) {
     const w = this.world;
     if (!w) {
@@ -593,28 +595,28 @@ class Game {
     const inMinigame = this.mode === MODE.QUIZ || this.mode === MODE.DECRYPT;
     const controlsActive = this.mode === MODE.PLAYING;
     const worldRunning = this.mode === MODE.PLAYING || inMinigame || this.mode === MODE.PRINTER;
+    const frozen = this._terminalsFrozen();
 
     if (worldRunning) {
-      // Minigames slow the lab instead of pausing it
-      let scale = 1;
-      if (this.mode === MODE.QUIZ) scale = QUIZ.timeScale;
-      else if (this.mode === MODE.DECRYPT) scale = DECRYPT.timeScale;
-      else if (this.mode === MODE.PRINTER) scale = 0.25;
-
+      const scale = this._minigameTimeScale();
       const wdt = dt * scale;
       w.runTime += wdt;
+
+      w.enemies.setFrozen(frozen);
 
       if (controlsActive) w.player.applyLook();
       w.player.update(wdt, controlsActive);
 
-      const ev = w.enemies.update(wdt, w.player);
-      // Burning a virus costs extra battery; applied from next frame, which is
-      // imperceptible and keeps the update order simple
+      const lures = w.throws?.lures || null;
+      const ev = w.enemies.update(wdt, w.player, lures);
       w.player.burningVirus = ev.burning;
       this._handleCombat(ev, wdt);
       this._handleGlitch(ev);
 
-      const got = w.pickups.update(wdt, w.player);
+      const throwEv = w.throws?.update(wdt, w.player, w.enemies) || null;
+      this._handleThrows(throwEv);
+
+      const got = w.pickups.update(wdt, w.player, w.inventory);
       this._handlePickups(got);
 
       if (w.printing) this._updatePrint(wdt);
@@ -624,12 +626,26 @@ class Game {
 
       if (controlsActive) {
         this._handleInteraction();
+        this._handleInventory();
       } else {
-        // A minigame is up: do not leave world prompts sitting behind the panel
         ui.showInteract(null);
         ui.showHint(null);
       }
-      if (this.quiz.open) this.quiz.setThreat(ev.nearest < 4.5);
+
+      if (this.quiz.open) {
+        this.quiz.setThreat(ev.nearest < 4.5 && !frozen, frozen);
+      }
+
+      if (settings.get('soundCaptions') && ev.hunters > 0 && ev.nearest < 18) {
+        const p = w.player;
+        const hunter = w.enemies.mice.find((m) => !m.dead && m.hunting)
+          || w.enemies.viruses.find((v) => !v.dead && v.hunting);
+        if (hunter) {
+          captions.fromWorld('Footsteps', hunter.pos, p, { type: 'enemy' });
+        }
+      }
+
+      captions.update(dt);
 
       for (let t = 0; t < this.terminalCooldowns.length; t++) {
         if (this.terminalCooldowns[t] > 0) this.terminalCooldowns[t] -= wdt;
@@ -653,10 +669,10 @@ class Game {
 
   _collectGlows() {
     const w = this.world;
-    // Rebuilt each frame because enemies and loot come and go
     const out = w.lab.glowSources.slice();
     for (const g of w.enemies.glowSources) out.push(g);
     for (const g of w.pickups.glowSources) out.push(g);
+    if (w.throws) for (const g of w.throws.glowSources) out.push(g);
     return out;
   }
 
@@ -692,7 +708,10 @@ class Game {
   /** Screen-space payoff when the beam finally breaks a virus. */
   _handleGlitch(ev) {
     if (!ev.glitched) return;
-    ui.glitchBurst(this.settings.reduceFx);
+    const reduced = this.settings.reduceFx || settings.get('reduceFlashing');
+    if (!reduced || flashGuard.request()) {
+      ui.glitchBurst(reduced);
+    }
     if (!this._taughtGlitch) {
       this._taughtGlitch = true;
       ui.toast('It glitched out! The light hurts them - but it drains your battery.', 'good', 4200);
@@ -701,22 +720,103 @@ class Game {
     }
   }
 
+  _handleThrows(ev) {
+    if (!ev) return;
+    const w = this.world;
+    if (ev.popped > 0) {
+      w.progress?.notePop();
+      ui.toast(
+        ev.popped === 1 ? 'One mouse popped!' : `${ev.popped} mice popped!`,
+        'good', 2200,
+      );
+    }
+    if (ev.virusKilled > 0) {
+      w.progress?.noteVirusKill();
+      ui.toast('Virus deleted permanently.', 'good', 2800);
+    }
+    if (ev.exploded && ev.shake > 0.2) {
+      ui.toast('Cheese dust everywhere.', 'warn', 1400);
+    }
+    for (const drop of ev.dropped || []) {
+      w.pickups.spawn(drop.kind, drop.cell, drop.pos);
+    }
+  }
+
   _handlePickups(got) {
     const w = this.world;
-    if (got.cheetos) {
-      ui.setHealth(w.player.health);
-      ui.toast('Hot cheetos! Snack energy restored.', 'good', 1700);
+    if (got.taken?.length) {
+      for (const kind of got.taken) {
+        if (kind === 'cheetos') ui.toast('Hot cheetos picked up. R to eat, G to throw.', 'good', 2200);
+        else if (kind === 'soda') ui.toast('Soda can picked up. R to drink.', 'good', 2000);
+        else if (kind === 'antivirus') ui.toast('Anti-virus disc! G to throw at a virus.', 'good', 2800);
+      }
+      ui.updateInventoryBar(w.inventory);
+      this._invUiRev = w.inventory.revision;
     }
     if (got.batteries) {
       ui.toast('Fresh battery. The dark just got smaller.', 'good', 1700);
     }
-    // Standing on an item you cannot use would otherwise spam a toast per frame
-    if (got.wasted) {
+    if (got.full) {
       this._wastedCooldown = (this._wastedCooldown || 0) - 1;
       if (this._wastedCooldown <= 0) {
         this._wastedCooldown = 180;
-        ui.toast('Already topped up - leave it here for later.', 'warn', 1600);
+        ui.toast('Hands full or already topped up — leave it for later.', 'warn', 1600);
       }
+    }
+  }
+
+  _handleInventory() {
+    const w = this.world;
+    const inv = w.inventory;
+    if (inv.revision !== this._invUiRev) {
+      ui.updateInventoryBar(inv);
+      this._invUiRev = inv.revision;
+    }
+
+    if (input.pressed('cycleItem')) {
+      inv.cycle(1);
+      ui.updateInventoryBar(inv);
+      const info = inv.info();
+      if (info) ui.toast(info.label, '', 900);
+    }
+
+    if (input.pressed('useItem')) {
+      const kind = inv.selected;
+      if (kind === 'cheetos' && inv.has('cheetos')) {
+        if (w.player.health >= w.player.maxHealth) {
+          ui.toast('Snack bar full — throw the bag instead.', 'warn');
+        } else if (inv.remove('cheetos') && w.player.heal(PICKUP.cheetosHeal)) {
+          ui.setHealth(w.player.health);
+          ui.updateInventoryBar(inv);
+          ui.toast('Hot cheetos! Snack energy restored.', 'good');
+        }
+      } else if (kind === 'soda' && inv.has('soda')) {
+        if (inv.remove('soda') && w.player.drinkSoda()) {
+          ui.updateInventoryBar(inv);
+          ui.toast('Soda boost! Stamina refilled.', 'good');
+        }
+      } else if (!inv.has(kind)) {
+        ui.toast('Nothing selected to use.', 'warn', 1200);
+      }
+    }
+
+    if (input.pressed('throwItem')) {
+      const kind = inv.selected;
+      const info = inv.info(kind);
+      if (!info?.throwable || !inv.has(kind)) {
+        audio.deny();
+        return;
+      }
+      if (!inv.remove(kind)) return;
+      const dir = w.player.forward();
+      const thrown = w.throws.throwItem(kind, w.player.eyePos, dir);
+      if (!thrown) {
+        inv.add(kind, 1);
+        audio.deny();
+        return;
+      }
+      ui.updateInventoryBar(inv);
+      ui.toast(kind === 'cheetos' ? 'Bag thrown — mice will smell it.' : 'Disc thrown!', 'good', 1600);
     }
   }
 
@@ -747,6 +847,11 @@ class Game {
     ui.setDanger(ev.hunters > 0 && ev.nearest < 7 && !p.hidden);
     ui.setObjective(this._objectiveText());
     audio.setMuffled(p.hidden);
+
+    if (w.inventory && w.inventory.revision !== this._invUiRev) {
+      ui.updateInventoryBar(w.inventory);
+      this._invUiRev = w.inventory.revision;
+    }
 
     // Announce hiding the first time it happens so the mechanic lands
     if (p.hidden && !this._wasHidden) {
@@ -875,9 +980,13 @@ class Game {
     const w = this.world;
     if (w.lab.laptops[index].solved) return;
 
-    // Redraw questions each attempt so a retry is not the same three questions
-    const questions = drawQuestions(index, QUIZ.questionsPerLaptop, w.rng);
+    const exclude = w.progress?.excludeIds?.() || null;
+    const questions = drawForTerminal(index, QUIZ.questionsPerLaptop, w.rng, {
+      excludeIds: exclude,
+      difficulty: this.settings.difficulty,
+    });
     w.terminalQuestions[index] = questions;
+    w.progress?.noteServed?.(idsOf(questions));
 
     this.mode = MODE.QUIZ;
     this.expectUnlock = true;
@@ -885,15 +994,18 @@ class Game {
     input.setEnabled(false);
     ui.setHudVisible(false);
     ui.showScreen('screen-quiz');
-    this.quiz.setThreat(false);
+    const frozen = this._terminalsFrozen();
+    this.quiz.setThreat(false, frozen);
 
     this.quiz.start(index, questions, {
-      onAnswer: (right) => {
+      onAnswer: (right, q, picked) => {
         w.questionsAsked++;
         if (right) w.questionsRight++;
-        else {
-          // A wrong answer is a noise event: the lab hears the error chime
-          this._makeNoise(QUIZ.wrongAnswerNoise);
+        else this._makeNoise(QUIZ.wrongAnswerNoise);
+
+        const meta = w.progress?.recordAnswer?.(q, right, picked, index);
+        if (meta?.revealed) {
+          ui.toast('Study Guide unlocked an answer!', 'good', 2800);
         }
       },
       onComplete: (passed, correct, total) => {
@@ -1106,9 +1218,20 @@ class Game {
     const acc = Math.round((w.questionsRight / asked) * 100);
     const time = formatTime(w.runTime);
 
+    const found = w.earned.filter(Boolean).length;
+    const delta = w.progress?.finishRun?.({
+      escaped: true,
+      seconds: w.runTime,
+      pieces: found,
+      levelId: w.level?.id,
+      difficulty: this.settings.difficulty,
+      stats: w.player.stats,
+    }) || null;
+
     ui.showVictory({
       stats: [
         { label: 'ESCAPE TIME', value: time, tone: 'good' },
+        { label: 'FLOOR', value: w.level?.codename || 'LEVEL' },
         { label: 'QUESTIONS RIGHT', value: `${w.questionsRight}/${w.questionsAsked}` },
         { label: 'ACCURACY', value: `${acc}%`, tone: acc >= 80 ? 'good' : '' },
         { label: 'SNACKS EATEN', value: w.player.stats.cheetosEaten },
@@ -1116,14 +1239,20 @@ class Game {
         { label: 'DIFFICULTY', value: w.diff.label },
       ],
       report: [
+        `<strong>${w.level?.name || 'The lab'}:</strong> ${w.level?.flavor || ''}`,
         `<strong>Design process:</strong> you worked a real DEFINE - PREPARE - TRY - REFLECT cycle to get out.`,
-        `<strong>Code pieces decrypted:</strong> ${w.earned.filter(Boolean).length} of ${CODE_PARTS}, using ${w.decryptAttempts} card flips.`,
+        `<strong>Code pieces decrypted:</strong> ${found} of ${CODE_PARTS}, using ${w.decryptAttempts} card flips.`,
         `<strong>Accuracy:</strong> ${acc}% on ${w.questionsAsked} questions across all four terminals.`,
+        delta?.unlocked?.length
+          ? `<strong>Unlocked:</strong> ${delta.unlocked.map((i) => getLevel(i).name).join(', ')}`
+          : '',
         acc >= 80
           ? '<strong>Next challenge:</strong> try SYSTEM CRASH difficulty, or beat your escape time.'
           : '<strong>Next challenge:</strong> read each explanation before you hit CONTINUE, then run it again.',
-      ],
+      ].filter(Boolean),
     });
+
+    sessionUi.renderLevelSelect();
   }
 
   _gameOver(ev) {
@@ -1152,6 +1281,20 @@ class Game {
       'You only need 2 of 3 questions right at a terminal. Read the explanations.',
     ];
 
+    const delta = w.progress?.finishRun?.({
+      escaped: false,
+      seconds: w.runTime,
+      pieces: found,
+      levelId: w.level?.id,
+      difficulty: this.settings.difficulty,
+      stats: w.player.stats,
+    }) || null;
+
+    const progLines = [];
+    if (delta?.mastered) progLines.push(`+${delta.mastered} mastered in Study Guide`);
+    if (delta?.revealed) progLines.push(`+${delta.revealed} answers revealed`);
+    if (delta?.micePopped) progLines.push(`${delta.micePopped} mice popped`);
+
     ui.showGameOver({
       title: 'SYSTEM FAILURE',
       flavor: found >= CODE_PARTS
@@ -1159,9 +1302,11 @@ class Game {
         : 'The lab goes quiet. Somewhere, four Chromebooks are still glowing, still waiting.',
       stats: [
         { label: 'CODE PIECES', value: `${found}/${CODE_PARTS}`, tone: found >= CODE_PARTS ? 'good' : 'bad' },
+        { label: 'FLOOR', value: w.level?.codename || 'LEVEL' },
         { label: 'SURVIVED', value: formatTime(w.runTime) },
         { label: 'QUESTIONS RIGHT', value: `${w.questionsRight}/${w.questionsAsked}` },
         { label: 'ACCURACY', value: `${acc}%` },
+        ...(progLines.length ? [{ label: 'THIS RUN', value: progLines.join(' · '), tone: 'good' }] : []),
       ],
       tip: `TIP: ${tips[Math.floor(Math.random() * tips.length)]}`,
     });

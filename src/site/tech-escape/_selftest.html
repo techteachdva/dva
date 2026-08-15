@@ -85,7 +85,7 @@ try {
   // ------------------------------------------------------------- questions
   ok('four terminals', TERMINALS.length === 4);
   ok('four pools', QUESTION_POOLS.length === 4);
-  ok('question count', QUESTION_COUNT === 48, `count=${QUESTION_COUNT}`);
+  ok('question count', QUESTION_COUNT >= 128, `count=${QUESTION_COUNT}`);
 
   let structureBad = [];
   let spreadBad = [];
@@ -97,7 +97,7 @@ try {
   let rankN = 0;
 
   QUESTION_POOLS.forEach((pool, pi) => {
-    ok(`pool ${pi} has 12`, pool.length === 12, `len=${pool.length}`);
+    ok(`pool ${pi} has 32`, pool.length === 32, `len=${pool.length}`);
     pool.forEach((q, qi) => {
       totalQ++;
       const id = `T${pi + 1}Q${qi + 1}`;
@@ -205,10 +205,10 @@ try {
   // stamina drains while sprinting and recovers when idle
   player.stamina = 100;
   input.held.forward = true;
-  input.held.sprint = true;
+  player.wantSprint = true;
   for (let i = 0; i < 60; i++) player.update(1 / 60, true);
   const afterSprint = player.stamina;
-  input.held.sprint = false;
+  player.wantSprint = false;
   input.held.forward = false;
   for (let i = 0; i < 180; i++) player.update(1 / 60, true);
   ok('stamina drains while sprinting', afterSprint < 95, `after=${afterSprint.toFixed(1)}`);
