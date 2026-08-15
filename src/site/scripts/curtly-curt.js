@@ -142,8 +142,8 @@
       category: "Lore",
       stem: "Curt has seen The Odyssey.",
       type: "tf",
-      answer: false,
-      explain: "False. Homer's epic remains unwatched.",
+      answer: true,
+      explain: "True. Homer's epic has been witnessed. The journey is complete.",
     },
     {
       category: "Real life",
@@ -221,34 +221,70 @@
       answer: false,
       explain: "False — he does believe in therapy. Take care of your brain.",
     },
+    {
+      category: "Board games",
+      stem: "Is Curt the King of Terraforming Mars?",
+      type: "mc",
+      choices: [
+        "No",
+        "Yes",
+        "Since Trevor fell off, yes",
+        "Trevor is still on the throne",
+      ],
+      answer: "Since Trevor fell off, yes",
+      explain:
+        "Since Trevor fell off, yes. The crown was there for the taking. Curt took it.",
+    },
+    {
+      category: "Steam lore",
+      stem: "What does Curt's Steam profile status say?",
+      type: "mc",
+      choices: [
+        "im in my undies",
+        "Respecting egirls (AFK)",
+        "Busy terraforming Mars",
+        "Do not disturb — FTL run",
+      ],
+      answer: "im in my undies",
+      explain:
+        "im in my undies. Public record on saint_gut_free. Peak honesty.",
+    },
+    {
+      category: "Joke round",
+      stem: "Curt has never once gone by the alias miserable sorcerer.",
+      type: "tf",
+      answer: false,
+      explain:
+        "False — miserable sorcerer is canon. The sorcery is miserable. The respect for egirls is not.",
+    },
   ];
 
   const RESULT_TIERS = [
     {
-      min: 27,
+      min: 30,
       title: "Blood Brother",
       blurb:
         "You know Curt better than he knows himself. Disturbing. Impressive. The egirl respecter approves.",
     },
     {
-      min: 22,
+      min: 24,
       title: "Inner Circle",
       blurb: "Solid dossier. You've earned a seat at the miserable sorcerer's table.",
     },
     {
-      min: 17,
+      min: 18,
       title: "Steam Friend",
       blurb: "You know the highlights but missed some deep lore. Study the Berserk manga and try again.",
     },
     {
-      min: 11,
+      min: 12,
       title: "Acquaintance",
       blurb: "You'd survive a group chat with Curt, but you wouldn't win trivia night.",
     },
     {
       min: 0,
       title: "Stranger Danger",
-      blurb: "Who are you? Curt would like a word. And by a word, he means 27 corrections.",
+      blurb: "Who are you? Curt would like a word. And by a word, he means 30 corrections.",
     },
   ];
 
