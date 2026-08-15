@@ -10,7 +10,7 @@
 import * as THREE from '../vendor/three.module.js';
 
 import {
-  CELL, QUALITY, DIFFICULTY, COLORS, PLAYER, PICKUP, QUIZ, DECRYPT, PRINTER, CODE_PARTS,
+  CELL, QUALITY, DIFFICULTY, COLORS, PLAYER, PICKUP, QUIZ, DECRYPT, PRINTER, CODE_PARTS, NOTIFY,
 } from './config.js';
 import { clamp, makeRng, formatTime } from './util.js';
 import { input } from './input.js';
@@ -27,7 +27,9 @@ import { Inventory } from './entities/inventory.js';
 import { disposeModels } from './entities/models.js';
 import { Quiz } from './minigames/quiz.js';
 import { Decrypt } from './minigames/memory.js';
+import { TwoTruths } from './minigames/twoTruths.js';
 import { TERMINALS, QUESTION_COUNT } from './data/questions.js';
+import { drawTwoTruths, TWO_TRUTHS_COUNT } from './data/twoTruths.js';
 import { drawForTerminal, idsOf } from './meta/quizpool.js';
 import { saveStore } from './meta/save.js';
 import { settings, flashGuard } from './meta/settings.js';
@@ -44,6 +46,7 @@ const MODE = {
   PAUSED: 'paused',
   QUIZ: 'quiz',
   DECRYPT: 'decrypt',
+  NOTIFY: 'notify',
   PRINTER: 'printer',
   OVER: 'over',
   WIN: 'win',
@@ -75,6 +78,10 @@ class Game {
 
     this.quiz = new Quiz();
     this.decrypt = new Decrypt();
+    this.notify = new TwoTruths();
+    this._notifyTimer = null;
+    this._notifyGap = 0;
+    this._mouseFrame = null;
   }
 
   // ================================================================== boot
@@ -93,6 +100,7 @@ class Game {
     input.applyBinds(settings.get('binds'));
     sessionUi.bind(this);
     bindUi.init();
+    this.notify.bindDismiss();
     settings.onChange((k) => {
       if (k === 'binds') {
         input.applyBinds(settings.get('binds'));
@@ -195,6 +203,10 @@ class Game {
       {
         text: 'PROMPT BANK',
         run: () => `${QUESTION_COUNT} READY`,
+      },
+      {
+        text: 'SEL TEXT BANK',
+        run: () => `${TWO_TRUTHS_COUNT} READY`,
       },
       {
         // The one line that is worth reading twice
@@ -463,6 +475,8 @@ class Game {
 
     this.terminalCooldowns = [0, 0, 0, 0];
     this._invUiRev = -1;
+    this._notifyTimer = this._scheduleNotifyTimer();
+    this._notifyGap = 0;
 
     ui.buildHealth(player.maxHealth);
     ui.setHealth(player.health);
@@ -578,10 +592,18 @@ class Game {
   }
 
   _terminalsFrozen() {
+    return this._enemiesFrozen();
+  }
+
+  _enemiesFrozen() {
     const key = this.settings.difficulty;
-    const map = QUIZ.timeScaleByDifficulty;
-    return (this.mode === MODE.QUIZ || this.mode === MODE.DECRYPT)
-      && map[key] === 0;
+    if (this.mode === MODE.QUIZ || this.mode === MODE.DECRYPT) {
+      return (QUIZ.timeScaleByDifficulty[key] ?? QUIZ.timeScale) === 0;
+    }
+    if (this.mode === MODE.NOTIFY) {
+      return (NOTIFY.timeScaleByDifficulty[key] ?? 0) === 0;
+    }
+    return false;
   }
 
   _minigameTimeScale() {
@@ -592,8 +614,17 @@ class Game {
     if (this.mode === MODE.DECRYPT) {
       return DECRYPT.timeScaleByDifficulty[key] ?? DECRYPT.timeScale;
     }
+    if (this.mode === MODE.NOTIFY) {
+      return NOTIFY.timeScaleByDifficulty[key] ?? 0;
+    }
     if (this.mode === MODE.PRINTER) return 0.25;
     return 1;
+  }
+
+  _scheduleNotifyTimer() {
+    const w = this.world;
+    if (!w) return NOTIFY.minInterval;
+    return w.rng.range(NOTIFY.minInterval, NOTIFY.maxInterval);
   }
 
   _tick(dt) {
@@ -603,10 +634,11 @@ class Game {
       return;
     }
 
-    const inMinigame = this.mode === MODE.QUIZ || this.mode === MODE.DECRYPT;
+    const inMinigame = this.mode === MODE.QUIZ || this.mode === MODE.DECRYPT
+      || this.mode === MODE.NOTIFY;
     const controlsActive = this.mode === MODE.PLAYING;
     const worldRunning = this.mode === MODE.PLAYING || inMinigame || this.mode === MODE.PRINTER;
-    const frozen = this._terminalsFrozen();
+    const frozen = this._enemiesFrozen();
 
     if (worldRunning) {
       const scale = this._minigameTimeScale();
@@ -614,6 +646,15 @@ class Game {
       w.runTime += wdt;
 
       w.enemies.setFrozen(frozen);
+
+      if (controlsActive) {
+        input.tickMouse(true, input.locked);
+        this._mouseFrame = input.mouseActions();
+        if (this._mouseFrame.crouch) input._edge.crouch = true;
+      } else {
+        input.tickMouse(false, false);
+        this._mouseFrame = null;
+      }
 
       if (controlsActive) w.player.applyLook();
       w.player.update(wdt, controlsActive);
@@ -638,6 +679,7 @@ class Game {
       if (controlsActive) {
         this._handleInteraction();
         this._handleInventory();
+        this._tickNotify(dt);
       } else {
         ui.showInteract(null);
         ui.showHint(null);
@@ -711,6 +753,10 @@ class Game {
           this.decrypt.close();
           this._exitMinigameToPlaying();
           ui.toast('Decryption interrupted!', 'bad');
+        } else if (this.mode === MODE.NOTIFY) {
+          this.notify.close();
+          this._exitMinigameToPlaying();
+          ui.toast('Notification dismissed — read it later in the Study Guide.', 'warn');
         }
       }
     }
@@ -791,7 +837,15 @@ class Game {
       if (info) ui.toast(info.label, '', 900);
     }
 
-    if (input.pressed('eatCheetos')) {
+    const mf = this._mouseFrame;
+    if (mf?.wheel) {
+      inv.cycle(mf.wheel > 0 ? 1 : -1);
+      ui.updateInventoryBar(inv);
+      const info = inv.info();
+      if (info) ui.toast(info.label, '', 900);
+    }
+
+    if (input.pressed('eatCheetos') || mf?.eat) {
       if (inv.selected === 'soda' && inv.has('soda')) {
         if (inv.remove('soda') && w.player.drinkSoda()) {
           ui.updateInventoryBar(inv);
@@ -813,7 +867,7 @@ class Game {
       }
     }
 
-    if (input.pressed('throw')) {
+    if (input.pressed('throw') || (mf?.primary && !this._mousePrimaryUsed)) {
       this._throwAimedItem();
     }
   }
@@ -1026,18 +1080,76 @@ class Game {
       else if (p.tableNearby()) {
         ui.showHint(p.crouching
           ? 'Crawl under the glowing desk'
-          : 'Press C to crouch and crawl under');
+          : 'Press C / M-Click to crouch and crawl under');
       } else ui.showHint(null);
     } else {
       ui.showHint(null);
     }
 
-    if (input.pressed('interact') && best) {
+    const mf = this._mouseFrame;
+    this._mousePrimaryUsed = false;
+
+    if ((input.pressed('interact') || mf?.primary) && best) {
+      this._mousePrimaryUsed = !!mf?.primary;
       if (best.enabled && best.action) best.action();
       else audio.deny();
     }
 
-    if (input.pressed('light')) p.toggleFlashlight();
+    if (input.pressed('light') || mf?.light) p.toggleFlashlight();
+  }
+
+  /** Count down to the next SEL notification ping. */
+  _tickNotify(dt) {
+    const w = this.world;
+    if (!w || this.notify.open) return;
+    if (w.runTime < NOTIFY.minRunSeconds) return;
+
+    if (this._notifyGap > 0) {
+      this._notifyGap -= dt;
+      return;
+    }
+
+    this._notifyTimer = (this._notifyTimer ?? this._scheduleNotifyTimer()) - dt;
+    if (this._notifyTimer <= 0) this._openNotify();
+  }
+
+  _openNotify() {
+    const w = this.world;
+    if (!w || this.notify.open) return;
+
+    const exclude = w.progress?.excludeIds?.() || null;
+    const item = drawTwoTruths(w.rng, exclude);
+    if (!item) return;
+
+    w.progress?.noteServed?.([item.id]);
+
+    this.mode = MODE.NOTIFY;
+    this.expectUnlock = true;
+    input.releaseLock();
+    input.setEnabled(false);
+    ui.setHudVisible(false);
+    ui.showScreen('screen-notify');
+
+    this.notify.start(item, {
+      onAnswer: (right, q, picked) => {
+        w.questionsAsked++;
+        if (right) w.questionsRight++;
+        else this._makeNoise(QUIZ.wrongAnswerNoise * 0.65);
+
+        const meta = w.progress?.recordAnswer?.(q, right, picked, 'sel');
+        if (meta?.revealed) {
+          ui.toast('Study Guide unlocked a SEL answer!', 'good', 2800);
+        }
+      },
+      onComplete: (passed) => {
+        this._notifyGap = NOTIFY.minGapSeconds;
+        this._notifyTimer = this._scheduleNotifyTimer();
+        this._exitMinigameToPlaying();
+        if (passed) {
+          ui.toast('Notification cleared. Back to the lab.', 'good', 2200);
+        }
+      },
+    });
   }
 
   // ================================================================ terminals

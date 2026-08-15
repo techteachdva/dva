@@ -211,7 +211,7 @@ export const ui = {
     const keyEl = this.el['interact-key'];
     if (keyEl) {
       const binds = normalizeBinds(settings.get('binds'));
-      keyEl.textContent = bindDisplay(binds.interact);
+      keyEl.textContent = `${bindDisplay(binds.interact)} / L-Click`;
     }
     if (!text) {
       if (this._lastInteract !== null) {
@@ -236,13 +236,23 @@ export const ui = {
     host.innerHTML = [
       row('WASD', 'move'),
       row('Arrows', 'look / turn'),
-      row(bindDisplay(b.interact), 'use terminal / printer / door'),
-      row(bindDisplay(b.throw), 'throw (disc at virus, cheetos otherwise)'),
-      row(bindDisplay(b.eatCheetos), 'eat hot cheetos'),
-      row(bindDisplay(b.light), 'flashlight'),
-      row(bindDisplay(b.crouch), 'crouch'),
-      row('Shift', 'sprint (toggle)'),
-      row(bindDisplay(b.cycleItem), 'switch item (soda)'),
+      row('Mouse', 'look (pointer lock)'),
+      row('R hold', 'walk forward'),
+      row('L hold', 'walk backward'),
+      row('L+R hold', 'sprint forward'),
+      row('M hold + move', 'strafe'),
+      row('L-Click', 'use terminal OR throw'),
+      row('R-Click', 'eat / drink'),
+      row('R hold', 'flashlight'),
+      row('M-Click', 'crouch toggle'),
+      row('Scroll', 'cycle inventory'),
+      row(bindDisplay(b.interact), 'use (keyboard)'),
+      row(bindDisplay(b.throw), 'throw (keyboard)'),
+      row(bindDisplay(b.eatCheetos), 'eat (keyboard)'),
+      row(bindDisplay(b.light), 'flashlight (keyboard)'),
+      row(bindDisplay(b.crouch), 'crouch (keyboard)'),
+      row('Shift', 'sprint toggle (keyboard)'),
+      row(bindDisplay(b.cycleItem), 'switch item (keyboard)'),
       row('H', 'hide this list'),
       row('P', 'pause'),
     ].join('');

@@ -583,6 +583,33 @@
     </div>
   </div>
 
+  <!-- ===================== SEL notification (Two Truths & a Lie) ===================== -->
+  <div id="screen-notify" class="screen hidden">
+    <div id="notify-phone" class="notify-phone" role="dialog" aria-modal="true" aria-labelledby="notify-preview">
+      <div class="notify-statusbar">
+        <span class="notify-carrier">Messages</span>
+        <span class="notify-battery">🔋 82%</span>
+      </div>
+      <header class="notify-header">
+        <div class="notify-avatar" aria-hidden="true">💬</div>
+        <div class="notify-meta">
+          <div id="notify-sender" class="notify-sender">Someone 📱</div>
+          <div id="notify-time" class="notify-time">now</div>
+        </div>
+      </header>
+      <div class="notify-thread">
+        <p id="notify-preview" class="notify-preview"></p>
+        <div id="notify-choices" class="notify-choices"></div>
+        <p id="notify-feedback" class="notify-feedback"></p>
+        <p id="notify-explain" class="notify-explain"></p>
+      </div>
+      <footer class="notify-foot">
+        <button id="notify-dismiss" class="notify-dismiss hidden" type="button">Dismiss</button>
+        <span id="notify-live" class="notify-live"></span>
+      </footer>
+    </div>
+  </div>
+
   <!-- ===================== Decrypt (memory match) minigame ===================== -->
   <div id="screen-decrypt" class="screen hidden">
     <div class="decrypt-panel">

@@ -10,6 +10,7 @@
 
 import { clamp } from './util.js';
 import { normalizeBinds } from './meta/binds.js';
+import { mousePlay } from './input-mouse.js';
 
 /** Movement and sprint — not remapped. */
 const FIXED_BINDS = {
@@ -80,6 +81,7 @@ export const input = {
     });
 
     this._initTouch();
+    mousePlay.init(canvas);
   },
 
   setEnabled(on) {
@@ -93,6 +95,7 @@ export const input = {
     this.mouseDY = 0;
     this.touchMove.x = 0;
     this.touchMove.y = 0;
+    mousePlay.releaseAll();
   },
 
   pressed(action) {
@@ -105,6 +108,16 @@ export const input = {
 
   clearEdges() {
     for (const k in this._edge) this._edge[k] = false;
+    mousePlay.clearEdges();
+  },
+
+  /** Mouse button / wheel actions for the current frame. */
+  mouseActions() {
+    return mousePlay.consumeEdges();
+  },
+
+  tickMouse(enabled, locked) {
+    mousePlay.tick(enabled, locked);
   },
 
   requestLock() {
@@ -119,6 +132,7 @@ export const input = {
 
   takeLook() {
     const scale = (this.sensitivity / 100) * 0.0022;
+    this.mouseDX = mousePlay.absorbLookDelta(this.mouseDX);
     const out = { x: this.mouseDX * scale, y: this.mouseDY * scale };
     this.mouseDX = 0;
     this.mouseDY = 0;
@@ -254,8 +268,8 @@ export const input = {
     if (this.held.right) x += 1;
     x += this.touchMove.x;
     y += this.touchMove.y;
-    const len = Math.hypot(x, y);
-    if (len > 1) { x /= len; y /= len; }
-    return { x, y };
+    const aug = mousePlay.augmentMoveAxes({ x, y });
+    this.held.mouseSprint = aug.sprint;
+    return { x: aug.x, y: aug.y };
   },
 };

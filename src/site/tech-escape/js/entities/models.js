@@ -43,53 +43,52 @@ const hex = (n) => `#${n.toString(16).padStart(6, '0')}`;
 
 /** Front-of-bag label: flame, big word, zigzag. Reads at a couple of pixels. */
 function makeCheetosLabel() {
-  const c = canvas(96, 80);
+  const c = canvas(192, 160);
   const g = c.getContext('2d');
 
-  const bg = g.createLinearGradient(0, 0, 0, 80);
+  const bg = g.createLinearGradient(0, 0, 0, 160);
   bg.addColorStop(0, hex(COLORS.cheeto));
   bg.addColorStop(1, '#c2400a');
   g.fillStyle = bg;
-  g.fillRect(0, 0, 96, 80);
+  g.fillRect(0, 0, 192, 160);
 
   // Flame motif behind the wordmark
   g.fillStyle = 'rgba(255,240,120,0.9)';
   g.beginPath();
-  g.moveTo(48, 8);
-  g.bezierCurveTo(66, 26, 74, 40, 62, 54);
-  g.bezierCurveTo(56, 62, 40, 62, 34, 54);
-  g.bezierCurveTo(22, 40, 30, 26, 48, 8);
+  g.moveTo(96, 16);
+  g.bezierCurveTo(132, 52, 148, 80, 124, 108);
+  g.bezierCurveTo(112, 124, 80, 124, 68, 108);
+  g.bezierCurveTo(44, 80, 60, 52, 96, 16);
   g.fill();
   g.fillStyle = '#e02a12';
   g.beginPath();
-  g.moveTo(48, 20);
-  g.bezierCurveTo(58, 32, 62, 42, 55, 51);
-  g.bezierCurveTo(51, 56, 43, 56, 39, 51);
-  g.bezierCurveTo(32, 42, 38, 32, 48, 20);
+  g.moveTo(96, 40);
+  g.bezierCurveTo(116, 64, 124, 84, 110, 102);
+  g.bezierCurveTo(102, 112, 88, 112, 78, 102);
+  g.bezierCurveTo(64, 84, 76, 64, 96, 40);
   g.fill();
 
   g.textAlign = 'center';
   g.textBaseline = 'middle';
-  g.font = 'bold 27px Verdana, Tahoma, sans-serif';
+  g.font = 'bold 54px Verdana, Tahoma, sans-serif';
+  g.lineWidth = 6;
+  g.strokeStyle = '#3a0b00';
+  g.strokeText('HOT', 96, 78);
+  g.fillStyle = '#fffbe8';
+  g.fillText('HOT', 96, 78);
+
+  g.font = 'bold 24px Verdana, Tahoma, sans-serif';
+  g.strokeStyle = '#3a0b00';
   g.lineWidth = 4;
-  g.strokeStyle = '#3a0b00';
-  g.strokeText('HOT', 48, 40);
+  g.strokeText('CHIPS', 96, 128);
   g.fillStyle = '#fffbe8';
-  g.fillText('HOT', 48, 40);
+  g.fillText('CHIPS', 96, 128);
 
-  g.font = 'bold 12px Verdana, Tahoma, sans-serif';
-  g.strokeStyle = '#3a0b00';
-  g.lineWidth = 3;
-  g.strokeText('CHIPS', 48, 64);
-  g.fillStyle = '#fffbe8';
-  g.fillText('CHIPS', 48, 64);
-
-  // Torn-foil zigzag along the top so the crimp reads even without the geometry
   g.strokeStyle = 'rgba(255,255,255,0.75)';
-  g.lineWidth = 2;
+  g.lineWidth = 3;
   g.beginPath();
-  for (let x = 0; x <= 96; x += 8) {
-    g.lineTo(x, x % 16 === 0 ? 5 : 11);
+  for (let x = 0; x <= 192; x += 12) {
+    g.lineTo(x, x % 24 === 0 ? 8 : 18);
   }
   g.stroke();
   return finish(c);
@@ -97,13 +96,13 @@ function makeCheetosLabel() {
 
 /** Wrapped can label. Cylinder UVs wrap horizontally, so the text is upright. */
 function makeSodaLabel() {
-  const c = canvas(128, 64);
+  const c = canvas(256, 128);
   const g = c.getContext('2d');
 
   g.fillStyle = '#f2f5ff';
-  g.fillRect(0, 0, 128, 64);
+  g.fillRect(0, 0, 256, 128);
   g.fillStyle = hex(COLORS.soda);
-  g.fillRect(0, 12, 128, 40);
+  g.fillRect(0, 24, 256, 80);
 
   // White diagonal swoosh, the universal soft-drink cue
   g.strokeStyle = 'rgba(255,255,255,0.92)';
@@ -115,12 +114,12 @@ function makeSodaLabel() {
 
   g.textAlign = 'center';
   g.textBaseline = 'middle';
-  g.font = 'bold 21px Verdana, Tahoma, sans-serif';
-  g.lineWidth = 4;
+  g.font = 'bold 42px Verdana, Tahoma, sans-serif';
+  g.lineWidth = 6;
   g.strokeStyle = '#5c0022';
-  g.strokeText('SODA', 64, 32);
+  g.strokeText('SODA', 128, 64);
   g.fillStyle = '#ffffff';
-  g.fillText('SODA', 64, 32);
+  g.fillText('SODA', 128, 64);
 
   // Bubbles
   g.fillStyle = 'rgba(255,255,255,0.75)';
@@ -134,12 +133,12 @@ function makeSodaLabel() {
 
 /** Disc face: iridescent rings, a shield, and a readable hub. */
 function makeAntivirusLabel() {
-  const c = canvas(128, 128);
+  const c = canvas(256, 256);
   const g = c.getContext('2d');
-  const cx = 64;
+  const cx = 128;
 
   g.fillStyle = '#0b1626';
-  g.fillRect(0, 0, 128, 128);
+  g.fillRect(0, 0, 256, 256);
 
   // Rainbow sheen: what makes a CD read as a CD
   const rings = ['#7fe9ff', '#bfe9ff', '#c79bff', '#7cffb2', '#ffe566', '#ff8cb0'];
@@ -148,7 +147,7 @@ function makeAntivirusLabel() {
     g.globalAlpha = 0.16 + (i % 3) * 0.1;
     g.lineWidth = 3;
     g.beginPath();
-    g.arc(cx, cx, 60 - i * 2.6, 0, Math.PI * 2);
+    g.arc(cx, cx, 120 - i * 5.2, 0, Math.PI * 2);
     g.stroke();
   }
   g.globalAlpha = 1;
@@ -156,36 +155,34 @@ function makeAntivirusLabel() {
   // Shield
   g.fillStyle = 'rgba(10,22,38,0.9)';
   g.beginPath();
-  g.moveTo(64, 34);
-  g.lineTo(88, 46);
-  g.lineTo(88, 70);
-  g.bezierCurveTo(88, 86, 76, 94, 64, 100);
-  g.bezierCurveTo(52, 94, 40, 86, 40, 70);
-  g.lineTo(40, 46);
+  g.moveTo(128, 68);
+  g.lineTo(176, 92);
+  g.lineTo(176, 140);
+  g.bezierCurveTo(176, 172, 152, 188, 128, 200);
+  g.bezierCurveTo(104, 188, 80, 172, 80, 140);
+  g.lineTo(80, 92);
   g.closePath();
   g.fill();
   g.strokeStyle = hex(COLORS.antivirus);
-  g.lineWidth = 4;
+  g.lineWidth = 8;
   g.stroke();
 
-  // Tick inside the shield
   g.strokeStyle = '#7cffb2';
-  g.lineWidth = 7;
+  g.lineWidth = 12;
   g.lineCap = 'round';
   g.beginPath();
-  g.moveTo(53, 66);
-  g.lineTo(62, 78);
-  g.lineTo(78, 52);
+  g.moveTo(106, 132);
+  g.lineTo(124, 156);
+  g.lineTo(156, 104);
   g.stroke();
   g.lineCap = 'butt';
 
-  // Hub
   g.fillStyle = '#05070d';
   g.beginPath();
-  g.arc(cx, cx, 13, 0, Math.PI * 2);
+  g.arc(cx, cx, 26, 0, Math.PI * 2);
   g.fill();
   g.strokeStyle = 'rgba(191,233,255,0.6)';
-  g.lineWidth = 2;
+  g.lineWidth = 4;
   g.stroke();
   return finish(c);
 }
@@ -238,16 +235,19 @@ export function getModelGeometry() {
   geo = {
     // Puffed pillow: a low-poly sphere squashed into a bag is ~80 triangles and
     // reads instantly as "snack packet" where a box never did
-    bagBody: new THREE.SphereGeometry(0.2, 8, 6),
+    bagBody: new THREE.SphereGeometry(0.2, 10, 8),
     bagCrimp: new THREE.BoxGeometry(0.33, 0.05, 0.085),
+    bagPleat: new THREE.BoxGeometry(0.04, 0.28, 0.11),
     bagLabel: new THREE.PlaneGeometry(0.26, 0.21),
-    battery: new THREE.CylinderGeometry(0.075, 0.075, 0.3, 8),
-    batteryCap: new THREE.CylinderGeometry(0.04, 0.04, 0.05, 8),
-    canBody: new THREE.CylinderGeometry(0.088, 0.088, 0.25, 10, 1, true),
-    canLid: new THREE.CylinderGeometry(0.09, 0.088, 0.022, 10),
+    battery: new THREE.CylinderGeometry(0.075, 0.075, 0.3, 10),
+    batteryCap: new THREE.CylinderGeometry(0.04, 0.04, 0.05, 10),
+    canBody: new THREE.CylinderGeometry(0.088, 0.088, 0.25, 12, 1, true),
+    canLid: new THREE.CylinderGeometry(0.09, 0.088, 0.022, 12),
     canTab: new THREE.BoxGeometry(0.05, 0.008, 0.022),
-    disc: new THREE.CylinderGeometry(0.17, 0.17, 0.013, 16),
-    discFace: new THREE.CircleGeometry(0.168, 16),
+    canRing: new THREE.TorusGeometry(0.028, 0.006, 6, 12),
+    disc: new THREE.CylinderGeometry(0.17, 0.17, 0.013, 20),
+    discFace: new THREE.CircleGeometry(0.168, 20),
+    discRim: new THREE.TorusGeometry(0.168, 0.006, 8, 20),
     glyph: new THREE.PlaneGeometry(0.42, 0.42),
     dust: new THREE.BoxGeometry(0.09, 0.09, 0.09),
     shockwave: new THREE.SphereGeometry(1, 10, 7),
@@ -314,6 +314,13 @@ export function makeCheetosBag() {
     group.add(crimp);
   }
 
+  const pleatMat = sharedMat('bagPleat', () => new THREE.MeshBasicMaterial({ color: 0xb83808 }));
+  for (const x of [-0.11, 0.11]) {
+    const pleat = new THREE.Mesh(g.bagPleat, pleatMat);
+    pleat.position.set(x, 0, 0.04);
+    group.add(pleat);
+  }
+
   // One double-sided plane rather than two: the back of a snack bag being a
   // mirror of the front costs nobody anything and saves a draw call per bag
   const label = new THREE.Mesh(g.bagLabel, sharedMat(
@@ -366,6 +373,13 @@ export function makeSodaCan() {
   ));
   tab.position.set(0.02, 0.146, 0);
   group.add(tab);
+
+  const ring = new THREE.Mesh(g.canRing, sharedMat(
+    'canRing', () => new THREE.MeshBasicMaterial({ color: 0x707888 }),
+  ));
+  ring.position.y = 0.146;
+  ring.rotation.x = Math.PI / 2;
+  group.add(ring);
   return group;
 }
 
@@ -386,6 +400,14 @@ export function makeAntivirusDisc() {
     face.position.y = y;
     face.rotation.x = y > 0 ? -Math.PI / 2 : Math.PI / 2;
     group.add(face);
+  }
+
+  const rimMat = sharedMat('discRim', () => new THREE.MeshBasicMaterial({ color: 0xbfe9ff }));
+  for (const y of [0.009, -0.009]) {
+    const rim = new THREE.Mesh(g.discRim, rimMat);
+    rim.position.y = y;
+    rim.rotation.x = Math.PI / 2;
+    group.add(rim);
   }
   return group;
 }

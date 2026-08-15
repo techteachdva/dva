@@ -156,15 +156,16 @@ export const sessionUi = {
         <h3>${g.name} <span class="guide-topic-sub">${g.topic}</span></h3>
         ${g.items.map((it) => this._guideCard(it)).join('')}
       </section>`).join('')
-      || '<p class="story dim">Answer questions at the Chromebooks to fill your guide.</p>';
+      || '<p class="story dim">Answer Chromebook quizzes and clear SEL text notifications to fill your guide.</p>';
   },
 
   _guideCard(it) {
     const state = it.revealed ? 'is-mastered' : 'is-locked';
+    const pickTag = it.twoTruths ? 'You called this the lie' : 'You picked';
     const opts = it.options
       ? it.options.map((o) => `
-          <li class="${o.correct && it.revealed ? 'is-correct' : ''}${it.picked && it.picked.includes(o.text) ? ' is-picked' : ''}">
-            ${o.text}${o.correct && it.revealed ? ' ✓' : ''}
+          <li class="${o.correct && it.revealed ? (it.twoTruths ? 'is-lie' : 'is-correct') : ''}${it.picked && it.picked.includes(o.text) ? ' is-picked' : ''}">
+            ${o.text}${o.correct && it.revealed ? (it.twoTruths ? ' ← lie' : ' ✓') : ''}
           </li>`).join('')
       : '';
     return `
@@ -174,8 +175,8 @@ export const sessionUi = {
           ${it.std ? `<span class="guide-std">${it.std}</span>` : ''}
         </div>
         <p class="guide-q">${it.text}</p>
-        ${it.picked && !it.revealed ? `<p class="guide-picked">You picked: <em>${it.picked}</em></p>` : ''}
-        ${opts ? `<ul class="guide-opts">${opts}</ul>` : ''}
+        ${it.picked && !it.revealed ? `<p class="guide-picked">${pickTag}: <em>${it.picked}</em></p>` : ''}
+        ${opts ? `<ul class="guide-opts${it.twoTruths ? ' is-twotruths' : ''}">${opts}</ul>` : ''}
         ${it.revealed && it.why ? `<p class="guide-why">${it.why}</p>` : ''}
         ${!it.revealed ? '<p class="guide-hint">Answer this prompt correctly on a later run to unlock the explanation.</p>' : ''}
       </article>`;

@@ -17,6 +17,7 @@
 // is still growing: a named import of an export it does not have yet is a fatal
 // module error, while a missing property on a namespace is just undefined.
 import * as bank from '../data/questions.js';
+import * as selBank from '../data/twoTruths.js';
 import { LEVEL_COUNT } from './levels.js';
 
 const TERMINALS = Array.isArray(bank.TERMINALS) ? bank.TERMINALS : [];
@@ -207,8 +208,8 @@ export class Progress {
     const guide = this.data.guide;
     const fresh = !guide[id];
     const e = guide[id] || {
-      t: q.text || '',
-      s: q.std || q.standard || '',
+      t: q.text || q.preview || '',
+      s: q.std || q.standard || q.topic || '',
       k: terminalIndex ?? 0,
       n: 0,
       w: 0,
@@ -258,10 +259,18 @@ export class Progress {
       blurb: t.blurb,
       items: [],
     }));
+    const selGroup = {
+      index: 'sel',
+      name: selBank.SEL_TOPIC?.name || 'TEXTS & TRUTHS',
+      topic: selBank.SEL_TOPIC?.topic || 'SEL & Digital Citizenship',
+      blurb: selBank.SEL_TOPIC?.blurb || '',
+      items: [],
+    };
     const spare = { index: -1, name: 'OTHER', topic: 'Unfiled', blurb: '', items: [] };
 
     for (const [id, e] of Object.entries(this.data.guide)) {
       const live = safeQuestion(id);
+      const twoTruths = !!live?.twoTruths;
       const item = {
         id,
         text: live?.q || e.t || id,
@@ -269,7 +278,11 @@ export class Progress {
         std: live?.std || e.s || '',
         standard: live?.standard || '',
         why: live?.why || '',
-        options: live ? live.a.map((text, i) => ({ text, correct: live.correct.includes(i) })) : null,
+        twoTruths,
+        options: live ? live.a.map((text, i) => ({
+          text,
+          correct: twoTruths ? i === live.correct[0] : live.correct.includes(i),
+        })) : null,
         picked: e.p || '',
         seen: e.n,
         wrong: e.w,
@@ -277,10 +290,11 @@ export class Progress {
         revealed: !!e.v,
         mastered: e.r > 0,
       };
-      const g = groups[e.k] || spare;
+      const g = e.k === 'sel' ? selGroup : groups[e.k] || spare;
       g.items.push(item);
     }
 
+    if (selGroup.items.length) groups.push(selGroup);
     if (spare.items.length) groups.push(spare);
     for (const g of groups) {
       g.items.sort((a, b) => (
@@ -371,6 +385,18 @@ export class Progress {
  */
 function safeQuestion(id) {
   try {
+    if (String(id).startsWith('SEL-') && typeof selBank.getTwoTruthById === 'function') {
+      const t = selBank.getTwoTruthById(id);
+      if (!t || !Array.isArray(t.statements)) return null;
+      return {
+        q: `${t.preview} Which one is the lie?`,
+        std: t.topic,
+        why: t.why,
+        a: t.statements,
+        correct: [t.lieIndex],
+        twoTruths: true,
+      };
+    }
     if (typeof bank.getQuestionById !== 'function') return null;
     const q = bank.getQuestionById(id);
     return q && Array.isArray(q.a) && Array.isArray(q.correct) ? q : null;

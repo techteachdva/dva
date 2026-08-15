@@ -185,7 +185,7 @@ export class Player {
     if (!wantsMove || this.crouching) this.wantSprint = false;
     if (this.exhausted > 0) this.exhausted -= dt;
 
-    this.sprinting = this.wantSprint && wantsMove && !this.crouching
+    this.sprinting = (this.wantSprint || input.held.mouseSprint) && wantsMove && !this.crouching
       && this.stamina > 0 && this.exhausted <= 0;
 
     if (this.sprinting) {

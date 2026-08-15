@@ -20,19 +20,23 @@ const _axisY = new THREE.Vector3(0, 1, 0);
 
 function makeFloorTexture() {
   const c = document.createElement('canvas');
-  c.width = c.height = 128;
+  c.width = c.height = 256;
   const g = c.getContext('2d');
   g.fillStyle = '#1b2130';
-  g.fillRect(0, 0, 128, 128);
+  g.fillRect(0, 0, 256, 256);
   // Speckle so the floor is not a flat colour under the flashlight
-  for (let i = 0; i < 900; i++) {
+  for (let i = 0; i < 1800; i++) {
     const v = 26 + Math.random() * 26;
     g.fillStyle = `rgba(${v},${v + 4},${v + 12},0.5)`;
-    g.fillRect(Math.random() * 128, Math.random() * 128, 2, 2);
+    g.fillRect(Math.random() * 256, Math.random() * 256, 2, 2);
   }
   g.strokeStyle = 'rgba(80,100,130,0.34)';
   g.lineWidth = 2;
-  g.strokeRect(0, 0, 128, 128);
+  for (let y = 0; y <= 256; y += 64) {
+    for (let x = 0; x <= 256; x += 64) {
+      g.strokeRect(x, y, 64, 64);
+    }
+  }
   const tex = new THREE.CanvasTexture(c);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
   tex.colorSpace = THREE.SRGBColorSpace;
@@ -41,26 +45,26 @@ function makeFloorTexture() {
 
 function makeWallTexture() {
   const c = document.createElement('canvas');
-  c.width = c.height = 128;
+  c.width = c.height = 256;
   const g = c.getContext('2d');
   g.fillStyle = '#252d3d';
-  g.fillRect(0, 0, 128, 128);
+  g.fillRect(0, 0, 256, 256);
   // Faint cinder-block courses
   g.strokeStyle = 'rgba(12,16,24,0.55)';
   g.lineWidth = 2;
-  for (let y = 0; y <= 128; y += 32) {
-    g.beginPath(); g.moveTo(0, y); g.lineTo(128, y); g.stroke();
+  for (let y = 0; y <= 256; y += 32) {
+    g.beginPath(); g.moveTo(0, y); g.lineTo(256, y); g.stroke();
   }
-  for (let row = 0; row < 4; row++) {
+  for (let row = 0; row < 8; row++) {
     const off = row % 2 ? 32 : 0;
-    for (let x = off; x <= 128; x += 64) {
+    for (let x = off; x <= 256; x += 64) {
       g.beginPath(); g.moveTo(x, row * 32); g.lineTo(x, row * 32 + 32); g.stroke();
     }
   }
-  for (let i = 0; i < 400; i++) {
+  for (let i = 0; i < 800; i++) {
     const v = 30 + Math.random() * 24;
     g.fillStyle = `rgba(${v},${v + 3},${v + 10},0.4)`;
-    g.fillRect(Math.random() * 128, Math.random() * 128, 2, 2);
+    g.fillRect(Math.random() * 256, Math.random() * 256, 2, 2);
   }
   const tex = new THREE.CanvasTexture(c);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
@@ -226,6 +230,50 @@ export class Lab {
     trim.instanceMatrix.needsUpdate = true;
     this.group.add(trim);
     this._disposables.push(trimGeo, trimMat);
+
+    this._buildEmergencyStrips(cells);
+  }
+
+  /** Theater-style floor-level egress strips along corridor-facing walls. */
+  _buildEmergencyStrips(wallCells) {
+    const maze = this.maze;
+    const faces = [
+      { dx: 1, dz: 0, ox: CELL / 2 - 0.03, oz: 0, rot: -Math.PI / 2 },
+      { dx: -1, dz: 0, ox: -CELL / 2 + 0.03, oz: 0, rot: Math.PI / 2 },
+      { dx: 0, dz: 1, ox: 0, oz: CELL / 2 - 0.03, rot: Math.PI },
+      { dx: 0, dz: -1, ox: 0, oz: -CELL / 2 + 0.03, rot: 0 },
+    ];
+    const segments = [];
+    for (const [x, y] of wallCells) {
+      for (const f of faces) {
+        const nx = x + f.dx;
+        const ny = y + f.dz;
+        if (!maze.inBounds(nx, ny) || !maze.isOpen(nx, ny)) continue;
+        segments.push([x, y, f]);
+      }
+    }
+    if (!segments.length) return;
+
+    const geo = new THREE.BoxGeometry(CELL * 0.94, 0.055, 0.038);
+    const mat = new THREE.MeshBasicMaterial({ color: 0xff3a1a });
+    const mesh = new THREE.InstancedMesh(geo, mat, segments.length);
+    mesh.frustumCulled = false;
+
+    segments.forEach(([x, y, f], i) => {
+      _v.set(
+        maze.cellToWorldX(x) + f.ox,
+        0.045,
+        maze.cellToWorldZ(y) + f.oz,
+      );
+      _q.setFromAxisAngle(_axisY, f.rot);
+      _m.compose(_v, _q, _s);
+      mesh.setMatrixAt(i, _m);
+      _q.identity();
+    });
+
+    mesh.instanceMatrix.needsUpdate = true;
+    this.group.add(mesh);
+    this._disposables.push(geo, mat);
   }
 
   // ------------------------------------------------------------------- tables
@@ -255,10 +303,24 @@ export class Lab {
     const tapeMat = new THREE.MeshBasicMaterial({
       color: 0x2fd4d0,
       transparent: true,
-      opacity: 0.5,
+      opacity: 0.34,
     });
     const tape = new THREE.InstancedMesh(tapeGeo, tapeMat, cells.length * 4);
     tape.frustumCulled = false;
+
+    const shadeGeo = new THREE.BoxGeometry(TABLE.topW * 1.05, 0.04, TABLE.topW * 1.05);
+    const shadeMat = new THREE.MeshBasicMaterial({
+      color: 0x04060c,
+      transparent: true,
+      opacity: 0.72,
+    });
+    const shades = new THREE.InstancedMesh(shadeGeo, shadeMat, cells.length);
+    shades.frustumCulled = false;
+
+    const patchGeo = new THREE.BoxGeometry(TABLE.topW * 1.12, 0.012, TABLE.topW * 1.12);
+    const patchMat = new THREE.MeshLambertMaterial({ color: 0x0e1218 });
+    const patches = new THREE.InstancedMesh(patchGeo, patchMat, cells.length);
+    patches.frustumCulled = false;
 
     const off = TABLE.legInset;
     const tapeY = TABLE.topY - TABLE.topThickness / 2 - 0.03;
@@ -271,6 +333,16 @@ export class Lab {
       _v.set(x, TABLE.topY, z);
       _m.compose(_v, _q, _s);
       tops.setMatrixAt(i, _m);
+
+      _v.set(x, 2.55, z);
+      _m.compose(_v, _q, _s);
+      shades.setMatrixAt(i, _m);
+
+      _v.set(x, 0.006, z);
+      _m.compose(_v, _q, _s);
+      patches.setMatrixAt(i, _m);
+
+      _v.set(x, TABLE.topY, z);
 
       const corners = [[-off, -off], [off, -off], [-off, off], [off, off]];
       corners.forEach(([ox, oz], k) => {
@@ -325,10 +397,15 @@ export class Lab {
     tops.instanceMatrix.needsUpdate = true;
     legs.instanceMatrix.needsUpdate = true;
     tape.instanceMatrix.needsUpdate = true;
+    shades.instanceMatrix.needsUpdate = true;
+    patches.instanceMatrix.needsUpdate = true;
     this.group.add(tops);
     this.group.add(legs);
     this.group.add(tape);
-    this._disposables.push(topGeo, topMat, legGeo, legMat, tapeGeo, tapeMat);
+    this.group.add(shades);
+    this.group.add(patches);
+    this._disposables.push(topGeo, topMat, legGeo, legMat, tapeGeo, tapeMat,
+      shadeGeo, shadeMat, patchGeo, patchMat);
   }
 
   /**

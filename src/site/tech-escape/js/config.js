@@ -285,6 +285,16 @@ export const PRINTER = {
 
 export const CODE_PARTS = 4;
 
+/** Periodic SEL / digital citizenship "text" notifications (Two Truths & a Lie). */
+export const NOTIFY = {
+  minRunSeconds: 50,       // no pings right after spawn
+  minGapSeconds: 75,       // cooldown after one closes
+  minInterval: 90,         // random timer floor
+  maxInterval: 165,
+  /** chill/normal freeze enemies; nightmare keeps hunting */
+  timeScaleByDifficulty: { chill: 0, normal: 0, nightmare: 1 },
+};
+
 /** Difficulty presets. Values multiply or replace the defaults above. */
 export const DIFFICULTY = {
   chill: {
