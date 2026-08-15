@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#05070d" />
+<meta name="description" content="Tech Escape - a 3D horror escape game where you answer technology questions, decrypt a code, and print a key to escape the haunted Tech Lab." />
+<title>Tech Escape</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div id="app">
+  <canvas id="scene"></canvas>
+
+  <!-- ===================== In-world HUD ===================== -->
+  <div id="hud" class="hidden" aria-hidden="true">
+    <div id="vignette"></div>
+    <div id="damage-flash"></div>
+    <div id="scanlines"></div>
+
+    <div id="hud-top">
+      <div id="objective">
+        <span id="objective-label">OBJECTIVE</span>
+        <span id="objective-text">Find a glowing Chromebook</span>
+      </div>
+      <div id="code-pieces" aria-label="Code pieces collected">
+        <div class="piece" data-piece="0"><span class="piece-slot">? ? ?</span></div>
+        <div class="piece" data-piece="1"><span class="piece-slot">? ? ?</span></div>
+        <div class="piece" data-piece="2"><span class="piece-slot">? ? ?</span></div>
+        <div class="piece" data-piece="3"><span class="piece-slot">? ? ?</span></div>
+      </div>
+    </div>
+
+    <div id="crosshair"><span></span></div>
+
+    <div id="interact-prompt" class="hidden">
+      <span class="key">E</span><span id="interact-text">Use</span>
+    </div>
+
+    <div id="hint-line" class="hidden"></div>
+
+    <div id="hud-bottom">
+      <div id="health-row" aria-label="Health">
+        <div class="bar-label">SNACK ENERGY</div>
+        <div id="health-bags"></div>
+      </div>
+      <div class="meter" id="stamina-meter">
+        <div class="bar-label">STAMINA <span class="hint-key">SHIFT</span></div>
+        <div class="bar-track"><div class="bar-fill" id="stamina-fill"></div></div>
+      </div>
+      <div class="meter" id="battery-meter">
+        <div class="bar-label"><span id="battery-label">FLASHLIGHT</span> <span class="hint-key">F</span></div>
+        <div class="bar-track"><div class="bar-fill" id="battery-fill"></div></div>
+      </div>
+      <div class="meter" id="stance-meter">
+        <div class="bar-label">STANCE <span class="hint-key">C</span></div>
+        <div id="stance-value">STANDING</div>
+      </div>
+    </div>
+
+    <div id="hide-indicator" class="hidden">
+      <span class="hide-dot"></span> HIDDEN &mdash; hold still
+    </div>
+
+    <!-- RGB split / static burst when a virus glitches out -->
+    <div id="glitch-overlay" aria-hidden="true">
+      <div class="glitch-r"></div>
+      <div class="glitch-b"></div>
+      <div class="glitch-static"></div>
+      <div class="glitch-bar"></div>
+    </div>
+
+    <div id="toast-stack"></div>
+
+    <div id="danger-warning" class="hidden">
+      <span>! SOMETHING IS CLOSE !</span>
+    </div>
+  </div>
+
+  <!-- ===================== Title screen ===================== -->
+  <div id="screen-title" class="screen">
+    <div class="screen-inner">
+      <div class="logo">
+        <div class="logo-sub">DVA Media Arts &amp; Tech presents</div>
+        <h1 class="logo-title" data-text="TECH ESCAPE">TECH ESCAPE</h1>
+        <div class="logo-tag">The lab is closed. Something else is logged in.</div>
+      </div>
+
+      <div class="title-body">
+        <p class="story">
+          It is 9:47 PM. You stayed late to finish your project and the Tech Lab doors just locked behind you.
+          The lights are dead. Four Chromebooks still glow in the dark &mdash; and something is
+          <em>skittering</em> between the tables.
+        </p>
+        <p class="story">
+          Answer the questions on all <strong>4 Chromebooks</strong> to earn <strong>4 pieces of an encrypted code</strong>.
+          Crack each piece in the decryption scramble, then reach the <strong>3D printer</strong>, print the key,
+          and get out before they find you.
+        </p>
+      </div>
+
+      <div class="title-controls">
+        <div class="ctrl"><span class="key">W A S D</span> Move</div>
+        <div class="ctrl"><span class="key">MOUSE</span> Look</div>
+        <div class="ctrl"><span class="key">SHIFT</span> Sprint</div>
+        <div class="ctrl"><span class="key">C</span> or <span class="key">CTRL</span> Crouch / crawl</div>
+        <div class="ctrl"><span class="key">F</span> Flashlight</div>
+        <div class="ctrl"><span class="key">E</span> Use</div>
+        <div class="ctrl"><span class="key">ESC</span> Pause</div>
+      </div>
+
+      <div class="title-tips">
+        <p><strong>Desks are solid.</strong> Crouch with <span class="key">C</span> to crawl under one &mdash;
+          the glowing tape means you can hide there. Nothing can reach you underneath.</p>
+        <p><strong>Your flashlight is a weapon &mdash; but only against viruses.</strong>
+          Hold the beam on a floating virus and it glitches out and teleports away. It comes back.
+          Burning one drains your battery fast, and the light <em>attracts</em> the mice.</p>
+      </div>
+
+      <div class="difficulty-select" role="radiogroup" aria-label="Difficulty">
+        <button class="diff-btn" data-diff="chill">
+          <span class="diff-name">FIELD TRIP</span>
+          <span class="diff-desc">Fewer hunters, kinder timers. Good for a first run.</span>
+        </button>
+        <button class="diff-btn is-selected" data-diff="normal">
+          <span class="diff-name">AFTER HOURS</span>
+          <span class="diff-desc">The intended haunt. Balanced and tense.</span>
+        </button>
+        <button class="diff-btn" data-diff="nightmare">
+          <span class="diff-name">SYSTEM CRASH</span>
+          <span class="diff-desc">They are fast, they are many, and the light is short.</span>
+        </button>
+      </div>
+
+      <button id="btn-start" class="big-btn">ENTER THE LAB</button>
+
+      <div class="title-foot">
+        <button class="link-btn" id="btn-settings">Settings</button>
+        <button class="link-btn" id="btn-standards">What will I learn?</button>
+      </div>
+      <div class="perf-note" id="perf-note"></div>
+    </div>
+  </div>
+
+  <!-- ===================== Pause / settings ===================== -->
+  <div id="screen-pause" class="screen hidden">
+    <div class="screen-inner narrow">
+      <h2 class="panel-title">PAUSED</h2>
+      <div class="settings">
+        <label class="setting">
+          <span>Mouse sensitivity</span>
+          <input type="range" id="set-sens" min="20" max="240" step="5" />
+          <output id="out-sens"></output>
+        </label>
+        <label class="setting">
+          <span>Graphics quality</span>
+          <select id="set-quality">
+            <option value="low">Low (fastest &mdash; older Chromebooks)</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+          </select>
+        </label>
+        <label class="setting">
+          <span>Brightness</span>
+          <input type="range" id="set-bright" min="60" max="220" step="5" />
+          <output id="out-bright"></output>
+        </label>
+        <label class="setting checkbox">
+          <input type="checkbox" id="set-mute" />
+          <span>Mute sound</span>
+        </label>
+        <label class="setting checkbox">
+          <input type="checkbox" id="set-shake" />
+          <span>Reduce screen shake &amp; flashing</span>
+        </label>
+      </div>
+      <h3 class="pause-h">CONTROLS</h3>
+      <div class="title-controls compact">
+        <div class="ctrl"><span class="key">W A S D</span> Move</div>
+        <div class="ctrl"><span class="key">MOUSE</span> Look</div>
+        <div class="ctrl"><span class="key">SHIFT</span> Sprint</div>
+        <div class="ctrl"><span class="key">C</span> / <span class="key">CTRL</span> Crouch &amp; crawl</div>
+        <div class="ctrl"><span class="key">F</span> Flashlight</div>
+        <div class="ctrl"><span class="key">E</span> Use</div>
+      </div>
+      <div class="pause-tips">
+        <p><strong>Crawl to hide.</strong> Desks are solid while you stand. Crouch to fit under one &mdash;
+          look for the glowing tape. You cannot stand up until you crawl back out.</p>
+        <p><strong>Light burns viruses.</strong> Hold the beam on a floating virus for about half a second and
+          it glitches away. It drains battery and it always comes back &mdash; and the mice are
+          <em>drawn</em> to your light instead.</p>
+      </div>
+
+      <div class="pause-buttons">
+        <button id="btn-resume" class="big-btn">RESUME</button>
+        <button id="btn-quit" class="link-btn">Quit to title</button>
+      </div>
+      <p class="tiny">Settings save automatically on this device.</p>
+    </div>
+  </div>
+
+  <!-- ===================== Standards / learning panel ===================== -->
+  <div id="screen-standards" class="screen hidden">
+    <div class="screen-inner narrow scrollable">
+      <h2 class="panel-title">WHAT WILL I LEARN?</h2>
+      <p class="std-intro">
+        Every Chromebook in the lab quizzes you on real Middle School Technology content. Get it right and
+        you earn a piece of the code. Get it wrong and the noise brings something running.
+      </p>
+      <h3 class="std-h">The Design Process</h3>
+      <p class="std-p">
+        <strong>DEFINE</strong> the problem &rarr; <strong>PREPARE</strong> a plan and research &rarr;
+        <strong>TRY</strong> a prototype &rarr; <strong>REFLECT</strong> on the results and iterate.
+        Terminal 1 drills this cycle hard, including what belongs in each phase and what does not.
+      </p>
+      <h3 class="std-h">Code.org Middle School strands</h3>
+      <ul class="std-list">
+        <li><strong>Computing Systems</strong> &mdash; hardware, software, input/output, troubleshooting.</li>
+        <li><strong>Networks &amp; the Internet</strong> &mdash; packets, protocols, addressing, encryption.</li>
+        <li><strong>Data &amp; Analysis</strong> &mdash; collection, bias, visualization, models.</li>
+        <li><strong>Algorithms &amp; Programming</strong> &mdash; loops, conditionals, variables, debugging.</li>
+        <li><strong>Impacts of Computing</strong> &mdash; digital citizenship, safety, ethics, AI.</li>
+      </ul>
+      <h3 class="std-h">ISTE Standards for Students (2025)</h3>
+      <ul class="std-list">
+        <li><strong>Empowered Learner</strong> &mdash; set goals, use feedback, choose the right tool.</li>
+        <li><strong>Digital Citizen</strong> &mdash; manage your footprint, credit sources, stay safe.</li>
+        <li><strong>Knowledge Constructor</strong> &mdash; evaluate sources, build meaning from evidence.</li>
+        <li><strong>Innovative Designer</strong> &mdash; use a design process, tolerate ambiguity, iterate.</li>
+        <li><strong>Computational Thinker</strong> &mdash; decompose, find patterns, test with data.</li>
+        <li><strong>Creative Communicator</strong> &mdash; pick formats and remix responsibly.</li>
+        <li><strong>Global Collaborator</strong> &mdash; work with others toward a shared goal.</li>
+      </ul>
+      <p class="tiny">
+        Questions are written so every answer choice is a similar length &mdash; you cannot spot the answer by
+        looking for the longest one. Several questions ask you to pick <em>every</em> correct choice.
+      </p>
+      <button id="btn-standards-close" class="big-btn">BACK</button>
+    </div>
+  </div>
+
+  <!-- ===================== Chromebook quiz ===================== -->
+  <div id="screen-quiz" class="screen hidden">
+    <div class="laptop-frame">
+      <div class="laptop-bezel">
+        <div class="cb-screen">
+          <div class="cb-topbar">
+            <span class="cb-dot"></span>
+            <span id="quiz-terminal-name">TERMINAL</span>
+            <span id="quiz-progress" class="cb-progress">1 / 3</span>
+          </div>
+          <div class="cb-body">
+            <div id="quiz-standard" class="quiz-standard"></div>
+            <div id="quiz-question" class="quiz-question"></div>
+            <div id="quiz-multi-note" class="quiz-multi-note hidden">Select ALL correct answers.</div>
+            <div id="quiz-answers" class="quiz-answers" role="group"></div>
+            <div id="quiz-actions" class="quiz-actions">
+              <button id="quiz-submit" class="cb-btn hidden">SUBMIT</button>
+              <button id="quiz-next" class="cb-btn hidden">CONTINUE</button>
+              <button id="quiz-bail" class="cb-btn ghost">STEP AWAY (ESC)</button>
+            </div>
+            <div id="quiz-feedback" class="quiz-feedback hidden">
+              <div id="quiz-verdict" class="verdict"></div>
+              <div id="quiz-explain" class="explain"></div>
+            </div>
+          </div>
+          <div class="cb-footer">
+            <span id="quiz-warn" class="cb-warn">The lab is still moving. Do not stay too long.</span>
+          </div>
+        </div>
+      </div>
+      <div class="laptop-base"></div>
+    </div>
+  </div>
+
+  <!-- ===================== Decrypt (memory match) minigame ===================== -->
+  <div id="screen-decrypt" class="screen hidden">
+    <div class="decrypt-panel">
+      <div class="decrypt-head">
+        <h2>DECRYPTION SCRAMBLE</h2>
+        <p>Match the pairs to unscramble your code piece. Every wrong pair burns a scan.</p>
+      </div>
+      <div class="decrypt-stats">
+        <div class="dstat"><span class="dstat-label">PAIRS</span><span id="dc-pairs">0 / 6</span></div>
+        <div class="dstat"><span class="dstat-label">SCANS LEFT</span><span id="dc-scans">8</span></div>
+        <div class="dstat"><span class="dstat-label">FRAGMENT</span><span id="dc-fragment">- - -</span></div>
+      </div>
+      <div id="dc-grid" class="dc-grid"></div>
+      <div class="decrypt-foot">
+        <button id="dc-bail" class="cb-btn ghost">ABORT (ESC)</button>
+        <span class="tiny">Aborting keeps your quiz answers but you must decrypt again.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== Printer panel ===================== -->
+  <div id="screen-printer" class="screen hidden">
+    <div class="printer-panel">
+      <h2 class="panel-title">3D PRINTER &mdash; LOCKED</h2>
+      <div id="printer-code" class="printer-code"></div>
+      <div id="printer-status" class="printer-status"></div>
+      <div class="printer-progress hidden" id="printer-progress">
+        <div class="bar-track tall"><div class="bar-fill" id="printer-fill"></div></div>
+        <div id="printer-percent" class="printer-percent">0%</div>
+      </div>
+      <button id="printer-go" class="big-btn">PRINT THE KEY</button>
+      <button id="printer-close" class="link-btn">Back away (ESC)</button>
+    </div>
+  </div>
+
+  <!-- ===================== Game over ===================== -->
+  <div id="screen-over" class="screen hidden">
+    <div class="screen-inner">
+      <h1 id="over-title" class="over-title">SYSTEM FAILURE</h1>
+      <p id="over-flavor" class="over-flavor"></p>
+      <div id="over-stats" class="stats-grid"></div>
+      <div class="over-buttons">
+        <button id="btn-retry" class="big-btn">TRY AGAIN</button>
+        <button id="btn-over-title" class="link-btn">Back to title</button>
+      </div>
+      <p id="over-tip" class="over-tip"></p>
+    </div>
+  </div>
+
+  <!-- ===================== Victory ===================== -->
+  <div id="screen-win" class="screen hidden">
+    <div class="screen-inner">
+      <h1 class="win-title">YOU ESCAPED</h1>
+      <p id="win-flavor" class="over-flavor">
+        The door swings shut behind you. The hallway lights buzz on. Somewhere back in the dark,
+        four Chromebooks quietly go to sleep.
+      </p>
+      <div id="win-stats" class="stats-grid"></div>
+      <div id="win-report" class="win-report"></div>
+      <div class="over-buttons">
+        <button id="btn-win-again" class="big-btn">PLAY AGAIN</button>
+        <button id="btn-win-title" class="link-btn">Back to title</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== Loading ===================== -->
+  <div id="screen-load" class="screen">
+    <div class="screen-inner narrow">
+      <div class="boot-log" id="boot-log">BOOTING TECH LAB...</div>
+      <div class="bar-track"><div class="bar-fill" id="load-fill"></div></div>
+    </div>
+  </div>
+
+  <!-- ===================== Fatal error (no WebGL etc.) ===================== -->
+  <div id="screen-error" class="screen hidden">
+    <div class="screen-inner narrow">
+      <h2 class="panel-title">CANNOT START</h2>
+      <p id="error-text" class="story"></p>
+      <p class="tiny">
+        On a Chromebook, open <strong>chrome://settings</strong> &rarr; System and make sure
+        &ldquo;Use graphics acceleration when available&rdquo; is on, then restart Chrome.
+      </p>
+    </div>
+  </div>
+
+  <!-- ===================== Touch controls (shown only on touch devices) ===================== -->
+  <div id="touch-ui" class="hidden">
+    <div id="touch-stick"><div id="touch-knob"></div></div>
+    <div class="touch-buttons">
+      <button class="tbtn" id="tbtn-use">USE</button>
+      <button class="tbtn" id="tbtn-light">LIGHT</button>
+      <button class="tbtn" id="tbtn-run">RUN</button>
+      <button class="tbtn" id="tbtn-crouch">CROUCH</button>
+    </div>
+  </div>
+</div>
+
+<script type="module" src="js/main.js"></script>
+<noscript>
+  <p style="color:#e6edf7;font-family:system-ui,sans-serif;padding:2rem">
+    Tech Escape needs JavaScript enabled to run.
+  </p>
+</noscript>
+</body>
+</html>

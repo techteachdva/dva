@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Tech Escape self test</title></head>
+<body>
+<pre id="out">running...</pre>
+<script type="module">
+// Static imports on purpose: they resolve before this module is evaluated, so
+// the whole suite runs synchronously and the results are in the DOM before the
+// load event. Dynamic `await import()` would finish after a headless --dump-dom.
+import { makeRng, sameSet, clamp } from './js/util.js';
+import { Maze } from './js/world/maze.js';
+import { Obstacles } from './js/world/obstacles.js';
+import { Lab } from './js/world/lab.js';
+import { QUESTION_POOLS, TERMINALS, drawQuestions, QUESTION_COUNT } from './js/data/questions.js';
+import { Player } from './js/entities/player.js';
+import { GhostVirus as Virus } from './js/entities/virus.js';
+import { EvilMouse } from './js/entities/mouse.js';
+import { input } from './js/input.js';
+import { CELL, GRID, DIFFICULTY, QUALITY, TABLE, PLAYER, VIRUS } from './js/config.js';
+import * as THREE from './vendor/three.module.js';
+
+const lines = [];
+let fails = 0;
+const ok = (name, cond, extra = '') => {
+  if (!cond) fails++;
+  lines.push(`${cond ? 'PASS' : 'FAIL'} ${name}${extra ? ` :: ${extra}` : ''}`);
+};
+const flush = () => { document.getElementById('out').textContent = lines.join('\n') + `\n\nFAILURES: ${fails}`; };
+
+window.addEventListener('error', (e) => { lines.push(`FAIL uncaught :: ${e.message}`); fails++; flush(); });
+window.addEventListener('unhandledrejection', (e) => { lines.push(`FAIL rejection :: ${e.reason}`); fails++; flush(); });
+
+try {
+  ok('three.js loaded', !!THREE.Scene, 'r' + (THREE.REVISION || '?'));
+
+  // ------------------------------------------------------------------ maze
+  const rng = makeRng(12345);
+  const maze = new Maze(rng);
+  const open = maze.openCells();
+  ok('maze size', maze.size === GRID, `size=${maze.size}`);
+  ok('maze has open space', open.length > 80, `open=${open.length}`);
+  ok('maze border sealed', (() => {
+    for (let i = 0; i < maze.size; i++) {
+      if (!maze.isSolid(0, i) || !maze.isSolid(maze.size - 1, i)) return false;
+      if (!maze.isSolid(i, 0) || !maze.isSolid(i, maze.size - 1)) return false;
+    }
+    return true;
+  })());
+  ok('maze fully connected', maze.isFullyConnected(open[0][0], open[0][1]));
+
+  // collision pushes a circle out of a wall
+  const wall = (() => {
+    for (let y = 1; y < maze.size - 1; y++)
+      for (let x = 1; x < maze.size - 1; x++)
+        if (maze.isSolid(x, y)) return [x, y];
+    return null;
+  })();
+  const wc = maze.cellCenter(wall[0], wall[1]);
+  const p = { x: wc.x, z: wc.z };
+  const corrected = maze.collide(p, 0.42);
+  ok('collide detects wall overlap', corrected === true);
+  ok('collide ejects out of wall', !maze.isWorldSolid(p.x, p.z),
+    `moved to ${p.x.toFixed(2)},${p.z.toFixed(2)}`);
+
+  // line of sight
+  const c0 = maze.cellCenter(open[0][0], open[0][1]);
+  ok('LOS to self', maze.lineOfSight(c0.x, c0.z, c0.x + 0.1, c0.z + 0.1));
+  ok('LOS blocked into wall', !maze.lineOfSight(c0.x, c0.z, wc.x, wc.z));
+
+  // flow field
+  const target = open[Math.floor(open.length / 2)];
+  const flow = maze.buildFlow(target[0], target[1]);
+  ok('flow reaches all open cells',
+    open.every((c) => maze.flowDistance(flow, c[0], c[1]) >= 0));
+  const far = open.reduce((a, c) =>
+    maze.flowDistance(flow, c[0], c[1]) > maze.flowDistance(flow, a[0], a[1]) ? c : a, open[0]);
+  const step = maze.flowStep(flow, far[0], far[1]);
+  ok('flowStep moves downhill', !!step
+    && maze.flowDistance(flow, step[0], step[1]) < maze.flowDistance(flow, far[0], far[1]));
+
+  // spreadCells
+  const spread = maze.spreadCells(4, [], 7);
+  ok('spreadCells returns 4 distinct', new Set(spread.map(c => c.join(','))).size === 4);
+
+  // ------------------------------------------------------------- questions
+  ok('four terminals', TERMINALS.length === 4);
+  ok('four pools', QUESTION_POOLS.length === 4);
+  ok('question count', QUESTION_COUNT === 48, `count=${QUESTION_COUNT}`);
+
+  let structureBad = [];
+  let spreadBad = [];
+  let totalQ = 0;
+  let multiCount = 0;
+  let singleCount = 0;
+  let singleLongestCorrect = 0;
+  let rankSum = 0;
+  let rankN = 0;
+
+  QUESTION_POOLS.forEach((pool, pi) => {
+    ok(`pool ${pi} has 12`, pool.length === 12, `len=${pool.length}`);
+    pool.forEach((q, qi) => {
+      totalQ++;
+      const id = `T${pi + 1}Q${qi + 1}`;
+      if (!q.q || !q.a || q.a.length !== 4) structureBad.push(`${id} options`);
+      if (!q.correct || !q.correct.length) structureBad.push(`${id} no correct`);
+      if (q.correct.some((i) => i < 0 || i >= q.a.length)) structureBad.push(`${id} bad index`);
+      if (new Set(q.correct).size !== q.correct.length) structureBad.push(`${id} dup correct`);
+      if (!q.why || q.why.length < 20) structureBad.push(`${id} weak why`);
+      if (!q.std) structureBad.push(`${id} no std`);
+      if (new Set(q.a).size !== q.a.length) structureBad.push(`${id} dup option text`);
+      if (q.correct.length > 1) multiCount++;
+
+      const lens = q.a.map((s) => s.length);
+      const spreadLen = Math.max(...lens) - Math.min(...lens);
+      if (spreadLen > 12) spreadBad.push(`${id} spread=${spreadLen}`);
+
+      // Track the length rank of each correct option: 0 = shortest, 1 = longest
+      const sortedLens = lens.slice().sort((x, y) => x - y);
+      for (const ci of q.correct) {
+        rankSum += sortedLens.indexOf(lens[ci]) / (lens.length - 1);
+        rankN++;
+      }
+      // Only single-answer questions can be gamed by "pick the longest"
+      if (q.correct.length === 1) {
+        singleCount++;
+        if (lens[q.correct[0]] === Math.max(...lens)) singleLongestCorrect++;
+      }
+    });
+  });
+
+  ok('question structure valid', structureBad.length === 0, structureBad.slice(0, 6).join(' | '));
+  ok('answer lengths balanced (<=12 char spread)', spreadBad.length === 0,
+    spreadBad.slice(0, 8).join(' | '));
+  ok('multi-answer questions present', multiCount >= 8, `multi=${multiCount}/${totalQ}`);
+
+  // On a 4-option single-answer question, "always pick the longest" should win
+  // about 25% of the time. Far above that is a giveaway; near zero is the same
+  // giveaway inverted, because students learn to never pick the longest.
+  const longestRate = singleLongestCorrect / singleCount;
+  ok('"pick the longest" performs at chance',
+    longestRate >= 0.1 && longestRate <= 0.4,
+    `wins ${(longestRate * 100).toFixed(0)}% of ${singleCount} single-answer questions`);
+
+  const meanRank = rankSum / rankN;
+  ok('correct answers sit mid-pack by length',
+    meanRank >= 0.35 && meanRank <= 0.62,
+    `mean length rank ${meanRank.toFixed(3)} (0=shortest, 1=longest)`);
+
+  // drawQuestions preserves correctness after shuffling
+  let drawOk = true;
+  let drawDetail = '';
+  for (let t = 0; t < 4; t++) {
+    const drawn = drawQuestions(t, 3, makeRng(999 + t));
+    if (drawn.length !== 3) { drawOk = false; drawDetail = 'wrong count'; break; }
+    for (const d of drawn) {
+      const n = d.options.filter((o) => o.correct).length;
+      if (n !== d.correctCount || n < 1) { drawOk = false; drawDetail = `correctCount ${n} vs ${d.correctCount}`; }
+      if (d.options.length !== 4) { drawOk = false; drawDetail = 'option count'; }
+      if (!d.why || !d.std || !d.text) { drawOk = false; drawDetail = 'missing field'; }
+      if (d.multi !== (d.correctCount > 1)) { drawOk = false; drawDetail = 'multi flag'; }
+    }
+  }
+  ok('drawQuestions remaps correct answers', drawOk, drawDetail);
+
+  // ---------------------------------------------------------------- player
+  const emptyObstacles = new Obstacles(maze);
+  const stubLab = {
+    tableAt: () => null,
+    tableNear: () => null,
+    obstacles: emptyObstacles,
+  };
+  const startCell = open[0];
+  const player = new Player(maze, stubLab, startCell, DIFFICULTY.normal);
+  player.flashlightOn = false;
+
+  // Fake input: press forward and confirm we travel along the facing vector
+  const testYaw = (yaw, label) => {
+    player.pos.set(maze.cellCenter(startCell[0], startCell[1]).x, 1.62,
+      maze.cellCenter(startCell[0], startCell[1]).z);
+    player.vel.set(0, 0, 0);
+    player.yaw = yaw;
+    const fx = -Math.sin(yaw);
+    const fz = -Math.cos(yaw);
+    const before = { x: player.pos.x, z: player.pos.z };
+    input.held.forward = true;
+    for (let i = 0; i < 20; i++) player.update(1 / 60, true);
+    input.held.forward = false;
+    const dx = player.pos.x - before.x;
+    const dz = player.pos.z - before.z;
+    const len = Math.hypot(dx, dz);
+    if (len < 0.05) return `no movement (${label})`;
+    const dot = (dx / len) * fx + (dz / len) * fz;
+    return dot > 0.9 ? null : `${label} dot=${dot.toFixed(2)}`;
+  };
+
+  const yawProblems = [
+    testYaw(0, 'yaw 0'),
+    testYaw(Math.PI / 2, 'yaw 90'),
+    testYaw(Math.PI, 'yaw 180'),
+    testYaw(-Math.PI / 2, 'yaw -90'),
+    testYaw(0.7, 'yaw 0.7'),
+  ].filter(Boolean);
+  ok('W moves along the camera facing vector', yawProblems.length === 0, yawProblems.join(' | '));
+
+  // stamina drains while sprinting and recovers when idle
+  player.stamina = 100;
+  input.held.forward = true;
+  input.held.sprint = true;
+  for (let i = 0; i < 60; i++) player.update(1 / 60, true);
+  const afterSprint = player.stamina;
+  input.held.sprint = false;
+  input.held.forward = false;
+  for (let i = 0; i < 180; i++) player.update(1 / 60, true);
+  ok('stamina drains while sprinting', afterSprint < 95, `after=${afterSprint.toFixed(1)}`);
+  ok('stamina regenerates at rest', player.stamina > afterSprint + 5,
+    `now=${player.stamina.toFixed(1)}`);
+
+  // battery drains only when the light is on
+  player.battery = 100;
+  player.flashlightOn = false;
+  for (let i = 0; i < 60; i++) player.update(1 / 60, true);
+  ok('battery holds while light is off', player.battery === 100);
+  player.flashlightOn = true;
+  for (let i = 0; i < 120; i++) player.update(1 / 60, true);
+  ok('battery drains while light is on', player.battery < 99, `bat=${player.battery.toFixed(1)}`);
+
+  // health and damage
+  player.health = 3;
+  const hit1 = player.takeDamage(1);
+  const hit2 = player.takeDamage(1);
+  ok('damage applies once per invulnerability window', hit1 && !hit2, `hp=${player.health}`);
+
+  // player never ends up inside a wall after many random moves
+  let stuck = false;
+  player.pos.set(maze.cellCenter(startCell[0], startCell[1]).x, 1.62,
+    maze.cellCenter(startCell[0], startCell[1]).z);
+  for (let i = 0; i < 900; i++) {
+    input.held.forward = Math.random() < 0.7;
+    input.held.left = Math.random() < 0.3;
+    input.held.right = Math.random() < 0.3;
+    player.yaw += (Math.random() - 0.5) * 0.6;
+    player.update(1 / 60, true);
+    if (maze.isWorldSolid(player.pos.x, player.pos.z)) { stuck = true; break; }
+  }
+  input.held.forward = input.held.left = input.held.right = false;
+  ok('player cannot walk into walls', !stuck);
+
+  // ------------------------------------------------- desks, crouch, hiding
+  ok('crouched body fits under a tabletop',
+    PLAYER.crouchHeight < TABLE.bandY0 && PLAYER.standHeight > TABLE.bandY0,
+    `crouch=${PLAYER.crouchHeight} band=${TABLE.bandY0} stand=${PLAYER.standHeight}`);
+  ok('crouched eye stays below the tabletop',
+    PLAYER.crouchEyeHeight < TABLE.bandY0,
+    `eye=${PLAYER.crouchEyeHeight}`);
+  // A table must not seal a corridor for a standing player
+  const sideGap = CELL / 2 - TABLE.topW / 2;
+  ok('a standing player can squeeze past a desk', sideGap > PLAYER.radius + 0.1,
+    `gap=${sideGap.toFixed(2)} radius=${PLAYER.radius}`);
+  // ...and the crawl gap between the legs must be wide enough to fit through
+  const legGap = TABLE.legInset * 2 - TABLE.legW;
+  ok('crawl gap between desk legs is passable', legGap > PLAYER.radius * 2 + 0.3,
+    `legGap=${legGap.toFixed(2)}`);
+
+  // Build a real lab so we test the colliders the game actually ships
+  const scene = new THREE.Scene();
+  const labRng = makeRng(4242);
+  const lab = new Lab(scene, maze, labRng);
+  const tableCells = labRng.shuffle(maze.openCells()).slice(0, 12);
+  lab.buildTables(tableCells);
+  const propCells = labRng.shuffle(maze.openCells().filter(
+    (c) => !tableCells.some((t) => t[0] === c[0] && t[1] === c[1]),
+  )).slice(0, 6);
+  lab.buildProps(propCells);
+  const obs = lab.obstacles;
+
+  ok('tables register colliders',
+    obs.countByTag('table-top') === 12 && obs.countByTag('table-leg') === 48,
+    `tops=${obs.countByTag('table-top')} legs=${obs.countByTag('table-leg')}`);
+  ok('props register colliders', obs.countByTag('prop') === 6,
+    `props=${obs.countByTag('prop')}`);
+
+  const t0 = lab.tables[0];
+  ok('standing body is blocked by the tabletop',
+    obs.overlaps(t0.x, t0.z, PLAYER.radius, 0, PLAYER.standHeight));
+  ok('crouched body passes under the tabletop',
+    !obs.overlaps(t0.x, t0.z, PLAYER.radius, 0, PLAYER.crouchHeight));
+  ok('props block a crouched body too',
+    obs.overlaps(
+      maze.cellCenter(propCells[0][0], propCells[0][1]).x,
+      maze.cellCenter(propCells[0][0], propCells[0][1]).z,
+      PLAYER.radius, 0, PLAYER.crouchHeight,
+    ));
+  ok('mice cannot fit under a desk',
+    obs.overlaps(t0.x, t0.z, 0.36, 0, 1.45));
+
+  // Walking at a desk while standing must not pass through it
+  const labPlayer = new Player(maze, lab, t0.cell, DIFFICULTY.normal);
+  labPlayer.flashlightOn = false;
+  const walkAt = (crouch) => {
+    // Start two cells away and drive straight at the desk centre
+    labPlayer.wantCrouch = crouch;
+    labPlayer.crouching = crouch;
+    const fromX = t0.x - CELL * 0.98;
+    labPlayer.pos.set(fromX, 1.62, t0.z);
+    labPlayer.vel.set(0, 0, 0);
+    // Face +X (forward is -Z at yaw 0, so yaw -90deg faces +X)
+    labPlayer.yaw = -Math.PI / 2;
+    input.held.forward = true;
+    let closest = Infinity;
+    // Long enough for the slow crawl speed to cover the full cell
+    for (let i = 0; i < 420; i++) {
+      labPlayer.update(1 / 60, true);
+      closest = Math.min(closest, Math.abs(labPlayer.pos.x - t0.x));
+    }
+    input.held.forward = false;
+    return { closest, endX: labPlayer.pos.x, crossed: labPlayer.pos.x > t0.x + 0.2 };
+  };
+
+  const standWalk = walkAt(false);
+  ok('standing player cannot walk through a desk',
+    !standWalk.crossed && standWalk.closest > TABLE.topW / 2 - 0.02,
+    `closest=${standWalk.closest.toFixed(2)} (needs > ${(TABLE.topW / 2).toFixed(2)})`);
+
+  const crouchWalk = walkAt(true);
+  ok('crouched player crawls under a desk',
+    crouchWalk.closest < 0.25,
+    `closest=${crouchWalk.closest.toFixed(2)}`);
+
+  // Under the desk: hidden, and standing is refused
+  labPlayer.pos.set(t0.x, 1.0, t0.z);
+  labPlayer.wantCrouch = true;
+  labPlayer.update(1 / 60, true);
+  ok('crouching under a desk hides the player', labPlayer.hidden);
+  ok('no headroom under a desk', !labPlayer.hasHeadroom);
+
+  labPlayer.wantCrouch = false;          // player asks to stand up
+  labPlayer.update(1 / 60, true);
+  ok('standing up under a desk is refused',
+    labPlayer.crouching && labPlayer.stuckUnder,
+    `crouching=${labPlayer.crouching} stuck=${labPlayer.stuckUnder}`);
+  ok('refusing to stand does not eject the player through the desk',
+    Math.abs(labPlayer.pos.x - t0.x) < 0.4 && Math.abs(labPlayer.pos.z - t0.z) < 0.4);
+
+  // Crawl out, then standing is allowed again
+  labPlayer.pos.set(t0.x - CELL * 0.9, 1.0, t0.z);
+  labPlayer.update(1 / 60, true);
+  ok('standing works again once clear of the desk',
+    !labPlayer.crouching && !labPlayer.hidden && labPlayer.hasHeadroom);
+
+  // Standing player must never end up inside furniture after random movement
+  let inFurniture = false;
+  labPlayer.wantCrouch = false;
+  labPlayer.pos.set(maze.cellCenter(startCell[0], startCell[1]).x, 1.62,
+    maze.cellCenter(startCell[0], startCell[1]).z);
+  for (let i = 0; i < 1200; i++) {
+    input.held.forward = Math.random() < 0.8;
+    input.held.left = Math.random() < 0.3;
+    input.held.right = Math.random() < 0.3;
+    labPlayer.yaw += (Math.random() - 0.5) * 0.7;
+    labPlayer.update(1 / 60, true);
+    if (labPlayer.crouching) continue;    // crouch is legitimately inside desks
+    if (obs.overlaps(labPlayer.pos.x, labPlayer.pos.z, PLAYER.radius * 0.85,
+      0, PLAYER.standHeight)) { inFurniture = true; break; }
+  }
+  input.held.forward = input.held.left = input.held.right = false;
+  ok('standing player never ends up inside furniture', !inFurniture);
+
+  // ------------------------------------------------------- virus vs the light
+  ok('glitch timing is in the intended window',
+    VIRUS.burnCharge >= 0.4 && VIRUS.burnCharge <= 0.8, `charge=${VIRUS.burnCharge}s`);
+  ok('glitch cooldown is in the intended window',
+    VIRUS.glitchCooldown >= 2 && VIRUS.glitchCooldown <= 4, `cd=${VIRUS.glitchCooldown}s`);
+
+  const vCell = open[Math.floor(open.length / 3)];
+  const virus = new Virus(maze, vCell, makeRng(77), 0);
+  const vc = maze.cellCenter(vCell[0], vCell[1]);
+
+  // Player standing right next to it, light on and aimed at it
+  const lightPlayer = new Player(maze, stubLab, vCell, DIFFICULTY.normal);
+  lightPlayer.pos.set(vc.x, 1.62, vc.z + 3);
+  lightPlayer.yaw = 0;                    // faces -Z, toward the virus
+  lightPlayer.flashlightOn = true;
+  lightPlayer.battery = 100;
+  ok('beam detection is forgiving', lightPlayer.isLightingUp(virus.pos, VIRUS.repelRange, 1.5, VIRUS.radius * 1.6));
+  // Aiming well off target must NOT count
+  lightPlayer.yaw = Math.PI;
+  ok('beam misses when aimed away',
+    !lightPlayer.isLightingUp(virus.pos, VIRUS.repelRange, 1.5, VIRUS.radius * 1.6));
+  lightPlayer.yaw = 0;
+
+  // A quick sweep of the beam must not be enough to glitch it
+  let glitchedEarly = false;
+  for (let i = 0; i < 12; i++) {              // 0.2s of contact
+    const r = virus.update(1 / 60, lightPlayer, DIFFICULTY.normal);
+    if (r?.glitched) glitchedEarly = true;
+  }
+  ok('a quick beam sweep does not glitch a virus', !glitchedEarly,
+    `burn=${virus.burn.toFixed(2)}s`);
+  ok('burning gives immediate feedback', virus.burning && virus.burn > 0.1);
+
+  // Sustained contact glitches it
+  const startPos = { x: virus.pos.x, z: virus.pos.z };
+  let glitched = false;
+  let framesToGlitch = 0;
+  for (let i = 0; i < 120 && !glitched; i++) {
+    framesToGlitch++;
+    const r = virus.update(1 / 60, lightPlayer, DIFFICULTY.normal);
+    if (r?.glitched) glitched = true;
+  }
+  ok('sustained beam glitches the virus', glitched,
+    `${(framesToGlitch / 60).toFixed(2)}s more contact, ${VIRUS.burnCharge}s total`);
+
+  // It stutters in place, then teleports
+  for (let i = 0; i < 40; i++) virus.update(1 / 60, lightPlayer, DIFFICULTY.normal);
+  const teleDist = Math.hypot(virus.pos.x - startPos.x, virus.pos.z - startPos.z);
+  ok('virus teleports far away', teleDist > CELL * 4,
+    `moved ${teleDist.toFixed(1)} units (${(teleDist / CELL).toFixed(1)} cells)`);
+  ok('virus teleports out of sight',
+    !maze.lineOfSight(lightPlayer.pos.x, lightPlayer.pos.z, virus.pos.x, virus.pos.z));
+  ok('virus survives the glitch (not a kill)', !!virus.mesh && virus.dazedTimer > 0);
+  ok('glitch cooldown is active', virus.glitchCooldown > 0);
+
+  // Cannot be stunlocked: another burn during cooldown must not glitch it
+  let reglitched = false;
+  for (let i = 0; i < 90; i++) {
+    // Keep the beam on it wherever it went
+    lightPlayer.yaw = Math.atan2(-(virus.pos.x - lightPlayer.pos.x), -(virus.pos.z - lightPlayer.pos.z));
+    const r = virus.update(1 / 60, lightPlayer, DIFFICULTY.normal);
+    if (r?.glitched) reglitched = true;
+  }
+  ok('virus cannot be glitched again during cooldown', !reglitched);
+
+  // After the daze it hunts again
+  for (let i = 0; i < 200; i++) virus.update(1 / 60, lightPlayer, DIFFICULTY.normal);
+  virus.pos.set(lightPlayer.pos.x + 2, VIRUS.hoverHeight, lightPlayer.pos.z);
+  lightPlayer.flashlightOn = false;
+  virus.dazedTimer = 0;
+  virus.update(1 / 60, lightPlayer, DIFFICULTY.normal);
+  ok('virus resumes hunting after the reprieve', virus.hunting);
+
+  // A dead battery must not be an instant loss: hiding still works
+  lightPlayer.battery = 0;
+  lightPlayer.flashlightOn = true;
+  ok('a dead battery cannot burn viruses',
+    !lightPlayer.isLightingUp(virus.pos, VIRUS.repelRange, 1.5, VIRUS.radius));
+  const hidePlayer = new Player(maze, lab, t0.cell, DIFFICULTY.normal);
+  hidePlayer.pos.set(t0.x, 1.0, t0.z);
+  hidePlayer.battery = 0;
+  hidePlayer.wantCrouch = true;
+  hidePlayer.update(1 / 60, true);
+  const hiddenVirus = new Virus(maze, t0.cell, makeRng(5), 1);
+  hiddenVirus.pos.set(t0.x, VIRUS.hoverHeight, t0.z);
+  hiddenVirus.attackCooldown = 0;
+  const atkEv = hiddenVirus.update(1 / 60, hidePlayer, DIFFICULTY.normal);
+  ok('hiding protects a player with a dead battery',
+    hidePlayer.hidden && !(atkEv && atkEv.hit));
+
+  // Mice are deliberately NOT repelled by light
+  const mouse = new EvilMouse(maze, vCell, makeRng(9), 0, obs);
+  ok('mice have no glitch mechanic',
+    mouse.burn === undefined && typeof mouse.glitchAway !== 'function');
+
+  // -------------------------------------------------------------- config
+  ok('difficulty presets complete', ['chill', 'normal', 'nightmare'].every((k) => {
+    const d = DIFFICULTY[k];
+    return d && d.mice > 0 && d.startHealth > 0 && d.decryptScans > 0 && d.label;
+  }));
+  ok('quality presets complete', ['low', 'medium', 'high'].every((k) => {
+    const q = QUALITY[k];
+    return q && q.scale > 0 && q.extraLights > 0;
+  }));
+
+} catch (err) {
+  lines.push(`FAIL exception :: ${err && err.stack ? err.stack : err}`);
+  fails++;
+}
+
+flush();
+document.title = fails === 0 ? 'ALL PASS' : `FAILURES ${fails}`;
+</script>
+</body>
+</html>

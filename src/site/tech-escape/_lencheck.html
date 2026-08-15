@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>len</title></head><body><pre id="out"></pre>
+<script type="module">
+const { QUESTION_POOLS } = await import('./js/data/questions.js');
+const rows = [];
+let single = 0, singleLongest = 0, rankSum = 0, rankN = 0;
+QUESTION_POOLS.forEach((pool, pi) => {
+  pool.forEach((q, qi) => {
+    const id = `T${pi + 1}Q${String(qi + 1).padStart(2, '0')}`;
+    const lens = q.a.map(s => s.length);
+    const maxAll = Math.max(...lens);
+    const isSingle = q.correct.length === 1;
+    // average length rank of correct options: 0 = shortest, 1 = longest
+    const sorted = lens.slice().sort((a, b) => a - b);
+    for (const ci of q.correct) {
+      rankSum += sorted.indexOf(lens[ci]) / (lens.length - 1);
+      rankN++;
+    }
+    if (isSingle) {
+      single++;
+      const c = q.correct[0];
+      const longestDistractor = Math.max(...lens.filter((_, i) => i !== c));
+      const isLongest = lens[c] === maxAll;
+      if (isLongest) singleLongest++;
+      rows.push(`${id} ${isSingle ? 'S' : 'M'} correct=${lens[c]} maxDistractor=${longestDistractor} delta=${lens[c] - longestDistractor} ${isLongest ? '<<< CORRECT IS LONGEST' : ''} lens=[${lens.join(',')}]`);
+    } else {
+      const cl = q.correct.map(i => lens[i]);
+      rows.push(`${id} M correctLens=[${cl.join(',')}] lens=[${lens.join(',')}]`);
+    }
+  });
+});
+rows.push('');
+rows.push(`single-correct questions: ${single}, correct-is-longest: ${singleLongest} (${Math.round(singleLongest / single * 100)}%)`);
+rows.push(`mean length rank of correct options (0=shortest,1=longest): ${(rankSum / rankN).toFixed(3)}`);
+document.getElementById('out').textContent = rows.join('\n');
+</script></body></html>

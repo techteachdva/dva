@@ -20,7 +20,7 @@ title: Games Mr. Phil has made
           <div class="cartridge-cuboid__face cartridge-cuboid__face--front">
             <div class="cartridge-label">
               <span class="cartridge-label__brand">Power_Word_Skill_Games</span>
-              <a class="cartridge-label__title external-link" href="https://techescape.abacusai.app/" target="_blank" rel="noopener noreferrer">Tech Escape</a>
+              <a class="cartridge-label__title external-link" href="https://dva-nu.vercel.app/tech-escape/" target="_blank" rel="noopener noreferrer">Tech Escape</a>
             </div>
           </div>
           <div class="cartridge-cuboid__face cartridge-cuboid__face--top" aria-hidden="true"></div>

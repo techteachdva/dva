@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Tech Escape playtest</title></head>
+<body style="margin:0;background:#000;color:#9fe;font:12px monospace">
+<pre id="log">booting...</pre>
+<!--
+  Drives the REAL game (real renderer, real world, real enemies) through a
+  scripted session and reports frame times plus mechanic outcomes. This is the
+  closest thing to sitting down and playing that a headless browser can do.
+
+  Run with: powershell -File _run_selftest.ps1 _playtest.html
+-->
+<script type="module">
+const lines = [];
+let fails = 0;
+const say = (s) => { lines.push(s); document.getElementById('log').textContent = lines.join('\n'); };
+const ok = (name, cond, extra = '') => {
+  if (!cond) fails++;
+  say(`${cond ? 'PASS' : 'FAIL'} ${name}${extra ? ` :: ${extra}` : ''}`);
+};
+
+const errors = [];
+window.addEventListener('error', (e) => errors.push(e.message));
+window.addEventListener('unhandledrejection', (e) => errors.push(String(e.reason)));
+
+import { makeRng } from './js/util.js';
+import { Maze } from './js/world/maze.js';
+import { Lab } from './js/world/lab.js';
+import { Lighting } from './js/world/lighting.js';
+import { Player } from './js/entities/player.js';
+import { EnemyManager } from './js/entities/enemies.js';
+import { PickupField } from './js/entities/pickups.js';
+import { input } from './js/input.js';
+import { CELL, DIFFICULTY, QUALITY, PLAYER, VIRUS, TABLE, CODE_PARTS } from './js/config.js';
+import * as THREE from './vendor/three.module.js';
+
+try {
+  // ------------------------------------------------------------ real world
+  const canvas = document.createElement('canvas');
+  canvas.width = 1280; canvas.height = 720;
+  document.body.appendChild(canvas);
+
+  let renderer = null;
+  try {
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'low-power' });
+    renderer.setPixelRatio(1);
+    renderer.setSize(1280, 720, false);
+  } catch (e) {
+    say(`NOTE no WebGL in this environment (${e.message}); running logic only`);
+  }
+  ok('renderer created', !!renderer,
+    renderer ? renderer.getContext().getParameter(0x1F01) : 'software fallback missing');
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(74, 1280 / 720, 0.1, 60);
+  const rng = makeRng(20260814);
+  const diff = DIFFICULTY.normal;
+
+  let maze = new Maze(rng);
+  for (let i = 0; i < 10 && !maze.isFullyConnected(...maze.openCells()[0]); i++) maze = new Maze(rng);
+
+  const lab = new Lab(scene, maze, rng);
+  const open = maze.openCells();
+  const used = new Set();
+  const key = (c) => `${c[0]},${c[1]}`;
+  const free = () => open.filter((c) => !used.has(key(c)));
+
+  const laptopCells = maze.spreadCells(CODE_PARTS, [], 7);
+  laptopCells.forEach((c) => used.add(key(c)));
+  const printerCell = maze.spreadCells(1, laptopCells, 6)[0];
+  used.add(key(printerCell));
+  const exitCell = maze.spreadCells(1, [...laptopCells, printerCell], 6)[0];
+  used.add(key(exitCell));
+  const startCell = rng.pick(free());
+  used.add(key(startCell));
+
+  lab.buildLaptops(laptopCells);
+  lab.buildPrinter(printerCell);
+  lab.buildExit(exitCell);
+  const tableCells = rng.shuffle(free()).slice(0, Math.round(open.length * 0.22));
+  tableCells.forEach((c) => used.add(key(c)));
+  lab.buildTables(tableCells);
+  const propCells = rng.shuffle(free()).slice(0, Math.round(open.length * 0.1));
+  propCells.forEach((c) => used.add(key(c)));
+  lab.buildProps(propCells);
+
+  scene.add(camera);
+  const lighting = new Lighting(scene, camera, QUALITY.medium);
+  const pickups = new PickupField(scene, maze, rng);
+  const loot = rng.shuffle(open.filter((c) => !propCells.some((p) => key(p) === key(c))));
+  for (let i = 0; i < diff.cheetos; i++) pickups.spawn('cheetos', loot[i % loot.length]);
+  for (let i = 0; i < diff.batteries; i++) pickups.spawn('battery', loot[(i + 20) % loot.length]);
+
+  const player = new Player(maze, lab, startCell, diff);
+  const enemies = new EnemyManager(scene, maze, rng, diff, lab.obstacles);
+  enemies.spawnInitial(startCell);
+
+  ok('world built', lab.obstacles.count > 0,
+    `${lab.obstacles.count} colliders, ${lab.tables.length} desks, ${enemies.mice.length} mice, ${enemies.viruses.length} viruses`);
+
+  // ------------------------------------------------------------- the loop
+  // Simulation cost is tracked separately from draw cost. Headless Chrome uses
+  // a software rasterizer, so its draw timings say nothing about a Chromebook
+  // GPU - but the CPU-side simulation cost is directly comparable.
+  let simTime = 0;
+
+  const frame = (dt) => {
+    const s0 = performance.now();
+    player.update(dt, true);
+    const ev = enemies.update(dt, player);
+    player.burningVirus = ev.burning;
+    pickups.update(dt, player);
+    simTime = performance.now() - s0;
+    player.syncCamera(camera);
+    lighting.setFlashlight(player.flashlightOn);
+    lighting.update(
+      dt, player.pos,
+      [...lab.glowSources, ...enemies.glowSources, ...pickups.glowSources],
+      player.batteryPct,
+    );
+    if (renderer) {
+      renderer.info.reset();
+      renderer.render(scene, camera);
+      lastCalls = renderer.info.render.calls;
+      lastTris = renderer.info.render.triangles;
+    }
+    return ev;
+  };
+  let lastCalls = 0;
+  let lastTris = 0;
+
+  // Warm up with the light on so first-use shader compiles (spotlight, point
+  // light pool) happen before the timing sample rather than inside it
+  player.flashlightOn = true;
+  for (let i = 0; i < 120; i++) frame(1 / 60);
+
+  // --------------------------------------------------------- wander around
+  const times = [];
+  const sims = [];
+  const calls = [];
+  const tris = [];
+  let hidTicks = 0;
+  let glitches = 0;
+  let crawlTicks = 0;
+  const dt = 1 / 60;
+
+  // Seeded so the whole session replays identically run to run
+  const botRng = makeRng(9090);
+  player.flashlightOn = true;
+  for (let i = 0; i < 1800; i++) {          // 30 simulated seconds
+    // Simple bot: walk forward, turn when blocked, sweep the light around
+    input.held.forward = true;
+    input.held.sprint = i % 300 < 90;
+    if (i % 90 === 0) player.yaw += (botRng.range(-1, 1)) * 1.1;
+    const before = { x: player.pos.x, z: player.pos.z };
+
+    const t0 = performance.now();
+    const ev = frame(dt);
+    times.push(performance.now() - t0);
+    sims.push(simTime);
+    calls.push(lastCalls);
+    tris.push(lastTris);
+
+    if (ev.glitched) glitches += ev.glitched;
+    if (player.hidden) hidTicks++;
+    if (player.crouching) crawlTicks++;
+    // Bumped into something: turn away
+    if (Math.hypot(player.pos.x - before.x, player.pos.z - before.z) < 0.008) {
+      player.yaw += 0.8 + botRng.range(0, 1);
+    }
+  }
+  input.held.forward = false;
+  input.held.sprint = false;
+
+  const pct = (arr, p) => {
+    const s = arr.slice().sort((a, b) => a - b);
+    return s[Math.min(s.length - 1, Math.floor(s.length * p))];
+  };
+
+  // The number that matters for a Chromebook: how much CPU the game logic eats
+  // every frame, leaving the rest of the 16.6ms budget for the GPU.
+  ok('simulation cost leaves the frame budget free', pct(sims, 0.95) < 2.0,
+    `sim median ${pct(sims, 0.5).toFixed(3)}ms, p95 ${pct(sims, 0.95).toFixed(3)}ms, ` +
+    `worst ${pct(sims, 1).toFixed(2)}ms`);
+
+  // Draw cost here is Chrome's software rasterizer, reported for reference only
+  say(`NOTE software-rasterised draw: median ${pct(times, 0.5).toFixed(1)}ms, ` +
+    `p95 ${pct(times, 0.95).toFixed(1)}ms (not representative of GPU hardware)`);
+
+  if (renderer) {
+    // Sampled every frame across the whole walk, since what is on screen (and
+    // therefore what survives frustum culling) changes constantly
+    ok('draw calls stay low for integrated graphics', pct(calls, 0.99) < 170,
+      `median ${pct(calls, 0.5)}, p99 ${pct(calls, 0.99)}, worst ${pct(calls, 1)} draw calls; ` +
+      `median ${pct(tris, 0.5)} triangles, worst ${pct(tris, 1)}`);
+  }
+
+  // --------------------------------------------------- deliberate crouch test
+  // Drop the player at a desk, crawl in, confirm hiding and blocked standing
+  const desk = lab.tables[Math.floor(lab.tables.length / 2)];
+  player.pos.set(desk.x - CELL * 0.95, 1.6, desk.z);
+  player.wantCrouch = false;
+  player.yaw = -Math.PI / 2;
+  input.held.forward = true;
+  let blockedAt = null;
+  for (let i = 0; i < 200; i++) {
+    frame(dt);
+    if (!blockedAt && Math.abs(player.pos.x - desk.x) < TABLE.topW / 2 + PLAYER.radius + 0.05) {
+      blockedAt = Math.abs(player.pos.x - desk.x);
+    }
+  }
+  const standStopped = Math.abs(player.pos.x - desk.x);
+  ok('desk stops a standing player in the live game', standStopped > TABLE.topW / 2,
+    `stopped ${standStopped.toFixed(2)} from centre`);
+
+  // Now crouch and crawl straight through: we should pass under and be flagged
+  // hidden along the way (and come out the far side, which is also correct)
+  player.wantCrouch = true;
+  let everHidden = false;
+  let hiddenFrames = 0;
+  for (let i = 0; i < 400; i++) {
+    frame(dt);
+    if (player.hidden) { everHidden = true; hiddenFrames++; }
+  }
+  input.held.forward = false;
+  ok('crawling gets the player under the desk in the live game', everHidden,
+    `${hiddenFrames} frames hidden while crossing under`);
+
+  // Park under the desk and try to stand
+  player.pos.set(desk.x, 1.0, desk.z);
+  player.wantCrouch = true;
+  frame(dt);
+  const parkedHidden = player.hidden;
+  player.wantCrouch = false;
+  frame(dt);
+  ok('standing is refused under the desk in the live game',
+    parkedHidden && player.crouching && player.stuckUnder,
+    `hidden=${parkedHidden} crouching=${player.crouching} stuck=${player.stuckUnder}`);
+
+  // Mice must not be able to join the player under there
+  const mouse = enemies.mice[0];
+  mouse.pos.set(desk.x - 2.2, mouse.pos.y, desk.z);
+  let mouseReached = false;
+  for (let i = 0; i < 240; i++) {
+    frame(dt);
+    if (Math.hypot(mouse.pos.x - desk.x, mouse.pos.z - desk.z) < TABLE.topW / 2 - 0.3) mouseReached = true;
+  }
+  ok('a mouse cannot get under the desk', !mouseReached);
+
+  // ------------------------------------------------------- virus glitch live
+  player.wantCrouch = false;
+  const spot = maze.cellCenter(...maze.openCells()[10]);
+  player.pos.set(spot.x, 1.6, spot.z);
+  frame(dt);
+  // Reset the virus completely: leftover velocity or daze from the walk would
+  // make this scenario differ run to run
+  const v = enemies.viruses[0];
+  v.glitchCooldown = 0;
+  v.burn = 0;
+  v.dazedTimer = 0;
+  v.stutterTimer = 0;
+  v.vel.set(0, 0, 0);
+
+  // Put it somewhere the player can actually see, so the scenario tests the
+  // burn mechanic rather than whether a wall happens to be in the way
+  let placed = null;
+  for (let a = 0; a < 16 && !placed; a++) {
+    const ang = (a / 16) * Math.PI * 2;
+    const px = spot.x + Math.sin(ang) * 5;
+    const pz = spot.z + Math.cos(ang) * 5;
+    if (maze.lineOfSight(spot.x, spot.z, px, pz)) placed = { x: px, z: pz };
+  }
+  placed = placed || { x: spot.x, z: spot.z - 3 };
+  v.pos.set(placed.x, VIRUS.hoverHeight, placed.z);
+  player.yaw = 0;
+  player.flashlightOn = true;
+  player.battery = 100;
+  const batteryBefore = player.battery;
+  let liveGlitch = 0;
+  let burnFrames = 0;
+  for (let i = 0; i < 120; i++) {
+    // keep the beam roughly on it, but sloppily, like a real player
+    player.yaw = Math.atan2(-(v.pos.x - player.pos.x), -(v.pos.z - player.pos.z))
+      + Math.sin(i * 0.3) * 0.12;
+    const ev = frame(dt);
+    if (ev.burning) burnFrames++;
+    liveGlitch += ev.glitched || 0;
+  }
+  ok('sloppy aim still burns the virus', burnFrames > 20, `${burnFrames} burning frames`);
+  ok('virus glitches away in the live game', liveGlitch >= 1, `${liveGlitch} glitch(es)`);
+  const spent = batteryBefore - player.battery;
+  ok('burning costs meaningful battery', spent > 4 && spent < 35,
+    `${spent.toFixed(1)}% for 2s of burning`);
+
+  // ------------------------------------------- cost of the new systems alone
+  // These are the two things this build added to the hot path, so measure them
+  // directly rather than inferring from noisy whole-frame numbers.
+  const probe = { x: player.pos.x, z: player.pos.z };
+  const N = 100000;
+  let t = performance.now();
+  for (let i = 0; i < N; i++) {
+    probe.x = player.pos.x; probe.z = player.pos.z;
+    lab.obstacles.collide(probe, PLAYER.radius, 0, PLAYER.standHeight);
+  }
+  const perCollide = (performance.now() - t) / N;
+  // Assert on the per-frame cost for every moving body, which is the number that
+  // affects the game. The raw microsecond figure swings with machine load.
+  const bodies = enemies.mice.length + 1;
+  const collidePerFrame = perCollide * bodies;
+  ok('obstacle collision is cheap', collidePerFrame < 0.2,
+    `${(perCollide * 1000).toFixed(2)}us per query, ` +
+    `${collidePerFrame.toFixed(4)}ms per frame for all ${bodies} bodies`);
+
+  t = performance.now();
+  for (let i = 0; i < N; i++) {
+    player.isLightingUp(enemies.viruses[0].pos, VIRUS.repelRange, 1.5, VIRUS.radius * 1.6);
+  }
+  const perCone = (performance.now() - t) / N;
+  const conePerFrame = perCone * enemies.viruses.length;
+  ok('flashlight cone + occlusion test is cheap', conePerFrame < 0.2,
+    `${(perCone * 1000).toFixed(2)}us per virus, ` +
+    `${conePerFrame.toFixed(4)}ms per frame for all ${enemies.viruses.length} viruses`);
+
+  // ----------------------------------------------------------- error check
+  ok('no runtime errors', errors.length === 0, errors.slice(0, 3).join(' | '));
+
+  say(`\nFAILURES: ${fails}`);
+  document.title = fails === 0 ? 'ALL PASS' : `FAILURES ${fails}`;
+} catch (err) {
+  say(`FAIL exception :: ${err && err.stack ? err.stack : err}`);
+  say(`\nFAILURES: ${fails + 1}`);
+  document.title = 'FAILURES';
+}
+</script>
+</body>
+</html>

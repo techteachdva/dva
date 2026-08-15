@@ -1,0 +1,160 @@
+/**
+ * Owns every hunter in the lab and the pressure curve.
+ *
+ * All hunting mice share one breadth-first flow field toward the player, rebuilt
+ * only when the player changes cell or a short timer expires, so adding more
+ * enemies costs almost nothing.
+ */
+
+import { EvilMouse, disposeMouseGeometry } from './mouse.js';
+import { GhostVirus, disposeVirusGeometry } from './virus.js';
+import { PRINTER } from '../config.js';
+
+const FLOW_INTERVAL = 0.3;
+const SAFE_SPAWN_CELLS = 7;   // graph distance from the player when spawning
+
+export class EnemyManager {
+  constructor(scene, maze, rng, diff, obstacles = null) {
+    this.scene = scene;
+    this.maze = maze;
+    this.rng = rng;
+    this.diff = diff;
+    this.obstacles = obstacles;
+
+    this.mice = [];
+    this.viruses = [];
+    this.escalation = 0;
+    this.swarming = false;
+
+    this._flow = null;
+    this._flowTimer = 0;
+    this._flowCell = [-1, -1];
+  }
+
+  spawnInitial(playerCell) {
+    for (let i = 0; i < this.diff.mice; i++) this.spawnMouse(playerCell);
+    for (let i = 0; i < this.diff.viruses; i++) this.spawnVirus(playerCell);
+  }
+
+  _safeCell(playerCell) {
+    const cell = this.maze.cellAwayFrom(playerCell[0], playerCell[1], SAFE_SPAWN_CELLS);
+    return cell || this.rng.pick(this.maze.openCells());
+  }
+
+  spawnMouse(playerCell) {
+    const m = new EvilMouse(
+      this.maze, this._safeCell(playerCell), this.rng, this.mice.length, this.obstacles,
+    );
+    this.scene.add(m.mesh);
+    this.mice.push(m);
+    return m;
+  }
+
+  spawnVirus(playerCell) {
+    const v = new GhostVirus(this.maze, this._safeCell(playerCell), this.rng, this.viruses.length);
+    this.scene.add(v.mesh);
+    this.viruses.push(v);
+    return v;
+  }
+
+  /** Called after each code piece: the lab notices you are winning. */
+  escalate(playerCell) {
+    this.escalation += this.diff.escalationPerPiece;
+    const speed = 1 + this.escalation * 0.055;
+    for (const m of this.mice) m.speedScale = speed;
+    for (const v of this.viruses) v.speedScale = speed;
+
+    // Alternate what gets added so both threats stay represented
+    if (this.escalation % 2 < 1) this.spawnMouse(playerCell);
+    else this.spawnVirus(playerCell);
+  }
+
+  /** The climax during the print: everything converges and speeds up. */
+  startSwarm(playerCell) {
+    if (this.swarming) return;
+    this.swarming = true;
+    for (let i = 0; i < PRINTER.swarmSpawn; i++) {
+      if (i % 2 === 0) this.spawnMouse(playerCell);
+      else this.spawnVirus(playerCell);
+    }
+    const s = PRINTER.swarmSpeedScale * (1 + this.escalation * 0.055);
+    for (const m of this.mice) m.speedScale = s;
+    for (const v of this.viruses) v.speedScale = s;
+  }
+
+  endSwarm() {
+    if (!this.swarming) return;
+    this.swarming = false;
+    const s = 1 + this.escalation * 0.055;
+    for (const m of this.mice) m.speedScale = s;
+    for (const v of this.viruses) v.speedScale = s;
+  }
+
+  get glowSources() {
+    const out = [];
+    for (const m of this.mice) out.push(m.glow);
+    for (const v of this.viruses) out.push(v.glow);
+    return out;
+  }
+
+  /**
+   * @returns {{damage:number, batteryDrain:number, hunters:number, nearest:number}}
+   */
+  update(dt, player) {
+    const [pcx, pcy] = this.maze.worldToCell(player.pos.x, player.pos.z);
+
+    // Rebuild the shared flow field on a timer or when the player moves cell
+    this._flowTimer -= dt;
+    if (this._flowTimer <= 0 || pcx !== this._flowCell[0] || pcy !== this._flowCell[1]) {
+      this._flowTimer = FLOW_INTERVAL;
+      this._flowCell = [pcx, pcy];
+      this.maze.invalidateFlow();
+      this._flow = this.maze.buildFlow(pcx, pcy);
+      // Patrol paths reuse the cache, so release it for them
+      this.maze.invalidateFlow();
+    }
+
+    let damage = 0;
+    let batteryDrain = 0;
+    let hunters = 0;
+    let nearest = Infinity;
+    let burning = false;
+    let burnCharge = 0;
+    let glitched = 0;
+
+    for (const m of this.mice) {
+      const ev = m.update(dt, player, this._flow, this.mice, this.diff);
+      if (ev?.hit) damage += ev.hit;
+      if (m.hunting) hunters++;
+      const d = Math.hypot(player.pos.x - m.pos.x, player.pos.z - m.pos.z);
+      if (d < nearest) nearest = d;
+    }
+
+    for (const v of this.viruses) {
+      const ev = v.update(dt, player, this.diff);
+      if (ev?.hit) {
+        damage += ev.hit;
+        batteryDrain += ev.batteryDrain || 0;
+      }
+      if (ev?.glitched) glitched++;
+      if (ev?.burning || v.burning) {
+        burning = true;
+        burnCharge = Math.max(burnCharge, ev?.charge || 0);
+      }
+      if (v.hunting) hunters++;
+      const d = Math.hypot(player.pos.x - v.pos.x, player.pos.z - v.pos.z);
+      if (d < nearest) nearest = d;
+    }
+
+    return { damage, batteryDrain, hunters, nearest, burning, burnCharge, glitched };
+  }
+
+  dispose() {
+    for (const m of this.mice) m.dispose(this.scene);
+    for (const v of this.viruses) v.dispose(this.scene);
+    this.mice.length = 0;
+    this.viruses.length = 0;
+    disposeMouseGeometry();
+    disposeVirusGeometry();
+  }
+}
