@@ -274,6 +274,16 @@ button { font-family: inherit; }
   text-align: center;
 }
 
+/* Title screen grew in 2.0; without this the play button sits below the fold
+   and body { overflow: hidden } makes it unreachable on Chromebooks. */
+#screen-title .screen-inner {
+  overflow-y: auto;
+  min-height: 0;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: clamp(12px, 2vh, 24px);
+}
+
 .screen-inner.narrow { width: min(620px, 100%); }
 
 .scrollable {
@@ -2065,6 +2075,7 @@ body.reduce-fx #scanlines { display: none; }
 
 @media (max-height: 560px) {
   .title-body { display: none; }
+  .title-tips { display: none; }
   .difficulty-select { margin-bottom: 10px; }
   .logo-title { font-size: clamp(30px, 8vw, 60px); }
 }
