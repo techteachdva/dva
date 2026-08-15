@@ -4,6 +4,8 @@
  */
 
 import { clamp } from './util.js';
+import { bindDisplay, normalizeBinds } from './meta/binds.js';
+import { settings } from './meta/settings.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -21,7 +23,7 @@ export const ui = {
       'health-bags', 'stamina-fill', 'battery-fill', 'battery-label',
       'hide-indicator', 'hint-line', 'glitch-overlay', 'stance-value',
       'toast-stack', 'danger-warning', 'damage-flash', 'crosshair',
-      'inventory-bar', 'caption-stack', 'control-legend',
+      'inventory-bar', 'caption-stack', 'control-legend', 'interact-key',
       'screen-title', 'screen-firstrun', 'screen-profile', 'screen-guide',
       'screen-pause', 'screen-standards', 'screen-quiz',
       'screen-decrypt', 'screen-printer', 'screen-over', 'screen-win',
@@ -32,6 +34,7 @@ export const ui = {
     for (const id of ids) {
       this.el[id] = $(id);
     }
+    this.updateControlLegend();
   },
 
   // ------------------------------------------------------------------ screens
@@ -205,6 +208,11 @@ export const ui = {
 
   showInteract(text) {
     const el = this.el['interact-prompt'];
+    const keyEl = this.el['interact-key'];
+    if (keyEl) {
+      const binds = normalizeBinds(settings.get('binds'));
+      keyEl.textContent = bindDisplay(binds.interact);
+    }
     if (!text) {
       if (this._lastInteract !== null) {
         el.classList.add('hidden');
@@ -217,6 +225,27 @@ export const ui = {
       el.classList.remove('hidden');
       this._lastInteract = text;
     }
+  },
+
+  /** HUD control list (H) — reflects remapped keys. */
+  updateControlLegend() {
+    const host = this.el['control-legend'];
+    if (!host) return;
+    const b = normalizeBinds(settings.get('binds'));
+    const row = (key, text) => `<div class="legend-row"><span class="key">${key}</span> ${text}</div>`;
+    host.innerHTML = [
+      row('WASD', 'move'),
+      row('Arrows', 'look / turn'),
+      row(bindDisplay(b.interact), 'use terminal / printer / door'),
+      row(bindDisplay(b.throw), 'throw (disc at virus, cheetos otherwise)'),
+      row(bindDisplay(b.eatCheetos), 'eat hot cheetos'),
+      row(bindDisplay(b.light), 'flashlight'),
+      row(bindDisplay(b.crouch), 'crouch'),
+      row('Shift', 'sprint (toggle)'),
+      row(bindDisplay(b.cycleItem), 'switch item (soda)'),
+      row('H', 'hide this list'),
+      row('P', 'pause'),
+    ].join('');
   },
 
   setHiddenIndicator(on) {

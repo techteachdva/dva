@@ -18,6 +18,7 @@
  */
 
 import { FLASH_SAFETY } from '../config.js';
+import { BIND_DEFAULTS, normalizeBinds } from './binds.js';
 
 const KEY = 'techEscape.settings.v1';
 
@@ -63,6 +64,9 @@ export const DEFAULTS = {
   showLegend: true,
   skipBoot: false,          // remembered once they skip the loading screen
   seenFirstRun: false,
+
+  /** Gameplay key codes; remapped from the pause menu. */
+  binds: { ...BIND_DEFAULTS },
 };
 
 /** Wide spacing is the intervention with actual evidence behind it. */
@@ -89,7 +93,13 @@ class Settings {
   /** @returns {boolean} true when the value actually changed. */
   set(k, v) {
     if (this.values[k] === v) return false;
-    this.values[k] = v;
+    if (k === 'binds') {
+      const merged = normalizeBinds(v);
+      if (JSON.stringify(merged) === JSON.stringify(this.values.binds)) return false;
+      this.values.binds = merged;
+    } else {
+      this.values[k] = v;
+    }
     this.save();
     this.apply();
     for (const fn of this._listeners) fn(k, v);
@@ -110,6 +120,7 @@ class Settings {
     } catch {
       // A locked-down or full profile is not a reason to refuse to boot
     }
+    this.values.binds = normalizeBinds(this.values.binds);
     this.adoptSystemPreferences();
     this.apply();
     return this.values;

@@ -35,7 +35,7 @@
     <div id="crosshair"><span></span></div>
 
     <div id="interact-prompt" class="hidden">
-      <span class="key">E</span><span id="interact-text">Use</span>
+      <span class="key" id="interact-key">Enter</span><span id="interact-text">Use</span>
     </div>
 
     <div id="hint-line" class="hidden"></div>
@@ -79,19 +79,7 @@
     <div id="caption-stack" class="caption-stack hidden" role="status" aria-live="polite"></div>
 
     <!-- Control legend, toggled with H -->
-    <div id="control-legend" class="control-legend">
-      <div class="legend-row"><span class="key">WASD</span> move</div>
-      <div class="legend-row"><span class="key">Arrows</span> look / turn</div>
-      <div class="legend-row"><span class="key">E</span> use terminal</div>
-      <div class="legend-row"><span class="key">F</span> flashlight</div>
-      <div class="legend-row"><span class="key">C</span> crouch</div>
-      <div class="legend-row"><span class="key">Shift</span> sprint (toggle)</div>
-      <div class="legend-row"><span class="key">Q</span> switch item</div>
-      <div class="legend-row"><span class="key">R</span> use item</div>
-      <div class="legend-row"><span class="key">G</span> throw item</div>
-      <div class="legend-row"><span class="key">H</span> hide this list</div>
-      <div class="legend-row"><span class="key">P</span> pause</div>
-    </div>
+    <div id="control-legend" class="control-legend"></div>
 
     <!-- RGB split / static burst when a virus glitches out -->
     <div id="glitch-overlay" aria-hidden="true">
@@ -249,9 +237,10 @@
         <div class="ctrl"><span class="key">SHIFT</span> Sprint (tap to toggle)</div>
         <div class="ctrl"><span class="key">C</span> Crouch / crawl</div>
         <div class="ctrl"><span class="key">F</span> Flashlight</div>
-        <div class="ctrl"><span class="key">E</span> Use</div>
+        <div class="ctrl"><span class="key">Enter</span> Use terminal / door</div>
+        <div class="ctrl"><span class="key">E</span> Throw (disc at virus, cheetos otherwise)</div>
         <div class="ctrl"><span class="key">Q</span> Switch item</div>
-        <div class="ctrl"><span class="key">R</span> Use item &middot; <span class="key">G</span> Throw</div>
+        <div class="ctrl"><span class="key">R</span> Eat hot cheetos</div>
         <div class="ctrl"><span class="key">P</span> or <span class="key">ESC</span> Pause</div>
       </div>
 
@@ -262,10 +251,10 @@
           Hold the beam on a floating virus and it glitches out and teleports away. It comes back.
           Burning one drains your battery fast, and the light <strong>attracts</strong> the mice.</p>
         <p><strong>Hot cheetos are a decision.</strong> Eat a bag with <span class="key">R</span> to get
-          health back, or throw it with <span class="key">G</span> &mdash; every mouse nearby will stop
-          hunting you and crowd around it. Do not be standing there when the bag goes off.</p>
-        <p><strong>An anti-virus disc deletes a virus for good.</strong> They are rare. Throw one with
-          <span class="key">G</span>; if you miss, it clatters to the floor and you can go pick it back up.</p>
+          health back, or throw with <span class="key">E</span> &mdash; aim at mice or the floor to lure them.
+          Do not stand nearby when the bag goes off.</p>
+        <p><strong>An anti-virus disc deletes a virus for good.</strong> They are rare. Aim at a virus and press
+          <span class="key">E</span>; if you miss, the disc clatters to the floor and you can pick it back up.</p>
       </div>
 
       <!--
@@ -475,18 +464,18 @@
         </button>
       </div>
 
+      <h3 class="pause-h">KEYBINDS</h3>
+      <p class="setting-note bind-note">Click a row, then press the key you want. Esc cancels.</p>
+      <div id="bind-list" class="bind-list"></div>
+      <button type="button" id="btn-bind-reset" class="link-btn">Reset controls to default</button>
+
       <h3 class="pause-h">CONTROLS</h3>
-      <div class="title-controls compact">
-        <div class="ctrl"><span class="key">W A S D</span> Move</div>
-        <div class="ctrl"><span class="key">ARROWS</span> Look / turn</div>
-        <div class="ctrl"><span class="key">SHIFT</span> Sprint (tap to toggle)</div>
-        <div class="ctrl"><span class="key">C</span> Crouch &amp; crawl</div>
+      <div class="title-controls compact" id="pause-controls-hint">
+        <div class="ctrl"><span class="key">Enter</span> Use</div>
+        <div class="ctrl"><span class="key">E</span> Throw</div>
+        <div class="ctrl"><span class="key">R</span> Eat cheetos</div>
         <div class="ctrl"><span class="key">F</span> Flashlight</div>
-        <div class="ctrl"><span class="key">E</span> Use</div>
         <div class="ctrl"><span class="key">Q</span> Switch item</div>
-        <div class="ctrl"><span class="key">R</span> Use item</div>
-        <div class="ctrl"><span class="key">G</span> Throw item</div>
-        <div class="ctrl"><span class="key">H</span> Control list</div>
       </div>
       <div class="pause-tips">
         <p><strong>Crawl to hide.</strong> Desks are solid while you stand. Crouch to fit under one &mdash;
@@ -696,6 +685,7 @@
     <div id="touch-stick"><div id="touch-knob"></div></div>
     <div class="touch-buttons">
       <button class="tbtn" id="tbtn-use">USE</button>
+      <button class="tbtn" id="tbtn-throw">THROW</button>
       <button class="tbtn" id="tbtn-light">LIGHT</button>
       <button class="tbtn" id="tbtn-run">RUN</button>
       <button class="tbtn" id="tbtn-crouch">CROUCH</button>

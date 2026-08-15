@@ -33,6 +33,7 @@ import { saveStore } from './meta/save.js';
 import { settings, flashGuard } from './meta/settings.js';
 import { getLevel, layoutFor, runProfile } from './meta/levels.js';
 import { sessionUi } from './meta/session-ui.js';
+import { bindUi } from './meta/bind-ui.js';
 import { BootSequence } from './ui/boot.js';
 import { captions } from './ui/captions.js';
 
@@ -49,6 +50,8 @@ const MODE = {
 };
 
 const INTERACT_RANGE = 2.6;
+const THROW_AIM_RANGE = 22;
+const THROW_AIM_DOT = 0.68;
 const FRAGMENT_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
 class Game {
@@ -87,7 +90,15 @@ class Game {
     if (!this._initRenderer(canvas)) return;
 
     input.init(canvas);
+    input.applyBinds(settings.get('binds'));
     sessionUi.bind(this);
+    bindUi.init();
+    settings.onChange((k) => {
+      if (k === 'binds') {
+        input.applyBinds(settings.get('binds'));
+        ui.updateControlLegend();
+      }
+    });
     this._applySettings();
 
     this._bindUi();
@@ -746,9 +757,9 @@ class Game {
     const w = this.world;
     if (got.taken?.length) {
       for (const kind of got.taken) {
-        if (kind === 'cheetos') ui.toast('Hot cheetos picked up. R to eat, G to throw.', 'good', 2200);
-        else if (kind === 'soda') ui.toast('Soda can picked up. R to drink.', 'good', 2000);
-        else if (kind === 'antivirus') ui.toast('Anti-virus disc! G to throw at a virus.', 'good', 2800);
+        if (kind === 'cheetos') ui.toast('Hot cheetos picked up. R to eat, E to throw.', 'good', 2200);
+        else if (kind === 'soda') ui.toast('Soda can picked up. Q to select, R to drink.', 'good', 2000);
+        else if (kind === 'antivirus') ui.toast('Anti-virus disc! Aim at a virus and press E.', 'good', 2800);
       }
       ui.updateInventoryBar(w.inventory);
       this._invUiRev = w.inventory.revision;
@@ -780,44 +791,99 @@ class Game {
       if (info) ui.toast(info.label, '', 900);
     }
 
-    if (input.pressed('useItem')) {
-      const kind = inv.selected;
-      if (kind === 'cheetos' && inv.has('cheetos')) {
+    if (input.pressed('eatCheetos')) {
+      if (inv.selected === 'soda' && inv.has('soda')) {
+        if (inv.remove('soda') && w.player.drinkSoda()) {
+          ui.updateInventoryBar(inv);
+          ui.toast('Soda boost! Stamina refilled.', 'good');
+        }
+      } else if (inv.has('cheetos')) {
         if (w.player.health >= w.player.maxHealth) {
-          ui.toast('Snack bar full — throw the bag instead.', 'warn');
+          ui.toast('Snack bar full — throw a bag to lure mice.', 'warn');
         } else if (inv.remove('cheetos') && w.player.heal(PICKUP.cheetosHeal)) {
           ui.setHealth(w.player.health);
           ui.updateInventoryBar(inv);
           ui.toast('Hot cheetos! Snack energy restored.', 'good');
         }
-      } else if (kind === 'soda' && inv.has('soda')) {
-        if (inv.remove('soda') && w.player.drinkSoda()) {
-          ui.updateInventoryBar(inv);
-          ui.toast('Soda boost! Stamina refilled.', 'good');
-        }
-      } else if (!inv.has(kind)) {
-        ui.toast('Nothing selected to use.', 'warn', 1200);
+      } else if (inv.has('soda') && inv.remove('soda') && w.player.drinkSoda()) {
+        ui.updateInventoryBar(inv);
+        ui.toast('Soda boost! Stamina refilled.', 'good');
+      } else {
+        ui.toast('No hot cheetos to eat.', 'warn', 1200);
       }
     }
 
-    if (input.pressed('throwItem')) {
-      const kind = inv.selected;
-      const info = inv.info(kind);
-      if (!info?.throwable || !inv.has(kind)) {
-        audio.deny();
-        return;
-      }
-      if (!inv.remove(kind)) return;
-      const dir = w.player.forward();
-      const thrown = w.throws.throwItem(kind, w.player.eyePos, dir);
-      if (!thrown) {
-        inv.add(kind, 1);
-        audio.deny();
-        return;
-      }
-      ui.updateInventoryBar(inv);
-      ui.toast(kind === 'cheetos' ? 'Bag thrown — mice will smell it.' : 'Disc thrown!', 'good', 1600);
+    if (input.pressed('throw')) {
+      this._throwAimedItem();
     }
+  }
+
+  /** True when the crosshair is on a living virus within throw range. */
+  _aimingAtVirus(w) {
+    const p = w.player;
+    const fwd = p.forward();
+    const px = p.pos.x;
+    const pz = p.pos.z;
+    for (const v of w.enemies.viruses) {
+      if (v.dead) continue;
+      const dx = v.pos.x - px;
+      const dz = v.pos.z - pz;
+      const dist = Math.hypot(dx, dz);
+      if (dist > THROW_AIM_RANGE) continue;
+      const dot = dist < 0.01 ? 1 : (dx / dist) * fwd.x + (dz / dist) * fwd.z;
+      if (dot >= THROW_AIM_DOT) return true;
+    }
+    return false;
+  }
+
+  /**
+   * Pick cheetos vs anti-virus from what the player is looking at, not the
+   * highlighted inventory slot — which is what caused disc throws to fire bags.
+   */
+  _resolveThrowKind(w) {
+    const inv = w.inventory;
+    const atVirus = this._aimingAtVirus(w);
+
+    if (atVirus) {
+      if (inv.has('antivirus')) return { kind: 'antivirus' };
+      return {
+        kind: null,
+        msg: 'You are aiming at a virus — you need an anti-virus disc, not cheetos.',
+      };
+    }
+
+    if (inv.has('cheetos')) return { kind: 'cheetos' };
+    if (inv.has('antivirus')) return { kind: 'antivirus' };
+    return { kind: null, msg: 'Nothing to throw.' };
+  }
+
+  _throwAimedItem() {
+    const w = this.world;
+    const inv = w.inventory;
+    const pick = this._resolveThrowKind(w);
+    if (!pick.kind) {
+      audio.deny();
+      if (pick.msg) ui.toast(pick.msg, 'warn', 2200);
+      return;
+    }
+    if (!inv.remove(pick.kind)) {
+      audio.deny();
+      return;
+    }
+    const dir = w.player.forward();
+    const thrown = w.throws.throwItem(pick.kind, w.player.eyePos, dir);
+    if (!thrown) {
+      inv.add(pick.kind, 1);
+      audio.deny();
+      return;
+    }
+    ui.updateInventoryBar(inv);
+    ui.toast(
+      pick.kind === 'cheetos'
+        ? 'Bag thrown — mice will smell it.'
+        : 'Disc thrown at the virus!',
+      'good', 1600,
+    );
   }
 
   _updateTension(ev, dt) {
@@ -966,7 +1032,7 @@ class Game {
       ui.showHint(null);
     }
 
-    if (input.pressed('use') && best) {
+    if (input.pressed('interact') && best) {
       if (best.enabled && best.action) best.action();
       else audio.deny();
     }

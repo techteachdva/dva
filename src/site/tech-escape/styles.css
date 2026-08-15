@@ -2373,6 +2373,47 @@ body.reduce-fx #scanlines { display: none; }
 
 .story.dim { color: var(--ink-dim); font-style: italic; }
 
+.bind-note { margin: 0 0 10px; text-align: left; }
+
+.bind-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.bind-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid rgba(53, 224, 255, 0.28);
+  border-radius: 8px;
+  background: rgba(8, 16, 28, 0.75);
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+  font-family: var(--sans);
+  font-size: 13px;
+}
+
+.bind-row:hover { border-color: var(--cyan); }
+.bind-row.is-listening {
+  border-color: var(--amber);
+  box-shadow: 0 0 12px rgba(255, 226, 102, 0.25);
+}
+
+.bind-name { flex: 1; line-height: 1.4; color: var(--ink-dim); }
+.bind-key {
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  color: var(--cyan);
+  white-space: nowrap;
+}
+
 @media print {
   .screen:not(#screen-guide) { display: none !important; }
   #screen-guide { position: static !important; background: #fff !important; color: #000 !important; }

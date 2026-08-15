@@ -3,29 +3,27 @@
  *
  * Pointer lock is requested on click. Chromebooks in tablet mode and
  * touchscreen Chromebooks fall back to the on-screen stick plus drag-to-look.
+ *
+ * Gameplay binds (throw, interact, etc.) are loaded from settings and can be
+ * remapped in the pause menu. Movement keys are fixed.
  */
 
 import { clamp } from './util.js';
+import { normalizeBinds } from './meta/binds.js';
 
-const KEY_ALIASES = {
+/** Movement and sprint — not remapped. */
+const FIXED_BINDS = {
   ArrowUp: 'forward', KeyW: 'forward',
   ArrowDown: 'back', KeyS: 'back',
   ArrowLeft: 'left', KeyA: 'left',
   ArrowRight: 'right', KeyD: 'right',
   ShiftLeft: 'sprint', ShiftRight: 'sprint',
-  KeyE: 'use', Enter: 'use',
-  KeyF: 'light',
-  KeyQ: 'cycleItem',
-  KeyR: 'useItem',
-  KeyG: 'throwItem',
-  // Crouch is a toggle. Both keys are comfortable on a Chromebook, and neither
-  // collides with Shift (sprint), so you can hold a direction and crouch freely.
-  KeyC: 'crouch', ControlLeft: 'crouch', ControlRight: 'crouch',
 };
 
 export const input = {
   held: Object.create(null),
   _edge: Object.create(null),
+  _codeToAction: { ...FIXED_BINDS },
   mouseDX: 0,
   mouseDY: 0,
   locked: false,
@@ -36,27 +34,37 @@ export const input = {
   _enabled: false,
   onPointerLockChange: null,
 
+  /** Rebuild code → action map from saved settings. */
+  applyBinds(binds) {
+    const map = { ...FIXED_BINDS };
+    const b = normalizeBinds(binds);
+    for (const [action, code] of Object.entries(b)) {
+      if (code) map[code] = action;
+    }
+    // Enter on numpad matches interact when Enter is bound
+    if (b.interact === 'Enter') map.NumpadEnter = 'interact';
+    this._codeToAction = map;
+  },
+
   init(canvas) {
     this._canvas = canvas;
 
     window.addEventListener('keydown', (e) => {
-      const a = KEY_ALIASES[e.code];
+      const a = this._codeToAction[e.code];
       if (a) {
         if (!this.held[a]) this._edge[a] = true;
         this.held[a] = true;
       }
-      // Stop the page from scrolling behind the canvas
       if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
         e.preventDefault();
       }
     });
 
     window.addEventListener('keyup', (e) => {
-      const a = KEY_ALIASES[e.code];
+      const a = this._codeToAction[e.code];
       if (a) this.held[a] = false;
     });
 
-    // Losing focus must not leave a key stuck down
     window.addEventListener('blur', () => this.releaseAll());
 
     document.addEventListener('pointerlockchange', () => {
@@ -74,7 +82,6 @@ export const input = {
     this._initTouch();
   },
 
-  /** Enable/disable look input without dropping pointer lock. */
   setEnabled(on) {
     this._enabled = on;
     if (!on) this.releaseAll();
@@ -88,7 +95,6 @@ export const input = {
     this.touchMove.y = 0;
   },
 
-  /** True once per physical press. */
   pressed(action) {
     if (this._edge[action]) {
       this._edge[action] = false;
@@ -104,7 +110,6 @@ export const input = {
   requestLock() {
     if (!this._canvas || this.locked) return;
     const p = this._canvas.requestPointerLock?.();
-    // Chrome returns a promise in newer versions; a rejection is not fatal
     if (p && typeof p.catch === 'function') p.catch(() => {});
   },
 
@@ -112,7 +117,6 @@ export const input = {
     if (document.pointerLockElement) document.exitPointerLock();
   },
 
-  /** Consumes accumulated look delta, scaled by sensitivity. */
   takeLook() {
     const scale = (this.sensitivity / 100) * 0.0022;
     const out = { x: this.mouseDX * scale, y: this.mouseDY * scale };
@@ -189,7 +193,6 @@ export const input = {
     stick.addEventListener('touchend', endStick);
     stick.addEventListener('touchcancel', endStick);
 
-    // Drag anywhere else on the canvas to look around
     let lookId = null;
     let lastX = 0;
     let lastY = 0;
@@ -229,7 +232,8 @@ export const input = {
       }, { passive: false });
     };
 
-    bindBtn('tbtn-use', 'use');
+    bindBtn('tbtn-use', 'interact');
+    bindBtn('tbtn-throw', 'throw');
     bindBtn('tbtn-light', 'light');
     bindBtn('tbtn-run', 'sprint');
     bindBtn('tbtn-crouch', 'crouch');
@@ -241,7 +245,6 @@ export const input = {
     if (ui) ui.classList.toggle('hidden', !show);
   },
 
-  /** Combined keyboard + touch movement axes. */
   moveAxes() {
     let x = 0;
     let y = 0;
