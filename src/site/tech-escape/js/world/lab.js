@@ -929,8 +929,8 @@ export class Lab {
     signTex.colorSpace = THREE.SRGBColorSpace;
     const signMat = new THREE.MeshBasicMaterial({ map: signTex });
     const sign = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 0.5), signMat);
-    sign.position.set(0, 1.52, 0.08);
-    doorPivot.add(sign);
+    sign.position.set(0, 2.72, 0.08);
+    group.add(sign);
     this._disposables.push(sign.geometry, signMat, signTex);
 
     this.group.add(group);
