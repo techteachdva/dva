@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#05070d" />
 <meta name="description" content="Tech Escape - a 3D horror escape game where you answer technology questions, decrypt a code, and print a key to escape the haunted Tech Lab." />
 <title>Tech Escape</title>
@@ -707,15 +710,23 @@
     </div>
   </div>
 
-  <!-- ===================== Touch controls (shown only on touch devices) ===================== -->
+  <!-- ===================== Touch controls (phones / tablets) ===================== -->
   <div id="touch-ui" class="hidden">
+    <div id="touch-look" aria-hidden="true"></div>
+    <p id="touch-look-hint" class="touch-look-hint">DRAG TO LOOK</p>
     <div id="touch-stick"><div id="touch-knob"></div></div>
+    <div class="touch-top-bar">
+      <button class="tbtn tbtn-mini" id="tbtn-fs" type="button">FULL</button>
+      <button class="tbtn tbtn-mini" id="tbtn-pause" type="button">PAUSE</button>
+    </div>
     <div class="touch-buttons">
-      <button class="tbtn" id="tbtn-use">USE</button>
-      <button class="tbtn" id="tbtn-throw">THROW</button>
-      <button class="tbtn" id="tbtn-light">LIGHT</button>
-      <button class="tbtn" id="tbtn-run">RUN</button>
-      <button class="tbtn" id="tbtn-crouch">CROUCH</button>
+      <button class="tbtn" id="tbtn-use" type="button">USE</button>
+      <button class="tbtn" id="tbtn-throw" type="button">THROW</button>
+      <button class="tbtn" id="tbtn-eat" type="button">EAT</button>
+      <button class="tbtn" id="tbtn-light" type="button">LIGHT</button>
+      <button class="tbtn" id="tbtn-run" type="button">RUN</button>
+      <button class="tbtn" id="tbtn-crouch" type="button">CROUCH</button>
+      <button class="tbtn" id="tbtn-item" type="button">ITEM</button>
     </div>
   </div>
 </div>

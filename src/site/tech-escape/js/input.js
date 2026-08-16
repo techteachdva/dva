@@ -1,16 +1,17 @@
 /**
  * Keyboard / mouse / touch input.
  *
- * Pointer lock is requested on click. Chromebooks in tablet mode and
- * touchscreen Chromebooks fall back to the on-screen stick plus drag-to-look.
+ * Desktop: pointer lock + keyboard + optional three-button mouse layer.
+ * Phones: virtual stick, look zone, and action buttons (no pointer lock).
  *
- * Gameplay binds (throw, interact, etc.) are loaded from settings and can be
- * remapped in the pause menu. Movement keys are fixed.
+ * Gameplay binds are loaded from settings and can be remapped in the pause menu.
  */
 
 import { clamp } from './util.js';
+import { MOBILE } from './config.js';
 import { normalizeBinds } from './meta/binds.js';
 import { mousePlay } from './input-mouse.js';
+import { touchUi, preferTouchControls } from './input-touch.js';
 
 /** Movement and sprint — not remapped. */
 const FIXED_BINDS = {
@@ -29,8 +30,8 @@ export const input = {
   mouseDY: 0,
   locked: false,
   sensitivity: 100,
-  touchActive: false,
-  touchMove: { x: 0, y: 0 },
+  touchMode: false,
+  touchAvailable: false,
   _canvas: null,
   _enabled: false,
   onPointerLockChange: null,
@@ -42,13 +43,14 @@ export const input = {
     for (const [action, code] of Object.entries(b)) {
       if (code) map[code] = action;
     }
-    // Enter on numpad matches interact when Enter is bound
     if (b.interact === 'Enter') map.NumpadEnter = 'interact';
     this._codeToAction = map;
   },
 
   init(canvas) {
     this._canvas = canvas;
+    this.touchMode = preferTouchControls();
+    document.body.classList.toggle('touch-mode', this.touchMode);
 
     window.addEventListener('keydown', (e) => {
       const a = this._codeToAction[e.code];
@@ -70,17 +72,18 @@ export const input = {
 
     document.addEventListener('pointerlockchange', () => {
       this.locked = document.pointerLockElement === canvas;
-      if (!this.locked) this.releaseAll();
+      if (!this.locked && !this.touchMode) this.releaseAll();
       if (this.onPointerLockChange) this.onPointerLockChange(this.locked);
     });
 
     document.addEventListener('mousemove', (e) => {
-      if (!this.locked || !this._enabled) return;
+      if (!this.locked || !this._enabled || this.touchMode) return;
       this.mouseDX += e.movementX || 0;
       this.mouseDY += e.movementY || 0;
     });
 
-    this._initTouch();
+    touchUi.init(this);
+    this.touchAvailable = touchUi.available;
     mousePlay.init(canvas);
   },
 
@@ -93,9 +96,8 @@ export const input = {
     for (const k in this.held) this.held[k] = false;
     this.mouseDX = 0;
     this.mouseDY = 0;
-    this.touchMove.x = 0;
-    this.touchMove.y = 0;
     mousePlay.releaseAll();
+    touchUi.releaseAll();
   },
 
   pressed(action) {
@@ -111,152 +113,47 @@ export const input = {
     mousePlay.clearEdges();
   },
 
-  /** Mouse button / wheel actions for the current frame. */
   mouseActions() {
+    if (this.touchMode) {
+      return { primary: false, eat: false, light: false, crouch: false, wheel: 0 };
+    }
     return mousePlay.consumeEdges();
   },
 
   tickMouse(enabled, locked) {
+    if (this.touchMode) return;
     mousePlay.tick(enabled, locked);
   },
 
   requestLock() {
-    if (!this._canvas || this.locked) return;
+    if (this.touchMode || !this._canvas || this.locked) return;
     const p = this._canvas.requestPointerLock?.();
     if (p && typeof p.catch === 'function') p.catch(() => {});
   },
 
   releaseLock() {
+    if (this.touchMode) return;
     if (document.pointerLockElement) document.exitPointerLock();
   },
 
   takeLook() {
-    const scale = (this.sensitivity / 100) * 0.0022;
+    const touchScale = this.touchMode ? MOBILE.lookScale : 1;
+    const scale = (this.sensitivity / 100) * 0.0022 * touchScale;
     this.mouseDX = mousePlay.absorbLookDelta(this.mouseDX);
     const out = { x: this.mouseDX * scale, y: this.mouseDY * scale };
     this.mouseDX = 0;
     this.mouseDY = 0;
-    if (this._touchLook.x || this._touchLook.y) {
-      out.x += this._touchLook.x * scale * 1.5;
-      out.y += this._touchLook.y * scale * 1.5;
-      this._touchLook.x = 0;
-      this._touchLook.y = 0;
+
+    if (this.touchMode && touchUi.active) {
+      const tl = touchUi.consumeLook();
+      out.x += tl.x * scale;
+      out.y += tl.y * scale;
     }
     return out;
   },
 
-  _touchLook: { x: 0, y: 0 },
-
-  _initTouch() {
-    const isTouch = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
-    if (!isTouch) return;
-
-    const ui = document.getElementById('touch-ui');
-    const stick = document.getElementById('touch-stick');
-    const knob = document.getElementById('touch-knob');
-    if (!ui || !stick || !knob) return;
-
-    this.touchAvailable = true;
-
-    let stickId = null;
-    let originX = 0;
-    let originY = 0;
-    const RADIUS = 46;
-
-    const setKnob = (dx, dy) => {
-      knob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
-    };
-
-    stick.addEventListener('touchstart', (e) => {
-      const t = e.changedTouches[0];
-      stickId = t.identifier;
-      const r = stick.getBoundingClientRect();
-      originX = r.left + r.width / 2;
-      originY = r.top + r.height / 2;
-      this.touchActive = true;
-      e.preventDefault();
-    }, { passive: false });
-
-    const moveStick = (e) => {
-      for (const t of e.changedTouches) {
-        if (t.identifier !== stickId) continue;
-        let dx = t.clientX - originX;
-        let dy = t.clientY - originY;
-        const len = Math.hypot(dx, dy) || 1;
-        const cl = Math.min(len, RADIUS);
-        dx = (dx / len) * cl;
-        dy = (dy / len) * cl;
-        setKnob(dx, dy);
-        this.touchMove.x = clamp(dx / RADIUS, -1, 1);
-        this.touchMove.y = clamp(dy / RADIUS, -1, 1);
-        e.preventDefault();
-      }
-    };
-
-    const endStick = (e) => {
-      for (const t of e.changedTouches) {
-        if (t.identifier !== stickId) continue;
-        stickId = null;
-        this.touchMove.x = 0;
-        this.touchMove.y = 0;
-        setKnob(0, 0);
-      }
-    };
-
-    stick.addEventListener('touchmove', moveStick, { passive: false });
-    stick.addEventListener('touchend', endStick);
-    stick.addEventListener('touchcancel', endStick);
-
-    let lookId = null;
-    let lastX = 0;
-    let lastY = 0;
-
-    this._canvas.addEventListener('touchstart', (e) => {
-      const t = e.changedTouches[0];
-      lookId = t.identifier;
-      lastX = t.clientX;
-      lastY = t.clientY;
-    }, { passive: true });
-
-    this._canvas.addEventListener('touchmove', (e) => {
-      if (!this._enabled) return;
-      for (const t of e.changedTouches) {
-        if (t.identifier !== lookId) continue;
-        this._touchLook.x += t.clientX - lastX;
-        this._touchLook.y += t.clientY - lastY;
-        lastX = t.clientX;
-        lastY = t.clientY;
-      }
-      e.preventDefault();
-    }, { passive: false });
-
-    this._canvas.addEventListener('touchend', () => { lookId = null; });
-
-    const bindBtn = (id, action) => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.addEventListener('touchstart', (e) => {
-        this.held[action] = true;
-        this._edge[action] = true;
-        e.preventDefault();
-      }, { passive: false });
-      el.addEventListener('touchend', (e) => {
-        this.held[action] = false;
-        e.preventDefault();
-      }, { passive: false });
-    };
-
-    bindBtn('tbtn-use', 'interact');
-    bindBtn('tbtn-throw', 'throw');
-    bindBtn('tbtn-light', 'light');
-    bindBtn('tbtn-run', 'sprint');
-    bindBtn('tbtn-crouch', 'crouch');
-  },
-
   showTouchUi(show) {
-    if (!this.touchAvailable) return;
-    const ui = document.getElementById('touch-ui');
-    if (ui) ui.classList.toggle('hidden', !show);
+    touchUi.setActive(show && this.touchMode);
   },
 
   moveAxes() {
@@ -266,10 +163,20 @@ export const input = {
     if (this.held.back) y += 1;
     if (this.held.left) x -= 1;
     if (this.held.right) x += 1;
-    x += this.touchMove.x;
-    y += this.touchMove.y;
-    const aug = mousePlay.augmentMoveAxes({ x, y });
-    this.held.mouseSprint = aug.sprint;
-    return { x: aug.x, y: aug.y };
+
+    if (this.touchMode && touchUi.active) {
+      x += touchUi.move.x;
+      y += touchUi.move.y;
+    }
+
+    if (!this.touchMode) {
+      const aug = mousePlay.augmentMoveAxes({ x, y });
+      this.held.mouseSprint = aug.sprint;
+      return { x: aug.x, y: aug.y };
+    }
+
+    return { x: clamp(x, -1, 1), y: clamp(y, -1, 1) };
   },
 };
+
+export { touchUi, preferTouchControls };

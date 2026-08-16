@@ -347,6 +347,14 @@ export const DIFFICULTY = {
   },
 };
 
+/** Phone / tablet tuning — pointer lock is skipped; touch UI drives play. */
+export const MOBILE = {
+  interactRange: 3.35,
+  lookScale: 1.9,
+  stickRadius: 62,
+  autoQuality: 'low',
+};
+
 /** Renderer presets so old Chromebooks can still hold 60fps. */
 export const QUALITY = {
   low: { scale: 0.68, maxDpr: 1, fogDensity: 0.062, extraLights: 3, antialias: false },

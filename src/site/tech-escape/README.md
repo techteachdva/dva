@@ -39,7 +39,25 @@ On the live site it is served at `/tech-escape/` (see the passthrough copy entry
 | ESC             | Pause, settings, controls                            |
 
 Crouch is a **toggle**, not a hold, so it never fights the sprint key and nobody has
-to keep a finger on CTRL while steering. Touch devices get an on-screen CROUCH button.
+to keep a finger on CTRL while steering.
+
+### Phone / tablet (Chrome mobile)
+
+Pointer lock does not work reliably on phones, so touch mode uses on-screen controls:
+
+| Control | Action |
+| -------- | ------ |
+| Left stick | Move |
+| Drag right side of screen | Look |
+| USE | Terminals, printer, door |
+| THROW / EAT / LIGHT | Same as keyboard |
+| RUN / CROUCH | Toggle sprint and crouch |
+| ITEM | Cycle inventory (soda) |
+| FULL | Enter / exit fullscreen |
+| PAUSE | Pause menu |
+
+Tap **FULL** after starting a run to hide the browser chrome (Android Chrome). iOS
+Safari has limited fullscreen support; add to Home Screen for the best experience.
 
 ## Core Mechanics
 

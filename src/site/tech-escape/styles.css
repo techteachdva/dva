@@ -164,12 +164,19 @@ p { max-width: var(--measure); }
   on, so no question, answer, or explanation is ever set in them.
 */
 
-body { touch-action: none; }
+body {
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
 
 #app {
   position: fixed;
   inset: 0;
   overflow: hidden;
+  /* Dynamic viewport height for mobile browser chrome */
+  width: 100%;
+  height: 100%;
+  height: 100dvh;
 }
 
 #scene {
@@ -2012,7 +2019,7 @@ body.reduce-fx #scanlines { display: none; }
   min-height: 7em;
 }
 
-/* ============================ TOUCH ============================ */
+/* ============================ TOUCH (phone / tablet) ============================ */
 
 #touch-ui {
   position: absolute;
@@ -2021,55 +2028,158 @@ body.reduce-fx #scanlines { display: none; }
   pointer-events: none;
 }
 
-#touch-stick {
+#touch-look {
   position: absolute;
-  bottom: 26px;
-  left: 26px;
-  width: 118px;
-  height: 118px;
-  border: 2px solid rgba(53, 224, 255, 0.3);
-  border-radius: 50%;
-  background: rgba(5, 7, 13, 0.4);
+  top: env(safe-area-inset-top, 0);
+  right: 0;
+  left: 38%;
+  bottom: 38%;
   pointer-events: auto;
   touch-action: none;
+  z-index: 1;
+}
+
+.touch-look-hint {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0) + 52px);
+  right: 16px;
+  z-index: 2;
+  pointer-events: none;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  color: rgba(191, 233, 255, 0.45);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+#touch-stick {
+  position: absolute;
+  bottom: calc(env(safe-area-inset-bottom, 0) + 22px);
+  left: calc(env(safe-area-inset-left, 0) + 18px);
+  width: 132px;
+  height: 132px;
+  border: 2px solid rgba(53, 224, 255, 0.35);
+  border-radius: 50%;
+  background: rgba(5, 7, 13, 0.55);
+  pointer-events: auto;
+  touch-action: none;
+  z-index: 3;
 }
 
 #touch-knob {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 46px;
-  height: 46px;
+  width: 52px;
+  height: 52px;
   transform: translate(-50%, -50%);
   border: 1px solid var(--cyan);
   border-radius: 50%;
-  background: rgba(53, 224, 255, 0.22);
+  background: rgba(53, 224, 255, 0.28);
+}
+
+.touch-top-bar {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0) + 10px);
+  left: calc(env(safe-area-inset-left, 0) + 12px);
+  display: flex;
+  gap: 8px;
+  pointer-events: auto;
+  z-index: 4;
 }
 
 .touch-buttons {
   position: absolute;
-  right: 22px;
-  bottom: 26px;
-  display: flex;
-  flex-direction: column;
-  gap: 9px;
+  right: calc(env(safe-area-inset-right, 0) + 12px);
+  bottom: calc(env(safe-area-inset-bottom, 0) + 16px);
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
   pointer-events: auto;
+  z-index: 3;
+  max-width: 168px;
 }
 
 .tbtn {
-  width: 74px;
-  height: 52px;
+  min-width: 76px;
+  min-height: 52px;
+  padding: 8px 6px;
   border: 1px solid rgba(53, 224, 255, 0.5);
-  border-radius: 9px;
-  background: rgba(5, 20, 30, 0.6);
+  border-radius: 10px;
+  background: rgba(5, 20, 30, 0.72);
   color: var(--cyan);
   font-family: var(--mono);
   font-size: 11px;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   touch-action: manipulation;
+  user-select: none;
 }
 
-.tbtn:active { background: rgba(53, 224, 255, 0.3); }
+.tbtn-mini {
+  min-width: 64px;
+  min-height: 40px;
+  font-size: 10px;
+  padding: 6px 8px;
+}
+
+.tbtn:active,
+.tbtn.is-pressed {
+  background: rgba(53, 224, 255, 0.35);
+  border-color: var(--cyan);
+}
+
+.tbtn.is-active {
+  background: rgba(255, 226, 102, 0.22);
+  border-color: var(--amber);
+  color: var(--amber);
+}
+
+/* Compact HUD when touch controls are active */
+body.touch-mode #control-legend { display: none !important; }
+body.touch-mode #hud-bottom {
+  flex-wrap: wrap;
+  gap: 4px;
+  max-width: 42%;
+  padding-bottom: 4px;
+}
+body.touch-mode #inventory-bar {
+  max-width: 46%;
+  font-size: 9px;
+}
+body.touch-mode #objective-text { font-size: 11px; }
+body.touch-mode .piece { min-width: 36px; font-size: 9px; }
+body.touch-mode #interact-prompt {
+  bottom: calc(env(safe-area-inset-bottom, 0) + 168px);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+@media (max-width: 620px) {
+  #touch-stick {
+    width: 118px;
+    height: 118px;
+    bottom: calc(env(safe-area-inset-bottom, 0) + 18px);
+    left: calc(env(safe-area-inset-left, 0) + 14px);
+  }
+  .touch-buttons {
+    max-width: 156px;
+    gap: 6px;
+  }
+  .tbtn {
+    min-width: 72px;
+    min-height: 48px;
+    font-size: 10px;
+  }
+  #touch-look {
+    left: 42%;
+    bottom: 42%;
+  }
+}
+
+@media (max-height: 520px) {
+  .touch-look-hint { display: none; }
+  #touch-look { bottom: 46%; }
+}
 
 /* ============================ SMALL SCREENS ============================ */
 
@@ -2087,6 +2197,16 @@ body.reduce-fx #scanlines { display: none; }
   .setting { grid-template-columns: 1fr; }
   .setting output { text-align: left; }
   .cb-btn.ghost { margin-left: 0; }
+  .quiz-panel {
+    width: 100%;
+    height: 100%;
+    max-height: 100dvh;
+    border-radius: 0;
+  }
+  .notify-phone {
+    margin-top: env(safe-area-inset-top, 0);
+    max-height: calc(100dvh - env(safe-area-inset-top, 0) - 12px);
+  }
 }
 
 /* ============================ TECH ESCAPE 2.0 UI ============================ */

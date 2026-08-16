@@ -10,10 +10,10 @@
 import * as THREE from '../vendor/three.module.js';
 
 import {
-  CELL, QUALITY, DIFFICULTY, COLORS, PLAYER, PICKUP, QUIZ, DECRYPT, PRINTER, CODE_PARTS, NOTIFY,
+  CELL, QUALITY, DIFFICULTY, COLORS, PLAYER, PICKUP, QUIZ, DECRYPT, PRINTER, CODE_PARTS, NOTIFY, MOBILE,
 } from './config.js';
 import { clamp, makeRng, formatTime } from './util.js';
-import { input } from './input.js';
+import { input, touchUi } from './input.js';
 import { audio } from './audio.js';
 import { ui } from './ui.js';
 import { Maze } from './world/maze.js';
@@ -98,6 +98,9 @@ class Game {
 
     input.init(canvas);
     input.applyBinds(settings.get('binds'));
+    touchUi.setPauseHook(() => {
+      if (this.mode === MODE.PLAYING) this.pause();
+    });
     sessionUi.bind(this);
     bindUi.init();
     this.notify.bindDismiss();
@@ -163,7 +166,8 @@ class Game {
 
   _resize() {
     if (!this.renderer) return;
-    const q = QUALITY[this.settings.quality];
+    const qKey = input.touchMode ? MOBILE.autoQuality : this.settings.quality;
+    const q = QUALITY[qKey] || QUALITY.medium;
     const w = window.innerWidth;
     const h = window.innerHeight;
     const dpr = Math.min(window.devicePixelRatio || 1, q.maxDpr) * q.scale;
@@ -243,7 +247,8 @@ class Game {
     if (this.world) {
       this.world.lighting.setBrightness(this.settings.brightness / 100);
       this.world.player.reduceFx = this.settings.reduceFx;
-      this.scene.fog.density = QUALITY[this.settings.quality].fogDensity;
+      const qKey = input.touchMode ? MOBILE.autoQuality : this.settings.quality;
+      this.scene.fog.density = QUALITY[qKey]?.fogDensity ?? QUALITY.medium.fogDensity;
     }
     this._resize();
     sessionUi._syncSettingsForm?.();
@@ -335,11 +340,12 @@ class Game {
 
     // Clicking the canvas re-grabs the mouse
     document.getElementById('scene').addEventListener('click', () => {
-      if (this.mode === MODE.PLAYING && !input.locked) input.requestLock();
+      if (this.mode === MODE.PLAYING && !input.locked && !input.touchMode) input.requestLock();
     });
 
-    // Losing pointer lock mid-game means the player alt-tabbed or hit Esc
+    // Losing pointer lock mid-game means the player alt-tabbed or hit Esc (desktop only)
     input.onPointerLockChange = (locked) => {
+      if (input.touchMode) return;
       if (!locked && this.mode === MODE.PLAYING && !this.expectUnlock) this.pause();
       this.expectUnlock = false;
     };
@@ -495,7 +501,16 @@ class Game {
     this.mode = MODE.PLAYING;
     input.setEnabled(true);
     input.clearEdges();
-    input.requestLock();
+    if (input.touchMode) {
+      touchUi.requestFullscreen();
+      ui.toast('Drag the right side to look. Stick moves. Tap FULL for fullscreen.', 'warn', 5200);
+      setTimeout(() => {
+        const hint = document.getElementById('touch-look-hint');
+        if (hint) hint.classList.add('hidden');
+      }, 9000);
+    } else {
+      input.requestLock();
+    }
 
     ui.toast(`${level.name} — four terminals, four code pieces. Do not get cornered.`, 'warn', 4200);
   }
@@ -549,6 +564,7 @@ class Game {
     document.querySelector('#screen-pause .panel-title').textContent = 'PAUSED';
     ui.showScreen('screen-pause');
     ui.setHudVisible(false);
+    input.showTouchUi(false);
     audio.setTension(0);
     audio.setMuffled(false);
   }
@@ -560,7 +576,8 @@ class Game {
     ui.setHudVisible(true);
     input.setEnabled(true);
     input.clearEdges();
-    input.requestLock();
+    input.showTouchUi(true);
+    if (!input.touchMode) input.requestLock();
   }
 
   quitToTitle() {
@@ -1010,6 +1027,7 @@ class Game {
     const p = w.player;
     const px = p.pos.x;
     const pz = p.pos.z;
+    const interactRange = input.touchMode ? MOBILE.interactRange : INTERACT_RANGE;
 
     const fwd = p.forward();
     let best = null;
@@ -1019,7 +1037,7 @@ class Game {
       const dx = target.x - px;
       const dz = target.z - pz;
       const dist = Math.hypot(dx, dz);
-      if (dist > INTERACT_RANGE) return;
+      if (dist > interactRange) return;
       const dot = dist < 0.001 ? 1 : (dx / dist) * fwd.x + (dz / dist) * fwd.z;
       if (dot < 0.1) return;
       const score = dot * 2 - dist * 0.3;
@@ -1267,8 +1285,8 @@ class Game {
     ui.setHudVisible(true);
     input.setEnabled(true);
     input.clearEdges();
-    // Called from a click handler, so this counts as a user gesture
-    input.requestLock();
+    input.showTouchUi(true);
+    if (!input.touchMode) input.requestLock();
   }
 
   /** Loud events pull nearby hunters toward the player. */

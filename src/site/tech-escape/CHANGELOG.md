@@ -1,4 +1,20 @@
-# Tech Escape 2.0 — Changelog
+# Tech Escape — Changelog
+
+## 2.1.0 (2026-08-16)
+
+### Mobile / Chrome on Android & iOS
+- **Full touch play mode** — phones skip pointer lock (which breaks mobile play) and use on-screen controls instead.
+- **Look zone** — drag the right side of the screen to turn; virtual stick on the left for movement.
+- **Complete action pad** — USE, THROW, EAT, LIGHT, RUN, CROUCH, ITEM, plus PAUSE and FULLSCREEN.
+- **Fullscreen** — tap FULL to hide browser UI (Android Chrome); safe-area padding for notched phones.
+- **Easier mobile tuning** — wider interact range, higher look sensitivity, auto low graphics preset for smooth FPS.
+- **HUD compaction** — meters and inventory shrink so controls are not covered.
+
+### Mouse-only + SEL (2.0.1, 2026-08-15)
+- **Three-button mouse layer** — L/M/R + scroll alongside keyboard (forward/back/sprint/strafe/throw/eat/light/crouch/cycle).
+- **SEL text notifications** — periodic Two Truths & One Lie smartphone overlay (~50 scenarios).
+- **Study Guide** — SEL LOUNGE section for notification answers.
+- **Visual polish** — higher-res canvas textures, emergency floor strips, dimmer table zones, richer pickup models.
 
 ## 2.0.0 (2026-08-15)
 
@@ -27,7 +43,12 @@
 - **Slower loading animation** — typewriter boot log (~6–10s, skippable).
 - **Pause menu** — full accessibility panel (motion, flash, captions, sensitivity, text presets).
 
-### Controls (new)
+### Controls
+- **Enter** — interact (terminals, printer, door)
+- **E** — throw (disc at virus, cheetos otherwise)
+- **R** — eat hot cheetos / drink soda
+- **F** — flashlight
 - **Q** — cycle inventory item
-- **R** — use selected item (eat cheetos / drink soda)
-- **G** — throw selected item
+- **C** — crouch toggle
+- **Shift** — sprint toggle
+- **Remappable** — pause menu KEYBINDS section
