@@ -758,6 +758,7 @@ class Game {
 
       w.player.syncCamera(this.camera);
       w.lighting.setFlashlight(w.player.flashlightOn);
+      w.lab.updateEmergencyArrows(w.player.pos);
       w.lighting.update(
         dt,
         w.player.pos,

@@ -16,6 +16,23 @@ const _v = new THREE.Vector3();
 const _s = new THREE.Vector3(1, 1, 1);
 const _axisY = new THREE.Vector3(0, 1, 0);
 
+/** Flat floor chevron pointing +Z in local space (before Y rotation). */
+function makeFloorArrowGeometry() {
+  const shape = new THREE.Shape();
+  shape.moveTo(0, 0.18);
+  shape.lineTo(-0.14, -0.06);
+  shape.lineTo(-0.05, -0.06);
+  shape.lineTo(-0.05, -0.16);
+  shape.lineTo(0.05, -0.16);
+  shape.lineTo(0.05, -0.06);
+  shape.lineTo(0.14, -0.06);
+  shape.closePath();
+  const geo = new THREE.ShapeGeometry(shape);
+  geo.rotateX(-Math.PI / 2);
+  geo.rotateY(Math.PI);
+  return geo;
+}
+
 /* ------------------------------------------------------------------ textures */
 
 function makeFloorTexture() {
@@ -151,6 +168,9 @@ export class Lab {
     this.exit = null;
     this.glowSources = []; // { pos: Vector3, color, intensity, distance, active }
 
+    this.emergencyArrows = null;
+    this._emergencyGlows = [];
+
     this._disposables = [];
 
     this._buildFloorAndCeiling();
@@ -235,16 +255,16 @@ export class Lab {
   }
 
   /**
-   * Floor-level egress strips where walls meet open floor. Placed in open cells
-   * flush against the wall base so they are not buried inside wall geometry.
+   * Red floor arrows along wall bases. Each arrow rotates to point along the
+   * maze path toward the nearest unsolved terminal.
    */
   _buildEmergencyStrips(wallCells) {
     const maze = this.maze;
     const faces = [
-      { dx: 1, dy: 0, rot: -Math.PI / 2 },
-      { dx: -1, dy: 0, rot: Math.PI / 2 },
-      { dx: 0, dy: 1, rot: Math.PI },
-      { dx: 0, dy: -1, rot: 0 },
+      { dx: 1, dy: 0 },
+      { dx: -1, dy: 0 },
+      { dx: 0, dy: 1 },
+      { dx: 0, dy: -1 },
     ];
     const segments = [];
     for (const [wx, wy] of wallCells) {
@@ -257,39 +277,105 @@ export class Lab {
         segments.push({
           px: wcx + f.dx * (CELL * 0.44),
           pz: wcz + f.dy * (CELL * 0.44),
-          rot: f.rot,
+          cx: ox,
+          cy: oy,
         });
       }
     }
     if (!segments.length) return;
 
-    const geo = new THREE.BoxGeometry(CELL * 0.86, 0.075, 0.048);
-    const mat = new THREE.MeshBasicMaterial({ color: 0xff5520 });
+    const geo = makeFloorArrowGeometry();
+    const mat = new THREE.MeshBasicMaterial({
+      color: 0xff3318,
+      transparent: true,
+      opacity: 0.92,
+      side: THREE.DoubleSide,
+    });
     const mesh = new THREE.InstancedMesh(geo, mat, segments.length);
     mesh.frustumCulled = false;
     mesh.renderOrder = 2;
 
     segments.forEach((seg, i) => {
-      _v.set(seg.px, 0.068, seg.pz);
-      _q.setFromAxisAngle(_axisY, seg.rot);
+      _v.set(seg.px, 0.062, seg.pz);
       _m.compose(_v, _q, _s);
       mesh.setMatrixAt(i, _m);
-      _q.identity();
 
-      if (i % 3 === 0) {
-        this.glowSources.push({
-          pos: new THREE.Vector3(seg.px, 0.12, seg.pz),
-          color: 0xff5520,
-          intensity: 2.4,
-          distance: 3.2,
+      if (i % 2 === 0) {
+        const glow = {
+          pos: new THREE.Vector3(seg.px, 0.14, seg.pz),
+          color: 0xff4420,
+          intensity: 5.8,
+          distance: 5.5,
           active: true,
-        });
+        };
+        this.glowSources.push(glow);
+        this._emergencyGlows.push(glow);
       }
     });
 
     mesh.instanceMatrix.needsUpdate = true;
     this.group.add(mesh);
     this._disposables.push(geo, mat);
+    this.emergencyArrows = { mesh, segments };
+  }
+
+  /** Nearest unsolved Chromebook by maze walk distance from a cell. */
+  _nearestUnsolvedLaptop(fromCell) {
+    const unsolved = this.laptops.filter((lp) => !lp.solved);
+    if (!unsolved.length) return null;
+
+    let best = null;
+    let bestD = Infinity;
+    for (const lp of unsolved) {
+      const flow = this.maze.buildFlow(lp.cell[0], lp.cell[1]);
+      const d = this.maze.flowDistance(flow, fromCell[0], fromCell[1]);
+      this.maze.invalidateFlow();
+      if (d >= 0 && d < bestD) {
+        bestD = d;
+        best = lp;
+      }
+    }
+    return best || unsolved[0];
+  }
+
+  /** Rotate floor arrows toward the nearest unsolved terminal. */
+  updateEmergencyArrows(playerPos) {
+    const arrows = this.emergencyArrows;
+    if (!arrows) return;
+
+    const pcx = this.maze.worldToCellX(playerPos.x);
+    const pcy = this.maze.worldToCellZ(playerPos.z);
+    const target = this._nearestUnsolvedLaptop([pcx, pcy]);
+
+    if (!target) {
+      arrows.mesh.visible = false;
+      for (const g of this._emergencyGlows) g.active = false;
+      return;
+    }
+
+    arrows.mesh.visible = true;
+    for (const g of this._emergencyGlows) g.active = true;
+
+    const flow = this.maze.buildFlow(target.cell[0], target.cell[1]);
+    const { mesh, segments } = arrows;
+
+    segments.forEach((seg, i) => {
+      let angle = Math.atan2(target.x - seg.px, target.z - seg.pz);
+      const step = this.maze.flowStep(flow, seg.cx, seg.cy);
+      if (step) {
+        const sx = this.maze.cellToWorldX(step[0]);
+        const sz = this.maze.cellToWorldZ(step[1]);
+        angle = Math.atan2(sx - seg.px, sz - seg.pz);
+      }
+
+      _v.set(seg.px, 0.062, seg.pz);
+      _q.setFromAxisAngle(_axisY, angle);
+      _m.compose(_v, _q, _s);
+      mesh.setMatrixAt(i, _m);
+    });
+
+    mesh.instanceMatrix.needsUpdate = true;
+    this.maze.invalidateFlow();
   }
 
   // ------------------------------------------------------------------- tables
