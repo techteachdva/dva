@@ -130,7 +130,7 @@ export class Player {
   get boosted() { return this.sodaBoost > 0; }
 
   takeDamage(amount) {
-    if (this.invuln > 0 || !this.alive) return false;
+    if (this.debugGod || this.invuln > 0 || !this.alive) return false;
     this.health = clamp(this.health - amount, 0, this.maxHealth);
     this.invuln = PLAYER.hurtInvuln;
     this.stats.damageTaken += amount;

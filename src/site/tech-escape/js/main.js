@@ -36,6 +36,7 @@ import { settings, flashGuard } from './meta/settings.js';
 import { getLevel, layoutFor, runProfile } from './meta/levels.js';
 import { sessionUi } from './meta/session-ui.js';
 import { bindUi } from './meta/bind-ui.js';
+import { debug, DEBUG_CODE } from './meta/debug.js';
 import { BootSequence } from './ui/boot.js';
 import { captions } from './ui/captions.js';
 
@@ -91,6 +92,7 @@ class Game {
     settings.load();
     captions.init();
     saveStore.init();
+    debug.init();
     this._loadSettings();
 
     const canvas = document.getElementById('scene');
@@ -113,6 +115,7 @@ class Game {
     this._applySettings();
 
     this._bindUi();
+    this._bindDebug();
     await this._bootSequence();
     ui.showScreen(null);
 
@@ -336,6 +339,14 @@ class Game {
         this._applySettings();
         ui.toast(this.settings.muted ? 'Sound muted' : 'Sound on');
       }
+      if (debug.enabled && this.mode === MODE.PLAYING) {
+        if (e.code === 'Digit1') { e.preventDefault(); this._debugAwardAllPieces(); }
+        if (e.code === 'Digit2') { e.preventDefault(); this._debugFinishPrinter(); }
+        if (e.code === 'Digit3') { e.preventDefault(); this._debugGiveKey(); }
+        if (e.code === 'Digit4') { e.preventDefault(); this._debugTeleportExit(); }
+        if (e.code === 'Digit5') { e.preventDefault(); this._debugGodMode(); }
+        if (e.code === 'Digit6') { e.preventDefault(); this._debugWin(); }
+      }
     });
 
     // Clicking the canvas re-grabs the mouse
@@ -392,7 +403,11 @@ class Game {
     const border = freeCells().filter(([x, y]) => (
       x <= 2 || y <= 2 || x >= maze.size - 3 || y >= maze.size - 3
     ));
-    const exitCell = border.length ? rng.pick(border) : rng.pick(freeCells());
+    const outerExit = maze.outerWallExitCandidates().filter((e) => !used.has(key(e.cell)));
+    const exitPick = outerExit.length ? rng.pick(outerExit) : null;
+    const exitCell = exitPick?.cell
+      ?? (border.length ? rng.pick(border) : rng.pick(freeCells()));
+    const exitSide = exitPick?.side ?? null;
     reserve([exitCell]);
 
     const startPool = freeCells().filter(
@@ -403,7 +418,7 @@ class Game {
 
     lab.buildLaptops(laptopCells);
     lab.buildPrinter(printerCell);
-    lab.buildExit(exitCell);
+    lab.buildExit(exitCell, exitSide);
 
     const tableCells = rng.shuffle(freeCells()).slice(0, Math.round(open.length * (level.tableDensity || 0.22)));
     reserve(tableCells);
@@ -565,6 +580,7 @@ class Game {
     ui.showScreen('screen-pause');
     ui.setHudVisible(false);
     input.showTouchUi(false);
+    debug.syncPanel();
     audio.setTension(0);
     audio.setMuffled(false);
   }
@@ -1506,6 +1522,124 @@ class Game {
       ],
       tip: `TIP: ${tips[Math.floor(Math.random() * tips.length)]}`,
     });
+  }
+
+  // ============================================================== playtest debug
+
+  _bindDebug() {
+    const on = (id, ev, fn) => document.getElementById(id)?.addEventListener(ev, fn);
+
+    on('debug-unlock-btn', 'click', () => {
+      const inputEl = document.getElementById('debug-code');
+      const code = inputEl?.value ?? '';
+      if (debug.tryUnlock(code)) {
+        audio.uiClick();
+        debug.syncPanel();
+        ui.toast('Playtest cheats unlocked.', 'good', 2800);
+      } else {
+        audio.deny();
+        ui.toast(`Wrong code. Hint: ${DEBUG_CODE}`, 'warn', 2200);
+      }
+    });
+
+    on('debug-pieces', 'click', () => {
+      audio.uiClick();
+      this._debugAwardAllPieces();
+      this.resume();
+    });
+    on('debug-print', 'click', () => {
+      audio.uiClick();
+      this._debugFinishPrinter();
+      this.resume();
+    });
+    on('debug-key', 'click', () => {
+      audio.uiClick();
+      this._debugGiveKey();
+      this.resume();
+    });
+    on('debug-exit', 'click', () => {
+      audio.uiClick();
+      this._debugTeleportExit();
+      this.resume();
+    });
+    on('debug-heal', 'click', () => {
+      audio.uiClick();
+      this._debugGodMode();
+      this.resume();
+    });
+    on('debug-win', 'click', () => {
+      audio.uiClick();
+      this._debugWin();
+    });
+    on('debug-disable', 'click', () => {
+      audio.uiClick();
+      debug.disable();
+      debug.syncPanel();
+      ui.toast('Playtest cheats disabled.', 'warn');
+    });
+
+    debug.syncPanel();
+  }
+
+  _debugAwardAllPieces() {
+    const w = this.world;
+    if (!w) return;
+    for (let i = 0; i < CODE_PARTS; i++) {
+      w.earned[i] = w.fragments[i];
+      w.lab.markLaptopSolved(i, w.fragments[i]);
+    }
+    ui.setPieces(w.earned);
+    w.lab.setPrinterUnlocked(true);
+    w.lab.updatePrinterPanel(CODE_PARTS);
+    ui.toast('DEBUG: all four code pieces awarded.', 'good', 2400);
+  }
+
+  _debugFinishPrinter() {
+    this._debugAwardAllPieces();
+    const w = this.world;
+    if (!w) return;
+    w.printing = false;
+    w.printerDone = true;
+    w.enemies.endSwarm?.();
+    w.lab.spawnKey();
+    w.lab.updatePrinterPanel(CODE_PARTS);
+    ui.toast('DEBUG: key printed on the bed.', 'good', 2400);
+  }
+
+  _debugGiveKey() {
+    this._debugFinishPrinter();
+    if (!this.world?.keyTaken) this._takeKey();
+  }
+
+  _debugTeleportExit() {
+    const w = this.world;
+    const exit = w?.lab?.exit;
+    if (!exit) return;
+    const [cx, cy] = exit.cell;
+    const px = w.maze.cellToWorldX(cx);
+    const pz = w.maze.cellToWorldZ(cy);
+    w.player.pos.x = px;
+    w.player.pos.z = pz;
+    w.player.vel.x = 0;
+    w.player.vel.z = 0;
+  }
+
+  _debugGodMode() {
+    const w = this.world;
+    if (!w) return;
+    w.player.debugGod = true;
+    w.player.health = w.player.maxHealth;
+    w.player.stamina = PLAYER.staminaMax;
+    w.player.battery = PLAYER.batteryMax;
+    ui.setHealth(w.player.health);
+    ui.toast('DEBUG: god mode — no damage.', 'good', 2000);
+  }
+
+  _debugWin() {
+    if (!this.world) return;
+    if (!this.world.keyTaken) this._debugGiveKey();
+    if (this.mode === MODE.PAUSED) this.resume();
+    this._escape();
   }
 }
 

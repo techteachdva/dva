@@ -2,7 +2,12 @@
 
 ## 2.1.0 (2026-08-16)
 
+### Playtest & exit fix
+- **Debug code `PLAYTEST`** — pause menu unlocks cheats: all code pieces, instant print/key, teleport to exit, god mode, win level. Hotkeys **1–6** while playing.
+- **EXIT door fix** — door only spawns on the true outer wall; collision clears when unlocked so you can walk through and finish the level.
+
 ### Mobile / Chrome on Android & iOS
+- **2T1L readability** — white choice text on solid bubbles for easy lie-spotting on phone and desktop.
 - **Full touch play mode** — phones skip pointer lock (which breaks mobile play) and use on-screen controls instead.
 - **Look zone** — drag the right side of the screen to turn; virtual stick on the left for movement.
 - **Complete action pad** — USE, THROW, EAT, LIGHT, RUN, CROUCH, ITEM, plus PAUSE and FULLSCREEN.

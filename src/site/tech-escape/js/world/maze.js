@@ -155,6 +155,25 @@ export class Maze {
     return out;
   }
 
+  /**
+   * Open cells directly beside the outer solid wall ring — valid EXIT placements.
+   * @returns {Array<{cell:[number,number], side:'west'|'east'|'north'|'south'}>}
+   */
+  outerWallExitCandidates() {
+    const s = this.size;
+    const out = [];
+    for (let y = 1; y < s - 1; y++) {
+      for (let x = 1; x < s - 1; x++) {
+        if (this.grid[y][x] !== OPEN) continue;
+        if (x === 1 && this.isSolid(0, y)) out.push({ cell: [x, y], side: 'west' });
+        else if (x === s - 2 && this.isSolid(s - 1, y)) out.push({ cell: [x, y], side: 'east' });
+        else if (y === 1 && this.isSolid(x, 0)) out.push({ cell: [x, y], side: 'north' });
+        else if (y === s - 2 && this.isSolid(x, s - 1)) out.push({ cell: [x, y], side: 'south' });
+      }
+    }
+    return out;
+  }
+
   cellToWorldX(cx) { return (cx - this.half) * CELL; }
   cellToWorldZ(cy) { return (cy - this.half) * CELL; }
 

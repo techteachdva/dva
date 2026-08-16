@@ -747,22 +747,35 @@ export class Lab {
 
   // --------------------------------------------------------------------- exit
 
-  buildExit(cell) {
+  static EXIT_FACING = {
+    west: { rot: Math.PI / 2, ox: -CELL / 2 + 0.14, oz: 0 },
+    east: { rot: -Math.PI / 2, ox: CELL / 2 - 0.14, oz: 0 },
+    north: { rot: 0, ox: 0, oz: -CELL / 2 + 0.14 },
+    south: { rot: Math.PI, ox: 0, oz: CELL / 2 - 0.14 },
+  };
+
+  buildExit(cell, wallSide = null) {
     const [cx, cy] = cell;
     const x = this.maze.cellToWorldX(cx);
     const z = this.maze.cellToWorldZ(cy);
 
-    // Point the door at whichever border wall is closest
-    const distances = [
-      { d: cx, rot: Math.PI / 2, ox: -CELL / 2 + 0.14, oz: 0 },
-      { d: this.maze.size - 1 - cx, rot: -Math.PI / 2, ox: CELL / 2 - 0.14, oz: 0 },
-      { d: cy, rot: 0, ox: 0, oz: -CELL / 2 + 0.14 },
-      { d: this.maze.size - 1 - cy, rot: Math.PI, ox: 0, oz: CELL / 2 - 0.14 },
-    ].sort((a, b) => a.d - b.d)[0];
+    let facing = wallSide && Lab.EXIT_FACING[wallSide] ? Lab.EXIT_FACING[wallSide] : null;
+    if (!facing) {
+      const distances = [
+        { d: cx, rot: Math.PI / 2, ox: -CELL / 2 + 0.14, oz: 0 },
+        { d: this.maze.size - 1 - cx, rot: -Math.PI / 2, ox: CELL / 2 - 0.14, oz: 0 },
+        { d: cy, rot: 0, ox: 0, oz: -CELL / 2 + 0.14 },
+        { d: this.maze.size - 1 - cy, rot: Math.PI, ox: 0, oz: CELL / 2 - 0.14 },
+      ].sort((a, b) => a.d - b.d)[0];
+      facing = { rot: distances.rot, ox: distances.ox, oz: distances.oz };
+    }
+
+    const dx = x + facing.ox;
+    const dz = z + facing.oz;
 
     const group = new THREE.Group();
-    group.position.set(x + distances.ox, 0, z + distances.oz);
-    group.rotation.y = distances.rot;
+    group.position.set(dx, 0, dz);
+    group.rotation.y = facing.rot;
 
     const doorMat = new THREE.MeshLambertMaterial({ color: 0x24303f });
     const door = new THREE.Mesh(new THREE.BoxGeometry(1.6, 2.4, 0.12), doorMat);
@@ -801,17 +814,8 @@ export class Lab {
 
     this.group.add(group);
 
-    this.obstacles.addRotated({
-      x: x + distances.ox,
-      z: z + distances.oz,
-      w: 1.6, d: 0.16,
-      rotation: distances.rot,
-      y0: 0, y1: 2.4,
-      tag: 'exit-door',
-    });
-
     const glow = {
-      pos: new THREE.Vector3(x + distances.ox, 2.7, z + distances.oz),
+      pos: new THREE.Vector3(dx, 2.7, dz),
       color: COLORS.exit,
       intensity: 5,
       distance: 12,
@@ -819,9 +823,24 @@ export class Lab {
     };
     this.glowSources.push(glow);
 
+    const obstacle = this.obstacles.addRotated({
+      x: dx,
+      z: dz,
+      w: 1.6, d: 0.16,
+      rotation: facing.rot,
+      y0: 0, y1: 2.4,
+      tag: 'exit-door',
+    });
+
     this.exit = {
-      x, z, cell, group, door, doorMat, glow,
-      position: new THREE.Vector3(x, 1.2, z),
+      x: dx,
+      z: dz,
+      cell: [cx, cy],
+      side: wallSide,
+      facing,
+      group, door, doorMat, glow,
+      obstacle,
+      position: new THREE.Vector3(dx, 1.2, dz),
       open: false,
     };
     return this.exit;
@@ -832,6 +851,11 @@ export class Lab {
     this.exit.open = true;
     this.exit.doorMat.color.setHex(0x0e3a26);
     this.exit.glow.intensity = 11;
+    if (this.exit.obstacle) {
+      this.obstacles.remove(this.exit.obstacle);
+      this.exit.obstacle = null;
+    }
+    if (this.exit.door) this.exit.door.rotation.y = 1.15;
   }
 
   // --------------------------------------------------------------- decoration

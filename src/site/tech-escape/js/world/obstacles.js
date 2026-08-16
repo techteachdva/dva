@@ -165,4 +165,15 @@ export class Obstacles {
   countByTag(tag) {
     return this.boxes.filter((b) => b.tag === tag).length;
   }
+
+  /** Remove a box from collision (e.g. exit door opens). */
+  remove(box) {
+    const idx = this.boxes.indexOf(box);
+    if (idx < 0) return;
+    this.boxes.splice(idx, 1);
+    for (const list of this.buckets.values()) {
+      const at = list.indexOf(box);
+      if (at >= 0) list.splice(at, 1);
+    }
+  }
 }

@@ -491,6 +491,30 @@
       <div class="pause-buttons">
         <button id="btn-quit" class="link-btn">Quit to title</button>
       </div>
+
+      <div id="debug-unlock" class="debug-unlock">
+        <label class="setting">
+          <span>Playtest code</span>
+          <input type="text" id="debug-code" autocomplete="off" placeholder="Unlock cheats" maxlength="16" />
+        </label>
+        <button id="debug-unlock-btn" class="link-btn" type="button">Unlock</button>
+        <p id="debug-status" class="tiny dim"></p>
+      </div>
+
+      <div id="debug-panel" class="hidden">
+        <h3 class="pause-h">PLAYTEST CHEATS</h3>
+        <p class="tiny">Skip ahead for testing. Keys 1–6 work while playing.</p>
+        <div class="debug-grid">
+          <button id="debug-pieces" class="cb-btn ghost" type="button">1 — All code pieces</button>
+          <button id="debug-print" class="cb-btn ghost" type="button">2 — Print key now</button>
+          <button id="debug-key" class="cb-btn ghost" type="button">3 — Key + open door</button>
+          <button id="debug-exit" class="cb-btn ghost" type="button">4 — Teleport to exit</button>
+          <button id="debug-heal" class="cb-btn ghost" type="button">5 — Heal + god mode</button>
+          <button id="debug-win" class="cb-btn ghost" type="button">6 — Win level</button>
+        </div>
+        <button id="debug-disable" class="link-btn" type="button">Turn off cheats</button>
+      </div>
+
       <p class="tiny">Settings save automatically on this device.</p>
     </div>
   </div>
