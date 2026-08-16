@@ -461,9 +461,10 @@ try {
     mouse.burn === undefined && typeof mouse.glitchAway !== 'function');
 
   // -------------------------------------------------------------- config
-  ok('difficulty presets complete', ['chill', 'normal', 'nightmare'].every((k) => {
+  ok('difficulty presets complete', ['beginner', 'chill', 'normal', 'nightmare', 'questions'].every((k) => {
     const d = DIFFICULTY[k];
-    return d && d.mice > 0 && d.startHealth > 0 && d.decryptScans > 0 && d.label;
+    return d && d.startHealth > 0 && d.decryptScans > 0 && d.label
+      && (d.noEnemies || d.mice > 0);
   }));
   ok('quality presets complete', ['low', 'medium', 'high'].every((k) => {
     const q = QUALITY[k];

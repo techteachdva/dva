@@ -136,13 +136,18 @@ export function layoutFor(level) {
 export function budgetFor(level, diff) {
   const e = level?.enemies || {};
   const l = level?.loot || {};
+  const noEnemies = diff?.noEnemies === true;
   const lootCount = (base, mult) => {
     if (!base) return 0;
     return Math.max(1, Math.round(base * (mult ?? 1)));
   };
+  const enemyCount = (base, mult, add) => {
+    if (noEnemies) return 0;
+    return Math.max(1, Math.round(base * (mult ?? 1)) + (add || 0));
+  };
   return {
-    mice: Math.max(1, Math.round(diff.mice * (e.miceMult ?? 1)) + (e.miceAdd || 0)),
-    viruses: Math.max(1, Math.round(diff.viruses * (e.virusMult ?? 1)) + (e.virusAdd || 0)),
+    mice: enemyCount(diff.mice, e.miceMult, e.miceAdd),
+    viruses: enemyCount(diff.viruses, e.virusMult, e.virusAdd),
     cheetos: lootCount(diff.cheetos, l.cheetos),
     batteries: lootCount(diff.batteries, l.batteries),
     sodas: lootCount(diff.sodas ?? 0, l.sodas),

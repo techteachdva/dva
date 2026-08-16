@@ -266,6 +266,11 @@
         screen, and a student cannot choose well from a label alone.
       -->
       <div class="difficulty-select" role="radiogroup" aria-label="Difficulty">
+        <button class="diff-btn" data-diff="beginner">
+          <span class="diff-name">BEGINNER</span>
+          <span class="diff-desc">Very forgiving: slow mice, extra health and supplies,
+            enemies pause while you work at a terminal.</span>
+        </button>
         <button class="diff-btn" data-diff="chill">
           <span class="diff-name">FIELD TRIP</span>
           <span class="diff-desc">Enemies move slower, warn you sooner, and hold still while
@@ -280,6 +285,11 @@
           <span class="diff-name">SYSTEM CRASH</span>
           <span class="diff-desc">Faster, more of them, less light &mdash; and the lab keeps
             hunting while you work.</span>
+        </button>
+        <button class="diff-btn" data-diff="questions">
+          <span class="diff-name">QUESTIONS ONLY</span>
+          <span class="diff-desc">No mice or viruses. Find the terminals, answer the quizzes,
+            print the key, and escape.</span>
         </button>
       </div>
 
@@ -453,6 +463,10 @@
            stuck should be able to keep playing, not have to start again. -->
       <div class="difficulty-select compact" id="pause-difficulty" role="radiogroup"
            aria-label="Difficulty">
+        <button class="diff-btn" data-diff="beginner">
+          <span class="diff-name">BEGINNER</span>
+          <span class="diff-desc">Slow, forgiving, extra supplies.</span>
+        </button>
         <button class="diff-btn" data-diff="chill">
           <span class="diff-name">FIELD TRIP</span>
           <span class="diff-desc">Slower enemies, more warning.</span>
@@ -464,6 +478,10 @@
         <button class="diff-btn" data-diff="nightmare">
           <span class="diff-name">SYSTEM CRASH</span>
           <span class="diff-desc">No pauses, no mercy.</span>
+        </button>
+        <button class="diff-btn" data-diff="questions">
+          <span class="diff-name">QUESTIONS ONLY</span>
+          <span class="diff-desc">Terminals only — no hunters.</span>
         </button>
       </div>
 

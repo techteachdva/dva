@@ -60,6 +60,7 @@ export class EnemyManager {
 
   /** Called after each code piece: the lab notices you are winning. */
   escalate(playerCell) {
+    if (this.diff.noEnemies) return;
     this.escalation += this.diff.escalationPerPiece;
     const speed = 1 + this.escalation * 0.055;
     for (const m of this.mice) m.speedScale = speed;
@@ -72,6 +73,7 @@ export class EnemyManager {
 
   /** The climax during the print: everything converges and speeds up. */
   startSwarm(playerCell) {
+    if (this.diff.noEnemies) return;
     if (this.swarming) return;
     this.swarming = true;
     for (let i = 0; i < PRINTER.swarmSpawn; i++) {

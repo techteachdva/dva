@@ -17,7 +17,9 @@
 import * as bank from '../data/questions.js';
 
 /** Which authored difficulty each game difficulty aims at. */
-const LEVEL_TARGET = { chill: 1, normal: 2, nightmare: 3 };
+const LEVEL_TARGET = {
+  beginner: 1, chill: 1, normal: 2, questions: 1, nightmare: 3,
+};
 
 // Ask for more than we need so there is something to weight. Three times the
 // ask is plenty and still cheap on a 30-question pool.

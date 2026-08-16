@@ -286,9 +286,9 @@ export class Lab {
 
     const geo = makeFloorArrowGeometry();
     const mat = new THREE.MeshBasicMaterial({
-      color: 0xff3318,
+      color: 0xff4418,
       transparent: true,
-      opacity: 0.92,
+      opacity: 0.98,
       side: THREE.DoubleSide,
     });
     const mesh = new THREE.InstancedMesh(geo, mat, segments.length);
@@ -303,9 +303,9 @@ export class Lab {
       if (i % 2 === 0) {
         const glow = {
           pos: new THREE.Vector3(seg.px, 0.14, seg.pz),
-          color: 0xff4420,
-          intensity: 5.8,
-          distance: 5.5,
+          color: 0xff5520,
+          intensity: 10.5,
+          distance: 7.8,
           active: true,
         };
         this.glowSources.push(glow);

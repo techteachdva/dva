@@ -376,7 +376,7 @@ class Game {
     this._teardownWorld();
 
     const level = getLevel(this.levelIndex);
-    const baseDiff = DIFFICULTY[this.settings.difficulty];
+    const baseDiff = DIFFICULTY[this.settings.difficulty] || DIFFICULTY.normal;
     const diff = runProfile(level, baseDiff);
     const seed = (Date.now() ^ Math.floor(Math.random() * 0xffffff)) >>> 0;
     const rng = makeRng(seed);
@@ -1310,12 +1310,14 @@ class Game {
 
     // The lab reacts to your progress
     const [pcx, pcy] = w.maze.worldToCell(w.player.pos.x, w.player.pos.z);
-    w.enemies.escalate([pcx, pcy]);
+    if (!w.diff.noEnemies) {
+      w.enemies.escalate([pcx, pcy]);
+    }
 
     if (found >= CODE_PARTS) {
       w.lab.setPrinterUnlocked(true);
       ui.toast('ALL FOUR PIECES! The 3D printer just woke up.', 'good', 5000);
-    } else {
+    } else if (!w.diff.noEnemies) {
       ui.toast('Something heard that. It is coming.', 'warn', 3000);
     }
   }
@@ -1388,10 +1390,16 @@ class Game {
     this._printSoundTimer = 0;
 
     const [pcx, pcy] = w.maze.worldToCell(w.player.pos.x, w.player.pos.z);
-    w.enemies.startSwarm([pcx, pcy]);
+    if (!w.diff.noEnemies) {
+      w.enemies.startSwarm([pcx, pcy]);
+    }
 
     this._exitMinigameToPlaying();
-    ui.toast('PRINTING! Everything in the lab just turned toward you.', 'bad', 5000);
+    if (w.diff.noEnemies) {
+      ui.toast('Printing your exit key...', 'good', 4000);
+    } else {
+      ui.toast('PRINTING! Everything in the lab just turned toward you.', 'bad', 5000);
+    }
   }
 
   _updatePrint(dt) {

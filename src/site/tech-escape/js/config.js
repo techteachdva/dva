@@ -83,10 +83,10 @@ export const PLAYER = {
 };
 
 export const FLASHLIGHT = {
-  angle: 0.42,                    // radians (cone half-angle)
-  penumbra: 0.55,
-  distance: 26,
-  intensity: 34,
+  angle: 0.74,                    // radians (cone half-angle) — wide beam
+  penumbra: 0.48,
+  distance: 28,
+  intensity: 68,
   color: 0xdfefff,
   // The dying-battery waver. Because the flashlight modulates the ENTIRE screen,
   // these two numbers are the difference between atmosphere and a WCAG 2.3.1
@@ -232,7 +232,9 @@ export const QUIZ = {
    * 0 means the world is frozen, not merely slowed.
    */
   timeScale: 0.32,                // fallback for an unknown difficulty key
-  timeScaleByDifficulty: { chill: 0, normal: 0, nightmare: 0.32 },
+  timeScaleByDifficulty: {
+    beginner: 0, chill: 0, normal: 0, questions: 0, nightmare: 0.32,
+  },
 };
 
 export const DECRYPT = {
@@ -241,7 +243,9 @@ export const DECRYPT = {
   peekTime: 0.85,                 // seconds a mismatched pair stays visible
   // The scramble is part of the same terminal visit, so it pauses the same way
   timeScale: 0.32,
-  timeScaleByDifficulty: { chill: 0, normal: 0, nightmare: 0.32 },
+  timeScaleByDifficulty: {
+    beginner: 0, chill: 0, normal: 0, questions: 0, nightmare: 0.32,
+  },
   // Shown on the cards
   glyphs: ['0', '1', '{', '}', '<', '>', '/', '#', '@', '&', '%', '$', '*', '+', '=', '~'],
 };
@@ -292,11 +296,29 @@ export const NOTIFY = {
   minInterval: 90,         // random timer floor
   maxInterval: 165,
   /** chill/normal freeze enemies; nightmare keeps hunting */
-  timeScaleByDifficulty: { chill: 0, normal: 0, nightmare: 1 },
+  timeScaleByDifficulty: {
+    beginner: 0, chill: 0, normal: 0, questions: 0, nightmare: 1,
+  },
 };
 
 /** Difficulty presets. Values multiply or replace the defaults above. */
 export const DIFFICULTY = {
+  beginner: {
+    label: 'BEGINNER',
+    mice: 2,
+    viruses: 0,
+    enemySpeedScale: 0.62,
+    batteryDrainScale: 0.5,
+    damageScale: 0.45,
+    startHealth: 6,
+    cheetos: 12,
+    batteries: 12,
+    sodas: 6,
+    antivirus: 2,
+    decryptScans: 12,
+    sightScale: 0.7,
+    escalationPerPiece: 0.15,
+  },
   chill: {
     label: 'FIELD TRIP',
     mice: 3,
@@ -344,6 +366,23 @@ export const DIFFICULTY = {
     decryptScans: 6,
     sightScale: 1.15,
     escalationPerPiece: 1.5,
+  },
+  questions: {
+    label: 'QUESTIONS ONLY',
+    noEnemies: true,
+    mice: 0,
+    viruses: 0,
+    enemySpeedScale: 1,
+    batteryDrainScale: 0.85,
+    damageScale: 0,
+    startHealth: 4,
+    cheetos: 6,
+    batteries: 8,
+    sodas: 4,
+    antivirus: 1,
+    decryptScans: 10,
+    sightScale: 1,
+    escalationPerPiece: 0,
   },
 };
 
