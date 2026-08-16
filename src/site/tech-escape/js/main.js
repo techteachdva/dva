@@ -18,6 +18,8 @@ import { audio } from './audio.js';
 import { ui } from './ui.js';
 import { Maze } from './world/maze.js';
 import { Lab } from './world/lab.js';
+import { planLabFurniture } from './world/layout.js';
+import { buildScatterProps } from './world/scatter.js';
 import { Lighting } from './world/lighting.js';
 import { Player } from './entities/player.js';
 import { EnemyManager } from './entities/enemies.js';
@@ -422,13 +424,22 @@ class Game {
     lab.buildPrinter(printerCell);
     lab.buildExit(exitCell, exitSide);
 
-    const tableCells = rng.shuffle(freeCells()).slice(0, Math.round(open.length * (level.tableDensity || 0.22)));
-    reserve(tableCells);
-    lab.buildTables(tableCells);
+    const furniture = planLabFurniture(
+      maze, rng, open,
+      [...laptopCells, printerCell, exitCell, startCell],
+      level,
+    );
+    reserve(furniture.tableCells);
+    reserve(furniture.propCells);
+    furniture.chairCells.forEach((c) => used.add(key(c.cell)));
 
-    const propCells = rng.shuffle(freeCells()).slice(0, Math.round(open.length * (level.propDensity || 0.1)));
-    reserve(propCells);
-    lab.buildProps(propCells);
+    lab.buildTables(furniture.tableCells);
+    lab.buildChairs(furniture.chairCells);
+    lab.buildProps(furniture.propCells);
+    buildScatterProps(lab, furniture.scatter);
+
+    const tableCells = furniture.tableCells;
+    const propCells = furniture.propCells;
 
     const inventory = new Inventory();
     const pickups = new PickupField(this.scene, maze, rng);

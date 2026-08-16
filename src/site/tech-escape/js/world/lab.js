@@ -234,41 +234,57 @@ export class Lab {
     this._buildEmergencyStrips(cells);
   }
 
-  /** Theater-style floor-level egress strips along corridor-facing walls. */
+  /**
+   * Floor-level egress strips where walls meet open floor. Placed in open cells
+   * flush against the wall base so they are not buried inside wall geometry.
+   */
   _buildEmergencyStrips(wallCells) {
     const maze = this.maze;
     const faces = [
-      { dx: 1, dz: 0, ox: CELL / 2 - 0.03, oz: 0, rot: -Math.PI / 2 },
-      { dx: -1, dz: 0, ox: -CELL / 2 + 0.03, oz: 0, rot: Math.PI / 2 },
-      { dx: 0, dz: 1, ox: 0, oz: CELL / 2 - 0.03, rot: Math.PI },
-      { dx: 0, dz: -1, ox: 0, oz: -CELL / 2 + 0.03, rot: 0 },
+      { dx: 1, dy: 0, rot: -Math.PI / 2 },
+      { dx: -1, dy: 0, rot: Math.PI / 2 },
+      { dx: 0, dy: 1, rot: Math.PI },
+      { dx: 0, dy: -1, rot: 0 },
     ];
     const segments = [];
-    for (const [x, y] of wallCells) {
+    for (const [wx, wy] of wallCells) {
+      const wcx = maze.cellToWorldX(wx);
+      const wcz = maze.cellToWorldZ(wy);
       for (const f of faces) {
-        const nx = x + f.dx;
-        const ny = y + f.dz;
-        if (!maze.inBounds(nx, ny) || !maze.isOpen(nx, ny)) continue;
-        segments.push([x, y, f]);
+        const ox = wx + f.dx;
+        const oy = wy + f.dy;
+        if (!maze.inBounds(ox, oy) || !maze.isOpen(ox, oy)) continue;
+        segments.push({
+          px: wcx + f.dx * (CELL * 0.44),
+          pz: wcz + f.dy * (CELL * 0.44),
+          rot: f.rot,
+        });
       }
     }
     if (!segments.length) return;
 
-    const geo = new THREE.BoxGeometry(CELL * 0.94, 0.055, 0.038);
-    const mat = new THREE.MeshBasicMaterial({ color: 0xff3a1a });
+    const geo = new THREE.BoxGeometry(CELL * 0.86, 0.075, 0.048);
+    const mat = new THREE.MeshBasicMaterial({ color: 0xff5520 });
     const mesh = new THREE.InstancedMesh(geo, mat, segments.length);
     mesh.frustumCulled = false;
+    mesh.renderOrder = 2;
 
-    segments.forEach(([x, y, f], i) => {
-      _v.set(
-        maze.cellToWorldX(x) + f.ox,
-        0.045,
-        maze.cellToWorldZ(y) + f.oz,
-      );
-      _q.setFromAxisAngle(_axisY, f.rot);
+    segments.forEach((seg, i) => {
+      _v.set(seg.px, 0.068, seg.pz);
+      _q.setFromAxisAngle(_axisY, seg.rot);
       _m.compose(_v, _q, _s);
       mesh.setMatrixAt(i, _m);
       _q.identity();
+
+      if (i % 3 === 0) {
+        this.glowSources.push({
+          pos: new THREE.Vector3(seg.px, 0.12, seg.pz),
+          color: 0xff5520,
+          intensity: 2.4,
+          distance: 3.2,
+          active: true,
+        });
+      }
     });
 
     mesh.instanceMatrix.needsUpdate = true;
@@ -406,6 +422,46 @@ export class Lab {
     this.group.add(patches);
     this._disposables.push(topGeo, topMat, legGeo, legMat, tapeGeo, tapeMat,
       shadeGeo, shadeMat, patchGeo, patchMat);
+  }
+
+  /** Hard plastic student chairs paired with tables; decorative, not solid. */
+  buildChairs(chairPlacements) {
+    if (!chairPlacements.length) return;
+
+    const plasticMat = new THREE.MeshLambertMaterial({ color: 0x4a5568 });
+    const seatY = 0.48;
+    const seatGeo = new THREE.BoxGeometry(0.36, 0.04, 0.34);
+    const backGeo = new THREE.BoxGeometry(0.36, 0.32, 0.035);
+    const legGeo = new THREE.BoxGeometry(0.035, seatY, 0.035);
+
+    for (const { cell, tableCell } of chairPlacements) {
+      const x = this.maze.cellToWorldX(cell[0]);
+      const z = this.maze.cellToWorldZ(cell[1]);
+      const tx = this.maze.cellToWorldX(tableCell[0]);
+      const tz = this.maze.cellToWorldZ(tableCell[1]);
+
+      const g = new THREE.Group();
+      g.position.set(x, 0, z);
+      g.rotation.y = Math.atan2(tx - x, tz - z);
+
+      const seat = new THREE.Mesh(seatGeo, plasticMat);
+      seat.position.y = seatY;
+      g.add(seat);
+
+      const back = new THREE.Mesh(backGeo, plasticMat);
+      back.position.set(0, seatY + 0.18, -0.15);
+      g.add(back);
+
+      for (const [lx, lz] of [[-0.14, -0.12], [0.14, -0.12], [-0.14, 0.12], [0.14, 0.12]]) {
+        const leg = new THREE.Mesh(legGeo, plasticMat);
+        leg.position.set(lx, seatY / 2, lz);
+        g.add(leg);
+      }
+
+      this.group.add(g);
+    }
+
+    this._disposables.push(seatGeo, backGeo, legGeo, plasticMat);
   }
 
   /**
