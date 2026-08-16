@@ -8,6 +8,7 @@
 
 import { audio } from '../audio.js';
 import { settings } from '../meta/settings.js';
+import { debug } from '../meta/debug.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -97,7 +98,10 @@ export class TwoTruths {
       btn.className = 'notify-choice';
       btn.dataset.index = String(i);
       btn.innerHTML = `<span class="notify-bubble">${text}</span>`;
-      btn.addEventListener('click', () => this._pick(i));
+      btn.addEventListener('click', () => {
+        if (debug.enabled && debug.skipMinigames) this.debugSkip();
+        else this._pick(i);
+      });
       host.appendChild(btn);
     });
 
@@ -156,5 +160,13 @@ export class TwoTruths {
       audio.uiClick();
       this._finish(true);
     });
+  }
+
+  debugSkip() {
+    if (!this.open || !this.item) return;
+    const it = this.item;
+    const lie = it.lieIndex;
+    this.hooks?.onAnswer?.(true, it, [it.statements[lie]]);
+    this._finish(true);
   }
 }

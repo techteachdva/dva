@@ -3,7 +3,7 @@
 ## 2.1.0 (2026-08-16)
 
 ### Playtest & exit fix
-- **Debug code `PLAYTEST`** — pause menu unlocks cheats: all code pieces, instant print/key, teleport to exit, god mode, win level. Hotkeys **1–6** while playing.
+- **Debug `PLAYTEST`** — full brightness + flashlight, invincibility, click-through minigames (any tap = correct + SKIP buttons), plus keys 1–6.
 - **EXIT door fix** — door only spawns on the true outer wall; collision clears when unlocked so you can walk through and finish the level.
 
 ### Mobile / Chrome on Android & iOS

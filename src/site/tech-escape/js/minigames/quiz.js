@@ -32,6 +32,7 @@ import { QUIZ } from '../config.js';
 import { audio } from '../audio.js';
 import { TERMINALS } from '../data/questions.js';
 import { settings } from '../meta/settings.js';
+import { debug } from '../meta/debug.js';
 
 const LETTERS = ['A', 'B', 'C', 'D', 'E'];
 
@@ -262,6 +263,13 @@ export class Quiz {
     const q = this._current();
     audio.uiClick();
 
+    if (debug.enabled && debug.skipMinigames) {
+      this.picked.clear();
+      q.options.forEach((opt, j) => { if (opt.correct) this.picked.add(j); });
+      this._confirm();
+      return;
+    }
+
     if (q.multi) {
       if (this.picked.has(i)) this.picked.delete(i);
       else this.picked.add(i);
@@ -282,7 +290,8 @@ export class Quiz {
 
   _confirm() {
     if (this.revealed || this.locked || !this.picked.size) return;
-    if (performance.now() - this._openedAt < OPEN_LOCKOUT_MS) return;
+    const debugFast = debug.enabled && debug.skipMinigames;
+    if (!debugFast && performance.now() - this._openedAt < OPEN_LOCKOUT_MS) return;
 
     const q = this._current();
     const chosen = [...this.picked];
@@ -327,6 +336,10 @@ export class Quiz {
     this.el.next.textContent = this.index >= this.questions.length - 1
       ? 'DISCONNECT' : 'CONTINUE';
     this.el.next.focus();
+
+    if (debug.enabled && debug.skipMinigames) {
+      setTimeout(() => this._next(), 80);
+    }
   }
 
   _rejectAnswer(q, partial) {
@@ -402,6 +415,19 @@ export class Quiz {
     audio.uiClick();
     this.close();
     this.hooks.onBail?.(this.firstTryCount, this.index);
+  }
+
+  /** Instantly pass every question on this terminal. */
+  debugSkipAll() {
+    if (!this.open) return;
+    for (let i = this.index; i < this.questions.length; i++) {
+      const q = this.questions[i];
+      const picked = q.options.filter((o) => o.correct).map((o) => o.text);
+      this.hooks.onAnswer?.(true, q, picked);
+      this.firstTryCount++;
+    }
+    this.close();
+    this.hooks.onComplete?.(true, this.questions.length, this.questions.length);
   }
 
   // ------------------------------------------------------------------ keyboard

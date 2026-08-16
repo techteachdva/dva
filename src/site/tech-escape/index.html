@@ -503,7 +503,21 @@
 
       <div id="debug-panel" class="hidden">
         <h3 class="pause-h">PLAYTEST CHEATS</h3>
-        <p class="tiny">Skip ahead for testing. Keys 1–6 work while playing.</p>
+        <p class="tiny">Keys 1–6 in play. Minigames: tap any answer or use SKIP buttons.</p>
+        <div class="debug-toggles">
+          <label class="setting checkbox">
+            <input type="checkbox" id="debug-flag-bright" checked />
+            <span><strong>Full brightness</strong> + flashlight</span>
+          </label>
+          <label class="setting checkbox">
+            <input type="checkbox" id="debug-flag-invuln" checked />
+            <span><strong>Invincibility</strong></span>
+          </label>
+          <label class="setting checkbox">
+            <input type="checkbox" id="debug-flag-skip" checked />
+            <span><strong>Click-through minigames</strong></span>
+          </label>
+        </div>
         <div class="debug-grid">
           <button id="debug-pieces" class="cb-btn ghost" type="button">1 — All code pieces</button>
           <button id="debug-print" class="cb-btn ghost" type="button">2 — Print key now</button>
@@ -601,6 +615,7 @@
           <button id="quiz-submit" class="cb-btn" type="button" disabled>CONFIRM</button>
           <button id="quiz-next" class="cb-btn hidden" type="button">CONTINUE</button>
           <button id="quiz-bail" class="cb-btn ghost" type="button">STEP AWAY (ESC)</button>
+          <button id="debug-skip-quiz" class="cb-btn debug-skip-btn hidden" type="button">DEBUG: SKIP TERMINAL</button>
         </div>
         <span id="quiz-warn" class="cb-warn">The lab is still moving. Do not stay too long.</span>
       </div>
@@ -632,6 +647,7 @@
       </div>
       <footer class="notify-foot">
         <button id="notify-dismiss" class="notify-dismiss hidden" type="button">Dismiss</button>
+        <button id="debug-skip-notify" class="notify-dismiss debug-skip-btn hidden" type="button">DEBUG: SKIP</button>
         <span id="notify-live" class="notify-live"></span>
       </footer>
     </div>
@@ -652,6 +668,7 @@
       <div id="dc-grid" class="dc-grid"></div>
       <div class="decrypt-foot">
         <button id="dc-bail" class="cb-btn ghost">ABORT (ESC)</button>
+        <button id="debug-skip-decrypt" class="cb-btn debug-skip-btn hidden" type="button">DEBUG: SKIP DECRYPT</button>
         <span class="tiny">Aborting keeps your quiz answers but you must decrypt again.</span>
       </div>
     </div>

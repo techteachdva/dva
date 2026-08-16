@@ -2717,6 +2717,13 @@ body.touch-mode #interact-prompt {
   margin: 10px 0 12px;
 }
 .debug-grid .cb-btn { width: 100%; text-align: left; }
+.debug-toggles { margin: 8px 0 12px; }
+.debug-skip-btn {
+  border-color: var(--amber) !important;
+  color: var(--amber) !important;
+  background: rgba(255, 226, 102, 0.12) !important;
+}
+.debug-skip-btn:hover { background: rgba(255, 226, 102, 0.22) !important; }
 
 @media print {
   .screen:not(#screen-guide) { display: none !important; }

@@ -248,10 +248,12 @@ class Game {
     audio.setMuted(this.settings.muted);
     document.body.classList.toggle('reduce-fx', this.settings.reduceFx);
     if (this.world) {
-      this.world.lighting.setBrightness(this.settings.brightness / 100);
+      const base = (this.settings.brightness / 100) * (this.world.level?.brightnessScale || 1);
+      this.world.lighting.setBrightness(base * debug.brightnessMultiplier());
       this.world.player.reduceFx = this.settings.reduceFx;
       const qKey = input.touchMode ? MOBILE.autoQuality : this.settings.quality;
       this.scene.fog.density = QUALITY[qKey]?.fogDensity ?? QUALITY.medium.fogDensity;
+      this._applyDebugPerks();
     }
     this._resize();
     sessionUi._syncSettingsForm?.();
@@ -455,7 +457,11 @@ class Game {
     player.yaw = this._bestStartYaw(maze, startCell);
 
     const lighting = new Lighting(this.scene, this.camera, QUALITY[this.settings.quality]);
-    lighting.setBrightness((this.settings.brightness / 100) * (level.brightnessScale || 1));
+    lighting.setBrightness(
+      (this.settings.brightness / 100) * (level.brightnessScale || 1) * debug.brightnessMultiplier(),
+    );
+
+    this._activeTerminalIndex = -1;
 
     this.scene.fog = new THREE.FogExp2(
       COLORS.fog,
@@ -528,6 +534,7 @@ class Game {
     }
 
     ui.toast(`${level.name} — four terminals, four code pieces. Do not get cornered.`, 'warn', 4200);
+    this._applyDebugPerks();
   }
 
   /** Points the player down the longest open run from their start cell. */
@@ -594,6 +601,7 @@ class Game {
     input.clearEdges();
     input.showTouchUi(true);
     if (!input.touchMode) input.requestLock();
+    this._applyDebugPerks();
   }
 
   quitToTitle() {
@@ -1163,6 +1171,7 @@ class Game {
     input.setEnabled(false);
     ui.setHudVisible(false);
     ui.showScreen('screen-notify');
+    debug.syncMinigameButtons();
 
     this.notify.start(item, {
       onAnswer: (right, q, picked) => {
@@ -1192,6 +1201,8 @@ class Game {
     const w = this.world;
     if (w.lab.laptops[index].solved) return;
 
+    this._activeTerminalIndex = index;
+
     const exclude = w.progress?.excludeIds?.() || null;
     const questions = drawForTerminal(index, QUIZ.questionsPerLaptop, w.rng, {
       excludeIds: exclude,
@@ -1208,6 +1219,7 @@ class Game {
     ui.showScreen('screen-quiz');
     const frozen = this._terminalsFrozen();
     this.quiz.setThreat(false, frozen);
+    debug.syncMinigameButtons();
 
     this.quiz.start(index, questions, {
       onAnswer: (right, q, picked) => {
@@ -1241,8 +1253,10 @@ class Game {
 
   _openDecrypt(index, correct, total) {
     const w = this.world;
+    this._activeTerminalIndex = index;
     this.mode = MODE.DECRYPT;
     ui.showScreen('screen-decrypt');
+    debug.syncMinigameButtons();
 
     this.decrypt.start(w.fragments[index], w.diff.decryptScans, {
       onComplete: (success, attempts) => {
@@ -1575,10 +1589,71 @@ class Game {
       audio.uiClick();
       debug.disable();
       debug.syncPanel();
+      if (this.world) this._applyDebugPerks(true);
       ui.toast('Playtest cheats disabled.', 'warn');
     });
 
+    on('debug-flag-bright', 'change', (e) => {
+      debug.fullBright = e.target.checked;
+      debug._saveFlags();
+      if (this.world) this._applyDebugPerks();
+    });
+    on('debug-flag-invuln', 'change', (e) => {
+      debug.invincible = e.target.checked;
+      debug._saveFlags();
+      if (this.world) this._applyDebugPerks();
+    });
+    on('debug-flag-skip', 'change', (e) => {
+      debug.skipMinigames = e.target.checked;
+      debug._saveFlags();
+      debug.syncMinigameButtons();
+    });
+
+    on('debug-skip-quiz', 'click', () => {
+      audio.uiClick();
+      this.quiz.debugSkipAll();
+    });
+    on('debug-skip-decrypt', 'click', () => {
+      audio.uiClick();
+      this.decrypt.debugSkip();
+    });
+    on('debug-skip-notify', 'click', () => {
+      audio.uiClick();
+      this.notify.debugSkip();
+    });
+
     debug.syncPanel();
+  }
+
+  _applyDebugPerks(revert = false) {
+    const w = this.world;
+    if (!w) return;
+
+    if (!debug.enabled || revert) {
+      if (w.player) w.player.debugGod = false;
+      const base = (this.settings.brightness / 100) * (w.level?.brightnessScale || 1);
+      w.lighting.setBrightness(base);
+      return;
+    }
+
+    if (debug.invincible) {
+      w.player.debugGod = true;
+      w.player.health = w.player.maxHealth;
+      ui.setHealth(w.player.health);
+    } else {
+      w.player.debugGod = false;
+    }
+
+    if (debug.fullBright) {
+      const base = (this.settings.brightness / 100) * (w.level?.brightnessScale || 1);
+      w.lighting.setBrightness(base * debug.brightnessMultiplier());
+      w.player.flashlightOn = true;
+      w.lighting.setFlashlight(true);
+      w.player.battery = PLAYER.batteryMax;
+    } else {
+      const base = (this.settings.brightness / 100) * (w.level?.brightnessScale || 1);
+      w.lighting.setBrightness(base);
+    }
   }
 
   _debugAwardAllPieces() {
@@ -1625,14 +1700,10 @@ class Game {
   }
 
   _debugGodMode() {
-    const w = this.world;
-    if (!w) return;
-    w.player.debugGod = true;
-    w.player.health = w.player.maxHealth;
-    w.player.stamina = PLAYER.staminaMax;
-    w.player.battery = PLAYER.batteryMax;
-    ui.setHealth(w.player.health);
-    ui.toast('DEBUG: god mode — no damage.', 'good', 2000);
+    debug.invincible = true;
+    debug._saveFlags();
+    this._applyDebugPerks();
+    ui.toast('DEBUG: invincibility on.', 'good', 2000);
   }
 
   _debugWin() {

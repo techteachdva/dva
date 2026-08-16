@@ -8,6 +8,7 @@
 
 import { DECRYPT } from '../config.js';
 import { audio } from '../audio.js';
+import { debug } from '../meta/debug.js';
 import { shuffle } from '../util.js';
 
 const $ = (id) => document.getElementById(id);
@@ -94,6 +95,10 @@ export class Decrypt {
 
   _flip(card) {
     if (!this.open || this.busy || card.matched || card.flipped) return;
+    if (debug.enabled && debug.skipMinigames) {
+      this.debugSkip();
+      return;
+    }
     if (this.flipped.length >= 2) return;
 
     card.flipped = true;
@@ -158,6 +163,12 @@ export class Decrypt {
     audio.uiClick();
     this.close();
     this.hooks.onBail?.();
+  }
+
+  debugSkip() {
+    if (!this.open) return;
+    this.close();
+    this.hooks.onComplete?.(true, this.attempts);
   }
 
   _onKey(e) {
