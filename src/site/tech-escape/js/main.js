@@ -1047,7 +1047,7 @@ class Game {
     const w = this.world;
     const found = w.earned.filter(Boolean).length;
     if (w.escaped) return 'You are out.';
-    if (w.keyTaken) return 'RUN! Get to the EXIT door';
+    if (w.keyTaken) return 'Use the key on the EXIT door';
     if (w.printerDone) return 'Grab the key from the printer bed';
     if (w.printing) return `SURVIVE THE PRINT - ${Math.round(w.printProgress * 100)}%`;
     if (found >= CODE_PARTS) return 'Code complete! Reach the 3D printer';
@@ -1428,9 +1428,8 @@ class Game {
     w.keyTaken = true;
     w.player.hasKey = true;
     w.lab.removeKeyMesh();
-    w.lab.openExitDoor();
     audio.keyReady();
-    ui.toast('KEY IN HAND. The exit is unlocked - RUN.', 'good', 4200);
+    ui.toast('KEY IN HAND. Use it on the EXIT door.', 'good', 4200);
   }
 
   // ================================================================ end states
@@ -1438,6 +1437,8 @@ class Game {
   _escape() {
     const w = this.world;
     if (w.escaped) return;
+    if (!w.keyTaken) return;
+    w.lab.openExitDoor();
     w.escaped = true;
     this.mode = MODE.WIN;
     audio.doorOpen();

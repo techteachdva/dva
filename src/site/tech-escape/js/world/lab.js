@@ -804,10 +804,34 @@ export class Lab {
   // --------------------------------------------------------------------- exit
 
   static EXIT_FACING = {
-    west: { rot: Math.PI / 2, ox: -CELL / 2 + 0.14, oz: 0 },
-    east: { rot: -Math.PI / 2, ox: CELL / 2 - 0.14, oz: 0 },
-    north: { rot: 0, ox: 0, oz: -CELL / 2 + 0.14 },
-    south: { rot: Math.PI, ox: 0, oz: CELL / 2 - 0.14 },
+    west: {
+      rot: Math.PI / 2,
+      ox: -CELL / 2 + 0.14,
+      oz: 0,
+      hinge: 'negX',
+      openAngle: -Math.PI / 2,
+    },
+    east: {
+      rot: -Math.PI / 2,
+      ox: CELL / 2 - 0.14,
+      oz: 0,
+      hinge: 'posX',
+      openAngle: Math.PI / 2,
+    },
+    north: {
+      rot: 0,
+      ox: 0,
+      oz: -CELL / 2 + 0.14,
+      hinge: 'negZ',
+      openAngle: Math.PI / 2,
+    },
+    south: {
+      rot: Math.PI,
+      ox: 0,
+      oz: CELL / 2 - 0.14,
+      hinge: 'posZ',
+      openAngle: -Math.PI / 2,
+    },
   };
 
   buildExit(cell, wallSide = null) {
@@ -818,31 +842,72 @@ export class Lab {
     let facing = wallSide && Lab.EXIT_FACING[wallSide] ? Lab.EXIT_FACING[wallSide] : null;
     if (!facing) {
       const distances = [
-        { d: cx, rot: Math.PI / 2, ox: -CELL / 2 + 0.14, oz: 0 },
-        { d: this.maze.size - 1 - cx, rot: -Math.PI / 2, ox: CELL / 2 - 0.14, oz: 0 },
-        { d: cy, rot: 0, ox: 0, oz: -CELL / 2 + 0.14 },
-        { d: this.maze.size - 1 - cy, rot: Math.PI, ox: 0, oz: CELL / 2 - 0.14 },
+        { d: cx, ...Lab.EXIT_FACING.west },
+        { d: this.maze.size - 1 - cx, ...Lab.EXIT_FACING.east },
+        { d: cy, ...Lab.EXIT_FACING.north },
+        { d: this.maze.size - 1 - cy, ...Lab.EXIT_FACING.south },
       ].sort((a, b) => a.d - b.d)[0];
-      facing = { rot: distances.rot, ox: distances.ox, oz: distances.oz };
+      facing = {
+        rot: distances.rot,
+        ox: distances.ox,
+        oz: distances.oz,
+        hinge: distances.hinge,
+        openAngle: distances.openAngle,
+      };
     }
 
     const dx = x + facing.ox;
     const dz = z + facing.oz;
 
+    const DOOR_W = 1.6;
+    const DOOR_H = 2.4;
+    const DOOR_T = 0.12;
+    const halfW = DOOR_W / 2;
+
     const group = new THREE.Group();
     group.position.set(dx, 0, dz);
     group.rotation.y = facing.rot;
 
+    const doorPivot = new THREE.Group();
+    switch (facing.hinge) {
+      case 'negX':
+        doorPivot.position.set(-halfW, 1.2, 0);
+        break;
+      case 'posX':
+        doorPivot.position.set(halfW, 1.2, 0);
+        break;
+      case 'negZ':
+        doorPivot.position.set(0, 1.2, -halfW);
+        break;
+      default:
+        doorPivot.position.set(0, 1.2, halfW);
+        break;
+    }
+    group.add(doorPivot);
+
     const doorMat = new THREE.MeshLambertMaterial({ color: 0x24303f });
-    const door = new THREE.Mesh(new THREE.BoxGeometry(1.6, 2.4, 0.12), doorMat);
-    door.position.y = 1.2;
-    group.add(door);
+    const door = new THREE.Mesh(new THREE.BoxGeometry(DOOR_W, DOOR_H, DOOR_T), doorMat);
+    switch (facing.hinge) {
+      case 'negX':
+        door.position.set(halfW, 0, 0);
+        break;
+      case 'posX':
+        door.position.set(-halfW, 0, 0);
+        break;
+      case 'negZ':
+        door.position.set(0, 0, halfW);
+        break;
+      default:
+        door.position.set(0, 0, -halfW);
+        break;
+    }
+    doorPivot.add(door);
     this._disposables.push(door.geometry, doorMat);
 
     const barMat = new THREE.MeshBasicMaterial({ color: 0x8a939f });
     const bar = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.09, 0.09), barMat);
-    bar.position.set(0, 1.05, 0.1);
-    group.add(bar);
+    bar.position.set(0, -0.15, 0.1);
+    door.add(bar);
     this._disposables.push(bar.geometry, barMat);
 
     // EXIT sign above the door
@@ -864,8 +929,8 @@ export class Lab {
     signTex.colorSpace = THREE.SRGBColorSpace;
     const signMat = new THREE.MeshBasicMaterial({ map: signTex });
     const sign = new THREE.Mesh(new THREE.PlaneGeometry(1.0, 0.5), signMat);
-    sign.position.set(0, 2.72, 0.08);
-    group.add(sign);
+    sign.position.set(0, 1.52, 0.08);
+    doorPivot.add(sign);
     this._disposables.push(sign.geometry, signMat, signTex);
 
     this.group.add(group);
@@ -894,7 +959,7 @@ export class Lab {
       cell: [cx, cy],
       side: wallSide,
       facing,
-      group, door, doorMat, glow,
+      group, door, doorPivot, doorMat, glow,
       obstacle,
       position: new THREE.Vector3(dx, 1.2, dz),
       open: false,
@@ -911,7 +976,9 @@ export class Lab {
       this.obstacles.remove(this.exit.obstacle);
       this.exit.obstacle = null;
     }
-    if (this.exit.door) this.exit.door.rotation.y = 1.15;
+    if (this.exit.doorPivot) {
+      this.exit.doorPivot.rotation.y = this.exit.facing.openAngle ?? Math.PI / 2;
+    }
   }
 
   // --------------------------------------------------------------- decoration
