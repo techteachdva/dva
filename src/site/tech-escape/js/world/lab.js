@@ -51,7 +51,7 @@ function makeEmergencyArrowTexture() {
 
 /** Horizontal plane arrow; tip points local +Z before instance Y rotation. */
 function makeEmergencyArrowGeometry() {
-  const geo = new THREE.PlaneGeometry(0.5, 0.5);
+  const geo = new THREE.PlaneGeometry(0.42, 0.42);
   geo.rotateX(-Math.PI / 2);
   return geo;
 }
@@ -289,18 +289,18 @@ export class Lab {
       { dx: 0, dy: 1 },
       { dx: 0, dy: -1 },
     ];
-    const inset = CELL * 0.34;
+    const wallInset = CELL * 0.5 + 0.07;
     const segments = [];
     for (const [wx, wy] of wallCells) {
+      const wallX = maze.cellToWorldX(wx);
+      const wallZ = maze.cellToWorldZ(wy);
       for (const f of faces) {
         const ox = wx + f.dx;
         const oy = wy + f.dy;
         if (!maze.inBounds(ox, oy) || !maze.isOpen(ox, oy)) continue;
-        const openX = maze.cellToWorldX(ox);
-        const openZ = maze.cellToWorldZ(oy);
         segments.push({
-          px: openX - f.dx * inset,
-          pz: openZ - f.dy * inset,
+          px: wallX + f.dx * wallInset,
+          pz: wallZ + f.dy * wallInset,
           cx: ox,
           cy: oy,
         });
@@ -347,17 +347,22 @@ export class Lab {
     this.emergencyArrows = { mesh, segments, arrowY };
   }
 
-  /** Nearest unsolved Chromebook by maze walk distance from the player. */
-  _nearestUnsolvedLaptop(fromCell) {
-    const unsolved = this.laptops.filter((lp) => !lp.solved);
-    if (!unsolved.length) return null;
+  /** Nearest unsolved Chromebook by maze walk distance from a cell. */
+  _nearestUnsolvedLaptop(fromCell, unsolved = null, flows = null) {
+    const list = unsolved ?? this.laptops.filter((lp) => !lp.solved);
+    if (!list.length) return null;
 
     let best = null;
     let bestD = Infinity;
-    for (const lp of unsolved) {
-      const flow = this.maze.buildFlow(lp.cell[0], lp.cell[1]);
-      const d = this.maze.flowDistance(flow, fromCell[0], fromCell[1]);
-      this.maze.invalidateFlow();
+    for (const lp of list) {
+      let d;
+      if (flows?.has(lp.index)) {
+        d = this.maze.flowDistance(flows.get(lp.index), fromCell[0], fromCell[1]);
+      } else {
+        const flow = this.maze.buildFlow(lp.cell[0], lp.cell[1]);
+        d = this.maze.flowDistance(flow, fromCell[0], fromCell[1]);
+        this.maze.invalidateFlow();
+      }
       if (d >= 0 && d < bestD) {
         bestD = d;
         best = lp;
@@ -371,16 +376,16 @@ export class Lab {
     return Math.atan2(x1 - x0, z1 - z0);
   }
 
-  /** Rotate floor arrows toward the nearest unsolved terminal along maze paths. */
-  updateEmergencyArrows(playerPos) {
+  /**
+   * Each arrow hugs the wall–floor line and points along the maze path toward
+   * the one unsolved terminal nearest to that arrow (not the player).
+   */
+  updateEmergencyArrows(_playerPos) {
     const arrows = this.emergencyArrows;
     if (!arrows) return;
 
-    const pcx = this.maze.worldToCellX(playerPos.x);
-    const pcy = this.maze.worldToCellZ(playerPos.z);
-    const target = this._nearestUnsolvedLaptop([pcx, pcy]);
-
-    if (!target) {
+    const unsolved = this.laptops.filter((lp) => !lp.solved);
+    if (!unsolved.length) {
       arrows.mesh.visible = false;
       for (const g of this._emergencyGlows) g.active = false;
       return;
@@ -389,13 +394,27 @@ export class Lab {
     arrows.mesh.visible = true;
     for (const g of this._emergencyGlows) g.active = true;
 
-    const flow = this.maze.buildFlow(target.cell[0], target.cell[1]);
+    const flows = new Map();
+    for (const lp of unsolved) {
+      flows.set(lp.index, this.maze.buildFlow(lp.cell[0], lp.cell[1]));
+    }
+
+    const targetByCell = new Map();
     const { mesh, segments, arrowY } = arrows;
     const y = arrowY ?? 0.102;
 
     segments.forEach((seg, i) => {
+      const cellKey = `${seg.cx},${seg.cy}`;
+      let target = targetByCell.get(cellKey);
+      if (!target) {
+        target = this._nearestUnsolvedLaptop([seg.cx, seg.cy], unsolved, flows);
+        targetByCell.set(cellKey, target);
+      }
+      if (!target) return;
+
+      const flow = flows.get(target.index);
       let angle = this._floorAngle(seg.px, seg.pz, target.x, target.z);
-      const step = this.maze.flowStep(flow, seg.cx, seg.cy);
+      const step = flow ? this.maze.flowStep(flow, seg.cx, seg.cy) : null;
       if (step) {
         const sx = this.maze.cellToWorldX(step[0]);
         const sz = this.maze.cellToWorldZ(step[1]);
