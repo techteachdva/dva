@@ -11,3 +11,10 @@ Dive into the dynamic world of Media Arts in this innovative, hands-on course! S
 5. Circuit Playground Express Programming
 
 By engaging with these different artistic platforms, students will develop a versatile skill set, learn to adapt their ideas across mediums, and gain valuable experience with both digital and physical art forms. This course encourages creative problem-solving, technological literacy, and artistic growth, preparing students for the ever-evolving landscape of media arts.
+
+## Explore
+
+- [[Technology|Technology]]
+- [[Video Production|Video Production]]
+- [[Pixel Art Museum|Pixel Art Museum]]
+- [[QR Code Hub|QR Code Hub]]

@@ -4,6 +4,12 @@
 
 Play Purple Worm Escape
 
+## Related
+
+- [Games collection](/games/)
+- [[Game Design|Game Design]]
+- [Open game in new tab](/worm-escape/)
+
 <div style="border:1px solid rgba(0,0,0,.12); border-radius:12px; overflow:hidden;">
   <iframe
     src="/worm-escape/"

@@ -13,3 +13,5 @@ Decades later, I still think about Mrs. J and Mr. F and how they ignited my love
 
 ![Gort_Firing.jpg](/img/user/Gort_Firing.jpg)
 (Gort from *The Day the Earth Stood Still*)
+
+[[5-12 Methods. Literature and Reading.|← Back to 5-12 Methods hub]]

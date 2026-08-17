@@ -20,3 +20,5 @@ For Vocabulary: Pretest-Check Test- Final Test. The more feedback they can get o
 3) Prompt, DON'T CORRECT. I have been accidentally breaking this rule. I would like to do a better job to remember to prompt and not correct students when they are reading. I don't have many opportunities to have students read aloud, as most of my classwork is independent reading and writing, but I could create more opportunities for students to read from the board or read their answers out loud to share with the class.
 
 ![fluency.png](/img/user/fluency.png)
+
+[[5-12 Methods. Literature and Reading.|← Back to 5-12 Methods hub]]

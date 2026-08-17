@@ -35,3 +35,5 @@ I NEED TO READ OUT ALL THE INSTRUCTIONS ON MY ASSIGNMENTS.
 I realized during the readings that some of my students are not reading the instructions on the assignment sheets I give them. I keep running into the same problems in all my classes, so I have to conclude that the squeaky wheel is me and I need to change my approach. I realized during my reading that if I want more of my students to read the instructions on the sheets, self-directed, then first I should enact a series of steps of reading them aloud, then reading them aloud with the students reading along, then setting them loose to do their reading on their own. If I teach in this sequence, over time I should (in theory) get more overall comprehension of the assignment sheets, which I have discovered they are having difficulty parsing without more scaffolding. I can use my assignment sheets as a text for them to study and get more proficient with reading and comprehension. 
 
 ![worksheet.png](/img/user/worksheet.png)
+
+[[5-12 Methods. Literature and Reading.|← Back to 5-12 Methods hub]]

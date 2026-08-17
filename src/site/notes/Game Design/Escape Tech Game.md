@@ -2,4 +2,10 @@
 {"dg-publish":true,"permalink":"/escape-tech-game/","noteIcon":""}
 ---
 
-https://dva-nu.vercel.app/tech-escape/
+[Play Tech Escape](/tech-escape/)
+
+## Related
+
+- [Games collection](/games/)
+- [[Game Design|Game Design]]
+- [[Technology|Technology]]

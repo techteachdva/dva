@@ -25,3 +25,5 @@ If a student is struggling with Tier 1 words that needs to be addressed before m
 It would be beneficial to have a "vocabulary meeting" with all of Middle school teachers to have a discussion focused around common academic language (Tier 2 words). If we could come up with a list of words we want to repeatedly and collectively use, we could really enhance students' learning these important Tier 2 words. 
 
 ![vocab.jpg](/img/user/vocab.jpg)
+
+[[5-12 Methods. Literature and Reading.|← Back to 5-12 Methods hub]]

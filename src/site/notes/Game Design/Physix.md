@@ -4,4 +4,10 @@ permalink: /notes/physix/
 noteIcon: ""
 ---
 
-[Play Physix](https://dva-nu.vercel.app/physix/)
+[Play Physix](/physix/)
+
+## Related
+
+- [Games collection](/games/)
+- [[Game Design|Game Design]]
+- [[Technology|Technology]]

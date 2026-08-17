@@ -19,8 +19,4 @@ What surprised you? **Draw Exclamation marks next to what surprised you.**
 What did the author think you already knew? **Draw Question marks next to what confused you.**
 What challenged, changed, or confirmed what you already know? **Draw C's next to these lines.**
 
-
-
-
-
-
+[[5-12 Methods. Literature and Reading.|← Back to 5-12 Methods hub]]

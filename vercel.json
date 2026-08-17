@@ -4,6 +4,8 @@
   "buildCommand": "npm run build",
   "devCommand": "npm run start",
   "redirects": [
+    { "source": "/x-k9-curtly", "destination": "/", "permanent": true },
+    { "source": "/x-k9-curtly/", "destination": "/", "permanent": true },
     { "source": "/crystalwizards", "destination": "/crystalwizards/", "permanent": true },
     { "source": "/uriel", "destination": "/uriel/", "permanent": true },
     { "source": "/dragon-trail", "destination": "/dragon-trail/", "permanent": true },

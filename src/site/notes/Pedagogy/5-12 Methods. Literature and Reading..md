@@ -2,11 +2,18 @@
 {"dg-publish":true,"permalink":"/5-12-methods-literature-and-reading/","noteIcon":""}
 ---
 
-This is the homepage for Philip Carroll's Digital Portfolio for ESE588 5-12 Methods: Literature and Reading. 
+This is the homepage for Philip Carroll's Digital Portfolio for ESE588 5-12 Methods: Literature and Reading.
 
-[[Desiderata\|Desiderata]]
+## Tools & pedagogy
 
-[[Number 1 - Literacy Public Narrative\|Number 1 - Literacy Public Narrative]]
+- [[Morphology|Morphology]]
+- [[Peda_Go_Gee|Peda_Go_Gee]]
+- [[About Mr. Phil — The Technology Teacher|About Mr. Phil]]
+- [[Desiderata|Desiderata]]
+
+## Reading logs
+
+[[Number 1 - Literacy Public Narrative|Number 1 - Literacy Public Narrative]]
 
 [[Number 2 - 9.18 Reading\|Number 2 - 9.18 Reading]]
 

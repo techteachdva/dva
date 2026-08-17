@@ -2,7 +2,15 @@
 {"dg-publish":true,"permalink":"/pixel-art-museum/","noteIcon":""}
 ---
 
-2024-2025
+Student pixel art gallery from Technology and Media Arts classes.
+
+## Explore
+
+- [[Technology|Technology]]
+- [[Media Arts|Media Arts]]
+- [[QR Code Hub|QR Code Hub]]
+
+## 2024-2025
 
 1st Semester
 

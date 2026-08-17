@@ -10,6 +10,8 @@ title: Games Mr. Phil has made
 
 <p class="cartridge-games-page__intro">Welcome to the collection. Pick up a cartridge and play.</p>
 
+<p class="cartridge-games-page__intro">Course hub: <a href="/game-design/">Game Design</a> · <a href="/technology/">Technology</a> · <a href="/diagnostic-writing/">Summer Writing Test</a></p>
+
 <div class="cartridge-stack">
 
   <article class="cartridge cartridge--tech" aria-label="Tech Escape game cartridge">
@@ -20,7 +22,7 @@ title: Games Mr. Phil has made
           <div class="cartridge-cuboid__face cartridge-cuboid__face--front">
             <div class="cartridge-label">
               <span class="cartridge-label__brand">Power_Word_Skill_Games</span>
-              <a class="cartridge-label__title external-link" href="https://dva-nu.vercel.app/tech-escape/" target="_blank" rel="noopener noreferrer">Tech Escape</a>
+              <a class="cartridge-label__title external-link" href="/tech-escape/" target="_blank" rel="noopener noreferrer">Tech Escape</a>
             </div>
           </div>
           <div class="cartridge-cuboid__face cartridge-cuboid__face--top" aria-hidden="true"></div>
@@ -41,7 +43,7 @@ title: Games Mr. Phil has made
           <div class="cartridge-cuboid__face cartridge-cuboid__face--front">
             <div class="cartridge-label">
               <span class="cartridge-label__brand">Power_Word_Skill_Games</span>
-              <a class="cartridge-label__title external-link" href="https://dva-nu.vercel.app/dungeonclass/Dungeon_Class.html" target="_blank" rel="noopener noreferrer">Dungeon Class</a>
+              <a class="cartridge-label__title external-link" href="/dungeonclass/Dungeon_Class.html" target="_blank" rel="noopener noreferrer">Dungeon Class</a>
             </div>
           </div>
           <div class="cartridge-cuboid__face cartridge-cuboid__face--top" aria-hidden="true"></div>
@@ -62,7 +64,7 @@ title: Games Mr. Phil has made
           <div class="cartridge-cuboid__face cartridge-cuboid__face--front">
             <div class="cartridge-label">
               <span class="cartridge-label__brand">Power_Word_Skill_Games</span>
-              <a class="cartridge-label__title external-link" href="https://dva-nu.vercel.app/crystalwizards/" target="_blank" rel="noopener noreferrer">Crystal Wizards</a>
+              <a class="cartridge-label__title external-link" href="/crystalwizards/" target="_blank" rel="noopener noreferrer">Crystal Wizards</a>
             </div>
           </div>
           <div class="cartridge-cuboid__face cartridge-cuboid__face--top" aria-hidden="true"></div>
@@ -83,7 +85,7 @@ title: Games Mr. Phil has made
           <div class="cartridge-cuboid__face cartridge-cuboid__face--front">
             <div class="cartridge-label">
               <span class="cartridge-label__brand">Power_Word_Skill_Games</span>
-              <a class="cartridge-label__title external-link" href="https://dva-nu.vercel.app/worm-escape/" target="_blank" rel="noopener noreferrer">Purple Worm Escape</a>
+              <a class="cartridge-label__title external-link" href="/worm-escape/" target="_blank" rel="noopener noreferrer">Purple Worm Escape</a>
             </div>
           </div>
           <div class="cartridge-cuboid__face cartridge-cuboid__face--top" aria-hidden="true"></div>
@@ -104,7 +106,7 @@ title: Games Mr. Phil has made
           <div class="cartridge-cuboid__face cartridge-cuboid__face--front">
             <div class="cartridge-label">
               <span class="cartridge-label__brand">Power_Word_Skill_Games</span>
-              <a class="cartridge-label__title external-link" href="https://dva-nu.vercel.app/dragon-trail/" target="_blank" rel="noopener noreferrer">Dragon Trail</a>
+              <a class="cartridge-label__title external-link" href="/dragon-trail/" target="_blank" rel="noopener noreferrer">Dragon Trail</a>
             </div>
           </div>
           <div class="cartridge-cuboid__face cartridge-cuboid__face--top" aria-hidden="true"></div>
@@ -125,7 +127,7 @@ title: Games Mr. Phil has made
           <div class="cartridge-cuboid__face cartridge-cuboid__face--front">
             <div class="cartridge-label">
               <span class="cartridge-label__brand">Power_Word_Skill_Games</span>
-              <a class="cartridge-label__title external-link" href="https://dva-nu.vercel.app/physix/" target="_blank" rel="noopener noreferrer">Physix</a>
+              <a class="cartridge-label__title external-link" href="/physix/" target="_blank" rel="noopener noreferrer">Physix</a>
             </div>
           </div>
           <div class="cartridge-cuboid__face cartridge-cuboid__face--top" aria-hidden="true"></div>
@@ -146,7 +148,7 @@ title: Games Mr. Phil has made
           <div class="cartridge-cuboid__face cartridge-cuboid__face--front">
             <div class="cartridge-label">
               <span class="cartridge-label__brand">Power_Word_Skill_Games</span>
-              <a class="cartridge-label__title external-link" href="https://dva-nu.vercel.app/diagnostic-writing/" target="_blank" rel="noopener noreferrer">Summer Writing Test</a>
+              <a class="cartridge-label__title external-link" href="/diagnostic-writing/" target="_blank" rel="noopener noreferrer">Summer Writing Test</a>
             </div>
           </div>
           <div class="cartridge-cuboid__face cartridge-cuboid__face--top" aria-hidden="true"></div>

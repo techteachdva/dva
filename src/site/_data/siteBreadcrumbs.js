@@ -28,5 +28,4 @@ module.exports = {
     { title: "Games Mr. Phil has made", url: "/games/" },
     { title: "Summer Writing Assignment Test", url: null },
   ],
-  "/curtly-curt/": [{ title: "Curtly Curt", url: null }],
 };

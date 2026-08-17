@@ -2,10 +2,14 @@
 {"dg-publish":true,"permalink":"/dungeon-class/","noteIcon":""}
 ---
 
-[Play Dungeon Class](https://dva-nu.vercel.app/dungeonclass/Dungeon_Class.html)
+[Play Dungeon Class](/dungeonclass/Dungeon_Class.html)
 
+## Related
 
-Teacher Codes
+- [Games collection](/games/)
+- [[Game Design|Game Design]]
+
+## Teacher Codes
 
 DAVINCI
 DRAGONS

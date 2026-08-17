@@ -14,3 +14,5 @@ It is what Norman Fairclough (1989) has dubbed “ideological common sense.” H
 
 For those who say we should teach literature “neutrally,” I offer the perspective of literary scholar Shirley Staton (1987):
 Contemporary theory holds that there is no such thing as an innocent, value-free reading. Instead, each of us has a viewpoint invested with presuppositions about “reality” and about ourselves, whether we are conscious of it or not. People who deny having a critical stance, who claim they are responding “naturally” or being “completely objective,” do not know themselves. (p. 43)
+
+[[5-12 Methods. Literature and Reading.|← Back to 5-12 Methods hub]]

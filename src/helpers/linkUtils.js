@@ -3,10 +3,12 @@ const path = require("path");
 const matter = require("gray-matter");
 const { globSync } = require("glob");
 const slugify = require("@sindresorhus/slugify");
+const siteGraphConfig = require("./siteGraphLinks");
 
 const wikiLinkRegex = /\[\[([^\]|#]+)(?:\|([^\]]*))?\]\]/g;
 const internalLinkRegex = /href="(\/[^"#?]*)/g;
 const externalSiteLinkRegex = /href="(https?:\/\/[^"]+)"/g;
+const bareUrlRegex = /https?:\/\/[^\s<)"']+/g;
 
 function normalizeUrl(url) {
   if (!url || typeof url !== "string") return null;
@@ -14,7 +16,12 @@ function normalizeUrl(url) {
   try {
     if (value.startsWith("http://") || value.startsWith("https://")) {
       const parsed = new URL(value);
-      value = parsed.pathname;
+      const host = parsed.hostname.replace(/^www\./, "");
+      if (host === "dva-nu.vercel.app" || host.endsWith(".vercel.app")) {
+        value = parsed.pathname;
+      } else {
+        return null;
+      }
     }
   } catch {
     return null;
@@ -50,6 +57,11 @@ function extractLinks(content) {
   const extRegex = new RegExp(externalSiteLinkRegex.source, externalSiteLinkRegex.flags);
   while ((match = extRegex.exec(str)) !== null) {
     links.push(match[1]);
+  }
+
+  const bareRegex = new RegExp(bareUrlRegex.source, bareUrlRegex.flags);
+  while ((match = bareRegex.exec(str)) !== null) {
+    links.push(match[0]);
   }
 
   return links;
@@ -168,6 +180,18 @@ function buildPageIndex(notes) {
       register(meta.url, meta);
     }
     registerAliases(parts[parts.length - 2], meta.url);
+  }
+
+  for (const app of siteGraphConfig.passthroughApps || []) {
+    const meta = {
+      url: normalizeUrl(app.url),
+      title: app.title,
+      noteIcon: process.env.NOTE_ICON_DEFAULT || "",
+      hide: false,
+      group: app.group || "Games",
+      home: false,
+    };
+    if (!urlToMeta[meta.url]) register(meta.url, meta);
   }
 
   return { urlToMeta, lookup };
@@ -293,6 +317,22 @@ async function getGraph(data) {
       if (!target.backLinks.includes(node.url)) target.backLinks.push(node.url);
     }
     node.size = node.neighbors.length;
+  }
+
+  for (const [fromUrl, toUrl] of siteGraphConfig) {
+    const from = nodes[normalizeUrl(fromUrl)];
+    const to = nodes[normalizeUrl(toUrl)];
+    if (!from || !to || from.url === to.url) continue;
+    links.push({ source: from.id, target: to.id });
+    links.push({ source: to.id, target: from.id });
+    if (!from.neighbors.includes(to.url)) from.neighbors.push(to.url);
+    if (!to.neighbors.includes(from.url)) to.neighbors.push(from.url);
+    if (!from.outBound.includes(to.url)) from.outBound.push(to.url);
+    if (!to.outBound.includes(from.url)) to.outBound.push(from.url);
+    if (!to.backLinks.includes(from.url)) to.backLinks.push(from.url);
+    if (!from.backLinks.includes(to.url)) from.backLinks.push(to.url);
+    from.size = from.neighbors.length;
+    to.size = to.neighbors.length;
   }
 
   return { homeAlias, nodes, links };

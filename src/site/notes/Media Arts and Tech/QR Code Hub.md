@@ -13,6 +13,15 @@ Mr. Phil is 37 years old (January birthday), has a girlfriend named Jilly, and t
 
 Mr. Phil teaches Technology, Game Design, Video Production, and Media Arts.
 
+## Classes & tools
+
+- [[Technology|Technology]]
+- [[Game Design|Game Design]]
+- [[Video Production|Video Production]]
+- [[Media Arts|Media Arts]]
+- [[Pixel Art Museum|Pixel Art Museum]]
+- [[About Mr. Phil — The Technology Teacher|About Mr. Phil (pedagogy note)]]
+
 Fun Fact: QR Code stands for Quick Response Code.
 
 
