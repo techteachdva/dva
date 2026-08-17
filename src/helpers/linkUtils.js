@@ -244,7 +244,7 @@ async function getGraph(data) {
 
   for (const note of notes) {
     const raw = await note.template.read();
-    const content = typeof raw === "string" ? raw : raw ? String(raw) : "");
+    const content = typeof raw === "string" ? raw : raw ? String(raw) : "";
     const sourceUrl = pageIndex.urlToMeta[normalizeUrl(note.url)]?.url || normalizeUrl(note.url);
     const outbound = new Set();
 
