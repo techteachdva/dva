@@ -5,6 +5,32 @@
   const TEACHER_PASSWORD = "studentsfirst";
   const API_URL = "/api/diagnostic-writing-submissions";
 
+  function loadValidClassrooms() {
+    const el = document.getElementById("dwClassroomsJson");
+    if (!el) return [];
+    try {
+      const list = JSON.parse(el.textContent);
+      return Array.isArray(list) ? list : [];
+    } catch {
+      return [];
+    }
+  }
+
+  const VALID_CLASSROOMS = loadValidClassrooms();
+
+  function normalizeClassroom(value) {
+    return String(value || "").trim().replace(/[\u2018\u2019\u201B\u2032]/g, "'");
+  }
+
+  function resolveClassroom(value) {
+    const norm = normalizeClassroom(value);
+    if (!norm) return "";
+    for (const classroom of VALID_CLASSROOMS) {
+      if (normalizeClassroom(classroom) === norm) return classroom;
+    }
+    return "";
+  }
+
   const STOP_WORDS = new Set([
     "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of",
     "is", "was", "it", "i", "we", "they", "he", "she", "my", "our", "that",
@@ -105,7 +131,7 @@
   }
 
   function canStart() {
-    return Boolean(studentName.value.trim() && studentClass.value);
+    return Boolean(studentName.value.trim() && resolveClassroom(studentClass.value));
   }
 
   function updateStartButton() {
@@ -575,7 +601,7 @@
     const actualDuration = Math.min(Math.max(elapsedSec, 1), DURATION_SEC);
     const text = storyInput.value;
     const name = studentName.value.trim();
-    const classroom = selectedClassroom;
+    const classroom = resolveClassroom(selectedClassroom || studentClass.value);
     let analysis;
     try {
       analysis = analyzeText(text, actualDuration);
@@ -588,11 +614,15 @@
     }
     let saveOk = false;
     let saveError = "";
-    try {
-      await submitResult(name, classroom, text, analysis, actualDuration);
-      saveOk = true;
-    } catch (err) {
-      saveError = err.message || "Could not save your submission.";
+    if (!classroom) {
+      saveError = "Your class was not recognized. Go back, pick your class from the list, and try again.";
+    } else {
+      try {
+        await submitResult(name, classroom, text, analysis, actualDuration);
+        saveOk = true;
+      } catch (err) {
+        saveError = err.message || "Could not save your submission.";
+      }
     }
     renderStudentResults(name, classroom, text, analysis, saveOk, saveError);
     showView("results");
@@ -856,7 +886,9 @@
   studentClass.addEventListener("change", updateStartButton);
   startBtn.addEventListener("click", () => {
     if (!canStart()) return;
-    selectedClassroom = studentClass.value;
+    const classroom = resolveClassroom(studentClass.value);
+    if (!classroom) return;
+    selectedClassroom = classroom;
     storyInput.value = "";
     storyInput.readOnly = false;
     showView("writing");

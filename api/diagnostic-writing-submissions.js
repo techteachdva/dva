@@ -8,22 +8,7 @@
  * Setup: see google-apps-script/diagnostic-writing-backend.gs
  */
 
-const VALID_CLASSROOMS = [
-  "Tech: Media Arts",
-  "Tech 6-A-2",
-  "Tech 7-A-4",
-  "Mr. Phil's Advisory",
-  "Tech 6-A-5",
-  "Tech 7-A-6",
-  "Tech: Video Production",
-  "Tech 8-B-2",
-  "Tech: Game Design",
-  "Tech 7-B-5",
-  "Tech 6-B-6",
-  "Mrs. Eckart 6th Grade ELA",
-  "Mrs. McCarthy 7th Grade ELA",
-  "Mrs. Severson 8th Grade ELA",
-];
+import { VALID_CLASSROOMS, resolveClassroom } from "./diagnostic-writing/classrooms.js";
 
 const TEACHER_PASSWORD = "studentsfirst";
 
@@ -77,10 +62,6 @@ async function fetchScriptJson(url, options) {
   }
 }
 
-function isValidClassroom(classroom) {
-  return typeof classroom === "string" && VALID_CLASSROOMS.includes(classroom);
-}
-
 export async function GET(request) {
   const password = getQueryParam(request, "password");
   if (password !== TEACHER_PASSWORD) {
@@ -126,15 +107,16 @@ export async function POST(request) {
   try {
     const body = await request.json();
     const name = typeof body?.name === "string" ? body.name.trim().slice(0, 80) : "";
-    const classroom = typeof body?.classroom === "string" ? body.classroom.trim() : "";
+    const classroomRaw = typeof body?.classroom === "string" ? body.classroom : "";
+    const classroom = resolveClassroom(classroomRaw);
     const text = typeof body?.text === "string" ? body.text.trim().slice(0, 15000) : "";
     const analysis = body?.analysis && typeof body.analysis === "object" ? body.analysis : null;
     const durationSec = Number(body?.durationSec);
 
-    if (!name || !classroom || !text || !analysis) {
+    if (!name || !text || !analysis) {
       return Response.json({ error: "Missing required fields" }, { status: 400, headers: corsHeaders() });
     }
-    if (!isValidClassroom(classroom)) {
+    if (!classroom) {
       return Response.json({ error: "Invalid classroom" }, { status: 400, headers: corsHeaders() });
     }
 

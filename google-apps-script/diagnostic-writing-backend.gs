@@ -26,7 +26,7 @@ function normalizeSheetId_(raw) {
   return s.split("/")[0].split("?")[0].split("#")[0];
 }
 
-/** Keep in sync with api/diagnostic-writing/classes.json */
+/** Auto-generated from api/diagnostic-writing/classes.json — run: npm run sync:classrooms */
 const VALID_CLASSROOMS = [
   "Tech: Media Arts",
   "Tech 6-A-2",
@@ -43,6 +43,21 @@ const VALID_CLASSROOMS = [
   "Mrs. McCarthy 7th Grade ELA",
   "Mrs. Severson 8th Grade ELA",
 ];
+
+function normalizeClassroom_(value) {
+  return String(value || "")
+    .trim()
+    .replace(/[\u2018\u2019\u201B\u2032]/g, "'");
+}
+
+function resolveClassroom_(value) {
+  const norm = normalizeClassroom_(value);
+  if (!norm) return "";
+  for (var i = 0; i < VALID_CLASSROOMS.length; i++) {
+    if (normalizeClassroom_(VALID_CLASSROOMS[i]) === norm) return VALID_CLASSROOMS[i];
+  }
+  return "";
+}
 
 function getSheet_() {
   const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
@@ -147,7 +162,7 @@ function listSubmissions_() {
 
 function saveSubmission_(params) {
   const name = String(params.name || "").trim().slice(0, 80);
-  const classroom = String(params.classroom || "").trim();
+  const classroom = resolveClassroom_(params.classroom);
   const text = String(params.text || "").trim().slice(0, 15000);
   const analysis = params.analysis || {};
   const durationSec = Number(params.durationSec);

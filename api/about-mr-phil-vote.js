@@ -11,24 +11,9 @@
  * Setup: see google-apps-script/about-mr-phil-vote-backend.gs
  */
 
-const VALID = new Set(["short", "mid", "full"]);
+import { resolveClassroom } from "./diagnostic-writing/classrooms.js";
 
-const VALID_CLASSROOMS = [
-  "Tech: Media Arts",
-  "Tech 6-A-2",
-  "Tech 7-A-4",
-  "Mr. Phil's Advisory",
-  "Tech 6-A-5",
-  "Tech 7-A-6",
-  "Tech: Video Production",
-  "Tech 8-B-2",
-  "Tech: Game Design",
-  "Tech 7-B-5",
-  "Tech 6-B-6",
-  "Mrs. Eckart 6th Grade ELA",
-  "Mrs. McCarthy 7th Grade ELA",
-  "Mrs. Severson 8th Grade ELA",
-];
+const VALID = new Set(["short", "mid", "full"]);
 
 function corsHeaders() {
   return {
@@ -104,10 +89,11 @@ export async function GET(request) {
     url.searchParams.set("secret", getApiSecret());
 
     const name = getQueryParam(request, "name").trim().slice(0, 80);
-    const classroom = getQueryParam(request, "class").trim();
+    const classroomRaw = getQueryParam(request, "class");
+    const classroom = resolveClassroom(classroomRaw);
 
-    if (name && classroom) {
-      if (!VALID_CLASSROOMS.includes(classroom)) {
+    if (name && classroomRaw) {
+      if (!classroom) {
         return Response.json({ error: "Invalid class." }, { status: 400, headers: corsHeaders() });
       }
       url.searchParams.set("action", "status");
@@ -156,12 +142,13 @@ export async function POST(request) {
   try {
     const body = await request.json();
     const name = typeof body?.name === "string" ? body.name.trim().slice(0, 80) : "";
-    const classroom = typeof body?.class === "string" ? body.class.trim() : "";
+    const classroomRaw = typeof body?.class === "string" ? body.class : "";
+    const classroom = resolveClassroom(classroomRaw);
     const choice = body?.choice;
-    if (!name || !classroom) {
+    if (!name || !classroomRaw) {
       return Response.json({ error: "Enter your name and class." }, { status: 400, headers: corsHeaders() });
     }
-    if (!VALID_CLASSROOMS.includes(classroom)) {
+    if (!classroom) {
       return Response.json({ error: "Invalid class." }, { status: 400, headers: corsHeaders() });
     }
     if (!VALID.has(choice)) {
