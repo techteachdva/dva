@@ -20,9 +20,9 @@ const VALID_CLASSROOMS = [
   "Tech: Game Design",
   "Tech 7-B-5",
   "Tech 6-B-6",
+  "Mrs. Eckart 6th Grade ELA",
   "Mrs. McCarthy 7th Grade ELA",
   "Mrs. Severson 8th Grade ELA",
-  "Mrs. Eckart 6th Grade ELA",
 ];
 
 const TEACHER_PASSWORD = "studentsfirst";
