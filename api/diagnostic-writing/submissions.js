@@ -1,14 +1,21 @@
 /**
  * Diagnostic Writing Submissions API
  * GET:  ?password=...  → all submissions (teacher only)
- * POST: { name, text, analysis, durationSec } → save submission
+ * POST: { name, classroom, text, analysis, durationSec } → save submission
  *
  * Requires Upstash Redis (UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN)
  */
 
+import { createRequire } from "module";
+
+const require = createRequire(import.meta.url);
+const VALID_CLASSROOMS = require("../../lib/diagnostic-writing-classes.js");
+
 const TEACHER_PASSWORD = "studentsfirst";
-const SUBMISSIONS_KEY = "diagnostic_writing_submissions";
-const MAX_SUBMISSIONS = 500;
+const LEGACY_SUBMISSIONS_KEY = "diagnostic_writing_submissions";
+const INDEX_KEY = "diagnostic_writing_index";
+const ENTRY_PREFIX = "diagnostic_writing:entry:";
+const MAX_SUBMISSIONS = 2000;
 
 function corsHeaders() {
   return {
@@ -19,12 +26,69 @@ function corsHeaders() {
   };
 }
 
+function hasRedisConfig() {
+  return Boolean(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
+}
+
 async function getRedis() {
+  if (!hasRedisConfig()) {
+    throw new Error("Redis not configured");
+  }
   const { Redis } = await import("@upstash/redis");
   return new Redis({
     url: process.env.UPSTASH_REDIS_REST_URL,
     token: process.env.UPSTASH_REDIS_REST_TOKEN,
   });
+}
+
+function isValidClassroom(classroom) {
+  return typeof classroom === "string" && VALID_CLASSROOMS.includes(classroom);
+}
+
+function normalizeEntry(entry) {
+  if (!entry || typeof entry !== "object" || !entry.name || !entry.text) return null;
+  return entry;
+}
+
+async function migrateLegacySubmissions(redis) {
+  const raw = await redis.get(LEGACY_SUBMISSIONS_KEY);
+  if (!Array.isArray(raw) || raw.length === 0) return;
+
+  for (const entry of raw) {
+    const normalized = normalizeEntry(entry);
+    if (!normalized?.id) continue;
+    await redis.set(`${ENTRY_PREFIX}${normalized.id}`, normalized);
+    await redis.zadd(INDEX_KEY, {
+      score: normalized.submittedAt || Date.now(),
+      member: normalized.id,
+    });
+  }
+
+  await redis.del(LEGACY_SUBMISSIONS_KEY);
+}
+
+async function loadSubmissions(redis) {
+  await migrateLegacySubmissions(redis);
+  const ids = await redis.zrange(INDEX_KEY, 0, MAX_SUBMISSIONS - 1, { rev: true });
+  if (!ids?.length) return [];
+
+  const keys = ids.map((id) => `${ENTRY_PREFIX}${id}`);
+  const entries = await redis.mget(...keys);
+  return entries.map(normalizeEntry).filter(Boolean);
+}
+
+async function saveSubmission(redis, entry) {
+  await redis.set(`${ENTRY_PREFIX}${entry.id}`, entry);
+  await redis.zadd(INDEX_KEY, { score: entry.submittedAt, member: entry.id });
+  const count = await redis.zcard(INDEX_KEY);
+  if (count > MAX_SUBMISSIONS) {
+    const overflow = await redis.zrange(INDEX_KEY, 0, count - MAX_SUBMISSIONS - 1);
+    if (overflow?.length) {
+      const staleKeys = overflow.map((id) => `${ENTRY_PREFIX}${id}`);
+      await redis.del(...staleKeys);
+      await redis.zrem(INDEX_KEY, ...overflow);
+    }
+  }
 }
 
 export async function GET(request) {
@@ -38,12 +102,21 @@ export async function GET(request) {
     );
   }
 
+  if (!hasRedisConfig()) {
+    return Response.json(
+      {
+        error: "Server storage is not configured. Add UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN in Vercel.",
+        submissions: [],
+      },
+      { status: 503, headers: corsHeaders() }
+    );
+  }
+
   try {
     const redis = await getRedis();
-    const raw = await redis.get(SUBMISSIONS_KEY);
-    const submissions = Array.isArray(raw) ? raw : [];
+    const submissions = await loadSubmissions(redis);
     submissions.sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0));
-    return Response.json({ submissions }, { headers: corsHeaders() });
+    return Response.json({ submissions, classrooms: VALID_CLASSROOMS }, { headers: corsHeaders() });
   } catch (e) {
     console.error("Diagnostic writing GET error:", e.message);
     return Response.json(
@@ -54,16 +127,31 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
+  if (!hasRedisConfig()) {
+    return Response.json(
+      { error: "Server storage is not configured. Contact your teacher." },
+      { status: 503, headers: corsHeaders() }
+    );
+  }
+
   try {
     const body = await request.json();
     const name = typeof body?.name === "string" ? body.name.trim().slice(0, 80) : "";
+    const classroom = typeof body?.classroom === "string" ? body.classroom.trim() : "";
     const text = typeof body?.text === "string" ? body.text.trim().slice(0, 15000) : "";
     const analysis = body?.analysis && typeof body.analysis === "object" ? body.analysis : null;
     const durationSec = Number(body?.durationSec);
 
-    if (!name || !text || !analysis) {
+    if (!name || !classroom || !text || !analysis) {
       return Response.json(
         { error: "Missing required fields" },
+        { status: 400, headers: corsHeaders() }
+      );
+    }
+
+    if (!isValidClassroom(classroom)) {
+      return Response.json(
+        { error: "Invalid classroom" },
         { status: 400, headers: corsHeaders() }
       );
     }
@@ -71,6 +159,7 @@ export async function POST(request) {
     const entry = {
       id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
       name,
+      classroom,
       text,
       analysis,
       durationSec: Number.isFinite(durationSec) ? durationSec : 300,
@@ -78,11 +167,7 @@ export async function POST(request) {
     };
 
     const redis = await getRedis();
-    let submissions = await redis.get(SUBMISSIONS_KEY);
-    if (!Array.isArray(submissions)) submissions = [];
-    submissions.unshift(entry);
-    submissions = submissions.slice(0, MAX_SUBMISSIONS);
-    await redis.set(SUBMISSIONS_KEY, submissions);
+    await saveSubmission(redis, entry);
 
     return Response.json({ ok: true, id: entry.id }, { headers: corsHeaders() });
   } catch (e) {

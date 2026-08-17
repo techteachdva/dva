@@ -186,6 +186,51 @@ html {
   outline-offset: 1px;
 }
 
+.dw-select {
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--dw-muted) 50%),
+    linear-gradient(135deg, var(--dw-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) calc(50% - 2px),
+    calc(100% - 12px) calc(50% - 2px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  padding-right: 36px;
+}
+
+.dw-select--compact {
+  min-width: 220px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  font-size: 14px;
+}
+
+.dw-class-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dw-save-status {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+}
+
+.dw-save-status--ok {
+  background: rgba(52, 211, 153, 0.12);
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  color: #a7f3d0;
+}
+
+.dw-save-status--error {
+  background: rgba(248, 113, 113, 0.12);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  color: #fecaca;
+}
+
 .dw-btn {
   display: inline-flex;
   align-items: center;

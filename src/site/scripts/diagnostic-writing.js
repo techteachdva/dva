@@ -4,7 +4,6 @@
   const DURATION_SEC = 300;
   const TEACHER_PASSWORD = "studentsfirst";
   const API_URL = "/api/diagnostic-writing/submissions";
-  const LOCAL_KEY = "dw_local_submissions";
 
   const STOP_WORDS = new Set([
     "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of",
@@ -48,6 +47,7 @@
   };
 
   const studentName = document.getElementById("studentName");
+  const studentClass = document.getElementById("studentClass");
   const startBtn = document.getElementById("startBtn");
   const storyInput = document.getElementById("storyInput");
   const timerDisplay = document.getElementById("timerDisplay");
@@ -68,13 +68,16 @@
   const emptyState = document.getElementById("emptyState");
   const detailPanel = document.getElementById("detailPanel");
   const filterBar = document.getElementById("filterBar");
+  const classFilter = document.getElementById("classFilter");
 
   let timerInterval = null;
   let elapsedSec = 0;
   let startTime = 0;
   let currentFilter = "all";
+  let currentClassFilter = "all";
   let allSubmissions = [];
   let teacherAuthed = false;
+  let selectedClassroom = "";
 
   function showView(name) {
     Object.entries(views).forEach(([key, el]) => {
@@ -99,6 +102,14 @@
     const trimmed = text.trim();
     if (!trimmed) return 0;
     return trimmed.split(/\s+/).length;
+  }
+
+  function canStart() {
+    return Boolean(studentName.value.trim() && studentClass.value);
+  }
+
+  function updateStartButton() {
+    startBtn.disabled = !canStart();
   }
 
   function clamp(n, min, max) {
@@ -555,15 +566,34 @@
     const text = storyInput.value;
     const analysis = analyzeText(text, actualDuration);
     const name = studentName.value.trim();
-    await submitResult(name, text, analysis, actualDuration);
-    renderStudentResults(name, text, analysis);
+    const classroom = selectedClassroom;
+    let saveOk = false;
+    let saveError = "";
+    try {
+      await submitResult(name, classroom, text, analysis, actualDuration);
+      saveOk = true;
+    } catch (err) {
+      saveError = err.message || "Could not save your submission.";
+    }
+    renderStudentResults(name, classroom, text, analysis, saveOk, saveError);
     showView("results");
   }
 
-  function renderStudentResults(name, text, analysis) {
+  function renderStudentResults(name, classroom, text, analysis, saveOk, saveError) {
     document.getElementById("resultName").textContent = name;
+    document.getElementById("resultClass").textContent = `Class: ${classroom}`;
     document.getElementById("resultSummary").textContent =
       `You wrote ${analysis.wordCount} words at ${analysis.wpm} WPM. Overall: ${analysis.scores.overall}/100.`;
+
+    const saveStatus = document.getElementById("saveStatus");
+    saveStatus.classList.remove("dw-hidden", "dw-save-status--ok", "dw-save-status--error");
+    if (saveOk) {
+      saveStatus.textContent = "Saved to your class roster. Your teacher can view this from any computer.";
+      saveStatus.classList.add("dw-save-status--ok");
+    } else {
+      saveStatus.textContent = saveError || "Could not save to the class roster. Tell your teacher and try again.";
+      saveStatus.classList.add("dw-save-status--error");
+    }
 
     const grid = document.getElementById("scoreGrid");
     grid.innerHTML = "";
@@ -597,30 +627,33 @@
     return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
 
-  async function submitResult(name, text, analysis, durationSec) {
-    const payload = { name, text, analysis, durationSec };
-    try {
-      const res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-      if (res.ok) return;
-    } catch { /* local fallback */ }
-    saveLocalSubmission(payload);
-  }
-
-  function saveLocalSubmission(entry) {
-    const stored = JSON.parse(localStorage.getItem(LOCAL_KEY) || "[]");
-    stored.unshift({ id: `local-${Date.now()}`, ...entry, submittedAt: Date.now() });
-    localStorage.setItem(LOCAL_KEY, JSON.stringify(stored.slice(0, 200)));
+  async function submitResult(name, classroom, text, analysis, durationSec) {
+    const payload = { name, classroom, text, analysis, durationSec };
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.error || `Save failed (${res.status})`);
+    }
+    return data;
   }
 
   async function fetchSubmissions() {
-    try {
-      const res = await fetch(`${API_URL}?password=${encodeURIComponent(TEACHER_PASSWORD)}`);
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data.submissions)) return data.submissions;
-      }
-    } catch { /* local fallback */ }
-    return JSON.parse(localStorage.getItem(LOCAL_KEY) || "[]");
+    const res = await fetch(`${API_URL}?password=${encodeURIComponent(TEACHER_PASSWORD)}`);
+    const data = await res.json().catch(() => ({}));
+    if (res.status === 401) {
+      throw new Error("Incorrect teacher password.");
+    }
+    if (!res.ok) {
+      throw new Error(data.error || `Could not load submissions (${res.status})`);
+    }
+    if (!Array.isArray(data.submissions)) {
+      throw new Error("Invalid server response.");
+    }
+    return data.submissions;
   }
 
   function badgeClass(level) {
@@ -633,15 +666,40 @@
 
   async function loadTeacherDashboard() {
     teacherMeta.textContent = "Loading submissions…";
-    allSubmissions = await fetchSubmissions();
-    teacherMeta.textContent = `${allSubmissions.length} submission${allSubmissions.length === 1 ? "" : "s"}`;
-    renderTeacherTable();
+    teacherMeta.classList.remove("dw-error");
+    try {
+      allSubmissions = await fetchSubmissions();
+      const classCounts = {};
+      for (const sub of allSubmissions) {
+        const cls = sub.classroom || "Unknown";
+        classCounts[cls] = (classCounts[cls] || 0) + 1;
+      }
+      const classSummary = Object.entries(classCounts)
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([cls, count]) => `${cls}: ${count}`)
+        .join(" · ");
+      teacherMeta.textContent = classSummary
+        ? `${allSubmissions.length} submission${allSubmissions.length === 1 ? "" : "s"} across all classes · ${classSummary}`
+        : `${allSubmissions.length} submission${allSubmissions.length === 1 ? "" : "s"}`;
+      renderTeacherTable();
+    } catch (err) {
+      allSubmissions = [];
+      teacherMeta.textContent = err.message || "Could not load submissions.";
+      teacherMeta.classList.add("dw-error");
+      renderTeacherTable();
+    }
+  }
+
+  function getFilteredSubmissions() {
+    return allSubmissions.filter((s) => {
+      const typingOk = currentFilter === "all" || s.analysis?.typingLevel === currentFilter;
+      const classOk = currentClassFilter === "all" || s.classroom === currentClassFilter;
+      return typingOk && classOk;
+    });
   }
 
   function renderTeacherTable() {
-    const filtered = currentFilter === "all"
-      ? allSubmissions
-      : allSubmissions.filter((s) => s.analysis?.typingLevel === currentFilter);
+    const filtered = getFilteredSubmissions();
 
     teacherTableBody.innerHTML = "";
     const table = document.getElementById("teacherTable");
@@ -654,6 +712,7 @@
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${escapeHtml(sub.name)}</td>
+        <td>${escapeHtml(sub.classroom || "—")}</td>
         <td>${a.wordCount ?? "—"}</td>
         <td>${a.wpm ?? "—"}</td>
         <td><span class="${badgeClass(a.typingLevel)}">${typingLabel(a.typingLevel)}</span></td>
@@ -701,7 +760,7 @@
   function showDetail(sub) {
     const a = sub.analysis || {};
     detailPanel.classList.remove("dw-hidden");
-    document.getElementById("detailName").textContent = sub.name;
+    document.getElementById("detailName").textContent = `${sub.name} · ${sub.classroom || "Unknown class"}`;
     document.getElementById("detailStory").textContent = sub.text || "";
 
     const metrics = [
@@ -728,13 +787,13 @@
 
   function exportCsv() {
     const headers = [
-      "Name", "Words", "WPM", "Typing", "Spelling", "Grammar", "Syntax", "Semantics",
+      "Name", "Class", "Words", "WPM", "Typing", "Spelling", "Grammar", "Syntax", "Semantics",
       "Overall", "Standards Needing Support", "Submitted",
     ];
     const rows = allSubmissions.map((s) => {
       const a = s.analysis || {};
       return [
-        s.name, a.wordCount, a.wpm, typingLabel(a.typingLevel),
+        s.name, s.classroom || "", a.wordCount, a.wpm, typingLabel(a.typingLevel),
         a.scores?.spelling, a.scores?.grammar, a.scores?.syntax, a.scores?.semantics,
         a.scores?.overall,
         (a.standards?.needsSupport || []).map((x) => x.id).join("; "),
@@ -751,9 +810,11 @@
     URL.revokeObjectURL(url);
   }
 
-  studentName.addEventListener("input", () => { startBtn.disabled = !studentName.value.trim(); });
+  studentName.addEventListener("input", updateStartButton);
+  studentClass.addEventListener("change", updateStartButton);
   startBtn.addEventListener("click", () => {
-    if (!studentName.value.trim()) return;
+    if (!canStart()) return;
+    selectedClassroom = studentClass.value;
     storyInput.value = "";
     storyInput.readOnly = false;
     showView("writing");
@@ -764,7 +825,8 @@
   storyInput.addEventListener("input", updateLiveStats);
   restartBtn.addEventListener("click", () => {
     stopTimer(); storyInput.value = ""; storyInput.readOnly = false;
-    studentName.value = ""; startBtn.disabled = true;
+    studentName.value = ""; studentClass.selectedIndex = 0; selectedClassroom = "";
+    updateStartButton();
     detailPanel.classList.add("dw-hidden"); showView("welcome");
   });
   teacherBtn.addEventListener("click", () => {
@@ -788,6 +850,10 @@
     if (!btn) return;
     currentFilter = btn.dataset.filter;
     filterBar.querySelectorAll(".dw-filter").forEach((b) => b.classList.toggle("dw-filter--active", b === btn));
+    renderTeacherTable();
+  });
+  classFilter.addEventListener("change", () => {
+    currentClassFilter = classFilter.value;
     renderTeacherTable();
   });
 })();

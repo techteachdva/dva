@@ -111,6 +111,15 @@ layout: false
               <span class="dw-label">Your first name</span>
               <input id="studentName" class="dw-input" type="text" maxlength="80" placeholder="e.g. Jordan" autocomplete="name" />
             </label>
+            <label class="dw-field">
+              <span class="dw-label">Your class</span>
+              <select id="studentClass" class="dw-input dw-select" required>
+                <option value="" disabled selected>Select your class…</option>
+                {% for classroom in diagnosticWritingClasses %}
+                <option value="{{ classroom }}">{{ classroom }}</option>
+                {% endfor %}
+              </select>
+            </label>
             <button id="startBtn" class="dw-btn" type="button" disabled>Start 5-minute timer</button>
           </div>
         </section>
@@ -148,7 +157,9 @@ layout: false
         <section id="resultsView" class="dw-hidden dw-stack">
           <div class="dw-card">
             <h2 class="dw-h2">Your results, <span id="resultName">—</span></h2>
+            <p class="dw-muted" id="resultClass">—</p>
             <p class="dw-muted" id="resultSummary">—</p>
+            <p id="saveStatus" class="dw-save-status dw-hidden" role="status"></p>
           </div>
           <div class="dw-score-grid dw-score-grid--8" id="scoreGrid"></div>
           <div class="dw-card dw-stack">
@@ -189,6 +200,18 @@ layout: false
             </div>
           </div>
 
+          <div class="dw-filter-bar" id="classFilterBar">
+            <label class="dw-class-filter">
+              <span class="dw-muted">Class</span>
+              <select id="classFilter" class="dw-input dw-select dw-select--compact">
+                <option value="all">All classes</option>
+                {% for classroom in diagnosticWritingClasses %}
+                <option value="{{ classroom }}">{{ classroom }}</option>
+                {% endfor %}
+              </select>
+            </label>
+          </div>
+
           <div class="dw-filter-bar" id="filterBar">
             <button class="dw-filter dw-filter--active" data-filter="all" type="button">All</button>
             <button class="dw-filter" data-filter="intervention" type="button">Needs intervention</button>
@@ -202,6 +225,7 @@ layout: false
               <thead>
                 <tr>
                   <th>Name</th>
+                  <th>Class</th>
                   <th>Words</th>
                   <th>WPM</th>
                   <th>Typing</th>
