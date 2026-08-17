@@ -84,10 +84,114 @@ html {
 }
 
 .amp-tagline {
-  margin: 6px 0 14px;
+  margin: 6px 0 0;
   font-size: 1rem;
   font-weight: 700;
   color: var(--amp-warm);
+}
+
+.amp-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.amp-head-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.amp-portrait {
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.amp-portrait img {
+  display: block;
+  width: 88px;
+  height: 88px;
+  border-radius: 16px;
+  object-fit: cover;
+  border: 2px solid rgba(45, 212, 191, 0.55);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.amp-live {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.amp-stat {
+  border: 1px solid var(--amp-border);
+  border-radius: 12px;
+  padding: 10px 10px;
+  background: rgba(0, 0, 0, 0.22);
+  text-align: center;
+}
+
+.amp-stat-k {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--amp-teal);
+  margin-bottom: 4px;
+}
+
+.amp-stat-v {
+  display: block;
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: clamp(0.72rem, 2.4vw, 0.88rem);
+  font-weight: 700;
+  color: var(--amp-text);
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+}
+
+.amp-stat-note {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.68rem;
+  color: var(--amp-muted);
+  line-height: 1.25;
+}
+
+.amp-gallery {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--amp-border);
+}
+
+.amp-photo {
+  margin: 0;
+  text-align: center;
+  width: 88px;
+}
+
+.amp-photo img {
+  display: block;
+  width: 88px;
+  height: 88px;
+  border-radius: 12px;
+  object-fit: cover;
+  border: 1px solid var(--amp-border);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.amp-photo figcaption {
+  margin-top: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--amp-muted);
 }
 
 .amp-grid {
@@ -234,6 +338,10 @@ html {
 }
 
 @media (max-width: 640px) {
+  .amp-live {
+    grid-template-columns: 1fr;
+  }
+
   .amp-grid {
     grid-template-columns: 1fr;
   }
@@ -301,5 +409,10 @@ html {
     border: 1px solid #333;
     background: #eee;
     color: #111;
+  }
+
+  .amp-live,
+  .amp-gallery {
+    display: none;
   }
 }
