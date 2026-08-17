@@ -648,6 +648,11 @@
       throw new Error("Incorrect teacher password.");
     }
     if (!res.ok) {
+      if (data.setupRequired) {
+        throw new Error(
+          "Cloud storage is not set up yet. Ask Mr. Phil to connect the Google Sheet (see site setup notes), then try again."
+        );
+      }
       throw new Error(data.error || `Could not load submissions (${res.status})`);
     }
     if (!Array.isArray(data.submissions)) {

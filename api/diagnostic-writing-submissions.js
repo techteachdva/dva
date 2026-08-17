@@ -1,7 +1,11 @@
 /**
- * Diagnostic Writing Submissions API (primary route for cached clients)
- * GET:  ?password=...  → all submissions (teacher only)
- * POST: { name, classroom, text, analysis, durationSec } → save submission
+ * Diagnostic Writing API — proxies to Google Sheets (Apps Script).
+ *
+ * Vercel environment variables:
+ *   DIAGNOSTIC_WRITING_SCRIPT_URL  — deployed Apps Script web app URL
+ *   DIAGNOSTIC_API_SECRET          — must match API_SECRET in the script (default: studentsfirst)
+ *
+ * Setup: see google-apps-script/diagnostic-writing-backend.gs
  */
 
 const VALID_CLASSROOMS = [
@@ -19,8 +23,6 @@ const VALID_CLASSROOMS = [
 ];
 
 const TEACHER_PASSWORD = "studentsfirst";
-const SUBMISSIONS_KEY = "diagnostic_writing_submissions_v2";
-const MAX_SUBMISSIONS = 2000;
 
 function corsHeaders() {
   return {
@@ -31,8 +33,12 @@ function corsHeaders() {
   };
 }
 
-function hasRedisConfig() {
-  return Boolean(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
+function getScriptUrl() {
+  return (process.env.DIAGNOSTIC_WRITING_SCRIPT_URL || "").trim();
+}
+
+function getApiSecret() {
+  return (process.env.DIAGNOSTIC_API_SECRET || "studentsfirst").trim();
 }
 
 function getQueryParam(request, key) {
@@ -45,65 +51,74 @@ function getQueryParam(request, key) {
   }
 }
 
+function notConfiguredResponse() {
+  return Response.json(
+    {
+      error:
+        "Writing storage is not configured. Deploy the Google Apps Script (google-apps-script/diagnostic-writing-backend.gs), then add DIAGNOSTIC_WRITING_SCRIPT_URL to Vercel environment variables and redeploy.",
+      submissions: [],
+      setupRequired: true,
+    },
+    { status: 503, headers: corsHeaders() }
+  );
+}
+
+async function fetchScriptJson(url, options) {
+  const res = await fetch(url, { ...options, redirect: "follow" });
+  const text = await res.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    console.error("Script non-JSON response:", text.slice(0, 200));
+    throw new Error("Google Script returned an invalid response. Check deployment URL and permissions.");
+  }
+}
+
 function isValidClassroom(classroom) {
   return typeof classroom === "string" && VALID_CLASSROOMS.includes(classroom);
 }
 
-function normalizeEntry(entry) {
-  if (!entry || typeof entry !== "object" || !entry.name || !entry.text) return null;
-  return entry;
-}
-
-async function loadSubmissions(redis) {
-  try {
-    const raw = await redis.get(SUBMISSIONS_KEY);
-    if (!Array.isArray(raw)) return [];
-    return raw.map(normalizeEntry).filter(Boolean);
-  } catch (e) {
-    console.error("Diagnostic writing load error:", e.message);
-    return [];
-  }
-}
-
 export async function GET(request) {
   const password = getQueryParam(request, "password");
-
   if (password !== TEACHER_PASSWORD) {
     return Response.json({ error: "Unauthorized" }, { status: 401, headers: corsHeaders() });
   }
 
-  if (!hasRedisConfig()) {
-    return Response.json(
-      {
-        error: "Server storage is not configured. Add UPstash Redis env vars in Vercel.",
-        submissions: [],
-      },
-      { status: 503, headers: corsHeaders() }
-    );
-  }
+  const scriptUrl = getScriptUrl();
+  if (!scriptUrl) return notConfiguredResponse();
 
   try {
-    const { Redis } = await import("@upstash/redis");
-    const redis = new Redis({
-      url: process.env.UPSTASH_REDIS_REST_URL,
-      token: process.env.UPSTASH_REDIS_REST_TOKEN,
-    });
-    const submissions = await loadSubmissions(redis);
-    submissions.sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0));
-    return Response.json({ submissions, classrooms: VALID_CLASSROOMS }, { headers: corsHeaders() });
+    const url = new URL(scriptUrl);
+    url.searchParams.set("action", "list");
+    url.searchParams.set("secret", getApiSecret());
+    url.searchParams.set("password", password);
+
+    const data = await fetchScriptJson(url.toString(), { method: "GET" });
+    if (data.error) {
+      return Response.json(
+        { error: data.error, submissions: [] },
+        { status: data.error === "Unauthorized" ? 401 : 502, headers: corsHeaders() }
+      );
+    }
+    return Response.json(
+      {
+        submissions: Array.isArray(data.submissions) ? data.submissions : [],
+        classrooms: VALID_CLASSROOMS,
+      },
+      { headers: corsHeaders() }
+    );
   } catch (e) {
-    console.error("Diagnostic writing GET error:", e.message);
-    return Response.json({ submissions: [], classrooms: VALID_CLASSROOMS }, { headers: corsHeaders() });
+    console.error("Diagnostic writing GET proxy error:", e.message);
+    return Response.json(
+      { error: e.message || "Could not load submissions from Google Sheets.", submissions: [] },
+      { status: 502, headers: corsHeaders() }
+    );
   }
 }
 
 export async function POST(request) {
-  if (!hasRedisConfig()) {
-    return Response.json(
-      { error: "Server storage is not configured. Contact your teacher." },
-      { status: 503, headers: corsHeaders() }
-    );
-  }
+  const scriptUrl = getScriptUrl();
+  if (!scriptUrl) return notConfiguredResponse();
 
   try {
     const body = await request.json();
@@ -116,34 +131,31 @@ export async function POST(request) {
     if (!name || !classroom || !text || !analysis) {
       return Response.json({ error: "Missing required fields" }, { status: 400, headers: corsHeaders() });
     }
-
     if (!isValidClassroom(classroom)) {
       return Response.json({ error: "Invalid classroom" }, { status: 400, headers: corsHeaders() });
     }
 
-    const entry = {
-      id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
-      name,
-      classroom,
-      text,
-      analysis,
-      durationSec: Number.isFinite(durationSec) ? durationSec : 300,
-      submittedAt: Date.now(),
-    };
-
-    const { Redis } = await import("@upstash/redis");
-    const redis = new Redis({
-      url: process.env.UPSTASH_REDIS_REST_URL,
-      token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    const data = await fetchScriptJson(scriptUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "save",
+        secret: getApiSecret(),
+        name,
+        classroom,
+        text,
+        analysis,
+        durationSec: Number.isFinite(durationSec) ? durationSec : 300,
+      }),
     });
-    const submissions = await loadSubmissions(redis);
-    submissions.unshift(entry);
-    await redis.set(SUBMISSIONS_KEY, submissions.slice(0, MAX_SUBMISSIONS));
 
-    return Response.json({ ok: true, id: entry.id }, { headers: corsHeaders() });
+    if (data.error) {
+      return Response.json({ error: data.error }, { status: 502, headers: corsHeaders() });
+    }
+    return Response.json({ ok: true, id: data.id }, { headers: corsHeaders() });
   } catch (e) {
-    console.error("Diagnostic writing POST error:", e.message);
-    return Response.json({ error: "Server error" }, { status: 500, headers: corsHeaders() });
+    console.error("Diagnostic writing POST proxy error:", e.message);
+    return Response.json({ error: e.message || "Server error" }, { status: 502, headers: corsHeaders() });
   }
 }
 
