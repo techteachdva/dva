@@ -9,6 +9,7 @@ import { LEVELS, LEVEL_COUNT } from './levels.js';
 import { input } from '../input.js';
 import { audio } from '../audio.js';
 import { ui } from '../ui.js';
+import { tutorial } from '../ui/tutorial.js';
 
 const $ = (id) => document.getElementById(id);
 
