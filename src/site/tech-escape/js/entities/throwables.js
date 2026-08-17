@@ -3,10 +3,8 @@
  *
  * A bag of hot cheetos is not a grenade. Thrown, it arcs, lands, and starts
  * LURING: every mouse in range abandons whatever it was doing, crowds the bag,
- * and eats. That feeding window is the thing the player actually bought - a few
- * seconds to cross a corridor or reach a terminal unhunted. Then the bag goes
- * off, and anything still eating pops in a cloud of cheese dust. The joke and
- * the tactic are the same object, which is why it works.
+ * and eats. Each mouse that munches long enough pops in cheese dust. One bag
+ * can pop up to three mice; it never blows up on its own.
  *
  * The anti-virus disc is the opposite: instant, precise, and the only permanent
  * answer to a virus in the whole game. Missing does not waste it - a disc that
@@ -66,9 +64,9 @@ export class ThrowField {
       vel: new THREE.Vector3(),
       spin: this.rng.range(6, 10) * (this.rng.chance(0.5) ? 1 : -1),
       state: 'flying',
-      fuse: THROWN.bagFuse,
+      killsRemaining: THROWN.bagMaxKills,
+      munching: new Map(),
       life: THROWN.discLife,
-      feeders: 0,
       glow: {
         pos: new THREE.Vector3().copy(pos),
         color: kind === 'antivirus' ? COLORS.antivirus : COLORS.cheeto,
@@ -161,56 +159,58 @@ export class ThrowField {
       return;
     }
 
-    // Armed: sit there, look appetising, and count down
-    it.fuse -= dt;
-    const t = 1 - Math.max(0, it.fuse) / THROWN.bagFuse;
-    // Bag jostles harder the more mice are on it, then shivers before it goes
-    const shake = 0.02 + it.feeders * 0.015 + (t > 0.75 ? (t - 0.75) * 0.5 : 0);
+    // Armed: lure mice until three have been popped from eating it
+    let feeders = 0;
+    for (const m of enemies.mice) {
+      if (m.dead || !m.feeding || m.lure !== it) continue;
+      feeders++;
+      let progress = it.munching.get(m) ?? 0;
+      progress += dt;
+      it.munching.set(m, progress);
+      if (progress >= THROWN.bagEatSeconds) {
+        this._popMouseFromBag(it, m, enemies, out);
+      }
+    }
+    for (const m of it.munching.keys()) {
+      if (m.dead || !m.feeding || m.lure !== it) it.munching.delete(m);
+    }
+
+    const shake = 0.015 + feeders * 0.012;
     it.mesh.position.set(
       it.pos.x + (Math.random() - 0.5) * shake,
       it.pos.y + Math.abs(Math.sin(this._t * 9)) * shake * 0.7,
       it.pos.z + (Math.random() - 0.5) * shake,
     );
-    // Glow swells toward detonation: the only warning, and it is a fair one
-    it.glow.intensity = 2.4 + t * 5.5;
+    it.glow.intensity = 2.6 + feeders * 0.35;
     it.glow.pos.copy(it.pos);
 
-    it.feeders = 0;
-    for (const m of enemies.mice) {
-      if (m.dead) continue;
-      if (m.feeding) it.feeders++;
-    }
-
-    if (it.fuse <= 0) {
-      this._explode(it, player, enemies, out);
+    if (it.killsRemaining <= 0) {
       it.state = 'done';
     }
   }
 
-  _explode(it, player, enemies, out) {
-    const bx = it.pos.x;
-    const bz = it.pos.z;
+  _popMouseFromBag(it, mouse, enemies, out) {
+    if (mouse.dead || it.killsRemaining <= 0) return;
+    mouse.pop();
+    it.munching.delete(mouse);
+    it.killsRemaining -= 1;
+    out.popped++;
 
-    for (const m of enemies.mice) {
-      if (m.dead) continue;
-      const d = Math.hypot(m.pos.x - bx, m.pos.z - bz);
-      if (d <= THROWN.bagBlastRadius) {
-        m.pop();
-        out.popped++;
-      } else if (d <= THROWN.bagScareRadius) {
-        // Everything that saw that happen wants to be somewhere else
-        m.scare(bx, bz, THROWN.bagScareTime);
+    this._spawnPuff(mouse.pos, 1);
+    audio.bagPop(1);
+
+    const px = mouse.pos.x;
+    const pz = mouse.pos.z;
+    for (const other of enemies.mice) {
+      if (other.dead || other === mouse) continue;
+      const d = Math.hypot(other.pos.x - px, other.pos.z - pz);
+      if (d <= THROWN.bagScareRadius) {
+        other.scare(px, pz, THROWN.bagScareTime);
       }
     }
 
-    this._spawnPuff(it.pos, out.popped);
-    audio.bagPop(out.popped);
-    out.exploded = true;
-
-    const pd = Math.hypot(player.pos.x - bx, player.pos.z - bz);
-    if (pd < THROWN.bagPlayerShoveRadius) {
-      // Cosmetic only. Being near your own snack bomb is funny, not fatal.
-      out.shake = 1 - pd / THROWN.bagPlayerShoveRadius;
+    if (it.killsRemaining <= 0) {
+      this._spawnPuff(it.pos, 0);
     }
   }
 

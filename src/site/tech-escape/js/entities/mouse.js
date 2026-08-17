@@ -208,7 +208,7 @@ export class EvilMouse {
       : this._findLure(lures);
     if (this.lure) this.state = STATE.FEED;
     else if (this.state === STATE.FEED) {
-      // The bag it was eating just detonated somewhere else, or expired
+      // The bag emptied or was picked up elsewhere
       this.state = STATE.PATROL;
       this.patrolTarget = null;
     }

@@ -23,7 +23,7 @@ export const ITEMS = {
     shape: 'bag',
     useVerb: 'EAT',
     useHint: 'restores 1 snack energy',
-    throwHint: 'lures mice, then pops them',
+    throwHint: 'mice eat, then pop — up to 3 per bag',
     throwable: true,
     usable: true,
   },

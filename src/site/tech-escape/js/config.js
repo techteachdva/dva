@@ -196,19 +196,18 @@ export const INVENTORY = {
 /**
  * Thrown items.
  *
- * A bag of hot cheetos does not simply explode: it LURES. Mice within range
- * abandon the hunt, crowd the bag, and feed - which is the distraction window
- * the player actually paid for. Then the bag goes off and anything still eating
- * pops in a cloud of cheese dust. Funny first, useful second.
+ * A landed bag of hot cheetos LURES mice and sits on the floor. It does not
+ * detonate on a timer. Each mouse that eats from it for long enough pops
+ * individually; one bag can take out up to three mice before it is empty.
  */
 export const THROWN = {
   bagLureRange: 15,               // how far a landed bag pulls mice from
   bagFeedRange: 1.15,             // close enough to be eating it
-  bagFuse: 4.2,                   // seconds from landing to detonation
-  bagBlastRadius: 2.5,            // mice inside this pop
-  bagScareRadius: 8,              // mice outside the blast flee instead
-  bagScareTime: 5.5,
-  bagPlayerShoveRadius: 3.4,      // cosmetic only: shake and an orange flash
+  bagEatSeconds: 1.35,            // munch time before one mouse pops
+  bagMaxKills: 3,                 // mice one bag can pop before it is empty
+  bagScareRadius: 6,              // mice that saw a pop flee instead
+  bagScareTime: 4.5,
+  bagPlayerShoveRadius: 3.4,      // unused — bags no longer blast the player
   // Anti-virus disc: flat, fast, and lethal to exactly one virus
   discSpeed: 24,
   discHitRadius: 1.5,
