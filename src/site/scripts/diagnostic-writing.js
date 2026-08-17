@@ -356,9 +356,7 @@
       sensoryCount, transitionCount, dialogueLines, voiceCount, conflictWords,
     });
 
-    const teacherFeedback = buildTeacherFeedback(analysis);
-
-    return {
+    const analysis = {
       wordCount,
       wpm: Math.round(wpm * 10) / 10,
       sentenceCount,
@@ -393,9 +391,11 @@
       standards,
       typingLevel,
       feedback: studentFeedback,
-      teacherFeedback,
       flags: buildFlags(typingLevel, wordCount, wpm, standards),
     };
+
+    analysis.teacherFeedback = buildTeacherFeedback(analysis);
+    return analysis;
   }
 
   function classifyTyping(wordCount, wpm) {
@@ -574,9 +574,18 @@
     showView("analyzing");
     const actualDuration = Math.min(Math.max(elapsedSec, 1), DURATION_SEC);
     const text = storyInput.value;
-    const analysis = analyzeText(text, actualDuration);
     const name = studentName.value.trim();
     const classroom = selectedClassroom;
+    let analysis;
+    try {
+      analysis = analyzeText(text, actualDuration);
+    } catch (err) {
+      console.error("Writing analysis failed:", err);
+      const note = document.getElementById("resultSummary");
+      if (note) note.textContent = "Something went wrong analyzing your writing. Refresh and try again, or tell your teacher.";
+      showView("results");
+      return;
+    }
     let saveOk = false;
     let saveError = "";
     try {
