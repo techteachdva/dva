@@ -135,11 +135,10 @@ async function syncVoteState() {
     resetVotableUI();
     return null;
   } catch {
-    if (stored) {
-      setFormValues(stored);
-      setVotedUI(stored);
-      return stored;
-    }
+    // Status endpoint missing or failed — keep form open; POST enforces duplicates.
+    clearStoredVote();
+    setFormValues({ name, class: classroom });
+    resetVotableUI();
     return null;
   }
 }
@@ -205,22 +204,6 @@ async function castVote(choice) {
     return;
   }
 
-  try {
-    const status = await fetchVoteStatus(name, classroom);
-    if (status.voted && status.choice) {
-      const record = { name, class: classroom, choice: status.choice };
-      storeVote(record);
-      setVotedUI(record);
-      return;
-    }
-  } catch {
-    const prior = readStoredVote();
-    if (prior) {
-      setVotedUI(prior);
-      return;
-    }
-  }
-
   voteInFlight = true;
   updateVoteButtons();
 
@@ -251,7 +234,7 @@ async function castVote(choice) {
   renderBars(data, choice);
 }
 
-async function onIdentityChange() {
+async function onIdentityReady() {
   updateVoteButtons();
   if (!formIsReady()) return;
   const active = await syncVoteState();
@@ -279,19 +262,27 @@ async function init() {
   const stored = readStoredVote();
   if (stored) setFormValues(stored);
 
-  // If teacher cleared the sheet, unlock even before status API is deployed.
   if (stored && tally.total === 0) {
     clearStoredVote();
     resetVotableUI();
   }
 
-  const active = await syncVoteState();
+  let active = null;
+  if (formIsReady()) {
+    active = await syncVoteState();
+  } else if (stored) {
+    clearStoredVote();
+    resetVotableUI();
+  }
   renderBars(tally, active?.choice || null);
 
   const nameEl = document.getElementById("vote-name");
   const classEl = document.getElementById("vote-class");
-  if (nameEl) nameEl.addEventListener("input", onIdentityChange);
-  if (classEl) classEl.addEventListener("change", onIdentityChange);
+  if (nameEl) {
+    nameEl.addEventListener("input", updateVoteButtons);
+    nameEl.addEventListener("blur", onIdentityReady);
+  }
+  if (classEl) classEl.addEventListener("change", onIdentityReady);
 
   document.querySelectorAll("[data-vote]").forEach((btn) => {
     btn.addEventListener("click", () => castVote(btn.dataset.vote));
@@ -302,8 +293,7 @@ async function init() {
   window.setInterval(async () => {
     try {
       const fresh = await fetchTally();
-      const current = await syncVoteState();
-      renderBars(fresh, current?.choice || null);
+      renderBars(fresh, readStoredVote()?.choice || null);
     } catch {
       /* ignore poll errors */
     }

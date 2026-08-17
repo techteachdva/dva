@@ -113,6 +113,12 @@ export async function GET(request) {
 
       const data = await fetchScriptJson(url.toString(), { method: "GET" });
       if (data.error) {
+        if (data.error === "Unknown action") {
+          return Response.json(
+            { voted: false, choice: null, statusUnavailable: true },
+            { headers: corsHeaders() }
+          );
+        }
         return Response.json({ error: data.error }, { status: 502, headers: corsHeaders() });
       }
       return Response.json(
