@@ -170,17 +170,15 @@
             .onNodeHover(node => {
                 highlightNodes.clear();
                 if (node) {
-                highlightNodes.add(node);
+                highlightNodes.add(node.url);
                 node.neighbors.forEach(neighbor => highlightNodes.add(neighbor));
                 }
                 hoverNode = node || null;
                 
             });
-            if (fullScreen || (delay != null && graphData.nodes.length > 4)) {
-                setTimeout(() => {
-                    Graph.zoomToFit(5, 75);
-                }, delay || 200);
-            }
+            setTimeout(() => {
+                Graph.zoomToFit(5, 75);
+            }, delay != null ? delay : 200);
         return Graph;
     }
 
@@ -190,7 +188,8 @@
         }
         const data = filterLocalGraphData(graphData, depth);
         const mount = resolveGraphMount(mountEl) || resolveGraphMount("link-graph");
-        return renderGraph(data, mount, null, fullScreen);
+        window.graph = renderGraph(data, mount, 200, fullScreen);
+        return window.graph;
     }
 
     function filterFullGraphData(graphData) {
@@ -222,7 +221,15 @@
         return null;
     }
 </script>
-<div  x-init="{graphData, fullGraphData} = await fetchGraphData();" x-data="{ graphData: null, depth: 2, graph: null, fullGraph: null, showFullGraph: false, fullScreen: false, fullGraphData: null}" id="graph-component" x-bind:class="fullScreen ? 'graph graph-fs' : 'graph'" v-scope>
+<div
+    x-data="{ graphData: null, depth: 2, graph: null, fullGraph: null, showFullGraph: false, fullScreen: false, fullGraphData: null }"
+    x-init="
+        const payload = await fetchGraphData();
+        graphData = payload.graphData;
+        fullGraphData = payload.fullGraphData;
+    "
+    id="graph-component"
+    x-bind:class="fullScreen ? 'graph graph-fs' : 'graph'">
     <div class="graph-title-container">
         <div class="graph-title">Connected Pages</div>
         <div class="graph-hint">Click a node to jump · drag to explore</div>
@@ -246,9 +253,9 @@
                 </div>
         </div>
     </div>
-    <div x-effect="$nextTick(() => { const m = $refs.localGraphMount; if (m && graphData) window.graph = renderLocalGraph(graphData, depth, fullScreen, m); })">
-        <div id="link-graph" x-ref="localGraphMount"></div>
-    </div>
+    <div
+        id="link-graph"
+        x-effect="graphData && (graph = renderLocalGraph(graphData, depth, fullScreen))"></div>
     <div x-show="showFullGraph" id="full-graph" class="show" style="display: none;">
         <span id="full-graph-close" x-on:click="fullGraph = closefullGraph(fullGraph); showFullGraph = false;"><i icon-name="x" aria-hidden="true"></i></span><div id="full-graph-container"></div>
     </div>
