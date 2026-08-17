@@ -619,6 +619,45 @@
   z-index: 1;
 }
 
+/* ===== Summer Writing Test ===== */
+.cartridge--writing .cartridge-cuboid__face--front {
+  background: linear-gradient(145deg, #f5e6c8 0%, #e8d4a8 100%);
+}
+.cartridge--writing .cartridge-label {
+  background: linear-gradient(180deg, #1a2a3a 0%, #0f1a24 50%, #1a2a3a 100%);
+}
+.cartridge--writing .cartridge-label__title {
+  color: #fef3c7 !important;
+  background: rgba(30, 58, 95, 0.8);
+  border: 1px solid rgba(251, 191, 36, 0.45);
+  font-family: Georgia, "Times New Roman", serif;
+  letter-spacing: 0.02em;
+}
+.cartridge--writing .cartridge-label::before {
+  content: "✏️";
+  position: absolute;
+  left: 42%;
+  top: 38%;
+  font-size: 1.4rem;
+  pointer-events: none;
+  z-index: 1;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+}
+.cartridge--writing .cartridge-label::after {
+  content: "";
+  position: absolute;
+  left: 30%;
+  top: 58%;
+  width: 70px;
+  height: 44px;
+  background: linear-gradient(180deg, #fffef8 0%, #f0ead6 100%);
+  border: 1px solid #c4b896;
+  border-radius: 2px;
+  box-shadow: 2px 3px 6px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  z-index: 1;
+}
+
 /* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 48rem) {
   .cartridge {

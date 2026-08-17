@@ -9,15 +9,15 @@ layout: false
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
     <meta name="theme-color" content="#0f172a" />
-    <title>Summer Story Diagnostic</title>
+    <title>Summer Writing Assignment Test</title>
     <link rel="stylesheet" href="/styles/diagnostic-writing.css" />
   </head>
   <body class="dw-body">
     <div class="dw-shell">
       <header class="dw-topbar">
         <div>
-          <div class="dw-title">Summer Story Diagnostic</div>
-          <div class="dw-subtitle">5-minute timed writing · typing &amp; storytelling</div>
+          <div class="dw-title">Summer Writing Assignment Test</div>
+          <div class="dw-subtitle">5-minute timed narrative · typing, craft &amp; Minnesota writing standards</div>
         </div>
         <div class="dw-actions">
           <a class="dw-link" href="/">Back to site</a>
@@ -26,27 +26,67 @@ layout: false
       </header>
 
       <main id="mainContent">
-        <!-- Welcome -->
-        <section id="welcomeView" class="dw-card dw-stack">
-          <h1 class="dw-h1">Tell your summer story</h1>
-          <p class="dw-lead">
-            You will have <strong>five full minutes</strong> to type as much as you can about
-            <strong>something that happened to you over summer break</strong>.
-          </p>
-          <ul class="dw-list">
-            <li>Type continuously — don&rsquo;t stop to edit or perfect.</li>
-            <li>Include details: who, what, where, when, and how you felt.</li>
-            <li>Try varied sentences — short punchy ones and longer descriptive ones.</li>
-            <li>When time is up, your story is submitted automatically.</li>
-          </ul>
-          <label class="dw-field">
-            <span class="dw-label">Your first name</span>
-            <input id="studentName" class="dw-input" type="text" maxlength="80" placeholder="e.g. Jordan" autocomplete="name" />
-          </label>
-          <button id="startBtn" class="dw-btn" type="button" disabled>Start 5-minute timer</button>
+        <section id="welcomeView" class="dw-stack">
+          <div class="dw-card dw-hero">
+            <h1 class="dw-h1">📝 Tell your summer story</h1>
+            <p class="dw-lead">
+              You will have <strong>five full minutes</strong> to type a personal narrative about
+              <strong>something that happened to you over summer break</strong>.
+              This is a <em>first draft</em> — write continuously without stopping to perfect.
+            </p>
+          </div>
+
+          <div class="dw-card dw-stack">
+            <h2 class="dw-h2">What this test measures</h2>
+            <p class="dw-muted">Use these techniques on purpose — your story will be scored on each area below.</p>
+            <div class="dw-rubric-grid">
+              <div class="dw-rubric">
+                <h3 class="dw-h3">⌨️ Typing fluency &amp; stamina</h3>
+                <p>Type as much as you can in five minutes. Fluency helps you get ideas down before you forget them.</p>
+              </div>
+              <div class="dw-rubric">
+                <h3 class="dw-h3">✏️ Spelling &amp; mechanics</h3>
+                <p>Capitalize sentence starts and proper nouns. End sentences with punctuation. Spell common words carefully.</p>
+              </div>
+              <div class="dw-rubric">
+                <h3 class="dw-h3">🔗 Syntax (sentence building)</h3>
+                <p>Mix short and long sentences. Use connectors: <em>because, when, although, but, so that</em>. Avoid run-ons.</p>
+              </div>
+              <div class="dw-rubric">
+                <h3 class="dw-h3">💬 Semantics (word choice)</h3>
+                <p>Choose specific nouns and vivid verbs. Name people and places. Avoid repeating the same word.</p>
+              </div>
+              <div class="dw-rubric">
+                <h3 class="dw-h3">🌞 Narrative craft</h3>
+                <p>Include who, what, where, when, and how you felt. Use sensory details and time words (<em>then, finally, suddenly</em>).</p>
+              </div>
+              <div class="dw-rubric">
+                <h3 class="dw-h3">🎭 Your voice</h3>
+                <p>Write in first person (<em>I, my, we</em>). This is <strong>your</strong> memory — let your personality show.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="dw-card dw-stack dw-prompt-box">
+            <h2 class="dw-h2">Your prompt</h2>
+            <blockquote class="dw-prompt-quote">
+              Write a story about something that happened to you over summer break.
+              Include what happened, where you were, who was there, and how you felt.
+            </blockquote>
+            <ul class="dw-list dw-checklist">
+              <li>Hit <strong>Start</strong> — the timer runs the full five minutes.</li>
+              <li>Keep typing until time is up (auto-submits).</li>
+              <li>Pasting is disabled — this measures <em>your</em> typing.</li>
+              <li>Don&rsquo;t worry about perfection; quantity + craft both count.</li>
+            </ul>
+            <label class="dw-field">
+              <span class="dw-label">Your first name</span>
+              <input id="studentName" class="dw-input" type="text" maxlength="80" placeholder="e.g. Jordan" autocomplete="name" />
+            </label>
+            <button id="startBtn" class="dw-btn" type="button" disabled>Start 5-minute timer</button>
+          </div>
         </section>
 
-        <!-- Writing -->
         <section id="writingView" class="dw-hidden">
           <div class="dw-timer-bar">
             <div class="dw-timer-meta">
@@ -65,51 +105,38 @@ layout: false
           <div class="dw-card dw-writing-card">
             <div class="dw-prompt-banner">
               <strong>Prompt:</strong> Write a story about something that happened to you over summer break.
-              Type as much as you can!
+              Use sensory details, varied sentences, and your own voice. Type as much as you can!
             </div>
-            <textarea
-              id="storyInput"
-              class="dw-textarea"
-              placeholder="Start typing your story here…"
-              spellcheck="true"
-              aria-label="Your summer story"
-            ></textarea>
+            <textarea id="storyInput" class="dw-textarea" placeholder="Start typing your story here…" spellcheck="true" aria-label="Your summer story"></textarea>
           </div>
-          <p class="dw-muted dw-tiny">Keep typing until the timer reaches zero. Pasting is disabled during the timed session.</p>
+          <p class="dw-muted dw-tiny">Keep typing until the timer reaches zero. Focus on spelling, sentence variety, and specific details.</p>
         </section>
 
-        <!-- Analyzing -->
         <section id="analyzingView" class="dw-card dw-stack dw-hidden dw-center">
           <div class="dw-spinner" aria-hidden="true"></div>
-          <p class="dw-lead">Analyzing your story…</p>
+          <p class="dw-lead">Analyzing spelling, grammar, syntax, semantics, and narrative craft…</p>
         </section>
 
-        <!-- Student results -->
         <section id="resultsView" class="dw-hidden dw-stack">
           <div class="dw-card">
             <h2 class="dw-h2">Your results, <span id="resultName">—</span></h2>
             <p class="dw-muted" id="resultSummary">—</p>
           </div>
-
-          <div class="dw-score-grid" id="scoreGrid"></div>
-
+          <div class="dw-score-grid dw-score-grid--8" id="scoreGrid"></div>
           <div class="dw-card dw-stack">
-            <h3 class="dw-h3">What we noticed</h3>
-            <ul class="dw-feedback" id="feedbackList"></ul>
+            <h3 class="dw-h3">Feedback by skill area</h3>
+            <ul class="dw-feedback dw-feedback--grouped" id="feedbackList"></ul>
           </div>
-
           <div class="dw-card dw-stack">
             <h3 class="dw-h3">Your story</h3>
             <div class="dw-story-preview" id="storyPreview"></div>
           </div>
-
           <button id="restartBtn" class="dw-btn dw-btn-secondary" type="button">Write again</button>
         </section>
 
-        <!-- Teacher login -->
         <section id="teacherLoginView" class="dw-card dw-stack dw-hidden dw-narrow">
           <h2 class="dw-h2">Teacher dashboard</h2>
-          <p class="dw-muted">Enter the teacher password to view class results.</p>
+          <p class="dw-muted">Enter the teacher password to view class results and Minnesota ELA standards alignment.</p>
           <label class="dw-field">
             <span class="dw-label">Password</span>
             <input id="teacherPassword" class="dw-input" type="password" autocomplete="current-password" />
@@ -121,11 +148,10 @@ layout: false
           <p id="teacherLoginError" class="dw-error dw-hidden">Incorrect password.</p>
         </section>
 
-        <!-- Teacher dashboard -->
         <section id="teacherView" class="dw-hidden dw-stack">
           <div class="dw-card dw-teacher-header">
             <div>
-              <h2 class="dw-h2">Class results</h2>
+              <h2 class="dw-h2">Class results · Minnesota ELA Writing Standards</h2>
               <p class="dw-muted" id="teacherMeta">Loading submissions…</p>
             </div>
             <div class="dw-row dw-row-wrap">
@@ -151,9 +177,11 @@ layout: false
                   <th>Words</th>
                   <th>WPM</th>
                   <th>Typing</th>
-                  <th>Complexity</th>
-                  <th>Creativity</th>
+                  <th>Mechanics</th>
+                  <th>Syntax</th>
+                  <th>Semantics</th>
                   <th>Overall</th>
+                  <th>Standards</th>
                   <th>Submitted</th>
                   <th></th>
                 </tr>
@@ -170,13 +198,17 @@ layout: false
             </div>
             <div class="dw-detail-grid" id="detailMetrics"></div>
             <div class="dw-detail-flags" id="detailFlags"></div>
-            <div class="dw-story-preview" id="detailStory"></div>
+            <div class="dw-standards-panel" id="detailStandards"></div>
+            <h4 class="dw-h3">Teacher notes</h4>
             <ul class="dw-feedback" id="detailFeedback"></ul>
+            <h4 class="dw-h3">Student story</h4>
+            <div class="dw-story-preview" id="detailStory"></div>
           </div>
         </section>
       </main>
     </div>
 
+    <script src="/scripts/diagnostic-writing-standards.js" defer></script>
     <script src="/scripts/diagnostic-writing.js" defer></script>
   </body>
 </html>

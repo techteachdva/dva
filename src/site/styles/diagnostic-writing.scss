@@ -338,8 +338,13 @@ html {
   gap: 12px;
 }
 
+.dw-score-grid--8 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
 @media (max-width: 800px) {
-  .dw-score-grid {
+  .dw-score-grid,
+  .dw-score-grid--8 {
     grid-template-columns: repeat(2, 1fr);
   }
 }
@@ -539,3 +544,81 @@ html {
   color: #6ee7b7;
   border: 1px solid rgba(52, 211, 153, 0.3);
 }
+
+/* Rubric & prompt scaffolding */
+.dw-hero {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.12), rgba(167, 139, 250, 0.1));
+}
+
+.dw-rubric-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .dw-rubric-grid { grid-template-columns: 1fr; }
+}
+
+.dw-rubric {
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid var(--dw-border);
+  background: rgba(0, 0, 0, 0.15);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.dw-rubric p { margin: 6px 0 0; color: var(--dw-muted); }
+.dw-prompt-box { border-color: rgba(56, 189, 248, 0.25); }
+.dw-prompt-quote {
+  margin: 0;
+  padding: 14px 18px;
+  border-left: 4px solid var(--dw-accent);
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 0 10px 10px 0;
+  font-size: 17px;
+  line-height: 1.55;
+}
+
+.dw-checklist { color: var(--dw-muted); }
+
+.dw-feedback--grouped { list-style: none; padding: 0; }
+.dw-feedback-section { margin-bottom: 16px; }
+.dw-feedback-section ul {
+  margin: 8px 0 0;
+  padding-left: 1.2rem;
+  color: var(--dw-muted);
+}
+
+/* Minnesota standards */
+.dw-standards-panel { margin: 16px 0; }
+.dw-std-group { margin-bottom: 18px; }
+.dw-std-group-title { margin: 0 0 10px; font-size: 15px; }
+.dw-std-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.dw-std-item {
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--dw-border);
+  background: rgba(0, 0, 0, 0.15);
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.dw-std {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  margin-right: 6px;
+}
+
+.dw-std--excelling { background: rgba(52, 211, 153, 0.2); color: #6ee7b7; }
+.dw-std--developing { background: rgba(251, 191, 36, 0.2); color: #fcd34d; }
+.dw-std--needs_support { background: rgba(248, 113, 113, 0.2); color: #fca5a5; }
+
+.dw-std-bench { font-size: 12px; display: block; }
+.dw-std-rec { font-size: 12px; color: var(--dw-accent); display: block; margin-top: 4px; }
+.dw-std-score { font-size: 12px; color: var(--dw-muted); }

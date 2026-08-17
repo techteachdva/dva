@@ -13,16 +13,31 @@
     "so", "if", "not", "by", "from", "up", "out", "just", "like", "very",
   ]);
 
+  const COMMON_MISSPELLINGS = {
+    teh: "the", recieve: "receive", becuase: "because", wierd: "weird",
+    freind: "friend", definately: "definitely", alot: "a lot", seperate: "separate",
+    occured: "occurred", thier: "their", untill: "until", realy: "really",
+    gonne: "gonna", somthing: "something", diffrent: "different", beautifull: "beautiful",
+    happend: "happened", finaly: "finally", basicly: "basically", writting: "writing",
+    swiming: "swimming", runing: "running", dont: "don't", wont: "won't", cant: "can't",
+    didnt: "didn't", wasnt: "wasn't", couldnt: "couldn't", wouldnt: "wouldn't",
+    im: "I'm", ive: "I've", youre: "you're", theyre: "they're", weve: "we've",
+  };
+
   const SENSORY_PATTERN =
-    /\b(saw|see|seen|heard|hear|felt|feel|smelled|smell|tasted|taste|touched|touch|bright|dark|loud|quiet|soft|rough|smooth|sweet|sour|cold|warm|hot|scary|exciting|beautiful|amazing|funny|nervous|happy|sad|angry|surprised)\b/gi;
+    /\b(saw|see|seen|heard|hear|felt|feel|smelled|smell|tasted|taste|touched|touch|bright|dark|loud|quiet|soft|rough|smooth|sweet|sour|cold|warm|hot|scary|exciting|beautiful|amazing|funny|nervous|happy|sad|angry|surprised|giggled|laughed|cried|shivered|gasped)\b/gi;
 
   const SUBORDINATOR_PATTERN =
-    /\b(because|although|though|while|when|if|since|unless|until|before|after|where|whereas|even though|so that|in order to|as soon as|whenever|wherever)\b/gi;
+    /\b(because|although|though|while|when|if|since|unless|until|before|after|where|whereas|even though|so that|in order to|as soon as|whenever|wherever|as|but|and|or)\b/gi;
 
   const TRANSITION_PATTERN =
-    /\b(then|next|finally|suddenly|meanwhile|later|afterward|eventually|one day|that day|first|second|lastly|soon|before long)\b/gi;
+    /\b(then|next|finally|suddenly|meanwhile|later|afterward|eventually|one day|that day|first|second|lastly|soon|before long|at first|in the end)\b/gi;
 
-  // DOM refs
+  const CONCRETE_PATTERN =
+    /\b(house|beach|pool|park|school|friend|mom|dad|brother|sister|dog|cat|bike|car|boat|lake|river|tree|food|pizza|ice cream|summer|morning|night)\b/gi;
+
+  const VOICE_PATTERN = /\b(i|me|my|mine|we|us|our|myself)\b/gi;
+
   const views = {
     welcome: document.getElementById("welcomeView"),
     writing: document.getElementById("writingView"),
@@ -61,8 +76,6 @@
   let allSubmissions = [];
   let teacherAuthed = false;
 
-  // --- View helpers ---
-
   function showView(name) {
     Object.entries(views).forEach(([key, el]) => {
       if (!el) return;
@@ -78,10 +91,7 @@
 
   function formatDate(ts) {
     return new Date(ts).toLocaleString(undefined, {
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
+      month: "short", day: "numeric", hour: "numeric", minute: "2-digit",
     });
   }
 
@@ -90,8 +100,6 @@
     if (!trimmed) return 0;
     return trimmed.split(/\s+/).length;
   }
-
-  // --- Analysis engine ---
 
   function clamp(n, min, max) {
     return Math.max(min, Math.min(max, n));
@@ -110,10 +118,149 @@
   }
 
   function getSentences(text) {
-    return text
-      .split(/[.!?]+/)
-      .map((s) => s.trim())
-      .filter((s) => s.length > 0);
+    return text.split(/[.!?]+/).map((s) => s.trim()).filter((s) => s.length > 0);
+  }
+
+  function normalizeWord(w) {
+    return w.toLowerCase().replace(/[^\w']/g, "");
+  }
+
+  function analyzeSpelling(text, words) {
+    const issues = [];
+    const lowerWords = words.map(normalizeWord);
+    let misspellCount = 0;
+
+    for (let i = 0; i < lowerWords.length; i++) {
+      const w = lowerWords[i];
+      if (COMMON_MISSPELLINGS[w]) {
+        misspellCount++;
+        if (issues.length < 5) issues.push(`"${words[i]}" → try "${COMMON_MISSPELLINGS[w]}"`);
+      }
+    }
+
+    const doubledLetter = /\b(\w{3,})\1{2,}\b/gi;
+    const doubled = (text.match(doubledLetter) || []).length;
+    misspellCount += doubled;
+
+    const apostropheErrors = (text.match(/\bi\b/g) || []).length;
+    const rate = words.length > 0 ? misspellCount / words.length : 0;
+    const score = clamp(Math.round(100 - rate * 400 - apostropheErrors * 3), 0, 100);
+
+    return {
+      score,
+      misspellCount,
+      apostropheErrors,
+      issues,
+      rate: Math.round(rate * 1000) / 10,
+    };
+  }
+
+  function analyzeGrammar(text, sentences, words) {
+    const issues = [];
+    let errorCount = 0;
+
+    for (const sent of sentences) {
+      const trimmed = sent.trim();
+      if (!trimmed) continue;
+      if (/^[a-z]/.test(trimmed)) {
+        errorCount++;
+        if (issues.length < 4) issues.push("Some sentences don't start with a capital letter.");
+      }
+    }
+
+    const endsWithPunct = /[.!?]["']?\s*$/.test(text.trim());
+    if (text.trim() && !endsWithPunct) {
+      errorCount++;
+      issues.push("Add ending punctuation to your final sentence.");
+    }
+
+    const commaSplices = (text.match(/,\s*(and|but|so)\s+\w+/gi) || []).length;
+    const weakEnds = (text.match(/\b(is|are|was|were|am)\s*$/gim) || []).length;
+    errorCount += Math.floor(commaSplices * 0.3);
+
+    const doubleSpaces = (text.match(/  +/g) || []).length;
+    errorCount += doubleSpaces;
+
+    const repeatedAdjacent = words.filter((w, i) => i > 0 && normalizeWord(w) === normalizeWord(words[i - 1]) && normalizeWord(w).length > 2).length;
+    errorCount += repeatedAdjacent;
+
+    const rate = words.length > 0 ? errorCount / Math.max(sentences.length, 1) : 0;
+    const score = clamp(Math.round(100 - rate * 25 - weakEnds * 5), 0, 100);
+
+    return { score, errorCount, commaSplices, repeatedAdjacent, issues: [...new Set(issues)].slice(0, 5) };
+  }
+
+  function analyzeSyntax(sentences, words, text) {
+    const sentLengths = sentences.map((s) => s.split(/\s+/).filter(Boolean).length);
+    const avgLen = sentLengths.reduce((a, b) => a + b, 0) / Math.max(sentLengths.length, 1);
+    const variance = sentLengths.reduce((s, l) => s + (l - avgLen) ** 2, 0) / Math.max(sentLengths.length, 1);
+    const variety = Math.sqrt(variance);
+
+    const complexMarkers =
+      (text.match(SUBORDINATOR_PATTERN) || []).length +
+      (text.match(/;/g) || []).length +
+      (text.match(/—|–/g) || []).length;
+
+    const fragments = sentLengths.filter((l) => l > 0 && l < 4).length;
+    const runOns = sentLengths.filter((l) => l > 35).length;
+
+    const score = clamp(Math.round(
+      scoreFromRange(variety, [[0, 20], [2, 40], [5, 65], [8, 82], [12, 95]]) * 0.3 +
+      scoreFromRange(avgLen, [[0, 20], [6, 45], [10, 68], [14, 82], [20, 95]]) * 0.25 +
+      scoreFromRange(complexMarkers, [[0, 30], [1, 50], [3, 70], [6, 88], [10, 100]]) * 0.3 -
+      fragments * 4 - runOns * 6
+    ), 0, 100);
+
+    const issues = [];
+    if (fragments > 2) issues.push("Some sentences are very short fragments — try combining ideas.");
+    if (runOns > 0) issues.push("Very long sentences may be run-ons — break them with periods or semicolons.");
+    if (variety < 3) issues.push("Sentence lengths are similar — mix short and long sentences.");
+
+    return {
+      score,
+      avgSentenceLength: Math.round(avgLen * 10) / 10,
+      sentenceVariety: Math.round(variety * 10) / 10,
+      complexMarkers,
+      fragments,
+      runOns,
+      issues,
+    };
+  }
+
+  function analyzeSemantics(words, text) {
+    const lowerWords = words.map(normalizeWord);
+    const contentWords = lowerWords.filter((w) => w.length > 1 && !STOP_WORDS.has(w));
+    const uniqueContent = new Set(contentWords);
+    const lexicalDiversity = contentWords.length > 0 ? uniqueContent.size / contentWords.length : 0;
+
+    const concreteCount = (text.match(CONCRETE_PATTERN) || []).length;
+    const properNouns = (text.match(/\b[A-Z][a-z]+/g) || []).length;
+    const numbers = (text.match(/\b\d+\b/g) || []).length;
+    const specificity = concreteCount + properNouns + numbers;
+
+    const freq = {};
+    for (const w of contentWords) freq[w] = (freq[w] || 0) + 1;
+    const maxFreq = Math.max(0, ...Object.values(freq));
+    const repetitionPenalty = words.length > 0 ? maxFreq / words.length : 0;
+
+    const score = clamp(Math.round(
+      scoreFromRange(lexicalDiversity, [[0, 20], [0.35, 45], [0.5, 65], [0.65, 82], [0.8, 95]]) * 0.45 +
+      scoreFromRange(specificity, [[0, 25], [2, 50], [5, 70], [10, 88], [15, 100]]) * 0.35 -
+      repetitionPenalty * 60
+    ), 0, 100);
+
+    const issues = [];
+    if (lexicalDiversity < 0.4) issues.push("Try using more varied vocabulary — synonyms keep writing fresh.");
+    if (specificity < 3) issues.push("Add specific names, places, and concrete details so readers can picture your story.");
+    if (repetitionPenalty > 0.12) issues.push("A word repeats often — try a thesaurus for variety.");
+
+    return {
+      score,
+      lexicalDiversity: Math.round(lexicalDiversity * 100) / 100,
+      specificity,
+      repetitionPenalty: Math.round(repetitionPenalty * 100) / 100,
+      issues,
+    };
   }
 
   function analyzeText(text, durationSec) {
@@ -121,129 +268,125 @@
     const wordCount = words.length;
     const minutes = durationSec / 60;
     const wpm = minutes > 0 ? wordCount / minutes : 0;
-
     const sentences = getSentences(text);
     const sentenceCount = Math.max(sentences.length, 1);
-    const avgSentenceLength = wordCount / sentenceCount;
 
-    const sentLengths = sentences.map((s) => s.split(/\s+/).filter(Boolean).length);
-    const avgLen = sentLengths.reduce((a, b) => a + b, 0) / sentLengths.length;
-    const variance =
-      sentLengths.reduce((sum, len) => sum + (len - avgLen) ** 2, 0) / sentLengths.length;
-    const sentenceVariety = Math.sqrt(variance);
-
-    const lowerWords = words.map((w) => w.toLowerCase().replace(/[^\w']/g, ""));
-    const contentWords = lowerWords.filter((w) => w.length > 1 && !STOP_WORDS.has(w));
-    const uniqueContent = new Set(contentWords);
-    const lexicalDiversity = contentWords.length > 0 ? uniqueContent.size / contentWords.length : 0;
-
-    const complexMarkers =
-      (text.match(SUBORDINATOR_PATTERN) || []).length +
-      (text.match(/;/g) || []).length +
-      (text.match(/—|–/g) || []).length;
+    const spelling = analyzeSpelling(text, words);
+    const grammar = analyzeGrammar(text, sentences, words);
+    const syntax = analyzeSyntax(sentences, words, text);
+    const semantics = analyzeSemantics(words, text);
 
     const sensoryCount = (text.match(SENSORY_PATTERN) || []).length;
     const transitionCount = (text.match(TRANSITION_PATTERN) || []).length;
-    const dialogueLines = (text.match(/["']/g) || []).length / 2;
-    const longWords = lowerWords.filter((w) => w.length >= 7).length;
-    const longWordRatio = wordCount > 0 ? longWords / wordCount : 0;
+    const dialogueLines = Math.round((text.match(/["']/g) || []).length / 2);
+    const voiceCount = (text.match(VOICE_PATTERN) || []).length;
+    const conflictWords = (text.match(/\b(but|however|problem|stuck|lost|scared|worried|until|finally)\b/gi) || []).length;
 
-    const freq = {};
-    for (const w of contentWords) freq[w] = (freq[w] || 0) + 1;
-    const maxFreq = Math.max(0, ...Object.values(freq));
-    const repetitionPenalty = wordCount > 0 ? maxFreq / wordCount : 0;
-
-    // Scores 0–100
     const volumeScore = scoreFromRange(wordCount, [
-      [0, 0],
-      [40, 25],
-      [75, 45],
-      [100, 58],
-      [150, 72],
-      [200, 85],
-      [280, 95],
-      [400, 100],
+      [0, 0], [40, 25], [75, 45], [100, 58], [150, 72], [200, 85], [280, 95], [400, 100],
     ]);
 
-    const complexityScore = clamp(
-      Math.round(
-        scoreFromRange(avgSentenceLength, [[0, 20], [6, 40], [10, 65], [14, 80], [20, 90], [30, 95]]) * 0.35 +
-          scoreFromRange(sentenceVariety, [[0, 20], [2, 40], [5, 65], [8, 80], [12, 95]]) * 0.25 +
-          scoreFromRange(lexicalDiversity, [[0, 20], [0.35, 45], [0.5, 65], [0.65, 80], [0.8, 95]]) * 0.25 +
-          scoreFromRange(complexMarkers, [[0, 30], [1, 50], [3, 70], [6, 85], [10, 100]]) * 0.15
-      ),
-      0,
-      100
-    );
+    const complexityScore = clamp(Math.round(
+      syntax.score * 0.5 + semantics.score * 0.3 + grammar.score * 0.2
+    ), 0, 100);
 
-    const creativityScore = clamp(
-      Math.round(
-        scoreFromRange(sensoryCount, [[0, 25], [1, 45], [3, 65], [6, 80], [10, 95]]) * 0.3 +
-          scoreFromRange(transitionCount, [[0, 30], [1, 50], [3, 70], [6, 90]]) * 0.2 +
-          scoreFromRange(dialogueLines, [[0, 40], [1, 60], [3, 80], [5, 95]]) * 0.15 +
-          scoreFromRange(longWordRatio, [[0, 30], [0.05, 50], [0.1, 70], [0.15, 90]]) * 0.15 +
-          scoreFromRange(lexicalDiversity, [[0, 20], [0.4, 55], [0.55, 75], [0.7, 95]]) * 0.2 -
-          repetitionPenalty * 80
-      ),
-      0,
-      100
-    );
+    const creativityScore = clamp(Math.round(
+      scoreFromRange(sensoryCount, [[0, 25], [1, 45], [3, 65], [6, 80], [10, 95]]) * 0.35 +
+      scoreFromRange(transitionCount, [[0, 30], [1, 50], [3, 70], [6, 90]]) * 0.25 +
+      scoreFromRange(dialogueLines, [[0, 40], [1, 60], [3, 80], [5, 95]]) * 0.2 +
+      scoreFromRange(conflictWords, [[0, 30], [1, 55], [3, 75], [5, 90]]) * 0.2
+    ), 0, 100);
 
     const typingScore = scoreFromRange(wpm, [
-      [0, 0],
-      [8, 20],
-      [15, 40],
-      [22, 55],
-      [30, 70],
-      [38, 82],
-      [45, 92],
-      [55, 100],
+      [0, 0], [8, 20], [15, 40], [22, 55], [30, 70], [38, 82], [45, 92], [55, 100],
     ]);
 
-    const overallScore = Math.round(
-      volumeScore * 0.35 + complexityScore * 0.25 + creativityScore * 0.2 + typingScore * 0.2
-    );
+    const mechanicsScore = clamp(Math.round(spelling.score * 0.5 + grammar.score * 0.5), 0, 100);
+    const voiceScore = clamp(Math.round(
+      scoreFromRange(voiceCount, [[0, 20], [2, 45], [5, 65], [10, 82], [15, 95]]) * 0.6 +
+      semantics.score * 0.4
+    ), 0, 100);
+
+    const narrativeScore = clamp(Math.round(
+      scoreFromRange(sensoryCount, [[0, 20], [2, 50], [4, 70], [8, 90]]) * 0.35 +
+      scoreFromRange(transitionCount, [[0, 25], [2, 55], [4, 75], [6, 90]]) * 0.25 +
+      scoreFromRange(dialogueLines, [[0, 30], [1, 55], [2, 75], [4, 90]]) * 0.2 +
+      scoreFromRange(conflictWords, [[0, 25], [1, 50], [3, 75], [5, 90]]) * 0.2
+    ), 0, 100);
+
+    const fluencyScore = typingScore;
+
+    const metricScores = {
+      spelling: spelling.score,
+      grammar: grammar.score,
+      mechanics: mechanicsScore,
+      syntax: syntax.score,
+      complexity: complexityScore,
+      semantics: semantics.score,
+      fluency: fluencyScore,
+      volume: volumeScore,
+      voice: voiceScore,
+      creativity: creativityScore,
+      narrative: narrativeScore,
+    };
+
+    const standards = window.DWStandards
+      ? window.DWStandards.mapToStandards(metricScores)
+      : { all: [], excelling: [], developing: [], needsSupport: [] };
 
     const typingLevel = classifyTyping(wordCount, wpm);
-    const feedback = buildFeedback({
-      wordCount,
-      wpm,
-      avgSentenceLength,
-      sentenceVariety,
-      lexicalDiversity,
-      complexMarkers,
-      sensoryCount,
-      transitionCount,
-      dialogueLines,
-      repetitionPenalty,
-      typingLevel,
-      volumeScore,
-      complexityScore,
-      creativityScore,
-      typingScore,
+    const overallScore = Math.round(
+      volumeScore * 0.2 + complexityScore * 0.2 + creativityScore * 0.15 +
+      typingScore * 0.15 + mechanicsScore * 0.15 + semantics.score * 0.15
+    );
+
+    const studentFeedback = buildStudentFeedback({
+      wordCount, wpm, typingLevel, spelling, grammar, syntax, semantics,
+      sensoryCount, transitionCount, dialogueLines, voiceCount, conflictWords,
+    });
+
+    const teacherFeedback = buildTeacherFeedback({
+      wordCount, wpm, typingLevel, spelling, grammar, syntax, semantics,
+      standards, metricScores, overallScore,
     });
 
     return {
       wordCount,
       wpm: Math.round(wpm * 10) / 10,
       sentenceCount,
-      avgSentenceLength: Math.round(avgSentenceLength * 10) / 10,
-      sentenceVariety: Math.round(sentenceVariety * 10) / 10,
-      lexicalDiversity: Math.round(lexicalDiversity * 100) / 100,
-      complexMarkers,
+      avgSentenceLength: syntax.avgSentenceLength,
+      sentenceVariety: syntax.sentenceVariety,
+      lexicalDiversity: semantics.lexicalDiversity,
+      complexMarkers: syntax.complexMarkers,
       sensoryCount,
       transitionCount,
-      dialogueLines: Math.round(dialogueLines),
+      dialogueLines,
+      voiceCount,
+      conflictWords,
+      spelling,
+      grammar,
+      syntax,
+      semantics,
       scores: {
         volume: volumeScore,
         complexity: complexityScore,
         creativity: creativityScore,
         typing: typingScore,
+        spelling: spelling.score,
+        grammar: grammar.score,
+        syntax: syntax.score,
+        semantics: semantics.score,
+        mechanics: mechanicsScore,
+        voice: voiceScore,
+        narrative: narrativeScore,
         overall: overallScore,
       },
+      metricScores,
+      standards,
       typingLevel,
-      feedback,
-      flags: buildFlags(typingLevel, wordCount, wpm, complexityScore, creativityScore),
+      feedback: studentFeedback,
+      teacherFeedback,
+      flags: buildFlags(typingLevel, wordCount, wpm, standards),
     };
   }
 
@@ -255,83 +398,126 @@
   }
 
   function typingLabel(level) {
-    const map = {
+    return {
       intervention: "Needs intervention",
       developing: "Developing",
       proficient: "Proficient",
       advanced: "Advanced",
-    };
-    return map[level] || level;
+    }[level] || level;
   }
 
-  function buildFlags(typingLevel, wordCount, wpm, complexityScore, creativityScore) {
+  function buildFlags(typingLevel, wordCount, wpm, standards) {
     const flags = [];
     if (typingLevel === "intervention") {
-      flags.push({
-        type: "alert",
-        text: "Typing intervention recommended — low fluency (" + wordCount + " words, " + Math.round(wpm) + " WPM)",
-      });
+      flags.push({ type: "alert", text: `Typing intervention: ${wordCount} words, ${Math.round(wpm)} WPM` });
     } else if (typingLevel === "advanced") {
-      flags.push({ type: "ok", text: "Strong typing fluency — proficient typist" });
-    } else if (typingLevel === "proficient") {
-      flags.push({ type: "ok", text: "On-track typing fluency" });
+      flags.push({ type: "ok", text: "Strong typing fluency" });
     }
-    if (complexityScore < 45) {
-      flags.push({ type: "alert", text: "Sentence complexity is emerging — practice varied sentence structures" });
+    for (const s of standards.needsSupport || []) {
+      flags.push({ type: "alert", text: `MN ${s.id} (${s.title}): needs support` });
     }
-    if (creativityScore < 45) {
-      flags.push({ type: "alert", text: "Storytelling details are limited — encourage sensory language and specifics" });
-    }
-    if (complexityScore >= 70 && creativityScore >= 70) {
-      flags.push({ type: "ok", text: "Strong writer — good complexity and creativity" });
+    for (const s of standards.excelling || []) {
+      flags.push({ type: "ok", text: `MN ${s.id} (${s.title}): excelling` });
     }
     return flags;
   }
 
-  function buildFeedback(metrics) {
-    const lines = [];
-    const { wordCount, wpm, typingLevel } = metrics;
+  function buildStudentFeedback(m) {
+    const sections = [];
 
-    if (wordCount >= 175) {
-      lines.push(`Strong output: you wrote ${wordCount} words in five minutes (${Math.round(wpm)} WPM).`);
-    } else if (wordCount >= 100) {
-      lines.push(`Solid effort: ${wordCount} words (${Math.round(wpm)} WPM). Keep building stamina by writing daily.`);
-    } else {
-      lines.push(`You wrote ${wordCount} words (${Math.round(wpm)} WPM). Regular practice will help you type more in five minutes.`);
-    }
+    sections.push({
+      title: "Typing & stamina",
+      items: [
+        m.wordCount >= 150
+          ? `Strong stamina: ${m.wordCount} words in five minutes (${Math.round(m.wpm)} WPM).`
+          : `You wrote ${m.wordCount} words (${Math.round(m.wpm)} WPM). Keep practicing daily timed writes to build fluency.`,
+        m.typingLevel === "intervention"
+          ? "Focus: short typing drills will help you get ideas on the page faster."
+          : null,
+      ].filter(Boolean),
+    });
 
-    if (metrics.avgSentenceLength >= 12) {
-      lines.push("Your sentences tend to be longer and more developed — good for storytelling.");
-    } else if (metrics.avgSentenceLength < 7) {
-      lines.push("Try combining some short sentences to add detail and flow.");
-    }
+    sections.push({
+      title: "Spelling & mechanics",
+      items: [
+        m.spelling.score >= 75
+          ? "Spelling looks solid for a first draft — nice control under time pressure."
+          : m.spelling.score >= 50
+            ? "Some spelling patterns to watch — slow down on tricky words in revision."
+            : "Spelling needs practice — try reading your story aloud to catch errors.",
+        ...m.spelling.issues.slice(0, 2).map((i) => i),
+        ...(m.grammar.score >= 75
+          ? ["Capital letters and punctuation are mostly in place."]
+          : m.grammar.issues.slice(0, 2)),
+      ].filter(Boolean),
+    });
 
-    if (metrics.sentenceVariety >= 5) {
-      lines.push("Nice variety in sentence length — that keeps a story interesting.");
-    }
+    sections.push({
+      title: "Syntax (how sentences are built)",
+      items: [
+        m.syntax.sentenceVariety >= 5
+          ? "Good sentence variety — you mix short and long sentences."
+          : "Try mixing short punchy sentences with longer descriptive ones.",
+        m.syntax.complexMarkers >= 2
+          ? "You used connecting words (because, when, although) to build complex sentences."
+          : "Add connectors like because, when, or although to link ideas.",
+        ...m.syntax.issues.slice(0, 2),
+      ],
+    });
 
-    if (metrics.sensoryCount >= 3) {
-      lines.push("You used sensory and feeling words — readers can picture your experience.");
-    } else {
-      lines.push("Add what you saw, heard, felt, or smelled to make your story come alive.");
-    }
+    sections.push({
+      title: "Semantics (word meaning & choice)",
+      items: [
+        m.semantics.lexicalDiversity >= 0.55
+          ? "Strong vocabulary variety — your word choices feel specific."
+          : "Use precise nouns and vivid verbs instead of general words like 'good' or 'nice'.",
+        m.semantics.specificity >= 5
+          ? "Specific details (names, places, numbers) help readers picture your story."
+          : "Name people, places, and moments — specifics make stories believable.",
+        ...m.semantics.issues.slice(0, 2),
+      ],
+    });
 
-    if (metrics.complexMarkers >= 2) {
-      lines.push("You used connecting words (because, when, although…) to build complex ideas.");
-    }
+    sections.push({
+      title: "Narrative craft",
+      items: [
+        m.sensoryCount >= 3
+          ? "Sensory details (what you saw, heard, felt) bring your summer memory to life."
+          : "Add what you saw, heard, smelled, or felt during the event.",
+        m.voiceCount >= 5
+          ? "Your personal voice comes through — this reads like your experience."
+          : "Use 'I' and 'my' to keep the story in your own voice.",
+        m.dialogueLines >= 1
+          ? "Dialogue adds energy — keep using quoted speech when it fits."
+          : "Try one line of dialogue if someone spoke during your story.",
+        m.transitionCount >= 2
+          ? "Time words (then, finally, suddenly) help the story flow."
+          : "Signal time shifts with words like then, next, or finally.",
+      ],
+    });
 
-    if (metrics.repetitionPenalty > 0.12) {
-      lines.push("Watch for repeating the same words — try synonyms to keep your writing fresh.");
-    }
-
-    if (typingLevel === "intervention") {
-      lines.push("Focus area: typing practice will help you get your ideas down faster.");
-    }
-
-    return lines;
+    return sections;
   }
 
-  // --- Timer & writing ---
+  function buildTeacherFeedback(m) {
+    const lines = [];
+    lines.push(`Overall: ${m.overallScore}/100 · ${m.wordCount} words · ${Math.round(m.wpm)} WPM · Typing: ${typingLabel(m.typingLevel)}`);
+    lines.push(`Mechanics — Spelling: ${m.spelling.score}, Grammar: ${m.grammar.score}, Syntax: ${m.syntax.score}, Semantics: ${m.semantics.score}`);
+
+    if (m.standards.excelling?.length) {
+      lines.push(`Excelling (${m.standards.excelling.length}): ${m.standards.excelling.map((s) => s.id).join(", ")}`);
+    }
+    if (m.standards.developing?.length) {
+      lines.push(`Developing (${m.standards.developing.length}): ${m.standards.developing.map((s) => s.id).join(", ")}`);
+    }
+    if (m.standards.needsSupport?.length) {
+      lines.push(`Needs support (${m.standards.needsSupport.length}): ${m.standards.needsSupport.map((s) => s.id).join(", ")}`);
+      for (const s of m.standards.needsSupport.slice(0, 3)) {
+        lines.push(`→ ${s.recommendation}`);
+      }
+    }
+    return lines;
+  }
 
   function updateLiveStats() {
     const words = countWords(storyInput.value);
@@ -346,37 +532,29 @@
     timerDisplay.textContent = formatTime(DURATION_SEC);
     timerDisplay.classList.remove("dw-timer-value--urgent");
     timerProgress.style.width = "100%";
-
     timerInterval = setInterval(() => {
       elapsedSec = Math.floor((Date.now() - startTime) / 1000);
       const remaining = Math.max(DURATION_SEC - elapsedSec, 0);
       timerDisplay.textContent = formatTime(remaining);
       timerProgress.style.width = `${(remaining / DURATION_SEC) * 100}%`;
       updateLiveStats();
-
       if (remaining <= 30) timerDisplay.classList.add("dw-timer-value--urgent");
-
       if (remaining <= 0) finishWriting();
     }, 200);
   }
 
   function stopTimer() {
-    if (timerInterval) {
-      clearInterval(timerInterval);
-      timerInterval = null;
-    }
+    if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
   }
 
   async function finishWriting() {
     stopTimer();
     storyInput.readOnly = true;
     showView("analyzing");
-
     const actualDuration = Math.min(Math.max(elapsedSec, 1), DURATION_SEC);
     const text = storyInput.value;
     const analysis = analyzeText(text, actualDuration);
     const name = studentName.value.trim();
-
     await submitResult(name, text, analysis, actualDuration);
     renderStudentResults(name, text, analysis);
     showView("results");
@@ -385,64 +563,52 @@
   function renderStudentResults(name, text, analysis) {
     document.getElementById("resultName").textContent = name;
     document.getElementById("resultSummary").textContent =
-      `You wrote ${analysis.wordCount} words at ${analysis.wpm} WPM. Overall score: ${analysis.scores.overall}/100.`;
+      `You wrote ${analysis.wordCount} words at ${analysis.wpm} WPM. Overall: ${analysis.scores.overall}/100.`;
 
     const grid = document.getElementById("scoreGrid");
     grid.innerHTML = "";
     const cards = [
-      { key: "Words typed", score: analysis.scores.volume, sub: `${analysis.wordCount} words` },
-      { key: "Typing fluency", score: analysis.scores.typing, sub: `${analysis.wpm} WPM · ${typingLabel(analysis.typingLevel)}` },
-      { key: "Sentence complexity", score: analysis.scores.complexity, sub: `Avg ${analysis.avgSentenceLength} words/sentence` },
-      { key: "Creativity", score: analysis.scores.creativity, sub: `${analysis.sensoryCount} sensory cues` },
+      { key: "Words & stamina", score: analysis.scores.volume, sub: `${analysis.wordCount} words` },
+      { key: "Typing fluency", score: analysis.scores.typing, sub: `${analysis.wpm} WPM` },
+      { key: "Spelling", score: analysis.scores.spelling, sub: `${analysis.spelling.misspellCount} flagged` },
+      { key: "Grammar", score: analysis.scores.grammar, sub: "Capitalization & punctuation" },
+      { key: "Syntax", score: analysis.scores.syntax, sub: `Avg ${analysis.avgSentenceLength} w/sent` },
+      { key: "Semantics", score: analysis.scores.semantics, sub: `Diversity ${analysis.lexicalDiversity}` },
+      { key: "Narrative craft", score: analysis.scores.narrative, sub: `${analysis.sensoryCount} sensory cues` },
+      { key: "Creativity", score: analysis.scores.creativity, sub: `${analysis.transitionCount} transitions` },
     ];
     for (const c of cards) {
       const el = document.createElement("div");
       el.className = "dw-score-card";
-      el.innerHTML = `
-        <div class="dw-score-k">${c.key}</div>
-        <div class="dw-score-v">${c.score}</div>
-        <div class="dw-score-sub">${c.sub}</div>
-      `;
+      el.innerHTML = `<div class="dw-score-k">${c.key}</div><div class="dw-score-v">${c.score}</div><div class="dw-score-sub">${c.sub}</div>`;
       grid.appendChild(el);
     }
 
     const fb = document.getElementById("feedbackList");
-    fb.innerHTML = analysis.feedback.map((line) => `<li>${escapeHtml(line)}</li>`).join("");
+    fb.innerHTML = analysis.feedback.map((section) => `
+      <li class="dw-feedback-section">
+        <strong>${escapeHtml(section.title)}</strong>
+        <ul>${section.items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>
+      </li>`).join("");
     document.getElementById("storyPreview").textContent = text;
   }
 
   function escapeHtml(str) {
-    return str
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;");
+    return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
-
-  // --- Submission storage ---
 
   async function submitResult(name, text, analysis, durationSec) {
     const payload = { name, text, analysis, durationSec };
     try {
-      const res = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const res = await fetch(API_URL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
       if (res.ok) return;
-    } catch {
-      // fall through to local storage
-    }
+    } catch { /* local fallback */ }
     saveLocalSubmission(payload);
   }
 
   function saveLocalSubmission(entry) {
     const stored = JSON.parse(localStorage.getItem(LOCAL_KEY) || "[]");
-    stored.unshift({
-      id: `local-${Date.now()}`,
-      ...entry,
-      submittedAt: Date.now(),
-    });
+    stored.unshift({ id: `local-${Date.now()}`, ...entry, submittedAt: Date.now() });
     localStorage.setItem(LOCAL_KEY, JSON.stringify(stored.slice(0, 200)));
   }
 
@@ -453,16 +619,16 @@
         const data = await res.json();
         if (Array.isArray(data.submissions)) return data.submissions;
       }
-    } catch {
-      // fall through
-    }
+    } catch { /* local fallback */ }
     return JSON.parse(localStorage.getItem(LOCAL_KEY) || "[]");
   }
 
-  // --- Teacher dashboard ---
-
   function badgeClass(level) {
     return `dw-badge dw-badge--${level}`;
+  }
+
+  function stdBadgeClass(level) {
+    return `dw-std dw-std--${level}`;
   }
 
   async function loadTeacherDashboard() {
@@ -473,10 +639,9 @@
   }
 
   function renderTeacherTable() {
-    const filtered =
-      currentFilter === "all"
-        ? allSubmissions
-        : allSubmissions.filter((s) => s.analysis?.typingLevel === currentFilter);
+    const filtered = currentFilter === "all"
+      ? allSubmissions
+      : allSubmissions.filter((s) => s.analysis?.typingLevel === currentFilter);
 
     teacherTableBody.innerHTML = "";
     const table = document.getElementById("teacherTable");
@@ -485,18 +650,20 @@
 
     for (const sub of filtered) {
       const a = sub.analysis || {};
+      const needsCount = a.standards?.needsSupport?.length ?? 0;
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${escapeHtml(sub.name)}</td>
         <td>${a.wordCount ?? "—"}</td>
         <td>${a.wpm ?? "—"}</td>
         <td><span class="${badgeClass(a.typingLevel)}">${typingLabel(a.typingLevel)}</span></td>
-        <td>${a.scores?.complexity ?? "—"}</td>
-        <td>${a.scores?.creativity ?? "—"}</td>
+        <td>${a.scores?.mechanics ?? "—"}</td>
+        <td>${a.scores?.syntax ?? "—"}</td>
+        <td>${a.scores?.semantics ?? "—"}</td>
         <td>${a.scores?.overall ?? "—"}</td>
+        <td>${needsCount > 0 ? `<span class="dw-std dw-std--needs_support">${needsCount} std</span>` : "—"}</td>
         <td>${sub.submittedAt ? formatDate(sub.submittedAt) : "—"}</td>
-        <td><button class="dw-btn dw-btn-ghost dw-view-btn" type="button" data-id="${sub.id}">View</button></td>
-      `;
+        <td><button class="dw-btn dw-btn-ghost dw-view-btn" type="button" data-id="${sub.id}">View</button></td>`;
       teacherTableBody.appendChild(tr);
     }
 
@@ -508,6 +675,29 @@
     });
   }
 
+  function renderStandardsPanel(standards) {
+    if (!standards) return "";
+    const groups = [
+      { key: "excelling", label: "Excelling", items: standards.excelling },
+      { key: "developing", label: "Developing", items: standards.developing },
+      { key: "needsSupport", label: "Needs support", items: standards.needsSupport },
+    ];
+    return groups.map((g) => {
+      if (!g.items?.length) return "";
+      return `<div class="dw-std-group">
+        <h4 class="dw-std-group-title">${g.label} <span class="dw-muted">(${g.items.length})</span></h4>
+        <ul class="dw-std-list">${g.items.map((s) => `
+          <li class="dw-std-item">
+            <span class="${stdBadgeClass(s.level)}">${escapeHtml(s.id)}</span>
+            <strong>${escapeHtml(s.title)}</strong>
+            <span class="dw-muted dw-std-bench">${escapeHtml(s.benchmark)}</span>
+            <span class="dw-std-rec">${escapeHtml(s.recommendation)}</span>
+            <span class="dw-std-score">${s.score}/100</span>
+          </li>`).join("")}</ul>
+      </div>`;
+    }).join("");
+  }
+
   function showDetail(sub) {
     const a = sub.analysis || {};
     detailPanel.classList.remove("dw-hidden");
@@ -515,82 +705,53 @@
     document.getElementById("detailStory").textContent = sub.text || "";
 
     const metrics = [
-      ["Words", a.wordCount],
-      ["WPM", a.wpm],
-      ["Sentences", a.sentenceCount],
-      ["Avg sentence length", a.avgSentenceLength],
-      ["Sentence variety", a.sentenceVariety],
-      ["Lexical diversity", a.lexicalDiversity],
-      ["Complex markers", a.complexMarkers],
-      ["Sensory words", a.sensoryCount],
-      ["Transitions", a.transitionCount],
-      ["Dialogue cues", a.dialogueLines],
-      ["Volume score", a.scores?.volume],
-      ["Complexity score", a.scores?.complexity],
-      ["Creativity score", a.scores?.creativity],
-      ["Typing score", a.scores?.typing],
+      ["Words", a.wordCount], ["WPM", a.wpm], ["Sentences", a.sentenceCount],
+      ["Spelling", a.scores?.spelling], ["Grammar", a.scores?.grammar],
+      ["Syntax", a.scores?.syntax], ["Semantics", a.scores?.semantics],
+      ["Mechanics", a.scores?.mechanics], ["Voice", a.scores?.voice],
+      ["Narrative", a.scores?.narrative], ["Creativity", a.scores?.creativity],
       ["Overall", a.scores?.overall],
     ];
+    document.getElementById("detailMetrics").innerHTML = metrics.map(([k, v]) => `
+      <div class="dw-metric"><div class="dw-metric-k">${k}</div><div class="dw-metric-v">${v ?? "—"}</div></div>`).join("");
 
-    document.getElementById("detailMetrics").innerHTML = metrics
-      .map(
-        ([k, v]) => `
-        <div class="dw-metric">
-          <div class="dw-metric-k">${k}</div>
-          <div class="dw-metric-v">${v ?? "—"}</div>
-        </div>`
-      )
-      .join("");
+    document.getElementById("detailFlags").innerHTML = (a.flags || [])
+      .map((f) => `<span class="dw-flag dw-flag--${f.type}">${escapeHtml(f.text)}</span>`).join("");
 
-    const flagsEl = document.getElementById("detailFlags");
-    flagsEl.innerHTML = (a.flags || [])
-      .map((f) => `<span class="dw-flag dw-flag--${f.type}">${escapeHtml(f.text)}</span>`)
-      .join("");
+    document.getElementById("detailStandards").innerHTML = renderStandardsPanel(a.standards);
 
-    document.getElementById("detailFeedback").innerHTML = (a.feedback || [])
-      .map((line) => `<li>${escapeHtml(line)}</li>`)
-      .join("");
+    document.getElementById("detailFeedback").innerHTML = (a.teacherFeedback || [])
+      .map((line) => `<li>${escapeHtml(line)}</li>`).join("");
 
     detailPanel.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   function exportCsv() {
     const headers = [
-      "Name", "Words", "WPM", "Typing Level", "Complexity", "Creativity",
-      "Overall", "Avg Sentence Length", "Submitted",
+      "Name", "Words", "WPM", "Typing", "Spelling", "Grammar", "Syntax", "Semantics",
+      "Overall", "Standards Needing Support", "Submitted",
     ];
     const rows = allSubmissions.map((s) => {
       const a = s.analysis || {};
       return [
-        s.name,
-        a.wordCount,
-        a.wpm,
-        typingLabel(a.typingLevel),
-        a.scores?.complexity,
-        a.scores?.creativity,
+        s.name, a.wordCount, a.wpm, typingLabel(a.typingLevel),
+        a.scores?.spelling, a.scores?.grammar, a.scores?.syntax, a.scores?.semantics,
         a.scores?.overall,
-        a.avgSentenceLength,
+        (a.standards?.needsSupport || []).map((x) => x.id).join("; "),
         s.submittedAt ? new Date(s.submittedAt).toISOString() : "",
       ];
     });
-    const csv = [headers, ...rows]
-      .map((row) => row.map((c) => `"${String(c ?? "").replace(/"/g, '""')}"`).join(","))
-      .join("\n");
+    const csv = [headers, ...rows].map((row) => row.map((c) => `"${String(c ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `diagnostic-writing-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click();
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `diagnostic-writing-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
     URL.revokeObjectURL(url);
   }
 
-  // --- Event handlers ---
-
-  studentName.addEventListener("input", () => {
-    startBtn.disabled = !studentName.value.trim();
-  });
-
+  studentName.addEventListener("input", () => { startBtn.disabled = !studentName.value.trim(); });
   startBtn.addEventListener("click", () => {
     if (!studentName.value.trim()) return;
     storyInput.value = "";
@@ -599,72 +760,34 @@
     storyInput.focus();
     startTimer();
   });
-
-  storyInput.addEventListener("paste", (e) => {
-    if (!storyInput.readOnly) e.preventDefault();
-  });
-
+  storyInput.addEventListener("paste", (e) => { if (!storyInput.readOnly) e.preventDefault(); });
   storyInput.addEventListener("input", updateLiveStats);
-
   restartBtn.addEventListener("click", () => {
-    stopTimer();
-    storyInput.value = "";
-    storyInput.readOnly = false;
-    studentName.value = "";
-    startBtn.disabled = true;
-    detailPanel.classList.add("dw-hidden");
-    showView("welcome");
+    stopTimer(); storyInput.value = ""; storyInput.readOnly = false;
+    studentName.value = ""; startBtn.disabled = true;
+    detailPanel.classList.add("dw-hidden"); showView("welcome");
   });
-
   teacherBtn.addEventListener("click", () => {
-    if (teacherAuthed) {
-      showView("teacher");
-      loadTeacherDashboard();
-    } else {
-      teacherPassword.value = "";
-      teacherLoginError.classList.add("dw-hidden");
-      showView("teacherLogin");
-      teacherPassword.focus();
-    }
+    if (teacherAuthed) { showView("teacher"); loadTeacherDashboard(); }
+    else { teacherPassword.value = ""; teacherLoginError.classList.add("dw-hidden"); showView("teacherLogin"); teacherPassword.focus(); }
   });
-
   teacherLoginBtn.addEventListener("click", async () => {
     if (teacherPassword.value === TEACHER_PASSWORD) {
-      teacherAuthed = true;
-      teacherLoginError.classList.add("dw-hidden");
-      showView("teacher");
-      await loadTeacherDashboard();
-    } else {
-      teacherLoginError.classList.remove("dw-hidden");
-    }
+      teacherAuthed = true; teacherLoginError.classList.add("dw-hidden");
+      showView("teacher"); await loadTeacherDashboard();
+    } else teacherLoginError.classList.remove("dw-hidden");
   });
-
-  teacherPassword.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") teacherLoginBtn.click();
-  });
-
+  teacherPassword.addEventListener("keydown", (e) => { if (e.key === "Enter") teacherLoginBtn.click(); });
   teacherCancelBtn.addEventListener("click", () => showView("welcome"));
-
-  teacherLogoutBtn.addEventListener("click", () => {
-    teacherAuthed = false;
-    detailPanel.classList.add("dw-hidden");
-    showView("welcome");
-  });
-
+  teacherLogoutBtn.addEventListener("click", () => { teacherAuthed = false; detailPanel.classList.add("dw-hidden"); showView("welcome"); });
   refreshBtn.addEventListener("click", loadTeacherDashboard);
   exportBtn.addEventListener("click", exportCsv);
-
-  document.getElementById("closeDetailBtn").addEventListener("click", () => {
-    detailPanel.classList.add("dw-hidden");
-  });
-
+  document.getElementById("closeDetailBtn").addEventListener("click", () => detailPanel.classList.add("dw-hidden"));
   filterBar.addEventListener("click", (e) => {
     const btn = e.target.closest(".dw-filter");
     if (!btn) return;
     currentFilter = btn.dataset.filter;
-    filterBar.querySelectorAll(".dw-filter").forEach((b) => {
-      b.classList.toggle("dw-filter--active", b === btn);
-    });
+    filterBar.querySelectorAll(".dw-filter").forEach((b) => b.classList.toggle("dw-filter--active", b === btn));
     renderTeacherTable();
   });
 })();

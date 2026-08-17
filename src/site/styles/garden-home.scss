@@ -1,0 +1,110 @@
+/* Mr. Phil's Digital Garden — home hub link grid */
+
+.garden-hub {
+  margin: 1.5rem 0 2rem;
+}
+
+.garden-hub__welcome {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+  padding: 1rem 1.1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, rgba(34, 139, 34, 0.12), rgba(46, 125, 50, 0.06));
+}
+
+.garden-hub__welcome-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 12px;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.garden-hub__welcome-text {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.garden-hub__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.garden-hub__link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  text-decoration: none !important;
+  color: inherit !important;
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+  min-height: 72px;
+}
+
+.garden-hub__link:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.18);
+  transform: translateY(-1px);
+}
+
+.garden-hub__link--static {
+  cursor: default;
+  opacity: 0.85;
+}
+
+.garden-hub__link--static:hover {
+  transform: none;
+}
+
+.garden-hub__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.garden-hub__label {
+  font-weight: 600;
+  font-size: 0.98rem;
+  line-height: 1.35;
+}
+
+.garden-hub__emoji {
+  margin-right: 0.15em;
+}
+
+.garden-hub__section {
+  margin: 1.5rem 0 0.5rem;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted, #888);
+  font-weight: 700;
+}
+
+@media (max-width: 40rem) {
+  .garden-hub__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .garden-hub__welcome {
+    flex-direction: column;
+    text-align: center;
+  }
+}
