@@ -169,6 +169,11 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Menus need pan-y scroll; gameplay keeps touch-action: none on #app / canvas. */
+body.is-ui-screen {
+  touch-action: pan-y;
+}
+
 #app {
   position: fixed;
   inset: 0;
@@ -262,9 +267,19 @@ button { font-family: inherit; }
   inset: 0;
   z-index: 40;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   padding: clamp(12px, 3vh, 40px);
+  padding-bottom: max(clamp(12px, 3vh, 40px), env(safe-area-inset-bottom, 0px));
+  /* Scroll on the screen shell — nested flex + max-height breaks Safari trackpad scroll. */
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  scrollbar-width: thin;
+  scrollbar-color: var(--cyan-dim) transparent;
   background:
     radial-gradient(ellipse at 50% 40%, rgba(20, 40, 70, 0.55) 0%, rgba(5, 7, 13, 0.94) 62%, #05070d 100%);
   animation: screen-in 0.28s ease-out;
@@ -277,32 +292,32 @@ button { font-family: inherit; }
 
 .screen-inner {
   width: min(980px, 100%);
-  max-height: 100%;
+  flex: 0 0 auto;
   text-align: center;
-}
-
-/* Title screen grew in 2.0; without this the play button sits below the fold
-   and body { overflow: hidden } makes it unreachable on Chromebooks. */
-#screen-title .screen-inner {
-  overflow-y: auto;
-  min-height: 0;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: clamp(12px, 2vh, 24px);
+  padding-bottom: clamp(16px, 3vh, 32px);
 }
 
 .screen-inner.narrow { width: min(620px, 100%); }
 
+/* Parent .screen scrolls; nested overflow traps Safari and hides the start button. */
+.screen > .screen-inner.scrollable {
+  overflow-y: visible;
+  max-height: none;
+}
+
 .scrollable {
-  overflow-y: auto;
   text-align: left;
   padding-right: 6px;
-  scrollbar-width: thin;
-  scrollbar-color: var(--cyan-dim) transparent;
 }
 
 .scrollable::-webkit-scrollbar { width: 10px; }
 .scrollable::-webkit-scrollbar-thumb {
+  background: var(--cyan-dim);
+  border-radius: 6px;
+}
+
+.screen::-webkit-scrollbar { width: 10px; }
+.screen::-webkit-scrollbar-thumb {
   background: var(--cyan-dim);
   border-radius: 6px;
 }
@@ -565,6 +580,21 @@ button { font-family: inherit; }
   gap: 10px;
   justify-content: center;
   margin-top: 12px;
+}
+
+/* Keeps ENTER THE LAB reachable while scrolling long title content (Safari-safe). */
+.title-sticky-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin-top: clamp(12px, 2vh, 20px);
+  padding: 14px 0 max(10px, env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(
+    0deg,
+    #05070d 62%,
+    rgba(5, 7, 13, 0.94) 82%,
+    transparent 100%
+  );
 }
 
 .perf-note {
@@ -2182,6 +2212,10 @@ body.touch-mode #interact-prompt {
 }
 
 /* ============================ SMALL SCREENS ============================ */
+
+@media (max-height: 820px) {
+  .title-tips { display: none; }
+}
 
 @media (max-height: 560px) {
   .title-body { display: none; }
