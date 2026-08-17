@@ -122,11 +122,11 @@ export const sessionUi = {
       const best = prog?.data?.levelBest?.[lv.id];
       const bestTxt = best ? `Best ${Math.floor(best.time / 60)}:${String(best.time % 60).padStart(2, '0')}` : '';
       return `
-        <button type="button" class="level-card${open ? '' : ' is-locked'}${sel ? ' is-selected' : ''}"
-                data-level="${i}" ${open ? '' : 'disabled'} role="radio" aria-checked="${sel}">
+        <button type="button" class="level-card level-card--chip${open ? '' : ' is-locked'}${sel ? ' is-selected' : ''}"
+                data-level="${i}" ${open ? '' : 'disabled'} role="radio" aria-checked="${sel}"
+                title="${open ? lv.threat : 'Escape the previous floor to unlock'}">
           <span class="level-code">${lv.codename}</span>
-          <span class="level-name">${lv.name}</span>
-          <span class="level-blurb">${open ? lv.threat : 'Escape the previous floor to unlock'}</span>
+          <span class="level-name">${lv.name.replace(/^THE /, '')}</span>
           ${bestTxt ? `<span class="level-best">${bestTxt}</span>` : ''}
         </button>`;
     }).join('');

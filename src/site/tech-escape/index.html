@@ -222,69 +222,71 @@
   </div>
 
   <!-- ===================== Title screen ===================== -->
-  <div id="screen-title" class="screen">
+  <div id="screen-title" class="screen screen--title">
     <div id="title-backdrop" class="title-backdrop" aria-hidden="true"></div>
-    <div class="screen-inner">
-      <div class="logo">
-        <div class="logo-sub">DVA Media Arts &amp; Tech presents</div>
-        <h1 class="logo-title" data-text="TECH ESCAPE">
-          TECH ESCAPE<span class="logo-ver">2.2</span>
-        </h1>
-        <div class="logo-tag">The lab is closed. Something else is logged in.</div>
-      </div>
+    <div class="screen-inner title-dashboard">
+      <header class="title-top">
+        <div class="logo logo--compact">
+          <div class="logo-sub">DVA Media Arts &amp; Tech presents</div>
+          <h1 class="logo-title" data-text="TECH ESCAPE">
+            TECH ESCAPE<span class="logo-ver">2.2</span>
+          </h1>
+          <div class="logo-tag">The lab is closed. Something else is logged in.</div>
+        </div>
 
-      <div class="title-greeting">
-        <span id="title-player" class="title-player"></span>
-        <button class="link-btn" id="btn-switch-player">Not you?</button>
-      </div>
+        <div class="title-greeting">
+          <span id="title-player" class="title-player"></span>
+          <button class="link-btn" id="btn-switch-player">Not you?</button>
+        </div>
 
-      <div class="title-body">
-        <p class="story">
-          Four glowing Chromebooks. Four encrypted code pieces. One 3D-printed key.
-          Clear the terminals, crack the scramble, and escape before whatever is
-          <strong>skittering</strong> in the dark finds you.
+        <p class="title-hook">
+          4 Chromebooks &middot; 4 code pieces &middot; print the key &middot; escape the
+          <strong>skittering</strong> dark
         </p>
+      </header>
+
+      <div class="title-panels">
+        <section class="title-panel" aria-label="Floor">
+          <h3 class="title-panel-label">FLOOR</h3>
+          <div id="level-select" class="level-select level-select--compact" role="radiogroup"></div>
+        </section>
+
+        <section class="title-panel" aria-label="Difficulty and tension">
+          <h3 class="title-panel-label">DIFFICULTY</h3>
+          <div class="difficulty-select difficulty-select--compact" role="radiogroup" aria-label="Difficulty">
+            <button class="diff-btn" data-diff="beginner"
+                    title="Very forgiving: slow mice, extra health and supplies, enemies pause at terminals.">
+              <span class="diff-name">BEGINNER</span>
+            </button>
+            <button class="diff-btn" data-diff="chill"
+                    title="Slower enemies, more warning, enemies hold still at terminals.">
+              <span class="diff-name">FIELD TRIP</span>
+            </button>
+            <button class="diff-btn is-selected" data-diff="normal"
+                    title="The intended haunt. Enemies pause at terminals; nothing else waits.">
+              <span class="diff-name">AFTER HOURS</span>
+            </button>
+            <button class="diff-btn" data-diff="nightmare"
+                    title="Faster, more hunters, less light — lab keeps hunting while you work.">
+              <span class="diff-name">SYSTEM CRASH</span>
+            </button>
+            <button class="diff-btn" data-diff="questions"
+                    title="No mice or viruses. Terminals, quizzes, print the key, escape.">
+              <span class="diff-name">QUESTIONS ONLY</span>
+            </button>
+          </div>
+          <label class="title-tension">
+            <span>Tension</span>
+            <select id="set-tension">
+              <option value="standard">Standard</option>
+              <option value="mild">Mild</option>
+            </select>
+          </label>
+        </section>
       </div>
 
-      <div id="level-select" class="level-select" role="radiogroup" aria-label="Floor"></div>
-      <div class="difficulty-select" role="radiogroup" aria-label="Difficulty">
-        <button class="diff-btn" data-diff="beginner">
-          <span class="diff-name">BEGINNER</span>
-          <span class="diff-desc">Very forgiving: slow mice, extra health and supplies,
-            enemies pause while you work at a terminal.</span>
-        </button>
-        <button class="diff-btn" data-diff="chill">
-          <span class="diff-name">FIELD TRIP</span>
-          <span class="diff-desc">Enemies move slower, warn you sooner, and hold still while
-            you are at a terminal.</span>
-        </button>
-        <button class="diff-btn is-selected" data-diff="normal">
-          <span class="diff-name">AFTER HOURS</span>
-          <span class="diff-desc">The intended haunt. Enemies pause while you are at a
-            terminal, but nothing else waits.</span>
-        </button>
-        <button class="diff-btn" data-diff="nightmare">
-          <span class="diff-name">SYSTEM CRASH</span>
-          <span class="diff-desc">Faster, more of them, less light &mdash; and the lab keeps
-            hunting while you work.</span>
-        </button>
-        <button class="diff-btn" data-diff="questions">
-          <span class="diff-name">QUESTIONS ONLY</span>
-          <span class="diff-desc">No mice or viruses. Find the terminals, answer the quizzes,
-            print the key, and escape.</span>
-        </button>
-      </div>
-
-      <label class="setting inline-setting">
-        <span>Tension</span>
-        <select id="set-tension">
-          <option value="standard">Standard</option>
-          <option value="mild">Mild &mdash; quieter scares, more warning, no death close-up</option>
-        </select>
-      </label>
-
-      <div class="title-sticky-bar">
-        <button id="btn-start" class="big-btn">ENTER THE LAB</button>
+      <footer class="title-bottom">
+        <button id="btn-start" class="big-btn big-btn--title">ENTER THE LAB</button>
 
         <div class="title-foot">
           <button class="link-btn" id="btn-how-to-play">How to Play</button>
@@ -293,7 +295,7 @@
           <button class="link-btn" id="btn-standards">What will I learn?</button>
         </div>
         <div class="perf-note" id="perf-note"></div>
-      </div>
+      </footer>
     </div>
   </div>
 

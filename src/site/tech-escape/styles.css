@@ -417,6 +417,197 @@ button { font-family: inherit; }
   position: relative;
 }
 
+/* Title lobby: one screen, no scroll — details live in tooltips / How to Play */
+#screen-title.screen--title {
+  overflow: hidden;
+  padding: clamp(6px, 1.2vh, 14px);
+  padding-bottom: max(6px, env(safe-area-inset-bottom, 0px));
+}
+
+#screen-title.screen--title .screen-inner.title-dashboard {
+  position: relative;
+  z-index: 1;
+  width: min(1040px, 100%);
+  height: 100%;
+  max-height: 100%;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: clamp(4px, 0.8vh, 10px);
+  padding-bottom: 0;
+  box-sizing: border-box;
+}
+
+.title-top {
+  text-align: center;
+}
+
+.title-hook {
+  margin: 4px 0 0;
+  font-size: clamp(11px, 1.35vw, 13px);
+  line-height: 1.45;
+  color: var(--ink-dim);
+}
+
+.title-hook strong { color: var(--cyan); }
+
+.title-panels {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: clamp(8px, 1.2vh, 14px);
+  align-content: start;
+  min-height: 0;
+}
+
+.title-panel {
+  padding: clamp(8px, 1vh, 12px);
+  border: 1px solid rgba(42, 56, 80, 0.65);
+  border-radius: 8px;
+  background: rgba(8, 14, 24, 0.55);
+}
+
+.title-panel-label {
+  margin: 0 0 6px;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+}
+
+.title-tension {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--ink-dim);
+}
+
+.title-tension select {
+  flex: 1;
+  max-width: 160px;
+  font-size: 12px;
+}
+
+.title-bottom {
+  text-align: center;
+}
+
+.logo--compact {
+  margin-bottom: 0;
+}
+
+.logo--compact .logo-sub {
+  margin-bottom: 0.35em;
+  font-size: clamp(8px, 1.1vw, 11px);
+}
+
+.logo--compact .logo-title {
+  font-size: clamp(26px, 5.2vw, 52px);
+  line-height: 0.95;
+}
+
+.logo--compact .logo-tag {
+  margin-top: 0.35em;
+  font-size: clamp(9px, 1.4vw, 12px);
+}
+
+.logo--compact .logo-ver {
+  font-size: clamp(14px, 2.6vw, 26px);
+}
+
+.level-select--compact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  max-width: none;
+}
+
+.level-card--chip {
+  flex: 1 1 calc(33.33% - 6px);
+  min-width: 88px;
+  padding: 7px 8px;
+  gap: 1px;
+}
+
+.level-card--chip .level-name {
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.level-card--chip .level-best {
+  font-size: 10px;
+  color: var(--green);
+}
+
+.difficulty-select--compact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  max-width: none;
+}
+
+.difficulty-select--compact .diff-btn {
+  flex: 1 1 calc(50% - 6px);
+  min-width: 0;
+  padding: 7px 8px;
+  text-align: center;
+}
+
+.difficulty-select--compact .diff-name {
+  font-size: 11px;
+  margin-bottom: 0;
+  letter-spacing: 0.1em;
+}
+
+.big-btn--title {
+  padding: 11px 34px;
+  font-size: 14px;
+}
+
+#screen-title .title-foot {
+  margin-top: 8px;
+  gap: 8px 12px;
+}
+
+#screen-title .perf-note {
+  margin-top: 4px;
+  font-size: 9px;
+}
+
+@media (max-width: 760px) {
+  .title-panels {
+    grid-template-columns: 1fr;
+  }
+
+  .level-card--chip {
+    flex: 1 1 calc(50% - 6px);
+  }
+}
+
+@media (max-height: 700px) {
+  .logo--compact .logo-title {
+    font-size: clamp(22px, 4.5vw, 40px);
+  }
+
+  .title-panel {
+    padding: 6px 8px;
+  }
+
+  .level-card--chip,
+  .difficulty-select--compact .diff-btn {
+    padding: 5px 6px;
+  }
+
+  .big-btn--title {
+    padding: 9px 28px;
+    font-size: 13px;
+  }
+}
+
 .title-backdrop {
   position: absolute;
   inset: 0;
@@ -2541,7 +2732,7 @@ body.touch-mode #interact-prompt {
   align-items: center;
   justify-content: center;
   gap: 12px;
-  margin-bottom: 10px;
+  margin-bottom: 4px;
 }
 
 .title-player {

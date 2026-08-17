@@ -49,7 +49,10 @@ export const ui = {
     ];
     for (const s of screens) {
       const el = this.el[s];
-      if (el) el.classList.toggle('hidden', s !== name);
+      if (el) {
+        el.classList.toggle('hidden', s !== name);
+        if (s === name) el.scrollTop = 0;
+      }
     }
     // Let Safari scroll menus; gameplay keeps touch-action: none on the canvas.
     document.body.classList.toggle('is-ui-screen', Boolean(name));
