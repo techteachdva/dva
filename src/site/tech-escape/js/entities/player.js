@@ -125,30 +125,47 @@ export class Player {
     return TABLE_SURFACE_Y + (this.crouching ? PLAYER.crouchEyeHeight : PLAYER.eyeHeight);
   }
 
-  /** Desk edge within vault reach, or null. */
+  /** Collision opts while moving — skip the slab we are standing on or crawling under. */
+  _obstacleOpts(bodyY0, bodyTop) {
+    const skip = [];
+    if (this.onTable) skip.push('table-top');
+    if (this.crouching && bodyTop <= TABLE.bandY0 + 0.02) skip.push('table-top');
+    if (skip.length) return { skipTags: skip };
+    return null;
+  }
+
+  /** Desk edge within vault reach, or null. Prefers the table in front of the player. */
   _vaultTarget() {
-    let best = null;
-    let bestD = PLAYER.vaultReach;
     const x = this.pos.x;
     const z = this.pos.z;
+    const fwd = this.forward();
+    let best = null;
+    let bestScore = -1e9;
 
     for (const t of this.lab.tables) {
       const half = TABLE.topW / 2;
       const dx = x - t.x;
       const dz = z - t.z;
-      const insideX = Math.abs(dx) < half - 0.08;
-      const insideZ = Math.abs(dz) < half - 0.08;
+      const insideX = Math.abs(dx) < half - 0.12;
+      const insideZ = Math.abs(dz) < half - 0.12;
       if (insideX && insideZ) continue;
 
       const penX = Math.max(0, Math.abs(dx) - half);
       const penZ = Math.max(0, Math.abs(dz) - half);
       const edgeDist = Math.hypot(penX, penZ);
-      if (edgeDist > PLAYER.vaultReach || edgeDist >= bestD) continue;
+      if (edgeDist > PLAYER.vaultReach) continue;
 
-      bestD = edgeDist;
-      best = t;
+      const toX = t.x - x;
+      const toZ = t.z - z;
+      const toLen = Math.hypot(toX, toZ) || 1;
+      const facing = (fwd.x * toX + fwd.z * toZ) / toLen;
+      const score = facing * 2 - edgeDist;
+      if (score > bestScore) {
+        bestScore = score;
+        best = t;
+      }
     }
-    return best;
+    return bestScore > -0.5 ? best : null;
   }
 
   _startVault(table) {
@@ -169,7 +186,7 @@ export class Player {
     this._vaulting = true;
     this._vaultT = 0;
     this._tableRef = table;
-    this.onTable = true;
+    this.onTable = false;
     this._vaultFrom.set(this.pos.x, this._eyeY, this.pos.z);
     this._vaultTo.set(table.x + nx, this._tableEyeY(), table.z + nz);
     this.wantCrouch = false;
@@ -186,9 +203,11 @@ export class Player {
     this.pos.x = this._vaultFrom.x + (this._vaultTo.x - this._vaultFrom.x) * ease;
     this.pos.z = this._vaultFrom.z + (this._vaultTo.z - this._vaultFrom.z) * ease;
     this._eyeY = this._vaultFrom.y + (this._vaultTo.y - this._vaultFrom.y) * ease + arc;
+    this.maze.collide(this.pos, PLAYER.radius);
 
     if (u >= 1) {
       this._vaulting = false;
+      this.onTable = true;
       this._eyeY = this._tableEyeY();
       this.pos.x = this._vaultTo.x;
       this.pos.z = this._vaultTo.z;
@@ -227,6 +246,7 @@ export class Player {
 
   /** Standing bodies cannot occupy the crawl footprint under a tabletop. */
   _ejectFromTableInterior() {
+    if (this.inTableCrawlGrace || this.wantCrouch) return;
     const t = this.lab.tableAt(this.pos.x, this.pos.z, -0.04);
     if (!t) return;
     const half = TABLE.topW / 2 - PLAYER.radius - 0.08;
@@ -322,9 +342,18 @@ export class Player {
     const wantsMove = axes.x !== 0 || axes.y !== 0;
 
     // ------------------------------------------------------------- vaulting
-    if (controlsActive && input.pressed('jump') && !this.onTable && !this.crouching && !this._falling) {
-      const target = this._vaultTarget();
-      if (target) this._startVault(target);
+    if (controlsActive && input.pressed('jump') && !this.onTable && !this._falling) {
+      const canVault = !this.crouching || !this.underTable();
+      if (canVault) {
+        const target = this._vaultTarget();
+        if (target) {
+          if (this.crouching) {
+            this.wantCrouch = false;
+            this.crouching = false;
+          }
+          this._startVault(target);
+        }
+      }
     }
 
     // ------------------------------------------------------------- crouching
@@ -336,6 +365,19 @@ export class Player {
     }
 
     const crawlGraceOpts = this.inTableCrawlGrace ? { skipTags: ['table-top'] } : null;
+    const standY0 = this.onTable ? TABLE_SURFACE_Y : 0;
+    const standTop = standY0 + PLAYER.standHeight;
+    const standOpts = this._obstacleOpts(standY0, standTop);
+    const headroomOpts = standOpts || crawlGraceOpts
+      ? {
+        skipTags: [
+          ...new Set([
+            ...(standOpts?.skipTags || []),
+            ...(crawlGraceOpts?.skipTags || []),
+          ]),
+        ],
+      }
+      : null;
 
     // Crouch is a toggle, not a hold, so it never fights the sprint key and
     // never asks a Chromebook user to keep a finger on Ctrl while steering.
@@ -346,7 +388,7 @@ export class Player {
     // Standing up under a desk would shove you through the tabletop, so the
     // stand is simply refused until there is headroom. Grace period lets you
     // walk up to a desk without instantly ducking to grab loot on a chair.
-    const blockedFromStanding = !this.hasHeadroom(crawlGraceOpts);
+    const blockedFromStanding = !this.hasHeadroom(headroomOpts);
     const forceCrawl = blockedFromStanding
       && (this.wantCrouch || !this.inTableCrawlGrace);
     this.stuckUnder = !this.wantCrouch && forceCrawl;
@@ -424,7 +466,8 @@ export class Player {
     this.maze.collide(this.pos, PLAYER.radius);
     const bodyY0 = this.onTable ? TABLE_SURFACE_Y : 0;
     const bodyTop = bodyY0 + (this.crouching ? PLAYER.crouchHeight : PLAYER.standHeight);
-    this.obstacles.collide(this.pos, PLAYER.radius, bodyY0, bodyTop);
+    const collideOpts = this._obstacleOpts(bodyY0, bodyTop);
+    this.obstacles.collide(this.pos, PLAYER.radius, bodyY0, bodyTop, collideOpts);
     if (!this.onTable && !this.crouching && !this._vaulting) {
       this._ejectFromTableInterior();
     }

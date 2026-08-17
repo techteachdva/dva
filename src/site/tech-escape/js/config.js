@@ -49,7 +49,7 @@ export const PLAYER = {
   // Collision body spans 0..standHeight, or 0..crouchHeight while crouched.
   // crouchHeight must stay below TABLE.bandY0 or you cannot crawl under a desk.
   standHeight: 1.75,
-  crouchHeight: 0.9,
+  crouchHeight: 0.88,
   radius: 0.42,
   walkSpeed: 4.1,
   sprintSpeed: 7.0,
@@ -82,8 +82,8 @@ export const PLAYER = {
   sodaSprintScale: 1.14,
   sodaDrainScale: 0.45,
   // Vault onto hide-under desks for a better view — loud and exposed.
-  vaultDuration: 0.38,
-  vaultReach: 1.18,
+  vaultDuration: 0.42,
+  vaultReach: 1.55,
   tableFallSpeed: 9.5,
   /** Stand under a tabletop this long before auto-crawl kicks in. */
   tableCrawlGrace: 1.0,

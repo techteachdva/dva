@@ -541,8 +541,8 @@ export class Lab {
         this.obstacles.add({
           x: x + ox,
           z: z + oz,
-          hx: TABLE.legW / 2 + 0.02,
-          hz: TABLE.legW / 2 + 0.02,
+          hx: TABLE.legW / 2,
+          hz: TABLE.legW / 2,
           y0: 0,
           y1: TABLE.topY,
           tag: 'table-leg',
@@ -615,10 +615,7 @@ export class Lab {
    */
   tableAt(x, z, margin = -0.06) {
     const half = TABLE.topW / 2 + margin;
-    const cx = this.maze.worldToCellX(x);
-    const cz = this.maze.worldToCellZ(z);
     for (const t of this.tables) {
-      if (t.cell[0] !== cx || t.cell[1] !== cz) continue;
       if (Math.abs(x - t.x) <= half && Math.abs(z - t.z) <= half) return t;
     }
     return null;
