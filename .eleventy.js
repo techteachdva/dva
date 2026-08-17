@@ -10,6 +10,7 @@ const pluginRss = require("@11ty/eleventy-plugin-rss");
 const { globSync } = require("glob");
 
 const { headerToId, namedHeadingsFilter } = require("./src/helpers/utils");
+const { normalizeUrl } = require("./src/helpers/linkUtils");
 const {
   userMarkdownSetup,
   userEleventySetup,
@@ -286,15 +287,21 @@ module.exports = function (eleventyConfig) {
     return date && date.toISOString();
   });
 
+  eleventyConfig.addFilter("normalizePermalink", function (url) {
+    return normalizeUrl(url);
+  });
+
   eleventyConfig.addFilter("link", function (str) {
     return (
       str &&
-      str.replace(/\[\[(.*?\|.*?)\]\]/g, function (match, p1) {
+      str.replace(/\[\[([^\]|#]+)(?:\|([^\]]*))?\]\]/g, function (match, p1) {
         //Check if it is an embedded excalidraw drawing or mathjax javascript
         if (p1.indexOf("],[") > -1 || p1.indexOf('"$"') > -1) {
           return match;
         }
-        const [fileLink, linkTitle] = p1.split("|");
+        const pipeIndex = p1.indexOf("|");
+        const fileLink = pipeIndex > -1 ? p1.slice(0, pipeIndex) : p1;
+        const linkTitle = pipeIndex > -1 ? p1.slice(pipeIndex + 1) : null;
 
         return getAnchorLink(fileLink, linkTitle);
       })

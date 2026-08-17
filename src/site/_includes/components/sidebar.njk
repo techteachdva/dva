@@ -44,12 +44,14 @@
                                                 {%- endif -%}
                                           {%- endfor -%}
                                           {%- else -%}
-                                                {%- if graph.nodes[page.url].backLinks.length === 0 -%}
+                                                {%- set pageKey = page.url | normalizePermalink -%}
+                                                {%- set currentBacklinks = graph.nodes[pageKey].backLinks if graph.nodes[pageKey] else [] -%}
+                                                {%- if currentBacklinks.length === 0 -%}
                                                       <div class="backlink-card">
                                                             <span class="no-backlinks-message">No other pages mentions this page</span>
                                                       </div>
                                                 {%- endif -%}
-                                          {%- for backlink in graph.nodes[page.url].backLinks -%}
+                                          {%- for backlink in currentBacklinks -%}
                                                 {%- if graph.nodes[backlink].url != page.url -%}
                                                 <div class="backlink-card">
                                                       {%- if not meta.noteIconsSettings.backlinks -%}<i  icon-name="link"></i> {%- endif -%}<a href="{{graph.nodes[backlink].url}}" data-note-icon="{{graph.nodes[backlink].noteIcon}}" class="backlink">{{graph.nodes[backlink].title}}</a>

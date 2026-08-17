@@ -22,6 +22,9 @@
     {% endif %}
     <main class="content cm-s-obsidian {{contentClasses}}">
       <header>
+      {% if breadcrumbs and breadcrumbs.length > 0 %}
+        {% include "components/breadcrumbs.njk" %}
+      {% endif %}
       {% if settings.dgShowInlineTitle === true %}
         <h1>{{ noteTitle  }}</h1>
       {% endif %}

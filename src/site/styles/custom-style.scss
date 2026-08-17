@@ -10,6 +10,62 @@ body {
 
 @import "garden-home";
 
+/* Breadcrumb trails */
+.breadcrumbs {
+  margin: 0 0 1rem;
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+
+.breadcrumbs__list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem 0.35rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.breadcrumbs__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.breadcrumbs__link {
+  color: var(--text-accent, #4f7cff);
+  text-decoration: none;
+}
+
+.breadcrumbs__link:hover {
+  text-decoration: underline;
+}
+
+.breadcrumbs__sep {
+  color: var(--text-muted, #888);
+  opacity: 0.75;
+}
+
+.breadcrumbs__current {
+  color: var(--text-normal, inherit);
+  font-weight: 600;
+}
+
+.breadcrumbs--standalone {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0.75rem 1rem 0;
+}
+
+.graph-hint {
+  font-size: 0.72rem;
+  color: var(--text-muted, #888);
+  margin-left: auto;
+  padding: 0.35rem 0.5rem 0;
+  text-align: right;
+}
+
 /* --------------------------------------------------------------------------
    Mobile-friendly defaults (safe areas, tap targets, horizontal scroll)
    -------------------------------------------------------------------------- */

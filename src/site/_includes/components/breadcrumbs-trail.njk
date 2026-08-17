@@ -1,0 +1,14 @@
+<nav class="breadcrumbs breadcrumbs--standalone" aria-label="Breadcrumb">
+  <ol class="breadcrumbs__list">
+    {% for crumb in trail %}
+      <li class="breadcrumbs__item">
+        {% if crumb.url and not loop.last %}
+          <a class="breadcrumbs__link" href="{{ crumb.url }}">{{ crumb.title }}</a>
+          <span class="breadcrumbs__sep" aria-hidden="true">›</span>
+        {% else %}
+          <span class="breadcrumbs__current"{% if loop.last %} aria-current="page"{% endif %}>{{ crumb.title }}</span>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ol>
+</nav>

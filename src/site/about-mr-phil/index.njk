@@ -12,13 +12,16 @@ layout: false
     <meta name="description" content="One-page intro to Mr. Phil, Technology Teacher at DaVinci Academy." />
     <title>About Mr. Phil — The Technology Teacher</title>
     <link rel="stylesheet" href="/styles/about-mr-phil.css" />
+    <link rel="stylesheet" href="/styles/custom-style.css" />
   </head>
   <body class="amp-body">
+    {% if breadcrumbs and breadcrumbs.length > 0 %}
+      <div class="breadcrumbs--standalone">{% include "components/breadcrumbs.njk" %}</div>
+    {% endif %}
     <article class="amp-sheet" aria-label="About Mr. Phil">
       <header class="amp-head">
         <div class="amp-head-top">
           <span class="amp-badge">DaVinci Tech · Short edition</span>
-          <a class="amp-link" href="/">← Site</a>
         </div>
         {% set version = 'short' %}
         {% include "about-mr-phil/version-nav.njk" %}

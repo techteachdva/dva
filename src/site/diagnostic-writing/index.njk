@@ -14,9 +14,13 @@ layout: false
     <meta property="og:image" content="/img/diagnostic-writing/summer-writing-test-hero.png" />
     <meta property="og:description" content="5-minute timed summer narrative writing diagnostic for typing, craft, and Minnesota ELA standards." />
     <link rel="stylesheet" href="/styles/diagnostic-writing.css" />
+    <link rel="stylesheet" href="/styles/custom-style.css" />
   </head>
   <body class="dw-body">
     <div class="dw-shell">
+      {% if breadcrumbs and breadcrumbs.length > 0 %}
+        <div class="breadcrumbs--standalone">{% include "components/breadcrumbs.njk" %}</div>
+      {% endif %}
       <header class="dw-topbar">
         <div class="dw-topbar-brand">
           <img

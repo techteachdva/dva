@@ -28,6 +28,9 @@ permalink: "notes/{{ page.fileSlug | slugify }}/"
 
     <main class="content cm-s-obsidian {{contentClasses}}">
       <header>
+        {% if breadcrumbs and breadcrumbs.length > 0 %}
+          {% include "components/breadcrumbs.njk" %}
+        {% endif %}
         {% if settings.dgShowInlineTitle === true %}
           <h1 data-note-icon="{% if noteIcon %}{{noteIcon}}{% else %}{{meta.noteIconsSettings.default}}{% endif %}">{% if title %}{{ title }}{% else %}{{ page.fileSlug }}{% endif %}</h1>
         {% endif %}
