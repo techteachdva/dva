@@ -40,6 +40,7 @@ export const TABLE = {
   legW: 0.14,
   bandY0: 1.0,
   bandY1: 1.24,
+  chairSeatY: 0.52,
 };
 
 export const PLAYER = {
@@ -80,6 +81,12 @@ export const PLAYER = {
   sodaBoostTime: 12,
   sodaSprintScale: 1.14,
   sodaDrainScale: 0.45,
+  // Vault onto hide-under desks for a better view — loud and exposed.
+  vaultDuration: 0.38,
+  vaultReach: 1.18,
+  tableFallSpeed: 9.5,
+  /** Stand under a tabletop this long before auto-crawl kicks in. */
+  tableCrawlGrace: 1.0,
 };
 
 export const FLASHLIGHT = {
@@ -174,7 +181,8 @@ export const VIRUS = {
 
 export const PICKUP = {
   cheetosHeal: 1,
-  radius: 1.05,                   // pickup collection radius
+  radius: 1.05,                   // legacy walk-over radius (unused for auto-grab)
+  grabRange: 2.35,                // arm's-length click / interact pickup
   bobSpeed: 2.2,
   spinSpeed: 1.4,
 };
@@ -317,6 +325,8 @@ export const DIFFICULTY = {
     decryptScans: 12,
     sightScale: 0.7,
     escalationPerPiece: 0.15,
+    hiddenEvade: true,
+    virusIgnoresHide: false,
   },
   chill: {
     label: 'FIELD TRIP',
@@ -333,6 +343,8 @@ export const DIFFICULTY = {
     decryptScans: 11,
     sightScale: 0.82,
     escalationPerPiece: 0.5,
+    hiddenEvade: true,
+    virusIgnoresHide: false,
   },
   normal: {
     label: 'AFTER HOURS',
@@ -349,6 +361,8 @@ export const DIFFICULTY = {
     decryptScans: 8,
     sightScale: 1,
     escalationPerPiece: 1,
+    hiddenEvade: true,
+    virusIgnoresHide: false,
   },
   nightmare: {
     label: 'SYSTEM CRASH',
@@ -365,6 +379,8 @@ export const DIFFICULTY = {
     decryptScans: 6,
     sightScale: 1.15,
     escalationPerPiece: 1.5,
+    hiddenEvade: false,
+    virusIgnoresHide: true,
   },
   questions: {
     label: 'QUESTIONS ONLY',

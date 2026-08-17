@@ -61,6 +61,7 @@ export class GhostVirus {
     this.stutterTimer = 0;      // violent jitter before it vanishes
     this.dazedTimer = 0;        // wandering, not yet hunting again
     this._burnAudioTimer = 0;
+    this._computeTimer = 0.2;
 
     // Deleted by an anti-virus disc. Unlike a glitch, this one is permanent.
     this.dead = false;
@@ -239,10 +240,29 @@ export class GhostVirus {
     }
 
     // ---------------------------------------------------------- detection
-    // Viruses sense the player through walls, but only at a modest range, and
-    // hiding under a desk still cuts their awareness a lot.
-    const range = VIRUS.sightRange * diff.sightScale * (player.hidden ? 0.42 : 1);
-    const detected = player.alive && dist < range && this.dazedTimer <= 0;
+    // Viruses sense through walls. On normal difficulties hiding ends the chase;
+    // on nightmare they hunt through tabletops.
+    let detected = false;
+    if (diff.hiddenEvade && player.hidden && !diff.virusIgnoresHide) {
+      this.hunting = false;
+      this.wasHunting = false;
+      if (!this.wanderTarget
+        || Math.hypot(this.wanderTarget.x - this.pos.x, this.wanderTarget.z - this.pos.z) < 1.4) {
+        const adx = this.pos.x - player.pos.x;
+        const adz = this.pos.z - player.pos.z;
+        const alen = Math.hypot(adx, adz) || 1;
+        this.wanderTarget = {
+          x: this.pos.x + (adx / alen) * 8,
+          z: this.pos.z + (adz / alen) * 8,
+        };
+      }
+    } else {
+      let hiddenScale = 1;
+      if (player.hidden) hiddenScale = diff.virusIgnoresHide ? 1 : 0;
+      else if (player.onTable) hiddenScale = 1.2;
+      const range = VIRUS.sightRange * diff.sightScale * hiddenScale;
+      detected = player.alive && dist < range && this.dazedTimer <= 0;
+    }
 
     if (detected && !this.wasHunting) audio.spotted();
     this.hunting = detected;
@@ -383,14 +403,28 @@ export class GhostVirus {
     }
 
     // ---------------------------------------------------------------- audio
-    this._whineTimer -= dt;
-    if (this._whineTimer <= 0 && !this.burning) {
-      const d = this.pos.distanceTo(player.pos);
-      if (d < 24) {
-        const vol = clamp(1 - d / 24, 0, 1) ** 1.5;
-        if (vol > 0.05) audio.virusWhine(vol * (detected ? 1.5 : 1));
+    this._computeTimer -= dt;
+    if (this._computeTimer <= 0 && !this.burning) {
+      if (dist < 24) {
+        const vol = clamp(1 - dist / 24, 0, 1) ** 1.5;
+        if (vol > 0.04) {
+          const pan = clamp(
+            ((player.pos.x - this.pos.x) * Math.cos(player.yaw)
+              + (player.pos.z - this.pos.z) * (-Math.sin(player.yaw)))
+            / Math.max(dist, 0.1),
+            -1, 1,
+          );
+          audio.virusCompute(vol * (detected ? 1.35 : 1), pan);
+        }
       }
-      this._whineTimer = detected ? 1.3 : 2.6 + Math.random() * 2.4;
+      this._computeTimer = detected ? 0.28 : 0.55 + Math.random() * 0.35;
+    }
+
+    this._whineTimer -= dt;
+    if (this._whineTimer <= 0 && !this.burning && detected) {
+      const vol = clamp(1 - dist / 24, 0, 1) ** 1.5;
+      if (vol > 0.05) audio.virusWhine(vol * 1.2);
+      this._whineTimer = 1.3;
     }
 
     // ---------------------------------------------------------------- attack
@@ -398,10 +432,14 @@ export class GhostVirus {
       dist < VIRUS.attackRange
       && this.attackCooldown <= 0
       && player.alive
-      && !player.hidden
+      && (!player.hidden || diff.virusIgnoresHide)
     ) {
       this.attackCooldown = VIRUS.attackCooldown;
-      return { hit: VIRUS.damage, batteryDrain: VIRUS.batteryDrainOnHit };
+      return {
+        hit: VIRUS.damage,
+        batteryDrain: VIRUS.batteryDrainOnHit,
+        from: { x: this.pos.x, z: this.pos.z, y: this.pos.y },
+      };
     }
     return this.burning ? { burning: true, charge } : null;
   }

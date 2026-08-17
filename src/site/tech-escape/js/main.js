@@ -18,7 +18,8 @@ import { audio } from './audio.js';
 import { ui } from './ui.js';
 import { Maze } from './world/maze.js';
 import { Lab } from './world/lab.js';
-import { planLabFurniture, planTableLootSlots } from './world/layout.js';
+import { planLabFurniture, placeLootSpot } from './world/layout.js';
+import { TableSurfacePlanner } from './world/table-surface.js';
 import { buildScatterProps } from './world/scatter.js';
 import { Lighting } from './world/lighting.js';
 import { Player } from './entities/player.js';
@@ -42,6 +43,7 @@ import { debug, DEBUG_CODE } from './meta/debug.js';
 import { BootSequence } from './ui/boot.js';
 import { captions } from './ui/captions.js';
 import { tutorial } from './ui/tutorial.js';
+import { threatSector, threatPan } from './threat-direction.js';
 
 const MODE = {
   LOADING: 'loading',
@@ -435,10 +437,12 @@ class Game {
     lab.buildPrinter(printerCell);
     lab.buildExit(exitCell, exitSide);
 
+    const surfacePlanner = new TableSurfacePlanner(maze, rng);
     const furniture = planLabFurniture(
       maze, rng, open,
       [...laptopCells, printerCell, exitCell, startCell],
       level,
+      surfacePlanner,
     );
     reserve(furniture.tableCells);
     reserve(furniture.propCells);
@@ -456,25 +460,26 @@ class Game {
     const pickups = new PickupField(this.scene, maze, rng);
     const throws = new ThrowField(this.scene, maze, rng);
 
-    const lootSlots = planTableLootSlots(maze, rng, furniture.tableCells);
-    let li = 0;
-    const nextLoot = () => lootSlots[li++ % lootSlots.length];
-    for (let i = 0; i < diff.cheetos; i++) {
-      const s = nextLoot();
-      pickups.spawn('cheetos', s.cell, s);
-    }
-    for (let i = 0; i < diff.batteries; i++) {
-      const s = nextLoot();
-      pickups.spawn('battery', s.cell, s);
-    }
-    for (let i = 0; i < (diff.sodas || 0); i++) {
-      const s = nextLoot();
-      pickups.spawn('soda', s.cell, s);
-    }
-    for (let i = 0; i < (diff.antivirus || 0); i++) {
-      const s = nextLoot();
-      pickups.spawn('antivirus', s.cell, s);
-    }
+    const lootTables = rng.shuffle([...furniture.tableCells]);
+    const underLootPlaced = new Map();
+    let lootTableIdx = 0;
+    const spawnLoot = (kind, count) => {
+      for (let i = 0; i < count; i++) {
+        let placed = null;
+        for (let attempt = 0; attempt < lootTables.length && !placed; attempt++) {
+          const cell = lootTables[(lootTableIdx + attempt) % lootTables.length];
+          placed = placeLootSpot(
+            maze, rng, cell, furniture.chairCells, kind, underLootPlaced,
+          );
+          if (placed) lootTableIdx = (lootTableIdx + attempt + 1) % lootTables.length;
+        }
+        if (placed) pickups.spawn(kind, placed.cell, placed);
+      }
+    };
+    spawnLoot('cheetos', diff.cheetos);
+    spawnLoot('battery', diff.batteries);
+    spawnLoot('soda', diff.sodas || 0);
+    spawnLoot('antivirus', diff.antivirus || 0);
 
     const player = new Player(maze, lab, startCell, diff);
     player.reduceFx = this.settings.reduceFx;
@@ -742,8 +747,7 @@ class Game {
       const throwEv = w.throws?.update(wdt, w.player, w.enemies) || null;
       this._handleThrows(throwEv);
 
-      const got = w.pickups.update(wdt, w.player, w.inventory);
-      this._handlePickups(got);
+      w.pickups.update(wdt);
 
       if (w.printing) this._updatePrint(wdt);
 
@@ -811,7 +815,17 @@ class Game {
     if (ev.damage > 0) {
       const applied = w.player.takeDamage(ev.damage * w.diff.damageScale);
       if (applied) {
-        ui.flashDamage();
+        if (ev.attackFrom) {
+          const sector = threatSector(
+            w.player, ev.attackFrom.x, ev.attackFrom.z, ev.attackFrom.y,
+          );
+          const pan = threatPan(w.player, ev.attackFrom.x, ev.attackFrom.z);
+          ui.flashDirectionalDamage(sector);
+          audio.hurtDirectional(pan);
+        } else {
+          ui.flashDamage();
+          audio.hurt();
+        }
         ui.setHealth(w.player.health);
         if (ev.batteryDrain) {
           w.player.battery = clamp(w.player.battery - ev.batteryDrain, 0, PLAYER.batteryMax);
@@ -1040,8 +1054,8 @@ class Game {
     ui.setBattery(p.batteryPct, p.flashlightOn, ev.burning);
     ui.setHiddenIndicator(p.hidden);
     ui.setCrouched(p.crouching, p.hidden);
-    ui.setDanger(ev.hunters > 0 && ev.nearest < 7 && !p.hidden);
-    if (ev.hunters > 0 && ev.nearest < 4.5 && !p.hidden && !this._dangerSting) {
+    ui.setDanger(ev.hunters > 0 && !p.hidden && ev.nearest < (p.onTable ? 9 : 7));
+    if (ev.hunters > 0 && ev.nearest < (p.onTable ? 6 : 4.5) && !p.hidden && !this._dangerSting) {
       this._dangerSting = true;
       audio.nearMiss();
     }
@@ -1097,11 +1111,18 @@ class Game {
     let best = null;
     let bestScore = -Infinity;
 
-    const consider = (target, label, action, enabled = true) => {
+    const consider = (target, label, action, enabled = true, maxDist = interactRange, use3d = false) => {
       const dx = target.x - px;
       const dz = target.z - pz;
-      const dist = Math.hypot(dx, dz);
-      if (dist > interactRange) return;
+      let dist;
+      if (use3d) {
+        const ty = target.y ?? p.pos.y;
+        const dy = p.pos.y - ty;
+        dist = Math.hypot(dx, dy, dz);
+      } else {
+        dist = Math.hypot(dx, dz);
+      }
+      if (dist > maxDist) return;
       const dot = dist < 0.001 ? 1 : (dx / dist) * fwd.x + (dz / dist) * fwd.z;
       if (dot < 0.1) return;
       const score = dot * 2 - dist * 0.3;
@@ -1110,6 +1131,21 @@ class Game {
         best = { label, action, enabled };
       }
     };
+
+    for (const item of w.pickups.items) {
+      if (item.taken || !w.pickups.canGrab(p, item)) continue;
+      consider(
+        item.pos,
+        w.pickups.labelFor(item.kind),
+        () => {
+          const got = w.pickups.collectOne(item, p, w.inventory);
+          if (got) this._handlePickups(got);
+        },
+        true,
+        PICKUP.grabRange,
+        true,
+      );
+    }
 
     for (const lp of w.lab.laptops) {
       if (lp.solved) continue;
@@ -1158,11 +1194,14 @@ class Game {
     // desk. When nothing is interactable, hint at the nearest desk instead.
     if (!best) {
       if (p.hidden) ui.showHint('Crawl out and stand when it is clear');
-      else if (p.crouching && p.underTable()) ui.showHint('Hidden');
+      else if (p.onTable) ui.showHint('Exposed on the desk — walk off the edge to drop down');
+      else if (p.inTableCrawlGrace) {
+        ui.showHint('Desk overhead — keep moving or press C to crawl under');
+      } else if (p.crouching && p.underTable()) ui.showHint('Hidden');
       else if (p.tableNearby()) {
         ui.showHint(p.crouching
-          ? 'Crawl under the glowing desk'
-          : 'Press C / M-Click to crouch and crawl under');
+          ? 'Crawl under the glowing desk — loot waits underneath'
+          : 'Space to climb up, C to crawl under and grab loot');
       } else ui.showHint(null);
     } else {
       ui.showHint(null);

@@ -131,8 +131,19 @@ export class EnemyManager {
     let burning = false;
     let burnCharge = 0;
     let glitched = 0;
+    let attackFrom = null;
+    let attackDist = Infinity;
 
     let feeding = 0;
+
+    const noteHit = (ev, pos) => {
+      if (!ev?.hit || !pos) return;
+      const d = Math.hypot(player.pos.x - pos.x, player.pos.z - pos.z);
+      if (d < attackDist) {
+        attackDist = d;
+        attackFrom = pos;
+      }
+    };
 
     // Reverse iteration so a mouse that popped this frame can be reaped in place
     for (let i = this.mice.length - 1; i >= 0; i--) {
@@ -143,7 +154,10 @@ export class EnemyManager {
         continue;
       }
       const ev = m.update(adt, player, this._flow, this.mice, this.diff, lures);
-      if (ev?.hit && !this.frozen) damage += ev.hit;
+      if (ev?.hit && !this.frozen) {
+        damage += ev.hit;
+        noteHit(ev, ev.from);
+      }
       if (m.hunting) hunters++;
       if (m.feeding) feeding++;
       const d = Math.hypot(player.pos.x - m.pos.x, player.pos.z - m.pos.z);
@@ -161,6 +175,7 @@ export class EnemyManager {
       if (ev?.hit && !this.frozen) {
         damage += ev.hit;
         batteryDrain += ev.batteryDrain || 0;
+        noteHit(ev, ev.from);
       }
       if (ev?.glitched) glitched++;
       if (ev?.burning || v.burning) {
@@ -174,6 +189,7 @@ export class EnemyManager {
 
     return {
       damage, batteryDrain, hunters, nearest, burning, burnCharge, glitched, feeding,
+      attackFrom,
     };
   }
 

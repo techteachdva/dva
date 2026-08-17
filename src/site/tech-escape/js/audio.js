@@ -83,11 +83,20 @@ class AudioEngine {
 
   get t() { return this.ctx ? this.ctx.currentTime : 0; }
 
+  /** Route a node through stereo panner into the muffled master chain. */
+  _toMaster(node, pan = 0) {
+    const panner = this.ctx.createStereoPanner();
+    panner.pan.value = clamp(pan, -1, 1);
+    node.connect(panner);
+    panner.connect(this.master);
+    return panner;
+  }
+
   // ---------------------------------------------------------------- primitives
 
   _tone({
     freq = 440, freqEnd = null, dur = 0.2, type = 'sine', vol = 0.3,
-    attack = 0.005, delay = 0, detune = 0, curve = 'exp',
+    attack = 0.005, delay = 0, detune = 0, curve = 'exp', pan = 0,
   }) {
     if (!this.ready || this.muted) return;
     const t0 = this.t + delay;
@@ -106,14 +115,15 @@ class AudioEngine {
     g.gain.setValueAtTime(0.0001, t0);
     g.gain.linearRampToValueAtTime(vol, t0 + attack);
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-    osc.connect(g).connect(this.master);
+    osc.connect(g);
+    this._toMaster(g, pan);
     osc.start(t0);
     osc.stop(t0 + dur + 0.02);
   }
 
   _noise({
     dur = 0.2, vol = 0.3, filter = 1200, filterEnd = null, q = 1,
-    type = 'lowpass', delay = 0, attack = 0.004,
+    type = 'lowpass', delay = 0, attack = 0.004, pan = 0,
   }) {
     if (!this.ready || this.muted) return;
     const t0 = this.t + delay;
@@ -129,7 +139,8 @@ class AudioEngine {
     g.gain.setValueAtTime(0.0001, t0);
     g.gain.linearRampToValueAtTime(vol, t0 + attack);
     g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-    src.connect(bq).connect(g).connect(this.master);
+    src.connect(bq).connect(g);
+    this._toMaster(g, pan);
     src.start(t0);
     src.stop(t0 + dur + 0.02);
   }
@@ -306,8 +317,49 @@ class AudioEngine {
   }
 
   hurt() {
-    this._noise({ dur: 0.34, vol: 0.34, filter: 900, filterEnd: 90, q: 1.5 });
-    this._tone({ freq: 180, freqEnd: 52, dur: 0.42, type: 'sawtooth', vol: 0.24 });
+    this.hurtDirectional(0);
+  }
+
+  /** Directional damage sting — pan matches HUD threat bearing. */
+  hurtDirectional(pan = 0) {
+    this._noise({
+      dur: 0.34, vol: 0.34, filter: 900, filterEnd: 90, q: 1.5, pan,
+    });
+    this._tone({ freq: 180, freqEnd: 52, dur: 0.42, type: 'sawtooth', vol: 0.24, pan });
+    this._tone({
+      freq: 260, freqEnd: 110, dur: 0.18, type: 'square', vol: 0.08,
+      delay: 0.04, pan: clamp(pan * 1.2, -1, 1),
+    });
+  }
+
+  /** Mouse proximity — scroll-wheel ticks, louder when closer. */
+  mouseScroll(volScale = 1, pan = 0) {
+    if (!this.ready) return;
+    for (let i = 0; i < 3; i++) {
+      this._noise({
+        dur: 0.028, vol: 0.055 * volScale, filter: 3400, filterEnd: 900,
+        q: 3.2, delay: i * 0.038, pan,
+      });
+      this._tone({
+        freq: 160 + i * 55, dur: 0.022, type: 'square', vol: 0.028 * volScale,
+        delay: i * 0.038, pan,
+      });
+    }
+  }
+
+  /** Virus proximity — chiptune data ticks, louder when closer. */
+  virusCompute(volScale = 1, pan = 0) {
+    if (!this.ready) return;
+    const notes = [392, 494, 587, 784];
+    notes.forEach((f, i) => {
+      this._tone({
+        freq: f, dur: 0.045, type: 'square', vol: 0.038 * volScale,
+        delay: i * 0.052, pan,
+      });
+    });
+    this._noise({
+      dur: 0.08, vol: 0.03 * volScale, filter: 5200, filterEnd: 1800, q: 2.5, pan,
+    });
   }
 
   /** The dramatic sting when an enemy first notices you. */
@@ -445,6 +497,12 @@ class AudioEngine {
       dur: 0.22, vol: 0.1,
       filter: down ? 900 : 1400, filterEnd: down ? 260 : 700, q: 1.1,
     });
+  }
+
+  /** Quick grunt when vaulting onto a desk. */
+  vault() {
+    this._noise({ dur: 0.14, vol: 0.11, filter: 520, filterEnd: 980, q: 1.1 });
+    this._tone({ freq: 220, dur: 0.08, vol: 0.05, type: 'triangle' });
   }
 
   /** Knee-and-palm scuff while crawling. */

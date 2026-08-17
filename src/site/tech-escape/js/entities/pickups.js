@@ -1,18 +1,8 @@
 /**
  * Floor loot: hot cheetos, AA batteries, soda, and the rare anti-virus disc.
  *
- * The important change from the first version is that snacks are no longer
- * consumed the instant you walk over them. Cheetos, soda, and discs go into the
- * player's hands, and what to do with them becomes a decision: eat the bag now,
- * or keep it to throw at the thing chasing you. A pickup you can save is worth
- * thinking about; a pickup that auto-applies is just a number going up.
- *
- * Batteries are the exception and stay instant. Flashlight fuel is the resource
- * the whole game is metered against, and making the player open a menu to use one
- * would add friction to the one action they take under the most pressure.
- *
- * Everything bobs and spins, because in a room this dark, motion is what gets
- * noticed first.
+ * Pickups are grabbed with Use / left-click at arm's length — not by walking over
+ * them. Batteries still apply instantly; snacks go into inventory.
  */
 
 import * as THREE from '../../vendor/three.module.js';
@@ -26,6 +16,13 @@ const GLOW = {
   battery: { color: 'battery', intensity: 1.7, distance: 4.2 },
   soda: { color: 'soda', intensity: 1.6, distance: 4.4 },
   antivirus: { color: 'antivirus', intensity: 2.6, distance: 6.5 },
+};
+
+const LABELS = {
+  cheetos: 'Pick up hot cheetos',
+  battery: 'Pick up battery',
+  soda: 'Pick up soda',
+  antivirus: 'Pick up anti-virus disc',
 };
 
 const TABLE_SURFACE_Y = TABLE.topY + TABLE.topThickness / 2;
@@ -60,22 +57,23 @@ export class PickupField {
       z = at.z;
     } else {
       const c = this.maze.cellCenter(cell[0], cell[1]);
-      // Nudge off-centre so items are not all in a perfect grid
       x = c.x + this.rng.range(-1.1, 1.1);
       z = c.z + this.rng.range(-1.1, 1.1);
     }
 
     const mesh = makeModel(kind);
     let baseY = REST_Y[kind] ?? 0.3;
-    if (at?.onTable) {
+    if (at?.onChair) {
+      baseY = TABLE.chairSeatY + (REST_Y[kind] ?? 0.28) * 0.55;
+    } else if (at?.underTable) {
+      baseY = REST_Y[kind] ?? 0.3;
+    } else if (at?.onTable) {
       baseY = ON_TABLE_Y[kind] ?? TABLE_SURFACE_Y + 0.05;
     } else if (at?.y != null) {
       baseY = at.y;
     }
     mesh.position.set(x, baseY, z);
     mesh.rotation.y = this.rng.range(0, Math.PI * 2);
-    // A battery lying on its side reads as a battery; standing up it reads as a
-    // pillar, and a disc lies flat like something dropped
     if (kind === 'battery') mesh.rotation.z = Math.PI / 2.4;
     if (kind === 'antivirus') mesh.rotation.z = 0.12;
     this.scene.add(mesh);
@@ -104,58 +102,70 @@ export class PickupField {
     return this.items.filter((i) => !i.taken).map((i) => i.glow);
   }
 
+  labelFor(kind) {
+    return LABELS[kind] || 'Pick up item';
+  }
+
+  /** 3D distance from the player's eyes to a pickup. */
+  grabDistance(player, item) {
+    const dy = player.pos.y - item.pos.y;
+    const dx = player.pos.x - item.pos.x;
+    const dz = player.pos.z - item.pos.z;
+    return Math.hypot(dx, dy, dz);
+  }
+
+  canGrab(player, item) {
+    if (item.taken) return false;
+    return this.grabDistance(player, item) <= PICKUP.grabRange;
+  }
+
   /**
-   * Animates and collects.
-   * @param {number} dt
-   * @param {object} player
-   * @param {import('./inventory.js').Inventory} inventory
-   * @returns {{taken:Array<string>, batteries:number, full:number}}
+   * Collect one pickup the player is reaching for.
+   * @returns {{taken:Array<string>, batteries:number, full:number}|null}
    */
-  update(dt, player, inventory) {
-    this._t += dt;
+  collectOne(item, player, inventory) {
+    if (!this.canGrab(player, item)) return null;
+
     const taken = [];
     let batteries = 0;
     let full = 0;
+
+    if (item.kind === 'battery') {
+      if (player.battery >= 99.5) {
+        return { taken, batteries: 0, full: 1 };
+      }
+      player.addBattery(PLAYER.batteryPickup);
+      audio.pickupBattery();
+      batteries = 1;
+    } else {
+      if (!inventory || !inventory.add(item.kind, 1)) {
+        return { taken, batteries: 0, full: 1 };
+      }
+      if (item.kind === 'cheetos') audio.pickupCheeto();
+      else if (item.kind === 'soda') audio.pickupSoda();
+      else audio.pickupDisc();
+      taken.push(item.kind);
+    }
+
+    item.taken = true;
+    item.glow.active = false;
+    this.scene.remove(item.mesh);
+    return { taken, batteries, full };
+  }
+
+  /** Animates bobbing pickups. Collection is handled via collectOne(). */
+  update(dt) {
+    this._t += dt;
 
     for (const item of this.items) {
       if (item.taken) continue;
       const bob = Math.sin(this._t * PICKUP.bobSpeed + item.phase) * 0.07;
       item.mesh.position.y = item.baseY + bob;
-      // The disc spins on its face like a coin; everything else turns upright
       if (item.kind === 'antivirus') item.mesh.rotation.y += dt * PICKUP.spinSpeed * 1.6;
       else item.mesh.rotation.y += dt * PICKUP.spinSpeed;
-
-      const dx = player.pos.x - item.pos.x;
-      const dz = player.pos.z - item.pos.z;
-      if (dx * dx + dz * dz > PICKUP.radius * PICKUP.radius) continue;
-
-      if (item.kind === 'battery') {
-        // Instant, because fumbling for fuel in the dark is not the fun part
-        if (player.battery >= 99.5) {
-          full++;
-          continue;
-        }
-        player.addBattery(PLAYER.batteryPickup);
-        audio.pickupBattery();
-        batteries++;
-      } else {
-        if (!inventory || !inventory.add(item.kind, 1)) {
-          // Hands full: leave it on the floor as a landmark to come back to
-          full++;
-          continue;
-        }
-        if (item.kind === 'cheetos') audio.pickupCheeto();
-        else if (item.kind === 'soda') audio.pickupSoda();
-        else audio.pickupDisc();
-        taken.push(item.kind);
-      }
-
-      item.taken = true;
-      item.glow.active = false;
-      this.scene.remove(item.mesh);
+      item.pos.y = item.baseY + bob;
+      item.glow.pos.y = item.baseY + bob + 0.1;
     }
-
-    return { taken, batteries, full };
   }
 
   get remaining() {

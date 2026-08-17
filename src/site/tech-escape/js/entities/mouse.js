@@ -163,23 +163,33 @@ export class EvilMouse {
     return best;
   }
 
+  /** Patrol point away from the player when hiding ends a chase. */
+  _awayPoint(player, dist = 5.5) {
+    const dx = this.pos.x - player.pos.x;
+    const dz = this.pos.z - player.pos.z;
+    const len = Math.hypot(dx, dz) || 1;
+    return {
+      x: this.pos.x + (dx / len) * dist,
+      z: this.pos.z + (dz / len) * dist,
+    };
+  }
+
   /** Distance-and-sight test plus hearing plus the flashlight lure. */
-  _senses(player, sightScale) {
+  _senses(player, diff) {
     if (!player.alive) return false;
+    if (diff.hiddenEvade && player.hidden) return false;
+
     const dx = player.pos.x - this.pos.x;
     const dz = player.pos.z - this.pos.z;
     const dist = Math.hypot(dx, dz);
 
-    // Hiding under a table beats sight, but not being loud right next to one
     const hearRange = player.noise * (player.hidden ? 0.35 : 1);
     if (dist < hearRange) return true;
-
-    if (player.hidden) return false;
 
     // The beam gives you away well beyond normal sight
     if (player.isLightingUp(this.pos, MOUSE.lightLureRange)) return true;
 
-    if (dist > MOUSE.sightRange * sightScale) return false;
+    if (dist > MOUSE.sightRange * diff.sightScale) return false;
     const fx = -Math.sin(this.heading);
     const fz = -Math.cos(this.heading);
     const dot = (dx / (dist || 1)) * fx + (dz / (dist || 1)) * fz;
@@ -215,7 +225,17 @@ export class EvilMouse {
     this.feeding = false;
 
     const distracted = this.state === STATE.FEED || this.state === STATE.FLEE;
-    const detected = !distracted && this._senses(player, diff.sightScale);
+
+    if (diff.hiddenEvade && player.hidden && !distracted) {
+      if (this.state === STATE.HUNT || this.state === STATE.SEARCH) {
+        this.state = STATE.PATROL;
+        this.patrolTarget = this._awayPoint(player, 5.5);
+        this.searchTimer = 0;
+        this.wasHunting = false;
+      }
+    }
+
+    const detected = !distracted && this._senses(player, diff);
 
     if (detected) {
       if (this.state !== STATE.HUNT) {
@@ -412,9 +432,17 @@ export class EvilMouse {
       const d = this.pos.distanceTo(player.pos);
       if (d < 20) {
         const vol = clamp(1 - d / 20, 0, 1) ** 1.6;
-        if (vol > 0.05) audio.skitter(vol);
+        if (vol > 0.05) {
+          const pan = clamp(
+            ((player.pos.x - this.pos.x) * Math.cos(player.yaw)
+              + (player.pos.z - this.pos.z) * (-Math.sin(player.yaw)))
+            / Math.max(d, 0.1),
+            -1, 1,
+          );
+          audio.mouseScroll(vol, pan);
+        }
       }
-      this._skitterTimer = this.state === STATE.HUNT ? 0.4 : 1.1 + Math.random() * 1.4;
+      this._skitterTimer = this.state === STATE.HUNT ? 0.35 : 0.9 + Math.random() * 0.5;
     }
 
     // ------------------------------------------------------------- attack
@@ -428,7 +456,10 @@ export class EvilMouse {
       && !distracted
     ) {
       this.attackCooldown = MOUSE.attackCooldown;
-      return { hit: MOUSE.damage };
+      return {
+        hit: MOUSE.damage,
+        from: { x: this.pos.x, z: this.pos.z, y: 0.25 },
+      };
     }
     return null;
   }

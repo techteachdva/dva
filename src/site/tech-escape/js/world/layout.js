@@ -3,6 +3,9 @@
  * without overlapping fixtures (terminals, printer, exit, start).
  */
 
+import { TABLE } from '../config.js';
+import { PICKUP_FOOTPRINT, SCATTER_FOOTPRINT, TableSurfacePlanner } from './table-surface.js';
+
 const cellKey = (c) => `${c[0]},${c[1]}`;
 
 /** Dressing on tabletops — everything except floor-only litter. */
@@ -20,8 +23,10 @@ const FLOOR_SCATTER_TYPES = ['pencil', 'eraser'];
  * @param {Array<[number, number]>} open
  * @param {Array<[number, number]>} reserved
  * @param {object} level
+ * @param {TableSurfacePlanner} [surfacePlanner]
  */
-export function planLabFurniture(maze, rng, open, reserved, level) {
+export function planLabFurniture(maze, rng, open, reserved, level, surfacePlanner = null) {
+  const planner = surfacePlanner || new TableSurfacePlanner(maze, rng);
   const used = new Set(reserved.map(cellKey));
   const freeCells = () => open.filter((c) => !used.has(cellKey(c)));
   const mark = (cells) => cells.forEach((c) => used.add(cellKey(c)));
@@ -63,23 +68,30 @@ export function planLabFurniture(maze, rng, open, reserved, level) {
 
   const scatter = [];
   for (const tc of tableCells) {
-    const x = maze.cellToWorldX(tc[0]);
-    const z = maze.cellToWorldZ(tc[1]);
-    scatter.push({
-      type: rng.pick(TABLE_SCATTER_TYPES),
-      x: x + rng.range(-0.18, 0.18),
-      z: z + rng.range(-0.18, 0.18),
-      surface: 'table',
-      rot: rng.range(0, Math.PI * 2),
-    });
-    if (rng.chance(0.55)) {
+    const type1 = rng.pick(TABLE_SCATTER_TYPES);
+    const spot1 = planner.place(tc, SCATTER_FOOTPRINT[type1] || 0.1);
+    if (spot1) {
       scatter.push({
-        type: rng.pick(TABLE_SCATTER_TYPES),
-        x: x + rng.range(-0.22, 0.22),
-        z: z + rng.range(-0.22, 0.22),
+        type: type1,
+        x: spot1.x,
+        z: spot1.z,
         surface: 'table',
         rot: rng.range(0, Math.PI * 2),
       });
+    }
+
+    if (rng.chance(0.55)) {
+      const type2 = rng.pick(TABLE_SCATTER_TYPES);
+      const spot2 = planner.place(tc, SCATTER_FOOTPRINT[type2] || 0.1);
+      if (spot2) {
+        scatter.push({
+          type: type2,
+          x: spot2.x,
+          z: spot2.z,
+          surface: 'table',
+          rot: rng.range(0, Math.PI * 2),
+        });
+      }
     }
   }
 
@@ -96,21 +108,65 @@ export function planLabFurniture(maze, rng, open, reserved, level) {
     });
   }
 
-  return { tableCells, chairCells, propCells, scatter };
+  return { tableCells, chairCells, propCells, scatter, surfacePlanner: planner };
 }
 
 /**
- * Shuffled world spots on tabletops for loot pickups.
+ * Place loot under a hide-under desk or on its paired chair.
  * @param {import('./maze.js').Maze} maze
  * @param {ReturnType<import('../util.js').makeRng>} rng
- * @param {Array<[number, number]>} tableCells
+ * @param {[number, number]} tableCell
+ * @param {Array<{cell:[number,number], tableCell:[number,number]}>} chairCells
+ * @param {'cheetos'|'battery'|'soda'|'antivirus'} kind
+ * @param {Map<string, Array<{x:number,z:number,r:number}>} underPlaced
  */
-export function planTableLootSlots(maze, rng, tableCells) {
-  const inset = 0.24;
-  return rng.shuffle(tableCells.map(([cx, cy]) => ({
-    cell: [cx, cy],
-    x: maze.cellToWorldX(cx) + rng.range(-inset, inset),
-    z: maze.cellToWorldZ(cy) + rng.range(-inset, inset),
-    onTable: true,
-  })));
+export function placeLootSpot(maze, rng, tableCell, chairCells, kind, underPlaced) {
+  const chair = chairCells.find(
+    (c) => c.tableCell[0] === tableCell[0] && c.tableCell[1] === tableCell[1],
+  );
+  if (chair && rng.chance(0.32)) {
+    const x = maze.cellToWorldX(chair.cell[0]);
+    const z = maze.cellToWorldZ(chair.cell[1]);
+    return { cell: tableCell, x, z, onChair: true };
+  }
+  return placeLootUnderTable(maze, rng, tableCell, kind, underPlaced);
+}
+
+function placeLootUnderTable(maze, rng, tableCell, kind, underPlaced) {
+  const key = cellKey(tableCell);
+  const list = underPlaced.get(key) || [];
+  const cx = maze.cellToWorldX(tableCell[0]);
+  const cz = maze.cellToWorldZ(tableCell[1]);
+  const radius = PICKUP_FOOTPRINT[kind] || 0.1;
+  const half = TABLE.topW / 2 - 0.22;
+  const leg = TABLE.legInset;
+  const gap = 0.06;
+
+  for (let attempt = 0; attempt < 36; attempt++) {
+    const px = rng.range(-half, half);
+    const pz = rng.range(-half, half);
+    if (Math.abs(px) > leg - 0.12 && Math.abs(pz) > leg - 0.12) continue;
+
+    let ok = true;
+    for (const p of list) {
+      const dx = px - p.x;
+      const dz = pz - p.z;
+      const min = radius + p.r + gap;
+      if (dx * dx + dz * dz < min * min) {
+        ok = false;
+        break;
+      }
+    }
+    if (!ok) continue;
+
+    list.push({ x: px, z: pz, r: radius });
+    underPlaced.set(key, list);
+    return {
+      cell: tableCell,
+      x: cx + px,
+      z: cz + pz,
+      underTable: true,
+    };
+  }
+  return null;
 }

@@ -77,10 +77,12 @@ export class Obstacles {
    * True when a body of the given vertical span overlaps any box at this spot.
    * Used for headroom tests (can I stand up here?) without moving anything.
    */
-  overlaps(x, z, radius, bodyY0, bodyY1) {
+  overlaps(x, z, radius, bodyY0, bodyY1, opts = null) {
+    const skipTags = opts?.skipTags || null;
     const list = this._near(x, z);
     if (!list) return false;
     for (const b of list) {
+      if (skipTags && skipTags.includes(b.tag)) continue;
       if (b.y1 <= bodyY0 + EPS || b.y0 >= bodyY1 - EPS) continue;
       const nx = Math.max(b.x - b.hx, Math.min(x, b.x + b.hx));
       const nz = Math.max(b.z - b.hz, Math.min(z, b.z + b.hz));
@@ -92,10 +94,12 @@ export class Obstacles {
   }
 
   /** The first box overlapping this body, or null. Handy for messages/tests. */
-  blockerAt(x, z, radius, bodyY0, bodyY1) {
+  blockerAt(x, z, radius, bodyY0, bodyY1, opts = null) {
+    const skipTags = opts?.skipTags || null;
     const list = this._near(x, z);
     if (!list) return null;
     for (const b of list) {
+      if (skipTags && skipTags.includes(b.tag)) continue;
       if (b.y1 <= bodyY0 + EPS || b.y0 >= bodyY1 - EPS) continue;
       const nx = Math.max(b.x - b.hx, Math.min(x, b.x + b.hx));
       const nz = Math.max(b.z - b.hz, Math.min(z, b.z + b.hz));
@@ -115,7 +119,8 @@ export class Obstacles {
    * @param {number} bodyY0 bottom of the body (feet)
    * @param {number} bodyY1 top of the body (head)
    */
-  collide(pos, radius, bodyY0, bodyY1) {
+  collide(pos, radius, bodyY0, bodyY1, opts = null) {
+    const skipTags = opts?.skipTags || null;
     let moved = false;
     // Two passes so a body wedged between two boxes settles instead of jittering
     for (let pass = 0; pass < 2; pass++) {
@@ -124,6 +129,7 @@ export class Obstacles {
       let hitThisPass = false;
 
       for (const b of list) {
+        if (skipTags && skipTags.includes(b.tag)) continue;
         // Skip anything we are above or below - this is the crawl space
         if (b.y1 <= bodyY0 + EPS || b.y0 >= bodyY1 - EPS) continue;
 

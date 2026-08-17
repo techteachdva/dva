@@ -280,10 +280,30 @@ export const ui = {
   flashDamage() {
     const el = this.el['damage-flash'];
     el.classList.add('is-hit');
-    // Next frame removal lets the CSS transition run the fade-out
     requestAnimationFrame(() => {
       requestAnimationFrame(() => el.classList.remove('is-hit'));
     });
+  },
+
+  /** AAA-style directional damage wedge around the crosshair. */
+  flashDirectionalDamage(sector) {
+    const root = document.getElementById('damage-indicator');
+    if (root) {
+      const wedge = root.querySelector(`[data-sector="${sector}"]`);
+      if (wedge) {
+        wedge.classList.remove('is-hit');
+        void wedge.offsetWidth;
+        wedge.classList.add('is-hit');
+        setTimeout(() => wedge.classList.remove('is-hit'), 460);
+      }
+    }
+    const el = this.el['damage-flash'];
+    if (el) {
+      el.classList.add('is-hit');
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => el.classList.remove('is-hit'));
+      });
+    }
   },
 
   // ------------------------------------------------------------------ toasts

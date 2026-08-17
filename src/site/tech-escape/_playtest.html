@@ -109,7 +109,7 @@ try {
     player.update(dt, true);
     const ev = enemies.update(dt, player);
     player.burningVirus = ev.burning;
-    pickups.update(dt, player);
+    pickups.update(dt);
     simTime = performance.now() - s0;
     player.syncCamera(camera);
     lighting.setFlashlight(player.flashlightOn);

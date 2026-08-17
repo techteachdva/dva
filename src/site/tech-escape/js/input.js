@@ -20,6 +20,7 @@ const FIXED_BINDS = {
   ArrowLeft: 'left', KeyA: 'left',
   ArrowRight: 'right', KeyD: 'right',
   ShiftLeft: 'sprint', ShiftRight: 'sprint',
+  Space: 'jump',
 };
 
 export const input = {

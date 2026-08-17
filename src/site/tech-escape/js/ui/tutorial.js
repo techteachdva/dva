@@ -33,6 +33,7 @@ function buildPages() {
           ${row('Mouse', 'Look around (pointer lock on desktop)')}
           ${row('Arrow keys', 'Turn and look up/down (keyboard-only mode)')}
           ${row('Shift', 'Sprint toggle — loud, drains stamina')}
+          ${row('Space', 'Climb onto a nearby desk (exposed, better view)')}
           ${row(c, 'Crouch / crawl under desks')}
         </ul>
         <p class="tutorial-tip"><strong>Touch:</strong> drag the right side to look, virtual stick to move,
@@ -60,13 +61,15 @@ function buildPages() {
       lead: 'Four glowing Chromebooks, four code pieces, one printed key, one exit.',
       body: `
         <ul class="tutorial-list">
+          <li><strong>Loot:</strong> snacks and batteries hide under desks or on nearby chairs — crawl in, grab, sneak out.</li>
           <li><strong>Hide:</strong> crouch under a desk with glowing tape — hunters cannot reach you.</li>
+          <li><strong>Climb:</strong> Space at a desk edge lifts you on top for a wider view — enemies can see you.</li>
           <li><strong>Flashlight:</strong> hold on a <em>virus</em> to glitch it away (drains battery, attracts mice).</li>
           <li><strong>Cheetos:</strong> eat for snack energy, or throw — mice munch and pop (3 per bag).</li>
           <li><strong>Disc:</strong> rare; aim at a virus to delete it permanently.</li>
           <li><strong>Flow:</strong> clear 4 terminals → decrypt fragments → print key → use key on EXIT door.</li>
         </ul>
-        <p class="tutorial-tip">Wrong quiz answers and loud actions wake the lab. Batteries and cheetos are on the tables.</p>`,
+        <p class="tutorial-tip">Wrong quiz answers and loud actions wake the lab. Crawl under desks for loot and cover.</p>`,
     },
   ];
 }

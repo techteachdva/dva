@@ -4,7 +4,7 @@
  */
 
 import * as THREE from '../../vendor/three.module.js';
-import { PLAYER, FLASHLIGHT } from '../config.js';
+import { PLAYER, FLASHLIGHT, TABLE } from '../config.js';
 import { clamp, damp } from '../util.js';
 import { audio } from '../audio.js';
 import { input } from '../input.js';
@@ -12,6 +12,7 @@ import { input } from '../input.js';
 const PITCH_LIMIT = Math.PI / 2 - 0.06;
 // Crawling restricts how far you can crane your neck, which is claustrophobic
 const PITCH_LIMIT_CROUCH = 0.78;
+const TABLE_SURFACE_Y = TABLE.topY + TABLE.topThickness / 2;
 
 export class Player {
   constructor(maze, lab, startCell, difficulty) {
@@ -33,6 +34,13 @@ export class Player {
     this.flashlightOn = true;
 
     this.hidden = false;
+    this.onTable = false;
+    this._tableRef = null;
+    this._vaulting = false;
+    this._vaultT = 0;
+    this._vaultFrom = new THREE.Vector3();
+    this._vaultTo = new THREE.Vector3();
+    this._falling = false;
     this.crouching = false;
     this.wantCrouch = false;
     // True when the player asked to stand but something is directly overhead
@@ -54,6 +62,7 @@ export class Player {
     this._lowBatteryBeep = 0;
     this._crawlAccum = 0;
     this._breathTimer = 0;
+    this._underTableTimer = 0;
     this.reduceFx = false;
 
     // Stats for the end-of-run report
@@ -64,6 +73,11 @@ export class Player {
   get batteryPct() { return this.battery / PLAYER.batteryMax; }
   get staminaPct() { return this.stamina / PLAYER.staminaMax; }
 
+  /** Standing on a desk top — exposed, but you can see farther. */
+  get exposed() {
+    return !this.hidden || this.onTable;
+  }
+
   /** World position of the eyes, used for line-of-sight checks. */
   get eyePos() { return this.pos; }
 
@@ -73,15 +87,132 @@ export class Player {
   }
 
   /** Standing right now would clip into something overhead. */
-  get hasHeadroom() {
+  hasHeadroom(opts = null) {
     return !this.obstacles.overlaps(
-      this.pos.x, this.pos.z, PLAYER.radius, PLAYER.crouchHeight, PLAYER.standHeight,
+      this.pos.x, this.pos.z, PLAYER.radius, PLAYER.crouchHeight, PLAYER.standHeight, opts,
     );
+  }
+
+  /** Brief window after entering a desk footprint before auto-crawl begins. */
+  get inTableCrawlGrace() {
+    return this._underTableTimer > 0
+      && this._underTableTimer < PLAYER.tableCrawlGrace
+      && !this.wantCrouch
+      && !this.onTable;
   }
 
   /** Directly underneath a table, so crouching here hides you. */
   underTable() {
+    if (this.onTable) return false;
     return !!this.lab.tableAt(this.pos.x, this.pos.z);
+  }
+
+  _floorEyeY() {
+    return this.crouching ? PLAYER.crouchEyeHeight : PLAYER.eyeHeight;
+  }
+
+  _tableEyeY() {
+    return TABLE_SURFACE_Y + (this.crouching ? PLAYER.crouchEyeHeight : PLAYER.eyeHeight);
+  }
+
+  /** Desk edge within vault reach, or null. */
+  _vaultTarget() {
+    let best = null;
+    let bestD = PLAYER.vaultReach;
+    const x = this.pos.x;
+    const z = this.pos.z;
+
+    for (const t of this.lab.tables) {
+      const half = TABLE.topW / 2;
+      const dx = x - t.x;
+      const dz = z - t.z;
+      const insideX = Math.abs(dx) < half - 0.08;
+      const insideZ = Math.abs(dz) < half - 0.08;
+      if (insideX && insideZ) continue;
+
+      const penX = Math.max(0, Math.abs(dx) - half);
+      const penZ = Math.max(0, Math.abs(dz) - half);
+      const edgeDist = Math.hypot(penX, penZ);
+      if (edgeDist > PLAYER.vaultReach || edgeDist >= bestD) continue;
+
+      bestD = edgeDist;
+      best = t;
+    }
+    return best;
+  }
+
+  _startVault(table) {
+    const half = TABLE.topW / 2 - PLAYER.radius - 0.1;
+    const dx = this.pos.x - table.x;
+    const dz = this.pos.z - table.z;
+
+    let nx;
+    let nz;
+    if (Math.abs(dx) > Math.abs(dz)) {
+      nx = Math.sign(dx || 1) * half * 0.82;
+      nz = clamp(dz, -half * 0.72, half * 0.72);
+    } else {
+      nz = Math.sign(dz || 1) * half * 0.82;
+      nx = clamp(dx, -half * 0.72, half * 0.72);
+    }
+
+    this._vaulting = true;
+    this._vaultT = 0;
+    this._tableRef = table;
+    this.onTable = true;
+    this._vaultFrom.set(this.pos.x, this._eyeY, this.pos.z);
+    this._vaultTo.set(table.x + nx, this._tableEyeY(), table.z + nz);
+    this.wantCrouch = false;
+    this.crouching = false;
+    audio.vault();
+  }
+
+  _updateVault(dt) {
+    this._vaultT += dt;
+    const u = clamp(this._vaultT / PLAYER.vaultDuration, 0, 1);
+    const ease = u * u * (3 - 2 * u);
+    const arc = Math.sin(u * Math.PI) * 0.42;
+
+    this.pos.x = this._vaultFrom.x + (this._vaultTo.x - this._vaultFrom.x) * ease;
+    this.pos.z = this._vaultFrom.z + (this._vaultTo.z - this._vaultFrom.z) * ease;
+    this._eyeY = this._vaultFrom.y + (this._vaultTo.y - this._vaultFrom.y) * ease + arc;
+
+    if (u >= 1) {
+      this._vaulting = false;
+      this._eyeY = this._tableEyeY();
+      this.pos.x = this._vaultTo.x;
+      this.pos.z = this._vaultTo.z;
+    }
+  }
+
+  _updateTableStand(dt) {
+    if (!this.onTable || !this._tableRef || this._vaulting) return;
+
+    const t = this._tableRef;
+    const half = TABLE.topW / 2 - PLAYER.radius - 0.06;
+    const dx = this.pos.x - t.x;
+    const dz = this.pos.z - t.z;
+
+    if (Math.abs(dx) > half || Math.abs(dz) > half) {
+      this.onTable = false;
+      this._tableRef = null;
+      this._falling = true;
+      return;
+    }
+
+    const targetEye = this._tableEyeY();
+    this._eyeY = damp(this._eyeY, targetEye, 0.0006, dt);
+  }
+
+  _updateFall(dt) {
+    if (!this._falling) return;
+
+    const target = this._floorEyeY();
+    this._eyeY = damp(this._eyeY, target, 0.0012, dt);
+    if (Math.abs(this._eyeY - target) < 0.04) {
+      this._eyeY = target;
+      this._falling = false;
+    }
   }
 
   /** A table close enough to be worth crawling toward. */
@@ -134,7 +265,6 @@ export class Player {
     this.health = clamp(this.health - amount, 0, this.maxHealth);
     this.invuln = PLAYER.hurtInvuln;
     this.stats.damageTaken += amount;
-    audio.hurt();
     return true;
   }
 
@@ -153,24 +283,52 @@ export class Player {
   update(dt, controlsActive) {
     if (this.invuln > 0) this.invuln -= dt;
 
+    if (this._vaulting) {
+      this._updateVault(dt);
+      this.pos.y = this._eyeY;
+      this.hidden = false;
+      return;
+    }
+
+    this._updateFall(dt);
+    this._updateTableStand(dt);
+
     const axes = controlsActive ? input.moveAxes() : { x: 0, y: 0 };
     const wantsMove = axes.x !== 0 || axes.y !== 0;
 
+    // ------------------------------------------------------------- vaulting
+    if (controlsActive && input.pressed('jump') && !this.onTable && !this.crouching && !this._falling) {
+      const target = this._vaultTarget();
+      if (target) this._startVault(target);
+    }
+
     // ------------------------------------------------------------- crouching
+    const inTableZone = this.underTable();
+    if (inTableZone && !this.wantCrouch && !this.onTable) {
+      this._underTableTimer += dt;
+    } else {
+      this._underTableTimer = 0;
+    }
+
+    const crawlGraceOpts = this.inTableCrawlGrace ? { skipTags: ['table-top'] } : null;
+
     // Crouch is a toggle, not a hold, so it never fights the sprint key and
     // never asks a Chromebook user to keep a finger on Ctrl while steering.
-    if (controlsActive && input.pressed('crouch')) {
+    if (controlsActive && input.pressed('crouch') && !this.onTable) {
       this.wantCrouch = !this.wantCrouch;
       audio.crouch(this.wantCrouch);
     }
     // Standing up under a desk would shove you through the tabletop, so the
-    // stand is simply refused until there is headroom.
-    const blockedFromStanding = !this.hasHeadroom;
-    this.stuckUnder = !this.wantCrouch && blockedFromStanding;
-    this.crouching = this.wantCrouch || blockedFromStanding;
+    // stand is simply refused until there is headroom. Grace period lets you
+    // walk up to a desk without instantly ducking to grab loot on a chair.
+    const blockedFromStanding = !this.hasHeadroom(crawlGraceOpts);
+    const forceCrawl = blockedFromStanding
+      && (this.wantCrouch || !this.inTableCrawlGrace);
+    this.stuckUnder = !this.wantCrouch && forceCrawl;
+    this.crouching = this.wantCrouch || forceCrawl;
 
-    // Hiding is not a button: it is the consequence of crouching under a desk
-    this.hidden = this.crouching && this.underTable();
+    // Hiding is not a button: crouch under a desk, not on top of one
+    this.hidden = !this.onTable && this.crouching && this.underTable();
 
     // ------------------------------------------------------------- stamina
     if (this.sodaBoost > 0) this.sodaBoost -= dt;
@@ -213,6 +371,7 @@ export class Player {
     // ------------------------------------------------------------ movement
     let speed = PLAYER.walkSpeed;
     if (this.crouching) speed = PLAYER.crouchSpeed * (this.hidden ? 0.72 : 1);
+    else if (this.onTable) speed *= 0.88;
     else if (this.sprinting) {
       speed = PLAYER.sprintSpeed * (this.boosted ? PLAYER.sodaSprintScale : 1);
     }
@@ -238,15 +397,19 @@ export class Player {
     // Walls first, then furniture. The body span is what lets a crouched player
     // slide under a tabletop that a standing player cannot pass.
     this.maze.collide(this.pos, PLAYER.radius);
-    this.obstacles.collide(this.pos, PLAYER.radius, 0, this.bodyTop);
+    const bodyY0 = this.onTable ? TABLE_SURFACE_Y : 0;
+    const bodyTop = bodyY0 + (this.crouching ? PLAYER.crouchHeight : PLAYER.standHeight);
+    this.obstacles.collide(this.pos, PLAYER.radius, bodyY0, bodyTop, crawlGraceOpts);
 
     const moved = Math.hypot(this.pos.x - beforeX, this.pos.z - beforeZ);
     this.stats.distance += moved;
     const movingFast = moved / Math.max(dt, 1e-5);
 
     // ------------------------------------------------------- camera height
-    const targetEye = this.crouching ? PLAYER.crouchEyeHeight : PLAYER.eyeHeight;
-    this._eyeY = damp(this._eyeY, targetEye, 0.0006, dt);
+    if (!this.onTable && !this._falling) {
+      const targetEye = this._floorEyeY();
+      this._eyeY = damp(this._eyeY, targetEye, 0.0006, dt);
+    }
 
     // Head bob sells the running; it is the first thing to go in reduced-effects
     if (!this.reduceFx && movingFast > 0.4) {
@@ -289,6 +452,7 @@ export class Player {
     else if (this.crouching) this.noise = PLAYER.noiseCrouch;
     else if (this.sprinting) this.noise = PLAYER.noiseSprint;
     else this.noise = PLAYER.noiseWalk;
+    if (this.onTable) this.noise *= 1.45;
     if (this.flashlightOn) this.noise *= 1.12;
 
     // ------------------------------------------------------------- battery

@@ -22,6 +22,17 @@
   <div id="hud" class="hidden" aria-hidden="true">
     <div id="vignette"></div>
     <div id="damage-flash"></div>
+    <div id="damage-indicator" aria-hidden="true">
+      <div class="dmg-sector" data-sector="front"></div>
+      <div class="dmg-sector" data-sector="up"></div>
+      <div class="dmg-sector" data-sector="up-right"></div>
+      <div class="dmg-sector" data-sector="right"></div>
+      <div class="dmg-sector" data-sector="down-right"></div>
+      <div class="dmg-sector" data-sector="down"></div>
+      <div class="dmg-sector" data-sector="down-left"></div>
+      <div class="dmg-sector" data-sector="left"></div>
+      <div class="dmg-sector" data-sector="up-left"></div>
+    </div>
     <div id="scanlines"></div>
 
     <div id="hud-top">
@@ -228,9 +239,8 @@
       <header class="title-hero">
         <div class="logo logo--lobby">
           <div class="logo-sub">DVA Media Arts &amp; Tech presents</div>
-          <h1 class="logo-title" data-text="TECH ESCAPE">
-            TECH ESCAPE<span class="logo-ver">2.2</span>
-          </h1>
+          <h1 class="logo-title" data-text="TECH ESCAPE">TECH ESCAPE</h1>
+          <p class="logo-ver">2.2</p>
           <p class="logo-tag">The lab is closed. Something else is logged in.</p>
         </div>
         <div class="title-greeting">
