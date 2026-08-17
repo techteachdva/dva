@@ -3,7 +3,7 @@
 
   const DURATION_SEC = 300;
   const TEACHER_PASSWORD = "studentsfirst";
-  const API_URL = "/api/diagnostic-writing/submissions";
+  const API_URL = "/api/diagnostic-writing-submissions";
 
   const STOP_WORDS = new Set([
     "the", "a", "an", "and", "or", "but", "in", "on", "at", "to", "for", "of",
