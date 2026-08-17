@@ -425,10 +425,80 @@ html {
 }
 
 .dw-score-v {
-  font-size: 32px;
+  font-size: 28px;
   font-weight: 800;
-  margin-top: 4px;
+  margin-top: 6px;
   font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.dw-score-v-suffix {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--dw-muted);
+  margin-left: 2px;
+}
+
+.dw-score-band,
+.dw-band {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.dw-band--strong,
+.dw-score-card--strong .dw-score-band {
+  background: rgba(52, 211, 153, 0.18);
+  color: #6ee7b7;
+  border: 1px solid rgba(52, 211, 153, 0.35);
+}
+
+.dw-band--on_track,
+.dw-score-card--on_track .dw-score-band {
+  background: rgba(56, 189, 248, 0.18);
+  color: #7dd3fc;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+}
+
+.dw-band--developing,
+.dw-score-card--developing .dw-score-band {
+  background: rgba(251, 191, 36, 0.18);
+  color: #fcd34d;
+  border: 1px solid rgba(251, 191, 36, 0.35);
+}
+
+.dw-band--needs_support,
+.dw-score-card--needs_support .dw-score-band {
+  background: rgba(248, 113, 113, 0.18);
+  color: #fca5a5;
+  border: 1px solid rgba(248, 113, 113, 0.35);
+}
+
+.dw-score-meaning {
+  margin: 10px 0 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #dbe5ff;
+}
+
+.dw-score-evidence {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--dw-muted);
+}
+
+.dw-score-legend {
+  margin-top: 4px;
+}
+
+.dw-legend-list {
+  margin: 10px 0 0;
+  padding-left: 1.1rem;
+  line-height: 1.7;
 }
 
 .dw-score-sub {
@@ -558,8 +628,54 @@ html {
 
 .dw-detail-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.dw-metric-card {
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid var(--dw-border);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.dw-metric-card__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dw-metric-card__title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--dw-text);
+}
+
+.dw-metric-card__score {
+  font-size: 22px;
+  font-weight: 800;
+  margin-top: 8px;
+}
+
+.dw-metric-card__score span {
+  font-size: 13px;
+  color: var(--dw-muted);
+  font-weight: 600;
+}
+
+.dw-metric-card__teacher {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #dbe5ff;
+}
+
+.dw-metric-card__evidence {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--dw-muted);
 }
 
 .dw-metric {

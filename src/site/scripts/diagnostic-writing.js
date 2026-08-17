@@ -356,10 +356,7 @@
       sensoryCount, transitionCount, dialogueLines, voiceCount, conflictWords,
     });
 
-    const teacherFeedback = buildTeacherFeedback({
-      wordCount, wpm, typingLevel, spelling, grammar, syntax, semantics,
-      standards, metricScores, overallScore,
-    });
+    const teacherFeedback = buildTeacherFeedback(analysis);
 
     return {
       wordCount,
@@ -510,20 +507,33 @@
     return sections;
   }
 
-  function buildTeacherFeedback(m) {
+  function buildTeacherFeedback(analysis) {
+    const R = window.DWRubrics;
     const lines = [];
-    lines.push(`Overall: ${m.overallScore}/100 · ${m.wordCount} words · ${Math.round(m.wpm)} WPM · Typing: ${typingLabel(m.typingLevel)}`);
-    lines.push(`Mechanics — Spelling: ${m.spelling.score}, Grammar: ${m.grammar.score}, Syntax: ${m.syntax.score}, Semantics: ${m.semantics.score}`);
-
-    if (m.standards.excelling?.length) {
-      lines.push(`Excelling (${m.standards.excelling.length}): ${m.standards.excelling.map((s) => s.id).join(", ")}`);
+    const m = analysis;
+    const overallScore = m.scores?.overall;
+    if (R) {
+      const summary = R.overallSummary(m);
+      lines.push(summary.teacherParagraph);
+      lines.push("");
+      lines.push("Skill bands (for grouping & next steps):");
+      for (const c of R.teacherMetricCards(m).slice(2, 8)) {
+        lines.push(`• ${c.teacherTitle}: ${c.band.label} (${c.score}) — ${c.teacherWhat}`);
+      }
+    } else {
+      lines.push(`Overall: ${overallScore}/100 · ${m.wordCount} words · ${Math.round(m.wpm)} WPM`);
     }
-    if (m.standards.developing?.length) {
-      lines.push(`Developing (${m.standards.developing.length}): ${m.standards.developing.map((s) => s.id).join(", ")}`);
+    lines.push("");
+    const standards = m.standards || {};
+    if (standards.excelling?.length) {
+      lines.push(`Excelling (${standards.excelling.length}): ${standards.excelling.map((s) => s.id).join(", ")}`);
     }
-    if (m.standards.needsSupport?.length) {
-      lines.push(`Needs support (${m.standards.needsSupport.length}): ${m.standards.needsSupport.map((s) => s.id).join(", ")}`);
-      for (const s of m.standards.needsSupport.slice(0, 3)) {
+    if (standards.developing?.length) {
+      lines.push(`Developing (${standards.developing.length}): ${standards.developing.map((s) => s.id).join(", ")}`);
+    }
+    if (standards.needsSupport?.length) {
+      lines.push(`Needs support (${standards.needsSupport.length}): ${standards.needsSupport.map((s) => s.id).join(", ")}`);
+      for (const s of standards.needsSupport.slice(0, 3)) {
         lines.push(`→ ${s.recommendation}`);
       }
     }
@@ -580,10 +590,14 @@
   }
 
   function renderStudentResults(name, classroom, text, analysis, saveOk, saveError) {
+    const R = window.DWRubrics;
+    const summary = R ? R.overallSummary(analysis) : null;
+
     document.getElementById("resultName").textContent = name;
     document.getElementById("resultClass").textContent = `Class: ${classroom}`;
-    document.getElementById("resultSummary").textContent =
-      `You wrote ${analysis.wordCount} words at ${analysis.wpm} WPM. Overall: ${analysis.scores.overall}/100.`;
+    document.getElementById("resultSummary").innerHTML = summary
+      ? `<strong>${escapeHtml(summary.headline)}</strong><br><span class="dw-muted">${escapeHtml(summary.studentParagraph)}</span>`
+      : `You wrote ${analysis.wordCount} words at ${analysis.wpm} WPM. Overall: ${analysis.scores.overall}/100.`;
 
     const saveStatus = document.getElementById("saveStatus");
     saveStatus.classList.remove("dw-hidden", "dw-save-status--ok", "dw-save-status--error");
@@ -597,22 +611,21 @@
 
     const grid = document.getElementById("scoreGrid");
     grid.innerHTML = "";
-    const cards = [
-      { key: "Words & stamina", score: analysis.scores.volume, sub: `${analysis.wordCount} words` },
-      { key: "Typing fluency", score: analysis.scores.typing, sub: `${analysis.wpm} WPM` },
-      { key: "Spelling", score: analysis.scores.spelling, sub: `${analysis.spelling.misspellCount} flagged` },
-      { key: "Grammar", score: analysis.scores.grammar, sub: "Capitalization & punctuation" },
-      { key: "Syntax", score: analysis.scores.syntax, sub: `Avg ${analysis.avgSentenceLength} w/sent` },
-      { key: "Semantics", score: analysis.scores.semantics, sub: `Diversity ${analysis.lexicalDiversity}` },
-      { key: "Narrative craft", score: analysis.scores.narrative, sub: `${analysis.sensoryCount} sensory cues` },
-      { key: "Creativity", score: analysis.scores.creativity, sub: `${analysis.transitionCount} transitions` },
-    ];
+    const cards = R ? R.studentScoreCards(analysis) : [];
     for (const c of cards) {
       const el = document.createElement("div");
-      el.className = "dw-score-card";
-      el.innerHTML = `<div class="dw-score-k">${c.key}</div><div class="dw-score-v">${c.score}</div><div class="dw-score-sub">${c.sub}</div>`;
+      el.className = R.scoreCardClass(c.band.level);
+      el.innerHTML = `
+        <div class="dw-score-k">${escapeHtml(c.title)}</div>
+        <div class="${R.bandClass(c.band.level)}">${escapeHtml(c.band.label)}</div>
+        <div class="dw-score-v" title="Rubric score ${c.score}/100">${c.score}<span class="dw-score-v-suffix">/100</span></div>
+        <p class="dw-score-meaning">${escapeHtml(c.studentWhat)}</p>
+        <div class="dw-score-evidence">${escapeHtml(c.evidence)}</div>`;
       grid.appendChild(el);
     }
+
+    const legend = document.getElementById("scoreLegend");
+    if (legend) legend.classList.remove("dw-hidden");
 
     const fb = document.getElementById("feedbackList");
     fb.innerHTML = analysis.feedback.map((section) => `
@@ -713,7 +726,12 @@
 
     for (const sub of filtered) {
       const a = sub.analysis || {};
+      const R = window.DWRubrics;
       const needsCount = a.standards?.needsSupport?.length ?? 0;
+      const mechBand = R ? R.band(a.scores?.mechanics) : null;
+      const narrBand = R ? R.band(a.scores?.narrative) : null;
+      const creatBand = R ? R.band(a.scores?.creativity) : null;
+      const overallBand = R ? R.band(a.scores?.overall) : null;
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td>${escapeHtml(sub.name)}</td>
@@ -721,10 +739,10 @@
         <td>${a.wordCount ?? "—"}</td>
         <td>${a.wpm ?? "—"}</td>
         <td><span class="${badgeClass(a.typingLevel)}">${typingLabel(a.typingLevel)}</span></td>
-        <td>${a.scores?.mechanics ?? "—"}</td>
-        <td>${a.scores?.syntax ?? "—"}</td>
-        <td>${a.scores?.semantics ?? "—"}</td>
-        <td>${a.scores?.overall ?? "—"}</td>
+        <td>${mechBand ? `<span class="${R.bandClass(mechBand.level)}" title="${mechBand.short}">${mechBand.label}</span>` : (a.scores?.mechanics ?? "—")}</td>
+        <td>${narrBand ? `<span class="${R.bandClass(narrBand.level)}" title="${narrBand.short}">${narrBand.label}</span>` : (a.scores?.narrative ?? "—")}</td>
+        <td>${creatBand ? `<span class="${R.bandClass(creatBand.level)}" title="${creatBand.short}">${creatBand.label}</span>` : (a.scores?.creativity ?? "—")}</td>
+        <td>${overallBand ? `<span class="${R.bandClass(overallBand.level)}">${overallBand.label}</span> <span class="dw-muted">${a.scores?.overall ?? ""}</span>` : (a.scores?.overall ?? "—")}</td>
         <td>${needsCount > 0 ? `<span class="dw-std dw-std--needs_support">${needsCount} std</span>` : "—"}</td>
         <td>${sub.submittedAt ? formatDate(sub.submittedAt) : "—"}</td>
         <td><button class="dw-btn dw-btn-ghost dw-view-btn" type="button" data-id="${sub.id}">View</button></td>`;
@@ -764,20 +782,30 @@
 
   function showDetail(sub) {
     const a = sub.analysis || {};
+    const R = window.DWRubrics;
     detailPanel.classList.remove("dw-hidden");
     document.getElementById("detailName").textContent = `${sub.name} · ${sub.classroom || "Unknown class"}`;
     document.getElementById("detailStory").textContent = sub.text || "";
 
-    const metrics = [
-      ["Words", a.wordCount], ["WPM", a.wpm], ["Sentences", a.sentenceCount],
-      ["Spelling", a.scores?.spelling], ["Grammar", a.scores?.grammar],
-      ["Syntax", a.scores?.syntax], ["Semantics", a.scores?.semantics],
-      ["Mechanics", a.scores?.mechanics], ["Voice", a.scores?.voice],
-      ["Narrative", a.scores?.narrative], ["Creativity", a.scores?.creativity],
-      ["Overall", a.scores?.overall],
-    ];
-    document.getElementById("detailMetrics").innerHTML = metrics.map(([k, v]) => `
-      <div class="dw-metric"><div class="dw-metric-k">${k}</div><div class="dw-metric-v">${v ?? "—"}</div></div>`).join("");
+    if (R) {
+      const cards = R.teacherMetricCards(a);
+      document.getElementById("detailMetrics").innerHTML = cards.map((c) => `
+        <div class="dw-metric-card ${R.scoreCardClass(c.band.level)}">
+          <div class="dw-metric-card__head">
+            <span class="dw-metric-card__title">${escapeHtml(c.teacherTitle)}</span>
+            <span class="${R.bandClass(c.band.level)}">${escapeHtml(c.band.label)}</span>
+          </div>
+          <div class="dw-metric-card__score">${c.score}<span>/100</span></div>
+          <p class="dw-metric-card__teacher">${escapeHtml(c.teacherWhat)}</p>
+          <div class="dw-metric-card__evidence">${escapeHtml(c.evidence)}</div>
+        </div>`).join("");
+    } else {
+      const metrics = [
+        ["Words", a.wordCount], ["WPM", a.wpm], ["Overall", a.scores?.overall],
+      ];
+      document.getElementById("detailMetrics").innerHTML = metrics.map(([k, v]) => `
+        <div class="dw-metric"><div class="dw-metric-k">${k}</div><div class="dw-metric-v">${v ?? "—"}</div></div>`).join("");
+    }
 
     document.getElementById("detailFlags").innerHTML = (a.flags || [])
       .map((f) => `<span class="dw-flag dw-flag--${f.type}">${escapeHtml(f.text)}</span>`).join("");

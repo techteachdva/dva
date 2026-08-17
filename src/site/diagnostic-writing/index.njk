@@ -162,6 +162,16 @@ layout: false
             <p id="saveStatus" class="dw-save-status dw-hidden" role="status"></p>
           </div>
           <div class="dw-score-grid dw-score-grid--8" id="scoreGrid"></div>
+          <div class="dw-card dw-score-legend dw-hidden" id="scoreLegend">
+            <h3 class="dw-h3">How to read your scores</h3>
+            <p class="dw-muted">Numbers are rubric points (not letter grades). The <strong>band label</strong> tells you what to work on next.</p>
+            <ul class="dw-legend-list">
+              <li><span class="dw-band dw-band--strong">Strong</span> 80–100 — solid for a timed first draft</li>
+              <li><span class="dw-band dw-band--on_track">On track</span> 65–79 — meeting expectations, keep building</li>
+              <li><span class="dw-band dw-band--developing">Developing</span> 50–64 — growing; practice this skill</li>
+              <li><span class="dw-band dw-band--needs_support">Needs support</span> below 50 — ask for help here</li>
+            </ul>
+          </div>
           <div class="dw-card dw-stack">
             <h3 class="dw-h3">Feedback by skill area</h3>
             <ul class="dw-feedback dw-feedback--grouped" id="feedbackList"></ul>
@@ -192,6 +202,7 @@ layout: false
             <div>
               <h2 class="dw-h2">Class results · Minnesota ELA Writing Standards</h2>
               <p class="dw-muted" id="teacherMeta">Loading submissions…</p>
+              <p class="dw-muted dw-tiny">Bands: <span class="dw-band dw-band--strong">Strong</span> <span class="dw-band dw-band--on_track">On track</span> <span class="dw-band dw-band--developing">Developing</span> <span class="dw-band dw-band--needs_support">Needs support</span> — use for grouping, not final grades.</p>
             </div>
             <div class="dw-row dw-row-wrap">
               <button id="refreshBtn" class="dw-btn dw-btn-secondary" type="button">Refresh</button>
@@ -230,8 +241,8 @@ layout: false
                   <th>WPM</th>
                   <th>Typing</th>
                   <th>Mechanics</th>
-                  <th>Syntax</th>
-                  <th>Semantics</th>
+                  <th>Storytelling</th>
+                  <th>Creative detail</th>
                   <th>Overall</th>
                   <th>Standards</th>
                   <th>Submitted</th>
@@ -260,6 +271,7 @@ layout: false
       </main>
     </div>
 
+    <script src="/scripts/diagnostic-writing-rubrics.js" defer></script>
     <script src="/scripts/diagnostic-writing-standards.js" defer></script>
     <script src="/scripts/diagnostic-writing.js" defer></script>
   </body>
