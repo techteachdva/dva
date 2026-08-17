@@ -18,7 +18,7 @@ import { audio } from './audio.js';
 import { ui } from './ui.js';
 import { Maze } from './world/maze.js';
 import { Lab } from './world/lab.js';
-import { planLabFurniture } from './world/layout.js';
+import { planLabFurniture, planTableLootSlots } from './world/layout.js';
 import { buildScatterProps } from './world/scatter.js';
 import { Lighting } from './world/lighting.js';
 import { Player } from './entities/player.js';
@@ -445,22 +445,24 @@ class Game {
     const pickups = new PickupField(this.scene, maze, rng);
     const throws = new ThrowField(this.scene, maze, rng);
 
-    const propSet = new Set(propCells.map(key));
-    const lootCells = rng.shuffle(open.filter(
-      (c) => key(c) !== key(startCell) && !propSet.has(key(c)),
-    ));
+    const lootSlots = planTableLootSlots(maze, rng, furniture.tableCells);
     let li = 0;
+    const nextLoot = () => lootSlots[li++ % lootSlots.length];
     for (let i = 0; i < diff.cheetos; i++) {
-      pickups.spawn('cheetos', lootCells[li++ % lootCells.length]);
+      const s = nextLoot();
+      pickups.spawn('cheetos', s.cell, s);
     }
     for (let i = 0; i < diff.batteries; i++) {
-      pickups.spawn('battery', lootCells[li++ % lootCells.length]);
+      const s = nextLoot();
+      pickups.spawn('battery', s.cell, s);
     }
     for (let i = 0; i < (diff.sodas || 0); i++) {
-      pickups.spawn('soda', lootCells[li++ % lootCells.length]);
+      const s = nextLoot();
+      pickups.spawn('soda', s.cell, s);
     }
     for (let i = 0; i < (diff.antivirus || 0); i++) {
-      pickups.spawn('antivirus', lootCells[li++ % lootCells.length]);
+      const s = nextLoot();
+      pickups.spawn('antivirus', s.cell, s);
     }
 
     const player = new Player(maze, lab, startCell, diff);

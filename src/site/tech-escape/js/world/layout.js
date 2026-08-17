@@ -5,10 +5,14 @@
 
 const cellKey = (c) => `${c[0]},${c[1]}`;
 
-const SCATTER_TYPES = [
+/** Dressing on tabletops — everything except floor-only litter. */
+const TABLE_SCATTER_TYPES = [
   'pencil', 'notebook', 'eraser', 'wire', 'circuit',
   'dice', 'meeple', 'camera', 'bulb', 'cpx', 'pixelArt',
 ];
+
+/** Only pencils and erasers may appear on the floor. */
+const FLOOR_SCATTER_TYPES = ['pencil', 'eraser'];
 
 /**
  * @param {import('./maze.js').Maze} maze
@@ -62,15 +66,15 @@ export function planLabFurniture(maze, rng, open, reserved, level) {
     const x = maze.cellToWorldX(tc[0]);
     const z = maze.cellToWorldZ(tc[1]);
     scatter.push({
-      type: rng.pick(SCATTER_TYPES),
+      type: rng.pick(TABLE_SCATTER_TYPES),
       x: x + rng.range(-0.18, 0.18),
       z: z + rng.range(-0.18, 0.18),
       surface: 'table',
       rot: rng.range(0, Math.PI * 2),
     });
-    if (rng.chance(0.45)) {
+    if (rng.chance(0.55)) {
       scatter.push({
-        type: rng.pick(SCATTER_TYPES),
+        type: rng.pick(TABLE_SCATTER_TYPES),
         x: x + rng.range(-0.22, 0.22),
         z: z + rng.range(-0.22, 0.22),
         surface: 'table',
@@ -79,12 +83,12 @@ export function planLabFurniture(maze, rng, open, reserved, level) {
     }
   }
 
-  const floorScatter = Math.min(28, Math.round(openLen * 0.1) + 6);
+  const floorScatter = Math.min(14, Math.round(openLen * 0.05) + 4);
   const floorCells = rng.shuffle(freeCells());
   for (let i = 0; i < floorScatter && i < floorCells.length; i++) {
     const c = floorCells[i];
     scatter.push({
-      type: rng.pick(SCATTER_TYPES),
+      type: rng.pick(FLOOR_SCATTER_TYPES),
       x: maze.cellToWorldX(c[0]) + rng.range(-0.35, 0.35),
       z: maze.cellToWorldZ(c[1]) + rng.range(-0.35, 0.35),
       surface: 'floor',
@@ -93,4 +97,20 @@ export function planLabFurniture(maze, rng, open, reserved, level) {
   }
 
   return { tableCells, chairCells, propCells, scatter };
+}
+
+/**
+ * Shuffled world spots on tabletops for loot pickups.
+ * @param {import('./maze.js').Maze} maze
+ * @param {ReturnType<import('../util.js').makeRng>} rng
+ * @param {Array<[number, number]>} tableCells
+ */
+export function planTableLootSlots(maze, rng, tableCells) {
+  const inset = 0.24;
+  return rng.shuffle(tableCells.map(([cx, cy]) => ({
+    cell: [cx, cy],
+    x: maze.cellToWorldX(cx) + rng.range(-inset, inset),
+    z: maze.cellToWorldZ(cy) + rng.range(-inset, inset),
+    onTable: true,
+  })));
 }

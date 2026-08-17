@@ -96,16 +96,7 @@ export function buildScatterProps(lab, items) {
         break;
 
       case 'wire':
-        const wireMat = new THREE.MeshLambertMaterial({ color: 0x6a7380 });
-        for (let w = 0; w < 3; w++) {
-          const seg = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.008, 0.35, 5), wireMat);
-          seg.rotation.z = rng.range(-0.4, 0.4);
-          seg.rotation.x = rng.range(-0.5, 0.5);
-          seg.position.set(rng.range(-0.08, 0.08), 0.01, rng.range(-0.08, 0.08));
-          g.add(seg);
-          disposables.push(seg.geometry);
-        }
-        disposables.push(wireMat);
+        buildJumperWire(g, disposables, rng);
         break;
 
       case 'circuit':
@@ -172,21 +163,47 @@ export function buildScatterProps(lab, items) {
         break;
 
       case 'bulb':
-        const base = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.025, 0.03, 0.04, 8),
-          new THREE.MeshLambertMaterial({ color: 0x8a9098 }),
+        const packMat = new THREE.MeshLambertMaterial({ color: 0x3a4048 });
+        const pack = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.028, 0.14), packMat);
+        pack.position.y = 0.014;
+        g.add(pack);
+        const packLabel = new THREE.Mesh(
+          new THREE.BoxGeometry(0.088, 0.004, 0.048),
+          new THREE.MeshLambertMaterial({ color: 0xffcc22 }),
         );
-        base.position.y = 0.02;
-        g.add(base);
+        packLabel.position.set(0, 0.028, 0);
+        g.add(packLabel);
+
+        const leadMat = new THREE.MeshLambertMaterial({ color: 0xcc3333 });
+        const leadGeo = new THREE.CylinderGeometry(0.004, 0.004, 0.055, 5);
+        const leadA = new THREE.Mesh(leadGeo, leadMat);
+        leadA.rotation.z = Math.PI / 2;
+        leadA.position.set(-0.02, 0.022, 0.045);
+        g.add(leadA);
+        const leadB = new THREE.Mesh(leadGeo, leadMat);
+        leadB.rotation.x = Math.PI / 2;
+        leadB.position.set(0.055, 0.03, 0.02);
+        g.add(leadB);
+
+        const screwMat = new THREE.MeshLambertMaterial({ color: 0x8a9098 });
+        const screw = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.026, 0.035, 8), screwMat);
+        screw.position.set(0.07, 0.036, 0.01);
+        g.add(screw);
+
         const glass = new THREE.Mesh(
-          new THREE.SphereGeometry(0.045, 10, 8),
+          new THREE.SphereGeometry(0.042, 10, 8),
           new THREE.MeshBasicMaterial({ color: 0xffe9a8 }),
         );
-        glass.position.y = 0.07;
+        glass.position.set(0.07, 0.085, 0.01);
         g.add(glass);
-        disposables.push(base.geometry, base.material, glass.geometry, glass.material);
+
+        disposables.push(
+          pack.geometry, packMat, packLabel.geometry, packLabel.material,
+          leadGeo, leadMat, screw.geometry, screwMat,
+          glass.geometry, glass.material,
+        );
         glowSources.push({
-          pos: new THREE.Vector3(item.x, yBase + 0.12, item.z),
+          pos: new THREE.Vector3(item.x + 0.07, yBase + 0.1, item.z + 0.01),
           color: 0xffe9a8,
           intensity: 4.2,
           distance: 5.5,
@@ -262,4 +279,35 @@ function buildCircuitPlayground(g, disposables) {
   }
 
   disposables.push(board.geometry, boardMat, usb.geometry, usb.material);
+}
+
+/** Dupont jumper cable with curved lead between plastic plugs. */
+function buildJumperWire(g, disposables, rng) {
+  const color = rng.pick([0xe63333, 0x22aa55, 0xffcc00]);
+  const wireMat = new THREE.MeshLambertMaterial({ color });
+  const plugMat = new THREE.MeshLambertMaterial({ color: 0x1a1f28 });
+  const plugGeo = new THREE.BoxGeometry(0.022, 0.018, 0.035);
+
+  const plugA = new THREE.Mesh(plugGeo, plugMat);
+  plugA.position.set(-0.11, 0.01, 0);
+  g.add(plugA);
+  const plugB = new THREE.Mesh(plugGeo, plugMat);
+  plugB.position.set(0.11, 0.012, 0.02);
+  g.add(plugB);
+
+  const points = [];
+  for (let i = 0; i <= 10; i++) {
+    const t = i / 10;
+    points.push(new THREE.Vector3(
+      -0.09 + t * 0.18,
+      0.012 + Math.sin(t * Math.PI) * 0.018,
+      Math.sin(t * Math.PI * 1.5) * 0.025,
+    ));
+  }
+  const curve = new THREE.CatmullRomCurve3(points);
+  const tubeGeo = new THREE.TubeGeometry(curve, 20, 0.006, 5, false);
+  const tube = new THREE.Mesh(tubeGeo, wireMat);
+  g.add(tube);
+
+  disposables.push(plugGeo, plugMat, tubeGeo, wireMat);
 }

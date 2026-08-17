@@ -16,7 +16,7 @@
  */
 
 import * as THREE from '../../vendor/three.module.js';
-import { PICKUP, PLAYER, COLORS } from '../config.js';
+import { PICKUP, PLAYER, COLORS, TABLE } from '../config.js';
 import { audio } from '../audio.js';
 import { makeModel, REST_Y } from './models.js';
 
@@ -26,6 +26,16 @@ const GLOW = {
   battery: { color: 'battery', intensity: 1.7, distance: 4.2 },
   soda: { color: 'soda', intensity: 1.6, distance: 4.4 },
   antivirus: { color: 'antivirus', intensity: 2.6, distance: 6.5 },
+};
+
+const TABLE_SURFACE_Y = TABLE.topY + TABLE.topThickness / 2;
+
+/** Rest height when a pickup sits on a hide-under desk tabletop. */
+const ON_TABLE_Y = {
+  cheetos: TABLE_SURFACE_Y + 0.065,
+  battery: TABLE_SURFACE_Y + 0.035,
+  soda: TABLE_SURFACE_Y + 0.09,
+  antivirus: TABLE_SURFACE_Y + 0.018,
 };
 
 export class PickupField {
@@ -56,7 +66,12 @@ export class PickupField {
     }
 
     const mesh = makeModel(kind);
-    const baseY = REST_Y[kind] ?? 0.3;
+    let baseY = REST_Y[kind] ?? 0.3;
+    if (at?.onTable) {
+      baseY = ON_TABLE_Y[kind] ?? TABLE_SURFACE_Y + 0.05;
+    } else if (at?.y != null) {
+      baseY = at.y;
+    }
     mesh.position.set(x, baseY, z);
     mesh.rotation.y = this.rng.range(0, Math.PI * 2);
     // A battery lying on its side reads as a battery; standing up it reads as a
