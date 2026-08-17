@@ -413,21 +413,25 @@ button { font-family: inherit; }
   text-shadow: 0 0 18px rgba(53, 224, 255, 0.55);
 }
 
-#screen-title {
-  position: relative;
-}
-
 /* Title lobby: one screen, no scroll — details live in tooltips / How to Play */
 #screen-title.screen--title {
+  position: absolute;
+  inset: 0;
+  width: 100%;
   overflow: hidden;
   padding: clamp(6px, 1.2vh, 14px);
   padding-bottom: max(6px, env(safe-area-inset-bottom, 0px));
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
 }
 
 #screen-title.screen--title .screen-inner.title-dashboard {
   position: relative;
   z-index: 1;
   width: min(1040px, 100%);
+  max-width: 100%;
+  margin: 0 auto;
   height: 100%;
   max-height: 100%;
   display: grid;
@@ -506,6 +510,7 @@ button { font-family: inherit; }
 .logo--compact .logo-title {
   font-size: clamp(26px, 5.2vw, 52px);
   line-height: 0.95;
+  overflow: hidden;
 }
 
 .logo--compact .logo-tag {
@@ -613,16 +618,12 @@ button { font-family: inherit; }
   inset: 0;
   z-index: 0;
   pointer-events: none;
+  transform-origin: center center;
   background:
     radial-gradient(ellipse 85% 65% at 18% 28%, rgba(53, 224, 255, 0.16), transparent 58%),
     radial-gradient(ellipse 75% 55% at 82% 72%, rgba(176, 124, 255, 0.14), transparent 52%),
     radial-gradient(ellipse 55% 45% at 50% 100%, rgba(255, 92, 110, 0.1), transparent 58%);
   animation: aurora-drift 16s ease-in-out infinite alternate;
-}
-
-#screen-title .screen-inner {
-  position: relative;
-  z-index: 1;
 }
 
 @keyframes aurora-drift {
