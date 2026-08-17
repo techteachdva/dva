@@ -14,8 +14,15 @@ function pct(n, total) {
 
 async function fetchTally() {
   const res = await fetch(API);
-  if (!res.ok) throw new Error("fetch failed");
-  return res.json();
+  const data = await res.json().catch(() => ({}));
+  if (data.setupRequired) {
+    const err = new Error("setup required");
+    err.setupRequired = true;
+    err.message = data.error || "Vote storage is not configured yet.";
+    throw err;
+  }
+  if (!res.ok) throw new Error(data.error || "fetch failed");
+  return data;
 }
 
 function renderBars(tally, highlight) {
@@ -77,7 +84,13 @@ async function castVote(choice) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     const err = document.getElementById("vote-note");
-    if (err) err.textContent = data.error || "Could not save vote. Try again.";
+    if (err) {
+      err.textContent =
+        data.error ||
+        (data.setupRequired
+          ? "Votes are not set up on the server yet. Ask Mr. Phil to connect Google Sheets."
+          : "Could not save vote. Try again.");
+    }
     return;
   }
   localStorage.setItem(STORAGE_KEY, choice);
@@ -89,9 +102,13 @@ async function init() {
   let tally = { short: 0, mid: 0, full: 0, total: 0 };
   try {
     tally = await fetchTally();
-  } catch {
+  } catch (err) {
     const note = document.getElementById("vote-note");
-    if (note) note.textContent = "Live results unavailable — you can still vote.";
+    if (note) {
+      note.textContent = err.setupRequired
+        ? err.message
+        : "Live results unavailable — you can still vote.";
+    }
   }
 
   const prior = localStorage.getItem(STORAGE_KEY);
