@@ -69,9 +69,18 @@ async function saveSubmission(redis, entry) {
   await redis.set(SUBMISSIONS_KEY, submissions.slice(0, MAX_SUBMISSIONS));
 }
 
+function getQueryParam(request, key) {
+  if (!request?.url) return "";
+  try {
+    return new URL(request.url, "https://dva-nu.vercel.app").searchParams.get(key) || "";
+  } catch {
+    const query = request.url.includes("?") ? request.url.split("?")[1] : "";
+    return new URLSearchParams(query).get(key) || "";
+  }
+}
+
 export async function GET(request) {
-  const url = new URL(request.url);
-  const password = url.searchParams.get("password") || "";
+  const password = getQueryParam(request, "password");
 
   if (password !== TEACHER_PASSWORD) {
     return Response.json(
