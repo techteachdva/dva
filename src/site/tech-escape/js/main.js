@@ -466,6 +466,7 @@ class Game {
     const player = new Player(maze, lab, startCell, diff);
     player.reduceFx = this.settings.reduceFx;
     player.yaw = this._bestStartYaw(maze, startCell);
+    lab.updateEmergencyArrows(player.pos);
 
     const lighting = new Lighting(this.scene, this.camera, QUALITY[this.settings.quality]);
     lighting.setBrightness(

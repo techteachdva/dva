@@ -16,20 +16,43 @@ const _v = new THREE.Vector3();
 const _s = new THREE.Vector3(1, 1, 1);
 const _axisY = new THREE.Vector3(0, 1, 0);
 
-/** Flat floor chevron pointing +Z in local space (before Y rotation). */
-function makeFloorArrowGeometry() {
-  const shape = new THREE.Shape();
-  shape.moveTo(0, 0.18);
-  shape.lineTo(-0.14, -0.06);
-  shape.lineTo(-0.05, -0.06);
-  shape.lineTo(-0.05, -0.16);
-  shape.lineTo(0.05, -0.16);
-  shape.lineTo(0.05, -0.06);
-  shape.lineTo(0.14, -0.06);
-  shape.closePath();
-  const geo = new THREE.ShapeGeometry(shape);
+/** Canvas chevron texture; tip drawn at canvas bottom maps to +Z (forward). */
+function makeEmergencyArrowTexture() {
+  const c = document.createElement('canvas');
+  c.width = 128;
+  c.height = 128;
+  const g = c.getContext('2d');
+  g.clearRect(0, 0, 128, 128);
+
+  const drawChevron = (fill, stroke, inset) => {
+    g.fillStyle = fill;
+    g.strokeStyle = stroke;
+    g.lineWidth = 4;
+    g.beginPath();
+    g.moveTo(64, 16 + inset);
+    g.lineTo(20 + inset, 80 - inset);
+    g.lineTo(42 + inset, 80 - inset);
+    g.lineTo(42 + inset, 104 - inset);
+    g.lineTo(90 - inset, 104 - inset);
+    g.lineTo(90 - inset, 80 - inset);
+    g.lineTo(112 - inset, 80 - inset);
+    g.closePath();
+    g.fill();
+    g.stroke();
+  };
+
+  drawChevron('#5a0a00', '#2a0400', 0);
+  drawChevron('#ff5520', '#ffaa66', 6);
+
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** Horizontal plane arrow; tip points local +Z before instance Y rotation. */
+function makeEmergencyArrowGeometry() {
+  const geo = new THREE.PlaneGeometry(0.5, 0.5);
   geo.rotateX(-Math.PI / 2);
-  geo.rotateY(Math.PI);
   return geo;
 }
 
@@ -266,17 +289,18 @@ export class Lab {
       { dx: 0, dy: 1 },
       { dx: 0, dy: -1 },
     ];
+    const inset = CELL * 0.34;
     const segments = [];
     for (const [wx, wy] of wallCells) {
-      const wcx = maze.cellToWorldX(wx);
-      const wcz = maze.cellToWorldZ(wy);
       for (const f of faces) {
         const ox = wx + f.dx;
         const oy = wy + f.dy;
         if (!maze.inBounds(ox, oy) || !maze.isOpen(ox, oy)) continue;
+        const openX = maze.cellToWorldX(ox);
+        const openZ = maze.cellToWorldZ(oy);
         segments.push({
-          px: wcx + f.dx * (CELL * 0.44),
-          pz: wcz + f.dy * (CELL * 0.44),
+          px: openX - f.dx * inset,
+          pz: openZ - f.dy * inset,
           cx: ox,
           cy: oy,
         });
@@ -284,25 +308,29 @@ export class Lab {
     }
     if (!segments.length) return;
 
-    const geo = makeFloorArrowGeometry();
+    const arrowTex = makeEmergencyArrowTexture();
+    const geo = makeEmergencyArrowGeometry();
     const mat = new THREE.MeshBasicMaterial({
-      color: 0xff4418,
+      map: arrowTex,
       transparent: true,
-      opacity: 0.98,
+      opacity: 1,
+      depthWrite: false,
       side: THREE.DoubleSide,
     });
     const mesh = new THREE.InstancedMesh(geo, mat, segments.length);
     mesh.frustumCulled = false;
-    mesh.renderOrder = 2;
+    mesh.renderOrder = 8;
 
+    const arrowY = 0.102;
     segments.forEach((seg, i) => {
-      _v.set(seg.px, 0.062, seg.pz);
+      _v.set(seg.px, arrowY, seg.pz);
+      _q.identity();
       _m.compose(_v, _q, _s);
       mesh.setMatrixAt(i, _m);
 
       if (i % 2 === 0) {
         const glow = {
-          pos: new THREE.Vector3(seg.px, 0.14, seg.pz),
+          pos: new THREE.Vector3(seg.px, arrowY + 0.06, seg.pz),
           color: 0xff5520,
           intensity: 10.5,
           distance: 7.8,
@@ -315,11 +343,11 @@ export class Lab {
 
     mesh.instanceMatrix.needsUpdate = true;
     this.group.add(mesh);
-    this._disposables.push(geo, mat);
-    this.emergencyArrows = { mesh, segments };
+    this._disposables.push(geo, mat, arrowTex);
+    this.emergencyArrows = { mesh, segments, arrowY };
   }
 
-  /** Nearest unsolved Chromebook by maze walk distance from a cell. */
+  /** Nearest unsolved Chromebook by maze walk distance from the player. */
   _nearestUnsolvedLaptop(fromCell) {
     const unsolved = this.laptops.filter((lp) => !lp.solved);
     if (!unsolved.length) return null;
@@ -335,10 +363,15 @@ export class Lab {
         best = lp;
       }
     }
-    return best || unsolved[0];
+    return best;
   }
 
-  /** Rotate floor arrows toward the nearest unsolved terminal. */
+  /** Direction on the XZ floor plane from (x0,z0) toward (x1,z1). */
+  _floorAngle(x0, z0, x1, z1) {
+    return Math.atan2(x1 - x0, z1 - z0);
+  }
+
+  /** Rotate floor arrows toward the nearest unsolved terminal along maze paths. */
   updateEmergencyArrows(playerPos) {
     const arrows = this.emergencyArrows;
     if (!arrows) return;
@@ -357,18 +390,19 @@ export class Lab {
     for (const g of this._emergencyGlows) g.active = true;
 
     const flow = this.maze.buildFlow(target.cell[0], target.cell[1]);
-    const { mesh, segments } = arrows;
+    const { mesh, segments, arrowY } = arrows;
+    const y = arrowY ?? 0.102;
 
     segments.forEach((seg, i) => {
-      let angle = Math.atan2(target.x - seg.px, target.z - seg.pz);
+      let angle = this._floorAngle(seg.px, seg.pz, target.x, target.z);
       const step = this.maze.flowStep(flow, seg.cx, seg.cy);
       if (step) {
         const sx = this.maze.cellToWorldX(step[0]);
         const sz = this.maze.cellToWorldZ(step[1]);
-        angle = Math.atan2(sx - seg.px, sz - seg.pz);
+        angle = this._floorAngle(seg.px, seg.pz, sx, sz);
       }
 
-      _v.set(seg.px, 0.062, seg.pz);
+      _v.set(seg.px, y, seg.pz);
       _q.setFromAxisAngle(_axisY, angle);
       _m.compose(_v, _q, _s);
       mesh.setMatrixAt(i, _m);
