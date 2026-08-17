@@ -21,9 +21,7 @@ const VALID_CLASSROOMS = [
 ];
 
 const TEACHER_PASSWORD = "studentsfirst";
-const LEGACY_SUBMISSIONS_KEY = "diagnostic_writing_submissions";
-const INDEX_KEY = "diagnostic_writing_index";
-const ENTRY_PREFIX = "diagnostic_writing:entry:";
+const SUBMISSIONS_KEY = "diagnostic_writing_submissions_v2";
 const MAX_SUBMISSIONS = 2000;
 
 function corsHeaders() {
@@ -59,45 +57,16 @@ function normalizeEntry(entry) {
   return entry;
 }
 
-async function migrateLegacySubmissions(redis) {
-  const raw = await redis.get(LEGACY_SUBMISSIONS_KEY);
-  if (!Array.isArray(raw) || raw.length === 0) return;
-
-  for (const entry of raw) {
-    const normalized = normalizeEntry(entry);
-    if (!normalized?.id) continue;
-    await redis.set(`${ENTRY_PREFIX}${normalized.id}`, normalized);
-    await redis.zadd(INDEX_KEY, {
-      score: normalized.submittedAt || Date.now(),
-      member: normalized.id,
-    });
-  }
-
-  await redis.del(LEGACY_SUBMISSIONS_KEY);
-}
-
 async function loadSubmissions(redis) {
-  await migrateLegacySubmissions(redis);
-  const ids = await redis.zrange(INDEX_KEY, 0, MAX_SUBMISSIONS - 1, { rev: true });
-  if (!ids?.length) return [];
-
-  const keys = ids.map((id) => `${ENTRY_PREFIX}${id}`);
-  const entries = await redis.mget(...keys);
-  return entries.map(normalizeEntry).filter(Boolean);
+  const raw = await redis.get(SUBMISSIONS_KEY);
+  if (!Array.isArray(raw)) return [];
+  return raw.map(normalizeEntry).filter(Boolean);
 }
 
 async function saveSubmission(redis, entry) {
-  await redis.set(`${ENTRY_PREFIX}${entry.id}`, entry);
-  await redis.zadd(INDEX_KEY, { score: entry.submittedAt, member: entry.id });
-  const count = await redis.zcard(INDEX_KEY);
-  if (count > MAX_SUBMISSIONS) {
-    const overflow = await redis.zrange(INDEX_KEY, 0, count - MAX_SUBMISSIONS - 1);
-    if (overflow?.length) {
-      const staleKeys = overflow.map((id) => `${ENTRY_PREFIX}${id}`);
-      await redis.del(...staleKeys);
-      await redis.zrem(INDEX_KEY, ...overflow);
-    }
-  }
+  const submissions = await loadSubmissions(redis);
+  submissions.unshift(entry);
+  await redis.set(SUBMISSIONS_KEY, submissions.slice(0, MAX_SUBMISSIONS));
 }
 
 export async function GET(request) {
