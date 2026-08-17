@@ -1,0 +1,182 @@
+---
+title: Summer Story Diagnostic
+permalink: /diagnostic-writing/
+layout: false
+---
+<!doctype html>
+<html lang="{{ meta.mainLanguage }}">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="theme-color" content="#0f172a" />
+    <title>Summer Story Diagnostic</title>
+    <link rel="stylesheet" href="/styles/diagnostic-writing.css" />
+  </head>
+  <body class="dw-body">
+    <div class="dw-shell">
+      <header class="dw-topbar">
+        <div>
+          <div class="dw-title">Summer Story Diagnostic</div>
+          <div class="dw-subtitle">5-minute timed writing · typing &amp; storytelling</div>
+        </div>
+        <div class="dw-actions">
+          <a class="dw-link" href="/">Back to site</a>
+          <button id="teacherBtn" class="dw-btn dw-btn-ghost" type="button">Teacher view</button>
+        </div>
+      </header>
+
+      <main id="mainContent">
+        <!-- Welcome -->
+        <section id="welcomeView" class="dw-card dw-stack">
+          <h1 class="dw-h1">Tell your summer story</h1>
+          <p class="dw-lead">
+            You will have <strong>five full minutes</strong> to type as much as you can about
+            <strong>something that happened to you over summer break</strong>.
+          </p>
+          <ul class="dw-list">
+            <li>Type continuously — don&rsquo;t stop to edit or perfect.</li>
+            <li>Include details: who, what, where, when, and how you felt.</li>
+            <li>Try varied sentences — short punchy ones and longer descriptive ones.</li>
+            <li>When time is up, your story is submitted automatically.</li>
+          </ul>
+          <label class="dw-field">
+            <span class="dw-label">Your first name</span>
+            <input id="studentName" class="dw-input" type="text" maxlength="80" placeholder="e.g. Jordan" autocomplete="name" />
+          </label>
+          <button id="startBtn" class="dw-btn" type="button" disabled>Start 5-minute timer</button>
+        </section>
+
+        <!-- Writing -->
+        <section id="writingView" class="dw-hidden">
+          <div class="dw-timer-bar">
+            <div class="dw-timer-meta">
+              <span class="dw-timer-label">Time remaining</span>
+              <span id="timerDisplay" class="dw-timer-value">5:00</span>
+            </div>
+            <div class="dw-timer-track" aria-hidden="true">
+              <div id="timerProgress" class="dw-timer-fill"></div>
+            </div>
+            <div class="dw-live-stats">
+              <span id="liveWordCount">0 words</span>
+              <span id="liveWpm">0 WPM</span>
+            </div>
+          </div>
+
+          <div class="dw-card dw-writing-card">
+            <div class="dw-prompt-banner">
+              <strong>Prompt:</strong> Write a story about something that happened to you over summer break.
+              Type as much as you can!
+            </div>
+            <textarea
+              id="storyInput"
+              class="dw-textarea"
+              placeholder="Start typing your story here…"
+              spellcheck="true"
+              aria-label="Your summer story"
+            ></textarea>
+          </div>
+          <p class="dw-muted dw-tiny">Keep typing until the timer reaches zero. Pasting is disabled during the timed session.</p>
+        </section>
+
+        <!-- Analyzing -->
+        <section id="analyzingView" class="dw-card dw-stack dw-hidden dw-center">
+          <div class="dw-spinner" aria-hidden="true"></div>
+          <p class="dw-lead">Analyzing your story…</p>
+        </section>
+
+        <!-- Student results -->
+        <section id="resultsView" class="dw-hidden dw-stack">
+          <div class="dw-card">
+            <h2 class="dw-h2">Your results, <span id="resultName">—</span></h2>
+            <p class="dw-muted" id="resultSummary">—</p>
+          </div>
+
+          <div class="dw-score-grid" id="scoreGrid"></div>
+
+          <div class="dw-card dw-stack">
+            <h3 class="dw-h3">What we noticed</h3>
+            <ul class="dw-feedback" id="feedbackList"></ul>
+          </div>
+
+          <div class="dw-card dw-stack">
+            <h3 class="dw-h3">Your story</h3>
+            <div class="dw-story-preview" id="storyPreview"></div>
+          </div>
+
+          <button id="restartBtn" class="dw-btn dw-btn-secondary" type="button">Write again</button>
+        </section>
+
+        <!-- Teacher login -->
+        <section id="teacherLoginView" class="dw-card dw-stack dw-hidden dw-narrow">
+          <h2 class="dw-h2">Teacher dashboard</h2>
+          <p class="dw-muted">Enter the teacher password to view class results.</p>
+          <label class="dw-field">
+            <span class="dw-label">Password</span>
+            <input id="teacherPassword" class="dw-input" type="password" autocomplete="current-password" />
+          </label>
+          <div class="dw-row">
+            <button id="teacherLoginBtn" class="dw-btn" type="button">Enter</button>
+            <button id="teacherCancelBtn" class="dw-btn dw-btn-ghost" type="button">Cancel</button>
+          </div>
+          <p id="teacherLoginError" class="dw-error dw-hidden">Incorrect password.</p>
+        </section>
+
+        <!-- Teacher dashboard -->
+        <section id="teacherView" class="dw-hidden dw-stack">
+          <div class="dw-card dw-teacher-header">
+            <div>
+              <h2 class="dw-h2">Class results</h2>
+              <p class="dw-muted" id="teacherMeta">Loading submissions…</p>
+            </div>
+            <div class="dw-row dw-row-wrap">
+              <button id="refreshBtn" class="dw-btn dw-btn-secondary" type="button">Refresh</button>
+              <button id="exportBtn" class="dw-btn dw-btn-ghost" type="button">Export CSV</button>
+              <button id="teacherLogoutBtn" class="dw-btn dw-btn-ghost" type="button">Log out</button>
+            </div>
+          </div>
+
+          <div class="dw-filter-bar" id="filterBar">
+            <button class="dw-filter dw-filter--active" data-filter="all" type="button">All</button>
+            <button class="dw-filter" data-filter="intervention" type="button">Needs intervention</button>
+            <button class="dw-filter" data-filter="developing" type="button">Developing</button>
+            <button class="dw-filter" data-filter="proficient" type="button">Proficient</button>
+            <button class="dw-filter" data-filter="advanced" type="button">Advanced</button>
+          </div>
+
+          <div id="teacherTableWrap" class="dw-card dw-table-wrap">
+            <table class="dw-table" id="teacherTable">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Words</th>
+                  <th>WPM</th>
+                  <th>Typing</th>
+                  <th>Complexity</th>
+                  <th>Creativity</th>
+                  <th>Overall</th>
+                  <th>Submitted</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="teacherTableBody"></tbody>
+            </table>
+            <p id="emptyState" class="dw-muted dw-center dw-hidden">No submissions yet.</p>
+          </div>
+
+          <div id="detailPanel" class="dw-card dw-detail dw-hidden">
+            <div class="dw-detail-header">
+              <h3 class="dw-h3" id="detailName">—</h3>
+              <button id="closeDetailBtn" class="dw-btn dw-btn-ghost" type="button">Close</button>
+            </div>
+            <div class="dw-detail-grid" id="detailMetrics"></div>
+            <div class="dw-detail-flags" id="detailFlags"></div>
+            <div class="dw-story-preview" id="detailStory"></div>
+            <ul class="dw-feedback" id="detailFeedback"></ul>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="/scripts/diagnostic-writing.js" defer></script>
+  </body>
+</html>
