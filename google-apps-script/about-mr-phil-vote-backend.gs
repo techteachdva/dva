@@ -13,7 +13,7 @@
  * 7. Set ABOUT_MR_PHIL_VOTE_API_SECRET in Vercel to match API_SECRET below
  */
 
-const SPREADSHEET_ID = normalizeSheetId_("PASTE_YOUR_SHEET_ID_HERE");
+const SPREADSHEET_ID = normalizeSheetId_("15Gw2-EdaLfikRVY5Qoq1v_BPjGaLZHjrH0AjVDX_kLM");
 const SHEET_NAME = "Votes";
 const API_SECRET = "studentsfirst";
 const VALID_CHOICES = ["short", "mid", "full"];
@@ -79,6 +79,10 @@ function handle_(e, isGet) {
       return respond_(getTally_());
     }
 
+    if (action === "status") {
+      return respond_(getVoteStatus_(params.name, params.class));
+    }
+
     if (action === "vote") {
       return respond_(saveVote_(params));
     }
@@ -94,20 +98,32 @@ function normalizeName_(name) {
 }
 
 function hasAlreadyVoted_(name, classroom) {
+  return Boolean(getVoteStatus_(name, classroom).voted);
+}
+
+function getVoteStatus_(name, classroom) {
   const sheet = getSheet_();
   const lastRow = sheet.getLastRow();
-  if (lastRow < 2) return false;
+  if (lastRow < 2) return { voted: false };
 
   const wantName = normalizeName_(name);
   const wantClass = String(classroom || "").trim();
+  if (!wantName || !wantClass) return { voted: false };
+
   const values = sheet.getRange(2, 1, lastRow, 5).getValues();
 
   for (let i = 0; i < values.length; i++) {
     const rowName = normalizeName_(values[i][2]);
     const rowClass = String(values[i][3] || "").trim();
-    if (rowName === wantName && rowClass === wantClass) return true;
+    if (rowName === wantName && rowClass === wantClass) {
+      const choice = String(values[i][4] || "").trim();
+      return {
+        voted: true,
+        choice: VALID_CHOICES.indexOf(choice) !== -1 ? choice : null,
+      };
+    }
   }
-  return false;
+  return { voted: false };
 }
 
 function getTally_() {

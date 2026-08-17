@@ -82,14 +82,46 @@ async function fetchScriptJson(url, options) {
   }
 }
 
-export async function GET() {
+function getQueryParam(request, key) {
+  if (!request?.url) return "";
+  try {
+    return new URL(request.url, "https://dva-nu.vercel.app").searchParams.get(key) || "";
+  } catch {
+    const query = request.url.includes("?") ? request.url.split("?")[1] : "";
+    return new URLSearchParams(query).get(key) || "";
+  }
+}
+
+export async function GET(request) {
   const scriptUrl = getScriptUrl();
   if (!scriptUrl) return notConfiguredResponse();
 
   try {
     const url = new URL(scriptUrl);
-    url.searchParams.set("action", "tally");
     url.searchParams.set("secret", getApiSecret());
+
+    const name = getQueryParam(request, "name").trim().slice(0, 80);
+    const classroom = getQueryParam(request, "class").trim();
+
+    if (name && classroom) {
+      if (!VALID_CLASSROOMS.includes(classroom)) {
+        return Response.json({ error: "Invalid class." }, { status: 400, headers: corsHeaders() });
+      }
+      url.searchParams.set("action", "status");
+      url.searchParams.set("name", name);
+      url.searchParams.set("class", classroom);
+
+      const data = await fetchScriptJson(url.toString(), { method: "GET" });
+      if (data.error) {
+        return Response.json({ error: data.error }, { status: 502, headers: corsHeaders() });
+      }
+      return Response.json(
+        { voted: Boolean(data.voted), choice: VALID.has(data.choice) ? data.choice : null },
+        { headers: corsHeaders() }
+      );
+    }
+
+    url.searchParams.set("action", "tally");
 
     const data = await fetchScriptJson(url.toString(), { method: "GET" });
     if (data.error) {

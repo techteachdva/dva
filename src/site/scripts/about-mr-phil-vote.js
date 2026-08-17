@@ -1,5 +1,7 @@
 const API = "/api/about-mr-phil-vote";
 const STORAGE_KEY = "about-mr-phil-vote-record";
+const DEFAULT_NOTE =
+  "One vote per student (name + class). Pick the version you'd want on the class site.";
 let voteInFlight = false;
 
 const LABELS = {
@@ -27,6 +29,10 @@ function readStoredVote() {
 
 function storeVote(record) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(record));
+}
+
+function clearStoredVote() {
+  localStorage.removeItem(STORAGE_KEY);
 }
 
 function getFormValues() {
@@ -57,6 +63,16 @@ function formIsReady() {
   return Boolean(name && classroom);
 }
 
+function resetVotableUI() {
+  lockIdentityFields(false);
+  document.querySelectorAll("[data-vote]").forEach((btn) => {
+    btn.classList.remove("is-picked");
+  });
+  const note = document.getElementById("vote-note");
+  if (note) note.textContent = DEFAULT_NOTE;
+  updateVoteButtons();
+}
+
 function updateVoteButtons() {
   const prior = readStoredVote();
   const ready = formIsReady();
@@ -80,6 +96,52 @@ async function fetchTally() {
   }
   if (!res.ok) throw new Error(data.error || "fetch failed");
   return data;
+}
+
+async function fetchVoteStatus(name, classroom) {
+  const url = new URL(API, window.location.origin);
+  url.searchParams.set("name", name);
+  url.searchParams.set("class", classroom);
+  const res = await fetch(url);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "status failed");
+  return data;
+}
+
+async function syncVoteState() {
+  const stored = readStoredVote();
+  const form = getFormValues();
+  const name = form.name || stored?.name || "";
+  const classroom = form.class || stored?.class || "";
+
+  if (!name || !classroom) {
+    if (stored) clearStoredVote();
+    resetVotableUI();
+    return null;
+  }
+
+  try {
+    const status = await fetchVoteStatus(name, classroom);
+    if (status.voted && status.choice) {
+      const record = { name, class: classroom, choice: status.choice };
+      storeVote(record);
+      setFormValues(record);
+      setVotedUI(record);
+      return record;
+    }
+
+    clearStoredVote();
+    setFormValues({ name, class: classroom });
+    resetVotableUI();
+    return null;
+  } catch {
+    if (stored) {
+      setFormValues(stored);
+      setVotedUI(stored);
+      return stored;
+    }
+    return null;
+  }
 }
 
 function renderBars(tally, highlight) {
@@ -134,11 +196,6 @@ function setVotedUI(record) {
 }
 
 async function castVote(choice) {
-  const prior = readStoredVote();
-  if (prior) {
-    setVotedUI(prior);
-    return;
-  }
   if (voteInFlight) return;
 
   const { name, class: classroom } = getFormValues();
@@ -146,6 +203,22 @@ async function castVote(choice) {
     const note = document.getElementById("vote-note");
     if (note) note.textContent = "Enter your name and class before voting.";
     return;
+  }
+
+  try {
+    const status = await fetchVoteStatus(name, classroom);
+    if (status.voted && status.choice) {
+      const record = { name, class: classroom, choice: status.choice };
+      storeVote(record);
+      setVotedUI(record);
+      return;
+    }
+  } catch {
+    const prior = readStoredVote();
+    if (prior) {
+      setVotedUI(prior);
+      return;
+    }
   }
 
   voteInFlight = true;
@@ -178,6 +251,18 @@ async function castVote(choice) {
   renderBars(data, choice);
 }
 
+async function onIdentityChange() {
+  updateVoteButtons();
+  if (!formIsReady()) return;
+  const active = await syncVoteState();
+  try {
+    const tally = await fetchTally();
+    renderBars(tally, active?.choice || null);
+  } catch {
+    /* ignore */
+  }
+}
+
 async function init() {
   let tally = { short: 0, mid: 0, full: 0, total: 0 };
   try {
@@ -191,17 +276,22 @@ async function init() {
     }
   }
 
-  const prior = readStoredVote();
-  if (prior) {
-    setFormValues(prior);
-    setVotedUI(prior);
+  const stored = readStoredVote();
+  if (stored) setFormValues(stored);
+
+  // If teacher cleared the sheet, unlock even before status API is deployed.
+  if (stored && tally.total === 0) {
+    clearStoredVote();
+    resetVotableUI();
   }
-  renderBars(tally, prior?.choice || null);
+
+  const active = await syncVoteState();
+  renderBars(tally, active?.choice || null);
 
   const nameEl = document.getElementById("vote-name");
   const classEl = document.getElementById("vote-class");
-  if (nameEl) nameEl.addEventListener("input", updateVoteButtons);
-  if (classEl) classEl.addEventListener("change", updateVoteButtons);
+  if (nameEl) nameEl.addEventListener("input", onIdentityChange);
+  if (classEl) classEl.addEventListener("change", onIdentityChange);
 
   document.querySelectorAll("[data-vote]").forEach((btn) => {
     btn.addEventListener("click", () => castVote(btn.dataset.vote));
@@ -212,7 +302,8 @@ async function init() {
   window.setInterval(async () => {
     try {
       const fresh = await fetchTally();
-      renderBars(fresh, readStoredVote()?.choice || null);
+      const current = await syncVoteState();
+      renderBars(fresh, current?.choice || null);
     } catch {
       /* ignore poll errors */
     }
