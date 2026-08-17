@@ -2,8 +2,6 @@
  * Diagnostic Writing Submissions API
  * GET:  ?password=...  → all submissions (teacher only)
  * POST: { name, classroom, text, analysis, durationSec } → save submission
- *
- * Requires Upstash Redis (UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN)
  */
 
 const VALID_CLASSROOMS = [
@@ -37,15 +35,14 @@ function hasRedisConfig() {
   return Boolean(process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN);
 }
 
-async function getRedis() {
-  if (!hasRedisConfig()) {
-    throw new Error("Redis not configured");
+function getQueryParam(request, key) {
+  if (!request?.url) return "";
+  try {
+    return new URL(request.url, "https://dva-nu.vercel.app").searchParams.get(key) || "";
+  } catch {
+    const query = request.url.includes("?") ? request.url.split("?")[1] : "";
+    return new URLSearchParams(query).get(key) || "";
   }
-  const { Redis } = await import("@upstash/redis");
-  return new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL,
-    token: process.env.UPSTASH_REDIS_REST_TOKEN,
-  });
 }
 
 function isValidClassroom(classroom) {
@@ -58,24 +55,13 @@ function normalizeEntry(entry) {
 }
 
 async function loadSubmissions(redis) {
-  const raw = await redis.get(SUBMISSIONS_KEY);
-  if (!Array.isArray(raw)) return [];
-  return raw.map(normalizeEntry).filter(Boolean);
-}
-
-async function saveSubmission(redis, entry) {
-  const submissions = await loadSubmissions(redis);
-  submissions.unshift(entry);
-  await redis.set(SUBMISSIONS_KEY, submissions.slice(0, MAX_SUBMISSIONS));
-}
-
-function getQueryParam(request, key) {
-  if (!request?.url) return "";
   try {
-    return new URL(request.url, "https://dva-nu.vercel.app").searchParams.get(key) || "";
-  } catch {
-    const query = request.url.includes("?") ? request.url.split("?")[1] : "";
-    return new URLSearchParams(query).get(key) || "";
+    const raw = await redis.get(SUBMISSIONS_KEY);
+    if (!Array.isArray(raw)) return [];
+    return raw.map(normalizeEntry).filter(Boolean);
+  } catch (e) {
+    console.error("Diagnostic writing load error:", e.message);
+    return [];
   }
 }
 
@@ -83,16 +69,13 @@ export async function GET(request) {
   const password = getQueryParam(request, "password");
 
   if (password !== TEACHER_PASSWORD) {
-    return Response.json(
-      { error: "Unauthorized" },
-      { status: 401, headers: corsHeaders() }
-    );
+    return Response.json({ error: "Unauthorized" }, { status: 401, headers: corsHeaders() });
   }
 
   if (!hasRedisConfig()) {
     return Response.json(
       {
-        error: "Server storage is not configured. Add UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN in Vercel.",
+        error: "Server storage is not configured. Add UPstash Redis env vars in Vercel.",
         submissions: [],
       },
       { status: 503, headers: corsHeaders() }
@@ -100,16 +83,17 @@ export async function GET(request) {
   }
 
   try {
-    const redis = await getRedis();
+    const { Redis } = await import("@upstash/redis");
+    const redis = new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    });
     const submissions = await loadSubmissions(redis);
     submissions.sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0));
     return Response.json({ submissions, classrooms: VALID_CLASSROOMS }, { headers: corsHeaders() });
   } catch (e) {
     console.error("Diagnostic writing GET error:", e.message);
-    return Response.json(
-      { error: "Server error", submissions: [] },
-      { status: 500, headers: corsHeaders() }
-    );
+    return Response.json({ submissions: [], classrooms: VALID_CLASSROOMS }, { headers: corsHeaders() });
   }
 }
 
@@ -130,17 +114,11 @@ export async function POST(request) {
     const durationSec = Number(body?.durationSec);
 
     if (!name || !classroom || !text || !analysis) {
-      return Response.json(
-        { error: "Missing required fields" },
-        { status: 400, headers: corsHeaders() }
-      );
+      return Response.json({ error: "Missing required fields" }, { status: 400, headers: corsHeaders() });
     }
 
     if (!isValidClassroom(classroom)) {
-      return Response.json(
-        { error: "Invalid classroom" },
-        { status: 400, headers: corsHeaders() }
-      );
+      return Response.json({ error: "Invalid classroom" }, { status: 400, headers: corsHeaders() });
     }
 
     const entry = {
@@ -153,16 +131,19 @@ export async function POST(request) {
       submittedAt: Date.now(),
     };
 
-    const redis = await getRedis();
-    await saveSubmission(redis, entry);
+    const { Redis } = await import("@upstash/redis");
+    const redis = new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    });
+    const submissions = await loadSubmissions(redis);
+    submissions.unshift(entry);
+    await redis.set(SUBMISSIONS_KEY, submissions.slice(0, MAX_SUBMISSIONS));
 
     return Response.json({ ok: true, id: entry.id }, { headers: corsHeaders() });
   } catch (e) {
     console.error("Diagnostic writing POST error:", e.message);
-    return Response.json(
-      { error: "Server error" },
-      { status: 500, headers: corsHeaders() }
-    );
+    return Response.json({ error: "Server error" }, { status: 500, headers: corsHeaders() });
   }
 }
 
