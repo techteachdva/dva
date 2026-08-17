@@ -9,7 +9,7 @@
 import { createRequire } from "module";
 
 const require = createRequire(import.meta.url);
-const VALID_CLASSROOMS = require("../../lib/diagnostic-writing-classes.js");
+const VALID_CLASSROOMS = require("./classes.js");
 
 const TEACHER_PASSWORD = "studentsfirst";
 const LEGACY_SUBMISSIONS_KEY = "diagnostic_writing_submissions";
