@@ -120,9 +120,30 @@ html {
 
 .amp-live {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
   margin-bottom: 12px;
+}
+
+.amp-stat--wide {
+  grid-column: 1 / -1;
+}
+
+.amp-stat-v--sub {
+  margin-top: 4px;
+  font-size: clamp(0.68rem, 2.1vw, 0.82rem) !important;
+  color: var(--amp-warm) !important;
+}
+
+.amp-stat-link {
+  color: var(--amp-teal);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.amp-stat-link:hover {
+  color: var(--amp-text);
 }
 
 .amp-stat {
