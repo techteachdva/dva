@@ -13,6 +13,20 @@
 
 const VALID = new Set(["short", "mid", "full"]);
 
+const VALID_CLASSROOMS = [
+  "Tech: Media Arts",
+  "Tech 6-A-2",
+  "Tech 7-A-4",
+  "Mr. Phil's Advisory",
+  "Tech 6-A-5",
+  "Tech 7-A-6",
+  "Tech: Video Production",
+  "Tech 8-B-2",
+  "Tech: Game Design",
+  "Tech 7-B-5",
+  "Tech 6-B-6",
+];
+
 function corsHeaders() {
   return {
     "Access-Control-Allow-Origin": "*",
@@ -100,7 +114,15 @@ export async function POST(request) {
 
   try {
     const body = await request.json();
+    const name = typeof body?.name === "string" ? body.name.trim().slice(0, 80) : "";
+    const classroom = typeof body?.class === "string" ? body.class.trim() : "";
     const choice = body?.choice;
+    if (!name || !classroom) {
+      return Response.json({ error: "Enter your name and class." }, { status: 400, headers: corsHeaders() });
+    }
+    if (!VALID_CLASSROOMS.includes(classroom)) {
+      return Response.json({ error: "Invalid class." }, { status: 400, headers: corsHeaders() });
+    }
     if (!VALID.has(choice)) {
       return Response.json({ error: "Pick short, mid, or full." }, { status: 400, headers: corsHeaders() });
     }
@@ -111,6 +133,8 @@ export async function POST(request) {
       body: JSON.stringify({
         action: "vote",
         secret: getApiSecret(),
+        name,
+        class: classroom,
         choice,
       }),
     });

@@ -38,14 +38,23 @@ function getSheet_() {
 
 function initHeaders_(sheet) {
   sheet
-    .getRange(1, 1, 1, 3)
-    .setValues([["id", "votedAt", "choice"]]);
-  sheet.getRange(1, 1, 1, 3).setFontWeight("bold");
+    .getRange(1, 1, 1, 5)
+    .setValues([["id", "votedAt", "name", "class", "choice"]]);
+  sheet.getRange(1, 1, 1, 5).setFontWeight("bold");
   sheet.setFrozenRows(1);
 }
 
 function initSheet() {
   initHeaders_(getSheet_());
+}
+
+/** Run from Apps Script editor to wipe all votes (keeps header row). */
+function clearAllVotes() {
+  const sheet = getSheet_();
+  const lastRow = sheet.getLastRow();
+  if (lastRow > 1) {
+    sheet.deleteRows(2, lastRow - 1);
+  }
 }
 
 function doGet(e) {
@@ -80,6 +89,27 @@ function handle_(e, isGet) {
   }
 }
 
+function normalizeName_(name) {
+  return String(name || "").trim().toLowerCase();
+}
+
+function hasAlreadyVoted_(name, classroom) {
+  const sheet = getSheet_();
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return false;
+
+  const wantName = normalizeName_(name);
+  const wantClass = String(classroom || "").trim();
+  const values = sheet.getRange(2, 1, lastRow, 5).getValues();
+
+  for (let i = 0; i < values.length; i++) {
+    const rowName = normalizeName_(values[i][2]);
+    const rowClass = String(values[i][3] || "").trim();
+    if (rowName === wantName && rowClass === wantClass) return true;
+  }
+  return false;
+}
+
 function getTally_() {
   const sheet = getSheet_();
   const lastRow = sheet.getLastRow();
@@ -87,9 +117,9 @@ function getTally_() {
 
   if (lastRow < 2) return tally;
 
-  const values = sheet.getRange(2, 1, lastRow, 3).getValues();
+  const values = sheet.getRange(2, 1, lastRow, 5).getValues();
   for (let i = 0; i < values.length; i++) {
-    const choice = String(values[i][2] || "").trim();
+    const choice = String(values[i][4] || values[i][2] || "").trim();
     if (VALID_CHOICES.indexOf(choice) === -1) continue;
     tally[choice] += 1;
     tally.total += 1;
@@ -99,14 +129,26 @@ function getTally_() {
 }
 
 function saveVote_(params) {
+  const name = String(params.name || "").trim();
+  const classroom = String(params.class || "").trim();
   const choice = String(params.choice || "").trim();
+
+  if (!name) {
+    throw new Error("Enter your first name.");
+  }
+  if (!classroom) {
+    throw new Error("Select your class.");
+  }
   if (VALID_CHOICES.indexOf(choice) === -1) {
     throw new Error("Pick short, mid, or full.");
+  }
+  if (hasAlreadyVoted_(name, classroom)) {
+    throw new Error("Someone with that name already voted in this class.");
   }
 
   const sheet = getSheet_();
   const id = String(Date.now()) + "-" + Math.random().toString(36).slice(2, 9);
-  sheet.appendRow([id, Date.now(), choice]);
+  sheet.appendRow([id, Date.now(), name, classroom, choice]);
 
   return getTally_();
 }

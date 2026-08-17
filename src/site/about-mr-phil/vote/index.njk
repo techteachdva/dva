@@ -50,7 +50,22 @@ layout: false
 
       <section class="amp-panel amp-panel--vote">
         <h2>Cast your vote</h2>
-        <p class="amp-mini" id="vote-note">One vote per device. Pick the version you'd want on the class site.</p>
+        <p class="amp-mini" id="vote-note">One vote per student (name + class). Pick the version you'd want on the class site.</p>
+        <div class="amp-vote-form">
+          <label class="amp-vote-field">
+            <span>Your first name</span>
+            <input id="vote-name" type="text" maxlength="80" autocomplete="given-name" placeholder="First name" />
+          </label>
+          <label class="amp-vote-field">
+            <span>Your class</span>
+            <select id="vote-class">
+              <option value="">Select your class…</option>
+              {% for classroom in diagnosticWritingClasses %}
+              <option value="{{ classroom }}">{{ classroom }}</option>
+              {% endfor %}
+            </select>
+          </label>
+        </div>
         <div class="amp-vote-btns">
           <button class="amp-vote-btn" type="button" data-vote="short">Short</button>
           <button class="amp-vote-btn" type="button" data-vote="mid">Mid</button>

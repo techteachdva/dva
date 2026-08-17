@@ -306,6 +306,56 @@ html {
   border-color: rgba(251, 191, 36, 0.4);
 }
 
+.amp-vote-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 12px 0 4px;
+}
+
+.amp-vote-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--amp-muted);
+}
+
+.amp-vote-field span {
+  padding-left: 2px;
+}
+
+.amp-vote-field input,
+.amp-vote-field select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 2px solid var(--amp-border);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  color: var(--amp-text);
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.amp-vote-field input:focus,
+.amp-vote-field select:focus {
+  outline: none;
+  border-color: var(--amp-teal);
+}
+
+.amp-vote-field input:disabled,
+.amp-vote-field select:disabled {
+  opacity: 0.65;
+}
+
+@media (max-width: 520px) {
+  .amp-vote-form {
+    grid-template-columns: 1fr;
+  }
+}
+
 .amp-vote-btns {
   display: flex;
   flex-wrap: wrap;

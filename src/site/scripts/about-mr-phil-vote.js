@@ -1,5 +1,6 @@
 const API = "/api/about-mr-phil-vote";
-const STORAGE_KEY = "about-mr-phil-vote-choice";
+const STORAGE_KEY = "about-mr-phil-vote-record";
+let voteInFlight = false;
 
 const LABELS = {
   short: "Short (one-pager)",
@@ -10,6 +11,62 @@ const LABELS = {
 function pct(n, total) {
   if (!total) return 0;
   return Math.round((n / total) * 100);
+}
+
+function readStoredVote() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (!data || !data.choice) return null;
+    return data;
+  } catch {
+    return null;
+  }
+}
+
+function storeVote(record) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(record));
+}
+
+function getFormValues() {
+  const nameEl = document.getElementById("vote-name");
+  const classEl = document.getElementById("vote-class");
+  return {
+    name: nameEl ? nameEl.value.trim() : "",
+    class: classEl ? classEl.value.trim() : "",
+  };
+}
+
+function setFormValues(record) {
+  const nameEl = document.getElementById("vote-name");
+  const classEl = document.getElementById("vote-class");
+  if (nameEl && record?.name) nameEl.value = record.name;
+  if (classEl && record?.class) classEl.value = record.class;
+}
+
+function lockIdentityFields(locked) {
+  const nameEl = document.getElementById("vote-name");
+  const classEl = document.getElementById("vote-class");
+  if (nameEl) nameEl.disabled = locked;
+  if (classEl) classEl.disabled = locked;
+}
+
+function formIsReady() {
+  const { name, class: classroom } = getFormValues();
+  return Boolean(name && classroom);
+}
+
+function updateVoteButtons() {
+  const prior = readStoredVote();
+  const ready = formIsReady();
+  document.querySelectorAll("[data-vote]").forEach((btn) => {
+    if (prior) {
+      btn.disabled = true;
+      return;
+    }
+    btn.disabled = !ready || voteInFlight;
+  });
 }
 
 async function fetchTally() {
@@ -57,32 +114,52 @@ function renderBars(tally, highlight) {
   if (totalEl) totalEl.textContent = `${total} total vote${total === 1 ? "" : "s"}`;
 }
 
-function setVotedUI(choice) {
+function setVotedUI(record) {
+  const choice = record?.choice;
+  if (!choice) return;
+
   document.querySelectorAll("[data-vote]").forEach((btn) => {
     const isPick = btn.dataset.vote === choice;
     btn.disabled = true;
     btn.classList.toggle("is-picked", isPick);
   });
+  lockIdentityFields(true);
+
   const note = document.getElementById("vote-note");
   if (note) {
-    note.textContent = `You voted for ${LABELS[choice]}. Thanks!`;
+    const who = record.name ? `${record.name}` : "You";
+    const classLabel = record.class ? ` (${record.class})` : "";
+    note.textContent = `${who}${classLabel} voted for ${LABELS[choice]}. Thanks!`;
   }
 }
 
 async function castVote(choice) {
-  const prior = localStorage.getItem(STORAGE_KEY);
+  const prior = readStoredVote();
   if (prior) {
     setVotedUI(prior);
     return;
   }
+  if (voteInFlight) return;
+
+  const { name, class: classroom } = getFormValues();
+  if (!name || !classroom) {
+    const note = document.getElementById("vote-note");
+    if (note) note.textContent = "Enter your name and class before voting.";
+    return;
+  }
+
+  voteInFlight = true;
+  updateVoteButtons();
 
   const res = await fetch(API, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ choice }),
+    body: JSON.stringify({ name, class: classroom, choice }),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
+    voteInFlight = false;
+    updateVoteButtons();
     const err = document.getElementById("vote-note");
     if (err) {
       err.textContent =
@@ -93,8 +170,11 @@ async function castVote(choice) {
     }
     return;
   }
-  localStorage.setItem(STORAGE_KEY, choice);
-  setVotedUI(choice);
+
+  const record = { name, class: classroom, choice };
+  storeVote(record);
+  voteInFlight = false;
+  setVotedUI(record);
   renderBars(data, choice);
 }
 
@@ -111,18 +191,28 @@ async function init() {
     }
   }
 
-  const prior = localStorage.getItem(STORAGE_KEY);
-  renderBars(tally, prior || null);
-  if (prior) setVotedUI(prior);
+  const prior = readStoredVote();
+  if (prior) {
+    setFormValues(prior);
+    setVotedUI(prior);
+  }
+  renderBars(tally, prior?.choice || null);
+
+  const nameEl = document.getElementById("vote-name");
+  const classEl = document.getElementById("vote-class");
+  if (nameEl) nameEl.addEventListener("input", updateVoteButtons);
+  if (classEl) classEl.addEventListener("change", updateVoteButtons);
 
   document.querySelectorAll("[data-vote]").forEach((btn) => {
     btn.addEventListener("click", () => castVote(btn.dataset.vote));
   });
 
+  updateVoteButtons();
+
   window.setInterval(async () => {
     try {
       const fresh = await fetchTally();
-      renderBars(fresh, localStorage.getItem(STORAGE_KEY));
+      renderBars(fresh, readStoredVote()?.choice || null);
     } catch {
       /* ignore poll errors */
     }
