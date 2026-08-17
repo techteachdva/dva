@@ -1,5 +1,30 @@
 # Tech Escape — Changelog
 
+## 2.3.0 — The Binaural Update (2026-08-17)
+
+### Audio
+- **10 Hz alpha binaural beat** layered under the lab drone (340 Hz left / 350 Hz right) for relaxed-alert focus during play.
+- **Directional damage audio** and proximity enemy sounds (mouse scroll ticks, virus chiptune ticks).
+
+### Terminals & pressure
+- **Locked terminals** glow cool blue; **completed terminals** glow faint green.
+- **First-attempt gate** — need 2 of 3 credentials accepted on the first try per question set; failing locks the terminal for 60s and pings all enemies for 10s (global alert, ignores normal detection range).
+- **Desk ridge boost** — jumping onto a hide-under table brightens locked terminals you can see.
+
+### Navigation & maze
+- Stronger terminal spread, brighter emergency arrows when one terminal remains, and more robust fully-connected maze validation.
+- Floor arrows still point along the maze path toward unsolved Chromebooks.
+
+### World & loot
+- **Larger student chairs** proportional to hide-under tables.
+- **Fixed standing clip-through** on table tops; crawl grace no longer lets you walk through the slab.
+- **Improved hot chip bag** model — bulging body with rounded end caps instead of boxy crimp sticks.
+- Scatter dressing on tabletops; loot under tables or on chair seats.
+
+### Decrypt minigame
+- **Color-blind safe pair colors** — each matched pair has its own hue.
+- **Larger, thicker glyph symbols** on memory cards.
+
 ## 2.1.0 (2026-08-16)
 
 ### Playtest & exit fix
@@ -38,22 +63,3 @@
 - **Inventory** — Hot Cheetos, Soda, Anti-Virus CD go into your bag instead of auto-consuming.
 - **Throw mechanics** — Cheetos lure mice then explode; Anti-Virus disc permanently deletes one virus.
 - **Terminal pause** — on FIELD TRIP and AFTER HOURS, enemies freeze while you read; SYSTEM CRASH keeps hunting.
-- **Improved pickup models** — puffy chip bags, readable soda cans, flat discs.
-
-### Accessibility & UI
-- **First-run screen** — reduce motion, reduce flashing, captions, look speed before first play.
-- **75% terminal panel** with larger fonts, shape-coded answers, two-step commit, retry-until-correct.
-- **Sound captions** — directional `[arrow] Source (proximity)` lines, on by default.
-- **Colourblind-safe palette** — four luminance tiers plus shape redundancy in HUD and world.
-- **Slower loading animation** — typewriter boot log (~6–10s, skippable).
-- **Pause menu** — full accessibility panel (motion, flash, captions, sensitivity, text presets).
-
-### Controls
-- **Enter** — interact (terminals, printer, door)
-- **E** — throw (disc at virus, cheetos otherwise)
-- **R** — eat hot cheetos / drink soda
-- **F** — flashlight
-- **Q** — cycle inventory item
-- **C** — crouch toggle
-- **Shift** — sprint toggle
-- **Remappable** — pause menu KEYBINDS section

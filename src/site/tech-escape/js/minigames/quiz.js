@@ -404,7 +404,11 @@ export class Quiz {
       this.close();
       // Retry-until-correct means every terminal is eventually cleared. What
       // varies is what it cost, so the report is first-attempt hits out of total.
-      this.hooks.onComplete?.(true, this.firstTryCount, this.questions.length);
+      this.hooks.onComplete?.(
+        this.firstTryCount >= QUIZ.passFirstTry,
+        this.firstTryCount,
+        this.questions.length,
+      );
       return;
     }
     this._render();

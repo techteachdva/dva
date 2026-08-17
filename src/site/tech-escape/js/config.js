@@ -40,7 +40,7 @@ export const TABLE = {
   legW: 0.14,
   bandY0: 1.0,
   bandY1: 1.24,
-  chairSeatY: 0.52,
+  chairSeatY: 0.56,
 };
 
 export const PLAYER = {
@@ -230,6 +230,12 @@ export const QUIZ = {
   // Missing a question makes noise and spawns pressure but is not instant death
   wrongAnswerNoise: 22,
   wrongAnswerHealthCost: 0,
+  /** First-attempt credentials needed to pass a terminal (of questionsPerLaptop). */
+  passFirstTry: 2,
+  /** Seconds locked out after failing the first-attempt threshold. */
+  failLockout: 60,
+  /** Global enemy alert duration after a terminal fail (seconds). */
+  failAlertSeconds: 10,
   /**
    * Terminals are the RELIEF beat: tension while you move, calm while you read.
    * Being chased through a multiple-choice question is where most players quit,
@@ -255,6 +261,8 @@ export const DECRYPT = {
   },
   // Shown on the cards
   glyphs: ['0', '1', '{', '}', '<', '>', '/', '#', '@', '&', '%', '$', '*', '+', '=', '~'],
+  /** Color-blind safe pair colors (one per matched pair). */
+  pairColors: ['#4ea1ff', '#ffb347', '#b47cff', '#5ddf8a', '#ff6b8a', '#ffd966'],
 };
 
 /**

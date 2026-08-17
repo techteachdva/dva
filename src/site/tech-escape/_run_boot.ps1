@@ -48,7 +48,7 @@ $checks = @(
   @{ name = "loading screen dismissed"; ok = ($html -notmatch 'screen-load" class="screen"') },
   @{ name = "lobby screen is showing"; ok = $lobbyVisible },
   @{ name = "how to play tutorial in DOM"; ok = ($html -match 'id="screen-tutorial"') },
-  @{ name = "title is Tech Escape 2.2"; ok = ($html -match 'logo-ver">2\.2') },
+  @{ name = "title is Tech Escape 2.3"; ok = ($html -match 'logo-ver">2\.3') },
   @{ name = "glitch overlay is in the DOM"; ok = ($html -match 'id="glitch-overlay"') },
   @{ name = "stance readout is in the HUD"; ok = ($html -match 'id="stance-value"') }
 )

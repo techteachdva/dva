@@ -168,14 +168,12 @@ class AudioEngine {
     lp.frequency.value = 220;
     lp.Q.value = 3;
 
-    // Slow filter sweep keeps the drone from sounding static
     const lfo = ctx.createOscillator();
     const lfoGain = ctx.createGain();
     lfo.frequency.value = 0.07;
     lfoGain.gain.value = 90;
     lfo.connect(lfoGain).connect(lp.frequency);
 
-    // Faint electrical hiss layer
     const hiss = ctx.createBufferSource();
     hiss.buffer = this._noiseBuf;
     hiss.loop = true;
@@ -186,15 +184,37 @@ class AudioEngine {
     const hissGain = ctx.createGain();
     hissGain.gain.value = 0.012;
 
+    // 10 Hz alpha binaural beat (340 Hz L / 350 Hz R) — relaxed-alert focus band
+    const binMerger = ctx.createChannelMerger(2);
+    const binGain = ctx.createGain();
+    binGain.gain.value = 0.038;
+    const binLeft = ctx.createOscillator();
+    const binRight = ctx.createOscillator();
+    binLeft.type = 'sine';
+    binRight.type = 'sine';
+    binLeft.frequency.value = 340;
+    binRight.frequency.value = 350;
+    const binPanL = ctx.createStereoPanner();
+    const binPanR = ctx.createStereoPanner();
+    binPanL.pan.value = -1;
+    binPanR.pan.value = 1;
+    binLeft.connect(binPanL).connect(binMerger, 0, 0);
+    binRight.connect(binPanR).connect(binMerger, 0, 1);
+    binMerger.connect(binGain).connect(out);
+
     oscA.connect(lp);
     oscB.connect(lp);
     lp.connect(out);
     hiss.connect(hissHp).connect(hissGain).connect(out);
 
     oscA.start(); oscB.start(); lfo.start(); hiss.start();
+    binLeft.start(); binRight.start();
     out.gain.linearRampToValueAtTime(0.16, this.t + 2.5);
 
-    this._drone = { out, lp, oscA, oscB, lfo, hiss, hissGain };
+    this._drone = {
+      out, lp, oscA, oscB, lfo, hiss, hissGain,
+      binLeft, binRight, binMerger, binGain,
+    };
     this._musicMode = 'game';
     this._musicNext = 5 + Math.random() * 4;
   }
@@ -208,6 +228,7 @@ class AudioEngine {
     setTimeout(() => {
       try {
         d.oscA.stop(); d.oscB.stop(); d.lfo.stop(); d.hiss.stop();
+        d.binLeft?.stop(); d.binRight?.stop();
         d.out.disconnect();
       } catch (e) { /* already torn down */ }
     }, 900);
@@ -669,6 +690,12 @@ class AudioEngine {
     this._tone({ freq: 880, dur: 0.08, type: 'square', vol: 0.09 });
     this._tone({ freq: 1320, dur: 0.1, type: 'triangle', vol: 0.08, delay: 0.07 });
     this._noise({ dur: 0.12, vol: 0.06, filter: 4200, filterEnd: 2800, q: 2 });
+  }
+
+  terminalDenied() {
+    this._tone({ freq: 220, freqEnd: 90, dur: 0.55, type: 'sawtooth', vol: 0.18 });
+    this._noise({ dur: 0.5, vol: 0.14, filter: 1200, filterEnd: 180, q: 1.2 });
+    this._tone({ freq: 1400, freqEnd: 400, dur: 0.35, type: 'square', vol: 0.1, delay: 0.08 });
   }
 
   sprintBurst() {

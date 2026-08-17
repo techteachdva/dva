@@ -391,8 +391,13 @@ export class Lab {
       return;
     }
 
+    const lastTerminal = unsolved.length === 1;
     arrows.mesh.visible = true;
-    for (const g of this._emergencyGlows) g.active = true;
+    for (const g of this._emergencyGlows) {
+      g.active = true;
+      g.intensity = lastTerminal ? 14 : 10.5;
+      g.distance = lastTerminal ? 10.5 : 7.8;
+    }
 
     const flows = new Map();
     for (const lp of unsolved) {
@@ -568,10 +573,10 @@ export class Lab {
     if (!chairPlacements.length) return;
 
     const plasticMat = new THREE.MeshLambertMaterial({ color: 0x4a5568 });
-    const seatY = 0.48;
-    const seatGeo = new THREE.BoxGeometry(0.36, 0.04, 0.34);
-    const backGeo = new THREE.BoxGeometry(0.36, 0.32, 0.035);
-    const legGeo = new THREE.BoxGeometry(0.035, seatY, 0.035);
+    const seatY = 0.54;
+    const seatGeo = new THREE.BoxGeometry(0.56, 0.05, 0.52);
+    const backGeo = new THREE.BoxGeometry(0.56, 0.48, 0.045);
+    const legGeo = new THREE.BoxGeometry(0.05, seatY, 0.05);
 
     for (const { cell, tableCell } of chairPlacements) {
       const x = this.maze.cellToWorldX(cell[0]);
@@ -588,10 +593,10 @@ export class Lab {
       g.add(seat);
 
       const back = new THREE.Mesh(backGeo, plasticMat);
-      back.position.set(0, seatY + 0.18, -0.15);
+      back.position.set(0, seatY + 0.26, -0.22);
       g.add(back);
 
-      for (const [lx, lz] of [[-0.14, -0.12], [0.14, -0.12], [-0.14, 0.12], [0.14, 0.12]]) {
+      for (const [lx, lz] of [[-0.22, -0.18], [0.22, -0.18], [-0.22, 0.18], [0.22, 0.18]]) {
         const leg = new THREE.Mesh(legGeo, plasticMat);
         leg.position.set(lx, seatY / 2, lz);
         g.add(leg);
@@ -720,13 +725,16 @@ export class Lab {
         tag: 'laptop-desk',
       });
 
-      // Screens are the main light source in the lab
+      // Locked terminals: cool blue glow; solved terminals switch to faint green
       const glow = {
         pos: new THREE.Vector3(x, DESK_Y + 0.34, z),
-        color: COLORS.screenGlow,
+        color: 0x5ab8ff,
         intensity: 8.5,
         distance: 11,
         active: true,
+        baseIntensity: 8.5,
+        baseDistance: 11,
+        baseColor: 0x5ab8ff,
       };
       this.glowSources.push(glow);
 
@@ -752,8 +760,31 @@ export class Lab {
     lp.solved = true;
     drawScreenTexture(lp.canvas, { index, state: 'solved', glyphs: fragment });
     lp.texture.needsUpdate = true;
-    lp.glow.color = COLORS.exit;
-    lp.glow.intensity = 6.5;
+    lp.glow.color = 0x3dff9a;
+    lp.glow.baseColor = 0x3dff9a;
+    lp.glow.intensity = 4.8;
+    lp.glow.baseIntensity = 4.8;
+    lp.glow.distance = 9;
+    lp.glow.baseDistance = 9;
+  }
+
+  /**
+   * Boost locked terminal glow when the player stands on a desk and has LOS.
+   * @param {import('../entities/player.js').Player} player
+   */
+  updateTerminalHighlights(player) {
+    if (!player?.alive) return;
+    for (const lp of this.laptops) {
+      if (lp.solved) continue;
+      const dx = lp.x - player.pos.x;
+      const dz = lp.z - player.pos.z;
+      const dist = Math.hypot(dx, dz);
+      const los = this.maze.lineOfSight(player.pos.x, player.pos.z, lp.x, lp.z);
+      const ridgeBoost = player.onTable && dist < 30 && los;
+      lp.glow.intensity = ridgeBoost ? lp.baseIntensity * 1.75 : lp.baseIntensity;
+      lp.glow.distance = ridgeBoost ? lp.baseDistance * 1.45 : lp.baseDistance;
+      lp.glow.color = ridgeBoost ? 0x7fd4ff : lp.baseColor;
+    }
   }
 
   // ------------------------------------------------------------------ printer

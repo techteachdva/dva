@@ -235,10 +235,10 @@ export function getModelGeometry() {
   geo = {
     // Puffed pillow: a low-poly sphere squashed into a bag is ~80 triangles and
     // reads instantly as "snack packet" where a box never did
-    bagBody: new THREE.SphereGeometry(0.2, 10, 8),
-    bagCrimp: new THREE.BoxGeometry(0.33, 0.05, 0.085),
-    bagPleat: new THREE.BoxGeometry(0.04, 0.28, 0.11),
-    bagLabel: new THREE.PlaneGeometry(0.26, 0.21),
+    bagBody: new THREE.SphereGeometry(0.22, 12, 10),
+    bagEndCap: new THREE.SphereGeometry(0.12, 8, 6),
+    bagBulge: new THREE.SphereGeometry(0.09, 8, 6),
+    bagLabel: new THREE.PlaneGeometry(0.28, 0.22),
     battery: new THREE.CylinderGeometry(0.075, 0.075, 0.3, 10),
     batteryCap: new THREE.CylinderGeometry(0.04, 0.04, 0.05, 10),
     canBody: new THREE.CylinderGeometry(0.088, 0.088, 0.25, 12, 1, true),
@@ -300,33 +300,33 @@ export function makeCheetosBag() {
   const t = getTextures();
   const group = new THREE.Group();
 
-  const body = new THREE.Mesh(g.bagBody, sharedMat(
+  const bodyMat = sharedMat(
     'bag', () => new THREE.MeshBasicMaterial({ color: COLORS.cheeto }),
-  ));
-  // Pillowed: tall, wide, and thin enough to look like it is holding air
-  body.scale.set(1.02, 1.3, 0.62);
+  );
+  const body = new THREE.Mesh(g.bagBody, bodyMat);
+  body.scale.set(1.08, 1.42, 0.78);
   group.add(body);
 
-  const crimpMat = sharedMat('bagCrimp', () => new THREE.MeshBasicMaterial({ color: 0x9e3305 }));
-  for (const y of [0.245, -0.245]) {
-    const crimp = new THREE.Mesh(g.bagCrimp, crimpMat);
-    crimp.position.y = y;
-    group.add(crimp);
+  const bulgeMat = sharedMat('bagBulge', () => new THREE.MeshBasicMaterial({ color: 0xc8480c }));
+  for (const [bx, by, bz] of [[-0.1, 0.06, 0.1], [0.11, -0.04, 0.11], [-0.06, -0.12, 0.09]]) {
+    const bulge = new THREE.Mesh(g.bagBulge, bulgeMat);
+    bulge.position.set(bx, by, bz);
+    bulge.scale.set(1.1, 1.35, 0.85);
+    group.add(bulge);
   }
 
-  const pleatMat = sharedMat('bagPleat', () => new THREE.MeshBasicMaterial({ color: 0xb83808 }));
-  for (const x of [-0.11, 0.11]) {
-    const pleat = new THREE.Mesh(g.bagPleat, pleatMat);
-    pleat.position.set(x, 0, 0.04);
-    group.add(pleat);
+  const capMat = sharedMat('bagCap', () => new THREE.MeshBasicMaterial({ color: 0x8a2804 }));
+  for (const y of [0.255, -0.255]) {
+    const cap = new THREE.Mesh(g.bagEndCap, capMat);
+    cap.position.y = y;
+    cap.scale.set(1.55, 0.42, 0.82);
+    group.add(cap);
   }
 
-  // One double-sided plane rather than two: the back of a snack bag being a
-  // mirror of the front costs nobody anything and saves a draw call per bag
   const label = new THREE.Mesh(g.bagLabel, sharedMat(
     'bagLabel', () => new THREE.MeshBasicMaterial({ map: t.cheetos, side: THREE.DoubleSide }),
   ));
-  label.position.z = 0.127;
+  label.position.z = 0.135;
   group.add(label);
   return group;
 }

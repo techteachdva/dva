@@ -215,6 +215,21 @@ export class Player {
     }
   }
 
+  /** Standing bodies cannot occupy the crawl footprint under a tabletop. */
+  _ejectFromTableInterior() {
+    const t = this.lab.tableAt(this.pos.x, this.pos.z, -0.04);
+    if (!t) return;
+    const half = TABLE.topW / 2 - PLAYER.radius - 0.08;
+    const dx = this.pos.x - t.x;
+    const dz = this.pos.z - t.z;
+    if (Math.abs(dx) >= half || Math.abs(dz) >= half) return;
+    if (Math.abs(dx) > Math.abs(dz)) {
+      this.pos.x = t.x + Math.sign(dx || 1) * half;
+    } else {
+      this.pos.z = t.z + Math.sign(dz || 1) * half;
+    }
+  }
+
   /** A table close enough to be worth crawling toward. */
   tableNearby() {
     return this.lab.tableNear(this.pos.x, this.pos.z, 2.6);
@@ -399,7 +414,10 @@ export class Player {
     this.maze.collide(this.pos, PLAYER.radius);
     const bodyY0 = this.onTable ? TABLE_SURFACE_Y : 0;
     const bodyTop = bodyY0 + (this.crouching ? PLAYER.crouchHeight : PLAYER.standHeight);
-    this.obstacles.collide(this.pos, PLAYER.radius, bodyY0, bodyTop, crawlGraceOpts);
+    this.obstacles.collide(this.pos, PLAYER.radius, bodyY0, bodyTop);
+    if (!this.onTable && !this.crouching && !this._vaulting) {
+      this._ejectFromTableInterior();
+    }
 
     const moved = Math.hypot(this.pos.x - beforeX, this.pos.z - beforeZ);
     this.stats.distance += moved;

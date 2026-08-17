@@ -181,7 +181,7 @@ export class GhostVirus {
     this.mesh.position.copy(this.pos);
   }
 
-  update(dt, player, diff) {
+  update(dt, player, diff, alertActive = false) {
     if (this.dead) return null;
     if (this.attackCooldown > 0) this.attackCooldown -= dt;
     if (this._repelTimer > 0) this._repelTimer -= dt;
@@ -262,6 +262,7 @@ export class GhostVirus {
       else if (player.onTable) hiddenScale = 1.2;
       const range = VIRUS.sightRange * diff.sightScale * hiddenScale;
       detected = player.alive && dist < range && this.dazedTimer <= 0;
+      if (alertActive && player.alive && !player.hidden) detected = true;
     }
 
     if (detected && !this.wasHunting) audio.spotted();

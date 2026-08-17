@@ -26,10 +26,15 @@ export class EnemyManager {
     this.escalation = 0;
     this.swarming = false;
     this.frozen = false;
+    this.globalAlertTimer = 0;
 
     this._flow = null;
     this._flowTimer = 0;
     this._flowCell = [-1, -1];
+  }
+
+  setGlobalAlert(seconds) {
+    this.globalAlertTimer = Math.max(this.globalAlertTimer, seconds);
   }
 
   spawnInitial(playerCell) {
@@ -124,6 +129,9 @@ export class EnemyManager {
       this.maze.invalidateFlow();
     }
 
+    if (this.globalAlertTimer > 0) this.globalAlertTimer -= adt;
+
+    const alertActive = this.globalAlertTimer > 0;
     let damage = 0;
     let batteryDrain = 0;
     let hunters = 0;
@@ -153,7 +161,7 @@ export class EnemyManager {
         this.mice.splice(i, 1);
         continue;
       }
-      const ev = m.update(adt, player, this._flow, this.mice, this.diff, lures);
+      const ev = m.update(adt, player, this._flow, this.mice, this.diff, lures, alertActive);
       if (ev?.hit && !this.frozen) {
         damage += ev.hit;
         noteHit(ev, ev.from);
@@ -171,7 +179,7 @@ export class EnemyManager {
         this.viruses.splice(i, 1);
         continue;
       }
-      const ev = v.update(adt, player, this.diff);
+      const ev = v.update(adt, player, this.diff, alertActive);
       if (ev?.hit && !this.frozen) {
         damage += ev.hit;
         batteryDrain += ev.batteryDrain || 0;

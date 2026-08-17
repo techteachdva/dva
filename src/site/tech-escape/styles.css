@@ -2391,11 +2391,13 @@ body.reduce-fx #scanlines { display: none; }
 
 .dc-front {
   transform: rotateY(180deg);
-  border: 1px solid var(--cyan);
-  background: linear-gradient(180deg, rgba(53, 224, 255, 0.16), rgba(8, 20, 28, 0.95));
-  color: #eafcff;
-  font-size: clamp(19px, 4.6vw, 34px);
-  text-shadow: 0 0 14px rgba(53, 224, 255, 0.7);
+  border: 2px solid var(--pair-color, var(--cyan));
+  background: linear-gradient(180deg, color-mix(in srgb, var(--pair-color, var(--cyan)) 28%, transparent), rgba(8, 20, 28, 0.96));
+  color: #f8fbff;
+  font-size: clamp(26px, 6.2vw, 46px);
+  font-weight: 800;
+  -webkit-text-stroke: 1px rgba(0, 0, 0, 0.35);
+  text-shadow: 0 0 16px color-mix(in srgb, var(--pair-color, var(--cyan)) 75%, transparent);
 }
 
 .dc-card.is-matched .dc-front {

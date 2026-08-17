@@ -44,17 +44,21 @@ export class Decrypt {
     this.attempts = 0;
 
     const glyphs = shuffle(DECRYPT.glyphs).slice(0, DECRYPT.pairs);
+    const glyphToPair = new Map(glyphs.map((g, i) => [g, i]));
+    const pairColors = DECRYPT.pairColors || [];
     const deck = shuffle([...glyphs, ...glyphs]);
 
     this.el.grid.innerHTML = '';
     this.cards = deck.map((glyph, i) => {
+      const pairIdx = glyphToPair.get(glyph) ?? 0;
+      const color = pairColors[pairIdx % pairColors.length] || '#4ea1ff';
       const btn = document.createElement('button');
       btn.className = 'dc-card';
       btn.type = 'button';
       btn.innerHTML = `
         <span class="dc-inner">
           <span class="dc-face dc-back">?</span>
-          <span class="dc-face dc-front"></span>
+          <span class="dc-face dc-front" style="--pair-color:${color}"></span>
         </span>`;
       btn.querySelector('.dc-front').textContent = glyph;
       const card = { glyph, btn, index: i, matched: false, flipped: false };

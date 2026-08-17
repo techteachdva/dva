@@ -397,7 +397,7 @@ class Game {
     const layout = layoutFor(level);
     let maze = new Maze(rng, layout);
     let attempts = 0;
-    while (attempts++ < 10) {
+    while (attempts++ < 24) {
       const open = maze.openCells();
       const [sx, sy] = open[0];
       if (maze.isFullyConnected(sx, sy)) break;
@@ -411,7 +411,7 @@ class Game {
     const reserve = (cells) => cells.forEach((c) => used.add(key(c)));
     const freeCells = () => open.filter((c) => !used.has(key(c)));
 
-    const laptopCells = maze.spreadCells(CODE_PARTS, [], level.terminalSeparation || 7);
+    const laptopCells = maze.spreadCells(CODE_PARTS, [], level.terminalSeparation || 8);
     reserve(laptopCells);
 
     const printerCell = maze.spreadCells(1, laptopCells, 6)[0];
@@ -785,6 +785,7 @@ class Game {
       w.player.syncCamera(this.camera);
       w.lighting.setFlashlight(w.player.flashlightOn);
       w.lab.updateEmergencyArrows(w.player.pos);
+      w.lab.updateTerminalHighlights(w.player);
       w.lighting.update(
         dt,
         w.player.pos,
@@ -1050,6 +1051,7 @@ class Game {
   _updateHud(ev) {
     const w = this.world;
     const p = w.player;
+    w.lab.updateTerminalHighlights(p);
     ui.setStamina(p.staminaPct, p.exhausted > 0);
     ui.setBattery(p.batteryPct, p.flashlightOn, ev.burning);
     ui.setHiddenIndicator(p.hidden);
@@ -1316,11 +1318,14 @@ class Game {
         if (passed) {
           this._openDecrypt(index, correct, total);
         } else {
-          this.terminalCooldowns[index] = 22;
+          this.terminalCooldowns[index] = QUIZ.failLockout;
+          w.enemies.setGlobalAlert(QUIZ.failAlertSeconds);
           this._exitMinigameToPlaying();
+          audio.terminalDenied();
           ui.toast(
-            `ACCESS DENIED - ${correct} of ${total} correct. This terminal reboots in 22s.`,
-            'bad', 4200,
+            `ACCESS DENIED — only ${correct} of ${total} credentials accepted on first try. `
+            + `Terminal locked ${QUIZ.failLockout}s. Enemies alerted!`,
+            'bad', 5200,
           );
         }
       },

@@ -175,8 +175,9 @@ export class EvilMouse {
   }
 
   /** Distance-and-sight test plus hearing plus the flashlight lure. */
-  _senses(player, diff) {
+  _senses(player, diff, alertActive = false) {
     if (!player.alive) return false;
+    if (alertActive && !player.hidden) return true;
     if (diff.hiddenEvade && player.hidden) return false;
 
     const dx = player.pos.x - this.pos.x;
@@ -197,7 +198,7 @@ export class EvilMouse {
     return this.maze.lineOfSight(this.pos.x, this.pos.z, player.pos.x, player.pos.z);
   }
 
-  update(dt, player, flow, others, diff, lures = null) {
+  update(dt, player, flow, others, diff, lures = null, alertActive = false) {
     if (this.dead) return null;
     if (this.attackCooldown > 0) this.attackCooldown -= dt;
 
@@ -235,7 +236,7 @@ export class EvilMouse {
       }
     }
 
-    const detected = !distracted && this._senses(player, diff);
+    const detected = !distracted && this._senses(player, diff, alertActive);
 
     if (detected) {
       if (this.state !== STATE.HUNT) {
