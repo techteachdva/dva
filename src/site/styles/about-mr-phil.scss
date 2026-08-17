@@ -37,6 +37,36 @@ html {
   padding: 12px 16px 24px;
 }
 
+.amp-page {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: min(100%, 8.5in);
+  gap: 0.5rem;
+}
+
+.amp-page--mid {
+  width: min(100%, 42rem);
+}
+
+.amp-page--full {
+  width: min(100%, 52rem);
+}
+
+.amp-page--vote {
+  width: min(100%, 42rem);
+}
+
+.amp-page .breadcrumbs--standalone {
+  max-width: none;
+  margin: 0;
+  padding: 0 0 0.25rem;
+}
+
+.amp-page .breadcrumbs__list {
+  justify-content: flex-start;
+}
+
 .amp-sheet--mid,
 .amp-sheet--full,
 .amp-sheet--vote {

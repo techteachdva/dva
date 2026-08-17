@@ -15,6 +15,7 @@ layout: false
     <link rel="stylesheet" href="/styles/custom-style.css" />
   </head>
   <body class="amp-body amp-body--scroll">
+    <div class="amp-page amp-page--vote">
     {% if breadcrumbs and breadcrumbs.length > 0 %}
       <div class="breadcrumbs--standalone">{% include "components/breadcrumbs.njk" %}</div>
     {% endif %}
@@ -59,6 +60,7 @@ layout: false
         <div id="vote-results" class="amp-vote-results" aria-live="polite"></div>
       </section>
     </article>
+    </div>
     <script src="/scripts/about-mr-phil-vote.js"></script>
   </body>
 </html>
