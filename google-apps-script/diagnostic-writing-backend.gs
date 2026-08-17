@@ -13,11 +13,20 @@
  * 7. Set DIAGNOSTIC_API_SECRET in Vercel to match API_SECRET below
  */
 
-const SPREADSHEET_ID = "PASTE_YOUR_SHEET_ID_HERE";
+const SPREADSHEET_ID = normalizeSheetId_("PASTE_YOUR_SHEET_ID_HERE");
 const SHEET_NAME = "Submissions";
 const TEACHER_PASSWORD = "studentsfirst";
 const API_SECRET = "studentsfirst";
 
+/** Use only the ID between /d/ and /edit in the sheet URL. */
+function normalizeSheetId_(raw) {
+  const s = String(raw || "").trim();
+  const match = s.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+  if (match) return match[1];
+  return s.split("/")[0].split("?")[0].split("#")[0];
+}
+
+/** Keep in sync with api/diagnostic-writing/classes.json */
 const VALID_CLASSROOMS = [
   "Tech: Media Arts",
   "Tech 6-A-2",
@@ -30,6 +39,9 @@ const VALID_CLASSROOMS = [
   "Tech: Game Design",
   "Tech 7-B-5",
   "Tech 6-B-6",
+  "Mrs. McCarthy 7th Grade ELA",
+  "Mrs. Severson 8th Grade ELA",
+  "Mrs. Eckart 6th Grade ELA",
 ];
 
 function getSheet_() {
