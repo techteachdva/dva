@@ -6,10 +6,19 @@
  * Requires Upstash Redis (UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN)
  */
 
-import { createRequire } from "module";
-
-const require = createRequire(import.meta.url);
-const VALID_CLASSROOMS = require("./classes.js");
+const VALID_CLASSROOMS = [
+  "Tech: Media Arts",
+  "Tech 6-A-2",
+  "Tech 7-A-4",
+  "Mr. Phil's Advisory",
+  "Tech 6-A-5",
+  "Tech 7-A-6",
+  "Tech: Video Production",
+  "Tech 8-B-2",
+  "Tech: Game Design",
+  "Tech 7-B-5",
+  "Tech 6-B-6",
+];
 
 const TEACHER_PASSWORD = "studentsfirst";
 const LEGACY_SUBMISSIONS_KEY = "diagnostic_writing_submissions";

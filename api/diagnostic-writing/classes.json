@@ -1,5 +1,4 @@
-/** Valid classroom names for the Summer Writing Assignment Test. */
-module.exports = [
+[
   "Tech: Media Arts",
   "Tech 6-A-2",
   "Tech 7-A-4",
@@ -10,5 +9,5 @@ module.exports = [
   "Tech 8-B-2",
   "Tech: Game Design",
   "Tech 7-B-5",
-  "Tech 6-B-6",
-];
+  "Tech 6-B-6"
+]
