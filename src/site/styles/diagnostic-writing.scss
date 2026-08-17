@@ -49,6 +49,22 @@ html {
   backdrop-filter: blur(10px);
 }
 
+.dw-topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.dw-topbar-img {
+  width: 72px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--dw-border);
+  flex-shrink: 0;
+}
+
 .dw-title {
   font-size: 22px;
   font-weight: 800;
@@ -546,6 +562,21 @@ html {
 }
 
 /* Rubric & prompt scaffolding */
+.dw-hero-banner {
+  margin-top: 18px;
+  border-radius: var(--dw-radius);
+  overflow: hidden;
+  border: 1px solid var(--dw-border);
+}
+
+.dw-hero-banner__img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 280px;
+  object-fit: cover;
+}
+
 .dw-hero {
   background: linear-gradient(135deg, rgba(56, 189, 248, 0.12), rgba(167, 139, 250, 0.1));
 }
