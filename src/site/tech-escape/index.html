@@ -224,78 +224,80 @@
   <!-- ===================== Title screen ===================== -->
   <div id="screen-title" class="screen screen--title">
     <div id="title-backdrop" class="title-backdrop" aria-hidden="true"></div>
-    <div class="screen-inner title-dashboard">
-      <header class="title-top">
-        <div class="logo logo--compact">
+    <div class="screen-inner title-lobby">
+      <header class="title-hero">
+        <div class="logo logo--lobby">
           <div class="logo-sub">DVA Media Arts &amp; Tech presents</div>
           <h1 class="logo-title" data-text="TECH ESCAPE">
             TECH ESCAPE<span class="logo-ver">2.2</span>
           </h1>
-          <div class="logo-tag">The lab is closed. Something else is logged in.</div>
+          <p class="logo-tag">The lab is closed. Something else is logged in.</p>
         </div>
-
         <div class="title-greeting">
           <span id="title-player" class="title-player"></span>
           <button class="link-btn" id="btn-switch-player">Not you?</button>
         </div>
-
-        <p class="title-hook">
-          4 Chromebooks &middot; 4 code pieces &middot; print the key &middot; escape the
-          <strong>skittering</strong> dark
-        </p>
       </header>
 
-      <div class="title-panels">
-        <section class="title-panel" aria-label="Floor">
-          <h3 class="title-panel-label">FLOOR</h3>
-          <div id="level-select" class="level-select level-select--compact" role="radiogroup"></div>
-        </section>
+      <div class="title-card">
+        <p class="title-mission">
+          Clear <strong>4 Chromebooks</strong>, crack the code, print the key, and escape the
+          <strong>skittering</strong> dark.
+        </p>
 
-        <section class="title-panel" aria-label="Difficulty and tension">
-          <h3 class="title-panel-label">DIFFICULTY</h3>
-          <div class="difficulty-select difficulty-select--compact" role="radiogroup" aria-label="Difficulty">
-            <button class="diff-btn" data-diff="beginner"
-                    title="Very forgiving: slow mice, extra health and supplies, enemies pause at terminals.">
+        <div class="title-block">
+          <h2 class="title-block-label">Floor</h2>
+          <div id="level-select" class="level-pick" role="radiogroup" aria-label="Floor"></div>
+        </div>
+
+        <div class="title-block">
+          <h2 class="title-block-label">Difficulty</h2>
+          <div class="diff-pick" role="radiogroup" aria-label="Difficulty">
+            <button type="button" class="diff-btn diff-pick-btn" data-diff="beginner"
+                    title="Very forgiving: slow mice, extra supplies, enemies pause at terminals.">
               <span class="diff-name">BEGINNER</span>
+              <span class="diff-hint">Slow &amp; forgiving</span>
             </button>
-            <button class="diff-btn" data-diff="chill"
-                    title="Slower enemies, more warning, enemies hold still at terminals.">
+            <button type="button" class="diff-btn diff-pick-btn" data-diff="chill"
+                    title="Slower enemies and more warning before they chase.">
               <span class="diff-name">FIELD TRIP</span>
+              <span class="diff-hint">Easier hunt</span>
             </button>
-            <button class="diff-btn is-selected" data-diff="normal"
-                    title="The intended haunt. Enemies pause at terminals; nothing else waits.">
+            <button type="button" class="diff-btn diff-pick-btn is-selected" data-diff="normal"
+                    title="The intended haunt. Enemies pause while you work at a terminal.">
               <span class="diff-name">AFTER HOURS</span>
+              <span class="diff-hint">Standard haunt</span>
             </button>
-            <button class="diff-btn" data-diff="nightmare"
-                    title="Faster, more hunters, less light — lab keeps hunting while you work.">
+            <button type="button" class="diff-btn diff-pick-btn" data-diff="nightmare"
+                    title="Faster hunters, less light, no pauses at terminals.">
               <span class="diff-name">SYSTEM CRASH</span>
+              <span class="diff-hint">No mercy</span>
             </button>
-            <button class="diff-btn" data-diff="questions"
-                    title="No mice or viruses. Terminals, quizzes, print the key, escape.">
+            <button type="button" class="diff-btn diff-pick-btn" data-diff="questions"
+                    title="No mice or viruses — terminals and escape only.">
               <span class="diff-name">QUESTIONS ONLY</span>
+              <span class="diff-hint">No enemies</span>
             </button>
           </div>
-          <label class="title-tension">
+          <label class="title-tension-row">
             <span>Tension</span>
             <select id="set-tension">
               <option value="standard">Standard</option>
               <option value="mild">Mild</option>
             </select>
           </label>
-        </section>
+        </div>
+
+        <button id="btn-start" class="big-btn title-cta" type="button">ENTER THE LAB</button>
       </div>
 
-      <footer class="title-bottom">
-        <button id="btn-start" class="big-btn big-btn--title">ENTER THE LAB</button>
-
-        <div class="title-foot">
-          <button class="link-btn" id="btn-how-to-play">How to Play</button>
-          <button class="link-btn" id="btn-settings">Settings</button>
-          <button class="link-btn" id="btn-guide">Study Guide</button>
-          <button class="link-btn" id="btn-standards">What will I learn?</button>
-        </div>
-        <div class="perf-note" id="perf-note"></div>
-      </footer>
+      <nav class="title-nav" aria-label="Lobby links">
+        <button class="link-btn" type="button" id="btn-how-to-play">How to Play</button>
+        <button class="link-btn" type="button" id="btn-settings">Settings</button>
+        <button class="link-btn" type="button" id="btn-guide">Study Guide</button>
+        <button class="link-btn" type="button" id="btn-standards">What will I learn?</button>
+      </nav>
+      <div class="perf-note" id="perf-note"></div>
     </div>
   </div>
 

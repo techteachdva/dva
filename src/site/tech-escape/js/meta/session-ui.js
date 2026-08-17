@@ -120,22 +120,27 @@ export const sessionUi = {
       const open = !prog || prog.levelUnlocked(i);
       const sel = i === selected;
       const best = prog?.data?.levelBest?.[lv.id];
-      const bestTxt = best ? `Best ${Math.floor(best.time / 60)}:${String(best.time % 60).padStart(2, '0')}` : '';
+      const bestTxt = best
+        ? `${Math.floor(best.time / 60)}:${String(best.time % 60).padStart(2, '0')}`
+        : '';
+      const code = lv.codename.replace('LEVEL ', 'LV ');
+      const name = lv.name.replace(/^THE /, '');
+      const meta = open ? lv.threat : 'Beat the previous floor';
       return `
-        <button type="button" class="level-card level-card--chip${open ? '' : ' is-locked'}${sel ? ' is-selected' : ''}"
+        <button type="button" class="level-pick-btn${open ? '' : ' is-locked'}${sel ? ' is-selected' : ''}"
                 data-level="${i}" ${open ? '' : 'disabled'} role="radio" aria-checked="${sel}"
                 title="${open ? lv.threat : 'Escape the previous floor to unlock'}">
-          <span class="level-code">${lv.codename}</span>
-          <span class="level-name">${lv.name.replace(/^THE /, '')}</span>
-          ${bestTxt ? `<span class="level-best">${bestTxt}</span>` : ''}
+          <span class="level-pick-code">${code}</span>
+          <span class="level-pick-name">${name}</span>
+          <span class="level-pick-meta">${meta}${bestTxt ? ` · ${bestTxt}` : ''}</span>
         </button>`;
     }).join('');
 
-    host.querySelectorAll('.level-card:not(.is-locked)').forEach((btn) => {
+    host.querySelectorAll('.level-pick-btn:not(.is-locked)').forEach((btn) => {
       btn.addEventListener('click', () => {
         audio.uiClick();
         this.game.levelIndex = Number(btn.dataset.level);
-        host.querySelectorAll('.level-card').forEach((b) => {
+        host.querySelectorAll('.level-pick-btn').forEach((b) => {
           b.classList.toggle('is-selected', b === btn);
           b.setAttribute('aria-checked', b === btn ? 'true' : 'false');
         });
