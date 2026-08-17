@@ -7,6 +7,8 @@ Welcome to Mr. Phil's Digital Garden.
 
 [[QR Code Hub\|QR Code Hub]]
 
+[[About Mr. Phil — The Technology Teacher\|About Mr. Phil — The Technology Teacher]]
+
 [[Technology\|Technology]]
 
 [[Game Design\|Game Design]]
