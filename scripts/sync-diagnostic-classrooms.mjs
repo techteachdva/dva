@@ -7,7 +7,31 @@ const classesPath = path.join(root, "api/diagnostic-writing/classes.json");
 const classes = JSON.parse(fs.readFileSync(classesPath, "utf8"));
 
 const marker = "/** Auto-generated from api/diagnostic-writing/classes.json";
-const block = `${marker} — run: npm run sync:classrooms */\nconst VALID_CLASSROOMS = ${JSON.stringify(classes, null, 2)};`;
+const gsBlock = `${marker} — run: npm run sync:classrooms */\nconst VALID_CLASSROOMS = ${JSON.stringify(classes, null, 2)};`;
+
+const classroomsJs = `${marker} — run: npm run sync:classrooms */
+export const VALID_CLASSROOMS = ${JSON.stringify(classes, null, 2)};
+
+const APOSTROPHE_RE = /[\\u2018\\u2019\\u201B\\u2032]/g;
+
+export function normalizeClassroom(value) {
+  return String(value || "").trim().replace(APOSTROPHE_RE, "'");
+}
+
+/** Returns the canonical classroom name from classes.json, or "" if invalid. */
+export function resolveClassroom(value) {
+  const norm = normalizeClassroom(value);
+  if (!norm) return "";
+  for (const classroom of VALID_CLASSROOMS) {
+    if (normalizeClassroom(classroom) === norm) return classroom;
+  }
+  return "";
+}
+
+export function isValidClassroom(value) {
+  return Boolean(resolveClassroom(value));
+}
+`;
 
 const targets = [
   path.join(root, "google-apps-script/diagnostic-writing-backend.gs"),
@@ -17,7 +41,7 @@ for (const file of targets) {
   let content = fs.readFileSync(file, "utf8");
   const replaced = content.replace(
     /\/\*\* (?:Keep in sync with api\/diagnostic-writing\/classes\.json|Auto-generated from api\/diagnostic-writing\/classes\.json)[\s\S]*?\*\/\s*const VALID_CLASSROOMS = \[[\s\S]*?\];/,
-    block
+    gsBlock
   );
   if (replaced === content) {
     console.warn(`sync-diagnostic-classrooms: VALID_CLASSROOMS block not found in ${path.relative(root, file)}`);
@@ -26,3 +50,6 @@ for (const file of targets) {
   fs.writeFileSync(file, replaced);
   console.log(`Updated ${path.relative(root, file)} (${classes.length} classrooms)`);
 }
+
+fs.writeFileSync(path.join(root, "api/diagnostic-writing/classrooms.js"), classroomsJs);
+console.log(`Updated api/diagnostic-writing/classrooms.js (${classes.length} classrooms)`);
