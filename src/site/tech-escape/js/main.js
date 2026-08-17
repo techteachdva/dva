@@ -40,6 +40,8 @@ import { getLevel, layoutFor, runProfile } from './meta/levels.js';
 import { sessionUi } from './meta/session-ui.js';
 import { bindUi } from './meta/bind-ui.js';
 import { debug, DEBUG_CODE } from './meta/debug.js';
+import { computeRunScore } from './meta/score.js';
+import { highscoresUi } from './meta/highscores-ui.js';
 import { BootSequence } from './ui/boot.js';
 import { captions } from './ui/captions.js';
 import { tutorial } from './ui/tutorial.js';
@@ -110,6 +112,7 @@ class Game {
     });
     sessionUi.bind(this);
     bindUi.init();
+    highscoresUi.init();
     tutorial.init();
     this.notify.bindDismiss();
     settings.onChange((k) => {
@@ -317,6 +320,7 @@ class Game {
 
     on('btn-retry', 'click', () => {
       audio.uiClick();
+      highscoresUi.resetEndScreen();
       this.startRun();
     });
     on('btn-over-title', 'click', () => {
@@ -325,6 +329,7 @@ class Game {
     });
     on('btn-win-again', 'click', () => {
       audio.uiClick();
+      highscoresUi.resetEndScreen();
       this.startRun();
     });
     on('btn-win-title', 'click', () => {
@@ -389,8 +394,9 @@ class Game {
     this._teardownWorld();
 
     const level = getLevel(this.levelIndex);
-    const baseDiff = DIFFICULTY[this.settings.difficulty] || DIFFICULTY.normal;
-    const diff = runProfile(level, baseDiff);
+    const diffKey = this.settings.difficulty || 'normal';
+    const baseDiff = DIFFICULTY[diffKey] || DIFFICULTY.normal;
+    const diff = runProfile(level, baseDiff, diffKey);
     const seed = (Date.now() ^ Math.floor(Math.random() * 0xffffff)) >>> 0;
     const rng = makeRng(seed);
 
@@ -518,6 +524,7 @@ class Game {
       earned: new Array(CODE_PARTS).fill(null),
       questionsAsked: 0,
       questionsRight: 0,
+      questionsFirstTry: 0,
       decryptAttempts: 0,
       printing: false,
       printProgress: 0,
@@ -648,6 +655,7 @@ class Game {
     input.showTouchUi(false);
     ui.setHudVisible(false);
     ui.clearToasts();
+    highscoresUi.resetEndScreen();
     sessionUi.renderTitleGreeting();
     sessionUi.renderLevelSelect();
     ui.showScreen('screen-title');
@@ -871,6 +879,7 @@ class Game {
     if (!ev) return;
     const w = this.world;
     if (ev.popped > 0) {
+      w.player.stats.micePopped += ev.popped;
       w.progress?.notePop();
       ui.toast(
         ev.popped === 1 ? 'One mouse popped!' : `${ev.popped} mice popped!`,
@@ -878,6 +887,7 @@ class Game {
       );
     }
     if (ev.virusKilled > 0) {
+      w.player.stats.virusesKilled += ev.virusKilled;
       w.progress?.noteVirusKill();
       ui.toast('Virus deleted permanently.', 'good', 2800);
     }
@@ -1022,6 +1032,7 @@ class Game {
       audio.deny();
       return;
     }
+    w.player.stats.itemsThrown++;
     ui.updateInventoryBar(inv);
     ui.toast(
       pick.kind === 'cheetos'
@@ -1257,8 +1268,10 @@ class Game {
     this.notify.start(item, {
       onAnswer: (right, q, picked) => {
         w.questionsAsked++;
-        if (right) w.questionsRight++;
-        else this._makeNoise(QUIZ.wrongAnswerNoise * 0.65);
+        if (right) {
+          w.questionsRight++;
+          w.questionsFirstTry++;
+        } else this._makeNoise(QUIZ.wrongAnswerNoise * 0.65);
 
         const meta = w.progress?.recordAnswer?.(q, right, picked, 'sel');
         if (meta?.revealed) {
@@ -1306,8 +1319,10 @@ class Game {
     this.quiz.start(index, questions, {
       onAnswer: (right, q, picked) => {
         w.questionsAsked++;
-        if (right) w.questionsRight++;
-        else this._makeNoise(QUIZ.wrongAnswerNoise);
+        if (right) {
+          w.questionsRight++;
+          w.questionsFirstTry++;
+        } else this._makeNoise(QUIZ.wrongAnswerNoise);
 
         const meta = w.progress?.recordAnswer?.(q, right, picked, index);
         if (meta?.revealed) {
@@ -1541,6 +1556,8 @@ class Game {
     const time = formatTime(w.runTime);
 
     const found = w.earned.filter(Boolean).length;
+    const scoreResult = computeRunScore(w, true);
+
     const delta = w.progress?.finishRun?.({
       escaped: true,
       seconds: w.runTime,
@@ -1552,6 +1569,7 @@ class Game {
 
     ui.showVictory({
       stats: [
+        { label: 'RUN SCORE', value: scoreResult.score, tone: 'good' },
         { label: 'ESCAPE TIME', value: time, tone: 'good' },
         { label: 'FLOOR', value: w.level?.codename || 'LEVEL' },
         { label: 'QUESTIONS RIGHT', value: `${w.questionsRight}/${w.questionsAsked}` },
@@ -1575,6 +1593,7 @@ class Game {
     });
 
     sessionUi.renderLevelSelect();
+    highscoresUi.presentEndScreen(scoreResult);
   }
 
   _gameOver(ev) {
@@ -1612,6 +1631,8 @@ class Game {
       stats: w.player.stats,
     }) || null;
 
+    const scoreResult = computeRunScore(w, false);
+
     const progLines = [];
     if (delta?.mastered) progLines.push(`+${delta.mastered} mastered in Study Guide`);
     if (delta?.revealed) progLines.push(`+${delta.revealed} answers revealed`);
@@ -1623,6 +1644,7 @@ class Game {
         ? 'You had the whole code. The printer was right there. The dark got there first.'
         : 'The lab goes quiet. Somewhere, four Chromebooks are still glowing, still waiting.',
       stats: [
+        { label: 'RUN SCORE', value: scoreResult.score },
         { label: 'CODE PIECES', value: `${found}/${CODE_PARTS}`, tone: found >= CODE_PARTS ? 'good' : 'bad' },
         { label: 'FLOOR', value: w.level?.codename || 'LEVEL' },
         { label: 'SURVIVED', value: formatTime(w.runTime) },
@@ -1632,6 +1654,7 @@ class Game {
       ],
       tip: `TIP: ${tips[Math.floor(Math.random() * tips.length)]}`,
     });
+    highscoresUi.presentEndScreen(scoreResult);
   }
 
   // ============================================================== playtest debug

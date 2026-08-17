@@ -66,7 +66,17 @@ export class Player {
     this.reduceFx = false;
 
     // Stats for the end-of-run report
-    this.stats = { damageTaken: 0, cheetosEaten: 0, batteriesFound: 0, distance: 0 };
+    this.stats = {
+      damageTaken: 0,
+      cheetosEaten: 0,
+      batteriesFound: 0,
+      distance: 0,
+      sodasDrunk: 0,
+      flashlightSec: 0,
+      itemsThrown: 0,
+      micePopped: 0,
+      virusesKilled: 0,
+    };
   }
 
   get alive() { return this.health > 0; }
@@ -475,6 +485,7 @@ export class Player {
 
     // ------------------------------------------------------------- battery
     if (this.flashlightOn) {
+      this.stats.flashlightSec += dt;
       let drain = PLAYER.batteryDrain;
       // Burning a virus is the expensive use of the light, which is what forces
       // the choice between seeing and defending yourself

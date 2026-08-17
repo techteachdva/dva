@@ -1,5 +1,5 @@
 /**
- * Profile picker, Study Guide, level select, and settings UI for Tech Escape 2.3.
+ * Profile picker, Study Guide, level select, and settings UI for Tech Escape 2.4.
  * Keeps DOM wiring out of main.js so the game loop stays readable.
  */
 

@@ -320,6 +320,7 @@ export const NOTIFY = {
 export const DIFFICULTY = {
   beginner: {
     label: 'BEGINNER',
+    scoreScale: 0.75,
     mice: 2,
     viruses: 0,
     enemySpeedScale: 0.62,
@@ -338,6 +339,7 @@ export const DIFFICULTY = {
   },
   chill: {
     label: 'FIELD TRIP',
+    scoreScale: 0.9,
     mice: 3,
     viruses: 1,
     enemySpeedScale: 0.84,
@@ -356,6 +358,7 @@ export const DIFFICULTY = {
   },
   normal: {
     label: 'AFTER HOURS',
+    scoreScale: 1,
     mice: 4,
     viruses: 2,
     enemySpeedScale: 1,
@@ -374,6 +377,7 @@ export const DIFFICULTY = {
   },
   nightmare: {
     label: 'SYSTEM CRASH',
+    scoreScale: 1.35,
     mice: 6,
     viruses: 3,
     enemySpeedScale: 1.16,
@@ -392,6 +396,7 @@ export const DIFFICULTY = {
   },
   questions: {
     label: 'QUESTIONS ONLY',
+    scoreScale: 0.85,
     noEnemies: true,
     mice: 0,
     viruses: 0,

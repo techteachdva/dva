@@ -3329,6 +3329,98 @@ body.touch-mode #interact-prompt {
 }
 .debug-skip-btn:hover { background: rgba(255, 226, 102, 0.22) !important; }
 
+/* High scores */
+.hs-panel {
+  margin: 18px 0 12px;
+  padding: 14px 16px;
+  border: 1px solid rgba(127, 233, 255, 0.22);
+  border-radius: 10px;
+  background: rgba(8, 14, 24, 0.72);
+}
+.hs-title {
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  color: var(--cyan);
+  margin: 0 0 8px;
+}
+.hs-score-line { margin: 0 0 8px; font-size: 15px; }
+.hs-breakdown {
+  margin: 0 0 12px;
+  padding-left: 18px;
+  color: var(--ink-dim);
+  line-height: 1.45;
+}
+.hs-form {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.hs-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 120px;
+}
+.hs-field--short { max-width: 88px; }
+.hs-field span {
+  font-size: 11px;
+  color: var(--ink-dim);
+  letter-spacing: 0.06em;
+}
+.hs-field input {
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(127, 233, 255, 0.25);
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--ink);
+  font-family: var(--mono);
+}
+.hs-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.hs-status { margin: 8px 0 0; color: var(--mint); }
+.hs-list {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+}
+.hs-row {
+  display: grid;
+  grid-template-columns: 42px 1fr auto auto;
+  gap: 8px 10px;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(127, 233, 255, 0.1);
+  font-size: 13px;
+}
+.hs-rank { color: var(--cyan); font-family: var(--mono); }
+.hs-name { font-weight: 600; }
+.hs-meta {
+  grid-column: 2;
+  font-size: 11px;
+  color: var(--ink-dim);
+}
+.hs-pts {
+  font-family: var(--mono);
+  color: var(--mint);
+  font-weight: 600;
+}
+.hs-badge {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--amber);
+  border: 1px solid rgba(255, 226, 102, 0.35);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.hs-loading, .hs-empty { color: var(--ink-dim); padding: 12px 0; }
+.hs-board-note { margin-bottom: 12px; color: var(--amber); }
+
 @media print {
   .screen:not(#screen-guide) { display: none !important; }
   #screen-guide { position: static !important; background: #fff !important; color: #000 !important; }

@@ -7,8 +7,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#05070d" />
-<meta name="description" content="Tech Escape 2.3 - The Binaural Update. A 3D horror escape game where you answer technology questions, decrypt a code, and print a key to escape the haunted Tech Lab." />
-<title>Tech Escape 2.3</title>
+<meta name="description" content="Tech Escape 2.4 - The High Score Update. A 3D horror escape game where you answer technology questions, decrypt a code, and print a key to escape the haunted Tech Lab." />
+<title>Tech Escape 2.4</title>
 <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -240,7 +240,7 @@
         <div class="logo logo--lobby">
           <div class="logo-sub">DVA Media Arts &amp; Tech presents</div>
           <h1 class="logo-title" data-text="TECH ESCAPE">TECH ESCAPE</h1>
-          <p class="logo-ver">2.3</p>
+          <p class="logo-ver">2.4</p>
           <p class="logo-tag">The lab is closed. Something else is logged in.</p>
         </div>
         <div class="title-greeting">
@@ -302,6 +302,7 @@
       </div>
 
       <nav class="title-nav" aria-label="Lobby links">
+        <button class="link-btn" type="button" id="btn-high-scores">High Scores</button>
         <button class="link-btn" type="button" id="btn-how-to-play">How to Play</button>
         <button class="link-btn" type="button" id="btn-settings">Settings</button>
         <button class="link-btn" type="button" id="btn-guide">Study Guide</button>
@@ -700,6 +701,26 @@
       <h1 id="over-title" class="over-title">SYSTEM FAILURE</h1>
       <p id="over-flavor" class="over-flavor"></p>
       <div id="over-stats" class="stats-grid"></div>
+      <section id="hs-end-panel" class="hs-panel hidden" aria-labelledby="hs-end-title">
+        <h3 id="hs-end-title" class="hs-title">POST YOUR SCORE</h3>
+        <p class="hs-score-line">Run score: <strong id="hs-score-value">0</strong></p>
+        <ul id="hs-breakdown" class="hs-breakdown tiny"></ul>
+        <div class="hs-form">
+          <label class="hs-field">
+            <span>First name</span>
+            <input id="hs-first" type="text" maxlength="16" autocomplete="given-name" placeholder="Alex" />
+          </label>
+          <label class="hs-field hs-field--short">
+            <span>Last initial</span>
+            <input id="hs-last" type="text" maxlength="1" autocomplete="family-name" placeholder="M" />
+          </label>
+        </div>
+        <div class="hs-actions">
+          <button id="hs-submit" class="big-btn" type="button">POST SCORE</button>
+          <button id="hs-skip" class="link-btn" type="button">Skip</button>
+        </div>
+        <p id="hs-status" class="hs-status tiny" role="status"></p>
+      </section>
       <div class="over-buttons">
         <button id="btn-retry" class="big-btn">TRY AGAIN</button>
         <button id="btn-over-title" class="link-btn">Back to title</button>
@@ -718,10 +739,40 @@
       </p>
       <div id="win-stats" class="stats-grid"></div>
       <div id="win-report" class="win-report"></div>
+      <section id="hs-end-panel-win" class="hs-panel hidden" aria-labelledby="hs-end-title-win">
+        <h3 id="hs-end-title-win" class="hs-title">POST YOUR SCORE</h3>
+        <p class="hs-score-line">Run score: <strong id="hs-score-value-win">0</strong></p>
+        <ul id="hs-breakdown-win" class="hs-breakdown tiny"></ul>
+        <div class="hs-form">
+          <label class="hs-field">
+            <span>First name</span>
+            <input id="hs-first-win" type="text" maxlength="16" autocomplete="given-name" placeholder="Alex" />
+          </label>
+          <label class="hs-field hs-field--short">
+            <span>Last initial</span>
+            <input id="hs-last-win" type="text" maxlength="1" autocomplete="family-name" placeholder="M" />
+          </label>
+        </div>
+        <div class="hs-actions">
+          <button id="hs-submit-win" class="big-btn" type="button">POST SCORE</button>
+          <button id="hs-skip-win" class="link-btn" type="button">Skip</button>
+        </div>
+        <p id="hs-status-win" class="hs-status tiny" role="status"></p>
+      </section>
       <div class="over-buttons">
         <button id="btn-win-again" class="big-btn">PLAY AGAIN</button>
         <button id="btn-win-title" class="link-btn">Back to title</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ===================== High scores ===================== -->
+  <div id="screen-highscores" class="screen hidden">
+    <div class="screen-inner narrow scrollable">
+      <h2 class="panel-title">TOP 100 HIGH SCORES</h2>
+      <p id="hs-board-note" class="tiny hs-board-note"></p>
+      <ol id="hs-list" class="hs-list"></ol>
+      <button id="btn-hs-back" class="link-btn" type="button">Back to title</button>
     </div>
   </div>
 

@@ -1,5 +1,13 @@
 # Tech Escape — Changelog
 
+## 2.4.0 — The High Score Update (2026-08-17)
+
+### Global leaderboard
+- **Top 100 high scores** saved to Google Sheets (same proxy pattern as Summer Writing and About Mr. Phil votes).
+- **Post your score** after winning or losing — first name (16 letters) + last initial.
+- **Title screen → High Scores** lists the full board.
+- **Run scoring** rewards escapes, speed, first-try answers, accuracy, item use, flashlight time, decrypt efficiency, low damage, floor progress, and difficulty multiplier.
+
 ## 2.3.0 — The Binaural Update (2026-08-17)
 
 ### Audio

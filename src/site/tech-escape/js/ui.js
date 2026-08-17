@@ -28,7 +28,7 @@ export const ui = {
       'screen-title', 'screen-firstrun', 'screen-profile', 'screen-guide',
       'screen-tutorial', 'screen-pause', 'screen-standards', 'screen-quiz',
       'screen-decrypt', 'screen-printer', 'screen-over', 'screen-win',
-      'screen-load', 'screen-error', 'boot-log', 'load-fill', 'error-text',
+      'screen-highscores', 'screen-load', 'screen-error', 'boot-log', 'load-fill', 'error-text',
       'over-title', 'over-flavor', 'over-stats', 'over-tip',
       'win-stats', 'win-report', 'win-flavor', 'perf-note',
     ];
@@ -45,7 +45,7 @@ export const ui = {
       'screen-title', 'screen-firstrun', 'screen-profile', 'screen-guide',
       'screen-tutorial', 'screen-pause', 'screen-standards', 'screen-quiz',
       'screen-decrypt', 'screen-printer', 'screen-over', 'screen-win',
-      'screen-load', 'screen-error',
+      'screen-highscores', 'screen-load', 'screen-error',
     ];
     for (const s of screens) {
       const el = this.el[s];

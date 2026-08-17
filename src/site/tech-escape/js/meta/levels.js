@@ -161,10 +161,11 @@ export function budgetFor(level, diff) {
  * plain DIFFICULTY object the entities already expect. Passing this instead of
  * the raw preset means mice, viruses and the player need no idea levels exist.
  */
-export function runProfile(level, diff) {
+export function runProfile(level, diff, diffKey) {
   const b = budgetFor(level, diff);
   return {
     ...diff,
+    key: diffKey || 'normal',
     mice: b.mice,
     viruses: b.viruses,
     cheetos: b.cheetos,
