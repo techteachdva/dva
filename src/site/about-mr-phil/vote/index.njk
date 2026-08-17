@@ -1,0 +1,61 @@
+---
+title: Vote — About Mr. Phil
+permalink: /about-mr-phil/vote/
+layout: false
+---
+<!doctype html>
+<html lang="{{ meta.mainLanguage }}">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="theme-color" content="#0b1220" />
+    <meta name="description" content="Vote for your favorite About Mr. Phil page." />
+    <title>Vote — About Mr. Phil</title>
+    <link rel="stylesheet" href="/styles/about-mr-phil.css" />
+  </head>
+  <body class="amp-body amp-body--scroll">
+    <article class="amp-sheet amp-sheet--vote" aria-label="Vote for your favorite profile">
+      <header class="amp-head">
+        <div class="amp-head-top">
+          <span class="amp-badge">Student vote</span>
+          <a class="amp-link" href="/">← Site</a>
+        </div>
+        {% set version = 'vote' %}
+        {% include "about-mr-phil/version-nav.njk" %}
+        <h1>Which one is best?</h1>
+        <p class="amp-tagline">Read all three. Then pick your favorite.</p>
+      </header>
+
+      <section class="amp-read-grid">
+        <a class="amp-read-card" href="/about-mr-phil/">
+          <span class="amp-read-k">Short</span>
+          <span class="amp-read-t">One-screen poster · ~30 sec</span>
+          <span class="amp-read-go">Read →</span>
+        </a>
+        <a class="amp-read-card" href="/about-mr-phil/mid/">
+          <span class="amp-read-k">Mid</span>
+          <span class="amp-read-t">A little more story · ~90 sec</span>
+          <span class="amp-read-go">Read →</span>
+        </a>
+        <a class="amp-read-card" href="/about-mr-phil/full/">
+          <span class="amp-read-k">Full</span>
+          <span class="amp-read-t">The whole story · ~4 min</span>
+          <span class="amp-read-go">Read →</span>
+        </a>
+      </section>
+
+      <section class="amp-panel amp-panel--vote">
+        <h2>Cast your vote</h2>
+        <p class="amp-mini" id="vote-note">One vote per device. Pick the version you'd want on the class site.</p>
+        <div class="amp-vote-btns">
+          <button class="amp-vote-btn" type="button" data-vote="short">Short</button>
+          <button class="amp-vote-btn" type="button" data-vote="mid">Mid</button>
+          <button class="amp-vote-btn" type="button" data-vote="full">Full</button>
+        </div>
+        <p class="amp-vote-total" id="vote-total">Loading results…</p>
+        <div id="vote-results" class="amp-vote-results" aria-live="polite"></div>
+      </section>
+    </article>
+    <script src="/scripts/about-mr-phil-vote.js"></script>
+  </body>
+</html>

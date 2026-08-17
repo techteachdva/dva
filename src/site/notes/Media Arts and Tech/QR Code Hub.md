@@ -5,7 +5,7 @@
 This is Mr. Phil's QR Code Hub!
 You can find info about Mr. Phil, the classes he teaches, and some fun facts!
 
-**[[About Mr. Phil — The Technology Teacher|About Mr. Phil]]** — a student-facing page about who Mr. Phil is and what his classroom is all about.
+**[[About Mr. Phil — The Technology Teacher|About Mr. Phil]]** — student-facing profile (short, mid, and full versions — **[vote for your favorite](/about-mr-phil/vote/)**).
 
 Mr. Phil started working at Davinci Academy last year and he intends to stay and continue leveling up to at least Level 50.
 

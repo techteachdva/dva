@@ -17,9 +17,11 @@ layout: false
     <article class="amp-sheet" aria-label="About Mr. Phil">
       <header class="amp-head">
         <div class="amp-head-top">
-          <span class="amp-badge">DaVinci Tech · Grades 6–8</span>
+          <span class="amp-badge">DaVinci Tech · Short edition</span>
           <a class="amp-link" href="/">← Site</a>
         </div>
+        {% set version = 'short' %}
+        {% include "about-mr-phil/version-nav.njk" %}
         <div class="amp-head-row">
           <div class="amp-head-text">
             <h1>Mr. Phil</h1>
@@ -31,27 +33,7 @@ layout: false
         </div>
       </header>
 
-      <section class="amp-live" aria-label="Live stats about Mr. Phil">
-        <div class="amp-stat">
-          <span class="amp-stat-k">Age (live)</span>
-          <span class="amp-stat-v" id="stat-age" aria-live="polite">—</span>
-          <span class="amp-stat-note">Born Jan 11, 1988 · 11 PM · Freehold, NJ</span>
-        </div>
-        <div class="amp-stat">
-          <span class="amp-stat-k">DaVinci</span>
-          <span class="amp-stat-v" id="stat-davinci" aria-live="polite">—</span>
-          <span class="amp-stat-note">Joined the 2023–24 school year</span>
-        </div>
-        <div class="amp-stat amp-stat--wide">
-          <span class="amp-stat-k">School year 2026–27</span>
-          <span class="amp-stat-v" id="stat-school-days" aria-live="polite">—</span>
-          <span class="amp-stat-v amp-stat-v--sub" id="stat-school-countdown" aria-live="polite">—</span>
-          <span class="amp-stat-note">
-            DaVinci board calendar ·
-            <a class="amp-stat-link" id="stat-calendar-link" href="https://davincicharterschool.hubbli.com/wp-content/uploads/sites/636/2026/02/Board-Approved-Public-DVA-26-27-School-Calendar.pdf" target="_blank" rel="noopener noreferrer">2026–27 PDF</a>
-          </span>
-        </div>
-      </section>
+      {% include "about-mr-phil/stats.njk" %}
 
       <div class="amp-grid">
         <section class="amp-panel amp-panel--hero">
@@ -111,24 +93,7 @@ layout: false
         </section>
       </div>
 
-      <section class="amp-gallery" aria-label="Photos">
-        <figure class="amp-photo">
-          <img src="/img/user/Pictures/Bubblegum.jpeg" width="120" height="120" alt="Bubblegum the dog" loading="lazy" decoding="async" />
-          <figcaption>Bubblegum</figcaption>
-        </figure>
-        <figure class="amp-photo">
-          <img src="/img/user/Pictures/Rowan.jpeg" width="120" height="120" alt="Rowan the dog" loading="lazy" decoding="async" />
-          <figcaption>Rowan</figcaption>
-        </figure>
-        <figure class="amp-photo">
-          <img src="/img/user/Pictures/Lemon2.jpg" width="120" height="120" alt="Lemon the cat" loading="lazy" decoding="async" />
-          <figcaption>Lemon</figcaption>
-        </figure>
-        <figure class="amp-photo amp-photo--wide">
-          <img src="/img/user/Pictures/Middle%20school%20pic.jpg" width="120" height="120" alt="Mr. Phil in middle school" loading="lazy" decoding="async" />
-          <figcaption>Middle-school me</figcaption>
-        </figure>
-      </section>
+      {% include "about-mr-phil/gallery.njk" %}
 
       <footer class="amp-sign">
         <p class="amp-quote">"I want you to see me as a teammate in your joy — not a brick in the wall."</p>
