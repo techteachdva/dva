@@ -339,6 +339,23 @@ html {
   font-weight: 600;
 }
 
+.amp-vote-field select {
+  background: #e2e6ee;
+  color: #111827;
+  border-color: #c5ccd8;
+  color-scheme: light;
+}
+
+.amp-vote-field select option {
+  background: #e2e6ee;
+  color: #111827;
+}
+
+.amp-vote-field select:invalid,
+.amp-vote-field select option[value=""] {
+  color: #4b5563;
+}
+
 .amp-vote-field input:focus,
 .amp-vote-field select:focus {
   outline: none;
