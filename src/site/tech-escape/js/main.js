@@ -12,7 +12,7 @@ import * as THREE from '../vendor/three.module.js';
 import {
   CELL, QUALITY, DIFFICULTY, COLORS, PLAYER, PICKUP, QUIZ, DECRYPT, PRINTER, CODE_PARTS, NOTIFY, MOBILE,
 } from './config.js';
-import { clamp, makeRng, formatTime } from './util.js';
+import { clamp, makeRng, formatTime, guessDeviceIp } from './util.js';
 import { input, touchUi } from './input.js';
 import { audio } from './audio.js';
 import { ui } from './ui.js';
@@ -41,6 +41,7 @@ import { bindUi } from './meta/bind-ui.js';
 import { debug, DEBUG_CODE } from './meta/debug.js';
 import { BootSequence } from './ui/boot.js';
 import { captions } from './ui/captions.js';
+import { tutorial } from './ui/tutorial.js';
 
 const MODE = {
   LOADING: 'loading',
@@ -107,12 +108,10 @@ class Game {
     });
     sessionUi.bind(this);
     bindUi.init();
+    tutorial.init();
     this.notify.bindDismiss();
     settings.onChange((k) => {
-      if (k === 'binds') {
-        input.applyBinds(settings.get('binds'));
-        ui.updateControlLegend();
-      }
+      if (k === 'binds') input.applyBinds(settings.get('binds'));
     });
     this._applySettings();
 
@@ -202,12 +201,24 @@ class Game {
         run: () => this._rendererName.slice(0, 18).toUpperCase(),
       },
       {
+        text: 'RETICULATING SPLINES',
+        run: () => 'OK',
+      },
+      {
         text: 'DOOR LOCKS ENGAGED, LIGHTS OFF',
         run: () => 'CONFIRMED',
       },
       {
+        text: 'QUANTIMIZING THE INFINITE',
+        run: () => '∞',
+      },
+      {
         text: 'CHROMEBOOKS AWAKE',
         run: () => `${TERMINALS.length} OF ${TERMINALS.length}`,
+      },
+      {
+        text: 'DOWNLOADING YOUR UNIQUE BRAINSTEM ID',
+        run: async () => guessDeviceIp(),
       },
       {
         text: 'PROMPT BANK',
@@ -531,6 +542,7 @@ class Game {
     input.showTouchUi(true);
 
     audio.init();
+    audio.stopTitleMusic();
     audio.startAmbience();
 
     this.mode = MODE.PLAYING;
@@ -602,6 +614,7 @@ class Game {
     ui.setHudVisible(false);
     input.showTouchUi(false);
     debug.syncPanel();
+    audio.menuWhoosh();
     audio.setTension(0);
     audio.setMuffled(false);
   }
@@ -621,6 +634,7 @@ class Game {
   quitToTitle() {
     this._teardownWorld();
     audio.stopAmbience();
+    audio.stopTitleMusic();
     audio.setMuffled(false);
     this.mode = MODE.TITLE;
     this.expectUnlock = true;
@@ -632,6 +646,9 @@ class Game {
     sessionUi.renderTitleGreeting();
     sessionUi.renderLevelSelect();
     ui.showScreen('screen-title');
+    audio.init();
+    audio.startTitleMusic();
+    tutorial.maybeShowOnLobby();
   }
 
   // ================================================================ main loop
@@ -683,9 +700,11 @@ class Game {
   }
 
   _tick(dt) {
+    audio.updateMusic(dt);
+
     const w = this.world;
     if (!w) {
-      this.renderer.render(this.scene, this.camera);
+      if (this.renderer) this.renderer.render(this.scene, this.camera);
       return;
     }
 
@@ -858,6 +877,7 @@ class Game {
   _handlePickups(got) {
     const w = this.world;
     if (got.taken?.length) {
+      audio.stashSparkle();
       for (const kind of got.taken) {
         if (kind === 'cheetos') ui.toast('Hot cheetos picked up. R to eat, E to throw.', 'good', 2200);
         else if (kind === 'soda') ui.toast('Soda can picked up. Q to select, R to drink.', 'good', 2000);
@@ -1021,6 +1041,11 @@ class Game {
     ui.setHiddenIndicator(p.hidden);
     ui.setCrouched(p.crouching, p.hidden);
     ui.setDanger(ev.hunters > 0 && ev.nearest < 7 && !p.hidden);
+    if (ev.hunters > 0 && ev.nearest < 4.5 && !p.hidden && !this._dangerSting) {
+      this._dangerSting = true;
+      audio.nearMiss();
+    }
+    if (!ev.hunters || ev.nearest > 8) this._dangerSting = false;
     ui.setObjective(this._objectiveText());
     audio.setMuffled(p.hidden);
 
@@ -1235,6 +1260,7 @@ class Game {
     const frozen = this._terminalsFrozen();
     this.quiz.setThreat(false, frozen);
     debug.syncMinigameButtons();
+    audio.terminalOpen();
 
     this.quiz.start(index, questions, {
       onAnswer: (right, q, picked) => {
@@ -1300,6 +1326,7 @@ class Game {
     w.lab.markLaptopSolved(index, w.fragments[index]);
     ui.setPieces(w.earned);
     audio.codePiece();
+    ui.fxBloom('good');
 
     const found = w.earned.filter(Boolean).length;
     w.lab.updatePrinterPanel(found);
@@ -1454,6 +1481,7 @@ class Game {
     w.escaped = true;
     this.mode = MODE.WIN;
     audio.doorOpen();
+    ui.fxBloom('win');
     setTimeout(() => audio.victory(), 500);
     audio.stopAmbience();
     audio.setMuffled(false);

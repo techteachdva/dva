@@ -66,3 +66,67 @@ export function sameSet(a, b) {
   const sb = b.slice().sort();
   return sa.every((v, i) => v === sb[i]);
 }
+
+function raceTimeout(promise, ms) {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error('timeout')), ms);
+    promise.then(
+      (v) => { clearTimeout(t); resolve(v); },
+      (e) => { clearTimeout(t); reject(e); },
+    );
+  });
+}
+
+/** WebRTC ICE trick — often blocked, but a decent local-IP fallback. */
+function probeLocalIp() {
+  return new Promise((resolve) => {
+    const RTC = window.RTCPeerConnection || window.webkitRTCPeerConnection;
+    if (!RTC) {
+      resolve(null);
+      return;
+    }
+    const ips = new Set();
+    const pc = new RTC({ iceServers: [] });
+    const finish = () => {
+      try { pc.close(); } catch { /* ignore */ }
+      resolve(ips.size ? [...ips][0] : null);
+    };
+    pc.onicecandidate = (e) => {
+      if (!e.candidate) {
+        finish();
+        return;
+      }
+      const m = /([0-9]{1,3}(?:\.[0-9]{1,3}){3})/.exec(e.candidate.candidate || '');
+      if (m && !m[1].startsWith('0.')) ips.add(m[1]);
+    };
+    pc.createDataChannel('x');
+    pc.createOffer()
+      .then((o) => pc.setLocalDescription(o))
+      .catch(() => finish());
+    setTimeout(finish, 900);
+  });
+}
+
+/**
+ * Best-effort device address for the boot gag. Tries public IP first, then a
+ * local address, then a safe placeholder if the network blocks both.
+ */
+export async function guessDeviceIp(timeoutMs = 2800) {
+  try {
+    const res = await raceTimeout(
+      fetch('https://api.ipify.org?format=json'),
+      timeoutMs,
+    );
+    if (res.ok) {
+      const data = await res.json();
+      if (data?.ip) return data.ip;
+    }
+  } catch { /* school firewall or offline */ }
+
+  try {
+    const local = await raceTimeout(probeLocalIp(), 1200);
+    if (local) return local;
+  } catch { /* ignore */ }
+
+  return 'REDACTED';
+}

@@ -47,7 +47,8 @@ $lobbyVisible = $titleVisible -or $firstrunVisible -or $profileVisible
 $checks = @(
   @{ name = "loading screen dismissed"; ok = ($html -notmatch 'screen-load" class="screen"') },
   @{ name = "lobby screen is showing"; ok = $lobbyVisible },
-  @{ name = "crouch is documented in controls"; ok = ($html -match 'Crouch') },
+  @{ name = "how to play tutorial in DOM"; ok = ($html -match 'id="screen-tutorial"') },
+  @{ name = "title is Tech Escape 2.2"; ok = ($html -match 'logo-ver">2\.2') },
   @{ name = "glitch overlay is in the DOM"; ok = ($html -match 'id="glitch-overlay"') },
   @{ name = "stance readout is in the HUD"; ok = ($html -match 'id="stance-value"') }
 )

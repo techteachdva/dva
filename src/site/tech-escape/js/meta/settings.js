@@ -64,6 +64,7 @@ export const DEFAULTS = {
   showLegend: true,
   skipBoot: false,          // remembered once they skip the loading screen
   seenFirstRun: false,
+  seenTutorial: false,
 
   /** Gameplay key codes; remapped from the pause menu. */
   binds: { ...BIND_DEFAULTS },

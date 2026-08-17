@@ -6,6 +6,7 @@
 import { clamp } from './util.js';
 import { bindDisplay, normalizeBinds } from './meta/binds.js';
 import { settings } from './meta/settings.js';
+import { audio } from './audio.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -23,9 +24,9 @@ export const ui = {
       'health-bags', 'stamina-fill', 'battery-fill', 'battery-label',
       'hide-indicator', 'hint-line', 'glitch-overlay', 'stance-value',
       'toast-stack', 'danger-warning', 'damage-flash', 'crosshair',
-      'inventory-bar', 'caption-stack', 'control-legend', 'interact-key',
+      'inventory-bar', 'caption-stack', 'interact-key',
       'screen-title', 'screen-firstrun', 'screen-profile', 'screen-guide',
-      'screen-pause', 'screen-standards', 'screen-quiz',
+      'screen-tutorial', 'screen-pause', 'screen-standards', 'screen-quiz',
       'screen-decrypt', 'screen-printer', 'screen-over', 'screen-win',
       'screen-load', 'screen-error', 'boot-log', 'load-fill', 'error-text',
       'over-title', 'over-flavor', 'over-stats', 'over-tip',
@@ -34,7 +35,6 @@ export const ui = {
     for (const id of ids) {
       this.el[id] = $(id);
     }
-    this.updateControlLegend();
   },
 
   // ------------------------------------------------------------------ screens
@@ -43,7 +43,7 @@ export const ui = {
   showScreen(name) {
     const screens = [
       'screen-title', 'screen-firstrun', 'screen-profile', 'screen-guide',
-      'screen-pause', 'screen-standards', 'screen-quiz',
+      'screen-tutorial', 'screen-pause', 'screen-standards', 'screen-quiz',
       'screen-decrypt', 'screen-printer', 'screen-over', 'screen-win',
       'screen-load', 'screen-error',
     ];
@@ -93,7 +93,13 @@ export const ui = {
 
   setObjective(text) {
     const el = this.el['objective-text'];
-    if (el && el.textContent !== text) el.textContent = text;
+    if (el && el.textContent !== text) {
+      el.textContent = text;
+      el.classList.remove('objective-pulse');
+      void el.offsetWidth;
+      el.classList.add('objective-pulse');
+      audio.objectivePing();
+    }
   },
 
   buildHealth(max) {
@@ -229,37 +235,6 @@ export const ui = {
     }
   },
 
-  /** HUD control list (H) — reflects remapped keys. */
-  updateControlLegend() {
-    const host = this.el['control-legend'];
-    if (!host) return;
-    const b = normalizeBinds(settings.get('binds'));
-    const row = (key, text) => `<div class="legend-row"><span class="key">${key}</span> ${text}</div>`;
-    host.innerHTML = [
-      row('WASD', 'move'),
-      row('Arrows', 'look / turn'),
-      row('Mouse', 'look (pointer lock)'),
-      row('R hold', 'walk forward'),
-      row('L hold', 'walk backward'),
-      row('L+R hold', 'sprint forward'),
-      row('M hold + move', 'strafe'),
-      row('L-Click', 'use terminal OR throw'),
-      row('R-Click', 'eat / drink'),
-      row('R hold', 'flashlight'),
-      row('M-Click', 'crouch toggle'),
-      row('Scroll', 'cycle inventory'),
-      row(bindDisplay(b.interact), 'use (keyboard)'),
-      row(bindDisplay(b.throw), 'throw (keyboard)'),
-      row(bindDisplay(b.eatCheetos), 'eat (keyboard)'),
-      row(bindDisplay(b.light), 'flashlight (keyboard)'),
-      row(bindDisplay(b.crouch), 'crouch (keyboard)'),
-      row('Shift', 'sprint toggle (keyboard)'),
-      row(bindDisplay(b.cycleItem), 'switch item (keyboard)'),
-      row('H', 'hide this list'),
-      row('P', 'pause'),
-    ].join('');
-  },
-
   setHiddenIndicator(on) {
     this.el['hide-indicator'].classList.toggle('hidden', !on);
   },
@@ -286,6 +261,17 @@ export const ui = {
   setCaptionsVisible(on) {
     const el = this.el['caption-stack'];
     if (el) el.classList.toggle('hidden', !on);
+  },
+
+  /** Brief screen bloom for big moments (code piece, escape, etc.). */
+  fxBloom(kind = 'good') {
+    const el = document.getElementById('fx-bloom');
+    if (!el) return;
+    el.className = `is-firing is-${kind}`;
+    clearTimeout(this._bloomTimer);
+    this._bloomTimer = setTimeout(() => {
+      el.className = '';
+    }, kind === 'win' ? 900 : 520);
   },
 
   flashDamage() {

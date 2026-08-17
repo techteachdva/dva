@@ -7,14 +7,16 @@
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="theme-color" content="#05070d" />
-<meta name="description" content="Tech Escape - a 3D horror escape game where you answer technology questions, decrypt a code, and print a key to escape the haunted Tech Lab." />
-<title>Tech Escape</title>
+<meta name="description" content="Tech Escape 2.2 - a 3D horror escape game where you answer technology questions, decrypt a code, and print a key to escape the haunted Tech Lab." />
+<title>Tech Escape 2.2</title>
 <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
 
 <div id="app">
   <canvas id="scene"></canvas>
+
+  <div id="fx-bloom" aria-hidden="true"></div>
 
   <!-- ===================== In-world HUD ===================== -->
   <div id="hud" class="hidden" aria-hidden="true">
@@ -80,9 +82,6 @@
       channels default to on and this sits where the eye already is.
     -->
     <div id="caption-stack" class="caption-stack hidden" role="status" aria-live="polite"></div>
-
-    <!-- Control legend, toggled with H -->
-    <div id="control-legend" class="control-legend"></div>
 
     <!-- RGB split / static burst when a virus glitches out -->
     <div id="glitch-overlay" aria-hidden="true">
@@ -205,12 +204,32 @@
     </div>
   </div>
 
+  <!-- ===================== How to play (3-page tutorial) ===================== -->
+  <div id="screen-tutorial" class="screen hidden">
+    <div class="screen-inner narrow scrollable">
+      <h2 class="panel-title">HOW TO PLAY</h2>
+      <p class="tutorial-meta">3 pages &mdash; movement, items, survival. Controls also live in Settings.</p>
+      <h3 id="tutorial-title" class="tutorial-page-title"></h3>
+      <p id="tutorial-lead" class="tutorial-lead"></p>
+      <div id="tutorial-body" class="tutorial-body"></div>
+      <div id="tutorial-dots" class="tutorial-dots" role="status"></div>
+      <div class="tutorial-nav">
+        <button type="button" id="btn-tutorial-prev" class="cb-btn ghost">PREVIOUS</button>
+        <button type="button" id="btn-tutorial-next" class="cb-btn">NEXT</button>
+        <button type="button" id="btn-tutorial-done" class="big-btn hidden">GOT IT</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ===================== Title screen ===================== -->
   <div id="screen-title" class="screen">
+    <div id="title-backdrop" class="title-backdrop" aria-hidden="true"></div>
     <div class="screen-inner">
       <div class="logo">
         <div class="logo-sub">DVA Media Arts &amp; Tech presents</div>
-        <h1 class="logo-title" data-text="TECH ESCAPE 2.0">TECH ESCAPE 2.0</h1>
+        <h1 class="logo-title" data-text="TECH ESCAPE">
+          TECH ESCAPE<span class="logo-ver">2.2</span>
+        </h1>
         <div class="logo-tag">The lab is closed. Something else is logged in.</div>
       </div>
 
@@ -221,50 +240,13 @@
 
       <div class="title-body">
         <p class="story">
-          It is 9:47 PM. You stayed late to finish your project and the Tech Lab doors just locked behind you.
-          The lights are dead. Four Chromebooks still glow in the dark &mdash; and something is
-          <strong>skittering</strong> between the tables.
-        </p>
-        <p class="story">
-          Clear the security check on all <strong>4 Chromebooks</strong> to earn <strong>4 pieces of an encrypted code</strong>.
-          Crack each piece in the decryption scramble, then reach the <strong>3D printer</strong>, print the key,
-          and get out before they find you.
+          Four glowing Chromebooks. Four encrypted code pieces. One 3D-printed key.
+          Clear the terminals, crack the scramble, and escape before whatever is
+          <strong>skittering</strong> in the dark finds you.
         </p>
       </div>
 
       <div id="level-select" class="level-select" role="radiogroup" aria-label="Floor"></div>
-
-      <div class="title-controls">
-        <div class="ctrl"><span class="key">W A S D</span> Move</div>
-        <div class="ctrl"><span class="key">MOUSE</span> or <span class="key">ARROWS</span> Look</div>
-        <div class="ctrl"><span class="key">SHIFT</span> Sprint (tap to toggle)</div>
-        <div class="ctrl"><span class="key">C</span> Crouch / crawl</div>
-        <div class="ctrl"><span class="key">F</span> Flashlight</div>
-        <div class="ctrl"><span class="key">Enter</span> Use terminal / door</div>
-        <div class="ctrl"><span class="key">E</span> Throw (disc at virus, cheetos otherwise)</div>
-        <div class="ctrl"><span class="key">Q</span> Switch item</div>
-        <div class="ctrl"><span class="key">R</span> Eat hot cheetos</div>
-        <div class="ctrl"><span class="key">P</span> or <span class="key">ESC</span> Pause</div>
-      </div>
-
-      <div class="title-tips">
-        <p><strong>Desks are solid.</strong> Crouch with <span class="key">C</span> to crawl under one &mdash;
-          the glowing tape means you can hide there. Nothing can reach you underneath.</p>
-        <p><strong>Your flashlight is a weapon &mdash; but only against viruses.</strong>
-          Hold the beam on a floating virus and it glitches out and teleports away. It comes back.
-          Burning one drains your battery fast, and the light <strong>attracts</strong> the mice.</p>
-        <p><strong>Hot cheetos are a decision.</strong> Eat a bag with <span class="key">R</span> to get
-          health back, or throw with <span class="key">E</span> &mdash; mice crowd the bag and pop one
-          by one after they eat enough. Each bag can take out three mice.</p>
-        <p><strong>An anti-virus disc deletes a virus for good.</strong> They are rare. Aim at a virus and press
-          <span class="key">E</span>; if you miss, the disc clatters to the floor and you can pick it back up.</p>
-      </div>
-
-      <!--
-        The names stay flavourful, but each one now says what it actually DOES.
-        "Easy" carries a stigma when the person at the next desk can read your
-        screen, and a student cannot choose well from a label alone.
-      -->
       <div class="difficulty-select" role="radiogroup" aria-label="Difficulty">
         <button class="diff-btn" data-diff="beginner">
           <span class="diff-name">BEGINNER</span>
@@ -305,6 +287,7 @@
         <button id="btn-start" class="big-btn">ENTER THE LAB</button>
 
         <div class="title-foot">
+          <button class="link-btn" id="btn-how-to-play">How to Play</button>
           <button class="link-btn" id="btn-settings">Settings</button>
           <button class="link-btn" id="btn-guide">Study Guide</button>
           <button class="link-btn" id="btn-standards">What will I learn?</button>
@@ -492,21 +475,9 @@
       <div id="bind-list" class="bind-list"></div>
       <button type="button" id="btn-bind-reset" class="link-btn">Reset controls to default</button>
 
-      <h3 class="pause-h">CONTROLS</h3>
-      <div class="title-controls compact" id="pause-controls-hint">
-        <div class="ctrl"><span class="key">Enter</span> Use</div>
-        <div class="ctrl"><span class="key">E</span> Throw</div>
-        <div class="ctrl"><span class="key">R</span> Eat cheetos</div>
-        <div class="ctrl"><span class="key">F</span> Flashlight</div>
-        <div class="ctrl"><span class="key">Q</span> Switch item</div>
-      </div>
-      <div class="pause-tips">
-        <p><strong>Crawl to hide.</strong> Desks are solid while you stand. Crouch to fit under one &mdash;
-          look for the glowing tape. You cannot stand up until you crawl back out.</p>
-        <p><strong>Light burns viruses.</strong> Hold the beam on a floating virus for about half a second and
-          it glitches away. It drains battery and it always comes back &mdash; and the mice are
-          <strong>drawn</strong> to your light instead.</p>
-      </div>
+      <h3 class="pause-h">HOW TO PLAY</h3>
+      <p class="setting-note">Three-page guide: movement, items, and how to survive the lab.</p>
+      <button type="button" id="btn-open-tutorial" class="cb-btn">OPEN CONTROLS GUIDE</button>
 
       <div class="pause-buttons">
         <button id="btn-quit" class="link-btn">Quit to title</button>

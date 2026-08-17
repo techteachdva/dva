@@ -179,7 +179,11 @@ export class Player {
     // looking with a trackpad is three simultaneous motor tasks, and on a
     // Chromebook that is the single most common reason a student simply stops
     // running. Tapping it once is the same decision with none of the strain.
-    if (controlsActive && input.pressed('sprint')) this.wantSprint = !this.wantSprint;
+    if (controlsActive && input.pressed('sprint')) {
+      const was = this.wantSprint;
+      this.wantSprint = !this.wantSprint;
+      if (!was && this.wantSprint) audio.sprintBurst();
+    }
     // Letting go of the stick, crouching, or running dry all cancel the intent,
     // so the toggle can never leave the player sprinting into a wall
     if (!wantsMove || this.crouching) this.wantSprint = false;

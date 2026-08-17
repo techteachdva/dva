@@ -17,6 +17,10 @@ class AudioEngine {
     this._heart = { next: 0, rate: 0 };
     this._tension = 0;
     this._lastStep = 0;
+    this._titleLayer = null;
+    this._musicMode = null;
+    this._musicStep = 0;
+    this._musicNext = 0;
   }
 
   /**
@@ -180,6 +184,8 @@ class AudioEngine {
     out.gain.linearRampToValueAtTime(0.16, this.t + 2.5);
 
     this._drone = { out, lp, oscA, oscB, lfo, hiss, hissGain };
+    this._musicMode = 'game';
+    this._musicNext = 5 + Math.random() * 4;
   }
 
   stopAmbience() {
@@ -195,6 +201,72 @@ class AudioEngine {
       } catch (e) { /* already torn down */ }
     }, 900);
     this._drone = null;
+    if (this._musicMode === 'game') this._musicMode = null;
+  }
+
+  /** Soft lobby pad + sparse arpeggio on the title screen. */
+  startTitleMusic() {
+    if (!this.ready || this._titleLayer) return;
+    const ctx = this.ctx;
+    const out = ctx.createGain();
+    out.gain.value = 0.0001;
+    out.connect(this.master);
+
+    const o1 = ctx.createOscillator();
+    const o2 = ctx.createOscillator();
+    o1.type = 'sine';
+    o2.type = 'sine';
+    o1.frequency.value = 82.4;
+    o2.frequency.value = 123.5;
+    o1.connect(out);
+    o2.connect(out);
+    o1.start();
+    o2.start();
+    out.gain.linearRampToValueAtTime(0.09, this.t + 1.4);
+
+    this._titleLayer = { out, o1, o2 };
+    this._musicMode = 'title';
+    this._musicStep = 0;
+    this._musicNext = 0.6;
+  }
+
+  stopTitleMusic() {
+    if (!this._titleLayer) return;
+    const l = this._titleLayer;
+    l.out.gain.setTargetAtTime(0.0001, this.t, 0.28);
+    setTimeout(() => {
+      try {
+        l.o1.stop();
+        l.o2.stop();
+        l.out.disconnect();
+      } catch { /* ignore */ }
+    }, 650);
+    this._titleLayer = null;
+    if (this._musicMode === 'title') this._musicMode = null;
+  }
+
+  /** Sparse melodic punctuation for title lobby and in-run ambience. */
+  updateMusic(dt) {
+    if (!this.ready || this.muted || !this._musicMode) return;
+    this._musicNext -= dt;
+    if (this._musicNext > 0) return;
+
+    if (this._musicMode === 'title') {
+      const notes = [329.6, 392, 493.9, 659.2, 587.3, 440];
+      const n = notes[this._musicStep % notes.length];
+      this._tone({ freq: n, freqEnd: n * 0.97, dur: 0.62, type: 'triangle', vol: 0.07 });
+      this._musicStep++;
+      this._musicNext = 1.85 + (this._musicStep % 4) * 0.22;
+      return;
+    }
+
+    if (this._musicMode === 'game') {
+      const notes = [196, 220, 261.6, 293.7, 329.6];
+      const n = notes[Math.floor(Math.random() * notes.length)];
+      this._tone({ freq: n, dur: 0.45, type: 'sine', vol: 0.035 });
+      this._tone({ freq: n * 1.5, dur: 0.38, type: 'triangle', vol: 0.02, delay: 0.05 });
+      this._musicNext = 8 + Math.random() * 7;
+    }
   }
 
   /**
@@ -533,6 +605,37 @@ class AudioEngine {
 
   invSwitch() {
     this._tone({ freq: 1300, dur: 0.04, type: 'square', vol: 0.05 });
+  }
+
+  terminalOpen() {
+    this._tone({ freq: 880, dur: 0.08, type: 'square', vol: 0.09 });
+    this._tone({ freq: 1320, dur: 0.1, type: 'triangle', vol: 0.08, delay: 0.07 });
+    this._noise({ dur: 0.12, vol: 0.06, filter: 4200, filterEnd: 2800, q: 2 });
+  }
+
+  sprintBurst() {
+    this._noise({ dur: 0.14, vol: 0.08, filter: 600, filterEnd: 2200, q: 0.9 });
+    this._tone({ freq: 180, freqEnd: 420, dur: 0.18, type: 'sawtooth', vol: 0.06 });
+  }
+
+  objectivePing() {
+    this._tone({ freq: 784, dur: 0.12, type: 'triangle', vol: 0.1 });
+    this._tone({ freq: 1046, dur: 0.16, type: 'sine', vol: 0.08, delay: 0.09 });
+  }
+
+  nearMiss() {
+    this._tone({ freq: 420, freqEnd: 280, dur: 0.22, type: 'sawtooth', vol: 0.12 });
+    this._noise({ dur: 0.2, vol: 0.1, filter: 1800, filterEnd: 400, q: 1.2 });
+  }
+
+  menuWhoosh() {
+    this._noise({ dur: 0.16, vol: 0.07, filter: 900, filterEnd: 3400, q: 0.8 });
+    this._tone({ freq: 600, freqEnd: 900, dur: 0.12, type: 'triangle', vol: 0.05 });
+  }
+
+  stashSparkle() {
+    this._tone({ freq: 1200, freqEnd: 1800, dur: 0.14, type: 'sine', vol: 0.08 });
+    this._tone({ freq: 1600, freqEnd: 2200, dur: 0.12, type: 'triangle', vol: 0.06, delay: 0.06 });
   }
 }
 

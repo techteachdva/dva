@@ -34,7 +34,7 @@ import { settings } from '../meta/settings.js';
 
 /** Blink at 1Hz. Anything faster is a flash source and a distraction. */
 const CURSOR_HZ = 1;
-const MAX_VISIBLE_LINES = 6;
+const MAX_VISIBLE_LINES = 8;
 
 export class BootSequence {
   constructor(els) {

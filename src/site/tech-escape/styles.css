@@ -404,6 +404,167 @@ button { font-family: inherit; }
   text-transform: uppercase;
 }
 
+.logo-ver {
+  display: block;
+  margin-top: 0.12em;
+  font-size: clamp(16px, 3.2vw, 34px);
+  letter-spacing: 0.32em;
+  color: var(--cyan);
+  text-shadow: 0 0 18px rgba(53, 224, 255, 0.55);
+}
+
+#screen-title {
+  position: relative;
+}
+
+.title-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 85% 65% at 18% 28%, rgba(53, 224, 255, 0.16), transparent 58%),
+    radial-gradient(ellipse 75% 55% at 82% 72%, rgba(176, 124, 255, 0.14), transparent 52%),
+    radial-gradient(ellipse 55% 45% at 50% 100%, rgba(255, 92, 110, 0.1), transparent 58%);
+  animation: aurora-drift 16s ease-in-out infinite alternate;
+}
+
+#screen-title .screen-inner {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes aurora-drift {
+  0% { filter: hue-rotate(0deg) brightness(1); transform: scale(1); }
+  100% { filter: hue-rotate(22deg) brightness(1.08); transform: scale(1.05); }
+}
+
+:root[data-reduce-motion="on"] .title-backdrop {
+  animation: none;
+}
+
+#fx-bloom {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(circle at 50% 42%, rgba(127, 255, 178, 0.38), transparent 62%);
+}
+
+#fx-bloom.is-firing {
+  animation: bloom-out 0.55s ease-out forwards;
+}
+
+#fx-bloom.is-firing.is-win {
+  background: radial-gradient(circle at 50% 38%, rgba(127, 255, 178, 0.55), rgba(53, 224, 255, 0.22) 48%, transparent 72%);
+  animation: bloom-out 0.9s ease-out forwards;
+}
+
+@keyframes bloom-out {
+  0% { opacity: 0.85; }
+  100% { opacity: 0; }
+}
+
+body.reduce-fx #fx-bloom { display: none; }
+
+#objective-text.objective-pulse {
+  animation: objective-flash 0.55s ease-out;
+}
+
+@keyframes objective-flash {
+  0% {
+    border-left-color: var(--green);
+    box-shadow: 0 0 20px rgba(127, 255, 178, 0.45);
+    color: var(--green);
+  }
+  100% {
+    border-left-color: var(--amber);
+    box-shadow: none;
+    color: inherit;
+  }
+}
+
+/* ============================ TUTORIAL ============================ */
+
+.tutorial-meta {
+  margin: 0 0 14px;
+  font-size: 14px;
+  color: var(--ink-dim);
+}
+
+.tutorial-page-title {
+  margin: 0 0 8px;
+  font-family: var(--mono);
+  font-size: clamp(18px, 2.4vw, 24px);
+  letter-spacing: 0.12em;
+  color: var(--cyan);
+  text-transform: uppercase;
+}
+
+.tutorial-lead {
+  margin: 0 0 14px;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--ink-dim);
+}
+
+.tutorial-body { text-align: left; }
+
+.tutorial-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.tutorial-list li {
+  padding: 9px 12px;
+  border-left: 3px solid rgba(53, 224, 255, 0.45);
+  background: rgba(10, 22, 34, 0.55);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink-dim);
+}
+
+.tutorial-tip {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--panel-border);
+  background: rgba(10, 22, 34, 0.45);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink-dim);
+}
+
+.tutorial-dots {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin: 18px 0 10px;
+}
+
+.tutorial-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--panel-border);
+}
+
+.tutorial-dot.is-active {
+  background: var(--cyan);
+  box-shadow: 0 0 12px rgba(53, 224, 255, 0.65);
+}
+
+.tutorial-nav {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
 .title-body {
   max-width: 74ch;
   margin: 0 auto clamp(10px, 2vh, 20px);
@@ -734,7 +895,7 @@ body.is-hidden-safe #vignette {
 #scanlines {
   position: absolute;
   inset: 0;
-  opacity: 0.16;
+  opacity: calc(0.16 * var(--fx-grain, 0.6));
   background: repeating-linear-gradient(
     0deg,
     rgba(255, 255, 255, 0.05) 0px,
@@ -742,6 +903,16 @@ body.is-hidden-safe #vignette {
     transparent 1px,
     transparent 3px
   );
+  animation: scan-drift 8s linear infinite;
+}
+
+@keyframes scan-drift {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(6px); }
+}
+
+:root[data-reduce-motion="on"] #scanlines {
+  animation: none;
 }
 
 #damage-flash {
@@ -1005,11 +1176,13 @@ body.is-hidden-safe #vignette {
   padding: 9px 18px;
   border: 1px solid rgba(53, 224, 255, 0.4);
   border-radius: 6px;
-  background: rgba(5, 7, 13, 0.82);
+  background: rgba(5, 7, 13, 0.88);
   font-size: clamp(11px, 1.5vw, 13.5px);
   letter-spacing: 0.06em;
   color: var(--ink);
   text-align: center;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
   animation: toast-in 0.26s ease-out;
 }
 
@@ -2166,6 +2339,8 @@ body.reduce-fx #scanlines { display: none; }
 
 /* Compact HUD when touch controls are active */
 body.touch-mode #control-legend { display: none !important; }
+
+/* control legend removed from HUD — full guide is in Settings */
 body.touch-mode #hud-bottom {
   flex-wrap: wrap;
   gap: 4px;

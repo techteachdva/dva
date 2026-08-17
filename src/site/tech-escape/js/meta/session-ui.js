@@ -1,5 +1,5 @@
 /**
- * Profile picker, Study Guide, level select, and settings UI for Tech Escape 2.0.
+ * Profile picker, Study Guide, level select, and settings UI for Tech Escape 2.2.
  * Keeps DOM wiring out of main.js so the game loop stays readable.
  */
 
@@ -73,6 +73,10 @@ export const sessionUi = {
     this.renderTitleGreeting();
     this.renderLevelSelect();
     this._syncSettingsForm();
+    audio.init();
+    audio.stopAmbience();
+    audio.startTitleMusic();
+    tutorial.maybeShowOnLobby();
   },
 
   renderTitleGreeting() {
