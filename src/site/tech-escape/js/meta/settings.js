@@ -66,6 +66,13 @@ export const DEFAULTS = {
   seenFirstRun: false,
   seenTutorial: false,
 
+  // --- audio mix (0–100 sliders; music default ~1/6 of hot master track) -----
+  volumeMaster: 90,
+  volumeMusic: 18,
+  volumeSfx: 100,
+  volumeBinaural: 100,
+  muted: false,
+
   /** Gameplay key codes; remapped from the pause menu. */
   binds: { ...BIND_DEFAULTS },
 };

@@ -1099,6 +1099,23 @@ body.reduce-fx #fx-bloom { display: none; }
   min-height: 1em;
 }
 
+.audio-credits {
+  margin: 10px 0 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: rgba(147, 164, 191, 0.62);
+}
+
+.audio-credits a {
+  color: rgba(120, 200, 230, 0.85);
+}
+
+.title-credits {
+  margin-top: 14px;
+  text-align: center;
+  max-width: 36rem;
+}
+
 /* ============================ PANELS ============================ */
 
 .panel-title {

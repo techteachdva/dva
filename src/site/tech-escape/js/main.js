@@ -263,6 +263,7 @@ class Game {
   _applySettings() {
     this._loadSettings();
     input.sensitivity = this.settings.sensitivity;
+    audio.applyVolumes(settings.values);
     audio.setMuted(this.settings.muted);
     document.body.classList.toggle('reduce-fx', this.settings.reduceFx);
     if (this.world) {
@@ -555,7 +556,6 @@ class Game {
     input.showTouchUi(true);
 
     audio.init();
-    audio.stopTitleMusic();
     audio.startAmbience();
 
     this.mode = MODE.PLAYING;

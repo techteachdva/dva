@@ -308,6 +308,11 @@
         <button class="link-btn" type="button" id="btn-guide">Study Guide</button>
         <button class="link-btn" type="button" id="btn-standards">What will I learn?</button>
       </nav>
+      <p class="audio-credits title-credits">
+        Music: &quot;Controlled Chaos&quot; Kevin MacLeod (incompetech.com).
+        Licensed under
+        <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>.
+      </p>
       <div class="perf-note" id="perf-note"></div>
     </div>
   </div>
@@ -452,10 +457,35 @@
           <input type="range" id="set-fx-glitch" min="0" max="100" step="10" />
           <output id="out-fx-glitch"></output>
         </label>
+        <label class="setting">
+          <span>Master volume</span>
+          <input type="range" id="set-vol-master" min="0" max="100" step="5" />
+          <output id="out-vol-master"></output>
+        </label>
+        <label class="setting">
+          <span>Music</span>
+          <input type="range" id="set-vol-music" min="0" max="100" step="5" />
+          <output id="out-vol-music"></output>
+        </label>
+        <label class="setting">
+          <span>Sound effects</span>
+          <input type="range" id="set-vol-sfx" min="0" max="100" step="5" />
+          <output id="out-vol-sfx"></output>
+        </label>
+        <label class="setting">
+          <span>Binaural beat</span>
+          <input type="range" id="set-vol-binaural" min="0" max="100" step="5" />
+          <output id="out-vol-binaural"></output>
+        </label>
         <label class="setting checkbox">
           <input type="checkbox" id="set-mute" />
-          <span>Mute sound</span>
+          <span>Mute all sound</span>
         </label>
+        <p class="audio-credits">
+          Music: &quot;Controlled Chaos&quot; Kevin MacLeod (incompetech.com).
+          Licensed under
+          <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>.
+        </p>
       </div>
 
       <h3 class="pause-h">DIFFICULTY</h3>

@@ -212,6 +212,16 @@ export const sessionUi = {
     chk('set-mute', v.muted ?? false);
     chk('set-shake', v.reduceFx ?? false);
 
+    const vol = (id, val, outId) => {
+      set(id, val ?? 100);
+      const out = $(outId);
+      if (out) out.textContent = `${val ?? 100}%`;
+    };
+    vol('set-vol-master', v.volumeMaster ?? 90, 'out-vol-master');
+    vol('set-vol-music', v.volumeMusic ?? 18, 'out-vol-music');
+    vol('set-vol-sfx', v.volumeSfx ?? 100, 'out-vol-sfx');
+    vol('set-vol-binaural', v.volumeBinaural ?? 100, 'out-vol-binaural');
+
     const sens = sliderFromSens(v.sensitivity);
     set('set-sens', sens);
     const out = $('out-sens');
@@ -336,6 +346,35 @@ export const sessionUi = {
       this.game.settings.muted = e.target.checked;
       settings.set('muted', e.target.checked);
       audio.setMuted(e.target.checked);
+    });
+
+    $('set-vol-master')?.addEventListener('input', (e) => {
+      const n = Number(e.target.value);
+      settings.set('volumeMaster', n);
+      audio.applyVolumes(settings.values);
+      const out = $('out-vol-master');
+      if (out) out.textContent = `${n}%`;
+    });
+    $('set-vol-music')?.addEventListener('input', (e) => {
+      const n = Number(e.target.value);
+      settings.set('volumeMusic', n);
+      audio.applyVolumes(settings.values);
+      const out = $('out-vol-music');
+      if (out) out.textContent = `${n}%`;
+    });
+    $('set-vol-sfx')?.addEventListener('input', (e) => {
+      const n = Number(e.target.value);
+      settings.set('volumeSfx', n);
+      audio.applyVolumes(settings.values);
+      const out = $('out-vol-sfx');
+      if (out) out.textContent = `${n}%`;
+    });
+    $('set-vol-binaural')?.addEventListener('input', (e) => {
+      const n = Number(e.target.value);
+      settings.set('volumeBinaural', n);
+      audio.applyVolumes(settings.values);
+      const out = $('out-vol-binaural');
+      if (out) out.textContent = `${n}%`;
     });
 
     $('set-shake')?.addEventListener('change', (e) => {

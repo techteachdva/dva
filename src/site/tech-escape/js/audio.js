@@ -1,15 +1,23 @@
 /**
- * Procedural audio. Every sound is synthesised with the Web Audio API so the
- * game ships with zero audio files - nothing to download, nothing a school
- * network can block, and no load time.
+ * Web Audio mix: procedural SFX, binaural ambience, and looped background music.
+ * Music: "Controlled Chaos" Kevin MacLeod (incompetech.com), CC BY 4.0.
  */
 
 import { clamp } from './util.js';
+
+/** Hot master — slider × this cap keeps default play level around 1/6–1/8. */
+const MUSIC_INTERNAL_GAIN = 0.34;
+const MUSIC_FADE_SEC = 2.4;
+const MUSIC_URL = 'Controlled%20Chaos.mp3';
 
 class AudioEngine {
   constructor() {
     this.ctx = null;
     this.master = null;
+    this.sfxBus = null;
+    this.musicBus = null;
+    this.binauralBus = null;
+    this.ambienceBus = null;
     this.muted = false;
     this.ready = false;
     this._noiseBuf = null;
@@ -17,10 +25,15 @@ class AudioEngine {
     this._heart = { next: 0, rate: 0 };
     this._tension = 0;
     this._lastStep = 0;
-    this._titleLayer = null;
-    this._musicMode = null;
-    this._musicStep = 0;
-    this._musicNext = 0;
+    this._musicBuffer = null;
+    this._musicLoadPromise = null;
+    this._loopActive = false;
+    this._loopTimer = null;
+    this._loopNodes = [];
+    this._volMaster = 90;
+    this._volMusic = 18;
+    this._volSfx = 100;
+    this._volBinaural = 100;
   }
 
   /**
@@ -52,7 +65,15 @@ class AudioEngine {
   _build(Ctx) {
     this.ctx = new Ctx();
     this.master = this.ctx.createGain();
-    this.master.gain.value = this.muted ? 0 : 0.9;
+    this.sfxBus = this.ctx.createGain();
+    this.musicBus = this.ctx.createGain();
+    this.binauralBus = this.ctx.createGain();
+    this.ambienceBus = this.ctx.createGain();
+
+    this.sfxBus.connect(this.master);
+    this.musicBus.connect(this.master);
+    this.binauralBus.connect(this.master);
+    this.ambienceBus.connect(this.master);
 
     // Everything runs through a lowpass so hiding under a desk can muffle the
     // whole mix, which sells "my head is down and my ears are covered".
@@ -71,25 +92,131 @@ class AudioEngine {
     for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
     this._noiseBuf = buf;
 
+    this.applyVolumes();
     this.ready = true;
+    this._loadMusic();
   }
 
   setMuted(m) {
     this.muted = m;
-    if (this.master) {
-      this.master.gain.setTargetAtTime(m ? 0 : 0.9, this.ctx.currentTime, 0.05);
+    this.applyVolumes();
+  }
+
+  /** Push saved slider values onto the four mix buses. */
+  applyVolumes(values = null) {
+    if (!this.master) return;
+    if (values) {
+      if (values.volumeMaster != null) this._volMaster = values.volumeMaster;
+      if (values.volumeMusic != null) this._volMusic = values.volumeMusic;
+      if (values.volumeSfx != null) this._volSfx = values.volumeSfx;
+      if (values.volumeBinaural != null) this._volBinaural = values.volumeBinaural;
     }
+    const t = this.t;
+    const master = this.muted ? 0 : (this._volMaster / 100) * 0.9;
+    this.master.gain.setTargetAtTime(master, t, 0.06);
+    this.sfxBus.gain.setTargetAtTime(this._volSfx / 100, t, 0.06);
+    this.musicBus.gain.setTargetAtTime(
+      (this._volMusic / 100) * MUSIC_INTERNAL_GAIN, t, 0.06,
+    );
+    this.binauralBus.gain.setTargetAtTime((this._volBinaural / 100) * 0.038, t, 0.06);
   }
 
   get t() { return this.ctx ? this.ctx.currentTime : 0; }
 
-  /** Route a node through stereo panner into the muffled master chain. */
+  /** Route a one-shot effect through stereo panner into the SFX bus. */
   _toMaster(node, pan = 0) {
     const panner = this.ctx.createStereoPanner();
     panner.pan.value = clamp(pan, -1, 1);
     node.connect(panner);
-    panner.connect(this.master);
+    panner.connect(this.sfxBus);
     return panner;
+  }
+
+  _loadMusic() {
+    if (!this.ctx || this._musicLoadPromise) return this._musicLoadPromise;
+    this._musicLoadPromise = fetch(MUSIC_URL)
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.arrayBuffer();
+      })
+      .then((ab) => this.ctx.decodeAudioData(ab))
+      .then((buf) => {
+        this._musicBuffer = buf;
+        return buf;
+      })
+      .catch((err) => {
+        console.warn('[Tech Escape] music load failed:', err);
+        this._musicLoadPromise = null;
+        return null;
+      });
+    return this._musicLoadPromise;
+  }
+
+  /** One segment with fade-in at start and fade-out at end for seamless crossfade loops. */
+  _playMusicSegment() {
+    if (!this._loopActive || !this._musicBuffer || !this.musicBus) return;
+    const ctx = this.ctx;
+    const buf = this._musicBuffer;
+    const fade = MUSIC_FADE_SEC;
+    const dur = buf.duration;
+    const t0 = ctx.currentTime + 0.02;
+
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const gain = ctx.createGain();
+    src.connect(gain).connect(this.musicBus);
+
+    src.start(t0, 0);
+    src.stop(t0 + dur + 0.05);
+
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.linearRampToValueAtTime(1, t0 + fade);
+    gain.gain.setValueAtTime(1, t0 + dur - fade);
+    gain.gain.linearRampToValueAtTime(0.0001, t0 + dur);
+
+    this._loopNodes.push({ src, gain });
+    if (this._loopNodes.length > 3) this._loopNodes.shift();
+
+    src.onended = () => {
+      const idx = this._loopNodes.findIndex((n) => n.src === src);
+      if (idx >= 0) this._loopNodes.splice(idx, 1);
+    };
+  }
+
+  _scheduleMusicLoop() {
+    if (!this._loopActive || !this._musicBuffer) return;
+    const dur = this._musicBuffer.duration;
+    const intervalMs = Math.max(500, (dur - MUSIC_FADE_SEC) * 1000);
+    this._loopTimer = setInterval(() => {
+      if (this._loopActive) this._playMusicSegment();
+    }, intervalMs);
+  }
+
+  startMusicLoop() {
+    if (!this.ready) return;
+    this._loadMusic()?.then((buf) => {
+      if (!buf || this._loopActive) return;
+      this._loopActive = true;
+      this._playMusicSegment();
+      this._scheduleMusicLoop();
+    });
+  }
+
+  stopMusicLoop() {
+    this._loopActive = false;
+    if (this._loopTimer) {
+      clearInterval(this._loopTimer);
+      this._loopTimer = null;
+    }
+    const t = this.t;
+    for (const { src, gain } of this._loopNodes) {
+      try {
+        gain.gain.cancelScheduledValues(t);
+        gain.gain.setTargetAtTime(0.0001, t, 0.35);
+        src.stop(t + 0.45);
+      } catch { /* already stopped */ }
+    }
+    this._loopNodes = [];
   }
 
   // ---------------------------------------------------------------- primitives
@@ -152,42 +279,22 @@ class AudioEngine {
     const ctx = this.ctx;
     const out = ctx.createGain();
     out.gain.value = 0.0001;
-    out.connect(this.master);
+    out.connect(this.ambienceBus);
 
-    // Two detuned saws through a low filter: the sound of a room full of
-    // machines that should be asleep.
-    const oscA = ctx.createOscillator();
-    const oscB = ctx.createOscillator();
-    oscA.type = 'sawtooth';
-    oscB.type = 'sawtooth';
-    oscA.frequency.value = 47;
-    oscB.frequency.value = 47.6;
-
-    const lp = ctx.createBiquadFilter();
-    lp.type = 'lowpass';
-    lp.frequency.value = 220;
-    lp.Q.value = 3;
-
-    const lfo = ctx.createOscillator();
-    const lfoGain = ctx.createGain();
-    lfo.frequency.value = 0.07;
-    lfoGain.gain.value = 90;
-    lfo.connect(lfoGain).connect(lp.frequency);
-
+    // Soft room hiss — the old detuned saw drone was oppressive; music carries mood now.
     const hiss = ctx.createBufferSource();
     hiss.buffer = this._noiseBuf;
     hiss.loop = true;
     const hissHp = ctx.createBiquadFilter();
     hissHp.type = 'bandpass';
-    hissHp.frequency.value = 3200;
-    hissHp.Q.value = 0.7;
+    hissHp.frequency.value = 2800;
+    hissHp.Q.value = 0.55;
     const hissGain = ctx.createGain();
-    hissGain.gain.value = 0.012;
+    hissGain.gain.value = 0.009;
+    hiss.connect(hissHp).connect(hissGain).connect(out);
 
     // 10 Hz alpha binaural beat (340 Hz L / 350 Hz R) — relaxed-alert focus band
     const binMerger = ctx.createChannelMerger(2);
-    const binGain = ctx.createGain();
-    binGain.gain.value = 0.038;
     const binLeft = ctx.createOscillator();
     const binRight = ctx.createOscillator();
     binLeft.type = 'sine';
@@ -200,23 +307,15 @@ class AudioEngine {
     binPanR.pan.value = 1;
     binLeft.connect(binPanL).connect(binMerger, 0, 0);
     binRight.connect(binPanR).connect(binMerger, 0, 1);
-    binMerger.connect(binGain).connect(out);
+    binMerger.connect(this.binauralBus);
 
-    oscA.connect(lp);
-    oscB.connect(lp);
-    lp.connect(out);
-    hiss.connect(hissHp).connect(hissGain).connect(out);
+    hiss.start();
+    binLeft.start();
+    binRight.start();
+    out.gain.linearRampToValueAtTime(0.045, this.t + 2.5);
 
-    oscA.start(); oscB.start(); lfo.start(); hiss.start();
-    binLeft.start(); binRight.start();
-    out.gain.linearRampToValueAtTime(0.16, this.t + 2.5);
-
-    this._drone = {
-      out, lp, oscA, oscB, lfo, hiss, hissGain,
-      binLeft, binRight, binMerger, binGain,
-    };
-    this._musicMode = 'game';
-    this._musicNext = 5 + Math.random() * 4;
+    this._drone = { out, hiss, hissGain, binLeft, binRight, binMerger };
+    this.startMusicLoop();
   }
 
   stopAmbience() {
@@ -227,91 +326,37 @@ class AudioEngine {
     d.out.gain.setTargetAtTime(0.0001, t, 0.3);
     setTimeout(() => {
       try {
-        d.oscA.stop(); d.oscB.stop(); d.lfo.stop(); d.hiss.stop();
-        d.binLeft?.stop(); d.binRight?.stop();
+        d.hiss?.stop();
+        d.binLeft?.stop();
+        d.binRight?.stop();
         d.out.disconnect();
       } catch (e) { /* already torn down */ }
     }, 900);
     this._drone = null;
-    if (this._musicMode === 'game') this._musicMode = null;
   }
 
-  /** Soft lobby pad + sparse arpeggio on the title screen. */
+  /** Lobby + gameplay share the same looped track. */
   startTitleMusic() {
-    if (!this.ready || this._titleLayer) return;
-    const ctx = this.ctx;
-    const out = ctx.createGain();
-    out.gain.value = 0.0001;
-    out.connect(this.master);
-
-    const o1 = ctx.createOscillator();
-    const o2 = ctx.createOscillator();
-    o1.type = 'sine';
-    o2.type = 'sine';
-    o1.frequency.value = 82.4;
-    o2.frequency.value = 123.5;
-    o1.connect(out);
-    o2.connect(out);
-    o1.start();
-    o2.start();
-    out.gain.linearRampToValueAtTime(0.09, this.t + 1.4);
-
-    this._titleLayer = { out, o1, o2 };
-    this._musicMode = 'title';
-    this._musicStep = 0;
-    this._musicNext = 0.6;
+    if (!this.ready) return;
+    this.startMusicLoop();
   }
 
   stopTitleMusic() {
-    if (!this._titleLayer) return;
-    const l = this._titleLayer;
-    l.out.gain.setTargetAtTime(0.0001, this.t, 0.28);
-    setTimeout(() => {
-      try {
-        l.o1.stop();
-        l.o2.stop();
-        l.out.disconnect();
-      } catch { /* ignore */ }
-    }, 650);
-    this._titleLayer = null;
-    if (this._musicMode === 'title') this._musicMode = null;
+    // Music continues into a run; only stopAmbience tears down the lab layer.
   }
 
-  /** Sparse melodic punctuation for title lobby and in-run ambience. */
-  updateMusic(dt) {
-    if (!this.ready || this.muted || !this._musicMode) return;
-    this._musicNext -= dt;
-    if (this._musicNext > 0) return;
-
-    if (this._musicMode === 'title') {
-      const notes = [329.6, 392, 493.9, 659.2, 587.3, 440];
-      const n = notes[this._musicStep % notes.length];
-      this._tone({ freq: n, freqEnd: n * 0.97, dur: 0.62, type: 'triangle', vol: 0.07 });
-      this._musicStep++;
-      this._musicNext = 1.85 + (this._musicStep % 4) * 0.22;
-      return;
-    }
-
-    if (this._musicMode === 'game') {
-      const notes = [196, 220, 261.6, 293.7, 329.6];
-      const n = notes[Math.floor(Math.random() * notes.length)];
-      this._tone({ freq: n, dur: 0.45, type: 'sine', vol: 0.035 });
-      this._tone({ freq: n * 1.5, dur: 0.38, type: 'triangle', vol: 0.02, delay: 0.05 });
-      this._musicNext = 8 + Math.random() * 7;
-    }
-  }
+  /** Called each frame — loop timing uses setInterval; nothing procedural to drive. */
+  updateMusic(_dt) { /* intentional no-op */ }
 
   /**
-   * 0 = calm, 1 = something is right behind you. Raises the drone pitch and
-   * volume, and drives the heartbeat.
+   * 0 = calm, 1 = something is right behind you. Raises room hiss and drives heartbeat.
    */
   setTension(v) {
     this._tension = clamp(v, 0, 1);
     if (!this._drone) return;
     const t = this.t;
-    this._drone.lp.frequency.setTargetAtTime(220 + this._tension * 620, t, 0.4);
-    this._drone.out.gain.setTargetAtTime(0.16 + this._tension * 0.16, t, 0.5);
-    this._drone.hissGain.gain.setTargetAtTime(0.012 + this._tension * 0.03, t, 0.5);
+    this._drone.out.gain.setTargetAtTime(0.045 + this._tension * 0.07, t, 0.5);
+    this._drone.hissGain.gain.setTargetAtTime(0.009 + this._tension * 0.022, t, 0.5);
   }
 
   /** Called every frame; schedules heartbeats when health is low or tension high. */
