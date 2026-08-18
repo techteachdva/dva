@@ -106,6 +106,36 @@ export async function POST(request) {
 
   try {
     const body = await request.json();
+
+    if (body?.action === "update") {
+      const password = typeof body?.password === "string" ? body.password : "";
+      if (password !== TEACHER_PASSWORD) {
+        return Response.json({ error: "Unauthorized" }, { status: 401, headers: corsHeaders() });
+      }
+      const id = typeof body?.id === "string" ? body.id.trim() : "";
+      const analysis = body?.analysis && typeof body.analysis === "object" ? body.analysis : null;
+      if (!id || !analysis) {
+        return Response.json({ error: "Missing id or analysis" }, { status: 400, headers: corsHeaders() });
+      }
+
+      const data = await fetchScriptJson(scriptUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "update",
+          secret: getApiSecret(),
+          password,
+          id,
+          analysis,
+        }),
+      });
+
+      if (data.error) {
+        return Response.json({ error: data.error }, { status: 502, headers: corsHeaders() });
+      }
+      return Response.json({ ok: true, id: data.id }, { headers: corsHeaders() });
+    }
+
     const name = typeof body?.name === "string" ? body.name.trim().slice(0, 80) : "";
     const classroomRaw = typeof body?.classroom === "string" ? body.classroom : "";
     const classroom = resolveClassroom(classroomRaw);

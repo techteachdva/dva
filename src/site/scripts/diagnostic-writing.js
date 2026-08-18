@@ -88,6 +88,7 @@
   const teacherLoginError = document.getElementById("teacherLoginError");
   const teacherLogoutBtn = document.getElementById("teacherLogoutBtn");
   const refreshBtn = document.getElementById("refreshBtn");
+  const reanalyzeBtn = document.getElementById("reanalyzeBtn");
   const exportBtn = document.getElementById("exportBtn");
   const teacherTableBody = document.getElementById("teacherTableBody");
   const teacherMeta = document.getElementById("teacherMeta");
@@ -181,7 +182,7 @@
 
     const apostropheErrors = (text.match(/\bi\b/g) || []).length;
     const rate = words.length > 0 ? misspellCount / words.length : 0;
-    const score = clamp(Math.round(100 - rate * 400 - apostropheErrors * 3), 0, 100);
+    const score = clamp(Math.round(100 - rate * 300 - apostropheErrors * 2), 0, 100);
 
     return {
       score,
@@ -245,7 +246,7 @@
       scoreFromRange(variety, [[0, 20], [2, 40], [5, 65], [8, 82], [12, 95]]) * 0.3 +
       scoreFromRange(avgLen, [[0, 20], [6, 45], [10, 68], [14, 82], [20, 95]]) * 0.25 +
       scoreFromRange(complexMarkers, [[0, 30], [1, 50], [3, 70], [6, 88], [10, 100]]) * 0.3 -
-      fragments * 4 - runOns * 6
+      fragments * 3 - runOns * 5
     ), 0, 100);
 
     const issues = [];
@@ -281,9 +282,9 @@
     const repetitionPenalty = words.length > 0 ? maxFreq / words.length : 0;
 
     const score = clamp(Math.round(
-      scoreFromRange(lexicalDiversity, [[0, 20], [0.35, 45], [0.5, 65], [0.65, 82], [0.8, 95]]) * 0.45 +
-      scoreFromRange(specificity, [[0, 25], [2, 50], [5, 70], [10, 88], [15, 100]]) * 0.35 -
-      repetitionPenalty * 60
+      scoreFromRange(lexicalDiversity, [[0, 25], [0.3, 42], [0.45, 62], [0.58, 78], [0.72, 92]]) * 0.45 +
+      scoreFromRange(specificity, [[0, 28], [1, 48], [3, 65], [6, 82], [10, 95]]) * 0.35 -
+      repetitionPenalty * 50
     ), 0, 100);
 
     const issues = [];
@@ -320,7 +321,7 @@
     const conflictWords = (text.match(/\b(but|however|problem|stuck|lost|scared|worried|until|finally)\b/gi) || []).length;
 
     const volumeScore = scoreFromRange(wordCount, [
-      [0, 0], [40, 25], [75, 45], [100, 58], [150, 72], [200, 85], [280, 95], [400, 100],
+      [0, 0], [30, 22], [55, 40], [80, 54], [110, 66], [140, 76], [175, 85], [220, 92], [280, 97], [350, 100],
     ]);
 
     const complexityScore = clamp(Math.round(
@@ -328,14 +329,14 @@
     ), 0, 100);
 
     const creativityScore = clamp(Math.round(
-      scoreFromRange(sensoryCount, [[0, 25], [1, 45], [3, 65], [6, 80], [10, 95]]) * 0.35 +
-      scoreFromRange(transitionCount, [[0, 30], [1, 50], [3, 70], [6, 90]]) * 0.25 +
-      scoreFromRange(dialogueLines, [[0, 40], [1, 60], [3, 80], [5, 95]]) * 0.2 +
-      scoreFromRange(conflictWords, [[0, 30], [1, 55], [3, 75], [5, 90]]) * 0.2
+      scoreFromRange(sensoryCount, [[0, 28], [1, 48], [2, 62], [4, 76], [7, 90], [10, 96]]) * 0.35 +
+      scoreFromRange(transitionCount, [[0, 32], [1, 52], [2, 68], [4, 82], [6, 92]]) * 0.25 +
+      scoreFromRange(dialogueLines, [[0, 42], [1, 58], [2, 74], [4, 90]]) * 0.2 +
+      scoreFromRange(conflictWords, [[0, 32], [1, 52], [2, 70], [4, 86]]) * 0.2
     ), 0, 100);
 
     const typingScore = scoreFromRange(wpm, [
-      [0, 0], [8, 20], [15, 40], [22, 55], [30, 70], [38, 82], [45, 92], [55, 100],
+      [0, 0], [6, 18], [12, 36], [18, 52], [24, 66], [30, 78], [38, 88], [48, 100],
     ]);
 
     const mechanicsScore = clamp(Math.round(spelling.score * 0.5 + grammar.score * 0.5), 0, 100);
@@ -345,10 +346,10 @@
     ), 0, 100);
 
     const narrativeScore = clamp(Math.round(
-      scoreFromRange(sensoryCount, [[0, 20], [2, 50], [4, 70], [8, 90]]) * 0.35 +
-      scoreFromRange(transitionCount, [[0, 25], [2, 55], [4, 75], [6, 90]]) * 0.25 +
-      scoreFromRange(dialogueLines, [[0, 30], [1, 55], [2, 75], [4, 90]]) * 0.2 +
-      scoreFromRange(conflictWords, [[0, 25], [1, 50], [3, 75], [5, 90]]) * 0.2
+      scoreFromRange(sensoryCount, [[0, 22], [1, 46], [3, 66], [5, 80], [8, 92]]) * 0.35 +
+      scoreFromRange(transitionCount, [[0, 28], [1, 50], [3, 70], [5, 86]]) * 0.25 +
+      scoreFromRange(dialogueLines, [[0, 32], [1, 54], [2, 72], [3, 88]]) * 0.2 +
+      scoreFromRange(conflictWords, [[0, 28], [1, 48], [2, 68], [4, 86]]) * 0.2
     ), 0, 100);
 
     const fluencyScore = typingScore;
@@ -425,9 +426,9 @@
   }
 
   function classifyTyping(wordCount, wpm) {
-    if (wordCount < 60 || wpm < 12) return "intervention";
-    if (wordCount < 110 || wpm < 20) return "developing";
-    if (wordCount < 175 || wpm < 32) return "proficient";
+    if (wordCount < 45 || wpm < 10) return "intervention";
+    if (wordCount < 90 || wpm < 16) return "developing";
+    if (wordCount < 150 || wpm < 28) return "proficient";
     return "advanced";
   }
 
@@ -679,6 +680,82 @@
     return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
 
+  async function updateSubmissionAnalysis(id, analysis) {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "update",
+        password: TEACHER_PASSWORD,
+        id,
+        analysis,
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.error || `Update failed (${res.status})`);
+    }
+    return data;
+  }
+
+  async function reanalyzeAllSubmissions() {
+    if (!allSubmissions.length) {
+      teacherMeta.textContent = "No submissions to re-analyze.";
+      return;
+    }
+    const confirmed = window.confirm(
+      `Re-analyze all ${allSubmissions.length} submission${allSubmissions.length === 1 ? "" : "s"} with the updated rubric?\n\nStudent stories are not changed — only scores and analysis data are updated.`
+    );
+    if (!confirmed) return;
+
+    reanalyzeBtn.disabled = true;
+    refreshBtn.disabled = true;
+    let ok = 0;
+    let fail = 0;
+
+    for (let i = 0; i < allSubmissions.length; i++) {
+      const sub = allSubmissions[i];
+      teacherMeta.textContent = `Re-analyzing ${i + 1} of ${allSubmissions.length}…`;
+      teacherMeta.classList.remove("dw-error");
+
+      const text = sub.text || "";
+      const durationSec = Number(sub.durationSec) || 300;
+      let analysis;
+      try {
+        analysis = analyzeText(text, durationSec);
+      } catch (err) {
+        console.error("Re-analyze failed for", sub.id, err);
+        fail++;
+        continue;
+      }
+
+      try {
+        await updateSubmissionAnalysis(sub.id, analysis);
+        sub.analysis = analysis;
+        ok++;
+      } catch (err) {
+        console.error("Save re-analysis failed for", sub.id, err);
+        fail++;
+      }
+    }
+
+    reanalyzeBtn.disabled = false;
+    refreshBtn.disabled = false;
+    teacherMeta.textContent = fail
+      ? `Re-analyzed ${ok} submission${ok === 1 ? "" : "s"}; ${fail} failed. If updates failed, redeploy the Google Apps Script (see setup notes).`
+      : `Re-analyzed ${ok} submission${ok === 1 ? "" : "s"} with the updated rubric.`;
+    if (fail) teacherMeta.classList.add("dw-error");
+    renderTeacherTable();
+
+    if (!detailPanel.classList.contains("dw-hidden")) {
+      const openId = detailPanel.dataset.openId;
+      if (openId) {
+        const sub = allSubmissions.find((s) => s.id === openId);
+        if (sub) showDetail(sub);
+      }
+    }
+  }
+
   async function submitResult(name, classroom, text, analysis, durationSec) {
     const payload = { name, classroom, text, analysis, durationSec };
     const res = await fetch(API_URL, {
@@ -822,9 +899,18 @@
   function showDetail(sub) {
     const a = sub.analysis || {};
     const R = window.DWRubrics;
+    const C = window.DWComparisons;
     detailPanel.classList.remove("dw-hidden");
+    detailPanel.dataset.openId = sub.id || "";
     document.getElementById("detailName").textContent = `${sub.name} · ${sub.classroom || "Unknown class"}`;
     document.getElementById("detailStory").textContent = sub.text || "";
+
+    const compareEl = document.getElementById("detailCompareCharts");
+    if (compareEl) {
+      compareEl.innerHTML = C
+        ? C.renderComparisonPanel(allSubmissions, sub)
+        : "";
+    }
 
     if (R) {
       const cards = R.teacherMetricCards(a);
@@ -917,6 +1003,7 @@
   teacherCancelBtn.addEventListener("click", () => showView("welcome"));
   teacherLogoutBtn.addEventListener("click", () => { teacherAuthed = false; detailPanel.classList.add("dw-hidden"); showView("welcome"); });
   refreshBtn.addEventListener("click", loadTeacherDashboard);
+  if (reanalyzeBtn) reanalyzeBtn.addEventListener("click", reanalyzeAllSubmissions);
   exportBtn.addEventListener("click", exportCsv);
   document.getElementById("closeDetailBtn").addEventListener("click", () => detailPanel.classList.add("dw-hidden"));
   filterBar.addEventListener("click", (e) => {

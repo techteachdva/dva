@@ -205,6 +205,7 @@ layout: false
               <p class="dw-muted dw-tiny">Bands: <span class="dw-band dw-band--strong">Strong</span> <span class="dw-band dw-band--on_track">On track</span> <span class="dw-band dw-band--developing">Developing</span> <span class="dw-band dw-band--needs_support">Needs support</span> — use for grouping, not final grades.</p>
             </div>
             <div class="dw-row dw-row-wrap">
+              <button id="reanalyzeBtn" class="dw-btn dw-btn-secondary" type="button">Re-analyze all</button>
               <button id="refreshBtn" class="dw-btn dw-btn-secondary" type="button">Refresh</button>
               <button id="exportBtn" class="dw-btn dw-btn-ghost" type="button">Export CSV</button>
               <button id="teacherLogoutBtn" class="dw-btn dw-btn-ghost" type="button">Log out</button>
@@ -259,6 +260,7 @@ layout: false
               <h3 class="dw-h3" id="detailName">—</h3>
               <button id="closeDetailBtn" class="dw-btn dw-btn-ghost" type="button">Close</button>
             </div>
+            <div id="detailCompareCharts" class="dw-compare-panel"></div>
             <div class="dw-detail-grid" id="detailMetrics"></div>
             <div class="dw-detail-flags" id="detailFlags"></div>
             <div class="dw-standards-panel" id="detailStandards"></div>
@@ -274,6 +276,7 @@ layout: false
     <script id="dwClassroomsJson" type="application/json">{{ diagnosticWritingClasses | jsonify | safe }}</script>
     <script src="/scripts/diagnostic-writing-rubrics.js" defer></script>
     <script src="/scripts/diagnostic-writing-standards.js" defer></script>
+    <script src="/scripts/diagnostic-writing-comparisons.js" defer></script>
     <script src="/scripts/diagnostic-writing.js" defer></script>
   </body>
 </html>

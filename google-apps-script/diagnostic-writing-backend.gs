@@ -123,6 +123,14 @@ function handle_(e, isGet) {
       return respond_({ ok: true, id: entry.id });
     }
 
+    if (action === "update") {
+      if (String(params.password || "") !== TEACHER_PASSWORD) {
+        return respond_({ error: "Unauthorized" });
+      }
+      updateSubmissionAnalysis_(params);
+      return respond_({ ok: true, id: String(params.id || "") });
+    }
+
     return respond_({ error: "Unknown action" });
   } catch (err) {
     return respond_({ error: String(err.message || err) });
@@ -201,6 +209,35 @@ function saveSubmission_(params) {
   ]);
 
   return entry;
+}
+
+function updateSubmissionAnalysis_(params) {
+  const id = String(params.id || "").trim();
+  const analysis = params.analysis || {};
+  if (!id || !analysis || typeof analysis !== "object") {
+    throw new Error("Missing id or analysis");
+  }
+
+  const sheet = getSheet_();
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) throw new Error("No submissions");
+
+  const ids = sheet.getRange(2, 1, lastRow, 1).getValues();
+  for (var i = 0; i < ids.length; i++) {
+    if (String(ids[i][0]) === id) {
+      var row = i + 2;
+      var scores = analysis.scores || {};
+      sheet.getRange(row, 5, row, 8).setValues([[
+        analysis.wordCount || 0,
+        analysis.wpm || 0,
+        analysis.typingLevel || "",
+        scores.overall || 0,
+      ]]);
+      sheet.getRange(row, 11).setValue(JSON.stringify(analysis));
+      return;
+    }
+  }
+  throw new Error("Submission not found: " + id);
 }
 
 function respond_(obj) {
