@@ -1,7 +1,4 @@
-# Runs the Tech Escape self test in headless Chrome and prints the results.
-# Usage:  powershell -ExecutionPolicy Bypass -File _run_selftest.ps1 [page]
-param([string]$Page = "_selftest.html")
-
+# Runs _selftest.html in headless Chrome (desk crawl, vault, collisions).
 $chrome = @(
   "C:\Program Files\Google\Chrome\Application\chrome.exe",
   "C:\Program Files (x86)\Google\Chrome\Application\chrome.exe"
@@ -10,37 +7,24 @@ $chrome = @(
 if (-not $chrome) { Write-Error "Chrome not found"; exit 1 }
 
 $dir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$url = "file:///" + ($dir -replace '\\', '/') + "/$Page"
-$out = Join-Path $env:TEMP "te-run-out.html"
-$err = Join-Path $env:TEMP "te-run-err.txt"
-Remove-Item $out, $err -ErrorAction SilentlyContinue
+$url = "file:///" + ($dir -replace '\\', '/') + "/_selftest.html"
+$out = Join-Path $env:TEMP "te-selftest-out.txt"
+Remove-Item $out -ErrorAction SilentlyContinue
 
-$chromeArgs = @(
+Start-Process -FilePath $chrome -ArgumentList @(
   "--headless=new", "--disable-gpu", "--no-sandbox",
   "--allow-file-access-from-files",
-  "--user-data-dir=$env:TEMP\te-chrome-profile",
-  "--enable-logging=stderr", "--v=0",
-  "--virtual-time-budget=40000",
+  "--user-data-dir=$env:TEMP\te-chrome-selftest",
+  "--virtual-time-budget=15000",
   "--dump-dom", $url
-)
+) -NoNewWindow -Wait -RedirectStandardOutput $out | Out-Null
 
-Start-Process -FilePath $chrome -ArgumentList $chromeArgs -NoNewWindow -Wait `
-  -RedirectStandardOutput $out -RedirectStandardError $err | Out-Null
+$text = Get-Content $out -Raw
+$failMatch = [regex]::Match($text, 'FAILURES:\s*(\d+)')
+$fails = if ($failMatch.Success) { [int]$failMatch.Groups[1].Value } else { 999 }
 
-$html = Get-Content $out -Raw
-if ($html -match '(?s)<pre id="out">(.*?)</pre>') {
-  $text = $matches[1] -replace '&amp;', '&' -replace '&lt;', '<' -replace '&gt;', '>' -replace '&quot;', '"'
-  Write-Output $text
-} else {
-  Write-Output "--- no results element; page errors below ---"
-}
-
-# Surface page-level console errors, which are easy to miss otherwise
-$log = Get-Content $err -Raw
-if ($log) {
-  $lines = $log -split "`r?`n" | Where-Object { $_ -match 'CONSOLE|Uncaught|SyntaxError' }
-  if ($lines) {
-    Write-Output "`n--- console ---"
-    $lines | ForEach-Object { Write-Output $_ }
-  }
-}
+$lines = $text -split "`r?`n" | Where-Object { $_ -match '^(PASS|FAIL)' }
+$lines | ForEach-Object { Write-Output $_ }
+Write-Output ""
+Write-Output "FAILURES: $fails"
+if ($fails -gt 0) { exit 1 }

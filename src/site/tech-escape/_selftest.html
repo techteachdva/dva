@@ -327,13 +327,23 @@ try {
     `closest=${crouchWalk.closest.toFixed(2)}`);
 
   // Under the desk: hidden, and standing is refused
-  labPlayer.pos.set(t0.x, 1.0, t0.z);
+  labPlayer.onTable = false;
+  labPlayer._tableRef = null;
+  labPlayer._vaulting = false;
+  labPlayer._falling = false;
+  input._edge.crouch = false;
+  input._edge.jump = false;
+  input.held.crouch = false;
+  labPlayer.pos.set(t0.x, PLAYER.crouchEyeHeight, t0.z);
+  labPlayer._eyeY = PLAYER.crouchEyeHeight;
   labPlayer.wantCrouch = true;
+  labPlayer.crouching = true;
   labPlayer.update(1 / 60, true);
   ok('crouching under a desk hides the player', labPlayer.hidden);
-  ok('no headroom under a desk', !labPlayer.hasHeadroom);
+  ok('no headroom under a desk', !labPlayer.hasHeadroom());
 
   labPlayer.wantCrouch = false;          // player asks to stand up
+  input._edge.crouch = false;
   labPlayer.update(1 / 60, true);
   ok('standing up under a desk is refused',
     labPlayer.crouching && labPlayer.stuckUnder,
@@ -345,7 +355,21 @@ try {
   labPlayer.pos.set(t0.x - CELL * 0.9, 1.0, t0.z);
   labPlayer.update(1 / 60, true);
   ok('standing works again once clear of the desk',
-    !labPlayer.crouching && !labPlayer.hidden && labPlayer.hasHeadroom);
+    !labPlayer.crouching && !labPlayer.hidden && labPlayer.hasHeadroom());
+
+  const vaultPlayer = new Player(maze, lab, t0.cell, DIFFICULTY.normal);
+  vaultPlayer.flashlightOn = false;
+  vaultPlayer.pos.set(t0.x - TABLE.topW / 2 - 0.35, PLAYER.eyeHeight, t0.z);
+  vaultPlayer.yaw = -Math.PI / 2;
+  input._edge.jump = true;
+  vaultPlayer.update(1 / 60, true);
+  ok('space vault onto desk engages', vaultPlayer._vaulting || vaultPlayer.onTable,
+    `vault=${vaultPlayer._vaulting} on=${vaultPlayer.onTable}`);
+  for (let i = 0; i < 50 && vaultPlayer._vaulting; i++) {
+    vaultPlayer.update(1 / 60, true);
+  }
+  ok('vault finishes on desk top', vaultPlayer.onTable, `on=${vaultPlayer.onTable}`);
+  input._edge.jump = false;
 
   // Standing player must never end up inside furniture after random movement
   let inFurniture = false;

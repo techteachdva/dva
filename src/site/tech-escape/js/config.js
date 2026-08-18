@@ -86,7 +86,7 @@ export const PLAYER = {
   vaultReach: 1.55,
   tableFallSpeed: 9.5,
   /** Stand under a tabletop this long before auto-crawl kicks in. */
-  tableCrawlGrace: 1.0,
+  tableCrawlGrace: 1.6,
 };
 
 export const FLASHLIGHT = {

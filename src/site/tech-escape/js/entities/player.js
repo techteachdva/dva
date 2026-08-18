@@ -98,8 +98,9 @@ export class Player {
 
   /** Standing right now would clip into something overhead. */
   hasHeadroom(opts = null) {
+    const y0 = this.onTable ? TABLE_SURFACE_Y : 0;
     return !this.obstacles.overlaps(
-      this.pos.x, this.pos.z, PLAYER.radius, PLAYER.crouchHeight, PLAYER.standHeight, opts,
+      this.pos.x, this.pos.z, PLAYER.radius, y0, y0 + PLAYER.standHeight, opts,
     );
   }
 
@@ -108,7 +109,14 @@ export class Player {
     return this._underTableTimer > 0
       && this._underTableTimer < PLAYER.tableCrawlGrace
       && !this.wantCrouch
+      && !this.crouching
       && !this.onTable;
+  }
+
+  /** Crouched in the crawl volume under a hide-under desk (not on top). */
+  _crawlUnderTable() {
+    if (this.onTable || !this.crouching) return false;
+    return !!this.lab.tableAt(this.pos.x, this.pos.z, 0.14);
   }
 
   /** Directly underneath a table, so crouching here hides you. */
@@ -125,11 +133,16 @@ export class Player {
     return TABLE_SURFACE_Y + (this.crouching ? PLAYER.crouchEyeHeight : PLAYER.eyeHeight);
   }
 
-  /** Collision opts while moving — skip the slab we are standing on or crawling under. */
+  /**
+   * Table collision modes:
+   * 1) Standing walk → tabletop + legs block (solid desk).
+   * 2) Crawl under → skip top + legs inside crawl footprint.
+   * 3) On top → skip own tabletop slab.
+   */
   _obstacleOpts(bodyY0, bodyTop) {
     const skip = [];
     if (this.onTable) skip.push('table-top');
-    if (this.crouching && bodyTop <= TABLE.bandY0 + 0.02) skip.push('table-top');
+    if (this._crawlUnderTable()) skip.push('table-top', 'table-leg');
     if (skip.length) return { skipTags: skip };
     return null;
   }
@@ -165,7 +178,7 @@ export class Player {
         best = t;
       }
     }
-    return bestScore > -0.5 ? best : null;
+    return bestScore > -1.2 ? best : null;
   }
 
   _startVault(table) {
@@ -246,7 +259,7 @@ export class Player {
 
   /** Standing bodies cannot occupy the crawl footprint under a tabletop. */
   _ejectFromTableInterior() {
-    if (this.inTableCrawlGrace || this.wantCrouch) return;
+    if (this.crouching || this.inTableCrawlGrace || this.wantCrouch) return;
     const t = this.lab.tableAt(this.pos.x, this.pos.z, -0.04);
     if (!t) return;
     const half = TABLE.topW / 2 - PLAYER.radius - 0.08;
@@ -358,26 +371,13 @@ export class Player {
 
     // ------------------------------------------------------------- crouching
     const inTableZone = this.underTable();
-    if (inTableZone && !this.wantCrouch && !this.onTable) {
+    if (inTableZone && !this.wantCrouch && !this.crouching && !this.onTable) {
       this._underTableTimer += dt;
     } else {
       this._underTableTimer = 0;
     }
 
     const crawlGraceOpts = this.inTableCrawlGrace ? { skipTags: ['table-top'] } : null;
-    const standY0 = this.onTable ? TABLE_SURFACE_Y : 0;
-    const standTop = standY0 + PLAYER.standHeight;
-    const standOpts = this._obstacleOpts(standY0, standTop);
-    const headroomOpts = standOpts || crawlGraceOpts
-      ? {
-        skipTags: [
-          ...new Set([
-            ...(standOpts?.skipTags || []),
-            ...(crawlGraceOpts?.skipTags || []),
-          ]),
-        ],
-      }
-      : null;
 
     // Crouch is a toggle, not a hold, so it never fights the sprint key and
     // never asks a Chromebook user to keep a finger on Ctrl while steering.
@@ -388,7 +388,7 @@ export class Player {
     // Standing up under a desk would shove you through the tabletop, so the
     // stand is simply refused until there is headroom. Grace period lets you
     // walk up to a desk without instantly ducking to grab loot on a chair.
-    const blockedFromStanding = !this.hasHeadroom(headroomOpts);
+    const blockedFromStanding = !this.hasHeadroom(crawlGraceOpts);
     const forceCrawl = blockedFromStanding
       && (this.wantCrouch || !this.inTableCrawlGrace);
     this.stuckUnder = !this.wantCrouch && forceCrawl;

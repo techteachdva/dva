@@ -799,6 +799,7 @@ class Game {
         w.player.pos,
         this._collectGlows(),
         w.player.batteryPct,
+        { crouching: w.player.crouching, onTable: w.player.onTable },
       );
 
       if (!w.player.alive && this.mode !== MODE.OVER) this._gameOver(ev);

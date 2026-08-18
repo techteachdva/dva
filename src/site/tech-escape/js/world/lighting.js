@@ -77,8 +77,19 @@ export class Lighting {
    * @param {THREE.Vector3} playerPos
    * @param {Array} sources glow sources from the lab and enemies
    * @param {number} batteryPct 0..1, drives the dying-battery flicker
+   * @param {{ crouching?: boolean, onTable?: boolean }} [playerState]
    */
-  update(dt, playerPos, sources, batteryPct) {
+  update(dt, playerPos, sources, batteryPct, playerState = {}) {
+    const crouching = Boolean(playerState.crouching);
+    const onTable = Boolean(playerState.onTable);
+    // Keep the beam out of the floor mesh when crawling; raise slightly on desks.
+    if (crouching) {
+      this.flashlight.position.set(0.14, 0.04, 0.04);
+    } else if (onTable) {
+      this.flashlight.position.set(0.16, -0.08, 0);
+    } else {
+      this.flashlight.position.set(0.16, -0.12, 0);
+    }
     // Flashlight intensity, with a dying-battery waver
     let target = 0;
     if (this._flashOn && batteryPct > 0) {
