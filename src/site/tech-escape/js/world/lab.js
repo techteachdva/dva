@@ -158,7 +158,7 @@ export function drawScreenTexture(canvas, opts) {
 
     g.fillStyle = 'rgba(255,200,87,0.9)';
     g.font = `bold ${Math.round(H * 0.115)}px ui-monospace, monospace`;
-    g.fillText('PRESS E TO LOG IN', W / 2, H * 0.79);
+    g.fillText('ENTER / E TO LOG IN', W / 2, H * 0.79);
 
     // Scanlines for CRT-ish menace
     g.fillStyle = 'rgba(0,0,0,0.18)';

@@ -15,7 +15,7 @@ export const BIND_DEFAULTS = {
 };
 
 export const BIND_LABELS = {
-  interact: 'Use terminal / printer / door',
+  interact: 'Use terminal / printer / door / pick up loot',
   throw: 'Throw (disc at virus, cheetos otherwise)',
   eatCheetos: 'Eat hot cheetos (drinks soda when soda is selected)',
   light: 'Flashlight',

@@ -496,6 +496,7 @@ class Game {
     lighting.setBrightness(
       (this.settings.brightness / 100) * (level.brightnessScale || 1) * debug.brightnessMultiplier(),
     );
+    lighting.setFlashlight(player.flashlightOn);
 
     this._activeTerminalIndex = -1;
 
@@ -1224,7 +1225,7 @@ class Game {
     const mf = this._mouseFrame;
     this._mousePrimaryUsed = false;
 
-    if ((input.pressed('interact') || mf?.primary) && best) {
+    if ((input.pressed('interact') || input.pressed('throw') || mf?.primary) && best) {
       this._mousePrimaryUsed = !!mf?.primary;
       if (best.enabled && best.action) best.action();
       else audio.deny();

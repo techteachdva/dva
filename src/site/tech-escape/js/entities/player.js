@@ -119,6 +119,12 @@ export class Player {
     return !!this.lab.tableAt(this.pos.x, this.pos.z, 0.14);
   }
 
+  /** Crouching and close enough to slide under a desk instead of hitting legs. */
+  _crawlApproachingTable() {
+    if (this.onTable || (!this.crouching && !this.wantCrouch)) return false;
+    return !!this.lab.tableNear(this.pos.x, this.pos.z, PLAYER.vaultReach);
+  }
+
   /** Directly underneath a table, so crouching here hides you. */
   underTable() {
     if (this.onTable) return false;
@@ -142,7 +148,9 @@ export class Player {
   _obstacleOpts(bodyY0, bodyTop) {
     const skip = [];
     if (this.onTable) skip.push('table-top');
-    if (this._crawlUnderTable()) skip.push('table-top', 'table-leg');
+    if (this._crawlUnderTable() || this._crawlApproachingTable()) {
+      skip.push('table-top', 'table-leg');
+    }
     if (skip.length) return { skipTags: skip };
     return null;
   }
@@ -217,6 +225,12 @@ export class Player {
     this.pos.z = this._vaultFrom.z + (this._vaultTo.z - this._vaultFrom.z) * ease;
     this._eyeY = this._vaultFrom.y + (this._vaultTo.y - this._vaultFrom.y) * ease + arc;
     this.maze.collide(this.pos, PLAYER.radius);
+    const vaultY0 = Math.min(this._vaultFrom.y, this._eyeY) - 0.15;
+    const vaultY1 = Math.max(this._vaultFrom.y, this._eyeY) + 0.35;
+    this.obstacles.collide(
+      this.pos, PLAYER.radius, vaultY0, vaultY1,
+      { skipTags: ['table-top', 'table-leg'] },
+    );
 
     if (u >= 1) {
       this._vaulting = false;
@@ -377,7 +391,9 @@ export class Player {
       this._underTableTimer = 0;
     }
 
-    const crawlGraceOpts = this.inTableCrawlGrace ? { skipTags: ['table-top'] } : null;
+    const crawlGraceOpts = this.inTableCrawlGrace
+      ? { skipTags: ['table-top', 'table-leg'] }
+      : null;
 
     // Crouch is a toggle, not a hold, so it never fights the sprint key and
     // never asks a Chromebook user to keep a finger on Ctrl while steering.
@@ -466,7 +482,10 @@ export class Player {
     this.maze.collide(this.pos, PLAYER.radius);
     const bodyY0 = this.onTable ? TABLE_SURFACE_Y : 0;
     const bodyTop = bodyY0 + (this.crouching ? PLAYER.crouchHeight : PLAYER.standHeight);
-    const collideOpts = this._obstacleOpts(bodyY0, bodyTop);
+    let collideOpts = this._obstacleOpts(bodyY0, bodyTop);
+    if (this._vaulting) {
+      collideOpts = { skipTags: ['table-top', 'table-leg'] };
+    }
     this.obstacles.collide(this.pos, PLAYER.radius, bodyY0, bodyTop, collideOpts);
     if (!this.onTable && !this.crouching && !this._vaulting) {
       this._ejectFromTableInterior();

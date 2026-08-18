@@ -69,6 +69,10 @@ export class Lighting {
   }
 
   setFlashlight(on) {
+    if (on && !this._flashOn) {
+      this._flashLevel = FLASHLIGHT.intensity * this.brightness;
+      this.flashlight.intensity = this._flashLevel;
+    }
     this._flashOn = on;
   }
 
@@ -117,7 +121,14 @@ export class Lighting {
         target *= 1 - FLASHLIGHT.flickerDepth * urgency * (0.5 + ripple * 0.5);
       }
     }
-    this._flashLevel = lerp(this._flashLevel, target, 1 - Math.pow(0.0001, dt));
+    // Snap on quickly so the beam is usable the moment a run starts; fade off gently.
+    if (target > 0 && this._flashLevel < target * 0.2) {
+      this._flashLevel = target;
+    } else if (target === 0) {
+      this._flashLevel = lerp(this._flashLevel, target, 1 - Math.pow(0.0001, dt));
+    } else {
+      this._flashLevel = lerp(this._flashLevel, target, 1 - Math.pow(0.004, dt));
+    }
     this.flashlight.intensity = this._flashLevel;
 
     // Assign the light pool to the closest active sources

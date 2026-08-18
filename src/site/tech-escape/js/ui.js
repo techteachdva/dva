@@ -222,7 +222,7 @@ export const ui = {
     const keyEl = this.el['interact-key'];
     if (keyEl) {
       const binds = normalizeBinds(settings.get('binds'));
-      keyEl.textContent = `${bindDisplay(binds.interact)} / L-Click`;
+      keyEl.textContent = `${bindDisplay(binds.interact)} / E / L-Click`;
     }
     if (!text) {
       if (this._lastInteract !== null) {
