@@ -30,8 +30,8 @@ export class Player {
     this.maxHealth = difficulty.startHealth;
     this.health = difficulty.startHealth;
     this.stamina = PLAYER.staminaMax;
-    this.battery = PLAYER.batteryMax;
-    this.flashlightOn = true;
+    this.battery = 0;
+    this.flashlightOn = false;
 
     this.hidden = false;
     this.onTable = false;

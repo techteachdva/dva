@@ -175,6 +175,18 @@ export class ThrowField {
       if (m.dead || !m.feeding || m.lure !== it) it.munching.delete(m);
     }
 
+    for (const bug of enemies.bugs) {
+      if (bug.dead || !bug.feeding || bug.lure !== it) continue;
+      bug._munchTimer = (bug._munchTimer || 0) + dt;
+      if (bug._munchTimer >= THROWN.bagEatSeconds * 1.2) {
+        bug.pop();
+        it.killsRemaining = 0;
+        it.state = 'done';
+        this._spawnPuff(bug.pos, 1);
+        audio.bagPop(1);
+      }
+    }
+
     const shake = 0.015 + feeders * 0.012;
     it.mesh.position.set(
       it.pos.x + (Math.random() - 0.5) * shake,

@@ -98,7 +98,7 @@ export class Lighting {
     let target = 0;
     if (this._flashOn && batteryPct > 0) {
       target = FLASHLIGHT.intensity * this.brightness;
-      if (batteryPct < 0.22 && !this.reduceFlashing) {
+      if (batteryPct < 0.12 && !this.reduceFlashing) {
         /*
          * This used to cut the beam to 15-40% brightness at random intervals as
          * short as 50ms - a full-screen luminance swing of 60% or more, up to 20
@@ -114,7 +114,7 @@ export class Lighting {
          * that strobes, because the player never gets the reset of full darkness.
          */
         this._flickerPhase += dt * FLASHLIGHT.flickerHz * Math.PI * 2;
-        const urgency = clamp(1 - batteryPct / 0.22, 0, 1);
+        const urgency = clamp(1 - batteryPct / 0.12, 0, 1);
         const ripple = (
           Math.sin(this._flickerPhase) + Math.sin(this._flickerPhase * 0.37)
         ) * 0.5;

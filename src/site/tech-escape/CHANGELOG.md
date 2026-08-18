@@ -1,5 +1,24 @@
 # Tech Escape — Changelog
 
+## 2.5.0 — The Map & Enemies Update (2026-08-17)
+
+### Navigation
+- **Map posters** at up to four maze dead ends show a birds-eye map: walls, terminals (squares), printer (triangle), exit (circle), poster dot, and **live player position**.
+- Flashlight starts **empty** — a battery spawns near your start cell.
+
+### Enemies (per floor)
+- **Level 1:** mice + viruses
+- **Level 2:** mice + **circuit bugs** (whole cheetos bag kills one)
+- **Level 3:** mice + **phishers** (steal items or pull you from under desks)
+- **Level 4:** mice + **cyberbullies**
+- **Level 5:** mix of all special enemies
+
+### Floors
+- Each level has distinct **floor/wall/table textures**, **emergency light colour** (red → orange → yellow → green → blue), and a **signature dressing prop**.
+
+### Flashlight
+- **F** always toggles on/off; sputter/flicker only when battery is nearly empty.
+
 ## 2.4.0 — The High Score Update (2026-08-17)
 
 ### Global leaderboard

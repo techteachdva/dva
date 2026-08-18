@@ -9,6 +9,11 @@
 import * as THREE from '../../vendor/three.module.js';
 import { CELL, WALL_H, TABLE, COLORS } from '../config.js';
 import { Obstacles } from './obstacles.js';
+import {
+  themeForLevel, makeThemedFloorTexture, makeThemedWallTexture,
+  makeThemedArrowTexture, buildLevelDressing,
+} from './level-themes.js';
+import { buildMapPosters } from './map-poster.js';
 
 const _m = new THREE.Matrix4();
 const _q = new THREE.Quaternion();
@@ -173,23 +178,26 @@ export class Lab {
    * @param {THREE.Scene} scene
    * @param {import('./maze.js').Maze} maze
    * @param {ReturnType<import('../util.js').makeRng>} rng
+   * @param {object} [level] current floor definition
    */
-  constructor(scene, maze, rng) {
+  constructor(scene, maze, rng, level = null) {
     this.scene = scene;
     this.maze = maze;
     this.rng = rng;
+    this.level = level;
+    this.theme = themeForLevel(level);
 
     this.group = new THREE.Group();
     scene.add(this.group);
 
-    // Every solid thing that is not a maze wall
     this.obstacles = new Obstacles(maze);
 
-    this.tables = [];      // { x, z, cell, top, height }
-    this.laptops = [];     // { index, x, z, mesh, screen, canvas, texture, solved, glow }
+    this.tables = [];
+    this.laptops = [];
     this.printer = null;
     this.exit = null;
-    this.glowSources = []; // { pos: Vector3, color, intensity, distance, active }
+    this.glowSources = [];
+    this.mapPosters = [];
 
     this.emergencyArrows = null;
     this._emergencyGlows = [];
@@ -198,6 +206,7 @@ export class Lab {
 
     this._buildFloorAndCeiling();
     this._buildWalls();
+    buildLevelDressing(scene, this.group, maze, rng, this.theme, this._disposables);
   }
 
   // ----------------------------------------------------------------- surfaces
@@ -205,7 +214,7 @@ export class Lab {
   _buildFloorAndCeiling() {
     const span = this.maze.size * CELL;
 
-    const floorTex = makeFloorTexture();
+    const floorTex = makeThemedFloorTexture(this.theme);
     floorTex.repeat.set(this.maze.size, this.maze.size);
     const floor = new THREE.Mesh(
       new THREE.PlaneGeometry(span, span),
@@ -217,7 +226,7 @@ export class Lab {
 
     const ceil = new THREE.Mesh(
       new THREE.PlaneGeometry(span, span),
-      new THREE.MeshLambertMaterial({ color: COLORS.ceiling }),
+      new THREE.MeshLambertMaterial({ color: this.theme.ceiling }),
     );
     ceil.rotation.x = Math.PI / 2;
     ceil.position.y = WALL_H;
@@ -243,7 +252,7 @@ export class Lab {
       }
     }
 
-    const wallTex = makeWallTexture();
+    const wallTex = makeThemedWallTexture(this.theme);
     wallTex.repeat.set(1, 1);
     const geo = new THREE.BoxGeometry(CELL, WALL_H, CELL);
     const mat = new THREE.MeshLambertMaterial({ color: 0xffffff, map: wallTex });
@@ -308,7 +317,7 @@ export class Lab {
     }
     if (!segments.length) return;
 
-    const arrowTex = makeEmergencyArrowTexture();
+    const arrowTex = makeThemedArrowTexture(this.theme.emergencyArrow);
     const geo = makeEmergencyArrowGeometry();
     const mat = new THREE.MeshBasicMaterial({
       map: arrowTex,
@@ -331,7 +340,7 @@ export class Lab {
       if (i % 2 === 0) {
         const glow = {
           pos: new THREE.Vector3(seg.px, arrowY + 0.06, seg.pz),
-          color: 0xff5520,
+          color: this.theme.emergencyColor,
           intensity: 10.5,
           distance: 7.8,
           active: true,
@@ -448,12 +457,12 @@ export class Lab {
    */
   buildTables(cells) {
     const topGeo = new THREE.BoxGeometry(TABLE.topW, TABLE.topThickness, TABLE.topW);
-    const topMat = new THREE.MeshLambertMaterial({ color: COLORS.table });
+    const topMat = new THREE.MeshLambertMaterial({ color: this.theme.tableColor });
     const tops = new THREE.InstancedMesh(topGeo, topMat, cells.length);
     tops.frustumCulled = false;
 
     const legGeo = new THREE.BoxGeometry(TABLE.legW, TABLE.topY, TABLE.legW);
-    const legMat = new THREE.MeshLambertMaterial({ color: COLORS.tableLeg });
+    const legMat = new THREE.MeshLambertMaterial({ color: this.theme.tableLeg });
     const legs = new THREE.InstancedMesh(legGeo, legMat, cells.length * 4);
     legs.frustumCulled = false;
 
@@ -1223,7 +1232,23 @@ export class Lab {
     this._disposables.push(rackMat, ledMat);
   }
 
+  /** Dead-end wall maps showing the full maze layout. */
+  installMapPosters(posterCells, landmarks) {
+    this.mapPosters = buildMapPosters(
+      this.maze, posterCells, landmarks, this.group, this._disposables,
+    );
+  }
+
+  updateMapPosters(playerPos) {
+    this._mapPosterTick = (this._mapPosterTick || 0) + 1;
+    if (this._mapPosterTick % 8 !== 0) return;
+    const cell = this.maze.worldToCell(playerPos.x, playerPos.z);
+    for (const p of this.mapPosters) p.canvas.setPlayerCell(cell);
+  }
+
   dispose() {
+    for (const p of this.mapPosters) p.canvas?.dispose?.();
+    this.mapPosters = [];
     this.scene.remove(this.group);
     for (const d of this._disposables) {
       if (d && typeof d.dispose === 'function') d.dispose();

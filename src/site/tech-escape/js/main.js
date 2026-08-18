@@ -21,6 +21,7 @@ import { Lab } from './world/lab.js';
 import { planLabFurniture, placeLootSpot } from './world/layout.js';
 import { TableSurfacePlanner } from './world/table-surface.js';
 import { buildScatterProps } from './world/scatter.js';
+import { pickPosterCells } from './world/map-poster.js';
 import { Lighting } from './world/lighting.js';
 import { Player } from './entities/player.js';
 import { EnemyManager } from './entities/enemies.js';
@@ -411,7 +412,7 @@ class Game {
       maze = new Maze(rng, layout);
     }
 
-    const lab = new Lab(this.scene, maze, rng);
+    const lab = new Lab(this.scene, maze, rng, level);
     const open = maze.openCells();
     const used = new Set();
     const key = (c) => `${c[0]},${c[1]}`;
@@ -443,6 +444,16 @@ class Game {
     lab.buildLaptops(laptopCells);
     lab.buildPrinter(printerCell);
     lab.buildExit(exitCell, exitSide);
+
+    const posterCells = pickPosterCells(
+      maze, rng,
+      [startCell, ...laptopCells, printerCell, exitCell],
+    );
+    lab.installMapPosters(posterCells, {
+      terminals: laptopCells,
+      printer: printerCell,
+      exit: exitCell,
+    });
 
     const surfacePlanner = new TableSurfacePlanner(maze, rng);
     const furniture = planLabFurniture(
@@ -487,6 +498,22 @@ class Game {
     spawnLoot('battery', diff.batteries);
     spawnLoot('soda', diff.sodas || 0);
     spawnLoot('antivirus', diff.antivirus || 0);
+
+    const startBatteryCells = maze.openCells().filter(([x, y]) => {
+      const d = Math.hypot(x - startCell[0], y - startCell[1]);
+      return d >= 1 && d <= 2.5;
+    });
+    if (startBatteryCells.length) {
+      const bc = rng.pick(startBatteryCells);
+      const bcCenter = maze.cellCenter(bc[0], bc[1]);
+      pickups.spawn('battery', bc, {
+        x: bcCenter.x,
+        z: bcCenter.z,
+        y: 0.38,
+        underTable: false,
+        onChair: false,
+      });
+    }
 
     const player = new Player(maze, lab, startCell, diff);
     player.reduceFx = this.settings.reduceFx;
@@ -748,7 +775,7 @@ class Game {
       w.player.update(wdt, controlsActive);
 
       const lures = w.throws?.lures || null;
-      const ev = w.enemies.update(wdt, w.player, lures);
+      const ev = w.enemies.update(wdt, w.player, lures, w.inventory);
       w.player.burningVirus = ev.burning;
       this._handleCombat(ev, wdt);
       this._handleGlitch(ev);
@@ -792,7 +819,9 @@ class Game {
       }
 
       w.player.syncCamera(this.camera);
+      w.lab.updateMapPosters(w.player.pos);
       w.lighting.setFlashlight(w.player.flashlightOn);
+      w.lighting.reduceFlashing = settings.get('reduceFlashing');
       w.lab.updateEmergencyArrows(w.player.pos);
       w.lab.updateTerminalHighlights(w.player);
       w.lighting.update(
@@ -859,6 +888,17 @@ class Game {
           ui.toast('Notification dismissed — read it later in the Study Guide.', 'warn');
         }
       }
+    }
+
+    if (ev.pullFromHide) {
+      w.player.wantCrouch = false;
+      w.player.crouching = false;
+      w.player.hidden = false;
+      ui.toast('A phisher yanked you out from under the desk!', 'bad', 2200);
+    }
+    if (ev.stole) {
+      ui.updateInventoryBar(w.inventory);
+      ui.toast(`A phisher stole your ${ev.stole}!`, 'bad', 2200);
     }
   }
 

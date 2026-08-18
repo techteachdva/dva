@@ -179,6 +179,48 @@ export const VIRUS = {
   glitchReacquire: 1.4,           // dazed wander time before it hunts again
 };
 
+export const BUG = {
+  radius: 0.34,
+  patrolSpeed: 3.2,
+  chaseSpeed: 6.8,
+  turnRate: 9,
+  sightRange: 12,
+  sightAngle: 0.95,
+  loseInterest: 3.2,
+  damage: 1,
+  attackRange: 0.9,
+  attackCooldown: 1.8,
+  dashTime: 0.75,
+  restTime: 0.28,
+};
+
+export const PHISHER = {
+  radius: 0.4,
+  patrolSpeed: 2.2,
+  chaseSpeed: 4.2,
+  sightRange: 20,
+  sightAngle: 1.0,
+  loseInterest: 5,
+  damage: 0,
+  castRange: 14,
+  castCooldown: 4.5,
+  lineSpeed: 16,
+  stealRange: 1.2,
+};
+
+export const CYBERBULLY = {
+  radius: 0.42,
+  patrolSpeed: 2.0,
+  chaseSpeed: 4.8,
+  turnRate: 6,
+  sightRange: 18,
+  sightAngle: 1.1,
+  loseInterest: 4.8,
+  damage: 1,
+  attackRange: 1.1,
+  attackCooldown: 1.35,
+};
+
 export const PICKUP = {
   cheetosHeal: 1,
   radius: 1.05,                   // legacy walk-over radius (unused for auto-grab)
@@ -213,6 +255,7 @@ export const THROWN = {
   bagFeedRange: 1.15,             // close enough to be eating it
   bagEatSeconds: 1.35,            // munch time before one mouse pops
   bagMaxKills: 3,                 // mice one bag can pop before it is empty
+  bagMaxBugKills: 1,              // one whole bag destroys one circuit bug
   bagScareRadius: 6,              // mice that saw a pop flee instead
   bagScareTime: 4.5,
   bagPlayerShoveRadius: 3.4,      // unused — bags no longer blast the player
