@@ -499,9 +499,10 @@ class Game {
     spawnLoot('soda', diff.sodas || 0);
     spawnLoot('antivirus', diff.antivirus || 0);
 
+    const startBatteryMax = diff.startBatteryMaxDist ?? 2.5;
     const startBatteryCells = maze.openCells().filter(([x, y]) => {
       const d = Math.hypot(x - startCell[0], y - startCell[1]);
-      return d >= 1 && d <= 2.5;
+      return d >= 1 && d <= startBatteryMax;
     });
     if (startBatteryCells.length) {
       const bc = rng.pick(startBatteryCells);
@@ -1376,7 +1377,7 @@ class Game {
           this._openDecrypt(index, correct, total);
         } else {
           this.terminalCooldowns[index] = QUIZ.failLockout;
-          w.enemies.setGlobalAlert(QUIZ.failAlertSeconds);
+          w.enemies.setGlobalAlert(w.diff.failAlertSeconds ?? QUIZ.failAlertSeconds);
           this._exitMinigameToPlaying();
           audio.terminalDenied();
           ui.toast(

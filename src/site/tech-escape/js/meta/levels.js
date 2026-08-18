@@ -147,13 +147,15 @@ export function budgetFor(level, diff) {
   const e = level?.enemies || {};
   const l = level?.loot || {};
   const noEnemies = diff?.noEnemies === true;
+  const lootScale = diff?.lootScale ?? 1;
+  const enemyScale = diff?.enemyBudgetScale ?? 1;
   const lootCount = (base, mult) => {
     if (!base) return 0;
-    return Math.max(1, Math.round(base * (mult ?? 1)));
+    return Math.max(1, Math.round(base * (mult ?? 1) * lootScale));
   };
   const enemyCount = (base, mult, add) => {
     if (noEnemies) return 0;
-    const n = Math.round(base * (mult ?? 1)) + (add || 0);
+    const n = Math.round((Math.round(base * (mult ?? 1)) + (add || 0)) * enemyScale);
     return base ? Math.max(0, n) : 0;
   };
   return {

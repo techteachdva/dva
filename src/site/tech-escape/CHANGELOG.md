@@ -19,6 +19,9 @@
 ### Flashlight
 - **F** always toggles on/off; sputter/flicker only when battery is nearly empty.
 
+### Balance (2.5.1)
+- **AFTER HOURS** smoothed: fewer hunters, more loot, gentler damage/speed/drain, shorter wrong-answer hunts, softer printer swarm, ~55% chance of extra spawns per code piece.
+
 ## 2.4.0 — The High Score Update (2026-08-17)
 
 ### Global leaderboard

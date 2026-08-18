@@ -112,6 +112,9 @@ export class EnemyManager {
     for (const p of this.phishers) p.speedScale = speed;
     for (const c of this.cyberbullies) c.speedScale = speed;
 
+    const spawnChance = this.diff.escalationSpawnChance ?? 1;
+    if (spawnChance < 1 && !this.rng.chance(spawnChance)) return;
+
     const sp = this.diff.specialEnemy || 'virus';
     if (this.escalation % 2 < 1) this.spawnMouse(playerCell);
     else if (sp === 'virus' || sp === 'all') this.spawnVirus(playerCell);
@@ -125,7 +128,8 @@ export class EnemyManager {
     if (this.swarming) return;
     this.swarming = true;
     const sp = this.diff.specialEnemy || 'virus';
-    for (let i = 0; i < PRINTER.swarmSpawn; i++) {
+    const swarmCount = this.diff.printerSwarmSpawn ?? PRINTER.swarmSpawn;
+    for (let i = 0; i < swarmCount; i++) {
       if (i % 3 === 0) this.spawnMouse(playerCell);
       else if (i % 3 === 1 && (sp === 'virus' || sp === 'all')) this.spawnVirus(playerCell);
       else if (sp === 'bug' || sp === 'all') this.spawnBug(playerCell);
