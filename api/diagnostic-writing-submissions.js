@@ -108,11 +108,42 @@ export async function POST(request) {
   try {
     const body = await request.json();
 
-    if (body?.action === "update") {
+    if (body?.action === "update" || body?.action === "updateBulk") {
       const password = typeof body?.password === "string" ? body.password : "";
       if (password !== TEACHER_PASSWORD) {
         return Response.json({ error: "Unauthorized" }, { status: 401, headers: corsHeaders() });
       }
+
+      if (body.action === "updateBulk") {
+        const updates = Array.isArray(body.updates) ? body.updates : [];
+        if (!updates.length) {
+          return Response.json({ error: "Missing updates array" }, { status: 400, headers: corsHeaders() });
+        }
+        const sanitized = updates.slice(0, 50).map((u) => ({
+          id: typeof u?.id === "string" ? u.id.trim() : String(u?.id || "").trim(),
+          analysis: u?.analysis && typeof u.analysis === "object" ? u.analysis : null,
+        })).filter((u) => u.id && u.analysis);
+
+        const data = await fetchScriptJson(scriptUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            action: "updateBulk",
+            secret: getApiSecret(),
+            password,
+            updates: sanitized,
+          }),
+        });
+
+        if (data.error) {
+          return Response.json({ error: data.error }, { status: 502, headers: corsHeaders() });
+        }
+        return Response.json(
+          { ok: true, updated: data.updated || 0, errors: data.errors || [] },
+          { headers: corsHeaders() }
+        );
+      }
+
       const id = typeof body?.id === "string" ? body.id.trim() : "";
       const analysis = body?.analysis && typeof body.analysis === "object" ? body.analysis : null;
       if (!id || !analysis) {

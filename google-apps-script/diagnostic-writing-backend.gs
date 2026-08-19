@@ -132,6 +132,14 @@ function handle_(e, isGet) {
       return respond_({ ok: true, id: String(params.id || "") });
     }
 
+    if (action === "updateBulk") {
+      if (String(params.password || "") !== TEACHER_PASSWORD) {
+        return respond_({ error: "Unauthorized" });
+      }
+      const result = updateSubmissionsBulk_(params.updates || []);
+      return respond_({ ok: true, updated: result.updated, errors: result.errors });
+    }
+
     return respond_({ error: "Unknown action" });
   } catch (err) {
     return respond_({ error: String(err.message || err) });
@@ -212,8 +220,24 @@ function saveSubmission_(params) {
   return entry;
 }
 
+function normalizeId_(value) {
+  if (value === null || value === undefined) return "";
+  return String(value).trim();
+}
+
+function writeAnalysisToRow_(sheet, row, analysis) {
+  const scores = analysis.scores || {};
+  sheet.getRange(row, 6, row, 9).setValues([[
+    analysis.wordCount || 0,
+    analysis.wpm || 0,
+    analysis.typingLevel || "",
+    scores.overall || 0,
+  ]]);
+  sheet.getRange(row, 11).setValue(JSON.stringify(analysis));
+}
+
 function updateSubmissionAnalysis_(params) {
-  const id = String(params.id || "").trim();
+  const id = normalizeId_(params.id);
   const analysis = params.analysis || {};
   if (!id || !analysis || typeof analysis !== "object") {
     throw new Error("Missing id or analysis");
@@ -225,20 +249,52 @@ function updateSubmissionAnalysis_(params) {
 
   const ids = sheet.getRange(2, 1, lastRow, 1).getValues();
   for (var i = 0; i < ids.length; i++) {
-    if (String(ids[i][0]) === id) {
-      var row = i + 2;
-      var scores = analysis.scores || {};
-      sheet.getRange(row, 5, row, 8).setValues([[
-        analysis.wordCount || 0,
-        analysis.wpm || 0,
-        analysis.typingLevel || "",
-        scores.overall || 0,
-      ]]);
-      sheet.getRange(row, 11).setValue(JSON.stringify(analysis));
+    if (normalizeId_(ids[i][0]) === id) {
+      writeAnalysisToRow_(sheet, i + 2, analysis);
       return;
     }
   }
   throw new Error("Submission not found: " + id);
+}
+
+function updateSubmissionsBulk_(updates) {
+  const sheet = getSheet_();
+  const lastRow = sheet.getLastRow();
+  const result = { updated: 0, errors: [] };
+  if (lastRow < 2) {
+    result.errors.push({ id: "", error: "No submissions in sheet" });
+    return result;
+  }
+  if (!updates || !updates.length) return result;
+
+  const idCol = sheet.getRange(2, 1, lastRow, 1).getValues();
+  const idToRow = {};
+  for (var i = 0; i < idCol.length; i++) {
+    const key = normalizeId_(idCol[i][0]);
+    if (key) idToRow[key] = i + 2;
+  }
+
+  for (var j = 0; j < updates.length; j++) {
+    const entry = updates[j] || {};
+    const id = normalizeId_(entry.id);
+    const analysis = entry.analysis || {};
+    const row = idToRow[id];
+    if (!row) {
+      result.errors.push({ id: id, error: "Submission not found" });
+      continue;
+    }
+    if (!analysis || typeof analysis !== "object") {
+      result.errors.push({ id: id, error: "Missing analysis" });
+      continue;
+    }
+    try {
+      writeAnalysisToRow_(sheet, row, analysis);
+      result.updated++;
+    } catch (err) {
+      result.errors.push({ id: id, error: String(err.message || err) });
+    }
+  }
+  return result;
 }
 
 function respond_(obj) {

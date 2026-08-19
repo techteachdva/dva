@@ -733,6 +733,23 @@
     return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
 
+  async function updateSubmissionsBulk(updates) {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "updateBulk",
+        password: TEACHER_PASSWORD,
+        updates,
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.error || `Bulk update failed (${res.status})`);
+    }
+    return data;
+  }
+
   async function updateSubmissionAnalysis(id, analysis) {
     const res = await fetch(API_URL, {
       method: "POST",
@@ -765,39 +782,60 @@
     refreshBtn.disabled = true;
     let ok = 0;
     let fail = 0;
+    let firstError = "";
+    const pending = [];
 
     for (let i = 0; i < allSubmissions.length; i++) {
       const sub = allSubmissions[i];
-      teacherMeta.textContent = `Re-analyzing ${i + 1} of ${allSubmissions.length}…`;
+      teacherMeta.textContent = `Scoring ${i + 1} of ${allSubmissions.length}…`;
       teacherMeta.classList.remove("dw-error");
 
       const text = sub.text || "";
       const durationSec = Number(sub.durationSec) || 300;
-      let analysis;
       try {
-        analysis = analyzeText(text, durationSec);
+        const analysis = analyzeText(text, durationSec);
+        sub.analysis = analysis;
+        pending.push({ id: String(sub.id || "").trim(), analysis });
       } catch (err) {
         console.error("Re-analyze failed for", sub.id, err);
         fail++;
-        continue;
+        if (!firstError) firstError = err.message || "Scoring failed";
       }
+    }
 
+    const CHUNK_SIZE = 25;
+    for (let i = 0; i < pending.length; i += CHUNK_SIZE) {
+      const chunk = pending.slice(i, i + CHUNK_SIZE);
+      teacherMeta.textContent = `Saving ${Math.min(i + chunk.length, pending.length)} of ${pending.length}…`;
       try {
-        await updateSubmissionAnalysis(sub.id, analysis);
-        sub.analysis = analysis;
-        ok++;
+        const result = await updateSubmissionsBulk(chunk);
+        ok += result.updated || 0;
+        const chunkFail = chunk.length - (result.updated || 0);
+        fail += chunkFail;
+        if (result.errors?.length && !firstError) {
+          firstError = result.errors[0].error || "Update failed";
+          if (result.errors[0].id) firstError += ` (id: ${result.errors[0].id})`;
+        }
       } catch (err) {
-        console.error("Save re-analysis failed for", sub.id, err);
-        fail++;
+        console.error("Bulk save failed:", err);
+        fail += chunk.length;
+        if (!firstError) firstError = err.message || "Could not save to Google Sheets";
       }
     }
 
     reanalyzeBtn.disabled = false;
     refreshBtn.disabled = false;
-    teacherMeta.textContent = fail
-      ? `Re-analyzed ${ok} submission${ok === 1 ? "" : "s"}; ${fail} failed. If updates failed, redeploy the Google Apps Script (see setup notes).`
-      : `Re-analyzed ${ok} submission${ok === 1 ? "" : "s"} with the updated rubric.`;
-    if (fail) teacherMeta.classList.add("dw-error");
+    if (fail) {
+      const hint = /unknown action/i.test(firstError)
+        ? " Redeploy Google Apps Script with the latest code (needs updateBulk action), then try again."
+        : /not found/i.test(firstError)
+          ? " Check that submission IDs in the sheet match the dashboard."
+          : " Redeploy Google Apps Script if you recently updated it.";
+      teacherMeta.textContent = `Re-analyzed ${ok} submission${ok === 1 ? "" : "s"}; ${fail} failed.${firstError ? ` First error: ${firstError}.` : ""}${hint}`;
+      teacherMeta.classList.add("dw-error");
+    } else {
+      teacherMeta.textContent = `Re-analyzed ${ok} submission${ok === 1 ? "" : "s"} with the updated rubric.`;
+    }
     renderTeacherTable();
 
     if (!detailPanel.classList.contains("dw-hidden")) {
