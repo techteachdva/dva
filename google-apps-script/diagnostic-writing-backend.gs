@@ -151,7 +151,8 @@ function listSubmissions_() {
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return [];
 
-  const values = sheet.getRange(2, 1, lastRow, 11).getValues();
+  const numRows = lastRow - 1;
+  const values = sheet.getRange(2, 1, numRows, 11).getValues();
   const submissions = [];
 
   for (let i = values.length - 1; i >= 0; i--) {
@@ -227,7 +228,8 @@ function normalizeId_(value) {
 
 function writeAnalysisToRow_(sheet, row, analysis) {
   const scores = analysis.scores || {};
-  sheet.getRange(row, 6, row, 9).setValues([[
+  // getRange(row, col, numRows, numCols) — NOT end row/col
+  sheet.getRange(row, 6, 1, 4).setValues([[
     analysis.wordCount || 0,
     analysis.wpm || 0,
     analysis.typingLevel || "",
@@ -247,7 +249,8 @@ function updateSubmissionAnalysis_(params) {
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) throw new Error("No submissions");
 
-  const ids = sheet.getRange(2, 1, lastRow, 1).getValues();
+  const numRows = lastRow - 1;
+  const ids = sheet.getRange(2, 1, numRows, 1).getValues();
   for (var i = 0; i < ids.length; i++) {
     if (normalizeId_(ids[i][0]) === id) {
       writeAnalysisToRow_(sheet, i + 2, analysis);
@@ -267,7 +270,8 @@ function updateSubmissionsBulk_(updates) {
   }
   if (!updates || !updates.length) return result;
 
-  const idCol = sheet.getRange(2, 1, lastRow, 1).getValues();
+  const numRows = lastRow - 1;
+  const idCol = sheet.getRange(2, 1, numRows, 1).getValues();
   const idToRow = {};
   for (var i = 0; i < idCol.length; i++) {
     const key = normalizeId_(idCol[i][0]);
