@@ -1,5 +1,5 @@
 /**
- * Peer comparison stats and radar charts for the writing diagnostic.
+ * Peer comparison stats and charts for the writing diagnostic.
  */
 (() => {
   "use strict";
@@ -63,11 +63,6 @@
         const g = classroomGrade(sub.classroom);
         return grade !== null && g === grade;
       }
-      if (scope === "classGrade") {
-        if (sub.classroom !== target.classroom) return false;
-        if (grade === null) return true;
-        return classroomGrade(sub.classroom) === grade;
-      }
       return false;
     });
   }
@@ -121,21 +116,172 @@
       classMax: withFallback(classMax, classAvg, gradeAvg),
       classPeerCount: classPeers.length,
       gradePeerCount: gradePeers.length,
-      classGradePeerCount: rangeScores.filter((v) => Number.isFinite(v)).length,
       minIsFallback: classMin === null,
       maxIsFallback: classMax === null,
+      status: peerStatus(student, classAvg, classMin, classMax),
     };
+  }
+
+  function peerStatus(student, classAvg, classMin, classMax) {
+    if (!Number.isFinite(student)) {
+      return { level: "neutral", label: "No score", diff: null };
+    }
+    if (!Number.isFinite(classAvg)) {
+      return { level: "neutral", label: "No class data", diff: null };
+    }
+    const diff = Math.round(student - classAvg);
+    const hasSpread = Number.isFinite(classMin) && Number.isFinite(classMax) && classMax > classMin;
+    if (hasSpread && student >= classMax) {
+      return { level: "top", label: "Top of class", diff };
+    }
+    if (hasSpread && student <= classMin) {
+      return { level: "bottom", label: "Lowest in class", diff };
+    }
+    if (diff >= 12) return { level: "high", label: "Well above class", diff };
+    if (diff >= 4) return { level: "above", label: "Above class", diff };
+    if (diff > -4) return { level: "mid", label: "Near class avg", diff };
+    if (diff > -12) return { level: "below", label: "Below class", diff };
+    return { level: "low", label: "Well below class", diff };
   }
 
   function computeComparisons(submissions, target) {
     const grade = classroomGrade(target.classroom);
     const metrics = METRICS.map((m) => computeMetricComparison(submissions, target, m.id));
+    let above = 0;
+    let below = 0;
+    let near = 0;
+    for (const m of metrics) {
+      const lvl = m.status?.level;
+      if (lvl === "high" || lvl === "above" || lvl === "top") above++;
+      else if (lvl === "low" || lvl === "below" || lvl === "bottom") below++;
+      else if (lvl === "mid") near++;
+    }
     return {
       grade,
       classroom: target.classroom || "",
       metrics,
-      metricLabels: METRICS,
+      summary: { above, below, near, total: metrics.length },
     };
+  }
+
+  function fmtDiff(diff) {
+    if (!Number.isFinite(diff)) return "—";
+    if (diff > 0) return `+${diff}`;
+    return String(diff);
+  }
+
+  function renderSummaryStrip(comparison) {
+    const { above, below, near, total } = comparison.summary;
+    const gradeNote = comparison.grade ? `Grade ${comparison.grade}` : "Grade n/a";
+    return `
+      <div class="dw-compare-summary">
+        <div class="dw-compare-summary__counts">
+          <div class="dw-compare-stat dw-compare-stat--above">
+            <span class="dw-compare-stat__n">${above}</span>
+            <span class="dw-compare-stat__k">above class</span>
+          </div>
+          <div class="dw-compare-stat dw-compare-stat--near">
+            <span class="dw-compare-stat__n">${near}</span>
+            <span class="dw-compare-stat__k">near average</span>
+          </div>
+          <div class="dw-compare-stat dw-compare-stat--below">
+            <span class="dw-compare-stat__n">${below}</span>
+            <span class="dw-compare-stat__k">below class</span>
+          </div>
+        </div>
+        <p class="dw-muted dw-tiny dw-compare-summary__meta">
+          ${escapeHtml(comparison.classroom || "Class")} · ${escapeHtml(gradeNote)} ·
+          comparing this student to ${total} skills vs class peers
+        </p>
+      </div>`;
+  }
+
+  function renderQuickGrid(comparison) {
+    const cards = comparison.metrics.map((m) => {
+      const label = METRICS.find((x) => x.id === m.id)?.label || m.id;
+      const diff = m.status?.diff;
+      const diffClass = !Number.isFinite(diff) ? "" : diff > 3 ? "dw-quick-card__diff--up" : diff < -3 ? "dw-quick-card__diff--down" : "dw-quick-card__diff--flat";
+      return `
+        <div class="dw-quick-card dw-quick-card--${m.status?.level || "neutral"}">
+          <div class="dw-quick-card__label">${escapeHtml(label)}</div>
+          <div class="dw-quick-card__score">${m.student ?? "—"}</div>
+          <div class="dw-quick-card__diff ${diffClass}">${Number.isFinite(diff) ? `${fmtDiff(diff)} vs class` : "—"}</div>
+        </div>`;
+    }).join("");
+
+    return `<div class="dw-quick-grid" aria-label="At-a-glance skill comparison">${cards}</div>`;
+  }
+
+  function renderMarker(kind, pct, label, value) {
+    if (!Number.isFinite(pct)) return "";
+    const safe = Math.max(2, Math.min(98, pct));
+    return `
+      <div class="dw-peer-scale__marker dw-peer-scale__marker--${kind}" style="left:${safe}%">
+        <span class="dw-peer-scale__marker-line" aria-hidden="true"></span>
+        <span class="dw-peer-scale__marker-label">${escapeHtml(label)}<strong>${value ?? "—"}</strong></span>
+      </div>`;
+  }
+
+  function renderPeerRows(comparison) {
+    const rows = comparison.metrics.map((m) => {
+      const label = METRICS.find((x) => x.id === m.id)?.label || m.id;
+      const student = m.student ?? 0;
+      const classAvg = m.classAvg;
+      const gradeAvg = m.gradeAvg;
+      const classMin = m.classMin ?? 0;
+      const classMax = m.classMax ?? 100;
+      const bandLeft = Math.max(0, Math.min(100, classMin));
+      const bandWidth = Math.max(2, Math.min(100 - bandLeft, classMax - classMin));
+
+      const classMarker = Number.isFinite(classAvg)
+        ? renderMarker("class", classAvg, "Class ", classAvg)
+        : "";
+      const gradeMarker = Number.isFinite(gradeAvg) && m.gradePeerCount > 0
+        ? renderMarker("grade", gradeAvg, "Grade ", gradeAvg)
+        : "";
+      const studentMarker = renderMarker("student", student, "Student ", student);
+
+      const rangeNote = m.minIsFallback || m.maxIsFallback
+        ? '<span class="dw-muted"> (range estimated)</span>'
+        : "";
+
+      return `
+        <article class="dw-peer-row dw-peer-row--${m.status?.level || "neutral"}">
+          <header class="dw-peer-row__head">
+            <div class="dw-peer-row__title-wrap">
+              <h5 class="dw-peer-row__title">${escapeHtml(label)}</h5>
+              <span class="dw-peer-chip dw-peer-chip--${m.status?.level || "neutral"}">${escapeHtml(m.status?.label || "—")}</span>
+            </div>
+            <div class="dw-peer-row__score">${m.student ?? "—"}</div>
+          </header>
+          <div class="dw-peer-scale" role="img" aria-label="${escapeHtml(label)}: student ${student}, class average ${classAvg ?? "unknown"}">
+            <div class="dw-peer-scale__track">
+              <div class="dw-peer-scale__band" style="left:${bandLeft}%; width:${bandWidth}%"></div>
+              ${classMarker}
+              ${gradeMarker}
+              ${studentMarker}
+            </div>
+            <div class="dw-peer-scale__footer">
+              <span>Low <strong>${m.classMin ?? "—"}</strong></span>
+              <span>High <strong>${m.classMax ?? "—"}</strong>${rangeNote}</span>
+            </div>
+          </div>
+        </article>`;
+    }).join("");
+
+    return `
+      <section class="dw-peer-map">
+        <header class="dw-peer-map__head">
+          <h4 class="dw-h3">Where they fall in class</h4>
+          <p class="dw-muted dw-tiny">
+            <span class="dw-peer-key dw-peer-key--student">● Student</span>
+            <span class="dw-peer-key dw-peer-key--class">| Class avg</span>
+            <span class="dw-peer-key dw-peer-key--grade">| Grade avg</span>
+            <span class="dw-peer-key dw-peer-key--band">▭ Class range</span>
+          </p>
+        </header>
+        <div class="dw-peer-map__rows">${rows}</div>
+      </section>`;
   }
 
   function polarPoint(cx, cy, radius, angleRad) {
@@ -156,124 +302,45 @@
       .join(" ");
   }
 
-  function axisLines(cx, cy, maxRadius, count) {
-    const step = (Math.PI * 2) / count;
-    let lines = "";
-    for (let i = 0; i < count; i++) {
-      const p = polarPoint(cx, cy, maxRadius, i * step);
-      lines += `<line x1="${cx}" y1="${cy}" x2="${p.x.toFixed(1)}" y2="${p.y.toFixed(1)}" class="dw-radar-axis"/>`;
-    }
-    return lines;
-  }
-
-  function gridRings(cx, cy, maxRadius) {
-    return [25, 50, 75, 100]
-      .map((pct) => {
-        const r = (pct / 100) * maxRadius;
-        return `<circle cx="${cx}" cy="${cy}" r="${r}" class="dw-radar-ring"/>`;
-      })
-      .join("");
-  }
-
-  function renderRadarChart(comparison, options = {}) {
-    const size = options.size || 360;
+  function renderRadarChart(comparison) {
+    const size = 320;
     const cx = size / 2;
     const cy = size / 2;
-    const maxRadius = size * 0.34;
+    const maxRadius = size * 0.32;
     const labels = comparison.metrics.map((m) => METRICS.find((x) => x.id === m.id)?.label || m.id);
-
     const studentVals = comparison.metrics.map((m) => m.student ?? 0);
     const classVals = comparison.metrics.map((m) => m.classAvg ?? 0);
-    const gradeVals = comparison.metrics.map((m) => m.gradeAvg ?? 0);
-
     const step = (Math.PI * 2) / labels.length;
-    const labelMarkup = labels
-      .map((label, i) => {
-        const p = polarPoint(cx, cy, maxRadius + 22, i * step);
-        return `<text x="${p.x.toFixed(1)}" y="${p.y.toFixed(1)}" class="dw-radar-label" text-anchor="middle" dominant-baseline="middle">${escapeHtml(label)}</text>`;
-      })
-      .join("");
 
-    const vertexMarkup = comparison.metrics
-      .map((m, i) => {
-        const student = m.student ?? 0;
-        const p = polarPoint(cx, cy, (student / 100) * maxRadius, i * step);
-        const minLabel = m.minIsFallback ? "~" : "";
-        const maxLabel = m.maxIsFallback ? "~" : "";
-        return `<g class="dw-radar-vertex">
-          <circle cx="${p.x.toFixed(1)}" cy="${p.y.toFixed(1)}" r="5" class="dw-radar-dot"/>
-          <text x="${p.x.toFixed(1)}" y="${(p.y - 10).toFixed(1)}" class="dw-radar-score" text-anchor="middle">${student}</text>
-          <text x="${p.x.toFixed(1)}" y="${(p.y + 14).toFixed(1)}" class="dw-radar-range" text-anchor="middle">${minLabel}${m.classMin ?? "—"}–${m.classMax ?? "—"}${maxLabel}</text>
-        </g>`;
-      })
-      .join("");
+    const rings = [25, 50, 75, 100].map((pct) => {
+      const r = (pct / 100) * maxRadius;
+      return `<circle cx="${cx}" cy="${cy}" r="${r}" class="dw-radar-ring"/>`;
+    }).join("");
 
-    const gradeNote = comparison.grade ? `Grade ${comparison.grade}` : "Grade level n/a";
-    const classNote = comparison.classroom || "Class";
+    const axes = labels.map((_, i) => {
+      const p = polarPoint(cx, cy, maxRadius, i * step);
+      return `<line x1="${cx}" y1="${cy}" x2="${p.x}" y2="${p.y}" class="dw-radar-axis"/>`;
+    }).join("");
+
+    const labelMarkup = labels.map((label, i) => {
+      const p = polarPoint(cx, cy, maxRadius + 18, i * step);
+      return `<text x="${p.x}" y="${p.y}" class="dw-radar-label" text-anchor="middle" dominant-baseline="middle">${escapeHtml(label)}</text>`;
+    }).join("");
 
     return `
-      <div class="dw-compare-radar">
-        <div class="dw-compare-radar__head">
-          <h4 class="dw-h3">Skill comparison chart</h4>
-          <p class="dw-muted dw-tiny">${escapeHtml(classNote)} · ${escapeHtml(gradeNote)} · bold = this student · faded shapes = class &amp; grade averages · range = low–high in class</p>
-        </div>
-        <div class="dw-compare-radar__body">
-          <svg class="dw-radar-svg" viewBox="0 0 ${size} ${size}" role="img" aria-label="Radar chart comparing student writing scores to class and grade averages">
-            ${gridRings(cx, cy, maxRadius)}
-            ${axisLines(cx, cy, maxRadius, labels.length)}
-            <polygon points="${polygonPoints(gradeVals, cx, cy, maxRadius)}" class="dw-radar-poly dw-radar-poly--grade"/>
+      <details class="dw-compare-radar-fold">
+        <summary class="dw-h3">Optional: shape overview</summary>
+        <div class="dw-compare-radar-fold__body">
+          <svg class="dw-radar-svg" viewBox="0 0 ${size} ${size}" role="img" aria-hidden="true">
+            ${rings}
+            ${axes}
             <polygon points="${polygonPoints(classVals, cx, cy, maxRadius)}" class="dw-radar-poly dw-radar-poly--class"/>
             <polygon points="${polygonPoints(studentVals, cx, cy, maxRadius)}" class="dw-radar-poly dw-radar-poly--student"/>
-            ${vertexMarkup}
             ${labelMarkup}
           </svg>
-          <ul class="dw-compare-legend">
-            <li><span class="dw-compare-swatch dw-compare-swatch--student"></span><strong>Student</strong></li>
-            <li><span class="dw-compare-swatch dw-compare-swatch--class"></span>Class average</li>
-            <li><span class="dw-compare-swatch dw-compare-swatch--grade"></span>Grade average</li>
-            <li><span class="dw-compare-swatch dw-compare-swatch--range"></span>Class low–high <span class="dw-muted">(~ = estimated from average)</span></li>
-          </ul>
+          <p class="dw-muted dw-tiny">Green = student · Blue = class average. Use the rows above for precise numbers.</p>
         </div>
-      </div>`;
-  }
-
-  function renderMetricBars(comparison) {
-    const rows = comparison.metrics
-      .map((m) => {
-        const label = METRICS.find((x) => x.id === m.id)?.label || m.id;
-        const student = m.student ?? 0;
-        const classAvg = m.classAvg ?? 0;
-        const gradeAvg = m.gradeAvg ?? 0;
-        const classMin = m.classMin ?? classAvg;
-        const classMax = m.classMax ?? classAvg;
-        return `
-          <div class="dw-compare-bar" data-metric="${escapeHtml(m.id)}">
-            <div class="dw-compare-bar__head">
-              <span class="dw-compare-bar__title">${escapeHtml(label)}</span>
-              <span class="dw-compare-bar__student">${student}</span>
-            </div>
-            <div class="dw-compare-bar__track" aria-hidden="true">
-              <div class="dw-compare-bar__range" style="left:${classMin}%; width:${Math.max(classMax - classMin, 2)}%"></div>
-              <div class="dw-compare-bar__ghost dw-compare-bar__ghost--grade" style="width:${gradeAvg}%"></div>
-              <div class="dw-compare-bar__ghost dw-compare-bar__ghost--class" style="width:${classAvg}%"></div>
-              <div class="dw-compare-bar__fill" style="width:${student}%"></div>
-            </div>
-            <div class="dw-compare-bar__labels">
-              <span>Low ${m.classMin ?? "—"}${m.minIsFallback ? "*" : ""}</span>
-              <span>Class ${m.classAvg ?? "—"}</span>
-              <span>Grade ${m.gradeAvg ?? "—"}</span>
-              <span>High ${m.classMax ?? "—"}${m.maxIsFallback ? "*" : ""}</span>
-            </div>
-          </div>`;
-      })
-      .join("");
-
-    return `
-      <div class="dw-compare-bars">
-        <h4 class="dw-h3">Category breakdown</h4>
-        <p class="dw-muted dw-tiny">Each bar: student (solid) over class average (blue ghost) and grade average (purple ghost). Shaded band = lowest–highest in this class.</p>
-        ${rows}
-      </div>`;
+      </details>`;
   }
 
   function renderComparisonPanel(submissions, target) {
@@ -282,7 +349,11 @@
     if (!hasPeers) {
       return `<div class="dw-compare-empty dw-muted">No peer submissions yet for comparison — averages will appear as more students complete the diagnostic.</div>`;
     }
-    return `${renderRadarChart(comparison)}${renderMetricBars(comparison)}`;
+    return `
+      ${renderSummaryStrip(comparison)}
+      ${renderQuickGrid(comparison)}
+      ${renderPeerRows(comparison)}
+      ${renderRadarChart(comparison)}`;
   }
 
   function escapeHtml(str) {
@@ -299,7 +370,6 @@
     computeComparisons,
     renderComparisonPanel,
     renderRadarChart,
-    renderMetricBars,
     isExcludedFromNorms,
   };
 })();
