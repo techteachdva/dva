@@ -5,15 +5,28 @@
   "use strict";
 
   const METRICS = [
-    { id: "volume", label: "Volume" },
     { id: "typing", label: "Typing" },
     { id: "mechanics", label: "Mechanics" },
-    { id: "syntax", label: "Syntax" },
-    { id: "semantics", label: "Word choice" },
-    { id: "voice", label: "Voice" },
-    { id: "narrative", label: "Story" },
-    { id: "creativity", label: "Creativity" },
+    { id: "story", label: "Story" },
   ];
+
+  function resolveStoryScore(analysis) {
+    const s = analysis?.scores;
+    if (!s) return null;
+    if (Number.isFinite(s.story)) return s.story;
+    const legacy = [s.narrative, s.voice, s.creativity].filter((v) => Number.isFinite(v));
+    if (legacy.length) return Math.round(legacy.reduce((a, b) => a + b, 0) / legacy.length);
+    return null;
+  }
+
+  function metricScore(sub, metricId) {
+    if (metricId === "story") {
+      const n = resolveStoryScore(sub?.analysis);
+      return Number.isFinite(n) ? n : null;
+    }
+    const n = Number(sub?.analysis?.scores?.[metricId]);
+    return Number.isFinite(n) ? n : null;
+  }
 
   function classroomGrade(classroom) {
     const c = String(classroom || "");
@@ -28,11 +41,6 @@
     const classroom = String(sub?.classroom || "").trim();
     if (/^teacher'?s lounge$/i.test(classroom)) return true;
     return /^amy$/i.test(name);
-  }
-
-  function metricScore(sub, metricId) {
-    const n = Number(sub?.analysis?.scores?.[metricId]);
-    return Number.isFinite(n) ? n : null;
   }
 
   function average(values) {
@@ -191,7 +199,7 @@
         </div>
         <p class="dw-muted dw-tiny dw-compare-summary__meta">
           ${escapeHtml(comparison.classroom || "Class")} · ${escapeHtml(gradeNote)} ·
-          comparing this student to ${total} skills vs class peers
+          comparing this student to ${total} main skills vs class peers
         </p>
       </div>`;
   }

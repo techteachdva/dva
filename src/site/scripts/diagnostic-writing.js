@@ -367,32 +367,45 @@
       [0, 0], [30, 22], [55, 40], [80, 54], [110, 66], [140, 76], [175, 85], [220, 92], [280, 97], [350, 100],
     ]);
 
-    const complexityScore = clamp(Math.round(
-      syntax.score * 0.5 + semantics.score * 0.3 + grammar.score * 0.2
-    ), 0, 100);
-
-    const creativityScore = clamp(Math.round(
-      scoreFromRange(sensoryCount, [[0, 28], [1, 48], [2, 62], [4, 76], [7, 90], [10, 96]]) * 0.35 +
-      scoreFromRange(transitionCount, [[0, 32], [1, 52], [2, 68], [4, 82], [6, 92]]) * 0.25 +
-      scoreFromRange(dialogueLines, [[0, 42], [1, 58], [2, 74], [4, 90]]) * 0.2 +
-      scoreFromRange(conflictWords, [[0, 32], [1, 52], [2, 70], [4, 86]]) * 0.2
-    ), 0, 100);
-
-    const typingScore = scoreFromRange(wpm, [
+    const wpmScore = scoreFromRange(wpm, [
       [0, 0], [6, 18], [12, 36], [18, 52], [24, 66], [30, 78], [38, 88], [48, 100],
     ]);
 
-    const mechanicsScore = clamp(Math.round(spelling.score * 0.5 + grammar.score * 0.5), 0, 100);
-    const voiceScore = clamp(Math.round(
-      scoreFromRange(voiceCount, [[0, 20], [2, 45], [5, 65], [10, 82], [15, 95]]) * 0.6 +
-      semantics.score * 0.4
+    const typingScore = clamp(Math.round(wpmScore * 0.55 + volumeScore * 0.45), 0, 100);
+
+    const mechanicsScore = clamp(Math.round(
+      spelling.score * 0.45 + grammar.score * 0.35 + syntax.score * 0.2
     ), 0, 100);
 
-    const narrativeScore = clamp(Math.round(
-      scoreFromRange(sensoryCount, [[0, 22], [1, 46], [3, 66], [5, 80], [8, 92]]) * 0.35 +
-      scoreFromRange(transitionCount, [[0, 28], [1, 50], [3, 70], [5, 86]]) * 0.25 +
-      scoreFromRange(dialogueLines, [[0, 32], [1, 54], [2, 72], [3, 88]]) * 0.2 +
-      scoreFromRange(conflictWords, [[0, 28], [1, 48], [2, 68], [4, 86]]) * 0.2
+    const storySubs = {
+      voice: scoreFromRange(voiceCount, [[0, 42], [2, 58], [5, 74], [8, 86], [12, 95]]),
+      detail: scoreFromRange(
+        sensoryCount + dialogueLines * 1.5,
+        [[0, 40], [1, 56], [2, 68], [4, 80], [6, 90], [9, 96]]
+      ),
+      structure: scoreFromRange(
+        transitionCount + conflictWords,
+        [[0, 40], [1, 58], [2, 72], [4, 84], [6, 93]]
+      ),
+      wordChoice: semantics.score,
+    };
+
+    let storyScore = clamp(Math.round(
+      storySubs.voice * 0.2 +
+      storySubs.detail * 0.25 +
+      storySubs.structure * 0.25 +
+      storySubs.wordChoice * 0.3
+    ), 0, 100);
+
+    if (wordCount >= 50 && voiceCount >= 2 && sentenceCount >= 3) {
+      storyScore = Math.max(storyScore, 48);
+    }
+    if (wordCount >= 90 && voiceCount >= 4) {
+      storyScore = Math.max(storyScore, 55);
+    }
+
+    const complexityScore = clamp(Math.round(
+      syntax.score * 0.5 + semantics.score * 0.3 + grammar.score * 0.2
     ), 0, 100);
 
     const fluencyScore = typingScore;
@@ -406,9 +419,11 @@
       semantics: semantics.score,
       fluency: fluencyScore,
       volume: volumeScore,
-      voice: voiceScore,
-      creativity: creativityScore,
-      narrative: narrativeScore,
+      typing: typingScore,
+      story: storyScore,
+      voice: storySubs.voice,
+      narrative: Math.round((storySubs.detail + storySubs.structure) / 2),
+      creativity: storySubs.detail,
     };
 
     const standards = window.DWStandards
@@ -416,14 +431,12 @@
       : { all: [], excelling: [], developing: [], needsSupport: [] };
 
     const typingLevel = classifyTyping(wordCount, wpm);
-    const overallScore = Math.round(
-      volumeScore * 0.2 + complexityScore * 0.2 + creativityScore * 0.15 +
-      typingScore * 0.15 + mechanicsScore * 0.15 + semantics.score * 0.15
-    );
+    const overallScore = Math.round((typingScore + mechanicsScore + storyScore) / 3);
 
     const studentFeedback = buildStudentFeedback({
       wordCount, wpm, typingLevel, spelling, grammar, syntax, semantics,
       sensoryCount, transitionCount, dialogueLines, voiceCount, conflictWords,
+      storySubs, typingScore, mechanicsScore, storyScore,
     });
 
     const analysis = {
@@ -443,19 +456,19 @@
       grammar,
       syntax,
       semantics,
+      storySubs,
       scores: {
-        volume: volumeScore,
-        complexity: complexityScore,
-        creativity: creativityScore,
         typing: typingScore,
+        mechanics: mechanicsScore,
+        story: storyScore,
+        overall: overallScore,
+        volume: volumeScore,
+        wpm: wpmScore,
         spelling: spelling.score,
         grammar: grammar.score,
         syntax: syntax.score,
         semantics: semantics.score,
-        mechanics: mechanicsScore,
-        voice: voiceScore,
-        narrative: narrativeScore,
-        overall: overallScore,
+        complexity: complexityScore,
       },
       metricScores,
       standards,
@@ -524,7 +537,7 @@
     });
 
     sections.push({
-      title: "Spelling & mechanics",
+      title: "Mechanics (spelling, punctuation & sentences)",
       items: [
         m.spelling.score >= 75
           ? "Spelling looks solid for a first draft — nice control under time pressure."
@@ -535,49 +548,32 @@
         ...(m.grammar.score >= 75
           ? ["Capital letters and punctuation are mostly in place."]
           : m.grammar.issues.slice(0, 2)),
+        m.syntax.sentenceVariety >= 5
+          ? "Good sentence variety — you mix short and long sentences."
+          : "Try mixing short punchy sentences with longer descriptive ones.",
+        ...m.syntax.issues.slice(0, 1),
       ].filter(Boolean),
     });
 
     sections.push({
-      title: "Syntax (how sentences are built)",
+      title: "Story (voice, details & narrative craft)",
       items: [
-        m.syntax.sentenceVariety >= 5
-          ? "Good sentence variety — you mix short and long sentences."
-          : "Try mixing short punchy sentences with longer descriptive ones.",
-        m.syntax.complexMarkers >= 2
-          ? "You used connecting words (because, when, although) to build complex sentences."
-          : "Add connectors like because, when, or although to link ideas.",
-        ...m.syntax.issues.slice(0, 2),
-      ],
-    });
-
-    sections.push({
-      title: "Semantics (word meaning & choice)",
-      items: [
-        m.semantics.lexicalDiversity >= 0.55
-          ? "Strong vocabulary variety — your word choices feel specific."
-          : "Use precise nouns and vivid verbs instead of general words like 'good' or 'nice'.",
-        m.semantics.specificity >= 5
-          ? "Specific details (names, places, numbers) help readers picture your story."
-          : "Name people, places, and moments — specifics make stories believable.",
-        ...m.semantics.issues.slice(0, 2),
-      ],
-    });
-
-    sections.push({
-      title: "Narrative craft",
-      items: [
-        m.sensoryCount >= 3
-          ? "Sensory details (what you saw, heard, felt) bring your summer memory to life."
-          : "Add what you saw, heard, smelled, or felt during the event.",
-        m.voiceCount >= 5
+        m.storyScore >= 65
+          ? "Your summer story comes through — voice, details, and sequence work together."
+          : m.storyScore >= 50
+            ? "You told a real story; add more specific details and time words to strengthen it."
+            : "Focus on one summer moment: who was there, what happened, and how you felt.",
+        m.voiceCount >= 4
           ? "Your personal voice comes through — this reads like your experience."
           : "Use 'I' and 'my' to keep the story in your own voice.",
-        m.dialogueLines >= 1
-          ? "Dialogue adds energy — keep using quoted speech when it fits."
-          : "Try one line of dialogue if someone spoke during your story.",
-        m.transitionCount >= 2
-          ? "Time words (then, finally, suddenly) help the story flow."
+        m.sensoryCount >= 2
+          ? "Sensory details help readers picture your memory."
+          : "Add what you saw, heard, or felt during the event.",
+        m.semantics.specificity >= 4
+          ? "Specific names and places make your story believable."
+          : "Name people, places, and moments — specifics matter.",
+        m.transitionCount >= 1
+          ? "Time words help your story flow from start to finish."
           : "Signal time shifts with words like then, next, or finally.",
       ],
     });
@@ -595,7 +591,7 @@
       lines.push(summary.teacherParagraph);
       lines.push("");
       lines.push("Skill bands (for grouping & next steps):");
-      for (const c of R.teacherMetricCards(m).slice(2, 8)) {
+      for (const c of R.teacherMetricCards(m)) {
         lines.push(`• ${c.teacherTitle}: ${c.band.label} (${c.score}) — ${c.teacherWhat}`);
       }
     } else {
@@ -952,7 +948,7 @@
       const R = window.DWRubrics;
       const overallBand = R ? R.band(a.scores?.overall) : null;
       const mechBand = R ? R.band(a.scores?.mechanics) : null;
-      const narrBand = R ? R.band(a.scores?.narrative) : null;
+      const narrBand = R ? R.band(resolveStoryScore(a)) : null;
       const typShort = { intervention: "Intv", developing: "Dev", proficient: "Prof", advanced: "Adv" };
       const bandShort = { strong: "Str", on_track: "Mid", developing: "Dev", needs_support: "Low" };
       const tr = document.createElement("tr");
@@ -965,7 +961,7 @@
         <td>${a.wpm ?? "—"}</td>
         <td><span class="${badgeClass(a.typingLevel)}" title="${typingLabel(a.typingLevel)}">${typShort[a.typingLevel] || "—"}</span></td>
         <td>${mechBand ? `<span class="${R.bandClass(mechBand.level)}" title="${mechBand.short}">${bandShort[mechBand.level] || mechBand.label}</span>` : (a.scores?.mechanics ?? "—")}</td>
-        <td>${narrBand ? `<span class="${R.bandClass(narrBand.level)}" title="${narrBand.short}">${bandShort[narrBand.level] || narrBand.label}</span>` : (a.scores?.narrative ?? "—")}</td>
+        <td>${narrBand ? `<span class="${R.bandClass(narrBand.level)}" title="${narrBand.short}">${bandShort[narrBand.level] || narrBand.label}</span>` : (resolveStoryScore(a) ?? "—")}</td>
         <td class="dw-col-overall">${overallBand ? `<span class="${R.bandClass(overallBand.level)}">${a.scores?.overall ?? "—"}</span>` : (a.scores?.overall ?? "—")}</td>`;
       tr.addEventListener("click", (e) => {
         if (e.target.closest(".dw-view-btn")) return;
@@ -1052,18 +1048,24 @@
     detailPanel.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
+  function resolveStoryScore(analysis) {
+    const s = analysis?.scores;
+    if (!s) return null;
+    if (Number.isFinite(s.story)) return s.story;
+    const legacy = [s.narrative, s.voice, s.creativity].filter((v) => Number.isFinite(v));
+    if (legacy.length) return Math.round(legacy.reduce((a, b) => a + b, 0) / legacy.length);
+    return null;
+  }
+
   function exportCsv() {
     const headers = [
-      "Name", "Class", "Words", "WPM", "Typing", "Spelling", "Grammar", "Syntax", "Semantics",
-      "Overall", "Standards Needing Support", "Submitted",
+      "Name", "Class", "Words", "WPM", "Typing", "Mechanics", "Story", "Overall", "Submitted",
     ];
     const rows = allSubmissions.map((s) => {
       const a = s.analysis || {};
       return [
-        s.name, s.classroom || "", a.wordCount, a.wpm, typingLabel(a.typingLevel),
-        a.scores?.spelling, a.scores?.grammar, a.scores?.syntax, a.scores?.semantics,
-        a.scores?.overall,
-        (a.standards?.needsSupport || []).map((x) => x.id).join("; "),
+        s.name, s.classroom || "", a.wordCount, a.wpm, a.scores?.typing, a.scores?.mechanics,
+        resolveStoryScore(a), a.scores?.overall,
         s.submittedAt ? new Date(s.submittedAt).toISOString() : "",
       ];
     });

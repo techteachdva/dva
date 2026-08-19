@@ -409,12 +409,13 @@ html {
   gap: 12px;
 }
 
-.dw-score-grid--8 {
+.dw-score-grid--4 {
   grid-template-columns: repeat(4, 1fr);
 }
 
 @media (max-width: 800px) {
   .dw-score-grid,
+  .dw-score-grid--4,
   .dw-score-grid--8 {
     grid-template-columns: repeat(2, 1fr);
   }

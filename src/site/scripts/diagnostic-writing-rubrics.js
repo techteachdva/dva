@@ -1,5 +1,5 @@
 /**
- * Plain-language score bands and metric explanations for the writing diagnostic.
+ * Plain-language score bands for Typing · Mechanics · Story (+ Overall).
  */
 (() => {
   "use strict";
@@ -56,143 +56,10 @@
     return {
       band: b,
       headline: `${b.label} overall (${analysis.scores?.overall ?? "—"}/100)`,
-      studentParagraph: `You wrote ${analysis.wordCount} words in five minutes (${analysis.wpm} WPM). ${typingNote} Scores below are rubric bands — not letter grades — so you know what to celebrate and what to work on next.`,
-      teacherParagraph: `${analysis.wordCount} words · ${analysis.wpm} WPM · typing: ${typing}. Overall band: ${b.label}. Use bands for grouping and next-step instruction, not as final grades.`,
+      studentParagraph: `You wrote ${analysis.wordCount} words in five minutes (${analysis.wpm} WPM). ${typingNote} Overall is the average of Typing, Mechanics, and Story — use the three scores below to see what to celebrate and what to work on next.`,
+      teacherParagraph: `${analysis.wordCount} words · ${analysis.wpm} WPM · typing tier: ${typing}. Overall (${analysis.scores?.overall ?? "—"}) = average of Typing, Mechanics, and Story. Use bands for grouping, not final grades.`,
     };
   }
-
-  const METRICS = {
-    volume: {
-      title: "How much you wrote",
-      teacherTitle: "Volume & stamina",
-      studentWhat(score, a) {
-        if (score >= 80) return "You wrote a lot in five minutes — great stamina for a first draft.";
-        if (score >= 65) return "You produced a solid amount of writing under time pressure.";
-        if (score >= 50) return "You got some ideas down; try to keep typing until the timer ends.";
-        return "Very little was written in five minutes — focus on typing fluency and brainstorming starters.";
-      },
-      teacherWhat(score, a) {
-        return `${a.wordCount} words in 5 min. ${score >= 65 ? "Adequate volume for analysis." : "Low volume — check typing skills vs. planning/engagement."}`;
-      },
-      evidence(a) {
-        return `${a.wordCount} words · ${a.wpm} WPM`;
-      },
-    },
-    typing: {
-      title: "Typing speed",
-      teacherTitle: "Typing fluency",
-      studentWhat(score, a) {
-        const lvl = a.typingLevel;
-        if (lvl === "advanced") return "You type quickly enough that ideas can keep flowing.";
-        if (lvl === "proficient") return "Your typing speed is workable — keep practicing to write more.";
-        if (lvl === "developing") return "Typing slows you down sometimes — drills and keyboard practice will help.";
-        return "Typing is hard right now — that's okay; practice will make writing feel easier.";
-      },
-      teacherWhat(score, a) {
-        return `${Math.round(a.wpm)} WPM · ${a.wordCount} words. ${typingLabel(a.typingLevel)}.`;
-      },
-      evidence(a) {
-        return `${a.wpm} WPM · ${typingLabel(a.typingLevel)}`;
-      },
-    },
-    mechanics: {
-      title: "Mechanics",
-      teacherTitle: "Mechanics (spelling + conventions)",
-      studentWhat(score, a) {
-        if (score >= 80) return "Capital letters, punctuation, and spelling look strong for a rushed first draft.";
-        if (score >= 65) return "Most sentences follow conventions; fix a few spelling or punctuation patterns in revision.";
-        if (score >= 50) return "Some capitalization, punctuation, or spelling patterns need attention.";
-        return "Conventions make writing hard to read — slow down on capitals, periods, and common spellings.";
-      },
-      teacherWhat(score, a) {
-        const issues = (a.spelling?.misspellCount || 0) + (a.grammar?.errorCount || 0);
-        return `Combined spelling/grammar index. ~${issues} flagged patterns. ${score >= 80 ? "Low editing load." : "Teach 1–2 convention targets, not everything at once."}`;
-      },
-      evidence(a) {
-        return `Spelling ${a.scores?.spelling ?? "—"} · Grammar ${a.scores?.grammar ?? "—"}`;
-      },
-    },
-    syntax: {
-      title: "Sentence building",
-      teacherTitle: "Syntax",
-      studentWhat(score, a) {
-        if (score >= 80) return "You mix short and long sentences and connect ideas with words like because, when, and but.";
-        if (score >= 65) return "Your sentences mostly work; try varying length and using more connectors.";
-        if (score >= 50) return "Sentences are similar in length or sometimes choppy — combine or split ideas on purpose.";
-        return "Sentences need work — aim for complete thoughts, capitals, and a mix of short and long.";
-      },
-      teacherWhat(score, a) {
-        return `Avg ${a.avgSentenceLength} words/sentence · variety ${a.sentenceVariety}. ${a.syntax?.complexMarkers ?? 0} complex markers (because, when, although…).`;
-      },
-      evidence(a) {
-        return `Avg ${a.avgSentenceLength} w/sent · ${a.syntax?.complexMarkers ?? 0} connectors`;
-      },
-    },
-    semantics: {
-      title: "Word choice",
-      teacherTitle: "Semantics / vocabulary",
-      studentWhat(score, a) {
-        if (score >= 80) return "You use specific, varied words — readers can picture your story.";
-        if (score >= 65) return "Word choice is mostly clear; swap general words (good, nice, stuff) for precise ones.";
-        if (score >= 50) return "Some words repeat or stay vague — name people, places, and actions.";
-        return "Words are often general or repeated — add names, places, and vivid verbs.";
-      },
-      teacherWhat(score, a) {
-        return `Lexical diversity ${a.lexicalDiversity} · ${a.semantics?.specificity ?? 0} concrete cues. Vocabulary mini-lessons if below 65.`;
-      },
-      evidence(a) {
-        return `Diversity ${a.lexicalDiversity} · ${a.semantics?.specificity ?? 0} specific details`;
-      },
-    },
-    voice: {
-      title: "Your voice",
-      teacherTitle: "Voice",
-      studentWhat(score, a) {
-        if (score >= 80) return "This sounds like YOU — personal words (I, my, we) and your perspective come through.";
-        if (score >= 65) return "Your personality shows up; keep writing in first person about your own experience.";
-        if (score >= 50) return "The story feels a bit distant — use I/my and tell how YOU felt.";
-        return "Hard to hear your voice — write as yourself, not like a report.";
-      },
-      teacherWhat(score, a) {
-        return `${a.voiceCount} first-person cues. ${score >= 65 ? "Authentic personal narrative tone." : "Encourage first-person reflection on feelings."}`;
-      },
-      evidence(a) {
-        return `${a.voiceCount} I/my/we cues`;
-      },
-    },
-    narrative: {
-      title: "Storytelling",
-      teacherTitle: "Narrative craft",
-      studentWhat(score, a) {
-        if (score >= 80) return "Your story has a clear sequence, details, and a sense of what happened.";
-        if (score >= 65) return "Events connect reasonably well — add time words (then, finally) and how you felt.";
-        if (score >= 50) return "The story is hard to follow — say what happened first, next, and last.";
-        return "Focus on one summer moment: who, where, what happened, and how you felt.";
-      },
-      teacherWhat(score, a) {
-        return `${a.sensoryCount} sensory · ${a.transitionCount} time words · ${a.dialogueLines} dialogue · ${a.conflictWords} tension words. Structure mini-lesson if transitions low.`;
-      },
-      evidence(a) {
-        return `${a.sensoryCount} sensory · ${a.transitionCount} time words · ${a.dialogueLines} dialogue`;
-      },
-    },
-    creativity: {
-      title: "Creative detail",
-      teacherTitle: "Creativity",
-      studentWhat(score, a) {
-        if (score >= 80) return "Vivid, creative choices — senses, dialogue, or tension make your story memorable.";
-        if (score >= 65) return "Some creative flair; add more sights, sounds, feelings, or a line someone said.";
-        if (score >= 50) return "The story is factual but flat — imagine the scene and describe it.";
-        return "Try one sensory detail (what you saw/heard/felt) and one moment that surprised you.";
-      },
-      teacherWhat(score, a) {
-        return `Craft index from sensory + transitions + dialogue + tension. ${score < 65 ? "Model show-don't-tell with mentor text." : "Good risk-taking for timed writing."}`;
-      },
-      evidence(a) {
-        return `${a.sensoryCount} sensory · ${a.transitionCount} transitions · ${a.conflictWords} tension words`;
-      },
-    },
-  };
 
   function typingLabel(level) {
     return {
@@ -202,6 +69,74 @@
       advanced: "Advanced",
     }[level] || level;
   }
+
+  const METRICS = {
+    typing: {
+      title: "Typing",
+      teacherTitle: "Typing (speed + stamina)",
+      studentWhat(score, a) {
+        const lvl = a.typingLevel;
+        if (lvl === "advanced") return "You type quickly and wrote a solid amount in five minutes.";
+        if (lvl === "proficient") return "Your typing speed is workable — keep practicing to write more.";
+        if (lvl === "developing") return "Typing slows you down sometimes — drills and keyboard practice will help.";
+        return "Typing is hard right now — practice will make writing feel easier.";
+      },
+      teacherWhat(score, a) {
+        return `${Math.round(a.wpm)} WPM · ${a.wordCount} words · ${typingLabel(a.typingLevel)}. Combines speed (${a.scores?.wpm ?? "—"}) and volume (${a.scores?.volume ?? "—"}).`;
+      },
+      evidence(a) {
+        return `${a.wpm} WPM · ${a.wordCount} words · ${typingLabel(a.typingLevel)}`;
+      },
+    },
+    mechanics: {
+      title: "Mechanics",
+      teacherTitle: "Mechanics (spelling, conventions, sentences)",
+      studentWhat(score, a) {
+        if (score >= 80) return "Capital letters, punctuation, spelling, and sentences look strong for a rushed first draft.";
+        if (score >= 65) return "Most conventions are in place; fix a few spelling or sentence patterns in revision.";
+        if (score >= 50) return "Some capitalization, punctuation, spelling, or sentence patterns need attention.";
+        return "Conventions make writing hard to read — slow down on capitals, periods, and common spellings.";
+      },
+      teacherWhat(score, a) {
+        const issues = (a.spelling?.misspellCount || 0) + (a.grammar?.errorCount || 0);
+        return `Spelling ${a.scores?.spelling ?? "—"} · Grammar ${a.scores?.grammar ?? "—"} · Syntax ${a.scores?.syntax ?? "—"}. ~${issues} flagged patterns.`;
+      },
+      evidence(a) {
+        return `Spell ${a.scores?.spelling ?? "—"} · Grammar ${a.scores?.grammar ?? "—"} · Syntax ${a.scores?.syntax ?? "—"}`;
+      },
+    },
+    story: {
+      title: "Story",
+      teacherTitle: "Story (voice, craft & word choice)",
+      studentWhat(score, a) {
+        if (score >= 80) return "Your summer story has voice, specific details, and a clear sense of what happened.";
+        if (score >= 65) return "Your story comes through — keep adding sensory details and time words.";
+        if (score >= 50) return "You told a real story; strengthen it with I/my voice, specifics, and sequence words.";
+        return "Focus on one summer moment: who, where, what happened, and how you felt.";
+      },
+      teacherWhat(score, a) {
+        const subs = a.storySubs || {};
+        return `Voice ${subs.voice ?? "—"} · Detail ${subs.detail ?? "—"} · Structure ${subs.structure ?? "—"} · Words ${subs.wordChoice ?? "—"}. One combined story score (not separate voice/narrative/creativity).`;
+      },
+      evidence(a) {
+        const subs = a.storySubs || {};
+        return `${a.sensoryCount ?? 0} sensory · ${a.transitionCount ?? 0} time words · ${a.voiceCount ?? 0} I/my/we · voice ${subs.voice ?? "—"} detail ${subs.detail ?? "—"}`;
+      },
+    },
+    overall: {
+      title: "Overall",
+      teacherTitle: "Overall (average of three)",
+      studentWhat(score, a) {
+        return `Average of Typing (${a.scores?.typing ?? "—"}), Mechanics (${a.scores?.mechanics ?? "—"}), and Story (${a.scores?.story ?? "—"}).`;
+      },
+      teacherWhat(score, a) {
+        return `Mean of Typing + Mechanics + Story. Not a weighted blend of old sub-scores.`;
+      },
+      evidence(a) {
+        return `Typ ${a.scores?.typing ?? "—"} · Mech ${a.scores?.mechanics ?? "—"} · Story ${a.scores?.story ?? "—"}`;
+      },
+    },
+  };
 
   function metricCard(id, score, analysis) {
     const m = METRICS[id];
@@ -219,22 +154,34 @@
     };
   }
 
+  function resolveStoryScore(analysis) {
+    const s = analysis?.scores;
+    if (!s) return null;
+    if (Number.isFinite(s.story)) return s.story;
+    const legacy = [s.narrative, s.voice, s.creativity].filter((v) => Number.isFinite(v));
+    if (legacy.length) return Math.round(legacy.reduce((a, b) => a + b, 0) / legacy.length);
+    return null;
+  }
+
   function studentScoreCards(analysis) {
     const s = analysis.scores || {};
+    const story = resolveStoryScore(analysis);
     return [
-      metricCard("volume", s.volume, analysis),
       metricCard("typing", s.typing, analysis),
       metricCard("mechanics", s.mechanics, analysis),
-      metricCard("syntax", s.syntax, analysis),
-      metricCard("semantics", s.semantics, analysis),
-      metricCard("voice", s.voice, analysis),
-      metricCard("narrative", s.narrative, analysis),
-      metricCard("creativity", s.creativity, analysis),
+      metricCard("story", story, analysis),
+      metricCard("overall", s.overall, analysis),
     ].filter(Boolean);
   }
 
   function teacherMetricCards(analysis) {
-    return studentScoreCards(analysis);
+    const s = analysis.scores || {};
+    const story = resolveStoryScore(analysis);
+    return [
+      metricCard("typing", s.typing, analysis),
+      metricCard("mechanics", s.mechanics, analysis),
+      metricCard("story", story, analysis),
+    ].filter(Boolean);
   }
 
   function bandClass(level) {
@@ -254,6 +201,7 @@
     bandClass,
     scoreCardClass,
     typingLabel,
+    resolveStoryScore,
     METRICS,
   };
 })();

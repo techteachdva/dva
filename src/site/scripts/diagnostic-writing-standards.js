@@ -43,32 +43,32 @@
       anchor: "W2",
       title: "Personal Voice",
       benchmark: "Write to reflect personal perspective, identity and voice.",
-      metrics: ["voice", "semantics"],
-      weight: { voice: 0.5, semantics: 0.5 },
+      metrics: ["story", "semantics"],
+      weight: { story: 0.6, semantics: 0.4 },
     },
     {
       id: "6.2.3.2",
       anchor: "W3",
       title: "Word Choice & Semantics",
       benchmark: "Vary word choice, showing understanding of denotation and connotation.",
-      metrics: ["semantics", "creativity"],
-      weight: { semantics: 0.55, creativity: 0.45 },
+      metrics: ["semantics", "story"],
+      weight: { semantics: 0.5, story: 0.5 },
     },
     {
       id: "6.2.6.1",
       anchor: "W6",
       title: "Narrative Craft",
       benchmark: "Write to create, portraying complexity in characters or self-expression in narrative.",
-      metrics: ["creativity", "narrative"],
-      weight: { creativity: 0.5, narrative: 0.5 },
+      metrics: ["story"],
+      weight: { story: 1 },
     },
     {
       id: "6.2.6.2",
       anchor: "W6",
       title: "Dialogue & Sensory Detail",
       benchmark: "Use dialogue and sensory detail to support literary elements and structure.",
-      metrics: ["narrative", "creativity"],
-      weight: { narrative: 0.6, creativity: 0.4 },
+      metrics: ["story"],
+      weight: { story: 1 },
     },
   ];
 
@@ -142,8 +142,8 @@
     if (std.metrics.includes("semantics") && (metrics.semantics ?? 100) < 50) {
       tips.push("word-choice revision circles and synonym webs");
     }
-    if (std.metrics.includes("narrative") && (metrics.narrative ?? 100) < 50) {
-      tips.push("show-don't-tell sensory detail prompts and dialogue practice");
+    if (std.metrics.includes("story") && (metrics.story ?? 100) < 50) {
+      tips.push("show-don't-tell sensory detail prompts, dialogue practice, and first-person reflection");
     }
     const intervention = tips.length
       ? `Priority intervention for ${std.id}: ${tips.join("; ")}.`
