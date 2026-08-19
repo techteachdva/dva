@@ -37,6 +37,16 @@ html {
   padding-bottom: max(24px, env(safe-area-inset-bottom, 0));
 }
 
+.dw-teacher-shell {
+  max-width: 100%;
+  padding-left: max(12px, env(safe-area-inset-left, 0));
+  padding-right: max(12px, env(safe-area-inset-right, 0));
+}
+
+.dw-shell.dw-shell--teacher {
+  max-width: min(1280px, 100%);
+}
+
 .dw-topbar {
   display: flex;
   align-items: center;
@@ -561,10 +571,100 @@ html {
   padding: 0;
 }
 
+.dw-table-wrap--fit {
+  overflow-x: visible;
+}
+
 .dw-table {
   width: 100%;
   border-collapse: collapse;
   font-size: 14px;
+  table-layout: fixed;
+}
+
+.dw-table--compact {
+  font-size: 12px;
+}
+
+.dw-table--compact th,
+.dw-table--compact td {
+  padding: 8px 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dw-table--compact .dw-col-view {
+  width: 52px;
+  padding-left: 8px;
+}
+
+.dw-table--compact .dw-col-name {
+  width: 14%;
+}
+
+.dw-table--compact .dw-col-class {
+  width: 16%;
+}
+
+.dw-table--compact .dw-col-overall {
+  width: 8%;
+}
+
+.dw-table-row--clickable {
+  cursor: pointer;
+}
+
+.dw-table-row--clickable:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.dw-view-btn--compact {
+  padding: 4px 8px;
+  font-size: 11px;
+  min-height: auto;
+}
+
+.dw-class-codes {
+  padding: 14px 16px;
+}
+
+.dw-class-codes__summary {
+  cursor: pointer;
+  list-style: none;
+  margin: 0;
+}
+
+.dw-class-codes__summary::-webkit-details-marker {
+  display: none;
+}
+
+.dw-class-codes__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.dw-class-code-card {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--dw-border);
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.dw-class-code-card__name {
+  font-size: 12px;
+  color: var(--dw-muted);
+  line-height: 1.3;
+  margin-bottom: 4px;
+}
+
+.dw-class-code-card__code {
+  font-size: 15px;
+  font-weight: 800;
+  color: #7dd3fc;
+  letter-spacing: 0.04em;
 }
 
 .dw-table th,

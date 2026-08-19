@@ -16,7 +16,31 @@
     }
   }
 
+  function loadClassroomCodes() {
+    const el = document.getElementById("dwClassroomCodesJson");
+    if (!el) return {};
+    try {
+      const map = JSON.parse(el.textContent);
+      return map && typeof map === "object" ? map : {};
+    } catch {
+      return {};
+    }
+  }
+
   const VALID_CLASSROOMS = loadValidClassrooms();
+  const CLASSROOM_CODES = loadClassroomCodes();
+
+  function normalizeClassCode(value) {
+    return String(value || "").trim().toLowerCase().replace(/\s+/g, "");
+  }
+
+  function verifyClassroomCode(classroom, code) {
+    const resolved = resolveClassroom(classroom);
+    if (!resolved) return false;
+    const expected = CLASSROOM_CODES[resolved];
+    if (!expected) return false;
+    return normalizeClassCode(code) === normalizeClassCode(expected);
+  }
 
   function normalizeClassroom(value) {
     return String(value || "").trim().replace(/[\u2018\u2019\u201B\u2032]/g, "'");
@@ -74,6 +98,8 @@
 
   const studentName = document.getElementById("studentName");
   const studentClass = document.getElementById("studentClass");
+  const classCode = document.getElementById("classCode");
+  const classCodeError = document.getElementById("classCodeError");
   const startBtn = document.getElementById("startBtn");
   const storyInput = document.getElementById("storyInput");
   const timerDisplay = document.getElementById("timerDisplay");
@@ -89,6 +115,7 @@
   const teacherLogoutBtn = document.getElementById("teacherLogoutBtn");
   const refreshBtn = document.getElementById("refreshBtn");
   const reanalyzeBtn = document.getElementById("reanalyzeBtn");
+  const teacherGuideBtn = document.getElementById("teacherGuideBtn");
   const exportBtn = document.getElementById("exportBtn");
   const teacherTableBody = document.getElementById("teacherTableBody");
   const teacherMeta = document.getElementById("teacherMeta");
@@ -105,8 +132,12 @@
   let allSubmissions = [];
   let teacherAuthed = false;
   let selectedClassroom = "";
+  let selectedClassCode = "";
+  let teacherClassroomCodes = {};
 
   function showView(name) {
+    const shell = document.querySelector(".dw-shell");
+    if (shell) shell.classList.toggle("dw-shell--teacher", name === "teacher");
     Object.entries(views).forEach(([key, el]) => {
       if (!el) return;
       el.classList.toggle("dw-hidden", key !== name);
@@ -132,10 +163,22 @@
   }
 
   function canStart() {
-    return Boolean(studentName.value.trim() && resolveClassroom(studentClass.value));
+    const classroom = resolveClassroom(studentClass.value);
+    const codeOk = verifyClassroomCode(classroom, classCode?.value || "");
+    return Boolean(studentName.value.trim() && classroom && codeOk);
   }
 
   function updateStartButton() {
+    const classroom = resolveClassroom(studentClass.value);
+    const code = classCode?.value || "";
+    const codeOk = classroom && verifyClassroomCode(classroom, code);
+    const hasCode = normalizeClassCode(code).length > 0;
+
+    if (classCodeError) {
+      const showCodeErr = Boolean(classroom && hasCode && !codeOk);
+      classCodeError.classList.toggle("dw-hidden", !showCodeErr);
+    }
+
     startBtn.disabled = !canStart();
   }
 
@@ -441,6 +484,14 @@
     }[level] || level;
   }
 
+  function shortClassName(classroom) {
+    const c = String(classroom || "—");
+    if (c.length <= 14) return c;
+    if (c.startsWith("Tech ")) return c.replace("Tech ", "T");
+    if (c.startsWith("Mrs. ")) return c.replace("Mrs. ", "M.").replace(" Grade ELA", "");
+    return c.slice(0, 13) + "…";
+  }
+
   function buildFlags(typingLevel, wordCount, wpm, standards) {
     const flags = [];
     if (typingLevel === "intervention") {
@@ -617,9 +668,11 @@
     let saveError = "";
     if (!classroom) {
       saveError = "Your class was not recognized. Go back, pick your class from the list, and try again.";
+    } else if (!verifyClassroomCode(classroom, selectedClassCode || classCode?.value || "")) {
+      saveError = "Your class code did not match. Go back and enter the code your teacher gave you.";
     } else {
       try {
-        await submitResult(name, classroom, text, analysis, actualDuration);
+        await submitResult(name, classroom, text, analysis, actualDuration, selectedClassCode || classCode?.value || "");
         saveOk = true;
       } catch (err) {
         saveError = err.message || "Could not save your submission.";
@@ -756,8 +809,8 @@
     }
   }
 
-  async function submitResult(name, classroom, text, analysis, durationSec) {
-    const payload = { name, classroom, text, analysis, durationSec };
+  async function submitResult(name, classroom, text, analysis, durationSec, classCodeValue) {
+    const payload = { name, classroom, text, analysis, durationSec, classCode: classCodeValue };
     const res = await fetch(API_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -787,7 +840,22 @@
     if (!Array.isArray(data.submissions)) {
       throw new Error("Invalid server response.");
     }
+    if (data.classroomCodes && typeof data.classroomCodes === "object") {
+      teacherClassroomCodes = data.classroomCodes;
+    }
     return data.submissions;
+  }
+
+  function renderClassCodesPanel() {
+    const grid = document.getElementById("classCodesGrid");
+    if (!grid) return;
+    const codes = Object.keys(teacherClassroomCodes).length ? teacherClassroomCodes : CLASSROOM_CODES;
+    const entries = Object.entries(codes).sort((a, b) => a[0].localeCompare(b[0]));
+    grid.innerHTML = entries.map(([cls, code]) => `
+      <div class="dw-class-code-card">
+        <div class="dw-class-code-card__name">${escapeHtml(cls)}</div>
+        <code class="dw-class-code-card__code">${escapeHtml(code)}</code>
+      </div>`).join("");
   }
 
   function badgeClass(level) {
@@ -815,6 +883,7 @@
       teacherMeta.textContent = classSummary
         ? `${allSubmissions.length} submission${allSubmissions.length === 1 ? "" : "s"} across all classes · ${classSummary}`
         : `${allSubmissions.length} submission${allSubmissions.length === 1 ? "" : "s"}`;
+      renderClassCodesPanel();
       renderTeacherTable();
     } catch (err) {
       allSubmissions = [];
@@ -843,25 +912,27 @@
     for (const sub of filtered) {
       const a = sub.analysis || {};
       const R = window.DWRubrics;
-      const needsCount = a.standards?.needsSupport?.length ?? 0;
+      const overallBand = R ? R.band(a.scores?.overall) : null;
       const mechBand = R ? R.band(a.scores?.mechanics) : null;
       const narrBand = R ? R.band(a.scores?.narrative) : null;
-      const creatBand = R ? R.band(a.scores?.creativity) : null;
-      const overallBand = R ? R.band(a.scores?.overall) : null;
+      const typShort = { intervention: "Intv", developing: "Dev", proficient: "Prof", advanced: "Adv" };
+      const bandShort = { strong: "Str", on_track: "Mid", developing: "Dev", needs_support: "Low" };
       const tr = document.createElement("tr");
+      tr.className = "dw-table-row--clickable";
       tr.innerHTML = `
-        <td>${escapeHtml(sub.name)}</td>
-        <td>${escapeHtml(sub.classroom || "—")}</td>
+        <td class="dw-col-view"><button class="dw-btn dw-btn-ghost dw-view-btn dw-view-btn--compact" type="button" data-id="${sub.id}">View</button></td>
+        <td class="dw-col-name" title="${escapeHtml(sub.name)}">${escapeHtml(sub.name)}</td>
+        <td class="dw-col-class" title="${escapeHtml(sub.classroom || "")}">${escapeHtml(shortClassName(sub.classroom))}</td>
         <td>${a.wordCount ?? "—"}</td>
         <td>${a.wpm ?? "—"}</td>
-        <td><span class="${badgeClass(a.typingLevel)}">${typingLabel(a.typingLevel)}</span></td>
-        <td>${mechBand ? `<span class="${R.bandClass(mechBand.level)}" title="${mechBand.short}">${mechBand.label}</span>` : (a.scores?.mechanics ?? "—")}</td>
-        <td>${narrBand ? `<span class="${R.bandClass(narrBand.level)}" title="${narrBand.short}">${narrBand.label}</span>` : (a.scores?.narrative ?? "—")}</td>
-        <td>${creatBand ? `<span class="${R.bandClass(creatBand.level)}" title="${creatBand.short}">${creatBand.label}</span>` : (a.scores?.creativity ?? "—")}</td>
-        <td>${overallBand ? `<span class="${R.bandClass(overallBand.level)}">${overallBand.label}</span> <span class="dw-muted">${a.scores?.overall ?? ""}</span>` : (a.scores?.overall ?? "—")}</td>
-        <td>${needsCount > 0 ? `<span class="dw-std dw-std--needs_support">${needsCount} std</span>` : "—"}</td>
-        <td>${sub.submittedAt ? formatDate(sub.submittedAt) : "—"}</td>
-        <td><button class="dw-btn dw-btn-ghost dw-view-btn" type="button" data-id="${sub.id}">View</button></td>`;
+        <td><span class="${badgeClass(a.typingLevel)}" title="${typingLabel(a.typingLevel)}">${typShort[a.typingLevel] || "—"}</span></td>
+        <td>${mechBand ? `<span class="${R.bandClass(mechBand.level)}" title="${mechBand.short}">${bandShort[mechBand.level] || mechBand.label}</span>` : (a.scores?.mechanics ?? "—")}</td>
+        <td>${narrBand ? `<span class="${R.bandClass(narrBand.level)}" title="${narrBand.short}">${bandShort[narrBand.level] || narrBand.label}</span>` : (a.scores?.narrative ?? "—")}</td>
+        <td class="dw-col-overall">${overallBand ? `<span class="${R.bandClass(overallBand.level)}">${a.scores?.overall ?? "—"}</span>` : (a.scores?.overall ?? "—")}</td>`;
+      tr.addEventListener("click", (e) => {
+        if (e.target.closest(".dw-view-btn")) return;
+        showDetail(sub);
+      });
       teacherTableBody.appendChild(tr);
     }
 
@@ -969,12 +1040,17 @@
   }
 
   studentName.addEventListener("input", updateStartButton);
-  studentClass.addEventListener("change", updateStartButton);
+  studentClass.addEventListener("change", () => {
+    if (classCode) classCode.value = "";
+    updateStartButton();
+  });
+  if (classCode) classCode.addEventListener("input", updateStartButton);
   startBtn.addEventListener("click", () => {
     if (!canStart()) return;
     const classroom = resolveClassroom(studentClass.value);
     if (!classroom) return;
     selectedClassroom = classroom;
+    selectedClassCode = classCode?.value || "";
     storyInput.value = "";
     storyInput.readOnly = false;
     showView("writing");
@@ -985,7 +1061,9 @@
   storyInput.addEventListener("input", updateLiveStats);
   restartBtn.addEventListener("click", () => {
     stopTimer(); storyInput.value = ""; storyInput.readOnly = false;
-    studentName.value = ""; studentClass.selectedIndex = 0; selectedClassroom = "";
+    studentName.value = ""; studentClass.selectedIndex = 0;
+    if (classCode) classCode.value = "";
+    selectedClassroom = ""; selectedClassCode = "";
     updateStartButton();
     detailPanel.classList.add("dw-hidden"); showView("welcome");
   });
@@ -996,6 +1074,7 @@
   teacherLoginBtn.addEventListener("click", async () => {
     if (teacherPassword.value === TEACHER_PASSWORD) {
       teacherAuthed = true; teacherLoginError.classList.add("dw-hidden");
+      renderClassCodesPanel();
       showView("teacher"); await loadTeacherDashboard();
     } else teacherLoginError.classList.remove("dw-hidden");
   });
@@ -1004,6 +1083,11 @@
   teacherLogoutBtn.addEventListener("click", () => { teacherAuthed = false; detailPanel.classList.add("dw-hidden"); showView("welcome"); });
   refreshBtn.addEventListener("click", loadTeacherDashboard);
   if (reanalyzeBtn) reanalyzeBtn.addEventListener("click", reanalyzeAllSubmissions);
+  if (teacherGuideBtn) {
+    teacherGuideBtn.addEventListener("click", () => {
+      window.open("/diagnostic-writing/teacher-guide/", "_blank", "noopener,noreferrer");
+    });
+  }
   exportBtn.addEventListener("click", exportCsv);
   document.getElementById("closeDetailBtn").addEventListener("click", () => detailPanel.classList.add("dw-hidden"));
   filterBar.addEventListener("click", (e) => {

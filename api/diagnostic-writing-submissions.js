@@ -8,7 +8,7 @@
  * Setup: see google-apps-script/diagnostic-writing-backend.gs
  */
 
-import { VALID_CLASSROOMS, resolveClassroom } from "./diagnostic-writing/classrooms.js";
+import { VALID_CLASSROOMS, resolveClassroom, verifyClassroomCode, CLASSROOM_CODES } from "./diagnostic-writing/classrooms.js";
 
 const TEACHER_PASSWORD = "studentsfirst";
 
@@ -88,6 +88,7 @@ export async function GET(request) {
       {
         submissions: Array.isArray(data.submissions) ? data.submissions : [],
         classrooms: VALID_CLASSROOMS,
+        classroomCodes: CLASSROOM_CODES,
       },
       { headers: corsHeaders() }
     );
@@ -139,6 +140,7 @@ export async function POST(request) {
     const name = typeof body?.name === "string" ? body.name.trim().slice(0, 80) : "";
     const classroomRaw = typeof body?.classroom === "string" ? body.classroom : "";
     const classroom = resolveClassroom(classroomRaw);
+    const classCode = typeof body?.classCode === "string" ? body.classCode : "";
     const text = typeof body?.text === "string" ? body.text.trim().slice(0, 15000) : "";
     const analysis = body?.analysis && typeof body.analysis === "object" ? body.analysis : null;
     const durationSec = Number(body?.durationSec);
@@ -148,6 +150,9 @@ export async function POST(request) {
     }
     if (!classroom) {
       return Response.json({ error: "Invalid classroom" }, { status: 400, headers: corsHeaders() });
+    }
+    if (!verifyClassroomCode(classroom, classCode)) {
+      return Response.json({ error: "Incorrect class code for the selected classroom." }, { status: 400, headers: corsHeaders() });
     }
 
     const data = await fetchScriptJson(scriptUrl, {

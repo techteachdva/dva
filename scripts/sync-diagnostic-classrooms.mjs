@@ -4,13 +4,17 @@ import { fileURLToPath } from "url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const classesPath = path.join(root, "api/diagnostic-writing/classes.json");
+const codesPath = path.join(root, "api/diagnostic-writing/classroom-codes.json");
 const classes = JSON.parse(fs.readFileSync(classesPath, "utf8"));
+const codes = JSON.parse(fs.readFileSync(codesPath, "utf8"));
 
 const marker = "/** Auto-generated from api/diagnostic-writing/classes.json";
 const gsBlock = `${marker} — run: npm run sync:classrooms */\nconst VALID_CLASSROOMS = ${JSON.stringify(classes, null, 2)};`;
 
 const classroomsJs = `${marker} — run: npm run sync:classrooms */
 export const VALID_CLASSROOMS = ${JSON.stringify(classes, null, 2)};
+
+export const CLASSROOM_CODES = ${JSON.stringify(codes, null, 2)};
 
 const APOSTROPHE_RE = /[\\u2018\\u2019\\u201B\\u2032]/g;
 
@@ -26,6 +30,18 @@ export function resolveClassroom(value) {
     if (normalizeClassroom(classroom) === norm) return classroom;
   }
   return "";
+}
+
+export function normalizeClassCode(value) {
+  return String(value || "").trim().toLowerCase().replace(/\\s+/g, "");
+}
+
+export function verifyClassroomCode(classroom, code) {
+  const resolved = resolveClassroom(classroom);
+  if (!resolved) return false;
+  const expected = CLASSROOM_CODES[resolved];
+  if (!expected) return false;
+  return normalizeClassCode(code) === normalizeClassCode(expected);
 }
 
 export function isValidClassroom(value) {

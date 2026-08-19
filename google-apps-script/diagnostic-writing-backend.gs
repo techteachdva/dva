@@ -42,6 +42,7 @@ const VALID_CLASSROOMS = [
   "Mrs. Eckart 6th Grade ELA",
   "Mrs. McCarthy 7th Grade ELA",
   "Mrs. Severson 8th Grade ELA",
+  "Teacher's Lounge",
 ];
 
 function normalizeClassroom_(value) {

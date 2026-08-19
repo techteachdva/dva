@@ -24,7 +24,10 @@
   }
 
   function isExcludedFromNorms(sub) {
-    return /^amy$/i.test(String(sub?.name || "").trim());
+    const name = String(sub?.name || "").trim();
+    const classroom = String(sub?.classroom || "").trim();
+    if (/^teacher'?s lounge$/i.test(classroom)) return true;
+    return /^amy$/i.test(name);
   }
 
   function metricScore(sub, metricId) {

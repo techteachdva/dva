@@ -120,6 +120,12 @@ layout: false
                 {% endfor %}
               </select>
             </label>
+            <label class="dw-field" id="classCodeField">
+              <span class="dw-label">Class code</span>
+              <input id="classCode" class="dw-input" type="text" maxlength="40" placeholder="From your teacher" autocomplete="off" autocapitalize="off" spellcheck="false" />
+              <span class="dw-muted dw-tiny">Your teacher will give you the code for your class. It must match the class you selected.</span>
+            </label>
+            <p id="classCodeError" class="dw-error dw-hidden" role="alert">That code doesn&rsquo;t match the class you selected. Check with your teacher.</p>
             <button id="startBtn" class="dw-btn" type="button" disabled>Start 5-minute timer</button>
           </div>
         </section>
@@ -197,7 +203,7 @@ layout: false
           <p id="teacherLoginError" class="dw-error dw-hidden">Incorrect password.</p>
         </section>
 
-        <section id="teacherView" class="dw-hidden dw-stack">
+        <section id="teacherView" class="dw-hidden dw-stack dw-teacher-shell">
           <div class="dw-card dw-teacher-header">
             <div>
               <h2 class="dw-h2">Class results · Minnesota ELA Writing Standards</h2>
@@ -205,12 +211,19 @@ layout: false
               <p class="dw-muted dw-tiny">Bands: <span class="dw-band dw-band--strong">Strong</span> <span class="dw-band dw-band--on_track">On track</span> <span class="dw-band dw-band--developing">Developing</span> <span class="dw-band dw-band--needs_support">Needs support</span> — use for grouping, not final grades.</p>
             </div>
             <div class="dw-row dw-row-wrap">
+              <button id="teacherGuideBtn" class="dw-btn dw-btn-ghost" type="button">How to read this data</button>
               <button id="reanalyzeBtn" class="dw-btn dw-btn-secondary" type="button">Re-analyze all</button>
               <button id="refreshBtn" class="dw-btn dw-btn-secondary" type="button">Refresh</button>
               <button id="exportBtn" class="dw-btn dw-btn-ghost" type="button">Export CSV</button>
               <button id="teacherLogoutBtn" class="dw-btn dw-btn-ghost" type="button">Log out</button>
             </div>
           </div>
+
+          <details class="dw-card dw-class-codes" id="classCodesPanel" open>
+            <summary class="dw-h3 dw-class-codes__summary">Class codes for students</summary>
+            <p class="dw-muted dw-tiny">Share the matching code when students join the test. Wrong class + code combinations cannot start.</p>
+            <div class="dw-class-codes__grid" id="classCodesGrid"></div>
+          </details>
 
           <div class="dw-filter-bar" id="classFilterBar">
             <label class="dw-class-filter">
@@ -232,22 +245,19 @@ layout: false
             <button class="dw-filter" data-filter="advanced" type="button">Advanced</button>
           </div>
 
-          <div id="teacherTableWrap" class="dw-card dw-table-wrap">
-            <table class="dw-table" id="teacherTable">
+          <div id="teacherTableWrap" class="dw-card dw-table-wrap dw-table-wrap--fit">
+            <table class="dw-table dw-table--compact" id="teacherTable">
               <thead>
                 <tr>
+                  <th class="dw-col-view"></th>
                   <th>Name</th>
                   <th>Class</th>
-                  <th>Words</th>
+                  <th>Wds</th>
                   <th>WPM</th>
-                  <th>Typing</th>
-                  <th>Mechanics</th>
-                  <th>Storytelling</th>
-                  <th>Creative detail</th>
+                  <th>Typ</th>
+                  <th>Mech</th>
+                  <th>Story</th>
                   <th>Overall</th>
-                  <th>Standards</th>
-                  <th>Submitted</th>
-                  <th></th>
                 </tr>
               </thead>
               <tbody id="teacherTableBody"></tbody>
@@ -274,6 +284,7 @@ layout: false
     </div>
 
     <script id="dwClassroomsJson" type="application/json">{{ diagnosticWritingClasses | jsonify | safe }}</script>
+    <script id="dwClassroomCodesJson" type="application/json">{{ diagnosticWritingClassCodes | jsonify | safe }}</script>
     <script src="/scripts/diagnostic-writing-rubrics.js" defer></script>
     <script src="/scripts/diagnostic-writing-standards.js" defer></script>
     <script src="/scripts/diagnostic-writing-comparisons.js" defer></script>
