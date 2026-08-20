@@ -1,0 +1,202 @@
+---
+title: Scoring Algorithms — Summer Writing Diagnostic
+permalink: /diagnostic-writing/algorithms/
+layout: false
+---
+<!doctype html>
+<html lang="{{ meta.mainLanguage }}">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Scoring Algorithms — Summer Writing Diagnostic</title>
+    <link rel="stylesheet" href="/styles/diagnostic-writing.css" />
+    <style>
+      .dw-guide { max-width: 820px; margin: 0 auto; padding: 24px; line-height: 1.65; }
+      .dw-guide h1 { font-size: 1.75rem; margin: 0 0 8px; }
+      .dw-guide h2 { font-size: 1.15rem; margin: 28px 0 10px; color: #7dd3fc; }
+      .dw-guide h3 { font-size: 1rem; margin: 18px 0 8px; color: #a5b4fc; }
+      .dw-guide p, .dw-guide li { color: #dbe5ff; font-size: 15px; }
+      .dw-guide ul, .dw-guide ol { padding-left: 1.2rem; }
+      .dw-guide code { background: rgba(0,0,0,0.35); padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+      .dw-guide pre {
+        background: rgba(0,0,0,0.35);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 10px;
+        padding: 14px 16px;
+        overflow-x: auto;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+      .dw-guide table { width: 100%; border-collapse: collapse; font-size: 14px; margin: 12px 0; }
+      .dw-guide th, .dw-guide td { padding: 8px 10px; border: 1px solid rgba(255,255,255,0.1); text-align: left; vertical-align: top; }
+      .dw-guide th { color: #94a3b8; font-size: 12px; text-transform: uppercase; }
+      .dw-guide .dw-callout {
+        margin: 16px 0;
+        padding: 14px 16px;
+        border-radius: 12px;
+        border: 1px solid rgba(56, 189, 248, 0.35);
+        background: rgba(56, 189, 248, 0.08);
+        font-size: 14px;
+      }
+      .dw-guide .dw-callout--warn {
+        border-color: rgba(251, 191, 36, 0.35);
+        background: rgba(251, 191, 36, 0.08);
+      }
+      .dw-guide a { color: #7dd3fc; }
+    </style>
+  </head>
+  <body class="dw-body">
+    <article class="dw-guide">
+      <p class="dw-muted"><a href="/diagnostic-writing/">← Diagnostic</a> · <a href="/diagnostic-writing/teacher-guide/">Teacher guide</a></p>
+      <h1>Scoring algorithms &amp; calibration</h1>
+      <p class="dw-muted">For tuning future rounds · last calibrated Aug 2026 (157 submissions)</p>
+
+      <div class="dw-callout">
+        <strong>Is “more data = better calibration” correct?</strong>
+        Mostly yes — with limits. More submissions make <em>grade norms, typing curves, and “what strong looks like”</em> more accurate.
+        They do <em>not</em> automatically fix subjective craft (voice, meaning, humor) or replace teacher judgment.
+        Best practice: use data to set <strong>fair thresholds</strong>, keep a fixed <strong>adult exemplar anchor</strong> (Cecelia Everette), and re-check a handful of stories by hand after each tune.
+      </div>
+
+      <h2>Pipeline (one submission)</h2>
+      <pre>Student text + 5 min timer
+  → analyzeText()
+      → analyzeSpelling / analyzeGrammar / analyzeSyntax / analyzeSemantics
+      → pattern counts (voice, sensory, transitions, …)
+      → composite: Typing · Mechanics · Story
+      → Overall = average(Typing, Mechanics, Story)
+      → MN standards mapping · feedback · typing tier</pre>
+
+      <h2>Source files (edit these to tune)</h2>
+      <table>
+        <thead><tr><th>File</th><th>Role</th></tr></thead>
+        <tbody>
+          <tr><td><code>src/site/scripts/diagnostic-writing-calibration.js</code></td><td><strong>Knobs.</strong> Breakpoints, weights, grade norms, exemplar, typing tiers. Change this first.</td></tr>
+          <tr><td><code>src/site/scripts/diagnostic-writing.js</code></td><td><strong>Engine.</strong> Sub-analyzers, <code>analyzeText()</code>, regex word lists, re-analyze.</td></tr>
+          <tr><td><code>src/site/scripts/diagnostic-writing-rubrics.js</code></td><td>Display bands (Strong 80+, On track 65+, …) and student/teacher copy.</td></tr>
+          <tr><td><code>src/site/scripts/diagnostic-writing-comparisons.js</code></td><td>Peer charts; uses <code>GRADE_NORMS</code> when grade pool is thin.</td></tr>
+          <tr><td><code>src/site/scripts/diagnostic-writing-standards.js</code></td><td>Minnesota ELA standards mapping from sub-scores.</td></tr>
+        </tbody>
+      </table>
+
+      <h2>Core helper: <code>scoreFromRange(value, breakpoints)</code></h2>
+      <p>
+        Most scores use piecewise linear lookup tables. Each row is <code>[rawValue, score]</code>.
+        Example: WPM 17 maps between breakpoints <code>[14,52]</code> and <code>[17,58]</code> → ~58 on the WPM sub-score.
+        Edit tables in <code>diagnostic-writing-calibration.js</code>.
+      </p>
+
+      <h2>Three headline scores</h2>
+      <table>
+        <thead><tr><th>Score</th><th>Formula</th><th>Main inputs</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Typing</strong></td>
+            <td>55% WPM sub-score + 45% volume sub-score</td>
+            <td>Word count in 5 min, composition WPM (not copy-typing)</td>
+          </tr>
+          <tr>
+            <td><strong>Mechanics</strong></td>
+            <td>45% spelling + 35% grammar + 20% syntax</td>
+            <td>Misspelling list, capitals/punctuation, sentence variety &amp; clauses</td>
+          </tr>
+          <tr>
+            <td><strong>Story</strong></td>
+            <td>20% voice + 25% detail + 25% structure + 30% word choice</td>
+            <td>I/my/we count, sensory/dialogue, transition/conflict words, semantics + length bonus</td>
+          </tr>
+          <tr>
+            <td><strong>Overall</strong></td>
+            <td>Mean of Typing + Mechanics + Story</td>
+            <td>Not weighted beyond the three categories</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>Sub-analyzers (in <code>diagnostic-writing.js</code>)</h2>
+      <ul>
+        <li><strong>Spelling</strong> — <code>COMMON_MISSPELLINGS</code> dictionary, doubled-letter patterns, lowercase “i” penalty. Rate × <code>SPELLING_MISSPELL_RATE</code>.</li>
+        <li><strong>Grammar</strong> — Sentence capitals, ending punctuation, comma splices, double spaces, repeated adjacent words.</li>
+        <li><strong>Syntax</strong> — Sentence length average/variance, subordinators/semicolons/dashes; fragment &amp; run-on penalties.</li>
+        <li><strong>Semantics</strong> — Lexical diversity, concrete/proper nouns/numbers, repetition penalty.</li>
+        <li><strong>Story patterns</strong> — Regex lists: <code>SENSORY_PATTERN</code>, <code>TRANSITION_PATTERN</code>, <code>VOICE_PATTERN</code>, etc.</li>
+      </ul>
+
+      <h2>Calibration anchors (Aug 2026)</h2>
+      <h3>Adult exemplar — Cecelia Everette (Teacher's Lounge)</h3>
+      <p>Target after calibration: <strong>100 / 100 / 100 / 100</strong> (Typing / Mechanics / Story / Overall). Observed: 320 words, 64 WPM.</p>
+
+      <h3>Grade norms (student submissions, excludes mixed-grade tech + Lounge)</h3>
+      <table>
+        <thead><tr><th>Grade</th><th>Median WPM</th><th>Median words</th><th>Norm overall</th><th>Advanced p90 overall</th></tr></thead>
+        <tbody>
+          <tr><td>6th</td><td>17</td><td>86</td><td>70</td><td>83</td></tr>
+          <tr><td>7th</td><td>20</td><td>98</td><td>71</td><td>87</td></tr>
+          <tr><td>8th</td><td>25</td><td>125</td><td>79</td><td>86</td></tr>
+        </tbody>
+      </table>
+      <p class="dw-muted">Stored in <code>GRADE_NORMS</code> and <code>GRADE_ADVANCED_P90</code> inside calibration.js.</p>
+
+      <h3>Excluded from grade-level pools</h3>
+      <ul>
+        <li>Teacher's Lounge (adult calibration)</li>
+        <li>Tech: Media Arts, Game Design, Video Production (mixed grades)</li>
+        <li>Submitter “Amy” (legacy test row)</li>
+      </ul>
+
+      <h2>Automation workflow (future tuning rounds)</h2>
+      <ol>
+        <li><strong>Export submissions</strong> (local snapshot, do not commit — contains student text):
+          <pre>curl.exe -s "https://dva-nu.vercel.app/api/diagnostic-writing-submissions?password=YOUR_TEACHER_PASSWORD" -o scripts/_submissions_snapshot.json</pre>
+        </li>
+        <li><strong>Analyze cohort</strong> — prints grade stats + writes machine-readable report:
+          <pre>py scripts/analyze-diagnostic-calibration.py --json</pre>
+          Output: <code>scripts/calibration-report.json</code>
+        </li>
+        <li><strong>Simulate proposed constants</strong> (after editing calibration.js locally):
+          <pre>py scripts/simulate-calibrated-scoring.py</pre>
+          Check Cecelia ≈ 100 all; grade medians/p90 look fair.
+        </li>
+        <li><strong>Deploy</strong> — push <code>diagnostic-writing-calibration.js</code> (+ engine if regex/logic changed).</li>
+        <li><strong>Re-analyze all</strong> on Teacher dashboard so stored rows pick up new scores.</li>
+        <li><strong>Spot-check</strong> — Read class: 3 strong, 3 middle, 3 struggling stories; adjust if bands feel wrong.</li>
+      </ol>
+
+      <div class="dw-callout dw-callout--warn">
+        <strong>What more data improves</strong>
+        <ul>
+          <li>Median/p90 WPM and word counts per grade</li>
+          <li>Where “advanced” students cluster (so 80–90 band matches your classes)</li>
+          <li>Typing tier cutoffs (intervention vs developing)</li>
+        </ul>
+        <strong>What more data does not fix alone</strong>
+        <ul>
+          <li>Stories that are strong but use few “sensory” keywords</li>
+          <li>EL students, humor, trauma-sensitive content, plagiarism/AI</li>
+          <li>Prompt changes (new topic = new baseline needed)</li>
+        </ul>
+      </div>
+
+      <h2>Research references (external benchmarks)</h2>
+      <ul>
+        <li>Composition WPM is lower than copy-typing tests (MiddleWeb, typing curriculum guides).</li>
+        <li>Common Core W.6.6: sustained typing for multi-page drafts; used for stamina, not raw WPM caps.</li>
+        <li>Published keyboarding targets (~28–40 WPM by grade 8) inform ceiling shape; your live medians anchor the middle.</li>
+      </ul>
+
+      <h2>Typing tiers (filters on dashboard)</h2>
+      <table>
+        <thead><tr><th>Tier</th><th>Trigger (approx.)</th></tr></thead>
+        <tbody>
+          <tr><td>Needs intervention</td><td>&lt; 35 words or &lt; 7 WPM</td></tr>
+          <tr><td>Developing</td><td>&lt; 65 words or &lt; 11 WPM</td></tr>
+          <tr><td>Proficient</td><td>&lt; 105 words or &lt; 18 WPM</td></tr>
+          <tr><td>Advanced</td><td>At or above proficient thresholds</td></tr>
+        </tbody>
+      </table>
+      <p>Edit <code>TYPING_TIERS</code> in calibration.js.</p>
+
+      <p class="dw-muted" style="margin-top: 32px; font-size: 13px;">Questions or next automation step? Talk to Mr. Phil.</p>
+    </article>
+  </body>
+</html>

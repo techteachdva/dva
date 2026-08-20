@@ -116,6 +116,7 @@
   const refreshBtn = document.getElementById("refreshBtn");
   const reanalyzeBtn = document.getElementById("reanalyzeBtn");
   const teacherGuideBtn = document.getElementById("teacherGuideBtn");
+  const teacherAlgorithmsBtn = document.getElementById("teacherAlgorithmsBtn");
   const exportBtn = document.getElementById("exportBtn");
   const teacherTableBody = document.getElementById("teacherTableBody");
   const teacherMeta = document.getElementById("teacherMeta");
@@ -1496,6 +1497,11 @@
   if (teacherGuideBtn) {
     teacherGuideBtn.addEventListener("click", () => {
       window.open("/diagnostic-writing/teacher-guide/", "_blank", "noopener,noreferrer");
+    });
+  }
+  if (teacherAlgorithmsBtn) {
+    teacherAlgorithmsBtn.addEventListener("click", () => {
+      window.open("/diagnostic-writing/algorithms/", "_blank", "noopener,noreferrer");
     });
   }
   exportBtn.addEventListener("click", exportCsv);

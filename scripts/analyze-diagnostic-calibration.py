@@ -1,13 +1,16 @@
 #!/usr/bin/env py
 """Analyze diagnostic writing submissions for rubric calibration."""
+import argparse
 import json
 import re
 import statistics
 from collections import defaultdict
+from datetime import datetime, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 DATA = ROOT / "_submissions_snapshot.json"
+REPORT = ROOT / "calibration-report.json"
 
 MIXED_GRADE_CLASSES = {
     "Tech: Media Arts",
@@ -15,11 +18,15 @@ MIXED_GRADE_CLASSES = {
     "Tech: Video Production",
 }
 
+EXEMPLAR_NAME_PATTERN = re.compile(r"cecel", re.I)
+
 GRADE_CLASS_PATTERNS = {
     6: re.compile(r"6th|(?:^|\s|[-:])6(?:\s|[-]|$)", re.I),
     7: re.compile(r"7th|(?:^|\s|[-:])7(?:\s|[-]|$)", re.I),
     8: re.compile(r"8th|(?:^|\s|[-:])8(?:\s|[-]|$)", re.I),
 }
+
+METRICS = ["wordCount", "wpm", "typing", "mechanics", "story", "overall"]
 
 
 def classroom_grade(classroom: str):
@@ -67,107 +74,167 @@ def summarize(values):
     }
 
 
-def main():
-    data = json.loads(DATA.read_text(encoding="utf-8"))
-    subs = data.get("submissions") or []
-    print(f"Total submissions: {len(subs)}")
+def metric_stats(rows, key):
+    vals = [r[key] for r in rows if isinstance(r.get(key), (int, float))]
+    return summarize(vals)
 
+
+def build_row(sub):
+    a = sub.get("analysis") or {}
+    sc = a.get("scores") or {}
+    return {
+        "name": sub.get("name"),
+        "classroom": sub.get("classroom"),
+        "wordCount": a.get("wordCount"),
+        "wpm": a.get("wpm"),
+        "typing": sc.get("typing"),
+        "mechanics": sc.get("mechanics"),
+        "story": resolve_story_score(a),
+        "overall": sc.get("overall"),
+        "typingLevel": a.get("typingLevel"),
+        "sensory": a.get("sensoryCount"),
+        "voice": a.get("voiceCount"),
+        "transitions": a.get("transitionCount"),
+    }
+
+
+def build_suggested_norms(by_grade, advanced_by_grade):
+    """Build GRADE_NORMS / GRADE_ADVANCED_P90-shaped objects from live data."""
+    norms = {}
+    advanced = {}
+    for grade in sorted(by_grade):
+        rows = by_grade[grade]
+        adv = advanced_by_grade.get(grade, [])
+        g = {}
+        a = {}
+        for key in ["typing", "mechanics", "story", "overall", "wordCount", "wpm"]:
+            med = metric_stats(rows, key)
+            p90 = metric_stats(adv, key) if adv else None
+            if med and med.get("median") is not None:
+                g[key] = int(round(med["median"]))
+            if p90 and p90.get("p90") is not None:
+                a[key] = int(round(p90["p90"]))
+        norms[str(grade)] = g
+        advanced[str(grade)] = a
+    return norms, advanced
+
+
+def analyze_submissions(subs):
     lounge = [s for s in subs if (s.get("classroom") or "").strip().lower() == "teacher's lounge"]
-    cecilia = [s for s in lounge if re.search(r"cecilia", s.get("name") or "", re.I)]
-    print(f"Teacher's Lounge: {len(lounge)} | Cecilia matches: {len(cecilia)}")
-    for s in cecilia:
-        a = s.get("analysis") or {}
-        sc = a.get("scores") or {}
-        print("  Cecilia:", s.get("name"), {
-            "words": a.get("wordCount"), "wpm": a.get("wpm"),
-            "typing": sc.get("typing"), "mech": sc.get("mechanics"),
-            "story": resolve_story_score(a), "overall": sc.get("overall"),
-        })
+    exemplar = next((s for s in lounge if EXEMPLAR_NAME_PATTERN.search(s.get("name") or "")), None)
 
     by_grade = defaultdict(list)
-    by_class = defaultdict(list)
     advanced_by_grade = defaultdict(list)
 
     for s in subs:
         cls = s.get("classroom") or "Unknown"
-        a = s.get("analysis") or {}
-        sc = a.get("scores") or {}
-        if cls.lower() == "teacher's lounge":
-            continue
-        if cls in MIXED_GRADE_CLASSES:
+        if cls.lower() == "teacher's lounge" or cls in MIXED_GRADE_CLASSES:
             continue
         grade = classroom_grade(cls)
         if grade is None:
             continue
-        row = {
-            "name": s.get("name"),
-            "classroom": cls,
-            "wordCount": a.get("wordCount"),
-            "wpm": a.get("wpm"),
-            "typing": sc.get("typing"),
-            "mechanics": sc.get("mechanics"),
-            "story": resolve_story_score(a),
-            "overall": sc.get("overall"),
-            "typingLevel": a.get("typingLevel"),
-            "sensory": a.get("sensoryCount"),
-            "voice": a.get("voiceCount"),
-            "transitions": a.get("transitionCount"),
-        }
+        row = build_row(s)
         by_grade[grade].append(row)
-        by_class[cls].append(row)
-        if a.get("typingLevel") == "advanced" or (sc.get("overall") or 0) >= 75:
+        if s.get("analysis", {}).get("typingLevel") == "advanced" or (row.get("overall") or 0) >= 75:
             advanced_by_grade[grade].append(row)
 
-    print("\n=== By grade (excluding mixed tech + lounge) ===")
+    grade_stats = {}
     for grade in sorted(by_grade):
-        rows = by_grade[grade]
-        print(f"\nGrade {grade} (n={len(rows)})")
-        for key in ["wordCount", "wpm", "typing", "mechanics", "story", "overall"]:
-            vals = [r[key] for r in rows if isinstance(r.get(key), (int, float))]
-            sm = summarize(vals)
-            if sm:
-                print(f"  {key:10} mean={sm['mean']:5} med={sm['median']:5} p75={sm['p75']:5} p90={sm['p90']:5} max={sm['max']:5}")
+        grade_stats[str(grade)] = {
+            "n": len(by_grade[grade]),
+            "metrics": {k: metric_stats(by_grade[grade], k) for k in METRICS},
+            "advancedN": len(advanced_by_grade.get(grade, [])),
+            "advancedMetrics": {k: metric_stats(advanced_by_grade[grade], k) for k in METRICS},
+        }
 
-    print("\n=== Advanced/top performers by grade (typingLevel=advanced OR overall>=75) ===")
-    for grade in sorted(advanced_by_grade):
-        rows = advanced_by_grade[grade]
-        print(f"\nGrade {grade} advanced pool (n={len(rows)})")
-        for key in ["wordCount", "wpm", "typing", "mechanics", "story", "overall"]:
-            vals = [r[key] for r in rows if isinstance(r.get(key), (int, float))]
-            sm = summarize(vals)
-            if sm:
-                print(f"  {key:10} mean={sm['mean']:5} med={sm['median']:5} p90={sm['p90']:5} max={sm['max']:5}")
-
-    print("\n=== Teacher's Lounge (exemplar pool) ===")
-    for key in ["wordCount", "wpm", "typing", "mechanics", "story", "overall"]:
+    lounge_stats = {}
+    for key in METRICS:
         vals = []
         for s in lounge:
-            a = s.get("analysis") or {}
-            sc = a.get("scores") or {}
-            v = a.get(key) if key in ("wordCount", "wpm") else sc.get(key if key != "story" else None)
-            if key == "story":
-                v = resolve_story_score(a)
-            vals.append(v)
-        vals = [v for v in vals if isinstance(v, (int, float))]
-        sm = summarize(vals)
-        if sm:
-            print(f"  {key:10} {sm}")
+            row = build_row(s)
+            v = row.get(key)
+            if isinstance(v, (int, float)):
+                vals.append(v)
+        lounge_stats[key] = summarize(vals)
 
-    print("\n=== Top 5 overall by grade ===")
-    for grade in sorted(by_grade):
-        top = sorted(by_grade[grade], key=lambda r: r.get("overall") or 0, reverse=True)[:5]
-        print(f"Grade {grade}:")
-        for r in top:
-            print(f"  {r['overall']:3} {r['name'][:20]:20} {r['classroom'][:28]:28} w={r['wordCount']} wpm={r['wpm']}")
+    suggested_norms, suggested_advanced = build_suggested_norms(by_grade, advanced_by_grade)
 
-    print("\n=== Current score distribution (all student grades) ===")
-    all_student = [r for g in by_grade for r in by_grade[g]]
-    for key in ["typing", "mechanics", "story", "overall"]:
-        vals = [r[key] for r in all_student if isinstance(r.get(key), (int, float))]
-        sm = summarize(vals)
-        under50 = sum(1 for v in vals if v < 50)
-        under65 = sum(1 for v in vals if v < 65)
-        print(f"  {key}: mean={sm['mean']} med={sm['median']} <50: {under50}/{sm['n']} <65: {under65}/{sm['n']}")
+    exemplar_row = None
+    if exemplar:
+        er = build_row(exemplar)
+        exemplar_row = {
+            "name": er["name"],
+            "targets": {"typing": 100, "mechanics": 100, "story": 100, "overall": 100},
+            "observed": {
+                "wordCount": er.get("wordCount"),
+                "wpm": er.get("wpm"),
+                "typing": er.get("typing"),
+                "mechanics": er.get("mechanics"),
+                "story": er.get("story"),
+                "overall": er.get("overall"),
+            },
+        }
+
+    return {
+        "generatedAt": datetime.now(timezone.utc).isoformat(),
+        "submissionCount": len(subs),
+        "exemplar": exemplar_row,
+        "loungeCount": len(lounge),
+        "loungeStats": lounge_stats,
+        "gradeStats": grade_stats,
+        "suggestedGradeNorms": suggested_norms,
+        "suggestedAdvancedP90": suggested_advanced,
+        "mixedGradeClassesExcluded": sorted(MIXED_GRADE_CLASSES),
+        "nextSteps": [
+            "Compare suggestedGradeNorms to src/site/scripts/diagnostic-writing-calibration.js",
+            "Adjust VOLUME_BREAKPOINTS / WPM_BREAKPOINTS so exemplar observed values → ~100",
+            "Run: py scripts/simulate-calibrated-scoring.py",
+            "Deploy and Re-analyze all on Teacher dashboard",
+        ],
+    }
+
+
+def print_report(report):
+    print(f"Total submissions: {report['submissionCount']}")
+    if report.get("exemplar"):
+        ex = report["exemplar"]
+        print(f"Exemplar: {ex['name']} observed={ex['observed']}")
+    print(f"Teacher's Lounge: {report['loungeCount']}")
+
+    for grade, gs in report["gradeStats"].items():
+        print(f"\nGrade {grade} (n={gs['n']})")
+        for key in METRICS:
+            sm = gs["metrics"].get(key)
+            if sm:
+                print(f"  {key:10} med={sm['median']:5} p90={sm['p90']:5} max={sm['max']:5}")
+
+    print("\n=== Suggested GRADE_NORMS (median - paste into calibration.js) ===")
+    print(json.dumps(report["suggestedGradeNorms"], indent=2))
+    print("\n=== Suggested GRADE_ADVANCED_P90 ===")
+    print(json.dumps(report["suggestedAdvancedP90"], indent=2))
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Analyze diagnostic writing submissions for calibration")
+    parser.add_argument("--json", action="store_true", help=f"Write {REPORT.name}")
+    parser.add_argument("--input", type=Path, default=DATA, help="Submissions snapshot path")
+    args = parser.parse_args()
+
+    if not args.input.exists():
+        raise SystemExit(
+            f"Missing {args.input}. Export first:\n"
+            '  curl.exe -s "https://dva-nu.vercel.app/api/diagnostic-writing-submissions?password=..." '
+            f"-o {args.input}"
+        )
+
+    data = json.loads(args.input.read_text(encoding="utf-8"))
+    subs = data.get("submissions") or []
+    report = analyze_submissions(subs)
+    print_report(report)
+
+    if args.json:
+        REPORT.write_text(json.dumps(report, indent=2), encoding="utf-8")
+        print(f"\nWrote {REPORT}")
 
 
 if __name__ == "__main__":

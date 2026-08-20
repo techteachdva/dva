@@ -28,6 +28,7 @@ dist/**/physix/*.pck
 dist/**/physix/*.wasm
 dist/**/physix/*.side.wasm
 scripts/_submissions_snapshot.json
+scripts/calibration-report.json
 scripts/__pycache__/
 # Local build artifact (optional download)
 src/site/crystalwizards/index.side.wasm

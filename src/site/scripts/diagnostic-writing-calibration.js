@@ -1,7 +1,7 @@
 /**
  * Rubric calibration for the 5-minute summer narrative diagnostic.
  *
- * Calibrated from 157 live submissions (Aug 2026) plus published K–12 benchmarks.
+ * See also: /diagnostic-writing/algorithms/ (human doc) and scripts/analyze-diagnostic-calibration.py (data export).
  * Teacher's Lounge adult samples (Cecelia Everette anchor) define the top of the scale.
  * Grade-level norms exclude mixed-grade tech classes (Media Arts, Game Design, Video Production).
  *
