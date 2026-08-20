@@ -74,7 +74,7 @@ layout: false
           <tr><td><code>src/site/scripts/diagnostic-writing-calibration.js</code></td><td><strong>Knobs.</strong> Breakpoints, weights, grade norms, exemplar, typing tiers. Change this first.</td></tr>
           <tr><td><code>src/site/scripts/diagnostic-writing.js</code></td><td><strong>Engine.</strong> Sub-analyzers, <code>analyzeText()</code>, regex word lists, re-analyze.</td></tr>
           <tr><td><code>src/site/scripts/diagnostic-writing-rubrics.js</code></td><td>Display bands (Strong 80+, On track 65+, …) and student/teacher copy.</td></tr>
-          <tr><td><code>src/site/scripts/diagnostic-writing-comparisons.js</code></td><td>Peer charts; uses <code>GRADE_NORMS</code> when grade pool is thin.</td></tr>
+          <tr><td><code>src/site/scripts/diagnostic-writing-comparisons.js</code></td><td>Peer charts; <strong>percentile ranks</strong> within class/grade; uses <code>GRADE_NORMS</code> when grade pool is thin.</td></tr>
           <tr><td><code>src/site/scripts/diagnostic-writing-standards.js</code></td><td>Minnesota ELA standards mapping from sub-scores.</td></tr>
         </tbody>
       </table>
@@ -143,6 +143,23 @@ layout: false
         <li>Tech: Media Arts, Game Design, Video Production (mixed grades)</li>
         <li>Submitter “Amy” (legacy test row)</li>
       </ul>
+
+      <h2>Peer comparison percentiles</h2>
+      <p>
+        Class and grade standing use <strong>mid-rank percentile</strong> (0–100): the share of peers at or below the student’s score on each metric.
+        Pools exclude Teacher's Lounge, mixed-grade tech classes, and the legacy “Amy” test row.
+      </p>
+      <table>
+        <thead><tr><th>UI element</th><th>Computation</th></tr></thead>
+        <tbody>
+          <tr><td>Quick grid “nth in class”</td><td><code>percentileRank(studentScore, allClassScoresIncludingSelf)</code></td></tr>
+          <tr><td>Quick grid “nth in grade”</td><td>Same, over grade-matched peers + self</td></tr>
+          <tr><td>Summary strip</td><td>Count skills ≥60th, 40th–59th, &lt;40th percentile in class</td></tr>
+          <tr><td>Peer row scale</td><td>X-axis = percentile; shaded band = 25th–75th (IQR); median line at 50</td></tr>
+          <tr><td>Radar (optional)</td><td>Student class percentiles vs. flat 50th reference polygon</td></tr>
+        </tbody>
+      </table>
+      <p class="dw-muted">Small classes (&lt;3 scores): percentiles hidden; show “small sample” instead.</p>
 
       <h2>Automation workflow (future tuning rounds)</h2>
       <ol>

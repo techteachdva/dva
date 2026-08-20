@@ -1,5 +1,14 @@
 ## Unreleased
 
+### Summer Writing Diagnostic — percentile comparisons & teacher guide
+
+- **Peer comparison charts** (`diagnostic-writing-comparisons.js`) — Class and grade standing now use **percentile ranks** (0–100) instead of raw point differences vs. class average. Summary strip counts skills above/near/below median percentiles; quick grid shows “nth in class” and “nth in grade”; peer rows use a 0–100 percentile axis with IQR band and median line; optional radar plots percentile shape.
+- **Teacher guide** (`/diagnostic-writing/teacher-guide/`) — Rewritten for the current comparison UI; larger typography and spacing; percentile interpretation table; links to Read class, calibration, and algorithms doc.
+- **Algorithms doc** — New section documenting percentile computation and UI mapping.
+- **Read class** — Teacher view to scroll all submissions in a class with scores and full text; class filter and scroll fixes shipped earlier in this cycle.
+- **Rubric calibration** — Breakpoints and grade norms from 157 submissions; Cecelia Everette (Teacher's Lounge) anchors 100; mixed-grade tech classes excluded from grade pools.
+- **Algorithms reference** (`/diagnostic-writing/algorithms/`) — Scoring pipeline, calibration workflow, `calibrate:report` / `calibrate:simulate` npm scripts.
+
 ### Arcade Cabinet Graphics Overhaul
 - **Games page (`/games/`)** — All 6 arcade cabinets redesigned with game-specific front art:
   - Tech Escape: glitched terminal code overlay with VHS glitch animation

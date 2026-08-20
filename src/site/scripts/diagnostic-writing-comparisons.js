@@ -1,5 +1,6 @@
 /**
  * Peer comparison stats and charts for the writing diagnostic.
+ * Displays class/grade standing as percentile ranks (0–100).
  */
 (() => {
   "use strict";
@@ -73,6 +74,43 @@
     return Math.max(...nums);
   }
 
+  function sortedNumeric(values) {
+    return values.filter((v) => Number.isFinite(v)).sort((a, b) => a - b);
+  }
+
+  /** Mid-rank percentile: share of the pool at or below this score (0–100). */
+  function percentileRank(value, values) {
+    const pool = sortedNumeric(values);
+    if (!Number.isFinite(value) || pool.length === 0) return null;
+    if (pool.length === 1) return 50;
+    const below = pool.filter((v) => v < value).length;
+    const equal = pool.filter((v) => v === value).length;
+    return Math.round(((below + (equal - 1) / 2) / (pool.length - 1)) * 100);
+  }
+
+  function quartile(sorted, q) {
+    if (!sorted.length) return null;
+    if (sorted.length === 1) return sorted[0];
+    const pos = (sorted.length - 1) * q;
+    const lo = Math.floor(pos);
+    const hi = Math.ceil(pos);
+    if (lo === hi) return sorted[lo];
+    return sorted[lo] + (sorted[hi] - sorted[lo]) * (pos - lo);
+  }
+
+  function ordinalPercentile(n) {
+    if (!Number.isFinite(n)) return "—";
+    const mod100 = n % 100;
+    const mod10 = n % 10;
+    let suffix = "th";
+    if (mod100 < 11 || mod100 > 13) {
+      if (mod10 === 1) suffix = "st";
+      else if (mod10 === 2) suffix = "nd";
+      else if (mod10 === 3) suffix = "rd";
+    }
+    return `${n}${suffix}`;
+  }
+
   function peerPool(submissions, target, scope) {
     const grade = classroomGrade(target.classroom);
     return submissions.filter((sub) => {
@@ -109,6 +147,45 @@
       .map((sub) => metricScore(sub, metricId));
   }
 
+  function peerStatusFromPercentile(classPct, gradePct, student, classAvg) {
+    if (!Number.isFinite(classPct)) {
+      if (!Number.isFinite(student)) {
+        return { level: "neutral", label: "No score", diff: null, percentile: null, gradePercentile: gradePct };
+      }
+      if (!Number.isFinite(classAvg)) {
+        return { level: "neutral", label: "Small class sample", diff: null, percentile: null, gradePercentile: gradePct };
+      }
+      const diff = Math.round(student - classAvg);
+      return { level: "mid", label: "Score only", diff, percentile: null, gradePercentile: gradePct };
+    }
+
+    const diff = classPct - 50;
+    let level = "mid";
+    let label = `${ordinalPercentile(classPct)} percentile`;
+
+    if (classPct >= 90) {
+      level = "top";
+      label = `${ordinalPercentile(classPct)} percentile · top of class`;
+    } else if (classPct >= 75) {
+      level = "high";
+      label = `${ordinalPercentile(classPct)} percentile · above most`;
+    } else if (classPct >= 60) {
+      level = "above";
+      label = `${ordinalPercentile(classPct)} percentile · above median`;
+    } else if (classPct >= 40) {
+      level = "mid";
+      label = `${ordinalPercentile(classPct)} percentile · near median`;
+    } else if (classPct >= 25) {
+      level = "below";
+      label = `${ordinalPercentile(classPct)} percentile · below median`;
+    } else {
+      level = "low";
+      label = `${ordinalPercentile(classPct)} percentile · lower range`;
+    }
+
+    return { level, label, diff, percentile: classPct, gradePercentile: gradePct };
+  }
+
   function computeMetricComparison(submissions, target, metricId) {
     const student = metricScore(target, metricId);
     const grade = classroomGrade(target.classroom);
@@ -117,17 +194,24 @@
 
     const classScores = classPeers.map((s) => metricScore(s, metricId));
     const gradeScores = gradePeers.map((s) => metricScore(s, metricId));
-    const rangeScores = classGradeScoreList(submissions, target, metricId, true);
+    const classPoolScores = sortedNumeric(classGradeScoreList(submissions, target, metricId, true));
+    const gradePoolScores = sortedNumeric([
+      ...gradeScores,
+      ...(Number.isFinite(student) ? [student] : []),
+    ]);
 
     const classAvg = average(classScores);
     const gradeAvg = withFallback(average(gradeScores), gradeNormFallback(grade, metricId));
 
-    let classMin = minValue(rangeScores);
-    let classMax = maxValue(rangeScores);
-    if (rangeScores.filter((v) => Number.isFinite(v)).length < 2) {
-      classMin = null;
-      classMax = null;
-    }
+    const classPercentile = percentileRank(student, classPoolScores);
+    const gradePercentile = gradePeers.length > 0 ? percentileRank(student, gradePoolScores) : null;
+
+    const classMin = classPoolScores.length ? classPoolScores[0] : null;
+    const classMax = classPoolScores.length ? classPoolScores[classPoolScores.length - 1] : null;
+    const classP25 = quartile(classPoolScores, 0.25);
+    const classP75 = quartile(classPoolScores, 0.75);
+    const classMedian = quartile(classPoolScores, 0.5);
+    const smallSample = classPoolScores.length < 3;
 
     return {
       id: metricId,
@@ -136,34 +220,17 @@
       gradeAvg,
       classMin: withFallback(classMin, classAvg, gradeAvg),
       classMax: withFallback(classMax, classAvg, gradeAvg),
+      classP25,
+      classP75,
+      classMedian,
+      classPercentile,
+      gradePercentile,
       classPeerCount: classPeers.length,
       gradePeerCount: gradePeers.length,
-      minIsFallback: classMin === null,
-      maxIsFallback: classMax === null,
-      status: peerStatus(student, classAvg, classMin, classMax),
+      classPoolSize: classPoolScores.length,
+      smallSample,
+      status: peerStatusFromPercentile(classPercentile, gradePercentile, student, classAvg),
     };
-  }
-
-  function peerStatus(student, classAvg, classMin, classMax) {
-    if (!Number.isFinite(student)) {
-      return { level: "neutral", label: "No score", diff: null };
-    }
-    if (!Number.isFinite(classAvg)) {
-      return { level: "neutral", label: "No class data", diff: null };
-    }
-    const diff = Math.round(student - classAvg);
-    const hasSpread = Number.isFinite(classMin) && Number.isFinite(classMax) && classMax > classMin;
-    if (hasSpread && student >= classMax) {
-      return { level: "top", label: "Top of class", diff };
-    }
-    if (hasSpread && student <= classMin) {
-      return { level: "bottom", label: "Lowest in class", diff };
-    }
-    if (diff >= 12) return { level: "high", label: "Well above class", diff };
-    if (diff >= 4) return { level: "above", label: "Above class", diff };
-    if (diff > -4) return { level: "mid", label: "Near class avg", diff };
-    if (diff > -12) return { level: "below", label: "Below class", diff };
-    return { level: "low", label: "Well below class", diff };
   }
 
   function computeComparisons(submissions, target) {
@@ -173,10 +240,14 @@
     let below = 0;
     let near = 0;
     for (const m of metrics) {
-      const lvl = m.status?.level;
-      if (lvl === "high" || lvl === "above" || lvl === "top") above++;
-      else if (lvl === "low" || lvl === "below" || lvl === "bottom") below++;
-      else if (lvl === "mid") near++;
+      const pct = m.classPercentile;
+      if (!Number.isFinite(pct)) {
+        near++;
+        continue;
+      }
+      if (pct >= 60) above++;
+      else if (pct < 40) below++;
+      else near++;
     }
     return {
       grade,
@@ -184,12 +255,6 @@
       metrics,
       summary: { above, below, near, total: metrics.length },
     };
-  }
-
-  function fmtDiff(diff) {
-    if (!Number.isFinite(diff)) return "—";
-    if (diff > 0) return `+${diff}`;
-    return String(diff);
   }
 
   function renderSummaryStrip(comparison) {
@@ -200,20 +265,20 @@
         <div class="dw-compare-summary__counts">
           <div class="dw-compare-stat dw-compare-stat--above">
             <span class="dw-compare-stat__n">${above}</span>
-            <span class="dw-compare-stat__k">above class</span>
+            <span class="dw-compare-stat__k">≥ 60th %ile</span>
           </div>
           <div class="dw-compare-stat dw-compare-stat--near">
             <span class="dw-compare-stat__n">${near}</span>
-            <span class="dw-compare-stat__k">near average</span>
+            <span class="dw-compare-stat__k">40th–59th %ile</span>
           </div>
           <div class="dw-compare-stat dw-compare-stat--below">
             <span class="dw-compare-stat__n">${below}</span>
-            <span class="dw-compare-stat__k">below class</span>
+            <span class="dw-compare-stat__k">&lt; 40th %ile</span>
           </div>
         </div>
         <p class="dw-muted dw-tiny dw-compare-summary__meta">
           ${escapeHtml(comparison.classroom || "Class")} · ${escapeHtml(gradeNote)} ·
-          comparing this student to ${total} main skills vs class peers
+          percentile rank vs classmates (higher = stronger relative standing)
         </p>
       </div>`;
   }
@@ -221,17 +286,24 @@
   function renderQuickGrid(comparison) {
     const cards = comparison.metrics.map((m) => {
       const label = METRICS.find((x) => x.id === m.id)?.label || m.id;
-      const diff = m.status?.diff;
-      const diffClass = !Number.isFinite(diff) ? "" : diff > 3 ? "dw-quick-card__diff--up" : diff < -3 ? "dw-quick-card__diff--down" : "dw-quick-card__diff--flat";
+      const classPct = m.classPercentile;
+      const gradePct = m.gradePercentile;
+      const pctClass = Number.isFinite(classPct) ? "dw-quick-card__diff--up" : "dw-quick-card__diff--flat";
+      const pctNote = Number.isFinite(classPct)
+        ? `<span class="dw-quick-card__pct">${ordinalPercentile(classPct)} in class</span>`
+        : `<span class="dw-quick-card__pct dw-muted">Small sample</span>`;
+      const gradeNote = Number.isFinite(gradePct)
+        ? `<span class="dw-quick-card__pct-sub">${ordinalPercentile(gradePct)} in grade</span>`
+        : "";
       return `
         <div class="dw-quick-card dw-quick-card--${m.status?.level || "neutral"}">
           <div class="dw-quick-card__label">${escapeHtml(label)}</div>
           <div class="dw-quick-card__score">${m.student ?? "—"}</div>
-          <div class="dw-quick-card__diff ${diffClass}">${Number.isFinite(diff) ? `${fmtDiff(diff)} vs class` : "—"}</div>
+          <div class="dw-quick-card__diff ${pctClass}">${pctNote}${gradeNote}</div>
         </div>`;
     }).join("");
 
-    return `<div class="dw-quick-grid" aria-label="At-a-glance skill comparison">${cards}</div>`;
+    return `<div class="dw-quick-grid" aria-label="At-a-glance percentile comparison">${cards}</div>`;
   }
 
   function renderMarker(kind, pct, label, value) {
@@ -240,32 +312,32 @@
     return `
       <div class="dw-peer-scale__marker dw-peer-scale__marker--${kind}" style="left:${safe}%">
         <span class="dw-peer-scale__marker-line" aria-hidden="true"></span>
-        <span class="dw-peer-scale__marker-label">${escapeHtml(label)}<strong>${value ?? "—"}</strong></span>
+        <span class="dw-peer-scale__marker-label">${escapeHtml(label)}<strong>${escapeHtml(String(value))}</strong></span>
       </div>`;
   }
 
   function renderPeerRows(comparison) {
     const rows = comparison.metrics.map((m) => {
       const label = METRICS.find((x) => x.id === m.id)?.label || m.id;
-      const student = m.student ?? 0;
-      const classAvg = m.classAvg;
-      const gradeAvg = m.gradeAvg;
-      const classMin = m.classMin ?? 0;
-      const classMax = m.classMax ?? 100;
-      const bandLeft = Math.max(0, Math.min(100, classMin));
-      const bandWidth = Math.max(2, Math.min(100 - bandLeft, classMax - classMin));
+      const classPct = m.classPercentile;
+      const gradePct = m.gradePercentile;
+      const student = m.student ?? "—";
 
-      const classMarker = Number.isFinite(classAvg)
-        ? renderMarker("class", classAvg, "Class ", classAvg)
-        : "";
-      const gradeMarker = Number.isFinite(gradeAvg) && m.gradePeerCount > 0
-        ? renderMarker("grade", gradeAvg, "Grade ", gradeAvg)
-        : "";
-      const studentMarker = renderMarker("student", student, "Student ", student);
+      const studentMarker = Number.isFinite(classPct)
+        ? renderMarker("student", classPct, "Student ", `${ordinalPercentile(classPct)} · ${student}`)
+        : renderMarker("student", 50, "Student ", String(student));
 
-      const rangeNote = m.minIsFallback || m.maxIsFallback
-        ? '<span class="dw-muted"> (range estimated)</span>'
+      const medianMarker = renderMarker("median", 50, "Median ", "50th");
+      const gradeMarker = Number.isFinite(gradePct) && m.gradePeerCount > 0
+        ? renderMarker("grade", gradePct, "Grade ", `${ordinalPercentile(gradePct)}`)
         : "";
+
+      const sampleNote = m.smallSample
+        ? '<span class="dw-muted"> (few classmates — interpret cautiously)</span>'
+        : "";
+
+      const p25Score = m.classP25 != null ? Math.round(m.classP25) : "—";
+      const p75Score = m.classP75 != null ? Math.round(m.classP75) : "—";
 
       return `
         <article class="dw-peer-row dw-peer-row--${m.status?.level || "neutral"}">
@@ -274,18 +346,18 @@
               <h5 class="dw-peer-row__title">${escapeHtml(label)}</h5>
               <span class="dw-peer-chip dw-peer-chip--${m.status?.level || "neutral"}">${escapeHtml(m.status?.label || "—")}</span>
             </div>
-            <div class="dw-peer-row__score">${m.student ?? "—"}</div>
+            <div class="dw-peer-row__score">${student}</div>
           </header>
-          <div class="dw-peer-scale" role="img" aria-label="${escapeHtml(label)}: student ${student}, class average ${classAvg ?? "unknown"}">
-            <div class="dw-peer-scale__track">
-              <div class="dw-peer-scale__band" style="left:${bandLeft}%; width:${bandWidth}%"></div>
-              ${classMarker}
+          <div class="dw-peer-scale" role="img" aria-label="${escapeHtml(label)}: ${Number.isFinite(classPct) ? `${ordinalPercentile(classPct)} percentile in class` : "score " + student}">
+            <div class="dw-peer-scale__track dw-peer-scale__track--percentile">
+              <div class="dw-peer-scale__band dw-peer-scale__band--iqr" style="left:25%; width:50%"></div>
+              ${medianMarker}
               ${gradeMarker}
               ${studentMarker}
             </div>
             <div class="dw-peer-scale__footer">
-              <span>Low <strong>${m.classMin ?? "—"}</strong></span>
-              <span>High <strong>${m.classMax ?? "—"}</strong>${rangeNote}</span>
+              <span>25th %ile <strong>${p25Score}</strong></span>
+              <span>75th %ile <strong>${p75Score}</strong>${sampleNote}</span>
             </div>
           </div>
         </article>`;
@@ -294,12 +366,12 @@
     return `
       <section class="dw-peer-map">
         <header class="dw-peer-map__head">
-          <h4 class="dw-h3">Where they fall in class</h4>
+          <h4 class="dw-h3">Percentile rank in class</h4>
           <p class="dw-muted dw-tiny">
             <span class="dw-peer-key dw-peer-key--student">● Student</span>
-            <span class="dw-peer-key dw-peer-key--class">| Class avg</span>
-            <span class="dw-peer-key dw-peer-key--grade">| Grade avg</span>
-            <span class="dw-peer-key dw-peer-key--band">▭ Class range</span>
+            <span class="dw-peer-key dw-peer-key--median">| Class median (50th)</span>
+            <span class="dw-peer-key dw-peer-key--grade">| Grade standing</span>
+            <span class="dw-peer-key dw-peer-key--band">▭ Middle 50% of class</span>
           </p>
         </header>
         <div class="dw-peer-map__rows">${rows}</div>
@@ -330,8 +402,8 @@
     const cy = size / 2;
     const maxRadius = size * 0.32;
     const labels = comparison.metrics.map((m) => METRICS.find((x) => x.id === m.id)?.label || m.id);
-    const studentVals = comparison.metrics.map((m) => m.student ?? 0);
-    const classVals = comparison.metrics.map((m) => m.classAvg ?? 0);
+    const studentVals = comparison.metrics.map((m) => m.classPercentile ?? 50);
+    const medianVals = comparison.metrics.map(() => 50);
     const step = (Math.PI * 2) / labels.length;
 
     const rings = [25, 50, 75, 100].map((pct) => {
@@ -345,31 +417,34 @@
     }).join("");
 
     const labelMarkup = labels.map((label, i) => {
-      const p = polarPoint(cx, cy, maxRadius + 18, i * step);
-      return `<text x="${p.x}" y="${p.y}" class="dw-radar-label" text-anchor="middle" dominant-baseline="middle">${escapeHtml(label)}</text>`;
+      const m = comparison.metrics[i];
+      const pct = m?.classPercentile;
+      const sub = Number.isFinite(pct) ? `${ordinalPercentile(pct)}` : "—";
+      const p = polarPoint(cx, cy, maxRadius + 22, i * step);
+      return `<text x="${p.x}" y="${p.y}" class="dw-radar-label" text-anchor="middle" dominant-baseline="middle">${escapeHtml(label)} (${sub})</text>`;
     }).join("");
 
     return `
       <details class="dw-compare-radar-fold">
-        <summary class="dw-h3">Optional: shape overview</summary>
+        <summary class="dw-h3">Optional: percentile shape overview</summary>
         <div class="dw-compare-radar-fold__body">
           <svg class="dw-radar-svg" viewBox="0 0 ${size} ${size}" role="img" aria-hidden="true">
             ${rings}
             ${axes}
-            <polygon points="${polygonPoints(classVals, cx, cy, maxRadius)}" class="dw-radar-poly dw-radar-poly--class"/>
+            <polygon points="${polygonPoints(medianVals, cx, cy, maxRadius)}" class="dw-radar-poly dw-radar-poly--class"/>
             <polygon points="${polygonPoints(studentVals, cx, cy, maxRadius)}" class="dw-radar-poly dw-radar-poly--student"/>
             ${labelMarkup}
           </svg>
-          <p class="dw-muted dw-tiny">Green = student · Blue = class average. Use the rows above for precise numbers.</p>
+          <p class="dw-muted dw-tiny">Green = student percentile in class · Blue = 50th percentile (class median). Each axis is 0–100th percentile, not raw score.</p>
         </div>
       </details>`;
   }
 
   function renderComparisonPanel(submissions, target) {
     const comparison = computeComparisons(submissions, target);
-    const hasPeers = comparison.metrics.some((m) => m.classPeerCount > 0 || m.gradePeerCount > 0);
+    const hasPeers = comparison.metrics.some((m) => m.classPeerCount > 0 || m.classPoolSize > 1);
     if (!hasPeers) {
-      return `<div class="dw-compare-empty dw-muted">No peer submissions yet for comparison — averages will appear as more students complete the diagnostic.</div>`;
+      return `<div class="dw-compare-empty dw-muted">No peer submissions yet for comparison — percentiles will appear as more students complete the diagnostic.</div>`;
     }
     return `
       ${renderSummaryStrip(comparison)}
@@ -390,6 +465,8 @@
     METRICS,
     classroomGrade,
     computeComparisons,
+    percentileRank,
+    ordinalPercentile,
     renderComparisonPanel,
     renderRadarChart,
     isExcludedFromNorms,

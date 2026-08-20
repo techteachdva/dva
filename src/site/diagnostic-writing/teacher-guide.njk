@@ -11,29 +11,116 @@ layout: false
     <title>Teacher Guide — Summer Writing Diagnostic</title>
     <link rel="stylesheet" href="/styles/diagnostic-writing.css" />
     <style>
-      .dw-guide { max-width: 720px; margin: 0 auto; padding: 24px; line-height: 1.65; }
-      .dw-guide h1 { font-size: 1.75rem; margin: 0 0 8px; }
-      .dw-guide h2 { font-size: 1.15rem; margin: 28px 0 10px; color: #7dd3fc; }
-      .dw-guide p, .dw-guide li { color: #dbe5ff; font-size: 15px; }
-      .dw-guide ul { padding-left: 1.2rem; }
+      .dw-guide {
+        max-width: 840px;
+        margin: 0 auto;
+        padding: 32px 28px 48px;
+        line-height: 1.75;
+        font-size: 18px;
+      }
+      .dw-guide h1 {
+        font-size: 2.25rem;
+        line-height: 1.2;
+        margin: 0 0 12px;
+        letter-spacing: -0.02em;
+      }
+      .dw-guide h2 {
+        font-size: 1.45rem;
+        margin: 36px 0 14px;
+        padding-top: 8px;
+        color: #7dd3fc;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .dw-guide h2:first-of-type { border-top: none; padding-top: 0; }
+      .dw-guide h3 {
+        font-size: 1.15rem;
+        margin: 20px 0 10px;
+        color: #a5b4fc;
+      }
+      .dw-guide p, .dw-guide li {
+        color: #dbe5ff;
+        font-size: 18px;
+        margin: 0 0 14px;
+      }
+      .dw-guide ul, .dw-guide ol {
+        padding-left: 1.35rem;
+        margin: 0 0 18px;
+      }
+      .dw-guide li { margin-bottom: 8px; }
+      .dw-guide .dw-lede {
+        font-size: 19px;
+        color: #94a3b8;
+        margin-bottom: 28px;
+      }
       .dw-guide .dw-callout {
-        margin: 16px 0;
-        padding: 14px 16px;
-        border-radius: 12px;
+        margin: 22px 0;
+        padding: 18px 20px;
+        border-radius: 14px;
         border: 1px solid rgba(251, 191, 36, 0.35);
         background: rgba(251, 191, 36, 0.08);
-        font-size: 14px;
+        font-size: 17px;
+        line-height: 1.65;
       }
       .dw-guide .dw-callout strong { color: #fcd34d; }
-      .dw-guide table { width: 100%; border-collapse: collapse; font-size: 14px; margin: 12px 0; }
-      .dw-guide th, .dw-guide td { padding: 8px 10px; border: 1px solid rgba(255,255,255,0.1); text-align: left; }
-      .dw-guide th { color: #94a3b8; font-size: 12px; text-transform: uppercase; }
+      .dw-guide .dw-callout ul { margin-top: 10px; margin-bottom: 0; }
+      .dw-guide table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 16px;
+        margin: 16px 0 20px;
+      }
+      .dw-guide th, .dw-guide td {
+        padding: 12px 14px;
+        border: 1px solid rgba(255,255,255,0.12);
+        text-align: left;
+        vertical-align: top;
+      }
+      .dw-guide th {
+        color: #94a3b8;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      .dw-guide code {
+        background: rgba(0,0,0,0.35);
+        padding: 2px 7px;
+        border-radius: 5px;
+        font-size: 0.9em;
+      }
+      .dw-guide a { color: #7dd3fc; }
+      .dw-guide .dw-steps {
+        counter-reset: step;
+        list-style: none;
+        padding-left: 0;
+      }
+      .dw-guide .dw-steps li {
+        position: relative;
+        padding-left: 2.4rem;
+        margin-bottom: 14px;
+      }
+      .dw-guide .dw-steps li::before {
+        counter-increment: step;
+        content: counter(step);
+        position: absolute;
+        left: 0;
+        top: 2px;
+        width: 1.75rem;
+        height: 1.75rem;
+        border-radius: 50%;
+        background: rgba(56, 189, 248, 0.2);
+        color: #7dd3fc;
+        font-weight: 800;
+        font-size: 14px;
+        line-height: 1.75rem;
+        text-align: center;
+      }
     </style>
   </head>
   <body class="dw-body">
     <article class="dw-guide">
+      <p class="dw-muted"><a href="/diagnostic-writing/">← Teacher dashboard</a> · <a href="/diagnostic-writing/algorithms/">Scoring algorithms</a></p>
       <h1>How to read the Summer Writing Diagnostic</h1>
-      <p class="dw-muted">A one-page guide for teachers · use with the Teacher dashboard</p>
+      <p class="dw-lede">A teacher-facing guide for the dashboard, percentile comparisons, and calibration.</p>
 
       <h2>What this tool is for</h2>
       <p>
@@ -55,22 +142,48 @@ layout: false
         </tbody>
       </table>
 
-      <h2>Reading the comparison charts</h2>
-      <p>When you open a student’s detail view, you’ll see:</p>
-      <ul>
-        <li><strong>Radar chart</strong> — The bold green shape is <em>this student</em>. Faded blue = class average; faded purple = grade-level average across all classes at that grade. Numbers on each axis show the student’s score; the small range below is the lowest–highest score in that class for that skill.</li>
-        <li><strong>Category bars</strong> — Same idea per skill: solid bar = student; ghost bars = averages; shaded band = spread in the class.</li>
-      </ul>
+      <h2>Reading peer comparisons (percentiles)</h2>
       <p>
-        Use comparisons for <strong>relative placement</strong> (“Is mechanics unusually low for this class?”),
-        not for ranking students publicly. Small classes produce noisy averages — a single strong or weak writer shifts the mean.
+        When you open a student’s detail view, the <strong>comparison panel</strong> shows how that student ranks
+        <em>within their class</em> and <em>within their grade</em> — using <strong>percentile ranks</strong>, not raw point differences.
+        A 72nd percentile in Typing means this student scored higher than about 72% of classmates on that skill.
       </p>
+
+      <h3>What you see, top to bottom</h3>
+      <ol class="dw-steps">
+        <li><strong>Summary strip</strong> — Counts how many skills fall at or above the 60th percentile, in the 40th–59th range (near median), or below the 40th percentile.</li>
+        <li><strong>Quick grid</strong> — Typing, Mechanics, and Story at a glance: raw score plus <em>nth percentile in class</em> and <em>nth percentile in grade</em>.</li>
+        <li><strong>Percentile rank in class</strong> — One row per skill. The horizontal scale runs from 0 to 100 (percentile). The green marker is the student; the blue line is the class median (50th percentile); the purple marker (when available) is grade-level standing. The shaded band is the middle 50% of the class (25th–75th percentile). Footer labels show the raw scores at the 25th and 75th percentiles.</li>
+        <li><strong>Optional radar</strong> — Collapsed by default. Shows the student’s percentile shape vs. a 50th-percentile reference. Each axis is percentile rank, not raw score.</li>
+      </ol>
+
+      <h3>How to interpret percentiles</h3>
+      <table>
+        <thead><tr><th>Percentile</th><th>Plain language</th><th>Teaching move</th></tr></thead>
+        <tbody>
+          <tr><td><strong>90th+</strong></td><td>Top of class on this skill</td><td>Peer model, extension tasks</td></tr>
+          <tr><td><strong>75th–89th</strong></td><td>Above most classmates</td><td>Stretch within the skill; check for uneven profile</td></tr>
+          <tr><td><strong>60th–74th</strong></td><td>Above median</td><td>On track; note which skill lags</td></tr>
+          <tr><td><strong>40th–59th</strong></td><td>Near class median</td><td>Typical for the room — pair with absolute score band</td></tr>
+          <tr><td><strong>25th–39th</strong></td><td>Below median</td><td>Small-group or conference on that skill</td></tr>
+          <tr><td><strong>Below 25th</strong></td><td>Lower range for the class</td><td>Intervention, scaffolds, read the story yourself</td></tr>
+        </tbody>
+      </table>
+
+      <div class="dw-callout">
+        <strong>Small classes &amp; privacy</strong>
+        <ul>
+          <li>With fewer than three classmates, percentiles are hidden or marked “small sample” — averages swing easily.</li>
+          <li>Use comparisons for <strong>relative placement</strong> in your planning, not for ranking students publicly.</li>
+          <li>Percentiles describe standing among peers; they do not replace reading the actual story.</li>
+        </ul>
+      </div>
 
       <h2>Skill areas at a glance</h2>
       <ul>
         <li><strong>Typing</strong> — WPM and how much was written in five minutes.</li>
         <li><strong>Mechanics</strong> — Spelling, conventions, and sentence building combined.</li>
-        <li><strong>Story</strong> — One combined score for voice, sensory detail, sequence, and word choice (not three separate buzzwords).</li>
+        <li><strong>Story</strong> — One combined score for voice, sensory detail, sequence, and word choice.</li>
         <li><strong>Overall</strong> — Average of Typing + Mechanics + Story.</li>
         <li><strong>Minnesota standards tags</strong> — Mapped from the scores above; “needs support” suggests a next step, not a failing grade.</li>
       </ul>
@@ -82,11 +195,11 @@ layout: false
         Grade-level comparison norms use 6th / 7th / 8th ELA and tech classes with a single grade — not mixed-grade Media Arts, Game Design, or Video Production.
       </p>
       <ul>
-        <li><strong>Typing</strong> — Calibrated to real 5-minute <em>composition</em> speed (typically lower than copy-typing tests). G6 median ≈ 17 WPM / 86 words; strong G6 writers ≈ 29 WPM / 140+ words.</li>
+        <li><strong>Typing</strong> — Calibrated to real 5-minute <em>composition</em> speed. G6 median ≈ 17 WPM / 86 words; strong G6 writers ≈ 29 WPM / 140+ words.</li>
         <li><strong>Story</strong> — Rewards voice, length, and craft; includes fairness floors so genuine narratives are not punished for missing narrow keyword lists.</li>
         <li><strong>Strong band (~80+)</strong> — Should reflect advanced work in your grade, not perfection. Scores near 100 are rare for students and normal for Teacher's Lounge exemplars.</li>
         <li>After rubric updates, run <strong>Re-analyze all</strong> so stored submissions pick up the new calibration.</li>
-        <li>Full algorithm reference &amp; automation workflow: <a href="/diagnostic-writing/algorithms/">Scoring algorithms doc</a>.</li>
+        <li>Full algorithm reference: <a href="/diagnostic-writing/algorithms/">Scoring algorithms doc</a>.</li>
       </ul>
 
       <h2>Read class — scroll through every story</h2>
@@ -100,33 +213,32 @@ layout: false
       <h2>Teacher’s Lounge</h2>
       <p>
         Use the <strong>Teacher’s Lounge</strong> class (code: <code>alwayslearning</code>) when adults submit sample writing for calibration.
-        Those entries are <strong>excluded from student peer averages</strong> so they don’t skew class comparisons.
+        Those entries are <strong>excluded from student peer averages and percentile pools</strong> so they don’t skew class comparisons.
       </p>
 
       <div class="dw-callout">
         <strong>Limits of algorithmic analysis</strong>
-        <ul style="margin: 8px 0 0;">
+        <ul>
           <li>Cannot judge <em>meaning</em>, humor, cultural context, or trauma-sensitive content — read the story yourself.</li>
           <li>Misses strong ideas hidden behind spelling errors or typing struggles.</li>
           <li>Counts patterns (sensory words, transitions) but not whether they’re used well.</li>
           <li>Does not detect plagiarism, AI-generated text, or paste attempts beyond blocking paste in the UI.</li>
-          <li>Does not measure speaking, revision process, collaboration, or research skills.</li>
           <li>English learners may score low on mechanics/vocabulary while showing strong thinking — pair scores with your knowledge of the student.</li>
           <li>One timed draft is a snapshot; growth requires multiple samples over time.</li>
         </ul>
       </div>
 
       <h2>Suggested workflow</h2>
-      <ol>
+      <ol class="dw-steps">
         <li>Filter by class; use <strong>Read class</strong> to read every story in one scroll.</li>
         <li>Scan typing tiers in the scores table for intervention groups.</li>
         <li>Open 2–3 detail views per band to read actual stories.</li>
-        <li>Use comparison charts to spot outliers (much lower than class on one skill).</li>
+        <li>Check percentile panels for outliers (one skill far below the 40th percentile).</li>
         <li>Plan one mini-lesson from a common “needs support” standard.</li>
         <li>Re-run <strong>Re-analyze all</strong> after rubric updates — student text is never changed.</li>
       </ol>
 
-      <p class="dw-muted" style="margin-top: 32px; font-size: 13px;">Questions? Talk to Mr. Phil. Close this tab to return to the dashboard.</p>
+      <p class="dw-muted" style="margin-top: 40px; font-size: 16px;">Questions? Talk to Mr. Phil. Close this tab to return to the dashboard.</p>
     </article>
   </body>
 </html>

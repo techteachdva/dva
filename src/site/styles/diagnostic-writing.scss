@@ -1183,7 +1183,22 @@ html {
 .dw-quick-card__diff {
   font-size: 12px;
   font-weight: 700;
-  margin-top: 2px;
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.dw-quick-card__pct {
+  font-size: 13px;
+  font-weight: 800;
+  color: #6ee7b7;
+}
+
+.dw-quick-card__pct-sub {
+  font-size: 11px;
+  font-weight: 600;
+  color: #c4b5fd;
 }
 
 .dw-quick-card__diff--up { color: #6ee7b7; }
@@ -1214,6 +1229,7 @@ html {
 
 .dw-peer-key--student { color: #6ee7b7; }
 .dw-peer-key--class { color: #7dd3fc; }
+.dw-peer-key--median { color: #7dd3fc; }
 .dw-peer-key--grade { color: #c4b5fd; }
 .dw-peer-key--band { color: var(--dw-muted); }
 
@@ -1261,9 +1277,9 @@ html {
 
 .dw-peer-chip {
   display: inline-block;
-  padding: 3px 10px;
+  padding: 4px 12px;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.02em;
 }
@@ -1314,6 +1330,30 @@ html {
   z-index: 1;
 }
 
+.dw-peer-scale__band--iqr {
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.28);
+}
+
+.dw-peer-scale__track--percentile::before,
+.dw-peer-scale__track--percentile::after {
+  position: absolute;
+  bottom: -1px;
+  font-size: 9px;
+  color: var(--dw-muted);
+  font-weight: 700;
+}
+
+.dw-peer-scale__track--percentile::before {
+  content: "0";
+  left: 4px;
+}
+
+.dw-peer-scale__track--percentile::after {
+  content: "100";
+  right: 4px;
+}
+
 .dw-peer-scale__marker {
   position: absolute;
   top: 0;
@@ -1333,9 +1373,18 @@ html {
   border-radius: 1px;
 }
 
-.dw-peer-scale__marker--class .dw-peer-scale__marker-line {
+.dw-peer-scale__marker--class .dw-peer-scale__marker-line,
+.dw-peer-scale__marker--median .dw-peer-scale__marker-line {
   background: #38bdf8;
   box-shadow: 0 0 6px rgba(56, 189, 248, 0.5);
+}
+
+.dw-peer-scale__marker--median {
+  z-index: 3;
+}
+
+.dw-peer-scale__marker--median .dw-peer-scale__marker-line {
+  border-left: 1px dashed rgba(255, 255, 255, 0.35);
 }
 
 .dw-peer-scale__marker--grade .dw-peer-scale__marker-line {
@@ -1383,7 +1432,8 @@ html {
   color: #6ee7b7;
 }
 
-.dw-peer-scale__marker--class .dw-peer-scale__marker-label strong { color: #7dd3fc; }
+.dw-peer-scale__marker--class .dw-peer-scale__marker-label strong,
+.dw-peer-scale__marker--median .dw-peer-scale__marker-label strong { color: #7dd3fc; }
 .dw-peer-scale__marker--grade .dw-peer-scale__marker-label strong { color: #c4b5fd; }
 
 .dw-peer-scale__footer {
