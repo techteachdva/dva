@@ -930,6 +930,7 @@
         ? `${allSubmissions.length} submission${allSubmissions.length === 1 ? "" : "s"} across all classes · ${classSummary}`
         : `${allSubmissions.length} submission${allSubmissions.length === 1 ? "" : "s"}`;
       renderClassCodesPanel();
+      populateClassFilterOptions();
       try {
         const saved = sessionStorage.getItem("dw-teacher-view-mode");
         if (saved === "reader" || saved === "table") teacherViewMode = saved;
@@ -944,10 +945,67 @@
     }
   }
 
+  function syncClassFilterFromDom() {
+    if (classFilter) currentClassFilter = classFilter.value || "all";
+  }
+
+  function canonicalClassroom(value) {
+    const resolved = resolveClassroom(value);
+    if (resolved) return resolved;
+    const norm = normalizeClassroom(value);
+    return norm || String(value || "").trim();
+  }
+
+  function classFilterMatches(submission, filterValue) {
+    if (filterValue === "all") return true;
+    return canonicalClassroom(submission.classroom) === canonicalClassroom(filterValue);
+  }
+
+  function populateClassFilterOptions() {
+    if (!classFilter) return;
+
+    const byKey = new Map();
+    for (const cls of VALID_CLASSROOMS) {
+      byKey.set(canonicalClassroom(cls), cls);
+    }
+    for (const sub of allSubmissions) {
+      if (!sub.classroom) continue;
+      const key = canonicalClassroom(sub.classroom);
+      if (!byKey.has(key)) {
+        byKey.set(key, resolveClassroom(sub.classroom) || sub.classroom);
+      }
+    }
+
+    const sorted = [...byKey.values()].sort((a, b) => a.localeCompare(b));
+    const prev = currentClassFilter || classFilter.value || "all";
+
+    classFilter.innerHTML = "";
+    const allOpt = document.createElement("option");
+    allOpt.value = "all";
+    allOpt.textContent = "All classes";
+    classFilter.appendChild(allOpt);
+
+    for (const cls of sorted) {
+      const opt = document.createElement("option");
+      opt.value = cls;
+      opt.textContent = cls;
+      classFilter.appendChild(opt);
+    }
+
+    if (prev === "all") {
+      classFilter.value = "all";
+    } else {
+      const match = sorted.find((cls) => canonicalClassroom(cls) === canonicalClassroom(prev));
+      classFilter.value = match || "all";
+    }
+    currentClassFilter = classFilter.value;
+  }
+
   function getFilteredSubmissions() {
+    syncClassFilterFromDom();
     return allSubmissions.filter((s) => {
       const typingOk = currentFilter === "all" || s.analysis?.typingLevel === currentFilter;
-      const classOk = currentClassFilter === "all" || s.classroom === currentClassFilter;
+      const classOk = classFilterMatches(s, currentClassFilter);
       return typingOk && classOk;
     });
   }
@@ -1058,10 +1116,24 @@
       const typingBand = R ? R.band(a.scores?.typing) : null;
 
       const navLi = document.createElement("li");
-      navLi.innerHTML = `<a class="dw-reader-nav__link" href="#${slug}">
-        <span class="dw-reader-nav__name">${escapeHtml(sub.name)}</span>
-        <span class="dw-reader-nav__score ${overallBand ? R.bandClass(overallBand.level) : ""}">${a.scores?.overall ?? "—"}</span>
-      </a>`;
+      const navLink = document.createElement("a");
+      navLink.className = "dw-reader-nav__link";
+      navLink.href = `#${slug}`;
+      navLink.innerHTML = `<span class="dw-reader-nav__name">${escapeHtml(sub.name)}</span>
+        <span class="dw-reader-nav__score ${overallBand ? R.bandClass(overallBand.level) : ""}">${a.scores?.overall ?? "—"}</span>`;
+      navLink.addEventListener("click", (e) => {
+        e.preventDefault();
+        const target = document.getElementById(slug);
+        if (!target) return;
+        if (readerFeed) {
+          const feedTop = readerFeed.getBoundingClientRect().top;
+          const targetTop = target.getBoundingClientRect().top;
+          readerFeed.scrollBy({ top: targetTop - feedTop - 8, behavior: "smooth" });
+        } else {
+          target.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      });
+      navLi.appendChild(navLink);
       readerNavList.appendChild(navLi);
 
       const card = document.createElement("article");
@@ -1261,6 +1333,30 @@
     URL.revokeObjectURL(url);
   }
 
+  function populateStudentClassOptions() {
+    if (!studentClass) return;
+    const selected = studentClass.value;
+    studentClass.innerHTML = "";
+    const placeholder = document.createElement("option");
+    placeholder.value = "";
+    placeholder.disabled = true;
+    placeholder.selected = !selected;
+    placeholder.textContent = "Select your class…";
+    studentClass.appendChild(placeholder);
+    for (const cls of VALID_CLASSROOMS) {
+      const opt = document.createElement("option");
+      opt.value = cls;
+      opt.textContent = cls;
+      if (cls === selected) {
+        opt.selected = true;
+        placeholder.selected = false;
+      }
+      studentClass.appendChild(opt);
+    }
+  }
+
+  populateStudentClassOptions();
+
   studentName.addEventListener("input", updateStartButton);
   studentClass.addEventListener("change", () => {
     if (classCode) classCode.value = "";
@@ -1331,6 +1427,7 @@
   }
   if (teacherTabReader) {
     teacherTabReader.addEventListener("click", () => {
+      syncClassFilterFromDom();
       setTeacherViewMode("reader");
       renderTeacherViews();
     });

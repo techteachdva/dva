@@ -103,9 +103,6 @@ layout: false
               <span class="dw-label">Your class</span>
               <select id="studentClass" class="dw-input dw-select" required>
                 <option value="" disabled selected>Select your class…</option>
-                {% for classroom in diagnosticWritingClasses %}
-                <option value="{{ classroom }}">{{ classroom }}</option>
-                {% endfor %}
               </select>
             </label>
             <label class="dw-field" id="classCodeField">
@@ -218,9 +215,6 @@ layout: false
               <span class="dw-muted">Class</span>
               <select id="classFilter" class="dw-input dw-select dw-select--compact">
                 <option value="all">All classes</option>
-                {% for classroom in diagnosticWritingClasses %}
-                <option value="{{ classroom }}">{{ classroom }}</option>
-                {% endfor %}
               </select>
             </label>
           </div>
@@ -270,7 +264,7 @@ layout: false
                   <option value="newest">Newest first</option>
                 </select>
               </label>
-              <p class="dw-muted dw-tiny" id="readerMeta">Select a class to read all stories in one scroll.</p>
+              <p class="dw-muted dw-tiny" id="readerMeta">Choose a class above, then scroll through every story.</p>
               <button id="readerPrintBtn" class="dw-btn dw-btn-ghost" type="button">Print this list</button>
             </div>
             <div class="dw-reader-layout">
