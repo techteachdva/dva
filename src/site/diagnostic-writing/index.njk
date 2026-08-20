@@ -233,6 +233,11 @@ layout: false
             <button class="dw-filter" data-filter="advanced" type="button">Advanced</button>
           </div>
 
+          <div class="dw-teacher-view-tabs" id="teacherViewTabs" role="tablist" aria-label="Teacher dashboard view">
+            <button id="teacherTabTable" class="dw-teacher-tab dw-teacher-tab--active" type="button" role="tab" aria-selected="true">Scores table</button>
+            <button id="teacherTabReader" class="dw-teacher-tab" type="button" role="tab" aria-selected="false">Read class</button>
+          </div>
+
           <div id="teacherTableWrap" class="dw-card dw-table-wrap dw-table-wrap--fit">
             <table class="dw-table dw-table--compact" id="teacherTable">
               <thead>
@@ -251,6 +256,31 @@ layout: false
               <tbody id="teacherTableBody"></tbody>
             </table>
             <p id="emptyState" class="dw-muted dw-center dw-hidden">No submissions yet.</p>
+          </div>
+
+          <div id="teacherReaderWrap" class="dw-reader dw-hidden" role="tabpanel" aria-label="Read student submissions">
+            <div class="dw-reader-toolbar">
+              <label class="dw-reader-sort">
+                <span class="dw-muted">Sort</span>
+                <select id="readerSort" class="dw-input dw-select dw-select--compact">
+                  <option value="name">Name (A–Z)</option>
+                  <option value="overall-desc">Overall (high → low)</option>
+                  <option value="overall-asc">Overall (low → high)</option>
+                  <option value="story-desc">Story (high → low)</option>
+                  <option value="newest">Newest first</option>
+                </select>
+              </label>
+              <p class="dw-muted dw-tiny" id="readerMeta">Select a class to read all stories in one scroll.</p>
+              <button id="readerPrintBtn" class="dw-btn dw-btn-ghost" type="button">Print this list</button>
+            </div>
+            <div class="dw-reader-layout">
+              <nav class="dw-reader-nav" id="readerNav" aria-label="Jump to student">
+                <p class="dw-reader-nav__title">Students</p>
+                <ol class="dw-reader-nav__list" id="readerNavList"></ol>
+              </nav>
+              <div class="dw-reader-feed" id="readerFeed"></div>
+            </div>
+            <p id="readerEmpty" class="dw-muted dw-center dw-hidden">No submissions match this filter.</p>
           </div>
 
           <div id="detailPanel" class="dw-card dw-detail dw-hidden">

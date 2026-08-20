@@ -123,6 +123,16 @@
   const detailPanel = document.getElementById("detailPanel");
   const filterBar = document.getElementById("filterBar");
   const classFilter = document.getElementById("classFilter");
+  const teacherTabTable = document.getElementById("teacherTabTable");
+  const teacherTabReader = document.getElementById("teacherTabReader");
+  const teacherTableWrap = document.getElementById("teacherTableWrap");
+  const teacherReaderWrap = document.getElementById("teacherReaderWrap");
+  const readerSortEl = document.getElementById("readerSort");
+  const readerPrintBtn = document.getElementById("readerPrintBtn");
+  const readerFeed = document.getElementById("readerFeed");
+  const readerNavList = document.getElementById("readerNavList");
+  const readerEmpty = document.getElementById("readerEmpty");
+  const readerMeta = document.getElementById("readerMeta");
 
   let timerInterval = null;
   let elapsedSec = 0;
@@ -134,6 +144,8 @@
   let selectedClassroom = "";
   let selectedClassCode = "";
   let teacherClassroomCodes = {};
+  let teacherViewMode = "table";
+  let readerSort = "name";
 
   function showView(name) {
     const shell = document.querySelector(".dw-shell");
@@ -832,7 +844,7 @@
     } else {
       teacherMeta.textContent = `Re-analyzed ${ok} submission${ok === 1 ? "" : "s"} with the updated rubric.`;
     }
-    renderTeacherTable();
+    renderTeacherViews();
 
     if (!detailPanel.classList.contains("dw-hidden")) {
       const openId = detailPanel.dataset.openId;
@@ -918,12 +930,17 @@
         ? `${allSubmissions.length} submission${allSubmissions.length === 1 ? "" : "s"} across all classes · ${classSummary}`
         : `${allSubmissions.length} submission${allSubmissions.length === 1 ? "" : "s"}`;
       renderClassCodesPanel();
-      renderTeacherTable();
+      try {
+        const saved = sessionStorage.getItem("dw-teacher-view-mode");
+        if (saved === "reader" || saved === "table") teacherViewMode = saved;
+      } catch { /* ignore */ }
+      setTeacherViewMode(teacherViewMode, false);
+      renderTeacherViews();
     } catch (err) {
       allSubmissions = [];
       teacherMeta.textContent = err.message || "Could not load submissions.";
       teacherMeta.classList.add("dw-error");
-      renderTeacherTable();
+      renderTeacherViews();
     }
   }
 
@@ -976,6 +993,171 @@
         if (sub) showDetail(sub);
       });
     });
+  }
+
+  function sortReaderSubmissions(items) {
+    const list = [...items];
+    switch (readerSort) {
+      case "overall-desc":
+        return list.sort((a, b) => (b.analysis?.scores?.overall ?? -1) - (a.analysis?.scores?.overall ?? -1));
+      case "overall-asc":
+        return list.sort((a, b) => (a.analysis?.scores?.overall ?? 101) - (b.analysis?.scores?.overall ?? 101));
+      case "story-desc":
+        return list.sort((a, b) => (resolveStoryScore(b.analysis) ?? -1) - (resolveStoryScore(a.analysis) ?? -1));
+      case "newest":
+        return list.sort((a, b) => new Date(b.submittedAt || 0) - new Date(a.submittedAt || 0));
+      default:
+        return list.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: "base" }));
+    }
+  }
+
+  function readerSlug(sub) {
+    const base = String(sub.id || sub.name).replace(/[^a-zA-Z0-9_-]/g, "-");
+    return `dw-reader-${base}`;
+  }
+
+  function renderReaderScoreChip(label, score, bandLevel) {
+    const R = window.DWRubrics;
+    const bandClass = R && bandLevel ? R.bandClass(bandLevel) : "";
+    return `<div class="dw-reader-score ${bandClass}">
+      <span class="dw-reader-score__label">${escapeHtml(label)}</span>
+      <span class="dw-reader-score__value">${score ?? "—"}</span>
+    </div>`;
+  }
+
+  function renderClassReader() {
+    if (!readerFeed || !readerNavList) return;
+
+    const filtered = getFilteredSubmissions();
+    const sorted = sortReaderSubmissions(filtered);
+    const R = window.DWRubrics;
+    const showClass = currentClassFilter === "all";
+    const typShort = { intervention: "Intv", developing: "Dev", proficient: "Prof", advanced: "Adv" };
+
+    const filterNote = currentFilter !== "all" ? ` · ${typingLabel(currentFilter)}` : "";
+    const classNote = currentClassFilter === "all" ? "all classes" : currentClassFilter;
+    if (readerMeta) {
+      readerMeta.textContent = sorted.length
+        ? `${sorted.length} stor${sorted.length === 1 ? "y" : "ies"} · ${classNote}${filterNote}`
+        : "No submissions match this filter.";
+    }
+
+    readerFeed.innerHTML = "";
+    readerNavList.innerHTML = "";
+    const layout = teacherReaderWrap?.querySelector(".dw-reader-layout");
+    if (layout) layout.classList.toggle("dw-hidden", sorted.length === 0);
+    if (readerEmpty) readerEmpty.classList.toggle("dw-hidden", sorted.length > 0);
+
+    for (const sub of sorted) {
+      const a = sub.analysis || {};
+      const slug = readerSlug(sub);
+      const overallBand = R ? R.band(a.scores?.overall) : null;
+      const mechBand = R ? R.band(a.scores?.mechanics) : null;
+      const storyScore = resolveStoryScore(a);
+      const storyBand = R ? R.band(storyScore) : null;
+      const typingBand = R ? R.band(a.scores?.typing) : null;
+
+      const navLi = document.createElement("li");
+      navLi.innerHTML = `<a class="dw-reader-nav__link" href="#${slug}">
+        <span class="dw-reader-nav__name">${escapeHtml(sub.name)}</span>
+        <span class="dw-reader-nav__score ${overallBand ? R.bandClass(overallBand.level) : ""}">${a.scores?.overall ?? "—"}</span>
+      </a>`;
+      readerNavList.appendChild(navLi);
+
+      const card = document.createElement("article");
+      card.className = "dw-reader-card";
+      card.id = slug;
+      card.innerHTML = `
+        <header class="dw-reader-card__head">
+          <div class="dw-reader-card__identity">
+            <h3 class="dw-reader-card__name">${escapeHtml(sub.name)}</h3>
+            ${showClass ? `<p class="dw-reader-card__class">${escapeHtml(sub.classroom || "Unknown class")}</p>` : ""}
+            <p class="dw-muted dw-tiny">${sub.submittedAt ? escapeHtml(formatDate(sub.submittedAt)) : ""}</p>
+          </div>
+          <div class="dw-reader-card__actions">
+            <button class="dw-btn dw-btn-ghost dw-reader-analyze-btn" type="button" data-id="${escapeHtml(sub.id || "")}">Analytics</button>
+          </div>
+        </header>
+        <div class="dw-reader-scores">
+          ${renderReaderScoreChip("Overall", a.scores?.overall, overallBand?.level)}
+          ${renderReaderScoreChip("Typing", a.scores?.typing, typingBand?.level)}
+          ${renderReaderScoreChip("Mechanics", a.scores?.mechanics, mechBand?.level)}
+          ${renderReaderScoreChip("Story", storyScore, storyBand?.level)}
+        </div>
+        <div class="dw-reader-stats">
+          <span>${a.wordCount ?? "—"} words</span>
+          <span>${a.wpm ?? "—"} WPM</span>
+          <span class="${badgeClass(a.typingLevel)}" title="${typingLabel(a.typingLevel)}">${typShort[a.typingLevel] || "—"} typing</span>
+        </div>
+        <div class="dw-reader-story">${escapeHtml(sub.text || "(No text submitted)")}</div>`;
+      readerFeed.appendChild(card);
+    }
+
+    readerFeed.querySelectorAll(".dw-reader-analyze-btn").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const sub = allSubmissions.find((s) => s.id === btn.dataset.id);
+        if (sub) showDetail(sub);
+      });
+    });
+  }
+
+  function setTeacherViewMode(mode, persist = true) {
+    teacherViewMode = mode;
+    if (teacherTabTable) {
+      teacherTabTable.classList.toggle("dw-teacher-tab--active", mode === "table");
+      teacherTabTable.setAttribute("aria-selected", mode === "table" ? "true" : "false");
+    }
+    if (teacherTabReader) {
+      teacherTabReader.classList.toggle("dw-teacher-tab--active", mode === "reader");
+      teacherTabReader.setAttribute("aria-selected", mode === "reader" ? "true" : "false");
+    }
+    if (teacherTableWrap) teacherTableWrap.classList.toggle("dw-hidden", mode !== "table");
+    if (teacherReaderWrap) teacherReaderWrap.classList.toggle("dw-hidden", mode !== "reader");
+    if (persist) {
+      try { sessionStorage.setItem("dw-teacher-view-mode", mode); } catch { /* ignore */ }
+    }
+  }
+
+  function renderTeacherViews() {
+    renderTeacherTable();
+    if (teacherViewMode === "reader") renderClassReader();
+  }
+
+  function printReaderList() {
+    const sorted = sortReaderSubmissions(getFilteredSubmissions());
+    if (!sorted.length) return;
+
+    const classNote = currentClassFilter === "all" ? "All classes" : currentClassFilter;
+    const cards = sorted.map((sub) => {
+      const a = sub.analysis || {};
+      const storyScore = resolveStoryScore(a);
+      return `<article class="print-card">
+        <h2>${escapeHtml(sub.name)}${currentClassFilter === "all" ? ` <span class="print-class">(${escapeHtml(sub.classroom || "")})</span>` : ""}</h2>
+        <p class="print-scores">Overall ${a.scores?.overall ?? "—"} · Typing ${a.scores?.typing ?? "—"} · Mechanics ${a.scores?.mechanics ?? "—"} · Story ${storyScore ?? "—"} · ${a.wordCount ?? "—"} words · ${a.wpm ?? "—"} WPM</p>
+        <div class="print-story">${escapeHtml(sub.text || "")}</div>
+      </article>`;
+    }).join("");
+
+    const win = window.open("", "_blank", "noopener,noreferrer");
+    if (!win) return;
+    win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Class stories — ${escapeHtml(classNote)}</title>
+      <style>
+        body { font-family: Georgia, serif; max-width: 7in; margin: 0 auto; padding: 0.5in; color: #111; line-height: 1.5; }
+        h1 { font-family: system-ui, sans-serif; font-size: 18px; margin: 0 0 1rem; }
+        .print-card { break-inside: avoid; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid #ccc; }
+        .print-card h2 { font-size: 16px; margin: 0 0 0.25rem; }
+        .print-class { font-weight: normal; color: #555; font-size: 14px; }
+        .print-scores { font-family: system-ui, sans-serif; font-size: 11px; color: #444; margin: 0 0 0.5rem; }
+        .print-story { white-space: pre-wrap; font-size: 13px; }
+        @media print { body { padding: 0; } }
+      </style></head><body>
+      <h1>Diagnostic writing — ${escapeHtml(classNote)} (${sorted.length})</h1>
+      ${cards}
+      </body></html>`);
+    win.document.close();
+    win.focus();
+    win.print();
   }
 
   function renderStandardsPanel(standards) {
@@ -1135,10 +1317,29 @@
     if (!btn) return;
     currentFilter = btn.dataset.filter;
     filterBar.querySelectorAll(".dw-filter").forEach((b) => b.classList.toggle("dw-filter--active", b === btn));
-    renderTeacherTable();
+    renderTeacherViews();
   });
   classFilter.addEventListener("change", () => {
     currentClassFilter = classFilter.value;
-    renderTeacherTable();
+    renderTeacherViews();
   });
+  if (teacherTabTable) {
+    teacherTabTable.addEventListener("click", () => {
+      setTeacherViewMode("table");
+      renderTeacherViews();
+    });
+  }
+  if (teacherTabReader) {
+    teacherTabReader.addEventListener("click", () => {
+      setTeacherViewMode("reader");
+      renderTeacherViews();
+    });
+  }
+  if (readerSortEl) {
+    readerSortEl.addEventListener("change", () => {
+      readerSort = readerSortEl.value;
+      renderClassReader();
+    });
+  }
+  if (readerPrintBtn) readerPrintBtn.addEventListener("click", printReaderList);
 })();
