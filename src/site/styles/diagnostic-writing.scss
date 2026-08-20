@@ -625,12 +625,14 @@ html {
   grid-template-columns: 200px 1fr;
   min-height: 420px;
   max-height: min(72vh, 900px);
+  overflow: hidden;
 }
 
 @media (max-width: 900px) {
   .dw-reader-layout {
     grid-template-columns: 1fr;
-    max-height: none;
+    grid-template-rows: auto minmax(0, 1fr);
+    max-height: min(78vh, 900px);
   }
 
   .dw-reader-nav {
@@ -644,6 +646,8 @@ html {
   padding: 12px 10px;
   border-right: 1px solid var(--dw-border);
   overflow-y: auto;
+  overscroll-behavior: contain;
+  min-height: 0;
   background: rgba(0, 0, 0, 0.12);
 }
 
@@ -700,10 +704,13 @@ html {
 
 .dw-reader-feed {
   overflow-y: auto;
+  overscroll-behavior: contain;
+  min-height: 0;
   padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 20px;
+  -webkit-overflow-scrolling: touch;
 }
 
 .dw-reader-card {

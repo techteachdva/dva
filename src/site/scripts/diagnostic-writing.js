@@ -1083,6 +1083,18 @@
     </div>`;
   }
 
+  function scrollReaderToCard(cardEl) {
+    if (!readerFeed || !cardEl) return;
+    const nextTop = readerFeed.scrollTop
+      + cardEl.getBoundingClientRect().top
+      - readerFeed.getBoundingClientRect().top
+      - 12;
+    readerFeed.scrollTo({
+      top: Math.max(0, nextTop),
+      behavior: "smooth",
+    });
+  }
+
   function renderClassReader() {
     if (!readerFeed || !readerNavList) return;
 
@@ -1123,15 +1135,7 @@
         <span class="dw-reader-nav__score ${overallBand ? R.bandClass(overallBand.level) : ""}">${a.scores?.overall ?? "—"}</span>`;
       navLink.addEventListener("click", (e) => {
         e.preventDefault();
-        const target = document.getElementById(slug);
-        if (!target) return;
-        if (readerFeed) {
-          const feedTop = readerFeed.getBoundingClientRect().top;
-          const targetTop = target.getBoundingClientRect().top;
-          readerFeed.scrollBy({ top: targetTop - feedTop - 8, behavior: "smooth" });
-        } else {
-          target.scrollIntoView({ behavior: "smooth", block: "start" });
-        }
+        scrollReaderToCard(document.getElementById(slug));
       });
       navLi.appendChild(navLink);
       readerNavList.appendChild(navLi);
