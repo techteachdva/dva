@@ -199,6 +199,15 @@
     return Math.max(min, Math.min(max, n));
   }
 
+  function getCalibration() {
+    return window.DWCalibration || {};
+  }
+
+  function calBreakpoints(key, fallback) {
+    const cal = getCalibration();
+    return cal[key] || fallback;
+  }
+
   function scoreFromRange(value, breakpoints) {
     for (let i = 0; i < breakpoints.length - 1; i++) {
       const [v0, s0] = breakpoints[i];
@@ -238,7 +247,9 @@
 
     const apostropheErrors = (text.match(/\bi\b/g) || []).length;
     const rate = words.length > 0 ? misspellCount / words.length : 0;
-    const score = clamp(Math.round(100 - rate * 300 - apostropheErrors * 2), 0, 100);
+    const misspellRate = getCalibration().SPELLING_MISSPELL_RATE ?? 220;
+    const iPenalty = getCalibration().SPELLING_I_PENALTY ?? 1.5;
+    const score = clamp(Math.round(100 - rate * misspellRate - apostropheErrors * iPenalty), 0, 100);
 
     return {
       score,
@@ -279,7 +290,8 @@
     errorCount += repeatedAdjacent;
 
     const rate = words.length > 0 ? errorCount / Math.max(sentences.length, 1) : 0;
-    const score = clamp(Math.round(100 - rate * 25 - weakEnds * 5), 0, 100);
+    const errorRate = getCalibration().GRAMMAR_ERROR_RATE ?? 18;
+    const score = clamp(Math.round(100 - rate * errorRate - weakEnds * 4), 0, 100);
 
     return { score, errorCount, commaSplices, repeatedAdjacent, issues: [...new Set(issues)].slice(0, 5) };
   }
@@ -298,11 +310,14 @@
     const fragments = sentLengths.filter((l) => l > 0 && l < 4).length;
     const runOns = sentLengths.filter((l) => l > 35).length;
 
+    const cal = getCalibration();
+    const synW = cal.SYNTAX_WEIGHTS || { variety: 0.2, avgLen: 0.2, complex: 0.6 };
+
     const score = clamp(Math.round(
-      scoreFromRange(variety, [[0, 20], [2, 40], [5, 65], [8, 82], [12, 95]]) * 0.3 +
-      scoreFromRange(avgLen, [[0, 20], [6, 45], [10, 68], [14, 82], [20, 95]]) * 0.25 +
-      scoreFromRange(complexMarkers, [[0, 30], [1, 50], [3, 70], [6, 88], [10, 100]]) * 0.3 -
-      fragments * 3 - runOns * 5
+      scoreFromRange(variety, calBreakpoints("SYNTAX_VARIETY_BREAKPOINTS", [[0, 25], [2, 45], [5, 68], [8, 82], [12, 94]])) * synW.variety +
+      scoreFromRange(avgLen, calBreakpoints("SYNTAX_LENGTH_BREAKPOINTS", [[0, 25], [6, 48], [10, 68], [14, 82], [20, 94]])) * synW.avgLen +
+      scoreFromRange(complexMarkers, calBreakpoints("SYNTAX_COMPLEX_BREAKPOINTS", [[0, 35], [2, 55], [5, 72], [8, 86], [12, 96], [16, 100]])) * synW.complex -
+      fragments * 2 - runOns * 4
     ), 0, 100);
 
     const issues = [];
@@ -337,10 +352,13 @@
     const maxFreq = Math.max(0, ...Object.values(freq));
     const repetitionPenalty = words.length > 0 ? maxFreq / words.length : 0;
 
+    const cal = getCalibration();
+    const semW = cal.SEMANTICS_WEIGHTS || { lex: 0.5, spec: 0.35, repetitionPenalty: 35 };
+
     const score = clamp(Math.round(
-      scoreFromRange(lexicalDiversity, [[0, 25], [0.3, 42], [0.45, 62], [0.58, 78], [0.72, 92]]) * 0.45 +
-      scoreFromRange(specificity, [[0, 28], [1, 48], [3, 65], [6, 82], [10, 95]]) * 0.35 -
-      repetitionPenalty * 50
+      scoreFromRange(lexicalDiversity, calBreakpoints("SEMANTICS_LEX_BREAKPOINTS", [[0, 30], [0.25, 45], [0.35, 58], [0.45, 70], [0.55, 80], [0.65, 88], [0.72, 94], [0.78, 100]])) * semW.lex +
+      scoreFromRange(specificity, calBreakpoints("SEMANTICS_SPEC_BREAKPOINTS", [[0, 30], [1, 48], [3, 62], [5, 74], [8, 84], [12, 92], [16, 100]])) * semW.spec -
+      repetitionPenalty * semW.repetitionPenalty
     ), 0, 100);
 
     const issues = [];
@@ -376,45 +394,74 @@
     const voiceCount = (text.match(VOICE_PATTERN) || []).length;
     const conflictWords = (text.match(/\b(but|however|problem|stuck|lost|scared|worried|until|finally)\b/gi) || []).length;
 
-    const volumeScore = scoreFromRange(wordCount, [
-      [0, 0], [30, 22], [55, 40], [80, 54], [110, 66], [140, 76], [175, 85], [220, 92], [280, 97], [350, 100],
-    ]);
+    const cal = getCalibration();
+    const typingW = cal.TYPING_WEIGHTS || { wpm: 0.55, volume: 0.45 };
+    const mechW = cal.MECHANICS_WEIGHTS || { spelling: 0.45, grammar: 0.35, syntax: 0.2 };
+    const storyW = cal.STORY_WEIGHTS || { voice: 0.2, detail: 0.25, structure: 0.25, wordChoice: 0.3 };
 
-    const wpmScore = scoreFromRange(wpm, [
-      [0, 0], [6, 18], [12, 36], [18, 52], [24, 66], [30, 78], [38, 88], [48, 100],
-    ]);
+    const volumeScore = scoreFromRange(wordCount, calBreakpoints("VOLUME_BREAKPOINTS", [
+      [0, 0], [20, 15], [40, 32], [55, 45], [70, 55], [85, 64], [100, 72],
+      [115, 78], [130, 83], [150, 88], [175, 92], [200, 95], [250, 98], [320, 100],
+    ]));
 
-    const typingScore = clamp(Math.round(wpmScore * 0.55 + volumeScore * 0.45), 0, 100);
+    const wpmScore = scoreFromRange(wpm, calBreakpoints("WPM_BREAKPOINTS", [
+      [0, 0], [6, 25], [10, 40], [14, 52], [17, 58], [20, 65], [24, 72],
+      [28, 79], [32, 85], [38, 91], [45, 96], [55, 100],
+    ]));
 
-    const mechanicsScore = clamp(Math.round(
-      spelling.score * 0.45 + grammar.score * 0.35 + syntax.score * 0.2
+    const typingScore = clamp(Math.round(wpmScore * typingW.wpm + volumeScore * typingW.volume), 0, 100);
+
+    let mechanicsScore = clamp(Math.round(
+      spelling.score * mechW.spelling + grammar.score * mechW.grammar + syntax.score * mechW.syntax
     ), 0, 100);
 
+    const mechFloor = cal.MECHANICS_EXEMPLAR_FLOOR;
+    if (mechFloor && wordCount >= mechFloor.minWords
+      && spelling.score >= mechFloor.minSpelling
+      && grammar.score >= mechFloor.minGrammar) {
+      mechanicsScore = Math.max(mechanicsScore, mechFloor.floor);
+    }
+
+    const detailBase = scoreFromRange(
+      sensoryCount + dialogueLines * 1.5,
+      calBreakpoints("STORY_DETAIL_BREAKPOINTS", [[0, 35], [1, 50], [2, 62], [3, 72], [4, 82], [6, 90], [8, 95], [11, 100]])
+    );
+    const detailBonus = scoreFromRange(
+      wordCount,
+      calBreakpoints("STORY_DETAIL_VOLUME_BONUS", [[0, 0], [60, 4], [90, 10], [130, 16], [180, 22], [250, 28]])
+    );
+
     const storySubs = {
-      voice: scoreFromRange(voiceCount, [[0, 42], [2, 58], [5, 74], [8, 86], [12, 95]]),
-      detail: scoreFromRange(
-        sensoryCount + dialogueLines * 1.5,
-        [[0, 40], [1, 56], [2, 68], [4, 80], [6, 90], [9, 96]]
-      ),
+      voice: scoreFromRange(voiceCount, calBreakpoints("STORY_VOICE_BREAKPOINTS", [[0, 40], [2, 55], [5, 68], [8, 78], [12, 88], [16, 94], [20, 100]])),
+      detail: clamp(detailBase + detailBonus, 0, 100),
       structure: scoreFromRange(
         transitionCount + conflictWords,
-        [[0, 40], [1, 58], [2, 72], [4, 84], [6, 93]]
+        calBreakpoints("STORY_STRUCTURE_BREAKPOINTS", [[0, 40], [1, 58], [2, 70], [3, 78], [4, 86], [5, 92], [6, 96], [8, 100]])
       ),
       wordChoice: semantics.score,
     };
 
     let storyScore = clamp(Math.round(
-      storySubs.voice * 0.2 +
-      storySubs.detail * 0.25 +
-      storySubs.structure * 0.25 +
-      storySubs.wordChoice * 0.3
+      storySubs.voice * storyW.voice +
+      storySubs.detail * storyW.detail +
+      storySubs.structure * storyW.structure +
+      storySubs.wordChoice * storyW.wordChoice
     ), 0, 100);
 
-    if (wordCount >= 50 && voiceCount >= 2 && sentenceCount >= 3) {
-      storyScore = Math.max(storyScore, 48);
-    }
-    if (wordCount >= 90 && voiceCount >= 4) {
-      storyScore = Math.max(storyScore, 55);
+    const storyFloors = cal.STORY_FLOORS || [
+      { minWords: 45, minVoice: 1, minSentences: 2, floor: 45 },
+      { minWords: 70, minVoice: 3, floor: 55 },
+      { minWords: 100, minVoice: 5, minSensory: 1, floor: 65 },
+      { minWords: 180, minVoice: 10, minSensory: 2, floor: 88 },
+      { minWords: 280, minVoice: 16, minSensory: 3, floor: 100 },
+    ];
+    for (const rule of storyFloors) {
+      const voiceOk = voiceCount >= (rule.minVoice ?? 0);
+      const sentOk = !rule.minSentences || sentenceCount >= rule.minSentences;
+      const sensoryOk = rule.minSensory == null || sensoryCount >= rule.minSensory;
+      if (wordCount >= rule.minWords && voiceOk && sentOk && sensoryOk) {
+        storyScore = Math.max(storyScore, rule.floor);
+      }
     }
 
     const complexityScore = clamp(Math.round(
@@ -495,9 +542,14 @@
   }
 
   function classifyTyping(wordCount, wpm) {
-    if (wordCount < 45 || wpm < 10) return "intervention";
-    if (wordCount < 90 || wpm < 16) return "developing";
-    if (wordCount < 150 || wpm < 28) return "proficient";
+    const tiers = getCalibration().TYPING_TIERS || {
+      intervention: { maxWords: 35, maxWpm: 7 },
+      developing: { maxWords: 65, maxWpm: 11 },
+      proficient: { maxWords: 105, maxWpm: 18 },
+    };
+    if (wordCount < tiers.intervention.maxWords || wpm < tiers.intervention.maxWpm) return "intervention";
+    if (wordCount < tiers.developing.maxWords || wpm < tiers.developing.maxWpm) return "developing";
+    if (wordCount < tiers.proficient.maxWords || wpm < tiers.proficient.maxWpm) return "proficient";
     return "advanced";
   }
 

@@ -36,6 +36,18 @@
     return null;
   }
 
+  function isMixedGradeClass(classroom) {
+    const mixed = window.DWCalibration?.MIXED_GRADE_CLASSES;
+    if (!mixed) return false;
+    return mixed.has(String(classroom || "").trim());
+  }
+
+  function gradeNormFallback(grade, metricId) {
+    const norms = window.DWCalibration?.GRADE_NORMS?.[grade];
+    if (!norms) return null;
+    return Number.isFinite(norms[metricId]) ? norms[metricId] : null;
+  }
+
   function isExcludedFromNorms(sub) {
     const name = String(sub?.name || "").trim();
     const classroom = String(sub?.classroom || "").trim();
@@ -68,6 +80,7 @@
       if (isExcludedFromNorms(sub)) return false;
       if (scope === "class") return sub.classroom === target.classroom;
       if (scope === "grade") {
+        if (isMixedGradeClass(sub.classroom)) return false;
         const g = classroomGrade(sub.classroom);
         return grade !== null && g === grade;
       }
@@ -98,6 +111,7 @@
 
   function computeMetricComparison(submissions, target, metricId) {
     const student = metricScore(target, metricId);
+    const grade = classroomGrade(target.classroom);
     const classPeers = peerPool(submissions, target, "class");
     const gradePeers = peerPool(submissions, target, "grade");
 
@@ -106,7 +120,7 @@
     const rangeScores = classGradeScoreList(submissions, target, metricId, true);
 
     const classAvg = average(classScores);
-    const gradeAvg = average(gradeScores);
+    const gradeAvg = withFallback(average(gradeScores), gradeNormFallback(grade, metricId));
 
     let classMin = minValue(rangeScores);
     let classMax = maxValue(rangeScores);
