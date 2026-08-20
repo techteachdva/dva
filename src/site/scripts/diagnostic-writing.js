@@ -130,6 +130,7 @@
   const readerSortEl = document.getElementById("readerSort");
   const readerPrintBtn = document.getElementById("readerPrintBtn");
   const readerFeed = document.getElementById("readerFeed");
+  const readerFeedShell = document.querySelector(".dw-reader-feed-shell");
   const readerNavList = document.getElementById("readerNavList");
   const readerEmpty = document.getElementById("readerEmpty");
   const readerMeta = document.getElementById("readerMeta");
@@ -1085,13 +1086,40 @@
 
   function scrollReaderToCard(cardEl) {
     if (!readerFeed || !cardEl) return;
-    const nextTop = readerFeed.scrollTop
-      + cardEl.getBoundingClientRect().top
-      - readerFeed.getBoundingClientRect().top
-      - 12;
     readerFeed.scrollTo({
-      top: Math.max(0, nextTop),
+      top: Math.max(0, cardEl.offsetTop - 12),
       behavior: "smooth",
+    });
+  }
+
+  function bindReaderScroll() {
+    if (!readerFeed || readerFeed.dataset.scrollBound) return;
+    readerFeed.dataset.scrollBound = "1";
+
+    const routeWheel = (e) => {
+      if (!readerFeed || teacherViewMode !== "reader") return;
+      if (readerFeed.scrollHeight <= readerFeed.clientHeight) return;
+
+      const delta = e.deltaY;
+      if (!delta) return;
+
+      const maxScroll = readerFeed.scrollHeight - readerFeed.clientHeight;
+      const nextTop = Math.min(maxScroll, Math.max(0, readerFeed.scrollTop + delta));
+      if (nextTop === readerFeed.scrollTop) return;
+
+      e.preventDefault();
+      readerFeed.scrollTop = nextTop;
+    };
+
+    readerFeed.addEventListener("wheel", routeWheel, { passive: false });
+    if (readerFeedShell) readerFeedShell.addEventListener("wheel", routeWheel, { passive: false });
+  }
+
+  function finalizeReaderPanel() {
+    if (teacherViewMode !== "reader" || !readerFeed) return;
+    bindReaderScroll();
+    requestAnimationFrame(() => {
+      readerFeed.focus({ preventScroll: true });
     });
   }
 
@@ -1176,10 +1204,18 @@
         if (sub) showDetail(sub);
       });
     });
+
+    finalizeReaderPanel();
   }
 
   function setTeacherViewMode(mode, persist = true) {
     teacherViewMode = mode;
+    const teacherView = document.getElementById("teacherView");
+    if (teacherView) teacherView.classList.toggle("dw-teacher-view--reader", mode === "reader");
+    if (mode === "reader") {
+      const classCodesPanel = document.getElementById("classCodesPanel");
+      if (classCodesPanel) classCodesPanel.open = false;
+    }
     if (teacherTabTable) {
       teacherTabTable.classList.toggle("dw-teacher-tab--active", mode === "table");
       teacherTabTable.setAttribute("aria-selected", mode === "table" ? "true" : "false");
