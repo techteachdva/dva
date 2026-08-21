@@ -310,7 +310,13 @@
       if (data.setupRequired) {
         throw new Error("Online storage is not configured on the server yet.");
       }
-      throw new Error(data.error || `Publish failed (${res.status})`);
+      const errMsg = data.error || `Publish failed (${res.status})`;
+      if (/illegal spreadsheet id|paste_your_sheet_id/i.test(errMsg)) {
+        throw new Error(
+          "Google Apps Script is not linked to your sheet yet. In the script editor, replace PASTE_YOUR_SHEET_ID_HERE with your real Sheet ID, save, run initSheet once, then deploy a new web app version."
+        );
+      }
+      throw new Error(errMsg);
     }
     return data;
   }

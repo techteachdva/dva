@@ -88,7 +88,17 @@ function verifyClassroomCode_(classroom, code) {
   return normalizeClassCode_(code) === normalizeClassCode_(expected);
 }
 
+function assertSpreadsheetConfigured_() {
+  if (!SPREADSHEET_ID || SPREADSHEET_ID === "PASTE_YOUR_SHEET_ID_HERE") {
+    throw new Error(
+      "WriteFlow Apps Script is not linked to a Google Sheet yet. " +
+        "Open the script editor and set SPREADSHEET_ID to your sheet ID (the long string between /d/ and /edit in the sheet URL)."
+    );
+  }
+}
+
 function getSpreadsheet_() {
+  assertSpreadsheetConfigured_();
   return SpreadsheetApp.openById(SPREADSHEET_ID);
 }
 

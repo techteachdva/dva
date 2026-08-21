@@ -52,5 +52,6 @@ Class validation uses the same lists as the Summer Writing Test (`api/diagnostic
 | "Cloud storage is not configured" | Set `WRITEFLOW_SCRIPT_URL` on Vercel and redeploy |
 | "Incorrect teacher password" | Re-save assignment in builder to sync password to `Assignments` sheet |
 | "Unauthorized" on save | Check `WRITEFLOW_API_SECRET` matches script `API_SECRET` |
+| "Illegal spreadsheet id" or `PASTE_YOUR_SHEET_ID_HERE` | In Apps Script line 18, paste your Sheet ID from the URL (`/d/SHEET_ID/edit`), save, run `initSheet`, redeploy web app |
 | Share link shows default template | Re-save in builder after updating Apps Script; confirm `configJson` column exists |
 | "Assignment not found online" | Teacher must click Save assignment while Google Sheets storage is connected |
