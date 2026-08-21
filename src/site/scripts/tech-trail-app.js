@@ -8,7 +8,7 @@
   const { STORY, CHARACTERS } = window.TechTrailStory || {};
   if (!Core || !STORY) return;
 
-  Core.applyTheme(Core.PRESETS.sandiego);
+  Core.applyTheme(Core.PRESETS.gauntlet);
 
   const views = {
     title: document.getElementById("titleView"),
@@ -148,7 +148,11 @@
 
   function renderEnding(node) {
     const isMentor = node.endingType === "mentor";
-    document.getElementById("endingTitle").textContent = isMentor ? "Mentor Operative!" : "Mission Complete!";
+    document.getElementById("endingTitle").textContent = isMentor
+      ? "Mentor Operative!"
+      : node.endingType === "champion"
+        ? "Gauntlet Champion!"
+        : "Mission Complete!";
     document.getElementById("endingNarrative").innerHTML = node.narrative || "";
     document.getElementById("endingBadges").innerHTML = [...badges].map((b) => `<span class="tt-badge">${escapeHtml(b)}</span>`).join("");
     document.getElementById("endingLessons").textContent =

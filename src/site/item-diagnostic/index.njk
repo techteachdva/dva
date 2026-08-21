@@ -8,24 +8,24 @@ layout: false
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-    <meta name="theme-color" content="#0f172a" />
+    <meta name="theme-color" content="#071612" />
     <title>ITEM 2025 Standards Diagnostic</title>
     <meta property="og:title" content="ITEM 2025 Standards Diagnostic" />
-    <meta property="og:description" content="Typing warm-up + knowledge quiz to diagnose which ITEM 2025 technology standards you need help with." />
+    <meta property="og:description" content="Typing warm-up and knowledge quiz to find which technology standards need the most practice." />
     <link rel="stylesheet" href="/styles/write-platform.css" />
     <link rel="stylesheet" href="/styles/custom-style.css" />
   </head>
-  <body class="dw-body">
+  <body class="dw-body wp-theme--item">
     <div class="dw-shell">
       {% if breadcrumbs and breadcrumbs.length > 0 %}
         <div class="breadcrumbs--standalone">{% include "components/breadcrumbs.njk" %}</div>
       {% endif %}
       <header class="dw-topbar">
         <div class="dw-topbar-brand">
-          <div style="width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#38bdf8,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:24px;">🎯</div>
+          <div style="width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#34d399,#fbbf24);display:flex;align-items:center;justify-content:center;font-size:24px;">🎯</div>
           <div>
             <div class="dw-title">ITEM 2025 Standards Diagnostic</div>
-            <div class="dw-subtitle">2-min typing warm-up · 20-question knowledge check · gap analysis</div>
+            <div class="dw-subtitle">Typing warm-up · knowledge check · gap analysis</div>
           </div>
         </div>
         <div class="dw-actions"><a class="dw-link" href="/tech-escape/">Tech Escape</a><a class="dw-link" href="/">Back to site</a></div>
@@ -35,14 +35,14 @@ layout: false
         <section id="welcomeView" class="dw-stack">
           <div class="dw-card dw-hero">
             <h1 class="dw-h1">Find your technology learning gaps</h1>
-            <p class="dw-lead">This diagnostic combines a <strong>2-minute typing warm-up</strong> with a <strong>20-question quiz</strong> drawn from the full Tech Escape bank (128 ITEM-tagged prompts). Your results show which standards to focus on.</p>
+            <p class="dw-lead">A short typing warm-up and a 20-question quiz show where you&rsquo;re strong and where to focus next.</p>
           </div>
           <div class="dw-card dw-stack">
             <h2 class="dw-h2">What gets measured</h2>
             <div class="dw-rubric-grid">
-              <div class="dw-rubric"><h3 class="dw-h3">⌨️ Typing</h3><p>Speed and stamina on a technology-themed warm-up prompt.</p></div>
-              <div class="dw-rubric"><h3 class="dw-h3">📚 Knowledge</h3><p>Design process, systems, data literacy, digital citizenship, and programming concepts.</p></div>
-              <div class="dw-rubric"><h3 class="dw-h3">🎯 Standards map</h3><p>Per-standard scores show where you&rsquo;re strong and where you need support.</p></div>
+              <div class="dw-rubric"><h3 class="dw-h3">⌨️ Typing</h3><p>Speed and stamina on a technology-themed prompt.</p></div>
+              <div class="dw-rubric"><h3 class="dw-h3">📚 Knowledge</h3><p>Design, systems, data, digital citizenship, and programming.</p></div>
+              <div class="dw-rubric"><h3 class="dw-h3">🎯 Standards map</h3><p>Per-standard scores highlight strengths and gaps.</p></div>
             </div>
           </div>
           <div class="dw-card dw-stack">
@@ -55,8 +55,8 @@ layout: false
         </section>
 
         <section id="typingView" class="dw-hidden">
-          <div class="dw-card"><h2 class="dw-h2">Phase 1 · Typing warm-up (2 minutes)</h2>
-            <p class="dw-muted">Explain how technology helps solve a problem in your daily life. Type continuously until time runs out.</p></div>
+          <div class="dw-card"><h2 class="dw-h2">Typing warm-up</h2>
+            <p class="dw-muted">Explain how technology helps solve a problem in your daily life. Type until time runs out.</p></div>
           <div class="dw-timer-bar">
             <div class="dw-timer-meta"><span class="dw-timer-label">Time remaining</span><span id="timerDisplay" class="dw-timer-value">2:00</span></div>
             <div class="dw-timer-track"><div id="timerProgress" class="dw-timer-fill"></div></div>
@@ -83,7 +83,7 @@ layout: false
 
         <section id="analyzingView" class="dw-card dw-stack dw-hidden dw-center">
           <div class="dw-spinner"></div>
-          <p class="dw-lead">Mapping your results to ITEM 2025 standards…</p>
+          <p class="dw-lead">Building your results…</p>
         </section>
 
         <section id="resultsView" class="dw-hidden dw-stack">
@@ -95,7 +95,7 @@ layout: false
           </div>
           <div class="dw-card"><h3 class="dw-h3">Typing warm-up</h3><div id="typingSummary"></div></div>
           <div class="dw-card"><h3 class="dw-h3">Topic areas</h3><div id="topicSummary"></div></div>
-          <div class="dw-card"><h3 class="dw-h3">Standards breakdown</h3><p class="dw-muted dw-tiny"><span style="color:var(--dw-success)">■</span> Strong (80%+) · <span style="color:var(--dw-warning)">■</span> Developing (50–79%) · <span style="color:var(--dw-danger)">■</span> Needs support (&lt;50%)</p><div class="std-grid" id="standardsGrid"></div></div>
+          <div class="dw-card"><h3 class="dw-h3">Standards breakdown</h3><div class="std-grid" id="standardsGrid"></div></div>
           <button id="restartBtn" class="dw-btn dw-btn-secondary" type="button">Try again</button>
         </section>
       </main>

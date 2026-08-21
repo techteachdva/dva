@@ -3,24 +3,132 @@
 /* ── Write Platform extensions (WriteFlow · ITEM Diagnostic · Tech Trail) ── */
 
 .wp-theme--light.dw-body {
+  --dw-border: rgba(0, 0, 0, 0.12);
   background:
-    radial-gradient(900px 600px at 15% 0%, rgba(26, 115, 232, 0.08), transparent 55%),
-    radial-gradient(900px 600px at 85% 10%, rgba(147, 52, 230, 0.06), transparent 55%),
+    radial-gradient(900px 600px at 12% 0%, rgba(26, 115, 232, 0.1), transparent 55%),
+    radial-gradient(900px 600px at 88% 8%, rgba(147, 52, 230, 0.07), transparent 55%),
     var(--dw-bg);
+  color: var(--dw-text);
+
+  .dw-topbar {
+    background: #fff;
+    border-color: rgba(0, 0, 0, 0.1);
+  }
 
   .dw-topbar,
   .dw-card {
-    box-shadow: 0 1px 2px rgba(60, 64, 67, 0.12), 0 1px 3px rgba(60, 64, 67, 0.08);
+    box-shadow: 0 1px 3px rgba(60, 64, 67, 0.16), 0 1px 2px rgba(60, 64, 67, 0.1);
+  }
+
+  .dw-card {
+    background: #fff;
+    border-color: rgba(0, 0, 0, 0.1);
+  }
+
+  .dw-title {
+    color: #1a1a1a;
+  }
+
+  .dw-subtitle,
+  .dw-muted,
+  .dw-tiny {
+    color: #3c4043;
+  }
+
+  .dw-lead {
+    color: #1a1a1a;
+  }
+
+  .dw-link {
+    color: #1a5bb8;
+  }
+
+  .dw-link:hover {
+    color: #174ea6;
   }
 
   .dw-input {
     background: #fff;
-    border-color: #dadce0;
+    border-color: #bdc1c6;
+    color: #1a1a1a;
   }
 
-  .dw-btn-secondary,
+  .dw-label {
+    color: #3c4043;
+  }
+
+  .dw-btn-secondary {
+    background: #f1f3f4;
+    border-color: #dadce0;
+    color: #1a1a1a;
+  }
+
   .dw-btn-ghost {
-    color: var(--dw-text);
+    background: #fff;
+    border-color: #dadce0;
+    color: #3c4043;
+  }
+
+  .dw-prompt-quote {
+    color: #1a1a1a;
+    border-left-color: var(--dw-accent);
+  }
+
+  .wf-builder-nav {
+    background: #f1f3f4;
+  }
+
+  .wf-builder-inspector {
+    background: #fafafa;
+  }
+}
+
+/* ITEM Diagnostic — emerald / amber (distinct from Summer Writing Test) */
+.wp-theme--item.dw-body {
+  background:
+    radial-gradient(1000px 700px at 10% -5%, rgba(16, 185, 129, 0.22), transparent 55%),
+    radial-gradient(900px 600px at 90% 5%, rgba(251, 191, 36, 0.14), transparent 50%),
+    radial-gradient(700px 500px at 50% 100%, rgba(5, 150, 105, 0.12), transparent 60%),
+    var(--dw-bg);
+
+  .dw-topbar {
+    background: linear-gradient(180deg, rgba(16, 185, 129, 0.14), rgba(255, 255, 255, 0.03));
+    border-color: rgba(52, 211, 153, 0.25);
+  }
+
+  .qz-standard {
+    background: rgba(16, 185, 129, 0.2);
+    color: #6ee7b7;
+    border-color: rgba(52, 211, 153, 0.35);
+  }
+
+  .dw-btn {
+    background: linear-gradient(135deg, #059669, #047857);
+  }
+}
+
+/* Global Tech Gauntlet — display typography */
+.wp-theme--gauntlet.dw-body {
+  background:
+    radial-gradient(900px 600px at 20% 0%, rgba(196, 30, 58, 0.2), transparent 55%),
+    radial-gradient(800px 500px at 80% 10%, rgba(255, 215, 0, 0.12), transparent 50%),
+    var(--dw-bg);
+
+  font-family: "Barlow", Roboto, "Segoe UI", sans-serif;
+
+  .dw-title,
+  .dw-h1,
+  .tt-ending__title,
+  .tt-location-badge {
+    font-family: "Bebas Neue", "Arial Narrow", sans-serif;
+    letter-spacing: 0.05em;
+    font-weight: 400;
+  }
+
+  .tt-narrative,
+  .tt-choice,
+  .dw-lead {
+    font-family: "Barlow", Roboto, sans-serif;
   }
 }
 

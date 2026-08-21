@@ -1,5 +1,5 @@
 ---
-title: Tech Trail
+title: Global Tech Gauntlet
 permalink: /tech-trail/
 layout: false
 ---
@@ -8,14 +8,17 @@ layout: false
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-    <meta name="theme-color" content="#1a0a2e" />
-    <title>Tech Trail — The Global Tech Gauntlet</title>
-    <meta property="og:title" content="Tech Trail: The Global Tech Gauntlet" />
-    <meta property="og:description" content="A choose-your-own-adventure typing game about digital citizenship, technology heroes, and the golden rules of the internet." />
+    <meta name="theme-color" content="#140818" />
+    <title>Global Tech Gauntlet</title>
+    <meta property="og:title" content="Global Tech Gauntlet" />
+    <meta property="og:description" content="A branching adventure about digital citizenship, technology heroes, and the golden rules of the internet." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="/styles/write-platform.css" />
     <link rel="stylesheet" href="/styles/custom-style.css" />
   </head>
-  <body class="dw-body">
+  <body class="dw-body wp-theme--gauntlet">
     <div class="dw-shell">
       {% if breadcrumbs and breadcrumbs.length > 0 %}
         <div class="breadcrumbs--standalone">{% include "components/breadcrumbs.njk" %}</div>
@@ -24,8 +27,8 @@ layout: false
         <div class="dw-topbar-brand">
           <div style="width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#c41e3a,#ffd700);display:flex;align-items:center;justify-content:center;font-size:24px;">🌐</div>
           <div>
-            <div class="dw-title">Tech Trail</div>
-            <div class="dw-subtitle">The Global Tech Gauntlet · digital citizenship CYOA</div>
+            <div class="dw-title">Global Tech Gauntlet</div>
+            <div class="dw-subtitle">Digital citizenship adventure</div>
           </div>
         </div>
         <div class="dw-actions"><a class="dw-link" href="/tech-escape/">Tech Escape</a><a class="dw-link" href="/">Back to site</a></div>
@@ -34,22 +37,18 @@ layout: false
       <main>
         <section id="titleView" class="dw-stack">
           <div class="tt-scene">
-            <span class="tt-location-badge">🎬 ACME Tech Division presents</span>
-            <h1 class="dw-h1" style="margin-top:16px;font-size:36px;">The Global Tech Gauntlet</h1>
-            <p class="tt-narrative">Inspired by <em>Where in the World is Carmen Sandiego?</em>, <em>Legends of the Hidden Temple</em>, and <em>Global Guts</em> — you are a recruit on a mission through branching paths of technology, intrigue, and digital citizenship.</p>
-            <p class="tt-narrative">Meet historical heroes of computing, game design, and culture. Learn that <strong>technology is part of being human</strong> — we make it, and it makes us. Every tool exists to solve a problem.</p>
+            <span class="tt-location-badge">ACME Tech Division</span>
+            <h1 class="dw-h1" style="margin-top:16px;font-size:42px;">Global Tech Gauntlet</h1>
+            <p class="tt-narrative">You are a recruit on a mission through branching paths of technology, intrigue, and digital citizenship.</p>
+            <p class="tt-narrative">Meet heroes of computing, game design, and culture. Learn that <strong>technology is part of being human</strong> — we make it, and it makes us.</p>
             <button id="startGameBtn" class="dw-btn" type="button" style="margin-top:8px;background:linear-gradient(135deg,#c41e3a,#8b0000);">Accept mission</button>
-          </div>
-          <div class="dw-card">
-            <h3 class="dw-h3">Heroes you&rsquo;ll meet</h3>
-            <p class="dw-muted">Ada Lovelace · Alan Turing · Charles Babbage · Grace Hopper · Katherine Johnson · Will Wright · Sid Meier · Joseph Campbell · Chris Crawford · John Conway — research them further after you play!</p>
           </div>
         </section>
 
         <section id="gameView" class="dw-hidden">
           <div class="tt-stats-bar">
             <span class="tt-stat">🏅 Badges: <span class="tt-stat__value" id="statBadges">0</span></span>
-            <span class="tt-stat">📚 ITEM: <span class="tt-stat__value" id="statLessons">0</span></span>
+            <span class="tt-stat">📚 Lessons: <span class="tt-stat__value" id="statLessons">0</span></span>
             <span class="tt-stat">⭐ Rules: <span class="tt-stat__value" id="statGoldenRules">0</span>/5</span>
             <span class="tt-stat">🗺️ Steps: <span class="tt-stat__value" id="statScenes">0</span></span>
           </div>
@@ -75,8 +74,8 @@ layout: false
             <div id="journalEntries"></div>
           </div>
           <div class="tt-journal" style="margin-top:12px;">
-            <h3 class="dw-h3">Hero research notes</h3>
-            <div id="researchPanel"><p class="dw-muted dw-tiny">Meet heroes during your mission to unlock research prompts.</p></div>
+            <h3 class="dw-h3">Hero notes</h3>
+            <div id="researchPanel"><p class="dw-muted dw-tiny">Meet heroes during your mission to unlock notes.</p></div>
           </div>
         </section>
 

@@ -42,6 +42,6 @@ module.exports = {
   ],
   "/tech-trail/": [
     { title: "Games Mr. Phil has made", url: "/games/" },
-    { title: "Tech Trail", url: null },
+    { title: "Global Tech Gauntlet", url: null },
   ],
 };

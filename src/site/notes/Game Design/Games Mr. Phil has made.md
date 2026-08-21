@@ -10,7 +10,7 @@ title: Games Mr. Phil has made
 
 <p class="cartridge-games-page__intro">Welcome to the collection. Pick up a cartridge and play.</p>
 
-<p class="cartridge-games-page__intro">Course hub: <a href="/game-design/">Game Design</a> · <a href="/technology/">Technology</a> · <a href="/diagnostic-writing/">Summer Writing Test</a> · <a href="/writeflow/">WriteFlow Studio</a> · <a href="/item-diagnostic/">ITEM Diagnostic</a> · <a href="/tech-trail/">Tech Trail</a></p>
+<p class="cartridge-games-page__intro">Course hub: <a href="/game-design/">Game Design</a> · <a href="/technology/">Technology</a> · <a href="/diagnostic-writing/">Summer Writing Test</a> · <a href="/writeflow/">WriteFlow</a> · <a href="/item-diagnostic/">ITEM Diagnostic</a> · <a href="/tech-trail/">Global Tech Gauntlet</a></p>
 
 <div class="cartridge-stack">
 
@@ -140,7 +140,7 @@ title: Games Mr. Phil has made
     </div>
   </article>
 
-  <article class="cartridge cartridge--writing" aria-label="WriteFlow Studio cartridge">
+  <article class="cartridge cartridge--writeflow" aria-label="WriteFlow Studio cartridge">
     <div class="cartridge__scene">
       <div class="cartridge__shadow" aria-hidden="true"></div>
       <div class="cartridge__tilt">
@@ -161,7 +161,7 @@ title: Games Mr. Phil has made
     </div>
   </article>
 
-  <article class="cartridge cartridge--tech" aria-label="ITEM 2025 Diagnostic cartridge">
+  <article class="cartridge cartridge--item" aria-label="ITEM 2025 Diagnostic cartridge">
     <div class="cartridge__scene">
       <div class="cartridge__shadow" aria-hidden="true"></div>
       <div class="cartridge__tilt">
@@ -182,7 +182,7 @@ title: Games Mr. Phil has made
     </div>
   </article>
 
-  <article class="cartridge cartridge--dragon" aria-label="Tech Trail game cartridge">
+  <article class="cartridge cartridge--gauntlet" aria-label="Global Tech Gauntlet cartridge">
     <div class="cartridge__scene">
       <div class="cartridge__shadow" aria-hidden="true"></div>
       <div class="cartridge__tilt">
@@ -190,7 +190,7 @@ title: Games Mr. Phil has made
           <div class="cartridge-cuboid__face cartridge-cuboid__face--front">
             <div class="cartridge-label">
               <span class="cartridge-label__brand">Power_Word_Skill_Games</span>
-              <a class="cartridge-label__title external-link" href="/tech-trail/" target="_blank" rel="noopener noreferrer">Tech Trail</a>
+              <a class="cartridge-label__title external-link" href="/tech-trail/" target="_blank" rel="noopener noreferrer">Global Tech Gauntlet</a>
             </div>
           </div>
           <div class="cartridge-cuboid__face cartridge-cuboid__face--top" aria-hidden="true"></div>

@@ -201,7 +201,7 @@
   }
 
   function boot() {
-    Core.applyTheme(Core.PRESETS.dark);
+    Core.applyTheme(Core.PRESETS.item);
     Core.populateClassSelect(document.getElementById("studentClass"), VALID_CLASSROOMS);
     bindEvents();
     updateStartButton();

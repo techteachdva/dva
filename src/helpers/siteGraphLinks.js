@@ -53,5 +53,5 @@ module.exports.passthroughApps = [
   { url: "/physix/", title: "Physix", group: "Games" },
   { url: "/writeflow/", title: "WriteFlow Studio", group: "Tools" },
   { url: "/item-diagnostic/", title: "ITEM 2025 Diagnostic", group: "Tools" },
-  { url: "/tech-trail/", title: "Tech Trail", group: "Games" },
+  { url: "/tech-trail/", title: "Global Tech Gauntlet", group: "Games" },
 ];

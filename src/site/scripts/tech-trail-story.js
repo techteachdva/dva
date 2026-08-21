@@ -16,7 +16,7 @@
     conway: { name: "John Conway", role: "Emergent Systems Observatory", emoji: "🔬", era: "1970", research: "John Conway's Game of Life showed how simple rules create complex patterns — like rumors online." },
     hopper: { name: "Admiral Grace Hopper", role: "Debugging Fleet", emoji: "🐛", era: "1947", research: "Grace Hopper coined 'debugging' and invented the first compiler — making code human-readable." },
     johnson: { name: "Director Katherine Johnson", role: "Trajectory Analytics", emoji: "🚀", era: "1962", research: "Katherine Johnson calculated NASA flight paths by hand — precision and persistence solve impossible problems." },
-    guide: { name: "The Host", role: "Global Tech Gauntlet", emoji: "🌐", era: "NOW", research: "Your guide through the gauntlet — part Carmen Sandiego, part Legends of the Hidden Temple." },
+    guide: { name: "The Host", role: "Global Tech Gauntlet", emoji: "🌐", era: "NOW", research: "Your mission host at ACME Tech Division — briefing you through each challenge." },
   };
 
   const STORY = {
@@ -31,7 +31,7 @@ Chief Ada Lovelace appears on the holo-screen. "Every algorithm begins with a qu
       choices: [
         { label: "Design Lab — learn the design process with Lovelace", next: "design_lab", lesson: "8.3.3.1" },
         { label: "Data Vault — a privacy breach is spreading", next: "data_vault", lesson: "8.2.2.3" },
-        { label: "Temple of Passwords — face the Olmec Gate", next: "password_temple" },
+        { label: "Password Vault — security gate ahead", next: "password_temple" },
         { label: "Code Bay — algorithms echo in the dark", next: "code_bay", lesson: "8.3.3.3" },
         { label: "Network Closet — packets are dropping everywhere", next: "network_closet", lesson: "8.3.2.1" },
       ],
@@ -95,7 +95,7 @@ Professor Campbell adds: "Every hero's journey has trials. Yours is ethical tech
       badge: "Problem Solver",
       choices: [
         { label: "Enter TRY phase — test a prototype", next: "try_phase" },
-        { label: "Temple of Passwords", next: "password_temple" },
+        { label: "Password Vault", next: "password_temple" },
         { label: "Sources Library — check your facts", next: "sources_library", lesson: "8.1.3.2" },
       ],
     },
@@ -265,7 +265,7 @@ A classmate sends login info over public Wi-Fi. What do you advise?`,
     },
 
     sources_library: {
-      location: "Sources Library · Carmen's Archives",
+      location: "Sources Library · Research Archives",
       character: "johnson",
       narrative: `Johnson stacks research papers with care. "Before you share a claim, check: Who wrote it? What's their evidence? Can you verify?"
 
@@ -331,7 +331,7 @@ You want a cool song in your video project.`,
     },
 
     collaboration_bridge: {
-      location: "Collaboration Bridge · Global Guts Obstacle",
+      location: "Collaboration Bridge · Team Challenge",
       character: "campbell",
       narrative: `"The bridge only holds teams that communicate," Campbell calls. "A group chat turns toxic. Someone is excluded and mocked."
 
@@ -415,7 +415,7 @@ A meme claims a celebrity said something shocking. It's a fake quote.`,
       badge: "Data Guardian",
       goldenRule: 2,
       choices: [
-        { label: "Temple of Passwords", next: "password_temple" },
+        { label: "Password Vault", next: "password_temple" },
         { label: "Media Decoding Chamber", next: "media_chamber" },
         { label: "Footprint Gallery", next: "footprint_scene" },
       ],
@@ -432,9 +432,9 @@ A meme claims a celebrity said something shocking. It's a fake quote.`,
     },
 
     password_temple: {
-      location: "Temple of Passwords · Olmec Gate",
+      location: "Vault of Passwords · Security Gate",
       character: "guide",
-      narrative: `"Legends of the Hidden Temple — only the worthy pass!" Dr. Babbage's ghost appears: "Garbage in, garbage out. Guard your digital keys."`,
+      narrative: `"Only the prepared pass this gate." Dr. Babbage's ghost appears: "Garbage in, garbage out. Guard your digital keys."`,
       choices: [
         { label: "Unique passwords + 2FA for every account", next: "password_win", lesson: "8.2.2.3" },
         { label: "Same easy password everywhere", next: "password_fail" },
@@ -443,10 +443,10 @@ A meme claims a celebrity said something shocking. It's a fake quote.`,
     },
 
     password_win: {
-      location: "Temple Inner Sanctum",
+      location: "Vault Inner Sanctum",
       character: "babbage",
       narrative: `Golden Rule #3: <strong>Your login is yours alone.</strong>`,
-      badge: "Temple Champion",
+      badge: "Gate Champion",
       goldenRule: 3,
       choices: [
         { label: "Media Decoding Chamber", next: "media_chamber" },
@@ -456,9 +456,9 @@ A meme claims a celebrity said something shocking. It's a fake quote.`,
     },
 
     password_fail: {
-      location: "Temple — Guard Awakens",
+      location: "Vault — Guard Awakens",
       character: "guide",
-      narrative: `"The Temple Guard claims another victim! Weak passwords get cracked."`,
+      narrative: `"The vault guard blocks weak passwords. Strong, unique keys only."`,
       choices: [
         { label: "Use unique passwords and 2FA", next: "password_win" },
         { label: "Footprint Gallery", next: "footprint_scene" },
@@ -499,7 +499,7 @@ A meme claims a celebrity said something shocking. It's a fake quote.`,
     },
 
     media_chamber: {
-      location: "Media Decoding Chamber · Carmen's Intel Desk",
+      location: "Media Decoding Chamber · Intel Desk",
       character: "crawford",
       narrative: `Three headlines about the same event — one shocking, one balanced, one clickbait. "Decode before you share."`,
       choices: [
@@ -533,7 +533,7 @@ A meme claims a celebrity said something shocking. It's a fake quote.`,
     final_trial: {
       location: "Gauntlet Arena · Final Round",
       character: "guide",
-      narrative: `"FINAL ROUND! Global Guts!" All mentors appear. "Write your Digital Citizenship Oath."`,
+      narrative: `"Final round!" All mentors appear. "Write your Digital Citizenship Oath."`,
       typingChallenge: {
         prompt: "Write your Digital Citizenship Oath (3-5 sentences): How will you use technology to solve problems, help others, and stay safe online?",
         minWords: 30,
@@ -565,9 +565,7 @@ You become a field operative, helping the next recruit navigate the gauntlet. <e
 <strong>1.</strong> Design for people. <strong>2.</strong> Protect data. <strong>3.</strong> Guard your login.
 <strong>4.</strong> Think before you post. <strong>5.</strong> Decode media.
 
-<strong>TECH TRAIL CHAMPION!</strong> Technology takes many forms — computers, culture, games, stories. Follow a deliberate design process and simple golden rules to build a better world.
-
-<em>Research: Lovelace, Turing, Babbage, Hopper, Johnson, Wright, Meier, Campbell, Crawford, Conway.</em>`,
+<strong>GAUNTLET CHAMPION!</strong> Technology takes many forms — computers, culture, games, stories. Follow a deliberate design process and simple golden rules to build a better world.`,
       choices: [
         { label: "Play again — explore every path", next: "start" },
       ],

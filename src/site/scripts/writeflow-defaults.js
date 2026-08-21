@@ -8,7 +8,7 @@
     id: "sample-persuasive",
     version: 1,
     title: "Persuasive Essay Draft",
-    subtitle: "Timed writing · customizable via WriteFlow Studio",
+    subtitle: "Timed writing assignment",
     prompt: "Write a persuasive paragraph about a school rule you would change. State your claim, give two reasons with evidence, and end with a call to action.",
     promptBanner: "State your claim clearly. Support with reasons. End with a call to action.",
     welcomeTitle: "Ready to write?",

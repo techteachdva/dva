@@ -230,7 +230,7 @@
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
       if (data.setupRequired) {
-        throw new Error("Cloud storage is not set up yet. Your teacher can enable Google Sheets (see WriteFlow setup guide).");
+        throw new Error("Results could not be saved online. Your teacher may need to finish setup.");
       }
       throw new Error(data.error || `Save failed (${res.status})`);
     }
@@ -276,7 +276,7 @@
     if (res.status === 401) throw new Error("Incorrect teacher password for this assignment.");
     if (!res.ok) {
       if (data.setupRequired) {
-        throw new Error("Cloud storage is not configured. Submissions are only saved on this device until Google Sheets is connected.");
+        throw new Error("Results are saved on this device only until online storage is connected.");
       }
       throw new Error(data.error || `Could not load submissions (${res.status})`);
     }
