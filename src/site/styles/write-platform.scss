@@ -661,7 +661,49 @@
   line-height: 1.6;
   color: #e8c896;
   max-width: 52ch;
-  margin: 0 auto 24px;
+  margin: 0 auto 16px;
+}
+
+.tt-tutorial {
+  text-align: left;
+  max-width: 520px;
+  margin: 0 auto 20px;
+  padding: 16px 20px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 215, 0, 0.25);
+  backdrop-filter: blur(6px);
+}
+
+.tt-tutorial__title {
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 1.25rem;
+  letter-spacing: 0.08em;
+  color: #ffd700;
+  margin: 0 0 10px;
+}
+
+.tt-tutorial__list {
+  margin: 0 0 10px;
+  padding-left: 1.25rem;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: #fff8e7;
+}
+
+.tt-tutorial__list li {
+  margin-bottom: 6px;
+}
+
+.tt-tutorial__note {
+  margin: 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: #c9b896;
+}
+
+.tt-golden-preview {
+  margin: 16px 0 24px;
 }
 
 .tt-cta-btn {
@@ -750,10 +792,6 @@
   gap: 10px;
   flex-wrap: wrap;
   justify-content: center;
-}
-
-.tt-golden-preview {
-  margin: 20px 0 28px;
 }
 
 .tt-golden-orb {
@@ -1069,14 +1107,7 @@
 }
 
 .tt-choice__tag {
-  margin-left: auto;
-  font-size: 11px;
-  padding: 4px 8px;
-  border-radius: 999px;
-  background: rgba(16, 185, 129, 0.2);
-  color: #6ee7b7;
-  border: 1px solid rgba(52, 211, 153, 0.35);
-  flex-shrink: 0;
+  display: none;
 }
 
 .tt-typing-progress {

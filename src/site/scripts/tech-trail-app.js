@@ -5,7 +5,7 @@
   "use strict";
 
   const Core = window.WriteTestCore;
-  const { STORY, CHARACTERS } = window.TechTrailStory || {};
+  const { STORY, CHARACTERS, START_MISSIONS } = window.TechTrailStory || {};
   const Visuals = window.TechTrailVisuals;
   if (!Core || !STORY || !Visuals) return;
 
@@ -24,11 +24,27 @@
   let journal = [];
   let typingPending = null;
   let metCharacters = new Set();
+  let runRng = Math.random;
+  let startChoices = [];
 
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   function escapeHtml(s) {
     return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  function shuffle(arr) {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(runRng() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function buildStartChoices() {
+    const count = runRng() < 0.45 ? 3 : 4;
+    return shuffle(START_MISSIONS || []).slice(0, count);
   }
 
   function show(name) {
@@ -150,10 +166,47 @@
     }
   }
 
+  function recordLesson(code) {
+    if (!code || lessons.has(code)) return;
+    lessons.add(code);
+    journal.push(`📚 Lesson logged`);
+    const lessonEl = document.getElementById("sceneLesson");
+    if (lessonEl) {
+      lessonEl.classList.remove("dw-hidden");
+      lessonEl.innerHTML = `New insight added to your mission record.`;
+      if (!prefersReducedMotion) {
+        lessonEl.classList.remove("tt-lesson-flash--show");
+        void lessonEl.offsetWidth;
+        lessonEl.classList.add("tt-lesson-flash--show");
+      }
+    }
+  }
+
+  function resolveChoices(node, nodeId) {
+    if (node.dynamicChoices === "start" || (nodeId === "start" && !node.choices?.length)) {
+      return startChoices.length ? startChoices : buildStartChoices();
+    }
+    return node.choices || [];
+  }
+
+  function maybeRollBonus(node) {
+    const roll = node.rngBadge;
+    if (!roll || runRng() >= roll.chance || badges.has(roll.badge)) return;
+    badges.add(roll.badge);
+    journal.push(`🏅 Badge: ${roll.badge}`);
+    toast(roll.message || `Bonus badge: ${roll.badge}`, "badge");
+    burstConfetti(14);
+  }
+
   function renderScene(nodeId) {
     const node = STORY[nodeId];
     if (!node) return;
     currentNode = nodeId;
+
+    if (nodeId === "start") {
+      startChoices = buildStartChoices();
+      journal.push(`🎲 ${startChoices.length} missions on the board this run`);
+    }
 
     applySceneZone(nodeId);
 
@@ -171,6 +224,10 @@
 
     const prevBadgeCount = badges.size;
     const prevGoldenCount = goldenRules.size;
+
+    if (node.lesson) recordLesson(node.lesson);
+    maybeRollBonus(node);
+
     if (node.badge) {
       badges.add(node.badge);
       journal.push(`🏅 Badge: ${node.badge}`);
@@ -185,7 +242,7 @@
       burstConfetti(18);
     }
     if (node.goldenRule && goldenRules.size > prevGoldenCount) {
-      toast(`Golden Rule #${node.goldenRule} recovered!`, "golden");
+      toast(`Golden Rule #${node.goldenRule} recovered`, "golden");
       burstConfetti(28);
     }
 
@@ -196,8 +253,6 @@
     const choicesEl = document.getElementById("sceneChoices");
     const lessonEl = document.getElementById("sceneLesson");
 
-    if (lessonEl) lessonEl.classList.add("dw-hidden");
-
     if (node.typingChallenge) {
       typingPending = node.typingChallenge;
       typingEl.classList.remove("dw-hidden");
@@ -206,23 +261,21 @@
       document.getElementById("typingInput").value = "";
       updateTypingProgress(0, typingPending.minWords || 20);
       document.getElementById("typingSubmitBtn").disabled = true;
-      toast("Typing challenge — read the prompt carefully", "info");
     } else {
       typingEl.classList.add("dw-hidden");
       typingPending = null;
-      choicesEl.innerHTML = (node.choices || []).map((c, i) => `
-        <button class="tt-choice" type="button" data-next="${escapeHtml(c.next)}" data-lesson="${escapeHtml(c.lesson || "")}" style="--tt-choice-i:${i}">
+      const choices = resolveChoices(node, nodeId);
+      choicesEl.innerHTML = choices.map((c, i) => `
+        <button class="tt-choice" type="button" data-next="${escapeHtml(c.next)}" style="--tt-choice-i:${i}">
           <span class="tt-choice__glow" aria-hidden="true"></span>
           <span class="tt-choice__arrow">▶</span>
           <span class="tt-choice__label">${escapeHtml(c.label)}</span>
-          ${c.lesson ? `<span class="tt-choice__tag">ITEM ${escapeHtml(c.lesson)}</span>` : ""}
         </button>`).join("");
 
       choicesEl.querySelectorAll(".tt-choice").forEach((btn) => {
         btn.addEventListener("click", () => {
-          const lesson = btn.dataset.lesson;
-          if (lesson) recordLesson(lesson);
-          journal.push(`→ ${btn.querySelector(".tt-choice__label")?.textContent?.trim().slice(0, 80) || "Choice"}…`);
+          const label = btn.querySelector(".tt-choice__label")?.textContent?.trim() || "Choice";
+          journal.push(`→ ${label.slice(0, 80)}${label.length > 80 ? "…" : ""}`);
           btn.classList.add("tt-choice--picked");
           setTimeout(() => navigate(btn.dataset.next), prefersReducedMotion ? 0 : 220);
         });
@@ -249,22 +302,6 @@
       countEl.textContent = `${words} / ${minWords} words`;
       countEl.classList.toggle("tt-typing-count--ready", words >= minWords);
     }
-  }
-
-  function recordLesson(code) {
-    lessons.add(code);
-    journal.push(`📚 ITEM ${code}`);
-    const lessonEl = document.getElementById("sceneLesson");
-    if (lessonEl) {
-      lessonEl.classList.remove("dw-hidden");
-      lessonEl.innerHTML = `<span class="qz-standard">ITEM ${escapeHtml(code)}</span> Standard explored — logged to your mission record.`;
-      if (!prefersReducedMotion) {
-        lessonEl.classList.remove("tt-lesson-flash--show");
-        void lessonEl.offsetWidth;
-        lessonEl.classList.add("tt-lesson-flash--show");
-      }
-    }
-    toast(`ITEM ${code} — lesson logged`, "lesson");
   }
 
   function navigate(nodeId) {
@@ -312,7 +349,7 @@
     document.getElementById("endingNarrative").innerHTML = node.narrative || "";
     document.getElementById("endingBadges").innerHTML = [...badges].map((b) => `<span class="tt-badge">${escapeHtml(b)}</span>`).join("");
     document.getElementById("endingLessons").textContent =
-      `${lessons.size} ITEM standards · ${badges.size} badges · ${goldenRules.size}/5 Golden Rules · ${metCharacters.size} heroes met`;
+      `${lessons.size} lessons · ${badges.size} badges · ${goldenRules.size}/5 Golden Rules · ${metCharacters.size} mentors met`;
 
     const endingBg = document.getElementById("endingBg");
     if (endingBg) {
@@ -326,11 +363,13 @@
   }
 
   function resetRun() {
+    runRng = Math.random;
+    startChoices = buildStartChoices();
     badges.clear();
     lessons.clear();
     goldenRules.clear();
     metCharacters.clear();
-    journal = ["🌐 Mission accepted: Global Tech Gauntlet"];
+    journal = ["🌐 Mission accepted"];
   }
 
   function init() {
@@ -365,8 +404,8 @@
       if (!typingPending) return;
       const words = Core.countWords(typingInput.value);
       if (words < (typingPending.minWords || 20)) return;
-      journal.push(`⌨️ Typed ${words} words — challenge complete`);
-      toast("Response submitted!", "badge");
+      journal.push(`⌨️ Oath drafted (${words} words)`);
+      toast("Response submitted", "badge");
       burstConfetti(20);
       navigate(typingPending.next);
     });

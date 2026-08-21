@@ -1,6 +1,5 @@
 /**
- * Tech Trail: The Global Tech Gauntlet
- * Choose Your Own Adventure — digital citizenship & technology as human problem-solving.
+ * Global Tech Gauntlet — branching digital citizenship adventure.
  */
 (() => {
   "use strict";
@@ -19,69 +18,74 @@
     guide: { name: "The Host", role: "Global Tech Gauntlet", emoji: "🌐", era: "NOW", research: "Your mission host at ACME Tech Division — briefing you through each challenge." },
   };
 
+  /** All possible first missions — app shuffles and shows 3–4 per run. */
+  const START_MISSIONS = [
+    { label: "Report to the Design Lab — a team built the wrong thing", next: "design_lab" },
+    { label: "Respond to a alert from the Data Vault", next: "data_vault" },
+    { label: "Head for the Password Vault — security gate is locked", next: "password_temple" },
+    { label: "Investigate strange output in the Code Bay", next: "code_bay" },
+    { label: "Help stabilize the Network Closet", next: "network_closet" },
+  ];
+
   const STORY = {
     start: {
       location: "ACME Tech Division — Briefing Room",
       character: "guide",
-      narrative: `Welcome, recruit! You've been selected for the <em>Global Tech Gauntlet</em> — a mission to recover the scattered <strong>Golden Rules of Digital Citizenship</strong>.
+      narrative: `The briefing room hums. Five holo-screens show live incidents across the network — but you can only respond to one right now.
 
-Holo-screens flicker to life around the briefing room. Maps pulse with live data. A countdown begins.
+The Host leans in. "Somewhere out there, the <strong>Golden Rules of Digital Citizenship</strong> got scattered. Recover them by making good calls under pressure. No single path covers everything — you'll need to think, not memorize."
 
-Remember: <em>Technology is created to solve problems. Humans make technology. Technology makes us human.</em>
-
-Chief Ada Lovelace materializes on the main screen, Victorian lace rendered in light. "Every algorithm begins with a question. Where do you begin?"`,
-      choices: [
-        { label: "Design Lab — learn the design process with Lovelace", next: "design_lab", lesson: "8.3.3.1" },
-        { label: "Data Vault — a privacy breach is spreading", next: "data_vault", lesson: "8.2.2.3" },
-        { label: "Password Vault — security gate ahead", next: "password_temple" },
-        { label: "Code Bay — algorithms echo in the dark", next: "code_bay", lesson: "8.3.3.3" },
-        { label: "Network Closet — packets are dropping everywhere", next: "network_closet", lesson: "8.3.2.1" },
-      ],
+Ada Lovelace flickers onto the main screen. "Every mission starts with a question worth asking. Pick your first move."`,
+      dynamicChoices: "start",
+      choices: [],
     },
 
     design_lab: {
       location: "Design Lab · London, 1843 (simulated)",
       character: "lovelace",
-      narrative: `"Before any machine helps anyone, we <strong>DEFINE</strong> the problem," Lovelace says. "Who has the problem? What does success look like?"
+      narrative: `Lovelace gestures at a half-finished app on the wall. "They asked users what they wanted, but never asked what problem they were actually solving."
 
-An alert flashes: a team skipped DEFINE and built something nobody needs.`,
+The project lead is impatient. "We can polish the interface later — ship it Friday."`,
       choices: [
-        { label: "Interview users about their actual needs first", next: "define_win", lesson: "8.3.3.1" },
-        { label: "Keep building — we'll find users later", next: "define_fail" },
+        { label: "Ask who will use this and what success looks like for them", next: "define_win" },
+        { label: "Focus on adding features — adoption will follow", next: "define_fail" },
       ],
     },
 
     define_win: {
-      location: "Design Lab — DEFINE Complete",
+      location: "Design Lab — Problem Defined",
       character: "lovelace",
-      narrative: `"Excellent!" Golden Rule #1: <strong>Design for people, not for gadgets.</strong>
+      lesson: "8.3.3.1",
+      narrative: `Lovelace smiles. "There — now you're designing for people, not for the demo."
 
-Coach Will Wright appears. "PREPARE comes next — research, brainstorm, plan."`,
+A side door opens onto Will Wright's simulation studio. Someone mentions a prototype ready for testing.`,
       badge: "Design Thinker",
       goldenRule: 1,
       choices: [
-        { label: "Continue to PREPARE with Wright", next: "prepare_phase" },
-        { label: "Jump to TRY phase — build a quick prototype", next: "try_phase", lesson: "8.3.3.1" },
-        { label: "Respond to Data Vault alert", next: "data_vault" },
+        { label: "Visit the simulation studio to plan the next step", next: "prepare_phase" },
+        { label: "Skip ahead — test a rough prototype now", next: "try_phase" },
+        { label: "Check the Data Vault alert you saw in briefing", next: "data_vault" },
       ],
     },
 
     define_fail: {
-      location: "Design Lab — Crash",
+      location: "Design Lab — Launch Day",
       character: "lovelace",
-      narrative: `The demo fails. "DEFINE exists for a reason," Lovelace says gently. "Technology without human understanding is noise."`,
+      narrative: `Launch day arrives. Three people open the app, frown, and leave. The lead checks analytics in silence.
+
+Lovelace doesn't scold you — she rewinds the holo-tape. "Want to try the conversation you skipped?"`,
       choices: [
-        { label: "Retry — DEFINE the problem properly", next: "design_lab" },
-        { label: "Visit the Code Bay instead", next: "code_bay" },
+        { label: "Talk to potential users before changing anything else", next: "define_win" },
+        { label: "Move on to the Code Bay instead", next: "code_bay" },
       ],
     },
 
     prepare_phase: {
       location: "Simulation Studio · Orinda, CA",
       character: "wright",
-      narrative: `Wright spreads SimCity blueprints. "PREPARE means research, brainstorm, and plan before you commit."`,
+      narrative: `Wright clears a table of crumpled sketches. "Before you build, tell me what you're actually trying to fix — in plain language."`,
       typingChallenge: {
-        prompt: "Describe a technology that would solve a real problem in your school or neighborhood (2-3 sentences). What problem does it solve?",
+        prompt: "In 2–3 sentences: What real problem would you solve with technology at your school or in your neighborhood? Who benefits?",
         minWords: 20,
         next: "prepare_win",
       },
@@ -89,98 +93,102 @@ Coach Will Wright appears. "PREPARE comes next — research, brainstorm, plan."`
     },
 
     prepare_win: {
-      location: "Simulation Studio — PREPARE Complete",
+      location: "Simulation Studio — Plan Set",
       character: "wright",
-      narrative: `"Deliberate design," Wright nods. "Culture is technology — it solves belonging, identity, and connection."
+      lesson: "8.3.3.1",
+      narrative: `"Good," Wright says. "That's a problem worth a prototype — not just a feature list."
 
-Professor Campbell adds: "Every hero's journey has trials. Yours is ethical technology use."`,
+Down the hall, you hear keyboard clicks and someone muttering about a login bug.`,
       badge: "Problem Solver",
       choices: [
-        { label: "Enter TRY phase — test a prototype", next: "try_phase" },
-        { label: "Password Vault", next: "password_temple" },
-        { label: "Sources Library — check your facts", next: "sources_library", lesson: "8.1.3.2" },
+        { label: "See what's happening in the prototype arena", next: "try_phase" },
+        { label: "Detour to the Password Vault", next: "password_temple" },
+        { label: "Visit the Sources Library — a rumor is spreading", next: "sources_library" },
       ],
     },
 
     try_phase: {
-      location: "Prototype Arena · TRY Phase",
+      location: "Prototype Arena",
       character: "meier",
-      narrative: `Captain Sid Meier tosses you a dice. "TRY means build something testable. My first Civilization prototype was ugly — but playable. Play teaches."
+      narrative: `Meier rolls a die across the table — it clatters to a stop. "Test early, test honest. Right now your build has a login bug, and real users are waiting."
 
-Your prototype has a bug. Users can't log in.`,
+You could watch them, patch quietly, or call in help.`,
+      rngBadge: { chance: 0.28, badge: "Lucky Roll", message: "The die lands on your number — Meier grins. \"Fortune favors the prepared.\"" },
       choices: [
-        { label: "Watch users struggle and take notes — that's data", next: "try_win", lesson: "8.3.3.1" },
-        { label: "Hide the bug and ship it anyway", next: "try_fail" },
-        { label: "Call Grace Hopper's Debugging Fleet", next: "debug_scene", lesson: "8.3.3.2" },
+        { label: "Sit with users, watch where they get stuck, take notes", next: "try_win" },
+        { label: "Push the build live and hope nobody notices", next: "try_fail" },
+        { label: "Call Grace Hopper's debugging team", next: "debug_scene" },
       ],
     },
 
     try_win: {
-      location: "Prototype Arena — Useful Data",
+      location: "Prototype Arena — Notes Taken",
       character: "meier",
-      narrative: `"Failure in TRY is information for REFLECT," Meier says. "Iterate. That's how Civilization got good."
+      lesson: "8.3.3.1",
+      narrative: `"Painful to watch, useful to know," Meier says. "That's data — not failure."
 
-Golden Rule insight: <strong>Test with real users before you celebrate.</strong>`,
+Chris Crawford is reviewing your metrics in the next room.`,
       badge: "Iterative Builder",
       choices: [
-        { label: "REFLECT with Crawford on what to change", next: "reflect_phase" },
-        { label: "Network Closet — systems emergency", next: "network_closet" },
+        { label: "Review what to change with Crawford", next: "reflect_phase" },
+        { label: "Follow the network outage to the closet", next: "network_closet" },
       ],
     },
 
     try_fail: {
-      location: "Prototype Arena — Angry Users",
+      location: "Prototype Arena — Support Queue",
       character: "meier",
-      narrative: `Users abandon your app. Meier resets the scenario. "Shipping broken tools breaks trust. TRY again — honestly."`,
+      narrative: `Support tickets pile up. One user writes: "I liked the idea. I couldn't get in."
+
+Meier resets the sim. "Same prototype. Different choice?"`,
       choices: [
-        { label: "Observe users and collect feedback", next: "try_win" },
-        { label: "Learn debugging from Grace Hopper", next: "debug_scene" },
+        { label: "Watch users and document what breaks", next: "try_win" },
+        { label: "Get Hopper's team to trace the bug", next: "debug_scene" },
       ],
     },
 
     debug_scene: {
       location: "Debugging Fleet · USS Hopper",
       character: "hopper",
-      narrative: `"The first 'bug' was a literal moth in a computer," Hopper grins. "Debugging is systematic: reproduce, isolate, fix, test."
+      narrative: `Hopper taps the screen. "Infinite loop. Classic. You can guess, you can rewrite everything, or you can trace it line by line."
 
-A loop in your code runs forever. What's your move?`,
+She's already pulled up the log.`,
       choices: [
-        { label: "Trace the logic step by step to find the error", next: "debug_win", lesson: "8.3.3.2" },
-        { label: "Delete everything and start over", next: "debug_fail" },
-        { label: "Add random code until it stops", next: "debug_fail" },
+        { label: "Walk through the logic step by step", next: "debug_win" },
+        { label: "Delete the module and rebuild from scratch tonight", next: "debug_fail" },
+        { label: "Change random lines until the error message changes", next: "debug_fail" },
       ],
     },
 
     debug_win: {
-      location: "Debugging Fleet — Bug Squashed",
+      location: "Debugging Fleet — Loop Broken",
       character: "hopper",
-      narrative: `"Computational thinking wins again," Hopper salutes. "Decompose, find patterns, design steps, debug."
+      lesson: "8.3.3.2",
+      narrative: `"There it is — one condition flipped," Hopper says. "Computers don't get tired. They do exactly what you wrote."
 
-Director Katherine Johnson waves from the trajectory console. "Precision matters — in space and online."`,
+Katherine Johnson waves you toward the trajectory console. A fake quote is trending upstairs.`,
       badge: "Debugger",
       choices: [
-        { label: "Visit Trajectory Analytics with Johnson", next: "trajectory_scene", lesson: "8.1.3.3" },
-        { label: "Continue to REFLECT phase", next: "reflect_phase" },
+        { label: "Check the trending quote with Johnson", next: "trajectory_scene" },
+        { label: "Reflect on the prototype with Crawford", next: "reflect_phase" },
       ],
     },
 
     debug_fail: {
-      location: "Debugging Fleet — Still Broken",
+      location: "Debugging Fleet — Still Spinning",
       character: "hopper",
-      narrative: `"Random changes create new bugs," Hopper warns. "Trace the logic. That's the job."`,
+      narrative: `"That made two bugs where there was one," Hopper says mildly. "Try the boring way — it works."`,
       choices: [
-        { label: "Trace through the logic step by step", next: "debug_win" },
+        { label: "Trace the logic carefully", next: "debug_win" },
       ],
     },
 
     reflect_phase: {
-      location: "Interactive Systems Bureau · REFLECT",
+      location: "Interactive Systems Bureau",
       character: "crawford",
-      narrative: `Crawford projects your prototype metrics. "REFLECT honestly: What worked? What didn't? What will you try next?"
-
-Conway's Game of Life patterns swirl behind him — small rule changes, big outcomes.`,
+      narrative: `Crawford pulls up a simple chart: what worked, what didn't, what surprised you. "No spin. What would version two fix?"`,
       typingChallenge: {
-        prompt: "What did you learn from testing your idea? What would you change in the next version? (2-3 sentences)",
+        prompt: "In 2–3 sentences: What did testing teach you? What would you change before sharing this with more people?",
         minWords: 15,
         next: "reflect_win",
       },
@@ -188,358 +196,394 @@ Conway's Game of Life patterns swirl behind him — small rule changes, big outc
     },
 
     reflect_win: {
-      location: "REFLECT Complete",
+      location: "Systems Bureau — Debrief",
       character: "conway",
-      narrative: `"Simple rules, complex results," Conway observes. "Online communities work the same way — small choices compound."
+      lesson: "8.3.3.1",
+      narrative: `Conway's Game of Life patterns ripple on the wall behind you. "Small rule changes, big outcomes. Same online."
 
-Golden Rule insight: <strong>Iterate deliberately — don't guess, improve.</strong>`,
+Campbell calls from the Collaboration Bridge — a group chat is going sideways.`,
       badge: "Reflector",
       choices: [
-        { label: "Collaboration Bridge — team challenge", next: "collaboration_bridge", lesson: "8.3.4.2" },
-        { label: "Final Trial", next: "final_trial" },
+        { label: "Head to the Collaboration Bridge", next: "collaboration_bridge" },
+        { label: "You're close — enter the Final Trial", next: "final_trial" },
       ],
     },
 
     code_bay: {
       location: "Code Bay · Algorithm Dock",
       character: "meier",
-      narrative: `Lines of pseudocode glow on the walls. Meier points: "An algorithm is an ordered plan. Loops repeat. Conditionals decide."
+      narrative: `A delivery robot waits at the edge of a grid. Meier hands you a marker. "It needs instructions — not vibes."
 
-A robot needs instructions to cross a grid. Which plan works?`,
+Two teammates argue. One wrote three clear steps with turns. The other wrote "go to the goal somehow."`,
       choices: [
-        { label: "Step-by-step instructions with IF obstacles THEN turn", next: "code_win", lesson: "8.3.3.3" },
-        { label: "Random guesses until it works", next: "code_fail" },
-        { label: "Tell the robot to 'figure it out'", next: "code_fail" },
+        { label: "Use ordered steps with clear if/then decisions", next: "code_win" },
+        { label: "Let it run random moves until something works", next: "code_fail" },
+        { label: "Assume the robot will figure it out", next: "code_fail" },
       ],
     },
 
     code_win: {
-      location: "Code Bay — Algorithm Accepted",
+      location: "Code Bay — Path Found",
       character: "meier",
-      narrative: `"Clear sequences, smart decisions, loops for repetition — that's computational thinking," Meier approves.`,
+      lesson: "8.3.3.3",
+      narrative: `"Boring, precise, done," Meier says. "That's an algorithm."
+
+The robot beeps acknowledgment and rolls toward the next bay.`,
       badge: "Algorithm Architect",
       choices: [
-        { label: "Debugging Fleet with Hopper", next: "debug_scene" },
-        { label: "Design Lab with Lovelace", next: "design_lab" },
-        { label: "Final Trial", next: "final_trial" },
+        { label: "Visit Hopper's debugging fleet", next: "debug_scene" },
+        { label: "Return to the Design Lab", next: "design_lab" },
+        { label: "Proceed to the Final Trial", next: "final_trial" },
       ],
     },
 
     code_fail: {
-      location: "Code Bay — Robot Confused",
+      location: "Code Bay — Gridlock",
       character: "meier",
-      narrative: `"Computers do exactly what you tell them — not what you mean," Meier says. "Write precise steps."`,
+      narrative: `The robot spins, backs into a wall, stops. Meier caps the marker. "Precision beats luck with machines."`,
       choices: [
-        { label: "Write step-by-step instructions with conditionals", next: "code_win" },
+        { label: "Write clear step-by-step instructions", next: "code_win" },
       ],
     },
 
     network_closet: {
       location: "Network Closet · Packet Junction",
       character: "babbage",
-      narrative: `Babbage adjusts brass switches. "Devices talk using protocols — agreed rules, like HTTP and HTTPS."
+      narrative: `Babbage adjusts a brass switch. "Your classmate just typed their password into a school project site — on café Wi‑Fi. No padlock icon in the browser."
 
-A classmate sends login info over public Wi-Fi. What do you advise?`,
+They're asking you if it's fine because they'll only be a minute.`,
       choices: [
-        { label: "Never send passwords on unsecured networks — use HTTPS sites", next: "network_win", lesson: "8.3.2.1" },
-        { label: "Public Wi-Fi is always safe if you're quick", next: "network_fail" },
+        { label: "Suggest waiting until they're on a trusted network", next: "network_win" },
+        { label: "Say it's probably fine — they'll be quick", next: "network_fail" },
       ],
     },
 
     network_win: {
-      location: "Network Closet — Encrypted",
+      location: "Network Closet — Connection Secured",
       character: "babbage",
-      narrative: `"HTTPS encrypts your connection. Protocols exist to solve communication problems safely," Babbage explains.`,
+      lesson: "8.3.2.1",
+      narrative: `"HTTPS and timing both matter," Babbage says. "Public air is shared air."
+
+A copyright question waits in the IP Chamber down the hall.`,
       badge: "Network Navigator",
       choices: [
-        { label: "Data Vault", next: "data_vault" },
-        { label: "IP Chamber — copyright mystery", next: "ip_chamber", lesson: "8.2.2.1" },
+        { label: "Follow up at the Data Vault", next: "data_vault" },
+        { label: "Handle the IP Chamber question", next: "ip_chamber" },
       ],
     },
 
     network_fail: {
-      location: "Network Closet — Intercepted",
+      location: "Network Closet — Packet Sniff",
       character: "babbage",
-      narrative: `"Unencrypted traffic can be read by others on the same network. Always check for HTTPS."`,
+      narrative: `A training sim shows what an attacker on the same network can see. Unencrypted logins aren't private — even for a minute.`,
       choices: [
-        { label: "Use HTTPS and avoid sensitive data on public Wi-Fi", next: "network_win" },
+        { label: "Recommend a secure connection instead", next: "network_win" },
       ],
     },
 
     sources_library: {
       location: "Sources Library · Research Archives",
       character: "johnson",
-      narrative: `Johnson stacks research papers with care. "Before you share a claim, check: Who wrote it? What's their evidence? Can you verify?"
+      narrative: `Johnson slides a tablet across the desk. A viral post claims homework destroys brain cells — slick chart, no author, no link to the study.
 
-A viral post claims "Scientists prove homework causes brain damage." No source cited.`,
+Your friend already reposted it.`,
       choices: [
-        { label: "Find the original study and check if it's real", next: "sources_win", lesson: "8.1.3.2" },
-        { label: "Share it — it has a chart", next: "sources_fail" },
-        { label: "Believe it because your friend posted it", next: "sources_fail" },
+        { label: "Look for the original study before reacting", next: "sources_win" },
+        { label: "Repost it — the chart looks official", next: "sources_fail" },
+        { label: "Assume it's true because everyone shares it", next: "sources_fail" },
       ],
     },
 
     sources_win: {
-      location: "Sources Library — Verified",
+      location: "Sources Library — Source Checked",
       character: "johnson",
-      narrative: `"No original source means no proof," Johnson says. "Credibility and authority matter — ITEM standard 8.1.3.2 in action."`,
+      lesson: "8.1.3.2",
+      narrative: `"The chart was recycled from an old blog post — no study behind it," Johnson says. "You just saved your friend a bad take."
+
+The Media Decoding Chamber is lit down the corridor.`,
       badge: "Fact Finder",
       choices: [
-        { label: "Media Decoding Chamber", next: "media_chamber" },
-        { label: "Footprint Gallery", next: "footprint_scene" },
+        { label: "Compare headlines in the Media Chamber", next: "media_chamber" },
+        { label: "Walk through the Footprint Gallery", next: "footprint_scene" },
       ],
     },
 
     sources_fail: {
-      location: "Sources Library — Misinformation Spreads",
+      location: "Sources Library — Correction Thread",
       character: "johnson",
-      narrative: `"Charts without sources are decoration, not evidence," Johnson warns.`,
+      narrative: `Johnson pulls up the original thread. The claim unraveled in the comments — but not before it spread.
+
+"Want to run the check you skipped?"`,
       choices: [
-        { label: "Verify the original source first", next: "sources_win" },
+        { label: "Find the original source first", next: "sources_win" },
       ],
     },
 
     ip_chamber: {
       location: "IP Chamber · Copyright Vault",
       character: "crawford",
-      narrative: `"Creative work belongs to someone," Crawford says. "You can be inspired — but credit and permission matter."
+      narrative: `You're editing a video for class. The perfect song is on a random upload site — no license info, no credit line.
 
-You want a cool song in your video project.`,
+Your partner says, "Everyone uses it. We'll cut that part out if anyone complains."`,
       choices: [
-        { label: "Use royalty-free music or get permission — credit the artist", next: "ip_win", lesson: "8.2.2.1" },
-        { label: "Download any song — if it's online, it's free", next: "ip_fail" },
-        { label: "Remove the watermark from someone else's art", next: "ip_fail" },
+        { label: "Find royalty-free music or get proper permission", next: "ip_win" },
+        { label: "Use it — nobody will notice a school project", next: "ip_fail" },
+        { label: "Crop out the watermark on a clip you found", next: "ip_fail" },
       ],
     },
 
     ip_win: {
-      location: "IP Chamber — Ethical Creator",
+      location: "IP Chamber — Cleared to Publish",
       character: "crawford",
-      narrative: `Golden Rule insight: <strong>Create ethically — credit others' work.</strong>`,
+      lesson: "8.2.2.1",
+      narrative: `"Creators deserve credit — and permission," Crawford says. "You can be inspired without taking."
+
+The Collaboration Bridge is crowded ahead.`,
       badge: "Ethical Creator",
       choices: [
-        { label: "Collaboration Bridge", next: "collaboration_bridge" },
-        { label: "Media Chamber", next: "media_chamber" },
+        { label: "Cross the Collaboration Bridge", next: "collaboration_bridge" },
+        { label: "Visit the Media Decoding Chamber", next: "media_chamber" },
       ],
     },
 
     ip_fail: {
       location: "IP Chamber — Takedown Notice",
       character: "crawford",
-      narrative: `"Copyright protects creators. Using work without permission can harm artists and get you in trouble."`,
+      narrative: `A takedown notice hits the project folder. "Copyright isn't about getting caught," Crawford says. "It's about respect."`,
       choices: [
-        { label: "Use licensed or royalty-free content with credit", next: "ip_win" },
+        { label: "Replace it with licensed or royalty-free work", next: "ip_win" },
       ],
     },
 
     collaboration_bridge: {
-      location: "Collaboration Bridge · Team Challenge",
+      location: "Collaboration Bridge",
       character: "campbell",
-      narrative: `"The bridge only holds teams that communicate," Campbell calls. "A group chat turns toxic. Someone is excluded and mocked."
+      narrative: `Campbell points at a group chat on the railing display. Someone is being left out of a shared doc — then mocked when they ask why.
 
-You're in the chat. What do you do?`,
+You're in the thread. Others are watching to see what you do.`,
       choices: [
-        { label: "Stand up for the excluded person and tell a trusted adult", next: "collab_win", lesson: "8.3.4.2" },
-        { label: "Stay silent — not your problem", next: "collab_fail" },
-        { label: "Join the mockery for laughs", next: "collab_fail" },
+        { label: "Back them up and loop in a trusted adult", next: "collab_win" },
+        { label: "Stay out of it — not your project", next: "collab_fail" },
+        { label: "Add a joke so you fit in", next: "collab_fail" },
       ],
     },
 
     collab_win: {
       location: "Collaboration Bridge — Crossed",
       character: "campbell",
-      narrative: `"Technology connects us — but humans choose kindness. Collaboration means lifting others up."
+      lesson: "8.3.4.2",
+      narrative: `"Tools connect us," Campbell says. "People choose whether that connection helps."
 
-Golden Rule insight: <strong>Be the teammate you'd want online.</strong>`,
+The bridge holds. Ahead, the arena lights dim up for the final round.`,
       badge: "Bridge Builder",
+      rngBadge: { chance: 0.22, badge: "Steady Hands", message: "A gust rocks the bridge — you steady a teammate. Campbell nods." },
       choices: [
-        { label: "Final Trial", next: "final_trial" },
-        { label: "Trajectory Analytics", next: "trajectory_scene" },
+        { label: "Enter the Final Trial", next: "final_trial" },
+        { label: "Verify a trending quote with Johnson first", next: "trajectory_scene" },
       ],
     },
 
     collab_fail: {
-      location: "Collaboration Bridge — Collapse",
+      location: "Collaboration Bridge — Reset",
       character: "campbell",
-      narrative: `"Silence and cruelty both have weight. The bridge resets. Choose again with courage."`,
+      narrative: `The chat keeps going. The excluded person stops typing. Campbell rewinds the scene quietly. "Same bridge. Different you?"`,
       choices: [
-        { label: "Support the excluded person and report the behavior", next: "collab_win" },
+        { label: "Speak up and get an adult involved", next: "collab_win" },
       ],
     },
 
     trajectory_scene: {
       location: "Trajectory Analytics · NASA Sim",
       character: "johnson",
-      narrative: `"One wrong decimal can miss the moon," Johnson says. "Online, one wrong share can miss the truth. Accuracy is ethical."
+      narrative: `Johnson zooms in on a viral meme — bold quote, famous face, no source. It's already racking up shares.
 
-A meme claims a celebrity said something shocking. It's a fake quote.`,
+"Accuracy is a habit," she says. "What do you do first?"`,
       choices: [
-        { label: "Check reliable sources before believing or sharing", next: "trajectory_win", lesson: "8.1.3.3" },
-        { label: "Share it immediately — it's trending", next: "trajectory_fail" },
+        { label: "Check whether the quote appears in reliable sources", next: "trajectory_win" },
+        { label: "Share it before the moment passes", next: "trajectory_fail" },
       ],
     },
 
     trajectory_win: {
-      location: "Trajectory Analytics — Verified Path",
+      location: "Trajectory Analytics — Verified",
       character: "johnson",
-      narrative: `"Reliability and accuracy protect everyone," Johnson smiles. "Research your heroes — Lovelace, Turing, Babbage, Hopper, Johnson, Wright, Meier, Campbell, Crawford, Conway."`,
+      lesson: "8.1.3.3",
+      narrative: `"Misattributed," Johnson says. "Close one. Trending and true aren't the same word."
+
+You could loop back for more missions — or head to the finale.`,
       badge: "Precision Thinker",
       choices: [
-        { label: "Final Trial", next: "final_trial" },
-        { label: "Explore another path from the start", next: "start" },
+        { label: "Enter the Final Trial", next: "final_trial" },
+        { label: "Return to briefing — pick another mission", next: "start" },
       ],
     },
 
     trajectory_fail: {
-      location: "Trajectory Analytics — Wrong Orbit",
+      location: "Trajectory Analytics — Correction Orbit",
       character: "johnson",
-      narrative: `"Trending doesn't mean true. Verify before you amplify."`,
+      narrative: `The quote spreads for an hour before fact-checkers catch it. Johnson replays the fork in the path.`,
       choices: [
-        { label: "Check reliable sources first", next: "trajectory_win" },
+        { label: "Verify before sharing next time", next: "trajectory_win" },
       ],
     },
 
     data_vault: {
       location: "Data Vault · ACME Sublevel 3",
       character: "turing",
-      narrative: `Agent Turing decrypts: "URGENT — student data exposed on a public forum." Someone posted private info without consent.`,
+      narrative: `Turing pulls up a forum thread. Someone posted a classmate's phone number and schedule "as a joke." It's climbing fast.
+
+You have a screenshot. So does everyone else.`,
       choices: [
-        { label: "Report to a trusted adult immediately", next: "privacy_win", lesson: "8.2.2.3" },
-        { label: "Screenshot and share — everyone needs to know", next: "privacy_fail" },
-        { label: "Confront the poster alone online", next: "privacy_fail" },
+        { label: "Report it to a trusted adult — don't repost", next: "privacy_win" },
+        { label: "Share the screenshot so people know to avoid them", next: "privacy_fail" },
+        { label: "DM the poster to take it down yourself", next: "privacy_fail" },
       ],
     },
 
     privacy_win: {
-      location: "Data Vault — Secured",
+      location: "Data Vault — Contained",
       character: "turing",
-      narrative: `Golden Rule #2: <strong>Protect data like you protect your friends.</strong>`,
+      lesson: "8.2.2.3",
+      narrative: `"Reporting beats amplifying," Turing says. "Private data isn't yours to broadcast — even when you're trying to help."
+
+Two more locks glow on the vault map: passwords and footprints.`,
       badge: "Data Guardian",
       goldenRule: 2,
       choices: [
-        { label: "Password Vault", next: "password_temple" },
-        { label: "Media Decoding Chamber", next: "media_chamber" },
-        { label: "Footprint Gallery", next: "footprint_scene" },
+        { label: "Secure the Password Vault", next: "password_temple" },
+        { label: "Decode conflicting headlines", next: "media_chamber" },
+        { label: "Visit the Footprint Gallery", next: "footprint_scene" },
       ],
     },
 
     privacy_fail: {
-      location: "Data Vault — Breach Escalates",
+      location: "Data Vault — Spread Accelerates",
       character: "turing",
-      narrative: `"Sharing leaked data spreads harm. Report — don't repost."`,
+      narrative: `Each share widens the leak. Turing freezes the sim. "Harm scales fast online. Try the report route."`,
       choices: [
         { label: "Report to a trusted adult", next: "privacy_win" },
-        { label: "Footprint Gallery first", next: "footprint_scene" },
+        { label: "Visit the Footprint Gallery", next: "footprint_scene" },
       ],
     },
 
     password_temple: {
       location: "Vault of Passwords · Security Gate",
       character: "guide",
-      narrative: `"Only the prepared pass this gate." Dr. Babbage's ghost appears: "Garbage in, garbage out. Guard your digital keys."`,
+      narrative: `The gate scans your habits, not your courage. A ghostly Babbage mutters: "Garbage in, garbage out."
+
+A recruit ahead used one password everywhere — including their school email and a game account.`,
       choices: [
-        { label: "Unique passwords + 2FA for every account", next: "password_win", lesson: "8.2.2.3" },
-        { label: "Same easy password everywhere", next: "password_fail" },
-        { label: "Share your password with your best friend", next: "password_fail" },
+        { label: "Use unique passwords and turn on two-factor auth", next: "password_win" },
+        { label: "Keep one strong password — easier to remember", next: "password_fail" },
+        { label: "Share your login with your best friend for emergencies", next: "password_fail" },
       ],
     },
 
     password_win: {
       location: "Vault Inner Sanctum",
       character: "babbage",
-      narrative: `Golden Rule #3: <strong>Your login is yours alone.</strong>`,
+      lesson: "8.2.2.3",
+      narrative: `The gate opens. Babbage nods once. "Your login is yours alone — even from friends with good intentions."`,
       badge: "Gate Champion",
       goldenRule: 3,
       choices: [
-        { label: "Media Decoding Chamber", next: "media_chamber" },
-        { label: "Footprint Gallery", next: "footprint_scene" },
-        { label: "Final Trial", next: "final_trial" },
+        { label: "Compare headlines in the Media Chamber", next: "media_chamber" },
+        { label: "Walk the Footprint Gallery", next: "footprint_scene" },
+        { label: "Enter the Final Trial", next: "final_trial" },
       ],
     },
 
     password_fail: {
-      location: "Vault — Guard Awakens",
+      location: "Vault — Gate Closed",
       character: "guide",
-      narrative: `"The vault guard blocks weak passwords. Strong, unique keys only."`,
+      narrative: `The gate flickers red. A training clip shows how one cracked password unlocks three accounts. "Try again?"`,
       choices: [
-        { label: "Use unique passwords and 2FA", next: "password_win" },
-        { label: "Footprint Gallery", next: "footprint_scene" },
+        { label: "Set unique passwords with two-factor auth", next: "password_win" },
+        { label: "Visit the Footprint Gallery", next: "footprint_scene" },
       ],
     },
 
     footprint_scene: {
       location: "Hall of Mirrors · Digital Footprint Gallery",
       character: "campbell",
-      narrative: `"Your digital footprint is permanent ink. Culture is technology that solves belonging — but mob mentality solves nothing."`,
+      narrative: `Campbell holds up two drafts of the same post. One is a thoughtful reply. One tags someone for embarrassment — "just a joke."
+
+"Which version still represents you in ten years?"`,
       choices: [
-        { label: "Would I want this attached to me in 10 years?", next: "footprint_win", lesson: "8.2.1.1" },
-        { label: "Will it get the most likes?", next: "footprint_fail" },
-        { label: "Embarrass someone else for laughs", next: "footprint_fail" },
+        { label: "Post the version you'd stand behind later", next: "footprint_win" },
+        { label: "Post whatever gets the most reactions tonight", next: "footprint_fail" },
+        { label: "Join the pile-on — everyone else is", next: "footprint_fail" },
       ],
     },
 
     footprint_win: {
-      location: "Hall of Mirrors — Clear",
+      location: "Hall of Mirrors — Clear Reflection",
       character: "campbell",
-      narrative: `Golden Rule #4: <strong>Think before you post.</strong>`,
+      lesson: "8.2.1.1",
+      narrative: `"The internet remembers slowly — but it remembers," Campbell says. "You chose the long view."`,
       badge: "Thoughtful Citizen",
       goldenRule: 4,
       choices: [
-        { label: "Media Decoding Chamber", next: "media_chamber" },
-        { label: "Final Trial", next: "final_trial" },
+        { label: "Compare headlines in the Media Chamber", next: "media_chamber" },
+        { label: "Enter the Final Trial", next: "final_trial" },
       ],
     },
 
     footprint_fail: {
-      location: "Hall of Mirrors — Regret",
+      location: "Hall of Mirrors — Aftermath",
       character: "campbell",
-      narrative: `"Likes fade. Harm lingers."`,
+      narrative: `"Likes fade," Campbell says. "Screenshots don't." He offers the draft again.`,
       choices: [
-        { label: "Consider long-term consequences", next: "footprint_win" },
-        { label: "Media Chamber", next: "media_chamber" },
+        { label: "Choose the post you'd stand behind", next: "footprint_win" },
+        { label: "Head to the Media Chamber", next: "media_chamber" },
       ],
     },
 
     media_chamber: {
-      location: "Media Decoding Chamber · Intel Desk",
+      location: "Media Decoding Chamber",
       character: "crawford",
-      narrative: `Three headlines about the same event — one shocking, one balanced, one clickbait. "Decode before you share."`,
+      narrative: `Three headlines blink side by side about the same event — one breathless, one dry and sourced, one ALL CAPS with a question mark.
+
+Your group chat is picking sides.`,
       choices: [
-        { label: "Compare sources and check evidence", next: "media_win", lesson: "8.2.2.4" },
-        { label: "Share the shocking headline", next: "media_fail" },
-        { label: "Trust the ALL-CAPS one", next: "media_fail" },
+        { label: "Compare sources and evidence before picking one", next: "media_win" },
+        { label: "Share the most shocking headline — it's moving fast", next: "media_fail" },
+        { label: "Trust the one that sounds the most confident", next: "media_fail" },
       ],
     },
 
     media_win: {
-      location: "Media Chamber — Truth Recovered",
+      location: "Media Chamber — Picture Clears",
       character: "crawford",
-      narrative: `Golden Rule #5: <strong>Decode media before you spread it.</strong>`,
+      lesson: "8.2.2.4",
+      narrative: `"Same event, three stories," Crawford says. "You looked past the packaging. That's the job."
+
+All five Golden Rules pulse on the wall — if you've found them. The arena waits.`,
       badge: "Media Decoder",
       goldenRule: 5,
       choices: [
-        { label: "Final Trial", next: "final_trial" },
-        { label: "Become a mentor — alternate ending", next: "mentor_ending" },
+        { label: "Enter the Final Trial", next: "final_trial" },
+        { label: "Take the mentor path — teach what you learned", next: "mentor_ending" },
       ],
     },
 
     media_fail: {
-      location: "Media Chamber — Panic",
+      location: "Media Chamber — Noise Floor",
       character: "crawford",
-      narrative: `"Who made it? What's the evidence? What do other sources say?"`,
+      narrative: `"Who made it? What's the evidence? Who else covered it?" Crawford asks. "Run the checklist."`,
       choices: [
-        { label: "Compare sources and check evidence", next: "media_win" },
+        { label: "Compare sources before sharing", next: "media_win" },
       ],
     },
 
     final_trial: {
       location: "Gauntlet Arena · Final Round",
       character: "guide",
-      narrative: `"Final round!" Spotlights sweep the arena. Every mentor you've met watches from the holo-rings above.
+      narrative: `The floor rises. Mentors you've met appear in the holo-ring — not to quiz you, but to listen.
 
-The floor rises. Your keyboard glows gold. "Write your Digital Citizenship Oath — in your own words."`,
+The Host's voice carries. "In your own words: what will you actually do online when it counts?"`,
       typingChallenge: {
-        prompt: "Write your Digital Citizenship Oath (3-5 sentences): How will you use technology to solve problems, help others, and stay safe online?",
+        prompt: "Write a short Digital Citizenship Oath (3–5 sentences): How will you use technology to solve problems, help others, and stay safe?",
         minWords: 30,
         next: "victory",
       },
@@ -551,11 +595,11 @@ The floor rises. Your keyboard glows gold. "Write your Digital Citizenship Oath 
       character: "lovelace",
       ending: true,
       endingType: "mentor",
-      narrative: `Lovelace places a mentor badge on your shoulder. "You've recovered the Golden Rules — now teach them. Technology is part of being human. Pass it on."
+      narrative: `Lovelace pins a mentor badge to your jacket. "You recovered the Golden Rules — now someone else needs a guide."
 
-You become a field operative, helping the next recruit navigate the gauntlet. <em>Research one hero from this mission and present their story to your class.</em>`,
+You'll help the next recruit through their first fork in the path. The mission log stays open.`,
       choices: [
-        { label: "Play again — new path", next: "start" },
+        { label: "Start a new run", next: "start" },
       ],
     },
 
@@ -564,17 +608,19 @@ You become a field operative, helping the next recruit navigate the gauntlet. <e
       character: "guide",
       ending: true,
       endingType: "champion",
-      narrative: `The five Golden Rules glow:
+      narrative: `The five Golden Rules line up on the main screen:
 
-<strong>1.</strong> Design for people. <strong>2.</strong> Protect data. <strong>3.</strong> Guard your login.
-<strong>4.</strong> Think before you post. <strong>5.</strong> Decode media.
+<strong>Design for people.</strong> <strong>Protect data.</strong> <strong>Guard your login.</strong>
+<strong>Think before you post.</strong> <strong>Decode media.</strong>
 
-<strong>GAUNTLET CHAMPION!</strong> Technology takes many forms — computers, culture, games, stories. Follow a deliberate design process and simple golden rules to build a better world.`,
+The Host extends a hand. "Gauntlet champion. You didn't just pick the 'right' button — you thought like a citizen."
+
+Play again to scramble the missions and meet every mentor.`,
       choices: [
-        { label: "Play again — explore every path", next: "start" },
+        { label: "Play again", next: "start" },
       ],
     },
   };
 
-  window.TechTrailStory = { STORY, CHARACTERS };
+  window.TechTrailStory = { STORY, CHARACTERS, START_MISSIONS };
 })();
