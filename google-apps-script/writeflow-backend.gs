@@ -15,7 +15,7 @@
  *   Assignments — teacher passwords per assignment ID (synced from builder)
  */
 
-const SPREADSHEET_ID = normalizeSheetId_("PASTE_YOUR_SHEET_ID_HERE");
+const SPREADSHEET_ID = normalizeSheetId_("1qzyvkmUlavabIq5VPgxornjIwKL0devWijH0kYmvSV4");
 const SUBMISSIONS_SHEET = "Submissions";
 const ASSIGNMENTS_SHEET = "Assignments";
 const API_SECRET = "studentsfirst";
