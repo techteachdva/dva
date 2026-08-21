@@ -6,7 +6,7 @@
 
   const DEFAULT_ASSIGNMENT = {
     id: "sample-persuasive",
-    version: 1,
+    version: 2,
     title: "Persuasive Essay Draft",
     subtitle: "Timed writing assignment",
     prompt: "Write a persuasive paragraph about a school rule you would change. State your claim, give two reasons with evidence, and end with a call to action.",
@@ -23,6 +23,9 @@
     allowPaste: false,
     lockAfterTime: true,
     showLiveStats: true,
+    allowEndEarly: false,
+    minWordCount: 0,
+    requireMinWordsToComplete: false,
     requireName: true,
     requireClass: true,
     requireClassCode: true,
@@ -31,6 +34,13 @@
     heroImage: "",
     heroImageData: "",
     teacherPassword: "changeme",
+    accessibility: {
+      largeText: false,
+      highContrast: false,
+      spellcheck: true,
+      reducedMotion: false,
+      dyslexiaFont: false,
+    },
     measureCategories: [
       { id: "typing", icon: "⌨️", title: "Typing", desc: "Speed and stamina — how much you write in the time limit." },
       { id: "mechanics", icon: "✏️", title: "Mechanics", desc: "Spelling, capitalization, punctuation, and sentence structure." },
@@ -39,11 +49,256 @@
   };
 
   const BUILDER_SECTIONS = [
+    { id: "templates", label: "Templates", icon: "📋", hint: "Start from a guided template" },
     { id: "content", label: "Content", icon: "📝", hint: "Prompt, welcome message, and teacher password" },
-    { id: "timer", label: "Timer & rules", icon: "⏱️", hint: "Time limit and what students must enter" },
+    { id: "timer", label: "Timer & rules", icon: "⏱️", hint: "Time limit, word goals, and student requirements" },
     { id: "appearance", label: "Appearance", icon: "🎨", hint: "Colors, fonts, and optional header image" },
+    { id: "accessibility", label: "Accessibility", icon: "♿", hint: "Fonts, contrast, and student-friendly options" },
     { id: "classes", label: "Classes", icon: "🏫", hint: "Class names and secret codes for students" },
     { id: "preview", label: "Preview", icon: "👁️", hint: "See what students will see before sharing" },
+  ];
+
+  function slugify(text) {
+    return String(text || "assignment")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")
+      .slice(0, 40) || "assignment";
+  }
+
+  const ASSIGNMENT_TEMPLATES = [
+    {
+      id: "quick-write",
+      icon: "⚡",
+      title: "Quick Write",
+      description: "Short timed response — warm-ups, exit tickets, or bell work.",
+      questions: [
+        { id: "topic", label: "What should students write about?", type: "textarea", placeholder: "e.g. What surprised you in today's lesson?", required: true },
+        { id: "minutes", label: "How many minutes?", type: "number", default: 5, min: 1, max: 60 },
+        { id: "minWords", label: "Minimum word count (0 = none)", type: "number", default: 0, min: 0, max: 500 },
+        { id: "allowEarly", label: "Let students finish early when ready?", type: "checkbox", default: true },
+      ],
+      build(answers) {
+        const mins = Math.max(1, Number(answers.minutes) || 5);
+        const minWords = Math.max(0, Number(answers.minWords) || 0);
+        const topic = String(answers.topic || "").trim();
+        const title = topic.length > 48 ? `${topic.slice(0, 45)}…` : topic || "Quick Write";
+        const checklist = [
+          "Read the prompt, enter your info, then press Start.",
+          `You have ${mins} minute${mins === 1 ? "" : "s"} to write.`,
+        ];
+        if (answers.allowEarly) checklist.push("Tap \"I'm done\" when you finish — you don't have to wait for the timer.");
+        if (minWords > 0) checklist.push(`Write at least ${minWords} words before submitting.`);
+        checklist.push("Focus on ideas first — spelling and polish come later.");
+        return {
+          id: `quick-${slugify(title)}-${Date.now()}`,
+          title: `Quick Write: ${title}`,
+          subtitle: `${mins}-minute response`,
+          welcomeTitle: "Quick write time",
+          welcomeLead: `You have ${mins} minute${mins === 1 ? "" : "s"} to respond in your own words. Type continuously and don't worry about perfection.`,
+          prompt: topic,
+          promptBanner: topic,
+          durationSec: mins * 60,
+          allowEndEarly: !!answers.allowEarly,
+          minWordCount: minWords,
+          requireMinWordsToComplete: minWords > 0,
+          allowPaste: false,
+          checklist,
+        };
+      },
+    },
+    {
+      id: "typing-stamina",
+      icon: "⌨️",
+      title: "Typing Stamina",
+      description: "Build fluency — students type on a topic for a set time with a word goal.",
+      questions: [
+        { id: "topic", label: "Typing topic or sentence starter", type: "text", placeholder: "e.g. Describe your favorite hobby in detail.", required: true },
+        { id: "minutes", label: "How many minutes?", type: "number", default: 10, min: 3, max: 45 },
+        { id: "minWords", label: "Target word count", type: "number", default: 100, min: 20, max: 800 },
+        { id: "allowEarly", label: "Allow \"I'm done\" before time runs out?", type: "checkbox", default: true },
+      ],
+      build(answers) {
+        const mins = Math.max(3, Number(answers.minutes) || 10);
+        const minWords = Math.max(20, Number(answers.minWords) || 100);
+        const topic = String(answers.topic || "").trim() || "Write as much as you can on the topic below.";
+        return {
+          id: `typing-${Date.now()}`,
+          title: "Typing Stamina Practice",
+          subtitle: `${mins} minutes · ${minWords}+ words`,
+          welcomeTitle: "Typing stamina challenge",
+          welcomeLead: `Type continuously for ${mins} minutes. Aim for at least ${minWords} words. Keep your fingers moving — it's okay if it's messy.`,
+          prompt: topic,
+          promptBanner: `Goal: ${minWords}+ words · ${mins} min`,
+          durationSec: mins * 60,
+          allowEndEarly: !!answers.allowEarly,
+          minWordCount: minWords,
+          requireMinWordsToComplete: true,
+          allowPaste: false,
+          showLiveStats: true,
+          checklist: [
+            "Press Start when ready — the timer begins immediately.",
+            `Aim for at least ${minWords} words.`,
+            answers.allowEarly ? "You can submit early once you hit the word goal." : "Keep typing until the timer ends.",
+            "Pasting is off — this measures your own typing.",
+          ],
+          theme: { preset: "dark", fontPreset: "readable" },
+          accessibility: { largeText: true, dyslexiaFont: false, highContrast: false, spellcheck: true, reducedMotion: false },
+        };
+      },
+    },
+    {
+      id: "reflection",
+      icon: "💭",
+      title: "Reflection",
+      description: "Students reflect on learning, behavior, or a reading.",
+      questions: [
+        { id: "focus", label: "What are students reflecting on?", type: "textarea", placeholder: "e.g. How did you use teamwork in today's lab?", required: true },
+        { id: "minutes", label: "How many minutes?", type: "number", default: 8, min: 3, max: 30 },
+        { id: "minWords", label: "Minimum words (0 = none)", type: "number", default: 50, min: 0, max: 300 },
+      ],
+      build(answers) {
+        const mins = Math.max(3, Number(answers.minutes) || 8);
+        const minWords = Math.max(0, Number(answers.minWords) || 50);
+        const focus = String(answers.focus || "").trim();
+        return {
+          id: `reflect-${Date.now()}`,
+          title: "Reflection",
+          subtitle: "Think and write",
+          welcomeTitle: "Take a moment to reflect",
+          welcomeLead: "There are no wrong answers. Write honestly about your experience.",
+          prompt: focus,
+          promptBanner: focus,
+          durationSec: mins * 60,
+          allowEndEarly: true,
+          minWordCount: minWords,
+          requireMinWordsToComplete: false,
+          allowPaste: true,
+          checklist: [
+            "Read the reflection question carefully.",
+            `You have ${mins} minutes — use the time you need.`,
+            minWords > 0 ? `Write at least ${minWords} words.` : "Write in complete sentences.",
+            "Tap \"I'm done\" when you finish.",
+          ],
+        };
+      },
+    },
+    {
+      id: "paragraph-response",
+      icon: "📄",
+      title: "Paragraph Response",
+      description: "Structured answer with claim and evidence — great for content classes.",
+      questions: [
+        { id: "question", label: "Question or prompt", type: "textarea", placeholder: "e.g. How does photosynthesis help plants survive?", required: true },
+        { id: "minutes", label: "How many minutes?", type: "number", default: 15, min: 5, max: 45 },
+        { id: "minWords", label: "Minimum words", type: "number", default: 80, min: 30, max: 400 },
+        { id: "banner", label: "Reminder shown while typing (optional)", type: "text", placeholder: "e.g. Claim + 2 reasons + evidence" },
+      ],
+      build(answers) {
+        const mins = Math.max(5, Number(answers.minutes) || 15);
+        const minWords = Math.max(30, Number(answers.minWords) || 80);
+        const question = String(answers.question || "").trim();
+        const banner = String(answers.banner || "").trim() || "State your claim. Support with evidence. Wrap up clearly.";
+        return {
+          id: `paragraph-${Date.now()}`,
+          title: "Paragraph Response",
+          subtitle: `${mins}-minute written response`,
+          welcomeTitle: "Paragraph response",
+          welcomeLead: `Answer the question below in a full paragraph (${minWords}+ words). Organize your ideas before you start typing.`,
+          prompt: question,
+          promptBanner: banner,
+          durationSec: mins * 60,
+          allowEndEarly: true,
+          minWordCount: minWords,
+          requireMinWordsToComplete: false,
+          allowPaste: false,
+          checklist: [
+            "Plan briefly, then press Start.",
+            `Write at least ${minWords} words in paragraph form.`,
+            banner,
+            "Submit when you're done or when time runs out.",
+          ],
+        };
+      },
+    },
+    {
+      id: "free-write",
+      icon: "✨",
+      title: "Free Write",
+      description: "Open-ended creative writing with flexible time and optional word floor.",
+      questions: [
+        { id: "starter", label: "Optional story starter or theme", type: "text", placeholder: "e.g. The door creaked open…" },
+        { id: "minutes", label: "How many minutes?", type: "number", default: 20, min: 5, max: 60 },
+        { id: "minWords", label: "Minimum words (0 = none)", type: "number", default: 0, min: 0, max: 500 },
+        { id: "allowPaste", label: "Allow paste?", type: "checkbox", default: false },
+      ],
+      build(answers) {
+        const mins = Math.max(5, Number(answers.minutes) || 20);
+        const minWords = Math.max(0, Number(answers.minWords) || 0);
+        const starter = String(answers.starter || "").trim();
+        const prompt = starter
+          ? `Free write starting from: "${starter}" — continue the story or idea in your own direction.`
+          : "Free write — create any story, description, or ideas you want. Let your imagination lead.";
+        return {
+          id: `freewrite-${Date.now()}`,
+          title: "Free Write",
+          subtitle: `${mins} minutes of creative writing`,
+          welcomeTitle: "Free write",
+          welcomeLead: "There is no single right answer. Keep typing and see where your writing goes.",
+          prompt,
+          promptBanner: starter ? `Starter: ${starter}` : "Write freely — quantity and creativity count.",
+          durationSec: mins * 60,
+          allowEndEarly: true,
+          minWordCount: minWords,
+          requireMinWordsToComplete: minWords > 0,
+          allowPaste: !!answers.allowPaste,
+          checklist: [
+            `You have ${mins} minutes.`,
+            minWords > 0 ? `Write at least ${minWords} words.` : "Write as much as you can.",
+            "Don't stop to edit — keep the ideas flowing.",
+            "Tap \"I'm done\" when finished, or wait for the timer.",
+          ],
+        };
+      },
+    },
+    {
+      id: "sentence-practice",
+      icon: "🔤",
+      title: "Sentence Practice",
+      description: "Short bursts for vocabulary, grammar, or spelling in context.",
+      questions: [
+        { id: "task", label: "What should students do?", type: "textarea", placeholder: "e.g. Write 5 sentences using this week's vocabulary words.", required: true },
+        { id: "minutes", label: "How many minutes?", type: "number", default: 7, min: 3, max: 20 },
+        { id: "minWords", label: "Minimum words", type: "number", default: 40, min: 10, max: 200 },
+      ],
+      build(answers) {
+        const mins = Math.max(3, Number(answers.minutes) || 7);
+        const minWords = Math.max(10, Number(answers.minWords) || 40);
+        const task = String(answers.task || "").trim();
+        return {
+          id: `sentences-${Date.now()}`,
+          title: "Sentence Practice",
+          subtitle: "Focused writing drill",
+          welcomeTitle: "Sentence practice",
+          welcomeLead: "Follow the directions carefully. Use complete sentences.",
+          prompt: task,
+          promptBanner: task,
+          durationSec: mins * 60,
+          allowEndEarly: true,
+          minWordCount: minWords,
+          requireMinWordsToComplete: true,
+          allowPaste: false,
+          theme: { preset: "light", fontPreset: "readable" },
+          accessibility: { largeText: true, spellcheck: true, highContrast: false, dyslexiaFont: true, reducedMotion: false },
+          checklist: [
+            "Read the task before you start.",
+            `Write at least ${minWords} words in complete sentences.`,
+            "Check capitalization and ending punctuation.",
+            "Submit when you meet the goal or time runs out.",
+          ],
+        };
+      },
+    },
   ];
 
   const TUTORIAL_STEPS = {
@@ -51,6 +306,11 @@
       {
         title: "Welcome to WriteFlow",
         body: "WriteFlow helps you run timed writing assignments. Students type on a timer; you get scores and submissions in one place.",
+      },
+      {
+        title: "Start from a template",
+        body: "Use Templates in the builder — or pick one on the home page — to answer a few questions and generate a ready-to-share assignment.",
+        highlight: "#wfTemplateGallery",
       },
       {
         title: "Step 1 — Configure",
@@ -77,13 +337,18 @@
         body: "Three areas: menu (left) picks what to edit, canvas (center) holds the settings, panel (right) saves and shares.",
       },
       {
+        title: "Templates",
+        body: "Pick a template, answer a few questions, and WriteFlow builds the assignment for you. You can still edit everything afterward.",
+        section: "templates",
+      },
+      {
         title: "Content",
         body: "Write the assignment title, student welcome text, and the writing prompt. Set a teacher password you will use to view results.",
         section: "content",
       },
       {
         title: "Timer & rules",
-        body: "Choose how many seconds students have. Toggle whether they need a name, class, class code, and whether paste is allowed.",
+        body: "Set time limits, minimum word counts, and whether students can finish early. Different settings help you support every learner.",
         section: "timer",
       },
       {
@@ -105,7 +370,7 @@
       },
       {
         title: "Writing time",
-        body: "Press Start when ready. The timer runs immediately — keep typing until time runs out. Your work submits automatically.",
+        body: "Press Start when ready. The timer runs immediately. If your teacher enabled it, you can tap \"I'm done\" when you finish.",
       },
       {
         title: "After time is up",
@@ -114,5 +379,11 @@
     ],
   };
 
-  window.WriteFlowDefaults = { DEFAULT_ASSIGNMENT, BUILDER_SECTIONS, TUTORIAL_STEPS };
+  window.WriteFlowDefaults = {
+    DEFAULT_ASSIGNMENT,
+    BUILDER_SECTIONS,
+    TUTORIAL_STEPS,
+    ASSIGNMENT_TEMPLATES,
+    slugify,
+  };
 })();

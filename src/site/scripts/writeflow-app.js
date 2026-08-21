@@ -27,6 +27,11 @@
   let tutorialHighlightEl = null;
 
   const TUTORIAL_STEPS = window.WriteFlowDefaults?.TUTORIAL_STEPS || {};
+  const ASSIGNMENT_TEMPLATES = window.WriteFlowDefaults?.ASSIGNMENT_TEMPLATES || [];
+
+  let timerWaitingForMinWords = false;
+  let activeTemplateId = params.get("template") || "";
+  let templateAnswers = {};
 
   const VALID_CLASSROOMS = Core.loadJsonScript("wfClassroomsJson", []);
   const CLASSROOM_CODES = Core.loadJsonScript("wfClassroomCodesJson", {});
@@ -97,8 +102,86 @@
     el.classList.remove("dw-hidden");
   }
 
+  function mergeAccessibility(configA11y = {}) {
+    return { ...Defaults.accessibility, ...configA11y };
+  }
+
+  function applyAccessibility() {
+    const a11y = mergeAccessibility(config.accessibility);
+    const shell = document.querySelector(".dw-shell");
+    shell?.classList.toggle("wf-a11y-large-text", !!a11y.largeText);
+    shell?.classList.toggle("wf-a11y-high-contrast", !!a11y.highContrast);
+    shell?.classList.toggle("wf-reduced-motion", !!a11y.reducedMotion);
+
+    const theme = Core.resolveTheme(config);
+    if (a11y.dyslexiaFont) theme.fontPreset = "dyslexic";
+    Core.applyTheme(theme);
+
+    const storyInput = document.getElementById("storyInput");
+    if (storyInput) storyInput.spellcheck = a11y.spellcheck !== false;
+  }
+
+  function getStoryWordCount() {
+    return Core.countWords(document.getElementById("storyInput")?.value || "");
+  }
+
+  function meetsMinWordCount() {
+    const min = Math.max(0, Number(config.minWordCount) || 0);
+    return !min || getStoryWordCount() >= min;
+  }
+
+  function showConfirmDialog({ title, body, confirmLabel = "Confirm", destructive = false }) {
+    return new Promise((resolve) => {
+      const overlay = document.getElementById("wfConfirm");
+      const titleEl = document.getElementById("wfConfirmTitle");
+      const bodyEl = document.getElementById("wfConfirmBody");
+      const okBtn = document.getElementById("confirmOkBtn");
+      const cancelBtn = document.getElementById("confirmCancelBtn");
+      const backdrop = document.getElementById("confirmBackdrop");
+      if (!overlay || !okBtn || !cancelBtn) {
+        resolve(window.confirm(body || title));
+        return;
+      }
+
+      titleEl.textContent = title || "Confirm";
+      bodyEl.textContent = body || "";
+      okBtn.textContent = confirmLabel;
+      okBtn.classList.toggle("wf-confirm__danger", destructive);
+      overlay.classList.remove("dw-hidden");
+      okBtn.focus();
+
+      function cleanup(result) {
+        overlay.classList.add("dw-hidden");
+        okBtn.removeEventListener("click", onOk);
+        cancelBtn.removeEventListener("click", onCancel);
+        backdrop?.removeEventListener("click", onCancel);
+        document.removeEventListener("keydown", onKey);
+        resolve(result);
+      }
+
+      function onOk() { cleanup(true); }
+      function onCancel() { cleanup(false); }
+      function onKey(e) {
+        if (e.key === "Escape") onCancel();
+      }
+
+      okBtn.addEventListener("click", onOk);
+      cancelBtn.addEventListener("click", onCancel);
+      backdrop?.addEventListener("click", onCancel);
+      document.addEventListener("keydown", onKey);
+    });
+  }
+
+  function deleteAssignment(id) {
+    try { localStorage.removeItem(Core.storageKey(STORAGE_PREFIX, id)); } catch {}
+    try { localStorage.removeItem(`writeflow:submissions:${id}`); } catch {}
+    const ids = getAssignmentsList().filter((x) => x !== id);
+    saveAssignmentsList(ids);
+    return ids;
+  }
+
   function applyConfigToUI() {
-    Core.applyTheme(Core.resolveTheme(config));
+    applyAccessibility();
     document.title = config.title + " · WriteFlow";
     const titleEl = document.getElementById("appTitle");
     const subEl = document.getElementById("appSubtitle");
@@ -151,6 +234,47 @@
       heroImg.classList.remove("dw-hidden");
     } else if (heroImg) {
       heroImg.classList.add("dw-hidden");
+    }
+
+    const liveStatsBar = document.getElementById("liveStatsBar");
+    if (liveStatsBar) liveStatsBar.classList.toggle("dw-hidden", !config.showLiveStats);
+
+    const minEl = document.getElementById("minWordProgress");
+    const minWords = Math.max(0, Number(config.minWordCount) || 0);
+    if (minEl) {
+      minEl.classList.toggle("dw-hidden", !minWords);
+      if (minWords) minEl.textContent = `Goal: ${minWords} words`;
+    }
+  }
+
+  function updateWritingControls() {
+    const endEarlyBtn = document.getElementById("endEarlyBtn");
+    const minWords = Math.max(0, Number(config.minWordCount) || 0);
+    const words = getStoryWordCount();
+    const canEndEarly = !!config.allowEndEarly && meetsMinWordCount();
+
+    if (endEarlyBtn) {
+      endEarlyBtn.classList.toggle("dw-hidden", !config.allowEndEarly);
+      endEarlyBtn.disabled = !canEndEarly;
+      if (config.allowEndEarly && minWords && words < minWords) {
+        endEarlyBtn.title = `Write ${minWords - words} more word${minWords - words === 1 ? "" : "s"} to submit early`;
+      } else {
+        endEarlyBtn.title = "";
+      }
+    }
+
+    const minEl = document.getElementById("minWordProgress");
+    if (minEl && minWords) {
+      const met = words >= minWords;
+      minEl.textContent = met ? `Goal met: ${words} / ${minWords} words` : `${words} / ${minWords} words`;
+      minEl.classList.toggle("wf-min-word-progress--met", met);
+    }
+
+    if (timerWaitingForMinWords && meetsMinWordCount()) {
+      timerWaitingForMinWords = false;
+      const notice = document.getElementById("timerExtendNotice");
+      notice?.classList.add("dw-hidden");
+      finishWriting();
     }
   }
 
@@ -333,9 +457,23 @@
   }
 
   function finishWriting() {
+    if (config.requireMinWordsToComplete && !meetsMinWordCount()) {
+      timerWaitingForMinWords = true;
+      const notice = document.getElementById("timerExtendNotice");
+      const minWords = Math.max(0, Number(config.minWordCount) || 0);
+      if (notice) {
+        notice.textContent = `Time's up — keep writing until you reach ${minWords} words. Your work will submit automatically when you hit the goal.`;
+        notice.classList.remove("dw-hidden");
+      }
+      updateWritingControls();
+      return;
+    }
+
     const storyInput = document.getElementById("storyInput");
     if (storyInput && config.lockAfterTime) storyInput.readOnly = true;
     if (timer) timer.stop();
+    timerWaitingForMinWords = false;
+    document.getElementById("timerExtendNotice")?.classList.add("dw-hidden");
     show("analyzing");
     void showResults(storyInput?.value || "");
   }
@@ -513,6 +651,9 @@
     });
 
     Core.setupLiveStats(storyInput, document.getElementById("liveWordCount"), document.getElementById("liveWpm"), () => timer?.getElapsed() || 0);
+    storyInput?.addEventListener("input", () => {
+      updateWritingControls();
+    });
 
     function autoGrowTextarea() {
       if (!storyInput) return;
@@ -530,12 +671,20 @@
       storyInput.value = "";
       storyInput.readOnly = false;
       storyInput.style.height = "";
+      timerWaitingForMinWords = false;
+      document.getElementById("timerExtendNotice")?.classList.add("dw-hidden");
       show("writing");
       requestAnimationFrame(() => {
         storyInput.focus();
         document.getElementById("writingView")?.scrollIntoView({ behavior: "smooth", block: "start" });
+        updateWritingControls();
       });
       timer.start();
+    });
+
+    document.getElementById("endEarlyBtn")?.addEventListener("click", () => {
+      if (!config.allowEndEarly || !meetsMinWordCount()) return;
+      finishWriting();
     });
 
     document.getElementById("restartBtn")?.addEventListener("click", () => {
@@ -662,7 +811,126 @@
   }
 
   /* ── Builder ── */
-  let builderSection = "content";
+  let builderSection = params.get("section") === "templates" || params.get("template") ? "templates" : "content";
+
+  function getTemplateById(id) {
+    return ASSIGNMENT_TEMPLATES.find((t) => t.id === id) || null;
+  }
+
+  function renderTemplateQuestionField(q, value) {
+    const val = value ?? q.default ?? "";
+    if (q.type === "textarea") {
+      return `<label class="dw-field"><span class="dw-label">${escapeHtml(q.label)}</span><textarea class="dw-textarea wf-template-input" data-qid="${escapeHtml(q.id)}" rows="3" placeholder="${escapeHtml(q.placeholder || "")}">${escapeHtml(val)}</textarea></label>`;
+    }
+    if (q.type === "checkbox") {
+      const checked = val === true || val === "true" || val === 1 || val === "1";
+      return `<label class="wf-toggle-row"><input class="wf-template-input" data-qid="${escapeHtml(q.id)}" type="checkbox" ${checked ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>${escapeHtml(q.label)}</strong></span></label>`;
+    }
+    const inputType = q.type === "number" ? "number" : "text";
+    const attrs = [
+      q.min != null ? `min="${q.min}"` : "",
+      q.max != null ? `max="${q.max}"` : "",
+      q.required ? "required" : "",
+    ].filter(Boolean).join(" ");
+    return `<label class="dw-field"><span class="dw-label">${escapeHtml(q.label)}</span><input class="dw-input wf-template-input" data-qid="${escapeHtml(q.id)}" type="${inputType}" value="${escapeHtml(val)}" placeholder="${escapeHtml(q.placeholder || "")}" ${attrs} /></label>`;
+  }
+
+  function collectTemplateAnswers(template) {
+    const answers = {};
+    template.questions.forEach((q) => {
+      const el = document.querySelector(`.wf-template-input[data-qid="${q.id}"]`);
+      if (!el) return;
+      if (q.type === "checkbox") answers[q.id] = el.checked;
+      else if (q.type === "number") answers[q.id] = Number(el.value);
+      else answers[q.id] = el.value;
+    });
+    return answers;
+  }
+
+  function applyTemplateToConfig(template, answers) {
+    const built = template.build(answers);
+    config = {
+      ...Defaults,
+      ...config,
+      ...built,
+      accessibility: { ...Defaults.accessibility, ...built.accessibility },
+      theme: { ...Defaults.theme, ...config.theme, ...built.theme },
+      version: 2,
+    };
+    persistConfig();
+    history.replaceState(null, "", `?mode=builder&id=${encodeURIComponent(config.id)}`);
+    builderSection = "content";
+    renderBuilder();
+    showSaveStatus(`Created "${config.title}" from template. Review settings, then Save assignment.`, true);
+  }
+
+  function renderTemplateGallery(containerId, onSelect) {
+    const grid = document.getElementById(containerId);
+    if (!grid) return;
+    grid.innerHTML = ASSIGNMENT_TEMPLATES.map((t) => `
+      <button class="wf-template-card" type="button" data-template="${escapeHtml(t.id)}" role="listitem">
+        <span class="wf-template-card__icon" aria-hidden="true">${t.icon}</span>
+        <span class="wf-template-card__body">
+          <span class="wf-template-card__title">${escapeHtml(t.title)}</span>
+          <span class="wf-template-card__desc">${escapeHtml(t.description)}</span>
+        </span>
+      </button>`).join("");
+    grid.querySelectorAll(".wf-template-card").forEach((btn) => {
+      btn.addEventListener("click", () => onSelect(btn.dataset.template));
+    });
+  }
+
+  function renderTemplateWizard(templateId) {
+    const template = getTemplateById(templateId);
+    if (!template) return "";
+    if (!templateAnswers[templateId]) {
+      templateAnswers[templateId] = {};
+      template.questions.forEach((q) => {
+        templateAnswers[templateId][q.id] = q.default ?? (q.type === "checkbox" ? false : "");
+      });
+    }
+    const answers = templateAnswers[templateId];
+    return `
+      <div class="wf-template-wizard dw-card">
+        <button type="button" class="dw-btn dw-btn-ghost wf-template-wizard__back" id="templateWizardBack">← All templates</button>
+        <h3 class="dw-h3">${template.icon} ${escapeHtml(template.title)}</h3>
+        <p class="dw-muted">${escapeHtml(template.description)}</p>
+        <div class="wf-template-wizard__form" id="templateWizardForm">
+          ${template.questions.map((q) => renderTemplateQuestionField(q, answers[q.id])).join("")}
+        </div>
+        <button type="button" class="dw-btn" id="templateBuildBtn">Build assignment</button>
+      </div>`;
+  }
+
+  function bindTemplateWizard(templateId) {
+    const template = getTemplateById(templateId);
+    if (!template) return;
+
+    document.getElementById("templateWizardBack")?.addEventListener("click", () => {
+      activeTemplateId = "";
+      renderBuilder();
+    });
+
+    document.querySelectorAll(".wf-template-input").forEach((el) => {
+      el.addEventListener("input", () => {
+        templateAnswers[templateId] = collectTemplateAnswers(template);
+      });
+      el.addEventListener("change", () => {
+        templateAnswers[templateId] = collectTemplateAnswers(template);
+      });
+    });
+
+    document.getElementById("templateBuildBtn")?.addEventListener("click", () => {
+      const answers = collectTemplateAnswers(template);
+      const missing = template.questions.filter((q) => q.required && !String(answers[q.id] ?? "").trim());
+      if (missing.length) {
+        alert(`Please fill in: ${missing.map((q) => q.label).join(", ")}`);
+        return;
+      }
+      templateAnswers[templateId] = answers;
+      applyTemplateToConfig(template, answers);
+    });
+  }
 
   function getAssignmentsList() {
     try { return JSON.parse(localStorage.getItem(ASSIGNMENTS_KEY) || "[]"); } catch { return [config.id]; }
@@ -737,7 +1005,21 @@
     const canvas = document.getElementById("builderCanvas");
     if (!canvas) return;
 
-    if (builderSection === "content") {
+    if (builderSection === "templates") {
+      if (activeTemplateId) {
+        canvas.innerHTML = `${builderSectionHeader("templates")}${renderTemplateWizard(activeTemplateId)}`;
+        bindTemplateWizard(activeTemplateId);
+      } else {
+        canvas.innerHTML = `
+          ${builderSectionHeader("templates")}
+          <p class="dw-muted">Pick a template, answer a few short questions, and WriteFlow builds the assignment for you. You can edit everything before sharing.</p>
+          <div class="wf-template-grid" id="builderTemplateGrid" role="list"></div>`;
+        renderTemplateGallery("builderTemplateGrid", (id) => {
+          activeTemplateId = id;
+          renderBuilder();
+        });
+      }
+    } else if (builderSection === "content") {
       canvas.innerHTML = `
         ${builderSectionHeader("content")}
         <label class="dw-field"><span class="dw-label">Assignment title</span><span class="dw-muted dw-tiny">Shown in the browser tab and top bar</span><input id="bfTitle" class="dw-input" value="${escapeHtml(config.title)}" /></label>
@@ -762,14 +1044,26 @@
           <span class="dw-muted dw-tiny">Students write until the timer hits zero · about ${escapeHtml(formatDurationLabel(config.durationSec))}</span>
           <input id="bfDuration" class="dw-input" type="number" min="60" max="3600" step="30" value="${config.durationSec}" />
         </label>
+        <label class="dw-field">
+          <span class="dw-label">Minimum word count</span>
+          <span class="dw-muted dw-tiny">0 = no minimum. Use with &ldquo;End early&rdquo; or &ldquo;Require minimum words&rdquo; to support different learners.</span>
+          <input id="bfMinWords" class="dw-input" type="number" min="0" max="2000" step="5" value="${Math.max(0, Number(config.minWordCount) || 0)}" />
+        </label>
         <div class="wf-toggle-list">
           <label class="wf-toggle-row"><input id="bfAllowPaste" type="checkbox" ${config.allowPaste ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Allow paste</strong><span class="wf-toggle-row__hint">Off = students must type their own words</span></span></label>
+          <label class="wf-toggle-row"><input id="bfAllowEndEarly" type="checkbox" ${config.allowEndEarly ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Allow end early</strong><span class="wf-toggle-row__hint">Students can tap &ldquo;I&rsquo;m done&rdquo; before the timer ends</span></span></label>
           <label class="wf-toggle-row"><input id="bfLockAfter" type="checkbox" ${config.lockAfterTime ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Lock editor when time expires</strong><span class="wf-toggle-row__hint">Prevents edits after the timer ends</span></span></label>
           <label class="wf-toggle-row"><input id="bfLiveStats" type="checkbox" ${config.showLiveStats ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Show live word count &amp; WPM</strong><span class="wf-toggle-row__hint">Displays stats during writing</span></span></label>
+          <label class="wf-toggle-row"><input id="bfRequireMinWords" type="checkbox" ${config.requireMinWordsToComplete ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Require minimum words to finish</strong><span class="wf-toggle-row__hint">If time runs out first, students keep writing until they hit the word goal</span></span></label>
           <label class="wf-toggle-row"><input id="bfRequireName" type="checkbox" ${config.requireName ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Require student name</strong><span class="wf-toggle-row__hint">First name before starting</span></span></label>
           <label class="wf-toggle-row"><input id="bfRequireClass" type="checkbox" ${config.requireClass ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Require class selection</strong><span class="wf-toggle-row__hint">Pick from the class list</span></span></label>
           <label class="wf-toggle-row"><input id="bfRequireCode" type="checkbox" ${config.requireClassCode ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Require class code</strong><span class="wf-toggle-row__hint">Secret code from the Classes tab</span></span></label>
         </div>`;
+      const minWordsInput = document.getElementById("bfMinWords");
+      minWordsInput?.addEventListener("change", (e) => {
+        config.minWordCount = Math.max(0, Number(e.target.value) || 0);
+        persistConfig();
+      });
       const durationInput = document.getElementById("bfDuration");
       durationInput?.addEventListener("input", (e) => {
         config.durationSec = Number(e.target.value) || 300;
@@ -777,8 +1071,17 @@
         if (hint) hint.textContent = `Students write until the timer hits zero · about ${formatDurationLabel(config.durationSec)}`;
       });
       durationInput?.addEventListener("change", (e) => { config.durationSec = Number(e.target.value) || 300; persistConfig(); renderInspector(); });
-      ["bfAllowPaste", "bfLockAfter", "bfLiveStats", "bfRequireName", "bfRequireClass", "bfRequireCode"].forEach((id) => {
-        const map = { bfAllowPaste: "allowPaste", bfLockAfter: "lockAfterTime", bfLiveStats: "showLiveStats", bfRequireName: "requireName", bfRequireClass: "requireClass", bfRequireCode: "requireClassCode" };
+      ["bfAllowPaste", "bfAllowEndEarly", "bfLockAfter", "bfLiveStats", "bfRequireMinWords", "bfRequireName", "bfRequireClass", "bfRequireCode"].forEach((id) => {
+        const map = {
+          bfAllowPaste: "allowPaste",
+          bfAllowEndEarly: "allowEndEarly",
+          bfLockAfter: "lockAfterTime",
+          bfLiveStats: "showLiveStats",
+          bfRequireMinWords: "requireMinWordsToComplete",
+          bfRequireName: "requireName",
+          bfRequireClass: "requireClass",
+          bfRequireCode: "requireClassCode",
+        };
         document.getElementById(id)?.addEventListener("change", (e) => { config[map[id]] = e.target.checked; persistConfig(); });
       });
     } else if (builderSection === "appearance") {
@@ -883,6 +1186,31 @@
         }
         clr?.classList.remove("dw-hidden");
       }
+    } else if (builderSection === "accessibility") {
+      const a11y = mergeAccessibility(config.accessibility);
+      canvas.innerHTML = `
+        ${builderSectionHeader("accessibility")}
+        <p class="dw-muted">These options help you support students with different needs. Students see the settings you enable here.</p>
+        <div class="wf-toggle-list">
+          <label class="wf-toggle-row"><input id="bfA11yLarge" type="checkbox" ${a11y.largeText ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Larger text</strong><span class="wf-toggle-row__hint">Bigger prompt and writing area</span></span></label>
+          <label class="wf-toggle-row"><input id="bfA11yContrast" type="checkbox" ${a11y.highContrast ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>High contrast</strong><span class="wf-toggle-row__hint">Stronger text and border contrast</span></span></label>
+          <label class="wf-toggle-row"><input id="bfA11yDyslexia" type="checkbox" ${a11y.dyslexiaFont ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Dyslexia-friendly font</strong><span class="wf-toggle-row__hint">Uses OpenDyslexic for reading and writing</span></span></label>
+          <label class="wf-toggle-row"><input id="bfA11ySpell" type="checkbox" ${a11y.spellcheck !== false ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Spellcheck while typing</strong><span class="wf-toggle-row__hint">Browser underlines possible spelling errors</span></span></label>
+          <label class="wf-toggle-row"><input id="bfA11yMotion" type="checkbox" ${a11y.reducedMotion ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Reduce motion</strong><span class="wf-toggle-row__hint">Minimizes animations and smooth scrolling</span></span></label>
+        </div>
+        <p class="dw-muted dw-tiny">Tip: combine longer timers with minimum word counts and &ldquo;End early&rdquo; so fast finishers can submit while others keep working.</p>`;
+      const bindA11y = (id, key, invert = false) => {
+        document.getElementById(id)?.addEventListener("change", (e) => {
+          config.accessibility = { ...mergeAccessibility(config.accessibility), [key]: invert ? !e.target.checked : e.target.checked };
+          persistConfig();
+          applyAccessibility();
+        });
+      };
+      bindA11y("bfA11yLarge", "largeText");
+      bindA11y("bfA11yContrast", "highContrast");
+      bindA11y("bfA11yDyslexia", "dyslexiaFont");
+      bindA11y("bfA11ySpell", "spellcheck");
+      bindA11y("bfA11yMotion", "reducedMotion");
     } else if (builderSection === "classes") {
       canvas.innerHTML = `
         ${builderSectionHeader("classes")}
@@ -943,6 +1271,7 @@
           <button id="bfExport" class="dw-btn dw-btn-secondary" type="button">Export JSON</button>
           <label class="dw-btn dw-btn-ghost" style="cursor:pointer">Import JSON<input id="bfImport" type="file" accept=".json" hidden /></label>
           <button id="bfNew" class="dw-btn dw-btn-ghost" type="button">New assignment</button>
+          <button id="bfDeleteCurrent" class="dw-btn dw-btn-ghost wf-btn-danger" type="button">Delete this assignment</button>
         </div>
       </div>
       <div class="wf-inspector-group">
@@ -992,28 +1321,81 @@
       renderBuilder();
     });
 
+    document.getElementById("bfDeleteCurrent")?.addEventListener("click", async () => {
+      const title = config.title || config.id;
+      const ok = await showConfirmDialog({
+        title: "Delete assignment?",
+        body: `Delete "${title}" (${config.id}) from this browser? This cannot be undone. Cloud copies are not removed — duplicates there need to be cleaned up in your sheet if needed.`,
+        confirmLabel: "Delete assignment",
+        destructive: true,
+      });
+      if (!ok) return;
+      const remaining = deleteAssignment(config.id);
+      if (remaining.length) {
+        const nextId = remaining[0];
+        config = readLocalConfig(nextId) || { ...Defaults, id: nextId };
+        history.replaceState(null, "", `?mode=builder&id=${encodeURIComponent(nextId)}`);
+      } else {
+        config = { ...Defaults, id: `assignment-${Date.now()}`, title: "Untitled Assignment" };
+        persistConfig();
+        history.replaceState(null, "", `?mode=builder&id=${encodeURIComponent(config.id)}`);
+      }
+      showSaveStatus("Assignment deleted from this browser.", true);
+      renderBuilder();
+    });
+
     const list = document.getElementById("bfAssignmentList");
     getAssignmentsList().forEach((id) => {
       const saved = readLocalConfig(id);
-      const card = document.createElement("button");
-      card.type = "button";
-      card.className = `wf-assignment-card${config.id === id ? " wf-assignment-card--active" : ""}`;
-      card.innerHTML = `
-        <span class="wf-assignment-card__body">
-          <span class="wf-assignment-card__title">${escapeHtml(saved?.title || id)}</span>
-          <span class="wf-assignment-card__id">${escapeHtml(id)}</span>
-        </span>
-        <span class="wf-assignment-card__meta">Open →</span>`;
-      card.addEventListener("click", () => {
+      const row = document.createElement("div");
+      row.className = `wf-assignment-card${config.id === id ? " wf-assignment-card--active" : ""}`;
+      row.innerHTML = `
+        <button type="button" class="wf-assignment-card__open" data-id="${escapeHtml(id)}">
+          <span class="wf-assignment-card__body">
+            <span class="wf-assignment-card__title">${escapeHtml(saved?.title || id)}</span>
+            <span class="wf-assignment-card__id">${escapeHtml(id)}</span>
+          </span>
+          <span class="wf-assignment-card__meta">Open →</span>
+        </button>
+        <button type="button" class="wf-assignment-card__delete" data-id="${escapeHtml(id)}" aria-label="Delete ${escapeHtml(saved?.title || id)}">Delete</button>`;
+      row.querySelector(".wf-assignment-card__open")?.addEventListener("click", () => {
         config = saved || Core.loadConfig(STORAGE_PREFIX, id, { ...Defaults, id });
         history.replaceState(null, "", `?mode=builder&id=${encodeURIComponent(id)}`);
         renderBuilder();
       });
-      list?.appendChild(card);
+      row.querySelector(".wf-assignment-card__delete")?.addEventListener("click", async (e) => {
+        e.stopPropagation();
+        const ok = await showConfirmDialog({
+          title: "Delete assignment?",
+          body: `Delete "${saved?.title || id}" from this browser? This cannot be undone.`,
+          confirmLabel: "Delete",
+          destructive: true,
+        });
+        if (!ok) return;
+        const wasCurrent = config.id === id;
+        const remaining = deleteAssignment(id);
+        if (wasCurrent) {
+          if (remaining.length) {
+            const nextId = remaining[0];
+            config = readLocalConfig(nextId) || { ...Defaults, id: nextId };
+            history.replaceState(null, "", `?mode=builder&id=${encodeURIComponent(nextId)}`);
+          } else {
+            config = { ...Defaults, id: `assignment-${Date.now()}`, title: "Untitled Assignment" };
+            persistConfig();
+            history.replaceState(null, "", `?mode=builder&id=${encodeURIComponent(config.id)}`);
+          }
+        }
+        renderBuilder();
+      });
+      list?.appendChild(row);
     });
   }
 
   function persistConfig() {
+    config.accessibility = mergeAccessibility(config.accessibility);
+    if (config.minWordCount == null) config.minWordCount = 0;
+    if (config.allowEndEarly == null) config.allowEndEarly = false;
+    if (config.requireMinWordsToComplete == null) config.requireMinWordsToComplete = false;
     Core.saveConfig(STORAGE_PREFIX, config.id, config);
     const ids = getAssignmentsList();
     if (!ids.includes(config.id)) ids.push(config.id);
@@ -1023,6 +1405,10 @@
 
   function initBuilder() {
     config = readLocalConfig(assignmentId) || Core.loadConfig(STORAGE_PREFIX, assignmentId, { ...Defaults, id: assignmentId });
+    if (params.get("template")) {
+      activeTemplateId = params.get("template");
+      builderSection = "templates";
+    }
     show("builder");
     document.getElementById("studentViewLink")?.addEventListener("click", () => {
       location.href = `/writeflow/?id=${encodeURIComponent(config.id)}`;
@@ -1033,8 +1419,11 @@
   function initHome() {
     Core.applyTheme(Core.resolveTheme({ ...Defaults, id: resolveDefaultAssignmentId() }));
     show("home");
+    renderTemplateGallery("homeTemplateGrid", (id) => {
+      location.href = `/writeflow/?mode=builder&template=${encodeURIComponent(id)}`;
+    });
     document.getElementById("openBuilderBtn")?.addEventListener("click", () => {
-      location.href = "/writeflow/?mode=builder";
+      location.href = "/writeflow/?mode=builder&section=templates";
     });
     document.getElementById("openSampleBtn")?.addEventListener("click", () => {
       location.href = "/writeflow/?id=sample-persuasive";

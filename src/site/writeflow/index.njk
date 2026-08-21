@@ -16,6 +16,7 @@ layout: false
     <link rel="stylesheet" href="/styles/custom-style.css" />
   </head>
   <body class="dw-body wp-theme--dark">
+    <a class="wf-skip-link" href="#mainContent">Skip to main content</a>
     <div class="dw-shell">
       {% if breadcrumbs and breadcrumbs.length > 0 %}
         <div class="breadcrumbs--standalone">{% include "components/breadcrumbs.njk" %}</div>
@@ -36,6 +37,18 @@ layout: false
           <a class="dw-link" href="/">Back to site</a>
         </div>
       </header>
+
+      <div id="wfConfirm" class="wf-confirm dw-hidden" role="alertdialog" aria-modal="true" aria-labelledby="wfConfirmTitle" aria-describedby="wfConfirmBody">
+        <div class="wf-confirm__backdrop" id="confirmBackdrop"></div>
+        <div class="wf-confirm__panel">
+          <h2 class="wf-confirm__title" id="wfConfirmTitle">Confirm</h2>
+          <p class="wf-confirm__body" id="wfConfirmBody"></p>
+          <div class="wf-confirm__actions">
+            <button id="confirmCancelBtn" class="dw-btn dw-btn-ghost" type="button">Cancel</button>
+            <button id="confirmOkBtn" class="dw-btn wf-confirm__danger" type="button">Confirm</button>
+          </div>
+        </div>
+      </div>
 
       <div id="wfTutorial" class="wf-tutorial dw-hidden" role="dialog" aria-modal="true" aria-labelledby="wfTutorialTitle">
         <div class="wf-tutorial__backdrop" id="tutorialBackdrop"></div>
@@ -88,9 +101,14 @@ layout: false
               </li>
             </ol>
           </div>
+          <div class="dw-card wf-template-gallery" id="wfTemplateGallery">
+            <h2 class="dw-h2">Start from a template</h2>
+            <p class="dw-muted">Answer a few questions — WriteFlow builds and formats the assignment for you.</p>
+            <div class="wf-template-grid" id="homeTemplateGrid" role="list"></div>
+          </div>
           <div class="dw-card dw-stack">
             <div class="dw-row dw-row-wrap">
-              <button id="openBuilderBtn" class="dw-btn" type="button">Create assignment</button>
+              <button id="openBuilderBtn" class="dw-btn" type="button">Create blank assignment</button>
               <button id="openSampleBtn" class="dw-btn dw-btn-secondary" type="button">Try sample</button>
               <button id="openTutorialHomeBtn" class="dw-btn dw-btn-ghost" type="button">Open tutorial</button>
             </div>
@@ -146,21 +164,27 @@ layout: false
           </div>
         </section>
 
-        <section id="writingView" class="dw-hidden">
+        <section id="writingView" class="dw-hidden" aria-label="Writing session">
           <div class="dw-timer-bar">
             <div class="dw-timer-meta">
               <span class="dw-timer-label">Time remaining</span>
-              <span id="timerDisplay" class="dw-timer-value">5:00</span>
+              <span id="timerDisplay" class="dw-timer-value" aria-live="polite">5:00</span>
             </div>
-            <div class="dw-timer-track"><div id="timerProgress" class="dw-timer-fill"></div></div>
-            <div class="dw-live-stats">
-              <span id="liveWordCount">0 words</span>
+            <div class="dw-timer-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="timerProgressBar"><div id="timerProgress" class="dw-timer-fill"></div></div>
+            <div class="dw-live-stats" id="liveStatsBar">
+              <span id="liveWordCount" aria-live="polite">0 words</span>
               <span id="liveWpm">0 WPM</span>
+              <span id="minWordProgress" class="wf-min-word-progress dw-hidden" aria-live="polite"></span>
             </div>
           </div>
+          <p id="timerExtendNotice" class="wf-timer-extend dw-hidden" role="status" aria-live="assertive"></p>
           <div class="dw-card dw-writing-card">
             <div class="dw-prompt-banner" id="promptBanner"></div>
-            <textarea id="storyInput" class="dw-textarea" placeholder="Start typing here…" spellcheck="true"></textarea>
+            <label class="wf-sr-only" for="storyInput">Your writing</label>
+            <textarea id="storyInput" class="dw-textarea" placeholder="Start typing here…" spellcheck="true" aria-describedby="promptBanner minWordProgress"></textarea>
+          </div>
+          <div class="wf-writing-actions">
+            <button id="endEarlyBtn" class="dw-btn dw-btn-secondary dw-hidden" type="button">I'm done — submit early</button>
           </div>
         </section>
 
