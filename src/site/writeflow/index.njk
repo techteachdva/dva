@@ -30,11 +30,31 @@ layout: false
         </div>
         <div class="dw-actions">
           <a class="dw-link" href="/writeflow/?home=1">Home</a>
+          <button id="tutorialBtn" class="dw-btn dw-btn-ghost wf-tutorial-btn" type="button" aria-haspopup="dialog">Tutorial</button>
           <button id="builderLinkBtn" class="dw-btn dw-btn-ghost" type="button">Configure</button>
           <button id="teacherBtn" class="dw-btn dw-btn-ghost" type="button">Results</button>
           <a class="dw-link" href="/">Back to site</a>
         </div>
       </header>
+
+      <div id="wfTutorial" class="wf-tutorial dw-hidden" role="dialog" aria-modal="true" aria-labelledby="wfTutorialTitle">
+        <div class="wf-tutorial__backdrop" id="tutorialBackdrop"></div>
+        <div class="wf-tutorial__panel">
+          <div class="wf-tutorial__meta">
+            <span class="wf-tutorial__eyebrow" id="wfTutorialEyebrow">Guide</span>
+            <span class="wf-tutorial__step" id="wfTutorialStep">1 / 5</span>
+          </div>
+          <h2 class="wf-tutorial__title" id="wfTutorialTitle">Welcome</h2>
+          <p class="wf-tutorial__body" id="wfTutorialBody"></p>
+          <div class="wf-tutorial__actions">
+            <button id="tutorialSkipBtn" class="dw-btn dw-btn-ghost" type="button">Skip</button>
+            <div class="wf-tutorial__nav">
+              <button id="tutorialBackBtn" class="dw-btn dw-btn-secondary" type="button">Back</button>
+              <button id="tutorialNextBtn" class="dw-btn" type="button">Next</button>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <main id="mainContent">
         <section id="wfHomeView" class="dw-hidden dw-stack">
@@ -42,21 +62,53 @@ layout: false
             <h1 class="dw-h1">WriteFlow Studio</h1>
             <p class="dw-lead">Create timed writing assignments with custom prompts, timers, and themes — or share a link and let students write.</p>
           </div>
+          <div class="dw-card wf-quickstart">
+            <h2 class="dw-h2">Quick start for teachers</h2>
+            <ol class="wf-quickstart__steps">
+              <li class="wf-quickstart__step">
+                <span class="wf-quickstart__num">1</span>
+                <div>
+                  <strong>Configure</strong>
+                  <p class="dw-muted">Set your prompt, timer, and rules in the builder.</p>
+                </div>
+              </li>
+              <li class="wf-quickstart__step">
+                <span class="wf-quickstart__num">2</span>
+                <div>
+                  <strong>Save assignment</strong>
+                  <p class="dw-muted">Publish so the student share link works on any device.</p>
+                </div>
+              </li>
+              <li class="wf-quickstart__step">
+                <span class="wf-quickstart__num">3</span>
+                <div>
+                  <strong>Share &amp; review</strong>
+                  <p class="dw-muted">Send the link to students; open Results to view submissions.</p>
+                </div>
+              </li>
+            </ol>
+          </div>
           <div class="dw-card dw-stack">
             <div class="dw-row dw-row-wrap">
               <button id="openBuilderBtn" class="dw-btn" type="button">Create assignment</button>
               <button id="openSampleBtn" class="dw-btn dw-btn-secondary" type="button">Try sample</button>
+              <button id="openTutorialHomeBtn" class="dw-btn dw-btn-ghost" type="button">Open tutorial</button>
             </div>
           </div>
         </section>
 
         <section id="builderView" class="dw-hidden">
           <div class="wf-toolbar">
-            <span class="dw-muted">Assignment builder</span>
+            <div class="wf-toolbar__text">
+              <strong>Assignment builder</strong>
+              <span class="dw-muted dw-tiny">Edit settings on the left · Save &amp; share on the right</span>
+            </div>
             <button id="studentViewLink" class="dw-btn dw-btn-secondary" type="button">Preview student view</button>
           </div>
           <div class="wf-builder">
-            <nav class="wf-builder-nav" id="builderNav"></nav>
+            <nav class="wf-builder-nav" id="builderNav">
+              <p class="wf-builder-nav__title">Settings</p>
+            </nav>
             <div class="wf-builder-canvas" id="builderCanvas"></div>
             <aside class="wf-builder-inspector" id="builderInspector"></aside>
           </div>
@@ -141,7 +193,8 @@ layout: false
 
         <section id="teacherLoginView" class="dw-card dw-stack dw-hidden dw-narrow">
           <h2 class="dw-h2">View results</h2>
-          <label class="dw-field"><span class="dw-label">Teacher password</span><input id="teacherPassword" class="dw-input" type="password" /></label>
+          <p class="dw-muted">Enter the teacher password you set in the builder for this assignment.</p>
+          <label class="dw-field"><span class="dw-label">Teacher password</span><input id="teacherPassword" class="dw-input" type="password" autocomplete="current-password" /></label>
           <div class="dw-row">
             <button id="teacherLoginBtn" class="dw-btn" type="button">Enter</button>
             <button id="teacherCancelBtn" class="dw-btn dw-btn-ghost" type="button">Cancel</button>

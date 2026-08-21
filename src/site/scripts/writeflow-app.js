@@ -21,6 +21,12 @@
   let timer = null;
   let allSubmissions = [];
   let teacherAuthed = false;
+  let sessionTeacherPassword = "";
+  let tutorialIndex = 0;
+  let tutorialContextKey = "home";
+  let tutorialHighlightEl = null;
+
+  const TUTORIAL_STEPS = window.WriteFlowDefaults?.TUTORIAL_STEPS || {};
 
   const VALID_CLASSROOMS = Core.loadJsonScript("wfClassroomsJson", []);
   const CLASSROOM_CODES = Core.loadJsonScript("wfClassroomCodesJson", {});
@@ -173,6 +179,136 @@
   function show(name) {
     Core.showView(views, name, shell, "teacher");
     scrollToMainTop();
+  }
+
+  function formatDurationLabel(sec) {
+    const total = Math.max(0, Number(sec) || 0);
+    const m = Math.floor(total / 60);
+    const s = total % 60;
+    if (!m) return `${s} seconds`;
+    if (!s) return `${m} minute${m === 1 ? "" : "s"}`;
+    return `${m} min ${s} sec`;
+  }
+
+  function builderSectionMeta(sectionId) {
+    return (window.WriteFlowDefaults?.BUILDER_SECTIONS || []).find((s) => s.id === sectionId) || {};
+  }
+
+  function builderSectionHeader(sectionId) {
+    const meta = builderSectionMeta(sectionId);
+    return `
+      <div class="wf-section-header">
+        <h2 class="dw-h2">${escapeHtml(meta.label || sectionId)}</h2>
+        <p class="dw-muted">${escapeHtml(meta.hint || "")}</p>
+      </div>`;
+  }
+
+  function clearTutorialHighlight() {
+    if (tutorialHighlightEl) {
+      tutorialHighlightEl.classList.remove("wf-tutorial-highlight");
+      tutorialHighlightEl = null;
+    }
+  }
+
+  function applyTutorialHighlight(selector) {
+    clearTutorialHighlight();
+    if (!selector) return;
+    const el = document.querySelector(selector);
+    if (!el) return;
+    tutorialHighlightEl = el;
+    el.classList.add("wf-tutorial-highlight");
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  function currentTutorialSteps() {
+    return TUTORIAL_STEPS[tutorialContextKey] || TUTORIAL_STEPS.home || [];
+  }
+
+  function getTutorialContext() {
+    if (mode === "builder") return "builder";
+    if (params.get("home") === "1") return "home";
+    return "student";
+  }
+
+  function renderTutorialStep() {
+    const steps = currentTutorialSteps();
+    const step = steps[tutorialIndex];
+    const overlay = document.getElementById("wfTutorial");
+    if (!step || !overlay) return;
+
+    if (step.section && mode === "builder") {
+      builderSection = step.section;
+      renderBuilder();
+    }
+
+    document.getElementById("wfTutorialTitle").textContent = step.title;
+    document.getElementById("wfTutorialBody").textContent = step.body;
+    document.getElementById("wfTutorialStep").textContent = `${tutorialIndex + 1} / ${steps.length}`;
+    document.getElementById("wfTutorialEyebrow").textContent =
+      tutorialContextKey === "builder" ? "Builder guide" : tutorialContextKey === "student" ? "Student guide" : "Teacher guide";
+
+    const backBtn = document.getElementById("tutorialBackBtn");
+    const nextBtn = document.getElementById("tutorialNextBtn");
+    if (backBtn) backBtn.disabled = tutorialIndex === 0;
+    if (nextBtn) nextBtn.textContent = tutorialIndex >= steps.length - 1 ? "Done" : "Next";
+
+    requestAnimationFrame(() => applyTutorialHighlight(step.highlight));
+  }
+
+  function closeTutorial(markSeen = true) {
+    const overlay = document.getElementById("wfTutorial");
+    overlay?.classList.add("dw-hidden");
+    clearTutorialHighlight();
+    if (markSeen) {
+      try { localStorage.setItem(`writeflow:tutorial:${tutorialContextKey}`, "1"); } catch {}
+    }
+  }
+
+  function openTutorial(context = getTutorialContext()) {
+    tutorialContextKey = context;
+    tutorialIndex = 0;
+    document.getElementById("wfTutorial")?.classList.remove("dw-hidden");
+    renderTutorialStep();
+  }
+
+  function initTutorial() {
+    document.getElementById("tutorialBtn")?.addEventListener("click", () => openTutorial(getTutorialContext()));
+    document.getElementById("openTutorialHomeBtn")?.addEventListener("click", () => openTutorial("home"));
+    document.getElementById("tutorialSkipBtn")?.addEventListener("click", () => closeTutorial(true));
+    document.getElementById("tutorialBackdrop")?.addEventListener("click", () => closeTutorial(true));
+    document.getElementById("tutorialBackBtn")?.addEventListener("click", () => {
+      if (tutorialIndex > 0) {
+        tutorialIndex--;
+        renderTutorialStep();
+      }
+    });
+    document.getElementById("tutorialNextBtn")?.addEventListener("click", () => {
+      const steps = currentTutorialSteps();
+      if (tutorialIndex >= steps.length - 1) closeTutorial(true);
+      else {
+        tutorialIndex++;
+        renderTutorialStep();
+      }
+    });
+
+    if (params.get("tutorial") === "1") {
+      openTutorial(getTutorialContext());
+      return;
+    }
+    const ctx = getTutorialContext();
+    try {
+      if (ctx === "home" && localStorage.getItem(`writeflow:tutorial:${ctx}`) !== "1") {
+        setTimeout(() => openTutorial("home"), 400);
+      }
+    } catch {}
+  }
+
+  function showSaveStatus(message, ok = true) {
+    const el = document.getElementById("bfSaveStatus");
+    if (!el) return;
+    el.textContent = message;
+    el.classList.remove("dw-hidden", "wf-save-status--ok", "wf-save-status--error");
+    el.classList.add(ok ? "wf-save-status--ok" : "wf-save-status--error");
   }
 
   function canStart() {
@@ -335,7 +471,7 @@
   }
 
   async function fetchSubmissions() {
-    const pw = document.getElementById("teacherPassword")?.value || config.teacherPassword;
+    const pw = sessionTeacherPassword || document.getElementById("teacherPassword")?.value || config.teacherPassword;
     const res = await fetch(
       `${API_URL}?password=${encodeURIComponent(pw)}&assignmentId=${encodeURIComponent(config.id)}`
     );
@@ -414,17 +550,48 @@
 
     document.getElementById("teacherCancelBtn")?.addEventListener("click", () => show("welcome"));
     document.getElementById("teacherLoginBtn")?.addEventListener("click", async () => {
-      const pw = document.getElementById("teacherPassword")?.value;
-      if (pw !== config.teacherPassword) {
-        document.getElementById("teacherLoginError")?.classList.remove("dw-hidden");
+      const pw = document.getElementById("teacherPassword")?.value || "";
+      const errEl = document.getElementById("teacherLoginError");
+      if (!pw) {
+        if (errEl) {
+          errEl.textContent = "Enter your teacher password.";
+          errEl.classList.remove("dw-hidden");
+        }
         return;
       }
-      document.getElementById("teacherLoginError")?.classList.add("dw-hidden");
+      if (errEl) errEl.classList.add("dw-hidden");
+
+      try {
+        const res = await fetch(
+          `${API_URL}?password=${encodeURIComponent(pw)}&assignmentId=${encodeURIComponent(config.id)}`
+        );
+        if (res.status === 401) {
+          if (errEl) {
+            errEl.textContent = "Incorrect password for this assignment.";
+            errEl.classList.remove("dw-hidden");
+          }
+          return;
+        }
+      } catch {
+        if (config.teacherPassword && pw !== config.teacherPassword) {
+          if (errEl) {
+            errEl.textContent = "Incorrect password for this assignment.";
+            errEl.classList.remove("dw-hidden");
+          }
+          return;
+        }
+      }
+
+      sessionTeacherPassword = pw;
       teacherAuthed = true;
       show("teacher");
       await loadTeacherDashboard();
     });
-    document.getElementById("teacherLogoutBtn")?.addEventListener("click", () => { teacherAuthed = false; show("welcome"); });
+    document.getElementById("teacherLogoutBtn")?.addEventListener("click", () => {
+      teacherAuthed = false;
+      sessionTeacherPassword = "";
+      show("welcome");
+    });
     document.getElementById("refreshBtn")?.addEventListener("click", loadTeacherDashboard);
     document.getElementById("exportBtn")?.addEventListener("click", exportCsv);
 
@@ -556,10 +723,12 @@
   function renderBuilder() {
     const nav = document.getElementById("builderNav");
     if (nav) {
-      nav.innerHTML = (window.WriteFlowDefaults?.BUILDER_SECTIONS || []).map((s) => `
-        <button class="wf-nav-item${builderSection === s.id ? " wf-nav-item--active" : ""}" type="button" data-section="${s.id}">
+      const titleEl = nav.querySelector(".wf-builder-nav__title");
+      const sectionsHtml = (window.WriteFlowDefaults?.BUILDER_SECTIONS || []).map((s) => `
+        <button class="wf-nav-item${builderSection === s.id ? " wf-nav-item--active" : ""}" type="button" data-section="${s.id}" title="${escapeHtml(s.hint || "")}">
           ${s.icon} ${escapeHtml(s.label)}
         </button>`).join("");
+      nav.innerHTML = `${titleEl ? titleEl.outerHTML : '<p class="wf-builder-nav__title">Settings</p>'}${sectionsHtml}`;
       nav.querySelectorAll(".wf-nav-item").forEach((btn) => {
         btn.addEventListener("click", () => { builderSection = btn.dataset.section; renderBuilder(); });
       });
@@ -570,14 +739,14 @@
 
     if (builderSection === "content") {
       canvas.innerHTML = `
-        <h2 class="dw-h2">Assignment content</h2>
-        <label class="dw-field"><span class="dw-label">Title</span><input id="bfTitle" class="dw-input" value="${escapeHtml(config.title)}" /></label>
-        <label class="dw-field"><span class="dw-label">Subtitle</span><input id="bfSubtitle" class="dw-input" value="${escapeHtml(config.subtitle)}" /></label>
-        <label class="dw-field"><span class="dw-label">Welcome headline</span><input id="bfWelcomeTitle" class="dw-input" value="${escapeHtml(config.welcomeTitle || "")}" /></label>
-        <label class="dw-field"><span class="dw-label">Welcome intro</span><textarea id="bfWelcomeLead" class="dw-textarea" rows="3">${escapeHtml(config.welcomeLead || "")}</textarea></label>
-        <label class="dw-field"><span class="dw-label">Writing prompt</span><textarea id="bfPrompt" class="dw-textarea" rows="4">${escapeHtml(config.prompt)}</textarea></label>
-        <label class="dw-field"><span class="dw-label">In-session prompt banner</span><input id="bfPromptBanner" class="dw-input" value="${escapeHtml(config.promptBanner || "")}" /></label>
-        <label class="dw-field"><span class="dw-label">Teacher password</span><input id="bfTeacherPw" class="dw-input" value="${escapeHtml(config.teacherPassword)}" /></label>`;
+        ${builderSectionHeader("content")}
+        <label class="dw-field"><span class="dw-label">Assignment title</span><span class="dw-muted dw-tiny">Shown in the browser tab and top bar</span><input id="bfTitle" class="dw-input" value="${escapeHtml(config.title)}" /></label>
+        <label class="dw-field"><span class="dw-label">Subtitle</span><span class="dw-muted dw-tiny">Short line under the title</span><input id="bfSubtitle" class="dw-input" value="${escapeHtml(config.subtitle)}" /></label>
+        <label class="dw-field"><span class="dw-label">Welcome headline</span><span class="dw-muted dw-tiny">First thing students read</span><input id="bfWelcomeTitle" class="dw-input" value="${escapeHtml(config.welcomeTitle || "")}" /></label>
+        <label class="dw-field"><span class="dw-label">Welcome intro</span><span class="dw-muted dw-tiny">Brief instructions before they start</span><textarea id="bfWelcomeLead" class="dw-textarea" rows="3">${escapeHtml(config.welcomeLead || "")}</textarea></label>
+        <label class="dw-field"><span class="dw-label">Writing prompt</span><span class="dw-muted dw-tiny">The main question or task</span><textarea id="bfPrompt" class="dw-textarea" rows="4">${escapeHtml(config.prompt)}</textarea></label>
+        <label class="dw-field"><span class="dw-label">In-session prompt banner</span><span class="dw-muted dw-tiny">Stays visible while students type</span><input id="bfPromptBanner" class="dw-input" value="${escapeHtml(config.promptBanner || "")}" /></label>
+        <label class="dw-field"><span class="dw-label">Teacher password</span><span class="dw-muted dw-tiny">Required to open Results for this assignment</span><input id="bfTeacherPw" class="dw-input" type="password" autocomplete="new-password" value="${escapeHtml(config.teacherPassword)}" /></label>`;
       bindBuilderField("bfTitle", "title");
       bindBuilderField("bfSubtitle", "subtitle");
       bindBuilderField("bfWelcomeTitle", "welcomeTitle");
@@ -587,21 +756,27 @@
       bindBuilderField("bfTeacherPw", "teacherPassword");
     } else if (builderSection === "timer") {
       canvas.innerHTML = `
-        <h2 class="dw-h2">Timer &amp; rules</h2>
-        <p class="dw-muted">Set how long students write and what is required before they start.</p>
+        ${builderSectionHeader("timer")}
         <label class="dw-field">
           <span class="dw-label">Duration (seconds)</span>
+          <span class="dw-muted dw-tiny">Students write until the timer hits zero · about ${escapeHtml(formatDurationLabel(config.durationSec))}</span>
           <input id="bfDuration" class="dw-input" type="number" min="60" max="3600" step="30" value="${config.durationSec}" />
         </label>
         <div class="wf-toggle-list">
-          <label class="wf-toggle-row"><input id="bfAllowPaste" type="checkbox" ${config.allowPaste ? "checked" : ""} /><span class="wf-toggle-row__label">Allow paste</span></label>
-          <label class="wf-toggle-row"><input id="bfLockAfter" type="checkbox" ${config.lockAfterTime ? "checked" : ""} /><span class="wf-toggle-row__label">Lock editor when time expires</span></label>
-          <label class="wf-toggle-row"><input id="bfLiveStats" type="checkbox" ${config.showLiveStats ? "checked" : ""} /><span class="wf-toggle-row__label">Show live word count &amp; WPM</span></label>
-          <label class="wf-toggle-row"><input id="bfRequireName" type="checkbox" ${config.requireName ? "checked" : ""} /><span class="wf-toggle-row__label">Require student name</span></label>
-          <label class="wf-toggle-row"><input id="bfRequireClass" type="checkbox" ${config.requireClass ? "checked" : ""} /><span class="wf-toggle-row__label">Require class selection</span></label>
-          <label class="wf-toggle-row"><input id="bfRequireCode" type="checkbox" ${config.requireClassCode ? "checked" : ""} /><span class="wf-toggle-row__label">Require class code</span></label>
+          <label class="wf-toggle-row"><input id="bfAllowPaste" type="checkbox" ${config.allowPaste ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Allow paste</strong><span class="wf-toggle-row__hint">Off = students must type their own words</span></span></label>
+          <label class="wf-toggle-row"><input id="bfLockAfter" type="checkbox" ${config.lockAfterTime ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Lock editor when time expires</strong><span class="wf-toggle-row__hint">Prevents edits after the timer ends</span></span></label>
+          <label class="wf-toggle-row"><input id="bfLiveStats" type="checkbox" ${config.showLiveStats ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Show live word count &amp; WPM</strong><span class="wf-toggle-row__hint">Displays stats during writing</span></span></label>
+          <label class="wf-toggle-row"><input id="bfRequireName" type="checkbox" ${config.requireName ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Require student name</strong><span class="wf-toggle-row__hint">First name before starting</span></span></label>
+          <label class="wf-toggle-row"><input id="bfRequireClass" type="checkbox" ${config.requireClass ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Require class selection</strong><span class="wf-toggle-row__hint">Pick from the class list</span></span></label>
+          <label class="wf-toggle-row"><input id="bfRequireCode" type="checkbox" ${config.requireClassCode ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Require class code</strong><span class="wf-toggle-row__hint">Secret code from the Classes tab</span></span></label>
         </div>`;
-      document.getElementById("bfDuration")?.addEventListener("change", (e) => { config.durationSec = Number(e.target.value) || 300; persistConfig(); renderInspector(); });
+      const durationInput = document.getElementById("bfDuration");
+      durationInput?.addEventListener("input", (e) => {
+        config.durationSec = Number(e.target.value) || 300;
+        const hint = durationInput.parentElement?.querySelector(".dw-tiny");
+        if (hint) hint.textContent = `Students write until the timer hits zero · about ${formatDurationLabel(config.durationSec)}`;
+      });
+      durationInput?.addEventListener("change", (e) => { config.durationSec = Number(e.target.value) || 300; persistConfig(); renderInspector(); });
       ["bfAllowPaste", "bfLockAfter", "bfLiveStats", "bfRequireName", "bfRequireClass", "bfRequireCode"].forEach((id) => {
         const map = { bfAllowPaste: "allowPaste", bfLockAfter: "lockAfterTime", bfLiveStats: "showLiveStats", bfRequireName: "requireName", bfRequireClass: "requireClass", bfRequireCode: "requireClassCode" };
         document.getElementById(id)?.addEventListener("change", (e) => { config[map[id]] = e.target.checked; persistConfig(); });
@@ -609,7 +784,7 @@
     } else if (builderSection === "appearance") {
       const fontKey = config.theme?.fontPreset || "google";
       canvas.innerHTML = `
-        <h2 class="dw-h2">Appearance</h2>
+        ${builderSectionHeader("appearance")}
         <p class="dw-muted">Theme, typography, and imagery — styled like a Google Forms header.</p>
         <div class="wf-inspector-group">
           <div class="wf-inspector-group__label">Color theme</div>
@@ -710,13 +885,13 @@
       }
     } else if (builderSection === "classes") {
       canvas.innerHTML = `
-        <h2 class="dw-h2">Classes</h2>
-        <p class="dw-muted">Students pick their class and enter the matching code before starting. Lists are shared site-wide (same as Summer Writing Test).</p>
+        ${builderSectionHeader("classes")}
+        <p class="dw-muted">Give each class the matching code below. Students enter it before they start writing.</p>
         <p class="dw-muted dw-tiny">Edit <code>api/diagnostic-writing/classes.json</code> and <code>classroom-codes.json</code>, then run <code>npm run sync:classrooms</code>.</p>
         ${renderClassroomReferenceTable()}`;
     } else if (builderSection === "preview") {
       canvas.innerHTML = `
-        <h2 class="dw-h2">Live preview</h2>
+        ${builderSectionHeader("preview")}
         <p class="dw-muted">This is how students will see the welcome screen.</p>
         <div class="wf-preview-frame dw-card">
           <h1 class="dw-h1">${escapeHtml(config.welcomeTitle || config.title)}</h1>
@@ -745,21 +920,30 @@
     insp.innerHTML = `
       <div class="wf-inspector-group">
         <div class="wf-inspector-group__label">Assignment ID</div>
+        <p class="dw-muted dw-tiny">Used in the share link — use letters, numbers, and dashes only.</p>
         <input id="bfId" class="dw-input" value="${escapeHtml(config.id)}" />
       </div>
       <div class="wf-inspector-group">
-        <div class="wf-inspector-group__label">Actions</div>
+        <div class="wf-inspector-group__label">Save &amp; publish</div>
+        <p class="dw-muted dw-tiny">Save publishes to the cloud so students can load this assignment from the share link.</p>
         <div class="dw-stack">
           <button id="bfSave" class="dw-btn" type="button">Save assignment</button>
-          <button id="bfExport" class="dw-btn dw-btn-secondary" type="button">Export JSON</button>
-          <label class="dw-btn dw-btn-ghost" style="cursor:pointer">Import JSON<input id="bfImport" type="file" accept=".json" hidden /></label>
-          <button id="bfNew" class="dw-btn dw-btn-ghost" type="button">New assignment</button>
+          <p id="bfSaveStatus" class="wf-save-status dw-hidden" role="status"></p>
         </div>
       </div>
       <div class="wf-inspector-group">
         <div class="wf-inspector-group__label">Share link</div>
-        <p class="dw-muted dw-tiny">Students load this assignment from the cloud when they open the link. Click Save assignment after editing.</p>
-        <input class="dw-input" readonly value="${location.origin}/writeflow/?id=${encodeURIComponent(config.id)}" onclick="this.select()" />
+        <p class="dw-muted dw-tiny">Send this URL to students — not the builder link.</p>
+        <input id="bfShareLink" class="dw-input" readonly value="${location.origin}/writeflow/?id=${encodeURIComponent(config.id)}" />
+        <button id="bfCopyLink" class="dw-btn dw-btn-secondary" type="button">Copy link</button>
+      </div>
+      <div class="wf-inspector-group">
+        <div class="wf-inspector-group__label">More actions</div>
+        <div class="dw-stack">
+          <button id="bfExport" class="dw-btn dw-btn-secondary" type="button">Export JSON</button>
+          <label class="dw-btn dw-btn-ghost" style="cursor:pointer">Import JSON<input id="bfImport" type="file" accept=".json" hidden /></label>
+          <button id="bfNew" class="dw-btn dw-btn-ghost" type="button">New assignment</button>
+        </div>
       </div>
       <div class="wf-inspector-group">
         <div class="wf-inspector-group__label">Saved assignments</div>
@@ -773,11 +957,22 @@
     });
     document.getElementById("bfSave")?.addEventListener("click", async () => {
       persistConfig();
+      showSaveStatus("Publishing…", true);
       try {
         await publishAssignmentCloud();
-        alert("Assignment saved and published. Students can use the share link on any device.");
+        showSaveStatus("Saved and published. Share link is ready for students.", true);
       } catch (err) {
-        alert(`Saved on this browser only. Could not publish for share links: ${err.message}`);
+        showSaveStatus(`Saved on this browser only. ${err.message}`, false);
+      }
+    });
+    document.getElementById("bfCopyLink")?.addEventListener("click", async () => {
+      const link = document.getElementById("bfShareLink")?.value || "";
+      try {
+        await navigator.clipboard.writeText(link);
+        showSaveStatus("Share link copied to clipboard.", true);
+      } catch {
+        document.getElementById("bfShareLink")?.select();
+        showSaveStatus("Select the link and copy it manually.", false);
       }
     });
     document.getElementById("bfExport")?.addEventListener("click", () => Core.exportConfig(config));
@@ -847,6 +1042,7 @@
   }
 
   bindTopbarActions();
+  initTutorial();
   if (mode === "builder") initBuilder();
   else if (params.get("home") === "1") initHome();
   else void initStudentFlow();

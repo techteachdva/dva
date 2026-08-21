@@ -2022,3 +2022,179 @@
 #typingChallenge:not(.dw-hidden) {
   scroll-margin-top: 20px;
 }
+
+/* WriteFlow — tutorial, quick start, clearer builder */
+.wf-tutorial-btn {
+  border-color: rgba(56, 189, 248, 0.35);
+}
+
+.wf-tutorial {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 24px;
+  pointer-events: none;
+}
+
+.wf-tutorial:not(.dw-hidden) {
+  pointer-events: auto;
+}
+
+.wf-tutorial__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(2px);
+}
+
+.wf-tutorial__panel {
+  position: relative;
+  width: min(92vw, 520px);
+  padding: 22px 24px;
+  border-radius: 16px;
+  border: 1px solid var(--dw-border);
+  background: var(--dw-bg, #0f172a);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+  margin-bottom: max(16px, env(safe-area-inset-bottom, 0));
+}
+
+.wf-tutorial__meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.wf-tutorial__eyebrow,
+.wf-tutorial__step {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--dw-muted);
+}
+
+.wf-tutorial__title {
+  margin: 0 0 10px;
+  font-size: 24px;
+}
+
+.wf-tutorial__body {
+  margin: 0 0 18px;
+  line-height: 1.6;
+  color: var(--dw-text);
+}
+
+.wf-tutorial__actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.wf-tutorial__nav {
+  display: flex;
+  gap: 8px;
+}
+
+.wf-tutorial-highlight {
+  position: relative;
+  z-index: 101;
+  outline: 3px solid var(--dw-accent);
+  outline-offset: 4px;
+  border-radius: 10px;
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
+}
+
+.wf-quickstart__steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.wf-quickstart__step {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.wf-quickstart__num {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: var(--dw-accent);
+  font-weight: 800;
+}
+
+.wf-section-header {
+  margin-bottom: 18px;
+}
+
+.wf-section-header .dw-h2 {
+  margin-bottom: 6px;
+}
+
+.wf-toolbar__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wf-toggle-row__label {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wf-toggle-row__hint {
+  display: block;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--dw-muted);
+}
+
+.wf-save-status {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.wf-save-status--ok {
+  background: rgba(52, 211, 153, 0.12);
+  border: 1px solid rgba(52, 211, 153, 0.35);
+  color: #6ee7b7;
+}
+
+.wf-save-status--error {
+  background: rgba(248, 113, 113, 0.12);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  color: #fca5a5;
+}
+
+.wp-theme--light .wf-tutorial__panel {
+  background: #fff;
+  color: #1a1a1a;
+}
+
+.wp-theme--light .wf-save-status--ok {
+  color: #047857;
+}
+
+.wp-theme--light .wf-save-status--error {
+  color: #b91c1c;
+}
