@@ -1,0 +1,106 @@
+---
+title: WriteFlow Assignment
+permalink: /writeflow/a/
+layout: false
+---
+<!doctype html>
+<html lang="{{ meta.mainLanguage }}">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="theme-color" content="#0f172a" />
+    <title>Writing assignment</title>
+    <meta name="robots" content="noindex" />
+    <link rel="stylesheet" href="/styles/write-platform.css" />
+    <link rel="stylesheet" href="/styles/custom-style.css" />
+  </head>
+  <body class="dw-body wp-theme--dark wf-student-app">
+    <a class="wf-skip-link" href="#mainContent">Skip to main content</a>
+    <div class="dw-shell dw-shell--student">
+      <header class="wf-student-topbar" id="studentTopbar">
+        <div class="wf-student-topbar__title" id="appTitle">Writing assignment</div>
+        <div class="wf-student-topbar__meta" id="appSubtitle"></div>
+      </header>
+
+      <main id="mainContent" class="wf-student-main">
+        <section id="welcomeView" class="dw-hidden wf-student-panel">
+          <div class="wf-student-prompt-box">
+            <h1 class="wf-student-prompt-box__title" id="welcomeTitle">Ready to write?</h1>
+            <blockquote class="wf-student-prompt" id="promptQuote"></blockquote>
+            <ul class="dw-list dw-checklist wf-student-checklist" id="checklist"></ul>
+            <div class="wf-student-gate" id="studentGate">
+              <label class="dw-field" id="nameField">
+                <span class="dw-label">First name</span>
+                <input id="studentName" class="dw-input" type="text" maxlength="80" autocomplete="name" />
+              </label>
+              <label class="dw-field" id="classField">
+                <span class="dw-label">Class</span>
+                <select id="studentClass" class="dw-input dw-select" required></select>
+              </label>
+              <label class="dw-field" id="classCodeField">
+                <span class="dw-label">Class code</span>
+                <input id="classCode" class="dw-input" type="text" maxlength="40" autocomplete="off" autocapitalize="off" spellcheck="false" />
+              </label>
+              <p id="classCodeError" class="dw-error dw-hidden" role="alert">That code doesn&rsquo;t match your class.</p>
+              <p id="assignmentLoadNotice" class="dw-error dw-hidden" role="alert"></p>
+              <button id="startBtn" class="dw-btn wf-student-start" type="button" disabled>Start writing</button>
+            </div>
+          </div>
+        </section>
+
+        <section id="writingView" class="dw-hidden wf-student-panel" aria-label="Writing session">
+          <div class="wf-student-writing-head">
+            <div class="wf-student-prompt-inline" id="promptBanner"></div>
+            <div class="wf-student-stats">
+              <div class="wf-student-stat">
+                <span class="wf-student-stat__label">Time</span>
+                <span id="timerDisplay" class="wf-student-stat__value" aria-live="polite">5:00</span>
+              </div>
+              <div class="wf-student-stat">
+                <span class="wf-student-stat__label">Words</span>
+                <span id="liveWordCount" class="wf-student-stat__value" aria-live="polite">0</span>
+              </div>
+              <div class="wf-student-stat">
+                <span class="wf-student-stat__label">WPM</span>
+                <span id="liveWpm" class="wf-student-stat__value">0</span>
+              </div>
+              <span id="minWordProgress" class="wf-min-word-progress dw-hidden" aria-live="polite"></span>
+            </div>
+            <div class="dw-timer-track wf-student-timer" role="progressbar" aria-valuemin="0" aria-valuemax="100" id="timerProgressBar"><div id="timerProgress" class="dw-timer-fill"></div></div>
+          </div>
+          <p id="timerExtendNotice" class="wf-timer-extend dw-hidden" role="status" aria-live="assertive"></p>
+          <label class="wf-sr-only" for="storyInput">Your writing</label>
+          <textarea id="storyInput" class="dw-textarea wf-student-textarea" placeholder="Start typing here…" aria-describedby="promptBanner minWordProgress"></textarea>
+          <div class="wf-writing-actions">
+            <button id="endEarlyBtn" class="dw-btn dw-btn-secondary dw-hidden" type="button">I'm done</button>
+          </div>
+        </section>
+
+        <section id="analyzingView" class="wf-student-panel dw-hidden wf-student-panel--center">
+          <div class="dw-spinner"></div>
+          <p class="dw-lead">Analyzing your writing…</p>
+        </section>
+
+        <section id="resultsView" class="dw-hidden wf-student-panel wf-student-panel--results">
+          <div class="wf-student-done">
+            <h2 class="dw-h2">Submitted, <span id="resultName">—</span></h2>
+            <p class="dw-muted" id="resultSummary"></p>
+            <p id="saveStatus" class="dw-save-status dw-hidden" role="status"></p>
+            <div id="vocabResult" class="wf-vocab-result dw-hidden"></div>
+            <p class="dw-muted dw-tiny">You can close this tab. Your teacher will see your submission in WriteFlow Studio.</p>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script>window.WRITEFLOW_ROLE = "student";</script>
+    <script id="wfClassroomsJson" type="application/json">{{ diagnosticWritingClasses | jsonify | safe }}</script>
+    <script id="wfClassroomCodesJson" type="application/json">{{ diagnosticWritingClassCodes | jsonify | safe }}</script>
+    <script src="/scripts/write-test-core.js" defer></script>
+    <script src="/scripts/writeflow-defaults.js" defer></script>
+    <script src="/scripts/diagnostic-writing-calibration.js" defer></script>
+    <script src="/scripts/diagnostic-writing-rubrics.js" defer></script>
+    <script src="/scripts/write-analysis-engine.js" defer></script>
+    <script src="/scripts/writeflow-app.js" defer></script>
+  </body>
+</html>

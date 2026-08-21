@@ -31,7 +31,7 @@ module.exports = [
   ["/mr-phil-s-digital-garden/", "/5-12-methods-literature-and-reading/"],
   ["/5-12-methods-literature-and-reading/", "/desiderata/"],
   ["/diagnostic-writing/", "/technology/"],
-  ["/games/", "/writeflow/"],
+  ["/technology/", "/writeflow/"],
   ["/games/", "/item-diagnostic/"],
   ["/games/", "/tech-trail/"],
   ["/writeflow/", "/diagnostic-writing/"],
@@ -52,6 +52,7 @@ module.exports.passthroughApps = [
   { url: "/dragon-trail/", title: "Dragon Trail", group: "Games" },
   { url: "/physix/", title: "Physix", group: "Games" },
   { url: "/writeflow/", title: "WriteFlow Studio", group: "Tools" },
+  { url: "/writeflow/studio/", title: "WriteFlow Studio App", group: "Tools" },
   { url: "/item-diagnostic/", title: "ITEM 2025 Diagnostic", group: "Tools" },
   { url: "/tech-trail/", title: "Global Tech Gauntlet", group: "Games" },
 ];

@@ -29,12 +29,20 @@ module.exports = {
     { title: "Summer Writing Assignment Test", url: null },
   ],
   "/writeflow/": [
-    { title: "Games Mr. Phil has made", url: "/games/" },
+    { title: "Technology", url: "/technology/" },
     { title: "WriteFlow Studio", url: null },
+  ],
+  "/writeflow/studio/": [
+    { title: "WriteFlow Studio", url: "/writeflow/" },
+    { title: "Studio app", url: null },
   ],
   "/writeflow/setup/": [
     { title: "WriteFlow Studio", url: "/writeflow/" },
     { title: "Google Sheets setup", url: null },
+  ],
+  "/writeflow/a/": [
+    { title: "WriteFlow Studio", url: "/writeflow/" },
+    { title: "Writing assignment", url: null },
   ],
   "/item-diagnostic/": [
     { title: "Games Mr. Phil has made", url: "/games/" },

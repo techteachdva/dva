@@ -4,6 +4,44 @@
 (() => {
   "use strict";
 
+  const APP_VERSION = "2.0";
+
+  const CHANGELOG = [
+    {
+      version: "2.0",
+      date: "2026-03-21",
+      summary: "Separate student assignments from WriteFlow Studio, vocabulary tracking, and a new landing page.",
+      items: [
+        "Student assignment links are now locked-down writing views with no teacher navigation.",
+        "WriteFlow Studio (builder, results, templates) lives at /writeflow/studio/.",
+        "New landing page at /writeflow/ with intro animation, changelog, and documentation.",
+        "Teachers can set expected vocabulary words; submissions highlight matches in Results.",
+        "Removed WriteFlow from the games cartridge shelf — it is a classroom writing tool.",
+      ],
+    },
+    {
+      version: "1.2",
+      date: "2026-03-21",
+      summary: "Templates, delete assignments, flexible timers, accessibility options.",
+      items: [
+        "Delete saved assignments with confirmation.",
+        "Template wizard builds assignments from short questions.",
+        "End early, minimum word count, and require-minimum-to-finish rules.",
+        "Accessibility: large text, high contrast, dyslexia font, reduced motion.",
+      ],
+    },
+    {
+      version: "1.0",
+      date: "2026-03-20",
+      summary: "Initial WriteFlow Studio release.",
+      items: [
+        "Assignment builder with cloud publish and share links.",
+        "Timed student writing with typing, mechanics, and content scoring.",
+        "Teacher results dashboard and CSV export.",
+      ],
+    },
+  ];
+
   const DEFAULT_ASSIGNMENT = {
     id: "sample-persuasive",
     version: 2,
@@ -21,6 +59,7 @@
     ],
     durationSec: 300,
     allowPaste: false,
+    spellcheck: true,
     lockAfterTime: true,
     showLiveStats: true,
     allowEndEarly: false,
@@ -34,6 +73,8 @@
     heroImage: "",
     heroImageData: "",
     teacherPassword: "changeme",
+    vocabWords: [],
+    highlightVocab: true,
     accessibility: {
       largeText: false,
       highContrast: false,
@@ -379,11 +420,21 @@
     ],
   };
 
+  function parseVocabInput(raw) {
+    return String(raw || "")
+      .split(/[\n,;]+/)
+      .map((w) => w.trim())
+      .filter(Boolean);
+  }
+
   window.WriteFlowDefaults = {
+    APP_VERSION,
+    CHANGELOG,
     DEFAULT_ASSIGNMENT,
     BUILDER_SECTIONS,
     TUTORIAL_STEPS,
     ASSIGNMENT_TEMPLATES,
     slugify,
+    parseVocabInput,
   };
 })();

@@ -13,9 +13,25 @@
 
   if (!Core || !Defaults) return;
 
+  const APP_ROLE = window.WRITEFLOW_ROLE || "studio";
+  const isStudentApp = APP_ROLE === "student";
+  const isStudioApp = !isStudentApp;
+  const STUDIO_PATH = "/writeflow/studio/";
+  const ASSIGNMENT_PATH = "/writeflow/a/";
+  const SENTENCE_STATS_KEY = "writeflow:global:sentences";
+
+  function assignmentUrl(id) {
+    return `${ASSIGNMENT_PATH}?id=${encodeURIComponent(id)}`;
+  }
+
+  function studioUrl(query = "") {
+    if (!query) return STUDIO_PATH;
+    return `${STUDIO_PATH}${query.startsWith("?") ? query : `?${query}`}`;
+  }
+
   const params = new URLSearchParams(location.search);
-  const mode = params.get("mode") === "builder" ? "builder" : "student";
-  const assignmentId = params.get("id") || "sample-persuasive";
+  const mode = isStudentApp ? "student" : (params.get("mode") === "builder" ? "builder" : "studio");
+  const assignmentId = params.get("id") || (isStudentApp ? "" : "sample-persuasive");
 
   let config = { ...Defaults, id: assignmentId };
   let timer = null;
@@ -37,19 +53,51 @@
   const CLASSROOM_CODES = Core.loadJsonScript("wfClassroomCodesJson", {});
 
   const shell = document.querySelector(".dw-shell");
-  const views = {
-    home: document.getElementById("wfHomeView"),
-    welcome: document.getElementById("welcomeView"),
-    writing: document.getElementById("writingView"),
-    analyzing: document.getElementById("analyzingView"),
-    results: document.getElementById("resultsView"),
-    builder: document.getElementById("builderView"),
-    teacherLogin: document.getElementById("teacherLoginView"),
-    teacher: document.getElementById("teacherView"),
-  };
+  const views = isStudentApp
+    ? {
+        welcome: document.getElementById("welcomeView"),
+        writing: document.getElementById("writingView"),
+        analyzing: document.getElementById("analyzingView"),
+        results: document.getElementById("resultsView"),
+      }
+    : {
+        home: document.getElementById("wfHomeView"),
+        builder: document.getElementById("builderView"),
+        teacherLogin: document.getElementById("teacherLoginView"),
+        teacher: document.getElementById("teacherView"),
+      };
 
   function escapeHtml(s) {
     return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  function escapeRegex(s) {
+    return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
+  function getVocabWords() {
+    return (config.vocabWords || []).map((w) => String(w).trim()).filter(Boolean);
+  }
+
+  function highlightVocabHtml(text, vocabWords = getVocabWords()) {
+    if (!text || !vocabWords.length || config.highlightVocab === false) {
+      return escapeHtml(text);
+    }
+    let html = escapeHtml(text);
+    const sorted = [...vocabWords].sort((a, b) => b.length - a.length);
+    for (const word of sorted) {
+      const re = new RegExp(`\\b(${escapeRegex(word)})\\b`, "gi");
+      html = html.replace(re, '<mark class="wf-vocab-hit">$1</mark>');
+    }
+    return html;
+  }
+
+  function recordSentenceStats(sentenceCount) {
+    if (!sentenceCount) return;
+    try {
+      const prev = Number(localStorage.getItem(SENTENCE_STATS_KEY) || 0);
+      localStorage.setItem(SENTENCE_STATS_KEY, String(prev + sentenceCount));
+    } catch {}
   }
 
   function hasLocalConfig(id) {
@@ -106,6 +154,11 @@
     return { ...Defaults.accessibility, ...configA11y };
   }
 
+  function resolveSpellcheck() {
+    if (typeof config.spellcheck === "boolean") return config.spellcheck;
+    return mergeAccessibility(config.accessibility).spellcheck !== false;
+  }
+
   function applyAccessibility() {
     const a11y = mergeAccessibility(config.accessibility);
     const shell = document.querySelector(".dw-shell");
@@ -118,7 +171,7 @@
     Core.applyTheme(theme);
 
     const storyInput = document.getElementById("storyInput");
-    if (storyInput) storyInput.spellcheck = a11y.spellcheck !== false;
+    if (storyInput) storyInput.spellcheck = resolveSpellcheck();
   }
 
   function getStoryWordCount() {
@@ -182,11 +235,13 @@
 
   function applyConfigToUI() {
     applyAccessibility();
-    document.title = config.title + " · WriteFlow";
+    const pageTitle = isStudentApp ? (config.title || "Writing assignment") : `${config.title} · WriteFlow Studio`;
+    document.title = pageTitle;
+
     const titleEl = document.getElementById("appTitle");
     const subEl = document.getElementById("appSubtitle");
-    if (titleEl) titleEl.textContent = config.title;
-    if (subEl) subEl.textContent = config.subtitle;
+    if (titleEl) titleEl.textContent = isStudentApp ? (config.title || "Writing assignment") : config.title;
+    if (subEl) subEl.textContent = isStudentApp ? (config.subtitle || "") : (config.subtitle || "Teacher workspace");
 
     const welcomeTitle = document.getElementById("welcomeTitle");
     const welcomeLead = document.getElementById("welcomeLead");
@@ -197,12 +252,22 @@
     if (promptQuote) promptQuote.textContent = config.prompt;
 
     const promptBanner = document.getElementById("promptBanner");
-    if (promptBanner) promptBanner.innerHTML = `<strong>Prompt:</strong> ${escapeHtml(config.promptBanner || config.prompt)}`;
+    if (promptBanner) {
+      const bannerText = config.promptBanner || config.prompt;
+      promptBanner.innerHTML = isStudentApp
+        ? escapeHtml(bannerText)
+        : `<strong>Prompt:</strong> ${escapeHtml(bannerText)}`;
+    }
 
     const checklist = document.getElementById("checklist");
     if (checklist) {
-      checklist.innerHTML = (config.checklist || []).map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+      const items = (config.checklist || []).filter(Boolean);
+      checklist.innerHTML = items.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+      checklist.closest(".wf-student-checklist, .dw-checklist")?.classList.toggle("dw-hidden", !items.length);
     }
+
+    document.getElementById("nameField")?.classList.toggle("dw-hidden", !config.requireName);
+    document.getElementById("classField")?.classList.toggle("dw-hidden", !config.requireClass);
 
     const rubricGrid = document.getElementById("rubricGrid");
     if (rubricGrid && config.measureCategories) {
@@ -215,10 +280,14 @@
 
     const startBtn = document.getElementById("startBtn");
     if (startBtn) {
-      const mins = Math.floor(config.durationSec / 60);
-      const secs = config.durationSec % 60;
-      const label = secs ? `${mins}:${String(secs).padStart(2, "0")}` : `${mins} minute${mins === 1 ? "" : "s"}`;
-      startBtn.textContent = `Start ${label} timer`;
+      if (isStudentApp) {
+        startBtn.textContent = "Start writing";
+      } else {
+        const mins = Math.floor(config.durationSec / 60);
+        const secs = config.durationSec % 60;
+        const label = secs ? `${mins}:${String(secs).padStart(2, "0")}` : `${mins} minute${mins === 1 ? "" : "s"}`;
+        startBtn.textContent = `Start ${label} timer`;
+      }
     }
 
     const timerDisplay = document.getElementById("timerDisplay");
@@ -350,7 +419,7 @@
 
   function getTutorialContext() {
     if (mode === "builder") return "builder";
-    if (params.get("home") === "1") return "home";
+    if (!isStudentApp) return "home";
     return "student";
   }
 
@@ -480,16 +549,38 @@
 
   async function showResults(text) {
     const duration = Math.min(Math.max(timer?.getElapsed() || config.durationSec, 1), config.durationSec);
-    const analysis = window.WriteAnalysis?.analyzeText(text, duration) || { scores: {}, wordCount: 0, wpm: 0, feedback: [] };
+    const vocabWords = getVocabWords();
+    const analysis = window.WriteAnalysis?.analyzeText(text, duration, { vocabWords })
+      || { scores: {}, wordCount: 0, wpm: 0, feedback: [], sentenceCount: 0 };
+    recordSentenceStats(analysis.sentenceCount || window.WriteAnalysis?.getSentences?.(text)?.length || 0);
+
     const name = document.getElementById("studentName")?.value.trim() || "Student";
     const classEl = document.getElementById("studentClass");
     const classroom = Core.resolveClassroom(classEl?.value, VALID_CLASSROOMS) || "";
     const classCode = document.getElementById("classCode")?.value || "";
 
-    document.getElementById("resultName").textContent = name;
-    document.getElementById("resultClass").textContent = classroom || "—";
-    document.getElementById("resultSummary").textContent =
-      `You wrote ${analysis.wordCount} words in ${Core.formatTime(duration)} (${analysis.wpm} WPM). Overall: ${analysis.scores?.overall ?? "—"}/100`;
+    const resultNameEl = document.getElementById("resultName");
+    const resultSummaryEl = document.getElementById("resultSummary");
+    if (resultNameEl) resultNameEl.textContent = name;
+    const resultClassEl = document.getElementById("resultClass");
+    if (resultClassEl) resultClassEl.textContent = classroom || "—";
+
+    const summaryText = isStudentApp
+      ? `You wrote ${analysis.wordCount} words in ${Core.formatTime(duration)} (${analysis.wpm} WPM).`
+      : `You wrote ${analysis.wordCount} words in ${Core.formatTime(duration)} (${analysis.wpm} WPM). Overall: ${analysis.scores?.overall ?? "—"}/100`;
+    if (resultSummaryEl) resultSummaryEl.textContent = summaryText;
+
+    const vocabEl = document.getElementById("vocabResult");
+    if (vocabEl && vocabWords.length && analysis.vocabulary) {
+      const v = analysis.vocabulary;
+      vocabEl.classList.remove("dw-hidden");
+      vocabEl.innerHTML = `
+        <p><strong>Vocabulary:</strong> ${v.usedCount} of ${v.requiredCount} expected words used.</p>
+        ${v.found.length ? `<p class="wf-vocab-found">Used: ${v.found.map((w) => escapeHtml(w)).join(", ")}</p>` : ""}
+        ${v.missing.length ? `<p class="wf-vocab-missing">Not found: ${v.missing.map((w) => escapeHtml(w)).join(", ")}</p>` : ""}`;
+    } else if (vocabEl) {
+      vocabEl.classList.add("dw-hidden");
+    }
 
     const R = window.DWRubrics;
     const scoreGrid = document.getElementById("scoreGrid");
@@ -508,7 +599,8 @@
         <li><strong>${escapeHtml(sec.title)}</strong><ul>${sec.items.map((i) => `<li>${escapeHtml(i)}</li>`).join("")}</ul></li>`).join("");
     }
 
-    document.getElementById("storyPreview").textContent = text;
+    const storyPreview = document.getElementById("storyPreview");
+    if (storyPreview) storyPreview.textContent = text;
     document.getElementById("scoreLegend")?.classList.remove("dw-hidden");
 
     let saveOk = false;
@@ -625,16 +717,20 @@
   }
 
   async function initStudentFlow() {
+    if (!assignmentId) {
+      showAssignmentNotice("This link is missing an assignment ID. Ask your teacher for the correct student link.");
+      show("welcome");
+      return;
+    }
+
     showAssignmentNotice("");
     const resolved = await resolveAssignmentConfig(assignmentId);
     config = resolved.config;
 
-    if (resolved.source === "missing" && assignmentId !== "sample-persuasive") {
+    if (resolved.source === "missing") {
       showAssignmentNotice(
-        "This assignment was not found online. Ask your teacher to open the WriteFlow builder and click Save assignment so the share link works."
+        "This assignment was not found. Ask your teacher to open WriteFlow Studio, save the assignment, and resend the link."
       );
-    } else if (resolved.source === "cloud") {
-      showAssignmentNotice("Assignment loaded.", false);
     }
 
     Core.populateClassSelect(document.getElementById("studentClass"), VALID_CLASSROOMS);
@@ -675,6 +771,7 @@
       document.getElementById("timerExtendNotice")?.classList.add("dw-hidden");
       show("writing");
       requestAnimationFrame(() => {
+        applyAccessibility();
         storyInput.focus();
         document.getElementById("writingView")?.scrollIntoView({ behavior: "smooth", block: "start" });
         updateWritingControls();
@@ -687,17 +784,12 @@
       finishWriting();
     });
 
-    document.getElementById("restartBtn")?.addEventListener("click", () => {
-      timer?.stop();
-      storyInput.value = "";
-      storyInput.readOnly = false;
-      document.getElementById("studentName").value = "";
-      show("welcome");
-      applyConfigToUI();
-      updateStartButton();
-    });
+    updateStartButton();
+    show("welcome");
+  }
 
-    document.getElementById("teacherCancelBtn")?.addEventListener("click", () => show("welcome"));
+  function bindTeacherEvents() {
+    document.getElementById("teacherCancelBtn")?.addEventListener("click", () => show("home"));
     document.getElementById("teacherLoginBtn")?.addEventListener("click", async () => {
       const pw = document.getElementById("teacherPassword")?.value || "";
       const errEl = document.getElementById("teacherLoginError");
@@ -739,14 +831,19 @@
     document.getElementById("teacherLogoutBtn")?.addEventListener("click", () => {
       teacherAuthed = false;
       sessionTeacherPassword = "";
-      show("welcome");
+      show("home");
     });
     document.getElementById("refreshBtn")?.addEventListener("click", loadTeacherDashboard);
     document.getElementById("exportBtn")?.addEventListener("click", exportCsv);
+  }
 
-    updateStartButton();
-    if (params.get("teacher") === "1") show("teacherLogin");
-    else show("welcome");
+  async function initTeacherPortal() {
+    const id = params.get("id") || resolveDefaultAssignmentId();
+    const resolved = await resolveAssignmentConfig(id);
+    config = resolved.config;
+    applyConfigToUI();
+    bindTeacherEvents();
+    show("teacherLogin");
   }
 
   async function loadTeacherDashboard() {
@@ -772,22 +869,62 @@
     renderTeacherTable();
   }
 
+  function showTeacherSubmission(sub) {
+    const panel = document.getElementById("teacherSubmissionDetail");
+    const meta = document.getElementById("teacherDetailMeta");
+    const vocabSummary = document.getElementById("teacherVocabSummary");
+    const preview = document.getElementById("teacherStoryPreview");
+    if (!panel || !preview) return;
+
+    panel.classList.remove("dw-hidden");
+    if (meta) {
+      meta.textContent = `${sub.name} · ${sub.classroom || "—"} · ${sub.analysis?.wordCount ?? 0} words · ${sub.submittedAt ? Core.formatDate(sub.submittedAt) : ""}`;
+    }
+
+    const vocab = sub.analysis?.vocabulary;
+    if (vocabSummary) {
+      if (vocab?.requiredCount) {
+        vocabSummary.classList.remove("dw-hidden");
+        vocabSummary.innerHTML = `
+          <p><strong>Vocabulary:</strong> ${vocab.usedCount}/${vocab.requiredCount} (${vocab.score}%)</p>
+          ${vocab.found.length ? `<p class="wf-vocab-found">Found: ${vocab.found.map((w) => `<span class="wf-vocab-chip">${escapeHtml(w)}</span>`).join(" ")}</p>` : ""}
+          ${vocab.missing.length ? `<p class="wf-vocab-missing">Missing: ${vocab.missing.map((w) => escapeHtml(w)).join(", ")}</p>` : ""}`;
+      } else {
+        vocabSummary.classList.add("dw-hidden");
+        vocabSummary.innerHTML = "";
+      }
+    }
+
+    preview.innerHTML = highlightVocabHtml(sub.text || "", getVocabWords());
+    panel.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   function renderTeacherTable() {
     const subs = allSubmissions;
     const tbody = document.getElementById("teacherTableBody");
     if (!tbody) return;
-    tbody.innerHTML = subs.map((s) => `
+    const hasVocab = getVocabWords().length > 0;
+    tbody.innerHTML = subs.map((s, idx) => `
       <tr>
         <td>${escapeHtml(s.name)}</td>
         <td>${escapeHtml(s.classroom)}</td>
         <td>${s.analysis?.wordCount ?? "—"}</td>
         <td>${s.analysis?.wpm ?? "—"}</td>
+        <td>${hasVocab ? (s.analysis?.vocabulary ? `${s.analysis.vocabulary.usedCount}/${s.analysis.vocabulary.requiredCount}` : "—") : "—"}</td>
         <td>${s.analysis?.scores?.typing ?? "—"}</td>
         <td>${s.analysis?.scores?.mechanics ?? "—"}</td>
         <td>${s.analysis?.scores?.story ?? "—"}</td>
         <td>${s.analysis?.scores?.overall ?? "—"}</td>
         <td>${s.submittedAt ? Core.formatDate(s.submittedAt) : "—"}</td>
-      </tr>`).join("") || '<tr><td colspan="9" class="dw-muted">No submissions yet.</td></tr>';
+        <td><button type="button" class="dw-btn dw-btn-ghost dw-btn--compact" data-sub-idx="${idx}">View</button></td>
+      </tr>`).join("") || `<tr><td colspan="11" class="dw-muted">No submissions yet.</td></tr>`;
+
+    tbody.querySelectorAll("[data-sub-idx]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const sub = subs[Number(btn.dataset.subIdx)];
+        if (sub) showTeacherSubmission(sub);
+      });
+    });
   }
 
   function renderTeacherDashboard() {
@@ -796,11 +933,15 @@
 
   function exportCsv() {
     const subs = allSubmissions.length ? allSubmissions : loadLocalSubmissions();
-    const rows = [["Name", "Class", "Words", "WPM", "Typing", "Mechanics", "Story", "Overall", "Submitted"]];
+    const hasVocab = getVocabWords().length > 0;
+    const rows = [["Name", "Class", "Words", "WPM", ...(hasVocab ? ["Vocab"] : []), "Typing", "Mechanics", "Story", "Overall", "Submitted"]];
     for (const s of subs) {
-      rows.push([s.name, s.classroom, s.analysis?.wordCount, s.analysis?.wpm,
+      rows.push([
+        s.name, s.classroom, s.analysis?.wordCount, s.analysis?.wpm,
+        ...(hasVocab ? [`${s.analysis?.vocabulary?.usedCount ?? 0}/${s.analysis?.vocabulary?.requiredCount ?? 0}`] : []),
         s.analysis?.scores?.typing, s.analysis?.scores?.mechanics, s.analysis?.scores?.story,
-        s.analysis?.scores?.overall, new Date(s.submittedAt).toISOString()]);
+        s.analysis?.scores?.overall, new Date(s.submittedAt).toISOString(),
+      ]);
     }
     const csv = rows.map((r) => r.map((c) => `"${String(c ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
@@ -946,19 +1087,15 @@
   }
 
   function bindTopbarActions() {
+    if (!isStudioApp) return;
     document.getElementById("builderLinkBtn")?.addEventListener("click", () => {
       const id = config?.id || resolveDefaultAssignmentId();
-      location.href = `/writeflow/?mode=builder&id=${encodeURIComponent(id)}`;
+      location.href = studioUrl(`?mode=builder&id=${encodeURIComponent(id)}`);
     });
 
     document.getElementById("teacherBtn")?.addEventListener("click", () => {
-      const onStudentAssignment = mode === "student" && params.get("home") !== "1";
-      if (onStudentAssignment) {
-        show("teacherLogin");
-        return;
-      }
       const id = config?.id || resolveDefaultAssignmentId();
-      location.href = `/writeflow/?id=${encodeURIComponent(id)}&teacher=1`;
+      location.href = studioUrl(`?id=${encodeURIComponent(id)}&teacher=1`);
     });
   }
 
@@ -1028,6 +1165,8 @@
         <label class="dw-field"><span class="dw-label">Welcome intro</span><span class="dw-muted dw-tiny">Brief instructions before they start</span><textarea id="bfWelcomeLead" class="dw-textarea" rows="3">${escapeHtml(config.welcomeLead || "")}</textarea></label>
         <label class="dw-field"><span class="dw-label">Writing prompt</span><span class="dw-muted dw-tiny">The main question or task</span><textarea id="bfPrompt" class="dw-textarea" rows="4">${escapeHtml(config.prompt)}</textarea></label>
         <label class="dw-field"><span class="dw-label">In-session prompt banner</span><span class="dw-muted dw-tiny">Stays visible while students type</span><input id="bfPromptBanner" class="dw-input" value="${escapeHtml(config.promptBanner || "")}" /></label>
+        <label class="dw-field"><span class="dw-label">Expected vocabulary</span><span class="dw-muted dw-tiny">Comma or line-separated words students should use — highlighted in Results</span><textarea id="bfVocab" class="dw-textarea" rows="3" placeholder="photosynthesis, chlorophyll, glucose">${escapeHtml((config.vocabWords || []).join(", "))}</textarea></label>
+        <label class="wf-toggle-row"><input id="bfHighlightVocab" type="checkbox" ${config.highlightVocab !== false ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Highlight vocabulary in teacher view</strong><span class="wf-toggle-row__hint">Marks expected words in submission previews</span></span></label>
         <label class="dw-field"><span class="dw-label">Teacher password</span><span class="dw-muted dw-tiny">Required to open Results for this assignment</span><input id="bfTeacherPw" class="dw-input" type="password" autocomplete="new-password" value="${escapeHtml(config.teacherPassword)}" /></label>`;
       bindBuilderField("bfTitle", "title");
       bindBuilderField("bfSubtitle", "subtitle");
@@ -1036,6 +1175,14 @@
       bindBuilderField("bfPrompt", "prompt");
       bindBuilderField("bfPromptBanner", "promptBanner");
       bindBuilderField("bfTeacherPw", "teacherPassword");
+      document.getElementById("bfVocab")?.addEventListener("change", (e) => {
+        config.vocabWords = window.WriteFlowDefaults?.parseVocabInput?.(e.target.value) || [];
+        persistConfig();
+      });
+      document.getElementById("bfHighlightVocab")?.addEventListener("change", (e) => {
+        config.highlightVocab = e.target.checked;
+        persistConfig();
+      });
     } else if (builderSection === "timer") {
       canvas.innerHTML = `
         ${builderSectionHeader("timer")}
@@ -1051,6 +1198,7 @@
         </label>
         <div class="wf-toggle-list">
           <label class="wf-toggle-row"><input id="bfAllowPaste" type="checkbox" ${config.allowPaste ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Allow paste</strong><span class="wf-toggle-row__hint">Off = students must type their own words</span></span></label>
+          <label class="wf-toggle-row"><input id="bfSpellcheck" type="checkbox" ${resolveSpellcheck() ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Spellcheck in typing window</strong><span class="wf-toggle-row__hint">Browser underlines possible spelling errors while students write</span></span></label>
           <label class="wf-toggle-row"><input id="bfAllowEndEarly" type="checkbox" ${config.allowEndEarly ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Allow end early</strong><span class="wf-toggle-row__hint">Students can tap &ldquo;I&rsquo;m done&rdquo; before the timer ends</span></span></label>
           <label class="wf-toggle-row"><input id="bfLockAfter" type="checkbox" ${config.lockAfterTime ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Lock editor when time expires</strong><span class="wf-toggle-row__hint">Prevents edits after the timer ends</span></span></label>
           <label class="wf-toggle-row"><input id="bfLiveStats" type="checkbox" ${config.showLiveStats ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Show live word count &amp; WPM</strong><span class="wf-toggle-row__hint">Displays stats during writing</span></span></label>
@@ -1071,9 +1219,10 @@
         if (hint) hint.textContent = `Students write until the timer hits zero · about ${formatDurationLabel(config.durationSec)}`;
       });
       durationInput?.addEventListener("change", (e) => { config.durationSec = Number(e.target.value) || 300; persistConfig(); renderInspector(); });
-      ["bfAllowPaste", "bfAllowEndEarly", "bfLockAfter", "bfLiveStats", "bfRequireMinWords", "bfRequireName", "bfRequireClass", "bfRequireCode"].forEach((id) => {
+      ["bfAllowPaste", "bfSpellcheck", "bfAllowEndEarly", "bfLockAfter", "bfLiveStats", "bfRequireMinWords", "bfRequireName", "bfRequireClass", "bfRequireCode"].forEach((id) => {
         const map = {
           bfAllowPaste: "allowPaste",
+          bfSpellcheck: "spellcheck",
           bfAllowEndEarly: "allowEndEarly",
           bfLockAfter: "lockAfterTime",
           bfLiveStats: "showLiveStats",
@@ -1082,7 +1231,14 @@
           bfRequireClass: "requireClass",
           bfRequireCode: "requireClassCode",
         };
-        document.getElementById(id)?.addEventListener("change", (e) => { config[map[id]] = e.target.checked; persistConfig(); });
+        document.getElementById(id)?.addEventListener("change", (e) => {
+          config[map[id]] = e.target.checked;
+          if (id === "bfSpellcheck") {
+            config.accessibility = { ...mergeAccessibility(config.accessibility), spellcheck: e.target.checked };
+          }
+          persistConfig();
+          if (id === "bfSpellcheck") applyAccessibility();
+        });
       });
     } else if (builderSection === "appearance") {
       const fontKey = config.theme?.fontPreset || "google";
@@ -1195,7 +1351,7 @@
           <label class="wf-toggle-row"><input id="bfA11yLarge" type="checkbox" ${a11y.largeText ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Larger text</strong><span class="wf-toggle-row__hint">Bigger prompt and writing area</span></span></label>
           <label class="wf-toggle-row"><input id="bfA11yContrast" type="checkbox" ${a11y.highContrast ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>High contrast</strong><span class="wf-toggle-row__hint">Stronger text and border contrast</span></span></label>
           <label class="wf-toggle-row"><input id="bfA11yDyslexia" type="checkbox" ${a11y.dyslexiaFont ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Dyslexia-friendly font</strong><span class="wf-toggle-row__hint">Uses OpenDyslexic for reading and writing</span></span></label>
-          <label class="wf-toggle-row"><input id="bfA11ySpell" type="checkbox" ${a11y.spellcheck !== false ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Spellcheck while typing</strong><span class="wf-toggle-row__hint">Browser underlines possible spelling errors</span></span></label>
+          <label class="wf-toggle-row"><input id="bfA11ySpell" type="checkbox" ${resolveSpellcheck() ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Spellcheck while typing</strong><span class="wf-toggle-row__hint">Same setting as Timer &amp; rules — browser underlines possible spelling errors</span></span></label>
           <label class="wf-toggle-row"><input id="bfA11yMotion" type="checkbox" ${a11y.reducedMotion ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Reduce motion</strong><span class="wf-toggle-row__hint">Minimizes animations and smooth scrolling</span></span></label>
         </div>
         <p class="dw-muted dw-tiny">Tip: combine longer timers with minimum word counts and &ldquo;End early&rdquo; so fast finishers can submit while others keep working.</p>`;
@@ -1209,7 +1365,12 @@
       bindA11y("bfA11yLarge", "largeText");
       bindA11y("bfA11yContrast", "highContrast");
       bindA11y("bfA11yDyslexia", "dyslexiaFont");
-      bindA11y("bfA11ySpell", "spellcheck");
+      document.getElementById("bfA11ySpell")?.addEventListener("change", (e) => {
+        config.spellcheck = e.target.checked;
+        config.accessibility = { ...mergeAccessibility(config.accessibility), spellcheck: e.target.checked };
+        persistConfig();
+        applyAccessibility();
+      });
       bindA11y("bfA11yMotion", "reducedMotion");
     } else if (builderSection === "classes") {
       canvas.innerHTML = `
@@ -1228,7 +1389,7 @@
           <button class="dw-btn" type="button" disabled>Start ${Core.formatTime(config.durationSec)} timer</button>
         </div>
         <div class="dw-row" style="margin-top:16px">
-          <a class="dw-btn" href="/writeflow/?id=${encodeURIComponent(config.id)}">Open student view</a>
+          <a class="dw-btn" href="${assignmentUrl(config.id)}" target="_blank" rel="noopener">Open student view</a>
         </div>`;
     }
     renderInspector();
@@ -1262,7 +1423,7 @@
       <div class="wf-inspector-group">
         <div class="wf-inspector-group__label">Share link</div>
         <p class="dw-muted dw-tiny">Send this URL to students — not the builder link.</p>
-        <input id="bfShareLink" class="dw-input" readonly value="${location.origin}/writeflow/?id=${encodeURIComponent(config.id)}" />
+        <input id="bfShareLink" class="dw-input" readonly value="${location.origin}${assignmentUrl(config.id)}" />
         <button id="bfCopyLink" class="dw-btn dw-btn-secondary" type="button">Copy link</button>
       </div>
       <div class="wf-inspector-group">
@@ -1396,6 +1557,10 @@
     if (config.minWordCount == null) config.minWordCount = 0;
     if (config.allowEndEarly == null) config.allowEndEarly = false;
     if (config.requireMinWordsToComplete == null) config.requireMinWordsToComplete = false;
+    if (typeof config.spellcheck !== "boolean") {
+      config.spellcheck = config.accessibility.spellcheck !== false;
+    }
+    config.accessibility.spellcheck = config.spellcheck;
     Core.saveConfig(STORAGE_PREFIX, config.id, config);
     const ids = getAssignmentsList();
     if (!ids.includes(config.id)) ids.push(config.id);
@@ -1411,7 +1576,7 @@
     }
     show("builder");
     document.getElementById("studentViewLink")?.addEventListener("click", () => {
-      location.href = `/writeflow/?id=${encodeURIComponent(config.id)}`;
+      window.open(assignmentUrl(config.id), "_blank", "noopener");
     });
     renderBuilder();
   }
@@ -1420,19 +1585,22 @@
     Core.applyTheme(Core.resolveTheme({ ...Defaults, id: resolveDefaultAssignmentId() }));
     show("home");
     renderTemplateGallery("homeTemplateGrid", (id) => {
-      location.href = `/writeflow/?mode=builder&template=${encodeURIComponent(id)}`;
+      location.href = studioUrl(`?mode=builder&template=${encodeURIComponent(id)}`);
     });
     document.getElementById("openBuilderBtn")?.addEventListener("click", () => {
-      location.href = "/writeflow/?mode=builder&section=templates";
-    });
-    document.getElementById("openSampleBtn")?.addEventListener("click", () => {
-      location.href = "/writeflow/?id=sample-persuasive";
+      location.href = studioUrl("?mode=builder&section=templates");
     });
   }
 
-  bindTopbarActions();
-  initTutorial();
-  if (mode === "builder") initBuilder();
-  else if (params.get("home") === "1") initHome();
-  else void initStudentFlow();
+  function initStudioApp() {
+    Core.applyTheme(Core.resolveTheme({ ...Defaults, id: resolveDefaultAssignmentId() }));
+    bindTopbarActions();
+    initTutorial();
+    if (mode === "builder") initBuilder();
+    else if (params.get("teacher") === "1") void initTeacherPortal();
+    else initHome();
+  }
+
+  if (isStudentApp) void initStudentFlow();
+  else initStudioApp();
 })();

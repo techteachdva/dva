@@ -11,5 +11,6 @@ This is an introductory computer science course that empowers students to create
 - [[Pixel Art Museum|Pixel Art Museum]]
 - [[Game Design|Game Design]]
 - [[QR Code Hub|QR Code Hub]]
+- [WriteFlow Studio](/writeflow/) — timed writing assignments for your classroom
 - [[Morphology|Morphology]]
 - [[About Mr. Phil — The Technology Teacher|About Mr. Phil]]

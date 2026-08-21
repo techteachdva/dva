@@ -135,7 +135,8 @@
     return "advanced";
   }
 
-  function analyzeText(text, durationSec) {
+  function analyzeText(text, durationSec, options = {}) {
+    const vocabWords = options.vocabWords || [];
     const words = text.trim() ? text.trim().split(/\s+/) : [];
     const wordCount = words.length;
     const minutes = durationSec / 60;
@@ -146,6 +147,7 @@
     const grammar = analyzeGrammar(text, sentences, words);
     const syntax = analyzeSyntax(sentences, words, text);
     const semantics = analyzeSemantics(words, text);
+    const vocabulary = analyzeVocabulary(text, vocabWords);
 
     const sensoryCount = (text.match(SENSORY_PATTERN) || []).length;
     const transitionCount = (text.match(TRANSITION_PATTERN) || []).length;
@@ -175,23 +177,59 @@
     const metricScores = {
       spelling: spelling.score, grammar: grammar.score, syntax: syntax.score,
       semantics: semantics.score, typing: typingScore, mechanics: mechanicsScore, story: storyScore,
+      vocabulary: vocabulary.score,
     };
     const standards = window.DWStandards ? window.DWStandards.mapToStandards(metricScores) : { all: [], excelling: [], developing: [], needsSupport: [] };
 
     return {
       wordCount,
       wpm: Math.round(wpm * 10) / 10,
+      sentenceCount: sentences.length,
       typingLevel,
-      spelling, grammar, syntax, semantics, storySubs,
-      scores: { typing: typingScore, mechanics: mechanicsScore, story: storyScore, overall: overallScore },
+      spelling, grammar, syntax, semantics, storySubs, vocabulary,
+      scores: { typing: typingScore, mechanics: mechanicsScore, story: storyScore, overall: overallScore, vocabulary: vocabulary.score },
       metricScores,
       standards,
-      feedback: buildFeedback(wordCount, wpm, typingLevel, spelling, grammar, storyScore, voiceCount, sensoryCount),
+      feedback: buildFeedback(wordCount, wpm, typingLevel, spelling, grammar, storyScore, voiceCount, sensoryCount, vocabulary),
     };
   }
 
-  function buildFeedback(wordCount, wpm, typingLevel, spelling, grammar, storyScore, voiceCount, sensoryCount) {
-    return [
+  function escapeRegex(s) {
+    return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
+  function analyzeVocabulary(text, vocabWords = []) {
+    const words = (vocabWords || []).map((w) => String(w).trim()).filter(Boolean);
+    if (!words.length) {
+      return { words: [], found: [], missing: [], hits: {}, score: 100, usedCount: 0, requiredCount: 0 };
+    }
+    const lower = text.toLowerCase();
+    const found = [];
+    const missing = [];
+    const hits = {};
+    for (const word of words) {
+      const pattern = new RegExp(`\\b${escapeRegex(word.toLowerCase())}\\b`, "i");
+      if (pattern.test(lower)) {
+        found.push(word);
+        hits[word] = (lower.match(new RegExp(`\\b${escapeRegex(word.toLowerCase())}\\b`, "gi")) || []).length;
+      } else {
+        missing.push(word);
+      }
+    }
+    const score = Math.round((found.length / words.length) * 100);
+    return {
+      words,
+      found,
+      missing,
+      hits,
+      score,
+      usedCount: found.length,
+      requiredCount: words.length,
+    };
+  }
+
+  function buildFeedback(wordCount, wpm, typingLevel, spelling, grammar, storyScore, voiceCount, sensoryCount, vocab) {
+    const sections = [
       {
         title: "Typing & stamina",
         items: [`You wrote ${wordCount} words (${Math.round(wpm)} WPM).`, typingLevel === "intervention" ? "Daily typing practice will help ideas flow faster." : null].filter(Boolean),
@@ -205,7 +243,17 @@
         items: [storyScore >= 65 ? "Your writing comes through clearly." : "Add specific details and your own voice.", voiceCount >= 4 ? "Personal voice is present." : "Use I/my to keep it in your voice.", sensoryCount >= 2 ? "Good sensory details." : "Add what you saw, heard, or felt."],
       },
     ];
+    if (vocab?.requiredCount) {
+      sections.push({
+        title: "Vocabulary",
+        items: [
+          `You used ${vocab.usedCount} of ${vocab.requiredCount} expected words.`,
+          vocab.missing.length ? `Still try to include: ${vocab.missing.join(", ")}.` : "Great job using the expected vocabulary.",
+        ],
+      });
+    }
+    return sections;
   }
 
-  window.WriteAnalysis = { analyzeText, classifyTyping };
+  window.WriteAnalysis = { analyzeText, classifyTyping, analyzeVocabulary, getSentences };
 })();

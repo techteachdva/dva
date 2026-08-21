@@ -1,0 +1,150 @@
+---
+title: WriteFlow Studio App
+permalink: /writeflow/studio/
+layout: false
+---
+<!doctype html>
+<html lang="{{ meta.mainLanguage }}">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="theme-color" content="#0f172a" />
+    <title>WriteFlow Studio</title>
+    <link rel="stylesheet" href="/styles/write-platform.css" />
+    <link rel="stylesheet" href="/styles/custom-style.css" />
+  </head>
+  <body class="dw-body wp-theme--dark wf-studio-app">
+    <a class="wf-skip-link" href="#mainContent">Skip to main content</a>
+    <div class="dw-shell">
+      <header class="dw-topbar" id="studioTopbar">
+        <div class="dw-topbar-brand">
+          <a href="/writeflow/" class="wf-brand-link">
+            <div class="wf-brand-icon" aria-hidden="true">✎</div>
+            <div>
+              <div class="dw-title" id="appTitle">WriteFlow Studio</div>
+              <div class="dw-subtitle" id="appSubtitle">Teacher workspace</div>
+            </div>
+          </a>
+        </div>
+        <div class="dw-actions" id="teacherTopbarNav">
+          <a class="dw-link" href="/writeflow/">Docs</a>
+          <button id="tutorialBtn" class="dw-btn dw-btn-ghost wf-tutorial-btn" type="button" aria-haspopup="dialog">Tutorial</button>
+          <button id="builderLinkBtn" class="dw-btn dw-btn-ghost" type="button">Configure</button>
+          <button id="teacherBtn" class="dw-btn dw-btn-ghost" type="button">Results</button>
+          <a class="dw-link" href="/">Back to site</a>
+        </div>
+      </header>
+
+      <div id="wfConfirm" class="wf-confirm dw-hidden" role="alertdialog" aria-modal="true" aria-labelledby="wfConfirmTitle" aria-describedby="wfConfirmBody">
+        <div class="wf-confirm__backdrop" id="confirmBackdrop"></div>
+        <div class="wf-confirm__panel">
+          <h2 class="wf-confirm__title" id="wfConfirmTitle">Confirm</h2>
+          <p class="wf-confirm__body" id="wfConfirmBody"></p>
+          <div class="wf-confirm__actions">
+            <button id="confirmCancelBtn" class="dw-btn dw-btn-ghost" type="button">Cancel</button>
+            <button id="confirmOkBtn" class="dw-btn wf-confirm__danger" type="button">Confirm</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="wfTutorial" class="wf-tutorial dw-hidden" role="dialog" aria-modal="true" aria-labelledby="wfTutorialTitle">
+        <div class="wf-tutorial__backdrop" id="tutorialBackdrop"></div>
+        <div class="wf-tutorial__panel">
+          <div class="wf-tutorial__meta">
+            <span class="wf-tutorial__eyebrow" id="wfTutorialEyebrow">Guide</span>
+            <span class="wf-tutorial__step" id="wfTutorialStep">1 / 5</span>
+          </div>
+          <h2 class="wf-tutorial__title" id="wfTutorialTitle">Welcome</h2>
+          <p class="wf-tutorial__body" id="wfTutorialBody"></p>
+          <div class="wf-tutorial__actions">
+            <button id="tutorialSkipBtn" class="dw-btn dw-btn-ghost" type="button">Skip</button>
+            <div class="wf-tutorial__nav">
+              <button id="tutorialBackBtn" class="dw-btn dw-btn-secondary" type="button">Back</button>
+              <button id="tutorialNextBtn" class="dw-btn" type="button">Next</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <main id="mainContent">
+        <section id="wfHomeView" class="dw-hidden dw-stack">
+          <div class="dw-card dw-hero">
+            <h1 class="dw-h1">WriteFlow Studio</h1>
+            <p class="dw-lead">Build timed writing assignments, publish share links for students, and review submissions.</p>
+          </div>
+          <div class="dw-card wf-template-gallery" id="wfTemplateGallery">
+            <h2 class="dw-h2">Start from a template</h2>
+            <p class="dw-muted">Answer a few questions — WriteFlow builds the assignment for you.</p>
+            <div class="wf-template-grid" id="homeTemplateGrid" role="list"></div>
+          </div>
+          <div class="dw-card dw-stack">
+            <div class="dw-row dw-row-wrap">
+              <button id="openBuilderBtn" class="dw-btn" type="button">Create blank assignment</button>
+              <button id="openTutorialHomeBtn" class="dw-btn dw-btn-ghost" type="button">Open tutorial</button>
+            </div>
+          </div>
+        </section>
+
+        <section id="builderView" class="dw-hidden">
+          <div class="wf-toolbar">
+            <div class="wf-toolbar__text">
+              <strong>Assignment builder</strong>
+              <span class="dw-muted dw-tiny">Edit settings on the left · Save &amp; share on the right</span>
+            </div>
+            <button id="studentViewLink" class="dw-btn dw-btn-secondary" type="button">Preview student view</button>
+          </div>
+          <div class="wf-builder">
+            <nav class="wf-builder-nav" id="builderNav"><p class="wf-builder-nav__title">Settings</p></nav>
+            <div class="wf-builder-canvas" id="builderCanvas"></div>
+            <aside class="wf-builder-inspector" id="builderInspector"></aside>
+          </div>
+        </section>
+
+        <section id="teacherLoginView" class="dw-card dw-stack dw-hidden dw-narrow">
+          <h2 class="dw-h2">View results</h2>
+          <p class="dw-muted">Enter the teacher password for this assignment.</p>
+          <label class="dw-field"><span class="dw-label">Teacher password</span><input id="teacherPassword" class="dw-input" type="password" autocomplete="current-password" /></label>
+          <div class="dw-row">
+            <button id="teacherLoginBtn" class="dw-btn" type="button">Enter</button>
+            <button id="teacherCancelBtn" class="dw-btn dw-btn-ghost" type="button">Cancel</button>
+          </div>
+          <p id="teacherLoginError" class="dw-error dw-hidden">Incorrect password.</p>
+        </section>
+
+        <section id="teacherView" class="dw-hidden dw-stack">
+          <div class="dw-card dw-teacher-header">
+            <h2 class="dw-h2">Submissions</h2>
+            <p class="dw-muted" id="teacherMeta"></p>
+            <div class="dw-row">
+              <button id="refreshBtn" class="dw-btn dw-btn-secondary" type="button">Refresh</button>
+              <button id="exportBtn" class="dw-btn dw-btn-ghost" type="button">Export CSV</button>
+              <button id="teacherLogoutBtn" class="dw-btn dw-btn-ghost" type="button">Log out</button>
+            </div>
+          </div>
+          <div class="dw-card dw-table-wrap">
+            <table class="dw-table dw-table--compact">
+              <thead><tr><th>Name</th><th>Class</th><th>Wds</th><th>WPM</th><th>Vocab</th><th>Typ</th><th>Mech</th><th>Story</th><th>Overall</th><th>Submitted</th><th></th></tr></thead>
+              <tbody id="teacherTableBody"></tbody>
+            </table>
+          </div>
+          <div id="teacherSubmissionDetail" class="dw-card dw-hidden">
+            <h3 class="dw-h3">Submission detail</h3>
+            <p class="dw-muted" id="teacherDetailMeta"></p>
+            <div id="teacherVocabSummary" class="wf-vocab-summary dw-hidden"></div>
+            <div class="dw-story-preview wf-story-preview--highlight" id="teacherStoryPreview"></div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script>window.WRITEFLOW_ROLE = "studio";</script>
+    <script id="wfClassroomsJson" type="application/json">{{ diagnosticWritingClasses | jsonify | safe }}</script>
+    <script id="wfClassroomCodesJson" type="application/json">{{ diagnosticWritingClassCodes | jsonify | safe }}</script>
+    <script src="/scripts/write-test-core.js" defer></script>
+    <script src="/scripts/writeflow-defaults.js" defer></script>
+    <script src="/scripts/diagnostic-writing-calibration.js" defer></script>
+    <script src="/scripts/diagnostic-writing-rubrics.js" defer></script>
+    <script src="/scripts/write-analysis-engine.js" defer></script>
+    <script src="/scripts/writeflow-app.js" defer></script>
+  </body>
+</html>

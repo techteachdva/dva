@@ -9,246 +9,113 @@ layout: false
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
     <meta name="theme-color" content="#0f172a" />
-    <title>WriteFlow Studio</title>
+    <title>WriteFlow Studio · Timed writing for classrooms</title>
     <meta property="og:title" content="WriteFlow Studio" />
-    <meta property="og:description" content="Timed writing assignments for any classroom — prompts, timers, themes, and feedback." />
+    <meta property="og:description" content="Timed writing assignments with prompts, vocabulary goals, typing analysis, and teacher dashboards." />
     <link rel="stylesheet" href="/styles/write-platform.css" />
     <link rel="stylesheet" href="/styles/custom-style.css" />
+    <script>
+      (function () {
+        var p = new URLSearchParams(location.search);
+        if (!p.toString()) return;
+        if (p.has("id") && !p.get("mode") && p.get("teacher") !== "1") {
+          location.replace("/writeflow/a/" + location.search);
+          return;
+        }
+        location.replace("/writeflow/studio/" + location.search);
+      })();
+    </script>
   </head>
-  <body class="dw-body wp-theme--dark">
-    <a class="wf-skip-link" href="#mainContent">Skip to main content</a>
-    <div class="dw-shell">
-      {% if breadcrumbs and breadcrumbs.length > 0 %}
-        <div class="breadcrumbs--standalone">{% include "components/breadcrumbs.njk" %}</div>
-      {% endif %}
-      <header class="dw-topbar">
-        <div class="dw-topbar-brand">
-          <div style="width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#1a73e8,#9334e6);display:flex;align-items:center;justify-content:center;font-size:24px;">✎</div>
-          <div>
-            <div class="dw-title" id="appTitle">WriteFlow Studio</div>
-            <div class="dw-subtitle" id="appSubtitle">Timed writing for any classroom</div>
-          </div>
-        </div>
-        <div class="dw-actions">
-          <a class="dw-link" href="/writeflow/?home=1">Home</a>
-          <button id="tutorialBtn" class="dw-btn dw-btn-ghost wf-tutorial-btn" type="button" aria-haspopup="dialog">Tutorial</button>
-          <button id="builderLinkBtn" class="dw-btn dw-btn-ghost" type="button">Configure</button>
-          <button id="teacherBtn" class="dw-btn dw-btn-ghost" type="button">Results</button>
-          <a class="dw-link" href="/">Back to site</a>
-        </div>
-      </header>
+  <body class="dw-body wp-theme--dark wf-landing-body">
+    <a class="wf-skip-link" href="#wfLandingMain">Skip to main content</a>
 
-      <div id="wfConfirm" class="wf-confirm dw-hidden" role="alertdialog" aria-modal="true" aria-labelledby="wfConfirmTitle" aria-describedby="wfConfirmBody">
-        <div class="wf-confirm__backdrop" id="confirmBackdrop"></div>
-        <div class="wf-confirm__panel">
-          <h2 class="wf-confirm__title" id="wfConfirmTitle">Confirm</h2>
-          <p class="wf-confirm__body" id="wfConfirmBody"></p>
-          <div class="wf-confirm__actions">
-            <button id="confirmCancelBtn" class="dw-btn dw-btn-ghost" type="button">Cancel</button>
-            <button id="confirmOkBtn" class="dw-btn wf-confirm__danger" type="button">Confirm</button>
+    <div id="wfIntroSplash" class="wf-intro-splash" aria-hidden="true">
+      <div class="wf-intro-splash__stage">
+        <div class="wf-intro-typewriter" id="wfIntroTypewriter" aria-hidden="true"></div>
+        <div class="wf-intro-score dw-hidden" id="wfIntroScore">
+          <div class="wf-intro-score__grid">
+            <div class="wf-intro-score__card"><span class="wf-intro-score__label">Typing</span><span class="wf-intro-score__val" data-score="typing">0</span></div>
+            <div class="wf-intro-score__card"><span class="wf-intro-score__label">Mechanics</span><span class="wf-intro-score__val" data-score="mechanics">0</span></div>
+            <div class="wf-intro-score__card"><span class="wf-intro-score__label">Content</span><span class="wf-intro-score__val" data-score="story">0</span></div>
+          </div>
+          <div class="wf-intro-graph" id="wfIntroGraph" aria-hidden="true">
+            <div class="wf-intro-graph__bar" style="--h:72%"></div>
+            <div class="wf-intro-graph__bar" style="--h:88%"></div>
+            <div class="wf-intro-graph__bar" style="--h:64%"></div>
+            <div class="wf-intro-graph__bar" style="--h:91%"></div>
           </div>
         </div>
       </div>
-
-      <div id="wfTutorial" class="wf-tutorial dw-hidden" role="dialog" aria-modal="true" aria-labelledby="wfTutorialTitle">
-        <div class="wf-tutorial__backdrop" id="tutorialBackdrop"></div>
-        <div class="wf-tutorial__panel">
-          <div class="wf-tutorial__meta">
-            <span class="wf-tutorial__eyebrow" id="wfTutorialEyebrow">Guide</span>
-            <span class="wf-tutorial__step" id="wfTutorialStep">1 / 5</span>
-          </div>
-          <h2 class="wf-tutorial__title" id="wfTutorialTitle">Welcome</h2>
-          <p class="wf-tutorial__body" id="wfTutorialBody"></p>
-          <div class="wf-tutorial__actions">
-            <button id="tutorialSkipBtn" class="dw-btn dw-btn-ghost" type="button">Skip</button>
-            <div class="wf-tutorial__nav">
-              <button id="tutorialBackBtn" class="dw-btn dw-btn-secondary" type="button">Back</button>
-              <button id="tutorialNextBtn" class="dw-btn" type="button">Next</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <main id="mainContent">
-        <section id="wfHomeView" class="dw-hidden dw-stack">
-          <div class="dw-card dw-hero">
-            <h1 class="dw-h1">WriteFlow Studio</h1>
-            <p class="dw-lead">Create timed writing assignments with custom prompts, timers, and themes — or share a link and let students write.</p>
-          </div>
-          <div class="dw-card wf-quickstart">
-            <h2 class="dw-h2">Quick start for teachers</h2>
-            <ol class="wf-quickstart__steps">
-              <li class="wf-quickstart__step">
-                <span class="wf-quickstart__num">1</span>
-                <div>
-                  <strong>Configure</strong>
-                  <p class="dw-muted">Set your prompt, timer, and rules in the builder.</p>
-                </div>
-              </li>
-              <li class="wf-quickstart__step">
-                <span class="wf-quickstart__num">2</span>
-                <div>
-                  <strong>Save assignment</strong>
-                  <p class="dw-muted">Publish so the student share link works on any device.</p>
-                </div>
-              </li>
-              <li class="wf-quickstart__step">
-                <span class="wf-quickstart__num">3</span>
-                <div>
-                  <strong>Share &amp; review</strong>
-                  <p class="dw-muted">Send the link to students; open Results to view submissions.</p>
-                </div>
-              </li>
-            </ol>
-          </div>
-          <div class="dw-card wf-template-gallery" id="wfTemplateGallery">
-            <h2 class="dw-h2">Start from a template</h2>
-            <p class="dw-muted">Answer a few questions — WriteFlow builds and formats the assignment for you.</p>
-            <div class="wf-template-grid" id="homeTemplateGrid" role="list"></div>
-          </div>
-          <div class="dw-card dw-stack">
-            <div class="dw-row dw-row-wrap">
-              <button id="openBuilderBtn" class="dw-btn" type="button">Create blank assignment</button>
-              <button id="openSampleBtn" class="dw-btn dw-btn-secondary" type="button">Try sample</button>
-              <button id="openTutorialHomeBtn" class="dw-btn dw-btn-ghost" type="button">Open tutorial</button>
-            </div>
-          </div>
-        </section>
-
-        <section id="builderView" class="dw-hidden">
-          <div class="wf-toolbar">
-            <div class="wf-toolbar__text">
-              <strong>Assignment builder</strong>
-              <span class="dw-muted dw-tiny">Edit settings on the left · Save &amp; share on the right</span>
-            </div>
-            <button id="studentViewLink" class="dw-btn dw-btn-secondary" type="button">Preview student view</button>
-          </div>
-          <div class="wf-builder">
-            <nav class="wf-builder-nav" id="builderNav">
-              <p class="wf-builder-nav__title">Settings</p>
-            </nav>
-            <div class="wf-builder-canvas" id="builderCanvas"></div>
-            <aside class="wf-builder-inspector" id="builderInspector"></aside>
-          </div>
-        </section>
-
-        <section id="welcomeView" class="dw-hidden dw-stack">
-          <div class="dw-card dw-hero">
-            <h1 class="dw-h1" id="welcomeTitle">Ready to write?</h1>
-            <p class="dw-lead" id="welcomeLead"></p>
-          </div>
-          <img id="heroImage" class="dw-hidden dw-hero-banner__img" alt="" width="1200" height="400" style="width:100%;border-radius:16px;object-fit:cover;" />
-          <div class="dw-card dw-stack">
-            <h2 class="dw-h2">What this measures</h2>
-            <div class="dw-rubric-grid" id="rubricGrid"></div>
-          </div>
-          <div class="dw-card dw-stack dw-prompt-box">
-            <h2 class="dw-h2">Your prompt</h2>
-            <blockquote class="dw-prompt-quote" id="promptQuote"></blockquote>
-            <ul class="dw-list dw-checklist" id="checklist"></ul>
-            <label class="dw-field">
-              <span class="dw-label">Your first name</span>
-              <input id="studentName" class="dw-input" type="text" maxlength="80" autocomplete="name" />
-            </label>
-            <label class="dw-field">
-              <span class="dw-label">Your class</span>
-              <select id="studentClass" class="dw-input dw-select" required></select>
-            </label>
-            <label class="dw-field" id="classCodeField">
-              <span class="dw-label">Class code</span>
-              <input id="classCode" class="dw-input" type="text" maxlength="40" autocomplete="off" autocapitalize="off" spellcheck="false" />
-            </label>
-            <p id="classCodeError" class="dw-error dw-hidden" role="alert">That code doesn&rsquo;t match your class.</p>
-            <p id="assignmentLoadNotice" class="dw-error dw-hidden" role="alert"></p>
-            <button id="startBtn" class="dw-btn" type="button" disabled>Start timer</button>
-          </div>
-        </section>
-
-        <section id="writingView" class="dw-hidden" aria-label="Writing session">
-          <div class="dw-timer-bar">
-            <div class="dw-timer-meta">
-              <span class="dw-timer-label">Time remaining</span>
-              <span id="timerDisplay" class="dw-timer-value" aria-live="polite">5:00</span>
-            </div>
-            <div class="dw-timer-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="timerProgressBar"><div id="timerProgress" class="dw-timer-fill"></div></div>
-            <div class="dw-live-stats" id="liveStatsBar">
-              <span id="liveWordCount" aria-live="polite">0 words</span>
-              <span id="liveWpm">0 WPM</span>
-              <span id="minWordProgress" class="wf-min-word-progress dw-hidden" aria-live="polite"></span>
-            </div>
-          </div>
-          <p id="timerExtendNotice" class="wf-timer-extend dw-hidden" role="status" aria-live="assertive"></p>
-          <div class="dw-card dw-writing-card">
-            <div class="dw-prompt-banner" id="promptBanner"></div>
-            <label class="wf-sr-only" for="storyInput">Your writing</label>
-            <textarea id="storyInput" class="dw-textarea" placeholder="Start typing here…" spellcheck="true" aria-describedby="promptBanner minWordProgress"></textarea>
-          </div>
-          <div class="wf-writing-actions">
-            <button id="endEarlyBtn" class="dw-btn dw-btn-secondary dw-hidden" type="button">I'm done — submit early</button>
-          </div>
-        </section>
-
-        <section id="analyzingView" class="dw-card dw-stack dw-hidden dw-center">
-          <div class="dw-spinner"></div>
-          <p class="dw-lead">Analyzing your writing…</p>
-        </section>
-
-        <section id="resultsView" class="dw-hidden dw-stack">
-          <div class="dw-card">
-            <h2 class="dw-h2">Your results, <span id="resultName">—</span></h2>
-            <p class="dw-muted" id="resultClass"></p>
-            <p class="dw-muted" id="resultSummary"></p>
-            <p id="saveStatus" class="dw-save-status dw-hidden" role="status"></p>
-          </div>
-          <div class="dw-score-grid dw-score-grid--4" id="scoreGrid"></div>
-          <div class="dw-card dw-score-legend dw-hidden" id="scoreLegend">
-            <h3 class="dw-h3">Score bands</h3>
-            <ul class="dw-legend-list">
-              <li><span class="dw-band dw-band--strong">Strong</span> 80+</li>
-              <li><span class="dw-band dw-band--on_track">On track</span> 65–79</li>
-              <li><span class="dw-band dw-band--developing">Developing</span> 50–64</li>
-              <li><span class="dw-band dw-band--needs_support">Needs support</span> &lt;50</li>
-            </ul>
-          </div>
-          <div class="dw-card"><h3 class="dw-h3">Feedback</h3><ul class="dw-feedback dw-feedback--grouped" id="feedbackList"></ul></div>
-          <div class="dw-card"><h3 class="dw-h3">Your writing</h3><div class="dw-story-preview" id="storyPreview"></div></div>
-          <button id="restartBtn" class="dw-btn dw-btn-secondary" type="button">Write again</button>
-        </section>
-
-        <section id="teacherLoginView" class="dw-card dw-stack dw-hidden dw-narrow">
-          <h2 class="dw-h2">View results</h2>
-          <p class="dw-muted">Enter the teacher password you set in the builder for this assignment.</p>
-          <label class="dw-field"><span class="dw-label">Teacher password</span><input id="teacherPassword" class="dw-input" type="password" autocomplete="current-password" /></label>
-          <div class="dw-row">
-            <button id="teacherLoginBtn" class="dw-btn" type="button">Enter</button>
-            <button id="teacherCancelBtn" class="dw-btn dw-btn-ghost" type="button">Cancel</button>
-          </div>
-          <p id="teacherLoginError" class="dw-error dw-hidden">Incorrect password.</p>
-        </section>
-
-        <section id="teacherView" class="dw-hidden dw-stack">
-          <div class="dw-card dw-teacher-header">
-            <h2 class="dw-h2">Submissions</h2>
-            <p class="dw-muted" id="teacherMeta"></p>
-            <div class="dw-row"><button id="refreshBtn" class="dw-btn dw-btn-secondary" type="button">Refresh</button><button id="exportBtn" class="dw-btn dw-btn-ghost" type="button">Export CSV</button><button id="teacherLogoutBtn" class="dw-btn dw-btn-ghost" type="button">Log out</button></div>
-          </div>
-          <div class="dw-card dw-table-wrap">
-            <table class="dw-table dw-table--compact">
-              <thead><tr><th>Name</th><th>Class</th><th>Wds</th><th>WPM</th><th>Typ</th><th>Mech</th><th>Story</th><th>Overall</th><th>Submitted</th></tr></thead>
-              <tbody id="teacherTableBody"></tbody>
-            </table>
-          </div>
-        </section>
-      </main>
     </div>
 
-    <script id="wfClassroomsJson" type="application/json">{{ diagnosticWritingClasses | jsonify | safe }}</script>
-    <script id="wfClassroomCodesJson" type="application/json">{{ diagnosticWritingClassCodes | jsonify | safe }}</script>
-    <script src="/scripts/write-test-core.js" defer></script>
+    <div class="wf-landing dw-hidden" id="wfLanding">
+      <header class="wf-landing__header">
+        <div class="wf-landing__brand">
+          <span class="wf-landing__logo" aria-hidden="true">✎</span>
+          <div>
+            <div class="wf-landing__title">WriteFlow Studio</div>
+            <div class="wf-landing__version">Version <span id="wfVersionLabel">2.0</span></div>
+          </div>
+        </div>
+        <nav class="wf-landing__nav" aria-label="WriteFlow">
+          <a class="dw-link" href="/">Back to site</a>
+          <a class="dw-btn dw-btn-secondary" href="/writeflow/studio/">Open Studio</a>
+        </nav>
+      </header>
+
+      <main id="wfLandingMain" class="wf-landing__main">
+        <section class="wf-landing-hero dw-card">
+          <p class="wf-landing-hero__eyebrow">Classroom writing tool</p>
+          <h1 class="dw-h1">Timed writing that meets every learner where they are.</h1>
+          <p class="dw-lead">WriteFlow Studio lets teachers build assignments with custom prompts, timers, vocabulary goals, and accessibility options. Students get a focused writing screen — no clutter, no paste, just type.</p>
+          <div class="wf-landing-hero__cta">
+            <a class="dw-btn wf-landing-cta" href="/writeflow/studio/">Open WriteFlow Studio</a>
+            <a class="dw-btn dw-btn-ghost" href="/writeflow/setup/">Google Sheets setup</a>
+          </div>
+          <p class="dw-muted dw-tiny">Student assignment links look like <code>/writeflow/a/?id=your-assignment</code> — share only those with students.</p>
+        </section>
+
+        <section class="wf-landing-stats dw-card" aria-labelledby="wfStatsTitle">
+          <h2 class="dw-h2" id="wfStatsTitle">Impact so far</h2>
+          <p class="wf-landing-stat">
+            <span class="wf-landing-stat__value" id="wfSentenceCount">—</span>
+            <span class="wf-landing-stat__label">sentences analyzed by WriteFlow</span>
+          </p>
+        </section>
+
+        <section class="wf-landing-welcome dw-card">
+          <h2 class="dw-h2">What is WriteFlow?</h2>
+          <div class="wf-landing-columns">
+            <div>
+              <h3 class="dw-h3">For teachers</h3>
+              <p class="dw-muted">Build assignments in WriteFlow Studio — set prompts, time limits, minimum word counts, expected vocabulary, and class codes. Save and publish to get a student link. Open Results to review submissions, highlight vocabulary usage, and export CSV.</p>
+            </div>
+            <div>
+              <h3 class="dw-h3">For students</h3>
+              <p class="dw-muted">Students open only their assignment link. They see the prompt, a timer, live word count and WPM, and a typing area. Pasting is blocked by default. When time is up (or they finish early), WriteFlow analyzes typing stamina, mechanics, and content.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="wf-landing-tutorial dw-card" aria-labelledby="wfTutorialTitle">
+          <h2 class="dw-h2" id="wfTutorialTitle">Quick tutorial</h2>
+          <ol class="wf-quickstart__steps" id="wfLandingTutorial"></ol>
+        </section>
+
+        <section class="wf-landing-changelog dw-card" aria-labelledby="wfChangelogTitle">
+          <h2 class="dw-h2" id="wfChangelogTitle">Changelog</h2>
+          <p class="dw-muted">Living documentation of features and fixes.</p>
+          <div id="wfChangelogFull" class="wf-changelog-full"></div>
+          <div id="wfChangelogSimple" class="wf-changelog-simple"></div>
+        </section>
+      </main>
+
+      <footer class="wf-landing__footer dw-muted">
+        <p>WriteFlow Studio · Mr. Phil's classroom tools · Not a game — a writing platform.</p>
+      </footer>
+    </div>
+
     <script src="/scripts/writeflow-defaults.js" defer></script>
-    <script src="/scripts/diagnostic-writing-calibration.js" defer></script>
-    <script src="/scripts/diagnostic-writing-rubrics.js" defer></script>
-    <script src="/scripts/write-analysis-engine.js" defer></script>
-    <script src="/scripts/writeflow-app.js" defer></script>
+    <script src="/scripts/writeflow-landing.js" defer></script>
   </body>
 </html>
