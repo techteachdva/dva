@@ -27,7 +27,7 @@
     requireClass: true,
     requireClassCode: true,
     rubrics: ["typing", "mechanics", "story"],
-    theme: { preset: "light", fontFamily: "", fontPreset: "google" },
+    theme: { preset: "dark", fontFamily: "", fontPreset: "google" },
     heroImage: "",
     heroImageData: "",
     teacherPassword: "changeme",

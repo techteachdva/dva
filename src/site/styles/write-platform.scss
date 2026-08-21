@@ -81,6 +81,53 @@
   .wf-builder-inspector {
     background: #fafafa;
   }
+
+  .wf-toolbar {
+    background: #f1f3f4;
+    color: #1a1a1a;
+  }
+
+  .wf-nav-item {
+    color: #1a1a1a;
+  }
+
+  .wf-nav-item:hover {
+    background: rgba(0, 0, 0, 0.05);
+  }
+
+  .wf-nav-item--active {
+    background: rgba(26, 115, 232, 0.12);
+    color: #174ea6;
+  }
+
+  .wf-assignment-card {
+    background: #fff;
+    color: #1a1a1a;
+  }
+
+  .wf-preset-chip {
+    background: #fff;
+    color: #1a1a1a;
+  }
+
+  .wf-preset-chip--active {
+    color: #174ea6;
+  }
+
+  .dw-story-preview {
+    background: rgba(0, 0, 0, 0.04);
+    color: #1a1a1a;
+  }
+
+  .dw-score-card {
+    background: #fff;
+    color: #1a1a1a;
+  }
+
+  .dw-prompt-banner {
+    color: #1a1a1a;
+    background: rgba(26, 115, 232, 0.08);
+  }
 }
 
 /* ITEM Diagnostic — emerald / amber (distinct from Summer Writing Test) */
@@ -488,7 +535,11 @@
 }
 
 .wf-nav-item:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.wp-theme--light .wf-nav-item:hover {
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .wf-nav-item--active {
@@ -501,6 +552,8 @@
   padding: 24px;
   overflow-y: auto;
   max-height: calc(100vh - 140px);
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
 }
 
 .wf-builder-inspector {
@@ -509,6 +562,8 @@
   overflow-y: auto;
   max-height: calc(100vh - 140px);
   background: rgba(0, 0, 0, 0.08);
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
 }
 
 .wp-theme--light .wf-builder-inspector {
@@ -595,6 +650,7 @@
   padding: 12px 16px;
   border-bottom: 1px solid var(--dw-border);
   background: rgba(0, 0, 0, 0.15);
+  color: var(--dw-text);
 }
 
 .wf-assignment-list {
@@ -1782,4 +1838,39 @@
   background: rgba(255, 215, 0, 0.15);
   border: 1px solid rgba(255, 215, 0, 0.35);
   color: #ffd700;
+}
+
+/* WriteFlow — writing session readability & scroll */
+#writingView .dw-textarea {
+  min-height: min(48vh, 420px);
+  max-height: 65vh;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+}
+
+#writingView .dw-prompt-banner {
+  color: var(--dw-text);
+}
+
+.dw-story-preview {
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* GTG — stable typewriter layout */
+.tt-narrative--typing {
+  min-height: 4.5em;
+}
+
+.tt-narrative--typing .tt-narrative__para:last-child {
+  display: inline;
+}
+
+.tt-narrative__para:last-child {
+  display: block;
+}
+
+#sceneChoices:not(:empty),
+#typingChallenge:not(.dw-hidden) {
+  scroll-margin-top: 20px;
 }

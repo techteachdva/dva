@@ -52,7 +52,7 @@
     const welcomeTitle = document.getElementById("welcomeTitle");
     const welcomeLead = document.getElementById("welcomeLead");
     if (welcomeTitle) welcomeTitle.textContent = config.welcomeTitle || config.title;
-    if (welcomeLead) welcomeLead.innerHTML = config.welcomeLead || "";
+    if (welcomeLead) welcomeLead.textContent = config.welcomeLead || "";
 
     const promptQuote = document.getElementById("promptQuote");
     if (promptQuote) promptQuote.textContent = config.prompt;
@@ -115,8 +115,14 @@
     });
   }
 
+  function scrollToMainTop() {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    document.getElementById("mainContent")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
   function show(name) {
     Core.showView(views, name, shell, "teacher");
+    scrollToMainTop();
   }
 
   function canStart() {
@@ -299,6 +305,13 @@
 
     Core.setupLiveStats(storyInput, document.getElementById("liveWordCount"), document.getElementById("liveWpm"), () => timer?.getElapsed() || 0);
 
+    function autoGrowTextarea() {
+      if (!storyInput) return;
+      storyInput.style.height = "auto";
+      storyInput.style.height = `${Math.min(storyInput.scrollHeight, Math.round(window.innerHeight * 0.65))}px`;
+    }
+    storyInput?.addEventListener("input", autoGrowTextarea);
+
     document.getElementById("studentName")?.addEventListener("input", updateStartButton);
     document.getElementById("studentClass")?.addEventListener("change", updateStartButton);
     document.getElementById("classCode")?.addEventListener("input", updateStartButton);
@@ -307,8 +320,12 @@
       if (!canStart()) return;
       storyInput.value = "";
       storyInput.readOnly = false;
+      storyInput.style.height = "";
       show("writing");
-      storyInput.focus();
+      requestAnimationFrame(() => {
+        storyInput.focus();
+        document.getElementById("writingView")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
       timer.start();
     });
 

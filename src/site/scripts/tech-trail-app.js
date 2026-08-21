@@ -73,12 +73,12 @@
   }
 
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  let typewriterActive = false;
-  let typewriterQueue = [];
+  let typewriterGen = 0;
   let typewriterResolve = null;
   const CHOICE_COOLDOWN_MS = 1200;
   const SCENE_LOADER_MIN_MS = 800;
   const TYPEWRITER_MIN_DWELL_MS = 1200;
+  const TYPEWRITER_CHAR_MS = 22;
 
   function showSceneLoader() {
     const el = document.getElementById("sceneLoader");
@@ -137,38 +137,102 @@
     return a;
   }
 
-  function buildStartChoices() {
-    const count = runRng() < 0.45 ? 3 : 4;
-    return shuffle(START_MISSIONS || []).slice(0, count);
+  function tokenizeHtml(html) {
+    const tokens = [];
+    let i = 0;
+    while (i < html.length) {
+      if (html[i] === "<") {
+        const end = html.indexOf(">", i);
+        if (end === -1) {
+          tokens.push({ type: "text", value: html.slice(i) });
+          break;
+        }
+        tokens.push({ type: "tag", value: html.slice(i, end + 1) });
+        i = end + 1;
+      } else {
+        let j = i + 1;
+        while (j < html.length && html[j] !== "<") j++;
+        tokens.push({ type: "text", value: html.slice(i, j) });
+        i = j;
+      }
+    }
+    return tokens;
   }
 
   function splitNarrativeIntoParagraphs(html) {
-    const div = document.createElement("div");
-    div.innerHTML = html;
-    const text = div.textContent || "";
-    const rawParas = text.split(/\n\n+/).map((p) => p.trim()).filter((p) => p.length > 0);
-    if (rawParas.length <= 1) return [html];
-    const result = [];
-    let remaining = html;
-    for (let i = 0; i < rawParas.length; i++) {
-      const end = remaining.indexOf(rawParas[i]) + rawParas[i].length;
-      result.push(remaining.slice(0, end));
-      remaining = remaining.slice(end);
-    }
-    if (remaining.trim()) result.push(remaining.trim());
-    return result.length ? result : [html];
+    const trimmed = String(html || "").trim();
+    if (!trimmed) return [""];
+    const parts = trimmed.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+    return parts.length ? parts : [trimmed];
   }
 
-  async function typewriteNarrative(container, html) {
+  function cancelTypewriterWait() {
+    if (typewriterResolve) {
+      typewriterResolve();
+      typewriterResolve = null;
+    }
+  }
+
+  async function waitForNarrativeContinue(gen) {
+    const continueBtn = document.getElementById("narrativeContinueBtn");
+    continueBtn?.classList.remove("dw-hidden");
+    await new Promise((resolve) => {
+      typewriterResolve = resolve;
+      const handler = (e) => {
+        if (e.type === "keydown" && e.key !== "Enter" && e.key !== " ") return;
+        cleanup();
+        resolve();
+      };
+      const cleanup = () => {
+        continueBtn?.removeEventListener("click", handler);
+        document.removeEventListener("keydown", handler);
+        if (typewriterResolve === resolve) typewriterResolve = null;
+      };
+      continueBtn?.addEventListener("click", handler);
+      document.addEventListener("keydown", handler);
+    });
+    if (gen !== typewriterGen) return;
+    continueBtn?.classList.add("dw-hidden");
+  }
+
+  async function typeParagraph(paraDiv, html, gen) {
+    const tokens = tokenizeHtml(html);
+    let rendered = "";
+    const paraStartTime = performance.now();
+
+    for (const token of tokens) {
+      if (gen !== typewriterGen) return;
+      if (token.type === "tag") {
+        rendered += token.value;
+        paraDiv.innerHTML = rendered;
+        continue;
+      }
+      for (const ch of token.value) {
+        if (gen !== typewriterGen) return;
+        rendered += ch;
+        paraDiv.innerHTML = rendered;
+        if (ch.trim()) {
+          await new Promise((r) => setTimeout(r, TYPEWRITER_CHAR_MS));
+        }
+      }
+    }
+
+    const elapsed = performance.now() - paraStartTime;
+    const remaining = Math.max(0, TYPEWRITER_MIN_DWELL_MS - elapsed);
+    if (remaining > 0) await new Promise((r) => setTimeout(r, remaining));
+  }
+
+  async function typewriteNarrative(html, gen) {
     const narrativeEl = document.getElementById("sceneNarrative");
     const continueBtn = document.getElementById("narrativeContinueBtn");
     if (!narrativeEl) return;
+
+    cancelTypewriterWait();
 
     if (prefersReducedMotion) {
       narrativeEl.innerHTML = html;
       narrativeEl.classList.remove("tt-narrative--typing");
       continueBtn?.classList.add("dw-hidden");
-      narrativeEl.focus();
       return;
     }
 
@@ -178,59 +242,24 @@
     continueBtn?.classList.add("dw-hidden");
 
     for (let i = 0; i < paragraphs.length; i++) {
+      if (gen !== typewriterGen) return;
       const paraDiv = document.createElement("div");
       paraDiv.className = "tt-narrative__para";
       narrativeEl.appendChild(paraDiv);
-
-      const fullText = paragraphs[i];
-      let current = "";
-      const speed = 25;
-      const tagRe = /<[^>]+>/g;
-      let pos = 0;
-      const paraStartTime = performance.now();
-
-      while (pos < fullText.length) {
-        const nextTag = tagRe.exec(fullText);
-        if (nextTag && nextTag.index === pos) {
-          current += nextTag[0];
-          pos += nextTag[0].length;
-          tagRe.lastIndex = pos;
-          continue;
-        }
-        current += fullText[pos];
-        pos++;
-        paraDiv.innerHTML = current;
-        await new Promise((r) => setTimeout(r, speed));
-      }
+      await typeParagraph(paraDiv, paragraphs[i], gen);
+      if (gen !== typewriterGen) return;
 
       if (i < paragraphs.length - 1) {
-        const elapsed = performance.now() - paraStartTime;
-        const remaining = Math.max(0, TYPEWRITER_MIN_DWELL_MS - elapsed);
-        if (remaining > 0) await new Promise((r) => setTimeout(r, remaining));
-        continueBtn?.classList.remove("dw-hidden");
         narrativeEl.classList.remove("tt-narrative--typing");
-        await new Promise((resolve) => {
-          typewriterResolve = resolve;
-          const handler = (e) => {
-            if (e.type === "keydown" && e.key !== "Enter" && e.key !== " ") return;
-            cleanup();
-            resolve();
-          };
-          const cleanup = () => {
-            continueBtn?.removeEventListener("click", handler);
-            document.removeEventListener("keydown", handler);
-          };
-          continueBtn?.addEventListener("click", handler);
-          document.addEventListener("keydown", handler);
-        });
-        continueBtn?.classList.add("dw-hidden");
+        await waitForNarrativeContinue(gen);
+        if (gen !== typewriterGen) return;
         narrativeEl.classList.add("tt-narrative--typing");
       }
     }
 
     narrativeEl.classList.remove("tt-narrative--typing");
     continueBtn?.classList.add("dw-hidden");
-    narrativeEl.focus();
+    narrativeEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
 
   function show(name) {
@@ -430,7 +459,8 @@
     burstConfetti(14);
   }
 
-  function renderScene(nodeId) {
+  async function renderScene(nodeId) {
+    const gen = ++typewriterGen;
     const node = STORY[nodeId];
     if (!node) return;
     currentNode = nodeId;
@@ -444,12 +474,20 @@
 
     document.getElementById("sceneLocation").textContent = node.location || "Unknown";
     const narrativeEl = document.getElementById("sceneNarrative");
+    const choicesEl = document.getElementById("sceneChoices");
+    const typingEl = document.getElementById("typingChallenge");
+
+    choicesEl.innerHTML = "";
+    typingEl.classList.add("dw-hidden");
+    typingPending = null;
+
     if (narrativeEl) {
       narrativeEl.classList.remove("tt-narrative--reveal");
       void narrativeEl.offsetWidth;
       narrativeEl.classList.add("tt-narrative--reveal");
-      typewriteNarrative(narrativeEl, node.narrative || "");
+      await typewriteNarrative(node.narrative || "", gen);
     }
+    if (gen !== typewriterGen) return;
 
     metCharacters.add(node.character);
     renderCharacter(node.character);
@@ -496,10 +534,6 @@
       startedAt: startTime,
     });
 
-    const typingEl = document.getElementById("typingChallenge");
-    const choicesEl = document.getElementById("sceneChoices");
-    const lessonEl = document.getElementById("sceneLesson");
-
     if (node.typingChallenge) {
       typingPending = node.typingChallenge;
       typingEl.classList.remove("dw-hidden");
@@ -512,6 +546,8 @@
       const min = scaleMinWords(typingPending.minWords || 20);
       updateTypingProgress(words, min);
       document.getElementById("typingSubmitBtn").disabled = words < min;
+      typingInput?.focus();
+      typingEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
     } else {
       typingEl.classList.add("dw-hidden");
       typingPending = null;
@@ -544,6 +580,7 @@
       } else {
         choiceButtons.forEach((b) => b.classList.remove("tt-choice--cooldown"));
       }
+      choicesEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
 
     if (node.ending) {

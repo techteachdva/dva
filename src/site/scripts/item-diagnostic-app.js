@@ -74,7 +74,8 @@
     selectedOptions = new Set();
     quizPhase = "select";
 
-    document.getElementById("quizProgress").textContent = `Question ${quizIndex + 1} of ${quizQuestions.length}`;
+    document.getElementById("quizProgress").textContent =
+      `Question ${quizIndex + 1} of ${quizQuestions.length || Bank.QUIZ_COUNT}`;
     document.getElementById("quizStandard").textContent = `ITEM ${q.std}`;
     document.getElementById("quizQuestion").textContent = q.q;
 
@@ -99,6 +100,8 @@
     opts.querySelectorAll(".qz-option").forEach((el) => {
       el.addEventListener("click", () => selectOption(Number(el.dataset.idx), multi));
     });
+
+    document.getElementById("quizView")?.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
   function selectOption(idx, multi) {
