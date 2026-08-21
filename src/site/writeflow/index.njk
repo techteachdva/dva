@@ -12,6 +12,9 @@ layout: false
     <title>WriteFlow Studio · Timed writing for classrooms</title>
     <meta property="og:title" content="WriteFlow Studio" />
     <meta property="og:description" content="Timed writing assignments with prompts, vocabulary goals, typing analysis, and teacher dashboards." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" />
     <link rel="stylesheet" href="/styles/write-platform.css" />
     <link rel="stylesheet" href="/styles/custom-style.css" />
     <script>
@@ -29,10 +32,17 @@ layout: false
   <body class="dw-body wp-theme--dark wf-landing-body">
     <a class="wf-skip-link" href="#wfLandingMain">Skip to main content</a>
 
-    <div id="wfIntroSplash" class="wf-intro-splash" aria-hidden="true">
+    <div id="wfIntroSplash" class="wf-intro-splash">
       <div class="wf-intro-splash__stage">
-        <div class="wf-intro-typewriter" id="wfIntroTypewriter" aria-hidden="true"></div>
+        <div id="wfIntroTypePhase" class="wf-intro-type-phase">
+          <div class="wf-intro-typewriter-wrap">
+            <span class="wf-intro-typewriter" id="wfIntroTypewriter" aria-live="polite"></span>
+            <span class="wf-intro-cursor" id="wfIntroCursor" aria-hidden="true">|</span>
+          </div>
+        </div>
+
         <div class="wf-intro-score dw-hidden" id="wfIntroScore">
+          <p class="wf-intro-score__heading">Analyzing draft…</p>
           <div class="wf-intro-score__grid">
             <div class="wf-intro-score__card"><span class="wf-intro-score__label">Typing</span><span class="wf-intro-score__val" data-score="typing">0</span></div>
             <div class="wf-intro-score__card"><span class="wf-intro-score__label">Mechanics</span><span class="wf-intro-score__val" data-score="mechanics">0</span></div>
@@ -43,6 +53,18 @@ layout: false
             <div class="wf-intro-graph__bar" style="--h:88%"></div>
             <div class="wf-intro-graph__bar" style="--h:64%"></div>
             <div class="wf-intro-graph__bar" style="--h:91%"></div>
+          </div>
+        </div>
+
+        <div class="wf-intro-logo dw-hidden" id="wfIntroLogo" aria-hidden="true">
+          <div class="wf-intro-logo__card">
+            <div class="wf-intro-logo__graph" aria-hidden="true">
+              <span class="wf-intro-logo__bar" style="--h:62%"></span>
+              <span class="wf-intro-logo__bar" style="--h:88%"></span>
+              <span class="wf-intro-logo__bar" style="--h:74%"></span>
+              <span class="wf-intro-logo__bar" style="--h:96%"></span>
+            </div>
+            <div class="wf-intro-logo__letters">WFS</div>
           </div>
         </div>
       </div>
@@ -59,7 +81,7 @@ layout: false
         </div>
         <nav class="wf-landing__nav" aria-label="WriteFlow">
           <a class="dw-link" href="/">Back to site</a>
-          <a class="dw-btn dw-btn-secondary" href="/writeflow/studio/">Open Studio</a>
+          <a class="dw-btn dw-btn-secondary" href="/writeflow/studio/" data-wf-app-link>Open Studio</a>
         </nav>
       </header>
 
@@ -69,7 +91,8 @@ layout: false
           <h1 class="dw-h1">Timed writing that meets every learner where they are.</h1>
           <p class="dw-lead">WriteFlow Studio lets teachers build assignments with custom prompts, timers, vocabulary goals, and accessibility options. Students get a focused writing screen — no clutter, no paste, just type.</p>
           <div class="wf-landing-hero__cta">
-            <a class="dw-btn wf-landing-cta" href="/writeflow/studio/">Open WriteFlow Studio</a>
+            <a class="dw-btn wf-landing-cta" href="/writeflow/studio/" data-wf-app-link>Open WriteFlow Studio</a>
+            <button class="dw-btn dw-btn-ghost" type="button" id="replayIntroBtn">Replay intro</button>
             <a class="dw-btn dw-btn-ghost" href="/writeflow/setup/">Google Sheets setup</a>
           </div>
           <p class="dw-muted dw-tiny">Student assignment links look like <code>/writeflow/a/?id=your-assignment</code> — share only those with students.</p>
@@ -77,10 +100,24 @@ layout: false
 
         <section class="wf-landing-stats dw-card" aria-labelledby="wfStatsTitle">
           <h2 class="dw-h2" id="wfStatsTitle">Impact so far</h2>
-          <p class="wf-landing-stat">
-            <span class="wf-landing-stat__value" id="wfSentenceCount">—</span>
-            <span class="wf-landing-stat__label">sentences analyzed by WriteFlow</span>
-          </p>
+          <div class="wf-landing-stats__grid">
+            <div class="wf-landing-stat">
+              <span class="wf-landing-stat__value" id="wfClassroomCount">—</span>
+              <span class="wf-landing-stat__label">Classrooms</span>
+            </div>
+            <div class="wf-landing-stat">
+              <span class="wf-landing-stat__value" id="wfAssignmentCount">—</span>
+              <span class="wf-landing-stat__label">Assignments</span>
+            </div>
+            <div class="wf-landing-stat">
+              <span class="wf-landing-stat__value" id="wfSubmissionCount">—</span>
+              <span class="wf-landing-stat__label">Submissions</span>
+            </div>
+            <div class="wf-landing-stat">
+              <span class="wf-landing-stat__value" id="wfSentenceCount">—</span>
+              <span class="wf-landing-stat__label">Sentences analyzed</span>
+            </div>
+          </div>
         </section>
 
         <section class="wf-landing-welcome dw-card">
@@ -111,10 +148,11 @@ layout: false
       </main>
 
       <footer class="wf-landing__footer dw-muted">
-        <p>WriteFlow Studio · Mr. Phil's classroom tools · Not a game — a writing platform.</p>
+        <p>WriteFlow Studio · Mr. Phil's classroom tools · Not a writing platform built for games — built for classrooms.</p>
       </footer>
     </div>
 
+    <script id="wfClassroomsJson" type="application/json">{{ diagnosticWritingClasses | jsonify | safe }}</script>
     <script src="/scripts/writeflow-defaults.js" defer></script>
     <script src="/scripts/writeflow-landing.js" defer></script>
   </body>

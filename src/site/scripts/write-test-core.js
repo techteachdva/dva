@@ -164,6 +164,11 @@
       family: 'Georgia, "Palatino Linotype", "Times New Roman", serif',
       googleUrl: "",
     },
+    libreBaskerville: {
+      label: "Libre Baskerville",
+      family: '"Libre Baskerville", Georgia, "Times New Roman", serif',
+      googleUrl: "https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap",
+    },
     system: {
       label: "System UI",
       family: 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif',

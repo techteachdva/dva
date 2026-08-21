@@ -19,6 +19,7 @@
   const STUDIO_PATH = "/writeflow/studio/";
   const ASSIGNMENT_PATH = "/writeflow/a/";
   const SENTENCE_STATS_KEY = "writeflow:global:sentences";
+  const SUBMISSION_STATS_KEY = "writeflow:global:submissions";
 
   function assignmentUrl(id) {
     return `${ASSIGNMENT_PATH}?id=${encodeURIComponent(id)}`;
@@ -97,6 +98,13 @@
     try {
       const prev = Number(localStorage.getItem(SENTENCE_STATS_KEY) || 0);
       localStorage.setItem(SENTENCE_STATS_KEY, String(prev + sentenceCount));
+    } catch {}
+  }
+
+  function recordSubmissionStats() {
+    try {
+      const prev = Number(localStorage.getItem(SUBMISSION_STATS_KEY) || 0);
+      localStorage.setItem(SUBMISSION_STATS_KEY, String(prev + 1));
     } catch {}
   }
 
@@ -613,6 +621,7 @@
       try {
         await submitResult(name, classroom, classCode, text, analysis, duration);
         saveOk = true;
+        recordSubmissionStats();
         saveLocalSubmission({ name, classroom, text, analysis, submittedAt: Date.now() });
       } catch (err) {
         saveError = err.message || "Could not save your submission.";

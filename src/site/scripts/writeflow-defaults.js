@@ -69,7 +69,7 @@
     requireClass: true,
     requireClassCode: true,
     rubrics: ["typing", "mechanics", "story"],
-    theme: { preset: "dark", fontFamily: "", fontPreset: "google" },
+    theme: { preset: "dark", fontFamily: "", fontPreset: "libreBaskerville" },
     heroImage: "",
     heroImageData: "",
     teacherPassword: "changeme",
