@@ -1,0 +1,192 @@
+---
+title: WriteFlow Studio
+permalink: /writeflow/
+layout: false
+---
+<!doctype html>
+<html lang="{{ meta.mainLanguage }}">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="theme-color" content="#f8f9fa" />
+    <title>WriteFlow Studio</title>
+    <meta property="og:title" content="WriteFlow Studio" />
+    <meta property="og:description" content="Customizable timed writing assignments for any classroom — prompts, timers, themes, and analysis." />
+    <link rel="stylesheet" href="/styles/write-platform.css" />
+    <link rel="stylesheet" href="/styles/custom-style.css" />
+  </head>
+  <body class="dw-body wp-theme--light">
+    <div class="dw-shell">
+      {% if breadcrumbs and breadcrumbs.length > 0 %}
+        <div class="breadcrumbs--standalone">{% include "components/breadcrumbs.njk" %}</div>
+      {% endif %}
+      <header class="dw-topbar">
+        <div class="dw-topbar-brand">
+          <div style="width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#1a73e8,#9334e6);display:flex;align-items:center;justify-content:center;font-size:24px;">✎</div>
+          <div>
+            <div class="dw-title" id="appTitle">WriteFlow Studio</div>
+            <div class="dw-subtitle" id="appSubtitle">Customizable writing assignments for any teacher</div>
+          </div>
+        </div>
+        <div class="dw-actions">
+          <a class="dw-link" href="/writeflow/?home=1">Home</a>
+          <button id="builderLinkBtn" class="dw-btn dw-btn-ghost" type="button">Configure</button>
+          <button id="teacherBtn" class="dw-btn dw-btn-ghost" type="button">Results</button>
+          <a class="dw-link" href="/">Back to site</a>
+        </div>
+      </header>
+
+      <main id="mainContent">
+        <section id="wfHomeView" class="dw-hidden dw-stack">
+          <div class="dw-card dw-hero">
+            <h1 class="dw-h1">WriteFlow Studio</h1>
+            <p class="dw-lead">A general-purpose writing submission tool — like a focused Google Docs assignment. Configure prompts, timers, paste rules, themes, and scoring for any classroom.</p>
+          </div>
+          <div class="dw-card dw-stack">
+            <h2 class="dw-h2">Get started</h2>
+            <div class="dw-row dw-row-wrap">
+              <button id="openBuilderBtn" class="dw-btn" type="button">Create assignment</button>
+              <button id="openSampleBtn" class="dw-btn dw-btn-secondary" type="button">Try sample assignment</button>
+            </div>
+          </div>
+          <div class="dw-card dw-stack">
+            <h2 class="dw-h2">Cloud storage</h2>
+            <p class="dw-muted">Connect Google Sheets so submissions sync across devices. <a href="/writeflow/setup/">Setup guide</a></p>
+          </div>
+          <div class="dw-card dw-stack">
+            <h2 class="dw-h2">Features</h2>
+            <ul class="dw-list">
+              <li>Custom prompts, durations (1–60 min), and welcome text</li>
+              <li>Paste allowed/disallowed · lock screen when time expires</li>
+              <li>Theme presets, custom accent colors, font presets &amp; hero image upload</li>
+              <li>Google Sheets sync for cross-device teacher dashboards</li>
+              <li>Typing, mechanics &amp; content analysis (SWAT engine)</li>
+              <li>Export/import assignments as JSON · CSV results export</li>
+            </ul>
+          </div>
+        </section>
+
+        <section id="builderView" class="dw-hidden">
+          <div class="wf-toolbar">
+            <span class="dw-muted">Assignment builder</span>
+            <button id="studentViewLink" class="dw-btn dw-btn-secondary" type="button">Preview student view</button>
+          </div>
+          <div class="wf-builder">
+            <nav class="wf-builder-nav" id="builderNav"></nav>
+            <div class="wf-builder-canvas" id="builderCanvas"></div>
+            <aside class="wf-builder-inspector" id="builderInspector"></aside>
+          </div>
+        </section>
+
+        <section id="welcomeView" class="dw-hidden dw-stack">
+          <div class="dw-card dw-hero">
+            <h1 class="dw-h1" id="welcomeTitle">Ready to write?</h1>
+            <p class="dw-lead" id="welcomeLead"></p>
+          </div>
+          <img id="heroImage" class="dw-hidden dw-hero-banner__img" alt="" width="1200" height="400" style="width:100%;border-radius:16px;object-fit:cover;" />
+          <div class="dw-card dw-stack">
+            <h2 class="dw-h2">What this measures</h2>
+            <div class="dw-rubric-grid" id="rubricGrid"></div>
+          </div>
+          <div class="dw-card dw-stack dw-prompt-box">
+            <h2 class="dw-h2">Your prompt</h2>
+            <blockquote class="dw-prompt-quote" id="promptQuote"></blockquote>
+            <ul class="dw-list dw-checklist" id="checklist"></ul>
+            <label class="dw-field">
+              <span class="dw-label">Your first name</span>
+              <input id="studentName" class="dw-input" type="text" maxlength="80" autocomplete="name" />
+            </label>
+            <label class="dw-field">
+              <span class="dw-label">Your class</span>
+              <select id="studentClass" class="dw-input dw-select" required></select>
+            </label>
+            <label class="dw-field" id="classCodeField">
+              <span class="dw-label">Class code</span>
+              <input id="classCode" class="dw-input" type="text" maxlength="40" autocomplete="off" autocapitalize="off" spellcheck="false" />
+            </label>
+            <p id="classCodeError" class="dw-error dw-hidden" role="alert">That code doesn&rsquo;t match your class.</p>
+            <button id="startBtn" class="dw-btn" type="button" disabled>Start timer</button>
+          </div>
+        </section>
+
+        <section id="writingView" class="dw-hidden">
+          <div class="dw-timer-bar">
+            <div class="dw-timer-meta">
+              <span class="dw-timer-label">Time remaining</span>
+              <span id="timerDisplay" class="dw-timer-value">5:00</span>
+            </div>
+            <div class="dw-timer-track"><div id="timerProgress" class="dw-timer-fill"></div></div>
+            <div class="dw-live-stats">
+              <span id="liveWordCount">0 words</span>
+              <span id="liveWpm">0 WPM</span>
+            </div>
+          </div>
+          <div class="dw-card dw-writing-card">
+            <div class="dw-prompt-banner" id="promptBanner"></div>
+            <textarea id="storyInput" class="dw-textarea" placeholder="Start typing here…" spellcheck="true"></textarea>
+          </div>
+        </section>
+
+        <section id="analyzingView" class="dw-card dw-stack dw-hidden dw-center">
+          <div class="dw-spinner"></div>
+          <p class="dw-lead">Analyzing your writing…</p>
+        </section>
+
+        <section id="resultsView" class="dw-hidden dw-stack">
+          <div class="dw-card">
+            <h2 class="dw-h2">Your results, <span id="resultName">—</span></h2>
+            <p class="dw-muted" id="resultClass"></p>
+            <p class="dw-muted" id="resultSummary"></p>
+            <p id="saveStatus" class="dw-save-status dw-hidden" role="status"></p>
+          </div>
+          <div class="dw-score-grid dw-score-grid--4" id="scoreGrid"></div>
+          <div class="dw-card dw-score-legend dw-hidden" id="scoreLegend">
+            <h3 class="dw-h3">Score bands</h3>
+            <ul class="dw-legend-list">
+              <li><span class="dw-band dw-band--strong">Strong</span> 80+</li>
+              <li><span class="dw-band dw-band--on_track">On track</span> 65–79</li>
+              <li><span class="dw-band dw-band--developing">Developing</span> 50–64</li>
+              <li><span class="dw-band dw-band--needs_support">Needs support</span> &lt;50</li>
+            </ul>
+          </div>
+          <div class="dw-card"><h3 class="dw-h3">Feedback</h3><ul class="dw-feedback dw-feedback--grouped" id="feedbackList"></ul></div>
+          <div class="dw-card"><h3 class="dw-h3">Your writing</h3><div class="dw-story-preview" id="storyPreview"></div></div>
+          <button id="restartBtn" class="dw-btn dw-btn-secondary" type="button">Write again</button>
+        </section>
+
+        <section id="teacherLoginView" class="dw-card dw-stack dw-hidden dw-narrow">
+          <h2 class="dw-h2">View results</h2>
+          <label class="dw-field"><span class="dw-label">Teacher password</span><input id="teacherPassword" class="dw-input" type="password" /></label>
+          <div class="dw-row">
+            <button id="teacherLoginBtn" class="dw-btn" type="button">Enter</button>
+            <button id="teacherCancelBtn" class="dw-btn dw-btn-ghost" type="button">Cancel</button>
+          </div>
+          <p id="teacherLoginError" class="dw-error dw-hidden">Incorrect password.</p>
+        </section>
+
+        <section id="teacherView" class="dw-hidden dw-stack">
+          <div class="dw-card dw-teacher-header">
+            <h2 class="dw-h2">Submissions</h2>
+            <p class="dw-muted" id="teacherMeta"></p>
+            <div class="dw-row"><button id="refreshBtn" class="dw-btn dw-btn-secondary" type="button">Refresh</button><button id="exportBtn" class="dw-btn dw-btn-ghost" type="button">Export CSV</button><button id="teacherLogoutBtn" class="dw-btn dw-btn-ghost" type="button">Log out</button></div>
+          </div>
+          <div class="dw-card dw-table-wrap">
+            <table class="dw-table dw-table--compact">
+              <thead><tr><th>Name</th><th>Class</th><th>Wds</th><th>WPM</th><th>Typ</th><th>Mech</th><th>Story</th><th>Overall</th><th>Submitted</th></tr></thead>
+              <tbody id="teacherTableBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script id="wfClassroomsJson" type="application/json">{{ diagnosticWritingClasses | jsonify | safe }}</script>
+    <script id="wfClassroomCodesJson" type="application/json">{{ diagnosticWritingClassCodes | jsonify | safe }}</script>
+    <script src="/scripts/write-test-core.js" defer></script>
+    <script src="/scripts/writeflow-defaults.js" defer></script>
+    <script src="/scripts/diagnostic-writing-calibration.js" defer></script>
+    <script src="/scripts/diagnostic-writing-rubrics.js" defer></script>
+    <script src="/scripts/write-analysis-engine.js" defer></script>
+    <script src="/scripts/writeflow-app.js" defer></script>
+  </body>
+</html>

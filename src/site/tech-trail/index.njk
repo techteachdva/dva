@@ -1,0 +1,99 @@
+---
+title: Tech Trail
+permalink: /tech-trail/
+layout: false
+---
+<!doctype html>
+<html lang="{{ meta.mainLanguage }}">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="theme-color" content="#1a0a2e" />
+    <title>Tech Trail — The Global Tech Gauntlet</title>
+    <meta property="og:title" content="Tech Trail: The Global Tech Gauntlet" />
+    <meta property="og:description" content="A choose-your-own-adventure typing game about digital citizenship, technology heroes, and the golden rules of the internet." />
+    <link rel="stylesheet" href="/styles/write-platform.css" />
+    <link rel="stylesheet" href="/styles/custom-style.css" />
+  </head>
+  <body class="dw-body">
+    <div class="dw-shell">
+      {% if breadcrumbs and breadcrumbs.length > 0 %}
+        <div class="breadcrumbs--standalone">{% include "components/breadcrumbs.njk" %}</div>
+      {% endif %}
+      <header class="dw-topbar">
+        <div class="dw-topbar-brand">
+          <div style="width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#c41e3a,#ffd700);display:flex;align-items:center;justify-content:center;font-size:24px;">🌐</div>
+          <div>
+            <div class="dw-title">Tech Trail</div>
+            <div class="dw-subtitle">The Global Tech Gauntlet · digital citizenship CYOA</div>
+          </div>
+        </div>
+        <div class="dw-actions"><a class="dw-link" href="/tech-escape/">Tech Escape</a><a class="dw-link" href="/">Back to site</a></div>
+      </header>
+
+      <main>
+        <section id="titleView" class="dw-stack">
+          <div class="tt-scene">
+            <span class="tt-location-badge">🎬 ACME Tech Division presents</span>
+            <h1 class="dw-h1" style="margin-top:16px;font-size:36px;">The Global Tech Gauntlet</h1>
+            <p class="tt-narrative">Inspired by <em>Where in the World is Carmen Sandiego?</em>, <em>Legends of the Hidden Temple</em>, and <em>Global Guts</em> — you are a recruit on a mission through branching paths of technology, intrigue, and digital citizenship.</p>
+            <p class="tt-narrative">Meet historical heroes of computing, game design, and culture. Learn that <strong>technology is part of being human</strong> — we make it, and it makes us. Every tool exists to solve a problem.</p>
+            <button id="startGameBtn" class="dw-btn" type="button" style="margin-top:8px;background:linear-gradient(135deg,#c41e3a,#8b0000);">Accept mission</button>
+          </div>
+          <div class="dw-card">
+            <h3 class="dw-h3">Heroes you&rsquo;ll meet</h3>
+            <p class="dw-muted">Ada Lovelace · Alan Turing · Charles Babbage · Grace Hopper · Katherine Johnson · Will Wright · Sid Meier · Joseph Campbell · Chris Crawford · John Conway — research them further after you play!</p>
+          </div>
+        </section>
+
+        <section id="gameView" class="dw-hidden">
+          <div class="tt-stats-bar">
+            <span class="tt-stat">🏅 Badges: <span class="tt-stat__value" id="statBadges">0</span></span>
+            <span class="tt-stat">📚 ITEM: <span class="tt-stat__value" id="statLessons">0</span></span>
+            <span class="tt-stat">⭐ Rules: <span class="tt-stat__value" id="statGoldenRules">0</span>/5</span>
+            <span class="tt-stat">🗺️ Steps: <span class="tt-stat__value" id="statScenes">0</span></span>
+          </div>
+          <div id="sceneLesson" class="dw-hidden" style="margin-top:12px;"></div>
+          <div class="tt-scene">
+            <div class="tt-scene-header">
+              <span class="tt-location-badge" id="sceneLocation">—</span>
+            </div>
+            <div class="tt-character" id="sceneCharacter"></div>
+            <div class="tt-narrative" id="sceneNarrative"></div>
+            <div id="typingChallenge" class="tt-typing-challenge dw-hidden">
+              <div class="tt-typing-challenge__prompt" id="typingPrompt"></div>
+              <textarea id="typingInput" class="dw-textarea" rows="4" placeholder="Type your response here…" spellcheck="true"></textarea>
+              <div class="dw-row" style="margin-top:10px;justify-content:space-between;">
+                <span class="dw-muted" id="typingWordCount">0 words</span>
+                <button id="typingSubmitBtn" class="dw-btn" type="button" disabled>Submit response</button>
+              </div>
+            </div>
+            <div class="tt-choices" id="sceneChoices"></div>
+          </div>
+          <div class="tt-journal">
+            <h3 class="dw-h3">Mission log</h3>
+            <div id="journalEntries"></div>
+          </div>
+          <div class="tt-journal" style="margin-top:12px;">
+            <h3 class="dw-h3">Hero research notes</h3>
+            <div id="researchPanel"><p class="dw-muted dw-tiny">Meet heroes during your mission to unlock research prompts.</p></div>
+          </div>
+        </section>
+
+        <section id="endingView" class="dw-hidden">
+          <div class="tt-scene tt-ending">
+            <h2 class="tt-ending__title" id="endingTitle">Mission Complete!</h2>
+            <div class="tt-narrative" id="endingNarrative"></div>
+            <p class="dw-muted" id="endingLessons"></p>
+            <div class="tt-badge-row" id="endingBadges"></div>
+            <button id="playAgainBtn" class="dw-btn" type="button" style="margin-top:24px;background:linear-gradient(135deg,#c41e3a,#8b0000);">Play again</button>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="/scripts/write-test-core.js" defer></script>
+    <script src="/scripts/tech-trail-story.js" defer></script>
+    <script src="/scripts/tech-trail-app.js" defer></script>
+  </body>
+</html>

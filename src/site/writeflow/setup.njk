@@ -1,0 +1,39 @@
+---
+title: WriteFlow Setup
+permalink: /writeflow/setup/
+layout: false
+---
+<!doctype html>
+<html lang="{{ meta.mainLanguage }}">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>WriteFlow Google Sheets Setup</title>
+    <link rel="stylesheet" href="/styles/write-platform.css" />
+  </head>
+  <body class="dw-body wp-theme--light">
+    <div class="dw-shell dw-stack" style="max-width:720px;padding-top:32px;">
+      <a class="dw-link" href="/writeflow/">← WriteFlow Studio</a>
+      <div class="dw-card dw-stack">
+        <h1 class="dw-h1">Google Sheets setup</h1>
+        <p class="dw-lead">Connect WriteFlow to Google Sheets so student submissions sync for any teacher, on any device.</p>
+        <ol class="dw-list">
+          <li>Create a Google Sheet (e.g. <strong>WriteFlow Submissions</strong>).</li>
+          <li>Extensions → Apps Script → paste <code>google-apps-script/writeflow-backend.gs</code> → Save.</li>
+          <li>Set <code>SPREADSHEET_ID</code> in the script.</li>
+          <li>Run <code>initSheet</code> once (authorize when prompted).</li>
+          <li>Deploy → Web app (Execute as: Me, Anyone).</li>
+          <li>Vercel env: <code>WRITEFLOW_SCRIPT_URL</code> and <code>WRITEFLOW_API_SECRET</code> (match script <code>API_SECRET</code>).</li>
+          <li>Redeploy the site.</li>
+        </ol>
+        <h2 class="dw-h2">Teacher workflow</h2>
+        <ul class="dw-list">
+          <li>Build assignment in <a href="/writeflow/?mode=builder">WriteFlow builder</a>.</li>
+          <li>Set a <strong>teacher password</strong> and click Save — registers assignment in the sheet.</li>
+          <li>Share student link: <code>/writeflow/?id=YOUR-ID</code></li>
+          <li>View results with the same password via <strong>Results</strong>.</li>
+        </ul>
+      </div>
+    </div>
+  </body>
+</html>

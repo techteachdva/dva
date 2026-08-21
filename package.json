@@ -15,6 +15,7 @@
         "inject-signaling": "node scripts/inject-signaling-url.js",
         "build": "npm-run-all get-theme sync:classrooms build:sass download-pck download-crystalwizards download-physix restore-physix-shell validate-physix-shell inject-signaling build:eleventy",
         "sync:classrooms": "node scripts/sync-diagnostic-classrooms.mjs",
+        "sync:item-questions": "node scripts/sync-item-questions.mjs",
         "calibrate:analyze": "py scripts/analyze-diagnostic-calibration.py",
         "calibrate:report": "py scripts/analyze-diagnostic-calibration.py --json",
         "calibrate:simulate": "py scripts/simulate-calibrated-scoring.py",

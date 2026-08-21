@@ -1,0 +1,113 @@
+---
+title: ITEM 2025 Diagnostic
+permalink: /item-diagnostic/
+layout: false
+---
+<!doctype html>
+<html lang="{{ meta.mainLanguage }}">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="theme-color" content="#0f172a" />
+    <title>ITEM 2025 Standards Diagnostic</title>
+    <meta property="og:title" content="ITEM 2025 Standards Diagnostic" />
+    <meta property="og:description" content="Typing warm-up + knowledge quiz to diagnose which ITEM 2025 technology standards you need help with." />
+    <link rel="stylesheet" href="/styles/write-platform.css" />
+    <link rel="stylesheet" href="/styles/custom-style.css" />
+  </head>
+  <body class="dw-body">
+    <div class="dw-shell">
+      {% if breadcrumbs and breadcrumbs.length > 0 %}
+        <div class="breadcrumbs--standalone">{% include "components/breadcrumbs.njk" %}</div>
+      {% endif %}
+      <header class="dw-topbar">
+        <div class="dw-topbar-brand">
+          <div style="width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#38bdf8,#a78bfa);display:flex;align-items:center;justify-content:center;font-size:24px;">🎯</div>
+          <div>
+            <div class="dw-title">ITEM 2025 Standards Diagnostic</div>
+            <div class="dw-subtitle">2-min typing warm-up · 20-question knowledge check · gap analysis</div>
+          </div>
+        </div>
+        <div class="dw-actions"><a class="dw-link" href="/tech-escape/">Tech Escape</a><a class="dw-link" href="/">Back to site</a></div>
+      </header>
+
+      <main>
+        <section id="welcomeView" class="dw-stack">
+          <div class="dw-card dw-hero">
+            <h1 class="dw-h1">Find your technology learning gaps</h1>
+            <p class="dw-lead">This diagnostic combines a <strong>2-minute typing warm-up</strong> with a <strong>20-question quiz</strong> drawn from the full Tech Escape bank (128 ITEM-tagged prompts). Your results show which standards to focus on.</p>
+          </div>
+          <div class="dw-card dw-stack">
+            <h2 class="dw-h2">What gets measured</h2>
+            <div class="dw-rubric-grid">
+              <div class="dw-rubric"><h3 class="dw-h3">⌨️ Typing</h3><p>Speed and stamina on a technology-themed warm-up prompt.</p></div>
+              <div class="dw-rubric"><h3 class="dw-h3">📚 Knowledge</h3><p>Design process, systems, data literacy, digital citizenship, and programming concepts.</p></div>
+              <div class="dw-rubric"><h3 class="dw-h3">🎯 Standards map</h3><p>Per-standard scores show where you&rsquo;re strong and where you need support.</p></div>
+            </div>
+          </div>
+          <div class="dw-card dw-stack">
+            <label class="dw-field"><span class="dw-label">Your first name</span><input id="studentName" class="dw-input" type="text" maxlength="80" autocomplete="name" /></label>
+            <label class="dw-field"><span class="dw-label">Your class</span><select id="studentClass" class="dw-input dw-select" required></select></label>
+            <label class="dw-field"><span class="dw-label">Class code</span><input id="classCode" class="dw-input" type="text" maxlength="40" autocomplete="off" autocapitalize="off" spellcheck="false" /></label>
+            <p id="classCodeError" class="dw-error dw-hidden" role="alert">That code doesn&rsquo;t match your class.</p>
+            <button id="startBtn" class="dw-btn" type="button" disabled>Start diagnostic</button>
+          </div>
+        </section>
+
+        <section id="typingView" class="dw-hidden">
+          <div class="dw-card"><h2 class="dw-h2">Phase 1 · Typing warm-up (2 minutes)</h2>
+            <p class="dw-muted">Explain how technology helps solve a problem in your daily life. Type continuously until time runs out.</p></div>
+          <div class="dw-timer-bar">
+            <div class="dw-timer-meta"><span class="dw-timer-label">Time remaining</span><span id="timerDisplay" class="dw-timer-value">2:00</span></div>
+            <div class="dw-timer-track"><div id="timerProgress" class="dw-timer-fill"></div></div>
+            <div class="dw-live-stats"><span id="liveWordCount">0 words</span><span id="liveWpm">0 WPM</span></div>
+          </div>
+          <div class="dw-card dw-writing-card">
+            <textarea id="typingInput" class="dw-textarea" placeholder="Technology helps me when…" spellcheck="true"></textarea>
+          </div>
+        </section>
+
+        <section id="quizView" class="dw-hidden">
+          <div class="qz-panel">
+            <div class="qz-header">
+              <span class="qz-standard" id="quizStandard">ITEM —</span>
+              <span class="qz-progress" id="quizProgress">Question 1 of 12</span>
+            </div>
+            <p id="quizMultiselect" class="qz-multiselect-hint dw-hidden"></p>
+            <h2 class="qz-question" id="quizQuestion"></h2>
+            <ul class="qz-options" id="quizOptions"></ul>
+            <div id="quizFeedback" class="qz-feedback dw-hidden"></div>
+            <div class="qz-actions"><button id="quizConfirmBtn" class="dw-btn" type="button" disabled>Confirm answer</button></div>
+          </div>
+        </section>
+
+        <section id="analyzingView" class="dw-card dw-stack dw-hidden dw-center">
+          <div class="dw-spinner"></div>
+          <p class="dw-lead">Mapping your results to ITEM 2025 standards…</p>
+        </section>
+
+        <section id="resultsView" class="dw-hidden dw-stack">
+          <div class="dw-card">
+            <h2 class="dw-h2">Your diagnostic, <span id="resultName">—</span></h2>
+            <p class="dw-muted" id="resultClass"></p>
+            <p class="dw-muted" id="resultSummary"></p>
+            <div id="gapSummary"></div>
+          </div>
+          <div class="dw-card"><h3 class="dw-h3">Typing warm-up</h3><div id="typingSummary"></div></div>
+          <div class="dw-card"><h3 class="dw-h3">Topic areas</h3><div id="topicSummary"></div></div>
+          <div class="dw-card"><h3 class="dw-h3">Standards breakdown</h3><p class="dw-muted dw-tiny"><span style="color:var(--dw-success)">■</span> Strong (80%+) · <span style="color:var(--dw-warning)">■</span> Developing (50–79%) · <span style="color:var(--dw-danger)">■</span> Needs support (&lt;50%)</p><div class="std-grid" id="standardsGrid"></div></div>
+          <button id="restartBtn" class="dw-btn dw-btn-secondary" type="button">Try again</button>
+        </section>
+      </main>
+    </div>
+
+    <script id="itemClassroomsJson" type="application/json">{{ diagnosticWritingClasses | jsonify | safe }}</script>
+    <script id="itemClassroomCodesJson" type="application/json">{{ diagnosticWritingClassCodes | jsonify | safe }}</script>
+    <script src="/scripts/write-test-core.js" defer></script>
+    <script src="/scripts/diagnostic-writing-calibration.js" defer></script>
+    <script src="/scripts/write-analysis-engine.js" defer></script>
+    <script src="/scripts/item-diagnostic-questions.js" defer></script>
+    <script type="module" src="/scripts/item-diagnostic-loader.js"></script>
+    <script src="/scripts/item-diagnostic-app.js" defer></script>
+  </body>
+</html>

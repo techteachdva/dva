@@ -10,7 +10,7 @@ title: Games Mr. Phil has made
 
 <p class="cartridge-games-page__intro">Welcome to the collection. Pick up a cartridge and play.</p>
 
-<p class="cartridge-games-page__intro">Course hub: <a href="/game-design/">Game Design</a> · <a href="/technology/">Technology</a> · <a href="/diagnostic-writing/">Summer Writing Test</a></p>
+<p class="cartridge-games-page__intro">Course hub: <a href="/game-design/">Game Design</a> · <a href="/technology/">Technology</a> · <a href="/diagnostic-writing/">Summer Writing Test</a> · <a href="/writeflow/">WriteFlow Studio</a> · <a href="/item-diagnostic/">ITEM Diagnostic</a> · <a href="/tech-trail/">Tech Trail</a></p>
 
 <div class="cartridge-stack">
 
@@ -128,6 +128,69 @@ title: Games Mr. Phil has made
             <div class="cartridge-label">
               <span class="cartridge-label__brand">Power_Word_Skill_Games</span>
               <a class="cartridge-label__title external-link" href="/physix/" target="_blank" rel="noopener noreferrer">Physix</a>
+            </div>
+          </div>
+          <div class="cartridge-cuboid__face cartridge-cuboid__face--top" aria-hidden="true"></div>
+          <div class="cartridge-cuboid__face cartridge-cuboid__face--right" aria-hidden="true"></div>
+          <div class="cartridge-cuboid__face cartridge-cuboid__face--bottom" aria-hidden="true"></div>
+          <div class="cartridge-cuboid__face cartridge-cuboid__face--left" aria-hidden="true"></div>
+          <div class="cartridge-cuboid__face cartridge-cuboid__face--back" aria-hidden="true"></div>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <article class="cartridge cartridge--writing" aria-label="WriteFlow Studio cartridge">
+    <div class="cartridge__scene">
+      <div class="cartridge__shadow" aria-hidden="true"></div>
+      <div class="cartridge__tilt">
+        <div class="cartridge-cuboid">
+          <div class="cartridge-cuboid__face cartridge-cuboid__face--front">
+            <div class="cartridge-label">
+              <span class="cartridge-label__brand">Power_Word_Skill_Games</span>
+              <a class="cartridge-label__title external-link" href="/writeflow/" target="_blank" rel="noopener noreferrer">WriteFlow Studio</a>
+            </div>
+          </div>
+          <div class="cartridge-cuboid__face cartridge-cuboid__face--top" aria-hidden="true"></div>
+          <div class="cartridge-cuboid__face cartridge-cuboid__face--right" aria-hidden="true"></div>
+          <div class="cartridge-cuboid__face cartridge-cuboid__face--bottom" aria-hidden="true"></div>
+          <div class="cartridge-cuboid__face cartridge-cuboid__face--left" aria-hidden="true"></div>
+          <div class="cartridge-cuboid__face cartridge-cuboid__face--back" aria-hidden="true"></div>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <article class="cartridge cartridge--tech" aria-label="ITEM 2025 Diagnostic cartridge">
+    <div class="cartridge__scene">
+      <div class="cartridge__shadow" aria-hidden="true"></div>
+      <div class="cartridge__tilt">
+        <div class="cartridge-cuboid">
+          <div class="cartridge-cuboid__face cartridge-cuboid__face--front">
+            <div class="cartridge-label">
+              <span class="cartridge-label__brand">Power_Word_Skill_Games</span>
+              <a class="cartridge-label__title external-link" href="/item-diagnostic/" target="_blank" rel="noopener noreferrer">ITEM Diagnostic</a>
+            </div>
+          </div>
+          <div class="cartridge-cuboid__face cartridge-cuboid__face--top" aria-hidden="true"></div>
+          <div class="cartridge-cuboid__face cartridge-cuboid__face--right" aria-hidden="true"></div>
+          <div class="cartridge-cuboid__face cartridge-cuboid__face--bottom" aria-hidden="true"></div>
+          <div class="cartridge-cuboid__face cartridge-cuboid__face--left" aria-hidden="true"></div>
+          <div class="cartridge-cuboid__face cartridge-cuboid__face--back" aria-hidden="true"></div>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <article class="cartridge cartridge--dragon" aria-label="Tech Trail game cartridge">
+    <div class="cartridge__scene">
+      <div class="cartridge__shadow" aria-hidden="true"></div>
+      <div class="cartridge__tilt">
+        <div class="cartridge-cuboid">
+          <div class="cartridge-cuboid__face cartridge-cuboid__face--front">
+            <div class="cartridge-label">
+              <span class="cartridge-label__brand">Power_Word_Skill_Games</span>
+              <a class="cartridge-label__title external-link" href="/tech-trail/" target="_blank" rel="noopener noreferrer">Tech Trail</a>
             </div>
           </div>
           <div class="cartridge-cuboid__face cartridge-cuboid__face--top" aria-hidden="true"></div>

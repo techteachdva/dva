@@ -31,6 +31,13 @@ module.exports = [
   ["/mr-phil-s-digital-garden/", "/5-12-methods-literature-and-reading/"],
   ["/5-12-methods-literature-and-reading/", "/desiderata/"],
   ["/diagnostic-writing/", "/technology/"],
+  ["/games/", "/writeflow/"],
+  ["/games/", "/item-diagnostic/"],
+  ["/games/", "/tech-trail/"],
+  ["/writeflow/", "/diagnostic-writing/"],
+  ["/item-diagnostic/", "/tech-escape/"],
+  ["/tech-trail/", "/tech-escape/"],
+  ["/tech-trail/", "/technology/"],
 ];
 
 /**
@@ -44,4 +51,7 @@ module.exports.passthroughApps = [
   { url: "/crystalwizards/", title: "Crystal Wizards", group: "Games" },
   { url: "/dragon-trail/", title: "Dragon Trail", group: "Games" },
   { url: "/physix/", title: "Physix", group: "Games" },
+  { url: "/writeflow/", title: "WriteFlow Studio", group: "Tools" },
+  { url: "/item-diagnostic/", title: "ITEM 2025 Diagnostic", group: "Tools" },
+  { url: "/tech-trail/", title: "Tech Trail", group: "Games" },
 ];

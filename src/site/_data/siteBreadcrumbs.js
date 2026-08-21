@@ -28,4 +28,20 @@ module.exports = {
     { title: "Games Mr. Phil has made", url: "/games/" },
     { title: "Summer Writing Assignment Test", url: null },
   ],
+  "/writeflow/": [
+    { title: "Games Mr. Phil has made", url: "/games/" },
+    { title: "WriteFlow Studio", url: null },
+  ],
+  "/writeflow/setup/": [
+    { title: "WriteFlow Studio", url: "/writeflow/" },
+    { title: "Google Sheets setup", url: null },
+  ],
+  "/item-diagnostic/": [
+    { title: "Games Mr. Phil has made", url: "/games/" },
+    { title: "ITEM 2025 Diagnostic", url: null },
+  ],
+  "/tech-trail/": [
+    { title: "Games Mr. Phil has made", url: "/games/" },
+    { title: "Tech Trail", url: null },
+  ],
 };

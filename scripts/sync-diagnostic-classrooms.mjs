@@ -51,14 +51,22 @@ export function isValidClassroom(value) {
 
 const targets = [
   path.join(root, "google-apps-script/diagnostic-writing-backend.gs"),
+  path.join(root, "google-apps-script/writeflow-backend.gs"),
 ];
 
 for (const file of targets) {
   let content = fs.readFileSync(file, "utf8");
-  const replaced = content.replace(
+  let replaced = content.replace(
     /\/\*\* (?:Keep in sync with api\/diagnostic-writing\/classes\.json|Auto-generated from api\/diagnostic-writing\/classes\.json)[\s\S]*?\*\/\s*const VALID_CLASSROOMS = \[[\s\S]*?\];/,
     gsBlock
   );
+  if (file.endsWith("writeflow-backend.gs")) {
+    const codesBlock = `${marker} — run: npm run sync:classrooms */\nconst CLASSROOM_CODES = ${JSON.stringify(codes, null, 2)};`;
+    replaced = replaced.replace(
+      /\/\*\* Auto-generated from api\/diagnostic-writing\/classroom-codes\.json[\s\S]*?\*\/\s*const CLASSROOM_CODES = \{[\s\S]*?\};/,
+      codesBlock
+    );
+  }
   if (replaced === content) {
     console.warn(`sync-diagnostic-classrooms: VALID_CLASSROOMS block not found in ${path.relative(root, file)}`);
     continue;
