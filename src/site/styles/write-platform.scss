@@ -750,6 +750,75 @@
   font-weight: 500;
 }
 
+.wf-class-table-wrap {
+  margin-top: 12px;
+  border: 1px solid var(--dw-border);
+  border-radius: 12px;
+  overflow: auto;
+  max-height: min(60vh, 520px);
+}
+
+.wf-class-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.wf-class-table th,
+.wf-class-table td {
+  padding: 12px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--dw-border);
+  vertical-align: top;
+}
+
+.wf-class-table th {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--dw-text);
+  background: rgba(0, 0, 0, 0.18);
+  position: sticky;
+  top: 0;
+}
+
+.wf-class-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.wf-class-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.wf-class-code {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  color: var(--dw-accent);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+}
+
+.wp-theme--light .wf-class-table th {
+  background: #f1f3f4;
+  color: #1a1a1a;
+}
+
+.wp-theme--light .wf-class-table tbody tr:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.wp-theme--light .wf-class-code {
+  background: rgba(26, 115, 232, 0.1);
+  border-color: rgba(26, 115, 232, 0.25);
+  color: #174ea6;
+}
+
 .wp-theme--light .wf-toggle-row {
   background: #fff;
 }

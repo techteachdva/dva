@@ -412,7 +412,6 @@
       updateStartButton();
     });
 
-    document.getElementById("teacherBtn")?.addEventListener("click", () => show("teacherLogin"));
     document.getElementById("teacherCancelBtn")?.addEventListener("click", () => show("welcome"));
     document.getElementById("teacherLoginBtn")?.addEventListener("click", async () => {
       const pw = document.getElementById("teacherPassword")?.value;
@@ -428,12 +427,10 @@
     document.getElementById("teacherLogoutBtn")?.addEventListener("click", () => { teacherAuthed = false; show("welcome"); });
     document.getElementById("refreshBtn")?.addEventListener("click", loadTeacherDashboard);
     document.getElementById("exportBtn")?.addEventListener("click", exportCsv);
-    document.getElementById("builderLinkBtn")?.addEventListener("click", () => {
-      location.href = `/writeflow/?mode=builder&id=${encodeURIComponent(config.id)}`;
-    });
 
     updateStartButton();
-    show("welcome");
+    if (params.get("teacher") === "1") show("teacherLogin");
+    else show("welcome");
   }
 
   async function loadTeacherDashboard() {
@@ -508,7 +505,53 @@
     localStorage.setItem(ASSIGNMENTS_KEY, JSON.stringify([...new Set(ids)]));
   }
 
-  function renderBuilder() {
+  function resolveDefaultAssignmentId() {
+    const ids = getAssignmentsList();
+    return ids[0] || assignmentId || "sample-persuasive";
+  }
+
+  function bindTopbarActions() {
+    document.getElementById("builderLinkBtn")?.addEventListener("click", () => {
+      const id = config?.id || resolveDefaultAssignmentId();
+      location.href = `/writeflow/?mode=builder&id=${encodeURIComponent(id)}`;
+    });
+
+    document.getElementById("teacherBtn")?.addEventListener("click", () => {
+      const onStudentAssignment = mode === "student" && params.get("home") !== "1";
+      if (onStudentAssignment) {
+        show("teacherLogin");
+        return;
+      }
+      const id = config?.id || resolveDefaultAssignmentId();
+      location.href = `/writeflow/?id=${encodeURIComponent(id)}&teacher=1`;
+    });
+  }
+
+  function renderClassroomReferenceTable() {
+    if (!VALID_CLASSROOMS.length) {
+      return `<p class="dw-muted">No classes configured yet.</p>`;
+    }
+    return `
+      <div class="wf-class-table-wrap">
+        <table class="wf-class-table">
+          <thead>
+            <tr>
+              <th scope="col">Class</th>
+              <th scope="col">Code</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${VALID_CLASSROOMS.map((classroom) => {
+              const code = CLASSROOM_CODES[classroom] || "";
+              return `<tr>
+                <td>${escapeHtml(classroom)}</td>
+                <td><code class="wf-class-code">${escapeHtml(code || "—")}</code></td>
+              </tr>`;
+            }).join("")}
+          </tbody>
+        </table>
+      </div>`;
+  }
     const nav = document.getElementById("builderNav");
     if (nav) {
       nav.innerHTML = (window.WriteFlowDefaults?.BUILDER_SECTIONS || []).map((s) => `
@@ -666,8 +709,9 @@
     } else if (builderSection === "classes") {
       canvas.innerHTML = `
         <h2 class="dw-h2">Classes</h2>
-        <p class="dw-muted">Class lists are shared site-wide (same as Summer Writing Test). Edit <code>api/diagnostic-writing/classes.json</code> to add classes.</p>
-        <ul class="dw-list">${VALID_CLASSROOMS.map((c) => `<li>${escapeHtml(c)}</li>`).join("")}</ul>`;
+        <p class="dw-muted">Students pick their class and enter the matching code before starting. Lists are shared site-wide (same as Summer Writing Test).</p>
+        <p class="dw-muted dw-tiny">Edit <code>api/diagnostic-writing/classes.json</code> and <code>classroom-codes.json</code>, then run <code>npm run sync:classrooms</code>.</p>
+        ${renderClassroomReferenceTable()}`;
     } else if (builderSection === "preview") {
       canvas.innerHTML = `
         <h2 class="dw-h2">Live preview</h2>
@@ -790,6 +834,7 @@
   }
 
   function initHome() {
+    Core.applyTheme(Core.resolveTheme({ ...Defaults, id: resolveDefaultAssignmentId() }));
     show("home");
     document.getElementById("openBuilderBtn")?.addEventListener("click", () => {
       location.href = "/writeflow/?mode=builder";
@@ -799,6 +844,7 @@
     });
   }
 
+  bindTopbarActions();
   if (mode === "builder") initBuilder();
   else if (params.get("home") === "1") initHome();
   else void initStudentFlow();
