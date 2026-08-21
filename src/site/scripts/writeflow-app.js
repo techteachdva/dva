@@ -552,6 +552,8 @@
         </table>
       </div>`;
   }
+
+  function renderBuilder() {
     const nav = document.getElementById("builderNav");
     if (nav) {
       nav.innerHTML = (window.WriteFlowDefaults?.BUILDER_SECTIONS || []).map((s) => `
