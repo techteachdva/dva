@@ -7,7 +7,8 @@
   const Core = window.WriteTestCore;
   const { STORY, CHARACTERS, START_MISSIONS } = window.TechTrailStory || {};
   const Visuals = window.TechTrailVisuals;
-  if (!Core || !STORY || !Visuals) return;
+  const State = window.TechTrailState;
+  if (!Core || !STORY || !Visuals || !State) return;
 
   Core.applyTheme(Core.PRESETS.gauntlet);
 
@@ -26,11 +27,66 @@
   let metCharacters = new Set();
   let runRng = Math.random;
   let startChoices = [];
+  let startTime = Date.now();
+  let difficulty = "operative";
+
+  const DIFFICULTY_CONFIG = {
+    cadet: { wordMult: 0.5, startChoicesMin: 3, startChoicesMax: 3, label: "Cadet" },
+    operative: { wordMult: 1, startChoicesMin: 3, startChoicesMax: 4, label: "Operative" },
+    analyst: { wordMult: 1.5, startChoicesMin: 4, startChoicesMax: 5, label: "Analyst" },
+  };
+
+  function loadDifficulty() {
+    try {
+      const raw = localStorage.getItem("techtrail:difficulty");
+      if (raw && DIFFICULTY_CONFIG[raw]) difficulty = raw;
+    } catch {}
+  }
+
+  function saveDifficulty(tier) {
+    if (DIFFICULTY_CONFIG[tier]) {
+      difficulty = tier;
+      try { localStorage.setItem("techtrail:difficulty", tier); } catch {}
+      updateDifficultyButtons();
+    }
+  }
+
+  function updateDifficultyButtons() {
+    document.querySelectorAll(".tt-difficulty__btn").forEach((btn) => {
+      btn.classList.toggle("tt-difficulty__btn--active", btn.dataset.tier === difficulty);
+    });
+  }
+
+  function scaleMinWords(base) {
+    const cfg = DIFFICULTY_CONFIG[difficulty] || DIFFICULTY_CONFIG.operative;
+    return Math.max(5, Math.round(base * cfg.wordMult));
+  }
+
+  function buildStartChoices() {
+    const cfg = DIFFICULTY_CONFIG[difficulty] || DIFFICULTY_CONFIG.operative;
+    const count = cfg.startChoicesMin + Math.floor(runRng() * (cfg.startChoicesMax - cfg.startChoicesMin + 1));
+    return shuffle(START_MISSIONS || []).slice(0, Math.min(count, START_MISSIONS.length));
+  }
 
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   function escapeHtml(s) {
     return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  function renderProfileMini() {
+    const el = document.getElementById("profileMini");
+    if (!el) return;
+    const profile = State.loadProfile();
+    const runs = profile.totalRuns || 0;
+    const badges = (profile.totalBadges || []).length;
+    const mentors = (profile.totalMentorsMet || []).length;
+    el.innerHTML = `
+      <div class="tt-profile-mini">
+        <span class="tt-profile-chip">🎖️ ${runs} run${runs === 1 ? "" : "s"}</span>
+        <span class="tt-profile-chip">🏅 ${badges} badge${badges === 1 ? "" : "s"}</span>
+        <span class="tt-profile-chip">👥 ${mentors} mentor${mentors === 1 ? "" : "s"}</span>
+      </div>`;
   }
 
   function shuffle(arr) {
@@ -249,6 +305,16 @@
     updateStats();
     renderGoldenTrack();
 
+    State.saveRun({
+      currentNode,
+      badges,
+      lessons,
+      goldenRules,
+      journal,
+      metCharacters,
+      startedAt: startTime,
+    });
+
     const typingEl = document.getElementById("typingChallenge");
     const choicesEl = document.getElementById("sceneChoices");
     const lessonEl = document.getElementById("sceneLesson");
@@ -258,9 +324,13 @@
       typingEl.classList.remove("dw-hidden");
       choicesEl.innerHTML = "";
       document.getElementById("typingPrompt").textContent = node.typingChallenge.prompt;
-      document.getElementById("typingInput").value = "";
-      updateTypingProgress(0, typingPending.minWords || 20);
-      document.getElementById("typingSubmitBtn").disabled = true;
+      const savedDraft = State.loadDraft();
+      const typingInput = document.getElementById("typingInput");
+      typingInput.value = savedDraft || "";
+      const words = Core.countWords(typingInput.value);
+      const min = scaleMinWords(typingPending.minWords || 20);
+      updateTypingProgress(words, min);
+      document.getElementById("typingSubmitBtn").disabled = words < min;
     } else {
       typingEl.classList.add("dw-hidden");
       typingPending = null;
@@ -360,9 +430,25 @@
     renderGoldenTrack("endingGoldenTrack");
     renderResearchPanel();
     burstConfetti(isMentor ? 32 : 48);
+
+    const runSnapshot = {
+      currentNode,
+      badges,
+      lessons,
+      goldenRules,
+      journal,
+      metCharacters,
+      startedAt: startTime,
+    };
+    const profile = State.loadProfile();
+    const updated = State.mergeRunToProfile(runSnapshot, profile);
+    State.saveProfile(updated);
+    State.clearRun();
+    renderProfileMini();
   }
 
   function resetRun() {
+    State.clearRun();
     runRng = Math.random;
     startChoices = buildStartChoices();
     badges.clear();
@@ -370,12 +456,56 @@
     goldenRules.clear();
     metCharacters.clear();
     journal = ["🌐 Mission accepted"];
+    startTime = Date.now();
   }
 
   function init() {
+    loadDifficulty();
     renderTitleGoldenPreview();
+    renderProfileMini();
+    updateDifficultyButtons();
 
-    document.getElementById("startGameBtn")?.addEventListener("click", () => {
+    document.querySelectorAll(".tt-difficulty__btn").forEach((btn) => {
+      btn.addEventListener("click", () => saveDifficulty(btn.dataset.tier));
+    });
+
+    const startBtn = document.getElementById("startGameBtn");
+    const continueBtn = document.getElementById("continueRunBtn");
+    const newRunBtn = document.getElementById("newRunBtn");
+
+    if (State.hasActiveRun()) {
+      startBtn?.classList.add("dw-hidden");
+      continueBtn?.classList.remove("dw-hidden");
+      newRunBtn?.classList.remove("dw-hidden");
+    } else {
+      startBtn?.classList.remove("dw-hidden");
+      continueBtn?.classList.add("dw-hidden");
+      newRunBtn?.classList.add("dw-hidden");
+    }
+
+    startBtn?.addEventListener("click", () => {
+      resetRun();
+      renderScene("start");
+    });
+
+    continueBtn?.addEventListener("click", () => {
+      const saved = State.loadRun();
+      if (saved) {
+        currentNode = saved.currentNode;
+        badges = saved.badges;
+        lessons = saved.lessons;
+        goldenRules = saved.goldenRules;
+        journal = saved.journal;
+        metCharacters = saved.metCharacters;
+        startTime = saved.startedAt || Date.now();
+        renderScene(currentNode);
+      } else {
+        resetRun();
+        renderScene("start");
+      }
+    });
+
+    newRunBtn?.addEventListener("click", () => {
       resetRun();
       renderScene("start");
     });
@@ -384,6 +514,7 @@
       resetRun();
       show("title");
       renderTitleGoldenPreview();
+      renderProfileMini();
     });
 
     const viewport = document.getElementById("sceneViewport");
@@ -395,22 +526,125 @@
 
     typingInput?.addEventListener("input", () => {
       const words = Core.countWords(typingInput.value);
-      const min = typingPending?.minWords || 20;
+      const min = scaleMinWords(typingPending?.minWords || 20);
       updateTypingProgress(words, min);
       document.getElementById("typingSubmitBtn").disabled = words < min;
+      State.saveDraft(typingInput.value);
     });
 
     document.getElementById("typingSubmitBtn")?.addEventListener("click", () => {
       if (!typingPending) return;
       const words = Core.countWords(typingInput.value);
-      if (words < (typingPending.minWords || 20)) return;
+      if (words < scaleMinWords(typingPending.minWords || 20)) return;
       journal.push(`⌨️ Oath drafted (${words} words)`);
       toast("Response submitted", "badge");
       burstConfetti(20);
-      navigate(typingPending.next);
+      State.clearDraft();
+
+      const nextNode = STORY[typingPending.next];
+      const isEnding = nextNode && nextNode.ending;
+      if (isEnding) {
+        showIdentityGate(() => navigate(typingPending.next));
+      } else {
+        navigate(typingPending.next);
+      }
     });
 
+    const identitySubmit = document.getElementById("identitySubmitBtn");
+    identitySubmit?.addEventListener("click", handleIdentitySubmit);
+
     show("title");
+  }
+
+  function showIdentityGate(onComplete) {
+    const gate = document.getElementById("identityGate");
+    if (!gate) { onComplete?.(); return; }
+    window._identityGateCallback = onComplete;
+    gate.classList.remove("dw-hidden");
+    const profile = State.loadProfile();
+    const firstEl = document.getElementById("identityFirstName");
+    const lastEl = document.getElementById("identityLastInitial");
+    const classEl = document.getElementById("identityClassroom");
+    const codeEl = document.getElementById("identityClassCode");
+    if (profile.lastName && firstEl && lastEl) {
+      const parts = profile.lastName.split(/\s+/);
+      if (parts.length >= 2) {
+        firstEl.value = parts.slice(0, -1).join(" ");
+        lastEl.value = parts[parts.length - 1].slice(0, 1);
+      }
+    }
+    if (profile.lastClassroom && classEl) {
+      classEl.value = profile.lastClassroom;
+    }
+    firstEl?.focus();
+  }
+
+  function hideIdentityGate() {
+    document.getElementById("identityGate")?.classList.add("dw-hidden");
+    window._identityGateCallback = null;
+  }
+
+  async function handleIdentitySubmit() {
+    const firstEl = document.getElementById("identityFirstName");
+    const lastEl = document.getElementById("identityLastInitial");
+    const classEl = document.getElementById("identityClassroom");
+    const codeEl = document.getElementById("identityClassCode");
+    const first = String(firstEl?.value || "").trim();
+    const last = String(lastEl?.value || "").trim();
+    const classroom = String(classEl?.value || "").trim();
+    const classCode = String(codeEl?.value || "").trim();
+
+    const name = first && last ? `${first} ${last.toUpperCase()}` : "";
+    if (!first || !last || !classroom || !classCode) {
+      toast("Fill in all fields to submit.", "lesson");
+      return;
+    }
+    if (!/^[\p{L}][\p{L}'-]{0,15}$/u.test(first)) {
+      toast("First name: letters only, up to 16 characters.", "lesson");
+      return;
+    }
+    if (!/^[\p{L}]$/u.test(last)) {
+      toast("Last initial must be one letter.", "lesson");
+      return;
+    }
+
+    const profile = State.loadProfile();
+    profile.lastName = name;
+    profile.lastClassroom = classroom;
+    State.saveProfile(profile);
+
+    const oathText = document.getElementById("typingInput")?.value?.trim() || "";
+    const submission = {
+      name,
+      classroom,
+      classCode,
+      oathText,
+      badges: [...badges],
+      goldenRules: [...goldenRules],
+      mentorsMet: [...metCharacters],
+      endingType: currentNode === "final_trial" ? "champion" : "mentor",
+      endingNode: currentNode,
+      durationSec: Math.max(0, Math.round((Date.now() - startTime) / 1000)),
+    };
+
+    try {
+      const res = await fetch("/api/tech-trail/submissions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(submission),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.error) {
+        throw new Error(data.error || `HTTP ${res.status}`);
+      }
+      toast("Submission saved!", "badge");
+    } catch (e) {
+      State.queueOfflineSubmission(submission);
+      toast("Saved locally — will retry when online.", "lesson");
+    }
+
+    hideIdentityGate();
+    window._identityGateCallback?.();
   }
 
   init();

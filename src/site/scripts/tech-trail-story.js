@@ -21,10 +21,15 @@
   /** All possible first missions — app shuffles and shows 3–4 per run. */
   const START_MISSIONS = [
     { label: "Report to the Design Lab — a team built the wrong thing", next: "design_lab" },
-    { label: "Respond to a alert from the Data Vault", next: "data_vault" },
+    { label: "Respond to an alert from the Data Vault", next: "data_vault" },
     { label: "Head for the Password Vault — security gate is locked", next: "password_temple" },
     { label: "Investigate strange output in the Code Bay", next: "code_bay" },
     { label: "Help stabilize the Network Closet", next: "network_closet" },
+    { label: "Visit the AI Ethics Lab — a classifier is flagging the wrong people", next: "ai_ethics" },
+    { label: "Tour the Hardware Graveyard — old devices are leaking data", next: "hardware_graveyard" },
+    { label: "Browse the Open Source Bazaar — a team forked without credit", next: "open_source" },
+    { label: "Report to the Bias Detection Unit — an app treats users differently", next: "bias_unit" },
+    { label: "Enter the Data Detective Agency — someone's trail doesn't add up", next: "data_detective" },
   ];
 
   const STORY = {
@@ -65,6 +70,7 @@ A side door opens onto Will Wright's simulation studio. Someone mentions a proto
         { label: "Visit the simulation studio to plan the next step", next: "prepare_phase" },
         { label: "Skip ahead — test a rough prototype now", next: "try_phase" },
         { label: "Check the Data Vault alert you saw in briefing", next: "data_vault" },
+        { label: "Ask Lovelace about her deep-dive module", next: "lovelace_deep" },
       ],
     },
 
@@ -171,6 +177,7 @@ Katherine Johnson waves you toward the trajectory console. A fake quote is trend
       choices: [
         { label: "Check the trending quote with Johnson", next: "trajectory_scene" },
         { label: "Reflect on the prototype with Crawford", next: "reflect_phase" },
+        { label: "Ask Hopper about her deep-dive module", next: "hopper_deep" },
       ],
     },
 
@@ -305,6 +312,7 @@ The Media Decoding Chamber is lit down the corridor.`,
       choices: [
         { label: "Compare headlines in the Media Chamber", next: "media_chamber" },
         { label: "Walk through the Footprint Gallery", next: "footprint_scene" },
+        { label: "Ask Johnson about her deep-dive module", next: "johnson_deep" },
       ],
     },
 
@@ -453,6 +461,7 @@ Two more locks glow on the vault map: passwords and footprints.`,
         { label: "Secure the Password Vault", next: "password_temple" },
         { label: "Decode conflicting headlines", next: "media_chamber" },
         { label: "Visit the Footprint Gallery", next: "footprint_scene" },
+        { label: "Ask Turing about his deep-dive module", next: "turing_deep" },
       ],
     },
 
@@ -573,6 +582,288 @@ All five Golden Rules pulse on the wall — if you've found them. The arena wait
       narrative: `"Who made it? What's the evidence? Who else covered it?" Crawford asks. "Run the checklist."`,
       choices: [
         { label: "Compare sources before sharing", next: "media_win" },
+      ],
+    },
+
+    ai_ethics: {
+      location: "AI Ethics Lab · Cambridge, MA",
+      character: "turing",
+      narrative: `Turing pulls up a face-recognition demo. "It works great on people like the engineers. It fails on everyone else. The team says accuracy is 'good enough for launch.'"
+
+The question is whether to ship, delay, or demand a fix.`,
+      choices: [
+        { label: "Insist the team tests on diverse faces before launch", next: "ai_ethics_win" },
+        { label: "Ship it — you can patch fairness later", next: "ai_ethics_fail" },
+        { label: "Remove the feature instead of fixing it", next: "ai_ethics_fail" },
+      ],
+    },
+
+    ai_ethics_win: {
+      location: "AI Ethics Lab — Fix Approved",
+      character: "turing",
+      lesson: "8.3.3.1",
+      narrative: `"Machines learn what we show them," Turing says. "If the data is narrow, the machine is narrow."
+
+A bulletin from the Bias Detection Unit lights up on the board.`,
+      badge: "Fairness Advocate",
+      choices: [
+        { label: "Head to the Bias Detection Unit", next: "bias_unit" },
+        { label: "Cross the Collaboration Bridge", next: "collaboration_bridge" },
+        { label: "Enter the Final Trial", next: "final_trial" },
+      ],
+    },
+
+    ai_ethics_fail: {
+      location: "AI Ethics Lab — Launch Day",
+      character: "turing",
+      narrative: `Headlines hit the feed by noon: "App can't recognize half its users." Turing rewinds the tape. "Want to make the call you skipped?"`,
+      choices: [
+        { label: "Demand diverse testing before anything ships", next: "ai_ethics_win" },
+      ],
+    },
+
+    hardware_graveyard: {
+      location: "Hardware Graveyard · Old ACME Storage",
+      character: "babbage",
+      narrative: `Babbage picks up a discarded phone. "Still powers on. Still has photos, messages, and location history. Someone threw it in the e-waste pile without wiping it."
+
+You could warn the team, ignore it, or grab it yourself.`,
+      choices: [
+        { label: "Report it and follow secure disposal protocol", next: "hardware_win" },
+        { label: "It's not your problem — someone else will deal with it", next: "hardware_fail" },
+        { label: "Keep it as a backup phone", next: "hardware_fail" },
+      ],
+    },
+
+    hardware_win: {
+      location: "Hardware Graveyard — Secured",
+      character: "babbage",
+      lesson: "8.2.2.3",
+      narrative: `"Data outlives the device," Babbage says. "Erase before you discard."
+
+A trail of old posts leads toward the Footprint Gallery.`,
+      badge: "Data Destroyer",
+      goldenRule: 2,
+      choices: [
+        { label: "Walk the Footprint Gallery", next: "footprint_scene" },
+        { label: "Visit the Password Vault", next: "password_temple" },
+      ],
+    },
+
+    hardware_fail: {
+      location: "Hardware Graveyard — Still Active",
+      character: "babbage",
+      narrative: `The phone buzzes with a notification. Someone already found it in the resale pile. Babbage holds up a factory-wipe guide. "Try again?"`,
+      choices: [
+        { label: "Follow secure disposal protocol", next: "hardware_win" },
+      ],
+    },
+
+    open_source: {
+      location: "Open Source Bazaar · Fork Alley",
+      character: "hopper",
+      narrative: `Hopper points at two versions of the same tool. "One team forked the other, removed the credits, and called it original. The creator is asking questions."
+
+You could call it out, stay silent, or add your own name to the fork.`,
+      choices: [
+        { label: "Credit the original creators and follow the license", next: "open_source_win" },
+        { label: "Stay quiet — it's not your project", next: "open_source_fail" },
+        { label: "Add your name to the fork too", next: "open_source_fail" },
+      ],
+    },
+
+    open_source_win: {
+      location: "Open Source Bazaar — Credits Restored",
+      character: "hopper",
+      lesson: "8.2.2.1",
+      narrative: `"Credit isn't optional — it's how open source lives," Hopper says. "You build on shoulders, you name the shoulders."
+
+Down the alley, Crawford is reviewing a video with a suspicious soundtrack.`,
+      badge: "License Scholar",
+      choices: [
+        { label: "Visit the IP Chamber", next: "ip_chamber" },
+        { label: "Head to the Code Bay", next: "code_bay" },
+      ],
+    },
+
+    open_source_fail: {
+      location: "Open Source Bazaar — Flame Thread",
+      character: "hopper",
+      narrative: `The original creator posts receipts. Comments turn hostile. Hopper rewinds the scene. "Same fork. Different you?"`,
+      choices: [
+        { label: "Restore credits and follow the license", next: "open_source_win" },
+      ],
+    },
+
+    bias_unit: {
+      location: "Bias Detection Unit · Algorithm Watch",
+      character: "johnson",
+      narrative: `Johnson zooms in on two loan-application screens. Same income, same history — different approval rates. The model won't explain why.
+
+The team wants to keep it running because "the numbers look good overall."`,
+      choices: [
+        { label: "Demand explainability and audit for group fairness", next: "bias_win" },
+        { label: "It's working — don't fix what isn't obviously broken", next: "bias_fail" },
+        { label: "Blame the data and move on", next: "bias_fail" },
+      ],
+    },
+
+    bias_win: {
+      location: "Bias Detection Unit — Audit Ordered",
+      character: "johnson",
+      lesson: "8.1.3.2",
+      narrative: `"Precision without fairness isn't precision," Johnson says. "It's a mirror of what you already fed it."
+
+The Sources Library has a new tip about a viral headline.`,
+      badge: "Bias Spotter",
+      choices: [
+        { label: "Check the Sources Library", next: "sources_library" },
+        { label: "Compare headlines in the Media Chamber", next: "media_chamber" },
+      ],
+    },
+
+    bias_fail: {
+      location: "Bias Detection Unit — Pattern Confirmed",
+      character: "johnson",
+      narrative: `A journalist runs the numbers independently. The gap is real and documented. Johnson replays the fork. "Same data. Different you?"`,
+      choices: [
+        { label: "Order the audit", next: "bias_win" },
+      ],
+    },
+
+    data_detective: {
+      location: "Data Detective Agency · Trail Analytics",
+      character: "conway",
+      narrative: `Conway lays out three profiles side by side. "Same person. Three apps. Each one guessed something different about them — and sold the guess."
+
+Your friend says, "I have nothing to hide, so why care?"`,
+      choices: [
+        { label: "Explain that small data points build a detailed profile", next: "detective_win" },
+        { label: "Agree — if you're not doing anything wrong, privacy doesn't matter", next: "detective_fail" },
+      ],
+    },
+
+    detective_win: {
+      location: "Data Detective Agency — Pattern Broken",
+      character: "conway",
+      lesson: "8.2.2.3",
+      narrative: `"Nothing to hide" misses the point," Conway says. "Privacy is about control, not secrets."
+
+The vault map shows two more locations: passwords and footprints.`,
+      badge: "Trail Tracker",
+      goldenRule: 2,
+      choices: [
+        { label: "Visit the Password Vault", next: "password_temple" },
+        { label: "Walk the Footprint Gallery", next: "footprint_scene" },
+      ],
+    },
+
+    detective_fail: {
+      location: "Data Detective Agency — Profile Complete",
+      character: "conway",
+      narrative: `Conway assembles the puzzle from public posts alone. Address, schedule, habits — all visible. "Still nothing to hide?" he asks.`,
+      choices: [
+        { label: "Limit what's shared and review app permissions", next: "detective_win" },
+      ],
+    },
+
+    lovelace_deep: {
+      location: "Design Lab — Deep Archive",
+      character: "lovelace",
+      narrative: `Lovelace unlocks a cabinet of punched cards. "Most people know I wrote the first program. Fewer know I predicted machines could compose music and paint pictures — a century before it happened."
+
+She slides a card across the desk. "In your own words: what did I see that Babbage didn't?"`,
+      typingChallenge: {
+        prompt: "In 2–3 sentences: What did Ada Lovelace understand about computing that went beyond pure calculation?",
+        minWords: 15,
+        next: "lovelace_deep_win",
+      },
+      choices: [],
+    },
+
+    lovelace_deep_win: {
+      location: "Design Lab — Archive Sealed",
+      character: "lovelace",
+      narrative: `"Poetry and analysis aren't opposites," Lovelace says. "They're the same engine running different software."`,
+      badge: "Lovelace Scholar",
+      choices: [
+        { label: "Return to briefing", next: "start" },
+        { label: "Enter the Final Trial", next: "final_trial" },
+      ],
+    },
+
+    turing_deep: {
+      location: "Data Vault — Cryptography Archive",
+      character: "turing",
+      narrative: `Turing opens a file marked "Enigma." "Breaking codes was the job. The deeper work was asking whether machines could think — and designing a test that still has no final answer."
+
+He turns to you. "What made the Turing Test revolutionary — not just clever?"`,
+      typingChallenge: {
+        prompt: "In 2–3 sentences: Why was the Turing Test a philosophical breakthrough and not just a technical trick?",
+        minWords: 15,
+        next: "turing_deep_win",
+      },
+      choices: [],
+    },
+
+    turing_deep_win: {
+      location: "Data Vault — Archive Sealed",
+      character: "turing",
+      narrative: `"You get it," Turing says. "The question isn't 'Can machines think?' It's 'What do we mean by think?'"`,
+      badge: "Turing Scholar",
+      choices: [
+        { label: "Return to briefing", next: "start" },
+        { label: "Enter the Final Trial", next: "final_trial" },
+      ],
+    },
+
+    hopper_deep: {
+      location: "Debugging Fleet — Compiler Museum",
+      character: "hopper",
+      narrative: `Hopper points at a wall of old programming manuals. "Before me, everyone wrote in machine code — ones and zeros. I built the first compiler so humans could write in something that looked like English."
+
+She taps the glass. "Why does that matter beyond convenience?"`,
+      typingChallenge: {
+        prompt: "In 2–3 sentences: Why was Grace Hopper's compiler more than just a time-saver — what did it change about who could program?",
+        minWords: 15,
+        next: "hopper_deep_win",
+      },
+      choices: [],
+    },
+
+    hopper_deep_win: {
+      location: "Debugging Fleet — Museum Sealed",
+      character: "hopper",
+      narrative: `"Exactly," Hopper says. "Code in English means ideas can come from anyone who has them — not just the ones who memorized the machine."`,
+      badge: "Hopper Scholar",
+      choices: [
+        { label: "Return to briefing", next: "start" },
+        { label: "Enter the Final Trial", next: "final_trial" },
+      ],
+    },
+
+    johnson_deep: {
+      location: "Sources Library — Orbital Mechanics Wing",
+      character: "johnson",
+      narrative: `Johnson spreads out hand-written trajectory tables. "No computers. Just pencil, paper, and confidence. One wrong decimal and the capsule misses the ocean by miles."
+
+She looks up. "What does precision mean when the stakes are lives?"`,
+      typingChallenge: {
+        prompt: "In 2–3 sentences: What did Katherine Johnson's work teach us about the relationship between human judgment and machine calculation?",
+        minWords: 15,
+        next: "johnson_deep_win",
+      },
+      choices: [],
+    },
+
+    johnson_deep_win: {
+      location: "Sources Library — Wing Sealed",
+      character: "johnson",
+      narrative: `"Machines calculate," Johnson says. "Humans decide what the calculation is for. Never confuse the two."`,
+      badge: "Johnson Scholar",
+      choices: [
+        { label: "Return to briefing", next: "start" },
+        { label: "Enter the Final Trial", next: "final_trial" },
       ],
     },
 

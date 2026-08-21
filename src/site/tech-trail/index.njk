@@ -64,8 +64,19 @@ layout: false
               </ol>
               <p class="tt-tutorial__note">Wrong turns aren't game over — the scene rewinds. Each run scrambles which missions appear first, and a lucky roll may earn a bonus badge.</p>
             </div>
+            <div class="tt-difficulty">
+              <span class="tt-difficulty__label">Difficulty:</span>
+              <button class="tt-difficulty__btn tt-difficulty__btn--active" type="button" data-tier="cadet">Cadet</button>
+              <button class="tt-difficulty__btn" type="button" data-tier="operative">Operative</button>
+              <button class="tt-difficulty__btn" type="button" data-tier="analyst">Analyst</button>
+            </div>
             <div class="tt-golden-preview" id="titleGoldenPreview" aria-label="Golden Rules to recover"></div>
-            <button id="startGameBtn" class="tt-cta-btn" type="button">Accept mission</button>
+            <div class="tt-btn-group" id="titleBtnGroup">
+              <button id="startGameBtn" class="tt-cta-btn" type="button">Accept mission</button>
+              <button id="continueRunBtn" class="tt-cta-btn tt-cta-btn--secondary dw-hidden" type="button">Continue mission</button>
+              <button id="newRunBtn" class="tt-cta-btn tt-cta-btn--ghost dw-hidden" type="button">New mission</button>
+            </div>
+            <div id="profileMini" class="tt-profile-mini-wrap"></div>
           </div>
         </section>
 
@@ -113,6 +124,30 @@ layout: false
             </div>
           </div>
 
+          <div id="identityGate" class="tt-identity-gate dw-hidden">
+            <div class="tt-identity-gate__panel">
+              <h3 class="dw-h3">Mission Report</h3>
+              <p class="dw-muted dw-tiny">Enter your details to submit your Digital Citizenship Oath.</p>
+              <div class="tt-identity-gate__field">
+                <label class="dw-label" for="identityFirstName">First name</label>
+                <input id="identityFirstName" class="dw-input" type="text" maxlength="16" placeholder="Ada" />
+              </div>
+              <div class="tt-identity-gate__field">
+                <label class="dw-label" for="identityLastInitial">Last initial</label>
+                <input id="identityLastInitial" class="dw-input" type="text" maxlength="1" placeholder="L" />
+              </div>
+              <div class="tt-identity-gate__field">
+                <label class="dw-label" for="identityClassroom">Classroom</label>
+                <input id="identityClassroom" class="dw-input" type="text" maxlength="60" placeholder="e.g. Tech: Media Arts" />
+              </div>
+              <div class="tt-identity-gate__field">
+                <label class="dw-label" for="identityClassCode">Class passcode</label>
+                <input id="identityClassCode" class="dw-input" type="password" maxlength="32" placeholder="••••" />
+              </div>
+              <button id="identitySubmitBtn" class="tt-cta-btn" type="button">Submit and enter</button>
+            </div>
+          </div>
+
           <div class="tt-sidebar">
             <div class="tt-journal tt-journal--3d">
               <h3 class="dw-h3">Mission log</h3>
@@ -146,6 +181,7 @@ layout: false
     <script src="/scripts/write-test-core.js" defer></script>
     <script src="/scripts/tech-trail-visuals.js" defer></script>
     <script src="/scripts/tech-trail-story.js" defer></script>
+    <script src="/scripts/tech-trail-state.js" defer></script>
     <script src="/scripts/tech-trail-app.js" defer></script>
   </body>
 </html>

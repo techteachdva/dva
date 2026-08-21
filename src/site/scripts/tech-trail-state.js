@@ -1,0 +1,228 @@
+/**
+ * Tech Trail State — localStorage persistence for Global Tech Gauntlet runs + profile.
+ */
+(() => {
+  "use strict";
+
+  const PREFIX = "techtrail";
+  const RUN_KEY = "run";
+  const PROFILE_KEY = "profile";
+  const DRAFT_KEY = "draft";
+  const OFFLINE_KEY = "offlineQueue";
+
+  function now() {
+    return Date.now();
+  }
+
+  function tryGet(key) {
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function trySet(key, value) {
+    try {
+      localStorage.setItem(key, JSON.stringify(value));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function tryRemove(key) {
+    try {
+      localStorage.removeItem(key);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function blankRun() {
+    return {
+      v: 1,
+      currentNode: "start",
+      badges: [],
+      lessons: [],
+      goldenRules: [],
+      journal: ["🌐 Mission accepted"],
+      metCharacters: [],
+      startedAt: now(),
+      updatedAt: now(),
+    };
+  }
+
+  function blankProfile() {
+    return {
+      v: 1,
+      totalRuns: 0,
+      totalBadges: [],
+      totalGoldenRules: [],
+      totalMentorsMet: [],
+      bestRun: null,
+      lastName: "",
+      lastClassroom: "",
+    };
+  }
+
+  function normalizeArray(arr) {
+    return Array.isArray(arr) ? arr : [];
+  }
+
+  function unionUnique(existing, incoming) {
+    const set = new Set(existing);
+    for (const item of normalizeArray(incoming)) set.add(item);
+    return [...set];
+  }
+
+  function loadRun() {
+    const raw = tryGet(`${PREFIX}:${RUN_KEY}`);
+    if (!raw || raw.v !== 1) return null;
+    return {
+      currentNode: raw.currentNode || "start",
+      badges: new Set(normalizeArray(raw.badges)),
+      lessons: new Set(normalizeArray(raw.lessons)),
+      goldenRules: new Set(normalizeArray(raw.goldenRules)),
+      journal: normalizeArray(raw.journal),
+      metCharacters: new Set(normalizeArray(raw.metCharacters)),
+      startedAt: raw.startedAt || now(),
+      updatedAt: raw.updatedAt || now(),
+    };
+  }
+
+  function saveRun(state) {
+    const payload = {
+      v: 1,
+      currentNode: state.currentNode,
+      badges: [...state.badges],
+      lessons: [...state.lessons],
+      goldenRules: [...state.goldenRules],
+      journal: state.journal,
+      metCharacters: [...state.metCharacters],
+      startedAt: state.startedAt,
+      updatedAt: now(),
+    };
+    trySet(`${PREFIX}:${RUN_KEY}`, payload);
+  }
+
+  function clearRun() {
+    tryRemove(`${PREFIX}:${RUN_KEY}`);
+    tryRemove(`${PREFIX}:${DRAFT_KEY}`);
+  }
+
+  function hasActiveRun() {
+    const raw = tryGet(`${PREFIX}:${RUN_KEY}`);
+    return !!(raw && raw.v === 1 && raw.currentNode && raw.currentNode !== "start");
+  }
+
+  function loadProfile() {
+    const raw = tryGet(`${PREFIX}:${PROFILE_KEY}`);
+    if (!raw || raw.v !== 1) return blankProfile();
+    return {
+      v: 1,
+      totalRuns: raw.totalRuns || 0,
+      totalBadges: normalizeArray(raw.totalBadges),
+      totalGoldenRules: normalizeArray(raw.totalGoldenRules),
+      totalMentorsMet: normalizeArray(raw.totalMentorsMet),
+      bestRun: raw.bestRun || null,
+      lastName: raw.lastName || "",
+      lastClassroom: raw.lastClassroom || "",
+    };
+  }
+
+  function saveProfile(profile) {
+    trySet(`${PREFIX}:${PROFILE_KEY}`, { ...profile, v: 1 });
+  }
+
+  function summarizeRun(run) {
+    const durationSec = Math.max(0, Math.round((now() - (run.startedAt || now())) / 1000));
+    return {
+      badgesCount: run.badges.size,
+      goldenCount: run.goldenRules.size,
+      mentorsCount: run.metCharacters.size,
+      durationSec,
+      endingType: null,
+    };
+  }
+
+  function mergeRunToProfile(run, profile) {
+    const updated = { ...profile };
+    updated.totalRuns = (updated.totalRuns || 0) + 1;
+    updated.totalBadges = unionUnique(updated.totalBadges, [...run.badges]);
+    updated.totalGoldenRules = unionUnique(updated.totalGoldenRules, [...run.goldenRules]);
+    updated.totalMentorsMet = unionUnique(updated.totalMentorsMet, [...run.metCharacters]);
+
+    const summary = summarizeRun(run);
+    const currentBest = updated.bestRun;
+    const isBetter =
+      !currentBest ||
+      summary.goldenCount > (currentBest.goldenCount || 0) ||
+      (summary.goldenCount === (currentBest.goldenCount || 0) &&
+        summary.badgesCount > (currentBest.badgesCount || 0));
+
+    if (isBetter) {
+      updated.bestRun = {
+        badgesCount: summary.badgesCount,
+        goldenCount: summary.goldenCount,
+        mentorsCount: summary.mentorsCount,
+        durationSec: summary.durationSec,
+        endedAt: now(),
+      };
+    }
+
+    return updated;
+  }
+
+  function saveDraft(text) {
+    trySet(`${PREFIX}:${DRAFT_KEY}`, { text: String(text || ""), savedAt: now() });
+  }
+
+  function loadDraft() {
+    const raw = tryGet(`${PREFIX}:${DRAFT_KEY}`);
+    if (!raw) return "";
+    return String(raw.text || "");
+  }
+
+  function clearDraft() {
+    tryRemove(`${PREFIX}:${DRAFT_KEY}`);
+  }
+
+  function queueOfflineSubmission(entry) {
+    const queue = normalizeArray(tryGet(`${PREFIX}:${OFFLINE_KEY}`));
+    queue.push({ ...entry, queuedAt: now() });
+    trySet(`${PREFIX}:${OFFLINE_KEY}`, queue);
+  }
+
+  function dequeueOfflineSubmissions() {
+    const queue = normalizeArray(tryGet(`${PREFIX}:${OFFLINE_KEY}`));
+    tryRemove(`${PREFIX}:${OFFLINE_KEY}`);
+    return queue;
+  }
+
+  function hasOfflineSubmissions() {
+    const queue = normalizeArray(tryGet(`${PREFIX}:${OFFLINE_KEY}`));
+    return queue.length > 0;
+  }
+
+  window.TechTrailState = {
+    loadRun,
+    saveRun,
+    clearRun,
+    hasActiveRun,
+    loadProfile,
+    saveProfile,
+    summarizeRun,
+    mergeRunToProfile,
+    saveDraft,
+    loadDraft,
+    clearDraft,
+    queueOfflineSubmission,
+    dequeueOfflineSubmissions,
+    hasOfflineSubmissions,
+    blankRun,
+    blankProfile,
+  };
+})();

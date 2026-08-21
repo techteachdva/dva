@@ -1,0 +1,286 @@
+---
+title: GTG Teacher Review
+permalink: /tech-trail/teacher/
+layout: false
+---
+<!doctype html>
+<html lang="{{ meta.mainLanguage }}">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="theme-color" content="#140818" />
+    <title>Global Tech Gauntlet — Teacher Review</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/styles/write-platform.css" />
+    <link rel="stylesheet" href="/styles/custom-style.css" />
+    <style>
+      .tt-summary { display:flex; flex-wrap:wrap; gap:16px; margin-bottom:20px; }
+      .tt-summary-card { flex:1 1 160px; padding:16px; border-radius:var(--dw-radius,10px); background:rgba(255,215,0,0.06); border:1px solid rgba(255,215,0,0.18); }
+      .tt-summary-card__num { font-family:"Bebas Neue",sans-serif; font-size:32px; line-height:1; color:#ffd700; }
+      .tt-summary-card__label { font-size:12px; text-transform:uppercase; letter-spacing:0.06em; color:var(--dw-muted); margin-top:4px; }
+      .tt-oath-preview { cursor:pointer; border-bottom:1px dotted rgba(255,248,231,0.35); }
+      .tt-oath-full { padding:12px; background:rgba(0,0,0,0.35); border-radius:8px; margin-top:8px; font-size:14px; line-height:1.6; white-space:pre-wrap; }
+      .tt-table-wrap { overflow-x:auto; }
+      .tt-table { width:100%; border-collapse:collapse; font-size:14px; }
+      .tt-table th { text-align:left; padding:10px; font-weight:600; border-bottom:1px solid rgba(255,248,231,0.15); white-space:nowrap; }
+      .tt-table td { padding:10px; vertical-align:top; border-bottom:1px solid rgba(255,248,231,0.06); }
+      .tt-table tr:hover td { background:rgba(255,255,255,0.03); }
+      .tt-export-bar { display:flex; gap:12px; align-items:center; margin-bottom:12px; }
+    </style>
+  </head>
+  <body class="dw-body wp-theme--gauntlet">
+    <div class="dw-shell tt-shell">
+      <header class="dw-topbar tt-topbar">
+        <div class="dw-topbar-brand">
+          <div class="tt-logo-mark" aria-hidden="true">🌐</div>
+          <div>
+            <div class="dw-title">Global Tech Gauntlet</div>
+            <div class="dw-subtitle">Teacher Review</div>
+          </div>
+        </div>
+        <div class="dw-actions"><a class="dw-link" href="/tech-trail/">Back to game</a><a class="dw-link" href="/">Back to site</a></div>
+      </header>
+
+      <main class="tt-main" style="padding: 24px; max-width: 1100px; margin: 0 auto;">
+        <section class="dw-card" style="padding: 20px; margin-bottom: 20px;">
+          <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;">
+            <div class="tt-identity-gate__field" style="flex: 1 1 180px;">
+              <label class="dw-label" for="teacherPassword">Teacher password</label>
+              <input id="teacherPassword" class="dw-input" type="password" value="studentsfirst" />
+            </div>
+            <div class="tt-identity-gate__field" style="flex: 1 1 180px;">
+              <label class="dw-label" for="filterClassroom">Classroom filter</label>
+              <select id="filterClassroom" class="dw-input">
+                <option value="">All classrooms</option>
+              </select>
+            </div>
+            <button id="loadBtn" class="tt-cta-btn" type="button" style="height: fit-content;">Load submissions</button>
+          </div>
+          <p id="statusMsg" class="dw-muted dw-tiny" style="margin-top: 10px;">Enter the teacher password and click Load.</p>
+        </section>
+
+        <section id="statsSection" class="dw-hidden">
+          <div class="tt-summary">
+            <div class="tt-summary-card">
+              <div class="tt-summary-card__num" id="statTotal">0</div>
+              <div class="tt-summary-card__label">Submissions</div>
+            </div>
+            <div class="tt-summary-card">
+              <div class="tt-summary-card__num" id="statAvgGolden">0</div>
+              <div class="tt-summary-card__label">Avg Golden Rules</div>
+            </div>
+            <div class="tt-summary-card">
+              <div class="tt-summary-card__num" id="statChampion">0</div>
+              <div class="tt-summary-card__label">Champions</div>
+            </div>
+            <div class="tt-summary-card">
+              <div class="tt-summary-card__num" id="statMentors">0</div>
+              <div class="tt-summary-card__label">Mentor Endings</div>
+            </div>
+          </div>
+        </section>
+
+        <section id="resultsSection" class="dw-hidden">
+          <div class="tt-export-bar">
+            <button id="exportBtn" class="tt-cta-btn tt-cta-btn--sm" type="button">Export CSV</button>
+            <span class="dw-muted dw-tiny" id="resultCount"></span>
+          </div>
+          <div class="tt-table-wrap">
+            <table class="tt-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Classroom</th>
+                  <th>Ending</th>
+                  <th>Badges</th>
+                  <th>Golden Rules</th>
+                  <th>Oath</th>
+                  <th>Duration</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody id="resultsBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      (() => {
+        "use strict";
+
+        const passwordEl = document.getElementById("teacherPassword");
+        const classroomEl = document.getElementById("filterClassroom");
+        const loadBtn = document.getElementById("loadBtn");
+        const exportBtn = document.getElementById("exportBtn");
+        const statusMsg = document.getElementById("statusMsg");
+        const statsSection = document.getElementById("statsSection");
+        const resultsSection = document.getElementById("resultsSection");
+        const resultsBody = document.getElementById("resultsBody");
+        const resultCount = document.getElementById("resultCount");
+
+        let cachedClassrooms = [];
+        let currentSubmissions = [];
+
+        function fmtDate(ts) {
+          const d = new Date(ts);
+          return d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+        }
+
+        function fmtSec(s) {
+          const m = Math.floor(s / 60);
+          const r = s % 60;
+          return `${m}m ${r}s`;
+        }
+
+        async function load() {
+          const password = String(passwordEl.value || "").trim();
+          const classroom = String(classroomEl.value || "").trim();
+          statusMsg.textContent = "Loading…";
+          statsSection.classList.add("dw-hidden");
+          resultsSection.classList.add("dw-hidden");
+
+          try {
+            const url = new URL("/api/tech-trail/submissions", window.location.origin);
+            url.searchParams.set("password", password);
+            if (classroom) url.searchParams.set("classroom", classroom);
+
+            const res = await fetch(url.toString(), { cache: "no-store" });
+            const data = await res.json().catch(() => ({}));
+
+            if (!res.ok || data.error) {
+              statusMsg.textContent = data.error || `Error ${res.status}`;
+              return;
+            }
+
+            if (data.setupRequired) {
+              statusMsg.textContent = "Backend not configured yet.";
+              return;
+            }
+
+            cachedClassrooms = data.classrooms || [];
+            populateClassrooms();
+
+            const subs = Array.isArray(data.submissions) ? data.submissions : [];
+            currentSubmissions = subs;
+            if (!subs.length) {
+              statusMsg.textContent = "No submissions found.";
+              return;
+            }
+
+            renderStats(subs);
+            renderTable(subs);
+            statusMsg.textContent = `Loaded ${subs.length} submission${subs.length === 1 ? "" : "s"}.`;
+          } catch (e) {
+            statusMsg.textContent = "Network error: " + e.message;
+          }
+        }
+
+        function populateClassrooms() {
+          const current = classroomEl.value;
+          classroomEl.innerHTML = '<option value="">All classrooms</option>';
+          for (const c of cachedClassrooms) {
+            const opt = document.createElement("option");
+            opt.value = c;
+            opt.textContent = c;
+            classroomEl.appendChild(opt);
+          }
+          classroomEl.value = current || "";
+        }
+
+        function renderStats(subs) {
+          const total = subs.length;
+          const avgGolden = total > 0
+            ? (subs.reduce((sum, s) => sum + (Array.isArray(s.goldenRules) ? s.goldenRules.length : 0), 0) / total).toFixed(1)
+            : "0";
+          const champions = subs.filter((s) => s.endingType === "champion").length;
+          const mentors = subs.filter((s) => s.endingType === "mentor").length;
+
+          document.getElementById("statTotal").textContent = total;
+          document.getElementById("statAvgGolden").textContent = avgGolden;
+          document.getElementById("statChampion").textContent = champions;
+          document.getElementById("statMentors").textContent = mentors;
+          statsSection.classList.remove("dw-hidden");
+        }
+
+        function renderTable(subs) {
+          resultCount.textContent = `${subs.length} row${subs.length === 1 ? "" : "s"}`;
+          resultsBody.innerHTML = subs.map((s, idx) => {
+            const shortOath = String(s.oathText || "").slice(0, 70);
+            const fullOath = escapeHtml(String(s.oathText || ""));
+            const badges = Array.isArray(s.badges) ? s.badges : [];
+            const golden = Array.isArray(s.goldenRules) ? s.goldenRules : [];
+            const mentors = Array.isArray(s.mentorsMet) ? s.mentorsMet : [];
+            return `
+              <tr data-idx="${idx}">
+                <td style="white-space:nowrap;">${escapeHtml(s.name)}</td>
+                <td>${escapeHtml(s.classroom)}</td>
+                <td><span class="tt-badge" style="font-size:12px;">${escapeHtml(s.endingType)}</span></td>
+                <td>${badges.length}</td>
+                <td>${golden.length}/5</td>
+                <td>
+                  <span class="tt-oath-preview" data-idx="${idx}">${escapeHtml(shortOath)}${shortOath.length >= 70 ? "…" : ""}</span>
+                </td>
+                <td style="white-space:nowrap;">${fmtSec(s.durationSec || 0)}</td>
+                <td style="white-space:nowrap;">${fmtDate(s.submittedAt)}</td>
+              </tr>`;
+          }).join("");
+
+          resultsBody.querySelectorAll(".tt-oath-preview").forEach((el) => {
+            el.addEventListener("click", () => {
+              const idx = Number(el.dataset.idx);
+              const existing = el.nextElementSibling;
+              if (existing && existing.classList.contains("tt-oath-full")) {
+                existing.remove();
+                return;
+              }
+              const full = escapeHtml(String(currentSubmissions[idx]?.oathText || ""));
+              const div = document.createElement("div");
+              div.className = "tt-oath-full";
+              div.textContent = full || "(No oath text)";
+              el.parentElement.appendChild(div);
+            });
+          });
+
+          resultsSection.classList.remove("dw-hidden");
+        }
+
+        function escapeHtml(str) {
+          return String(str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        }
+
+        function exportCsv() {
+          if (!currentSubmissions.length) return;
+          const headers = ["Name", "Classroom", "Ending", "Badges", "GoldenRules", "MentorsMet", "OathText", "DurationSec", "SubmittedAt"];
+          const rows = currentSubmissions.map((s) => [
+            s.name,
+            s.classroom,
+            s.endingType,
+            (s.badges || []).join("; "),
+            (s.goldenRules || []).join("; "),
+            (s.mentorsMet || []).join("; "),
+            String(s.oathText || "").replace(/\r?\n/g, " "),
+            s.durationSec || 0,
+            new Date(s.submittedAt || 0).toISOString(),
+          ]);
+          const csv = [headers, ...rows]
+            .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))
+            .join("\n");
+          const blob = new Blob([csv], { type: "text/csv" });
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = `gtg-submissions-${new Date().toISOString().slice(0, 10)}.csv`;
+          a.click();
+          URL.revokeObjectURL(a.href);
+        }
+
+        loadBtn.addEventListener("click", load);
+        exportBtn.addEventListener("click", exportCsv);
+        load();
+      })();
+    </script>
+  </body>
+</html>
