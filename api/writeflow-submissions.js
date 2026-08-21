@@ -61,18 +61,47 @@ async function fetchScriptJson(url, options) {
 }
 
 export async function GET(request) {
-  const password = getQueryParam(request, "password");
+  const action = getQueryParam(request, "action") || "list";
   const assignmentId = getQueryParam(request, "assignmentId");
 
   if (!assignmentId) {
     return Response.json({ error: "Missing assignmentId" }, { status: 400, headers: corsHeaders() });
   }
-  if (!password) {
-    return Response.json({ error: "Unauthorized" }, { status: 401, headers: corsHeaders() });
-  }
 
   const scriptUrl = getScriptUrl();
   if (!scriptUrl) return notConfiguredResponse();
+
+  if (action === "getAssignment") {
+    try {
+      const url = new URL(scriptUrl);
+      url.searchParams.set("action", "getAssignment");
+      url.searchParams.set("secret", getApiSecret());
+      url.searchParams.set("assignmentId", assignmentId);
+
+      const data = await fetchScriptJson(url.toString(), { method: "GET" });
+      if (data.error) {
+        return Response.json(
+          { error: data.error },
+          { status: data.error === "Assignment not found" ? 404 : 502, headers: corsHeaders() }
+        );
+      }
+      return Response.json(
+        { ok: true, assignmentId: data.assignmentId, title: data.title, config: data.config },
+        { headers: corsHeaders() }
+      );
+    } catch (e) {
+      console.error("WriteFlow getAssignment error:", e.message);
+      return Response.json(
+        { error: e.message || "Could not load assignment." },
+        { status: 502, headers: corsHeaders() }
+      );
+    }
+  }
+
+  const password = getQueryParam(request, "password");
+  if (!password) {
+    return Response.json({ error: "Unauthorized" }, { status: 401, headers: corsHeaders() });
+  }
 
   try {
     const url = new URL(scriptUrl);
@@ -117,8 +146,19 @@ export async function POST(request) {
       const assignmentId = typeof body?.assignmentId === "string" ? body.assignmentId.trim().slice(0, 80) : "";
       const teacherPassword = typeof body?.teacherPassword === "string" ? body.teacherPassword.slice(0, 80) : "";
       const title = typeof body?.title === "string" ? body.title.trim().slice(0, 200) : "";
+      const config = body?.config && typeof body.config === "object" ? body.config : null;
       if (!assignmentId || !teacherPassword) {
         return Response.json({ error: "Missing assignmentId or teacherPassword" }, { status: 400, headers: corsHeaders() });
+      }
+      let configJson = "";
+      if (config) {
+        const publicConfig = { ...config };
+        delete publicConfig.teacherPassword;
+        delete publicConfig.heroImageData;
+        configJson = JSON.stringify(publicConfig);
+        if (configJson.length > 45000) {
+          return Response.json({ error: "Assignment config is too large to publish. Remove uploaded hero images and use a URL instead." }, { status: 400, headers: corsHeaders() });
+        }
       }
       const data = await fetchScriptJson(scriptUrl, {
         method: "POST",
@@ -129,6 +169,7 @@ export async function POST(request) {
           assignmentId,
           teacherPassword,
           title,
+          configJson,
         }),
       });
       if (data.error) {

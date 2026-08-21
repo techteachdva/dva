@@ -122,8 +122,8 @@ function initSubmissionHeaders_(sheet) {
 }
 
 function initAssignmentHeaders_(sheet) {
-  sheet.getRange(1, 1, 1, 4).setValues([["assignmentId", "teacherPassword", "title", "updatedAt"]]);
-  sheet.getRange(1, 1, 1, 4).setFontWeight("bold");
+  sheet.getRange(1, 1, 1, 5).setValues([["assignmentId", "teacherPassword", "title", "updatedAt", "configJson"]]);
+  sheet.getRange(1, 1, 1, 5).setFontWeight("bold");
   sheet.setFrozenRows(1);
 }
 
@@ -164,6 +164,14 @@ function handle_(e, isGet) {
       });
     }
 
+    if (action === "getAssignment") {
+      const assignmentId = String(params.assignmentId || "").trim();
+      if (!assignmentId) return respond_({ error: "Missing assignmentId" });
+      const assignment = getAssignmentConfig_(assignmentId);
+      if (!assignment) return respond_({ error: "Assignment not found" });
+      return respond_({ ok: true, assignmentId: assignmentId, title: assignment.title, config: assignment.config });
+    }
+
     if (action === "registerAssignment") {
       registerAssignment_(params);
       return respond_({ ok: true, assignmentId: String(params.assignmentId || "") });
@@ -198,6 +206,7 @@ function registerAssignment_(params) {
   const assignmentId = String(params.assignmentId || "").trim().slice(0, 80);
   const teacherPassword = String(params.teacherPassword || "").slice(0, 80);
   const title = String(params.title || "").trim().slice(0, 200);
+  const configJson = String(params.configJson || "").slice(0, 45000);
   if (!assignmentId || !teacherPassword) {
     throw new Error("Missing assignmentId or teacherPassword");
   }
@@ -216,12 +225,36 @@ function registerAssignment_(params) {
     }
   }
 
-  const row = [assignmentId, teacherPassword, title, Date.now()];
+  const row = [assignmentId, teacherPassword, title, Date.now(), configJson];
   if (targetRow > 0) {
-    sheet.getRange(targetRow, 1, 1, 4).setValues([row]);
+    sheet.getRange(targetRow, 1, 1, 5).setValues([row]);
   } else {
     sheet.appendRow(row);
   }
+}
+
+function getAssignmentConfig_(assignmentId) {
+  const sheet = getAssignmentsSheet_();
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return null;
+  const numRows = lastRow - 1;
+  const rows = sheet.getRange(2, 1, numRows, 5).getValues();
+  for (var i = 0; i < rows.length; i++) {
+    if (String(rows[i][0]) !== assignmentId) continue;
+    const rawJson = String(rows[i][4] || "").trim();
+    if (!rawJson) return null;
+    var config = {};
+    try {
+      config = JSON.parse(rawJson);
+    } catch (ignore) {
+      return null;
+    }
+    return {
+      title: String(rows[i][2] || ""),
+      config: config,
+    };
+  }
+  return null;
 }
 
 function listSubmissions_(assignmentId) {

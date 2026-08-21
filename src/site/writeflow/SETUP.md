@@ -12,7 +12,9 @@ WriteFlow stores student submissions in Google Sheets so any teacher can view re
 
 4. **Run `initSheet`** once from the script editor (authorize when prompted). This creates two tabs:
    - `Submissions` — student writing rows
-   - `Assignments` — teacher passwords per assignment ID
+   - `Assignments` — teacher passwords, titles, and published assignment configs (`configJson` column)
+
+   **Upgrading from an older script?** Add a fifth column header `configJson` on the `Assignments` tab, paste the updated script, and create a **new** web app deployment.
 
 5. **Deploy → New deployment → Web app**
    - Execute as: **Me**
@@ -28,9 +30,11 @@ WriteFlow stores student submissions in Google Sheets so any teacher can view re
 
 1. Open **WriteFlow builder**: `/writeflow/?mode=builder`
 2. Set assignment title, prompt, timer, and **teacher password**.
-3. Click **Save assignment** — this registers the assignment ID + password in the `Assignments` sheet.
+3. Click **Save assignment** — this saves locally and **publishes** the full assignment config to the `Assignments` sheet so share links work on any device.
 4. Share the student link: `/writeflow/?id=YOUR-ASSIGNMENT-ID`
 5. View results: **Results** button → enter the same teacher password.
+
+**Important:** If you only saved before this update, open the builder and click **Save assignment** again so the config is published to the cloud.
 
 ## Student submissions
 
@@ -48,4 +52,5 @@ Class validation uses the same lists as the Summer Writing Test (`api/diagnostic
 | "Cloud storage is not configured" | Set `WRITEFLOW_SCRIPT_URL` on Vercel and redeploy |
 | "Incorrect teacher password" | Re-save assignment in builder to sync password to `Assignments` sheet |
 | "Unauthorized" on save | Check `WRITEFLOW_API_SECRET` matches script `API_SECRET` |
-| Submissions only on one device | Google Sheets not connected — complete setup above |
+| Share link shows default template | Re-save in builder after updating Apps Script; confirm `configJson` column exists |
+| "Assignment not found online" | Teacher must click Save assignment while Google Sheets storage is connected |

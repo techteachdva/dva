@@ -17,7 +17,7 @@
   const mode = params.get("mode") === "builder" ? "builder" : "student";
   const assignmentId = params.get("id") || "sample-persuasive";
 
-  let config = Core.loadConfig(STORAGE_PREFIX, assignmentId, { ...Defaults, id: assignmentId });
+  let config = { ...Defaults, id: assignmentId };
   let timer = null;
   let allSubmissions = [];
   let teacherAuthed = false;
@@ -39,6 +39,56 @@
 
   function escapeHtml(s) {
     return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  function hasLocalConfig(id) {
+    try {
+      return !!localStorage.getItem(Core.storageKey(STORAGE_PREFIX, id));
+    } catch {
+      return false;
+    }
+  }
+
+  function readLocalConfig(id) {
+    if (!hasLocalConfig(id)) return null;
+    return Core.loadConfig(STORAGE_PREFIX, id, { ...Defaults, id });
+  }
+
+  async function fetchCloudConfig(id) {
+    try {
+      const res = await fetch(`${API_URL}?action=getAssignment&assignmentId=${encodeURIComponent(id)}`);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.config) return null;
+      return data.config;
+    } catch {
+      return null;
+    }
+  }
+
+  async function resolveAssignmentConfig(id) {
+    const local = readLocalConfig(id);
+    if (local) return { config: local, source: "local" };
+
+    const cloud = await fetchCloudConfig(id);
+    if (cloud) {
+      return { config: { ...Defaults, ...cloud, id }, source: "cloud" };
+    }
+
+    return { config: { ...Defaults, id }, source: "missing" };
+  }
+
+  function showAssignmentNotice(message, isError = true) {
+    const el = document.getElementById("assignmentLoadNotice");
+    if (!el) return;
+    if (!message) {
+      el.classList.add("dw-hidden");
+      el.textContent = "";
+      return;
+    }
+    el.textContent = message;
+    el.classList.toggle("dw-error", isError);
+    el.classList.toggle("dw-save-status--ok", !isError);
+    el.classList.remove("dw-hidden");
   }
 
   function applyConfigToUI() {
@@ -243,21 +293,26 @@
     return data;
   }
 
-  async function registerAssignmentCloud() {
-    try {
-      await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "registerAssignment",
-          assignmentId: config.id,
-          teacherPassword: config.teacherPassword,
-          title: config.title,
-        }),
-      });
-    } catch {
-      /* optional — builder still works offline */
+  async function publishAssignmentCloud() {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "registerAssignment",
+        assignmentId: config.id,
+        teacherPassword: config.teacherPassword,
+        title: config.title,
+        config,
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      if (data.setupRequired) {
+        throw new Error("Online storage is not configured on the server yet.");
+      }
+      throw new Error(data.error || `Publish failed (${res.status})`);
     }
+    return data;
   }
 
   function saveLocalSubmission(entry) {
@@ -289,7 +344,19 @@
     return Array.isArray(data.submissions) ? data.submissions : [];
   }
 
-  function initStudentFlow() {
+  async function initStudentFlow() {
+    showAssignmentNotice("");
+    const resolved = await resolveAssignmentConfig(assignmentId);
+    config = resolved.config;
+
+    if (resolved.source === "missing" && assignmentId !== "sample-persuasive") {
+      showAssignmentNotice(
+        "This assignment was not found online. Ask your teacher to open the WriteFlow builder and click Save assignment so the share link works."
+      );
+    } else if (resolved.source === "cloud") {
+      showAssignmentNotice("Assignment loaded.", false);
+    }
+
     Core.populateClassSelect(document.getElementById("studentClass"), VALID_CLASSROOMS);
     applyConfigToUI();
 
@@ -470,13 +537,19 @@
     } else if (builderSection === "timer") {
       canvas.innerHTML = `
         <h2 class="dw-h2">Timer &amp; rules</h2>
-        <label class="dw-field"><span class="dw-label">Duration (seconds)</span><input id="bfDuration" class="dw-input" type="number" min="60" max="3600" step="30" value="${config.durationSec}" /></label>
-        <label class="dw-field dw-row"><input id="bfAllowPaste" type="checkbox" ${config.allowPaste ? "checked" : ""} /><span>Allow paste</span></label>
-        <label class="dw-field dw-row"><input id="bfLockAfter" type="checkbox" ${config.lockAfterTime ? "checked" : ""} /><span>Lock editor when time expires</span></label>
-        <label class="dw-field dw-row"><input id="bfLiveStats" type="checkbox" ${config.showLiveStats ? "checked" : ""} /><span>Show live word count &amp; WPM</span></label>
-        <label class="dw-field dw-row"><input id="bfRequireName" type="checkbox" ${config.requireName ? "checked" : ""} /><span>Require student name</span></label>
-        <label class="dw-field dw-row"><input id="bfRequireClass" type="checkbox" ${config.requireClass ? "checked" : ""} /><span>Require class selection</span></label>
-        <label class="dw-field dw-row"><input id="bfRequireCode" type="checkbox" ${config.requireClassCode ? "checked" : ""} /><span>Require class code</span></label>`;
+        <p class="dw-muted">Set how long students write and what is required before they start.</p>
+        <label class="dw-field">
+          <span class="dw-label">Duration (seconds)</span>
+          <input id="bfDuration" class="dw-input" type="number" min="60" max="3600" step="30" value="${config.durationSec}" />
+        </label>
+        <div class="wf-toggle-list">
+          <label class="wf-toggle-row"><input id="bfAllowPaste" type="checkbox" ${config.allowPaste ? "checked" : ""} /><span class="wf-toggle-row__label">Allow paste</span></label>
+          <label class="wf-toggle-row"><input id="bfLockAfter" type="checkbox" ${config.lockAfterTime ? "checked" : ""} /><span class="wf-toggle-row__label">Lock editor when time expires</span></label>
+          <label class="wf-toggle-row"><input id="bfLiveStats" type="checkbox" ${config.showLiveStats ? "checked" : ""} /><span class="wf-toggle-row__label">Show live word count &amp; WPM</span></label>
+          <label class="wf-toggle-row"><input id="bfRequireName" type="checkbox" ${config.requireName ? "checked" : ""} /><span class="wf-toggle-row__label">Require student name</span></label>
+          <label class="wf-toggle-row"><input id="bfRequireClass" type="checkbox" ${config.requireClass ? "checked" : ""} /><span class="wf-toggle-row__label">Require class selection</span></label>
+          <label class="wf-toggle-row"><input id="bfRequireCode" type="checkbox" ${config.requireClassCode ? "checked" : ""} /><span class="wf-toggle-row__label">Require class code</span></label>
+        </div>`;
       document.getElementById("bfDuration")?.addEventListener("change", (e) => { config.durationSec = Number(e.target.value) || 300; persistConfig(); renderInspector(); });
       ["bfAllowPaste", "bfLockAfter", "bfLiveStats", "bfRequireName", "bfRequireClass", "bfRequireCode"].forEach((id) => {
         const map = { bfAllowPaste: "allowPaste", bfLockAfter: "lockAfterTime", bfLiveStats: "showLiveStats", bfRequireName: "requireName", bfRequireClass: "requireClass", bfRequireCode: "requireClassCode" };
@@ -633,6 +706,7 @@
       </div>
       <div class="wf-inspector-group">
         <div class="wf-inspector-group__label">Share link</div>
+        <p class="dw-muted dw-tiny">Students load this assignment from the cloud when they open the link. Click Save assignment after editing.</p>
         <input class="dw-input" readonly value="${location.origin}/writeflow/?id=${encodeURIComponent(config.id)}" onclick="this.select()" />
       </div>
       <div class="wf-inspector-group">
@@ -645,9 +719,14 @@
       persistConfig();
       history.replaceState(null, "", `?mode=builder&id=${encodeURIComponent(config.id)}`);
     });
-    document.getElementById("bfSave")?.addEventListener("click", () => {
+    document.getElementById("bfSave")?.addEventListener("click", async () => {
       persistConfig();
-      alert("Assignment saved.");
+      try {
+        await publishAssignmentCloud();
+        alert("Assignment saved and published. Students can use the share link on any device.");
+      } catch (err) {
+        alert(`Saved on this browser only. Could not publish for share links: ${err.message}`);
+      }
     });
     document.getElementById("bfExport")?.addEventListener("click", () => Core.exportConfig(config));
     document.getElementById("bfImport")?.addEventListener("change", async (e) => {
@@ -668,12 +747,18 @@
 
     const list = document.getElementById("bfAssignmentList");
     getAssignmentsList().forEach((id) => {
+      const saved = readLocalConfig(id);
       const card = document.createElement("button");
       card.type = "button";
-      card.className = "wf-assignment-card";
-      card.innerHTML = `<span>${escapeHtml(id)}</span><span class="wf-assignment-card__meta">Open →</span>`;
+      card.className = `wf-assignment-card${config.id === id ? " wf-assignment-card--active" : ""}`;
+      card.innerHTML = `
+        <span class="wf-assignment-card__body">
+          <span class="wf-assignment-card__title">${escapeHtml(saved?.title || id)}</span>
+          <span class="wf-assignment-card__id">${escapeHtml(id)}</span>
+        </span>
+        <span class="wf-assignment-card__meta">Open →</span>`;
       card.addEventListener("click", () => {
-        config = Core.loadConfig(STORAGE_PREFIX, id, { ...Defaults, id });
+        config = saved || Core.loadConfig(STORAGE_PREFIX, id, { ...Defaults, id });
         history.replaceState(null, "", `?mode=builder&id=${encodeURIComponent(id)}`);
         renderBuilder();
       });
@@ -687,10 +772,10 @@
     if (!ids.includes(config.id)) ids.push(config.id);
     saveAssignmentsList(ids);
     Core.applyTheme(Core.resolveTheme(config));
-    void registerAssignmentCloud();
   }
 
   function initBuilder() {
+    config = readLocalConfig(assignmentId) || Core.loadConfig(STORAGE_PREFIX, assignmentId, { ...Defaults, id: assignmentId });
     show("builder");
     document.getElementById("studentViewLink")?.addEventListener("click", () => {
       location.href = `/writeflow/?id=${encodeURIComponent(config.id)}`;
@@ -710,5 +795,5 @@
 
   if (mode === "builder") initBuilder();
   else if (params.get("home") === "1") initHome();
-  else initStudentFlow();
+  else void initStudentFlow();
 })();
