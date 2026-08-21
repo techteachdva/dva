@@ -77,10 +77,14 @@ layout: false
               <button id="newRunBtn" class="tt-cta-btn tt-cta-btn--ghost dw-hidden" type="button">New mission</button>
             </div>
             <div id="profileMini" class="tt-profile-mini-wrap"></div>
+            <div class="tt-settings-bar" style="margin-top:14px; display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+              <button id="highContrastToggle" class="tt-settings-btn" type="button" title="Toggle high contrast">🔲 High contrast</button>
+            </div>
           </div>
         </section>
 
         <section id="gameView" class="dw-hidden">
+          <a href="#sceneChoices" id="skipToChoices" class="tt-skip-link">Skip to choices</a>
           <div class="tt-hud">
             <div class="tt-stats-bar">
               <span class="tt-stat">🏅 <span class="tt-stat__value" id="statBadges">0</span> badges</span>
@@ -88,6 +92,7 @@ layout: false
               <span class="tt-stat">🗺️ <span class="tt-stat__value" id="statScenes">0</span> steps</span>
             </div>
             <div class="tt-golden-track" id="goldenRulesTrack" aria-label="Golden Rules progress"></div>
+            <button id="muteToggleBtn" class="tt-mute-btn" type="button" title="Toggle sound">🔊</button>
           </div>
 
           <div id="sceneLesson" class="tt-lesson-flash dw-hidden"></div>
@@ -105,7 +110,8 @@ layout: false
                     <span class="tt-scene-mood" id="sceneMood"></span>
                   </div>
                   <div class="tt-character tt-character--3d" id="sceneCharacter"></div>
-                  <div class="tt-narrative tt-narrative--reveal" id="sceneNarrative"></div>
+                  <div class="tt-narrative tt-narrative--reveal" id="sceneNarrative" aria-live="polite" aria-atomic="true"></div>
+                  <button id="narrativeContinueBtn" class="tt-cta-btn tt-cta-btn--sm dw-hidden" type="button">Continue ▶</button>
                   <div id="typingChallenge" class="tt-typing-challenge dw-hidden">
                     <div class="tt-typing-challenge__header">
                       <span class="tt-typing-challenge__label">⌨️ Typing challenge</span>
@@ -182,6 +188,8 @@ layout: false
     <script src="/scripts/tech-trail-visuals.js" defer></script>
     <script src="/scripts/tech-trail-story.js" defer></script>
     <script src="/scripts/tech-trail-state.js" defer></script>
+    <script src="/scripts/tech-trail-audio.js" defer></script>
     <script src="/scripts/tech-trail-app.js" defer></script>
+    <script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/tech-trail/sw.js');</script>
   </body>
 </html>

@@ -8,6 +8,7 @@
   const { STORY, CHARACTERS, START_MISSIONS } = window.TechTrailStory || {};
   const Visuals = window.TechTrailVisuals;
   const State = window.TechTrailState;
+  const Audio = window.TechTrailAudio;
   if (!Core || !STORY || !Visuals || !State) return;
 
   Core.applyTheme(Core.PRESETS.gauntlet);
@@ -69,6 +70,28 @@
   }
 
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let typewriterActive = false;
+  let typewriterQueue = [];
+  let typewriterResolve = null;
+
+  function loadHighContrast() {
+    try {
+      if (localStorage.getItem("techtrail:highContrast") === "1") {
+        document.body.classList.add("tt-high-contrast");
+      }
+    } catch {}
+  }
+
+  function toggleHighContrast() {
+    const on = document.body.classList.toggle("tt-high-contrast");
+    try { localStorage.setItem("techtrail:highContrast", on ? "1" : "0"); } catch {}
+  }
+
+  function updateMuteButton() {
+    const btn = document.getElementById("muteToggleBtn");
+    if (!btn) return;
+    btn.textContent = Audio?.isMuted?.() ? "🔇" : "🔊";
+  }
 
   function escapeHtml(s) {
     return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -101,6 +124,93 @@
   function buildStartChoices() {
     const count = runRng() < 0.45 ? 3 : 4;
     return shuffle(START_MISSIONS || []).slice(0, count);
+  }
+
+  function splitNarrativeIntoParagraphs(html) {
+    const div = document.createElement("div");
+    div.innerHTML = html;
+    const text = div.textContent || "";
+    const rawParas = text.split(/\n\n+/).map((p) => p.trim()).filter((p) => p.length > 0);
+    if (rawParas.length <= 1) return [html];
+    const result = [];
+    let remaining = html;
+    for (let i = 0; i < rawParas.length; i++) {
+      const end = remaining.indexOf(rawParas[i]) + rawParas[i].length;
+      result.push(remaining.slice(0, end));
+      remaining = remaining.slice(end);
+    }
+    if (remaining.trim()) result.push(remaining.trim());
+    return result.length ? result : [html];
+  }
+
+  async function typewriteNarrative(container, html) {
+    const narrativeEl = document.getElementById("sceneNarrative");
+    const continueBtn = document.getElementById("narrativeContinueBtn");
+    if (!narrativeEl) return;
+
+    if (prefersReducedMotion) {
+      narrativeEl.innerHTML = html;
+      narrativeEl.classList.remove("tt-narrative--typing");
+      continueBtn?.classList.add("dw-hidden");
+      narrativeEl.focus();
+      return;
+    }
+
+    const paragraphs = splitNarrativeIntoParagraphs(html);
+    narrativeEl.innerHTML = "";
+    narrativeEl.classList.add("tt-narrative--typing");
+    continueBtn?.classList.add("dw-hidden");
+
+    for (let i = 0; i < paragraphs.length; i++) {
+      const paraDiv = document.createElement("div");
+      paraDiv.className = "tt-narrative__para";
+      narrativeEl.appendChild(paraDiv);
+
+      const fullText = paragraphs[i];
+      let current = "";
+      const speed = 25;
+      const tagRe = /<[^>]+>/g;
+      let pos = 0;
+
+      while (pos < fullText.length) {
+        const nextTag = tagRe.exec(fullText);
+        if (nextTag && nextTag.index === pos) {
+          current += nextTag[0];
+          pos += nextTag[0].length;
+          tagRe.lastIndex = pos;
+          continue;
+        }
+        current += fullText[pos];
+        pos++;
+        paraDiv.innerHTML = current;
+        await new Promise((r) => setTimeout(r, speed));
+      }
+
+      if (i < paragraphs.length - 1) {
+        continueBtn?.classList.remove("dw-hidden");
+        narrativeEl.classList.remove("tt-narrative--typing");
+        await new Promise((resolve) => {
+          typewriterResolve = resolve;
+          const handler = (e) => {
+            if (e.type === "keydown" && e.key !== "Enter" && e.key !== " ") return;
+            cleanup();
+            resolve();
+          };
+          const cleanup = () => {
+            continueBtn?.removeEventListener("click", handler);
+            document.removeEventListener("keydown", handler);
+          };
+          continueBtn?.addEventListener("click", handler);
+          document.addEventListener("keydown", handler);
+        });
+        continueBtn?.classList.add("dw-hidden");
+        narrativeEl.classList.add("tt-narrative--typing");
+      }
+    }
+
+    narrativeEl.classList.remove("tt-narrative--typing");
+    continueBtn?.classList.add("dw-hidden");
+    narrativeEl.focus();
   }
 
   function show(name) {
@@ -167,14 +277,31 @@
     const room = document.getElementById("sceneRoom");
     const mood = document.getElementById("sceneMood");
 
-    if (bg) bg.style.backgroundImage = `url('${zone.bg}')`;
-    if (tint) tint.style.background = zone.tint;
+    if (prefersReducedMotion) {
+      if (bg) bg.style.backgroundImage = `url('${zone.bg}')`;
+      if (tint) tint.style.background = zone.tint;
+    } else {
+      bg?.classList.add("tt-scene-bg--out");
+      setTimeout(() => {
+        if (bg) bg.style.backgroundImage = `url('${zone.bg}')`;
+        if (tint) tint.style.background = zone.tint;
+        bg?.classList.remove("tt-scene-bg--out");
+        bg?.classList.add("tt-scene-bg--in");
+        setTimeout(() => bg?.classList.remove("tt-scene-bg--in"), 500);
+      }, 450);
+    }
+
     if (mood) mood.textContent = zone.mood ? zone.mood.toUpperCase() : "";
 
     if (room && !prefersReducedMotion) {
       room.classList.remove("tt-stage__room--enter");
       void room.offsetWidth;
       room.classList.add("tt-stage__room--enter");
+    }
+
+    if (Audio) {
+      Audio.stopZoneAmbience?.();
+      Audio.startZoneAmbience?.(zone.mood);
     }
   }
 
@@ -194,6 +321,35 @@
     if (!viewport) return;
     viewport.style.setProperty("--tt-tilt-y", "0deg");
     viewport.style.setProperty("--tt-tilt-x", "0deg");
+  }
+
+  function handleDeviceOrientation(e) {
+    if (prefersReducedMotion) return;
+    const viewport = document.getElementById("sceneViewport");
+    if (!viewport) return;
+    const beta = Math.max(-45, Math.min(45, e.beta || 0));
+    const gamma = Math.max(-45, Math.min(45, e.gamma || 0));
+    viewport.style.setProperty("--tt-tilt-x", `${-beta * 0.15}deg`);
+    viewport.style.setProperty("--tt-tilt-y", `${gamma * 0.15}deg`);
+  }
+
+  let touchStartX = 0;
+  let touchStartY = 0;
+
+  function handleTouchStart(e) {
+    if (prefersReducedMotion || e.touches.length !== 1) return;
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  }
+
+  function handleTouchMove(e) {
+    if (prefersReducedMotion || e.touches.length !== 1) return;
+    const viewport = document.getElementById("sceneViewport");
+    if (!viewport) return;
+    const dx = (e.touches[0].clientX - touchStartX) / window.innerWidth;
+    const dy = (e.touches[0].clientY - touchStartY) / window.innerHeight;
+    viewport.style.setProperty("--tt-tilt-y", `${dx * 12}deg`);
+    viewport.style.setProperty("--tt-tilt-x", `${-dy * 8}deg`);
   }
 
   function renderCharacter(charKey) {
@@ -269,10 +425,10 @@
     document.getElementById("sceneLocation").textContent = node.location || "Unknown";
     const narrativeEl = document.getElementById("sceneNarrative");
     if (narrativeEl) {
-      narrativeEl.innerHTML = node.narrative || "";
       narrativeEl.classList.remove("tt-narrative--reveal");
       void narrativeEl.offsetWidth;
       narrativeEl.classList.add("tt-narrative--reveal");
+      typewriteNarrative(narrativeEl, node.narrative || "");
     }
 
     metCharacters.add(node.character);
@@ -296,10 +452,12 @@
     if (badges.size > prevBadgeCount && node.badge) {
       toast(`Badge unlocked: ${node.badge}`, "badge");
       burstConfetti(18);
+      Audio?.playBadgeChime?.();
     }
     if (node.goldenRule && goldenRules.size > prevGoldenCount) {
       toast(`Golden Rule #${node.goldenRule} recovered`, "golden");
       burstConfetti(28);
+      Audio?.playGoldenFanfare?.();
     }
 
     updateStats();
@@ -344,6 +502,7 @@
 
       choicesEl.querySelectorAll(".tt-choice").forEach((btn) => {
         btn.addEventListener("click", () => {
+          Audio?.playChoiceClick?.();
           const label = btn.querySelector(".tt-choice__label")?.textContent?.trim() || "Choice";
           journal.push(`→ ${label.slice(0, 80)}${label.length > 80 ? "…" : ""}`);
           btn.classList.add("tt-choice--picked");
@@ -461,12 +620,20 @@
 
   function init() {
     loadDifficulty();
+    loadHighContrast();
     renderTitleGoldenPreview();
     renderProfileMini();
     updateDifficultyButtons();
+    updateMuteButton();
 
     document.querySelectorAll(".tt-difficulty__btn").forEach((btn) => {
       btn.addEventListener("click", () => saveDifficulty(btn.dataset.tier));
+    });
+
+    document.getElementById("highContrastToggle")?.addEventListener("click", toggleHighContrast);
+    document.getElementById("muteToggleBtn")?.addEventListener("click", () => {
+      Audio?.toggleMuted?.();
+      updateMuteButton();
     });
 
     const startBtn = document.getElementById("startGameBtn");
@@ -484,11 +651,13 @@
     }
 
     startBtn?.addEventListener("click", () => {
+      Audio?.init?.();
       resetRun();
       renderScene("start");
     });
 
     continueBtn?.addEventListener("click", () => {
+      Audio?.init?.();
       const saved = State.loadRun();
       if (saved) {
         currentNode = saved.currentNode;
@@ -506,11 +675,13 @@
     });
 
     newRunBtn?.addEventListener("click", () => {
+      Audio?.init?.();
       resetRun();
       renderScene("start");
     });
 
     document.getElementById("playAgainBtn")?.addEventListener("click", () => {
+      Audio?.stopZoneAmbience?.();
       resetRun();
       show("title");
       renderTitleGoldenPreview();
@@ -520,11 +691,16 @@
     const viewport = document.getElementById("sceneViewport");
     viewport?.addEventListener("mousemove", (e) => tiltStage(e.clientX, e.clientY));
     viewport?.addEventListener("mouseleave", resetStageTilt);
+    viewport?.addEventListener("touchstart", handleTouchStart, { passive: true });
+    viewport?.addEventListener("touchmove", handleTouchMove, { passive: true });
+    viewport?.addEventListener("touchend", resetStageTilt, { passive: true });
+    window.addEventListener("deviceorientation", handleDeviceOrientation);
 
     const typingInput = document.getElementById("typingInput");
     Core.setupPasteControl(typingInput, false);
 
     typingInput?.addEventListener("input", () => {
+      Audio?.playTypeTick?.();
       const words = Core.countWords(typingInput.value);
       const min = scaleMinWords(typingPending?.minWords || 20);
       updateTypingProgress(words, min);
