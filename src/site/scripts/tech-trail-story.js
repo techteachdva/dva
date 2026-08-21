@@ -52,8 +52,8 @@ Ada Lovelace flickers onto the main screen. "Every mission starts with a questio
 
 The project lead is impatient. "We can polish the interface later — ship it Friday."`,
       choices: [
-        { label: "Ask who will use this and what success looks like for them", next: "define_win" },
-        { label: "Focus on adding features — adoption will follow", next: "define_fail" },
+        { label: "Interview potential users before building more", next: "define_win", integrity: 5, reputation: 5 },
+        { label: "Ship a lean prototype fast and gather feedback live", next: "define_recovery_1", integrity: -5, reputation: 10 },
       ],
     },
 
@@ -74,15 +74,26 @@ A side door opens onto Will Wright's simulation studio. Someone mentions a proto
       ],
     },
 
-    define_fail: {
+    define_recovery_1: {
       location: "Design Lab — Launch Day",
       character: "lovelace",
       narrative: `Launch day arrives. Three people open the app, frown, and leave. The lead checks analytics in silence.
 
-Lovelace doesn't scold you — she rewinds the holo-tape. "Want to try the conversation you skipped?"`,
+Lovelace doesn't scold you — she studies the bounce rate. "Speed teaches too, but it teaches in public. You shipped something half-understood."`,
       choices: [
-        { label: "Talk to potential users before changing anything else", next: "define_win" },
-        { label: "Move on to the Code Bay instead", next: "code_bay" },
+        { label: "Pivot based on feedback and re-engage users", next: "define_win", integrity: 5, reputation: 0 },
+        { label: "Double down on features to win back the leavers", next: "define_recovery_2", integrity: -10, reputation: -5 },
+      ],
+    },
+
+    define_recovery_2: {
+      location: "Design Lab — Deadline Pressure",
+      character: "lovelace",
+      narrative: `Feature bloat makes the app slower. The lead wants one more sprint. Lovelace taps the whiteboard: "You're solving your own anxiety, not their problem."
+
+Your integrity takes a hit from the public misstep.`,
+      choices: [
+        { label: "Pause and run user interviews before anything else ships", next: "define_win", integrity: 0, reputation: 0 },
       ],
     },
 
@@ -118,12 +129,12 @@ Down the hall, you hear keyboard clicks and someone muttering about a login bug.
       character: "meier",
       narrative: `Meier rolls a die across the table — it clatters to a stop. "Test early, test honest. Right now your build has a login bug, and real users are waiting."
 
-You could watch them, patch quietly, or call in help.`,
+You could watch them struggle openly, or patch quietly and monitor logs.`,
       rngBadge: { chance: 0.28, badge: "Lucky Roll", message: "The die lands on your number — Meier grins. \"Fortune favors the prepared.\"" },
       choices: [
-        { label: "Sit with users, watch where they get stuck, take notes", next: "try_win" },
-        { label: "Push the build live and hope nobody notices", next: "try_fail" },
-        { label: "Call Grace Hopper's debugging team", next: "debug_scene" },
+        { label: "Sit with users, watch where they get stuck, take notes", next: "try_win", integrity: 5, reputation: 5 },
+        { label: "Patch quietly and push a hotfix without announcing the bug", next: "try_recovery_1", integrity: -5, reputation: 10 },
+        { label: "Call Grace Hopper's debugging team", next: "debug_scene", integrity: 0, reputation: 0 },
       ],
     },
 
@@ -141,28 +152,39 @@ Chris Crawford is reviewing your metrics in the next room.`,
       ],
     },
 
-    try_fail: {
+    try_recovery_1: {
       location: "Prototype Arena — Support Queue",
       character: "meier",
-      narrative: `Support tickets pile up. One user writes: "I liked the idea. I couldn't get in."
+      narrative: `Support tickets pile up. One user writes: "I liked the idea. I couldn't get in." Another notices the silent patch and questions your transparency.
 
-Meier resets the sim. "Same prototype. Different choice?"`,
+Meier resets the sim. "You fixed the code but chipped your credibility. Same prototype. Different choice?"`,
       choices: [
-        { label: "Watch users and document what breaks", next: "try_win" },
-        { label: "Get Hopper's team to trace the bug", next: "debug_scene" },
+        { label: "Watch users and document what breaks", next: "try_win", integrity: 5, reputation: 0 },
+        { label: "Keep patching quietly and monitor from behind the scenes", next: "try_recovery_2", integrity: -10, reputation: -5 },
+      ],
+    },
+
+    try_recovery_2: {
+      location: "Prototype Arena — Trust Erosion",
+      character: "meier",
+      narrative: `A forum thread accuses the team of hiding bugs. Meier taps the table. "Silent fixes feel safe — until they don't."
+
+Your integrity takes another hit from the credibility gap.`,
+      choices: [
+        { label: "Own the bug publicly and observe users fixing it", next: "try_win", integrity: 0, reputation: 0 },
       ],
     },
 
     debug_scene: {
       location: "Debugging Fleet · USS Hopper",
       character: "hopper",
-      narrative: `Hopper taps the screen. "Infinite loop. Classic. You can guess, you can rewrite everything, or you can trace it line by line."
+      narrative: `Hopper taps the screen. "Infinite loop. Classic. You can guess, you can rewrite everything, or you can trace it line by step."
 
 She's already pulled up the log.`,
       choices: [
-        { label: "Walk through the logic step by step", next: "debug_win" },
-        { label: "Delete the module and rebuild from scratch tonight", next: "debug_fail" },
-        { label: "Change random lines until the error message changes", next: "debug_fail" },
+        { label: "Walk through the logic step by step", next: "debug_win", integrity: 5, reputation: 5 },
+        { label: "Rewrite the module cleanly from scratch tonight", next: "debug_recovery_1", integrity: -5, reputation: 0 },
+        { label: "Change random lines until the error message changes", next: "debug_recovery_2", integrity: -15, reputation: -10 },
       ],
     },
 
@@ -181,12 +203,26 @@ Katherine Johnson waves you toward the trajectory console. A fake quote is trend
       ],
     },
 
-    debug_fail: {
+    debug_recovery_1: {
+      location: "Debugging Fleet — Scope Creep",
+      character: "hopper",
+      narrative: `The rewrite introduces three new bugs where one existed. Hopper studies the diff. "Fresh code smells better, but it isn't smarter."
+
+"You replaced a known problem with unknown ones."`,
+      choices: [
+        { label: "Trace the original logic carefully", next: "debug_win", integrity: 5, reputation: 0 },
+        { label: "Keep rewriting — you'll catch them eventually", next: "debug_recovery_2", integrity: -5, reputation: -5 },
+      ],
+    },
+
+    debug_recovery_2: {
       location: "Debugging Fleet — Still Spinning",
       character: "hopper",
-      narrative: `"That made two bugs where there was one," Hopper says mildly. "Try the boring way — it works."`,
+      narrative: `"That made two bugs where there was one," Hopper says mildly. "Try the boring way — it works."
+
+Your integrity takes a hit from preferring motion over method.`,
       choices: [
-        { label: "Trace the logic carefully", next: "debug_win" },
+        { label: "Trace the logic carefully", next: "debug_win", integrity: 0, reputation: 0 },
       ],
     },
 
@@ -223,9 +259,9 @@ Campbell calls from the Collaboration Bridge — a group chat is going sideways.
 
 Two teammates argue. One wrote three clear steps with turns. The other wrote "go to the goal somehow."`,
       choices: [
-        { label: "Use ordered steps with clear if/then decisions", next: "code_win" },
-        { label: "Let it run random moves until something works", next: "code_fail" },
-        { label: "Assume the robot will figure it out", next: "code_fail" },
+        { label: "Use ordered steps with clear if/then decisions", next: "code_win", integrity: 5, reputation: 5 },
+        { label: "Write a simpler heuristic and test iteratively", next: "code_recovery_1", integrity: 0, reputation: 0 },
+        { label: "Let it run random moves until something works", next: "code_recovery_2", integrity: -10, reputation: -5 },
       ],
     },
 
@@ -244,12 +280,26 @@ The robot beeps acknowledgment and rolls toward the next bay.`,
       ],
     },
 
-    code_fail: {
+    code_recovery_1: {
+      location: "Code Bay — Partial Path",
+      character: "meier",
+      narrative: `The heuristic gets the robot halfway — then loops in a corner. Meier studies the trace. "Heuristics are fine for games, not guarantees."
+
+"Want to tighten it into something provable?"`,
+      choices: [
+        { label: "Rewrite as ordered step-by-step instructions", next: "code_win", integrity: 5, reputation: 0 },
+        { label: "Add more heuristics and hope one sticks", next: "code_recovery_2", integrity: -5, reputation: -5 },
+      ],
+    },
+
+    code_recovery_2: {
       location: "Code Bay — Gridlock",
       character: "meier",
-      narrative: `The robot spins, backs into a wall, stops. Meier caps the marker. "Precision beats luck with machines."`,
+      narrative: `The robot spins, backs into a wall, stops. Meier caps the marker. "Precision beats luck with machines."
+
+Your integrity takes a hit from refusing to think systematically.`,
       choices: [
-        { label: "Write clear step-by-step instructions", next: "code_win" },
+        { label: "Write clear step-by-step instructions", next: "code_win", integrity: 0, reputation: 0 },
       ],
     },
 
@@ -260,8 +310,8 @@ The robot beeps acknowledgment and rolls toward the next bay.`,
 
 They're asking you if it's fine because they'll only be a minute.`,
       choices: [
-        { label: "Suggest waiting until they're on a trusted network", next: "network_win" },
-        { label: "Say it's probably fine — they'll be quick", next: "network_fail" },
+        { label: "Suggest waiting until they're on a trusted network", next: "network_win", integrity: 5, reputation: 5 },
+        { label: "Offer your phone hotspot — faster than arguing", next: "network_recovery_1", integrity: -5, reputation: 0 },
       ],
     },
 
@@ -279,12 +329,14 @@ A copyright question waits in the IP Chamber down the hall.`,
       ],
     },
 
-    network_fail: {
+    network_recovery_1: {
       location: "Network Closet — Packet Sniff",
       character: "babbage",
-      narrative: `A training sim shows what an attacker on the same network can see. Unencrypted logins aren't private — even for a minute.`,
+      narrative: `A training sim shows what an attacker on the same network can see. Unencrypted logins aren't private — even for a minute. Your hotspot didn't have the padlock either.
+
+Babbage adjusts the switch. "Good intentions don't encrypt packets."`,
       choices: [
-        { label: "Recommend a secure connection instead", next: "network_win" },
+        { label: "Recommend a secure connection instead", next: "network_win", integrity: 5, reputation: 0 },
       ],
     },
 
@@ -295,9 +347,9 @@ A copyright question waits in the IP Chamber down the hall.`,
 
 Your friend already reposted it.`,
       choices: [
-        { label: "Look for the original study before reacting", next: "sources_win" },
-        { label: "Repost it — the chart looks official", next: "sources_fail" },
-        { label: "Assume it's true because everyone shares it", next: "sources_fail" },
+        { label: "Look for the original study before reacting", next: "sources_win", integrity: 5, reputation: 5 },
+        { label: "Reply with a skeptical comment but keep the post up", next: "sources_recovery_1", integrity: -5, reputation: 0 },
+        { label: "Repost it — the chart looks official", next: "sources_recovery_2", integrity: -10, reputation: -10 },
       ],
     },
 
@@ -316,14 +368,26 @@ The Media Decoding Chamber is lit down the corridor.`,
       ],
     },
 
-    sources_fail: {
+    sources_recovery_1: {
+      location: "Sources Library — Skepticism Backfires",
+      character: "johnson",
+      narrative: `Your skeptical comment gets ratioed. People quote you as "even the doubters agree it's basically true." Johnson pulls up the original thread.
+
+"Sitting on the fence still broadcasts the post. Want to run the check you skipped?"`,
+      choices: [
+        { label: "Find the original source first", next: "sources_win", integrity: 5, reputation: 0 },
+        { label: "Delete your comment and stay quiet", next: "sources_recovery_2", integrity: -5, reputation: -5 },
+      ],
+    },
+
+    sources_recovery_2: {
       location: "Sources Library — Correction Thread",
       character: "johnson",
-      narrative: `Johnson pulls up the original thread. The claim unraveled in the comments — but not before it spread.
+      narrative: `Johnson pulls up the original thread. The claim unraveled in the comments — but not before it spread. Your name is still in the share chain.
 
 "Want to run the check you skipped?"`,
       choices: [
-        { label: "Find the original source first", next: "sources_win" },
+        { label: "Find the original source first", next: "sources_win", integrity: 0, reputation: 0 },
       ],
     },
 
@@ -334,9 +398,9 @@ The Media Decoding Chamber is lit down the corridor.`,
 
 Your partner says, "Everyone uses it. We'll cut that part out if anyone complains."`,
       choices: [
-        { label: "Find royalty-free music or get proper permission", next: "ip_win" },
-        { label: "Use it — nobody will notice a school project", next: "ip_fail" },
-        { label: "Crop out the watermark on a clip you found", next: "ip_fail" },
+        { label: "Find royalty-free music or get proper permission", next: "ip_win", integrity: 10, reputation: 5 },
+        { label: "Use a short clip and credit the artist informally", next: "ip_recovery_1", integrity: -5, reputation: 0 },
+        { label: "Use it — nobody will notice a school project", next: "ip_recovery_2", integrity: -15, reputation: -10 },
       ],
     },
 
@@ -354,12 +418,26 @@ The Collaboration Bridge is crowded ahead.`,
       ],
     },
 
-    ip_fail: {
+    ip_recovery_1: {
+      location: "IP Chamber — Informal Credit",
+      character: "crawford",
+      narrative: `The informal credit doesn't satisfy the platform's Content ID system. The video gets flagged anyway. Crawford holds up the takedown notice.
+
+"Good intentions don't replace licenses."`,
+      choices: [
+        { label: "Replace it with properly licensed work", next: "ip_win", integrity: 5, reputation: 0 },
+        { label: "Re-edit to make the clip shorter and harder to detect", next: "ip_recovery_2", integrity: -10, reputation: -5 },
+      ],
+    },
+
+    ip_recovery_2: {
       location: "IP Chamber — Takedown Notice",
       character: "crawford",
-      narrative: `A takedown notice hits the project folder. "Copyright isn't about getting caught," Crawford says. "It's about respect."`,
+      narrative: `A takedown notice hits the project folder. "Copyright isn't about getting caught," Crawford says. "It's about respect."
+
+Your integrity takes a hit from treating evasion as strategy.`,
       choices: [
-        { label: "Replace it with licensed or royalty-free work", next: "ip_win" },
+        { label: "Replace it with licensed or royalty-free work", next: "ip_win", integrity: 0, reputation: 0 },
       ],
     },
 
@@ -370,9 +448,9 @@ The Collaboration Bridge is crowded ahead.`,
 
 You're in the thread. Others are watching to see what you do.`,
       choices: [
-        { label: "Back them up and loop in a trusted adult", next: "collab_win" },
-        { label: "Stay out of it — not your project", next: "collab_fail" },
-        { label: "Add a joke so you fit in", next: "collab_fail" },
+        { label: "Back them up publicly and loop in a trusted adult", next: "collab_win", integrity: 10, reputation: 5 },
+        { label: "Message them privately to check in", next: "collab_recovery_1", integrity: 0, reputation: 0 },
+        { label: "Add a joke so you fit in", next: "collab_recovery_2", integrity: -15, reputation: -10 },
       ],
     },
 
@@ -391,12 +469,26 @@ The bridge holds. Ahead, the arena lights dim up for the final round.`,
       ],
     },
 
-    collab_fail: {
+    collab_recovery_1: {
+      location: "Collaboration Bridge — Private Check-In",
+      character: "campbell",
+      narrative: `You DM the excluded person. They appreciate it — but the mockery in the group chat continues without correction. Others assume silence means agreement.
+
+Campbell watches the thread. "Kindness in private matters. But the public norm still shifted toward cruelty."`,
+      choices: [
+        { label: "Speak up in the thread now and escalate to an adult", next: "collab_win", integrity: 5, reputation: -5 },
+        { label: "Stay out of it — you've done what you could", next: "collab_recovery_2", integrity: -5, reputation: -5 },
+      ],
+    },
+
+    collab_recovery_2: {
       location: "Collaboration Bridge — Reset",
       character: "campbell",
-      narrative: `The chat keeps going. The excluded person stops typing. Campbell rewinds the scene quietly. "Same bridge. Different you?"`,
+      narrative: `The chat keeps going. The excluded person stops typing. Campbell rewinds the scene quietly. "Same bridge. Different you?"
+
+Your integrity takes a hit from watching harm happen and choosing comfort.`,
       choices: [
-        { label: "Speak up and get an adult involved", next: "collab_win" },
+        { label: "Speak up and get an adult involved", next: "collab_win", integrity: 0, reputation: 0 },
       ],
     },
 
@@ -407,8 +499,8 @@ The bridge holds. Ahead, the arena lights dim up for the final round.`,
 
 "Accuracy is a habit," she says. "What do you do first?"`,
       choices: [
-        { label: "Check whether the quote appears in reliable sources", next: "trajectory_win" },
-        { label: "Share it before the moment passes", next: "trajectory_fail" },
+        { label: "Check whether the quote appears in reliable sources", next: "trajectory_win", integrity: 5, reputation: 5 },
+        { label: "Share it with a disclaimer that you're not sure", next: "trajectory_recovery_1", integrity: -5, reputation: 0 },
       ],
     },
 
@@ -426,12 +518,26 @@ You could loop back for more missions — or head to the finale.`,
       ],
     },
 
-    trajectory_fail: {
+    trajectory_recovery_1: {
+      location: "Trajectory Analytics — Vague Spread",
+      character: "johnson",
+      narrative: `Your disclaimer gets cropped out in reshares. People quote you as "the one who found it first." Johnson replays the fork.
+
+"Uncertainty doesn't travel as fast as certainty."`,
+      choices: [
+        { label: "Delete the post and verify before sharing next time", next: "trajectory_win", integrity: 5, reputation: -5 },
+        { label: "Leave it up — at least you said you weren't sure", next: "trajectory_recovery_2", integrity: -5, reputation: -5 },
+      ],
+    },
+
+    trajectory_recovery_2: {
       location: "Trajectory Analytics — Correction Orbit",
       character: "johnson",
-      narrative: `The quote spreads for an hour before fact-checkers catch it. Johnson replays the fork in the path.`,
+      narrative: `The quote spreads for an hour before fact-checkers catch it. Johnson replays the fork in the path.
+
+Your integrity takes a hit from privileging speed over truth.`,
       choices: [
-        { label: "Verify before sharing next time", next: "trajectory_win" },
+        { label: "Verify before sharing next time", next: "trajectory_win", integrity: 0, reputation: 0 },
       ],
     },
 
@@ -442,9 +548,9 @@ You could loop back for more missions — or head to the finale.`,
 
 You have a screenshot. So does everyone else.`,
       choices: [
-        { label: "Report it to a trusted adult — don't repost", next: "privacy_win" },
-        { label: "Share the screenshot so people know to avoid them", next: "privacy_fail" },
-        { label: "DM the poster to take it down yourself", next: "privacy_fail" },
+        { label: "Report it to a trusted adult — don't repost", next: "privacy_win", integrity: 10, reputation: 5 },
+        { label: "DM the poster asking them to remove it quietly", next: "privacy_recovery_1", integrity: -5, reputation: 0 },
+        { label: "Share the screenshot so people know to avoid them", next: "privacy_recovery_2", integrity: -15, reputation: -10 },
       ],
     },
 
@@ -465,13 +571,27 @@ Two more locks glow on the vault map: passwords and footprints.`,
       ],
     },
 
-    privacy_fail: {
+    privacy_recovery_1: {
+      location: "Data Vault — Poster Responds",
+      character: "turing",
+      narrative: `The poster deletes the thread — but not before screenshotting your DM and framing you as "the snitch." The victim's info is still in group chats you can't see.
+
+Turing studies the ripple. "Direct action feels brave, but it exposed you and didn't contain the leak."`,
+      choices: [
+        { label: "Escalate to an adult now that the situation is worse", next: "privacy_win", integrity: 5, reputation: -5 },
+        { label: "Back off and let the group sort it out", next: "privacy_recovery_2", integrity: -10, reputation: -5 },
+      ],
+    },
+
+    privacy_recovery_2: {
       location: "Data Vault — Spread Accelerates",
       character: "turing",
-      narrative: `Each share widens the leak. Turing freezes the sim. "Harm scales fast online. Try the report route."`,
+      narrative: `Each share widens the leak. The screenshot of your DM is now part of the drama. Turing freezes the sim.
+
+"Harm scales fast online. You tried personal — now try institutional."`,
       choices: [
-        { label: "Report to a trusted adult", next: "privacy_win" },
-        { label: "Visit the Footprint Gallery", next: "footprint_scene" },
+        { label: "Report to a trusted adult and accept the reputation cost", next: "privacy_win", integrity: 0, reputation: 0 },
+        { label: "Visit the Footprint Gallery to reflect", next: "footprint_scene", integrity: 0, reputation: 0 },
       ],
     },
 
@@ -482,9 +602,9 @@ Two more locks glow on the vault map: passwords and footprints.`,
 
 A recruit ahead used one password everywhere — including their school email and a game account.`,
       choices: [
-        { label: "Use unique passwords and turn on two-factor auth", next: "password_win" },
-        { label: "Keep one strong password — easier to remember", next: "password_fail" },
-        { label: "Share your login with your best friend for emergencies", next: "password_fail" },
+        { label: "Use unique passwords and turn on two-factor auth", next: "password_win", integrity: 10, reputation: 5 },
+        { label: "Use a password manager — one master, many unique", next: "password_recovery_1", integrity: 0, reputation: 0 },
+        { label: "Keep one strong password — easier to remember", next: "password_recovery_2", integrity: -10, reputation: -5 },
       ],
     },
 
@@ -502,13 +622,27 @@ A recruit ahead used one password everywhere — including their school email an
       ],
     },
 
-    password_fail: {
+    password_recovery_1: {
+      location: "Vault — Gate Ajar",
+      character: "guide",
+      narrative: `The gate opens halfway. Babbage appears. "A manager is only as strong as its master password. Lose that, lose everything."
+
+It's defensible — but still a single point of failure.`,
+      choices: [
+        { label: "Add two-factor auth to the manager as well", next: "password_win", integrity: 5, reputation: 0 },
+        { label: "Stick with the manager and move on", next: "password_recovery_2", integrity: -5, reputation: 0 },
+      ],
+    },
+
+    password_recovery_2: {
       location: "Vault — Gate Closed",
       character: "guide",
-      narrative: `The gate flickers red. A training clip shows how one cracked password unlocks three accounts. "Try again?"`,
+      narrative: `The gate flickers red. A training clip shows how one cracked password unlocks three accounts. "Try again?"
+
+Your integrity takes a hit from relying on convenience over defense.`,
       choices: [
-        { label: "Set unique passwords with two-factor auth", next: "password_win" },
-        { label: "Visit the Footprint Gallery", next: "footprint_scene" },
+        { label: "Set unique passwords with two-factor auth", next: "password_win", integrity: 0, reputation: 0 },
+        { label: "Visit the Footprint Gallery", next: "footprint_scene", integrity: 0, reputation: 0 },
       ],
     },
 
@@ -519,9 +653,9 @@ A recruit ahead used one password everywhere — including their school email an
 
 "Which version still represents you in ten years?"`,
       choices: [
-        { label: "Post the version you'd stand behind later", next: "footprint_win" },
-        { label: "Post whatever gets the most reactions tonight", next: "footprint_fail" },
-        { label: "Join the pile-on — everyone else is", next: "footprint_fail" },
+        { label: "Post the version you'd stand behind later", next: "footprint_win", integrity: 10, reputation: 5 },
+        { label: "Don't post either — stay silent and avoid the drama", next: "footprint_recovery_1", integrity: 0, reputation: -5 },
+        { label: "Join the pile-on — everyone else is", next: "footprint_recovery_2", integrity: -15, reputation: -15 },
       ],
     },
 
@@ -538,13 +672,27 @@ A recruit ahead used one password everywhere — including their school email an
       ],
     },
 
-    footprint_fail: {
+    footprint_recovery_1: {
+      location: "Hall of Mirrors — Missed Chance",
+      character: "campbell",
+      narrative: `Silence keeps you safe, but the tag stays up. The victim notices nobody defended them. Campbell lowers the drafts.
+
+"Not harming is baseline. Digital citizenship sometimes means showing up."`,
+      choices: [
+        { label: "Speak up after the fact and support them privately", next: "footprint_win", integrity: 5, reputation: 0 },
+        { label: "Keep your head down and move on", next: "footprint_recovery_2", integrity: -5, reputation: -5 },
+      ],
+    },
+
+    footprint_recovery_2: {
       location: "Hall of Mirrors — Aftermath",
       character: "campbell",
-      narrative: `"Likes fade," Campbell says. "Screenshots don't." He offers the draft again.`,
+      narrative: `"Likes fade," Campbell says. "Screenshots don't." He offers the draft again.
+
+Your integrity takes a hit from letting the harm spread.`,
       choices: [
-        { label: "Choose the post you'd stand behind", next: "footprint_win" },
-        { label: "Head to the Media Chamber", next: "media_chamber" },
+        { label: "Choose the post you'd stand behind", next: "footprint_win", integrity: 0, reputation: 0 },
+        { label: "Head to the Media Chamber", next: "media_chamber", integrity: 0, reputation: 0 },
       ],
     },
 
@@ -555,9 +703,9 @@ A recruit ahead used one password everywhere — including their school email an
 
 Your group chat is picking sides.`,
       choices: [
-        { label: "Compare sources and evidence before picking one", next: "media_win" },
-        { label: "Share the most shocking headline — it's moving fast", next: "media_fail" },
-        { label: "Trust the one that sounds the most confident", next: "media_fail" },
+        { label: "Compare sources and evidence before picking one", next: "media_win", integrity: 10, reputation: 5 },
+        { label: "Wait for more outlets to cover it before reacting", next: "media_recovery_1", integrity: 0, reputation: -5 },
+        { label: "Share the most shocking headline — it's moving fast", next: "media_recovery_2", integrity: -10, reputation: -10 },
       ],
     },
 
@@ -576,12 +724,26 @@ All five Golden Rules pulse on the wall — if you've found them. The arena wait
       ],
     },
 
-    media_fail: {
+    media_recovery_1: {
+      location: "Media Chamber — Missed Window",
+      character: "crawford",
+      narrative: `You waited. By the time you check back, the story has morphed — half your group chat believes a detail that was never in the original article.
+
+"Caution is wise," Crawford says. "But silence in a group chat can look like agreement."`,
+      choices: [
+        { label: "Compare sources now and correct the record", next: "media_win", integrity: 5, reputation: 0 },
+        { label: "Let it pass — the conversation moved on", next: "media_recovery_2", integrity: -5, reputation: -5 },
+      ],
+    },
+
+    media_recovery_2: {
       location: "Media Chamber — Noise Floor",
       character: "crawford",
-      narrative: `"Who made it? What's the evidence? Who else covered it?" Crawford asks. "Run the checklist."`,
+      narrative: `"Who made it? What's the evidence? Who else covered it?" Crawford asks. "Run the checklist."
+
+Your integrity takes a hit from amplifying noise.`,
       choices: [
-        { label: "Compare sources before sharing", next: "media_win" },
+        { label: "Compare sources before sharing", next: "media_win", integrity: 0, reputation: 0 },
       ],
     },
 
@@ -592,9 +754,9 @@ All five Golden Rules pulse on the wall — if you've found them. The arena wait
 
 The question is whether to ship, delay, or demand a fix.`,
       choices: [
-        { label: "Insist the team tests on diverse faces before launch", next: "ai_ethics_win" },
-        { label: "Ship it — you can patch fairness later", next: "ai_ethics_fail" },
-        { label: "Remove the feature instead of fixing it", next: "ai_ethics_fail" },
+        { label: "Insist the team tests on diverse faces before launch", next: "ai_ethics_win", integrity: 10, reputation: 5 },
+        { label: "Delay launch and run an internal bias audit first", next: "ai_ethics_recovery_1", integrity: 0, reputation: -5 },
+        { label: "Ship it — you can patch fairness later", next: "ai_ethics_recovery_2", integrity: -15, reputation: -10 },
       ],
     },
 
@@ -613,12 +775,28 @@ A bulletin from the Bias Detection Unit lights up on the board.`,
       ],
     },
 
-    ai_ethics_fail: {
+    ai_ethics_recovery_1: {
+      location: "AI Ethics Lab — Internal Audit",
+      character: "turing",
+      narrative: `The audit finds bias — but the report stays internal. Leadership suppresses it to avoid liability. Turing taps the screen.
+
+"Delay without transparency just hides the problem."`,
+      choices: [
+        { label: "Leak the audit and demand public diverse testing", next: "ai_ethics_win", integrity: 5, reputation: -5 },
+        { label: "Accept the suppression and move on", next: "ai_ethics_recovery_2", integrity: -10, reputation: -5 },
+      ],
+    },
+
+    ai_ethics_recovery_2: {
       location: "AI Ethics Lab — Launch Day",
       character: "turing",
-      narrative: `Headlines hit the feed by noon: "App can't recognize half its users." Turing rewinds the tape. "Want to make the call you skipped?"`,
+      narrative: `Headlines hit the feed by noon: "App can't recognize half its users." Turing rewinds the tape.
+
+"Want to make the call you skipped?"
+
+Your integrity takes a hit from shipping known harm.`,
       choices: [
-        { label: "Demand diverse testing before anything ships", next: "ai_ethics_win" },
+        { label: "Demand diverse testing before anything ships", next: "ai_ethics_win", integrity: 0, reputation: 0 },
       ],
     },
 
@@ -629,9 +807,9 @@ A bulletin from the Bias Detection Unit lights up on the board.`,
 
 You could warn the team, ignore it, or grab it yourself.`,
       choices: [
-        { label: "Report it and follow secure disposal protocol", next: "hardware_win" },
-        { label: "It's not your problem — someone else will deal with it", next: "hardware_fail" },
-        { label: "Keep it as a backup phone", next: "hardware_fail" },
+        { label: "Report it and follow secure disposal protocol", next: "hardware_win", integrity: 10, reputation: 5 },
+        { label: "Wipe it yourself before telling anyone", next: "hardware_recovery_1", integrity: -5, reputation: 0 },
+        { label: "It's not your problem — someone else will deal with it", next: "hardware_recovery_2", integrity: -10, reputation: -5 },
       ],
     },
 
@@ -650,12 +828,26 @@ A trail of old posts leads toward the Footprint Gallery.`,
       ],
     },
 
-    hardware_fail: {
+    hardware_recovery_1: {
+      location: "Hardware Graveyard — Solo Wipe",
+      character: "babbage",
+      narrative: `You wipe the phone — but doing it alone means the e-waste pile still has other un-wiped devices. Babbage holds up the next one.
+
+"One hero doesn't scale. Systems scale."`,
+      choices: [
+        { label: "Report the systemic issue and follow protocol", next: "hardware_win", integrity: 5, reputation: 0 },
+        { label: "Move on — you fixed the one in front of you", next: "hardware_recovery_2", integrity: -5, reputation: -5 },
+      ],
+    },
+
+    hardware_recovery_2: {
       location: "Hardware Graveyard — Still Active",
       character: "babbage",
-      narrative: `The phone buzzes with a notification. Someone already found it in the resale pile. Babbage holds up a factory-wipe guide. "Try again?"`,
+      narrative: `The phone buzzes with a notification. Someone already found it in the resale pile. Babbage holds up a factory-wipe guide. "Try again?"
+
+Your integrity takes a hit from ignoring data that isn't yours to leave exposed.`,
       choices: [
-        { label: "Follow secure disposal protocol", next: "hardware_win" },
+        { label: "Follow secure disposal protocol", next: "hardware_win", integrity: 0, reputation: 0 },
       ],
     },
 
@@ -666,9 +858,9 @@ A trail of old posts leads toward the Footprint Gallery.`,
 
 You could call it out, stay silent, or add your own name to the fork.`,
       choices: [
-        { label: "Credit the original creators and follow the license", next: "open_source_win" },
-        { label: "Stay quiet — it's not your project", next: "open_source_fail" },
-        { label: "Add your name to the fork too", next: "open_source_fail" },
+        { label: "Credit the original creators and follow the license", next: "open_source_win", integrity: 10, reputation: 5 },
+        { label: "Stay quiet — it's not your project", next: "open_source_recovery_1", integrity: -5, reputation: -5 },
+        { label: "Add your name to the fork too", next: "open_source_recovery_2", integrity: -15, reputation: -15 },
       ],
     },
 
@@ -686,12 +878,26 @@ Down the alley, Crawford is reviewing a video with a suspicious soundtrack.`,
       ],
     },
 
-    open_source_fail: {
+    open_source_recovery_1: {
+      location: "Open Source Bazaar — Complicit Silence",
+      character: "hopper",
+      narrative: `The creator calls out the fork publicly. Because you stayed silent, your team's name is in the credits of the stolen version. Hopper rewinds the scene.
+
+" neutrality isn't neutral when you benefit from the wrong."`,
+      choices: [
+        { label: "Restore credits and follow the license", next: "open_source_win", integrity: 5, reputation: -5 },
+        { label: "Apologize privately but keep the fork live", next: "open_source_recovery_2", integrity: -5, reputation: -5 },
+      ],
+    },
+
+    open_source_recovery_2: {
       location: "Open Source Bazaar — Flame Thread",
       character: "hopper",
-      narrative: `The original creator posts receipts. Comments turn hostile. Hopper rewinds the scene. "Same fork. Different you?"`,
+      narrative: `The original creator posts receipts. Comments turn hostile. Hopper rewinds the scene. "Same fork. Different you?"
+
+Your integrity takes a hit from taking credit you didn't earn.`,
       choices: [
-        { label: "Restore credits and follow the license", next: "open_source_win" },
+        { label: "Restore credits and follow the license", next: "open_source_win", integrity: 0, reputation: 0 },
       ],
     },
 
@@ -702,9 +908,9 @@ Down the alley, Crawford is reviewing a video with a suspicious soundtrack.`,
 
 The team wants to keep it running because "the numbers look good overall."`,
       choices: [
-        { label: "Demand explainability and audit for group fairness", next: "bias_win" },
-        { label: "It's working — don't fix what isn't obviously broken", next: "bias_fail" },
-        { label: "Blame the data and move on", next: "bias_fail" },
+        { label: "Demand explainability and audit for group fairness", next: "bias_win", integrity: 10, reputation: 5 },
+        { label: "Request a narrower audit on the flagged group only", next: "bias_recovery_1", integrity: -5, reputation: 0 },
+        { label: "It's working — don't fix what isn't obviously broken", next: "bias_recovery_2", integrity: -15, reputation: -10 },
       ],
     },
 
@@ -722,12 +928,26 @@ The Sources Library has a new tip about a viral headline.`,
       ],
     },
 
-    bias_fail: {
+    bias_recovery_1: {
+      location: "Bias Detection Unit — Narrow Audit",
+      character: "johnson",
+      narrative: `The narrow audit confirms bias for that group — but the same pattern repeats in other demographics you didn't check. Johnson replays the fork.
+
+"A partial mirror still distorts the face."`,
+      choices: [
+        { label: "Expand the audit to full explainability and fairness", next: "bias_win", integrity: 5, reputation: 0 },
+        { label: "Patch the one group and move on", next: "bias_recovery_2", integrity: -5, reputation: -5 },
+      ],
+    },
+
+    bias_recovery_2: {
       location: "Bias Detection Unit — Pattern Confirmed",
       character: "johnson",
-      narrative: `A journalist runs the numbers independently. The gap is real and documented. Johnson replays the fork. "Same data. Different you?"`,
+      narrative: `A journalist runs the numbers independently. The gap is real and documented. Johnson replays the fork. "Same data. Different you?"
+
+Your integrity takes a hit from defending a harmful system.`,
       choices: [
-        { label: "Order the audit", next: "bias_win" },
+        { label: "Order the audit", next: "bias_win", integrity: 0, reputation: 0 },
       ],
     },
 
@@ -738,8 +958,8 @@ The Sources Library has a new tip about a viral headline.`,
 
 Your friend says, "I have nothing to hide, so why care?"`,
       choices: [
-        { label: "Explain that small data points build a detailed profile", next: "detective_win" },
-        { label: "Agree — if you're not doing anything wrong, privacy doesn't matter", next: "detective_fail" },
+        { label: "Explain that small data points build a detailed profile", next: "detective_win", integrity: 5, reputation: 5 },
+        { label: "Agree — if you're not doing anything wrong, privacy doesn't matter", next: "detective_recovery_1", integrity: -10, reputation: -5 },
       ],
     },
 
@@ -758,12 +978,14 @@ The vault map shows two more locations: passwords and footprints.`,
       ],
     },
 
-    detective_fail: {
+    detective_recovery_1: {
       location: "Data Detective Agency — Profile Complete",
       character: "conway",
-      narrative: `Conway assembles the puzzle from public posts alone. Address, schedule, habits — all visible. "Still nothing to hide?" he asks.`,
+      narrative: `Conway assembles the puzzle from public posts alone. Address, schedule, habits — all visible. "Still nothing to hide?" he asks.
+
+Your integrity takes a hit from normalizing surveillance.`,
       choices: [
-        { label: "Limit what's shared and review app permissions", next: "detective_win" },
+        { label: "Limit what's shared and review app permissions", next: "detective_win", integrity: 0, reputation: 0 },
       ],
     },
 

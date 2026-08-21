@@ -50,6 +50,9 @@
       goldenRules: [],
       journal: ["🌐 Mission accepted"],
       metCharacters: [],
+      integrity: 100,
+      reputation: 50,
+      mentorTrust: {},
       startedAt: now(),
       updatedAt: now(),
     };
@@ -88,6 +91,9 @@
       goldenRules: new Set(normalizeArray(raw.goldenRules)),
       journal: normalizeArray(raw.journal),
       metCharacters: new Set(normalizeArray(raw.metCharacters)),
+      integrity: typeof raw.integrity === "number" ? raw.integrity : 100,
+      reputation: typeof raw.reputation === "number" ? raw.reputation : 50,
+      mentorTrust: raw.mentorTrust && typeof raw.mentorTrust === "object" ? raw.mentorTrust : {},
       startedAt: raw.startedAt || now(),
       updatedAt: raw.updatedAt || now(),
     };
@@ -102,6 +108,9 @@
       goldenRules: [...state.goldenRules],
       journal: state.journal,
       metCharacters: [...state.metCharacters],
+      integrity: state.integrity ?? 100,
+      reputation: state.reputation ?? 50,
+      mentorTrust: state.mentorTrust || {},
       startedAt: state.startedAt,
       updatedAt: now(),
     };
@@ -139,12 +148,17 @@
 
   function summarizeRun(run) {
     const durationSec = Math.max(0, Math.round((now() - (run.startedAt || now())) / 1000));
+    const integrity = run.integrity ?? 100;
+    const goldenCount = run.goldenRules.size;
+    const endingType = integrity >= 80 && goldenCount >= 5 ? "champion" : integrity >= 50 && goldenCount >= 3 ? "operative" : "probation";
     return {
       badgesCount: run.badges.size,
-      goldenCount: run.goldenRules.size,
+      goldenCount,
       mentorsCount: run.metCharacters.size,
+      integrity,
+      reputation: run.reputation ?? 50,
       durationSec,
-      endingType: null,
+      endingType,
     };
   }
 
@@ -161,6 +175,9 @@
       !currentBest ||
       summary.goldenCount > (currentBest.goldenCount || 0) ||
       (summary.goldenCount === (currentBest.goldenCount || 0) &&
+        summary.integrity > (currentBest.integrity || 0)) ||
+      (summary.goldenCount === (currentBest.goldenCount || 0) &&
+        summary.integrity === (currentBest.integrity || 0) &&
         summary.badgesCount > (currentBest.badgesCount || 0));
 
     if (isBetter) {
@@ -168,6 +185,8 @@
         badgesCount: summary.badgesCount,
         goldenCount: summary.goldenCount,
         mentorsCount: summary.mentorsCount,
+        integrity: summary.integrity,
+        reputation: summary.reputation,
         durationSec: summary.durationSec,
         endedAt: now(),
       };

@@ -26,6 +26,9 @@
   let journal = [];
   let typingPending = null;
   let metCharacters = new Set();
+  let integrity = 100;
+  let reputation = 50;
+  let mentorTrust = {};
   let runRng = Math.random;
   let startChoices = [];
   let startTime = Date.now();
@@ -73,6 +76,19 @@
   let typewriterActive = false;
   let typewriterQueue = [];
   let typewriterResolve = null;
+  const CHOICE_COOLDOWN_MS = 1200;
+  const SCENE_LOADER_MIN_MS = 800;
+  const TYPEWRITER_MIN_DWELL_MS = 1200;
+
+  function showSceneLoader() {
+    const el = document.getElementById("sceneLoader");
+    if (el) el.classList.remove("dw-hidden");
+  }
+
+  function hideSceneLoader() {
+    const el = document.getElementById("sceneLoader");
+    if (el) el.classList.add("dw-hidden");
+  }
 
   function loadHighContrast() {
     try {
@@ -171,6 +187,7 @@
       const speed = 25;
       const tagRe = /<[^>]+>/g;
       let pos = 0;
+      const paraStartTime = performance.now();
 
       while (pos < fullText.length) {
         const nextTag = tagRe.exec(fullText);
@@ -187,6 +204,9 @@
       }
 
       if (i < paragraphs.length - 1) {
+        const elapsed = performance.now() - paraStartTime;
+        const remaining = Math.max(0, TYPEWRITER_MIN_DWELL_MS - elapsed);
+        if (remaining > 0) await new Promise((r) => setTimeout(r, remaining));
         continueBtn?.classList.remove("dw-hidden");
         narrativeEl.classList.remove("tt-narrative--typing");
         await new Promise((resolve) => {
@@ -470,6 +490,9 @@
       goldenRules,
       journal,
       metCharacters,
+      integrity,
+      reputation,
+      mentorTrust,
       startedAt: startTime,
     });
 
@@ -494,21 +517,33 @@
       typingPending = null;
       const choices = resolveChoices(node, nodeId);
       choicesEl.innerHTML = choices.map((c, i) => `
-        <button class="tt-choice" type="button" data-next="${escapeHtml(c.next)}" style="--tt-choice-i:${i}">
+        <button class="tt-choice tt-choice--cooldown" type="button" data-next="${escapeHtml(c.next)}" data-choice-idx="${i}" style="--tt-choice-i:${i}">
           <span class="tt-choice__glow" aria-hidden="true"></span>
           <span class="tt-choice__arrow">▶</span>
           <span class="tt-choice__label">${escapeHtml(c.label)}</span>
+          ${c.integrity < 0 || c.reputation < 0 ? '<span class="tt-choice__risk" aria-hidden="true">⚠️</span>' : ""}
         </button>`).join("");
 
-      choicesEl.querySelectorAll(".tt-choice").forEach((btn) => {
+      const choiceButtons = choicesEl.querySelectorAll(".tt-choice");
+      choiceButtons.forEach((btn) => {
+        const choiceIdx = Number(btn.dataset.choiceIdx ?? -1);
+        const choiceData = choices[choiceIdx] || {};
         btn.addEventListener("click", () => {
           Audio?.playChoiceClick?.();
           const label = btn.querySelector(".tt-choice__label")?.textContent?.trim() || "Choice";
           journal.push(`→ ${label.slice(0, 80)}${label.length > 80 ? "…" : ""}`);
           btn.classList.add("tt-choice--picked");
+          applyChoiceEffects(choiceData);
           setTimeout(() => navigate(btn.dataset.next), prefersReducedMotion ? 0 : 220);
         });
       });
+      if (!prefersReducedMotion) {
+        setTimeout(() => {
+          choiceButtons.forEach((b) => b.classList.remove("tt-choice--cooldown"));
+        }, CHOICE_COOLDOWN_MS);
+      } else {
+        choiceButtons.forEach((b) => b.classList.remove("tt-choice--cooldown"));
+      }
     }
 
     if (node.ending) {
@@ -534,13 +569,54 @@
   }
 
   function navigate(nodeId) {
-    renderScene(nodeId);
+    if (prefersReducedMotion) {
+      renderScene(nodeId);
+      return;
+    }
+    showSceneLoader();
+    setTimeout(() => {
+      renderScene(nodeId);
+      hideSceneLoader();
+    }, SCENE_LOADER_MIN_MS);
   }
 
   function updateStats() {
     document.getElementById("statBadges").textContent = badges.size;
     document.getElementById("statLessons").textContent = lessons.size;
     document.getElementById("statScenes").textContent = journal.length;
+    const integrityEl = document.getElementById("statIntegrity");
+    const repEl = document.getElementById("statReputation");
+    if (integrityEl) {
+      integrityEl.textContent = integrity;
+      integrityEl.style.color = integrity >= 80 ? "#34d399" : integrity >= 50 ? "#fbbf24" : "#ef4444";
+    }
+    if (repEl) repEl.textContent = reputation;
+  }
+
+  function applyChoiceEffects(choice) {
+    let msgs = [];
+    if (typeof choice.integrity === "number") {
+      integrity = Math.max(0, Math.min(100, integrity + choice.integrity));
+      if (choice.integrity < 0) msgs.push(`⚠️ Integrity −${Math.abs(choice.integrity)}`);
+      else if (choice.integrity > 0) msgs.push(`✅ Integrity +${choice.integrity}`);
+    }
+    if (typeof choice.reputation === "number") {
+      reputation = Math.max(0, Math.min(100, reputation + choice.reputation));
+      if (choice.reputation < 0) msgs.push(`⚠️ Reputation −${Math.abs(choice.reputation)}`);
+      else if (choice.reputation > 0) msgs.push(`✅ Reputation +${choice.reputation}`);
+    }
+    if (choice.mentorDelta) {
+      const { key, delta } = choice.mentorDelta;
+      mentorTrust[key] = (mentorTrust[key] || 0) + delta;
+      if (delta < 0) msgs.push(`⚠️ ${CHARACTERS[key]?.name || key} trust decreased`);
+      else msgs.push(`✅ ${CHARACTERS[key]?.name || key} trust increased`);
+    }
+    if (msgs.length) {
+      toast(msgs.join(" · "), choice.integrity < 0 || choice.reputation < 0 ? "lesson" : "info");
+    }
+    if (integrity <= 0) {
+      toast("Mission integrity critical — one more misstep and you're on probation.", "lesson");
+    }
   }
 
   function renderJournal() {
@@ -568,27 +644,44 @@
     }).join("");
   }
 
+  function computeEndingType() {
+    if (integrity >= 80 && goldenRules.size >= 5) return "champion";
+    if (integrity >= 50 && goldenRules.size >= 3) return "operative";
+    return "probation";
+  }
+
   function renderEnding(node) {
-    const isMentor = node.endingType === "mentor";
-    document.getElementById("endingTitle").textContent = isMentor
-      ? "Mentor Operative!"
-      : node.endingType === "champion"
-        ? "Gauntlet Champion!"
-        : "Mission Complete!";
-    document.getElementById("endingNarrative").innerHTML = node.narrative || "";
+    const endingType = computeEndingType();
+    let title, narrativeOverride;
+    if (endingType === "champion") {
+      title = "Gauntlet Champion!";
+    } else if (endingType === "operative") {
+      title = "Mission Operative";
+    } else {
+      title = "Operative on Probation";
+      narrativeOverride = `The five Golden Rules line up on the main screen, but the audit log tells a harder story.
+
+<strong>Integrity: ${integrity}/100 · Reputation: ${reputation}/100 · ${goldenRules.size}/5 Golden Rules</strong>
+
+You recovered some rules — but the cost was visible. Compromises leave traces. The Host extends a hand anyway. "Next run, the stakes are real."
+
+Play again to rebuild your record clean.`;
+    }
+    document.getElementById("endingTitle").textContent = title;
+    document.getElementById("endingNarrative").innerHTML = narrativeOverride || node.narrative || "";
     document.getElementById("endingBadges").innerHTML = [...badges].map((b) => `<span class="tt-badge">${escapeHtml(b)}</span>`).join("");
     document.getElementById("endingLessons").textContent =
-      `${lessons.size} lessons · ${badges.size} badges · ${goldenRules.size}/5 Golden Rules · ${metCharacters.size} mentors met`;
+      `${lessons.size} lessons · ${badges.size} badges · ${goldenRules.size}/5 Golden Rules · Integrity ${integrity} · Reputation ${reputation}`;
 
     const endingBg = document.getElementById("endingBg");
     if (endingBg) {
-      const zone = Visuals.zoneForNode(node.endingType === "champion" ? "final_trial" : "start");
+      const zone = Visuals.zoneForNode(endingType === "champion" ? "final_trial" : "start");
       endingBg.style.backgroundImage = `url('${zone.bg}')`;
     }
 
     renderGoldenTrack("endingGoldenTrack");
     renderResearchPanel();
-    burstConfetti(isMentor ? 32 : 48);
+    burstConfetti(endingType === "probation" ? 16 : endingType === "operative" ? 32 : 48);
 
     const runSnapshot = {
       currentNode,
@@ -597,6 +690,9 @@
       goldenRules,
       journal,
       metCharacters,
+      integrity,
+      reputation,
+      mentorTrust,
       startedAt: startTime,
     };
     const profile = State.loadProfile();
@@ -614,6 +710,9 @@
     lessons.clear();
     goldenRules.clear();
     metCharacters.clear();
+    integrity = 100;
+    reputation = 50;
+    mentorTrust = {};
     journal = ["🌐 Mission accepted"];
     startTime = Date.now();
   }
@@ -653,7 +752,8 @@
     startBtn?.addEventListener("click", () => {
       Audio?.init?.();
       resetRun();
-      renderScene("start");
+      showSceneLoader();
+      setTimeout(() => { renderScene("start"); hideSceneLoader(); }, SCENE_LOADER_MIN_MS);
     });
 
     continueBtn?.addEventListener("click", () => {
@@ -666,18 +766,24 @@
         goldenRules = saved.goldenRules;
         journal = saved.journal;
         metCharacters = saved.metCharacters;
+        integrity = saved.integrity ?? 100;
+        reputation = saved.reputation ?? 50;
+        mentorTrust = saved.mentorTrust || {};
         startTime = saved.startedAt || Date.now();
-        renderScene(currentNode);
+        showSceneLoader();
+        setTimeout(() => { renderScene(currentNode); hideSceneLoader(); }, SCENE_LOADER_MIN_MS);
       } else {
         resetRun();
-        renderScene("start");
+        showSceneLoader();
+        setTimeout(() => { renderScene("start"); hideSceneLoader(); }, SCENE_LOADER_MIN_MS);
       }
     });
 
     newRunBtn?.addEventListener("click", () => {
       Audio?.init?.();
       resetRun();
-      renderScene("start");
+      showSceneLoader();
+      setTimeout(() => { renderScene("start"); hideSceneLoader(); }, SCENE_LOADER_MIN_MS);
     });
 
     document.getElementById("playAgainBtn")?.addEventListener("click", () => {
@@ -713,17 +819,21 @@
       const words = Core.countWords(typingInput.value);
       if (words < scaleMinWords(typingPending.minWords || 20)) return;
       journal.push(`⌨️ Oath drafted (${words} words)`);
-      toast("Response submitted", "badge");
+      toast("Transmitting response...", "badge");
       burstConfetti(20);
       State.clearDraft();
 
       const nextNode = STORY[typingPending.next];
       const isEnding = nextNode && nextNode.ending;
-      if (isEnding) {
-        showIdentityGate(() => navigate(typingPending.next));
-      } else {
-        navigate(typingPending.next);
-      }
+      showSceneLoader();
+      setTimeout(() => {
+        hideSceneLoader();
+        if (isEnding) {
+          showIdentityGate(() => navigate(typingPending.next));
+        } else {
+          navigate(typingPending.next);
+        }
+      }, SCENE_LOADER_MIN_MS);
     });
 
     const identitySubmit = document.getElementById("identitySubmitBtn");

@@ -261,7 +261,38 @@
   border-color: rgba(196, 30, 58, 0.85);
 }
 
-/* ── Phase 5 additions ── */
+/* ── Phase 5 + integrity/stakes additions ── */
+
+.tt-stat--integrity .tt-stat__value {
+  color: #34d399;
+}
+
+.tt-stat--reputation .tt-stat__value {
+  color: #ffd700;
+}
+
+.tt-choice__risk {
+  margin-left: auto;
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+.tt-choice--risky {
+  border-color: rgba(239, 68, 68, 0.5) !important;
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.tt-choice--safe {
+  border-color: rgba(52, 211, 153, 0.5) !important;
+  background: rgba(52, 211, 153, 0.08);
+}
+
+.tt-consequence-toast {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* Skip link and mute (Phase 5) */
 
 .tt-skip-link {
   position: absolute;
@@ -1371,6 +1402,82 @@
 
 .tt-choice__tag {
   display: none;
+}
+
+.tt-choice--cooldown {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+  filter: grayscale(0.6);
+}
+
+.tt-choice--cooldown::after {
+  content: "🔒";
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+.tt-scene-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  background: rgba(20, 8, 24, 0.85);
+  backdrop-filter: blur(6px);
+  transition: opacity 0.35s ease, visibility 0.35s ease;
+}
+
+.tt-scene-loader.dw-hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.tt-scene-loader__content {
+  text-align: center;
+  color: var(--dw-text);
+}
+
+.tt-scene-loader__dots {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.tt-scene-loader__dots span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ffd700, #c41e3a);
+  animation: tt-loader-bounce 0.9s ease-in-out infinite;
+}
+
+.tt-scene-loader__dots span:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.tt-scene-loader__dots span:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes tt-loader-bounce {
+  0%, 80%, 100% { transform: translateY(0) scale(0.85); opacity: 0.6; }
+  40% { transform: translateY(-14px) scale(1.1); opacity: 1; }
+}
+
+.tt-scene-loader__label {
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 18px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0.85;
 }
 
 .tt-typing-progress {

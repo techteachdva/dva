@@ -90,12 +90,23 @@ layout: false
               <span class="tt-stat">🏅 <span class="tt-stat__value" id="statBadges">0</span> badges</span>
               <span class="tt-stat">📚 <span class="tt-stat__value" id="statLessons">0</span> lessons</span>
               <span class="tt-stat">🗺️ <span class="tt-stat__value" id="statScenes">0</span> steps</span>
+              <span class="tt-stat tt-stat--integrity">🛡️ <span class="tt-stat__value" id="statIntegrity">100</span> integrity</span>
+              <span class="tt-stat tt-stat--reputation">⭐ <span class="tt-stat__value" id="statReputation">50</span> reputation</span>
             </div>
             <div class="tt-golden-track" id="goldenRulesTrack" aria-label="Golden Rules progress"></div>
             <button id="muteToggleBtn" class="tt-mute-btn" type="button" title="Toggle sound">🔊</button>
           </div>
 
           <div id="sceneLesson" class="tt-lesson-flash dw-hidden"></div>
+
+          <div id="sceneLoader" class="tt-scene-loader dw-hidden" aria-hidden="true">
+            <div class="tt-scene-loader__content">
+              <div class="tt-scene-loader__dots" aria-hidden="true">
+                <span></span><span></span><span></span>
+              </div>
+              <div class="tt-scene-loader__label">ACME Uplink</div>
+            </div>
+          </div>
 
           <div class="tt-stage" id="sceneStage">
             <div class="tt-stage__viewport" id="sceneViewport">
