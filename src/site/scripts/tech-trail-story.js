@@ -25,9 +25,11 @@
       character: "guide",
       narrative: `Welcome, recruit! You've been selected for the <em>Global Tech Gauntlet</em> — a mission to recover the scattered <strong>Golden Rules of Digital Citizenship</strong>.
 
-Remember: <em>Technology is created to solve problems. Humans make technology. Technology makes us human.</em> Culture solves belonging and identity — it is technology too.
+Holo-screens flicker to life around the briefing room. Maps pulse with live data. A countdown begins.
 
-Chief Ada Lovelace appears on the holo-screen. "Every algorithm begins with a question. Where do you begin?"`,
+Remember: <em>Technology is created to solve problems. Humans make technology. Technology makes us human.</em>
+
+Chief Ada Lovelace materializes on the main screen, Victorian lace rendered in light. "Every algorithm begins with a question. Where do you begin?"`,
       choices: [
         { label: "Design Lab — learn the design process with Lovelace", next: "design_lab", lesson: "8.3.3.1" },
         { label: "Data Vault — a privacy breach is spreading", next: "data_vault", lesson: "8.2.2.3" },
@@ -533,7 +535,9 @@ A meme claims a celebrity said something shocking. It's a fake quote.`,
     final_trial: {
       location: "Gauntlet Arena · Final Round",
       character: "guide",
-      narrative: `"Final round!" All mentors appear. "Write your Digital Citizenship Oath."`,
+      narrative: `"Final round!" Spotlights sweep the arena. Every mentor you've met watches from the holo-rings above.
+
+The floor rises. Your keyboard glows gold. "Write your Digital Citizenship Oath — in your own words."`,
       typingChallenge: {
         prompt: "Write your Digital Citizenship Oath (3-5 sentences): How will you use technology to solve problems, help others, and stay safe online?",
         minWords: 30,
