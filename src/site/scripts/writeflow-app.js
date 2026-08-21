@@ -18,9 +18,6 @@
   const isStudioApp = !isStudentApp;
   const STUDIO_PATH = "/writeflow/studio/";
   const ASSIGNMENT_PATH = "/writeflow/a/";
-  const SENTENCE_STATS_KEY = "writeflow:global:sentences";
-  const SUBMISSION_STATS_KEY = "writeflow:global:submissions";
-
   function assignmentUrl(id) {
     return `${ASSIGNMENT_PATH}?id=${encodeURIComponent(id)}`;
   }
@@ -91,21 +88,6 @@
       html = html.replace(re, '<mark class="wf-vocab-hit">$1</mark>');
     }
     return html;
-  }
-
-  function recordSentenceStats(sentenceCount) {
-    if (!sentenceCount) return;
-    try {
-      const prev = Number(localStorage.getItem(SENTENCE_STATS_KEY) || 0);
-      localStorage.setItem(SENTENCE_STATS_KEY, String(prev + sentenceCount));
-    } catch {}
-  }
-
-  function recordSubmissionStats() {
-    try {
-      const prev = Number(localStorage.getItem(SUBMISSION_STATS_KEY) || 0);
-      localStorage.setItem(SUBMISSION_STATS_KEY, String(prev + 1));
-    } catch {}
   }
 
   function hasLocalConfig(id) {
@@ -560,8 +542,6 @@
     const vocabWords = getVocabWords();
     const analysis = window.WriteAnalysis?.analyzeText(text, duration, { vocabWords })
       || { scores: {}, wordCount: 0, wpm: 0, feedback: [], sentenceCount: 0 };
-    recordSentenceStats(analysis.sentenceCount || window.WriteAnalysis?.getSentences?.(text)?.length || 0);
-
     const name = document.getElementById("studentName")?.value.trim() || "Student";
     const classEl = document.getElementById("studentClass");
     const classroom = Core.resolveClassroom(classEl?.value, VALID_CLASSROOMS) || "";
@@ -621,7 +601,6 @@
       try {
         await submitResult(name, classroom, classCode, text, analysis, duration);
         saveOk = true;
-        recordSubmissionStats();
         saveLocalSubmission({ name, classroom, text, analysis, submittedAt: Date.now() });
       } catch (err) {
         saveError = err.message || "Could not save your submission.";

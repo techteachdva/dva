@@ -7,42 +7,26 @@
   const Defaults = window.WriteFlowDefaults;
   if (!Defaults) return;
 
-  const STATS = {
-    sentences: { key: "writeflow:global:sentences", base: 12840 },
-    submissions: { key: "writeflow:global:submissions", base: 1840 },
-    assignments: { key: "writeflow:assignments", base: 24, isList: true },
-  };
-
+  const STATS_API = "/api/writeflow-submissions?action=stats";
   const INTRO_TEXT = "WriteFlow Studio";
   const SCORE_TARGETS = { typing: 84, mechanics: 76, story: 91 };
   let introRunning = false;
+  let cachedStats = null;
 
   function escapeHtml(s) {
     return String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   }
 
-  function loadClassrooms() {
+  async function fetchImpactStats() {
+    if (cachedStats) return cachedStats;
     try {
-      const el = document.getElementById("wfClassroomsJson");
-      if (!el) return 8;
-      const list = JSON.parse(el.textContent || "[]");
-      return Array.isArray(list) ? list.length : 8;
+      const res = await fetch(STATS_API);
+      if (!res.ok) return null;
+      const data = await res.json();
+      cachedStats = data.stats || null;
+      return cachedStats;
     } catch {
-      return 8;
-    }
-  }
-
-  function getStatValue(kind) {
-    const cfg = STATS[kind];
-    if (!cfg) return 0;
-    try {
-      if (cfg.isList) {
-        const list = JSON.parse(localStorage.getItem(cfg.key) || "[]");
-        return cfg.base + (Array.isArray(list) ? list.length : 0);
-      }
-      return cfg.base + Number(localStorage.getItem(cfg.key) || 0);
-    } catch {
-      return cfg.base;
+      return null;
     }
   }
 
@@ -100,17 +84,17 @@
       </li>`).join("");
   }
 
-  function renderImpactStats() {
-    const classrooms = loadClassrooms();
+  async function renderImpactStats() {
+    const stats = await fetchImpactStats();
     const targets = {
-      wfClassroomCount: classrooms,
-      wfAssignmentCount: getStatValue("assignments"),
-      wfSubmissionCount: getStatValue("submissions"),
-      wfSentenceCount: getStatValue("sentences"),
+      wfClassroomCount: stats?.classrooms ?? 0,
+      wfAssignmentCount: stats?.assignments ?? 0,
+      wfSubmissionCount: stats?.submissions ?? 0,
+      wfSentenceCount: stats?.sentences ?? 0,
     };
-    Object.entries(targets).forEach(([id, target]) => {
-      void animateCounter(document.getElementById(id), target, 2000);
-    });
+    await Promise.all(Object.entries(targets).map(([id, target]) =>
+      animateCounter(document.getElementById(id), target, 2000)
+    ));
   }
 
   function prefersReducedMotion() {
@@ -172,7 +156,7 @@
     await delay(700);
     splash?.classList.add("dw-hidden");
     landing?.classList.remove("dw-hidden");
-    renderImpactStats();
+    await renderImpactStats();
   }
 
   async function runIntroAnimation({ thenNavigate = null } = {}) {
@@ -192,6 +176,8 @@
       if (thenNavigate) location.href = thenNavigate;
       return;
     }
+
+    void fetchImpactStats();
 
     if (prefersReducedMotion()) {
       await hideSplash();

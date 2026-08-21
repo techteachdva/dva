@@ -174,6 +174,10 @@ function handle_(e, isGet) {
       });
     }
 
+    if (action === "stats") {
+      return respond_({ ok: true, stats: getStats_() });
+    }
+
     if (action === "getAssignment") {
       const assignmentId = String(params.assignmentId || "").trim();
       if (!assignmentId) return respond_({ error: "Missing assignmentId" });
@@ -265,6 +269,50 @@ function getAssignmentConfig_(assignmentId) {
     };
   }
   return null;
+}
+
+function countSentencesInText_(text) {
+  const trimmed = String(text || "").trim();
+  if (!trimmed) return 0;
+  return trimmed.split(/[.!?]+/).filter(function (part) {
+    return String(part || "").trim().length > 0;
+  }).length;
+}
+
+function getStats_() {
+  const assignmentsSheet = getAssignmentsSheet_();
+  const submissionsSheet = getSubmissionsSheet_();
+  const assignmentLastRow = assignmentsSheet.getLastRow();
+  const submissionLastRow = submissionsSheet.getLastRow();
+  const assignments = Math.max(0, assignmentLastRow - 1);
+  const classrooms = {};
+  var submissions = 0;
+  var sentences = 0;
+
+  if (submissionLastRow >= 2) {
+    const numRows = submissionLastRow - 1;
+    const values = submissionsSheet.getRange(2, 1, numRows, 12).getValues();
+    for (var i = 0; i < values.length; i++) {
+      const row = values[i];
+      if (!row[0]) continue;
+      submissions += 1;
+      const classroom = normalizeClassroom_(row[4]);
+      if (classroom) classrooms[classroom] = true;
+      var analysis = {};
+      try {
+        analysis = JSON.parse(row[11] || "{}");
+      } catch (ignore) {}
+      const sentenceCount = Number(analysis.sentenceCount);
+      sentences += sentenceCount > 0 ? sentenceCount : countSentencesInText_(row[10]);
+    }
+  }
+
+  return {
+    classrooms: Object.keys(classrooms).length,
+    assignments: assignments,
+    submissions: submissions,
+    sentences: sentences,
+  };
 }
 
 function listSubmissions_(assignmentId) {

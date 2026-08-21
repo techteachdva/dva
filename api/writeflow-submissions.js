@@ -63,12 +63,43 @@ async function fetchScriptJson(url, options) {
 export async function GET(request) {
   const action = getQueryParam(request, "action") || "list";
   const assignmentId = getQueryParam(request, "assignmentId");
+  const scriptUrl = getScriptUrl();
+
+  if (action === "stats") {
+    if (!scriptUrl) {
+      return Response.json(
+        { ok: true, stats: { classrooms: 0, assignments: 0, submissions: 0, sentences: 0 }, setupRequired: true },
+        { headers: { ...corsHeaders(), "Cache-Control": "public, max-age=300" } }
+      );
+    }
+    try {
+      const url = new URL(scriptUrl);
+      url.searchParams.set("action", "stats");
+      url.searchParams.set("secret", getApiSecret());
+      const data = await fetchScriptJson(url.toString(), { method: "GET" });
+      if (data.error) {
+        return Response.json(
+          { error: data.error, stats: { classrooms: 0, assignments: 0, submissions: 0, sentences: 0 } },
+          { status: 502, headers: corsHeaders() }
+        );
+      }
+      return Response.json(
+        { ok: true, stats: data.stats || { classrooms: 0, assignments: 0, submissions: 0, sentences: 0 } },
+        { headers: { ...corsHeaders(), "Cache-Control": "public, max-age=300" } }
+      );
+    } catch (e) {
+      console.error("WriteFlow stats error:", e.message);
+      return Response.json(
+        { error: e.message || "Could not load stats.", stats: { classrooms: 0, assignments: 0, submissions: 0, sentences: 0 } },
+        { status: 502, headers: corsHeaders() }
+      );
+    }
+  }
 
   if (!assignmentId) {
     return Response.json({ error: "Missing assignmentId" }, { status: 400, headers: corsHeaders() });
   }
 
-  const scriptUrl = getScriptUrl();
   if (!scriptUrl) return notConfiguredResponse();
 
   if (action === "getAssignment") {
