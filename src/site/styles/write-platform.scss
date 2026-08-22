@@ -2038,7 +2038,7 @@
 .wf-tutorial {
   position: fixed;
   inset: 0;
-  z-index: 100;
+  z-index: 25000;
   display: flex;
   align-items: flex-end;
   justify-content: center;
@@ -2072,7 +2072,8 @@
   background: var(--dw-bg, #0f172a);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
   margin-bottom: max(16px, env(safe-area-inset-bottom, 0));
-  z-index: 2;
+  z-index: 3;
+  pointer-events: auto;
 }
 
 .wf-tutorial__meta {
@@ -2117,12 +2118,13 @@
 
 .wf-tutorial-highlight {
   position: relative;
-  z-index: 110 !important;
+  z-index: 90 !important;
   outline: 3px solid #38bdf8;
   outline-offset: 4px;
   border-radius: 10px;
   box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.35), 0 12px 40px rgba(0, 0, 0, 0.45);
   background-color: var(--dw-bg, #0f172a);
+  pointer-events: none;
 }
 
 .wf-quickstart__steps {

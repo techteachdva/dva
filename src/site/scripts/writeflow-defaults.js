@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.3.5";
+  const APP_VERSION = "2.3.6";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -119,6 +119,16 @@
   ];
 
   const CHANGELOG = [
+    {
+      version: "2.3.6",
+      date: "2026-08-22",
+      summary: "Fix Studio tutorial spotlight blocking the Next button.",
+      items: [
+        "Tutorial overlay now stacks above highlighted UI so Next and Back stay clickable.",
+        "Large spotlight targets use a soft dim instead of a viewport-sized cutout.",
+        "Step 2 no longer highlights the full dashboard grid — instructions stay readable alongside the UI.",
+      ],
+    },
     {
       version: "2.3.5",
       date: "2026-08-22",
@@ -715,8 +725,7 @@
       },
       {
         title: "The three-panel layout",
-        body: "Left — start from a template or blank assignment. Center — your saved assignments as file tiles. Right — reminders for naming, links, and passwords.",
-        highlight: "#wfStudioHomeGrid",
+        body: "Left — start from a template or blank assignment. Center — your saved assignments as file tiles. Right — quick tips for naming, links, and passwords.",
       },
       {
         title: "Name your assignment first",

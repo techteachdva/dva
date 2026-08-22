@@ -691,10 +691,35 @@
       panel.style.removeProperty("marginTop");
       panel.style.removeProperty("marginBottom");
     }
-    if (overlay) overlay.style.removeProperty("alignItems");
+    if (overlay) {
+      overlay.style.removeProperty("alignItems");
+    }
     if (tutorialHighlightEl) {
       tutorialHighlightEl.classList.remove("wf-tutorial-highlight");
       tutorialHighlightEl = null;
+    }
+  }
+
+  function highlightCoversMostOfViewport(el) {
+    if (!el) return false;
+    const rect = el.getBoundingClientRect();
+    const viewportArea = window.innerWidth * window.innerHeight;
+    const elArea = rect.width * rect.height;
+    return elArea / viewportArea > 0.45 || rect.height > window.innerHeight * 0.55;
+  }
+
+  function pinTutorialPanel(position = "bottom") {
+    const overlay = document.getElementById("wfTutorial");
+    const panel = overlay?.querySelector(".wf-tutorial__panel");
+    if (!overlay || !panel) return;
+    panel.style.marginTop = "";
+    panel.style.marginBottom = "";
+    if (position === "top") {
+      overlay.style.alignItems = "flex-start";
+      panel.style.marginTop = "max(16px, env(safe-area-inset-top, 0))";
+    } else {
+      overlay.style.alignItems = "flex-end";
+      panel.style.marginBottom = "max(16px, env(safe-area-inset-bottom, 0))";
     }
   }
 
@@ -703,6 +728,12 @@
     const backdrop = document.getElementById("tutorialBackdrop");
     const panel = overlay?.querySelector(".wf-tutorial__panel");
     if (!el || !overlay || !backdrop) return;
+
+    if (highlightCoversMostOfViewport(el)) {
+      backdrop.style.removeProperty("clip-path");
+      pinTutorialPanel("bottom");
+      return;
+    }
 
     const pad = 10;
     const rect = el.getBoundingClientRect();
@@ -722,16 +753,20 @@
     )`;
 
     if (panel) {
+      const panelRect = panel.getBoundingClientRect();
+      const panelH = panelRect.height || 220;
       const spaceBelow = window.innerHeight - rect.bottom;
       const spaceAbove = rect.top;
-      panel.style.marginTop = "";
-      panel.style.marginBottom = "";
-      if (spaceBelow >= 200 || spaceBelow >= spaceAbove) {
-        overlay.style.alignItems = "flex-end";
-        panel.style.marginBottom = "max(16px, env(safe-area-inset-bottom, 0))";
+      const panelFitsBelow = spaceBelow >= panelH + 24;
+      const panelFitsAbove = spaceAbove >= panelH + 24;
+
+      if (panelFitsBelow && (spaceBelow >= spaceAbove || !panelFitsAbove)) {
+        pinTutorialPanel("bottom");
+      } else if (panelFitsAbove) {
+        pinTutorialPanel("top");
       } else {
-        overlay.style.alignItems = "flex-start";
-        panel.style.marginTop = "max(16px, env(safe-area-inset-top, 0))";
+        backdrop.style.removeProperty("clip-path");
+        pinTutorialPanel("bottom");
       }
     }
   }
@@ -739,16 +774,35 @@
   function applyTutorialHighlight(selector) {
     clearTutorialHighlight();
     const overlay = document.getElementById("wfTutorial");
-    if (!selector) return;
+    if (!selector) {
+      pinTutorialPanel("bottom");
+      return;
+    }
     const el = document.querySelector(selector);
-    if (!el) return;
+    if (!el) {
+      pinTutorialPanel("bottom");
+      return;
+    }
+
     tutorialHighlightEl = el;
     el.classList.add("wf-tutorial-highlight");
     overlay?.classList.add("wf-tutorial--spotlight");
-    el.scrollIntoView({ behavior: "smooth", block: "center" });
+
+    const useSoftHighlight = highlightCoversMostOfViewport(el);
+    el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
     requestAnimationFrame(() => {
-      positionTutorialSpotlight(el);
-      requestAnimationFrame(() => positionTutorialSpotlight(el));
+      if (useSoftHighlight) {
+        const backdrop = document.getElementById("tutorialBackdrop");
+        backdrop?.style.removeProperty("clip-path");
+        pinTutorialPanel("bottom");
+      } else {
+        positionTutorialSpotlight(el);
+      }
+      requestAnimationFrame(() => {
+        if (!useSoftHighlight) positionTutorialSpotlight(el);
+        else pinTutorialPanel("bottom");
+      });
     });
   }
 
