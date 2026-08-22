@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.3.0";
+  const APP_VERSION = "2.3.1";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -120,6 +120,16 @@
 
   const CHANGELOG = [
     {
+      version: "2.3.1",
+      date: "2026-08-22",
+      summary: "Docs and tutorial updates for teacher accounts and the shared library.",
+      items: [
+        "Landing page changelog and version label updated for the teacher-accounts release.",
+        "Tutorial now covers signing in, saving assignments to your account, and sharing with colleagues.",
+        "Setup guide documents Teachers and Sessions sheet tabs for admins deploying the backend.",
+      ],
+    },
+    {
       version: "2.3.0",
       date: "2026-08-22",
       summary: "Teacher accounts, shared assignment library, and assignment ownership.",
@@ -129,6 +139,8 @@
         "Copy any shared assignment into your account with one click, then edit and publish your own version.",
         "Signed-in owners can open Results without re-entering the per-assignment teacher password.",
         "New Google Sheet tabs: Teachers (accounts) and Sessions (login tokens). Assignments tab adds owner and shared columns.",
+        "Studio Sign in button opens the account panel; home dashboard merges cloud and local assignments.",
+        "Shared by other teachers section lists colleague templates you can copy into your account.",
       ],
     },
     {
@@ -580,6 +592,11 @@
         body: "WriteFlow helps you run timed writing assignments. Students type on a timer; you get scores and submissions in one place.",
       },
       {
+        title: "Sign in (optional)",
+        body: "Use Sign in on the top bar to create a teacher account. Saved assignments link to your username and sync across devices.",
+        highlight: "#wfAccountBtn",
+      },
+      {
         title: "Start from a template",
         body: "Use Templates in the builder — or pick one on the home page — to answer a few questions and generate a ready-to-share assignment.",
         highlight: "#wfTemplateGallery",
@@ -616,6 +633,11 @@
       {
         title: "Content",
         body: "Write the assignment title, student welcome text, and the writing prompt. Set a teacher password you will use to view results.",
+        section: "content",
+      },
+      {
+        title: "Share with colleagues",
+        body: "When signed in, turn on Share with other teachers in Content before you save. Colleagues can copy your assignment from the shared library on the home page.",
         section: "content",
       },
       {
