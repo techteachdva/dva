@@ -3590,6 +3590,93 @@ mark.wf-vocab-hit {
   gap: 8px;
 }
 
+.wf-assignment-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0 0 8px;
+}
+
+.wf-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #cbd5e1;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.wf-badge--shared {
+  color: #a5f3fc;
+  border-color: rgba(56, 189, 248, 0.45);
+  background: rgba(56, 189, 248, 0.12);
+}
+
+.wf-badge--cloud {
+  color: #bbf7d0;
+  border-color: rgba(74, 222, 128, 0.4);
+  background: rgba(74, 222, 128, 0.1);
+}
+
+.wf-account-panel__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.wf-account-panel__body {
+  max-width: 420px;
+}
+
+.wf-account-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.wf-account-tab {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: transparent;
+  color: var(--dw-text);
+  cursor: pointer;
+  font: inherit;
+}
+
+.wf-account-tab--active {
+  border-color: rgba(56, 189, 248, 0.55);
+  background: rgba(56, 189, 248, 0.12);
+}
+
+.wf-account-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.wf-account-greeting {
+  margin: 0 0 12px;
+}
+
+.wf-account-btn {
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wf-assignment-hub-card--shared {
+  border-style: dashed;
+}
+
 .wf-empty-state {
   text-align: center;
   padding: 28px 16px;

@@ -12,13 +12,18 @@
  *
  * Sheets:
  *   Submissions — student writing rows (one row per submission)
- *   Assignments — teacher passwords per assignment ID (synced from builder)
+ *   Assignments — teacher assignments (config, owner, shared flag)
+ *   Teachers — teacher usernames and passwords (admin-managed)
+ *   Sessions — login tokens
  */
 
 const SPREADSHEET_ID = normalizeSheetId_("1qzyvkmUlavabIq5VPgxornjIwKL0devWijH0kYmvSV4");
 const SUBMISSIONS_SHEET = "Submissions";
 const ASSIGNMENTS_SHEET = "Assignments";
+const TEACHERS_SHEET = "Teachers";
+const SESSIONS_SHEET = "Sessions";
 const API_SECRET = "studentsfirst";
+const SESSION_TTL_MS = 14 * 24 * 60 * 60 * 1000;
 
 /** Auto-generated from api/diagnostic-writing/classes.json — run: npm run sync:classrooms */
 const VALID_CLASSROOMS = [
@@ -118,8 +123,241 @@ function getAssignmentsSheet_() {
   if (!sheet) {
     sheet = ss.insertSheet(ASSIGNMENTS_SHEET);
     initAssignmentHeaders_(sheet);
+  } else {
+    ensureAssignmentColumns_(sheet);
   }
   return sheet;
+}
+
+function getTeachersSheet_() {
+  const ss = getSpreadsheet_();
+  let sheet = ss.getSheetByName(TEACHERS_SHEET);
+  if (!sheet) {
+    sheet = ss.insertSheet(TEACHERS_SHEET);
+    initTeacherHeaders_(sheet);
+  }
+  return sheet;
+}
+
+function getSessionsSheet_() {
+  const ss = getSpreadsheet_();
+  let sheet = ss.getSheetByName(SESSIONS_SHEET);
+  if (!sheet) {
+    sheet = ss.insertSheet(SESSIONS_SHEET);
+    initSessionHeaders_(sheet);
+  }
+  return sheet;
+}
+
+function ensureAssignmentColumns_(sheet) {
+  if (sheet.getLastColumn() < 8) {
+    initAssignmentHeaders_(sheet);
+  }
+}
+
+function normalizeUsername_(value) {
+  return String(value || "").trim().toLowerCase().replace(/[^a-z0-9._-]/g, "").slice(0, 40);
+}
+
+function normalizeDisplayName_(value) {
+  return String(value || "").trim().slice(0, 80);
+}
+
+function getTeacherByUsername_(username) {
+  const norm = normalizeUsername_(username);
+  if (!norm) return null;
+  const sheet = getTeachersSheet_();
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return null;
+  const rows = sheet.getRange(2, 1, lastRow - 1, 4).getValues();
+  for (var i = 0; i < rows.length; i++) {
+    if (normalizeUsername_(rows[i][0]) === norm) {
+      return {
+        username: norm,
+        password: String(rows[i][1] || ""),
+        displayName: normalizeDisplayName_(rows[i][2]) || norm,
+        createdAt: Number(rows[i][3]) || 0,
+      };
+    }
+  }
+  return null;
+}
+
+function verifyTeacherLogin_(username, password) {
+  const teacher = getTeacherByUsername_(username);
+  if (!teacher) return null;
+  if (String(teacher.password) !== String(password)) return null;
+  return teacher;
+}
+
+function registerTeacher_(username, password, displayName) {
+  const norm = normalizeUsername_(username);
+  const pw = String(password || "").slice(0, 80);
+  const name = normalizeDisplayName_(displayName) || norm;
+  if (!norm || norm.length < 3) throw new Error("Username must be at least 3 characters (letters, numbers, dots, dashes).");
+  if (!pw || pw.length < 4) throw new Error("Password must be at least 4 characters.");
+  if (getTeacherByUsername_(norm)) throw new Error("That username is already taken.");
+  getTeachersSheet_().appendRow([norm, pw, name, Date.now()]);
+  return getTeacherByUsername_(norm);
+}
+
+function createSessionToken_() {
+  return Utilities.getUuid().replace(/-/g, "") + Utilities.getUuid().replace(/-/g, "").slice(0, 8);
+}
+
+function createSession_(teacher) {
+  purgeExpiredSessions_();
+  const token = createSessionToken_();
+  const now = Date.now();
+  getSessionsSheet_().appendRow([token, teacher.username, now, now + SESSION_TTL_MS]);
+  return { token: token, username: teacher.username, displayName: teacher.displayName, expiresAt: now + SESSION_TTL_MS };
+}
+
+function purgeExpiredSessions_() {
+  const sheet = getSessionsSheet_();
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return;
+  const now = Date.now();
+  const rows = sheet.getRange(2, 1, lastRow - 1, 4).getValues();
+  for (var i = rows.length - 1; i >= 0; i--) {
+    if (Number(rows[i][3]) < now) {
+      sheet.deleteRow(i + 2);
+    }
+  }
+}
+
+function validateSession_(token) {
+  const clean = String(token || "").trim();
+  if (!clean) return null;
+  purgeExpiredSessions_();
+  const sheet = getSessionsSheet_();
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return null;
+  const rows = sheet.getRange(2, 1, lastRow - 1, 4).getValues();
+  const now = Date.now();
+  for (var i = 0; i < rows.length; i++) {
+    if (String(rows[i][0]) !== clean) continue;
+    if (Number(rows[i][3]) < now) return null;
+    const teacher = getTeacherByUsername_(rows[i][1]);
+    if (!teacher) return null;
+    return { username: teacher.username, displayName: teacher.displayName, token: clean };
+  }
+  return null;
+}
+
+function revokeSession_(token) {
+  const clean = String(token || "").trim();
+  if (!clean) return;
+  const sheet = getSessionsSheet_();
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return;
+  const rows = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+  for (var i = rows.length - 1; i >= 0; i--) {
+    if (String(rows[i][0]) === clean) sheet.deleteRow(i + 2);
+  }
+}
+
+function readAssignmentRows_() {
+  const sheet = getAssignmentsSheet_();
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return [];
+  return sheet.getRange(2, 1, lastRow - 1, 8).getValues();
+}
+
+function assignmentSummaryFromRow_(row) {
+  return {
+    assignmentId: String(row[0] || ""),
+    title: String(row[2] || ""),
+    updatedAt: Number(row[3]) || 0,
+    ownerUsername: String(row[5] || ""),
+    shared: String(row[6] || "").toUpperCase() === "TRUE",
+    authorDisplayName: String(row[7] || "") || String(row[5] || ""),
+  };
+}
+
+function listAssignmentsForOwner_(username) {
+  const norm = normalizeUsername_(username);
+  const out = [];
+  const rows = readAssignmentRows_();
+  for (var i = 0; i < rows.length; i++) {
+    if (normalizeUsername_(rows[i][5]) !== norm) continue;
+    out.push(assignmentSummaryFromRow_(rows[i]));
+  }
+  out.sort(function (a, b) { return b.updatedAt - a.updatedAt; });
+  return out;
+}
+
+function listSharedAssignments_() {
+  const out = [];
+  const rows = readAssignmentRows_();
+  for (var i = 0; i < rows.length; i++) {
+    if (String(rows[i][6] || "").toUpperCase() !== "TRUE") continue;
+    out.push(assignmentSummaryFromRow_(rows[i]));
+  }
+  out.sort(function (a, b) { return b.updatedAt - a.updatedAt; });
+  return out;
+}
+
+function userOwnsAssignment_(username, assignmentId) {
+  const rows = readAssignmentRows_();
+  for (var i = 0; i < rows.length; i++) {
+    if (String(rows[i][0]) !== assignmentId) continue;
+    return normalizeUsername_(rows[i][5]) === normalizeUsername_(username);
+  }
+  return false;
+}
+
+function copyAssignmentForUser_(session, sourceAssignmentId, newAssignmentId, newTitle) {
+  const sourceId = String(sourceAssignmentId || "").trim().slice(0, 80);
+  const newId = String(newAssignmentId || "").trim().slice(0, 80);
+  if (!sourceId || !newId) throw new Error("Missing assignment id.");
+  if (sourceId === newId) throw new Error("Choose a different id for your copy.");
+
+  const rows = readAssignmentRows_();
+  var sourceRow = null;
+  for (var i = 0; i < rows.length; i++) {
+    if (String(rows[i][0]) === sourceId) {
+      sourceRow = rows[i];
+      break;
+    }
+  }
+  if (!sourceRow) throw new Error("Source assignment not found.");
+  const isShared = String(sourceRow[6] || "").toUpperCase() === "TRUE";
+  const isOwner = normalizeUsername_(sourceRow[5]) === session.username;
+  if (!isShared && !isOwner) throw new Error("You do not have permission to copy this assignment.");
+
+  for (var j = 0; j < rows.length; j++) {
+    if (String(rows[j][0]) === newId) throw new Error("That assignment id is already in use.");
+  }
+
+  const rawJson = String(sourceRow[4] || "").trim();
+  if (!rawJson) throw new Error("Source assignment has no saved config.");
+  var config = {};
+  try {
+    config = JSON.parse(rawJson);
+  } catch (ignore) {
+    throw new Error("Source assignment config is invalid.");
+  }
+
+  const title = String(newTitle || config.title || sourceRow[2] || newId).trim().slice(0, 200);
+  config.id = newId;
+  config.title = title;
+  config.shared = false;
+  config.ownerUsername = session.username;
+  const teacherPassword = String(config.teacherPassword || "").slice(0, 80) || ("wf" + Math.random().toString(36).slice(2, 10));
+  config.teacherPassword = teacherPassword;
+
+  registerAssignment_({
+    assignmentId: newId,
+    teacherPassword: teacherPassword,
+    title: title,
+    configJson: JSON.stringify(config),
+    ownerUsername: session.username,
+    shared: false,
+    authorDisplayName: session.displayName,
+  });
+
+  return { assignmentId: newId, title: title, config: config, teacherPassword: teacherPassword };
 }
 
 function initSubmissionHeaders_(sheet) {
@@ -132,14 +370,31 @@ function initSubmissionHeaders_(sheet) {
 }
 
 function initAssignmentHeaders_(sheet) {
-  sheet.getRange(1, 1, 1, 5).setValues([["assignmentId", "teacherPassword", "title", "updatedAt", "configJson"]]);
-  sheet.getRange(1, 1, 1, 5).setFontWeight("bold");
+  sheet.getRange(1, 1, 1, 8).setValues([[
+    "assignmentId", "teacherPassword", "title", "updatedAt", "configJson",
+    "ownerUsername", "shared", "authorDisplayName",
+  ]]);
+  sheet.getRange(1, 1, 1, 8).setFontWeight("bold");
+  sheet.setFrozenRows(1);
+}
+
+function initTeacherHeaders_(sheet) {
+  sheet.getRange(1, 1, 1, 4).setValues([["username", "password", "displayName", "createdAt"]]);
+  sheet.getRange(1, 1, 1, 4).setFontWeight("bold");
+  sheet.setFrozenRows(1);
+}
+
+function initSessionHeaders_(sheet) {
+  sheet.getRange(1, 1, 1, 4).setValues([["token", "username", "createdAt", "expiresAt"]]);
+  sheet.getRange(1, 1, 1, 4).setFontWeight("bold");
   sheet.setFrozenRows(1);
 }
 
 function initSheet() {
   initSubmissionHeaders_(getSubmissionsSheet_());
   initAssignmentHeaders_(getAssignmentsSheet_());
+  initTeacherHeaders_(getTeachersSheet_());
+  initSessionHeaders_(getSessionsSheet_());
 }
 
 function doGet(e) {
@@ -163,8 +418,9 @@ function handle_(e, isGet) {
     if (action === "list") {
       const assignmentId = String(params.assignmentId || "").trim();
       const password = String(params.password || "");
+      const session = validateSession_(params.sessionToken);
       if (!assignmentId) return respond_({ error: "Missing assignmentId" });
-      if (!verifyAssignmentPassword_(assignmentId, password)) {
+      if (!verifyAssignmentPassword_(assignmentId, password, session)) {
         return respond_({ error: "Unauthorized" });
       }
       return respond_({
@@ -186,6 +442,22 @@ function handle_(e, isGet) {
       return respond_({ ok: true, assignmentId: assignmentId, title: assignment.title, config: assignment.config });
     }
 
+    if (action === "listSharedAssignments") {
+      return respond_({ ok: true, assignments: listSharedAssignments_() });
+    }
+
+    if (action === "teacherValidate") {
+      const session = validateSession_(params.sessionToken);
+      if (!session) return respond_({ error: "Invalid session" });
+      return respond_({ ok: true, username: session.username, displayName: session.displayName });
+    }
+
+    if (action === "listMyAssignments") {
+      const session = validateSession_(params.sessionToken);
+      if (!session) return respond_({ error: "Invalid session" });
+      return respond_({ ok: true, assignments: listAssignmentsForOwner_(session.username) });
+    }
+
     if (action === "registerAssignment") {
       registerAssignment_(params);
       return respond_({ ok: true, assignmentId: String(params.assignmentId || "") });
@@ -196,13 +468,44 @@ function handle_(e, isGet) {
       return respond_({ ok: true, id: entry.id });
     }
 
+    if (action === "teacherLogin") {
+      const teacher = verifyTeacherLogin_(params.username, params.password);
+      if (!teacher) return respond_({ error: "Invalid username or password." });
+      const session = createSession_(teacher);
+      return respond_({ ok: true, session: session });
+    }
+
+    if (action === "teacherRegister") {
+      const teacher = registerTeacher_(params.username, params.password, params.displayName);
+      const session = createSession_(teacher);
+      return respond_({ ok: true, session: session });
+    }
+
+    if (action === "teacherLogout") {
+      revokeSession_(params.sessionToken);
+      return respond_({ ok: true });
+    }
+
+    if (action === "copyAssignment") {
+      const session = validateSession_(params.sessionToken);
+      if (!session) return respond_({ error: "Invalid session" });
+      const copied = copyAssignmentForUser_(
+        session,
+        params.sourceAssignmentId,
+        params.newAssignmentId,
+        params.newTitle
+      );
+      return respond_({ ok: true, assignmentId: copied.assignmentId, title: copied.title, config: copied.config });
+    }
+
     return respond_({ error: "Unknown action" });
   } catch (err) {
     return respond_({ error: String(err.message || err) });
   }
 }
 
-function verifyAssignmentPassword_(assignmentId, password) {
+function verifyAssignmentPassword_(assignmentId, password, session) {
+  if (session && userOwnsAssignment_(session.username, assignmentId)) return true;
   const sheet = getAssignmentsSheet_();
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return false;
@@ -225,6 +528,15 @@ function registerAssignment_(params) {
     throw new Error("Missing assignmentId or teacherPassword");
   }
 
+  var ownerUsername = normalizeUsername_(params.ownerUsername);
+  var authorDisplayName = normalizeDisplayName_(params.authorDisplayName);
+  const session = validateSession_(params.sessionToken);
+  if (session) {
+    ownerUsername = session.username;
+    authorDisplayName = session.displayName;
+  }
+  const shared = params.shared === true || String(params.shared).toUpperCase() === "TRUE";
+
   const sheet = getAssignmentsSheet_();
   const lastRow = sheet.getLastRow();
   var targetRow = -1;
@@ -239,20 +551,32 @@ function registerAssignment_(params) {
     }
   }
 
-  const row = [assignmentId, teacherPassword, title, Date.now(), configJson];
+  if (targetRow > 0 && session) {
+    const existingOwner = normalizeUsername_(sheet.getRange(targetRow, 6).getValue());
+    if (existingOwner && existingOwner !== session.username) {
+      throw new Error("This assignment belongs to another teacher.");
+    }
+  }
+
+  const row = [
+    assignmentId,
+    teacherPassword,
+    title,
+    Date.now(),
+    configJson,
+    ownerUsername,
+    shared ? "TRUE" : "FALSE",
+    authorDisplayName || ownerUsername,
+  ];
   if (targetRow > 0) {
-    sheet.getRange(targetRow, 1, 1, 5).setValues([row]);
+    sheet.getRange(targetRow, 1, 1, 8).setValues([row]);
   } else {
     sheet.appendRow(row);
   }
 }
 
 function getAssignmentConfig_(assignmentId) {
-  const sheet = getAssignmentsSheet_();
-  const lastRow = sheet.getLastRow();
-  if (lastRow < 2) return null;
-  const numRows = lastRow - 1;
-  const rows = sheet.getRange(2, 1, numRows, 5).getValues();
+  const rows = readAssignmentRows_();
   for (var i = 0; i < rows.length; i++) {
     if (String(rows[i][0]) !== assignmentId) continue;
     const rawJson = String(rows[i][4] || "").trim();
@@ -263,9 +587,14 @@ function getAssignmentConfig_(assignmentId) {
     } catch (ignore) {
       return null;
     }
+    config.ownerUsername = String(rows[i][5] || "");
+    config.shared = String(rows[i][6] || "").toUpperCase() === "TRUE";
+    config.authorDisplayName = String(rows[i][7] || "") || config.ownerUsername;
     return {
       title: String(rows[i][2] || ""),
       config: config,
+      ownerUsername: String(rows[i][5] || ""),
+      shared: String(rows[i][6] || "").toUpperCase() === "TRUE",
     };
   }
   return null;

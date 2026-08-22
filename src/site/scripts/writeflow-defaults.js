@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.2.0";
+  const APP_VERSION = "2.3.0";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -119,6 +119,18 @@
   ];
 
   const CHANGELOG = [
+    {
+      version: "2.3.0",
+      date: "2026-08-22",
+      summary: "Teacher accounts, shared assignment library, and assignment ownership.",
+      items: [
+        "Teachers can create an account, sign in, and save assignments linked to their username.",
+        "Shared library — enable “Share with other teachers” when saving to let colleagues copy your assignment.",
+        "Copy any shared assignment into your account with one click, then edit and publish your own version.",
+        "Signed-in owners can open Results without re-entering the per-assignment teacher password.",
+        "New Google Sheet tabs: Teachers (accounts) and Sessions (login tokens). Assignments tab adds owner and shared columns.",
+      ],
+    },
     {
       version: "2.2.0",
       date: "2026-08-22",

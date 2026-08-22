@@ -60,9 +60,25 @@ async function fetchScriptJson(url, options) {
   }
 }
 
+function scriptGetUrl(params) {
+  const url = new URL(getScriptUrl());
+  url.searchParams.set("secret", getApiSecret());
+  for (const [key, value] of Object.entries(params)) {
+    if (value != null && value !== "") url.searchParams.set(key, String(value));
+  }
+  return url.toString();
+}
+
+async function scriptPost(body) {
+  return fetchScriptJson(getScriptUrl(), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ secret: getApiSecret(), ...body }),
+  });
+}
+
 export async function GET(request) {
   const action = getQueryParam(request, "action") || "list";
-  const assignmentId = getQueryParam(request, "assignmentId");
   const scriptUrl = getScriptUrl();
 
   if (action === "stats") {
@@ -73,10 +89,7 @@ export async function GET(request) {
       );
     }
     try {
-      const url = new URL(scriptUrl);
-      url.searchParams.set("action", "stats");
-      url.searchParams.set("secret", getApiSecret());
-      const data = await fetchScriptJson(url.toString(), { method: "GET" });
+      const data = await fetchScriptJson(scriptGetUrl({ action: "stats" }), { method: "GET" });
       if (data.error) {
         return Response.json(
           { error: data.error, stats: { classrooms: 0, assignments: 0, submissions: 0, sentences: 0 } },
@@ -96,20 +109,66 @@ export async function GET(request) {
     }
   }
 
+  if (!scriptUrl) return notConfiguredResponse();
+
+  if (action === "listSharedAssignments") {
+    try {
+      const data = await fetchScriptJson(scriptGetUrl({ action: "listSharedAssignments" }), { method: "GET" });
+      if (data.error) {
+        return Response.json({ error: data.error, assignments: [] }, { status: 502, headers: corsHeaders() });
+      }
+      return Response.json(
+        { ok: true, assignments: Array.isArray(data.assignments) ? data.assignments : [] },
+        { headers: corsHeaders() }
+      );
+    } catch (e) {
+      return Response.json({ error: e.message || "Could not load shared assignments.", assignments: [] }, { status: 502, headers: corsHeaders() });
+    }
+  }
+
+  if (action === "teacherValidate") {
+    const sessionToken = getQueryParam(request, "sessionToken");
+    if (!sessionToken) {
+      return Response.json({ error: "Invalid session" }, { status: 401, headers: corsHeaders() });
+    }
+    try {
+      const data = await fetchScriptJson(scriptGetUrl({ action: "teacherValidate", sessionToken }), { method: "GET" });
+      if (data.error) {
+        return Response.json({ error: data.error }, { status: 401, headers: corsHeaders() });
+      }
+      return Response.json({ ok: true, username: data.username, displayName: data.displayName }, { headers: corsHeaders() });
+    } catch (e) {
+      return Response.json({ error: e.message || "Could not validate session." }, { status: 502, headers: corsHeaders() });
+    }
+  }
+
+  if (action === "listMyAssignments") {
+    const sessionToken = getQueryParam(request, "sessionToken");
+    if (!sessionToken) {
+      return Response.json({ error: "Invalid session" }, { status: 401, headers: corsHeaders() });
+    }
+    try {
+      const data = await fetchScriptJson(scriptGetUrl({ action: "listMyAssignments", sessionToken }), { method: "GET" });
+      if (data.error) {
+        return Response.json({ error: data.error, assignments: [] }, { status: data.error === "Invalid session" ? 401 : 502, headers: corsHeaders() });
+      }
+      return Response.json(
+        { ok: true, assignments: Array.isArray(data.assignments) ? data.assignments : [] },
+        { headers: corsHeaders() }
+      );
+    } catch (e) {
+      return Response.json({ error: e.message || "Could not load assignments.", assignments: [] }, { status: 502, headers: corsHeaders() });
+    }
+  }
+
+  const assignmentId = getQueryParam(request, "assignmentId");
   if (!assignmentId) {
     return Response.json({ error: "Missing assignmentId" }, { status: 400, headers: corsHeaders() });
   }
 
-  if (!scriptUrl) return notConfiguredResponse();
-
   if (action === "getAssignment") {
     try {
-      const url = new URL(scriptUrl);
-      url.searchParams.set("action", "getAssignment");
-      url.searchParams.set("secret", getApiSecret());
-      url.searchParams.set("assignmentId", assignmentId);
-
-      const data = await fetchScriptJson(url.toString(), { method: "GET" });
+      const data = await fetchScriptJson(scriptGetUrl({ action: "getAssignment", assignmentId }), { method: "GET" });
       if (data.error) {
         return Response.json(
           { error: data.error },
@@ -130,18 +189,16 @@ export async function GET(request) {
   }
 
   const password = getQueryParam(request, "password");
-  if (!password) {
+  const sessionToken = getQueryParam(request, "sessionToken");
+  if (!password && !sessionToken) {
     return Response.json({ error: "Unauthorized" }, { status: 401, headers: corsHeaders() });
   }
 
   try {
-    const url = new URL(scriptUrl);
-    url.searchParams.set("action", "list");
-    url.searchParams.set("secret", getApiSecret());
-    url.searchParams.set("password", password);
-    url.searchParams.set("assignmentId", assignmentId);
-
-    const data = await fetchScriptJson(url.toString(), { method: "GET" });
+    const data = await fetchScriptJson(
+      scriptGetUrl({ action: "list", password, sessionToken, assignmentId }),
+      { method: "GET" }
+    );
     if (data.error) {
       return Response.json(
         { error: data.error, submissions: [] },
@@ -173,10 +230,63 @@ export async function POST(request) {
     const body = await request.json();
     const action = String(body?.action || "save");
 
+    if (action === "teacherLogin") {
+      const username = typeof body?.username === "string" ? body.username.trim() : "";
+      const password = typeof body?.password === "string" ? body.password : "";
+      if (!username || !password) {
+        return Response.json({ error: "Enter username and password." }, { status: 400, headers: corsHeaders() });
+      }
+      const data = await scriptPost({ action: "teacherLogin", username, password });
+      if (data.error) {
+        return Response.json({ error: data.error }, { status: 401, headers: corsHeaders() });
+      }
+      return Response.json({ ok: true, session: data.session }, { headers: corsHeaders() });
+    }
+
+    if (action === "teacherRegister") {
+      const username = typeof body?.username === "string" ? body.username.trim() : "";
+      const password = typeof body?.password === "string" ? body.password : "";
+      const displayName = typeof body?.displayName === "string" ? body.displayName.trim().slice(0, 80) : "";
+      if (!username || !password) {
+        return Response.json({ error: "Enter username and password." }, { status: 400, headers: corsHeaders() });
+      }
+      const data = await scriptPost({ action: "teacherRegister", username, password, displayName });
+      if (data.error) {
+        return Response.json({ error: data.error }, { status: 400, headers: corsHeaders() });
+      }
+      return Response.json({ ok: true, session: data.session }, { headers: corsHeaders() });
+    }
+
+    if (action === "teacherLogout") {
+      const sessionToken = typeof body?.sessionToken === "string" ? body.sessionToken.trim() : "";
+      if (sessionToken) await scriptPost({ action: "teacherLogout", sessionToken });
+      return Response.json({ ok: true }, { headers: corsHeaders() });
+    }
+
+    if (action === "copyAssignment") {
+      const sessionToken = typeof body?.sessionToken === "string" ? body.sessionToken.trim() : "";
+      const sourceAssignmentId = typeof body?.sourceAssignmentId === "string" ? body.sourceAssignmentId.trim().slice(0, 80) : "";
+      const newAssignmentId = typeof body?.newAssignmentId === "string" ? body.newAssignmentId.trim().slice(0, 80) : "";
+      const newTitle = typeof body?.newTitle === "string" ? body.newTitle.trim().slice(0, 200) : "";
+      if (!sessionToken || !sourceAssignmentId || !newAssignmentId) {
+        return Response.json({ error: "Missing required fields." }, { status: 400, headers: corsHeaders() });
+      }
+      const data = await scriptPost({ action: "copyAssignment", sessionToken, sourceAssignmentId, newAssignmentId, newTitle });
+      if (data.error) {
+        return Response.json({ error: data.error }, { status: 502, headers: corsHeaders() });
+      }
+      return Response.json(
+        { ok: true, assignmentId: data.assignmentId, title: data.title, config: data.config },
+        { headers: corsHeaders() }
+      );
+    }
+
     if (action === "registerAssignment") {
       const assignmentId = typeof body?.assignmentId === "string" ? body.assignmentId.trim().slice(0, 80) : "";
       const teacherPassword = typeof body?.teacherPassword === "string" ? body.teacherPassword.slice(0, 80) : "";
       const title = typeof body?.title === "string" ? body.title.trim().slice(0, 200) : "";
+      const sessionToken = typeof body?.sessionToken === "string" ? body.sessionToken.trim() : "";
+      const shared = body?.shared === true;
       const config = body?.config && typeof body.config === "object" ? body.config : null;
       if (!assignmentId || !teacherPassword) {
         return Response.json({ error: "Missing assignmentId or teacherPassword" }, { status: 400, headers: corsHeaders() });
@@ -191,17 +301,14 @@ export async function POST(request) {
           return Response.json({ error: "Assignment config is too large to publish. Remove uploaded hero images and use a URL instead." }, { status: 400, headers: corsHeaders() });
         }
       }
-      const data = await fetchScriptJson(scriptUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          action: "registerAssignment",
-          secret: getApiSecret(),
-          assignmentId,
-          teacherPassword,
-          title,
-          configJson,
-        }),
+      const data = await scriptPost({
+        action: "registerAssignment",
+        assignmentId,
+        teacherPassword,
+        title,
+        configJson,
+        sessionToken,
+        shared,
       });
       if (data.error) {
         return Response.json({ error: data.error }, { status: 502, headers: corsHeaders() });
@@ -229,21 +336,16 @@ export async function POST(request) {
       return Response.json({ error: "Incorrect class code for the selected classroom." }, { status: 400, headers: corsHeaders() });
     }
 
-    const data = await fetchScriptJson(scriptUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "save",
-        secret: getApiSecret(),
-        assignmentId,
-        name,
-        classroom: classroom || "",
-        classCode,
-        requireClassCode,
-        text,
-        analysis,
-        durationSec: Number.isFinite(durationSec) ? durationSec : 300,
-      }),
+    const data = await scriptPost({
+      action: "save",
+      assignmentId,
+      name,
+      classroom: classroom || "",
+      classCode,
+      requireClassCode,
+      text,
+      analysis,
+      durationSec: Number.isFinite(durationSec) ? durationSec : 300,
     });
 
     if (data.error) {

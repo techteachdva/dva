@@ -38,6 +38,7 @@ layout: false
           <button id="tutorialBtn" class="dw-btn dw-btn-ghost wf-tutorial-btn" type="button" aria-haspopup="dialog">Tutorial</button>
           <button id="builderLinkBtn" class="dw-btn dw-btn-ghost" type="button">Assignments</button>
           <button id="teacherBtn" class="dw-btn dw-btn-ghost" type="button">Results</button>
+          <button id="wfAccountBtn" class="dw-btn dw-btn-ghost wf-account-btn" type="button" aria-haspopup="dialog" aria-controls="wfAccountPanel">Sign in</button>
           <a class="dw-link" href="/">Back to site</a>
         </div>
       </header>
@@ -90,6 +91,39 @@ layout: false
             <strong>Choose an assignment</strong> to view student results.
           </div>
 
+          <section id="wfAccountPanel" class="dw-card wf-account-panel dw-hidden" aria-labelledby="wfAccountHeading">
+            <div class="wf-account-panel__head">
+              <div>
+                <h2 class="dw-h2" id="wfAccountHeading">Teacher account</h2>
+                <p class="dw-muted" id="wfAccountSubtitle">Sign in to save assignments to your account and browse shared templates from other teachers.</p>
+              </div>
+              <button id="wfAccountCloseBtn" class="dw-btn dw-btn-ghost" type="button" aria-label="Close account panel">Close</button>
+            </div>
+            <div id="wfAccountSignedOut" class="wf-account-panel__body">
+              <div class="wf-account-tabs" role="tablist">
+                <button id="wfAccountTabLogin" class="wf-account-tab wf-account-tab--active" type="button" role="tab" aria-selected="true">Sign in</button>
+                <button id="wfAccountTabRegister" class="wf-account-tab" type="button" role="tab" aria-selected="false">Create account</button>
+              </div>
+              <form id="wfLoginForm" class="wf-account-form" autocomplete="on">
+                <label class="dw-field"><span class="dw-label">Username</span><input id="wfLoginUsername" class="dw-input" type="text" autocomplete="username" required /></label>
+                <label class="dw-field"><span class="dw-label">Password</span><input id="wfLoginPassword" class="dw-input" type="password" autocomplete="current-password" required /></label>
+                <button class="dw-btn" type="submit">Sign in</button>
+              </form>
+              <form id="wfRegisterForm" class="wf-account-form dw-hidden" autocomplete="on">
+                <label class="dw-field"><span class="dw-label">Username</span><span class="dw-muted dw-tiny">Letters, numbers, dots, dashes — at least 3 characters</span><input id="wfRegisterUsername" class="dw-input" type="text" autocomplete="username" required /></label>
+                <label class="dw-field"><span class="dw-label">Display name</span><span class="dw-muted dw-tiny">Shown when you share assignments</span><input id="wfRegisterDisplayName" class="dw-input" type="text" autocomplete="name" /></label>
+                <label class="dw-field"><span class="dw-label">Password</span><span class="dw-muted dw-tiny">At least 4 characters</span><input id="wfRegisterPassword" class="dw-input" type="password" autocomplete="new-password" required /></label>
+                <button class="dw-btn" type="submit">Create account</button>
+              </form>
+              <p id="wfAccountError" class="dw-error dw-hidden" role="alert"></p>
+            </div>
+            <div id="wfAccountSignedIn" class="wf-account-panel__body dw-hidden">
+              <p class="wf-account-greeting">Signed in as <strong id="wfAccountDisplayName"></strong> <span class="dw-muted">(<span id="wfAccountUsername"></span>)</span></p>
+              <p class="dw-muted dw-tiny">Assignments you save while signed in are linked to your account. Turn on &ldquo;Share with other teachers&rdquo; in the builder to let colleagues copy your work.</p>
+              <button id="wfAccountLogoutBtn" class="dw-btn dw-btn-ghost" type="button">Sign out</button>
+            </div>
+          </section>
+
           <section class="dw-card wf-assignments-hub" aria-labelledby="wfAssignmentsHeading">
             <div class="wf-assignments-hub__head">
               <div>
@@ -98,6 +132,16 @@ layout: false
               </div>
             </div>
             <div id="wfAssignmentsDashboard" class="wf-assignments-dashboard" role="list"></div>
+          </section>
+
+          <section class="dw-card wf-shared-library dw-hidden" id="wfSharedLibrary" aria-labelledby="wfSharedHeading">
+            <div class="wf-assignments-hub__head">
+              <div>
+                <h2 class="dw-h2" id="wfSharedHeading">Shared by other teachers</h2>
+                <p class="dw-muted">Copy any shared assignment into your account, then edit and publish your own version.</p>
+              </div>
+            </div>
+            <div id="wfSharedDashboard" class="wf-assignments-dashboard" role="list"></div>
           </section>
 
           <section class="dw-card wf-template-gallery" id="wfTemplateGallery">
@@ -166,6 +210,7 @@ layout: false
     <script id="wfClassroomCodesJson" type="application/json">{{ diagnosticWritingClassCodes | jsonify | safe }}</script>
     <script src="/scripts/write-test-core.js" defer></script>
     <script src="/scripts/writeflow-defaults.js" defer></script>
+    <script src="/scripts/writeflow-teacher.js" defer></script>
     <script src="/scripts/writeflow-intro.js" defer></script>
     <script src="/scripts/diagnostic-writing-calibration.js" defer></script>
     <script src="/scripts/diagnostic-writing-rubrics.js" defer></script>

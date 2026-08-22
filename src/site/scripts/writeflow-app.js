@@ -10,6 +10,7 @@
   const STORAGE_PREFIX = "writeflow";
   const ASSIGNMENTS_KEY = "writeflow:assignments";
   const API_URL = "/api/writeflow-submissions";
+  const Teacher = () => window.WriteFlowTeacher;
 
   if (!Core || !Defaults) return;
 
@@ -36,6 +37,8 @@
   let allSubmissions = [];
   let teacherAuthed = false;
   let sessionTeacherPassword = "";
+  let cloudAssignmentMeta = {};
+  let sharedAssignmentMeta = [];
   let tutorialIndex = 0;
   let tutorialContextKey = "home";
   let tutorialHighlightEl = null;
@@ -805,6 +808,7 @@
   }
 
   async function publishAssignmentCloud() {
+    const sessionToken = Teacher()?.getToken() || "";
     const res = await fetch(API_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -814,6 +818,8 @@
         teacherPassword: config.teacherPassword,
         title: config.title,
         config,
+        sessionToken,
+        shared: !!config.shared,
       }),
     });
     const data = await res.json().catch(() => ({}));
@@ -847,9 +853,11 @@
 
   async function fetchSubmissions() {
     const pw = sessionTeacherPassword || document.getElementById("teacherPassword")?.value || config.teacherPassword;
-    const res = await fetch(
-      `${API_URL}?password=${encodeURIComponent(pw)}&assignmentId=${encodeURIComponent(config.id)}`
-    );
+    const sessionToken = Teacher()?.getToken() || "";
+    const qs = new URLSearchParams({ assignmentId: config.id });
+    if (sessionToken) qs.set("sessionToken", sessionToken);
+    else if (pw) qs.set("password", pw);
+    const res = await fetch(`${API_URL}?${qs}`);
     const data = await res.json().catch(() => ({}));
     if (res.status === 401) throw new Error("Incorrect teacher password for this assignment.");
     if (!res.ok) {
@@ -948,6 +956,213 @@
     show("welcome");
   }
 
+  function updateAccountButton() {
+    const btn = document.getElementById("wfAccountBtn");
+    const session = Teacher()?.getSession();
+    if (!btn) return;
+    if (session?.displayName || session?.username) {
+      btn.textContent = session.displayName || session.username;
+      btn.setAttribute("aria-label", `Account: ${session.displayName || session.username}`);
+    } else {
+      btn.textContent = "Sign in";
+      btn.setAttribute("aria-label", "Sign in to your teacher account");
+    }
+  }
+
+  function showAccountPanel(showPanel = true) {
+    const panel = document.getElementById("wfAccountPanel");
+    panel?.classList.toggle("dw-hidden", !showPanel);
+    if (showPanel) renderAccountPanel();
+  }
+
+  function renderAccountPanel() {
+    const session = Teacher()?.getSession();
+    const signedOut = document.getElementById("wfAccountSignedOut");
+    const signedIn = document.getElementById("wfAccountSignedIn");
+    const errEl = document.getElementById("wfAccountError");
+    errEl?.classList.add("dw-hidden");
+
+    if (session?.username) {
+      signedOut?.classList.add("dw-hidden");
+      signedIn?.classList.remove("dw-hidden");
+      const nameEl = document.getElementById("wfAccountDisplayName");
+      const userEl = document.getElementById("wfAccountUsername");
+      if (nameEl) nameEl.textContent = session.displayName || session.username;
+      if (userEl) userEl.textContent = session.username;
+    } else {
+      signedOut?.classList.remove("dw-hidden");
+      signedIn?.classList.add("dw-hidden");
+    }
+    updateAccountButton();
+  }
+
+  function bindAccountEvents() {
+    document.getElementById("wfAccountBtn")?.addEventListener("click", () => {
+      const panel = document.getElementById("wfAccountPanel");
+      const isOpen = panel && !panel.classList.contains("dw-hidden");
+      showAccountPanel(!isOpen);
+    });
+    document.getElementById("wfAccountCloseBtn")?.addEventListener("click", () => showAccountPanel(false));
+
+    document.getElementById("wfAccountTabLogin")?.addEventListener("click", () => {
+      document.getElementById("wfAccountTabLogin")?.classList.add("wf-account-tab--active");
+      document.getElementById("wfAccountTabRegister")?.classList.remove("wf-account-tab--active");
+      document.getElementById("wfLoginForm")?.classList.remove("dw-hidden");
+      document.getElementById("wfRegisterForm")?.classList.add("dw-hidden");
+      document.getElementById("wfAccountError")?.classList.add("dw-hidden");
+    });
+    document.getElementById("wfAccountTabRegister")?.addEventListener("click", () => {
+      document.getElementById("wfAccountTabRegister")?.classList.add("wf-account-tab--active");
+      document.getElementById("wfAccountTabLogin")?.classList.remove("wf-account-tab--active");
+      document.getElementById("wfRegisterForm")?.classList.remove("dw-hidden");
+      document.getElementById("wfLoginForm")?.classList.add("dw-hidden");
+      document.getElementById("wfAccountError")?.classList.add("dw-hidden");
+    });
+
+    document.getElementById("wfLoginForm")?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const errEl = document.getElementById("wfAccountError");
+      const username = document.getElementById("wfLoginUsername")?.value || "";
+      const password = document.getElementById("wfLoginPassword")?.value || "";
+      try {
+        await Teacher()?.login(username, password);
+        renderAccountPanel();
+        await refreshCloudAssignments();
+        await refreshSharedLibrary();
+      } catch (err) {
+        if (errEl) {
+          errEl.textContent = err.message || "Could not sign in.";
+          errEl.classList.remove("dw-hidden");
+        }
+      }
+    });
+
+    document.getElementById("wfRegisterForm")?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const errEl = document.getElementById("wfAccountError");
+      const username = document.getElementById("wfRegisterUsername")?.value || "";
+      const displayName = document.getElementById("wfRegisterDisplayName")?.value || "";
+      const password = document.getElementById("wfRegisterPassword")?.value || "";
+      try {
+        await Teacher()?.register(username, password, displayName);
+        renderAccountPanel();
+        await refreshCloudAssignments();
+        await refreshSharedLibrary();
+      } catch (err) {
+        if (errEl) {
+          errEl.textContent = err.message || "Could not create account.";
+          errEl.classList.remove("dw-hidden");
+        }
+      }
+    });
+
+    document.getElementById("wfAccountLogoutBtn")?.addEventListener("click", async () => {
+      await Teacher()?.logout();
+      cloudAssignmentMeta = {};
+      renderAccountPanel();
+      renderHomeDashboard();
+      renderSharedLibrary();
+    });
+  }
+
+  async function refreshCloudAssignments() {
+    if (!Teacher()?.isLoggedIn()) {
+      cloudAssignmentMeta = {};
+      renderHomeDashboard();
+      return;
+    }
+    try {
+      const items = await Teacher().listMyAssignments();
+      cloudAssignmentMeta = {};
+      for (const item of items) {
+        cloudAssignmentMeta[item.assignmentId] = item;
+        const ids = getAssignmentsList();
+        if (!ids.includes(item.assignmentId)) {
+          saveAssignmentsList([...ids, item.assignmentId]);
+        }
+      }
+    } catch {
+      cloudAssignmentMeta = {};
+    }
+    renderHomeDashboard();
+  }
+
+  async function refreshSharedLibrary() {
+    const section = document.getElementById("wfSharedLibrary");
+    try {
+      sharedAssignmentMeta = await Teacher()?.listSharedAssignments() || [];
+    } catch {
+      sharedAssignmentMeta = [];
+    }
+    const hasShared = sharedAssignmentMeta.length > 0;
+    section?.classList.toggle("dw-hidden", !hasShared);
+    renderSharedLibrary();
+  }
+
+  function renderSharedAssignmentCard(item) {
+    const title = item.title || item.assignmentId;
+    const author = item.authorDisplayName || item.ownerUsername || "A teacher";
+    return `
+      <article class="wf-assignment-hub-card wf-assignment-hub-card--shared" role="listitem" data-shared-id="${escapeHtml(item.assignmentId)}">
+        <div class="wf-assignment-hub-card__main">
+          <h3 class="wf-assignment-hub-card__title">${escapeHtml(title)}</h3>
+          <p class="wf-assignment-hub-card__id"><code>${escapeHtml(item.assignmentId)}</code></p>
+          <p class="dw-muted dw-tiny">Shared by ${escapeHtml(author)}</p>
+        </div>
+        <div class="wf-assignment-hub-card__actions">
+          <button class="dw-btn" type="button" data-action="copy-shared" data-id="${escapeHtml(item.assignmentId)}" data-title="${escapeHtml(title)}">Copy to my assignments</button>
+        </div>
+      </article>`;
+  }
+
+  function renderSharedLibrary() {
+    const el = document.getElementById("wfSharedDashboard");
+    if (!el) return;
+    const session = Teacher()?.getSession();
+    const items = sharedAssignmentMeta.filter((item) => {
+      if (!session?.username) return true;
+      return normalizeUsername(item.ownerUsername) !== normalizeUsername(session.username);
+    });
+    if (!items.length) {
+      el.innerHTML = `<p class="dw-muted">No shared assignments yet. Teachers can enable sharing when they save an assignment.</p>`;
+      return;
+    }
+    el.innerHTML = items.map((item) => renderSharedAssignmentCard(item)).join("");
+    el.querySelectorAll("[data-action='copy-shared']").forEach((btn) => {
+      btn.addEventListener("click", () => void copySharedAssignment(btn.dataset.id, btn.dataset.title));
+    });
+  }
+
+  function normalizeUsername(value) {
+    return String(value || "").trim().toLowerCase();
+  }
+
+  async function copySharedAssignment(sourceId, title) {
+    if (!Teacher()?.isLoggedIn()) {
+      showAccountPanel(true);
+      const errEl = document.getElementById("wfAccountError");
+      if (errEl) {
+        errEl.textContent = "Sign in to copy shared assignments.";
+        errEl.classList.remove("dw-hidden");
+      }
+      return;
+    }
+    const newId = `assignment-${Date.now()}`;
+    try {
+      const data = await Teacher().copyAssignment(sourceId, newId, title ? `${title} (copy)` : undefined);
+      const next = { ...Defaults, ...data.config, id: data.assignmentId, title: data.title || title };
+      Core.saveConfig(STORAGE_PREFIX, next.id, next);
+      const ids = getAssignmentsList();
+      if (!ids.includes(next.id)) saveAssignmentsList([...ids, next.id]);
+      await refreshCloudAssignments();
+      await refreshSharedLibrary();
+      await openAssignmentInBuilder(next.id);
+      showSaveStatus(`Copied “${next.title}” into your assignments.`, true);
+    } catch (err) {
+      alert(err.message || "Could not copy assignment.");
+    }
+  }
+
   function bindTeacherEvents() {
     document.getElementById("teacherCancelBtn")?.addEventListener("click", () => show("home"));
     document.getElementById("teacherLoginBtn")?.addEventListener("click", async () => {
@@ -963,9 +1178,11 @@
       if (errEl) errEl.classList.add("dw-hidden");
 
       try {
-        const res = await fetch(
-          `${API_URL}?password=${encodeURIComponent(pw)}&assignmentId=${encodeURIComponent(config.id)}`
-        );
+        const sessionToken = Teacher()?.getToken() || "";
+        const qs = new URLSearchParams({ assignmentId: config.id });
+        if (sessionToken) qs.set("sessionToken", sessionToken);
+        else qs.set("password", pw);
+        const res = await fetch(`${API_URL}?${qs}`);
         if (res.status === 401) {
           if (errEl) {
             errEl.textContent = "Incorrect password for this assignment.";
@@ -1012,6 +1229,18 @@
     config = resolved.config;
     applyConfigToUI();
     bindTeacherEvents();
+
+    const session = Teacher()?.getSession();
+    const ownsAssignment = session?.username
+      && normalizeUsername(config.ownerUsername) === normalizeUsername(session.username);
+    if (ownsAssignment) {
+      teacherAuthed = true;
+      sessionTeacherPassword = config.teacherPassword || "";
+      show("teacher");
+      await loadTeacherDashboard();
+      return;
+    }
+
     show("teacherLogin");
   }
 
@@ -1334,10 +1563,18 @@
     }
   }
 
-  function renderAssignmentCard(id, { active = false, compact = false } = {}) {
+  function renderAssignmentCard(id, { active = false, compact = false, meta = null } = {}) {
     const saved = readLocalConfig(id) || { id, title: id };
-    const title = saved.title || id;
+    const title = saved.title || meta?.title || id;
     const sharePath = assignmentUrl(id);
+    const badges = [];
+    if (meta?.shared) badges.push('<span class="wf-badge wf-badge--shared">Shared</span>');
+    if (meta?.ownerUsername && Teacher()?.getSession()?.username === normalizeUsername(meta.ownerUsername)) {
+      badges.push('<span class="wf-badge wf-badge--cloud">Your account</span>');
+    } else if (meta?.authorDisplayName) {
+      badges.push(`<span class="wf-badge">${escapeHtml(meta.authorDisplayName)}</span>`);
+    }
+    const badgeHtml = badges.length ? `<div class="wf-assignment-badges">${badges.join("")}</div>` : "";
     if (compact) {
       return `
         <article class="wf-assignment-card${active ? " wf-assignment-card--active" : ""}" data-assignment-id="${escapeHtml(id)}">
@@ -1355,6 +1592,7 @@
       <article class="wf-assignment-hub-card" role="listitem" data-assignment-id="${escapeHtml(id)}">
         <div class="wf-assignment-hub-card__main">
           <h3 class="wf-assignment-hub-card__title">${escapeHtml(title)}</h3>
+          ${badgeHtml}
           <p class="wf-assignment-hub-card__id"><code>${escapeHtml(id)}</code></p>
           <p class="wf-assignment-hub-card__link dw-muted dw-tiny">${escapeHtml(sharePath)}</p>
         </div>
@@ -1422,15 +1660,27 @@
   function renderHomeDashboard() {
     const el = document.getElementById("wfAssignmentsDashboard");
     if (!el) return;
-    const ids = getAssignmentsList();
+    const localIds = getAssignmentsList();
+    const cloudIds = Object.keys(cloudAssignmentMeta);
+    const ids = [...new Set([...localIds, ...cloudIds])];
     const picker = params.get("teacher") === "1" && !params.get("id");
     document.getElementById("wfTeacherPickerBanner")?.classList.toggle("dw-hidden", !picker);
+
+    const heading = document.getElementById("wfAssignmentsHeading");
+    const hubSubtitle = document.querySelector(".wf-assignments-hub .dw-muted");
+    if (Teacher()?.isLoggedIn()) {
+      if (heading) heading.textContent = "Your assignments";
+      if (hubSubtitle) hubSubtitle.textContent = "Assignments on this device and in your teacher account. Open any to edit, share, or view results.";
+    } else {
+      if (heading) heading.textContent = "Your assignments";
+      if (hubSubtitle) hubSubtitle.textContent = "Open any assignment to edit settings, copy the student link, or view results. Sign in to sync assignments across devices.";
+    }
 
     if (!ids.length) {
       el.innerHTML = `
         <div class="wf-empty-state">
           <p class="dw-lead">No assignments yet</p>
-          <p class="dw-muted">Create your first assignment with a template or start from a blank one.</p>
+          <p class="dw-muted">Create your first assignment with a template or start from a blank one.${Teacher()?.isLoggedIn() ? "" : " Sign in to load assignments from your account."}</p>
           <button class="dw-btn" type="button" id="wfEmptyCreateBtn">Create assignment</button>
         </div>`;
       document.getElementById("wfEmptyCreateBtn")?.addEventListener("click", () => {
@@ -1439,7 +1689,7 @@
       return;
     }
 
-    el.innerHTML = ids.map((id) => renderAssignmentCard(id)).join("");
+    el.innerHTML = ids.map((id) => renderAssignmentCard(id, { meta: cloudAssignmentMeta[id] || null })).join("");
     bindAssignmentCardActions(el);
   }
 
@@ -1543,7 +1793,10 @@
         <label class="dw-field"><span class="dw-label">Sentence starters (optional)</span><span class="dw-muted dw-tiny">Shown above the writing area — e.g. &ldquo;One thing I noticed…&rdquo; or &ldquo;I felt… because…&rdquo;</span><textarea id="bfSentenceStarters" class="dw-textarea" rows="2" placeholder="Optional scaffold text">${escapeHtml(config.sentenceStarters || "")}</textarea></label>
         <label class="dw-field"><span class="dw-label">Expected vocabulary</span><span class="dw-muted dw-tiny">Comma or line-separated words students should use — highlighted in Results</span><textarea id="bfVocab" class="dw-textarea" rows="3" placeholder="photosynthesis, chlorophyll, glucose">${escapeHtml((config.vocabWords || []).join(", "))}</textarea></label>
         <label class="wf-toggle-row"><input id="bfHighlightVocab" type="checkbox" ${config.highlightVocab !== false ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Highlight vocabulary in teacher view</strong><span class="wf-toggle-row__hint">Marks expected words in submission previews</span></span></label>
-        <label class="dw-field"><span class="dw-label">Teacher password</span><span class="dw-muted dw-tiny">Required to open Results for this assignment</span><input id="bfTeacherPw" class="dw-input" type="password" autocomplete="new-password" value="${escapeHtml(config.teacherPassword)}" /></label>`;
+        <label class="dw-field"><span class="dw-label">Teacher password</span><span class="dw-muted dw-tiny">Required to open Results for this assignment</span><input id="bfTeacherPw" class="dw-input" type="password" autocomplete="new-password" value="${escapeHtml(config.teacherPassword)}" /></label>
+        <div id="bfShareRow" class="dw-hidden">
+          <label class="wf-toggle-row"><input id="bfShared" type="checkbox" ${config.shared ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Share with other teachers</strong><span class="wf-toggle-row__hint">Lets colleagues copy this assignment from the shared library</span></span></label>
+        </div>`;
       bindBuilderField("bfTitle", "title");
       bindBuilderField("bfSubtitle", "subtitle");
       bindBuilderField("bfWelcomeTitle", "welcomeTitle");
@@ -1558,6 +1811,12 @@
       });
       document.getElementById("bfHighlightVocab")?.addEventListener("change", (e) => {
         config.highlightVocab = e.target.checked;
+        persistConfig();
+      });
+      const shareRow = document.getElementById("bfShareRow");
+      if (shareRow) shareRow.classList.toggle("dw-hidden", !Teacher()?.isLoggedIn());
+      document.getElementById("bfShared")?.addEventListener("change", (e) => {
+        config.shared = e.target.checked;
         persistConfig();
       });
     } else if (builderSection === "timer") {
@@ -1855,7 +2114,7 @@
       </div>
       <div class="wf-inspector-group">
         <div class="wf-inspector-group__label">Save &amp; publish</div>
-        <p class="dw-muted dw-tiny">Save publishes to the cloud so students can load this assignment from the share link.</p>
+        <p class="dw-muted dw-tiny">${Teacher()?.isLoggedIn() ? "Save publishes to the cloud and links this assignment to your account." : "Save publishes to the cloud so students can load this assignment from the share link. Sign in to attach assignments to your account."}</p>
         <div class="dw-stack">
           <button id="bfSave" class="dw-btn" type="button">Save assignment</button>
           <p id="bfSaveStatus" class="wf-save-status dw-hidden" role="status"></p>
@@ -1892,6 +2151,8 @@
       showSaveStatus("Publishing…", true);
       try {
         await publishAssignmentCloud();
+        if (Teacher()?.isLoggedIn()) await refreshCloudAssignments();
+        if (config.shared) await refreshSharedLibrary();
         showSaveStatus("Saved and published. Share link is ready for students.", true);
       } catch (err) {
         showSaveStatus(`Saved on this browser only. ${err.message}`, false);
@@ -1995,6 +2256,7 @@
     Core.applyTheme(Core.resolveTheme({ ...Defaults, id: resolveDefaultAssignmentId() }));
     show("home");
     renderHomeDashboard();
+    void refreshSharedLibrary();
     renderTemplateGallery("homeTemplateGrid", (id) => {
       location.href = studioUrl(`?mode=builder&template=${encodeURIComponent(id)}`);
     });
@@ -2003,9 +2265,16 @@
     });
   }
 
-  function initStudioApp() {
+  async function initStudioApp() {
     Core.applyTheme(Core.resolveTheme({ ...Defaults, id: resolveDefaultAssignmentId() }));
     bindTopbarActions();
+    bindAccountEvents();
+    if (Teacher()) {
+      await Teacher().validate();
+      updateAccountButton();
+      await refreshCloudAssignments();
+      await refreshSharedLibrary();
+    }
     initTutorial();
     if (mode === "builder") void initBuilder();
     else if (params.get("teacher") === "1" && !params.get("id")) initHome();
@@ -2019,7 +2288,7 @@
     } else {
       document.getElementById("wfStudioShell")?.classList.remove("dw-hidden");
     }
-    initStudioApp();
+    await initStudioApp();
   }
 
   if (isStudentApp) void initStudentFlow();
