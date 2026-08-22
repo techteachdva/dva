@@ -10,7 +10,7 @@
   const STATS_API = "/api/writeflow-submissions?action=stats";
   const INTRO_TEXT = "WriteFlow Studio";
   const SCORE_TARGETS = { typing: 84, mechanics: 76, story: 91 };
-  const STEP_MS = { type: 130, morph1: 1100, morph2: 1000, morph3: 1200, hold: 900 };
+  const STEP_MS = { type: 130, morph1: 1100, morph2: 1000, morph3: 1500, hold: 900 };
   let introRunning = false;
   let cachedStats = null;
 
@@ -133,6 +133,12 @@
     if (typeEl) typeEl.textContent = "";
     document.querySelectorAll(".wf-intro-morph__score-val").forEach((el) => { el.textContent = "0"; });
     document.getElementById("wfIntroCursor")?.classList.remove("dw-hidden");
+    const titleEl = document.getElementById("wfIntroTitle");
+    if (titleEl) {
+      titleEl.style.animation = "none";
+      void titleEl.offsetWidth;
+      titleEl.style.animation = "";
+    }
   }
 
   async function hideSplash() {
