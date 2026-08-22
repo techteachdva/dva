@@ -214,6 +214,7 @@ export async function POST(request) {
     const classroomRaw = typeof body?.classroom === "string" ? body.classroom : "";
     const classroom = resolveClassroom(classroomRaw);
     const classCode = typeof body?.classCode === "string" ? body.classCode : "";
+    const requireClassCode = body?.requireClassCode !== false;
     const text = typeof body?.text === "string" ? body.text.trim().slice(0, 15000) : "";
     const analysis = body?.analysis && typeof body.analysis === "object" ? body.analysis : null;
     const durationSec = Number(body?.durationSec);
@@ -224,7 +225,7 @@ export async function POST(request) {
     if (classroomRaw && !classroom) {
       return Response.json({ error: "Invalid classroom" }, { status: 400, headers: corsHeaders() });
     }
-    if (classroom && !verifyClassroomCode(classroom, classCode)) {
+    if (classroom && requireClassCode && !verifyClassroomCode(classroom, classCode)) {
       return Response.json({ error: "Incorrect class code for the selected classroom." }, { status: 400, headers: corsHeaders() });
     }
 
@@ -238,6 +239,7 @@ export async function POST(request) {
         name,
         classroom: classroom || "",
         classCode,
+        requireClassCode,
         text,
         analysis,
         durationSec: Number.isFinite(durationSec) ? durationSec : 300,

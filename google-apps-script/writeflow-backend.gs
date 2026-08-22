@@ -362,7 +362,8 @@ function saveSubmission_(params) {
   if (params.classroom && !classroom) {
     throw new Error("Invalid classroom");
   }
-  if (classroom && !verifyClassroomCode_(classroom, classCode)) {
+  const requireClassCode = params.requireClassCode !== false;
+  if (classroom && requireClassCode && !verifyClassroomCode_(classroom, classCode)) {
     throw new Error("Incorrect class code for the selected classroom.");
   }
 

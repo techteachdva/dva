@@ -603,7 +603,7 @@
     studentSession = {
       name: document.getElementById("studentName")?.value.trim() || "",
       classroom: Core.resolveClassroom(classEl?.value, VALID_CLASSROOMS) || "",
-      classCode: document.getElementById("classCode")?.value || "",
+      classCode: Core.normalizeClassCode(document.getElementById("classCode")?.value || ""),
     };
   }
 
@@ -662,7 +662,8 @@
     const name = studentSession.name || document.getElementById("studentName")?.value.trim() || "Student";
     const classEl = document.getElementById("studentClass");
     const classroom = studentSession.classroom || Core.resolveClassroom(classEl?.value, VALID_CLASSROOMS) || "";
-    const classCode = studentSession.classCode || document.getElementById("classCode")?.value || "";
+    const classCode = studentSession.classCode
+      || Core.normalizeClassCode(document.getElementById("classCode")?.value || "");
 
     const resultNameEl = document.getElementById("resultName");
     const resultSummaryEl = document.getElementById("resultSummary");
@@ -756,6 +757,7 @@
         name,
         classroom,
         classCode,
+        requireClassCode: config.requireClassCode !== false,
         text,
         analysis,
         durationSec,
