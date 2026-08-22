@@ -12,7 +12,7 @@ layout: false
     <title>WriteFlow Studio · Timed writing for classrooms</title>
     <meta property="og:title" content="WriteFlow Studio" />
     <meta property="og:description" content="Timed writing assignments with prompts, vocabulary goals, typing analysis, and teacher dashboards." />
-    <link rel="icon" href="/writeflow/assets/wfs-favicon.png" type="image/png" />
+    <link rel="icon" href="/writeflow/assets/wfs-icon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" />
@@ -60,23 +60,22 @@ layout: false
             </div>
           </div>
 
-          <div class="wf-intro-morph__bars" id="wfIntroBars" aria-hidden="true">
-            <span class="wf-intro-morph__bar" style="--h:62%"></span>
-            <span class="wf-intro-morph__bar" style="--h:88%"></span>
-            <span class="wf-intro-morph__bar" style="--h:74%"></span>
-            <span class="wf-intro-morph__bar" style="--h:96%"></span>
+          <div class="wf-logo wf-logo--intro" id="wfIntroLogo" aria-hidden="true">
+            <span class="wf-logo__bracket wf-logo__bracket--l" aria-hidden="true">[</span>
+            <div class="wf-logo__stack">
+              <div class="wf-logo__ops" aria-hidden="true">
+                <span>+</span><span>−</span><span>×</span><span>÷</span>
+              </div>
+              <div class="wf-logo__letters" aria-hidden="true">WFS</div>
+              <div class="wf-logo__bars" id="wfIntroBars" aria-hidden="true">
+                <span class="wf-logo__bar" style="--h:0.62"></span>
+                <span class="wf-logo__bar" style="--h:0.88"></span>
+                <span class="wf-logo__bar" style="--h:0.74"></span>
+                <span class="wf-logo__bar wf-logo__bar--accent" style="--h:0.96"></span>
+              </div>
+            </div>
+            <span class="wf-logo__bracket wf-logo__bracket--r" aria-hidden="true">]</span>
           </div>
-
-          <img
-            class="wf-intro-morph__mark wf-intro-morph__logo"
-            id="wfIntroMark"
-            src="/writeflow/assets/wfs-logo.png"
-            alt=""
-            width="200"
-            height="200"
-            decoding="async"
-            aria-hidden="true"
-          />
         </div>
       </div>
     </div>
@@ -84,7 +83,7 @@ layout: false
     <div class="wf-landing dw-hidden" id="wfLanding">
       <header class="wf-landing__header">
         <div class="wf-landing__brand">
-          <img class="wf-landing__logo-img" src="/writeflow/assets/wfs-logo.png" alt="" width="52" height="52" />
+          <img class="wf-landing__logo-img" src="/writeflow/assets/wfs-logo.svg" alt="WriteFlow Studio" width="56" height="34" />
           <div>
             <div class="wf-landing__title">WriteFlow Studio</div>
             <div class="wf-landing__version">Version <span id="wfVersionLabel">2.0</span></div>
@@ -103,7 +102,7 @@ layout: false
           <p class="dw-lead">WriteFlow Studio lets teachers build assignments with custom prompts, timers, vocabulary goals, and accessibility options. Students get a focused writing screen — no clutter, no paste, just type.</p>
           <div class="wf-landing-hero__cta">
             <a class="dw-btn wf-landing-cta" href="/writeflow/studio/" data-wf-app-link>
-              <img class="wf-landing-cta__logo" src="/writeflow/assets/wfs-logo.png" alt="" width="28" height="28" />
+              <img class="wf-landing-cta__logo" src="/writeflow/assets/wfs-logo.svg" alt="" width="32" height="19" />
               Open WriteFlow Studio
             </a>
             <button class="dw-btn dw-btn-ghost" type="button" id="replayIntroBtn">Replay intro</button>

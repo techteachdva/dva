@@ -9,9 +9,8 @@
 
   const STATS_API = "/api/writeflow-submissions?action=stats";
   const INTRO_TEXT = "WriteFlow Studio";
-  const LOGO_URL = "/writeflow/assets/wfs-logo.png";
   const SCORE_TARGETS = { typing: 84, mechanics: 76, story: 91 };
-  const STEP_MS = { type: 130, morph1: 1100, morph2: 900, morph3: 1400, hold: 900 };
+  const STEP_MS = { type: 130, morph1: 1100, morph2: 1000, morph3: 1200, hold: 900 };
   let introRunning = false;
   let cachedStats = null;
 
@@ -118,12 +117,6 @@
     if (stage) stage.dataset.step = String(step);
   }
 
-  function preloadLogo() {
-    const img = new Image();
-    img.src = LOGO_URL;
-    return img.decode?.().catch(() => {}) ?? Promise.resolve();
-  }
-
   function resetIntro() {
     const splash = document.getElementById("wfIntroSplash");
     const landing = document.getElementById("wfLanding");
@@ -195,7 +188,6 @@
 
     try {
       if (document.fonts?.ready) await document.fonts.ready;
-      await preloadLogo();
       resetIntro();
       await waitForPaint();
 
@@ -213,11 +205,11 @@
       await delay(ms("morph1"));
       await scorePromise;
 
-      // Step 2 — scores fold into rising bars (same card, continuous motion)
+      // Step 2 — scores dissolve; logo bars rise in place (same elements as final mark)
       setIntroStep(2);
       await delay(ms("morph2"));
 
-      // Step 3 — bars tighten into logo mark + frame appears
+      // Step 3 — brackets, math ops, and WFS letters assemble around the bars
       setIntroStep(3);
       await delay(ms("morph3"));
 
@@ -261,7 +253,6 @@
     renderTutorial();
     bindAppLinks();
     bindReplay();
-    void preloadLogo();
     void runIntroAnimation();
   }
 

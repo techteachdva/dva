@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.1.1";
+  const APP_VERSION = "2.1.2";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -119,6 +119,16 @@
   ];
 
   const CHANGELOG = [
+    {
+      version: "2.1.2",
+      date: "2026-08-21",
+      summary: "Replace AI-generated PNG logo with a clean SVG mark and a true intro morph.",
+      items: [
+        "New lightweight SVG logo (transparent, brackets + math ops + WFS + bars) replaces 850 KB PNG assets.",
+        "Intro animation uses the same bar elements throughout — they rise first, then brackets, ops, and letters assemble around them.",
+        "Favicon, header, CTA, and studio branding updated to the SVG mark.",
+      ],
+    },
     {
       version: "2.1.1",
       date: "2026-08-21",

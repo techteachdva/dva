@@ -2693,64 +2693,95 @@ body.wf-intro-active {
   font-variant-numeric: tabular-nums;
 }
 
-.wf-intro-morph__bars {
-  position: absolute;
-  left: 50%;
-  top: 38%;
-  z-index: 2;
+/* WFS logo mark — shared intro + static branding */
+.wf-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  user-select: none;
+}
+
+.wf-logo__bracket {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(2.4rem, 8vw, 3.6rem);
+  font-weight: 300;
+  line-height: 1;
+  color: #94a3b8;
+  opacity: 0;
+  transform: scaleY(0.6);
+  transition:
+    opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.wf-logo__stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.wf-logo__ops {
+  display: flex;
+  gap: 14px;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: #7dd3fc;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition:
+    opacity 0.85s ease,
+    transform 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.wf-logo__letters {
+  font-family: "Libre Baskerville", Georgia, serif;
+  font-size: clamp(2rem, 6vw, 2.75rem);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #f1f5f9;
+  opacity: 0;
+  transform: scale(0.88);
+  transition:
+    opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.wf-logo__bars {
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  gap: 10px;
-  height: 0;
-  width: max-content;
-  opacity: 0;
-  transform: translate(-50%, 0) translateY(16px);
-  overflow: visible;
-  transition:
-    height 1s cubic-bezier(0.4, 0, 0.2, 1),
-    gap 1.1s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity 0.9s ease,
-    transform 1s cubic-bezier(0.4, 0, 0.2, 1),
-    filter 1s ease,
-    top 1s cubic-bezier(0.4, 0, 0.2, 1);
+  gap: 8px;
+  height: 48px;
 }
 
-.wf-intro-morph__bar {
-  width: 28px;
-  height: calc(56px * var(--h, 70%) / 100%);
-  border-radius: 8px 8px 2px 2px;
+.wf-logo__bar {
+  width: 12px;
+  height: calc(48px * var(--h, 0.7));
+  border-radius: 4px 4px 1px 1px;
   background: linear-gradient(180deg, #38bdf8, #6366f1);
   transform-origin: bottom center;
   transform: scaleY(0);
-  transition:
-    transform 0.85s cubic-bezier(0.22, 1, 0.36, 1),
-    width 1.1s cubic-bezier(0.4, 0, 0.2, 1),
-    height 1.1s cubic-bezier(0.4, 0, 0.2, 1),
-    border-radius 1.1s ease;
+  transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.wf-intro-morph__mark {
+.wf-logo__bar--accent {
+  background: linear-gradient(180deg, #f4a582, #e8796a);
+}
+
+.wf-logo--intro {
   position: absolute;
   left: 50%;
   top: 50%;
   z-index: 3;
-  display: block;
-  width: min(200px, 52vw);
-  height: auto;
   opacity: 0;
-  transform: translate(-50%, -50%) scale(0.72);
-  filter: blur(8px);
+  transform: translate(-50%, -50%) scale(0.94);
   transition:
-    opacity 1.1s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 1.1s cubic-bezier(0.22, 1, 0.36, 1),
-    filter 1.1s ease;
+    opacity 0.8s ease,
+    transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
   pointer-events: none;
-}
-
-.wf-intro-morph__logo {
-  object-fit: contain;
-  border-radius: 12px;
 }
 
 /* Step 0 — typewriter only */
@@ -2778,7 +2809,7 @@ body.wf-intro-active {
   filter: blur(0);
 }
 
-/* Step 2 — scores dissolve into rising bars */
+/* Step 2 — scores dissolve; logo bars rise (same elements as final mark) */
 #wfIntroStage[data-step="2"] .wf-intro-morph__tag {
   opacity: 0;
   transform: translate(-50%, 0) translateY(-12px) scale(0.95);
@@ -2792,23 +2823,23 @@ body.wf-intro-active {
   max-height: 0;
 }
 
-#wfIntroStage[data-step="2"] .wf-intro-morph__bars {
-  height: 100px;
-  top: 36%;
+#wfIntroStage[data-step="2"] .wf-logo--intro,
+#wfIntroStage[data-step="3"] .wf-logo--intro {
   opacity: 1;
-  transform: translate(-50%, 0) translateY(0);
+  transform: translate(-50%, -50%) scale(1);
 }
 
-#wfIntroStage[data-step="2"] .wf-intro-morph__bar {
+#wfIntroStage[data-step="2"] .wf-logo__bar,
+#wfIntroStage[data-step="3"] .wf-logo__bar {
   transform: scaleY(1);
 }
 
-#wfIntroStage[data-step="2"] .wf-intro-morph__bar:nth-child(1) { transition-delay: 0.05s; }
-#wfIntroStage[data-step="2"] .wf-intro-morph__bar:nth-child(2) { transition-delay: 0.12s; }
-#wfIntroStage[data-step="2"] .wf-intro-morph__bar:nth-child(3) { transition-delay: 0.19s; }
-#wfIntroStage[data-step="2"] .wf-intro-morph__bar:nth-child(4) { transition-delay: 0.26s; }
+#wfIntroStage[data-step="2"] .wf-logo__bar:nth-child(1) { transition-delay: 0.05s; }
+#wfIntroStage[data-step="2"] .wf-logo__bar:nth-child(2) { transition-delay: 0.12s; }
+#wfIntroStage[data-step="2"] .wf-logo__bar:nth-child(3) { transition-delay: 0.19s; }
+#wfIntroStage[data-step="2"] .wf-logo__bar:nth-child(4) { transition-delay: 0.26s; }
 
-/* Step 3 — bars dissolve into branded logo image, frame appears */
+/* Step 3 — brackets, ops, and letters assemble around the bars */
 #wfIntroStage[data-step="3"] .wf-intro-morph__frame {
   opacity: 1;
   transform: scale(1);
@@ -2817,17 +2848,21 @@ body.wf-intro-active {
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
 }
 
-#wfIntroStage[data-step="3"] .wf-intro-morph__bars {
-  opacity: 0;
-  transform: translate(-50%, 0) translateY(12px) scale(0.55);
-  filter: blur(6px);
-  pointer-events: none;
+#wfIntroStage[data-step="3"] .wf-logo__bracket {
+  opacity: 1;
+  transform: scaleY(1);
 }
 
-#wfIntroStage[data-step="3"] .wf-intro-morph__mark {
+#wfIntroStage[data-step="3"] .wf-logo__ops {
   opacity: 1;
-  transform: translate(-50%, -50%) scale(1);
-  filter: blur(0);
+  transform: translateY(0);
+  transition-delay: 0.15s;
+}
+
+#wfIntroStage[data-step="3"] .wf-logo__letters {
+  opacity: 1;
+  transform: scale(1);
+  transition-delay: 0.08s;
 }
 
 .wf-intro-morph--pulse {
@@ -2843,14 +2878,13 @@ body.wf-intro-active {
   .wf-intro-morph__title,
   .wf-intro-morph__tag,
   .wf-intro-morph__scores,
-  .wf-intro-morph__bars,
-  .wf-intro-morph__bar,
-  .wf-intro-morph__mark,
+  .wf-logo__bracket,
+  .wf-logo__ops,
+  .wf-logo__letters,
+  .wf-logo__bar,
+  .wf-logo--intro,
   .wf-intro-morph__frame {
     transition-duration: 0.15s !important;
-  }
-
-  .wf-intro-morph__bar {
     transition-delay: 0s !important;
   }
 }
@@ -2892,12 +2926,10 @@ body.wf-intro-active {
 }
 
 .wf-landing__logo-img {
-  width: 52px;
-  height: 52px;
-  border-radius: 14px;
+  width: auto;
+  height: 34px;
   object-fit: contain;
   flex-shrink: 0;
-  box-shadow: 0 4px 16px rgba(56, 189, 248, 0.2);
 }
 
 .wf-landing__logo {
@@ -2959,9 +2991,8 @@ body.wf-intro-active {
 }
 
 .wf-landing-cta__logo {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
+  width: auto;
+  height: 19px;
   object-fit: contain;
   flex-shrink: 0;
 }
@@ -3176,9 +3207,10 @@ body.wf-intro-active {
 
 .wf-brand-logo {
   display: block;
+  width: auto;
+  height: 29px;
   object-fit: contain;
   background: transparent;
-  box-shadow: 0 2px 10px rgba(56, 189, 248, 0.18);
 }
 
 .wf-vocab-hit,
