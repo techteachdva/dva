@@ -8,9 +8,8 @@
   if (!Defaults) return;
 
   const STATS_API = "/api/writeflow-submissions?action=stats";
-  const CHANGELOG_VISIBLE = 4;
-  const CHANGELOG_ITEMS_PER_ENTRY = 3;
-  const QUICKSTART_MAX_STEPS = 6;
+  const CHANGELOG_VISIBLE = 3;
+  const CHANGELOG_ITEMS_PER_ENTRY = 4;
 
   let cachedStats = null;
 
@@ -71,9 +70,7 @@
 
   function renderTutorial() {
     const list = document.getElementById("wfLandingTutorial");
-    const steps = (Defaults.TUTORIAL_STEPS?.home || [])
-      .filter((s) => !s.highlight)
-      .slice(0, QUICKSTART_MAX_STEPS);
+    const steps = Defaults.LANDING_QUICKSTART || Defaults.TUTORIAL_STEPS?.home || [];
     if (!list) return;
     list.innerHTML = steps.map((step, i) => `
       <li class="wf-quickstart__step wf-quickstart__step--compact">

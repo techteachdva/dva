@@ -43,18 +43,18 @@ layout: false
           </div>
           <div>
             <div class="wf-landing__title">WriteFlow Studio</div>
-            <div class="wf-landing__version">Version <span id="wfVersionLabel">2.3.4</span></div>
+            <div class="wf-landing__version">Version <span id="wfVersionLabel">2.3.5</span></div>
           </div>
         </div>
         <nav class="wf-landing__nav" aria-label="WriteFlow">
-          <a class="dw-btn dw-btn-secondary" href="/writeflow/studio/" target="_blank" rel="noopener">Open Studio</a>
+          <a class="dw-btn dw-btn-secondary" href="/writeflow/studio/">Open Studio</a>
         </nav>
       </header>
 
       <main id="wfLandingMain" class="wf-landing__main">
         <aside class="wf-landing__panel wf-landing__panel--changelog" aria-labelledby="wfChangelogTitle">
           <h2 class="wf-landing__panel-title" id="wfChangelogTitle">Changelog</h2>
-          <p class="wf-landing__panel-lead dw-muted">Living documentation of features and fixes.</p>
+          <p class="wf-landing__panel-lead dw-muted">What’s new in each release.</p>
           <div id="wfChangelogFull" class="wf-changelog-full wf-changelog-full--compact"></div>
         </aside>
 
@@ -62,9 +62,9 @@ layout: false
           <section class="wf-landing-hero dw-card wf-landing-hero--compact">
             <p class="wf-landing-hero__eyebrow">Classroom writing tool</p>
             <h1 class="dw-h1 wf-landing-hero__title">Timed writing that meets every learner where they are.</h1>
-            <p class="dw-lead wf-landing-hero__lead">Build assignments with custom prompts, timers, vocabulary goals, and accessibility options. Students get a focused writing screen — no clutter, no paste, just type.</p>
+            <p class="dw-lead wf-landing-hero__lead">Name an assignment, pick a template with clear student defaults, and publish a link. Students get a focused writing screen — prompt, timer, and typing area.</p>
             <div class="wf-landing-hero__cta">
-              <a class="dw-btn wf-landing-cta" href="/writeflow/studio/" target="_blank" rel="noopener">
+              <a class="dw-btn wf-landing-cta" href="/writeflow/studio/">
                 <span class="wf-mark-wrap wf-mark-wrap--cta" aria-hidden="true">{% include "wfs-mark.svg.njk" %}</span>
                 Open WriteFlow Studio
               </a>
@@ -94,33 +94,42 @@ layout: false
             </div>
           </section>
 
-          <section class="wf-landing-welcome dw-card wf-landing-welcome--compact">
-            <h2 class="wf-landing__section-title">What is WriteFlow?</h2>
-            <div class="wf-landing-columns">
-              <div>
-                <h3 class="dw-h3 wf-landing__mini-title">For teachers</h3>
-                <p class="dw-muted wf-landing__dense-text">Build in Studio — prompts, timers, vocabulary, class codes. Save to publish a student link. Open Results to review submissions and export CSV.</p>
+          <section class="wf-landing-glance dw-card" aria-labelledby="wfGlanceTitle">
+            <h2 class="wf-landing__section-title" id="wfGlanceTitle">Studio at a glance</h2>
+            <div class="wf-landing-glance__grid">
+              <div class="wf-landing-glance__item">
+                <span class="wf-landing-glance__icon" aria-hidden="true">📋</span>
+                <strong>Templates</strong>
+                <p class="dw-muted">See default timer, scoring, and paste rules. Name your assignment, run the wizard.</p>
               </div>
-              <div>
-                <h3 class="dw-h3 wf-landing__mini-title">For students</h3>
-                <p class="dw-muted wf-landing__dense-text">Students open only their assignment link: prompt, timer, word count, and typing area. Pasting is blocked by default. WriteFlow scores stamina, mechanics, and content.</p>
+              <div class="wf-landing-glance__item">
+                <span class="wf-landing-glance__icon" aria-hidden="true">📁</span>
+                <strong>Your files</strong>
+                <p class="dw-muted">Assignments as tiles — edit, copy the student link, preview, or open Results.</p>
+              </div>
+              <div class="wf-landing-glance__item">
+                <span class="wf-landing-glance__icon" aria-hidden="true">⚙️</span>
+                <strong>Builder</strong>
+                <p class="dw-muted">Settings · center editor · File information — save and publish from one screen.</p>
               </div>
             </div>
           </section>
         </div>
 
         <aside class="wf-landing__panel wf-landing__panel--guide" aria-labelledby="wfTutorialTitle">
-          <h2 class="wf-landing__panel-title" id="wfTutorialTitle">Quick start</h2>
+          <h2 class="wf-landing__panel-title" id="wfTutorialTitle">Get started</h2>
+          <p class="wf-landing__panel-lead dw-muted">Six steps to your first assignment.</p>
           <ol class="wf-quickstart__steps wf-quickstart__steps--compact" id="wfLandingTutorial"></ol>
-          <div class="wf-landing__panel-note dw-card">
-            <p class="dw-muted dw-tiny"><strong>Student links only:</strong> <code>/writeflow/a/?id=your-assignment</code> — never share the Studio URL with students.</p>
-            <p class="dw-muted dw-tiny">Full interactive tutorial inside Studio after you sign in.</p>
+          <div class="wf-landing__panel-note">
+            <p><strong>For teachers:</strong> build, save, and review submissions in Studio.</p>
+            <p><strong>For students:</strong> open only <code>/writeflow/a/?id=…</code> — never the Studio URL.</p>
+            <p class="dw-muted">Interactive tutorial inside Studio covers every panel in detail.</p>
           </div>
         </aside>
       </main>
 
       <footer class="wf-landing__footer dw-muted">
-        <p>WriteFlow Studio · Mr. Phil's classroom tools · Built for classrooms.</p>
+        <p>WriteFlow Studio · Mr. Phil's classroom tools</p>
       </footer>
     </div>
 
