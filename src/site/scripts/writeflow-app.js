@@ -247,6 +247,89 @@
     });
   }
 
+  function slugifyAssignmentName(text) {
+    return window.WriteFlowDefaults?.slugify?.(text) || String(text || "assignment").toLowerCase().replace(/[^a-z0-9]+/g, "-").slice(0, 40);
+  }
+
+  function ensureUniqueAssignmentId(baseName) {
+    const existing = getAssignmentsList();
+    return window.WriteFlowDefaults?.uniqueSlug?.(baseName, existing)
+      || slugifyAssignmentName(baseName);
+  }
+
+  function promptAssignmentName(defaultName = "") {
+    return new Promise((resolve) => {
+      const overlay = document.getElementById("wfNameModal");
+      const input = document.getElementById("wfNameModalInput");
+      const slugEl = document.getElementById("wfNameModalSlug");
+      const okBtn = document.getElementById("wfNameModalOk");
+      const cancelBtn = document.getElementById("wfNameModalCancel");
+      const backdrop = document.getElementById("wfNameModalBackdrop");
+      if (!overlay || !input || !okBtn || !cancelBtn) {
+        const name = window.prompt("Assignment name:", defaultName || "");
+        resolve(name?.trim() || null);
+        return;
+      }
+
+      const updateSlug = () => {
+        if (slugEl) slugEl.textContent = ensureUniqueAssignmentId(input.value || "assignment");
+      };
+
+      input.value = defaultName || "";
+      updateSlug();
+      overlay.classList.remove("dw-hidden");
+      input.focus();
+      input.select();
+
+      function cleanup(result) {
+        overlay.classList.add("dw-hidden");
+        input.removeEventListener("input", updateSlug);
+        okBtn.removeEventListener("click", onOk);
+        cancelBtn.removeEventListener("click", onCancel);
+        backdrop?.removeEventListener("click", onCancel);
+        document.removeEventListener("keydown", onKey);
+        resolve(result);
+      }
+
+      function onOk() {
+        const name = input.value.trim();
+        if (!name) {
+          input.focus();
+          return;
+        }
+        cleanup(name);
+      }
+      function onCancel() { cleanup(null); }
+      function onKey(e) {
+        if (e.key === "Escape") onCancel();
+        if (e.key === "Enter") onOk();
+      }
+
+      input.addEventListener("input", updateSlug);
+      okBtn.addEventListener("click", onOk);
+      cancelBtn.addEventListener("click", onCancel);
+      backdrop?.addEventListener("click", onCancel);
+      document.addEventListener("keydown", onKey);
+    });
+  }
+
+  function assignmentModeIcon(mode) {
+    const icons = { composition: "✏️", fluency: "⌨️", typing_practice: "⌨️", reflection: "💭" };
+    return icons[mode] || "📄";
+  }
+
+  function assignmentTileSummary(saved = {}) {
+    const mode = window.WriteFlowDefaults?.formatModeLabel?.(saved.assignmentMode) || "composition";
+    const mins = Math.max(1, Math.round((Number(saved.durationSec) || 300) / 60));
+    return `${mins} min · ${mode}`;
+  }
+
+  function renderTemplateDefaultsList(template) {
+    const lines = template?.defaultsPreview || [];
+    if (!lines.length) return "";
+    return `<ul class="wf-template-card__defaults">${lines.map((line) => `<li>${escapeHtml(line)}</li>`).join("")}</ul>`;
+  }
+
   function deleteAssignment(id) {
     try { localStorage.removeItem(Core.storageKey(STORAGE_PREFIX, id)); } catch {}
     try { localStorage.removeItem(`writeflow:submissions:${id}`); } catch {}
@@ -522,15 +605,21 @@
     showHomeView({ resultsPicker });
   }
 
-  async function navigateToNewAssignment({ templateId = "", section = "templates" } = {}) {
+  async function navigateToNewAssignment({ templateId = "", section = "templates", name = "" } = {}) {
+    let assignmentName = name?.trim() || "";
+    if (!assignmentName) {
+      assignmentName = await promptAssignmentName();
+      if (!assignmentName) return;
+    }
+
     studioMode = "builder";
     activeTemplateId = templateId || "";
-    builderSection = section || "templates";
-    const id = `assignment-${Date.now()}`;
+    builderSection = section || (templateId ? "templates" : "content");
+    const id = ensureUniqueAssignmentId(assignmentName);
     config = {
       ...Defaults,
       id,
-      title: "Untitled Assignment",
+      title: assignmentName,
       teacherPassword: `wf${Math.random().toString(36).slice(2, 10)}`,
     };
     persistConfig();
@@ -1274,10 +1363,13 @@
       }
       return;
     }
-    const newId = `assignment-${Date.now()}`;
+    const defaultName = title ? `${title} (copy)` : "Shared assignment copy";
+    const assignmentName = await promptAssignmentName(defaultName);
+    if (!assignmentName) return;
+    const newId = ensureUniqueAssignmentId(assignmentName);
     try {
-      const data = await Teacher().copyAssignment(sourceId, newId, title ? `${title} (copy)` : undefined);
-      const next = { ...Defaults, ...data.config, id: data.assignmentId, title: data.title || title };
+      const data = await Teacher().copyAssignment(sourceId, newId, assignmentName);
+      const next = { ...Defaults, ...data.config, id: data.assignmentId || newId, title: assignmentName };
       Core.saveConfig(STORAGE_PREFIX, next.id, next);
       const ids = getAssignmentsList();
       if (!ids.includes(next.id)) saveAssignmentsList([...ids, next.id]);
@@ -1570,30 +1662,36 @@
 
   function applyTemplateToConfig(template, answers) {
     const built = template.build(answers);
+    const preservedId = config.id;
+    const preservedTitle = config.title;
     config = {
       ...Defaults,
       ...config,
       ...built,
+      id: preservedId,
+      title: preservedTitle || built.title,
       accessibility: { ...Defaults.accessibility, ...built.accessibility },
       theme: { ...Defaults.theme, ...config.theme, ...built.theme },
       version: 2,
     };
     persistConfig();
-    history.replaceState(null, "", `?mode=builder&id=${encodeURIComponent(config.id)}`);
+    history.replaceState(null, "", studioUrl(`?mode=builder&id=${encodeURIComponent(config.id)}`));
     builderSection = "content";
     renderBuilder();
-    showSaveStatus(`Created "${config.title}" from template. Review settings, then Save assignment.`, true);
+    showSaveStatus(`Built "${config.title}" from ${template.title}. Review settings, then Save assignment.`, true);
   }
 
   function renderTemplateGallery(containerId, onSelect) {
     const grid = document.getElementById(containerId);
     if (!grid) return;
     grid.innerHTML = ASSIGNMENT_TEMPLATES.map((t) => `
-      <button class="wf-template-card" type="button" data-template="${escapeHtml(t.id)}" role="listitem">
+      <button class="wf-template-card wf-template-card--rich" type="button" data-template="${escapeHtml(t.id)}" role="listitem">
         <span class="wf-template-card__icon" aria-hidden="true">${t.icon}</span>
         <span class="wf-template-card__body">
           <span class="wf-template-card__title">${escapeHtml(t.title)}</span>
           <span class="wf-template-card__desc">${escapeHtml(t.description)}</span>
+          ${renderTemplateDefaultsList(t)}
+          <span class="wf-template-card__cta">Start wizard →</span>
         </span>
       </button>`).join("");
     grid.querySelectorAll(".wf-template-card").forEach((btn) => {
@@ -1616,6 +1714,11 @@
         <button type="button" class="dw-btn dw-btn-ghost wf-template-wizard__back" id="templateWizardBack">← All templates</button>
         <h3 class="dw-h3">${template.icon} ${escapeHtml(template.title)}</h3>
         <p class="dw-muted">${escapeHtml(template.description)}</p>
+        <div class="wf-template-defaults-box" role="note">
+          <strong>Default student experience</strong>
+          ${renderTemplateDefaultsList(template)}
+          <p class="dw-muted dw-tiny">You can change every setting after building.</p>
+        </div>
         <div class="wf-template-wizard__form" id="templateWizardForm">
           ${template.questions.map((q) => renderTemplateQuestionField(q, answers[q.id])).join("")}
         </div>
@@ -1703,6 +1806,8 @@
     const saved = readLocalConfig(id) || { id, title: id };
     const title = saved.title || meta?.title || id;
     const sharePath = assignmentUrl(id);
+    const icon = assignmentModeIcon(saved.assignmentMode);
+    const summary = assignmentTileSummary(saved);
     const badges = [];
     if (meta?.shared) badges.push('<span class="wf-badge wf-badge--shared">Shared</span>');
     if (meta?.ownerUsername && Teacher()?.getSession()?.username === normalizeUsername(meta.ownerUsername)) {
@@ -1725,18 +1830,19 @@
         </article>`;
     }
     return `
-      <article class="wf-assignment-hub-card" role="listitem" data-assignment-id="${escapeHtml(id)}">
-        <div class="wf-assignment-hub-card__main">
-          <h3 class="wf-assignment-hub-card__title">${escapeHtml(title)}</h3>
+      <article class="wf-file-tile${active ? " wf-file-tile--active" : ""}" role="listitem" data-assignment-id="${escapeHtml(id)}">
+        <button type="button" class="wf-file-tile__body" data-action="edit" data-id="${escapeHtml(id)}">
+          <span class="wf-file-tile__icon" aria-hidden="true">${icon}</span>
+          <span class="wf-file-tile__name">${escapeHtml(title)}</span>
+          <span class="wf-file-tile__meta">${escapeHtml(summary)}</span>
+          <span class="wf-file-tile__id"><code>${escapeHtml(id)}</code></span>
           ${badgeHtml}
-          <p class="wf-assignment-hub-card__id"><code>${escapeHtml(id)}</code></p>
-          <p class="wf-assignment-hub-card__link dw-muted dw-tiny">${escapeHtml(sharePath)}</p>
-        </div>
-        <div class="wf-assignment-hub-card__actions">
-          <button class="dw-btn dw-btn-secondary" type="button" data-action="edit" data-id="${escapeHtml(id)}">Edit</button>
-          <button class="dw-btn dw-btn-ghost" type="button" data-action="results" data-id="${escapeHtml(id)}">Results</button>
-          <button class="dw-btn dw-btn-ghost" type="button" data-action="copy" data-id="${escapeHtml(id)}">Copy link</button>
-          <a class="dw-btn dw-btn-ghost" href="${escapeHtml(sharePath)}" target="_blank" rel="noopener">Preview</a>
+        </button>
+        <div class="wf-file-tile__actions">
+          <button class="dw-btn dw-btn-secondary dw-btn--compact" type="button" data-action="results" data-id="${escapeHtml(id)}">Results</button>
+          <button class="dw-btn dw-btn-ghost dw-btn--compact" type="button" data-action="copy" data-id="${escapeHtml(id)}">Link</button>
+          <a class="dw-btn dw-btn-ghost dw-btn--compact" href="${escapeHtml(sharePath)}" target="_blank" rel="noopener">Preview</a>
+          <button class="wf-file-tile__delete" type="button" data-action="delete" data-id="${escapeHtml(id)}" aria-label="Delete ${escapeHtml(title)}">×</button>
         </div>
       </article>`;
   }
@@ -1802,26 +1908,13 @@
     const picker = params.get("teacher") === "1" && !params.get("id");
     document.getElementById("wfTeacherPickerBanner")?.classList.toggle("dw-hidden", !picker);
 
-    const heading = document.getElementById("wfAssignmentsHeading");
-    const hubSubtitle = document.querySelector(".wf-assignments-hub .dw-muted");
-    if (Teacher()?.isLoggedIn()) {
-      if (heading) heading.textContent = "Your assignments";
-      if (hubSubtitle) hubSubtitle.textContent = "Assignments on this device and in your teacher account. Open any to edit, share, or view results.";
-    } else {
-      if (heading) heading.textContent = "Your assignments";
-      if (hubSubtitle) hubSubtitle.textContent = "Open any assignment to edit settings, copy the student link, or view results. Sign in to sync assignments across devices.";
-    }
-
     if (!ids.length) {
       el.innerHTML = `
-        <div class="wf-empty-state">
+        <div class="wf-files-empty">
+          <span class="wf-files-empty__icon" aria-hidden="true">📁</span>
           <p class="dw-lead">No assignments yet</p>
-          <p class="dw-muted">Create your first assignment with a template or start from a blank one.${Teacher()?.isLoggedIn() ? "" : " Sign in to load assignments from your account."}</p>
-          <button class="dw-btn" type="button" id="wfEmptyCreateBtn">Create assignment</button>
+          <p class="dw-muted">Pick a template on the left, or create a blank assignment.${Teacher()?.isLoggedIn() ? "" : " Sign in to sync across devices."}</p>
         </div>`;
-      document.getElementById("wfEmptyCreateBtn")?.addEventListener("click", () => {
-        void navigateToNewAssignment({ section: "templates" });
-      });
       return;
     }
 
@@ -1884,11 +1977,6 @@
   }
 
   function renderBuilder() {
-    const toolbarMeta = document.querySelector(".wf-toolbar__text span");
-    if (toolbarMeta) {
-      toolbarMeta.textContent = `Editing “${config.title || config.id}” · Save & share on the right`;
-    }
-
     const nav = document.getElementById("builderNav");
     if (nav) {
       const titleEl = nav.querySelector(".wf-builder-nav__title");
@@ -1912,7 +2000,7 @@
       } else {
         canvas.innerHTML = `
           ${builderSectionHeader("templates")}
-          <p class="dw-muted">Pick a template, answer a few short questions, and WriteFlow builds the assignment for you. You can edit everything before sharing.</p>
+          <p class="dw-muted">Pick a template to see its default student experience, then answer a few questions. Your assignment name (from when you started) becomes the link ID.</p>
           <div class="wf-template-grid" id="builderTemplateGrid" role="list"></div>`;
         renderTemplateGallery("builderTemplateGrid", (id) => {
           activeTemplateId = id;
@@ -2244,10 +2332,26 @@
   function renderInspector() {
     const insp = document.getElementById("builderInspector");
     if (!insp) return;
+    const modeLabel = window.WriteFlowDefaults?.formatModeLabel?.(config.assignmentMode) || "composition";
+    const timerLabel = resolveTimerStyle();
+    const rubrics = resolveRubrics(config).join(", ");
+    const mins = Math.max(1, Math.round((Number(config.durationSec) || 300) / 60));
     insp.innerHTML = `
       <div class="wf-inspector-group">
+        <div class="wf-inspector-group__label">File information</div>
+        <dl class="wf-file-meta">
+          <div class="wf-file-meta__row"><dt>Title</dt><dd>${escapeHtml(config.title || "Untitled")}</dd></div>
+          <div class="wf-file-meta__row"><dt>Link ID</dt><dd><code>${escapeHtml(config.id)}</code></dd></div>
+          <div class="wf-file-meta__row"><dt>Mode</dt><dd>${escapeHtml(modeLabel)}</dd></div>
+          <div class="wf-file-meta__row"><dt>Timer</dt><dd>${escapeHtml(timerLabel)} · ${mins} min</dd></div>
+          <div class="wf-file-meta__row"><dt>Scoring</dt><dd>${escapeHtml(rubrics)}</dd></div>
+          <div class="wf-file-meta__row"><dt>Paste</dt><dd>${config.allowPaste ? "Allowed" : "Blocked"}</dd></div>
+          <div class="wf-file-meta__row"><dt>Live WPM</dt><dd>${config.showLiveWpm ? "Shown" : "Hidden"}</dd></div>
+        </dl>
+      </div>
+      <div class="wf-inspector-group">
         <div class="wf-inspector-group__label">Assignment ID</div>
-        <p class="dw-muted dw-tiny">Used in the share link — use letters, numbers, and dashes only.</p>
+        <p class="dw-muted dw-tiny">Used in the share link — letters, numbers, and dashes only.</p>
         <input id="bfId" class="dw-input" value="${escapeHtml(config.id)}" />
       </div>
       <div class="wf-inspector-group">
@@ -2255,6 +2359,7 @@
         <p class="dw-muted dw-tiny">${Teacher()?.isLoggedIn() ? "Save publishes to the cloud and links this assignment to your account." : "Save publishes to the cloud so students can load this assignment from the share link. Sign in to attach assignments to your account."}</p>
         <div class="dw-stack">
           <button id="bfSave" class="dw-btn" type="button">Save assignment</button>
+          <button id="bfPreviewStudent" class="dw-btn dw-btn-secondary" type="button">Preview student view</button>
           <p id="bfSaveStatus" class="wf-save-status dw-hidden" role="status"></p>
         </div>
       </div>
@@ -2322,11 +2427,11 @@
         renderBuilder();
       } catch { alert("Invalid JSON file."); }
     });
+    document.getElementById("bfPreviewStudent")?.addEventListener("click", () => {
+      window.open(assignmentUrl(config.id), "_blank", "noopener");
+    });
     document.getElementById("bfNew")?.addEventListener("click", () => {
-      config = { ...Defaults, id: `assignment-${Date.now()}`, title: "Untitled Assignment" };
-      persistConfig();
-      history.replaceState(null, "", `?mode=builder&id=${encodeURIComponent(config.id)}`);
-      renderBuilder();
+      void navigateToNewAssignment({ section: "content" });
     });
 
     document.getElementById("bfDeleteCurrent")?.addEventListener("click", async () => {
@@ -2343,10 +2448,7 @@
       if (remaining.length) {
         await openAssignmentInBuilder(remaining[0]);
       } else {
-        config = { ...Defaults, id: `assignment-${Date.now()}`, title: "Untitled Assignment" };
-        persistConfig();
-        history.replaceState(null, "", studioUrl(`?mode=builder&id=${encodeURIComponent(config.id)}`));
-        renderBuilder();
+        void navigateToNewAssignment({ section: "content" });
       }
       showSaveStatus("Assignment deleted from this browser.", true);
     });
@@ -2391,15 +2493,12 @@
     }
     show("builder");
     applyConfigToUI();
-    document.getElementById("studentViewLink")?.addEventListener("click", () => {
-      window.open(assignmentUrl(config.id), "_blank", "noopener");
-    });
     renderBuilder();
   }
 
   function bindHomeEvents() {
     document.getElementById("openBuilderBtn")?.addEventListener("click", () => {
-      void navigateToNewAssignment({ section: "templates" });
+      void navigateToNewAssignment({ section: "content" });
     });
     renderTemplateGallery("homeTemplateGrid", (id) => {
       void navigateToNewAssignment({ templateId: id, section: "templates" });

@@ -43,9 +43,25 @@ layout: false
           <button id="builderLinkBtn" class="dw-btn dw-btn-ghost" type="button">Assignments</button>
           <button id="teacherBtn" class="dw-btn dw-btn-ghost" type="button">Results</button>
           <button id="wfAccountBtn" class="dw-btn dw-btn-ghost wf-account-btn" type="button" aria-haspopup="dialog" aria-controls="wfAccountPanel">Sign in</button>
-          <a class="dw-link" href="/">Back to site</a>
         </div>
       </header>
+
+      <div id="wfNameModal" class="wf-modal dw-hidden" role="dialog" aria-modal="true" aria-labelledby="wfNameModalTitle">
+        <div class="wf-modal__backdrop" id="wfNameModalBackdrop"></div>
+        <div class="wf-modal__panel dw-card">
+          <h2 class="dw-h2" id="wfNameModalTitle">Name your assignment</h2>
+          <p class="dw-muted">This becomes the title and the ID in your student link. You can rename the title later in the builder.</p>
+          <label class="dw-field">
+            <span class="dw-label">Assignment name</span>
+            <input id="wfNameModalInput" class="dw-input" type="text" placeholder="e.g. Photosynthesis paragraph" autocomplete="off" />
+          </label>
+          <p class="dw-muted dw-tiny">Student link ID: <code id="wfNameModalSlug">—</code></p>
+          <div class="dw-row">
+            <button id="wfNameModalCancel" class="dw-btn dw-btn-ghost" type="button">Cancel</button>
+            <button id="wfNameModalOk" class="dw-btn" type="button">Continue</button>
+          </div>
+        </div>
+      </div>
 
       <div id="wfConfirm" class="wf-confirm dw-hidden" role="alertdialog" aria-modal="true" aria-labelledby="wfConfirmTitle" aria-describedby="wfConfirmBody">
         <div class="wf-confirm__backdrop" id="confirmBackdrop"></div>
@@ -80,19 +96,47 @@ layout: false
 
       <main id="mainContent">
         <section id="wfHomeView" class="dw-hidden wf-studio-home">
-          <div class="wf-studio-home__hero dw-card">
-            <div class="wf-studio-home__hero-copy">
-              <h1 class="dw-h1">WriteFlow Studio</h1>
-              <p class="dw-lead">Create assignments, share links with students, and review submissions — all in one place.</p>
-            </div>
-            <div class="wf-studio-home__hero-actions">
-              <button id="openBuilderBtn" class="dw-btn" type="button">New assignment</button>
-              <button id="openTutorialHomeBtn" class="dw-btn dw-btn-ghost" type="button">Tutorial</button>
-            </div>
-          </div>
-
           <div id="wfTeacherPickerBanner" class="wf-teacher-picker-banner dw-hidden" role="status">
             <strong>Choose an assignment</strong> to view student results.
+          </div>
+
+          <div class="wf-studio-home__grid">
+            <aside class="wf-studio-home__panel wf-studio-home__panel--templates" aria-labelledby="wfTemplatesHeading">
+              <div class="wf-studio-home__panel-head">
+                <h2 class="wf-studio-home__panel-title" id="wfTemplatesHeading">New from template</h2>
+                <p class="dw-muted wf-studio-home__panel-lead">Each template sets timer, scoring, and student defaults. Pick one, name it, answer a few questions.</p>
+              </div>
+              <div class="wf-template-grid wf-template-grid--studio" id="homeTemplateGrid" role="list"></div>
+              <button id="openBuilderBtn" class="dw-btn dw-btn-secondary wf-studio-home__blank-btn" type="button">Blank assignment</button>
+            </aside>
+
+            <div class="wf-studio-home__panel wf-studio-home__panel--center">
+              <div class="wf-studio-home__hero dw-card">
+                <div class="wf-studio-home__hero-copy">
+                  <h1 class="dw-h1 wf-studio-home__title">Your assignments</h1>
+                  <p class="dw-muted wf-studio-home__lead">Open a file to edit, copy the student link, or view results.</p>
+                </div>
+                <button id="openTutorialHomeBtn" class="dw-btn dw-btn-ghost" type="button">Tutorial</button>
+              </div>
+              <div id="wfAssignmentsDashboard" class="wf-files-grid" role="list" aria-labelledby="wfAssignmentsHeading">
+                <h2 class="dw-hidden" id="wfAssignmentsHeading">Your assignments</h2>
+              </div>
+              <section class="wf-shared-library dw-hidden wf-studio-home__shared" id="wfSharedLibrary" aria-labelledby="wfSharedHeading">
+                <h3 class="wf-studio-home__section-title" id="wfSharedHeading">Shared by other teachers</h3>
+                <div id="wfSharedDashboard" class="wf-files-grid wf-files-grid--shared" role="list"></div>
+              </section>
+            </div>
+
+            <aside class="wf-studio-home__panel wf-studio-home__panel--guide">
+              <h2 class="wf-studio-home__panel-title">Quick tips</h2>
+              <ul class="wf-studio-tips">
+                <li><strong>Name first</strong> — every new assignment starts with a name that becomes the link ID.</li>
+                <li><strong>Templates</strong> — show default student experience before you build.</li>
+                <li><strong>Student links</strong> — share <code>/writeflow/a/?id=…</code> only, never Studio.</li>
+                <li><strong>Results</strong> — use your assignment teacher password or sign in as owner.</li>
+              </ul>
+              <p class="dw-muted dw-tiny">Sign in from the top bar to sync assignments and browse shared templates.</p>
+            </aside>
           </div>
 
           <section id="wfAccountPanel" class="dw-card wf-account-panel dw-hidden" aria-labelledby="wfAccountHeading">
@@ -127,46 +171,15 @@ layout: false
               <button id="wfAccountLogoutBtn" class="dw-btn dw-btn-ghost" type="button">Sign out</button>
             </div>
           </section>
-
-          <section class="dw-card wf-assignments-hub" aria-labelledby="wfAssignmentsHeading">
-            <div class="wf-assignments-hub__head">
-              <div>
-                <h2 class="dw-h2" id="wfAssignmentsHeading">Your assignments</h2>
-                <p class="dw-muted">Open any assignment to edit settings, copy the student link, or view results.</p>
-              </div>
-            </div>
-            <div id="wfAssignmentsDashboard" class="wf-assignments-dashboard" role="list"></div>
-          </section>
-
-          <section class="dw-card wf-shared-library dw-hidden" id="wfSharedLibrary" aria-labelledby="wfSharedHeading">
-            <div class="wf-assignments-hub__head">
-              <div>
-                <h2 class="dw-h2" id="wfSharedHeading">Shared by other teachers</h2>
-                <p class="dw-muted">Copy any shared assignment into your account, then edit and publish your own version.</p>
-              </div>
-            </div>
-            <div id="wfSharedDashboard" class="wf-assignments-dashboard" role="list"></div>
-          </section>
-
-          <section class="dw-card wf-template-gallery" id="wfTemplateGallery">
-            <h2 class="dw-h2">Start from a template</h2>
-            <p class="dw-muted">Answer a few questions — WriteFlow builds the assignment for you.</p>
-            <div class="wf-template-grid" id="homeTemplateGrid" role="list"></div>
-          </section>
         </section>
 
-        <section id="builderView" class="dw-hidden">
-          <div class="wf-toolbar">
-            <div class="wf-toolbar__text">
-              <strong>Assignment builder</strong>
-              <span class="dw-muted dw-tiny">Edit settings on the left · Save &amp; share on the right</span>
-            </div>
-            <button id="studentViewLink" class="dw-btn dw-btn-secondary" type="button">Preview student view</button>
-          </div>
+        <section id="builderView" class="dw-hidden wf-builder-view">
           <div class="wf-builder">
-            <nav class="wf-builder-nav" id="builderNav"><p class="wf-builder-nav__title">Settings</p></nav>
-            <div class="wf-builder-canvas" id="builderCanvas"></div>
-            <aside class="wf-builder-inspector" id="builderInspector"></aside>
+            <nav class="wf-builder-nav wf-builder-panel" id="builderNav" aria-label="Settings">
+              <p class="wf-builder-nav__title">Settings</p>
+            </nav>
+            <div class="wf-builder-canvas wf-builder-panel" id="builderCanvas"></div>
+            <aside class="wf-builder-inspector wf-builder-panel" id="builderInspector" aria-label="File information"></aside>
           </div>
         </section>
 

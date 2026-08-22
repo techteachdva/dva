@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.3.3";
+  const APP_VERSION = "2.3.4";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -119,6 +119,19 @@
   ];
 
   const CHANGELOG = [
+    {
+      version: "2.3.4",
+      date: "2026-08-22",
+      summary: "Studio dashboard, template clarity, assignment naming, and layout polish.",
+      items: [
+        "New assignments start with a name prompt — the slug becomes the student link ID.",
+        "Template cards and wizards show default student experience (timer, scoring, paste, WPM).",
+        "Assignments hub uses a graphical file-tile folder view; Studio home matches the splash three-panel layout.",
+        "Builder spreads across the full screen with scrollable Settings, center editor, and File information panels.",
+        "Splash and Studio text sizes increased for readability; alphabet loader stays on one row.",
+        "Removed Back to site links from WriteFlow pages.",
+      ],
+    },
     {
       version: "2.3.3",
       date: "2026-08-22",
@@ -371,12 +384,31 @@
       .slice(0, 40) || "assignment";
   }
 
+  function uniqueSlug(base, existingIds = []) {
+    const set = new Set(existingIds);
+    let id = slugify(base) || "assignment";
+    if (!set.has(id)) return id;
+    let n = 2;
+    while (set.has(`${id}-${n}`)) n += 1;
+    return `${id}-${n}`;
+  }
+
+  function formatModeLabel(mode) {
+    return String(mode || "composition").replace(/_/g, " ");
+  }
+
   const ASSIGNMENT_TEMPLATES = [
     {
       id: "quick-write",
       icon: "⚡",
       title: "Quick Write",
       description: "Short timed response — warm-ups, exit tickets, or bell work.",
+      defaultsPreview: [
+        "Composition mode · soft timer",
+        "Scores mechanics + story (not speed)",
+        "Paste blocked · optional word minimum",
+        "Students: prompt, timer, word count — no WPM",
+      ],
       questions: [
         { id: "topic", label: "What should students write about?", type: "textarea", placeholder: "e.g. What surprised you in today's lesson?", required: true },
         { id: "minutes", label: "How many minutes?", type: "number", default: 5, min: 1, max: 60 },
@@ -417,6 +449,12 @@
       icon: "⌨️",
       title: "Typing Stamina",
       description: "Build fluency — students type on a topic for a set time with a word goal.",
+      defaultsPreview: [
+        "Fluency mode · hard timer (auto-submit)",
+        "Scores typing stamina only",
+        "Paste blocked · live WPM + word count",
+        "Larger text · must hit word goal to finish",
+      ],
       questions: [
         { id: "topic", label: "Typing topic or sentence starter", type: "text", placeholder: "e.g. Describe your favorite hobby in detail.", required: true },
         { id: "minutes", label: "How many minutes?", type: "number", default: 10, min: 3, max: 45 },
@@ -458,6 +496,12 @@
       icon: "💭",
       title: "Reflection",
       description: "Students reflect on learning, behavior, or a reading.",
+      defaultsPreview: [
+        "Reflection mode · soft timer",
+        "Scores mechanics + story",
+        "Paste allowed · finish early anytime",
+        "Students: calm prompt, no speed pressure",
+      ],
       questions: [
         { id: "focus", label: "What are students reflecting on?", type: "textarea", placeholder: "e.g. How did you use teamwork in today's lab?", required: true },
         { id: "minutes", label: "How many minutes?", type: "number", default: 8, min: 3, max: 30 },
@@ -494,6 +538,12 @@
       icon: "📄",
       title: "Paragraph Response",
       description: "Structured answer with claim and evidence — great for content classes.",
+      defaultsPreview: [
+        "Composition mode · soft timer",
+        "Scores mechanics + story",
+        "Paste blocked · paragraph word minimum",
+        "Banner reminds: claim, evidence, conclusion",
+      ],
       questions: [
         { id: "question", label: "Question or prompt", type: "textarea", placeholder: "e.g. How does photosynthesis help plants survive?", required: true },
         { id: "minutes", label: "How many minutes?", type: "number", default: 15, min: 5, max: 45 },
@@ -532,6 +582,12 @@
       icon: "✨",
       title: "Free Write",
       description: "Open-ended creative writing with flexible time and optional word floor.",
+      defaultsPreview: [
+        "Composition mode · soft timer",
+        "Scores mechanics + story",
+        "Paste optional (off by default)",
+        "Optional story starter · finish early allowed",
+      ],
       questions: [
         { id: "starter", label: "Optional story starter or theme", type: "text", placeholder: "e.g. The door creaked open…" },
         { id: "minutes", label: "How many minutes?", type: "number", default: 20, min: 5, max: 60 },
@@ -573,6 +629,12 @@
       icon: "🔤",
       title: "Sentence Practice",
       description: "Short bursts for vocabulary, grammar, or spelling in context.",
+      defaultsPreview: [
+        "Composition mode · soft timer",
+        "Scores mechanics + story",
+        "Paste blocked · required word minimum",
+        "Large text + dyslexia-friendly font · spellcheck on",
+      ],
       questions: [
         { id: "task", label: "What should students do?", type: "textarea", placeholder: "e.g. Write 5 sentences using this week's vocabulary words.", required: true },
         { id: "minutes", label: "How many minutes?", type: "number", default: 7, min: 3, max: 20 },
@@ -763,6 +825,8 @@
     MODE_DEFAULTS,
     DIFFERENTIATION_PRESETS,
     slugify,
+    uniqueSlug,
+    formatModeLabel,
     parseVocabInput,
     resolveTimerStyle,
     resolveShowLiveWpm,
