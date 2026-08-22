@@ -8,6 +8,7 @@
   if (!Defaults) return;
 
   const STATS_API = "/api/writeflow-submissions?action=stats";
+  const INTRO_SEEN_KEY = "writeflow:introSeen";
   const INTRO_TEXT = "WriteFlow Studio";
   const SCORE_TARGETS = { typing: 84, mechanics: 76, story: 91 };
   const STEP_MS = { type: 130, morph1: 1100, morph2: 1000, morph3: 1500, hold: 900 };
@@ -141,6 +142,23 @@
     }
   }
 
+  function skipIntroSplash() {
+    const splash = document.getElementById("wfIntroSplash");
+    const landing = document.getElementById("wfLanding");
+    splash?.classList.add("dw-hidden", "wf-intro-splash--out");
+    landing?.classList.remove("dw-hidden");
+    document.body.classList.remove("wf-intro-active");
+    void renderImpactStats();
+  }
+
+  function markIntroSeen() {
+    try { localStorage.setItem(INTRO_SEEN_KEY, "1"); } catch {}
+  }
+
+  function hasSeenIntro() {
+    try { return localStorage.getItem(INTRO_SEEN_KEY) === "1"; } catch { return false; }
+  }
+
   async function hideSplash() {
     const splash = document.getElementById("wfIntroSplash");
     const landing = document.getElementById("wfLanding");
@@ -149,6 +167,7 @@
     splash?.classList.add("dw-hidden");
     landing?.classList.remove("dw-hidden");
     document.body.classList.remove("wf-intro-active");
+    markIntroSeen();
     await renderImpactStats();
   }
 
@@ -171,7 +190,7 @@
     }));
   }
 
-  async function runIntroAnimation({ thenNavigate = null } = {}) {
+  async function runIntroAnimation() {
     if (introRunning) return;
     introRunning = true;
 
@@ -182,7 +201,6 @@
 
     if (!splash || !typeEl) {
       introRunning = false;
-      if (thenNavigate) location.href = thenNavigate;
       return;
     }
 
@@ -229,21 +247,6 @@
     }
 
     introRunning = false;
-    if (thenNavigate) location.href = thenNavigate;
-  }
-
-  function bindAppLinks() {
-    document.querySelectorAll("[data-wf-app-link]").forEach((link) => {
-      link.addEventListener("click", (e) => {
-        const href = link.getAttribute("href");
-        if (!href || introRunning) {
-          e.preventDefault();
-          return;
-        }
-        e.preventDefault();
-        void runIntroAnimation({ thenNavigate: href });
-      });
-    });
   }
 
   function bindReplay() {
@@ -257,9 +260,12 @@
     if (versionEl) versionEl.textContent = Defaults.APP_VERSION || "2.0";
     renderChangelog();
     renderTutorial();
-    bindAppLinks();
     bindReplay();
-    void runIntroAnimation();
+    if (hasSeenIntro() || prefersReducedMotion()) {
+      skipIntroSplash();
+    } else {
+      void runIntroAnimation();
+    }
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
