@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.1.4";
+  const APP_VERSION = "2.2.0";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -119,6 +119,19 @@
   ];
 
   const CHANGELOG = [
+    {
+      version: "2.2.0",
+      date: "2026-08-22",
+      summary: "Teacher assignments hub, GIF hero images, and smoother Studio workflow.",
+      items: [
+        "Studio home is now an assignments dashboard — Edit, Results, Copy link, and Preview on every saved assignment.",
+        "Fixed saved assignments not opening in the builder; switching assignments reloads config and jumps to Content.",
+        "Hero images and animated GIFs display at the top of the student welcome screen (URL or upload, up to 2.5 MB for GIFs).",
+        "Class code validation only runs when the assignment requires it; codes are captured at Start and kept through submit.",
+        "Landing intro finale fixed — logo and wordmark no longer overlap at the end of the animation.",
+        "Results view adds Edit assignment and All assignments shortcuts.",
+      ],
+    },
     {
       version: "2.1.4",
       date: "2026-08-21",
