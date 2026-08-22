@@ -259,7 +259,10 @@
     const welcomeTitle = document.getElementById("welcomeTitle");
     const welcomeLead = document.getElementById("welcomeLead");
     if (welcomeTitle) welcomeTitle.textContent = config.welcomeTitle || config.title;
-    if (welcomeLead) welcomeLead.textContent = config.welcomeLead || "";
+    if (welcomeLead) {
+      welcomeLead.textContent = config.welcomeLead || "";
+      welcomeLead.classList.toggle("dw-hidden", !config.welcomeLead);
+    }
 
     const promptQuote = document.getElementById("promptQuote");
     if (promptQuote) promptQuote.textContent = config.prompt;
@@ -309,13 +312,15 @@
     const classCodeField = document.getElementById("classCodeField");
     if (classCodeField) classCodeField.classList.toggle("dw-hidden", !config.requireClassCode);
 
+    const heroWrap = document.getElementById("heroImageWrap");
     const heroImg = document.getElementById("heroImage");
-    const heroSrc = config.heroImageData || config.heroImage;
+    const heroSrc = heroImageSrc();
     if (heroImg && heroSrc) {
       heroImg.src = heroSrc;
-      heroImg.classList.remove("dw-hidden");
-    } else if (heroImg) {
-      heroImg.classList.add("dw-hidden");
+      heroWrap?.classList.remove("dw-hidden");
+    } else {
+      heroImg?.removeAttribute("src");
+      heroWrap?.classList.add("dw-hidden");
     }
 
     const liveStatsBar = document.getElementById("liveStatsBar");
@@ -391,8 +396,11 @@
         reject(new Error("Please choose an image file (JPG, PNG, GIF, or WebP)."));
         return;
       }
-      if (file.size > 750000) {
-        reject(new Error("Image must be under 750 KB for storage in assignment config."));
+      const isGif = file.type === "image/gif";
+      const maxSize = isGif ? 2500000 : 750000;
+      const maxLabel = isGif ? "2.5 MB" : "750 KB";
+      if (file.size > maxSize) {
+        reject(new Error(`Image must be under ${maxLabel}. For share links, use a direct image/GIF URL instead.`));
         return;
       }
       const reader = new FileReader();
@@ -400,6 +408,29 @@
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
+  }
+
+  function heroImageSrc() {
+    return config.heroImageData || config.heroImage || "";
+  }
+
+  function setHeroPreview(container, src) {
+    if (!container) return;
+    if (!src) {
+      container.classList.add("dw-hidden");
+      container.innerHTML = "";
+      return;
+    }
+    container.classList.remove("dw-hidden");
+    container.innerHTML = "";
+    const img = document.createElement("img");
+    img.src = src;
+    img.alt = "";
+    img.className = container.classList.contains("wf-student-hero")
+      ? "wf-student-hero__img"
+      : "wf-hero-preview__img";
+    img.loading = "lazy";
+    container.appendChild(img);
   }
 
   function scrollToMainTop() {
@@ -961,6 +992,15 @@
       teacherAuthed = false;
       sessionTeacherPassword = "";
       show("home");
+      renderHomeDashboard();
+    });
+    document.getElementById("teacherHomeBtn")?.addEventListener("click", () => {
+      teacherAuthed = false;
+      sessionTeacherPassword = "";
+      location.href = studioUrl("");
+    });
+    document.getElementById("teacherEditBtn")?.addEventListener("click", () => {
+      void openAssignmentInBuilder(config.id);
     });
     document.getElementById("refreshBtn")?.addEventListener("click", loadTeacherDashboard);
     document.getElementById("exportBtn")?.addEventListener("click", exportCsv);
@@ -1257,6 +1297,152 @@
     localStorage.setItem(ASSIGNMENTS_KEY, JSON.stringify([...new Set(ids)]));
   }
 
+  async function loadAssignmentForEdit(id) {
+    let next = readLocalConfig(id);
+    if (!next) {
+      const cloud = await fetchCloudConfig(id);
+      if (cloud) {
+        next = { ...Defaults, ...cloud, id };
+        Core.saveConfig(STORAGE_PREFIX, id, next);
+        const ids = getAssignmentsList();
+        if (!ids.includes(id)) saveAssignmentsList([...ids, id]);
+      }
+    }
+    return next || { ...Defaults, id };
+  }
+
+  async function openAssignmentInBuilder(id, { section = "content" } = {}) {
+    if (!id) return;
+    config = await loadAssignmentForEdit(id);
+    builderSection = section;
+    activeTemplateId = "";
+    history.replaceState(null, "", studioUrl(`?mode=builder&id=${encodeURIComponent(config.id)}`));
+    show("builder");
+    applyConfigToUI();
+    Core.applyTheme(Core.resolveTheme(config));
+    renderBuilder();
+    showSaveStatus(`Opened “${config.title || config.id}”.`, true);
+  }
+
+  async function copyShareLink(id = config.id) {
+    const link = `${location.origin}${assignmentUrl(id)}`;
+    try {
+      await navigator.clipboard.writeText(link);
+      showSaveStatus("Student link copied to clipboard.", true);
+    } catch {
+      showSaveStatus(link, false);
+    }
+  }
+
+  function renderAssignmentCard(id, { active = false, compact = false } = {}) {
+    const saved = readLocalConfig(id) || { id, title: id };
+    const title = saved.title || id;
+    const sharePath = assignmentUrl(id);
+    if (compact) {
+      return `
+        <article class="wf-assignment-card${active ? " wf-assignment-card--active" : ""}" data-assignment-id="${escapeHtml(id)}">
+          <button type="button" class="wf-assignment-card__open" data-action="edit" data-id="${escapeHtml(id)}">
+            <span class="wf-assignment-card__body">
+              <span class="wf-assignment-card__title">${escapeHtml(title)}</span>
+              <span class="wf-assignment-card__id">${escapeHtml(id)}</span>
+            </span>
+            <span class="wf-assignment-card__meta">Edit →</span>
+          </button>
+          <button type="button" class="wf-assignment-card__delete" data-action="delete" data-id="${escapeHtml(id)}" aria-label="Delete ${escapeHtml(title)}">Delete</button>
+        </article>`;
+    }
+    return `
+      <article class="wf-assignment-hub-card" role="listitem" data-assignment-id="${escapeHtml(id)}">
+        <div class="wf-assignment-hub-card__main">
+          <h3 class="wf-assignment-hub-card__title">${escapeHtml(title)}</h3>
+          <p class="wf-assignment-hub-card__id"><code>${escapeHtml(id)}</code></p>
+          <p class="wf-assignment-hub-card__link dw-muted dw-tiny">${escapeHtml(sharePath)}</p>
+        </div>
+        <div class="wf-assignment-hub-card__actions">
+          <button class="dw-btn dw-btn-secondary" type="button" data-action="edit" data-id="${escapeHtml(id)}">Edit</button>
+          <button class="dw-btn dw-btn-ghost" type="button" data-action="results" data-id="${escapeHtml(id)}">Results</button>
+          <button class="dw-btn dw-btn-ghost" type="button" data-action="copy" data-id="${escapeHtml(id)}">Copy link</button>
+          <a class="dw-btn dw-btn-ghost" href="${escapeHtml(sharePath)}" target="_blank" rel="noopener">Preview</a>
+        </div>
+      </article>`;
+  }
+
+  function bindAssignmentCardActions(root) {
+    root?.querySelectorAll("[data-action]").forEach((btn) => {
+      btn.addEventListener("click", async (e) => {
+        const action = btn.dataset.action;
+        const id = btn.dataset.id;
+        if (!id) return;
+        if (action === "edit") {
+          e.preventDefault();
+          await openAssignmentInBuilder(id);
+          return;
+        }
+        if (action === "results") {
+          e.preventDefault();
+          location.href = studioUrl(`?id=${encodeURIComponent(id)}&teacher=1`);
+          return;
+        }
+        if (action === "copy") {
+          e.preventDefault();
+          await copyShareLink(id);
+          return;
+        }
+        if (action === "delete") {
+          e.preventDefault();
+          e.stopPropagation();
+          const saved = readLocalConfig(id) || { id, title: id };
+          const ok = await showConfirmDialog({
+            title: "Delete assignment?",
+            body: `Delete "${saved.title || id}" from this browser? This cannot be undone.`,
+            confirmLabel: "Delete",
+            destructive: true,
+          });
+          if (!ok) return;
+          const wasCurrent = config.id === id;
+          const remaining = deleteAssignment(id);
+          if (wasCurrent) {
+            if (remaining.length) {
+              await openAssignmentInBuilder(remaining[0]);
+            } else {
+              config = { ...Defaults, id: `assignment-${Date.now()}`, title: "Untitled Assignment" };
+              persistConfig();
+              history.replaceState(null, "", studioUrl(`?mode=builder&id=${encodeURIComponent(config.id)}`));
+              renderBuilder();
+            }
+          } else {
+            renderHomeDashboard();
+            renderBuilder();
+          }
+        }
+      });
+    });
+  }
+
+  function renderHomeDashboard() {
+    const el = document.getElementById("wfAssignmentsDashboard");
+    if (!el) return;
+    const ids = getAssignmentsList();
+    const picker = params.get("teacher") === "1" && !params.get("id");
+    document.getElementById("wfTeacherPickerBanner")?.classList.toggle("dw-hidden", !picker);
+
+    if (!ids.length) {
+      el.innerHTML = `
+        <div class="wf-empty-state">
+          <p class="dw-lead">No assignments yet</p>
+          <p class="dw-muted">Create your first assignment with a template or start from a blank one.</p>
+          <button class="dw-btn" type="button" id="wfEmptyCreateBtn">Create assignment</button>
+        </div>`;
+      document.getElementById("wfEmptyCreateBtn")?.addEventListener("click", () => {
+        location.href = studioUrl("?mode=builder&section=templates");
+      });
+      return;
+    }
+
+    el.innerHTML = ids.map((id) => renderAssignmentCard(id)).join("");
+    bindAssignmentCardActions(el);
+  }
+
   function resolveDefaultAssignmentId() {
     const ids = getAssignmentsList();
     return ids[0] || assignmentId || "sample-persuasive";
@@ -1265,12 +1451,20 @@
   function bindTopbarActions() {
     if (!isStudioApp) return;
     document.getElementById("builderLinkBtn")?.addEventListener("click", () => {
-      const id = config?.id || resolveDefaultAssignmentId();
-      location.href = studioUrl(`?mode=builder&id=${encodeURIComponent(id)}`);
+      location.href = studioUrl("");
     });
 
     document.getElementById("teacherBtn")?.addEventListener("click", () => {
-      const id = config?.id || resolveDefaultAssignmentId();
+      const ids = getAssignmentsList();
+      if (!ids.length) {
+        location.href = studioUrl("?teacher=1");
+        return;
+      }
+      const id = config?.id && ids.includes(config.id) ? config.id : ids[0];
+      if (ids.length > 1 && mode !== "builder") {
+        location.href = studioUrl("?teacher=1");
+        return;
+      }
       location.href = studioUrl(`?id=${encodeURIComponent(id)}&teacher=1`);
     });
   }
@@ -1302,6 +1496,11 @@
   }
 
   function renderBuilder() {
+    const toolbarMeta = document.querySelector(".wf-toolbar__text span");
+    if (toolbarMeta) {
+      toolbarMeta.textContent = `Editing “${config.title || config.id}” · Save & share on the right`;
+    }
+
     const nav = document.getElementById("builderNav");
     if (nav) {
       const titleEl = nav.querySelector(".wf-builder-nav__title");
@@ -1484,13 +1683,14 @@
           </div>
         </label>
         <label class="dw-field">
-          <span class="dw-label">Hero image URL (optional)</span>
+          <span class="dw-label">Hero image or GIF URL</span>
+          <span class="dw-muted dw-tiny">Shown at the top of the student welcome screen — paste a direct link to an image or animated GIF.</span>
           <input id="bfHero" class="dw-input" value="${escapeHtml(config.heroImage || "")}" placeholder="https://…" />
         </label>
         <label class="dw-field">
-          <span class="dw-label">Or upload hero image</span>
+          <span class="dw-label">Or upload image / GIF</span>
           <input id="bfHeroUpload" class="dw-input" type="file" accept="image/png,image/jpeg,image/gif,image/webp" />
-          <span class="dw-muted dw-tiny">Stored in assignment config (max 750 KB). Overrides URL when set.</span>
+          <span class="dw-muted dw-tiny">Images up to 750 KB, GIFs up to 2.5 MB. For share links, a URL is more reliable than a large upload.</span>
         </label>
         <div id="bfHeroPreview" class="wf-hero-preview dw-hidden"></div>
         <button id="bfClearHero" class="dw-btn dw-btn-ghost dw-hidden" type="button">Remove uploaded image</button>`;
@@ -1532,6 +1732,7 @@
       document.getElementById("bfHero")?.addEventListener("change", (e) => {
         config.heroImage = e.target.value;
         persistConfig();
+        renderBuilder();
       });
       document.getElementById("bfHeroUpload")?.addEventListener("change", async (e) => {
         const file = e.target.files?.[0];
@@ -1546,17 +1747,14 @@
       });
       document.getElementById("bfClearHero")?.addEventListener("click", () => {
         config.heroImageData = "";
+        config.heroImage = "";
         persistConfig();
         renderBuilder();
       });
-      if (config.heroImageData) {
-        const prev = document.getElementById("bfHeroPreview");
-        const clr = document.getElementById("bfClearHero");
-        if (prev) {
-          prev.classList.remove("dw-hidden");
-          prev.innerHTML = `<img src="${config.heroImageData}" alt="" style="width:100%;max-height:180px;object-fit:cover;border-radius:12px;" />`;
-        }
-        clr?.classList.remove("dw-hidden");
+      const heroPreviewSrc = heroImageSrc();
+      if (heroPreviewSrc) {
+        setHeroPreview(document.getElementById("bfHeroPreview"), heroPreviewSrc);
+        document.getElementById("bfClearHero")?.classList.remove("dw-hidden");
       }
     } else if (builderSection === "accessibility") {
       const a11y = mergeAccessibility(config.accessibility);
@@ -1623,15 +1821,17 @@
       canvas.innerHTML = `
         ${builderSectionHeader("preview")}
         <p class="dw-muted">This is how students will see the welcome screen.</p>
-        <div class="wf-preview-frame dw-card">
+        <div class="wf-preview-frame dw-card wf-student-prompt-box" id="wfPreviewFrame">
+          <div class="wf-student-hero dw-hidden" id="wfPreviewHero"></div>
           <h1 class="dw-h1">${escapeHtml(config.welcomeTitle || config.title)}</h1>
-          <p class="dw-lead">${escapeHtml(config.welcomeLead || "")}</p>
+          ${config.welcomeLead ? `<p class="dw-lead">${escapeHtml(config.welcomeLead)}</p>` : ""}
           <blockquote class="dw-prompt-quote">${escapeHtml(config.prompt)}</blockquote>
-          <button class="dw-btn" type="button" disabled>Start ${Core.formatTime(config.durationSec)} timer</button>
+          <button class="dw-btn" type="button" disabled>Start writing</button>
         </div>
         <div class="dw-row" style="margin-top:16px">
           <a class="dw-btn" href="${assignmentUrl(config.id)}" target="_blank" rel="noopener">Open student view</a>
         </div>`;
+      setHeroPreview(document.getElementById("wfPreviewHero"), heroImageSrc());
     }
     renderInspector();
   }
@@ -1678,6 +1878,7 @@
       </div>
       <div class="wf-inspector-group">
         <div class="wf-inspector-group__label">Saved assignments</div>
+        <p class="dw-muted dw-tiny">Switch assignments without leaving the builder.</p>
         <div class="wf-assignment-list" id="bfAssignmentList"></div>
       </div>`;
 
@@ -1727,70 +1928,34 @@
       const title = config.title || config.id;
       const ok = await showConfirmDialog({
         title: "Delete assignment?",
-        body: `Delete "${title}" (${config.id}) from this browser? This cannot be undone. Cloud copies are not removed — duplicates there need to be cleaned up in your sheet if needed.`,
+        body: `Delete "${title}" (${config.id}) from this browser? This cannot be undone.`,
         confirmLabel: "Delete assignment",
         destructive: true,
       });
       if (!ok) return;
-      const remaining = deleteAssignment(config.id);
+      const deletedId = config.id;
+      const remaining = deleteAssignment(deletedId);
       if (remaining.length) {
-        const nextId = remaining[0];
-        config = readLocalConfig(nextId) || { ...Defaults, id: nextId };
-        history.replaceState(null, "", `?mode=builder&id=${encodeURIComponent(nextId)}`);
+        await openAssignmentInBuilder(remaining[0]);
       } else {
         config = { ...Defaults, id: `assignment-${Date.now()}`, title: "Untitled Assignment" };
         persistConfig();
-        history.replaceState(null, "", `?mode=builder&id=${encodeURIComponent(config.id)}`);
+        history.replaceState(null, "", studioUrl(`?mode=builder&id=${encodeURIComponent(config.id)}`));
+        renderBuilder();
       }
       showSaveStatus("Assignment deleted from this browser.", true);
-      renderBuilder();
     });
 
     const list = document.getElementById("bfAssignmentList");
-    getAssignmentsList().forEach((id) => {
-      const saved = readLocalConfig(id);
-      const row = document.createElement("div");
-      row.className = `wf-assignment-card${config.id === id ? " wf-assignment-card--active" : ""}`;
-      row.innerHTML = `
-        <button type="button" class="wf-assignment-card__open" data-id="${escapeHtml(id)}">
-          <span class="wf-assignment-card__body">
-            <span class="wf-assignment-card__title">${escapeHtml(saved?.title || id)}</span>
-            <span class="wf-assignment-card__id">${escapeHtml(id)}</span>
-          </span>
-          <span class="wf-assignment-card__meta">Open →</span>
-        </button>
-        <button type="button" class="wf-assignment-card__delete" data-id="${escapeHtml(id)}" aria-label="Delete ${escapeHtml(saved?.title || id)}">Delete</button>`;
-      row.querySelector(".wf-assignment-card__open")?.addEventListener("click", () => {
-        config = saved || Core.loadConfig(STORAGE_PREFIX, id, { ...Defaults, id });
-        history.replaceState(null, "", `?mode=builder&id=${encodeURIComponent(id)}`);
-        renderBuilder();
-      });
-      row.querySelector(".wf-assignment-card__delete")?.addEventListener("click", async (e) => {
-        e.stopPropagation();
-        const ok = await showConfirmDialog({
-          title: "Delete assignment?",
-          body: `Delete "${saved?.title || id}" from this browser? This cannot be undone.`,
-          confirmLabel: "Delete",
-          destructive: true,
-        });
-        if (!ok) return;
-        const wasCurrent = config.id === id;
-        const remaining = deleteAssignment(id);
-        if (wasCurrent) {
-          if (remaining.length) {
-            const nextId = remaining[0];
-            config = readLocalConfig(nextId) || { ...Defaults, id: nextId };
-            history.replaceState(null, "", `?mode=builder&id=${encodeURIComponent(nextId)}`);
-          } else {
-            config = { ...Defaults, id: `assignment-${Date.now()}`, title: "Untitled Assignment" };
-            persistConfig();
-            history.replaceState(null, "", `?mode=builder&id=${encodeURIComponent(config.id)}`);
-          }
-        }
-        renderBuilder();
-      });
-      list?.appendChild(row);
-    });
+    if (list) {
+      const ids = getAssignmentsList();
+      if (!ids.length) {
+        list.innerHTML = `<p class="dw-muted dw-tiny">No saved assignments yet.</p>`;
+      } else {
+        list.innerHTML = ids.map((id) => renderAssignmentCard(id, { active: config.id === id, compact: true })).join("");
+        bindAssignmentCardActions(list);
+      }
+    }
   }
 
   function persistConfig() {
@@ -1809,13 +1974,17 @@
     Core.applyTheme(Core.resolveTheme(config));
   }
 
-  function initBuilder() {
-    config = readLocalConfig(assignmentId) || Core.loadConfig(STORAGE_PREFIX, assignmentId, { ...Defaults, id: assignmentId });
+  async function initBuilder() {
+    const id = params.get("id") || resolveDefaultAssignmentId();
+    config = await loadAssignmentForEdit(id);
     if (params.get("template")) {
       activeTemplateId = params.get("template");
       builderSection = "templates";
+    } else if (params.get("section") === "templates") {
+      builderSection = "templates";
     }
     show("builder");
+    applyConfigToUI();
     document.getElementById("studentViewLink")?.addEventListener("click", () => {
       window.open(assignmentUrl(config.id), "_blank", "noopener");
     });
@@ -1825,6 +1994,7 @@
   function initHome() {
     Core.applyTheme(Core.resolveTheme({ ...Defaults, id: resolveDefaultAssignmentId() }));
     show("home");
+    renderHomeDashboard();
     renderTemplateGallery("homeTemplateGrid", (id) => {
       location.href = studioUrl(`?mode=builder&template=${encodeURIComponent(id)}`);
     });
@@ -1837,7 +2007,8 @@
     Core.applyTheme(Core.resolveTheme({ ...Defaults, id: resolveDefaultAssignmentId() }));
     bindTopbarActions();
     initTutorial();
-    if (mode === "builder") initBuilder();
+    if (mode === "builder") void initBuilder();
+    else if (params.get("teacher") === "1" && !params.get("id")) initHome();
     else if (params.get("teacher") === "1") void initTeacherPortal();
     else initHome();
   }

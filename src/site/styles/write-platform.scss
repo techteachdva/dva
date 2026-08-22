@@ -3497,3 +3497,138 @@ mark.wf-vocab-hit {
   font-size: 12px;
 }
 
+/* WriteFlow Studio — teacher home dashboard */
+.wf-studio-home {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 8px 0 40px;
+}
+
+.wf-studio-home__hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 28px 28px;
+}
+
+.wf-studio-home__hero-copy {
+  flex: 1 1 280px;
+}
+
+.wf-studio-home__hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.wf-teacher-picker-banner {
+  padding: 14px 18px;
+  border-radius: 12px;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  background: rgba(56, 189, 248, 0.1);
+  color: #e2e8f0;
+}
+
+.wf-assignments-hub__head {
+  margin-bottom: 16px;
+}
+
+.wf-assignments-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.wf-assignment-hub-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.wf-assignment-hub-card:hover {
+  border-color: rgba(56, 189, 248, 0.45);
+  background: rgba(56, 189, 248, 0.06);
+}
+
+.wf-assignment-hub-card__main {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.wf-assignment-hub-card__title {
+  margin: 0 0 4px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--dw-text);
+}
+
+.wf-assignment-hub-card__id {
+  margin: 0 0 6px;
+  font-size: 12px;
+}
+
+.wf-assignment-hub-card__link {
+  margin: 0;
+  word-break: break-all;
+}
+
+.wf-assignment-hub-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.wf-empty-state {
+  text-align: center;
+  padding: 28px 16px;
+}
+
+.wf-student-hero {
+  margin: 0 0 18px;
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.wf-student-hero__img,
+.wf-hero-preview__img {
+  display: block;
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+}
+
+.wf-student-prompt-box__lead {
+  margin: 0 0 16px;
+  line-height: 1.5;
+}
+
+.wf-hero-preview {
+  margin-top: 12px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.wp-theme--light .wf-assignment-hub-card {
+  background: rgba(255, 255, 255, 0.85);
+  border-color: rgba(15, 23, 42, 0.12);
+}
+
+.wp-theme--light .wf-student-hero {
+  border-color: rgba(15, 23, 42, 0.1);
+}
+

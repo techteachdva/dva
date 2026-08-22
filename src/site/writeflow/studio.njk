@@ -30,7 +30,7 @@ layout: false
         <div class="dw-actions" id="teacherTopbarNav">
           <a class="dw-link" href="/writeflow/">Docs</a>
           <button id="tutorialBtn" class="dw-btn dw-btn-ghost wf-tutorial-btn" type="button" aria-haspopup="dialog">Tutorial</button>
-          <button id="builderLinkBtn" class="dw-btn dw-btn-ghost" type="button">Configure</button>
+          <button id="builderLinkBtn" class="dw-btn dw-btn-ghost" type="button">Assignments</button>
           <button id="teacherBtn" class="dw-btn dw-btn-ghost" type="button">Results</button>
           <a class="dw-link" href="/">Back to site</a>
         </div>
@@ -68,22 +68,37 @@ layout: false
       </div>
 
       <main id="mainContent">
-        <section id="wfHomeView" class="dw-hidden dw-stack">
-          <div class="dw-card dw-hero">
-            <h1 class="dw-h1">WriteFlow Studio</h1>
-            <p class="dw-lead">Build timed writing assignments, publish share links for students, and review submissions.</p>
+        <section id="wfHomeView" class="dw-hidden wf-studio-home">
+          <div class="wf-studio-home__hero dw-card">
+            <div class="wf-studio-home__hero-copy">
+              <h1 class="dw-h1">WriteFlow Studio</h1>
+              <p class="dw-lead">Create assignments, share links with students, and review submissions — all in one place.</p>
+            </div>
+            <div class="wf-studio-home__hero-actions">
+              <button id="openBuilderBtn" class="dw-btn" type="button">New assignment</button>
+              <button id="openTutorialHomeBtn" class="dw-btn dw-btn-ghost" type="button">Tutorial</button>
+            </div>
           </div>
-          <div class="dw-card wf-template-gallery" id="wfTemplateGallery">
+
+          <div id="wfTeacherPickerBanner" class="wf-teacher-picker-banner dw-hidden" role="status">
+            <strong>Choose an assignment</strong> to view student results.
+          </div>
+
+          <section class="dw-card wf-assignments-hub" aria-labelledby="wfAssignmentsHeading">
+            <div class="wf-assignments-hub__head">
+              <div>
+                <h2 class="dw-h2" id="wfAssignmentsHeading">Your assignments</h2>
+                <p class="dw-muted">Open any assignment to edit settings, copy the student link, or view results.</p>
+              </div>
+            </div>
+            <div id="wfAssignmentsDashboard" class="wf-assignments-dashboard" role="list"></div>
+          </section>
+
+          <section class="dw-card wf-template-gallery" id="wfTemplateGallery">
             <h2 class="dw-h2">Start from a template</h2>
             <p class="dw-muted">Answer a few questions — WriteFlow builds the assignment for you.</p>
             <div class="wf-template-grid" id="homeTemplateGrid" role="list"></div>
-          </div>
-          <div class="dw-card dw-stack">
-            <div class="dw-row dw-row-wrap">
-              <button id="openBuilderBtn" class="dw-btn" type="button">Create blank assignment</button>
-              <button id="openTutorialHomeBtn" class="dw-btn dw-btn-ghost" type="button">Open tutorial</button>
-            </div>
-          </div>
+          </section>
         </section>
 
         <section id="builderView" class="dw-hidden">
@@ -117,8 +132,10 @@ layout: false
             <h2 class="dw-h2">Submissions</h2>
             <p class="dw-muted" id="teacherMeta"></p>
             <div class="dw-row">
+              <button id="teacherEditBtn" class="dw-btn dw-btn-secondary" type="button">Edit assignment</button>
               <button id="refreshBtn" class="dw-btn dw-btn-secondary" type="button">Refresh</button>
               <button id="exportBtn" class="dw-btn dw-btn-ghost" type="button">Export CSV</button>
+              <button id="teacherHomeBtn" class="dw-btn dw-btn-ghost" type="button">All assignments</button>
               <button id="teacherLogoutBtn" class="dw-btn dw-btn-ghost" type="button">Log out</button>
             </div>
           </div>
