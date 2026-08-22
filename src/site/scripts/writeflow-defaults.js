@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.1.2";
+  const APP_VERSION = "2.1.3";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -119,6 +119,16 @@
   ];
 
   const CHANGELOG = [
+    {
+      version: "2.1.3",
+      date: "2026-08-21",
+      summary: "Fix missing header icon and polish the WFS mark.",
+      items: [
+        "Inline SVG logo mark in header, CTA, studio, and intro — no broken external image files.",
+        "Fixed intro CSS that was hiding the header icon; animation styles scoped to intro only.",
+        "Repaired corrupted SVG math symbols and improved mark proportions.",
+      ],
+    },
     {
       version: "2.1.2",
       date: "2026-08-21",

@@ -2693,95 +2693,95 @@ body.wf-intro-active {
   font-variant-numeric: tabular-nums;
 }
 
-/* WFS logo mark — shared intro + static branding */
-.wf-logo {
+/* WFS mark — inline SVG, shared intro + header */
+.wf-mark-wrap {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  user-select: none;
-}
-
-.wf-logo__bracket {
-  font-family: ui-sans-serif, system-ui, sans-serif;
-  font-size: clamp(2.4rem, 8vw, 3.6rem);
-  font-weight: 300;
-  line-height: 1;
-  color: #94a3b8;
-  opacity: 0;
-  transform: scaleY(0.6);
-  transition:
-    opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.wf-logo__stack {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-}
-
-.wf-logo__ops {
-  display: flex;
-  gap: 14px;
-  font-family: ui-sans-serif, system-ui, sans-serif;
-  font-size: 0.85rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  color: #7dd3fc;
-  opacity: 0;
-  transform: translateY(-6px);
-  transition:
-    opacity 0.85s ease,
-    transform 0.85s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.wf-logo__letters {
-  font-family: "Libre Baskerville", Georgia, serif;
-  font-size: clamp(2rem, 6vw, 2.75rem);
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: #f1f5f9;
-  opacity: 0;
-  transform: scale(0.88);
-  transition:
-    opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.wf-logo__bars {
-  display: flex;
-  align-items: flex-end;
   justify-content: center;
-  gap: 8px;
-  height: 48px;
+  flex-shrink: 0;
+  color: #94a3b8;
 }
 
-.wf-logo__bar {
-  width: 12px;
-  height: calc(48px * var(--h, 0.7));
-  border-radius: 4px 4px 1px 1px;
-  background: linear-gradient(180deg, #38bdf8, #6366f1);
-  transform-origin: bottom center;
-  transform: scaleY(0);
-  transition: transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+.wf-mark {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
-.wf-logo__bar--accent {
-  background: linear-gradient(180deg, #f4a582, #e8796a);
+.wf-mark-wrap--header {
+  width: 44px;
+  height: 44px;
+  filter: drop-shadow(0 2px 8px rgba(56, 189, 248, 0.25));
 }
 
-.wf-logo--intro {
+.wf-mark-wrap--cta {
+  width: 26px;
+  height: 26px;
+}
+
+.wf-mark-wrap--intro {
   position: absolute;
   left: 50%;
   top: 50%;
   z-index: 3;
+  width: min(200px, 52vw);
+  height: min(200px, 52vw);
   opacity: 0;
-  transform: translate(-50%, -50%) scale(0.94);
+  transform: translate(-50%, -50%) scale(0.92);
   transition:
-    opacity 0.8s ease,
-    transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+    opacity 0.85s ease,
+    transform 0.85s cubic-bezier(0.22, 1, 0.36, 1);
   pointer-events: none;
+}
+
+/* Header + CTA marks always show the full logo */
+.wf-mark-wrap--header .wf-mark__bracket,
+.wf-mark-wrap--header .wf-mark__ops,
+.wf-mark-wrap--header .wf-mark__letters,
+.wf-mark-wrap--cta .wf-mark__bracket,
+.wf-mark-wrap--cta .wf-mark__ops,
+.wf-mark-wrap--cta .wf-mark__letters {
+  opacity: 1;
+  transform: none;
+}
+
+.wf-mark-wrap--header .wf-mark__bar,
+.wf-mark-wrap--cta .wf-mark__bar {
+  transform: scaleY(1);
+}
+
+/* Intro-only: parts hidden until their step */
+.wf-mark-wrap--intro .wf-mark__bracket {
+  opacity: 0;
+  transform-origin: center;
+  transform: scaleY(0.5);
+  transition:
+    opacity 0.85s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.wf-mark-wrap--intro .wf-mark__ops {
+  opacity: 0;
+  transform: translateY(-4px);
+  transition:
+    opacity 0.75s ease,
+    transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.wf-mark-wrap--intro .wf-mark__letters {
+  opacity: 0;
+  transform-origin: center;
+  transform: scale(0.85);
+  transition:
+    opacity 0.85s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.85s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.wf-mark-wrap--intro .wf-mark__bars .wf-mark__bar {
+  transform-box: fill-box;
+  transform-origin: center bottom;
+  transform: scaleY(0);
+  transition: transform 0.75s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 /* Step 0 — typewriter only */
@@ -2809,7 +2809,7 @@ body.wf-intro-active {
   filter: blur(0);
 }
 
-/* Step 2 — scores dissolve; logo bars rise (same elements as final mark) */
+/* Step 2 — scores dissolve; logo bars rise */
 #wfIntroStage[data-step="2"] .wf-intro-morph__tag {
   opacity: 0;
   transform: translate(-50%, 0) translateY(-12px) scale(0.95);
@@ -2823,23 +2823,23 @@ body.wf-intro-active {
   max-height: 0;
 }
 
-#wfIntroStage[data-step="2"] .wf-logo--intro,
-#wfIntroStage[data-step="3"] .wf-logo--intro {
+#wfIntroStage[data-step="2"] .wf-mark-wrap--intro,
+#wfIntroStage[data-step="3"] .wf-mark-wrap--intro {
   opacity: 1;
   transform: translate(-50%, -50%) scale(1);
 }
 
-#wfIntroStage[data-step="2"] .wf-logo__bar,
-#wfIntroStage[data-step="3"] .wf-logo__bar {
+#wfIntroStage[data-step="2"] .wf-mark-wrap--intro .wf-mark__bar,
+#wfIntroStage[data-step="3"] .wf-mark-wrap--intro .wf-mark__bar {
   transform: scaleY(1);
 }
 
-#wfIntroStage[data-step="2"] .wf-logo__bar:nth-child(1) { transition-delay: 0.05s; }
-#wfIntroStage[data-step="2"] .wf-logo__bar:nth-child(2) { transition-delay: 0.12s; }
-#wfIntroStage[data-step="2"] .wf-logo__bar:nth-child(3) { transition-delay: 0.19s; }
-#wfIntroStage[data-step="2"] .wf-logo__bar:nth-child(4) { transition-delay: 0.26s; }
+#wfIntroStage[data-step="2"] .wf-mark-wrap--intro .wf-mark__bar:nth-child(1) { transition-delay: 0.06s; }
+#wfIntroStage[data-step="2"] .wf-mark-wrap--intro .wf-mark__bar:nth-child(2) { transition-delay: 0.13s; }
+#wfIntroStage[data-step="2"] .wf-mark-wrap--intro .wf-mark__bar:nth-child(3) { transition-delay: 0.2s; }
+#wfIntroStage[data-step="2"] .wf-mark-wrap--intro .wf-mark__bar:nth-child(4) { transition-delay: 0.27s; }
 
-/* Step 3 — brackets, ops, and letters assemble around the bars */
+/* Step 3 — brackets, ops, letters assemble */
 #wfIntroStage[data-step="3"] .wf-intro-morph__frame {
   opacity: 1;
   transform: scale(1);
@@ -2848,21 +2848,21 @@ body.wf-intro-active {
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
 }
 
-#wfIntroStage[data-step="3"] .wf-logo__bracket {
+#wfIntroStage[data-step="3"] .wf-mark-wrap--intro .wf-mark__bracket {
   opacity: 1;
   transform: scaleY(1);
 }
 
-#wfIntroStage[data-step="3"] .wf-logo__ops {
+#wfIntroStage[data-step="3"] .wf-mark-wrap--intro .wf-mark__ops {
   opacity: 1;
   transform: translateY(0);
-  transition-delay: 0.15s;
+  transition-delay: 0.12s;
 }
 
-#wfIntroStage[data-step="3"] .wf-logo__letters {
+#wfIntroStage[data-step="3"] .wf-mark-wrap--intro .wf-mark__letters {
   opacity: 1;
   transform: scale(1);
-  transition-delay: 0.08s;
+  transition-delay: 0.06s;
 }
 
 .wf-intro-morph--pulse {
@@ -2878,11 +2878,11 @@ body.wf-intro-active {
   .wf-intro-morph__title,
   .wf-intro-morph__tag,
   .wf-intro-morph__scores,
-  .wf-logo__bracket,
-  .wf-logo__ops,
-  .wf-logo__letters,
-  .wf-logo__bar,
-  .wf-logo--intro,
+  .wf-mark__bracket,
+  .wf-mark__ops,
+  .wf-mark__letters,
+  .wf-mark__bar,
+  .wf-mark-wrap--intro,
   .wf-intro-morph__frame {
     transition-duration: 0.15s !important;
     transition-delay: 0s !important;
