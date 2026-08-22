@@ -43,7 +43,7 @@ layout: false
           </div>
           <div>
             <div class="wf-landing__title">WriteFlow Studio</div>
-            <div class="wf-landing__version">Version <span id="wfVersionLabel">2.3.2</span></div>
+            <div class="wf-landing__version">Version <span id="wfVersionLabel">2.3.3</span></div>
           </div>
         </div>
         <nav class="wf-landing__nav" aria-label="WriteFlow">
@@ -53,72 +53,75 @@ layout: false
       </header>
 
       <main id="wfLandingMain" class="wf-landing__main">
-        <section class="wf-landing-hero dw-card">
-          <p class="wf-landing-hero__eyebrow">Classroom writing tool</p>
-          <h1 class="dw-h1">Timed writing that meets every learner where they are.</h1>
-          <p class="dw-lead">WriteFlow Studio lets teachers build assignments with custom prompts, timers, vocabulary goals, and accessibility options. Students get a focused writing screen — no clutter, no paste, just type.</p>
-          <div class="wf-landing-hero__cta">
-            <a class="dw-btn wf-landing-cta" href="/writeflow/studio/" target="_blank" rel="noopener">
-              <span class="wf-mark-wrap wf-mark-wrap--cta" aria-hidden="true">{% include "wfs-mark.svg.njk" %}</span>
-              Open WriteFlow Studio
-            </a>
-            <button class="dw-btn dw-btn-ghost" type="button" id="replayIntroBtn">Replay intro</button>
-            <a class="dw-btn dw-btn-ghost" href="/writeflow/setup/">Setup guide</a>
+        <aside class="wf-landing__panel wf-landing__panel--changelog" aria-labelledby="wfChangelogTitle">
+          <h2 class="wf-landing__panel-title" id="wfChangelogTitle">Changelog</h2>
+          <p class="wf-landing__panel-lead dw-muted">Living documentation of features and fixes.</p>
+          <div id="wfChangelogFull" class="wf-changelog-full wf-changelog-full--compact"></div>
+        </aside>
+
+        <div class="wf-landing__center">
+          <section class="wf-landing-hero dw-card wf-landing-hero--compact">
+            <p class="wf-landing-hero__eyebrow">Classroom writing tool</p>
+            <h1 class="dw-h1 wf-landing-hero__title">Timed writing that meets every learner where they are.</h1>
+            <p class="dw-lead wf-landing-hero__lead">Build assignments with custom prompts, timers, vocabulary goals, and accessibility options. Students get a focused writing screen — no clutter, no paste, just type.</p>
+            <div class="wf-landing-hero__cta">
+              <a class="dw-btn wf-landing-cta" href="/writeflow/studio/" target="_blank" rel="noopener">
+                <span class="wf-mark-wrap wf-mark-wrap--cta" aria-hidden="true">{% include "wfs-mark.svg.njk" %}</span>
+                Open WriteFlow Studio
+              </a>
+              <a class="dw-btn dw-btn-ghost" href="/writeflow/setup/">Setup guide</a>
+            </div>
+          </section>
+
+          <section class="wf-landing-stats dw-card wf-landing-stats--compact" aria-labelledby="wfStatsTitle">
+            <h2 class="wf-landing__section-title" id="wfStatsTitle">Impact so far</h2>
+            <div class="wf-landing-stats__grid">
+              <div class="wf-landing-stat">
+                <span class="wf-landing-stat__value" id="wfClassroomCount">—</span>
+                <span class="wf-landing-stat__label">Classrooms</span>
+              </div>
+              <div class="wf-landing-stat">
+                <span class="wf-landing-stat__value" id="wfAssignmentCount">—</span>
+                <span class="wf-landing-stat__label">Assignments</span>
+              </div>
+              <div class="wf-landing-stat">
+                <span class="wf-landing-stat__value" id="wfSubmissionCount">—</span>
+                <span class="wf-landing-stat__label">Submissions</span>
+              </div>
+              <div class="wf-landing-stat">
+                <span class="wf-landing-stat__value" id="wfSentenceCount">—</span>
+                <span class="wf-landing-stat__label">Sentences analyzed</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="wf-landing-welcome dw-card wf-landing-welcome--compact">
+            <h2 class="wf-landing__section-title">What is WriteFlow?</h2>
+            <div class="wf-landing-columns">
+              <div>
+                <h3 class="dw-h3 wf-landing__mini-title">For teachers</h3>
+                <p class="dw-muted wf-landing__dense-text">Build in Studio — prompts, timers, vocabulary, class codes. Save to publish a student link. Open Results to review submissions and export CSV.</p>
+              </div>
+              <div>
+                <h3 class="dw-h3 wf-landing__mini-title">For students</h3>
+                <p class="dw-muted wf-landing__dense-text">Students open only their assignment link: prompt, timer, word count, and typing area. Pasting is blocked by default. WriteFlow scores stamina, mechanics, and content.</p>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <aside class="wf-landing__panel wf-landing__panel--guide" aria-labelledby="wfTutorialTitle">
+          <h2 class="wf-landing__panel-title" id="wfTutorialTitle">Quick start</h2>
+          <ol class="wf-quickstart__steps wf-quickstart__steps--compact" id="wfLandingTutorial"></ol>
+          <div class="wf-landing__panel-note dw-card">
+            <p class="dw-muted dw-tiny"><strong>Student links only:</strong> <code>/writeflow/a/?id=your-assignment</code> — never share the Studio URL with students.</p>
+            <p class="dw-muted dw-tiny">Full interactive tutorial inside Studio after you sign in.</p>
           </div>
-          <p class="dw-muted dw-tiny">Student assignment links look like <code>/writeflow/a/?id=your-assignment</code> — share only those with students.</p>
-        </section>
-
-        <section class="wf-landing-stats dw-card" aria-labelledby="wfStatsTitle">
-          <h2 class="dw-h2" id="wfStatsTitle">Impact so far</h2>
-          <div class="wf-landing-stats__grid">
-            <div class="wf-landing-stat">
-              <span class="wf-landing-stat__value" id="wfClassroomCount">—</span>
-              <span class="wf-landing-stat__label">Classrooms</span>
-            </div>
-            <div class="wf-landing-stat">
-              <span class="wf-landing-stat__value" id="wfAssignmentCount">—</span>
-              <span class="wf-landing-stat__label">Assignments</span>
-            </div>
-            <div class="wf-landing-stat">
-              <span class="wf-landing-stat__value" id="wfSubmissionCount">—</span>
-              <span class="wf-landing-stat__label">Submissions</span>
-            </div>
-            <div class="wf-landing-stat">
-              <span class="wf-landing-stat__value" id="wfSentenceCount">—</span>
-              <span class="wf-landing-stat__label">Sentences analyzed</span>
-            </div>
-          </div>
-        </section>
-
-        <section class="wf-landing-welcome dw-card">
-          <h2 class="dw-h2">What is WriteFlow?</h2>
-          <div class="wf-landing-columns">
-            <div>
-              <h3 class="dw-h3">For teachers</h3>
-              <p class="dw-muted">Build assignments in WriteFlow Studio — set prompts, time limits, minimum word counts, expected vocabulary, and class codes. Save and publish to get a student link. Open Results to review submissions, highlight vocabulary usage, and export CSV.</p>
-            </div>
-            <div>
-              <h3 class="dw-h3">For students</h3>
-              <p class="dw-muted">Students open only their assignment link. They see the prompt, a timer, live word count and WPM, and a typing area. Pasting is blocked by default. When time is up (or they finish early), WriteFlow analyzes typing stamina, mechanics, and content.</p>
-            </div>
-          </div>
-        </section>
-
-        <section class="wf-landing-tutorial dw-card" aria-labelledby="wfTutorialTitle">
-          <h2 class="dw-h2" id="wfTutorialTitle">Quick tutorial</h2>
-          <ol class="wf-quickstart__steps" id="wfLandingTutorial"></ol>
-        </section>
-
-        <section class="wf-landing-changelog dw-card" aria-labelledby="wfChangelogTitle">
-          <h2 class="dw-h2" id="wfChangelogTitle">Changelog</h2>
-          <p class="dw-muted">Living documentation of features and fixes.</p>
-          <div id="wfChangelogFull" class="wf-changelog-full"></div>
-          <div id="wfChangelogSimple" class="wf-changelog-simple"></div>
-        </section>
+        </aside>
       </main>
 
       <footer class="wf-landing__footer dw-muted">
-        <p>WriteFlow Studio · Mr. Phil's classroom tools · Not a writing platform built for games — built for classrooms.</p>
+        <p>WriteFlow Studio · Mr. Phil's classroom tools · Built for classrooms.</p>
       </footer>
     </div>
 

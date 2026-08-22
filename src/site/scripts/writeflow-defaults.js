@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.3.2";
+  const APP_VERSION = "2.3.3";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -119,6 +119,17 @@
   ];
 
   const CHANGELOG = [
+    {
+      version: "2.3.3",
+      date: "2026-08-22",
+      summary: "Dense full-width landing layout; admin setup redacted from public pages.",
+      items: [
+        "Splash page redesigned as a three-column dashboard — changelog left, hero/stats/overview center, quick start right — optimized to fit one screen without scrolling.",
+        "Removed Replay intro button from the landing page.",
+        "Public setup guide is teacher-only; Google Sheets / Vercel admin steps moved to a private desktop folder for site owners.",
+        "Troubleshooting no longer exposes backend environment variable names or API secrets.",
+      ],
+    },
     {
       version: "2.3.2",
       date: "2026-08-22",
