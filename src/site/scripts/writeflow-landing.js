@@ -9,7 +9,9 @@
 
   const STATS_API = "/api/writeflow-submissions?action=stats";
   const INTRO_TEXT = "WriteFlow Studio";
+  const LOGO_URL = "/writeflow/assets/wfs-logo.png";
   const SCORE_TARGETS = { typing: 84, mechanics: 76, story: 91 };
+  const STEP_MS = { type: 130, morph1: 1100, morph2: 900, morph3: 1400, hold: 900 };
   let introRunning = false;
   let cachedStats = null;
 
@@ -111,16 +113,48 @@
     });
   }
 
-  function setPhaseVisible(id, visible) {
-    const el = document.getElementById(id);
-    if (!el) return;
-    el.classList.toggle("wf-intro-phase--hidden", !visible);
-    el.setAttribute("aria-hidden", visible ? "false" : "true");
+  function setIntroStep(step) {
+    const stage = document.getElementById("wfIntroStage");
+    if (stage) stage.dataset.step = String(step);
   }
 
-  function animateScoreValues(speed = 1) {
-    const els = document.querySelectorAll(".wf-intro-score__val");
-    const duration = Math.round(1400 / speed);
+  function preloadLogo() {
+    const img = new Image();
+    img.src = LOGO_URL;
+    return img.decode?.().catch(() => {}) ?? Promise.resolve();
+  }
+
+  function resetIntro() {
+    const splash = document.getElementById("wfIntroSplash");
+    const landing = document.getElementById("wfLanding");
+    const typeEl = document.getElementById("wfIntroTypewriter");
+    const morph = document.getElementById("wfIntroMorph");
+
+    document.body.classList.add("wf-intro-active");
+    splash?.classList.remove("dw-hidden", "wf-intro-splash--out");
+    landing?.classList.add("dw-hidden");
+    morph?.classList.remove("wf-intro-morph--pulse");
+
+    setIntroStep(0);
+
+    if (typeEl) typeEl.textContent = "";
+    document.querySelectorAll(".wf-intro-morph__score-val").forEach((el) => { el.textContent = "0"; });
+    document.getElementById("wfIntroCursor")?.classList.remove("dw-hidden");
+  }
+
+  async function hideSplash() {
+    const splash = document.getElementById("wfIntroSplash");
+    const landing = document.getElementById("wfLanding");
+    splash?.classList.add("wf-intro-splash--out");
+    await delay(700);
+    splash?.classList.add("dw-hidden");
+    landing?.classList.remove("dw-hidden");
+    document.body.classList.remove("wf-intro-active");
+    await renderImpactStats();
+  }
+
+  function animateScoreValues(duration = 1400) {
+    const els = document.querySelectorAll(".wf-intro-morph__score-val");
     return Promise.all([...els].map((el) => {
       const key = el.dataset.score;
       const target = SCORE_TARGETS[key] || 80;
@@ -138,100 +172,16 @@
     }));
   }
 
-  function resetIntro() {
-    const splash = document.getElementById("wfIntroSplash");
-    const landing = document.getElementById("wfLanding");
-    const typeEl = document.getElementById("wfIntroTypewriter");
-    const scoreEl = document.getElementById("wfIntroScore");
-    const graphEl = document.getElementById("wfIntroGraph");
-
-    document.body.classList.add("wf-intro-active");
-    splash?.classList.remove("dw-hidden", "wf-intro-splash--out");
-    landing?.classList.add("dw-hidden");
-
-    setPhaseVisible("wfIntroTypePhase", true);
-    setPhaseVisible("wfIntroScore", false);
-    setPhaseVisible("wfIntroLogo", false);
-
-    scoreEl?.classList.remove("wf-intro-score--in", "wf-intro-score--out");
-    graphEl?.classList.remove("wf-intro-graph--in");
-
-    if (typeEl) typeEl.textContent = "";
-    document.querySelectorAll(".wf-intro-score__val").forEach((el) => { el.textContent = "0"; });
-    document.getElementById("wfIntroCursor")?.classList.remove("dw-hidden");
-  }
-
-  async function hideSplash() {
-    const splash = document.getElementById("wfIntroSplash");
-    const landing = document.getElementById("wfLanding");
-    splash?.classList.add("wf-intro-splash--out");
-    await delay(700);
-    splash?.classList.add("dw-hidden");
-    landing?.classList.remove("dw-hidden");
-    document.body.classList.remove("wf-intro-active");
-    await renderImpactStats();
-  }
-
-  async function runTypewriterPhase(speed = 1) {
-    const typeEl = document.getElementById("wfIntroTypewriter");
-    const cursorEl = document.getElementById("wfIntroCursor");
-    if (!typeEl) return;
-
-    setPhaseVisible("wfIntroTypePhase", true);
-    typeEl.textContent = "";
-    cursorEl?.classList.remove("dw-hidden");
-
-    const charDelay = Math.max(40, Math.round(130 / speed));
-    for (const ch of INTRO_TEXT) {
-      typeEl.textContent += ch;
-      await delay(charDelay);
-    }
-    cursorEl?.classList.add("dw-hidden");
-    await delay(Math.round(700 / speed));
-  }
-
-  async function runScorePhase(speed = 1) {
-    const scoreEl = document.getElementById("wfIntroScore");
-    const graphEl = document.getElementById("wfIntroGraph");
-
-    setPhaseVisible("wfIntroTypePhase", false);
-    setPhaseVisible("wfIntroScore", true);
-    scoreEl?.classList.add("wf-intro-score--in");
-
-    await animateScoreValues(speed);
-    await delay(Math.round(500 / speed));
-
-    if (graphEl) {
-      graphEl.classList.add("wf-intro-graph--in");
-      graphEl.querySelectorAll(".wf-intro-graph__bar").forEach((bar, i) => {
-        bar.style.animationDelay = `${i * 120}ms`;
-      });
-    }
-    await delay(Math.round(1600 / speed));
-  }
-
-  async function runLogoPhase(speed = 1) {
-    const scoreEl = document.getElementById("wfIntroScore");
-    const logoEl = document.getElementById("wfIntroLogo");
-
-    scoreEl?.classList.add("wf-intro-score--out");
-    await delay(Math.round(500 / speed));
-    setPhaseVisible("wfIntroScore", false);
-
-    setPhaseVisible("wfIntroLogo", true);
-    logoEl?.classList.add("wf-intro-logo--in");
-    await delay(Math.round(1800 / speed));
-
-    logoEl?.classList.add("wf-intro-logo--pulse");
-    await delay(Math.round(600 / speed));
-  }
-
   async function runIntroAnimation({ thenNavigate = null } = {}) {
     if (introRunning) return;
     introRunning = true;
 
     const splash = document.getElementById("wfIntroSplash");
-    if (!splash || !document.getElementById("wfIntroTypewriter")) {
+    const typeEl = document.getElementById("wfIntroTypewriter");
+    const cursorEl = document.getElementById("wfIntroCursor");
+    const morph = document.getElementById("wfIntroMorph");
+
+    if (!splash || !typeEl) {
       introRunning = false;
       if (thenNavigate) location.href = thenNavigate;
       return;
@@ -239,15 +189,41 @@
 
     void fetchImpactStats();
 
+    const fast = prefersReducedMotion();
+    const ms = (key) => (fast ? Math.round(STEP_MS[key] * 0.35) : STEP_MS[key]);
+    const charDelay = fast ? 35 : 95;
+
     try {
       if (document.fonts?.ready) await document.fonts.ready;
+      await preloadLogo();
       resetIntro();
       await waitForPaint();
 
-      const speed = prefersReducedMotion() ? 2.5 : 1;
-      await runTypewriterPhase(speed);
-      await runScorePhase(speed);
-      await runLogoPhase(speed);
+      // Step 0 — typewriter (title grows in place)
+      for (const ch of INTRO_TEXT) {
+        typeEl.textContent += ch;
+        await delay(charDelay);
+      }
+      cursorEl?.classList.add("dw-hidden");
+      await delay(fast ? 200 : 500);
+
+      // Step 1 — title dissolves into analysis tag + score cards (crossfade morph)
+      setIntroStep(1);
+      const scorePromise = animateScoreValues(fast ? 500 : 1200);
+      await delay(ms("morph1"));
+      await scorePromise;
+
+      // Step 2 — scores fold into rising bars (same card, continuous motion)
+      setIntroStep(2);
+      await delay(ms("morph2"));
+
+      // Step 3 — bars tighten into logo mark + frame appears
+      setIntroStep(3);
+      await delay(ms("morph3"));
+
+      morph?.classList.add("wf-intro-morph--pulse");
+      await delay(ms("hold"));
+
       await hideSplash();
     } catch (err) {
       console.error("WriteFlow intro animation error:", err);
@@ -285,6 +261,7 @@
     renderTutorial();
     bindAppLinks();
     bindReplay();
+    void preloadLogo();
     void runIntroAnimation();
   }
 

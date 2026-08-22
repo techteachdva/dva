@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.1.0";
+  const APP_VERSION = "2.1.1";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -119,6 +119,16 @@
   ];
 
   const CHANGELOG = [
+    {
+      version: "2.1.1",
+      date: "2026-08-21",
+      summary: "WFS logo branding across WriteFlow Studio with animated intro finale.",
+      items: [
+        "New WFS logo asset (brackets, math ops, bar chart) used for favicon, header, hero CTA, and studio top bar.",
+        "Landing intro animation morphs rising bars into the real logo image at the final step.",
+        "Favicon added to landing, studio, and student assignment pages.",
+      ],
+    },
     {
       version: "2.1.0",
       date: "2026-08-21",
