@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.1.3";
+  const APP_VERSION = "2.1.4";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -119,6 +119,16 @@
   ];
 
   const CHANGELOG = [
+    {
+      version: "2.1.4",
+      date: "2026-08-21",
+      summary: "Rewrite Google Sheets setup guide for teachers and admins.",
+      items: [
+        "Setup page split into a teacher quick-start (no backend required) and a step-by-step admin guide.",
+        "Improved readability: dark theme, numbered steps, troubleshooting table, and GitHub link to copy the Apps Script.",
+        "Fixed outdated student link format in setup docs.",
+      ],
+    },
     {
       version: "2.1.3",
       date: "2026-08-21",

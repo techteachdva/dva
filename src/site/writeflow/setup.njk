@@ -7,33 +7,261 @@ layout: false
 <html lang="{{ meta.mainLanguage }}">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>WriteFlow Google Sheets Setup</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="theme-color" content="#0f172a" />
+    <title>WriteFlow Setup Guide</title>
+    <link rel="icon" href="/writeflow/assets/wfs-icon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" />
     <link rel="stylesheet" href="/styles/write-platform.css" />
+    <link rel="stylesheet" href="/styles/custom-style.css" />
   </head>
-  <body class="dw-body wp-theme--light">
-    <div class="dw-shell dw-stack" style="max-width:720px;padding-top:32px;">
-      <a class="dw-link" href="/writeflow/">← WriteFlow Studio</a>
-      <div class="dw-card dw-stack">
-        <h1 class="dw-h1">Google Sheets setup</h1>
-        <p class="dw-lead">Connect WriteFlow to Google Sheets so student submissions sync for any teacher, on any device.</p>
-        <ol class="dw-list">
-          <li>Create a Google Sheet (e.g. <strong>WriteFlow Submissions</strong>).</li>
-          <li>Extensions → Apps Script → paste <code>google-apps-script/writeflow-backend.gs</code> → Save.</li>
-          <li>Set <code>SPREADSHEET_ID</code> in the script.</li>
-          <li>Run <code>initSheet</code> once (authorize when prompted).</li>
-          <li>Deploy → Web app (Execute as: Me, Anyone).</li>
-          <li>Vercel env: <code>WRITEFLOW_SCRIPT_URL</code> and <code>WRITEFLOW_API_SECRET</code> (match script <code>API_SECRET</code>).</li>
-          <li>Redeploy the site.</li>
-        </ol>
-        <h2 class="dw-h2">Teacher workflow</h2>
-        <ul class="dw-list">
-          <li>Build assignment in <a href="/writeflow/?mode=builder">WriteFlow builder</a>.</li>
-          <li>Set a <strong>teacher password</strong> and click Save — registers assignment in the sheet.</li>
-          <li>Share student link: <code>/writeflow/?id=YOUR-ID</code></li>
-          <li>View results with the same password via <strong>Results</strong>.</li>
-        </ul>
-      </div>
+  <body class="dw-body wp-theme--dark wf-setup-body">
+    <a class="wf-skip-link" href="#wfSetupMain">Skip to main content</a>
+
+    <div class="wf-setup">
+      <header class="wf-setup__header">
+        <a class="dw-link" href="/writeflow/">← Back to WriteFlow Studio</a>
+        <h1 class="dw-h1">Setup guide</h1>
+        <p class="dw-lead">Everything you need to run WriteFlow with your classes — whether you are a teacher using the site or an admin connecting Google Sheets.</p>
+      </header>
+
+      <main id="wfSetupMain" class="wf-setup__main">
+
+        <section class="wf-setup-callout dw-card" aria-labelledby="wfSetupWhoTitle">
+          <h2 class="dw-h2" id="wfSetupWhoTitle">Start here: which guide do you need?</h2>
+          <div class="wf-setup-callout__grid">
+            <div class="wf-setup-callout__card">
+              <h3 class="dw-h3">I'm a teacher</h3>
+              <p class="dw-muted">You want to create assignments and collect student writing. You do <strong>not</strong> need Google Apps Script or Vercel.</p>
+              <a class="dw-btn wf-setup-jump" href="#teacher-guide">Jump to teacher guide</a>
+            </div>
+            <div class="wf-setup-callout__card">
+              <h3 class="dw-h3">I'm setting up the site</h3>
+              <p class="dw-muted">You manage the website and need student submissions saved to a Google Sheet (one-time, ~15 minutes).</p>
+              <a class="dw-btn dw-btn-secondary wf-setup-jump" href="#admin-guide">Jump to admin guide</a>
+            </div>
+          </div>
+        </section>
+
+        <section class="wf-setup-section dw-card" id="teacher-guide" aria-labelledby="wfTeacherTitle">
+          <p class="wf-setup-eyebrow">For teachers</p>
+          <h2 class="dw-h2" id="wfTeacherTitle">Using WriteFlow with your classes</h2>
+          <p class="dw-muted">If you are using Mr. Phil's WriteFlow site, storage is already connected. Just open Studio and build an assignment.</p>
+
+          <ol class="wf-setup-steps">
+            <li class="wf-setup-step">
+              <span class="wf-setup-step__num">1</span>
+              <div>
+                <strong>Open WriteFlow Studio</strong>
+                <p class="dw-muted">Go to <a href="/writeflow/studio/">WriteFlow Studio</a>. This is where you build assignments and view results.</p>
+              </div>
+            </li>
+            <li class="wf-setup-step">
+              <span class="wf-setup-step__num">2</span>
+              <div>
+                <strong>Create your assignment</strong>
+                <p class="dw-muted">Click <strong>Configure</strong> (or start from a template). Set the prompt, timer, class requirements, and accessibility options.</p>
+              </div>
+            </li>
+            <li class="wf-setup-step">
+              <span class="wf-setup-step__num">3</span>
+              <div>
+                <strong>Set a teacher password</strong>
+                <p class="dw-muted">In the builder, choose a password you will remember. You need this to open <strong>Results</strong> later. Students never see it.</p>
+              </div>
+            </li>
+            <li class="wf-setup-step">
+              <span class="wf-setup-step__num">4</span>
+              <div>
+                <strong>Save the assignment</strong>
+                <p class="dw-muted">Click <strong>Save assignment</strong>. Wait for the green confirmation. This publishes your assignment so the student link works on any device.</p>
+              </div>
+            </li>
+            <li class="wf-setup-step">
+              <span class="wf-setup-step__num">5</span>
+              <div>
+                <strong>Share the student link only</strong>
+                <p class="dw-muted">Copy the link that looks like:</p>
+                <p class="wf-setup-code">/writeflow/a/?id=your-assignment-name</p>
+                <p class="dw-muted dw-tiny">Do <em>not</em> share the Studio link. Students should only see their assignment page.</p>
+              </div>
+            </li>
+            <li class="wf-setup-step">
+              <span class="wf-setup-step__num">6</span>
+              <div>
+                <strong>View submissions</strong>
+                <p class="dw-muted">In Studio, click <strong>Results</strong>, enter your teacher password, and review or export CSV.</p>
+              </div>
+            </li>
+          </ol>
+
+          <div class="wf-setup-tip">
+            <strong>Tip:</strong> If students get "assignment not found," open Studio, load the assignment, and click <strong>Save assignment</strong> again.
+          </div>
+        </section>
+
+        <section class="wf-setup-section dw-card" id="admin-guide" aria-labelledby="wfAdminTitle">
+          <p class="wf-setup-eyebrow">For site administrators</p>
+          <h2 class="dw-h2" id="wfAdminTitle">One-time Google Sheets connection</h2>
+          <p class="dw-muted">Do this once per school/site. After this, any teacher can save assignments and collect submissions without repeating these steps.</p>
+
+          <h3 class="dw-h3">Part A — Google Sheet</h3>
+          <ol class="wf-setup-steps">
+            <li class="wf-setup-step">
+              <span class="wf-setup-step__num">A1</span>
+              <div>
+                <strong>Create a new Google Sheet</strong>
+                <p class="dw-muted">Name it something clear, e.g. <strong>WriteFlow Submissions</strong>. Use a Google account your school is OK storing student writing in.</p>
+              </div>
+            </li>
+            <li class="wf-setup-step">
+              <span class="wf-setup-step__num">A2</span>
+              <div>
+                <strong>Copy the Sheet ID</strong>
+                <p class="dw-muted">From the browser address bar, copy the long ID between <code>/d/</code> and <code>/edit</code>:</p>
+                <p class="wf-setup-code">https://docs.google.com/spreadsheets/d/<strong>THIS_PART_IS_THE_SHEET_ID</strong>/edit</p>
+              </div>
+            </li>
+          </ol>
+
+          <h3 class="dw-h3">Part B — Apps Script (the bridge to your sheet)</h3>
+          <ol class="wf-setup-steps">
+            <li class="wf-setup-step">
+              <span class="wf-setup-step__num">B1</span>
+              <div>
+                <strong>Open Apps Script from the sheet</strong>
+                <p class="dw-muted">In your Google Sheet menu: <strong>Extensions → Apps Script</strong>.</p>
+              </div>
+            </li>
+            <li class="wf-setup-step">
+              <span class="wf-setup-step__num">B2</span>
+              <div>
+                <strong>Paste the WriteFlow script</strong>
+                <p class="dw-muted">Delete any code already in the editor. Copy the full script from the link below and paste it in:</p>
+                <p><a class="dw-link" href="https://github.com/techteachdva/dva/blob/main/google-apps-script/writeflow-backend.gs" target="_blank" rel="noopener">Open writeflow-backend.gs on GitHub →</a></p>
+                <p class="dw-muted dw-tiny">On GitHub, click the <strong>Raw</strong> button, then Select all → Copy.</p>
+              </div>
+            </li>
+            <li class="wf-setup-step">
+              <span class="wf-setup-step__num">B3</span>
+              <div>
+                <strong>Set your Sheet ID in the script</strong>
+                <p class="dw-muted">Near the top of the script, find <code>SPREADSHEET_ID</code> and replace the value with your Sheet ID from step A2. Save the project (Ctrl+S).</p>
+              </div>
+            </li>
+            <li class="wf-setup-step">
+              <span class="wf-setup-step__num">B4</span>
+              <div>
+                <strong>Run <code>initSheet</code> once</strong>
+                <p class="dw-muted">In the function dropdown at the top, choose <code>initSheet</code>, then click <strong>Run</strong>. Google will ask you to authorize — approve it. This creates two tabs: <strong>Submissions</strong> and <strong>Assignments</strong>.</p>
+              </div>
+            </li>
+            <li class="wf-setup-step">
+              <span class="wf-setup-step__num">B5</span>
+              <div>
+                <strong>Deploy as a web app</strong>
+                <p class="dw-muted">Click <strong>Deploy → New deployment</strong>. Choose type <strong>Web app</strong>.</p>
+                <ul class="wf-setup-checklist">
+                  <li>Execute as: <strong>Me</strong></li>
+                  <li>Who has access: <strong>Anyone</strong></li>
+                </ul>
+                <p class="dw-muted">Click Deploy, then copy the <strong>Web app URL</strong> (it ends in <code>/exec</code>). Keep this URL private.</p>
+              </div>
+            </li>
+          </ol>
+
+          <h3 class="dw-h3">Part C — Connect the website (Vercel)</h3>
+          <ol class="wf-setup-steps">
+            <li class="wf-setup-step">
+              <span class="wf-setup-step__num">C1</span>
+              <div>
+                <strong>Add two environment variables</strong>
+                <p class="dw-muted">In your Vercel project: <strong>Settings → Environment Variables</strong>. Add both:</p>
+                <table class="wf-setup-table">
+                  <thead>
+                    <tr><th>Variable name</th><th>Value</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><code>WRITEFLOW_SCRIPT_URL</code></td>
+                      <td>The Web app URL from step B5</td>
+                    </tr>
+                    <tr>
+                      <td><code>WRITEFLOW_API_SECRET</code></td>
+                      <td>Must match <code>API_SECRET</code> in the script (default: <code>studentsfirst</code>)</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </li>
+            <li class="wf-setup-step">
+              <span class="wf-setup-step__num">C2</span>
+              <div>
+                <strong>Redeploy the site</strong>
+                <p class="dw-muted">Trigger a new deployment on Vercel so the environment variables take effect.</p>
+              </div>
+            </li>
+            <li class="wf-setup-step">
+              <span class="wf-setup-step__num">C3</span>
+              <div>
+                <strong>Test it</strong>
+                <p class="dw-muted">Open WriteFlow Studio, create a test assignment, save it, and submit as a student. Check the <strong>Submissions</strong> tab in your Google Sheet for a new row.</p>
+              </div>
+            </li>
+          </ol>
+        </section>
+
+        <section class="wf-setup-section dw-card" aria-labelledby="wfTroubleTitle">
+          <h2 class="dw-h2" id="wfTroubleTitle">Troubleshooting</h2>
+          <table class="wf-setup-table wf-setup-table--trouble">
+            <thead>
+              <tr><th>What you see</th><th>What to try</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>"Cloud storage is not configured"</td>
+                <td>Admin: set <code>WRITEFLOW_SCRIPT_URL</code> on Vercel and redeploy.</td>
+              </tr>
+              <tr>
+                <td>"Assignment not found"</td>
+                <td>Teacher: open Studio, load the assignment, click <strong>Save assignment</strong> again.</td>
+              </tr>
+              <tr>
+                <td>"Incorrect teacher password"</td>
+                <td>Re-save the assignment in Studio with the password you want, then try Results again.</td>
+              </tr>
+              <tr>
+                <td>"Incorrect class code"</td>
+                <td>Student must pick the right class and enter the code for that class exactly. Admin: classroom lists are synced from the site — contact the site owner if a class is missing.</td>
+              </tr>
+              <tr>
+                <td>"Illegal spreadsheet id"</td>
+                <td>Admin: paste the correct Sheet ID in <code>SPREADSHEET_ID</code>, run <code>initSheet</code>, deploy a <strong>new</strong> web app version.</td>
+              </tr>
+              <tr>
+                <td>Share link shows wrong assignment</td>
+                <td>Re-save in Studio after updating the script. Confirm the <strong>Assignments</strong> sheet has a <code>configJson</code> column.</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <section class="wf-setup-section dw-card" aria-labelledby="wfSheetTitle">
+          <h2 class="dw-h2" id="wfSheetTitle">What gets stored in the sheet?</h2>
+          <ul class="wf-setup-bullets">
+            <li><strong>Submissions</strong> — each student write-up: name, class, word count, WPM, full text, and analysis.</li>
+            <li><strong>Assignments</strong> — assignment ID, teacher password, title, and published config (so share links work everywhere).</li>
+          </ul>
+          <p class="dw-muted dw-tiny">Student writing may contain personal information. Restrict sheet access to staff who need it.</p>
+        </section>
+
+      </main>
+
+      <footer class="wf-setup__footer dw-muted">
+        <p>Questions? Contact your site administrator or Mr. Phil.</p>
+      </footer>
     </div>
   </body>
 </html>
