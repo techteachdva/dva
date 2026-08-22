@@ -11,12 +11,18 @@ layout: false
     <meta name="theme-color" content="#0f172a" />
     <title>WriteFlow Studio</title>
     <link rel="icon" href="/writeflow/assets/wfs-icon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap" />
     <link rel="stylesheet" href="/styles/write-platform.css" />
     <link rel="stylesheet" href="/styles/custom-style.css" />
   </head>
   <body class="dw-body wp-theme--dark wf-studio-app">
     <a class="wf-skip-link" href="#mainContent">Skip to main content</a>
-    <div class="dw-shell">
+
+    {% include "writeflow-intro-splash.njk" %}
+
+    <div class="dw-shell dw-hidden" id="wfStudioShell">
       <header class="dw-topbar" id="studioTopbar">
         <div class="dw-topbar-brand">
           <a href="/writeflow/" class="wf-brand-link">
@@ -160,6 +166,7 @@ layout: false
     <script id="wfClassroomCodesJson" type="application/json">{{ diagnosticWritingClassCodes | jsonify | safe }}</script>
     <script src="/scripts/write-test-core.js" defer></script>
     <script src="/scripts/writeflow-defaults.js" defer></script>
+    <script src="/scripts/writeflow-intro.js" defer></script>
     <script src="/scripts/diagnostic-writing-calibration.js" defer></script>
     <script src="/scripts/diagnostic-writing-rubrics.js" defer></script>
     <script src="/scripts/write-analysis-engine.js" defer></script>

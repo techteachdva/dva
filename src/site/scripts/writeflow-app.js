@@ -2013,6 +2013,15 @@
     else initHome();
   }
 
+  async function bootStudioApp() {
+    if (document.getElementById("wfIntroSplash") && window.WriteFlowIntro) {
+      await window.WriteFlowIntro.play();
+    } else {
+      document.getElementById("wfStudioShell")?.classList.remove("dw-hidden");
+    }
+    initStudioApp();
+  }
+
   if (isStudentApp) void initStudentFlow();
-  else initStudioApp();
+  else void bootStudioApp();
 })();
