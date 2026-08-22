@@ -3677,6 +3677,67 @@ mark.wf-vocab-hit {
   border-style: dashed;
 }
 
+.wf-boot-loader {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 24px;
+  background: rgba(11, 18, 32, 0.92);
+  backdrop-filter: blur(6px);
+}
+
+.wf-boot-loader__label {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #cbd5e1;
+  letter-spacing: 0.02em;
+}
+
+.wf-boot-loader__track {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px;
+  max-width: min(640px, 92vw);
+}
+
+.wf-boot-loader__letter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-family: ui-monospace, "Cascadia Code", monospace;
+  color: rgba(148, 163, 184, 0.35);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  border-radius: 4px;
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.wf-boot-loader__letter--on {
+  color: #e0f2fe;
+  background: rgba(56, 189, 248, 0.2);
+  border-color: rgba(56, 189, 248, 0.55);
+  transform: translateY(-1px);
+}
+
+#wfStudioShell {
+  position: relative;
+}
+
+.wf-topbar-btn--active {
+  border-color: rgba(56, 189, 248, 0.55) !important;
+  background: rgba(56, 189, 248, 0.14) !important;
+  color: #e0f2fe !important;
+}
+
 .wf-empty-state {
   text-align: center;
   padding: 28px 16px;

@@ -138,6 +138,20 @@
     });
   }
 
+  async function canAccessResults(assignmentId) {
+    const token = getToken();
+    if (!token || !assignmentId) return false;
+    try {
+      const qs = new URLSearchParams({ assignmentId, sessionToken: token });
+      const res = await fetch(`${API_URL}?${qs}`);
+      if (res.status === 401) return false;
+      const data = await res.json().catch(() => ({}));
+      return res.ok && !data.error;
+    } catch {
+      return false;
+    }
+  }
+
   window.WriteFlowTeacher = {
     validate,
     login,
@@ -149,5 +163,6 @@
     listMyAssignments,
     listSharedAssignments,
     copyAssignment,
+    canAccessResults,
   };
 })();

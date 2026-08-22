@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.3.1";
+  const APP_VERSION = "2.3.2";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -119,6 +119,18 @@
   ];
 
   const CHANGELOG = [
+    {
+      version: "2.3.2",
+      date: "2026-08-22",
+      summary: "Comprehensive tutorial, alphabet boot loader, and navigation/password fixes.",
+      items: [
+        "New Studio tutorial walks through every feature — account login, assignments hub, builder tabs, passwords, sharing, and student links.",
+        "Alphabet loading bar animates A–Z while Studio boots after the intro splash.",
+        "Assignments button now switches views instantly without reloading the page or replaying the intro.",
+        "Results access hardened: signed-in owners skip the assignment password; owned assignments cannot be overwritten by other teachers.",
+        "Teacher password required before publish; clearer Results login explains the three password types.",
+      ],
+    },
     {
       version: "2.3.1",
       date: "2026-08-22",
@@ -586,92 +598,141 @@
   ];
 
   const TUTORIAL_STEPS = {
-    home: [
+    studio: [
       {
-        title: "Welcome to WriteFlow",
-        body: "WriteFlow helps you run timed writing assignments. Students type on a timer; you get scores and submissions in one place.",
+        title: "Welcome to WriteFlow Studio",
+        body: "WriteFlow is a timed writing tool for classrooms. You build assignments here in Studio; students write at a simple link you share. This tour covers every major feature.",
       },
       {
-        title: "Sign in (optional)",
-        body: "Use Sign in on the top bar to create a teacher account. Saved assignments link to your username and sync across devices.",
+        title: "Three kinds of passwords",
+        body: "① Account login (top bar Sign in) — saves assignments to your teacher profile. ② Assignment teacher password (in Content) — unlocks Results for that assignment; share with co-teachers only. ③ Class codes (Classes tab) — students enter these to verify their class. Student writing links need no password.",
+      },
+      {
+        title: "Sign in to your account",
+        body: "Create a free teacher account to attach assignments to your username, sync across devices, and share templates with colleagues. Signing in is optional but recommended.",
         highlight: "#wfAccountBtn",
       },
       {
-        title: "Start from a template",
-        body: "Use Templates in the builder — or pick one on the home page — to answer a few questions and generate a ready-to-share assignment.",
+        title: "Your assignments hub",
+        body: "Every assignment you create appears here. Edit settings, copy the student link, preview the student view, or open Results. Signed-in teachers also see cloud assignments from their account.",
+        highlight: "#wfAssignmentsHeading",
+      },
+      {
+        title: "Create a new assignment",
+        body: "Click New assignment to open the builder. You can also start from a template below — WriteFlow asks a few questions and builds the assignment for you.",
+        highlight: "#openBuilderBtn",
+      },
+      {
+        title: "Templates gallery",
+        body: "Templates cover common classroom needs: persuasive writing, fluency drills, reflection prompts, and more. Pick one, answer short questions, then fine-tune every setting.",
         highlight: "#wfTemplateGallery",
       },
       {
-        title: "Step 1 — Configure",
-        body: "Click Configure (or Create assignment) to open the builder. Set your prompt, timer, and class requirements.",
+        title: "Shared by other teachers",
+        body: "When a colleague enables Share with other teachers on an assignment, it appears here. Copy it into your account, edit freely, and publish your own version with a new student link.",
+        highlight: "#wfSharedLibrary",
+      },
+      {
+        title: "Assignments button",
+        body: "Use Assignments in the top bar anytime to return to this home screen — no page reload. From here you manage all your work.",
         highlight: "#builderLinkBtn",
       },
       {
-        title: "Step 2 — Save & publish",
-        body: "In the builder, click Save assignment in the right panel. That publishes your assignment so share links work on any device.",
-      },
-      {
-        title: "Step 3 — Share the link",
-        body: "Copy the share link from the builder and send it to students. They open it, enter their info, and write.",
-      },
-      {
-        title: "Step 4 — View results",
-        body: "Click Results and enter your teacher password to see submissions, refresh the list, or export CSV.",
+        title: "Results button",
+        body: "Open Results to view student submissions. If you own the assignment and are signed in, results open automatically. Otherwise enter the assignment teacher password you set in the builder.",
         highlight: "#teacherBtn",
       },
+      {
+        title: "Student links vs Studio",
+        body: "Send students the share link from the builder (starts with /writeflow/a/). Never send the Studio URL — students should only see the writing prompt, timer, and typing area.",
+      },
+      {
+        title: "Open the builder",
+        body: "Ready to build? Click New assignment or open Tutorial anytime from the top bar. The builder guide walks through every settings tab when you are in the builder.",
+        highlight: "#tutorialBtn",
+      },
     ],
+    home: [],
     builder: [
       {
-        title: "Builder overview",
-        body: "Three areas: menu (left) picks what to edit, canvas (center) holds the settings, panel (right) saves and shares.",
+        title: "Builder layout",
+        body: "Three areas: Settings menu (left) picks what to edit, canvas (center) holds the form, inspector (right) saves, publishes, and shares. Changes auto-save to this browser as you type.",
       },
       {
         title: "Templates",
-        body: "Pick a template, answer a few questions, and WriteFlow builds the assignment for you. You can still edit everything afterward.",
+        body: "Start from a guided template when you want a head start. Answer a few questions — WriteFlow sets the prompt, timer mode, rubrics, and accessibility defaults. Everything remains editable.",
         section: "templates",
       },
       {
-        title: "Content",
-        body: "Write the assignment title, student welcome text, and the writing prompt. Set a teacher password you will use to view results.",
+        title: "Content — prompts & vocabulary",
+        body: "Set the assignment title, welcome message, writing prompt, and optional sentence starters. Add expected vocabulary words — they are highlighted in Results when students use them.",
+        section: "content",
+      },
+      {
+        title: "Assignment teacher password",
+        body: "Every assignment needs a teacher password in Content. This unlocks Results for that assignment and is separate from your account login. Choose something you will remember or share securely with co-teachers.",
         section: "content",
       },
       {
         title: "Share with colleagues",
-        body: "When signed in, turn on Share with other teachers in Content before you save. Colleagues can copy your assignment from the shared library on the home page.",
+        body: "When signed in, enable Share with other teachers before saving. Colleagues can copy your assignment from the shared library — they get their own copy with a new password and student link.",
         section: "content",
       },
       {
         title: "Timer & rules",
-        body: "Set time limits, minimum word counts, and whether students can finish early. Different settings help you support every learner.",
+        body: "Pick an assignment mode (composition, fluency, typing practice, reflection) — each sets scoring focus and timer defaults. Choose soft, hard, goal, or no timer. Set duration, minimum words, paste rules, and class requirements.",
         section: "timer",
       },
       {
-        title: "Classes",
-        body: "Open the Classes tab to see each class name and its code. Share the correct code with each class.",
+        title: "Appearance",
+        body: "Choose a color theme, font preset, optional custom font, accent color, and a hero image or GIF URL for the student welcome screen.",
+        section: "appearance",
+      },
+      {
+        title: "Accessibility",
+        body: "One-click differentiation presets bundle timer, scoring, and display settings. Toggle larger text, high contrast, dyslexia-friendly font, spellcheck, and reduced motion.",
+        section: "accessibility",
+      },
+      {
+        title: "Classes & class codes",
+        body: "Reference every class name and its secret code. When Require class code is on, students must enter the correct code for their class before writing begins.",
         section: "classes",
       },
       {
-        title: "Save & share",
-        body: "When you are done, click Save assignment, then copy the share link. Students use that URL — not the builder link.",
+        title: "Preview",
+        body: "See exactly how students will view the welcome screen before you share. Open the full student view in a new tab to test the complete flow.",
+        section: "preview",
+      },
+      {
+        title: "Save & publish",
+        body: "Click Save assignment to publish to the cloud. Students can then load your assignment from the share link on any device. While signed in, the assignment is linked to your account.",
         highlight: "#bfSave",
+      },
+      {
+        title: "Copy the student link",
+        body: "After saving, copy the share link from the inspector panel. Send only this URL to students — not the Studio builder link.",
+        highlight: "#bfCopyLink",
       },
     ],
     student: [
       {
         title: "Before you start",
-        body: "Read the prompt, enter your first name, pick your class, and type the class code your teacher gave you.",
+        body: "Read the prompt carefully. Enter your first name, pick your class from the list, and type the class code your teacher gave you (if required).",
         highlight: "#startBtn",
       },
       {
         title: "Writing time",
-        body: "Press Start when ready. The timer runs immediately. If your teacher enabled it, you can tap \"I'm done\" when you finish.",
+        body: "Press Start when you are ready — the timer begins immediately. Type your response in the box. Pasting may be disabled. Watch the word count; live WPM may show depending on your teacher's settings.",
       },
       {
-        title: "After time is up",
-        body: "You will see scores and feedback. Your teacher can open Results with their password to view your submission.",
+        title: "Finishing up",
+        body: "When time ends or you tap I'm done, your writing is analyzed and saved. Your teacher views submissions from WriteFlow Studio Results using their assignment password.",
       },
     ],
   };
+
+  // Legacy alias
+  TUTORIAL_STEPS.home = TUTORIAL_STEPS.studio;
 
   function parseVocabInput(raw) {
     return String(raw || "")

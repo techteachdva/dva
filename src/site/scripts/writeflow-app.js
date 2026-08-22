@@ -29,8 +29,14 @@
   }
 
   const params = new URLSearchParams(location.search);
-  const mode = isStudentApp ? "student" : (params.get("mode") === "builder" ? "builder" : "studio");
+  let studioMode = isStudentApp ? "student" : (params.get("mode") === "builder" ? "builder" : "studio");
   const assignmentId = params.get("id") || (isStudentApp ? "" : "sample-persuasive");
+
+  const BOOT_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+
+  function isBuilderMode() {
+    return studioMode === "builder";
+  }
 
   let config = { ...Defaults, id: assignmentId };
   let timer = null;
@@ -444,6 +450,124 @@
   function show(name) {
     Core.showView(views, name, shell, "teacher");
     scrollToMainTop();
+    updateTopbarActiveState(name);
+  }
+
+  function updateTopbarActiveState(activeView = "") {
+    if (!isStudioApp) return;
+    const homeActive = activeView === "home";
+    const resultsActive = activeView === "teacher" || activeView === "teacherLogin";
+    document.getElementById("builderLinkBtn")?.classList.toggle("wf-topbar-btn--active", homeActive);
+    document.getElementById("teacherBtn")?.classList.toggle("wf-topbar-btn--active", resultsActive);
+  }
+
+  function initBootLoader() {
+    const track = document.getElementById("wfBootAlphabet");
+    if (!track || track.childElementCount) return;
+    track.innerHTML = BOOT_ALPHABET.map((ch) =>
+      `<span class="wf-boot-loader__letter">${escapeHtml(ch)}</span>`
+    ).join("");
+  }
+
+  function setBootProgress(ratio) {
+    const letters = document.querySelectorAll("#wfBootAlphabet .wf-boot-loader__letter");
+    const filled = Math.round(Math.max(0, Math.min(1, ratio)) * letters.length);
+    letters.forEach((el, i) => {
+      el.classList.toggle("wf-boot-loader__letter--on", i < filled);
+    });
+  }
+
+  function showBootLoader(visible = true) {
+    const el = document.getElementById("wfBootLoader");
+    if (!el) return;
+    el.classList.toggle("dw-hidden", !visible);
+    el.setAttribute("aria-busy", visible ? "true" : "false");
+  }
+
+  async function ownsAssignment(assignmentId) {
+    const session = Teacher()?.getSession();
+    if (!session?.username || !assignmentId) return false;
+    const norm = normalizeUsername(session.username);
+    if (normalizeUsername(config?.ownerUsername) === norm) return true;
+    if (normalizeUsername(cloudAssignmentMeta[assignmentId]?.ownerUsername) === norm) return true;
+    if (Teacher()?.canAccessResults) {
+      try {
+        if (await Teacher().canAccessResults(assignmentId)) return true;
+      } catch {
+        /* ignore */
+      }
+    }
+    try {
+      const items = await Teacher().listMyAssignments();
+      return items.some((item) => item.assignmentId === assignmentId);
+    } catch {
+      return false;
+    }
+  }
+
+  function showHomeView({ resultsPicker = false } = {}) {
+    studioMode = "studio";
+    document.getElementById("wfTeacherPickerBanner")?.classList.toggle("dw-hidden", !resultsPicker);
+    Core.applyTheme(Core.resolveTheme({ ...Defaults, id: resolveDefaultAssignmentId() }));
+    show("home");
+    renderHomeDashboard();
+    void refreshSharedLibrary();
+  }
+
+  async function navigateToHome({ resultsPicker = false } = {}) {
+    teacherAuthed = false;
+    sessionTeacherPassword = "";
+    const query = resultsPicker ? "?teacher=1" : "";
+    history.replaceState(null, "", studioUrl(query));
+    showHomeView({ resultsPicker });
+  }
+
+  async function navigateToNewAssignment({ templateId = "", section = "templates" } = {}) {
+    studioMode = "builder";
+    activeTemplateId = templateId || "";
+    builderSection = section || "templates";
+    const id = `assignment-${Date.now()}`;
+    config = {
+      ...Defaults,
+      id,
+      title: "Untitled Assignment",
+      teacherPassword: `wf${Math.random().toString(36).slice(2, 10)}`,
+    };
+    persistConfig();
+    const qs = new URLSearchParams({ mode: "builder", id: config.id });
+    if (section) qs.set("section", section);
+    if (templateId) qs.set("template", templateId);
+    history.replaceState(null, "", studioUrl(`?${qs}`));
+    show("builder");
+    applyConfigToUI();
+    Core.applyTheme(Core.resolveTheme(config));
+    renderBuilder();
+  }
+
+  async function navigateToResults(assignmentId) {
+    if (!assignmentId) {
+      await navigateToHome({ resultsPicker: true });
+      return;
+    }
+    studioMode = "studio";
+    config = (await loadAssignmentForEdit(assignmentId));
+    applyConfigToUI();
+    history.replaceState(null, "", studioUrl(`?id=${encodeURIComponent(assignmentId)}&teacher=1`));
+
+    if (await ownsAssignment(assignmentId)) {
+      teacherAuthed = true;
+      sessionTeacherPassword = config.teacherPassword || "";
+      show("teacher");
+      await loadTeacherDashboard();
+      return;
+    }
+
+    teacherAuthed = false;
+    sessionTeacherPassword = "";
+    const pwEl = document.getElementById("teacherPassword");
+    if (pwEl) pwEl.value = "";
+    document.getElementById("teacherLoginError")?.classList.add("dw-hidden");
+    show("teacherLogin");
   }
 
   function formatDurationLabel(sec) {
@@ -540,12 +664,12 @@
   }
 
   function currentTutorialSteps() {
-    return TUTORIAL_STEPS[tutorialContextKey] || TUTORIAL_STEPS.home || [];
+    return TUTORIAL_STEPS[tutorialContextKey] || TUTORIAL_STEPS.studio || [];
   }
 
   function getTutorialContext() {
-    if (mode === "builder") return "builder";
-    if (!isStudentApp) return "home";
+    if (isBuilderMode()) return "builder";
+    if (!isStudentApp) return "studio";
     return "student";
   }
 
@@ -555,7 +679,7 @@
     const overlay = document.getElementById("wfTutorial");
     if (!step || !overlay) return;
 
-    if (step.section && mode === "builder") {
+    if (step.section && isBuilderMode()) {
       builderSection = step.section;
       renderBuilder();
     }
@@ -564,7 +688,7 @@
     document.getElementById("wfTutorialBody").textContent = step.body;
     document.getElementById("wfTutorialStep").textContent = `${tutorialIndex + 1} / ${steps.length}`;
     document.getElementById("wfTutorialEyebrow").textContent =
-      tutorialContextKey === "builder" ? "Builder guide" : tutorialContextKey === "student" ? "Student guide" : "Teacher guide";
+      tutorialContextKey === "builder" ? "Builder guide" : tutorialContextKey === "student" ? "Student guide" : "Studio guide";
 
     const backBtn = document.getElementById("tutorialBackBtn");
     const nextBtn = document.getElementById("tutorialNextBtn");
@@ -581,7 +705,10 @@
     overlay?.classList.add("dw-hidden");
     clearTutorialHighlight();
     if (markSeen) {
-      try { localStorage.setItem(`writeflow:tutorial:${tutorialContextKey}`, "1"); } catch {}
+      try {
+        localStorage.setItem(`writeflow:tutorial:studio:${Defaults?.APP_VERSION || "2.3.2"}`, "1");
+        localStorage.setItem(`writeflow:tutorial:${tutorialContextKey}`, "1");
+      } catch {}
     }
   }
 
@@ -594,7 +721,7 @@
 
   function initTutorial() {
     document.getElementById("tutorialBtn")?.addEventListener("click", () => openTutorial(getTutorialContext()));
-    document.getElementById("openTutorialHomeBtn")?.addEventListener("click", () => openTutorial("home"));
+    document.getElementById("openTutorialHomeBtn")?.addEventListener("click", () => openTutorial("studio"));
     document.getElementById("tutorialSkipBtn")?.addEventListener("click", () => closeTutorial(true));
     document.getElementById("tutorialBackdrop")?.addEventListener("click", () => closeTutorial(true));
     document.getElementById("tutorialBackBtn")?.addEventListener("click", () => {
@@ -616,10 +743,10 @@
       openTutorial(getTutorialContext());
       return;
     }
-    const ctx = getTutorialContext();
+    const tutorialKey = `writeflow:tutorial:studio:${Defaults?.APP_VERSION || "2.3.2"}`;
     try {
-      if (ctx === "home" && localStorage.getItem(`writeflow:tutorial:${ctx}`) !== "1") {
-        setTimeout(() => openTutorial("home"), 400);
+      if (!isStudentApp && !isBuilderMode() && localStorage.getItem(tutorialKey) !== "1") {
+        setTimeout(() => openTutorial("studio"), 500);
       }
     } catch {}
   }
@@ -1164,13 +1291,23 @@
   }
 
   function bindTeacherEvents() {
-    document.getElementById("teacherCancelBtn")?.addEventListener("click", () => show("home"));
+    document.getElementById("teacherCancelBtn")?.addEventListener("click", () => void navigateToHome());
     document.getElementById("teacherLoginBtn")?.addEventListener("click", async () => {
       const pw = document.getElementById("teacherPassword")?.value || "";
       const errEl = document.getElementById("teacherLoginError");
+
+      if (await ownsAssignment(config.id)) {
+        teacherAuthed = true;
+        sessionTeacherPassword = config.teacherPassword || "";
+        if (errEl) errEl.classList.add("dw-hidden");
+        show("teacher");
+        await loadTeacherDashboard();
+        return;
+      }
+
       if (!pw) {
         if (errEl) {
-          errEl.textContent = "Enter your teacher password.";
+          errEl.textContent = "Enter the assignment teacher password.";
           errEl.classList.remove("dw-hidden");
         }
         return;
@@ -1190,14 +1327,16 @@
           }
           return;
         }
-      } catch {
-        if (config.teacherPassword && pw !== config.teacherPassword) {
-          if (errEl) {
-            errEl.textContent = "Incorrect password for this assignment.";
-            errEl.classList.remove("dw-hidden");
-          }
-          return;
+        if (!res.ok) {
+          const data = await res.json().catch(() => ({}));
+          throw new Error(data.error || "Could not verify access.");
         }
+      } catch (err) {
+        if (errEl) {
+          errEl.textContent = err.message || "Could not verify access. Check your connection and try again.";
+          errEl.classList.remove("dw-hidden");
+        }
+        return;
       }
 
       sessionTeacherPassword = pw;
@@ -1208,13 +1347,12 @@
     document.getElementById("teacherLogoutBtn")?.addEventListener("click", () => {
       teacherAuthed = false;
       sessionTeacherPassword = "";
-      show("home");
-      renderHomeDashboard();
+      void navigateToHome();
     });
     document.getElementById("teacherHomeBtn")?.addEventListener("click", () => {
       teacherAuthed = false;
       sessionTeacherPassword = "";
-      location.href = studioUrl("");
+      void navigateToHome();
     });
     document.getElementById("teacherEditBtn")?.addEventListener("click", () => {
       void openAssignmentInBuilder(config.id);
@@ -1230,10 +1368,7 @@
     applyConfigToUI();
     bindTeacherEvents();
 
-    const session = Teacher()?.getSession();
-    const ownsAssignment = session?.username
-      && normalizeUsername(config.ownerUsername) === normalizeUsername(session.username);
-    if (ownsAssignment) {
+    if (await ownsAssignment(id)) {
       teacherAuthed = true;
       sessionTeacherPassword = config.teacherPassword || "";
       show("teacher");
@@ -1542,6 +1677,7 @@
 
   async function openAssignmentInBuilder(id, { section = "content" } = {}) {
     if (!id) return;
+    studioMode = "builder";
     config = await loadAssignmentForEdit(id);
     builderSection = section;
     activeTemplateId = "";
@@ -1618,7 +1754,7 @@
         }
         if (action === "results") {
           e.preventDefault();
-          location.href = studioUrl(`?id=${encodeURIComponent(id)}&teacher=1`);
+          void navigateToResults(id);
           return;
         }
         if (action === "copy") {
@@ -1684,7 +1820,7 @@
           <button class="dw-btn" type="button" id="wfEmptyCreateBtn">Create assignment</button>
         </div>`;
       document.getElementById("wfEmptyCreateBtn")?.addEventListener("click", () => {
-        location.href = studioUrl("?mode=builder&section=templates");
+        void navigateToNewAssignment({ section: "templates" });
       });
       return;
     }
@@ -1701,21 +1837,23 @@
   function bindTopbarActions() {
     if (!isStudioApp) return;
     document.getElementById("builderLinkBtn")?.addEventListener("click", () => {
-      location.href = studioUrl("");
+      void navigateToHome();
     });
 
     document.getElementById("teacherBtn")?.addEventListener("click", () => {
       const ids = getAssignmentsList();
-      if (!ids.length) {
-        location.href = studioUrl("?teacher=1");
+      const cloudIds = Object.keys(cloudAssignmentMeta);
+      const allIds = [...new Set([...ids, ...cloudIds])];
+      if (!allIds.length) {
+        void navigateToHome({ resultsPicker: true });
         return;
       }
-      const id = config?.id && ids.includes(config.id) ? config.id : ids[0];
-      if (ids.length > 1 && mode !== "builder") {
-        location.href = studioUrl("?teacher=1");
+      const id = config?.id && allIds.includes(config.id) ? config.id : allIds[0];
+      if (allIds.length > 1 && !isBuilderMode() && !teacherAuthed) {
+        void navigateToHome({ resultsPicker: true });
         return;
       }
-      location.href = studioUrl(`?id=${encodeURIComponent(id)}&teacher=1`);
+      void navigateToResults(id);
     });
   }
 
@@ -2147,6 +2285,12 @@
       history.replaceState(null, "", `?mode=builder&id=${encodeURIComponent(config.id)}`);
     });
     document.getElementById("bfSave")?.addEventListener("click", async () => {
+      if (!String(config.teacherPassword || "").trim()) {
+        showSaveStatus("Set a teacher password in Content before saving — it protects your results.", false);
+        builderSection = "content";
+        renderBuilder();
+        return;
+      }
       persistConfig();
       showSaveStatus("Publishing…", true);
       try {
@@ -2236,6 +2380,7 @@
   }
 
   async function initBuilder() {
+    studioMode = "builder";
     const id = params.get("id") || resolveDefaultAssignmentId();
     config = await loadAssignmentForEdit(id);
     if (params.get("template")) {
@@ -2252,23 +2397,23 @@
     renderBuilder();
   }
 
-  function initHome() {
-    Core.applyTheme(Core.resolveTheme({ ...Defaults, id: resolveDefaultAssignmentId() }));
-    show("home");
-    renderHomeDashboard();
-    void refreshSharedLibrary();
-    renderTemplateGallery("homeTemplateGrid", (id) => {
-      location.href = studioUrl(`?mode=builder&template=${encodeURIComponent(id)}`);
-    });
+  function bindHomeEvents() {
     document.getElementById("openBuilderBtn")?.addEventListener("click", () => {
-      location.href = studioUrl("?mode=builder&section=templates");
+      void navigateToNewAssignment({ section: "templates" });
+    });
+    renderTemplateGallery("homeTemplateGrid", (id) => {
+      void navigateToNewAssignment({ templateId: id, section: "templates" });
     });
   }
 
+  function initHome() {
+    showHomeView();
+  }
+
   async function initStudioApp() {
-    Core.applyTheme(Core.resolveTheme({ ...Defaults, id: resolveDefaultAssignmentId() }));
     bindTopbarActions();
     bindAccountEvents();
+    bindHomeEvents();
     if (Teacher()) {
       await Teacher().validate();
       updateAccountButton();
@@ -2276,9 +2421,8 @@
       await refreshSharedLibrary();
     }
     initTutorial();
-    if (mode === "builder") void initBuilder();
-    else if (params.get("teacher") === "1" && !params.get("id")) initHome();
-    else if (params.get("teacher") === "1") void initTeacherPortal();
+    if (isBuilderMode()) void initBuilder();
+    else if (params.get("teacher") === "1" && params.get("id")) void initTeacherPortal();
     else initHome();
   }
 
@@ -2288,7 +2432,30 @@
     } else {
       document.getElementById("wfStudioShell")?.classList.remove("dw-hidden");
     }
-    await initStudioApp();
+
+    initBootLoader();
+    showBootLoader(true);
+    setBootProgress(0);
+    const bootStart = performance.now();
+    const minBootMs = 700;
+    let bootDone = false;
+    const progressTimer = setInterval(() => {
+      if (bootDone) return;
+      const ratio = Math.min(0.9, (performance.now() - bootStart) / 1600);
+      setBootProgress(ratio);
+    }, 40);
+
+    try {
+      await initStudioApp();
+    } finally {
+      bootDone = true;
+      clearInterval(progressTimer);
+      const elapsed = performance.now() - bootStart;
+      if (elapsed < minBootMs) await new Promise((r) => setTimeout(r, minBootMs - elapsed));
+      setBootProgress(1);
+      await new Promise((r) => setTimeout(r, 150));
+      showBootLoader(false);
+    }
   }
 
   if (isStudentApp) void initStudentFlow();

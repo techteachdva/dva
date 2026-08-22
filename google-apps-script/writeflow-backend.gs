@@ -355,6 +355,7 @@ function copyAssignmentForUser_(session, sourceAssignmentId, newAssignmentId, ne
     ownerUsername: session.username,
     shared: false,
     authorDisplayName: session.displayName,
+    sessionToken: session.token,
   });
 
   return { assignmentId: newId, title: title, config: config, teacherPassword: teacherPassword };
@@ -439,7 +440,8 @@ function handle_(e, isGet) {
       if (!assignmentId) return respond_({ error: "Missing assignmentId" });
       const assignment = getAssignmentConfig_(assignmentId);
       if (!assignment) return respond_({ error: "Assignment not found" });
-      return respond_({ ok: true, assignmentId: assignmentId, title: assignment.title, config: assignment.config });
+      const publicConfig = stripPublicAssignmentConfig_(assignment.config);
+      return respond_({ ok: true, assignmentId: assignmentId, title: assignment.title, config: publicConfig });
     }
 
     if (action === "listSharedAssignments") {
@@ -519,11 +521,27 @@ function verifyAssignmentPassword_(assignmentId, password, session) {
   return false;
 }
 
+function stripPublicAssignmentConfig_(config) {
+  const next = config && typeof config === "object" ? Object.assign({}, config) : {};
+  delete next.teacherPassword;
+  delete next.heroImageData;
+  return next;
+}
+
 function registerAssignment_(params) {
   const assignmentId = String(params.assignmentId || "").trim().slice(0, 80);
   const teacherPassword = String(params.teacherPassword || "").slice(0, 80);
   const title = String(params.title || "").trim().slice(0, 200);
-  const configJson = String(params.configJson || "").slice(0, 45000);
+  const rawConfigJson = String(params.configJson || "").slice(0, 45000);
+  var configJson = rawConfigJson;
+  if (rawConfigJson) {
+    try {
+      const parsed = JSON.parse(rawConfigJson);
+      configJson = JSON.stringify(stripPublicAssignmentConfig_(parsed)).slice(0, 45000);
+    } catch (ignore) {
+      configJson = rawConfigJson;
+    }
+  }
   if (!assignmentId || !teacherPassword) {
     throw new Error("Missing assignmentId or teacherPassword");
   }
@@ -551,10 +569,10 @@ function registerAssignment_(params) {
     }
   }
 
-  if (targetRow > 0 && session) {
+  if (targetRow > 0) {
     const existingOwner = normalizeUsername_(sheet.getRange(targetRow, 6).getValue());
-    if (existingOwner && existingOwner !== session.username) {
-      throw new Error("This assignment belongs to another teacher.");
+    if (existingOwner && (!session || session.username !== existingOwner)) {
+      throw new Error("This assignment belongs to another teacher. Sign in to edit it.");
     }
   }
 

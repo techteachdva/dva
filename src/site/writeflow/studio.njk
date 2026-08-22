@@ -23,6 +23,10 @@ layout: false
     {% include "writeflow-intro-splash.njk" %}
 
     <div class="dw-shell dw-hidden" id="wfStudioShell">
+      <div id="wfBootLoader" class="wf-boot-loader dw-hidden" aria-live="polite" aria-busy="true">
+        <p class="wf-boot-loader__label">Loading WriteFlow Studio…</p>
+        <div class="wf-boot-loader__track" id="wfBootAlphabet" aria-hidden="true"></div>
+      </div>
       <header class="dw-topbar" id="studioTopbar">
         <div class="dw-topbar-brand">
           <a href="/writeflow/" class="wf-brand-link">
@@ -168,7 +172,8 @@ layout: false
 
         <section id="teacherLoginView" class="dw-card dw-stack dw-hidden dw-narrow">
           <h2 class="dw-h2">View results</h2>
-          <p class="dw-muted">Enter the teacher password for this assignment.</p>
+          <p class="dw-muted">Enter the <strong>assignment teacher password</strong> you set in the builder. If you are signed in as the assignment owner, you can open results without re-entering it.</p>
+          <p class="dw-muted dw-tiny">This password is separate from your WriteFlow account login. It protects student submissions — share it only with co-teachers who need access to results.</p>
           <label class="dw-field"><span class="dw-label">Teacher password</span><input id="teacherPassword" class="dw-input" type="password" autocomplete="current-password" /></label>
           <div class="dw-row">
             <button id="teacherLoginBtn" class="dw-btn" type="button">Enter</button>

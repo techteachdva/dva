@@ -175,8 +175,13 @@ export async function GET(request) {
           { status: data.error === "Assignment not found" ? 404 : 502, headers: corsHeaders() }
         );
       }
+      const publicConfig = data.config && typeof data.config === "object" ? { ...data.config } : data.config;
+      if (publicConfig && typeof publicConfig === "object") {
+        delete publicConfig.teacherPassword;
+        delete publicConfig.heroImageData;
+      }
       return Response.json(
-        { ok: true, assignmentId: data.assignmentId, title: data.title, config: data.config },
+        { ok: true, assignmentId: data.assignmentId, title: data.title, config: publicConfig },
         { headers: corsHeaders() }
       );
     } catch (e) {
