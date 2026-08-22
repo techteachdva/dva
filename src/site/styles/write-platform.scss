@@ -2045,6 +2045,12 @@
   inset: 0;
   background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(2px);
+  transition: clip-path 0.2s ease;
+}
+
+.wf-tutorial--spotlight .wf-tutorial__backdrop {
+  background: rgba(0, 0, 0, 0.62);
+  backdrop-filter: none;
 }
 
 .wf-tutorial__panel {
@@ -2056,6 +2062,7 @@
   background: var(--dw-bg, #0f172a);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
   margin-bottom: max(16px, env(safe-area-inset-bottom, 0));
+  z-index: 2;
 }
 
 .wf-tutorial__meta {
@@ -2100,11 +2107,12 @@
 
 .wf-tutorial-highlight {
   position: relative;
-  z-index: 101;
-  outline: 3px solid var(--dw-accent);
+  z-index: 110 !important;
+  outline: 3px solid #38bdf8;
   outline-offset: 4px;
   border-radius: 10px;
-  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.35), 0 12px 40px rgba(0, 0, 0, 0.45);
+  background-color: var(--dw-bg, #0f172a);
 }
 
 .wf-quickstart__steps {
@@ -2476,12 +2484,33 @@
 }
 
 .wf-intro-splash__stage {
+  position: relative;
   width: min(760px, 92vw);
-  text-align: center;
+  height: min(360px, 52vh);
   min-height: 280px;
+  text-align: center;
+}
+
+.wf-intro-phase {
+  position: absolute;
+  inset: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-direction: column;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.45s ease, transform 0.45s ease, visibility 0.45s ease;
+}
+
+.wf-intro-phase--hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+body.wf-intro-active {
+  overflow: hidden;
 }
 
 .wf-intro-type-phase {
@@ -2526,6 +2555,7 @@
   transition: opacity 0.55s ease, transform 0.55s ease;
 }
 
+.wf-intro-phase.wf-intro-score:not(.wf-intro-phase--hidden),
 .wf-intro-score--in {
   opacity: 1;
   transform: translateY(0);
@@ -2604,6 +2634,13 @@
 .wf-intro-logo {
   opacity: 0;
   transform: scale(0.7);
+}
+
+.wf-intro-phase.wf-intro-logo:not(.wf-intro-phase--hidden),
+.wf-intro-logo--in {
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .wf-intro-logo--in {

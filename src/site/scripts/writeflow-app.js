@@ -44,6 +44,7 @@
   const ASSIGNMENT_TEMPLATES = window.WriteFlowDefaults?.ASSIGNMENT_TEMPLATES || [];
 
   let timerWaitingForMinWords = false;
+  let studentSession = { name: "", classroom: "", classCode: "" };
   let activeTemplateId = params.get("template") || "";
   let templateAnswers = {};
 
@@ -387,20 +388,74 @@
   }
 
   function clearTutorialHighlight() {
+    const overlay = document.getElementById("wfTutorial");
+    overlay?.classList.remove("wf-tutorial--spotlight");
+    const backdrop = document.getElementById("tutorialBackdrop");
+    const panel = overlay?.querySelector(".wf-tutorial__panel");
+    if (backdrop) backdrop.style.removeProperty("clip-path");
+    if (panel) {
+      panel.style.removeProperty("marginTop");
+      panel.style.removeProperty("marginBottom");
+    }
+    if (overlay) overlay.style.removeProperty("alignItems");
     if (tutorialHighlightEl) {
       tutorialHighlightEl.classList.remove("wf-tutorial-highlight");
       tutorialHighlightEl = null;
     }
   }
 
+  function positionTutorialSpotlight(el) {
+    const overlay = document.getElementById("wfTutorial");
+    const backdrop = document.getElementById("tutorialBackdrop");
+    const panel = overlay?.querySelector(".wf-tutorial__panel");
+    if (!el || !overlay || !backdrop) return;
+
+    const pad = 10;
+    const rect = el.getBoundingClientRect();
+    const x1 = Math.max(0, rect.left - pad);
+    const y1 = Math.max(0, rect.top - pad);
+    const x2 = Math.min(window.innerWidth, rect.right + pad);
+    const y2 = Math.min(window.innerHeight, rect.bottom + pad);
+
+    backdrop.style.clipPath = `polygon(
+      evenodd,
+      0% 0%, 100% 0%, 100% 100%, 0% 100%, 0% 0%,
+      ${x1}px ${y1}px,
+      ${x1}px ${y2}px,
+      ${x2}px ${y2}px,
+      ${x2}px ${y1}px,
+      ${x1}px ${y1}px
+    )`;
+
+    if (panel) {
+      const spaceBelow = window.innerHeight - rect.bottom;
+      const spaceAbove = rect.top;
+      panel.style.marginTop = "";
+      panel.style.marginBottom = "";
+      if (spaceBelow >= 200 || spaceBelow >= spaceAbove) {
+        overlay.style.alignItems = "flex-end";
+        panel.style.marginBottom = "max(16px, env(safe-area-inset-bottom, 0))";
+      } else {
+        overlay.style.alignItems = "flex-start";
+        panel.style.marginTop = "max(16px, env(safe-area-inset-top, 0))";
+      }
+    }
+  }
+
   function applyTutorialHighlight(selector) {
     clearTutorialHighlight();
+    const overlay = document.getElementById("wfTutorial");
     if (!selector) return;
     const el = document.querySelector(selector);
     if (!el) return;
     tutorialHighlightEl = el;
     el.classList.add("wf-tutorial-highlight");
+    overlay?.classList.add("wf-tutorial--spotlight");
     el.scrollIntoView({ behavior: "smooth", block: "center" });
+    requestAnimationFrame(() => {
+      positionTutorialSpotlight(el);
+      requestAnimationFrame(() => positionTutorialSpotlight(el));
+    });
   }
 
   function currentTutorialSteps() {
@@ -435,7 +490,9 @@
     if (backBtn) backBtn.disabled = tutorialIndex === 0;
     if (nextBtn) nextBtn.textContent = tutorialIndex >= steps.length - 1 ? "Done" : "Next";
 
-    requestAnimationFrame(() => applyTutorialHighlight(step.highlight));
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => applyTutorialHighlight(step.highlight));
+    });
   }
 
   function closeTutorial(markSeen = true) {
@@ -494,6 +551,15 @@
     el.classList.add(ok ? "wf-save-status--ok" : "wf-save-status--error");
   }
 
+  function captureStudentSession() {
+    const classEl = document.getElementById("studentClass");
+    studentSession = {
+      name: document.getElementById("studentName")?.value.trim() || "",
+      classroom: Core.resolveClassroom(classEl?.value, VALID_CLASSROOMS) || "",
+      classCode: document.getElementById("classCode")?.value || "",
+    };
+  }
+
   function canStart() {
     const nameOk = !config.requireName || document.getElementById("studentName")?.value.trim();
     const classEl = document.getElementById("studentClass");
@@ -542,10 +608,10 @@
     const vocabWords = getVocabWords();
     const analysis = window.WriteAnalysis?.analyzeText(text, duration, { vocabWords })
       || { scores: {}, wordCount: 0, wpm: 0, feedback: [], sentenceCount: 0 };
-    const name = document.getElementById("studentName")?.value.trim() || "Student";
+    const name = studentSession.name || document.getElementById("studentName")?.value.trim() || "Student";
     const classEl = document.getElementById("studentClass");
-    const classroom = Core.resolveClassroom(classEl?.value, VALID_CLASSROOMS) || "";
-    const classCode = document.getElementById("classCode")?.value || "";
+    const classroom = studentSession.classroom || Core.resolveClassroom(classEl?.value, VALID_CLASSROOMS) || "";
+    const classCode = studentSession.classCode || document.getElementById("classCode")?.value || "";
 
     const resultNameEl = document.getElementById("resultName");
     const resultSummaryEl = document.getElementById("resultSummary");
@@ -752,6 +818,7 @@
 
     document.getElementById("startBtn")?.addEventListener("click", () => {
       if (!canStart()) return;
+      captureStudentSession();
       storyInput.value = "";
       storyInput.readOnly = false;
       storyInput.style.height = "";

@@ -4,9 +4,21 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.0";
+  const APP_VERSION = "2.0.1";
 
   const CHANGELOG = [
+    {
+      version: "2.0.1",
+      date: "2026-08-21",
+      summary: "Landing intro animation, tutorial spotlight, and class-code submission fixes.",
+      items: [
+        "Landing intro animation now plays all three phases (typewriter, score cards, WFS logo) with proper layering.",
+        "Tutorial uses a spotlight cutout so highlighted settings stay visible behind the guide panel.",
+        "Student name, class, and class code are saved at Start and reused when submitting after the timer.",
+        "Google Sheets backend classroom codes synced with the site so server validation matches the client.",
+        "Impact stats on the landing page use real counts from your submissions sheet.",
+      ],
+    },
     {
       version: "2.0",
       date: "2026-03-21",

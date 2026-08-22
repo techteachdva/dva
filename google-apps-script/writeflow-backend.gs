@@ -41,21 +41,21 @@ const VALID_CLASSROOMS = [
 
 /** Auto-generated from api/diagnostic-writing/classroom-codes.json */
 const CLASSROOM_CODES = {
-  "Tech: Media Arts": "media",
+  "Tech: Media Arts": "storyboard",
   "Tech 6-A-2": "variable",
   "Tech 7-A-4": "function",
-  "Mr. Phil's Advisory": "advisory",
-  "Tech 6-A-5": "loop",
-  "Tech 7-A-6": "binary",
-  "Tech: Video Production": "frame",
-  "Tech 8-B-2": "pixel",
-  "Tech: Game Design": "sprite",
-  "Tech 7-B-5": "debug",
-  "Tech 6-B-6": "input",
-  "Mrs. Eckart 6th Grade ELA": "eclipse",
-  "Mrs. McCarthy 7th Grade ELA": "metaphor",
-  "Mrs. Severson 8th Grade ELA": "syntax",
-  "Teacher's Lounge": "coffee",
+  "Mr. Phil's Advisory": "dontbeagort",
+  "Tech 6-A-5": "circuit",
+  "Tech 7-A-6": "debugging",
+  "Tech: Video Production": "lightscamera",
+  "Tech 8-B-2": "prototype",
+  "Tech: Game Design": "rollforit",
+  "Tech 7-B-5": "iteration",
+  "Tech 6-B-6": "binary",
+  "Mrs. Eckart 6th Grade ELA": "narrative",
+  "Mrs. McCarthy 7th Grade ELA": "revision",
+  "Mrs. Severson 8th Grade ELA": "thesis",
+  "Teacher's Lounge": "alwayslearning",
 };
 
 function normalizeSheetId_(raw) {

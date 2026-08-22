@@ -32,16 +32,16 @@ layout: false
   <body class="dw-body wp-theme--dark wf-landing-body">
     <a class="wf-skip-link" href="#wfLandingMain">Skip to main content</a>
 
-    <div id="wfIntroSplash" class="wf-intro-splash">
+    <div id="wfIntroSplash" class="wf-intro-splash" aria-hidden="false">
       <div class="wf-intro-splash__stage">
-        <div id="wfIntroTypePhase" class="wf-intro-type-phase">
+        <div id="wfIntroTypePhase" class="wf-intro-phase" aria-hidden="false">
           <div class="wf-intro-typewriter-wrap">
             <span class="wf-intro-typewriter" id="wfIntroTypewriter" aria-live="polite"></span>
             <span class="wf-intro-cursor" id="wfIntroCursor" aria-hidden="true">|</span>
           </div>
         </div>
 
-        <div class="wf-intro-score dw-hidden" id="wfIntroScore">
+        <div class="wf-intro-phase wf-intro-score wf-intro-phase--hidden" id="wfIntroScore" aria-hidden="true">
           <p class="wf-intro-score__heading">Analyzing draft…</p>
           <div class="wf-intro-score__grid">
             <div class="wf-intro-score__card"><span class="wf-intro-score__label">Typing</span><span class="wf-intro-score__val" data-score="typing">0</span></div>
@@ -56,7 +56,7 @@ layout: false
           </div>
         </div>
 
-        <div class="wf-intro-logo dw-hidden" id="wfIntroLogo" aria-hidden="true">
+        <div class="wf-intro-phase wf-intro-logo wf-intro-phase--hidden" id="wfIntroLogo" aria-hidden="true">
           <div class="wf-intro-logo__card">
             <div class="wf-intro-logo__graph" aria-hidden="true">
               <span class="wf-intro-logo__bar" style="--h:62%"></span>
