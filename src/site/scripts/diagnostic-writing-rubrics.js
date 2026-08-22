@@ -163,25 +163,30 @@
     return null;
   }
 
-  function studentScoreCards(analysis) {
+  function filterScoreCards(cards, rubrics) {
+    const active = rubrics || ["typing", "mechanics", "story"];
+    return (cards || []).filter((c) => c.id === "overall" || active.includes(c.id));
+  }
+
+  function studentScoreCards(analysis, rubrics) {
     const s = analysis.scores || {};
     const story = resolveStoryScore(analysis);
-    return [
+    return filterScoreCards([
       metricCard("typing", s.typing, analysis),
       metricCard("mechanics", s.mechanics, analysis),
       metricCard("story", story, analysis),
       metricCard("overall", s.overall, analysis),
-    ].filter(Boolean);
+    ].filter(Boolean), rubrics);
   }
 
-  function teacherMetricCards(analysis) {
+  function teacherMetricCards(analysis, rubrics) {
     const s = analysis.scores || {};
     const story = resolveStoryScore(analysis);
-    return [
+    return filterScoreCards([
       metricCard("typing", s.typing, analysis),
       metricCard("mechanics", s.mechanics, analysis),
       metricCard("story", story, analysis),
-    ].filter(Boolean);
+    ].filter(Boolean), rubrics);
   }
 
   function bandClass(level) {
@@ -196,6 +201,7 @@
     band,
     overallSummary,
     metricCard,
+    filterScoreCards,
     studentScoreCards,
     teacherMetricCards,
     bandClass,

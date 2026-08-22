@@ -4,9 +4,134 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.0.1";
+  const APP_VERSION = "2.1.0";
+
+  const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
+
+  const MODE_DEFAULTS = {
+    composition: {
+      assignmentMode: "composition",
+      rubrics: ["mechanics", "story"],
+      showLiveStats: true,
+      showLiveWpm: false,
+      timerStyle: "soft",
+      allowEndEarly: true,
+      lockAfterTime: false,
+    },
+    fluency: {
+      assignmentMode: "fluency",
+      rubrics: ["typing"],
+      showLiveStats: true,
+      showLiveWpm: true,
+      timerStyle: "hard",
+      allowEndEarly: true,
+      lockAfterTime: true,
+    },
+    typing_practice: {
+      assignmentMode: "typing_practice",
+      rubrics: ["typing"],
+      showLiveStats: true,
+      showLiveWpm: true,
+      timerStyle: "hard",
+      allowEndEarly: false,
+      lockAfterTime: true,
+    },
+    reflection: {
+      assignmentMode: "reflection",
+      rubrics: ["mechanics", "story"],
+      showLiveStats: true,
+      showLiveWpm: false,
+      timerStyle: "soft",
+      allowEndEarly: true,
+      lockAfterTime: false,
+      allowPaste: true,
+    },
+  };
+
+  const DIFFERENTIATION_PRESETS = [
+    {
+      id: "emerging-typist",
+      icon: "🌱",
+      label: "Emerging typist",
+      description: "Extra time, soft timer, larger text — fluency not scored.",
+      settings: {
+        assignmentMode: "composition",
+        timerStyle: "soft",
+        durationSec: 600,
+        showLiveWpm: false,
+        allowEndEarly: true,
+        lockAfterTime: false,
+        rubrics: ["mechanics", "story"],
+        accessibility: { largeText: true, dyslexiaFont: true, highContrast: false, spellcheck: true, reducedMotion: false },
+      },
+    },
+    {
+      id: "standard",
+      icon: "✏️",
+      label: "Standard",
+      description: "Balanced composition defaults — ideas and craft, not speed.",
+      settings: {
+        assignmentMode: "composition",
+        timerStyle: "soft",
+        durationSec: 300,
+        showLiveWpm: false,
+        allowEndEarly: true,
+        lockAfterTime: false,
+        rubrics: ["mechanics", "story"],
+        accessibility: { largeText: false, dyslexiaFont: false, highContrast: false, spellcheck: true, reducedMotion: false },
+      },
+    },
+    {
+      id: "fluency-challenge",
+      icon: "⌨️",
+      label: "Fluency challenge",
+      description: "Timed stamina drill — WPM visible, typing scored.",
+      settings: {
+        assignmentMode: "fluency",
+        timerStyle: "hard",
+        durationSec: 600,
+        showLiveWpm: true,
+        minWordCount: 100,
+        requireMinWordsToComplete: true,
+        allowEndEarly: true,
+        lockAfterTime: true,
+        rubrics: ["typing"],
+        accessibility: { largeText: true, dyslexiaFont: false, highContrast: false, spellcheck: true, reducedMotion: false },
+      },
+    },
+    {
+      id: "reflection-preset",
+      icon: "💭",
+      label: "Reflection",
+      description: "Low-stakes reflection — soft timer, paste allowed.",
+      settings: {
+        assignmentMode: "reflection",
+        timerStyle: "soft",
+        durationSec: 480,
+        showLiveWpm: false,
+        allowEndEarly: true,
+        lockAfterTime: false,
+        allowPaste: true,
+        rubrics: ["mechanics", "story"],
+        accessibility: { largeText: false, dyslexiaFont: false, highContrast: false, spellcheck: true, reducedMotion: false },
+      },
+    },
+  ];
 
   const CHANGELOG = [
+    {
+      version: "2.1.0",
+      date: "2026-08-21",
+      summary: "Pedagogy-informed modes, soft timers, and differentiation presets.",
+      items: [
+        "Assignment modes (composition, fluency, typing practice, reflection) set sensible defaults for scoring and live stats.",
+        "WPM is hidden by default in composition — show words only unless you enable live WPM or use a fluency mode.",
+        "Soft, goal, and no-timer styles let students finish on their own instead of auto-submitting at zero.",
+        "Rubrics filter score cards, CSV columns, and overall scoring by mode.",
+        "One-click differentiation presets and optional sentence starters for scaffolds.",
+        "Growth-oriented student results copy de-emphasizes speed in composition mode.",
+      ],
+    },
     {
       version: "2.0.1",
       date: "2026-08-21",
@@ -57,6 +182,7 @@
   const DEFAULT_ASSIGNMENT = {
     id: "sample-persuasive",
     version: 2,
+    assignmentMode: "composition",
     title: "Persuasive Essay Draft",
     subtitle: "Timed writing assignment",
     prompt: "Write a persuasive paragraph about a school rule you would change. State your claim, give two reasons with evidence, and end with a call to action.",
@@ -65,22 +191,25 @@
     welcomeLead: "You will have a timed window to type your first draft. Focus on getting ideas down — revision comes later.",
     checklist: [
       "Hit Start when you're ready — the timer runs automatically.",
-      "Keep typing until time is up (auto-submits).",
+      "Keep writing until you're done — tap \"I'm done\" or wait for the timer.",
       "Pasting is disabled — this measures your own typing.",
-      "Don't worry about perfection; quantity and craft both count.",
+      "Don't worry about perfection; ideas and craft both count.",
     ],
     durationSec: 300,
+    timerStyle: "soft",
     allowPaste: false,
     spellcheck: true,
-    lockAfterTime: true,
+    lockAfterTime: false,
     showLiveStats: true,
-    allowEndEarly: false,
+    showLiveWpm: false,
+    allowEndEarly: true,
     minWordCount: 0,
     requireMinWordsToComplete: false,
     requireName: true,
     requireClass: true,
     requireClassCode: true,
-    rubrics: ["typing", "mechanics", "story"],
+    rubrics: ["mechanics", "story"],
+    sentenceStarters: "",
     theme: { preset: "dark", fontFamily: "", fontPreset: "libreBaskerville" },
     heroImage: "",
     heroImageData: "",
@@ -102,14 +231,37 @@
   };
 
   const BUILDER_SECTIONS = [
-    { id: "templates", label: "Templates", icon: "📋", hint: "Start from a guided template" },
-    { id: "content", label: "Content", icon: "📝", hint: "Prompt, welcome message, and teacher password" },
-    { id: "timer", label: "Timer & rules", icon: "⏱️", hint: "Time limit, word goals, and student requirements" },
+    { id: "templates", label: "Templates", icon: "📋", hint: "Start from a guided template — modes set scoring and timer defaults" },
+    { id: "content", label: "Content", icon: "📝", hint: "Prompt, sentence starters, and welcome message — clarity lowers anxiety" },
+    { id: "timer", label: "Timer & rules", icon: "⏱️", hint: "Soft timers support composition; hard timers suit fluency drills" },
     { id: "appearance", label: "Appearance", icon: "🎨", hint: "Colors, fonts, and optional header image" },
-    { id: "accessibility", label: "Accessibility", icon: "♿", hint: "Fonts, contrast, and student-friendly options" },
+    { id: "accessibility", label: "Accessibility", icon: "♿", hint: "Presets and options — match timer and word goals to each learner" },
     { id: "classes", label: "Classes", icon: "🏫", hint: "Class names and secret codes for students" },
     { id: "preview", label: "Preview", icon: "👁️", hint: "See what students will see before sharing" },
   ];
+
+  function resolveTimerStyle(config = {}) {
+    if (config.timerStyle) return config.timerStyle;
+    const mode = config.assignmentMode || "composition";
+    return MODE_DEFAULTS[mode]?.timerStyle || "soft";
+  }
+
+  function resolveShowLiveWpm(config = {}) {
+    if (config.showLiveWpm) return true;
+    const mode = config.assignmentMode || "composition";
+    return mode === "fluency" || mode === "typing_practice";
+  }
+
+  function resolveRubrics(config = {}) {
+    if (Array.isArray(config.rubrics) && config.rubrics.length) return config.rubrics;
+    const mode = config.assignmentMode || "composition";
+    return MODE_DEFAULTS[mode]?.rubrics || ["typing", "mechanics", "story"];
+  }
+
+  function applyModeDefaults(mode, base = {}) {
+    const defaults = MODE_DEFAULTS[mode] || MODE_DEFAULTS.composition;
+    return { ...base, ...defaults, assignmentMode: mode };
+  }
 
   function slugify(text) {
     return String(text || "assignment")
@@ -143,7 +295,7 @@
         if (answers.allowEarly) checklist.push("Tap \"I'm done\" when you finish — you don't have to wait for the timer.");
         if (minWords > 0) checklist.push(`Write at least ${minWords} words before submitting.`);
         checklist.push("Focus on ideas first — spelling and polish come later.");
-        return {
+        return applyModeDefaults("composition", {
           id: `quick-${slugify(title)}-${Date.now()}`,
           title: `Quick Write: ${title}`,
           subtitle: `${mins}-minute response`,
@@ -157,7 +309,7 @@
           requireMinWordsToComplete: minWords > 0,
           allowPaste: false,
           checklist,
-        };
+        });
       },
     },
     {
@@ -175,7 +327,7 @@
         const mins = Math.max(3, Number(answers.minutes) || 10);
         const minWords = Math.max(20, Number(answers.minWords) || 100);
         const topic = String(answers.topic || "").trim() || "Write as much as you can on the topic below.";
-        return {
+        return applyModeDefaults("fluency", {
           id: `typing-${Date.now()}`,
           title: "Typing Stamina Practice",
           subtitle: `${mins} minutes · ${minWords}+ words`,
@@ -189,6 +341,7 @@
           requireMinWordsToComplete: true,
           allowPaste: false,
           showLiveStats: true,
+          showLiveWpm: true,
           checklist: [
             "Press Start when ready — the timer begins immediately.",
             `Aim for at least ${minWords} words.`,
@@ -197,7 +350,7 @@
           ],
           theme: { preset: "dark", fontPreset: "readable" },
           accessibility: { largeText: true, dyslexiaFont: false, highContrast: false, spellcheck: true, reducedMotion: false },
-        };
+        });
       },
     },
     {
@@ -214,7 +367,7 @@
         const mins = Math.max(3, Number(answers.minutes) || 8);
         const minWords = Math.max(0, Number(answers.minWords) || 50);
         const focus = String(answers.focus || "").trim();
-        return {
+        return applyModeDefaults("reflection", {
           id: `reflect-${Date.now()}`,
           title: "Reflection",
           subtitle: "Think and write",
@@ -233,7 +386,7 @@
             minWords > 0 ? `Write at least ${minWords} words.` : "Write in complete sentences.",
             "Tap \"I'm done\" when you finish.",
           ],
-        };
+        });
       },
     },
     {
@@ -252,7 +405,7 @@
         const minWords = Math.max(30, Number(answers.minWords) || 80);
         const question = String(answers.question || "").trim();
         const banner = String(answers.banner || "").trim() || "State your claim. Support with evidence. Wrap up clearly.";
-        return {
+        return applyModeDefaults("composition", {
           id: `paragraph-${Date.now()}`,
           title: "Paragraph Response",
           subtitle: `${mins}-minute written response`,
@@ -271,7 +424,7 @@
             banner,
             "Submit when you're done or when time runs out.",
           ],
-        };
+        });
       },
     },
     {
@@ -292,14 +445,15 @@
         const prompt = starter
           ? `Free write starting from: "${starter}" — continue the story or idea in your own direction.`
           : "Free write — create any story, description, or ideas you want. Let your imagination lead.";
-        return {
+        return applyModeDefaults("composition", {
           id: `freewrite-${Date.now()}`,
           title: "Free Write",
           subtitle: `${mins} minutes of creative writing`,
           welcomeTitle: "Free write",
           welcomeLead: "There is no single right answer. Keep typing and see where your writing goes.",
           prompt,
-          promptBanner: starter ? `Starter: ${starter}` : "Write freely — quantity and creativity count.",
+          promptBanner: starter ? `Starter: ${starter}` : "Write freely — ideas and creativity count.",
+          sentenceStarters: starter || "",
           durationSec: mins * 60,
           allowEndEarly: true,
           minWordCount: minWords,
@@ -311,7 +465,7 @@
             "Don't stop to edit — keep the ideas flowing.",
             "Tap \"I'm done\" when finished, or wait for the timer.",
           ],
-        };
+        });
       },
     },
     {
@@ -328,7 +482,7 @@
         const mins = Math.max(3, Number(answers.minutes) || 7);
         const minWords = Math.max(10, Number(answers.minWords) || 40);
         const task = String(answers.task || "").trim();
-        return {
+        return applyModeDefaults("composition", {
           id: `sentences-${Date.now()}`,
           title: "Sentence Practice",
           subtitle: "Focused writing drill",
@@ -349,7 +503,7 @@
             "Check capitalization and ending punctuation.",
             "Submit when you meet the goal or time runs out.",
           ],
-        };
+        });
       },
     },
   ];
@@ -446,7 +600,14 @@
     BUILDER_SECTIONS,
     TUTORIAL_STEPS,
     ASSIGNMENT_TEMPLATES,
+    ASSIGNMENT_MODES,
+    MODE_DEFAULTS,
+    DIFFERENTIATION_PRESETS,
     slugify,
     parseVocabInput,
+    resolveTimerStyle,
+    resolveShowLiveWpm,
+    resolveRubrics,
+    applyModeDefaults,
   };
 })();

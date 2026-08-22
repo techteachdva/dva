@@ -172,7 +172,10 @@
       storySubs.voice * 0.2 + storySubs.detail * 0.25 + storySubs.structure * 0.25 + storySubs.wordChoice * 0.3
     ), 0, 100);
 
-    const overallScore = Math.round((typingScore + mechanicsScore + storyScore) / 3);
+    const overallScore = computeOverallScore(
+      { typing: typingScore, mechanics: mechanicsScore, story: storyScore },
+      { assignmentMode: options.assignmentMode, rubrics: options.rubrics }
+    );
     const typingLevel = classifyTyping(wordCount, wpm);
     const metricScores = {
       spelling: spelling.score, grammar: grammar.score, syntax: syntax.score,
@@ -190,7 +193,10 @@
       scores: { typing: typingScore, mechanics: mechanicsScore, story: storyScore, overall: overallScore, vocabulary: vocabulary.score },
       metricScores,
       standards,
-      feedback: buildFeedback(wordCount, wpm, typingLevel, spelling, grammar, storyScore, voiceCount, sensoryCount, vocabulary),
+      feedback: buildFeedback(wordCount, wpm, typingLevel, spelling, grammar, storyScore, voiceCount, sensoryCount, vocabulary, {
+        assignmentMode: options.assignmentMode,
+        rubrics: options.rubrics,
+      }),
     };
   }
 
@@ -228,21 +234,61 @@
     };
   }
 
-  function buildFeedback(wordCount, wpm, typingLevel, spelling, grammar, storyScore, voiceCount, sensoryCount, vocab) {
-    const sections = [
-      {
+  const MODE_OVERALL_WEIGHTS = {
+    composition: { typing: 0, mechanics: 0.35, story: 0.65 },
+    fluency: { typing: 1, mechanics: 0, story: 0 },
+    typing_practice: { typing: 1, mechanics: 0, story: 0 },
+    reflection: { typing: 0, mechanics: 0.25, story: 0.75 },
+  };
+
+  function computeOverallScore(scores, options = {}) {
+    const mode = options.assignmentMode || "composition";
+    const rubrics = options.rubrics || Object.keys(MODE_OVERALL_WEIGHTS[mode] || {}).filter((k) => (MODE_OVERALL_WEIGHTS[mode]?.[k] ?? 0) > 0);
+    const weights = MODE_OVERALL_WEIGHTS[mode] || { typing: 0.33, mechanics: 0.34, story: 0.33 };
+    let sum = 0;
+    let weightSum = 0;
+    for (const key of rubrics) {
+      const w = weights[key] ?? 0;
+      const score = scores[key];
+      if (w > 0 && Number.isFinite(score)) {
+        sum += score * w;
+        weightSum += w;
+      }
+    }
+    if (weightSum > 0) return Math.round(sum / weightSum);
+    return Math.round((scores.typing + scores.mechanics + scores.story) / 3);
+  }
+
+  function buildFeedback(wordCount, wpm, typingLevel, spelling, grammar, storyScore, voiceCount, sensoryCount, vocab, options = {}) {
+    const mode = options.assignmentMode || "composition";
+    const rubrics = options.rubrics || ["typing", "mechanics", "story"];
+    const sections = [];
+
+    if (rubrics.includes("typing") && (mode === "fluency" || mode === "typing_practice")) {
+      sections.push({
         title: "Typing & stamina",
         items: [`You wrote ${wordCount} words (${Math.round(wpm)} WPM).`, typingLevel === "intervention" ? "Daily typing practice will help ideas flow faster." : null].filter(Boolean),
-      },
-      {
+      });
+    }
+
+    if (rubrics.includes("mechanics")) {
+      sections.push({
         title: "Mechanics",
         items: [spelling.score >= 75 ? "Spelling looks solid for a first draft." : "Watch spelling in revision.", grammar.score >= 75 ? "Conventions are mostly in place." : "Check capitals and ending punctuation."],
-      },
-      {
-        title: "Content",
-        items: [storyScore >= 65 ? "Your writing comes through clearly." : "Add specific details and your own voice.", voiceCount >= 4 ? "Personal voice is present." : "Use I/my to keep it in your voice.", sensoryCount >= 2 ? "Good sensory details." : "Add what you saw, heard, or felt."],
-      },
-    ];
+      });
+    }
+
+    if (rubrics.includes("story")) {
+      const contentItems = [storyScore >= 65 ? "Your writing comes through clearly." : "Add specific details and your own voice."];
+      if (mode === "reflection") {
+        contentItems.push("Honest reflection is what matters — keep building on your ideas.");
+      } else {
+        contentItems.push(voiceCount >= 4 ? "Personal voice is present." : "Use I/my to keep it in your voice.");
+        contentItems.push(sensoryCount >= 2 ? "Good sensory details." : "Add what you saw, heard, or felt.");
+      }
+      sections.push({ title: mode === "reflection" ? "Reflection" : "Content", items: contentItems });
+    }
+
     if (vocab?.requiredCount) {
       sections.push({
         title: "Vocabulary",

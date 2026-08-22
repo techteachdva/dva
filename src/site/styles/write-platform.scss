@@ -2411,6 +2411,69 @@
   font-weight: 600;
 }
 
+.wf-sentence-starters {
+  margin: 0 0 12px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--dw-border, rgba(255, 255, 255, 0.12));
+  background: var(--dw-surface, rgba(255, 255, 255, 0.04));
+  color: var(--dw-muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.wf-sentence-starters strong {
+  color: var(--dw-text);
+}
+
+.wf-diff-preset-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.wf-diff-preset-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--dw-border, rgba(255, 255, 255, 0.12));
+  background: var(--dw-surface, rgba(255, 255, 255, 0.04));
+  color: var(--dw-text);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.wf-diff-preset-card:hover {
+  border-color: var(--dw-accent);
+  background: rgba(56, 189, 248, 0.08);
+}
+
+.wf-diff-preset-card__icon {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.wf-diff-preset-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.wf-diff-preset-card__title {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.wf-diff-preset-card__desc {
+  font-size: 0.8rem;
+  color: var(--dw-muted);
+  line-height: 1.4;
+}
+
 .wf-a11y-large-text .dw-textarea,
 .wf-a11y-large-text .dw-input,
 .wf-a11y-large-text .dw-prompt-quote,

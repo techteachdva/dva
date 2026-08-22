@@ -237,17 +237,40 @@
       durationSec,
       onTick,
       onComplete,
+      onSoftExpire,
       displayEl,
       progressEl,
       urgentSec = 30,
+      timerStyle = "hard",
     } = opts;
 
     let interval = null;
     let elapsed = 0;
     let startTime = 0;
+    let softExpired = false;
 
     function tick() {
       elapsed = (Date.now() - startTime) / 1000;
+
+      if (timerStyle === "none") {
+        if (displayEl) displayEl.textContent = "—";
+        if (progressEl) progressEl.style.width = "0%";
+        if (onTick) onTick({ elapsed, remaining: Infinity, durationSec, softExpired });
+        return;
+      }
+
+      if (timerStyle === "goal") {
+        if (displayEl) {
+          displayEl.textContent = formatTime(elapsed);
+          displayEl.classList.remove("dw-timer-value--urgent");
+        }
+        if (progressEl) {
+          progressEl.style.width = `${clamp(durationSec > 0 ? (elapsed / durationSec) * 100 : 0, 0, 100)}%`;
+        }
+        if (onTick) onTick({ elapsed, remaining: Math.max(0, durationSec - elapsed), durationSec, softExpired });
+        return;
+      }
+
       const remaining = Math.max(0, durationSec - elapsed);
       if (displayEl) {
         displayEl.textContent = formatTime(remaining);
@@ -256,8 +279,16 @@
       if (progressEl) {
         progressEl.style.width = `${clamp((elapsed / durationSec) * 100, 0, 100)}%`;
       }
-      if (onTick) onTick({ elapsed, remaining, durationSec });
+      if (onTick) onTick({ elapsed, remaining, durationSec, softExpired });
+
       if (remaining <= 0) {
+        if (timerStyle === "soft") {
+          if (!softExpired) {
+            softExpired = true;
+            if (onSoftExpire) onSoftExpire();
+          }
+          return;
+        }
         stop();
         if (onComplete) onComplete();
       }
@@ -290,15 +321,16 @@
     });
   }
 
-  function setupLiveStats(textarea, wordEl, wpmEl, getElapsed) {
+  function setupLiveStats(textarea, wordEl, wpmEl, getElapsed, options = {}) {
     if (!textarea) return;
+    const showWpm = options.showWpm !== false;
     textarea.addEventListener("input", () => {
       const words = countWords(textarea.value);
       const elapsed = getElapsed();
       const mins = Math.max(elapsed / 60, 0.01);
       const wpm = Math.round(words / mins);
-      if (wordEl) wordEl.textContent = `${words} word${words === 1 ? "" : "s"}`;
-      if (wpmEl) wpmEl.textContent = `${wpm} WPM`;
+      if (wordEl) wordEl.textContent = String(words);
+      if (wpmEl && showWpm) wpmEl.textContent = String(wpm);
     });
   }
 

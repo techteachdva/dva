@@ -42,6 +42,28 @@
 
   const TUTORIAL_STEPS = window.WriteFlowDefaults?.TUTORIAL_STEPS || {};
   const ASSIGNMENT_TEMPLATES = window.WriteFlowDefaults?.ASSIGNMENT_TEMPLATES || [];
+  const ASSIGNMENT_MODES = window.WriteFlowDefaults?.ASSIGNMENT_MODES || [];
+  const DIFFERENTIATION_PRESETS = window.WriteFlowDefaults?.DIFFERENTIATION_PRESETS || [];
+
+  function resolveTimerStyle() {
+    return window.WriteFlowDefaults?.resolveTimerStyle?.(config) || config.timerStyle || "hard";
+  }
+
+  function resolveShowLiveWpm() {
+    return window.WriteFlowDefaults?.resolveShowLiveWpm?.(config) || !!config.showLiveWpm;
+  }
+
+  function getActiveRubrics() {
+    return window.WriteFlowDefaults?.resolveRubrics?.(config) || config.rubrics || ["typing", "mechanics", "story"];
+  }
+
+  function getAnalysisOptions() {
+    return {
+      vocabWords: getVocabWords(),
+      assignmentMode: config.assignmentMode || "composition",
+      rubrics: getActiveRubrics(),
+    };
+  }
 
   let timerWaitingForMinWords = false;
   let studentSession = { name: "", classroom: "", classCode: "" };
@@ -298,6 +320,31 @@
 
     const liveStatsBar = document.getElementById("liveStatsBar");
     if (liveStatsBar) liveStatsBar.classList.toggle("dw-hidden", !config.showLiveStats);
+
+    const wpmStat = document.getElementById("wpmStat");
+    if (wpmStat) wpmStat.classList.toggle("dw-hidden", !resolveShowLiveWpm());
+
+    const timerStyle = resolveTimerStyle();
+    const timeStat = document.getElementById("timeStat");
+    const timerTrack = document.getElementById("timerTrack");
+    const timerStatLabel = document.getElementById("timerStatLabel");
+    if (timeStat) timeStat.classList.toggle("dw-hidden", timerStyle === "none");
+    if (timerTrack) timerTrack.classList.toggle("dw-hidden", timerStyle === "none");
+    if (timerStatLabel) {
+      timerStatLabel.textContent = timerStyle === "goal" ? "Elapsed" : "Time";
+    }
+
+    const startersEl = document.getElementById("sentenceStarters");
+    const starters = String(config.sentenceStarters || "").trim();
+    if (startersEl) {
+      if (starters) {
+        startersEl.classList.remove("dw-hidden");
+        startersEl.innerHTML = `<strong>Sentence starters:</strong> ${escapeHtml(starters)}`;
+      } else {
+        startersEl.classList.add("dw-hidden");
+        startersEl.innerHTML = "";
+      }
+    }
 
     const minEl = document.getElementById("minWordProgress");
     const minWords = Math.max(0, Number(config.minWordCount) || 0);
@@ -604,9 +651,13 @@
   }
 
   async function showResults(text) {
-    const duration = Math.min(Math.max(timer?.getElapsed() || config.durationSec, 1), config.durationSec);
-    const vocabWords = getVocabWords();
-    const analysis = window.WriteAnalysis?.analyzeText(text, duration, { vocabWords })
+    const timerStyle = resolveTimerStyle();
+    const maxDuration = timerStyle === "none" || timerStyle === "goal" || timerStyle === "soft"
+      ? Math.max(timer?.getElapsed() || config.durationSec, 1)
+      : config.durationSec;
+    const duration = Math.min(Math.max(timer?.getElapsed() || config.durationSec, 1), maxDuration);
+    const analysisOpts = getAnalysisOptions();
+    const analysis = window.WriteAnalysis?.analyzeText(text, duration, analysisOpts)
       || { scores: {}, wordCount: 0, wpm: 0, feedback: [], sentenceCount: 0 };
     const name = studentSession.name || document.getElementById("studentName")?.value.trim() || "Student";
     const classEl = document.getElementById("studentClass");
@@ -619,13 +670,20 @@
     const resultClassEl = document.getElementById("resultClass");
     if (resultClassEl) resultClassEl.textContent = classroom || "—";
 
-    const summaryText = isStudentApp
-      ? `You wrote ${analysis.wordCount} words in ${Core.formatTime(duration)} (${analysis.wpm} WPM).`
-      : `You wrote ${analysis.wordCount} words in ${Core.formatTime(duration)} (${analysis.wpm} WPM). Overall: ${analysis.scores?.overall ?? "—"}/100`;
+    const mode = config.assignmentMode || "composition";
+    const rubrics = getActiveRubrics();
+    let summaryText;
+    if (isStudentApp && (mode === "composition" || mode === "reflection")) {
+      summaryText = `You wrote ${analysis.wordCount} words in ${Core.formatTime(duration)}. Your ideas are saved — revision and polish come next.`;
+    } else if (isStudentApp) {
+      summaryText = `You wrote ${analysis.wordCount} words in ${Core.formatTime(duration)} (${analysis.wpm} WPM).`;
+    } else {
+      summaryText = `You wrote ${analysis.wordCount} words in ${Core.formatTime(duration)} (${analysis.wpm} WPM). Overall: ${analysis.scores?.overall ?? "—"}/100`;
+    }
     if (resultSummaryEl) resultSummaryEl.textContent = summaryText;
 
     const vocabEl = document.getElementById("vocabResult");
-    if (vocabEl && vocabWords.length && analysis.vocabulary) {
+    if (vocabEl && getVocabWords().length && analysis.vocabulary) {
       const v = analysis.vocabulary;
       vocabEl.classList.remove("dw-hidden");
       vocabEl.innerHTML = `
@@ -639,7 +697,7 @@
     const R = window.DWRubrics;
     const scoreGrid = document.getElementById("scoreGrid");
     if (scoreGrid && R) {
-      scoreGrid.innerHTML = R.studentScoreCards(analysis).map((c) => `
+      scoreGrid.innerHTML = R.studentScoreCards(analysis, rubrics).map((c) => `
         <div class="dw-score-card dw-band--${c.band.level}">
           <div class="dw-score-card__title">${escapeHtml(c.title)}</div>
           <div class="dw-score-card__value">${c.score}</div>
@@ -797,10 +855,24 @@
       durationSec: config.durationSec,
       displayEl: document.getElementById("timerDisplay"),
       progressEl: document.getElementById("timerProgress"),
+      timerStyle: resolveTimerStyle(),
       onComplete: finishWriting,
+      onSoftExpire: () => {
+        const notice = document.getElementById("timerExtendNotice");
+        if (notice) {
+          notice.textContent = "Suggested time is up — take a moment to wrap up, then tap \"I'm done\" when you're ready.";
+          notice.classList.remove("dw-hidden");
+        }
+      },
     });
 
-    Core.setupLiveStats(storyInput, document.getElementById("liveWordCount"), document.getElementById("liveWpm"), () => timer?.getElapsed() || 0);
+    Core.setupLiveStats(
+      storyInput,
+      document.getElementById("liveWordCount"),
+      document.getElementById("liveWpm"),
+      () => timer?.getElapsed() || 0,
+      { showWpm: resolveShowLiveWpm() }
+    );
     storyInput?.addEventListener("input", () => {
       updateWritingControls();
     });
@@ -957,22 +1029,58 @@
   function renderTeacherTable() {
     const subs = allSubmissions;
     const tbody = document.getElementById("teacherTableBody");
-    if (!tbody) return;
+    const thead = document.getElementById("teacherTableHead");
+    const rubrics = getActiveRubrics();
     const hasVocab = getVocabWords().length > 0;
+    const showWpm = resolveShowLiveWpm() || rubrics.includes("typing");
+    const cols = ["name", "class", "words"];
+    if (showWpm) cols.push("wpm");
+    if (hasVocab) cols.push("vocab");
+    if (rubrics.includes("typing")) cols.push("typing");
+    if (rubrics.includes("mechanics")) cols.push("mechanics");
+    if (rubrics.includes("story")) cols.push("story");
+    cols.push("overall", "submitted", "action");
+
+    const headerLabels = {
+      name: "Name",
+      class: "Class",
+      words: "Wds",
+      wpm: "WPM",
+      vocab: "Vocab",
+      typing: "Typ",
+      mechanics: "Mech",
+      story: "Story",
+      overall: "Overall",
+      submitted: "Submitted",
+      action: "",
+    };
+
+    if (thead) {
+      thead.innerHTML = cols.map((c) => `<th>${headerLabels[c]}</th>`).join("");
+    }
+
+    if (!tbody) return;
+
+    function cellValue(sub, col, idx) {
+      switch (col) {
+        case "name": return escapeHtml(sub.name);
+        case "class": return escapeHtml(sub.classroom);
+        case "words": return sub.analysis?.wordCount ?? "—";
+        case "wpm": return sub.analysis?.wpm ?? "—";
+        case "vocab": return sub.analysis?.vocabulary ? `${sub.analysis.vocabulary.usedCount}/${sub.analysis.vocabulary.requiredCount}` : "—";
+        case "typing": return sub.analysis?.scores?.typing ?? "—";
+        case "mechanics": return sub.analysis?.scores?.mechanics ?? "—";
+        case "story": return sub.analysis?.scores?.story ?? "—";
+        case "overall": return sub.analysis?.scores?.overall ?? "—";
+        case "submitted": return sub.submittedAt ? Core.formatDate(sub.submittedAt) : "—";
+        case "action": return `<button type="button" class="dw-btn dw-btn-ghost dw-btn--compact" data-sub-idx="${idx}">View</button>`;
+        default: return "—";
+      }
+    }
+
     tbody.innerHTML = subs.map((s, idx) => `
-      <tr>
-        <td>${escapeHtml(s.name)}</td>
-        <td>${escapeHtml(s.classroom)}</td>
-        <td>${s.analysis?.wordCount ?? "—"}</td>
-        <td>${s.analysis?.wpm ?? "—"}</td>
-        <td>${hasVocab ? (s.analysis?.vocabulary ? `${s.analysis.vocabulary.usedCount}/${s.analysis.vocabulary.requiredCount}` : "—") : "—"}</td>
-        <td>${s.analysis?.scores?.typing ?? "—"}</td>
-        <td>${s.analysis?.scores?.mechanics ?? "—"}</td>
-        <td>${s.analysis?.scores?.story ?? "—"}</td>
-        <td>${s.analysis?.scores?.overall ?? "—"}</td>
-        <td>${s.submittedAt ? Core.formatDate(s.submittedAt) : "—"}</td>
-        <td><button type="button" class="dw-btn dw-btn-ghost dw-btn--compact" data-sub-idx="${idx}">View</button></td>
-      </tr>`).join("") || `<tr><td colspan="11" class="dw-muted">No submissions yet.</td></tr>`;
+      <tr>${cols.map((c) => `<td>${cellValue(s, c, idx)}</td>`).join("")}</tr>`).join("")
+      || `<tr><td colspan="${cols.length}" class="dw-muted">No submissions yet.</td></tr>`;
 
     tbody.querySelectorAll("[data-sub-idx]").forEach((btn) => {
       btn.addEventListener("click", () => {
@@ -988,15 +1096,26 @@
 
   function exportCsv() {
     const subs = allSubmissions.length ? allSubmissions : loadLocalSubmissions();
+    const rubrics = getActiveRubrics();
     const hasVocab = getVocabWords().length > 0;
-    const rows = [["Name", "Class", "Words", "WPM", ...(hasVocab ? ["Vocab"] : []), "Typing", "Mechanics", "Story", "Overall", "Submitted"]];
+    const showWpm = resolveShowLiveWpm() || rubrics.includes("typing");
+    const header = ["Name", "Class", "Words"];
+    if (showWpm) header.push("WPM");
+    if (hasVocab) header.push("Vocab");
+    if (rubrics.includes("typing")) header.push("Typing");
+    if (rubrics.includes("mechanics")) header.push("Mechanics");
+    if (rubrics.includes("story")) header.push("Story");
+    header.push("Overall", "Submitted");
+    const rows = [header];
     for (const s of subs) {
-      rows.push([
-        s.name, s.classroom, s.analysis?.wordCount, s.analysis?.wpm,
-        ...(hasVocab ? [`${s.analysis?.vocabulary?.usedCount ?? 0}/${s.analysis?.vocabulary?.requiredCount ?? 0}`] : []),
-        s.analysis?.scores?.typing, s.analysis?.scores?.mechanics, s.analysis?.scores?.story,
-        s.analysis?.scores?.overall, new Date(s.submittedAt).toISOString(),
-      ]);
+      const row = [s.name, s.classroom, s.analysis?.wordCount];
+      if (showWpm) row.push(s.analysis?.wpm);
+      if (hasVocab) row.push(`${s.analysis?.vocabulary?.usedCount ?? 0}/${s.analysis?.vocabulary?.requiredCount ?? 0}`);
+      if (rubrics.includes("typing")) row.push(s.analysis?.scores?.typing);
+      if (rubrics.includes("mechanics")) row.push(s.analysis?.scores?.mechanics);
+      if (rubrics.includes("story")) row.push(s.analysis?.scores?.story);
+      row.push(s.analysis?.scores?.overall, new Date(s.submittedAt).toISOString());
+      rows.push(row);
     }
     const csv = rows.map((r) => r.map((c) => `"${String(c ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
     const blob = new Blob([csv], { type: "text/csv" });
@@ -1220,6 +1339,7 @@
         <label class="dw-field"><span class="dw-label">Welcome intro</span><span class="dw-muted dw-tiny">Brief instructions before they start</span><textarea id="bfWelcomeLead" class="dw-textarea" rows="3">${escapeHtml(config.welcomeLead || "")}</textarea></label>
         <label class="dw-field"><span class="dw-label">Writing prompt</span><span class="dw-muted dw-tiny">The main question or task</span><textarea id="bfPrompt" class="dw-textarea" rows="4">${escapeHtml(config.prompt)}</textarea></label>
         <label class="dw-field"><span class="dw-label">In-session prompt banner</span><span class="dw-muted dw-tiny">Stays visible while students type</span><input id="bfPromptBanner" class="dw-input" value="${escapeHtml(config.promptBanner || "")}" /></label>
+        <label class="dw-field"><span class="dw-label">Sentence starters (optional)</span><span class="dw-muted dw-tiny">Shown above the writing area — e.g. &ldquo;One thing I noticed…&rdquo; or &ldquo;I felt… because…&rdquo;</span><textarea id="bfSentenceStarters" class="dw-textarea" rows="2" placeholder="Optional scaffold text">${escapeHtml(config.sentenceStarters || "")}</textarea></label>
         <label class="dw-field"><span class="dw-label">Expected vocabulary</span><span class="dw-muted dw-tiny">Comma or line-separated words students should use — highlighted in Results</span><textarea id="bfVocab" class="dw-textarea" rows="3" placeholder="photosynthesis, chlorophyll, glucose">${escapeHtml((config.vocabWords || []).join(", "))}</textarea></label>
         <label class="wf-toggle-row"><input id="bfHighlightVocab" type="checkbox" ${config.highlightVocab !== false ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Highlight vocabulary in teacher view</strong><span class="wf-toggle-row__hint">Marks expected words in submission previews</span></span></label>
         <label class="dw-field"><span class="dw-label">Teacher password</span><span class="dw-muted dw-tiny">Required to open Results for this assignment</span><input id="bfTeacherPw" class="dw-input" type="password" autocomplete="new-password" value="${escapeHtml(config.teacherPassword)}" /></label>`;
@@ -1229,6 +1349,7 @@
       bindBuilderField("bfWelcomeLead", "welcomeLead");
       bindBuilderField("bfPrompt", "prompt");
       bindBuilderField("bfPromptBanner", "promptBanner");
+      bindBuilderField("bfSentenceStarters", "sentenceStarters");
       bindBuilderField("bfTeacherPw", "teacherPassword");
       document.getElementById("bfVocab")?.addEventListener("change", (e) => {
         config.vocabWords = window.WriteFlowDefaults?.parseVocabInput?.(e.target.value) || [];
@@ -1239,11 +1360,30 @@
         persistConfig();
       });
     } else if (builderSection === "timer") {
+      const currentMode = config.assignmentMode || "composition";
+      const timerStyle = resolveTimerStyle();
+      const modeOptions = ASSIGNMENT_MODES.map((m) =>
+        `<option value="${m}"${currentMode === m ? " selected" : ""}>${escapeHtml(m.replace(/_/g, " "))}</option>`).join("");
       canvas.innerHTML = `
         ${builderSectionHeader("timer")}
         <label class="dw-field">
+          <span class="dw-label">Assignment mode</span>
+          <span class="dw-muted dw-tiny">Sets scoring focus, live stats, and timer defaults</span>
+          <select id="bfAssignmentMode" class="dw-input dw-select">${modeOptions}</select>
+        </label>
+        <label class="dw-field">
+          <span class="dw-label">Timer style</span>
+          <span class="dw-muted dw-tiny">Soft and goal timers let students finish on their own</span>
+          <select id="bfTimerStyle" class="dw-input dw-select">
+            <option value="soft"${timerStyle === "soft" ? " selected" : ""}>Soft — gentle notice at zero, keep writing</option>
+            <option value="hard"${timerStyle === "hard" ? " selected" : ""}>Hard — auto-submit when time runs out</option>
+            <option value="goal"${timerStyle === "goal" ? " selected" : ""}>Goal — count up with suggested duration</option>
+            <option value="none"${timerStyle === "none" ? " selected" : ""}>None — no timer shown</option>
+          </select>
+        </label>
+        <label class="dw-field">
           <span class="dw-label">Duration (seconds)</span>
-          <span class="dw-muted dw-tiny">Students write until the timer hits zero · about ${escapeHtml(formatDurationLabel(config.durationSec))}</span>
+          <span class="dw-muted dw-tiny">${timerStyle === "goal" ? "Suggested writing time" : "Students write until the timer hits zero"} · about ${escapeHtml(formatDurationLabel(config.durationSec))}</span>
           <input id="bfDuration" class="dw-input" type="number" min="60" max="3600" step="30" value="${config.durationSec}" />
         </label>
         <label class="dw-field">
@@ -1256,12 +1396,30 @@
           <label class="wf-toggle-row"><input id="bfSpellcheck" type="checkbox" ${resolveSpellcheck() ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Spellcheck in typing window</strong><span class="wf-toggle-row__hint">Browser underlines possible spelling errors while students write</span></span></label>
           <label class="wf-toggle-row"><input id="bfAllowEndEarly" type="checkbox" ${config.allowEndEarly ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Allow end early</strong><span class="wf-toggle-row__hint">Students can tap &ldquo;I&rsquo;m done&rdquo; before the timer ends</span></span></label>
           <label class="wf-toggle-row"><input id="bfLockAfter" type="checkbox" ${config.lockAfterTime ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Lock editor when time expires</strong><span class="wf-toggle-row__hint">Prevents edits after the timer ends</span></span></label>
-          <label class="wf-toggle-row"><input id="bfLiveStats" type="checkbox" ${config.showLiveStats ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Show live word count &amp; WPM</strong><span class="wf-toggle-row__hint">Displays stats during writing</span></span></label>
+          <label class="wf-toggle-row"><input id="bfLiveStats" type="checkbox" ${config.showLiveStats ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Show live word count</strong><span class="wf-toggle-row__hint">Word total during writing — on by default for composition</span></span></label>
+          <label class="wf-toggle-row"><input id="bfLiveWpm" type="checkbox" ${config.showLiveWpm ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Show live WPM</strong><span class="wf-toggle-row__hint">Off by default in composition — use for fluency drills</span></span></label>
           <label class="wf-toggle-row"><input id="bfRequireMinWords" type="checkbox" ${config.requireMinWordsToComplete ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Require minimum words to finish</strong><span class="wf-toggle-row__hint">If time runs out first, students keep writing until they hit the word goal</span></span></label>
           <label class="wf-toggle-row"><input id="bfRequireName" type="checkbox" ${config.requireName ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Require student name</strong><span class="wf-toggle-row__hint">First name before starting</span></span></label>
           <label class="wf-toggle-row"><input id="bfRequireClass" type="checkbox" ${config.requireClass ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Require class selection</strong><span class="wf-toggle-row__hint">Pick from the class list</span></span></label>
           <label class="wf-toggle-row"><input id="bfRequireCode" type="checkbox" ${config.requireClassCode ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Require class code</strong><span class="wf-toggle-row__hint">Secret code from the Classes tab</span></span></label>
         </div>`;
+      document.getElementById("bfAssignmentMode")?.addEventListener("change", (e) => {
+        const mode = e.target.value;
+        const defaults = window.WriteFlowDefaults?.MODE_DEFAULTS?.[mode];
+        if (defaults) {
+          Object.assign(config, defaults);
+          config.assignmentMode = mode;
+        } else {
+          config.assignmentMode = mode;
+        }
+        persistConfig();
+        renderBuilder();
+      });
+      document.getElementById("bfTimerStyle")?.addEventListener("change", (e) => {
+        config.timerStyle = e.target.value;
+        persistConfig();
+        renderBuilder();
+      });
       const minWordsInput = document.getElementById("bfMinWords");
       minWordsInput?.addEventListener("change", (e) => {
         config.minWordCount = Math.max(0, Number(e.target.value) || 0);
@@ -1274,13 +1432,14 @@
         if (hint) hint.textContent = `Students write until the timer hits zero · about ${formatDurationLabel(config.durationSec)}`;
       });
       durationInput?.addEventListener("change", (e) => { config.durationSec = Number(e.target.value) || 300; persistConfig(); renderInspector(); });
-      ["bfAllowPaste", "bfSpellcheck", "bfAllowEndEarly", "bfLockAfter", "bfLiveStats", "bfRequireMinWords", "bfRequireName", "bfRequireClass", "bfRequireCode"].forEach((id) => {
+      ["bfAllowPaste", "bfSpellcheck", "bfAllowEndEarly", "bfLockAfter", "bfLiveStats", "bfLiveWpm", "bfRequireMinWords", "bfRequireName", "bfRequireClass", "bfRequireCode"].forEach((id) => {
         const map = {
           bfAllowPaste: "allowPaste",
           bfSpellcheck: "spellcheck",
           bfAllowEndEarly: "allowEndEarly",
           bfLockAfter: "lockAfterTime",
           bfLiveStats: "showLiveStats",
+          bfLiveWpm: "showLiveWpm",
           bfRequireMinWords: "requireMinWordsToComplete",
           bfRequireName: "requireName",
           bfRequireClass: "requireClass",
@@ -1399,9 +1558,19 @@
       }
     } else if (builderSection === "accessibility") {
       const a11y = mergeAccessibility(config.accessibility);
+      const presetCards = DIFFERENTIATION_PRESETS.map((p) => `
+        <button class="wf-diff-preset-card" type="button" data-preset="${escapeHtml(p.id)}" title="${escapeHtml(p.description)}">
+          <span class="wf-diff-preset-card__icon" aria-hidden="true">${p.icon}</span>
+          <span class="wf-diff-preset-card__body">
+            <span class="wf-diff-preset-card__title">${escapeHtml(p.label)}</span>
+            <span class="wf-diff-preset-card__desc">${escapeHtml(p.description)}</span>
+          </span>
+        </button>`).join("");
       canvas.innerHTML = `
         ${builderSectionHeader("accessibility")}
-        <p class="dw-muted">These options help you support students with different needs. Students see the settings you enable here.</p>
+        <p class="dw-muted">One-click presets bundle timer, scoring, and display settings for common classroom needs.</p>
+        <div class="wf-diff-preset-grid" role="list">${presetCards}</div>
+        <p class="dw-muted dw-tiny">Presets update mode and accessibility — you can still tweak individual settings afterward.</p>
         <div class="wf-toggle-list">
           <label class="wf-toggle-row"><input id="bfA11yLarge" type="checkbox" ${a11y.largeText ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Larger text</strong><span class="wf-toggle-row__hint">Bigger prompt and writing area</span></span></label>
           <label class="wf-toggle-row"><input id="bfA11yContrast" type="checkbox" ${a11y.highContrast ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>High contrast</strong><span class="wf-toggle-row__hint">Stronger text and border contrast</span></span></label>
@@ -1409,7 +1578,22 @@
           <label class="wf-toggle-row"><input id="bfA11ySpell" type="checkbox" ${resolveSpellcheck() ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Spellcheck while typing</strong><span class="wf-toggle-row__hint">Same setting as Timer &amp; rules — browser underlines possible spelling errors</span></span></label>
           <label class="wf-toggle-row"><input id="bfA11yMotion" type="checkbox" ${a11y.reducedMotion ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Reduce motion</strong><span class="wf-toggle-row__hint">Minimizes animations and smooth scrolling</span></span></label>
         </div>
-        <p class="dw-muted dw-tiny">Tip: combine longer timers with minimum word counts and &ldquo;End early&rdquo; so fast finishers can submit while others keep working.</p>`;
+        <p class="dw-muted dw-tiny">Tip: combine soft timers with &ldquo;End early&rdquo; so fast finishers submit while others keep working.</p>`;
+      document.querySelectorAll(".wf-diff-preset-card").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const preset = DIFFERENTIATION_PRESETS.find((p) => p.id === btn.dataset.preset);
+          if (!preset?.settings) return;
+          const { accessibility: presetA11y, ...rest } = preset.settings;
+          Object.assign(config, rest);
+          if (presetA11y) {
+            config.accessibility = { ...mergeAccessibility(config.accessibility), ...presetA11y };
+          }
+          persistConfig();
+          applyAccessibility();
+          renderBuilder();
+          showSaveStatus(`Applied "${preset.label}" preset. Review settings, then save.`, true);
+        });
+      });
       const bindA11y = (id, key, invert = false) => {
         document.getElementById(id)?.addEventListener("change", (e) => {
           config.accessibility = { ...mergeAccessibility(config.accessibility), [key]: invert ? !e.target.checked : e.target.checked };

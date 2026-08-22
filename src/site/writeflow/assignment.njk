@@ -51,24 +51,25 @@ layout: false
         <section id="writingView" class="dw-hidden wf-student-panel" aria-label="Writing session">
           <div class="wf-student-writing-head">
             <div class="wf-student-prompt-inline" id="promptBanner"></div>
-            <div class="wf-student-stats">
-              <div class="wf-student-stat">
-                <span class="wf-student-stat__label">Time</span>
+            <div class="wf-student-stats" id="liveStatsBar">
+              <div class="wf-student-stat" id="timeStat">
+                <span class="wf-student-stat__label" id="timerStatLabel">Time</span>
                 <span id="timerDisplay" class="wf-student-stat__value" aria-live="polite">5:00</span>
               </div>
-              <div class="wf-student-stat">
+              <div class="wf-student-stat" id="wordStat">
                 <span class="wf-student-stat__label">Words</span>
                 <span id="liveWordCount" class="wf-student-stat__value" aria-live="polite">0</span>
               </div>
-              <div class="wf-student-stat">
+              <div class="wf-student-stat" id="wpmStat">
                 <span class="wf-student-stat__label">WPM</span>
                 <span id="liveWpm" class="wf-student-stat__value">0</span>
               </div>
               <span id="minWordProgress" class="wf-min-word-progress dw-hidden" aria-live="polite"></span>
             </div>
-            <div class="dw-timer-track wf-student-timer" role="progressbar" aria-valuemin="0" aria-valuemax="100" id="timerProgressBar"><div id="timerProgress" class="dw-timer-fill"></div></div>
+            <div class="dw-timer-track wf-student-timer" id="timerTrack" role="progressbar" aria-valuemin="0" aria-valuemax="100"><div id="timerProgress" class="dw-timer-fill"></div></div>
           </div>
           <p id="timerExtendNotice" class="wf-timer-extend dw-hidden" role="status" aria-live="assertive"></p>
+          <div id="sentenceStarters" class="wf-sentence-starters dw-hidden" role="note"></div>
           <label class="wf-sr-only" for="storyInput">Your writing</label>
           <textarea id="storyInput" class="dw-textarea wf-student-textarea" placeholder="Start typing here…" aria-describedby="promptBanner minWordProgress"></textarea>
           <div class="wf-writing-actions">
