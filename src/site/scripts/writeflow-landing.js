@@ -107,7 +107,12 @@
     renderTutorial();
     bindReplay();
     void fetchImpactStats();
-    await window.WriteFlowIntro?.play();
+    if (window.WriteFlowIntro) {
+      await window.WriteFlowIntro.play();
+    } else {
+      document.getElementById("wfLanding")?.classList.remove("dw-hidden");
+      document.getElementById("wfIntroSplash")?.classList.add("dw-hidden");
+    }
     await renderImpactStats();
   }
 

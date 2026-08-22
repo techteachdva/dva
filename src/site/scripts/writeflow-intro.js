@@ -26,7 +26,6 @@
   }
 
   function shouldSkipIntro() {
-    if (prefersReducedMotion()) return true;
     try {
       return new URLSearchParams(location.search).get("skipIntro") === "1";
     } catch {
@@ -123,7 +122,6 @@
     }
 
     if (shouldSkipIntro()) {
-      resetIntro();
       return finishIntro({ animated: false });
     }
 
@@ -137,7 +135,8 @@
         if (document.fonts?.ready) await document.fonts.ready;
         resetIntro();
         await waitForPaint();
-
+        // Let step-0 styles apply before the typewriter starts.
+        await delay(fast ? 80 : 180);
         for (const ch of INTRO_TEXT) {
           typeEl.textContent += ch;
           await delay(charDelay);
