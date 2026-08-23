@@ -3056,7 +3056,7 @@
         const chip = document.createElement("button");
         chip.type = "button";
         chip.className = `wf-preset-chip${config.theme?.preset === key ? " wf-preset-chip--active" : ""}`;
-        chip.textContent = key.charAt(0).toUpperCase() + key.slice(1);
+        chip.textContent = Core.PRESET_LABELS?.[key] || key.charAt(0).toUpperCase() + key.slice(1);
         chip.addEventListener("click", () => {
           config.theme = { ...config.theme, preset: key, ...Core.PRESETS[key] };
           persistConfig();

@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.7.1";
+  const APP_VERSION = "2.7.2";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -119,6 +119,16 @@
   ];
 
   const CHANGELOG = [
+    {
+      version: "2.7.2",
+      date: "2026-08-23",
+      summary: "Distinct Light and Classroom themes with unique fonts.",
+      items: [
+        "Light theme is clean white with Inter; Classroom uses composition-paper lines and handwriting fonts.",
+        "Each color preset sets a default font (Libre Baskerville, DM Sans, Newsreader, Barlow, etc.).",
+        "Midnight, San Diego, and Gauntlet skins have clearer visual identity in Studio and student views.",
+      ],
+    },
     {
       version: "2.7.1",
       date: "2026-08-23",
@@ -893,7 +903,7 @@
           minWordCount: minWords,
           requireMinWordsToComplete: true,
           allowPaste: false,
-          theme: { preset: "light", fontPreset: "readable" },
+          theme: { preset: "light", fontPreset: "inter" },
           accessibility: { largeText: true, spellcheck: true, highContrast: false, dyslexiaFont: true, reducedMotion: false },
           checklist: [
             "Read the task before you start.",

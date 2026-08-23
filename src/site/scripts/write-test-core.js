@@ -13,35 +13,50 @@
     surface: "rgba(255,255,255,0.04)",
     text: "#e8eefc",
     muted: "#94a3b8",
-    fontFamily: 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif',
+    fontFamily: '"Libre Baskerville", Georgia, "Times New Roman", serif',
+    fontPreset: "libreBaskerville",
     radius: "16px",
   };
 
   const LIGHT_THEME = {
     mode: "light",
-    accent: "#1a73e8",
-    accent2: "#9334e6",
-    bg: "#e8eaed",
+    accent: "#2563eb",
+    accent2: "#7c3aed",
+    bg: "#ffffff",
     surface: "#ffffff",
-    text: "#1a1a1a",
-    muted: "#3c4043",
-    fontFamily: 'Roboto, "Segoe UI", system-ui, Arial, sans-serif',
-    radius: "12px",
+    text: "#111827",
+    muted: "#6b7280",
+    fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+    fontPreset: "inter",
+    radius: "10px",
   };
 
   const PRESETS = {
     dark: DEFAULT_THEME,
     light: LIGHT_THEME,
     classroom: {
-      ...LIGHT_THEME,
-      accent: "#1967d2",
-      accent2: "#188038",
+      mode: "classroom",
+      accent: "#1d4ed8",
+      accent2: "#db2777",
+      bg: "#fffdf7",
+      surface: "rgba(255, 255, 255, 0.88)",
+      text: "#1f2937",
+      muted: "#64748b",
+      fontFamily: '"Caveat", "Patrick Hand", "Comic Sans MS", cursive',
+      fontPreset: "classroomHand",
+      radius: "8px",
     },
     midnight: {
-      ...DEFAULT_THEME,
+      mode: "dark",
       accent: "#818cf8",
       accent2: "#c084fc",
       bg: "#0c0a1a",
+      surface: "rgba(129, 140, 248, 0.08)",
+      text: "#e8e4ff",
+      muted: "#a5b4fc",
+      fontFamily: '"DM Sans", ui-sans-serif, system-ui, sans-serif',
+      fontPreset: "dmSans",
+      radius: "14px",
     },
     sandiego: {
       mode: "custom",
@@ -51,7 +66,8 @@
       surface: "rgba(255,215,0,0.06)",
       text: "#f5e6c8",
       muted: "#c9b896",
-      fontFamily: '"Palatino Linotype", Georgia, serif',
+      fontFamily: '"Newsreader", "Palatino Linotype", Georgia, serif',
+      fontPreset: "newsreader",
       radius: "8px",
     },
     item: {
@@ -63,6 +79,7 @@
       text: "#ecfdf5",
       muted: "#6ee7b7",
       fontFamily: 'Roboto, "Segoe UI", system-ui, Arial, sans-serif',
+      fontPreset: "google",
       radius: "14px",
     },
     gauntlet: {
@@ -74,9 +91,22 @@
       text: "#fff8e7",
       muted: "#e8c896",
       fontFamily: '"Barlow", Roboto, "Segoe UI", sans-serif',
+      fontPreset: "barlow",
       radius: "10px",
     },
   };
+
+  const PRESET_LABELS = {
+    dark: "Dark",
+    light: "Light",
+    classroom: "Classroom",
+    midnight: "Midnight",
+    sandiego: "San Diego",
+    item: "ITEM",
+    gauntlet: "Gauntlet",
+  };
+
+  const THEME_SKINS = Object.keys(PRESETS);
 
   function clamp(n, min, max) {
     return Math.max(min, Math.min(max, n));
@@ -169,6 +199,31 @@
       family: '"Libre Baskerville", Georgia, "Times New Roman", serif',
       googleUrl: "https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&display=swap",
     },
+    inter: {
+      label: "Inter (clean)",
+      family: "Inter, ui-sans-serif, system-ui, sans-serif",
+      googleUrl: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap",
+    },
+    classroomHand: {
+      label: "Classroom handwriting",
+      family: '"Caveat", "Patrick Hand", "Comic Sans MS", cursive',
+      googleUrl: "https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Patrick+Hand&display=swap",
+    },
+    dmSans: {
+      label: "DM Sans",
+      family: '"DM Sans", ui-sans-serif, system-ui, sans-serif',
+      googleUrl: "https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap",
+    },
+    barlow: {
+      label: "Barlow",
+      family: '"Barlow", Roboto, "Segoe UI", sans-serif',
+      googleUrl: "https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&display=swap",
+    },
+    newsreader: {
+      label: "Newsreader",
+      family: '"Newsreader", "Palatino Linotype", Georgia, serif',
+      googleUrl: "https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,600&display=swap",
+    },
     system: {
       label: "System UI",
       family: 'ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif',
@@ -201,7 +256,10 @@
   }
 
   function applyTheme(theme) {
-    const t = { ...DEFAULT_THEME, ...theme };
+    const presetKey = theme?.preset && PRESETS[theme.preset] ? theme.preset : null;
+    const base = presetKey ? PRESETS[presetKey] : DEFAULT_THEME;
+    const t = { ...DEFAULT_THEME, ...base, ...theme };
+
     const root = document.documentElement;
     root.style.setProperty("--dw-bg", t.bg);
     root.style.setProperty("--dw-surface", t.surface);
@@ -211,25 +269,28 @@
     root.style.setProperty("--dw-accent-2", t.accent2);
     root.style.setProperty("--dw-radius", t.radius);
 
-    if (theme?.fontPreset) {
-      applyFontPreset(theme.fontPreset, theme.fontFamily || null);
+    const fontKey = theme?.fontPreset || t.fontPreset;
+    if (fontKey) {
+      applyFontPreset(fontKey, theme?.fontFamily || t.fontFamily || null);
     } else if (t.fontFamily) {
       document.body.style.fontFamily = t.fontFamily;
     }
 
-    if (t.mode === "light") {
-      document.body.classList.add("wp-theme--light");
-      document.body.classList.remove("wp-theme--dark");
-    } else {
-      document.body.classList.add("wp-theme--dark");
-      document.body.classList.remove("wp-theme--light");
-    }
+    THEME_SKINS.forEach((skin) => document.body.classList.remove(`wp-theme--${skin}`));
+    const skin = presetKey || (t.mode === "light" ? "light" : t.mode === "classroom" ? "classroom" : "dark");
+    document.body.classList.add(`wp-theme--${skin}`);
+    document.body.classList.toggle("wp-theme--light", skin === "light");
+    document.body.classList.toggle("wp-theme--dark", skin !== "light" && skin !== "classroom");
   }
 
   function resolveTheme(config) {
     const preset = config?.theme?.preset;
     const base = PRESETS[preset] || PRESETS.dark;
-    return { ...base, ...config?.theme };
+    const merged = { ...base, ...config?.theme };
+    if (!config?.theme?.fontPreset && base.fontPreset) {
+      merged.fontPreset = base.fontPreset;
+    }
+    return merged;
   }
 
   function createTimer(opts) {
@@ -413,6 +474,7 @@
     DEFAULT_THEME,
     LIGHT_THEME,
     PRESETS,
+    PRESET_LABELS,
     FONT_PRESETS,
     clamp,
     formatTime,
