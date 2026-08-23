@@ -3105,7 +3105,7 @@
     if (!insp) return;
     const modeLabel = window.WriteFlowDefaults?.formatModeLabel?.(config.assignmentMode) || "composition";
     const timerLabel = resolveTimerStyle();
-    const rubrics = resolveRubrics(config).join(", ");
+    const rubrics = getActiveRubrics().join(", ");
     const mins = Math.max(1, Math.round((Number(config.durationSec) || 300) / 60));
     insp.innerHTML = `
       <div class="wf-inspector-group wf-inspector-group--sticky">
