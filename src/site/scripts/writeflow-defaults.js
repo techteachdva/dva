@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.6.1";
+  const APP_VERSION = "2.6.2";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -119,6 +119,16 @@
   ];
 
   const CHANGELOG = [
+    {
+      version: "2.6.2",
+      date: "2026-08-23",
+      summary: "Guided tutorial and quick-start aligned with v2.6 standards diagnostics.",
+      items: [
+        "Studio, builder, and student tutorials cover standards attachment, heuristic Results alignment, and conference prompts.",
+        "Landing quick-start and Studio quick tips updated for card detail panel, edit-in-new-tab, hero crop, and top-bar save.",
+        "Tutorial walks through intro splash, A–Z boot loader, and MN ELA + ITEM 2025 catalogs.",
+      ],
+    },
     {
       version: "2.6.1",
       date: "2026-08-23",
@@ -868,27 +878,35 @@
   const LANDING_QUICKSTART = [
     {
       title: "Open Studio",
-      body: "Click Open WriteFlow Studio to reach your teacher dashboard — three panels, one screen.",
+      body: "From the landing page or /writeflow/studio/. The WFS intro plays on first load; Studio syncs during the splash, then shows an A–Z boot bar while your files load.",
     },
     {
       title: "Name your assignment",
-      body: "Every new assignment starts with a name. That becomes the title and the ID in your student link.",
+      body: "Every new assignment starts with a name. That becomes the title and the slug in your student link (/writeflow/a/?id=…).",
     },
     {
       title: "Pick a template",
-      body: "Templates on the left show default student experience (timer, scoring, paste, WPM). Run the wizard, then fine-tune anything.",
+      body: "Templates show default student experience—timer style, scoring focus, paste rules, and live WPM. Run the short wizard, then fine-tune in the builder.",
+    },
+    {
+      title: "Attach standards (optional)",
+      body: "In the builder Standards section, attach ITEM 2025 or MN ELA benchmarks (grades 5–8). Students see chips at the top; Results use heuristic alignment—not AI grading.",
     },
     {
       title: "Manage your files",
-      body: "Saved assignments appear as tiles in the center. Open one to edit, copy the student link, preview, or view Results.",
+      body: "Saved assignments appear as cards in the center. Click a card for details on the right. Edit opens the builder in a new tab; use Link, Preview, Results, or Delete on each card.",
     },
     {
       title: "Build in three panels",
-      body: "Settings on the left, content in the center, File information on the right — save, preview, and publish without leaving the builder.",
+      body: "Settings on the left, forms in the center, File information on the right—save from the sticky panel or the top-bar Save assignment button.",
+    },
+    {
+      title: "Review Results",
+      body: "Open Results with your assignment teacher password (or sign in as owner). See scores, vocabulary hits, and standards alignment with evidence, confidence, and conference prompts.",
     },
     {
       title: "Share student links only",
-      body: "After saving, copy /writeflow/a/?id=your-name — never share the Studio URL with students.",
+      body: "After saving, copy /writeflow/a/?id=your-name from File information—never share the Studio builder URL with students.",
     },
   ];
 
@@ -896,15 +914,20 @@
     studio: [
       {
         title: "Welcome to WriteFlow Studio",
-        body: "Studio is your teacher dashboard: templates on the left, your assignment files in the center, and quick tips on the right. Everything fits on one screen.",
+        body: "Studio v2.6 is your teacher dashboard: templates on the left, assignment files in the center, and quick tips plus assignment details on the right. Everything fits on one screen.",
+      },
+      {
+        title: "Intro & loading",
+        body: "First visit plays the WFS logo intro while cloud sync runs in the background. After that, an A–Z boot loader fills while assignments load. Add ?skipIntro=1 to the Studio URL to skip the animation.",
       },
       {
         title: "The three-panel layout",
-        body: "Left — start from a template or blank assignment. Center — your saved assignments as file tiles. Right — quick tips for naming, links, and passwords.",
+        body: "Left — start from a template or blank assignment. Center — your saved assignments as scrollable cards. Right — quick tips and the detail panel when you select a card.",
+        highlight: "#wfStudioHomeGrid",
       },
       {
         title: "Name your assignment first",
-        body: "Click Blank assignment or any template. WriteFlow asks for a name before you build — that name becomes the student link ID (slugified). You can still edit the title later.",
+        body: "Click Blank assignment or any template. WriteFlow asks for a name before you build — that name becomes the student link ID (slugified). You can still edit the title later in Content.",
         highlight: "#openBuilderBtn",
       },
       {
@@ -913,9 +936,18 @@
         highlight: "#wfTemplatesHeading",
       },
       {
-        title: "Your assignment files",
-        body: "Every saved assignment appears as a tile — icon, title, duration, and mode. Click a tile to edit, or use Results, Link, or Preview from the tile actions.",
+        title: "Assignment cards",
+        body: "Click a card title to select it and open the detail panel on the right. Edit opens the builder in a new tab so this dashboard stays open. Every card also has Results, Link, Preview, and Delete. Hover Preview for a ghost welcome thumbnail.",
         highlight: "#wfAssignmentsDashboard",
+      },
+      {
+        title: "Detail panel",
+        body: "The right column shows metadata and quick actions for the selected assignment — mode, timer, link ID, and buttons to edit, copy the link, or open Results.",
+        highlight: "#wfStudioQuickTips",
+      },
+      {
+        title: "Teaching standards",
+        body: "In the builder Standards section, attach ITEM 2025 (technology) or MN ELA benchmarks (grades 5–8). Students see standard chips on welcome and writing screens. Results use heuristic matching — benchmark terms, structure patterns, and craft scores — with evidence quotes, confidence labels, look-fors, and conference prompts. Not AI grading.",
       },
       {
         title: "Three kinds of passwords",
@@ -923,27 +955,27 @@
       },
       {
         title: "Sign in to your account",
-        body: "Optional but recommended: attach assignments to your username, sync across devices, share with colleagues, and open Results without re-entering the assignment password.",
+        body: "Optional but recommended: attach assignments to your username, sync across devices, share with colleagues, and open Results without re-entering the assignment password when you are the owner.",
         highlight: "#wfAccountBtn",
       },
       {
         title: "Shared by other teachers",
-        body: "When a colleague enables Share with other teachers, their assignment appears below your files. Copy it, name your version, and publish with your own link.",
+        body: "When a colleague enables Share with other teachers, their assignment appears below your files. Copy it, name your version, and publish with your own link and password.",
         highlight: "#wfSharedLibrary",
       },
       {
         title: "Assignments button",
-        body: "Return to this dashboard anytime from the top bar — no page reload. Switch between editing and managing files instantly.",
+        body: "Return to this dashboard anytime from the top bar — no page reload and no replaying the intro. Switch between editing and managing files instantly.",
         highlight: "#builderLinkBtn",
       },
       {
-        title: "Results button",
-        body: "View student submissions. Signed-in owners skip the assignment password; otherwise enter the teacher password you set in the builder.",
+        title: "Results & standards alignment",
+        body: "View student submissions and export CSV. When standards are attached, each submission shows a Standards alignment panel — demonstrated / developing / not evident, confidence, score breakdown, and highlighted terms in the preview. Signed-in owners skip the assignment password.",
         highlight: "#teacherBtn",
       },
       {
         title: "Open the builder guide",
-        body: "When you edit an assignment, use Tutorial again for a walkthrough of Settings, the center editor, and the File information panel.",
+        body: "When you edit an assignment, use Tutorial again for a walkthrough of every Settings section — including Standards, hero images, and save controls.",
         highlight: "#tutorialBtn",
       },
     ],
@@ -955,13 +987,18 @@
       },
       {
         title: "Settings menu",
-        body: "Jump between Templates, Content, Timer, Appearance, Accessibility, Classes, and Preview. The active section is highlighted.",
+        body: "Jump between Templates, Content, Standards, Timer, Appearance, Accessibility, Classes, and Preview. Standards is where you attach ITEM 2025 or MN ELA benchmarks. The active section is highlighted.",
         highlight: "#builderNav",
       },
       {
         title: "File information panel",
-        body: "See title, link ID, mode, timer, and scoring at a glance. Save assignment, preview the student view, copy the share link, and switch between saved files — all from the right panel.",
+        body: "See title, link ID, mode, timer, and scoring at a glance. Save assignment (sticky at the top of this panel), preview the student view, copy the share link, and switch between saved files.",
         highlight: "#builderInspector",
+      },
+      {
+        title: "Top-bar save",
+        body: "While editing, Save assignment also appears in the top bar so you can publish without scrolling — same action as the File information panel.",
+        highlight: "#wfTopbarSaveBtn",
       },
       {
         title: "Templates & student defaults",
@@ -974,9 +1011,14 @@
         section: "content",
       },
       {
-        title: "Teaching Standards",
-        body: "Choose ITEM 2025 (technology) or MN ELA (grades 5–8). Filter by grade and strand, attach benchmarks, or add custom standards. Students see them at the top; Results use heuristic text matching (terms, structure, craft) with evidence lines and conference prompts — not AI grading.",
+        title: "Standards — attach benchmarks",
+        body: "Browse ITEM 2025 (technology, grade 8) or MN ELA (grades 5–8). Filter by grade and strand, search benchmark text, attach standards, or add custom entries. Attached standards appear as chips for students.",
         section: "standards",
+        highlight: "#bfStandardsCatalog",
+      },
+      {
+        title: "Standards — what Results show",
+        body: "After students submit, Results analyzes each draft heuristically: benchmark terms, writing-structure patterns (claims, evidence, narrative cues), and craft scores. Demonstrated requires textual signals — not just strong mechanics. You get evidence lines, confidence, look-fors, conference prompts, and highlighted terms in the submission preview.",
       },
       {
         title: "Assignment teacher password",
@@ -994,18 +1036,24 @@
         section: "timer",
       },
       {
-        title: "Appearance & accessibility",
-        body: "Theme, fonts, and hero images shape the student welcome screen. Accessibility presets bundle differentiation settings in one click.",
+        title: "Appearance — hero image",
+        body: "Upload or paste a hero image, then Crop & position to drag, zoom, and pick banner, square, or circle display on the student welcome screen. URL images keep focus position; uploads bake the crop for reliable sharing.",
         section: "appearance",
+        highlight: "#bfHero",
+      },
+      {
+        title: "Appearance & accessibility",
+        body: "Theme and fonts shape the student welcome screen. Accessibility presets bundle differentiation settings — large text, dyslexia font, high contrast — in one click.",
+        section: "accessibility",
       },
       {
         title: "Classes & preview",
-        body: "Reference class codes in Classes. Use Preview to see the student welcome screen before you share.",
+        body: "Reference class codes in Classes. Use Preview to see the student welcome screen — including standards chips and hero image — before you share.",
         section: "preview",
       },
       {
         title: "Save & publish",
-        body: "Click Save assignment in File information to publish to the cloud. Students can then load your assignment from the share link on any device.",
+        body: "Click Save assignment in File information (or the top bar) to publish to the cloud. Students can then load your assignment from the share link on any device.",
         highlight: "#bfSave",
       },
       {
@@ -1017,8 +1065,12 @@
     student: [
       {
         title: "Before you start",
-        body: "Read the prompt carefully. Enter your first name, pick your class from the list, and type the class code your teacher gave you (if required).",
+        body: "Read the prompt carefully. If your teacher attached standards, you'll see chips at the top showing what the assignment targets. Enter your first name, pick your class, and type the class code if required.",
         highlight: "#startBtn",
+      },
+      {
+        title: "Standards on screen",
+        body: "Standards chips stay visible on the welcome screen and while you write. They remind you what to include — your teacher reviews alignment in Results, not on this screen.",
       },
       {
         title: "Writing time",
@@ -1026,7 +1078,7 @@
       },
       {
         title: "Finishing up",
-        body: "When time ends or you tap I'm done, your writing is analyzed and saved. Your teacher views submissions from WriteFlow Studio Results using their assignment password.",
+        body: "When time ends or you tap I'm done, your writing is analyzed and saved. Your teacher views submissions from WriteFlow Studio Results — including vocabulary highlights and standards alignment when benchmarks are attached.",
       },
     ],
   };
