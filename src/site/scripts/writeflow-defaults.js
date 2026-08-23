@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.6.0";
+  const APP_VERSION = "2.6.1";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -119,6 +119,17 @@
   ];
 
   const CHANGELOG = [
+    {
+      version: "2.6.1",
+      date: "2026-08-23",
+      summary: "Sharper standards alignment diagnostics without AI.",
+      items: [
+        "Benchmark terms and writing-structure patterns (claims, evidence, inquiry, etc.) improve text matching.",
+        "Demonstrated now requires textual signals — not just strong mechanics scores.",
+        "Results show confidence, score breakdown, benchmark look-fors, and conference prompts.",
+        "Submission preview highlights standard-related terms alongside vocabulary.",
+      ],
+    },
     {
       version: "2.6.0",
       date: "2026-08-23",
@@ -529,7 +540,7 @@
   const BUILDER_SECTIONS = [
     { id: "templates", label: "Templates", icon: "📋", hint: "Start from a guided template — modes set scoring and timer defaults" },
     { id: "content", label: "Content", icon: "📝", hint: "Prompt, sentence starters, and welcome message — clarity lowers anxiety" },
-    { id: "standards", label: "Standards", icon: "🎯", hint: "ITEM 2025 technology standards or MN ELA grades 5–8" },
+    { id: "standards", label: "Standards", icon: "🎯", hint: "ITEM 2025 or MN ELA — heuristic text + craft alignment in Results" },
     { id: "timer", label: "Timer & rules", icon: "⏱️", hint: "Soft timers support composition; hard timers suit fluency drills" },
     { id: "appearance", label: "Appearance", icon: "🎨", hint: "Colors, fonts, and optional header image" },
     { id: "accessibility", label: "Accessibility", icon: "♿", hint: "Presets and options — match timer and word goals to each learner" },
@@ -964,7 +975,7 @@
       },
       {
         title: "Teaching Standards",
-        body: "Choose ITEM 2025 (technology) or MN ELA (grades 5–8). Filter by grade and strand, attach benchmarks, or add custom standards. Students see them at the top; Results analyze evidence in their writing.",
+        body: "Choose ITEM 2025 (technology) or MN ELA (grades 5–8). Filter by grade and strand, attach benchmarks, or add custom standards. Students see them at the top; Results use heuristic text matching (terms, structure, craft) with evidence lines and conference prompts — not AI grading.",
         section: "standards",
       },
       {

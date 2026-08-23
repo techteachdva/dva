@@ -181,14 +181,18 @@
       spelling: spelling.score, grammar: grammar.score, syntax: syntax.score,
       semantics: semantics.score, typing: typingScore, mechanics: mechanicsScore, story: storyScore,
       vocabulary: vocabulary.score,
+      voice: storySubs.voice,
+      detail: storySubs.detail,
+      structure: storySubs.structure,
+      wordChoice: storySubs.wordChoice,
     };
     const standards = window.DWStandards ? window.DWStandards.mapToStandards(metricScores) : { all: [], excelling: [], developing: [], needsSupport: [] };
     const teachingStandards = window.WriteFlowItemStandards?.analyzeAttachedStandards?.(
       text,
       options.teachingStandards || [],
       metricScores,
-      { wordCount, wpm, durationSec }
-    ) || { attached: [], all: [], demonstrated: [], developing: [], notEvident: [] };
+      { wordCount, wpm, durationSec, assignmentPrompt: options.assignmentPrompt || "" }
+    ) || { attached: [], all: [], demonstrated: [], developing: [], notEvident: [], summary: null };
 
     return {
       wordCount,

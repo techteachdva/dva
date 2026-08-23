@@ -5219,6 +5219,75 @@ mark.wf-vocab-hit {
   line-height: 1.45;
 }
 
+.wf-standards-align__summary {
+  margin: 0 0 12px;
+  font-size: 0.9rem;
+}
+
+.wf-standards-align__disclaimer {
+  margin: 0 0 14px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: rgba(148, 163, 184, 0.12);
+}
+
+.wf-standards-align__metrics-note {
+  color: #fbbf24;
+}
+
+.wf-standards-align__breakdown {
+  margin: 0 0 4px;
+}
+
+.wf-standards-align__lookfors {
+  margin: 6px 0;
+  padding-left: 18px;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: rgba(226, 232, 240, 0.85);
+}
+
+.wf-standards-align__conference {
+  margin: 6px 0;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.wf-standards-align__confidence {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.wf-standards-align__confidence--strong {
+  background: rgba(34, 197, 94, 0.2);
+  color: #86efac;
+}
+
+.wf-standards-align__confidence--moderate {
+  background: rgba(250, 204, 21, 0.2);
+  color: #fde047;
+}
+
+.wf-standards-align__confidence--metrics_only {
+  background: rgba(96, 165, 250, 0.2);
+  color: #93c5fd;
+}
+
+.wf-standards-align__confidence--weak {
+  background: rgba(148, 163, 184, 0.2);
+  color: #cbd5e1;
+}
+
+mark.wf-standard-hit,
+.wf-standard-hit {
+  background: rgba(167, 139, 250, 0.35);
+  color: inherit;
+  padding: 0 2px;
+  border-radius: 2px;
+}
+
 .wp-theme--light .wf-standards-bar,
 .wp-theme--light .wf-standards-catalog-item,
 .wp-theme--light .wf-standards-selected,

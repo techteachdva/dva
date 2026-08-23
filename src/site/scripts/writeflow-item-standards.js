@@ -182,7 +182,7 @@
     },
     elaNarrative: {
       keywords: ["narrative", "story", "dialogue", "character", "plot", "poetry", "figurative", "sensory", "voice", "tone", "mood", "pacing"],
-      metrics: { story: 0.65, mechanics: 0.2, semantics: 0.15 },
+      metrics: { story: 0.45, detail: 0.25, voice: 0.2, mechanics: 0.1 },
       minWords: 45,
     },
     elaResearch: {
@@ -223,16 +223,19 @@
   }
 
   function enrichElaStandard(raw) {
+    const base = elaSignalFor(raw.code);
+    const signal = mergeSignalWithBenchmark(base, raw.benchmark, raw.code, CATALOG_IDS.mn_ela);
     return {
       ...raw,
       catalog: CATALOG_IDS.mn_ela,
       connections: raw.connections || "",
-      signal: elaSignalFor(raw.code),
+      signal,
     };
   }
 
   function enrichItemStandard(raw) {
-    return { ...raw, catalog: CATALOG_IDS.item };
+    const signal = mergeSignalWithBenchmark(raw.signal || SIGNAL_PRESETS.generic, raw.benchmark, raw.code, CATALOG_IDS.item);
+    return { ...raw, catalog: CATALOG_IDS.item, signal };
   }
 
   const ITEM_2025_STANDARDS = [
@@ -726,6 +729,96 @@
     return (list || []).map(normalizeAttached).filter(Boolean);
   }
 
+  const BENCHMARK_STOP = new Set([
+    "about", "after", "again", "also", "another", "any", "are", "because", "been", "before",
+    "being", "between", "both", "but", "can", "could", "during", "each", "from", "have", "having",
+    "including", "into", "just", "like", "more", "most", "not", "only", "other", "over", "same",
+    "should", "some", "such", "than", "that", "their", "them", "these", "they", "this", "those",
+    "through", "under", "using", "very", "were", "what", "when", "where", "which", "while", "will",
+    "with", "would", "your", "write", "writing", "students", "student", "text", "texts",
+  ]);
+
+  function extractBenchmarkTerms(text = "") {
+    const words = String(text).toLowerCase().replace(/[^a-z0-9\s'-]/g, " ").split(/\s+/);
+    const terms = [];
+    for (const w of words) {
+      const clean = w.replace(/'/g, "");
+      if (clean.length >= 5 && !BENCHMARK_STOP.has(clean)) terms.push(clean);
+    }
+    return [...new Set(terms)].slice(0, 14);
+  }
+
+  function inferStructurePatterns(code = "", catalog = "") {
+    const parts = String(code).split(".");
+    const major = parts[1];
+    const minor = parts[2];
+    const patterns = [];
+    const add = (label, re) => patterns.push({ label, re });
+
+    if (major === "2" && minor === "4") {
+      add("Claim or opinion", /\b(i think|i believe|in my opinion|claim|argue|should|must|we should|my opinion)\b/gi);
+      add("Reasoning", /\b(because|since|therefore|so that|as a result|reason|however|although)\b/gi);
+      add("Support", /\b(for example|for instance|evidence|according to|such as|shows that|proves)\b/gi);
+    }
+    if (major === "2" && (minor === "7" || minor === "8")) {
+      add("Questions", /\?/g);
+      add("Inquiry", /\b(wonder|question|research|investigate|inquiry|explore|narrow|broaden)\b/gi);
+      add("Sources", /\b(source|cite|citation|quote|paraphrase|summarize|plagiarism|reference)\b/gi);
+    }
+    if (major === "2" && minor === "5") {
+      add("Explain", /\b(explain|describe|define|means|clarify|inform|detail)\b/gi);
+      add("Organization", /\b(first|second|third|next|finally|another|additionally|overall)\b/gi);
+    }
+    if (major === "2" && minor === "6") {
+      add("Voice", /\b(i |my |we |our |felt|thought|voice|myself)\b/gi);
+      add("Sensory detail", /\b(saw|heard|felt|smelled|bright|loud|quiet|warm|cold|scary|beautiful|exciting)\b/gi);
+      add("Dialogue/craft", /\b(dialogue|character|plot|stanza|scene|figurative|metaphor|simile)\b/gi);
+    }
+    if (major === "2" && minor === "1") {
+      add("Conventions", /[.!?]|,/g);
+      add("Sentence craft", /\b(sentence|capital|punctuation|grammar|spelling|clause|phrase)\b/gi);
+    }
+    if (major === "2" && minor === "2") {
+      add("Reflection", /\b(i |my |reflect|learned|realized|identity|experience|feel|grown|changed)\b/gi);
+    }
+    if (major === "1" && minor === "4") {
+      add("Text evidence", /["'“”]|\b(quote|states|shows|according to|the text says|cite)\b/gi);
+      add("Theme/idea", /\b(theme|central idea|main idea|message|develops|convey|inference)\b/gi);
+    }
+    if (major === "1" && (minor === "6" || minor === "7")) {
+      add("Perspective", /\b(author|perspective|viewpoint|compare|contrast|bias|fact|fiction|opinion)\b/gi);
+    }
+    if (major === "1" && minor === "9") {
+      add("Source evaluation", /\b(credible|credibility|reliable|bias|perspective|relevant|valid|verify|source)\b/gi);
+    }
+    if (major === "3") {
+      add("Discussion", /\b(discuss|collaborate|listen|feedback|respond|exchange|peer|audience|present)\b/gi);
+    }
+    if (major === "1" && minor === "1") {
+      add("Inquiry/topic", /\b(topic|question|research|focus|background|prior knowledge|subtopic)\b/gi);
+    }
+    if (catalog === CATALOG_IDS.item && major === "2") {
+      add("Digital citizenship", /\b(digital|online|privacy|copyright|plagiarism|footprint|cyber|respect|ethical|intelligence|media)\b/gi);
+    }
+    return patterns;
+  }
+
+  function mergeSignalWithBenchmark(baseSignal, benchmark = "", code = "", catalog = "") {
+    const terms = extractBenchmarkTerms(benchmark);
+    const keywords = [...new Set([...(baseSignal.keywords || []), ...terms])];
+    const patterns = inferStructurePatterns(code, catalog);
+    return { ...baseSignal, keywords, patterns };
+  }
+
+  function parseLookFors(benchmark = "") {
+    const fors = [];
+    for (const line of String(benchmark).split(/\n/)) {
+      const m = line.match(/^\s*[a-z][.)]\s*(.+)/i) || line.match(/^\s*\d+[.)]\s*(.+)/);
+      if (m?.[1]) fors.push(m[1].trim());
+    }
+    return fors.slice(0, 6);
+  }
+
   function countKeywordHits(text, keywords = []) {
     const lower = text.toLowerCase();
     const hits = [];
@@ -763,8 +856,56 @@
     return weightSum > 0 ? Math.round(total / weightSum) : null;
   }
 
-  function levelFromScore(score) {
-    if (score >= 75) return "demonstrated";
+  function countPatternHits(text, patterns = []) {
+    const hits = [];
+    for (const p of patterns) {
+      const matches = text.match(p.re);
+      if (matches?.length) hits.push({ label: p.label, count: matches.length });
+    }
+    return hits;
+  }
+
+  function promptAlignmentScore(text, prompt = "") {
+    const terms = extractBenchmarkTerms(prompt).slice(0, 10);
+    if (!terms.length) return 0;
+    const lower = text.toLowerCase();
+    let hits = 0;
+    for (const t of terms) {
+      if (lower.includes(t)) hits += 1;
+    }
+    return Math.min(100, Math.round((hits / terms.length) * 100));
+  }
+
+  function structureScoreFromHits(patternHits = []) {
+    if (!patternHits.length) return 0;
+    const variety = patternHits.length;
+    const volume = patternHits.reduce((s, p) => s + Math.min(p.count, 4), 0);
+    return Math.min(100, variety * 22 + volume * 8);
+  }
+
+  function computeConfidence(score, keywordHits, patternHits, evidence, metricScore) {
+    const textSignals = keywordHits.length + patternHits.length;
+    if (score >= 75 && evidence.length && textSignals >= 2) return "strong";
+    if (score >= 50 && textSignals >= 1) return "moderate";
+    if (score >= 50 && metricScore >= 68 && textSignals === 0) return "metrics_only";
+    return "weak";
+  }
+
+  function confidenceLabel(confidence) {
+    return {
+      strong: "Strong text match",
+      moderate: "Partial text match",
+      metrics_only: "Writing quality only — few benchmark terms in text",
+      weak: "Limited match",
+    }[confidence] || confidence;
+  }
+
+  function levelFromScore(score, signalQuality = {}) {
+    const { keywordHits = [], patternHits = [], evidence = [] } = signalQuality;
+    const textSignals = keywordHits.length + patternHits.length;
+    const hasEvidence = evidence.length > 0 || textSignals >= 1;
+    if (score >= 75 && hasEvidence && textSignals >= 2) return "demonstrated";
+    if (score >= 75 && !hasEvidence) return "developing";
     if (score >= 50) return "developing";
     return "not_evident";
   }
@@ -781,18 +922,30 @@
     const signal = standard.signal || SIGNAL_PRESETS.generic;
     const wordCount = context.wordCount || 0;
     const keywords = signal.keywords || SIGNAL_PRESETS.generic.keywords;
+    const benchmarkTerms = extractBenchmarkTerms(standard.benchmark || "");
     const keywordHits = countKeywordHits(text, keywords);
-    const keywordScore = Math.min(100, Math.round((keywordHits.length / Math.max(keywords.length * 0.15, 2)) * 100));
+    const benchmarkHits = benchmarkTerms.filter((t) => new RegExp(`\\b${t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`, "i").test(text));
+    const allKeywordHits = [...new Set([...keywordHits, ...benchmarkHits])];
+    const keywordScore = Math.min(100, Math.round((allKeywordHits.length / Math.max(keywords.length * 0.12, 3)) * 100));
+    const patternHits = countPatternHits(text, signal.patterns || []);
+    const structureScore = structureScoreFromHits(patternHits);
     const metricScore = scoreFromMetrics(signal.metrics, metricScores);
+    const promptBonus = promptAlignmentScore(text, context.assignmentPrompt || "");
     const minWords = signal.minWords || 30;
-    const volumeFactor = wordCount >= minWords ? 1 : wordCount / minWords;
+    const volumeFactor = wordCount >= minWords ? 1 : Math.max(0.35, wordCount / minWords);
+
     let combined = metricScore != null
-      ? Math.round(metricScore * 0.55 + keywordScore * 0.45)
-      : keywordScore;
+      ? Math.round(metricScore * 0.42 + keywordScore * 0.33 + structureScore * 0.25)
+      : Math.round(keywordScore * 0.6 + structureScore * 0.4);
+    if (promptBonus >= 40) combined = Math.min(100, combined + 6);
     combined = Math.round(combined * volumeFactor);
     combined = Math.max(0, Math.min(100, combined));
-    const level = levelFromScore(combined);
-    const evidence = extractEvidenceSnippets(text, keywordHits.length ? keywordHits : keywords.slice(0, 6));
+
+    const evidence = extractEvidenceSnippets(text, allKeywordHits.length ? allKeywordHits : keywords.slice(0, 8));
+    const level = levelFromScore(combined, { keywordHits: allKeywordHits, patternHits, evidence });
+    const confidence = computeConfidence(combined, allKeywordHits, patternHits, evidence, metricScore ?? 0);
+    const lookFors = parseLookFors(standard.benchmark || "");
+
     return {
       code: standard.code,
       shortTitle: standard.shortTitle,
@@ -801,43 +954,80 @@
       score: combined,
       level,
       levelLabel: levelLabel(level),
-      keywordHits,
+      confidence,
+      confidenceLabel: confidenceLabel(confidence),
+      keywordHits: allKeywordHits,
+      benchmarkHits,
+      patternHits,
+      lookFors,
+      scoreBreakdown: {
+        keyword: keywordScore,
+        structure: structureScore,
+        metrics: metricScore,
+        promptAlignment: promptBonus,
+        volumeFactor: Math.round(volumeFactor * 100),
+      },
       evidence,
-      recommendation: buildRecommendation(standard, level, combined, keywordHits, evidence),
+      recommendation: buildRecommendation(standard, level, combined, allKeywordHits, patternHits, evidence, confidence),
+      conferencePrompt: buildConferencePrompt(standard, level, lookFors),
     };
   }
 
-  function buildRecommendation(standard, level, score, keywordHits, evidence) {
+  function buildConferencePrompt(standard, level, lookFors = []) {
     if (level === "demonstrated") {
-      return `Writing shows evidence aligned with ${standard.code}. Look for: ${keywordHits.slice(0, 4).join(", ") || "ideas and craft from the benchmark"}.`;
+      return `Ask: “What part of your writing best shows ${standard.code}?” Push for one more specific example.`;
+    }
+    if (lookFors.length) {
+      return `Conference focus: ${lookFors[0].slice(0, 90)}${lookFors[0].length > 90 ? "…" : ""}`;
+    }
+    return `Revisit the benchmark for ${standard.code} with a short model and sentence frame.`;
+  }
+
+  function buildRecommendation(standard, level, score, keywordHits, patternHits, evidence, confidence) {
+    const patternNote = patternHits.length
+      ? ` Structure signals: ${patternHits.map((p) => p.label).join(", ")}.`
+      : "";
+    if (level === "demonstrated") {
+      return `Text and craft align with ${standard.code} (${confidenceLabel(confidence)}). Terms: ${keywordHits.slice(0, 5).join(", ") || "see evidence"}.${patternNote}`;
     }
     if (level === "developing") {
-      return `Approaching ${standard.code}. Ask the student to name specific examples or vocabulary tied to the benchmark in revision.`;
+      if (confidence === "metrics_only") {
+        return `Writing quality is solid but the draft uses few benchmark-specific words for ${standard.code}. Ask the student to name examples using the benchmark vocabulary.`;
+      }
+      return `Approaching ${standard.code}. In revision, target: ${keywordHits.slice(0, 3).join(", ") || "benchmark vocabulary"} or add a sentence that directly addresses the benchmark.${patternNote}`;
     }
     if (!evidence.length) {
-      return `Limited textual evidence for ${standard.code}. Consider a follow-up prompt or conference focused on the benchmark language.`;
+      return `Little language from ${standard.code} appears in this draft. Use a short re-teach or oral conference before expecting this benchmark in writing.`;
     }
-    return `Needs support for ${standard.code} (${score}/100). Reteach with a short model and sentence frames before the next draft.`;
+    return `Needs support for ${standard.code} (${score}/100). Model one sentence that meets the benchmark, then let the student try again.${patternNote}`;
   }
 
   function analyzeAttachedStandards(text, attachedList = [], metricScores = {}, context = {}) {
     const resolved = resolveAttachedList(attachedList);
     if (!resolved.length) {
-      return { attached: [], demonstrated: [], developing: [], notEvident: [], all: [] };
+      return { attached: [], demonstrated: [], developing: [], notEvident: [], all: [], summary: null };
     }
     const all = resolved.map((std) => {
       const catalog = getByCode(std.code, std.catalog);
       const withSignal = catalog
         ? { ...std, signal: catalog.signal }
-        : { ...std, signal: SIGNAL_PRESETS.generic };
+        : { ...std, signal: mergeSignalWithBenchmark(SIGNAL_PRESETS.generic, std.benchmark || "", std.code, std.catalog || "") };
       return analyzeStandard(text, withSignal, metricScores, context);
     });
+    const summary = {
+      demonstrated: all.filter((r) => r.level === "demonstrated").length,
+      developing: all.filter((r) => r.level === "developing").length,
+      notEvident: all.filter((r) => r.level === "not_evident").length,
+      strongMatch: all.filter((r) => r.confidence === "strong").length,
+      metricsOnly: all.filter((r) => r.confidence === "metrics_only").length,
+    };
     return {
       attached: resolved,
       all,
       demonstrated: all.filter((r) => r.level === "demonstrated"),
       developing: all.filter((r) => r.level === "developing"),
       notEvident: all.filter((r) => r.level === "not_evident"),
+      summary,
     };
   }
 
@@ -875,5 +1065,7 @@
     searchCatalog,
     shortTitleFromBenchmark,
     levelLabel,
+    confidenceLabel,
+    parseLookFors,
   };
 })();

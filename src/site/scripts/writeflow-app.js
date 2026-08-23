@@ -74,6 +74,7 @@
       assignmentMode: config.assignmentMode || "composition",
       rubrics: getActiveRubrics(),
       teachingStandards: getTeachingStandardsRaw(),
+      assignmentPrompt: config.prompt || config.promptBanner || "",
     };
   }
 
@@ -182,30 +183,71 @@
   function renderStandardsAlignmentHtml(alignment = {}) {
     const items = alignment.all || [];
     if (!items.length) return "";
-    const rows = items.map((item) => `
+    const summary = alignment.summary;
+    const summaryHtml = summary
+      ? `<p class="wf-standards-align__summary dw-muted">
+          <strong>${summary.demonstrated}</strong> demonstrated ·
+          <strong>${summary.developing}</strong> developing ·
+          <strong>${summary.notEvident}</strong> not evident
+          ${summary.metricsOnly ? ` · <span class="wf-standards-align__metrics-note">${summary.metricsOnly} need text check (quality only)</span>` : ""}
+        </p>
+        <p class="dw-muted dw-tiny wf-standards-align__disclaimer">Heuristic match — use evidence lines and conference prompts below; not a formal rubric score.</p>`
+      : "";
+    const rows = items.map((item) => {
+      const breakdown = item.scoreBreakdown;
+      const breakdownHtml = breakdown
+        ? `<p class="dw-muted dw-tiny wf-standards-align__breakdown">Signals ${breakdown.keyword} · Structure ${breakdown.structure}${breakdown.metrics != null ? ` · Craft ${breakdown.metrics}` : ""}${breakdown.promptAlignment ? ` · Prompt ${breakdown.promptAlignment}` : ""}</p>`
+        : "";
+      const patternsHtml = item.patternHits?.length
+        ? `<p class="dw-muted dw-tiny">Structure: ${item.patternHits.map((p) => `${escapeHtml(p.label)} (${p.count})`).join(", ")}</p>`
+        : "";
+      const lookForsHtml = item.lookFors?.length
+        ? `<ul class="wf-standards-align__lookfors">${item.lookFors.map((lf) => `<li>${escapeHtml(lf)}</li>`).join("")}</ul>`
+        : "";
+      const conferenceHtml = item.conferencePrompt
+        ? `<p class="wf-standards-align__conference"><strong>Try asking:</strong> ${escapeHtml(item.conferencePrompt)}</p>`
+        : "";
+      return `
       <div class="wf-standards-align wf-standards-align--${item.level}">
         <div class="wf-standards-align__head">
           <strong>${escapeHtml(item.code)}</strong>
           <span class="wf-standards-align__badge">${escapeHtml(item.levelLabel)}</span>
+          <span class="wf-standards-align__confidence wf-standards-align__confidence--${escapeHtml(item.confidence || "weak")}">${escapeHtml(item.confidenceLabel || "")}</span>
           <span class="wf-standards-align__score">${item.score}/100</span>
         </div>
         <p class="wf-standards-align__title">${escapeHtml(item.shortTitle || "")}</p>
-        ${item.evidence?.length ? `<ul class="wf-standards-align__evidence">${item.evidence.map((e) => `<li>${escapeHtml(e)}</li>`).join("")}</ul>` : ""}
-        ${item.keywordHits?.length ? `<p class="dw-muted dw-tiny">Signals: ${escapeHtml(item.keywordHits.join(", "))}</p>` : ""}
+        ${breakdownHtml}
+        ${patternsHtml}
+        ${item.evidence?.length ? `<ul class="wf-standards-align__evidence">${item.evidence.map((e) => `<li>${escapeHtml(e)}</li>`).join("")}</ul>` : "<p class=\"dw-muted dw-tiny\">No quoted evidence lines detected — read the full draft below.</p>"}
+        ${item.keywordHits?.length ? `<p class="dw-muted dw-tiny">Terms in text: ${escapeHtml(item.keywordHits.join(", "))}</p>` : ""}
+        ${lookForsHtml}
+        ${conferenceHtml}
         <p class="dw-muted dw-tiny">${escapeHtml(item.recommendation || "")}</p>
-      </div>`).join("");
-    return `<div class="wf-standards-align-panel"><h4 class="dw-h4">Standards alignment</h4>${rows}</div>`;
+      </div>`;
+    }).join("");
+    return `<div class="wf-standards-align-panel"><h4 class="dw-h4">Standards alignment</h4>${summaryHtml}${rows}</div>`;
   }
 
-  function highlightVocabHtml(text, vocabWords = getVocabWords()) {
-    if (!text || !vocabWords.length || config.highlightVocab === false) {
-      return escapeHtml(text);
+  function collectStandardHighlightTerms(alignment = {}) {
+    const terms = new Set();
+    for (const item of alignment.all || []) {
+      for (const w of item.keywordHits || []) terms.add(w);
+      for (const w of item.benchmarkHits || []) terms.add(w);
     }
+    return [...terms].sort((a, b) => b.length - a.length);
+  }
+
+  function highlightSubmissionHtml(text, { vocabWords = getVocabWords(), alignment = null } = {}) {
+    if (!text) return "";
     let html = escapeHtml(text);
-    const sorted = [...vocabWords].sort((a, b) => b.length - a.length);
+    const standardTerms = alignment ? collectStandardHighlightTerms(alignment) : [];
+    const vocabList = vocabWords.length && config.highlightVocab !== false ? vocabWords : [];
+    const sorted = [...new Set([...standardTerms, ...vocabList])].sort((a, b) => b.length - a.length);
     for (const word of sorted) {
+      const isVocab = vocabList.some((v) => v.toLowerCase() === word.toLowerCase());
+      const cls = isVocab ? "wf-vocab-hit" : "wf-standard-hit";
       const re = new RegExp(`\\b(${escapeRegex(word)})\\b`, "gi");
-      html = html.replace(re, '<mark class="wf-vocab-hit">$1</mark>');
+      html = html.replace(re, `<mark class="${cls}">$1</mark>`);
     }
     return html;
   }
@@ -2031,7 +2073,7 @@
       }
     }
 
-    preview.innerHTML = highlightVocabHtml(sub.text || "", getVocabWords());
+    preview.innerHTML = highlightSubmissionHtml(sub.text || "", { alignment: sub.analysis?.teachingStandards });
     panel.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
@@ -2126,11 +2168,11 @@
       if (rubrics.includes("mechanics")) row.push(s.analysis?.scores?.mechanics);
       if (rubrics.includes("story")) row.push(s.analysis?.scores?.story);
       row.push(s.analysis?.scores?.overall, new Date(s.submittedAt).toISOString());
-      if (attachedCodes.length) {
+        if (attachedCodes.length) {
         const byCode = Object.fromEntries((s.analysis?.teachingStandards?.all || []).map((r) => [r.code, r]));
         for (const code of attachedCodes) {
           const match = byCode[code];
-          row.push(match ? `${match.levelLabel} (${match.score})` : "—");
+          row.push(match ? `${match.levelLabel} (${match.score}, ${match.confidenceLabel || ""})` : "—");
         }
       }
       rows.push(row);
@@ -2661,7 +2703,7 @@
       const gradeOptions = grades.map((g) => `<option value="${g}">Grade ${g}</option>`).join("");
       canvas.innerHTML = `
         ${builderSectionHeader("standards")}
-        <p class="dw-muted">Attach ITEM 2025 (technology) or MN ELA (grades 5–8) benchmarks. Students see standards at the top of the assignment; Results analyze writing for textual evidence.</p>
+        <p class="dw-muted">Attach ITEM 2025 (technology) or MN ELA (grades 5–8) benchmarks. Students see standards at the top; Results use heuristic matching (benchmark terms, writing structure, craft scores) with evidence quotes and conference prompts — not AI grading.</p>
         <div class="wf-inspector-group">
           <div class="wf-inspector-group__label">Attached standards (${attached.length})</div>
           <div class="wf-standards-selected-list" id="bfStandardsSelected">${selectedHtml}</div>
