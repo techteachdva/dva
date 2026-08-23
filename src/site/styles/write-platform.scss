@@ -2,6 +2,30 @@
 
 /* ── Write Platform extensions (WriteFlow · ITEM Diagnostic · Tech Trail) ── */
 
+/* Readable baseline across all Write Platform themes */
+.dw-body {
+  font-size: 17px;
+  line-height: 1.55;
+}
+
+.dw-input,
+.dw-textarea,
+.dw-select {
+  font-size: 1.05rem;
+}
+
+.dw-btn {
+  font-size: 1.02rem;
+}
+
+.dw-tiny {
+  font-size: 0.84rem;
+}
+
+.dw-muted {
+  font-size: 0.96rem;
+}
+
 .wp-theme--light.dw-body {
   --dw-border: rgba(15, 23, 42, 0.08);
   background: #ffffff;
@@ -136,54 +160,64 @@
   }
 }
 
-/* Classroom — composition paper, handwriting, margin lines */
-$wp-classroom-line: 32px;
-$wp-classroom-margin: 54px;
+/* Classroom — composition notebook (single 8.5×11 sheet, three-hole punch) */
+$wp-classroom-line: 36px;
+$wp-classroom-margin: 72px;
+$wp-classroom-hole-x: 22px;
+$wp-sheet-width: 816px;
+$wp-sheet-min-height: 1056px;
 
-@mixin wp-classroom-paper-bg {
-  background-color: #fffdf8;
+@mixin wp-classroom-ruled-lines {
+  background-color: #fffef9;
   background-image:
     repeating-linear-gradient(
       to bottom,
       transparent 0,
       transparent calc(#{$wp-classroom-line} - 1px),
-      rgba(96, 165, 220, 0.32) calc(#{$wp-classroom-line} - 1px),
-      rgba(96, 165, 220, 0.32) #{$wp-classroom-line}
-    ),
-    repeating-linear-gradient(
-      to bottom,
-      transparent 0,
-      transparent calc(4 * #{$wp-classroom-line} - 2px),
-      rgba(244, 114, 182, 0.28) calc(4 * #{$wp-classroom-line} - 2px),
-      rgba(244, 114, 182, 0.28) calc(4 * #{$wp-classroom-line})
+      rgba(91, 155, 213, 0.34) calc(#{$wp-classroom-line} - 1px),
+      rgba(91, 155, 213, 0.34) #{$wp-classroom-line}
     ),
     linear-gradient(
       to right,
       transparent 0,
       transparent calc(#{$wp-classroom-margin} - 1px),
-      rgba(236, 72, 153, 0.38) calc(#{$wp-classroom-margin} - 1px),
-      rgba(236, 72, 153, 0.38) #{$wp-classroom-margin},
-      transparent #{$wp-classroom-margin}
+      rgba(232, 90, 110, 0.48) calc(#{$wp-classroom-margin} - 1px),
+      rgba(232, 90, 110, 0.48) calc(#{$wp-classroom-margin} + 1px),
+      transparent calc(#{$wp-classroom-margin} + 1px)
     );
-  background-size: 100% #{$wp-classroom-line}, 100% calc(4 * #{$wp-classroom-line}), 100% 100%;
+  background-size: 100% #{$wp-classroom-line}, 100% 100%;
+}
+
+@mixin wp-classroom-hole-punches {
+  background-image:
+    radial-gradient(
+      circle at #{$wp-classroom-hole-x} 11%,
+      rgba(30, 41, 59, 0.2) 0,
+      rgba(30, 41, 59, 0.2) 5.5px,
+      rgba(0, 0, 0, 0.07) 6px,
+      transparent 6.5px
+    ),
+    radial-gradient(
+      circle at #{$wp-classroom-hole-x} 50%,
+      rgba(30, 41, 59, 0.2) 0,
+      rgba(30, 41, 59, 0.2) 5.5px,
+      rgba(0, 0, 0, 0.07) 6px,
+      transparent 6.5px
+    ),
+    radial-gradient(
+      circle at #{$wp-classroom-hole-x} 89%,
+      rgba(30, 41, 59, 0.2) 0,
+      rgba(30, 41, 59, 0.2) 5.5px,
+      rgba(0, 0, 0, 0.07) 6px,
+      transparent 6.5px
+    );
+  background-repeat: no-repeat;
 }
 
 .wp-theme--classroom.dw-body {
   --dw-border: rgba(100, 116, 139, 0.22);
-  @include wp-classroom-paper-bg;
   color: var(--dw-text);
-
-  .dw-topbar {
-    background: rgba(255, 255, 255, 0.92);
-    border-color: rgba(100, 116, 139, 0.2);
-    backdrop-filter: blur(4px);
-  }
-
-  .dw-card {
-    background: rgba(255, 255, 255, 0.9);
-    border-color: rgba(100, 116, 139, 0.2);
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
-  }
+  font-size: 1.125rem;
 
   .dw-title,
   .dw-h1,
@@ -202,7 +236,7 @@ $wp-classroom-margin: 54px;
   .dw-input,
   .dw-textarea,
   .dw-select {
-    background: rgba(255, 255, 255, 0.85);
+    font-size: 1.1rem;
     border-color: rgba(96, 165, 220, 0.45);
     color: #1f2937;
   }
@@ -210,30 +244,7 @@ $wp-classroom-margin: 54px;
   .dw-btn {
     font-family: "Patrick Hand", "Caveat", cursive;
     font-weight: 600;
-  }
-
-  .wf-student-prompt-box {
-    @include wp-classroom-paper-bg;
-    border: 1px solid rgba(96, 165, 220, 0.35);
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6);
-  }
-
-  .wf-student-prompt {
-    font-size: 1.15rem;
-    line-height: 1.5;
-  }
-
-  .wf-student-textarea,
-  #storyInput {
-    @include wp-classroom-paper-bg;
-    background-size: 100% #{$wp-classroom-line}, 100% calc(4 * #{$wp-classroom-line}), 100% 100%;
-    border: 1px solid rgba(96, 165, 220, 0.4);
-    border-radius: 4px;
-    font-size: 1.35rem;
-    line-height: #{$wp-classroom-line};
-    padding-left: calc(#{$wp-classroom-margin} + 8px);
-    color: #1e293b;
-    box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
+    font-size: 1.12rem;
   }
 
   .wf-builder-nav {
@@ -249,16 +260,125 @@ $wp-classroom-margin: 54px;
     color: #1d4ed8;
   }
 
-  .dw-prompt-banner,
+  .dw-card {
+    background: rgba(255, 255, 255, 0.94);
+    border-color: rgba(100, 116, 139, 0.2);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  }
+
+  .dw-topbar {
+    background: rgba(255, 255, 255, 0.92);
+    border-color: rgba(100, 116, 139, 0.2);
+  }
+}
+
+/* Student assignment — desk surface + one ruled sheet */
+.wp-theme--classroom.wf-student-app.dw-body {
+  background:
+    linear-gradient(165deg, #b8a99a 0%, #d8cdbf 35%, #c4b5a6 100%);
+
+  .dw-shell--student {
+    position: relative;
+    max-width: $wp-sheet-width;
+    width: calc(100% - 28px);
+    min-height: min(#{$wp-sheet-min-height}, calc(100vh - 40px));
+    margin: 20px auto;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    box-shadow:
+      0 1px 2px rgba(15, 23, 42, 0.06),
+      0 14px 44px rgba(15, 23, 42, 0.22);
+    @include wp-classroom-ruled-lines;
+    @include wp-classroom-hole-punches;
+  }
+
+  .wf-student-topbar {
+    background: transparent;
+    border-bottom: 1px solid rgba(91, 155, 213, 0.28);
+    padding: 18px 24px 10px 56px;
+  }
+
+  .wf-student-topbar__title {
+    font-size: 1.65rem;
+  }
+
+  .wf-student-topbar__meta {
+    font-size: 1.05rem;
+  }
+
+  .wf-student-main {
+    flex: 1;
+    padding: 12px 20px 36px 56px;
+    background: transparent;
+  }
+
+  .wf-student-prompt-box {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+  }
+
+  .wf-student-prompt-box__title {
+    font-size: 1.75rem;
+  }
+
+  .wf-student-prompt {
+    font-size: 1.35rem;
+    line-height: 1.45;
+    background: rgba(255, 255, 255, 0.45);
+    border-left-color: rgba(232, 90, 110, 0.55);
+  }
+
   .wf-student-prompt-inline {
-    background: rgba(255, 255, 255, 0.75);
-    border: 1px dashed rgba(236, 72, 153, 0.35);
+    font-size: 1.15rem;
+    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(91, 155, 213, 0.25);
+  }
+
+  .wf-student-stat__label {
+    font-size: 0.78rem;
+  }
+
+  .wf-student-stat__value {
+    font-size: 1.5rem;
+  }
+
+  .wf-student-textarea,
+  #storyInput {
+    background: transparent;
+    background-image: none;
+    border: 1px solid rgba(91, 155, 213, 0.35);
+    border-radius: 2px;
+    font-size: 1.7rem;
+    line-height: #{$wp-classroom-line};
+    padding: 4px 12px 8px calc(#{$wp-classroom-margin} - 44px);
+    color: #1e293b;
+    box-shadow: none;
+    min-height: min(52vh, 640px);
+  }
+
+  .dw-prompt-banner {
+    background: rgba(255, 255, 255, 0.55);
+    font-size: 1.1rem;
   }
 
   .dw-story-preview {
-    @include wp-classroom-paper-bg;
-    padding-left: calc(#{$wp-classroom-margin} + 8px);
+    background: transparent;
+    padding-left: calc(#{$wp-classroom-margin} - 44px);
     line-height: #{$wp-classroom-line};
+    font-size: 1.25rem;
+  }
+
+  .wf-student-account {
+    background: rgba(255, 255, 255, 0.72);
+    font-size: 1.05rem;
+  }
+
+  .dw-label {
+    font-size: 1.05rem;
   }
 }
 
@@ -3982,7 +4102,7 @@ body.wf-intro-active {
 }
 
 .wf-student-prompt-box__title {
-  font-size: 1.5rem;
+  font-size: 1.65rem;
   margin: 0;
 }
 
@@ -3992,7 +4112,7 @@ body.wf-intro-active {
   border-left: 4px solid var(--dw-accent);
   background: rgba(0, 0, 0, 0.15);
   border-radius: 0 12px 12px 0;
-  font-size: 1.05rem;
+  font-size: 1.15rem;
   line-height: 1.55;
 }
 
@@ -4015,7 +4135,7 @@ body.wf-intro-active {
 }
 
 .wf-student-prompt-inline {
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   line-height: 1.5;
   color: var(--dw-muted);
   padding: 10px 14px;
@@ -4038,14 +4158,14 @@ body.wf-intro-active {
 }
 
 .wf-student-stat__label {
-  font-size: 11px;
+  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--dw-muted);
 }
 
 .wf-student-stat__value {
-  font-size: 1.35rem;
+  font-size: 1.45rem;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
@@ -4056,7 +4176,7 @@ body.wf-intro-active {
 
 .wf-student-textarea {
   min-height: min(58vh, 520px);
-  font-size: 1.05rem;
+  font-size: 1.15rem;
   line-height: 1.65;
   resize: vertical;
 }

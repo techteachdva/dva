@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.7.2";
+  const APP_VERSION = "2.7.3";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -119,6 +119,16 @@
   ];
 
   const CHANGELOG = [
+    {
+      version: "2.7.3",
+      date: "2026-08-23",
+      summary: "Classroom notebook polish and larger readable fonts.",
+      items: [
+        "Classroom theme is a single 8.5×11 sheet on a desk with three hole punches and one pink margin line.",
+        "Removed repeating pink section bands; blue ruled lines only.",
+        "Larger text across all themes; classroom handwriting is ~1.7rem in the writing area.",
+      ],
+    },
     {
       version: "2.7.2",
       date: "2026-08-23",
