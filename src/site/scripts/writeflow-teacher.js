@@ -138,18 +138,21 @@
     });
   }
 
-  async function canAccessResults(assignmentId) {
+  async function isAssignmentOwner(assignmentId) {
     const token = getToken();
     if (!token || !assignmentId) return false;
     try {
-      const qs = new URLSearchParams({ assignmentId, sessionToken: token });
-      const res = await fetch(`${API_URL}?${qs}`);
-      if (res.status === 401) return false;
-      const data = await res.json().catch(() => ({}));
-      return res.ok && !data.error;
+      const items = await listMyAssignments();
+      return items.some((item) =>
+        String(item.assignmentId || "").trim().toLowerCase() === String(assignmentId || "").trim().toLowerCase()
+      );
     } catch {
       return false;
     }
+  }
+
+  async function canAccessResults(assignmentId) {
+    return isAssignmentOwner(assignmentId);
   }
 
   window.WriteFlowTeacher = {

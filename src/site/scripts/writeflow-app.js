@@ -563,6 +563,53 @@
     });
   }
 
+  function assignmentIdsMatch(a, b) {
+    return String(a || "").trim().toLowerCase() === String(b || "").trim().toLowerCase();
+  }
+
+  function passwordsMatch(stored, provided) {
+    return String(stored || "").trim() === String(provided || "").trim();
+  }
+
+  async function cloudAssignmentExists(id) {
+    try {
+      const res = await fetch(`${API_URL}?action=getAssignment&assignmentId=${encodeURIComponent(id)}`);
+      if (!res.ok) return false;
+      const data = await res.json().catch(() => ({}));
+      return !!data.config;
+    } catch {
+      return false;
+    }
+  }
+
+  function localPasswordMatches(id, password) {
+    const local = readLocalConfig(id);
+    return !!(local?.teacherPassword && passwordsMatch(local.teacherPassword, password));
+  }
+
+  async function verifyResultsAccess(assignmentId, password) {
+    const sessionToken = Teacher()?.getToken() || "";
+    const qs = new URLSearchParams({ assignmentId });
+    if (sessionToken) qs.set("sessionToken", sessionToken);
+    if (password) qs.set("password", password);
+    const res = await fetch(`${API_URL}?${qs}`);
+    if (res.ok) return { ok: true, source: "cloud" };
+    if (res.status === 401) {
+      const inCloud = await cloudAssignmentExists(assignmentId);
+      if (!inCloud && password && localPasswordMatches(assignmentId, password)) {
+        return { ok: true, source: "local" };
+      }
+      return {
+        ok: false,
+        reason: inCloud
+          ? "That password does not match the published assignment. Use the teacher password from the builder (Assignments sheet column B), not your account login or class code."
+          : "That password did not match. If this assignment was never published, open it on the device that created it or publish from Studio first.",
+      };
+    }
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.error || "Could not verify access.");
+  }
+
   function showBootLoader(visible = true) {
     const el = document.getElementById("wfBootLoader");
     if (!el) return;
@@ -571,21 +618,10 @@
   }
 
   async function ownsAssignment(assignmentId) {
-    const session = Teacher()?.getSession();
-    if (!session?.username || !assignmentId) return false;
-    const norm = normalizeUsername(session.username);
-    if (normalizeUsername(config?.ownerUsername) === norm) return true;
-    if (normalizeUsername(cloudAssignmentMeta[assignmentId]?.ownerUsername) === norm) return true;
-    if (Teacher()?.canAccessResults) {
-      try {
-        if (await Teacher().canAccessResults(assignmentId)) return true;
-      } catch {
-        /* ignore */
-      }
-    }
+    if (!Teacher()?.isLoggedIn() || !assignmentId) return false;
     try {
       const items = await Teacher().listMyAssignments();
-      return items.some((item) => item.assignmentId === assignmentId);
+      return items.some((item) => assignmentIdsMatch(item.assignmentId, assignmentId));
     } catch {
       return false;
     }
@@ -1125,14 +1161,20 @@
   }
 
   async function fetchSubmissions() {
-    const pw = sessionTeacherPassword || document.getElementById("teacherPassword")?.value || config.teacherPassword;
+    const pw = (sessionTeacherPassword || document.getElementById("teacherPassword")?.value || config.teacherPassword || "").trim();
     const sessionToken = Teacher()?.getToken() || "";
     const qs = new URLSearchParams({ assignmentId: config.id });
     if (sessionToken) qs.set("sessionToken", sessionToken);
     if (pw) qs.set("password", pw);
     const res = await fetch(`${API_URL}?${qs}`);
     const data = await res.json().catch(() => ({}));
-    if (res.status === 401) throw new Error("Incorrect teacher password for this assignment.");
+    if (res.status === 401) {
+      const inCloud = await cloudAssignmentExists(config.id);
+      if (!inCloud && pw && localPasswordMatches(config.id, pw)) {
+        return loadLocalSubmissions();
+      }
+      throw new Error("Incorrect teacher password for this assignment.");
+    }
     if (!res.ok) {
       if (data.setupRequired) {
         throw new Error("Results are saved on this device only until online storage is connected.");
@@ -1442,7 +1484,7 @@
   function bindTeacherEvents() {
     document.getElementById("teacherCancelBtn")?.addEventListener("click", () => void navigateToHome());
     document.getElementById("teacherLoginBtn")?.addEventListener("click", async () => {
-      const pw = document.getElementById("teacherPassword")?.value || "";
+      const pw = document.getElementById("teacherPassword")?.value?.trim() || "";
       const errEl = document.getElementById("teacherLoginError");
 
       if (await ownsAssignment(config.id)) {
@@ -1464,21 +1506,13 @@
       if (errEl) errEl.classList.add("dw-hidden");
 
       try {
-        const sessionToken = Teacher()?.getToken() || "";
-        const qs = new URLSearchParams({ assignmentId: config.id });
-        if (sessionToken) qs.set("sessionToken", sessionToken);
-        if (pw) qs.set("password", pw);
-        const res = await fetch(`${API_URL}?${qs}`);
-        if (res.status === 401) {
+        const access = await verifyResultsAccess(config.id, pw);
+        if (!access.ok) {
           if (errEl) {
-            errEl.textContent = "Incorrect password for this assignment.";
+            errEl.textContent = access.reason || "Incorrect password for this assignment.";
             errEl.classList.remove("dw-hidden");
           }
           return;
-        }
-        if (!res.ok) {
-          const data = await res.json().catch(() => ({}));
-          throw new Error(data.error || "Could not verify access.");
         }
       } catch (err) {
         if (errEl) {

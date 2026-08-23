@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.3.9";
+  const APP_VERSION = "2.3.10";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -119,6 +119,17 @@
   ];
 
   const CHANGELOG = [
+    {
+      version: "2.3.10",
+      date: "2026-08-22",
+      summary: "Fix Results password verification for co-teachers and published assignments.",
+      items: [
+        "Results login always sends the assignment password alongside a signed-in session.",
+        "Assignment IDs and passwords match case-insensitively with trimmed whitespace on the server.",
+        "Unpublished local assignments can still open Results with the builder password on that device.",
+        "Clearer Results screen copy — teacher password is not your account login or class code.",
+      ],
+    },
     {
       version: "2.3.9",
       date: "2026-08-22",

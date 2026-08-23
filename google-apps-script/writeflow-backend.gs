@@ -159,6 +159,18 @@ function normalizeUsername_(value) {
   return String(value || "").trim().toLowerCase().replace(/[^a-z0-9._-]/g, "").slice(0, 40);
 }
 
+function normalizeAssignmentId_(value) {
+  return String(value || "").trim();
+}
+
+function assignmentIdMatches_(a, b) {
+  return normalizeAssignmentId_(a).toLowerCase() === normalizeAssignmentId_(b).toLowerCase();
+}
+
+function passwordsMatch_(stored, provided) {
+  return String(stored || "").trim() === String(provided || "").trim();
+}
+
 function normalizeDisplayName_(value) {
   return String(value || "").trim().slice(0, 80);
 }
@@ -301,7 +313,7 @@ function listSharedAssignments_() {
 function userOwnsAssignment_(username, assignmentId) {
   const rows = readAssignmentRows_();
   for (var i = 0; i < rows.length; i++) {
-    if (String(rows[i][0]) !== assignmentId) continue;
+    if (!assignmentIdMatches_(rows[i][0], assignmentId)) continue;
     return normalizeUsername_(rows[i][5]) === normalizeUsername_(username);
   }
   return false;
@@ -507,16 +519,13 @@ function handle_(e, isGet) {
 }
 
 function verifyAssignmentPassword_(assignmentId, password, session) {
-  if (session && userOwnsAssignment_(session.username, assignmentId)) return true;
-  const sheet = getAssignmentsSheet_();
-  const lastRow = sheet.getLastRow();
-  if (lastRow < 2) return false;
-  const numRows = lastRow - 1;
-  const rows = sheet.getRange(2, 1, numRows, 2).getValues();
+  const targetId = normalizeAssignmentId_(assignmentId);
+  if (!targetId) return false;
+  if (session && userOwnsAssignment_(session.username, targetId)) return true;
+  const rows = readAssignmentRows_();
   for (var i = 0; i < rows.length; i++) {
-    if (String(rows[i][0]) === assignmentId) {
-      return String(rows[i][1]) === String(password);
-    }
+    if (!assignmentIdMatches_(rows[i][0], targetId)) continue;
+    return passwordsMatch_(rows[i][1], password);
   }
   return false;
 }
@@ -562,7 +571,7 @@ function registerAssignment_(params) {
     const numRows = lastRow - 1;
     const ids = sheet.getRange(2, 1, numRows, 1).getValues();
     for (var i = 0; i < ids.length; i++) {
-      if (String(ids[i][0]) === assignmentId) {
+      if (assignmentIdMatches_(ids[i][0], assignmentId)) {
         targetRow = i + 2;
         break;
       }
@@ -596,7 +605,7 @@ function registerAssignment_(params) {
 function getAssignmentConfig_(assignmentId) {
   const rows = readAssignmentRows_();
   for (var i = 0; i < rows.length; i++) {
-    if (String(rows[i][0]) !== assignmentId) continue;
+    if (!assignmentIdMatches_(rows[i][0], assignmentId)) continue;
     const rawJson = String(rows[i][4] || "").trim();
     if (!rawJson) return null;
     var config = {};
@@ -673,7 +682,7 @@ function listSubmissions_(assignmentId) {
 
   for (let i = values.length - 1; i >= 0; i--) {
     const row = values[i];
-    if (!row[0] || String(row[2]) !== assignmentId) continue;
+    if (!row[0] || !assignmentIdMatches_(row[2], assignmentId)) continue;
     let analysis = {};
     try {
       analysis = JSON.parse(row[11] || "{}");
