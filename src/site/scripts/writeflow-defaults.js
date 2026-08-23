@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.3.10";
+  const APP_VERSION = "2.3.11";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -119,6 +119,16 @@
   ];
 
   const CHANGELOG = [
+    {
+      version: "2.3.11",
+      date: "2026-08-22",
+      summary: "Fix assignment file tiles — layout and action buttons.",
+      items: [
+        "Assignment cards show title, duration, mode, ID, and account badges without clipping.",
+        "Results, Link, and Preview buttons work from the dashboard; Link copies the student URL with a tooltip.",
+        "Cloud-synced assignments load display metadata when no local copy exists on this device.",
+      ],
+    },
     {
       version: "2.3.10",
       date: "2026-08-22",

@@ -318,10 +318,47 @@
     return icons[mode] || "📄";
   }
 
-  function assignmentTileSummary(saved = {}) {
-    const mode = window.WriteFlowDefaults?.formatModeLabel?.(saved.assignmentMode) || "composition";
-    const mins = Math.max(1, Math.round((Number(saved.durationSec) || 300) / 60));
-    return `${mins} min · ${mode}`;
+  function assignmentTileSummary(saved = {}, meta = null) {
+    const mode = window.WriteFlowDefaults?.formatModeLabel?.(saved.assignmentMode || meta?.assignmentMode);
+    const durationSec = Number(saved.durationSec || meta?.durationSec);
+    if (mode && Number.isFinite(durationSec) && durationSec > 0) {
+      const mins = Math.max(1, Math.round(durationSec / 60));
+      return `${mins} min · ${mode}`;
+    }
+    if (meta?.shared) return "Shared assignment";
+    if (meta?.ownerUsername) return "Synced to your account";
+    return "Writing assignment";
+  }
+
+  function showTileToast(message, anchorEl) {
+    let toast = document.getElementById("wfTileToast");
+    if (!toast) {
+      toast = document.createElement("div");
+      toast.id = "wfTileToast";
+      toast.className = "wf-tile-toast dw-hidden";
+      toast.setAttribute("role", "status");
+      toast.setAttribute("aria-live", "polite");
+      document.body.appendChild(toast);
+    }
+    toast.textContent = message;
+    toast.classList.remove("dw-hidden");
+    toast.classList.add("wf-tile-toast--visible");
+    if (anchorEl?.getBoundingClientRect) {
+      const rect = anchorEl.getBoundingClientRect();
+      toast.style.left = `${rect.left + rect.width / 2}px`;
+      toast.style.top = `${Math.max(12, rect.top - 10)}px`;
+    } else {
+      toast.style.left = "50%";
+      toast.style.top = "auto";
+      toast.style.bottom = "24px";
+      toast.style.transform = "translateX(-50%)";
+    }
+    clearTimeout(showTileToast._timer);
+    showTileToast._timer = setTimeout(() => {
+      toast.classList.remove("wf-tile-toast--visible");
+      toast.classList.add("dw-hidden");
+      toast.style.transform = "";
+    }, 2200);
   }
 
   function renderTemplateDefaultsList(template) {
@@ -1390,7 +1427,17 @@
       const items = await Teacher().listMyAssignments();
       cloudAssignmentMeta = {};
       for (const item of items) {
-        cloudAssignmentMeta[item.assignmentId] = item;
+        let enriched = { ...item };
+        const local = readLocalConfig(item.assignmentId);
+        if (local) {
+          enriched.assignmentMode = local.assignmentMode;
+          enriched.durationSec = local.durationSec;
+          enriched.title = local.title || enriched.title;
+        } else {
+          const cloud = await fetchCloudConfig(item.assignmentId);
+          if (cloud) enriched = { ...enriched, ...cloud };
+        }
+        cloudAssignmentMeta[item.assignmentId] = enriched;
         const ids = getAssignmentsList();
         if (!ids.includes(item.assignmentId)) {
           saveAssignmentsList([...ids, item.assignmentId]);
@@ -1883,30 +1930,33 @@
     showSaveStatus(`Opened “${config.title || config.id}”.`, true);
   }
 
-  async function copyShareLink(id = config.id) {
+  async function copyShareLink(id = config.id, anchorEl = null) {
     const link = `${location.origin}${assignmentUrl(id)}`;
     try {
       await navigator.clipboard.writeText(link);
+      showTileToast("Student link copied", anchorEl);
       showSaveStatus("Student link copied to clipboard.", true);
     } catch {
+      showTileToast("Copy failed — select link manually", anchorEl);
       showSaveStatus(link, false);
     }
   }
 
   function renderAssignmentCard(id, { active = false, compact = false, meta = null } = {}) {
-    const saved = readLocalConfig(id) || { id, title: id };
-    const title = saved.title || meta?.title || id;
-    const sharePath = assignmentUrl(id);
-    const icon = assignmentModeIcon(saved.assignmentMode);
-    const summary = assignmentTileSummary(saved);
+    const local = readLocalConfig(id);
+    const cloudMeta = meta || cloudAssignmentMeta[id] || null;
+    const display = local || cloudMeta || { id };
+    const title = local?.title || cloudMeta?.title || id;
+    const icon = assignmentModeIcon(display.assignmentMode || cloudMeta?.assignmentMode);
+    const summary = assignmentTileSummary(display, cloudMeta);
     const badges = [];
-    if (meta?.shared) badges.push('<span class="wf-badge wf-badge--shared">Shared</span>');
-    if (meta?.ownerUsername && Teacher()?.getSession()?.username === normalizeUsername(meta.ownerUsername)) {
+    if (cloudMeta?.shared) badges.push('<span class="wf-badge wf-badge--shared">Shared</span>');
+    if (cloudMeta?.ownerUsername && Teacher()?.getSession()?.username === normalizeUsername(cloudMeta.ownerUsername)) {
       badges.push('<span class="wf-badge wf-badge--cloud">Your account</span>');
-    } else if (meta?.authorDisplayName) {
-      badges.push(`<span class="wf-badge">${escapeHtml(meta.authorDisplayName)}</span>`);
+    } else if (cloudMeta?.authorDisplayName) {
+      badges.push(`<span class="wf-badge">${escapeHtml(cloudMeta.authorDisplayName)}</span>`);
     }
-    const badgeHtml = badges.length ? `<div class="wf-assignment-badges">${badges.join("")}</div>` : "";
+    const badgeHtml = badges.length ? `<div class="wf-file-tile__badges">${badges.join("")}</div>` : "";
     if (compact) {
       return `
         <article class="wf-assignment-card${active ? " wf-assignment-card--active" : ""}" data-assignment-id="${escapeHtml(id)}">
@@ -1922,72 +1972,89 @@
     }
     return `
       <article class="wf-file-tile${active ? " wf-file-tile--active" : ""}" role="listitem" data-assignment-id="${escapeHtml(id)}">
-        <button type="button" class="wf-file-tile__body" data-action="edit" data-id="${escapeHtml(id)}">
+        <div class="wf-file-tile__top">
           <span class="wf-file-tile__icon" aria-hidden="true">${icon}</span>
-          <span class="wf-file-tile__name">${escapeHtml(title)}</span>
-          <span class="wf-file-tile__meta">${escapeHtml(summary)}</span>
-          <span class="wf-file-tile__id"><code>${escapeHtml(id)}</code></span>
-          ${badgeHtml}
-        </button>
+          <div class="wf-file-tile__content">
+            <button type="button" class="wf-file-tile__title" data-action="edit" data-id="${escapeHtml(id)}">${escapeHtml(title)}</button>
+            <p class="wf-file-tile__meta">${escapeHtml(summary)}</p>
+            <p class="wf-file-tile__id"><code>${escapeHtml(id)}</code></p>
+          </div>
+        </div>
+        ${badgeHtml}
         <div class="wf-file-tile__actions">
-          <button class="dw-btn dw-btn-secondary dw-btn--compact" type="button" data-action="results" data-id="${escapeHtml(id)}">Results</button>
-          <button class="dw-btn dw-btn-ghost dw-btn--compact" type="button" data-action="copy" data-id="${escapeHtml(id)}">Link</button>
-          <a class="dw-btn dw-btn-ghost dw-btn--compact" href="${escapeHtml(sharePath)}" target="_blank" rel="noopener">Preview</a>
+          <button class="dw-btn dw-btn-secondary dw-btn--compact wf-file-tile__action" type="button" data-action="results" data-id="${escapeHtml(id)}">Results</button>
+          <button class="dw-btn dw-btn-ghost dw-btn--compact wf-file-tile__action" type="button" data-action="copy" data-id="${escapeHtml(id)}" title="Copy student link">Link</button>
+          <button class="dw-btn dw-btn-ghost dw-btn--compact wf-file-tile__action" type="button" data-action="preview" data-id="${escapeHtml(id)}">Preview</button>
           <button class="wf-file-tile__delete" type="button" data-action="delete" data-id="${escapeHtml(id)}" aria-label="Delete ${escapeHtml(title)}">×</button>
         </div>
       </article>`;
   }
 
-  function bindAssignmentCardActions(root) {
-    root?.querySelectorAll("[data-action]").forEach((btn) => {
-      btn.addEventListener("click", async (e) => {
-        const action = btn.dataset.action;
-        const id = btn.dataset.id;
-        if (!id) return;
-        if (action === "edit") {
-          e.preventDefault();
-          await openAssignmentInBuilder(id);
-          return;
-        }
-        if (action === "results") {
-          e.preventDefault();
-          void navigateToResults(id);
-          return;
-        }
-        if (action === "copy") {
-          e.preventDefault();
-          await copyShareLink(id);
-          return;
-        }
-        if (action === "delete") {
-          e.preventDefault();
-          e.stopPropagation();
-          const saved = readLocalConfig(id) || { id, title: id };
-          const ok = await showConfirmDialog({
-            title: "Delete assignment?",
-            body: `Delete "${saved.title || id}" from this browser? This cannot be undone.`,
-            confirmLabel: "Delete",
-            destructive: true,
-          });
-          if (!ok) return;
-          const wasCurrent = config.id === id;
-          const remaining = deleteAssignment(id);
-          if (wasCurrent) {
-            if (remaining.length) {
-              await openAssignmentInBuilder(remaining[0]);
-            } else {
-              config = { ...Defaults, id: `assignment-${Date.now()}`, title: "Untitled Assignment" };
-              persistConfig();
-              history.replaceState(null, "", studioUrl(`?mode=builder&id=${encodeURIComponent(config.id)}`));
-              renderBuilder();
-            }
-          } else {
-            renderHomeDashboard();
-            renderBuilder();
-          }
-        }
+  async function handleAssignmentCardAction(e) {
+    const btn = e.target.closest("[data-action]");
+    if (!btn) return;
+    const root = btn.closest("#wfAssignmentsDashboard, #bfAssignmentList");
+    if (!root) return;
+    const action = btn.dataset.action;
+    const id = btn.dataset.id;
+    if (!id) return;
+
+    if (action === "edit") {
+      e.preventDefault();
+      await openAssignmentInBuilder(id);
+      return;
+    }
+    if (action === "results") {
+      e.preventDefault();
+      e.stopPropagation();
+      void navigateToResults(id);
+      return;
+    }
+    if (action === "copy") {
+      e.preventDefault();
+      e.stopPropagation();
+      await copyShareLink(id, btn);
+      return;
+    }
+    if (action === "preview") {
+      e.preventDefault();
+      e.stopPropagation();
+      window.open(`${location.origin}${assignmentUrl(id)}`, "_blank", "noopener,noreferrer");
+      return;
+    }
+    if (action === "delete") {
+      e.preventDefault();
+      e.stopPropagation();
+      const saved = readLocalConfig(id) || cloudAssignmentMeta[id] || { id, title: id };
+      const ok = await showConfirmDialog({
+        title: "Delete assignment?",
+        body: `Delete "${saved.title || id}" from this browser? This cannot be undone.`,
+        confirmLabel: "Delete",
+        destructive: true,
       });
-    });
+      if (!ok) return;
+      const wasCurrent = config.id === id;
+      const remaining = deleteAssignment(id);
+      if (wasCurrent) {
+        if (remaining.length) {
+          await openAssignmentInBuilder(remaining[0]);
+        } else {
+          config = { ...Defaults, id: `assignment-${Date.now()}`, title: "Untitled Assignment" };
+          persistConfig();
+          history.replaceState(null, "", studioUrl(`?mode=builder&id=${encodeURIComponent(config.id)}`));
+          renderBuilder();
+        }
+      } else {
+        renderHomeDashboard();
+        renderBuilder();
+      }
+    }
+  }
+
+  function bindAssignmentCardActions(root) {
+    if (!root || root.dataset.cardActionsBound === "1") return;
+    root.dataset.cardActionsBound = "1";
+    root.addEventListener("click", (e) => { void handleAssignmentCardAction(e); });
   }
 
   function renderHomeDashboard() {
@@ -2591,6 +2658,7 @@
     document.getElementById("openBuilderBtn")?.addEventListener("click", () => {
       void navigateToNewAssignment({ section: "content" });
     });
+    bindAssignmentCardActions(document.getElementById("wfAssignmentsDashboard"));
     renderTemplateGallery("homeTemplateGrid", (id) => {
       void navigateToNewAssignment({ templateId: id, section: "templates" });
     });
