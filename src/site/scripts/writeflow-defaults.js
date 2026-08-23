@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.3.13";
+  const APP_VERSION = "2.3.14";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -119,6 +119,16 @@
   ];
 
   const CHANGELOG = [
+    {
+      version: "2.3.14",
+      date: "2026-08-22",
+      summary: "Restore visible Save assignment controls in the builder.",
+      items: [
+        "Save & publish moved to the top of the right panel and stays sticky while you scroll.",
+        "Save assignment button also appears in the top bar while editing.",
+        "On narrower screens, the save panel appears above settings instead of below them.",
+      ],
+    },
     {
       version: "2.3.13",
       date: "2026-08-22",

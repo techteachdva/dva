@@ -617,8 +617,10 @@
     if (!isStudioApp) return;
     const homeActive = activeView === "home";
     const resultsActive = activeView === "teacher" || activeView === "teacherLogin";
+    const builderActive = activeView === "builder";
     document.getElementById("builderLinkBtn")?.classList.toggle("wf-topbar-btn--active", homeActive);
     document.getElementById("teacherBtn")?.classList.toggle("wf-topbar-btn--active", resultsActive);
+    document.getElementById("wfTopbarSaveBtn")?.classList.toggle("dw-hidden", !builderActive);
   }
 
   function initBootLoader() {
@@ -1019,10 +1021,43 @@
 
   function showSaveStatus(message, ok = true) {
     const el = document.getElementById("bfSaveStatus");
-    if (!el) return;
-    el.textContent = message;
-    el.classList.remove("dw-hidden", "wf-save-status--ok", "wf-save-status--error");
-    el.classList.add(ok ? "wf-save-status--ok" : "wf-save-status--error");
+    if (el) {
+      el.textContent = message;
+      el.classList.remove("dw-hidden", "wf-save-status--ok", "wf-save-status--error");
+      el.classList.add(ok ? "wf-save-status--ok" : "wf-save-status--error");
+    }
+    const topBtn = document.getElementById("wfTopbarSaveBtn");
+    if (topBtn && isBuilderMode()) {
+      topBtn.classList.toggle("wf-topbar-save--ok", ok);
+      topBtn.classList.toggle("wf-topbar-save--error", !ok);
+      if (message && message !== "Publishing…") {
+        clearTimeout(showSaveStatus._topReset);
+        showSaveStatus._topReset = setTimeout(() => {
+          topBtn.classList.remove("wf-topbar-save--ok", "wf-topbar-save--error");
+        }, 3200);
+      }
+    }
+  }
+
+  async function saveAndPublishAssignment() {
+    if (!String(config.teacherPassword || "").trim()) {
+      showSaveStatus("Set a teacher password in Content before saving — it protects your results.", false);
+      builderSection = "content";
+      renderBuilder();
+      return false;
+    }
+    persistConfig();
+    showSaveStatus("Publishing…", true);
+    try {
+      await publishAssignmentCloud();
+      if (Teacher()?.isLoggedIn()) await refreshCloudAssignments();
+      if (config.shared) await refreshSharedLibrary();
+      showSaveStatus("Saved and published. Share link is ready for students.", true);
+      return true;
+    } catch (err) {
+      showSaveStatus(`Saved on this browser only. ${err.message}`, false);
+      return false;
+    }
   }
 
   function captureStudentSession() {
@@ -2157,6 +2192,10 @@
       void navigateToHome();
     });
 
+    document.getElementById("wfTopbarSaveBtn")?.addEventListener("click", () => {
+      void saveAndPublishAssignment();
+    });
+
     document.getElementById("teacherBtn")?.addEventListener("click", () => {
       const ids = getAssignmentsList();
       const cloudIds = Object.keys(cloudAssignmentMeta);
@@ -2584,6 +2623,15 @@
     const rubrics = resolveRubrics(config).join(", ");
     const mins = Math.max(1, Math.round((Number(config.durationSec) || 300) / 60));
     insp.innerHTML = `
+      <div class="wf-inspector-group wf-inspector-group--sticky">
+        <div class="wf-inspector-group__label">Save &amp; publish</div>
+        <p class="dw-muted dw-tiny">${Teacher()?.isLoggedIn() ? "Save publishes to the cloud and links this assignment to your account." : "Save publishes to the cloud so students can load this assignment from the share link. Sign in to attach assignments to your account."}</p>
+        <div class="dw-stack">
+          <button id="bfSave" class="dw-btn" type="button">Save assignment</button>
+          <button id="bfPreviewStudent" class="dw-btn dw-btn-secondary" type="button">Preview student view</button>
+          <p id="bfSaveStatus" class="wf-save-status dw-hidden" role="status"></p>
+        </div>
+      </div>
       <div class="wf-inspector-group">
         <div class="wf-inspector-group__label">File information</div>
         <dl class="wf-file-meta">
@@ -2600,15 +2648,6 @@
         <div class="wf-inspector-group__label">Assignment ID</div>
         <p class="dw-muted dw-tiny">Used in the share link — letters, numbers, and dashes only.</p>
         <input id="bfId" class="dw-input" value="${escapeHtml(config.id)}" />
-      </div>
-      <div class="wf-inspector-group">
-        <div class="wf-inspector-group__label">Save &amp; publish</div>
-        <p class="dw-muted dw-tiny">${Teacher()?.isLoggedIn() ? "Save publishes to the cloud and links this assignment to your account." : "Save publishes to the cloud so students can load this assignment from the share link. Sign in to attach assignments to your account."}</p>
-        <div class="dw-stack">
-          <button id="bfSave" class="dw-btn" type="button">Save assignment</button>
-          <button id="bfPreviewStudent" class="dw-btn dw-btn-secondary" type="button">Preview student view</button>
-          <p id="bfSaveStatus" class="wf-save-status dw-hidden" role="status"></p>
-        </div>
       </div>
       <div class="wf-inspector-group">
         <div class="wf-inspector-group__label">Share link</div>
@@ -2636,23 +2675,8 @@
       persistConfig();
       history.replaceState(null, "", `?mode=builder&id=${encodeURIComponent(config.id)}`);
     });
-    document.getElementById("bfSave")?.addEventListener("click", async () => {
-      if (!String(config.teacherPassword || "").trim()) {
-        showSaveStatus("Set a teacher password in Content before saving — it protects your results.", false);
-        builderSection = "content";
-        renderBuilder();
-        return;
-      }
-      persistConfig();
-      showSaveStatus("Publishing…", true);
-      try {
-        await publishAssignmentCloud();
-        if (Teacher()?.isLoggedIn()) await refreshCloudAssignments();
-        if (config.shared) await refreshSharedLibrary();
-        showSaveStatus("Saved and published. Share link is ready for students.", true);
-      } catch (err) {
-        showSaveStatus(`Saved on this browser only. ${err.message}`, false);
-      }
+    document.getElementById("bfSave")?.addEventListener("click", () => {
+      void saveAndPublishAssignment();
     });
     document.getElementById("bfCopyLink")?.addEventListener("click", async () => {
       const link = document.getElementById("bfShareLink")?.value || "";

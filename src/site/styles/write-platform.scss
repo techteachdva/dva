@@ -505,14 +505,30 @@
 @media (max-width: 1100px) {
   .wf-builder {
     grid-template-columns: 1fr;
+    grid-template-areas:
+      "nav"
+      "inspector"
+      "canvas";
     height: auto;
   }
 
-  .wf-builder-nav,
-  .wf-builder-inspector {
+  .wf-builder-nav {
+    grid-area: nav;
     border-right: none;
     border-bottom: 1px solid var(--dw-border);
     max-height: 40vh;
+  }
+
+  .wf-builder-inspector {
+    grid-area: inspector;
+    border-left: none;
+    border-bottom: 1px solid var(--dw-border);
+    max-height: none;
+  }
+
+  .wf-builder-canvas {
+    grid-area: canvas;
+    min-height: 50vh;
   }
 }
 
@@ -582,6 +598,17 @@
 
 .wf-inspector-group {
   margin-bottom: 20px;
+}
+
+.wf-inspector-group--sticky {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding-top: 2px;
+  padding-bottom: 14px;
+  margin-bottom: 16px;
+  background: inherit;
+  border-bottom: 1px solid var(--dw-border);
 }
 
 .wf-inspector-group__label {
@@ -4513,6 +4540,16 @@ mark.wf-vocab-hit {
   border-color: rgba(56, 189, 248, 0.55) !important;
   background: rgba(56, 189, 248, 0.14) !important;
   color: #e0f2fe !important;
+}
+
+.wf-topbar-save--ok {
+  border-color: rgba(34, 197, 94, 0.55) !important;
+  background: rgba(34, 197, 94, 0.18) !important;
+}
+
+.wf-topbar-save--error {
+  border-color: rgba(248, 113, 113, 0.55) !important;
+  background: rgba(248, 113, 113, 0.14) !important;
 }
 
 .wf-empty-state {
