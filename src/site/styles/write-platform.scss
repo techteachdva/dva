@@ -4097,68 +4097,77 @@ mark.wf-vocab-hit {
   min-height: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  grid-template-areas:
-    "main actions"
-    "badges actions";
+  gap: 0;
   align-items: stretch;
 }
 
-.wf-files-grid--dashboard .wf-file-tile__top {
-  grid-area: main;
-  padding: 10px 12px 4px;
+.wf-files-grid--dashboard .wf-file-tile__main {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  min-width: 0;
+}
+
+.wf-files-grid--dashboard .wf-file-tile__details {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.wf-files-grid--dashboard .wf-file-tile__title {
+  font-size: 1.02rem;
+  margin: 0;
+}
+
+.wf-files-grid--dashboard .wf-file-tile__meta {
+  margin: 0;
+  font-size: 0.9rem;
 }
 
 .wf-files-grid--dashboard .wf-file-tile__badges {
-  grid-area: badges;
-  padding: 0 12px 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0;
+  margin: 0;
 }
 
-.wf-files-grid--dashboard .wf-file-tile__badges:empty {
-  display: none;
+.wf-files-grid--dashboard .wf-file-tile__id {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  word-break: break-all;
 }
 
 .wf-files-grid--dashboard .wf-file-tile__actions {
-  grid-area: actions;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  align-content: center;
-  justify-content: flex-end;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(5.25rem, 1fr));
   gap: 6px;
-  width: auto;
-  min-width: 220px;
+  align-content: center;
+  padding: 10px 12px;
+  min-width: 12rem;
   margin-top: 0;
-  padding: 8px 10px;
   border-top: none;
   border-left: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.wf-files-grid--dashboard .wf-file-tile__title {
-  font-size: 1rem;
-}
-
-.wf-files-grid--dashboard .wf-file-tile__meta {
-  font-size: 0.88rem;
-}
-
-.wf-files-grid--dashboard .wf-file-tile__id {
-  font-size: 0.78rem;
-}
-
 .wf-files-grid--dashboard .wf-file-tile__action {
   font-size: 0.82rem;
-  flex: 0 1 auto;
-  width: auto;
-  min-width: 4.5rem;
+  width: 100%;
+  min-width: 0;
+  justify-content: center;
+}
+
+.wf-files-grid--dashboard .wf-file-tile__action--danger {
+  grid-column: 1 / -1;
 }
 
 @media (max-width: 900px) {
   .wf-files-grid--dashboard .wf-file-tile {
     grid-template-columns: 1fr;
-    grid-template-areas:
-      "main"
-      "badges"
-      "actions";
   }
 
   .wf-files-grid--dashboard .wf-file-tile__actions {
@@ -4166,7 +4175,11 @@ mark.wf-vocab-hit {
     width: 100%;
     border-left: none;
     border-top: 1px solid rgba(255, 255, 255, 0.08);
-    justify-content: flex-start;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .wf-files-grid--dashboard .wf-file-tile__action--danger {
+    grid-column: 1 / -1;
   }
 }
 
@@ -4185,11 +4198,11 @@ mark.wf-vocab-hit {
 .wf-file-tile {
   display: flex;
   flex-direction: column;
-  min-height: 168px;
+  min-height: 0;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 12px;
   background: linear-gradient(180deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
-  overflow: visible;
+  overflow: hidden;
   transition: border-color 0.2s ease, transform 0.15s ease;
 }
 
@@ -4203,18 +4216,24 @@ mark.wf-vocab-hit {
   box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.35);
 }
 
+.wf-file-tile__main,
 .wf-file-tile__top {
   display: flex;
   align-items: flex-start;
   gap: 10px;
   padding: 12px 12px 6px;
   flex: 1;
+  min-width: 0;
   min-height: 0;
 }
 
+.wf-file-tile__details,
 .wf-file-tile__content {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .wf-file-tile__title {
@@ -4264,7 +4283,7 @@ mark.wf-vocab-hit {
 }
 
 .wf-file-tile__meta {
-  margin: 0 0 4px;
+  margin: 0;
   font-size: 0.8rem;
   color: var(--dw-muted);
   line-height: 1.35;
@@ -4275,14 +4294,15 @@ mark.wf-vocab-hit {
   font-size: 0.72rem;
   color: var(--dw-muted);
   word-break: break-all;
-  line-height: 1.35;
+  line-height: 1.4;
 }
 
 .wf-file-tile__badges {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  padding: 0 12px 6px;
+  padding: 0;
+  margin: 0;
 }
 
 .wf-file-tile__badges .wf-badge {
@@ -4291,7 +4311,7 @@ mark.wf-vocab-hit {
 
 .wf-file-tile__actions {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr)) auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
   align-items: center;
   padding: 8px 10px 10px;
@@ -4308,14 +4328,16 @@ mark.wf-vocab-hit {
   font-size: 0.78rem;
 }
 
-.wf-file-tile__delete {
-  border: none;
-  background: transparent;
-  color: #f87171;
-  font-size: 1.1rem;
-  line-height: 1;
-  cursor: pointer;
-  padding: 4px 6px;
+.wf-file-tile__action--danger {
+  grid-column: 1 / -1;
+  color: #fca5a5;
+  border-color: rgba(248, 113, 113, 0.35);
+}
+
+.wf-file-tile__action--danger:hover {
+  color: #fecaca;
+  background: rgba(248, 113, 113, 0.12);
+  border-color: rgba(248, 113, 113, 0.55);
 }
 
 .wf-tile-toast {

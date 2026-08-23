@@ -2084,20 +2084,21 @@
     }
     return `
       <article class="wf-file-tile${active ? " wf-file-tile--active" : ""}" role="listitem" data-assignment-id="${escapeHtml(id)}">
-        <div class="wf-file-tile__top">
+        <div class="wf-file-tile__main">
           <span class="wf-file-tile__icon" aria-hidden="true">${icon}</span>
-          <div class="wf-file-tile__content">
+          <div class="wf-file-tile__details">
             <button type="button" class="wf-file-tile__title" data-action="edit" data-id="${escapeHtml(id)}">${escapeHtml(title)}</button>
             <p class="wf-file-tile__meta">${escapeHtml(summary)}</p>
+            ${badgeHtml}
             <p class="wf-file-tile__id"><code>${escapeHtml(id)}</code></p>
           </div>
         </div>
-        ${badgeHtml}
-        <div class="wf-file-tile__actions">
+        <div class="wf-file-tile__actions" role="group" aria-label="Actions for ${escapeHtml(title)}">
+          <button class="dw-btn dw-btn-secondary dw-btn--compact wf-file-tile__action" type="button" data-action="edit" data-id="${escapeHtml(id)}">Edit</button>
           <button class="dw-btn dw-btn-secondary dw-btn--compact wf-file-tile__action" type="button" data-action="results" data-id="${escapeHtml(id)}">Results</button>
           <button class="dw-btn dw-btn-ghost dw-btn--compact wf-file-tile__action" type="button" data-action="copy" data-id="${escapeHtml(id)}" title="Copy student link">Link</button>
           <button class="dw-btn dw-btn-ghost dw-btn--compact wf-file-tile__action" type="button" data-action="preview" data-id="${escapeHtml(id)}">Preview</button>
-          <button class="wf-file-tile__delete" type="button" data-action="delete" data-id="${escapeHtml(id)}" aria-label="Delete ${escapeHtml(title)}">×</button>
+          <button class="dw-btn dw-btn-ghost dw-btn--compact wf-file-tile__action wf-file-tile__action--danger" type="button" data-action="delete" data-id="${escapeHtml(id)}">Delete</button>
         </div>
       </article>`;
   }

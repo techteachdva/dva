@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.3.15";
+  const APP_VERSION = "2.3.16";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -119,6 +119,16 @@
   ];
 
   const CHANGELOG = [
+    {
+      version: "2.3.16",
+      date: "2026-08-23",
+      summary: "Clearer assignment cards with Edit and Delete buttons.",
+      items: [
+        "Assignment cards stack title, summary, badges, and link ID without overlap.",
+        "Added Edit button alongside Results, Link, and Preview.",
+        "Delete is now a labeled button matching the other actions.",
+      ],
+    },
     {
       version: "2.3.15",
       date: "2026-08-22",
