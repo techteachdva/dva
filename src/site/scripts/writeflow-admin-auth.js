@@ -1,0 +1,149 @@
+/**
+ * WriteFlow — admin session and tools.
+ */
+(() => {
+  "use strict";
+
+  const API_URL = "/api/writeflow-submissions";
+  const SESSION_KEY = "writeflow:adminSession";
+
+  let session = null;
+
+  function loadStoredSession() {
+    try {
+      const raw = localStorage.getItem(SESSION_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }
+
+  function saveSession(next) {
+    session = next;
+    if (next?.token) localStorage.setItem(SESSION_KEY, JSON.stringify(next));
+    else localStorage.removeItem(SESSION_KEY);
+  }
+
+  async function apiPost(action, body = {}) {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, ...body }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+    return data;
+  }
+
+  async function apiGet(params) {
+    const qs = new URLSearchParams(params);
+    const res = await fetch(`${API_URL}?${qs}`);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+    return data;
+  }
+
+  async function validate() {
+    const stored = loadStoredSession();
+    if (!stored?.token) {
+      session = null;
+      return null;
+    }
+    try {
+      const data = await apiGet({ action: "adminValidate", sessionToken: stored.token });
+      session = {
+        token: stored.token,
+        username: data.username,
+        displayName: data.displayName,
+        role: "admin",
+        impersonateAs: data.impersonateAs || "",
+        expiresAt: stored.expiresAt,
+      };
+      saveSession(session);
+      return session;
+    } catch {
+      saveSession(null);
+      session = null;
+      return null;
+    }
+  }
+
+  async function login(username, password) {
+    const data = await apiPost("adminLogin", { username, password });
+    session = data.session;
+    saveSession(session);
+    return session;
+  }
+
+  async function impersonate(targetUsername, targetRole = "teacher") {
+    const token = getToken();
+    if (!token) throw new Error("Admin sign-in required.");
+    const data = await apiPost("adminImpersonate", {
+      sessionToken: token,
+      targetUsername,
+      targetRole,
+    });
+    session = data.session;
+    saveSession(session);
+    return session;
+  }
+
+  async function logout() {
+    saveSession(null);
+    session = null;
+  }
+
+  function getSession() {
+    return session || loadStoredSession();
+  }
+
+  function getToken() {
+    return getSession()?.token || "";
+  }
+
+  function isLoggedIn() {
+    return !!getToken();
+  }
+
+  async function getStats() {
+    const token = getToken();
+    if (!token) throw new Error("Admin sign-in required.");
+    const data = await apiGet({ action: "adminStats", sessionToken: token });
+    return data.stats || {};
+  }
+
+  async function dedupeSubmissions() {
+    const token = getToken();
+    if (!token) throw new Error("Admin sign-in required.");
+    return apiPost("adminDedupeSubmissions", { sessionToken: token });
+  }
+
+  async function listTeachers() {
+    const token = getToken();
+    if (!token) throw new Error("Admin sign-in required.");
+    const data = await apiPost("adminListTeachers", { sessionToken: token });
+    return data.teachers || [];
+  }
+
+  async function listStudents() {
+    const token = getToken();
+    if (!token) throw new Error("Admin sign-in required.");
+    const data = await apiPost("adminListStudents", { sessionToken: token });
+    return data.students || [];
+  }
+
+  window.WriteFlowAdmin = {
+    validate,
+    login,
+    impersonate,
+    logout,
+    getSession,
+    getToken,
+    isLoggedIn,
+    getStats,
+    dedupeSubmissions,
+    listTeachers,
+    listStudents,
+  };
+})();

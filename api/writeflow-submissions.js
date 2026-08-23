@@ -136,9 +136,113 @@ export async function GET(request) {
       if (data.error) {
         return Response.json({ error: data.error }, { status: 401, headers: corsHeaders() });
       }
-      return Response.json({ ok: true, username: data.username, displayName: data.displayName }, { headers: corsHeaders() });
+      return Response.json({
+        ok: true,
+        username: data.username,
+        displayName: data.displayName,
+        role: data.role || "teacher",
+        mustChangePassword: data.mustChangePassword || false,
+      }, { headers: corsHeaders() });
     } catch (e) {
       return Response.json({ error: e.message || "Could not validate session." }, { status: 502, headers: corsHeaders() });
+    }
+  }
+
+  if (action === "studentValidate") {
+    const sessionToken = getQueryParam(request, "sessionToken");
+    if (!sessionToken) {
+      return Response.json({ error: "Invalid session" }, { status: 401, headers: corsHeaders() });
+    }
+    try {
+      const data = await fetchScriptJson(scriptGetUrl({ action: "studentValidate", sessionToken }), { method: "GET" });
+      if (data.error) {
+        return Response.json({ error: data.error }, { status: 401, headers: corsHeaders() });
+      }
+      return Response.json({
+        ok: true,
+        username: data.username,
+        displayName: data.displayName,
+        classroom: data.classroom || "",
+        role: "student",
+        mustChangePassword: data.mustChangePassword || false,
+      }, { headers: corsHeaders() });
+    } catch (e) {
+      return Response.json({ error: e.message || "Could not validate session." }, { status: 502, headers: corsHeaders() });
+    }
+  }
+
+  if (action === "adminValidate") {
+    const sessionToken = getQueryParam(request, "sessionToken");
+    if (!sessionToken) {
+      return Response.json({ error: "Invalid session" }, { status: 401, headers: corsHeaders() });
+    }
+    try {
+      const data = await fetchScriptJson(scriptGetUrl({ action: "adminValidate", sessionToken }), { method: "GET" });
+      if (data.error) {
+        return Response.json({ error: data.error }, { status: 401, headers: corsHeaders() });
+      }
+      return Response.json({
+        ok: true,
+        username: data.username,
+        displayName: data.displayName,
+        role: "admin",
+        impersonateAs: data.impersonateAs || "",
+      }, { headers: corsHeaders() });
+    } catch (e) {
+      return Response.json({ error: e.message || "Could not validate session." }, { status: 502, headers: corsHeaders() });
+    }
+  }
+
+  if (action === "checkStudentUsername") {
+    const username = getQueryParam(request, "username");
+    try {
+      const data = await fetchScriptJson(scriptGetUrl({ action: "checkStudentUsername", username }), { method: "GET" });
+      if (data.error) {
+        return Response.json({ error: data.error }, { status: 400, headers: corsHeaders() });
+      }
+      return Response.json({
+        ok: true,
+        valid: data.valid,
+        username: data.username || "",
+        classroom: data.classroom || "",
+      }, { headers: corsHeaders() });
+    } catch (e) {
+      return Response.json({ error: e.message || "Could not check username." }, { status: 502, headers: corsHeaders() });
+    }
+  }
+
+  if (action === "listMySubmissions") {
+    const sessionToken = getQueryParam(request, "sessionToken");
+    if (!sessionToken) {
+      return Response.json({ error: "Invalid session" }, { status: 401, headers: corsHeaders() });
+    }
+    try {
+      const data = await fetchScriptJson(scriptGetUrl({ action: "listMySubmissions", sessionToken }), { method: "GET" });
+      if (data.error) {
+        return Response.json({ error: data.error, submissions: [] }, { status: 401, headers: corsHeaders() });
+      }
+      return Response.json({
+        ok: true,
+        submissions: Array.isArray(data.submissions) ? data.submissions : [],
+      }, { headers: corsHeaders() });
+    } catch (e) {
+      return Response.json({ error: e.message || "Could not load submissions.", submissions: [] }, { status: 502, headers: corsHeaders() });
+    }
+  }
+
+  if (action === "adminStats") {
+    const sessionToken = getQueryParam(request, "sessionToken");
+    if (!sessionToken) {
+      return Response.json({ error: "Admin sign-in required" }, { status: 401, headers: corsHeaders() });
+    }
+    try {
+      const data = await fetchScriptJson(scriptGetUrl({ action: "adminStats", sessionToken }), { method: "GET" });
+      if (data.error) {
+        return Response.json({ error: data.error }, { status: 401, headers: corsHeaders() });
+      }
+      return Response.json({ ok: true, stats: data.stats || {} }, { headers: corsHeaders() });
+    } catch (e) {
+      return Response.json({ error: e.message || "Could not load stats." }, { status: 502, headers: corsHeaders() });
     }
   }
 
@@ -249,17 +353,126 @@ export async function POST(request) {
     }
 
     if (action === "teacherRegister") {
+      return Response.json({ error: "Use email verification signup. Click Create account in Studio." }, { status: 400, headers: corsHeaders() });
+    }
+
+    if (action === "teacherRequestVerification") {
+      const email = typeof body?.email === "string" ? body.email.trim() : "";
+      const username = typeof body?.username === "string" ? body.username.trim() : "";
+      const displayName = typeof body?.displayName === "string" ? body.displayName.trim().slice(0, 80) : "";
+      if (!email || !username) {
+        return Response.json({ error: "Enter your school email and username." }, { status: 400, headers: corsHeaders() });
+      }
+      const data = await scriptPost({ action: "teacherRequestVerification", email, username, displayName });
+      if (data.error) {
+        return Response.json({ error: data.error }, { status: 400, headers: corsHeaders() });
+      }
+      return Response.json({ ok: true, message: data.message || "Verification code sent." }, { headers: corsHeaders() });
+    }
+
+    if (action === "teacherCompleteRegistration") {
+      const email = typeof body?.email === "string" ? body.email.trim() : "";
       const username = typeof body?.username === "string" ? body.username.trim() : "";
       const password = typeof body?.password === "string" ? body.password : "";
       const displayName = typeof body?.displayName === "string" ? body.displayName.trim().slice(0, 80) : "";
-      if (!username || !password) {
-        return Response.json({ error: "Enter username and password." }, { status: 400, headers: corsHeaders() });
+      const code = typeof body?.code === "string" ? body.code.trim() : "";
+      if (!email || !username || !password || !code) {
+        return Response.json({ error: "Complete all registration fields." }, { status: 400, headers: corsHeaders() });
       }
-      const data = await scriptPost({ action: "teacherRegister", username, password, displayName });
+      const data = await scriptPost({ action: "teacherCompleteRegistration", email, username, password, displayName, code });
       if (data.error) {
         return Response.json({ error: data.error }, { status: 400, headers: corsHeaders() });
       }
       return Response.json({ ok: true, session: data.session }, { headers: corsHeaders() });
+    }
+
+    if (action === "studentLogin") {
+      const username = typeof body?.username === "string" ? body.username.trim() : "";
+      const password = typeof body?.password === "string" ? body.password : "";
+      if (!username || !password) {
+        return Response.json({ error: "Enter username and password." }, { status: 400, headers: corsHeaders() });
+      }
+      const data = await scriptPost({ action: "studentLogin", username, password });
+      if (data.error) {
+        return Response.json({ error: data.error }, { status: 401, headers: corsHeaders() });
+      }
+      return Response.json({ ok: true, session: data.session }, { headers: corsHeaders() });
+    }
+
+    if (action === "studentSetPassword") {
+      const sessionToken = typeof body?.sessionToken === "string" ? body.sessionToken.trim() : "";
+      const newPassword = typeof body?.newPassword === "string" ? body.newPassword : "";
+      if (!sessionToken || !newPassword) {
+        return Response.json({ error: "Enter a new password." }, { status: 400, headers: corsHeaders() });
+      }
+      const data = await scriptPost({ action: "studentSetPassword", sessionToken, newPassword });
+      if (data.error) {
+        return Response.json({ error: data.error }, { status: 400, headers: corsHeaders() });
+      }
+      return Response.json({ ok: true, session: data.session }, { headers: corsHeaders() });
+    }
+
+    if (action === "adminLogin") {
+      const username = typeof body?.username === "string" ? body.username.trim() : "";
+      const password = typeof body?.password === "string" ? body.password : "";
+      if (!username || !password) {
+        return Response.json({ error: "Enter username and password." }, { status: 400, headers: corsHeaders() });
+      }
+      const data = await scriptPost({ action: "adminLogin", username, password });
+      if (data.error) {
+        return Response.json({ error: data.error }, { status: 401, headers: corsHeaders() });
+      }
+      return Response.json({ ok: true, session: data.session }, { headers: corsHeaders() });
+    }
+
+    if (action === "adminImpersonate") {
+      const sessionToken = typeof body?.sessionToken === "string" ? body.sessionToken.trim() : "";
+      const targetUsername = typeof body?.targetUsername === "string" ? body.targetUsername.trim() : "";
+      const targetRole = typeof body?.targetRole === "string" ? body.targetRole.trim() : "teacher";
+      if (!sessionToken || !targetUsername) {
+        return Response.json({ error: "Missing required fields." }, { status: 400, headers: corsHeaders() });
+      }
+      const data = await scriptPost({ action: "adminImpersonate", sessionToken, targetUsername, targetRole });
+      if (data.error) {
+        return Response.json({ error: data.error }, { status: 400, headers: corsHeaders() });
+      }
+      return Response.json({ ok: true, session: data.session }, { headers: corsHeaders() });
+    }
+
+    if (action === "adminDedupeSubmissions") {
+      const sessionToken = typeof body?.sessionToken === "string" ? body.sessionToken.trim() : "";
+      if (!sessionToken) {
+        return Response.json({ error: "Admin sign-in required." }, { status: 401, headers: corsHeaders() });
+      }
+      const data = await scriptPost({ action: "adminDedupeSubmissions", sessionToken });
+      if (data.error) {
+        return Response.json({ error: data.error }, { status: 400, headers: corsHeaders() });
+      }
+      return Response.json({ ok: true, removed: data.removed || 0, message: data.message || "" }, { headers: corsHeaders() });
+    }
+
+    if (action === "adminListTeachers") {
+      const sessionToken = typeof body?.sessionToken === "string" ? body.sessionToken.trim() : "";
+      if (!sessionToken) {
+        return Response.json({ error: "Admin sign-in required." }, { status: 401, headers: corsHeaders() });
+      }
+      const data = await scriptPost({ action: "adminListTeachers", sessionToken });
+      if (data.error) {
+        return Response.json({ error: data.error, teachers: [] }, { status: 401, headers: corsHeaders() });
+      }
+      return Response.json({ ok: true, teachers: data.teachers || [] }, { headers: corsHeaders() });
+    }
+
+    if (action === "adminListStudents") {
+      const sessionToken = typeof body?.sessionToken === "string" ? body.sessionToken.trim() : "";
+      if (!sessionToken) {
+        return Response.json({ error: "Admin sign-in required." }, { status: 401, headers: corsHeaders() });
+      }
+      const data = await scriptPost({ action: "adminListStudents", sessionToken });
+      if (data.error) {
+        return Response.json({ error: data.error, students: [] }, { status: 401, headers: corsHeaders() });
+      }
+      return Response.json({ ok: true, students: data.students || [] }, { headers: corsHeaders() });
     }
 
     if (action === "teacherLogout") {
@@ -351,6 +564,7 @@ export async function POST(request) {
       text,
       analysis,
       durationSec: Number.isFinite(durationSec) ? durationSec : 300,
+      studentUsername: typeof body?.studentUsername === "string" ? body.studentUsername.trim().slice(0, 80) : "",
     });
 
     if (data.error) {

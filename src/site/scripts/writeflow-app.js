@@ -11,6 +11,7 @@
   const ASSIGNMENTS_KEY = "writeflow:assignments";
   const API_URL = "/api/writeflow-submissions";
   const Teacher = () => window.WriteFlowTeacher;
+  const Student = () => window.WriteFlowStudent;
 
   if (!Core || !Defaults) return;
 
@@ -1358,7 +1359,86 @@
     };
   }
 
+  function renderStudentAccountPanel() {
+    const session = Student()?.getSession();
+    const signedOut = document.getElementById("studentSignedOut");
+    const signedIn = document.getElementById("studentSignedIn");
+    const passwordPanel = document.getElementById("studentPasswordPanel");
+    const nameEl = document.getElementById("studentAccountName");
+    const errEl = document.getElementById("studentLoginError");
+    errEl?.classList.add("dw-hidden");
+
+    if (session?.username) {
+      signedOut?.classList.add("dw-hidden");
+      signedIn?.classList.remove("dw-hidden");
+      if (nameEl) nameEl.textContent = session.username;
+      passwordPanel?.classList.toggle("dw-hidden", !session.mustChangePassword);
+
+      const studentNameInput = document.getElementById("studentName");
+      if (studentNameInput && session.username) {
+        studentNameInput.value = session.username.replace(/\.$/, "");
+        studentNameInput.readOnly = true;
+      }
+      const classEl = document.getElementById("studentClass");
+      if (classEl && session.classroom) {
+        classEl.value = session.classroom;
+        classEl.disabled = true;
+      }
+    } else {
+      signedOut?.classList.remove("dw-hidden");
+      signedIn?.classList.add("dw-hidden");
+      passwordPanel?.classList.add("dw-hidden");
+      const studentNameInput = document.getElementById("studentName");
+      if (studentNameInput) studentNameInput.readOnly = false;
+      const classEl = document.getElementById("studentClass");
+      if (classEl) classEl.disabled = false;
+    }
+    updateStartButton();
+  }
+
+  function bindStudentAccountEvents() {
+    document.getElementById("studentLoginForm")?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const errEl = document.getElementById("studentLoginError");
+      const username = document.getElementById("studentLoginUsername")?.value || "";
+      const password = document.getElementById("studentLoginPassword")?.value || "";
+      try {
+        await Student()?.login(username, password);
+        await Student()?.validate();
+        renderStudentAccountPanel();
+      } catch (err) {
+        if (errEl) {
+          errEl.textContent = err.message || "Could not sign in.";
+          errEl.classList.remove("dw-hidden");
+        }
+      }
+    });
+
+    document.getElementById("studentLogoutBtn")?.addEventListener("click", async () => {
+      await Student()?.logout();
+      renderStudentAccountPanel();
+    });
+
+    document.getElementById("studentPasswordForm")?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const errEl = document.getElementById("studentPasswordError");
+      const newPassword = document.getElementById("studentNewPassword")?.value || "";
+      try {
+        await Student()?.setPassword(newPassword);
+        await Student()?.validate();
+        renderStudentAccountPanel();
+      } catch (err) {
+        if (errEl) {
+          errEl.textContent = err.message || "Could not save password.";
+          errEl.classList.remove("dw-hidden");
+        }
+      }
+    });
+  }
+
   function canStart() {
+    const session = Student()?.getSession();
+    if (session?.mustChangePassword) return false;
     const nameOk = !config.requireName || document.getElementById("studentName")?.value.trim();
     const classEl = document.getElementById("studentClass");
     const classroom = config.requireClass ? Core.resolveClassroom(classEl?.value, VALID_CLASSROOMS) : true;
@@ -1500,6 +1580,7 @@
   }
 
   async function submitResult(name, classroom, classCode, text, analysis, durationSec) {
+    const studentSession = Student()?.getSession();
     const res = await fetch(API_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -1512,6 +1593,7 @@
         text,
         analysis,
         durationSec,
+        studentUsername: studentSession?.username || "",
       }),
     });
     const data = await res.json().catch(() => ({}));
@@ -1593,6 +1675,12 @@
   }
 
   async function initStudentFlow() {
+    if (Student()) {
+      await Student().validate();
+      bindStudentAccountEvents();
+      renderStudentAccountPanel();
+    }
+
     if (!assignmentId) {
       showAssignmentNotice("This link is missing an assignment ID. Ask your teacher for the correct student link.");
       show("welcome");
@@ -1740,6 +1828,9 @@
       document.getElementById("wfRegisterForm")?.classList.remove("dw-hidden");
       document.getElementById("wfLoginForm")?.classList.add("dw-hidden");
       document.getElementById("wfAccountError")?.classList.add("dw-hidden");
+      document.getElementById("wfRegisterVerifyStep")?.classList.add("dw-hidden");
+      const submitBtn = document.getElementById("wfRegisterSubmitBtn");
+      if (submitBtn) submitBtn.textContent = "Send verification code";
     });
 
     document.getElementById("wfLoginForm")?.addEventListener("submit", async (e) => {
@@ -1760,14 +1851,36 @@
       }
     });
 
+    let registerAwaitingCode = false;
+
     document.getElementById("wfRegisterForm")?.addEventListener("submit", async (e) => {
       e.preventDefault();
       const errEl = document.getElementById("wfAccountError");
+      const email = document.getElementById("wfRegisterEmail")?.value || "";
       const username = document.getElementById("wfRegisterUsername")?.value || "";
       const displayName = document.getElementById("wfRegisterDisplayName")?.value || "";
+      const code = document.getElementById("wfRegisterCode")?.value || "";
       const password = document.getElementById("wfRegisterPassword")?.value || "";
+      const verifyStep = document.getElementById("wfRegisterVerifyStep");
+      const submitBtn = document.getElementById("wfRegisterSubmitBtn");
+
       try {
-        await Teacher()?.register(username, password, displayName);
+        if (!registerAwaitingCode) {
+          await Teacher()?.requestVerification(email, username, displayName);
+          registerAwaitingCode = true;
+          verifyStep?.classList.remove("dw-hidden");
+          if (submitBtn) submitBtn.textContent = "Create account";
+          if (errEl) {
+            errEl.textContent = "Check your school email for a 6-digit code, then enter it below.";
+            errEl.classList.remove("dw-hidden");
+            errEl.classList.remove("dw-error");
+          }
+          return;
+        }
+        await Teacher()?.completeRegistration(email, username, password, displayName, code);
+        registerAwaitingCode = false;
+        verifyStep?.classList.add("dw-hidden");
+        if (submitBtn) submitBtn.textContent = "Send verification code";
         renderAccountPanel();
         await refreshCloudAssignments();
         await refreshSharedLibrary();
@@ -1775,6 +1888,7 @@
         if (errEl) {
           errEl.textContent = err.message || "Could not create account.";
           errEl.classList.remove("dw-hidden");
+          errEl.classList.add("dw-error");
         }
       }
     });

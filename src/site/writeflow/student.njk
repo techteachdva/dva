@@ -1,0 +1,64 @@
+---
+title: WriteFlow Student Portal
+permalink: /writeflow/student/
+layout: false
+---
+<!doctype html>
+<html lang="{{ meta.mainLanguage }}">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="theme-color" content="#0f172a" />
+    <title>My writing · WriteFlow</title>
+    <meta name="robots" content="noindex" />
+    <link rel="icon" href="/writeflow/assets/wfs-icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles/write-platform.css" />
+    <link rel="stylesheet" href="/styles/custom-style.css" />
+  </head>
+  <body class="dw-body wp-theme--dark wf-student-portal">
+    <a class="wf-skip-link" href="#mainContent">Skip to main content</a>
+    <div class="dw-shell dw-shell--narrow">
+      <header class="wf-portal-header">
+        <h1 class="dw-h1">My writing</h1>
+        <p class="dw-muted">Sign in to see every assignment you have submitted in WriteFlow.</p>
+      </header>
+
+      <main id="mainContent" class="wf-portal-main">
+        <section id="studentPortalSignedOut" class="dw-card dw-stack">
+          <p class="dw-muted dw-tiny">Username is your first name and last initial (e.g. <strong>John D.</strong>). First-time password is <strong>SPARK</strong> — you will choose your own password on first login.</p>
+          <form id="studentPortalLoginForm" class="wf-account-form">
+            <label class="dw-field"><span class="dw-label">Username</span><input id="studentPortalUsername" class="dw-input" type="text" autocomplete="username" required /></label>
+            <label class="dw-field"><span class="dw-label">Password</span><input id="studentPortalPassword" class="dw-input" type="password" autocomplete="current-password" required /></label>
+            <button class="dw-btn" type="submit">Sign in</button>
+            <p id="studentPortalLoginError" class="dw-error dw-hidden" role="alert"></p>
+          </form>
+        </section>
+
+        <section id="studentPortalPasswordPanel" class="dw-card dw-stack dw-hidden">
+          <h2 class="dw-h2">Choose your password</h2>
+          <p class="dw-muted">Before viewing your work, set a password you will remember.</p>
+          <form id="studentPortalPasswordForm" class="wf-account-form">
+            <label class="dw-field"><span class="dw-label">New password</span><input id="studentPortalNewPassword" class="dw-input" type="password" autocomplete="new-password" required minlength="4" /></label>
+            <button class="dw-btn" type="submit">Save password</button>
+            <p id="studentPortalPasswordError" class="dw-error dw-hidden" role="alert"></p>
+          </form>
+        </section>
+
+        <section id="studentPortalSignedIn" class="dw-hidden dw-stack">
+          <div class="dw-card wf-portal-bar">
+            <p>Signed in as <strong id="studentPortalDisplayName"></strong></p>
+            <button id="studentPortalLogoutBtn" class="dw-btn dw-btn-ghost" type="button">Sign out</button>
+          </div>
+          <div class="dw-card">
+            <h2 class="dw-h2">Your submissions</h2>
+            <p id="studentPortalEmpty" class="dw-muted dw-hidden">No submissions yet. Complete a writing assignment from a link your teacher shares.</p>
+            <div id="studentPortalList" class="wf-submission-list" role="list"></div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="/scripts/writeflow-student-auth.js" defer></script>
+    <script src="/scripts/writeflow-student-portal.js" defer></script>
+  </body>
+</html>

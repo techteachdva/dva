@@ -239,6 +239,8 @@ function purgeExpiredSessions_() {
 }
 
 function validateSession_(token) {
+  const v2 = validateSessionV2_(token);
+  if (v2) return v2;
   const clean = String(token || "").trim();
   if (!clean) return null;
   purgeExpiredSessions_();
@@ -252,7 +254,7 @@ function validateSession_(token) {
     if (Number(rows[i][3]) < now) return null;
     const teacher = getTeacherByUsername_(rows[i][1]);
     if (!teacher) return null;
-    return { username: teacher.username, displayName: teacher.displayName, token: clean };
+    return { username: teacher.username, displayName: teacher.displayName, token: clean, role: "teacher", effectiveUsername: teacher.username };
   }
   return null;
 }
@@ -408,6 +410,7 @@ function initSheet() {
   initAssignmentHeaders_(getAssignmentsSheet_());
   initTeacherHeaders_(getTeachersSheet_());
   initSessionHeaders_(getSessionsSheet_());
+  initAuthSheets_();
 }
 
 function doGet(e) {
@@ -463,7 +466,54 @@ function handle_(e, isGet) {
     if (action === "teacherValidate") {
       const session = validateSession_(params.sessionToken);
       if (!session) return respond_({ error: "Invalid session" });
-      return respond_({ ok: true, username: session.username, displayName: session.displayName });
+      return respond_({
+        ok: true,
+        username: session.username,
+        displayName: session.displayName,
+        role: session.role || "teacher",
+        mustChangePassword: session.mustChangePassword || false,
+      });
+    }
+
+    if (action === "studentValidate") {
+      const session = validateSessionV2_(params.sessionToken);
+      if (!session || session.role !== "student") return respond_({ error: "Invalid session" });
+      return respond_({
+        ok: true,
+        username: session.username,
+        displayName: session.displayName,
+        role: "student",
+        classroom: session.classroom || "",
+        mustChangePassword: session.mustChangePassword || false,
+      });
+    }
+
+    if (action === "adminValidate") {
+      const session = validateSessionV2_(params.sessionToken);
+      if (!session || session.role !== "admin") return respond_({ error: "Invalid session" });
+      return respond_({
+        ok: true,
+        username: session.username,
+        displayName: session.displayName,
+        role: "admin",
+        impersonateAs: session.impersonateAs || "",
+      });
+    }
+
+    if (action === "checkStudentUsername") {
+      return respond_({ ok: true, ...checkStudentUsername_(params.username) });
+    }
+
+    if (action === "listMySubmissions") {
+      const session = validateSessionV2_(params.sessionToken);
+      if (!session || session.role !== "student") return respond_({ error: "Invalid session" });
+      return respond_({ ok: true, submissions: listStudentSubmissions_(session.effectiveUsername) });
+    }
+
+    if (action === "adminStats") {
+      const session = validateSessionV2_(params.sessionToken);
+      if (!session || session.role !== "admin") return respond_({ error: "Admin access required" });
+      return respond_({ ok: true, stats: adminGetStats_() });
     }
 
     if (action === "listMyAssignments") {
@@ -483,16 +533,67 @@ function handle_(e, isGet) {
     }
 
     if (action === "teacherLogin") {
-      const teacher = verifyTeacherLogin_(params.username, params.password);
+      const teacher = verifyTeacherLoginV2_(params.username, params.password);
       if (!teacher) return respond_({ error: "Invalid username or password." });
-      const session = createSession_(teacher);
+      const session = createSessionV2_({
+        username: teacher.username,
+        displayName: teacher.displayName,
+        role: "teacher",
+        effectiveUsername: teacher.username,
+      });
       return respond_({ ok: true, session: session });
     }
 
     if (action === "teacherRegister") {
-      const teacher = registerTeacher_(params.username, params.password, params.displayName);
-      const session = createSession_(teacher);
+      return respond_({ error: "Use email verification signup. Click Create account in Studio." });
+    }
+
+    if (action === "teacherRequestVerification") {
+      const result = teacherRequestVerification_(params.email, params.username, params.displayName);
+      return respond_(result);
+    }
+
+    if (action === "teacherCompleteRegistration") {
+      const session = teacherCompleteRegistration_(params.email, params.username, params.password, params.displayName, params.code);
       return respond_({ ok: true, session: session });
+    }
+
+    if (action === "studentLogin") {
+      const session = studentLogin_(params.username, params.password);
+      return respond_({ ok: true, session: session });
+    }
+
+    if (action === "studentSetPassword") {
+      const session = studentSetPassword_(params.sessionToken, params.newPassword);
+      return respond_({ ok: true, session: session });
+    }
+
+    if (action === "adminLogin") {
+      const session = adminLogin_(params.username, params.password);
+      return respond_({ ok: true, session: session });
+    }
+
+    if (action === "adminImpersonate") {
+      const session = adminImpersonate_(params.sessionToken, params.targetUsername, params.targetRole);
+      return respond_({ ok: true, session: session });
+    }
+
+    if (action === "adminDedupeSubmissions") {
+      const session = validateSessionV2_(params.sessionToken);
+      if (!session || session.role !== "admin") return respond_({ error: "Admin access required" });
+      return respond_({ ok: true, ...adminDedupeSubmissions_() });
+    }
+
+    if (action === "adminListTeachers") {
+      const session = validateSessionV2_(params.sessionToken);
+      if (!session || session.role !== "admin") return respond_({ error: "Admin access required" });
+      return respond_({ ok: true, teachers: adminListTeachers_() });
+    }
+
+    if (action === "adminListStudents") {
+      const session = validateSessionV2_(params.sessionToken);
+      if (!session || session.role !== "admin") return respond_({ error: "Admin access required" });
+      return respond_({ ok: true, students: adminListRegisteredStudents_() });
     }
 
     if (action === "teacherLogout") {
@@ -729,6 +830,7 @@ function saveSubmission_(params) {
     assignmentId: assignmentId,
     name: name,
     classroom: classroom || "",
+    studentUsername: String(params.studentUsername || "").trim().slice(0, 80),
     durationSec: isFinite(durationSec) ? durationSec : 300,
     text: text,
     analysis: analysis,
@@ -736,6 +838,7 @@ function saveSubmission_(params) {
 
   const scores = entry.analysis.scores || {};
   const sheet = getSubmissionsSheet_();
+  ensureSubmissionStudentColumn_(sheet);
   sheet.appendRow([
     entry.id,
     entry.submittedAt,
@@ -749,6 +852,7 @@ function saveSubmission_(params) {
     scores.overall || 0,
     entry.text,
     JSON.stringify(entry.analysis),
+    entry.studentUsername || entry.name,
   ]);
 
   return entry;

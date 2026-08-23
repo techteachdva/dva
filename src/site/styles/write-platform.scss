@@ -5309,3 +5309,94 @@ mark.wf-standard-hit,
   color: #1e293b;
 }
 
+/* Portals — student history + admin */
+.wf-portal-header {
+  margin-bottom: 24px;
+}
+
+.wf-portal-main {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.wf-portal-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.wf-submission-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.wf-submission-card {
+  padding: 12px 14px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.35);
+}
+
+.wf-submission-card__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.wf-submission-card__preview {
+  margin: 8px 0 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.wf-student-account {
+  margin-bottom: 12px;
+  padding: 12px 14px;
+}
+
+.wf-admin-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.wf-admin-table-wrap {
+  overflow-x: auto;
+}
+
+.wf-admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.wf-admin-table th,
+.wf-admin-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  text-align: left;
+}
+
+.wf-stats-dl {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.wf-stats-dl dt {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin: 0;
+}
+
+.wf-stats-dl dd {
+  margin: 4px 0 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+

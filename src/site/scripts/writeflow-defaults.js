@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.6.3";
+  const APP_VERSION = "2.7.0";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -119,6 +119,18 @@
   ];
 
   const CHANGELOG = [
+    {
+      version: "2.7.0",
+      date: "2026-08-23",
+      summary: "Student accounts, verified teacher signup, and admin tools.",
+      items: [
+        "Students sign in with roster username (first name + last initial); default password SPARK, then choose their own.",
+        "Student portal at /writeflow/student/ shows all past submissions across assignments.",
+        "Teachers register with @davincicharterschool.org email verification; only approved emails can sign up.",
+        "Admin portal at /writeflow/admin/ — stats, dedupe submissions, impersonation, account lists.",
+        "Submissions link to studentUsername when signed in for reliable history matching.",
+      ],
+    },
     {
       version: "2.6.3",
       date: "2026-08-23",

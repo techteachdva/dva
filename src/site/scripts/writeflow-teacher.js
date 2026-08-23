@@ -65,6 +65,7 @@
         token: stored.token,
         username: data.username,
         displayName: data.displayName,
+        role: data.role || "teacher",
         expiresAt: stored.expiresAt,
       };
       saveSession(session);
@@ -76,6 +77,17 @@
     }
   }
 
+  async function requestVerification(email, username, displayName) {
+    return apiPost("teacherRequestVerification", { email, username, displayName });
+  }
+
+  async function completeRegistration(email, username, password, displayName, code) {
+    const data = await apiPost("teacherCompleteRegistration", { email, username, password, displayName, code });
+    session = data.session;
+    saveSession(session);
+    return session;
+  }
+
   async function login(username, password) {
     const data = await apiPost("teacherLogin", { username, password });
     session = data.session;
@@ -84,10 +96,7 @@
   }
 
   async function register(username, password, displayName) {
-    const data = await apiPost("teacherRegister", { username, password, displayName });
-    session = data.session;
-    saveSession(session);
-    return session;
+    throw new Error("Use Create account with your @davincicharterschool.org email.");
   }
 
   async function logout() {
@@ -159,6 +168,8 @@
     validate,
     login,
     register,
+    requestVerification,
+    completeRegistration,
     logout,
     getSession,
     getToken,

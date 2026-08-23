@@ -35,6 +35,29 @@ layout: false
             <blockquote class="wf-student-prompt" id="promptQuote"></blockquote>
             <ul class="dw-list dw-checklist wf-student-checklist" id="checklist"></ul>
             <div class="wf-student-gate" id="studentGate">
+              <div id="studentAccountPanel" class="wf-student-account dw-card dw-stack">
+                <p class="dw-muted dw-tiny">Sign in with your roster username (first name + last initial, e.g. <strong>John D.</strong>). First-time password is <strong>SPARK</strong>.</p>
+                <div id="studentSignedOut">
+                  <form id="studentLoginForm" class="wf-account-form">
+                    <label class="dw-field"><span class="dw-label">Username</span><input id="studentLoginUsername" class="dw-input" type="text" maxlength="80" autocomplete="username" /></label>
+                    <label class="dw-field"><span class="dw-label">Password</span><input id="studentLoginPassword" class="dw-input" type="password" autocomplete="current-password" /></label>
+                    <button class="dw-btn dw-btn-ghost" type="submit">Sign in</button>
+                    <p id="studentLoginError" class="dw-error dw-hidden" role="alert"></p>
+                  </form>
+                  <p class="dw-muted dw-tiny"><a href="/writeflow/student/">View all your past writing</a></p>
+                </div>
+                <div id="studentSignedIn" class="dw-hidden">
+                  <p>Signed in as <strong id="studentAccountName"></strong> <button id="studentLogoutBtn" class="dw-btn dw-btn-ghost" type="button">Sign out</button></p>
+                </div>
+                <div id="studentPasswordPanel" class="dw-hidden">
+                  <p class="dw-muted">Choose your own password before you start.</p>
+                  <form id="studentPasswordForm" class="wf-account-form">
+                    <label class="dw-field"><span class="dw-label">New password</span><input id="studentNewPassword" class="dw-input" type="password" autocomplete="new-password" required minlength="4" /></label>
+                    <button class="dw-btn" type="submit">Save password</button>
+                    <p id="studentPasswordError" class="dw-error dw-hidden" role="alert"></p>
+                  </form>
+                </div>
+              </div>
               <label class="dw-field" id="nameField">
                 <span class="dw-label">First name</span>
                 <input id="studentName" class="dw-input" type="text" maxlength="80" autocomplete="name" />
@@ -111,6 +134,7 @@ layout: false
     <script src="/scripts/diagnostic-writing-calibration.js" defer></script>
     <script src="/scripts/diagnostic-writing-rubrics.js" defer></script>
     <script src="/scripts/write-analysis-engine.js" defer></script>
+    <script src="/scripts/writeflow-student-auth.js" defer></script>
     <script src="/scripts/writeflow-app.js" defer></script>
   </body>
 </html>
