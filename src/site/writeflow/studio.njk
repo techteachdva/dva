@@ -149,14 +149,18 @@ layout: false
             <div class="wf-studio-home__panel wf-studio-home__panel--center">
               <div class="wf-studio-home__hero dw-card">
                 <h1 class="dw-h1 wf-studio-home__title">Your assignments</h1>
-                <p class="dw-muted wf-studio-home__lead">Click a file to edit. Templates on the left, tips on the right.</p>
+                <p class="dw-muted wf-studio-home__lead">Click a card for details on the right. Use Edit to open the builder in a new tab.</p>
               </div>
-              <div id="wfAssignmentsDashboard" class="wf-files-grid wf-files-grid--dashboard" role="list" aria-labelledby="wfAssignmentsHeading">
-                <h2 class="dw-hidden" id="wfAssignmentsHeading">Your assignments</h2>
+              <div class="wf-studio-assignments-scroll">
+                <div id="wfAssignmentsDashboard" class="wf-files-grid wf-files-grid--dashboard" role="list" aria-labelledby="wfAssignmentsHeading">
+                  <h2 class="dw-hidden" id="wfAssignmentsHeading">Your assignments</h2>
+                </div>
               </div>
               <section class="wf-shared-library dw-hidden wf-studio-home__shared" id="wfSharedLibrary" aria-labelledby="wfSharedHeading">
                 <h3 class="wf-studio-home__section-title" id="wfSharedHeading">Shared by other teachers</h3>
-                <div id="wfSharedDashboard" class="wf-files-grid wf-files-grid--shared" role="list"></div>
+                <div class="wf-studio-shared-scroll">
+                  <div id="wfSharedDashboard" class="wf-files-grid wf-files-grid--dashboard wf-files-grid--shared" role="list"></div>
+                </div>
               </section>
             </div>
 
@@ -169,6 +173,7 @@ layout: false
                 <li><strong>Results</strong> — use your assignment teacher password or sign in as owner.</li>
               </ul>
               <p class="dw-muted dw-tiny">Sign in from the top bar to sync assignments and browse shared templates.</p>
+              <div id="wfAssignmentDetail" class="wf-assignment-detail dw-hidden" aria-live="polite"></div>
             </aside>
           </div>
 

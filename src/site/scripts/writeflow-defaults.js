@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.3.16";
+  const APP_VERSION = "2.3.17";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -119,6 +119,16 @@
   ];
 
   const CHANGELOG = [
+    {
+      version: "2.3.17",
+      date: "2026-08-23",
+      summary: "Studio dashboard cards open edit in new tab with detail panel and preview tooltips.",
+      items: [
+        "Edit opens the builder in a new browser tab; clicking a card shows details in the right panel.",
+        "Your assignments and shared libraries scroll independently (~5 cards visible each).",
+        "Preview hover shows a ghost welcome preview; shared cards add Results, Copy, and Preview.",
+      ],
+    },
     {
       version: "2.3.16",
       date: "2026-08-23",

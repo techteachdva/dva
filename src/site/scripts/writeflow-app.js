@@ -45,6 +45,8 @@
   let sessionTeacherPassword = "";
   let cloudAssignmentMeta = {};
   let sharedAssignmentMeta = [];
+  let selectedDashboardAssignmentId = null;
+  let selectedDashboardAssignmentShared = false;
   let tutorialIndex = 0;
   let tutorialContextKey = "home";
   let tutorialHighlightEl = null;
@@ -318,7 +320,171 @@
     return icons[mode] || "📄";
   }
 
+  function openAssignmentEditorWindow(id) {
+    if (!id) return;
+    const url = `${location.origin}${studioUrl(`?mode=builder&id=${encodeURIComponent(id)}`)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  }
+
+  function assignmentDetailFields(id, { shared = false } = {}) {
+    const local = readLocalConfig(id);
+    const cloudMeta = cloudAssignmentMeta[id] || null;
+    const sharedMeta = shared
+      ? sharedAssignmentMeta.find((item) => item.assignmentId === id) || null
+      : null;
+    const display = { id, ...cloudMeta, ...sharedMeta, ...local };
+    return {
+      id,
+      title: display.title || id,
+      subtitle: display.subtitle || "",
+      welcomeTitle: display.welcomeTitle || display.title || "",
+      welcomeLead: display.welcomeLead || "",
+      prompt: display.prompt || "",
+      assignmentMode: display.assignmentMode || cloudMeta?.assignmentMode || "composition",
+      durationSec: Number(display.durationSec || cloudMeta?.durationSec) || 300,
+      shared,
+      author: sharedMeta?.authorDisplayName || sharedMeta?.ownerUsername || "",
+    };
+  }
+
+  async function renderAssignmentDetailPanel(id, { shared = false } = {}) {
+    const panel = document.getElementById("wfAssignmentDetail");
+    if (!panel || !id) return;
+    panel.classList.remove("dw-hidden");
+    panel.innerHTML = `<p class="dw-muted dw-tiny">Loading assignment details…</p>`;
+
+    let fields = assignmentDetailFields(id, { shared });
+    const local = readLocalConfig(id);
+    if (!local?.prompt) {
+      const cloud = await fetchCloudConfig(id);
+      if (cloud) {
+        fields = {
+          ...fields,
+          title: cloud.title || fields.title,
+          subtitle: cloud.subtitle || fields.subtitle,
+          welcomeTitle: cloud.welcomeTitle || cloud.title || fields.welcomeTitle,
+          welcomeLead: cloud.welcomeLead || fields.welcomeLead,
+          prompt: cloud.prompt || fields.prompt,
+          assignmentMode: cloud.assignmentMode || fields.assignmentMode,
+          durationSec: Number(cloud.durationSec) || fields.durationSec,
+        };
+      }
+    }
+
+    const modeLabel = window.WriteFlowDefaults?.formatModeLabel?.(fields.assignmentMode) || fields.assignmentMode;
+    const mins = Math.max(1, Math.round(fields.durationSec / 60));
+    const shareUrl = `${location.origin}${assignmentUrl(id)}`;
+    panel.innerHTML = `
+      <h3 class="wf-assignment-detail__title">Selected assignment</h3>
+      <dl class="wf-assignment-detail__meta">
+        <div class="wf-assignment-detail__row"><dt>Title</dt><dd>${escapeHtml(fields.title)}</dd></div>
+        <div class="wf-assignment-detail__row"><dt>Link ID</dt><dd><code>${escapeHtml(fields.id)}</code></dd></div>
+        ${fields.subtitle ? `<div class="wf-assignment-detail__row"><dt>Subtitle</dt><dd>${escapeHtml(fields.subtitle)}</dd></div>` : ""}
+        <div class="wf-assignment-detail__row"><dt>Mode</dt><dd>${escapeHtml(modeLabel)} · ${mins} min</dd></div>
+        ${shared && fields.author ? `<div class="wf-assignment-detail__row"><dt>Shared by</dt><dd>${escapeHtml(fields.author)}</dd></div>` : ""}
+      </dl>
+      ${fields.welcomeTitle ? `<p class="wf-assignment-detail__label">Welcome headline</p><p class="wf-assignment-detail__text">${escapeHtml(fields.welcomeTitle)}</p>` : ""}
+      ${fields.welcomeLead ? `<p class="wf-assignment-detail__label">Welcome intro</p><p class="wf-assignment-detail__text">${escapeHtml(fields.welcomeLead)}</p>` : ""}
+      <p class="wf-assignment-detail__label">Writing prompt</p>
+      <blockquote class="wf-assignment-detail__prompt">${escapeHtml(fields.prompt || "No prompt text saved yet.")}</blockquote>
+      <p class="wf-assignment-detail__label">Student link</p>
+      <p class="wf-assignment-detail__link"><code>${escapeHtml(shareUrl)}</code></p>
+      <div class="wf-assignment-detail__actions">
+        <button class="dw-btn dw-btn-secondary dw-btn--compact" type="button" data-detail-action="edit" data-id="${escapeHtml(id)}">Edit</button>
+        <button class="dw-btn dw-btn-ghost dw-btn--compact" type="button" data-detail-action="preview" data-id="${escapeHtml(id)}">Preview</button>
+      </div>`;
+
+    panel.querySelector("[data-detail-action='edit']")?.addEventListener("click", () => openAssignmentEditorWindow(id));
+    panel.querySelector("[data-detail-action='preview']")?.addEventListener("click", () => {
+      window.open(`${location.origin}${assignmentUrl(id)}`, "_blank", "noopener,noreferrer");
+    });
+  }
+
+  async function selectDashboardAssignment(id, { shared = false } = {}) {
+    selectedDashboardAssignmentId = id;
+    selectedDashboardAssignmentShared = !!shared;
+    renderHomeDashboard();
+    renderSharedLibrary();
+    await renderAssignmentDetailPanel(id, { shared });
+  }
+
+  function ensurePreviewTooltipEl() {
+    let el = document.getElementById("wfPreviewTooltip");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "wfPreviewTooltip";
+      el.className = "wf-preview-tooltip dw-hidden";
+      el.setAttribute("role", "tooltip");
+      document.body.appendChild(el);
+    }
+    return el;
+  }
+
+  function positionPreviewTooltip(tooltip, anchor) {
+    if (!tooltip || !anchor) return;
+    tooltip.classList.remove("dw-hidden");
+    const rect = anchor.getBoundingClientRect();
+    const width = tooltip.offsetWidth || 280;
+    const left = Math.min(window.innerWidth - width - 12, Math.max(12, rect.left + rect.width / 2 - width / 2));
+    const top = Math.max(12, rect.top - tooltip.offsetHeight - 10);
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${top}px`;
+  }
+
+  async function showPreviewTooltip(anchor) {
+    clearTimeout(showPreviewTooltip._hideTimer);
+    const id = anchor?.dataset?.id;
+    if (!id) return;
+    const tooltip = ensurePreviewTooltipEl();
+    tooltip.innerHTML = `<p class="wf-preview-tooltip__loading">Loading preview…</p>`;
+    positionPreviewTooltip(tooltip, anchor);
+
+    const { config: cfg } = await resolveAssignmentConfig(id);
+    const welcome = cfg.welcomeTitle || cfg.title || id;
+    const prompt = cfg.prompt || cfg.welcomeLead || "No prompt text saved yet.";
+    const hero = cfg.heroImageData || cfg.heroImage || "";
+    const heroStyle = hero ? ` style="background-image:url('${String(hero).replace(/'/g, "%27")}')"` : "";
+    const heroHtml = hero ? `<div class="wf-preview-tooltip__hero"${heroStyle}></div>` : "";
+    tooltip.innerHTML = `
+      <div class="wf-preview-tooltip__card">
+        ${heroHtml}
+        <p class="wf-preview-tooltip__eyebrow">Student welcome preview</p>
+        <strong class="wf-preview-tooltip__title">${escapeHtml(welcome)}</strong>
+        <p class="wf-preview-tooltip__prompt">${escapeHtml(prompt.length > 300 ? `${prompt.slice(0, 300)}…` : prompt)}</p>
+      </div>`;
+    requestAnimationFrame(() => positionPreviewTooltip(tooltip, anchor));
+  }
+
+  function hidePreviewTooltip() {
+    clearTimeout(showPreviewTooltip._hideTimer);
+    showPreviewTooltip._hideTimer = setTimeout(() => {
+      document.getElementById("wfPreviewTooltip")?.classList.add("dw-hidden");
+    }, 140);
+  }
+
+  function bindPreviewTooltips(root) {
+    if (!root) return;
+    root.querySelectorAll('[data-action="preview"]').forEach((btn) => {
+      if (btn.dataset.previewBound === "1") return;
+      btn.dataset.previewBound = "1";
+      btn.addEventListener("mouseenter", () => { void showPreviewTooltip(btn); });
+      btn.addEventListener("mouseleave", hidePreviewTooltip);
+      btn.addEventListener("focus", () => { void showPreviewTooltip(btn); });
+      btn.addEventListener("blur", hidePreviewTooltip);
+    });
+  }
+
   function assignmentTileSummary(saved = {}, meta = null) {
+    const mode = window.WriteFlowDefaults?.formatModeLabel?.(saved.assignmentMode || meta?.assignmentMode);
+    const durationSec = Number(saved.durationSec || meta?.durationSec);
+    if (mode && Number.isFinite(durationSec) && durationSec > 0) {
+      const mins = Math.max(1, Math.round(durationSec / 60));
+      return `${mins} min · ${mode}`;
+    }
+    if (meta?.shared) return "Shared assignment";
+    if (meta?.ownerUsername) return "Synced to your account";
+    return "Writing assignment";
+  }
     const mode = window.WriteFlowDefaults?.formatModeLabel?.(saved.assignmentMode || meta?.assignmentMode);
     const durationSec = Number(saved.durationSec || meta?.durationSec);
     if (mode && Number.isFinite(durationSec) && durationSec > 0) {
@@ -1545,16 +1711,24 @@
   function renderSharedAssignmentCard(item) {
     const title = item.title || item.assignmentId;
     const author = item.authorDisplayName || item.ownerUsername || "A teacher";
+    const id = item.assignmentId;
+    const selected = selectedDashboardAssignmentId === id && selectedDashboardAssignmentShared;
+    const icon = assignmentModeIcon(item.assignmentMode);
     return `
-      <article class="wf-assignment-hub-card wf-assignment-hub-card--shared" role="listitem" data-shared-id="${escapeHtml(item.assignmentId)}">
-        <div class="wf-assignment-hub-card__main">
-          <h3 class="wf-assignment-hub-card__title">${escapeHtml(title)}</h3>
-          <p class="wf-assignment-hub-card__id"><code>${escapeHtml(item.assignmentId)}</code></p>
-          <p class="dw-muted dw-tiny">Shared by ${escapeHtml(author)}</p>
+      <article class="wf-file-tile wf-file-tile--shared${selected ? " wf-file-tile--selected" : ""}" role="listitem" data-assignment-id="${escapeHtml(id)}" data-shared="1">
+        <div class="wf-file-tile__main">
+          <span class="wf-file-tile__icon" aria-hidden="true">${icon}</span>
+          <div class="wf-file-tile__details">
+            <button type="button" class="wf-file-tile__title" data-action="select" data-id="${escapeHtml(id)}">${escapeHtml(title)}</button>
+            <p class="wf-file-tile__meta">Shared by ${escapeHtml(author)}</p>
+            <div class="wf-file-tile__badges"><span class="wf-badge wf-badge--shared">Shared</span></div>
+            <p class="wf-file-tile__id"><code>${escapeHtml(id)}</code></p>
+          </div>
         </div>
-        <div class="wf-assignment-hub-card__actions">
-          <button class="dw-btn dw-btn-secondary dw-btn--compact" type="button" data-action="results" data-id="${escapeHtml(item.assignmentId)}">Results</button>
-          <button class="dw-btn" type="button" data-action="copy-shared" data-id="${escapeHtml(item.assignmentId)}" data-title="${escapeHtml(title)}">Copy to my assignments</button>
+        <div class="wf-file-tile__actions wf-file-tile__actions--shared" role="group" aria-label="Actions for ${escapeHtml(title)}">
+          <button class="dw-btn dw-btn-secondary dw-btn--compact wf-file-tile__action" type="button" data-action="results" data-id="${escapeHtml(id)}">Results</button>
+          <button class="dw-btn dw-btn--compact wf-file-tile__action" type="button" data-action="copy-shared" data-id="${escapeHtml(id)}" data-title="${escapeHtml(title)}">Copy assignment</button>
+          <button class="dw-btn dw-btn-ghost dw-btn--compact wf-file-tile__action" type="button" data-action="preview" data-id="${escapeHtml(id)}">Preview</button>
         </div>
       </article>`;
   }
@@ -1571,13 +1745,15 @@
       el.innerHTML = `<p class="dw-muted">No shared assignments yet. Teachers can enable sharing when they save an assignment.</p>`;
       return;
     }
-    el.innerHTML = items.map((item) => renderSharedAssignmentCard(item)).join("");
-    el.querySelectorAll("[data-action='copy-shared']").forEach((btn) => {
-      btn.addEventListener("click", () => void copySharedAssignment(btn.dataset.id, btn.dataset.title));
-    });
-    el.querySelectorAll("[data-action='results']").forEach((btn) => {
-      btn.addEventListener("click", () => void navigateToResults(btn.dataset.id));
-    });
+    const sorted = [...items].sort((a, b) =>
+      String(a.title || a.assignmentId).localeCompare(String(b.title || b.assignmentId), undefined, { sensitivity: "base" })
+    );
+    el.innerHTML = sorted.map((item) => renderSharedAssignmentCard(item)).join("");
+    bindAssignmentCardActions(el);
+    bindPreviewTooltips(el);
+    if (selectedDashboardAssignmentId && selectedDashboardAssignmentShared) {
+      void renderAssignmentDetailPanel(selectedDashboardAssignmentId, { shared: true });
+    }
   }
 
   function normalizeUsername(value) {
@@ -1606,7 +1782,7 @@
       if (!ids.includes(next.id)) saveAssignmentsList([...ids, next.id]);
       await refreshCloudAssignments();
       await refreshSharedLibrary();
-      await openAssignmentInBuilder(next.id);
+      openAssignmentEditorWindow(next.id);
       showSaveStatus(`Copied “${next.title}” into your assignments.`, true);
     } catch (err) {
       alert(err.message || "Could not copy assignment.");
@@ -2054,7 +2230,7 @@
     }
   }
 
-  function renderAssignmentCard(id, { active = false, compact = false, meta = null } = {}) {
+  function renderAssignmentCard(id, { active = false, compact = false, meta = null, selected = false } = {}) {
     const local = readLocalConfig(id);
     const cloudMeta = meta || cloudAssignmentMeta[id] || null;
     const display = local || cloudMeta || { id };
@@ -2083,11 +2259,11 @@
         </article>`;
     }
     return `
-      <article class="wf-file-tile${active ? " wf-file-tile--active" : ""}" role="listitem" data-assignment-id="${escapeHtml(id)}">
+      <article class="wf-file-tile${active ? " wf-file-tile--active" : ""}${selected ? " wf-file-tile--selected" : ""}" role="listitem" data-assignment-id="${escapeHtml(id)}">
         <div class="wf-file-tile__main">
           <span class="wf-file-tile__icon" aria-hidden="true">${icon}</span>
           <div class="wf-file-tile__details">
-            <button type="button" class="wf-file-tile__title" data-action="edit" data-id="${escapeHtml(id)}">${escapeHtml(title)}</button>
+            <button type="button" class="wf-file-tile__title" data-action="select" data-id="${escapeHtml(id)}">${escapeHtml(title)}</button>
             <p class="wf-file-tile__meta">${escapeHtml(summary)}</p>
             ${badgeHtml}
             <p class="wf-file-tile__id"><code>${escapeHtml(id)}</code></p>
@@ -2105,16 +2281,36 @@
 
   async function handleAssignmentCardAction(e) {
     const btn = e.target.closest("[data-action]");
-    if (!btn) return;
-    const root = btn.closest("#wfAssignmentsDashboard, #bfAssignmentList");
+    if (!btn) {
+      const card = e.target.closest(".wf-file-tile");
+      const root = card?.closest("#wfAssignmentsDashboard, #wfSharedDashboard");
+      if (!card || !root) return;
+      const id = card.dataset.assignmentId;
+      if (!id) return;
+      await selectDashboardAssignment(id, { shared: card.hasAttribute("data-shared") });
+      return;
+    }
+    const root = btn.closest("#wfAssignmentsDashboard, #bfAssignmentList, #wfSharedDashboard");
     if (!root) return;
     const action = btn.dataset.action;
     const id = btn.dataset.id;
     if (!id) return;
+    const isSharedCard = btn.closest("[data-shared='1']");
 
+    if (action === "select") {
+      e.preventDefault();
+      await selectDashboardAssignment(id, { shared: !!isSharedCard });
+      return;
+    }
     if (action === "edit") {
       e.preventDefault();
-      await openAssignmentInBuilder(id);
+      openAssignmentEditorWindow(id);
+      return;
+    }
+    if (action === "copy-shared") {
+      e.preventDefault();
+      e.stopPropagation();
+      await copySharedAssignment(id, btn.dataset.title);
       return;
     }
     if (action === "results") {
@@ -2148,6 +2344,10 @@
       if (!ok) return;
       const wasCurrent = config.id === id;
       const remaining = deleteAssignment(id);
+      if (selectedDashboardAssignmentId === id) {
+        selectedDashboardAssignmentId = null;
+        document.getElementById("wfAssignmentDetail")?.classList.add("dw-hidden");
+      }
       if (wasCurrent) {
         if (remaining.length) {
           await openAssignmentInBuilder(remaining[0]);
@@ -2165,9 +2365,11 @@
   }
 
   function bindAssignmentCardActions(root) {
-    if (!root || root.dataset.cardActionsBound === "1") return;
-    root.dataset.cardActionsBound = "1";
-    root.addEventListener("click", (e) => { void handleAssignmentCardAction(e); });
+    if (!root) return;
+    if (root.dataset.cardActionsBound !== "1") {
+      root.dataset.cardActionsBound = "1";
+      root.addEventListener("click", (e) => { void handleAssignmentCardAction(e); });
+    }
   }
 
   function renderHomeDashboard() {
@@ -2189,8 +2391,15 @@
       return;
     }
 
-    el.innerHTML = ids.map((id) => renderAssignmentCard(id, { meta: cloudAssignmentMeta[id] || null })).join("");
+    el.innerHTML = ids.map((id) => renderAssignmentCard(id, {
+      meta: cloudAssignmentMeta[id] || null,
+      selected: id === selectedDashboardAssignmentId && !selectedDashboardAssignmentShared,
+    })).join("");
     bindAssignmentCardActions(el);
+    bindPreviewTooltips(el);
+    if (selectedDashboardAssignmentId && !selectedDashboardAssignmentShared && ids.includes(selectedDashboardAssignmentId)) {
+      void renderAssignmentDetailPanel(selectedDashboardAssignmentId, { shared: false });
+    }
   }
 
   function resolveDefaultAssignmentId() {
