@@ -1129,7 +1129,7 @@
     const sessionToken = Teacher()?.getToken() || "";
     const qs = new URLSearchParams({ assignmentId: config.id });
     if (sessionToken) qs.set("sessionToken", sessionToken);
-    else if (pw) qs.set("password", pw);
+    if (pw) qs.set("password", pw);
     const res = await fetch(`${API_URL}?${qs}`);
     const data = await res.json().catch(() => ({}));
     if (res.status === 401) throw new Error("Incorrect teacher password for this assignment.");
@@ -1467,7 +1467,7 @@
         const sessionToken = Teacher()?.getToken() || "";
         const qs = new URLSearchParams({ assignmentId: config.id });
         if (sessionToken) qs.set("sessionToken", sessionToken);
-        else qs.set("password", pw);
+        if (pw) qs.set("password", pw);
         const res = await fetch(`${API_URL}?${qs}`);
         if (res.status === 401) {
           if (errEl) {

@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.3.8";
+  const APP_VERSION = "2.3.9";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -119,6 +119,15 @@
   ];
 
   const CHANGELOG = [
+    {
+      version: "2.3.9",
+      date: "2026-08-22",
+      summary: "Darker name modal and assignment-password results for co-teachers.",
+      items: [
+        "Name your assignment dialog uses a heavier backdrop and solid panel so Studio text behind it no longer competes.",
+        "Signed-in co-teachers can open Results with the assignment teacher password — session login no longer blocks password auth.",
+      ],
+    },
     {
       version: "2.3.8",
       date: "2026-08-22",
