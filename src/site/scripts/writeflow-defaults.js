@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.7.0";
+  const APP_VERSION = "2.7.1";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -119,6 +119,15 @@
   ];
 
   const CHANGELOG = [
+    {
+      version: "2.7.1",
+      date: "2026-08-23",
+      summary: "Fix teacher email verification signup button.",
+      items: [
+        "Create account no longer blocks on a hidden required password field before the code step.",
+        "Verification code and password fields unlock only after the email code is sent.",
+      ],
+    },
     {
       version: "2.7.0",
       date: "2026-08-23",

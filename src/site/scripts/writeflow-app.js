@@ -1807,6 +1807,33 @@
     updateAccountButton();
   }
 
+  let registerAwaitingCode = false;
+
+  function setTeacherRegisterVerifyStep(show) {
+    const verifyStep = document.getElementById("wfRegisterVerifyStep");
+    const codeEl = document.getElementById("wfRegisterCode");
+    const passwordEl = document.getElementById("wfRegisterPassword");
+    if (verifyStep) {
+      verifyStep.classList.toggle("dw-hidden", !show);
+      verifyStep.hidden = !show;
+    }
+    if (codeEl) {
+      codeEl.disabled = !show;
+      if (!show) codeEl.value = "";
+    }
+    if (passwordEl) {
+      passwordEl.disabled = !show;
+      if (!show) passwordEl.value = "";
+    }
+  }
+
+  function resetTeacherRegisterForm() {
+    registerAwaitingCode = false;
+    setTeacherRegisterVerifyStep(false);
+    const submitBtn = document.getElementById("wfRegisterSubmitBtn");
+    if (submitBtn) submitBtn.textContent = "Send verification code";
+  }
+
   function bindAccountEvents() {
     document.getElementById("wfAccountBtn")?.addEventListener("click", () => {
       const panel = document.getElementById("wfAccountPanel");
@@ -1821,6 +1848,7 @@
       document.getElementById("wfLoginForm")?.classList.remove("dw-hidden");
       document.getElementById("wfRegisterForm")?.classList.add("dw-hidden");
       document.getElementById("wfAccountError")?.classList.add("dw-hidden");
+      resetTeacherRegisterForm();
     });
     document.getElementById("wfAccountTabRegister")?.addEventListener("click", () => {
       document.getElementById("wfAccountTabRegister")?.classList.add("wf-account-tab--active");
@@ -1828,9 +1856,6 @@
       document.getElementById("wfRegisterForm")?.classList.remove("dw-hidden");
       document.getElementById("wfLoginForm")?.classList.add("dw-hidden");
       document.getElementById("wfAccountError")?.classList.add("dw-hidden");
-      document.getElementById("wfRegisterVerifyStep")?.classList.add("dw-hidden");
-      const submitBtn = document.getElementById("wfRegisterSubmitBtn");
-      if (submitBtn) submitBtn.textContent = "Send verification code";
     });
 
     document.getElementById("wfLoginForm")?.addEventListener("submit", async (e) => {
@@ -1851,45 +1876,56 @@
       }
     });
 
-    let registerAwaitingCode = false;
-
     document.getElementById("wfRegisterForm")?.addEventListener("submit", async (e) => {
       e.preventDefault();
       const errEl = document.getElementById("wfAccountError");
-      const email = document.getElementById("wfRegisterEmail")?.value || "";
-      const username = document.getElementById("wfRegisterUsername")?.value || "";
-      const displayName = document.getElementById("wfRegisterDisplayName")?.value || "";
-      const code = document.getElementById("wfRegisterCode")?.value || "";
+      const email = document.getElementById("wfRegisterEmail")?.value.trim() || "";
+      const username = document.getElementById("wfRegisterUsername")?.value.trim() || "";
+      const displayName = document.getElementById("wfRegisterDisplayName")?.value.trim() || "";
+      const code = document.getElementById("wfRegisterCode")?.value.trim() || "";
       const password = document.getElementById("wfRegisterPassword")?.value || "";
-      const verifyStep = document.getElementById("wfRegisterVerifyStep");
       const submitBtn = document.getElementById("wfRegisterSubmitBtn");
+
+      const showRegisterError = (message, isError = true) => {
+        if (!errEl) return;
+        errEl.textContent = message;
+        errEl.classList.remove("dw-hidden");
+        errEl.classList.toggle("dw-error", isError);
+      };
 
       try {
         if (!registerAwaitingCode) {
+          if (!email || !username) {
+            showRegisterError("Enter your school email and username.");
+            return;
+          }
+          if (!email.toLowerCase().endsWith("@davincicharterschool.org")) {
+            showRegisterError("Use your @davincicharterschool.org email.");
+            return;
+          }
           await Teacher()?.requestVerification(email, username, displayName);
           registerAwaitingCode = true;
-          verifyStep?.classList.remove("dw-hidden");
+          setTeacherRegisterVerifyStep(true);
           if (submitBtn) submitBtn.textContent = "Create account";
-          if (errEl) {
-            errEl.textContent = "Check your school email for a 6-digit code, then enter it below.";
-            errEl.classList.remove("dw-hidden");
-            errEl.classList.remove("dw-error");
-          }
+          showRegisterError("Check your school email for a 6-digit code, then enter it below.", false);
+          document.getElementById("wfRegisterCode")?.focus();
+          return;
+        }
+        if (!code || code.length < 6) {
+          showRegisterError("Enter the 6-digit verification code from your email.");
+          return;
+        }
+        if (!password || password.length < 4) {
+          showRegisterError("Choose a password with at least 4 characters.");
           return;
         }
         await Teacher()?.completeRegistration(email, username, password, displayName, code);
-        registerAwaitingCode = false;
-        verifyStep?.classList.add("dw-hidden");
-        if (submitBtn) submitBtn.textContent = "Send verification code";
+        resetTeacherRegisterForm();
         renderAccountPanel();
         await refreshCloudAssignments();
         await refreshSharedLibrary();
       } catch (err) {
-        if (errEl) {
-          errEl.textContent = err.message || "Could not create account.";
-          errEl.classList.remove("dw-hidden");
-          errEl.classList.add("dw-error");
-        }
+        showRegisterError(err.message || "Could not create account.");
       }
     });
 

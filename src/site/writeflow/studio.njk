@@ -197,14 +197,14 @@ layout: false
                 <label class="dw-field"><span class="dw-label">Password</span><input id="wfLoginPassword" class="dw-input" type="password" autocomplete="current-password" required /></label>
                 <button class="dw-btn" type="submit">Sign in</button>
               </form>
-              <form id="wfRegisterForm" class="wf-account-form dw-hidden" autocomplete="on">
+              <form id="wfRegisterForm" class="wf-account-form dw-hidden" autocomplete="on" novalidate>
                 <p class="dw-muted dw-tiny">Use your <strong>@davincicharterschool.org</strong> email. Your email must be on the approved teacher list.</p>
                 <label class="dw-field"><span class="dw-label">School email</span><input id="wfRegisterEmail" class="dw-input" type="email" autocomplete="email" required /></label>
                 <label class="dw-field"><span class="dw-label">Username</span><span class="dw-muted dw-tiny">Letters, numbers, dots, dashes — at least 3 characters</span><input id="wfRegisterUsername" class="dw-input" type="text" autocomplete="username" required /></label>
                 <label class="dw-field"><span class="dw-label">Display name</span><span class="dw-muted dw-tiny">Shown when you share assignments</span><input id="wfRegisterDisplayName" class="dw-input" type="text" autocomplete="name" /></label>
-                <div id="wfRegisterVerifyStep" class="dw-hidden">
-                  <label class="dw-field"><span class="dw-label">Verification code</span><span class="dw-muted dw-tiny">Sent to your school email</span><input id="wfRegisterCode" class="dw-input" type="text" maxlength="6" autocomplete="one-time-code" /></label>
-                  <label class="dw-field"><span class="dw-label">Password</span><span class="dw-muted dw-tiny">At least 4 characters</span><input id="wfRegisterPassword" class="dw-input" type="password" autocomplete="new-password" required /></label>
+                <div id="wfRegisterVerifyStep" class="dw-hidden" hidden>
+                  <label class="dw-field"><span class="dw-label">Verification code</span><span class="dw-muted dw-tiny">Sent to your school email</span><input id="wfRegisterCode" class="dw-input" type="text" maxlength="6" autocomplete="one-time-code" disabled /></label>
+                  <label class="dw-field"><span class="dw-label">Password</span><span class="dw-muted dw-tiny">At least 4 characters</span><input id="wfRegisterPassword" class="dw-input" type="password" autocomplete="new-password" disabled /></label>
                 </div>
                 <button id="wfRegisterSubmitBtn" class="dw-btn" type="submit">Send verification code</button>
               </form>
