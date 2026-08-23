@@ -29,6 +29,7 @@ layout: false
             <div class="wf-student-hero dw-hidden" id="heroImageWrap">
               <img id="heroImage" class="wf-student-hero__img" alt="" />
             </div>
+            <div id="teachingStandardsWelcome" class="dw-hidden"></div>
             <h1 class="wf-student-prompt-box__title" id="welcomeTitle">Ready to write?</h1>
             <p class="wf-student-prompt-box__lead dw-muted" id="welcomeLead"></p>
             <blockquote class="wf-student-prompt" id="promptQuote"></blockquote>
@@ -54,6 +55,7 @@ layout: false
         </section>
 
         <section id="writingView" class="dw-hidden wf-student-panel" aria-label="Writing session">
+          <div id="teachingStandardsWriting" class="dw-hidden"></div>
           <div class="wf-student-writing-head">
             <div class="wf-student-prompt-inline" id="promptBanner"></div>
             <div class="wf-student-stats" id="liveStatsBar">
@@ -104,6 +106,8 @@ layout: false
     <script id="wfClassroomCodesJson" type="application/json">{{ diagnosticWritingClassCodes | jsonify | safe }}</script>
     <script src="/scripts/write-test-core.js" defer></script>
     <script src="/scripts/writeflow-defaults.js" defer></script>
+    <script src="/scripts/writeflow-mn-ela-standards-data.js" defer></script>
+    <script src="/scripts/writeflow-item-standards.js" defer></script>
     <script src="/scripts/diagnostic-writing-calibration.js" defer></script>
     <script src="/scripts/diagnostic-writing-rubrics.js" defer></script>
     <script src="/scripts/write-analysis-engine.js" defer></script>

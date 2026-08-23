@@ -73,6 +73,7 @@
       vocabWords: getVocabWords(),
       assignmentMode: config.assignmentMode || "composition",
       rubrics: getActiveRubrics(),
+      teachingStandards: getTeachingStandardsRaw(),
     };
   }
 
@@ -109,6 +110,91 @@
 
   function getVocabWords() {
     return (config.vocabWords || []).map((w) => String(w).trim()).filter(Boolean);
+  }
+
+  function getTeachingStandardsRaw() {
+    return Array.isArray(config.teachingStandards) ? config.teachingStandards : [];
+  }
+
+  function getResolvedTeachingStandards() {
+    const ItemStd = window.WriteFlowItemStandards;
+    if (!ItemStd) return getTeachingStandardsRaw();
+    return ItemStd.resolveAttachedList(getTeachingStandardsRaw());
+  }
+
+  function isStandardAttached(code, catalog = null) {
+    return getTeachingStandardsRaw().some((s) => {
+      if (s.code !== code) return false;
+      if (catalog) return s.catalog === catalog;
+      return true;
+    });
+  }
+
+  function addTeachingStandard(entry) {
+    const code = String(entry?.code || "").trim();
+    if (!code) return;
+    const catalog = entry.catalog || window.WriteFlowItemStandards?.CATALOG_IDS?.item || "item";
+    const list = getTeachingStandardsRaw().filter((s) => s.code !== code || (s.catalog || "item") !== catalog);
+    list.push(entry.custom ? { ...entry, custom: true, catalog: entry.catalog || "custom" } : { code, catalog });
+    config.teachingStandards = list;
+    persistConfig();
+  }
+
+  function removeTeachingStandard(code, catalog = null) {
+    config.teachingStandards = getTeachingStandardsRaw().filter((s) => {
+      if (s.code !== code) return true;
+      if (catalog) return s.catalog !== catalog;
+      return false;
+    });
+    persistConfig();
+  }
+
+  function renderTeachingStandardsMarkup(resolved = getResolvedTeachingStandards(), { compact = false } = {}) {
+    if (!resolved.length) return "";
+    const chips = resolved.map((s) => `
+      <span class="wf-standards-chip${compact ? " wf-standards-chip--compact" : ""}" title="${escapeHtml(s.benchmark || s.shortTitle)}">
+        ${s.catalogLabel && s.catalogLabel !== "Custom" ? `<span class="wf-standards-chip__framework">${escapeHtml(s.catalogLabel)}</span>` : ""}
+        <span class="wf-standards-chip__code">${escapeHtml(s.code)}</span>
+        <span class="wf-standards-chip__title">${escapeHtml(s.shortTitle || s.code)}</span>
+      </span>`).join("");
+    return `<div class="wf-standards-bar${compact ? " wf-standards-bar--compact" : ""}" role="note" aria-label="Teaching standards">
+      <p class="wf-standards-bar__label">Standards addressed</p>
+      <div class="wf-standards-bar__chips">${chips}</div>
+    </div>`;
+  }
+
+  function renderTeachingStandardsPanels() {
+    const welcomeBar = document.getElementById("teachingStandardsWelcome");
+    const writingBar = document.getElementById("teachingStandardsWriting");
+    const resolved = getResolvedTeachingStandards();
+    const html = renderTeachingStandardsMarkup(resolved);
+    const writingHtml = renderTeachingStandardsMarkup(resolved, { compact: true });
+    if (welcomeBar) {
+      welcomeBar.innerHTML = html;
+      welcomeBar.classList.toggle("dw-hidden", !resolved.length);
+    }
+    if (writingBar) {
+      writingBar.innerHTML = writingHtml;
+      writingBar.classList.toggle("dw-hidden", !resolved.length);
+    }
+  }
+
+  function renderStandardsAlignmentHtml(alignment = {}) {
+    const items = alignment.all || [];
+    if (!items.length) return "";
+    const rows = items.map((item) => `
+      <div class="wf-standards-align wf-standards-align--${item.level}">
+        <div class="wf-standards-align__head">
+          <strong>${escapeHtml(item.code)}</strong>
+          <span class="wf-standards-align__badge">${escapeHtml(item.levelLabel)}</span>
+          <span class="wf-standards-align__score">${item.score}/100</span>
+        </div>
+        <p class="wf-standards-align__title">${escapeHtml(item.shortTitle || "")}</p>
+        ${item.evidence?.length ? `<ul class="wf-standards-align__evidence">${item.evidence.map((e) => `<li>${escapeHtml(e)}</li>`).join("")}</ul>` : ""}
+        ${item.keywordHits?.length ? `<p class="dw-muted dw-tiny">Signals: ${escapeHtml(item.keywordHits.join(", "))}</p>` : ""}
+        <p class="dw-muted dw-tiny">${escapeHtml(item.recommendation || "")}</p>
+      </div>`).join("");
+    return `<div class="wf-standards-align-panel"><h4 class="dw-h4">Standards alignment</h4>${rows}</div>`;
   }
 
   function highlightVocabHtml(text, vocabWords = getVocabWords()) {
@@ -610,6 +696,8 @@
 
     const heroWrap = document.getElementById("heroImageWrap");
     if (heroWrap) renderHeroImage(heroWrap, config);
+
+    renderTeachingStandardsPanels();
 
     const liveStatsBar = document.getElementById("liveStatsBar");
     if (liveStatsBar) liveStatsBar.classList.toggle("dw-hidden", !config.showLiveStats);
@@ -1909,6 +1997,7 @@
     const panel = document.getElementById("teacherSubmissionDetail");
     const meta = document.getElementById("teacherDetailMeta");
     const vocabSummary = document.getElementById("teacherVocabSummary");
+    const standardsSummary = document.getElementById("teacherStandardsSummary");
     const preview = document.getElementById("teacherStoryPreview");
     if (!panel || !preview) return;
 
@@ -1928,6 +2017,17 @@
       } else {
         vocabSummary.classList.add("dw-hidden");
         vocabSummary.innerHTML = "";
+      }
+    }
+
+    if (standardsSummary) {
+      const alignment = sub.analysis?.teachingStandards;
+      if (alignment?.all?.length) {
+        standardsSummary.classList.remove("dw-hidden");
+        standardsSummary.innerHTML = renderStandardsAlignmentHtml(alignment);
+      } else {
+        standardsSummary.classList.add("dw-hidden");
+        standardsSummary.innerHTML = "";
       }
     }
 
@@ -2015,6 +2115,8 @@
     if (rubrics.includes("mechanics")) header.push("Mechanics");
     if (rubrics.includes("story")) header.push("Story");
     header.push("Overall", "Submitted");
+    const attachedCodes = getResolvedTeachingStandards().map((s) => s.code);
+    if (attachedCodes.length) header.push(...attachedCodes.map((c) => `Std ${c}`));
     const rows = [header];
     for (const s of subs) {
       const row = [s.name, s.classroom, s.analysis?.wordCount];
@@ -2024,6 +2126,13 @@
       if (rubrics.includes("mechanics")) row.push(s.analysis?.scores?.mechanics);
       if (rubrics.includes("story")) row.push(s.analysis?.scores?.story);
       row.push(s.analysis?.scores?.overall, new Date(s.submittedAt).toISOString());
+      if (attachedCodes.length) {
+        const byCode = Object.fromEntries((s.analysis?.teachingStandards?.all || []).map((r) => [r.code, r]));
+        for (const code of attachedCodes) {
+          const match = byCode[code];
+          row.push(match ? `${match.levelLabel} (${match.score})` : "—");
+        }
+      }
       rows.push(row);
     }
     const csv = rows.map((r) => r.map((c) => `"${String(c ?? "").replace(/"/g, '""')}"`).join(",")).join("\n");
@@ -2526,6 +2635,71 @@
         config.shared = e.target.checked;
         persistConfig();
       });
+    } else if (builderSection === "standards") {
+      const ItemStd = window.WriteFlowItemStandards;
+      const catalogId = ItemStd?.CATALOG_IDS?.item || "item";
+      const mnElaId = ItemStd?.CATALOG_IDS?.mn_ela || "mn_ela";
+      const defaultCatalog = catalogId;
+      const strands = ItemStd?.getStrands?.(defaultCatalog) || [];
+      const grades = ItemStd?.getGrades?.(defaultCatalog) || [8];
+      const attached = getTeachingStandardsRaw();
+      const selectedHtml = attached.length
+        ? attached.map((entry) => {
+            const resolved = ItemStd?.normalizeAttached?.(entry) || entry;
+            return `
+              <div class="wf-standards-selected" data-code="${escapeHtml(entry.code)}" data-catalog="${escapeHtml(entry.catalog || "")}">
+                <div class="wf-standards-selected__head">
+                  <strong>${escapeHtml(resolved.catalogLabel ? `${resolved.catalogLabel} · ${resolved.code}` : resolved.code)}</strong>
+                  <button type="button" class="dw-btn dw-btn-ghost dw-btn--compact wf-standards-remove" data-code="${escapeHtml(entry.code)}" data-catalog="${escapeHtml(entry.catalog || "")}">Remove</button>
+                </div>
+                <p class="dw-muted dw-tiny">${escapeHtml(resolved.shortTitle || "")}</p>
+                ${resolved.benchmark ? `<p class="wf-standards-selected__bench">${escapeHtml(resolved.benchmark)}</p>` : ""}
+              </div>`;
+          }).join("")
+        : `<p class="dw-muted">No standards attached yet. Search a catalog below or add a custom standard.</p>`;
+      const strandOptions = strands.map((s) => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join("");
+      const gradeOptions = grades.map((g) => `<option value="${g}">Grade ${g}</option>`).join("");
+      canvas.innerHTML = `
+        ${builderSectionHeader("standards")}
+        <p class="dw-muted">Attach ITEM 2025 (technology) or MN ELA (grades 5–8) benchmarks. Students see standards at the top of the assignment; Results analyze writing for textual evidence.</p>
+        <div class="wf-inspector-group">
+          <div class="wf-inspector-group__label">Attached standards (${attached.length})</div>
+          <div class="wf-standards-selected-list" id="bfStandardsSelected">${selectedHtml}</div>
+        </div>
+        <div class="wf-standards-filters">
+          <label class="dw-field">
+            <span class="dw-label">Standards catalog</span>
+            <select id="bfStandardsCatalog" class="dw-input dw-select">
+              <option value="${escapeHtml(catalogId)}">ITEM 2025 (technology, grade 8)</option>
+              <option value="${escapeHtml(mnElaId)}">MN ELA (grades 5–8)</option>
+            </select>
+          </label>
+          <label class="dw-field">
+            <span class="dw-label">Grade</span>
+            <select id="bfStandardsGrade" class="dw-input dw-select">${gradeOptions}</select>
+          </label>
+          <label class="dw-field">
+            <span class="dw-label">Search catalog</span>
+            <input id="bfStandardsSearch" class="dw-input" type="search" placeholder="Code, keyword, or benchmark text…" />
+          </label>
+          <label class="dw-field">
+            <span class="dw-label">Strand</span>
+            <select id="bfStandardsStrand" class="dw-input dw-select">
+              <option value="">All strands</option>
+              ${strandOptions}
+            </select>
+          </label>
+        </div>
+        <div class="wf-standards-catalog" id="bfStandardsCatalogList" role="list"></div>
+        <div class="wf-inspector-group">
+          <div class="wf-inspector-group__label">Custom standard</div>
+          <p class="dw-muted dw-tiny">Type your own code and benchmark for district or specialty standards.</p>
+          <label class="dw-field"><span class="dw-label">Code</span><input id="bfCustomStdCode" class="dw-input" placeholder="e.g. MN ELA 8.2.1.1" /></label>
+          <label class="dw-field"><span class="dw-label">Short title</span><input id="bfCustomStdTitle" class="dw-input" placeholder="Brief label shown to students" /></label>
+          <label class="dw-field"><span class="dw-label">Benchmark</span><textarea id="bfCustomStdBench" class="dw-textarea" rows="3" placeholder="What students should demonstrate in their writing"></textarea></label>
+          <button id="bfCustomStdAdd" class="dw-btn dw-btn-secondary" type="button">Add custom standard</button>
+        </div>`;
+      bindStandardsBuilder();
     } else if (builderSection === "timer") {
       const currentMode = config.assignmentMode || "composition";
       const timerStyle = resolveTimerStyle();
@@ -2812,6 +2986,7 @@
         <p class="dw-muted">This is how students will see the welcome screen.</p>
         <div class="wf-preview-frame dw-card wf-student-prompt-box" id="wfPreviewFrame">
           <div class="wf-student-hero dw-hidden" id="wfPreviewHero"></div>
+          <div id="wfPreviewStandards">${renderTeachingStandardsMarkup(getResolvedTeachingStandards())}</div>
           <h1 class="dw-h1">${escapeHtml(config.welcomeTitle || config.title)}</h1>
           ${config.welcomeLead ? `<p class="dw-lead">${escapeHtml(config.welcomeLead)}</p>` : ""}
           <blockquote class="dw-prompt-quote">${escapeHtml(config.prompt)}</blockquote>
@@ -2831,6 +3006,98 @@
       persistConfig();
       renderInspector();
     });
+  }
+
+  function renderStandardsCatalog() {
+    const catalogEl = document.getElementById("bfStandardsCatalogList");
+    const ItemStd = window.WriteFlowItemStandards;
+    if (!catalogEl || !ItemStd) return;
+    const query = document.getElementById("bfStandardsSearch")?.value || "";
+    const strand = document.getElementById("bfStandardsStrand")?.value || "";
+    const catalogId = document.getElementById("bfStandardsCatalog")?.value || ItemStd.CATALOG_IDS?.item || "item";
+    const grade = Number(document.getElementById("bfStandardsGrade")?.value) || null;
+    const results = ItemStd.searchCatalog(query, grade, strand, catalogId).slice(0, 40);
+    const catalogLabel = ItemStd.getCatalogLabel?.(catalogId) || catalogId;
+    if (!results.length) {
+      catalogEl.innerHTML = `<p class="dw-muted">No ${escapeHtml(catalogLabel)} standards match your search.</p>`;
+      return;
+    }
+    catalogEl.innerHTML = results.map((s) => {
+      const attached = isStandardAttached(s.code, s.catalog);
+      return `
+        <div class="wf-standards-catalog-item" role="listitem">
+          <div class="wf-standards-catalog-item__head">
+            <strong>${escapeHtml(s.code)}</strong>
+            <span class="dw-muted dw-tiny">${escapeHtml(catalogLabel)} · Grade ${s.grade} · ${escapeHtml(s.strand)}</span>
+          </div>
+          <p class="wf-standards-catalog-item__title">${escapeHtml(s.shortTitle)}</p>
+          <p class="dw-muted dw-tiny wf-standards-catalog-item__bench">${escapeHtml(s.benchmark)}</p>
+          ${s.connections ? `<p class="dw-muted dw-tiny">Connections: ${escapeHtml(s.connections)}</p>` : ""}
+          <button type="button" class="dw-btn dw-btn-secondary dw-btn--compact wf-standards-add" data-code="${escapeHtml(s.code)}" data-catalog="${escapeHtml(s.catalog)}" ${attached ? "disabled" : ""}>
+            ${attached ? "Attached" : "Attach"}
+          </button>
+        </div>`;
+    }).join("");
+    catalogEl.querySelectorAll(".wf-standards-add").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        addTeachingStandard({ code: btn.dataset.code, catalog: btn.dataset.catalog });
+        renderBuilder();
+      });
+    });
+  }
+
+  function refreshStandardsGradeOptions(catalogId) {
+    const ItemStd = window.WriteFlowItemStandards;
+    const gradeSel = document.getElementById("bfStandardsGrade");
+    const strandSel = document.getElementById("bfStandardsStrand");
+    if (!ItemStd || !gradeSel) return;
+    const grades = ItemStd.getGrades?.(catalogId) || [8];
+    const prev = Number(gradeSel.value);
+    gradeSel.innerHTML = grades.map((g) => `<option value="${g}"${prev === g ? " selected" : ""}>Grade ${g}</option>`).join("");
+    if (!grades.includes(prev)) gradeSel.value = String(grades[grades.length - 1] || 8);
+    if (strandSel) {
+      const strands = ItemStd.getStrands?.(catalogId) || [];
+      const prevStrand = strandSel.value;
+      strandSel.innerHTML = `<option value="">All strands</option>${strands.map((s) => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join("")}`;
+      if (strands.includes(prevStrand)) strandSel.value = prevStrand;
+    }
+  }
+
+  function bindStandardsBuilder() {
+    document.querySelectorAll(".wf-standards-remove").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        removeTeachingStandard(btn.dataset.code, btn.dataset.catalog || null);
+        renderBuilder();
+      });
+    });
+    document.getElementById("bfStandardsCatalog")?.addEventListener("change", (e) => {
+      refreshStandardsGradeOptions(e.target.value);
+      renderStandardsCatalog();
+    });
+    document.getElementById("bfStandardsGrade")?.addEventListener("change", () => renderStandardsCatalog());
+    document.getElementById("bfStandardsSearch")?.addEventListener("input", () => renderStandardsCatalog());
+    document.getElementById("bfStandardsStrand")?.addEventListener("change", () => renderStandardsCatalog());
+    document.getElementById("bfCustomStdAdd")?.addEventListener("click", () => {
+      const code = document.getElementById("bfCustomStdCode")?.value?.trim() || "";
+      const title = document.getElementById("bfCustomStdTitle")?.value?.trim() || "";
+      const benchmark = document.getElementById("bfCustomStdBench")?.value?.trim() || "";
+      if (!code || !benchmark) {
+        showSaveStatus("Custom standards need a code and benchmark description.", false);
+        return;
+      }
+      addTeachingStandard({
+        code,
+        custom: true,
+        shortTitle: title || window.WriteFlowItemStandards?.shortTitleFromBenchmark?.(benchmark) || code,
+        benchmark,
+        strand: "Custom",
+      });
+      document.getElementById("bfCustomStdCode").value = "";
+      document.getElementById("bfCustomStdTitle").value = "";
+      document.getElementById("bfCustomStdBench").value = "";
+      renderBuilder();
+    });
+    renderStandardsCatalog();
   }
 
   function renderInspector() {
@@ -2858,6 +3125,7 @@
           <div class="wf-file-meta__row"><dt>Mode</dt><dd>${escapeHtml(modeLabel)}</dd></div>
           <div class="wf-file-meta__row"><dt>Timer</dt><dd>${escapeHtml(timerLabel)} · ${mins} min</dd></div>
           <div class="wf-file-meta__row"><dt>Scoring</dt><dd>${escapeHtml(rubrics)}</dd></div>
+          <div class="wf-file-meta__row"><dt>Standards</dt><dd>${getResolvedTeachingStandards().length} attached</dd></div>
           <div class="wf-file-meta__row"><dt>Paste</dt><dd>${config.allowPaste ? "Allowed" : "Blocked"}</dd></div>
           <div class="wf-file-meta__row"><dt>Live WPM</dt><dd>${config.showLiveWpm ? "Shown" : "Hidden"}</dd></div>
         </dl>
@@ -2963,6 +3231,7 @@
       config.spellcheck = config.accessibility.spellcheck !== false;
     }
     config.accessibility.spellcheck = config.spellcheck;
+    if (!Array.isArray(config.teachingStandards)) config.teachingStandards = [];
     Core.saveConfig(STORAGE_PREFIX, config.id, config);
     const ids = getAssignmentsList();
     if (!ids.includes(config.id)) ids.push(config.id);

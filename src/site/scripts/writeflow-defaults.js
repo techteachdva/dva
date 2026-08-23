@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.4.0";
+  const APP_VERSION = "2.6.0";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -119,6 +119,28 @@
   ];
 
   const CHANGELOG = [
+    {
+      version: "2.6.0",
+      date: "2026-08-23",
+      summary: "MN ELA standards catalog (grades 5–8) alongside ITEM 2025.",
+      items: [
+        "Standards builder now offers two catalogs: ITEM 2025 (technology) and MN ELA (grades 5–8).",
+        "Filter by grade and strand; 166 MN ELA benchmarks with full benchmark text from state standards.",
+        "Catalog-aware attachment prevents collisions between ITEM and ELA codes that share the same number.",
+        "Student chips and Results alignment show which framework each standard comes from.",
+      ],
+    },
+    {
+      version: "2.5.0",
+      date: "2026-08-23",
+      summary: "Teaching Standards — attach ITEM 2025 benchmarks to assignments.",
+      items: [
+        "New Standards section in the builder — browse, search, and attach ITEM 2025 grade 8 benchmarks (6–8 band).",
+        "Add custom standards by typing a code and benchmark description.",
+        "Standards appear at the top of the student assignment welcome and writing views.",
+        "Submissions analyze writing for textual evidence aligned to attached standards in Results.",
+      ],
+    },
     {
       version: "2.4.0",
       date: "2026-08-23",
@@ -501,11 +523,13 @@
       { id: "mechanics", icon: "✏️", title: "Mechanics", desc: "Spelling, capitalization, punctuation, and sentence structure." },
       { id: "story", icon: "📖", title: "Content", desc: "Voice, details, word choice, and organization." },
     ],
+    teachingStandards: [],
   };
 
   const BUILDER_SECTIONS = [
     { id: "templates", label: "Templates", icon: "📋", hint: "Start from a guided template — modes set scoring and timer defaults" },
     { id: "content", label: "Content", icon: "📝", hint: "Prompt, sentence starters, and welcome message — clarity lowers anxiety" },
+    { id: "standards", label: "Standards", icon: "🎯", hint: "ITEM 2025 technology standards or MN ELA grades 5–8" },
     { id: "timer", label: "Timer & rules", icon: "⏱️", hint: "Soft timers support composition; hard timers suit fluency drills" },
     { id: "appearance", label: "Appearance", icon: "🎨", hint: "Colors, fonts, and optional header image" },
     { id: "accessibility", label: "Accessibility", icon: "♿", hint: "Presets and options — match timer and word goals to each learner" },
@@ -937,6 +961,11 @@
         title: "Content — prompts & vocabulary",
         body: "Set the assignment title, welcome message, writing prompt, and optional sentence starters. Add expected vocabulary — highlighted in Results when students use them.",
         section: "content",
+      },
+      {
+        title: "Teaching Standards",
+        body: "Choose ITEM 2025 (technology) or MN ELA (grades 5–8). Filter by grade and strand, attach benchmarks, or add custom standards. Students see them at the top; Results analyze evidence in their writing.",
+        section: "standards",
       },
       {
         title: "Assignment teacher password",

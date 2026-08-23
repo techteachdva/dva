@@ -183,6 +183,12 @@
       vocabulary: vocabulary.score,
     };
     const standards = window.DWStandards ? window.DWStandards.mapToStandards(metricScores) : { all: [], excelling: [], developing: [], needsSupport: [] };
+    const teachingStandards = window.WriteFlowItemStandards?.analyzeAttachedStandards?.(
+      text,
+      options.teachingStandards || [],
+      metricScores,
+      { wordCount, wpm, durationSec }
+    ) || { attached: [], all: [], demonstrated: [], developing: [], notEvident: [] };
 
     return {
       wordCount,
@@ -193,6 +199,7 @@
       scores: { typing: typingScore, mechanics: mechanicsScore, story: storyScore, overall: overallScore, vocabulary: vocabulary.score },
       metricScores,
       standards,
+      teachingStandards,
       feedback: buildFeedback(wordCount, wpm, typingLevel, spelling, grammar, storyScore, voiceCount, sensoryCount, vocabulary, {
         assignmentMode: options.assignmentMode,
         rubrics: options.rubrics,

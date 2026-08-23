@@ -255,6 +255,7 @@ layout: false
             <h3 class="dw-h3">Submission detail</h3>
             <p class="dw-muted" id="teacherDetailMeta"></p>
             <div id="teacherVocabSummary" class="wf-vocab-summary dw-hidden"></div>
+            <div id="teacherStandardsSummary" class="wf-standards-summary dw-hidden"></div>
             <div class="dw-story-preview wf-story-preview--highlight" id="teacherStoryPreview"></div>
           </div>
         </section>
@@ -266,6 +267,8 @@ layout: false
     <script id="wfClassroomCodesJson" type="application/json">{{ diagnosticWritingClassCodes | jsonify | safe }}</script>
     <script src="/scripts/write-test-core.js" defer></script>
     <script src="/scripts/writeflow-defaults.js" defer></script>
+    <script src="/scripts/writeflow-mn-ela-standards-data.js" defer></script>
+    <script src="/scripts/writeflow-item-standards.js" defer></script>
     <script src="/scripts/writeflow-teacher.js" defer></script>
     <script src="/scripts/writeflow-hero-crop.js" defer></script>
     <script src="/scripts/writeflow-intro.js" defer></script>
