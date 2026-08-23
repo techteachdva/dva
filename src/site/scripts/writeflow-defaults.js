@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.3.18";
+  const APP_VERSION = "2.3.19";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -119,6 +119,15 @@
   ];
 
   const CHANGELOG = [
+    {
+      version: "2.3.19",
+      date: "2026-08-23",
+      summary: "Fix alphabet boot loader stalling at W before completing A–Z.",
+      items: [
+        "Progress now maps evenly across all 26 letters like a true progress bar.",
+        "Loader advances smoothly during init milestones, then fills to Z before dismiss.",
+      ],
+    },
     {
       version: "2.3.18",
       date: "2026-08-23",

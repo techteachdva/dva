@@ -792,9 +792,8 @@
     const total = letters.length;
     if (!total) return;
     const clamped = Math.max(0, Math.min(1, ratio));
-    const filled = Math.min(total, Math.ceil(clamped * total - 1e-6));
     letters.forEach((el, i) => {
-      el.classList.toggle("wf-boot-loader__letter--on", i < filled);
+      el.classList.toggle("wf-boot-loader__letter--on", clamped * total > i);
     });
   }
 
@@ -2992,21 +2991,29 @@
     showHomeView();
   }
 
-  async function initStudioApp() {
+  async function initStudioApp(onBootMilestone) {
+    const bump = (value) => onBootMilestone?.(value);
+    bump(0.12);
     bindTopbarActions();
     bindAccountEvents();
     bindHomeEvents();
     bindTeacherEvents();
+    bump(0.22);
     if (Teacher()) {
       await Teacher().validate();
+      bump(0.38);
       updateAccountButton();
       await refreshCloudAssignments();
+      bump(0.68);
       await refreshSharedLibrary();
+      bump(0.88);
     }
     initTutorial();
+    bump(0.94);
     if (isBuilderMode()) void initBuilder();
     else if (params.get("teacher") === "1" && params.get("id")) void initTeacherPortal();
     else initHome();
+    bump(0.97);
   }
 
   async function bootStudioApp() {
@@ -3019,25 +3026,52 @@
     initBootLoader();
     showBootLoader(true);
     setBootProgress(0);
+
     const bootStart = performance.now();
-    const minBootMs = 700;
-    let bootDone = false;
-    const progressTimer = setInterval(() => {
-      if (bootDone) return;
+    const minBootMs = 650;
+    const holdFullMs = 300;
+    let displayed = 0;
+    let loadTarget = 0.04;
+    let initComplete = false;
+    let bootFinished = false;
+    let rafId = 0;
+
+    const runFrame = () => {
+      if (bootFinished) return;
       const elapsed = performance.now() - bootStart;
-      const ratio = Math.min(0.88, elapsed / 1800);
-      setBootProgress(ratio);
-    }, 40);
+      const timeCreep = 0.96 * (1 - Math.exp(-elapsed / 1500));
+      let target;
+      if (initComplete) {
+        target = 1;
+      } else {
+        target = Math.min(0.96, Math.max(loadTarget, timeCreep));
+      }
+      const ease = initComplete ? 0.28 : 0.14;
+      displayed += (target - displayed) * ease;
+      if (initComplete && displayed > 0.995) displayed = 1;
+      setBootProgress(displayed);
+      rafId = requestAnimationFrame(runFrame);
+    };
+
+    rafId = requestAnimationFrame(runFrame);
 
     try {
-      await initStudioApp();
+      await initStudioApp((value) => {
+        loadTarget = Math.max(loadTarget, value);
+      });
     } finally {
-      bootDone = true;
-      clearInterval(progressTimer);
+      initComplete = true;
       const elapsed = performance.now() - bootStart;
-      if (elapsed < minBootMs) await new Promise((r) => setTimeout(r, minBootMs - elapsed));
+      if (elapsed < minBootMs) {
+        await new Promise((resolve) => setTimeout(resolve, minBootMs - elapsed));
+      }
+      while (displayed < 0.999) {
+        await new Promise((resolve) => setTimeout(resolve, 16));
+      }
       setBootProgress(1);
-      await new Promise((r) => setTimeout(r, 320));
+      bootFinished = true;
+      cancelAnimationFrame(rafId);
+      await new Promise((resolve) => setTimeout(resolve, holdFullMs));
       showBootLoader(false);
     }
   }
