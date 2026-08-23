@@ -554,7 +554,10 @@
 
   function setBootProgress(ratio) {
     const letters = document.querySelectorAll("#wfBootAlphabet .wf-boot-loader__letter");
-    const filled = Math.round(Math.max(0, Math.min(1, ratio)) * letters.length);
+    const total = letters.length;
+    if (!total) return;
+    const clamped = Math.max(0, Math.min(1, ratio));
+    const filled = Math.min(total, Math.ceil(clamped * total - 1e-6));
     letters.forEach((el, i) => {
       el.classList.toggle("wf-boot-loader__letter--on", i < filled);
     });
@@ -2594,7 +2597,8 @@
     let bootDone = false;
     const progressTimer = setInterval(() => {
       if (bootDone) return;
-      const ratio = Math.min(0.9, (performance.now() - bootStart) / 1600);
+      const elapsed = performance.now() - bootStart;
+      const ratio = Math.min(0.88, elapsed / 1800);
       setBootProgress(ratio);
     }, 40);
 
@@ -2606,7 +2610,7 @@
       const elapsed = performance.now() - bootStart;
       if (elapsed < minBootMs) await new Promise((r) => setTimeout(r, minBootMs - elapsed));
       setBootProgress(1);
-      await new Promise((r) => setTimeout(r, 150));
+      await new Promise((r) => setTimeout(r, 320));
       showBootLoader(false);
     }
   }

@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.3.6";
+  const APP_VERSION = "2.3.7";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -119,6 +119,16 @@
   ];
 
   const CHANGELOG = [
+    {
+      version: "2.3.7",
+      date: "2026-08-22",
+      summary: "Fix alphabet boot loader stopping at W.",
+      items: [
+        "Boot progress now completes A through Z — the 0.9 cap was lighting only 23 of 26 letters.",
+        "Letter track uses a 26-column grid so X, Y, and Z stay visible on one row.",
+        "Full alphabet lights for 320ms before the loader dismisses.",
+      ],
+    },
     {
       version: "2.3.6",
       date: "2026-08-22",

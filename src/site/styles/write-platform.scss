@@ -4300,21 +4300,21 @@ mark.wf-vocab-hit {
 }
 
 .wf-boot-loader__track {
-  display: flex;
-  flex-wrap: nowrap;
-  justify-content: center;
-  gap: 3px;
-  max-width: min(96vw, 780px);
-  overflow: hidden;
+  display: grid;
+  grid-template-columns: repeat(26, minmax(0, 1fr));
+  width: min(96vw, 720px);
+  gap: 2px;
+  overflow: visible;
 }
 
 .wf-boot-loader__letter {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.15rem;
-  height: 1.3rem;
-  font-size: clamp(0.58rem, 1.45vw, 0.68rem);
+  width: 100%;
+  min-width: 0;
+  height: 1.35rem;
+  font-size: clamp(0.5rem, 2.1vw, 0.68rem);
   font-weight: 700;
   font-family: ui-monospace, "Cascadia Code", monospace;
   color: rgba(148, 163, 184, 0.35);
