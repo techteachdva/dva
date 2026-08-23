@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.6.2";
+  const APP_VERSION = "2.6.3";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -119,6 +119,16 @@
   ];
 
   const CHANGELOG = [
+    {
+      version: "2.6.3",
+      date: "2026-08-23",
+      summary: "Hotfix: standards catalog loads again in the builder.",
+      items: [
+        "Fixed a script initialization order bug that prevented WriteFlowItemStandards from loading (empty catalog, grade filter stuck).",
+        "Standards builder keeps catalog, grade, and search filters when you attach standards.",
+        "Catalog list shows a count and clearer empty-state message when filters match nothing.",
+      ],
+    },
     {
       version: "2.6.2",
       date: "2026-08-23",
@@ -1014,7 +1024,7 @@
         title: "Standards — attach benchmarks",
         body: "Browse ITEM 2025 (technology, grade 8) or MN ELA (grades 5–8). Filter by grade and strand, search benchmark text, attach standards, or add custom entries. Attached standards appear as chips for students.",
         section: "standards",
-        highlight: "#bfStandardsCatalog",
+        highlight: "#bfStandardsCatalogList",
       },
       {
         title: "Standards — what Results show",

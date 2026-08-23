@@ -222,6 +222,87 @@
     return SIGNAL_PRESETS.generic;
   }
 
+  const BENCHMARK_STOP = new Set([
+    "about", "after", "again", "also", "another", "any", "are", "because", "been", "before",
+    "being", "between", "both", "but", "can", "could", "during", "each", "from", "have", "having",
+    "including", "into", "just", "like", "more", "most", "not", "only", "other", "over", "same",
+    "should", "some", "such", "than", "that", "their", "them", "these", "they", "this", "those",
+    "through", "under", "using", "very", "were", "what", "when", "where", "which", "while", "will",
+    "with", "would", "your", "write", "writing", "students", "student", "text", "texts",
+  ]);
+
+  function extractBenchmarkTerms(text = "") {
+    const words = String(text).toLowerCase().replace(/[^a-z0-9\s'-]/g, " ").split(/\s+/);
+    const terms = [];
+    for (const w of words) {
+      const clean = w.replace(/'/g, "");
+      if (clean.length >= 5 && !BENCHMARK_STOP.has(clean)) terms.push(clean);
+    }
+    return [...new Set(terms)].slice(0, 14);
+  }
+
+  function inferStructurePatterns(code = "", catalog = "") {
+    const parts = String(code).split(".");
+    const major = parts[1];
+    const minor = parts[2];
+    const patterns = [];
+    const add = (label, re) => patterns.push({ label, re });
+
+    if (major === "2" && minor === "4") {
+      add("Claim or opinion", /\b(i think|i believe|in my opinion|claim|argue|should|must|we should|my opinion)\b/gi);
+      add("Reasoning", /\b(because|since|therefore|so that|as a result|reason|however|although)\b/gi);
+      add("Support", /\b(for example|for instance|evidence|according to|such as|shows that|proves)\b/gi);
+    }
+    if (major === "2" && (minor === "7" || minor === "8")) {
+      add("Questions", /\?/g);
+      add("Inquiry", /\b(wonder|question|research|investigate|inquiry|explore|narrow|broaden)\b/gi);
+      add("Sources", /\b(source|cite|citation|quote|paraphrase|summarize|plagiarism|reference)\b/gi);
+    }
+    if (major === "2" && minor === "5") {
+      add("Explain", /\b(explain|describe|define|means|clarify|inform|detail)\b/gi);
+      add("Organization", /\b(first|second|third|next|finally|another|additionally|overall)\b/gi);
+    }
+    if (major === "2" && minor === "6") {
+      add("Voice", /\b(i |my |we |our |felt|thought|voice|myself)\b/gi);
+      add("Sensory detail", /\b(saw|heard|felt|smelled|bright|loud|quiet|warm|cold|scary|beautiful|exciting)\b/gi);
+      add("Dialogue/craft", /\b(dialogue|character|plot|stanza|scene|figurative|metaphor|simile)\b/gi);
+    }
+    if (major === "2" && minor === "1") {
+      add("Conventions", /[.!?]|,/g);
+      add("Sentence craft", /\b(sentence|capital|punctuation|grammar|spelling|clause|phrase)\b/gi);
+    }
+    if (major === "2" && minor === "2") {
+      add("Reflection", /\b(i |my |reflect|learned|realized|identity|experience|feel|grown|changed)\b/gi);
+    }
+    if (major === "1" && minor === "4") {
+      add("Text evidence", /["'“”]|\b(quote|states|shows|according to|the text says|cite)\b/gi);
+      add("Theme/idea", /\b(theme|central idea|main idea|message|develops|convey|inference)\b/gi);
+    }
+    if (major === "1" && (minor === "6" || minor === "7")) {
+      add("Perspective", /\b(author|perspective|viewpoint|compare|contrast|bias|fact|fiction|opinion)\b/gi);
+    }
+    if (major === "1" && minor === "9") {
+      add("Source evaluation", /\b(credible|credibility|reliable|bias|perspective|relevant|valid|verify|source)\b/gi);
+    }
+    if (major === "3") {
+      add("Discussion", /\b(discuss|collaborate|listen|feedback|respond|exchange|peer|audience|present)\b/gi);
+    }
+    if (major === "1" && minor === "1") {
+      add("Inquiry/topic", /\b(topic|question|research|focus|background|prior knowledge|subtopic)\b/gi);
+    }
+    if (catalog === CATALOG_IDS.item && major === "2") {
+      add("Digital citizenship", /\b(digital|online|privacy|copyright|plagiarism|footprint|cyber|respect|ethical|intelligence|media)\b/gi);
+    }
+    return patterns;
+  }
+
+  function mergeSignalWithBenchmark(baseSignal, benchmark = "", code = "", catalog = "") {
+    const terms = extractBenchmarkTerms(benchmark);
+    const keywords = [...new Set([...(baseSignal.keywords || []), ...terms])];
+    const patterns = inferStructurePatterns(code, catalog);
+    return { ...baseSignal, keywords, patterns };
+  }
+
   function enrichElaStandard(raw) {
     const base = elaSignalFor(raw.code);
     const signal = mergeSignalWithBenchmark(base, raw.benchmark, raw.code, CATALOG_IDS.mn_ela);
@@ -729,87 +810,6 @@
     return (list || []).map(normalizeAttached).filter(Boolean);
   }
 
-  const BENCHMARK_STOP = new Set([
-    "about", "after", "again", "also", "another", "any", "are", "because", "been", "before",
-    "being", "between", "both", "but", "can", "could", "during", "each", "from", "have", "having",
-    "including", "into", "just", "like", "more", "most", "not", "only", "other", "over", "same",
-    "should", "some", "such", "than", "that", "their", "them", "these", "they", "this", "those",
-    "through", "under", "using", "very", "were", "what", "when", "where", "which", "while", "will",
-    "with", "would", "your", "write", "writing", "students", "student", "text", "texts",
-  ]);
-
-  function extractBenchmarkTerms(text = "") {
-    const words = String(text).toLowerCase().replace(/[^a-z0-9\s'-]/g, " ").split(/\s+/);
-    const terms = [];
-    for (const w of words) {
-      const clean = w.replace(/'/g, "");
-      if (clean.length >= 5 && !BENCHMARK_STOP.has(clean)) terms.push(clean);
-    }
-    return [...new Set(terms)].slice(0, 14);
-  }
-
-  function inferStructurePatterns(code = "", catalog = "") {
-    const parts = String(code).split(".");
-    const major = parts[1];
-    const minor = parts[2];
-    const patterns = [];
-    const add = (label, re) => patterns.push({ label, re });
-
-    if (major === "2" && minor === "4") {
-      add("Claim or opinion", /\b(i think|i believe|in my opinion|claim|argue|should|must|we should|my opinion)\b/gi);
-      add("Reasoning", /\b(because|since|therefore|so that|as a result|reason|however|although)\b/gi);
-      add("Support", /\b(for example|for instance|evidence|according to|such as|shows that|proves)\b/gi);
-    }
-    if (major === "2" && (minor === "7" || minor === "8")) {
-      add("Questions", /\?/g);
-      add("Inquiry", /\b(wonder|question|research|investigate|inquiry|explore|narrow|broaden)\b/gi);
-      add("Sources", /\b(source|cite|citation|quote|paraphrase|summarize|plagiarism|reference)\b/gi);
-    }
-    if (major === "2" && minor === "5") {
-      add("Explain", /\b(explain|describe|define|means|clarify|inform|detail)\b/gi);
-      add("Organization", /\b(first|second|third|next|finally|another|additionally|overall)\b/gi);
-    }
-    if (major === "2" && minor === "6") {
-      add("Voice", /\b(i |my |we |our |felt|thought|voice|myself)\b/gi);
-      add("Sensory detail", /\b(saw|heard|felt|smelled|bright|loud|quiet|warm|cold|scary|beautiful|exciting)\b/gi);
-      add("Dialogue/craft", /\b(dialogue|character|plot|stanza|scene|figurative|metaphor|simile)\b/gi);
-    }
-    if (major === "2" && minor === "1") {
-      add("Conventions", /[.!?]|,/g);
-      add("Sentence craft", /\b(sentence|capital|punctuation|grammar|spelling|clause|phrase)\b/gi);
-    }
-    if (major === "2" && minor === "2") {
-      add("Reflection", /\b(i |my |reflect|learned|realized|identity|experience|feel|grown|changed)\b/gi);
-    }
-    if (major === "1" && minor === "4") {
-      add("Text evidence", /["'“”]|\b(quote|states|shows|according to|the text says|cite)\b/gi);
-      add("Theme/idea", /\b(theme|central idea|main idea|message|develops|convey|inference)\b/gi);
-    }
-    if (major === "1" && (minor === "6" || minor === "7")) {
-      add("Perspective", /\b(author|perspective|viewpoint|compare|contrast|bias|fact|fiction|opinion)\b/gi);
-    }
-    if (major === "1" && minor === "9") {
-      add("Source evaluation", /\b(credible|credibility|reliable|bias|perspective|relevant|valid|verify|source)\b/gi);
-    }
-    if (major === "3") {
-      add("Discussion", /\b(discuss|collaborate|listen|feedback|respond|exchange|peer|audience|present)\b/gi);
-    }
-    if (major === "1" && minor === "1") {
-      add("Inquiry/topic", /\b(topic|question|research|focus|background|prior knowledge|subtopic)\b/gi);
-    }
-    if (catalog === CATALOG_IDS.item && major === "2") {
-      add("Digital citizenship", /\b(digital|online|privacy|copyright|plagiarism|footprint|cyber|respect|ethical|intelligence|media)\b/gi);
-    }
-    return patterns;
-  }
-
-  function mergeSignalWithBenchmark(baseSignal, benchmark = "", code = "", catalog = "") {
-    const terms = extractBenchmarkTerms(benchmark);
-    const keywords = [...new Set([...(baseSignal.keywords || []), ...terms])];
-    const patterns = inferStructurePatterns(code, catalog);
-    return { ...baseSignal, keywords, patterns };
-  }
-
   function parseLookFors(benchmark = "") {
     const fors = [];
     for (const line of String(benchmark).split(/\n/)) {
@@ -1038,13 +1038,19 @@
       if (grade && Number(s.grade) !== Number(grade)) return false;
       if (strand && s.strand !== strand) return false;
       if (!q) return true;
+      const code = String(s.code || "").toLowerCase();
+      const shortTitle = String(s.shortTitle || "").toLowerCase();
+      const benchmark = String(s.benchmark || "").toLowerCase();
+      const strandLabel = String(s.strand || "").toLowerCase();
+      const anchor = String(s.anchorStandard || "").toLowerCase();
+      const connections = String(s.connections || "").toLowerCase();
       return (
-        s.code.toLowerCase().includes(q)
-        || s.shortTitle.toLowerCase().includes(q)
-        || s.benchmark.toLowerCase().includes(q)
-        || s.strand.toLowerCase().includes(q)
-        || (s.anchorStandard && s.anchorStandard.toLowerCase().includes(q))
-        || (s.connections && s.connections.toLowerCase().includes(q))
+        code.includes(q)
+        || shortTitle.includes(q)
+        || benchmark.includes(q)
+        || strandLabel.includes(q)
+        || anchor.includes(q)
+        || connections.includes(q)
       );
     });
   }

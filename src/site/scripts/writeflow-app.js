@@ -2187,6 +2187,10 @@
 
   /* ── Builder ── */
   let builderSection = params.get("section") === "templates" || params.get("template") ? "templates" : "content";
+  let standardsCatalogFilter = "item";
+  let standardsGradeFilter = "";
+  let standardsStrandFilter = "";
+  let standardsSearchFilter = "";
 
   function getTemplateById(id) {
     return ASSIGNMENT_TEMPLATES.find((t) => t.id === id) || null;
@@ -2681,9 +2685,12 @@
       const ItemStd = window.WriteFlowItemStandards;
       const catalogId = ItemStd?.CATALOG_IDS?.item || "item";
       const mnElaId = ItemStd?.CATALOG_IDS?.mn_ela || "mn_ela";
-      const defaultCatalog = catalogId;
-      const strands = ItemStd?.getStrands?.(defaultCatalog) || [];
-      const grades = ItemStd?.getGrades?.(defaultCatalog) || [8];
+      const activeCatalogId = standardsCatalogFilter || catalogId;
+      const strands = ItemStd?.getStrands?.(activeCatalogId) || [];
+      const grades = ItemStd?.getGrades?.(activeCatalogId) || [8];
+      const activeGrade = standardsGradeFilter && grades.includes(Number(standardsGradeFilter))
+        ? Number(standardsGradeFilter)
+        : (grades.includes(8) ? 8 : grades[grades.length - 1]);
       const attached = getTeachingStandardsRaw();
       const selectedHtml = attached.length
         ? attached.map((entry) => {
@@ -2699,8 +2706,8 @@
               </div>`;
           }).join("")
         : `<p class="dw-muted">No standards attached yet. Search a catalog below or add a custom standard.</p>`;
-      const strandOptions = strands.map((s) => `<option value="${escapeHtml(s)}">${escapeHtml(s)}</option>`).join("");
-      const gradeOptions = grades.map((g) => `<option value="${g}">Grade ${g}</option>`).join("");
+      const strandOptions = strands.map((s) => `<option value="${escapeHtml(s)}"${standardsStrandFilter === s ? " selected" : ""}>${escapeHtml(s)}</option>`).join("");
+      const gradeOptions = grades.map((g) => `<option value="${g}"${activeGrade === g ? " selected" : ""}>Grade ${g}</option>`).join("");
       canvas.innerHTML = `
         ${builderSectionHeader("standards")}
         <p class="dw-muted">Attach ITEM 2025 (technology) or MN ELA (grades 5–8) benchmarks. Students see standards at the top; Results use heuristic matching (benchmark terms, writing structure, craft scores) with evidence quotes and conference prompts — not AI grading.</p>
@@ -2711,9 +2718,9 @@
         <div class="wf-standards-filters">
           <label class="dw-field">
             <span class="dw-label">Standards catalog</span>
-            <select id="bfStandardsCatalog" class="dw-input dw-select">
-              <option value="${escapeHtml(catalogId)}">ITEM 2025 (technology, grade 8)</option>
-              <option value="${escapeHtml(mnElaId)}">MN ELA (grades 5–8)</option>
+            <select id="bfStandardsCatalogSelect" class="dw-input dw-select">
+              <option value="${escapeHtml(catalogId)}"${activeCatalogId === catalogId ? " selected" : ""}>ITEM 2025 (technology, grade 8)</option>
+              <option value="${escapeHtml(mnElaId)}"${activeCatalogId === mnElaId ? " selected" : ""}>MN ELA (grades 5–8)</option>
             </select>
           </label>
           <label class="dw-field">
@@ -2722,12 +2729,12 @@
           </label>
           <label class="dw-field">
             <span class="dw-label">Search catalog</span>
-            <input id="bfStandardsSearch" class="dw-input" type="search" placeholder="Code, keyword, or benchmark text…" />
+            <input id="bfStandardsSearch" class="dw-input" type="search" placeholder="Code, keyword, or benchmark text…" value="${escapeHtml(standardsSearchFilter)}" />
           </label>
           <label class="dw-field">
             <span class="dw-label">Strand</span>
             <select id="bfStandardsStrand" class="dw-input dw-select">
-              <option value="">All strands</option>
+              <option value=""${!standardsStrandFilter ? " selected" : ""}>All strands</option>
               ${strandOptions}
             </select>
           </label>
@@ -3050,21 +3057,39 @@
     });
   }
 
+  function getStandardsCatalogSelectId() {
+    const ItemStd = window.WriteFlowItemStandards;
+    return document.getElementById("bfStandardsCatalogSelect")?.value
+      || ItemStd?.CATALOG_IDS?.item
+      || "item";
+  }
+
   function renderStandardsCatalog() {
     const catalogEl = document.getElementById("bfStandardsCatalogList");
     const ItemStd = window.WriteFlowItemStandards;
-    if (!catalogEl || !ItemStd) return;
-    const query = document.getElementById("bfStandardsSearch")?.value || "";
-    const strand = document.getElementById("bfStandardsStrand")?.value || "";
-    const catalogId = document.getElementById("bfStandardsCatalog")?.value || ItemStd.CATALOG_IDS?.item || "item";
-    const grade = Number(document.getElementById("bfStandardsGrade")?.value) || null;
-    const results = ItemStd.searchCatalog(query, grade, strand, catalogId).slice(0, 40);
-    const catalogLabel = ItemStd.getCatalogLabel?.(catalogId) || catalogId;
-    if (!results.length) {
-      catalogEl.innerHTML = `<p class="dw-muted">No ${escapeHtml(catalogLabel)} standards match your search.</p>`;
+    if (!catalogEl) return;
+    if (!ItemStd) {
+      catalogEl.innerHTML = `<p class="dw-error">Standards catalog failed to load. Hard-refresh the page (Ctrl+Shift+R). If this persists, check that /scripts/writeflow-item-standards.js loads without errors.</p>`;
       return;
     }
-    catalogEl.innerHTML = results.map((s) => {
+    const query = document.getElementById("bfStandardsSearch")?.value || "";
+    const strand = document.getElementById("bfStandardsStrand")?.value || "";
+    const catalogId = getStandardsCatalogSelectId();
+    standardsCatalogFilter = catalogId;
+    standardsSearchFilter = query;
+    standardsStrandFilter = strand;
+    const gradeRaw = document.getElementById("bfStandardsGrade")?.value;
+    const grade = gradeRaw ? Number(gradeRaw) : null;
+    if (grade) standardsGradeFilter = String(grade);
+    const results = ItemStd.searchCatalog(query, grade, strand, catalogId).slice(0, 40);
+    const catalogLabel = ItemStd.getCatalogLabel?.(catalogId) || catalogId;
+    const total = ItemStd.searchCatalog(query, grade, strand, catalogId).length;
+    const header = `<p class="dw-muted dw-tiny wf-standards-catalog__count">Showing ${results.length} of ${total} ${escapeHtml(catalogLabel)} standards</p>`;
+    if (!results.length) {
+      catalogEl.innerHTML = `${header}<p class="dw-muted">No standards match — try another grade, clear the search box, or pick a different strand.</p>`;
+      return;
+    }
+    catalogEl.innerHTML = header + results.map((s) => {
       const attached = isStandardAttached(s.code, s.catalog);
       return `
         <div class="wf-standards-catalog-item" role="listitem">
@@ -3112,7 +3137,8 @@
         renderBuilder();
       });
     });
-    document.getElementById("bfStandardsCatalog")?.addEventListener("change", (e) => {
+    document.getElementById("bfStandardsCatalogSelect")?.addEventListener("change", (e) => {
+      standardsCatalogFilter = e.target.value;
       refreshStandardsGradeOptions(e.target.value);
       renderStandardsCatalog();
     });
@@ -3139,6 +3165,7 @@
       document.getElementById("bfCustomStdBench").value = "";
       renderBuilder();
     });
+    refreshStandardsGradeOptions(getStandardsCatalogSelectId());
     renderStandardsCatalog();
   }
 
