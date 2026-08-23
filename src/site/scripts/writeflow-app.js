@@ -485,16 +485,6 @@
     if (meta?.ownerUsername) return "Synced to your account";
     return "Writing assignment";
   }
-    const mode = window.WriteFlowDefaults?.formatModeLabel?.(saved.assignmentMode || meta?.assignmentMode);
-    const durationSec = Number(saved.durationSec || meta?.durationSec);
-    if (mode && Number.isFinite(durationSec) && durationSec > 0) {
-      const mins = Math.max(1, Math.round(durationSec / 60));
-      return `${mins} min · ${mode}`;
-    }
-    if (meta?.shared) return "Shared assignment";
-    if (meta?.ownerUsername) return "Synced to your account";
-    return "Writing assignment";
-  }
 
   function showTileToast(message, anchorEl) {
     let toast = document.getElementById("wfTileToast");

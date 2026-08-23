@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.3.17";
+  const APP_VERSION = "2.3.18";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -119,6 +119,14 @@
   ];
 
   const CHANGELOG = [
+    {
+      version: "2.3.18",
+      date: "2026-08-23",
+      summary: "Fix Studio boot hang caused by a JavaScript syntax error.",
+      items: [
+        "Removed duplicate code fragment in writeflow-app.js that blocked the intro animation from finishing.",
+      ],
+    },
     {
       version: "2.3.17",
       date: "2026-08-23",
