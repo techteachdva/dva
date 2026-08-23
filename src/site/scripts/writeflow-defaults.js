@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.3.19";
+  const APP_VERSION = "2.4.0";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -119,6 +119,17 @@
   ];
 
   const CHANGELOG = [
+    {
+      version: "2.4.0",
+      date: "2026-08-23",
+      summary: "Performance polish, lighter Studio theme, and intro logo card fix.",
+      items: [
+        "Studio init runs during the intro splash so cloud sync finishes sooner.",
+        "Assignment cloud metadata loads in parallel; duplicate shared-library fetch removed.",
+        "Lighter Studio background; intro finale card fits the WFS logo snugly.",
+        "Boot loader completes faster after init; landing stats animate during intro.",
+      ],
+    },
     {
       version: "2.3.19",
       date: "2026-08-23",

@@ -74,6 +74,7 @@
 
     return new Promise((resolve) => {
       const show = () => {
+        splash?.setAttribute("aria-hidden", "true");
         splash?.classList.add("dw-hidden", "wf-intro-splash--out");
         reveal?.classList.remove("dw-hidden");
         document.body.classList.remove("wf-intro-active");
@@ -132,7 +133,9 @@
       const charDelay = fast ? 35 : 95;
 
       try {
-        if (document.fonts?.ready) await document.fonts.ready;
+        if (document.fonts?.ready) {
+          await Promise.race([document.fonts.ready, delay(1500)]);
+        }
         resetIntro();
         await waitForPaint();
         // Let step-0 styles apply before the typewriter starts.

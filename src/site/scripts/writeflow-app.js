@@ -355,7 +355,18 @@
 
     let fields = assignmentDetailFields(id, { shared });
     const local = readLocalConfig(id);
-    if (!local?.prompt) {
+    const cached = cloudAssignmentMeta[id];
+    if (cached?.prompt) {
+      fields = {
+        ...fields,
+        title: local?.title || cached.title || fields.title,
+        prompt: local?.prompt || cached.prompt || fields.prompt,
+        welcomeTitle: local?.welcomeTitle || cached.welcomeTitle || cached.title || fields.welcomeTitle,
+        welcomeLead: local?.welcomeLead || cached.welcomeLead || fields.welcomeLead,
+        assignmentMode: local?.assignmentMode || cached.assignmentMode || fields.assignmentMode,
+        durationSec: Number(local?.durationSec || cached.durationSec) || fields.durationSec,
+      };
+    } else if (!local?.prompt) {
       const cloud = await fetchCloudConfig(id);
       if (cloud) {
         fields = {
@@ -806,14 +817,7 @@
   }
 
   async function cloudAssignmentExists(id) {
-    try {
-      const res = await fetch(`${API_URL}?action=getAssignment&assignmentId=${encodeURIComponent(id)}`);
-      if (!res.ok) return false;
-      const data = await res.json().catch(() => ({}));
-      return !!data.config;
-    } catch {
-      return false;
-    }
+    return !!(await fetchCloudConfig(id));
   }
 
   function localPasswordMatches(id, password) {
@@ -853,6 +857,7 @@
 
   async function ownsAssignment(assignmentId) {
     if (!Teacher()?.isLoggedIn() || !assignmentId) return false;
+    if (cloudAssignmentMeta[assignmentId]) return true;
     try {
       const items = await Teacher().listMyAssignments();
       return items.some((item) => assignmentIdsMatch(item.assignmentId, assignmentId));
@@ -861,13 +866,13 @@
     }
   }
 
-  function showHomeView({ resultsPicker = false } = {}) {
+  function showHomeView({ resultsPicker = false, skipSharedRefresh = false } = {}) {
     studioMode = "studio";
     document.getElementById("wfTeacherPickerBanner")?.classList.toggle("dw-hidden", !resultsPicker);
     Core.applyTheme(Core.resolveTheme({ ...Defaults, id: resolveDefaultAssignmentId() }));
     show("home");
     renderHomeDashboard();
-    void refreshSharedLibrary();
+    if (!skipSharedRefresh) void refreshSharedLibrary();
   }
 
   async function navigateToHome({ resultsPicker = false } = {}) {
@@ -1662,13 +1667,16 @@
     try {
       const items = await Teacher().listMyAssignments();
       cloudAssignmentMeta = {};
-      for (const item of items) {
+      await Promise.all(items.map(async (item) => {
         let enriched = { ...item };
         const local = readLocalConfig(item.assignmentId);
         if (local) {
           enriched.assignmentMode = local.assignmentMode;
           enriched.durationSec = local.durationSec;
           enriched.title = local.title || enriched.title;
+          enriched.prompt = local.prompt;
+          enriched.welcomeTitle = local.welcomeTitle;
+          enriched.welcomeLead = local.welcomeLead;
         } else {
           const cloud = await fetchCloudConfig(item.assignmentId);
           if (cloud) enriched = { ...enriched, ...cloud };
@@ -1678,7 +1686,7 @@
         if (!ids.includes(item.assignmentId)) {
           saveAssignmentsList([...ids, item.assignmentId]);
         }
-      }
+      }));
     } catch {
       cloudAssignmentMeta = {};
     }
@@ -2987,8 +2995,8 @@
     });
   }
 
-  function initHome() {
-    showHomeView();
+  function initHome(options = {}) {
+    showHomeView(options);
   }
 
   async function initStudioApp(onBootMilestone) {
@@ -3003,24 +3011,42 @@
       await Teacher().validate();
       bump(0.38);
       updateAccountButton();
-      await refreshCloudAssignments();
-      bump(0.68);
-      await refreshSharedLibrary();
-      bump(0.88);
+      await Promise.all([
+        refreshCloudAssignments(),
+        refreshSharedLibrary(),
+      ]);
+      bump(0.9);
     }
     initTutorial();
     bump(0.94);
     if (isBuilderMode()) void initBuilder();
     else if (params.get("teacher") === "1" && params.get("id")) void initTeacherPortal();
-    else initHome();
+    else initHome({ skipSharedRefresh: true });
     bump(0.97);
   }
 
+  function shouldSkipIntroSplash() {
+    try {
+      return new URLSearchParams(location.search).get("skipIntro") === "1";
+    } catch {
+      return false;
+    }
+  }
+
   async function bootStudioApp() {
-    if (document.getElementById("wfIntroSplash") && window.WriteFlowIntro) {
+    const shell = document.getElementById("wfStudioShell");
+    const hasIntro = document.getElementById("wfIntroSplash") && window.WriteFlowIntro;
+    const skipIntro = shouldSkipIntroSplash();
+
+    let loadTarget = 0.04;
+    const initPromise = initStudioApp((value) => {
+      loadTarget = Math.max(loadTarget, value);
+    });
+
+    if (hasIntro && !skipIntro) {
       await window.WriteFlowIntro.play();
     } else {
-      document.getElementById("wfStudioShell")?.classList.remove("dw-hidden");
+      shell?.classList.remove("dw-hidden");
     }
 
     initBootLoader();
@@ -3028,10 +3054,9 @@
     setBootProgress(0);
 
     const bootStart = performance.now();
-    const minBootMs = 650;
-    const holdFullMs = 300;
+    const minBootMs = 280;
+    const holdFullMs = 220;
     let displayed = 0;
-    let loadTarget = 0.04;
     let initComplete = false;
     let bootFinished = false;
     let rafId = 0;
@@ -3039,14 +3064,14 @@
     const runFrame = () => {
       if (bootFinished) return;
       const elapsed = performance.now() - bootStart;
-      const timeCreep = 0.96 * (1 - Math.exp(-elapsed / 1500));
+      const timeCreep = 0.96 * (1 - Math.exp(-elapsed / 1200));
       let target;
       if (initComplete) {
         target = 1;
       } else {
         target = Math.min(0.96, Math.max(loadTarget, timeCreep));
       }
-      const ease = initComplete ? 0.28 : 0.14;
+      const ease = initComplete ? 0.32 : 0.16;
       displayed += (target - displayed) * ease;
       if (initComplete && displayed > 0.995) displayed = 1;
       setBootProgress(displayed);
@@ -3056,9 +3081,7 @@
     rafId = requestAnimationFrame(runFrame);
 
     try {
-      await initStudioApp((value) => {
-        loadTarget = Math.max(loadTarget, value);
-      });
+      if (!initComplete) await initPromise;
     } finally {
       initComplete = true;
       const elapsed = performance.now() - bootStart;

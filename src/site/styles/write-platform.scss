@@ -2927,13 +2927,41 @@ body.wf-intro-active {
   max-height: 0;
 }
 
-#wfIntroStage[data-step="2"] .wf-mark-wrap--intro,
-#wfIntroStage[data-step="3"] .wf-mark-wrap--intro {
+#wfIntroStage[data-step="2"] .wf-mark-wrap--intro {
   opacity: 1;
   transform: translate(-50%, -50%) scale(1);
   top: 44%;
   width: min(168px, 44vw);
   height: min(168px, 44vw);
+}
+
+#wfIntroStage[data-step="3"] .wf-intro-morph {
+  width: min(248px, 68vw);
+  min-height: 0;
+  padding: 22px 20px 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: width 0.9s cubic-bezier(0.22, 1, 0.36, 1), padding 0.9s ease;
+}
+
+#wfIntroStage[data-step="3"] .wf-mark-wrap--intro {
+  order: 1;
+  position: relative;
+  left: auto;
+  top: auto;
+  opacity: 1;
+  transform: none;
+  width: min(156px, 42vw);
+  height: min(156px, 42vw);
+  margin: 0 auto;
+  flex-shrink: 0;
+}
+
+#wfIntroStage[data-step="3"] .wf-intro-morph__tag,
+#wfIntroStage[data-step="3"] .wf-intro-morph__scores {
+  display: none;
 }
 
 #wfIntroStage[data-step="2"] .wf-mark-wrap--intro .wf-mark__bar,
@@ -2946,20 +2974,25 @@ body.wf-intro-active {
 #wfIntroStage[data-step="2"] .wf-mark-wrap--intro .wf-mark__bar:nth-child(3) { transition-delay: 0.2s; }
 #wfIntroStage[data-step="2"] .wf-mark-wrap--intro .wf-mark__bar:nth-child(4) { transition-delay: 0.27s; }
 
-/* Step 3 — brackets, ops, letters assemble; wordmark fades in below */
+/* Step 3 — logo card sized to fit mark; wordmark below */
 #wfIntroStage[data-step="3"] .wf-intro-morph__title {
-  top: 76%;
+  order: 2;
+  position: relative;
+  left: auto;
+  top: auto;
   z-index: 4;
+  margin: 10px 0 0;
   opacity: 0;
   visibility: visible;
-  transform: translate(-50%, -50%) scale(0.62);
+  transform: none;
   filter: blur(0);
   pointer-events: none;
+  white-space: nowrap;
   animation: wf-intro-wordmark-in 0.85s cubic-bezier(0.22, 1, 0.36, 1) 0.62s forwards;
 }
 
 #wfIntroStage[data-step="3"] .wf-intro-typewriter {
-  font-size: clamp(1rem, 3.4vw, 1.4rem);
+  font-size: clamp(0.95rem, 3.2vw, 1.25rem);
   font-weight: 600;
   letter-spacing: 0.03em;
   color: #cbd5e1;
@@ -2968,12 +3001,12 @@ body.wf-intro-active {
 @keyframes wf-intro-wordmark-in {
   from {
     opacity: 0;
-    transform: translate(-50%, -42%) scale(0.62);
+    transform: translateY(10px) scale(0.92);
     filter: blur(3px);
   }
   to {
     opacity: 1;
-    transform: translate(-50%, -50%) scale(0.62);
+    transform: translateY(0) scale(1);
     filter: blur(0);
   }
 }
@@ -2981,9 +3014,10 @@ body.wf-intro-active {
 #wfIntroStage[data-step="3"] .wf-intro-morph__frame {
   opacity: 1;
   transform: scale(1);
-  border-color: rgba(56, 189, 248, 0.35);
-  background: linear-gradient(160deg, rgba(56, 189, 248, 0.12), rgba(99, 102, 241, 0.08));
-  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  border-color: rgba(56, 189, 248, 0.4);
+  background: linear-gradient(160deg, rgba(56, 189, 248, 0.14), rgba(99, 102, 241, 0.1));
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.38);
+  border-radius: 18px;
 }
 
 #wfIntroStage[data-step="3"] .wf-mark-wrap--intro .wf-mark__bracket {
@@ -3936,6 +3970,11 @@ mark.wf-vocab-hit {
   height: 100vh;
   max-height: 100vh;
   overflow: hidden;
+  background:
+    radial-gradient(1100px 720px at 12% -8%, rgba(56, 189, 248, 0.14), transparent 58%),
+    radial-gradient(900px 620px at 88% 4%, rgba(99, 102, 241, 0.12), transparent 52%),
+    radial-gradient(700px 500px at 50% 100%, rgba(30, 58, 95, 0.35), transparent 60%),
+    #1c2d4a;
 }
 
 .wf-studio-app .dw-shell {
@@ -3983,8 +4022,8 @@ mark.wf-vocab-hit {
   overflow-y: auto;
   padding: 14px 16px;
   border-radius: 14px;
-  border: 1px solid var(--dw-border);
-  background: rgba(0, 0, 0, 0.14);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .wf-studio-home__panel--center {
@@ -4766,7 +4805,7 @@ mark.wf-vocab-hit {
   justify-content: center;
   gap: 20px;
   padding: 24px;
-  background: rgba(11, 18, 32, 0.92);
+  background: rgba(28, 45, 74, 0.94);
   backdrop-filter: blur(6px);
 }
 

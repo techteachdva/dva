@@ -96,13 +96,13 @@
     renderChangelog();
     renderTutorial();
     void fetchImpactStats();
-    if (window.WriteFlowIntro) {
-      await window.WriteFlowIntro.play();
-    } else {
-      document.getElementById("wfLanding")?.classList.remove("dw-hidden");
-      document.getElementById("wfIntroSplash")?.classList.add("dw-hidden");
-    }
-    await renderImpactStats();
+    const introTask = window.WriteFlowIntro
+      ? window.WriteFlowIntro.play()
+      : Promise.resolve().then(() => {
+          document.getElementById("wfLanding")?.classList.remove("dw-hidden");
+          document.getElementById("wfIntroSplash")?.classList.add("dw-hidden");
+        });
+    await Promise.all([introTask, renderImpactStats()]);
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
