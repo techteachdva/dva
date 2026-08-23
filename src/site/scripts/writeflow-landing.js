@@ -8,8 +8,6 @@
   if (!Defaults) return;
 
   const STATS_API = "/api/writeflow-submissions?action=stats";
-  const CHANGELOG_VISIBLE = 3;
-  const CHANGELOG_ITEMS_PER_ENTRY = 4;
 
   let cachedStats = null;
 
@@ -47,22 +45,19 @@
 
   function renderChangelog() {
     const full = document.getElementById("wfChangelogFull");
-    const entries = (Defaults.CHANGELOG || []).slice(0, CHANGELOG_VISIBLE);
+    const entries = Defaults.CHANGELOG || [];
 
     if (full) {
       full.innerHTML = entries.map((entry) => {
-        const items = (entry.items || []).slice(0, CHANGELOG_ITEMS_PER_ENTRY);
-        const more = (entry.items || []).length > CHANGELOG_ITEMS_PER_ENTRY
-          ? `<li class="wf-changelog-entry__more dw-muted">+${entry.items.length - CHANGELOG_ITEMS_PER_ENTRY} more in Studio</li>`
-          : "";
+        const items = entry.items || [];
         return `
-        <article class="wf-changelog-entry wf-changelog-entry--compact">
+        <article class="wf-changelog-entry wf-changelog-entry--landing">
           <header class="wf-changelog-entry__head">
             <strong>v${escapeHtml(entry.version)}</strong>
             <span class="dw-muted">${escapeHtml(entry.date)}</span>
           </header>
           <p class="wf-changelog-entry__summary">${escapeHtml(entry.summary)}</p>
-          <ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}${more}</ul>
+          ${items.length ? `<ul>${items.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>` : ""}
         </article>`;
       }).join("");
     }

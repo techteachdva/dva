@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.3.7";
+  const APP_VERSION = "2.3.8";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -119,6 +119,16 @@
   ];
 
   const CHANGELOG = [
+    {
+      version: "2.3.8",
+      date: "2026-08-22",
+      summary: "Landing page layout — full scrollable changelog and larger text.",
+      items: [
+        "Left panel now shows the complete release history in a scrollable column.",
+        "Typography scaled up across hero, stats, quick start, and changelog entries.",
+        "Wider three-column layout with more padding so the splash page fills the screen.",
+      ],
+    },
     {
       version: "2.3.7",
       date: "2026-08-22",
