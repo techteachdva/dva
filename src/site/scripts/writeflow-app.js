@@ -984,7 +984,6 @@
 
   function initTutorial() {
     document.getElementById("tutorialBtn")?.addEventListener("click", () => openTutorial(getTutorialContext()));
-    document.getElementById("openTutorialHomeBtn")?.addEventListener("click", () => openTutorial("studio"));
     document.getElementById("tutorialSkipBtn")?.addEventListener("click", () => closeTutorial(true));
     document.getElementById("tutorialBackdrop")?.addEventListener("click", () => closeTutorial(true));
     document.getElementById("tutorialBackBtn")?.addEventListener("click", () => {
@@ -1520,7 +1519,7 @@
           if (cloud) enriched = { ...enriched, ...cloud };
         }
         cloudAssignmentMeta[item.assignmentId] = enriched;
-        const ids = getAssignmentsList();
+        const ids = sortAssignmentIds(getAssignmentsList());
         if (!ids.includes(item.assignmentId)) {
           saveAssignmentsList([...ids, item.assignmentId]);
         }
@@ -1603,7 +1602,7 @@
       const data = await Teacher().copyAssignment(sourceId, newId, assignmentName);
       const next = { ...Defaults, ...data.config, id: data.assignmentId || newId, title: assignmentName };
       Core.saveConfig(STORAGE_PREFIX, next.id, next);
-      const ids = getAssignmentsList();
+      const ids = sortAssignmentIds(getAssignmentsList());
       if (!ids.includes(next.id)) saveAssignmentsList([...ids, next.id]);
       await refreshCloudAssignments();
       await refreshSharedLibrary();
@@ -1999,6 +1998,18 @@
     try { return JSON.parse(localStorage.getItem(ASSIGNMENTS_KEY) || "[]"); } catch { return [config.id]; }
   }
 
+  function assignmentSortKey(id) {
+    const local = readLocalConfig(id);
+    const cloudMeta = cloudAssignmentMeta[id] || null;
+    return (local?.title || cloudMeta?.title || id).trim();
+  }
+
+  function sortAssignmentIds(ids) {
+    return [...new Set(ids)].sort((a, b) =>
+      assignmentSortKey(a).localeCompare(assignmentSortKey(b), undefined, { sensitivity: "base" })
+    );
+  }
+
   function saveAssignmentsList(ids) {
     localStorage.setItem(ASSIGNMENTS_KEY, JSON.stringify([...new Set(ids)]));
   }
@@ -2010,7 +2021,7 @@
       if (cloud) {
         next = { ...Defaults, ...cloud, id };
         Core.saveConfig(STORAGE_PREFIX, id, next);
-        const ids = getAssignmentsList();
+        const ids = sortAssignmentIds(getAssignmentsList());
         if (!ids.includes(id)) saveAssignmentsList([...ids, id]);
       }
     }
@@ -2163,7 +2174,7 @@
     if (!el) return;
     const localIds = getAssignmentsList();
     const cloudIds = Object.keys(cloudAssignmentMeta);
-    const ids = [...new Set([...localIds, ...cloudIds])];
+    const ids = sortAssignmentIds([...localIds, ...cloudIds]);
     const picker = params.get("teacher") === "1" && !params.get("id");
     document.getElementById("wfTeacherPickerBanner")?.classList.toggle("dw-hidden", !picker);
 
@@ -2197,9 +2208,9 @@
     });
 
     document.getElementById("teacherBtn")?.addEventListener("click", () => {
-      const ids = getAssignmentsList();
+      const ids = sortAssignmentIds(getAssignmentsList());
       const cloudIds = Object.keys(cloudAssignmentMeta);
-      const allIds = [...new Set([...ids, ...cloudIds])];
+      const allIds = sortAssignmentIds([...ids, ...cloudIds]);
       if (!allIds.length) {
         void navigateToHome({ resultsPicker: true });
         return;
@@ -2726,7 +2737,7 @@
 
     const list = document.getElementById("bfAssignmentList");
     if (list) {
-      const ids = getAssignmentsList();
+      const ids = sortAssignmentIds(getAssignmentsList());
       if (!ids.length) {
         list.innerHTML = `<p class="dw-muted dw-tiny">No saved assignments yet.</p>`;
       } else {

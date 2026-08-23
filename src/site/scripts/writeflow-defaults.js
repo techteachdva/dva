@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.3.14";
+  const APP_VERSION = "2.3.15";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -119,6 +119,16 @@
   ];
 
   const CHANGELOG = [
+    {
+      version: "2.3.15",
+      date: "2026-08-22",
+      summary: "Wider Studio home layout with denser assignment list.",
+      items: [
+        "Studio panels use more screen width with larger, easier-to-read text.",
+        "Removed duplicate Tutorial button from the assignments panel.",
+        "Assignments sort alphabetically and use compact rows so more fit on screen.",
+      ],
+    },
     {
       version: "2.3.14",
       date: "2026-08-22",
