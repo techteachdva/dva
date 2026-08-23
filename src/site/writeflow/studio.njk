@@ -63,6 +63,41 @@ layout: false
         </div>
       </div>
 
+      <div id="wfHeroCropModal" class="wf-modal dw-hidden" role="dialog" aria-modal="true" aria-labelledby="wfHeroCropTitle">
+        <div class="wf-modal__backdrop" id="wfHeroCropBackdrop"></div>
+        <div class="wf-modal__panel wf-hero-crop-modal">
+          <h2 class="dw-h2" id="wfHeroCropTitle">Crop hero image</h2>
+          <p class="dw-muted wf-hero-crop-modal__lead">Drag to reposition. Pick how students see it: wide banner, square, or circle.</p>
+          <div class="wf-hero-crop-modal__stage">
+            <canvas id="wfHeroCropCanvas" class="wf-hero-crop-modal__canvas" width="320" height="240" aria-label="Crop preview"></canvas>
+          </div>
+          <label class="dw-field">
+            <span class="dw-label">Zoom</span>
+            <input id="wfHeroCropZoom" class="dw-input" type="range" min="1" max="3" step="0.02" value="1" />
+          </label>
+          <fieldset class="wf-hero-shape-picker">
+            <legend class="dw-label">Display shape</legend>
+            <label class="wf-hero-shape-picker__option">
+              <input type="radio" name="wfHeroCropShape" value="banner" checked />
+              <span>Wide banner</span>
+            </label>
+            <label class="wf-hero-shape-picker__option">
+              <input type="radio" name="wfHeroCropShape" value="square" />
+              <span>Square</span>
+            </label>
+            <label class="wf-hero-shape-picker__option">
+              <input type="radio" name="wfHeroCropShape" value="circle" />
+              <span>Circle</span>
+            </label>
+          </fieldset>
+          <p id="wfHeroCropHint" class="dw-muted dw-tiny"></p>
+          <div class="dw-row">
+            <button id="wfHeroCropCancel" class="dw-btn dw-btn-ghost" type="button">Cancel</button>
+            <button id="wfHeroCropApply" class="dw-btn" type="button">Apply crop</button>
+          </div>
+        </div>
+      </div>
+
       <div id="wfConfirm" class="wf-confirm dw-hidden" role="alertdialog" aria-modal="true" aria-labelledby="wfConfirmTitle" aria-describedby="wfConfirmBody">
         <div class="wf-confirm__backdrop" id="confirmBackdrop"></div>
         <div class="wf-confirm__panel">
@@ -229,6 +264,7 @@ layout: false
     <script src="/scripts/write-test-core.js" defer></script>
     <script src="/scripts/writeflow-defaults.js" defer></script>
     <script src="/scripts/writeflow-teacher.js" defer></script>
+    <script src="/scripts/writeflow-hero-crop.js" defer></script>
     <script src="/scripts/writeflow-intro.js" defer></script>
     <script src="/scripts/diagnostic-writing-calibration.js" defer></script>
     <script src="/scripts/diagnostic-writing-rubrics.js" defer></script>

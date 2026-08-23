@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.3.12";
+  const APP_VERSION = "2.3.13";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -119,6 +119,16 @@
   ];
 
   const CHANGELOG = [
+    {
+      version: "2.3.13",
+      date: "2026-08-22",
+      summary: "Configurable hero image with crop and shape options.",
+      items: [
+        "Upload or paste a hero image, then crop and position it in a built-in editor.",
+        "Choose wide banner, square, or circle display on the student welcome screen.",
+        "URL images save focus position; uploads bake the crop for reliable sharing.",
+      ],
+    },
     {
       version: "2.3.12",
       date: "2026-08-22",
@@ -406,6 +416,8 @@
     theme: { preset: "dark", fontFamily: "", fontPreset: "libreBaskerville" },
     heroImage: "",
     heroImageData: "",
+    heroImageShape: "banner",
+    heroImageFocus: { x: 50, y: 50 },
     teacherPassword: "changeme",
     vocabWords: [],
     highlightVocab: true,

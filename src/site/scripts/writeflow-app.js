@@ -442,15 +442,7 @@
     if (classCodeField) classCodeField.classList.toggle("dw-hidden", !config.requireClassCode);
 
     const heroWrap = document.getElementById("heroImageWrap");
-    const heroImg = document.getElementById("heroImage");
-    const heroSrc = heroImageSrc();
-    if (heroImg && heroSrc) {
-      heroImg.src = heroSrc;
-      heroWrap?.classList.remove("dw-hidden");
-    } else {
-      heroImg?.removeAttribute("src");
-      heroWrap?.classList.add("dw-hidden");
-    }
+    if (heroWrap) renderHeroImage(heroWrap, config);
 
     const liveStatsBar = document.getElementById("liveStatsBar");
     if (liveStatsBar) liveStatsBar.classList.toggle("dw-hidden", !config.showLiveStats);
@@ -539,27 +531,75 @@
     });
   }
 
-  function heroImageSrc() {
-    return config.heroImageData || config.heroImage || "";
+  function heroImageSrc(cfg = config) {
+    return cfg.heroImageData || cfg.heroImage || "";
   }
 
-  function setHeroPreview(container, src) {
+  function normalizeHeroConfig(cfg = config) {
+    const shape = ["banner", "square", "circle"].includes(cfg.heroImageShape) ? cfg.heroImageShape : "banner";
+    const focus = cfg.heroImageFocus && typeof cfg.heroImageFocus === "object"
+      ? { x: Number(cfg.heroImageFocus.x) || 50, y: Number(cfg.heroImageFocus.y) || 50 }
+      : { x: 50, y: 50 };
+    return { shape, focus };
+  }
+
+  function renderHeroImage(container, cfg = config) {
     if (!container) return;
+    const src = heroImageSrc(cfg);
     if (!src) {
-      container.classList.add("dw-hidden");
+      const isPreview = container.id === "bfHeroPreview" || container.id === "wfPreviewHero";
+      container.className = isPreview ? "wf-hero-preview dw-hidden" : "wf-student-hero dw-hidden";
       container.innerHTML = "";
       return;
     }
-    container.classList.remove("dw-hidden");
+    const { shape, focus } = normalizeHeroConfig(cfg);
+    const isPreview = container.id === "bfHeroPreview" || container.id === "wfPreviewHero";
+    const baseClass = isPreview ? "wf-hero-preview" : "wf-student-hero";
+    container.className = `${baseClass} ${baseClass}--${shape}`;
     container.innerHTML = "";
     const img = document.createElement("img");
     img.src = src;
     img.alt = "";
-    img.className = container.classList.contains("wf-student-hero")
-      ? "wf-student-hero__img"
-      : "wf-hero-preview__img";
+    img.className = isPreview ? "wf-hero-preview__img" : "wf-student-hero__img";
+    if (!cfg.heroImageData && cfg.heroImage) {
+      img.style.objectPosition = `${focus.x}% ${focus.y}%`;
+    }
     img.loading = "lazy";
     container.appendChild(img);
+  }
+
+  async function openHeroCropEditor(src = heroImageSrc()) {
+    if (!src || !window.WriteFlowHeroCrop) return;
+    const { shape, focus } = normalizeHeroConfig();
+    const isGif = String(src).includes("image/gif");
+    const result = await window.WriteFlowHeroCrop.open({
+      src,
+      shape,
+      focus,
+      allowBake: !isGif,
+    });
+    if (!result) return;
+    config.heroImageShape = result.shape;
+    config.heroImageFocus = result.focus || config.heroImageFocus;
+    if (result.dataUrl) {
+      config.heroImageData = result.dataUrl;
+      config.heroImage = "";
+    }
+    persistConfig();
+    renderBuilder();
+  }
+
+  function bindHeroShapePicker() {
+    document.querySelectorAll('input[name="bfHeroShape"]').forEach((el) => {
+      el.addEventListener("change", () => {
+        if (!el.checked) return;
+        config.heroImageShape = el.value;
+        persistConfig();
+        renderHeroImage(document.getElementById("bfHeroPreview"), config);
+        const previewHero = document.getElementById("wfPreviewHero");
+        if (previewHero) renderHeroImage(previewHero, config);
+      });
+    });
   }
 
   function scrollToMainTop() {
@@ -2353,16 +2393,34 @@
         </label>
         <label class="dw-field">
           <span class="dw-label">Hero image or GIF URL</span>
-          <span class="dw-muted dw-tiny">Shown at the top of the student welcome screen — paste a direct link to an image or animated GIF.</span>
+          <span class="dw-muted dw-tiny">Shown at the top of the student welcome screen — paste a direct link, or upload below.</span>
           <input id="bfHero" class="dw-input" value="${escapeHtml(config.heroImage || "")}" placeholder="https://…" />
         </label>
         <label class="dw-field">
-          <span class="dw-label">Or upload image / GIF</span>
+          <span class="dw-label">Or upload image</span>
           <input id="bfHeroUpload" class="dw-input" type="file" accept="image/png,image/jpeg,image/gif,image/webp" />
-          <span class="dw-muted dw-tiny">Images up to 750 KB, GIFs up to 2.5 MB. For share links, a URL is more reliable than a large upload.</span>
+          <span class="dw-muted dw-tiny">Opens the crop tool. GIFs keep animation but cannot be cropped — use shape and position only.</span>
         </label>
+        <fieldset class="wf-hero-shape-picker">
+          <legend class="dw-label">Hero display shape</legend>
+          <label class="wf-hero-shape-picker__option">
+            <input type="radio" name="bfHeroShape" value="banner"${normalizeHeroConfig().shape === "banner" ? " checked" : ""} />
+            <span>Wide banner</span>
+          </label>
+          <label class="wf-hero-shape-picker__option">
+            <input type="radio" name="bfHeroShape" value="square"${normalizeHeroConfig().shape === "square" ? " checked" : ""} />
+            <span>Square</span>
+          </label>
+          <label class="wf-hero-shape-picker__option">
+            <input type="radio" name="bfHeroShape" value="circle"${normalizeHeroConfig().shape === "circle" ? " checked" : ""} />
+            <span>Circle</span>
+          </label>
+        </fieldset>
         <div id="bfHeroPreview" class="wf-hero-preview dw-hidden"></div>
-        <button id="bfClearHero" class="dw-btn dw-btn-ghost dw-hidden" type="button">Remove uploaded image</button>`;
+        <div class="wf-hero-builder-actions">
+          <button id="bfHeroCrop" class="dw-btn dw-btn-secondary dw-hidden" type="button">Crop &amp; position</button>
+          <button id="bfClearHero" class="dw-btn dw-btn-ghost dw-hidden" type="button">Remove image</button>
+        </div>`;
       const presets = document.getElementById("bfPresets");
       Object.keys(Core.PRESETS).forEach((key) => {
         const chip = document.createElement("button");
@@ -2398,32 +2456,37 @@
         persistConfig();
         Core.applyTheme(Core.resolveTheme(config));
       });
-      document.getElementById("bfHero")?.addEventListener("change", (e) => {
+      document.getElementById("bfHero")?.addEventListener("change", async (e) => {
         config.heroImage = e.target.value;
+        config.heroImageData = "";
         persistConfig();
-        renderBuilder();
+        if (config.heroImage) await openHeroCropEditor(config.heroImage);
+        else renderBuilder();
       });
       document.getElementById("bfHeroUpload")?.addEventListener("change", async (e) => {
         const file = e.target.files?.[0];
+        e.target.value = "";
         if (!file) return;
         try {
-          config.heroImageData = await readImageFile(file);
-          persistConfig();
-          renderBuilder();
+          const data = await readImageFile(file);
+          await openHeroCropEditor(data);
         } catch (err) {
           alert(err.message || "Could not load image.");
         }
       });
+      document.getElementById("bfHeroCrop")?.addEventListener("click", () => { void openHeroCropEditor(); });
       document.getElementById("bfClearHero")?.addEventListener("click", () => {
         config.heroImageData = "";
         config.heroImage = "";
+        config.heroImageFocus = { x: 50, y: 50 };
         persistConfig();
         renderBuilder();
       });
-      const heroPreviewSrc = heroImageSrc();
-      if (heroPreviewSrc) {
-        setHeroPreview(document.getElementById("bfHeroPreview"), heroPreviewSrc);
+      bindHeroShapePicker();
+      if (heroImageSrc()) {
+        renderHeroImage(document.getElementById("bfHeroPreview"), config);
         document.getElementById("bfClearHero")?.classList.remove("dw-hidden");
+        document.getElementById("bfHeroCrop")?.classList.remove("dw-hidden");
       }
     } else if (builderSection === "accessibility") {
       const a11y = mergeAccessibility(config.accessibility);
@@ -2500,7 +2563,7 @@
         <div class="dw-row" style="margin-top:16px">
           <a class="dw-btn" href="${assignmentUrl(config.id)}" target="_blank" rel="noopener">Open student view</a>
         </div>`;
-      setHeroPreview(document.getElementById("wfPreviewHero"), heroImageSrc());
+      renderHeroImage(document.getElementById("wfPreviewHero"), config);
     }
     renderInspector();
   }

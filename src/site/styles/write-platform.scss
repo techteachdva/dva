@@ -4521,24 +4521,63 @@ mark.wf-vocab-hit {
 }
 
 .wf-student-hero {
-  margin: 0 0 18px;
-  border-radius: 14px;
+  margin: 0 auto 18px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(0, 0, 0, 0.2);
+}
+
+.wf-student-hero--banner {
+  width: 100%;
+  max-height: 220px;
+  border-radius: 14px;
+  aspect-ratio: 2.5 / 1;
+}
+
+.wf-student-hero--square {
+  width: min(220px, 72vw);
+  border-radius: 14px;
+  aspect-ratio: 1 / 1;
+  align-self: center;
+}
+
+.wf-student-hero--circle {
+  width: min(180px, 56vw);
+  border-radius: 50%;
+  aspect-ratio: 1 / 1;
+  align-self: center;
+}
+
+.wf-hero-preview--square,
+.wf-hero-preview--circle {
+  align-self: center;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.wf-hero-preview--square {
+  width: min(160px, 100%);
+  aspect-ratio: 1 / 1;
+}
+
+.wf-hero-preview--circle {
+  width: min(140px, 100%);
+  aspect-ratio: 1 / 1;
+  border-radius: 50%;
 }
 
 .wf-student-hero__img,
 .wf-hero-preview__img {
   display: block;
   width: 100%;
-  max-height: 220px;
+  height: 100%;
   object-fit: cover;
+  object-position: center;
 }
 
-.wf-student-prompt-box__lead {
-  margin: 0 0 16px;
-  line-height: 1.5;
+.wf-student-hero--banner .wf-student-hero__img,
+.wf-student-hero--banner .wf-hero-preview__img {
+  max-height: 220px;
 }
 
 .wf-hero-preview {
@@ -4548,6 +4587,69 @@ mark.wf-vocab-hit {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+.wf-hero-preview--banner {
+  width: 100%;
+  aspect-ratio: 2.5 / 1;
+  max-height: 160px;
+}
+
+.wf-hero-shape-picker {
+  margin: 0 0 12px;
+  padding: 0;
+  border: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+}
+
+.wf-hero-shape-picker__option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.wf-hero-crop-modal {
+  width: min(420px, 100%);
+}
+
+.wf-hero-crop-modal__lead {
+  margin: 0 0 12px;
+  font-size: 0.9rem;
+}
+
+.wf-hero-crop-modal__stage {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+  padding: 10px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.wf-hero-crop-modal__canvas {
+  display: block;
+  width: 100%;
+  max-width: 320px;
+  height: auto;
+  touch-action: none;
+  cursor: grab;
+  border-radius: 8px;
+}
+
+.wf-hero-crop-modal__canvas:active {
+  cursor: grabbing;
+}
+
+.wf-hero-builder-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
 .wp-theme--light .wf-assignment-hub-card {
   background: rgba(255, 255, 255, 0.85);
   border-color: rgba(15, 23, 42, 0.12);
@@ -4555,5 +4657,10 @@ mark.wf-vocab-hit {
 
 .wp-theme--light .wf-student-hero {
   border-color: rgba(15, 23, 42, 0.1);
+}
+
+.wf-student-prompt-box__lead {
+  margin: 0 0 16px;
+  line-height: 1.5;
 }
 
