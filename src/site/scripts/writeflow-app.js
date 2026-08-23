@@ -732,7 +732,9 @@
     const pwEl = document.getElementById("teacherPassword");
     if (pwEl) pwEl.value = "";
     document.getElementById("teacherLoginError")?.classList.add("dw-hidden");
+    closeTutorial(false);
     show("teacherLogin");
+    pwEl?.focus();
   }
 
   function formatDurationLabel(sec) {
@@ -962,10 +964,15 @@
       openTutorial(getTutorialContext());
       return;
     }
+    if (params.get("teacher") === "1" && params.get("id")) return;
     const tutorialKey = `writeflow:tutorial:studio:${Defaults?.APP_VERSION || "2.3.2"}`;
     try {
       if (!isStudentApp && !isBuilderMode() && localStorage.getItem(tutorialKey) !== "1") {
-        setTimeout(() => openTutorial("studio"), 500);
+        setTimeout(() => {
+          const onResultsGate = !document.getElementById("teacherLoginView")?.classList.contains("dw-hidden")
+            || !document.getElementById("teacherView")?.classList.contains("dw-hidden");
+          if (!onResultsGate) openTutorial("studio");
+        }, 500);
       }
     } catch {}
   }
@@ -1472,6 +1479,7 @@
           <p class="dw-muted dw-tiny">Shared by ${escapeHtml(author)}</p>
         </div>
         <div class="wf-assignment-hub-card__actions">
+          <button class="dw-btn dw-btn-secondary dw-btn--compact" type="button" data-action="results" data-id="${escapeHtml(item.assignmentId)}">Results</button>
           <button class="dw-btn" type="button" data-action="copy-shared" data-id="${escapeHtml(item.assignmentId)}" data-title="${escapeHtml(title)}">Copy to my assignments</button>
         </div>
       </article>`;
@@ -1492,6 +1500,9 @@
     el.innerHTML = items.map((item) => renderSharedAssignmentCard(item)).join("");
     el.querySelectorAll("[data-action='copy-shared']").forEach((btn) => {
       btn.addEventListener("click", () => void copySharedAssignment(btn.dataset.id, btn.dataset.title));
+    });
+    el.querySelectorAll("[data-action='results']").forEach((btn) => {
+      btn.addEventListener("click", () => void navigateToResults(btn.dataset.id));
     });
   }
 
@@ -1529,30 +1540,42 @@
   }
 
   function bindTeacherEvents() {
+    if (bindTeacherEvents._bound) return;
+    bindTeacherEvents._bound = true;
+
     document.getElementById("teacherCancelBtn")?.addEventListener("click", () => void navigateToHome());
+    document.getElementById("teacherPassword")?.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        document.getElementById("teacherLoginBtn")?.click();
+      }
+    });
     document.getElementById("teacherLoginBtn")?.addEventListener("click", async () => {
+      const btn = document.getElementById("teacherLoginBtn");
       const pw = document.getElementById("teacherPassword")?.value?.trim() || "";
       const errEl = document.getElementById("teacherLoginError");
 
-      if (await ownsAssignment(config.id)) {
-        teacherAuthed = true;
-        sessionTeacherPassword = config.teacherPassword || "";
-        if (errEl) errEl.classList.add("dw-hidden");
-        show("teacher");
-        await loadTeacherDashboard();
-        return;
-      }
-
-      if (!pw) {
-        if (errEl) {
-          errEl.textContent = "Enter the assignment teacher password.";
-          errEl.classList.remove("dw-hidden");
-        }
-        return;
-      }
-      if (errEl) errEl.classList.add("dw-hidden");
+      if (btn) btn.disabled = true;
 
       try {
+        if (await ownsAssignment(config.id)) {
+          teacherAuthed = true;
+          sessionTeacherPassword = config.teacherPassword || "";
+          if (errEl) errEl.classList.add("dw-hidden");
+          show("teacher");
+          await loadTeacherDashboard();
+          return;
+        }
+
+        if (!pw) {
+          if (errEl) {
+            errEl.textContent = "Enter the assignment teacher password.";
+            errEl.classList.remove("dw-hidden");
+          }
+          return;
+        }
+        if (errEl) errEl.classList.add("dw-hidden");
+
         const access = await verifyResultsAccess(config.id, pw);
         if (!access.ok) {
           if (errEl) {
@@ -1561,18 +1584,19 @@
           }
           return;
         }
+
+        sessionTeacherPassword = pw;
+        teacherAuthed = true;
+        show("teacher");
+        await loadTeacherDashboard();
       } catch (err) {
         if (errEl) {
           errEl.textContent = err.message || "Could not verify access. Check your connection and try again.";
           errEl.classList.remove("dw-hidden");
         }
-        return;
+      } finally {
+        if (btn) btn.disabled = false;
       }
-
-      sessionTeacherPassword = pw;
-      teacherAuthed = true;
-      show("teacher");
-      await loadTeacherDashboard();
     });
     document.getElementById("teacherLogoutBtn")?.addEventListener("click", () => {
       teacherAuthed = false;
@@ -1596,17 +1620,19 @@
     const resolved = await resolveAssignmentConfig(id);
     config = resolved.config;
     applyConfigToUI();
-    bindTeacherEvents();
 
     if (await ownsAssignment(id)) {
       teacherAuthed = true;
       sessionTeacherPassword = config.teacherPassword || "";
+      closeTutorial(false);
       show("teacher");
       await loadTeacherDashboard();
       return;
     }
 
+    closeTutorial(false);
     show("teacherLogin");
+    document.getElementById("teacherPassword")?.focus();
   }
 
   async function loadTeacherDashboard() {
@@ -2672,6 +2698,7 @@
     bindTopbarActions();
     bindAccountEvents();
     bindHomeEvents();
+    bindTeacherEvents();
     if (Teacher()) {
       await Teacher().validate();
       updateAccountButton();

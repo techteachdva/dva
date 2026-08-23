@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.3.11";
+  const APP_VERSION = "2.3.12";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -119,6 +119,16 @@
   ];
 
   const CHANGELOG = [
+    {
+      version: "2.3.12",
+      date: "2026-08-22",
+      summary: "Fix Results Enter button blocked by tutorial and dashboard navigation.",
+      items: [
+        "Teacher login handlers bind on every Studio load — Results from a file tile now wires up Enter.",
+        "Tutorial no longer covers the View results password screen; it dismisses when you open Results.",
+        "Shared assignments get a Results button; Enter key submits the assignment password.",
+      ],
+    },
     {
       version: "2.3.11",
       date: "2026-08-22",
