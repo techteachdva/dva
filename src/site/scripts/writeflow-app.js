@@ -1379,19 +1379,12 @@
         studentNameInput.value = session.username.replace(/\.$/, "");
         studentNameInput.readOnly = true;
       }
-      const classEl = document.getElementById("studentClass");
-      if (classEl && session.classroom) {
-        classEl.value = session.classroom;
-        classEl.disabled = true;
-      }
     } else {
       signedOut?.classList.remove("dw-hidden");
       signedIn?.classList.add("dw-hidden");
       passwordPanel?.classList.add("dw-hidden");
       const studentNameInput = document.getElementById("studentName");
       if (studentNameInput) studentNameInput.readOnly = false;
-      const classEl = document.getElementById("studentClass");
-      if (classEl) classEl.disabled = false;
     }
     updateStartButton();
   }
@@ -1678,7 +1671,6 @@
     if (Student()) {
       await Student().validate();
       bindStudentAccountEvents();
-      renderStudentAccountPanel();
     }
 
     if (!assignmentId) {
@@ -1698,6 +1690,7 @@
     }
 
     Core.populateClassSelect(document.getElementById("studentClass"), VALID_CLASSROOMS);
+    if (Student()) renderStudentAccountPanel();
     applyConfigToUI();
 
     const storyInput = document.getElementById("storyInput");
