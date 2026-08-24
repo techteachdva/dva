@@ -4311,8 +4311,50 @@ mark.wf-vocab-hit {
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(300px, 1fr) minmax(340px, 1.1fr);
+  grid-template-columns: minmax(0, 3fr) minmax(0, 1fr);
   gap: 12px;
+}
+
+.wf-teacher-results__table-panel {
+  overflow-x: auto;
+}
+
+.wf-teacher-results__table-panel .wf-teacher-results__table {
+  table-layout: auto;
+  width: 100%;
+  min-width: max-content;
+}
+
+.wf-teacher-results__table-panel .wf-teacher-results__table th,
+.wf-teacher-results__table-panel .wf-teacher-results__table td {
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.wf-teacher-results__table-panel .wf-teacher-results__table .dw-col-name {
+  min-width: 9.5rem;
+  width: auto;
+}
+
+.wf-teacher-results__table-panel .wf-teacher-results__table .dw-col-class {
+  min-width: 12rem;
+  width: auto;
+}
+
+.wf-teacher-results__table-panel .wf-teacher-results__table .dw-col-submitted {
+  min-width: 8.75rem;
+}
+
+.wf-teacher-results__table-panel .wf-teacher-results__table .dw-col-action {
+  width: 4.25rem;
+}
+
+.wf-teacher-results__detail {
+  font-size: 0.94rem;
+}
+
+.wf-teacher-results__detail .dw-story-preview {
+  font-size: 0.9rem;
 }
 
 .wf-teacher-results__table-panel,
@@ -4336,10 +4378,13 @@ mark.wf-vocab-hit {
   z-index: 1;
   padding-bottom: 8px;
   background: linear-gradient(180deg, rgba(28, 45, 74, 0.98) 70%, rgba(28, 45, 74, 0));
+  flex-wrap: wrap;
 }
 
 .wf-teacher-results__detail-head .dw-h3 {
   margin: 0;
+  font-size: 1rem;
+  line-height: 1.3;
 }
 
 .wf-teacher-results__detail-placeholder {

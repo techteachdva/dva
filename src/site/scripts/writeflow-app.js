@@ -2340,11 +2340,12 @@
 
     if (thead) {
       thead.innerHTML = cols.map((c) => {
-        if (c === "action") return `<th scope="col">${headerLabels[c]}</th>`;
+        const colClass = `dw-col-${c}`;
+        if (c === "action") return `<th scope="col" class="${colClass}">${headerLabels[c]}</th>`;
         const active = teacherTableSort.col === c;
         const ariaSort = active ? (teacherTableSort.dir === "asc" ? "ascending" : "descending") : "none";
         const icon = active ? (teacherTableSort.dir === "asc" ? "▲" : "▼") : "↕";
-        return `<th scope="col" aria-sort="${ariaSort}">
+        return `<th scope="col" class="${colClass}" aria-sort="${ariaSort}">
           <button type="button" class="dw-table-sort" data-sort-col="${c}">
             <span class="dw-table-sort__label">${headerLabels[c]}</span>
             <span class="dw-table-sort__icon" aria-hidden="true">${icon}</span>
@@ -2379,7 +2380,7 @@
       const subKey = getTeacherSubmissionKey(s);
       const selected = subKey && subKey === selectedTeacherSubmissionKey;
       return `<tr class="dw-table-row--clickable${selected ? " dw-table-row--selected" : ""}" data-sub-key="${escapeHtml(subKey)}" tabindex="0" aria-selected="${selected ? "true" : "false"}">
-        ${cols.map((c) => `<td>${cellValue(s, c, idx)}</td>`).join("")}
+        ${cols.map((c) => `<td class="dw-col-${c}">${cellValue(s, c, idx)}</td>`).join("")}
       </tr>`;
     }).join("")
       || `<tr><td colspan="${cols.length}" class="dw-muted">No submissions yet.</td></tr>`;
