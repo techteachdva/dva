@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Tech Escape — SEL Two Truths &amp; One Lie (Teacher Review)</title>
+<style>
+  @page { size: letter; margin: 0.65in 0.7in; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: "Segoe UI", Calibri, Arial, sans-serif;
+    font-size: 15pt;
+    line-height: 1.45;
+    color: #111;
+    background: #fff;
+    margin: 0;
+  }
+  .cover { page-break-after: always; padding: 0.5in 0 1in; }
+  .cover h1 { font-size: 32pt; line-height: 1.15; margin: 0 0 0.35in; color: #0d2847; }
+  .cover .sub { font-size: 20pt; color: #2a5a8a; margin-bottom: 0.5in; }
+  .cover p { font-size: 16pt; max-width: 7in; margin: 0.2in 0; }
+  .cover ul { font-size: 16pt; margin: 0.25in 0; padding-left: 0.35in; }
+  .cover .meta { margin-top: 0.6in; font-size: 13pt; color: #444; }
+  .legend {
+    border: 2px solid #ccc; border-radius: 10px;
+    padding: 0.25in 0.35in; margin: 0.4in 0; font-size: 14pt;
+  }
+  .legend strong { display: block; margin-bottom: 0.1in; }
+  .card { page-break-after: always; padding-bottom: 0.35in; }
+  .card:last-child { page-break-after: auto; }
+  .card-head {
+    display: flex; flex-wrap: wrap; gap: 0.15in 0.35in; align-items: baseline;
+    margin-bottom: 0.15in; border-bottom: 3px solid #0d2847; padding-bottom: 0.12in;
+  }
+  .card-num { font-size: 14pt; font-weight: 700; color: #555; }
+  .card-id { font-size: 18pt; font-weight: 800; color: #0d2847; font-family: Consolas, monospace; }
+  .card-topic { font-size: 14pt; font-weight: 600; color: #2a5a8a; flex: 1; }
+  .sender { font-size: 22pt; font-weight: 700; margin: 0.12in 0 0.08in; }
+  .preview { font-size: 18pt; font-weight: 600; margin: 0 0 0.2in; color: #222; }
+  .prompt { font-size: 13pt; color: #555; margin: 0 0 0.15in; }
+  .statements { list-style: none; margin: 0 0 0.25in; padding: 0; }
+  .stmt {
+    display: grid; grid-template-columns: 0.45in 1fr auto;
+    gap: 0.12in 0.2in; align-items: start;
+    padding: 0.18in 0.2in; margin-bottom: 0.12in;
+    border-radius: 8px; border: 2px solid #ddd; font-size: 17pt;
+  }
+  .stmt.is-truth { background: #eef8f0; border-color: #3d8f5a; }
+  .stmt.is-lie { background: #fdeeee; border-color: #c44; }
+  .stmt-label { font-weight: 800; font-size: 18pt; color: #0d2847; }
+  .stmt-text { font-weight: 500; }
+  .stmt-tag {
+    font-size: 11pt; font-weight: 800; letter-spacing: 0.06em;
+    padding: 0.06in 0.12in; border-radius: 4px; white-space: nowrap;
+  }
+  .is-truth .stmt-tag { background: #3d8f5a; color: #fff; }
+  .is-lie .stmt-tag { background: #b33; color: #fff; }
+  .why {
+    font-size: 15pt; background: #f4f7fb; border-left: 5px solid #2a5a8a;
+    padding: 0.18in 0.22in; margin-bottom: 0.2in;
+  }
+  .why strong { display: block; font-size: 14pt; margin-bottom: 0.08in; color: #2a5a8a; }
+  .why p { margin: 0; }
+  .notes strong { display: block; font-size: 14pt; margin-bottom: 0.08in; color: #444; }
+  .notes-box {
+    min-height: 0.9in; border: 2px dashed #aaa; border-radius: 8px; background: #fafafa;
+  }
+  @media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+  <section class="cover">
+    <h1>Tech Escape — SEL Notifications</h1>
+    <p class="sub">Two Truths &amp; One Lie — Teacher Review Packet</p>
+    <p>
+      These are the <strong>text-message style notifications</strong> that pop up during
+      <em>Tech Escape</em> while students explore the haunted computer lab.
+      Each scenario has <strong>two true statements and one lie</strong>.
+      Students must spot the lie before the timer runs out.
+    </p>
+    <ul>
+      <li><strong>50</strong> scenarios total</li>
+      <li><strong>25</strong> Digital Citizenship</li>
+      <li><strong>25</strong> Social Emotional Learning</li>
+    </ul>
+    <div class="legend">
+      <strong>How to use this packet</strong>
+      Each page shows <span style="color:#3d8f5a;font-weight:700">TRUTH</span> and
+      <span style="color:#b33;font-weight:700">LIE</span> labels for review only —
+      students do not see these in the game.
+      Use the notes box to suggest edits or new scenarios. Return feedback to update the game bank.
+    </div>
+    <p class="meta">
+      Source: src/site/tech-escape/js/data/twoTruths.js<br />
+      Generated: 2026-08-17 · DVA Media Arts &amp; Tech
+    </p>
+  </section>
+  
+    <article class="card" id="SEL-001">
+      <header class="card-head">
+        <div class="card-num">1 of 50</div>
+        <div class="card-id">SEL-001</div>
+        <div class="card-topic">Digital Citizenship</div>
+      </header>
+      <div class="sender">Jordan 📱</div>
+      <p class="preview">Someone posted a screenshot of our private group chat in the school story 😬</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-truth"><span class="stmt-label">A</span><span class="stmt-text">Screenshots can spread even when you thought a chat was private.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-lie"><span class="stmt-label">B</span><span class="stmt-text">Deleting the original message always removes every copy people saved.</span><span class="stmt-tag">LIE</span></li><li class="stmt is-truth"><span class="stmt-label">C</span><span class="stmt-text">If you share a screenshot without asking, you can hurt trust and break school rules.</span><span class="stmt-tag">TRUTH</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Deleting a message only removes it from the chat app — not from screenshots, forwards, or saved photos. Before you share anything from a private chat, ask the people involved or leave it out. If something already leaked, tell a trusted adult instead of reposting it.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-002">
+      <header class="card-head">
+        <div class="card-num">2 of 50</div>
+        <div class="card-id">SEL-002</div>
+        <div class="card-topic">Social Emotional Learning</div>
+      </header>
+      <div class="sender">Maya 💬</div>
+      <p class="preview">They kicked me from the Minecraft server and said it was &quot;just a joke&quot;</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-truth"><span class="stmt-label">A</span><span class="stmt-text">Being left out on purpose can feel as bad as in-person exclusion.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-truth"><span class="stmt-label">B</span><span class="stmt-text">A joke stops being funny when the person on the receiving end says it hurts.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-lie"><span class="stmt-label">C</span><span class="stmt-text">If you ignore exclusion online, it usually fixes itself without anyone saying anything.</span><span class="stmt-tag">LIE</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Online exclusion rarely resolves on its own — silence often lets it continue. If you are excluded, it is okay to step away, talk to someone you trust, or ask a moderator for help. If you see it happening, checking in with the person left out is a small act that matters.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-003">
+      <header class="card-head">
+        <div class="card-num">3 of 50</div>
+        <div class="card-id">SEL-003</div>
+        <div class="card-topic">Digital Citizenship</div>
+      </header>
+      <div class="sender">Devon 🎮</div>
+      <p class="preview">Someone in voice chat keeps saying slurs &quot;because it is just the game&quot;</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-lie"><span class="stmt-label">A</span><span class="stmt-text">Voice chat rules are different from school, so anything goes there.</span><span class="stmt-tag">LIE</span></li><li class="stmt is-truth"><span class="stmt-label">B</span><span class="stmt-text">Hate speech in a game lobby can still get you reported or banned.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-truth"><span class="stmt-label">C</span><span class="stmt-text">Muting or leaving a toxic voice channel protects your mood and focus.</span><span class="stmt-tag">TRUTH</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Game platforms have community standards, and hate speech can lead to bans or reports to school when it involves classmates. Muting, leaving, or reporting protects you. If it involves someone from school, save evidence and tell a trusted adult — &quot;it is just a game&quot; is not a free pass to harm others.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-004">
+      <header class="card-head">
+        <div class="card-num">4 of 50</div>
+        <div class="card-id">SEL-004</div>
+        <div class="card-topic">Social Emotional Learning</div>
+      </header>
+      <div class="sender">Aisha ✨</div>
+      <p class="preview">My friend posted a mean meme about someone in our grade</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-truth"><span class="stmt-label">A</span><span class="stmt-text">Laughing at a mean post can encourage more bullying.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-lie"><span class="stmt-label">B</span><span class="stmt-text">Sharing a bullying post to &quot;warn people&quot; always helps the victim.</span><span class="stmt-tag">LIE</span></li><li class="stmt is-truth"><span class="stmt-label">C</span><span class="stmt-text">You can be an upstander by not engaging and supporting the person targeted.</span><span class="stmt-tag">TRUTH</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Reposting bullying content spreads it further and can embarrass the victim again. Upstanders refuse to pass it along, report it on the platform, and check in privately with the person hurt. Warning others is better done by telling an adult who can handle it safely.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-005">
+      <header class="card-head">
+        <div class="card-num">5 of 50</div>
+        <div class="card-id">SEL-005</div>
+        <div class="card-topic">Digital Citizenship</div>
+      </header>
+      <div class="sender">Chris 🔐</div>
+      <p class="preview">My best friend asked for my Instagram password &quot;just for one day&quot;</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-truth"><span class="stmt-label">A</span><span class="stmt-text">Sharing passwords gives someone full control of your account and DMs.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-truth"><span class="stmt-label">B</span><span class="stmt-text">A real friend will understand if you say no to sharing login info.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-lie"><span class="stmt-label">C</span><span class="stmt-text">Sharing passwords with one close friend is safe if you trust them completely.</span><span class="stmt-tag">LIE</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Even trusted friends can accidentally post, get hacked, or feel pressured to share what they see. Passwords are personal — use strong unique ones and never trade them. If someone pushes back when you say no, that is useful information about the friendship.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-006">
+      <header class="card-head">
+        <div class="card-num">6 of 50</div>
+        <div class="card-id">SEL-006</div>
+        <div class="card-topic">Social Emotional Learning</div>
+      </header>
+      <div class="sender">Riley 🌈</div>
+      <p class="preview">There is drama in the group chat and I do not want to pick sides</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-lie"><span class="stmt-label">A</span><span class="stmt-text">Staying neutral online means you should never tell an adult about serious conflict.</span><span class="stmt-tag">LIE</span></li><li class="stmt is-truth"><span class="stmt-label">B</span><span class="stmt-text">You can care about friends without joining every argument.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-truth"><span class="stmt-label">C</span><span class="stmt-text">Taking a pause before replying can stop a fight from growing.</span><span class="stmt-tag">TRUTH</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Neutral does not mean silent about harm. You can avoid picking sides while still reporting threats, harassment, or anything that feels unsafe. Pausing, using &quot;I&quot; statements, and moving heated talks offline or to a mediator are healthy ways to stay out of drama without ignoring real problems.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-007">
+      <header class="card-head">
+        <div class="card-num">7 of 50</div>
+        <div class="card-id">SEL-007</div>
+        <div class="card-topic">Digital Citizenship</div>
+      </header>
+      <div class="sender">Sam 📸</div>
+      <p class="preview">Someone took a photo of me at lunch and wants to post it</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-truth"><span class="stmt-label">A</span><span class="stmt-text">You have the right to say no to a photo being posted, even in public.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-lie"><span class="stmt-label">B</span><span class="stmt-text">If you are in the background of a photo, you legally cannot ask for it to be taken down.</span><span class="stmt-tag">LIE</span></li><li class="stmt is-truth"><span class="stmt-label">C</span><span class="stmt-text">Once a photo is online, you cannot fully control who sees or saves it.</span><span class="stmt-tag">TRUTH</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>You can always ask friends not to post you, and many schools treat non-consensual posting as a digital citizenship issue. If someone ignores your no, talk to a trusted adult. Being in the background does not erase your right to privacy and respect.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-008">
+      <header class="card-head">
+        <div class="card-num">8 of 50</div>
+        <div class="card-id">SEL-008</div>
+        <div class="card-topic">Social Emotional Learning</div>
+      </header>
+      <div class="sender">Taylor 🎧</div>
+      <p class="preview">I stayed up until 2 a.m. gaming and my mom took my console</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-truth"><span class="stmt-label">A</span><span class="stmt-text">Losing sleep can make mood, grades, and friendships harder the next day.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-truth"><span class="stmt-label">B</span><span class="stmt-text">Talking about screen limits calmly works better than hiding your usage.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-lie"><span class="stmt-label">C</span><span class="stmt-text">Parents who set screen-time rules never understand gaming or social life.</span><span class="stmt-tag">LIE</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Many parents set limits because they care about sleep and balance, not because they &quot;do not get it.&quot; Hiding usage usually breaks trust. Try proposing a schedule, using built-in timers, or agreeing on a check-in — negotiation beats sneaking every time.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-009">
+      <header class="card-head">
+        <div class="card-num">9 of 50</div>
+        <div class="card-id">SEL-009</div>
+        <div class="card-topic">Digital Citizenship</div>
+      </header>
+      <div class="sender">Priya 🔍</div>
+      <p class="preview">There is a rumor on TikTok about someone in our school</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-lie"><span class="stmt-label">A</span><span class="stmt-text">If a rumor has lots of views, it is probably accurate.</span><span class="stmt-tag">LIE</span></li><li class="stmt is-truth"><span class="stmt-label">B</span><span class="stmt-text">Rumors online can reach people faster than hallway gossip.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-truth"><span class="stmt-label">C</span><span class="stmt-text">Checking whether a claim is true before sharing protects everyone involved.</span><span class="stmt-tag">TRUTH</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Views measure attention, not truth. False rumors can ruin reputations in hours. Pause before reposting, look for reliable sources, and avoid naming people in speculation. If something is harmful or threatening, report it and tell a trusted adult.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-010">
+      <header class="card-head">
+        <div class="card-num">10 of 50</div>
+        <div class="card-id">SEL-010</div>
+        <div class="card-topic">Social Emotional Learning</div>
+      </header>
+      <div class="sender">Marcus 🤝</div>
+      <p class="preview">I saw someone getting piled on in the comments and did not know what to do</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-truth"><span class="stmt-label">A</span><span class="stmt-text">A single supportive comment can help a target feel less alone.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-lie"><span class="stmt-label">B</span><span class="stmt-text">Comment-section pile-ons are harmless because nobody knows the person in real life.</span><span class="stmt-tag">LIE</span></li><li class="stmt is-truth"><span class="stmt-label">C</span><span class="stmt-text">Reporting abusive comments is different from starting more drama.</span><span class="stmt-tag">TRUTH</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Online harassment hurts even when it is &quot;just comments,&quot; and classmates often recognize each other. Reporting, blocking, or a kind DM to the person targeted are upstander moves. Joining the pile-on adds harm — you do not need a perfect speech to make a difference.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-011">
+      <header class="card-head">
+        <div class="card-num">11 of 50</div>
+        <div class="card-id">SEL-011</div>
+        <div class="card-topic">Digital Citizenship</div>
+      </header>
+      <div class="sender">Elena 📱</div>
+      <p class="preview">An anonymous app at school has people posting secrets about classmates</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-truth"><span class="stmt-label">A</span><span class="stmt-text">Anonymous does not mean untraceable — platforms and schools can investigate serious posts.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-truth"><span class="stmt-label">B</span><span class="stmt-text">Mean anonymous posts can still count as bullying or harassment.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-lie"><span class="stmt-label">C</span><span class="stmt-text">Anonymous apps guarantee that nobody can ever find out who posted.</span><span class="stmt-tag">LIE</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Anonymous apps often cooperate with schools or law enforcement when safety is at risk, and metadata can sometimes identify users. Treat anonymous spaces like public ones: do not post secrets about others, and report threats. If you are targeted, save screenshots and tell an adult.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-012">
+      <header class="card-head">
+        <div class="card-num">12 of 50</div>
+        <div class="card-id">SEL-012</div>
+        <div class="card-topic">Social Emotional Learning</div>
+      </header>
+      <div class="sender">Noah 😤</div>
+      <p class="preview">I typed something mean when I was mad and now the whole chat saw it</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-lie"><span class="stmt-label">A</span><span class="stmt-text">Once you apologize in chat, everyone has to forgive you immediately.</span><span class="stmt-tag">LIE</span></li><li class="stmt is-truth"><span class="stmt-label">B</span><span class="stmt-text">Anger can make us write things we would not say face to face.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-truth"><span class="stmt-label">C</span><span class="stmt-text">A sincere apology and giving space can start to repair trust.</span><span class="stmt-tag">TRUTH</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Apologies matter, but healing takes time and the other person chooses when they are ready. Follow up with changed behavior, not repeated demands for forgiveness. If you are upset, draft offline, wait ten minutes, or talk in person before sending.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-013">
+      <header class="card-head">
+        <div class="card-num">13 of 50</div>
+        <div class="card-id">SEL-013</div>
+        <div class="card-topic">Digital Citizenship</div>
+      </header>
+      <div class="sender">Zoe 🌍</div>
+      <p class="preview">My teacher said our digital footprint follows us — is that real?</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-truth"><span class="stmt-label">A</span><span class="stmt-text">Old posts and usernames can show up in searches years later.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-lie"><span class="stmt-label">B</span><span class="stmt-text">Kids&#x27; online posts disappear automatically when they turn eighteen.</span><span class="stmt-tag">LIE</span></li><li class="stmt is-truth"><span class="stmt-label">C</span><span class="stmt-text">Thinking before you post helps protect future opportunities.</span><span class="stmt-tag">TRUTH</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>The internet rarely forgets on its own. Posts, tags, and comments can be screenshotted or archived. You can clean up accounts, adjust privacy settings, and post thoughtfully going forward — but assume what you share could be seen by colleges, employers, or future you.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-014">
+      <header class="card-head">
+        <div class="card-num">14 of 50</div>
+        <div class="card-id">SEL-014</div>
+        <div class="card-topic">Social Emotional Learning</div>
+      </header>
+      <div class="sender">Jayden 💭</div>
+      <p class="preview">My friend has not replied in three days and I think they are mad at me</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-truth"><span class="stmt-label">A</span><span class="stmt-text">Delayed replies can mean someone is busy, overwhelmed, or offline.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-truth"><span class="stmt-label">B</span><span class="stmt-text">Asking gently if everything is okay is better than sending ten messages.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-lie"><span class="stmt-label">C</span><span class="stmt-text">If someone does not reply instantly, they are definitely ending the friendship.</span><span class="stmt-tag">LIE</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Silence has many explanations — sports, family stuff, phone limits, or needing space. Assumptions often create conflict that was not there. One calm check-in is fine; flooding someone with messages usually adds pressure. If patterns worry you, talk to a trusted adult.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-015">
+      <header class="card-head">
+        <div class="card-num">15 of 50</div>
+        <div class="card-id">SEL-015</div>
+        <div class="card-topic">Digital Citizenship</div>
+      </header>
+      <div class="sender">Fatima 🛡️</div>
+      <p class="preview">Someone in Discord DMed me a link to &quot;free Robux&quot;</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-truth"><span class="stmt-label">A</span><span class="stmt-text">Too-good-to-be-true offers often steal accounts or install malware.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-lie"><span class="stmt-label">B</span><span class="stmt-text">If a link comes from a friend&#x27;s account, it is always safe to click.</span><span class="stmt-tag">LIE</span></li><li class="stmt is-truth"><span class="stmt-label">C</span><span class="stmt-text">Reporting and blocking suspicious DMs protects you and others.</span><span class="stmt-tag">TRUTH</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Accounts get hacked and impersonate friends all the time. Verify through another channel before clicking. Never enter your password on unofficial sites. Use official app stores, enable two-factor authentication, and tell an adult if you already clicked something suspicious.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-016">
+      <header class="card-head">
+        <div class="card-num">16 of 50</div>
+        <div class="card-id">SEL-016</div>
+        <div class="card-topic">Social Emotional Learning</div>
+      </header>
+      <div class="sender">Leo 🎯</div>
+      <p class="preview">Two friends want me to join a group call to &quot;confront&quot; someone</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-lie"><span class="stmt-label">A</span><span class="stmt-text">More people on a call always makes conflict resolution fairer.</span><span class="stmt-tag">LIE</span></li><li class="stmt is-truth"><span class="stmt-label">B</span><span class="stmt-text">Group confrontations online can escalate fast and leave lasting hurt.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-truth"><span class="stmt-label">C</span><span class="stmt-text">Suggesting a calm one-on-one talk or involving a mediator is safer.</span><span class="stmt-tag">TRUTH</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Piling on someone in a group call often feels like ambush, not fairness. Conflict de-escalation works best with clear goals, privacy, and respect. You can decline to join, propose talking to a counselor, or message the person privately if it feels safe.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-017">
+      <header class="card-head">
+        <div class="card-num">17 of 50</div>
+        <div class="card-id">SEL-017</div>
+        <div class="card-topic">Digital Citizenship</div>
+      </header>
+      <div class="sender">Hannah 📵</div>
+      <p class="preview">My cousin wants to borrow my phone to &quot;just check something real quick&quot;</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-truth"><span class="stmt-label">A</span><span class="stmt-text">Unlocked phones can expose private messages, photos, and saved passwords.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-truth"><span class="stmt-label">B</span><span class="stmt-text">It is okay to say no or to supervise what someone does on your device.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-lie"><span class="stmt-label">C</span><span class="stmt-text">Letting anyone use your logged-in phone has zero privacy risks.</span><span class="stmt-tag">LIE</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>A logged-in phone is access to your whole digital life — DMs, banking apps, location, and accounts. Offer to look something up for them instead, or log out of sensitive apps first. Boundaries around devices are normal and smart.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-018">
+      <header class="card-head">
+        <div class="card-num">18 of 50</div>
+        <div class="card-id">SEL-018</div>
+        <div class="card-topic">Social Emotional Learning</div>
+      </header>
+      <div class="sender">Omar 🌟</div>
+      <p class="preview">I laughed at a meme that made fun of someone\</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-lie"><span class="stmt-label">A</span><span class="stmt-text">Online jokes about appearance do not affect people because they are &quot;not real.&quot;</span><span class="stmt-tag">LIE</span></li><li class="stmt is-truth"><span class="stmt-label">B</span><span class="stmt-text">Humor that targets how someone looks can damage self-esteem.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-truth"><span class="stmt-label">C</span><span class="stmt-text">You can tell friends you are not comfortable with that kind of joke.</span><span class="stmt-tag">TRUTH</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Targets often see those posts, and laughter signals approval to everyone watching. You can un-like, speak up, or change the subject. Kindness online means remembering a real person is on the other side of the screen.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-019">
+      <header class="card-head">
+        <div class="card-num">19 of 50</div>
+        <div class="card-id">SEL-019</div>
+        <div class="card-topic">Digital Citizenship</div>
+      </header>
+      <div class="sender">Grace 🔔</div>
+      <p class="preview">Should I report something mean I saw, or is that snitching?</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-truth"><span class="stmt-label">A</span><span class="stmt-text">Reporting threats or repeated harassment helps keep communities safer.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-lie"><span class="stmt-label">B</span><span class="stmt-text">Reporting always gets the reporter in trouble with their friends.</span><span class="stmt-tag">LIE</span></li><li class="stmt is-truth"><span class="stmt-label">C</span><span class="stmt-text">Gossiping about what someone did is different from telling a trusted adult.</span><span class="stmt-tag">TRUTH</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Reporting serious harm is responsible, not snitching — gossip spreads rumors for entertainment. Platforms and schools use reports to stop bullying and threats. You can report anonymously on many apps. Real friends do not pressure you to stay silent about safety.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-020">
+      <header class="card-head">
+        <div class="card-num">20 of 50</div>
+        <div class="card-id">SEL-020</div>
+        <div class="card-topic">Social Emotional Learning</div>
+      </header>
+      <div class="sender">Kai 🧘</div>
+      <p class="preview">I got into a heated debate in comments and my heart is racing</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-truth"><span class="stmt-label">A</span><span class="stmt-text">Strong emotions can narrow your thinking and make replies harsher.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-truth"><span class="stmt-label">B</span><span class="stmt-text">Stepping away from the screen helps your body calm down.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-lie"><span class="stmt-label">C</span><span class="stmt-text">Winning an online argument is more important than staying respectful.</span><span class="stmt-tag">LIE</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>No comment section trophy is worth damaging relationships or your reputation. When you feel activated, close the app, drink water, or move around. Return later if you still want to discuss — or agree to disagree. Respect outlasts &quot;winning.&quot;</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-021">
+      <header class="card-head">
+        <div class="card-num">21 of 50</div>
+        <div class="card-id">SEL-021</div>
+        <div class="card-topic">Digital Citizenship</div>
+      </header>
+      <div class="sender">Isabella 📲</div>
+      <p class="preview">A classmate made a fake account pretending to be me</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-lie"><span class="stmt-label">A</span><span class="stmt-text">Fake accounts are harmless if they only post silly jokes.</span><span class="stmt-tag">LIE</span></li><li class="stmt is-truth"><span class="stmt-label">B</span><span class="stmt-text">Impersonation can violate platform rules and school policies.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-truth"><span class="stmt-label">C</span><span class="stmt-text">Saving evidence and reporting the account is a smart first step.</span><span class="stmt-tag">TRUTH</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Impersonation can spread false information, embarrass you, or harm your reputation — even as a &quot;joke.&quot; Report the profile, tell a trusted adult, and warn close friends it is not you. Schools take identity impersonation seriously when it affects students.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-022">
+      <header class="card-head">
+        <div class="card-num">22 of 50</div>
+        <div class="card-id">SEL-022</div>
+        <div class="card-topic">Social Emotional Learning</div>
+      </header>
+      <div class="sender">Tyler 🏀</div>
+      <p class="preview">My team group chat turned toxic after we lost a game</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-truth"><span class="stmt-label">A</span><span class="stmt-text">Blaming one player publicly can hurt the whole team&#x27;s trust.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-lie"><span class="stmt-label">B</span><span class="stmt-text">Venting anger at teammates in chat always makes teams play better.</span><span class="stmt-tag">LIE</span></li><li class="stmt is-truth"><span class="stmt-label">C</span><span class="stmt-text">Private feedback or a reset message can refocus the group.</span><span class="stmt-tag">TRUTH</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Public blame creates fear and resentment, not better performance. If you are upset, cool off first. Constructive talk works one-on-one or after everyone calms down. If chat stays toxic, mute notifications and loop in a coach or adult.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-023">
+      <header class="card-head">
+        <div class="card-num">23 of 50</div>
+        <div class="card-id">SEL-023</div>
+        <div class="card-topic">Digital Citizenship</div>
+      </header>
+      <div class="sender">Nina 🎬</div>
+      <p class="preview">Someone wants to livestream our hangout without asking everyone</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-truth"><span class="stmt-label">A</span><span class="stmt-text">Livestreams can show faces, locations, and conversations to strangers.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-truth"><span class="stmt-label">B</span><span class="stmt-text">Everyone present should agree before going live or recording.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-lie"><span class="stmt-label">C</span><span class="stmt-text">If you are in the room, you automatically consent to being streamed.</span><span class="stmt-tag">LIE</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Consent matters for recordings and livestreams — people may have privacy, safety, or family reasons to opt out. Ask the group out loud, not just in chat. If someone streams anyway, leave the frame and tell an adult if you feel unsafe.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-024">
+      <header class="card-head">
+        <div class="card-num">24 of 50</div>
+        <div class="card-id">SEL-024</div>
+        <div class="card-topic">Social Emotional Learning</div>
+      </header>
+      <div class="sender">Ben 🐢</div>
+      <p class="preview">I sent a text and they left me on read — should I spam them?</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-lie"><span class="stmt-label">A</span><span class="stmt-text">Being left on read always means the other person hates you.</span><span class="stmt-tag">LIE</span></li><li class="stmt is-truth"><span class="stmt-label">B</span><span class="stmt-text">Repeated messages can feel overwhelming or pushy.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-truth"><span class="stmt-label">C</span><span class="stmt-text">Giving space shows respect for the other person&#x27;s timing.</span><span class="stmt-tag">TRUTH</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Read receipts show delivery, not feelings. People pause replies for many reasons. One follow-up after a day is reasonable; a burst of messages rarely helps. If communication patterns concern you long-term, talk it out calmly or seek advice from someone you trust.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-025">
+      <header class="card-head">
+        <div class="card-num">25 of 50</div>
+        <div class="card-id">SEL-025</div>
+        <div class="card-topic">Digital Citizenship</div>
+      </header>
+      <div class="sender">Amara 🔑</div>
+      <p class="preview">Our school project needs a shared password for one account</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-truth"><span class="stmt-label">A</span><span class="stmt-text">Shared classroom accounts should use passwords teachers control and rotate.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-lie"><span class="stmt-label">B</span><span class="stmt-text">Reusing the same password everywhere is a good way to remember it.</span><span class="stmt-tag">LIE</span></li><li class="stmt is-truth"><span class="stmt-label">C</span><span class="stmt-text">Using your personal password for a school login is risky.</span><span class="stmt-tag">TRUTH</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Reusing passwords means one leak compromises every account. Use unique passwords — or a manager your family approves — and never recycle your personal login for group projects. Teachers can create shared credentials safely without students trading private ones.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-026">
+      <header class="card-head">
+        <div class="card-num">26 of 50</div>
+        <div class="card-id">SEL-026</div>
+        <div class="card-topic">Social Emotional Learning</div>
+      </header>
+      <div class="sender">Dylan 🎭</div>
+      <p class="preview">People are subtweeting someone in our grade and I know who they mean</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-truth"><span class="stmt-label">A</span><span class="stmt-text">Vague posts can still hurt because the target often recognizes themselves.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-truth"><span class="stmt-label">B</span><span class="stmt-text">Choosing not to like or share subtweets reduces their reach.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-lie"><span class="stmt-label">C</span><span class="stmt-text">Subtweets are fine because they never name anyone directly.</span><span class="stmt-tag">LIE</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Subtweeting is indirect bullying — the target usually knows, and so do bystanders. Engaging rewards the behavior. If it is about you or a friend, save evidence and talk to a trusted adult. Kindness means addressing conflict directly or not at all.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-027">
+      <header class="card-head">
+        <div class="card-num">27 of 50</div>
+        <div class="card-id">SEL-027</div>
+        <div class="card-topic">Digital Citizenship</div>
+      </header>
+      <div class="sender">Sophie 🌐</div>
+      <p class="preview">I found someone\</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-lie"><span class="stmt-label">A</span><span class="stmt-text">If a post is public, reposting it to embarrass someone is always fair game.</span><span class="stmt-tag">LIE</span></li><li class="stmt is-truth"><span class="stmt-label">B</span><span class="stmt-text">Digging up old posts to mock someone is a form of harassment.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-truth"><span class="stmt-label">C</span><span class="stmt-text">People grow and deserve not to be defined by one old moment.</span><span class="stmt-tag">TRUTH</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Public does not mean permission to humiliate. Resurfacing old content to mock someone can violate platform harassment rules and school conduct expectations. Delete what you shared, apologize if needed, and practice empathy — you would want the same grace someday.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-028">
+      <header class="card-head">
+        <div class="card-num">28 of 50</div>
+        <div class="card-id">SEL-028</div>
+        <div class="card-topic">Social Emotional Learning</div>
+      </header>
+      <div class="sender">Andre 💡</div>
+      <p class="preview">My friend said &quot;no offense&quot; right before insulting someone in chat</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-truth"><span class="stmt-label">A</span><span class="stmt-text">Saying &quot;no offense&quot; does not remove the sting of hurtful words.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-lie"><span class="stmt-label">B</span><span class="stmt-text">Online insults do not count if the speaker says they are joking afterward.</span><span class="stmt-tag">LIE</span></li><li class="stmt is-truth"><span class="stmt-label">C</span><span class="stmt-text">You can call out unkind comments without attacking the person.</span><span class="stmt-tag">TRUTH</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Impact matters more than intent labels like &quot;just joking.&quot; You can say, &quot;That came across mean — let us keep it respectful.&quot; If you spoke harshly, own it and apologize specifically. Jokes that punch down are not required for friend groups to have fun.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-029">
+      <header class="card-head">
+        <div class="card-num">29 of 50</div>
+        <div class="card-id">SEL-029</div>
+        <div class="card-topic">Digital Citizenship</div>
+      </header>
+      <div class="sender">Lily 🕹️</div>
+      <p class="preview">A stranger in my game keeps asking where I go to school</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-truth"><span class="stmt-label">A</span><span class="stmt-text">Personal details like school name and schedule can be used to find you.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-truth"><span class="stmt-label">B</span><span class="stmt-text">You can decline personal questions and still keep playing.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-lie"><span class="stmt-label">C</span><span class="stmt-text">Sharing your school name with online strangers is safe if you are in a party voice chat.</span><span class="stmt-tag">LIE</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Strangers may not be who they claim — age, location, and intentions can be faked. Keep real-world details private, use generic usernames, and block or report pushy behavior. Tell a trusted adult if someone persists or makes you uncomfortable.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-030">
+      <header class="card-head">
+        <div class="card-num">30 of 50</div>
+        <div class="card-id">SEL-030</div>
+        <div class="card-topic">Social Emotional Learning</div>
+      </header>
+      <div class="sender">Jasmine 🌸</div>
+      <p class="preview">I want to support a friend who is being talked about online</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-lie"><span class="stmt-label">A</span><span class="stmt-text">You must publicly defend them in every comment thread to be a good friend.</span><span class="stmt-tag">LIE</span></li><li class="stmt is-truth"><span class="stmt-label">B</span><span class="stmt-text">A private check-in shows you care without adding public drama.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-truth"><span class="stmt-label">C</span><span class="stmt-text">Listening without demanding every detail respects their boundaries.</span><span class="stmt-tag">TRUTH</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Public fights can escalate and sometimes embarrass the person you want to help. Ask what they need — company, reporting help, or adult support. Small private gestures often matter more than heroic comment battles.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-031">
+      <header class="card-head">
+        <div class="card-num">31 of 50</div>
+        <div class="card-id">SEL-031</div>
+        <div class="card-topic">Digital Citizenship</div>
+      </header>
+      <div class="sender">Caleb 📧</div>
+      <p class="preview">I got an email saying my account will be deleted unless I click now</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-truth"><span class="stmt-label">A</span><span class="stmt-text">Urgent threats in messages are a common phishing tactic.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-lie"><span class="stmt-label">B</span><span class="stmt-text">If an email looks official, the link inside is always legitimate.</span><span class="stmt-tag">LIE</span></li><li class="stmt is-truth"><span class="stmt-label">C</span><span class="stmt-text">Going directly to the official site or app is safer than clicking email links.</span><span class="stmt-tag">TRUTH</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Scammers mimic logos and urgent language to rush you. Never click — open the app or type the URL yourself. Report phishing and tell an adult if you entered credentials. Real companies rarely threaten instant deletion by email alone.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-032">
+      <header class="card-head">
+        <div class="card-num">32 of 50</div>
+        <div class="card-id">SEL-032</div>
+        <div class="card-topic">Social Emotional Learning</div>
+      </header>
+      <div class="sender">Morgan 🔄</div>
+      <p class="preview">Two friend groups are fighting and want me to share screenshots</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-truth"><span class="stmt-label">A</span><span class="stmt-text">Forwarding private messages can break trust with both sides.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-truth"><span class="stmt-label">B</span><span class="stmt-text">Encouraging people to talk directly reduces triangle drama.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-lie"><span class="stmt-label">C</span><span class="stmt-text">Sharing screenshots always clears up who is right faster.</span><span class="stmt-tag">LIE</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Screenshot wars usually deepen conflict and expose private words out of context. Decline to be the messenger, suggest a mediated conversation, or involve an adult if it is serious. Your loyalty can be to kindness and privacy, not to carrying gossip.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-033">
+      <header class="card-head">
+        <div class="card-num">33 of 50</div>
+        <div class="card-id">SEL-033</div>
+        <div class="card-topic">Digital Citizenship</div>
+      </header>
+      <div class="sender">Ruby ♻️</div>
+      <p class="preview">Is it okay to repost someone\</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-lie"><span class="stmt-label">A</span><span class="stmt-text">If it is on the internet, anyone can repost it without credit.</span><span class="stmt-tag">LIE</span></li><li class="stmt is-truth"><span class="stmt-label">B</span><span class="stmt-text">Creators deserve credit when you share their work.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-truth"><span class="stmt-label">C</span><span class="stmt-text">Asking permission respects their time and ownership.</span><span class="stmt-tag">TRUTH</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Copyright and community norms still apply online. Credit the artist, link the original, or ask first — many creators say yes when asked respectfully. Uncredited reposts can get your account reported and hurt artists who rely on visibility.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-034">
+      <header class="card-head">
+        <div class="card-num">34 of 50</div>
+        <div class="card-id">SEL-034</div>
+        <div class="card-topic">Social Emotional Learning</div>
+      </header>
+      <div class="sender">Ethan 🌙</div>
+      <p class="preview">I said something in a voice channel that sounded harsher than I meant</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-truth"><span class="stmt-label">A</span><span class="stmt-text">Tone is easy to misread when you cannot see someone&#x27;s face.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-lie"><span class="stmt-label">B</span><span class="stmt-text">Voice chat tone is always obvious so misunderstandings never happen.</span><span class="stmt-tag">LIE</span></li><li class="stmt is-truth"><span class="stmt-label">C</span><span class="stmt-text">Clarifying your intent privately can prevent lasting misunderstandings.</span><span class="stmt-tag">TRUTH</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Sarcasm and frustration land differently without visual cues. If you misspoke, say so clearly: &quot;That came out wrong — I did not mean it that way.&quot; If you are on the receiving end, ask before assuming the worst. Moving tough talks to video or in person can help.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-035">
+      <header class="card-head">
+        <div class="card-num">35 of 50</div>
+        <div class="card-id">SEL-035</div>
+        <div class="card-topic">Digital Citizenship</div>
+      </header>
+      <div class="sender">Valentina 📍</div>
+      <p class="preview">My friend tagged our exact location at the mall in their story</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-truth"><span class="stmt-label">A</span><span class="stmt-text">Location tags can reveal where you are in real time to wide audiences.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-truth"><span class="stmt-label">B</span><span class="stmt-text">You can ask friends not to tag you or post your location.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-lie"><span class="stmt-label">C</span><span class="stmt-text">Location tags only show city names, never specific places you visit.</span><span class="stmt-tag">LIE</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Many apps tag precise venues and update in real time. That can inform strangers or people you would not invite. Turn off location for posts, review tags before they go live, and discuss boundaries with friends about when check-ins are okay.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-036">
+      <header class="card-head">
+        <div class="card-num">36 of 50</div>
+        <div class="card-id">SEL-036</div>
+        <div class="card-topic">Social Emotional Learning</div>
+      </header>
+      <div class="sender">Quinn 🧩</div>
+      <p class="preview">Someone sent me a &quot;truth or dare&quot; list that gets really personal</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-lie"><span class="stmt-label">A</span><span class="stmt-text">You owe complete honesty to anyone who DMs you a dare list.</span><span class="stmt-tag">LIE</span></li><li class="stmt is-truth"><span class="stmt-label">B</span><span class="stmt-text">You can refuse questions that feel too private or uncomfortable.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-truth"><span class="stmt-label">C</span><span class="stmt-text">Pressure to answer everything is a sign the game is not safe.</span><span class="stmt-tag">TRUTH</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Games that push for secrets, photos, or insults cross boundaries fast. &quot;No&quot; is a full sentence — you do not owe explanations. If someone keeps pushing, block, report, and tell a trusted adult. Real friends respect limits.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-037">
+      <header class="card-head">
+        <div class="card-num">37 of 50</div>
+        <div class="card-id">SEL-037</div>
+        <div class="card-topic">Digital Citizenship</div>
+      </header>
+      <div class="sender">Imani 🏫</div>
+      <p class="preview">A TikTok trend asks students to rate teachers — should I join?</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-truth"><span class="stmt-label">A</span><span class="stmt-text">Publicly rating adults can violate school rules and hurt reputations.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-lie"><span class="stmt-label">B</span><span class="stmt-text">Trends are harmless if deleting the video within an hour erases all impact.</span><span class="stmt-tag">LIE</span></li><li class="stmt is-truth"><span class="stmt-label">C</span><span class="stmt-text">Trends that mock real people can have consequences beyond views.</span><span class="stmt-tag">TRUTH</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Videos can be screenshotted, reuploaded, or seen by staff before you delete. Rating or mocking teachers can lead to discipline and damaged relationships. Choose trends that do not target real people, or skip them — your future self will thank you.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-038">
+      <header class="card-head">
+        <div class="card-num">38 of 50</div>
+        <div class="card-id">SEL-038</div>
+        <div class="card-topic">Social Emotional Learning</div>
+      </header>
+      <div class="sender">Jackson 🎤</div>
+      <p class="preview">My friend vented about me in a private story I was not meant to see</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-truth"><span class="stmt-label">A</span><span class="stmt-text">Finding out secondhand can hurt — your feelings are valid.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-truth"><span class="stmt-label">B</span><span class="stmt-text">A calm conversation later works better than firing back publicly.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-lie"><span class="stmt-label">C</span><span class="stmt-text">If they vented online, you should expose their story to everyone immediately.</span><span class="stmt-tag">LIE</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Retaliating by sharing their private story spreads more pain and makes you part of the problem. Cool off, then talk directly or with a mediator. If venting included lies or harassment, involve an adult — but revenge posts rarely fix friendships.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-039">
+      <header class="card-head">
+        <div class="card-num">39 of 50</div>
+        <div class="card-id">SEL-039</div>
+        <div class="card-topic">Digital Citizenship</div>
+      </header>
+      <div class="sender">Sara 🧠</div>
+      <p class="preview">I use the same username everywhere — is that a problem?</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-lie"><span class="stmt-label">A</span><span class="stmt-text">Usernames never connect across apps so criminals cannot trace you.</span><span class="stmt-tag">LIE</span></li><li class="stmt is-truth"><span class="stmt-label">B</span><span class="stmt-text">Consistent usernames can link your gaming, social, and school identities.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-truth"><span class="stmt-label">C</span><span class="stmt-text">Separate usernames for public and private spaces add a layer of privacy.</span><span class="stmt-tag">TRUTH</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Search tools and determined strangers can connect dots across platforms. Consider different handles for gaming versus personal social life, and avoid usernames with birth years or full names. Privacy is about making linking harder, not impossible.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-040">
+      <header class="card-head">
+        <div class="card-num">40 of 50</div>
+        <div class="card-id">SEL-040</div>
+        <div class="card-topic">Social Emotional Learning</div>
+      </header>
+      <div class="sender">Micah 🫶</div>
+      <p class="preview">I want to compliment someone online but worry it will seem weird</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-truth"><span class="stmt-label">A</span><span class="stmt-text">Specific, kind comments can brighten someone&#x27;s day.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-lie"><span class="stmt-label">B</span><span class="stmt-text">Kind comments online always come across as flirting or creepy.</span><span class="stmt-tag">LIE</span></li><li class="stmt is-truth"><span class="stmt-label">C</span><span class="stmt-text">Compliments about effort or character land better than appearance-only remarks.</span><span class="stmt-tag">TRUTH</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Thoughtful kindness is rarely creepy — tone and context matter. &quot;Your project explanation helped me&quot; or &quot;Thanks for standing up for them&quot; feels genuine. Avoid repeated DMs after someone does not reply, and respect boundaries if they seem uncomfortable.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-041">
+      <header class="card-head">
+        <div class="card-num">41 of 50</div>
+        <div class="card-id">SEL-041</div>
+        <div class="card-topic">Digital Citizenship</div>
+      </header>
+      <div class="sender">Olivia 🚨</div>
+      <p class="preview">Someone posted a threat toward our school in a group chat</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-truth"><span class="stmt-label">A</span><span class="stmt-text">Threats should be reported to a trusted adult immediately.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-truth"><span class="stmt-label">B</span><span class="stmt-text">Do not forward threats widely — that can spread panic and tip off harmful actors.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-lie"><span class="stmt-label">C</span><span class="stmt-text">Online threats are never serious if they use jokes or memes.</span><span class="stmt-tag">LIE</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Schools and law enforcement assess every threat — &quot;joke&quot; defenses do not make them safe. Tell an adult right away, save evidence, and avoid reposting. Spreading threats can interfere with investigations and frighten classmates unnecessarily.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-042">
+      <header class="card-head">
+        <div class="card-num">42 of 50</div>
+        <div class="card-id">SEL-042</div>
+        <div class="card-topic">Social Emotional Learning</div>
+      </header>
+      <div class="sender">Ryan 🌊</div>
+      <p class="preview">We are planning a surprise party but the guest of honor is in the chat</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-lie"><span class="stmt-label">A</span><span class="stmt-text">Keeping secrets in a shared group chat always works if you tell everyone &quot;no spoilers.&quot;</span><span class="stmt-tag">LIE</span></li><li class="stmt is-truth"><span class="stmt-label">B</span><span class="stmt-text">Surprises can backfire if the person feels left out of planning threads.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-truth"><span class="stmt-label">C</span><span class="stmt-text">A separate chat or code words reduce accidental spoilers.</span><span class="stmt-tag">TRUTH</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Notifications, accidental replies, and curious scrolling ruin surprises fast. Move planning to a chat without the guest or use a label like &quot;gift committee.&quot; If they feel hurt by secrecy, explain kindly — empathy matters as much as the surprise.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-043">
+      <header class="card-head">
+        <div class="card-num">43 of 50</div>
+        <div class="card-id">SEL-043</div>
+        <div class="card-topic">Digital Citizenship</div>
+      </header>
+      <div class="sender">Keisha 📚</div>
+      <p class="preview">Someone asked me to send homework answers over Snap</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-truth"><span class="stmt-label">A</span><span class="stmt-text">Sharing graded work can count as cheating for both people.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-lie"><span class="stmt-label">B</span><span class="stmt-text">Sending answers privately never counts as cheating if the teacher does not see it.</span><span class="stmt-tag">LIE</span></li><li class="stmt is-truth"><span class="stmt-label">C</span><span class="stmt-text">Offering to explain concepts helps without copying answers.</span><span class="stmt-tag">TRUTH</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Cheating policies cover sharing work even in DMs — and you both risk consequences. Helping means discussing steps, not photographing answers. If you are stuck, ask the teacher, a tutor, or a classmate for legitimate study help.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-044">
+      <header class="card-head">
+        <div class="card-num">44 of 50</div>
+        <div class="card-id">SEL-044</div>
+        <div class="card-topic">Social Emotional Learning</div>
+      </header>
+      <div class="sender">Alex 🪞</div>
+      <p class="preview">I compared my life to influencers and felt terrible all day</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-truth"><span class="stmt-label">A</span><span class="stmt-text">Curated feeds often show highlights, not everyday reality.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-truth"><span class="stmt-label">B</span><span class="stmt-text">Taking breaks from accounts that hurt your mood is self-care.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-lie"><span class="stmt-label">C</span><span class="stmt-text">If someone looks perfect online, their life is definitely better than yours.</span><span class="stmt-tag">LIE</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Filters, staging, and selective posting hide normal struggles. Comparison steals joy from your real life. Mute or unfollow triggers, follow diverse creators, and talk to someone if scrolling consistently brings you down.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-045">
+      <header class="card-head">
+        <div class="card-num">45 of 50</div>
+        <div class="card-id">SEL-045</div>
+        <div class="card-topic">Digital Citizenship</div>
+      </header>
+      <div class="sender">Brooke 🔇</div>
+      <p class="preview">My little cousin keeps mic-spamming in our family game night call</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-lie"><span class="stmt-label">A</span><span class="stmt-text">There is no way to manage voice chat behavior without yelling at people.</span><span class="stmt-tag">LIE</span></li><li class="stmt is-truth"><span class="stmt-label">B</span><span class="stmt-text">Muting disruptive mics keeps the session fun for everyone.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-truth"><span class="stmt-label">C</span><span class="stmt-text">Explaining voice-chat etiquette calmly can teach younger kids.</span><span class="stmt-tag">TRUTH</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Platform mute controls, push-to-talk settings, and clear family rules work better than shouting. Kids often need one simple rule at a time. Model calm communication — gaming together is a chance to practice digital citizenship at home.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-046">
+      <header class="card-head">
+        <div class="card-num">46 of 50</div>
+        <div class="card-id">SEL-046</div>
+        <div class="card-topic">Social Emotional Learning</div>
+      </header>
+      <div class="sender">Daniel 🏳️</div>
+      <p class="preview">People are misgendering a classmate in an online fan server</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-truth"><span class="stmt-label">A</span><span class="stmt-text">Using someone&#x27;s chosen name and pronouns shows respect.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-lie"><span class="stmt-label">B</span><span class="stmt-text">Pronouns online do not matter because nobody uses real names anyway.</span><span class="stmt-tag">LIE</span></li><li class="stmt is-truth"><span class="stmt-label">C</span><span class="stmt-text">Correcting gently — &quot;they use she/her&quot; — can support the person targeted.</span><span class="stmt-tag">TRUTH</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Chosen names and pronouns matter in digital spaces too — misgendering can harm mental health and violate server rules. If you mess up, apologize briefly and try again. Support classmates by backing their identity consistently, online and off.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-047">
+      <header class="card-head">
+        <div class="card-num">47 of 50</div>
+        <div class="card-id">SEL-047</div>
+        <div class="card-topic">Digital Citizenship</div>
+      </header>
+      <div class="sender">Yuki 💾</div>
+      <p class="preview">My phone auto-backed up photos I did not want saved to the cloud</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-truth"><span class="stmt-label">A</span><span class="stmt-text">Cloud backups can sync sensitive photos across devices and accounts.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-truth"><span class="stmt-label">B</span><span class="stmt-text">Reviewing backup and privacy settings helps you control what is stored.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-lie"><span class="stmt-label">C</span><span class="stmt-text">Deleted photos always disappear from every backup instantly everywhere.</span><span class="stmt-tag">LIE</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Backups and shared family accounts can keep copies after you delete locally. Check Google Photos, iCloud, or similar settings with a parent or guardian. Turn off auto-upload for sensitive folders and use device passcodes to protect privacy.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-048">
+      <header class="card-head">
+        <div class="card-num">48 of 50</div>
+        <div class="card-id">SEL-048</div>
+        <div class="card-topic">Social Emotional Learning</div>
+      </header>
+      <div class="sender">Nate ⚖️</div>
+      <p class="preview">I accidentally liked an old post while stalking someone\</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-lie"><span class="stmt-label">A</span><span class="stmt-text">One accidental like always ruins your reputation permanently at school.</span><span class="stmt-tag">LIE</span></li><li class="stmt is-truth"><span class="stmt-label">B</span><span class="stmt-text">Accidental likes happen — most people do not make a big deal of one notification.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-truth"><span class="stmt-label">C</span><span class="stmt-text">Obsessively checking someone&#x27;s profile can increase anxiety more than it helps.</span><span class="stmt-tag">TRUTH</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>A single like is usually forgotten in a day. If it feels awkward, you can laugh it off or leave it — do not spiral. If profile-checking stresses you out, mute the account and focus on offline friendships and hobbies that build confidence.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-049">
+      <header class="card-head">
+        <div class="card-num">49 of 50</div>
+        <div class="card-id">SEL-049</div>
+        <div class="card-topic">Digital Citizenship</div>
+      </header>
+      <div class="sender">Camila 📝</div>
+      <p class="preview">Our club wants to post student full names and photos on a public page</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-truth"><span class="stmt-label">A</span><span class="stmt-text">Families should consent before student names and faces go fully public.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-lie"><span class="stmt-label">B</span><span class="stmt-text">School clubs can post any student info online without permission.</span><span class="stmt-tag">LIE</span></li><li class="stmt is-truth"><span class="stmt-label">C</span><span class="stmt-text">Using first names only or group shots can reduce privacy risks.</span><span class="stmt-tag">TRUTH</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Many districts require media releases for public identification of minors. Leaders should collect permission slips or use privacy-friendly formats. If you are uncomfortable being posted, say so — adults can adjust plans to include you safely.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+    <article class="card" id="SEL-050">
+      <header class="card-head">
+        <div class="card-num">50 of 50</div>
+        <div class="card-id">SEL-050</div>
+        <div class="card-topic">Social Emotional Learning</div>
+      </header>
+      <div class="sender">Jordan 📱</div>
+      <p class="preview">End of unit — what is the best mindset for being online tomorrow?</p>
+      <p class="prompt">Which one is the lie? (Students do not see TRUTH/LIE labels in the game.)</p>
+      <ul class="statements"><li class="stmt is-truth"><span class="stmt-label">A</span><span class="stmt-text">Pause before posting when emotions are high.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-truth"><span class="stmt-label">B</span><span class="stmt-text">Ask for help from trusted adults when something feels wrong.</span><span class="stmt-tag">TRUTH</span></li><li class="stmt is-lie"><span class="stmt-label">C</span><span class="stmt-text">The best online strategy is never making mistakes so you never need help.</span><span class="stmt-tag">LIE</span></li></ul>
+      <div class="why">
+        <strong>Why the lie is wrong</strong>
+        <p>Everyone slips up online — growth comes from repairing harm and learning. Pausing, seeking help, and practicing empathy beat pretending perfection. Digital citizenship is a habit you build one choice at a time, not a score you either pass or fail forever.</p>
+      </div>
+      <div class="notes">
+        <strong>Teacher notes / suggested edits</strong>
+        <div class="notes-box"></div>
+      </div>
+    </article>
+</body>
+</html>

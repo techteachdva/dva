@@ -1,0 +1,466 @@
+{
+  "title": "Curt's Birthday Movie Bash",
+  "description": "50 blockbuster movie trivia questions (1990s–2026) with classic horror deep cuts. For Kahoot import + host guide.",
+  "columns": [
+    "Question",
+    "Answer 1",
+    "Answer 2",
+    "Answer 3",
+    "Answer 4",
+    "Time limit (seconds)",
+    "Correct answer(s)",
+    "Image link"
+  ],
+  "questions": [
+    {
+      "id": 1,
+      "category": "Classic horror",
+      "question": "In Scream (1996), what mask does Ghostface wear?",
+      "answers": ["White ghost mask", "Hockey mask", "Leatherface mask", "Clown mask"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/a/a9/Scream_poster.jpg"
+    },
+    {
+      "id": 2,
+      "category": "Classic horror",
+      "question": "The Sixth Sense (1999): \"I see ___ people.\"",
+      "answers": ["dead", "angry", "famous", "invisible"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/6/66/The_sixth_sense.jpg"
+    },
+    {
+      "id": 3,
+      "category": "Classic horror",
+      "question": "Saw (2004): the creepy puppet on the tricycle is named…",
+      "answers": ["Billy", "Chucky", "Jigsaw Jr.", "Bobby"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/5/56/Saw_official_poster.jpg"
+    },
+    {
+      "id": 4,
+      "category": "Classic horror",
+      "question": "In The Ring (2002), how many days after the tape do you have?",
+      "answers": ["7 days", "3 days", "13 days", "24 hours"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/3/3c/The_Ring_poster.jpg"
+    },
+    {
+      "id": 5,
+      "category": "Classic horror",
+      "question": "Halloween: what is the killer's name?",
+      "answers": ["Michael Myers", "Jason Voorhees", "Freddy Krueger", "Leatherface"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/a/af/Halloween_%281978%29_theatrical_poster.jpg"
+    },
+    {
+      "id": 6,
+      "category": "Classic horror",
+      "question": "A Nightmare on Elm Street: the villain haunts you in…",
+      "answers": ["Your dreams", "Your mirror", "Your basement", "Your phone"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/9/9e/Nightmare_on_Elm_Street_%281984%29_theatrical_poster.jpg"
+    },
+    {
+      "id": 7,
+      "category": "Classic horror",
+      "question": "It (2017): the clown's name is…",
+      "answers": ["Pennywise", "Captain Spaulding", "Twisty", "Art"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/5/5a/It_%282017%29_poster.jpg"
+    },
+    {
+      "id": 8,
+      "category": "Classic horror",
+      "question": "Get Out (2017): Missy traps minds using a…",
+      "answers": ["Teacup and spoon", "Pocket watch", "Hypno app", "VR headset"],
+      "correct": 1,
+      "time": 30,
+      "image": "https://upload.wikimedia.org/wikipedia/en/a/a3/Get_Out_poster.png"
+    },
+    {
+      "id": 9,
+      "category": "Classic horror",
+      "question": "A Quiet Place: the creatures hunt using…",
+      "answers": ["Sound", "Smell", "Heat vision", "Moonlight"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/a/a0/A_Quiet_Place_film_poster.png"
+    },
+    {
+      "id": 10,
+      "category": "Classic horror",
+      "question": "Hereditary (2018): the cult worships which demon king?",
+      "answers": ["Paimon", "Bael", "Asmodeus", "Lucifer"],
+      "correct": 1,
+      "time": 30,
+      "image": "https://upload.wikimedia.org/wikipedia/en/7/7a/Hereditary.png"
+    },
+    {
+      "id": 11,
+      "category": "Classic horror",
+      "question": "Midsommar (2019) takes place mostly in…",
+      "answers": ["Sweden", "Norway", "Iceland", "Finland"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/0/0b/Midsommar_%282019%29_poster.png"
+    },
+    {
+      "id": 12,
+      "category": "Classic horror",
+      "question": "Alien (1979): \"In space no one can hear you ___\"",
+      "answers": ["scream", "breathe", "think", "sleep"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/c/c3/Alien_movie_poster.jpg"
+    },
+    {
+      "id": 13,
+      "category": "Classic horror",
+      "question": "The Shining: what is the haunted hotel called?",
+      "answers": ["The Overlook", "The Blackthorne", "The Red Lion", "The Timberline"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/9/9b/The_shining_poster.jpg"
+    },
+    {
+      "id": 14,
+      "category": "Classic horror",
+      "question": "28 Days Later: the infected are driven by…",
+      "answers": ["Rage", "Hunger", "Fear", "Greed"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/1/15/28_Days_Later_poster.JPG"
+    },
+    {
+      "id": 15,
+      "category": "Classic horror",
+      "question": "The Blair Witch Project is shot as…",
+      "answers": ["Found footage", "One long take", "Black and white", "Stop motion"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/2/26/Blair_Witch_Project.jpg"
+    },
+    {
+      "id": 16,
+      "category": "Classic horror",
+      "question": "The Conjuring (2013): the Warrens are…",
+      "answers": ["Ghost hunters", "FBI agents", "Priests", "News reporters"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/3/3e/The_Conjuring_poster.jpg"
+    },
+    {
+      "id": 17,
+      "category": "Classic horror",
+      "question": "Jaws (1975): what animal terrorizes Amity Island?",
+      "answers": ["Great white shark", "Giant squid", "Killer whale", "Saltwater croc"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/e/e5/Jaws_Movie_poster.jpg"
+    },
+    {
+      "id": 18,
+      "category": "Modern horror",
+      "question": "Smile (2022): the curse spreads when you…",
+      "answers": ["Witness a death", "Say its name", "Open a box", "Fall asleep"],
+      "correct": 1,
+      "time": 30,
+      "image": "https://upload.wikimedia.org/wikipedia/en/5/5e/Smile_%282022_film%29.png"
+    },
+    {
+      "id": 19,
+      "category": "90s blockbuster",
+      "question": "Titanic (1997): the ship hits a(n)…",
+      "answers": ["Iceberg", "Reef", "Another ship", "Whale"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/1/18/Titanic_%281997%29_poster.png"
+    },
+    {
+      "id": 20,
+      "category": "90s blockbuster",
+      "question": "Jurassic Park: dinosaur DNA is recovered from…",
+      "answers": ["Mosquitoes in amber", "Frozen bones", "Cave paintings", "Volcanic ash"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/e/e7/Jurassic_Park_poster.jpg"
+    },
+    {
+      "id": 21,
+      "category": "90s blockbuster",
+      "question": "The Matrix: which pill shows Neo the truth?",
+      "answers": ["Red pill", "Blue pill", "Green pill", "Yellow pill"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/c/c1/The_Matrix_Poster.jpg"
+    },
+    {
+      "id": 22,
+      "category": "90s blockbuster",
+      "question": "Toy Story (1995): Andy's new toy is…",
+      "answers": ["Buzz Lightyear", "Slinky Dog", "Mr. Potato Head", "Rex"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/1/13/Toy_Story.jpg"
+    },
+    {
+      "id": 23,
+      "category": "90s blockbuster",
+      "question": "Harry Potter: the Hogwarts train leaves from platform…",
+      "answers": ["9¾", "7½", "10", "4¾"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/7/7b/Harry_Potter_and_the_Philosopher%27s_Stone_banner.jpg"
+    },
+    {
+      "id": 24,
+      "category": "90s blockbuster",
+      "question": "Forrest Gump: \"Life is like a box of…\"",
+      "answers": ["chocolates", "crayons", "memories", "surprises"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/6/67/Forrest_Gump_poster.jpg"
+    },
+    {
+      "id": 25,
+      "category": "90s blockbuster",
+      "question": "The Lord of the Rings: the One Ring must be destroyed in…",
+      "answers": ["Mount Doom", "Rivendell", "Mordor Gate", "Helm's Deep"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/8/87/Ringstrilogyposter.jpg"
+    },
+    {
+      "id": 26,
+      "category": "00s blockbuster",
+      "question": "Finding Nemo: Marlin is searching for his son…",
+      "answers": ["Nemo", "Dory", "Squirt", "Gill"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/2/29/Finding_Nemo.jpg"
+    },
+    {
+      "id": 27,
+      "category": "00s blockbuster",
+      "question": "Pirates of the Caribbean: Jack Sparrow wants his ship, the…",
+      "answers": ["Black Pearl", "Flying Dutchman", "Interceptor", "Queen Anne's Revenge"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/8/89/Pirates_of_the_Caribbean_-_The_Curse_of_the_Black_Pearl.png"
+    },
+    {
+      "id": 28,
+      "category": "00s blockbuster",
+      "question": "Iron Man (2008): Tony Stark builds the first suit in a…",
+      "answers": ["Cave", "Billionaire lab", "SHIELD jet", "Stark Expo"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/0/02/Iron_Man_%282008_film%29_poster.jpg"
+    },
+    {
+      "id": 29,
+      "category": "00s blockbuster",
+      "question": "Avatar (2009): humans mine the planet…",
+      "answers": ["Pandora", "Arrakis", "Krypton", "Ego"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/d/d6/Avatar_%282009_film%29_poster.jpg"
+    },
+    {
+      "id": 30,
+      "category": "00s blockbuster",
+      "question": "The Dark Knight (2008): Batman's nemesis is…",
+      "answers": ["The Joker", "Bane", "Riddler", "Penguin"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/1/1c/The_Dark_Knight_%282008_film%29.jpg"
+    },
+    {
+      "id": 31,
+      "category": "2010s blockbuster",
+      "question": "Avengers: Endgame — who snaps everyone back?",
+      "answers": ["Hulk", "Iron Man", "Captain America", "Thor"],
+      "correct": 1,
+      "time": 30,
+      "image": "https://upload.wikimedia.org/wikipedia/en/0/0d/Avengers_Endgame_poster.jpg"
+    },
+    {
+      "id": 32,
+      "category": "2010s blockbuster",
+      "question": "Frozen (2013): Elsa's power is…",
+      "answers": ["Ice and snow", "Fire", "Lightning", "Wind"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/0/05/Frozen_%282013_film%29_poster.jpg"
+    },
+    {
+      "id": 33,
+      "category": "2010s blockbuster",
+      "question": "Black Panther (2018): Wakanda is hidden in…",
+      "answers": ["Africa", "South America", "Antarctica", "Australia"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/d/d6/Black_Panther_%28film%29_poster.jpg"
+    },
+    {
+      "id": 34,
+      "category": "2010s blockbuster",
+      "question": "Inception: Cobb's spinning top is a…",
+      "answers": ["Totem", "Bomb timer", "Key", "Compass"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/7/7f/Inception_ver3.jpg"
+    },
+    {
+      "id": 35,
+      "category": "2010s blockbuster",
+      "question": "Parasite (2019) is from which country?",
+      "answers": ["South Korea", "Japan", "China", "Thailand"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/5/53/Parasite_%282019_film%29.png"
+    },
+    {
+      "id": 36,
+      "category": "2010s blockbuster",
+      "question": "Mad Max: Fury Road is mostly a chase through the…",
+      "answers": ["Wasteland", "Ocean", "Forest", "City"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/6/6e/Mad_Max_Fury_Road.jpg"
+    },
+    {
+      "id": 37,
+      "category": "2010s blockbuster",
+      "question": "Inside Out (2015): which emotion runs HQ at the start?",
+      "answers": ["Joy", "Sadness", "Anger", "Fear"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/0/0a/Inside_Out_%282015_film%29_poster.jpg"
+    },
+    {
+      "id": 38,
+      "category": "2020s blockbuster",
+      "question": "Everything Everywhere All at Once: the family runs a…",
+      "answers": ["Laundromat", "Restaurant", "Motel", "Bookstore"],
+      "correct": 1,
+      "time": 30,
+      "image": "https://upload.wikimedia.org/wikipedia/en/1/1e/Everything_Everywhere_All_at_Once.jpg"
+    },
+    {
+      "id": 39,
+      "category": "2020s blockbuster",
+      "question": "Top Gun: Maverick (2022) is a sequel to Top Gun from…",
+      "answers": ["1986", "1991", "1996", "2001"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/8/8f/Top_Gun_Maverick_poster.png"
+    },
+    {
+      "id": 40,
+      "category": "2020s blockbuster",
+      "question": "Barbie (2023): Barbie travels from Barbieland to the…",
+      "answers": ["Real world", "Moon", "Underworld", "1980s"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/0/0b/Barbie_2023_poster.jpg"
+    },
+    {
+      "id": 41,
+      "category": "2020s blockbuster",
+      "question": "Oppenheimer (2023): the first bomb test is called…",
+      "answers": ["Trinity", "Genesis", "Prometheus", "Vulcan"],
+      "correct": 1,
+      "time": 30,
+      "image": "https://upload.wikimedia.org/wikipedia/en/4/4a/Oppenheimer_%282023%29_poster.jpg"
+    },
+    {
+      "id": 42,
+      "category": "2020s blockbuster",
+      "question": "Dune (2021): the desert planet rich in spice is…",
+      "answers": ["Arrakis", "Tatooine", "Pandora", "Krypton"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/5/5e/Dune_%282021_film%29.jpg"
+    },
+    {
+      "id": 43,
+      "category": "2020s blockbuster",
+      "question": "Spider-Man: Across the Spider-Verse stars Miles from…",
+      "answers": ["Brooklyn", "Queens", "Manhattan", "Bronx"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/0/0c/Spider-Man_Across_the_Spider-Verse_poster.jpeg"
+    },
+    {
+      "id": 44,
+      "category": "2020s blockbuster",
+      "question": "Inside Out 2 (2024) adds which new emotion?",
+      "answers": ["Anxiety", "Jealousy", "Boredom", "Pride"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/f/f7/Inside_Out_2_poster.jpg"
+    },
+    {
+      "id": 45,
+      "category": "2020s blockbuster",
+      "question": "Wicked (2024) tells the story of Glinda and…",
+      "answers": ["Elphaba", "Ariel", "Maleficent", "Ursula"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/6/68/Wicked_%282024_film%29_poster.jpg"
+    },
+    {
+      "id": 46,
+      "category": "2020s blockbuster",
+      "question": "Avatar: The Way of Water (2022) focuses on Pandora's…",
+      "answers": ["Oceans", "Mountains", "Deserts", "Cities"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/5/54/Avatar_The_Way_of_Water_poster.jpg"
+    },
+    {
+      "id": 47,
+      "category": "Modern horror",
+      "question": "Nope (2022): the siblings try to film a UFO they nickname…",
+      "answers": ["Jean Jacket", "Red Eye", "Sky Shark", "The Drifter"],
+      "correct": 1,
+      "time": 30,
+      "image": "https://upload.wikimedia.org/wikipedia/en/4/4c/Nope_%282022_film%29.jpg"
+    },
+    {
+      "id": 48,
+      "category": "Modern horror",
+      "question": "Terrifier 3 (2024): the killer clown is…",
+      "answers": ["Art the Clown", "Pennywise", "Captain Spaulding", "Twisty"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/5/5f/Terrifier_3_poster.jpg"
+    },
+    {
+      "id": 49,
+      "category": "Modern horror",
+      "question": "Beetlejuice Beetlejuice (2024): say his name ___ times to summon him.",
+      "answers": ["Three", "Two", "Five", "Seven"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/4/4f/Beetlejuice_Beetlejuice_poster.jpg"
+    },
+    {
+      "id": 50,
+      "category": "Modern horror",
+      "question": "A Quiet Place: Day One (2024) shows the invasion on…",
+      "answers": ["Day one", "Year ten", "Mars", "A submarine"],
+      "correct": 1,
+      "time": 20,
+      "image": "https://upload.wikimedia.org/wikipedia/en/6/6e/A_Quiet_Place_Day_One_poster.jpg"
+    }
+  ]
+}

@@ -3639,7 +3639,12 @@ body.wf-intro-active {
   flex-direction: column;
   gap: 12px;
   min-height: 0;
-  overflow: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 8px;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(56, 189, 248, 0.45) rgba(255, 255, 255, 0.06);
 }
 
 .wf-landing__panel {
@@ -3848,23 +3853,27 @@ body.wf-intro-active {
   padding-top: 4px;
 }
 
-.wf-changelog-full--panel::-webkit-scrollbar {
+.wf-changelog-full--panel::-webkit-scrollbar,
+.wf-landing__center::-webkit-scrollbar {
   width: 10px;
 }
 
-.wf-changelog-full--panel::-webkit-scrollbar-track {
+.wf-changelog-full--panel::-webkit-scrollbar-track,
+.wf-landing__center::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.04);
   border-radius: 999px;
 }
 
-.wf-changelog-full--panel::-webkit-scrollbar-thumb {
+.wf-changelog-full--panel::-webkit-scrollbar-thumb,
+.wf-landing__center::-webkit-scrollbar-thumb {
   background: rgba(56, 189, 248, 0.35);
   border-radius: 999px;
   border: 2px solid transparent;
   background-clip: padding-box;
 }
 
-.wf-changelog-full--panel::-webkit-scrollbar-thumb:hover {
+.wf-changelog-full--panel::-webkit-scrollbar-thumb:hover,
+.wf-landing__center::-webkit-scrollbar-thumb:hover {
   background: rgba(56, 189, 248, 0.55);
   background-clip: padding-box;
 }
@@ -4283,6 +4292,38 @@ mark.wf-vocab-hit {
   min-height: 0;
   overflow: hidden;
   padding: 0 4px 8px;
+}
+
+.wf-studio-app #teacherView {
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 4px;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(56, 189, 248, 0.45) rgba(255, 255, 255, 0.06);
+}
+
+.wf-studio-app #teacherView::-webkit-scrollbar {
+  width: 10px;
+}
+
+.wf-studio-app #teacherView::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 999px;
+}
+
+.wf-studio-app #teacherView::-webkit-scrollbar-thumb {
+  background: rgba(56, 189, 248, 0.35);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.wf-studio-app #teacherView::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 189, 248, 0.55);
+  background-clip: padding-box;
 }
 
 .wf-studio-home {

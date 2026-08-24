@@ -1,0 +1,1115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Curt's Birthday Movie Kahoot — Host Guide</title>
+  <style>
+    :root {
+      --bg: #0d0a12;
+      --card: #16121f;
+      --border: rgba(255,255,255,.1);
+      --text: #f3eef8;
+      --muted: #9d93ab;
+      --accent: #e11d48;
+      --gold: #fbbf24;
+      --green: #4ade80;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+    }
+    .hero {
+      padding: 40px 24px;
+      text-align: center;
+      background: linear-gradient(180deg, rgba(225,29,72,.15), transparent);
+      border-bottom: 1px solid var(--border);
+    }
+    .hero h1 {
+      font-size: clamp(2rem, 6vw, 3rem);
+      margin: 0 0 8px;
+      letter-spacing: .04em;
+    }
+    .hero p { color: var(--muted); max-width: 640px; margin: 0 auto; }
+    .stats {
+      display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;
+      margin-top: 20px;
+    }
+    .stat {
+      padding: 6px 12px; border: 1px solid var(--border); border-radius: 999px;
+      font-size: .8rem; color: var(--gold);
+    }
+    .grid {
+      max-width: 1100px; margin: 0 auto; padding: 24px 16px 48px;
+      display: grid; gap: 20px;
+    }
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--card);
+      overflow: hidden;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .card-top {
+      display: flex; gap: 10px; align-items: center;
+      padding: 10px 14px; border-bottom: 1px solid var(--border);
+      font-size: .75rem; text-transform: uppercase; letter-spacing: .12em;
+    }
+    .num { color: var(--accent); font-weight: 700; }
+    .cat { color: var(--muted); flex: 1; }
+    .time { color: var(--gold); }
+    .card-body {
+      display: grid; grid-template-columns: 120px 1fr; gap: 16px;
+      padding: 14px;
+    }
+    .card-body img {
+      width: 120px; height: 180px; object-fit: cover; border-radius: 4px;
+      border: 1px solid var(--border);
+      background: #1a1420;
+    }
+    .card-body img.missing {
+      object-fit: contain;
+      background: linear-gradient(145deg, #1a1420, #2a1520);
+    }
+    .card-text h2 {
+      font-size: 1.05rem; margin: 0 0 12px; line-height: 1.35;
+    }
+    .answers { margin: 0; padding-left: 1.2rem; }
+    .answers li { margin: 4px 0; color: var(--muted); }
+    .answers li.correct { color: var(--green); font-weight: 700; }
+    .print-note {
+      max-width: 1100px; margin: 0 auto; padding: 0 16px 24px;
+      color: var(--muted); font-size: .9rem;
+    }
+    @media (max-width: 640px) {
+      .card-body { grid-template-columns: 1fr; }
+      .card-body img { width: 100%; height: auto; max-height: 280px; }
+    }
+    @media print {
+      body { background: #fff; color: #000; }
+      .hero { background: none; }
+      .card { border-color: #ccc; background: #fff; }
+      .answers li { color: #333; }
+      .answers li.correct { color: #0a6b0a; }
+      .print-note { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <header class="hero">
+    <h1>Curt's Birthday Movie Kahoot</h1>
+    <p>50 blockbuster trivia questions (1990s–2026) · classic horror + modern hits · host answer key with posters</p>
+    <div class="stats">
+      <span class="stat">50 questions</span>
+      <span class="stat">17 Classic horror</span><span class="stat">5 Modern horror</span><span class="stat">7 90s blockbuster</span><span class="stat">5 00s blockbuster</span><span class="stat">7 2010s blockbuster</span><span class="stat">9 2020s blockbuster</span>
+    </div>
+  </header>
+  <p class="print-note">Posters are bundled in the <code>posters/</code> folder — open this file from that directory so images load reliably.</p>
+  <main class="grid">
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#1</span>
+        <span class="cat">Classic horror</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/1.jpg" data-remote="https://image.tmdb.org/t/p/w342/rwEtK0YLHLzT13uPtXyXCHoWMwR.jpg" alt="Movie poster for question 1" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>In Scream (1996), what mask does Ghostface wear?</h2>
+          <ol class="answers">
+            <li class="correct">White ghost mask ✓</li>
+<li class="">Hockey mask</li>
+<li class="">Leatherface mask</li>
+<li class="">Clown mask</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#2</span>
+        <span class="cat">Classic horror</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/2.jpg" data-remote="https://image.tmdb.org/t/p/w342/vOyfUXNFSnaTk7Vk5AjpsKTUWsu.jpg" alt="Movie poster for question 2" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>The Sixth Sense (1999): &quot;I see ___ people.&quot;</h2>
+          <ol class="answers">
+            <li class="correct">dead ✓</li>
+<li class="">angry</li>
+<li class="">famous</li>
+<li class="">invisible</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#3</span>
+        <span class="cat">Classic horror</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/3.jpg" data-remote="https://image.tmdb.org/t/p/w342/3i6Av4EjzAW30fd73vkv0DDdjyV.jpg" alt="Movie poster for question 3" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>Saw (2004): the creepy puppet on the tricycle is named…</h2>
+          <ol class="answers">
+            <li class="correct">Billy ✓</li>
+<li class="">Chucky</li>
+<li class="">Jigsaw Jr.</li>
+<li class="">Bobby</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#4</span>
+        <span class="cat">Classic horror</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/4.jpg" data-remote="https://image.tmdb.org/t/p/w342/AeRpUynJKDpJveklBJipOYrVxCS.jpg" alt="Movie poster for question 4" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>In The Ring (2002), how many days after the tape do you have?</h2>
+          <ol class="answers">
+            <li class="correct">7 days ✓</li>
+<li class="">3 days</li>
+<li class="">13 days</li>
+<li class="">24 hours</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#5</span>
+        <span class="cat">Classic horror</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/5.jpg" data-remote="https://image.tmdb.org/t/p/w342/wijlZ3HaYMvlDTPqJoTCWKFkCPU.jpg" alt="Movie poster for question 5" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>Halloween: what is the killer&#x27;s name?</h2>
+          <ol class="answers">
+            <li class="correct">Michael Myers ✓</li>
+<li class="">Jason Voorhees</li>
+<li class="">Freddy Krueger</li>
+<li class="">Leatherface</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#6</span>
+        <span class="cat">Classic horror</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/6.jpg" data-remote="https://image.tmdb.org/t/p/w342/wGTpGGRMZmyFCcrY2YoxVTIBlli.jpg" alt="Movie poster for question 6" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>A Nightmare on Elm Street: the villain haunts you in…</h2>
+          <ol class="answers">
+            <li class="correct">Your dreams ✓</li>
+<li class="">Your mirror</li>
+<li class="">Your basement</li>
+<li class="">Your phone</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#7</span>
+        <span class="cat">Classic horror</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/7.jpg" data-remote="https://image.tmdb.org/t/p/w342/9E2y5Q7WlCVNEhP5GiVTjhEhx1o.jpg" alt="Movie poster for question 7" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>It (2017): the clown&#x27;s name is…</h2>
+          <ol class="answers">
+            <li class="correct">Pennywise ✓</li>
+<li class="">Captain Spaulding</li>
+<li class="">Twisty</li>
+<li class="">Art</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#8</span>
+        <span class="cat">Classic horror</span>
+        <span class="time">30s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/8.jpg" data-remote="https://image.tmdb.org/t/p/w342/tFXcEccSQMf3lfhfXKSU9iRBpa3.jpg" alt="Movie poster for question 8" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>Get Out (2017): Missy traps minds using a…</h2>
+          <ol class="answers">
+            <li class="correct">Teacup and spoon ✓</li>
+<li class="">Pocket watch</li>
+<li class="">Hypno app</li>
+<li class="">VR headset</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#9</span>
+        <span class="cat">Classic horror</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/9.jpg" data-remote="https://image.tmdb.org/t/p/w342/nAU74GmpUk7t5iklEp3bufwDq4n.jpg" alt="Movie poster for question 9" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>A Quiet Place: the creatures hunt using…</h2>
+          <ol class="answers">
+            <li class="correct">Sound ✓</li>
+<li class="">Smell</li>
+<li class="">Heat vision</li>
+<li class="">Moonlight</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#10</span>
+        <span class="cat">Classic horror</span>
+        <span class="time">30s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/10.jpg" data-remote="https://image.tmdb.org/t/p/w342/4GFPuL14eXi66V96xBWY73Y9PfR.jpg" alt="Movie poster for question 10" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>Hereditary (2018): the cult worships which demon king?</h2>
+          <ol class="answers">
+            <li class="correct">Paimon ✓</li>
+<li class="">Bael</li>
+<li class="">Asmodeus</li>
+<li class="">Lucifer</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#11</span>
+        <span class="cat">Classic horror</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/11.jpg" data-remote="https://image.tmdb.org/t/p/w342/7LEI8ulZzO5gy9Ww2NVCrKmHeDZ.jpg" alt="Movie poster for question 11" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>Midsommar (2019) takes place mostly in…</h2>
+          <ol class="answers">
+            <li class="correct">Sweden ✓</li>
+<li class="">Norway</li>
+<li class="">Iceland</li>
+<li class="">Finland</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#12</span>
+        <span class="cat">Classic horror</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/12.jpg" data-remote="https://image.tmdb.org/t/p/w342/vfrQk5IPloGg1v9Rzbh2Eg3VGyM.jpg" alt="Movie poster for question 12" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>Alien (1979): &quot;In space no one can hear you ___&quot;</h2>
+          <ol class="answers">
+            <li class="correct">scream ✓</li>
+<li class="">breathe</li>
+<li class="">think</li>
+<li class="">sleep</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#13</span>
+        <span class="cat">Classic horror</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/13.jpg" data-remote="https://image.tmdb.org/t/p/w342/uAR0AWqhQL1hQa69UDEbb2rE5Wx.jpg" alt="Movie poster for question 13" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>The Shining: what is the haunted hotel called?</h2>
+          <ol class="answers">
+            <li class="correct">The Overlook ✓</li>
+<li class="">The Blackthorne</li>
+<li class="">The Red Lion</li>
+<li class="">The Timberline</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#14</span>
+        <span class="cat">Classic horror</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/14.jpg" data-remote="https://image.tmdb.org/t/p/w342/sQckQRt17VaWbo39GIu0TMOiszq.jpg" alt="Movie poster for question 14" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>28 Days Later: the infected are driven by…</h2>
+          <ol class="answers">
+            <li class="correct">Rage ✓</li>
+<li class="">Hunger</li>
+<li class="">Fear</li>
+<li class="">Greed</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#15</span>
+        <span class="cat">Classic horror</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/15.jpg" data-remote="https://image.tmdb.org/t/p/w342/9050VGrYjYrEjpOvDZVAngLbg1f.jpg" alt="Movie poster for question 15" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>The Blair Witch Project is shot as…</h2>
+          <ol class="answers">
+            <li class="correct">Found footage ✓</li>
+<li class="">One long take</li>
+<li class="">Black and white</li>
+<li class="">Stop motion</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#16</span>
+        <span class="cat">Classic horror</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/16.jpg" data-remote="https://image.tmdb.org/t/p/w342/wVYREutTvI2tmxr6ujrHT704wGF.jpg" alt="Movie poster for question 16" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>The Conjuring (2013): the Warrens are…</h2>
+          <ol class="answers">
+            <li class="correct">Ghost hunters ✓</li>
+<li class="">FBI agents</li>
+<li class="">Priests</li>
+<li class="">News reporters</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#17</span>
+        <span class="cat">Classic horror</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/17.jpg" data-remote="https://image.tmdb.org/t/p/w342/lxM6kqilAdpdhqUl2biYp5frUxE.jpg" alt="Movie poster for question 17" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>Jaws (1975): what animal terrorizes Amity Island?</h2>
+          <ol class="answers">
+            <li class="correct">Great white shark ✓</li>
+<li class="">Giant squid</li>
+<li class="">Killer whale</li>
+<li class="">Saltwater croc</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#18</span>
+        <span class="cat">Modern horror</span>
+        <span class="time">30s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/18.jpg" data-remote="https://image.tmdb.org/t/p/w342/nVAaj8QB3DVgwxMFigbZdAiIhiQ.jpg" alt="Movie poster for question 18" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>Smile (2022): the curse spreads when you…</h2>
+          <ol class="answers">
+            <li class="correct">Witness a death ✓</li>
+<li class="">Say its name</li>
+<li class="">Open a box</li>
+<li class="">Fall asleep</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#19</span>
+        <span class="cat">90s blockbuster</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/19.jpg" data-remote="https://image.tmdb.org/t/p/w342/9xjZS2rlVxm8SFx8kPC3aIGCOYQ.jpg" alt="Movie poster for question 19" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>Titanic (1997): the ship hits a(n)…</h2>
+          <ol class="answers">
+            <li class="correct">Iceberg ✓</li>
+<li class="">Reef</li>
+<li class="">Another ship</li>
+<li class="">Whale</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#20</span>
+        <span class="cat">90s blockbuster</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/20.jpg" data-remote="https://image.tmdb.org/t/p/w342/63viWuPfYQjRYLSZSZNq7dglJP5.jpg" alt="Movie poster for question 20" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>Jurassic Park: dinosaur DNA is recovered from…</h2>
+          <ol class="answers">
+            <li class="correct">Mosquitoes in amber ✓</li>
+<li class="">Frozen bones</li>
+<li class="">Cave paintings</li>
+<li class="">Volcanic ash</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#21</span>
+        <span class="cat">90s blockbuster</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/21.jpg" data-remote="https://image.tmdb.org/t/p/w342/dXNAPwY7VrqMAo51EKhhCJfaGb5.jpg" alt="Movie poster for question 21" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>The Matrix: which pill shows Neo the truth?</h2>
+          <ol class="answers">
+            <li class="correct">Red pill ✓</li>
+<li class="">Blue pill</li>
+<li class="">Green pill</li>
+<li class="">Yellow pill</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#22</span>
+        <span class="cat">90s blockbuster</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/22.jpg" data-remote="https://image.tmdb.org/t/p/w342/uXDfjJbdP4ijW5hWSBrPrlKpxab.jpg" alt="Movie poster for question 22" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>Toy Story (1995): Andy&#x27;s new toy is…</h2>
+          <ol class="answers">
+            <li class="correct">Buzz Lightyear ✓</li>
+<li class="">Slinky Dog</li>
+<li class="">Mr. Potato Head</li>
+<li class="">Rex</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#23</span>
+        <span class="cat">90s blockbuster</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/23.jpg" data-remote="https://image.tmdb.org/t/p/w342/wuMc08IPKEatf9rnMNXvIDxqP4W.jpg" alt="Movie poster for question 23" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>Harry Potter: the Hogwarts train leaves from platform…</h2>
+          <ol class="answers">
+            <li class="correct">9¾ ✓</li>
+<li class="">7½</li>
+<li class="">10</li>
+<li class="">4¾</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#24</span>
+        <span class="cat">90s blockbuster</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/24.jpg" data-remote="https://image.tmdb.org/t/p/w342/Cw4hIUIAmSYfK9QfaUW5igp9La.jpg" alt="Movie poster for question 24" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>Forrest Gump: &quot;Life is like a box of…&quot;</h2>
+          <ol class="answers">
+            <li class="correct">chocolates ✓</li>
+<li class="">crayons</li>
+<li class="">memories</li>
+<li class="">surprises</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#25</span>
+        <span class="cat">90s blockbuster</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/25.jpg" data-remote="https://image.tmdb.org/t/p/w342/6oom5QYQ2yQTMJIbnvbkBL9cHo6.jpg" alt="Movie poster for question 25" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>The Lord of the Rings: the One Ring must be destroyed in…</h2>
+          <ol class="answers">
+            <li class="correct">Mount Doom ✓</li>
+<li class="">Rivendell</li>
+<li class="">Mordor Gate</li>
+<li class="">Helm&#x27;s Deep</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#26</span>
+        <span class="cat">00s blockbuster</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/26.jpg" data-remote="https://image.tmdb.org/t/p/w342/5lc6nQc0VhWFYFbNv016xze8Jvy.jpg" alt="Movie poster for question 26" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>Finding Nemo: Marlin is searching for his son…</h2>
+          <ol class="answers">
+            <li class="correct">Nemo ✓</li>
+<li class="">Dory</li>
+<li class="">Squirt</li>
+<li class="">Gill</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#27</span>
+        <span class="cat">00s blockbuster</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/27.jpg" data-remote="https://image.tmdb.org/t/p/w342/poHwCZeWzJCShH7tOjg8RIoyjcw.jpg" alt="Movie poster for question 27" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>Pirates of the Caribbean: Jack Sparrow wants his ship, the…</h2>
+          <ol class="answers">
+            <li class="correct">Black Pearl ✓</li>
+<li class="">Flying Dutchman</li>
+<li class="">Interceptor</li>
+<li class="">Queen Anne&#x27;s Revenge</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#28</span>
+        <span class="cat">00s blockbuster</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/28.jpg" data-remote="https://image.tmdb.org/t/p/w342/78lPtwv72eTNqFW9COBYI0dWDJa.jpg" alt="Movie poster for question 28" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>Iron Man (2008): Tony Stark builds the first suit in a…</h2>
+          <ol class="answers">
+            <li class="correct">Cave ✓</li>
+<li class="">Billionaire lab</li>
+<li class="">SHIELD jet</li>
+<li class="">Stark Expo</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#29</span>
+        <span class="cat">00s blockbuster</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/29.jpg" data-remote="https://image.tmdb.org/t/p/w342/gKY6q7SjCkAU6FqvqWybDYgUKIF.jpg" alt="Movie poster for question 29" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>Avatar (2009): humans mine the planet…</h2>
+          <ol class="answers">
+            <li class="correct">Pandora ✓</li>
+<li class="">Arrakis</li>
+<li class="">Krypton</li>
+<li class="">Ego</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#30</span>
+        <span class="cat">00s blockbuster</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/30.jpg" data-remote="https://image.tmdb.org/t/p/w342/qJ2tW6WMUDux911r6m7haRef0WH.jpg" alt="Movie poster for question 30" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>The Dark Knight (2008): Batman&#x27;s nemesis is…</h2>
+          <ol class="answers">
+            <li class="correct">The Joker ✓</li>
+<li class="">Bane</li>
+<li class="">Riddler</li>
+<li class="">Penguin</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#31</span>
+        <span class="cat">2010s blockbuster</span>
+        <span class="time">30s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/31.jpg" data-remote="https://image.tmdb.org/t/p/w342/ulzhLuWrPK07P1YkdWQLZnQh1JL.jpg" alt="Movie poster for question 31" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>Avengers: Endgame — who snaps everyone back?</h2>
+          <ol class="answers">
+            <li class="correct">Hulk ✓</li>
+<li class="">Iron Man</li>
+<li class="">Captain America</li>
+<li class="">Thor</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#32</span>
+        <span class="cat">2010s blockbuster</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/32.jpg" data-remote="https://image.tmdb.org/t/p/w342/itAKcobTYGpYT8Phwjd8c9hleTo.jpg" alt="Movie poster for question 32" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>Frozen (2013): Elsa&#x27;s power is…</h2>
+          <ol class="answers">
+            <li class="correct">Ice and snow ✓</li>
+<li class="">Fire</li>
+<li class="">Lightning</li>
+<li class="">Wind</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#33</span>
+        <span class="cat">2010s blockbuster</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/33.jpg" data-remote="https://image.tmdb.org/t/p/w342/uxzzxijgPIY7slzFvMotPv8wjKA.jpg" alt="Movie poster for question 33" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>Black Panther (2018): Wakanda is hidden in…</h2>
+          <ol class="answers">
+            <li class="correct">Africa ✓</li>
+<li class="">South America</li>
+<li class="">Antarctica</li>
+<li class="">Australia</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#34</span>
+        <span class="cat">2010s blockbuster</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/34.jpg" data-remote="https://image.tmdb.org/t/p/w342/xlaY2zyzMfkhk0HSC5VUwzoZPU1.jpg" alt="Movie poster for question 34" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>Inception: Cobb&#x27;s spinning top is a…</h2>
+          <ol class="answers">
+            <li class="correct">Totem ✓</li>
+<li class="">Bomb timer</li>
+<li class="">Key</li>
+<li class="">Compass</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#35</span>
+        <span class="cat">2010s blockbuster</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/35.jpg" data-remote="https://image.tmdb.org/t/p/w342/7IiTTgloJzvGI1TAYymCfbfl3vT.jpg" alt="Movie poster for question 35" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>Parasite (2019) is from which country?</h2>
+          <ol class="answers">
+            <li class="correct">South Korea ✓</li>
+<li class="">Japan</li>
+<li class="">China</li>
+<li class="">Thailand</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#36</span>
+        <span class="cat">2010s blockbuster</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/36.jpg" data-remote="https://image.tmdb.org/t/p/w342/ulcAi4dKpAjHwYGS08vNyx9H6I9.jpg" alt="Movie poster for question 36" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>Mad Max: Fury Road is mostly a chase through the…</h2>
+          <ol class="answers">
+            <li class="correct">Wasteland ✓</li>
+<li class="">Ocean</li>
+<li class="">Forest</li>
+<li class="">City</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#37</span>
+        <span class="cat">2010s blockbuster</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/37.jpg" data-remote="https://image.tmdb.org/t/p/w342/2H1TmgdfNtsKlU9jKdeNyYL5y8T.jpg" alt="Movie poster for question 37" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>Inside Out (2015): which emotion runs HQ at the start?</h2>
+          <ol class="answers">
+            <li class="correct">Joy ✓</li>
+<li class="">Sadness</li>
+<li class="">Anger</li>
+<li class="">Fear</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#38</span>
+        <span class="cat">2020s blockbuster</span>
+        <span class="time">30s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/38.jpg" data-remote="https://image.tmdb.org/t/p/w342/u68AjlvlutfEIcpmbYpKcdi09ut.jpg" alt="Movie poster for question 38" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>Everything Everywhere All at Once: the family runs a…</h2>
+          <ol class="answers">
+            <li class="correct">Laundromat ✓</li>
+<li class="">Restaurant</li>
+<li class="">Motel</li>
+<li class="">Bookstore</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#39</span>
+        <span class="cat">2020s blockbuster</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/39.jpg" data-remote="https://image.tmdb.org/t/p/w342/n0YuM4f5lvGAP6MAW2kBIzugXnc.jpg" alt="Movie poster for question 39" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>Top Gun: Maverick (2022) is a sequel to Top Gun from…</h2>
+          <ol class="answers">
+            <li class="correct">1986 ✓</li>
+<li class="">1991</li>
+<li class="">1996</li>
+<li class="">2001</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#40</span>
+        <span class="cat">2020s blockbuster</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/40.jpg" data-remote="https://image.tmdb.org/t/p/w342/iuFNMS8U5cb6xfzi51Dbkovj7vM.jpg" alt="Movie poster for question 40" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>Barbie (2023): Barbie travels from Barbieland to the…</h2>
+          <ol class="answers">
+            <li class="correct">Real world ✓</li>
+<li class="">Moon</li>
+<li class="">Underworld</li>
+<li class="">1980s</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#41</span>
+        <span class="cat">2020s blockbuster</span>
+        <span class="time">30s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/41.jpg" data-remote="https://image.tmdb.org/t/p/w342/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg" alt="Movie poster for question 41" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>Oppenheimer (2023): the first bomb test is called…</h2>
+          <ol class="answers">
+            <li class="correct">Trinity ✓</li>
+<li class="">Genesis</li>
+<li class="">Prometheus</li>
+<li class="">Vulcan</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#42</span>
+        <span class="cat">2020s blockbuster</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/42.jpg" data-remote="https://image.tmdb.org/t/p/w342/v1tRXZ4JtD2Iv6fjkPvT4GiwslV.jpg" alt="Movie poster for question 42" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>Dune (2021): the desert planet rich in spice is…</h2>
+          <ol class="answers">
+            <li class="correct">Arrakis ✓</li>
+<li class="">Tatooine</li>
+<li class="">Pandora</li>
+<li class="">Krypton</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#43</span>
+        <span class="cat">2020s blockbuster</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/43.jpg" data-remote="https://image.tmdb.org/t/p/w342/8Vt6mWEReuy4Of61Lnj5Xj704m8.jpg" alt="Movie poster for question 43" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>Spider-Man: Across the Spider-Verse stars Miles from…</h2>
+          <ol class="answers">
+            <li class="correct">Brooklyn ✓</li>
+<li class="">Queens</li>
+<li class="">Manhattan</li>
+<li class="">Bronx</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#44</span>
+        <span class="cat">2020s blockbuster</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/44.jpg" data-remote="https://image.tmdb.org/t/p/w342/vpnVM9B6NMmQpWeZvzLvDESb2QY.jpg" alt="Movie poster for question 44" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>Inside Out 2 (2024) adds which new emotion?</h2>
+          <ol class="answers">
+            <li class="correct">Anxiety ✓</li>
+<li class="">Jealousy</li>
+<li class="">Boredom</li>
+<li class="">Pride</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#45</span>
+        <span class="cat">2020s blockbuster</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/45.jpg" data-remote="https://image.tmdb.org/t/p/w342/xDGbZ0JJ3mYaGKy4Nzd9Kph6M9L.jpg" alt="Movie poster for question 45" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>Wicked (2024) tells the story of Glinda and…</h2>
+          <ol class="answers">
+            <li class="correct">Elphaba ✓</li>
+<li class="">Ariel</li>
+<li class="">Maleficent</li>
+<li class="">Ursula</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#46</span>
+        <span class="cat">2020s blockbuster</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/46.jpg" data-remote="https://image.tmdb.org/t/p/w342/t6HIqrRAclMCA60NsSmeqe9RmNV.jpg" alt="Movie poster for question 46" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>Avatar: The Way of Water (2022) focuses on Pandora&#x27;s…</h2>
+          <ol class="answers">
+            <li class="correct">Oceans ✓</li>
+<li class="">Mountains</li>
+<li class="">Deserts</li>
+<li class="">Cities</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#47</span>
+        <span class="cat">Modern horror</span>
+        <span class="time">30s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/47.jpg" data-remote="https://image.tmdb.org/t/p/w342/AcKVlWaNVVVFQwro3nLXqPljcYA.jpg" alt="Movie poster for question 47" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>Nope (2022): the siblings try to film a UFO they nickname…</h2>
+          <ol class="answers">
+            <li class="correct">Jean Jacket ✓</li>
+<li class="">Red Eye</li>
+<li class="">Sky Shark</li>
+<li class="">The Drifter</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#48</span>
+        <span class="cat">Modern horror</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/48.jpg" data-remote="https://image.tmdb.org/t/p/w342/ju10W5gl3PPK3b7TjEmVOZap51I.jpg" alt="Movie poster for question 48" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>Terrifier 3 (2024): the killer clown is…</h2>
+          <ol class="answers">
+            <li class="correct">Art the Clown ✓</li>
+<li class="">Pennywise</li>
+<li class="">Captain Spaulding</li>
+<li class="">Twisty</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#49</span>
+        <span class="cat">Modern horror</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/49.jpg" data-remote="https://image.tmdb.org/t/p/w342/kKgQzkUCnQmeTPkyIwHly2t6ZFI.jpg" alt="Movie poster for question 49" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>Beetlejuice Beetlejuice (2024): say his name ___ times to summon him.</h2>
+          <ol class="answers">
+            <li class="correct">Three ✓</li>
+<li class="">Two</li>
+<li class="">Five</li>
+<li class="">Seven</li>
+
+          </ol>
+        </div>
+      </div>
+    </article>
+    <article class="card">
+      <div class="card-top">
+        <span class="num">#50</span>
+        <span class="cat">Modern horror</span>
+        <span class="time">20s</span>
+      </div>
+      <div class="card-body">
+        <img src="posters/50.jpg" data-remote="https://image.tmdb.org/t/p/w342/2JhadBY56wfnGUFfTX1ftPW1nyL.jpg" alt="Movie poster for question 50" loading="lazy" onerror="if(this.dataset.remote && this.src!==this.dataset.remote){this.src=this.dataset.remote}else{this.classList.add('missing')}" />
+        <div class="card-text">
+          <h2>A Quiet Place: Day One (2024) shows the invasion on…</h2>
+          <ol class="answers">
+            <li class="correct">Day one ✓</li>
+<li class="">Year ten</li>
+<li class="">Mars</li>
+<li class="">A submarine</li>
+
+          </ol>
+        </div>
+      </div>
+    </article></main>
+</body>
+</html>
