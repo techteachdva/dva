@@ -240,8 +240,8 @@ layout: false
           <p id="teacherLoginError" class="dw-error dw-hidden">Incorrect password.</p>
         </section>
 
-        <section id="teacherView" class="dw-hidden dw-stack">
-          <div class="dw-card dw-teacher-header">
+        <section id="teacherView" class="dw-hidden wf-teacher-results">
+          <div class="dw-card dw-teacher-header wf-teacher-results__header">
             <h2 class="dw-h2">Submissions</h2>
             <p class="dw-muted" id="teacherMeta"></p>
             <div class="dw-row">
@@ -252,18 +252,26 @@ layout: false
               <button id="teacherLogoutBtn" class="dw-btn dw-btn-ghost" type="button">Log out</button>
             </div>
           </div>
-          <div class="dw-card dw-table-wrap">
-            <table class="dw-table dw-table--compact">
-              <thead><tr id="teacherTableHead"><th>Name</th><th>Class</th><th>Wds</th><th>WPM</th><th>Vocab</th><th>Typ</th><th>Mech</th><th>Story</th><th>Overall</th><th>Submitted</th><th></th></tr></thead>
-              <tbody id="teacherTableBody"></tbody>
-            </table>
-          </div>
-          <div id="teacherSubmissionDetail" class="dw-card dw-hidden">
-            <h3 class="dw-h3">Submission detail</h3>
-            <p class="dw-muted" id="teacherDetailMeta"></p>
-            <div id="teacherVocabSummary" class="wf-vocab-summary dw-hidden"></div>
-            <div id="teacherStandardsSummary" class="wf-standards-summary dw-hidden"></div>
-            <div class="dw-story-preview wf-story-preview--highlight" id="teacherStoryPreview"></div>
+          <div class="wf-teacher-results__split" id="teacherResultsSplit">
+            <div class="wf-teacher-results__table-panel dw-card dw-table-wrap">
+              <table class="dw-table dw-table--compact">
+                <thead><tr id="teacherTableHead"><th>Name</th><th>Class</th><th>Wds</th><th>WPM</th><th>Vocab</th><th>Typ</th><th>Mech</th><th>Story</th><th>Overall</th><th>Submitted</th><th></th></tr></thead>
+                <tbody id="teacherTableBody"></tbody>
+              </table>
+            </div>
+            <div id="teacherSubmissionDetail" class="wf-teacher-results__detail dw-card wf-teacher-results__detail--empty">
+              <div class="wf-teacher-results__detail-head">
+                <h3 class="dw-h3">Submission detail</h3>
+                <button id="teacherDetailCloseBtn" class="dw-btn dw-btn-ghost dw-btn--compact" type="button">Back to list</button>
+              </div>
+              <p id="teacherDetailPlaceholder" class="dw-muted wf-teacher-results__detail-placeholder">Select a submission from the list to read the full draft, vocabulary hits, and standards alignment.</p>
+              <div id="teacherDetailContent" class="wf-teacher-results__detail-content dw-hidden">
+                <p class="dw-muted" id="teacherDetailMeta"></p>
+                <div id="teacherVocabSummary" class="wf-vocab-summary dw-hidden"></div>
+                <div id="teacherStandardsSummary" class="wf-standards-summary dw-hidden"></div>
+                <div class="dw-story-preview wf-story-preview--highlight" id="teacherStoryPreview"></div>
+              </div>
+            </div>
           </div>
         </section>
       </main>

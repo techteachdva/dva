@@ -42,6 +42,8 @@
   let config = { ...Defaults, id: assignmentId };
   let timer = null;
   let allSubmissions = [];
+  let teacherTableSort = { col: "submitted", dir: "desc" };
+  let selectedTeacherSubmissionKey = "";
   let teacherAuthed = false;
   let sessionTeacherPassword = "";
   let cloudAssignmentMeta = {};
@@ -2133,6 +2135,10 @@
     });
     document.getElementById("refreshBtn")?.addEventListener("click", loadTeacherDashboard);
     document.getElementById("exportBtn")?.addEventListener("click", exportCsv);
+    document.getElementById("teacherDetailCloseBtn")?.addEventListener("click", () => {
+      clearTeacherSubmissionDetail();
+      document.querySelector(".wf-teacher-results__table-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
   }
 
   async function initTeacherPortal() {
@@ -2178,15 +2184,47 @@
     renderTeacherTable();
   }
 
+  function getTeacherSubmissionKey(sub) {
+    if (!sub) return "";
+    return `${sub.name || ""}|${sub.submittedAt || ""}|${sub.classroom || ""}`;
+  }
+
+  function updateTeacherTableSelection() {
+    document.querySelectorAll("#teacherTableBody tr[data-sub-key]").forEach((row) => {
+      const selected = row.dataset.subKey === selectedTeacherSubmissionKey;
+      row.classList.toggle("dw-table-row--selected", selected);
+      row.setAttribute("aria-selected", selected ? "true" : "false");
+    });
+  }
+
+  function clearTeacherSubmissionDetail() {
+    selectedTeacherSubmissionKey = "";
+    const panel = document.getElementById("teacherSubmissionDetail");
+    const placeholder = document.getElementById("teacherDetailPlaceholder");
+    const content = document.getElementById("teacherDetailContent");
+    panel?.classList.add("wf-teacher-results__detail--empty");
+    placeholder?.classList.remove("dw-hidden");
+    content?.classList.add("dw-hidden");
+    document.getElementById("teacherResultsSplit")?.classList.remove("wf-teacher-results__split--detail-open");
+    updateTeacherTableSelection();
+  }
+
   function showTeacherSubmission(sub) {
     const panel = document.getElementById("teacherSubmissionDetail");
+    const placeholder = document.getElementById("teacherDetailPlaceholder");
+    const content = document.getElementById("teacherDetailContent");
     const meta = document.getElementById("teacherDetailMeta");
     const vocabSummary = document.getElementById("teacherVocabSummary");
     const standardsSummary = document.getElementById("teacherStandardsSummary");
     const preview = document.getElementById("teacherStoryPreview");
-    if (!panel || !preview) return;
+    if (!panel || !preview || !sub) return;
 
-    panel.classList.remove("dw-hidden");
+    selectedTeacherSubmissionKey = getTeacherSubmissionKey(sub);
+    panel.classList.remove("wf-teacher-results__detail--empty");
+    placeholder?.classList.add("dw-hidden");
+    content?.classList.remove("dw-hidden");
+    document.getElementById("teacherResultsSplit")?.classList.add("wf-teacher-results__split--detail-open");
+
     if (meta) {
       meta.textContent = `${sub.name} · ${sub.classroom || "—"} · ${sub.analysis?.wordCount ?? 0} words · ${sub.submittedAt ? Core.formatDate(sub.submittedAt) : ""}`;
     }
@@ -2217,13 +2255,10 @@
     }
 
     preview.innerHTML = highlightSubmissionHtml(sub.text || "", { alignment: sub.analysis?.teachingStandards });
-    panel.scrollIntoView({ behavior: "smooth", block: "start" });
+    updateTeacherTableSelection();
   }
 
-  function renderTeacherTable() {
-    const subs = allSubmissions;
-    const tbody = document.getElementById("teacherTableBody");
-    const thead = document.getElementById("teacherTableHead");
+  function getTeacherTableColumns() {
     const rubrics = getActiveRubrics();
     const hasVocab = getVocabWords().length > 0;
     const showWpm = resolveShowLiveWpm() || rubrics.includes("typing");
@@ -2234,7 +2269,61 @@
     if (rubrics.includes("mechanics")) cols.push("mechanics");
     if (rubrics.includes("story")) cols.push("story");
     cols.push("overall", "submitted", "action");
+    return cols;
+  }
 
+  function defaultTeacherSortDir(col) {
+    return col === "name" || col === "class" ? "asc" : "desc";
+  }
+
+  function getTeacherSubmissionSortValue(sub, col) {
+    switch (col) {
+      case "name": return (sub.name || "").toLowerCase();
+      case "class": return (sub.classroom || "").toLowerCase();
+      case "words": return Number(sub.analysis?.wordCount) || 0;
+      case "wpm": return Number(sub.analysis?.wpm) || 0;
+      case "vocab": {
+        const vocab = sub.analysis?.vocabulary;
+        if (!vocab?.requiredCount) return -1;
+        return vocab.usedCount / vocab.requiredCount;
+      }
+      case "typing": return Number(sub.analysis?.scores?.typing ?? -1);
+      case "mechanics": return Number(sub.analysis?.scores?.mechanics ?? -1);
+      case "story": return Number(sub.analysis?.scores?.story ?? -1);
+      case "overall": return Number(sub.analysis?.scores?.overall ?? -1);
+      case "submitted": return Number(sub.submittedAt) || 0;
+      default: return 0;
+    }
+  }
+
+  function sortTeacherSubmissions(subs, col, dir) {
+    const mult = dir === "asc" ? 1 : -1;
+    return [...subs].sort((a, b) => {
+      const av = getTeacherSubmissionSortValue(a, col);
+      const bv = getTeacherSubmissionSortValue(b, col);
+      if (typeof av === "string" && typeof bv === "string") {
+        return mult * av.localeCompare(bv, undefined, { sensitivity: "base", numeric: true });
+      }
+      return mult * (av - bv);
+    });
+  }
+
+  function toggleTeacherTableSort(col) {
+    if (!col || col === "action") return;
+    if (teacherTableSort.col === col) {
+      teacherTableSort.dir = teacherTableSort.dir === "asc" ? "desc" : "asc";
+    } else {
+      teacherTableSort.col = col;
+      teacherTableSort.dir = defaultTeacherSortDir(col);
+    }
+    renderTeacherTable();
+  }
+
+  function renderTeacherTable() {
+    const cols = getTeacherTableColumns();
+    const subs = sortTeacherSubmissions(allSubmissions, teacherTableSort.col, teacherTableSort.dir);
+    const tbody = document.getElementById("teacherTableBody");
+    const thead = document.getElementById("teacherTableHead");
     const headerLabels = {
       name: "Name",
       class: "Class",
@@ -2250,7 +2339,21 @@
     };
 
     if (thead) {
-      thead.innerHTML = cols.map((c) => `<th>${headerLabels[c]}</th>`).join("");
+      thead.innerHTML = cols.map((c) => {
+        if (c === "action") return `<th scope="col">${headerLabels[c]}</th>`;
+        const active = teacherTableSort.col === c;
+        const ariaSort = active ? (teacherTableSort.dir === "asc" ? "ascending" : "descending") : "none";
+        const icon = active ? (teacherTableSort.dir === "asc" ? "▲" : "▼") : "↕";
+        return `<th scope="col" aria-sort="${ariaSort}">
+          <button type="button" class="dw-table-sort" data-sort-col="${c}">
+            <span class="dw-table-sort__label">${headerLabels[c]}</span>
+            <span class="dw-table-sort__icon" aria-hidden="true">${icon}</span>
+          </button>
+        </th>`;
+      }).join("");
+      thead.querySelectorAll("[data-sort-col]").forEach((btn) => {
+        btn.addEventListener("click", () => toggleTeacherTableSort(btn.dataset.sortCol));
+      });
     }
 
     if (!tbody) return;
@@ -2272,12 +2375,35 @@
       }
     }
 
-    tbody.innerHTML = subs.map((s, idx) => `
-      <tr>${cols.map((c) => `<td>${cellValue(s, c, idx)}</td>`).join("")}</tr>`).join("")
+    tbody.innerHTML = subs.map((s, idx) => {
+      const subKey = getTeacherSubmissionKey(s);
+      const selected = subKey && subKey === selectedTeacherSubmissionKey;
+      return `<tr class="dw-table-row--clickable${selected ? " dw-table-row--selected" : ""}" data-sub-key="${escapeHtml(subKey)}" tabindex="0" aria-selected="${selected ? "true" : "false"}">
+        ${cols.map((c) => `<td>${cellValue(s, c, idx)}</td>`).join("")}
+      </tr>`;
+    }).join("")
       || `<tr><td colspan="${cols.length}" class="dw-muted">No submissions yet.</td></tr>`;
 
+    tbody.querySelectorAll("tr[data-sub-key]").forEach((row) => {
+      const open = () => {
+        const sub = subs.find((s) => getTeacherSubmissionKey(s) === row.dataset.subKey);
+        if (sub) showTeacherSubmission(sub);
+      };
+      row.addEventListener("click", (e) => {
+        if (e.target.closest("button")) return;
+        open();
+      });
+      row.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          open();
+        }
+      });
+    });
+
     tbody.querySelectorAll("[data-sub-idx]").forEach((btn) => {
-      btn.addEventListener("click", () => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
         const sub = subs[Number(btn.dataset.subIdx)];
         if (sub) showTeacherSubmission(sub);
       });
@@ -2289,7 +2415,11 @@
   }
 
   function exportCsv() {
-    const subs = allSubmissions.length ? allSubmissions : loadLocalSubmissions();
+    const subs = sortTeacherSubmissions(
+      allSubmissions.length ? allSubmissions : loadLocalSubmissions(),
+      teacherTableSort.col,
+      teacherTableSort.dir
+    );
     const rubrics = getActiveRubrics();
     const hasVocab = getVocabWords().length > 0;
     const showWpm = resolveShowLiveWpm() || rubrics.includes("typing");
