@@ -14,7 +14,7 @@
   let tableSort = { col: "submitted", dir: "desc" };
   const configCache = new Map();
 
-  const TABLE_COLUMNS = ["name", "assignment", "class", "words", "wpm", "typing", "mechanics", "story", "overall", "submitted"];
+  const TABLE_COLUMNS = ["name", "assignment", "class", "words", "wpm", "typing", "mechanics", "story", "overall", "teacher", "submitted"];
   const HEADER_LABELS = {
     name: "Student",
     assignment: "Assignment",
@@ -24,7 +24,8 @@
     typing: "Typ",
     mechanics: "Mech",
     story: "Story",
-    overall: "Overall",
+    overall: "Auto",
+    teacher: "Teacher",
     submitted: "Submitted",
   };
 
@@ -89,6 +90,10 @@
       case "mechanics": return Number(sub.analysis?.scores?.mechanics ?? -1);
       case "story": return Number(sub.analysis?.scores?.story ?? -1);
       case "overall": return Number(sub.analysis?.scores?.overall ?? -1);
+      case "teacher": {
+        const grade = Number(sub.teacherGrade);
+        return Number.isFinite(grade) ? grade : -1;
+      }
       case "submitted": return Number(sub.submittedAt) || 0;
       default: return 0;
     }
@@ -142,6 +147,12 @@
   function scoreValue(analysis, key) {
     const value = analysis?.scores?.[key];
     return value == null || value === "" ? "—" : value;
+  }
+
+  function teacherGradeValue(sub) {
+    if (sub?.teacherGrade == null || sub.teacherGrade === "") return "—";
+    const grade = Number(sub.teacherGrade);
+    return Number.isFinite(grade) ? String(grade) : "—";
   }
 
   function setMeta(text, isError = false) {
@@ -249,6 +260,7 @@
         <td class="dw-col-mechanics">${scoreValue(sub.analysis, "mechanics")}</td>
         <td class="dw-col-story">${scoreValue(sub.analysis, "story")}</td>
         <td class="dw-col-overall">${scoreValue(sub.analysis, "overall")}</td>
+        <td class="dw-col-teacher">${teacherGradeValue(sub)}</td>
         <td class="dw-col-submitted">${formatDate(sub.submittedAt)}</td>
       </tr>`;
     }).join("");
@@ -300,7 +312,7 @@
         Assignment: <strong>${escapeHtml(sub.assignmentTitle || sub.assignmentId || "—")}</strong>
         (<code>${escapeHtml(sub.assignmentId || "")}</code>)
       </p>
-      <p class="dw-muted dw-tiny">Scores — Typ ${scoreValue(sub.analysis, "typing")} · Mech ${scoreValue(sub.analysis, "mechanics")} · Story ${scoreValue(sub.analysis, "story")} · Overall ${scoreValue(sub.analysis, "overall")}</p>
+      <p class="dw-muted dw-tiny">Scores — Typ ${scoreValue(sub.analysis, "typing")} · Mech ${scoreValue(sub.analysis, "mechanics")} · Story ${scoreValue(sub.analysis, "story")} · Auto ${scoreValue(sub.analysis, "overall")} · Teacher ${teacherGradeValue(sub)}</p>
       <p><a class="dw-link" href="${escapeHtml(studioUrl)}" target="_blank" rel="noopener noreferrer">Open assignment results in Studio ↗</a></p>
       ${resolveSubmissionText(sub)
         ? `<pre class="wf-admin-results__draft">${escapeHtml(resolveSubmissionText(sub))}</pre>${sub.textTruncated ? `<p class="dw-muted dw-tiny">Preview only — open assignment Results in Studio for the full draft.</p>` : ""}`

@@ -6510,6 +6510,13 @@ mark.wf-standard-hit,
   min-width: 10rem;
 }
 
+.wf-admin-results__table-panel .wf-admin-results__table .dw-col-overall,
+.wf-admin-results__table-panel .wf-admin-results__table .dw-col-teacher {
+  min-width: 4.5rem;
+  white-space: nowrap;
+  text-align: right;
+}
+
 .wf-admin-results__table-panel .wf-admin-results__table .dw-col-submitted {
   min-width: 10.5rem;
   white-space: nowrap;
