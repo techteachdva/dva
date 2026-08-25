@@ -3455,8 +3455,10 @@
       Object.keys(Core.PRESETS).forEach((key) => {
         const chip = document.createElement("button");
         chip.type = "button";
-        chip.className = `wf-preset-chip${config.theme?.preset === key ? " wf-preset-chip--active" : ""}`;
-        chip.textContent = Core.PRESET_LABELS?.[key] || key.charAt(0).toUpperCase() + key.slice(1);
+        const label = Core.PRESET_LABELS?.[key] || key.charAt(0).toUpperCase() + key.slice(1);
+        const hint = Core.PRESET_HINTS?.[key] || "";
+        chip.className = `wf-preset-chip wf-preset-chip--${key}${config.theme?.preset === key ? " wf-preset-chip--active" : ""}`;
+        chip.innerHTML = `<span class="wf-preset-chip__swatch" aria-hidden="true"></span><span class="wf-preset-chip__text"><span class="wf-preset-chip__label">${escapeHtml(label)}</span>${hint ? `<span class="wf-preset-chip__hint">${escapeHtml(hint)}</span>` : ""}</span>`;
         chip.addEventListener("click", () => {
           config.theme = { ...config.theme, preset: key, ...Core.PRESETS[key] };
           persistConfig();

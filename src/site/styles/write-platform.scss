@@ -27,13 +27,15 @@
 }
 
 .wp-theme--light.dw-body {
-  --dw-border: rgba(15, 23, 42, 0.08);
-  background: #ffffff;
-  color: var(--dw-text);
+  --dw-text: #0f172a;
+  --dw-muted: #475569;
+  --dw-border: rgba(15, 23, 42, 0.12);
+  background: #f8fafc;
+  color: #0f172a;
 
   .dw-topbar {
     background: #ffffff;
-    border-color: rgba(15, 23, 42, 0.08);
+    border-color: rgba(15, 23, 42, 0.1);
     box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
   }
 
@@ -44,60 +46,71 @@
 
   .dw-card {
     background: #ffffff;
-    border-color: rgba(15, 23, 42, 0.1);
+    border-color: rgba(15, 23, 42, 0.12);
+    color: #0f172a;
   }
 
-  .dw-title {
-    color: #111827;
+  .dw-title,
+  .dw-h1,
+  .dw-h2,
+  .dw-h3 {
+    color: #0f172a;
   }
 
   .dw-subtitle,
   .dw-muted,
-  .dw-tiny {
-    color: #6b7280;
+  .dw-tiny,
+  .wf-toggle-row__hint,
+  .wf-student-topbar__meta {
+    color: #475569;
   }
 
-  .dw-lead {
-    color: #111827;
+  .dw-lead,
+  .dw-label,
+  .dw-prompt-quote,
+  .dw-prompt-banner {
+    color: #0f172a;
   }
 
   .dw-link {
-    color: #2563eb;
-  }
-
-  .dw-link:hover {
     color: #1d4ed8;
   }
 
-  .dw-input {
-    background: #ffffff;
-    border-color: #d1d5db;
-    color: #111827;
+  .dw-link:hover {
+    color: #1e40af;
   }
 
-  .dw-label {
-    color: #374151;
+  .dw-input,
+  .dw-textarea,
+  .dw-select {
+    background: #ffffff;
+    border-color: #cbd5e1;
+    color: #0f172a;
+  }
+
+  .dw-input::placeholder,
+  .dw-textarea::placeholder {
+    color: #64748b;
   }
 
   .dw-btn-secondary {
-    background: #f9fafb;
-    border-color: #e5e7eb;
-    color: #111827;
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    color: #0f172a;
   }
 
   .dw-btn-ghost {
     background: #ffffff;
-    border-color: #e5e7eb;
-    color: #374151;
+    border-color: #cbd5e1;
+    color: #334155;
   }
 
   .dw-prompt-quote {
-    color: #111827;
     border-left-color: var(--dw-accent);
   }
 
   .wf-builder-nav {
-    background: #f9fafb;
+    background: #f1f5f9;
   }
 
   .wf-builder-inspector {
@@ -105,58 +118,105 @@
   }
 
   .wf-toolbar {
-    background: #f9fafb;
-    color: #111827;
+    background: #f1f5f9;
+    color: #0f172a;
   }
 
   .wf-nav-item {
-    color: #111827;
+    color: #0f172a;
   }
 
   .wf-nav-item:hover {
-    background: rgba(15, 23, 42, 0.04);
+    background: rgba(15, 23, 42, 0.05);
   }
 
   .wf-nav-item--active {
-    background: rgba(37, 99, 235, 0.1);
+    background: rgba(37, 99, 235, 0.12);
     color: #1d4ed8;
   }
 
   .wf-assignment-card {
     background: #ffffff;
-    color: #111827;
-    border-color: rgba(15, 23, 42, 0.1);
+    color: #0f172a;
+    border-color: rgba(15, 23, 42, 0.12);
   }
 
   .wf-preset-chip {
     background: #ffffff;
-    color: #111827;
-    border-color: #e5e7eb;
+    color: #0f172a;
+    border-color: #cbd5e1;
   }
 
   .wf-preset-chip--active {
     color: #1d4ed8;
-    border-color: rgba(37, 99, 235, 0.35);
+    border-color: rgba(37, 99, 235, 0.45);
   }
 
   .dw-story-preview {
-    background: #f9fafb;
-    color: #111827;
+    background: #f1f5f9;
+    color: #0f172a;
   }
 
   .dw-score-card {
     background: #ffffff;
-    color: #111827;
+    color: #0f172a;
   }
 
   .dw-prompt-banner {
-    color: #111827;
-    background: rgba(37, 99, 235, 0.06);
+    background: rgba(37, 99, 235, 0.08);
   }
 
   .wf-student-prompt-box,
   .wf-student-panel {
+    background: transparent;
+  }
+
+  .wf-student-prompt {
+    background: rgba(37, 99, 235, 0.07);
+    color: #0f172a;
+  }
+
+  .wf-student-prompt-inline {
+    color: #334155;
+    background: rgba(15, 23, 42, 0.04);
+    border-color: rgba(15, 23, 42, 0.1);
+  }
+
+  .wf-student-stat__label {
+    color: #475569;
+  }
+
+  .wf-student-stat__value {
+    color: #0f172a;
+  }
+
+  .wf-student-textarea,
+  #storyInput {
+    color: #0f172a;
     background: #ffffff;
+    border-color: #cbd5e1;
+  }
+
+  .wf-standards-bar {
+    background: rgba(241, 245, 249, 0.95);
+    border-color: rgba(15, 23, 42, 0.1);
+  }
+
+  .wf-standards-bar__label {
+    color: #475569;
+  }
+
+  .wf-standards-chip {
+    background: rgba(219, 234, 254, 0.9);
+    border-color: rgba(37, 99, 235, 0.25);
+  }
+
+  .wf-standards-chip__code {
+    color: #1d4ed8;
+  }
+
+  .wf-standards-chip__title {
+    color: #0f172a;
   }
 }
 
@@ -215,60 +275,80 @@ $wp-sheet-min-height: 1056px;
 }
 
 .wp-theme--classroom.dw-body {
-  --dw-border: rgba(100, 116, 139, 0.22);
-  color: var(--dw-text);
+  --dw-text: #0f172a;
+  --dw-muted: #475569;
+  --dw-border: rgba(71, 85, 105, 0.22);
+  color: #0f172a;
   font-size: 1.125rem;
 
   .dw-title,
   .dw-h1,
   .dw-h2,
-  .wf-student-topbar__title {
-    font-family: "Patrick Hand", "Caveat", cursive;
+  .dw-h3,
+  .wf-student-topbar__title,
+  .wf-student-prompt-box__title {
+    font-family: "Patrick Hand", "Kalam", cursive;
     font-weight: 600;
-    letter-spacing: 0.02em;
+    letter-spacing: 0.01em;
+    color: #0f172a;
   }
 
   .dw-muted,
-  .dw-tiny {
-    color: #64748b;
+  .dw-tiny,
+  .dw-subtitle,
+  .wf-toggle-row__hint,
+  .wf-student-topbar__meta,
+  .wf-student-stat__label {
+    color: #475569;
+  }
+
+  .dw-lead,
+  .dw-label,
+  .dw-prompt-quote,
+  .dw-prompt-banner {
+    color: #0f172a;
   }
 
   .dw-input,
   .dw-textarea,
   .dw-select {
-    font-size: 1.1rem;
-    border-color: rgba(96, 165, 220, 0.45);
-    color: #1f2937;
+    font-family: "Kalam", "Patrick Hand", "Segoe Print", cursive;
+    font-size: 1.2rem;
+    line-height: 1.45;
+    border-color: rgba(59, 130, 200, 0.45);
+    color: #0f172a;
+    background: rgba(255, 255, 255, 0.92);
   }
 
   .dw-btn {
-    font-family: "Patrick Hand", "Caveat", cursive;
+    font-family: "Patrick Hand", "Kalam", cursive;
     font-weight: 600;
-    font-size: 1.12rem;
+    font-size: 1.15rem;
   }
 
   .wf-builder-nav {
-    background: rgba(255, 253, 248, 0.95);
+    background: rgba(255, 253, 248, 0.98);
   }
 
   .wf-builder-inspector {
-    background: rgba(255, 255, 255, 0.92);
+    background: rgba(255, 255, 255, 0.96);
   }
 
   .wf-nav-item--active {
-    background: rgba(29, 78, 216, 0.1);
-    color: #1d4ed8;
+    background: rgba(29, 78, 216, 0.12);
+    color: #1e40af;
   }
 
   .dw-card {
-    background: rgba(255, 255, 255, 0.94);
-    border-color: rgba(100, 116, 139, 0.2);
+    background: rgba(255, 255, 255, 0.96);
+    border-color: rgba(71, 85, 105, 0.18);
     box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+    color: #0f172a;
   }
 
   .dw-topbar {
-    background: rgba(255, 255, 255, 0.92);
-    border-color: rgba(100, 116, 139, 0.2);
+    background: rgba(255, 255, 255, 0.96);
+    border-color: rgba(71, 85, 105, 0.18);
   }
 }
 
@@ -301,11 +381,12 @@ $wp-sheet-min-height: 1056px;
   }
 
   .wf-student-topbar__title {
-    font-size: 1.65rem;
+    font-size: 1.85rem;
   }
 
   .wf-student-topbar__meta {
-    font-size: 1.05rem;
+    font-size: 1.1rem;
+    color: #475569;
   }
 
   .wf-student-main {
@@ -322,63 +403,100 @@ $wp-sheet-min-height: 1056px;
   }
 
   .wf-student-prompt-box__title {
-    font-size: 1.75rem;
+    font-size: 1.9rem;
   }
 
   .wf-student-prompt {
-    font-size: 1.35rem;
-    line-height: 1.45;
-    background: rgba(255, 255, 255, 0.45);
-    border-left-color: rgba(232, 90, 110, 0.55);
+    font-family: "Kalam", "Patrick Hand", cursive;
+    font-size: 1.45rem;
+    line-height: 1.5;
+    color: #0f172a;
+    background: rgba(255, 255, 255, 0.72);
+    border-left-color: rgba(232, 90, 110, 0.65);
   }
 
   .wf-student-prompt-inline {
-    font-size: 1.15rem;
-    background: rgba(255, 255, 255, 0.5);
-    border: 1px solid rgba(91, 155, 213, 0.25);
+    font-family: "Kalam", "Patrick Hand", cursive;
+    font-size: 1.25rem;
+    line-height: 1.5;
+    color: #334155;
+    background: rgba(255, 255, 255, 0.72);
+    border: 1px solid rgba(91, 155, 213, 0.3);
   }
 
   .wf-student-stat__label {
-    font-size: 0.78rem;
+    font-size: 0.95rem;
+    color: #475569;
   }
 
   .wf-student-stat__value {
-    font-size: 1.5rem;
+    font-size: 1.65rem;
+    color: #0f172a;
   }
 
   .wf-student-textarea,
   #storyInput {
     background: transparent;
     background-image: none;
-    border: 1px solid rgba(91, 155, 213, 0.35);
+    border: 1px solid rgba(59, 130, 200, 0.4);
     border-radius: 2px;
-    font-size: 1.7rem;
+    font-family: "Kalam", "Patrick Hand", "Segoe Print", cursive;
+    font-size: 1.95rem;
+    font-weight: 400;
     line-height: #{$wp-classroom-line};
-    padding: 4px 12px 8px calc(#{$wp-classroom-margin} - 44px);
-    color: #1e293b;
+    padding: 6px 12px 10px calc(#{$wp-classroom-margin} - 44px);
+    color: #0f172a;
     box-shadow: none;
     min-height: min(52vh, 640px);
   }
 
   .dw-prompt-banner {
-    background: rgba(255, 255, 255, 0.55);
-    font-size: 1.1rem;
+    background: rgba(255, 255, 255, 0.72);
+    font-family: "Kalam", "Patrick Hand", cursive;
+    font-size: 1.2rem;
+    color: #0f172a;
   }
 
   .dw-story-preview {
     background: transparent;
     padding-left: calc(#{$wp-classroom-margin} - 44px);
     line-height: #{$wp-classroom-line};
-    font-size: 1.25rem;
+    font-family: "Kalam", "Patrick Hand", cursive;
+    font-size: 1.45rem;
+    color: #0f172a;
   }
 
   .wf-student-account {
-    background: rgba(255, 255, 255, 0.72);
-    font-size: 1.05rem;
+    background: rgba(255, 255, 255, 0.85);
+    font-size: 1.1rem;
+    color: #0f172a;
   }
 
   .dw-label {
-    font-size: 1.05rem;
+    font-size: 1.1rem;
+    color: #0f172a;
+  }
+
+  .wf-standards-bar {
+    background: rgba(255, 255, 255, 0.82);
+    border-color: rgba(71, 85, 105, 0.15);
+  }
+
+  .wf-standards-bar__label {
+    color: #475569;
+  }
+
+  .wf-standards-chip {
+    background: rgba(219, 234, 254, 0.85);
+    border-color: rgba(37, 99, 235, 0.22);
+  }
+
+  .wf-standards-chip__code {
+    color: #1d4ed8;
+  }
+
+  .wf-standards-chip__title {
+    color: #0f172a;
   }
 }
 
@@ -396,6 +514,71 @@ $wp-sheet-min-height: 1056px;
 
   .dw-card {
     border-color: rgba(129, 140, 248, 0.18);
+  }
+}
+
+/* Ocean — coastal sky blue (light, distinct from Light and ITEM) */
+.wp-theme--ocean.dw-body {
+  --dw-text: #0c4a6e;
+  --dw-muted: #475569;
+  --dw-border: rgba(8, 145, 178, 0.2);
+  background:
+    radial-gradient(900px 500px at 10% 0%, rgba(34, 211, 238, 0.2), transparent 55%),
+    radial-gradient(700px 450px at 90% 10%, rgba(8, 145, 178, 0.15), transparent 50%),
+    #e0f2fe;
+  color: #0c4a6e;
+
+  .dw-topbar {
+    background: rgba(240, 249, 255, 0.95);
+    border-color: rgba(8, 145, 178, 0.22);
+  }
+
+  .dw-card {
+    background: rgba(255, 255, 255, 0.92);
+    border-color: rgba(8, 145, 178, 0.18);
+    color: #0c4a6e;
+  }
+
+  .dw-title,
+  .dw-h1,
+  .dw-h2 {
+    color: #0c4a6e;
+  }
+
+  .dw-muted,
+  .dw-tiny,
+  .dw-subtitle {
+    color: #475569;
+  }
+
+  .dw-input,
+  .dw-textarea,
+  .dw-select {
+    background: #ffffff;
+    border-color: rgba(8, 145, 178, 0.28);
+    color: #0c4a6e;
+  }
+
+  .wf-nav-item--active {
+    background: rgba(8, 145, 178, 0.14);
+    color: #0e7490;
+  }
+
+  .wf-student-prompt {
+    background: rgba(255, 255, 255, 0.7);
+    color: #0c4a6e;
+  }
+
+  .wf-student-prompt-inline {
+    color: #334155;
+    background: rgba(255, 255, 255, 0.65);
+  }
+
+  .wf-student-textarea,
+  #storyInput {
+    color: #0c4a6e;
+    background: rgba(255, 255, 255, 0.88);
+    border-color: rgba(8, 145, 178, 0.3);
   }
 }
 
@@ -925,25 +1108,108 @@ $wp-sheet-min-height: 1056px;
 
 .wf-preset-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+@media (min-width: 520px) {
+  .wf-preset-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 .wf-preset-chip {
-  padding: 10px 12px;
-  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 12px;
   border: 2px solid var(--dw-border);
-  background: transparent;
+  background: rgba(0, 0, 0, 0.12);
   color: var(--dw-text);
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  text-align: center;
+  text-align: left;
+  min-height: 88px;
+}
+
+.wf-preset-chip__swatch {
+  display: block;
+  height: 34px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.wf-preset-chip__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.wf-preset-chip__label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.wf-preset-chip__hint {
+  font-size: 0.68rem;
+  font-weight: 500;
+  line-height: 1.25;
+  color: var(--dw-muted);
 }
 
 .wf-preset-chip--active {
   border-color: var(--dw-accent);
-  background: rgba(56, 189, 248, 0.12);
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.25);
+}
+
+.wf-preset-chip--dark .wf-preset-chip__swatch {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #38bdf8 100%);
+}
+
+.wf-preset-chip--light .wf-preset-chip__swatch {
+  background: linear-gradient(135deg, #ffffff 0%, #f1f5f9 55%, #2563eb 100%);
+}
+
+.wf-preset-chip--classroom .wf-preset-chip__swatch {
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      #fffef9 0,
+      #fffef9 7px,
+      rgba(91, 155, 213, 0.35) 7px,
+      rgba(91, 155, 213, 0.35) 8px
+    ),
+    linear-gradient(90deg, transparent 18%, rgba(232, 90, 110, 0.5) 18%, rgba(232, 90, 110, 0.5) 20%, transparent 20%),
+    #d4c4a8;
+}
+
+.wf-preset-chip--midnight .wf-preset-chip__swatch {
+  background: linear-gradient(135deg, #0c0a1a 0%, #312e81 50%, #c084fc 100%);
+}
+
+.wf-preset-chip--sandiego .wf-preset-chip__swatch {
+  background: linear-gradient(135deg, #1a0a2e 0%, #c41e3a 45%, #ffd700 100%);
+}
+
+.wf-preset-chip--item .wf-preset-chip__swatch {
+  background: linear-gradient(135deg, #071612 0%, #059669 50%, #fbbf24 100%);
+}
+
+.wf-preset-chip--gauntlet .wf-preset-chip__swatch {
+  background: linear-gradient(135deg, #140818 0%, #c41e3a 55%, #ffd700 100%);
+}
+
+.wf-preset-chip--ocean .wf-preset-chip__swatch {
+  background: linear-gradient(135deg, #e0f2fe 0%, #7dd3fc 45%, #0891b2 100%);
+}
+
+.wf-preset-chip--active .wf-preset-chip__label {
+  color: var(--dw-accent);
 }
 
 .wf-hero-preview {
@@ -4219,6 +4485,7 @@ body.wf-intro-active {
   border-radius: 0 12px 12px 0;
   font-size: 1.15rem;
   line-height: 1.55;
+  color: var(--dw-text);
 }
 
 .wf-student-gate {

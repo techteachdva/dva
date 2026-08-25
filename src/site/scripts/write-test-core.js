@@ -22,10 +22,10 @@
     mode: "light",
     accent: "#2563eb",
     accent2: "#7c3aed",
-    bg: "#ffffff",
+    bg: "#f8fafc",
     surface: "#ffffff",
-    text: "#111827",
-    muted: "#6b7280",
+    text: "#0f172a",
+    muted: "#475569",
     fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
     fontPreset: "inter",
     radius: "10px",
@@ -39,11 +39,11 @@
       accent: "#1d4ed8",
       accent2: "#db2777",
       bg: "#d4c4a8",
-      surface: "rgba(255, 255, 255, 0.94)",
-      text: "#1f2937",
-      muted: "#64748b",
-      fontFamily: '"Caveat", "Patrick Hand", "Comic Sans MS", cursive',
-      fontPreset: "classroomHand",
+      surface: "#fffef9",
+      text: "#0f172a",
+      muted: "#475569",
+      fontFamily: '"Kalam", "Patrick Hand", "Segoe Print", cursive',
+      fontPreset: "kalam",
       radius: "8px",
     },
     midnight: {
@@ -94,6 +94,18 @@
       fontPreset: "barlow",
       radius: "10px",
     },
+    ocean: {
+      mode: "ocean",
+      accent: "#0891b2",
+      accent2: "#06b6d4",
+      bg: "#e0f2fe",
+      surface: "#f0f9ff",
+      text: "#0c4a6e",
+      muted: "#475569",
+      fontFamily: '"Source Sans 3", ui-sans-serif, system-ui, sans-serif',
+      fontPreset: "sourceSans",
+      radius: "12px",
+    },
   };
 
   const PRESET_LABELS = {
@@ -104,6 +116,18 @@
     sandiego: "San Diego",
     item: "ITEM",
     gauntlet: "Gauntlet",
+    ocean: "Ocean",
+  };
+
+  const PRESET_HINTS = {
+    dark: "Cool slate night · Libre Baskerville",
+    light: "Clean paper white · Inter",
+    classroom: "Ruled notebook · Kalam handwriting",
+    midnight: "Indigo glow · DM Sans",
+    sandiego: "Gold on purple · Newsreader",
+    item: "Emerald diagnostic · Roboto",
+    gauntlet: "Bold arcade red · Barlow",
+    ocean: "Sky blue coastal · Source Sans",
   };
 
   const THEME_SKINS = Object.keys(PRESETS);
@@ -205,9 +229,19 @@
       googleUrl: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap",
     },
     classroomHand: {
-      label: "Classroom handwriting",
-      family: '"Caveat", "Patrick Hand", "Comic Sans MS", cursive',
-      googleUrl: "https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Patrick+Hand&display=swap",
+      label: "Caveat (decorative)",
+      family: '"Caveat", "Comic Sans MS", cursive',
+      googleUrl: "https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&display=swap",
+    },
+    kalam: {
+      label: "Kalam (legible handwriting)",
+      family: '"Kalam", "Patrick Hand", "Segoe Print", cursive',
+      googleUrl: "https://fonts.googleapis.com/css2?family=Kalam:wght@400;700&family=Patrick+Hand&display=swap",
+    },
+    patrickHand: {
+      label: "Patrick Hand",
+      family: '"Patrick Hand", "Segoe Print", cursive',
+      googleUrl: "https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap",
     },
     dmSans: {
       label: "DM Sans",
@@ -223,6 +257,11 @@
       label: "Newsreader",
       family: '"Newsreader", "Palatino Linotype", Georgia, serif',
       googleUrl: "https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,600&display=swap",
+    },
+    sourceSans: {
+      label: "Source Sans 3",
+      family: '"Source Sans 3", ui-sans-serif, system-ui, sans-serif',
+      googleUrl: "https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700&display=swap",
     },
     system: {
       label: "System UI",
@@ -289,6 +328,10 @@
     const merged = { ...base, ...config?.theme };
     if (!config?.theme?.fontPreset && base.fontPreset) {
       merged.fontPreset = base.fontPreset;
+    }
+    if (preset === "classroom" && merged.fontPreset === "classroomHand") {
+      merged.fontPreset = "kalam";
+      merged.fontFamily = PRESETS.classroom.fontFamily;
     }
     return merged;
   }
@@ -475,6 +518,7 @@
     LIGHT_THEME,
     PRESETS,
     PRESET_LABELS,
+    PRESET_HINTS,
     FONT_PRESETS,
     clamp,
     formatTime,

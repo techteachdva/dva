@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.8.0";
+  const APP_VERSION = "2.8.1";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -119,6 +119,18 @@
   ];
 
   const CHANGELOG = [
+    {
+      version: "2.8.1",
+      date: "2026-08-24",
+      summary: "Appearance themes — readability fixes and eighth Ocean preset.",
+      items: [
+        "Eight visually distinct color themes with swatch previews and font hints in the builder.",
+        "Light theme: darker body text (#0f172a) and secondary text (#475569) on soft white.",
+        "Classroom theme: larger Kalam handwriting (~2rem in the writing area), darker ink, legible labels.",
+        "New Ocean theme — sky-blue coastal palette with Source Sans 3.",
+        "Student screens: fixed light-on-light prompts, stats, standards chips, and inputs.",
+      ],
+    },
     {
       version: "2.8.0",
       date: "2026-08-24",
