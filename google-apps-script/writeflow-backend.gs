@@ -672,6 +672,7 @@ function handle_(e, isGet) {
 function verifyAssignmentPassword_(assignmentId, password, session) {
   const targetId = normalizeAssignmentId_(assignmentId);
   if (!targetId) return false;
+  if (session && session.role === "admin") return true;
   if (session && userOwnsAssignment_(session.username, targetId)) return true;
   const rows = readAssignmentRows_();
   for (var i = 0; i < rows.length; i++) {

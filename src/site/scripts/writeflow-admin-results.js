@@ -13,6 +13,8 @@
   let selectedId = "";
   let tableSort = { col: "submitted", dir: "desc" };
   const configCache = new Map();
+  const loadedAssignmentIds = new Set();
+  let detailRequestId = 0;
 
   const TABLE_COLUMNS = ["name", "assignment", "class", "words", "wpm", "typing", "mechanics", "story", "overall", "teacher", "submitted"];
   const HEADER_LABELS = {
@@ -155,6 +157,21 @@
     return Number.isFinite(grade) ? String(grade) : "—";
   }
 
+  function resolveMaxPoints(config) {
+    const max = Number(config?.maxPoints);
+    return max > 0 ? max : 100;
+  }
+
+  function suggestedPointsFromAnalysis(analysis, maxPts) {
+    const overall = Number(analysis?.scores?.overall);
+    if (!Number.isFinite(overall)) return null;
+    return Math.round((overall / 100) * maxPts);
+  }
+
+  function currentSubmission() {
+    return allSubmissions.find((item) => item.id === selectedId) || null;
+  }
+
   function setMeta(text, isError = false) {
     const el = document.getElementById("adminResultsMeta");
     if (!el) return;
@@ -268,7 +285,7 @@
     tbody.querySelectorAll("tr[data-sub-id]").forEach((row) => {
       const open = () => {
         const sub = subs.find((item) => item.id === row.dataset.subId);
-        if (sub) showDetail(sub);
+        if (sub) void showDetail(sub);
       };
       row.addEventListener("click", open);
       row.addEventListener("keydown", (e) => {
@@ -286,10 +303,101 @@
     document.getElementById("adminResultsDetailPlaceholder")?.classList.remove("dw-hidden");
     document.getElementById("adminResultsDetailContent")?.classList.add("dw-hidden");
     document.getElementById("adminResultsSplit")?.classList.remove("wf-admin-results__split--detail-open");
+    const statusEl = document.getElementById("adminGradeStatus");
+    if (statusEl) statusEl.textContent = "";
     renderTable();
   }
 
-  function showDetail(sub) {
+  async function ensureFullText(sub) {
+    if (!sub) return sub;
+    if (sub.text && !sub.textTruncated) return sub;
+    if (sub.textPreview && !sub.textTruncated) {
+      sub.text = sub.textPreview;
+      return sub;
+    }
+    const assignmentId = String(sub.assignmentId || "").trim();
+    if (!assignmentId || loadedAssignmentIds.has(assignmentId)) {
+      return allSubmissions.find((item) => item.id === sub.id) || sub;
+    }
+    try {
+      const items = await Admin().listAssignmentSubmissions(assignmentId);
+      loadedAssignmentIds.add(assignmentId);
+      for (const item of items) {
+        const idx = allSubmissions.findIndex((row) => row.id === item.id);
+        if (idx < 0) continue;
+        allSubmissions[idx] = {
+          ...allSubmissions[idx],
+          ...item,
+          assignmentTitle: allSubmissions[idx].assignmentTitle || item.assignmentTitle,
+          textTruncated: false,
+        };
+      }
+    } catch (err) {
+      console.error("Could not load full drafts for", assignmentId, err);
+    }
+    return allSubmissions.find((item) => item.id === sub.id) || sub;
+  }
+
+  function fillGradingForm(sub, config) {
+    const maxPts = resolveMaxPoints(config);
+    const suggested = suggestedPointsFromAnalysis(sub.analysis, maxPts);
+    const gradeInput = document.getElementById("adminGradeInput");
+    const feedbackInput = document.getElementById("adminFeedbackInput");
+    const visibleInput = document.getElementById("adminFeedbackVisible");
+    const hint = document.getElementById("adminGradingHint");
+    const notice = document.getElementById("adminResultsGradingNotice");
+    const statusEl = document.getElementById("adminGradeStatus");
+    if (gradeInput) {
+      gradeInput.max = String(maxPts);
+      gradeInput.value = sub.teacherGrade != null ? String(sub.teacherGrade) : (suggested != null ? String(suggested) : "");
+    }
+    if (feedbackInput) feedbackInput.value = sub.teacherFeedback || "";
+    if (visibleInput) {
+      visibleInput.checked = sub.gradedAt
+        ? !!sub.feedbackVisible
+        : !!(config.autoReleaseFeedback || sub.feedbackVisible);
+    }
+    if (hint) {
+      hint.textContent = suggested != null
+        ? `Suggested ${suggested}/${maxPts} from auto score (${sub.analysis?.scores?.overall ?? "—"}/100). Override anytime — students see this when you release feedback.`
+        : `Out of ${maxPts} points. Students see this when you release feedback.`;
+    }
+    if (notice) {
+      if (config.gradingEnabled === false) {
+        notice.classList.remove("dw-hidden");
+        notice.textContent = "This assignment does not have points & feedback enabled in Studio yet. You can still save a grade here; students will see it after that option is turned on.";
+      } else {
+        notice.classList.add("dw-hidden");
+        notice.textContent = "";
+      }
+    }
+    if (statusEl) statusEl.textContent = "";
+  }
+
+  function fillDraft(sub) {
+    const draftEl = document.getElementById("adminResultsDraft");
+    const noteEl = document.getElementById("adminResultsDraftNote");
+    const storyText = resolveSubmissionText(sub);
+    if (draftEl) {
+      draftEl.textContent = storyText;
+      draftEl.classList.toggle("dw-hidden", !storyText);
+    }
+    if (noteEl) {
+      if (sub.textUnavailable) {
+        noteEl.classList.remove("dw-hidden");
+        noteEl.textContent = "Student text is unavailable for this submission (overwritten by an earlier Re-analyze bug). Restore from Google Sheets version history if needed, or open Results in Studio.";
+      } else if (sub.textTruncated && storyText) {
+        noteEl.classList.remove("dw-hidden");
+        noteEl.textContent = "Preview only — full draft could not be loaded. Open assignment Results in Studio if you need the complete text.";
+      } else {
+        noteEl.classList.add("dw-hidden");
+        noteEl.textContent = "";
+      }
+    }
+  }
+
+  async function showDetail(sub) {
+    const req = ++detailRequestId;
     selectedId = sub.id;
     const panel = document.getElementById("adminResultsDetail");
     const placeholder = document.getElementById("adminResultsDetailPlaceholder");
@@ -300,25 +408,87 @@
     placeholder.classList.add("dw-hidden");
     content.classList.remove("dw-hidden");
     document.getElementById("adminResultsSplit")?.classList.add("wf-admin-results__split--detail-open");
+    renderTable();
 
     const studioUrl = sub.assignmentId
       ? `/writeflow/studio/?id=${encodeURIComponent(sub.assignmentId)}&teacher=1`
       : "/writeflow/studio/";
-    content.innerHTML = `
-      <p class="dw-muted wf-admin-results__detail-meta">
-        <strong>${escapeHtml(sub.name)}</strong> · ${escapeHtml(sub.classroom || "No class")} · ${formatDate(sub.submittedAt)}
-      </p>
-      <p class="dw-muted dw-tiny">
-        Assignment: <strong>${escapeHtml(sub.assignmentTitle || sub.assignmentId || "—")}</strong>
-        (<code>${escapeHtml(sub.assignmentId || "")}</code>)
-      </p>
-      <p class="dw-muted dw-tiny">Scores — Typ ${scoreValue(sub.analysis, "typing")} · Mech ${scoreValue(sub.analysis, "mechanics")} · Story ${scoreValue(sub.analysis, "story")} · Auto ${scoreValue(sub.analysis, "overall")} · Teacher ${teacherGradeValue(sub)}</p>
-      <p><a class="dw-link" href="${escapeHtml(studioUrl)}" target="_blank" rel="noopener noreferrer">Open assignment results in Studio ↗</a></p>
-      ${resolveSubmissionText(sub)
-        ? `<pre class="wf-admin-results__draft">${escapeHtml(resolveSubmissionText(sub))}</pre>${sub.textTruncated ? `<p class="dw-muted dw-tiny">Preview only — open assignment Results in Studio for the full draft.</p>` : ""}`
-        : `<p class="dw-muted">Student text is unavailable for this submission (overwritten by an earlier Re-analyze bug). Restore from Google Sheets version history if needed, or open Results in Studio.</p>`}`;
+    const studioLink = document.getElementById("adminResultsStudioLink");
+    if (studioLink) studioLink.href = studioUrl;
 
+    const meta = document.getElementById("adminResultsDetailMeta");
+    const assignmentEl = document.getElementById("adminResultsDetailAssignment");
+    const scoresEl = document.getElementById("adminResultsDetailScores");
+    if (meta) {
+      meta.innerHTML = `<strong>${escapeHtml(sub.name)}</strong> · ${escapeHtml(sub.classroom || "No class")} · ${formatDate(sub.submittedAt)}`;
+    }
+    if (assignmentEl) {
+      assignmentEl.innerHTML = `Assignment: <strong>${escapeHtml(sub.assignmentTitle || sub.assignmentId || "—")}</strong> (<code>${escapeHtml(sub.assignmentId || "")}</code>)`;
+    }
+    if (scoresEl) {
+      scoresEl.textContent = `Scores — Typ ${scoreValue(sub.analysis, "typing")} · Mech ${scoreValue(sub.analysis, "mechanics")} · Story ${scoreValue(sub.analysis, "story")} · Auto ${scoreValue(sub.analysis, "overall")} · Teacher ${teacherGradeValue(sub)}`;
+    }
+    fillGradingForm(sub, configCache.get(String(sub.assignmentId || "").trim()) || {});
+    fillDraft(sub);
+
+    const [cfg] = await Promise.all([
+      fetchAssignmentConfig(sub.assignmentId),
+      ensureFullText(sub),
+    ]);
+    if (req !== detailRequestId) return;
+
+    const current = currentSubmission() || sub;
+    if (scoresEl) {
+      scoresEl.textContent = `Scores — Typ ${scoreValue(current.analysis, "typing")} · Mech ${scoreValue(current.analysis, "mechanics")} · Story ${scoreValue(current.analysis, "story")} · Auto ${scoreValue(current.analysis, "overall")} · Teacher ${teacherGradeValue(current)}`;
+    }
+    const active = document.activeElement;
+    const editingGrade = active && (active.id === "adminGradeInput" || active.id === "adminFeedbackInput" || active.id === "adminFeedbackVisible");
+    if (!editingGrade) fillGradingForm(current, cfg || {});
+    fillDraft(current);
     renderTable();
+  }
+
+  async function saveAdminGrade() {
+    const sub = currentSubmission();
+    const statusEl = document.getElementById("adminGradeStatus");
+    const btn = document.getElementById("adminGradeSaveBtn");
+    if (!sub) {
+      if (statusEl) statusEl.textContent = "Select a submission first.";
+      return;
+    }
+    const gradeVal = document.getElementById("adminGradeInput")?.value;
+    const teacherGrade = gradeVal === "" ? null : Number(gradeVal);
+    const teacherFeedback = document.getElementById("adminFeedbackInput")?.value || "";
+    const feedbackVisible = document.getElementById("adminFeedbackVisible")?.checked || false;
+    if (teacherGrade != null && (!Number.isFinite(teacherGrade) || teacherGrade < 0)) {
+      if (statusEl) statusEl.textContent = "Enter a valid point value.";
+      return;
+    }
+    if (statusEl) statusEl.textContent = "Saving…";
+    if (btn) btn.disabled = true;
+    try {
+      const data = await Admin().saveSubmissionGrade(sub.id, sub.assignmentId, {
+        teacherGrade,
+        teacherFeedback,
+        feedbackVisible,
+      });
+      const idx = allSubmissions.findIndex((item) => item.id === sub.id);
+      if (idx >= 0) {
+        allSubmissions[idx] = {
+          ...allSubmissions[idx],
+          teacherGrade: data.grading?.teacherGrade ?? teacherGrade,
+          teacherFeedback: data.grading?.teacherFeedback ?? teacherFeedback,
+          feedbackVisible: data.grading?.feedbackVisible ?? feedbackVisible,
+          gradedAt: data.grading?.gradedAt || Date.now(),
+        };
+      }
+      applyFilters();
+      if (statusEl) statusEl.textContent = feedbackVisible ? "Saved and released to student." : "Saved.";
+    } catch (err) {
+      if (statusEl) statusEl.textContent = err.message || "Could not save grade.";
+    } finally {
+      if (btn) btn.disabled = false;
+    }
   }
 
   async function fetchAssignmentConfig(assignmentId) {
@@ -359,6 +529,7 @@
     setMeta("Loading submissions…");
     try {
       allSubmissions = await Admin().listAllSubmissions();
+      loadedAssignmentIds.clear();
       populateFilterOptions();
       applyFilters();
     } catch (err) {
@@ -474,6 +645,7 @@
     document.getElementById("adminResultsAssignmentFilter")?.addEventListener("change", applyFilters);
     document.getElementById("adminResultsClassroomFilter")?.addEventListener("change", applyFilters);
     document.getElementById("adminResultsSearch")?.addEventListener("input", applyFilters);
+    document.getElementById("adminGradeSaveBtn")?.addEventListener("click", () => void saveAdminGrade());
 
     await loadSubmissions();
   }

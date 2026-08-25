@@ -151,6 +151,28 @@
     });
   }
 
+  async function listAssignmentSubmissions(assignmentId) {
+    const token = getToken();
+    if (!token) throw new Error("Admin sign-in required.");
+    if (!assignmentId) throw new Error("Missing assignment ID.");
+    const data = await apiGet({ action: "list", assignmentId, sessionToken: token });
+    return data.submissions || [];
+  }
+
+  async function saveSubmissionGrade(submissionId, assignmentId, { teacherGrade, teacherFeedback, feedbackVisible }) {
+    const token = getToken();
+    if (!token) throw new Error("Admin sign-in required.");
+    if (!submissionId || !assignmentId) throw new Error("Missing submission or assignment ID.");
+    return apiPost("saveSubmissionGrade", {
+      sessionToken: token,
+      submissionId,
+      assignmentId,
+      teacherGrade,
+      teacherFeedback,
+      feedbackVisible,
+    });
+  }
+
   window.WriteFlowAdmin = {
     validate,
     login,
@@ -164,6 +186,8 @@
     listTeachers,
     listStudents,
     listAllSubmissions,
+    listAssignmentSubmissions,
+    saveSubmissionGrade,
     reanalyzeBulk,
   };
 })();

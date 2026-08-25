@@ -71,8 +71,41 @@ layout: false
                 <h2 class="dw-h3">Submission detail</h2>
                 <button id="adminResultsDetailClose" class="dw-btn dw-btn-ghost dw-btn--compact" type="button">Close</button>
               </div>
-              <p id="adminResultsDetailPlaceholder" class="dw-muted">Select a row to read the draft and scores.</p>
-              <div id="adminResultsDetailContent" class="dw-hidden"></div>
+              <p id="adminResultsDetailPlaceholder" class="dw-muted">Select a row to read the draft, then save a teacher score and feedback.</p>
+              <div id="adminResultsDetailContent" class="dw-hidden">
+                <p class="dw-muted wf-admin-results__detail-meta" id="adminResultsDetailMeta"></p>
+                <p class="dw-muted dw-tiny" id="adminResultsDetailAssignment"></p>
+                <p class="dw-muted dw-tiny" id="adminResultsDetailScores"></p>
+                <p class="dw-muted dw-tiny dw-hidden" id="adminResultsGradingNotice"></p>
+                <div id="adminResultsGradingPanel" class="wf-teacher-grading">
+                  <h4 class="wf-teacher-grading__title">Grade &amp; feedback</h4>
+                  <p class="wf-grading-guide" role="note">
+                    <strong>Grading guide:</strong> Full credit (100%) requires answering the prompt with correct spelling, punctuation, capitalization, grammar, and syntax.
+                    Strong answer with weak conventions, or strong conventions without answering the prompt, should not exceed 50%.
+                    Auto scores are a starting suggestion only — use your judgment.
+                  </p>
+                  <p class="dw-muted dw-tiny" id="adminGradingHint">Suggested points are based on the auto score. Override anytime — students see this when you release feedback.</p>
+                  <label class="dw-field">
+                    <span class="dw-label">Points</span>
+                    <input id="adminGradeInput" class="dw-input" type="number" min="0" step="0.5" />
+                  </label>
+                  <label class="dw-field">
+                    <span class="dw-label">Feedback for student</span>
+                    <textarea id="adminFeedbackInput" class="dw-textarea" rows="4" placeholder="What went well? What should they revise?"></textarea>
+                  </label>
+                  <label class="wf-toggle-row">
+                    <input id="adminFeedbackVisible" type="checkbox" />
+                    <span class="wf-toggle-row__label"><strong>Release to student</strong><span class="wf-toggle-row__hint">Student sees grade and feedback in My writing when signed in</span></span>
+                  </label>
+                  <div class="dw-row wf-teacher-grading__actions">
+                    <button id="adminGradeSaveBtn" class="dw-btn dw-btn--compact" type="button">Save grade</button>
+                    <span id="adminGradeStatus" class="dw-muted dw-tiny" role="status"></span>
+                  </div>
+                </div>
+                <p><a id="adminResultsStudioLink" class="dw-link" target="_blank" rel="noopener noreferrer">Open assignment results in Studio ↗</a></p>
+                <pre class="wf-admin-results__draft dw-hidden" id="adminResultsDraft"></pre>
+                <p class="dw-muted dw-tiny dw-hidden" id="adminResultsDraftNote"></p>
+              </div>
             </aside>
           </div>
         </section>
