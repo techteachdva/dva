@@ -175,6 +175,27 @@ function normalizeDisplayName_(value) {
   return String(value || "").trim().slice(0, 80);
 }
 
+function columnIndexToLetter_(column) {
+  var letter = "";
+  var temp = 0;
+  var col = column;
+  while (col > 0) {
+    temp = (col - 1) % 26;
+    letter = String.fromCharCode(temp + 65) + letter;
+    col = Math.floor((col - 1) / 26);
+  }
+  return letter || "A";
+}
+
+/** Data rows 2…lastRow via A1 notation (avoids numRows vs endRow ambiguity in getRange). */
+function readSheetDataRows_(sheet, minCols) {
+  var lastRow = sheet.getLastRow();
+  if (lastRow < 2) return [];
+  var lastCol = Math.max(minCols || 1, sheet.getLastColumn());
+  if (lastCol < 1) lastCol = 1;
+  return sheet.getRange("A2:" + columnIndexToLetter_(lastCol) + lastRow).getValues();
+}
+
 function getTeacherByUsername_(username) {
   const norm = normalizeUsername_(username);
   if (!norm) return null;
@@ -272,10 +293,7 @@ function revokeSession_(token) {
 }
 
 function readAssignmentRows_() {
-  const sheet = getAssignmentsSheet_();
-  const lastRow = sheet.getLastRow();
-  if (lastRow < 2) return [];
-  return sheet.getRange(2, 1, lastRow - 1, 8).getValues();
+  return readSheetDataRows_(getAssignmentsSheet_(), 8);
 }
 
 function assignmentSummaryFromRow_(row) {
@@ -767,8 +785,7 @@ function getStats_() {
   var sentences = 0;
 
   if (submissionLastRow >= 2) {
-    const numRows = submissionLastRow - 1;
-    const values = submissionsSheet.getRange(2, 1, numRows, 12).getValues();
+    const values = readSheetDataRows_(submissionsSheet, 12);
     for (var i = 0; i < values.length; i++) {
       const row = values[i];
       if (!row[0]) continue;
@@ -798,9 +815,8 @@ function listSubmissions_(assignmentId) {
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return [];
 
-  const numRows = lastRow - 1;
   const colCount = Math.max(17, sheet.getLastColumn());
-  const values = sheet.getRange(2, 1, numRows, colCount).getValues();
+  const values = readSheetDataRows_(sheet, colCount);
   const submissions = [];
 
   for (let i = values.length - 1; i >= 0; i--) {
@@ -835,9 +851,8 @@ function listAllSubmissions_() {
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return [];
 
-  const numRows = lastRow - 1;
   const colCount = Math.max(17, sheet.getLastColumn());
-  const values = sheet.getRange(2, 1, numRows, colCount).getValues();
+  const values = readSheetDataRows_(sheet, colCount);
   const submissions = [];
   const titleCache = {};
 
@@ -865,7 +880,8 @@ function listAllSubmissions_() {
       name: String(row[3]),
       classroom: String(row[4]),
       durationSec: Number(row[5]) || 0,
-      text: storyText,
+      textPreview: storyText ? storyText.slice(0, 400) : "",
+      textTruncated: storyText.length > 400,
       textUnavailable: !storyText && looksLikeAnalysisJson_(row[10]),
       analysis: analysis,
       studentUsername: String(row[12] || ""),
@@ -985,9 +1001,8 @@ function updateSubmissionsBulk_(assignmentId, updates) {
   }
   if (!updates || !updates.length) return result;
 
-  const numRows = lastRow - 1;
   const colCount = Math.max(17, sheet.getLastColumn());
-  const values = sheet.getRange(2, 1, numRows, colCount).getValues();
+  const values = readSheetDataRows_(sheet, colCount);
   const idToRow = {};
   for (var i = 0; i < values.length; i++) {
     const row = values[i];

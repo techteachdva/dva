@@ -49,9 +49,10 @@
   function resolveSubmissionText(sub) {
     if (!sub) return "";
     if (sub.textUnavailable) return "";
-    const raw = String(sub.text || "").trim();
+    if (sub.text) return String(sub.text);
+    const raw = String(sub.textPreview || "").trim();
     if (looksLikeAnalysisJson(raw)) return "";
-    return String(sub.text || "");
+    return String(sub.textPreview || "");
   }
 
   function formatDate(ts) {
@@ -302,8 +303,8 @@
       <p class="dw-muted dw-tiny">Scores — Typ ${scoreValue(sub.analysis, "typing")} · Mech ${scoreValue(sub.analysis, "mechanics")} · Story ${scoreValue(sub.analysis, "story")} · Overall ${scoreValue(sub.analysis, "overall")}</p>
       <p><a class="dw-link" href="${escapeHtml(studioUrl)}" target="_blank" rel="noopener noreferrer">Open assignment results in Studio ↗</a></p>
       ${resolveSubmissionText(sub)
-        ? `<pre class="wf-admin-results__draft">${escapeHtml(resolveSubmissionText(sub))}</pre>`
-        : `<p class="dw-muted">Student text is unavailable for this submission (overwritten by an earlier Re-analyze bug). Restore from Google Sheets version history if needed.</p>`}`;
+        ? `<pre class="wf-admin-results__draft">${escapeHtml(resolveSubmissionText(sub))}</pre>${sub.textTruncated ? `<p class="dw-muted dw-tiny">Preview only — open assignment Results in Studio for the full draft.</p>` : ""}`
+        : `<p class="dw-muted">Student text is unavailable for this submission (overwritten by an earlier Re-analyze bug). Restore from Google Sheets version history if needed, or open Results in Studio.</p>`}`;
 
     renderTable();
   }

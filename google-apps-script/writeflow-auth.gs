@@ -181,7 +181,7 @@ function saveSubmissionGrade_(params) {
   if (lastRow < 2) throw new Error("Submission not found.");
 
   const colCount = Math.max(17, sheet.getLastColumn());
-  const values = sheet.getRange(2, 1, lastRow - 1, colCount).getValues();
+  const values = readSheetDataRows_(sheet, colCount);
   var targetRow = -1;
   for (var i = 0; i < values.length; i++) {
     if (String(values[i][0]) !== submissionId) continue;
@@ -607,9 +607,8 @@ function listStudentSubmissions_(studentUsername) {
   ensureSubmissionGradingColumns_(sheet);
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return [];
-  const numRows = lastRow - 1;
   const colCount = Math.max(17, sheet.getLastColumn());
-  const values = sheet.getRange(2, 1, numRows, colCount).getValues();
+  const values = readSheetDataRows_(sheet, colCount);
   const out = [];
   for (var i = values.length - 1; i >= 0; i--) {
     const row = values[i];
@@ -662,9 +661,8 @@ function adminDedupeSubmissions_() {
   const sheet = getSubmissionsSheet_();
   const lastRow = sheet.getLastRow();
   if (lastRow < 3) return { removed: 0 };
-  const numRows = lastRow - 1;
   const colCount = Math.max(13, sheet.getLastColumn());
-  const values = sheet.getRange(2, 1, numRows, colCount).getValues();
+  const values = readSheetDataRows_(sheet, colCount);
   const seen = {};
   var removed = 0;
   for (var i = values.length - 1; i >= 0; i--) {

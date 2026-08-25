@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.8.5";
+  const APP_VERSION = "2.8.6";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -119,6 +119,15 @@
   ];
 
   const CHANGELOG = [
+    {
+      version: "2.8.6",
+      date: "2026-08-24",
+      summary: "Fix admin all-results sheet read error.",
+      items: [
+        "Admin See all results no longer throws “Those rows are out of bounds” on large submission sheets.",
+        "Uses explicit A1 ranges when reading submission rows; admin list returns text previews to keep responses fast.",
+      ],
+    },
     {
       version: "2.8.5",
       date: "2026-08-24",
