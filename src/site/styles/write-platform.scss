@@ -3990,7 +3990,7 @@ body.wf-intro-active {
 
 .wf-landing-glance__grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -4123,11 +4123,6 @@ body.wf-intro-active {
 
 .wf-landing-hero--compact {
   flex: 0 0 auto;
-}
-
-.wf-landing-glance {
-  flex: 1;
-  min-height: 0;
 }
 
 .wf-landing-hero__title {

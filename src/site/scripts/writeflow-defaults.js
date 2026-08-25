@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.8.1";
+  const APP_VERSION = "2.8.2";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -119,6 +119,15 @@
   ];
 
   const CHANGELOG = [
+    {
+      version: "2.8.2",
+      date: "2026-08-24",
+      summary: "Landing page layout — fix overlapping center sections.",
+      items: [
+        "Studio at a glance and How auto scoring works no longer overlap in the center column.",
+        "Glance cards use a balanced 2×2 grid instead of three plus one.",
+      ],
+    },
     {
       version: "2.8.1",
       date: "2026-08-24",
