@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.8.4";
+  const APP_VERSION = "2.8.5";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -119,6 +119,15 @@
   ];
 
   const CHANGELOG = [
+    {
+      version: "2.8.5",
+      date: "2026-08-24",
+      summary: "Fix Re-analyze overwriting student text in the sheet.",
+      items: [
+        "Bulk re-analyze now writes analysis JSON to column 12 (analysisJson), not column 11 (storyText).",
+        "Results detail detects corrupted text cells and shows a clear message instead of raw JSON.",
+      ],
+    },
     {
       version: "2.8.4",
       date: "2026-08-24",

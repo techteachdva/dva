@@ -806,13 +806,9 @@ function listSubmissions_(assignmentId) {
   for (let i = values.length - 1; i >= 0; i--) {
     const row = values[i];
     if (!row[0] || !assignmentIdMatches_(row[2], assignmentId)) continue;
-    let analysis = {};
-    try {
-      analysis = JSON.parse(row[11] || "{}");
-    } catch (ignore) {
-      analysis = { scores: { overall: Number(row[9]) || 0 }, typingLevel: String(row[8] || "") };
-    }
+    const analysis = parseSubmissionAnalysis_(row);
     const grading = parseSubmissionGrading_(row);
+    const storyText = normalizeSubmissionText_(row);
     submissions.push({
       id: String(row[0]),
       submittedAt: Number(row[1]) || 0,
@@ -820,7 +816,8 @@ function listSubmissions_(assignmentId) {
       name: String(row[3]),
       classroom: String(row[4]),
       durationSec: Number(row[5]) || 0,
-      text: String(row[10] || ""),
+      text: storyText,
+      textUnavailable: !storyText && looksLikeAnalysisJson_(row[10]),
       analysis: analysis,
       studentUsername: String(row[12] || ""),
       teacherGrade: grading.teacherGrade,
@@ -856,14 +853,10 @@ function listAllSubmissions_() {
   for (let i = values.length - 1; i >= 0; i--) {
     const row = values[i];
     if (!row[0]) continue;
-    let analysis = {};
-    try {
-      analysis = JSON.parse(row[11] || "{}");
-    } catch (ignore) {
-      analysis = { scores: { overall: Number(row[9]) || 0 }, typingLevel: String(row[8] || "") };
-    }
+    const analysis = parseSubmissionAnalysis_(row);
     const grading = parseSubmissionGrading_(row);
     const assignmentId = String(row[2]);
+    const storyText = normalizeSubmissionText_(row);
     submissions.push({
       id: String(row[0]),
       submittedAt: Number(row[1]) || 0,
@@ -872,7 +865,8 @@ function listAllSubmissions_() {
       name: String(row[3]),
       classroom: String(row[4]),
       durationSec: Number(row[5]) || 0,
-      text: String(row[10] || ""),
+      text: storyText,
+      textUnavailable: !storyText && looksLikeAnalysisJson_(row[10]),
       analysis: analysis,
       studentUsername: String(row[12] || ""),
       teacherGrade: grading.teacherGrade,
@@ -951,7 +945,34 @@ function writeSubmissionAnalysisToRow_(sheet, row, analysis) {
     analysis.typingLevel || "",
     scores.overall || 0,
   ]]);
-  sheet.getRange(row, 11).setValue(JSON.stringify(analysis));
+  sheet.getRange(row, 12).setValue(JSON.stringify(analysis));
+}
+
+function looksLikeAnalysisJson_(value) {
+  const s = String(value || "").trim();
+  if (!s || s.charAt(0) !== "{") return false;
+  return s.indexOf('"scores"') !== -1 || s.indexOf('"feedback"') !== -1;
+}
+
+function normalizeSubmissionText_(row) {
+  const text = String(row[10] || "");
+  if (!looksLikeAnalysisJson_(text)) return text;
+  return "";
+}
+
+function parseSubmissionAnalysis_(row) {
+  const storyCol = String(row[10] || "");
+  const analysisCol = String(row[11] || "");
+  if (looksLikeAnalysisJson_(storyCol)) {
+    try {
+      return JSON.parse(storyCol);
+    } catch (ignore) {}
+  }
+  try {
+    return JSON.parse(analysisCol || "{}");
+  } catch (ignore) {
+    return { scores: { overall: Number(row[9]) || 0 }, typingLevel: String(row[8] || "") };
+  }
 }
 
 function updateSubmissionsBulk_(assignmentId, updates) {

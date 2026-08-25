@@ -280,6 +280,20 @@
     return [...terms].sort((a, b) => b.length - a.length);
   }
 
+  function looksLikeAnalysisJson(text) {
+    const s = String(text || "").trim();
+    if (!s || s.charAt(0) !== "{") return false;
+    return s.includes('"scores"') || s.includes('"feedback"');
+  }
+
+  function resolveSubmissionText(sub) {
+    if (!sub) return "";
+    if (sub.textUnavailable) return "";
+    const raw = String(sub.text || "").trim();
+    if (looksLikeAnalysisJson(raw)) return "";
+    return String(sub.text || "");
+  }
+
   function highlightSubmissionHtml(text, { vocabWords = getVocabWords(), alignment = null } = {}) {
     if (!text) return "";
     let html = escapeHtml(text);
@@ -2417,7 +2431,10 @@
       }
     }
 
-    preview.innerHTML = highlightSubmissionHtml(sub.text || "", { alignment: sub.analysis?.teachingStandards });
+    const storyText = resolveSubmissionText(sub);
+    preview.innerHTML = storyText
+      ? highlightSubmissionHtml(storyText, { alignment: sub.analysis?.teachingStandards })
+      : `<p class="dw-muted">Student text is unavailable for this submission. An earlier Re-analyze update wrote analysis data into the text column. Scores above are still valid. Restore the original text from Google Sheets version history if you need it.</p>`;
     updateTeacherTableSelection();
   }
 

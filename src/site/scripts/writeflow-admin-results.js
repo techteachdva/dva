@@ -40,6 +40,20 @@
     document.getElementById(id)?.classList.toggle("dw-hidden", !visible);
   }
 
+  function looksLikeAnalysisJson(text) {
+    const s = String(text || "").trim();
+    if (!s || s.charAt(0) !== "{") return false;
+    return s.includes('"scores"') || s.includes('"feedback"');
+  }
+
+  function resolveSubmissionText(sub) {
+    if (!sub) return "";
+    if (sub.textUnavailable) return "";
+    const raw = String(sub.text || "").trim();
+    if (looksLikeAnalysisJson(raw)) return "";
+    return String(sub.text || "");
+  }
+
   function formatDate(ts) {
     if (!ts) return "—";
     try {
@@ -287,7 +301,9 @@
       </p>
       <p class="dw-muted dw-tiny">Scores — Typ ${scoreValue(sub.analysis, "typing")} · Mech ${scoreValue(sub.analysis, "mechanics")} · Story ${scoreValue(sub.analysis, "story")} · Overall ${scoreValue(sub.analysis, "overall")}</p>
       <p><a class="dw-link" href="${escapeHtml(studioUrl)}" target="_blank" rel="noopener noreferrer">Open assignment results in Studio ↗</a></p>
-      <pre class="wf-admin-results__draft">${escapeHtml(sub.text || "")}</pre>`;
+      ${resolveSubmissionText(sub)
+        ? `<pre class="wf-admin-results__draft">${escapeHtml(resolveSubmissionText(sub))}</pre>`
+        : `<p class="dw-muted">Student text is unavailable for this submission (overwritten by an earlier Re-analyze bug). Restore from Google Sheets version history if needed.</p>`}`;
 
     renderTable();
   }

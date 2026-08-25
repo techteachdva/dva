@@ -617,12 +617,8 @@ function listStudentSubmissions_(studentUsername) {
     const rowStudent = normalizeStudentUsername_(row[12] || "").toLowerCase();
     const rowName = normalizeStudentUsername_(row[3] || "").toLowerCase();
     if (rowStudent !== norm && rowName !== norm) continue;
-    var analysis = {};
-    try {
-      analysis = JSON.parse(row[11] || "{}");
-    } catch (ignore) {
-      analysis = { scores: { overall: Number(row[9]) || 0 } };
-    }
+    const analysis = parseSubmissionAnalysis_(row);
+    const storyText = normalizeSubmissionText_(row);
     out.push({
       id: String(row[0]),
       submittedAt: Number(row[1]) || 0,
@@ -630,7 +626,8 @@ function listStudentSubmissions_(studentUsername) {
       name: String(row[3]),
       classroom: String(row[4]),
       durationSec: Number(row[5]) || 0,
-      text: String(row[10] || ""),
+      text: storyText,
+      textUnavailable: !storyText && looksLikeAnalysisJson_(row[10]),
       analysis: analysis,
       studentUsername: String(row[12] || ""),
       grading: getAssignmentGradingMeta_(String(row[2])),
