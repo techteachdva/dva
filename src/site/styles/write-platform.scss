@@ -6295,6 +6295,11 @@ mark.wf-standard-hit,
   flex-wrap: wrap;
 }
 
+.wf-admin-results .dw-shell,
+.dw-shell.dw-shell--wide {
+  max-width: min(1720px, 98vw);
+}
+
 .wf-admin-results__toolbar {
   display: flex;
   flex-wrap: wrap;
@@ -6334,9 +6339,38 @@ mark.wf-standard-hit,
   overflow: auto;
 }
 
+.wf-admin-results__table-panel .wf-admin-results__table {
+  table-layout: auto;
+  width: 100%;
+  min-width: max-content;
+}
+
+.wf-admin-results__table-panel .wf-admin-results__table th,
+.wf-admin-results__table-panel .wf-admin-results__table td {
+  overflow: visible;
+  text-overflow: clip;
+}
+
+.wf-admin-results__table-panel .wf-admin-results__table .dw-col-name {
+  min-width: 9rem;
+}
+
+.wf-admin-results__table-panel .wf-admin-results__table .dw-col-assignment {
+  min-width: 12rem;
+}
+
+.wf-admin-results__table-panel .wf-admin-results__table .dw-col-class {
+  min-width: 10rem;
+}
+
+.wf-admin-results__table-panel .wf-admin-results__table .dw-col-submitted {
+  min-width: 10.5rem;
+  white-space: nowrap;
+}
+
 .wf-admin-results__assignment {
   display: inline-block;
-  max-width: 14rem;
+  max-width: 20rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.8.3";
+  const APP_VERSION = "2.8.4";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -119,6 +119,16 @@
   ];
 
   const CHANGELOG = [
+    {
+      version: "2.8.4",
+      date: "2026-08-24",
+      summary: "Admin all-results table — sortable columns and clearer timestamps.",
+      items: [
+        "Sortable column headers on /writeflow/admin/results/.",
+        "Submitted times show date and time (e.g. 8/24/26 8:31am).",
+        "Wider results viewer with room for full timestamp and assignment names.",
+      ],
+    },
     {
       version: "2.8.3",
       date: "2026-08-24",

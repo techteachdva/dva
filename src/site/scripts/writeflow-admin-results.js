@@ -11,7 +11,22 @@
   let allSubmissions = [];
   let filteredSubmissions = [];
   let selectedId = "";
+  let tableSort = { col: "submitted", dir: "desc" };
   const configCache = new Map();
+
+  const TABLE_COLUMNS = ["name", "assignment", "class", "words", "wpm", "typing", "mechanics", "story", "overall", "submitted"];
+  const HEADER_LABELS = {
+    name: "Student",
+    assignment: "Assignment",
+    class: "Class",
+    words: "Wds",
+    wpm: "WPM",
+    typing: "Typ",
+    mechanics: "Mech",
+    story: "Story",
+    overall: "Overall",
+    submitted: "Submitted",
+  };
 
   function escapeHtml(text) {
     return String(text || "")
@@ -28,10 +43,85 @@
   function formatDate(ts) {
     if (!ts) return "—";
     try {
-      return new Date(ts).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+      const d = new Date(ts);
+      if (Number.isNaN(d.getTime())) return "—";
+      const month = d.getMonth() + 1;
+      const day = d.getDate();
+      const year = String(d.getFullYear()).slice(-2);
+      let hours = d.getHours();
+      const minutes = d.getMinutes();
+      const ampm = hours >= 12 ? "pm" : "am";
+      hours = hours % 12 || 12;
+      const minStr = String(minutes).padStart(2, "0");
+      return `${month}/${day}/${year} ${hours}:${minStr}${ampm}`;
     } catch {
       return "—";
     }
+  }
+
+  function defaultSortDir(col) {
+    return col === "name" || col === "assignment" || col === "class" ? "asc" : "desc";
+  }
+
+  function getSortValue(sub, col) {
+    switch (col) {
+      case "name": return (sub.name || "").toLowerCase();
+      case "assignment": return (sub.assignmentTitle || sub.assignmentId || "").toLowerCase();
+      case "class": return (sub.classroom || "").toLowerCase();
+      case "words": return Number(sub.analysis?.wordCount) || 0;
+      case "wpm": return Number(sub.analysis?.wpm) || 0;
+      case "typing": return Number(sub.analysis?.scores?.typing ?? -1);
+      case "mechanics": return Number(sub.analysis?.scores?.mechanics ?? -1);
+      case "story": return Number(sub.analysis?.scores?.story ?? -1);
+      case "overall": return Number(sub.analysis?.scores?.overall ?? -1);
+      case "submitted": return Number(sub.submittedAt) || 0;
+      default: return 0;
+    }
+  }
+
+  function sortSubmissions(subs) {
+    const mult = tableSort.dir === "asc" ? 1 : -1;
+    return [...subs].sort((a, b) => {
+      const av = getSortValue(a, tableSort.col);
+      const bv = getSortValue(b, tableSort.col);
+      if (typeof av === "string" && typeof bv === "string") {
+        return mult * av.localeCompare(bv, undefined, { sensitivity: "base", numeric: true });
+      }
+      return mult * (av - bv);
+    });
+  }
+
+  function toggleTableSort(col) {
+    if (!col) return;
+    if (tableSort.col === col) {
+      tableSort.dir = tableSort.dir === "asc" ? "desc" : "asc";
+    } else {
+      tableSort.col = col;
+      tableSort.dir = defaultSortDir(col);
+    }
+    renderTable();
+  }
+
+  function renderTableHead() {
+    const thead = document.getElementById("adminResultsTableHead");
+    if (!thead) return;
+    thead.innerHTML = TABLE_COLUMNS.map((col) => {
+      const active = tableSort.col === col;
+      const ariaSort = active ? (tableSort.dir === "asc" ? "ascending" : "descending") : "none";
+      const icon = active ? (tableSort.dir === "asc" ? "▲" : "▼") : "↕";
+      return `<th scope="col" class="dw-col-${col}" aria-sort="${ariaSort}">
+        <button type="button" class="dw-table-sort" data-sort-col="${col}">
+          <span class="dw-table-sort__label">${escapeHtml(HEADER_LABELS[col])}</span>
+          <span class="dw-table-sort__icon" aria-hidden="true">${icon}</span>
+        </button>
+      </th>`;
+    }).join("");
+    thead.querySelectorAll("[data-sort-col]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleTableSort(btn.dataset.sortCol);
+      });
+    });
   }
 
   function scoreValue(analysis, key) {
@@ -122,31 +212,35 @@
     const tbody = document.getElementById("adminResultsTableBody");
     if (!tbody) return;
 
+    renderTableHead();
+
     if (!filteredSubmissions.length) {
-      tbody.innerHTML = `<tr><td colspan="10" class="dw-muted">No submissions match these filters.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="${TABLE_COLUMNS.length}" class="dw-muted">No submissions match these filters.</td></tr>`;
       return;
     }
 
-    tbody.innerHTML = filteredSubmissions.map((sub) => {
+    const subs = sortSubmissions(filteredSubmissions);
+
+    tbody.innerHTML = subs.map((sub) => {
       const selected = sub.id === selectedId;
       const assignmentLabel = sub.assignmentTitle || sub.assignmentId || "—";
       return `<tr class="dw-table-row--clickable${selected ? " dw-table-row--selected" : ""}" data-sub-id="${escapeHtml(sub.id)}" tabindex="0">
-        <td>${escapeHtml(sub.name)}</td>
-        <td><span class="wf-admin-results__assignment" title="${escapeHtml(sub.assignmentId || "")}">${escapeHtml(assignmentLabel)}</span></td>
-        <td>${escapeHtml(sub.classroom || "—")}</td>
-        <td>${sub.analysis?.wordCount ?? "—"}</td>
-        <td>${sub.analysis?.wpm ?? "—"}</td>
-        <td>${scoreValue(sub.analysis, "typing")}</td>
-        <td>${scoreValue(sub.analysis, "mechanics")}</td>
-        <td>${scoreValue(sub.analysis, "story")}</td>
-        <td>${scoreValue(sub.analysis, "overall")}</td>
-        <td>${formatDate(sub.submittedAt)}</td>
+        <td class="dw-col-name">${escapeHtml(sub.name)}</td>
+        <td class="dw-col-assignment"><span class="wf-admin-results__assignment" title="${escapeHtml(sub.assignmentId || "")}">${escapeHtml(assignmentLabel)}</span></td>
+        <td class="dw-col-class">${escapeHtml(sub.classroom || "—")}</td>
+        <td class="dw-col-words">${sub.analysis?.wordCount ?? "—"}</td>
+        <td class="dw-col-wpm">${sub.analysis?.wpm ?? "—"}</td>
+        <td class="dw-col-typing">${scoreValue(sub.analysis, "typing")}</td>
+        <td class="dw-col-mechanics">${scoreValue(sub.analysis, "mechanics")}</td>
+        <td class="dw-col-story">${scoreValue(sub.analysis, "story")}</td>
+        <td class="dw-col-overall">${scoreValue(sub.analysis, "overall")}</td>
+        <td class="dw-col-submitted">${formatDate(sub.submittedAt)}</td>
       </tr>`;
     }).join("");
 
     tbody.querySelectorAll("tr[data-sub-id]").forEach((row) => {
       const open = () => {
-        const sub = filteredSubmissions.find((item) => item.id === row.dataset.subId);
+        const sub = subs.find((item) => item.id === row.dataset.subId);
         if (sub) showDetail(sub);
       };
       row.addEventListener("click", open);
