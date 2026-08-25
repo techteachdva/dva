@@ -534,6 +534,68 @@ export async function POST(request) {
       return Response.json({ ok: true, assignmentId: data.assignmentId }, { headers: corsHeaders() });
     }
 
+    if (action === "saveSubmissionGrade") {
+      const submissionId = typeof body?.submissionId === "string" ? body.submissionId.trim() : "";
+      const assignmentId = typeof body?.assignmentId === "string" ? body.assignmentId.trim().slice(0, 80) : "";
+      const password = typeof body?.password === "string" ? body.password.slice(0, 80) : "";
+      const sessionToken = typeof body?.sessionToken === "string" ? body.sessionToken.trim() : "";
+      const teacherFeedback = typeof body?.teacherFeedback === "string" ? body.teacherFeedback : "";
+      const feedbackVisible = body?.feedbackVisible === true;
+      const teacherGrade = body?.teacherGrade;
+      if (!submissionId || !assignmentId) {
+        return Response.json({ error: "Missing submission or assignment ID." }, { status: 400, headers: corsHeaders() });
+      }
+      const data = await scriptPost({
+        action: "saveSubmissionGrade",
+        submissionId,
+        assignmentId,
+        password,
+        sessionToken,
+        teacherGrade,
+        teacherFeedback,
+        feedbackVisible,
+      });
+      if (data.error) {
+        return Response.json({ error: data.error }, { status: data.error === "Unauthorized" ? 401 : 400, headers: corsHeaders() });
+      }
+      return Response.json({ ok: true, grading: data.grading }, { headers: corsHeaders() });
+    }
+
+    if (action === "updateBulk") {
+      const sessionToken = typeof body?.sessionToken === "string" ? body.sessionToken.trim() : "";
+      const assignmentId = typeof body?.assignmentId === "string" ? body.assignmentId.trim().slice(0, 80) : "";
+      const updates = Array.isArray(body?.updates) ? body.updates : [];
+      if (!sessionToken) {
+        return Response.json({ error: "Admin sign-in required." }, { status: 401, headers: corsHeaders() });
+      }
+      if (!assignmentId) {
+        return Response.json({ error: "Missing assignmentId" }, { status: 400, headers: corsHeaders() });
+      }
+      if (!updates.length) {
+        return Response.json({ error: "Missing updates array" }, { status: 400, headers: corsHeaders() });
+      }
+      const sanitized = updates.slice(0, 50).map((u) => ({
+        id: typeof u?.id === "string" ? u.id.trim() : String(u?.id || "").trim(),
+        analysis: u?.analysis && typeof u.analysis === "object" ? u.analysis : null,
+      })).filter((u) => u.id && u.analysis);
+      const data = await scriptPost({
+        action: "updateBulk",
+        sessionToken,
+        assignmentId,
+        updates: sanitized,
+      });
+      if (data.error) {
+        return Response.json(
+          { error: data.error },
+          { status: data.error === "Admin access required" ? 403 : 502, headers: corsHeaders() }
+        );
+      }
+      return Response.json(
+        { ok: true, updated: data.updated || 0, errors: data.errors || [] },
+        { headers: corsHeaders() }
+      );
+    }
+
     const assignmentId = typeof body?.assignmentId === "string" ? body.assignmentId.trim().slice(0, 80) : "";
     const name = typeof body?.name === "string" ? body.name.trim().slice(0, 80) : "";
     const classroomRaw = typeof body?.classroom === "string" ? body.classroom : "";

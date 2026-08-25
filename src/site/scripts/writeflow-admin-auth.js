@@ -133,6 +133,17 @@
     return data.students || [];
   }
 
+  async function reanalyzeBulk(assignmentId, updates) {
+    const token = getToken();
+    if (!token) throw new Error("Admin sign-in required.");
+    if (!assignmentId) throw new Error("Missing assignment ID.");
+    return apiPost("updateBulk", {
+      sessionToken: token,
+      assignmentId,
+      updates,
+    });
+  }
+
   window.WriteFlowAdmin = {
     validate,
     login,
@@ -145,5 +156,6 @@
     dedupeSubmissions,
     listTeachers,
     listStudents,
+    reanalyzeBulk,
   };
 })();

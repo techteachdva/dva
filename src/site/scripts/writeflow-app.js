@@ -12,6 +12,7 @@
   const API_URL = "/api/writeflow-submissions";
   const Teacher = () => window.WriteFlowTeacher;
   const Student = () => window.WriteFlowStudent;
+  const Admin = () => window.WriteFlowAdmin;
 
   if (!Core || !Defaults) return;
 
@@ -72,13 +73,52 @@
   }
 
   function getAnalysisOptions() {
+    const classEl = document.getElementById("studentClass");
+    const classroom = studentSession.classroom
+      || Core.resolveClassroom(classEl?.value, VALID_CLASSROOMS)
+      || "";
     return {
       vocabWords: getVocabWords(),
       assignmentMode: config.assignmentMode || "composition",
       rubrics: getActiveRubrics(),
       teachingStandards: getTeachingStandardsRaw(),
       assignmentPrompt: config.prompt || config.promptBanner || "",
+      classroom,
     };
+  }
+
+  function getReanalyzeOptions(sub) {
+    return {
+      vocabWords: getVocabWords(),
+      assignmentMode: config.assignmentMode || "composition",
+      rubrics: getActiveRubrics(),
+      teachingStandards: getTeachingStandardsRaw(),
+      assignmentPrompt: config.prompt || config.promptBanner || "",
+      classroom: sub?.classroom || "",
+    };
+  }
+
+  async function updateAdminReanalyzeUi() {
+    const btn = document.getElementById("reanalyzeBtn");
+    if (!btn || !Admin()) return;
+    try {
+      await Admin().validate();
+    } catch {
+      btn.classList.add("dw-hidden");
+      return;
+    }
+    btn.classList.toggle("dw-hidden", !Admin().isLoggedIn());
+  }
+
+  function resolveMaxPoints() {
+    const max = Number(config.maxPoints);
+    return config.gradingEnabled && max > 0 ? max : 100;
+  }
+
+  function suggestedPointsFromAnalysis(analysis) {
+    const overall = Number(analysis?.scores?.overall);
+    if (!Number.isFinite(overall)) return null;
+    return Math.round((overall / 100) * resolveMaxPoints());
   }
 
   let timerWaitingForMinWords = false;
@@ -2134,6 +2174,7 @@
       void openAssignmentInBuilder(config.id);
     });
     document.getElementById("refreshBtn")?.addEventListener("click", loadTeacherDashboard);
+    document.getElementById("reanalyzeBtn")?.addEventListener("click", () => void reanalyzeAllSubmissions());
     document.getElementById("exportBtn")?.addEventListener("click", exportCsv);
     document.getElementById("teacherDetailCloseBtn")?.addEventListener("click", () => {
       clearTeacherSubmissionDetail();
@@ -2181,7 +2222,101 @@
       meta.textContent = `${allSubmissions.length} submission${allSubmissions.length === 1 ? "" : "s"} · ${config.title}`;
       meta.classList.remove("dw-error");
     }
+    void updateAdminReanalyzeUi();
     renderTeacherTable();
+  }
+
+  async function reanalyzeAllSubmissions() {
+    const admin = Admin();
+    if (!admin) return;
+    await admin.validate();
+    if (!admin.isLoggedIn()) {
+      window.alert("Admin sign-in required. Open /writeflow/admin/, sign in, then return to Results and try again.");
+      return;
+    }
+    if (!allSubmissions.length) {
+      const meta = document.getElementById("teacherMeta");
+      if (meta) meta.textContent = "No submissions to re-analyze.";
+      return;
+    }
+    const confirmed = window.confirm(
+      `Re-analyze all ${allSubmissions.length} submission${allSubmissions.length === 1 ? "" : "s"} with the updated rubric?\n\nStudent text is not changed — only scores and analysis data are updated.`
+    );
+    if (!confirmed) return;
+
+    const reanalyzeBtn = document.getElementById("reanalyzeBtn");
+    const refreshBtn = document.getElementById("refreshBtn");
+    const meta = document.getElementById("teacherMeta");
+    const analyzeFn = window.WriteAnalysis?.analyzeText;
+    if (!analyzeFn) {
+      if (meta) meta.textContent = "Analysis engine not loaded.";
+      return;
+    }
+
+    reanalyzeBtn.disabled = true;
+    refreshBtn.disabled = true;
+    let ok = 0;
+    let fail = 0;
+    let firstError = "";
+    const pending = [];
+
+    for (let i = 0; i < allSubmissions.length; i++) {
+      const sub = allSubmissions[i];
+      if (meta) meta.textContent = `Scoring ${i + 1} of ${allSubmissions.length}…`;
+      const text = sub.text || "";
+      const durationSec = Number(sub.durationSec) || 300;
+      try {
+        const analysis = analyzeFn(text, durationSec, getReanalyzeOptions(sub));
+        sub.analysis = analysis;
+        pending.push({ id: String(sub.id || "").trim(), analysis });
+      } catch (err) {
+        console.error("Re-analyze failed for", sub.id, err);
+        fail++;
+        if (!firstError) firstError = err.message || "Scoring failed";
+      }
+    }
+
+    const CHUNK_SIZE = 25;
+    for (let i = 0; i < pending.length; i += CHUNK_SIZE) {
+      const chunk = pending.slice(i, i + CHUNK_SIZE);
+      if (meta) meta.textContent = `Saving ${Math.min(i + chunk.length, pending.length)} of ${pending.length}…`;
+      try {
+        const result = await admin.reanalyzeBulk(config.id, chunk);
+        ok += result.updated || 0;
+        const chunkFail = chunk.length - (result.updated || 0);
+        fail += chunkFail;
+        if (result.errors?.length && !firstError) {
+          firstError = result.errors[0].error || "Update failed";
+          if (result.errors[0].id) firstError += ` (id: ${result.errors[0].id})`;
+        }
+      } catch (err) {
+        console.error("Bulk save failed:", err);
+        fail += chunk.length;
+        if (!firstError) firstError = err.message || "Could not save to Google Sheets";
+      }
+    }
+
+    reanalyzeBtn.disabled = false;
+    refreshBtn.disabled = false;
+    if (fail) {
+      const hint = /admin access required/i.test(firstError)
+        ? " Sign in at /writeflow/admin/ and try again."
+        : /unknown action/i.test(firstError)
+          ? " Redeploy Google Apps Script with the latest code, then try again."
+          : "";
+      if (meta) {
+        meta.textContent = `Re-analyzed ${ok} submission${ok === 1 ? "" : "s"}; ${fail} failed.${firstError ? ` First error: ${firstError}.` : ""}${hint}`;
+        meta.classList.add("dw-error");
+      }
+    } else if (meta) {
+      meta.textContent = `Re-analyzed ${ok} submission${ok === 1 ? "" : "s"} with the updated rubric.`;
+      meta.classList.remove("dw-error");
+    }
+    renderTeacherTable();
+    if (selectedTeacherSubmissionKey) {
+      const open = allSubmissions.find((s) => getTeacherSubmissionKey(s) === selectedTeacherSubmissionKey);
+      if (open) showTeacherSubmission(open);
+    }
   }
 
   function getTeacherSubmissionKey(sub) {
@@ -2217,6 +2352,7 @@
     const vocabSummary = document.getElementById("teacherVocabSummary");
     const standardsSummary = document.getElementById("teacherStandardsSummary");
     const preview = document.getElementById("teacherStoryPreview");
+    const gradingPanel = document.getElementById("teacherGradingPanel");
     if (!panel || !preview || !sub) return;
 
     selectedTeacherSubmissionKey = getTeacherSubmissionKey(sub);
@@ -2226,7 +2362,36 @@
     document.getElementById("teacherResultsSplit")?.classList.add("wf-teacher-results__split--detail-open");
 
     if (meta) {
-      meta.textContent = `${sub.name} · ${sub.classroom || "—"} · ${sub.analysis?.wordCount ?? 0} words · ${sub.submittedAt ? Core.formatDate(sub.submittedAt) : ""}`;
+      const autoOverall = sub.analysis?.scores?.overall ?? "—";
+      meta.textContent = `${sub.name} · ${sub.classroom || "—"} · ${sub.analysis?.wordCount ?? 0} words · ${sub.submittedAt ? Core.formatDate(sub.submittedAt) : ""} · auto score ${autoOverall}`;
+    }
+
+    if (gradingPanel) {
+      gradingPanel.classList.toggle("dw-hidden", !config.gradingEnabled);
+      if (config.gradingEnabled) {
+        const maxPts = resolveMaxPoints();
+        const suggested = suggestedPointsFromAnalysis(sub.analysis);
+        const gradeInput = document.getElementById("teacherGradeInput");
+        const feedbackInput = document.getElementById("teacherFeedbackInput");
+        const visibleInput = document.getElementById("teacherFeedbackVisible");
+        const hint = document.getElementById("teacherGradingHint");
+        if (gradeInput) {
+          gradeInput.max = String(maxPts);
+          gradeInput.value = sub.teacherGrade != null ? String(sub.teacherGrade) : (suggested != null ? String(suggested) : "");
+        }
+        if (feedbackInput) feedbackInput.value = sub.teacherFeedback || "";
+        if (visibleInput) {
+          visibleInput.checked = sub.gradedAt
+            ? !!sub.feedbackVisible
+            : !!(config.autoReleaseFeedback || sub.feedbackVisible);
+        }
+        if (hint) {
+          hint.textContent = suggested != null
+            ? `Suggested ${suggested}/${maxPts} from auto score (${sub.analysis?.scores?.overall ?? "—"}/100). Override anytime — students see this when you release feedback.`
+            : `Out of ${maxPts} points. Students see this when you release feedback.`;
+        }
+        bindTeacherGradingSave(sub);
+      }
     }
 
     const vocab = sub.analysis?.vocabulary;
@@ -2258,6 +2423,71 @@
     updateTeacherTableSelection();
   }
 
+  let activeGradingSubmissionId = "";
+
+  function bindTeacherGradingSave(sub) {
+    activeGradingSubmissionId = sub.id;
+    const btn = document.getElementById("teacherGradeSaveBtn");
+    if (!btn || btn.dataset.bound === "1") return;
+    btn.dataset.bound = "1";
+    btn.addEventListener("click", async () => {
+      const current = allSubmissions.find((s) => s.id === activeGradingSubmissionId);
+      if (!current) return;
+      const statusEl = document.getElementById("teacherGradeStatus");
+      const gradeVal = document.getElementById("teacherGradeInput")?.value;
+      const teacherGrade = gradeVal === "" ? null : Number(gradeVal);
+      const teacherFeedback = document.getElementById("teacherFeedbackInput")?.value || "";
+      const feedbackVisible = document.getElementById("teacherFeedbackVisible")?.checked || false;
+      if (teacherGrade != null && (!Number.isFinite(teacherGrade) || teacherGrade < 0)) {
+        if (statusEl) statusEl.textContent = "Enter a valid point value.";
+        return;
+      }
+      if (statusEl) statusEl.textContent = "Saving…";
+      btn.disabled = true;
+      try {
+        await saveSubmissionGrade(current, { teacherGrade, teacherFeedback, feedbackVisible });
+        if (statusEl) statusEl.textContent = feedbackVisible ? "Saved and released to student." : "Saved.";
+        const refreshed = allSubmissions.find((s) => s.id === current.id);
+        if (refreshed) showTeacherSubmission(refreshed);
+      } catch (err) {
+        if (statusEl) statusEl.textContent = err.message || "Could not save grade.";
+      } finally {
+        btn.disabled = false;
+      }
+    });
+  }
+
+  async function saveSubmissionGrade(sub, { teacherGrade, teacherFeedback, feedbackVisible }) {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "saveSubmissionGrade",
+        submissionId: sub.id,
+        assignmentId: config.id,
+        password: sessionTeacherPassword || config.teacherPassword || "",
+        sessionToken: Teacher()?.getToken() || "",
+        teacherGrade,
+        teacherFeedback,
+        feedbackVisible,
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `Save failed (${res.status})`);
+    const idx = allSubmissions.findIndex((s) => s.id === sub.id);
+    if (idx >= 0) {
+      allSubmissions[idx] = {
+        ...allSubmissions[idx],
+        teacherGrade: data.grading?.teacherGrade ?? teacherGrade,
+        teacherFeedback: data.grading?.teacherFeedback ?? teacherFeedback,
+        feedbackVisible: data.grading?.feedbackVisible ?? feedbackVisible,
+        gradedAt: data.grading?.gradedAt || Date.now(),
+      };
+    }
+    renderTeacherTable();
+    return data;
+  }
+
   function getTeacherTableColumns() {
     const rubrics = getActiveRubrics();
     const hasVocab = getVocabWords().length > 0;
@@ -2268,7 +2498,9 @@
     if (rubrics.includes("typing")) cols.push("typing");
     if (rubrics.includes("mechanics")) cols.push("mechanics");
     if (rubrics.includes("story")) cols.push("story");
-    cols.push("overall", "submitted", "action");
+    cols.push("overall");
+    if (config.gradingEnabled) cols.push("grade");
+    cols.push("submitted", "action");
     return cols;
   }
 
@@ -2291,6 +2523,10 @@
       case "mechanics": return Number(sub.analysis?.scores?.mechanics ?? -1);
       case "story": return Number(sub.analysis?.scores?.story ?? -1);
       case "overall": return Number(sub.analysis?.scores?.overall ?? -1);
+      case "grade": {
+        const pts = sub.teacherGrade != null ? sub.teacherGrade : suggestedPointsFromAnalysis(sub.analysis);
+        return pts == null ? -1 : Number(pts);
+      }
       case "submitted": return Number(sub.submittedAt) || 0;
       default: return 0;
     }
@@ -2334,6 +2570,7 @@
       mechanics: "Mech",
       story: "Story",
       overall: "Overall",
+      grade: "Pts",
       submitted: "Submitted",
       action: "",
     };
@@ -2370,6 +2607,13 @@
         case "mechanics": return sub.analysis?.scores?.mechanics ?? "—";
         case "story": return sub.analysis?.scores?.story ?? "—";
         case "overall": return sub.analysis?.scores?.overall ?? "—";
+        case "grade": {
+          const maxPts = resolveMaxPoints();
+          const pts = sub.teacherGrade != null ? sub.teacherGrade : suggestedPointsFromAnalysis(sub.analysis);
+          if (pts == null) return "—";
+          const draft = sub.teacherGrade == null ? "*" : "";
+          return `${pts}/${maxPts}${draft}`;
+        }
         case "submitted": return sub.submittedAt ? Core.formatDate(sub.submittedAt) : "—";
         case "action": return `<button type="button" class="dw-btn dw-btn-ghost dw-btn--compact" data-sub-idx="${idx}">View</button>`;
         default: return "—";
@@ -2431,6 +2675,7 @@
     if (rubrics.includes("mechanics")) header.push("Mechanics");
     if (rubrics.includes("story")) header.push("Story");
     header.push("Overall", "Submitted");
+    if (config.gradingEnabled) header.push("Teacher points", "Feedback released", "Teacher feedback");
     const attachedCodes = getResolvedTeachingStandards().map((s) => s.code);
     if (attachedCodes.length) header.push(...attachedCodes.map((c) => `Std ${c}`));
     const rows = [header];
@@ -2442,6 +2687,10 @@
       if (rubrics.includes("mechanics")) row.push(s.analysis?.scores?.mechanics);
       if (rubrics.includes("story")) row.push(s.analysis?.scores?.story);
       row.push(s.analysis?.scores?.overall, new Date(s.submittedAt).toISOString());
+      if (config.gradingEnabled) {
+        const pts = s.teacherGrade != null ? s.teacherGrade : suggestedPointsFromAnalysis(s.analysis);
+        row.push(pts ?? "", s.feedbackVisible ? "yes" : "no", s.teacherFeedback || "");
+      }
         if (attachedCodes.length) {
         const byCode = Object.fromEntries((s.analysis?.teachingStandards?.all || []).map((r) => [r.code, r]));
         for (const code of attachedCodes) {
@@ -2930,6 +3179,17 @@
         <label class="dw-field"><span class="dw-label">Expected vocabulary</span><span class="dw-muted dw-tiny">Comma or line-separated words students should use — highlighted in Results</span><textarea id="bfVocab" class="dw-textarea" rows="3" placeholder="photosynthesis, chlorophyll, glucose">${escapeHtml((config.vocabWords || []).join(", "))}</textarea></label>
         <label class="wf-toggle-row"><input id="bfHighlightVocab" type="checkbox" ${config.highlightVocab !== false ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Highlight vocabulary in teacher view</strong><span class="wf-toggle-row__hint">Marks expected words in submission previews</span></span></label>
         <label class="dw-field"><span class="dw-label">Teacher password</span><span class="dw-muted dw-tiny">Required to open Results for this assignment</span><input id="bfTeacherPw" class="dw-input" type="password" autocomplete="new-password" value="${escapeHtml(config.teacherPassword)}" /></label>
+        <div class="wf-builder-subsection">
+          <p class="dw-label">Grading</p>
+          <p class="wf-grading-guide" role="note">
+            <strong>Grading guide:</strong> Full credit (100%) requires answering the prompt with correct spelling, punctuation, capitalization, grammar, and syntax.
+            Strong answer with weak conventions, or strong conventions without answering the prompt, should not exceed 50%.
+            Auto scores are a starting suggestion only — use your judgment.
+          </p>
+          <label class="wf-toggle-row"><input id="bfGradingEnabled" type="checkbox" ${config.gradingEnabled ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Enable points & feedback</strong><span class="wf-toggle-row__hint">Grade submissions in Results; students see released feedback in My writing</span></span></label>
+          <label class="dw-field" id="bfMaxPointsRow"><span class="dw-label">Maximum points</span><input id="bfMaxPoints" class="dw-input" type="number" min="1" max="1000" value="${Number(config.maxPoints) || 100}" /></label>
+          <label class="wf-toggle-row"><input id="bfAutoReleaseFeedback" type="checkbox" ${config.autoReleaseFeedback ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Auto-release feedback</strong><span class="wf-toggle-row__hint">New grades are visible to students immediately when you save</span></span></label>
+        </div>
         <div id="bfShareRow" class="dw-hidden">
           <label class="wf-toggle-row"><input id="bfShared" type="checkbox" ${config.shared ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Share with other teachers</strong><span class="wf-toggle-row__hint">Lets colleagues copy this assignment from the shared library</span></span></label>
         </div>`;
@@ -2941,6 +3201,22 @@
       bindBuilderField("bfPromptBanner", "promptBanner");
       bindBuilderField("bfSentenceStarters", "sentenceStarters");
       bindBuilderField("bfTeacherPw", "teacherPassword");
+      document.getElementById("bfGradingEnabled")?.addEventListener("change", (e) => {
+        config.gradingEnabled = e.target.checked;
+        document.getElementById("bfMaxPointsRow")?.classList.toggle("dw-hidden", !e.target.checked);
+        document.getElementById("bfAutoReleaseFeedback")?.closest(".wf-toggle-row")?.classList.toggle("dw-hidden", !e.target.checked);
+        persistConfig();
+      });
+      document.getElementById("bfMaxPointsRow")?.classList.toggle("dw-hidden", !config.gradingEnabled);
+      document.getElementById("bfAutoReleaseFeedback")?.closest(".wf-toggle-row")?.classList.toggle("dw-hidden", !config.gradingEnabled);
+      document.getElementById("bfMaxPoints")?.addEventListener("change", (e) => {
+        config.maxPoints = Math.max(1, Number(e.target.value) || 100);
+        persistConfig();
+      });
+      document.getElementById("bfAutoReleaseFeedback")?.addEventListener("change", (e) => {
+        config.autoReleaseFeedback = e.target.checked;
+        persistConfig();
+      });
       document.getElementById("bfVocab")?.addEventListener("change", (e) => {
         config.vocabWords = window.WriteFlowDefaults?.parseVocabInput?.(e.target.value) || [];
         persistConfig();
@@ -3628,6 +3904,10 @@
         refreshSharedLibrary(),
       ]);
       bump(0.9);
+    }
+    if (Admin()) {
+      await Admin().validate();
+      void updateAdminReanalyzeUi();
     }
     initTutorial();
     bump(0.94);

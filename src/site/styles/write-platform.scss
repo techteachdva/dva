@@ -3753,6 +3753,102 @@ body.wf-intro-active {
   line-height: 1.45;
 }
 
+.wf-landing-scoring {
+  flex-shrink: 0;
+  padding: 18px 20px;
+}
+
+.wf-landing-scoring__lead {
+  margin: 0 0 12px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.wf-landing-scoring__disclaimer {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  font-size: 0.86rem;
+  line-height: 1.45;
+  color: #bae6fd;
+}
+
+.wf-landing-scoring__modes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.wf-landing-scoring__mode {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+  align-items: baseline;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--dw-border);
+  background: rgba(0, 0, 0, 0.1);
+  font-size: 0.88rem;
+}
+
+.wf-landing-scoring__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.wf-landing-scoring__dim {
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--dw-border);
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.wf-landing-scoring__dim-title {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+
+.wf-landing-scoring__formula {
+  margin: 0 0 8px;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: #7dd3fc;
+  font-family: ui-monospace, "Cascadia Code", "Consolas", monospace;
+}
+
+.wf-landing-scoring__signals {
+  margin: 0;
+  padding-left: 1.15rem;
+  font-size: 0.86rem;
+  line-height: 1.45;
+  color: #94a3b8;
+}
+
+.wf-landing-scoring__signals li + li {
+  margin-top: 4px;
+}
+
+.wf-landing-scoring__footer {
+  padding-top: 4px;
+  border-top: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.wf-landing-scoring__note {
+  margin: 10px 0 0;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: #cbd5e1;
+}
+
+.wf-landing-scoring__note:first-child {
+  margin-top: 0;
+}
+
 .wf-landing-hero--compact,
 .wf-landing-stats--compact {
   padding: 18px 20px;
@@ -5843,6 +5939,62 @@ mark.wf-standard-hit,
   margin: 8px 0 0;
   font-size: 0.9rem;
   line-height: 1.45;
+}
+
+.wf-submission-card__grade {
+  margin: 8px 0 0;
+  font-size: 1rem;
+}
+
+.wf-submission-card__feedback {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+}
+
+.wf-submission-card__feedback-label {
+  margin: 0 0 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #7dd3fc;
+}
+
+.wf-teacher-grading {
+  margin: 12px 0 16px;
+  padding: 12px 14px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.wf-teacher-grading__title {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+}
+
+.wf-grading-guide {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(251, 191, 36, 0.08);
+  border: 1px solid rgba(251, 191, 36, 0.22);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: #e2e8f0;
+}
+
+.wf-grading-guide strong {
+  color: #fcd34d;
+}
+
+.wf-teacher-grading__actions {
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
 }
 
 .wf-student-account {

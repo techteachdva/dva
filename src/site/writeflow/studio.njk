@@ -247,6 +247,7 @@ layout: false
             <div class="dw-row">
               <button id="teacherEditBtn" class="dw-btn dw-btn-secondary" type="button">Edit assignment</button>
               <button id="refreshBtn" class="dw-btn dw-btn-secondary" type="button">Refresh</button>
+              <button id="reanalyzeBtn" class="dw-btn dw-btn-secondary dw-hidden" type="button" title="Admin only — sign in at /writeflow/admin/ first">Re-analyze all</button>
               <button id="exportBtn" class="dw-btn dw-btn-ghost" type="button">Export CSV</button>
               <button id="teacherHomeBtn" class="dw-btn dw-btn-ghost" type="button">All assignments</button>
               <button id="teacherLogoutBtn" class="dw-btn dw-btn-ghost" type="button">Log out</button>
@@ -267,6 +268,31 @@ layout: false
               <p id="teacherDetailPlaceholder" class="dw-muted wf-teacher-results__detail-placeholder">Select a submission from the list to read the full draft, vocabulary hits, and standards alignment.</p>
               <div id="teacherDetailContent" class="wf-teacher-results__detail-content dw-hidden">
                 <p class="dw-muted" id="teacherDetailMeta"></p>
+                <div id="teacherGradingPanel" class="wf-teacher-grading dw-hidden">
+                  <h4 class="wf-teacher-grading__title">Grade & feedback</h4>
+                  <p class="wf-grading-guide" role="note">
+                    <strong>Grading guide:</strong> Full credit (100%) requires answering the prompt with correct spelling, punctuation, capitalization, grammar, and syntax.
+                    Strong answer with weak conventions, or strong conventions without answering the prompt, should not exceed 50%.
+                    Auto scores are a starting suggestion only — use your judgment.
+                  </p>
+                  <p class="dw-muted dw-tiny" id="teacherGradingHint">Suggested points are based on the auto score. Override anytime — students see this when you release feedback.</p>
+                  <label class="dw-field">
+                    <span class="dw-label">Points</span>
+                    <input id="teacherGradeInput" class="dw-input" type="number" min="0" step="0.5" />
+                  </label>
+                  <label class="dw-field">
+                    <span class="dw-label">Feedback for student</span>
+                    <textarea id="teacherFeedbackInput" class="dw-textarea" rows="4" placeholder="What went well? What should they revise?"></textarea>
+                  </label>
+                  <label class="wf-toggle-row">
+                    <input id="teacherFeedbackVisible" type="checkbox" />
+                    <span class="wf-toggle-row__label"><strong>Release to student</strong><span class="wf-toggle-row__hint">Student sees grade and feedback in My writing when signed in</span></span>
+                  </label>
+                  <div class="dw-row wf-teacher-grading__actions">
+                    <button id="teacherGradeSaveBtn" class="dw-btn dw-btn--compact" type="button">Save grade</button>
+                    <span id="teacherGradeStatus" class="dw-muted dw-tiny" role="status"></span>
+                  </div>
+                </div>
                 <div id="teacherVocabSummary" class="wf-vocab-summary dw-hidden"></div>
                 <div id="teacherStandardsSummary" class="wf-standards-summary dw-hidden"></div>
                 <div class="dw-story-preview wf-story-preview--highlight" id="teacherStoryPreview"></div>
@@ -285,6 +311,7 @@ layout: false
     <script src="/scripts/writeflow-mn-ela-standards-data.js" defer></script>
     <script src="/scripts/writeflow-item-standards.js" defer></script>
     <script src="/scripts/writeflow-teacher.js" defer></script>
+    <script src="/scripts/writeflow-admin-auth.js" defer></script>
     <script src="/scripts/writeflow-hero-crop.js" defer></script>
     <script src="/scripts/writeflow-intro.js" defer></script>
     <script src="/scripts/diagnostic-writing-calibration.js" defer></script>

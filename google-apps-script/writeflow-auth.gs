@@ -129,6 +129,89 @@ function ensureSubmissionStudentColumn_(sheet) {
     sheet.getRange(1, 13).setValue("studentUsername");
     sheet.getRange(1, 13).setFontWeight("bold");
   }
+  ensureSubmissionGradingColumns_(sheet);
+}
+
+function ensureSubmissionGradingColumns_(sheet) {
+  const headers = ["teacherGrade", "teacherFeedback", "feedbackVisible", "gradedAt"];
+  for (var i = 0; i < headers.length; i++) {
+    const col = 14 + i;
+    if (sheet.getLastColumn() < col) {
+      sheet.getRange(1, col).setValue(headers[i]);
+      sheet.getRange(1, col).setFontWeight("bold");
+    }
+  }
+}
+
+function parseSubmissionGrading_(row) {
+  return {
+    teacherGrade: row[13] === "" || row[13] == null ? null : Number(row[13]),
+    teacherFeedback: String(row[14] || ""),
+    feedbackVisible: String(row[15] || "").toUpperCase() === "TRUE",
+    gradedAt: Number(row[16]) || 0,
+  };
+}
+
+function getAssignmentGradingMeta_(assignmentId) {
+  const assignment = getAssignmentConfig_(assignmentId);
+  if (!assignment || !assignment.config) {
+    return { gradingEnabled: false, maxPoints: 100, title: assignmentId };
+  }
+  const cfg = assignment.config;
+  return {
+    gradingEnabled: !!cfg.gradingEnabled,
+    maxPoints: Number(cfg.maxPoints) > 0 ? Number(cfg.maxPoints) : 100,
+    title: assignment.title || cfg.title || assignmentId,
+  };
+}
+
+function saveSubmissionGrade_(params) {
+  const submissionId = String(params.submissionId || "").trim();
+  const assignmentId = String(params.assignmentId || "").trim();
+  const password = String(params.password || "");
+  const session = validateSession_(params.sessionToken);
+  if (!submissionId || !assignmentId) throw new Error("Missing submission or assignment ID.");
+  if (!verifyAssignmentPassword_(assignmentId, password, session)) {
+    throw new Error("Unauthorized");
+  }
+
+  const sheet = getSubmissionsSheet_();
+  ensureSubmissionGradingColumns_(sheet);
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) throw new Error("Submission not found.");
+
+  const colCount = Math.max(17, sheet.getLastColumn());
+  const values = sheet.getRange(2, 1, lastRow - 1, colCount).getValues();
+  var targetRow = -1;
+  for (var i = 0; i < values.length; i++) {
+    if (String(values[i][0]) !== submissionId) continue;
+    if (!assignmentIdMatches_(values[i][2], assignmentId)) throw new Error("Submission does not match assignment.");
+    targetRow = i + 2;
+    break;
+  }
+  if (targetRow < 0) throw new Error("Submission not found.");
+
+  const gradeRaw = params.teacherGrade;
+  const teacherGrade = gradeRaw === "" || gradeRaw == null ? "" : Number(gradeRaw);
+  if (teacherGrade !== "" && (!isFinite(teacherGrade) || teacherGrade < 0)) {
+    throw new Error("Grade must be a non-negative number.");
+  }
+  const teacherFeedback = String(params.teacherFeedback || "").trim().slice(0, 4000);
+  const feedbackVisible = params.feedbackVisible === true || String(params.feedbackVisible || "").toUpperCase() === "TRUE";
+  const gradedAt = Date.now();
+
+  sheet.getRange(targetRow, 14).setValue(teacherGrade === "" ? "" : teacherGrade);
+  sheet.getRange(targetRow, 15).setValue(teacherFeedback);
+  sheet.getRange(targetRow, 16).setValue(feedbackVisible ? "TRUE" : "FALSE");
+  sheet.getRange(targetRow, 17).setValue(gradedAt);
+
+  return {
+    id: submissionId,
+    teacherGrade: teacherGrade === "" ? null : teacherGrade,
+    teacherFeedback: teacherFeedback,
+    feedbackVisible: feedbackVisible,
+    gradedAt: gradedAt,
+  };
 }
 
 function ensureSessionColumns_(sheet) {
@@ -521,10 +604,11 @@ function listStudentSubmissions_(studentUsername) {
   const norm = normalizeStudentUsername_(studentUsername).toLowerCase();
   const sheet = getSubmissionsSheet_();
   ensureSubmissionStudentColumn_(sheet);
+  ensureSubmissionGradingColumns_(sheet);
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return [];
   const numRows = lastRow - 1;
-  const colCount = Math.max(13, sheet.getLastColumn());
+  const colCount = Math.max(17, sheet.getLastColumn());
   const values = sheet.getRange(2, 1, numRows, colCount).getValues();
   const out = [];
   for (var i = values.length - 1; i >= 0; i--) {
@@ -549,7 +633,20 @@ function listStudentSubmissions_(studentUsername) {
       text: String(row[10] || ""),
       analysis: analysis,
       studentUsername: String(row[12] || ""),
+      grading: getAssignmentGradingMeta_(String(row[2])),
+      teacherGrade: null,
+      teacherFeedback: "",
+      feedbackVisible: false,
+      gradedAt: 0,
     });
+    const grading = parseSubmissionGrading_(row);
+    const meta = out[out.length - 1].grading;
+    if (meta.gradingEnabled && grading.feedbackVisible) {
+      out[out.length - 1].teacherGrade = grading.teacherGrade;
+      out[out.length - 1].teacherFeedback = grading.teacherFeedback;
+      out[out.length - 1].feedbackVisible = true;
+      out[out.length - 1].gradedAt = grading.gradedAt;
+    }
   }
   return out;
 }

@@ -77,6 +77,39 @@
       </li>`).join("");
   }
 
+  function renderScoringGuide() {
+    const root = document.getElementById("wfScoringGuide");
+    const guide = Defaults.LANDING_SCORING_GUIDE;
+    if (!root || !guide) return;
+
+    const modes = (guide.modes || []).map((m) => `
+      <div class="wf-landing-scoring__mode">
+        <strong>${escapeHtml(m.name)}</strong>
+        <span class="dw-muted">${escapeHtml(m.detail)}</span>
+      </div>`).join("");
+
+    const dimensions = (guide.dimensions || []).map((dim) => `
+      <article class="wf-landing-scoring__dim">
+        <h3 class="wf-landing-scoring__dim-title">${escapeHtml(dim.title)}</h3>
+        <p class="wf-landing-scoring__formula">${escapeHtml(dim.formula)}</p>
+        <ul class="wf-landing-scoring__signals">
+          ${(dim.signals || []).map((s) => `<li>${escapeHtml(s)}</li>`).join("")}
+        </ul>
+      </article>`).join("");
+
+    const notes = (guide.notes || []).map((n) => `<p class="wf-landing-scoring__note">${escapeHtml(n)}</p>`).join("");
+
+    root.innerHTML = `
+      <h2 class="wf-landing__section-title" id="wfScoringTitle">${escapeHtml(guide.title)}</h2>
+      <p class="wf-landing-scoring__lead">${escapeHtml(guide.lead)}</p>
+      <p class="wf-landing-scoring__disclaimer" role="note">${escapeHtml(guide.disclaimer)}</p>
+      <h3 class="wf-landing__mini-title">Overall score by assignment mode</h3>
+      <div class="wf-landing-scoring__modes">${modes}</div>
+      <h3 class="wf-landing__mini-title">What each dimension measures</h3>
+      <div class="wf-landing-scoring__grid">${dimensions}</div>
+      <div class="wf-landing-scoring__footer">${notes}</div>`;
+  }
+
   async function renderImpactStats() {
     const stats = await fetchImpactStats();
     const targets = {
@@ -95,6 +128,7 @@
     if (versionEl) versionEl.textContent = Defaults.APP_VERSION || "2.0";
     renderChangelog();
     renderTutorial();
+    renderScoringGuide();
     void fetchImpactStats();
     const introTask = window.WriteFlowIntro
       ? window.WriteFlowIntro.play()

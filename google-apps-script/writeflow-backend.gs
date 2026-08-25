@@ -532,6 +532,20 @@ function handle_(e, isGet) {
       return respond_({ ok: true, id: entry.id });
     }
 
+    if (action === "saveSubmissionGrade") {
+      const result = saveSubmissionGrade_(params);
+      return respond_({ ok: true, grading: result });
+    }
+
+    if (action === "updateBulk") {
+      const session = validateSessionV2_(params.sessionToken);
+      if (!session || session.role !== "admin") return respond_({ error: "Admin access required" });
+      const assignmentId = String(params.assignmentId || "").trim();
+      if (!assignmentId) return respond_({ error: "Missing assignmentId" });
+      const result = updateSubmissionsBulk_(assignmentId, params.updates || []);
+      return respond_({ ok: true, updated: result.updated, errors: result.errors });
+    }
+
     if (action === "teacherLogin") {
       const teacher = verifyTeacherLoginV2_(params.username, params.password);
       if (!teacher) return respond_({ error: "Invalid username or password." });
@@ -774,11 +788,13 @@ function getStats_() {
 
 function listSubmissions_(assignmentId) {
   const sheet = getSubmissionsSheet_();
+  ensureSubmissionGradingColumns_(sheet);
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return [];
 
   const numRows = lastRow - 1;
-  const values = sheet.getRange(2, 1, numRows, 12).getValues();
+  const colCount = Math.max(17, sheet.getLastColumn());
+  const values = sheet.getRange(2, 1, numRows, colCount).getValues();
   const submissions = [];
 
   for (let i = values.length - 1; i >= 0; i--) {
@@ -790,6 +806,7 @@ function listSubmissions_(assignmentId) {
     } catch (ignore) {
       analysis = { scores: { overall: Number(row[9]) || 0 }, typingLevel: String(row[8] || "") };
     }
+    const grading = parseSubmissionGrading_(row);
     submissions.push({
       id: String(row[0]),
       submittedAt: Number(row[1]) || 0,
@@ -799,6 +816,11 @@ function listSubmissions_(assignmentId) {
       durationSec: Number(row[5]) || 0,
       text: String(row[10] || ""),
       analysis: analysis,
+      studentUsername: String(row[12] || ""),
+      teacherGrade: grading.teacherGrade,
+      teacherFeedback: grading.teacherFeedback,
+      feedbackVisible: grading.feedbackVisible,
+      gradedAt: grading.gradedAt,
     });
   }
   return submissions;
@@ -839,6 +861,7 @@ function saveSubmission_(params) {
   const scores = entry.analysis.scores || {};
   const sheet = getSubmissionsSheet_();
   ensureSubmissionStudentColumn_(sheet);
+  ensureSubmissionGradingColumns_(sheet);
   sheet.appendRow([
     entry.id,
     entry.submittedAt,
@@ -853,9 +876,69 @@ function saveSubmission_(params) {
     entry.text,
     JSON.stringify(entry.analysis),
     entry.studentUsername || entry.name,
+    "",
+    "",
+    "FALSE",
+    "",
   ]);
 
   return entry;
+}
+
+function writeSubmissionAnalysisToRow_(sheet, row, analysis) {
+  const scores = analysis.scores || {};
+  sheet.getRange(row, 7, 1, 4).setValues([[
+    analysis.wordCount || 0,
+    analysis.wpm || 0,
+    analysis.typingLevel || "",
+    scores.overall || 0,
+  ]]);
+  sheet.getRange(row, 11).setValue(JSON.stringify(analysis));
+}
+
+function updateSubmissionsBulk_(assignmentId, updates) {
+  const sheet = getSubmissionsSheet_();
+  const result = { updated: 0, errors: [] };
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) {
+    result.errors.push({ id: "", error: "No submissions in sheet" });
+    return result;
+  }
+  if (!updates || !updates.length) return result;
+
+  const numRows = lastRow - 1;
+  const colCount = Math.max(17, sheet.getLastColumn());
+  const values = sheet.getRange(2, 1, numRows, colCount).getValues();
+  const idToRow = {};
+  for (var i = 0; i < values.length; i++) {
+    const row = values[i];
+    const id = String(row[0] || "").trim();
+    if (!id) continue;
+    if (!assignmentIdMatches_(row[2], assignmentId)) continue;
+    idToRow[id] = i + 2;
+  }
+
+  for (var j = 0; j < updates.length; j++) {
+    const entry = updates[j] || {};
+    const id = String(entry.id || "").trim();
+    const analysis = entry.analysis || {};
+    const row = idToRow[id];
+    if (!row) {
+      result.errors.push({ id: id, error: "Submission not found for this assignment" });
+      continue;
+    }
+    if (!analysis || typeof analysis !== "object") {
+      result.errors.push({ id: id, error: "Missing analysis" });
+      continue;
+    }
+    try {
+      writeSubmissionAnalysisToRow_(sheet, row, analysis);
+      result.updated++;
+    } catch (err) {
+      result.errors.push({ id: id, error: String(err.message || err) });
+    }
+  }
+  return result;
 }
 
 function respond_(obj) {

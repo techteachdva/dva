@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.7.3";
+  const APP_VERSION = "2.8.0";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -119,6 +119,20 @@
   ];
 
   const CHANGELOG = [
+    {
+      version: "2.8.0",
+      date: "2026-08-24",
+      summary: "Teacher grading, student feedback, and grade-relative scoring calibration.",
+      items: [
+        "Enable points & feedback on assignments (including retroactively on saved assignments).",
+        "Grade submissions in Results — points, written feedback, and release to student.",
+        "Students see released grades and feedback at /writeflow/student/.",
+        "Typing scores calibrated per grade using best-in-class typist as ceiling (~100) and weakest as floor (~10).",
+        "Grading guide note in builder and Results; richer mechanics and prompt-focused story scoring.",
+        "Landing page center panel explains how auto scoring works for teachers.",
+        "Admin-only Re-analyze all in Results (sign in at /writeflow/admin/ first).",
+      ],
+    },
     {
       version: "2.7.3",
       date: "2026-08-23",
@@ -581,6 +595,9 @@
     heroImageShape: "banner",
     heroImageFocus: { x: 50, y: 50 },
     teacherPassword: "changeme",
+    gradingEnabled: false,
+    maxPoints: 100,
+    autoReleaseFeedback: false,
     vocabWords: [],
     highlightVocab: true,
     accessibility: {
@@ -926,6 +943,56 @@
     },
   ];
 
+  /** Teacher-facing scoring transparency — rendered on /writeflow/ center panel. */
+  const LANDING_SCORING_GUIDE = {
+    title: "How auto scoring works",
+    lead: "Every submission is scored in the browser when a student taps I'm done — before it is saved. The rubric is transparent, deterministic, and calibrated from real classroom data.",
+    disclaimer: "Heuristic analysis, not AI grading. Use Results and manual points when you need the final word.",
+    modes: [
+      { name: "Composition", detail: "Mechanics 35% · Story 65% · Typing not scored" },
+      { name: "Reflection", detail: "Mechanics 25% · Story 75% · Typing not scored" },
+      { name: "Fluency / typing practice", detail: "Typing 100% · Mechanics & story not scored" },
+    ],
+    dimensions: [
+      {
+        title: "Mechanics",
+        formula: "45% spelling · 35% grammar · 20% syntax",
+        signals: [
+          "Spelling: common misspellings & contractions (e.g. sucess, dont)",
+          "Grammar: sentence capitals, ending punctuation, capital I",
+          "Grammar: run-ons & missing commas between ideas",
+          "Syntax: sentence variety, length, and subordinators (because, when, although…)",
+          "Short drafts use gentler penalties so brief answers stay fair",
+        ],
+      },
+      {
+        title: "Story & reflection",
+        formula: "Voice · detail · structure · word choice · prompt focus",
+        signals: [
+          "Voice: personal pronouns (I, my, we)",
+          "Detail: sensory words + bonus for sustained length",
+          "Structure: transitions (first, next, finally) and numbered ideas",
+          "Word choice: vocabulary diversity & concrete specifics",
+          "Prompt focus (40% when a prompt is set): key terms from your question plus reflection cues (means to me, because, I think)",
+        ],
+      },
+      {
+        title: "Typing (fluency modes only)",
+        formula: "55% WPM · 45% word count, grade-calibrated",
+        signals: [
+          "Absolute speed & volume scored first",
+          "When class is known (e.g. Tech 7-A-6), compared to peers in that grade",
+          "Best typist in grade trends toward ~100; weakest toward ~10",
+          "Blended 65% grade-relative / 35% absolute for fairness",
+        ],
+      },
+    ],
+    notes: [
+      "Standards alignment in Results is separate — keyword, structure, and craft signals with evidence quotes. It does not change the overall auto score.",
+      "Enable points & feedback in the builder to set max points and release written feedback. Auto scores suggest points; you apply your rubric (e.g. full credit only when the prompt is answered with strong conventions).",
+    ],
+  };
+
   const LANDING_QUICKSTART = [
     {
       title: "Open Studio",
@@ -1151,6 +1218,7 @@
     BUILDER_SECTIONS,
     TUTORIAL_STEPS,
     LANDING_QUICKSTART,
+    LANDING_SCORING_GUIDE,
     ASSIGNMENT_TEMPLATES,
     ASSIGNMENT_MODES,
     MODE_DEFAULTS,

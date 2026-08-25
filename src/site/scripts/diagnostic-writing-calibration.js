@@ -112,7 +112,17 @@
   const MECHANICS_EXEMPLAR_FLOOR = { minWords: 240, minSpelling: 98, minGrammar: 94, floor: 99 };
 
   /**
-   * Empirical grade norms (n≈131 student submissions, Aug 2026).
+   * Per-grade typing floor/ceiling composites (Aug 2026 SPARK cohorts, n=218).
+   * Best in-grade typist (fast WPM + strong conventions) → ~100; weakest → ~10.
+   */
+  const GRADE_TYPING_BOUNDS = {
+    6: { floorWpm: 2, floorConventions: 57, ceilWpm: 28, ceilConventions: 82 },
+    7: { floorWpm: 5, floorConventions: 55, ceilWpm: 27, ceilConventions: 89 },
+    8: { floorWpm: 6, floorConventions: 50, ceilWpm: 33, ceilConventions: 90 },
+  };
+
+  /**
+   * Empirical grade norms (n≈131 narrative diagnostic + n≈218 SPARK reflection, Aug 2026).
    * Used as comparison fallbacks when grade peer pools are thin.
    */
   const GRADE_NORMS = {
@@ -121,10 +131,10 @@
     8: { typing: 67, mechanics: 90, story: 76, overall: 79, wordCount: 125, wpm: 25 },
   };
 
-  /** ~top 18% of each grade (advanced tier or overall ≥ 75 in original rubric). */
+  /** Best-in-grade typist per cohort — ceiling for grade-relative typing scale. */
   const GRADE_ADVANCED_P90 = {
-    6: { typing: 82, mechanics: 91, story: 82, overall: 83, wordCount: 143, wpm: 29 },
-    7: { typing: 86, mechanics: 94, story: 85, overall: 87, wordCount: 162, wpm: 32 },
+    6: { typing: 82, mechanics: 93, story: 63, overall: 71, wordCount: 141, wpm: 28 },
+    7: { typing: 81, mechanics: 94, story: 61, overall: 73, wordCount: 138, wpm: 27 },
     8: { typing: 86, mechanics: 93, story: 81, overall: 86, wordCount: 166, wpm: 33 },
   };
 
@@ -158,6 +168,7 @@
     TYPING_TIERS,
     STORY_FLOORS,
     MECHANICS_EXEMPLAR_FLOOR,
+    GRADE_TYPING_BOUNDS,
     GRADE_NORMS,
     GRADE_ADVANCED_P90,
     LOUNGE_NORMS,
