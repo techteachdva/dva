@@ -1,0 +1,100 @@
+---
+title: WriteFlow Admin — All Results
+permalink: /writeflow/admin/results/
+layout: false
+---
+<!doctype html>
+<html lang="{{ meta.mainLanguage }}">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="theme-color" content="#0f172a" />
+    <title>WriteFlow Admin — All Results</title>
+    <meta name="robots" content="noindex" />
+    <link rel="icon" href="/writeflow/assets/wfs-icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/styles/write-platform.css" />
+    <link rel="stylesheet" href="/styles/custom-style.css" />
+  </head>
+  <body class="dw-body wp-theme--dark wf-admin-portal wf-admin-results">
+    <a class="wf-skip-link" href="#mainContent">Skip to main content</a>
+    <div class="dw-shell dw-shell--wide">
+      <header class="wf-portal-header wf-admin-results__header">
+        <div>
+          <h1 class="dw-h1">All WriteFlow results</h1>
+          <p class="dw-muted" id="adminResultsMeta">Loading submissions…</p>
+        </div>
+        <div class="wf-admin-results__toolbar">
+          <a class="dw-btn dw-btn-ghost" href="/writeflow/admin/">← Admin portal</a>
+          <button id="adminResultsRefreshBtn" class="dw-btn dw-btn-secondary" type="button">Refresh</button>
+          <button id="adminResultsReanalyzeBtn" class="dw-btn" type="button">Re-analyze all results</button>
+        </div>
+      </header>
+
+      <main id="mainContent" class="wf-portal-main">
+        <section id="adminResultsSignedOut" class="dw-card dw-stack dw-narrow dw-hidden">
+          <h2 class="dw-h2">Admin sign-in required</h2>
+          <p class="dw-muted">Sign in at the admin portal first, then open this page again.</p>
+          <a class="dw-btn" href="/writeflow/admin/">Go to admin portal</a>
+        </section>
+
+        <section id="adminResultsSignedIn" class="dw-hidden wf-admin-results__body">
+          <div class="dw-card wf-admin-results__filters">
+            <label class="dw-field wf-admin-results__filter">
+              <span class="dw-label">Assignment</span>
+              <select id="adminResultsAssignmentFilter" class="dw-input dw-select">
+                <option value="">All assignments</option>
+              </select>
+            </label>
+            <label class="dw-field wf-admin-results__filter">
+              <span class="dw-label">Classroom</span>
+              <select id="adminResultsClassroomFilter" class="dw-input dw-select">
+                <option value="">All classrooms</option>
+              </select>
+            </label>
+            <label class="dw-field wf-admin-results__filter wf-admin-results__filter--search">
+              <span class="dw-label">Search student</span>
+              <input id="adminResultsSearch" class="dw-input" type="search" placeholder="Name or username" autocomplete="off" />
+            </label>
+          </div>
+
+          <div class="wf-admin-results__split" id="adminResultsSplit">
+            <div class="wf-admin-results__table-panel dw-card dw-table-wrap">
+              <table class="dw-table dw-table--compact wf-admin-results__table">
+                <thead>
+                  <tr>
+                    <th scope="col">Student</th>
+                    <th scope="col">Assignment</th>
+                    <th scope="col">Class</th>
+                    <th scope="col">Wds</th>
+                    <th scope="col">WPM</th>
+                    <th scope="col">Typ</th>
+                    <th scope="col">Mech</th>
+                    <th scope="col">Story</th>
+                    <th scope="col">Overall</th>
+                    <th scope="col">Submitted</th>
+                  </tr>
+                </thead>
+                <tbody id="adminResultsTableBody"></tbody>
+              </table>
+            </div>
+            <aside id="adminResultsDetail" class="wf-admin-results__detail dw-card wf-admin-results__detail--empty">
+              <div class="wf-admin-results__detail-head">
+                <h2 class="dw-h3">Submission detail</h2>
+                <button id="adminResultsDetailClose" class="dw-btn dw-btn-ghost dw-btn--compact" type="button">Close</button>
+              </div>
+              <p id="adminResultsDetailPlaceholder" class="dw-muted">Select a row to read the draft and scores.</p>
+              <div id="adminResultsDetailContent" class="dw-hidden"></div>
+            </aside>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="/scripts/writeflow-admin-auth.js" defer></script>
+    <script src="/scripts/writeflow-item-standards.js" defer></script>
+    <script src="/scripts/diagnostic-writing-calibration.js" defer></script>
+    <script src="/scripts/diagnostic-writing-rubrics.js" defer></script>
+    <script src="/scripts/write-analysis-engine.js" defer></script>
+    <script src="/scripts/writeflow-admin-results.js" defer></script>
+  </body>
+</html>

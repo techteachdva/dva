@@ -246,6 +246,25 @@ export async function GET(request) {
     }
   }
 
+  if (action === "adminListAllSubmissions") {
+    const sessionToken = getQueryParam(request, "sessionToken");
+    if (!sessionToken) {
+      return Response.json({ error: "Admin sign-in required" }, { status: 401, headers: corsHeaders() });
+    }
+    try {
+      const data = await fetchScriptJson(scriptGetUrl({ action: "adminListAllSubmissions", sessionToken }), { method: "GET" });
+      if (data.error) {
+        return Response.json({ error: data.error, submissions: [] }, { status: 401, headers: corsHeaders() });
+      }
+      return Response.json({
+        ok: true,
+        submissions: Array.isArray(data.submissions) ? data.submissions : [],
+      }, { headers: corsHeaders() });
+    } catch (e) {
+      return Response.json({ error: e.message || "Could not load submissions.", submissions: [] }, { status: 502, headers: corsHeaders() });
+    }
+  }
+
   if (action === "listMyAssignments") {
     const sessionToken = getQueryParam(request, "sessionToken");
     if (!sessionToken) {

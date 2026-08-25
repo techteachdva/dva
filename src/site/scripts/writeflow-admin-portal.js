@@ -117,6 +117,10 @@
       renderSignedOut();
     });
 
+    document.getElementById("adminSeeAllResultsBtn")?.addEventListener("click", () => {
+      window.open("/writeflow/admin/results/", "_blank", "noopener,noreferrer");
+    });
+
     document.getElementById("adminDedupeBtn")?.addEventListener("click", async () => {
       const resultEl = document.getElementById("adminDedupeResult");
       try {

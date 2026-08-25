@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.8.2";
+  const APP_VERSION = "2.8.3";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -119,6 +119,16 @@
   ];
 
   const CHANGELOG = [
+    {
+      version: "2.8.3",
+      date: "2026-08-24",
+      summary: "Admin all-results view; remove broken Studio Results button.",
+      items: [
+        "Removed non-functional Results button from Studio top bar — use Results on each assignment card instead.",
+        "Admin portal: See all results opens a filterable database-wide submissions view in a new tab.",
+        "Admin can Re-analyze all results across every assignment from /writeflow/admin/results/.",
+      ],
+    },
     {
       version: "2.8.2",
       date: "2026-08-24",
@@ -1109,8 +1119,8 @@
       },
       {
         title: "Results & standards alignment",
-        body: "View student submissions and export CSV. When standards are attached, each submission shows a Standards alignment panel — demonstrated / developing / not evident, confidence, score breakdown, and highlighted terms in the preview. Signed-in owners skip the assignment password.",
-        highlight: "#teacherBtn",
+        body: "Open Results on any assignment card to view submissions and export CSV. When standards are attached, each submission shows a Standards alignment panel — demonstrated / developing / not evident, confidence, score breakdown, and highlighted terms in the preview. Signed-in owners skip the assignment password.",
+        highlight: "#wfAssignmentsDashboard",
       },
       {
         title: "Open the builder guide",

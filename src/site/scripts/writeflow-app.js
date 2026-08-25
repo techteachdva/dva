@@ -956,10 +956,8 @@
   function updateTopbarActiveState(activeView = "") {
     if (!isStudioApp) return;
     const homeActive = activeView === "home";
-    const resultsActive = activeView === "teacher" || activeView === "teacherLogin";
     const builderActive = activeView === "builder";
     document.getElementById("builderLinkBtn")?.classList.toggle("wf-topbar-btn--active", homeActive);
-    document.getElementById("teacherBtn")?.classList.toggle("wf-topbar-btn--active", resultsActive);
     document.getElementById("wfTopbarSaveBtn")?.classList.toggle("dw-hidden", !builderActive);
   }
 
@@ -3090,22 +3088,6 @@
 
     document.getElementById("wfTopbarSaveBtn")?.addEventListener("click", () => {
       void saveAndPublishAssignment();
-    });
-
-    document.getElementById("teacherBtn")?.addEventListener("click", () => {
-      const ids = sortAssignmentIds(getAssignmentsList());
-      const cloudIds = Object.keys(cloudAssignmentMeta);
-      const allIds = sortAssignmentIds([...ids, ...cloudIds]);
-      if (!allIds.length) {
-        void navigateToHome({ resultsPicker: true });
-        return;
-      }
-      const id = config?.id && allIds.includes(config.id) ? config.id : allIds[0];
-      if (allIds.length > 1 && !isBuilderMode() && !teacherAuthed) {
-        void navigateToHome({ resultsPicker: true });
-        return;
-      }
-      void navigateToResults(id);
     });
   }
 

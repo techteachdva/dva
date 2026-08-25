@@ -133,6 +133,13 @@
     return data.students || [];
   }
 
+  async function listAllSubmissions() {
+    const token = getToken();
+    if (!token) throw new Error("Admin sign-in required.");
+    const data = await apiGet({ action: "adminListAllSubmissions", sessionToken: token });
+    return data.submissions || [];
+  }
+
   async function reanalyzeBulk(assignmentId, updates) {
     const token = getToken();
     if (!token) throw new Error("Admin sign-in required.");
@@ -156,6 +163,7 @@
     dedupeSubmissions,
     listTeachers,
     listStudents,
+    listAllSubmissions,
     reanalyzeBulk,
   };
 })();

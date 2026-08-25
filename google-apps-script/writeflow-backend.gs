@@ -516,6 +516,12 @@ function handle_(e, isGet) {
       return respond_({ ok: true, stats: adminGetStats_() });
     }
 
+    if (action === "adminListAllSubmissions") {
+      const session = validateSessionV2_(params.sessionToken);
+      if (!session || session.role !== "admin") return respond_({ error: "Admin access required" });
+      return respond_({ ok: true, submissions: listAllSubmissions_() });
+    }
+
     if (action === "listMyAssignments") {
       const session = validateSession_(params.sessionToken);
       if (!session) return respond_({ error: "Invalid session" });
@@ -811,6 +817,58 @@ function listSubmissions_(assignmentId) {
       id: String(row[0]),
       submittedAt: Number(row[1]) || 0,
       assignmentId: String(row[2]),
+      name: String(row[3]),
+      classroom: String(row[4]),
+      durationSec: Number(row[5]) || 0,
+      text: String(row[10] || ""),
+      analysis: analysis,
+      studentUsername: String(row[12] || ""),
+      teacherGrade: grading.teacherGrade,
+      teacherFeedback: grading.teacherFeedback,
+      feedbackVisible: grading.feedbackVisible,
+      gradedAt: grading.gradedAt,
+    });
+  }
+  return submissions;
+}
+
+function listAllSubmissions_() {
+  const sheet = getSubmissionsSheet_();
+  ensureSubmissionGradingColumns_(sheet);
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return [];
+
+  const numRows = lastRow - 1;
+  const colCount = Math.max(17, sheet.getLastColumn());
+  const values = sheet.getRange(2, 1, numRows, colCount).getValues();
+  const submissions = [];
+  const titleCache = {};
+
+  function assignmentTitle(assignmentId) {
+    const key = String(assignmentId || "").trim();
+    if (!key) return "";
+    if (titleCache[key] !== undefined) return titleCache[key];
+    const assignment = getAssignmentConfig_(key);
+    titleCache[key] = assignment ? String(assignment.title || key) : key;
+    return titleCache[key];
+  }
+
+  for (let i = values.length - 1; i >= 0; i--) {
+    const row = values[i];
+    if (!row[0]) continue;
+    let analysis = {};
+    try {
+      analysis = JSON.parse(row[11] || "{}");
+    } catch (ignore) {
+      analysis = { scores: { overall: Number(row[9]) || 0 }, typingLevel: String(row[8] || "") };
+    }
+    const grading = parseSubmissionGrading_(row);
+    const assignmentId = String(row[2]);
+    submissions.push({
+      id: String(row[0]),
+      submittedAt: Number(row[1]) || 0,
+      assignmentId: assignmentId,
+      assignmentTitle: assignmentTitle(assignmentId),
       name: String(row[3]),
       classroom: String(row[4]),
       durationSec: Number(row[5]) || 0,
