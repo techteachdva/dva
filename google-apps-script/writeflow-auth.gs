@@ -141,6 +141,18 @@ function ensureSubmissionGradingColumns_(sheet) {
       sheet.getRange(1, col).setFontWeight("bold");
     }
   }
+  ensureSubmissionAttemptColumns_(sheet);
+}
+
+function ensureSubmissionAttemptColumns_(sheet) {
+  const headers = ["attemptNumber", "countsForGrade"];
+  for (var i = 0; i < headers.length; i++) {
+    const col = 18 + i;
+    if (sheet.getLastColumn() < col) {
+      sheet.getRange(1, col).setValue(headers[i]);
+      sheet.getRange(1, col).setFontWeight("bold");
+    }
+  }
 }
 
 function parseSubmissionGrading_(row) {
@@ -152,16 +164,100 @@ function parseSubmissionGrading_(row) {
   };
 }
 
+function parseSubmissionAttempts_(row) {
+  const attemptRaw = row[17];
+  const attemptNumber = attemptRaw === "" || attemptRaw == null ? 1 : Number(attemptRaw);
+  return {
+    attemptNumber: attemptNumber > 0 ? attemptNumber : 1,
+    countsForGrade: String(row[18] || "").toUpperCase() === "TRUE",
+  };
+}
+
+function submissionStudentKey_(row) {
+  return normalizeStudentUsername_(row[12] || row[3] || "").toLowerCase();
+}
+
 function getAssignmentGradingMeta_(assignmentId) {
   const assignment = getAssignmentConfig_(assignmentId);
   if (!assignment || !assignment.config) {
-    return { gradingEnabled: false, maxPoints: 100, title: assignmentId };
+    return {
+      gradingEnabled: false,
+      maxPoints: 100,
+      title: assignmentId,
+      allowRetries: false,
+      maxAttempts: 1,
+      retriesOpen: true,
+      retryStudentMessage: "",
+    };
   }
   const cfg = assignment.config;
   return {
     gradingEnabled: !!cfg.gradingEnabled,
     maxPoints: Number(cfg.maxPoints) > 0 ? Number(cfg.maxPoints) : 100,
     title: assignment.title || cfg.title || assignmentId,
+    allowRetries: !!cfg.allowRetries,
+    maxAttempts: Math.max(1, Number(cfg.maxAttempts) || 1),
+    retriesOpen: cfg.retriesOpen !== false,
+    retryStudentMessage: String(cfg.retryStudentMessage || ""),
+  };
+}
+
+function countStudentAttemptsForAssignment_(sheet, assignmentId, studentKey) {
+  if (!studentKey) return 0;
+  const values = readSheetDataRows_(sheet, 19);
+  var count = 0;
+  for (var i = 0; i < values.length; i++) {
+    const row = values[i];
+    if (!row[0]) continue;
+    if (!assignmentIdMatches_(row[2], assignmentId)) continue;
+    if (submissionStudentKey_(row) !== studentKey) continue;
+    count++;
+  }
+  return count;
+}
+
+function setCountedSubmission_(params) {
+  const submissionId = String(params.submissionId || "").trim();
+  const assignmentId = String(params.assignmentId || "").trim();
+  const password = String(params.password || "");
+  const session = validateSession_(params.sessionToken);
+  if (!submissionId || !assignmentId) throw new Error("Missing submission or assignment ID.");
+  if (!verifyAssignmentPassword_(assignmentId, password, session)) {
+    throw new Error("Unauthorized");
+  }
+
+  const sheet = getSubmissionsSheet_();
+  ensureSubmissionAttemptColumns_(sheet);
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) throw new Error("Submission not found.");
+
+  const colCount = Math.max(19, sheet.getLastColumn());
+  const values = readSheetDataRows_(sheet, colCount);
+  var targetIndex = -1;
+  var studentKey = "";
+  for (var i = 0; i < values.length; i++) {
+    const row = values[i];
+    if (String(row[0]) !== submissionId) continue;
+    if (!assignmentIdMatches_(row[2], assignmentId)) throw new Error("Submission does not match assignment.");
+    targetIndex = i;
+    studentKey = submissionStudentKey_(row);
+    break;
+  }
+  if (targetIndex < 0) throw new Error("Submission not found.");
+  if (!studentKey) throw new Error("Could not identify student for this submission.");
+
+  for (var j = 0; j < values.length; j++) {
+    const row = values[j];
+    if (!row[0]) continue;
+    if (!assignmentIdMatches_(row[2], assignmentId)) continue;
+    if (submissionStudentKey_(row) !== studentKey) continue;
+    sheet.getRange(j + 2, 19).setValue(j === targetIndex ? "TRUE" : "FALSE");
+  }
+
+  return {
+    id: submissionId,
+    countsForGrade: true,
+    studentKey: studentKey,
   };
 }
 
@@ -180,7 +276,7 @@ function saveSubmissionGrade_(params) {
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) throw new Error("Submission not found.");
 
-  const colCount = Math.max(17, sheet.getLastColumn());
+  const colCount = Math.max(19, sheet.getLastColumn());
   const values = readSheetDataRows_(sheet, colCount);
   var targetRow = -1;
   for (var i = 0; i < values.length; i++) {
@@ -607,7 +703,7 @@ function listStudentSubmissions_(studentUsername) {
   ensureSubmissionGradingColumns_(sheet);
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return [];
-  const colCount = Math.max(17, sheet.getLastColumn());
+  const colCount = Math.max(19, sheet.getLastColumn());
   const values = readSheetDataRows_(sheet, colCount);
   const out = [];
   for (var i = values.length - 1; i >= 0; i--) {
@@ -618,6 +714,9 @@ function listStudentSubmissions_(studentUsername) {
     if (rowStudent !== norm && rowName !== norm) continue;
     const analysis = parseSubmissionAnalysis_(row);
     const storyText = normalizeSubmissionText_(row);
+    const attempts = parseSubmissionAttempts_(row);
+    const meta = getAssignmentGradingMeta_(String(row[2]));
+    const grading = parseSubmissionGrading_(row);
     out.push({
       id: String(row[0]),
       submittedAt: Number(row[1]) || 0,
@@ -629,20 +728,23 @@ function listStudentSubmissions_(studentUsername) {
       textUnavailable: !storyText && looksLikeAnalysisJson_(row[10]),
       analysis: analysis,
       studentUsername: String(row[12] || ""),
-      grading: getAssignmentGradingMeta_(String(row[2])),
+      grading: meta,
       teacherGrade: null,
       teacherFeedback: "",
       feedbackVisible: false,
       gradedAt: 0,
+      attemptNumber: attempts.attemptNumber,
+      countsForGrade: attempts.countsForGrade,
+      canRetry: false,
     });
-    const grading = parseSubmissionGrading_(row);
-    const meta = out[out.length - 1].grading;
     if (meta.gradingEnabled && grading.feedbackVisible) {
       out[out.length - 1].teacherGrade = grading.teacherGrade;
       out[out.length - 1].teacherFeedback = grading.teacherFeedback;
       out[out.length - 1].feedbackVisible = true;
       out[out.length - 1].gradedAt = grading.gradedAt;
     }
+    const used = countStudentAttemptsForAssignment_(sheet, String(row[2]), norm);
+    out[out.length - 1].canRetry = meta.allowRetries && meta.retriesOpen && used < meta.maxAttempts;
   }
   return out;
 }

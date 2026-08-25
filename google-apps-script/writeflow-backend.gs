@@ -553,12 +553,24 @@ function handle_(e, isGet) {
 
     if (action === "save") {
       const entry = saveSubmission_(params);
-      return respond_({ ok: true, id: entry.id });
+      return respond_({
+        ok: true,
+        id: entry.id,
+        attemptNumber: entry.attemptNumber,
+        attemptsUsed: entry.attemptsUsed,
+        maxAttempts: entry.maxAttempts,
+        canRetry: entry.canRetry,
+      });
     }
 
     if (action === "saveSubmissionGrade") {
       const result = saveSubmissionGrade_(params);
       return respond_({ ok: true, grading: result });
+    }
+
+    if (action === "setCountedSubmission") {
+      const result = setCountedSubmission_(params);
+      return respond_({ ok: true, counted: result });
     }
 
     if (action === "updateBulk") {
@@ -815,7 +827,7 @@ function listSubmissions_(assignmentId) {
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return [];
 
-  const colCount = Math.max(17, sheet.getLastColumn());
+  const colCount = Math.max(19, sheet.getLastColumn());
   const values = readSheetDataRows_(sheet, colCount);
   const submissions = [];
 
@@ -824,6 +836,7 @@ function listSubmissions_(assignmentId) {
     if (!row[0] || !assignmentIdMatches_(row[2], assignmentId)) continue;
     const analysis = parseSubmissionAnalysis_(row);
     const grading = parseSubmissionGrading_(row);
+    const attempts = parseSubmissionAttempts_(row);
     const storyText = normalizeSubmissionText_(row);
     submissions.push({
       id: String(row[0]),
@@ -840,6 +853,8 @@ function listSubmissions_(assignmentId) {
       teacherFeedback: grading.teacherFeedback,
       feedbackVisible: grading.feedbackVisible,
       gradedAt: grading.gradedAt,
+      attemptNumber: attempts.attemptNumber,
+      countsForGrade: attempts.countsForGrade,
     });
   }
   return submissions;
@@ -851,7 +866,7 @@ function listAllSubmissions_() {
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return [];
 
-  const colCount = Math.max(17, sheet.getLastColumn());
+  const colCount = Math.max(19, sheet.getLastColumn());
   const values = readSheetDataRows_(sheet, colCount);
   const submissions = [];
   const titleCache = {};
@@ -870,6 +885,7 @@ function listAllSubmissions_() {
     if (!row[0]) continue;
     const analysis = parseSubmissionAnalysis_(row);
     const grading = parseSubmissionGrading_(row);
+    const attempts = parseSubmissionAttempts_(row);
     const assignmentId = String(row[2]);
     const storyText = normalizeSubmissionText_(row);
     submissions.push({
@@ -889,6 +905,8 @@ function listAllSubmissions_() {
       teacherFeedback: grading.teacherFeedback,
       feedbackVisible: grading.feedbackVisible,
       gradedAt: grading.gradedAt,
+      attemptNumber: attempts.attemptNumber,
+      countsForGrade: attempts.countsForGrade,
     });
   }
   return submissions;
@@ -929,7 +947,23 @@ function saveSubmission_(params) {
   const scores = entry.analysis.scores || {};
   const sheet = getSubmissionsSheet_();
   ensureSubmissionStudentColumn_(sheet);
-  ensureSubmissionGradingColumns_(sheet);
+  ensureSubmissionAttemptColumns_(sheet);
+  const studentKey = normalizeStudentUsername_(entry.studentUsername || entry.name).toLowerCase();
+  const retryMeta = getAssignmentGradingMeta_(assignmentId);
+  const priorAttempts = countStudentAttemptsForAssignment_(sheet, assignmentId, studentKey);
+  if (priorAttempts > 0) {
+    if (!retryMeta.allowRetries) {
+      throw new Error("This assignment allows only one submission.");
+    }
+    if (!retryMeta.retriesOpen) {
+      throw new Error("Revision round is not open yet. Wait for your teacher to open it.");
+    }
+    if (priorAttempts >= retryMeta.maxAttempts) {
+      throw new Error("You have used all " + retryMeta.maxAttempts + " attempts for this assignment.");
+    }
+  }
+  const attemptNumber = priorAttempts + 1;
+  const countsForGrade = attemptNumber === 1 && retryMeta.maxAttempts === 1;
   sheet.appendRow([
     entry.id,
     entry.submittedAt,
@@ -948,9 +982,17 @@ function saveSubmission_(params) {
     "",
     "FALSE",
     "",
+    attemptNumber,
+    countsForGrade ? "TRUE" : "FALSE",
   ]);
 
-  return entry;
+  return {
+    id: entry.id,
+    attemptNumber: attemptNumber,
+    attemptsUsed: attemptNumber,
+    maxAttempts: retryMeta.maxAttempts,
+    canRetry: retryMeta.allowRetries && retryMeta.retriesOpen && attemptNumber < retryMeta.maxAttempts,
+  };
 }
 
 function writeSubmissionAnalysisToRow_(sheet, row, analysis) {
@@ -1001,7 +1043,7 @@ function updateSubmissionsBulk_(assignmentId, updates) {
   }
   if (!updates || !updates.length) return result;
 
-  const colCount = Math.max(17, sheet.getLastColumn());
+  const colCount = Math.max(19, sheet.getLastColumn());
   const values = readSheetDataRows_(sheet, colCount);
   const idToRow = {};
   for (var i = 0; i < values.length; i++) {

@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.8.6";
+  const APP_VERSION = "2.9.0";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -119,6 +119,16 @@
   ];
 
   const CHANGELOG = [
+    {
+      version: "2.9.0",
+      date: "2026-08-24",
+      summary: "Student retries and a richer My writing hub.",
+      items: [
+        "Teachers can allow up to two attempts per assignment; pick which attempt counts for the grade in Results.",
+        "Students see Try again after submitting when retries are open; attempt numbers appear in the teacher table.",
+        "My writing groups submissions by assignment, expands full drafts, and links back to retry when allowed.",
+      ],
+    },
     {
       version: "2.8.6",
       date: "2026-08-24",
@@ -657,6 +667,10 @@
     gradingEnabled: false,
     maxPoints: 100,
     autoReleaseFeedback: false,
+    allowRetries: false,
+    maxAttempts: 2,
+    retriesOpen: true,
+    retryStudentMessage: "",
     vocabWords: [],
     highlightVocab: true,
     accessibility: {

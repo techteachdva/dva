@@ -6183,6 +6183,49 @@ mark.wf-standard-hit,
   gap: 12px;
 }
 
+.wf-submission-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.wf-submission-group {
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+  background: rgba(15, 23, 42, 0.35);
+}
+
+.wf-submission-group__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.wf-submission-group__title {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.wf-submission-group__retry {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  background: rgba(59, 130, 246, 0.12);
+}
+
+.wf-submission-group__attempts {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
 .wf-submission-card {
   padding: 12px 14px;
   border: 1px solid rgba(148, 163, 184, 0.2);
@@ -6223,6 +6266,110 @@ mark.wf-standard-hit,
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: #7dd3fc;
+}
+
+.wf-submission-card__badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: rgba(34, 197, 94, 0.18);
+  color: #86efac;
+}
+
+.wf-submission-card__details {
+  margin-top: 0.5rem;
+}
+
+.wf-submission-card__summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #7dd3fc;
+}
+
+.wf-submission-card__full {
+  margin-top: 0.5rem;
+}
+
+.wf-submission-card__preview--clip {
+  margin-top: 0.35rem;
+}
+
+.wf-student-retry {
+  margin: 1rem 0;
+  padding: 1rem;
+  border-radius: 10px;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.wf-student-retry__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.wf-teacher-attempts {
+  margin: 0.75rem 0 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.wf-teacher-attempts__title {
+  margin: 0 0 0.35rem;
+  font-size: 0.95rem;
+}
+
+.wf-teacher-attempts__list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.wf-teacher-attempts__item--active .wf-teacher-attempts__pick {
+  border-color: #60a5fa;
+  background: rgba(59, 130, 246, 0.12);
+}
+
+.wf-teacher-attempts__pick {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.75rem;
+  text-align: left;
+  padding: 0.5rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.wf-teacher-attempts__badge {
+  margin-left: auto;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #86efac;
+}
+
+.wf-teacher-attempts__actions {
+  margin-top: 0.65rem;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.wf-attempt-counted {
+  margin-left: 0.15rem;
+  color: #fbbf24;
 }
 
 .wf-teacher-grading {

@@ -267,6 +267,15 @@ layout: false
               <p id="teacherDetailPlaceholder" class="dw-muted wf-teacher-results__detail-placeholder">Select a submission from the list to read the full draft, vocabulary hits, and standards alignment.</p>
               <div id="teacherDetailContent" class="wf-teacher-results__detail-content dw-hidden">
                 <p class="dw-muted" id="teacherDetailMeta"></p>
+                <div id="teacherAttemptsPanel" class="wf-teacher-attempts dw-hidden">
+                  <h4 class="wf-teacher-attempts__title">Attempts</h4>
+                  <p class="dw-muted dw-tiny" id="teacherAttemptsHint">When retries are enabled, choose which attempt counts for the grade.</p>
+                  <ul id="teacherAttemptsList" class="wf-teacher-attempts__list"></ul>
+                  <div class="dw-row wf-teacher-attempts__actions">
+                    <button id="teacherCountForGradeBtn" class="dw-btn dw-btn--compact" type="button">Count this attempt for grade</button>
+                    <span id="teacherCountForGradeStatus" class="dw-muted dw-tiny" role="status"></span>
+                  </div>
+                </div>
                 <div id="teacherGradingPanel" class="wf-teacher-grading dw-hidden">
                   <h4 class="wf-teacher-grading__title">Grade & feedback</h4>
                   <p class="wf-grading-guide" role="note">

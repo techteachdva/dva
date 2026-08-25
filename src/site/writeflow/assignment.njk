@@ -117,8 +117,15 @@ layout: false
             <h2 class="dw-h2">Submitted, <span id="resultName">—</span></h2>
             <p class="dw-muted" id="resultSummary"></p>
             <p id="saveStatus" class="dw-save-status dw-hidden" role="status"></p>
+            <div id="studentRetryPanel" class="wf-student-retry dw-hidden">
+              <p id="studentRetryMessage" class="dw-muted"></p>
+              <div class="wf-student-retry__actions">
+                <button id="studentTryAgainBtn" class="dw-btn" type="button">Try again</button>
+                <a class="dw-btn dw-btn-secondary" href="/writeflow/student/">View all your writing</a>
+              </div>
+            </div>
             <div id="vocabResult" class="wf-vocab-result dw-hidden"></div>
-            <p class="dw-muted dw-tiny">You can close this tab. Your teacher will see your submission in WriteFlow Studio.</p>
+            <p class="dw-muted dw-tiny wf-student-done__footer">You can close this tab. Your teacher will see your submission in WriteFlow Studio.</p>
           </div>
         </section>
       </main>

@@ -28,15 +28,56 @@
     document.getElementById(id)?.classList.toggle("dw-hidden", !visible);
   }
 
-  function renderSubmissionCard(item) {
+  function assignmentUrl(assignmentId) {
+    return `/writeflow/a/?id=${encodeURIComponent(assignmentId)}`;
+  }
+
+  function groupByAssignment(items) {
+    const groups = new Map();
+    for (const item of items) {
+      const key = item.assignmentId || "unknown";
+      if (!groups.has(key)) {
+        groups.set(key, {
+          assignmentId: key,
+          title: item.grading?.title || key,
+          meta: item.grading || {},
+          items: [],
+        });
+      }
+      groups.get(key).items.push(item);
+    }
+    return [...groups.values()]
+      .map((group) => {
+        group.items.sort((a, b) => (Number(a.attemptNumber) || 1) - (Number(b.attemptNumber) || 1));
+        return group;
+      })
+      .sort((a, b) => {
+        const maxA = Math.max(...a.items.map((i) => Number(i.submittedAt) || 0));
+        const maxB = Math.max(...b.items.map((i) => Number(i.submittedAt) || 0));
+        return maxB - maxA;
+      });
+  }
+
+  function groupCanRetry(group) {
+    const meta = group.meta || {};
+    if (!meta.allowRetries || meta.retriesOpen === false) return false;
+    const maxAttempts = Math.max(1, Number(meta.maxAttempts) || 2);
+    return group.items.length < maxAttempts;
+  }
+
+  function renderAttemptCard(item, group) {
     const scores = item.analysis?.scores || {};
     const overall = scores.overall != null ? Math.round(scores.overall) : "—";
     const words = item.analysis?.wordCount || 0;
-    const preview = escapeHtml((item.text || "").slice(0, 160));
-    const grading = item.grading || {};
-    const title = grading.title || item.assignmentId;
+    const grading = item.grading || group.meta || {};
     const maxPoints = grading.maxPoints || 100;
     const hasReleasedGrade = grading.gradingEnabled && item.feedbackVisible;
+    const attemptLabel = (item.attemptNumber || 1) > 1 || group.items.length > 1
+      ? `Attempt ${item.attemptNumber || 1}`
+      : "Submission";
+    const countedBadge = item.countsForGrade
+      ? `<span class="wf-submission-card__badge">Counted for grade</span>`
+      : "";
     const gradeLine = hasReleasedGrade && item.teacherGrade != null
       ? `<p class="wf-submission-card__grade"><strong>${escapeHtml(String(item.teacherGrade))}</strong> / ${maxPoints} points</p>`
       : (grading.gradingEnabled
@@ -45,20 +86,49 @@
     const feedbackBlock = hasReleasedGrade && item.teacherFeedback
       ? `<div class="wf-submission-card__feedback"><p class="wf-submission-card__feedback-label">Teacher feedback</p><p>${escapeHtml(item.teacherFeedback)}</p></div>`
       : "";
-    const metaLine = hasReleasedGrade
-      ? `<p class="dw-muted dw-tiny">${escapeHtml(item.classroom || "")} · ${words} words · ${formatDate(item.submittedAt)}</p>`
-      : "";
+    const preview = escapeHtml((item.text || "").slice(0, 200));
+    const hasMore = (item.text || "").length > 200;
+    const textUnavailable = item.textUnavailable || (!item.text && item.analysis);
 
     return `<article class="wf-submission-card" role="listitem">
       <header class="wf-submission-card__head">
-        <strong>${escapeHtml(title)}</strong>
+        <div>
+          <strong>${escapeHtml(attemptLabel)}</strong>
+          ${countedBadge}
+        </div>
         <span class="dw-muted dw-tiny">${formatDate(item.submittedAt)}</span>
       </header>
-      ${metaLine}
       ${gradeLine}
       ${feedbackBlock}
-      <p class="wf-submission-card__preview">${preview}${(item.text || "").length > 160 ? "…" : ""}</p>
+      <details class="wf-submission-card__details">
+        <summary class="wf-submission-card__summary">${textUnavailable ? "Text unavailable" : (hasMore ? "Read full draft" : "View draft")}</summary>
+        <div class="wf-submission-card__full">${textUnavailable
+          ? `<p class="dw-muted dw-tiny">Your draft text could not be loaded. Ask your teacher if you need a copy.</p>`
+          : `<p class="wf-submission-card__preview">${escapeHtml(item.text || "")}</p>`}</div>
+      </details>
+      ${!textUnavailable && preview ? `<p class="wf-submission-card__preview wf-submission-card__preview--clip">${preview}${hasMore ? "…" : ""}</p>` : ""}
     </article>`;
+  }
+
+  function renderAssignmentGroup(group) {
+    const canRetry = groupCanRetry(group);
+    const retryMsg = String(group.meta.retryStudentMessage || "").trim();
+    const retryBlock = canRetry
+      ? `<div class="wf-submission-group__retry">
+          <p class="dw-muted dw-tiny">${escapeHtml(retryMsg || "Your teacher has allowed another attempt.")}</p>
+          <a class="dw-btn dw-btn--compact" href="${assignmentUrl(group.assignmentId)}">Try again</a>
+        </div>`
+      : "";
+    const attempts = group.items.map((item) => renderAttemptCard(item, group)).join("");
+
+    return `<section class="wf-submission-group" role="listitem">
+      <header class="wf-submission-group__head">
+        <h3 class="wf-submission-group__title">${escapeHtml(group.title)}</h3>
+        <span class="dw-muted dw-tiny">${group.items.length} attempt${group.items.length === 1 ? "" : "s"}</span>
+      </header>
+      ${retryBlock}
+      <div class="wf-submission-group__attempts" role="list">${attempts}</div>
+    </section>`;
   }
 
   async function renderSubmissions() {
@@ -74,7 +144,8 @@
     }
     emptyEl?.classList.add("dw-hidden");
 
-    listEl.innerHTML = items.map((item) => renderSubmissionCard(item)).join("");
+    const groups = groupByAssignment(items);
+    listEl.innerHTML = groups.map((group) => renderAssignmentGroup(group)).join("");
   }
 
   function renderSignedIn() {

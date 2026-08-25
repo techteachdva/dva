@@ -115,6 +115,10 @@
     return config.gradingEnabled && max > 0 ? max : 100;
   }
 
+  function retriesEnabled() {
+    return !!config.allowRetries && Math.max(1, Number(config.maxAttempts) || 1) > 1;
+  }
+
   function suggestedPointsFromAnalysis(analysis) {
     const overall = Number(analysis?.scores?.overall);
     if (!Number.isFinite(overall)) return null;
@@ -123,6 +127,7 @@
 
   let timerWaitingForMinWords = false;
   let studentSession = { name: "", classroom: "", classCode: "" };
+  let lastSubmitMeta = null;
   let activeTemplateId = params.get("template") || "";
   let templateAnswers = {};
 
@@ -1596,17 +1601,20 @@
 
     let saveOk = false;
     let saveError = "";
+    let submitData = null;
     if (config.requireClass && !classroom) {
       saveError = "Your class was not recognized. Go back and pick your class from the list.";
     } else if (config.requireClassCode && classroom && !Core.verifyClassroomCode(classroom, classCode, CLASSROOM_CODES)) {
       saveError = "Your class code did not match. Check with your teacher.";
     } else {
       try {
-        await submitResult(name, classroom, classCode, text, analysis, duration);
+        submitData = await submitResult(name, classroom, classCode, text, analysis, duration);
         saveOk = true;
-        saveLocalSubmission({ name, classroom, text, analysis, submittedAt: Date.now() });
+        lastSubmitMeta = submitData;
+        saveLocalSubmission({ name, classroom, text, analysis, submittedAt: Date.now(), attemptNumber: submitData?.attemptNumber });
       } catch (err) {
         saveError = err.message || "Could not save your submission.";
+        lastSubmitMeta = null;
         saveLocalSubmission({ name, classroom, text, analysis, submittedAt: Date.now() });
       }
     }
@@ -1615,7 +1623,10 @@
     if (saveStatus) {
       saveStatus.classList.remove("dw-hidden", "dw-save-status--ok", "dw-save-status--error");
       if (saveOk) {
-        saveStatus.textContent = "Saved to your class roster. Your teacher can view this from any computer.";
+        const attemptLine = submitData?.attemptNumber
+          ? ` Attempt ${submitData.attemptNumber}${submitData.maxAttempts ? ` of ${submitData.maxAttempts}` : ""}.`
+          : "";
+        saveStatus.textContent = `Saved to your class roster.${attemptLine} Your teacher can view this from any computer.`;
         saveStatus.classList.add("dw-save-status--ok");
       } else {
         saveStatus.textContent = saveError || "Could not save to the class roster.";
@@ -1623,7 +1634,44 @@
       }
     }
 
+    renderStudentRetryPanel(saveOk ? submitData : null);
     show("results");
+  }
+
+  function renderStudentRetryPanel(submitData) {
+    const panel = document.getElementById("studentRetryPanel");
+    const messageEl = document.getElementById("studentRetryMessage");
+    if (!panel) return;
+    const canRetry = !!(submitData?.canRetry && retriesEnabled() && config.retriesOpen !== false);
+    panel.classList.toggle("dw-hidden", !canRetry);
+    if (!canRetry) return;
+    const custom = String(config.retryStudentMessage || "").trim();
+    const used = submitData.attemptsUsed || submitData.attemptNumber || 1;
+    const max = submitData.maxAttempts || config.maxAttempts || 2;
+    const defaultMsg = `You have used ${used} of ${max} attempts. You can try once more with a fresh timer and blank page.`;
+    if (messageEl) messageEl.textContent = custom || defaultMsg;
+  }
+
+  function startRetryAttempt() {
+    const storyInput = document.getElementById("storyInput");
+    if (storyInput) {
+      storyInput.value = "";
+      storyInput.readOnly = false;
+      storyInput.style.height = "";
+    }
+    timerWaitingForMinWords = false;
+    document.getElementById("timerExtendNotice")?.classList.add("dw-hidden");
+    document.getElementById("saveStatus")?.classList.add("dw-hidden");
+    document.getElementById("studentRetryPanel")?.classList.add("dw-hidden");
+    lastSubmitMeta = null;
+    show("writing");
+    requestAnimationFrame(() => {
+      applyAccessibility();
+      storyInput?.focus();
+      document.getElementById("writingView")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      updateWritingControls();
+    });
+    timer?.start();
   }
 
   async function submitResult(name, classroom, classCode, text, analysis, durationSec) {
@@ -1808,6 +1856,10 @@
     document.getElementById("endEarlyBtn")?.addEventListener("click", () => {
       if (!config.allowEndEarly || !meetsMinWordCount()) return;
       finishWriting();
+    });
+
+    document.getElementById("studentTryAgainBtn")?.addEventListener("click", () => {
+      startRetryAttempt();
     });
 
     updateStartButton();
@@ -2333,7 +2385,20 @@
 
   function getTeacherSubmissionKey(sub) {
     if (!sub) return "";
+    if (sub.id) return String(sub.id);
     return `${sub.name || ""}|${sub.submittedAt || ""}|${sub.classroom || ""}`;
+  }
+
+  function getSubmissionStudentKey(sub) {
+    return String(sub?.studentUsername || sub?.name || "").trim().toLowerCase();
+  }
+
+  function getSiblingAttempts(sub) {
+    const key = getSubmissionStudentKey(sub);
+    if (!key) return [];
+    return allSubmissions
+      .filter((s) => getSubmissionStudentKey(s) === key)
+      .sort((a, b) => (Number(a.attemptNumber) || 1) - (Number(b.attemptNumber) || 1));
   }
 
   function updateTeacherTableSelection() {
@@ -2375,8 +2440,12 @@
 
     if (meta) {
       const autoOverall = sub.analysis?.scores?.overall ?? "—";
-      meta.textContent = `${sub.name} · ${sub.classroom || "—"} · ${sub.analysis?.wordCount ?? 0} words · ${sub.submittedAt ? Core.formatDate(sub.submittedAt) : ""} · auto score ${autoOverall}`;
+      const attemptPart = retriesEnabled() ? ` · attempt ${sub.attemptNumber || 1}` : "";
+      const countedPart = sub.countsForGrade ? " · counts for grade" : "";
+      meta.textContent = `${sub.name} · ${sub.classroom || "—"} · ${sub.analysis?.wordCount ?? 0} words · ${sub.submittedAt ? Core.formatDate(sub.submittedAt) : ""} · auto score ${autoOverall}${attemptPart}${countedPart}`;
     }
+
+    renderTeacherAttemptsPanel(sub);
 
     if (gradingPanel) {
       gradingPanel.classList.toggle("dw-hidden", !config.gradingEnabled);
@@ -2439,6 +2508,94 @@
   }
 
   let activeGradingSubmissionId = "";
+  let activeCountSubmissionId = "";
+
+  function renderTeacherAttemptsPanel(sub) {
+    const panel = document.getElementById("teacherAttemptsPanel");
+    const listEl = document.getElementById("teacherAttemptsList");
+    const countBtn = document.getElementById("teacherCountForGradeBtn");
+    const statusEl = document.getElementById("teacherCountForGradeStatus");
+    if (!panel || !listEl) return;
+
+    const siblings = getSiblingAttempts(sub);
+    const showPanel = retriesEnabled() && siblings.length > 0;
+    panel.classList.toggle("dw-hidden", !showPanel);
+    if (!showPanel) return;
+
+    activeCountSubmissionId = sub.id;
+    listEl.innerHTML = siblings.map((s) => {
+      const overall = s.analysis?.scores?.overall ?? "—";
+      const selected = s.id === sub.id;
+      const counted = !!s.countsForGrade;
+      const date = s.submittedAt ? Core.formatDate(s.submittedAt) : "—";
+      return `<li class="wf-teacher-attempts__item${selected ? " wf-teacher-attempts__item--active" : ""}">
+        <button type="button" class="wf-teacher-attempts__pick" data-attempt-id="${escapeHtml(s.id)}">
+          <span class="wf-teacher-attempts__label">Attempt ${s.attemptNumber || 1}</span>
+          <span class="dw-muted dw-tiny">${date} · ${s.analysis?.wordCount ?? 0} wds · score ${overall}</span>
+          ${counted ? `<span class="wf-teacher-attempts__badge">Counted</span>` : ""}
+        </button>
+      </li>`;
+    }).join("");
+
+    listEl.querySelectorAll("[data-attempt-id]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const pick = siblings.find((s) => s.id === btn.dataset.attemptId);
+        if (pick) showTeacherSubmission(pick);
+      });
+    });
+
+    if (countBtn) {
+      countBtn.disabled = !!sub.countsForGrade;
+      countBtn.textContent = sub.countsForGrade ? "This attempt counts for grade" : "Count this attempt for grade";
+    }
+    if (statusEl) statusEl.textContent = "";
+    bindCountForGradeSave();
+  }
+
+  function bindCountForGradeSave() {
+    const btn = document.getElementById("teacherCountForGradeBtn");
+    if (!btn || btn.dataset.bound === "1") return;
+    btn.dataset.bound = "1";
+    btn.addEventListener("click", async () => {
+      const current = allSubmissions.find((s) => s.id === activeCountSubmissionId);
+      if (!current || current.countsForGrade) return;
+      const statusEl = document.getElementById("teacherCountForGradeStatus");
+      if (statusEl) statusEl.textContent = "Saving…";
+      btn.disabled = true;
+      try {
+        await setCountedSubmission(current);
+        if (statusEl) statusEl.textContent = "Saved — this attempt now counts for the grade.";
+        const refreshed = allSubmissions.find((s) => s.id === current.id);
+        if (refreshed) showTeacherSubmission(refreshed);
+      } catch (err) {
+        if (statusEl) statusEl.textContent = err.message || "Could not save.";
+        btn.disabled = false;
+      }
+    });
+  }
+
+  async function setCountedSubmission(sub) {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "setCountedSubmission",
+        submissionId: sub.id,
+        assignmentId: config.id,
+        password: sessionTeacherPassword || config.teacherPassword || "",
+        sessionToken: Teacher()?.getToken() || "",
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `Save failed (${res.status})`);
+    const studentKey = getSubmissionStudentKey(sub);
+    allSubmissions = allSubmissions.map((s) => {
+      if (getSubmissionStudentKey(s) !== studentKey) return s;
+      return { ...s, countsForGrade: s.id === sub.id };
+    });
+    renderTeacherTable();
+    return data;
+  }
 
   function bindTeacherGradingSave(sub) {
     activeGradingSubmissionId = sub.id;
@@ -2515,6 +2672,7 @@
     if (rubrics.includes("story")) cols.push("story");
     cols.push("overall");
     if (config.gradingEnabled) cols.push("grade");
+    if (retriesEnabled()) cols.push("attempt");
     cols.push("submitted", "action");
     return cols;
   }
@@ -2542,6 +2700,7 @@
         const pts = sub.teacherGrade != null ? sub.teacherGrade : suggestedPointsFromAnalysis(sub.analysis);
         return pts == null ? -1 : Number(pts);
       }
+      case "attempt": return Number(sub.attemptNumber) || 1;
       case "submitted": return Number(sub.submittedAt) || 0;
       default: return 0;
     }
@@ -2586,6 +2745,7 @@
       story: "Story",
       overall: "Overall",
       grade: "Pts",
+      attempt: "Try",
       submitted: "Submitted",
       action: "",
     };
@@ -2622,14 +2782,19 @@
         case "mechanics": return sub.analysis?.scores?.mechanics ?? "—";
         case "story": return sub.analysis?.scores?.story ?? "—";
         case "overall": return sub.analysis?.scores?.overall ?? "—";
-        case "grade": {
-          const maxPts = resolveMaxPoints();
-          const pts = sub.teacherGrade != null ? sub.teacherGrade : suggestedPointsFromAnalysis(sub.analysis);
-          if (pts == null) return "—";
-          const draft = sub.teacherGrade == null ? "*" : "";
-          return `${pts}/${maxPts}${draft}`;
-        }
-        case "submitted": return sub.submittedAt ? Core.formatDate(sub.submittedAt) : "—";
+      case "grade": {
+        const maxPts = resolveMaxPoints();
+        const pts = sub.teacherGrade != null ? sub.teacherGrade : suggestedPointsFromAnalysis(sub.analysis);
+        if (pts == null) return "—";
+        const draft = sub.teacherGrade == null ? "*" : "";
+        return `${pts}/${maxPts}${draft}`;
+      }
+      case "attempt": {
+        const n = sub.attemptNumber || 1;
+        const badge = sub.countsForGrade ? '<span class="wf-attempt-counted" title="Counts for grade">★</span>' : "";
+        return `${n}${badge}`;
+      }
+      case "submitted": return sub.submittedAt ? Core.formatDate(sub.submittedAt) : "—";
         case "action": return `<button type="button" class="dw-btn dw-btn-ghost dw-btn--compact" data-sub-idx="${idx}">View</button>`;
         default: return "—";
       }
@@ -3189,6 +3354,14 @@
           <label class="dw-field" id="bfMaxPointsRow"><span class="dw-label">Maximum points</span><input id="bfMaxPoints" class="dw-input" type="number" min="1" max="1000" value="${Number(config.maxPoints) || 100}" /></label>
           <label class="wf-toggle-row"><input id="bfAutoReleaseFeedback" type="checkbox" ${config.autoReleaseFeedback ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Auto-release feedback</strong><span class="wf-toggle-row__hint">New grades are visible to students immediately when you save</span></span></label>
         </div>
+        <div class="wf-builder-subsection" id="bfRetriesSection">
+          <p class="dw-label">Retries</p>
+          <p class="dw-muted dw-tiny">Let students submit a second attempt. You choose which attempt counts for the grade in Results.</p>
+          <label class="wf-toggle-row"><input id="bfAllowRetries" type="checkbox" ${config.allowRetries ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Allow retries</strong><span class="wf-toggle-row__hint">Up to two attempts per student when retries are open</span></span></label>
+          <label class="dw-field" id="bfMaxAttemptsRow"><span class="dw-label">Maximum attempts</span><input id="bfMaxAttempts" class="dw-input" type="number" min="2" max="2" value="${Math.min(2, Math.max(2, Number(config.maxAttempts) || 2))}" readonly /></label>
+          <label class="wf-toggle-row" id="bfRetriesOpenRow"><input id="bfRetriesOpen" type="checkbox" ${config.retriesOpen !== false ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Retries open</strong><span class="wf-toggle-row__hint">Uncheck to close retries after the first round (existing attempts stay visible)</span></span></label>
+          <label class="dw-field" id="bfRetryMessageRow"><span class="dw-label">Message after first attempt (optional)</span><textarea id="bfRetryMessage" class="dw-textarea" rows="2" placeholder="e.g. Read the feedback, then try again with a stronger claim.">${escapeHtml(config.retryStudentMessage || "")}</textarea></label>
+        </div>
         <div id="bfShareRow" class="dw-hidden">
           <label class="wf-toggle-row"><input id="bfShared" type="checkbox" ${config.shared ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Share with other teachers</strong><span class="wf-toggle-row__hint">Lets colleagues copy this assignment from the shared library</span></span></label>
         </div>`;
@@ -3216,6 +3389,27 @@
         config.autoReleaseFeedback = e.target.checked;
         persistConfig();
       });
+      function syncRetryBuilderVisibility() {
+        const on = !!config.allowRetries;
+        document.getElementById("bfRetriesOpenRow")?.classList.toggle("dw-hidden", !on);
+        document.getElementById("bfRetryMessageRow")?.classList.toggle("dw-hidden", !on);
+        document.getElementById("bfMaxAttemptsRow")?.classList.toggle("dw-hidden", !on);
+      }
+      document.getElementById("bfAllowRetries")?.addEventListener("change", (e) => {
+        config.allowRetries = e.target.checked;
+        if (config.allowRetries) config.maxAttempts = 2;
+        syncRetryBuilderVisibility();
+        persistConfig();
+      });
+      document.getElementById("bfRetriesOpen")?.addEventListener("change", (e) => {
+        config.retriesOpen = e.target.checked;
+        persistConfig();
+      });
+      document.getElementById("bfRetryMessage")?.addEventListener("change", (e) => {
+        config.retryStudentMessage = e.target.value;
+        persistConfig();
+      });
+      syncRetryBuilderVisibility();
       document.getElementById("bfVocab")?.addEventListener("change", (e) => {
         config.vocabWords = window.WriteFlowDefaults?.parseVocabInput?.(e.target.value) || [];
         persistConfig();

@@ -580,6 +580,27 @@ export async function POST(request) {
       return Response.json({ ok: true, grading: data.grading }, { headers: corsHeaders() });
     }
 
+    if (action === "setCountedSubmission") {
+      const submissionId = typeof body?.submissionId === "string" ? body.submissionId.trim() : "";
+      const assignmentId = typeof body?.assignmentId === "string" ? body.assignmentId.trim().slice(0, 80) : "";
+      const password = typeof body?.password === "string" ? body.password.slice(0, 80) : "";
+      const sessionToken = typeof body?.sessionToken === "string" ? body.sessionToken.trim() : "";
+      if (!submissionId || !assignmentId) {
+        return Response.json({ error: "Missing submission or assignment ID." }, { status: 400, headers: corsHeaders() });
+      }
+      const data = await scriptPost({
+        action: "setCountedSubmission",
+        submissionId,
+        assignmentId,
+        password,
+        sessionToken,
+      });
+      if (data.error) {
+        return Response.json({ error: data.error }, { status: data.error === "Unauthorized" ? 401 : 400, headers: corsHeaders() });
+      }
+      return Response.json({ ok: true, counted: data.counted }, { headers: corsHeaders() });
+    }
+
     if (action === "updateBulk") {
       const sessionToken = typeof body?.sessionToken === "string" ? body.sessionToken.trim() : "";
       const assignmentId = typeof body?.assignmentId === "string" ? body.assignmentId.trim().slice(0, 80) : "";
@@ -651,7 +672,14 @@ export async function POST(request) {
     if (data.error) {
       return Response.json({ error: data.error }, { status: 502, headers: corsHeaders() });
     }
-    return Response.json({ ok: true, id: data.id }, { headers: corsHeaders() });
+    return Response.json({
+      ok: true,
+      id: data.id,
+      attemptNumber: data.attemptNumber,
+      attemptsUsed: data.attemptsUsed,
+      maxAttempts: data.maxAttempts,
+      canRetry: data.canRetry,
+    }, { headers: corsHeaders() });
   } catch (e) {
     console.error("WriteFlow POST error:", e.message);
     return Response.json({ error: e.message || "Server error" }, { status: 502, headers: corsHeaders() });
