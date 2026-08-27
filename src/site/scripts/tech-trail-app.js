@@ -1320,7 +1320,8 @@
     if (!node) return;
     currentNode = nodeId;
 
-    document.getElementById("choiceTypingInput")?.disabled = false;
+    const choiceTypingInput = document.getElementById("choiceTypingInput");
+    if (choiceTypingInput) choiceTypingInput.disabled = false;
     document.getElementById("typingChoices")?.classList.remove("tt-typing-choices--unlock");
 
     if (nodeId === "start") {
