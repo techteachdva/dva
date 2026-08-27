@@ -654,10 +654,140 @@ $wp-sheet-min-height: 1056px;
 
 .tt-btn-group {
   display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 520px;
+  margin: 18px auto 0;
+  gap: 16px;
+}
+
+.tt-launch-actions {
+  display: flex;
   flex-wrap: wrap;
-  gap: 12px;
   justify-content: center;
-  margin-top: 18px;
+  align-items: center;
+  gap: 14px;
+}
+
+.tt-boot-error {
+  margin: 0 auto 12px;
+  padding: 10px 14px;
+  max-width: 520px;
+  border-radius: 10px;
+  background: rgba(196, 30, 58, 0.25);
+  border: 1px solid rgba(239, 68, 68, 0.55);
+  color: #fecaca;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.tt-launch-link-btn {
+  padding: 8px 16px;
+  border: 1px solid rgba(255, 248, 231, 0.35);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff8e7;
+  font-family: "Barlow", sans-serif;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.tt-launch-link-btn:hover {
+  border-color: rgba(255, 215, 0, 0.5);
+  background: rgba(255, 215, 0, 0.08);
+}
+
+.tt-globe-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 4px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: #fff8e7;
+  transition: transform 0.15s ease;
+}
+
+.tt-globe-btn:hover {
+  transform: translateY(-2px) scale(1.03);
+}
+
+.tt-globe-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.tt-globe-btn__globe {
+  position: relative;
+  width: 112px;
+  height: 112px;
+  transform-style: preserve-3d;
+  animation: tt-globe-spin 18s linear infinite;
+}
+
+.tt-globe-btn--sm .tt-globe-btn__globe {
+  width: 88px;
+  height: 88px;
+}
+
+.tt-globe-btn__sphere {
+  position: absolute;
+  inset: 14px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 30% 28%, rgba(255, 215, 0, 0.55), transparent 45%),
+    radial-gradient(circle at 70% 70%, rgba(196, 30, 58, 0.65), #1a0a2e 70%);
+  box-shadow:
+    inset -8px -12px 24px rgba(0, 0, 0, 0.5),
+    0 0 40px rgba(255, 215, 0, 0.22),
+    0 8px 32px rgba(196, 30, 58, 0.45);
+  border: 2px solid rgba(255, 215, 0, 0.35);
+}
+
+.tt-globe-btn--sm .tt-globe-btn__sphere {
+  inset: 12px;
+}
+
+.tt-globe-btn__ring {
+  position: absolute;
+  inset: 0;
+  border: 2px solid rgba(255, 215, 0, 0.45);
+  border-radius: 50%;
+}
+
+.tt-globe-btn__ring--1 {
+  transform: rotateX(72deg);
+}
+
+.tt-globe-btn__ring--2 {
+  transform: rotateX(36deg) rotateY(45deg);
+}
+
+.tt-globe-btn__ring--3 {
+  transform: rotateY(72deg);
+}
+
+.tt-globe-btn:hover .tt-globe-btn__sphere {
+  box-shadow:
+    inset -8px -12px 24px rgba(0, 0, 0, 0.45),
+    0 0 48px rgba(255, 215, 0, 0.35),
+    0 10px 36px rgba(196, 30, 58, 0.55);
+}
+
+.tt-globe-btn__label {
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 1.1rem;
+  letter-spacing: 0.1em;
+  color: #ffd700;
+  text-transform: uppercase;
+}
+
+.tt-globe-btn--sm .tt-globe-btn__label {
+  font-size: 0.95rem;
 }
 
 .tt-cta-btn--secondary {
@@ -6778,9 +6908,11 @@ mark.wf-standard-hit,
 
 .tt-title-typing {
   width: 100%;
-  max-width: 480px;
-  margin-bottom: 12px;
-  padding: 14px;
+  max-width: none;
+  margin-bottom: 0;
+  padding: 16px;
+  box-sizing: border-box;
+  overflow: visible;
   border-radius: 14px;
   background: rgba(0, 0, 0, 0.4);
   border: 1px solid rgba(255, 215, 0, 0.2);
@@ -6900,6 +7032,9 @@ mark.wf-standard-hit,
 
 .tt-typing-input--title {
   font-size: 16px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .tt-typing-input--diagnostic {

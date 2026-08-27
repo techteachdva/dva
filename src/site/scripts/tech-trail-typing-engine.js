@@ -222,7 +222,7 @@
   }
 
   function exceedsTypoBudget(typoCount, maxTypos) {
-    if (maxTypos >= 5) return false;
+    if (maxTypos >= 10) return false;
     return typoCount > maxTypos;
   }
 

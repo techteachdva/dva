@@ -50,14 +50,6 @@ layout: false
           <div class="tt-title-screen__bg" style="background-image:url('/tech-trail/images/scenes/scene-gauntlet-arena.png')"></div>
           <div class="tt-title-screen__overlay"></div>
           <div class="tt-title-screen__content">
-            <div class="tt-globe-scene" aria-hidden="true">
-              <div class="tt-globe">
-                <div class="tt-globe__sphere"></div>
-                <div class="tt-globe__ring tt-globe__ring--1"></div>
-                <div class="tt-globe__ring tt-globe__ring--2"></div>
-                <div class="tt-globe__ring tt-globe__ring--3"></div>
-              </div>
-            </div>
             <span class="tt-location-badge">ACME Tech Division</span>
             <h1 class="tt-title-screen__headline">Global Tech Gauntlet</h1>
             <p class="tt-title-screen__tagline">Recover the Golden Rules by <strong>typing your choices</strong>. Meet the mentors who shaped computing. Every keystroke shapes your mission.</p>
@@ -79,7 +71,7 @@ layout: false
             </div>
             <div class="tt-typo-settings">
               <span class="tt-difficulty__label">Typo forgiveness:</span>
-              <input id="typoToleranceRange" type="range" min="0" max="5" value="2" class="tt-typo-range" aria-label="Typo forgiveness" />
+              <input id="typoToleranceRange" type="range" min="0" max="10" value="2" class="tt-typo-range" aria-label="Typo forgiveness" />
               <span id="typoToleranceLabel" class="tt-typo-label">2 typos</span>
             </div>
             <div class="tt-difficulty">
@@ -89,9 +81,10 @@ layout: false
               <button class="tt-difficulty__btn" type="button" data-tier="analyst">Analyst</button>
             </div>
             <div class="tt-golden-preview" id="titleGoldenPreview" aria-label="Golden Rules to recover"></div>
+            <p id="gtgBootError" class="tt-boot-error dw-hidden" role="alert"></p>
             <div class="tt-btn-group" id="titleBtnGroup">
               <div id="titleTypingMenu" class="tt-title-typing tt-typing-panel">
-                <p class="tt-title-typing__hint">Type a command below — or tap a button</p>
+                <p class="tt-title-typing__hint">Type a command below — or tap the globe</p>
                 <p id="titleCommandHint" class="tt-title-command-hint">Type: <strong>ACCEPT MISSION</strong> to begin</p>
                 <div id="titleGhostPrompt" class="tt-ghost-prompt"></div>
                 <div class="tt-typing-meter" id="titleTypingMeter">
@@ -106,9 +99,26 @@ layout: false
                 <input id="titleTypingInput" class="tt-typing-input tt-typing-input--title" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Type here…" aria-label="Title menu command" />
                 <div id="titleTypedDisplay" class="tt-typed-display" aria-live="polite"></div>
               </div>
-              <button id="startGameBtn" class="tt-cta-btn" type="button">Accept mission</button>
-              <button id="continueRunBtn" class="tt-cta-btn tt-cta-btn--secondary dw-hidden" type="button">Continue mission</button>
-              <button id="newRunBtn" class="tt-cta-btn tt-cta-btn--ghost dw-hidden" type="button">New mission</button>
+              <div class="tt-launch-actions">
+                <button id="startGameBtn" class="tt-globe-btn" type="button" aria-label="Accept mission and start">
+                  <span class="tt-globe-btn__globe" aria-hidden="true">
+                    <span class="tt-globe-btn__sphere"></span>
+                    <span class="tt-globe-btn__ring tt-globe-btn__ring--1"></span>
+                    <span class="tt-globe-btn__ring tt-globe-btn__ring--2"></span>
+                    <span class="tt-globe-btn__ring tt-globe-btn__ring--3"></span>
+                  </span>
+                  <span class="tt-globe-btn__label">Accept mission</span>
+                </button>
+                <button id="continueRunBtn" class="tt-globe-btn tt-globe-btn--sm dw-hidden" type="button" aria-label="Continue saved mission">
+                  <span class="tt-globe-btn__globe" aria-hidden="true">
+                    <span class="tt-globe-btn__sphere"></span>
+                    <span class="tt-globe-btn__ring tt-globe-btn__ring--1"></span>
+                    <span class="tt-globe-btn__ring tt-globe-btn__ring--2"></span>
+                  </span>
+                  <span class="tt-globe-btn__label">Continue</span>
+                </button>
+                <button id="newRunBtn" class="tt-launch-link-btn dw-hidden" type="button">New mission</button>
+              </div>
             </div>
             <div id="profileMini" class="tt-profile-mini-wrap"></div>
             <div class="tt-settings-bar" style="margin-top:14px; display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">

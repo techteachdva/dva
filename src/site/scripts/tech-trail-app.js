@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const Core = window.WriteTestCore;
+  const WriteTestCoreRef = window.WriteTestCore;
   const { STORY, CHARACTERS, START_MISSIONS } = window.TechTrailStory || {};
   const Visuals = window.TechTrailVisuals;
   const State = window.TechTrailState;
@@ -140,7 +140,7 @@
         return Math.round(Math.max(8, testWpm * 1.5) * 10) / 10;
       },
       exceedsTypoBudget(typoCount, maxTypos) {
-        if (maxTypos >= 5) return false;
+        if (maxTypos >= 10) return false;
         return typoCount > maxTypos;
       },
       meetsSpeedGate(wpm, targetWpm) {
@@ -155,9 +155,37 @@
     console.warn("[GTG] tech-trail-typing-engine.js missing — using built-in fallback");
   }
 
-  if (!Core || !STORY || !Visuals || !State) return;
+  const CoreStub = {
+    PRESETS: { gauntlet: {} },
+    applyTheme() {},
+    setupPasteControl(textarea, allowPaste) {
+      if (!textarea) return;
+      textarea.addEventListener("paste", (e) => {
+        if (!allowPaste && !textarea.readOnly) e.preventDefault();
+      });
+    },
+    countWords(text) {
+      return String(text || "").trim().split(/\s+/).filter(Boolean).length;
+    },
+  };
+  const CoreApi = WriteTestCoreRef || CoreStub;
+  if (WriteTestCoreRef) WriteTestCoreRef.applyTheme(WriteTestCoreRef.PRESETS.gauntlet);
 
-  Core.applyTheme(Core.PRESETS.gauntlet);
+  function showBootError(msg) {
+    const el = document.getElementById("gtgBootError");
+    if (el) {
+      el.classList.remove("dw-hidden");
+      el.textContent = msg;
+    }
+    console.error("[GTG]", msg);
+  }
+
+  if (!STORY || !Visuals || !State) {
+    showBootError("Game scripts failed to load. Hard refresh (Ctrl+Shift+R) or clear site data for this page.");
+    return;
+  }
+
+  const Core = CoreApi;
 
   const views = {
     title: document.getElementById("titleView"),
@@ -217,9 +245,9 @@
   function updateTypoToleranceUI() {
     const label = document.getElementById("typoToleranceLabel");
     const range = document.getElementById("typoToleranceRange");
-    if (range) range.value = String(typingProfile.maxTypos);
+    if (range) range.value = String(Math.min(10, typingProfile.maxTypos));
     if (label) {
-      label.textContent = typingProfile.maxTypos >= 5 ? "all typos OK" : `${typingProfile.maxTypos} typo${typingProfile.maxTypos === 1 ? "" : "s"}`;
+      label.textContent = typingProfile.maxTypos >= 10 ? "all typos OK" : `${typingProfile.maxTypos} typo${typingProfile.maxTypos === 1 ? "" : "s"}`;
     }
   }
 
@@ -407,7 +435,7 @@
 
     const hint = document.getElementById("choiceSpeedHint");
     if (hint) {
-      hint.textContent = `Type one path at ${typingProfile.targetWpm} WPM · ${typingProfile.maxTypos >= 5 ? "typos forgiven" : `up to ${typingProfile.maxTypos} typo${typingProfile.maxTypos === 1 ? "" : "s"}`}`;
+      hint.textContent = `Type one path at ${typingProfile.targetWpm} WPM · ${typingProfile.maxTypos >= 10 ? "typos forgiven" : `up to ${typingProfile.maxTypos} typo${typingProfile.maxTypos === 1 ? "" : "s"}`}`;
     }
 
     updateTypingMeterUI({
@@ -538,6 +566,22 @@
     };
   }
 
+  function titlePrefixProgress(inputVal, typeText) {
+    const t = Typing.normalize(typeText);
+    const raw = Typing.normalize(inputVal);
+    if (!t.length) return raw.length > 0 ? Math.min(99, raw.length * 5) : 0;
+    let match = 0;
+    for (let i = 0; i < raw.length; i++) {
+      if (i < t.length && raw[i] === t[i]) match = i + 1;
+      else break;
+    }
+    return Math.min(100, Math.round((match / t.length) * 100));
+  }
+
+  function isTitleCommandComplete(inputVal, typeText) {
+    return Typing.normalize(inputVal) === Typing.normalize(typeText);
+  }
+
   function runTitleCommand(action) {
     if (action === "start") beginStartMission();
     else if (action === "continue") beginContinueMission();
@@ -577,7 +621,7 @@
     if (!typeText) {
       if (typedEl) typedEl.innerHTML = "";
       updateTypingMeterUI({
-        progressPct: input.value.length > 0 ? Math.min(100, input.value.length * 6) : 0,
+        progressPct: titlePrefixProgress(input.value, options[0] || "ACCEPT MISSION"),
         progressFillId: "titleProgressFill",
         progressPctId: "titleProgressPct",
         inputEl: input,
@@ -586,9 +630,10 @@
     }
 
     const cmp = Typing.compareToTarget(typeText, input.value);
+    const progressPct = titlePrefixProgress(input.value, typeText);
     if (typedEl) typedEl.innerHTML = Typing.renderTypedCharsHtml(cmp.chars, 999);
     updateTypingMeterUI({
-      progressPct: cmp.progress,
+      progressPct,
       liveWpm: 0,
       targetWpm: 0,
       progressFillId: "titleProgressFill",
@@ -604,7 +649,8 @@
       else Audio?.playTypeTick?.();
     }
 
-    if (!cmp.complete || !resolved.action) return;
+    const commandComplete = isTitleCommandComplete(input.value, typeText);
+    if (!commandComplete || !resolved.action) return;
 
     input.disabled = true;
     hideDiagnostic();
@@ -641,8 +687,7 @@
     if (!input || input.disabled) return;
     const resolved = resolveTitleCommand(input.value);
     if (!resolved.typeText) return;
-    const cmp = Typing.compareToTarget(resolved.typeText, input.value);
-    if (cmp.complete && resolved.action) {
+    if (isTitleCommandComplete(input.value, resolved.typeText) && resolved.action) {
       e.preventDefault();
       handleTitleTypingInput();
     }
@@ -1561,6 +1606,11 @@ Play again to rebuild your record clean.`;
   }
 
   function init() {
+    const titleTypingInput = document.getElementById("titleTypingInput");
+    Core.setupPasteControl(titleTypingInput, false);
+    titleTypingInput?.addEventListener("input", handleTitleTypingInput);
+    titleTypingInput?.addEventListener("keydown", handleTitleTypingKeydown);
+
     loadDifficulty();
     loadHighContrast();
     typingProfile = State.loadTypingProfile();
@@ -1641,11 +1691,6 @@ Play again to rebuild your record clean.`;
     const choiceTypingInput = document.getElementById("choiceTypingInput");
     Core.setupPasteControl(choiceTypingInput, false);
     choiceTypingInput?.addEventListener("input", handleChoiceTypingInput);
-
-    const titleTypingInput = document.getElementById("titleTypingInput");
-    Core.setupPasteControl(titleTypingInput, false);
-    titleTypingInput?.addEventListener("input", handleTitleTypingInput);
-    titleTypingInput?.addEventListener("keydown", handleTitleTypingKeydown);
 
     const typoRange = document.getElementById("typoToleranceRange");
     typoRange?.addEventListener("input", () => {
@@ -1813,5 +1858,10 @@ Play again to rebuild your record clean.`;
     }, prefersReducedMotion ? 0 : 700);
   }
 
-  init();
+  try {
+    init();
+  } catch (err) {
+    showBootError("Game failed to start. Hard refresh (Ctrl+Shift+R) or clear site data for this page.");
+    console.error("[GTG] init failed:", err);
+  }
 })();
