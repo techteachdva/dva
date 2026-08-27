@@ -18,6 +18,47 @@
   /** Minimum target: correct keystrokes per minute */
   const MIN_TARGET_CPM = 40;
   const DEFAULT_TARGET_CPM = 90;
+  /** Middle-school caps — short diagnostic phrases can otherwise spike to 200+ CPM */
+  const MAX_TEST_CPM = 120;
+  const MAX_TARGET_CPM = 95;
+  /** Minimum ms per counted keystroke when measuring speed (prevents burst inflation) */
+  const MIN_MS_PER_KEY = 320;
+
+  /** Correct keystrokes per minute — only characters that match the target (spellcheck-valid). */
+  function computeCpm(correctCharCount, durationMs, options = {}) {
+    const count = Math.max(0, correctCharCount || 0);
+    if (!count) return 0;
+    const maxCpm = options.maxCpm ?? MAX_TEST_CPM;
+    const msPerKey = options.minMsPerKey ?? MIN_MS_PER_KEY;
+    const effectiveMs = Math.max(durationMs || 0, count * msPerKey);
+    if (effectiveMs <= 0) return 0;
+    const minutes = effectiveMs / 60000;
+    const raw = Math.round(count / minutes);
+    return Math.min(raw, maxCpm);
+  }
+
+  function pickDiagnosticPhrase(rng = Math.random) {
+    const i = Math.floor(rng() * DIAGNOSTIC_PHRASES.length);
+    return DIAGNOSTIC_PHRASES[i];
+  }
+
+  function recommendedTargetCpm(testCpm) {
+    const cappedTest = Math.min(Math.max(0, testCpm), MAX_TEST_CPM);
+    const base = Math.max(MIN_TARGET_CPM, cappedTest * RECOMMENDED_SPEED_RATIO);
+    return Math.round(Math.min(base, MAX_TARGET_CPM));
+  }
+
+  function clampTargetCpm(testCpm, chosen) {
+    const min = MIN_TARGET_CPM;
+    const cappedTest = Math.min(Math.max(0, testCpm), MAX_TEST_CPM);
+    const max = Math.min(MAX_TARGET_CPM, Math.max(min, cappedTest * MAX_MANUAL_SPEED_RATIO));
+    return Math.round(Math.min(max, Math.max(min, chosen)));
+  }
+
+  function maxManualTargetCpm(testCpm) {
+    const cappedTest = Math.min(Math.max(0, testCpm), MAX_TEST_CPM);
+    return Math.round(Math.min(MAX_TARGET_CPM, Math.max(MIN_TARGET_CPM, cappedTest * MAX_MANUAL_SPEED_RATIO)));
+  }
 
   function normalize(s) {
     return String(s || "")
@@ -43,33 +84,6 @@
 
   function countCorrectChars(chars) {
     return (chars || []).filter((c) => c.state === "correct").length;
-  }
-
-  /** Correct keystrokes per minute — only characters that match the target (spellcheck-valid). */
-  function computeCpm(correctCharCount, durationMs) {
-    if (!durationMs || durationMs <= 0) return 0;
-    const minutes = durationMs / 60000;
-    return Math.round(correctCharCount / minutes);
-  }
-
-  function pickDiagnosticPhrase(rng = Math.random) {
-    const i = Math.floor(rng() * DIAGNOSTIC_PHRASES.length);
-    return DIAGNOSTIC_PHRASES[i];
-  }
-
-  function recommendedTargetCpm(testCpm) {
-    const base = Math.max(MIN_TARGET_CPM, testCpm * RECOMMENDED_SPEED_RATIO);
-    return Math.round(base);
-  }
-
-  function clampTargetCpm(testCpm, chosen) {
-    const min = MIN_TARGET_CPM;
-    const max = Math.max(min, testCpm * MAX_MANUAL_SPEED_RATIO);
-    return Math.round(Math.min(max, Math.max(min, chosen)));
-  }
-
-  function maxManualTargetCpm(testCpm) {
-    return Math.round(Math.max(MIN_TARGET_CPM, testCpm * MAX_MANUAL_SPEED_RATIO));
   }
 
   /**
@@ -235,7 +249,7 @@
 
   function meetsSpeedGate(cpm, targetCpm) {
     if (!targetCpm || targetCpm <= 0) return true;
-    return cpm >= targetCpm * 0.85;
+    return cpm >= targetCpm * 0.75;
   }
 
   window.TechTrailTyping = {
@@ -244,6 +258,9 @@
     MAX_MANUAL_SPEED_RATIO,
     MIN_TARGET_CPM,
     DEFAULT_TARGET_CPM,
+    MAX_TEST_CPM,
+    MAX_TARGET_CPM,
+    MIN_MS_PER_KEY,
     normalize,
     deriveTypeText,
     choiceTypeText,

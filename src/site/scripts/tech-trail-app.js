@@ -89,19 +89,27 @@
       countCorrectChars(chars) {
         return (chars || []).filter((c) => c.state === "correct").length;
       },
-      computeCpm(correctCharCount, durationMs) {
-        if (!durationMs) return 0;
-        return Math.round(correctCharCount / (durationMs / 60000));
+      computeCpm(correctCharCount, durationMs, options = {}) {
+        const count = Math.max(0, correctCharCount || 0);
+        if (!count) return 0;
+        const maxCpm = options.maxCpm ?? 120;
+        const msPerKey = options.minMsPerKey ?? 320;
+        const effectiveMs = Math.max(durationMs || 0, count * msPerKey);
+        if (effectiveMs <= 0) return 0;
+        return Math.min(Math.round(count / (effectiveMs / 60000)), maxCpm);
       },
       recommendedTargetCpm(testCpm) {
-        return Math.round(Math.max(40, testCpm * 0.88));
+        const capped = Math.min(Math.max(0, testCpm), 120);
+        return Math.round(Math.min(Math.max(40, capped * 0.88), 95));
       },
       clampTargetCpm(testCpm, chosen) {
-        const max = Math.max(40, testCpm * 1.5);
+        const capped = Math.min(Math.max(0, testCpm), 120);
+        const max = Math.min(95, Math.max(40, capped * 1.5));
         return Math.round(Math.min(max, Math.max(40, chosen)));
       },
       maxManualTargetCpm(testCpm) {
-        return Math.round(Math.max(40, testCpm * 1.5));
+        const capped = Math.min(Math.max(0, testCpm), 120);
+        return Math.round(Math.min(95, Math.max(40, capped * 1.5)));
       },
       choiceTypeText(c) {
         if (c?.typeText) return String(c.typeText).trim();
@@ -149,7 +157,7 @@
       },
       meetsSpeedGate(cpm, targetCpm) {
         if (!targetCpm) return true;
-        return cpm >= targetCpm * 0.85;
+        return cpm >= targetCpm * 0.75;
       },
     };
   }
@@ -227,8 +235,20 @@
   };
 
   function saveTypingProfile() {
+    sanitizeTypingProfile();
     State.saveTypingProfile(typingProfile);
     updateTypingProfileUI();
+  }
+
+  function sanitizeTypingProfile() {
+    const maxTest = Typing.MAX_TEST_CPM ?? 120;
+    const maxTarget = Typing.MAX_TARGET_CPM ?? 95;
+    const minTarget = Typing.MIN_TARGET_CPM ?? 40;
+    if (typingProfile.testCpm > maxTest) typingProfile.testCpm = maxTest;
+    if (typingProfile.targetCpm > maxTarget) typingProfile.targetCpm = maxTarget;
+    if (typingProfile.targetCpm < minTarget && typingProfile.diagnosed) {
+      typingProfile.targetCpm = minTarget;
+    }
   }
 
   function updateTypingProfileUI() {
@@ -1759,7 +1779,14 @@ Play again to rebuild your record clean.`;
 
     loadDifficulty();
     loadHighContrast();
-    typingProfile = State.loadTypingProfile();
+    const loadedProfile = State.loadTypingProfile();
+    typingProfile = loadedProfile;
+    const prevTest = loadedProfile.testCpm;
+    const prevTarget = loadedProfile.targetCpm;
+    sanitizeTypingProfile();
+    if (typingProfile.testCpm !== prevTest || typingProfile.targetCpm !== prevTarget) {
+      State.saveTypingProfile(typingProfile);
+    }
     renderTitleGoldenPreview();
     renderProfileMini();
     updateDifficultyButtons();
