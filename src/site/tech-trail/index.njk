@@ -53,7 +53,19 @@ layout: false
             <span class="tt-location-badge">ACME Tech Division</span>
             <h1 class="tt-title-screen__headline">Global Tech Gauntlet</h1>
             <p class="tt-title-screen__tagline">Recover the Golden Rules by <strong>typing your choices</strong>. Meet the mentors who shaped computing. Every keystroke shapes your mission.</p>
-            <div class="tt-tutorial">
+
+            <div id="titleWelcome" class="tt-title-welcome dw-hidden">
+              <p class="tt-title-welcome__badge">Step 1 · New cadet briefing</p>
+              <p class="tt-title-welcome__lead">Welcome! Take a <strong>60-second keystroke test</strong> so the game sets your pace. Then your mission launches automatically.</p>
+              <ol class="tt-title-welcome__steps">
+                <li><span>1</span> Type the phrase — only correct keys count</li>
+                <li><span>2</span> Accept your speed target</li>
+                <li><span>3</span> Play your first scene</li>
+              </ol>
+            </div>
+
+            <div id="titleExtras" class="tt-title-extras">
+            <div class="tt-tutorial" id="titleTutorial">
               <h2 class="tt-tutorial__title">How to play</h2>
               <ol class="tt-tutorial__list">
                 <li><strong>Diagnose</strong> your keystroke speed with a quick phrase — only correct letters count. The game sets a target pace for you.</li>
@@ -86,6 +98,8 @@ layout: false
               <div class="tt-golden-track tt-golden-track--title" id="titleGoldenPreview" aria-label="Golden Rules to recover"></div>
               <div id="goldenRuleDetail" class="tt-golden-rule-detail dw-hidden" aria-live="polite"></div>
             </div>
+            </div>
+
             <p id="gtgBootError" class="tt-boot-error dw-hidden" role="alert"></p>
             <div class="tt-btn-group" id="titleBtnGroup">
               <div id="titleTypingMenu" class="tt-title-typing tt-typing-panel">
@@ -105,14 +119,15 @@ layout: false
                 <div id="titleTypedDisplay" class="tt-typed-display" aria-live="polite"></div>
               </div>
               <div class="tt-launch-actions">
-                <button id="startGameBtn" class="tt-globe-btn" type="button" aria-label="Accept mission and start">
+                <button id="startGameBtn" class="tt-globe-btn tt-globe-btn--primary" type="button" aria-label="Start game">
                   <span class="tt-globe-btn__globe" aria-hidden="true">
                     <span class="tt-globe-btn__sphere"></span>
                     <span class="tt-globe-btn__ring tt-globe-btn__ring--1"></span>
                     <span class="tt-globe-btn__ring tt-globe-btn__ring--2"></span>
                     <span class="tt-globe-btn__ring tt-globe-btn__ring--3"></span>
                   </span>
-                  <span class="tt-globe-btn__label">Accept mission</span>
+                  <span class="tt-globe-btn__label" id="startGameBtnLabel">Start game</span>
+                  <span class="tt-globe-btn__sublabel" id="startGameBtnHint">Keystroke test first</span>
                 </button>
                 <button id="continueRunBtn" class="tt-globe-btn tt-globe-btn--sm dw-hidden" type="button" aria-label="Continue saved mission">
                   <span class="tt-globe-btn__globe" aria-hidden="true">
@@ -136,10 +151,13 @@ layout: false
         <div id="diagnosticOverlay" class="tt-diagnostic dw-hidden" role="dialog" aria-modal="true" aria-labelledby="diagnosticTitle">
           <div class="tt-diagnostic__panel tt-diagnostic__panel--pop tt-typing-panel">
             <div class="tt-diagnostic__burst" aria-hidden="true"></div>
-            <h2 id="diagnosticTitle" class="tt-diagnostic__title">⌨️ Keystroke Speed Diagnostic</h2>
-            <p id="diagnosticIntro" class="tt-diagnostic__intro">Type the phrase below as fast and accurately as you can. Only correct keystrokes count toward your speed.</p>
-            <p id="diagnosticPhrasePlain" class="tt-diagnostic__phrase-plain" aria-live="polite"></p>
-            <div id="diagnosticGhost" class="tt-ghost-prompt tt-ghost-prompt--diagnostic"></div>
+            <p id="diagnosticStep" class="tt-diagnostic__step">Step 1 of 2</p>
+            <h2 id="diagnosticTitle" class="tt-diagnostic__title">⌨️ Keystroke test</h2>
+            <p id="diagnosticIntro" class="tt-diagnostic__intro">Type the phrase below. Only <strong>correct</strong> keystrokes count toward your speed.</p>
+            <div class="tt-diagnostic__phrase-wrap">
+              <div id="diagnosticGhost" class="tt-ghost-prompt tt-ghost-prompt--diagnostic" aria-live="polite"></div>
+              <p id="diagnosticPhrasePlain" class="tt-diagnostic__phrase-plain dw-hidden" aria-hidden="true"></p>
+            </div>
             <div class="tt-typing-meter tt-typing-meter--diagnostic" id="diagnosticMeter">
               <div class="tt-typing-meter__row">
                 <span class="tt-typing-meter__label">Phrase progress</span>
@@ -153,9 +171,10 @@ layout: false
                 <span>Live <strong id="diagnosticLiveWpm">0</strong> keys/min</span>
               </div>
             </div>
-            <input id="diagnosticInput" class="tt-typing-input tt-typing-input--diagnostic" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Diagnostic typing phrase" />
+            <input id="diagnosticInput" class="tt-typing-input tt-typing-input--diagnostic" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Diagnostic typing phrase" placeholder="Start typing here…" />
             <div id="diagnosticTyped" class="tt-typed-display tt-typed-display--diagnostic" aria-live="polite"></div>
             <div id="diagnosticResult" class="tt-diagnostic__result dw-hidden">
+              <p class="tt-diagnostic__step">Step 2 of 2</p>
               <p class="tt-diagnostic__wpm">Your speed: <strong id="diagnosticWpm">0</strong> correct keys/min</p>
               <p class="tt-diagnostic__recommend">Recommended target: <strong id="diagnosticRecommended">0</strong> keys/min (88% of your test)</p>
               <label class="tt-diagnostic__custom-label" for="diagnosticTargetInput">Set your target (up to 150%):</label>
@@ -163,7 +182,7 @@ layout: false
                 <input id="diagnosticTargetInput" class="dw-input tt-diagnostic__target-input" type="number" min="40" step="1" />
                 <span class="dw-muted dw-tiny">keys/min</span>
               </div>
-              <button id="diagnosticAcceptBtn" class="tt-cta-btn" type="button">Accept target &amp; begin</button>
+              <button id="diagnosticAcceptBtn" class="tt-cta-btn tt-cta-btn--launch" type="button">Start mission →</button>
             </div>
             <p id="diagnosticStatus" class="tt-diagnostic__status dw-muted dw-tiny"></p>
           </div>

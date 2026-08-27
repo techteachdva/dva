@@ -6,11 +6,11 @@
   "use strict";
 
   const DIAGNOSTIC_PHRASES = [
-    "the quick brown fox jumped over the lazy log",
-    "pack my box with five dozen liquor jugs",
-    "sphinx of black quartz judge my vow",
-    "how vexingly quick daft zebras jump",
-    "jovial monks flee quirky badger packs",
+    "the quick brown fox jumps",
+    "pack my box with five jugs",
+    "sphinx black quartz judge vow",
+    "quick daft zebras jump high",
+    "jovial monks flee badger packs",
   ];
 
   const RECOMMENDED_SPEED_RATIO = 0.88;

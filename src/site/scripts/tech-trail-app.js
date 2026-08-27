@@ -13,9 +13,9 @@
   /** Minimal fallback if typing-engine.js fails to load (SW cache / 404). */
   function buildTypingFallback() {
     const PHRASES = [
-      "the quick brown fox jumped over the lazy log",
-      "pack my box with five dozen liquor jugs",
-      "sphinx of black quartz judge my vow",
+      "the quick brown fox jumps",
+      "pack my box with five jugs",
+      "sphinx black quartz judge vow",
     ];
     const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     return {
@@ -266,18 +266,78 @@
     showDiagnostic();
   }
 
+  function startMissionCore() {
+    resetRun();
+    showSceneLoader();
+    setTimeout(() => {
+      renderScene("start");
+      hideSceneLoader();
+      updateTitleLaunchUI();
+    }, SCENE_LOADER_MIN_MS);
+  }
+
+  function updateTitleLaunchUI() {
+    const isNew = !typingProfile.diagnosed;
+    const hasRun = State.hasActiveRun();
+    const welcome = document.getElementById("titleWelcome");
+    const extras = document.getElementById("titleExtras");
+    const typingMenu = document.getElementById("titleTypingMenu");
+    const startBtn = document.getElementById("startGameBtn");
+    const startLabel = document.getElementById("startGameBtnLabel");
+    const startHint = document.getElementById("startGameBtnHint");
+    const continueBtn = document.getElementById("continueRunBtn");
+    const newRunBtn = document.getElementById("newRunBtn");
+
+    if (isNew) {
+      welcome?.classList.remove("dw-hidden");
+      extras?.classList.add("dw-hidden");
+      typingMenu?.classList.add("dw-hidden");
+      if (startLabel) startLabel.textContent = "Start keystroke test";
+      if (startHint) startHint.textContent = "Required before your first mission";
+      startBtn?.setAttribute("aria-label", "Begin keystroke test — required for new players");
+    } else {
+      welcome?.classList.add("dw-hidden");
+      extras?.classList.remove("dw-hidden");
+      typingMenu?.classList.remove("dw-hidden");
+      if (startLabel) startLabel.textContent = hasRun ? "New mission" : "Play mission";
+      if (startHint) startHint.textContent = hasRun ? "Fresh run from the start" : "Tap or type ACCEPT MISSION";
+      startBtn?.setAttribute("aria-label", hasRun ? "Start a new mission" : "Play mission");
+    }
+
+    if (hasRun) {
+      startBtn?.classList.add("dw-hidden");
+      continueBtn?.classList.remove("dw-hidden");
+      newRunBtn?.classList.remove("dw-hidden");
+    } else {
+      startBtn?.classList.remove("dw-hidden");
+      continueBtn?.classList.add("dw-hidden");
+      newRunBtn?.classList.add("dw-hidden");
+    }
+  }
+
+  function openDiagnosticForLaunch(onComplete) {
+    const overlay = document.getElementById("diagnosticOverlay");
+    if (overlay && !overlay.classList.contains("dw-hidden")) return;
+    pendingDiagnosticAction = onComplete;
+    showDiagnostic();
+  }
+
   function showDiagnostic() {
     const overlay = document.getElementById("diagnosticOverlay");
     const input = document.getElementById("diagnosticInput");
     const result = document.getElementById("diagnosticResult");
     const status = document.getElementById("diagnosticStatus");
+    const step = document.getElementById("diagnosticStep");
+    const panel = overlay?.querySelector(".tt-diagnostic__panel");
     if (!overlay) return;
 
-    diagnosticPhrase = Typing.pickDiagnosticPhrase(runRng) || Typing.DIAGNOSTIC_PHRASES?.[0] || "the quick brown fox jumped over the lazy log";
+    diagnosticPhrase = Typing.pickDiagnosticPhrase(runRng) || Typing.DIAGNOSTIC_PHRASES?.[0] || "the quick brown fox jumps";
     diagnosticStartTime = 0;
     overlay.classList.remove("dw-hidden");
     result?.classList.add("dw-hidden");
-    if (status) status.textContent = "Only correct keystrokes count — fix underlined letters first!";
+    if (step) step.textContent = "Step 1 of 2 · Type the phrase";
+    if (status) status.textContent = "Type in the box below — fix red underlines before you continue.";
+    panel?.classList.remove("tt-diagnostic__panel--success");
     if (input) {
       input.value = "";
       input.disabled = false;
@@ -293,7 +353,7 @@
       liveCpmId: "diagnosticLiveWpm",
       inputEl: input,
     });
-    overlay.querySelector(".tt-diagnostic__panel")?.classList.add("tt-diagnostic__panel--pop");
+    panel?.classList.add("tt-diagnostic__panel--pop");
     setTimeout(() => input?.focus(), 120);
   }
 
@@ -305,7 +365,7 @@
   function updateDiagnosticGhost(inputVal) {
     const ghost = document.getElementById("diagnosticGhost");
     const plain = document.getElementById("diagnosticPhrasePlain");
-    const phrase = diagnosticPhrase || Typing.DIAGNOSTIC_PHRASES?.[0] || "the quick brown fox jumped over the lazy log";
+    const phrase = diagnosticPhrase || Typing.DIAGNOSTIC_PHRASES?.[0] || "the quick brown fox jumps";
     if (plain) plain.textContent = phrase;
     if (ghost) ghost.innerHTML = Typing.renderGhostHtml(phrase, inputVal.length);
   }
@@ -369,7 +429,9 @@
         targetInput.value = String(recommended);
       }
       document.getElementById("diagnosticResult")?.classList.remove("dw-hidden");
-      if (status) status.textContent = "Nice! Accept the recommended speed or set your own challenge.";
+      const step = document.getElementById("diagnosticStep");
+      if (step) step.textContent = "Step 2 of 2 · Lock your target";
+      if (status) status.textContent = "Great typing! Tap Start mission — the game launches right after.";
       Audio?.playDiagnosticPop?.();
       document.querySelector(".tt-diagnostic__panel")?.classList.add("tt-diagnostic__panel--success");
       celebrateTypedSuccess(diagnosticPhrase, input, {
@@ -388,19 +450,21 @@
     typingProfile.targetCpm = Typing.clampTargetCpm(typingProfile.testCpm, chosen);
     typingProfile.diagnosed = true;
     saveTypingProfile();
+    updateTitleLaunchUI();
     const acceptBtn = document.getElementById("diagnosticAcceptBtn");
-    celebrateTypedSuccess(`${typingProfile.targetCpm} keys/min TARGET`, acceptBtn || targetInput, {
-      badge: "LOCKED IN!",
-      confetti: 12,
+    celebrateTypedSuccess("MISSION LAUNCH", acceptBtn || targetInput, {
+      badge: "LET'S GO!",
+      confetti: 14,
       center: true,
       container: document.querySelector(".tt-diagnostic__panel"),
     });
+    const launch = pendingDiagnosticAction;
     setTimeout(() => {
       hideDiagnostic();
-      toast(`Target set: ${typingProfile.targetCpm} keys/min — type your adventure!`, "badge");
-      pendingDiagnosticAction?.();
+      toast(`Target: ${typingProfile.targetCpm} keys/min — launching mission!`, "badge");
+      launch?.();
       pendingDiagnosticAction = null;
-    }, prefersReducedMotion ? 0 : 850);
+    }, prefersReducedMotion ? 0 : 450);
   }
 
   function clearChoiceTyping() {
@@ -657,8 +721,6 @@
     if (!commandComplete || !resolved.action) return;
 
     input.disabled = true;
-    hideDiagnostic();
-    pendingDiagnosticAction = null;
 
     const badge =
       resolved.action === "start" ? "MISSION ON!"
@@ -700,45 +762,45 @@
   function beginStartMission() {
     Audio?.init?.();
     requestGameFullscreen().then(updateFullscreenButton);
-    requireDiagnostic(() => {
-      resetRun();
-      showSceneLoader();
-      setTimeout(() => { renderScene("start"); hideSceneLoader(); }, SCENE_LOADER_MIN_MS);
-    });
+    if (!typingProfile.diagnosed) {
+      openDiagnosticForLaunch(() => startMissionCore());
+      return;
+    }
+    startMissionCore();
   }
 
   function beginContinueMission() {
     Audio?.init?.();
-    requireDiagnostic(() => {
-      const saved = State.loadRun();
-      if (saved) {
-        currentNode = saved.currentNode;
-        badges = saved.badges;
-        lessons = saved.lessons;
-        goldenRules = saved.goldenRules;
-        journal = saved.journal;
-        metCharacters = saved.metCharacters;
-        integrity = saved.integrity ?? 100;
-        reputation = saved.reputation ?? 50;
-        mentorTrust = saved.mentorTrust || {};
-        startTime = saved.startedAt || Date.now();
-        showSceneLoader();
-        setTimeout(() => { renderScene(currentNode); hideSceneLoader(); }, SCENE_LOADER_MIN_MS);
-      } else {
-        resetRun();
-        showSceneLoader();
-        setTimeout(() => { renderScene("start"); hideSceneLoader(); }, SCENE_LOADER_MIN_MS);
-      }
-    });
+    if (!typingProfile.diagnosed) {
+      openDiagnosticForLaunch(() => beginContinueMission());
+      return;
+    }
+    const saved = State.loadRun();
+    if (saved) {
+      currentNode = saved.currentNode;
+      badges = saved.badges;
+      lessons = saved.lessons;
+      goldenRules = saved.goldenRules;
+      journal = saved.journal;
+      metCharacters = saved.metCharacters;
+      integrity = saved.integrity ?? 100;
+      reputation = saved.reputation ?? 50;
+      mentorTrust = saved.mentorTrust || {};
+      startTime = saved.startedAt || Date.now();
+      showSceneLoader();
+      setTimeout(() => { renderScene(currentNode); hideSceneLoader(); }, SCENE_LOADER_MIN_MS);
+    } else {
+      startMissionCore();
+    }
   }
 
   function beginNewMission() {
     Audio?.init?.();
-    requireDiagnostic(() => {
-      resetRun();
-      showSceneLoader();
-      setTimeout(() => { renderScene("start"); hideSceneLoader(); }, SCENE_LOADER_MIN_MS);
-    });
+    if (!typingProfile.diagnosed) {
+      openDiagnosticForLaunch(() => beginNewMission());
+      return;
+    }
+    startMissionCore();
   }
 
   function loadDifficulty() {
@@ -1670,6 +1732,7 @@ Play again to rebuild your record clean.`;
     updateMuteButton();
     updateTypingProfileUI();
     updateTypoToleranceUI();
+    updateTitleLaunchUI();
     renderTitleTypingMenu();
 
     document.querySelectorAll(".tt-difficulty__btn").forEach((btn) => {
@@ -1686,10 +1749,12 @@ Play again to rebuild your record clean.`;
     const playLaunch = new URLSearchParams(window.location.search).get("play") === "1";
     if (playLaunch) {
       hookFullscreenOnFirstGesture();
-      setTimeout(() => {
-        toast("Tip: tap ⛶ Fullscreen for the best arcade view.", "info");
-        document.getElementById("titleTypingInput")?.focus();
-      }, 600);
+      if (typingProfile.diagnosed) {
+        setTimeout(() => {
+          toast("Tip: tap ⛶ Fullscreen for the best arcade view.", "info");
+          document.getElementById("titleTypingInput")?.focus();
+        }, 600);
+      }
     }
 
     document.getElementById("muteToggleBtn")?.addEventListener("click", () => {
@@ -1700,16 +1765,6 @@ Play again to rebuild your record clean.`;
     const startBtn = document.getElementById("startGameBtn");
     const continueBtn = document.getElementById("continueRunBtn");
     const newRunBtn = document.getElementById("newRunBtn");
-
-    if (State.hasActiveRun()) {
-      startBtn?.classList.add("dw-hidden");
-      continueBtn?.classList.remove("dw-hidden");
-      newRunBtn?.classList.remove("dw-hidden");
-    } else {
-      startBtn?.classList.remove("dw-hidden");
-      continueBtn?.classList.add("dw-hidden");
-      newRunBtn?.classList.add("dw-hidden");
-    }
 
     startBtn?.addEventListener("click", () => beginStartMission());
 
@@ -1724,12 +1779,14 @@ Play again to rebuild your record clean.`;
       renderTitleGoldenPreview();
       renderProfileMini();
       renderTitleTypingMenu();
+      updateTitleLaunchUI();
     });
 
     document.getElementById("retakeDiagnosticBtn")?.addEventListener("click", () => {
       typingProfile.diagnosed = false;
       saveTypingProfile();
-      showDiagnostic();
+      updateTitleLaunchUI();
+      openDiagnosticForLaunch(() => updateTitleLaunchUI());
     });
 
     document.getElementById("diagnosticAcceptBtn")?.addEventListener("click", acceptDiagnostic);
@@ -1802,6 +1859,13 @@ Play again to rebuild your record clean.`;
     identitySubmit?.addEventListener("click", handleIdentitySubmit);
 
     show("title");
+
+    if (!typingProfile.diagnosed && !State.hasActiveRun()) {
+      setTimeout(() => {
+        openDiagnosticForLaunch(() => startMissionCore());
+        toast("Welcome! Complete the keystroke test to launch your mission.", "lesson");
+      }, prefersReducedMotion ? 200 : 650);
+    }
   }
 
   function showIdentityGate(onComplete) {
