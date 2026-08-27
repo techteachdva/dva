@@ -6791,6 +6791,33 @@ mark.wf-standard-hit,
   text-align: center;
 }
 
+.tt-title-command-hint {
+  margin: 0 0 10px;
+  text-align: center;
+  font-size: 15px;
+  color: #fff8e7;
+}
+
+.tt-title-command-hint strong {
+  color: #ffd700;
+  font-family: "Bebas Neue", sans-serif;
+  letter-spacing: 0.06em;
+}
+
+.tt-diagnostic__phrase-plain {
+  margin: 0 0 10px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px dashed rgba(255, 215, 0, 0.35);
+  font-size: clamp(16px, 3.5vw, 22px);
+  font-weight: 600;
+  line-height: 1.45;
+  text-align: center;
+  color: #fff8e7;
+  word-break: break-word;
+}
+
 .tt-ghost-prompt {
   font-family: "Barlow", sans-serif;
   font-size: 20px;
@@ -6817,7 +6844,7 @@ mark.wf-standard-hit,
 }
 
 .tt-ghost-char {
-  color: rgba(255, 248, 231, 0.28);
+  color: rgba(255, 248, 231, 0.52);
   transition: color 0.12s ease, text-shadow 0.12s ease;
 }
 

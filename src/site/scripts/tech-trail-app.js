@@ -9,8 +9,139 @@
   const Visuals = window.TechTrailVisuals;
   const State = window.TechTrailState;
   const Audio = window.TechTrailAudio;
-  const Typing = window.TechTrailTyping;
-  if (!Core || !STORY || !Visuals || !State || !Typing) return;
+
+  /** Minimal fallback if typing-engine.js fails to load (SW cache / 404). */
+  function buildTypingFallback() {
+    const PHRASES = [
+      "the quick brown fox jumped over the lazy log",
+      "pack my box with five dozen liquor jugs",
+      "sphinx of black quartz judge my vow",
+    ];
+    const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    return {
+      DIAGNOSTIC_PHRASES: PHRASES,
+      MIN_TARGET_WPM: 8,
+      DEFAULT_TARGET_WPM: 18,
+      pickDiagnosticPhrase(rng = Math.random) {
+        return PHRASES[Math.floor(rng() * PHRASES.length)];
+      },
+      renderGhostHtml(target, typedLength) {
+        const t = String(target || "");
+        const len = typedLength || 0;
+        let html = "";
+        for (let i = 0; i < t.length; i++) {
+          const ch = t[i] === " " ? "\u00a0" : esc(t[i]);
+          const cls = i < len ? "tt-ghost-char--solid" : "tt-ghost-char";
+          html += `<span class="${cls}">${ch}</span>`;
+        }
+        return html;
+      },
+      renderBranchGhostHtml(prefix, branches, activeIdx, typedLen) {
+        const branchHtml = (branches || []).map((b, i) => {
+          const inner = this.renderGhostHtml(b, i === activeIdx ? typedLen : 0);
+          return `<span class="tt-ghost-branch${i === activeIdx ? " tt-ghost-branch--active" : ""}">${inner}</span>`;
+        }).join('<span class="tt-ghost-slash">/</span>');
+        const prefixHtml = prefix
+          ? `<span class="tt-ghost-prefix">${esc(prefix)}</span><span class="tt-ghost-ellipsis">…</span>`
+          : "";
+        return prefixHtml + branchHtml;
+      },
+      renderTypedCharsHtml(chars) {
+        if (!chars?.length) return "";
+        return chars.map((c) => {
+          let cls = "tt-typed-char";
+          if (c.state === "correct") cls += " tt-typed-char--correct";
+          else if (c.state === "wrong") cls += " tt-typed-char--wrong";
+          else cls += " tt-typed-char--extra";
+          const ch = c.char === " " ? "\u00a0" : esc(c.char);
+          return `<span class="${cls}">${ch}</span>`;
+        }).join("");
+      },
+      normalize(s) {
+        return String(s || "").toLowerCase().replace(/\s+/g, " ").trim();
+      },
+      compareToTarget(target, input) {
+        const t = this.normalize(target);
+        const raw = String(input || "");
+        const chars = [];
+        let typoCount = 0;
+        for (let i = 0; i < raw.length; i++) {
+          const expected = t[i];
+          const typed = raw[i];
+          if (!expected) {
+            chars.push({ char: typed, state: "extra", index: i });
+            typoCount++;
+          } else if (typed.toLowerCase() === expected) {
+            chars.push({ char: typed, state: "correct", index: i });
+          } else {
+            chars.push({ char: typed, state: "wrong", index: i });
+            typoCount++;
+          }
+        }
+        return {
+          chars,
+          typoCount,
+          complete: this.normalize(raw) === t,
+          progress: t.length ? Math.min(100, Math.round((raw.length / t.length) * 100)) : 0,
+        };
+      },
+      choiceTypeText(c) {
+        if (c?.typeText) return String(c.typeText).trim();
+        return String(c?.label || "").trim();
+      },
+      resolveActiveChoice(input, choices) {
+        const raw = this.normalize(input);
+        let bestIdx = -1;
+        let bestScore = -1;
+        (choices || []).forEach((c, i) => {
+          const typeText = this.normalize(this.choiceTypeText(c));
+          let score = 0;
+          for (let j = 0; j < raw.length && j < typeText.length; j++) {
+            if (raw[j] === typeText[j]) score++;
+            else break;
+          }
+          if (raw.length <= typeText.length && score === raw.length && score > bestScore) {
+            bestScore = score;
+            bestIdx = i;
+          }
+        });
+        return {
+          choice: bestIdx >= 0 ? choices[bestIdx] : null,
+          choiceIndex: bestIdx,
+          typeText: bestIdx >= 0 ? this.choiceTypeText(choices[bestIdx]) : "",
+        };
+      },
+      computeWpm(charCount, durationMs) {
+        if (!durationMs) return 0;
+        return Math.round(((charCount / 5) / (durationMs / 60000)) * 10) / 10;
+      },
+      recommendedTargetWpm(wpm) {
+        return Math.round(Math.max(8, wpm * 0.88) * 10) / 10;
+      },
+      clampTargetWpm(testWpm, chosen) {
+        const max = Math.max(8, testWpm * 1.5);
+        return Math.round(Math.min(max, Math.max(8, chosen)) * 10) / 10;
+      },
+      maxManualTargetWpm(testWpm) {
+        return Math.round(Math.max(8, testWpm * 1.5) * 10) / 10;
+      },
+      exceedsTypoBudget(typoCount, maxTypos) {
+        if (maxTypos >= 5) return false;
+        return typoCount > maxTypos;
+      },
+      meetsSpeedGate(wpm, targetWpm) {
+        if (!targetWpm) return true;
+        return wpm >= targetWpm * 0.85;
+      },
+    };
+  }
+
+  const Typing = window.TechTrailTyping || buildTypingFallback();
+  if (!window.TechTrailTyping) {
+    console.warn("[GTG] tech-trail-typing-engine.js missing — using built-in fallback");
+  }
+
+  if (!Core || !STORY || !Visuals || !State) return;
 
   Core.applyTheme(Core.PRESETS.gauntlet);
 
@@ -84,6 +215,8 @@
       return;
     }
     pendingDiagnosticAction = onComplete;
+    const overlay = document.getElementById("diagnosticOverlay");
+    if (overlay && !overlay.classList.contains("dw-hidden")) return;
     showDiagnostic();
   }
 
@@ -94,7 +227,7 @@
     const status = document.getElementById("diagnosticStatus");
     if (!overlay) return;
 
-    diagnosticPhrase = Typing.pickDiagnosticPhrase(runRng);
+    diagnosticPhrase = Typing.pickDiagnosticPhrase(runRng) || Typing.DIAGNOSTIC_PHRASES?.[0] || "the quick brown fox jumped over the lazy log";
     diagnosticStartTime = 0;
     overlay.classList.remove("dw-hidden");
     result?.classList.add("dw-hidden");
@@ -125,8 +258,10 @@
 
   function updateDiagnosticGhost(inputVal) {
     const ghost = document.getElementById("diagnosticGhost");
-    if (!ghost) return;
-    ghost.innerHTML = Typing.renderGhostHtml(diagnosticPhrase, inputVal.length);
+    const plain = document.getElementById("diagnosticPhrasePlain");
+    const phrase = diagnosticPhrase || Typing.DIAGNOSTIC_PHRASES?.[0] || "the quick brown fox jumped over the lazy log";
+    if (plain) plain.textContent = phrase;
+    if (ghost) ghost.innerHTML = Typing.renderGhostHtml(phrase, inputVal.length);
   }
 
   function handleDiagnosticInput() {
@@ -369,10 +504,16 @@
 
   function renderTitleTypingMenu() {
     const ghost = document.getElementById("titleGhostPrompt");
+    const hint = document.getElementById("titleCommandHint");
     const hasRun = State.hasActiveRun();
     const options = hasRun
       ? ["CONTINUE MISSION", "NEW MISSION"]
       : ["ACCEPT MISSION"];
+    if (hint) {
+      hint.innerHTML = hasRun
+        ? "Type: <strong>CONTINUE MISSION</strong> or <strong>NEW MISSION</strong>"
+        : "Type: <strong>ACCEPT MISSION</strong> to begin";
+    }
     if (!ghost) return;
     ghost.innerHTML = Typing.renderBranchGhostHtml("", options, -1, 0);
   }
@@ -1448,6 +1589,10 @@ Play again to rebuild your record clean.`;
     identitySubmit?.addEventListener("click", handleIdentitySubmit);
 
     show("title");
+
+    if (!typingProfile.diagnosed) {
+      setTimeout(() => showDiagnostic(), prefersReducedMotion ? 0 : 400);
+    }
   }
 
   function showIdentityGate(onComplete) {

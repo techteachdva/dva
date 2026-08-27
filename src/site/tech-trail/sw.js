@@ -1,11 +1,12 @@
 /**
- * Global Tech Gauntlet — cache-first service worker for offline play.
+ * Global Tech Gauntlet — service worker with network-first for scripts/styles.
  */
-const CACHE_NAME = "gtg-v3";
+const CACHE_NAME = "gtg-v4";
 const PRECACHE = [
   "/styles/write-platform.css",
   "/styles/custom-style.css",
   "/scripts/write-test-core.js",
+  "/scripts/tech-trail-typing-engine.js",
   "/scripts/tech-trail-visuals.js",
   "/scripts/tech-trail-story.js",
   "/scripts/tech-trail-state.js",
@@ -31,6 +32,18 @@ const PRECACHE = [
   "/tech-trail/images/heroes/hero-wright.png",
 ];
 
+function networkFirst(request) {
+  return fetch(request)
+    .then((res) => {
+      if (res && res.status === 200 && res.type === "basic") {
+        const clone = res.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+      }
+      return res;
+    })
+    .catch(() => caches.match(request));
+}
+
 self.addEventListener("install", (e) => {
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE)).catch(() => {})
@@ -50,6 +63,16 @@ self.addEventListener("activate", (e) => {
 self.addEventListener("fetch", (e) => {
   const { request } = e;
   if (request.method !== "GET") return;
+
+  const url = new URL(request.url);
+  const isScriptOrStyle =
+    url.pathname.startsWith("/scripts/") || url.pathname.startsWith("/styles/");
+
+  if (isScriptOrStyle) {
+    e.respondWith(networkFirst(request));
+    return;
+  }
+
   e.respondWith(
     caches.match(request).then((cached) => {
       if (cached) return cached;

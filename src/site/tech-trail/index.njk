@@ -86,7 +86,8 @@ layout: false
             <div class="tt-btn-group" id="titleBtnGroup">
               <div id="titleTypingMenu" class="tt-title-typing tt-typing-panel">
                 <p class="tt-title-typing__hint">Type a command below — or tap a button</p>
-                <div id="titleGhostPrompt" class="tt-ghost-prompt" aria-hidden="true"></div>
+                <p id="titleCommandHint" class="tt-title-command-hint">Type: <strong>ACCEPT MISSION</strong> to begin</p>
+                <div id="titleGhostPrompt" class="tt-ghost-prompt"></div>
                 <div class="tt-typing-meter" id="titleTypingMeter">
                   <div class="tt-typing-meter__row">
                     <span class="tt-typing-meter__label">Progress</span>
@@ -116,7 +117,8 @@ layout: false
             <div class="tt-diagnostic__burst" aria-hidden="true"></div>
             <h2 id="diagnosticTitle" class="tt-diagnostic__title">⌨️ Typing Speed Diagnostic</h2>
             <p id="diagnosticIntro" class="tt-diagnostic__intro">Type the phrase below as fast and accurately as you can. This sets your mission speed target.</p>
-            <div id="diagnosticGhost" class="tt-ghost-prompt tt-ghost-prompt--diagnostic" aria-hidden="true"></div>
+            <p id="diagnosticPhrasePlain" class="tt-diagnostic__phrase-plain" aria-live="polite"></p>
+            <div id="diagnosticGhost" class="tt-ghost-prompt tt-ghost-prompt--diagnostic"></div>
             <div class="tt-typing-meter tt-typing-meter--diagnostic" id="diagnosticMeter">
               <div class="tt-typing-meter__row">
                 <span class="tt-typing-meter__label">Phrase progress</span>
@@ -290,12 +292,12 @@ layout: false
       </main>
     </div>
 
-    <script src="/scripts/write-test-core.js" defer></script>
-    <script src="/scripts/tech-trail-typing-engine.js" defer></script>
-    <script src="/scripts/tech-trail-visuals.js" defer></script>
-    <script src="/scripts/tech-trail-story.js" defer></script>
-    <script src="/scripts/tech-trail-state.js" defer></script>
-    <script src="/scripts/tech-trail-audio.js" defer></script>
+    <script src="/scripts/write-test-core.js"></script>
+    <script src="/scripts/tech-trail-typing-engine.js"></script>
+    <script src="/scripts/tech-trail-visuals.js"></script>
+    <script src="/scripts/tech-trail-story.js"></script>
+    <script src="/scripts/tech-trail-state.js"></script>
+    <script src="/scripts/tech-trail-audio.js"></script>
     <script src="/scripts/tech-trail-app.js" defer></script>
     <script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/tech-trail/sw.js');</script>
   </body>
