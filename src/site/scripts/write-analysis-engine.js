@@ -91,7 +91,8 @@
   }
 
   function analyzePromptResponse(text, prompt = "") {
-    if (!prompt.trim()) return { score: null, termHits: [], termsChecked: 0, signals: [] };
+    if (!prompt.trim()) return { score: null, termHits: [], termsChecked: 0, signals: [], exampleCount: 0, responseType: "normal" };
+    const cal = getCalibration();
     const terms = extractPromptTerms(prompt);
     const lower = text.toLowerCase();
     const termHits = terms.filter((t) => lower.includes(t));
@@ -112,7 +113,75 @@
     score = clamp(Math.round(score * 0.72 + elaboration * 0.28), 0, 100);
     if (wordCount < 25 && termRate < 0.25 && signalScore < 12) score = Math.min(score, 38);
     if (wordCount >= 35 && termRate >= 0.5 && signalScore >= 10) score = Math.max(score, 58);
-    return { score, termHits, termsChecked: terms.length, signals };
+
+    const examplePattern = cal.EXAMPLE_NOUN_PATTERN;
+    const exampleCount = examplePattern ? (text.match(examplePattern) || []).length : 0;
+    const hasTechContrast = cal.TECH_CONTRAST_PATTERN?.test(text);
+    const hasBecause = /\bbecause\b/i.test(text);
+    const tc = cal.TEACHER_CALIBRATION?.reasoningBonus;
+    if (tc) {
+      if (hasBecause) score = Math.min(100, score + (tc.because || 0));
+      if (hasTechContrast) score = Math.min(100, score + (tc.techContrast || 0));
+    }
+    const exBonus = cal.TEACHER_CALIBRATION?.exampleBonus;
+    if (exBonus && exampleCount >= (exBonus.minExamples || 3)) {
+      score = Math.min(100, score + Math.min((exampleCount - 2) * (exBonus.perExample || 4), exBonus.maxBonus || 16));
+    }
+
+    let responseType = "normal";
+    if (cal.DICTATION_PATTERN?.test(text)) responseType = "dictation";
+    else if (cal.OFF_TOPIC_NARRATIVE_PATTERN?.test(text) && !hasTechContrast && exampleCount < 2) responseType = "off_topic";
+
+    return { score, termHits, termsChecked: terms.length, signals, exampleCount, hasTechContrast, hasBecause, responseType };
+  }
+
+  function detectResponseType(text, promptResponse) {
+    if (promptResponse?.responseType && promptResponse.responseType !== "normal") return promptResponse.responseType;
+    const cal = getCalibration();
+    if (cal.DICTATION_PATTERN?.test(text)) return "dictation";
+    const exampleCount = promptResponse?.exampleCount || 0;
+    const hasTechContrast = promptResponse?.hasTechContrast;
+    if (cal.OFF_TOPIC_NARRATIVE_PATTERN?.test(text) && !hasTechContrast && exampleCount < 2) return "off_topic";
+    return "normal";
+  }
+
+  function applyTeacherCalibration(overallScore, scores, text, promptResponse, options = {}) {
+    const cal = getCalibration();
+    const tc = cal.TEACHER_CALIBRATION;
+    if (!tc) return overallScore;
+
+    const responseType = detectResponseType(text, promptResponse);
+    if (responseType === "off_topic") return Math.min(overallScore, tc.offTopicCap || 15);
+    if (responseType === "dictation") {
+      const typing = scores.typing || 0;
+      const mechanics = scores.mechanics || 0;
+      const raw = typing * (tc.dictationTypingWeight || 0.5) + mechanics * (tc.dictationMechanicsWeight || 0.1);
+      return clamp(Math.round(Math.min(raw, tc.dictationMaxScore || 12)), 0, 100);
+    }
+
+    const mode = options.assignmentMode || "composition";
+    if (mode !== "reflection" && !options.assignmentPrompt) return overallScore;
+
+    const exampleCount = promptResponse?.exampleCount || 0;
+    const floorRule = tc.exampleAttemptFloor;
+    if (floorRule && exampleCount >= (floorRule.minExamples || 2) && responseType === "normal") {
+      const promptScore = promptResponse?.score || 0;
+      const qualifies = promptScore >= 40
+        || promptResponse?.hasTechContrast
+        || promptResponse?.hasBecause
+        || (promptScore >= 25 && exampleCount >= 4);
+      if (qualifies) {
+        const floor = (floorRule.base || 78) + Math.min(exampleCount, 5) * (floorRule.perExample || 4);
+        overallScore = Math.max(overallScore, Math.min(100, floor));
+      }
+    }
+    const strongBonus = tc.strongAttemptBonus;
+    if (strongBonus && (scores.mechanics || 0) >= (strongBonus.minMechanics || 80) && exampleCount >= (strongBonus.minExamples || 2)) {
+      if (promptResponse?.hasTechContrast || promptResponse?.hasBecause || (promptResponse?.score || 0) >= 35) {
+        overallScore = Math.min(100, overallScore + (strongBonus.bonus || 10));
+      }
+    }
+    return overallScore;
   }
 
   function analyzeSpelling(text, words) {
@@ -326,9 +395,15 @@
     }
     storyScore = applyStoryFloors(storyScore, wordCount, voiceCount, sensoryCount, sentences.length);
 
-    const overallScore = computeOverallScore(
+    const overallScore = applyTeacherCalibration(
+      computeOverallScore(
+        { typing: typingScore, mechanics: mechanicsScore, story: storyScore },
+        { assignmentMode: options.assignmentMode, rubrics: options.rubrics }
+      ),
       { typing: typingScore, mechanics: mechanicsScore, story: storyScore },
-      { assignmentMode: options.assignmentMode, rubrics: options.rubrics }
+      text,
+      promptResponse,
+      options
     );
     const typingLevel = classifyTyping(wordCount, wpm);
     const metricScores = {
@@ -362,6 +437,8 @@
       feedback: buildFeedback(wordCount, wpm, typingLevel, spelling, grammar, storyScore, voiceCount, sensoryCount, vocabulary, promptResponse, {
         assignmentMode: options.assignmentMode,
         rubrics: options.rubrics,
+        mechanicsScore,
+        overallScore,
       }),
     };
   }
@@ -404,13 +481,18 @@
     composition: { typing: 0, mechanics: 0.35, story: 0.65 },
     fluency: { typing: 1, mechanics: 0, story: 0 },
     typing_practice: { typing: 1, mechanics: 0, story: 0 },
-    reflection: { typing: 0, mechanics: 0.25, story: 0.75 },
+    reflection: { typing: 0, mechanics: 0.35, story: 0.65 },
   };
 
   function computeOverallScore(scores, options = {}) {
     const mode = options.assignmentMode || "composition";
+    const cal = getCalibration();
+    const reflectionWeights = cal.TEACHER_CALIBRATION?.reflectionOverall;
     const rubrics = options.rubrics || Object.keys(MODE_OVERALL_WEIGHTS[mode] || {}).filter((k) => (MODE_OVERALL_WEIGHTS[mode]?.[k] ?? 0) > 0);
-    const weights = MODE_OVERALL_WEIGHTS[mode] || { typing: 0.33, mechanics: 0.34, story: 0.33 };
+    let weights = MODE_OVERALL_WEIGHTS[mode] || { typing: 0.33, mechanics: 0.34, story: 0.33 };
+    if (mode === "reflection" && reflectionWeights) {
+      weights = { typing: 0, mechanics: reflectionWeights.mechanics, story: reflectionWeights.story };
+    }
     let sum = 0;
     let weightSum = 0;
     for (const key of rubrics) {
@@ -428,7 +510,34 @@
   function buildFeedback(wordCount, wpm, typingLevel, spelling, grammar, storyScore, voiceCount, sensoryCount, vocab, promptResponse, options = {}) {
     const mode = options.assignmentMode || "composition";
     const rubrics = options.rubrics || ["typing", "mechanics", "story"];
+    const mechanicsScore = options.mechanicsScore;
+    const overallScore = options.overallScore;
+    const responseType = promptResponse?.responseType || "normal";
     const sections = [];
+    const strengths = [];
+    const improvements = [];
+
+    if (responseType === "off_topic") {
+      return [{
+        title: "What to improve",
+        items: ["Your writing doesn't address the assignment question. Re-read the prompt and answer it directly."],
+      }, {
+        title: "What you did well",
+        items: wordCount >= 20 ? ["You wrote a personal story — now connect it to the prompt."] : ["Keep practicing — try again with the prompt in mind."],
+      }];
+    }
+
+    if (responseType === "dictation") {
+      const items = [`You typed ${wordCount} words (${Math.round(wpm)} WPM).`];
+      if (spelling.score >= 85) strengths.push("Good spelling accuracy while copying.");
+      else improvements.push("Focus on spelling each word correctly as you type.");
+      if (grammar.score >= 85) strengths.push("Capitalization and punctuation look good.");
+      else improvements.push("Match capitals and punctuation to what you hear.");
+      sections.push({ title: "Typing accuracy", items });
+      if (strengths.length) sections.push({ title: "What you did well", items: strengths });
+      if (improvements.length) sections.push({ title: "What to improve", items: improvements });
+      return sections;
+    }
 
     if (rubrics.includes("typing") && (mode === "fluency" || mode === "typing_practice")) {
       sections.push({
@@ -438,33 +547,36 @@
     }
 
     if (rubrics.includes("mechanics")) {
-      const items = [];
-      if (spelling.score >= 75) items.push("Spelling looks solid for a first draft.");
-      else if (spelling.misspellCount > 0) items.push(`Watch spelling — ${spelling.misspellCount} possible misspelling${spelling.misspellCount === 1 ? "" : "s"} flagged.`);
-      else items.push("Watch spelling in revision.");
-      if (grammar.score >= 75) items.push("Conventions are mostly in place.");
-      else items.push("Check capitals, the pronoun I, and ending punctuation.");
-      sections.push({ title: "Mechanics", items });
+      if (spelling.score >= 75) strengths.push("Spelling looks solid for a first draft.");
+      else if (spelling.misspellCount > 0) improvements.push(`Watch spelling — ${spelling.misspellCount} possible misspelling${spelling.misspellCount === 1 ? "" : "s"} flagged.`);
+      else improvements.push("Watch spelling in revision.");
+      if (grammar.score >= 75) strengths.push("Conventions are mostly in place.");
+      else improvements.push("Check capitals, the pronoun I, and ending punctuation.");
     }
 
     if (rubrics.includes("story")) {
-      const contentItems = [];
       if (promptResponse?.score != null) {
-        if (promptResponse.score >= 65) contentItems.push("Your response connects to the prompt.");
-        else if (promptResponse.score >= 40) contentItems.push("Address more of the prompt question in your own words.");
-        else contentItems.push("Re-read the prompt and explain what it means to you with a specific example.");
+        if (promptResponse.score >= 65) strengths.push("Your response connects to the prompt.");
+        else if (promptResponse.score >= 40) improvements.push("Address more of the prompt question in your own words.");
+        else improvements.push("Re-read the prompt and explain what it means to you with a specific example.");
+        if (promptResponse.hasBecause) strengths.push("Good use of reasoning — you explained why.");
+        else if (promptResponse.exampleCount >= 2) improvements.push("Add a sentence explaining why your examples fit the prompt.");
+        if (promptResponse.exampleCount >= 3) strengths.push(`Strong examples — you listed ${promptResponse.exampleCount} relevant items.`);
+        if (promptResponse.hasTechContrast) strengths.push("You showed understanding of what counts as technology.");
       } else if (storyScore >= 65) {
-        contentItems.push("Your writing comes through clearly.");
+        strengths.push("Your writing comes through clearly.");
       } else {
-        contentItems.push("Add specific details and your own voice.");
+        improvements.push("Add specific details and your own voice.");
       }
       if (mode === "reflection") {
-        contentItems.push("Honest reflection is what matters — keep building on your ideas.");
+        if (overallScore >= 75) strengths.push("Thoughtful reflection — keep building on your ideas.");
+        else improvements.push("Expand on your ideas with one more specific example.");
       } else {
-        contentItems.push(voiceCount >= 4 ? "Personal voice is present." : "Use I/my to keep it in your voice.");
-        contentItems.push(sensoryCount >= 2 ? "Good sensory details." : "Add what you saw, heard, or felt.");
+        if (voiceCount >= 4) strengths.push("Personal voice is present.");
+        else improvements.push("Use I/my to keep it in your voice.");
+        if (sensoryCount >= 2) strengths.push("Good sensory details.");
+        else improvements.push("Add what you saw, heard, or felt.");
       }
-      sections.push({ title: mode === "reflection" ? "Reflection" : "Content", items: contentItems });
     }
 
     if (vocab?.requiredCount) {
@@ -475,6 +587,12 @@
           vocab.missing.length ? `Still try to include: ${vocab.missing.join(", ")}.` : "Great job using the expected vocabulary.",
         ],
       });
+    }
+
+    if (strengths.length) sections.push({ title: "What you did well", items: strengths });
+    if (improvements.length) sections.push({ title: "What to improve", items: improvements });
+    if (!sections.length) {
+      sections.push({ title: "Mechanics", items: ["Keep writing — every draft builds skill."] });
     }
     return sections;
   }

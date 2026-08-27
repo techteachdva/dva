@@ -143,6 +143,45 @@
     typing: 97, mechanics: 93, story: 83, overall: 91, wordCount: 258, wpm: 52,
   };
 
+  /**
+   * Teacher grading calibration (Feb 2026, n=87 teacher-graded WriteFlow submissions).
+   * Aligns auto scores with Mr. Phil's rubric for reflection/bell-ringer assignments.
+   */
+  const TEACHER_CALIBRATION = {
+    /** Reflection mode overall weights — mechanics correlates strongest with teacher grades (r=0.53). */
+    reflectionOverall: { mechanics: 0.35, story: 0.65 },
+    /** Bonus points when students explain reasoning or contrast with technology. */
+    reasoningBonus: { because: 12, techContrast: 8 },
+    /** Bonus per valid example noun beyond the first two (classification prompts). */
+    exampleBonus: { perExample: 4, maxBonus: 16, minExamples: 3 },
+    /** Floor for genuine on-topic attempts with multiple examples. */
+    exampleAttemptFloor: { minExamples: 2, base: 78, perExample: 4, maxBonus: 20 },
+    /** Bonus when mechanics are strong and student listed valid examples. */
+    strongAttemptBonus: { minMechanics: 80, minExamples: 2, bonus: 10 },
+    /** Cap when response is clearly off-topic narrative. */
+    offTopicCap: 15,
+    /** Dictation/copy exercises — score mostly on typing accuracy. */
+    dictationTypingWeight: 0.5,
+    dictationMechanicsWeight: 0.1,
+    dictationMaxScore: 12,
+  };
+
+  /** Off-topic personal narratives unrelated to assignment prompt. */
+  const OFF_TOPIC_NARRATIVE_PATTERN =
+    /\b(went to|valley fair|my mom|boyfriend|girlfriend|last summer|one day i went|do not now wut to rit|by{4,})\b/i;
+
+  /** Teacher read-aloud dictation exercises (not content-graded). */
+  const DICTATION_PATTERN =
+    /\b(this is a little|write out exactly|what i am saying|what i'm saying|try to wright|try to write out exactly|want to see if you can focus|want to see if you can typ|random words)\b/i;
+
+  /** Technology contrast language — shows student understands the concept. */
+  const TECH_CONTRAST_PATTERN =
+    /\b(not technology|isn't technology|isnt technology|not tech|non.?tech|man.?made|natural(?:ly)?|electronic|digital|human.?made)\b/i;
+
+  /** Valid example nouns for classification prompts (what is/isn't technology). */
+  const EXAMPLE_NOUN_PATTERN =
+    /\b(trees?|grass|rocks?|water|animals?|birds?|dogs?|cats?|food|humans?|people|brick|paper|pencils?|chairs?|tables?|sun|moon|air|wind|plants?|flowers?|bugs?|insects?|fish|shoes?|books?|clothes|houses?|buildings?|leaves?|dirt|sand|sky|clouds?|rivers?|lakes?|mountains?|snow|ice|wood|metal|glass|plastic|fabric|cotton|wool|meat|fruit|vegetables?)\b/gi;
+
   window.DWCalibration = {
     MIXED_GRADE_CLASSES,
     EXEMPLAR,
@@ -172,5 +211,10 @@
     GRADE_NORMS,
     GRADE_ADVANCED_P90,
     LOUNGE_NORMS,
+    TEACHER_CALIBRATION,
+    OFF_TOPIC_NARRATIVE_PATTERN,
+    DICTATION_PATTERN,
+    TECH_CONTRAST_PATTERN,
+    EXAMPLE_NOUN_PATTERN,
   };
 })();
