@@ -601,6 +601,7 @@
 
   function beginStartMission() {
     Audio?.init?.();
+    requestGameFullscreen().then(updateFullscreenButton);
     requireDiagnostic(() => {
       resetRun();
       showSceneLoader();
@@ -709,6 +710,58 @@
     const btn = document.getElementById("muteToggleBtn");
     if (!btn) return;
     btn.textContent = Audio?.isMuted?.() ? "🔇" : "🔊";
+  }
+
+  function isGameFullscreen() {
+    return Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+  }
+
+  async function requestGameFullscreen() {
+    const el = document.documentElement;
+    try {
+      if (isGameFullscreen()) return true;
+      if (el.requestFullscreen) await el.requestFullscreen();
+      else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
+      document.body.classList.add("tt-is-fullscreen");
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async function exitGameFullscreen() {
+    try {
+      if (document.exitFullscreen) await document.exitFullscreen();
+      else if (document.webkitExitFullscreen) await document.webkitExitFullscreen();
+    } catch {}
+    document.body.classList.remove("tt-is-fullscreen");
+  }
+
+  function updateFullscreenButton() {
+    const btn = document.getElementById("fullscreenToggleBtn");
+    if (!btn) return;
+    btn.textContent = isGameFullscreen() ? "⛶ Exit fullscreen" : "⛶ Fullscreen";
+    document.body.classList.toggle("tt-is-fullscreen", isGameFullscreen());
+  }
+
+  async function toggleGameFullscreen() {
+    if (isGameFullscreen()) {
+      await exitGameFullscreen();
+    } else {
+      const ok = await requestGameFullscreen();
+      if (!ok) toast("Fullscreen needs a click — browsers block auto-fullscreen.", "lesson");
+    }
+    updateFullscreenButton();
+  }
+
+  let fullscreenGestureHooked = false;
+  function hookFullscreenOnFirstGesture() {
+    if (fullscreenGestureHooked) return;
+    fullscreenGestureHooked = true;
+    const once = () => {
+      requestGameFullscreen().then(updateFullscreenButton);
+    };
+    document.addEventListener("pointerdown", once, { once: true, capture: true });
   }
 
   function escapeHtml(s) {
@@ -1475,6 +1528,21 @@ Play again to rebuild your record clean.`;
     });
 
     document.getElementById("highContrastToggle")?.addEventListener("click", toggleHighContrast);
+    document.getElementById("fullscreenToggleBtn")?.addEventListener("click", () => toggleGameFullscreen());
+    document.addEventListener("fullscreenchange", updateFullscreenButton);
+    document.addEventListener("webkitfullscreenchange", updateFullscreenButton);
+    updateFullscreenButton();
+    hookFullscreenOnFirstGesture();
+
+    const playLaunch = new URLSearchParams(window.location.search).get("play") === "1";
+    if (playLaunch) {
+      hookFullscreenOnFirstGesture();
+      setTimeout(() => {
+        toast("Tip: tap ⛶ Fullscreen for the best arcade view.", "info");
+        document.getElementById("titleTypingInput")?.focus();
+      }, 600);
+    }
+
     document.getElementById("muteToggleBtn")?.addEventListener("click", () => {
       Audio?.toggleMuted?.();
       updateMuteButton();

@@ -1705,6 +1705,7 @@ $wp-sheet-min-height: 1056px;
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
 }
 
 .tt-title-screen__bg,
@@ -1713,8 +1714,8 @@ $wp-sheet-min-height: 1056px;
   inset: 0;
   background-size: cover;
   background-position: center;
-  transform: scale(1.05);
-  filter: brightness(0.45) saturate(1.15);
+  transform: scale(1.02);
+  filter: brightness(0.78) saturate(1.22) contrast(1.06);
 }
 
 .tt-title-screen__overlay,
@@ -1722,16 +1723,17 @@ $wp-sheet-min-height: 1056px;
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse at 50% 30%, rgba(196, 30, 58, 0.25), transparent 55%),
-    linear-gradient(180deg, rgba(10, 4, 14, 0.2), rgba(10, 4, 14, 0.85));
+    radial-gradient(ellipse at 50% 25%, rgba(196, 30, 58, 0.16), transparent 52%),
+    linear-gradient(180deg, rgba(10, 4, 14, 0.12), rgba(10, 4, 14, 0.52));
 }
 
 .tt-title-screen__content {
   position: relative;
   z-index: 2;
   text-align: center;
-  padding: 48px 28px;
-  max-width: 720px;
+  padding: clamp(24px, 4vw, 48px) clamp(16px, 4vw, 32px);
+  max-width: min(1040px, 96vw);
+  width: 100%;
 }
 
 .tt-title-screen__headline {
@@ -1752,13 +1754,13 @@ $wp-sheet-min-height: 1056px;
 
 .tt-tutorial {
   text-align: left;
-  max-width: 520px;
+  max-width: min(720px, 96vw);
   margin: 0 auto 20px;
   padding: 16px 20px;
   border-radius: 14px;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(0, 0, 0, 0.38);
   border: 1px solid rgba(255, 215, 0, 0.25);
-  backdrop-filter: blur(6px);
+  backdrop-filter: blur(8px);
 }
 
 .tt-tutorial__title {
@@ -1972,8 +1974,8 @@ $wp-sheet-min-height: 1056px;
   inset: 0;
   background-size: cover;
   background-position: center;
-  transform: translateZ(-60px) scale(1.12);
-  filter: brightness(0.5) saturate(1.1);
+  transform: translateZ(-60px) scale(1.08);
+  filter: brightness(0.74) saturate(1.18) contrast(1.05);
 }
 
 .tt-scene-bg__tint {
@@ -2000,7 +2002,7 @@ $wp-sheet-min-height: 1056px;
   z-index: 2;
   margin: clamp(16px, 3vw, 28px);
   padding: clamp(18px, 3vw, 28px);
-  background: rgba(12, 6, 18, 0.88);
+  background: rgba(12, 6, 18, 0.72);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 215, 0, 0.22);
   border-radius: 16px;
@@ -7380,6 +7382,126 @@ mark.wf-standard-hit,
   .tt-typing-choices,
   .tt-title-typing {
     padding: 12px;
+  }
+}
+
+/* ── GTG immersive full-viewport layout ── */
+.tt-game-body.wp-theme--gauntlet {
+  overflow-x: hidden;
+}
+
+.wp-theme--gauntlet .dw-shell.tt-shell {
+  max-width: none;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.wp-theme--gauntlet .breadcrumbs--standalone {
+  max-width: none;
+  margin: 0;
+  padding: 6px 14px;
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.wp-theme--gauntlet .tt-topbar {
+  margin: 0;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  padding: 10px 16px;
+  background: rgba(8, 4, 12, 0.82);
+  backdrop-filter: blur(10px);
+}
+
+.wp-theme--gauntlet .tt-topbar .dw-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.wp-theme--gauntlet .tt-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: 0;
+}
+
+.wp-theme--gauntlet .tt-title-screen {
+  flex: 1;
+  min-height: calc(100dvh - 108px);
+  margin-top: 0;
+  border-radius: 0;
+}
+
+.wp-theme--gauntlet #endingView {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.wp-theme--gauntlet #endingView .tt-ending-screen {
+  flex: 1;
+  min-height: calc(100dvh - 108px);
+  margin-top: 0;
+  border-radius: 0;
+}
+
+.wp-theme--gauntlet .tt-game-layout:not(.dw-hidden) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 300px);
+  grid-template-areas:
+    "hud hud"
+    "stage sidebar";
+  gap: 12px;
+  padding: 12px 16px 20px;
+  flex: 1;
+  width: 100%;
+  align-items: start;
+}
+
+.wp-theme--gauntlet .tt-game-layout .tt-hud {
+  grid-area: hud;
+}
+
+.wp-theme--gauntlet .tt-game-layout #sceneLesson {
+  grid-area: hud;
+}
+
+.wp-theme--gauntlet .tt-game-layout .tt-stage {
+  grid-area: stage;
+  min-width: 0;
+  margin-top: 0;
+}
+
+.wp-theme--gauntlet .tt-game-layout .tt-sidebar {
+  grid-area: sidebar;
+  margin-top: 0;
+}
+
+.wp-theme--gauntlet .tt-stage__room {
+  min-height: min(72vh, 900px);
+}
+
+.wp-theme--gauntlet.tt-is-fullscreen .breadcrumbs--standalone {
+  display: none;
+}
+
+.wp-theme--gauntlet.tt-is-fullscreen .tt-title-screen,
+.wp-theme--gauntlet.tt-is-fullscreen #endingView .tt-ending-screen {
+  min-height: calc(100dvh - 52px);
+}
+
+@media (max-width: 1080px) {
+  .wp-theme--gauntlet .tt-game-layout:not(.dw-hidden) {
+    grid-template-columns: 1fr;
+    grid-template-areas: "hud" "stage" "sidebar";
   }
 }
 

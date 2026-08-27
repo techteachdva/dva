@@ -10,7 +10,7 @@ title: Games Mr. Phil has made
 
 <p class="cartridge-games-page__intro">Welcome to the collection. Pick up a cartridge and play.</p>
 
-<p class="cartridge-games-page__intro">Course hub: <a href="/game-design/">Game Design</a> · <a href="/technology/">Technology</a> · <a href="/diagnostic-writing/">Summer Writing Test</a> · <a href="/item-diagnostic/">ITEM Diagnostic</a> · <a href="/tech-trail/">Global Tech Gauntlet</a></p>
+<p class="cartridge-games-page__intro">Course hub: <a href="/game-design/">Game Design</a> · <a href="/technology/">Technology</a> · <a href="/diagnostic-writing/">Summer Writing Test</a> · <a href="/item-diagnostic/">ITEM Diagnostic</a> · <a href="/tech-trail/?play=1" target="_blank" rel="noopener noreferrer">Global Tech Gauntlet</a></p>
 
 <div class="cartridge-stack">
 
@@ -169,7 +169,7 @@ title: Games Mr. Phil has made
           <div class="cartridge-cuboid__face cartridge-cuboid__face--front">
             <div class="cartridge-label">
               <span class="cartridge-label__brand">Power_Word_Skill_Games</span>
-              <a class="cartridge-label__title external-link" href="/tech-trail/" target="_blank" rel="noopener noreferrer">Global Tech Gauntlet</a>
+              <a class="cartridge-label__title external-link" href="/tech-trail/?play=1" target="_blank" rel="noopener noreferrer">Global Tech Gauntlet</a>
             </div>
           </div>
           <div class="cartridge-cuboid__face cartridge-cuboid__face--top" aria-hidden="true"></div>
