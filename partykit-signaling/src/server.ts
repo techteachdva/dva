@@ -9,9 +9,11 @@
  * - 3 PEER_DISCONNECT: peer left
  * - 4 OFFER, 5 ANSWER, 6 CANDIDATE: WebRTC relay (id = destination peer)
  * - 7 SEAL: host seals lobby (no new joins)
- * - 8 START: host requests start game; server broadcasts to all peers (reliable)
+ * - 8 START: host requests start game; server broadcasts to joiners
  * - 9 WIZARD_ASSIGN: peer assigns self to wizard slot; server broadcasts to all (id=senderId, data="slot_index|name")
- * - 10 BEGIN_GAME: host requests begin after wizard selection; server broadcasts to all (reliable)
+ * - 10 BEGIN_GAME: host requests begin after wizard selection; server broadcasts to joiners
+ * - 11 END_TURN: host broadcasts turn end during game (relay to clients)
+ * - 12 CAST_DAMAGE_TARGETS: host broadcasts cast targets during game (relay to clients)
  *
  * Connect: wss://YOUR_PROJECT.USERNAME.partykit.dev/parties/main/ROOM_CODE
  * Room code = 6-letter code (e.g. ABC123)
@@ -31,18 +33,23 @@ const CMD = {
   START: 8,
   WIZARD_ASSIGN: 9,
   BEGIN_GAME: 10,
+  END_TURN: 11,
+  CAST_DAMAGE_TARGETS: 12,
 } as const;
+
+const MAX_PLAYERS = 4;
 
 function protoMessage(type: number, id: number, data: string): string {
   return JSON.stringify({ type, id, data: data || "" });
 }
 
-type PeerState = { assignedId: number };
-
 export default class SignalingServer implements Party.Server {
   // Map connection.id -> assigned numeric ID (1=host, 2,3,4=peers)
   peerIds: Map<string, number> = new Map();
+  // slot_index (0-3) -> assigned peer ID (prevents duplicate wizard selection)
+  slotAssignments: Map<number, number> = new Map();
   sealed: boolean = false;
+  gameStarted: boolean = false;  // true after MSG_START; late joiners get MSG_START to go to wizard selection
 
   constructor(readonly room: Party.Room) {}
 
@@ -65,6 +72,16 @@ export default class SignalingServer implements Party.Server {
 
   async onConnect(connection: Party.Connection) {
     const connections = this.getConnections();
+
+    if (this.sealed) {
+      connection.close(4000, "Game in progress");
+      return;
+    }
+    if (connections.length > MAX_PLAYERS) {
+      connection.close(4000, "Lobby full");
+      return;
+    }
+
     const isHost = connections.length <= 1;
 
     const assignedId = isHost ? 1 : this.peerIds.size + 1;
@@ -85,11 +102,13 @@ export default class SignalingServer implements Party.Server {
         connection.send(protoMessage(CMD.PEER_CONNECT, this.getAssignedId(conn.id), ""));
       }
     }
+    // If host clicked Start Game (but not GO! yet), send MSG_START so late joiner goes to wizard selection
+    if (this.gameStarted && !this.sealed) {
+      connection.send(protoMessage(CMD.START, 0, ""));
+    }
   }
 
   async onMessage(message: string, sender: Party.Connection) {
-    if (this.sealed) return;
-
     let json: { type?: number; id?: number; data?: string };
     try {
       json = JSON.parse(message);
@@ -100,6 +119,13 @@ export default class SignalingServer implements Party.Server {
     const type = typeof json.type === "number" ? Math.floor(json.type) : -1;
     const id = typeof json.id === "number" ? Math.floor(json.id) : -1;
     const data = typeof json.data === "string" ? json.data : "";
+
+    // When sealed (game in progress), only allow END_TURN, CAST_DAMAGE_TARGETS, and WebRTC relay.
+    if (this.sealed) {
+      if (type !== CMD.END_TURN && type !== CMD.CAST_DAMAGE_TARGETS && type !== CMD.OFFER && type !== CMD.ANSWER && type !== CMD.CANDIDATE) {
+        return;
+      }
+    }
 
     const senderId = this.getAssignedId(sender.id);
 
@@ -114,15 +140,36 @@ export default class SignalingServer implements Party.Server {
     }
 
     if (type === CMD.START && senderId === 1) {
+      this.gameStarted = true;
       for (const conn of this.getConnections()) {
-        if (conn.id !== sender.id) conn.send(protoMessage(CMD.START, 0, ""));
+        if (conn.id !== sender.id) {
+          conn.send(protoMessage(CMD.START, 0, ""));
+        }
       }
       return;
     }
 
     if (type === CMD.WIZARD_ASSIGN) {
-      const slotIndex = typeof id === "number" ? Math.floor(id) : 0;
-      const payload = String(slotIndex) + "|" + (data || "");
+      const slotIndex = typeof id === "number" ? Math.floor(id) : -1;
+      for (const [slot, peerId] of this.slotAssignments) {
+        if (peerId === senderId) {
+          this.slotAssignments.delete(slot);
+          break;
+        }
+      }
+      let payload: string;
+      if (slotIndex >= 0 && slotIndex <= 3) {
+        const currentOwner = this.slotAssignments.get(slotIndex);
+        if (currentOwner !== undefined && currentOwner !== senderId) {
+          payload = "-1|";
+          for (const conn of this.getConnections()) {
+            conn.send(protoMessage(CMD.WIZARD_ASSIGN, senderId, payload));
+          }
+          return;
+        }
+        this.slotAssignments.set(slotIndex, senderId);
+      }
+      payload = String(slotIndex) + "|" + (data || "");
       for (const conn of this.getConnections()) {
         conn.send(protoMessage(CMD.WIZARD_ASSIGN, senderId, payload));
       }
@@ -130,8 +177,29 @@ export default class SignalingServer implements Party.Server {
     }
 
     if (type === CMD.BEGIN_GAME && senderId === 1) {
+      this.sealed = true;
       for (const conn of this.getConnections()) {
-        if (conn.id !== sender.id) conn.send(protoMessage(CMD.BEGIN_GAME, 0, ""));
+        if (conn.id !== sender.id) {
+          conn.send(protoMessage(CMD.BEGIN_GAME, 0, ""));
+        }
+      }
+      return;
+    }
+
+    if (type === CMD.END_TURN && senderId === 1) {
+      for (const conn of this.getConnections()) {
+        if (conn.id !== sender.id) {
+          conn.send(protoMessage(CMD.END_TURN, 0, ""));
+        }
+      }
+      return;
+    }
+
+    if (type === CMD.CAST_DAMAGE_TARGETS && senderId === 1) {
+      for (const conn of this.getConnections()) {
+        if (conn.id !== sender.id) {
+          conn.send(protoMessage(CMD.CAST_DAMAGE_TARGETS, 0, data));
+        }
       }
       return;
     }
@@ -148,8 +216,13 @@ export default class SignalingServer implements Party.Server {
   async onClose(connection: Party.Connection) {
     const assignedId = this.peerIds.get(connection.id);
     this.peerIds.delete(connection.id);
-
     if (assignedId !== undefined) {
+      for (const [slot, peerId] of this.slotAssignments) {
+        if (peerId === assignedId) {
+          this.slotAssignments.delete(slot);
+          break;
+        }
+      }
       for (const conn of this.getConnections()) {
         conn.send(protoMessage(CMD.PEER_DISCONNECT, assignedId, ""));
       }
