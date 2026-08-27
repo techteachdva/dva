@@ -4,7 +4,7 @@
 (() => {
   "use strict";
 
-  const APP_VERSION = "2.9.0";
+  const APP_VERSION = "2.9.1";
 
   const ASSIGNMENT_MODES = ["composition", "fluency", "typing_practice", "reflection"];
 
@@ -119,6 +119,16 @@
   ];
 
   const CHANGELOG = [
+    {
+      version: "2.9.1",
+      date: "2026-08-25",
+      summary: "Grade and give feedback from Admin All Results.",
+      items: [
+        "Admin All Results now shows Auto and Teacher scores in the table and detail panel.",
+        "Select a submission to save points, teacher feedback, and release-to-student — the same grading tools as Studio Results.",
+        "Suggested points still come from the auto score; ungraded rows stay blank until you save.",
+      ],
+    },
     {
       version: "2.9.0",
       date: "2026-08-24",

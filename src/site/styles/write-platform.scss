@@ -6510,6 +6510,13 @@ mark.wf-standard-hit,
   min-width: 10rem;
 }
 
+.wf-admin-results__table-panel .wf-admin-results__table .dw-col-overall,
+.wf-admin-results__table-panel .wf-admin-results__table .dw-col-teacher {
+  min-width: 4.5rem;
+  white-space: nowrap;
+  text-align: right;
+}
+
 .wf-admin-results__table-panel .wf-admin-results__table .dw-col-submitted {
   min-width: 10.5rem;
   white-space: nowrap;
@@ -6542,6 +6549,14 @@ mark.wf-standard-hit,
 
 .wf-admin-results__detail-meta {
   margin: 0 0 8px;
+}
+
+.wf-admin-results__detail .wf-teacher-grading {
+  margin-top: 12px;
+}
+
+.wf-admin-results__detail .wf-toggle-row {
+  margin-top: 8px;
 }
 
 .wf-admin-results__draft {
