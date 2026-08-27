@@ -1154,11 +1154,18 @@
     }
   }
 
-  function renderGoldenTrack(containerId = "goldenRulesTrack") {
+  function renderGoldenTrack(containerId = "goldenRulesTrack", options = {}) {
     const el = document.getElementById(containerId);
     if (!el) return;
+    const interactive = Boolean(options.interactive);
     el.innerHTML = Visuals.GOLDEN_RULES.map((rule) => {
-      const lit = goldenRules.has(rule.n);
+      const lit = interactive ? false : goldenRules.has(rule.n);
+      if (interactive) {
+        return `<button type="button" class="tt-golden-orb tt-golden-orb--interactive" data-rule-n="${rule.n}" aria-label="Golden Rule ${rule.n}: ${escapeHtml(rule.short)}" aria-pressed="false">
+          <span class="tt-golden-orb__icon" aria-hidden="true">${rule.icon}</span>
+          <span class="tt-golden-orb__label">${escapeHtml(rule.short)}</span>
+        </button>`;
+      }
       return `<div class="tt-golden-orb${lit ? " tt-golden-orb--lit" : ""}" title="${escapeHtml(rule.short)}">
         <span class="tt-golden-orb__icon">${rule.icon}</span>
         <span class="tt-golden-orb__num">${rule.n}</span>
@@ -1166,12 +1173,41 @@
     }).join("");
   }
 
+  function wireTitleGoldenRules() {
+    const container = document.getElementById("titleGoldenPreview");
+    const detail = document.getElementById("goldenRuleDetail");
+    if (!container) return;
+    container.querySelectorAll(".tt-golden-orb--interactive").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const n = Number(btn.dataset.ruleN);
+        const rule = Visuals.GOLDEN_RULES.find((r) => r.n === n);
+        if (!rule) return;
+        container.querySelectorAll(".tt-golden-orb--interactive").forEach((b) => {
+          b.classList.remove("tt-golden-orb--selected");
+          b.setAttribute("aria-pressed", "false");
+        });
+        btn.classList.add("tt-golden-orb--selected");
+        btn.setAttribute("aria-pressed", "true");
+        if (detail) {
+          detail.classList.remove("dw-hidden");
+          detail.innerHTML = `<div class="tt-golden-rule-detail__badge">Golden Rule ${rule.n}</div>
+            <strong class="tt-golden-rule-detail__title">${escapeHtml(rule.short)}</strong>
+            <p class="tt-golden-rule-detail__body">${escapeHtml(rule.detail || rule.short)}</p>
+            <p class="tt-golden-rule-detail__hint">Recover this rule during your mission by making smart digital choices.</p>`;
+        }
+        toast(`Golden Rule ${rule.n}: ${rule.short}`, "lesson");
+        Audio?.playPathUnlock?.();
+        burstConfetti(8);
+      });
+    });
+  }
+
   function renderTitleGoldenPreview() {
-    renderGoldenTrack("titleGoldenPreview");
+    renderGoldenTrack("titleGoldenPreview", { interactive: true });
     document.querySelectorAll("#titleGoldenPreview .tt-golden-orb").forEach((orb, i) => {
-      orb.classList.remove("tt-golden-orb--lit");
       setTimeout(() => orb.classList.add("tt-golden-orb--pulse"), 300 + i * 180);
     });
+    wireTitleGoldenRules();
   }
 
   function applySceneZone(nodeId) {

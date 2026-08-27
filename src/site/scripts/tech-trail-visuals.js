@@ -112,11 +112,36 @@
   };
 
   const GOLDEN_RULES = [
-    { n: 1, short: "Design for people", icon: "🎯" },
-    { n: 2, short: "Protect data", icon: "🛡️" },
-    { n: 3, short: "Guard your login", icon: "🔑" },
-    { n: 4, short: "Think before you post", icon: "✋" },
-    { n: 5, short: "Decode media", icon: "🔍" },
+    {
+      n: 1,
+      short: "Design for people",
+      icon: "🎯",
+      detail: "Technology should help real humans — clear interfaces, accessibility, and empathy beat flashy tricks.",
+    },
+    {
+      n: 2,
+      short: "Protect data",
+      icon: "🛡️",
+      detail: "Treat personal information like treasure. Share only what is needed and know who can see it.",
+    },
+    {
+      n: 3,
+      short: "Guard your login",
+      icon: "🔑",
+      detail: "Strong passwords and careful sign-in habits keep your accounts and identity safe.",
+    },
+    {
+      n: 4,
+      short: "Think before you post",
+      icon: "✋",
+      detail: "Pause before you publish. Words and images online can spread fast and last a long time.",
+    },
+    {
+      n: 5,
+      short: "Decode media",
+      icon: "🔍",
+      detail: "Ask who made a message, what they want you to believe, and what evidence supports it.",
+    },
   ];
 
   function zoneForNode(nodeId) {

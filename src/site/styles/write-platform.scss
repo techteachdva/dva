@@ -627,10 +627,7 @@ $wp-sheet-min-height: 1056px;
 
 /* Global Tech Gauntlet — display typography */
 .wp-theme--gauntlet.dw-body {
-  background:
-    radial-gradient(900px 600px at 20% 0%, rgba(196, 30, 58, 0.2), transparent 55%),
-    radial-gradient(800px 500px at 80% 10%, rgba(255, 215, 0, 0.12), transparent 50%),
-    var(--dw-bg);
+  background: #0a0410;
 
   font-family: "Barlow", Roboto, "Segoe UI", sans-serif;
 
@@ -1920,8 +1917,90 @@ $wp-sheet-min-height: 1056px;
   color: #c9b896;
 }
 
-.tt-golden-preview {
-  margin: 16px 0 24px;
+.tt-golden-preview-wrap {
+  margin: 16px auto 20px;
+  max-width: min(720px, 96vw);
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.42);
+  border: 1px solid rgba(255, 215, 0, 0.22);
+  backdrop-filter: blur(8px);
+}
+
+.tt-golden-preview__heading {
+  margin: 0 0 6px;
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 1.2rem;
+  letter-spacing: 0.08em;
+  color: #ffd700;
+}
+
+.tt-golden-preview__sub {
+  margin: 0 0 12px;
+  font-size: 0.9rem;
+  color: rgba(255, 248, 231, 0.72);
+  line-height: 1.45;
+}
+
+.tt-golden-track--title {
+  gap: 10px;
+}
+
+.tt-golden-rule-detail {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(255, 215, 0, 0.08);
+  border: 1px solid rgba(255, 215, 0, 0.35);
+  text-align: left;
+  animation: tt-golden-detail-in 0.25s ease-out;
+}
+
+.tt-golden-rule-detail__badge {
+  display: inline-block;
+  margin-bottom: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(196, 30, 58, 0.35);
+  border: 1px solid rgba(255, 215, 0, 0.35);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: #ffd700;
+}
+
+.tt-golden-rule-detail__title {
+  display: block;
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 1.15rem;
+  letter-spacing: 0.06em;
+  color: #fff8e7;
+  margin-bottom: 6px;
+}
+
+.tt-golden-rule-detail__body {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: #e8c896;
+}
+
+.tt-golden-rule-detail__hint {
+  margin: 0;
+  font-size: 0.82rem;
+  color: rgba(255, 248, 231, 0.62);
+  font-style: italic;
+}
+
+@keyframes tt-golden-detail-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .tt-cta-btn {
@@ -2023,12 +2102,52 @@ $wp-sheet-min-height: 1056px;
   background: rgba(0, 0, 0, 0.35);
   border: 2px solid rgba(255, 215, 0, 0.2);
   opacity: 0.45;
-  transition: opacity 0.3s, box-shadow 0.3s, transform 0.3s;
+  transition: opacity 0.3s, box-shadow 0.3s, transform 0.3s, border-color 0.2s;
 }
 
-.tt-golden-orb__icon {
-  font-size: 14px;
-  line-height: 1;
+.tt-golden-orb--interactive {
+  width: auto;
+  min-width: 88px;
+  height: auto;
+  padding: 10px 8px 8px;
+  border-radius: 12px;
+  opacity: 1;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.tt-golden-orb--interactive:focus-visible {
+  outline: 2px solid #ffd700;
+  outline-offset: 2px;
+}
+
+.tt-golden-orb--interactive:hover {
+  transform: translateY(-2px) scale(1.04);
+  border-color: rgba(255, 215, 0, 0.55);
+  box-shadow: 0 0 22px rgba(255, 215, 0, 0.35);
+}
+
+.tt-golden-orb--selected {
+  border-color: #ffd700;
+  background: rgba(255, 215, 0, 0.14);
+  box-shadow: 0 0 28px rgba(255, 215, 0, 0.45);
+  transform: scale(1.05);
+}
+
+.tt-golden-orb__label {
+  display: block;
+  margin-top: 5px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  color: #e8c896;
+  max-width: 76px;
+}
+
+.tt-golden-orb--interactive .tt-golden-orb__icon {
+  font-size: 18px;
 }
 
 .tt-golden-orb__num {
@@ -7523,6 +7642,7 @@ mark.wf-standard-hit,
 /* ── GTG immersive full-viewport layout ── */
 .tt-game-body.wp-theme--gauntlet {
   overflow-x: hidden;
+  background: #0a0410;
 }
 
 .wp-theme--gauntlet .dw-shell.tt-shell {
@@ -7533,6 +7653,36 @@ mark.wf-standard-hit,
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
+}
+
+.wp-theme--gauntlet #titleView {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.wp-theme--gauntlet .tt-title-screen__bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background-size: cover;
+  background-position: center center;
+  transform: none;
+  filter: brightness(0.78) saturate(1.22) contrast(1.06);
+}
+
+.wp-theme--gauntlet .tt-title-screen__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.wp-theme--gauntlet .tt-title-screen {
+  position: relative;
+  z-index: 2;
+  isolation: isolate;
 }
 
 .wp-theme--gauntlet .breadcrumbs--standalone {
@@ -7549,6 +7699,8 @@ mark.wf-standard-hit,
   border-right: none;
   border-top: none;
   padding: 10px 16px;
+  position: relative;
+  z-index: 10;
   background: rgba(8, 4, 12, 0.82);
   backdrop-filter: blur(10px);
 }

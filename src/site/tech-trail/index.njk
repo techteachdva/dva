@@ -80,7 +80,12 @@ layout: false
               <button class="tt-difficulty__btn" type="button" data-tier="operative">Operative</button>
               <button class="tt-difficulty__btn" type="button" data-tier="analyst">Analyst</button>
             </div>
-            <div class="tt-golden-preview" id="titleGoldenPreview" aria-label="Golden Rules to recover"></div>
+            <div class="tt-golden-preview-wrap">
+              <h2 class="tt-golden-preview__heading">The Five Golden Rules</h2>
+              <p class="tt-golden-preview__sub">Tap a rule to preview what you will recover on your mission.</p>
+              <div class="tt-golden-track tt-golden-track--title" id="titleGoldenPreview" aria-label="Golden Rules to recover"></div>
+              <div id="goldenRuleDetail" class="tt-golden-rule-detail dw-hidden" aria-live="polite"></div>
+            </div>
             <p id="gtgBootError" class="tt-boot-error dw-hidden" role="alert"></p>
             <div class="tt-btn-group" id="titleBtnGroup">
               <div id="titleTypingMenu" class="tt-title-typing tt-typing-panel">
