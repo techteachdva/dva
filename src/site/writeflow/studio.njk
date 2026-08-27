@@ -241,8 +241,18 @@ layout: false
 
         <section id="teacherView" class="dw-hidden wf-teacher-results">
           <div class="dw-card dw-teacher-header wf-teacher-results__header">
-            <h2 class="dw-h2">Submissions</h2>
-            <p class="dw-muted" id="teacherMeta"></p>
+            <div class="wf-teacher-results__header-top">
+              <div class="wf-teacher-results__title-row">
+                <h2 class="dw-h2">Submissions</h2>
+                <label class="wf-teacher-results__class-filter dw-field">
+                  <span class="wf-sr-only">Filter by classroom</span>
+                  <select id="teacherClassroomFilter" class="dw-input dw-select" aria-label="Filter by classroom">
+                    <option value="">All classrooms</option>
+                  </select>
+                </label>
+              </div>
+              <p class="dw-muted" id="teacherMeta"></p>
+            </div>
             <div class="dw-row">
               <button id="teacherEditBtn" class="dw-btn dw-btn-secondary" type="button">Edit assignment</button>
               <button id="refreshBtn" class="dw-btn dw-btn-secondary" type="button">Refresh</button>

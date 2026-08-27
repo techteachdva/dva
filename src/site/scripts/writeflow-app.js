@@ -44,6 +44,7 @@
   let timer = null;
   let allSubmissions = [];
   let teacherTableSort = { col: "submitted", dir: "desc" };
+  let teacherClassroomFilter = "";
   let selectedTeacherSubmissionKey = "";
   let teacherAuthed = false;
   let sessionTeacherPassword = "";
@@ -2238,6 +2239,7 @@
       void openAssignmentInBuilder(config.id);
     });
     document.getElementById("refreshBtn")?.addEventListener("click", loadTeacherDashboard);
+    document.getElementById("teacherClassroomFilter")?.addEventListener("change", applyTeacherClassroomFilter);
     document.getElementById("reanalyzeBtn")?.addEventListener("click", () => void reanalyzeAllSubmissions());
     document.getElementById("exportBtn")?.addEventListener("click", exportCsv);
     document.getElementById("teacherDetailCloseBtn")?.addEventListener("click", () => {
@@ -2267,26 +2269,71 @@
   }
 
   async function loadTeacherDashboard() {
-    const meta = document.getElementById("teacherMeta");
-    if (meta) meta.textContent = "Loading submissions…";
+    updateTeacherMeta("Loading submissions…");
     try {
       allSubmissions = await fetchSubmissions();
     } catch (err) {
       allSubmissions = loadLocalSubmissions();
-      if (meta) {
-        meta.textContent = allSubmissions.length
-          ? `${allSubmissions.length} submission(s) · local backup (${err.message})`
-          : err.message;
-        meta.classList.add("dw-error");
+      populateTeacherClassroomFilter();
+      if (allSubmissions.length) {
+        updateTeacherMeta(`${getFilteredTeacherSubmissions().length} submission(s) · local backup (${err.message})`, true);
+      } else {
+        updateTeacherMeta(err.message, true);
       }
       renderTeacherTable();
       return;
     }
-    if (meta) {
-      meta.textContent = `${allSubmissions.length} submission${allSubmissions.length === 1 ? "" : "s"} · ${config.title}`;
-      meta.classList.remove("dw-error");
-    }
+    populateTeacherClassroomFilter();
+    updateTeacherMeta();
     void updateAdminReanalyzeUi();
+    renderTeacherTable();
+  }
+
+  function getFilteredTeacherSubmissions() {
+    if (!teacherClassroomFilter) return allSubmissions;
+    return allSubmissions.filter((sub) => sub.classroom === teacherClassroomFilter);
+  }
+
+  function populateTeacherClassroomFilter() {
+    const select = document.getElementById("teacherClassroomFilter");
+    if (!select) return;
+    const current = teacherClassroomFilter || select.value || "";
+    const classrooms = [...new Set(allSubmissions.map((sub) => sub.classroom).filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+    select.innerHTML = `<option value="">All classrooms</option>${classrooms
+      .map((room) => `<option value="${escapeHtml(room)}">${escapeHtml(room)}</option>`)
+      .join("")}`;
+    select.value = classrooms.includes(current) ? current : "";
+    teacherClassroomFilter = select.value;
+  }
+
+  function updateTeacherMeta(overrideText, isError = false) {
+    const meta = document.getElementById("teacherMeta");
+    if (!meta) return;
+    if (overrideText != null) {
+      meta.textContent = overrideText;
+      meta.classList.toggle("dw-error", !!isError);
+      return;
+    }
+    const total = allSubmissions.length;
+    const shown = getFilteredTeacherSubmissions().length;
+    if (!total) {
+      meta.textContent = `0 submissions · ${config.title}`;
+    } else if (!teacherClassroomFilter || shown === total) {
+      meta.textContent = `${total} submission${total === 1 ? "" : "s"} · ${config.title}`;
+    } else {
+      meta.textContent = `${shown} of ${total} submissions · ${teacherClassroomFilter} · ${config.title}`;
+    }
+    meta.classList.remove("dw-error");
+  }
+
+  function applyTeacherClassroomFilter() {
+    teacherClassroomFilter = document.getElementById("teacherClassroomFilter")?.value || "";
+    if (selectedTeacherSubmissionKey) {
+      const stillVisible = getFilteredTeacherSubmissions().some((sub) => getTeacherSubmissionKey(sub) === selectedTeacherSubmissionKey);
+      if (!stillVisible) clearTeacherSubmissionDetail();
+    }
+    updateTeacherMeta();
     renderTeacherTable();
   }
 
@@ -2738,7 +2785,7 @@
 
   function renderTeacherTable() {
     const cols = getTeacherTableColumns();
-    const subs = sortTeacherSubmissions(allSubmissions, teacherTableSort.col, teacherTableSort.dir);
+    const subs = sortTeacherSubmissions(getFilteredTeacherSubmissions(), teacherTableSort.col, teacherTableSort.dir);
     const tbody = document.getElementById("teacherTableBody");
     const thead = document.getElementById("teacherTableHead");
     const headerLabels = {
@@ -2847,11 +2894,11 @@
   }
 
   function exportCsv() {
-    const subs = sortTeacherSubmissions(
-      allSubmissions.length ? allSubmissions : loadLocalSubmissions(),
-      teacherTableSort.col,
-      teacherTableSort.dir
-    );
+    const base = allSubmissions.length ? allSubmissions : loadLocalSubmissions();
+    const filtered = teacherClassroomFilter
+      ? base.filter((s) => s.classroom === teacherClassroomFilter)
+      : base;
+    const subs = sortTeacherSubmissions(filtered, teacherTableSort.col, teacherTableSort.dir);
     const rubrics = getActiveRubrics();
     const hasVocab = getVocabWords().length > 0;
     const showWpm = resolveShowLiveWpm() || rubrics.includes("typing");
