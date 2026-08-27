@@ -267,10 +267,15 @@
   }
 
   function startMissionCore() {
+    hideDiagnostic();
+    show("game");
     resetRun();
     showSceneLoader();
     setTimeout(() => {
-      renderScene("start");
+      renderScene("start").catch((err) => {
+        console.error("[GTG] Failed to load start scene:", err);
+        toast("Mission failed to load — tap Play mission to try again.", "lesson");
+      });
       hideSceneLoader();
       updateTitleLaunchUI();
     }, SCENE_LOADER_MIN_MS);
@@ -359,6 +364,9 @@
 
   function hideDiagnostic() {
     document.getElementById("diagnosticOverlay")?.classList.add("dw-hidden");
+  }
+
+  function clearPendingDiagnostic() {
     pendingDiagnosticAction = null;
   }
 
@@ -431,7 +439,8 @@
       document.getElementById("diagnosticResult")?.classList.remove("dw-hidden");
       const step = document.getElementById("diagnosticStep");
       if (step) step.textContent = "Step 2 of 2 · Lock your target";
-      if (status) status.textContent = "Great typing! Tap Start mission — the game launches right after.";
+      if (status) status.textContent = "Great typing! Tap Start mission below (or press Enter).";
+      document.getElementById("diagnosticAcceptBtn")?.focus();
       Audio?.playDiagnosticPop?.();
       document.querySelector(".tt-diagnostic__panel")?.classList.add("tt-diagnostic__panel--success");
       celebrateTypedSuccess(diagnosticPhrase, input, {
@@ -461,10 +470,19 @@
     const launch = pendingDiagnosticAction;
     setTimeout(() => {
       hideDiagnostic();
+      clearPendingDiagnostic();
       toast(`Target: ${typingProfile.targetCpm} keys/min — launching mission!`, "badge");
       launch?.();
-      pendingDiagnosticAction = null;
     }, prefersReducedMotion ? 0 : 450);
+  }
+
+  function handleDiagnosticKeydown(e) {
+    const result = document.getElementById("diagnosticResult");
+    if (!result || result.classList.contains("dw-hidden")) return;
+    if (e.key === "Enter") {
+      e.preventDefault();
+      acceptDiagnostic();
+    }
   }
 
   function clearChoiceTyping() {
@@ -787,8 +805,15 @@
       reputation = saved.reputation ?? 50;
       mentorTrust = saved.mentorTrust || {};
       startTime = saved.startedAt || Date.now();
+      hideDiagnostic();
+      show("game");
       showSceneLoader();
-      setTimeout(() => { renderScene(currentNode); hideSceneLoader(); }, SCENE_LOADER_MIN_MS);
+      setTimeout(() => {
+        renderScene(currentNode).catch((err) => {
+          console.error("[GTG] Failed to load saved scene:", err);
+        });
+        hideSceneLoader();
+      }, SCENE_LOADER_MIN_MS);
     } else {
       startMissionCore();
     }
@@ -1037,14 +1062,16 @@
     if (remaining > 0) await new Promise((r) => setTimeout(r, remaining));
   }
 
-  async function typewriteNarrative(html, gen) {
+  async function typewriteNarrative(html, gen, options = {}) {
     const narrativeEl = document.getElementById("sceneNarrative");
     const continueBtn = document.getElementById("narrativeContinueBtn");
     if (!narrativeEl) return;
 
     cancelTypewriterWait();
 
-    if (prefersReducedMotion) {
+    const skipPauses = Boolean(options.skipPauses);
+
+    if (prefersReducedMotion || skipPauses) {
       narrativeEl.innerHTML = html;
       narrativeEl.classList.remove("tt-narrative--typing");
       continueBtn?.classList.add("dw-hidden");
@@ -1428,8 +1455,17 @@
   async function renderScene(nodeId) {
     const gen = ++typewriterGen;
     const node = STORY[nodeId];
-    if (!node) return;
+    if (!node) {
+      console.error("[GTG] Missing story node:", nodeId);
+      toast("Story error — try Play mission again.", "lesson");
+      return;
+    }
     currentNode = nodeId;
+
+    if (!node.ending) {
+      hideDiagnostic();
+      show("game");
+    }
 
     const choiceTypingInput = document.getElementById("choiceTypingInput");
     if (choiceTypingInput) choiceTypingInput.disabled = false;
@@ -1455,7 +1491,7 @@
       narrativeEl.classList.remove("tt-narrative--reveal");
       void narrativeEl.offsetWidth;
       narrativeEl.classList.add("tt-narrative--reveal");
-      await typewriteNarrative(node.narrative || "", gen);
+      await typewriteNarrative(node.narrative || "", gen, { skipPauses: nodeId === "start" });
     }
     if (gen !== typewriterGen) return;
 
@@ -1534,8 +1570,6 @@
     if (node.ending) {
       show("ending");
       renderEnding(node);
-    } else {
-      show("game");
     }
 
     renderJournal();
@@ -1794,6 +1828,7 @@ Play again to rebuild your record clean.`;
     const diagnosticInput = document.getElementById("diagnosticInput");
     Core.setupPasteControl(diagnosticInput, false);
     diagnosticInput?.addEventListener("input", handleDiagnosticInput);
+    diagnosticInput?.addEventListener("keydown", handleDiagnosticKeydown);
 
     const choiceTypingInput = document.getElementById("choiceTypingInput");
     Core.setupPasteControl(choiceTypingInput, false);
