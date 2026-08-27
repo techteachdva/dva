@@ -1,5 +1,5 @@
 /**
- * Tech Trail Typing Engine — diagnostic, ghost-text matching, WPM, typo tolerance.
+ * Tech Trail Typing Engine — diagnostic, ghost-text matching, CPM (correct keys/min), typo tolerance.
  * Aligns with ITEM 2025 keyboarding benchmarks (8.3.2.1) and middle-school fluency goals.
  */
 (() => {
@@ -15,8 +15,9 @@
 
   const RECOMMENDED_SPEED_RATIO = 0.88;
   const MAX_MANUAL_SPEED_RATIO = 1.5;
-  const MIN_TARGET_WPM = 8;
-  const DEFAULT_TARGET_WPM = 18;
+  /** Minimum target: correct keystrokes per minute */
+  const MIN_TARGET_CPM = 40;
+  const DEFAULT_TARGET_CPM = 90;
 
   function normalize(s) {
     return String(s || "")
@@ -40,11 +41,15 @@
     return deriveTypeText(choice.label);
   }
 
-  /** Standard WPM: (characters / 5) / minutes */
-  function computeWpm(charCount, durationMs) {
+  function countCorrectChars(chars) {
+    return (chars || []).filter((c) => c.state === "correct").length;
+  }
+
+  /** Correct keystrokes per minute — only characters that match the target (spellcheck-valid). */
+  function computeCpm(correctCharCount, durationMs) {
     if (!durationMs || durationMs <= 0) return 0;
     const minutes = durationMs / 60000;
-    return Math.round(((charCount / 5) / minutes) * 10) / 10;
+    return Math.round(correctCharCount / minutes);
   }
 
   function pickDiagnosticPhrase(rng = Math.random) {
@@ -52,19 +57,19 @@
     return DIAGNOSTIC_PHRASES[i];
   }
 
-  function recommendedTargetWpm(testWpm) {
-    const base = Math.max(MIN_TARGET_WPM, testWpm * RECOMMENDED_SPEED_RATIO);
-    return Math.round(base * 10) / 10;
+  function recommendedTargetCpm(testCpm) {
+    const base = Math.max(MIN_TARGET_CPM, testCpm * RECOMMENDED_SPEED_RATIO);
+    return Math.round(base);
   }
 
-  function clampTargetWpm(testWpm, chosen) {
-    const min = MIN_TARGET_WPM;
-    const max = Math.max(min, testWpm * MAX_MANUAL_SPEED_RATIO);
-    return Math.round(Math.min(max, Math.max(min, chosen)) * 10) / 10;
+  function clampTargetCpm(testCpm, chosen) {
+    const min = MIN_TARGET_CPM;
+    const max = Math.max(min, testCpm * MAX_MANUAL_SPEED_RATIO);
+    return Math.round(Math.min(max, Math.max(min, chosen)));
   }
 
-  function maxManualTargetWpm(testWpm) {
-    return Math.round(Math.max(MIN_TARGET_WPM, testWpm * MAX_MANUAL_SPEED_RATIO) * 10) / 10;
+  function maxManualTargetCpm(testCpm) {
+    return Math.round(Math.max(MIN_TARGET_CPM, testCpm * MAX_MANUAL_SPEED_RATIO));
   }
 
   /**
@@ -99,6 +104,7 @@
 
     const complete = normalize(raw) === t;
     const progress = t.length ? Math.min(100, Math.round((raw.length / t.length) * 100)) : 0;
+    const correctCount = countCorrectChars(chars);
 
     return {
       target: t,
@@ -109,6 +115,7 @@
       progress,
       typedLength: raw.length,
       targetLength: t.length,
+      correctCount,
     };
   }
 
@@ -226,25 +233,26 @@
     return typoCount > maxTypos;
   }
 
-  function meetsSpeedGate(wpm, targetWpm) {
-    if (!targetWpm || targetWpm <= 0) return true;
-    return wpm >= targetWpm * 0.85;
+  function meetsSpeedGate(cpm, targetCpm) {
+    if (!targetCpm || targetCpm <= 0) return true;
+    return cpm >= targetCpm * 0.85;
   }
 
   window.TechTrailTyping = {
     DIAGNOSTIC_PHRASES,
     RECOMMENDED_SPEED_RATIO,
     MAX_MANUAL_SPEED_RATIO,
-    MIN_TARGET_WPM,
-    DEFAULT_TARGET_WPM,
+    MIN_TARGET_CPM,
+    DEFAULT_TARGET_CPM,
     normalize,
     deriveTypeText,
     choiceTypeText,
-    computeWpm,
+    countCorrectChars,
+    computeCpm,
     pickDiagnosticPhrase,
-    recommendedTargetWpm,
-    clampTargetWpm,
-    maxManualTargetWpm,
+    recommendedTargetCpm,
+    clampTargetCpm,
+    maxManualTargetCpm,
     compareToTarget,
     resolveActiveChoice,
     buildBranchDisplay,

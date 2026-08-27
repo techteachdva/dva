@@ -74,24 +74,40 @@
 
   function blankTypingProfile() {
     return {
-      v: 1,
+      v: 2,
       diagnosed: false,
-      testWpm: 0,
-      targetWpm: 18,
+      testCpm: 0,
+      targetCpm: 90,
       maxTypos: 2,
       lastPhrase: "",
       diagnosedAt: null,
     };
   }
 
+  function migrateTypingSpeed(raw) {
+    if (typeof raw.testCpm === "number" && raw.testCpm > 0) {
+      return {
+        testCpm: raw.testCpm,
+        targetCpm: typeof raw.targetCpm === "number" ? raw.targetCpm : 90,
+      };
+    }
+    if (typeof raw.testWpm === "number" && raw.testWpm > 0) {
+      const testCpm = Math.round(raw.testWpm * 5);
+      const targetCpm = typeof raw.targetWpm === "number" ? Math.round(raw.targetWpm * 5) : Math.round(testCpm * 0.88);
+      return { testCpm, targetCpm };
+    }
+    return { testCpm: 0, targetCpm: typeof raw.targetCpm === "number" ? raw.targetCpm : 90 };
+  }
+
   function loadTypingProfile() {
     const raw = tryGet(`${PREFIX}:${TYPING_KEY}`);
-    if (!raw || raw.v !== 1) return blankTypingProfile();
+    if (!raw || (raw.v !== 1 && raw.v !== 2)) return blankTypingProfile();
+    const speeds = migrateTypingSpeed(raw);
     return {
-      v: 1,
+      v: 2,
       diagnosed: Boolean(raw.diagnosed),
-      testWpm: typeof raw.testWpm === "number" ? raw.testWpm : 0,
-      targetWpm: typeof raw.targetWpm === "number" ? raw.targetWpm : 18,
+      testCpm: speeds.testCpm,
+      targetCpm: speeds.targetCpm,
       maxTypos: typeof raw.maxTypos === "number" ? raw.maxTypos : 2,
       lastPhrase: raw.lastPhrase || "",
       diagnosedAt: raw.diagnosedAt || null,
@@ -99,7 +115,7 @@
   }
 
   function saveTypingProfile(profile) {
-    trySet(`${PREFIX}:${TYPING_KEY}`, { ...profile, v: 1 });
+    trySet(`${PREFIX}:${TYPING_KEY}`, { ...profile, v: 2 });
   }
 
   function normalizeArray(arr) {

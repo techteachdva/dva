@@ -20,8 +20,8 @@
     const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     return {
       DIAGNOSTIC_PHRASES: PHRASES,
-      MIN_TARGET_WPM: 8,
-      DEFAULT_TARGET_WPM: 18,
+      MIN_TARGET_CPM: 40,
+      DEFAULT_TARGET_CPM: 90,
       pickDiagnosticPhrase(rng = Math.random) {
         return PHRASES[Math.floor(rng() * PHRASES.length)];
       },
@@ -83,7 +83,25 @@
           typoCount,
           complete: this.normalize(raw) === t,
           progress: t.length ? Math.min(100, Math.round((raw.length / t.length) * 100)) : 0,
+          correctCount: chars.filter((c) => c.state === "correct").length,
         };
+      },
+      countCorrectChars(chars) {
+        return (chars || []).filter((c) => c.state === "correct").length;
+      },
+      computeCpm(correctCharCount, durationMs) {
+        if (!durationMs) return 0;
+        return Math.round(correctCharCount / (durationMs / 60000));
+      },
+      recommendedTargetCpm(testCpm) {
+        return Math.round(Math.max(40, testCpm * 0.88));
+      },
+      clampTargetCpm(testCpm, chosen) {
+        const max = Math.max(40, testCpm * 1.5);
+        return Math.round(Math.min(max, Math.max(40, chosen)));
+      },
+      maxManualTargetCpm(testCpm) {
+        return Math.round(Math.max(40, testCpm * 1.5));
       },
       choiceTypeText(c) {
         if (c?.typeText) return String(c.typeText).trim();
@@ -125,27 +143,13 @@
           typeText: bestIdx >= 0 ? this.choiceTypeText(choices[bestIdx]) : "",
         };
       },
-      computeWpm(charCount, durationMs) {
-        if (!durationMs) return 0;
-        return Math.round(((charCount / 5) / (durationMs / 60000)) * 10) / 10;
-      },
-      recommendedTargetWpm(wpm) {
-        return Math.round(Math.max(8, wpm * 0.88) * 10) / 10;
-      },
-      clampTargetWpm(testWpm, chosen) {
-        const max = Math.max(8, testWpm * 1.5);
-        return Math.round(Math.min(max, Math.max(8, chosen)) * 10) / 10;
-      },
-      maxManualTargetWpm(testWpm) {
-        return Math.round(Math.max(8, testWpm * 1.5) * 10) / 10;
-      },
       exceedsTypoBudget(typoCount, maxTypos) {
         if (maxTypos >= 10) return false;
         return typoCount > maxTypos;
       },
-      meetsSpeedGate(wpm, targetWpm) {
-        if (!targetWpm) return true;
-        return wpm >= targetWpm * 0.85;
+      meetsSpeedGate(cpm, targetCpm) {
+        if (!targetCpm) return true;
+        return cpm >= targetCpm * 0.85;
       },
     };
   }
@@ -234,12 +238,12 @@
     const statTarget = document.getElementById("statTargetWpm");
     if (typingProfile.diagnosed) {
       bar?.classList.remove("dw-hidden");
-      if (testEl) testEl.textContent = String(typingProfile.testWpm);
-      if (targetEl) targetEl.textContent = String(typingProfile.targetWpm);
+      if (testEl) testEl.textContent = String(typingProfile.testCpm);
+      if (targetEl) targetEl.textContent = String(typingProfile.targetCpm);
     } else {
       bar?.classList.add("dw-hidden");
     }
-    if (statTarget) statTarget.textContent = typingProfile.diagnosed ? String(typingProfile.targetWpm) : "—";
+    if (statTarget) statTarget.textContent = typingProfile.diagnosed ? String(typingProfile.targetCpm) : "—";
   }
 
   function updateTypoToleranceUI() {
@@ -273,7 +277,7 @@
     diagnosticStartTime = 0;
     overlay.classList.remove("dw-hidden");
     result?.classList.add("dw-hidden");
-    if (status) status.textContent = "Focus on accuracy first — speed follows!";
+    if (status) status.textContent = "Only correct keystrokes count — fix underlined letters first!";
     if (input) {
       input.value = "";
       input.disabled = false;
@@ -282,11 +286,11 @@
     document.getElementById("diagnosticTyped").innerHTML = "";
     updateTypingMeterUI({
       progressPct: 0,
-      liveWpm: 0,
+      liveCpm: 0,
       progressFillId: "diagnosticProgressFill",
-      wpmFillId: "diagnosticWpmFill",
+      speedFillId: "diagnosticWpmFill",
       progressPctId: "diagnosticProgressPct",
-      liveWpmId: "diagnosticLiveWpm",
+      liveCpmId: "diagnosticLiveWpm",
       inputEl: input,
     });
     overlay.querySelector(".tt-diagnostic__panel")?.classList.add("tt-diagnostic__panel--pop");
@@ -321,15 +325,15 @@
     if (typedEl) typedEl.innerHTML = Typing.renderTypedCharsHtml(cmp.chars, typingProfile.maxTypos);
 
     const duration = diagnosticStartTime ? performance.now() - diagnosticStartTime : 0;
-    const liveWpm = duration > 0 ? Typing.computeWpm(input.value.length, duration) : 0;
+    const liveCpm = duration > 0 ? Typing.computeCpm(cmp.correctCount, duration) : 0;
     updateTypingMeterUI({
       progressPct: cmp.progress,
-      liveWpm,
-      targetWpm: typingProfile.targetWpm || Typing.DEFAULT_TARGET_WPM,
+      liveCpm,
+      targetCpm: typingProfile.targetCpm || Typing.DEFAULT_TARGET_CPM,
       progressFillId: "diagnosticProgressFill",
-      wpmFillId: "diagnosticWpmFill",
+      speedFillId: "diagnosticWpmFill",
       progressPctId: "diagnosticProgressPct",
-      liveWpmId: "diagnosticLiveWpm",
+      liveCpmId: "diagnosticLiveWpm",
       inputEl: input,
       complete: cmp.complete,
       speedOk: true,
@@ -348,28 +352,28 @@
 
     if (cmp.complete) {
       const duration = diagnosticStartTime ? performance.now() - diagnosticStartTime : 0;
-      const wpm = Typing.computeWpm(diagnosticPhrase.length, duration);
-      typingProfile.testWpm = wpm;
+      const cpm = Typing.computeCpm(cmp.correctCount, duration);
+      typingProfile.testCpm = cpm;
       typingProfile.lastPhrase = diagnosticPhrase;
       typingProfile.diagnosedAt = Date.now();
-      const recommended = Typing.recommendedTargetWpm(wpm);
-      typingProfile.targetWpm = recommended;
+      const recommended = Typing.recommendedTargetCpm(cpm);
+      typingProfile.targetCpm = recommended;
 
       input.disabled = true;
-      document.getElementById("diagnosticWpm").textContent = String(wpm);
+      document.getElementById("diagnosticWpm").textContent = String(cpm);
       document.getElementById("diagnosticRecommended").textContent = String(recommended);
       const targetInput = document.getElementById("diagnosticTargetInput");
       if (targetInput) {
-        targetInput.min = String(Typing.MIN_TARGET_WPM);
-        targetInput.max = String(Typing.maxManualTargetWpm(wpm));
-        targetInput.value = String(Math.round(recommended));
+        targetInput.min = String(Typing.MIN_TARGET_CPM);
+        targetInput.max = String(Typing.maxManualTargetCpm(cpm));
+        targetInput.value = String(recommended);
       }
       document.getElementById("diagnosticResult")?.classList.remove("dw-hidden");
       if (status) status.textContent = "Nice! Accept the recommended speed or set your own challenge.";
       Audio?.playDiagnosticPop?.();
       document.querySelector(".tt-diagnostic__panel")?.classList.add("tt-diagnostic__panel--success");
       celebrateTypedSuccess(diagnosticPhrase, input, {
-        badge: `${wpm} WPM!`,
+        badge: `${cpm} keys/min!`,
         badgeVariant: "green",
         confetti: 16,
         skipAudio: true,
@@ -380,12 +384,12 @@
 
   function acceptDiagnostic() {
     const targetInput = document.getElementById("diagnosticTargetInput");
-    const chosen = Number(targetInput?.value || typingProfile.targetWpm);
-    typingProfile.targetWpm = Typing.clampTargetWpm(typingProfile.testWpm, chosen);
+    const chosen = Number(targetInput?.value || typingProfile.targetCpm);
+    typingProfile.targetCpm = Typing.clampTargetCpm(typingProfile.testCpm, chosen);
     typingProfile.diagnosed = true;
     saveTypingProfile();
     const acceptBtn = document.getElementById("diagnosticAcceptBtn");
-    celebrateTypedSuccess(`${typingProfile.targetWpm} WPM TARGET`, acceptBtn || targetInput, {
+    celebrateTypedSuccess(`${typingProfile.targetCpm} keys/min TARGET`, acceptBtn || targetInput, {
       badge: "LOCKED IN!",
       confetti: 12,
       center: true,
@@ -393,7 +397,7 @@
     });
     setTimeout(() => {
       hideDiagnostic();
-      toast(`Target set: ${typingProfile.targetWpm} WPM — type your adventure!`, "badge");
+      toast(`Target set: ${typingProfile.targetCpm} keys/min — type your adventure!`, "badge");
       pendingDiagnosticAction?.();
       pendingDiagnosticAction = null;
     }, prefersReducedMotion ? 0 : 850);
@@ -435,18 +439,18 @@
 
     const hint = document.getElementById("choiceSpeedHint");
     if (hint) {
-      hint.textContent = `Type one path at ${typingProfile.targetWpm} WPM · ${typingProfile.maxTypos >= 10 ? "typos forgiven" : `up to ${typingProfile.maxTypos} typo${typingProfile.maxTypos === 1 ? "" : "s"}`}`;
+      hint.textContent = `Type one path at ${typingProfile.targetCpm} keys/min · ${typingProfile.maxTypos >= 10 ? "typos forgiven" : `up to ${typingProfile.maxTypos} typo${typingProfile.maxTypos === 1 ? "" : "s"}`}`;
     }
 
     updateTypingMeterUI({
       progressPct: 0,
-      liveWpm: 0,
-      targetWpm: typingProfile.targetWpm,
+      liveCpm: 0,
+      targetCpm: typingProfile.targetCpm,
       progressFillId: "choiceProgressFill",
-      wpmFillId: "choiceWpmFill",
+      speedFillId: "choiceWpmFill",
       progressPctId: "choiceProgressPct",
-      liveWpmId: "choiceLiveWpm",
-      targetWpmId: "choiceTargetWpm",
+      liveCpmId: "choiceLiveWpm",
+      targetCpmId: "choiceTargetWpm",
       inputEl: document.getElementById("choiceTypingInput"),
     });
 
@@ -484,22 +488,22 @@
     if (typedEl) typedEl.innerHTML = Typing.renderTypedCharsHtml(cmp.chars, typingProfile.maxTypos);
 
     const duration = choiceTypingStart ? performance.now() - choiceTypingStart : 0;
-    const liveWpm = duration > 0 ? Typing.computeWpm(input.value.length, duration) : 0;
+    const liveCpm = duration > 0 ? Typing.computeCpm(cmp.correctCount, duration) : 0;
     const liveEl = document.getElementById("statLiveWpm");
-    if (liveEl) liveEl.textContent = String(Math.round(liveWpm));
+    if (liveEl) liveEl.textContent = String(liveCpm);
 
     updateTypingMeterUI({
       progressPct: cmp.progress,
-      liveWpm,
-      targetWpm: typingProfile.targetWpm,
+      liveCpm,
+      targetCpm: typingProfile.targetCpm,
       progressFillId: "choiceProgressFill",
-      wpmFillId: "choiceWpmFill",
+      speedFillId: "choiceWpmFill",
       progressPctId: "choiceProgressPct",
-      liveWpmId: "choiceLiveWpm",
-      targetWpmId: "choiceTargetWpm",
+      liveCpmId: "choiceLiveWpm",
+      targetCpmId: "choiceTargetWpm",
       inputEl: input,
       complete: cmp.complete,
-      speedOk: Typing.meetsSpeedGate(liveWpm, typingProfile.targetWpm),
+      speedOk: Typing.meetsSpeedGate(liveCpm, typingProfile.targetCpm),
     });
 
     if (cmp.chars.length > 0) {
@@ -515,8 +519,8 @@
 
     if (!cmp.complete || !resolved.choice) return;
 
-    if (!Typing.meetsSpeedGate(liveWpm, typingProfile.targetWpm)) {
-      if (hint) hint.textContent = `Too slow (${Math.round(liveWpm)} WPM) — need ${typingProfile.targetWpm} WPM. Try again!`;
+    if (!Typing.meetsSpeedGate(liveCpm, typingProfile.targetCpm)) {
+      if (hint) hint.textContent = `Too slow (${liveCpm} keys/min) — need ${typingProfile.targetCpm} keys/min. Try again!`;
       Audio?.playSpeedFail?.();
       return;
     }
@@ -1110,41 +1114,50 @@
   function updateTypingMeterUI(cfg) {
     const {
       progressPct = 0,
-      liveWpm = 0,
-      targetWpm = 0,
+      liveCpm = 0,
+      targetCpm = 0,
       progressFillId,
+      speedFillId,
       wpmFillId,
       progressPctId,
+      liveCpmId,
       liveWpmId,
+      targetCpmId,
       targetWpmId,
       inputEl,
       complete = false,
       speedOk = true,
     } = cfg;
 
+    const liveSpeed = liveCpm || cfg.liveWpm || 0;
+    const targetSpeed = targetCpm || cfg.targetWpm || 0;
+    const fillId = speedFillId || wpmFillId;
+    const liveId = liveCpmId || liveWpmId;
+    const targetId = targetCpmId || targetWpmId;
+
     const pct = Math.min(100, Math.max(0, Math.round(progressPct)));
     const progressFill = progressFillId ? document.getElementById(progressFillId) : null;
     if (progressFill) progressFill.style.width = `${pct}%`;
 
-    const wpmFill = wpmFillId ? document.getElementById(wpmFillId) : null;
-    if (wpmFill && targetWpm > 0) {
-      const wpmPct = Math.min(100, Math.round((liveWpm / targetWpm) * 100));
-      wpmFill.style.width = `${wpmPct}%`;
-      wpmFill.classList.toggle("tt-typing-meter__wpm--hot", wpmPct >= 88);
-      wpmFill.classList.toggle("tt-typing-meter__wpm--cold", wpmPct < 55);
+    const speedFill = fillId ? document.getElementById(fillId) : null;
+    if (speedFill && targetSpeed > 0) {
+      const speedPct = Math.min(100, Math.round((liveSpeed / targetSpeed) * 100));
+      speedFill.style.width = `${speedPct}%`;
+      speedFill.classList.toggle("tt-typing-meter__wpm--hot", speedPct >= 88);
+      speedFill.classList.toggle("tt-typing-meter__wpm--cold", speedPct < 55);
     }
 
     if (progressPctId) {
       const el = document.getElementById(progressPctId);
       if (el) el.textContent = `${pct}%`;
     }
-    if (liveWpmId) {
-      const el = document.getElementById(liveWpmId);
-      if (el) el.textContent = String(Math.round(liveWpm));
+    if (liveId) {
+      const el = document.getElementById(liveId);
+      if (el) el.textContent = String(Math.round(liveSpeed));
     }
-    if (targetWpmId) {
-      const el = document.getElementById(targetWpmId);
-      if (el) el.textContent = targetWpm > 0 ? String(Math.round(targetWpm)) : "—";
+    if (targetId) {
+      const el = document.getElementById(targetId);
+      if (el) el.textContent = targetSpeed > 0 ? String(Math.round(targetSpeed)) : "—";
     }
 
     if (inputEl) {
