@@ -13,9 +13,9 @@
   /** Minimal fallback if typing-engine.js fails to load (SW cache / 404). */
   function buildTypingFallback() {
     const PHRASES = [
-      "the quick brown fox jumps",
-      "pack my box with five jugs",
-      "sphinx black quartz judge vow",
+      "The quick brown fox jumped over the lazy dog.",
+      "Always think carefully before you share online.",
+      "Strong passwords help guard your personal data.",
     ];
     const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     return {
@@ -356,12 +356,12 @@
     const panel = overlay?.querySelector(".tt-diagnostic__panel");
     if (!overlay) return;
 
-    diagnosticPhrase = Typing.pickDiagnosticPhrase(runRng) || Typing.DIAGNOSTIC_PHRASES?.[0] || "the quick brown fox jumps";
+    diagnosticPhrase = Typing.pickDiagnosticPhrase(runRng) || Typing.DIAGNOSTIC_PHRASES?.[0] || "The quick brown fox jumped over the lazy dog.";
     diagnosticStartTime = 0;
     overlay.classList.remove("dw-hidden");
     result?.classList.add("dw-hidden");
     if (step) step.textContent = "Step 1 of 2 · Type the phrase";
-    if (status) status.textContent = "Type in the box below — fix red underlines before you continue.";
+    if (status) status.textContent = "Type the whole sentence in the box below — don't forget the period!";
     panel?.classList.remove("tt-diagnostic__panel--success");
     if (input) {
       input.value = "";
@@ -393,7 +393,7 @@
   function updateDiagnosticGhost(inputVal) {
     const ghost = document.getElementById("diagnosticGhost");
     const plain = document.getElementById("diagnosticPhrasePlain");
-    const phrase = diagnosticPhrase || Typing.DIAGNOSTIC_PHRASES?.[0] || "the quick brown fox jumps";
+    const phrase = diagnosticPhrase || Typing.DIAGNOSTIC_PHRASES?.[0] || "The quick brown fox jumped over the lazy dog.";
     if (plain) plain.textContent = phrase;
     if (ghost) ghost.innerHTML = Typing.renderGhostHtml(phrase, inputVal.length);
   }
@@ -436,6 +436,14 @@
     if (Typing.exceedsTypoBudget(cmp.typoCount, 0)) {
       if (status) status.textContent = "Fix the underlined letters before continuing.";
       return;
+    }
+
+    if (!cmp.complete && status) {
+      const normInput = Typing.normalize(input.value);
+      const normPhrase = Typing.normalize(diagnosticPhrase);
+      if (normPhrase.endsWith(".") && normInput === normPhrase.slice(0, -1).trim()) {
+        status.textContent = "Almost there — type the period to finish the sentence.";
+      }
     }
 
     if (cmp.complete) {

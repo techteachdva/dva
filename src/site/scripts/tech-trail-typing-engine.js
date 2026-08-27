@@ -5,12 +5,13 @@
 (() => {
   "use strict";
 
+  /** Full-sentence diagnostic prompts — students must type the entire sentence including punctuation. */
   const DIAGNOSTIC_PHRASES = [
-    "the quick brown fox jumps",
-    "pack my box with five jugs",
-    "sphinx black quartz judge vow",
-    "quick daft zebras jump high",
-    "jovial monks flee badger packs",
+    "The quick brown fox jumped over the lazy dog.",
+    "Always think carefully before you share online.",
+    "Strong passwords help guard your personal data.",
+    "Good designers build technology for real people.",
+    "Check your sources before you trust a headline.",
   ];
 
   const RECOMMENDED_SPEED_RATIO = 0.88;
