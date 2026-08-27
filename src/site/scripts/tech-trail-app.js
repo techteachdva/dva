@@ -1,5 +1,5 @@
 /**
- * Global Tech Gauntlet — CYOA digital citizenship typing adventure.
+ * Global Tech Gauntlet — typing-powered CYOA digital citizenship adventure.
  */
 (() => {
   "use strict";
@@ -9,7 +9,8 @@
   const Visuals = window.TechTrailVisuals;
   const State = window.TechTrailState;
   const Audio = window.TechTrailAudio;
-  if (!Core || !STORY || !Visuals || !State) return;
+  const Typing = window.TechTrailTyping;
+  if (!Core || !STORY || !Visuals || !State || !Typing) return;
 
   Core.applyTheme(Core.PRESETS.gauntlet);
 
@@ -33,12 +34,472 @@
   let startChoices = [];
   let startTime = Date.now();
   let difficulty = "operative";
+  let typingProfile = State.loadTypingProfile();
+  let diagnosticPhrase = "";
+  let diagnosticStartTime = 0;
+  let choiceTypingStart = 0;
+  let activeChoices = [];
+  let activeChoicePrefix = "";
+  let pendingDiagnosticAction = null;
+  let choiceUnlocking = false;
 
   const DIFFICULTY_CONFIG = {
     cadet: { wordMult: 0.5, startChoicesMin: 3, startChoicesMax: 3, label: "Cadet" },
     operative: { wordMult: 1, startChoicesMin: 3, startChoicesMax: 4, label: "Operative" },
     analyst: { wordMult: 1.5, startChoicesMin: 4, startChoicesMax: 5, label: "Analyst" },
   };
+
+  function saveTypingProfile() {
+    State.saveTypingProfile(typingProfile);
+    updateTypingProfileUI();
+  }
+
+  function updateTypingProfileUI() {
+    const bar = document.getElementById("typingProfileBar");
+    const testEl = document.getElementById("profileTestWpm");
+    const targetEl = document.getElementById("profileTargetWpm");
+    const statTarget = document.getElementById("statTargetWpm");
+    if (typingProfile.diagnosed) {
+      bar?.classList.remove("dw-hidden");
+      if (testEl) testEl.textContent = String(typingProfile.testWpm);
+      if (targetEl) targetEl.textContent = String(typingProfile.targetWpm);
+    } else {
+      bar?.classList.add("dw-hidden");
+    }
+    if (statTarget) statTarget.textContent = typingProfile.diagnosed ? String(typingProfile.targetWpm) : "—";
+  }
+
+  function updateTypoToleranceUI() {
+    const label = document.getElementById("typoToleranceLabel");
+    const range = document.getElementById("typoToleranceRange");
+    if (range) range.value = String(typingProfile.maxTypos);
+    if (label) {
+      label.textContent = typingProfile.maxTypos >= 5 ? "all typos OK" : `${typingProfile.maxTypos} typo${typingProfile.maxTypos === 1 ? "" : "s"}`;
+    }
+  }
+
+  function requireDiagnostic(onComplete) {
+    if (typingProfile.diagnosed) {
+      onComplete?.();
+      return;
+    }
+    pendingDiagnosticAction = onComplete;
+    showDiagnostic();
+  }
+
+  function showDiagnostic() {
+    const overlay = document.getElementById("diagnosticOverlay");
+    const input = document.getElementById("diagnosticInput");
+    const result = document.getElementById("diagnosticResult");
+    const status = document.getElementById("diagnosticStatus");
+    if (!overlay) return;
+
+    diagnosticPhrase = Typing.pickDiagnosticPhrase(runRng);
+    diagnosticStartTime = 0;
+    overlay.classList.remove("dw-hidden");
+    result?.classList.add("dw-hidden");
+    if (status) status.textContent = "Focus on accuracy first — speed follows!";
+    if (input) {
+      input.value = "";
+      input.disabled = false;
+    }
+    updateDiagnosticGhost("");
+    document.getElementById("diagnosticTyped").innerHTML = "";
+    updateTypingMeterUI({
+      progressPct: 0,
+      liveWpm: 0,
+      progressFillId: "diagnosticProgressFill",
+      wpmFillId: "diagnosticWpmFill",
+      progressPctId: "diagnosticProgressPct",
+      liveWpmId: "diagnosticLiveWpm",
+      inputEl: input,
+    });
+    overlay.querySelector(".tt-diagnostic__panel")?.classList.add("tt-diagnostic__panel--pop");
+    setTimeout(() => input?.focus(), 120);
+  }
+
+  function hideDiagnostic() {
+    document.getElementById("diagnosticOverlay")?.classList.add("dw-hidden");
+    pendingDiagnosticAction = null;
+  }
+
+  function updateDiagnosticGhost(inputVal) {
+    const ghost = document.getElementById("diagnosticGhost");
+    if (!ghost) return;
+    ghost.innerHTML = Typing.renderGhostHtml(diagnosticPhrase, inputVal.length);
+  }
+
+  function handleDiagnosticInput() {
+    const input = document.getElementById("diagnosticInput");
+    const typedEl = document.getElementById("diagnosticTyped");
+    const status = document.getElementById("diagnosticStatus");
+    if (!input) return;
+
+    if (!diagnosticStartTime && input.value.length > 0) {
+      diagnosticStartTime = performance.now();
+    }
+
+    const cmp = Typing.compareToTarget(diagnosticPhrase, input.value);
+    updateDiagnosticGhost(input.value);
+    if (typedEl) typedEl.innerHTML = Typing.renderTypedCharsHtml(cmp.chars, typingProfile.maxTypos);
+
+    const duration = diagnosticStartTime ? performance.now() - diagnosticStartTime : 0;
+    const liveWpm = duration > 0 ? Typing.computeWpm(input.value.length, duration) : 0;
+    updateTypingMeterUI({
+      progressPct: cmp.progress,
+      liveWpm,
+      targetWpm: typingProfile.targetWpm || Typing.DEFAULT_TARGET_WPM,
+      progressFillId: "diagnosticProgressFill",
+      wpmFillId: "diagnosticWpmFill",
+      progressPctId: "diagnosticProgressPct",
+      liveWpmId: "diagnosticLiveWpm",
+      inputEl: input,
+      complete: cmp.complete,
+      speedOk: true,
+    });
+
+    if (cmp.chars.length > 0) {
+      const last = cmp.chars[cmp.chars.length - 1];
+      if (last.state === "correct") Audio?.playCharCorrect?.();
+      else Audio?.playTypeTick?.();
+    }
+
+    if (Typing.exceedsTypoBudget(cmp.typoCount, 0)) {
+      if (status) status.textContent = "Fix the underlined letters before continuing.";
+      return;
+    }
+
+    if (cmp.complete) {
+      const duration = diagnosticStartTime ? performance.now() - diagnosticStartTime : 0;
+      const wpm = Typing.computeWpm(diagnosticPhrase.length, duration);
+      typingProfile.testWpm = wpm;
+      typingProfile.lastPhrase = diagnosticPhrase;
+      typingProfile.diagnosedAt = Date.now();
+      const recommended = Typing.recommendedTargetWpm(wpm);
+      typingProfile.targetWpm = recommended;
+
+      input.disabled = true;
+      document.getElementById("diagnosticWpm").textContent = String(wpm);
+      document.getElementById("diagnosticRecommended").textContent = String(recommended);
+      const targetInput = document.getElementById("diagnosticTargetInput");
+      if (targetInput) {
+        targetInput.min = String(Typing.MIN_TARGET_WPM);
+        targetInput.max = String(Typing.maxManualTargetWpm(wpm));
+        targetInput.value = String(Math.round(recommended));
+      }
+      document.getElementById("diagnosticResult")?.classList.remove("dw-hidden");
+      if (status) status.textContent = "Nice! Accept the recommended speed or set your own challenge.";
+      Audio?.playDiagnosticPop?.();
+      document.querySelector(".tt-diagnostic__panel")?.classList.add("tt-diagnostic__panel--success");
+      celebrateTypedSuccess(diagnosticPhrase, input, {
+        badge: `${wpm} WPM!`,
+        badgeVariant: "green",
+        confetti: 16,
+        skipAudio: true,
+        container: document.querySelector(".tt-diagnostic__panel"),
+      });
+    }
+  }
+
+  function acceptDiagnostic() {
+    const targetInput = document.getElementById("diagnosticTargetInput");
+    const chosen = Number(targetInput?.value || typingProfile.targetWpm);
+    typingProfile.targetWpm = Typing.clampTargetWpm(typingProfile.testWpm, chosen);
+    typingProfile.diagnosed = true;
+    saveTypingProfile();
+    const acceptBtn = document.getElementById("diagnosticAcceptBtn");
+    celebrateTypedSuccess(`${typingProfile.targetWpm} WPM TARGET`, acceptBtn || targetInput, {
+      badge: "LOCKED IN!",
+      confetti: 12,
+      center: true,
+      container: document.querySelector(".tt-diagnostic__panel"),
+    });
+    setTimeout(() => {
+      hideDiagnostic();
+      toast(`Target set: ${typingProfile.targetWpm} WPM — type your adventure!`, "badge");
+      pendingDiagnosticAction?.();
+      pendingDiagnosticAction = null;
+    }, prefersReducedMotion ? 0 : 850);
+  }
+
+  function clearChoiceTyping() {
+    const input = document.getElementById("choiceTypingInput");
+    const typed = document.getElementById("choiceTypedDisplay");
+    const ghost = document.getElementById("choiceGhostPrompt");
+    const hint = document.getElementById("choiceSpeedHint");
+    if (input) input.value = "";
+    if (typed) typed.innerHTML = "";
+    if (ghost) ghost.innerHTML = "";
+    if (hint) hint.textContent = "";
+    choiceTypingStart = 0;
+    activeChoices = [];
+    activeChoicePrefix = "";
+    choiceUnlocking = false;
+    document.getElementById("liveWpmStat")?.classList.add("dw-hidden");
+  }
+
+  function setupTypingChoices(node, choices) {
+    const wrap = document.getElementById("typingChoices");
+    const choicesEl = document.getElementById("sceneChoices");
+    if (!wrap || !choices.length) return;
+
+    clearChoiceTyping();
+    activeChoices = choices;
+    activeChoicePrefix = node.choicePrefix || "";
+
+    choicesEl.innerHTML = "";
+    wrap.classList.remove("dw-hidden");
+
+    const branches = choices.map((c) => Typing.choiceTypeText(c));
+    const ghost = document.getElementById("choiceGhostPrompt");
+    if (ghost) {
+      ghost.innerHTML = Typing.renderBranchGhostHtml(activeChoicePrefix, branches, -1, 0);
+    }
+
+    const hint = document.getElementById("choiceSpeedHint");
+    if (hint) {
+      hint.textContent = `Type one path at ${typingProfile.targetWpm} WPM · ${typingProfile.maxTypos >= 5 ? "typos forgiven" : `up to ${typingProfile.maxTypos} typo${typingProfile.maxTypos === 1 ? "" : "s"}`}`;
+    }
+
+    updateTypingMeterUI({
+      progressPct: 0,
+      liveWpm: 0,
+      targetWpm: typingProfile.targetWpm,
+      progressFillId: "choiceProgressFill",
+      wpmFillId: "choiceWpmFill",
+      progressPctId: "choiceProgressPct",
+      liveWpmId: "choiceLiveWpm",
+      targetWpmId: "choiceTargetWpm",
+      inputEl: document.getElementById("choiceTypingInput"),
+    });
+
+    document.getElementById("liveWpmStat")?.classList.remove("dw-hidden");
+    const input = document.getElementById("choiceTypingInput");
+    setTimeout(() => input?.focus(), 200);
+    wrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
+
+  function handleChoiceTypingInput() {
+    if (choiceUnlocking || !activeChoices.length) return;
+    const input = document.getElementById("choiceTypingInput");
+    const typedEl = document.getElementById("choiceTypedDisplay");
+    const ghost = document.getElementById("choiceGhostPrompt");
+    const hint = document.getElementById("choiceSpeedHint");
+    if (!input) return;
+
+    if (!choiceTypingStart && input.value.length > 0) {
+      choiceTypingStart = performance.now();
+    }
+
+    const resolved = Typing.resolveActiveChoice(input.value, activeChoices);
+    const typeText = resolved.typeText || "";
+    const cmp = Typing.compareToTarget(typeText, input.value);
+    const branches = activeChoices.map((c) => Typing.choiceTypeText(c));
+
+    if (ghost) {
+      ghost.innerHTML = Typing.renderBranchGhostHtml(
+        activeChoicePrefix,
+        branches,
+        resolved.choiceIndex,
+        input.value.length
+      );
+    }
+    if (typedEl) typedEl.innerHTML = Typing.renderTypedCharsHtml(cmp.chars, typingProfile.maxTypos);
+
+    const duration = choiceTypingStart ? performance.now() - choiceTypingStart : 0;
+    const liveWpm = duration > 0 ? Typing.computeWpm(input.value.length, duration) : 0;
+    const liveEl = document.getElementById("statLiveWpm");
+    if (liveEl) liveEl.textContent = String(Math.round(liveWpm));
+
+    updateTypingMeterUI({
+      progressPct: cmp.progress,
+      liveWpm,
+      targetWpm: typingProfile.targetWpm,
+      progressFillId: "choiceProgressFill",
+      wpmFillId: "choiceWpmFill",
+      progressPctId: "choiceProgressPct",
+      liveWpmId: "choiceLiveWpm",
+      targetWpmId: "choiceTargetWpm",
+      inputEl: input,
+      complete: cmp.complete,
+      speedOk: Typing.meetsSpeedGate(liveWpm, typingProfile.targetWpm),
+    });
+
+    if (cmp.chars.length > 0) {
+      const last = cmp.chars[cmp.chars.length - 1];
+      if (last.state === "correct") Audio?.playCharCorrect?.();
+      else Audio?.playTypeTick?.();
+    }
+
+    if (Typing.exceedsTypoBudget(cmp.typoCount, typingProfile.maxTypos)) {
+      if (hint) hint.textContent = "Too many typos — fix the underlined letters!";
+      return;
+    }
+
+    if (!cmp.complete || !resolved.choice) return;
+
+    if (!Typing.meetsSpeedGate(liveWpm, typingProfile.targetWpm)) {
+      if (hint) hint.textContent = `Too slow (${Math.round(liveWpm)} WPM) — need ${typingProfile.targetWpm} WPM. Try again!`;
+      Audio?.playSpeedFail?.();
+      return;
+    }
+
+    choiceUnlocking = true;
+    input.disabled = true;
+    const displayPhrase = activeChoicePrefix
+      ? `${activeChoicePrefix} ${typeText}`
+      : typeText;
+    celebrateTypedSuccess(displayPhrase, input, {
+      badge: "PATH UNLOCKED!",
+      confetti: 14,
+      container: document.getElementById("typingChoices"),
+    });
+    if (hint) hint.textContent = "Path unlocked!";
+    document.getElementById("typingChoices")?.classList.add("tt-typing-choices--unlock");
+
+    const choiceData = resolved.choice;
+    const label = choiceData.label || typeText;
+    journal.push(`⌨️ ${label.slice(0, 80)}${label.length > 80 ? "…" : ""}`);
+
+    setTimeout(() => {
+      applyChoiceEffects(choiceData);
+      navigate(choiceData.next);
+    }, prefersReducedMotion ? 0 : 1000);
+  }
+
+  function renderTitleTypingMenu() {
+    const ghost = document.getElementById("titleGhostPrompt");
+    const hasRun = State.hasActiveRun();
+    const options = hasRun
+      ? ["CONTINUE MISSION", "NEW MISSION"]
+      : ["ACCEPT MISSION"];
+    if (!ghost) return;
+    ghost.innerHTML = Typing.renderBranchGhostHtml("", options, -1, 0);
+  }
+
+  function handleTitleTypingInput() {
+    const input = document.getElementById("titleTypingInput");
+    const typedEl = document.getElementById("titleTypedDisplay");
+    if (!input) return;
+
+    const val = Typing.normalize(input.value);
+    const hasRun = State.hasActiveRun();
+    let matched = null;
+    let typeText = "";
+
+    if (hasRun) {
+      if (val.startsWith("continue") || val === "continue mission") {
+        matched = "continue";
+        typeText = "CONTINUE MISSION";
+      } else if (val.startsWith("new")) {
+        matched = "newrun";
+        typeText = "NEW MISSION";
+      }
+    } else {
+      if (val.startsWith("accept") || val === "start" || val === "begin") {
+        matched = "start";
+        typeText = "ACCEPT MISSION";
+      }
+    }
+
+    const options = hasRun ? ["CONTINUE MISSION", "NEW MISSION"] : ["ACCEPT MISSION"];
+    const idx = matched === "continue" ? 0 : matched === "newrun" ? 1 : matched === "start" ? 0 : -1;
+    const ghost = document.getElementById("titleGhostPrompt");
+    if (ghost) {
+      ghost.innerHTML = Typing.renderBranchGhostHtml("", options, idx, input.value.length);
+    }
+
+    if (typeText) {
+      const cmp = Typing.compareToTarget(typeText, input.value);
+      if (typedEl) typedEl.innerHTML = Typing.renderTypedCharsHtml(cmp.chars, 999);
+      updateTypingMeterUI({
+        progressPct: cmp.progress,
+        liveWpm: 0,
+        targetWpm: 0,
+        progressFillId: "titleProgressFill",
+        progressPctId: "titleProgressPct",
+        inputEl: input,
+        complete: cmp.complete,
+        speedOk: true,
+      });
+      if (cmp.complete) {
+        input.disabled = true;
+        celebrateTypedSuccess(typeText, input, {
+          badge: matched === "start" ? "MISSION ON!" : matched === "continue" ? "WELCOME BACK!" : "NEW RUN!",
+          confetti: 10,
+          container: document.getElementById("titleTypingMenu"),
+        });
+        setTimeout(() => {
+          input.value = "";
+          typedEl.innerHTML = "";
+          input.disabled = false;
+          updateTypingMeterUI({
+            progressPct: 0,
+            progressFillId: "titleProgressFill",
+            progressPctId: "titleProgressPct",
+            inputEl: input,
+          });
+          if (matched === "start") beginStartMission();
+          else if (matched === "continue") beginContinueMission();
+          else if (matched === "newrun") beginNewMission();
+        }, prefersReducedMotion ? 0 : 900);
+      }
+    } else if (typedEl) {
+      updateTypingMeterUI({
+        progressPct: input.value.length > 0 ? Math.min(100, input.value.length * 8) : 0,
+        progressFillId: "titleProgressFill",
+        progressPctId: "titleProgressPct",
+        inputEl: input,
+      });
+      typedEl.innerHTML = Typing.renderTypedCharsHtml(
+        input.value.split("").map((ch, i) => ({ char: ch, state: "correct", index: i })),
+        999
+      );
+    }
+  }
+
+  function beginStartMission() {
+    Audio?.init?.();
+    requireDiagnostic(() => {
+      resetRun();
+      showSceneLoader();
+      setTimeout(() => { renderScene("start"); hideSceneLoader(); }, SCENE_LOADER_MIN_MS);
+    });
+  }
+
+  function beginContinueMission() {
+    Audio?.init?.();
+    requireDiagnostic(() => {
+      const saved = State.loadRun();
+      if (saved) {
+        currentNode = saved.currentNode;
+        badges = saved.badges;
+        lessons = saved.lessons;
+        goldenRules = saved.goldenRules;
+        journal = saved.journal;
+        metCharacters = saved.metCharacters;
+        integrity = saved.integrity ?? 100;
+        reputation = saved.reputation ?? 50;
+        mentorTrust = saved.mentorTrust || {};
+        startTime = saved.startedAt || Date.now();
+        showSceneLoader();
+        setTimeout(() => { renderScene(currentNode); hideSceneLoader(); }, SCENE_LOADER_MIN_MS);
+      } else {
+        resetRun();
+        showSceneLoader();
+        setTimeout(() => { renderScene("start"); hideSceneLoader(); }, SCENE_LOADER_MIN_MS);
+      }
+    });
+  }
+
+  function beginNewMission() {
+    Audio?.init?.();
+    requireDiagnostic(() => {
+      resetRun();
+      showSceneLoader();
+      setTimeout(() => { renderScene("start"); hideSceneLoader(); }, SCENE_LOADER_MIN_MS);
+    });
+  }
 
   function loadDifficulty() {
     try {
@@ -299,6 +760,112 @@
     }
   }
 
+  function popSuccessPhrase(text, anchorEl, options = {}) {
+    if (!text) return;
+    const layer = document.getElementById("phrasePopLayer");
+    if (!layer) return;
+
+    const delay = options.delay || 0;
+    const duration = prefersReducedMotion ? 0 : (options.holdMs || 720);
+
+    setTimeout(() => {
+      const el = document.createElement("div");
+      el.className = `tt-phrase-pop tt-phrase-pop--${options.variant || "gold"}`;
+      if (options.size === "sm") el.classList.add("tt-phrase-pop--sm");
+      if (options.size === "lg") el.classList.add("tt-phrase-pop--lg");
+      el.textContent = text;
+
+      if (anchorEl && !options.center) {
+        const rect = anchorEl.getBoundingClientRect();
+        el.style.setProperty("--tt-pop-x", `${rect.left + rect.width / 2}px`);
+        el.style.setProperty("--tt-pop-y", `${rect.top + rect.height * 0.35}px`);
+        el.classList.add("tt-phrase-pop--anchored");
+      } else {
+        el.classList.add("tt-phrase-pop--center");
+      }
+
+      layer.appendChild(el);
+      if (prefersReducedMotion) {
+        setTimeout(() => el.remove(), 400);
+        return;
+      }
+      requestAnimationFrame(() => el.classList.add("tt-phrase-pop--active"));
+      setTimeout(() => el.classList.add("tt-phrase-pop--out"), duration);
+      setTimeout(() => el.remove(), duration + 650);
+    }, delay);
+  }
+
+  function flashTypingPanel(container) {
+    if (!container || prefersReducedMotion) return;
+    container.classList.remove("tt-typing-panel--success");
+    void container.offsetWidth;
+    container.classList.add("tt-typing-panel--success");
+  }
+
+  function celebrateTypedSuccess(phrase, anchorEl, options = {}) {
+    const container = options.container
+      || anchorEl?.closest(".tt-typing-panel, .tt-title-typing, .tt-typing-choices, .tt-diagnostic__panel, .tt-typing-challenge");
+    flashTypingPanel(container);
+    popSuccessPhrase(phrase, anchorEl, { variant: options.variant || "phrase", size: options.phraseSize || "lg", center: options.center });
+    if (options.badge) {
+      popSuccessPhrase(options.badge, anchorEl, {
+        variant: options.badgeVariant || "gold",
+        size: "sm",
+        delay: prefersReducedMotion ? 0 : 140,
+        holdMs: 900,
+      });
+    }
+    if (options.confetti) burstConfetti(options.confetti);
+    if (!options.skipAudio) Audio?.playPathUnlock?.();
+  }
+
+  function updateTypingMeterUI(cfg) {
+    const {
+      progressPct = 0,
+      liveWpm = 0,
+      targetWpm = 0,
+      progressFillId,
+      wpmFillId,
+      progressPctId,
+      liveWpmId,
+      targetWpmId,
+      inputEl,
+      complete = false,
+      speedOk = true,
+    } = cfg;
+
+    const pct = Math.min(100, Math.max(0, Math.round(progressPct)));
+    const progressFill = progressFillId ? document.getElementById(progressFillId) : null;
+    if (progressFill) progressFill.style.width = `${pct}%`;
+
+    const wpmFill = wpmFillId ? document.getElementById(wpmFillId) : null;
+    if (wpmFill && targetWpm > 0) {
+      const wpmPct = Math.min(100, Math.round((liveWpm / targetWpm) * 100));
+      wpmFill.style.width = `${wpmPct}%`;
+      wpmFill.classList.toggle("tt-typing-meter__wpm--hot", wpmPct >= 88);
+      wpmFill.classList.toggle("tt-typing-meter__wpm--cold", wpmPct < 55);
+    }
+
+    if (progressPctId) {
+      const el = document.getElementById(progressPctId);
+      if (el) el.textContent = `${pct}%`;
+    }
+    if (liveWpmId) {
+      const el = document.getElementById(liveWpmId);
+      if (el) el.textContent = String(Math.round(liveWpm));
+    }
+    if (targetWpmId) {
+      const el = document.getElementById(targetWpmId);
+      if (el) el.textContent = targetWpm > 0 ? String(Math.round(targetWpm)) : "—";
+    }
+
+    if (inputEl) {
+      inputEl.classList.toggle("tt-typing-input--near", pct >= 65 && !complete);
+      inputEl.classList.toggle("tt-typing-input--ready", complete && speedOk);
+      inputEl.classList.toggle("tt-typing-input--slow", complete && !speedOk);
+    }
+  }
+
   function renderGoldenTrack(containerId = "goldenRulesTrack") {
     const el = document.getElementById(containerId);
     if (!el) return;
@@ -465,6 +1032,9 @@
     if (!node) return;
     currentNode = nodeId;
 
+    document.getElementById("choiceTypingInput")?.disabled = false;
+    document.getElementById("typingChoices")?.classList.remove("tt-typing-choices--unlock");
+
     if (nodeId === "start") {
       startChoices = buildStartChoices();
       journal.push(`🎲 ${startChoices.length} missions on the board this run`);
@@ -536,6 +1106,8 @@
 
     if (node.typingChallenge) {
       typingPending = node.typingChallenge;
+      document.getElementById("typingChoices")?.classList.add("dw-hidden");
+      clearChoiceTyping();
       typingEl.classList.remove("dw-hidden");
       choicesEl.innerHTML = "";
       document.getElementById("typingPrompt").textContent = node.typingChallenge.prompt;
@@ -551,36 +1123,12 @@
     } else {
       typingEl.classList.add("dw-hidden");
       typingPending = null;
+      document.getElementById("typingChoices")?.classList.add("dw-hidden");
+      clearChoiceTyping();
       const choices = resolveChoices(node, nodeId);
-      choicesEl.innerHTML = choices.map((c, i) => `
-        <button class="tt-choice tt-choice--cooldown" type="button" data-next="${escapeHtml(c.next)}" data-choice-idx="${i}" style="--tt-choice-i:${i}">
-          <span class="tt-choice__glow" aria-hidden="true"></span>
-          <span class="tt-choice__arrow">▶</span>
-          <span class="tt-choice__label">${escapeHtml(c.label)}</span>
-          ${c.integrity < 0 || c.reputation < 0 ? '<span class="tt-choice__risk" aria-hidden="true">⚠️</span>' : ""}
-        </button>`).join("");
-
-      const choiceButtons = choicesEl.querySelectorAll(".tt-choice");
-      choiceButtons.forEach((btn) => {
-        const choiceIdx = Number(btn.dataset.choiceIdx ?? -1);
-        const choiceData = choices[choiceIdx] || {};
-        btn.addEventListener("click", () => {
-          Audio?.playChoiceClick?.();
-          const label = btn.querySelector(".tt-choice__label")?.textContent?.trim() || "Choice";
-          journal.push(`→ ${label.slice(0, 80)}${label.length > 80 ? "…" : ""}`);
-          btn.classList.add("tt-choice--picked");
-          applyChoiceEffects(choiceData);
-          setTimeout(() => navigate(btn.dataset.next), prefersReducedMotion ? 0 : 220);
-        });
-      });
-      if (!prefersReducedMotion) {
-        setTimeout(() => {
-          choiceButtons.forEach((b) => b.classList.remove("tt-choice--cooldown"));
-        }, CHOICE_COOLDOWN_MS);
-      } else {
-        choiceButtons.forEach((b) => b.classList.remove("tt-choice--cooldown"));
+      if (choices.length) {
+        setupTypingChoices(node, choices);
       }
-      choicesEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
 
     if (node.ending) {
@@ -598,10 +1146,25 @@
     const pct = Math.min(100, Math.round((words / minWords) * 100));
     const fill = document.getElementById("typingProgressFill");
     const countEl = document.getElementById("typingWordCount");
+    const challengeFill = document.getElementById("challengeWordFill");
     if (fill) fill.style.width = `${pct}%`;
+    if (challengeFill) challengeFill.style.width = `${pct}%`;
+    updateTypingMeterUI({
+      progressPct: pct,
+      progressFillId: "challengeWordFill",
+      progressPctId: "challengeWordPct",
+      inputEl: document.getElementById("typingInput"),
+      complete: words >= minWords,
+      speedOk: true,
+    });
     if (countEl) {
       countEl.textContent = `${words} / ${minWords} words`;
       countEl.classList.toggle("tt-typing-count--ready", words >= minWords);
+    }
+    const submitBtn = document.getElementById("typingSubmitBtn");
+    if (submitBtn) {
+      submitBtn.disabled = words < minWords;
+      submitBtn.classList.toggle("tt-cta-btn--ready", words >= minWords);
     }
   }
 
@@ -757,10 +1320,14 @@ Play again to rebuild your record clean.`;
   function init() {
     loadDifficulty();
     loadHighContrast();
+    typingProfile = State.loadTypingProfile();
     renderTitleGoldenPreview();
     renderProfileMini();
     updateDifficultyButtons();
     updateMuteButton();
+    updateTypingProfileUI();
+    updateTypoToleranceUI();
+    renderTitleTypingMenu();
 
     document.querySelectorAll(".tt-difficulty__btn").forEach((btn) => {
       btn.addEventListener("click", () => saveDifficulty(btn.dataset.tier));
@@ -786,42 +1353,11 @@ Play again to rebuild your record clean.`;
       newRunBtn?.classList.add("dw-hidden");
     }
 
-    startBtn?.addEventListener("click", () => {
-      Audio?.init?.();
-      resetRun();
-      showSceneLoader();
-      setTimeout(() => { renderScene("start"); hideSceneLoader(); }, SCENE_LOADER_MIN_MS);
-    });
+    startBtn?.addEventListener("click", () => beginStartMission());
 
-    continueBtn?.addEventListener("click", () => {
-      Audio?.init?.();
-      const saved = State.loadRun();
-      if (saved) {
-        currentNode = saved.currentNode;
-        badges = saved.badges;
-        lessons = saved.lessons;
-        goldenRules = saved.goldenRules;
-        journal = saved.journal;
-        metCharacters = saved.metCharacters;
-        integrity = saved.integrity ?? 100;
-        reputation = saved.reputation ?? 50;
-        mentorTrust = saved.mentorTrust || {};
-        startTime = saved.startedAt || Date.now();
-        showSceneLoader();
-        setTimeout(() => { renderScene(currentNode); hideSceneLoader(); }, SCENE_LOADER_MIN_MS);
-      } else {
-        resetRun();
-        showSceneLoader();
-        setTimeout(() => { renderScene("start"); hideSceneLoader(); }, SCENE_LOADER_MIN_MS);
-      }
-    });
+    continueBtn?.addEventListener("click", () => beginContinueMission());
 
-    newRunBtn?.addEventListener("click", () => {
-      Audio?.init?.();
-      resetRun();
-      showSceneLoader();
-      setTimeout(() => { renderScene("start"); hideSceneLoader(); }, SCENE_LOADER_MIN_MS);
-    });
+    newRunBtn?.addEventListener("click", () => beginNewMission());
 
     document.getElementById("playAgainBtn")?.addEventListener("click", () => {
       Audio?.stopZoneAmbience?.();
@@ -829,6 +1365,34 @@ Play again to rebuild your record clean.`;
       show("title");
       renderTitleGoldenPreview();
       renderProfileMini();
+      renderTitleTypingMenu();
+    });
+
+    document.getElementById("retakeDiagnosticBtn")?.addEventListener("click", () => {
+      typingProfile.diagnosed = false;
+      saveTypingProfile();
+      showDiagnostic();
+    });
+
+    document.getElementById("diagnosticAcceptBtn")?.addEventListener("click", acceptDiagnostic);
+
+    const diagnosticInput = document.getElementById("diagnosticInput");
+    Core.setupPasteControl(diagnosticInput, false);
+    diagnosticInput?.addEventListener("input", handleDiagnosticInput);
+
+    const choiceTypingInput = document.getElementById("choiceTypingInput");
+    Core.setupPasteControl(choiceTypingInput, false);
+    choiceTypingInput?.addEventListener("input", handleChoiceTypingInput);
+
+    const titleTypingInput = document.getElementById("titleTypingInput");
+    Core.setupPasteControl(titleTypingInput, false);
+    titleTypingInput?.addEventListener("input", handleTitleTypingInput);
+
+    const typoRange = document.getElementById("typoToleranceRange");
+    typoRange?.addEventListener("input", () => {
+      typingProfile.maxTypos = Number(typoRange.value);
+      saveTypingProfile();
+      updateTypoToleranceUI();
     });
 
     const viewport = document.getElementById("sceneViewport");
@@ -853,15 +1417,22 @@ Play again to rebuild your record clean.`;
 
     document.getElementById("typingSubmitBtn")?.addEventListener("click", () => {
       if (!typingPending) return;
-      const words = Core.countWords(typingInput.value);
-      if (words < scaleMinWords(typingPending.minWords || 20)) return;
+      const typingInput = document.getElementById("typingInput");
+      const words = Core.countWords(typingInput?.value || "");
+      const min = scaleMinWords(typingPending.minWords || 20);
+      if (words < min) return;
       journal.push(`⌨️ Oath drafted (${words} words)`);
+      celebrateTypedSuccess(`${words} WORDS LOGGED`, typingInput, {
+        badge: "TRANSMITTED!",
+        confetti: 20,
+        container: document.getElementById("typingChallenge"),
+      });
       toast("Transmitting response...", "badge");
-      burstConfetti(20);
       State.clearDraft();
 
       const nextNode = STORY[typingPending.next];
       const isEnding = nextNode && nextNode.ending;
+      const delay = prefersReducedMotion ? SCENE_LOADER_MIN_MS : SCENE_LOADER_MIN_MS + 400;
       showSceneLoader();
       setTimeout(() => {
         hideSceneLoader();
@@ -870,7 +1441,7 @@ Play again to rebuild your record clean.`;
         } else {
           navigate(typingPending.next);
         }
-      }, SCENE_LOADER_MIN_MS);
+      }, delay);
     });
 
     const identitySubmit = document.getElementById("identitySubmitBtn");
@@ -961,13 +1532,26 @@ Play again to rebuild your record clean.`;
         throw new Error(data.error || `HTTP ${res.status}`);
       }
       toast("Submission saved!", "badge");
+      celebrateTypedSuccess(name, document.getElementById("identitySubmitBtn"), {
+        badge: "OATH FILED!",
+        confetti: 24,
+        center: true,
+        container: document.querySelector(".tt-identity-gate__panel"),
+      });
     } catch (e) {
       State.queueOfflineSubmission(submission);
       toast("Saved locally — will retry when online.", "lesson");
+      celebrateTypedSuccess("SAVED LOCALLY", document.getElementById("identitySubmitBtn"), {
+        badge: "OFFLINE QUEUE",
+        center: true,
+        container: document.querySelector(".tt-identity-gate__panel"),
+      });
     }
 
-    hideIdentityGate();
-    window._identityGateCallback?.();
+    setTimeout(() => {
+      hideIdentityGate();
+      window._identityGateCallback?.();
+    }, prefersReducedMotion ? 0 : 700);
   }
 
   init();

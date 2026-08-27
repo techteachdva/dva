@@ -20,16 +20,16 @@
 
   /** All possible first missions — app shuffles and shows 3–4 per run. */
   const START_MISSIONS = [
-    { label: "Report to the Design Lab — a team built the wrong thing", next: "design_lab" },
-    { label: "Respond to an alert from the Data Vault", next: "data_vault" },
-    { label: "Head for the Password Vault — security gate is locked", next: "password_temple" },
-    { label: "Investigate strange output in the Code Bay", next: "code_bay" },
-    { label: "Help stabilize the Network Closet", next: "network_closet" },
-    { label: "Visit the AI Ethics Lab — a classifier is flagging the wrong people", next: "ai_ethics" },
-    { label: "Tour the Hardware Graveyard — old devices are leaking data", next: "hardware_graveyard" },
-    { label: "Browse the Open Source Bazaar — a team forked without credit", next: "open_source" },
-    { label: "Report to the Bias Detection Unit — an app treats users differently", next: "bias_unit" },
-    { label: "Enter the Data Detective Agency — someone's trail doesn't add up", next: "data_detective" },
+    { label: "Report to the Design Lab — a team built the wrong thing", next: "design_lab", typeText: "Design Lab" },
+    { label: "Respond to an alert from the Data Vault", next: "data_vault", typeText: "Data Vault" },
+    { label: "Head for the Password Vault — security gate is locked", next: "password_temple", typeText: "Password Vault" },
+    { label: "Investigate strange output in the Code Bay", next: "code_bay", typeText: "Code Bay" },
+    { label: "Help stabilize the Network Closet", next: "network_closet", typeText: "Network Closet" },
+    { label: "Visit the AI Ethics Lab — a classifier is flagging the wrong people", next: "ai_ethics", typeText: "AI Ethics Lab" },
+    { label: "Tour the Hardware Graveyard — old devices are leaking data", next: "hardware_graveyard", typeText: "Hardware Graveyard" },
+    { label: "Browse the Open Source Bazaar — a team forked without credit", next: "open_source", typeText: "Open Source Bazaar" },
+    { label: "Report to the Bias Detection Unit — an app treats users differently", next: "bias_unit", typeText: "Bias Detection Unit" },
+    { label: "Enter the Data Detective Agency — someone's trail doesn't add up", next: "data_detective", typeText: "Data Detective Agency" },
   ];
 
   const STORY = {
@@ -41,6 +41,7 @@
 The Host leans in. "Somewhere out there, the <strong>Golden Rules of Digital Citizenship</strong> got scattered. Recover them by making good calls under pressure. No single path covers everything — you'll need to think, not memorize."
 
 Ada Lovelace flickers onto the main screen. "Every mission starts with a question worth asking. Pick your first move."`,
+      choicePrefix: "I choose to go to the",
       dynamicChoices: "start",
       choices: [],
     },
@@ -51,9 +52,10 @@ Ada Lovelace flickers onto the main screen. "Every mission starts with a questio
       narrative: `Lovelace gestures at a half-finished app on the wall. "They asked users what they wanted, but never asked what problem they were actually solving."
 
 The project lead is impatient. "We can polish the interface later — ship it Friday."`,
+      choicePrefix: "I will",
       choices: [
-        { label: "Interview potential users before building more", next: "define_win", integrity: 5, reputation: 5 },
-        { label: "Ship a lean prototype fast and gather feedback live", next: "define_recovery_1", integrity: -5, reputation: 10 },
+        { label: "Interview potential users before building more", next: "define_win", integrity: 5, reputation: 5, typeText: "interview users" },
+        { label: "Ship a lean prototype fast and gather feedback live", next: "define_recovery_1", integrity: -5, reputation: 10, typeText: "ship fast" },
       ],
     },
 
@@ -66,11 +68,12 @@ The project lead is impatient. "We can polish the interface later — ship it Fr
 A side door opens onto Will Wright's simulation studio. Someone mentions a prototype ready for testing.`,
       badge: "Design Thinker",
       goldenRule: 1,
+      choicePrefix: "Next I will go to the",
       choices: [
-        { label: "Visit the simulation studio to plan the next step", next: "prepare_phase" },
-        { label: "Skip ahead — test a rough prototype now", next: "try_phase" },
-        { label: "Check the Data Vault alert you saw in briefing", next: "data_vault" },
-        { label: "Ask Lovelace about her deep-dive module", next: "lovelace_deep" },
+        { label: "Visit the simulation studio to plan the next step", next: "prepare_phase", typeText: "Simulation Studio" },
+        { label: "Skip ahead — test a rough prototype now", next: "try_phase", typeText: "Prototype Arena" },
+        { label: "Check the Data Vault alert you saw in briefing", next: "data_vault", typeText: "Data Vault" },
+        { label: "Ask Lovelace about her deep-dive module", next: "lovelace_deep", typeText: "Lovelace Deep Dive" },
       ],
     },
 

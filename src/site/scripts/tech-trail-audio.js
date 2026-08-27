@@ -140,6 +140,26 @@
     _noise({ dur: 0.015, vol: 0.04, filter: 3000, attack: 0.001 });
   }
 
+  function playCharCorrect() {
+    _tone({ freq: 520, freqEnd: 680, dur: 0.04, type: "sine", vol: 0.06, attack: 0.001 });
+  }
+
+  function playPathUnlock() {
+    _tone({ freq: 440, dur: 0.08, type: "triangle", vol: 0.14, attack: 0.005 });
+    setTimeout(() => _tone({ freq: 660, dur: 0.12, type: "triangle", vol: 0.16, attack: 0.005 }), 60);
+    setTimeout(() => _tone({ freq: 880, freqEnd: 1100, dur: 0.2, type: "sine", vol: 0.12, attack: 0.01 }), 140);
+  }
+
+  function playDiagnosticPop() {
+    _tone({ freq: 330, dur: 0.06, type: "square", vol: 0.08, attack: 0.002 });
+    setTimeout(() => _tone({ freq: 440, dur: 0.08, type: "square", vol: 0.1, attack: 0.002 }), 50);
+    setTimeout(() => _tone({ freq: 554, freqEnd: 880, dur: 0.25, type: "triangle", vol: 0.14, attack: 0.01 }), 120);
+  }
+
+  function playSpeedFail() {
+    _tone({ freq: 220, freqEnd: 180, dur: 0.15, type: "sawtooth", vol: 0.06, attack: 0.01 });
+  }
+
   function playZoneTransition() {
     _noise({ dur: 0.35, vol: 0.12, filter: 2000, filterEnd: 200, attack: 0.02 });
   }
@@ -233,6 +253,10 @@
     playGoldenFanfare,
     playChoiceClick,
     playTypeTick,
+    playCharCorrect,
+    playPathUnlock,
+    playDiagnosticPop,
+    playSpeedFail,
     playZoneTransition,
     startZoneAmbience,
     stopZoneAmbience,

@@ -11,7 +11,7 @@ layout: false
     <meta name="theme-color" content="#140818" />
     <title>Global Tech Gauntlet</title>
     <meta property="og:title" content="Global Tech Gauntlet" />
-    <meta property="og:description" content="A branching adventure about digital citizenship, technology heroes, and the golden rules of the internet." />
+    <meta property="og:description" content="A typing-powered choose-your-own-adventure about digital citizenship, technology heroes, and the golden rules of the internet." />
     <meta property="og:image" content="/tech-trail/images/scenes/scene-gauntlet-arena.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -29,13 +29,14 @@ layout: false
           <div class="tt-logo-mark" aria-hidden="true">🌐</div>
           <div>
             <div class="dw-title">Global Tech Gauntlet</div>
-            <div class="dw-subtitle">Digital citizenship adventure</div>
+            <div class="dw-subtitle">Type your path · Digital citizenship adventure</div>
           </div>
         </div>
         <div class="dw-actions"><a class="dw-link" href="/tech-escape/">Tech Escape</a><a class="dw-link" href="/">Back to site</a></div>
       </header>
 
       <div id="fxLayer" class="tt-fx-layer" aria-hidden="true"></div>
+      <div id="phrasePopLayer" class="tt-phrase-pop-layer" aria-hidden="true"></div>
       <div id="toastStack" class="tt-toast-stack" aria-live="polite"></div>
 
       <main class="tt-main">
@@ -53,16 +54,27 @@ layout: false
             </div>
             <span class="tt-location-badge">ACME Tech Division</span>
             <h1 class="tt-title-screen__headline">Global Tech Gauntlet</h1>
-            <p class="tt-title-screen__tagline">Recover the Golden Rules. Meet the mentors who shaped computing. Every choice shapes your mission.</p>
+            <p class="tt-title-screen__tagline">Recover the Golden Rules by <strong>typing your choices</strong>. Meet the mentors who shaped computing. Every keystroke shapes your mission.</p>
             <div class="tt-tutorial">
               <h2 class="tt-tutorial__title">How to play</h2>
               <ol class="tt-tutorial__list">
-                <li><strong>Read</strong> each scene, then pick what you would honestly do — not what sounds like a textbook answer.</li>
-                <li><strong>Type</strong> when prompted (paste is off). Short answers are fine if they meet the word count.</li>
+                <li><strong>Diagnose</strong> your typing speed with a quick phrase — the game sets a target pace for you.</li>
+                <li><strong>Read</strong> each scene, then <strong>type</strong> your path — ghost text shows what to write. Branch options appear as <span class="tt-ghost-demo">Library<span class="tt-ghost-demo__slash">/</span>Tech Lab<span class="tt-ghost-demo__slash">/</span>Bridge</span>.</li>
+                <li><strong>Hit your speed</strong> to unlock pathways. Fix underlined typos before you continue.</li>
                 <li><strong>Collect</strong> badges and light up all five Golden Rules orbiting the top of the screen.</li>
-                <li><strong>Win</strong> by reaching the Final Trial and writing your Digital Citizenship Oath in your own words.</li>
+                <li><strong>Win</strong> by reaching the Final Trial and typing your Digital Citizenship Oath.</li>
               </ol>
-              <p class="tt-tutorial__note">Wrong turns aren't game over — the scene rewinds. Each run scrambles which missions appear first, and a lucky roll may earn a bonus badge.</p>
+              <p class="tt-tutorial__note">Wrong turns aren't game over — the scene rewinds. Each run scrambles which missions appear first. Built for grades 6–8 keyboarding fluency (ITEM 2025 · 8.3.2.1).</p>
+            </div>
+            <div id="typingProfileBar" class="tt-typing-profile dw-hidden">
+              <span class="tt-typing-profile__stat">⌨️ Test: <strong id="profileTestWpm">—</strong> WPM</span>
+              <span class="tt-typing-profile__stat">🎯 Target: <strong id="profileTargetWpm">—</strong> WPM</span>
+              <button id="retakeDiagnosticBtn" class="tt-settings-btn tt-settings-btn--sm" type="button">Retake speed test</button>
+            </div>
+            <div class="tt-typo-settings">
+              <span class="tt-difficulty__label">Typo forgiveness:</span>
+              <input id="typoToleranceRange" type="range" min="0" max="5" value="2" class="tt-typo-range" aria-label="Typo forgiveness" />
+              <span id="typoToleranceLabel" class="tt-typo-label">2 typos</span>
             </div>
             <div class="tt-difficulty">
               <span class="tt-difficulty__label">Difficulty:</span>
@@ -72,6 +84,21 @@ layout: false
             </div>
             <div class="tt-golden-preview" id="titleGoldenPreview" aria-label="Golden Rules to recover"></div>
             <div class="tt-btn-group" id="titleBtnGroup">
+              <div id="titleTypingMenu" class="tt-title-typing tt-typing-panel">
+                <p class="tt-title-typing__hint">Type a command below — or tap a button</p>
+                <div id="titleGhostPrompt" class="tt-ghost-prompt" aria-hidden="true"></div>
+                <div class="tt-typing-meter" id="titleTypingMeter">
+                  <div class="tt-typing-meter__row">
+                    <span class="tt-typing-meter__label">Progress</span>
+                    <span class="tt-typing-meter__value" id="titleProgressPct">0%</span>
+                  </div>
+                  <div class="tt-typing-meter__track">
+                    <div class="tt-typing-meter__fill" id="titleProgressFill"></div>
+                  </div>
+                </div>
+                <input id="titleTypingInput" class="tt-typing-input tt-typing-input--title" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Type here…" aria-label="Title menu command" />
+                <div id="titleTypedDisplay" class="tt-typed-display" aria-live="polite"></div>
+              </div>
               <button id="startGameBtn" class="tt-cta-btn" type="button">Accept mission</button>
               <button id="continueRunBtn" class="tt-cta-btn tt-cta-btn--secondary dw-hidden" type="button">Continue mission</button>
               <button id="newRunBtn" class="tt-cta-btn tt-cta-btn--ghost dw-hidden" type="button">New mission</button>
@@ -80,8 +107,44 @@ layout: false
             <div class="tt-settings-bar" style="margin-top:14px; display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
               <button id="highContrastToggle" class="tt-settings-btn" type="button" title="Toggle high contrast">🔲 High contrast</button>
             </div>
+            <p class="tt-credit">A Game by Mr. Phil</p>
           </div>
         </section>
+
+        <div id="diagnosticOverlay" class="tt-diagnostic dw-hidden" role="dialog" aria-modal="true" aria-labelledby="diagnosticTitle">
+          <div class="tt-diagnostic__panel tt-diagnostic__panel--pop tt-typing-panel">
+            <div class="tt-diagnostic__burst" aria-hidden="true"></div>
+            <h2 id="diagnosticTitle" class="tt-diagnostic__title">⌨️ Typing Speed Diagnostic</h2>
+            <p id="diagnosticIntro" class="tt-diagnostic__intro">Type the phrase below as fast and accurately as you can. This sets your mission speed target.</p>
+            <div id="diagnosticGhost" class="tt-ghost-prompt tt-ghost-prompt--diagnostic" aria-hidden="true"></div>
+            <div class="tt-typing-meter tt-typing-meter--diagnostic" id="diagnosticMeter">
+              <div class="tt-typing-meter__row">
+                <span class="tt-typing-meter__label">Phrase progress</span>
+                <span class="tt-typing-meter__value" id="diagnosticProgressPct">0%</span>
+              </div>
+              <div class="tt-typing-meter__track">
+                <div class="tt-typing-meter__fill" id="diagnosticProgressFill"></div>
+                <div class="tt-typing-meter__wpm" id="diagnosticWpmFill"></div>
+              </div>
+              <div class="tt-typing-meter__speed-row">
+                <span>Live <strong id="diagnosticLiveWpm">0</strong> WPM</span>
+              </div>
+            </div>
+            <input id="diagnosticInput" class="tt-typing-input tt-typing-input--diagnostic" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Diagnostic typing phrase" />
+            <div id="diagnosticTyped" class="tt-typed-display tt-typed-display--diagnostic" aria-live="polite"></div>
+            <div id="diagnosticResult" class="tt-diagnostic__result dw-hidden">
+              <p class="tt-diagnostic__wpm">Your speed: <strong id="diagnosticWpm">0</strong> WPM</p>
+              <p class="tt-diagnostic__recommend">Recommended target: <strong id="diagnosticRecommended">0</strong> WPM (88% of your test)</p>
+              <label class="tt-diagnostic__custom-label" for="diagnosticTargetInput">Set your target (up to 150%):</label>
+              <div class="tt-diagnostic__custom-row">
+                <input id="diagnosticTargetInput" class="dw-input tt-diagnostic__target-input" type="number" min="8" step="1" />
+                <span class="dw-muted dw-tiny">WPM</span>
+              </div>
+              <button id="diagnosticAcceptBtn" class="tt-cta-btn" type="button">Accept target &amp; begin</button>
+            </div>
+            <p id="diagnosticStatus" class="tt-diagnostic__status dw-muted dw-tiny"></p>
+          </div>
+        </div>
 
         <section id="gameView" class="dw-hidden">
           <a href="#sceneChoices" id="skipToChoices" class="tt-skip-link">Skip to choices</a>
@@ -92,6 +155,8 @@ layout: false
               <span class="tt-stat">🗺️ <span class="tt-stat__value" id="statScenes">0</span> steps</span>
               <span class="tt-stat tt-stat--integrity">🛡️ <span class="tt-stat__value" id="statIntegrity">100</span> integrity</span>
               <span class="tt-stat tt-stat--reputation">⭐ <span class="tt-stat__value" id="statReputation">50</span> reputation</span>
+              <span class="tt-stat tt-stat--speed">🎯 <span class="tt-stat__value" id="statTargetWpm">—</span> WPM</span>
+              <span class="tt-stat tt-stat--live-wpm dw-hidden" id="liveWpmStat">⚡ <span class="tt-stat__value" id="statLiveWpm">0</span> live</span>
             </div>
             <div class="tt-golden-track" id="goldenRulesTrack" aria-label="Golden Rules progress"></div>
             <button id="muteToggleBtn" class="tt-mute-btn" type="button" title="Toggle sound">🔊</button>
@@ -123,10 +188,19 @@ layout: false
                   <div class="tt-character tt-character--3d" id="sceneCharacter"></div>
                   <div class="tt-narrative tt-narrative--reveal" id="sceneNarrative" aria-live="polite" aria-atomic="true"></div>
                   <button id="narrativeContinueBtn" class="tt-cta-btn tt-cta-btn--sm dw-hidden" type="button">Continue ▶</button>
-                  <div id="typingChallenge" class="tt-typing-challenge dw-hidden">
+                  <div id="typingChallenge" class="tt-typing-challenge tt-typing-panel dw-hidden">
                     <div class="tt-typing-challenge__header">
                       <span class="tt-typing-challenge__label">⌨️ Typing challenge</span>
                       <div class="tt-typing-progress"><div class="tt-typing-progress__fill" id="typingProgressFill"></div></div>
+                    </div>
+                    <div class="tt-typing-meter" id="challengeMeter">
+                      <div class="tt-typing-meter__row">
+                        <span class="tt-typing-meter__label">Word goal</span>
+                        <span class="tt-typing-meter__value" id="challengeWordPct">0%</span>
+                      </div>
+                      <div class="tt-typing-meter__track">
+                        <div class="tt-typing-meter__fill" id="challengeWordFill"></div>
+                      </div>
                     </div>
                     <div class="tt-typing-challenge__prompt" id="typingPrompt"></div>
                     <textarea id="typingInput" class="dw-textarea tt-textarea" rows="5" placeholder="Type your response here…" spellcheck="true"></textarea>
@@ -135,6 +209,27 @@ layout: false
                       <button id="typingSubmitBtn" class="tt-cta-btn tt-cta-btn--sm" type="button" disabled>Submit response</button>
                     </div>
                   </div>
+                  <div id="typingChoices" class="tt-typing-choices tt-typing-panel dw-hidden">
+                    <p class="tt-typing-choices__label">⌨️ Type your path</p>
+                    <div id="choiceGhostPrompt" class="tt-ghost-prompt tt-ghost-prompt--choices" aria-hidden="true"></div>
+                    <div class="tt-typing-meter" id="choiceTypingMeter">
+                      <div class="tt-typing-meter__row">
+                        <span class="tt-typing-meter__label">Path progress</span>
+                        <span class="tt-typing-meter__value" id="choiceProgressPct">0%</span>
+                      </div>
+                      <div class="tt-typing-meter__track">
+                        <div class="tt-typing-meter__fill" id="choiceProgressFill"></div>
+                        <div class="tt-typing-meter__wpm" id="choiceWpmFill"></div>
+                      </div>
+                      <div class="tt-typing-meter__speed-row">
+                        <span>Live <strong id="choiceLiveWpm">0</strong> WPM</span>
+                        <span>Target <strong id="choiceTargetWpm">—</strong> WPM</span>
+                      </div>
+                    </div>
+                    <input id="choiceTypingInput" class="tt-typing-input tt-typing-input--choices" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="Type your choice" />
+                    <div id="choiceTypedDisplay" class="tt-typed-display" aria-live="polite"></div>
+                    <p id="choiceSpeedHint" class="tt-speed-hint dw-muted dw-tiny"></p>
+                  </div>
                   <div class="tt-choices" id="sceneChoices"></div>
                 </div>
               </div>
@@ -142,7 +237,7 @@ layout: false
           </div>
 
           <div id="identityGate" class="tt-identity-gate dw-hidden">
-            <div class="tt-identity-gate__panel">
+            <div class="tt-identity-gate__panel tt-typing-panel">
               <h3 class="dw-h3">Mission Report</h3>
               <p class="dw-muted dw-tiny">Enter your details to submit your Digital Citizenship Oath.</p>
               <div class="tt-identity-gate__field">
@@ -196,6 +291,7 @@ layout: false
     </div>
 
     <script src="/scripts/write-test-core.js" defer></script>
+    <script src="/scripts/tech-trail-typing-engine.js" defer></script>
     <script src="/scripts/tech-trail-visuals.js" defer></script>
     <script src="/scripts/tech-trail-story.js" defer></script>
     <script src="/scripts/tech-trail-state.js" defer></script>

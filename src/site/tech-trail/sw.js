@@ -1,7 +1,7 @@
 /**
  * Global Tech Gauntlet — cache-first service worker for offline play.
  */
-const CACHE_NAME = "gtg-v1";
+const CACHE_NAME = "gtg-v3";
 const PRECACHE = [
   "/styles/write-platform.css",
   "/styles/custom-style.css",

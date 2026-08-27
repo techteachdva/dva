@@ -9,6 +9,7 @@
   const PROFILE_KEY = "profile";
   const DRAFT_KEY = "draft";
   const OFFLINE_KEY = "offlineQueue";
+  const TYPING_KEY = "typingProfile";
 
   function now() {
     return Date.now();
@@ -69,6 +70,36 @@
       lastName: "",
       lastClassroom: "",
     };
+  }
+
+  function blankTypingProfile() {
+    return {
+      v: 1,
+      diagnosed: false,
+      testWpm: 0,
+      targetWpm: 18,
+      maxTypos: 2,
+      lastPhrase: "",
+      diagnosedAt: null,
+    };
+  }
+
+  function loadTypingProfile() {
+    const raw = tryGet(`${PREFIX}:${TYPING_KEY}`);
+    if (!raw || raw.v !== 1) return blankTypingProfile();
+    return {
+      v: 1,
+      diagnosed: Boolean(raw.diagnosed),
+      testWpm: typeof raw.testWpm === "number" ? raw.testWpm : 0,
+      targetWpm: typeof raw.targetWpm === "number" ? raw.targetWpm : 18,
+      maxTypos: typeof raw.maxTypos === "number" ? raw.maxTypos : 2,
+      lastPhrase: raw.lastPhrase || "",
+      diagnosedAt: raw.diagnosedAt || null,
+    };
+  }
+
+  function saveTypingProfile(profile) {
+    trySet(`${PREFIX}:${TYPING_KEY}`, { ...profile, v: 1 });
   }
 
   function normalizeArray(arr) {
@@ -243,5 +274,8 @@
     hasOfflineSubmissions,
     blankRun,
     blankProfile,
+    loadTypingProfile,
+    saveTypingProfile,
+    blankTypingProfile,
   };
 })();

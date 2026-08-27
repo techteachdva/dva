@@ -6716,3 +6716,643 @@ mark.wf-standard-hit,
   font-weight: 600;
 }
 
+/* ── GTG Typing Game ── */
+.tt-credit {
+  margin: 20px 0 0;
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 15px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(255, 215, 0, 0.55);
+  text-align: center;
+}
+
+.tt-ghost-demo {
+  color: rgba(255, 248, 231, 0.45);
+  font-style: italic;
+}
+
+.tt-ghost-demo__slash {
+  color: rgba(255, 215, 0, 0.35);
+  margin: 0 4px;
+}
+
+.tt-typing-profile {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
+  margin: 12px 0;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 215, 0, 0.15);
+}
+
+.tt-typing-profile__stat {
+  font-size: 14px;
+  color: var(--dw-text);
+}
+
+.tt-typo-settings {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  margin: 10px 0;
+}
+
+.tt-typo-range {
+  width: 120px;
+  accent-color: #ffd700;
+}
+
+.tt-typo-label {
+  font-size: 13px;
+  color: rgba(255, 248, 231, 0.7);
+}
+
+.tt-title-typing {
+  width: 100%;
+  max-width: 480px;
+  margin-bottom: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+.tt-title-typing__hint {
+  font-size: 13px;
+  color: rgba(255, 248, 231, 0.65);
+  margin: 0 0 10px;
+  text-align: center;
+}
+
+.tt-ghost-prompt {
+  font-family: "Barlow", sans-serif;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.5;
+  margin-bottom: 10px;
+  min-height: 1.5em;
+  word-break: break-word;
+}
+
+.tt-ghost-prompt--diagnostic {
+  font-size: 24px;
+  text-align: center;
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(196, 30, 58, 0.12);
+}
+
+.tt-ghost-prompt--choices {
+  font-size: 18px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.tt-ghost-char {
+  color: rgba(255, 248, 231, 0.28);
+  transition: color 0.12s ease, text-shadow 0.12s ease;
+}
+
+.tt-ghost-char--solid {
+  color: #fff8e7;
+  text-shadow: 0 0 12px rgba(255, 215, 0, 0.45);
+}
+
+.tt-ghost-prefix {
+  color: #ffd700;
+  margin-right: 4px;
+}
+
+.tt-ghost-ellipsis {
+  color: rgba(255, 215, 0, 0.5);
+  margin-right: 6px;
+}
+
+.tt-ghost-branch {
+  display: inline;
+}
+
+.tt-ghost-branch--active .tt-ghost-char:not(.tt-ghost-char--solid) {
+  color: rgba(255, 215, 0, 0.45);
+}
+
+.tt-ghost-slash {
+  color: rgba(255, 215, 0, 0.35);
+  margin: 0 6px;
+  font-weight: 400;
+}
+
+.tt-typing-input {
+  width: 100%;
+  font-family: "Barlow", sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  padding: 12px 14px;
+  border: 2px solid rgba(255, 215, 0, 0.25);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff8e7;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.tt-typing-input:focus {
+  border-color: #ffd700;
+  box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.15), 0 0 24px rgba(196, 30, 58, 0.2);
+}
+
+.tt-typing-input--title {
+  font-size: 16px;
+}
+
+.tt-typing-input--diagnostic {
+  font-size: 20px;
+  text-align: center;
+}
+
+.tt-typing-input--choices {
+  font-size: 18px;
+}
+
+.tt-typed-display {
+  margin-top: 8px;
+  font-size: 16px;
+  min-height: 1.4em;
+  line-height: 1.5;
+}
+
+.tt-typed-display--diagnostic {
+  text-align: center;
+  font-size: 18px;
+}
+
+.tt-typed-char--correct {
+  color: #6ee7b7;
+}
+
+.tt-typed-char--wrong {
+  color: #ef4444;
+  text-decoration: underline wavy #ef4444;
+  text-underline-offset: 3px;
+}
+
+.tt-typed-char--extra {
+  color: #f97316;
+  text-decoration: underline wavy #f97316;
+}
+
+.tt-typing-choices {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 14px;
+  border: 2px solid rgba(255, 215, 0, 0.22);
+  background: linear-gradient(135deg, rgba(196, 30, 58, 0.12), rgba(0, 0, 0, 0.35));
+  animation: tt-choice-in 0.45s ease-out both;
+}
+
+.tt-typing-choices--unlock {
+  border-color: #ffd700;
+  box-shadow: 0 0 32px rgba(255, 215, 0, 0.25);
+  animation: tt-unlock-pop 0.5s ease-out;
+}
+
+@keyframes tt-unlock-pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+.tt-typing-choices__label {
+  font-family: "Bebas Neue", sans-serif;
+  letter-spacing: 0.08em;
+  color: #ffd700;
+  margin: 0 0 10px;
+  font-size: 16px;
+}
+
+.tt-speed-hint {
+  margin: 8px 0 0;
+  text-align: center;
+}
+
+.tt-stat--speed .tt-stat__value {
+  color: #ffd700;
+}
+
+.tt-stat--live-wpm .tt-stat__value {
+  color: #6ee7b7;
+}
+
+.tt-diagnostic {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 4, 14, 0.88);
+  backdrop-filter: blur(8px);
+  padding: 20px;
+}
+
+.tt-diagnostic.dw-hidden {
+  display: none;
+}
+
+.tt-diagnostic__panel {
+  position: relative;
+  width: min(560px, 100%);
+  padding: 28px 24px;
+  border-radius: 18px;
+  border: 2px solid rgba(255, 215, 0, 0.35);
+  background: linear-gradient(160deg, rgba(40, 12, 24, 0.95), rgba(14, 8, 20, 0.98));
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55), 0 0 48px rgba(196, 30, 58, 0.15);
+}
+
+.tt-diagnostic__panel--pop {
+  animation: tt-diagnostic-pop 0.55s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+.tt-diagnostic__panel--success {
+  border-color: #ffd700;
+  box-shadow: 0 0 48px rgba(255, 215, 0, 0.2);
+}
+
+@keyframes tt-diagnostic-pop {
+  0% { opacity: 0; transform: scale(0.88) translateY(20px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.tt-diagnostic__burst {
+  position: absolute;
+  top: -40px;
+  left: 50%;
+  width: 200px;
+  height: 200px;
+  margin-left: -100px;
+  background: radial-gradient(circle, rgba(255, 215, 0, 0.15), transparent 70%);
+  pointer-events: none;
+}
+
+.tt-diagnostic__title {
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 28px;
+  letter-spacing: 0.06em;
+  color: #ffd700;
+  margin: 0 0 8px;
+  text-align: center;
+}
+
+.tt-diagnostic__intro {
+  text-align: center;
+  margin: 0 0 16px;
+  color: rgba(255, 248, 231, 0.75);
+  font-size: 15px;
+}
+
+.tt-diagnostic__result {
+  margin-top: 16px;
+  text-align: center;
+}
+
+.tt-diagnostic__wpm {
+  font-size: 18px;
+  margin: 0 0 6px;
+}
+
+.tt-diagnostic__wpm strong {
+  color: #6ee7b7;
+  font-size: 22px;
+}
+
+.tt-diagnostic__recommend {
+  margin: 0 0 12px;
+  color: rgba(255, 248, 231, 0.8);
+}
+
+.tt-diagnostic__custom-label {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.tt-diagnostic__custom-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+
+.tt-diagnostic__target-input {
+  width: 80px;
+  text-align: center;
+}
+
+.tt-diagnostic__status {
+  text-align: center;
+  margin-top: 10px;
+}
+
+.tt-settings-btn--sm {
+  font-size: 12px;
+  padding: 6px 10px;
+}
+
+.wp-theme--gauntlet.tt-high-contrast .tt-ghost-char {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.wp-theme--gauntlet.tt-high-contrast .tt-ghost-char--solid {
+  color: #fff;
+}
+
+@media (max-width: 640px) {
+  .tt-ghost-prompt {
+    font-size: 16px;
+  }
+
+  .tt-ghost-prompt--diagnostic {
+    font-size: 18px;
+  }
+
+  .tt-typing-input {
+    font-size: 16px;
+  }
+}
+
+/* ── Phrase pop & dynamic typing UI ── */
+.tt-phrase-pop-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.tt-phrase-pop {
+  position: fixed;
+  left: 50%;
+  top: 42%;
+  transform: translate(-50%, -50%) scale(0.6);
+  opacity: 0;
+  font-family: "Bebas Neue", sans-serif;
+  font-size: clamp(22px, 5vw, 36px);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff8e7;
+  text-shadow: 0 0 24px rgba(255, 215, 0, 0.55), 0 4px 16px rgba(0, 0, 0, 0.5);
+  padding: 10px 18px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(196, 30, 58, 0.85), rgba(80, 20, 40, 0.9));
+  border: 2px solid rgba(255, 215, 0, 0.45);
+  max-width: min(92vw, 520px);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tt-phrase-pop--anchored {
+  left: var(--tt-pop-x, 50%);
+  top: var(--tt-pop-y, 42%);
+}
+
+.tt-phrase-pop--center {
+  left: 50%;
+  top: 38%;
+}
+
+.tt-phrase-pop--sm {
+  font-size: clamp(14px, 3.5vw, 20px);
+  padding: 6px 14px;
+}
+
+.tt-phrase-pop--lg {
+  font-size: clamp(20px, 4.5vw, 32px);
+}
+
+.tt-phrase-pop--phrase {
+  background: linear-gradient(135deg, rgba(30, 60, 90, 0.92), rgba(10, 20, 40, 0.95));
+  border-color: rgba(110, 231, 183, 0.45);
+  color: #ecfdf5;
+  white-space: normal;
+  word-break: break-word;
+  max-width: min(94vw, 640px);
+}
+
+.tt-phrase-pop--gold {
+  background: linear-gradient(135deg, rgba(196, 30, 58, 0.9), rgba(120, 20, 50, 0.92));
+  border-color: rgba(255, 215, 0, 0.55);
+  color: #ffd700;
+}
+
+.tt-phrase-pop--green {
+  background: linear-gradient(135deg, rgba(16, 80, 55, 0.92), rgba(8, 40, 30, 0.95));
+  border-color: rgba(110, 231, 183, 0.5);
+  color: #6ee7b7;
+}
+
+.tt-phrase-pop--active {
+  animation: tt-phrase-pop-in 0.45s cubic-bezier(0.34, 1.45, 0.64, 1) forwards;
+}
+
+.tt-phrase-pop--out {
+  animation: tt-phrase-pop-out 0.55s ease-in forwards;
+}
+
+@keyframes tt-phrase-pop-in {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -40%) scale(0.55);
+    filter: blur(4px);
+  }
+  55% {
+    opacity: 1;
+    transform: translate(-50%, -58%) scale(1.08);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -62%) scale(1);
+  }
+}
+
+@keyframes tt-phrase-pop-out {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -62%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -95%) scale(0.92);
+    filter: blur(3px);
+  }
+}
+
+.tt-typing-panel {
+  position: relative;
+  transition: box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.tt-typing-panel--success {
+  animation: tt-panel-success 0.65s ease-out;
+}
+
+@keyframes tt-panel-success {
+  0% { box-shadow: 0 0 0 rgba(255, 215, 0, 0); }
+  35% { box-shadow: 0 0 36px rgba(255, 215, 0, 0.35), inset 0 0 24px rgba(110, 231, 183, 0.08); }
+  100% { box-shadow: 0 0 0 rgba(255, 215, 0, 0); }
+}
+
+.tt-typing-meter {
+  margin: 10px 0 12px;
+}
+
+.tt-typing-meter__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: rgba(255, 248, 231, 0.7);
+}
+
+.tt-typing-meter__label {
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.tt-typing-meter__value {
+  font-family: "Bebas Neue", sans-serif;
+  color: #ffd700;
+  letter-spacing: 0.06em;
+}
+
+.tt-typing-meter__track {
+  position: relative;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+
+.tt-typing-meter__fill {
+  height: 100%;
+  width: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #c41e3a, #ffd700);
+  transition: width 0.12s ease-out;
+}
+
+.tt-typing-meter__wpm {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(110, 231, 183, 0.35), rgba(52, 211, 153, 0.65));
+  transition: width 0.15s ease-out, background 0.2s;
+  pointer-events: none;
+}
+
+.tt-typing-meter__wpm--hot {
+  background: linear-gradient(90deg, rgba(110, 231, 183, 0.55), rgba(52, 211, 153, 0.9));
+  box-shadow: 0 0 12px rgba(110, 231, 183, 0.35);
+}
+
+.tt-typing-meter__wpm--cold {
+  background: linear-gradient(90deg, rgba(248, 113, 113, 0.35), rgba(239, 68, 68, 0.55));
+}
+
+.tt-typing-meter__speed-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+  font-size: 12px;
+  color: rgba(255, 248, 231, 0.75);
+}
+
+.tt-typing-meter__speed-row strong {
+  color: #6ee7b7;
+  font-size: 14px;
+}
+
+.tt-typing-meter--diagnostic {
+  margin-bottom: 14px;
+}
+
+.tt-typing-input--near {
+  border-color: rgba(255, 215, 0, 0.55);
+  box-shadow: 0 0 16px rgba(255, 215, 0, 0.12);
+}
+
+.tt-typing-input--ready {
+  border-color: #6ee7b7;
+  box-shadow: 0 0 0 3px rgba(110, 231, 183, 0.2), 0 0 28px rgba(110, 231, 183, 0.25);
+  animation: tt-input-ready-pulse 1.2s ease-in-out infinite;
+}
+
+.tt-typing-input--slow {
+  border-color: #f87171;
+  box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.15);
+}
+
+@keyframes tt-input-ready-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(110, 231, 183, 0.15), 0 0 20px rgba(110, 231, 183, 0.2); }
+  50% { box-shadow: 0 0 0 4px rgba(110, 231, 183, 0.28), 0 0 32px rgba(110, 231, 183, 0.35); }
+}
+
+.tt-cta-btn--ready {
+  border-color: #6ee7b7;
+  animation: tt-btn-ready 0.8s ease-in-out infinite;
+}
+
+@keyframes tt-btn-ready {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tt-phrase-pop--active,
+  .tt-phrase-pop--out,
+  .tt-typing-panel--success,
+  .tt-typing-input--ready,
+  .tt-cta-btn--ready {
+    animation: none;
+  }
+
+  .tt-phrase-pop--active {
+    opacity: 1;
+    transform: translate(-50%, -58%) scale(1);
+  }
+}
+
+@media (max-width: 640px) {
+  .tt-phrase-pop {
+    font-size: clamp(18px, 4.5vw, 28px);
+    padding: 8px 14px;
+  }
+
+  .tt-typing-meter__speed-row {
+    flex-direction: column;
+    gap: 4px;
+    align-items: flex-start;
+  }
+
+  .tt-typing-choices,
+  .tt-title-typing {
+    padding: 12px;
+  }
+}
+
