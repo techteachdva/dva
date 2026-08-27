@@ -173,6 +173,16 @@
     });
   }
 
+  async function saveGradesBulk(grades) {
+    const token = getToken();
+    if (!token) throw new Error("Admin sign-in required.");
+    if (!grades?.length) return { saved: 0, results: [], errors: [] };
+    return apiPost("saveGradesBulk", {
+      sessionToken: token,
+      grades,
+    });
+  }
+
   window.WriteFlowAdmin = {
     validate,
     login,
@@ -188,6 +198,7 @@
     listAllSubmissions,
     listAssignmentSubmissions,
     saveSubmissionGrade,
+    saveGradesBulk,
     reanalyzeBulk,
   };
 })();

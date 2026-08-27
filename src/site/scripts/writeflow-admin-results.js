@@ -1,5 +1,5 @@
 /**
- * WriteFlow — admin all-results view.
+ * WriteFlow — admin all-results view with fast grading queue.
  */
 (() => {
   "use strict";
@@ -7,6 +7,7 @@
   const Admin = () => window.WriteFlowAdmin;
   const API_URL = "/api/writeflow-submissions";
   const CHUNK_SIZE = 25;
+  const INPUT_DEBOUNCE_MS = 350;
 
   let allSubmissions = [];
   let filteredSubmissions = [];
@@ -15,6 +16,9 @@
   const configCache = new Map();
   const loadedAssignmentIds = new Set();
   let detailRequestId = 0;
+  let gradingQueue = null;
+  let inputDebounceTimer = null;
+  let skipNextFormCapture = false;
 
   const TABLE_COLUMNS = ["name", "assignment", "class", "words", "wpm", "typing", "mechanics", "story", "overall", "teacher", "submitted"];
   const HEADER_LABELS = {
@@ -93,6 +97,10 @@
       case "story": return Number(sub.analysis?.scores?.story ?? -1);
       case "overall": return Number(sub.analysis?.scores?.overall ?? -1);
       case "teacher": {
+        const draft = gradingQueue?.getDraft(sub.id);
+        if (draft?.dirty && draft.teacherGrade != null && draft.teacherGrade !== "") {
+          return Number(draft.teacherGrade);
+        }
         const grade = Number(sub.teacherGrade);
         return Number.isFinite(grade) ? grade : -1;
       }
@@ -151,7 +159,12 @@
     return value == null || value === "" ? "—" : value;
   }
 
-  function teacherGradeValue(sub) {
+  function displayTeacherGrade(sub) {
+    const draft = gradingQueue?.getDraft(sub.id);
+    if (draft?.dirty) {
+      const g = draft.teacherGrade;
+      if (g != null && g !== "") return `${g}*`;
+    }
     if (sub?.teacherGrade == null || sub.teacherGrade === "") return "—";
     const grade = Number(sub.teacherGrade);
     return Number.isFinite(grade) ? String(grade) : "—";
@@ -172,11 +185,48 @@
     return allSubmissions.find((item) => item.id === selectedId) || null;
   }
 
+  function sortedFilteredSubmissions() {
+    return sortSubmissions(filteredSubmissions);
+  }
+
   function setMeta(text, isError = false) {
     const el = document.getElementById("adminResultsMeta");
     if (!el) return;
     el.textContent = text;
     el.classList.toggle("dw-error", isError);
+  }
+
+  function updateQueueUi() {
+    const dirty = gradingQueue?.countDirty() || 0;
+    const btn = document.getElementById("adminSaveAllPendingBtn");
+    if (btn) {
+      btn.disabled = dirty === 0;
+      btn.textContent = dirty ? `Save pending (${dirty})` : "Save pending";
+    }
+  }
+
+  function applyGradingResult(item) {
+    const idx = allSubmissions.findIndex((row) => row.id === item.id);
+    if (idx < 0) return;
+    allSubmissions[idx] = {
+      ...allSubmissions[idx],
+      teacherGrade: item.teacherGrade,
+      teacherFeedback: item.teacherFeedback,
+      feedbackVisible: item.feedbackVisible,
+      gradedAt: item.gradedAt || Date.now(),
+    };
+    updateQueueUi();
+    updateTeacherCell(allSubmissions[idx]);
+  }
+
+  function updateTeacherCell(sub) {
+    const row = document.querySelector(`#adminResultsTableBody tr[data-sub-id="${CSS.escape(sub.id)}"]`);
+    if (!row) return;
+    const cell = row.querySelector(".dw-col-teacher");
+    if (cell) {
+      cell.textContent = displayTeacherGrade(sub);
+      cell.classList.toggle("wf-grade-cell--pending", !!gradingQueue?.isDirty(sub.id));
+    }
   }
 
   function getFilters() {
@@ -262,12 +312,13 @@
       return;
     }
 
-    const subs = sortSubmissions(filteredSubmissions);
+    const subs = sortedFilteredSubmissions();
 
     tbody.innerHTML = subs.map((sub) => {
       const selected = sub.id === selectedId;
+      const pending = gradingQueue?.isDirty(sub.id);
       const assignmentLabel = sub.assignmentTitle || sub.assignmentId || "—";
-      return `<tr class="dw-table-row--clickable${selected ? " dw-table-row--selected" : ""}" data-sub-id="${escapeHtml(sub.id)}" tabindex="0">
+      return `<tr class="dw-table-row--clickable${selected ? " dw-table-row--selected" : ""}${pending ? " wf-grade-row--pending" : ""}" data-sub-id="${escapeHtml(sub.id)}" tabindex="0">
         <td class="dw-col-name">${escapeHtml(sub.name)}</td>
         <td class="dw-col-assignment"><span class="wf-admin-results__assignment" title="${escapeHtml(sub.assignmentId || "")}">${escapeHtml(assignmentLabel)}</span></td>
         <td class="dw-col-class">${escapeHtml(sub.classroom || "—")}</td>
@@ -277,7 +328,7 @@
         <td class="dw-col-mechanics">${scoreValue(sub.analysis, "mechanics")}</td>
         <td class="dw-col-story">${scoreValue(sub.analysis, "story")}</td>
         <td class="dw-col-overall">${scoreValue(sub.analysis, "overall")}</td>
-        <td class="dw-col-teacher">${teacherGradeValue(sub)}</td>
+        <td class="dw-col-teacher wf-grade-cell${pending ? " wf-grade-cell--pending" : ""}">${displayTeacherGrade(sub)}</td>
         <td class="dw-col-submitted">${formatDate(sub.submittedAt)}</td>
       </tr>`;
     }).join("");
@@ -297,7 +348,46 @@
     });
   }
 
+  function readGradingForm() {
+    const gradeVal = document.getElementById("adminGradeInput")?.value;
+    const teacherGrade = gradeVal === "" ? null : Number(gradeVal);
+    return {
+      teacherGrade,
+      teacherFeedback: document.getElementById("adminFeedbackInput")?.value || "",
+      feedbackVisible: document.getElementById("adminFeedbackVisible")?.checked || false,
+    };
+  }
+
+  function captureCurrentGradingDraft() {
+    if (skipNextFormCapture || !selectedId) return;
+    const sub = currentSubmission();
+    if (!sub) return;
+    const form = readGradingForm();
+    if (form.teacherGrade != null && (!Number.isFinite(form.teacherGrade) || form.teacherGrade < 0)) return;
+    gradingQueue?.stage(sub.id, sub.assignmentId, form);
+    applyGradingResult({
+      id: sub.id,
+      teacherGrade: form.teacherGrade,
+      teacherFeedback: form.teacherFeedback,
+      feedbackVisible: form.feedbackVisible,
+      gradedAt: sub.gradedAt || Date.now(),
+    });
+    updateQueueUi();
+  }
+
+  function scheduleCapture() {
+    if (inputDebounceTimer) clearTimeout(inputDebounceTimer);
+    inputDebounceTimer = setTimeout(() => {
+      captureCurrentGradingDraft();
+      const statusEl = document.getElementById("adminGradeStatus");
+      if (statusEl && gradingQueue?.isDirty(selectedId)) {
+        statusEl.textContent = "Queued — saves automatically";
+      }
+    }, INPUT_DEBOUNCE_MS);
+  }
+
   function closeDetail() {
+    captureCurrentGradingDraft();
     selectedId = "";
     document.getElementById("adminResultsDetail")?.classList.add("wf-admin-results__detail--empty");
     document.getElementById("adminResultsDetailPlaceholder")?.classList.remove("dw-hidden");
@@ -341,21 +431,34 @@
   function fillGradingForm(sub, config) {
     const maxPts = resolveMaxPoints(config);
     const suggested = suggestedPointsFromAnalysis(sub.analysis, maxPts);
+    const draft = gradingQueue?.getDraft(sub.id);
     const gradeInput = document.getElementById("adminGradeInput");
     const feedbackInput = document.getElementById("adminFeedbackInput");
     const visibleInput = document.getElementById("adminFeedbackVisible");
     const hint = document.getElementById("adminGradingHint");
     const notice = document.getElementById("adminResultsGradingNotice");
     const statusEl = document.getElementById("adminGradeStatus");
+
+    skipNextFormCapture = true;
     if (gradeInput) {
       gradeInput.max = String(maxPts);
-      gradeInput.value = sub.teacherGrade != null ? String(sub.teacherGrade) : (suggested != null ? String(suggested) : "");
+      if (draft?.dirty) {
+        gradeInput.value = draft.teacherGrade != null ? String(draft.teacherGrade) : "";
+      } else {
+        gradeInput.value = sub.teacherGrade != null ? String(sub.teacherGrade) : (suggested != null ? String(suggested) : "");
+      }
     }
-    if (feedbackInput) feedbackInput.value = sub.teacherFeedback || "";
+    if (feedbackInput) {
+      feedbackInput.value = draft?.dirty ? (draft.teacherFeedback || "") : (sub.teacherFeedback || "");
+    }
     if (visibleInput) {
-      visibleInput.checked = sub.gradedAt
-        ? !!sub.feedbackVisible
-        : !!(config.autoReleaseFeedback || sub.feedbackVisible);
+      if (draft?.dirty) {
+        visibleInput.checked = !!draft.feedbackVisible;
+      } else {
+        visibleInput.checked = sub.gradedAt
+          ? !!sub.feedbackVisible
+          : !!(config.autoReleaseFeedback || sub.feedbackVisible);
+      }
     }
     if (hint) {
       hint.textContent = suggested != null
@@ -371,7 +474,10 @@
         notice.textContent = "";
       }
     }
-    if (statusEl) statusEl.textContent = "";
+    if (statusEl) {
+      statusEl.textContent = draft?.dirty ? "Queued — saves automatically" : "";
+    }
+    skipNextFormCapture = false;
   }
 
   function fillDraft(sub) {
@@ -396,7 +502,16 @@
     }
   }
 
+  function navigateSubmission(delta) {
+    const subs = sortedFilteredSubmissions();
+    if (!subs.length) return;
+    const idx = subs.findIndex((sub) => sub.id === selectedId);
+    const nextIdx = idx < 0 ? (delta > 0 ? 0 : subs.length - 1) : Math.max(0, Math.min(subs.length - 1, idx + delta));
+    if (subs[nextIdx]) void showDetail(subs[nextIdx]);
+  }
+
   async function showDetail(sub) {
+    captureCurrentGradingDraft();
     const req = ++detailRequestId;
     selectedId = sub.id;
     const panel = document.getElementById("adminResultsDetail");
@@ -423,12 +538,14 @@
       meta.innerHTML = `<strong>${escapeHtml(sub.name)}</strong> · ${escapeHtml(sub.classroom || "No class")} · ${formatDate(sub.submittedAt)}`;
     }
     if (assignmentEl) {
-      assignmentEl.innerHTML = `Assignment: <strong>${escapeHtml(sub.assignmentTitle || sub.assignmentId || "—")}</strong> (<code>${escapeHtml(sub.assignmentId || "")}</code>)`;
+      assignmentEl.innerHTML = `Assignment: <strong>${escapeHtml(sub.assignmentTitle || sub.assignmentId || "—")}</strong>`;
     }
     if (scoresEl) {
-      scoresEl.textContent = `Scores — Typ ${scoreValue(sub.analysis, "typing")} · Mech ${scoreValue(sub.analysis, "mechanics")} · Story ${scoreValue(sub.analysis, "story")} · Auto ${scoreValue(sub.analysis, "overall")} · Teacher ${teacherGradeValue(sub)}`;
+      scoresEl.textContent = `Auto ${scoreValue(sub.analysis, "overall")} · Typ ${scoreValue(sub.analysis, "typing")} · Mech ${scoreValue(sub.analysis, "mechanics")} · Story ${scoreValue(sub.analysis, "story")} · Teacher ${displayTeacherGrade(sub)}`;
     }
-    fillGradingForm(sub, configCache.get(String(sub.assignmentId || "").trim()) || {});
+
+    const cachedCfg = configCache.get(String(sub.assignmentId || "").trim()) || {};
+    fillGradingForm(sub, cachedCfg);
     fillDraft(sub);
 
     const [cfg] = await Promise.all([
@@ -439,56 +556,25 @@
 
     const current = currentSubmission() || sub;
     if (scoresEl) {
-      scoresEl.textContent = `Scores — Typ ${scoreValue(current.analysis, "typing")} · Mech ${scoreValue(current.analysis, "mechanics")} · Story ${scoreValue(current.analysis, "story")} · Auto ${scoreValue(current.analysis, "overall")} · Teacher ${teacherGradeValue(current)}`;
+      scoresEl.textContent = `Auto ${scoreValue(current.analysis, "overall")} · Typ ${scoreValue(current.analysis, "typing")} · Mech ${scoreValue(current.analysis, "mechanics")} · Story ${scoreValue(current.analysis, "story")} · Teacher ${displayTeacherGrade(current)}`;
     }
     const active = document.activeElement;
     const editingGrade = active && (active.id === "adminGradeInput" || active.id === "adminFeedbackInput" || active.id === "adminFeedbackVisible");
     if (!editingGrade) fillGradingForm(current, cfg || {});
     fillDraft(current);
     renderTable();
+    document.getElementById("adminGradeInput")?.focus();
   }
 
-  async function saveAdminGrade() {
+  async function saveAndNext() {
+    captureCurrentGradingDraft();
     const sub = currentSubmission();
+    if (!sub) return;
     const statusEl = document.getElementById("adminGradeStatus");
-    const btn = document.getElementById("adminGradeSaveBtn");
-    if (!sub) {
-      if (statusEl) statusEl.textContent = "Select a submission first.";
-      return;
-    }
-    const gradeVal = document.getElementById("adminGradeInput")?.value;
-    const teacherGrade = gradeVal === "" ? null : Number(gradeVal);
-    const teacherFeedback = document.getElementById("adminFeedbackInput")?.value || "";
-    const feedbackVisible = document.getElementById("adminFeedbackVisible")?.checked || false;
-    if (teacherGrade != null && (!Number.isFinite(teacherGrade) || teacherGrade < 0)) {
-      if (statusEl) statusEl.textContent = "Enter a valid point value.";
-      return;
-    }
     if (statusEl) statusEl.textContent = "Saving…";
-    if (btn) btn.disabled = true;
-    try {
-      const data = await Admin().saveSubmissionGrade(sub.id, sub.assignmentId, {
-        teacherGrade,
-        teacherFeedback,
-        feedbackVisible,
-      });
-      const idx = allSubmissions.findIndex((item) => item.id === sub.id);
-      if (idx >= 0) {
-        allSubmissions[idx] = {
-          ...allSubmissions[idx],
-          teacherGrade: data.grading?.teacherGrade ?? teacherGrade,
-          teacherFeedback: data.grading?.teacherFeedback ?? teacherFeedback,
-          feedbackVisible: data.grading?.feedbackVisible ?? feedbackVisible,
-          gradedAt: data.grading?.gradedAt || Date.now(),
-        };
-      }
-      applyFilters();
-      if (statusEl) statusEl.textContent = feedbackVisible ? "Saved and released to student." : "Saved.";
-    } catch (err) {
-      if (statusEl) statusEl.textContent = err.message || "Could not save grade.";
-    } finally {
-      if (btn) btn.disabled = false;
-    }
+    await gradingQueue?.flush();
+    if (statusEl) statusEl.textContent = "";
+    navigateSubmission(1);
   }
 
   async function fetchAssignmentConfig(assignmentId) {
@@ -505,6 +591,11 @@
       configCache.set(key, {});
       return {};
     }
+  }
+
+  async function prefetchAssignmentConfigs() {
+    const ids = [...new Set(allSubmissions.map((sub) => String(sub.assignmentId || "").trim()).filter(Boolean))];
+    await Promise.all(ids.map((id) => fetchAssignmentConfig(id)));
   }
 
   function reanalyzeOptions(config, sub) {
@@ -532,6 +623,7 @@
       loadedAssignmentIds.clear();
       populateFilterOptions();
       applyFilters();
+      void prefetchAssignmentConfigs();
     } catch (err) {
       allSubmissions = [];
       filteredSubmissions = [];
@@ -549,7 +641,7 @@
       return;
     }
     const confirmed = window.confirm(
-      `Re-analyze all ${allSubmissions.length} submission${allSubmissions.length === 1 ? "" : "s"} with the current rubric?\n\nStudent text is not changed — only scores and analysis data are updated.`
+      `Re-analyze all ${allSubmissions.length} submission${allSubmissions.length === 1 ? "" : "s"} with the current rubric?\n\nStudent text is not changed — only scores and analysis data are updated. Teacher grades and feedback are not changed.`
     );
     if (!confirmed) return;
 
@@ -625,6 +717,68 @@
     setMeta(`Re-analyzed ${saved} submission${saved === 1 ? "" : "s"} successfully.`);
   }
 
+  function initGradingQueue() {
+    if (!window.WriteFlowGradingQueue) return;
+    gradingQueue = window.WriteFlowGradingQueue.createGradingQueue({
+      storageKey: "writeflow:gradingPending:admin",
+      saveBulk: (grades) => Admin().saveGradesBulk(grades),
+      onStatus: (text, isError) => {
+        const el = document.getElementById("adminGradingQueueStatus");
+        if (el) {
+          el.textContent = text || "";
+          el.classList.toggle("dw-error", !!isError);
+        }
+        updateQueueUi();
+      },
+      onApplied: applyGradingResult,
+    });
+    updateQueueUi();
+  }
+
+  function bindGradingInputs() {
+    for (const id of ["adminGradeInput", "adminFeedbackInput", "adminFeedbackVisible"]) {
+      document.getElementById(id)?.addEventListener("input", scheduleCapture);
+      document.getElementById(id)?.addEventListener("change", scheduleCapture);
+    }
+  }
+
+  function bindKeyboardShortcuts() {
+    document.addEventListener("keydown", (e) => {
+      if (!selectedId) return;
+      const tag = (e.target?.tagName || "").toLowerCase();
+      const inField = tag === "input" || tag === "textarea" || tag === "select";
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        e.preventDefault();
+        void saveAndNext();
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        captureCurrentGradingDraft();
+        void gradingQueue?.flush();
+        return;
+      }
+      if (e.altKey && e.key === "ArrowDown") {
+        e.preventDefault();
+        navigateSubmission(1);
+        return;
+      }
+      if (e.altKey && e.key === "ArrowUp") {
+        e.preventDefault();
+        navigateSubmission(-1);
+        return;
+      }
+      if (!inField && e.key === "j") {
+        e.preventDefault();
+        navigateSubmission(1);
+      }
+      if (!inField && e.key === "k") {
+        e.preventDefault();
+        navigateSubmission(-1);
+      }
+    });
+  }
+
   async function init() {
     if (!Admin()) return;
 
@@ -638,14 +792,32 @@
 
     show("adminResultsSignedOut", false);
     show("adminResultsSignedIn", true);
+    initGradingQueue();
 
     document.getElementById("adminResultsRefreshBtn")?.addEventListener("click", () => void loadSubmissions());
     document.getElementById("adminResultsReanalyzeBtn")?.addEventListener("click", () => void reanalyzeAll());
     document.getElementById("adminResultsDetailClose")?.addEventListener("click", closeDetail);
+    document.getElementById("adminPrevSubmissionBtn")?.addEventListener("click", () => navigateSubmission(-1));
+    document.getElementById("adminNextSubmissionBtn")?.addEventListener("click", () => navigateSubmission(1));
     document.getElementById("adminResultsAssignmentFilter")?.addEventListener("change", applyFilters);
     document.getElementById("adminResultsClassroomFilter")?.addEventListener("change", applyFilters);
     document.getElementById("adminResultsSearch")?.addEventListener("input", applyFilters);
-    document.getElementById("adminGradeSaveBtn")?.addEventListener("click", () => void saveAdminGrade());
+    document.getElementById("adminGradeSaveBtn")?.addEventListener("click", () => void saveAndNext());
+    document.getElementById("adminSaveAllPendingBtn")?.addEventListener("click", () => {
+      captureCurrentGradingDraft();
+      void gradingQueue?.flush();
+    });
+
+    bindGradingInputs();
+    bindKeyboardShortcuts();
+
+    window.addEventListener("beforeunload", (e) => {
+      if ((gradingQueue?.countDirty() || 0) > 0) {
+        captureCurrentGradingDraft();
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    });
 
     await loadSubmissions();
   }

@@ -4711,8 +4711,35 @@ mark.wf-vocab-hit {
   font-size: 0.94rem;
 }
 
-.wf-teacher-results__detail .dw-story-preview {
-  font-size: 0.9rem;
+.wf-teacher-results__detail .dw-story-preview,
+.wf-teacher-results__detail .wf-grading-draft__text {
+  font-family: Georgia, "Iowan Old Style", "Palatino Linotype", Palatino, serif;
+  font-size: 1.15rem;
+  line-height: 1.65;
+  padding: 16px 18px;
+  max-height: min(40vh, 460px);
+  overflow: auto;
+}
+
+.wf-teacher-results__detail-content {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.wf-teacher-results__detail .wf-grading-draft__label {
+  margin: 0 0 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dw-muted, #94a3b8);
+}
+
+.wf-teacher-results__detail .wf-grading-form__grade-input {
+  font-size: 1.25rem;
+  font-weight: 600;
+  max-width: 8rem;
 }
 
 .wf-teacher-results__table-panel,
@@ -6478,7 +6505,7 @@ mark.wf-standard-hit,
 }
 
 .wf-admin-results__split--detail-open {
-  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.9fr);
+  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 1fr);
 }
 
 .wf-admin-results__table-panel {
@@ -6552,26 +6579,117 @@ mark.wf-standard-hit,
 }
 
 .wf-admin-results__detail .wf-teacher-grading {
-  margin-top: 12px;
+  margin-top: 0;
 }
 
 .wf-admin-results__detail .wf-toggle-row {
   margin-top: 8px;
 }
 
-.wf-admin-results__draft {
-  margin: 12px 0 0;
-  padding: 12px 14px;
-  border-radius: 10px;
-  border: 1px solid var(--dw-border);
-  background: rgba(0, 0, 0, 0.18);
+/* Fast grading panel */
+.wf-grading-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.wf-grading-panel__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.wf-grading-panel__student {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.wf-grading-scores-strip {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--dw-muted, #94a3b8);
+  letter-spacing: 0.01em;
+}
+
+.wf-grading-draft {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wf-grading-draft__label {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dw-muted, #94a3b8);
+}
+
+.wf-grading-draft__text {
+  margin: 0;
+  padding: 16px 18px;
+  border-radius: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  background: rgba(0, 0, 0, 0.22);
   white-space: pre-wrap;
   word-break: break-word;
-  font-family: inherit;
-  font-size: 0.95rem;
-  line-height: 1.5;
-  max-height: min(48vh, 520px);
+  font-family: Georgia, "Iowan Old Style", "Palatino Linotype", Palatino, serif;
+  font-size: 1.2rem;
+  line-height: 1.65;
+  max-height: min(42vh, 480px);
   overflow: auto;
+  color: #f1f5f9;
+}
+
+.wf-grading-form__grade-input {
+  font-size: 1.35rem;
+  font-weight: 600;
+  max-width: 8rem;
+  padding: 10px 12px;
+}
+
+.wf-grading-form__feedback {
+  min-height: 5.5rem;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.wf-grading-guide-collapse {
+  margin-top: 4px;
+  font-size: 0.88rem;
+}
+
+.wf-grading-guide-collapse summary {
+  cursor: pointer;
+  color: var(--dw-muted, #94a3b8);
+  user-select: none;
+}
+
+.wf-grading-guide-collapse .wf-grading-guide {
+  margin-top: 8px;
+}
+
+.wf-grading-nav {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.wf-grading-queue-status {
+  min-width: 8rem;
+  text-align: right;
+}
+
+.wf-grade-cell--pending,
+.wf-grade-row--pending .dw-col-teacher {
+  color: #fbbf24;
+  font-weight: 600;
+}
+
+.wf-admin-results__detail {
+  max-height: min(88vh, 980px);
+  overflow-y: auto;
 }
 
 @media (max-width: 960px) {

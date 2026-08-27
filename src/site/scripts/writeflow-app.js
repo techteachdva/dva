@@ -2602,7 +2602,7 @@
     const btn = document.getElementById("teacherGradeSaveBtn");
     if (!btn || btn.dataset.bound === "1") return;
     btn.dataset.bound = "1";
-    btn.addEventListener("click", async () => {
+    btn.addEventListener("click", () => {
       const current = allSubmissions.find((s) => s.id === activeGradingSubmissionId);
       if (!current) return;
       const statusEl = document.getElementById("teacherGradeStatus");
@@ -2614,18 +2614,25 @@
         if (statusEl) statusEl.textContent = "Enter a valid point value.";
         return;
       }
-      if (statusEl) statusEl.textContent = "Saving…";
-      btn.disabled = true;
-      try {
-        await saveSubmissionGrade(current, { teacherGrade, teacherFeedback, feedbackVisible });
-        if (statusEl) statusEl.textContent = feedbackVisible ? "Saved and released to student." : "Saved.";
-        const refreshed = allSubmissions.find((s) => s.id === current.id);
-        if (refreshed) showTeacherSubmission(refreshed);
-      } catch (err) {
-        if (statusEl) statusEl.textContent = err.message || "Could not save grade.";
-      } finally {
-        btn.disabled = false;
+      const idx = allSubmissions.findIndex((s) => s.id === current.id);
+      if (idx >= 0) {
+        allSubmissions[idx] = {
+          ...allSubmissions[idx],
+          teacherGrade,
+          teacherFeedback,
+          feedbackVisible,
+          gradedAt: Date.now(),
+        };
       }
+      renderTeacherTable();
+      if (statusEl) statusEl.textContent = "Saving…";
+      void saveSubmissionGrade(current, { teacherGrade, teacherFeedback, feedbackVisible })
+        .then(() => {
+          if (statusEl) statusEl.textContent = feedbackVisible ? "Saved and released to student." : "Saved.";
+        })
+        .catch((err) => {
+          if (statusEl) statusEl.textContent = err.message || "Could not save grade.";
+        });
     });
   }
 

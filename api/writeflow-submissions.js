@@ -580,6 +580,35 @@ export async function POST(request) {
       return Response.json({ ok: true, grading: data.grading }, { headers: corsHeaders() });
     }
 
+    if (action === "saveGradesBulk") {
+      const sessionToken = typeof body?.sessionToken === "string" ? body.sessionToken.trim() : "";
+      const password = typeof body?.password === "string" ? body.password.slice(0, 80) : "";
+      const grades = Array.isArray(body?.grades) ? body.grades : [];
+      if (!grades.length) {
+        return Response.json({ error: "Missing grades array." }, { status: 400, headers: corsHeaders() });
+      }
+      const sanitized = grades.slice(0, 50).map((g) => ({
+        submissionId: typeof g?.submissionId === "string" ? g.submissionId.trim() : String(g?.id || "").trim(),
+        assignmentId: typeof g?.assignmentId === "string" ? g.assignmentId.trim().slice(0, 80) : "",
+        teacherGrade: g?.teacherGrade,
+        teacherFeedback: typeof g?.teacherFeedback === "string" ? g.teacherFeedback : "",
+        feedbackVisible: g?.feedbackVisible === true,
+      })).filter((g) => g.submissionId && g.assignmentId);
+      const data = await scriptPost({
+        action: "saveGradesBulk",
+        sessionToken,
+        password,
+        grades: sanitized,
+      });
+      if (data.error) {
+        return Response.json({ error: data.error }, { status: data.error === "Unauthorized" ? 401 : 400, headers: corsHeaders() });
+      }
+      return Response.json(
+        { ok: true, saved: data.saved || 0, results: data.results || [], errors: data.errors || [] },
+        { headers: corsHeaders() }
+      );
+    }
+
     if (action === "setCountedSubmission") {
       const submissionId = typeof body?.submissionId === "string" ? body.submissionId.trim() : "";
       const assignmentId = typeof body?.assignmentId === "string" ? body.assignmentId.trim().slice(0, 80) : "";

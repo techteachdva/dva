@@ -296,10 +296,12 @@ function saveSubmissionGrade_(params) {
   const feedbackVisible = params.feedbackVisible === true || String(params.feedbackVisible || "").toUpperCase() === "TRUE";
   const gradedAt = Date.now();
 
-  sheet.getRange(targetRow, 14).setValue(teacherGrade === "" ? "" : teacherGrade);
-  sheet.getRange(targetRow, 15).setValue(teacherFeedback);
-  sheet.getRange(targetRow, 16).setValue(feedbackVisible ? "TRUE" : "FALSE");
-  sheet.getRange(targetRow, 17).setValue(gradedAt);
+  sheet.getRange(targetRow, 14, 1, 4).setValues([[
+    teacherGrade === "" ? "" : teacherGrade,
+    teacherFeedback,
+    feedbackVisible ? "TRUE" : "FALSE",
+    gradedAt,
+  ]]);
 
   return {
     id: submissionId,
@@ -308,6 +310,95 @@ function saveSubmissionGrade_(params) {
     feedbackVisible: feedbackVisible,
     gradedAt: gradedAt,
   };
+}
+
+function normalizeGradeEntry_(entry) {
+  const submissionId = String(entry.submissionId || entry.id || "").trim();
+  const assignmentId = String(entry.assignmentId || "").trim();
+  const gradeRaw = entry.teacherGrade;
+  const teacherGrade = gradeRaw === "" || gradeRaw == null ? "" : Number(gradeRaw);
+  if (teacherGrade !== "" && (!isFinite(teacherGrade) || teacherGrade < 0)) {
+    throw new Error("Grade must be a non-negative number.");
+  }
+  return {
+    submissionId: submissionId,
+    assignmentId: assignmentId,
+    teacherGrade: teacherGrade,
+    teacherFeedback: String(entry.teacherFeedback || "").trim().slice(0, 4000),
+    feedbackVisible: entry.feedbackVisible === true || String(entry.feedbackVisible || "").toUpperCase() === "TRUE",
+  };
+}
+
+function saveGradesBulk_(params) {
+  const password = String(params.password || "");
+  const session = validateSession_(params.sessionToken);
+  const grades = params.grades || [];
+  if (!grades.length) return { saved: 0, results: [], errors: [] };
+
+  const sheet = getSubmissionsSheet_();
+  ensureSubmissionGradingColumns_(sheet);
+  const colCount = Math.max(19, sheet.getLastColumn());
+  const values = readSheetDataRows_(sheet, colCount);
+  const idToRow = {};
+  for (var i = 0; i < values.length; i++) {
+    const id = String(values[i][0] || "").trim();
+    if (id) idToRow[id] = i + 2;
+  }
+
+  const verifiedAssignments = {};
+  const gradedAt = Date.now();
+  const results = [];
+  const errors = [];
+
+  for (var j = 0; j < grades.length; j++) {
+    var normalized;
+    try {
+      normalized = normalizeGradeEntry_(grades[j] || {});
+    } catch (err) {
+      errors.push({ id: String((grades[j] || {}).submissionId || (grades[j] || {}).id || ""), error: String(err.message || err) });
+      continue;
+    }
+    if (!normalized.submissionId || !normalized.assignmentId) {
+      errors.push({ id: normalized.submissionId, error: "Missing submission or assignment ID." });
+      continue;
+    }
+    if (!verifiedAssignments[normalized.assignmentId]) {
+      if (!verifyAssignmentPassword_(normalized.assignmentId, password, session)) {
+        errors.push({ id: normalized.submissionId, error: "Unauthorized" });
+        continue;
+      }
+      verifiedAssignments[normalized.assignmentId] = true;
+    }
+    const targetRow = idToRow[normalized.submissionId];
+    if (!targetRow) {
+      errors.push({ id: normalized.submissionId, error: "Submission not found." });
+      continue;
+    }
+    const rowValues = values[targetRow - 2] || [];
+    if (!assignmentIdMatches_(rowValues[2], normalized.assignmentId)) {
+      errors.push({ id: normalized.submissionId, error: "Submission does not match assignment." });
+      continue;
+    }
+    try {
+      sheet.getRange(targetRow, 14, 1, 4).setValues([[
+        normalized.teacherGrade === "" ? "" : normalized.teacherGrade,
+        normalized.teacherFeedback,
+        normalized.feedbackVisible ? "TRUE" : "FALSE",
+        gradedAt,
+      ]]);
+      results.push({
+        id: normalized.submissionId,
+        teacherGrade: normalized.teacherGrade === "" ? null : normalized.teacherGrade,
+        teacherFeedback: normalized.teacherFeedback,
+        feedbackVisible: normalized.feedbackVisible,
+        gradedAt: gradedAt,
+      });
+    } catch (err) {
+      errors.push({ id: normalized.submissionId, error: String(err.message || err) });
+    }
+  }
+
+  return { saved: results.length, results: results, errors: errors };
 }
 
 function ensureSessionColumns_(sheet) {

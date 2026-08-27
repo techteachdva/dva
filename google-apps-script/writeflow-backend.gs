@@ -568,6 +568,11 @@ function handle_(e, isGet) {
       return respond_({ ok: true, grading: result });
     }
 
+    if (action === "saveGradesBulk") {
+      const result = saveGradesBulk_(params);
+      return respond_({ ok: true, saved: result.saved, results: result.results, errors: result.errors });
+    }
+
     if (action === "setCountedSubmission") {
       const result = setCountedSubmission_(params);
       return respond_({ ok: true, counted: result });
