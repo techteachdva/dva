@@ -91,6 +91,7 @@
       },
       resolveActiveChoice(input, choices) {
         const raw = this.normalize(input);
+        if (!raw) return { choice: null, choiceIndex: -1, typeText: "" };
         let bestIdx = -1;
         let bestScore = -1;
         (choices || []).forEach((c, i) => {
@@ -105,6 +106,19 @@
             bestIdx = i;
           }
         });
+        if (bestIdx < 0) {
+          (choices || []).forEach((c, i) => {
+            const typeText = this.normalize(this.choiceTypeText(c));
+            let score = 0;
+            for (let j = 0; j < Math.min(raw.length, typeText.length); j++) {
+              if (raw[j] === typeText[j]) score++;
+            }
+            if (score > bestScore) {
+              bestScore = score;
+              bestIdx = i;
+            }
+          });
+        }
         return {
           choice: bestIdx >= 0 ? choices[bestIdx] : null,
           choiceIndex: bestIdx,
@@ -502,17 +516,43 @@
     }, prefersReducedMotion ? 0 : 1000);
   }
 
+  function getTitleChoices() {
+    if (State.hasActiveRun()) {
+      return [
+        { typeText: "CONTINUE MISSION", action: "continue" },
+        { typeText: "NEW MISSION", action: "newrun" },
+        { typeText: "ACCEPT MISSION", action: "newrun" },
+      ];
+    }
+    return [{ typeText: "ACCEPT MISSION", action: "start" }];
+  }
+
+  function resolveTitleCommand(inputVal) {
+    const choices = getTitleChoices().map((c) => ({ ...c, label: c.typeText }));
+    const resolved = Typing.resolveActiveChoice(inputVal, choices);
+    return {
+      choice: resolved.choice,
+      choiceIndex: resolved.choiceIndex,
+      typeText: resolved.typeText || "",
+      action: resolved.choice?.action || null,
+    };
+  }
+
+  function runTitleCommand(action) {
+    if (action === "start") beginStartMission();
+    else if (action === "continue") beginContinueMission();
+    else if (action === "newrun") beginNewMission();
+  }
+
   function renderTitleTypingMenu() {
     const ghost = document.getElementById("titleGhostPrompt");
     const hint = document.getElementById("titleCommandHint");
-    const hasRun = State.hasActiveRun();
-    const options = hasRun
-      ? ["CONTINUE MISSION", "NEW MISSION"]
-      : ["ACCEPT MISSION"];
+    const choices = getTitleChoices();
+    const options = choices.map((c) => c.typeText);
     if (hint) {
-      hint.innerHTML = hasRun
-        ? "Type: <strong>CONTINUE MISSION</strong> or <strong>NEW MISSION</strong>"
-        : "Type: <strong>ACCEPT MISSION</strong> to begin";
+      hint.innerHTML = options.length > 1
+        ? `Type: ${options.map((o) => `<strong>${escapeHtml(o)}</strong>`).join(" · ")}`
+        : `Type: <strong>${escapeHtml(options[0])}</strong> to begin`;
     }
     if (!ghost) return;
     ghost.innerHTML = Typing.renderBranchGhostHtml("", options, -1, 0);
@@ -521,81 +561,90 @@
   function handleTitleTypingInput() {
     const input = document.getElementById("titleTypingInput");
     const typedEl = document.getElementById("titleTypedDisplay");
-    if (!input) return;
+    if (!input || input.disabled) return;
 
-    const val = Typing.normalize(input.value);
-    const hasRun = State.hasActiveRun();
-    let matched = null;
-    let typeText = "";
+    const choices = getTitleChoices();
+    const options = choices.map((c) => c.typeText);
+    const resolved = resolveTitleCommand(input.value);
+    const typeText = resolved.typeText;
 
-    if (hasRun) {
-      if (val.startsWith("continue") || val === "continue mission") {
-        matched = "continue";
-        typeText = "CONTINUE MISSION";
-      } else if (val.startsWith("new")) {
-        matched = "newrun";
-        typeText = "NEW MISSION";
-      }
-    } else {
-      if (val.startsWith("accept") || val === "start" || val === "begin") {
-        matched = "start";
-        typeText = "ACCEPT MISSION";
-      }
-    }
-
-    const options = hasRun ? ["CONTINUE MISSION", "NEW MISSION"] : ["ACCEPT MISSION"];
-    const idx = matched === "continue" ? 0 : matched === "newrun" ? 1 : matched === "start" ? 0 : -1;
     const ghost = document.getElementById("titleGhostPrompt");
     if (ghost) {
-      ghost.innerHTML = Typing.renderBranchGhostHtml("", options, idx, input.value.length);
+      const typedLen = resolved.choiceIndex >= 0 ? input.value.length : 0;
+      ghost.innerHTML = Typing.renderBranchGhostHtml("", options, resolved.choiceIndex, typedLen);
     }
 
-    if (typeText) {
-      const cmp = Typing.compareToTarget(typeText, input.value);
-      if (typedEl) typedEl.innerHTML = Typing.renderTypedCharsHtml(cmp.chars, 999);
+    if (!typeText) {
+      if (typedEl) typedEl.innerHTML = "";
       updateTypingMeterUI({
-        progressPct: cmp.progress,
-        liveWpm: 0,
-        targetWpm: 0,
-        progressFillId: "titleProgressFill",
-        progressPctId: "titleProgressPct",
-        inputEl: input,
-        complete: cmp.complete,
-        speedOk: true,
-      });
-      if (cmp.complete) {
-        input.disabled = true;
-        celebrateTypedSuccess(typeText, input, {
-          badge: matched === "start" ? "MISSION ON!" : matched === "continue" ? "WELCOME BACK!" : "NEW RUN!",
-          confetti: 10,
-          container: document.getElementById("titleTypingMenu"),
-        });
-        setTimeout(() => {
-          input.value = "";
-          typedEl.innerHTML = "";
-          input.disabled = false;
-          updateTypingMeterUI({
-            progressPct: 0,
-            progressFillId: "titleProgressFill",
-            progressPctId: "titleProgressPct",
-            inputEl: input,
-          });
-          if (matched === "start") beginStartMission();
-          else if (matched === "continue") beginContinueMission();
-          else if (matched === "newrun") beginNewMission();
-        }, prefersReducedMotion ? 0 : 900);
-      }
-    } else if (typedEl) {
-      updateTypingMeterUI({
-        progressPct: input.value.length > 0 ? Math.min(100, input.value.length * 8) : 0,
+        progressPct: input.value.length > 0 ? Math.min(100, input.value.length * 6) : 0,
         progressFillId: "titleProgressFill",
         progressPctId: "titleProgressPct",
         inputEl: input,
       });
-      typedEl.innerHTML = Typing.renderTypedCharsHtml(
-        input.value.split("").map((ch, i) => ({ char: ch, state: "correct", index: i })),
-        999
-      );
+      return;
+    }
+
+    const cmp = Typing.compareToTarget(typeText, input.value);
+    if (typedEl) typedEl.innerHTML = Typing.renderTypedCharsHtml(cmp.chars, 999);
+    updateTypingMeterUI({
+      progressPct: cmp.progress,
+      liveWpm: 0,
+      targetWpm: 0,
+      progressFillId: "titleProgressFill",
+      progressPctId: "titleProgressPct",
+      inputEl: input,
+      complete: cmp.complete,
+      speedOk: true,
+    });
+
+    if (cmp.chars.length > 0) {
+      const last = cmp.chars[cmp.chars.length - 1];
+      if (last.state === "correct") Audio?.playCharCorrect?.();
+      else Audio?.playTypeTick?.();
+    }
+
+    if (!cmp.complete || !resolved.action) return;
+
+    input.disabled = true;
+    hideDiagnostic();
+    pendingDiagnosticAction = null;
+
+    const badge =
+      resolved.action === "start" ? "MISSION ON!"
+      : resolved.action === "continue" ? "WELCOME BACK!"
+      : "NEW RUN!";
+    celebrateTypedSuccess(typeText, input, {
+      badge,
+      confetti: 10,
+      container: document.getElementById("titleTypingMenu"),
+    });
+
+    const delay = prefersReducedMotion ? 0 : 700;
+    setTimeout(() => {
+      input.value = "";
+      if (typedEl) typedEl.innerHTML = "";
+      input.disabled = false;
+      updateTypingMeterUI({
+        progressPct: 0,
+        progressFillId: "titleProgressFill",
+        progressPctId: "titleProgressPct",
+        inputEl: input,
+      });
+      runTitleCommand(resolved.action);
+    }, delay);
+  }
+
+  function handleTitleTypingKeydown(e) {
+    if (e.key !== "Enter") return;
+    const input = document.getElementById("titleTypingInput");
+    if (!input || input.disabled) return;
+    const resolved = resolveTitleCommand(input.value);
+    if (!resolved.typeText) return;
+    const cmp = Typing.compareToTarget(resolved.typeText, input.value);
+    if (cmp.complete && resolved.action) {
+      e.preventDefault();
+      handleTitleTypingInput();
     }
   }
 
@@ -1596,6 +1645,7 @@ Play again to rebuild your record clean.`;
     const titleTypingInput = document.getElementById("titleTypingInput");
     Core.setupPasteControl(titleTypingInput, false);
     titleTypingInput?.addEventListener("input", handleTitleTypingInput);
+    titleTypingInput?.addEventListener("keydown", handleTitleTypingKeydown);
 
     const typoRange = document.getElementById("typoToleranceRange");
     typoRange?.addEventListener("input", () => {
@@ -1657,10 +1707,6 @@ Play again to rebuild your record clean.`;
     identitySubmit?.addEventListener("click", handleIdentitySubmit);
 
     show("title");
-
-    if (!typingProfile.diagnosed) {
-      setTimeout(() => showDiagnostic(), prefersReducedMotion ? 0 : 400);
-    }
   }
 
   function showIdentityGate(onComplete) {
