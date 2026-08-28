@@ -25,7 +25,7 @@ layout: false
 
       <main id="mainContent" class="wf-portal-main">
         <section id="studentPortalSignedOut" class="dw-card dw-stack">
-          <p class="dw-muted dw-tiny">Username is your first name and last initial (e.g. <strong>John D.</strong>). First-time password is <strong>SPARK</strong> — you will choose your own password on first login.</p>
+          <p class="dw-muted dw-tiny">Username is your first name and last initial (e.g. <strong>John D.</strong>). Default password is <strong>SPARK</strong> — students can keep SPARK or choose their own.</p>
           <form id="studentPortalLoginForm" class="wf-account-form">
             <label class="dw-field"><span class="dw-label">Username</span><input id="studentPortalUsername" class="dw-input" type="text" autocomplete="username" required /></label>
             <label class="dw-field"><span class="dw-label">Password</span><input id="studentPortalPassword" class="dw-input" type="password" autocomplete="current-password" required /></label>
@@ -35,11 +35,14 @@ layout: false
         </section>
 
         <section id="studentPortalPasswordPanel" class="dw-card dw-stack dw-hidden">
-          <h2 class="dw-h2">Choose your password</h2>
-          <p class="dw-muted">Before viewing your work, set a password you will remember.</p>
+          <h2 class="dw-h2">Password</h2>
+          <p class="dw-muted">Your password is <strong>SPARK</strong>. You can keep it or choose your own — either is fine.</p>
           <form id="studentPortalPasswordForm" class="wf-account-form">
-            <label class="dw-field"><span class="dw-label">New password</span><input id="studentPortalNewPassword" class="dw-input" type="password" autocomplete="new-password" required minlength="4" /></label>
-            <button class="dw-btn" type="submit">Save password</button>
+            <label class="dw-field"><span class="dw-label">New password (optional)</span><input id="studentPortalNewPassword" class="dw-input" type="password" autocomplete="new-password" minlength="4" placeholder="Leave blank to keep SPARK" /></label>
+            <div class="wf-admin-actions">
+              <button class="dw-btn" type="submit">Save new password</button>
+              <button id="studentPortalKeepSparkBtn" class="dw-btn dw-btn-ghost" type="button">Keep SPARK</button>
+            </div>
             <p id="studentPortalPasswordError" class="dw-error dw-hidden" role="alert"></p>
           </form>
         </section>

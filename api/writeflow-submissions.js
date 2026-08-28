@@ -165,6 +165,8 @@ export async function GET(request) {
         classroom: data.classroom || "",
         role: "student",
         mustChangePassword: data.mustChangePassword || false,
+        offerPasswordChange: data.offerPasswordChange || false,
+        usesDefaultPassword: data.usesDefaultPassword || false,
       }, { headers: corsHeaders() });
     } catch (e) {
       return Response.json({ error: e.message || "Could not validate session." }, { status: 502, headers: corsHeaders() });
@@ -425,6 +427,18 @@ export async function POST(request) {
         return Response.json({ error: "Enter a new password." }, { status: 400, headers: corsHeaders() });
       }
       const data = await scriptPost({ action: "studentSetPassword", sessionToken, newPassword });
+      if (data.error) {
+        return Response.json({ error: data.error }, { status: 400, headers: corsHeaders() });
+      }
+      return Response.json({ ok: true, session: data.session }, { headers: corsHeaders() });
+    }
+
+    if (action === "studentKeepDefaultPassword") {
+      const sessionToken = typeof body?.sessionToken === "string" ? body.sessionToken.trim() : "";
+      if (!sessionToken) {
+        return Response.json({ error: "Sign in first." }, { status: 401, headers: corsHeaders() });
+      }
+      const data = await scriptPost({ action: "studentKeepDefaultPassword", sessionToken });
       if (data.error) {
         return Response.json({ error: data.error }, { status: 400, headers: corsHeaders() });
       }

@@ -498,13 +498,21 @@ function handle_(e, isGet) {
       if (!session || session.role !== "student") return respond_({ error: "Invalid session" });
       const roster = findRosterEntry_(session.username);
       const student = getStudentByUsername_(session.username);
+      const flags = student ? buildStudentSessionResponse_(student, roster) : {
+        classroom: roster ? roster.classroom : "",
+        mustChangePassword: false,
+        offerPasswordChange: false,
+        usesDefaultPassword: false,
+      };
       return respond_({
         ok: true,
         username: session.username,
         displayName: session.displayName,
         role: "student",
-        classroom: roster ? roster.classroom : (student ? student.classroom : ""),
-        mustChangePassword: session.mustChangePassword || false,
+        classroom: flags.classroom || (roster ? roster.classroom : (student ? student.classroom : "")),
+        mustChangePassword: false,
+        offerPasswordChange: flags.offerPasswordChange,
+        usesDefaultPassword: flags.usesDefaultPassword,
       });
     }
 
@@ -622,6 +630,11 @@ function handle_(e, isGet) {
 
     if (action === "studentSetPassword") {
       const session = studentSetPassword_(params.sessionToken, params.newPassword);
+      return respond_({ ok: true, session: session });
+    }
+
+    if (action === "studentKeepDefaultPassword") {
+      const session = studentKeepDefaultPassword_(params.sessionToken);
       return respond_({ ok: true, session: session });
     }
 

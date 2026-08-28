@@ -59,6 +59,8 @@
         classroom: data.classroom,
         role: "student",
         mustChangePassword: data.mustChangePassword,
+        offerPasswordChange: data.offerPasswordChange,
+        usesDefaultPassword: data.usesDefaultPassword,
         expiresAt: stored.expiresAt,
       };
       saveSession(session);
@@ -85,6 +87,15 @@
     const token = getToken();
     if (!token) throw new Error("Sign in first.");
     const data = await apiPost("studentSetPassword", { sessionToken: token, newPassword });
+    session = data.session;
+    saveSession(session);
+    return session;
+  }
+
+  async function keepDefaultPassword() {
+    const token = getToken();
+    if (!token) throw new Error("Sign in first.");
+    const data = await apiPost("studentKeepDefaultPassword", { sessionToken: token });
     session = data.session;
     saveSession(session);
     return session;
@@ -119,6 +130,7 @@
     checkUsername,
     login,
     setPassword,
+    keepDefaultPassword,
     logout,
     getSession,
     getToken,

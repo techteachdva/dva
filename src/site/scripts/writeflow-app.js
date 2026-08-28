@@ -1454,7 +1454,7 @@
       signedOut?.classList.add("dw-hidden");
       signedIn?.classList.remove("dw-hidden");
       if (nameEl) nameEl.textContent = session.username;
-      passwordPanel?.classList.toggle("dw-hidden", !session.mustChangePassword);
+      passwordPanel?.classList.toggle("dw-hidden", !session.offerPasswordChange);
 
       const studentNameInput = document.getElementById("studentName");
       if (studentNameInput && session.username) {
@@ -1536,6 +1536,13 @@
       e.preventDefault();
       const errEl = document.getElementById("studentPasswordError");
       const newPassword = document.getElementById("studentNewPassword")?.value || "";
+      if (!newPassword.trim()) {
+        if (errEl) {
+          errEl.textContent = "Enter a new password, or click Keep SPARK.";
+          errEl.classList.remove("dw-hidden");
+        }
+        return;
+      }
       try {
         await Student()?.setPassword(newPassword);
         await Student()?.validate();
@@ -1547,11 +1554,24 @@
         }
       }
     });
+
+    document.getElementById("studentKeepSparkBtn")?.addEventListener("click", async () => {
+      const errEl = document.getElementById("studentPasswordError");
+      try {
+        await Student()?.keepDefaultPassword();
+        await Student()?.validate();
+        renderStudentAccountPanel();
+      } catch (err) {
+        if (errEl) {
+          errEl.textContent = err.message || "Could not save choice.";
+          errEl.classList.remove("dw-hidden");
+        }
+      }
+    });
   }
 
   function canStart() {
     const session = Student()?.getSession();
-    if (session?.mustChangePassword) return false;
     if (requiresStudentLogin() && !session?.username) return false;
     const nameOk = !config.requireName || session?.username || document.getElementById("studentName")?.value.trim();
     const classEl = document.getElementById("studentClass");

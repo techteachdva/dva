@@ -153,16 +153,9 @@
     const nameEl = document.getElementById("studentPortalDisplayName");
     if (nameEl) nameEl.textContent = session?.username || "";
 
-    if (session?.mustChangePassword) {
-      show("studentPortalSignedOut", false);
-      show("studentPortalSignedIn", false);
-      show("studentPortalPasswordPanel", true);
-      return;
-    }
-
     show("studentPortalSignedOut", false);
-    show("studentPortalPasswordPanel", false);
     show("studentPortalSignedIn", true);
+    show("studentPortalPasswordPanel", !!session?.offerPasswordChange);
     void renderSubmissions();
   }
 
@@ -198,6 +191,13 @@
       e.preventDefault();
       const errEl = document.getElementById("studentPortalPasswordError");
       const newPassword = document.getElementById("studentPortalNewPassword")?.value || "";
+      if (!newPassword.trim()) {
+        if (errEl) {
+          errEl.textContent = "Enter a new password, or click Keep SPARK.";
+          errEl.classList.remove("dw-hidden");
+        }
+        return;
+      }
       try {
         await Student().setPassword(newPassword);
         await Student().validate();
@@ -205,6 +205,20 @@
       } catch (err) {
         if (errEl) {
           errEl.textContent = err.message || "Could not save password.";
+          errEl.classList.remove("dw-hidden");
+        }
+      }
+    });
+
+    document.getElementById("studentPortalKeepSparkBtn")?.addEventListener("click", async () => {
+      const errEl = document.getElementById("studentPortalPasswordError");
+      try {
+        await Student().keepDefaultPassword();
+        await Student().validate();
+        renderSignedIn();
+      } catch (err) {
+        if (errEl) {
+          errEl.textContent = err.message || "Could not save choice.";
           errEl.classList.remove("dw-hidden");
         }
       }

@@ -51,10 +51,13 @@ layout: false
                   <p>Signed in as <strong id="studentAccountName"></strong> <button id="studentLogoutBtn" class="dw-btn dw-btn-ghost" type="button">Sign out</button></p>
                 </div>
                 <div id="studentPasswordPanel" class="dw-hidden">
-                  <p class="dw-muted">Choose your own password before you start.</p>
+                  <p class="dw-muted">Your password is <strong>SPARK</strong>. You can keep it or choose your own — either is fine.</p>
                   <form id="studentPasswordForm" class="wf-account-form">
-                    <label class="dw-field"><span class="dw-label">New password</span><input id="studentNewPassword" class="dw-input" type="password" autocomplete="new-password" required minlength="4" /></label>
-                    <button class="dw-btn" type="submit">Save password</button>
+                    <label class="dw-field"><span class="dw-label">New password (optional)</span><input id="studentNewPassword" class="dw-input" type="password" autocomplete="new-password" minlength="4" placeholder="Leave blank to keep SPARK" /></label>
+                    <div class="wf-admin-actions">
+                      <button class="dw-btn" type="submit">Save new password</button>
+                      <button id="studentKeepSparkBtn" class="dw-btn dw-btn-ghost" type="button">Keep SPARK</button>
+                    </div>
                     <p id="studentPasswordError" class="dw-error dw-hidden" role="alert"></p>
                   </form>
                 </div>

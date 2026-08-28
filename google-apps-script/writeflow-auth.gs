@@ -730,9 +730,10 @@ function getStudentByUsername_(username) {
   const norm = normalizeStudentUsername_(username);
   if (!norm) return null;
   const sheet = getStudentsSheet_();
+  ensureStudentsDefaultPasswordOkColumn_(sheet);
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return null;
-  const rows = sheet.getRange(2, 1, lastRow - 1, 5).getValues();
+  const rows = sheet.getRange(2, 1, lastRow - 1, 6).getValues();
   for (var i = 0; i < rows.length; i++) {
     if (normalizeStudentUsername_(rows[i][0]).toLowerCase() === norm.toLowerCase()) {
       return {
@@ -741,6 +742,7 @@ function getStudentByUsername_(username) {
         classroom: String(rows[i][2] || ""),
         mustChangePassword: String(rows[i][3] || "").toUpperCase() === "TRUE",
         createdAt: Number(rows[i][4]) || 0,
+        defaultPasswordOk: String(rows[i][5] || "").toUpperCase() === "TRUE",
       };
     }
   }
@@ -748,26 +750,31 @@ function getStudentByUsername_(username) {
 }
 
 function createStudentAccount_(rosterEntry, password) {
+  ensureStudentsDefaultPasswordOkColumn_(getStudentsSheet_());
   getStudentsSheet_().appendRow([
     rosterEntry.username,
     hashPassword_(password),
     rosterEntry.classroom,
-    "TRUE",
+    "FALSE",
     Date.now(),
+    "FALSE",
   ]);
   return getStudentByUsername_(rosterEntry.username);
 }
 
 function updateStudentPassword_(username, newPassword, clearMustChange) {
   const sheet = getStudentsSheet_();
+  ensureStudentsDefaultPasswordOkColumn_(sheet);
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) throw new Error("Student account not found.");
   const norm = normalizeStudentUsername_(username).toLowerCase();
+  const usingDefault = String(newPassword || "") === STUDENT_DEFAULT_PASSWORD;
   for (var i = 2; i <= lastRow; i++) {
     const cell = normalizeStudentUsername_(sheet.getRange(i, 1).getValue()).toLowerCase();
     if (cell !== norm) continue;
     sheet.getRange(i, 2).setValue(hashPassword_(newPassword));
     if (clearMustChange) sheet.getRange(i, 4).setValue("FALSE");
+    sheet.getRange(i, 6).setValue(usingDefault ? "TRUE" : "FALSE");
     return getStudentByUsername_(username);
   }
   throw new Error("Student account not found.");
@@ -795,6 +802,9 @@ function createSessionV2_(principal) {
     impersonateAs: principal.impersonateAs || "",
     effectiveUsername: principal.effectiveUsername || principal.username,
     mustChangePassword: principal.mustChangePassword || false,
+    offerPasswordChange: principal.offerPasswordChange || false,
+    usesDefaultPassword: principal.usesDefaultPassword || false,
+    classroom: principal.classroom || "",
     expiresAt: now + SESSION_TTL_MS,
   };
 }
@@ -832,6 +842,7 @@ function validateSessionV2_(token) {
     if (role === "student") {
       const student = getStudentByUsername_(effectiveUsername);
       if (!student) return null;
+      const flags = buildStudentSessionResponse_(student);
       return {
         token: clean,
         username: student.username,
@@ -839,8 +850,10 @@ function validateSessionV2_(token) {
         role: "student",
         impersonateAs: "",
         effectiveUsername: student.username,
-        classroom: student.classroom,
-        mustChangePassword: student.mustChangePassword,
+        classroom: flags.classroom,
+        mustChangePassword: false,
+        offerPasswordChange: flags.offerPasswordChange,
+        usesDefaultPassword: flags.usesDefaultPassword,
       };
     }
 
@@ -895,21 +908,15 @@ function studentLogin_(username, password) {
   var student = getStudentByUsername_(roster.username);
   if (!student) {
     if (String(password || "") !== STUDENT_DEFAULT_PASSWORD) {
-      throw new Error("First login: use default password SPARK, then choose your own password.");
+      throw new Error("First login: use the default password SPARK.");
     }
     student = createStudentAccount_(roster, STUDENT_DEFAULT_PASSWORD);
   } else if (!passwordsMatchStored_(student.password, password)) {
     throw new Error("Incorrect password.");
   }
 
-  return createSessionV2_({
-    username: student.username,
-    displayName: student.username,
-    role: "student",
-    effectiveUsername: student.username,
-    mustChangePassword: student.mustChangePassword,
-    classroom: roster.classroom,
-  });
+  const session = buildStudentSessionResponse_(student, roster);
+  return createSessionV2_(session);
 }
 
 function studentSetPassword_(sessionToken, newPassword) {
@@ -918,13 +925,35 @@ function studentSetPassword_(sessionToken, newPassword) {
   const pw = String(newPassword || "");
   if (pw.length < 4) throw new Error("Password must be at least 4 characters.");
   updateStudentPassword_(session.username, pw, true);
-  return createSessionV2_({
-    username: session.username,
-    displayName: session.username,
-    role: "student",
-    effectiveUsername: session.username,
-    mustChangePassword: false,
-  });
+  const student = getStudentByUsername_(session.username);
+  const roster = findRosterEntry_(session.username);
+  return createSessionV2_(buildStudentSessionResponse_(student, roster));
+}
+
+function studentKeepDefaultPassword_(sessionToken) {
+  const session = validateSessionV2_(sessionToken);
+  if (!session || session.role !== "student") throw new Error("Sign in as a student first.");
+  const student = getStudentByUsername_(session.username);
+  if (!studentUsesDefaultPassword_(student)) {
+    throw new Error("This option is only available while your password is SPARK.");
+  }
+  setStudentDefaultPasswordOk_(session.username, true);
+  sheetMustChangePasswordFalse_(session.username);
+  const updated = getStudentByUsername_(session.username);
+  const roster = findRosterEntry_(session.username);
+  return createSessionV2_(buildStudentSessionResponse_(updated, roster));
+}
+
+function sheetMustChangePasswordFalse_(username) {
+  const sheet = getStudentsSheet_();
+  const lastRow = sheet.getLastRow();
+  const norm = normalizeStudentUsername_(username).toLowerCase();
+  for (var i = 2; i <= lastRow; i++) {
+    const cell = normalizeStudentUsername_(sheet.getRange(i, 1).getValue()).toLowerCase();
+    if (cell !== norm) continue;
+    sheet.getRange(i, 4).setValue("FALSE");
+    return;
+  }
 }
 
 function adminLogin_(username, password) {
@@ -1236,6 +1265,51 @@ function ensureStudentsCreatedAtColumn_(sheet) {
     sheet.getRange(1, 5).setValue("createdAt");
     sheet.getRange(1, 5).setFontWeight("bold");
   }
+  ensureStudentsDefaultPasswordOkColumn_(sheet);
+}
+
+function ensureStudentsDefaultPasswordOkColumn_(sheet) {
+  if (sheet.getLastColumn() < 6) {
+    sheet.getRange(1, 6).setValue("defaultPasswordOk");
+    sheet.getRange(1, 6).setFontWeight("bold");
+  }
+}
+
+function studentUsesDefaultPassword_(student) {
+  return !!(student && passwordsMatchStored_(student.password, STUDENT_DEFAULT_PASSWORD));
+}
+
+function studentOfferPasswordChange_(student) {
+  return studentUsesDefaultPassword_(student) && !student.defaultPasswordOk;
+}
+
+function setStudentDefaultPasswordOk_(username, ok) {
+  const sheet = getStudentsSheet_();
+  ensureStudentsDefaultPasswordOkColumn_(sheet);
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) throw new Error("Student account not found.");
+  const norm = normalizeStudentUsername_(username).toLowerCase();
+  for (var i = 2; i <= lastRow; i++) {
+    const cell = normalizeStudentUsername_(sheet.getRange(i, 1).getValue()).toLowerCase();
+    if (cell !== norm) continue;
+    sheet.getRange(i, 6).setValue(ok ? "TRUE" : "FALSE");
+    return;
+  }
+  throw new Error("Student account not found.");
+}
+
+function buildStudentSessionResponse_(student, roster) {
+  const rosterEntry = roster || findRosterEntry_(student.username);
+  return {
+    username: student.username,
+    displayName: student.username,
+    role: "student",
+    effectiveUsername: student.username,
+    classroom: rosterEntry ? rosterEntry.classroom : student.classroom,
+    mustChangePassword: false,
+    offerPasswordChange: studentOfferPasswordChange_(student),
+    usesDefaultPassword: studentUsesDefaultPassword_(student),
+  };
 }
 
 function adminListClassRoster_() {
@@ -1326,6 +1400,7 @@ function adminResetStudentPassword_(username) {
 
 function resetStudentPasswordToDefault_(username) {
   const sheet = getStudentsSheet_();
+  ensureStudentsDefaultPasswordOkColumn_(sheet);
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) throw new Error("Student account not found.");
   const norm = normalizeStudentUsername_(username).toLowerCase();
@@ -1333,7 +1408,8 @@ function resetStudentPasswordToDefault_(username) {
     const cell = normalizeStudentUsername_(sheet.getRange(i, 1).getValue()).toLowerCase();
     if (cell !== norm) continue;
     sheet.getRange(i, 2).setValue(hashPassword_(STUDENT_DEFAULT_PASSWORD));
-    sheet.getRange(i, 4).setValue("TRUE");
+    sheet.getRange(i, 4).setValue("FALSE");
+    sheet.getRange(i, 6).setValue("FALSE");
     const roster = findRosterEntry_(username);
     if (roster) sheet.getRange(i, 3).setValue(roster.classroom);
     return;

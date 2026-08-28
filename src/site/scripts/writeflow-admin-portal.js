@@ -319,11 +319,11 @@
       const statusEl = document.getElementById("adminRosterStatus");
       const classroom = document.getElementById("adminBulkResetClassroom")?.value || "";
       const label = classroom || "all registered students";
-      if (!window.confirm(`Reset passwords to SPARK for ${label}? Students will be prompted to choose a new password on next login.`)) return;
+      if (!window.confirm(`Reset passwords to SPARK for ${label}? Students can keep SPARK or choose a new password — nothing is blocked.`)) return;
       try {
         const data = await Admin().bulkResetPasswords(classroom);
         if (statusEl) {
-          statusEl.textContent = `Reset ${data.reset || 0} password(s) to SPARK. ${data.notRegistered || 0} on roster but not registered yet.`;
+          statusEl.textContent = `Reset ${data.reset || 0} password(s) to SPARK. Students will see an optional prompt to change or keep SPARK. ${data.notRegistered || 0} on roster but not registered yet.`;
           statusEl.classList.remove("dw-hidden", "dw-error");
         }
         await refreshDashboard();
@@ -341,12 +341,12 @@
       if (!btn) return;
       const username = btn.getAttribute("data-reset-password");
       if (!username) return;
-      if (!window.confirm(`Reset ${username} to password SPARK?`)) return;
+      if (!window.confirm(`Reset ${username} to password SPARK? They can keep SPARK or choose a new password.`)) return;
       const statusEl = document.getElementById("adminRosterStatus");
       try {
         await Admin().resetStudentPassword(username);
         if (statusEl) {
-          statusEl.textContent = `Reset ${username} to SPARK. They must choose a new password on next login.`;
+          statusEl.textContent = `Reset ${username} to SPARK. They can keep SPARK or choose a new password on next sign-in.`;
           statusEl.classList.remove("dw-hidden", "dw-error");
         }
         await refreshDashboard();

@@ -246,7 +246,7 @@
       date: "2026-08-23",
       summary: "Student accounts, verified teacher signup, and admin tools.",
       items: [
-        "Students sign in with roster username (first name + last initial); default password SPARK, then choose their own.",
+        "Students sign in with roster username (first name + last initial); default password SPARK — optional to change or keep.",
         "Student portal at /writeflow/student/ shows all past submissions across assignments.",
         "Teachers register with @davincicharterschool.org email verification; only approved emails can sign up.",
         "Admin portal at /writeflow/admin/ — stats, dedupe submissions, impersonation, account lists.",
