@@ -52,7 +52,7 @@ layout: false
           <div class="tt-title-screen__content">
             <span class="tt-location-badge">ACME Tech Division</span>
             <h1 class="tt-title-screen__headline">Global Tech Gauntlet</h1>
-            <p class="tt-title-screen__tagline">Recover the Golden Rules by <strong>typing your choices</strong>. Meet the mentors who shaped computing. Every keystroke shapes your mission.</p>
+            <p class="tt-title-screen__tagline">Recover the five Golden Rules by <strong>typing your path</strong>. Meet the mentors who built computing. Punch in. Think fast. Don't ship the wrong thing.</p>
 
             <div id="titleWelcome" class="tt-title-welcome dw-hidden">
               <p class="tt-title-welcome__badge">Step 1 · New cadet briefing</p>
@@ -74,7 +74,7 @@ layout: false
                 <li><strong>Collect</strong> badges and light up all five Golden Rules orbiting the top of the screen.</li>
                 <li><strong>Win</strong> by reaching the Final Trial and typing your Digital Citizenship Oath.</li>
               </ol>
-              <p class="tt-tutorial__note">Wrong turns aren't game over — the scene rewinds. Each run scrambles which missions appear first. Built for grades 6–8 keyboarding fluency (ITEM 2025 · 8.3.2.1).</p>
+              <p class="tt-tutorial__note">Wrong turns rewind the scene — they aren't game over. Each run scrambles side missions, but the five Golden Rules stay the main quest. Built for grades 6–8 (ITEM 2025 · 8.3.2.1).</p>
             </div>
             <div id="typingProfileBar" class="tt-typing-profile dw-hidden">
               <span class="tt-typing-profile__stat">⌨️ Test: <strong id="profileTestWpm">—</strong> keys/min</span>
@@ -221,13 +221,26 @@ layout: false
                 <div class="tt-scene-bg" id="sceneBg">
                   <div class="tt-scene-bg__tint" id="sceneTint"></div>
                   <div class="tt-scene-bg__scanlines" aria-hidden="true"></div>
+                  <div class="tt-scene-bg__depth" aria-hidden="true"></div>
                 </div>
+                <div class="tt-room-fx" aria-hidden="true">
+                  <span class="tt-room-fx__floor"></span>
+                  <span class="tt-room-fx__dust tt-room-fx__dust--1"></span>
+                  <span class="tt-room-fx__dust tt-room-fx__dust--2"></span>
+                  <span class="tt-room-fx__dust tt-room-fx__dust--3"></span>
+                </div>
+                <div id="sceneDoor" class="tt-room-door dw-hidden" aria-hidden="true">
+                  <div class="tt-room-door__leaf tt-room-door__leaf--l"></div>
+                  <div class="tt-room-door__leaf tt-room-door__leaf--r"></div>
+                  <div class="tt-room-door__glow"></div>
+                </div>
+                <div id="sceneArrive" class="tt-arrive-sting dw-hidden" aria-hidden="true"></div>
+                <div class="tt-character tt-character--hero tt-character--3d" id="sceneCharacter"></div>
                 <div class="tt-scene-panel" id="scenePanel">
                   <div class="tt-scene-header">
                     <span class="tt-location-badge" id="sceneLocation">—</span>
                     <span class="tt-scene-mood" id="sceneMood"></span>
                   </div>
-                  <div class="tt-character tt-character--3d" id="sceneCharacter"></div>
                   <div class="tt-narrative tt-narrative--reveal" id="sceneNarrative" aria-live="polite" aria-atomic="true"></div>
                   <button id="narrativeContinueBtn" class="tt-cta-btn tt-cta-btn--sm dw-hidden" type="button">Continue ▶</button>
                   <div id="typingChallenge" class="tt-typing-challenge tt-typing-panel dw-hidden">

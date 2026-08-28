@@ -5,7 +5,7 @@
   "use strict";
 
   const WriteTestCoreRef = window.WriteTestCore;
-  const { STORY, CHARACTERS, START_MISSIONS } = window.TechTrailStory || {};
+  const { STORY, CHARACTERS, START_MISSIONS, GOLDEN_SPINE } = window.TechTrailStory || {};
   const Visuals = window.TechTrailVisuals;
   const State = window.TechTrailState;
   const Audio = window.TechTrailAudio;
@@ -566,7 +566,7 @@
 
     document.getElementById("liveWpmStat")?.classList.remove("dw-hidden");
     const input = document.getElementById("choiceTypingInput");
-    setTimeout(() => input?.focus(), 200);
+    setTimeout(() => input?.focus(), prefersReducedMotion ? 0 : 480);
     wrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
 
@@ -882,19 +882,76 @@
     return Math.max(5, Math.round(base * cfg.wordMult));
   }
 
+  function nextSpineMission() {
+    const spine = GOLDEN_SPINE || [];
+    return spine.find((s) => !goldenRules.has(s.rule)) || null;
+  }
+
   function buildStartChoices() {
     const cfg = DIFFICULTY_CONFIG[difficulty] || DIFFICULTY_CONFIG.operative;
     const count = cfg.startChoicesMin + Math.floor(runRng() * (cfg.startChoicesMax - cfg.startChoicesMin + 1));
-    return shuffle(START_MISSIONS || []).slice(0, Math.min(count, START_MISSIONS.length));
+    const missions = START_MISSIONS || [];
+    const spine = GOLDEN_SPINE || [];
+    const missingSpine = spine.filter((s) => !goldenRules.has(s.rule));
+    const guaranteed = shuffle(missingSpine).slice(0, Math.min(2, missingSpine.length)).map((s) => ({
+      label: s.label,
+      next: s.next,
+      typeText: s.typeText,
+      recommended: true,
+    }));
+    const used = new Set(guaranteed.map((g) => g.next));
+    const extras = shuffle(missions.filter((m) => !used.has(m.next))).slice(0, Math.max(0, count - guaranteed.length));
+    return shuffle([...guaranteed, ...extras]);
+  }
+
+  function enhanceChoices(node, nodeId, choices) {
+    const list = (choices || []).map((c) => ({ ...c }));
+    if (!list.length || node.dynamicChoices === "start" || nodeId === "start") return list;
+
+    const spine = nextSpineMission();
+    const tooEarlyForFinale = goldenRules.size < 3;
+
+    const mapped = list.map((c) => {
+      if (c.next === "final_trial" && tooEarlyForFinale && spine) {
+        return {
+          ...c,
+          label: `Keep hunting — ${spine.typeText}`,
+          next: spine.next,
+          typeText: spine.typeText,
+          recommended: true,
+        };
+      }
+      return c;
+    });
+
+    const isWin = Boolean(node.badge || node.goldenRule);
+    if (isWin && spine && !mapped.some((c) => c.next === spine.next || c.next === "final_trial")) {
+      mapped.unshift({
+        label: spine.label,
+        next: spine.next,
+        typeText: spine.typeText,
+        recommended: true,
+      });
+    }
+
+    return mapped;
   }
 
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   let typewriterGen = 0;
   let typewriterResolve = null;
+  let lastZoneId = "";
   const CHOICE_COOLDOWN_MS = 1200;
-  const SCENE_LOADER_MIN_MS = 800;
-  const TYPEWRITER_MIN_DWELL_MS = 1200;
-  const TYPEWRITER_CHAR_MS = 22;
+  const SCENE_LOADER_MIN_MS = 420;
+  const ROOM_HOLD_MS = 920;
+  const CHARACTER_POP_MS = 380;
+  const PANEL_FADE_MS = 520;
+  const TYPEWRITER_MIN_DWELL_MS = 900;
+  const TYPEWRITER_CHAR_MS = 16;
+
+  function sleep(ms) {
+    return new Promise((r) => setTimeout(r, ms));
+  }
 
   function showSceneLoader() {
     const el = document.getElementById("sceneLoader");
@@ -1119,7 +1176,7 @@
       await typeParagraph(paraDiv, paragraphs[i], gen);
       if (gen !== typewriterGen) return;
 
-      if (i < paragraphs.length - 1) {
+      if (i < paragraphs.length - 1 && !options.skipContinue) {
         narrativeEl.classList.remove("tt-narrative--typing");
         await waitForNarrativeContinue(gen);
         if (gen !== typewriterGen) return;
@@ -1346,33 +1403,105 @@
     const tint = document.getElementById("sceneTint");
     const room = document.getElementById("sceneRoom");
     const mood = document.getElementById("sceneMood");
+    const zoneChanged = lastZoneId !== zone.bg;
+    lastZoneId = zone.bg;
 
     if (prefersReducedMotion) {
       if (bg) bg.style.backgroundImage = `url('${zone.bg}')`;
       if (tint) tint.style.background = zone.tint;
     } else {
+      bg?.classList.toggle("tt-scene-bg--cross", zoneChanged);
       bg?.classList.add("tt-scene-bg--out");
       setTimeout(() => {
         if (bg) bg.style.backgroundImage = `url('${zone.bg}')`;
         if (tint) tint.style.background = zone.tint;
         bg?.classList.remove("tt-scene-bg--out");
         bg?.classList.add("tt-scene-bg--in");
-        setTimeout(() => bg?.classList.remove("tt-scene-bg--in"), 500);
-      }, 450);
+        setTimeout(() => {
+          bg?.classList.remove("tt-scene-bg--in");
+          bg?.classList.remove("tt-scene-bg--cross");
+        }, 700);
+      }, zoneChanged ? 280 : 120);
     }
 
     if (mood) mood.textContent = zone.mood ? zone.mood.toUpperCase() : "";
 
     if (room && !prefersReducedMotion) {
-      room.classList.remove("tt-stage__room--enter");
+      room.classList.remove("tt-stage__room--enter", "tt-stage__room--walk");
       void room.offsetWidth;
       room.classList.add("tt-stage__room--enter");
+      if (zoneChanged) room.classList.add("tt-stage__room--walk");
     }
 
     if (Audio) {
       Audio.stopZoneAmbience?.();
       Audio.startZoneAmbience?.(zone.mood);
     }
+  }
+
+  function setPanelWaiting(waiting) {
+    const panel = document.getElementById("scenePanel");
+    const hudLayers = document.querySelectorAll("#typingChoices, #typingChallenge, #sceneNarrative, #sceneChoices, #narrativeContinueBtn");
+    if (!panel) return;
+    panel.classList.toggle("tt-scene-panel--waiting", waiting);
+    panel.classList.toggle("tt-scene-panel--reveal", !waiting);
+    hudLayers.forEach((el) => {
+      if (!el) return;
+      el.classList.toggle("tt-layer--waiting", waiting);
+    });
+  }
+
+  async function playRoomReveal(node, gen) {
+    const arrive = document.getElementById("sceneArrive");
+    const door = document.getElementById("sceneDoor");
+    const charEl = document.getElementById("sceneCharacter");
+    const sting = node.enter || node.location || "";
+
+    setPanelWaiting(true);
+    charEl?.classList.add("tt-character--hidden");
+    document.getElementById("typingChoices")?.classList.add("dw-hidden");
+    document.getElementById("typingChallenge")?.classList.add("dw-hidden");
+
+    if (arrive) {
+      arrive.textContent = sting;
+      arrive.classList.remove("dw-hidden");
+      arrive.classList.add("tt-arrive-sting--show");
+    }
+
+    if (door && !prefersReducedMotion) {
+      door.classList.remove("dw-hidden");
+      door.classList.remove("tt-room-door--open");
+      void door.offsetWidth;
+      door.classList.add("tt-room-door--slam");
+      await sleep(280);
+      if (gen !== typewriterGen) return;
+      door.classList.remove("tt-room-door--slam");
+      door.classList.add("tt-room-door--open");
+      setTimeout(() => door.classList.add("dw-hidden"), 820);
+    }
+
+    if (prefersReducedMotion) {
+      renderCharacter(node.character);
+      setPanelWaiting(false);
+      charEl?.classList.remove("tt-character--hidden");
+      arrive?.classList.add("dw-hidden");
+      door?.classList.add("dw-hidden");
+      return;
+    }
+
+    await sleep(ROOM_HOLD_MS);
+    if (gen !== typewriterGen) return;
+
+    arrive?.classList.remove("tt-arrive-sting--show");
+    setTimeout(() => arrive?.classList.add("dw-hidden"), 420);
+
+    charEl?.classList.remove("tt-character--hidden");
+    renderCharacter(node.character);
+    await sleep(CHARACTER_POP_MS);
+    if (gen !== typewriterGen) return;
+
+    setPanelWaiting(false);
+    await sleep(PANEL_FADE_MS);
   }
 
   function tiltStage(clientX, clientY) {
@@ -1382,8 +1511,8 @@
     const rect = viewport.getBoundingClientRect();
     const x = (clientX - rect.left) / rect.width - 0.5;
     const y = (clientY - rect.top) / rect.height - 0.5;
-    viewport.style.setProperty("--tt-tilt-y", `${x * 8}deg`);
-    viewport.style.setProperty("--tt-tilt-x", `${-y * 5}deg`);
+    viewport.style.setProperty("--tt-tilt-y", `${x * 12}deg`);
+    viewport.style.setProperty("--tt-tilt-x", `${-y * 8}deg`);
   }
 
   function resetStageTilt() {
@@ -1429,7 +1558,7 @@
     if (!charEl) return;
 
     const avatarInner = portrait
-      ? `<img class="tt-character__photo" src="${portrait}" alt="" width="72" height="72" loading="lazy" />`
+      ? `<img class="tt-character__photo" src="${portrait}" alt="${escapeHtml(char.name)}" width="220" height="280" loading="eager" />`
       : `<span class="tt-character__emoji">${char.emoji}</span>`;
 
     charEl.innerHTML = `
@@ -1437,7 +1566,8 @@
         <div class="tt-character__avatar">${avatarInner}</div>
         <div class="tt-character__info">
           <div class="tt-character__name">${escapeHtml(char.name)}</div>
-          <div class="tt-character__role">${escapeHtml(char.role)} · ${escapeHtml(char.era)}</div>
+          <div class="tt-character__role">${escapeHtml(char.role)}</div>
+          <div class="tt-character__era">${escapeHtml(char.era)}</div>
         </div>
       </div>`;
 
@@ -1465,10 +1595,13 @@
   }
 
   function resolveChoices(node, nodeId) {
+    let choices;
     if (node.dynamicChoices === "start" || (nodeId === "start" && !node.choices?.length)) {
-      return startChoices.length ? startChoices : buildStartChoices();
+      choices = startChoices.length ? startChoices : buildStartChoices();
+    } else {
+      choices = node.choices || [];
     }
-    return node.choices || [];
+    return enhanceChoices(node, nodeId, choices);
   }
 
   function maybeRollBonus(node) {
@@ -1506,25 +1639,37 @@
 
     applySceneZone(nodeId);
 
-    document.getElementById("sceneLocation").textContent = node.location || "Unknown";
+    const locEl = document.getElementById("sceneLocation");
+    if (locEl) locEl.textContent = node.location || "Unknown";
     const narrativeEl = document.getElementById("sceneNarrative");
     const choicesEl = document.getElementById("sceneChoices");
     const typingEl = document.getElementById("typingChallenge");
 
-    choicesEl.innerHTML = "";
-    typingEl.classList.add("dw-hidden");
+    if (choicesEl) choicesEl.innerHTML = "";
+    typingEl?.classList.add("dw-hidden");
     typingPending = null;
+    if (narrativeEl) narrativeEl.innerHTML = "";
+
+    if (!node.ending) {
+      await playRoomReveal(node, gen);
+      if (gen !== typewriterGen) return;
+    } else {
+      renderCharacter(node.character);
+      setPanelWaiting(false);
+    }
 
     if (narrativeEl) {
       narrativeEl.classList.remove("tt-narrative--reveal");
       void narrativeEl.offsetWidth;
       narrativeEl.classList.add("tt-narrative--reveal");
-      await typewriteNarrative(node.narrative || "", gen, { skipPauses: nodeId === "start" });
+      await typewriteNarrative(node.narrative || "", gen, {
+        skipPauses: prefersReducedMotion,
+        skipContinue: true,
+      });
     }
     if (gen !== typewriterGen) return;
 
     metCharacters.add(node.character);
-    renderCharacter(node.character);
 
     const prevBadgeCount = badges.size;
     const prevGoldenCount = goldenRules.size;
@@ -1573,7 +1718,8 @@
       document.getElementById("typingChoices")?.classList.add("dw-hidden");
       clearChoiceTyping();
       typingEl.classList.remove("dw-hidden");
-      choicesEl.innerHTML = "";
+      typingEl.classList.add("tt-layer--enter");
+      if (choicesEl) choicesEl.innerHTML = "";
       document.getElementById("typingPrompt").textContent = node.typingChallenge.prompt;
       const savedDraft = State.loadDraft();
       const typingInput = document.getElementById("typingInput");
@@ -1582,7 +1728,7 @@
       const min = scaleMinWords(typingPending.minWords || 20);
       updateTypingProgress(words, min);
       document.getElementById("typingSubmitBtn").disabled = words < min;
-      typingInput?.focus();
+      setTimeout(() => typingInput?.focus(), prefersReducedMotion ? 0 : 420);
       typingEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
     } else {
       typingEl.classList.add("dw-hidden");
@@ -1592,6 +1738,7 @@
       const choices = resolveChoices(node, nodeId);
       if (choices.length) {
         setupTypingChoices(node, choices);
+        document.getElementById("typingChoices")?.classList.add("tt-layer--enter");
       }
     }
 
@@ -1631,15 +1778,7 @@
   }
 
   function navigate(nodeId) {
-    if (prefersReducedMotion) {
-      renderScene(nodeId);
-      return;
-    }
-    showSceneLoader();
-    setTimeout(() => {
-      renderScene(nodeId);
-      hideSceneLoader();
-    }, SCENE_LOADER_MIN_MS);
+    renderScene(nodeId);
   }
 
   function updateStats() {
@@ -1700,7 +1839,7 @@
       const c = CHARACTERS[k];
       const portrait = Visuals.PORTRAITS[k];
       const thumb = portrait
-        ? `<img class="tt-hero-note__thumb" src="${portrait}" alt="" width="40" height="40" loading="lazy" />`
+        ? `<img class="tt-hero-note__thumb" src="${portrait}" alt="" width="72" height="72" loading="lazy" />`
         : `<span class="tt-hero-note__emoji">${c.emoji}</span>`;
       return `<div class="tt-hero-note">${thumb}<div><strong>${escapeHtml(c.name)}</strong><p>${escapeHtml(c.research)}</p></div></div>`;
     }).join("");
