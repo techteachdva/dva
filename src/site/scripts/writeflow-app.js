@@ -13,6 +13,7 @@
   const Teacher = () => window.WriteFlowTeacher;
   const Student = () => window.WriteFlowStudent;
   const Admin = () => window.WriteFlowAdmin;
+  const Loading = () => window.WriteFlowLoading;
 
   if (!Core || !Defaults) return;
 
@@ -847,10 +848,11 @@
     const minWords = Math.max(0, Number(config.minWordCount) || 0);
     const words = getStoryWordCount();
     const canEndEarly = !!config.allowEndEarly && meetsMinWordCount();
+    const submitting = Loading()?.isGuarded("submit");
 
     if (endEarlyBtn) {
       endEarlyBtn.classList.toggle("dw-hidden", !config.allowEndEarly);
-      endEarlyBtn.disabled = !canEndEarly;
+      endEarlyBtn.disabled = !canEndEarly || submitting;
       if (config.allowEndEarly && minWords && words < minWords) {
         endEarlyBtn.title = `Write ${minWords - words} more word${minWords - words === 1 ? "" : "s"} to submit early`;
       } else {
@@ -1512,28 +1514,36 @@
 
     document.getElementById("studentLoginForm")?.addEventListener("submit", async (e) => {
       e.preventDefault();
+      const form = e.currentTarget;
       const errEl = document.getElementById("studentLoginError");
-      const username = document.getElementById("studentLoginUsername")?.value || "";
-      const password = document.getElementById("studentLoginPassword")?.value || "";
-      try {
-        await Student()?.login(username, password);
-        await Student()?.validate();
-        renderStudentAccountPanel();
-      } catch (err) {
-        if (errEl) {
-          errEl.textContent = err.message || "Could not sign in.";
-          errEl.classList.remove("dw-hidden");
+      await Loading()?.withFormBusy(form, async () => {
+        errEl?.classList.add("dw-hidden");
+        const username = document.getElementById("studentLoginUsername")?.value || "";
+        const password = document.getElementById("studentLoginPassword")?.value || "";
+        try {
+          await Student()?.login(username, password);
+          await Student()?.validate();
+          renderStudentAccountPanel();
+        } catch (err) {
+          if (errEl) {
+            errEl.textContent = err.message || "Could not sign in.";
+            errEl.classList.remove("dw-hidden");
+          }
         }
-      }
+      }, { busyLabel: "Signing in…" });
     });
 
     document.getElementById("studentLogoutBtn")?.addEventListener("click", async () => {
-      await Student()?.logout();
-      renderStudentAccountPanel();
+      const btn = document.getElementById("studentLogoutBtn");
+      await Loading()?.withButtonBusy(btn, async () => {
+        await Student()?.logout();
+        renderStudentAccountPanel();
+      }, { busyLabel: "Signing out…" });
     });
 
     document.getElementById("studentPasswordForm")?.addEventListener("submit", async (e) => {
       e.preventDefault();
+      const form = e.currentTarget;
       const errEl = document.getElementById("studentPasswordError");
       const newPassword = document.getElementById("studentNewPassword")?.value || "";
       if (!newPassword.trim()) {
@@ -1543,30 +1553,37 @@
         }
         return;
       }
-      try {
-        await Student()?.setPassword(newPassword);
-        await Student()?.validate();
-        renderStudentAccountPanel();
-      } catch (err) {
-        if (errEl) {
-          errEl.textContent = err.message || "Could not save password.";
-          errEl.classList.remove("dw-hidden");
+      await Loading()?.withFormBusy(form, async () => {
+        errEl?.classList.add("dw-hidden");
+        try {
+          await Student()?.setPassword(newPassword);
+          await Student()?.validate();
+          renderStudentAccountPanel();
+        } catch (err) {
+          if (errEl) {
+            errEl.textContent = err.message || "Could not save password.";
+            errEl.classList.remove("dw-hidden");
+          }
         }
-      }
+      }, { busyLabel: "Saving…" });
     });
 
     document.getElementById("studentKeepSparkBtn")?.addEventListener("click", async () => {
+      const btn = document.getElementById("studentKeepSparkBtn");
       const errEl = document.getElementById("studentPasswordError");
-      try {
-        await Student()?.keepDefaultPassword();
-        await Student()?.validate();
-        renderStudentAccountPanel();
-      } catch (err) {
-        if (errEl) {
-          errEl.textContent = err.message || "Could not save choice.";
-          errEl.classList.remove("dw-hidden");
+      await Loading()?.withButtonBusy(btn, async () => {
+        errEl?.classList.add("dw-hidden");
+        try {
+          await Student()?.keepDefaultPassword();
+          await Student()?.validate();
+          renderStudentAccountPanel();
+        } catch (err) {
+          if (errEl) {
+            errEl.textContent = err.message || "Could not save choice.";
+            errEl.classList.remove("dw-hidden");
+          }
         }
-      }
+      }, { busyLabel: "Saving…" });
     });
   }
 
@@ -1594,6 +1611,8 @@
   }
 
   function finishWriting() {
+    if (Loading()?.isGuarded("submit")) return;
+
     if (config.requireMinWordsToComplete && !meetsMinWordCount()) {
       timerWaitingForMinWords = true;
       const notice = document.getElementById("timerExtendNotice");
@@ -1611,11 +1630,23 @@
     if (timer) timer.stop();
     timerWaitingForMinWords = false;
     document.getElementById("timerExtendNotice")?.classList.add("dw-hidden");
+
+    const endEarlyBtn = document.getElementById("endEarlyBtn");
+    Loading()?.setButtonBusy(endEarlyBtn, true, { busyLabel: "Submitting…" });
+    const analyzingView = document.getElementById("analyzingView");
+    analyzingView?.setAttribute("aria-busy", "true");
+    Loading()?.resetAnalyzingStatus();
     show("analyzing");
-    void showResults(storyInput?.value || "");
+    void Loading()?.runGuarded("submit", () => showResults(storyInput?.value || ""));
   }
 
   async function showResults(text) {
+    const endEarlyBtn = document.getElementById("endEarlyBtn");
+    const analyzingView = document.getElementById("analyzingView");
+    try {
+      Loading()?.setAnalyzingStatus("Analyzing your writing…", 12);
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+
     const timerStyle = resolveTimerStyle();
     const maxDuration = timerStyle === "none" || timerStyle === "goal" || timerStyle === "soft"
       ? Math.max(timer?.getElapsed() || config.durationSec, 1)
@@ -1624,6 +1655,7 @@
     const analysisOpts = getAnalysisOptions();
     const analysis = window.WriteAnalysis?.analyzeText(text, duration, analysisOpts)
       || { scores: {}, wordCount: 0, wpm: 0, feedback: [], sentenceCount: 0 };
+    Loading()?.setAnalyzingStatus("Preparing your results…", 48);
     const name = studentSession.username || studentSession.name || Student()?.getSession()?.username || document.getElementById("studentName")?.value.trim() || "Student";
     const classEl = document.getElementById("studentClass");
     const classroom = studentSession.classroom || Core.resolveClassroom(classEl?.value, VALID_CLASSROOMS) || "";
@@ -1684,16 +1716,24 @@
     let saveOk = false;
     let saveError = "";
     let submitData = null;
+    const saveStatus = document.getElementById("saveStatus");
     if (config.requireClass && !classroom) {
       saveError = "Your class was not recognized. Go back and pick your class from the list.";
     } else if (config.requireClassCode && classroom && !Core.verifyClassroomCode(classroom, classCode, CLASSROOM_CODES)) {
       saveError = "Your class code did not match. Check with your teacher.";
     } else {
+      if (saveStatus) {
+        saveStatus.classList.remove("dw-hidden", "dw-save-status--ok", "dw-save-status--error");
+        saveStatus.classList.add("dw-save-status--pending");
+        saveStatus.textContent = "Saving your work…";
+      }
+      Loading()?.setAnalyzingStatus("Saving to your class roster…", 78);
       try {
         submitData = await submitResult(name, classroom, classCode, text, analysis, duration);
         saveOk = true;
         lastSubmitMeta = submitData;
         saveLocalSubmission({ name, classroom, text, analysis, submittedAt: Date.now(), attemptNumber: submitData?.attemptNumber });
+        Loading()?.setAnalyzingStatus("Finishing up…", 96);
       } catch (err) {
         saveError = err.message || "Could not save your submission.";
         lastSubmitMeta = null;
@@ -1701,9 +1741,8 @@
       }
     }
 
-    const saveStatus = document.getElementById("saveStatus");
     if (saveStatus) {
-      saveStatus.classList.remove("dw-hidden", "dw-save-status--ok", "dw-save-status--error");
+      saveStatus.classList.remove("dw-hidden", "dw-save-status--ok", "dw-save-status--error", "dw-save-status--pending");
       if (saveOk) {
         const attemptLine = submitData?.attemptNumber
           ? ` Attempt ${submitData.attemptNumber}${submitData.maxAttempts ? ` of ${submitData.maxAttempts}` : ""}.`
@@ -1718,6 +1757,11 @@
 
     renderStudentRetryPanel(saveOk ? submitData : null);
     show("results");
+    } finally {
+      Loading()?.setButtonBusy(endEarlyBtn, false);
+      analyzingView?.setAttribute("aria-busy", "false");
+      updateWritingControls();
+    }
   }
 
   function renderStudentRetryPanel(submitData) {
@@ -1854,6 +1898,14 @@
   }
 
   async function initStudentFlow() {
+    const welcomeLoading = document.getElementById("welcomeLoading");
+    const startBtn = document.getElementById("startBtn");
+    const studentRoot = document.querySelector(".wf-student-app") || document.body;
+    welcomeLoading?.classList.remove("dw-hidden");
+    if (startBtn) startBtn.disabled = true;
+    Loading()?.showGlobalBar(studentRoot, "Loading your assignment…");
+
+    try {
     if (Student()) {
       await Student().validate();
       bindStudentAccountEvents();
@@ -1941,16 +1993,24 @@
     });
 
     document.getElementById("endEarlyBtn")?.addEventListener("click", () => {
-      if (!config.allowEndEarly || !meetsMinWordCount()) return;
+      if (!config.allowEndEarly || !meetsMinWordCount() || Loading()?.isGuarded("submit")) return;
       finishWriting();
     });
 
-    document.getElementById("studentTryAgainBtn")?.addEventListener("click", () => {
-      startRetryAttempt();
+    document.getElementById("studentTryAgainBtn")?.addEventListener("click", async () => {
+      const btn = document.getElementById("studentTryAgainBtn");
+      await Loading()?.withButtonBusy(btn, async () => {
+        startRetryAttempt();
+      }, { busyLabel: "Starting…" });
     });
 
     updateStartButton();
     show("welcome");
+    } finally {
+      welcomeLoading?.classList.add("dw-hidden");
+      Loading()?.hideGlobalBar(studentRoot);
+      updateStartButton();
+    }
   }
 
   function updateAccountButton() {

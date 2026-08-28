@@ -5,6 +5,7 @@
   "use strict";
 
   const Student = () => window.WriteFlowStudent;
+  const Loading = () => window.WriteFlowLoading;
   if (!Student) return;
 
   function formatDate(ms) {
@@ -134,18 +135,33 @@
   async function renderSubmissions() {
     const listEl = document.getElementById("studentPortalList");
     const emptyEl = document.getElementById("studentPortalEmpty");
+    const loadingEl = document.getElementById("studentPortalLoading");
+    const main = document.querySelector(".wf-portal-main");
     if (!listEl) return;
 
-    const items = await Student().listMySubmissions();
-    if (!items.length) {
-      listEl.innerHTML = "";
-      emptyEl?.classList.remove("dw-hidden");
-      return;
-    }
     emptyEl?.classList.add("dw-hidden");
+    listEl.innerHTML = "";
+    loadingEl?.classList.remove("dw-hidden");
+    main?.setAttribute("aria-busy", "true");
+    Loading()?.showGlobalBar(document.querySelector(".wf-student-portal") || document.body, "Loading your assignments…");
 
-    const groups = groupByAssignment(items);
-    listEl.innerHTML = groups.map((group) => renderAssignmentGroup(group)).join("");
+    try {
+      const items = await Student().listMySubmissions();
+      loadingEl?.classList.add("dw-hidden");
+      if (!items.length) {
+        listEl.innerHTML = "";
+        emptyEl?.classList.remove("dw-hidden");
+        return;
+      }
+      emptyEl?.classList.add("dw-hidden");
+
+      const groups = groupByAssignment(items);
+      listEl.innerHTML = groups.map((group) => renderAssignmentGroup(group)).join("");
+    } finally {
+      loadingEl?.classList.add("dw-hidden");
+      main?.removeAttribute("aria-busy");
+      Loading()?.hideGlobalBar(document.querySelector(".wf-student-portal") || document.body);
+    }
   }
 
   function renderSignedIn() {
@@ -166,29 +182,40 @@
   }
 
   async function init() {
-    await Student().validate();
-    if (Student().isLoggedIn()) renderSignedIn();
-    else renderSignedOut();
+    const portalRoot = document.querySelector(".wf-student-portal") || document.body;
+    Loading()?.showGlobalBar(portalRoot, "Loading…");
+    try {
+      await Student().validate();
+      if (Student().isLoggedIn()) renderSignedIn();
+      else renderSignedOut();
+    } finally {
+      Loading()?.hideGlobalBar(portalRoot);
+    }
 
     document.getElementById("studentPortalLoginForm")?.addEventListener("submit", async (e) => {
       e.preventDefault();
+      const form = e.currentTarget;
       const errEl = document.getElementById("studentPortalLoginError");
-      const username = document.getElementById("studentPortalUsername")?.value || "";
-      const password = document.getElementById("studentPortalPassword")?.value || "";
-      try {
-        await Student().login(username, password);
-        await Student().validate();
-        renderSignedIn();
-      } catch (err) {
-        if (errEl) {
-          errEl.textContent = err.message || "Could not sign in.";
-          errEl.classList.remove("dw-hidden");
+      await Loading()?.withFormBusy(form, async () => {
+        errEl?.classList.add("dw-hidden");
+        const username = document.getElementById("studentPortalUsername")?.value || "";
+        const password = document.getElementById("studentPortalPassword")?.value || "";
+        try {
+          await Student().login(username, password);
+          await Student().validate();
+          renderSignedIn();
+        } catch (err) {
+          if (errEl) {
+            errEl.textContent = err.message || "Could not sign in.";
+            errEl.classList.remove("dw-hidden");
+          }
         }
-      }
+      }, { busyLabel: "Signing in…" });
     });
 
     document.getElementById("studentPortalPasswordForm")?.addEventListener("submit", async (e) => {
       e.preventDefault();
+      const form = e.currentTarget;
       const errEl = document.getElementById("studentPortalPasswordError");
       const newPassword = document.getElementById("studentPortalNewPassword")?.value || "";
       if (!newPassword.trim()) {
@@ -198,35 +225,45 @@
         }
         return;
       }
-      try {
-        await Student().setPassword(newPassword);
-        await Student().validate();
-        renderSignedIn();
-      } catch (err) {
-        if (errEl) {
-          errEl.textContent = err.message || "Could not save password.";
-          errEl.classList.remove("dw-hidden");
+      await Loading()?.withFormBusy(form, async () => {
+        errEl?.classList.add("dw-hidden");
+        try {
+          await Student().setPassword(newPassword);
+          await Student().validate();
+          renderSignedIn();
+        } catch (err) {
+          if (errEl) {
+            errEl.textContent = err.message || "Could not save password.";
+            errEl.classList.remove("dw-hidden");
+          }
         }
-      }
+      }, { busyLabel: "Saving…" });
     });
 
     document.getElementById("studentPortalKeepSparkBtn")?.addEventListener("click", async () => {
+      const btn = document.getElementById("studentPortalKeepSparkBtn");
       const errEl = document.getElementById("studentPortalPasswordError");
-      try {
-        await Student().keepDefaultPassword();
-        await Student().validate();
-        renderSignedIn();
-      } catch (err) {
-        if (errEl) {
-          errEl.textContent = err.message || "Could not save choice.";
-          errEl.classList.remove("dw-hidden");
+      await Loading()?.withButtonBusy(btn, async () => {
+        errEl?.classList.add("dw-hidden");
+        try {
+          await Student().keepDefaultPassword();
+          await Student().validate();
+          renderSignedIn();
+        } catch (err) {
+          if (errEl) {
+            errEl.textContent = err.message || "Could not save choice.";
+            errEl.classList.remove("dw-hidden");
+          }
         }
-      }
+      }, { busyLabel: "Saving…" });
     });
 
     document.getElementById("studentPortalLogoutBtn")?.addEventListener("click", async () => {
-      await Student().logout();
-      renderSignedOut();
+      const btn = document.getElementById("studentPortalLogoutBtn");
+      await Loading()?.withButtonBusy(btn, async () => {
+        await Student().logout();
+        renderSignedOut();
+      }, { busyLabel: "Signing out…" });
     });
   }
 

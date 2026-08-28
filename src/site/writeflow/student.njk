@@ -29,7 +29,7 @@ layout: false
           <form id="studentPortalLoginForm" class="wf-account-form">
             <label class="dw-field"><span class="dw-label">Username</span><input id="studentPortalUsername" class="dw-input" type="text" autocomplete="username" required /></label>
             <label class="dw-field"><span class="dw-label">Password</span><input id="studentPortalPassword" class="dw-input" type="password" autocomplete="current-password" required /></label>
-            <button class="dw-btn" type="submit">Sign in</button>
+            <button id="studentPortalLoginSubmitBtn" class="dw-btn" type="submit">Sign in</button>
             <p id="studentPortalLoginError" class="dw-error dw-hidden" role="alert"></p>
           </form>
         </section>
@@ -56,12 +56,17 @@ layout: false
             <h2 class="dw-h2">Your assignments</h2>
             <p class="dw-muted dw-tiny">Grouped by assignment — expand any attempt to read your full draft and teacher feedback.</p>
             <p id="studentPortalEmpty" class="dw-muted dw-hidden">No submissions yet. Complete a writing assignment from a link your teacher shares.</p>
+            <div id="studentPortalLoading" class="wf-list-loading dw-hidden" role="status" aria-live="polite">
+              <div class="wf-progress wf-progress--indeterminate" aria-hidden="true"><div class="wf-progress__bar"></div></div>
+              <p class="wf-list-loading__text dw-muted">Loading your assignments…</p>
+            </div>
             <div id="studentPortalList" class="wf-submission-groups" role="list"></div>
           </div>
         </section>
       </main>
     </div>
 
+    <script src="/scripts/writeflow-loading.js" defer></script>
     <script src="/scripts/writeflow-student-auth.js" defer></script>
     <script src="/scripts/writeflow-student-portal.js" defer></script>
   </body>

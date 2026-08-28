@@ -42,7 +42,7 @@ layout: false
                     <label class="dw-field"><span class="dw-label">Username</span><input id="studentLoginUsername" class="dw-input" type="text" maxlength="80" autocomplete="username" placeholder="John D." required /></label>
                     <p id="studentUsernameHint" class="dw-muted dw-tiny dw-hidden" role="status"></p>
                     <label class="dw-field"><span class="dw-label">Password</span><input id="studentLoginPassword" class="dw-input" type="password" autocomplete="current-password" /></label>
-                    <button class="dw-btn dw-btn-ghost" type="submit">Sign in</button>
+                    <button id="studentLoginSubmitBtn" class="dw-btn dw-btn-ghost" type="submit">Sign in</button>
                     <p id="studentLoginError" class="dw-error dw-hidden" role="alert"></p>
                   </form>
                   <p class="dw-muted dw-tiny"><a href="/writeflow/student/">View all your past writing</a></p>
@@ -77,6 +77,10 @@ layout: false
               </label>
               <p id="classCodeError" class="dw-error dw-hidden" role="alert">That code doesn&rsquo;t match your class.</p>
               <p id="assignmentLoadNotice" class="dw-error dw-hidden" role="alert"></p>
+              <div id="welcomeLoading" class="wf-list-loading dw-hidden" role="status" aria-live="polite">
+                <div class="wf-progress wf-progress--indeterminate" aria-hidden="true"><div class="wf-progress__bar"></div></div>
+                <p class="wf-list-loading__text dw-muted">Loading your assignment…</p>
+              </div>
               <button id="startBtn" class="dw-btn wf-student-start" type="button" disabled>Start writing</button>
             </div>
           </div>
@@ -112,9 +116,15 @@ layout: false
           </div>
         </section>
 
-        <section id="analyzingView" class="wf-student-panel dw-hidden wf-student-panel--center">
-          <div class="dw-spinner"></div>
-          <p class="dw-lead">Analyzing your writing…</p>
+        <section id="analyzingView" class="wf-student-panel dw-hidden wf-student-panel--center" aria-busy="false">
+          <div class="wf-analyzing">
+            <div class="dw-spinner" aria-hidden="true"></div>
+            <div id="analyzingProgress" class="wf-analyzing__progress dw-hidden" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <div class="wf-progress"><div id="analyzingProgressBar" class="wf-progress__bar"></div></div>
+            </div>
+            <p id="analyzingStatus" class="dw-lead wf-analyzing__status">Analyzing your writing…</p>
+            <p class="dw-muted dw-tiny">Please wait — do not close this tab or press the button again.</p>
+          </div>
         </section>
 
         <section id="resultsView" class="dw-hidden wf-student-panel wf-student-panel--results">
@@ -146,6 +156,7 @@ layout: false
     <script src="/scripts/diagnostic-writing-calibration.js" defer></script>
     <script src="/scripts/diagnostic-writing-rubrics.js" defer></script>
     <script src="/scripts/write-analysis-engine.js" defer></script>
+    <script src="/scripts/writeflow-loading.js" defer></script>
     <script src="/scripts/writeflow-student-auth.js" defer></script>
     <script src="/scripts/writeflow-app.js" defer></script>
   </body>
