@@ -8108,54 +8108,243 @@ mark.wf-standard-hit,
 }
 
 .wp-theme--gauntlet .tt-game-layout:not(.dw-hidden) {
+  position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 300px);
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 280px);
+  grid-template-rows: auto minmax(0, 1fr);
   grid-template-areas:
     "hud hud"
     "stage sidebar";
-  gap: 12px;
-  padding: 12px 16px 20px;
+  gap: 10px;
+  padding: 10px 14px 12px;
   flex: 1;
   width: 100%;
-  align-items: start;
+  min-height: 0;
+  overflow: hidden;
+  align-items: stretch;
 }
 
 .wp-theme--gauntlet .tt-game-layout .tt-hud {
   grid-area: hud;
+  margin-top: 0;
+  gap: 8px;
 }
 
 .wp-theme--gauntlet .tt-game-layout #sceneLesson {
   grid-area: hud;
 }
 
+.wp-theme--gauntlet .tt-game-layout .tt-stats-bar {
+  margin-top: 0;
+  padding: 10px 14px;
+  gap: 12px;
+}
+
 .wp-theme--gauntlet .tt-game-layout .tt-stage {
   grid-area: stage;
   min-width: 0;
+  min-height: 0;
   margin-top: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.wp-theme--gauntlet .tt-game-layout .tt-stage__viewport {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+}
+
+.wp-theme--gauntlet .tt-game-layout .tt-stage__room {
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.wp-theme--gauntlet .tt-game-layout .tt-scene-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.wp-theme--gauntlet .tt-game-layout .tt-scene-header {
+  flex-shrink: 0;
+  margin-bottom: 12px;
+}
+
+.wp-theme--gauntlet .tt-game-layout .tt-character {
+  flex-shrink: 0;
+  margin-bottom: 10px;
+}
+
+.wp-theme--gauntlet .tt-game-layout .tt-narrative {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 12px;
+  padding-right: 4px;
+  scrollbar-gutter: stable;
+}
+
+.wp-theme--gauntlet .tt-game-layout .tt-choices,
+.wp-theme--gauntlet .tt-game-layout .tt-typing-choices,
+.wp-theme--gauntlet .tt-game-layout .tt-typing-challenge,
+.wp-theme--gauntlet .tt-game-layout #narrativeContinueBtn {
+  flex-shrink: 0;
+}
+
+.wp-theme--gauntlet .tt-game-layout .tt-choices,
+.wp-theme--gauntlet .tt-game-layout .tt-typing-choices {
+  max-height: min(34vh, 280px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .wp-theme--gauntlet .tt-game-layout .tt-sidebar {
   grid-area: sidebar;
   margin-top: 0;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
-.wp-theme--gauntlet .tt-stage__room {
-  min-height: min(72vh, 900px);
+.wp-theme--gauntlet .tt-game-layout .tt-journal {
+  margin-top: 0;
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+/* Lock viewport while playing — scroll inside panels, not the page */
+.wp-theme--gauntlet.tt-game-body:has(#gameView:not(.dw-hidden)) {
+  overflow: hidden;
+  height: 100dvh;
+}
+
+.wp-theme--gauntlet.tt-game-body:has(#gameView:not(.dw-hidden)) .breadcrumbs--standalone {
+  display: none;
+}
+
+.wp-theme--gauntlet.tt-game-body:has(#gameView:not(.dw-hidden)) .dw-shell.tt-shell {
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
 }
 
 .wp-theme--gauntlet.tt-is-fullscreen .breadcrumbs--standalone {
   display: none;
 }
 
+.wp-theme--gauntlet.tt-is-fullscreen .tt-topbar {
+  padding: 6px 12px;
+}
+
+.wp-theme--gauntlet.tt-is-fullscreen .tt-topbar .dw-subtitle {
+  display: none;
+}
+
 .wp-theme--gauntlet.tt-is-fullscreen .tt-title-screen,
 .wp-theme--gauntlet.tt-is-fullscreen #endingView .tt-ending-screen {
-  min-height: calc(100dvh - 52px);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.wp-theme--gauntlet.tt-is-fullscreen .tt-title-screen__content,
+.wp-theme--gauntlet.tt-is-fullscreen .tt-ending-screen__content {
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+
+.wp-theme--gauntlet.tt-is-fullscreen .tt-game-layout:not(.dw-hidden) {
+  gap: 8px;
+  padding: 8px 12px 10px;
+}
+
+.wp-theme--gauntlet.tt-is-fullscreen .tt-hud {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "stats stats"
+    "track mute";
+  align-items: center;
+  gap: 6px 10px;
+}
+
+.wp-theme--gauntlet.tt-is-fullscreen .tt-stats-bar {
+  grid-area: stats;
+  padding: 8px 12px;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.wp-theme--gauntlet.tt-is-fullscreen .tt-golden-track {
+  grid-area: track;
+  justify-content: flex-start;
+  gap: 8px;
+}
+
+.wp-theme--gauntlet.tt-is-fullscreen .tt-mute-btn {
+  grid-area: mute;
+  justify-self: end;
+  align-self: center;
+}
+
+.wp-theme--gauntlet.tt-is-fullscreen .tt-golden-orb {
+  width: 38px;
+  height: 38px;
+}
+
+.wp-theme--gauntlet.tt-is-fullscreen .tt-scene-panel {
+  margin: clamp(8px, 1.2vw, 14px);
+  padding: clamp(12px, 2vw, 18px);
+}
+
+.wp-theme--gauntlet.tt-is-fullscreen .tt-narrative {
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.wp-theme--gauntlet.tt-is-fullscreen .tt-character--3d .tt-character__card {
+  padding: 10px 14px;
+  gap: 12px;
+}
+
+.wp-theme--gauntlet.tt-is-fullscreen .tt-character--3d .tt-character__avatar {
+  width: 56px;
+  height: 56px;
 }
 
 @media (max-width: 1080px) {
   .wp-theme--gauntlet .tt-game-layout:not(.dw-hidden) {
     grid-template-columns: 1fr;
-    grid-template-areas: "hud" "stage" "sidebar";
+    grid-template-rows: auto minmax(0, 1.4fr) minmax(0, 0.6fr);
+    grid-template-areas:
+      "hud"
+      "stage"
+      "sidebar";
+  }
+
+  .wp-theme--gauntlet .tt-game-layout .tt-sidebar {
+    flex-direction: row;
+    gap: 8px;
+  }
+
+  .wp-theme--gauntlet .tt-game-layout .tt-journal {
+    flex: 1;
   }
 }
 
