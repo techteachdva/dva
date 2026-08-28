@@ -651,6 +651,25 @@ function handle_(e, isGet) {
       return respond_({ ok: true, students: adminListRegisteredStudents_() });
     }
 
+    if (action === "adminListClassRoster") {
+      const session = validateSessionV2_(params.sessionToken);
+      if (!session || session.role !== "admin") return respond_({ error: "Admin access required" });
+      return respond_({ ok: true, roster: adminListClassRoster_() });
+    }
+
+    if (action === "adminBackfillStudentCreatedAt") {
+      const session = validateSessionV2_(params.sessionToken);
+      if (!session || session.role !== "admin") return respond_({ error: "Admin access required" });
+      return respond_({ ok: true, ...adminBackfillStudentCreatedAt_() });
+    }
+
+    if (action === "adminAddRosterEntry") {
+      const session = validateSessionV2_(params.sessionToken);
+      if (!session || session.role !== "admin") return respond_({ error: "Admin access required" });
+      const entry = adminAddRosterEntry_(params.classroom, params.username);
+      return respond_({ ok: true, entry: entry });
+    }
+
     if (action === "teacherLogout") {
       revokeSession_(params.sessionToken);
       return respond_({ ok: true });

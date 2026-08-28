@@ -893,6 +893,7 @@ function adminListTeachers_() {
 
 function adminListRegisteredStudents_() {
   const sheet = getStudentsSheet_();
+  ensureStudentsCreatedAtColumn_(sheet);
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return [];
   const rows = sheet.getRange(2, 1, lastRow - 1, 5).getValues();
@@ -906,6 +907,84 @@ function adminListRegisteredStudents_() {
     });
   }
   return out;
+}
+
+function ensureStudentsCreatedAtColumn_(sheet) {
+  const colCount = Math.max(5, sheet.getLastColumn());
+  const headers = sheet.getRange(1, 1, 1, colCount).getValues()[0];
+  if (String(headers[4] || "").toLowerCase() !== "createdat") {
+    sheet.getRange(1, 5).setValue("createdAt");
+    sheet.getRange(1, 5).setFontWeight("bold");
+  }
+}
+
+function adminListClassRoster_() {
+  ensureStudentsCreatedAtColumn_(getStudentsSheet_());
+  const rosterSheet = getStudentRosterSheet_();
+  const lastRow = rosterSheet.getLastRow();
+  if (lastRow < 2) return [];
+  const registeredByUser = {};
+  const students = adminListRegisteredStudents_();
+  for (var s = 0; s < students.length; s++) {
+    registeredByUser[normalizeStudentUsername_(students[s].username).toLowerCase()] = students[s];
+  }
+  const rows = rosterSheet.getRange(2, 1, lastRow - 1, 3).getValues();
+  const out = [];
+  for (var i = 0; i < rows.length; i++) {
+    const username = normalizeStudentUsername_(rows[i][1]);
+    if (!username) continue;
+    const reg = registeredByUser[username.toLowerCase()];
+    out.push({
+      classroom: String(rows[i][0] || ""),
+      username: username,
+      active: String(rows[i][2] || "").toUpperCase() === "TRUE",
+      registered: !!reg,
+      mustChangePassword: reg ? reg.mustChangePassword : false,
+      createdAt: reg ? reg.createdAt : 0,
+    });
+  }
+  out.sort(function (a, b) {
+    const room = a.classroom.localeCompare(b.classroom);
+    if (room !== 0) return room;
+    return a.username.localeCompare(b.username);
+  });
+  return out;
+}
+
+function adminBackfillStudentCreatedAt_() {
+  const sheet = getStudentsSheet_();
+  ensureStudentsCreatedAtColumn_(sheet);
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return { updated: 0 };
+  const now = Date.now();
+  var updated = 0;
+  for (var i = 2; i <= lastRow; i++) {
+    const val = sheet.getRange(i, 5).getValue();
+    const num = Number(val);
+    if (!val || !Number.isFinite(num) || num <= 0) {
+      sheet.getRange(i, 5).setValue(now);
+      updated += 1;
+    }
+  }
+  return { updated: updated };
+}
+
+function adminAddRosterEntry_(classroom, username) {
+  const room = String(classroom || "").trim();
+  const user = normalizeStudentUsername_(username);
+  if (!room) throw new Error("Classroom is required.");
+  if (!user) throw new Error("Username is required (e.g. Phil C.).");
+  if (findRosterEntry_(user)) throw new Error("That username is already on the roster.");
+  getStudentRosterSheet_().appendRow([room, user, "TRUE"]);
+  const registered = getStudentByUsername_(user);
+  return {
+    classroom: room,
+    username: user,
+    active: true,
+    registered: !!registered,
+    mustChangePassword: registered ? registered.mustChangePassword : false,
+    createdAt: registered ? registered.createdAt : 0,
+  };
 }
 
 function checkStudentUsername_(username) {

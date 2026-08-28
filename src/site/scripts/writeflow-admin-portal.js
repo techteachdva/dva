@@ -45,6 +45,16 @@
     return `<table class="wf-admin-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
   }
 
+  function formatCreatedAt(ts) {
+    const n = Number(ts);
+    if (!n) return "—";
+    try {
+      return new Date(n).toLocaleString(undefined, { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
+    } catch {
+      return "—";
+    }
+  }
+
   async function refreshDashboard() {
     const stats = await Admin().getStats();
     renderStats(stats);
@@ -62,8 +72,23 @@
     const studentsEl = document.getElementById("adminStudentsList");
     if (studentsEl) {
       studentsEl.innerHTML = renderTable(
-        ["Username", "Classroom", "Needs password change"],
-        students.map((s) => [s.username, s.classroom, s.mustChangePassword ? "Yes" : "No"])
+        ["Username", "Classroom", "Needs password change", "Created at"],
+        students.map((s) => [s.username, s.classroom, s.mustChangePassword ? "Yes" : "No", formatCreatedAt(s.createdAt)])
+      );
+    }
+
+    const roster = await Admin().listClassRoster();
+    const rosterEl = document.getElementById("adminClassRosterList");
+    if (rosterEl) {
+      rosterEl.innerHTML = renderTable(
+        ["Username", "Classroom", "Active", "Registered", "Created at"],
+        roster.map((r) => [
+          r.username,
+          r.classroom,
+          r.active ? "Yes" : "No",
+          r.registered ? "Yes" : "No",
+          formatCreatedAt(r.createdAt),
+        ])
       );
     }
 
@@ -150,6 +175,47 @@
       } catch (err) {
         if (errEl) {
           errEl.textContent = err.message || "Could not impersonate.";
+          errEl.classList.remove("dw-hidden");
+        }
+      }
+    });
+
+    document.getElementById("adminBackfillCreatedAtBtn")?.addEventListener("click", async () => {
+      const resultEl = document.getElementById("adminRosterStatus");
+      try {
+        const data = await Admin().backfillStudentCreatedAt();
+        if (resultEl) {
+          resultEl.textContent = `Filled in created-at for ${data.updated || 0} student account(s).`;
+          resultEl.classList.remove("dw-hidden", "dw-error");
+        }
+        await refreshDashboard();
+      } catch (err) {
+        if (resultEl) {
+          resultEl.textContent = err.message || "Backfill failed.";
+          resultEl.classList.remove("dw-hidden");
+          resultEl.classList.add("dw-error");
+        }
+      }
+    });
+
+    document.getElementById("adminAddRosterForm")?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const errEl = document.getElementById("adminAddRosterError");
+      const statusEl = document.getElementById("adminRosterStatus");
+      const classroom = document.getElementById("adminAddRosterClassroom")?.value || "";
+      const username = document.getElementById("adminAddRosterUsername")?.value || "";
+      try {
+        await Admin().addRosterEntry(classroom, username);
+        if (errEl) errEl.classList.add("dw-hidden");
+        if (statusEl) {
+          statusEl.textContent = `Added ${username.trim()} to ${classroom.trim()}. They can sign in at /writeflow/student/ with password SPARK.`;
+          statusEl.classList.remove("dw-hidden", "dw-error");
+        }
+        document.getElementById("adminAddRosterUsername").value = "";
+        await refreshDashboard();
+      } catch (err) {
+        if (errEl) {
+          errEl.textContent = err.message || "Could not add student.";
           errEl.classList.remove("dw-hidden");
         }
       }

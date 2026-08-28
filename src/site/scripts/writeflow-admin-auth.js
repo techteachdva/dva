@@ -133,6 +133,26 @@
     return data.students || [];
   }
 
+  async function listClassRoster() {
+    const token = getToken();
+    if (!token) throw new Error("Admin sign-in required.");
+    const data = await apiPost("adminListClassRoster", { sessionToken: token });
+    return data.roster || [];
+  }
+
+  async function backfillStudentCreatedAt() {
+    const token = getToken();
+    if (!token) throw new Error("Admin sign-in required.");
+    return apiPost("adminBackfillStudentCreatedAt", { sessionToken: token });
+  }
+
+  async function addRosterEntry(classroom, username) {
+    const token = getToken();
+    if (!token) throw new Error("Admin sign-in required.");
+    const data = await apiPost("adminAddRosterEntry", { sessionToken: token, classroom, username });
+    return data.entry;
+  }
+
   async function listAllSubmissions() {
     const token = getToken();
     if (!token) throw new Error("Admin sign-in required.");
@@ -195,6 +215,9 @@
     dedupeSubmissions,
     listTeachers,
     listStudents,
+    listClassRoster,
+    backfillStudentCreatedAt,
+    addRosterEntry,
     listAllSubmissions,
     listAssignmentSubmissions,
     saveSubmissionGrade,

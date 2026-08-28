@@ -87,7 +87,22 @@ layout: false
           </section>
 
           <section class="dw-card dw-stack">
+            <h2 class="dw-h2">Class roster</h2>
+            <p class="dw-muted dw-tiny">Everyone on <strong>StudentRoster</strong> in Google Sheets. <strong>Created at</strong> is set when they first sign in at <a class="dw-link" href="/writeflow/student/">My writing</a> — blank means they have not logged in yet.</p>
+            <form id="adminAddRosterForm" class="wf-account-form wf-admin-roster-form">
+              <label class="dw-field"><span class="dw-label">Classroom</span><input id="adminAddRosterClassroom" class="dw-input" type="text" placeholder="Teacher's Lounge" required /></label>
+              <label class="dw-field"><span class="dw-label">Username</span><input id="adminAddRosterUsername" class="dw-input" type="text" placeholder="Phil C." required /></label>
+              <button class="dw-btn dw-btn-secondary" type="submit">Add to roster</button>
+              <p id="adminAddRosterError" class="dw-error dw-hidden" role="alert"></p>
+            </form>
+            <button id="adminBackfillCreatedAtBtn" class="dw-btn dw-btn-ghost" type="button">Fill missing created-at dates</button>
+            <p id="adminRosterStatus" class="dw-muted dw-tiny dw-hidden" role="status"></p>
+            <div id="adminClassRosterList" class="wf-admin-table-wrap"></div>
+          </section>
+
+          <section class="dw-card dw-stack">
             <h2 class="dw-h2">Registered students</h2>
+            <p class="dw-muted dw-tiny">Accounts in the <strong>Students</strong> sheet (created on first login).</p>
             <div id="adminStudentsList" class="wf-admin-table-wrap"></div>
           </section>
         </section>
