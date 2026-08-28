@@ -467,7 +467,77 @@ export async function POST(request) {
       if (data.error) {
         return Response.json({ error: data.error }, { status: 400, headers: corsHeaders() });
       }
-      return Response.json({ ok: true, removed: data.removed || 0, message: data.message || "" }, { headers: corsHeaders() });
+      return Response.json({ ok: true, removed: data.removed || 0, kept: data.kept || 0, message: data.message || "" }, { headers: corsHeaders() });
+    }
+
+    if (action === "adminListClassrooms") {
+      const sessionToken = typeof body?.sessionToken === "string" ? body.sessionToken.trim() : "";
+      if (!sessionToken) {
+        return Response.json({ error: "Admin sign-in required." }, { status: 401, headers: corsHeaders() });
+      }
+      const data = await scriptPost({ action: "adminListClassrooms", sessionToken });
+      if (data.error) {
+        return Response.json({ error: data.error, classrooms: [] }, { status: 401, headers: corsHeaders() });
+      }
+      return Response.json({ ok: true, classrooms: data.classrooms || [] }, { headers: corsHeaders() });
+    }
+
+    if (action === "adminResetStudentPassword") {
+      const sessionToken = typeof body?.sessionToken === "string" ? body.sessionToken.trim() : "";
+      const username = typeof body?.username === "string" ? body.username.trim() : "";
+      if (!sessionToken) {
+        return Response.json({ error: "Admin sign-in required." }, { status: 401, headers: corsHeaders() });
+      }
+      if (!username) {
+        return Response.json({ error: "Username is required." }, { status: 400, headers: corsHeaders() });
+      }
+      const data = await scriptPost({ action: "adminResetStudentPassword", sessionToken, username });
+      if (data.error) {
+        return Response.json({ error: data.error }, { status: 400, headers: corsHeaders() });
+      }
+      return Response.json({ ok: true, ...data }, { headers: corsHeaders() });
+    }
+
+    if (action === "adminBulkResetPasswords") {
+      const sessionToken = typeof body?.sessionToken === "string" ? body.sessionToken.trim() : "";
+      if (!sessionToken) {
+        return Response.json({ error: "Admin sign-in required." }, { status: 401, headers: corsHeaders() });
+      }
+      const classroom = typeof body?.classroom === "string" ? body.classroom.trim() : "";
+      const data = await scriptPost({ action: "adminBulkResetPasswords", sessionToken, classroom });
+      if (data.error) {
+        return Response.json({ error: data.error }, { status: 400, headers: corsHeaders() });
+      }
+      return Response.json({ ok: true, ...data }, { headers: corsHeaders() });
+    }
+
+    if (action === "adminSyncStudentClassrooms") {
+      const sessionToken = typeof body?.sessionToken === "string" ? body.sessionToken.trim() : "";
+      if (!sessionToken) {
+        return Response.json({ error: "Admin sign-in required." }, { status: 401, headers: corsHeaders() });
+      }
+      const data = await scriptPost({ action: "adminSyncStudentClassrooms", sessionToken });
+      if (data.error) {
+        return Response.json({ error: data.error }, { status: 401, headers: corsHeaders() });
+      }
+      return Response.json({ ok: true, updated: data.updated || 0 }, { headers: corsHeaders() });
+    }
+
+    if (action === "adminBulkAddRosterEntries") {
+      const sessionToken = typeof body?.sessionToken === "string" ? body.sessionToken.trim() : "";
+      const classroom = typeof body?.classroom === "string" ? body.classroom.trim() : "";
+      const usernamesText = typeof body?.usernamesText === "string" ? body.usernamesText : "";
+      if (!sessionToken) {
+        return Response.json({ error: "Admin sign-in required." }, { status: 401, headers: corsHeaders() });
+      }
+      if (!classroom || !usernamesText.trim()) {
+        return Response.json({ error: "Classroom and at least one username are required." }, { status: 400, headers: corsHeaders() });
+      }
+      const data = await scriptPost({ action: "adminBulkAddRosterEntries", sessionToken, classroom, usernamesText });
+      if (data.error) {
+        return Response.json({ error: data.error }, { status: 400, headers: corsHeaders() });
+      }
+      return Response.json({ ok: true, added: data.added || [], skipped: data.skipped || [] }, { headers: corsHeaders() });
     }
 
     if (action === "adminListTeachers") {

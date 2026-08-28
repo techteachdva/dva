@@ -25,22 +25,22 @@
     const rows = [
       ["Submissions", stats.submissions],
       ["Assignments", stats.assignments],
-      ["Classrooms (in data)", stats.classrooms],
-      ["Sentences analyzed", stats.sentences],
-      ["Registered students", stats.registeredStudents],
+      ["Classrooms", stats.classrooms],
+      ["Sentences", stats.sentences],
+      ["Registered", stats.registeredStudents],
       ["Teachers", stats.teachers],
-      ["Roster entries", stats.rosterEntries],
+      ["Roster", stats.rosterEntries],
     ];
-    el.innerHTML = `<dl class="wf-stats-dl">${rows
+    el.innerHTML = rows
       .map(([label, value]) => `<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value ?? "—")}</dd></div>`)
-      .join("")}</dl>`;
+      .join("");
   }
 
   function renderTable(headers, rows) {
     if (!rows.length) return "<p class=\"dw-muted\">None yet.</p>";
     const head = headers.map((h) => `<th>${escapeHtml(h)}</th>`).join("");
     const body = rows
-      .map((row) => `<tr>${row.map((cell) => `<td>${escapeHtml(cell)}</td>`).join("")}</tr>`)
+      .map((row) => `<tr>${row.map((cell) => `<td>${cell}</td>`).join("")}</tr>`)
       .join("");
     return `<table class="wf-admin-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
   }
@@ -56,6 +56,23 @@
   }
 
   let usernameCleanupPreview = [];
+  let classroomOptions = [];
+
+  function populateClassroomSelects(classrooms) {
+    classroomOptions = classrooms || [];
+    const datalist = document.getElementById("adminClassroomList");
+    if (datalist) {
+      datalist.innerHTML = classroomOptions.map((c) => `<option value="${escapeHtml(c)}"></option>`).join("");
+    }
+    const resetSelect = document.getElementById("adminBulkResetClassroom");
+    if (resetSelect) {
+      const current = resetSelect.value;
+      resetSelect.innerHTML = `<option value="">All registered students</option>${classroomOptions
+        .map((c) => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`)
+        .join("")}`;
+      resetSelect.value = current || "";
+    }
+  }
 
   function renderUsernameCleanupPreview(changes) {
     const el = document.getElementById("adminUsernameCleanupPreview");
@@ -63,62 +80,107 @@
     usernameCleanupPreview = Array.isArray(changes) ? changes : [];
     if (!el) return;
     const fixable = usernameCleanupPreview.filter((c) => c.toUsername);
-    if (!fixable.length) {
-      el.innerHTML = usernameCleanupPreview.length
-        ? "<p class=\"dw-muted\">No automatic fixes found. Add missing students to the roster, then preview again.</p>"
-        : "";
+    const unmatched = usernameCleanupPreview.filter((c) => !c.toUsername);
+    if (!fixable.length && !unmatched.length) {
+      el.innerHTML = "";
       if (applyBtn) applyBtn.disabled = true;
       return;
     }
+    let html = "";
+    if (fixable.length) {
+      html += renderTable(
+        ["Current name", "Roster name", "Class", "Confidence", "Reason"],
+        fixable.map((c) => [
+          escapeHtml(c.fromUsername || c.fromName || "—"),
+          escapeHtml(c.toUsername),
+          escapeHtml(c.classroom || "—"),
+          escapeHtml(c.confidence || "—"),
+          escapeHtml(c.reason || "—"),
+        ])
+      );
+    }
+    if (unmatched.length) {
+      html += `<p class="dw-muted dw-tiny" style="margin-top:12px"><strong>${unmatched.length}</strong> submission(s) could not be matched — add those students to StudentRoster first.</p>`;
+      html += renderTable(
+        ["Unmatched name", "Class", "Assignment"],
+        unmatched.slice(0, 30).map((c) => [
+          escapeHtml(c.fromUsername || c.fromName || "—"),
+          escapeHtml(c.classroom || "—"),
+          escapeHtml(c.assignmentId || "—"),
+        ])
+      );
+      if (unmatched.length > 30) {
+        html += `<p class="dw-muted dw-tiny">…and ${unmatched.length - 30} more unmatched.</p>`;
+      }
+    }
+    el.innerHTML = html;
+    if (applyBtn) applyBtn.disabled = !fixable.length;
+  }
+
+  function renderStudentsTable(students) {
+    const el = document.getElementById("adminStudentsList");
+    if (!el) return;
+    if (!students.length) {
+      el.innerHTML = "<p class=\"dw-muted\">No registered students yet.</p>";
+      return;
+    }
     el.innerHTML = renderTable(
-      ["Current name", "Suggested roster name", "Class", "Confidence", "Reason"],
-      fixable.map((c) => [
-        c.fromUsername || c.fromName || "—",
-        c.toUsername,
-        c.classroom || "—",
-        c.confidence || "—",
-        c.reason || "—",
+      ["Username", "Classroom", "Password", "Created at", ""],
+      students.map((s) => [
+        escapeHtml(s.username),
+        escapeHtml(s.classroom),
+        s.mustChangePassword ? "Needs change" : "Set",
+        escapeHtml(formatCreatedAt(s.createdAt)),
+        `<button class="dw-btn dw-btn-ghost" type="button" data-reset-password="${escapeHtml(s.username)}">Reset to SPARK</button>`,
       ])
     );
-    if (applyBtn) applyBtn.disabled = false;
+  }
+
+  function renderRosterTable(roster) {
+    const el = document.getElementById("adminClassRosterList");
+    if (!el) return;
+    if (!roster.length) {
+      el.innerHTML = "<p class=\"dw-muted\">No roster entries yet.</p>";
+      return;
+    }
+    el.innerHTML = renderTable(
+      ["Username", "Classroom", "Active", "Registered", "Created at"],
+      roster.map((r) => [
+        escapeHtml(r.username),
+        escapeHtml(r.classroom),
+        r.active ? "Yes" : "No",
+        r.registered ? "Yes" : "No",
+        escapeHtml(formatCreatedAt(r.createdAt)),
+      ])
+    );
   }
 
   async function refreshDashboard() {
     const stats = await Admin().getStats();
     renderStats(stats);
 
+    const classrooms = await Admin().listClassrooms();
+    populateClassroomSelects(classrooms);
+
     const teachers = await Admin().listTeachers();
     const teachersEl = document.getElementById("adminTeachersList");
     if (teachersEl) {
       teachersEl.innerHTML = renderTable(
         ["Username", "Display name", "Email", "Verified"],
-        teachers.map((t) => [t.username, t.displayName, t.email, t.verified ? "Yes" : "No"])
+        teachers.map((t) => [
+          escapeHtml(t.username),
+          escapeHtml(t.displayName),
+          escapeHtml(t.email),
+          t.verified ? "Yes" : "No",
+        ])
       );
     }
 
     const students = await Admin().listStudents();
-    const studentsEl = document.getElementById("adminStudentsList");
-    if (studentsEl) {
-      studentsEl.innerHTML = renderTable(
-        ["Username", "Classroom", "Needs password change", "Created at"],
-        students.map((s) => [s.username, s.classroom, s.mustChangePassword ? "Yes" : "No", formatCreatedAt(s.createdAt)])
-      );
-    }
+    renderStudentsTable(students);
 
     const roster = await Admin().listClassRoster();
-    const rosterEl = document.getElementById("adminClassRosterList");
-    if (rosterEl) {
-      rosterEl.innerHTML = renderTable(
-        ["Username", "Classroom", "Active", "Registered", "Created at"],
-        roster.map((r) => [
-          r.username,
-          r.classroom,
-          r.active ? "Yes" : "No",
-          r.registered ? "Yes" : "No",
-          formatCreatedAt(r.createdAt),
-        ])
-      );
-    }
+    renderRosterTable(roster);
 
     const session = Admin().getSession();
     const note = document.getElementById("adminPortalImpersonateNote");
@@ -174,12 +236,30 @@
       window.open("/writeflow/admin/results/", "_blank", "noopener,noreferrer");
     });
 
+    document.getElementById("adminSyncClassroomsBtn")?.addEventListener("click", async () => {
+      const statusEl = document.getElementById("adminSyncClassroomsStatus");
+      try {
+        const data = await Admin().syncStudentClassrooms();
+        if (statusEl) {
+          statusEl.textContent = `Updated classroom for ${data.updated || 0} registered student(s) from StudentRoster.`;
+          statusEl.classList.remove("dw-hidden", "dw-error");
+        }
+        await refreshDashboard();
+      } catch (err) {
+        if (statusEl) {
+          statusEl.textContent = err.message || "Sync failed.";
+          statusEl.classList.remove("dw-hidden");
+          statusEl.classList.add("dw-error");
+        }
+      }
+    });
+
     document.getElementById("adminDedupeBtn")?.addEventListener("click", async () => {
       const resultEl = document.getElementById("adminDedupeResult");
       try {
         const data = await Admin().dedupeSubmissions();
         if (resultEl) {
-          resultEl.textContent = `Removed ${data.removed || 0} duplicate row(s).`;
+          resultEl.textContent = data.message || `Removed ${data.removed || 0} duplicate row(s).`;
           resultEl.classList.remove("dw-hidden");
         }
         await refreshDashboard();
@@ -199,7 +279,7 @@
         if (statusEl) {
           const fixable = (data.changes || []).filter((c) => c.toUsername).length;
           const unmatched = data.unmatched || 0;
-          statusEl.textContent = `${fixable} row(s) can be fixed automatically; ${unmatched} row(s) need manual review; ${data.unchanged || 0} already correct.`;
+          statusEl.textContent = `${fixable} row(s) can be fixed; ${unmatched} unmatched; ${data.unchanged || 0} already correct.`;
           statusEl.classList.remove("dw-hidden", "dw-error");
         }
       } catch (err) {
@@ -229,6 +309,50 @@
       } catch (err) {
         if (statusEl) {
           statusEl.textContent = err.message || "Apply failed.";
+          statusEl.classList.remove("dw-hidden");
+          statusEl.classList.add("dw-error");
+        }
+      }
+    });
+
+    document.getElementById("adminBulkResetPasswordsBtn")?.addEventListener("click", async () => {
+      const statusEl = document.getElementById("adminRosterStatus");
+      const classroom = document.getElementById("adminBulkResetClassroom")?.value || "";
+      const label = classroom || "all registered students";
+      if (!window.confirm(`Reset passwords to SPARK for ${label}? Students will be prompted to choose a new password on next login.`)) return;
+      try {
+        const data = await Admin().bulkResetPasswords(classroom);
+        if (statusEl) {
+          statusEl.textContent = `Reset ${data.reset || 0} password(s) to SPARK. ${data.notRegistered || 0} on roster but not registered yet.`;
+          statusEl.classList.remove("dw-hidden", "dw-error");
+        }
+        await refreshDashboard();
+      } catch (err) {
+        if (statusEl) {
+          statusEl.textContent = err.message || "Bulk reset failed.";
+          statusEl.classList.remove("dw-hidden");
+          statusEl.classList.add("dw-error");
+        }
+      }
+    });
+
+    document.getElementById("adminStudentsList")?.addEventListener("click", async (e) => {
+      const btn = e.target.closest("[data-reset-password]");
+      if (!btn) return;
+      const username = btn.getAttribute("data-reset-password");
+      if (!username) return;
+      if (!window.confirm(`Reset ${username} to password SPARK?`)) return;
+      const statusEl = document.getElementById("adminRosterStatus");
+      try {
+        await Admin().resetStudentPassword(username);
+        if (statusEl) {
+          statusEl.textContent = `Reset ${username} to SPARK. They must choose a new password on next login.`;
+          statusEl.classList.remove("dw-hidden", "dw-error");
+        }
+        await refreshDashboard();
+      } catch (err) {
+        if (statusEl) {
+          statusEl.textContent = err.message || "Reset failed.";
           statusEl.classList.remove("dw-hidden");
           statusEl.classList.add("dw-error");
         }
@@ -277,10 +401,10 @@
       const classroom = document.getElementById("adminAddRosterClassroom")?.value || "";
       const username = document.getElementById("adminAddRosterUsername")?.value || "";
       try {
-        await Admin().addRosterEntry(classroom, username);
+        const entry = await Admin().addRosterEntry(classroom, username);
         if (errEl) errEl.classList.add("dw-hidden");
         if (statusEl) {
-          statusEl.textContent = `Added ${username.trim()} to ${classroom.trim()}. They can sign in at /writeflow/student/ with password SPARK.`;
+          statusEl.textContent = `Added ${entry.username} to ${entry.classroom}. They can sign in with password SPARK.`;
           statusEl.classList.remove("dw-hidden", "dw-error");
         }
         document.getElementById("adminAddRosterUsername").value = "";
@@ -288,6 +412,35 @@
       } catch (err) {
         if (errEl) {
           errEl.textContent = err.message || "Could not add student.";
+          errEl.classList.remove("dw-hidden");
+        }
+      }
+    });
+
+    document.getElementById("adminBulkAddRosterForm")?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const errEl = document.getElementById("adminBulkAddError");
+      const statusEl = document.getElementById("adminRosterStatus");
+      const classroom = document.getElementById("adminBulkAddClassroom")?.value || "";
+      const usernamesText = document.getElementById("adminBulkAddUsernames")?.value || "";
+      try {
+        const data = await Admin().bulkAddRosterEntries(classroom, usernamesText);
+        if (errEl) errEl.classList.add("dw-hidden");
+        const added = data.added?.length || 0;
+        const skipped = data.skipped?.length || 0;
+        if (statusEl) {
+          statusEl.textContent = `Added ${added} student(s) to ${classroom.trim()}.${skipped ? ` Skipped ${skipped} duplicate or invalid line(s).` : ""}`;
+          statusEl.classList.remove("dw-hidden", "dw-error");
+        }
+        if (skipped && errEl) {
+          errEl.textContent = data.skipped.map((s) => `${s.username}: ${s.error}`).join(" ");
+          errEl.classList.remove("dw-hidden");
+        }
+        document.getElementById("adminBulkAddUsernames").value = "";
+        await refreshDashboard();
+      } catch (err) {
+        if (errEl) {
+          errEl.textContent = err.message || "Bulk add failed.";
           errEl.classList.remove("dw-hidden");
         }
       }

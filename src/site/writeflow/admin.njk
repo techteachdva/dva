@@ -17,13 +17,13 @@ layout: false
   </head>
   <body class="dw-body wp-theme--dark wf-admin-portal">
     <a class="wf-skip-link" href="#mainContent">Skip to main content</a>
-    <div class="dw-shell dw-shell--wide">
+    <div class="dw-shell dw-shell--wide wf-admin-shell">
       <header class="wf-portal-header">
         <h1 class="dw-h1">WriteFlow Admin</h1>
-        <p class="dw-muted">Manage accounts, clean duplicate submissions, and impersonate users for support.</p>
+        <p class="dw-muted">StudentRoster is the source of truth — manage roster, passwords, and clean up submission data.</p>
       </header>
 
-      <main id="mainContent" class="wf-portal-main">
+      <main id="mainContent" class="wf-portal-main wf-admin-layout">
         <section id="adminPortalSignedOut" class="dw-card dw-stack dw-narrow">
           <form id="adminPortalLoginForm" class="wf-account-form">
             <label class="dw-field"><span class="dw-label">Username</span><input id="adminPortalUsername" class="dw-input" type="text" autocomplete="username" value="Admin" required /></label>
@@ -33,86 +33,111 @@ layout: false
           </form>
         </section>
 
-        <section id="adminPortalSignedIn" class="dw-hidden dw-stack">
+        <section id="adminPortalSignedIn" class="dw-hidden wf-admin-layout">
           <div class="dw-card wf-portal-bar">
             <p>Admin session <span id="adminPortalImpersonateNote" class="dw-muted dw-hidden"></span></p>
             <button id="adminPortalLogoutBtn" class="dw-btn dw-btn-ghost" type="button">Sign out</button>
           </div>
 
-          <div class="wf-admin-grid">
-            <section class="dw-card dw-stack">
+          <div class="wf-admin-layout__row wf-admin-layout__row--stats">
+            <section class="dw-card dw-stack wf-admin-panel wf-admin-panel--compact">
               <h2 class="dw-h2">Stats</h2>
-              <dl id="adminPortalStats" class="wf-stats-dl"></dl>
+              <dl id="adminPortalStats" class="wf-stats-dl wf-stats-dl--compact"></dl>
             </section>
-
-            <section class="dw-card dw-stack">
-              <h2 class="dw-h2">Data cleanup</h2>
-              <p class="dw-muted dw-tiny">Remove duplicate submissions (same assignment, student, and opening text).</p>
-              <button id="adminDedupeBtn" class="dw-btn" type="button">Remove duplicate submissions</button>
-              <p id="adminDedupeResult" class="dw-muted dw-hidden" role="status"></p>
-              <hr class="wf-admin-divider" />
-              <p class="dw-muted dw-tiny">Match mistyped student names (e.g. <strong>theo</strong>, <strong>HAFSA</strong>) to roster usernames like <strong>Theo M.</strong> and rewrite submission rows.</p>
-              <div class="dw-stack dw-stack--row">
-                <button id="adminPreviewUsernamesBtn" class="dw-btn dw-btn-secondary" type="button">Preview username fixes</button>
-                <button id="adminApplyUsernamesBtn" class="dw-btn" type="button" disabled>Apply high-confidence fixes</button>
+            <section class="dw-card dw-stack wf-admin-panel">
+              <h2 class="dw-h2">Quick links</h2>
+              <div class="wf-admin-actions">
+                <button id="adminSeeAllResultsBtn" class="dw-btn dw-btn-secondary" type="button">See all results</button>
+                <button id="adminSyncClassroomsBtn" class="dw-btn dw-btn-ghost" type="button">Sync student classrooms from roster</button>
               </div>
-              <label class="wf-toggle-row"><input id="adminApplyLowConfidenceUsernames" type="checkbox" /><span class="wf-toggle-row__label"><strong>Include low-confidence matches</strong><span class="wf-toggle-row__hint">Only turn on after reviewing the preview table</span></span></label>
-              <p id="adminUsernameCleanupStatus" class="dw-muted dw-tiny dw-hidden" role="status"></p>
-              <div id="adminUsernameCleanupPreview" class="wf-admin-table-wrap"></div>
-            </section>
-
-            <section class="dw-card dw-stack">
-              <h2 class="dw-h2">All results</h2>
-              <p class="dw-muted dw-tiny">Browse every submission in the database, filter by assignment or classroom, and re-score all rows after a rubric update.</p>
-              <button id="adminSeeAllResultsBtn" class="dw-btn" type="button">See all results</button>
-              <p class="dw-muted dw-tiny">Opens in a new tab. Stay signed in here first.</p>
-            </section>
-
-            <section class="dw-card dw-stack">
-              <h2 class="dw-h2">Per-assignment re-score</h2>
-              <p class="dw-muted dw-tiny">To re-analyze one assignment only, open its Results in Studio while signed in here — the <strong>Re-analyze all</strong> button appears in that view.</p>
-            </section>
-
-            <section class="dw-card dw-stack">
-              <h2 class="dw-h2">Impersonate user</h2>
-              <p class="dw-muted dw-tiny">View the site as a teacher or student for debugging. Does not change their password.</p>
-              <form id="adminImpersonateForm" class="wf-account-form">
-                <label class="dw-field"><span class="dw-label">Username</span><input id="adminImpersonateUsername" class="dw-input" type="text" required /></label>
-                <label class="dw-field"><span class="dw-label">Role</span>
-                  <select id="adminImpersonateRole" class="dw-input dw-select">
-                    <option value="teacher">Teacher</option>
-                    <option value="student">Student</option>
-                  </select>
-                </label>
-                <button class="dw-btn dw-btn-ghost" type="submit">Impersonate</button>
-                <p id="adminImpersonateError" class="dw-error dw-hidden" role="alert"></p>
-              </form>
+              <p id="adminSyncClassroomsStatus" class="dw-muted dw-tiny dw-hidden" role="status"></p>
+              <p class="dw-muted dw-tiny">Opens results in a new tab. Sync copies classroom names from StudentRoster into registered student accounts.</p>
             </section>
           </div>
 
-          <section class="dw-card dw-stack">
-            <h2 class="dw-h2">Teachers</h2>
-            <div id="adminTeachersList" class="wf-admin-table-wrap"></div>
+          <section class="dw-card dw-stack wf-admin-panel wf-admin-panel--full">
+            <h2 class="dw-h2">Data cleanup</h2>
+            <div class="wf-admin-cleanup-grid">
+              <div class="wf-admin-cleanup-block">
+                <h3 class="dw-h3">Duplicate submissions</h3>
+                <p class="dw-muted dw-tiny">Finds duplicates after roster-normalizing student names — same assignment, same student, same text (or same word count within 2 minutes). Keeps graded rows.</p>
+                <button id="adminDedupeBtn" class="dw-btn" type="button">Remove duplicate submissions</button>
+                <p id="adminDedupeResult" class="dw-muted dw-tiny dw-hidden" role="status"></p>
+              </div>
+              <div class="wf-admin-cleanup-block">
+                <h3 class="dw-h3">Username fixes</h3>
+                <p class="dw-muted dw-tiny">Match mistyped names to roster usernames (e.g. <strong>theo</strong> → <strong>Theo J.</strong>). Won&rsquo;t cross-match different first names.</p>
+                <div class="wf-admin-actions">
+                  <button id="adminPreviewUsernamesBtn" class="dw-btn dw-btn-secondary" type="button">Preview username fixes</button>
+                  <button id="adminApplyUsernamesBtn" class="dw-btn" type="button" disabled>Apply high-confidence fixes</button>
+                </div>
+                <label class="wf-toggle-row"><input id="adminApplyLowConfidenceUsernames" type="checkbox" /><span class="wf-toggle-row__label"><strong>Include low-confidence matches</strong><span class="wf-toggle-row__hint">Review the preview table first</span></span></label>
+                <p id="adminUsernameCleanupStatus" class="dw-muted dw-tiny dw-hidden" role="status"></p>
+              </div>
+            </div>
+            <div id="adminUsernameCleanupPreview" class="wf-admin-table-wrap wf-admin-table-wrap--tall"></div>
           </section>
 
-          <section class="dw-card dw-stack">
+          <section class="dw-card dw-stack wf-admin-panel wf-admin-panel--full">
             <h2 class="dw-h2">Class roster</h2>
-            <p class="dw-muted dw-tiny">Everyone on <strong>StudentRoster</strong> in Google Sheets. <strong>Created at</strong> is set when they first sign in at <a class="dw-link" href="/writeflow/student/">My writing</a> — blank means they have not logged in yet.</p>
-            <form id="adminAddRosterForm" class="wf-account-form wf-admin-roster-form">
-              <label class="dw-field"><span class="dw-label">Classroom</span><input id="adminAddRosterClassroom" class="dw-input" type="text" placeholder="Teacher's Lounge" required /></label>
+            <p class="dw-muted dw-tiny"><strong>StudentRoster</strong> controls who can sign in and how submissions are matched. Format: first name + last initial + period (e.g. <strong>Phil C.</strong>). First login password is <strong>SPARK</strong>.</p>
+
+            <form id="adminAddRosterForm" class="wf-admin-roster-form">
+              <label class="dw-field"><span class="dw-label">Classroom</span><input id="adminAddRosterClassroom" class="dw-input" list="adminClassroomList" type="text" placeholder="Tech 6-A-2" required /></label>
               <label class="dw-field"><span class="dw-label">Username</span><input id="adminAddRosterUsername" class="dw-input" type="text" placeholder="Phil C." required /></label>
-              <button class="dw-btn dw-btn-secondary" type="submit">Add to roster</button>
+              <button class="dw-btn dw-btn-secondary" type="submit">Add student</button>
               <p id="adminAddRosterError" class="dw-error dw-hidden" role="alert"></p>
             </form>
-            <button id="adminBackfillCreatedAtBtn" class="dw-btn dw-btn-ghost" type="button">Fill missing created-at dates</button>
+
+            <form id="adminBulkAddRosterForm" class="wf-admin-bulk-form">
+              <label class="dw-field"><span class="dw-label">Bulk add to classroom</span>
+                <input id="adminBulkAddClassroom" class="dw-input" list="adminClassroomList" type="text" placeholder="Tech 6-A-2" required />
+              </label>
+              <label class="dw-field wf-admin-bulk-form__names"><span class="dw-label">One username per line</span>
+                <textarea id="adminBulkAddUsernames" class="dw-input dw-textarea" rows="4" placeholder="Aaron R.&#10;Benjamin W.&#10;Callie S." required></textarea>
+              </label>
+              <button class="dw-btn dw-btn-ghost" type="submit">Bulk add to roster</button>
+              <p id="adminBulkAddError" class="dw-error dw-hidden" role="alert"></p>
+            </form>
+            <datalist id="adminClassroomList"></datalist>
+
+            <div class="wf-admin-actions">
+              <button id="adminBackfillCreatedAtBtn" class="dw-btn dw-btn-ghost" type="button">Fill missing created-at dates</button>
+              <label class="dw-field wf-admin-reset-class"><span class="dw-label">Reset passwords for classroom</span>
+                <select id="adminBulkResetClassroom" class="dw-input dw-select"><option value="">All registered students</option></select>
+              </label>
+              <button id="adminBulkResetPasswordsBtn" class="dw-btn dw-btn-ghost" type="button">Reset to SPARK</button>
+            </div>
             <p id="adminRosterStatus" class="dw-muted dw-tiny dw-hidden" role="status"></p>
-            <div id="adminClassRosterList" class="wf-admin-table-wrap"></div>
+            <div id="adminClassRosterList" class="wf-admin-table-wrap wf-admin-table-wrap--tall"></div>
           </section>
 
-          <section class="dw-card dw-stack">
-            <h2 class="dw-h2">Registered students</h2>
-            <p class="dw-muted dw-tiny">Accounts in the <strong>Students</strong> sheet (created on first login).</p>
-            <div id="adminStudentsList" class="wf-admin-table-wrap"></div>
+          <div class="wf-admin-layout__row wf-admin-layout__row--split">
+            <section class="dw-card dw-stack wf-admin-panel">
+              <h2 class="dw-h2">Registered students</h2>
+              <p class="dw-muted dw-tiny">Accounts created on first login. Password resets apply here.</p>
+              <div id="adminStudentsList" class="wf-admin-table-wrap wf-admin-table-wrap--tall"></div>
+            </section>
+            <section class="dw-card dw-stack wf-admin-panel">
+              <h2 class="dw-h2">Teachers</h2>
+              <div id="adminTeachersList" class="wf-admin-table-wrap"></div>
+            </section>
+          </div>
+
+          <section class="dw-card dw-stack wf-admin-panel wf-admin-panel--narrow">
+            <h2 class="dw-h2">Impersonate user</h2>
+            <p class="dw-muted dw-tiny">View the site as a teacher or student for debugging.</p>
+            <form id="adminImpersonateForm" class="wf-account-form wf-admin-roster-form">
+              <label class="dw-field"><span class="dw-label">Username</span><input id="adminImpersonateUsername" class="dw-input" type="text" required /></label>
+              <label class="dw-field"><span class="dw-label">Role</span>
+                <select id="adminImpersonateRole" class="dw-input dw-select">
+                  <option value="teacher">Teacher</option>
+                  <option value="student">Student</option>
+                </select>
+              </label>
+              <button class="dw-btn dw-btn-ghost" type="submit">Impersonate</button>
+              <p id="adminImpersonateError" class="dw-error dw-hidden" role="alert"></p>
+            </form>
           </section>
         </section>
       </main>

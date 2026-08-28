@@ -67,6 +67,27 @@ function firstNameToken_(value) {
   return String(value || "").trim().split(/\s+/)[0].toLowerCase();
 }
 
+function lastInitialToken_(value) {
+  const parts = normalizeStudentUsername_(value).split(/\s+/);
+  if (parts.length < 2) return "";
+  return parts[parts.length - 1].replace(/\.$/, "").charAt(0).toLowerCase();
+}
+
+function alphaOnlyKey_(value) {
+  return String(value || "").toLowerCase().replace(/[^a-z]/g, "");
+}
+
+function firstNamesCompatible_(rawFirst, rosterFirst) {
+  const a = String(rawFirst || "").toLowerCase();
+  const b = String(rosterFirst || "").toLowerCase();
+  if (!a || !b) return false;
+  if (a === b) return true;
+  if (a.length >= 3 && b.indexOf(a) === 0) return true;
+  if (b.length >= 3 && a.indexOf(b) === 0) return true;
+  if (a.length < 3 || b.length < 3) return false;
+  return levenshtein_(a, b) <= 1;
+}
+
 function levenshtein_(a, b) {
   const m = a.length;
   const n = b.length;
@@ -122,8 +143,12 @@ function matchUsernameToRoster_(raw, classroom, roster) {
   }
 
   const first = firstNameToken_(raw);
+  const rawAlpha = alphaOnlyKey_(raw);
   const firstMatches = scoped.filter(function (entry) {
-    return firstNameToken_(entry.username) === first;
+    const rosterFirst = firstNameToken_(entry.username);
+    return rosterFirst === first
+      || alphaOnlyKey_(rosterFirst) === rawAlpha
+      || firstNamesCompatible_(first, rosterFirst);
   });
   if (firstMatches.length === 1) {
     return { username: firstMatches[0].username, reason: "first_name", confidence: "high" };
@@ -136,7 +161,7 @@ function matchUsernameToRoster_(raw, classroom, roster) {
     const initMatches = scoped.filter(function (entry) {
       const rp = normalizeStudentUsername_(entry.username).split(/\s+/);
       if (rp.length < 2) return false;
-      return rp[0].toLowerCase() === fn
+      return firstNamesCompatible_(fn, rp[0])
         && rp[rp.length - 1].replace(/\.$/, "").charAt(0).toLowerCase() === lastInit;
     });
     if (initMatches.length === 1) {
@@ -144,15 +169,24 @@ function matchUsernameToRoster_(raw, classroom, roster) {
     }
   }
 
-  var best = null;
-  for (var j = 0; j < scoped.length; j++) {
-    const rk = rosterUsernameKey_(scoped[j].username);
-    const dist = Math.min(levenshtein_(key, rk), levenshtein_(first, firstNameToken_(scoped[j].username)));
-    if (!best || dist < best.dist) {
-      best = { username: scoped[j].username, dist: dist, reason: "fuzzy" };
+  if (firstMatches.length > 1 && classroom) {
+    const inClassMatches = firstMatches.filter(function (entry) { return entry.classroom === classroom; });
+    if (inClassMatches.length === 1) {
+      return { username: inClassMatches[0].username, reason: "first_name_class", confidence: "high" };
     }
   }
-  if (best && best.dist <= 3) {
+
+  var best = null;
+  for (var j = 0; j < scoped.length; j++) {
+    const rosterFirst = firstNameToken_(scoped[j].username);
+    if (!firstNamesCompatible_(first, rosterFirst)) continue;
+    const rk = rosterUsernameKey_(scoped[j].username);
+    const dist = Math.min(levenshtein_(key, rk), levenshtein_(first, rosterFirst));
+    if (!best || dist < best.dist) {
+      best = { username: scoped[j].username, dist: dist, reason: "typo" };
+    }
+  }
+  if (best && best.dist <= 2) {
     return {
       username: best.username,
       reason: best.reason,
@@ -160,6 +194,29 @@ function matchUsernameToRoster_(raw, classroom, roster) {
     };
   }
   return null;
+}
+
+function resolveRosterUsernameForData_(raw, classroom, roster) {
+  const exact = findRosterEntry_(raw);
+  if (exact) return exact.username;
+  const match = matchUsernameToRoster_(raw, classroom, roster);
+  if (match && (match.confidence === "high" || match.confidence === "medium")) {
+    return match.username;
+  }
+  return normalizeStudentUsername_(raw);
+}
+
+function normalizeSubmissionTextKey_(text) {
+  return String(text || "").trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+function submissionRowKeepScore_(row) {
+  var score = 0;
+  if (row[13] !== "" && row[13] != null && !isNaN(Number(row[13]))) score += 10000;
+  if (String(row[14] || "").trim()) score += 5000;
+  if (String(row[15] || "").toUpperCase() === "TRUE") score += 2500;
+  score += Number(row[1]) || 0;
+  return score;
 }
 
 function resolveSubmissionStudent_(params) {
@@ -1061,23 +1118,78 @@ function adminGetStats_() {
 function adminDedupeSubmissions_() {
   const sheet = getSubmissionsSheet_();
   const lastRow = sheet.getLastRow();
-  if (lastRow < 3) return { removed: 0 };
-  const colCount = Math.max(13, sheet.getLastColumn());
+  if (lastRow < 3) return { removed: 0, kept: 0, message: "No submissions to check." };
+  const colCount = Math.max(18, sheet.getLastColumn());
   const values = readSheetDataRows_(sheet, colCount);
-  const seen = {};
-  var removed = 0;
-  for (var i = values.length - 1; i >= 0; i--) {
+  const roster = listActiveRosterEntries_();
+  const groups = {};
+  const rowsMeta = [];
+
+  for (var i = 0; i < values.length; i++) {
     const row = values[i];
-    const studentKey = normalizeStudentUsername_(row[12] || row[3] || "").toLowerCase();
-    const key = String(row[2]) + "|" + studentKey + "|" + String(row[10] || "").slice(0, 200);
-    if (seen[key]) {
-      sheet.deleteRow(i + 2);
-      removed += 1;
-    } else {
-      seen[key] = true;
-    }
+    if (!row[0]) continue;
+    const classroom = String(row[4] || "");
+    const rawStudent = String(row[12] || row[3] || "");
+    const rosterName = resolveRosterUsernameForData_(rawStudent, classroom, roster);
+    const studentKey = rosterUsernameKey_(rosterName);
+    const assignmentId = String(row[2] || "");
+    const textKey = normalizeSubmissionTextKey_(row[10] || "");
+    const wordCount = Number(row[6]) || 0;
+    const submittedAt = Number(row[1]) || 0;
+    const exactKey = assignmentId + "|" + studentKey + "|" + textKey.slice(0, 400);
+    const nearKey = assignmentId + "|" + studentKey + "|wc:" + wordCount;
+    rowsMeta.push({
+      sheetRow: i + 2,
+      row: row,
+      studentKey: studentKey,
+      exactKey: exactKey,
+      nearKey: nearKey,
+      submittedAt: submittedAt,
+      keepScore: submissionRowKeepScore_(row),
+    });
+    if (!groups[exactKey]) groups[exactKey] = [];
+    groups[exactKey].push(rowsMeta[rowsMeta.length - 1]);
   }
-  return { removed: removed };
+
+  var toDelete = {};
+  Object.keys(groups).forEach(function (key) {
+    const list = groups[key];
+    if (list.length < 2) return;
+    list.sort(function (a, b) { return b.keepScore - a.keepScore; });
+    for (var d = 1; d < list.length; d++) {
+      toDelete[list[d].sheetRow] = true;
+    }
+  });
+
+  const nearGroups = {};
+  rowsMeta.forEach(function (meta) {
+    if (toDelete[meta.sheetRow]) return;
+    const bucket = Math.floor(meta.submittedAt / 120000);
+    const groupKey = meta.nearKey + "|" + bucket;
+    if (!nearGroups[groupKey]) nearGroups[groupKey] = [];
+    nearGroups[groupKey].push(meta);
+  });
+  Object.keys(nearGroups).forEach(function (groupKey) {
+    const list = nearGroups[groupKey];
+    if (list.length < 2) return;
+    list.sort(function (a, b) { return b.keepScore - a.keepScore; });
+    for (var d = 1; d < list.length; d++) {
+      toDelete[list[d].sheetRow] = true;
+    }
+  });
+
+  const finalDeleteRows = Object.keys(toDelete).map(Number).sort(function (a, b) { return b - a; });
+  finalDeleteRows.forEach(function (rowNum) {
+    sheet.deleteRow(rowNum);
+  });
+
+  return {
+    removed: finalDeleteRows.length,
+    kept: rowsMeta.length - finalDeleteRows.length,
+    message: finalDeleteRows.length
+      ? "Removed " + deleteRows.length + " duplicate row(s) using roster-normalized student names."
+      : "No duplicates found. Run username fixes first if students used different spellings.",
+  };
 }
 
 function adminListTeachers_() {
@@ -1177,14 +1289,129 @@ function adminBackfillStudentCreatedAt_() {
   return { updated: updated };
 }
 
+function formatRosterUsername_(value) {
+  const raw = normalizeStudentUsername_(value);
+  if (!raw) return "";
+  const parts = raw.split(/\s+/);
+  if (parts.length < 2) return raw;
+  const first = parts[0].charAt(0).toUpperCase() + parts[0].slice(1).toLowerCase();
+  const lastRaw = parts.slice(1).join(" ").replace(/\.$/, "").toUpperCase();
+  return first + " " + lastRaw + ".";
+}
+
+function adminListClassrooms_() {
+  const roster = listActiveRosterEntries_();
+  const seen = {};
+  const out = [];
+  for (var i = 0; i < roster.length; i++) {
+    const room = roster[i].classroom;
+    if (!room || seen[room]) continue;
+    seen[room] = true;
+    out.push(room);
+  }
+  out.sort();
+  return out;
+}
+
+function adminResetStudentPassword_(username) {
+  const roster = findRosterEntry_(username);
+  if (!roster) throw new Error("That username is not on the StudentRoster sheet.");
+  const student = getStudentByUsername_(roster.username);
+  if (!student) {
+    throw new Error(roster.username + " is on the roster but has not signed in yet — no password to reset.");
+  }
+  resetStudentPasswordToDefault_(roster.username);
+  return { username: roster.username, classroom: roster.classroom, reset: true };
+}
+
+function resetStudentPasswordToDefault_(username) {
+  const sheet = getStudentsSheet_();
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) throw new Error("Student account not found.");
+  const norm = normalizeStudentUsername_(username).toLowerCase();
+  for (var i = 2; i <= lastRow; i++) {
+    const cell = normalizeStudentUsername_(sheet.getRange(i, 1).getValue()).toLowerCase();
+    if (cell !== norm) continue;
+    sheet.getRange(i, 2).setValue(hashPassword_(STUDENT_DEFAULT_PASSWORD));
+    sheet.getRange(i, 4).setValue("TRUE");
+    const roster = findRosterEntry_(username);
+    if (roster) sheet.getRange(i, 3).setValue(roster.classroom);
+    return;
+  }
+  throw new Error("Student account not found.");
+}
+
+function adminBulkResetPasswords_(classroom) {
+  const roster = listActiveRosterEntries_();
+  const roomFilter = String(classroom || "").trim();
+  const pool = roomFilter
+    ? roster.filter(function (entry) { return entry.classroom === roomFilter; })
+    : roster;
+  var reset = 0;
+  var skipped = 0;
+  var notRegistered = 0;
+  for (var i = 0; i < pool.length; i++) {
+    const student = getStudentByUsername_(pool[i].username);
+    if (!student) {
+      notRegistered += 1;
+      continue;
+    }
+    try {
+      resetStudentPasswordToDefault_(pool[i].username);
+      reset += 1;
+    } catch (e) {
+      skipped += 1;
+    }
+  }
+  return {
+    reset: reset,
+    skipped: skipped,
+    notRegistered: notRegistered,
+    classroom: roomFilter || "all",
+  };
+}
+
+function adminSyncStudentClassroomsFromRoster_() {
+  const roster = listActiveRosterEntries_();
+  const byUser = {};
+  for (var i = 0; i < roster.length; i++) {
+    byUser[rosterUsernameKey_(roster[i].username)] = roster[i].classroom;
+  }
+  const sheet = getStudentsSheet_();
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return { updated: 0 };
+  var updated = 0;
+  for (var r = 2; r <= lastRow; r++) {
+    const username = normalizeStudentUsername_(sheet.getRange(r, 1).getValue());
+    const room = byUser[rosterUsernameKey_(username)];
+    if (!room) continue;
+    const current = String(sheet.getRange(r, 3).getValue() || "");
+    if (current !== room) {
+      sheet.getRange(r, 3).setValue(room);
+      updated += 1;
+    }
+  }
+  return { updated: updated };
+}
+
 function adminAddRosterEntry_(classroom, username) {
   const room = String(classroom || "").trim();
-  const user = normalizeStudentUsername_(username);
+  const user = formatRosterUsername_(username);
   if (!room) throw new Error("Classroom is required.");
   if (!user) throw new Error("Username is required (e.g. Phil C.).");
   if (findRosterEntry_(user)) throw new Error("That username is already on the roster.");
   getStudentRosterSheet_().appendRow([room, user, "TRUE"]);
   const registered = getStudentByUsername_(user);
+  if (registered && String(registered.classroom || "") !== room) {
+    const sheet = getStudentsSheet_();
+    const lastRow = sheet.getLastRow();
+    const norm = rosterUsernameKey_(user);
+    for (var i = 2; i <= lastRow; i++) {
+      if (rosterUsernameKey_(sheet.getRange(i, 1).getValue()) !== norm) continue;
+      sheet.getRange(i, 3).setValue(room);
+      break;
+    }
+  }
   return {
     classroom: room,
     username: user,
@@ -1193,6 +1420,24 @@ function adminAddRosterEntry_(classroom, username) {
     mustChangePassword: registered ? registered.mustChangePassword : false,
     createdAt: registered ? registered.createdAt : 0,
   };
+}
+
+function adminBulkAddRosterEntries_(classroom, usernamesText) {
+  const room = String(classroom || "").trim();
+  if (!room) throw new Error("Classroom is required.");
+  const lines = String(usernamesText || "").split(/\r?\n/);
+  const added = [];
+  const skipped = [];
+  for (var i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    try {
+      added.push(adminAddRosterEntry_(room, line));
+    } catch (e) {
+      skipped.push({ username: line, error: String(e.message || e) });
+    }
+  }
+  return { added: added, skipped: skipped };
 }
 
 function checkStudentUsername_(username) {

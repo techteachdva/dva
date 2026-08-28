@@ -7017,8 +7017,99 @@ mark.wf-standard-hit,
   gap: 16px;
 }
 
+.wf-admin-portal .wf-admin-shell.dw-shell.dw-shell--wide,
+.wf-admin-portal .dw-shell.dw-shell--wide {
+  max-width: min(1920px, 99vw);
+  width: 100%;
+}
+
+.wf-admin-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+}
+
+.wf-admin-layout__row {
+  display: grid;
+  gap: 16px;
+}
+
+.wf-admin-layout__row--stats {
+  grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+}
+
+.wf-admin-layout__row--split {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.wf-admin-panel--full {
+  width: 100%;
+}
+
+.wf-admin-panel--compact .wf-stats-dl--compact {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 16px;
+}
+
+.wf-admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-end;
+}
+
+.wf-admin-cleanup-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  margin-bottom: 16px;
+}
+
+.wf-admin-cleanup-block {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.wf-admin-roster-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  align-items: end;
+}
+
+.wf-admin-bulk-form {
+  display: grid;
+  grid-template-columns: minmax(180px, 240px) minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+  margin-top: 12px;
+}
+
+.wf-admin-bulk-form__names {
+  grid-column: span 1;
+}
+
+.wf-admin-reset-class {
+  min-width: 220px;
+  margin: 0;
+}
+
+.wf-admin-divider {
+  border: 0;
+  border-top: 1px solid rgba(148, 163, 184, 0.2);
+  margin: 12px 0;
+}
+
 .wf-admin-table-wrap {
   overflow-x: auto;
+}
+
+.wf-admin-table-wrap--tall {
+  max-height: min(520px, 60vh);
+  overflow: auto;
 }
 
 .wf-admin-table {
@@ -7032,6 +7123,28 @@ mark.wf-standard-hit,
   padding: 8px 10px;
   border-bottom: 1px solid rgba(148, 163, 184, 0.2);
   text-align: left;
+  vertical-align: middle;
+}
+
+.wf-admin-table th {
+  position: sticky;
+  top: 0;
+  background: rgba(15, 23, 42, 0.98);
+  z-index: 1;
+}
+
+.wf-admin-table .dw-btn {
+  padding: 4px 10px;
+  font-size: 0.8rem;
+}
+
+@media (max-width: 960px) {
+  .wf-admin-layout__row--stats,
+  .wf-admin-layout__row--split,
+  .wf-admin-cleanup-grid,
+  .wf-admin-bulk-form {
+    grid-template-columns: 1fr;
+  }
 }
 
 .wf-admin-results__header {

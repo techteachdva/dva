@@ -165,6 +165,38 @@
     return apiPost("adminApplyUsernameCleanup", { sessionToken: token, applyLowConfidence });
   }
 
+  async function listClassrooms() {
+    const token = getToken();
+    if (!token) throw new Error("Admin sign-in required.");
+    const data = await apiPost("adminListClassrooms", { sessionToken: token });
+    return data.classrooms || [];
+  }
+
+  async function resetStudentPassword(username) {
+    const token = getToken();
+    if (!token) throw new Error("Admin sign-in required.");
+    return apiPost("adminResetStudentPassword", { sessionToken: token, username });
+  }
+
+  async function bulkResetPasswords(classroom = "") {
+    const token = getToken();
+    if (!token) throw new Error("Admin sign-in required.");
+    return apiPost("adminBulkResetPasswords", { sessionToken: token, classroom });
+  }
+
+  async function syncStudentClassrooms() {
+    const token = getToken();
+    if (!token) throw new Error("Admin sign-in required.");
+    return apiPost("adminSyncStudentClassrooms", { sessionToken: token });
+  }
+
+  async function bulkAddRosterEntries(classroom, usernamesText) {
+    const token = getToken();
+    if (!token) throw new Error("Admin sign-in required.");
+    const data = await apiPost("adminBulkAddRosterEntries", { sessionToken: token, classroom, usernamesText });
+    return data;
+  }
+
   async function listAllSubmissions() {
     const token = getToken();
     if (!token) throw new Error("Admin sign-in required.");
@@ -232,6 +264,11 @@
     addRosterEntry,
     previewUsernameCleanup,
     applyUsernameCleanup,
+    listClassrooms,
+    resetStudentPassword,
+    bulkResetPasswords,
+    syncStudentClassrooms,
+    bulkAddRosterEntries,
     listAllSubmissions,
     listAssignmentSubmissions,
     saveSubmissionGrade,

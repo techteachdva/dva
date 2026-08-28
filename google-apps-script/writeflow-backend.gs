@@ -685,6 +685,38 @@ function handle_(e, isGet) {
       return respond_({ ok: true, ...adminApplyUsernameCleanup_(applyLow) });
     }
 
+    if (action === "adminListClassrooms") {
+      const session = validateSessionV2_(params.sessionToken);
+      if (!session || session.role !== "admin") return respond_({ error: "Admin access required" });
+      return respond_({ ok: true, classrooms: adminListClassrooms_() });
+    }
+
+    if (action === "adminResetStudentPassword") {
+      const session = validateSessionV2_(params.sessionToken);
+      if (!session || session.role !== "admin") return respond_({ error: "Admin access required" });
+      const result = adminResetStudentPassword_(params.username);
+      return respond_({ ok: true, ...result });
+    }
+
+    if (action === "adminBulkResetPasswords") {
+      const session = validateSessionV2_(params.sessionToken);
+      if (!session || session.role !== "admin") return respond_({ error: "Admin access required" });
+      return respond_({ ok: true, ...adminBulkResetPasswords_(params.classroom) });
+    }
+
+    if (action === "adminSyncStudentClassrooms") {
+      const session = validateSessionV2_(params.sessionToken);
+      if (!session || session.role !== "admin") return respond_({ error: "Admin access required" });
+      return respond_({ ok: true, ...adminSyncStudentClassroomsFromRoster_() });
+    }
+
+    if (action === "adminBulkAddRosterEntries") {
+      const session = validateSessionV2_(params.sessionToken);
+      if (!session || session.role !== "admin") return respond_({ error: "Admin access required" });
+      const result = adminBulkAddRosterEntries_(params.classroom, params.usernamesText);
+      return respond_({ ok: true, ...result });
+    }
+
     if (action === "teacherLogout") {
       revokeSession_(params.sessionToken);
       return respond_({ ok: true });
