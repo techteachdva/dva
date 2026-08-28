@@ -1111,29 +1111,191 @@ $wp-sheet-min-height: 1056px;
   50% { opacity: 0; }
 }
 
-/* High-contrast mode */
-.wp-theme--gauntlet.tt-high-contrast .tt-scene-bg {
+/* High-contrast mode — title screen + in-mission chrome */
+.wp-theme--gauntlet.tt-high-contrast {
+  background: #000;
+  color: #fff;
+}
+
+.wp-theme--gauntlet.tt-high-contrast .tt-scene-bg,
+.wp-theme--gauntlet.tt-high-contrast .tt-title-screen__bg,
+.wp-theme--gauntlet.tt-high-contrast .tt-ending-screen__bg {
+  background: #000 !important;
   background-image: none !important;
-  background: #0a0a0a;
+  filter: none !important;
+}
+
+.wp-theme--gauntlet.tt-high-contrast .tt-title-screen__overlay,
+.wp-theme--gauntlet.tt-high-contrast .tt-ending-screen__overlay {
+  background: #000;
+}
+
+.wp-theme--gauntlet.tt-high-contrast .tt-topbar,
+.wp-theme--gauntlet.tt-high-contrast .breadcrumbs--standalone {
+  background: #000;
+  border-bottom: 2px solid #fff;
+  backdrop-filter: none;
+}
+
+.wp-theme--gauntlet.tt-high-contrast .dw-title,
+.wp-theme--gauntlet.tt-high-contrast .tt-title-screen__headline,
+.wp-theme--gauntlet.tt-high-contrast .tt-ending__title {
+  color: #fff;
+  text-shadow: none;
+}
+
+.wp-theme--gauntlet.tt-high-contrast .dw-subtitle,
+.wp-theme--gauntlet.tt-high-contrast .tt-title-screen__tagline,
+.wp-theme--gauntlet.tt-high-contrast .dw-link,
+.wp-theme--gauntlet.tt-high-contrast .tt-credit,
+.wp-theme--gauntlet.tt-high-contrast .tt-music-credit,
+.wp-theme--gauntlet.tt-high-contrast .tt-music-credit a,
+.wp-theme--gauntlet.tt-high-contrast .tt-difficulty__label,
+.wp-theme--gauntlet.tt-high-contrast .tt-typo-label,
+.wp-theme--gauntlet.tt-high-contrast .tt-tutorial__note,
+.wp-theme--gauntlet.tt-high-contrast .tt-golden-preview__sub,
+.wp-theme--gauntlet.tt-high-contrast .tt-title-typing__hint,
+.wp-theme--gauntlet.tt-high-contrast .tt-globe-btn__sublabel {
+  color: #fff;
+}
+
+.wp-theme--gauntlet.tt-high-contrast .tt-tutorial,
+.wp-theme--gauntlet.tt-high-contrast .tt-title-welcome,
+.wp-theme--gauntlet.tt-high-contrast .tt-golden-preview-wrap,
+.wp-theme--gauntlet.tt-high-contrast .tt-golden-rule-detail,
+.wp-theme--gauntlet.tt-high-contrast .tt-typing-profile,
+.wp-theme--gauntlet.tt-high-contrast .tt-title-typing,
+.wp-theme--gauntlet.tt-high-contrast .tt-diagnostic__panel,
+.wp-theme--gauntlet.tt-high-contrast .tt-identity-gate__panel,
+.wp-theme--gauntlet.tt-high-contrast .tt-inventory__panel,
+.wp-theme--gauntlet.tt-high-contrast .tt-scene-panel,
+.wp-theme--gauntlet.tt-high-contrast .tt-journal {
+  background: #000;
+  border: 2px solid #fff;
+  backdrop-filter: none;
+  color: #fff;
+}
+
+.wp-theme--gauntlet.tt-high-contrast .tt-tutorial__title,
+.wp-theme--gauntlet.tt-high-contrast .tt-tutorial__list,
+.wp-theme--gauntlet.tt-high-contrast .tt-title-welcome__lead,
+.wp-theme--gauntlet.tt-high-contrast .tt-title-welcome__steps li,
+.wp-theme--gauntlet.tt-high-contrast .tt-title-command-hint,
+.wp-theme--gauntlet.tt-high-contrast .tt-golden-preview__heading,
+.wp-theme--gauntlet.tt-high-contrast .tt-golden-rule-detail__title,
+.wp-theme--gauntlet.tt-high-contrast .tt-golden-rule-detail__body,
+.wp-theme--gauntlet.tt-high-contrast .tt-typing-profile__stat,
+.wp-theme--gauntlet.tt-high-contrast .tt-narrative,
+.wp-theme--gauntlet.tt-high-contrast .dw-h3 {
+  color: #fff;
+}
+
+.wp-theme--gauntlet.tt-high-contrast .tt-title-welcome__badge,
+.wp-theme--gauntlet.tt-high-contrast .tt-title-command-hint strong,
+.wp-theme--gauntlet.tt-high-contrast .tt-globe-btn__label,
+.wp-theme--gauntlet.tt-high-contrast .tt-location-badge {
+  color: #ffe44d;
+}
+
+.wp-theme--gauntlet.tt-high-contrast .tt-location-badge {
+  background: #000;
+  border: 2px solid #ffe44d;
+}
+
+.wp-theme--gauntlet.tt-high-contrast .tt-settings-btn,
+.wp-theme--gauntlet.tt-high-contrast .tt-difficulty__btn,
+.wp-theme--gauntlet.tt-high-contrast .tt-launch-link-btn,
+.wp-theme--gauntlet.tt-high-contrast .tt-mute-btn,
+.wp-theme--gauntlet.tt-high-contrast .tt-pack-btn {
+  background: #000;
+  border: 2px solid #fff;
+  color: #fff;
+}
+
+.wp-theme--gauntlet.tt-high-contrast .tt-settings-btn--on,
+.wp-theme--gauntlet.tt-high-contrast .tt-difficulty__btn--active {
+  background: #fff;
+  color: #000;
+  border-color: #fff;
+}
+
+.wp-theme--gauntlet.tt-high-contrast .tt-typing-input,
+.wp-theme--gauntlet.tt-high-contrast .tt-textarea,
+.wp-theme--gauntlet.tt-high-contrast .dw-input {
+  background: #000;
+  border: 2px solid #fff;
+  color: #fff;
+  caret-color: #ffe44d;
+}
+
+.wp-theme--gauntlet.tt-high-contrast .tt-typing-meter__track {
+  background: #222;
+  border: 1px solid #fff;
+}
+
+.wp-theme--gauntlet.tt-high-contrast .tt-typing-meter__fill {
+  background: #ffe44d;
+}
+
+.wp-theme--gauntlet.tt-high-contrast .tt-golden-orb {
+  background: #000;
+  border: 2px solid #fff;
+  color: #fff;
+}
+
+.wp-theme--gauntlet.tt-high-contrast .tt-golden-orb--lit,
+.wp-theme--gauntlet.tt-high-contrast .tt-golden-orb--pulse,
+.wp-theme--gauntlet.tt-high-contrast .tt-golden-orb--selected {
+  background: #ffe44d;
+  color: #000;
+  border-color: #fff;
 }
 
 .wp-theme--gauntlet.tt-high-contrast .tt-stage__room {
-  border-color: #ffd700;
+  border-color: #ffe44d;
   box-shadow: none;
 }
 
 .wp-theme--gauntlet.tt-high-contrast .tt-choice {
-  border-color: #fff;
+  border: 2px solid #fff;
   background: #000;
+  color: #fff;
 }
 
-.wp-theme--gauntlet.tt-high-contrast .tt-choice:hover {
-  border-color: #ffd700;
+.wp-theme--gauntlet.tt-high-contrast .tt-choice:hover,
+.wp-theme--gauntlet.tt-high-contrast .tt-choice:focus-visible {
+  border-color: #ffe44d;
+  background: #111;
 }
 
 .wp-theme--gauntlet.tt-high-contrast .tt-cta-btn {
   background: #c41e3a;
-  border-color: #fff;
+  border: 2px solid #fff;
+  color: #fff;
+}
+
+.wp-theme--gauntlet.tt-high-contrast .tt-globe-btn__sphere {
+  background: #000;
+  border: 3px solid #ffe44d;
+  box-shadow: none;
+}
+
+.wp-theme--gauntlet.tt-high-contrast .tt-profile-chip {
+  background: #000;
+  border: 2px solid #fff;
+  color: #fff;
+}
+
+.wp-theme--gauntlet.tt-high-contrast .tt-identity-gate {
+  background: #000;
+}
+
+.wp-theme--gauntlet.tt-high-contrast .tt-ghost-char {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.wp-theme--gauntlet.tt-high-contrast .tt-ghost-char--solid {
+  color: #fff;
 }
 
 /* Mobile touch area */
@@ -7138,6 +7300,26 @@ mark.wf-standard-hit,
   text-align: center;
 }
 
+.tt-music-credit {
+  margin: 8px auto 12px;
+  max-width: 52ch;
+  font-size: 12px;
+  line-height: 1.45;
+  color: rgba(255, 248, 231, 0.72);
+  text-align: center;
+}
+
+.tt-music-credit a {
+  color: #ffd700;
+  text-underline-offset: 2px;
+}
+
+.tt-settings-btn--on {
+  border-color: #ffd700;
+  background: rgba(255, 215, 0, 0.18);
+  color: #fff8e7;
+}
+
 .tt-ghost-demo {
   color: rgba(255, 248, 231, 0.45);
   font-style: italic;
@@ -7850,6 +8032,7 @@ mark.wf-standard-hit,
   position: fixed;
   inset: 0;
   z-index: 0;
+  background-image: url("/tech-trail/images/scenes/scene-gauntlet-arena.png");
   background-size: cover;
   background-position: center center;
   transform: none;

@@ -1,14 +1,24 @@
 /**
- * Tech Trail Audio — lightweight Web Audio engine with procedural SFX and zone ambience.
+ * Global Tech Gauntlet audio — procedural SFX plus looping soundtrack.
+ *
+ * Soundtrack: "The Complex" Kevin MacLeod (incompetech.com)
+ * Licensed under Creative Commons: By Attribution 4.0 License
+ * http://creativecommons.org/licenses/by/4.0/
  */
 (() => {
   "use strict";
 
   const PREFIX = "techtrail";
+  const MUSIC_URL = "/tech-trail/audio/the-complex.mp3";
+  const MUSIC_VOLUME = 0.34;
+  const MUSIC_ATTRIBUTION =
+    '"The Complex" Kevin MacLeod (incompetech.com) Licensed under Creative Commons: By Attribution 4.0 License http://creativecommons.org/licenses/by/4.0/';
+
   let engine = null;
   let _noiseBuf = null;
   let _ambienceNodes = [];
   let _muted = false;
+  let _musicEl = null;
 
   function loadMuted() {
     try {
@@ -23,10 +33,14 @@
   function init() {
     if (engine) {
       if (engine.ctx.state === "suspended") engine.ctx.resume().catch(() => {});
+      startSoundtrack();
       return engine;
     }
     const Ctx = window.AudioContext || window.webkitAudioContext;
-    if (!Ctx) return null;
+    if (!Ctx) {
+      startSoundtrack();
+      return null;
+    }
     try {
       const ctx = new Ctx();
       const master = ctx.createGain();
@@ -40,9 +54,11 @@
       ambienceBus.gain.value = 0.35;
       engine = { ctx, master, sfxBus, ambienceBus };
       _buildNoiseBuf(ctx);
+      startSoundtrack();
       return engine;
     } catch (e) {
       console.warn("[GTG] Audio init failed:", e);
+      startSoundtrack();
       return null;
     }
   }
@@ -181,9 +197,47 @@
     media: { freq: 115, noiseFilter: 420 },
   };
 
+  function _syncMusicVolume() {
+    if (!_musicEl) return;
+    _musicEl.volume = _muted ? 0 : MUSIC_VOLUME;
+  }
+
+  function startSoundtrack() {
+    if (!_musicEl) {
+      _musicEl = new Audio(MUSIC_URL);
+      _musicEl.loop = true;
+      _musicEl.preload = "auto";
+      _musicEl.setAttribute("data-track", "The Complex");
+      _musicEl.setAttribute("data-artist", "Kevin MacLeod");
+      _musicEl.setAttribute("data-source", "https://incompetech.com");
+      _musicEl.setAttribute(
+        "data-license",
+        "Creative Commons By Attribution 4.0 https://creativecommons.org/licenses/by/4.0/"
+      );
+      _musicEl.setAttribute("data-attribution", MUSIC_ATTRIBUTION);
+      _musicEl.setAttribute("aria-hidden", "true");
+      _musicEl.style.display = "none";
+      if (document.body && !_musicEl.isConnected) document.body.appendChild(_musicEl);
+    }
+    _syncMusicVolume();
+    if (_muted) {
+      _musicEl.pause();
+      return _musicEl;
+    }
+    const play = _musicEl.play();
+    if (play && typeof play.catch === "function") play.catch(() => {});
+    return _musicEl;
+  }
+
+  function stopSoundtrack() {
+    if (!_musicEl) return;
+    try { _musicEl.pause(); } catch {}
+  }
+
   function startZoneAmbience(mood) {
     stopZoneAmbience();
     if (!engine) return;
+    if (_musicEl && !_musicEl.paused && !_muted) return;
     const cfg = ZONE_DRONES[mood] || ZONE_DRONES.tech;
     const t = _now();
     const osc = engine.ctx.createOscillator();
@@ -234,6 +288,12 @@
       const t = engine.ctx.currentTime;
       engine.master.gain.setTargetAtTime(_muted ? 0 : 0.55, t, 0.06);
     }
+    _syncMusicVolume();
+    if (_muted) {
+      stopSoundtrack();
+    } else if (_musicEl) {
+      startSoundtrack();
+    }
   }
 
   function toggleMuted() {
@@ -249,6 +309,8 @@
 
   window.TechTrailAudio = {
     init,
+    MUSIC_URL,
+    MUSIC_ATTRIBUTION,
     playBadgeChime,
     playGoldenFanfare,
     playChoiceClick,
@@ -260,6 +322,8 @@
     playZoneTransition,
     startZoneAmbience,
     stopZoneAmbience,
+    startSoundtrack,
+    stopSoundtrack,
     setMuted,
     toggleMuted,
     isMuted,

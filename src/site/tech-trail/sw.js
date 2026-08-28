@@ -1,7 +1,7 @@
 /**
  * Global Tech Gauntlet — service worker with network-first for scripts/styles.
  */
-const CACHE_NAME = "gtg-v17";
+const CACHE_NAME = "gtg-v18";
 const PRECACHE = [
   "/styles/write-platform.css",
   "/styles/custom-style.css",
@@ -68,6 +68,11 @@ self.addEventListener("fetch", (e) => {
   if (request.method !== "GET") return;
 
   const url = new URL(request.url);
+  if (/\.(mp3|wav|ogg|m4a)$/i.test(url.pathname)) {
+    e.respondWith(fetch(request).catch(() => caches.match(request)));
+    return;
+  }
+
   const isScriptOrStyle =
     url.pathname.startsWith("/scripts/") || url.pathname.startsWith("/styles/");
 

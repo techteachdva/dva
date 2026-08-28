@@ -1036,7 +1036,7 @@
     const tooEarlyForFinale = goldenRules.size < 3;
 
     const mapped = list.map((c) => {
-      if (c.next === "final_trial" && tooEarlyForFinale && spine) {
+      if ((c.next === "final_trial" || c.next === "mentor_ending") && tooEarlyForFinale && spine) {
         return {
           ...c,
           label: `Keep hunting — ${spine.typeText}`,
@@ -1093,17 +1093,42 @@
         document.body.classList.add("tt-high-contrast");
       }
     } catch {}
+    updateHighContrastButton();
+  }
+
+  function updateHighContrastButton() {
+    const btn = document.getElementById("highContrastToggle");
+    if (!btn) return;
+    const on = document.body.classList.contains("tt-high-contrast");
+    btn.setAttribute("aria-pressed", on ? "true" : "false");
+    btn.classList.toggle("tt-settings-btn--on", on);
+    btn.textContent = on ? "🔲 High contrast on" : "🔲 High contrast";
   }
 
   function toggleHighContrast() {
-    const on = document.body.classList.toggle("tt-high-contrast");
+    document.body.classList.toggle("tt-high-contrast");
+    const on = document.body.classList.contains("tt-high-contrast");
     try { localStorage.setItem("techtrail:highContrast", on ? "1" : "0"); } catch {}
+    updateHighContrastButton();
   }
 
   function updateMuteButton() {
-    const btn = document.getElementById("muteToggleBtn");
-    if (!btn) return;
-    btn.textContent = Audio?.isMuted?.() ? "🔇" : "🔊";
+    const muted = Boolean(Audio?.isMuted?.());
+    const gameBtn = document.getElementById("muteToggleBtn");
+    if (gameBtn) gameBtn.textContent = muted ? "🔇" : "🔊";
+    const titleBtn = document.getElementById("titleMuteBtn");
+    if (titleBtn) {
+      titleBtn.textContent = muted ? "🔇 Sound off" : "🔊 Sound on";
+      titleBtn.setAttribute("aria-pressed", muted ? "true" : "false");
+      titleBtn.classList.toggle("tt-settings-btn--on", muted);
+    }
+  }
+
+  function toggleMute() {
+    Audio?.init?.();
+    Audio?.toggleMuted?.();
+    if (!Audio?.isMuted?.()) Audio?.startSoundtrack?.();
+    updateMuteButton();
   }
 
   function isGameFullscreen() {
@@ -1149,6 +1174,15 @@
   }
 
   let fullscreenGestureHooked = false;
+  function hookSoundtrackOnFirstGesture() {
+    const start = () => {
+      Audio?.init?.();
+      Audio?.startSoundtrack?.();
+    };
+    document.addEventListener("pointerdown", start, { once: true, capture: true });
+    document.addEventListener("keydown", start, { once: true, capture: true });
+  }
+
   function hookFullscreenOnFirstGesture() {
     if (fullscreenGestureHooked) return;
     fullscreenGestureHooked = true;
@@ -1441,7 +1475,7 @@
     if (speedFill && targetSpeed > 0) {
       const speedPct = Math.min(100, Math.round((liveSpeed / targetSpeed) * 100));
       speedFill.style.width = `${speedPct}%`;
-      speedFill.classList.toggle("tt-typing-meter__wpm--hot", speedPct >= 88);
+      speedFill.classList.toggle("tt-typing-meter__wpm--hot", speedPct >= 100);
       speedFill.classList.toggle("tt-typing-meter__wpm--cold", speedPct < 55);
     }
 
@@ -2294,11 +2328,13 @@ Play again to rebuild your record clean.`;
     });
 
     document.getElementById("highContrastToggle")?.addEventListener("click", toggleHighContrast);
+    document.getElementById("titleMuteBtn")?.addEventListener("click", toggleMute);
     document.getElementById("fullscreenToggleBtn")?.addEventListener("click", () => toggleGameFullscreen());
     document.addEventListener("fullscreenchange", updateFullscreenButton);
     document.addEventListener("webkitfullscreenchange", updateFullscreenButton);
     updateFullscreenButton();
     hookFullscreenOnFirstGesture();
+    hookSoundtrackOnFirstGesture();
 
     const playLaunch = new URLSearchParams(window.location.search).get("play") === "1";
     if (playLaunch) {
@@ -2328,10 +2364,7 @@ Play again to rebuild your record clean.`;
       if (e.key === "Escape") closeInventory();
     });
 
-    document.getElementById("muteToggleBtn")?.addEventListener("click", () => {
-      Audio?.toggleMuted?.();
-      updateMuteButton();
-    });
+    document.getElementById("muteToggleBtn")?.addEventListener("click", toggleMute);
 
     const startBtn = document.getElementById("startGameBtn");
     const continueBtn = document.getElementById("continueRunBtn");

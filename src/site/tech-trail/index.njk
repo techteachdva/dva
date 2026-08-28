@@ -47,7 +47,7 @@ layout: false
 
       <main class="tt-main">
         <section id="titleView" class="tt-title-screen">
-          <div class="tt-title-screen__bg" style="background-image:url('/tech-trail/images/scenes/scene-gauntlet-arena.png')"></div>
+          <div class="tt-title-screen__bg"></div>
           <div class="tt-title-screen__overlay"></div>
           <div class="tt-title-screen__content">
             <span class="tt-location-badge">ACME Tech Division</span>
@@ -142,9 +142,16 @@ layout: false
             </div>
             <div id="profileMini" class="tt-profile-mini-wrap"></div>
             <div class="tt-settings-bar" style="margin-top:14px; display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
-              <button id="highContrastToggle" class="tt-settings-btn" type="button" title="Toggle high contrast">🔲 High contrast</button>
+              <button id="highContrastToggle" class="tt-settings-btn" type="button" title="Toggle high contrast" aria-pressed="false">🔲 High contrast</button>
+              <button id="titleMuteBtn" class="tt-settings-btn" type="button" title="Toggle soundtrack">🔊 Sound on</button>
             </div>
             <p class="tt-credit">A Game by Mr. Phil</p>
+            <p class="tt-music-credit">
+              Soundtrack: &quot;The Complex&quot; Kevin MacLeod
+              (<a href="https://incompetech.com" target="_blank" rel="noopener">incompetech.com</a>).
+              Licensed under
+              <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>.
+            </p>
           </div>
         </section>
 
