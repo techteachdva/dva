@@ -251,6 +251,7 @@
         "Teachers register with @davincicharterschool.org email verification; only approved emails can sign up.",
         "Admin portal at /writeflow/admin/ — stats, dedupe submissions, impersonation, account lists.",
         "Submissions link to studentUsername when signed in for reliable history matching.",
+        "Students must sign in with roster usernames — free-text names are no longer accepted.",
       ],
     },
     {
@@ -663,7 +664,8 @@
     allowEndEarly: true,
     minWordCount: 0,
     requireMinWordsToComplete: false,
-    requireName: true,
+    requireName: false,
+    requireStudentLogin: true,
     requireClass: true,
     requireClassCode: true,
     rubrics: ["mechanics", "story"],

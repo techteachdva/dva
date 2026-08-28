@@ -535,6 +535,39 @@ export async function POST(request) {
       return Response.json({ ok: true, entry: data.entry || null }, { headers: corsHeaders() });
     }
 
+    if (action === "adminPreviewUsernameCleanup") {
+      const sessionToken = typeof body?.sessionToken === "string" ? body.sessionToken.trim() : "";
+      if (!sessionToken) {
+        return Response.json({ error: "Admin sign-in required." }, { status: 401, headers: corsHeaders() });
+      }
+      const data = await scriptPost({ action: "adminPreviewUsernameCleanup", sessionToken });
+      if (data.error) {
+        return Response.json({ error: data.error }, { status: 401, headers: corsHeaders() });
+      }
+      return Response.json({
+        ok: true,
+        changes: data.changes || [],
+        unchanged: data.unchanged || 0,
+        unmatched: data.unmatched || 0,
+      }, { headers: corsHeaders() });
+    }
+
+    if (action === "adminApplyUsernameCleanup") {
+      const sessionToken = typeof body?.sessionToken === "string" ? body.sessionToken.trim() : "";
+      if (!sessionToken) {
+        return Response.json({ error: "Admin sign-in required." }, { status: 401, headers: corsHeaders() });
+      }
+      const data = await scriptPost({
+        action: "adminApplyUsernameCleanup",
+        sessionToken,
+        applyLowConfidence: body?.applyLowConfidence === true,
+      });
+      if (data.error) {
+        return Response.json({ error: data.error }, { status: 401, headers: corsHeaders() });
+      }
+      return Response.json({ ok: true, ...data }, { headers: corsHeaders() });
+    }
+
     if (action === "teacherLogout") {
       const sessionToken = typeof body?.sessionToken === "string" ? body.sessionToken.trim() : "";
       if (sessionToken) await scriptPost({ action: "teacherLogout", sessionToken });
@@ -715,9 +748,14 @@ export async function POST(request) {
     const text = typeof body?.text === "string" ? body.text.trim().slice(0, 15000) : "";
     const analysis = body?.analysis && typeof body.analysis === "object" ? body.analysis : null;
     const durationSec = Number(body?.durationSec);
+    const studentSessionToken = typeof body?.studentSessionToken === "string" ? body.studentSessionToken.trim() : "";
+    const studentUsername = typeof body?.studentUsername === "string" ? body.studentUsername.trim().slice(0, 80) : "";
 
-    if (!assignmentId || !name || !text || !analysis) {
+    if (!assignmentId || !text || !analysis) {
       return Response.json({ error: "Missing required fields" }, { status: 400, headers: corsHeaders() });
+    }
+    if (!studentSessionToken && !studentUsername && !name) {
+      return Response.json({ error: "Please sign in with your roster username before submitting." }, { status: 400, headers: corsHeaders() });
     }
     if (classroomRaw && !classroom) {
       return Response.json({ error: "Invalid classroom" }, { status: 400, headers: corsHeaders() });
@@ -736,7 +774,8 @@ export async function POST(request) {
       text,
       analysis,
       durationSec: Number.isFinite(durationSec) ? durationSec : 300,
-      studentUsername: typeof body?.studentUsername === "string" ? body.studentUsername.trim().slice(0, 80) : "",
+      studentUsername,
+      studentSessionToken,
     });
 
     if (data.error) {

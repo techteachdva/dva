@@ -50,6 +50,15 @@ layout: false
               <p class="dw-muted dw-tiny">Remove duplicate submissions (same assignment, student, and opening text).</p>
               <button id="adminDedupeBtn" class="dw-btn" type="button">Remove duplicate submissions</button>
               <p id="adminDedupeResult" class="dw-muted dw-hidden" role="status"></p>
+              <hr class="wf-admin-divider" />
+              <p class="dw-muted dw-tiny">Match mistyped student names (e.g. <strong>theo</strong>, <strong>HAFSA</strong>) to roster usernames like <strong>Theo M.</strong> and rewrite submission rows.</p>
+              <div class="dw-stack dw-stack--row">
+                <button id="adminPreviewUsernamesBtn" class="dw-btn dw-btn-secondary" type="button">Preview username fixes</button>
+                <button id="adminApplyUsernamesBtn" class="dw-btn" type="button" disabled>Apply high-confidence fixes</button>
+              </div>
+              <label class="wf-toggle-row"><input id="adminApplyLowConfidenceUsernames" type="checkbox" /><span class="wf-toggle-row__label"><strong>Include low-confidence matches</strong><span class="wf-toggle-row__hint">Only turn on after reviewing the preview table</span></span></label>
+              <p id="adminUsernameCleanupStatus" class="dw-muted dw-tiny dw-hidden" role="status"></p>
+              <div id="adminUsernameCleanupPreview" class="wf-admin-table-wrap"></div>
             </section>
 
             <section class="dw-card dw-stack">

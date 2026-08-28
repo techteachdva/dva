@@ -496,12 +496,14 @@ function handle_(e, isGet) {
     if (action === "studentValidate") {
       const session = validateSessionV2_(params.sessionToken);
       if (!session || session.role !== "student") return respond_({ error: "Invalid session" });
+      const roster = findRosterEntry_(session.username);
+      const student = getStudentByUsername_(session.username);
       return respond_({
         ok: true,
         username: session.username,
         displayName: session.displayName,
         role: "student",
-        classroom: session.classroom || "",
+        classroom: roster ? roster.classroom : (student ? student.classroom : ""),
         mustChangePassword: session.mustChangePassword || false,
       });
     }
@@ -668,6 +670,19 @@ function handle_(e, isGet) {
       if (!session || session.role !== "admin") return respond_({ error: "Admin access required" });
       const entry = adminAddRosterEntry_(params.classroom, params.username);
       return respond_({ ok: true, entry: entry });
+    }
+
+    if (action === "adminPreviewUsernameCleanup") {
+      const session = validateSessionV2_(params.sessionToken);
+      if (!session || session.role !== "admin") return respond_({ error: "Admin access required" });
+      return respond_({ ok: true, ...adminPreviewUsernameCleanup_() });
+    }
+
+    if (action === "adminApplyUsernameCleanup") {
+      const session = validateSessionV2_(params.sessionToken);
+      if (!session || session.role !== "admin") return respond_({ error: "Admin access required" });
+      const applyLow = params.applyLowConfidence === true;
+      return respond_({ ok: true, ...adminApplyUsernameCleanup_(applyLow) });
     }
 
     if (action === "teacherLogout") {
@@ -939,14 +954,15 @@ function listAllSubmissions_() {
 
 function saveSubmission_(params) {
   const assignmentId = String(params.assignmentId || "").trim().slice(0, 80);
-  const name = String(params.name || "").trim().slice(0, 80);
   const classroom = resolveClassroom_(params.classroom);
   const classCode = String(params.classCode || "");
   const text = String(params.text || "").trim().slice(0, 15000);
   const analysis = params.analysis || {};
   const durationSec = Number(params.durationSec);
+  const rosterStudent = resolveSubmissionStudent_(params);
+  const name = rosterStudent.username;
 
-  if (!assignmentId || !name || !text || !analysis) {
+  if (!assignmentId || !text || !analysis) {
     throw new Error("Missing required fields");
   }
   if (params.classroom && !classroom) {
@@ -962,8 +978,8 @@ function saveSubmission_(params) {
     submittedAt: Date.now(),
     assignmentId: assignmentId,
     name: name,
-    classroom: classroom || "",
-    studentUsername: String(params.studentUsername || "").trim().slice(0, 80),
+    classroom: classroom || rosterStudent.classroom || "",
+    studentUsername: rosterStudent.username,
     durationSec: isFinite(durationSec) ? durationSec : 300,
     text: text,
     analysis: analysis,

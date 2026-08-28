@@ -36,10 +36,11 @@ layout: false
             <ul class="dw-list dw-checklist wf-student-checklist" id="checklist"></ul>
             <div class="wf-student-gate" id="studentGate">
               <div id="studentAccountPanel" class="wf-student-account dw-card dw-stack">
-                <p class="dw-muted dw-tiny">Sign in with your roster username (first name + last initial, e.g. <strong>John D.</strong>). First-time password is <strong>SPARK</strong>.</p>
+                <p class="dw-muted dw-tiny">Sign in with your teacher-assigned username (first name + last initial, e.g. <strong>John D.</strong>). You cannot make up a new name — only roster usernames work. First-time password is <strong>SPARK</strong>.</p>
                 <div id="studentSignedOut">
                   <form id="studentLoginForm" class="wf-account-form">
-                    <label class="dw-field"><span class="dw-label">Username</span><input id="studentLoginUsername" class="dw-input" type="text" maxlength="80" autocomplete="username" /></label>
+                    <label class="dw-field"><span class="dw-label">Username</span><input id="studentLoginUsername" class="dw-input" type="text" maxlength="80" autocomplete="username" placeholder="John D." required /></label>
+                    <p id="studentUsernameHint" class="dw-muted dw-tiny dw-hidden" role="status"></p>
                     <label class="dw-field"><span class="dw-label">Password</span><input id="studentLoginPassword" class="dw-input" type="password" autocomplete="current-password" /></label>
                     <button class="dw-btn dw-btn-ghost" type="submit">Sign in</button>
                     <p id="studentLoginError" class="dw-error dw-hidden" role="alert"></p>
@@ -58,8 +59,9 @@ layout: false
                   </form>
                 </div>
               </div>
-              <label class="dw-field" id="nameField">
-                <span class="dw-label">First name</span>
+              <p id="studentLoginRequired" class="dw-error dw-hidden" role="alert">Sign in with your roster username above before you can start.</p>
+              <label class="dw-field dw-hidden" id="nameField">
+                <span class="dw-label">Name</span>
                 <input id="studentName" class="dw-input" type="text" maxlength="80" autocomplete="name" />
               </label>
               <label class="dw-field" id="classField">

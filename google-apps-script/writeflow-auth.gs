@@ -59,6 +59,212 @@ function normalizeStudentUsername_(value) {
   return String(value || "").trim().replace(/\s+/g, " ");
 }
 
+function rosterUsernameKey_(value) {
+  return normalizeStudentUsername_(value).toLowerCase().replace(/\.$/, "");
+}
+
+function firstNameToken_(value) {
+  return String(value || "").trim().split(/\s+/)[0].toLowerCase();
+}
+
+function levenshtein_(a, b) {
+  const m = a.length;
+  const n = b.length;
+  if (!m) return n;
+  if (!n) return m;
+  const dp = [];
+  for (var i = 0; i <= m; i++) {
+    dp[i] = [i];
+  }
+  for (var j = 1; j <= n; j++) {
+    dp[0][j] = j;
+  }
+  for (var r = 1; r <= m; r++) {
+    for (var c = 1; c <= n; c++) {
+      const cost = a.charAt(r - 1) === b.charAt(c - 1) ? 0 : 1;
+      dp[r][c] = Math.min(dp[r - 1][c] + 1, dp[r][c - 1] + 1, dp[r - 1][c - 1] + cost);
+    }
+  }
+  return dp[m][n];
+}
+
+function listActiveRosterEntries_() {
+  const sheet = getStudentRosterSheet_();
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return [];
+  const rows = sheet.getRange(2, 1, lastRow - 1, 3).getValues();
+  const out = [];
+  for (var i = 0; i < rows.length; i++) {
+    if (String(rows[i][2] || "").toUpperCase() !== "TRUE") continue;
+    const username = normalizeStudentUsername_(rows[i][1]);
+    if (!username) continue;
+    out.push({ username: username, classroom: String(rows[i][0] || "") });
+  }
+  return out;
+}
+
+function matchUsernameToRoster_(raw, classroom, roster) {
+  const key = rosterUsernameKey_(raw);
+  if (!key) return null;
+  const pool = roster && roster.length ? roster : listActiveRosterEntries_();
+  if (!pool.length) return null;
+
+  for (var i = 0; i < pool.length; i++) {
+    if (rosterUsernameKey_(pool[i].username) === key) {
+      return { username: pool[i].username, reason: "exact", confidence: "high" };
+    }
+  }
+
+  var scoped = pool;
+  if (classroom) {
+    const inClass = pool.filter(function (entry) { return entry.classroom === classroom; });
+    if (inClass.length) scoped = inClass;
+  }
+
+  const first = firstNameToken_(raw);
+  const firstMatches = scoped.filter(function (entry) {
+    return firstNameToken_(entry.username) === first;
+  });
+  if (firstMatches.length === 1) {
+    return { username: firstMatches[0].username, reason: "first_name", confidence: "high" };
+  }
+
+  const parts = normalizeStudentUsername_(raw).split(/\s+/);
+  if (parts.length >= 2) {
+    const fn = parts[0].toLowerCase();
+    const lastInit = parts[parts.length - 1].replace(/\.$/, "").charAt(0).toLowerCase();
+    const initMatches = scoped.filter(function (entry) {
+      const rp = normalizeStudentUsername_(entry.username).split(/\s+/);
+      if (rp.length < 2) return false;
+      return rp[0].toLowerCase() === fn
+        && rp[rp.length - 1].replace(/\.$/, "").charAt(0).toLowerCase() === lastInit;
+    });
+    if (initMatches.length === 1) {
+      return { username: initMatches[0].username, reason: "first_last_initial", confidence: "high" };
+    }
+  }
+
+  var best = null;
+  for (var j = 0; j < scoped.length; j++) {
+    const rk = rosterUsernameKey_(scoped[j].username);
+    const dist = Math.min(levenshtein_(key, rk), levenshtein_(first, firstNameToken_(scoped[j].username)));
+    if (!best || dist < best.dist) {
+      best = { username: scoped[j].username, dist: dist, reason: "fuzzy" };
+    }
+  }
+  if (best && best.dist <= 3) {
+    return {
+      username: best.username,
+      reason: best.reason,
+      confidence: best.dist <= 1 ? "medium" : "low",
+    };
+  }
+  return null;
+}
+
+function resolveSubmissionStudent_(params) {
+  const sessionToken = String(params.studentSessionToken || "").trim();
+  if (sessionToken) {
+    const session = validateSessionV2_(sessionToken);
+    if (!session || session.role !== "student") {
+      throw new Error("Please sign in with your roster username before submitting.");
+    }
+    const roster = findRosterEntry_(session.username);
+    if (!roster) throw new Error("Your username is not on the class roster.");
+    return roster;
+  }
+  const claimed = String(params.studentUsername || params.name || "").trim();
+  const roster = findRosterEntry_(claimed);
+  if (roster) return roster;
+  throw new Error("Please sign in with your roster username (first name + last initial, e.g. Phil C.).");
+}
+
+function adminPreviewUsernameCleanup_() {
+  const roster = listActiveRosterEntries_();
+  const sheet = getSubmissionsSheet_();
+  ensureSubmissionStudentColumn_(sheet);
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return { changes: [], unchanged: 0, unmatched: 0 };
+  const colCount = Math.max(13, sheet.getLastColumn());
+  const values = readSheetDataRows_(sheet, colCount);
+  const changes = [];
+  var unchanged = 0;
+  var unmatched = 0;
+  for (var i = 0; i < values.length; i++) {
+    const row = values[i];
+    if (!row[0]) continue;
+    const classroom = String(row[4] || "");
+    const currentName = normalizeStudentUsername_(row[3] || "");
+    const currentUser = normalizeStudentUsername_(row[12] || currentName);
+    const raw = currentUser || currentName;
+    const exact = findRosterEntry_(raw);
+    const match = exact
+      ? { username: exact.username, reason: "exact", confidence: "high" }
+      : matchUsernameToRoster_(raw, classroom, roster);
+    if (!match) {
+      unmatched += 1;
+      changes.push({
+        row: i + 2,
+        submissionId: String(row[0]),
+        assignmentId: String(row[2] || ""),
+        classroom: classroom,
+        fromName: currentName,
+        fromUsername: currentUser,
+        toUsername: "",
+        reason: "unmatched",
+        confidence: "none",
+      });
+      continue;
+    }
+    const canonical = match.username;
+    if (rosterUsernameKey_(currentName) === rosterUsernameKey_(canonical)
+      && rosterUsernameKey_(currentUser) === rosterUsernameKey_(canonical)) {
+      unchanged += 1;
+      continue;
+    }
+    changes.push({
+      row: i + 2,
+      submissionId: String(row[0]),
+      assignmentId: String(row[2] || ""),
+      classroom: classroom,
+      fromName: currentName,
+      fromUsername: currentUser,
+      toUsername: canonical,
+      reason: match.reason,
+      confidence: match.confidence,
+    });
+  }
+  return { changes: changes, unchanged: unchanged, unmatched: unmatched };
+}
+
+function adminApplyUsernameCleanup_(applyLowConfidence) {
+  const preview = adminPreviewUsernameCleanup_();
+  const sheet = getSubmissionsSheet_();
+  var updated = 0;
+  var skipped = 0;
+  for (var i = 0; i < preview.changes.length; i++) {
+    const change = preview.changes[i];
+    if (!change.toUsername) {
+      skipped += 1;
+      continue;
+    }
+    if (!applyLowConfidence && change.confidence === "low") {
+      skipped += 1;
+      continue;
+    }
+    sheet.getRange(change.row, 4).setValue(change.toUsername);
+    sheet.getRange(change.row, 13).setValue(change.toUsername);
+    updated += 1;
+  }
+  return {
+    updated: updated,
+    skipped: skipped,
+    unmatched: preview.unmatched,
+    unchanged: preview.unchanged,
+    previewCount: preview.changes.length,
+  };
+}
+
 function normalizeEmail_(value) {
   return String(value || "").trim().toLowerCase();
 }
@@ -455,7 +661,8 @@ function findRosterEntry_(username) {
   for (var i = 0; i < rows.length; i++) {
     if (String(rows[i][2] || "").toUpperCase() !== "TRUE") continue;
     const rowName = normalizeStudentUsername_(rows[i][1]);
-    if (rowName.toLowerCase() === norm.toLowerCase()) {
+    if (rowName.toLowerCase() === norm.toLowerCase()
+      || rosterUsernameKey_(rowName) === rosterUsernameKey_(norm)) {
       return { username: rowName, classroom: String(rows[i][0] || "") };
     }
   }
@@ -644,6 +851,7 @@ function studentLogin_(username, password) {
     role: "student",
     effectiveUsername: student.username,
     mustChangePassword: student.mustChangePassword,
+    classroom: roster.classroom,
   });
 }
 

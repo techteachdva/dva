@@ -55,6 +55,34 @@
     }
   }
 
+  let usernameCleanupPreview = [];
+
+  function renderUsernameCleanupPreview(changes) {
+    const el = document.getElementById("adminUsernameCleanupPreview");
+    const applyBtn = document.getElementById("adminApplyUsernamesBtn");
+    usernameCleanupPreview = Array.isArray(changes) ? changes : [];
+    if (!el) return;
+    const fixable = usernameCleanupPreview.filter((c) => c.toUsername);
+    if (!fixable.length) {
+      el.innerHTML = usernameCleanupPreview.length
+        ? "<p class=\"dw-muted\">No automatic fixes found. Add missing students to the roster, then preview again.</p>"
+        : "";
+      if (applyBtn) applyBtn.disabled = true;
+      return;
+    }
+    el.innerHTML = renderTable(
+      ["Current name", "Suggested roster name", "Class", "Confidence", "Reason"],
+      fixable.map((c) => [
+        c.fromUsername || c.fromName || "—",
+        c.toUsername,
+        c.classroom || "—",
+        c.confidence || "—",
+        c.reason || "—",
+      ])
+    );
+    if (applyBtn) applyBtn.disabled = false;
+  }
+
   async function refreshDashboard() {
     const stats = await Admin().getStats();
     renderStats(stats);
@@ -159,6 +187,50 @@
         if (resultEl) {
           resultEl.textContent = err.message || "Dedupe failed.";
           resultEl.classList.remove("dw-hidden");
+        }
+      }
+    });
+
+    document.getElementById("adminPreviewUsernamesBtn")?.addEventListener("click", async () => {
+      const statusEl = document.getElementById("adminUsernameCleanupStatus");
+      try {
+        const data = await Admin().previewUsernameCleanup();
+        renderUsernameCleanupPreview(data.changes || []);
+        if (statusEl) {
+          const fixable = (data.changes || []).filter((c) => c.toUsername).length;
+          const unmatched = data.unmatched || 0;
+          statusEl.textContent = `${fixable} row(s) can be fixed automatically; ${unmatched} row(s) need manual review; ${data.unchanged || 0} already correct.`;
+          statusEl.classList.remove("dw-hidden", "dw-error");
+        }
+      } catch (err) {
+        if (statusEl) {
+          statusEl.textContent = err.message || "Preview failed.";
+          statusEl.classList.remove("dw-hidden");
+          statusEl.classList.add("dw-error");
+        }
+      }
+    });
+
+    document.getElementById("adminApplyUsernamesBtn")?.addEventListener("click", async () => {
+      const statusEl = document.getElementById("adminUsernameCleanupStatus");
+      const applyLow = document.getElementById("adminApplyLowConfidenceUsernames")?.checked === true;
+      const fixable = usernameCleanupPreview.filter((c) => c.toUsername).length;
+      if (!fixable) return;
+      if (!window.confirm(`Update ${fixable} submission row(s) to roster usernames?`)) return;
+      try {
+        const data = await Admin().applyUsernameCleanup({ applyLowConfidence: applyLow });
+        if (statusEl) {
+          statusEl.textContent = `Updated ${data.updated || 0} row(s); skipped ${data.skipped || 0}; ${data.unmatched || 0} still unmatched.`;
+          statusEl.classList.remove("dw-hidden", "dw-error");
+        }
+        const preview = await Admin().previewUsernameCleanup();
+        renderUsernameCleanupPreview(preview.changes || []);
+        await refreshDashboard();
+      } catch (err) {
+        if (statusEl) {
+          statusEl.textContent = err.message || "Apply failed.";
+          statusEl.classList.remove("dw-hidden");
+          statusEl.classList.add("dw-error");
         }
       }
     });

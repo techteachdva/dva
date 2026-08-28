@@ -771,7 +771,7 @@
       checklist.closest(".wf-student-checklist, .dw-checklist")?.classList.toggle("dw-hidden", !items.length);
     }
 
-    document.getElementById("nameField")?.classList.toggle("dw-hidden", !config.requireName);
+    document.getElementById("nameField")?.classList.toggle("dw-hidden", isStudentApp || config.requireStudentLogin !== false || !config.requireName);
     document.getElementById("classField")?.classList.toggle("dw-hidden", !config.requireClass);
 
     const rubricGrid = document.getElementById("rubricGrid");
@@ -1412,11 +1412,31 @@
     }
   }
 
+  function requiresStudentLogin() {
+    return isStudentApp || config.requireStudentLogin !== false;
+  }
+
+  function applySessionClassroom(session) {
+    if (!session?.classroom) return;
+    const classEl = document.getElementById("studentClass");
+    if (!classEl) return;
+    const resolved = Core.resolveClassroom(session.classroom, VALID_CLASSROOMS);
+    if (!resolved) return;
+    for (const opt of classEl.options) {
+      if (opt.value === resolved) {
+        classEl.value = resolved;
+        break;
+      }
+    }
+  }
+
   function captureStudentSession() {
+    const session = Student()?.getSession();
     const classEl = document.getElementById("studentClass");
     studentSession = {
-      name: document.getElementById("studentName")?.value.trim() || "",
-      classroom: Core.resolveClassroom(classEl?.value, VALID_CLASSROOMS) || "",
+      name: session?.username || document.getElementById("studentName")?.value.trim() || "",
+      username: session?.username || "",
+      classroom: Core.resolveClassroom(classEl?.value, VALID_CLASSROOMS) || session?.classroom || "",
       classCode: Core.normalizeClassCode(document.getElementById("classCode")?.value || ""),
     };
   }
@@ -1438,20 +1458,58 @@
 
       const studentNameInput = document.getElementById("studentName");
       if (studentNameInput && session.username) {
-        studentNameInput.value = session.username.replace(/\.$/, "");
+        studentNameInput.value = session.username;
         studentNameInput.readOnly = true;
       }
+      applySessionClassroom(session);
     } else {
       signedOut?.classList.remove("dw-hidden");
       signedIn?.classList.add("dw-hidden");
       passwordPanel?.classList.add("dw-hidden");
       const studentNameInput = document.getElementById("studentName");
-      if (studentNameInput) studentNameInput.readOnly = false;
+      if (studentNameInput) {
+        studentNameInput.readOnly = false;
+        studentNameInput.value = "";
+      }
     }
+    document.getElementById("studentLoginRequired")?.classList.toggle(
+      "dw-hidden",
+      !requiresStudentLogin() || !!session?.username
+    );
     updateStartButton();
   }
 
   function bindStudentAccountEvents() {
+    let usernameCheckTimer = null;
+    document.getElementById("studentLoginUsername")?.addEventListener("input", () => {
+      const hintEl = document.getElementById("studentUsernameHint");
+      if (hintEl) {
+        hintEl.classList.add("dw-hidden");
+        hintEl.textContent = "";
+      }
+      clearTimeout(usernameCheckTimer);
+      const value = document.getElementById("studentLoginUsername")?.value.trim() || "";
+      if (!value || value.length < 2) return;
+      usernameCheckTimer = setTimeout(async () => {
+        try {
+          const data = await Student()?.checkUsername(value);
+          if (!hintEl) return;
+          if (data?.valid) {
+            hintEl.textContent = data.username === value
+              ? "Found on your class roster."
+              : `Found on roster as ${data.username}. You can sign in with that name.`;
+            hintEl.classList.remove("dw-hidden", "dw-error");
+          } else {
+            hintEl.textContent = "That name is not on the roster. Ask your teacher for your assigned username (e.g. Phil C.).";
+            hintEl.classList.remove("dw-hidden");
+            hintEl.classList.add("dw-error");
+          }
+        } catch {
+          /* ignore lookup errors */
+        }
+      }, 350);
+    });
+
     document.getElementById("studentLoginForm")?.addEventListener("submit", async (e) => {
       e.preventDefault();
       const errEl = document.getElementById("studentLoginError");
@@ -1494,7 +1552,8 @@
   function canStart() {
     const session = Student()?.getSession();
     if (session?.mustChangePassword) return false;
-    const nameOk = !config.requireName || document.getElementById("studentName")?.value.trim();
+    if (requiresStudentLogin() && !session?.username) return false;
+    const nameOk = !config.requireName || session?.username || document.getElementById("studentName")?.value.trim();
     const classEl = document.getElementById("studentClass");
     const classroom = config.requireClass ? Core.resolveClassroom(classEl?.value, VALID_CLASSROOMS) : true;
     const codeOk = !config.requireClassCode || Core.verifyClassroomCode(classroom, document.getElementById("classCode")?.value, CLASSROOM_CODES);
@@ -1545,7 +1604,7 @@
     const analysisOpts = getAnalysisOptions();
     const analysis = window.WriteAnalysis?.analyzeText(text, duration, analysisOpts)
       || { scores: {}, wordCount: 0, wpm: 0, feedback: [], sentenceCount: 0 };
-    const name = studentSession.name || document.getElementById("studentName")?.value.trim() || "Student";
+    const name = studentSession.username || studentSession.name || Student()?.getSession()?.username || document.getElementById("studentName")?.value.trim() || "Student";
     const classEl = document.getElementById("studentClass");
     const classroom = studentSession.classroom || Core.resolveClassroom(classEl?.value, VALID_CLASSROOMS) || "";
     const classCode = studentSession.classCode
@@ -1685,7 +1744,7 @@
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         assignmentId: config.id,
-        name,
+        name: studentSession?.username || name,
         classroom,
         classCode,
         requireClassCode: config.requireClassCode !== false,
@@ -1693,6 +1752,7 @@
         analysis,
         durationSec,
         studentUsername: studentSession?.username || "",
+        studentSessionToken: studentSession?.token || "",
       }),
     });
     const data = await res.json().catch(() => ({}));
@@ -3752,7 +3812,7 @@
           <label class="wf-toggle-row"><input id="bfLiveStats" type="checkbox" ${config.showLiveStats ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Show live word count</strong><span class="wf-toggle-row__hint">Word total during writing — on by default for composition</span></span></label>
           <label class="wf-toggle-row"><input id="bfLiveWpm" type="checkbox" ${config.showLiveWpm ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Show live WPM</strong><span class="wf-toggle-row__hint">Off by default in composition — use for fluency drills</span></span></label>
           <label class="wf-toggle-row"><input id="bfRequireMinWords" type="checkbox" ${config.requireMinWordsToComplete ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Require minimum words to finish</strong><span class="wf-toggle-row__hint">If time runs out first, students keep writing until they hit the word goal</span></span></label>
-          <label class="wf-toggle-row"><input id="bfRequireName" type="checkbox" ${config.requireName ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Require student name</strong><span class="wf-toggle-row__hint">First name before starting</span></span></label>
+          <label class="wf-toggle-row"><input id="bfRequireStudentLogin" type="checkbox" ${config.requireStudentLogin !== false ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Require roster sign-in</strong><span class="wf-toggle-row__hint">Students must sign in with a teacher-assigned username — no made-up names</span></span></label>
           <label class="wf-toggle-row"><input id="bfRequireClass" type="checkbox" ${config.requireClass ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Require class selection</strong><span class="wf-toggle-row__hint">Pick from the class list</span></span></label>
           <label class="wf-toggle-row"><input id="bfRequireCode" type="checkbox" ${config.requireClassCode ? "checked" : ""} /><span class="wf-toggle-row__label"><strong>Require class code</strong><span class="wf-toggle-row__hint">Secret code from the Classes tab</span></span></label>
         </div>`;
@@ -3785,7 +3845,7 @@
         if (hint) hint.textContent = `Students write until the timer hits zero · about ${formatDurationLabel(config.durationSec)}`;
       });
       durationInput?.addEventListener("change", (e) => { config.durationSec = Number(e.target.value) || 300; persistConfig(); renderInspector(); });
-      ["bfAllowPaste", "bfSpellcheck", "bfAllowEndEarly", "bfLockAfter", "bfLiveStats", "bfLiveWpm", "bfRequireMinWords", "bfRequireName", "bfRequireClass", "bfRequireCode"].forEach((id) => {
+      ["bfAllowPaste", "bfSpellcheck", "bfAllowEndEarly", "bfLockAfter", "bfLiveStats", "bfLiveWpm", "bfRequireMinWords", "bfRequireStudentLogin", "bfRequireClass", "bfRequireCode"].forEach((id) => {
         const map = {
           bfAllowPaste: "allowPaste",
           bfSpellcheck: "spellcheck",
@@ -3794,7 +3854,7 @@
           bfLiveStats: "showLiveStats",
           bfLiveWpm: "showLiveWpm",
           bfRequireMinWords: "requireMinWordsToComplete",
-          bfRequireName: "requireName",
+          bfRequireStudentLogin: "requireStudentLogin",
           bfRequireClass: "requireClass",
           bfRequireCode: "requireClassCode",
         };

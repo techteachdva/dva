@@ -153,6 +153,18 @@
     return data.entry;
   }
 
+  async function previewUsernameCleanup() {
+    const token = getToken();
+    if (!token) throw new Error("Admin sign-in required.");
+    return apiPost("adminPreviewUsernameCleanup", { sessionToken: token });
+  }
+
+  async function applyUsernameCleanup({ applyLowConfidence = false } = {}) {
+    const token = getToken();
+    if (!token) throw new Error("Admin sign-in required.");
+    return apiPost("adminApplyUsernameCleanup", { sessionToken: token, applyLowConfidence });
+  }
+
   async function listAllSubmissions() {
     const token = getToken();
     if (!token) throw new Error("Admin sign-in required.");
@@ -218,6 +230,8 @@
     listClassRoster,
     backfillStudentCreatedAt,
     addRosterEntry,
+    previewUsernameCleanup,
+    applyUsernameCleanup,
     listAllSubmissions,
     listAssignmentSubmissions,
     saveSubmissionGrade,
