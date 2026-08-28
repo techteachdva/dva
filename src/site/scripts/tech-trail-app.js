@@ -2210,7 +2210,7 @@
 
 <strong>Integrity: ${integrity}/100 · Reputation: ${reputation}/100 · ${goldenRules.size}/5 Golden Rules</strong>
 
-You recovered some rules — but the cost was visible. Compromises leave traces. The Host extends a hand anyway. "Next run, the stakes are real."
+You recovered some rules — but the cost was visible. Compromises leave traces. Mr. Phil grins anyway. "Next run, the stakes are real."
 
 Play again to rebuild your record clean.`;
     }

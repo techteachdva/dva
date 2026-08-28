@@ -108,7 +108,7 @@
     conway: `${BASE}/heroes/hero-conway.png`,
     hopper: `${BASE}/heroes/hero-hopper.png`,
     johnson: `${BASE}/heroes/hero-johnson.png`,
-    guide: `${BASE}/heroes/hero-guide.png`,
+    guide: `${BASE}/heroes/hero-phil.png`,
   };
 
   const GOLDEN_RULES = [

@@ -77,11 +77,11 @@
       research: "Katherine Johnson calculated NASA flight paths by hand. One wrong decimal, and a capsule misses the ocean.",
     },
     guide: {
-      name: "The Host",
-      role: "Global Tech Gauntlet",
-      emoji: "🌐",
+      name: "Mr. Phil",
+      role: "Mission Host · ACME Tech Division",
+      emoji: "👓",
       era: "NOW",
-      research: "Your mission host at ACME Tech Division. They scramble the board each run — but the Golden Rules never change.",
+      research: "Your teacher and mission host. He built the Gauntlet so you can practice digital citizenship under pressure — and he still reads the oath.",
     },
   };
 
@@ -115,7 +115,7 @@
       enter: "Doors hiss. Coffee. Hot metal. Five alarms at once.",
       narrative: `Alarms strobe across five holo-screens. A locker leak. A viral lie. An app that ships Friday whether it works or not.
 
-The Host snaps a badge onto your jacket. "Welcome to the Gauntlet. The <strong>Golden Rules of Digital Citizenship</strong> didn't vanish — people stopped using them. Recover all five."
+Mr. Phil snaps a badge onto your jacket. "Welcome to the Gauntlet. The <strong>Golden Rules of Digital Citizenship</strong> didn't vanish — people stopped using them. Recover all five."
 
 Ada Lovelace flickers onto the main screen. "Don't wait for the perfect mission. Pick a door. Think on your feet. Wrong turns rewind — they don't end the run."`,
       choicePrefix: "I sprint to the",
@@ -179,7 +179,7 @@ Lovelace doesn't yell. She zooms the bounce-rate chart. "Speed teaches too — b
       character: "lovelace",
       narrative: `The app gets slower. The lead wants “one more sprint.” Lovelace taps the whiteboard until the marker squeaks.
 
-"You're solving your own panic, not their problem." The Host's voice crackles: <em>Rewind available. Same lab. Smarter you.</em>`,
+"You're solving your own panic, not their problem." Mr. Phil's voice crackles: <em>Rewind available. Same lab. Smarter you.</em>`,
       choicePrefix: "I will",
       choices: [
         { label: "Pause and interview users before anything else ships", next: "define_win", integrity: 0, reputation: 0, typeText: "pause and interview" },
@@ -207,7 +207,7 @@ Lovelace doesn't yell. She zooms the bounce-rate chart. "Speed teaches too — b
       lesson: "8.3.3.1",
       narrative: `"Good," Wright says. "That's a problem worth a prototype — not a feature shopping list."
 
-Down the hall you hear keyboard clicks and Sid Meier muttering about a login bug. The Host radios: "Prototype Arena is live. Password Vault is still blinking red if you want the security track."`,
+Down the hall you hear keyboard clicks and Sid Meier muttering about a login bug. Mr. Phil radios: "Prototype Arena is live. Password Vault is still blinking red if you want the security track."`,
       badge: "Problem Solver",
       choicePrefix: "I head to the",
       choices: [
@@ -241,7 +241,7 @@ You could sit with them and watch the pain — or patch quietly and pretend noth
       lesson: "8.3.3.1",
       narrative: `"Painful to watch. Useful to know," Meier says. "That's data — not failure."
 
-Chris Crawford is already pulling your metrics in the next room. The Host adds, "Network Closet is sparking if you want a detour."`,
+Chris Crawford is already pulling your metrics in the next room. Mr. Phil adds, "Network Closet is sparking if you want a detour."`,
       badge: "Iterative Builder",
       choicePrefix: "I head to",
       choices: [
@@ -355,7 +355,7 @@ Katherine Johnson waves from a NASA sim upstairs. A fake quote is already trendi
       enter: "Conway's Game of Life ripples across the wall — tiny rules, huge messes.",
       narrative: `John Conway leans in as patterns bloom behind you. "Small rule changes, giant outcomes. Same as a group chat."
 
-Campbell's voice hits the intercom from the Collaboration Bridge: someone is getting iced out of a shared doc. The Host adds, "If you've got enough Rules, the Arena will take you. If not — keep hunting."`,
+Campbell's voice hits the intercom from the Collaboration Bridge: someone is getting iced out of a shared doc. Mr. Phil adds, "If you've got enough Rules, the Arena will take you. If not — keep hunting."`,
       badge: "Reflector",
       choicePrefix: "I head to the",
       choices: [
@@ -387,7 +387,7 @@ One teammate wrote three clear steps with turns. The other wrote, "go to the goa
       lesson: "8.3.3.3",
       narrative: `"Boring. Precise. Done," Meier says. "That's an algorithm."
 
-The robot beeps and rolls toward Hopper's bay. The Host radios the Design Lab pulse from briefing — still on the board if you haven't been.`,
+The robot beeps and rolls toward Hopper's bay. Mr. Phil radios the Design Lab pulse from briefing — still on the board if you haven't been.`,
       badge: "Algorithm Architect",
       choicePrefix: "I head to",
       choices: [
@@ -444,7 +444,7 @@ They're asking if it's fine. 'I'll only be a minute.'`,
       lesson: "8.3.2.1",
       narrative: `"HTTPS and timing both matter," Babbage says. "Public air is shared air. A minute is plenty of time to steal a login."
 
-The Host pings two follow-ups: Data Vault (private info) and the IP Chamber (a video with a stolen song).`,
+Mr. Phil pings two follow-ups: Data Vault (private info) and the IP Chamber (a video with a stolen song).`,
       badge: "Network Navigator",
       choicePrefix: "I head to the",
       choices: [
@@ -752,7 +752,7 @@ Turing studies the ripple. "Brave. Also leaky. You exposed yourself and didn't c
       location: "Vault of Passwords · Security Gate",
       character: "guide",
       enter: "A gate that scans habits, not courage. Babbage mutters in the static.",
-      narrative: `The Host meets you at the security gate. A ghostly Babbage mutters, "Garbage in, garbage out."
+      narrative: `Mr. Phil meets you at the security gate. A ghostly Babbage mutters, "Garbage in, garbage out."
 
 A recruit ahead used one password everywhere — school email, a game account, the works.`,
       choicePrefix: "I will",
@@ -1306,7 +1306,7 @@ Back to briefing — or the Arena if you've earned it.`,
       location: "Gauntlet Arena · Final Round",
       character: "guide",
       enter: "The floor rises. Mentors you met appear in the holo-ring.",
-      narrative: `The Host's voice fills the Arena. Mentors you've met don't quiz you. They listen.
+      narrative: `Mr. Phil's voice fills the Arena. Mentors you've met don't quiz you. They listen.
 
 "In your own words: what will you actually do online when it counts — not when it's easy?"`,
       typingChallenge: {
@@ -1342,7 +1342,7 @@ You'll help the next recruit through their first fork. The mission log stays ope
 <strong>Design for people.</strong> <strong>Protect data.</strong> <strong>Guard your login.</strong>
 <strong>Think before you post.</strong> <strong>Decode media.</strong>
 
-The Host extends a hand. "Gauntlet champion. You didn't mash the 'right' button — you thought like a citizen."
+Mr. Phil grins. "Gauntlet champion. You didn't mash the 'right' button — you thought like a citizen."
 
 Play again. The side missions scramble. The Rules don't.`,
       choices: [
