@@ -42,6 +42,7 @@
 
   let config = { ...Defaults, id: assignmentId };
   let timer = null;
+  let keystrokeTracker = null;
   let allSubmissions = [];
   let teacherTableSort = { col: "submitted", dir: "desc" };
   let teacherClassroomFilter = "";
@@ -85,6 +86,7 @@
       teachingStandards: getTeachingStandardsRaw(),
       assignmentPrompt: config.prompt || config.promptBanner || "",
       classroom,
+      keystrokeStats: keystrokeTracker?.getStats?.() || null,
     };
   }
 
@@ -1659,6 +1661,7 @@
       storyInput.value = "";
       storyInput.readOnly = false;
       storyInput.style.height = "";
+      keystrokeTracker?.reset?.();
     }
     timerWaitingForMinWords = false;
     document.getElementById("timerExtendNotice")?.classList.add("dw-hidden");
@@ -1821,6 +1824,8 @@
       () => timer?.getElapsed() || 0,
       { showWpm: resolveShowLiveWpm() }
     );
+    keystrokeTracker = Core.createKeystrokeTracker?.(storyInput) || null;
+    keystrokeTracker?.attach?.();
     storyInput?.addEventListener("input", () => {
       updateWritingControls();
     });
@@ -1842,6 +1847,7 @@
       storyInput.value = "";
       storyInput.readOnly = false;
       storyInput.style.height = "";
+      keystrokeTracker?.reset?.();
       timerWaitingForMinWords = false;
       document.getElementById("timerExtendNotice")?.classList.add("dw-hidden");
       show("writing");
@@ -2240,6 +2246,7 @@
     });
     document.getElementById("refreshBtn")?.addEventListener("click", loadTeacherDashboard);
     document.getElementById("teacherClassroomFilter")?.addEventListener("change", applyTeacherClassroomFilter);
+    bindTeacherBatchGrade();
     document.getElementById("reanalyzeBtn")?.addEventListener("click", () => void reanalyzeAllSubmissions());
     document.getElementById("exportBtn")?.addEventListener("click", exportCsv);
     document.getElementById("teacherDetailCloseBtn")?.addEventListener("click", () => {
@@ -2286,6 +2293,7 @@
     populateTeacherClassroomFilter();
     updateTeacherMeta();
     void updateAdminReanalyzeUi();
+    updateTeacherBatchGradeButton();
     renderTeacherTable();
   }
 
@@ -2334,6 +2342,7 @@
       if (!stillVisible) clearTeacherSubmissionDetail();
     }
     updateTeacherMeta();
+    updateTeacherBatchGradeButton();
     renderTeacherTable();
   }
 
@@ -2712,6 +2721,163 @@
     }
     renderTeacherTable();
     return data;
+  }
+
+  const BATCH_GRADE_CHUNK = 50;
+
+  async function saveGradesBulkStudio(grades) {
+    if (!grades?.length) return { saved: 0, results: [], errors: [] };
+    let saved = 0;
+    const results = [];
+    const errors = [];
+    for (let i = 0; i < grades.length; i += BATCH_GRADE_CHUNK) {
+      const chunk = grades.slice(i, i + BATCH_GRADE_CHUNK);
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "saveGradesBulk",
+          password: sessionTeacherPassword || config.teacherPassword || "",
+          sessionToken: Teacher()?.getToken() || "",
+          grades: chunk,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `Batch save failed (${res.status})`);
+      saved += data.saved || 0;
+      if (Array.isArray(data.results)) results.push(...data.results);
+      if (Array.isArray(data.errors)) errors.push(...data.errors);
+    }
+    return { saved, results, errors };
+  }
+
+  function getTeacherBatchGradeTargets(ungradedOnly) {
+    return getFilteredTeacherSubmissions().filter((sub) => {
+      if (!sub?.id) return false;
+      if (ungradedOnly && sub.teacherGrade != null && sub.teacherGrade !== "") return false;
+      return true;
+    });
+  }
+
+  function updateTeacherBatchGradeButton() {
+    const btn = document.getElementById("teacherBatchGradeBtn");
+    if (!btn) return;
+    const show = !!config.gradingEnabled && getFilteredTeacherSubmissions().length > 0;
+    btn.classList.toggle("dw-hidden", !show);
+  }
+
+  function updateTeacherBatchGradeScope() {
+    const scopeEl = document.getElementById("teacherBatchGradeScope");
+    if (!scopeEl) return;
+    const ungradedOnly = !!document.getElementById("teacherBatchGradeUngradedOnly")?.checked;
+    const targets = getTeacherBatchGradeTargets(ungradedOnly);
+    const pts = document.getElementById("teacherBatchGradePoints")?.value || "10";
+    const roomNote = teacherClassroomFilter ? ` in ${teacherClassroomFilter}` : "";
+    scopeEl.textContent = targets.length
+      ? `Give ${pts} points to ${targets.length} student${targets.length === 1 ? "" : "s"}${roomNote}.`
+      : `No matching students${roomNote}. Try turning off "Only without a saved grade".`;
+  }
+
+  function openTeacherBatchGradeDialog() {
+    const dialog = document.getElementById("teacherBatchGradeDialog");
+    if (!dialog) return;
+    const releaseInput = document.getElementById("teacherBatchGradeRelease");
+    if (releaseInput) releaseInput.checked = !!config.autoReleaseFeedback;
+    const statusEl = document.getElementById("teacherBatchGradeStatus");
+    if (statusEl) statusEl.textContent = "";
+    updateTeacherBatchGradeScope();
+    if (typeof dialog.showModal === "function") dialog.showModal();
+  }
+
+  function closeTeacherBatchGradeDialog() {
+    const dialog = document.getElementById("teacherBatchGradeDialog");
+    if (dialog?.open) dialog.close();
+  }
+
+  async function applyTeacherBatchGrade() {
+    const pointsInput = document.getElementById("teacherBatchGradePoints");
+    const feedbackInput = document.getElementById("teacherBatchGradeFeedback");
+    const releaseInput = document.getElementById("teacherBatchGradeRelease");
+    const ungradedOnlyInput = document.getElementById("teacherBatchGradeUngradedOnly");
+    const statusEl = document.getElementById("teacherBatchGradeStatus");
+    const applyBtn = document.getElementById("teacherBatchGradeApplyBtn");
+    const teacherGrade = Number(pointsInput?.value);
+    const teacherFeedback = (feedbackInput?.value || "").trim();
+    const feedbackVisible = !!releaseInput?.checked;
+    const ungradedOnly = !!ungradedOnlyInput?.checked;
+
+    if (!Number.isFinite(teacherGrade) || teacherGrade < 0) {
+      if (statusEl) statusEl.textContent = "Enter a valid point value.";
+      return;
+    }
+
+    const targets = getTeacherBatchGradeTargets(ungradedOnly);
+    if (!targets.length) {
+      if (statusEl) statusEl.textContent = "No students match these options.";
+      return;
+    }
+
+    const confirmMsg = `Give ${teacherGrade} points to ${targets.length} student${targets.length === 1 ? "" : "s"}?`;
+    if (!window.confirm(confirmMsg)) return;
+
+    if (applyBtn) applyBtn.disabled = true;
+    if (statusEl) statusEl.textContent = `Saving 0 of ${targets.length}…`;
+
+    const grades = targets.map((sub) => ({
+      submissionId: sub.id,
+      assignmentId: config.id,
+      teacherGrade,
+      teacherFeedback,
+      feedbackVisible,
+    }));
+
+    try {
+      let saved = 0;
+      const errors = [];
+      for (let i = 0; i < grades.length; i += BATCH_GRADE_CHUNK) {
+        const chunk = grades.slice(i, i + BATCH_GRADE_CHUNK);
+        if (statusEl) statusEl.textContent = `Saving ${Math.min(i + chunk.length, grades.length)} of ${grades.length}…`;
+        const result = await saveGradesBulkStudio(chunk);
+        saved += result.saved || 0;
+        if (result.errors?.length) errors.push(...result.errors);
+        for (const item of result.results || []) {
+          const idx = allSubmissions.findIndex((row) => row.id === item.id);
+          if (idx >= 0) {
+            allSubmissions[idx] = {
+              ...allSubmissions[idx],
+              teacherGrade: item.teacherGrade,
+              teacherFeedback: item.teacherFeedback,
+              feedbackVisible: item.feedbackVisible,
+              gradedAt: item.gradedAt || Date.now(),
+            };
+          }
+        }
+      }
+      renderTeacherTable();
+      closeTeacherBatchGradeDialog();
+      if (errors.length) {
+        updateTeacherMeta(`Saved ${saved} of ${targets.length} grades; ${errors.length} failed.`, true);
+      } else {
+        updateTeacherMeta(`Batch graded ${saved} student${saved === 1 ? "" : "s"} with ${teacherGrade} points.`);
+      }
+    } catch (err) {
+      if (statusEl) statusEl.textContent = err.message || "Could not save grades.";
+    } finally {
+      if (applyBtn) applyBtn.disabled = false;
+    }
+  }
+
+  function bindTeacherBatchGrade() {
+    document.getElementById("teacherBatchGradeBtn")?.addEventListener("click", openTeacherBatchGradeDialog);
+    document.getElementById("teacherBatchGradeCancelBtn")?.addEventListener("click", closeTeacherBatchGradeDialog);
+    document.getElementById("teacherBatchGradeForm")?.addEventListener("submit", (e) => {
+      e.preventDefault();
+      void applyTeacherBatchGrade();
+    });
+    for (const id of ["teacherBatchGradePoints", "teacherBatchGradeUngradedOnly"]) {
+      document.getElementById(id)?.addEventListener("input", updateTeacherBatchGradeScope);
+      document.getElementById(id)?.addEventListener("change", updateTeacherBatchGradeScope);
+    }
   }
 
   function getTeacherTableColumns() {

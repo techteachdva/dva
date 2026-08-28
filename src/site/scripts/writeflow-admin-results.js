@@ -779,6 +779,122 @@
     });
   }
 
+  const BATCH_GRADE_CHUNK = 50;
+
+  function getAdminBatchGradeTargets(ungradedOnly) {
+    return filteredSubmissions.filter((sub) => {
+      if (!sub?.id || !sub?.assignmentId) return false;
+      if (ungradedOnly && sub.teacherGrade != null && sub.teacherGrade !== "") return false;
+      return true;
+    });
+  }
+
+  function updateAdminBatchGradeScope() {
+    const scopeEl = document.getElementById("adminBatchGradeScope");
+    if (!scopeEl) return;
+    const ungradedOnly = !!document.getElementById("adminBatchGradeUngradedOnly")?.checked;
+    const targets = getAdminBatchGradeTargets(ungradedOnly);
+    const pts = document.getElementById("adminBatchGradePoints")?.value || "10";
+    const { assignmentId, classroom } = getFilters();
+    const filterBits = [];
+    if (assignmentId) filterBits.push("this assignment");
+    if (classroom) filterBits.push(classroom);
+    const filterNote = filterBits.length ? ` (${filterBits.join(", ")})` : "";
+    scopeEl.textContent = targets.length
+      ? `Give ${pts} points to ${targets.length} student${targets.length === 1 ? "" : "s"}${filterNote}.`
+      : `No matching students${filterNote}. Try turning off "Only without a saved grade".`;
+  }
+
+  function openAdminBatchGradeDialog() {
+    const dialog = document.getElementById("adminBatchGradeDialog");
+    if (!dialog) return;
+    const statusEl = document.getElementById("adminBatchGradeStatus");
+    if (statusEl) statusEl.textContent = "";
+    updateAdminBatchGradeScope();
+    if (typeof dialog.showModal === "function") dialog.showModal();
+  }
+
+  function closeAdminBatchGradeDialog() {
+    const dialog = document.getElementById("adminBatchGradeDialog");
+    if (dialog?.open) dialog.close();
+  }
+
+  async function applyAdminBatchGrade() {
+    const pointsInput = document.getElementById("adminBatchGradePoints");
+    const feedbackInput = document.getElementById("adminBatchGradeFeedback");
+    const releaseInput = document.getElementById("adminBatchGradeRelease");
+    const ungradedOnlyInput = document.getElementById("adminBatchGradeUngradedOnly");
+    const statusEl = document.getElementById("adminBatchGradeStatus");
+    const applyBtn = document.getElementById("adminBatchGradeApplyBtn");
+    const teacherGrade = Number(pointsInput?.value);
+    const teacherFeedback = (feedbackInput?.value || "").trim();
+    const feedbackVisible = !!releaseInput?.checked;
+    const ungradedOnly = !!ungradedOnlyInput?.checked;
+
+    if (!Number.isFinite(teacherGrade) || teacherGrade < 0) {
+      if (statusEl) statusEl.textContent = "Enter a valid point value.";
+      return;
+    }
+
+    const targets = getAdminBatchGradeTargets(ungradedOnly);
+    if (!targets.length) {
+      if (statusEl) statusEl.textContent = "No students match these options.";
+      return;
+    }
+
+    const confirmMsg = `Give ${teacherGrade} points to ${targets.length} student${targets.length === 1 ? "" : "s"}?`;
+    if (!window.confirm(confirmMsg)) return;
+
+    if (applyBtn) applyBtn.disabled = true;
+    if (statusEl) statusEl.textContent = `Saving 0 of ${targets.length}…`;
+
+    const grades = targets.map((sub) => ({
+      submissionId: sub.id,
+      assignmentId: sub.assignmentId,
+      teacherGrade,
+      teacherFeedback,
+      feedbackVisible,
+    }));
+
+    try {
+      let saved = 0;
+      const errors = [];
+      for (let i = 0; i < grades.length; i += BATCH_GRADE_CHUNK) {
+        const chunk = grades.slice(i, i + BATCH_GRADE_CHUNK);
+        if (statusEl) statusEl.textContent = `Saving ${Math.min(i + chunk.length, grades.length)} of ${grades.length}…`;
+        const result = await Admin().saveGradesBulk(chunk);
+        saved += result.saved || 0;
+        if (result.errors?.length) errors.push(...result.errors);
+        for (const item of result.results || []) {
+          applyGradingResult(item);
+        }
+      }
+      closeAdminBatchGradeDialog();
+      if (errors.length) {
+        setMeta(`Saved ${saved} of ${targets.length} grades; ${errors.length} failed.`, true);
+      } else {
+        setMeta(`Batch graded ${saved} student${saved === 1 ? "" : "s"} with ${teacherGrade} points.`);
+      }
+    } catch (err) {
+      if (statusEl) statusEl.textContent = err.message || "Could not save grades.";
+    } finally {
+      if (applyBtn) applyBtn.disabled = false;
+    }
+  }
+
+  function bindAdminBatchGrade() {
+    document.getElementById("adminBatchGradeBtn")?.addEventListener("click", openAdminBatchGradeDialog);
+    document.getElementById("adminBatchGradeCancelBtn")?.addEventListener("click", closeAdminBatchGradeDialog);
+    document.getElementById("adminBatchGradeForm")?.addEventListener("submit", (e) => {
+      e.preventDefault();
+      void applyAdminBatchGrade();
+    });
+    for (const id of ["adminBatchGradePoints", "adminBatchGradeUngradedOnly"]) {
+      document.getElementById(id)?.addEventListener("input", updateAdminBatchGradeScope);
+      document.getElementById(id)?.addEventListener("change", updateAdminBatchGradeScope);
+    }
+  }
+
   async function init() {
     if (!Admin()) return;
 
@@ -810,6 +926,7 @@
 
     bindGradingInputs();
     bindKeyboardShortcuts();
+    bindAdminBatchGrade();
 
     window.addEventListener("beforeunload", (e) => {
       if ((gradingQueue?.countDirty() || 0) > 0) {

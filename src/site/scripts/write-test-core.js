@@ -438,6 +438,100 @@
     });
   }
 
+  /**
+   * Track keystroke accuracy during timed writing.
+   * Rewards students who type cleanly with fewer backspaces/corrections.
+   */
+  function createKeystrokeTracker(textarea) {
+    const stats = {
+      totalKeys: 0,
+      insertChars: 0,
+      backspaces: 0,
+      deletes: 0,
+      pasteEvents: 0,
+      pastedChars: 0,
+    };
+
+    if (!textarea) {
+      return {
+        reset() {},
+        getStats() { return { ...stats }; },
+        attach() {},
+        detach() {},
+      };
+    }
+
+    let lastValue = textarea.value || "";
+    let attached = false;
+
+    function onKeyDown(e) {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.key === "Backspace") {
+        stats.backspaces += 1;
+        stats.totalKeys += 1;
+      } else if (e.key === "Delete") {
+        stats.deletes += 1;
+        stats.totalKeys += 1;
+      } else if (e.key.length === 1) {
+        stats.insertChars += 1;
+        stats.totalKeys += 1;
+      } else if (e.key === "Enter") {
+        stats.insertChars += 1;
+        stats.totalKeys += 1;
+      }
+    }
+
+    function onPaste(e) {
+      stats.pasteEvents += 1;
+      const pasted = e.clipboardData?.getData("text") || "";
+      stats.pastedChars += pasted.length;
+    }
+
+    function onInput() {
+      const current = textarea.value || "";
+      const delta = current.length - lastValue.length;
+      if (delta > 1 && stats.pasteEvents === 0) {
+        stats.insertChars += delta;
+        stats.totalKeys += delta;
+      }
+      lastValue = current;
+    }
+
+    function attach() {
+      if (attached) return;
+      attached = true;
+      lastValue = textarea.value || "";
+      textarea.addEventListener("keydown", onKeyDown);
+      textarea.addEventListener("paste", onPaste);
+      textarea.addEventListener("input", onInput);
+    }
+
+    function detach() {
+      if (!attached) return;
+      attached = false;
+      textarea.removeEventListener("keydown", onKeyDown);
+      textarea.removeEventListener("paste", onPaste);
+      textarea.removeEventListener("input", onInput);
+    }
+
+    function reset() {
+      stats.totalKeys = 0;
+      stats.insertChars = 0;
+      stats.backspaces = 0;
+      stats.deletes = 0;
+      stats.pasteEvents = 0;
+      stats.pastedChars = 0;
+      lastValue = textarea.value || "";
+    }
+
+    return {
+      reset,
+      getStats() { return { ...stats }; },
+      attach,
+      detach,
+    };
+  }
+
   function shuffle(arr) {
     const a = [...arr];
     for (let i = a.length - 1; i > 0; i--) {
@@ -535,6 +629,7 @@
     createTimer,
     setupPasteControl,
     setupLiveStats,
+    createKeystrokeTracker,
     shuffle,
     shuffleOptions,
     storageKey,

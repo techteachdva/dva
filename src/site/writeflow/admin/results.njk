@@ -26,6 +26,7 @@ layout: false
         <div class="wf-admin-results__toolbar">
           <span id="adminGradingQueueStatus" class="wf-grading-queue-status dw-muted dw-tiny" role="status" aria-live="polite"></span>
           <button id="adminSaveAllPendingBtn" class="dw-btn dw-btn-secondary" type="button" disabled>Save pending</button>
+          <button id="adminBatchGradeBtn" class="dw-btn dw-btn-secondary" type="button">Batch grade</button>
           <a class="dw-btn dw-btn-ghost" href="/writeflow/admin/">← Admin portal</a>
           <button id="adminResultsRefreshBtn" class="dw-btn dw-btn-secondary" type="button">Refresh</button>
           <button id="adminResultsReanalyzeBtn" class="dw-btn" type="button">Re-analyze all results</button>
@@ -129,6 +130,34 @@ layout: false
         </section>
       </main>
     </div>
+
+    <dialog id="adminBatchGradeDialog" class="wf-batch-grade-dialog">
+      <form id="adminBatchGradeForm" class="wf-batch-grade-form" method="dialog">
+        <h3 class="dw-h3">Batch grade</h3>
+        <p class="dw-muted dw-tiny" id="adminBatchGradeScope">Apply the same grade to multiple students.</p>
+        <label class="dw-field">
+          <span class="dw-label">Points</span>
+          <input id="adminBatchGradePoints" class="dw-input wf-grading-form__grade-input" type="number" min="0" step="0.5" value="10" />
+        </label>
+        <label class="dw-field">
+          <span class="dw-label">Feedback for students</span>
+          <textarea id="adminBatchGradeFeedback" class="dw-textarea wf-grading-form__feedback" rows="2" placeholder="Thanks for trying!">Thanks for trying the test!</textarea>
+        </label>
+        <label class="wf-toggle-row">
+          <input id="adminBatchGradeRelease" type="checkbox" />
+          <span class="wf-toggle-row__label"><strong>Release to students</strong><span class="wf-toggle-row__hint">Students see grade and feedback in My writing</span></span>
+        </label>
+        <label class="wf-toggle-row">
+          <input id="adminBatchGradeUngradedOnly" type="checkbox" />
+          <span class="wf-toggle-row__label"><strong>Only without a saved grade</strong><span class="wf-toggle-row__hint">Skip students you already graded manually</span></span>
+        </label>
+        <div class="dw-row wf-batch-grade-form__actions">
+          <button id="adminBatchGradeApplyBtn" class="dw-btn" type="submit">Apply grades</button>
+          <button id="adminBatchGradeCancelBtn" class="dw-btn dw-btn-ghost" type="button">Cancel</button>
+        </div>
+        <p id="adminBatchGradeStatus" class="dw-muted dw-tiny" role="status"></p>
+      </form>
+    </dialog>
 
     <script src="/scripts/writeflow-admin-auth.js" defer></script>
     <script src="/scripts/writeflow-grading-queue.js" defer></script>

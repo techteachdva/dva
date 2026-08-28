@@ -146,10 +146,13 @@
   /**
    * Teacher grading calibration (Feb 2026, n=87 teacher-graded WriteFlow submissions).
    * Aligns auto scores with Mr. Phil's rubric for reflection/bell-ringer assignments.
+   * Aug 2026: added keystroke accuracy, conventions rewards, semantic prompt matching.
    */
   const TEACHER_CALIBRATION = {
-    /** Reflection mode overall weights — mechanics correlates strongest with teacher grades (r=0.53). */
-    reflectionOverall: { mechanics: 0.35, story: 0.65 },
+    /** Reflection mode overall weights — mechanics + accuracy matter; speed rewarded modestly. */
+    reflectionOverall: { typing: 0.12, mechanics: 0.33, story: 0.55 },
+    /** Composition mode — speed + accuracy alongside conventions and prompt response. */
+    compositionOverall: { typing: 0.15, mechanics: 0.35, story: 0.50 },
     /** Bonus points when students explain reasoning or contrast with technology. */
     reasoningBonus: { because: 12, techContrast: 8 },
     /** Bonus per valid example noun beyond the first two (classification prompts). */
@@ -161,10 +164,82 @@
     /** Cap when response is clearly off-topic narrative. */
     offTopicCap: 15,
     /** Dictation/copy exercises — score mostly on typing accuracy. */
-    dictationTypingWeight: 0.5,
-    dictationMechanicsWeight: 0.1,
+    dictationTypingWeight: 0.55,
+    dictationMechanicsWeight: 0.15,
     dictationMaxScore: 12,
   };
+
+  /** Keystroke accuracy — rewards clean typing and penalizes excessive corrections. */
+  const KEYSTROKE_CALIBRATION = {
+    correctionPenalty: 135,
+    minKeysForScoring: 15,
+    /** Typing sub-score blend: wpm + volume + accuracy */
+    typingBlend: { wpm: 0.40, volume: 0.28, accuracy: 0.32 },
+    /** Speed bonus when accuracy is already solid */
+    speedBonusMinAccuracy: 72,
+    speedBonusMinWpm: 14,
+    speedBonusMax: 14,
+    /** When re-analyzing without live stats, estimate accuracy from text quality */
+    estimateFromMechanics: true,
+  };
+
+  /** Positive rewards for conventions Mr. Phil values (punctuation, spacing, spelling). */
+  const CONVENTIONS_REWARDS = {
+    minWords: 18,
+    perfectPunctuation: 10,
+    perfectSpacing: 8,
+    cleanSpelling: 12,
+    sentencePunctuation: 6,
+    interiorPunctuation: 5,
+  };
+
+  /**
+   * Semantic prompt matching — detects exact, near, paraphrase, and summary answers.
+   * Concept clusters expand beyond literal prompt keywords.
+   */
+  const PROMPT_SEMANTICS = {
+    heuristicWeight: 0.45,
+    semanticWeight: 0.55,
+    jaccardNearExact: 0.40,
+    jaccardParaphrase: 0.24,
+    jaccardSummary: 0.14,
+    tierScores: { exact: 100, near: 88, paraphrase: 76, summary: 68, partial: 52, weak: 28 },
+    summaryPhrases: /\b(in other words|basically|what i mean|same (thing|idea)|to put it simply|another way|that means|which means)\b/i,
+    definitionPhrases: /\b(means to me|is when|is that|refers to|is about|is like|can be|is something|is anything)\b/i,
+  };
+
+  /** Concept clusters for logical answer matching beyond literal keywords. */
+  const PROMPT_CONCEPT_CLUSTERS = [
+    {
+      id: "technology",
+      triggers: ["technology", "tech", "isn't", "isnt", "device", "digital"],
+      terms: ["technology", "tech", "device", "devices", "computer", "phone", "digital", "electronic", "machine", "internet", "screen", "app", "software", "tool", "tools", "gadget", "gadgets", "electric", "battery", "wifi", "online"],
+      contrastTerms: ["natural", "nature", "man-made", "human-made", "not technology", "non-tech", "isnt technology", "isn't technology", "organic", "living"],
+    },
+    {
+      id: "meaning",
+      triggers: ["mean", "means", "meaning", "definition"],
+      terms: ["mean", "means", "meaning", "represents", "symbolize", "definition", "important", "matters", "significant", "represents", "stands for", "about", "represents"],
+    },
+    {
+      id: "spark",
+      triggers: ["spark"],
+      terms: ["spark", "curiosity", "wonder", "interest", "ignite", "motivation", "inspire", "excited", "learn", "discovery", "question", "explore", "curious"],
+    },
+    {
+      id: "example",
+      triggers: ["example", "list", "name", "identify"],
+      terms: ["example", "for instance", "such as", "like", "including", "one is", "another", "also"],
+    },
+  ];
+
+  /** Common word-family stems for near-match detection. */
+  const PROMPT_STEM_GROUPS = [
+    ["technolog", "tech", "digital", "electron", "computer", "device", "machine"],
+    ["mean", "defin", "represent", "symbol", "signif"],
+    ["spark", "curios", "wonder", "inspir", "motivat", "learn", "discover"],
+    ["write", "writ", "compos", "story", "narrat"],
+  ];
 
   /** Off-topic personal narratives unrelated to assignment prompt. */
   const OFF_TOPIC_NARRATIVE_PATTERN =
@@ -212,6 +287,11 @@
     GRADE_ADVANCED_P90,
     LOUNGE_NORMS,
     TEACHER_CALIBRATION,
+    KEYSTROKE_CALIBRATION,
+    CONVENTIONS_REWARDS,
+    PROMPT_SEMANTICS,
+    PROMPT_CONCEPT_CLUSTERS,
+    PROMPT_STEM_GROUPS,
     OFF_TOPIC_NARRATIVE_PATTERN,
     DICTATION_PATTERN,
     TECH_CONTRAST_PATTERN,

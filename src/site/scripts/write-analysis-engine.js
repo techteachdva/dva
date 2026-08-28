@@ -90,6 +90,107 @@
     return [...new Set(terms)].slice(0, 12);
   }
 
+  function getContentWords(text) {
+    return String(text).toLowerCase().replace(/[^a-z0-9\s'-]/g, " ").split(/\s+/)
+      .map((w) => w.replace(/'/g, ""))
+      .filter((w) => w.length > 2 && !STOP_WORDS.has(w));
+  }
+
+  function jaccardSimilarity(wordsA, wordsB) {
+    const setA = new Set(wordsA);
+    const setB = new Set(wordsB);
+    if (!setA.size || !setB.size) return 0;
+    let inter = 0;
+    for (const w of setA) if (setB.has(w)) inter++;
+    return inter / (setA.size + setB.size - inter);
+  }
+
+  function stemMatch(word, stem) {
+    const minLen = Math.min(4, word.length, stem.length);
+    return word.startsWith(stem) || stem.startsWith(word.slice(0, minLen));
+  }
+
+  function analyzePromptSemantics(text, prompt = "") {
+    if (!prompt.trim()) return { score: null, tier: null, conceptHits: [], jaccard: 0, stemHits: 0, termRate: 0 };
+    const cal = getCalibration();
+    const sem = cal.PROMPT_SEMANTICS || {};
+    const tiers = sem.tierScores || {};
+    const promptWords = getContentWords(prompt);
+    const textWords = getContentWords(text);
+    const jaccard = jaccardSimilarity(promptWords, textWords);
+    const lower = text.toLowerCase();
+    const terms = extractPromptTerms(prompt);
+    const termHits = terms.filter((t) => lower.includes(t));
+    const termRate = terms.length ? termHits.length / terms.length : 0;
+
+    const conceptHits = [];
+    let conceptScore = 0;
+    const promptLower = prompt.toLowerCase();
+    for (const cluster of cal.PROMPT_CONCEPT_CLUSTERS || []) {
+      const relevant = (cluster.triggers || []).some((t) => promptLower.includes(t) || lower.includes(t));
+      if (!relevant) continue;
+      const matchedTerms = (cluster.terms || []).filter((t) => lower.includes(t));
+      const contrastHits = (cluster.contrastTerms || []).filter((t) => lower.includes(t));
+      if (matchedTerms.length) {
+        conceptHits.push({ id: cluster.id, terms: matchedTerms.slice(0, 4), contrast: contrastHits.length });
+        conceptScore += Math.min(28, matchedTerms.length * 8 + contrastHits.length * 6);
+      }
+    }
+    conceptScore = Math.min(conceptScore, 55);
+
+    let stemHits = 0;
+    for (const group of cal.PROMPT_STEM_GROUPS || []) {
+      const promptHas = group.some((stem) => promptWords.some((w) => stemMatch(w, stem)));
+      if (!promptHas) continue;
+      if (group.some((stem) => textWords.some((w) => stemMatch(w, stem)))) stemHits++;
+    }
+    const stemScore = Math.min(24, stemHits * 8);
+
+    const hasSummaryPhrase = sem.summaryPhrases?.test(text);
+    const hasDefinitionPhrase = sem.definitionPhrases?.test(text);
+    let tier = "weak";
+    if (termRate >= 0.75 || jaccard >= (sem.jaccardNearExact || 0.4)) tier = "exact";
+    else if (termRate >= 0.5 || jaccard >= (sem.jaccardParaphrase || 0.24) || (stemHits >= 2 && conceptScore >= 20)) tier = "near";
+    else if (hasDefinitionPhrase && (termRate >= 0.35 || conceptScore >= 16)) tier = "paraphrase";
+    else if (hasSummaryPhrase && (termRate >= 0.25 || jaccard >= (sem.jaccardSummary || 0.14))) tier = "summary";
+    else if (termRate >= 0.3 || conceptScore >= 12 || stemHits >= 1) tier = "partial";
+
+    let score = tiers[tier] || 28;
+    score = clamp(Math.round(score + conceptScore * 0.35 + stemScore * 0.4 + jaccard * 30), 0, 100);
+    return {
+      score,
+      tier,
+      conceptHits,
+      jaccard: Math.round(jaccard * 100) / 100,
+      stemHits,
+      termRate: Math.round(termRate * 100) / 100,
+      conceptScore,
+    };
+  }
+
+  function analyzeKeystrokeAccuracy(keystrokeStats, spellingScore, grammarScore) {
+    const cal = getCalibration().KEYSTROKE_CALIBRATION || {};
+    if (!keystrokeStats || keystrokeStats.totalKeys < (cal.minKeysForScoring || 15)) {
+      if (cal.estimateFromMechanics !== false) {
+        const estimated = clamp(Math.round(spellingScore * 0.5 + grammarScore * 0.5), 0, 100);
+        return { score: estimated, source: "estimated", accuracyRate: null, correctionRate: null };
+      }
+      return { score: 70, source: "default", accuracyRate: null, correctionRate: null };
+    }
+    const corrections = (keystrokeStats.backspaces || 0) + (keystrokeStats.deletes || 0);
+    const correctionRate = corrections / Math.max(keystrokeStats.totalKeys, 1);
+    const productiveRate = Math.min(1, (keystrokeStats.insertChars || 0) / Math.max(keystrokeStats.totalKeys, 1));
+    const pastePenalty = (keystrokeStats.pastedChars || 0) > 0 ? Math.min(15, keystrokeStats.pastedChars * 0.5) : 0;
+    let score = 100 - correctionRate * (cal.correctionPenalty || 135) - pastePenalty;
+    score = clamp(Math.round(score * 0.7 + productiveRate * 100 * 0.3), 0, 100);
+    return {
+      score,
+      source: "live",
+      accuracyRate: Math.round((1 - correctionRate) * 100),
+      correctionRate: Math.round(correctionRate * 100),
+    };
+  }
+
   function analyzePromptResponse(text, prompt = "") {
     if (!prompt.trim()) return { score: null, termHits: [], termsChecked: 0, signals: [], exampleCount: 0, responseType: "normal" };
     const cal = getCalibration();
@@ -128,11 +229,22 @@
       score = Math.min(100, score + Math.min((exampleCount - 2) * (exBonus.perExample || 4), exBonus.maxBonus || 16));
     }
 
+    const semantic = analyzePromptSemantics(text, prompt);
+    const semCfg = cal.PROMPT_SEMANTICS || {};
+    if (semantic.score != null) {
+      const hw = semCfg.heuristicWeight ?? 0.45;
+      const sw = semCfg.semanticWeight ?? 0.55;
+      score = clamp(Math.round(score * hw + semantic.score * sw), 0, 100);
+    }
+
     let responseType = "normal";
     if (cal.DICTATION_PATTERN?.test(text)) responseType = "dictation";
     else if (cal.OFF_TOPIC_NARRATIVE_PATTERN?.test(text) && !hasTechContrast && exampleCount < 2) responseType = "off_topic";
 
-    return { score, termHits, termsChecked: terms.length, signals, exampleCount, hasTechContrast, hasBecause, responseType };
+    return {
+      score, termHits, termsChecked: terms.length, signals, exampleCount, hasTechContrast, hasBecause, responseType,
+      semantic, answerTier: semantic.tier,
+    };
   }
 
   function detectResponseType(text, promptResponse) {
@@ -195,11 +307,19 @@
         if (issues.length < 5) issues.push(`"${words[i]}" → try "${COMMON_MISSPELLINGS[w]}"`);
       }
     }
+    const doubledLetter = /\b(\w{3,})\1{2,}\b/gi;
+    misspellCount += (text.match(doubledLetter) || []).length;
+    const apostropheErrors = (text.match(/\bi\b/g) || []).length;
     const rate = words.length > 0 ? misspellCount / words.length : 0;
     const penaltyRate = getCalibration().SPELLING_MISSPELL_RATE || 220;
+    const iPenalty = getCalibration().SPELLING_I_PENALTY || 1.5;
     const adjustedRate = words.length < 30 ? misspellCount / Math.max(words.length, 12) : rate;
-    const score = clamp(Math.round(100 - adjustedRate * penaltyRate), 0, 100);
-    return { score, misspellCount, issues };
+    let score = clamp(Math.round(100 - adjustedRate * penaltyRate - apostropheErrors * iPenalty), 0, 100);
+    const rewards = getCalibration().CONVENTIONS_REWARDS || {};
+    if (words.length >= (rewards.minWords || 18) && misspellCount === 0 && apostropheErrors === 0) {
+      score = Math.min(100, score + (rewards.cleanSpelling || 12));
+    }
+    return { score, misspellCount, apostropheErrors, issues };
   }
 
   function analyzeGrammar(text, sentences, words) {
@@ -211,7 +331,8 @@
         if (issues.length < 4) issues.push("Some sentences don't start with a capital letter.");
       }
     }
-    if (text.trim() && !/[.!?]["']?\s*$/.test(text.trim())) {
+    const endsWithPunct = /[.!?]["']?\s*$/.test(text.trim());
+    if (text.trim() && !endsWithPunct) {
       errorCount++;
       if (issues.length < 5) issues.push("Add ending punctuation to your final sentence.");
     }
@@ -229,9 +350,33 @@
       errorCount++;
       if (issues.length < 5) issues.push("Use commas or periods between ideas.");
     }
+    const doubleSpaces = (text.match(/  +/g) || []).length;
+    errorCount += doubleSpaces;
+    const repeatedAdjacent = words.filter((w, i) => i > 0 && normalizeWord(w) === normalizeWord(words[i - 1]) && normalizeWord(w).length > 2).length;
+    errorCount += repeatedAdjacent;
+    const commaSplices = (text.match(/,\s*(and|but|so)\s+\w+/gi) || []).length;
+    errorCount += Math.floor(commaSplices * 0.3);
+
     const perSentence = errorCount / Math.max(sentences.length, 1);
-    const deduction = Math.min(58, errorCount * 9 + perSentence * 7);
-    return { score: clamp(Math.round(100 - deduction), 0, 100), issues: [...new Set(issues)].slice(0, 5) };
+    const grammarRate = getCalibration().GRAMMAR_ERROR_RATE || 18;
+    let score = clamp(Math.round(100 - errorCount * 9 - perSentence * 7 - commaSplices * 2), 0, 100);
+    if (score < 42) score = clamp(Math.round(100 - perSentence * grammarRate), 0, 100);
+
+    const rewards = getCalibration().CONVENTIONS_REWARDS || {};
+    let bonus = 0;
+    const minWords = rewards.minWords || 18;
+    if (words.length >= minWords) {
+      if (doubleSpaces === 0) bonus += rewards.perfectSpacing || 8;
+      const capitalizedSentences = sentences.filter((s) => /^[A-Z]/.test(s.trim())).length;
+      if (capitalizedSentences === sentences.length && sentences.length >= 2 && endsWithPunct) {
+        bonus += rewards.perfectPunctuation || 10;
+      }
+      if (interiorPunct >= Math.max(1, sentences.length - 1)) bonus += rewards.interiorPunctuation || 5;
+      const sentenceEndings = (text.match(/[.!?]+/g) || []).length;
+      if (sentenceEndings >= sentences.length && sentences.length >= 2) bonus += rewards.sentencePunctuation || 6;
+    }
+    score = clamp(score + bonus, 0, 100);
+    return { score, issues: [...new Set(issues)].slice(0, 5), doubleSpaces, repeatedAdjacent };
   }
 
   function analyzeSyntax(sentences, words, text) {
@@ -364,12 +509,27 @@
     const wpmScore = scoreFromRange(wpm, calBreakpoints("WPM_BREAKPOINTS", [
       [0, 0], [10, 40], [17, 58], [24, 72], [32, 85], [45, 100],
     ]));
-    let typingScore = clamp(Math.round(wpmScore * 0.55 + volumeScore * 0.45), 0, 100);
+    const keystrokeAccuracy = analyzeKeystrokeAccuracy(options.keystrokeStats, spelling.score, grammar.score);
+    const kc = getCalibration().KEYSTROKE_CALIBRATION?.typingBlend || { wpm: 0.4, volume: 0.28, accuracy: 0.32 };
+    let typingScore = clamp(Math.round(
+      wpmScore * (kc.wpm || 0.4) + volumeScore * (kc.volume || 0.28) + keystrokeAccuracy.score * (kc.accuracy || 0.32)
+    ), 0, 100);
+    const kcal = getCalibration().KEYSTROKE_CALIBRATION || {};
+    if (keystrokeAccuracy.score >= (kcal.speedBonusMinAccuracy || 72) && wpm >= (kcal.speedBonusMinWpm || 14)) {
+      const speedExtra = scoreFromRange(wpm, calBreakpoints("WPM_BREAKPOINTS", [
+        [0, 0], [10, 40], [17, 58], [24, 72], [32, 85], [45, 100],
+      ])) * 0.12;
+      typingScore = Math.min(100, typingScore + Math.min(kcal.speedBonusMax || 14, Math.round(speedExtra)));
+    }
     const gradeTyping = computeGradeRelativeTyping(wordCount, wpm, grammar.score, syntax.score, options.classroom);
     if (gradeTyping != null) {
       typingScore = clamp(Math.round(typingScore * 0.35 + gradeTyping * 0.65), 10, 100);
     }
-    let mechanicsScore = clamp(Math.round(spelling.score * 0.45 + grammar.score * 0.35 + syntax.score * 0.2), 0, 100);
+    let mechanicsScore = clamp(Math.round(
+      spelling.score * (getCalibration().MECHANICS_WEIGHTS?.spelling || 0.45) +
+      grammar.score * (getCalibration().MECHANICS_WEIGHTS?.grammar || 0.35) +
+      syntax.score * (getCalibration().MECHANICS_WEIGHTS?.syntax || 0.2)
+    ), 0, 100);
     mechanicsScore = applyMechanicsExemplarFloor(mechanicsScore, wordCount, spelling.score, grammar.score);
 
     const detailBase = scoreFromRange(sensoryCount, calBreakpoints("STORY_DETAIL_BREAKPOINTS", [[0, 35], [2, 62], [4, 82], [8, 100]]));
@@ -410,6 +570,7 @@
       spelling: spelling.score, grammar: grammar.score, syntax: syntax.score,
       semantics: semantics.score, typing: typingScore, mechanics: mechanicsScore, story: storyScore,
       vocabulary: vocabulary.score,
+      keystrokeAccuracy: keystrokeAccuracy.score,
       voice: storySubs.voice,
       detail: storySubs.detail,
       structure: storySubs.structure,
@@ -429,7 +590,7 @@
       wpm: Math.round(wpm * 10) / 10,
       sentenceCount: sentences.length,
       typingLevel,
-      spelling, grammar, syntax, semantics, storySubs, vocabulary, promptResponse,
+      spelling, grammar, syntax, semantics, storySubs, vocabulary, promptResponse, keystrokeAccuracy,
       scores: { typing: typingScore, mechanics: mechanicsScore, story: storyScore, overall: overallScore, vocabulary: vocabulary.score },
       metricScores,
       standards,
@@ -439,6 +600,7 @@
         rubrics: options.rubrics,
         mechanicsScore,
         overallScore,
+        keystrokeAccuracy,
       }),
     };
   }
@@ -478,24 +640,35 @@
   }
 
   const MODE_OVERALL_WEIGHTS = {
-    composition: { typing: 0, mechanics: 0.35, story: 0.65 },
+    composition: { typing: 0.15, mechanics: 0.35, story: 0.50 },
     fluency: { typing: 1, mechanics: 0, story: 0 },
     typing_practice: { typing: 1, mechanics: 0, story: 0 },
-    reflection: { typing: 0, mechanics: 0.35, story: 0.65 },
+    reflection: { typing: 0.12, mechanics: 0.33, story: 0.55 },
   };
 
   function computeOverallScore(scores, options = {}) {
     const mode = options.assignmentMode || "composition";
     const cal = getCalibration();
-    const reflectionWeights = cal.TEACHER_CALIBRATION?.reflectionOverall;
+    const tc = cal.TEACHER_CALIBRATION || {};
     const rubrics = options.rubrics || Object.keys(MODE_OVERALL_WEIGHTS[mode] || {}).filter((k) => (MODE_OVERALL_WEIGHTS[mode]?.[k] ?? 0) > 0);
     let weights = MODE_OVERALL_WEIGHTS[mode] || { typing: 0.33, mechanics: 0.34, story: 0.33 };
-    if (mode === "reflection" && reflectionWeights) {
-      weights = { typing: 0, mechanics: reflectionWeights.mechanics, story: reflectionWeights.story };
+    if (mode === "reflection" && tc.reflectionOverall) {
+      weights = {
+        typing: tc.reflectionOverall.typing || 0,
+        mechanics: tc.reflectionOverall.mechanics,
+        story: tc.reflectionOverall.story,
+      };
+    } else if (mode === "composition" && tc.compositionOverall) {
+      weights = {
+        typing: tc.compositionOverall.typing || 0,
+        mechanics: tc.compositionOverall.mechanics,
+        story: tc.compositionOverall.story,
+      };
     }
+    const scoreKeys = Object.keys(weights).filter((k) => (weights[k] ?? 0) > 0);
     let sum = 0;
     let weightSum = 0;
-    for (const key of rubrics) {
+    for (const key of scoreKeys) {
       const w = weights[key] ?? 0;
       const score = scores[key];
       if (w > 0 && Number.isFinite(score)) {
@@ -550,8 +723,18 @@
       if (spelling.score >= 75) strengths.push("Spelling looks solid for a first draft.");
       else if (spelling.misspellCount > 0) improvements.push(`Watch spelling — ${spelling.misspellCount} possible misspelling${spelling.misspellCount === 1 ? "" : "s"} flagged.`);
       else improvements.push("Watch spelling in revision.");
-      if (grammar.score >= 75) strengths.push("Conventions are mostly in place.");
-      else improvements.push("Check capitals, the pronoun I, and ending punctuation.");
+      if (grammar.score >= 75) strengths.push("Conventions are mostly in place — good punctuation and spacing.");
+      else {
+        if (grammar.doubleSpaces > 0) improvements.push("Remove extra spaces between words.");
+        improvements.push("Check capitals, the pronoun I, and ending punctuation on every sentence.");
+      }
+    }
+
+    if (rubrics.includes("typing") && mode !== "fluency" && mode !== "typing_practice") {
+      const acc = options.keystrokeAccuracy;
+      if (acc?.score >= 80) strengths.push("Clean typing — few corrections needed.");
+      else if (acc?.source === "live" && acc.correctionRate > 25) improvements.push("Try to type more accurately — fewer backspaces means faster writing.");
+      if (options.wpm >= 20) strengths.push(`Good writing speed (${Math.round(options.wpm)} WPM).`);
     }
 
     if (rubrics.includes("story")) {
@@ -559,6 +742,13 @@
         if (promptResponse.score >= 65) strengths.push("Your response connects to the prompt.");
         else if (promptResponse.score >= 40) improvements.push("Address more of the prompt question in your own words.");
         else improvements.push("Re-read the prompt and explain what it means to you with a specific example.");
+        if (promptResponse.answerTier === "exact" || promptResponse.answerTier === "near") {
+          strengths.push("You answered the question clearly — your ideas match the prompt.");
+        } else if (promptResponse.answerTier === "paraphrase" || promptResponse.answerTier === "summary") {
+          strengths.push("You explained the idea in your own words — good paraphrase.");
+        } else if (promptResponse.answerTier === "partial") {
+          improvements.push("Try to answer the full question — name the concept and explain what it means to you.");
+        }
         if (promptResponse.hasBecause) strengths.push("Good use of reasoning — you explained why.");
         else if (promptResponse.exampleCount >= 2) improvements.push("Add a sentence explaining why your examples fit the prompt.");
         if (promptResponse.exampleCount >= 3) strengths.push(`Strong examples — you listed ${promptResponse.exampleCount} relevant items.`);

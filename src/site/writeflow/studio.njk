@@ -257,6 +257,7 @@ layout: false
               <button id="teacherEditBtn" class="dw-btn dw-btn-secondary" type="button">Edit assignment</button>
               <button id="refreshBtn" class="dw-btn dw-btn-secondary" type="button">Refresh</button>
               <button id="reanalyzeBtn" class="dw-btn dw-btn-secondary dw-hidden" type="button" title="Admin only — sign in at /writeflow/admin/ first">Re-analyze all</button>
+              <button id="teacherBatchGradeBtn" class="dw-btn dw-btn-secondary dw-hidden" type="button">Batch grade</button>
               <button id="exportBtn" class="dw-btn dw-btn-ghost" type="button">Export CSV</button>
               <button id="teacherHomeBtn" class="dw-btn dw-btn-ghost" type="button">All assignments</button>
               <button id="teacherLogoutBtn" class="dw-btn dw-btn-ghost" type="button">Log out</button>
@@ -326,6 +327,34 @@ layout: false
         </section>
       </main>
     </div>
+
+    <dialog id="teacherBatchGradeDialog" class="wf-batch-grade-dialog">
+      <form id="teacherBatchGradeForm" class="wf-batch-grade-form" method="dialog">
+        <h3 class="dw-h3">Batch grade</h3>
+        <p class="dw-muted dw-tiny" id="teacherBatchGradeScope">Apply the same grade to multiple students.</p>
+        <label class="dw-field">
+          <span class="dw-label">Points</span>
+          <input id="teacherBatchGradePoints" class="dw-input wf-grading-form__grade-input" type="number" min="0" step="0.5" value="10" />
+        </label>
+        <label class="dw-field">
+          <span class="dw-label">Feedback for students</span>
+          <textarea id="teacherBatchGradeFeedback" class="dw-textarea wf-grading-form__feedback" rows="2" placeholder="Thanks for trying!">Thanks for trying the test!</textarea>
+        </label>
+        <label class="wf-toggle-row">
+          <input id="teacherBatchGradeRelease" type="checkbox" />
+          <span class="wf-toggle-row__label"><strong>Release to students</strong><span class="wf-toggle-row__hint">Students see grade and feedback in My writing</span></span>
+        </label>
+        <label class="wf-toggle-row">
+          <input id="teacherBatchGradeUngradedOnly" type="checkbox" />
+          <span class="wf-toggle-row__label"><strong>Only without a saved grade</strong><span class="wf-toggle-row__hint">Skip students you already graded manually</span></span>
+        </label>
+        <div class="dw-row wf-batch-grade-form__actions">
+          <button id="teacherBatchGradeApplyBtn" class="dw-btn" type="submit">Apply grades</button>
+          <button id="teacherBatchGradeCancelBtn" class="dw-btn dw-btn-ghost" type="button">Cancel</button>
+        </div>
+        <p id="teacherBatchGradeStatus" class="dw-muted dw-tiny" role="status"></p>
+      </form>
+    </dialog>
 
     <script>window.WRITEFLOW_ROLE = "studio";</script>
     <script id="wfClassroomsJson" type="application/json">{{ diagnosticWritingClasses | jsonify | safe }}</script>
