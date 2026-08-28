@@ -100,16 +100,16 @@
       },
       recommendedTargetCpm(testCpm) {
         const capped = Math.min(Math.max(0, testCpm), 120);
-        return Math.round(Math.min(Math.max(40, capped * 0.88), 95));
+        return Math.round(Math.min(Math.max(20, capped * 0.5), 95));
       },
       clampTargetCpm(testCpm, chosen) {
         const capped = Math.min(Math.max(0, testCpm), 120);
-        const max = Math.min(95, Math.max(40, capped * 1.5));
-        return Math.round(Math.min(max, Math.max(40, chosen)));
+        const max = Math.min(95, Math.max(20, capped * 1.5));
+        return Math.round(Math.min(max, Math.max(20, chosen)));
       },
       maxManualTargetCpm(testCpm) {
         const capped = Math.min(Math.max(0, testCpm), 120);
-        return Math.round(Math.min(95, Math.max(40, capped * 1.5)));
+        return Math.round(Math.min(95, Math.max(20, capped * 1.5)));
       },
       choiceTypeText(c) {
         if (c?.typeText) return String(c.typeText).trim();
@@ -155,9 +155,37 @@
         if (maxTypos >= 10) return false;
         return typoCount > maxTypos;
       },
-      meetsSpeedGate(cpm, targetCpm) {
+      meetsSpeedGate(cpm, targetCpm, ratio = 0.85) {
         if (!targetCpm) return true;
-        return cpm >= targetCpm * 0.75;
+        return cpm >= targetCpm * ratio;
+      },
+      estimateTextAccuracy(text) {
+        const raw = String(text || "");
+        const compact = raw.replace(/\s+/g, "");
+        if (!compact) return 0;
+        const letters = (raw.match(/[A-Za-z]/g) || []).length;
+        const words = raw.trim().split(/\s+/).filter(Boolean);
+        const realish = words.filter((w) => /[a-zA-Z]{2,}/.test(w)).length;
+        const letterRatio = letters / compact.length;
+        const wordRatio = words.length ? realish / words.length : 0;
+        return Math.max(0, Math.min(1, letterRatio * 0.55 + wordRatio * 0.45));
+      },
+      evaluateChallengeUnlock(cfg) {
+        const words = Math.max(0, cfg.words || 0);
+        const minWords = Math.max(1, cfg.minWords || 20);
+        const liveCpm = Math.max(0, cfg.liveCpm || 0);
+        const targetCpm = Math.max(0, cfg.targetCpm || 0);
+        const accuracy = Math.max(0, Math.min(1, cfg.accuracy ?? 0));
+        const speedGate = cfg.speedGate ?? 0.85;
+        const accuracyMin = cfg.accuracyMin ?? 0.68;
+        const minWordsFloor = cfg.minWordsFloor ?? 4;
+        const speedRatio = targetCpm > 0 ? liveCpm / targetCpm : 1;
+        const speedOk = speedRatio >= speedGate;
+        const accuracyOk = accuracy >= accuracyMin;
+        const wordSoft = Math.min(1, words / minWords);
+        const score = Math.min(1, Math.max(0, speedRatio)) * 0.62 + accuracy * 0.28 + wordSoft * 0.1;
+        const unlocked = words >= minWordsFloor && accuracyOk && (speedOk || (wordSoft >= 0.5 && score >= 0.58));
+        return { unlocked, score, speedOk, accuracyOk, speedRatio, wordSoft };
       },
     };
   }
@@ -227,12 +255,92 @@
   let activeChoicePrefix = "";
   let pendingDiagnosticAction = null;
   let choiceUnlocking = false;
+  let diagnosticKeystrokeTracker = null;
+  let challengeKeystrokeTracker = null;
+  let challengeStartTime = 0;
+
+  function serializeAnalysis(analysis) {
+    if (!analysis) return null;
+    return {
+      wordCount: analysis.wordCount,
+      wpm: analysis.wpm,
+      typingLevel: analysis.typingLevel,
+      scores: analysis.scores,
+      copyMatch: analysis.copyMatch,
+      keystrokeAccuracy: analysis.keystrokeAccuracy,
+      promptResponse: analysis.promptResponse ? {
+        score: analysis.promptResponse.score,
+        answerTier: analysis.promptResponse.answerTier,
+        responseType: analysis.promptResponse.responseType,
+      } : null,
+      metricScores: {
+        spelling: analysis.metricScores?.spelling,
+        grammar: analysis.metricScores?.grammar,
+        mechanics: analysis.metricScores?.mechanics,
+        typing: analysis.metricScores?.typing,
+        story: analysis.metricScores?.story,
+        keystrokeAccuracy: analysis.metricScores?.keystrokeAccuracy,
+      },
+    };
+  }
+
+  function runGtgAnalysis(text, durationSec, options = {}) {
+    if (!window.WriteAnalysis?.analyzeText || !String(text || "").trim()) return null;
+    const duration = Math.max(1, Number(durationSec) || 1);
+    return window.WriteAnalysis.analyzeText(text, duration, {
+      assignmentMode: options.assignmentMode || "fluency",
+      rubrics: options.rubrics || ["typing", "mechanics"],
+      assignmentPrompt: options.assignmentPrompt || "",
+      classroom: options.classroom || "",
+      keystrokeStats: options.keystrokeStats || null,
+      copyTarget: options.copyTarget || "",
+    });
+  }
+
+  function analyzeDiagnosticTest(inputVal, phrase, durationMs) {
+    const durationSec = Math.max(1, Math.round((durationMs || 0) / 1000));
+    return runGtgAnalysis(inputVal, durationSec, {
+      assignmentMode: "fluency",
+      rubrics: ["typing", "mechanics"],
+      assignmentPrompt: phrase,
+      copyTarget: phrase,
+      keystrokeStats: diagnosticKeystrokeTracker?.getStats?.() || null,
+    });
+  }
+
+  function updateDiagnosticAlgoScore(analysis) {
+    const el = document.getElementById("diagnosticAlgoScore");
+    if (!el) return;
+    if (!analysis?.scores) {
+      el.classList.add("dw-hidden");
+      el.textContent = "";
+      return;
+    }
+    const typing = analysis.scores.typing ?? "—";
+    const mechanics = analysis.scores.mechanics ?? "—";
+    const copyPct = analysis.copyMatch ? Math.round((analysis.copyMatch.charAccuracy || 0) * 100) : null;
+    const copyNote = analysis.copyMatch?.complete
+      ? "Perfect sentence match"
+      : copyPct != null
+        ? `${copyPct}% character accuracy`
+        : "";
+    el.textContent = `Algorithm score — typing ${typing}, conventions ${mechanics}${copyNote ? ` · ${copyNote}` : ""}`;
+    el.classList.remove("dw-hidden");
+  }
 
   const DIFFICULTY_CONFIG = {
-    cadet: { wordMult: 0.5, startChoicesMin: 3, startChoicesMax: 3, label: "Cadet" },
-    operative: { wordMult: 1, startChoicesMin: 3, startChoicesMax: 4, label: "Operative" },
-    analyst: { wordMult: 1.5, startChoicesMin: 4, startChoicesMax: 5, label: "Analyst" },
+    cadet: { wordMult: 0.5, startChoicesMin: 3, startChoicesMax: 3, label: "Cadet", speedGate: 0.7, accuracyMin: 0.5, completeRatio: 0.7, typoBonus: 2, minWordsFloor: 3 },
+    operative: { wordMult: 1, startChoicesMin: 3, startChoicesMax: 4, label: "Operative", speedGate: 0.85, accuracyMin: 0.68, completeRatio: 0.85, typoBonus: 0, minWordsFloor: 4 },
+    analyst: { wordMult: 1.5, startChoicesMin: 4, startChoicesMax: 5, label: "Analyst", speedGate: 1, accuracyMin: 0.82, completeRatio: 0.95, typoBonus: -1, minWordsFloor: 6 },
   };
+
+  function difficultyCfg() {
+    return DIFFICULTY_CONFIG[difficulty] || DIFFICULTY_CONFIG.operative;
+  }
+
+  function typoBudget() {
+    return Math.max(0, (typingProfile.maxTypos || 0) + (difficultyCfg().typoBonus || 0));
+  }
 
   function saveTypingProfile() {
     sanitizeTypingProfile();
@@ -243,7 +351,7 @@
   function sanitizeTypingProfile() {
     const maxTest = Typing.MAX_TEST_CPM ?? 120;
     const maxTarget = Typing.MAX_TARGET_CPM ?? 95;
-    const minTarget = Typing.MIN_TARGET_CPM ?? 40;
+    const minTarget = Typing.MIN_TARGET_CPM ?? 20;
     if (typingProfile.testCpm > maxTest) typingProfile.testCpm = maxTest;
     if (typingProfile.targetCpm > maxTarget) typingProfile.targetCpm = maxTarget;
     if (typingProfile.targetCpm < minTarget && typingProfile.diagnosed) {
@@ -367,6 +475,11 @@
       input.value = "";
       input.disabled = false;
     }
+    diagnosticKeystrokeTracker?.detach?.();
+    diagnosticKeystrokeTracker = Core.createKeystrokeTracker?.(input) || null;
+    diagnosticKeystrokeTracker?.attach?.();
+    diagnosticKeystrokeTracker?.reset?.();
+    document.getElementById("diagnosticAlgoScore")?.classList.add("dw-hidden");
     updateDiagnosticGhost("");
     document.getElementById("diagnosticTyped").innerHTML = "";
     updateTypingMeterUI({
@@ -454,6 +567,10 @@
       typingProfile.diagnosedAt = Date.now();
       const recommended = Typing.recommendedTargetCpm(cpm);
       typingProfile.targetCpm = recommended;
+
+      const diagnosticAnalysis = analyzeDiagnosticTest(input.value, diagnosticPhrase, duration);
+      typingProfile.diagnosticAnalysis = serializeAnalysis(diagnosticAnalysis);
+      updateDiagnosticAlgoScore(diagnosticAnalysis);
 
       input.disabled = true;
       document.getElementById("diagnosticWpm").textContent = String(cpm);
@@ -548,8 +665,10 @@
     }
 
     const hint = document.getElementById("choiceSpeedHint");
+    const cfg = difficultyCfg();
+    const budget = typoBudget();
     if (hint) {
-      hint.textContent = `Type one path at ${typingProfile.targetCpm} keys/min · ${typingProfile.maxTypos >= 10 ? "typos forgiven" : `up to ${typingProfile.maxTypos} typo${typingProfile.maxTypos === 1 ? "" : "s"}`}`;
+      hint.textContent = `Speed unlocks the path (${Math.round(cfg.speedGate * 100)}% of ${typingProfile.targetCpm} keys/min) · ${budget >= 10 ? "typos forgiven" : `up to ${budget} typo${budget === 1 ? "" : "s"}`}`;
     }
 
     updateTypingMeterUI({
@@ -595,15 +714,20 @@
         input.value.length
       );
     }
-    if (typedEl) typedEl.innerHTML = Typing.renderTypedCharsHtml(cmp.chars, typingProfile.maxTypos);
+    if (typedEl) typedEl.innerHTML = Typing.renderTypedCharsHtml(cmp.chars, typoBudget());
 
+    const cfg = difficultyCfg();
     const duration = choiceTypingStart ? performance.now() - choiceTypingStart : 0;
     const liveCpm = duration > 0 ? Typing.computeCpm(cmp.correctCount, duration) : 0;
     const liveEl = document.getElementById("statLiveWpm");
     if (liveEl) liveEl.textContent = String(liveCpm);
+    const speedOk = Typing.meetsSpeedGate(liveCpm, typingProfile.targetCpm, cfg.speedGate);
+    const targetLen = Typing.normalize(typeText).length || 1;
+    const completeness = cmp.correctCount / targetLen;
+    const completeEnough = cmp.complete || completeness >= cfg.completeRatio;
 
     updateTypingMeterUI({
-      progressPct: cmp.progress,
+      progressPct: Math.max(cmp.progress, Math.round(completeness * 100)),
       liveCpm,
       targetCpm: typingProfile.targetCpm,
       progressFillId: "choiceProgressFill",
@@ -612,8 +736,8 @@
       liveCpmId: "choiceLiveWpm",
       targetCpmId: "choiceTargetWpm",
       inputEl: input,
-      complete: cmp.complete,
-      speedOk: Typing.meetsSpeedGate(liveCpm, typingProfile.targetCpm),
+      complete: completeEnough,
+      speedOk,
     });
 
     if (cmp.chars.length > 0) {
@@ -622,16 +746,16 @@
       else Audio?.playTypeTick?.();
     }
 
-    if (Typing.exceedsTypoBudget(cmp.typoCount, typingProfile.maxTypos)) {
+    if (Typing.exceedsTypoBudget(cmp.typoCount, typoBudget())) {
       if (hint) hint.textContent = "Too many typos — fix the underlined letters!";
       return;
     }
 
-    if (!cmp.complete || !resolved.choice) return;
+    if (!completeEnough || !resolved.choice) return;
 
-    if (!Typing.meetsSpeedGate(liveCpm, typingProfile.targetCpm)) {
-      if (hint) hint.textContent = `Too slow (${liveCpm} keys/min) — need ${typingProfile.targetCpm} keys/min. Try again!`;
-      Audio?.playSpeedFail?.();
+    if (!speedOk && !(cmp.complete && difficulty !== "analyst")) {
+      const need = Math.round(typingProfile.targetCpm * cfg.speedGate);
+      if (hint) hint.textContent = `Keep going — ${liveCpm} keys/min (about ${need} unlocks this path).`;
       return;
     }
 
@@ -1353,11 +1477,19 @@
           <span class="tt-golden-orb__label">${escapeHtml(rule.short)}</span>
         </button>`;
       }
-      return `<div class="tt-golden-orb${lit ? " tt-golden-orb--lit" : ""}" title="${escapeHtml(rule.short)}">
+      return `<button type="button" class="tt-golden-orb${lit ? " tt-golden-orb--lit" : ""}" data-rule-n="${rule.n}" title="${escapeHtml(rule.short)}" aria-label="Golden Rule ${rule.n}: ${escapeHtml(rule.short)}">
         <span class="tt-golden-orb__icon">${rule.icon}</span>
         <span class="tt-golden-orb__num">${rule.n}</span>
-      </div>`;
+      </button>`;
     }).join("");
+
+    if (!interactive && containerId === "goldenRulesTrack") {
+      el.querySelectorAll(".tt-golden-orb").forEach((orb) => {
+        const n = Number(orb.dataset.ruleN);
+        const open = () => openInventory("rules", Number.isFinite(n) ? `rule:${n}` : "");
+        orb.addEventListener("click", open);
+      });
+    }
   }
 
   function wireTitleGoldenRules() {
@@ -1582,10 +1714,15 @@
     if (!code || lessons.has(code)) return;
     lessons.add(code);
     journal.push(`📚 Lesson logged`);
+    pulsePackButton();
+    const lore = Visuals.LESSONS?.[code];
     const lessonEl = document.getElementById("sceneLesson");
     if (lessonEl) {
       lessonEl.classList.remove("dw-hidden");
-      lessonEl.innerHTML = `New insight added to your mission record.`;
+      lessonEl.innerHTML = lore
+        ? `<button type="button" class="tt-lesson-flash__btn" data-lesson="${escapeHtml(code)}">${escapeHtml(lore.title)} — added to your pack</button>`
+        : `<button type="button" class="tt-lesson-flash__btn" data-lesson="${escapeHtml(code)}">New insight added to your pack.</button>`;
+      lessonEl.querySelector("button")?.addEventListener("click", () => openInventory("knowledge", `lesson:${code}`));
       if (!prefersReducedMotion) {
         lessonEl.classList.remove("tt-lesson-flash--show");
         void lessonEl.offsetWidth;
@@ -1611,6 +1748,7 @@
     journal.push(`🏅 Badge: ${roll.badge}`);
     toast(roll.message || `Bonus badge: ${roll.badge}`, "badge");
     burstConfetti(14);
+    pulsePackButton();
   }
 
   async function renderScene(nodeId) {
@@ -1687,14 +1825,16 @@
     }
 
     if (badges.size > prevBadgeCount && node.badge) {
-      toast(`Badge unlocked: ${node.badge}`, "badge");
+      toast(`Badge unlocked: ${node.badge} — tap your pack`, "badge");
       burstConfetti(18);
       Audio?.playBadgeChime?.();
+      pulsePackButton();
     }
     if (node.goldenRule && goldenRules.size > prevGoldenCount) {
-      toast(`Golden Rule #${node.goldenRule} recovered`, "golden");
+      toast(`Golden Rule #${node.goldenRule} recovered — tap your pack`, "golden");
       burstConfetti(28);
       Audio?.playGoldenFanfare?.();
+      pulsePackButton();
     }
 
     updateStats();
@@ -1724,10 +1864,15 @@
       const savedDraft = State.loadDraft();
       const typingInput = document.getElementById("typingInput");
       typingInput.value = savedDraft || "";
+      challengeStartTime = Date.now();
+      challengeKeystrokeTracker?.detach?.();
+      challengeKeystrokeTracker = Core.createKeystrokeTracker?.(typingInput) || null;
+      challengeKeystrokeTracker?.attach?.();
+      challengeKeystrokeTracker?.reset?.();
       const words = Core.countWords(typingInput.value);
       const min = scaleMinWords(typingPending.minWords || 20);
-      updateTypingProgress(words, min);
-      document.getElementById("typingSubmitBtn").disabled = words < min;
+      challengeStartTime = 0;
+      updateChallengeUnlockUI(typingInput.value, min);
       setTimeout(() => typingInput?.focus(), prefersReducedMotion ? 0 : 420);
       typingEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
     } else {
@@ -1752,7 +1897,31 @@
   }
 
   function updateTypingProgress(words, minWords) {
-    const pct = Math.min(100, Math.round((words / minWords) * 100));
+    updateChallengeUnlockUI(document.getElementById("typingInput")?.value || "", minWords);
+  }
+
+  function updateChallengeUnlockUI(text, minWords) {
+    const cfg = difficultyCfg();
+    const words = Core.countWords(text);
+    const compactLen = String(text || "").replace(/\s/g, "").length;
+    if (!challengeStartTime && compactLen > 0) challengeStartTime = performance.now();
+    const duration = challengeStartTime ? performance.now() - challengeStartTime : 0;
+    const liveCpm = duration > 0 ? Typing.computeCpm(compactLen, duration) : 0;
+    const accuracy = Typing.estimateTextAccuracy?.(text) ?? 1;
+    const evalFn = Typing.evaluateChallengeUnlock;
+    const result = evalFn
+      ? evalFn({
+          words,
+          minWords,
+          liveCpm,
+          targetCpm: typingProfile.targetCpm,
+          accuracy,
+          speedGate: cfg.speedGate,
+          accuracyMin: cfg.accuracyMin,
+          minWordsFloor: cfg.minWordsFloor,
+        })
+      : { unlocked: words >= cfg.minWordsFloor, score: words >= minWords ? 1 : 0.4, speedOk: true, accuracyOk: true };
+    const pct = Math.min(100, Math.round((result.unlocked ? 100 : result.score * 100)));
     const fill = document.getElementById("typingProgressFill");
     const countEl = document.getElementById("typingWordCount");
     const challengeFill = document.getElementById("challengeWordFill");
@@ -1760,21 +1929,39 @@
     if (challengeFill) challengeFill.style.width = `${pct}%`;
     updateTypingMeterUI({
       progressPct: pct,
+      liveCpm,
+      targetCpm: typingProfile.targetCpm,
       progressFillId: "challengeWordFill",
       progressPctId: "challengeWordPct",
+      liveCpmId: "challengeLiveWpm",
       inputEl: document.getElementById("typingInput"),
-      complete: words >= minWords,
-      speedOk: true,
+      complete: result.unlocked,
+      speedOk: result.speedOk,
     });
     if (countEl) {
-      countEl.textContent = `${words} / ${minWords} words`;
-      countEl.classList.toggle("tt-typing-count--ready", words >= minWords);
+      const accPct = Math.round(accuracy * 100);
+      countEl.textContent = result.unlocked
+        ? `${words} words · ${Math.round(liveCpm)} keys/min · ready`
+        : `${words} words · ${Math.round(liveCpm)} keys/min · ${accPct}% accuracy`;
+      countEl.classList.toggle("tt-typing-count--ready", result.unlocked);
+    }
+    const hint = document.getElementById("challengeUnlockHint");
+    if (hint) {
+      if (result.unlocked) hint.textContent = "Unlocked — speed and accuracy are good. Submit whenever you're ready.";
+      else if (words < cfg.minWordsFloor) hint.textContent = `Type a few real words to start (${cfg.minWordsFloor}+). Speed does most of the unlocking.`;
+      else if (!result.accuracyOk) hint.textContent = "Accuracy is low for this difficulty — write in real sentences.";
+      else if (!result.speedOk) hint.textContent = `Keep typing — hit about ${Math.round(typingProfile.targetCpm * cfg.speedGate)} keys/min to unlock. Word count is a bonus, not a lock.`;
+      else hint.textContent = "Almost — keep going.";
     }
     const submitBtn = document.getElementById("typingSubmitBtn");
     if (submitBtn) {
-      submitBtn.disabled = words < minWords;
-      submitBtn.classList.toggle("tt-cta-btn--ready", words >= minWords);
+      submitBtn.disabled = !result.unlocked;
+      submitBtn.classList.toggle("tt-cta-btn--ready", result.unlocked);
     }
+    const liveEl = document.getElementById("statLiveWpm");
+    if (liveEl) liveEl.textContent = String(Math.round(liveCpm));
+    document.getElementById("liveWpmStat")?.classList.remove("dw-hidden");
+    return result;
   }
 
   function navigate(nodeId) {
@@ -1792,6 +1979,7 @@
       integrityEl.style.color = integrity >= 80 ? "#34d399" : integrity >= 50 ? "#fbbf24" : "#ef4444";
     }
     if (repEl) repEl.textContent = reputation;
+    updatePackCount();
   }
 
   function applyChoiceEffects(choice) {
@@ -1843,6 +2031,164 @@
         : `<span class="tt-hero-note__emoji">${c.emoji}</span>`;
       return `<div class="tt-hero-note">${thumb}<div><strong>${escapeHtml(c.name)}</strong><p>${escapeHtml(c.research)}</p></div></div>`;
     }).join("");
+    el.querySelectorAll(".tt-hero-note").forEach((note, i) => {
+      note.setAttribute("role", "button");
+      note.tabIndex = 0;
+      const key = chars.slice(-6)[i];
+      note.addEventListener("click", () => openInventory("knowledge", `hero:${key}`));
+      note.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          openInventory("knowledge", `hero:${key}`);
+        }
+      });
+    });
+  }
+
+  let inventoryTab = "trophies";
+
+  function packCount() {
+    return badges.size + goldenRules.size + lessons.size + metCharacters.size;
+  }
+
+  function pulsePackButton() {
+    const btn = document.getElementById("inventoryBtn");
+    if (!btn) return;
+    btn.classList.remove("tt-pack-btn--pulse");
+    void btn.offsetWidth;
+    btn.classList.add("tt-pack-btn--pulse");
+  }
+
+  function updatePackCount() {
+    const el = document.getElementById("packCount");
+    if (el) el.textContent = String(packCount());
+  }
+
+  function openInventory(tab = "trophies", focusId = "") {
+    inventoryTab = tab;
+    const overlay = document.getElementById("inventoryOverlay");
+    if (!overlay) return;
+    overlay.classList.remove("dw-hidden");
+    overlay.setAttribute("aria-hidden", "false");
+    renderInventory(focusId);
+    document.getElementById("inventoryCloseBtn")?.focus();
+    Audio?.playPathUnlock?.();
+  }
+
+  function closeInventory() {
+    const overlay = document.getElementById("inventoryOverlay");
+    if (!overlay) return;
+    overlay.classList.add("dw-hidden");
+    overlay.setAttribute("aria-hidden", "true");
+  }
+
+  function renderInventory(focusId = "") {
+    const grid = document.getElementById("inventoryGrid");
+    const detail = document.getElementById("inventoryDetail");
+    if (!grid) return;
+    document.querySelectorAll("[data-inv-tab]").forEach((btn) => {
+      btn.classList.toggle("tt-inventory__tab--active", btn.dataset.invTab === inventoryTab);
+    });
+
+    if (inventoryTab === "trophies") {
+      const list = [...badges];
+      if (!list.length) {
+        grid.innerHTML = `<p class="dw-muted">No trophies yet. Make a smart call and they'll land in your pack.</p>`;
+      } else {
+        grid.innerHTML = list.map((name) => {
+          const lore = Visuals.BADGES?.[name] || { icon: "🏅", blurb: "Earned on this run." };
+          return `<button type="button" class="tt-inv-slot" data-inv-id="badge:${escapeHtml(name)}">
+            <span class="tt-inv-slot__icon">${lore.icon}</span>
+            <span class="tt-inv-slot__name">${escapeHtml(name)}</span>
+          </button>`;
+        }).join("");
+      }
+    } else if (inventoryTab === "rules") {
+      grid.innerHTML = Visuals.GOLDEN_RULES.map((rule) => {
+        const lit = goldenRules.has(rule.n);
+        return `<button type="button" class="tt-inv-slot${lit ? " tt-inv-slot--lit" : " tt-inv-slot--locked"}" data-inv-id="rule:${rule.n}">
+          <span class="tt-inv-slot__icon">${rule.icon}</span>
+          <span class="tt-inv-slot__name">${lit ? escapeHtml(rule.short) : "???"}</span>
+          <span class="tt-inv-slot__tag">${lit ? "Recovered" : "Still out there"}</span>
+        </button>`;
+      }).join("");
+    } else {
+      const heroes = [...metCharacters].filter((k) => CHARACTERS[k]);
+      const lessonList = [...lessons];
+      if (!heroes.length && !lessonList.length) {
+        grid.innerHTML = `<p class="dw-muted">Meet mentors and clear scenes to fill this log.</p>`;
+      } else {
+        const heroHtml = heroes.map((k) => {
+          const c = CHARACTERS[k];
+          const portrait = Visuals.PORTRAITS[k];
+          const thumb = portrait
+            ? `<img src="${portrait}" alt="" width="48" height="48" />`
+            : `<span>${c.emoji}</span>`;
+          return `<button type="button" class="tt-inv-slot tt-inv-slot--hero" data-inv-id="hero:${k}">
+            <span class="tt-inv-slot__icon tt-inv-slot__icon--photo">${thumb}</span>
+            <span class="tt-inv-slot__name">${escapeHtml(c.name)}</span>
+          </button>`;
+        }).join("");
+        const lessonHtml = lessonList.map((code) => {
+          const lore = Visuals.LESSONS?.[code] || { title: "Insight", blurb: "" };
+          return `<button type="button" class="tt-inv-slot" data-inv-id="lesson:${escapeHtml(code)}">
+            <span class="tt-inv-slot__icon">📚</span>
+            <span class="tt-inv-slot__name">${escapeHtml(lore.title)}</span>
+          </button>`;
+        }).join("");
+        grid.innerHTML = heroHtml + lessonHtml;
+      }
+    }
+
+    grid.querySelectorAll("[data-inv-id]").forEach((btn) => {
+      btn.addEventListener("click", () => showInventoryDetail(btn.dataset.invId));
+    });
+
+    if (focusId) showInventoryDetail(focusId);
+    else if (detail) {
+      detail.innerHTML = `<p class="dw-muted dw-tiny">Tap a slot to inspect it.</p>`;
+    }
+  }
+
+  function showInventoryDetail(id) {
+    const detail = document.getElementById("inventoryDetail");
+    if (!detail || !id) return;
+    const [kind, ...rest] = String(id).split(":");
+    const key = rest.join(":");
+    document.querySelectorAll(".tt-inv-slot").forEach((s) => {
+      s.classList.toggle("tt-inv-slot--selected", s.dataset.invId === id);
+    });
+
+    if (kind === "badge") {
+      const lore = Visuals.BADGES?.[key] || { icon: "🏅", blurb: "Earned on this run." };
+      detail.innerHTML = `<div class="tt-inv-detail__icon">${lore.icon}</div>
+        <h3>${escapeHtml(key)}</h3>
+        <p>${escapeHtml(lore.blurb)}</p>`;
+    } else if (kind === "rule") {
+      const n = Number(key);
+      const rule = Visuals.GOLDEN_RULES.find((r) => r.n === n);
+      const lit = goldenRules.has(n);
+      if (!rule) return;
+      detail.innerHTML = `<div class="tt-inv-detail__icon">${rule.icon}</div>
+        <h3>Golden Rule ${n}${lit ? "" : " — locked"}</h3>
+        <p><strong>${escapeHtml(rule.short)}</strong></p>
+        <p>${lit ? escapeHtml(rule.detail) : "Still scattered. Recover it by making the right call in the field."}</p>`;
+    } else if (kind === "hero") {
+      const c = CHARACTERS[key];
+      if (!c) return;
+      const portrait = Visuals.PORTRAITS[key];
+      const img = portrait ? `<img class="tt-inv-detail__photo" src="${portrait}" alt="${escapeHtml(c.name)}" />` : `<div class="tt-inv-detail__icon">${c.emoji}</div>`;
+      detail.innerHTML = `${img}
+        <h3>${escapeHtml(c.name)}</h3>
+        <p class="dw-tiny">${escapeHtml(c.role)} · ${escapeHtml(c.era)}</p>
+        <p>${escapeHtml(c.research)}</p>`;
+    } else if (kind === "lesson") {
+      const lore = Visuals.LESSONS?.[key] || { title: "Insight", blurb: "Logged during your mission." };
+      detail.innerHTML = `<div class="tt-inv-detail__icon">📚</div>
+        <h3>${escapeHtml(lore.title)}</h3>
+        <p>${escapeHtml(lore.blurb)}</p>
+        <p class="dw-tiny">Standard ${escapeHtml(key)}</p>`;
+    }
   }
 
   function computeEndingType() {
@@ -1965,6 +2311,23 @@ Play again to rebuild your record clean.`;
       }
     }
 
+    document.getElementById("inventoryBtn")?.addEventListener("click", () => openInventory("trophies"));
+    document.getElementById("inventoryCloseBtn")?.addEventListener("click", closeInventory);
+    document.getElementById("inventoryOverlay")?.addEventListener("click", (e) => {
+      if (e.target?.id === "inventoryOverlay") closeInventory();
+    });
+    document.querySelectorAll("[data-inv-tab]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        inventoryTab = btn.dataset.invTab;
+        renderInventory();
+      });
+    });
+    document.getElementById("statBadges")?.closest(".tt-stat")?.addEventListener("click", () => openInventory("trophies"));
+    document.getElementById("statLessons")?.closest(".tt-stat")?.addEventListener("click", () => openInventory("knowledge"));
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeInventory();
+    });
+
     document.getElementById("muteToggleBtn")?.addEventListener("click", () => {
       Audio?.toggleMuted?.();
       updateMuteButton();
@@ -2028,20 +2391,19 @@ Play again to rebuild your record clean.`;
 
     typingInput?.addEventListener("input", () => {
       Audio?.playTypeTick?.();
-      const words = Core.countWords(typingInput.value);
       const min = scaleMinWords(typingPending?.minWords || 20);
-      updateTypingProgress(words, min);
-      document.getElementById("typingSubmitBtn").disabled = words < min;
+      updateChallengeUnlockUI(typingInput.value, min);
       State.saveDraft(typingInput.value);
     });
 
     document.getElementById("typingSubmitBtn")?.addEventListener("click", () => {
       if (!typingPending) return;
       const typingInput = document.getElementById("typingInput");
-      const words = Core.countWords(typingInput?.value || "");
       const min = scaleMinWords(typingPending.minWords || 20);
-      if (words < min) return;
-      journal.push(`⌨️ Oath drafted (${words} words)`);
+      const result = updateChallengeUnlockUI(typingInput?.value || "", min);
+      if (!result?.unlocked) return;
+      const words = Core.countWords(typingInput?.value || "");
+      journal.push(`⌨️ Response logged (${words} words)`);
       celebrateTypedSuccess(`${words} WORDS LOGGED`, typingInput, {
         badge: "TRANSMITTED!",
         confetti: 20,
@@ -2135,6 +2497,17 @@ Play again to rebuild your record clean.`;
     State.saveProfile(profile);
 
     const oathText = document.getElementById("typingInput")?.value?.trim() || "";
+    const challengeDurationSec = challengeStartTime
+      ? Math.max(1, Math.round((Date.now() - challengeStartTime) / 1000))
+      : Math.max(1, Math.round((Date.now() - startTime) / 1000 * 0.15));
+    const oathPrompt = typingPending?.prompt || STORY?.final_trial?.typingChallenge?.prompt || "";
+    const oathAnalysis = runGtgAnalysis(oathText, challengeDurationSec, {
+      assignmentMode: "reflection",
+      rubrics: ["typing", "mechanics", "story"],
+      assignmentPrompt: oathPrompt,
+      classroom,
+      keystrokeStats: challengeKeystrokeTracker?.getStats?.() || null,
+    });
     const submission = {
       name,
       classroom,
@@ -2146,6 +2519,11 @@ Play again to rebuild your record clean.`;
       endingType: currentNode === "final_trial" ? "champion" : "mentor",
       endingNode: currentNode,
       durationSec: Math.max(0, Math.round((Date.now() - startTime) / 1000)),
+      challengeDurationSec,
+      analysis: serializeAnalysis(oathAnalysis),
+      diagnosticAnalysis: typingProfile.diagnosticAnalysis || null,
+      overallScore: oathAnalysis?.scores?.overall ?? null,
+      oathWpm: oathAnalysis?.wpm ?? null,
     };
 
     try {

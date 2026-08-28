@@ -136,6 +136,13 @@ export async function POST(request) {
     const endingType = String(body?.endingType || "").slice(0, 24);
     const endingNode = String(body?.endingNode || "").slice(0, 40);
     const durationSec = Number(body?.durationSec);
+    const challengeDurationSec = Number(body?.challengeDurationSec);
+    const overallScore = Number(body?.overallScore);
+    const oathWpm = Number(body?.oathWpm);
+    const analysis = body?.analysis && typeof body.analysis === "object" ? body.analysis : null;
+    const diagnosticAnalysis = body?.diagnosticAnalysis && typeof body.diagnosticAnalysis === "object"
+      ? body.diagnosticAnalysis
+      : null;
 
     const nameParts = nameRaw.split(/\s+/);
     const lastInitial = nameParts.length >= 2 ? nameParts[nameParts.length - 1].slice(0, 1) : "";
@@ -172,6 +179,11 @@ export async function POST(request) {
         endingType,
         endingNode,
         durationSec: Number.isFinite(durationSec) ? durationSec : 0,
+        challengeDurationSec: Number.isFinite(challengeDurationSec) ? challengeDurationSec : 0,
+        overallScore: Number.isFinite(overallScore) ? overallScore : null,
+        oathWpm: Number.isFinite(oathWpm) ? oathWpm : null,
+        analysis,
+        diagnosticAnalysis,
       }),
     });
 

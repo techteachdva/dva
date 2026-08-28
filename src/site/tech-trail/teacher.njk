@@ -97,6 +97,9 @@ layout: false
                   <th>Badges</th>
                   <th>Golden Rules</th>
                   <th>Oath</th>
+                  <th>WPM</th>
+                  <th>Score</th>
+                  <th>Diag.</th>
                   <th>Duration</th>
                   <th>Date</th>
                 </tr>
@@ -214,6 +217,9 @@ layout: false
             const badges = Array.isArray(s.badges) ? s.badges : [];
             const golden = Array.isArray(s.goldenRules) ? s.goldenRules : [];
             const mentors = Array.isArray(s.mentorsMet) ? s.mentorsMet : [];
+            const oathWpm = s.oathWpm ?? s.analysis?.wpm ?? "—";
+            const overall = s.overallScore ?? s.analysis?.scores?.overall ?? "—";
+            const diagOverall = s.diagnosticAnalysis?.scores?.typing ?? "—";
             return `
               <tr data-idx="${idx}">
                 <td style="white-space:nowrap;">${escapeHtml(s.name)}</td>
@@ -224,6 +230,9 @@ layout: false
                 <td>
                   <span class="tt-oath-preview" data-idx="${idx}">${escapeHtml(shortOath)}${shortOath.length >= 70 ? "…" : ""}</span>
                 </td>
+                <td>${oathWpm}</td>
+                <td>${overall}</td>
+                <td>${diagOverall}</td>
                 <td style="white-space:nowrap;">${fmtSec(s.durationSec || 0)}</td>
                 <td style="white-space:nowrap;">${fmtDate(s.submittedAt)}</td>
               </tr>`;
@@ -254,7 +263,7 @@ layout: false
 
         function exportCsv() {
           if (!currentSubmissions.length) return;
-          const headers = ["Name", "Classroom", "Ending", "Badges", "GoldenRules", "MentorsMet", "OathText", "DurationSec", "SubmittedAt"];
+          const headers = ["Name", "Classroom", "Ending", "Badges", "GoldenRules", "MentorsMet", "OathText", "OathWpm", "OverallScore", "DiagnosticTypingScore", "DurationSec", "ChallengeDurationSec", "SubmittedAt"];
           const rows = currentSubmissions.map((s) => [
             s.name,
             s.classroom,
@@ -263,7 +272,11 @@ layout: false
             (s.goldenRules || []).join("; "),
             (s.mentorsMet || []).join("; "),
             String(s.oathText || "").replace(/\r?\n/g, " "),
+            s.oathWpm ?? s.analysis?.wpm ?? "",
+            s.overallScore ?? s.analysis?.scores?.overall ?? "",
+            s.diagnosticAnalysis?.scores?.typing ?? "",
             s.durationSec || 0,
+            s.challengeDurationSec || 0,
             new Date(s.submittedAt || 0).toISOString(),
           ]);
           const csv = [headers, ...rows]

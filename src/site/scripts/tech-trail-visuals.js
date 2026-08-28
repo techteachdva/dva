@@ -148,5 +148,48 @@
     return ZONES[NODE_ZONE[nodeId] || "acme"];
   }
 
-  window.TechTrailVisuals = { ZONES, NODE_ZONE, PORTRAITS, GOLDEN_RULES, zoneForNode };
+  const LESSONS = {
+    "8.3.3.1": { title: "Design for people", blurb: "Ask who it's for — and what problem you're actually solving — before you build." },
+    "8.3.3.2": { title: "Debug the truth", blurb: "Computers don't get tired. They do exactly what you wrote, even the silly part." },
+    "8.3.3.3": { title: "Write clear steps", blurb: "An algorithm is boring, precise instructions. Vibes don't move robots." },
+    "8.3.2.1": { title: "Shared air", blurb: "Public Wi‑Fi is a shared hallway. Padlocks (HTTPS) keep your login from walking off." },
+    "8.1.3.2": { title: "Find the source", blurb: "A slick chart isn't evidence. Hunt the original study before you react." },
+    "8.2.2.1": { title: "Credit and permission", blurb: "You can be inspired without taking. Creators deserve both credit and a license." },
+    "8.3.4.2": { title: "Show up", blurb: "Tools connect us. People choose whether that connection helps or hurts." },
+    "8.1.3.3": { title: "Trending ≠ true", blurb: "Accuracy is a habit. Check whether a quote actually exists before you share it." },
+    "8.2.2.3": { title: "Protect data", blurb: "Private info isn't yours to broadcast — even when you think you're helping." },
+    "8.2.1.1": { title: "The long view", blurb: "The internet remembers slowly, but it remembers. Post the version you'd stand behind." },
+    "8.2.2.4": { title: "Decode the packaging", blurb: "Same event, three headlines. Look past the ALL CAPS and ask who made it." },
+  };
+
+  const BADGES = {
+    "Design Thinker": { icon: "🎯", blurb: "You interviewed real people instead of shipping a guess." },
+    "Problem Solver": { icon: "🧩", blurb: "You named a real problem in plain language before building." },
+    "Lucky Roll": { icon: "🎲", blurb: "Meier's die landed on your number. Fortune favors the prepared." },
+    "Iterative Builder": { icon: "🔁", blurb: "You watched users struggle and treated it as data, not failure." },
+    "Debugger": { icon: "🐛", blurb: "You traced the logic instead of mashing random lines." },
+    "Reflector": { icon: "🪞", blurb: "You said what version two should actually fix — no PR spin." },
+    "Algorithm Architect": { icon: "📐", blurb: "Clear if/then steps beat 'go to the goal somehow.'" },
+    "Network Navigator": { icon: "📡", blurb: "You kept a login off café Wi‑Fi. Public air is shared air." },
+    "Fact Finder": { icon: "🔍", blurb: "You hunted the original study and saved a friend a bad take." },
+    "Ethical Creator": { icon: "🎵", blurb: "You used licensed work. Good intentions don't replace permission." },
+    "Bridge Builder": { icon: "🌉", blurb: "You backed someone up in public and looped in an adult." },
+    "Steady Hands": { icon: "🤝", blurb: "A gust hit the bridge. You steadied a teammate." },
+    "Precision Thinker": { icon: "🚀", blurb: "You checked the quote. Trending and true are not the same word." },
+    "Data Guardian": { icon: "🛡️", blurb: "You reported a leak instead of amplifying it." },
+    "Gate Champion": { icon: "🔑", blurb: "Unique passwords + 2FA. Your login is yours alone." },
+    "Thoughtful Citizen": { icon: "✋", blurb: "You posted the version you'd still stand behind in ten years." },
+    "Media Decoder": { icon: "📰", blurb: "You compared sources instead of grabbing the loudest headline." },
+    "Fairness Advocate": { icon: "⚖️", blurb: "You made them test on more than one kind of face." },
+    "Data Destroyer": { icon: "📱", blurb: "You wiped the device the right way. Data outlives hardware." },
+    "License Scholar": { icon: "📜", blurb: "You restored credits. Open source lives on named shoulders." },
+    "Bias Spotter": { icon: "📊", blurb: "Same numbers, different yes/no — you ordered a fairness audit." },
+    "Trail Tracker": { icon: "🕵️", blurb: "You showed how tiny data points build a detailed profile." },
+    "Lovelace Scholar": { icon: "👑", blurb: "You saw what Ada saw: machines can do more than calculate." },
+    "Turing Scholar": { icon: "🔐", blurb: "You got the real question: what do we mean by think?" },
+    "Hopper Scholar": { icon: "⚓", blurb: "English-like code means more people get to have ideas." },
+    "Johnson Scholar": { icon: "✏️", blurb: "Machines calculate. Humans decide what the calculation is for." },
+  };
+
+  window.TechTrailVisuals = { ZONES, NODE_ZONE, PORTRAITS, GOLDEN_RULES, LESSONS, BADGES, zoneForNode };
 })();

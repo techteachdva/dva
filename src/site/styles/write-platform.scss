@@ -8354,4 +8354,229 @@ mark.wf-standard-hit,
   }
 }
 
+.wp-theme--gauntlet .tt-pack-btn {
+  align-self: flex-start;
+  border: 2px solid rgba(255, 215, 0, 0.45);
+  background: linear-gradient(135deg, rgba(196, 30, 58, 0.45), rgba(12, 6, 18, 0.85));
+  color: #fff8e7;
+  font-weight: 800;
+  font-size: 14px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+}
+
+.wp-theme--gauntlet .tt-pack-btn:hover {
+  border-color: #ffd700;
+  transform: translateY(-1px);
+}
+
+.wp-theme--gauntlet .tt-pack-btn--pulse {
+  animation: tt-pack-pulse 0.7s ease-out;
+}
+
+@keyframes tt-pack-pulse {
+  0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.55); }
+  50% { transform: scale(1.08); box-shadow: 0 0 0 10px rgba(255, 215, 0, 0); }
+  100% { transform: scale(1); }
+}
+
+.wp-theme--gauntlet .tt-stat {
+  cursor: pointer;
+}
+
+.wp-theme--gauntlet .tt-golden-orb {
+  cursor: pointer;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+}
+
+.wp-theme--gauntlet .tt-hero-note {
+  cursor: pointer;
+}
+
+.wp-theme--gauntlet .tt-lesson-flash__btn {
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+  padding: 0;
+  text-decoration: underline;
+  text-decoration-color: rgba(52, 211, 153, 0.5);
+}
+
+.wp-theme--gauntlet .tt-inventory {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(6, 2, 10, 0.72);
+  backdrop-filter: blur(8px);
+  grid-column: 1 / -1;
+}
+
+.wp-theme--gauntlet .tt-inventory.dw-hidden {
+  display: none;
+}
+
+.wp-theme--gauntlet .tt-inventory__panel {
+  width: min(920px, 100%);
+  max-height: min(86vh, 760px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 215, 0, 0.35);
+  background: linear-gradient(180deg, rgba(28, 10, 22, 0.96), rgba(12, 6, 18, 0.96));
+  box-shadow: 0 28px 64px rgba(0, 0, 0, 0.55);
+  transform: perspective(900px) rotateX(2deg);
+}
+
+.wp-theme--gauntlet .tt-inventory__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 18px 8px;
+}
+
+.wp-theme--gauntlet .tt-inventory__title {
+  margin: 0;
+  font-family: "Bebas Neue", Impact, sans-serif;
+  letter-spacing: 0.08em;
+  font-size: 28px;
+  color: #ffd700;
+}
+
+.wp-theme--gauntlet .tt-inventory__tabs {
+  display: flex;
+  gap: 8px;
+  padding: 0 18px 12px;
+}
+
+.wp-theme--gauntlet .tt-inventory__tab {
+  border: 1px solid rgba(255, 215, 0, 0.25);
+  background: rgba(0, 0, 0, 0.25);
+  color: #fff8e7;
+  border-radius: 999px;
+  padding: 6px 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.wp-theme--gauntlet .tt-inventory__tab--active {
+  background: rgba(196, 30, 58, 0.45);
+  border-color: #ffd700;
+}
+
+.wp-theme--gauntlet .tt-inventory__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(220px, 0.8fr);
+  gap: 16px;
+  padding: 8px 18px 18px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.wp-theme--gauntlet .tt-inventory__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+  overflow: auto;
+  max-height: 52vh;
+}
+
+.wp-theme--gauntlet .tt-inv-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 215, 0, 0.22);
+  background: rgba(0, 0, 0, 0.28);
+  color: #fff8e7;
+  cursor: pointer;
+  text-align: center;
+  transform: perspective(400px) rotateY(-4deg);
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.wp-theme--gauntlet .tt-inv-slot:hover,
+.wp-theme--gauntlet .tt-inv-slot--selected {
+  border-color: #ffd700;
+  transform: perspective(400px) rotateY(0) translateY(-3px);
+}
+
+.wp-theme--gauntlet .tt-inv-slot--locked {
+  opacity: 0.45;
+  filter: grayscale(0.6);
+}
+
+.wp-theme--gauntlet .tt-inv-slot--lit {
+  box-shadow: 0 0 18px rgba(255, 215, 0, 0.25);
+}
+
+.wp-theme--gauntlet .tt-inv-slot__icon {
+  font-size: 28px;
+  line-height: 1;
+}
+
+.wp-theme--gauntlet .tt-inv-slot__icon--photo img,
+.wp-theme--gauntlet .tt-inv-slot__icon--photo span {
+  width: 48px;
+  height: 48px;
+  border-radius: 10px;
+  object-fit: cover;
+  display: block;
+}
+
+.wp-theme--gauntlet .tt-inv-slot__name {
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.wp-theme--gauntlet .tt-inv-slot__tag {
+  font-size: 10px;
+  color: rgba(255, 248, 231, 0.65);
+}
+
+.wp-theme--gauntlet .tt-inventory__detail {
+  border: 1px solid rgba(255, 215, 0, 0.18);
+  border-radius: 14px;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.28);
+  overflow: auto;
+}
+
+.wp-theme--gauntlet .tt-inv-detail__icon {
+  font-size: 42px;
+}
+
+.wp-theme--gauntlet .tt-inv-detail__photo {
+  width: 100%;
+  max-height: 180px;
+  object-fit: cover;
+  object-position: top center;
+  border-radius: 12px;
+  border: 2px solid rgba(255, 215, 0, 0.4);
+}
+
+.wp-theme--gauntlet .tt-inventory__detail h3 {
+  margin: 8px 0 6px;
+}
+
+@media (max-width: 720px) {
+  .wp-theme--gauntlet .tt-inventory__body {
+    grid-template-columns: 1fr;
+  }
+}
+
 

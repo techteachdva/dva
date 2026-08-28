@@ -31,13 +31,15 @@ function getSheet_() {
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_NAME);
     initHeaders_(sheet);
+  } else {
+    ensureAnalysisColumns_(sheet);
   }
   return sheet;
 }
 
 function initHeaders_(sheet) {
   sheet
-    .getRange(1, 1, 1, 11)
+    .getRange(1, 1, 1, 16)
     .setValues([[
       "id",
       "submittedAt",
@@ -50,8 +52,29 @@ function initHeaders_(sheet) {
       "endingType",
       "endingNode",
       "durationSec",
+      "analysisJson",
+      "diagnosticAnalysisJson",
+      "overallScore",
+      "oathWpm",
+      "challengeDurationSec",
     ]]);
-  sheet.getRange(1, 1, 1, 11).setFontWeight("bold");
+  sheet.getRange(1, 1, 1, 16).setFontWeight("bold");
+  sheet.setFrozenRows(1);
+}
+
+function ensureAnalysisColumns_(sheet) {
+  const headers = [
+    "id", "submittedAt", "name", "classroom", "oathText", "badgesJson", "goldenRulesJson",
+    "mentorsMetJson", "endingType", "endingNode", "durationSec",
+    "analysisJson", "diagnosticAnalysisJson", "overallScore", "oathWpm", "challengeDurationSec",
+  ];
+  const lastCol = Math.max(sheet.getLastColumn(), headers.length);
+  const existing = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+  for (let i = 0; i < headers.length; i++) {
+    if (!String(existing[i] || "").trim()) {
+      sheet.getRange(1, i + 1).setValue(headers[i]).setFontWeight("bold");
+    }
+  }
   sheet.setFrozenRows(1);
 }
 
@@ -115,16 +138,21 @@ function normalizeName_(name) {
 function readRows_(sheet) {
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return [];
-  return sheet.getRange(2, 1, lastRow - 1, 11).getValues();
+  const colCount = Math.max(16, sheet.getLastColumn());
+  return sheet.getRange(2, 1, lastRow - 1, colCount).getValues();
 }
 
 function rowToSubmission_(row) {
   let badges = [];
   let goldenRules = [];
   let mentorsMet = [];
+  let analysis = null;
+  let diagnosticAnalysis = null;
   try { badges = JSON.parse(row[5] || "[]"); } catch (ignore) {}
   try { goldenRules = JSON.parse(row[6] || "[]"); } catch (ignore) {}
   try { mentorsMet = JSON.parse(row[7] || "[]"); } catch (ignore) {}
+  try { analysis = JSON.parse(row[11] || "null"); } catch (ignore) {}
+  try { diagnosticAnalysis = JSON.parse(row[12] || "null"); } catch (ignore) {}
   return {
     id: String(row[0] || ""),
     submittedAt: Number(row[1]) || 0,
@@ -137,6 +165,11 @@ function rowToSubmission_(row) {
     endingType: String(row[8] || ""),
     endingNode: String(row[9] || ""),
     durationSec: Number(row[10]) || 0,
+    analysis: analysis,
+    diagnosticAnalysis: diagnosticAnalysis,
+    overallScore: row[13] === "" || row[13] == null ? null : Number(row[13]),
+    oathWpm: row[14] === "" || row[14] == null ? null : Number(row[14]),
+    challengeDurationSec: Number(row[15]) || 0,
   };
 }
 
@@ -163,6 +196,13 @@ function saveSubmission_(params) {
   const endingType = String(params.endingType || "").slice(0, 24);
   const endingNode = String(params.endingNode || "").slice(0, 40);
   const durationSec = Number(params.durationSec) || 0;
+  const challengeDurationSec = Number(params.challengeDurationSec) || 0;
+  const overallScore = params.overallScore == null || params.overallScore === "" ? "" : Number(params.overallScore);
+  const oathWpm = params.oathWpm == null || params.oathWpm === "" ? "" : Number(params.oathWpm);
+  const analysisJson = params.analysis ? JSON.stringify(params.analysis).slice(0, 12000) : "";
+  const diagnosticAnalysisJson = params.diagnosticAnalysis
+    ? JSON.stringify(params.diagnosticAnalysis).slice(0, 8000)
+    : "";
 
   if (!classroom) throw new Error("Classroom is required.");
 
@@ -180,6 +220,11 @@ function saveSubmission_(params) {
     endingType,
     endingNode,
     Math.round(durationSec),
+    analysisJson,
+    diagnosticAnalysisJson,
+    overallScore,
+    oathWpm,
+    Math.round(challengeDurationSec),
   ]);
 
   return { ok: true, id: id };

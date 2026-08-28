@@ -168,6 +168,39 @@
     };
   }
 
+  function analyzeCopyMatch(text, target) {
+    if (!target) return null;
+    const norm = (s) => String(s || "")
+      .toLowerCase()
+      .replace(/[\u2018\u2019']/g, "'")
+      .replace(/\s+/g, " ")
+      .trim();
+    const t = norm(target);
+    const raw = String(text || "");
+    if (!t.length) return null;
+    let correct = 0;
+    let wrong = 0;
+    let extra = 0;
+    for (let i = 0; i < Math.max(raw.length, t.length); i++) {
+      const expected = t[i];
+      const typed = raw[i];
+      if (expected === undefined) {
+        if (typed !== undefined) extra++;
+        continue;
+      }
+      if (typed === undefined) {
+        wrong++;
+        continue;
+      }
+      if (typed.toLowerCase() === expected) correct++;
+      else wrong++;
+    }
+    const charAccuracy = correct / t.length;
+    const complete = norm(raw) === t;
+    const score = clamp(Math.round(charAccuracy * 100 - wrong * 2.5 - extra * 3 + (complete ? 10 : 0)), 0, 100);
+    return { score, charAccuracy, correct, wrong, extra, complete, typoCount: wrong + extra };
+  }
+
   function analyzeKeystrokeAccuracy(keystrokeStats, spellingScore, grammarScore) {
     const cal = getCalibration().KEYSTROKE_CALIBRATION || {};
     if (!keystrokeStats || keystrokeStats.totalKeys < (cal.minKeysForScoring || 15)) {
@@ -525,12 +558,22 @@
     if (gradeTyping != null) {
       typingScore = clamp(Math.round(typingScore * 0.35 + gradeTyping * 0.65), 10, 100);
     }
+    const copyMatch = options.copyTarget ? analyzeCopyMatch(text, options.copyTarget) : null;
+    if (copyMatch) {
+      typingScore = clamp(Math.round(typingScore * 0.22 + copyMatch.score * 0.78), 0, 100);
+      if (copyMatch.complete && keystrokeAccuracy.score >= 70) {
+        typingScore = Math.min(100, typingScore + 6);
+      }
+    }
     let mechanicsScore = clamp(Math.round(
       spelling.score * (getCalibration().MECHANICS_WEIGHTS?.spelling || 0.45) +
       grammar.score * (getCalibration().MECHANICS_WEIGHTS?.grammar || 0.35) +
       syntax.score * (getCalibration().MECHANICS_WEIGHTS?.syntax || 0.2)
     ), 0, 100);
     mechanicsScore = applyMechanicsExemplarFloor(mechanicsScore, wordCount, spelling.score, grammar.score);
+    if (copyMatch?.complete) {
+      mechanicsScore = Math.min(100, Math.max(mechanicsScore, copyMatch.score >= 85 ? 92 : 80));
+    }
 
     const detailBase = scoreFromRange(sensoryCount, calBreakpoints("STORY_DETAIL_BREAKPOINTS", [[0, 35], [2, 62], [4, 82], [8, 100]]));
     const detailBonus = scoreFromRange(wordCount, calBreakpoints("STORY_DETAIL_VOLUME_BONUS", [[0, 0]]));
@@ -590,7 +633,7 @@
       wpm: Math.round(wpm * 10) / 10,
       sentenceCount: sentences.length,
       typingLevel,
-      spelling, grammar, syntax, semantics, storySubs, vocabulary, promptResponse, keystrokeAccuracy,
+      spelling, grammar, syntax, semantics, storySubs, vocabulary, promptResponse, keystrokeAccuracy, copyMatch,
       scores: { typing: typingScore, mechanics: mechanicsScore, story: storyScore, overall: overallScore, vocabulary: vocabulary.score },
       metricScores,
       standards,
@@ -787,5 +830,5 @@
     return sections;
   }
 
-  window.WriteAnalysis = { analyzeText, classifyTyping, analyzeVocabulary, getSentences };
+  window.WriteAnalysis = { analyzeText, classifyTyping, analyzeVocabulary, getSentences, analyzeCopyMatch };
 })();

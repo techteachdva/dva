@@ -14,11 +14,11 @@
     "Check your sources before you trust a headline.",
   ];
 
-  const RECOMMENDED_SPEED_RATIO = 0.88;
+  const RECOMMENDED_SPEED_RATIO = 0.5;
   const MAX_MANUAL_SPEED_RATIO = 1.5;
   /** Minimum target: correct keystrokes per minute */
-  const MIN_TARGET_CPM = 40;
-  const DEFAULT_TARGET_CPM = 90;
+  const MIN_TARGET_CPM = 20;
+  const DEFAULT_TARGET_CPM = 45;
   /** Middle-school caps — short diagnostic phrases can otherwise spike to 200+ CPM */
   const MAX_TEST_CPM = 120;
   const MAX_TARGET_CPM = 95;
@@ -248,9 +248,54 @@
     return typoCount > maxTypos;
   }
 
-  function meetsSpeedGate(cpm, targetCpm) {
+  function meetsSpeedGate(cpm, targetCpm, ratio = 0.85) {
     if (!targetCpm || targetCpm <= 0) return true;
-    return cpm >= targetCpm * 0.75;
+    return cpm >= targetCpm * ratio;
+  }
+
+  /** Free-response accuracy: real letters/words vs junk. 0–1. */
+  function estimateTextAccuracy(text) {
+    const raw = String(text || "");
+    const compact = raw.replace(/\s+/g, "");
+    if (!compact) return 0;
+    const letters = (raw.match(/[A-Za-z]/g) || []).length;
+    const letterRatio = letters / compact.length;
+    const words = raw.trim().split(/\s+/).filter(Boolean);
+    if (!words.length) return Math.max(0, Math.min(1, letterRatio));
+    const realish = words.filter((w) => /[a-zA-Z]{2,}/.test(w)).length;
+    const wordRatio = realish / words.length;
+    return Math.max(0, Math.min(1, letterRatio * 0.55 + wordRatio * 0.45));
+  }
+
+  /**
+   * Speed carries most of the unlock. Word count is a soft bonus, never a hard lock.
+   * accuracyMin / speedGate / minWordsFloor come from difficulty.
+   */
+  function evaluateChallengeUnlock(cfg) {
+    const words = Math.max(0, cfg.words || 0);
+    const minWords = Math.max(1, cfg.minWords || 20);
+    const liveCpm = Math.max(0, cfg.liveCpm || 0);
+    const targetCpm = Math.max(0, cfg.targetCpm || 0);
+    const accuracy = Math.max(0, Math.min(1, cfg.accuracy ?? 0));
+    const speedGate = cfg.speedGate ?? 0.85;
+    const accuracyMin = cfg.accuracyMin ?? 0.68;
+    const minWordsFloor = cfg.minWordsFloor ?? 4;
+
+    const speedRatio = targetCpm > 0 ? liveCpm / targetCpm : 1;
+    const speedOk = speedRatio >= speedGate;
+    const accuracyOk = accuracy >= accuracyMin;
+    const enoughFloor = words >= minWordsFloor;
+    const wordSoft = Math.min(1, words / minWords);
+    const score = Math.min(1, Math.max(0, speedRatio)) * 0.62 + accuracy * 0.28 + wordSoft * 0.1;
+    const unlocked = enoughFloor && accuracyOk && (speedOk || (wordSoft >= 0.5 && score >= 0.58));
+    return {
+      unlocked,
+      score,
+      speedOk,
+      accuracyOk,
+      speedRatio,
+      wordSoft,
+    };
   }
 
   window.TechTrailTyping = {
@@ -279,6 +324,8 @@
     renderTypedCharsHtml,
     exceedsTypoBudget,
     meetsSpeedGate,
+    estimateTextAccuracy,
+    evaluateChallengeUnlock,
     escapeHtml,
   };
 })();
