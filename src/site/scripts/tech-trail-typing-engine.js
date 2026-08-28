@@ -248,6 +248,19 @@
     return typoCount > maxTypos;
   }
 
+  /**
+   * Path choices require the full ghost phrase — no early unlock at 70% of letters.
+   * Typo budget still applies once the whole target has been typed.
+   */
+  function isChoiceComplete(cmp, maxTypos = 0) {
+    if (!cmp) return false;
+    const targetLen = cmp.targetLength || 0;
+    const typedLen = cmp.typedLength ?? 0;
+    if (!targetLen || typedLen < targetLen) return false;
+    if (exceedsTypoBudget(cmp.typoCount || 0, maxTypos)) return false;
+    return true;
+  }
+
   function meetsSpeedGate(cpm, targetCpm, ratio = 0.85) {
     if (!targetCpm || targetCpm <= 0) return true;
     return cpm >= targetCpm * ratio;
@@ -323,6 +336,7 @@
     renderBranchGhostHtml,
     renderTypedCharsHtml,
     exceedsTypoBudget,
+    isChoiceComplete,
     meetsSpeedGate,
     estimateTextAccuracy,
     evaluateChallengeUnlock,

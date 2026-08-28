@@ -14,7 +14,7 @@
     security: { bg: `${BASE}/scenes/scene-data-vault.png`, tint: "rgba(6, 78, 59, 0.42)", mood: "tense" },
     network: { bg: `${BASE}/scenes/scene-network-closet.png`, tint: "rgba(30, 64, 175, 0.38)", mood: "tech" },
     library: { bg: `${BASE}/scenes/scene-sources-library.png`, tint: "rgba(120, 53, 15, 0.35)", mood: "scholar" },
-    bridge: { bg: `${BASE}/scenes/scene-collaboration-bridge.png`, tint: "rgba(146, 64, 14, 0.4)", mood: "dramatic" },
+    bridge: { bg: `${BASE}/scenes/scene-collaboration-bridge.png`, tint: "rgba(30, 58, 138, 0.38)", mood: "dramatic" },
     fleet: { bg: `${BASE}/scenes/scene-network-closet.png`, tint: "rgba(59, 130, 246, 0.35)", mood: "tech" },
     bureau: { bg: `${BASE}/scenes/scene-design-lab.png`, tint: "rgba(124, 58, 237, 0.32)", mood: "reflect" },
     code: { bg: `${BASE}/scenes/scene-network-closet.png`, tint: "rgba(16, 185, 129, 0.32)", mood: "code" },

@@ -83,6 +83,8 @@
           typoCount,
           complete: this.normalize(raw) === t,
           progress: t.length ? Math.min(100, Math.round((raw.length / t.length) * 100)) : 0,
+          typedLength: raw.length,
+          targetLength: t.length,
           correctCount: chars.filter((c) => c.state === "correct").length,
         };
       },
@@ -154,6 +156,13 @@
       exceedsTypoBudget(typoCount, maxTypos) {
         if (maxTypos >= 10) return false;
         return typoCount > maxTypos;
+      },
+      isChoiceComplete(cmp, maxTypos = 0) {
+        const targetLen = cmp?.targetLength || 0;
+        const typedLen = cmp?.typedLength ?? cmp?.chars?.length ?? 0;
+        if (!targetLen || typedLen < targetLen) return false;
+        if (this.exceedsTypoBudget(cmp?.typoCount || 0, maxTypos)) return false;
+        return true;
       },
       meetsSpeedGate(cpm, targetCpm, ratio = 0.85) {
         if (!targetCpm) return true;
@@ -329,9 +338,9 @@
   }
 
   const DIFFICULTY_CONFIG = {
-    cadet: { wordMult: 0.5, startChoicesMin: 3, startChoicesMax: 3, label: "Cadet", speedGate: 0.7, accuracyMin: 0.5, completeRatio: 0.7, typoBonus: 2, minWordsFloor: 3 },
-    operative: { wordMult: 1, startChoicesMin: 3, startChoicesMax: 4, label: "Operative", speedGate: 0.85, accuracyMin: 0.68, completeRatio: 0.85, typoBonus: 0, minWordsFloor: 4 },
-    analyst: { wordMult: 1.5, startChoicesMin: 4, startChoicesMax: 5, label: "Analyst", speedGate: 1, accuracyMin: 0.82, completeRatio: 0.95, typoBonus: -1, minWordsFloor: 6 },
+    cadet: { wordMult: 0.5, startChoicesMin: 3, startChoicesMax: 3, label: "Cadet", speedGate: 0.7, accuracyMin: 0.5, completeRatio: 1, typoBonus: 2, minWordsFloor: 3 },
+    operative: { wordMult: 1, startChoicesMin: 3, startChoicesMax: 4, label: "Operative", speedGate: 0.85, accuracyMin: 0.68, completeRatio: 1, typoBonus: 0, minWordsFloor: 4 },
+    analyst: { wordMult: 1.5, startChoicesMin: 4, startChoicesMax: 5, label: "Analyst", speedGate: 1, accuracyMin: 0.82, completeRatio: 1, typoBonus: -1, minWordsFloor: 6 },
   };
 
   function difficultyCfg() {
@@ -668,7 +677,7 @@
     const cfg = difficultyCfg();
     const budget = typoBudget();
     if (hint) {
-      hint.textContent = `Speed unlocks the path (${Math.round(cfg.speedGate * 100)}% of ${typingProfile.targetCpm} keys/min) · ${budget >= 10 ? "typos forgiven" : `up to ${budget} typo${budget === 1 ? "" : "s"}`}`;
+      hint.textContent = `Type the full highlighted path. Speed unlocks it (${Math.round(cfg.speedGate * 100)}% of ${typingProfile.targetCpm} keys/min) · ${budget >= 10 ? "typos forgiven" : `up to ${budget} typo${budget === 1 ? "" : "s"}`}`;
     }
 
     updateTypingMeterUI({
@@ -722,12 +731,12 @@
     const liveEl = document.getElementById("statLiveWpm");
     if (liveEl) liveEl.textContent = String(liveCpm);
     const speedOk = Typing.meetsSpeedGate(liveCpm, typingProfile.targetCpm, cfg.speedGate);
-    const targetLen = Typing.normalize(typeText).length || 1;
-    const completeness = cmp.correctCount / targetLen;
-    const completeEnough = cmp.complete || completeness >= cfg.completeRatio;
+    const pathComplete = Typing.isChoiceComplete
+      ? Typing.isChoiceComplete(cmp, typoBudget())
+      : Boolean(cmp.complete);
 
     updateTypingMeterUI({
-      progressPct: Math.max(cmp.progress, Math.round(completeness * 100)),
+      progressPct: cmp.progress,
       liveCpm,
       targetCpm: typingProfile.targetCpm,
       progressFillId: "choiceProgressFill",
@@ -736,7 +745,7 @@
       liveCpmId: "choiceLiveWpm",
       targetCpmId: "choiceTargetWpm",
       inputEl: input,
-      complete: completeEnough,
+      complete: pathComplete,
       speedOk,
     });
 
@@ -751,11 +760,17 @@
       return;
     }
 
-    if (!completeEnough || !resolved.choice) return;
+    if (!pathComplete || !resolved.choice) {
+      if (hint && resolved.choice && cmp.targetLength && cmp.typedLength < cmp.targetLength) {
+        const left = Math.max(0, cmp.targetLength - cmp.typedLength);
+        hint.textContent = `Keep typing the full path — ${left} character${left === 1 ? "" : "s"} left.`;
+      }
+      return;
+    }
 
-    if (!speedOk && !(cmp.complete && difficulty !== "analyst")) {
+    if (!speedOk && !(pathComplete && difficulty !== "analyst")) {
       const need = Math.round(typingProfile.targetCpm * cfg.speedGate);
-      if (hint) hint.textContent = `Keep going — ${liveCpm} keys/min (about ${need} unlocks this path).`;
+      if (hint) hint.textContent = `Path is complete — keep typing at about ${need} keys/min to unlock (${liveCpm} now).`;
       return;
     }
 

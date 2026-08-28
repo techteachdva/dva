@@ -359,7 +359,7 @@ Campbell's voice hits the intercom from the Collaboration Bridge: someone is get
       badge: "Reflector",
       choicePrefix: "I head to the",
       choices: [
-        { label: "Cross the Collaboration Bridge", next: "collaboration_bridge", typeText: "Collaboration Bridge" },
+        { label: "Report to the Collaboration Bridge", next: "collaboration_bridge", typeText: "Collaboration Bridge" },
         { label: "Enter the Final Trial", next: "final_trial", typeText: "Final Trial" },
       ],
     },
@@ -546,7 +546,7 @@ The Collaboration Bridge is packed ahead. Media Chamber is still decoding three 
       badge: "Ethical Creator",
       choicePrefix: "I head to the",
       choices: [
-        { label: "Cross the Collaboration Bridge", next: "collaboration_bridge", typeText: "Collaboration Bridge" },
+        { label: "Report to the Collaboration Bridge", next: "collaboration_bridge", typeText: "Collaboration Bridge" },
         { label: "Visit the Media Decoding Chamber", next: "media_chamber", typeText: "Media Chamber" },
       ],
     },
@@ -579,8 +579,8 @@ The Collaboration Bridge is packed ahead. Media Chamber is still decoding three 
     collaboration_bridge: {
       location: "Collaboration Bridge",
       character: "campbell",
-      enter: "Wind on the span. A group chat glowing on the railing.",
-      narrative: `Joseph Campbell points at a group chat on the railing display. Someone's locked out of a shared doc — then roasted when they ask why.
+      enter: "Captain's chair. Stars on the viewer. A group chat glowing on the main screen.",
+      narrative: `Joseph Campbell points at a group chat on the main viewer. Someone's locked out of a shared doc — then roasted when they ask why.
 
 You're in the thread. Everyone's watching to see what you do.`,
       choicePrefix: "I will",
@@ -592,14 +592,14 @@ You're in the thread. Everyone's watching to see what you do.`,
     },
 
     collab_win: {
-      location: "Collaboration Bridge — Crossed",
+      location: "Collaboration Bridge — Channel Clear",
       character: "campbell",
       lesson: "8.3.4.2",
       narrative: `"Tools connect us," Campbell says. "People choose whether that connection helps."
 
-The bridge holds. Arena lights dim up ahead — but Johnson still has a fake quote on her console if you want one more accuracy check.`,
+The crew holds. Arena lights dim up ahead — but Johnson still has a fake quote on her console if you want one more accuracy check.`,
       badge: "Bridge Builder",
-      rngBadge: { chance: 0.22, badge: "Steady Hands", message: "A gust rocks the bridge — you steady a teammate. Campbell nods." },
+      rngBadge: { chance: 0.22, badge: "Steady Hands", message: "A surge hits the comms — you steady a teammate. Campbell nods." },
       choicePrefix: "I head to the",
       choices: [
         { label: "Enter the Final Trial", next: "final_trial", typeText: "Final Trial" },
@@ -623,7 +623,7 @@ Campbell watches the thread. "Kindness in private matters. The public norm still
     collab_recovery_2: {
       location: "Collaboration Bridge — Reset",
       character: "campbell",
-      narrative: `The excluded person stops typing. Campbell rewinds the wind.
+      narrative: `The excluded person stops typing. Campbell rewinds the feed.
 
 "Same bridge. Different you?" <em>Rewind available.</em>`,
       choicePrefix: "I will",
@@ -954,7 +954,7 @@ A bulletin from Bias Detection lights the board. The Bridge is crowded if you wa
       choicePrefix: "I head to the",
       choices: [
         { label: "Head to the Bias Detection Unit", next: "bias_unit", typeText: "Bias Detection Unit" },
-        { label: "Cross the Collaboration Bridge", next: "collaboration_bridge", typeText: "Collaboration Bridge" },
+        { label: "Report to the Collaboration Bridge", next: "collaboration_bridge", typeText: "Collaboration Bridge" },
         { label: "Enter the Final Trial", next: "final_trial", typeText: "Final Trial" },
       ],
     },
