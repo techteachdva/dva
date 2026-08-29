@@ -5,7 +5,7 @@
  * and the flat game is untouched.
  */
 import * as THREE from "three";
-import { decorateRoom, roomSilhouette, addWindows } from "./tech-trail-world3d-props.js";
+import { decorateRoom, roomSilhouette, makeRoomFloorTexture } from "./tech-trail-world3d-props.js";
 
 (() => {
   const WORLD_HALF_X = 88;
@@ -220,7 +220,7 @@ import { decorateRoom, roomSilhouette, addWindows } from "./tech-trail-world3d-p
     ground.receiveShadow = true;
     scene.add(ground);
 
-    const windowGlowMats = [];
+    const clickables = [];
 
     const reducedMotion = () =>
       window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
@@ -240,140 +240,125 @@ import { decorateRoom, roomSilhouette, addWindows } from "./tech-trail-world3d-p
 
     const buildings = new Map(); // roomId -> { group, doorPosition, ringMat, room }
 
+    const ROOM_MENTOR = {};
+    Object.entries(MENTOR_ROOMS).forEach(([mentor, roomId]) => {
+      if (!ROOM_MENTOR[roomId]) ROOM_MENTOR[roomId] = mentor;
+    });
+
     function buildRoom(room) {
       const { x, z } = roomPos(room);
       const zoneKey = Visuals.NODE_ZONE?.[room.id] || "dragons";
       const zone = Visuals.ZONES[zoneKey] || Visuals.ZONES.dragons;
       const color = parseTint(zone.tint);
       const golden = GOLDEN_ROOMS.has(room.id);
-      const isVault = room.id === "password_temple";
+      const padW = room.id === "final_trial" ? 14 : 12;
+      const padD = room.id === "final_trial" ? 13 : 11;
+      const padH = 3.2;
 
       const group = new THREE.Group();
       group.position.set(x, 0, z);
-      const toCenter = Math.atan2(-x, -z); // yaw facing campus center
+      const toCenter = Math.atan2(-x, -z);
       group.rotation.y = toCenter;
 
-      let seed = 0;
-      for (const ch of room.id) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
-      const baseH = 5 + (seed % 4);
-      const sil = roomSilhouette(room.id, group, baseH, color);
-      const h = sil.h;
-
-      const bodyMat = stdMat(color);
-      const bodyW = room.id === "final_trial" ? 11 : 9;
-      const body = new THREE.Mesh(new THREE.BoxGeometry(bodyW, h, 9), bodyMat);
-      body.position.y = h / 2;
-      body.castShadow = true;
-      body.receiveShadow = true;
-      group.add(body);
-
+      const sil = roomSilhouette(room.id, group, padH, color);
       const trimColor = sil.trim || 0x9d8cff;
-      const band = new THREE.Mesh(
-        new THREE.BoxGeometry(bodyW + 0.2, 0.18, 9.2),
-        new THREE.MeshBasicMaterial({ color: trimColor, transparent: true, opacity: 0.75 })
-      );
-      band.position.y = h * 0.72;
-      group.add(band);
 
-      if (sil.roof === "flat") {
-        const roof = new THREE.Mesh(
-          new THREE.BoxGeometry(bodyW + 0.6, 0.45, 9.6),
-          stdMat(color, { roughness: 0.78, metalness: 0.05 })
+      const floorTex = makeRoomFloorTexture(room.id, color);
+      const floor = new THREE.Mesh(
+        new THREE.PlaneGeometry(padW, padD),
+        new THREE.MeshStandardMaterial({
+          map: floorTex,
+          color: 0xffffff,
+          roughness: 0.82,
+          metalness: 0.08,
+        })
+      );
+      floor.rotation.x = -Math.PI / 2;
+      floor.position.y = 0.05;
+      floor.receiveShadow = true;
+      floor.userData = { type: "floor", roomId: room.id };
+      group.add(floor);
+
+      const border = new THREE.Mesh(
+        new THREE.RingGeometry(Math.min(padW, padD) * 0.46, Math.min(padW, padD) * 0.5, 48),
+        new THREE.MeshBasicMaterial({ color: trimColor, transparent: true, opacity: golden ? 0.9 : 0.55 })
+      );
+      border.rotation.x = -Math.PI / 2;
+      border.position.y = 0.07;
+      group.add(border);
+
+      [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz]) => {
+        const post = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.07, 0.09, 2.6, 6),
+          stdMat(trimColor, { metalness: 0.25 })
         );
-        roof.position.y = h + 0.22;
-        roof.castShadow = true;
-        group.add(roof);
-      } else if (sil.roof === "dome") {
-        const roof = new THREE.Mesh(
-          new THREE.SphereGeometry(5.5, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2),
-          stdMat(color, { roughness: 0.55, metalness: 0.18 })
+        post.position.set(sx * padW * 0.44, 1.3, sz * padD * 0.44);
+        post.castShadow = true;
+        group.add(post);
+        const cap = new THREE.Mesh(
+          new THREE.SphereGeometry(0.12, 8, 8),
+          new THREE.MeshBasicMaterial({ color: golden ? 0xffd54a : trimColor })
         );
-        roof.position.y = h;
-        roof.castShadow = true;
-        group.add(roof);
-      } else if (sil.roof === "antenna") {
-        const roof = new THREE.Mesh(
-          new THREE.BoxGeometry(9.2, 0.35, 9.2),
-          stdMat(color, { roughness: 0.8 })
-        );
-        roof.position.y = h + 0.18;
-        roof.castShadow = true;
-        group.add(roof);
-        const ant = new THREE.Mesh(
-          new THREE.CylinderGeometry(0.05, 0.12, 2.2, 6),
-          stdMat(0x888899, { metalness: 0.45 })
-        );
-        ant.position.set(0, h + 1.3, 0);
-        ant.castShadow = true;
-        group.add(ant);
-      } else if (sil.roof === "arch") {
-        const roof = new THREE.Mesh(
-          new THREE.BoxGeometry(9, 0.3, 9),
-          stdMat(color, { roughness: 0.75 })
-        );
-        roof.position.y = h + 0.15;
-        roof.castShadow = true;
-        group.add(roof);
-      } else {
-        const roof = new THREE.Mesh(
-          new THREE.ConeGeometry(7.2, 3, 4),
-          stdMat(color, { roughness: 0.7 })
-        );
-        roof.position.y = h + 1.5;
-        roof.rotation.y = Math.PI / 4;
-        roof.castShadow = true;
-        group.add(roof);
-      }
+        cap.position.set(sx * padW * 0.44, 2.65, sz * padD * 0.44);
+        group.add(cap);
+      });
 
       if (golden) {
-        const trim = new THREE.Mesh(
-          new THREE.TorusGeometry(5.2, 0.18, 8, 24),
-          new THREE.MeshBasicMaterial({ color: 0xffd54a })
-        );
-        trim.rotation.x = Math.PI / 2;
-        trim.position.y = h + 0.4;
-        group.add(trim);
-        const accent = new THREE.PointLight(0xffd54a, 0.42, 16);
-        accent.position.set(0, h + 0.8, 2.5);
+        const accent = new THREE.PointLight(0xffd54a, 0.5, 18);
+        accent.position.set(0, 2.5, 0);
         group.add(accent);
       }
 
-      addWindows(group, h, trimColor, windowGlowMats);
-
-      const door = new THREE.Mesh(
-        new THREE.PlaneGeometry(isVault ? 0.1 : 2.6, isVault ? 0.1 : 3.4),
-        new THREE.MeshBasicMaterial({ color: 0x120a1e, visible: !isVault })
-      );
-      door.position.set(0, 1.7, 4.51);
-      group.add(door);
-
-      decorateRoom(room.id, group, h, color);
+      decorateRoom(room.id, group, padH, color);
 
       const label = textSprite(`${room.icon} ${room.label}`);
-      label.position.y = h + 5;
+      label.position.y = 4.2;
+      label.visible = false;
       group.add(label);
 
       const ringMat = new THREE.MeshBasicMaterial({ color: 0x4a3d63, transparent: true, opacity: 0.85 });
-      const ring = new THREE.Mesh(new THREE.RingGeometry(6.4, 7.1, 40), ringMat);
+      const ring = new THREE.Mesh(new THREE.RingGeometry(5.8, 6.5, 40), ringMat);
       ring.rotation.x = -Math.PI / 2;
-      ring.position.y = 0.05;
+      ring.position.y = 0.04;
       group.add(ring);
 
       scene.add(group);
 
       const doorDir = new THREE.Vector3(Math.sin(toCenter), 0, Math.cos(toCenter));
-      const doorWorld = new THREE.Vector3(x, 0, z).addScaledVector(doorDir, 5.2);
+      const doorDist = Math.max(padW, padD) * 0.48;
+      const doorWorld = new THREE.Vector3(x, 0, z).addScaledVector(doorDir, doorDist);
 
-      buildings.set(room.id, {
+      const building = {
         room,
         group,
         ringMat,
         doorWorld,
-        halfExtent: 5.2,
-        door,
-        portalLoaded: false,
+        floorMesh: floor,
+        labelSprite: label,
+        halfExtent: Math.max(padW, padD) * 0.42,
+        enterRadius: 5.5,
         portalUrl: zone.bg,
-      });
+        npcSprite: null,
+      };
+      buildings.set(room.id, building);
+
+      const mentorId = ROOM_MENTOR[room.id];
+      const portrait = mentorId && Visuals.PORTRAITS[mentorId];
+      if (mentorId && portrait) {
+        downscaleTexture(portrait, 256).then((tex) => {
+          if (!tex) return;
+          const sprite = new THREE.Sprite(
+            new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false })
+          );
+          const aspect = tex.image ? tex.image.width / tex.image.height : 0.75;
+          sprite.scale.set(2.4 * aspect, 2.4, 1);
+          sprite.position.set(0, 2.35, 0);
+          sprite.userData = { type: "npc", mentorId, roomId: room.id };
+          group.add(sprite);
+          building.npcSprite = sprite;
+          clickables.push(sprite);
+        });
+      }
     }
 
     Object.values(Visuals.MAP_ROOMS).forEach(buildRoom);
@@ -502,15 +487,9 @@ import { decorateRoom, roomSilhouette, addWindows } from "./tech-trail-world3d-p
     const completedSet = () => new Set(bridge.getRunState().completedRooms);
 
     function enterable(roomId) {
-      const visited = visitedSet();
+      if (!Visuals.MAP_ROOMS[roomId]) return null;
       if (pendingTarget?.roomId === roomId) return "target";
-      if (visited.has(roomId)) return "visited";
-      for (const v of visited) {
-        if ((neighborsOf[v] || []).includes(roomId)) return "neighbor";
-      }
-      const exitNode = bridge.resolveEntryNode?.(roomId, pendingTarget);
-      if (exitNode && bridge.mapIdFor(exitNode) === roomId) return "exit";
-      return null;
+      return "visited";
     }
 
     function setRoam(on) {
@@ -600,6 +579,16 @@ import { decorateRoom, roomSilhouette, addWindows } from "./tech-trail-world3d-p
 
     window.__gtgWorld3D.enterRoom = enterRoom;
 
+    window.__gtgWorld3D.exitToCampus = () => {
+      const roomId = bridge.mapIdFor(bridge.getRunState().currentNode);
+      setRoam(true);
+      teleportToRoomDoor(roomId);
+      refreshRings();
+      updateObjective();
+    };
+
+    window.__gtgWorld3D.closeMap = () => bridge.closeMap?.();
+
     bridge.onSceneRendered((nodeId) => {
       const roomId = bridge.mapIdFor(nodeId);
       if (pendingTarget && pendingTarget.roomId === roomId) {
@@ -627,47 +616,7 @@ import { decorateRoom, roomSilhouette, addWindows } from "./tech-trail-world3d-p
       });
     }
 
-    // --- mentors -------------------------------------------------------------------
-    const mentorsByRoom = {};
-    Object.entries(MENTOR_ROOMS).forEach(([mentor, roomId]) => {
-      (mentorsByRoom[roomId] = mentorsByRoom[roomId] || []).push(mentor);
-    });
-    Object.entries(mentorsByRoom).forEach(([roomId, mentors], ) => {
-      const b = buildings.get(roomId);
-      if (!b) return;
-      mentors.forEach((mentor, i) => {
-        const url = Visuals.PORTRAITS[mentor];
-        if (!url) return;
-        downscaleTexture(url, 256).then((tex) => {
-          if (!tex) return;
-          const sprite = new THREE.Sprite(
-            new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false })
-          );
-          const aspect = tex.image ? tex.image.width / tex.image.height : 0.75;
-          sprite.scale.set(2.6 * aspect, 2.6, 1);
-          const angle = (i + 1) * 1.15;
-          sprite.position.set(
-            b.group.position.x + Math.sin(angle) * 7.5,
-            2.2,
-            b.group.position.z + Math.cos(angle) * 7.5
-          );
-          scene.add(sprite);
-        });
-      });
-    });
-
-    // Door portal textures (zone scene PNGs, downscaled).
-    const portalCache = new Map();
-    buildings.forEach((b) => {
-      if (portalCache.has(b.portalUrl)) {
-        const pending = portalCache.get(b.portalUrl);
-        pending.then((tex) => { if (tex) { b.door.material.map = tex; b.door.material.color.set(0xffffff); b.door.material.needsUpdate = true; } });
-        return;
-      }
-      const pending = downscaleTexture(b.portalUrl, 512);
-      portalCache.set(b.portalUrl, pending);
-      pending.then((tex) => { if (tex) { b.door.material.map = tex; b.door.material.color.set(0xffffff); b.door.material.needsUpdate = true; } });
-    });
+    // --- mentors (placed per room in buildRoom) ------------------------------------
 
     // --- input ----------------------------------------------------------------------
     const keys = new Set();
@@ -675,7 +624,38 @@ import { decorateRoom, roomSilhouette, addWindows } from "./tech-trail-world3d-p
       const el = document.activeElement;
       return el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable);
     };
-    const mapOpen = () => !document.getElementById("campusMap")?.classList.contains("dw-hidden");
+    const mapOpen = () => document.body.classList.contains("tt-map-open");
+
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+    renderer.domElement.addEventListener("pointerdown", (e) => {
+      if (bridge.isOverlayOpen() || typingFocused()) return;
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+
+      const npcHits = raycaster.intersectObjects(clickables, true);
+      if (npcHits.length) {
+        const data = npcHits[0].object.userData;
+        if (data?.type === "npc") {
+          bridge.showNpcDialog?.(data.mentorId, data.roomId);
+          return;
+        }
+      }
+
+      if (!mapOpen()) return;
+      const floors = [...buildings.values()].map((b) => b.floorMesh).filter(Boolean);
+      const floorHits = raycaster.intersectObjects(floors, true);
+      if (floorHits.length) {
+        const roomId = floorHits[0].object.userData?.roomId;
+        if (roomId) {
+          teleportToRoomDoor(roomId);
+          player.position.copy(playerPos);
+          bridge.closeMap?.();
+        }
+      }
+    });
 
     window.addEventListener("keydown", (e) => {
       const k = e.key.toLowerCase();
@@ -770,24 +750,6 @@ import { decorateRoom, roomSilhouette, addWindows } from "./tech-trail-world3d-p
       playerPos.x = Math.max(-WORLD_HALF_X - 6, Math.min(WORLD_HALF_X + 6, playerPos.x));
       playerPos.z = Math.max(-WORLD_HALF_Z - 6, Math.min(WORLD_HALF_Z + 6, playerPos.z));
 
-      // Circle vs building AABB push-out.
-      buildings.forEach((b) => {
-        const bx = b.group.position.x;
-        const bz = b.group.position.z;
-        const he = b.halfExtent;
-        const cx = Math.max(bx - he, Math.min(bx + he, playerPos.x));
-        const cz = Math.max(bz - he, Math.min(bz + he, playerPos.z));
-        const ddx = playerPos.x - cx;
-        const ddz = playerPos.z - cz;
-        const d = Math.hypot(ddx, ddz);
-        if (d < PLAYER_RADIUS && d > 0.0001) {
-          playerPos.x = cx + (ddx / d) * PLAYER_RADIUS;
-          playerPos.z = cz + (ddz / d) * PLAYER_RADIUS;
-        } else if (d <= 0.0001) {
-          playerPos.x = bx + he + PLAYER_RADIUS; // degenerate: push east
-        }
-      });
-
       player.rotation.y = playerYaw;
       if (!reducedMotion()) {
         playerBody.position.y = 1.05 + Math.abs(Math.sin(performance.now() * 0.012)) * 0.12;
@@ -799,10 +761,13 @@ import { decorateRoom, roomSilhouette, addWindows } from "./tech-trail-world3d-p
     function checkProximity() {
       if (!roam) return;
       let best = null;
-      let bestD = DOOR_REACH;
+      let bestD = Infinity;
       buildings.forEach((b, roomId) => {
-        const d = Math.hypot(playerPos.x - b.doorWorld.x, playerPos.z - b.doorWorld.z);
-        if (d < bestD) {
+        const d = Math.hypot(
+          playerPos.x - b.group.position.x,
+          playerPos.z - b.group.position.z
+        );
+        if (d < (b.enterRadius || 5.5) && d < bestD) {
           bestD = d;
           best = roomId;
         }
@@ -815,10 +780,10 @@ import { decorateRoom, roomSilhouette, addWindows } from "./tech-trail-world3d-p
       const room = Visuals.MAP_ROOMS[best];
       const status = enterable(best);
       if (status) {
-        showPrompt(`Enter ${room.icon} ${room.label}`);
+        showPrompt(`Enter ${room.icon} ${room.label} — press E`);
         promptAction = () => enterRoom(best);
       } else {
-        showPrompt(`${room.icon} ${room.label} — locked. Follow your mission.`);
+        showPrompt(`${room.icon} ${room.label}`);
         promptAction = null;
       }
     }
@@ -946,10 +911,14 @@ import { decorateRoom, roomSilhouette, addWindows } from "./tech-trail-world3d-p
       if (!reducedMotion()) {
         const t = performance.now() * 0.001;
         motes.rotation.y += dt * 0.015;
-        windowGlowMats.forEach((wm, i) => {
-          wm.emissiveIntensity = 0.55 + Math.sin(t * 1.8 + i * 0.7) * 0.22;
-        });
       }
+      const map = mapOpen();
+      buildings.forEach((b) => {
+        if (b.labelSprite) b.labelSprite.visible = map;
+        if (b.npcSprite) {
+          b.npcSprite.material.opacity = map ? 1 : 0.95;
+        }
+      });
       renderer.render(scene, camera);
     });
   }

@@ -10481,6 +10481,152 @@ body.tt-rhythm-active textarea {
 
 
 
+/* === 3D map flyover HUD === */
+.tt-map-flyover {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 4;
+  width: min(720px, calc(100% - 24px));
+  pointer-events: none;
+}
+
+.tt-map-flyover__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 213, 74, 0.45);
+  background: rgba(10, 5, 18, 0.88);
+  color: #fff8e7;
+  pointer-events: auto;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+}
+
+.tt-map-flyover__title {
+  display: block;
+  font-family: "Bebas Neue", Impact, sans-serif;
+  font-size: 22px;
+  letter-spacing: 0.06em;
+}
+
+.tt-map-flyover__sub {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: rgba(255, 248, 231, 0.75);
+}
+
+.tt-exit-room-btn {
+  margin-top: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(157, 140, 255, 0.45);
+  background: rgba(20, 10, 32, 0.85);
+  color: #e8e0ff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tt-exit-room-btn:hover {
+  border-color: #ffd54a;
+  color: #ffd54a;
+}
+
+.tt-npc-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(6, 2, 12, 0.72);
+  backdrop-filter: blur(6px);
+}
+
+.tt-npc-dialog__panel {
+  position: relative;
+  width: min(520px, 100%);
+  max-height: min(88vh, 640px);
+  overflow: auto;
+  padding: 18px 18px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 213, 74, 0.35);
+  background: linear-gradient(180deg, rgba(24, 12, 36, 0.98), rgba(10, 5, 18, 0.98));
+  color: #fff8e7;
+}
+
+.tt-npc-dialog__close {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  border: 0;
+  background: transparent;
+  color: rgba(255, 248, 231, 0.8);
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.tt-npc-dialog__hero {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.tt-npc-dialog__photo {
+  width: 96px;
+  height: auto;
+  border-radius: 10px;
+  border: 2px solid rgba(255, 213, 74, 0.4);
+}
+
+.tt-npc-dialog__name {
+  margin: 0 0 4px;
+  font-size: 22px;
+}
+
+.tt-npc-dialog__role {
+  margin: 0;
+  font-size: 13px;
+  color: rgba(255, 248, 231, 0.72);
+}
+
+.tt-npc-dialog__problem,
+.tt-npc-dialog__tech,
+.tt-npc-dialog__job {
+  margin: 0 0 10px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.tt-character__card {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tt-character__card:hover .tt-character__avatar {
+  box-shadow: 0 0 0 2px rgba(255, 213, 74, 0.55);
+}
+
+body.tt-map-open .tt-scene-panel {
+  opacity: 0.15;
+  pointer-events: none;
+}
+
 /* === 3D world layer (Three.js campus) === */
 
 .tt-world {

@@ -223,7 +223,7 @@ layout: false
             </button>
             <div class="tt-hud-actions">
               <button id="sidebarToggleBtn" class="tt-hud-btn tt-hud-btn--sidebar" type="button" title="Mission log">📋 Log</button>
-              <button id="mapToggleBtn" class="tt-map-btn" type="button" title="Campus map (Z)" aria-pressed="false" aria-controls="campusMap">🗺️ Map <kbd>Z</kbd></button>
+              <button id="mapToggleBtn" class="tt-map-btn" type="button" title="Campus overview (Z)" aria-pressed="false">🛰️ Overview <kbd>Z</kbd></button>
               <button id="stillCameraHudBtn" class="tt-mute-btn" type="button" title="Still camera" aria-pressed="true">📷</button>
               <button id="muteToggleBtn" class="tt-mute-btn" type="button" title="Toggle sound">🔊</button>
             </div>
@@ -265,7 +265,22 @@ layout: false
                 <kbd>E</kbd> <span id="worldPromptText">Enter</span>
               </div>
               <div id="worldControlsHint" class="tt-world-controls dw-hidden">
-                <kbd>W</kbd><kbd>S</kbd> move · <kbd>A</kbd><kbd>D</kbd> turn · <kbd>Shift</kbd> run · <kbd>E</kbd> enter
+                <kbd>W</kbd><kbd>S</kbd> move · <kbd>A</kbd><kbd>D</kbd> turn · <kbd>Shift</kbd> run · <kbd>E</kbd> enter room · click heroes to talk
+              </div>
+              <div id="mapFlyoverHud" class="tt-map-flyover dw-hidden" aria-hidden="true">
+                <div class="tt-map-flyover__bar">
+                  <div>
+                    <strong class="tt-map-flyover__title">Campus Overview</strong>
+                    <p class="tt-map-flyover__sub">Overhead view — click a labeled floor to travel · click a hero portrait to hear their story</p>
+                  </div>
+                  <button id="mapFlyoverCloseBtn" class="tt-settings-btn" type="button">Close <kbd>Z</kbd></button>
+                </div>
+              </div>
+              <div id="npcDialog" class="tt-npc-dialog dw-hidden" role="dialog" aria-modal="true" aria-labelledby="npcDialogTitle" aria-hidden="true">
+                <div class="tt-npc-dialog__panel">
+                  <button id="npcDialogCloseBtn" class="tt-npc-dialog__close" type="button" aria-label="Close">×</button>
+                  <div id="npcDialogBody"></div>
+                </div>
               </div>
               <div class="tt-stage__room" id="sceneRoom">
                 <div class="tt-scene-bg" id="sceneBg">
@@ -291,6 +306,7 @@ layout: false
                     <div class="tt-scene-header__meta">
                       <span class="tt-location-badge" id="sceneLocation">—</span>
                       <span class="tt-scene-mood" id="sceneMood"></span>
+                      <button id="exitRoomBtn" class="tt-exit-room-btn dw-hidden" type="button" title="Return to campus">🚪 Leave room</button>
                     </div>
                   </div>
                   <p id="sceneJob" class="tt-scene-job dw-hidden"></p>

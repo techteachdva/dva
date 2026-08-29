@@ -1890,14 +1890,18 @@
       : `<span class="tt-character__emoji">${char.emoji}</span>`;
 
     charEl.innerHTML = `
-      <div class="tt-character__card">
+      <button type="button" class="tt-character__card" data-char="${escapeHtml(charKey)}" title="Click to hear about ${escapeHtml(char.name)}">
         <div class="tt-character__avatar">${avatarInner}</div>
         <div class="tt-character__info">
           <div class="tt-character__name">${escapeHtml(char.name)}</div>
           <div class="tt-character__role">${escapeHtml(char.role)}</div>
           <div class="tt-character__era">${escapeHtml(char.era)}</div>
         </div>
-      </div>`;
+      </button>`;
+
+    charEl.querySelector(".tt-character__card")?.addEventListener("click", () => {
+      showNpcDialog(charKey, mapIdFor(currentNode));
+    });
 
     if (!prefersReducedMotion) {
       charEl.classList.remove("tt-character--pop");
@@ -2025,22 +2029,61 @@
   }
 
   function mapIsOpen() {
-    const el = document.getElementById("campusMap");
-    return Boolean(el && !el.classList.contains("dw-hidden"));
+    return document.body.classList.contains("tt-map-open");
   }
 
   function setMapOpen(open) {
-    const el = document.getElementById("campusMap");
     const btn = document.getElementById("mapToggleBtn");
-    if (!el) return;
-    el.classList.toggle("dw-hidden", !open);
-    el.setAttribute("aria-hidden", open ? "false" : "true");
-    btn?.setAttribute("aria-pressed", open ? "true" : "false");
+    const hud = document.getElementById("mapFlyoverHud");
     document.body.classList.toggle("tt-map-open", open);
-    if (open) {
-      renderCampusMap(currentNode);
-      el.querySelector(".tt-map__panel")?.focus?.();
-    }
+    btn?.setAttribute("aria-pressed", open ? "true" : "false");
+    hud?.classList.toggle("dw-hidden", !open);
+    hud?.setAttribute("aria-hidden", open ? "false" : "true");
+    document.getElementById("campusMap")?.classList.add("dw-hidden");
+    if (open) window.__gtgWorld3D?.resize?.();
+  }
+
+  function exitToCampus() {
+    window.__gtgWorld3D?.exitToCampus?.();
+    document.getElementById("exitRoomBtn")?.classList.add("dw-hidden");
+    toast("Back on campus — walk to any open floor and press E to enter.", "info");
+  }
+
+  function showNpcDialog(mentorKey, roomId) {
+    const char = CHARACTERS[mentorKey];
+    if (!char) return;
+    const room = Visuals.MAP_ROOMS?.[roomId];
+    const conflict = room?.conflict;
+    const el = document.getElementById("npcDialog");
+    const body = document.getElementById("npcDialogBody");
+    if (!el || !body) return;
+    const portrait = Visuals.PORTRAITS[mentorKey];
+    const thumb = portrait
+      ? `<img class="tt-npc-dialog__photo" src="${portrait}" alt="" width="120" height="150" />`
+      : `<span class="tt-npc-dialog__emoji">${char.emoji}</span>`;
+    body.innerHTML = `
+      <div class="tt-npc-dialog__hero">${thumb}
+        <div>
+          <h3 id="npcDialogTitle" class="tt-npc-dialog__name">${escapeHtml(char.name)}</h3>
+          <p class="tt-npc-dialog__role">${escapeHtml(char.role)} · ${escapeHtml(char.era)}</p>
+        </div>
+      </div>
+      ${conflict ? `<p class="tt-npc-dialog__problem"><strong>${escapeHtml(conflict.title)}</strong> — ${escapeHtml(conflict.situation)}</p>` : ""}
+      <p class="tt-npc-dialog__tech">${escapeHtml(char.research || "This mentor's notes unlock as you explore.")}</p>
+      ${room?.job ? `<p class="tt-npc-dialog__job"><strong>Your job here:</strong> ${escapeHtml(room.job)}</p>` : ""}
+      <button type="button" class="tt-cta-btn tt-cta-btn--sm" id="npcEnterRoomBtn">Enter ${escapeHtml(room?.label || "room")} ▶</button>`;
+    el.classList.remove("dw-hidden");
+    el.setAttribute("aria-hidden", "false");
+    metCharacters.add(mentorKey);
+    journal.push(`💬 Talked with ${char.name}`);
+    document.getElementById("npcEnterRoomBtn")?.addEventListener("click", () => {
+      el.classList.add("dw-hidden");
+      if (roomId) window.__gtgWorld3D?.enterRoom?.(roomId);
+    });
+    document.getElementById("npcDialogCloseBtn")?.addEventListener("click", () => {
+      el.classList.add("dw-hidden");
+      el.setAttribute("aria-hidden", "true");
+    }, { once: true });
   }
 
   function toggleMap() {
@@ -2284,6 +2327,11 @@
     if (!node.ending) {
       hideDiagnostic();
       show("game");
+      const exitBtn = document.getElementById("exitRoomBtn");
+      if (exitBtn) {
+        const showExit = Boolean(window.__gtgWorld3D?.active && !document.body.classList.contains("tt-roam"));
+        exitBtn.classList.toggle("dw-hidden", !showExit);
+      }
     }
 
     const choiceTypingInput = document.getElementById("choiceTypingInput");
@@ -3002,6 +3050,12 @@ Play again to rebuild your record clean.`;
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
         if (mapIsOpen()) { setMapOpen(false); return; }
+        const npc = document.getElementById("npcDialog");
+        if (npc && !npc.classList.contains("dw-hidden")) {
+          npc.classList.add("dw-hidden");
+          npc.setAttribute("aria-hidden", "true");
+          return;
+        }
         closeInventory();
         const sidebar = document.querySelector(".tt-sidebar");
         if (sidebar?.classList.contains("tt-sidebar--open")) {
@@ -3018,7 +3072,9 @@ Play again to rebuild your record clean.`;
       }
     });
     document.getElementById("mapToggleBtn")?.addEventListener("click", () => toggleMap());
+    document.getElementById("mapFlyoverCloseBtn")?.addEventListener("click", () => setMapOpen(false));
     document.getElementById("mapCloseBtn")?.addEventListener("click", () => setMapOpen(false));
+    document.getElementById("exitRoomBtn")?.addEventListener("click", () => exitToCampus());
     document.getElementById("youAreHere")?.addEventListener("click", () => toggleMap());
 
     document.getElementById("muteToggleBtn")?.addEventListener("click", toggleMute);
@@ -3309,11 +3365,18 @@ Play again to rebuild your record clean.`;
         document.getElementById("inventoryOverlay") && !document.getElementById("inventoryOverlay").classList.contains("dw-hidden")
       ) || !!(
         document.getElementById("diagnosticOverlay") && !document.getElementById("diagnosticOverlay").classList.contains("dw-hidden")
+      ) || !!(
+        document.getElementById("npcDialog") && !document.getElementById("npcDialog").classList.contains("dw-hidden")
       );
     },
     isViewActive(name) {
       return activeView === name;
     },
+    closeMap() {
+      setMapOpen(false);
+    },
+    showNpcDialog,
+    exitToCampus,
   };
 
   try {

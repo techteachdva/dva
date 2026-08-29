@@ -3,6 +3,65 @@
  */
 import * as THREE from "three";
 
+const FLOOR_PALETTES = {
+  start: { bg: "#1a1428", grid: "#9d8cff", accent: "#ffd54a" },
+  design_lab: { bg: "#221830", grid: "#c49bff", accent: "#ff6688" },
+  data_vault: { bg: "#101c28", grid: "#2dd4bf", accent: "#44ffcc" },
+  password_temple: { bg: "#181820", grid: "#ffd54a", accent: "#ffaa00" },
+  footprint_scene: { bg: "#201828", grid: "#c4a8ff", accent: "#ff88cc" },
+  media_chamber: { bg: "#1c1424", grid: "#ff6688", accent: "#88ccff" },
+  prepare_phase: { bg: "#142238", grid: "#44aa66", accent: "#88ddff" },
+  try_phase: { bg: "#1a2030", grid: "#88aaff", accent: "#ffffff" },
+  debug_scene: { bg: "#181828", grid: "#44ff88", accent: "#aaffcc" },
+  reflect_phase: { bg: "#201828", grid: "#bb88ff", accent: "#ffcc88" },
+  code_bay: { bg: "#1a1828", grid: "#66aaff", accent: "#ffdd44" },
+  network_closet: { bg: "#121c18", grid: "#44ff88", accent: "#aaffaa" },
+  sources_library: { bg: "#181c28", grid: "#88bbff", accent: "#ffcc66" },
+  ip_chamber: { bg: "#201820", grid: "#cc88ff", accent: "#ffaa44" },
+  collaboration_bridge: { bg: "#182028", grid: "#88ccff", accent: "#ffd54a" },
+  trajectory_scene: { bg: "#281818", grid: "#ff8866", accent: "#ffcc44" },
+  ai_ethics: { bg: "#1c1830", grid: "#aa88ff", accent: "#ff6688" },
+  hardware_graveyard: { bg: "#1a2018", grid: "#88cc88", accent: "#44ff66" },
+  open_source: { bg: "#182018", grid: "#88dd88", accent: "#ffd54a" },
+  bias_unit: { bg: "#201828", grid: "#ff8866", accent: "#44aa66" },
+  data_detective: { bg: "#181420", grid: "#bbaaff", accent: "#ffcc88" },
+  final_trial: { bg: "#241830", grid: "#ffd54a", accent: "#ff88cc" },
+};
+
+export function makeRoomFloorTexture(roomId, accent) {
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = 256;
+  const ctx = canvas.getContext("2d");
+  const ac = accent instanceof THREE.Color ? accent : new THREE.Color(accent || 0x9d8cff);
+  const pal = FLOOR_PALETTES[roomId] || {
+    bg: `#${ac.clone().multiplyScalar(0.35).getHexString()}`,
+    grid: `#${ac.getHexString()}`,
+    accent: `#${ac.clone().offsetHSL(0.05, 0.1, 0.2).getHexString()}`,
+  };
+  ctx.fillStyle = pal.bg;
+  ctx.fillRect(0, 0, 256, 256);
+  ctx.strokeStyle = pal.grid;
+  ctx.globalAlpha = 0.28;
+  ctx.lineWidth = 2;
+  for (let i = 0; i <= 256; i += 32) {
+    ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 256); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(256, i); ctx.stroke();
+  }
+  ctx.globalAlpha = 0.45;
+  ctx.fillStyle = pal.accent;
+  const seed = [...String(roomId)].reduce((s, ch) => s + ch.charCodeAt(0), 0);
+  for (let i = 0; i < 6; i++) {
+    const x = ((seed * (i + 3) * 17) % 200) + 28;
+    const y = ((seed * (i + 7) * 13) % 200) + 28;
+    ctx.fillRect(x, y, 18 + (i % 3) * 8, 18 + (i % 2) * 10);
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(2.2, 2.2);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
 function mat(color, emissive = null) {
   const c = typeof color === "number" ? new THREE.Color(color) : color;
   const m = new THREE.MeshStandardMaterial({
@@ -303,13 +362,13 @@ export function decorateRoom(roomId, group, h, accent) {
       break;
 
     case "final_trial":
-      for (let i = 0; i < 4; i++) {
-        const ang = (i / 4) * Math.PI * 2 + Math.PI / 4;
-        group.add(cyl(0.35, 0.45, 5, 8, mat(0x6a5a7a), Math.cos(ang) * 5.5, 2.5, Math.sin(ang) * 5.5));
+      for (let i = 0; i < 5; i++) {
+        const ang = (i / 5) * Math.PI * 2;
+        group.add(cyl(0.06, 0.08, 2.8, 6, mat(0xffd54a), Math.cos(ang) * 4.8, 1.4, Math.sin(ang) * 4.8));
       }
-      group.add(cyl(0.8, 0.5, 1.2, 6, mat(0xffd54a), 0, 0.6, 3));
-      group.add(cyl(0.25, 0.35, 0.5, 8, mat(0xffd54a), 0, 1.4, 3));
-      neonStrip(group, 0, h + 0.2, 4.4, 3.5, 0xffd54a, "x");
+      group.add(cyl(0.9, 0.9, 0.08, 24, mat(0xffd54a), 0, 0.05, 0));
+      neonStrip(group, 0, 0.12, 0, 4.2, 0xffd54a, "x");
+      neonStrip(group, 0, 0.12, 0, 4.2, 0xffd54a, "z");
       break;
 
     default:
