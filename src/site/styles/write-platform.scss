@@ -9569,6 +9569,78 @@ mark.wf-standard-hit,
   }
 }
 
+/* ── Data fragment tracker ── */
+.wp-theme--gauntlet .tt-fragment-tracker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  border-radius: 999px;
+}
+
+.wp-theme--gauntlet .tt-fragment-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255, 248, 231, 0.15);
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  transition: background 0.4s ease, box-shadow 0.4s ease;
+}
+
+.wp-theme--gauntlet .tt-fragment-dot--lit {
+  background: linear-gradient(135deg, #ffd700, #c41e3a);
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.55);
+  border-color: rgba(255, 215, 0, 0.6);
+}
+
+/* ── Map completed rooms ── */
+.wp-theme--gauntlet .tt-map-room--completed .tt-map-room__cube {
+  border-color: rgba(52, 211, 153, 0.75);
+  box-shadow: 0 0 12px rgba(52, 211, 153, 0.35);
+}
+
+.wp-theme--gauntlet .tt-map-room--completed .tt-map-room__name::after {
+  content: " ✓";
+  color: #34d399;
+  font-weight: 800;
+}
+
+/* ── Ending mosaic ── */
+.wp-theme--gauntlet .tt-ending-mosaic {
+  text-align: center;
+  margin-top: 16px;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 215, 0, 0.25);
+  border-radius: 14px;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+.wp-theme--gauntlet .tt-ending-mosaic--revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.wp-theme--gauntlet .tt-ending-mosaic__label {
+  font-family: "Bebas Neue", Impact, sans-serif;
+  font-size: 18px;
+  letter-spacing: 0.08em;
+  color: #ffd700;
+  margin: 0 0 10px;
+}
+
+.wp-theme--gauntlet .tt-ending-mosaic__img {
+  width: 180px;
+  height: 180px;
+  object-fit: contain;
+  border-radius: 12px;
+  filter: drop-shadow(0 12px 24px rgba(255, 215, 0, 0.25));
+}
+
 /* ── Room phrase check (one huge next letter) ── */
 .tt-rhythm {
   position: fixed;

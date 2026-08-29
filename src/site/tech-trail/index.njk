@@ -214,6 +214,7 @@ layout: false
               <span class="tt-stat tt-stat--speed">🎯 <span class="tt-stat__value" id="statTargetWpm">—</span> keys/min</span>
               <span class="tt-stat tt-stat--live-wpm dw-hidden" id="liveWpmStat">⚡ <span class="tt-stat__value" id="statLiveWpm">0</span> live keys/min</span>
             </div>
+            <div class="tt-fragment-tracker" id="fragmentTracker" title="Data fragments collected" aria-label="Data fragment tracker"></div>
             <p class="tt-you-are-here" id="youAreHere"><span id="youAreHereLabel">Briefing Room</span></p>
             <div class="tt-golden-track" id="goldenRulesTrack" aria-label="Golden Rules progress"></div>
             <button id="inventoryBtn" class="tt-pack-btn" type="button" title="Open mission pack">
@@ -446,6 +447,10 @@ layout: false
               <p class="dw-muted" id="endingLessons"></p>
               <div class="tt-badge-row" id="endingBadges"></div>
               <div class="tt-golden-track tt-golden-track--ending" id="endingGoldenTrack"></div>
+              <div id="endingMosaic" class="tt-ending-mosaic dw-hidden">
+                <p class="tt-ending-mosaic__label">Data Mosaic Assembled</p>
+                <img src="/tech-trail/images/dragons-logo.png" alt="DaVinci Dragons emblem" width="200" height="200" class="tt-ending-mosaic__img" />
+              </div>
               <p id="endingAnalystHint" class="tt-ending__analyst dw-hidden">
                 Ready for a harder typing gauntlet?
                 <button id="tryAnalystBtn" class="tt-settings-btn" type="button">Try Analyst next run</button>
