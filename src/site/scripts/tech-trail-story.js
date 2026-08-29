@@ -113,9 +113,11 @@
       location: "ACME Tech Division — Briefing Room",
       character: "guide",
       enter: "Doors hiss. Coffee. Hot metal. Five alarms at once.",
-      narrative: `Alarms strobe across five holo-screens. A locker leak. A viral lie. An app that ships Friday whether it works or not.
+      job: "Pick a room. Recover all five Golden Rules of digital citizenship.",
+      conflict: { graphic: "alarms", title: "Five alarms at once", situation: "A locker leak. A viral lie. An app shipping Friday whether it works. Five screens, five fires.", question: "Which door do you take first?" },
+      narrative: `Mr. Phil snaps a badge onto your jacket. The hologram over the table is a campus map — same one you can open anytime with <strong>Z</strong>.
 
-Mr. Phil snaps a badge onto your jacket. "Welcome to the Gauntlet. The <strong>Golden Rules of Digital Citizenship</strong> didn't vanish — people stopped using them. Recover all five."
+"Welcome to the Gauntlet. The <strong>Golden Rules of Digital Citizenship</strong> didn't vanish — people stopped using them. Each room has a mentor, a live conflict on the hologram, and a solution you type."
 
 Ada Lovelace flickers onto the main screen. "Don't wait for the perfect mission. Pick a door. Think on your feet. Wrong turns rewind — they don't end the run."`,
       choicePrefix: "I sprint to the",
@@ -127,11 +129,13 @@ Ada Lovelace flickers onto the main screen. "Don't wait for the perfect mission.
       location: "Design Lab · London, 1843 (simulated)",
       character: "lovelace",
       enter: "Whiteboards. Heat lamps. A half-built app blinking on the wall.",
-      narrative: `You step out of the briefing tunnel into Ada Lovelace's lab. She's already pointing at a half-finished app.
+      job: "Stop this team from shipping an app nobody asked for.",
+      conflict: { graphic: "app", title: "Ship-it Friday", situation: "Kids were asked what they wanted. Nobody asked what problem they were solving. The countdown still says Friday.", question: "Interview real users, or ship a guess?" },
+      narrative: `Ada Lovelace — the person who wrote the first computer program in 1843 — is already pointing at the hologram.
 
-"They asked kids what they <em>wanted</em>," she says. "They never asked what problem they were actually solving."
+"Look. That's the conflict. They built a toy, not a tool. Fancy buttons don't matter if nobody needed the app."
 
-The project lead taps a countdown. "We can polish later. Ship it Friday."`,
+The project lead taps the countdown. "We can polish later. Ship it Friday." Lovelace looks at you. "Pick a solution. Type it."`,
       choicePrefix: "I will",
       choices: [
         { label: "Interview real users before building more", next: "define_win", integrity: 5, reputation: 5, typeText: "interview users" },
@@ -190,9 +194,11 @@ Lovelace doesn't yell. She zooms the bounce-rate chart. "Speed teaches too — b
       location: "Simulation Studio · Orinda, CA",
       character: "wright",
       enter: "Crumpled sketches. Tiny cities. Wright clears a table with one sweep.",
-      narrative: `The lab door dumps you into Will Wright's studio. Mini cities glow under glass.
+      job: "Name the real problem in plain language before you build.",
+      conflict: { graphic: "cities", title: "No buzzwords", situation: "A blank sim city waits. Wright wants the problem in plain language — not 'make an app.'", question: "Who is this actually for?" },
+      narrative: `Will Wright — the designer of SimCity and The Sims — dumps you at a table of tiny glowing cities.
 
-"Before you build," Wright says, "tell me what you're actually trying to fix — in plain language. No buzzwords. No 'make an app.'"`,
+"Before you build, tell me what you're actually trying to fix. No buzzwords. The hologram stays empty until the problem is real."`,
       typingChallenge: {
         prompt: "In 2–3 sentences: What real problem would you solve with technology at your school or in your neighborhood? Who benefits?",
         minWords: 20,
@@ -221,11 +227,11 @@ Down the hall you hear keyboard clicks and Sid Meier muttering about a login bug
       location: "Prototype Arena",
       character: "meier",
       enter: "A die clatters across steel. Real users wait behind glass.",
-      narrative: `You follow the keyboard noise into Sid Meier's arena. He rolls a die. It clatters to a stop.
+      job: "Test the login bug honestly — don't hide it.",
+      conflict: { graphic: "dice", title: "Login bug, live users", situation: "Real people are waiting behind the glass. Login is broken. You could watch where they get stuck — or patch quietly and pretend nothing happened.", question: "Watch users, or hide the bug?" },
+      narrative: `Sid Meier — the designer of Civilization — rolls a die. It clatters to a stop in front of the hologram.
 
-"Test early. Test honest. Your build has a login bug, and real people are waiting."
-
-You could sit with them and watch the pain — or patch quietly and pretend nothing happened.`,
+"Test early. Test honest. Your build has a login bug, and those are real people. Pick a solution."`,
       rngBadge: { chance: 0.28, badge: "Lucky Roll", message: "The die lands on your number. Meier grins. \"Fortune favors the prepared.\"" },
       choicePrefix: "I will",
       choices: [
@@ -279,11 +285,11 @@ Meier resets the sim. "You fixed the code and chipped your credibility. Same pro
       location: "Debugging Fleet · USS Hopper",
       character: "hopper",
       enter: "Brass rails. Green terminals. Hopper already has the log open.",
-      narrative: `You radio Hopper and the floor drops you onto her ship. She taps the screen.
+      job: "Find the real bug. Don't guess.",
+      conflict: { graphic: "loop", title: "Infinite loop", situation: "The program never stops. You can guess, rewrite everything tonight, or walk it line by line.", question: "Trace the logic, or mash random lines?" },
+      narrative: `Admiral Grace Hopper — she coined “debugging” and built the first compiler so humans could write code in words — already has the hologram on the suspicious <code>if</code>.
 
-"Infinite loop. Classic. You can guess, you can rewrite everything tonight, or you can walk it line by line."
-
-She's already scrolled to the suspicious <code>if</code>.`,
+"Infinite loop. Classic. Computers do exactly what you wrote, even the silly part. Pick how we hunt it."`,
       choicePrefix: "I will",
       choices: [
         { label: "Walk through the logic step by step", next: "debug_win", integrity: 5, reputation: 5, typeText: "trace the logic" },
@@ -337,9 +343,11 @@ Katherine Johnson waves from a NASA sim upstairs. A fake quote is already trendi
       location: "Interactive Systems Bureau",
       character: "crawford",
       enter: "Charts. No spin. Crawford waits with a blank “version two” column.",
-      narrative: `Meier's notes follow you into Chris Crawford's bureau. He pulls up a simple chart: what worked, what flopped, what surprised you.
+      job: "Say what version two should actually fix — no PR spin.",
+      conflict: { graphic: "notes", title: "No PR voice", situation: "A chart: what worked, what flopped, what surprised you. The version-two column is empty.", question: "What would you change before more people see this?" },
+      narrative: `Chris Crawford — a pioneer of games where your choices actually matter — pulls the hologram: what worked, what flopped, what surprised you.
 
-"No PR voice. What would version two actually fix?"`,
+"No PR voice. The conflict is simple: what would version two actually fix?"`,
       typingChallenge: {
         prompt: "In 2–3 sentences: What did testing teach you? What would you change before sharing this with more people?",
         minWords: 15,
@@ -368,11 +376,11 @@ Campbell's voice hits the intercom from the Collaboration Bridge: someone is get
       location: "Code Bay · Algorithm Dock",
       character: "meier",
       enter: "A delivery robot idles on a grid. Two teammates argue over a marker.",
-      narrative: `You peel off the briefing into Code Bay. Sid Meier slaps a marker in your hand. A delivery robot waits at the edge of a grid.
+      job: "Give the robot real instructions — not vibes.",
+      conflict: { graphic: "robot", title: "Vibes vs steps", situation: "One teammate wrote three clear turns. The other wrote 'go to the goal somehow.' The robot is waiting.", question: "Clear if/then steps, or let it wander?" },
+      narrative: `Sid Meier slaps a marker in your hand and nods at the hologram.
 
-One teammate wrote three clear steps with turns. The other wrote, "go to the goal somehow."
-
-"It needs instructions," Meier says. "Not vibes."`,
+"That robot needs an algorithm: boring, precise steps. Vibes don't move machines. Pick a solution."`,
       choicePrefix: "I will",
       choices: [
         { label: "Write ordered steps with clear if/then decisions", next: "code_win", integrity: 5, reputation: 5, typeText: "write clear steps" },
@@ -426,11 +434,11 @@ The robot beeps and rolls toward Hopper's bay. Mr. Phil radios the Design Lab pu
       location: "Network Closet · Packet Junction",
       character: "babbage",
       enter: "Brass switches. Blinking LEDs. Café Wi‑Fi hissing in the speakers.",
-      narrative: `You squeeze into Babbage's closet. He flicks a brass switch.
+      job: "Keep a password off café Wi-Fi.",
+      conflict: { graphic: "wifi", title: "No padlock", situation: "A classmate is about to type a school password on café Wi-Fi. No HTTPS lock in the browser. They say they'll only be a minute.", question: "Wait for trusted Wi-Fi, or let them hurry?" },
+      narrative: `Charles Babbage — he designed the Analytical Engine, the first idea of a general-purpose computer — flicks a brass switch. The hologram shows an unlocked padlock over a café.
 
-"Your classmate just typed a password into a school project site — on café Wi‑Fi. No padlock in the browser."
-
-They're asking if it's fine. 'I'll only be a minute.'`,
+"Public air is shared air. A minute is plenty of time to steal a login. What's your call?"`,
       choicePrefix: "I will",
       choices: [
         { label: "Tell them to wait for a trusted network", next: "network_win", integrity: 5, reputation: 5, typeText: "wait for trusted wifi" },
@@ -469,9 +477,11 @@ Babbage adjusts the switch. "Good intentions don't encrypt packets."`,
       location: "Sources Library · Research Archives",
       character: "johnson",
       enter: "Quiet stacks. A viral chart glowing on Johnson's tablet.",
-      narrative: `Katherine Johnson slides a tablet across the desk. A viral post claims homework destroys brain cells — slick chart, no author, no link to a study.
+      job: "Hunt the original study before anyone else shares it.",
+      conflict: { graphic: "chart", title: "Viral chart, no author", situation: "A slick chart claims homework destroys brain cells. No study. No author. Your friend already reposted it.", question: "Find the source, or keep the post up?" },
+      narrative: `Katherine Johnson — she calculated NASA flight paths by hand, where one wrong decimal missed the ocean — slides the hologram across the desk.
 
-Your friend already reposted it.`,
+"A chart isn't evidence. Your friend already hit share. What's your move?"`,
       choicePrefix: "I will",
       choices: [
         { label: "Hunt the original study before reacting", next: "sources_win", integrity: 5, reputation: 5, typeText: "find the original study" },
@@ -525,9 +535,11 @@ Lights kick on down the corridor: Media Chamber for headline decoding, Footprint
       location: "IP Chamber · Copyright Vault",
       character: "crawford",
       enter: "A video timeline. A perfect song. Zero license info.",
-      narrative: `You're editing a class video. The perfect song sits on a random upload site — no license, no credit.
+      job: "Use music you actually have permission for.",
+      conflict: { graphic: "music", title: "Perfect song, zero license", situation: "The class video sounds great with a random upload. No license. No credit. Partner says you'll cut it if anyone complains.", question: "Get permission, or just use it?" },
+      narrative: `Chris Crawford points at the hologram waveform. "Everyone uses it" is not a license.
 
-Your partner shrugs. "Everyone uses it. We'll cut it if anyone complains."`,
+"Creators deserve credit and permission. You can be inspired without taking. Pick a solution."`,
       choicePrefix: "I will",
       choices: [
         { label: "Find royalty-free music or get real permission", next: "ip_win", integrity: 10, reputation: 5, typeText: "get real permission" },
@@ -580,9 +592,11 @@ The Collaboration Bridge is packed ahead. Media Chamber is still decoding three 
       location: "Collaboration Bridge",
       character: "campbell",
       enter: "Captain's chair. Stars on the viewer. A group chat glowing on the main screen.",
-      narrative: `Joseph Campbell points at a group chat on the main viewer. Someone's locked out of a shared doc — then roasted when they ask why.
+      job: "Back someone up when the group chat turns mean.",
+      conflict: { graphic: "chat", title: "Locked out, then roasted", situation: "A classmate is locked out of a shared doc — then roasted for asking why. You're in the thread. Everyone is watching.", question: "Speak up in public, or join the joke?" },
+      narrative: `Joseph Campbell — he studied hero stories worldwide — points at the hologram chat.
 
-You're in the thread. Everyone's watching to see what you do.`,
+"Online, you're in a story too. You pick who you become. Kindness in a DM is real. The public thread still needs a voice. What's your solution?"`,
       choicePrefix: "I will",
       choices: [
         { label: "Back them up in the chat and tell a trusted adult", next: "collab_win", integrity: 10, reputation: 5, typeText: "back them up publicly" },
@@ -610,9 +624,9 @@ The crew holds. Arena lights dim up ahead — but Johnson still has a fake quote
     collab_recovery_1: {
       location: "Collaboration Bridge — Private Check-In",
       character: "campbell",
-      narrative: `You DM the excluded person. They appreciate it — but the roast keeps going in the group chat. Silence starts looking like agreement.
+      narrative: `<strong>What just happened:</strong> Checking in privately was kind — but staying quiet in the group chat looked like you agreed with the roast.
 
-Campbell watches the thread. "Kindness in private matters. The public norm still slid toward cruel."`,
+You DM the excluded person. They appreciate it — but the roast keeps going. Campbell watches the thread. "Kindness in private matters. The public norm still slid toward cruel."`,
       choicePrefix: "I will",
       choices: [
         { label: "Speak up in the thread now and loop in an adult", next: "collab_win", integrity: 5, reputation: -5, typeText: "speak up now" },
@@ -636,9 +650,9 @@ Campbell watches the thread. "Kindness in private matters. The public norm still
       location: "Trajectory Analytics · NASA Sim",
       character: "johnson",
       enter: "Earth in the window. A meme with a famous face and zero source.",
-      narrative: `Johnson zooms a viral meme — bold quote, famous face, no source. Shares are climbing.
-
-"Accuracy is a habit," she says. "What do you do first?"`,
+      job: "Check if a viral quote is even real before it spreads.",
+      conflict: { graphic: "meme", title: "Famous face, no source", situation: "A meme puts a bold quote on a famous face. Shares are climbing. No citation anywhere.", question: "Verify first, or share with a disclaimer?" },
+      narrative: `Johnson zooms the hologram. "Accuracy is a habit. Trending and true are not the same word. What do you do first?"`,
       choicePrefix: "I will",
       choices: [
         { label: "Check if the quote shows up in reliable sources", next: "trajectory_win", integrity: 5, reputation: 5, typeText: "check reliable sources" },
@@ -690,9 +704,11 @@ You can loop to briefing for a fresh mission — or take the Arena if you've ear
       location: "Data Vault · ACME Sublevel 3",
       character: "turing",
       enter: "Cold air. Lockers of light. Turing already has the thread open.",
-      narrative: `You drop into Turing's vault. A forum post shows a classmate's phone number and schedule “as a joke.” It's climbing.
+      job: "Stop a privacy leak without spreading it further.",
+      conflict: { graphic: "leak", title: "The locker leak", situation: "A classmate's phone number and schedule are in a public thread 'as a joke.' Screenshots are already flying.", question: "Report it — don't repost — or pass it along?" },
+      narrative: `Agent Alan Turing — he helped crack WWII codes and asked whether a machine can think — already has the hologram thread open.
 
-You have a screenshot. So does everyone else.`,
+"Private data isn't yours to broadcast, even as a joke, even if you think you're warning people. Reporting beats amplifying. Pick a solution."`,
       choicePrefix: "I will",
       choices: [
         { label: "Report it to a trusted adult — don't repost", next: "privacy_win", integrity: 10, reputation: 5, typeText: "report don't repost" },
@@ -725,9 +741,9 @@ Two more locks light up: Password Vault and Footprint Gallery. Turing also keeps
     privacy_recovery_1: {
       location: "Data Vault — Poster Responds",
       character: "turing",
-      narrative: `The poster deletes the thread — after screenshotting your DM and calling you “the snitch.” The victim's info is still in chats you can't see.
+      narrative: `<strong>What just happened:</strong> You DMed instead of reporting. The leak kept spreading — and now your message is in the screenshots too.
 
-Turing studies the ripple. "Brave. Also leaky. You exposed yourself and didn't contain it."`,
+The poster deletes the thread — after calling you “the snitch.” The victim's info is still in chats you can't see. Turing studies the ripple. "Brave. Also leaky. You didn't contain it."`,
       choicePrefix: "I will",
       choices: [
         { label: "Escalate to an adult now that it's worse", next: "privacy_win", integrity: 5, reputation: -5, typeText: "tell an adult now" },
@@ -752,9 +768,11 @@ Turing studies the ripple. "Brave. Also leaky. You exposed yourself and didn't c
       location: "Vault of Passwords · Security Gate",
       character: "guide",
       enter: "A gate that scans habits, not courage. Babbage mutters in the static.",
-      narrative: `Mr. Phil meets you at the security gate. A ghostly Babbage mutters, "Garbage in, garbage out."
+      job: "Lock accounts the new way: unique passwords plus 2FA.",
+      conflict: { graphic: "keys", title: "One password, three doors", situation: "A recruit used the same password for school email, a game, and a second account. One crack opens all three.", question: "Unique passwords and 2FA, or one 'strong' password everywhere?" },
+      narrative: `Mr. Phil meets you at the gate. Ghostly Babbage mutters, "Garbage in, garbage out." The hologram shows one key opening three locks.
 
-A recruit ahead used one password everywhere — school email, a game account, the works.`,
+"You already know not to <em>share</em> a password. The trap here is reusing the same one. Unique plus two-factor — that's the new move. Pick a solution."`,
       choicePrefix: "I will",
       choices: [
         { label: "Use unique passwords plus two-factor auth", next: "password_win", integrity: 10, reputation: 5, typeText: "unique passwords and 2FA" },
@@ -768,7 +786,7 @@ A recruit ahead used one password everywhere — school email, a game account, t
       character: "babbage",
       lesson: "8.2.2.3",
       enter: "The gate opens like a lock clicking in a quiet room.",
-      narrative: `The gate opens. Babbage nods once. "Your login is yours alone — even from friends with 'good reasons.'"
+      narrative: `The gate opens. Babbage nods once. "You already knew don't-share. The new move is unique passwords plus two-factor auth — even from friends with 'good reasons.'"
 
 <strong>Golden Rule 3 unlocked: Guard your login.</strong>
 
@@ -799,9 +817,9 @@ Defensible. Still a single point of failure.`,
     password_recovery_2: {
       location: "Vault — Gate Closed",
       character: "guide",
-      narrative: `The gate flickers red. A clip shows one cracked password unlocking three accounts.
+      narrative: `<strong>What just happened:</strong> One cracked password opened school email, a game, and a second account. Strong is not the same as unique.
 
-<em>Rewind available.</em>`,
+The gate flickers red. <em>Rewind available.</em>`,
       choicePrefix: "I will",
       choices: [
         { label: "Set unique passwords with two-factor auth", next: "password_win", integrity: 0, reputation: 0, typeText: "unique passwords and 2FA" },
@@ -813,9 +831,9 @@ Defensible. Still a single point of failure.`,
       location: "Hall of Mirrors · Digital Footprint Gallery",
       character: "campbell",
       enter: "Two drafts of the same post. One kind. One 'just a joke.'",
-      narrative: `Campbell holds up two versions of the same post. One is a thoughtful reply. One tags someone for embarrassment — “just a joke.”
-
-"Which version still represents you in ten years?"`,
+      job: "Choose the post you'd still stand behind in ten years.",
+      conflict: { graphic: "post", title: "Two drafts", situation: "Same moment. One reply is kind. One tags someone to embarrass them — 'just a joke.'", question: "Which version still represents you later?" },
+      narrative: `Campbell holds the hologram: two drafts. "The internet remembers slowly — but it remembers. Digital citizenship isn't only avoiding harm. Sometimes it means showing up. Which draft do you post?"`,
       choicePrefix: "I will",
       choices: [
         { label: "Post the version I'd stand behind later", next: "footprint_win", integrity: 10, reputation: 5, typeText: "post the kind version" },
@@ -846,7 +864,7 @@ Media Chamber is the last Rule for a lot of cadets. Then the Arena.`,
     footprint_recovery_1: {
       location: "Hall of Mirrors — Missed Chance",
       character: "campbell",
-      narrative: `Silence keeps you safe. The tag stays up. The target notices nobody defended them.
+      narrative: `<strong>What just happened:</strong> Sitting it out didn't make you the bully — and it didn't help. The mean post is still up, and they noticed nobody spoke up.
 
 "Not harming is baseline," Campbell says. "Digital citizenship sometimes means showing up."`,
       choicePrefix: "I will",
@@ -873,9 +891,9 @@ Media Chamber is the last Rule for a lot of cadets. Then the Arena.`,
       location: "Media Decoding Chamber",
       character: "crawford",
       enter: "Three headlines. Same event. Three totally different stories.",
-      narrative: `Three headlines blink about the same event — one breathless, one dry and sourced, one ALL CAPS with a question mark.
-
-Your group chat is already picking sides.`,
+      job: "Decode three headlines before you pick a side.",
+      conflict: { graphic: "headlines", title: "Same event, three stories", situation: "One headline is sourced. One is breathless. One is ALL CAPS with a question mark. The group chat is already picking sides.", question: "Compare sources, or share the loudest one?" },
+      narrative: `Three hologram cards blink. Crawford taps each one. "Who made it? What's the evidence? Who else covered it? That's the job. Pick a solution before the chat fills in fake details."`,
       choicePrefix: "I will",
       choices: [
         { label: "Compare sources and evidence before picking a side", next: "media_win", integrity: 10, reputation: 5, typeText: "compare the sources" },
@@ -906,7 +924,7 @@ If you've got the set, the Arena is calling. Lovelace also offers a mentor path 
     media_recovery_1: {
       location: "Media Chamber — Missed Window",
       character: "crawford",
-      narrative: `You waited. By the time you check back, the story mutated. Half the group chat believes a detail that was never in the original article.
+      narrative: `<strong>What just happened:</strong> Waiting felt careful. While you waited, the group chat filled in the blanks — including details that were never true.
 
 "Caution is wise," Crawford says. "Silence in a group chat can look like agreement."`,
       choicePrefix: "I will",
@@ -932,9 +950,9 @@ If you've got the set, the Arena is calling. Lovelace also offers a mentor path 
       location: "AI Ethics Lab · Cambridge, MA",
       character: "turing",
       enter: "A face-scanner demo. It works — on some faces.",
-      narrative: `Turing pulls up a face-recognition demo. "Great on people who look like the engineers. Fails on everyone else. The team says accuracy is 'good enough for launch.'"
-
-Ship, delay, or demand a real fix?`,
+      job: "Don't ship a scanner that only works on some faces.",
+      conflict: { graphic: "faces", title: "Good enough?", situation: "Face unlock works on people who look like the engineers. Fails on everyone else. The team says accuracy is good enough for launch.", question: "Test diverse faces first, or ship and patch later?" },
+      narrative: `Turing pulls the hologram scanner. "Machines learn what we show them. Narrow data, narrow machine. Ship, delay, or demand a real fix?"`,
       choicePrefix: "I will",
       choices: [
         { label: "Insist they test on diverse faces before launch", next: "ai_ethics_win", integrity: 10, reputation: 5, typeText: "test diverse faces first" },
@@ -988,9 +1006,9 @@ A bulletin from Bias Detection lights the board. The Bridge is crowded if you wa
       location: "Hardware Graveyard · Old ACME Storage",
       character: "babbage",
       enter: "Dust. Dead screens. One phone that still buzzes.",
-      narrative: `Babbage picks up a discarded phone. "Still powers on. Photos. Messages. Location history. Someone tossed it in e-waste without wiping it."
-
-Warn the team, DIY-wipe it, or walk away?`,
+      job: "Wipe devices the right way before they leave the building.",
+      conflict: { graphic: "phones", title: "Still buzzing", situation: "A discarded phone still has photos, messages, and location history. It was tossed in e-waste without a wipe.", question: "Report and wipe properly, or walk away?" },
+      narrative: `Babbage picks up the buzzing hologram-phone. "Data outlives hardware. Someone tossed this without erasing it. Warn the team, DIY-wipe it, or walk away?"`,
       choicePrefix: "I will",
       choices: [
         { label: "Report it and follow secure disposal protocol", next: "hardware_win", integrity: 10, reputation: 5, typeText: "report and wipe properly" },
@@ -1044,9 +1062,9 @@ A trail of old posts leads toward the Footprint Gallery. Password Vault is the o
       location: "Open Source Bazaar · Fork Alley",
       character: "hopper",
       enter: "Two copies of the same tool. One is missing the credits.",
-      narrative: `Hopper points at two versions of the same tool. "One team forked the other, deleted the credits, and called it original. The creator is asking questions."
-
-Call it out, stay quiet, or slap your name on it too?`,
+      job: "Put the credits back where they belong.",
+      conflict: { graphic: "credits", title: "Deleted credits", situation: "Two copies of the same tool. One fork deleted the original names and called it new. The creator is asking questions.", question: "Restore credit, or stay quiet?" },
+      narrative: `Hopper points at the hologram: two versions, one missing names. "Open source lives on named shoulders. Call it out, stay quiet, or slap your name on it too?"`,
       choicePrefix: "I will",
       choices: [
         { label: "Credit the original creators and follow the license", next: "open_source_win", integrity: 10, reputation: 5, typeText: "restore the credits" },
@@ -1099,9 +1117,9 @@ Down the alley, Crawford is reviewing a video with a suspicious soundtrack. Code
       location: "Bias Detection Unit · Algorithm Watch",
       character: "johnson",
       enter: "Two loan screens. Same numbers. Different yes/no.",
-      narrative: `Johnson zooms two loan-application screens. Same income, same history — different approval rates. The model won't explain why.
-
-The team wants to keep it running because “the numbers look good overall.”`,
+      job: "Catch a model that treats people differently.",
+      conflict: { graphic: "split", title: "Same numbers, different yes", situation: "Two loan screens. Same income, same history — different approval. The team says overall numbers look fine.", question: "Demand a fairness audit, or leave it running?" },
+      narrative: `Johnson zooms the split hologram. "Precision without fairness isn't precision. It's a mirror of what you already fed it. The model won't explain why. What's your solution?"`,
       choicePrefix: "I will",
       choices: [
         { label: "Demand explainability and a fairness audit", next: "bias_win", integrity: 10, reputation: 5, typeText: "demand a fairness audit" },
@@ -1154,9 +1172,11 @@ The Sources Library just got a tip about a viral homework headline. Media Chambe
       location: "Data Detective Agency · Trail Analytics",
       character: "conway",
       enter: "Three app profiles. One person. Way too much detail.",
-      narrative: `Conway lays out three profiles. "Same person. Three apps. Each guessed something different — and sold the guess."
+      job: "Show how tiny data points build a detailed profile.",
+      conflict: { graphic: "profiles", title: "Three apps, one person", situation: "Three apps each guessed something different about the same kid — and sold the guess. A friend shrugs: nothing to hide.", question: "Explain the trail, or say privacy doesn't matter?" },
+      narrative: `John Conway — his Game of Life showed how tiny rules explode into huge patterns — lays three hologram profiles on the table.
 
-Your friend shrugs. "I have nothing to hide, so why care?"`,
+"Same as a rumor in a group chat. Tiny crumbs, giant picture. Your friend thinks privacy is extra. What's your solution?"`,
       choicePrefix: "I will",
       choices: [
         { label: "Explain how tiny data points build a detailed profile", next: "detective_win", integrity: 5, reputation: 5, typeText: "explain the profile" },
@@ -1306,11 +1326,13 @@ Back to briefing — or the Arena if you've earned it.`,
       location: "Gauntlet Arena · Final Round",
       character: "guide",
       enter: "The floor rises. Mentors you met appear in the holo-ring.",
-      narrative: `Mr. Phil's voice fills the Arena. Mentors you've met don't quiz you. They listen.
+      job: "Write your Digital Citizenship Oath in your own words.",
+      conflict: { graphic: "oath", title: "The Arena", situation: "Mentors you met wait in the holo-ring. This is not a quiz. It is a promise: what will you actually do online when it counts?", question: "Name the Golden Rules you will use." },
+      narrative: `Mr. Phil's voice fills the Arena. The hologram shows the five Rules as empty rings until you fill them with your own words.
 
-"In your own words: what will you actually do online when it counts — not when it's easy?"`,
+"In your own words: what will you actually do online when it counts — not when it's easy? Use the Golden Rules you recovered."`,
       typingChallenge: {
-        prompt: "Write a short Digital Citizenship Oath (3–5 sentences): How will you use technology to solve problems, help others, and stay safe?",
+        prompt: "Write a short Digital Citizenship Oath (3–5 sentences). Name the Golden Rules you will actually use: Design for people. Protect data. Guard your login. Think before you post. Decode media.",
         minWords: 30,
         next: "victory",
       },

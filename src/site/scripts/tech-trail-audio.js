@@ -19,6 +19,7 @@
   let _ambienceNodes = [];
   let _muted = false;
   let _musicEl = null;
+  let _musicDuck = 1;
 
   function loadMuted() {
     try {
@@ -199,7 +200,38 @@
 
   function _syncMusicVolume() {
     if (!_musicEl) return;
-    _musicEl.volume = _muted ? 0 : MUSIC_VOLUME;
+    const duck = Number.isFinite(_musicDuck) ? _musicDuck : 1;
+    _musicEl.volume = _muted ? 0 : MUSIC_VOLUME * Math.max(0, Math.min(1, duck));
+  }
+
+  function setMusicDuck(factor) {
+    _musicDuck = Number.isFinite(factor) ? factor : 1;
+    _syncMusicVolume();
+  }
+
+  function playMetronomeClick() {
+    if (!engine) init();
+    _tone({ freq: 784, dur: 0.032, type: "sine", vol: 0.045, attack: 0.001 });
+    _tone({ freq: 392, dur: 0.048, type: "triangle", vol: 0.028, attack: 0.002 });
+    _noise({ dur: 0.012, vol: 0.018, filter: 2200, attack: 0.001 });
+  }
+
+  function playRhythmHit(quality) {
+    if (!engine) init();
+    if (quality === "perfect") {
+      _tone({ freq: 784, freqEnd: 988, dur: 0.09, type: "sine", vol: 0.09, attack: 0.004 });
+      return;
+    }
+    if (quality === "great") {
+      _tone({ freq: 659, freqEnd: 784, dur: 0.07, type: "sine", vol: 0.075, attack: 0.003 });
+      return;
+    }
+    _tone({ freq: 523, dur: 0.06, type: "triangle", vol: 0.06, attack: 0.003 });
+  }
+
+  function playRhythmMiss() {
+    if (!engine) init();
+    _tone({ freq: 196, freqEnd: 164, dur: 0.09, type: "sine", vol: 0.04, attack: 0.006 });
   }
 
   function startSoundtrack() {
@@ -324,6 +356,10 @@
     stopZoneAmbience,
     startSoundtrack,
     stopSoundtrack,
+    setMusicDuck,
+    playMetronomeClick,
+    playRhythmHit,
+    playRhythmMiss,
     setMuted,
     toggleMuted,
     isMuted,

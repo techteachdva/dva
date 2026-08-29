@@ -151,35 +151,145 @@
       short: "Design for people",
       icon: "🎯",
       detail: "Technology should help real humans — clear interfaces, accessibility, and empathy beat flashy tricks.",
+      learnLine: "Ask who it's for before you build.",
     },
     {
       n: 2,
       short: "Protect data",
       icon: "🛡️",
       detail: "Treat personal information like treasure. Share only what is needed and know who can see it.",
+      learnLine: "Private info isn't yours to pass around — even as a joke.",
     },
     {
       n: 3,
       short: "Guard your login",
       icon: "🔑",
-      detail: "Strong passwords and careful sign-in habits keep your accounts and identity safe.",
+      detail: "Don't just hide one password. Use a unique password on each account and turn on two-factor auth.",
+      learnLine: "You already knew don't-share. The new move is unique passwords + 2FA.",
     },
     {
       n: 4,
       short: "Think before you post",
       icon: "✋",
       detail: "Pause before you publish. Words and images online can spread fast and last a long time.",
+      learnLine: "If you wouldn't stand behind it in a year, don't post it.",
     },
     {
       n: 5,
       short: "Decode media",
       icon: "🔍",
       detail: "Ask who made a message, what they want you to believe, and what evidence supports it.",
+      learnLine: "Same event, three headlines. Check the source before you share.",
     },
   ];
 
   function zoneForNode(nodeId) {
     return ZONES[NODE_ZONE[nodeId] || "acme"];
+  }
+
+  const MAP_ROOMS = {
+    start: { id: "start", label: "Briefing Room", icon: "🌐", x: 50, y: 86, job: "Pick a room. Recover all five Golden Rules.", conflict: { graphic: "alarms", title: "Five alarms at once", situation: "A locker leak. A viral lie. An app shipping Friday whether it works. Five screens, five fires.", question: "Which door do you take first?" } },
+    design_lab: { id: "design_lab", label: "Design Lab", icon: "🎯", x: 18, y: 68, job: "Stop a team from shipping the wrong app.", conflict: { graphic: "app", title: "Ship-it Friday", situation: "The app looks flashy. Nobody asked what problem it solves. The countdown says Friday.", question: "Interview real users, or ship a guess?" } },
+    data_vault: { id: "data_vault", label: "Data Vault", icon: "🛡️", x: 38, y: 68, job: "Stop a private-info leak without spreading it.", conflict: { graphic: "leak", title: "The locker leak", situation: "A classmate's phone number and schedule are in a public thread 'as a joke.' Screenshots are already flying.", question: "Report it, or pass it along?" } },
+    password_temple: { id: "password_temple", label: "Password Vault", icon: "🔑", x: 50, y: 68, job: "Lock accounts the right way: unique + 2FA.", conflict: { graphic: "keys", title: "One password, three doors", situation: "A recruit used the same password for school email, a game, and a second account. One crack opens all three.", question: "Unique passwords and 2FA, or one 'strong' password everywhere?" } },
+    footprint_scene: { id: "footprint_scene", label: "Footprint Gallery", icon: "✋", x: 62, y: 68, job: "Choose the post you'd still stand behind later.", conflict: { graphic: "post", title: "Two drafts", situation: "Same moment. One reply is kind. One tags someone to embarrass them — 'just a joke.'", question: "Which version still represents you in ten years?" } },
+    media_chamber: { id: "media_chamber", label: "Media Chamber", icon: "📰", x: 82, y: 68, job: "Decode three headlines before you pick a side.", conflict: { graphic: "headlines", title: "Same event, three stories", situation: "One headline is sourced. One is breathless. One is ALL CAPS with a question mark. The group chat is already picking sides.", question: "Compare sources, or share the loudest one?" } },
+    prepare_phase: { id: "prepare_phase", label: "Simulation Studio", icon: "🌍", x: 12, y: 50, job: "Name the real problem before you build.", conflict: { graphic: "cities", title: "No buzzwords", situation: "A blank sim city waits. Wright wants the problem in plain language — not 'make an app.'", question: "Who is this actually for?" } },
+    try_phase: { id: "try_phase", label: "Prototype Arena", icon: "♟️", x: 30, y: 50, job: "Test honestly with real users.", conflict: { graphic: "dice", title: "Login bug, live users", situation: "People are waiting behind the glass. The login is broken. You could watch the pain — or patch quietly and hide it.", question: "Watch users, or hide the bug?" } },
+    debug_scene: { id: "debug_scene", label: "Hopper's Fleet", icon: "🐛", x: 48, y: 50, job: "Find the real bug — don't guess.", conflict: { graphic: "loop", title: "Infinite loop", situation: "The program never stops. Guessing, rewriting everything, or walking it line by line are on the table.", question: "Trace the logic, or mash random lines?" } },
+    reflect_phase: { id: "reflect_phase", label: "Crawford's Bureau", icon: "🎮", x: 66, y: 50, job: "Say what version two should actually fix.", conflict: { graphic: "notes", title: "No PR voice", situation: "A chart: what worked, what flopped, what surprised you. Empty 'version two' column.", question: "What would you change before more people see this?" } },
+    code_bay: { id: "code_bay", label: "Code Bay", icon: "📐", x: 84, y: 50, job: "Give the robot real instructions, not vibes.", conflict: { graphic: "robot", title: "Vibes vs steps", situation: "A delivery robot waits on a grid. One teammate wrote if/then turns. The other wrote 'go to the goal somehow.'", question: "Clear steps, or let it wander?" } },
+    network_closet: { id: "network_closet", label: "Network Closet", icon: "📡", x: 10, y: 32, job: "Keep a login off café Wi-Fi.", conflict: { graphic: "wifi", title: "No padlock", situation: "A classmate is about to type a password into a school site on café Wi-Fi. No HTTPS padlock. 'I'll only be a minute.'", question: "Wait for trusted Wi-Fi, or let them hurry?" } },
+    sources_library: { id: "sources_library", label: "Sources Library", icon: "🔍", x: 28, y: 32, job: "Hunt the original study before you react.", conflict: { graphic: "chart", title: "Viral chart, no author", situation: "A slick chart claims homework destroys brain cells. No study. No author. Your friend already reposted it.", question: "Find the source, or keep the post up?" } },
+    ip_chamber: { id: "ip_chamber", label: "IP Chamber", icon: "🎵", x: 46, y: 32, job: "Use music you actually have permission for.", conflict: { graphic: "music", title: "Perfect song, zero license", situation: "The class video sounds great with a random upload. No license. No credit. Partner: 'We'll cut it if anyone complains.'", question: "Get permission, or just use it?" } },
+    collaboration_bridge: { id: "collaboration_bridge", label: "Collaboration Bridge", icon: "🌉", x: 64, y: 32, job: "Back someone up when the group chat turns mean.", conflict: { graphic: "chat", title: "Locked out, then roasted", situation: "A classmate is locked out of a shared doc — then roasted for asking why. You're in the thread. Everyone's watching.", question: "Speak up in public, or join the joke?" } },
+    trajectory_scene: { id: "trajectory_scene", label: "Johnson's Console", icon: "🚀", x: 82, y: 32, job: "Check if a viral quote is even real.", conflict: { graphic: "meme", title: "Famous face, no source", situation: "A meme puts a bold quote on a famous face. Shares are climbing. No citation anywhere.", question: "Verify first, or share with a disclaimer?" } },
+    ai_ethics: { id: "ai_ethics", label: "AI Ethics Lab", icon: "⚖️", x: 14, y: 16, job: "Don't ship a scanner that only works on some faces.", conflict: { graphic: "faces", title: "Good enough?", situation: "Face unlock works — on people who look like the engineers. Fails on everyone else. The team wants to launch.", question: "Test diverse faces first, or ship and patch later?" } },
+    hardware_graveyard: { id: "hardware_graveyard", label: "Hardware Graveyard", icon: "📱", x: 32, y: 16, job: "Wipe devices the right way before they leave.", conflict: { graphic: "phones", title: "Still buzzing", situation: "A discarded phone still has photos, messages, and location history. It was tossed in e-waste without a wipe.", question: "Report and wipe properly, or walk away?" } },
+    open_source: { id: "open_source", label: "Open Source Bazaar", icon: "📜", x: 50, y: 16, job: "Put the credits back where they belong.", conflict: { graphic: "credits", title: "Deleted credits", situation: "Two copies of the same tool. One fork deleted the original names and called it new. The creator is asking questions.", question: "Restore credit, or stay quiet?" } },
+    bias_unit: { id: "bias_unit", label: "Bias Detection", icon: "📊", x: 68, y: 16, job: "Catch a model that treats people differently.", conflict: { graphic: "split", title: "Same numbers, different yes", situation: "Two loan screens. Same income, same history — different approval. The team says overall numbers look fine.", question: "Demand a fairness audit, or leave it running?" } },
+    data_detective: { id: "data_detective", label: "Detective Agency", icon: "🕵️", x: 86, y: 16, job: "Show how tiny data points build a profile.", conflict: { graphic: "profiles", title: "Three apps, one person", situation: "Three apps each guessed something different about the same kid — and sold the guess. Friend: 'I have nothing to hide.'", question: "Explain the trail, or say privacy doesn't matter?" } },
+    final_trial: { id: "final_trial", label: "Final Trial", icon: "🏟️", x: 50, y: 4, job: "Write your Digital Citizenship Oath.", conflict: { graphic: "oath", title: "The Arena", situation: "Mentors you met wait in the holo-ring. This is not a quiz. It is a promise: what will you actually do online when it counts?", question: "Name the Golden Rules you will use." } },
+  };
+
+  const MAP_EDGES = [
+    ["start", "design_lab"], ["start", "data_vault"], ["start", "password_temple"], ["start", "footprint_scene"], ["start", "media_chamber"],
+    ["start", "code_bay"], ["start", "network_closet"], ["start", "ai_ethics"], ["start", "hardware_graveyard"], ["start", "open_source"],
+    ["start", "bias_unit"], ["start", "data_detective"],
+    ["design_lab", "prepare_phase"], ["prepare_phase", "try_phase"], ["try_phase", "debug_scene"], ["try_phase", "reflect_phase"],
+    ["debug_scene", "reflect_phase"], ["debug_scene", "trajectory_scene"], ["code_bay", "debug_scene"], ["code_bay", "design_lab"],
+    ["network_closet", "data_vault"], ["network_closet", "ip_chamber"], ["sources_library", "media_chamber"], ["sources_library", "footprint_scene"],
+    ["ip_chamber", "collaboration_bridge"], ["ip_chamber", "media_chamber"], ["collaboration_bridge", "final_trial"], ["collaboration_bridge", "trajectory_scene"],
+    ["data_vault", "password_temple"], ["data_vault", "footprint_scene"], ["data_vault", "media_chamber"],
+    ["password_temple", "media_chamber"], ["password_temple", "footprint_scene"], ["footprint_scene", "media_chamber"],
+    ["media_chamber", "final_trial"], ["ai_ethics", "bias_unit"], ["ai_ethics", "collaboration_bridge"],
+    ["hardware_graveyard", "footprint_scene"], ["hardware_graveyard", "password_temple"], ["open_source", "ip_chamber"], ["open_source", "code_bay"],
+    ["bias_unit", "sources_library"], ["bias_unit", "media_chamber"], ["data_detective", "data_vault"], ["trajectory_scene", "final_trial"],
+    ["reflect_phase", "collaboration_bridge"], ["reflect_phase", "final_trial"], ["password_temple", "final_trial"],
+  ];
+
+  const MAP_ALIAS = [
+    [/^start$/, "start"],
+    [/^victory/, "final_trial"],
+    [/^mentor_ending/, "start"],
+    [/^(design|define|lovelace)/, "design_lab"],
+    [/^prepare/, "prepare_phase"],
+    [/^try_/, "try_phase"],
+    [/^(debug|hopper_deep)/, "debug_scene"],
+    [/^reflect/, "reflect_phase"],
+    [/^code_/, "code_bay"],
+    [/^network/, "network_closet"],
+    [/^(sources|johnson_deep)/, "sources_library"],
+    [/^ip_/, "ip_chamber"],
+    [/^collab/, "collaboration_bridge"],
+    [/^trajectory/, "trajectory_scene"],
+    [/^(data_vault|privacy|turing_deep)/, "data_vault"],
+    [/^password/, "password_temple"],
+    [/^footprint/, "footprint_scene"],
+    [/^media/, "media_chamber"],
+    [/^ai_ethics/, "ai_ethics"],
+    [/^hardware/, "hardware_graveyard"],
+    [/^open_source/, "open_source"],
+    [/^bias/, "bias_unit"],
+    [/^detective/, "data_detective"],
+    [/^final_trial/, "final_trial"],
+  ];
+
+  function mapRoomForNode(nodeId) {
+    const id = String(nodeId || "");
+    for (const [re, roomId] of MAP_ALIAS) {
+      if (re.test(id)) return MAP_ROOMS[roomId];
+    }
+    return MAP_ROOMS.start;
+  }
+
+  function holoGraphicHtml(kind) {
+    const k = String(kind || "alarms");
+    const inner = {
+      alarms: `<div class="tt-hg tt-hg--alarms"><span></span><span></span><span></span><span></span><span></span></div>`,
+      app: `<div class="tt-hg tt-hg--app"><div class="tt-hg__phone"><i></i><i></i><i></i><b>?</b></div></div>`,
+      cities: `<div class="tt-hg tt-hg--cities"><i></i><i></i><i></i></div>`,
+      dice: `<div class="tt-hg tt-hg--dice"><span>⚄</span><div class="tt-hg__crowd">👤👤👤</div></div>`,
+      loop: `<div class="tt-hg tt-hg--loop">{ while (true) }</div>`,
+      notes: `<div class="tt-hg tt-hg--notes"><em>v1</em><em class="tt-hg__blank">v2 ?</em></div>`,
+      robot: `<div class="tt-hg tt-hg--robot"><div class="tt-hg__grid"></div><b>🤖</b></div>`,
+      wifi: `<div class="tt-hg tt-hg--wifi"><span>☕</span><span class="tt-hg__lock">🔓</span></div>`,
+      chart: `<div class="tt-hg tt-hg--chart"><i style="height:40%"></i><i style="height:80%"></i><i style="height:25%"></i><small>no source</small></div>`,
+      music: `<div class="tt-hg tt-hg--music"><span>♪</span><span class="tt-hg__c">© ?</span></div>`,
+      chat: `<div class="tt-hg tt-hg--chat"><p>why am I locked out?</p><p class="tt-hg__mean">lol ratio</p><p class="tt-hg__mean">stay mad</p></div>`,
+      meme: `<div class="tt-hg tt-hg--meme"><strong>“I never said that.”</strong><small>source: none</small></div>`,
+      leak: `<div class="tt-hg tt-hg--leak"><span>📱 555-0199</span><span>📅 3rd period</span><span>🏠 Maple St</span></div>`,
+      keys: `<div class="tt-hg tt-hg--keys"><b>🔑</b><i></i><i></i><i></i></div>`,
+      post: `<div class="tt-hg tt-hg--post"><p class="tt-hg__kind">You did great.</p><p class="tt-hg__mean">@them 😂</p></div>`,
+      headlines: `<div class="tt-hg tt-hg--headlines"><em>Sourced</em><em class="tt-hg__hot">BREAKING!!</em><em class="tt-hg__q">SCANDAL???</em></div>`,
+      faces: `<div class="tt-hg tt-hg--faces"><span class="tt-hg__ok">✓</span><span class="tt-hg__no">✗</span><span class="tt-hg__no">✗</span></div>`,
+      phones: `<div class="tt-hg tt-hg--phones"><span>📷 photos</span><span>💬 messages</span><span>📍 history</span></div>`,
+      credits: `<div class="tt-hg tt-hg--credits"><s>Ada L.</s> → <b>NewTeam</b></div>`,
+      split: `<div class="tt-hg tt-hg--split"><div>YES</div><div>NO</div></div>`,
+      profiles: `<div class="tt-hg tt-hg--profiles"><i>App A</i><i>App B</i><i>App C</i><b>👤</b></div>`,
+      oath: `<div class="tt-hg tt-hg--oath"><i>1</i><i>2</i><i>3</i><i>4</i><i>5</i></div>`,
+    };
+    return inner[k] || inner.alarms;
   }
 
   const LESSONS = {
@@ -225,5 +335,8 @@
     "Johnson Scholar": { icon: "✏️", blurb: "Machines calculate. Humans decide what the calculation is for." },
   };
 
-  window.TechTrailVisuals = { ZONES, NODE_ZONE, PORTRAITS, GOLDEN_RULES, LESSONS, BADGES, zoneForNode };
+  window.TechTrailVisuals = {
+    ZONES, NODE_ZONE, PORTRAITS, GOLDEN_RULES, LESSONS, BADGES, zoneForNode,
+    MAP_ROOMS, MAP_EDGES, mapRoomForNode, holoGraphicHtml,
+  };
 })();

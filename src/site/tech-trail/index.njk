@@ -71,6 +71,8 @@ layout: false
                 <li><strong>Diagnose</strong> your keystroke speed by typing one <strong>complete sentence</strong> — only correct letters count.</li>
                 <li><strong>Read</strong> each scene, then <strong>type</strong> your path — ghost text shows what to write. Branch options appear as <span class="tt-ghost-demo">Library<span class="tt-ghost-demo__slash">/</span>Tech Lab<span class="tt-ghost-demo__slash">/</span>Bridge</span>.</li>
                 <li><strong>Type the whole path</strong> shown in ghost text — every letter of the choice you pick. Then hit your speed to unlock. Fix underlined typos before you continue.</li>
+                <li><strong>Map</strong> — press <kbd>Z</kbd> (or tap 🗺️ Map) to see the campus in 3D. Glowing rooms show where you are and which doors you can type next.</li>
+                <li><strong>Pulse check</strong> before you leave a room: type a digital citizenship line and a SPARK line on the beat. Hit the letter when it fills the glowing ring.</li>
                 <li><strong>Collect</strong> trophies in your pack — tap 🎒 to inspect badges, Golden Rules, and mentor notes.</li>
                 <li><strong>Win</strong> by reaching the Final Trial and typing your Digital Citizenship Oath.</li>
               </ol>
@@ -143,6 +145,7 @@ layout: false
             <div id="profileMini" class="tt-profile-mini-wrap"></div>
             <div class="tt-settings-bar" style="margin-top:14px; display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
               <button id="highContrastToggle" class="tt-settings-btn" type="button" title="Toggle high contrast" aria-pressed="false">🔲 High contrast</button>
+              <button id="stillCameraToggle" class="tt-settings-btn" type="button" title="Keep the scene still so clicks stay easy" aria-pressed="true">📷 Still camera on</button>
               <button id="titleMuteBtn" class="tt-settings-btn" type="button" title="Toggle soundtrack">🔊 Sound on</button>
             </div>
             <p class="tt-credit">A Game by Mr. Phil</p>
@@ -208,11 +211,16 @@ layout: false
               <span class="tt-stat tt-stat--speed">🎯 <span class="tt-stat__value" id="statTargetWpm">—</span> keys/min</span>
               <span class="tt-stat tt-stat--live-wpm dw-hidden" id="liveWpmStat">⚡ <span class="tt-stat__value" id="statLiveWpm">0</span> live keys/min</span>
             </div>
+            <p class="tt-you-are-here" id="youAreHere"><span id="youAreHereLabel">Briefing Room</span></p>
             <div class="tt-golden-track" id="goldenRulesTrack" aria-label="Golden Rules progress"></div>
             <button id="inventoryBtn" class="tt-pack-btn" type="button" title="Open mission pack">
               🎒 Pack <span id="packCount">0</span>
             </button>
-            <button id="muteToggleBtn" class="tt-mute-btn" type="button" title="Toggle sound">🔊</button>
+            <div class="tt-hud-actions">
+              <button id="mapToggleBtn" class="tt-map-btn" type="button" title="Campus map (Z)" aria-pressed="false" aria-controls="campusMap">🗺️ Map <kbd>Z</kbd></button>
+              <button id="stillCameraHudBtn" class="tt-mute-btn" type="button" title="Still camera" aria-pressed="true">📷</button>
+              <button id="muteToggleBtn" class="tt-mute-btn" type="button" title="Toggle sound">🔊</button>
+            </div>
           </div>
 
           <div id="sceneLesson" class="tt-lesson-flash dw-hidden"></div>
@@ -265,11 +273,25 @@ layout: false
                 </div>
                 <div id="sceneArrive" class="tt-arrive-sting dw-hidden" aria-hidden="true"></div>
                 <div class="tt-character tt-character--hero tt-character--3d" id="sceneCharacter"></div>
+                <aside id="sceneHolo" class="tt-holo dw-hidden" aria-live="polite">
+                  <div class="tt-holo__frame">
+                    <div class="tt-holo__scan" aria-hidden="true"></div>
+                    <div class="tt-holo__graphic" id="holoGraphic"></div>
+                    <div class="tt-holo__caption">
+                      <p class="tt-holo__kicker">Hologram · the situation</p>
+                      <h3 id="holoTitle" class="tt-holo__title"></h3>
+                      <p id="holoSituation" class="tt-holo__sit"></p>
+                      <p id="holoQuestion" class="tt-holo__q"></p>
+                    </div>
+                  </div>
+                </aside>
                 <div class="tt-scene-panel" id="scenePanel">
                   <div class="tt-scene-header">
                     <span class="tt-location-badge" id="sceneLocation">—</span>
                     <span class="tt-scene-mood" id="sceneMood"></span>
                   </div>
+                  <p id="sceneJob" class="tt-scene-job dw-hidden"></p>
+                  <p id="mentorIntro" class="tt-mentor-intro dw-hidden"></p>
                   <div class="tt-narrative tt-narrative--reveal" id="sceneNarrative" aria-live="polite" aria-atomic="true"></div>
                   <button id="narrativeContinueBtn" class="tt-cta-btn tt-cta-btn--sm dw-hidden" type="button">Continue ▶</button>
                   <div id="typingChallenge" class="tt-typing-challenge tt-typing-panel dw-hidden">
@@ -287,6 +309,7 @@ layout: false
                       </div>
                       <p id="challengeUnlockHint" class="tt-speed-hint dw-muted dw-tiny">Speed does most of the unlocking. Word count is a bonus, not a lock.</p>
                     </div>
+                    <div id="oathRuleRecap" class="tt-oath-recap dw-hidden" aria-live="polite"></div>
                     <div class="tt-typing-challenge__prompt" id="typingPrompt"></div>
                     <textarea id="typingInput" class="dw-textarea tt-textarea" rows="5" placeholder="Type your response here…" spellcheck="true"></textarea>
                     <div class="tt-typing-challenge__footer">
@@ -316,6 +339,51 @@ layout: false
                     <p id="choiceSpeedHint" class="tt-speed-hint dw-muted dw-tiny"></p>
                   </div>
                   <div class="tt-choices" id="sceneChoices"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div id="campusMap" class="tt-map dw-hidden" role="dialog" aria-modal="true" aria-labelledby="mapTitle" aria-hidden="true">
+            <div class="tt-map__panel">
+              <header class="tt-map__header">
+                <div>
+                  <h2 id="mapTitle" class="tt-map__title">ACME Campus Map</h2>
+                  <p class="tt-map__sub">You are the glowing room. Gold doors are exits you can type next. Press <kbd>Z</kbd> to close.</p>
+                </div>
+                <button id="mapCloseBtn" class="tt-settings-btn" type="button">Close <kbd>Z</kbd></button>
+              </header>
+              <div class="tt-map__stage" id="mapStage">
+                <svg class="tt-map__links" id="mapLinks" aria-hidden="true" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+                <div class="tt-map__world" id="mapWorld"></div>
+              </div>
+              <p class="tt-map__legend" id="mapLegend"></p>
+            </div>
+          </div>
+
+          <div id="rhythmGate" class="tt-rhythm dw-hidden" role="dialog" aria-modal="true" aria-labelledby="rhythmTitle" aria-hidden="true">
+            <div class="tt-rhythm__inner">
+              <p class="tt-rhythm__kicker" id="rhythmKicker">Room pulse check</p>
+              <h2 id="rhythmTitle" class="tt-rhythm__title">Type on the beat</h2>
+              <p class="tt-rhythm__meaning" id="rhythmMeaning"></p>
+              <div class="tt-rhythm__stage" id="rhythmStage">
+                <div class="tt-rhythm__lane" id="rhythmLane" aria-hidden="true"></div>
+                <div class="tt-rhythm__ring" id="rhythmRing" aria-hidden="true"></div>
+                <div class="tt-rhythm__count" id="rhythmCount" aria-hidden="true"></div>
+                <div class="tt-rhythm__judge" id="rhythmJudge" aria-hidden="true"></div>
+              </div>
+              <p class="tt-rhythm__phrase" id="rhythmPhrase" aria-live="polite"></p>
+              <p class="tt-rhythm__hint" id="rhythmHint">Type the glowing letter when it fills the ring.</p>
+              <div class="tt-rhythm__hud">
+                <span id="rhythmCombo">Combo 0</span>
+                <span id="rhythmScore">0%</span>
+                <span id="rhythmBpm"></span>
+              </div>
+              <div id="rhythmResult" class="tt-rhythm__result dw-hidden">
+                <p id="rhythmResultText"></p>
+                <div class="tt-rhythm__result-actions">
+                  <button id="rhythmRetryBtn" class="tt-cta-btn tt-cta-btn--sm" type="button">Try again</button>
+                  <button id="rhythmContinueBtn" class="tt-cta-btn tt-cta-btn--sm dw-hidden" type="button">Continue ▶</button>
                 </div>
               </div>
             </div>
@@ -368,6 +436,10 @@ layout: false
               <p class="dw-muted" id="endingLessons"></p>
               <div class="tt-badge-row" id="endingBadges"></div>
               <div class="tt-golden-track tt-golden-track--ending" id="endingGoldenTrack"></div>
+              <p id="endingAnalystHint" class="tt-ending__analyst dw-hidden">
+                Ready for a harder typing gauntlet?
+                <button id="tryAnalystBtn" class="tt-settings-btn" type="button">Try Analyst next run</button>
+              </p>
               <button id="playAgainBtn" class="tt-cta-btn" type="button">Play again</button>
             </div>
           </div>
@@ -383,6 +455,7 @@ layout: false
     <script src="/scripts/tech-trail-story.js"></script>
     <script src="/scripts/tech-trail-state.js"></script>
     <script src="/scripts/tech-trail-audio.js"></script>
+    <script src="/scripts/tech-trail-rhythm.js"></script>
     <script src="/scripts/tech-trail-app.js" defer></script>
     <script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/tech-trail/sw.js');</script>
   </body>
