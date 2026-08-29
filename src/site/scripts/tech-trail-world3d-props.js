@@ -5,8 +5,15 @@ import * as THREE from "three";
 
 function mat(color, emissive = null) {
   const c = typeof color === "number" ? new THREE.Color(color) : color;
-  const m = new THREE.MeshLambertMaterial({ color: c });
-  if (emissive != null) m.emissive = new THREE.Color(emissive);
+  const m = new THREE.MeshStandardMaterial({
+    color: c,
+    roughness: 0.62,
+    metalness: 0.14,
+  });
+  if (emissive != null) {
+    m.emissive = new THREE.Color(emissive);
+    m.emissiveIntensity = 0.55;
+  }
   return m;
 }
 
@@ -68,14 +75,16 @@ function filmReel(group, x, y, z) {
 function vaultDoor(group, h) {
   const y = 1.85;
   const z = 4.55;
-  group.add(cyl(1.55, 1.55, 0.14, 32, mat(0x3d3d48), 0, y, z, 0, 0));
-  group.add(cyl(1.35, 1.35, 0.08, 32, mat(0x6a6a78), 0, y, z + 0.06, 0, 0));
+  const faceRx = Math.PI / 2; // cylinder axis along +Z → upright disc on building face
+
+  group.add(cyl(1.55, 1.55, 0.14, 32, mat(0x3d3d48), 0, y, z, faceRx, 0));
+  group.add(cyl(1.35, 1.35, 0.08, 32, mat(0x6a6a78), 0, y, z + 0.06, faceRx, 0));
   for (let i = 0; i < 8; i++) {
     const a = (i / 8) * Math.PI * 2;
-    group.add(box(0.08, 1.1, 0.06, mat(0x4a4a55), Math.sin(a) * 0.55, y, z + 0.1 + Math.cos(a) * 0.55, 0, a));
+    group.add(box(0.08, 1.1, 0.06, mat(0x4a4a55), Math.sin(a) * 0.55, y + Math.cos(a) * 0.55, z + 0.1, 0, 0, a));
   }
-  group.add(cyl(0.18, 0.18, 0.2, 16, mat(0xffd54a), 0, y, z + 0.14, Math.PI / 2, 0));
-  group.add(cyl(0.08, 0.08, 0.25, 12, mat(0x222222), 0.55, y, z + 0.12, 0, 0));
+  group.add(cyl(0.18, 0.18, 0.2, 16, mat(0xffd54a), 0, y, z + 0.14, faceRx, 0));
+  group.add(cyl(0.08, 0.08, 0.25, 12, mat(0x222222), 0.55, y, z + 0.12, faceRx, 0));
   neonStrip(group, 0, h + 0.2, 4.2, 3.2, 0xffd54a, "x");
 }
 
@@ -330,8 +339,18 @@ export function roomSilhouette(roomId, group, h, color) {
   }
 }
 
-export function addWindows(group, h, tint) {
-  const winMat = glow(tint);
+export function addWindows(group, h, tint, glowMats = null) {
+  const tc = tint instanceof THREE.Color ? tint : new THREE.Color(tint);
+  const winMat = new THREE.MeshStandardMaterial({
+    color: tc,
+    emissive: tc.clone(),
+    emissiveIntensity: 0.72,
+    roughness: 0.35,
+    metalness: 0.12,
+    transparent: true,
+    opacity: 0.9,
+  });
+  if (glowMats) glowMats.push(winMat);
   for (let row = 0; row < 2; row++) {
     for (let col = 0; col < 2; col++) {
       group.add(box(0.55, 0.7, 0.04, winMat, -1.1 + col * 2.2, 1.8 + row * 1.4, 4.48));

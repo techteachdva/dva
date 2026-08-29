@@ -88,15 +88,24 @@ import { decorateRoom, roomSilhouette, addWindows } from "./tech-trail-world3d-p
 
   function groundTexture() {
     const canvas = document.createElement("canvas");
-    canvas.width = canvas.height = 256;
+    canvas.width = canvas.height = 512;
     const ctx = canvas.getContext("2d");
-    ctx.fillStyle = "#15101f";
-    ctx.fillRect(0, 0, 256, 256);
-    ctx.strokeStyle = "rgba(146, 108, 255, 0.10)";
+    const g = ctx.createRadialGradient(256, 256, 40, 256, 256, 280);
+    g.addColorStop(0, "#1c1528");
+    g.addColorStop(1, "#0e0a16");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, 512, 512);
+    ctx.strokeStyle = "rgba(146, 108, 255, 0.14)";
     ctx.lineWidth = 2;
-    for (let i = 0; i <= 256; i += 32) {
-      ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 256); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(256, i); ctx.stroke();
+    for (let i = 0; i <= 512; i += 32) {
+      ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 512); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(512, i); ctx.stroke();
+    }
+    for (let i = 0; i < 120; i++) {
+      const x = Math.random() * 512;
+      const y = Math.random() * 512;
+      ctx.fillStyle = `rgba(157, 140, 255, ${0.03 + Math.random() * 0.05})`;
+      ctx.fillRect(x, y, 2 + Math.random() * 4, 2 + Math.random() * 4);
     }
     const tex = new THREE.CanvasTexture(canvas);
     tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
@@ -105,7 +114,47 @@ import { decorateRoom, roomSilhouette, addWindows } from "./tech-trail-world3d-p
     return tex;
   }
 
+  function skyDome() {
+    const canvas = document.createElement("canvas");
+    canvas.width = 4;
+    canvas.height = 512;
+    const ctx = canvas.getContext("2d");
+    const grad = ctx.createLinearGradient(0, 0, 0, 512);
+    grad.addColorStop(0, "#06040c");
+    grad.addColorStop(0.25, "#12081c");
+    grad.addColorStop(0.55, "#1e1030");
+    grad.addColorStop(0.85, "#2a1840");
+    grad.addColorStop(1, "#3a2248");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 4, 512);
+    for (let i = 0; i < 90; i++) {
+      const y = Math.random() * 220;
+      ctx.fillStyle = `rgba(255,248,240,${0.15 + Math.random() * 0.55})`;
+      ctx.fillRect(Math.random() * 4, y, 1, 1);
+    }
+    const tex = new THREE.CanvasTexture(canvas);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    return new THREE.Mesh(
+      new THREE.SphereGeometry(190, 36, 18),
+      new THREE.MeshBasicMaterial({ map: tex, side: THREE.BackSide, fog: false })
+    );
+  }
+
+  function stdMat(color, opts = {}) {
+    const c = color instanceof THREE.Color ? color : new THREE.Color(color);
+    const base = c.clone().multiplyScalar(0.88).lerp(new THREE.Color(0x2a2040), 0.28);
+    return new THREE.MeshStandardMaterial({
+      color: base,
+      roughness: opts.roughness ?? 0.68,
+      metalness: opts.metalness ?? 0.12,
+      emissive: opts.emissive != null ? new THREE.Color(opts.emissive) : new THREE.Color(0x000000),
+      emissiveIntensity: opts.emissiveIntensity ?? 0,
+    });
+  }
+
   function boot() {
+    if (window.__gtgWorld3D?.ready) return;
+
     const Visuals = window.TechTrailVisuals;
     const bridge = window.TechTrailWorld;
     const root = document.getElementById("worldRoot");
@@ -119,30 +168,59 @@ import { decorateRoom, roomSilhouette, addWindows } from "./tech-trail-world3d-p
       return;
     }
 
-    window.__gtgWorld3D = { active: true, requestWalkTo: null, enterRoom: null };
+    window.__gtgWorld3D = { active: true, ready: false, requestWalkTo: null, enterRoom: null, resize: null };
 
     // --- renderer / scene basics -------------------------------------------------
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.08;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     root.appendChild(renderer.domElement);
     renderer.domElement.classList.add("tt-world__canvas");
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x140818);
-    scene.fog = new THREE.Fog(0x241533, 60, 220);
+    scene.background = new THREE.Color(0x0a0612);
+    scene.fog = new THREE.FogExp2(0x1a1028, 0.0042);
 
     const camera = new THREE.PerspectiveCamera(58, 1, 0.1, 400);
 
-    scene.add(new THREE.HemisphereLight(0x9d8cff, 0x1a0f24, 1.15));
-    const sun = new THREE.DirectionalLight(0xffd9a0, 1.05);
-    sun.position.set(60, 90, 40);
-    scene.add(sun);
+    scene.add(skyDome());
 
+    const hemi = new THREE.HemisphereLight(0xb8a8ff, 0x1a0f24, 0.95);
+    scene.add(hemi);
+    const sun = new THREE.DirectionalLight(0xffe4b8, 1.15);
+    sun.position.set(55, 85, 35);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(1024, 1024);
+    sun.shadow.camera.near = 20;
+    sun.shadow.camera.far = 220;
+    sun.shadow.camera.left = -95;
+    sun.shadow.camera.right = 95;
+    sun.shadow.camera.top = 95;
+    sun.shadow.camera.bottom = -95;
+    sun.shadow.bias = -0.0008;
+    scene.add(sun);
+    const fill = new THREE.DirectionalLight(0x6a4aff, 0.35);
+    fill.position.set(-40, 30, -50);
+    scene.add(fill);
+
+    const groundTex = groundTexture();
     const ground = new THREE.Mesh(
       new THREE.PlaneGeometry(240, 240),
-      new THREE.MeshLambertMaterial({ map: groundTexture(), color: 0xffffff })
+      new THREE.MeshStandardMaterial({
+        map: groundTex,
+        color: 0xffffff,
+        roughness: 0.92,
+        metalness: 0.04,
+      })
     );
     ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
     scene.add(ground);
+
+    const windowGlowMats = [];
 
     const reducedMotion = () =>
       window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
@@ -181,12 +259,12 @@ import { decorateRoom, roomSilhouette, addWindows } from "./tech-trail-world3d-p
       const sil = roomSilhouette(room.id, group, baseH, color);
       const h = sil.h;
 
-      const bodyMat = new THREE.MeshLambertMaterial({
-        color: color.clone().multiplyScalar(0.85).lerp(new THREE.Color(0x2a2040), 0.35),
-      });
+      const bodyMat = stdMat(color);
       const bodyW = room.id === "final_trial" ? 11 : 9;
       const body = new THREE.Mesh(new THREE.BoxGeometry(bodyW, h, 9), bodyMat);
       body.position.y = h / 2;
+      body.castShadow = true;
+      body.receiveShadow = true;
       group.add(body);
 
       const trimColor = sil.trim || 0x9d8cff;
@@ -200,44 +278,50 @@ import { decorateRoom, roomSilhouette, addWindows } from "./tech-trail-world3d-p
       if (sil.roof === "flat") {
         const roof = new THREE.Mesh(
           new THREE.BoxGeometry(bodyW + 0.6, 0.45, 9.6),
-          new THREE.MeshLambertMaterial({ color: color.clone().multiplyScalar(0.5) })
+          stdMat(color, { roughness: 0.78, metalness: 0.05 })
         );
         roof.position.y = h + 0.22;
+        roof.castShadow = true;
         group.add(roof);
       } else if (sil.roof === "dome") {
         const roof = new THREE.Mesh(
           new THREE.SphereGeometry(5.5, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2),
-          new THREE.MeshLambertMaterial({ color: color.clone().multiplyScalar(0.55) })
+          stdMat(color, { roughness: 0.55, metalness: 0.18 })
         );
         roof.position.y = h;
+        roof.castShadow = true;
         group.add(roof);
       } else if (sil.roof === "antenna") {
         const roof = new THREE.Mesh(
           new THREE.BoxGeometry(9.2, 0.35, 9.2),
-          new THREE.MeshLambertMaterial({ color: color.clone().multiplyScalar(0.45) })
+          stdMat(color, { roughness: 0.8 })
         );
         roof.position.y = h + 0.18;
+        roof.castShadow = true;
         group.add(roof);
         const ant = new THREE.Mesh(
           new THREE.CylinderGeometry(0.05, 0.12, 2.2, 6),
-          new THREE.MeshLambertMaterial({ color: 0x888899 })
+          stdMat(0x888899, { metalness: 0.45 })
         );
         ant.position.set(0, h + 1.3, 0);
+        ant.castShadow = true;
         group.add(ant);
       } else if (sil.roof === "arch") {
         const roof = new THREE.Mesh(
           new THREE.BoxGeometry(9, 0.3, 9),
-          new THREE.MeshLambertMaterial({ color: color.clone().multiplyScalar(0.5) })
+          stdMat(color, { roughness: 0.75 })
         );
         roof.position.y = h + 0.15;
+        roof.castShadow = true;
         group.add(roof);
       } else {
         const roof = new THREE.Mesh(
           new THREE.ConeGeometry(7.2, 3, 4),
-          new THREE.MeshLambertMaterial({ color: color.clone().multiplyScalar(0.55) })
+          stdMat(color, { roughness: 0.7 })
         );
         roof.position.y = h + 1.5;
         roof.rotation.y = Math.PI / 4;
+        roof.castShadow = true;
         group.add(roof);
       }
 
@@ -249,9 +333,12 @@ import { decorateRoom, roomSilhouette, addWindows } from "./tech-trail-world3d-p
         trim.rotation.x = Math.PI / 2;
         trim.position.y = h + 0.4;
         group.add(trim);
+        const accent = new THREE.PointLight(0xffd54a, 0.42, 16);
+        accent.position.set(0, h + 0.8, 2.5);
+        group.add(accent);
       }
 
-      addWindows(group, h, trimColor);
+      addWindows(group, h, trimColor, windowGlowMats);
 
       const door = new THREE.Mesh(
         new THREE.PlaneGeometry(isVault ? 0.1 : 2.6, isVault ? 0.1 : 3.4),
@@ -292,7 +379,19 @@ import { decorateRoom, roomSilhouette, addWindows } from "./tech-trail-world3d-p
     Object.values(Visuals.MAP_ROOMS).forEach(buildRoom);
 
     // Path ribbons along edges.
-    const pathMat = new THREE.MeshBasicMaterial({ color: 0x352a52, transparent: true, opacity: 0.55 });
+    const pathMat = new THREE.MeshStandardMaterial({
+      color: 0x2a2240,
+      roughness: 0.88,
+      metalness: 0.06,
+      transparent: true,
+      opacity: 0.72,
+    });
+    const pathGlowMat = new THREE.MeshBasicMaterial({
+      color: 0x9d8cff,
+      transparent: true,
+      opacity: 0.28,
+      depthWrite: false,
+    });
     Visuals.MAP_EDGES.forEach(([a, b]) => {
       const ra = Visuals.MAP_ROOMS[a];
       const rb = Visuals.MAP_ROOMS[b];
@@ -303,12 +402,44 @@ import { decorateRoom, roomSilhouette, addWindows } from "./tech-trail-world3d-p
       const dz = pb.z - pa.z;
       const len = Math.hypot(dx, dz) - 13;
       if (len <= 1) return;
-      const strip = new THREE.Mesh(new THREE.PlaneGeometry(1.7, len), pathMat);
+      const rotZ = -Math.atan2(dx, dz);
+      const midX = (pa.x + pb.x) / 2;
+      const midZ = (pa.z + pb.z) / 2;
+      const strip = new THREE.Mesh(new THREE.PlaneGeometry(1.9, len), pathMat);
       strip.rotation.x = -Math.PI / 2;
-      strip.rotation.z = -Math.atan2(dx, dz);
-      strip.position.set((pa.x + pb.x) / 2, 0.03, (pa.z + pb.z) / 2);
+      strip.rotation.z = rotZ;
+      strip.position.set(midX, 0.03, midZ);
+      strip.receiveShadow = true;
       scene.add(strip);
+      const glow = new THREE.Mesh(new THREE.PlaneGeometry(0.35, len * 0.92), pathGlowMat);
+      glow.rotation.x = -Math.PI / 2;
+      glow.rotation.z = rotZ;
+      glow.position.set(midX, 0.05, midZ);
+      scene.add(glow);
     });
+
+    // Floating campus motes.
+    const moteCount = 240;
+    const motePos = new Float32Array(moteCount * 3);
+    for (let i = 0; i < moteCount; i++) {
+      motePos[i * 3] = (Math.random() - 0.5) * 170;
+      motePos[i * 3 + 1] = 1.5 + Math.random() * 22;
+      motePos[i * 3 + 2] = (Math.random() - 0.5) * 170;
+    }
+    const moteGeo = new THREE.BufferGeometry();
+    moteGeo.setAttribute("position", new THREE.BufferAttribute(motePos, 3));
+    const motes = new THREE.Points(
+      moteGeo,
+      new THREE.PointsMaterial({
+        color: 0xc4b0ff,
+        size: 0.32,
+        transparent: true,
+        opacity: 0.42,
+        depthWrite: false,
+        sizeAttenuation: true,
+      })
+    );
+    scene.add(motes);
 
     // Objective beacon.
     const beaconMat = new THREE.MeshBasicMaterial({
@@ -323,16 +454,26 @@ import { decorateRoom, roomSilhouette, addWindows } from "./tech-trail-world3d-p
     const player = new THREE.Group();
     const playerBody = new THREE.Mesh(
       new THREE.CapsuleGeometry(PLAYER_RADIUS, 1.0, 4, 12),
-      new THREE.MeshLambertMaterial({ color: 0xc41e3a })
+      stdMat(0xc41e3a, { roughness: 0.55, metalness: 0.08 })
     );
     playerBody.position.y = 1.05;
+    playerBody.castShadow = true;
     player.add(playerBody);
     const visor = new THREE.Mesh(
       new THREE.BoxGeometry(0.7, 0.25, 0.2),
-      new THREE.MeshBasicMaterial({ color: 0x7ef0ff })
+      new THREE.MeshStandardMaterial({
+        color: 0x7ef0ff,
+        emissive: 0x44c8e8,
+        emissiveIntensity: 0.85,
+        roughness: 0.2,
+        metalness: 0.35,
+      })
     );
     visor.position.set(0, 1.5, PLAYER_RADIUS - 0.05);
     player.add(visor);
+    const playerLight = new THREE.PointLight(0xffd4b0, 0.55, 14);
+    playerLight.position.set(0, 2.2, 0.4);
+    player.add(playerLight);
     scene.add(player);
 
     const playerPos = new THREE.Vector3(0, 0, 70);
@@ -608,10 +749,10 @@ import { decorateRoom, roomSilhouette, addWindows } from "./tech-trail-world3d-p
 
       let forward = 0;
       let strafe = 0;
-      if (keys.has("w") || keys.has("arrowup")) forward -= 1;
-      if (keys.has("s") || keys.has("arrowdown")) forward += 1;
+      if (keys.has("w") || keys.has("arrowup")) forward += 1;
+      if (keys.has("s") || keys.has("arrowdown")) forward -= 1;
       strafe += joyVec.x;
-      forward += joyVec.y;
+      forward -= joyVec.y;
 
       const sin = Math.sin(playerYaw);
       const cos = Math.cos(playerYaw);
@@ -683,7 +824,7 @@ import { decorateRoom, roomSilhouette, addWindows } from "./tech-trail-world3d-p
     }
 
     // --- fog ambience -------------------------------------------------------------------
-    const fogTarget = new THREE.Color(0x241533);
+    const fogTarget = new THREE.Color(0x1a1028);
     function updateFog(dt) {
       let nearest = null;
       let nd = Infinity;
@@ -736,23 +877,34 @@ import { decorateRoom, roomSilhouette, addWindows } from "./tech-trail-world3d-p
     }
 
     // --- resize ------------------------------------------------------------------------------
+    let lastW = 0;
+    let lastH = 0;
     function resize() {
-      const w = root.clientWidth || 1;
-      const h = root.clientHeight || 1;
+      const w = root.clientWidth;
+      const h = root.clientHeight;
+      if (w < 2 || h < 2) return;
+      if (w === lastW && h === lastH) return;
+      lastW = w;
+      lastH = h;
       renderer.setSize(w, h, false);
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
     }
+    window.__gtgWorld3D.resize = resize;
     window.addEventListener("resize", resize);
     resize();
 
     // --- spawn when game view first shows ------------------------------------------------------
     function ensureSpawn() {
-      if (gameEverShown || !bridge.isViewActive("game")) return;
+      if (!bridge.isViewActive("game")) return;
+      resize();
+      if (gameEverShown) return;
       gameEverShown = true;
       teleportToRoomDoor(bridge.mapIdFor(bridge.getRunState().currentNode));
       refreshRings();
     }
+
+    window.__gtgWorld3D.ready = true;
 
     // --- main loop -------------------------------------------------------------------------------
     const clock = new THREE.Clock();
@@ -777,6 +929,13 @@ import { decorateRoom, roomSilhouette, addWindows } from "./tech-trail-world3d-p
         const b = buildings.get(pendingTarget.roomId);
         if (b && !reducedMotion()) b.ringMat.opacity = 0.6 + Math.sin(performance.now() * 0.006) * 0.35;
       }
+      if (!reducedMotion()) {
+        const t = performance.now() * 0.001;
+        motes.rotation.y += dt * 0.015;
+        windowGlowMats.forEach((wm, i) => {
+          wm.emissiveIntensity = 0.55 + Math.sin(t * 1.8 + i * 0.7) * 0.22;
+        });
+      }
       renderer.render(scene, camera);
     });
   }
@@ -789,9 +948,10 @@ import { decorateRoom, roomSilhouette, addWindows } from "./tech-trail-world3d-p
     if (window.__gtgWorld3D) window.__gtgWorld3D.active = false;
   }
 
-  if (!window.__gtgWorld3D?.requestWalkTo) {
+  if (!window.__gtgWorld3D?.ready) {
     window.addEventListener("load", () => {
-      if (window.__gtgWorld3D?.requestWalkTo || !window.TechTrailWorld) return;
+      if (window.__gtgWorld3D?.ready) return;
+      if (!window.TechTrailWorld) return;
       try {
         boot();
       } catch (err) {

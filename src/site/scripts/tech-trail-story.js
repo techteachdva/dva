@@ -119,11 +119,11 @@
       research: "Gladys West modeled the shape of the Earth so GPS could work. Your phone’s map is her math — and location data is personal.",
     },
     noble: {
-      name: "Dr. Safiya Noble",
+      name: "Dr. Safiya U. Noble",
       role: "Media Decode Bureau",
       emoji: "🔎",
       era: "2018",
-      research: "Safiya Noble wrote Algorithms of Oppression to show that search results and headlines are designed — not a neutral mirror of the world.",
+      research: "Safiya U. Noble, Ph.D. wrote Algorithms of Oppression to show that search results and headlines are designed — not a neutral mirror of the world.",
     },
     guide: {
       name: "Mr. Phil",
@@ -950,7 +950,7 @@ Media Chamber is the last Rule for a lot of cadets. Then the Arena.`,
       enter: "Three headlines. Same event. Three totally different stories.",
       job: "Decode three headlines before you pick a side.",
       conflict: { graphic: "headlines", title: "Same event, three stories", situation: "One headline is sourced. One is breathless. One is ALL CAPS with a question mark. The group chat is already picking sides.", question: "Compare sources, or share the loudest one?" },
-      narrative: `Dr. Safiya Noble — she proved search and headlines are designed, not a neutral mirror — taps three hologram cards.
+      narrative: `Dr. Safiya U. Noble — she proved search and headlines are designed, not a neutral mirror — taps three hologram cards.
 
 "Who made it? Who profits if you believe it? What's the evidence? Search ranks a story. That rank is a choice. Pick a solution before the chat fills in fake details."`,
       choicePrefix: "I will",
@@ -1749,9 +1749,9 @@ She glances at the discarded phone still buzzing with history. "That's the citiz
       location: "Media Chamber — Noble's Search Desk",
       character: "noble",
       enter: "A search bar. First page glowing. What didn't rank sits in the dark.",
-      job: "Learn how Safiya Noble showed that search results and headlines are designed — not a neutral mirror.",
+      job: "Learn how Safiya U. Noble showed that search results and headlines are designed — not a neutral mirror.",
       conflict: { graphic: "headlines", title: "The first page feels like truth", situation: "You type a question. Ten blue links appear. It feels like the world answered. Nobody told you a company ranked those links to keep you clicking.", question: "What did Noble write so people could see the ranking as a choice?" },
-      narrative: `Safiya Noble opens a search that looks helpful — until you read who it hurts.
+      narrative: `Dr. Safiya U. Noble opens a search that looks helpful — until you read who it hurts.
 
 "In 2018 I published <em>Algorithms of Oppression</em>. I studied what search engines show when you ask about people — especially girls and women of color. The results weren't a mirror. They were a design. Ads, old stereotypes, and click-bait rose to the top. Kids treated page one like a fact sheet."
 

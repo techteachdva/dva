@@ -1477,12 +1477,22 @@
     target.classList.remove("dw-hidden");
     requestAnimationFrame(() => target.classList.add("tt-view--active"));
 
+    if (name === "game") {
+      window.TechTrailGlitch?.reset?.();
+      requestAnimationFrame(() => window.__gtgWorld3D?.resize?.());
+      setTimeout(() => window.__gtgWorld3D?.resize?.(), 400);
+    } else {
+      document.body.classList.remove("tt-3d");
+      window.TechTrailGlitch?.reset?.();
+    }
+
     if (activeView) {
       const prev = activeView;
       viewTransitionTimer = setTimeout(() => {
         const prevEl = views[prev];
         if (prevEl && activeView !== prev) prevEl.classList.add("dw-hidden");
         viewTransitionTimer = null;
+        if (name === "game") window.__gtgWorld3D?.resize?.();
       }, 350);
     }
 
@@ -1704,8 +1714,12 @@
 
   function applySceneZone(nodeId) {
     const zone = Visuals.zoneForNode(nodeId);
-    if (window.__gtgWorld3D?.active) {
+    const world3d = window.__gtgWorld3D;
+    if (world3d?.active && world3d?.ready) {
+      world3d.resize?.();
       document.body.classList.add("tt-3d");
+    } else {
+      document.body.classList.remove("tt-3d");
     }
     const bg = document.getElementById("sceneBg");
     const tint = document.getElementById("sceneTint");
@@ -2148,6 +2162,7 @@
     }
     currentNode = nodeId;
     visitedRooms.add(mapIdFor(nodeId));
+    window.TechTrailGlitch?.reset?.();
     worldListeners.forEach((cb) => {
       try { cb(nodeId); } catch (err) { console.error("[GTG] world listener:", err); }
     });

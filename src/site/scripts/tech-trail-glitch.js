@@ -25,11 +25,35 @@
   let overlay;
   let popHost;
   let glitchTimer = 0;
+  let domReady = false;
 
   function ensureDom() {
     overlay = document.getElementById("gtgGlitchOverlay");
     popHost = document.getElementById("gtgGlitchPopups");
+    if (overlay && popHost && !domReady) {
+      domReady = true;
+      overlay.addEventListener("animationend", () => {
+        overlay.classList.remove("is-firing", "is-firing-soft");
+        overlay.style.opacity = "";
+      });
+    }
     return overlay && popHost;
+  }
+
+  function reset() {
+    if (!ensureDom()) return;
+    clearTimeout(glitchTimer);
+    glitchTimer = 0;
+    overlay.classList.remove("is-firing", "is-firing-soft");
+    overlay.style.opacity = "";
+    overlay.querySelectorAll("div").forEach((el) => {
+      el.style.animation = "none";
+      el.style.transform = "";
+      el.style.opacity = "";
+      void el.offsetWidth;
+      el.style.animation = "";
+    });
+    if (popHost) popHost.innerHTML = "";
   }
 
   function reduced() {
@@ -84,5 +108,5 @@
     }
   }
 
-  window.TechTrailGlitch = { burst, onWrongChoice, spawnPopup };
+  window.TechTrailGlitch = { burst, onWrongChoice, spawnPopup, reset };
 })();
