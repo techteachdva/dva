@@ -1689,6 +1689,9 @@
 
   function applySceneZone(nodeId) {
     const zone = Visuals.zoneForNode(nodeId);
+    if (window.__gtgWorld3D?.active) {
+      document.body.classList.add("tt-3d");
+    }
     const bg = document.getElementById("sceneBg");
     const tint = document.getElementById("sceneTint");
     const room = document.getElementById("sceneRoom");
@@ -2111,6 +2114,9 @@
     }
     currentNode = nodeId;
     visitedRooms.add(mapIdFor(nodeId));
+    worldListeners.forEach((cb) => {
+      try { cb(nodeId); } catch (err) { console.error("[GTG] world listener:", err); }
+    });
 
     if (!node.ending) {
       hideDiagnostic();
@@ -2392,6 +2398,23 @@
   }
 
   function navigate(nodeId, opts = {}) {
+    const world = window.__gtgWorld3D;
+    const isRoomHop = !!(
+      world?.active &&
+      !opts.direct &&
+      !STORY[nodeId]?.ending &&
+      activeView === "game" &&
+      mapIdFor(nodeId) !== mapIdFor(currentNode)
+    );
+    if (isRoomHop) {
+      const depart = () => world.requestWalkTo(nodeId, mapIdFor(nodeId));
+      if (!opts.skipRhythm && !shouldSkipRhythm(currentNode, nodeId)) {
+        runRhythmThen(currentNode, depart);
+      } else {
+        depart();
+      }
+      return;
+    }
     if (!opts.skipRhythm && !shouldSkipRhythm(currentNode, nodeId)) {
       runRhythmThen(currentNode, () => renderScene(nodeId));
       return;
@@ -3073,6 +3096,39 @@ Play again to rebuild your record clean.`;
       window._identityGateCallback?.();
     }, prefersReducedMotion ? 0 : 700);
   }
+
+  const worldListeners = new Set();
+
+  window.TechTrailWorld = {
+    navigate,
+    mapIdFor,
+    onSceneRendered(cb) {
+      if (typeof cb === "function") worldListeners.add(cb);
+      return () => worldListeners.delete(cb);
+    },
+    getRunState() {
+      return {
+        currentNode,
+        visitedRooms: [...visitedRooms],
+        completedRooms: [...completedRooms],
+        goldenRules: [...goldenRules],
+      };
+    },
+    isOverlayOpen() {
+      return !!(
+        document.getElementById("rhythmGate") && !document.getElementById("rhythmGate").classList.contains("dw-hidden")
+      ) || !!(
+        document.getElementById("identityGate") && !document.getElementById("identityGate").classList.contains("dw-hidden")
+      ) || !!(
+        document.getElementById("inventoryOverlay") && !document.getElementById("inventoryOverlay").classList.contains("dw-hidden")
+      ) || !!(
+        document.getElementById("diagnosticOverlay") && !document.getElementById("diagnosticOverlay").classList.contains("dw-hidden")
+      );
+    },
+    isViewActive(name) {
+      return activeView === name;
+    },
+  };
 
   try {
     init();

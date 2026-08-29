@@ -73,7 +73,8 @@ layout: false
                   <li><strong>Diagnose</strong> your keystroke speed by typing one <strong>complete sentence</strong> — only correct letters count.</li>
                   <li><strong>Read</strong> each scene, then <strong>type</strong> your path — ghost text shows what to write. Branch options appear as <span class="tt-ghost-demo">Library<span class="tt-ghost-demo__slash">/</span>Tech Lab<span class="tt-ghost-demo__slash">/</span>Bridge</span>.</li>
                   <li><strong>Type the whole path</strong> shown in ghost text — every letter of the choice you pick. Then hit your speed to unlock. Fix underlined typos before you continue.</li>
-                  <li><strong>Map</strong> — press <kbd>Z</kbd> (or tap 🗺️ Map) to see the campus. The glowing room is you. Gold doors are exits you can type next.</li>
+                  <li><strong>Explore in 3D</strong> — walk the campus with <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> (drag to look around). Glowing buildings are rooms; walk up to a gold door and press <kbd>E</kbd> to enter.</li>
+                  <li><strong>Map</strong> — press <kbd>Z</kbd> (or tap 🗺️ Map) to fly over the campus. The glowing room is you. Gold doors are exits.</li>
                   <li><strong>Phrase check</strong> before you leave a room: type a digital citizenship sentence and a SPARK sentence. The big letter is next — press space between words.</li>
                   <li><strong>Collect</strong> trophies in your pack — tap 🎒 to inspect badges, Golden Rules, and mentor notes.</li>
                   <li><strong>Win</strong> by reaching the Final Trial and typing your Digital Citizenship Oath.</li>
@@ -259,6 +260,13 @@ layout: false
 
           <div class="tt-stage" id="sceneStage">
             <div class="tt-stage__viewport" id="sceneViewport">
+              <div id="worldRoot" class="tt-world" aria-hidden="true"></div>
+              <div id="worldPrompt" class="tt-world-prompt dw-hidden">
+                <kbd>E</kbd> <span id="worldPromptText">Enter</span>
+              </div>
+              <div id="worldControlsHint" class="tt-world-controls dw-hidden">
+                <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> walk · drag to look · <kbd>Shift</kbd> run · <kbd>E</kbd> enter
+              </div>
               <div class="tt-stage__room" id="sceneRoom">
                 <div class="tt-scene-bg" id="sceneBg">
                   <div class="tt-scene-bg__tint" id="sceneTint"></div>
@@ -472,6 +480,8 @@ layout: false
     <script src="/scripts/tech-trail-audio.js"></script>
     <script src="/scripts/tech-trail-rhythm.js"></script>
     <script src="/scripts/tech-trail-app.js" defer></script>
+    <script type="importmap">{"imports":{"three":"/scripts/vendor/three.module.js"}}</script>
+    <script type="module" src="/scripts/tech-trail-world3d.js"></script>
     <script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/tech-trail/sw.js');</script>
   </body>
 </html>
