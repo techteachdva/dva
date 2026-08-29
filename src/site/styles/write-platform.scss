@@ -8438,6 +8438,88 @@ mark.wf-standard-hit,
   min-height: calc(100dvh - 108px);
   margin-top: 0;
   border-radius: 0;
+  overflow: hidden;
+}
+
+.wp-theme--gauntlet .tt-title-screen__content {
+  max-height: calc(100dvh - 108px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: clamp(16px, 3vw, 32px) clamp(12px, 3vw, 24px);
+}
+
+.wp-theme--gauntlet .tt-title-logo img {
+  width: 64px;
+  height: 64px;
+}
+
+.wp-theme--gauntlet .tt-title-screen__headline {
+  font-size: clamp(2rem, 6vw, 3.2rem);
+  margin: 8px 0 6px;
+}
+
+.wp-theme--gauntlet .tt-title-screen__tagline {
+  font-size: 1rem;
+  line-height: 1.45;
+  margin-bottom: 10px;
+}
+
+.wp-theme--gauntlet .tt-golden-preview-wrap {
+  margin-bottom: 10px;
+}
+
+.wp-theme--gauntlet .tt-golden-preview__heading {
+  font-size: 1rem;
+  margin-bottom: 4px;
+}
+
+.wp-theme--gauntlet .tt-golden-preview__sub {
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+}
+
+.wp-theme--gauntlet .tt-globe-btn--primary .tt-globe-btn__globe {
+  width: 80px;
+  height: 80px;
+}
+
+/* Compact tutorial accordion */
+.wp-theme--gauntlet .tt-tutorial--compact {
+  margin: 0 auto 12px;
+  max-width: min(720px, 96vw);
+}
+
+.wp-theme--gauntlet .tt-tutorial--compact .tt-tutorial__title {
+  cursor: pointer;
+  list-style: none;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.38);
+  border: 1px solid rgba(255, 215, 0, 0.25);
+  backdrop-filter: blur(8px);
+  font-size: 1rem;
+  text-align: center;
+  margin: 0;
+}
+
+.wp-theme--gauntlet .tt-tutorial--compact .tt-tutorial__title::-webkit-details-marker {
+  display: none;
+}
+
+.wp-theme--gauntlet .tt-tutorial--compact .tt-tutorial__body {
+  padding: 12px 16px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 215, 0, 0.12);
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+  max-height: min(40vh, 320px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.wp-theme--gauntlet .tt-tutorial--compact[open] .tt-tutorial__title {
+  border-radius: 10px 10px 0 0;
+  border-bottom-color: rgba(255, 215, 0, 0.12);
 }
 
 .wp-theme--gauntlet #endingView {
@@ -8451,6 +8533,20 @@ mark.wf-standard-hit,
   min-height: calc(100dvh - 108px);
   margin-top: 0;
   border-radius: 0;
+}
+
+/* View transition system */
+.wp-theme--gauntlet .tt-view {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.35s ease, transform 0.35s ease;
+  pointer-events: none;
+}
+
+.wp-theme--gauntlet .tt-view.tt-view--active {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
 }
 
 .wp-theme--gauntlet .tt-game-layout:not(.dw-hidden) {
@@ -8474,9 +8570,11 @@ mark.wf-standard-hit,
   grid-area: hud;
   margin-top: 0;
   flex-direction: row;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 8px 10px;
+  min-height: 48px;
+  max-height: 64px;
 }
 
 .wp-theme--gauntlet .tt-game-layout #sceneLesson {
@@ -8488,6 +8586,9 @@ mark.wf-standard-hit,
   padding: 8px 12px;
   gap: 10px;
   flex: 1 1 420px;
+  flex-wrap: nowrap;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .wp-theme--gauntlet .tt-game-layout .tt-you-are-here {
@@ -8767,24 +8868,51 @@ mark.wf-standard-hit,
 @media (max-width: 1080px) {
   .wp-theme--gauntlet .tt-game-layout:not(.dw-hidden) {
     grid-template-columns: 1fr;
-    grid-template-rows: auto minmax(0, 1.4fr) minmax(0, 0.6fr);
+    grid-template-rows: auto minmax(0, 1fr);
     grid-template-areas:
       "hud"
-      "stage"
-      "sidebar";
+      "stage";
   }
 
   .wp-theme--gauntlet .tt-game-layout .tt-sidebar {
-    flex-direction: row;
-    gap: 8px;
-  }
-
-  .wp-theme--gauntlet .tt-game-layout .tt-journal {
-    flex: 1;
+    display: none;
   }
 
   .wp-theme--gauntlet .tt-game-layout .tt-scene-split {
     grid-template-columns: 1fr;
+  }
+
+  .wp-theme--gauntlet .tt-game-layout .tt-scene-panel {
+    margin: 8px;
+    padding: 12px;
+  }
+
+  .wp-theme--gauntlet .tt-game-layout .tt-character--hero .tt-character__avatar {
+    width: 64px;
+    min-height: 80px;
+  }
+
+  /* Sidebar slide-out panel on small screens */
+  .wp-theme--gauntlet .tt-game-layout .tt-sidebar.tt-sidebar--overlay {
+    display: flex;
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: min(320px, 85vw);
+    height: 100dvh;
+    z-index: 1000;
+    background: rgba(12, 6, 18, 0.95);
+    backdrop-filter: blur(12px);
+    border-left: 1px solid rgba(255, 215, 0, 0.2);
+    transform: translateX(100%);
+    transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+    flex-direction: column;
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .wp-theme--gauntlet .tt-sidebar--overlay.tt-sidebar--open {
+    transform: translateX(0);
   }
 }
 
@@ -9161,12 +9289,22 @@ mark.wf-standard-hit,
   }
 
   .wp-theme--gauntlet .tt-scene-panel {
-    margin: 12px;
+    margin: 8px;
+    padding: 10px;
     max-height: none;
   }
 
   .wp-theme--gauntlet .tt-stage__room {
     min-height: min(86vh, 1100px);
+  }
+}
+
+@media (max-width: 720px) {
+  .wp-theme--gauntlet .tt-game-layout .tt-stat__label {
+    display: none;
+  }
+  .wp-theme--gauntlet .tt-game-layout .tt-stat__value {
+    font-size: 13px;
   }
 }
 
@@ -9223,6 +9361,42 @@ mark.wf-standard-hit,
   padding: 0;
   text-decoration: underline;
   text-decoration-color: rgba(52, 211, 153, 0.5);
+}
+
+/* Gauntlet scene loader — cinematic curtain */
+.wp-theme--gauntlet .tt-scene-loader {
+  background: rgba(10, 4, 14, 0.92);
+  backdrop-filter: blur(10px);
+}
+
+.wp-theme--gauntlet .tt-scene-loader::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, transparent 30%, rgba(0, 0, 0, 0.5) 100%);
+  pointer-events: none;
+}
+
+/* Hide sidebar toggle on desktop */
+@media (min-width: 1081px) {
+  .wp-theme--gauntlet .tt-hud-btn--sidebar {
+    display: none;
+  }
+}
+
+/* Staggered scene content reveal */
+.wp-theme--gauntlet .tt-scene-panel.tt-scene-panel--reveal .tt-scene-header {
+  animation: tt-scene-stagger-in 0.45s ease-out both;
+}
+
+.wp-theme--gauntlet .tt-scene-panel.tt-scene-panel--reveal .tt-character:not(.tt-character--pop) {
+  animation: tt-scene-stagger-in 0.45s ease-out both;
+  animation-delay: 0.12s;
+}
+
+@keyframes tt-scene-stagger-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .wp-theme--gauntlet .tt-inventory {
@@ -9393,6 +9567,78 @@ mark.wf-standard-hit,
   .wp-theme--gauntlet .tt-inventory__body {
     grid-template-columns: 1fr;
   }
+}
+
+/* ── Data fragment tracker ── */
+.wp-theme--gauntlet .tt-fragment-tracker {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  border-radius: 999px;
+}
+
+.wp-theme--gauntlet .tt-fragment-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255, 248, 231, 0.15);
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  transition: background 0.4s ease, box-shadow 0.4s ease;
+}
+
+.wp-theme--gauntlet .tt-fragment-dot--lit {
+  background: linear-gradient(135deg, #ffd700, #c41e3a);
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.55);
+  border-color: rgba(255, 215, 0, 0.6);
+}
+
+/* ── Map completed rooms ── */
+.wp-theme--gauntlet .tt-map-room--completed .tt-map-room__cube {
+  border-color: rgba(52, 211, 153, 0.75);
+  box-shadow: 0 0 12px rgba(52, 211, 153, 0.35);
+}
+
+.wp-theme--gauntlet .tt-map-room--completed .tt-map-room__name::after {
+  content: " ✓";
+  color: #34d399;
+  font-weight: 800;
+}
+
+/* ── Ending mosaic ── */
+.wp-theme--gauntlet .tt-ending-mosaic {
+  text-align: center;
+  margin-top: 16px;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 215, 0, 0.25);
+  border-radius: 14px;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+
+.wp-theme--gauntlet .tt-ending-mosaic--revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.wp-theme--gauntlet .tt-ending-mosaic__label {
+  font-family: "Bebas Neue", Impact, sans-serif;
+  font-size: 18px;
+  letter-spacing: 0.08em;
+  color: #ffd700;
+  margin: 0 0 10px;
+}
+
+.wp-theme--gauntlet .tt-ending-mosaic__img {
+  width: 180px;
+  height: 180px;
+  object-fit: contain;
+  border-radius: 12px;
+  filter: drop-shadow(0 12px 24px rgba(255, 215, 0, 0.25));
 }
 
 /* ── Room phrase check (one huge next letter) ── */
@@ -10197,3 +10443,130 @@ body.tt-rhythm-active textarea {
 }
 
 
+
+/* === 3D world layer (Three.js campus) === */
+
+.tt-world {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.tt-world__canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+body.tt-3d .tt-scene-bg,
+body.tt-3d .tt-room-fx,
+body.tt-3d .tt-room-door,
+body.tt-3d .tt-arrive-sting {
+  display: none;
+}
+
+/* Roam mode: the story panel steps aside so the campus is playable. */
+body.tt-roam .tt-scene-panel {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(40px);
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.tt-scene-panel {
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.tt-world-prompt {
+  position: absolute;
+  left: 50%;
+  bottom: 18%;
+  transform: translateX(-50%);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: rgba(12, 6, 20, 0.88);
+  border: 1px solid rgba(255, 213, 74, 0.65);
+  box-shadow: 0 0 24px rgba(255, 213, 74, 0.25);
+  color: #f5e9ff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  backdrop-filter: blur(6px);
+}
+
+.tt-world-prompt kbd {
+  background: #ffd54a;
+  color: #1a1024;
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-weight: 700;
+}
+
+.tt-world-controls {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(12, 6, 20, 0.72);
+  border: 1px solid rgba(157, 140, 255, 0.35);
+  color: #cfc3ec;
+  font-size: 12px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.tt-world-controls kbd {
+  background: rgba(157, 140, 255, 0.2);
+  border: 1px solid rgba(157, 140, 255, 0.45);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 11px;
+}
+
+.tt-world-objective {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 40;
+  padding: 8px 18px;
+  border-radius: 10px;
+  background: rgba(12, 6, 20, 0.85);
+  border: 1px solid rgba(255, 213, 74, 0.5);
+  color: #ffd54a;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+}
+
+/* In 3D mode the map overlay goes translucent so the 3D flyover shows through. */
+body.tt-3d #campusMap .tt-map__panel {
+  background: rgba(10, 5, 16, 0.55);
+  backdrop-filter: blur(4px);
+}
+
+body.tt-3d #campusMap .tt-map__stage {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .tt-world-controls {
+    font-size: 11px;
+    padding: 5px 10px;
+  }
+}
+
+.tt-stage__viewport {
+  position: relative;
+}

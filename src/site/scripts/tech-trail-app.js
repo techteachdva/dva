@@ -242,6 +242,9 @@
     ending: document.getElementById("endingView"),
   };
 
+  let activeView = "title";
+  let viewTransitionTimer = null;
+
   let currentNode = "start";
   let badges = new Set();
   let lessons = new Set();
@@ -250,6 +253,9 @@
   let typingPending = null;
   let metCharacters = new Set();
   let visitedRooms = new Set(["start"]);
+  let completedRooms = new Set();
+  let dataFragments = [];
+  let mentorPackets = [];
   let integrity = 100;
   let reputation = 50;
   let mentorTrust = {};
@@ -265,6 +271,7 @@
   let activeChoicePrefix = "";
   let pendingDiagnosticAction = null;
   let choiceUnlocking = false;
+  let choiceCooldownUntil = 0;
   let diagnosticKeystrokeTracker = null;
   let challengeKeystrokeTracker = null;
   let challengeStartTime = 0;
@@ -408,6 +415,7 @@
     hideDiagnostic();
     show("game");
     resetRun();
+    renderFragmentTracker();
     showSceneLoader();
     setTimeout(() => {
       renderScene("start").catch((err) => {
@@ -654,6 +662,42 @@
     activeChoicePrefix = "";
     choiceUnlocking = false;
     document.getElementById("liveWpmStat")?.classList.add("dw-hidden");
+  }
+
+  function renderClickChoices(node, choices) {
+    const choicesEl = document.getElementById("sceneChoices");
+    if (!choicesEl || !choices.length) return;
+    clearChoiceTyping();
+    activeChoices = choices;
+
+    choicesEl.innerHTML = choices.map((c, i) => {
+      const riskClass = c.risky ? " tt-choice--risky" : c.safe ? " tt-choice--safe" : "";
+      const arrow = c.recommended ? "⭐" : "➤";
+      const label = escapeHtml(c.label || c.typeText || "Choose");
+      return `<button type="button" class="tt-choice${riskClass}" style="--tt-choice-i:${i}" data-idx="${i}">
+        <span class="tt-choice__arrow">${arrow}</span>
+        <span>${label}</span>
+        <span class="tt-choice__glow"></span>
+      </button>`;
+    }).join("");
+
+    choicesEl.querySelectorAll(".tt-choice").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (choiceCooldownUntil && Date.now() < choiceCooldownUntil) return;
+        const idx = Number(btn.dataset.idx);
+        const choice = activeChoices[idx];
+        if (!choice) return;
+
+        btn.classList.add("tt-choice--picked");
+        choiceCooldownUntil = Date.now() + CHOICE_COOLDOWN_MS;
+
+        const label = choice.label || choice.typeText || "";
+        journal.push(`➤ ${label.slice(0, 80)}${label.length > 80 ? "…" : ""}`);
+
+        applyChoiceEffects(choice);
+        navigate(choice.next);
+      });
+    });
   }
 
   function setupTypingChoices(node, choices) {
@@ -967,6 +1011,9 @@
       badges = saved.badges;
       lessons = saved.lessons;
       goldenRules = saved.goldenRules;
+      completedRooms = saved.completedRooms instanceof Set ? saved.completedRooms : new Set(saved.completedRooms || []);
+      dataFragments = saved.dataFragments || [];
+      mentorPackets = saved.mentorPackets || [];
       journal = saved.journal;
       metCharacters = saved.metCharacters;
       visitedRooms = saved.visitedRooms instanceof Set ? saved.visitedRooms : new Set(saved.visitedRooms || [currentNode]);
@@ -976,6 +1023,7 @@
       startTime = saved.startedAt || Date.now();
       hideDiagnostic();
       show("game");
+      renderFragmentTracker();
       showSceneLoader();
       setTimeout(() => {
         renderScene(currentNode).catch((err) => {
@@ -1398,7 +1446,32 @@
   }
 
   function show(name) {
-    Core.showView(views, name);
+    const target = views[name];
+    if (!target || activeView === name) return;
+
+    if (viewTransitionTimer) {
+      clearTimeout(viewTransitionTimer);
+      viewTransitionTimer = null;
+    }
+
+    if (activeView) {
+      const current = views[activeView];
+      if (current) current.classList.remove("tt-view--active");
+    }
+
+    target.classList.remove("dw-hidden");
+    requestAnimationFrame(() => target.classList.add("tt-view--active"));
+
+    if (activeView) {
+      const prev = activeView;
+      viewTransitionTimer = setTimeout(() => {
+        const prevEl = views[prev];
+        if (prevEl && activeView !== prev) prevEl.classList.add("dw-hidden");
+        viewTransitionTimer = null;
+      }, 350);
+    }
+
+    activeView = name;
   }
 
   function toast(message, type = "info") {
@@ -1616,6 +1689,9 @@
 
   function applySceneZone(nodeId) {
     const zone = Visuals.zoneForNode(nodeId);
+    if (window.__gtgWorld3D?.active) {
+      document.body.classList.add("tt-3d");
+    }
     const bg = document.getElementById("sceneBg");
     const tint = document.getElementById("sceneTint");
     const room = document.getElementById("sceneRoom");
@@ -1779,7 +1855,7 @@
     if (!charEl) return;
 
     const avatarInner = portrait
-      ? `<img class="tt-character__photo" src="${portrait}" alt="${escapeHtml(char.name)}" width="220" height="280" loading="eager" />`
+      ? `<img class="tt-character__photo" src="${portrait}" alt="${escapeHtml(char.name)}" width="220" height="280" loading="eager" onerror="this.parentElement.innerHTML='<span class=\\'tt-character__emoji\\'>${char.emoji}</span>';" />`
       : `<span class="tt-character__emoji">${char.emoji}</span>`;
 
     charEl.innerHTML = `
@@ -1900,8 +1976,9 @@
     world.innerHTML = Object.values(Visuals.MAP_ROOMS).map((room) => {
       const current = room.id === here;
       const visited = visitedRooms.has(room.id);
+      const completed = completedRooms.has(room.id);
       const exit = exits.has(room.id) && !current;
-      const cls = ["tt-map-room", current ? "tt-map-room--here" : "", visited ? "tt-map-room--seen" : "", exit ? "tt-map-room--exit" : ""].filter(Boolean).join(" ");
+      const cls = ["tt-map-room", current ? "tt-map-room--here" : "", visited ? "tt-map-room--seen" : "", completed ? "tt-map-room--completed" : "", exit ? "tt-map-room--exit" : ""].filter(Boolean).join(" ");
       return `<button type="button" class="${cls}" data-room="${escapeHtml(room.id)}" style="--x:${room.x}%;--y:${room.y}%" ${current ? 'aria-current="true"' : ""}>
         <span class="tt-map-room__cube" aria-hidden="true">${room.icon}</span>
         <span class="tt-map-room__name">${escapeHtml(room.label)}</span>
@@ -2037,6 +2114,9 @@
     }
     currentNode = nodeId;
     visitedRooms.add(mapIdFor(nodeId));
+    worldListeners.forEach((cb) => {
+      try { cb(nodeId); } catch (err) { console.error("[GTG] world listener:", err); }
+    });
 
     if (!node.ending) {
       hideDiagnostic();
@@ -2117,6 +2197,24 @@
       Audio?.playGoldenFanfare?.();
       pulsePackButton();
       flashGoldenRule(node.goldenRule);
+
+      const fragmentId = `fragment-${node.goldenRule}`;
+      if (!dataFragments.includes(fragmentId)) {
+        dataFragments.push(fragmentId);
+        journal.push(`💾 Data fragment ${node.goldenRule}/5 recovered`);
+        toast(`Data fragment ${node.goldenRule} of 5 collected`, "badge");
+        renderFragmentTracker();
+      }
+    }
+
+    if (nodeId.endsWith("_deep_win")) {
+      const charKey = nodeId.replace("_deep_win", "");
+      if (charKey && !mentorPackets.includes(charKey)) {
+        mentorPackets.push(charKey);
+        journal.push(`📦 Mentor packet: ${CHARACTERS[charKey]?.name || charKey}`);
+        toast(`Mentor packet archived: ${CHARACTERS[charKey]?.name || charKey}`, "info");
+        renderFragmentTracker();
+      }
     }
 
     updateStats();
@@ -2127,6 +2225,9 @@
       badges,
       lessons,
       goldenRules,
+      completedRooms,
+      dataFragments,
+      mentorPackets,
       journal,
       metCharacters,
       visitedRooms,
@@ -2136,7 +2237,9 @@
       startedAt: startTime,
     });
 
-    if (node.typingChallenge) {
+    const isRoomCompleted = completedRooms.has(nodeId);
+
+    if (node.typingChallenge && !isRoomCompleted) {
       typingPending = node.typingChallenge;
       document.getElementById("typingChoices")?.classList.add("dw-hidden");
       clearChoiceTyping();
@@ -2159,6 +2262,22 @@
       updateChallengeUnlockUI(typingInput.value, min);
       setTimeout(() => typingInput?.focus(), prefersReducedMotion ? 0 : 420);
       typingEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    } else if (node.typingChallenge && isRoomCompleted) {
+      typingEl.classList.add("dw-hidden");
+      typingPending = null;
+      renderOathRuleRecap(false);
+      document.getElementById("typingChoices")?.classList.add("dw-hidden");
+      clearChoiceTyping();
+      if (choicesEl) {
+        choicesEl.innerHTML = `<button type="button" class="tt-choice" data-continue-next="${escapeHtml(node.typingChallenge.next)}">
+          <span class="tt-choice__arrow">➤</span>
+          <span>Room completed — continue to ${escapeHtml(STORY[node.typingChallenge.next]?.location || "next room")}</span>
+          <span class="tt-choice__glow"></span>
+        </button>`;
+        choicesEl.querySelector("[data-continue-next]")?.addEventListener("click", () => {
+          navigate(node.typingChallenge.next);
+        });
+      }
     } else {
       typingEl.classList.add("dw-hidden");
       typingPending = null;
@@ -2167,8 +2286,8 @@
       clearChoiceTyping();
       const choices = resolveChoices(node, nodeId);
       if (choices.length) {
-        setupTypingChoices(node, choices);
-        document.getElementById("typingChoices")?.classList.add("tt-layer--enter");
+        renderClickChoices(node, choices);
+        document.getElementById("sceneChoices")?.classList.add("tt-layer--enter");
       }
     }
 
@@ -2279,6 +2398,23 @@
   }
 
   function navigate(nodeId, opts = {}) {
+    const world = window.__gtgWorld3D;
+    const isRoomHop = !!(
+      world?.active &&
+      !opts.direct &&
+      !STORY[nodeId]?.ending &&
+      activeView === "game" &&
+      mapIdFor(nodeId) !== mapIdFor(currentNode)
+    );
+    if (isRoomHop) {
+      const depart = () => world.requestWalkTo(nodeId, mapIdFor(nodeId));
+      if (!opts.skipRhythm && !shouldSkipRhythm(currentNode, nodeId)) {
+        runRhythmThen(currentNode, depart);
+      } else {
+        depart();
+      }
+      return;
+    }
     if (!opts.skipRhythm && !shouldSkipRhythm(currentNode, nodeId)) {
       runRhythmThen(currentNode, () => renderScene(nodeId));
       return;
@@ -2298,6 +2434,19 @@
     }
     if (repEl) repEl.textContent = reputation;
     updatePackCount();
+  }
+
+  function renderFragmentTracker() {
+    const container = document.getElementById("fragmentTracker");
+    if (!container) return;
+    const total = 5;
+    const collected = dataFragments.length;
+    const html = Array.from({ length: total }, (_, i) => {
+      const got = dataFragments.includes(`fragment-${i + 1}`);
+      return `<span class="tt-fragment-dot${got ? " tt-fragment-dot--lit" : ""}" title="Fragment ${i + 1}${got ? " collected" : " missing"}"></span>`;
+    }).join("");
+    container.innerHTML = html;
+    container.classList.toggle("tt-fragment-tracker--complete", collected >= total);
   }
 
   function applyChoiceEffects(choice) {
@@ -2548,6 +2697,15 @@ Play again to rebuild your record clean.`;
     renderResearchPanel();
     burstConfetti(endingType === "probation" ? 16 : endingType === "operative" ? 32 : 48);
 
+    const mosaicEl = document.getElementById("endingMosaic");
+    if (mosaicEl) {
+      const hasAllFragments = dataFragments.length >= 5;
+      mosaicEl.classList.toggle("dw-hidden", !hasAllFragments);
+      if (hasAllFragments) {
+        setTimeout(() => mosaicEl.classList.add("tt-ending-mosaic--revealed"), 600);
+      }
+    }
+
     const analystHint = document.getElementById("endingAnalystHint");
     if (analystHint) {
       analystHint.classList.toggle("dw-hidden", difficulty === "analyst");
@@ -2579,6 +2737,9 @@ Play again to rebuild your record clean.`;
     badges.clear();
     lessons.clear();
     goldenRules.clear();
+    completedRooms = new Set();
+    dataFragments = [];
+    mentorPackets = [];
     metCharacters.clear();
     visitedRooms = new Set(["start"]);
     integrity = 100;
@@ -2657,6 +2818,10 @@ Play again to rebuild your record clean.`;
       if (e.key === "Escape") {
         if (mapIsOpen()) { setMapOpen(false); return; }
         closeInventory();
+        const sidebar = document.querySelector(".tt-sidebar");
+        if (sidebar?.classList.contains("tt-sidebar--open")) {
+          sidebar.classList.remove("tt-sidebar--open", "tt-sidebar--overlay");
+        }
         return;
       }
       if (e.key === "z" || e.key === "Z") {
@@ -2672,6 +2837,22 @@ Play again to rebuild your record clean.`;
     document.getElementById("youAreHere")?.addEventListener("click", () => toggleMap());
 
     document.getElementById("muteToggleBtn")?.addEventListener("click", toggleMute);
+
+    document.getElementById("sidebarToggleBtn")?.addEventListener("click", () => {
+      const sidebar = document.querySelector(".tt-sidebar");
+      if (!sidebar) return;
+      sidebar.classList.toggle("tt-sidebar--overlay");
+      sidebar.classList.toggle("tt-sidebar--open");
+    });
+
+    document.addEventListener("click", (e) => {
+      const sidebar = document.querySelector(".tt-sidebar");
+      const toggle = document.getElementById("sidebarToggleBtn");
+      if (!sidebar || !sidebar.classList.contains("tt-sidebar--open")) return;
+      if (!sidebar.contains(e.target) && e.target !== toggle && !toggle?.contains(e.target)) {
+        sidebar.classList.remove("tt-sidebar--open", "tt-sidebar--overlay");
+      }
+    });
 
     const startBtn = document.getElementById("startGameBtn");
     const continueBtn = document.getElementById("continueRunBtn");
@@ -2757,6 +2938,15 @@ Play again to rebuild your record clean.`;
       });
       toast("Transmitting response...", "badge");
       State.clearDraft();
+
+      completedRooms.add(currentNode);
+      const node = STORY[currentNode];
+      if (node?.goldenRule && !dataFragments.includes(`fragment-${node.goldenRule}`)) {
+        dataFragments.push(`fragment-${node.goldenRule}`);
+        journal.push(`💾 Data fragment ${node.goldenRule}/5 recovered`);
+        toast(`Data fragment ${node.goldenRule} of 5 collected`, "badge");
+      }
+      renderFragmentTracker();
 
       const nextNode = STORY[typingPending.next];
       const isEnding = nextNode && nextNode.ending;
@@ -2906,6 +3096,39 @@ Play again to rebuild your record clean.`;
       window._identityGateCallback?.();
     }, prefersReducedMotion ? 0 : 700);
   }
+
+  const worldListeners = new Set();
+
+  window.TechTrailWorld = {
+    navigate,
+    mapIdFor,
+    onSceneRendered(cb) {
+      if (typeof cb === "function") worldListeners.add(cb);
+      return () => worldListeners.delete(cb);
+    },
+    getRunState() {
+      return {
+        currentNode,
+        visitedRooms: [...visitedRooms],
+        completedRooms: [...completedRooms],
+        goldenRules: [...goldenRules],
+      };
+    },
+    isOverlayOpen() {
+      return !!(
+        document.getElementById("rhythmGate") && !document.getElementById("rhythmGate").classList.contains("dw-hidden")
+      ) || !!(
+        document.getElementById("identityGate") && !document.getElementById("identityGate").classList.contains("dw-hidden")
+      ) || !!(
+        document.getElementById("inventoryOverlay") && !document.getElementById("inventoryOverlay").classList.contains("dw-hidden")
+      ) || !!(
+        document.getElementById("diagnosticOverlay") && !document.getElementById("diagnosticOverlay").classList.contains("dw-hidden")
+      );
+    },
+    isViewActive(name) {
+      return activeView === name;
+    },
+  };
 
   try {
     init();
