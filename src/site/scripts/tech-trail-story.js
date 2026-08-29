@@ -447,7 +447,7 @@ Campbell's voice hits the intercom from the Collaboration Bridge: someone is get
       lesson: "8.3.3.3",
       narrative: `"Boring. Precise. Done," Meier says. "That's an algorithm."
 
-The robot beeps and rolls toward Hopper's bay. Mr. Phil radios the Design Lab pulse from briefing — still on the board if you haven't been. Margaret Hamilton also keeps her Apollo printouts here if you want the story of software that had to land a ship.`
+The robot beeps and rolls toward Hopper's bay. Mr. Phil radios the Design Lab pulse from briefing — still on the board if you haven't been. Margaret Hamilton also keeps her Apollo printouts here if you want the story of software that had to land a ship.`,
       badge: "Algorithm Architect",
       choicePrefix: "I head to",
       choices: [
