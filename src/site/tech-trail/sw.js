@@ -1,7 +1,7 @@
 /**
  * Global Tech Gauntlet — service worker with network-first for scripts/styles.
  */
-const CACHE_NAME = "gtg-v24";
+const CACHE_NAME = "gtg-v28";
 const PRECACHE = [
   "/styles/write-platform.css",
   "/styles/custom-style.css",

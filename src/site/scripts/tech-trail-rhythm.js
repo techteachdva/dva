@@ -167,14 +167,14 @@
   const THEME_BY_PREFIX = [
     [/password/, "passwords"],
     [/footprint/, "post"],
-    [/media/, "misinfo"],
-    [/privacy|data_vault|detective/, "privacy"],
+    [/media|noble/, "misinfo"],
+    [/privacy|data_vault|detective|sweeney/, "privacy"],
     [/sources|johnson/, "media"],
-    [/design|define|ai_ethics|lovelace/, "design"],
-    [/network|hardware/, "network"],
+    [/design|define|ai_ethics|lovelace|buolamwini/, "design"],
+    [/network|hardware|lamarr|perlman|west/, "network"],
     [/ip_chamber|ip_win|ip_fail|ip_recovery|open_source/, "credit"],
     [/collab/, "collab"],
-    [/debug|hopper|code_bay|code_win|code_fail|code_recovery/, "debug"],
+    [/debug|hopper|code_bay|code_win|code_fail|code_recovery|hamilton/, "debug"],
     [/bias|trajectory/, "bias"],
     [/start|prepare|try_|final_trial|reflect/, "default"],
   ];
@@ -221,14 +221,13 @@
     return [normalizePhrase(citizen, short), normalizePhrase(spark, short)];
   }
 
-  function isTypedChar(ch) {
-    return Boolean(ch) && ch !== " ";
+  function isSpaceChar(ch) {
+    return ch === " ";
   }
 
   function buildChart(text) {
     const notes = [];
     for (const ch of String(text || "")) {
-      if (!isTypedChar(ch)) continue;
       notes.push({
         char: ch,
         state: "pending",
@@ -241,6 +240,7 @@
   function charsMatch(expected, typed) {
     const a = String(expected || "");
     const b = String(typed || "");
+    if (isSpaceChar(a) && isSpaceChar(b)) return true;
     if (!a || !b) return false;
     if (a.toLowerCase() === b.toLowerCase()) return true;
     if ("'\u2018\u2019".includes(a) && "'\u2018\u2019".includes(b)) return true;
@@ -296,6 +296,8 @@
     if (e.key === "Escape" || e.key === "Tab") return;
     if (e.key === " " || e.code === "Space") {
       e.preventDefault();
+      e.stopPropagation();
+      hitNote(" ");
       return;
     }
     if (e.key.length !== 1) return;
@@ -348,11 +350,12 @@
   function flashJudgement(kind) {
     const el = $("rhythmJudge");
     if (!el) return;
+    const waitingSpace = session?.chart?.notes?.[currentNoteIndex(session.chart.notes)]?.char === " ";
     const labels = {
       perfect: "NICE",
       great: "YES",
       ok: "GOOD",
-      miss: "TRY THAT KEY",
+      miss: waitingSpace ? "HIT SPACE" : "TRY THAT KEY",
     };
     el.textContent = labels[kind] || "";
     el.dataset.kind = kind;
@@ -385,13 +388,13 @@
     let noteI = 0;
     const activeIdx = currentNoteIndex(notes);
     const html = [...phrase.text].map((ch) => {
-      if (!isTypedChar(ch)) {
-        return `<span class="tt-rhythm-ch tt-rhythm-ch--space" aria-hidden="true">&nbsp;</span>`;
-      }
       const note = notes[noteI];
       const on = noteI === activeIdx;
       const st = note?.state || "pending";
       noteI += 1;
+      if (isSpaceChar(ch)) {
+        return `<span class="tt-rhythm-ch tt-rhythm-ch--space tt-rhythm-ch--${st}${on ? " tt-rhythm-ch--now" : ""}" title="space">␣</span>`;
+      }
       return `<span class="tt-rhythm-ch tt-rhythm-ch--${st}${on ? " tt-rhythm-ch--now" : ""}">${esc(ch)}</span>`;
     }).join("");
     el.innerHTML = html;
@@ -405,7 +408,7 @@
   }
 
   function displayChar(ch) {
-    if (ch === " ") return "␣";
+    if (isSpaceChar(ch)) return "SPACE";
     return ch;
   }
 
@@ -421,7 +424,8 @@
       return;
     }
     const letter = displayChar(note.char);
-    lane.innerHTML = `<span class="tt-rhythm-note tt-rhythm-note--solo${animate ? " tt-rhythm-note--grow" : ""}">${esc(letter)}</span>`;
+    const spaceCls = isSpaceChar(note.char) ? " tt-rhythm-note--space" : "";
+    lane.innerHTML = `<span class="tt-rhythm-note tt-rhythm-note--solo${spaceCls}${animate ? " tt-rhythm-note--grow" : ""}">${esc(letter)}</span>`;
     if (ring) {
       ring.textContent = "";
       ring.classList.add("tt-rhythm__ring--hot");
@@ -502,7 +506,7 @@
     if (title) title.textContent = phrase.title;
     if (meaning) meaning.textContent = phrase.meaning;
     if (hint) {
-      hint.textContent = "Type the big letter. Spaces are free. Finish the sentence as fast as you can.";
+      hint.textContent = "Type the big letter. When it says SPACE, press the space bar to separate the words.";
     }
     const combo = $("rhythmCombo");
     const score = $("rhythmScore");

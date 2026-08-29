@@ -9519,6 +9519,11 @@ mark.wf-standard-hit,
   text-shadow: 0 0 32px rgba(255, 215, 0, 0.85);
 }
 
+.tt-rhythm-note--space {
+  font-size: clamp(3.4rem, 8vw, 5.6rem);
+  letter-spacing: 0.12em;
+}
+
 .tt-rhythm-note--grow {
   animation: tt-rhythm-grow 0.38s cubic-bezier(0.16, 0.84, 0.32, 1) both;
 }
@@ -9610,7 +9615,22 @@ mark.wf-standard-hit,
 
 .tt-rhythm-ch--space {
   display: inline-block;
-  width: 0.38em;
+  min-width: 0.7em;
+  margin: 0 0.08em;
+  color: rgba(255, 248, 231, 0.45);
+  font-size: 0.72em;
+  vertical-align: 0.12em;
+}
+
+.tt-rhythm-ch--space.tt-rhythm-ch--now {
+  color: #ffd700;
+  background: rgba(255, 215, 0, 0.16);
+  border-radius: 4px;
+  padding: 0 4px;
+}
+
+.tt-rhythm-ch--space.tt-rhythm-ch--hit {
+  color: #34d399;
 }
 
 .tt-rhythm__hint {
