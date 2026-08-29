@@ -11,7 +11,7 @@ Reference photos used to generate stylized in-game portrait cards (CC-licensed s
 
 Local copies: `refs/meier-ref.jpg`, `refs/crawford-ref.jpg`, `refs/conway-ref.jpg`, `refs/phil-ref.png`
 
-Generated game portraits: `heroes/hero-meier.png`, `heroes/hero-crawford.png`, `heroes/hero-conway.png`, `heroes/hero-phil.png`
+Generated game portraits: `heroes/hero-meier.png`, `heroes/hero-crawford.png`, `heroes/hero-conway.png`, `heroes/hero-phil.png`, `heroes/hero-lamarr.png`, `heroes/hero-hamilton.png`, `heroes/hero-perlman.png`, `heroes/hero-sweeney.png`, `heroes/hero-buolamwini.png`, `heroes/hero-west.png`, `heroes/hero-noble.png`
 
 ## Soundtrack
 

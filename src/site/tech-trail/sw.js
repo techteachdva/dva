@@ -1,7 +1,7 @@
 /**
  * Global Tech Gauntlet — service worker with network-first for scripts/styles.
  */
-const CACHE_NAME = "gtg-v29";
+const CACHE_NAME = "gtg-v30";
 const PRECACHE = [
   "/styles/write-platform.css",
   "/styles/custom-style.css",
@@ -34,6 +34,13 @@ const PRECACHE = [
   "/tech-trail/images/heroes/hero-meier.png",
   "/tech-trail/images/heroes/hero-turing-stylized.png",
   "/tech-trail/images/heroes/hero-wright.png",
+  "/tech-trail/images/heroes/hero-lamarr.png",
+  "/tech-trail/images/heroes/hero-hamilton.png",
+  "/tech-trail/images/heroes/hero-perlman.png",
+  "/tech-trail/images/heroes/hero-sweeney.png",
+  "/tech-trail/images/heroes/hero-buolamwini.png",
+  "/tech-trail/images/heroes/hero-west.png",
+  "/tech-trail/images/heroes/hero-noble.png",
 ];
 
 function networkFirst(request) {

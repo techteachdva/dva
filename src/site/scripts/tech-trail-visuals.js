@@ -168,6 +168,13 @@
     conway: `${BASE}/heroes/hero-conway.png`,
     hopper: `${BASE}/heroes/hero-hopper.png`,
     johnson: `${BASE}/heroes/hero-johnson.png`,
+    lamarr: `${BASE}/heroes/hero-lamarr.png`,
+    hamilton: `${BASE}/heroes/hero-hamilton.png`,
+    perlman: `${BASE}/heroes/hero-perlman.png`,
+    sweeney: `${BASE}/heroes/hero-sweeney.png`,
+    buolamwini: `${BASE}/heroes/hero-buolamwini.png`,
+    west: `${BASE}/heroes/hero-west.png`,
+    noble: `${BASE}/heroes/hero-noble.png`,
     guide: `${BASE}/heroes/hero-phil.png`,
   };
 
