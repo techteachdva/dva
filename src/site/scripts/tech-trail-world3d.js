@@ -840,12 +840,25 @@ import { decorateRoom, roomSilhouette, addWindows } from "./tech-trail-world3d-p
     }
 
     // --- camera --------------------------------------------------------------------------
+    function mapCameraHeight(aspect) {
+      const spanX = WORLD_HALF_X * 2;
+      const spanZ = WORLD_HALF_Z * 2;
+      const fovRad = THREE.MathUtils.degToRad(camera.fov);
+      const distV = spanZ / (2 * Math.tan(fovRad / 2));
+      const distH = spanX / (2 * Math.tan(fovRad / 2) * Math.max(aspect, 0.55));
+      return Math.max(distV, distH) * 1.14;
+    }
+
+    let mapFogDensity = 0.0042;
     function updateCamera(dt) {
       const map = mapOpen();
       if (map) {
-        camDesired.set(0, 130, 155);
-        camTarget.lerp(new THREE.Vector3(0, 0, 0), Math.min(1, dt * 3));
+        const h = mapCameraHeight(camera.aspect || 1);
+        camDesired.set(0, h, 0);
+        camTarget.lerp(new THREE.Vector3(0, 0, 0), Math.min(1, dt * 4));
+        mapFogDensity = THREE.MathUtils.lerp(mapFogDensity, 0.0016, Math.min(1, dt * 5));
       } else {
+        mapFogDensity = THREE.MathUtils.lerp(mapFogDensity, 0.0042, Math.min(1, dt * 5));
         const still = reducedMotion();
         const bob = still ? 0 : Math.sin(performance.now() * 0.0011) * 0.12;
         const backX = -Math.sin(playerYaw) * camDist;
@@ -859,6 +872,7 @@ import { decorateRoom, roomSilhouette, addWindows } from "./tech-trail-world3d-p
         const lookZ = playerPos.z + Math.cos(playerYaw) * 3;
         camTarget.lerp(new THREE.Vector3(lookX, 1.8 + bob, lookZ), Math.min(1, dt * 10));
       }
+      if (scene.fog?.density != null) scene.fog.density = mapFogDensity;
       camPos.lerp(camDesired, Math.min(1, dt * (map ? 1.6 : 9)));
       camera.position.copy(camPos);
       camera.lookAt(camTarget);

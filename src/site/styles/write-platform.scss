@@ -10069,7 +10069,7 @@ body.tt-rhythm-active textarea {
 
 .tt-map__panel {
   width: min(1240px, 100%);
-  max-height: min(94vh, 880px);
+  max-height: min(96vh, 920px);
   display: flex;
   flex-direction: column;
   border-radius: 18px;
@@ -10102,21 +10102,24 @@ body.tt-rhythm-active textarea {
 
 .tt-map__stage {
   position: relative;
-  height: min(68vh, 640px);
+  flex: 1 1 auto;
+  min-height: min(52vh, 480px);
+  height: min(72vh, 700px);
   margin: 4px 16px 8px;
   border-radius: 14px;
   overflow: hidden;
   background:
-    radial-gradient(ellipse at 50% 80%, rgba(196, 30, 58, 0.16), transparent 55%),
+    radial-gradient(ellipse at 50% 42%, rgba(157, 140, 255, 0.12), transparent 62%),
+    radial-gradient(ellipse at 50% 80%, rgba(196, 30, 58, 0.12), transparent 55%),
     linear-gradient(180deg, rgba(20, 40, 80, 0.22), rgba(0, 0, 0, 0.35));
   border: 1px solid rgba(255, 215, 0, 0.15);
 }
 
 .tt-map__links {
   position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  inset: 6% 5%;
+  width: auto;
+  height: auto;
   overflow: visible;
   pointer-events: none;
 }
@@ -10134,7 +10137,7 @@ body.tt-rhythm-active textarea {
 
 .tt-map__world {
   position: absolute;
-  inset: 0;
+  inset: 6% 5%;
 }
 
 .tt-map-room {
@@ -10145,34 +10148,34 @@ body.tt-rhythm-active textarea {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 5px;
-  padding: 6px 4px;
+  gap: 4px;
+  padding: 4px 2px;
   border: 0;
   background: transparent;
   color: #fff8e7;
   cursor: pointer;
-  width: 128px;
+  width: min(118px, 11vw);
 }
 
 .tt-map-room__cube {
-  width: 56px;
-  height: 56px;
+  width: 48px;
+  height: 48px;
   display: grid;
   place-items: center;
-  border-radius: 12px;
+  border-radius: 10px;
   background: rgba(12, 8, 20, 0.92);
   border: 3px solid rgba(255, 248, 231, 0.28);
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.45);
-  font-size: 26px;
+  font-size: 22px;
 }
 
 .tt-map-room__name {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 800;
   text-align: center;
   line-height: 1.15;
   text-shadow: 0 2px 6px #000;
-  max-width: 124px;
+  max-width: 100%;
 }
 
 .tt-map-room--seen .tt-map-room__cube {
@@ -10621,14 +10624,14 @@ body.tt-roam .tt-scene-panel {
   pointer-events: none;
 }
 
-/* In 3D mode the map overlay goes translucent so the 3D flyover shows through. */
+/* In 3D mode show the overhead schematic on top of the live campus flyover. */
 body.tt-3d #campusMap .tt-map__panel {
-  background: rgba(10, 5, 16, 0.55);
-  backdrop-filter: blur(4px);
+  background: linear-gradient(180deg, rgba(16, 8, 26, 0.94), rgba(8, 4, 14, 0.92));
+  backdrop-filter: blur(6px);
 }
 
-body.tt-3d #campusMap .tt-map__stage {
-  display: none;
+body.tt-3d.tt-map-open .tt-world__canvas {
+  filter: contrast(1.05) saturate(1.08) brightness(0.92);
 }
 
 @media (max-width: 720px) {
