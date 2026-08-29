@@ -1029,20 +1029,8 @@
   }
 
   function buildStartChoices() {
-    const cfg = DIFFICULTY_CONFIG[difficulty] || DIFFICULTY_CONFIG.operative;
-    const count = cfg.startChoicesMin + Math.floor(runRng() * (cfg.startChoicesMax - cfg.startChoicesMin + 1));
     const missions = START_MISSIONS || [];
-    const spine = GOLDEN_SPINE || [];
-    const missingSpine = spine.filter((s) => !goldenRules.has(s.rule));
-    const guaranteed = shuffle(missingSpine).slice(0, Math.min(2, missingSpine.length)).map((s) => ({
-      label: s.label,
-      next: s.next,
-      typeText: s.typeText,
-      recommended: true,
-    }));
-    const used = new Set(guaranteed.map((g) => g.next));
-    const extras = shuffle(missions.filter((m) => !used.has(m.next))).slice(0, Math.max(0, count - guaranteed.length));
-    return shuffle([...guaranteed, ...extras]);
+    return shuffle(missions.map((m) => ({ ...m })));
   }
 
   function enhanceChoices(node, nodeId, choices) {

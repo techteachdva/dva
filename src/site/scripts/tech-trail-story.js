@@ -127,7 +127,7 @@
     },
     guide: {
       name: "Mr. Phil",
-      role: "Mission Host · ACME Tech Division",
+      role: "Mission Host · DaVinci Dragons",
       emoji: "👓",
       era: "NOW",
       research: "", // Mr. Phil — add your bio / deep-dive later
@@ -143,27 +143,22 @@
     { rule: 5, next: "media_chamber", typeText: "Media Chamber", label: "Decode the Media Chamber — three headlines, one event" },
   ];
 
-  /** Side missions shuffled onto the briefing board each run. */
+  /** Five paths on the briefing board — one per Golden Rule screen. */
   const START_MISSIONS = [
-    { label: "Sprint to the Design Lab — they built the wrong thing", next: "design_lab", typeText: "Design Lab" },
-    { label: "Answer the Data Vault alert — private info is leaking", next: "data_vault", typeText: "Data Vault" },
-    { label: "Lock the Password Vault before someone walks in", next: "password_temple", typeText: "Password Vault" },
-    { label: "Investigate weird output in the Code Bay", next: "code_bay", typeText: "Code Bay" },
-    { label: "Stabilize the Network Closet — café Wi‑Fi drama", next: "network_closet", typeText: "Network Closet" },
-    { label: "Hit the AI Ethics Lab — a scanner is failing faces", next: "ai_ethics", typeText: "AI Ethics Lab" },
-    { label: "Tour the Hardware Graveyard — old phones still remember", next: "hardware_graveyard", typeText: "Hardware Graveyard" },
-    { label: "Browse the Open Source Bazaar — someone stole the credits", next: "open_source", typeText: "Open Source Bazaar" },
-    { label: "Report to Bias Detection — the app treats people differently", next: "bias_unit", typeText: "Bias Detection Unit" },
-    { label: "Enter Data Detective Agency — three apps, one person", next: "data_detective", typeText: "Data Detective Agency" },
+    { label: "Screen 1: Sprint to the Design Lab — they built the wrong thing", next: "design_lab", typeText: "Design Lab" },
+    { label: "Screen 2: Answer the Data Vault alert — private info is leaking", next: "data_vault", typeText: "Data Vault" },
+    { label: "Screen 3: Lock the Password Vault before someone walks in", next: "password_temple", typeText: "Password Vault" },
+    { label: "Screen 4: Cut through the Footprint Gallery — a post is about to blow up", next: "footprint_scene", typeText: "Footprint Gallery" },
+    { label: "Screen 5: Decode the Media Chamber — three headlines, one event", next: "media_chamber", typeText: "Media Chamber" },
   ];
 
   const STORY = {
     start: {
-      location: "ACME Tech Division — Briefing Room",
+      location: "DaVinci Dragons — Briefing Room",
       character: "guide",
       enter: "Doors hiss. Coffee. Hot metal. Five alarms at once.",
       job: "Pick a room. Recover all five Golden Rules of digital citizenship.",
-      conflict: { graphic: "alarms", title: "Five alarms at once", situation: "A locker leak. A viral lie. An app shipping Friday whether it works. Five screens, five fires.", question: "Which door do you take first?" },
+      conflict: { graphic: "alarms", title: "Five alarms at once", situation: "Five screens line the wall. A locker leak. A viral lie. An app shipping Friday whether it works. Five screens, five alarms, five paths — each one guards a Golden Rule.", question: "Which door do you take first?" },
       narrative: `Mr. Phil snaps a badge onto your jacket. The hologram over the table is a campus map — same one you can open anytime with <strong>Z</strong>.
 
 "Welcome to the Gauntlet. The <strong>Golden Rules of Digital Citizenship</strong> didn't vanish — people stopped using them. Each room has a mentor, a live conflict on the hologram, and a solution you type."
@@ -210,6 +205,7 @@ A side door irises open. Will Wright's simulation studio hums next door. Down th
         { label: "Skip ahead and test a rough prototype now", next: "try_phase", typeText: "Prototype Arena" },
         { label: "Check that Data Vault alert from briefing", next: "data_vault", typeText: "Data Vault" },
         { label: "Ask Lovelace about her deep-dive archive", next: "lovelace_deep", typeText: "Lovelace Deep Dive" },
+        { label: "Detour to the AI Ethics Lab", next: "ai_ethics", typeText: "AI Ethics Lab" },
       ],
     },
 
@@ -759,7 +755,7 @@ You can loop to briefing for a fresh mission — or take the Arena if you've ear
     },
 
     data_vault: {
-      location: "Data Vault · ACME Sublevel 3",
+      location: "Data Vault · Dragons Sublevel 3",
       character: "turing",
       enter: "Cold air. Lockers of light. Turing already has the thread open.",
       job: "Stop a privacy leak without spreading it further.",
@@ -793,6 +789,7 @@ Two more locks light up: Password Vault and Footprint Gallery. Turing also keeps
         { label: "Decode conflicting headlines", next: "media_chamber", typeText: "Media Chamber" },
         { label: "Visit the Footprint Gallery", next: "footprint_scene", typeText: "Footprint Gallery" },
         { label: "Ask Turing about his cryptography archive", next: "turing_deep", typeText: "Turing Deep Dive" },
+        { label: "Check the Data Detective Agency", next: "data_detective", typeText: "Data Detective Agency" },
       ],
     },
 
@@ -856,6 +853,7 @@ Media Chamber and Footprint Gallery still sit on the map. Arena lights if you're
         { label: "Compare headlines in the Media Chamber", next: "media_chamber", typeText: "Media Chamber" },
         { label: "Walk the Footprint Gallery", next: "footprint_scene", typeText: "Footprint Gallery" },
         { label: "Enter the Final Trial", next: "final_trial", typeText: "Final Trial" },
+        { label: "Tour the Hardware Graveyard", next: "hardware_graveyard", typeText: "Hardware Graveyard" },
       ],
     },
 
@@ -916,6 +914,7 @@ Media Chamber is the last Rule for a lot of cadets. Then the Arena.`,
       choices: [
         { label: "Compare headlines in the Media Chamber", next: "media_chamber", typeText: "Media Chamber" },
         { label: "Enter the Final Trial", next: "final_trial", typeText: "Final Trial" },
+        { label: "Browse the Open Source Bazaar", next: "open_source", typeText: "Open Source Bazaar" },
       ],
     },
 
@@ -1067,7 +1066,7 @@ A bulletin from Bias Detection lights the board. Joy also keeps her Gender Shade
     },
 
     hardware_graveyard: {
-      location: "Hardware Graveyard · Old ACME Storage",
+      location: "Hardware Graveyard · Old Dragons Storage",
       character: "babbage",
       enter: "Dust. Dead screens. One phone that still buzzes.",
       job: "Wipe devices the right way before they leave the building.",
@@ -1793,7 +1792,7 @@ She fans the three headlines. "The breakthrough is a decode tool: ask who built 
     },
 
     mentor_ending: {
-      location: "ACME Mentor Hall",
+      location: "DaVinci Dragons Mentor Hall",
       character: "lovelace",
       ending: true,
       endingType: "mentor",
@@ -1807,7 +1806,7 @@ You'll help the next recruit through their first fork. The mission log stays ope
     },
 
     victory: {
-      location: "ACME Tech Division — Mission Complete",
+      location: "DaVinci Dragons — Mission Complete",
       character: "guide",
       ending: true,
       endingType: "champion",

@@ -1995,12 +1995,23 @@ $wp-sheet-min-height: 1056px;
   width: 48px;
   height: 48px;
   border-radius: 12px;
-  background: linear-gradient(135deg, #c41e3a, #ffd700);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 24px;
   box-shadow: 0 4px 16px rgba(196, 30, 58, 0.45);
+  overflow: hidden;
+}
+
+.tt-title-logo {
+  margin: 0 auto 14px;
+  width: 96px;
+  height: 96px;
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .tt-fx-layer {

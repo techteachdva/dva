@@ -7,7 +7,7 @@
   const BASE = "/tech-trail/images";
 
   const ZONES = {
-    acme: { bg: `${BASE}/scenes/scene-acme-briefing.png`, tint: "rgba(196, 30, 58, 0.42)", mood: "briefing" },
+    dragons: { bg: `${BASE}/scenes/scene-dragons-briefing.png`, tint: "rgba(196, 30, 58, 0.42)", mood: "briefing" },
     design: { bg: `${BASE}/scenes/scene-design-lab.png`, tint: "rgba(146, 64, 14, 0.38)", mood: "warm" },
     simulation: { bg: `${BASE}/scenes/scene-design-lab.png`, tint: "rgba(37, 99, 235, 0.32)", mood: "cool" },
     arena: { bg: `${BASE}/scenes/scene-gauntlet-arena.png`, tint: "rgba(196, 30, 58, 0.45)", mood: "epic" },
@@ -18,16 +18,16 @@
     fleet: { bg: `${BASE}/scenes/scene-network-closet.png`, tint: "rgba(59, 130, 246, 0.35)", mood: "tech" },
     bureau: { bg: `${BASE}/scenes/scene-design-lab.png`, tint: "rgba(124, 58, 237, 0.32)", mood: "reflect" },
     code: { bg: `${BASE}/scenes/scene-network-closet.png`, tint: "rgba(16, 185, 129, 0.32)", mood: "code" },
-    nasa: { bg: `${BASE}/scenes/scene-acme-briefing.png`, tint: "rgba(30, 58, 138, 0.45)", mood: "precision" },
+    nasa: { bg: `${BASE}/scenes/scene-dragons-briefing.png`, tint: "rgba(30, 58, 138, 0.45)", mood: "precision" },
     vault: { bg: `${BASE}/scenes/scene-data-vault.png`, tint: "rgba(113, 63, 18, 0.38)", mood: "legal" },
     mirrors: { bg: `${BASE}/scenes/scene-sources-library.png`, tint: "rgba(88, 28, 135, 0.4)", mood: "mirror" },
     media: { bg: `${BASE}/scenes/scene-sources-library.png`, tint: "rgba(190, 18, 60, 0.35)", mood: "media" },
   };
 
   const NODE_ZONE = {
-    start: "acme",
-    victory: "acme",
-    mentor_ending: "acme",
+    start: "dragons",
+    victory: "dragons",
+    mentor_ending: "dragons",
     design_lab: "design",
     define_win: "design",
     define_fail: "design",
@@ -210,7 +210,7 @@
   ];
 
   function zoneForNode(nodeId) {
-    return ZONES[NODE_ZONE[nodeId] || "acme"];
+    return ZONES[NODE_ZONE[nodeId] || "dragons"];
   }
 
   const MAP_ROOMS = {

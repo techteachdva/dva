@@ -15,7 +15,7 @@ const PRECACHE = [
   "/scripts/tech-trail-audio.js",
   "/scripts/tech-trail-rhythm.js",
   "/scripts/tech-trail-app.js",
-  "/tech-trail/images/scenes/scene-acme-briefing.png",
+  "/tech-trail/images/scenes/scene-dragons-briefing.png",
   "/tech-trail/images/scenes/scene-collaboration-bridge.png",
   "/tech-trail/images/scenes/scene-data-vault.png",
   "/tech-trail/images/scenes/scene-design-lab.png",
