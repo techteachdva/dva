@@ -1485,6 +1485,7 @@
       setTimeout(() => window.__gtgWorld3D?.resize?.(), 400);
     } else {
       document.body.classList.remove("tt-3d");
+      document.getElementById("gameView")?.classList.remove("tt-game-layout--immersive");
       window.TechTrailGlitch?.reset?.();
     }
 
@@ -1720,8 +1721,11 @@
     if (world3d?.active && world3d?.ready) {
       world3d.resize?.();
       document.body.classList.add("tt-3d");
+      document.getElementById("gameView")?.classList.add("tt-game-layout--immersive");
+      requestAnimationFrame(() => world3d.resize?.());
     } else {
       document.body.classList.remove("tt-3d");
+      document.getElementById("gameView")?.classList.remove("tt-game-layout--immersive");
     }
     const bg = document.getElementById("sceneBg");
     const tint = document.getElementById("sceneTint");
@@ -3082,7 +3086,11 @@ Play again to rebuild your record clean.`;
     document.getElementById("sidebarToggleBtn")?.addEventListener("click", () => {
       const sidebar = document.querySelector(".tt-sidebar");
       if (!sidebar) return;
-      sidebar.classList.toggle("tt-sidebar--overlay");
+      if (document.body.classList.contains("tt-3d")) {
+        sidebar.classList.add("tt-sidebar--overlay");
+      } else {
+        sidebar.classList.toggle("tt-sidebar--overlay");
+      }
       sidebar.classList.toggle("tt-sidebar--open");
     });
 
