@@ -1778,11 +1778,14 @@ She fans the three headlines. "The breakthrough is a decode tool: ask who built 
       location: "Gauntlet Arena · Final Round",
       character: "guide",
       enter: "The floor rises. Mentors you met appear in the holo-ring.",
-      job: "Write your Digital Citizenship Oath in your own words.",
-      conflict: { graphic: "oath", title: "The Arena", situation: "Mentors you met wait in the holo-ring. This is not a quiz. It is a promise: what will you actually do online when it counts?", question: "Name the Golden Rules you will use." },
-      narrative: `Mr. Phil's voice fills the Arena. The hologram shows the five Rules as empty rings until you fill them with your own words.
+      job: "Pass the Golden Rules exam, then write your Digital Citizenship Oath.",
+      conflict: { graphic: "oath", title: "The Arena", situation: "Mentors you met wait in the holo-ring. Five scenarios flash on the wall — match each one to the right Golden Rule.", question: "Which rule fits each situation?" },
+      narrative: `Mr. Phil's voice fills the Arena. The hologram shows the five Rules as empty rings until you prove you know them.
 
-"In your own words: what will you actually do online when it counts — not when it's easy? Use the Golden Rules you recovered."`,
+"Final exam first: five real situations. Pick the Golden Rule that actually applies — not the one that sounds cool."
+
+When you pass, you'll write your Digital Citizenship Oath in your own words.`,
+      goldenRulesQuiz: true,
       typingChallenge: {
         prompt: "Write a short Digital Citizenship Oath (3–5 sentences). Name the Golden Rules you will actually use: Design for people. Protect data. Guard your login. Think before you post. Decode media.",
         minWords: 30,

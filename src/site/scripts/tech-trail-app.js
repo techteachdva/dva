@@ -254,6 +254,7 @@
   let metCharacters = new Set();
   let visitedRooms = new Set(["start"]);
   let completedRooms = new Set();
+  let goldenQuizPassed = false;
   let dataFragments = [];
   let mentorPackets = [];
   let integrity = 100;
@@ -1026,7 +1027,8 @@
       badges = saved.badges;
       lessons = saved.lessons;
       goldenRules = saved.goldenRules;
-      completedRooms = saved.completedRooms instanceof Set ? saved.completedRooms : new Set(saved.completedRooms || []);
+      completedRooms = normalizeCompletedRooms(saved.completedRooms);
+      goldenQuizPassed = Boolean(saved.goldenQuizPassed);
       dataFragments = saved.dataFragments || [];
       mentorPackets = saved.mentorPackets || [];
       journal = saved.journal;
@@ -1101,7 +1103,7 @@
     if (!list.length || node.dynamicChoices === "start" || nodeId === "start") return list;
 
     const spine = nextSpineMission();
-    const tooEarlyForFinale = goldenRules.size < 3;
+    const tooEarlyForFinale = goldenRules.size < 5;
 
     const mapped = list.map((c) => {
       if ((c.next === "final_trial" || c.next === "mentor_ending") && tooEarlyForFinale && spine) {
@@ -1908,6 +1910,47 @@
     return Visuals.mapRoomForNode?.(nodeId)?.id || "start";
   }
 
+  function normalizeCompletedRooms(raw) {
+    const set = raw instanceof Set ? raw : new Set(raw || []);
+    const out = new Set();
+    set.forEach((id) => {
+      if (Visuals.MAP_ROOMS?.[id]) out.add(id);
+      else out.add(mapIdFor(id));
+    });
+    return out;
+  }
+
+  function isMapRoomComplete(nodeId) {
+    return completedRooms.has(mapIdFor(nodeId));
+  }
+
+  function markMapRoomComplete(nodeId) {
+    completedRooms.add(mapIdFor(nodeId));
+  }
+
+  const GOLDEN_RULES_QUIZ = [
+    {
+      scenario: "A team is about to ship an app on Friday. Nobody asked students whether they needed it.",
+      correct: 1,
+    },
+    {
+      scenario: "A classmate's phone number and schedule were posted in a public thread 'as a joke.'",
+      correct: 2,
+    },
+    {
+      scenario: "Someone used the same password for school email, a game, and a second account — with no two-factor auth.",
+      correct: 3,
+    },
+    {
+      scenario: "You're about to post a reply that tags someone just to embarrass them. It might go viral.",
+      correct: 4,
+    },
+    {
+      scenario: "Three headlines describe the same event. One is sourced, one is breathless, one is ALL CAPS with a question mark.",
+      correct: 5,
+    },
+  ];
+
   /** Story node to load when the player enters a map room from the 3D campus. */
   function resolveEntryNode(roomId, pendingTarget) {
     if (pendingTarget?.roomId === roomId && pendingTarget?.nodeId) {
@@ -2111,6 +2154,77 @@
     }
   }
 
+  function renderGoldenRulesQuiz(choicesEl) {
+    if (!choicesEl) return;
+    const rules = Visuals.GOLDEN_RULES || [];
+    let index = 0;
+
+    function renderQuestion() {
+      const q = GOLDEN_RULES_QUIZ[index];
+      if (!q) {
+        goldenQuizPassed = true;
+        journal.push("🏟️ Golden Rules final exam passed");
+        toast("All five Golden Rules matched — write your oath.", "golden");
+        Audio?.playGoldenFanfare?.();
+        State.saveRun({
+          currentNode,
+          badges,
+          lessons,
+          goldenRules,
+          completedRooms,
+          goldenQuizPassed,
+          dataFragments,
+          mentorPackets,
+          journal,
+          metCharacters,
+          visitedRooms,
+          integrity,
+          reputation,
+          mentorTrust,
+          startedAt: startTime,
+        });
+        renderScene(currentNode, { quizJustPassed: true }).catch((err) => console.error("[GTG] quiz:", err));
+        return;
+      }
+
+      const rule = rules.find((r) => r.n === q.correct);
+      const options = shuffle(rules.map((r) => r)).map((r) => `
+        <button type="button" class="tt-choice tt-golden-quiz__opt" data-rule-n="${r.n}">
+          <span class="tt-choice__arrow">${r.icon}</span>
+          <span><strong>Golden Rule ${r.n}:</strong> ${escapeHtml(r.short)}</span>
+          <span class="tt-choice__glow"></span>
+        </button>`).join("");
+
+      choicesEl.innerHTML = `
+        <div class="tt-golden-quiz">
+          <p class="tt-golden-quiz__progress">Final exam · Question ${index + 1} of ${GOLDEN_RULES_QUIZ.length}</p>
+          <p class="tt-golden-quiz__scenario">${escapeHtml(q.scenario)}</p>
+          <p class="tt-golden-quiz__prompt">Which Golden Rule applies?</p>
+          <div class="tt-golden-quiz__options">${options}</div>
+        </div>`;
+
+      choicesEl.querySelectorAll("[data-rule-n]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const picked = Number(btn.dataset.ruleN);
+          if (picked === q.correct) {
+            btn.classList.add("tt-choice--picked");
+            journal.push(`✓ Final exam ${index + 1}: ${rule?.short || "Golden Rule"}`);
+            index += 1;
+            setTimeout(() => renderQuestion(), prefersReducedMotion ? 120 : 380);
+          } else {
+            btn.classList.add("tt-choice--risky");
+            triggerGlitchIfWrong({ risky: true, label: "Wrong rule" });
+            toast("Not quite — read the scenario again and pick the rule that fits.", "lesson");
+            integrity = Math.max(0, integrity - 2);
+            updateStats();
+          }
+        });
+      });
+    }
+
+    renderQuestion();
+  }
+
   function renderOathRuleRecap(visible) {
     const el = document.getElementById("oathRuleRecap");
     if (!el) return;
@@ -2282,6 +2396,7 @@
       lessons,
       goldenRules,
       completedRooms,
+      goldenQuizPassed,
       dataFragments,
       mentorPackets,
       journal,
@@ -2293,9 +2408,17 @@
       startedAt: startTime,
     });
 
-    const isRoomCompleted = completedRooms.has(nodeId);
+    const isRoomCompleted = isMapRoomComplete(nodeId);
+    const needsGoldenQuiz = Boolean(node.goldenRulesQuiz && !goldenQuizPassed);
 
-    if (node.typingChallenge && !isRoomCompleted) {
+    if (needsGoldenQuiz) {
+      typingEl.classList.add("dw-hidden");
+      typingPending = null;
+      renderOathRuleRecap(false);
+      document.getElementById("typingChoices")?.classList.add("dw-hidden");
+      clearChoiceTyping();
+      renderGoldenRulesQuiz(choicesEl);
+    } else if (node.typingChallenge && !isRoomCompleted) {
       typingPending = node.typingChallenge;
       document.getElementById("typingChoices")?.classList.add("dw-hidden");
       clearChoiceTyping();
@@ -2435,8 +2558,13 @@
 
   function runRhythmThen(fromId, then) {
     setMapOpen(false);
+    if (isMapRoomComplete(fromId)) {
+      then?.();
+      return;
+    }
     const Rhythm = window.TechTrailRhythm;
     if (!Rhythm?.start) {
+      markMapRoomComplete(fromId);
       then?.();
       return;
     }
@@ -2448,6 +2576,7 @@
         if (result && !result.skipped && result.accuracy != null) {
           journal.push(`⌨️ Phrase ${Math.round(result.accuracy)}% · ${result.title || "citizenship"}`);
         }
+        markMapRoomComplete(fromId);
         then?.();
       },
     });
@@ -2467,6 +2596,10 @@
       return;
     }
     if (!opts.skipRhythm && opts.finishRhythm) {
+      if (isMapRoomComplete(currentNode)) {
+        renderScene(nodeId, { ...opts, skipRhythm: true });
+        return;
+      }
       runRhythmThen(currentNode, () => renderScene(nodeId, opts));
       return;
     }
@@ -2788,6 +2921,7 @@ Play again to rebuild your record clean.`;
     badges.clear();
     lessons.clear();
     goldenRules.clear();
+    goldenQuizPassed = false;
     completedRooms = new Set();
     dataFragments = [];
     mentorPackets = [];
@@ -2990,7 +3124,7 @@ Play again to rebuild your record clean.`;
       toast("Transmitting response...", "badge");
       State.clearDraft();
 
-      completedRooms.add(currentNode);
+      markMapRoomComplete(currentNode);
       const node = STORY[currentNode];
       if (node?.goldenRule && !dataFragments.includes(`fragment-${node.goldenRule}`)) {
         dataFragments.push(`fragment-${node.goldenRule}`);
@@ -3010,7 +3144,7 @@ Play again to rebuild your record clean.`;
             showIdentityGate(() => navigate(typingPending.next, { skipRhythm: true }));
           });
         } else {
-          navigate(typingPending.next, { finishRhythm: true });
+          navigate(typingPending.next, { skipRhythm: true });
         }
       }, delay);
     });

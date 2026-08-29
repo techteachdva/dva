@@ -2627,6 +2627,40 @@ $wp-sheet-min-height: 1056px;
   color: rgba(255, 248, 231, 0.72);
 }
 
+.tt-golden-quiz {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 4px 0 8px;
+}
+
+.tt-golden-quiz__progress {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 213, 74, 0.9);
+}
+
+.tt-golden-quiz__scenario {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.45;
+  color: rgba(255, 248, 231, 0.95);
+}
+
+.tt-golden-quiz__prompt {
+  margin: 0;
+  font-size: 14px;
+  color: rgba(157, 140, 255, 0.9);
+}
+
+.tt-golden-quiz__options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .tt-ending__analyst {
   display: flex;
   flex-wrap: wrap;
