@@ -46,7 +46,7 @@ layout: false
       <div id="toastStack" class="tt-toast-stack" aria-live="polite"></div>
 
       <main class="tt-main">
-        <section id="titleView" class="tt-title-screen">
+        <section id="titleView" class="tt-title-screen tt-view tt-view--active">
           <div class="tt-title-screen__bg"></div>
           <div class="tt-title-screen__overlay"></div>
           <div class="tt-title-screen__content">
@@ -66,19 +66,21 @@ layout: false
             </div>
 
             <div id="titleExtras" class="tt-title-extras">
-            <div class="tt-tutorial" id="titleTutorial">
-              <h2 class="tt-tutorial__title">How to play</h2>
-              <ol class="tt-tutorial__list">
-                <li><strong>Diagnose</strong> your keystroke speed by typing one <strong>complete sentence</strong> — only correct letters count.</li>
-                <li><strong>Read</strong> each scene, then <strong>type</strong> your path — ghost text shows what to write. Branch options appear as <span class="tt-ghost-demo">Library<span class="tt-ghost-demo__slash">/</span>Tech Lab<span class="tt-ghost-demo__slash">/</span>Bridge</span>.</li>
-                <li><strong>Type the whole path</strong> shown in ghost text — every letter of the choice you pick. Then hit your speed to unlock. Fix underlined typos before you continue.</li>
-                <li><strong>Map</strong> — press <kbd>Z</kbd> (or tap 🗺️ Map) to see the campus. The glowing room is you. Gold doors are exits you can type next.</li>
-                <li><strong>Phrase check</strong> before you leave a room: type a digital citizenship sentence and a SPARK sentence. The big letter is next — press space between words.</li>
-                <li><strong>Collect</strong> trophies in your pack — tap 🎒 to inspect badges, Golden Rules, and mentor notes.</li>
-                <li><strong>Win</strong> by reaching the Final Trial and typing your Digital Citizenship Oath.</li>
-              </ol>
-              <p class="tt-tutorial__note">Wrong turns rewind the scene — they aren't game over. Each run scrambles side missions, but the five Golden Rules stay the main quest. Built for grades 6–8 (ITEM 2025 · 8.3.2.1).</p>
-            </div>
+            <details class="tt-tutorial tt-tutorial--compact" id="titleTutorial">
+              <summary class="tt-tutorial__title">How to play ▼</summary>
+              <div class="tt-tutorial__body">
+                <ol class="tt-tutorial__list">
+                  <li><strong>Diagnose</strong> your keystroke speed by typing one <strong>complete sentence</strong> — only correct letters count.</li>
+                  <li><strong>Read</strong> each scene, then <strong>type</strong> your path — ghost text shows what to write. Branch options appear as <span class="tt-ghost-demo">Library<span class="tt-ghost-demo__slash">/</span>Tech Lab<span class="tt-ghost-demo__slash">/</span>Bridge</span>.</li>
+                  <li><strong>Type the whole path</strong> shown in ghost text — every letter of the choice you pick. Then hit your speed to unlock. Fix underlined typos before you continue.</li>
+                  <li><strong>Map</strong> — press <kbd>Z</kbd> (or tap 🗺️ Map) to see the campus. The glowing room is you. Gold doors are exits you can type next.</li>
+                  <li><strong>Phrase check</strong> before you leave a room: type a digital citizenship sentence and a SPARK sentence. The big letter is next — press space between words.</li>
+                  <li><strong>Collect</strong> trophies in your pack — tap 🎒 to inspect badges, Golden Rules, and mentor notes.</li>
+                  <li><strong>Win</strong> by reaching the Final Trial and typing your Digital Citizenship Oath.</li>
+                </ol>
+                <p class="tt-tutorial__note">Wrong turns rewind the scene — they aren't game over. Each run scrambles side missions, but the five Golden Rules stay the main quest. Built for grades 6–8 (ITEM 2025 · 8.3.2.1).</p>
+              </div>
+            </details>
             <div id="typingProfileBar" class="tt-typing-profile dw-hidden">
               <span class="tt-typing-profile__stat">⌨️ Test: <strong id="profileTestWpm">—</strong> keys/min</span>
               <span class="tt-typing-profile__stat">🎯 Target: <strong id="profileTargetWpm">—</strong> keys/min</span>
@@ -200,7 +202,7 @@ layout: false
           </div>
         </div>
 
-        <section id="gameView" class="dw-hidden tt-game-layout">
+        <section id="gameView" class="dw-hidden tt-game-layout tt-view">
           <a href="#sceneChoices" id="skipToChoices" class="tt-skip-link">Skip to choices</a>
           <div class="tt-hud">
             <div class="tt-stats-bar">
@@ -218,6 +220,7 @@ layout: false
               🎒 Pack <span id="packCount">0</span>
             </button>
             <div class="tt-hud-actions">
+              <button id="sidebarToggleBtn" class="tt-hud-btn tt-hud-btn--sidebar" type="button" title="Mission log">📋 Log</button>
               <button id="mapToggleBtn" class="tt-map-btn" type="button" title="Campus map (Z)" aria-pressed="false" aria-controls="campusMap">🗺️ Map <kbd>Z</kbd></button>
               <button id="stillCameraHudBtn" class="tt-mute-btn" type="button" title="Still camera" aria-pressed="true">📷</button>
               <button id="muteToggleBtn" class="tt-mute-btn" type="button" title="Toggle sound">🔊</button>
@@ -432,7 +435,7 @@ layout: false
           </div>
         </section>
 
-        <section id="endingView" class="dw-hidden">
+        <section id="endingView" class="dw-hidden tt-view">
           <div class="tt-ending-screen">
             <div class="tt-ending-screen__bg" id="endingBg"></div>
             <div class="tt-ending-screen__overlay"></div>

@@ -242,6 +242,9 @@
     ending: document.getElementById("endingView"),
   };
 
+  let activeView = "title";
+  let viewTransitionTimer = null;
+
   let currentNode = "start";
   let badges = new Set();
   let lessons = new Set();
@@ -1398,7 +1401,32 @@
   }
 
   function show(name) {
-    Core.showView(views, name);
+    const target = views[name];
+    if (!target || activeView === name) return;
+
+    if (viewTransitionTimer) {
+      clearTimeout(viewTransitionTimer);
+      viewTransitionTimer = null;
+    }
+
+    if (activeView) {
+      const current = views[activeView];
+      if (current) current.classList.remove("tt-view--active");
+    }
+
+    target.classList.remove("dw-hidden");
+    requestAnimationFrame(() => target.classList.add("tt-view--active"));
+
+    if (activeView) {
+      const prev = activeView;
+      viewTransitionTimer = setTimeout(() => {
+        const prevEl = views[prev];
+        if (prevEl && activeView !== prev) prevEl.classList.add("dw-hidden");
+        viewTransitionTimer = null;
+      }, 350);
+    }
+
+    activeView = name;
   }
 
   function toast(message, type = "info") {
@@ -2657,6 +2685,10 @@ Play again to rebuild your record clean.`;
       if (e.key === "Escape") {
         if (mapIsOpen()) { setMapOpen(false); return; }
         closeInventory();
+        const sidebar = document.querySelector(".tt-sidebar");
+        if (sidebar?.classList.contains("tt-sidebar--open")) {
+          sidebar.classList.remove("tt-sidebar--open", "tt-sidebar--overlay");
+        }
         return;
       }
       if (e.key === "z" || e.key === "Z") {
@@ -2672,6 +2704,22 @@ Play again to rebuild your record clean.`;
     document.getElementById("youAreHere")?.addEventListener("click", () => toggleMap());
 
     document.getElementById("muteToggleBtn")?.addEventListener("click", toggleMute);
+
+    document.getElementById("sidebarToggleBtn")?.addEventListener("click", () => {
+      const sidebar = document.querySelector(".tt-sidebar");
+      if (!sidebar) return;
+      sidebar.classList.toggle("tt-sidebar--overlay");
+      sidebar.classList.toggle("tt-sidebar--open");
+    });
+
+    document.addEventListener("click", (e) => {
+      const sidebar = document.querySelector(".tt-sidebar");
+      const toggle = document.getElementById("sidebarToggleBtn");
+      if (!sidebar || !sidebar.classList.contains("tt-sidebar--open")) return;
+      if (!sidebar.contains(e.target) && e.target !== toggle && !toggle?.contains(e.target)) {
+        sidebar.classList.remove("tt-sidebar--open", "tt-sidebar--overlay");
+      }
+    });
 
     const startBtn = document.getElementById("startGameBtn");
     const continueBtn = document.getElementById("continueRunBtn");

@@ -8438,6 +8438,88 @@ mark.wf-standard-hit,
   min-height: calc(100dvh - 108px);
   margin-top: 0;
   border-radius: 0;
+  overflow: hidden;
+}
+
+.wp-theme--gauntlet .tt-title-screen__content {
+  max-height: calc(100dvh - 108px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: clamp(16px, 3vw, 32px) clamp(12px, 3vw, 24px);
+}
+
+.wp-theme--gauntlet .tt-title-logo img {
+  width: 64px;
+  height: 64px;
+}
+
+.wp-theme--gauntlet .tt-title-screen__headline {
+  font-size: clamp(2rem, 6vw, 3.2rem);
+  margin: 8px 0 6px;
+}
+
+.wp-theme--gauntlet .tt-title-screen__tagline {
+  font-size: 1rem;
+  line-height: 1.45;
+  margin-bottom: 10px;
+}
+
+.wp-theme--gauntlet .tt-golden-preview-wrap {
+  margin-bottom: 10px;
+}
+
+.wp-theme--gauntlet .tt-golden-preview__heading {
+  font-size: 1rem;
+  margin-bottom: 4px;
+}
+
+.wp-theme--gauntlet .tt-golden-preview__sub {
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+}
+
+.wp-theme--gauntlet .tt-globe-btn--primary .tt-globe-btn__globe {
+  width: 80px;
+  height: 80px;
+}
+
+/* Compact tutorial accordion */
+.wp-theme--gauntlet .tt-tutorial--compact {
+  margin: 0 auto 12px;
+  max-width: min(720px, 96vw);
+}
+
+.wp-theme--gauntlet .tt-tutorial--compact .tt-tutorial__title {
+  cursor: pointer;
+  list-style: none;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.38);
+  border: 1px solid rgba(255, 215, 0, 0.25);
+  backdrop-filter: blur(8px);
+  font-size: 1rem;
+  text-align: center;
+  margin: 0;
+}
+
+.wp-theme--gauntlet .tt-tutorial--compact .tt-tutorial__title::-webkit-details-marker {
+  display: none;
+}
+
+.wp-theme--gauntlet .tt-tutorial--compact .tt-tutorial__body {
+  padding: 12px 16px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 215, 0, 0.12);
+  border-top: none;
+  border-radius: 0 0 10px 10px;
+  max-height: min(40vh, 320px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.wp-theme--gauntlet .tt-tutorial--compact[open] .tt-tutorial__title {
+  border-radius: 10px 10px 0 0;
+  border-bottom-color: rgba(255, 215, 0, 0.12);
 }
 
 .wp-theme--gauntlet #endingView {
@@ -8451,6 +8533,20 @@ mark.wf-standard-hit,
   min-height: calc(100dvh - 108px);
   margin-top: 0;
   border-radius: 0;
+}
+
+/* View transition system */
+.wp-theme--gauntlet .tt-view {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.35s ease, transform 0.35s ease;
+  pointer-events: none;
+}
+
+.wp-theme--gauntlet .tt-view.tt-view--active {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
 }
 
 .wp-theme--gauntlet .tt-game-layout:not(.dw-hidden) {
@@ -8474,9 +8570,11 @@ mark.wf-standard-hit,
   grid-area: hud;
   margin-top: 0;
   flex-direction: row;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
   gap: 8px 10px;
+  min-height: 48px;
+  max-height: 64px;
 }
 
 .wp-theme--gauntlet .tt-game-layout #sceneLesson {
@@ -8488,6 +8586,9 @@ mark.wf-standard-hit,
   padding: 8px 12px;
   gap: 10px;
   flex: 1 1 420px;
+  flex-wrap: nowrap;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .wp-theme--gauntlet .tt-game-layout .tt-you-are-here {
@@ -8767,24 +8868,51 @@ mark.wf-standard-hit,
 @media (max-width: 1080px) {
   .wp-theme--gauntlet .tt-game-layout:not(.dw-hidden) {
     grid-template-columns: 1fr;
-    grid-template-rows: auto minmax(0, 1.4fr) minmax(0, 0.6fr);
+    grid-template-rows: auto minmax(0, 1fr);
     grid-template-areas:
       "hud"
-      "stage"
-      "sidebar";
+      "stage";
   }
 
   .wp-theme--gauntlet .tt-game-layout .tt-sidebar {
-    flex-direction: row;
-    gap: 8px;
-  }
-
-  .wp-theme--gauntlet .tt-game-layout .tt-journal {
-    flex: 1;
+    display: none;
   }
 
   .wp-theme--gauntlet .tt-game-layout .tt-scene-split {
     grid-template-columns: 1fr;
+  }
+
+  .wp-theme--gauntlet .tt-game-layout .tt-scene-panel {
+    margin: 8px;
+    padding: 12px;
+  }
+
+  .wp-theme--gauntlet .tt-game-layout .tt-character--hero .tt-character__avatar {
+    width: 64px;
+    min-height: 80px;
+  }
+
+  /* Sidebar slide-out panel on small screens */
+  .wp-theme--gauntlet .tt-game-layout .tt-sidebar.tt-sidebar--overlay {
+    display: flex;
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: min(320px, 85vw);
+    height: 100dvh;
+    z-index: 1000;
+    background: rgba(12, 6, 18, 0.95);
+    backdrop-filter: blur(12px);
+    border-left: 1px solid rgba(255, 215, 0, 0.2);
+    transform: translateX(100%);
+    transition: transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1);
+    flex-direction: column;
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .wp-theme--gauntlet .tt-sidebar--overlay.tt-sidebar--open {
+    transform: translateX(0);
   }
 }
 
@@ -9161,12 +9289,22 @@ mark.wf-standard-hit,
   }
 
   .wp-theme--gauntlet .tt-scene-panel {
-    margin: 12px;
+    margin: 8px;
+    padding: 10px;
     max-height: none;
   }
 
   .wp-theme--gauntlet .tt-stage__room {
     min-height: min(86vh, 1100px);
+  }
+}
+
+@media (max-width: 720px) {
+  .wp-theme--gauntlet .tt-game-layout .tt-stat__label {
+    display: none;
+  }
+  .wp-theme--gauntlet .tt-game-layout .tt-stat__value {
+    font-size: 13px;
   }
 }
 
@@ -9223,6 +9361,42 @@ mark.wf-standard-hit,
   padding: 0;
   text-decoration: underline;
   text-decoration-color: rgba(52, 211, 153, 0.5);
+}
+
+/* Gauntlet scene loader — cinematic curtain */
+.wp-theme--gauntlet .tt-scene-loader {
+  background: rgba(10, 4, 14, 0.92);
+  backdrop-filter: blur(10px);
+}
+
+.wp-theme--gauntlet .tt-scene-loader::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, transparent 30%, rgba(0, 0, 0, 0.5) 100%);
+  pointer-events: none;
+}
+
+/* Hide sidebar toggle on desktop */
+@media (min-width: 1081px) {
+  .wp-theme--gauntlet .tt-hud-btn--sidebar {
+    display: none;
+  }
+}
+
+/* Staggered scene content reveal */
+.wp-theme--gauntlet .tt-scene-panel.tt-scene-panel--reveal .tt-scene-header {
+  animation: tt-scene-stagger-in 0.45s ease-out both;
+}
+
+.wp-theme--gauntlet .tt-scene-panel.tt-scene-panel--reveal .tt-character:not(.tt-character--pop) {
+  animation: tt-scene-stagger-in 0.45s ease-out both;
+  animation-delay: 0.12s;
+}
+
+@keyframes tt-scene-stagger-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .wp-theme--gauntlet .tt-inventory {
