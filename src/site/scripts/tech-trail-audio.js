@@ -117,18 +117,20 @@
     if (filterEnd && filterEnd !== filter) {
       filt.frequency.linearRampToValueAtTime(filterEnd, t + dur);
     }
-    gain.gain.setValueAtTime(0.0001, t);
-    gain.gain.linearRampToValueAtTime(vol, t + attack);
-    gain.gain.setValueAtTime(vol, t + dur - 0.02);
-    gain.gain.linearRampToValueAtTime(0.0001, t + dur);
+    const startAt = Math.max(0, t);
+    const peakAt = startAt + Math.max(0.001, attack);
+    const endAt = Math.max(peakAt + 0.004, startAt + dur);
+    gain.gain.setValueAtTime(0.0001, startAt);
+    gain.gain.linearRampToValueAtTime(vol, peakAt);
+    gain.gain.linearRampToValueAtTime(0.0001, endAt);
     if (panner) {
       panner.pan.value = pan;
       src.connect(filt).connect(gain).connect(panner).connect(engine.sfxBus);
     } else {
       src.connect(filt).connect(gain).connect(engine.sfxBus);
     }
-    src.start(t);
-    src.stop(t + dur + 0.02);
+    src.start(startAt);
+    src.stop(endAt + 0.02);
     setTimeout(() => { try { src.disconnect(); gain.disconnect(); filt.disconnect(); panner?.disconnect(); } catch {} }, (dur + 0.1) * 1000);
   }
 

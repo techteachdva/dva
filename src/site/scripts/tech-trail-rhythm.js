@@ -1,14 +1,14 @@
 /**
- * Global Tech Gauntlet — typing rhythm pulse check (DDR-style letter highway).
- * Soft metronome via TechTrailAudio. Gates room exits until the phrase is typed on beat.
+ * Global Tech Gauntlet — room phrase check.
+ * One huge next letter. Type the full sentence as fast as you can.
  */
 (() => {
   "use strict";
 
   const DIFFICULTY = {
-    cadet: { bpm: 68, windowMs: 170, pass: 0.58, approachBeats: 4 },
-    operative: { bpm: 84, windowMs: 120, pass: 0.7, approachBeats: 4 },
-    analyst: { bpm: 100, windowMs: 90, pass: 0.8, approachBeats: 3.5 },
+    cadet: { pass: 0.5 },
+    operative: { pass: 0.65 },
+    analyst: { pass: 0.75 },
   };
 
   const SPARK_PHRASES = [
@@ -183,9 +183,8 @@
 
   let active = false;
   let bound = false;
-  let raf = 0;
+  let countTimer = 0;
   let session = null;
-  let lastBeat = -1;
 
   function hash32(s) {
     let h = 2166136261;
@@ -222,56 +221,28 @@
     return [normalizePhrase(citizen, short), normalizePhrase(spark, short)];
   }
 
-  function diffCfg(difficulty, reducedMotion) {
-    const base = DIFFICULTY[difficulty] || DIFFICULTY.operative;
-    if (!reducedMotion) return { ...base };
-    return {
-      ...base,
-      bpm: Math.max(60, Math.round(base.bpm * 0.82)),
-      windowMs: Math.max(base.windowMs, 160),
-      approachBeats: 3,
-    };
+  function isTypedChar(ch) {
+    return Boolean(ch) && ch !== " ";
   }
 
-  function isNoteChar(ch) {
-    return ch && ch !== " ";
-  }
-
-  function buildChart(text, bpm, approachBeats) {
-    const beat = 60 / bpm;
-    const countIn = 4;
-    let t = countIn * beat;
+  function buildChart(text) {
     const notes = [];
     for (const ch of String(text || "")) {
-      if (!isNoteChar(ch)) {
-        t += beat;
-        continue;
-      }
+      if (!isTypedChar(ch)) continue;
       notes.push({
         char: ch,
-        hitTime: t,
         state: "pending",
         quality: null,
       });
-      t += beat;
     }
-    return {
-      notes,
-      beat,
-      bpm,
-      approach: approachBeats * beat,
-      countIn,
-      endTime: t + beat * 0.6,
-    };
+    return { notes, text: String(text || "") };
   }
 
   function charsMatch(expected, typed) {
     const a = String(expected || "");
     const b = String(typed || "");
     if (!a || !b) return false;
-    const al = a.toLowerCase();
-    const bl = b.toLowerCase();
-    if (al === bl) return true;
+    if (a.toLowerCase() === b.toLowerCase()) return true;
     if ("'\u2018\u2019".includes(a) && "'\u2018\u2019".includes(b)) return true;
     if ("-\u2013\u2014".includes(a) && "-\u2013\u2014".includes(b)) return true;
     return false;
@@ -315,11 +286,7 @@
 
   function onContinueClick() {
     if (!session || session.phase !== "result") return;
-    const need = Math.round(session.cfg.pass * 100);
-    const last = session.roundScores[session.roundScores.length - 1];
-    const passed = (last?.accuracy || 0) >= need;
-    if (passed || session.roundIndex === 0) advanceOrFinish();
-    else finishSession(false);
+    advanceOrFinish();
   }
 
   function onKey(e) {
@@ -341,53 +308,40 @@
     return notes.findIndex((n) => n.state === "pending");
   }
 
+  function liveKeysPerMin() {
+    if (!session?.startedAt) return 0;
+    const elapsed = (performance.now() - session.startedAt) / 60000;
+    if (elapsed <= 0) return 0;
+    const typed = session.chart.notes.filter((n) => n.state === "hit").length;
+    return Math.round(typed / elapsed);
+  }
+
   function hitNote(key) {
-    const { chart, cfg, startedAt } = session;
-    const now = (performance.now() - startedAt) / 1000;
+    const { chart } = session;
     const idx = currentNoteIndex(chart.notes);
     if (idx < 0) return;
     const note = chart.notes[idx];
-    if (now < chart.countIn * chart.beat - 0.02) return;
-    const deltaMs = (now - note.hitTime) * 1000;
-    const earlyIgnore = cfg.windowMs * 1.8;
-    if (deltaMs < -earlyIgnore) return;
     if (!charsMatch(note.char, key)) {
-      missNote(note, "wrong");
-      return;
-    }
-    const abs = Math.abs(deltaMs);
-    if (abs > cfg.windowMs) {
-      missNote(note, deltaMs > 0 ? "late" : "early");
+      session.misses += 1;
+      session.combo = 0;
+      note.quality = "miss";
+      Audio()?.playRhythmMiss?.();
+      flashJudgement("miss");
+      pulseRing("miss");
+      renderPhraseStrip();
       return;
     }
     note.state = "hit";
-    if (abs <= 42) note.quality = "perfect";
-    else if (abs <= cfg.windowMs * 0.55) note.quality = "great";
-    else note.quality = "ok";
+    note.quality = session.combo >= 4 ? "perfect" : "great";
     session.combo += 1;
     session.maxCombo = Math.max(session.maxCombo, session.combo);
     Audio()?.playRhythmHit?.(note.quality);
     flashJudgement(note.quality);
     pulseRing("hit");
     renderPhraseStrip();
-  }
-
-  function missNote(note, why) {
-    if (note.state !== "pending") return;
-    note.state = "miss";
-    note.quality = why || "miss";
-    session.combo = 0;
-    Audio()?.playRhythmMiss?.();
-    flashJudgement("miss");
-    pulseRing("miss");
-    renderPhraseStrip();
-  }
-
-  function autoMissPassed(now) {
-    const { chart, cfg } = session;
-    for (const note of chart.notes) {
-      if (note.state !== "pending") continue;
-      if (now > note.hitTime + cfg.windowMs / 1000) missNote(note, "late");
+    renderNextLetter(true);
+    if (chart.notes.every((n) => n.state !== "pending")) {
+      endRound();
     }
   }
 
@@ -395,10 +349,10 @@
     const el = $("rhythmJudge");
     if (!el) return;
     const labels = {
-      perfect: "PERFECT",
-      great: "GREAT",
+      perfect: "NICE",
+      great: "YES",
       ok: "GOOD",
-      miss: "MISS",
+      miss: "TRY THAT KEY",
     };
     el.textContent = labels[kind] || "";
     el.dataset.kind = kind;
@@ -415,10 +369,12 @@
     ring.classList.add(kind === "miss" ? "tt-rhythm__ring--miss" : kind === "hit" ? "tt-rhythm__ring--hit" : "tt-rhythm__ring--beat");
   }
 
-  function accuracyOf(notes) {
+  function accuracyOf(notes, misses) {
     if (!notes.length) return 100;
     const hits = notes.filter((n) => n.state === "hit").length;
-    return Math.round((hits / notes.length) * 100);
+    const total = hits + (misses || 0);
+    if (!total) return 100;
+    return Math.round((hits / total) * 100);
   }
 
   function renderPhraseStrip() {
@@ -429,8 +385,8 @@
     let noteI = 0;
     const activeIdx = currentNoteIndex(notes);
     const html = [...phrase.text].map((ch) => {
-      if (!isNoteChar(ch)) {
-        return `<span class="tt-rhythm-ch tt-rhythm-ch--space">${esc(ch)}</span>`;
+      if (!isTypedChar(ch)) {
+        return `<span class="tt-rhythm-ch tt-rhythm-ch--space" aria-hidden="true">&nbsp;</span>`;
       }
       const note = notes[noteI];
       const on = noteI === activeIdx;
@@ -439,100 +395,47 @@
       return `<span class="tt-rhythm-ch tt-rhythm-ch--${st}${on ? " tt-rhythm-ch--now" : ""}">${esc(ch)}</span>`;
     }).join("");
     el.innerHTML = html;
+    const done = notes.filter((n) => n.state === "hit").length;
     const combo = $("rhythmCombo");
     const score = $("rhythmScore");
-    if (combo) combo.textContent = `Combo ${session.combo}`;
-    if (score) score.textContent = `${accuracyOf(notes)}%`;
+    const bpm = $("rhythmBpm");
+    if (combo) combo.textContent = `${done} / ${notes.length}`;
+    if (score) score.textContent = `${accuracyOf(notes, session.misses)}%`;
+    if (bpm) bpm.textContent = `${liveKeysPerMin()} keys/min`;
   }
 
-  function renderLane(now) {
+  function displayChar(ch) {
+    if (ch === " ") return "␣";
+    return ch;
+  }
+
+  function renderNextLetter(animate) {
     const lane = $("rhythmLane");
-    if (!lane || !session) return;
-    const { chart, reducedMotion } = session;
-    const approach = chart.approach;
-    const parts = [];
-    for (let i = 0; i < chart.notes.length; i++) {
-      const note = chart.notes[i];
-      const until = note.hitTime - now;
-      if (until > approach + 0.05) continue;
-      if (until < -0.28 && note.state !== "pending") continue;
-      const progress = 1 - until / approach;
-      const z = reducedMotion ? 0 : (1 - Math.min(Math.max(progress, 0), 1.25)) * -820;
-      const scale = reducedMotion
-        ? 0.55 + Math.min(Math.max(progress, 0), 1) * 0.55
-        : 0.16 + Math.min(Math.max(progress, 0), 1.05) * 0.92;
-      const opacity = progress < 0.06
-        ? progress / 0.06
-        : progress > 1.2
-          ? Math.max(0, 1 - (progress - 1.2) / 0.25)
-          : 1;
-      const hot = Math.abs(until) < session.cfg.windowMs / 1000 + 0.02 && note.state === "pending";
-      parts.push(
-        `<span class="tt-rhythm-note tt-rhythm-note--${note.state}${hot ? " tt-rhythm-note--hot" : ""}" style="--z:${z.toFixed(1)}px;--s:${scale.toFixed(3)};opacity:${opacity.toFixed(3)}">${esc(note.char)}</span>`
-      );
-    }
-    const restUntil = nextRestOrBeat(now);
-    lane.innerHTML = parts.join("") + (restUntil != null && Math.abs(restUntil) < 0.09
-      ? `<span class="tt-rhythm-rest" aria-hidden="true">•</span>`
-      : "");
-  }
-
-  function nextRestOrBeat(now) {
-    if (!session) return null;
-    const beat = session.chart.beat;
-    const nearest = Math.round(now / beat) * beat;
-    return nearest - now;
-  }
-
-  function tickMetronome(now) {
-    const beat = session.chart.beat;
-    const idx = Math.floor((now + 0.02) / beat);
-    if (idx === lastBeat || idx < 0) return;
-    if (now > session.chart.endTime + 0.2) return;
-    lastBeat = idx;
-    Audio()?.playMetronomeClick?.();
-    pulseRing("beat");
-    const countEl = $("rhythmCount");
-    if (session.phase === "play" && idx < session.chart.countIn && countEl) {
-      const labels = ["3", "2", "1", "TYPE"];
-      countEl.textContent = labels[idx] || "";
-      countEl.classList.remove("dw-hidden");
-    } else if (countEl && idx >= session.chart.countIn) {
-      countEl.textContent = "";
-      countEl.classList.add("dw-hidden");
-    }
-  }
-
-  function loop() {
-    if (!active || !session || session.phase !== "play") return;
-    const now = (performance.now() - session.startedAt) / 1000;
-    autoMissPassed(now);
-    tickMetronome(now);
-    renderLane(now);
-    renderPhraseStrip();
     const ring = $("rhythmRing");
+    if (!lane || !session) return;
     const idx = currentNoteIndex(session.chart.notes);
     const note = idx >= 0 ? session.chart.notes[idx] : null;
-    const hot = note && Math.abs(now - note.hitTime) <= session.cfg.windowMs / 1000;
-    ring?.classList.toggle("tt-rhythm__ring--hot", Boolean(hot));
-    const allDone = session.chart.notes.every((n) => n.state !== "pending");
-    if (allDone && now >= session.chart.endTime) {
-      endRound();
+    if (!note) {
+      lane.innerHTML = "";
+      if (ring) ring.textContent = "";
       return;
     }
-    raf = requestAnimationFrame(loop);
+    const letter = displayChar(note.char);
+    lane.innerHTML = `<span class="tt-rhythm-note tt-rhythm-note--solo${animate ? " tt-rhythm-note--grow" : ""}">${esc(letter)}</span>`;
+    if (ring) {
+      ring.textContent = "";
+      ring.classList.add("tt-rhythm__ring--hot");
+    }
   }
 
   function endRound() {
-    cancelAnimationFrame(raf);
-    raf = 0;
-    const acc = accuracyOf(session.chart.notes);
+    window.clearTimeout(countTimer);
+    const acc = accuracyOf(session.chart.notes, session.misses);
     session.roundScores.push({
       title: session.rounds[session.roundIndex].title,
       accuracy: acc,
     });
-    const need = Math.round(session.cfg.pass * 100);
-    const passed = acc >= need;
+    const passed = session.chart.notes.every((n) => n.state === "hit");
     session.phase = "result";
     const result = $("rhythmResult");
     const text = $("rhythmResultText");
@@ -541,21 +444,14 @@
     setHidden(result, false);
     const roundLabel = session.roundIndex === 0 ? "Digital citizenship" : "SPARK";
     if (text) {
-      text.textContent = passed
-        ? `${roundLabel}: ${acc}% — cleared.`
-        : `${roundLabel}: ${acc}% — need ${need}% to pass.`;
+      text.textContent = `${roundLabel}: ${acc}% first-try · ${liveKeysPerMin()} keys/min — sentence complete.`;
     }
-    setHidden(retry, passed);
-    const canBail = !passed && session.attempts >= session.maxAttempts;
+    setHidden(retry, false);
     if (cont) {
-      cont.textContent = passed
-        ? (session.roundIndex === 0 ? "SPARK round ▶" : "Enter next room ▶")
-        : session.roundIndex === 0
-          ? "SPARK round anyway ▶"
-          : "Continue anyway ▶";
-      setHidden(cont, !(passed || canBail));
+      cont.textContent = session.roundIndex === 0 ? "SPARK phrase ▶" : "Enter next room ▶";
+      setHidden(cont, false);
     }
-    if (retry) retry.disabled = passed;
+    if (retry) retry.disabled = false;
     if (passed) Audio()?.playPathUnlock?.();
   }
 
@@ -570,8 +466,7 @@
   }
 
   function finishSession(passed) {
-    cancelAnimationFrame(raf);
-    raf = 0;
+    window.clearTimeout(countTimer);
     const overlay = $("rhythmGate");
     setHidden(overlay, true);
     overlay?.setAttribute("aria-hidden", "true");
@@ -585,7 +480,6 @@
     const cb = session?.onComplete;
     active = false;
     session = null;
-    lastBeat = -1;
     cb?.({
       passed,
       accuracy: avg,
@@ -599,47 +493,72 @@
     const kicker = $("rhythmKicker");
     const title = $("rhythmTitle");
     const meaning = $("rhythmMeaning");
-    const bpm = $("rhythmBpm");
     const hint = $("rhythmHint");
     if (kicker) {
       kicker.textContent = sessionRef.roundIndex === 0
-        ? "Room pulse check · Digital citizenship"
-        : "Room pulse check · SPARK";
+        ? "Room phrase check · Digital citizenship"
+        : "Room phrase check · SPARK";
     }
     if (title) title.textContent = phrase.title;
     if (meaning) meaning.textContent = phrase.meaning;
-    if (bpm) bpm.textContent = `${sessionRef.cfg.bpm} BPM`;
     if (hint) {
-      hint.textContent = sessionRef.reducedMotion
-        ? "Type the highlighted letter when the ring lights up."
-        : "Type the letter when it fills the glowing ring — on the metronome click.";
+      hint.textContent = "Type the big letter. Spaces are free. Finish the sentence as fast as you can.";
     }
-    $("rhythmCombo").textContent = "Combo 0";
-    $("rhythmScore").textContent = "0%";
+    const combo = $("rhythmCombo");
+    const score = $("rhythmScore");
+    const bpm = $("rhythmBpm");
+    if (combo) combo.textContent = `0 / ${sessionRef.chart.notes.length}`;
+    if (score) score.textContent = "100%";
+    if (bpm) bpm.textContent = "0 keys/min";
+  }
+
+  function runCountIn(sessionRef) {
+    const labels = ["3", "2", "1", "TYPE"];
+    const countEl = $("rhythmCount");
+    let i = 0;
+    const tick = () => {
+      if (!session || session !== sessionRef) return;
+      if (i >= labels.length) {
+        if (countEl) {
+          countEl.textContent = "";
+          countEl.classList.add("dw-hidden");
+        }
+        sessionRef.phase = "play";
+        sessionRef.startedAt = performance.now();
+        renderNextLetter(true);
+        $("rhythmGate")?.focus?.();
+        return;
+      }
+      if (countEl) {
+        countEl.textContent = labels[i];
+        countEl.classList.remove("dw-hidden");
+      }
+      try { Audio()?.playMetronomeClick?.(); } catch (_) { /* audio context not ready */ }
+      i += 1;
+      countTimer = window.setTimeout(tick, 520);
+    };
+    tick();
   }
 
   function startRound(sessionRef, { retry }) {
     if (retry && sessionRef.roundScores.length) sessionRef.roundScores.pop();
     const phrase = sessionRef.rounds[sessionRef.roundIndex];
-    sessionRef.chart = buildChart(phrase.text, sessionRef.cfg.bpm, sessionRef.cfg.approachBeats);
+    sessionRef.chart = buildChart(phrase.text);
     sessionRef.combo = 0;
-    sessionRef.phase = "play";
-    sessionRef.startedAt = performance.now();
-    lastBeat = -1;
+    sessionRef.misses = 0;
+    sessionRef.phase = "countdown";
+    sessionRef.startedAt = 0;
     if (retry) sessionRef.attempts += 1;
-    else if (sessionRef.roundIndex === 0) sessionRef.attempts = 1;
     else sessionRef.attempts = 1;
     setHidden($("rhythmResult"), true);
     fillHud(sessionRef);
     renderPhraseStrip();
-    const countEl = $("rhythmCount");
-    if (countEl) {
-      countEl.textContent = "3";
-      countEl.classList.remove("dw-hidden");
-    }
-    cancelAnimationFrame(raf);
-    raf = requestAnimationFrame(loop);
-    $("rhythmGate")?.focus?.();
+    const lane = $("rhythmLane");
+    if (lane) lane.innerHTML = "";
+    const ring = $("rhythmRing");
+    if (ring) ring.textContent = "";
+    window.clearTimeout(countTimer);
+    runCountIn(sessionRef);
   }
 
   function start(opts = {}) {
@@ -655,13 +574,12 @@
       document.body.appendChild(overlay);
     }
     const difficulty = opts.difficulty || "operative";
-    const reducedMotion = Boolean(opts.reducedMotion);
-    const cfg = diffCfg(difficulty, reducedMotion);
+    const cfg = DIFFICULTY[difficulty] || DIFFICULTY.operative;
     const maxAttempts = difficulty === "analyst" ? 4 : 3;
     session = {
       nodeId: opts.nodeId,
       difficulty,
-      reducedMotion,
+      reducedMotion: Boolean(opts.reducedMotion),
       cfg,
       rounds: pickPhrases(opts.nodeId, difficulty),
       roundIndex: 0,
@@ -669,9 +587,10 @@
       chart: null,
       combo: 0,
       maxCombo: 0,
+      misses: 0,
       attempts: 0,
       maxAttempts,
-      phase: "play",
+      phase: "countdown",
       startedAt: 0,
       onComplete: opts.onComplete,
     };

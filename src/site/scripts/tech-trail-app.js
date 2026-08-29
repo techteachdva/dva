@@ -2283,7 +2283,7 @@
       reducedMotion: prefersReducedMotion || document.body.classList.contains("tt-high-contrast"),
       onComplete(result) {
         if (result && !result.skipped && result.accuracy != null) {
-          journal.push(`🥁 Pulse ${Math.round(result.accuracy)}% · ${result.title || "citizenship"}`);
+          journal.push(`⌨️ Phrase ${Math.round(result.accuracy)}% · ${result.title || "citizenship"}`);
         }
         then?.();
       },

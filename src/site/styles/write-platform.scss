@@ -1024,7 +1024,7 @@ $wp-sheet-min-height: 1056px;
 
 .tt-skip-link {
   position: absolute;
-  top: -40px;
+  top: 12px;
   left: 12px;
   z-index: 100;
   padding: 8px 14px;
@@ -1033,11 +1033,11 @@ $wp-sheet-min-height: 1056px;
   font-weight: 600;
   border-radius: 6px;
   text-decoration: none;
-  transition: top 0.2s;
+  transform: translateY(-180%);
 }
 
-.tt-skip-link:focus {
-  top: 12px;
+.tt-skip-link:focus-visible {
+  transform: none;
 }
 
 .tt-mute-btn {
@@ -8462,7 +8462,10 @@ mark.wf-standard-hit,
 .wp-theme--gauntlet .tt-game-layout .tt-hud {
   grid-area: hud;
   margin-top: 0;
-  gap: 8px;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
 }
 
 .wp-theme--gauntlet .tt-game-layout #sceneLesson {
@@ -8471,8 +8474,27 @@ mark.wf-standard-hit,
 
 .wp-theme--gauntlet .tt-game-layout .tt-stats-bar {
   margin-top: 0;
-  padding: 10px 14px;
-  gap: 12px;
+  padding: 8px 12px;
+  gap: 10px;
+  flex: 1 1 420px;
+}
+
+.wp-theme--gauntlet .tt-game-layout .tt-you-are-here {
+  order: 2;
+}
+
+.wp-theme--gauntlet .tt-game-layout .tt-golden-track {
+  order: 3;
+}
+
+.wp-theme--gauntlet .tt-game-layout .tt-pack-btn {
+  order: 4;
+  align-self: center;
+}
+
+.wp-theme--gauntlet .tt-game-layout .tt-hud-actions {
+  order: 5;
+  margin-left: auto;
 }
 
 .wp-theme--gauntlet .tt-game-layout .tt-stage {
@@ -8508,12 +8530,64 @@ mark.wf-standard-hit,
 
 .wp-theme--gauntlet .tt-game-layout .tt-scene-header {
   flex-shrink: 0;
-  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
 }
 
-.wp-theme--gauntlet .tt-game-layout .tt-character {
+.wp-theme--gauntlet .tt-game-layout .tt-scene-header__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.wp-theme--gauntlet .tt-game-layout .tt-character,
+.wp-theme--gauntlet .tt-game-layout .tt-character--hero {
+  position: static;
+  left: auto;
+  bottom: auto;
+  width: auto;
+  margin: 0;
+  transform: none;
   flex-shrink: 0;
+}
+
+.wp-theme--gauntlet .tt-game-layout .tt-character--hero .tt-character__card {
+  flex-direction: row;
+  align-items: center;
+  transform: none;
+  gap: 10px;
+}
+
+.wp-theme--gauntlet .tt-game-layout .tt-character--hero .tt-character__avatar {
+  width: 64px;
+  height: 64px;
+  min-height: 64px;
+  aspect-ratio: 1;
+  border-radius: 12px;
+}
+
+.wp-theme--gauntlet .tt-game-layout .tt-character--hero .tt-character__emoji {
+  font-size: 32px;
+}
+
+.wp-theme--gauntlet .tt-game-layout .tt-scene-split {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(240px, 0.85fr);
+  gap: 12px;
   margin-bottom: 10px;
+}
+
+.wp-theme--gauntlet .tt-game-layout .tt-scene-main {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .wp-theme--gauntlet .tt-game-layout .tt-narrative {
@@ -8522,9 +8596,20 @@ mark.wf-standard-hit,
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
   padding-right: 4px;
   scrollbar-gutter: stable;
+}
+
+.wp-theme--gauntlet .tt-game-layout .tt-holo {
+  position: static;
+  right: auto;
+  top: auto;
+  width: auto;
+  max-width: none;
+  transform: none;
+  pointer-events: auto;
+  z-index: 1;
 }
 
 .wp-theme--gauntlet .tt-game-layout .tt-choices,
@@ -8686,6 +8771,10 @@ mark.wf-standard-hit,
   .wp-theme--gauntlet .tt-game-layout .tt-journal {
     flex: 1;
   }
+
+  .wp-theme--gauntlet .tt-game-layout .tt-scene-split {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Cinematic room, oversized heroes, 3D chrome */
@@ -8696,6 +8785,10 @@ mark.wf-standard-hit,
 .wp-theme--gauntlet .tt-stage__room {
   min-height: min(78vh, 980px);
   transform-style: preserve-3d;
+}
+
+.wp-theme--gauntlet .tt-game-layout .tt-stage__room {
+  min-height: 0;
 }
 
 .wp-theme--gauntlet .tt-stage__room--walk .tt-scene-bg {
@@ -9291,7 +9384,7 @@ mark.wf-standard-hit,
   }
 }
 
-/* ── Typing rhythm pulse check (DDR letter highway) ── */
+/* ── Room phrase check (one huge next letter) ── */
 .tt-rhythm {
   position: fixed;
   inset: 0;
@@ -9299,10 +9392,10 @@ mark.wf-standard-hit,
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px;
+  padding: 20px;
   background:
-    radial-gradient(ellipse at 50% 58%, rgba(80, 40, 120, 0.35), transparent 55%),
-    rgba(8, 2, 14, 0.88);
+    radial-gradient(ellipse at 50% 42%, rgba(80, 40, 120, 0.45), #120818 58%),
+    #0a0410;
   backdrop-filter: blur(10px);
 }
 
@@ -9311,76 +9404,77 @@ mark.wf-standard-hit,
 }
 
 .tt-rhythm__inner {
-  width: min(720px, 100%);
+  width: min(980px, 100%);
+  min-height: min(86vh, 760px);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: 12px;
   color: #fff8e7;
   text-align: center;
 }
 
 .tt-rhythm__kicker {
   margin: 0;
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: #fbbf24;
-  font-weight: 700;
+  font-weight: 800;
 }
 
 .tt-rhythm__title {
   margin: 0;
   font-family: "Bebas Neue", Impact, sans-serif;
-  font-size: clamp(28px, 5vw, 42px);
+  font-size: clamp(36px, 6vw, 58px);
   letter-spacing: 0.04em;
   line-height: 1;
 }
 
 .tt-rhythm__meaning {
-  margin: 0 0 4px;
-  max-width: 38rem;
-  font-size: 14px;
-  color: rgba(255, 248, 231, 0.78);
+  margin: 0;
+  max-width: 42rem;
+  font-size: clamp(16px, 2.2vw, 20px);
+  color: rgba(255, 248, 231, 0.82);
 }
 
 .tt-rhythm__stage {
   position: relative;
-  width: min(420px, 92vw);
-  height: min(46vh, 340px);
-  perspective: 920px;
-  perspective-origin: 50% 62%;
-  margin: 4px 0 8px;
+  width: min(420px, 86vw);
+  height: min(38vh, 320px);
+  margin: 8px 0 4px;
+  display: grid;
+  place-items: center;
 }
 
 .tt-rhythm__lane {
-  position: absolute;
-  inset: 0;
-  transform-style: preserve-3d;
+  position: relative;
+  z-index: 2;
+  display: grid;
+  place-items: center;
   pointer-events: none;
 }
 
 .tt-rhythm__ring {
   position: absolute;
-  left: 50%;
-  top: 62%;
-  width: 7.4rem;
-  height: 7.4rem;
+  inset: 8%;
   margin: 0;
-  border: 3px solid rgba(255, 215, 0, 0.55);
+  border: 6px solid rgba(255, 215, 0, 0.55);
   border-radius: 50%;
-  transform: translate(-50%, -50%);
   box-shadow:
-    0 0 0 8px rgba(255, 215, 0, 0.08),
-    0 0 28px rgba(255, 215, 0, 0.25);
+    0 0 0 12px rgba(255, 215, 0, 0.08),
+    0 0 40px rgba(255, 215, 0, 0.28);
   pointer-events: none;
+  font-size: 0;
+  color: transparent;
 }
 
 .tt-rhythm__ring--hot {
   border-color: #ffd700;
   box-shadow:
-    0 0 0 10px rgba(255, 215, 0, 0.16),
-    0 0 36px rgba(255, 215, 0, 0.45);
+    0 0 0 14px rgba(255, 215, 0, 0.16),
+    0 0 48px rgba(255, 215, 0, 0.5);
 }
 
 .tt-rhythm__ring--beat {
@@ -9397,37 +9491,45 @@ mark.wf-standard-hit,
 }
 
 @keyframes tt-rhythm-beat {
-  0% { transform: translate(-50%, -50%) scale(1.08); }
-  100% { transform: translate(-50%, -50%) scale(1); }
+  0% { transform: scale(1.06); }
+  100% { transform: scale(1); }
 }
 
 @keyframes tt-rhythm-hit {
-  0% { box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.9), 0 0 40px rgba(52, 211, 153, 0.5); }
-  100% { box-shadow: 0 0 0 8px rgba(255, 215, 0, 0.08), 0 0 28px rgba(255, 215, 0, 0.25); }
+  0% { box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.9), 0 0 48px rgba(52, 211, 153, 0.5); }
+  100% { box-shadow: 0 0 0 12px rgba(255, 215, 0, 0.08), 0 0 40px rgba(255, 215, 0, 0.28); }
 }
 
 @keyframes tt-rhythm-miss {
-  0% { transform: translate(-50%, -50%) scale(0.94); }
-  100% { transform: translate(-50%, -50%) scale(1); }
+  0% { transform: scale(0.94); }
+  100% { transform: scale(1); }
 }
 
 .tt-rhythm-note {
-  position: absolute;
-  left: 50%;
-  top: 62%;
   font-family: "Bebas Neue", Impact, sans-serif;
-  font-size: 5.4rem;
-  line-height: 1;
+  font-size: clamp(7.5rem, 18vw, 12rem);
+  line-height: 0.85;
   color: #fff8e7;
-  text-shadow: 0 0 18px rgba(167, 139, 250, 0.65);
-  transform: translate(-50%, -50%) translateZ(var(--z, -800px)) scale(var(--s, 0.2));
-  transform-style: preserve-3d;
+  text-shadow: 0 0 28px rgba(167, 139, 250, 0.7);
   pointer-events: none;
+}
+
+.tt-rhythm-note--solo {
+  color: #ffd700;
+  text-shadow: 0 0 32px rgba(255, 215, 0, 0.85);
+}
+
+.tt-rhythm-note--grow {
+  animation: tt-rhythm-grow 0.38s cubic-bezier(0.16, 0.84, 0.32, 1) both;
+}
+
+@keyframes tt-rhythm-grow {
+  0% { transform: scale(0.18); opacity: 0.45; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 .tt-rhythm-note--hot {
   color: #ffd700;
-  text-shadow: 0 0 22px rgba(255, 215, 0, 0.85);
 }
 
 .tt-rhythm-note--hit {
@@ -9438,35 +9540,26 @@ mark.wf-standard-hit,
   color: #f87171;
 }
 
-.tt-rhythm-rest {
-  position: absolute;
-  left: 50%;
-  top: 62%;
-  transform: translate(-50%, -50%);
-  font-size: 2rem;
-  color: rgba(255, 215, 0, 0.45);
-}
-
 .tt-rhythm__count {
   position: absolute;
-  left: 50%;
-  top: 62%;
-  transform: translate(-50%, -50%);
+  inset: 0;
+  display: grid;
+  place-items: center;
   font-family: "Bebas Neue", Impact, sans-serif;
-  font-size: 4.2rem;
-  color: rgba(255, 215, 0, 0.92);
-  text-shadow: 0 0 24px rgba(255, 215, 0, 0.45);
+  font-size: clamp(5rem, 12vw, 8rem);
+  color: rgba(255, 215, 0, 0.95);
+  text-shadow: 0 0 28px rgba(255, 215, 0, 0.5);
   pointer-events: none;
-  z-index: 2;
+  z-index: 3;
 }
 
 .tt-rhythm__judge {
   position: absolute;
   left: 50%;
-  top: 18%;
+  top: 6%;
   transform: translate(-50%, 0);
   font-family: "Bebas Neue", Impact, sans-serif;
-  font-size: 1.8rem;
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
   letter-spacing: 0.12em;
   opacity: 0;
   pointer-events: none;
@@ -9489,20 +9582,22 @@ mark.wf-standard-hit,
 
 .tt-rhythm__phrase {
   margin: 0;
-  font-size: clamp(15px, 2.4vw, 18px);
+  font-size: clamp(22px, 3.4vw, 32px);
   line-height: 1.45;
-  max-width: 40rem;
+  max-width: 46rem;
   min-height: 2.6em;
+  font-weight: 800;
 }
 
 .tt-rhythm-ch {
-  color: rgba(255, 248, 231, 0.42);
+  color: rgba(255, 248, 231, 0.38);
 }
 
 .tt-rhythm-ch--now {
   color: #ffd700;
   text-decoration: underline;
-  text-underline-offset: 3px;
+  text-underline-offset: 6px;
+  text-decoration-thickness: 3px;
 }
 
 .tt-rhythm-ch--hit {
@@ -9515,26 +9610,26 @@ mark.wf-standard-hit,
 
 .tt-rhythm-ch--space {
   display: inline-block;
-  width: 0.35em;
+  width: 0.38em;
 }
 
 .tt-rhythm__hint {
   margin: 0;
-  font-size: 12px;
-  color: rgba(255, 248, 231, 0.62);
+  font-size: 16px;
+  color: rgba(255, 248, 231, 0.72);
 }
 
 .tt-rhythm__hud {
   display: flex;
-  gap: 16px;
-  font-size: 13px;
-  font-weight: 700;
-  color: rgba(255, 248, 231, 0.8);
+  gap: 22px;
+  font-size: 18px;
+  font-weight: 800;
+  color: rgba(255, 248, 231, 0.88);
 }
 
 .tt-rhythm__result {
   margin-top: 8px;
-  padding: 12px 16px;
+  padding: 14px 18px;
   border-radius: 14px;
   border: 1px solid rgba(255, 215, 0, 0.28);
   background: rgba(0, 0, 0, 0.35);
@@ -9543,6 +9638,7 @@ mark.wf-standard-hit,
 .tt-rhythm__result p {
   margin: 0 0 10px;
   font-weight: 700;
+  font-size: 18px;
 }
 
 .tt-rhythm__result-actions {
@@ -9563,21 +9659,12 @@ body.tt-rhythm-active textarea {
 }
 
 .tt-high-contrast .tt-rhythm__ring {
-  border-width: 4px;
+  border-width: 7px;
   border-color: #ffd700;
 }
 
-.tt-high-contrast .tt-rhythm__stage {
-  perspective: none;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .tt-rhythm__stage {
-    perspective: none;
-  }
-  .tt-rhythm-note {
-    transform: translate(-50%, -50%) scale(var(--s, 1));
-  }
+  .tt-rhythm-note--grow,
   .tt-rhythm__ring--beat,
   .tt-rhythm__ring--hit,
   .tt-rhythm__ring--miss,
@@ -9587,15 +9674,18 @@ body.tt-rhythm-active textarea {
 }
 
 @media (max-width: 640px) {
+  .tt-rhythm {
+    padding: 12px;
+  }
+  .tt-rhythm__inner {
+    min-height: 0;
+    gap: 8px;
+  }
   .tt-rhythm__stage {
-    height: min(40vh, 260px);
+    height: min(34vh, 240px);
   }
-  .tt-rhythm-note {
-    font-size: 4.2rem;
-  }
-  .tt-rhythm__ring {
-    width: 5.8rem;
-    height: 5.8rem;
+  .tt-rhythm__phrase {
+    font-size: 20px;
   }
 }
 
@@ -9657,8 +9747,8 @@ body.tt-rhythm-active textarea {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px;
-  background: rgba(6, 2, 12, 0.72);
+  padding: 12px;
+  background: rgba(6, 2, 12, 0.78);
   backdrop-filter: blur(8px);
 }
 
@@ -9667,13 +9757,13 @@ body.tt-rhythm-active textarea {
 }
 
 .tt-map__panel {
-  width: min(960px, 100%);
-  max-height: min(88vh, 720px);
+  width: min(1240px, 100%);
+  max-height: min(94vh, 880px);
   display: flex;
   flex-direction: column;
   border-radius: 18px;
   border: 1px solid rgba(255, 215, 0, 0.3);
-  background: linear-gradient(180deg, rgba(24, 10, 36, 0.96), rgba(8, 4, 16, 0.96));
+  background: linear-gradient(180deg, rgba(24, 10, 36, 0.97), rgba(8, 4, 16, 0.97));
   color: #fff8e7;
   overflow: hidden;
 }
@@ -9701,14 +9791,13 @@ body.tt-rhythm-active textarea {
 
 .tt-map__stage {
   position: relative;
-  height: min(52vh, 420px);
-  margin: 8px 16px;
-  perspective: 980px;
+  height: min(68vh, 640px);
+  margin: 4px 16px 8px;
   border-radius: 14px;
   overflow: hidden;
   background:
-    radial-gradient(ellipse at 50% 80%, rgba(196, 30, 58, 0.18), transparent 55%),
-    linear-gradient(180deg, rgba(20, 40, 80, 0.25), rgba(0, 0, 0, 0.35));
+    radial-gradient(ellipse at 50% 80%, rgba(196, 30, 58, 0.16), transparent 55%),
+    linear-gradient(180deg, rgba(20, 40, 80, 0.22), rgba(0, 0, 0, 0.35));
   border: 1px solid rgba(255, 215, 0, 0.15);
 }
 
@@ -9717,66 +9806,62 @@ body.tt-rhythm-active textarea {
   inset: 0;
   width: 100%;
   height: 100%;
-  transform: rotateX(58deg) rotateZ(-16deg);
-  transform-origin: 50% 70%;
   overflow: visible;
   pointer-events: none;
 }
 
 .tt-map-link {
-  stroke: rgba(255, 215, 0, 0.22);
-  stroke-width: 0.45;
+  stroke: rgba(255, 215, 0, 0.28);
+  stroke-width: 0.55;
 }
 
 .tt-map-link--live {
   stroke: #ffd700;
-  stroke-width: 0.7;
+  stroke-width: 1.1;
   filter: drop-shadow(0 0 4px #ffd700);
 }
 
 .tt-map__world {
   position: absolute;
   inset: 0;
-  transform: rotateX(58deg) rotateZ(-16deg);
-  transform-origin: 50% 70%;
-  transform-style: preserve-3d;
 }
 
 .tt-map-room {
   position: absolute;
   left: var(--x);
   top: var(--y);
-  transform: translate(-50%, -50%) rotateZ(16deg) rotateX(-58deg) translateZ(18px);
+  transform: translate(-50%, -50%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
-  padding: 0;
+  gap: 5px;
+  padding: 6px 4px;
   border: 0;
   background: transparent;
   color: #fff8e7;
   cursor: pointer;
-  width: 72px;
+  width: 128px;
 }
 
 .tt-map-room__cube {
-  width: 42px;
-  height: 42px;
+  width: 56px;
+  height: 56px;
   display: grid;
   place-items: center;
-  border-radius: 10px;
-  background: rgba(12, 8, 20, 0.9);
-  border: 2px solid rgba(255, 248, 231, 0.22);
-  box-shadow: 0 10px 18px rgba(0, 0, 0, 0.45);
-  font-size: 20px;
+  border-radius: 12px;
+  background: rgba(12, 8, 20, 0.92);
+  border: 3px solid rgba(255, 248, 231, 0.28);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.45);
+  font-size: 26px;
 }
 
 .tt-map-room__name {
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 800;
   text-align: center;
   line-height: 1.15;
   text-shadow: 0 2px 6px #000;
+  max-width: 124px;
 }
 
 .tt-map-room--seen .tt-map-room__cube {
@@ -9812,13 +9897,9 @@ body.tt-rhythm-active textarea {
 
 /* ── Hologram conflict screen ── */
 .tt-holo {
-  position: absolute;
-  right: clamp(12px, 2.4vw, 28px);
-  top: clamp(72px, 12vh, 120px);
-  z-index: 4;
-  width: min(280px, 30vw);
-  pointer-events: none;
-  transform: translateZ(48px);
+  position: relative;
+  z-index: 1;
+  width: 100%;
 }
 
 .tt-holo__frame {
@@ -9845,7 +9926,7 @@ body.tt-rhythm-active textarea {
 }
 
 .tt-holo__graphic {
-  height: 118px;
+  height: 132px;
   display: grid;
   place-items: center;
   padding: 10px;
@@ -9875,9 +9956,9 @@ body.tt-rhythm-active textarea {
 .tt-holo__sit,
 .tt-holo__q {
   margin: 0;
-  font-size: 12px;
-  line-height: 1.35;
-  color: rgba(255, 248, 231, 0.82);
+  font-size: 14px;
+  line-height: 1.4;
+  color: rgba(255, 248, 231, 0.86);
 }
 
 .tt-holo__q {
@@ -10062,33 +10143,25 @@ body.tt-rhythm-active textarea {
   .tt-hg--loop {
     animation: none;
   }
-  .tt-map__world,
-  .tt-map__links {
-    transform: none;
-  }
 }
 
 @media (max-width: 900px) {
   .tt-holo {
-    position: relative;
-    right: auto;
-    top: auto;
-    width: 100%;
-    max-width: 420px;
-    margin: 0 auto 10px;
-    transform: none;
-    pointer-events: auto;
+    max-width: none;
+  }
+  .tt-map__stage {
+    height: min(62vh, 520px);
   }
   .tt-map-room {
-    width: 58px;
+    width: 96px;
   }
   .tt-map-room__cube {
-    width: 32px;
-    height: 32px;
-    font-size: 16px;
+    width: 44px;
+    height: 44px;
+    font-size: 22px;
   }
   .tt-map-room__name {
-    font-size: 9px;
+    font-size: 11px;
   }
 }
 
