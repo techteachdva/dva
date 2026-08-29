@@ -268,6 +268,7 @@
   let activeChoicePrefix = "";
   let pendingDiagnosticAction = null;
   let choiceUnlocking = false;
+  let choiceCooldownUntil = 0;
   let diagnosticKeystrokeTracker = null;
   let challengeKeystrokeTracker = null;
   let challengeStartTime = 0;
@@ -657,6 +658,42 @@
     activeChoicePrefix = "";
     choiceUnlocking = false;
     document.getElementById("liveWpmStat")?.classList.add("dw-hidden");
+  }
+
+  function renderClickChoices(node, choices) {
+    const choicesEl = document.getElementById("sceneChoices");
+    if (!choicesEl || !choices.length) return;
+    clearChoiceTyping();
+    activeChoices = choices;
+
+    choicesEl.innerHTML = choices.map((c, i) => {
+      const riskClass = c.risky ? " tt-choice--risky" : c.safe ? " tt-choice--safe" : "";
+      const arrow = c.recommended ? "⭐" : "➤";
+      const label = escapeHtml(c.label || c.typeText || "Choose");
+      return `<button type="button" class="tt-choice${riskClass}" style="--tt-choice-i:${i}" data-idx="${i}">
+        <span class="tt-choice__arrow">${arrow}</span>
+        <span>${label}</span>
+        <span class="tt-choice__glow"></span>
+      </button>`;
+    }).join("");
+
+    choicesEl.querySelectorAll(".tt-choice").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (choiceCooldownUntil && Date.now() < choiceCooldownUntil) return;
+        const idx = Number(btn.dataset.idx);
+        const choice = activeChoices[idx];
+        if (!choice) return;
+
+        btn.classList.add("tt-choice--picked");
+        choiceCooldownUntil = Date.now() + CHOICE_COOLDOWN_MS;
+
+        const label = choice.label || choice.typeText || "";
+        journal.push(`➤ ${label.slice(0, 80)}${label.length > 80 ? "…" : ""}`);
+
+        applyChoiceEffects(choice);
+        navigate(choice.next);
+      });
+    });
   }
 
   function setupTypingChoices(node, choices) {
@@ -2195,8 +2232,8 @@
       clearChoiceTyping();
       const choices = resolveChoices(node, nodeId);
       if (choices.length) {
-        setupTypingChoices(node, choices);
-        document.getElementById("typingChoices")?.classList.add("tt-layer--enter");
+        renderClickChoices(node, choices);
+        document.getElementById("sceneChoices")?.classList.add("tt-layer--enter");
       }
     }
 
