@@ -164,6 +164,229 @@
     },
   };
 
+  const ROOM_PHRASES = {
+    start: {
+      citizen: {
+        id: "briefing",
+        title: "Mission briefing",
+        meaning: "Pick a door. Think on your feet.",
+        text: "Pick a room. Recover all five Golden Rules of digital citizenship.",
+        cadetText: "Recover the five Golden Rules.",
+      },
+      sparkId: "spark-all",
+    },
+    design_lab: {
+      citizen: {
+        id: "design-lab",
+        title: "Design for people",
+        meaning: "Interview users before you ship.",
+        text: "Design for people, not just for flash.",
+        cadetText: "Design for people first.",
+      },
+      sparkId: "spark-s",
+    },
+    data_vault: {
+      citizen: {
+        id: "vault-privacy",
+        title: "Protect private data",
+        meaning: "Don't pass leaks along.",
+        text: "Private data is not a joke to share.",
+        cadetText: "Protect private data.",
+      },
+      sparkId: "spark-r",
+    },
+    password_temple: {
+      citizen: {
+        id: "unique-2fa",
+        title: "Guard your login",
+        meaning: "Unique passwords plus 2FA.",
+        text: "Use unique passwords and two factor authentication, or 2FA.",
+        cadetText: "Unique passwords and 2FA.",
+      },
+      sparkId: "spark-r",
+    },
+    footprint_scene: {
+      citizen: {
+        id: "footprint",
+        title: "Your digital footprint",
+        meaning: "The internet remembers.",
+        text: "Think before you post. The internet remembers.",
+        cadetText: "The internet remembers.",
+      },
+      sparkId: "spark-k",
+    },
+    media_chamber: {
+      citizen: {
+        id: "decode",
+        title: "Decode media",
+        meaning: "Check the source before you share.",
+        text: "Decode the headline. Check the source before you share.",
+        cadetText: "Check the source first.",
+      },
+      sparkId: "spark-report",
+    },
+    prepare_phase: {
+      citizen: {
+        id: "prepare",
+        title: "Name the problem",
+        meaning: "Plain language beats buzzwords.",
+        text: "Design for people, not just for flash.",
+        cadetText: "Design for people first.",
+      },
+      sparkId: "spark-s",
+    },
+    try_phase: {
+      citizen: {
+        id: "try-test",
+        title: "Test honestly",
+        meaning: "Watch real users, don't hide bugs.",
+        text: "Read the error. Fix one thing at a time.",
+        cadetText: "Fix one thing at a time.",
+      },
+      sparkId: "spark-p",
+    },
+    debug_scene: {
+      citizen: {
+        id: "debug",
+        title: "Debug the truth",
+        meaning: "Trace logic line by line.",
+        text: "Read the error. Fix one thing at a time.",
+        cadetText: "Fix one thing at a time.",
+      },
+      sparkId: "spark-s",
+    },
+    reflect_phase: {
+      citizen: {
+        id: "reflect",
+        title: "Honest reflection",
+        meaning: "Say what version two should fix.",
+        text: "Be a good digital citizen. Pause before you post.",
+        cadetText: "Pause before you post.",
+      },
+      sparkId: "spark-p",
+    },
+    code_bay: {
+      citizen: {
+        id: "code-steps",
+        title: "Clear instructions",
+        meaning: "Robots need steps, not vibes.",
+        text: "Read the error. Fix one thing at a time.",
+        cadetText: "Fix one thing at a time.",
+      },
+      sparkId: "spark-s",
+    },
+    network_closet: {
+      citizen: {
+        id: "wifi",
+        title: "Shared air",
+        meaning: "Public Wi-Fi needs HTTPS.",
+        text: "Public Wi-Fi is shared. Look for HTTPS.",
+        cadetText: "Look for HTTPS.",
+      },
+      sparkId: "spark-r",
+    },
+    sources_library: {
+      citizen: {
+        id: "sources",
+        title: "Check the source",
+        meaning: "Find the original before you react.",
+        text: "Decode the headline. Check the source before you share.",
+        cadetText: "Check the source first.",
+      },
+      sparkId: "spark-credit",
+    },
+    ip_chamber: {
+      citizen: {
+        id: "credit",
+        title: "Credit and permission",
+        meaning: "Get permission for music and art.",
+        text: "Credit the creator. Don't copy and claim.",
+        cadetText: "Credit the creator.",
+      },
+      sparkId: "spark-credit",
+    },
+    collaboration_bridge: {
+      citizen: {
+        id: "collab",
+        title: "Show up",
+        meaning: "Back someone up when chat turns mean.",
+        text: "Help a teammate without doing their work.",
+        cadetText: "Help, don't take over.",
+      },
+      sparkId: "spark-help",
+    },
+    trajectory_scene: {
+      citizen: {
+        id: "verify-quote",
+        title: "Verify first",
+        meaning: "Famous faces need citations.",
+        text: "A trending chart is not the same as proof.",
+        cadetText: "Trending is not proof.",
+      },
+      sparkId: "spark-report",
+    },
+    ai_ethics: {
+      citizen: {
+        id: "ai-fair",
+        title: "Test for everyone",
+        meaning: "Don't ship biased tools.",
+        text: "Design for people, not just for flash.",
+        cadetText: "Design for people first.",
+      },
+      sparkId: "spark-k",
+    },
+    hardware_graveyard: {
+      citizen: {
+        id: "wipe-devices",
+        title: "Wipe before discard",
+        meaning: "Old phones still hold secrets.",
+        text: "Private data is not a joke to share.",
+        cadetText: "Protect private data.",
+      },
+      sparkId: "spark-r",
+    },
+    open_source: {
+      citizen: {
+        id: "oss-credit",
+        title: "Restore credit",
+        meaning: "Open source still needs names.",
+        text: "Credit the creator. Don't copy and claim.",
+        cadetText: "Credit the creator.",
+      },
+      sparkId: "spark-credit",
+    },
+    bias_unit: {
+      citizen: {
+        id: "bias",
+        title: "Check the pattern",
+        meaning: "Demand a fairness audit.",
+        text: "A trending chart is not the same as proof.",
+        cadetText: "Trending is not proof.",
+      },
+      sparkId: "spark-report",
+    },
+    data_detective: {
+      citizen: {
+        id: "detective",
+        title: "Follow the data trail",
+        meaning: "Tiny clues build a profile.",
+        text: "Private data is not a joke to share.",
+        cadetText: "Protect private data.",
+      },
+      sparkId: "spark-r",
+    },
+    final_trial: {
+      citizen: {
+        id: "oath",
+        title: "Digital Citizenship Oath",
+        meaning: "Promise what you'll actually do.",
+        text: "Be a good digital citizen. Pause before you post.",
+        cadetText: "Pause before you post.",
+      },
+      sparkId: "spark-all",
+    },
+  };
+
   const THEME_BY_PREFIX = [
     [/password/, "passwords"],
     [/footprint/, "post"],
@@ -216,8 +439,21 @@
 
   function pickPhrases(nodeId, difficulty) {
     const short = difficulty === "cadet";
-    const citizen = CITIZEN_BY_THEME[themeForNode(nodeId)] || CITIZEN_BY_THEME.default;
-    const spark = SPARK_PHRASES[hash32(nodeId) % SPARK_PHRASES.length];
+    const bridge = window.TechTrailWorld;
+    const roomId = bridge?.mapIdFor?.(nodeId) || "start";
+    const roomPack = ROOM_PHRASES[roomId];
+    let citizen;
+    if (roomPack?.citizen) {
+      citizen = roomPack.citizen;
+    } else {
+      citizen = CITIZEN_BY_THEME[themeForNode(nodeId)] || CITIZEN_BY_THEME.default;
+    }
+    let spark;
+    if (roomPack?.sparkId) {
+      spark = SPARK_PHRASES.find((p) => p.id === roomPack.sparkId) || SPARK_PHRASES[0];
+    } else {
+      spark = SPARK_PHRASES[hash32(nodeId) % SPARK_PHRASES.length];
+    }
     return [normalizePhrase(citizen, short), normalizePhrase(spark, short)];
   }
 

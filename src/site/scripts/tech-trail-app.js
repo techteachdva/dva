@@ -664,6 +664,19 @@
     document.getElementById("liveWpmStat")?.classList.add("dw-hidden");
   }
 
+  function choiceFinishesRoom(choice) {
+    const next = STORY?.[choice?.next];
+    if (!next) return false;
+    if (next.badge || next.goldenRule) return true;
+    if (String(choice.next).includes("_win")) return true;
+    if (next.lesson && !next.typingChallenge) return true;
+    return false;
+  }
+
+  function triggerGlitchIfWrong(choice) {
+    window.TechTrailGlitch?.onWrongChoice?.(choice);
+  }
+
   function renderClickChoices(node, choices) {
     const choicesEl = document.getElementById("sceneChoices");
     if (!choicesEl || !choices.length) return;
@@ -695,7 +708,8 @@
         journal.push(`➤ ${label.slice(0, 80)}${label.length > 80 ? "…" : ""}`);
 
         applyChoiceEffects(choice);
-        navigate(choice.next);
+        triggerGlitchIfWrong(choice);
+        navigate(choice.next, { finishRhythm: choiceFinishesRoom(choice) });
       });
     });
   }
@@ -838,7 +852,8 @@
 
     setTimeout(() => {
       applyChoiceEffects(choiceData);
-      navigate(choiceData.next);
+      triggerGlitchIfWrong(choiceData);
+      navigate(choiceData.next, { finishRhythm: choiceFinishesRoom(choiceData) });
     }, prefersReducedMotion ? 0 : 1000);
   }
 
@@ -1879,6 +1894,25 @@
     return Visuals.mapRoomForNode?.(nodeId)?.id || "start";
   }
 
+  /** Story node to load when the player enters a map room from the 3D campus. */
+  function resolveEntryNode(roomId, pendingTarget) {
+    if (pendingTarget?.roomId === roomId && pendingTarget?.nodeId) {
+      return pendingTarget.nodeId;
+    }
+    const node = STORY[currentNode];
+    if (node) {
+      const choices = resolveChoices(node, currentNode);
+      for (const c of choices) {
+        if (c?.next && mapIdFor(c.next) === roomId) return c.next;
+      }
+      if (node.typingChallenge?.next && mapIdFor(node.typingChallenge.next) === roomId) {
+        return node.typingChallenge.next;
+      }
+    }
+    if (STORY[roomId]) return roomId;
+    return currentNode;
+  }
+
   function renderMissionChrome(nodeId, node) {
     const room = Visuals.mapRoomForNode?.(nodeId);
     const here = document.getElementById("youAreHereLabel");
@@ -2104,7 +2138,7 @@
     pulsePackButton();
   }
 
-  async function renderScene(nodeId) {
+  async function renderScene(nodeId, opts = {}) {
     const gen = ++typewriterGen;
     const node = STORY[nodeId];
     if (!node) {
@@ -2148,8 +2182,15 @@
     if (narrativeEl) narrativeEl.innerHTML = "";
 
     if (!node.ending) {
-      await playRoomReveal(node, gen);
-      if (gen !== typewriterGen) return;
+      if (opts.fromWorld) {
+        renderCharacter(node.character);
+        setPanelWaiting(false);
+        document.getElementById("sceneArrive")?.classList.add("dw-hidden");
+        document.getElementById("sceneDoor")?.classList.add("dw-hidden");
+      } else {
+        await playRoomReveal(node, gen);
+        if (gen !== typewriterGen) return;
+      }
     } else {
       renderCharacter(node.character);
       setPanelWaiting(false);
@@ -2407,19 +2448,14 @@
       mapIdFor(nodeId) !== mapIdFor(currentNode)
     );
     if (isRoomHop) {
-      const depart = () => world.requestWalkTo(nodeId, mapIdFor(nodeId));
-      if (!opts.skipRhythm && !shouldSkipRhythm(currentNode, nodeId)) {
-        runRhythmThen(currentNode, depart);
-      } else {
-        depart();
-      }
+      world.requestWalkTo(nodeId, mapIdFor(nodeId));
       return;
     }
-    if (!opts.skipRhythm && !shouldSkipRhythm(currentNode, nodeId)) {
-      runRhythmThen(currentNode, () => renderScene(nodeId));
+    if (!opts.skipRhythm && opts.finishRhythm) {
+      runRhythmThen(currentNode, () => renderScene(nodeId, opts));
       return;
     }
-    renderScene(nodeId);
+    renderScene(nodeId, opts);
   }
 
   function updateStats() {
@@ -2959,7 +2995,7 @@ Play again to rebuild your record clean.`;
             showIdentityGate(() => navigate(typingPending.next, { skipRhythm: true }));
           });
         } else {
-          navigate(typingPending.next);
+          navigate(typingPending.next, { finishRhythm: true });
         }
       }, delay);
     });
@@ -3102,6 +3138,7 @@ Play again to rebuild your record clean.`;
   window.TechTrailWorld = {
     navigate,
     mapIdFor,
+    resolveEntryNode,
     onSceneRendered(cb) {
       if (typeof cb === "function") worldListeners.add(cb);
       return () => worldListeners.delete(cb);

@@ -265,7 +265,7 @@ layout: false
                 <kbd>E</kbd> <span id="worldPromptText">Enter</span>
               </div>
               <div id="worldControlsHint" class="tt-world-controls dw-hidden">
-                <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> walk · drag to look · <kbd>Shift</kbd> run · <kbd>E</kbd> enter
+                <kbd>W</kbd><kbd>S</kbd> move · <kbd>A</kbd><kbd>D</kbd> turn · <kbd>Shift</kbd> run · <kbd>E</kbd> enter
               </div>
               <div class="tt-stage__room" id="sceneRoom">
                 <div class="tt-scene-bg" id="sceneBg">
@@ -380,6 +380,14 @@ layout: false
             </div>
           </div>
 
+          <div id="gtgGlitchOverlay" class="tt-gtg-glitch" aria-hidden="true">
+            <div class="tt-gtg-glitch__r"></div>
+            <div class="tt-gtg-glitch__b"></div>
+            <div class="tt-gtg-glitch__static"></div>
+            <div class="tt-gtg-glitch__bar"></div>
+          </div>
+          <div id="gtgGlitchPopups" class="tt-gtg-glitch-popups" aria-hidden="true"></div>
+
           <div id="rhythmGate" class="tt-rhythm dw-hidden" role="dialog" aria-modal="true" aria-labelledby="rhythmTitle" aria-hidden="true">
             <div class="tt-rhythm__inner">
               <p class="tt-rhythm__kicker" id="rhythmKicker">Room phrase check</p>
@@ -478,6 +486,7 @@ layout: false
     <script src="/scripts/tech-trail-story.js"></script>
     <script src="/scripts/tech-trail-state.js"></script>
     <script src="/scripts/tech-trail-audio.js"></script>
+    <script src="/scripts/tech-trail-glitch.js"></script>
     <script src="/scripts/tech-trail-rhythm.js"></script>
     <script src="/scripts/tech-trail-app.js" defer></script>
     <script type="importmap">{"imports":{"three":"/scripts/vendor/three.module.js"}}</script>

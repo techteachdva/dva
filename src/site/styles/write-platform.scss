@@ -10467,6 +10467,33 @@ body.tt-3d .tt-arrive-sting {
   display: none;
 }
 
+body.tt-3d .tt-stage__viewport {
+  min-height: min(78vh, 980px);
+}
+
+body.tt-3d.wp-theme--gauntlet .tt-game-layout .tt-stage__viewport {
+  min-height: 0;
+  height: 100%;
+}
+
+body.tt-3d .tt-stage__room {
+  background: transparent;
+  border-color: rgba(157, 140, 255, 0.12);
+  box-shadow: none;
+}
+
+body.tt-3d.tt-roam .tt-stage__room {
+  pointer-events: none;
+}
+
+body.tt-3d.tt-roam .tt-world-prompt {
+  pointer-events: auto;
+}
+
+body.tt-3d:not(.tt-roam) .tt-scene-panel {
+  background: rgba(12, 6, 18, 0.88);
+}
+
 /* Roam mode: the story panel steps aside so the campus is playable. */
 body.tt-roam .tt-scene-panel {
   opacity: 0;
@@ -10569,4 +10596,164 @@ body.tt-3d #campusMap .tt-map__stage {
 
 .tt-stage__viewport {
   position: relative;
+}
+
+/* GTG glitch burst + scam popups */
+.tt-gtg-glitch {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 120;
+  mix-blend-mode: screen;
+}
+
+.tt-gtg-glitch > div {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+
+.tt-gtg-glitch__r { background: rgba(255, 40, 90, 0.5); }
+.tt-gtg-glitch__b { background: rgba(40, 190, 255, 0.5); }
+.tt-gtg-glitch__static {
+  background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.24) 0 1px, transparent 1px 3px);
+}
+.tt-gtg-glitch__bar {
+  height: 22%;
+  inset: auto 0 auto 0;
+  background: rgba(255, 255, 255, 0.5);
+  mix-blend-mode: overlay;
+}
+
+.tt-gtg-glitch.is-firing {
+  opacity: 1;
+  animation: tt-gtg-glitch-frame 0.6s steps(1) 1;
+}
+
+.tt-gtg-glitch.is-firing .tt-gtg-glitch__r { animation: tt-gtg-glitch-r 0.6s steps(1) 1; }
+.tt-gtg-glitch.is-firing .tt-gtg-glitch__b { animation: tt-gtg-glitch-b 0.6s steps(1) 1; }
+.tt-gtg-glitch.is-firing .tt-gtg-glitch__static { animation: tt-gtg-glitch-static 0.6s steps(1) 1; }
+.tt-gtg-glitch.is-firing .tt-gtg-glitch__bar { animation: tt-gtg-glitch-bar 0.6s steps(1) 1; }
+
+.tt-gtg-glitch.is-firing-soft {
+  opacity: 1;
+  animation: tt-gtg-glitch-soft 0.26s ease-out 1;
+}
+
+.tt-gtg-glitch-popups {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 121;
+  overflow: hidden;
+}
+
+.tt-gtg-scam {
+  position: absolute;
+  width: min(280px, 72vw);
+  padding: 12px 14px 14px;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #ece9ff 0%, #d8d0f0 100%);
+  border: 2px solid #2244cc;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  font-family: Tahoma, "Segoe UI", sans-serif;
+  pointer-events: auto;
+  animation: tt-gtg-scam-in 0.25s ease-out both;
+}
+
+.tt-gtg-scam__x {
+  position: absolute;
+  top: 4px;
+  right: 8px;
+  border: none;
+  background: #c0c0c0;
+  color: #000;
+  width: 18px;
+  height: 18px;
+  line-height: 16px;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.tt-gtg-scam__title {
+  font-weight: 700;
+  color: #000080;
+  font-size: 13px;
+  margin-bottom: 6px;
+  padding-right: 16px;
+}
+
+.tt-gtg-scam__body {
+  font-size: 12px;
+  color: #111;
+  margin: 0 0 6px;
+}
+
+.tt-gtg-scam__err {
+  font-size: 11px;
+  color: #cc0000;
+  margin: 0 0 8px;
+  font-family: "Courier New", monospace;
+}
+
+.tt-gtg-scam__cta {
+  display: block;
+  width: 100%;
+  padding: 6px;
+  background: linear-gradient(180deg, #4488ff, #2255cc);
+  border: 1px solid #003399;
+  color: #fff;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.tt-gtg-scam--shake {
+  animation: tt-gtg-scam-shake 0.35s ease-in-out;
+}
+
+@keyframes tt-gtg-glitch-frame {
+  0%, 100% { filter: none; }
+  20% { filter: contrast(1.5); }
+  60% { filter: contrast(1.2); }
+}
+
+@keyframes tt-gtg-glitch-r {
+  0%, 100% { transform: translate(0); opacity: 0; }
+  15% { transform: translate(4px, 0); opacity: 0.7; }
+  45% { transform: translate(-3px, 1px); opacity: 0.5; }
+}
+
+@keyframes tt-gtg-glitch-b {
+  0%, 100% { transform: translate(0); opacity: 0; }
+  15% { transform: translate(-4px, 0); opacity: 0.7; }
+  45% { transform: translate(3px, -1px); opacity: 0.5; }
+}
+
+@keyframes tt-gtg-glitch-static {
+  0%, 100% { opacity: 0; }
+  10%, 70% { opacity: 0.35; }
+}
+
+@keyframes tt-gtg-glitch-bar {
+  0% { top: 10%; opacity: 0.6; }
+  30% { top: 55%; opacity: 0.4; }
+  100% { top: 80%; opacity: 0; }
+}
+
+@keyframes tt-gtg-glitch-soft {
+  from { opacity: 0.55; }
+  to { opacity: 0; }
+}
+
+@keyframes tt-gtg-scam-in {
+  from { opacity: 0; transform: scale(0.92) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes tt-gtg-scam-shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
 }

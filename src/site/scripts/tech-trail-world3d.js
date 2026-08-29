@@ -5,14 +5,18 @@
  * and the flat game is untouched.
  */
 import * as THREE from "three";
+import { decorateRoom, roomSilhouette, addWindows } from "./tech-trail-world3d-props.js";
 
 (() => {
   const WORLD_HALF_X = 88;
   const WORLD_HALF_Z = 80;
   const WALK_SPEED = 6.5;
   const RUN_SPEED = 11;
+  const TURN_SPEED = 2.4;
   const DOOR_REACH = 3.4;
   const PLAYER_RADIUS = 0.55;
+  const CAM_DIST = 9.5;
+  const CAM_HEIGHT = 3.2;
 
   const MENTOR_ROOMS = {
     guide: "start",
@@ -164,6 +168,7 @@ import * as THREE from "three";
       const zone = Visuals.ZONES[zoneKey] || Visuals.ZONES.dragons;
       const color = parseTint(zone.tint);
       const golden = GOLDEN_ROOMS.has(room.id);
+      const isVault = room.id === "password_temple";
 
       const group = new THREE.Group();
       group.position.set(x, 0, z);
@@ -172,22 +177,69 @@ import * as THREE from "three";
 
       let seed = 0;
       for (const ch of room.id) seed = (seed * 31 + ch.charCodeAt(0)) >>> 0;
-      const h = 5 + (seed % 4);
+      const baseH = 5 + (seed % 4);
+      const sil = roomSilhouette(room.id, group, baseH, color);
+      const h = sil.h;
 
       const bodyMat = new THREE.MeshLambertMaterial({
         color: color.clone().multiplyScalar(0.85).lerp(new THREE.Color(0x2a2040), 0.35),
       });
-      const body = new THREE.Mesh(new THREE.BoxGeometry(9, h, 9), bodyMat);
+      const bodyW = room.id === "final_trial" ? 11 : 9;
+      const body = new THREE.Mesh(new THREE.BoxGeometry(bodyW, h, 9), bodyMat);
       body.position.y = h / 2;
       group.add(body);
 
-      const roof = new THREE.Mesh(
-        new THREE.ConeGeometry(7.2, 3, 4),
-        new THREE.MeshLambertMaterial({ color: color.clone().multiplyScalar(0.55) })
+      const trimColor = sil.trim || 0x9d8cff;
+      const band = new THREE.Mesh(
+        new THREE.BoxGeometry(bodyW + 0.2, 0.18, 9.2),
+        new THREE.MeshBasicMaterial({ color: trimColor, transparent: true, opacity: 0.75 })
       );
-      roof.position.y = h + 1.5;
-      roof.rotation.y = Math.PI / 4;
-      group.add(roof);
+      band.position.y = h * 0.72;
+      group.add(band);
+
+      if (sil.roof === "flat") {
+        const roof = new THREE.Mesh(
+          new THREE.BoxGeometry(bodyW + 0.6, 0.45, 9.6),
+          new THREE.MeshLambertMaterial({ color: color.clone().multiplyScalar(0.5) })
+        );
+        roof.position.y = h + 0.22;
+        group.add(roof);
+      } else if (sil.roof === "dome") {
+        const roof = new THREE.Mesh(
+          new THREE.SphereGeometry(5.5, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2),
+          new THREE.MeshLambertMaterial({ color: color.clone().multiplyScalar(0.55) })
+        );
+        roof.position.y = h;
+        group.add(roof);
+      } else if (sil.roof === "antenna") {
+        const roof = new THREE.Mesh(
+          new THREE.BoxGeometry(9.2, 0.35, 9.2),
+          new THREE.MeshLambertMaterial({ color: color.clone().multiplyScalar(0.45) })
+        );
+        roof.position.y = h + 0.18;
+        group.add(roof);
+        const ant = new THREE.Mesh(
+          new THREE.CylinderGeometry(0.05, 0.12, 2.2, 6),
+          new THREE.MeshLambertMaterial({ color: 0x888899 })
+        );
+        ant.position.set(0, h + 1.3, 0);
+        group.add(ant);
+      } else if (sil.roof === "arch") {
+        const roof = new THREE.Mesh(
+          new THREE.BoxGeometry(9, 0.3, 9),
+          new THREE.MeshLambertMaterial({ color: color.clone().multiplyScalar(0.5) })
+        );
+        roof.position.y = h + 0.15;
+        group.add(roof);
+      } else {
+        const roof = new THREE.Mesh(
+          new THREE.ConeGeometry(7.2, 3, 4),
+          new THREE.MeshLambertMaterial({ color: color.clone().multiplyScalar(0.55) })
+        );
+        roof.position.y = h + 1.5;
+        roof.rotation.y = Math.PI / 4;
+        group.add(roof);
+      }
 
       if (golden) {
         const trim = new THREE.Mesh(
@@ -199,12 +251,16 @@ import * as THREE from "three";
         group.add(trim);
       }
 
+      addWindows(group, h, trimColor);
+
       const door = new THREE.Mesh(
-        new THREE.PlaneGeometry(2.6, 3.4),
-        new THREE.MeshBasicMaterial({ color: 0x120a1e })
+        new THREE.PlaneGeometry(isVault ? 0.1 : 2.6, isVault ? 0.1 : 3.4),
+        new THREE.MeshBasicMaterial({ color: 0x120a1e, visible: !isVault })
       );
       door.position.set(0, 1.7, 4.51);
       group.add(door);
+
+      decorateRoom(room.id, group, h, color);
 
       const label = textSprite(`${room.icon} ${room.label}`);
       label.position.y = h + 5;
@@ -280,11 +336,11 @@ import * as THREE from "three";
     scene.add(player);
 
     const playerPos = new THREE.Vector3(0, 0, 70);
-    let camYaw = 0; // camera south of player, looking toward campus center
-    let camPitch = 0.42;
-    let camDist = 10;
+    let playerYaw = 0;
+    let camDist = CAM_DIST;
     const camPos = new THREE.Vector3(0, 40, 140);
     const camTarget = new THREE.Vector3();
+    const camDesired = new THREE.Vector3();
 
     // --- interaction / game-state glue -------------------------------------------
     const promptEl = document.getElementById("worldPrompt");
@@ -311,6 +367,8 @@ import * as THREE from "three";
       for (const v of visited) {
         if ((neighborsOf[v] || []).includes(roomId)) return "neighbor";
       }
+      const exitNode = bridge.resolveEntryNode?.(roomId, pendingTarget);
+      if (exitNode && bridge.mapIdFor(exitNode) === roomId) return "exit";
       return null;
     }
 
@@ -318,7 +376,14 @@ import * as THREE from "three";
       roam = on;
       document.body.classList.toggle("tt-roam", on);
       hintEl?.classList.toggle("dw-hidden", !on);
-      if (!on) hidePrompt();
+      if (on) {
+        const ae = document.activeElement;
+        if (ae && ae !== document.body && ae !== document.documentElement) {
+          ae.blur();
+        }
+      } else {
+        hidePrompt();
+      }
       updateObjective();
     }
 
@@ -337,7 +402,7 @@ import * as THREE from "three";
     }
 
     function showPrompt(text) {
-      if (!promptEl) return;
+      if (!promptEl || !promptText) return;
       promptText.textContent = text;
       promptEl.classList.remove("dw-hidden");
     }
@@ -358,16 +423,28 @@ import * as THREE from "three";
       const away = b.doorWorld.clone().sub(b.group.position).normalize();
       playerPos.copy(b.doorWorld).addScaledVector(away, 2.2);
       playerPos.y = 0;
-      camYaw = Math.atan2(-playerPos.x, -playerPos.z) + Math.PI;
+      playerYaw = Math.atan2(
+        b.group.position.x - playerPos.x,
+        b.group.position.z - playerPos.z
+      );
+      player.rotation.y = playerYaw;
       playerRoom = roomId;
     }
 
     function enterRoom(roomId) {
-      const nodeId = pendingTarget?.roomId === roomId ? pendingTarget.nodeId : roomId;
+      const nodeId = bridge.resolveEntryNode?.(roomId, pendingTarget)
+        || (pendingTarget?.roomId === roomId ? pendingTarget.nodeId : roomId);
+      if (!window.TechTrailStory?.STORY?.[nodeId]) {
+        console.error("[GTG] 3D enter: unknown story node", nodeId, "for room", roomId);
+        showPrompt("That door is not ready yet — check your mission.");
+        return;
+      }
       pendingTarget = null;
       beacon.visible = false;
       setRoam(false);
-      bridge.navigate(nodeId, { direct: true, skipRhythm: true });
+      promptAction = null;
+      hidePrompt();
+      bridge.navigate(nodeId, { direct: true, skipRhythm: true, fromWorld: true });
     }
 
     window.__gtgWorld3D.requestWalkTo = (nodeId, roomId) => {
@@ -396,10 +473,13 @@ import * as THREE from "three";
     function refreshRings() {
       const visited = visitedSet();
       const completed = completedSet();
+      const completedRooms = new Set(
+        [...completed].map((nodeId) => bridge.mapIdFor(nodeId))
+      );
       buildings.forEach((b, roomId) => {
         b.ringMat.opacity = 0.85;
         if (pendingTarget?.roomId === roomId) b.ringMat.color.set(0xffd54a);
-        else if (completed.has(roomId)) b.ringMat.color.set(0x2dd4bf);
+        else if (completedRooms.has(roomId)) b.ringMat.color.set(0x2dd4bf);
         else if (visited.has(roomId)) b.ringMat.color.set(0x1f8f83);
         else if (enterable(roomId)) b.ringMat.color.set(0xb98a1e);
         else b.ringMat.color.set(0x4a3d63);
@@ -457,49 +537,33 @@ import * as THREE from "three";
     const mapOpen = () => !document.getElementById("campusMap")?.classList.contains("dw-hidden");
 
     window.addEventListener("keydown", (e) => {
-      if (!roam || typingFocused() || bridge.isOverlayOpen() || mapOpen()) return;
       const k = e.key.toLowerCase();
+      if (k === "e" && roam && promptAction && !bridge.isOverlayOpen() && !mapOpen()) {
+        e.preventDefault();
+        promptAction();
+        return;
+      }
+      if (!roam || typingFocused() || bridge.isOverlayOpen() || mapOpen()) return;
       if (["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright", "shift"].includes(k)) {
         keys.add(k);
         e.preventDefault();
-      }
-      if (k === "e" && promptAction) {
-        e.preventDefault();
-        promptAction();
       }
     });
     window.addEventListener("keyup", (e) => keys.delete(e.key.toLowerCase()));
     window.addEventListener("blur", () => keys.clear());
 
-    // Click-drag orbit (mouse), wheel zoom.
-    let dragging = false;
-    let lastPX = 0;
-    let lastPY = 0;
-    renderer.domElement.addEventListener("pointerdown", (e) => {
-      if (e.pointerType === "touch") return;
-      dragging = true;
-      lastPX = e.clientX;
-      lastPY = e.clientY;
-    });
-    window.addEventListener("pointerup", () => { dragging = false; });
-    window.addEventListener("pointermove", (e) => {
-      if (!dragging || e.pointerType === "touch") return;
-      camYaw -= (e.clientX - lastPX) * 0.005;
-      camPitch = Math.min(1.15, Math.max(0.12, camPitch + (e.clientY - lastPY) * 0.004));
-      lastPX = e.clientX;
-      lastPY = e.clientY;
-    });
     renderer.domElement.addEventListener("wheel", (e) => {
       if (!roam) return;
-      camDist = Math.min(16, Math.max(6, camDist + e.deltaY * 0.01));
+      camDist = Math.min(14, Math.max(5.5, camDist + e.deltaY * 0.01));
     }, { passive: true });
 
-    // Touch: left half = joystick, right half = orbit drag.
+    // Touch: left half = move, right half = turn.
     let joyId = null;
     const joyStart = { x: 0, y: 0 };
     const joyVec = { x: 0, y: 0 };
-    let orbitId = null;
-    const orbitLast = { x: 0, y: 0 };
+    let turnId = null;
+    const turnLast = { x: 0, y: 0 };
+    let turnDelta = 0;
     renderer.domElement.addEventListener("touchstart", (e) => {
       if (!roam) return;
       for (const t of e.changedTouches) {
@@ -507,10 +571,9 @@ import * as THREE from "three";
           joyId = t.identifier;
           joyStart.x = t.clientX;
           joyStart.y = t.clientY;
-        } else if (orbitId === null) {
-          orbitId = t.identifier;
-          orbitLast.x = t.clientX;
-          orbitLast.y = t.clientY;
+        } else if (turnId === null) {
+          turnId = t.identifier;
+          turnLast.x = t.clientX;
         }
       }
     }, { passive: true });
@@ -519,18 +582,16 @@ import * as THREE from "three";
         if (t.identifier === joyId) {
           joyVec.x = Math.max(-1, Math.min(1, (t.clientX - joyStart.x) / 60));
           joyVec.y = Math.max(-1, Math.min(1, (t.clientY - joyStart.y) / 60));
-        } else if (t.identifier === orbitId) {
-          camYaw -= (t.clientX - orbitLast.x) * 0.006;
-          camPitch = Math.min(1.15, Math.max(0.12, camPitch + (t.clientY - orbitLast.y) * 0.005));
-          orbitLast.x = t.clientX;
-          orbitLast.y = t.clientY;
+        } else if (t.identifier === turnId) {
+          turnDelta += (t.clientX - turnLast.x) * 0.004;
+          turnLast.x = t.clientX;
         }
       }
     }, { passive: true });
     const endTouch = (e) => {
       for (const t of e.changedTouches) {
         if (t.identifier === joyId) { joyId = null; joyVec.x = 0; joyVec.y = 0; }
-        if (t.identifier === orbitId) orbitId = null;
+        if (t.identifier === turnId) turnId = null;
       }
     };
     renderer.domElement.addEventListener("touchend", endTouch, { passive: true });
@@ -538,26 +599,31 @@ import * as THREE from "three";
 
     // --- movement & collision --------------------------------------------------------
     function movePlayer(dt) {
-      let ix = 0;
-      let iz = 0;
-      if (keys.has("w") || keys.has("arrowup")) iz -= 1;
-      if (keys.has("s") || keys.has("arrowdown")) iz += 1;
-      if (keys.has("a") || keys.has("arrowleft")) ix -= 1;
-      if (keys.has("d") || keys.has("arrowright")) ix += 1;
-      ix += joyVec.x;
-      iz += joyVec.y;
-      const mag = Math.hypot(ix, iz);
-      if (mag < 0.05) {
+      if (keys.has("a") || keys.has("arrowleft")) playerYaw += TURN_SPEED * dt;
+      if (keys.has("d") || keys.has("arrowright")) playerYaw -= TURN_SPEED * dt;
+      if (turnDelta) {
+        playerYaw -= turnDelta;
+        turnDelta = 0;
+      }
+
+      let forward = 0;
+      let strafe = 0;
+      if (keys.has("w") || keys.has("arrowup")) forward -= 1;
+      if (keys.has("s") || keys.has("arrowdown")) forward += 1;
+      strafe += joyVec.x;
+      forward += joyVec.y;
+
+      const sin = Math.sin(playerYaw);
+      const cos = Math.cos(playerYaw);
+      const speed = keys.has("shift") ? RUN_SPEED : WALK_SPEED;
+      const dx = (forward * sin + strafe * cos) * speed * dt;
+      const dz = (forward * cos - strafe * sin) * speed * dt;
+      const mag = Math.hypot(dx, dz);
+      if (mag < 0.0005) {
         playerBody.position.y = 1.05;
+        player.rotation.y = playerYaw;
         return;
       }
-      ix /= Math.max(1, mag);
-      iz /= Math.max(1, mag);
-      const speed = keys.has("shift") ? RUN_SPEED : WALK_SPEED;
-      const sin = Math.sin(camYaw);
-      const cos = Math.cos(camYaw);
-      const dx = (ix * cos + iz * sin) * speed * dt;
-      const dz = (iz * cos - ix * sin) * speed * dt;
       playerPos.x += dx;
       playerPos.z += dz;
       playerPos.x = Math.max(-WORLD_HALF_X - 6, Math.min(WORLD_HALF_X + 6, playerPos.x));
@@ -581,7 +647,7 @@ import * as THREE from "three";
         }
       });
 
-      player.rotation.y = Math.atan2(dx, dz);
+      player.rotation.y = playerYaw;
       if (!reducedMotion()) {
         playerBody.position.y = 1.05 + Math.abs(Math.sin(performance.now() * 0.012)) * 0.12;
       }
@@ -635,22 +701,24 @@ import * as THREE from "three";
     // --- camera --------------------------------------------------------------------------
     function updateCamera(dt) {
       const map = mapOpen();
-      let desired;
       if (map) {
-        desired = new THREE.Vector3(0, 130, 155);
+        camDesired.set(0, 130, 155);
         camTarget.lerp(new THREE.Vector3(0, 0, 0), Math.min(1, dt * 3));
       } else {
         const still = reducedMotion();
-        const bob = still ? 0 : Math.sin(performance.now() * 0.0011) * 0.15;
-        const off = new THREE.Vector3(
-          Math.sin(camYaw) * Math.cos(camPitch),
-          Math.sin(camPitch),
-          Math.cos(camYaw) * Math.cos(camPitch)
-        ).multiplyScalar(camDist);
-        desired = playerPos.clone().add(off).add(new THREE.Vector3(0, 2.4 + bob, 0));
-        camTarget.lerp(playerPos.clone().add(new THREE.Vector3(0, 2, 0)), Math.min(1, dt * 6));
+        const bob = still ? 0 : Math.sin(performance.now() * 0.0011) * 0.12;
+        const backX = -Math.sin(playerYaw) * camDist;
+        const backZ = -Math.cos(playerYaw) * camDist;
+        camDesired.set(
+          playerPos.x + backX,
+          CAM_HEIGHT + bob,
+          playerPos.z + backZ
+        );
+        const lookX = playerPos.x + Math.sin(playerYaw) * 3;
+        const lookZ = playerPos.z + Math.cos(playerYaw) * 3;
+        camTarget.lerp(new THREE.Vector3(lookX, 1.8 + bob, lookZ), Math.min(1, dt * 10));
       }
-      camPos.lerp(desired, Math.min(1, dt * (map ? 1.6 : 8)));
+      camPos.lerp(camDesired, Math.min(1, dt * (map ? 1.6 : 9)));
       camera.position.copy(camPos);
       camera.lookAt(camTarget);
     }
@@ -719,5 +787,17 @@ import * as THREE from "three";
     console.error("[GTG] 3D world failed to start; falling back to flat mode.", err);
     document.body.classList.add("tt-flat");
     if (window.__gtgWorld3D) window.__gtgWorld3D.active = false;
+  }
+
+  if (!window.__gtgWorld3D?.requestWalkTo) {
+    window.addEventListener("load", () => {
+      if (window.__gtgWorld3D?.requestWalkTo || !window.TechTrailWorld) return;
+      try {
+        boot();
+      } catch (err) {
+        console.error("[GTG] 3D world retry failed.", err);
+        document.body.classList.add("tt-flat");
+      }
+    }, { once: true });
   }
 })();
