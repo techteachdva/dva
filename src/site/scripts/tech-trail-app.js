@@ -900,6 +900,9 @@
       callback?.();
       return;
     }
+    // Warm-up must live outside #gameView — that section is hidden on the title screen.
+    const shell = document.querySelector(".dw-shell.tt-shell");
+    if (shell && gate.parentElement !== shell) shell.appendChild(gate);
     const tip = Pedagogy.buildAdaptiveTip(
       { counts: ped.errorTotals },
       null

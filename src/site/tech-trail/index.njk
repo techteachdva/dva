@@ -45,8 +45,8 @@ layout: false
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/styles/write-platform.css?v=gtg58" />
-    <link rel="stylesheet" href="/styles/custom-style.css?v=gtg58" />
+    <link rel="stylesheet" href="/styles/write-platform.css?v=gtg59" />
+    <link rel="stylesheet" href="/styles/custom-style.css?v=gtg59" />
   </head>
   <body class="dw-body wp-theme--gauntlet tt-game-body">
     <div class="dw-shell tt-shell">
@@ -217,6 +217,21 @@ layout: false
               <div id="diagnosticPedagogyFeedback" class="tt-pedagogy-feedback dw-hidden" aria-live="polite"></div>
             </div>
             <p id="diagnosticStatus" class="tt-diagnostic__status dw-muted dw-tiny"></p>
+          </div>
+        </div>
+
+        <div id="warmupGate" class="tt-warmup dw-hidden" role="dialog" aria-modal="true" aria-labelledby="warmupTitle" aria-hidden="true">
+          <div class="tt-warmup__panel tt-typing-panel">
+            <p class="tt-warmup__kicker">Micro-session · deliberate practice</p>
+            <h2 id="warmupTitle" class="tt-warmup__title">Typing warm-up</h2>
+            <p id="warmupTip" class="tt-pedagogy-tip"></p>
+            <p id="warmupProgress" class="tt-warmup__progress">Phrase 1 of 3</p>
+            <div id="warmupGhost" class="tt-ghost-prompt"></div>
+            <input id="warmupInput" class="tt-typing-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Type the phrase…" />
+            <div id="warmupTyped" class="tt-typed-display" aria-live="polite"></div>
+            <div class="tt-warmup__actions">
+              <button id="warmupSkipBtn" class="tt-launch-link-btn" type="button">Skip warm-up</button>
+            </div>
           </div>
         </div>
 
@@ -443,21 +458,6 @@ layout: false
               <div class="tt-chat-mission__actions">
                 <button id="chatMissionSubmitBtn" class="tt-cta-btn tt-cta-btn--sm" type="button">Send message</button>
                 <button id="chatMissionSkipBtn" class="tt-launch-link-btn" type="button">Skip briefing</button>
-              </div>
-            </div>
-          </div>
-
-          <div id="warmupGate" class="tt-warmup dw-hidden" role="dialog" aria-modal="true" aria-labelledby="warmupTitle" aria-hidden="true">
-            <div class="tt-warmup__panel tt-typing-panel">
-              <p class="tt-warmup__kicker">Micro-session · deliberate practice</p>
-              <h2 id="warmupTitle" class="tt-warmup__title">Typing warm-up</h2>
-              <p id="warmupTip" class="tt-pedagogy-tip"></p>
-              <p id="warmupProgress" class="tt-warmup__progress">Phrase 1 of 3</p>
-              <div id="warmupGhost" class="tt-ghost-prompt"></div>
-              <input id="warmupInput" class="tt-typing-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Type the phrase…" />
-              <div id="warmupTyped" class="tt-typed-display" aria-live="polite"></div>
-              <div class="tt-warmup__actions">
-                <button id="warmupSkipBtn" class="tt-launch-link-btn" type="button">Skip warm-up</button>
               </div>
             </div>
           </div>
