@@ -672,37 +672,11 @@
     const content = document.querySelector(".tt-title-screen__content");
     const titleView = document.getElementById("titleView");
     if (!content || !titleView?.classList.contains("tt-view--active")) return;
-
+    // Full-width dashboard — never scale (transform caused side letterboxing).
     content.style.transform = "";
     content.style.width = "";
-
-    const available = titleView.clientHeight;
-    if (available <= 0) return;
-
-    const prevRows = content.style.gridTemplateRows;
-    const prevAutoRows = content.style.gridAutoRows;
-    content.style.gridTemplateRows = "none";
-    content.style.gridAutoRows = "auto";
-    const needed = content.scrollHeight;
-    content.style.gridTemplateRows = prevRows;
-    content.style.gridAutoRows = prevAutoRows;
-
-    const footer = content.querySelector(".tt-title-footer");
-    const footerBottom = footer?.getBoundingClientRect().bottom ?? 0;
-    const viewBottom = titleView.getBoundingClientRect().bottom;
-    const clipped = footer && footerBottom > viewBottom + 1;
-    const naturalOverflow = needed > available + 2;
-
-    if ((naturalOverflow || clipped) && available > 0) {
-      const overflowPx = clipped
-        ? Math.max(0, footerBottom - viewBottom)
-        : Math.max(0, needed - available);
-      const basis = clipped ? available + overflowPx : needed;
-      const scale = Math.max(0.68, Math.min(1, available / basis));
-      content.style.transform = `scale(${scale})`;
-      content.style.transformOrigin = "top center";
-      content.style.width = `${100 / scale}%`;
-    }
+    content.style.gridTemplateRows = "";
+    content.style.gridAutoRows = "";
   }
 
   function openDiagnosticForLaunch(onComplete) {

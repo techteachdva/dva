@@ -8466,6 +8466,16 @@ html:has(.tt-game-body #gameView:not(.dw-hidden)) {
   pointer-events: none;
 }
 
+.wp-theme--gauntlet #titleView.tt-title-screen {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  width: 100% !important;
+  margin-top: 0 !important;
+  min-height: 0 !important;
+}
+
 .wp-theme--gauntlet .tt-title-screen {
   position: relative;
   z-index: 2;
@@ -8476,8 +8486,8 @@ html:has(.tt-game-body #gameView:not(.dw-hidden)) {
   margin-top: 0;
   border-radius: 0;
   overflow: hidden;
-  align-items: stretch;
-  justify-content: flex-start;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
 }
 
 .wp-theme--gauntlet .tt-main {
@@ -8492,20 +8502,22 @@ html:has(.tt-game-body #gameView:not(.dw-hidden)) {
   position: relative;
   z-index: 2;
   flex: 1;
-  max-width: min(1400px, 99vw);
-  width: 100%;
+  align-self: stretch;
+  max-width: none !important;
+  width: 100% !important;
   height: 100%;
   max-height: 100%;
   min-height: 0;
   overflow: hidden;
   overscroll-behavior: none;
-  padding: clamp(4px, 0.8vh, 8px) clamp(10px, 1.4vw, 18px) clamp(4px, 0.6vh, 6px);
-  margin: 0 auto;
+  padding: clamp(4px, 0.8vh, 8px) clamp(16px, 2vw, 32px) clamp(4px, 0.6vh, 6px);
+  margin: 0 !important;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto auto;
-  gap: clamp(3px, 0.5vh, 6px);
-  text-align: left;
+  gap: clamp(2px, 0.4vh, 5px);
+  text-align: left !important;
   font-size: clamp(12px, 1.45vh, 14px);
+  box-sizing: border-box;
 }
 
 .wp-theme--gauntlet .tt-title-hero {
@@ -8533,16 +8545,7 @@ html:has(.tt-game-body #gameView:not(.dw-hidden)) {
 .wp-theme--gauntlet #titleLaunchBar {
   grid-row: 3;
   flex-shrink: 0;
-}
-
-.wp-theme--gauntlet .tt-title-footer {
-  grid-row: 4;
-}
-
-.wp-theme--gauntlet #titleExtras {
-  min-height: 0;
-  overflow: auto;
-  overscroll-behavior: contain;
+  width: 100%;
 }
 
 .wp-theme--gauntlet .tt-title-launch-bar {
@@ -8553,6 +8556,7 @@ html:has(.tt-game-body #gameView:not(.dw-hidden)) {
   min-height: 0;
   flex-shrink: 0;
   padding-top: 2px;
+  width: 100%;
 }
 
 .wp-theme--gauntlet .tt-title-launch-bar .tt-launch-actions {
@@ -8664,6 +8668,7 @@ html:has(.tt-game-body #gameView:not(.dw-hidden)) {
   justify-content: flex-start;
   text-align: left;
   flex-shrink: 0;
+  width: 100%;
 }
 
 .wp-theme--gauntlet .tt-title-hero__text {
@@ -8698,11 +8703,12 @@ html:has(.tt-game-body #gameView:not(.dw-hidden)) {
 
 .wp-theme--gauntlet .tt-title-extras {
   display: grid;
-  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1fr);
-  gap: clamp(6px, 0.9vw, 10px);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(8px, 1.2vw, 14px);
   align-items: stretch;
   min-height: 0;
   overflow: hidden;
+  width: 100%;
 }
 
 .wp-theme--gauntlet .tt-title-controls-row {
@@ -8792,6 +8798,8 @@ html:has(.tt-game-body #gameView:not(.dw-hidden)) {
 }
 
 .wp-theme--gauntlet .tt-title-footer {
+  grid-row: 4;
+  width: 100%;
   flex-shrink: 0;
   display: flex;
   flex-wrap: wrap;
@@ -8801,6 +8809,7 @@ html:has(.tt-game-body #gameView:not(.dw-hidden)) {
   margin-top: 0;
   padding-top: 0;
   min-height: 0;
+  box-sizing: border-box;
 }
 
 .wp-theme--gauntlet .tt-title-footer .tt-profile-mini-wrap {
@@ -8843,6 +8852,20 @@ html:has(.tt-game-body #gameView:not(.dw-hidden)) {
 
 .wp-theme--gauntlet .tt-title-extras__col--rules {
   min-height: 0;
+}
+
+.wp-theme--gauntlet #titleView .tt-golden-preview-wrap {
+  margin: 0;
+  max-width: none;
+  width: 100%;
+}
+
+.wp-theme--gauntlet #titleView .tt-tutorial--compact .tt-tutorial__title {
+  text-align: left;
+}
+
+.wp-theme--gauntlet #titleTypingMenu .tt-ghost-prompt {
+  display: none;
 }
 
 .wp-theme--gauntlet .tt-golden-preview-wrap {
@@ -9403,10 +9426,16 @@ body.tt-warmup-active {
 }
 
 
-/* Compact tutorial accordion */
-.wp-theme--gauntlet .tt-tutorial--compact {
+/* Compact tutorial accordion — title dashboard uses full column width */
+.wp-theme--gauntlet .tt-tutorial--compact:not(#titleTutorial) {
   margin: 0 auto 12px;
   max-width: min(720px, 96vw);
+}
+
+.wp-theme--gauntlet #titleTutorial.tt-tutorial--compact {
+  margin: 0;
+  max-width: none;
+  width: 100%;
 }
 
 .wp-theme--gauntlet .tt-tutorial--compact .tt-tutorial__title {
