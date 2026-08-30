@@ -306,6 +306,12 @@ layout: false
           </div>
 
           <div class="tt-stage" id="sceneStage">
+            <div id="sceneStoryOverlay" class="tt-scene-story-overlay dw-hidden" aria-live="polite">
+              <div class="tt-scene-story-overlay__panel tt-scene-panel"></div>
+            </div>
+            <div id="sceneTypingOverlay" class="tt-scene-typing-overlay dw-hidden" aria-live="polite">
+              <div class="tt-scene-typing-overlay__panel"></div>
+            </div>
             <div class="tt-stage__viewport" id="sceneViewport">
               <div id="worldRoot" class="tt-world" aria-hidden="true"></div>
               <div id="worldPrompt" class="tt-world-prompt dw-hidden">
@@ -348,34 +354,37 @@ layout: false
                 </div>
                 <div id="sceneArrive" class="tt-arrive-sting dw-hidden" aria-hidden="true"></div>
                 <div class="tt-scene-panel" id="scenePanel">
-                  <div class="tt-scene-header">
-                    <div class="tt-character tt-character--hero tt-character--3d" id="sceneCharacter"></div>
-                    <div class="tt-scene-header__meta">
-                      <span class="tt-location-badge" id="sceneLocation">—</span>
-                      <span class="tt-scene-mood" id="sceneMood"></span>
-                      <button id="exitRoomBtn" class="tt-exit-room-btn dw-hidden" type="button" title="Return to campus">🚪 Leave room</button>
-                    </div>
-                  </div>
-                  <p id="sceneJob" class="tt-scene-job dw-hidden"></p>
-                  <p id="mentorIntro" class="tt-mentor-intro dw-hidden"></p>
-                  <div class="tt-scene-split">
-                    <div class="tt-scene-main">
-                      <div class="tt-narrative tt-narrative--reveal" id="sceneNarrative" aria-live="polite" aria-atomic="true"></div>
-                      <button id="narrativeContinueBtn" class="tt-cta-btn tt-cta-btn--sm dw-hidden" type="button">Continue ▶</button>
-                    </div>
-                    <aside id="sceneHolo" class="tt-holo dw-hidden" aria-live="polite">
-                      <div class="tt-holo__frame">
-                        <div class="tt-holo__scan" aria-hidden="true"></div>
-                        <div class="tt-holo__graphic" id="holoGraphic"></div>
-                        <div class="tt-holo__caption">
-                          <p class="tt-holo__kicker">Hologram · the situation</p>
-                          <h3 id="holoTitle" class="tt-holo__title"></h3>
-                          <p id="holoSituation" class="tt-holo__sit"></p>
-                          <p id="holoQuestion" class="tt-holo__q"></p>
-                        </div>
+                  <div id="sceneStoryBlock" class="tt-scene-story-block">
+                    <div class="tt-scene-header">
+                      <div class="tt-character tt-character--hero tt-character--3d" id="sceneCharacter"></div>
+                      <div class="tt-scene-header__meta">
+                        <span class="tt-location-badge" id="sceneLocation">—</span>
+                        <span class="tt-scene-mood" id="sceneMood"></span>
+                        <button id="exitRoomBtn" class="tt-exit-room-btn dw-hidden" type="button" title="Return to campus">🚪 Leave room</button>
                       </div>
-                    </aside>
+                    </div>
+                    <p id="sceneJob" class="tt-scene-job dw-hidden"></p>
+                    <p id="mentorIntro" class="tt-mentor-intro dw-hidden"></p>
+                    <div class="tt-scene-split">
+                      <div class="tt-scene-main">
+                        <div class="tt-narrative tt-narrative--reveal" id="sceneNarrative" aria-live="polite" aria-atomic="true"></div>
+                        <button id="narrativeContinueBtn" class="tt-cta-btn tt-cta-btn--sm dw-hidden" type="button">Continue ▶</button>
+                      </div>
+                      <aside id="sceneHolo" class="tt-holo dw-hidden" aria-live="polite">
+                        <div class="tt-holo__frame">
+                          <div class="tt-holo__scan" aria-hidden="true"></div>
+                          <div class="tt-holo__graphic" id="holoGraphic"></div>
+                          <div class="tt-holo__caption">
+                            <p class="tt-holo__kicker">Hologram · the situation</p>
+                            <h3 id="holoTitle" class="tt-holo__title"></h3>
+                            <p id="holoSituation" class="tt-holo__sit"></p>
+                            <p id="holoQuestion" class="tt-holo__q"></p>
+                          </div>
+                        </div>
+                      </aside>
+                    </div>
                   </div>
+                  <div id="sceneTypingBlock" class="tt-scene-typing-block">
                   <div id="typingChallenge" class="tt-typing-challenge tt-typing-panel dw-hidden">
                     <div class="tt-typing-challenge__header">
                       <span class="tt-typing-challenge__label" id="typingChallengeLabel">✍️ Composition challenge</span>
@@ -423,6 +432,7 @@ layout: false
                     <p id="choiceSpeedHint" class="tt-speed-hint dw-muted dw-tiny"></p>
                   </div>
                   <div class="tt-choices" id="sceneChoices"></div>
+                  </div>
                 </div>
               </div>
             </div>

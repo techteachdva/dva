@@ -12019,36 +12019,165 @@ body.tt-3d .tt-game-layout--immersive .tt-immersive-rail {
 }
 
 body.tt-3d .tt-game-layout--immersive .tt-immersive-rail .tt-scene-panel {
-  flex: 1 1 58%;
-  min-height: 0;
-  max-height: 62%;
+  display: none;
+}
+
+body.tt-3d .tt-game-layout--immersive .tt-stage__room .tt-scene-panel {
+  display: none;
+}
+
+body.tt-3d .tt-game-layout--immersive .tt-scene-typing-block {
   display: flex;
   flex-direction: column;
-  position: relative;
-  z-index: 1;
-  margin: 0;
-  padding: 16px 18px;
-  border-radius: 0;
-  border: none;
-  border-bottom: 1px solid rgba(255, 213, 74, 0.18);
+  gap: 12px;
+  min-height: 0;
+}
+
+/* Center-screen story popup over the 3D stage */
+body.tt-3d .tt-game-layout--immersive .tt-scene-story-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 72;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 28px 24px;
+  pointer-events: none;
+}
+
+body.tt-3d .tt-game-layout--immersive .tt-stage:has(.tt-scene-typing-overlay:not(.dw-hidden)) .tt-scene-story-overlay {
+  padding-bottom: min(46vh, 220px);
+}
+
+body.tt-3d .tt-game-layout--immersive .tt-scene-story-overlay.dw-hidden {
+  display: none;
+}
+
+body.tt-3d .tt-game-layout--immersive .tt-scene-story-overlay__panel {
+  pointer-events: auto;
+  width: min(720px, 94%);
+  max-height: min(82vh, 880px);
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
-  pointer-events: auto;
-  box-shadow: none;
+  margin: 0;
+  padding: 20px 24px;
+  border-radius: 16px;
+  background: rgba(10, 5, 18, 0.94);
+  border: 1px solid rgba(255, 213, 74, 0.35);
+  box-shadow:
+    0 16px 56px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(255, 213, 74, 0.08) inset;
+  backdrop-filter: blur(14px);
   transform: none;
-  background: rgba(10, 5, 18, 0.55);
+}
+
+body.tt-3d .tt-game-layout--immersive .tt-scene-story-overlay .tt-scene-split {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  overflow: visible;
+}
+
+body.tt-3d .tt-game-layout--immersive .tt-scene-story-overlay .tt-scene-main {
+  flex: 1;
+  min-height: 0;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+}
+
+body.tt-3d .tt-game-layout--immersive .tt-scene-story-overlay .tt-narrative {
+  font-size: clamp(17px, 1vw + 15px, 21px);
+  line-height: 1.6;
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: none;
+  overflow: visible;
+}
+
+body.tt-3d .tt-game-layout--immersive .tt-scene-story-overlay .tt-holo {
+  flex-shrink: 0;
+  max-height: none;
+  overflow: visible;
+  font-size: clamp(15px, 0.9vw + 13px, 18px);
+  line-height: 1.45;
+}
+
+body.tt-3d .tt-game-layout--immersive .tt-scene-story-overlay .tt-scene-header {
+  flex-shrink: 0;
+  margin-bottom: 8px;
+}
+
+body.tt-3d .tt-game-layout--immersive .tt-scene-story-overlay .tt-character--hero .tt-character__avatar {
+  width: 80px;
+  min-height: 96px;
+}
+
+/* Bottom typing bar over the 3D stage */
+body.tt-3d .tt-game-layout--immersive .tt-scene-typing-overlay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 74;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0 16px 12px;
+  pointer-events: none;
+}
+
+body.tt-3d .tt-game-layout--immersive .tt-scene-typing-overlay.dw-hidden {
+  display: none;
+}
+
+body.tt-3d .tt-game-layout--immersive .tt-scene-typing-overlay__panel {
+  pointer-events: auto;
+  width: min(960px, 100%);
+  max-height: min(44vh, 440px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  margin: 0;
+  padding: 14px 18px 16px;
+  border-radius: 14px 14px 10px 10px;
+  background: rgba(10, 5, 18, 0.96);
+  border: 1px solid rgba(255, 213, 74, 0.38);
+  box-shadow:
+    0 -8px 40px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(255, 213, 74, 0.08) inset;
+  backdrop-filter: blur(14px);
   font-size: clamp(16px, 0.95vw + 14px, 18px);
+}
+
+body.tt-3d .tt-game-layout--immersive .tt-scene-typing-overlay .tt-textarea {
+  min-height: 5.5rem;
+  max-height: 12rem;
+}
+
+body.tt-3d .tt-game-layout--immersive .tt-scene-typing-overlay .tt-typing-challenge,
+body.tt-3d .tt-game-layout--immersive .tt-scene-typing-overlay .tt-typing-choices,
+body.tt-3d .tt-game-layout--immersive .tt-scene-typing-overlay .tt-choices {
+  margin: 0;
 }
 
 body.tt-3d.tt-roam .tt-game-layout--immersive .tt-immersive-rail .tt-scene-panel {
   display: none;
 }
 
+body.tt-3d.tt-roam .tt-game-layout--immersive .tt-scene-story-overlay,
+body.tt-3d.tt-roam .tt-game-layout--immersive .tt-scene-typing-overlay {
+  display: none !important;
+}
+
 body.tt-3d .tt-game-layout--immersive .tt-sidebar {
   grid-area: unset;
-  flex: 1 1 42%;
-  min-height: 200px;
+  flex: 1 1 auto;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -12121,6 +12250,18 @@ body.tt-3d:not(.tt-roam) .tt-game-layout--immersive .tt-stage__room {
 body.tt-3d .tt-game-layout--immersive .tt-scene-header {
   flex-shrink: 0;
   margin-bottom: 6px;
+}
+
+body.tt-3d .tt-game-layout--immersive .tt-immersive-rail .tt-scene-header,
+body.tt-3d .tt-game-layout--immersive .tt-immersive-rail .tt-scene-split,
+body.tt-3d .tt-game-layout--immersive .tt-immersive-rail .tt-scene-job,
+body.tt-3d .tt-game-layout--immersive .tt-immersive-rail .tt-mentor-intro,
+body.tt-3d .tt-game-layout--immersive .tt-immersive-rail #sceneNarrative,
+body.tt-3d .tt-game-layout--immersive .tt-immersive-rail #sceneHolo,
+body.tt-3d .tt-game-layout--immersive .tt-immersive-rail #narrativeContinueBtn,
+body.tt-3d .tt-game-layout--immersive .tt-stage__room .tt-scene-story-block,
+body.tt-3d .tt-game-layout--immersive .tt-stage__room .tt-scene-typing-block {
+  display: none;
 }
 
 body.tt-3d .tt-game-layout--immersive .tt-character--hero .tt-character__avatar {
@@ -12197,11 +12338,13 @@ body.tt-3d .tt-game-layout--immersive .tt-typing-choice {
   line-height: 1.45;
 }
 
-body.tt-3d .tt-game-layout--immersive .tt-immersive-rail .tt-scene-panel > .tt-choices,
-body.tt-3d .tt-game-layout--immersive .tt-immersive-rail .tt-scene-panel > .tt-typing-choices,
-body.tt-3d .tt-game-layout--immersive .tt-immersive-rail .tt-scene-panel > .tt-typing-challenge,
-body.tt-3d .tt-game-layout--immersive .tt-immersive-rail .tt-scene-panel > #narrativeContinueBtn {
-  margin-top: auto;
+body.tt-3d .tt-game-layout--immersive .tt-immersive-rail .tt-scene-typing-block > .tt-choices,
+body.tt-3d .tt-game-layout--immersive .tt-immersive-rail .tt-scene-typing-block > .tt-typing-choices,
+body.tt-3d .tt-game-layout--immersive .tt-immersive-rail .tt-scene-typing-block > .tt-typing-challenge,
+body.tt-3d .tt-game-layout--immersive .tt-scene-typing-overlay .tt-scene-typing-block > .tt-choices,
+body.tt-3d .tt-game-layout--immersive .tt-scene-typing-overlay .tt-scene-typing-block > .tt-typing-choices,
+body.tt-3d .tt-game-layout--immersive .tt-scene-typing-overlay .tt-scene-typing-block > .tt-typing-challenge {
+  margin-top: 0;
 }
 
 /* Bottom-center world prompts (roam mode) */
@@ -12297,12 +12440,32 @@ body.tt-3d .tt-game-layout--immersive .tt-skip-link {
     box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.35);
   }
 
-  body.tt-3d .tt-game-layout--immersive .tt-immersive-rail .tt-scene-panel {
-    flex: 1.1;
+  body.tt-3d .tt-game-layout--immersive .tt-immersive-rail .tt-sidebar {
+    flex: 1;
+    min-height: 0;
   }
 
-  body.tt-3d .tt-game-layout--immersive .tt-immersive-rail .tt-sidebar {
-    flex: 0.9;
+  body.tt-3d .tt-game-layout--immersive .tt-scene-story-overlay {
+    padding: 12px 14px 16px;
+  }
+
+  body.tt-3d .tt-game-layout--immersive .tt-stage:has(.tt-scene-typing-overlay:not(.dw-hidden)) .tt-scene-story-overlay {
+    padding-bottom: min(42vh, 180px);
+  }
+
+  body.tt-3d .tt-game-layout--immersive .tt-scene-story-overlay__panel {
+    width: min(640px, 96%);
+    max-height: min(52vh, 560px);
+    padding: 16px 18px;
+  }
+
+  body.tt-3d .tt-game-layout--immersive .tt-scene-typing-overlay {
+    padding: 0 10px 8px;
+  }
+
+  body.tt-3d .tt-game-layout--immersive .tt-scene-typing-overlay__panel {
+    max-height: min(38vh, 320px);
+    padding: 12px 14px 14px;
   }
 }
 

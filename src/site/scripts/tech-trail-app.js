@@ -1367,6 +1367,7 @@
         navigate(choice.next, { finishRhythm: choiceFinishesRoom(choice) });
       });
     });
+    syncImmersiveTypingOverlay();
   }
 
   function setupTypingChoices(node, choices) {
@@ -1409,7 +1410,8 @@
     document.getElementById("liveWpmStat")?.classList.remove("dw-hidden");
     const input = document.getElementById("choiceTypingInput");
     setTimeout(() => input?.focus(), prefersReducedMotion ? 0 : 480);
-    wrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    if (!isImmersiveRail()) wrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    syncImmersiveTypingOverlay();
   }
 
   function handleChoiceTypingInput() {
@@ -2434,18 +2436,63 @@
 
   let scenePanelHome = null;
 
+  function isImmersiveRail() {
+    return document.getElementById("gameView")?.classList.contains("tt-game-layout--immersive") ?? false;
+  }
+
+  function syncImmersiveTypingOverlay() {
+    const typingOverlay = document.getElementById("sceneTypingOverlay");
+    if (!typingOverlay || !isImmersiveRail()) return;
+    const challenge = document.getElementById("typingChallenge");
+    const typingChoices = document.getElementById("typingChoices");
+    const sceneChoices = document.getElementById("sceneChoices");
+    const hasChallenge = Boolean(challenge && !challenge.classList.contains("dw-hidden"));
+    const hasTypingChoices = Boolean(typingChoices && !typingChoices.classList.contains("dw-hidden"));
+    const hasClickChoices = Boolean(sceneChoices?.children?.length);
+    typingOverlay.classList.toggle("dw-hidden", !hasChallenge && !hasTypingChoices && !hasClickChoices);
+  }
+
   function mountImmersiveRail() {
     const panel = document.getElementById("scenePanel");
-    const rail = document.querySelector(".tt-immersive-rail");
-    if (!panel || !rail) return;
+    const storyBlock = document.getElementById("sceneStoryBlock");
+    const typingBlock = document.getElementById("sceneTypingBlock");
+    const overlay = document.getElementById("sceneStoryOverlay");
+    const overlayPanel = overlay?.querySelector(".tt-scene-story-overlay__panel");
+    const typingOverlay = document.getElementById("sceneTypingOverlay");
+    const typingPanel = typingOverlay?.querySelector(".tt-scene-typing-overlay__panel");
+    if (!panel || !storyBlock || !typingBlock || !overlay || !overlayPanel || !typingOverlay || !typingPanel) return;
     if (!scenePanelHome) scenePanelHome = panel.parentElement;
-    if (panel.parentElement !== rail) rail.insertBefore(panel, rail.firstChild);
+    if (storyBlock.parentElement !== overlayPanel) overlayPanel.appendChild(storyBlock);
+    overlay.classList.remove("dw-hidden");
+    if (typingBlock.parentElement !== typingPanel) typingPanel.appendChild(typingBlock);
+    syncImmersiveStoryPanelState();
+    syncImmersiveTypingOverlay();
   }
 
   function unmountImmersiveRail() {
     const panel = document.getElementById("scenePanel");
+    const storyBlock = document.getElementById("sceneStoryBlock");
+    const typingBlock = document.getElementById("sceneTypingBlock");
+    const overlay = document.getElementById("sceneStoryOverlay");
+    const typingOverlay = document.getElementById("sceneTypingOverlay");
     if (!panel || !scenePanelHome) return;
+    if (storyBlock && storyBlock.parentElement !== panel) {
+      panel.insertBefore(storyBlock, panel.firstChild);
+    }
+    if (typingBlock && typingBlock.parentElement !== panel) {
+      panel.appendChild(typingBlock);
+    }
+    overlay?.classList.add("dw-hidden");
+    typingOverlay?.classList.add("dw-hidden");
     if (panel.parentElement !== scenePanelHome) scenePanelHome.appendChild(panel);
+  }
+
+  function syncImmersiveStoryPanelState() {
+    const panel = document.getElementById("scenePanel");
+    const overlayPanel = document.querySelector(".tt-scene-story-overlay__panel");
+    if (!panel || !overlayPanel) return;
+    overlayPanel.classList.toggle("tt-scene-panel--waiting", panel.classList.contains("tt-scene-panel--waiting"));
+    overlayPanel.classList.toggle("tt-scene-panel--reveal", panel.classList.contains("tt-scene-panel--reveal"));
   }
 
   function applySceneZone(nodeId) {
@@ -2504,14 +2551,18 @@
 
   function setPanelWaiting(waiting) {
     const panel = document.getElementById("scenePanel");
+    const overlayPanel = document.querySelector(".tt-scene-story-overlay__panel");
     const hudLayers = document.querySelectorAll("#typingChoices, #typingChallenge, #sceneNarrative, #sceneChoices, #narrativeContinueBtn");
     if (!panel) return;
     panel.classList.toggle("tt-scene-panel--waiting", waiting);
     panel.classList.toggle("tt-scene-panel--reveal", !waiting);
+    overlayPanel?.classList.toggle("tt-scene-panel--waiting", waiting);
+    overlayPanel?.classList.toggle("tt-scene-panel--reveal", !waiting);
     hudLayers.forEach((el) => {
       if (!el) return;
       el.classList.toggle("tt-layer--waiting", waiting);
     });
+    syncImmersiveTypingOverlay();
   }
 
   async function playRoomReveal(node, gen) {
@@ -3246,7 +3297,7 @@
       challengeStartTime = 0;
       updateChallengeUnlockUI(typingInput.value, min);
       setTimeout(() => typingInput?.focus(), prefersReducedMotion ? 0 : 420);
-      typingEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      if (!isImmersiveRail()) typingEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
     } else if (node.typingChallenge && isRoomCompleted) {
       typingEl.classList.add("dw-hidden");
       typingPending = null;
@@ -3293,6 +3344,7 @@
       renderEnding(node);
     }
 
+    syncImmersiveTypingOverlay();
     renderJournal();
     renderResearchPanel();
   }
@@ -3535,10 +3587,6 @@
   function sidebarNeedsOverlay() {
     if (document.getElementById("gameView")?.classList.contains("tt-game-layout--immersive")) return false;
     return window.matchMedia("(max-width: 1080px)").matches;
-  }
-
-  function isImmersiveRail() {
-    return document.getElementById("gameView")?.classList.contains("tt-game-layout--immersive") ?? false;
   }
 
   function focusRailSidebar(tab = "log") {
