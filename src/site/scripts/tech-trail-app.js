@@ -642,6 +642,7 @@
       welcome?.classList.remove("dw-hidden");
       extras?.classList.add("dw-hidden");
       typingMenu?.classList.add("dw-hidden");
+      document.getElementById("titleLaunchBar")?.classList.remove("dw-hidden");
       if (startLabel) startLabel.textContent = "Start keystroke test";
       if (startHint) startHint.textContent = "Required before your first mission";
       startBtn?.setAttribute("aria-label", "Begin keystroke test — required for new players");
@@ -649,6 +650,7 @@
       welcome?.classList.add("dw-hidden");
       extras?.classList.remove("dw-hidden");
       typingMenu?.classList.remove("dw-hidden");
+      document.getElementById("titleLaunchBar")?.classList.remove("dw-hidden");
       if (startLabel) startLabel.textContent = hasRun ? "New mission" : "Play mission";
       if (startHint) startHint.textContent = hasRun ? "Fresh run from the start" : "Tap or type ACCEPT MISSION";
       startBtn?.setAttribute("aria-label", hasRun ? "Start a new mission" : "Play mission");
@@ -662,6 +664,23 @@
       startBtn?.classList.remove("dw-hidden");
       continueBtn?.classList.add("dw-hidden");
       newRunBtn?.classList.add("dw-hidden");
+    }
+    fitTitleScreenScale();
+  }
+
+  function fitTitleScreenScale() {
+    const content = document.querySelector(".tt-title-screen__content");
+    const titleView = document.getElementById("titleView");
+    if (!content || !titleView?.classList.contains("tt-view--active")) return;
+    content.style.transform = "";
+    content.style.width = "";
+    const available = titleView.clientHeight;
+    const needed = content.scrollHeight;
+    if (needed > available + 2 && available > 0) {
+      const scale = Math.max(0.72, available / needed);
+      content.style.transform = `scale(${scale})`;
+      content.style.transformOrigin = "top center";
+      content.style.width = `${100 / scale}%`;
     }
   }
 
@@ -1874,6 +1893,12 @@
     }
 
     activeView = name;
+    if (name === "title") {
+      requestAnimationFrame(() => {
+        fitTitleScreenScale();
+        setTimeout(fitTitleScreenScale, 120);
+      });
+    }
   }
 
   function toast(message, type = "info") {
@@ -3443,6 +3468,8 @@ Play again to rebuild your record clean.`;
     updateTypoToleranceUI();
     updateTitleLaunchUI();
     renderTitleTypingMenu();
+    window.addEventListener("resize", fitTitleScreenScale);
+    requestAnimationFrame(fitTitleScreenScale);
 
     document.querySelectorAll(".tt-difficulty__btn").forEach((btn) => {
       btn.addEventListener("click", () => saveDifficulty(btn.dataset.tier));

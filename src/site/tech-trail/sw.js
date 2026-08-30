@@ -1,7 +1,34 @@
 /**
  * Global Tech Gauntlet — service worker with network-first for scripts/styles.
  */
-const CACHE_NAME = "gtg-v50";
+const CACHE_NAME = "gtg-v52";
+
+function isCacheableRequest(request) {
+  try {
+    const url = new URL(request.url);
+    return request.method === "GET" && (url.protocol === "http:" || url.protocol === "https:");
+  } catch {
+    return false;
+  }
+}
+
+function maybeCache(request, response) {
+  if (!isCacheableRequest(request) || !response || response.status !== 200 || response.type !== "basic") {
+    return;
+  }
+  const clone = response.clone();
+  caches.open(CACHE_NAME).then((cache) => cache.put(request, clone).catch(() => {}));
+}
+
+function networkFirst(request) {
+  if (!isCacheableRequest(request)) return fetch(request);
+  return fetch(request)
+    .then((res) => {
+      maybeCache(request, res);
+      return res;
+    })
+    .catch(() => caches.match(request));
+}
 const PRECACHE = [
   "/styles/write-platform.css",
   "/styles/custom-style.css",
@@ -48,18 +75,6 @@ const PRECACHE = [
   "/tech-trail/images/heroes/hero-noble.png",
 ];
 
-function networkFirst(request) {
-  return fetch(request)
-    .then((res) => {
-      if (res && res.status === 200 && res.type === "basic") {
-        const clone = res.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-      }
-      return res;
-    })
-    .catch(() => caches.match(request));
-}
-
 self.addEventListener("install", (e) => {
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE)).catch(() => {})
@@ -76,9 +91,19 @@ self.addEventListener("activate", (e) => {
   self.clients.claim();
 });
 
+self.addEventListener("message", (e) => {
+  if (e.data === "skipWaiting") {
+    self.skipWaiting().then(() => {
+      self.clients.matchAll().then((clients) => {
+        clients.forEach((client) => client.postMessage("reload"));
+      });
+    });
+  }
+});
+
 self.addEventListener("fetch", (e) => {
   const { request } = e;
-  if (request.method !== "GET") return;
+  if (!isCacheableRequest(request)) return;
 
   const url = new URL(request.url);
   if (/\.(mp3|wav|ogg|m4a)$/i.test(url.pathname)) {
@@ -98,9 +123,7 @@ self.addEventListener("fetch", (e) => {
     caches.match(request).then((cached) => {
       if (cached) return cached;
       return fetch(request).then((res) => {
-        if (!res || res.status !== 200 || res.type !== "basic") return res;
-        const clone = res.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
+        maybeCache(request, res);
         return res;
       }).catch(() => cached);
     })

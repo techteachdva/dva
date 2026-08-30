@@ -95,7 +95,9 @@ layout: false
               <div id="goldenRuleDetail" class="tt-golden-rule-detail dw-hidden" aria-live="polite"></div>
             </div>
             </div>
-            <div class="tt-title-extras__col tt-title-extras__col--launch">
+            </div>
+
+            <div class="tt-title-launch-bar" id="titleLaunchBar">
               <div class="tt-launch-actions">
                 <button id="startGameBtn" class="tt-globe-btn tt-globe-btn--primary" type="button" aria-label="Start game">
                   <span class="tt-globe-btn__globe" aria-hidden="true">
@@ -131,7 +133,6 @@ layout: false
                 </div>
                 <div id="titleTypedDisplay" class="tt-typed-display" aria-live="polite"></div>
               </div>
-            </div>
             </div>
 
             <p id="gtgBootError" class="tt-boot-error dw-hidden" role="alert"></p>
@@ -538,6 +539,16 @@ layout: false
     <script src="/scripts/tech-trail-app.js" defer></script>
     <script type="importmap">{"imports":{"three":"/scripts/vendor/three.module.js"}}</script>
     <script type="module" src="/scripts/tech-trail-world3d.js"></script>
-    <script>if('serviceWorker' in navigator)navigator.serviceWorker.register('/tech-trail/sw.js');</script>
+    <script>
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/tech-trail/sw.js', { updateViaCache: 'none' }).then((reg) => {
+          reg.update();
+          if (reg.waiting) reg.waiting.postMessage('skipWaiting');
+        });
+        navigator.serviceWorker.addEventListener('message', (e) => {
+          if (e.data === 'reload') window.location.reload();
+        });
+      }
+    </script>
   </body>
 </html>
