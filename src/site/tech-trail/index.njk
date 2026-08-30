@@ -7,9 +7,10 @@ layout: false
 <html lang="{{ meta.mainLanguage }}">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1,user-scalable=no" />
     <meta name="theme-color" content="#140818" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="mobile-web-app-capable" content="yes" />
     <link rel="preload" as="image" href="/tech-trail/images/scenes/scene-gauntlet-arena.png" fetchpriority="high" />
     <style>
@@ -154,8 +155,8 @@ layout: false
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/styles/write-platform.css?v=gtg74" />
-    <link rel="stylesheet" href="/styles/custom-style.css?v=gtg74" />
+    <link rel="stylesheet" href="/styles/write-platform.css?v=gtg75" />
+    <link rel="stylesheet" href="/styles/custom-style.css?v=gtg75" />
   </head>
   <body class="dw-body wp-theme--gauntlet tt-game-body">
     <div class="dw-shell tt-shell">
@@ -402,6 +403,7 @@ layout: false
               <span class="tt-stat tt-stat--live-wpm dw-hidden" id="liveWpmStat">⚡ <span class="tt-stat__value" id="statLiveWpm">0</span> live keys/min</span>
             </div>
             <div class="tt-fragment-tracker" id="fragmentTracker" title="Data fragments collected" aria-label="Data fragment tracker"></div>
+            <span class="tt-campus-progress" id="campusLinkProgress" title="Rooms on your campus circuit">Campus 0/21</span>
             <p class="tt-you-are-here" id="youAreHere"><span id="youAreHereLabel">Briefing Room</span></p>
             <div class="tt-golden-track" id="goldenRulesTrack" aria-label="Golden Rules progress"></div>
             <button id="inventoryBtn" class="tt-pack-btn" type="button" title="Open mission pack">
@@ -410,6 +412,7 @@ layout: false
             <div class="tt-hud-actions">
               <button id="sidebarToggleBtn" class="tt-hud-btn tt-hud-btn--sidebar" type="button" title="Mission log">📋 Log</button>
               <button id="mapToggleBtn" class="tt-map-btn" type="button" title="Campus overview (Z)" aria-pressed="false">🛰️ Overview <kbd>Z</kbd></button>
+              <button id="fastTravelBtn" class="tt-map-btn" type="button" title="Fast travel to unlocked rooms (T)">🚀 Travel <kbd>T</kbd></button>
               <button id="stillCameraHudBtn" class="tt-mute-btn" type="button" title="Still camera" aria-pressed="true">📷</button>
               <button id="muteToggleBtn" class="tt-mute-btn" type="button" title="Toggle sound">🔊</button>
             </div>
@@ -436,16 +439,38 @@ layout: false
             <div class="tt-stage__viewport" id="sceneViewport">
               <div id="worldRoot" class="tt-world" aria-hidden="true"></div>
               <div id="worldPrompt" class="tt-world-prompt dw-hidden">
-                <kbd>E</kbd> <span id="worldPromptText">Enter</span>
+                <kbd class="tt-world-prompt__key">E</kbd> <span id="worldPromptText">Enter</span>
               </div>
               <div id="worldControlsHint" class="tt-world-controls dw-hidden">
-                <kbd>W</kbd><kbd>S</kbd> move · <kbd>A</kbd><kbd>D</kbd> turn · <kbd>Shift</kbd> run · <kbd>E</kbd> enter room · click heroes to talk
+                <span class="tt-world-controls__desktop"><kbd>W</kbd><kbd>S</kbd> move · <kbd>A</kbd><kbd>D</kbd> turn · <kbd>Shift</kbd> run · <kbd>E</kbd> enter · <kbd>T</kbd> fast travel · <kbd>Z</kbd> map</span>
+                <span class="tt-world-controls__touch dw-hidden">Left side: drag to move · Right side: drag to turn · Tap Enter or 🚪 to go inside · 🛰️ Map · 🚀 Travel in the HUD</span>
+              </div>
+              <div id="worldTouchZones" class="tt-world-touch-zones dw-hidden" aria-hidden="true">
+                <div class="tt-world-touch-zones__move">Drag to move</div>
+                <div class="tt-world-touch-zones__look">Drag to look</div>
+              </div>
+              <div id="worldTouchBar" class="tt-world-touch-bar dw-hidden" aria-label="Campus touch controls">
+                <button type="button" id="worldTouchMapBtn" class="tt-world-touch-bar__btn" title="Campus overview">🛰️</button>
+                <button type="button" id="worldTouchTravelBtn" class="tt-world-touch-bar__btn" title="Fast travel">🚀</button>
+                <button type="button" id="worldTouchEnterBtn" class="tt-world-touch-bar__btn tt-world-touch-bar__btn--enter dw-hidden" title="Enter room">🚪 Enter</button>
+              </div>
+              <div id="fastTravelGate" class="tt-fast-travel dw-hidden" role="dialog" aria-modal="true" aria-labelledby="fastTravelTitle" aria-hidden="true">
+                <div class="tt-fast-travel__panel">
+                  <button id="fastTravelCloseBtn" class="tt-fast-travel__close" type="button" aria-label="Close">×</button>
+                  <h2 id="fastTravelTitle" class="tt-fast-travel__title">🚀 Fast Travel</h2>
+                  <p class="tt-fast-travel__sub">Type a room name to jump there — only unlocked rooms on your circuit.</p>
+                  <div class="tt-fast-travel__row">
+                    <input id="fastTravelInput" class="tt-fast-travel__input" type="text" placeholder="e.g. Design Lab, Data Vault…" autocomplete="off" spellcheck="false" />
+                    <button id="fastTravelGoBtn" class="tt-cta-btn tt-cta-btn--sm" type="button">Go</button>
+                  </div>
+                  <div id="fastTravelList" class="tt-fast-travel__list"></div>
+                </div>
               </div>
               <div id="mapFlyoverHud" class="tt-map-flyover dw-hidden" aria-hidden="true">
                 <div class="tt-map-flyover__bar">
                   <div>
                     <strong class="tt-map-flyover__title">Campus Overview</strong>
-                    <p class="tt-map-flyover__sub">Overhead view — click a labeled floor to travel · click a hero portrait to hear their story</p>
+                    <p class="tt-map-flyover__sub">Overhead view — gold doors are open · locked rooms show 🔒 · click an open floor to travel</p>
                   </div>
                   <button id="mapFlyoverCloseBtn" class="tt-settings-btn" type="button">Close <kbd>Z</kbd></button>
                 </div>
@@ -756,7 +781,7 @@ layout: false
     <script src="/scripts/tech-trail-room-phrases.js"></script>
     <script src="/scripts/tech-trail-rhythm.js"></script>
     <script src="/scripts/tech-trail-minigames.js"></script>
-    <script src="/scripts/tech-trail-app.js?v=gtg74" defer></script>
+    <script src="/scripts/tech-trail-app.js?v=gtg75" defer></script>
     <script type="importmap">{"imports":{"three":"/scripts/vendor/three.module.js"}}</script>
     <script type="module" src="/scripts/tech-trail-world3d.js"></script>
     <script>

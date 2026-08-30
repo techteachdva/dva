@@ -134,6 +134,9 @@
     },
   };
 
+  /** Minimum Golden Rules to reach Final Trial on the speed-run path (after Crawford debrief). */
+  const MIN_GOLDEN_FOR_SPEEDRUN = 3;
+
   /** Golden Rule spine. Always offered as the “main quest.” Side missions scramble around it. */
   const GOLDEN_SPINE = [
     { rule: 1, next: "design_lab", typeText: "Design Lab", label: "Sprint to the Design Lab. They built the wrong thing" },
@@ -159,9 +162,11 @@
       enter: "Doors hiss. Coffee. Hot metal. Five alarms at once.",
       job: "Pick a room. Recover all five Golden Rules of digital citizenship.",
       conflict: { graphic: "alarms", title: "Five alarms at once", situation: "Five screens line the wall. A locker leak. A viral lie. An app shipping Friday whether it works. Five screens, five alarms, five paths. Each one guards a Golden Rule.", question: "Which door do you take first?" },
-      narrative: `Mr. Phil snaps a badge onto your jacket. The hologram over the table is a campus map. Same one you can open anytime with <strong>Z</strong>.
+      narrative: `Mr. Phil snaps a badge onto your jacket. The hologram over the table is a campus map. Same one you can open anytime with <strong>Z</strong>. Type a room name with <strong>T</strong> to fast-travel once it's on your circuit.
 
 "Welcome to the Gauntlet. The <strong>Golden Rules of Digital Citizenship</strong> didn't vanish. People stopped using them. Each room has a mentor, a live conflict on the hologram, and a solution you type."
+
+"Five doors branch from this Briefing Room. Pick <strong>one path first</strong>. Clear a room and the campus circuit links to its neighbors. Branch out, connect the map, then find Crawford's Bureau to wire the Arena."
 
 Ada Lovelace flickers onto the main screen. "Wrong turns cost you. Three strikes and you're pulled off the mission. Pick a door. Think on your feet."`,
       choicePrefix: "I sprint to the",
@@ -413,7 +418,9 @@ Katherine Johnson waves from a NASA sim upstairs. A fake quote is already trendi
       enter: "Conway's Game of Life ripples across the wall. Tiny rules, huge messes.",
       narrative: `John Conway leans in as patterns bloom behind you. "Small rule changes, giant outcomes. Same as a group chat."
 
-Campbell's voice hits the intercom from the Collaboration Bridge: someone is getting iced out of a shared doc. Mr. Phil adds, "If you've got enough Rules, the Arena will take you. If not. Keep hunting."`,
+A circuit trace lights on the wall — Crawford's Bureau now links straight to the <strong>Final Trial Arena</strong>. Completing this debrief wired the last hop.
+
+Campbell's voice hits the intercom from the Collaboration Bridge: someone is getting iced out of a shared doc. Mr. Phil adds, "The Arena is live once you've recovered at least three Golden Rules and finished this debrief. Or keep branching — link every room before you swear the oath."`,
       badge: "Reflector",
       choicePrefix: "I head to the",
       choices: [
@@ -725,7 +732,7 @@ You DM the excluded person. They appreciate it. But the roast keeps going. Campb
       lesson: "8.1.3.3",
       narrative: `"Misattributed," Johnson says. "Close one. Trending and true are not the same word."
 
-You can loop to briefing for a fresh mission. Or take the Arena if you've earned enough Rules.`,
+You can loop to briefing for a fresh mission. Or take the Arena if you've recovered at least three Golden Rules and finished Crawford's debrief.`,
       badge: "Precision Thinker",
       choicePrefix: "I will",
       choices: [
@@ -1856,5 +1863,5 @@ Play again. The side missions scramble. The Rules don't.`,
     },
   };
 
-  window.TechTrailStory = { STORY, CHARACTERS, START_MISSIONS, GOLDEN_SPINE };
+  window.TechTrailStory = { STORY, CHARACTERS, START_MISSIONS, GOLDEN_SPINE, MIN_GOLDEN_FOR_SPEEDRUN };
 })();

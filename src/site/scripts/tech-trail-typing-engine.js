@@ -24,6 +24,23 @@
   const MAX_TARGET_CPM = 95;
   /** Minimum ms per counted keystroke when measuring speed (prevents burst inflation) */
   const MIN_MS_PER_KEY = 320;
+  /** Choice paths this short (e.g. "Design Lab") cannot sustain a CPM sample — accuracy only. */
+  const SHORT_PATH_MAX_CHARS = 24;
+
+  function isShortTranscriptionPath(target, maxLen = SHORT_PATH_MAX_CHARS) {
+    return normalize(target).length <= maxLen;
+  }
+
+  /** Scale speed gate down for short targets; returns 0 to waive the gate entirely. */
+  function scaledSpeedGateRatio(speedGate, targetLength, maxLen = SHORT_PATH_MAX_CHARS) {
+    const len = Math.max(0, targetLength || 0);
+    if (len <= maxLen) return 0;
+    const rampStart = maxLen;
+    const rampEnd = 48;
+    if (len >= rampEnd) return speedGate ?? 0.85;
+    const t = (len - rampStart) / (rampEnd - rampStart);
+    return (speedGate ?? 0.85) * t;
+  }
 
   /** Correct keystrokes per minute — only characters that match the target (spellcheck-valid). */
   function computeCpm(correctCharCount, durationMs, options = {}) {
@@ -262,7 +279,7 @@
   }
 
   function meetsSpeedGate(cpm, targetCpm, ratio = 0.85) {
-    if (!targetCpm || targetCpm <= 0) return true;
+    if (!targetCpm || targetCpm <= 0 || ratio <= 0) return true;
     return cpm >= targetCpm * ratio;
   }
 
@@ -338,6 +355,7 @@
     MAX_TEST_CPM,
     MAX_TARGET_CPM,
     MIN_MS_PER_KEY,
+    SHORT_PATH_MAX_CHARS,
     normalize,
     deriveTypeText,
     choiceTypeText,
@@ -356,6 +374,8 @@
     exceedsTypoBudget,
     isChoiceComplete,
     meetsSpeedGate,
+    isShortTranscriptionPath,
+    scaledSpeedGateRatio,
     estimateTextAccuracy,
     evaluateChallengeUnlock,
     classifyErrors,

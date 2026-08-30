@@ -10,8 +10,8 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture, FLOOR_PALETTES } fr
 (() => {
   const WORLD_HALF_X = 88;
   const WORLD_HALF_Z = 80;
-  const WALK_SPEED = 11;
-  const RUN_SPEED = 19;
+  const WALK_SPEED = 14;
+  const RUN_SPEED = 24;
   const TURN_SPEED = 3.1;
   const DOOR_REACH = 3.4;
   const PLAYER_RADIUS = 0.55;
@@ -287,14 +287,19 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture, FLOOR_PALETTES } fr
       return;
     }
 
-    window.__gtgWorld3D = { active: true, ready: false, requestWalkTo: null, enterRoom: null, resize: null };
+    window.__gtgWorld3D = { active: true, ready: false, requestWalkTo: null, enterRoom: null, resize: null, triggerEnter: null };
+
+    const mobileGpu =
+      window.matchMedia("(pointer: coarse)").matches
+      || window.matchMedia("(hover: none)").matches
+      || window.innerWidth < 900;
 
     // --- renderer / scene basics -------------------------------------------------
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobileGpu ? 1.25 : 1.5));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.08;
-    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.enabled = !mobileGpu;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     root.appendChild(renderer.domElement);
     renderer.domElement.classList.add("tt-world__canvas");
@@ -313,8 +318,12 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture, FLOOR_PALETTES } fr
     scene.add(hemi);
     const sun = new THREE.DirectionalLight(0xffe4b8, 1.15);
     sun.position.set(55, 85, 35);
-    sun.castShadow = true;
-    sun.shadow.mapSize.set(1024, 1024);
+    sun.castShadow = !mobileGpu;
+    if (sun.castShadow) {
+      sun.shadow.mapSize.set(mobileGpu ? 512 : 1024, mobileGpu ? 512 : 1024);
+    } else {
+      sun.shadow.mapSize.set(1024, 1024);
+    }
     sun.shadow.camera.near = 20;
     sun.shadow.camera.far = 220;
     sun.shadow.camera.left = -95;
@@ -662,7 +671,19 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture, FLOOR_PALETTES } fr
     // --- interaction / game-state glue -------------------------------------------
     const promptEl = document.getElementById("worldPrompt");
     const promptText = document.getElementById("worldPromptText");
+    const promptKey = promptEl?.querySelector(".tt-world-prompt__key, kbd");
     const hintEl = document.getElementById("worldControlsHint");
+    const touchBar = document.getElementById("worldTouchBar");
+    const touchZones = document.getElementById("worldTouchZones");
+    const touchEnterBtn = document.getElementById("worldTouchEnterBtn");
+    const touchMode = () => document.body.classList.contains("tt-touch-mode");
+
+    function syncTouchRoamUi(on) {
+      if (!touchMode()) return;
+      touchBar?.classList.toggle("dw-hidden", !on);
+      touchZones?.classList.toggle("dw-hidden", !on);
+      if (!on) touchEnterBtn?.classList.add("dw-hidden");
+    }
 
     const objectiveEl = document.createElement("div");
     objectiveEl.id = "worldObjective";
@@ -675,7 +696,12 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture, FLOOR_PALETTES } fr
     let gameEverShown = false;
 
     const visitedSet = () => new Set(bridge.getRunState().visitedRooms);
+    const unlockedSet = () => new Set(bridge.getRunState().unlockedRooms || ["start"]);
     const completedSet = () => new Set(bridge.getRunState().completedRooms);
+
+    function roomUnlocked(roomId) {
+      return bridge.isRoomUnlocked?.(roomId) ?? unlockedSet().has(roomId);
+    }
 
     function movementBlocked() {
       if (mapOpen()) return true;
@@ -688,8 +714,10 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture, FLOOR_PALETTES } fr
 
     function enterable(roomId) {
       if (!Visuals.MAP_ROOMS[roomId]) return null;
+      if (!roomUnlocked(roomId)) return null;
       if (pendingTarget?.roomId === roomId) return "target";
-      return "visited";
+      if (visitedSet().has(roomId)) return "visited";
+      return "unlocked";
     }
 
     function setRoam(on) {
@@ -697,6 +725,7 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture, FLOOR_PALETTES } fr
       document.body.classList.toggle("tt-roam", on);
       document.body.classList.toggle("tt-in-room", !on);
       hintEl?.classList.toggle("dw-hidden", !on);
+      syncTouchRoamUi(on);
       if (on) {
         const ae = document.activeElement;
         if (ae && ae !== document.body && ae !== document.documentElement) {
@@ -718,7 +747,10 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture, FLOOR_PALETTES } fr
         objectiveEl.textContent = `➤ Next: ${room?.icon || ""} ${room?.label || pendingTarget.roomId}`;
         objectiveEl.classList.remove("dw-hidden");
       } else if (roam) {
-        objectiveEl.textContent = "Explore the campus — gold-ring doors are open";
+        const open = [...unlockedSet()].filter((id) => id !== "start").length;
+        objectiveEl.textContent = touchMode()
+          ? `Explore — ${open} room${open === 1 ? "" : "s"} unlocked · tap 🚀 Travel in the HUD`
+          : `Explore — ${open} room${open === 1 ? "" : "s"} on your circuit · press T to fast travel`;
         objectiveEl.classList.remove("dw-hidden");
       } else {
         objectiveEl.classList.add("dw-hidden");
@@ -727,15 +759,24 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture, FLOOR_PALETTES } fr
 
     function showPrompt(text) {
       if (!promptEl || !promptText) return;
-      promptText.textContent = text;
+      const touch = touchMode();
+      let label = text;
+      if (touch) {
+        label = label.replace(/ — press E/gi, " — tap to enter").replace(/press E/gi, "tap to enter");
+      }
+      promptText.textContent = label;
+      promptKey?.classList.toggle("dw-hidden", touch);
+      touchEnterBtn?.classList.toggle("dw-hidden", !(touch && /enter|tap to enter/i.test(label)));
       promptEl.classList.remove("dw-hidden");
     }
     function hidePrompt() {
       promptEl?.classList.add("dw-hidden");
+      touchEnterBtn?.classList.add("dw-hidden");
     }
 
     let promptAction = null;
     promptEl?.addEventListener("click", () => promptAction?.());
+    window.__gtgWorld3D.triggerEnter = () => promptAction?.();
 
     function doorOf(roomId) {
       return buildings.get(roomId)?.doorWorld || null;
@@ -791,7 +832,10 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture, FLOOR_PALETTES } fr
       bridge.navigate(nodeId, { direct: true, skipRhythm: true, fromWorld: true });
     }
 
+    window.__gtgWorld3D.teleportToRoom = teleportToRoomDoor;
+
     window.__gtgWorld3D.requestWalkTo = (nodeId, roomId) => {
+      if (!roomUnlocked(roomId)) return;
       pendingTarget = { nodeId, roomId };
       setRoam(true);
       updateObjective();
@@ -830,17 +874,18 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture, FLOOR_PALETTES } fr
 
     function refreshRings() {
       const visited = visitedSet();
+      const unlocked = unlockedSet();
       const completed = completedSet();
       const completedRooms = new Set(
         [...completed].map((nodeId) => bridge.mapIdFor(nodeId))
       );
       buildings.forEach((b, roomId) => {
-        b.ringMat.opacity = 0.85;
-        if (pendingTarget?.roomId === roomId) b.ringMat.color.set(0xffd54a);
+        b.ringMat.opacity = roomUnlocked(roomId) ? 0.85 : 0.35;
+        if (!roomUnlocked(roomId)) b.ringMat.color.set(0x2a2238);
+        else if (pendingTarget?.roomId === roomId) b.ringMat.color.set(0xffd54a);
         else if (completedRooms.has(roomId)) b.ringMat.color.set(0x2dd4bf);
         else if (visited.has(roomId)) b.ringMat.color.set(0x1f8f83);
-        else if (enterable(roomId)) b.ringMat.color.set(0xb98a1e);
-        else b.ringMat.color.set(0x4a3d63);
+        else b.ringMat.color.set(0xb98a1e);
       });
       circuitSegments.forEach((seg) => {
         const { pairs, traceMat, glowMat } = seg;
@@ -848,8 +893,11 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture, FLOOR_PALETTES } fr
         pairs.forEach(([roomA, roomB]) => {
           const doneA = completedRooms.has(roomA);
           const doneB = completedRooms.has(roomB);
+          const openA = roomUnlocked(roomA);
+          const openB = roomUnlocked(roomB);
           if (doneA && doneB) level = 2;
           else if ((doneA || doneB) && level < 2) level = 1;
+          else if (openA && openB && level < 1) level = 1;
         });
         seg.glowLevel = level;
         if (level === 2) {
@@ -913,7 +961,7 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture, FLOOR_PALETTES } fr
       const floorHits = raycaster.intersectObjects(floors, true);
       if (floorHits.length) {
         const roomId = floorHits[0].object.userData?.roomId;
-        if (roomId) {
+        if (roomId && roomUnlocked(roomId)) {
           teleportToRoomDoor(roomId);
           player.position.copy(playerPos);
           bridge.closeMap?.();
@@ -949,8 +997,15 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture, FLOOR_PALETTES } fr
     let turnId = null;
     const turnLast = { x: 0, y: 0 };
     let turnDelta = 0;
+    let touchHintDismissed = false;
+    const dismissTouchHint = () => {
+      if (touchHintDismissed) return;
+      touchHintDismissed = true;
+      touchZones?.classList.add("tt-world-touch-zones--dismissed");
+    };
     renderer.domElement.addEventListener("touchstart", (e) => {
       if (movementBlocked()) return;
+      dismissTouchHint();
       for (const t of e.changedTouches) {
         if (t.clientX < window.innerWidth * 0.45 && joyId === null) {
           joyId = t.identifier;
@@ -1042,8 +1097,11 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture, FLOOR_PALETTES } fr
       const room = Visuals.MAP_ROOMS[best];
       const status = enterable(best);
       if (status) {
-        showPrompt(`Enter ${room.icon} ${room.label} — press E`);
         promptAction = () => enterRoom(best);
+        showPrompt(`Enter ${room.icon} ${room.label} — press E`);
+      } else if (!roomUnlocked(best)) {
+        showPrompt(`🔒 ${room.icon} ${room.label} — link adjacent rooms first`);
+        promptAction = null;
       } else {
         showPrompt(`${room.icon} ${room.label}`);
         promptAction = null;

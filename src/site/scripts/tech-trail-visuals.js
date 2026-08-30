@@ -221,7 +221,7 @@
   }
 
   const MAP_ROOMS = {
-    start: { id: "start", label: "Briefing Room", icon: "🌐", x: 50, y: 86, job: "Pick a room. Recover all five Golden Rules.", conflict: { graphic: "alarms", title: "Five alarms at once", situation: "A locker leak. A viral lie. An app shipping Friday whether it works. Five screens, five fires.", question: "Which door do you take first?" } },
+    start: { id: "start", label: "Briefing Room", icon: "🌐", x: 50, y: 86, job: "Pick one of five paths. Each cleared room links new doors on the circuit.", conflict: { graphic: "alarms", title: "Five alarms at once", situation: "A locker leak. A viral lie. An app shipping Friday whether it works. Five screens, five fires.", question: "Which door do you take first?" } },
     design_lab: { id: "design_lab", label: "Design Lab", icon: "🎯", x: 18, y: 68, job: "Stop a team from shipping the wrong app.", conflict: { graphic: "app", title: "Ship-it Friday", situation: "The app looks flashy. Nobody asked what problem it solves. The countdown says Friday.", question: "Interview real users, or ship a guess?" } },
     data_vault: { id: "data_vault", label: "Data Vault", icon: "🛡️", x: 38, y: 68, job: "Stop a private-info leak without spreading it.", conflict: { graphic: "leak", title: "The locker leak", situation: "A classmate's phone number and schedule are in a public thread 'as a joke.' Screenshots are already flying.", question: "Report it, or pass it along?" } },
     password_temple: { id: "password_temple", label: "Password Vault", icon: "🔑", x: 50, y: 68, job: "Lock accounts the right way: unique + 2FA.", conflict: { graphic: "keys", title: "One password, three doors", situation: "A recruit used the same password for school email, a game, and a second account. One crack opens all three.", question: "Unique passwords and 2FA, or one 'strong' password everywhere?" } },
@@ -245,10 +245,11 @@
     final_trial: { id: "final_trial", label: "Final Trial", icon: "🏟️", x: 50, y: 4, job: "Write your Digital Citizenship Oath.", conflict: { graphic: "oath", title: "The Arena", situation: "Mentors you met wait in the holo-ring. This is not a quiz. It is a promise: what will you actually do online when it counts?", question: "Name the Golden Rules you will use." } },
   };
 
+  /** Five Golden Rule doors from the Briefing Room — pick one to start your circuit. */
+  const GOLDEN_PATH_ROOMS = new Set(["design_lab", "data_vault", "password_temple", "footprint_scene", "media_chamber"]);
+
   const MAP_EDGES = [
     ["start", "design_lab"], ["start", "data_vault"], ["start", "password_temple"], ["start", "footprint_scene"], ["start", "media_chamber"],
-    ["start", "code_bay"], ["start", "network_closet"], ["start", "ai_ethics"], ["start", "hardware_graveyard"], ["start", "open_source"],
-    ["start", "bias_unit"], ["start", "data_detective"],
     ["design_lab", "prepare_phase"], ["prepare_phase", "try_phase"], ["try_phase", "debug_scene"], ["try_phase", "reflect_phase"],
     ["debug_scene", "reflect_phase"], ["debug_scene", "trajectory_scene"], ["code_bay", "debug_scene"], ["code_bay", "design_lab"],
     ["network_closet", "data_vault"], ["network_closet", "ip_chamber"], ["sources_library", "media_chamber"], ["sources_library", "footprint_scene"],
@@ -392,8 +393,63 @@
     "Noble Scholar": { icon: "🔎", blurb: "Noble showed search and headlines are designed. Rank is not truth." },
   };
 
+  const _adjacency = (() => {
+    const adj = {};
+    for (const [a, b] of MAP_EDGES) {
+      (adj[a] ||= []).push(b);
+      (adj[b] ||= []).push(a);
+    }
+    return adj;
+  })();
+
+  function getAdjacentRooms(roomId) {
+    return _adjacency[roomId] ? [..._adjacency[roomId]] : [];
+  }
+
+  function isGoldenPathRoom(roomId) {
+    return GOLDEN_PATH_ROOMS.has(roomId);
+  }
+
+  /** Rebuild unlock set for saves that predate campus gating. */
+  function deriveUnlockedRooms(visitedRooms, completedRooms) {
+    const visited = new Set(visitedRooms || ["start"]);
+    const completed = new Set(completedRooms || []);
+    const unlocked = new Set(["start"]);
+    for (const room of visited) unlocked.add(room);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const room of [...unlocked]) {
+        if (room !== "start" && !visited.has(room) && !completed.has(room)) continue;
+        for (const adj of getAdjacentRooms(room)) {
+          if (!unlocked.has(adj) && (visited.has(adj) || completed.has(adj) || completed.has(room))) {
+            unlocked.add(adj);
+            changed = true;
+          }
+        }
+      }
+    }
+    if (completed.has("reflect_phase") || [...completed].some((r) => getAdjacentRooms(r).includes("final_trial"))) {
+      unlocked.add("final_trial");
+    }
+    return unlocked;
+  }
+
+  function matchRoomQuery(query) {
+    const q = String(query || "").trim().toLowerCase();
+    if (!q) return null;
+    const rooms = Object.values(MAP_ROOMS);
+    const exact = rooms.find((r) => r.id === q || r.label.toLowerCase() === q);
+    if (exact) return exact.id;
+    const partial = rooms.filter((r) => r.label.toLowerCase().includes(q) || r.id.includes(q.replace(/\s+/g, "_")));
+    if (partial.length === 1) return partial[0].id;
+    const starts = partial.filter((r) => r.label.toLowerCase().startsWith(q));
+    return starts.length === 1 ? starts[0].id : null;
+  }
+
   window.TechTrailVisuals = {
     ZONES, NODE_ZONE, PORTRAITS, GOLDEN_RULES, LESSONS, BADGES, zoneForNode,
-    MAP_ROOMS, MAP_EDGES, mapRoomForNode, holoGraphicHtml,
+    MAP_ROOMS, MAP_EDGES, GOLDEN_PATH_ROOMS, mapRoomForNode, holoGraphicHtml,
+    getAdjacentRooms, isGoldenPathRoom, deriveUnlockedRooms, matchRoomQuery,
   };
 })();

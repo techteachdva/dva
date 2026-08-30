@@ -12,6 +12,10 @@
   const TYPING_KEY = "typingProfile";
   const SUBMITTED_KEY = "submittedRuns";
 
+  function minGoldenForSpeedrun() {
+    return window.TechTrailStory?.MIN_GOLDEN_FOR_SPEEDRUN ?? 3;
+  }
+
   function now() {
     return Date.now();
   }
@@ -87,7 +91,11 @@
     const p = profile || loadProfile();
     if (p.hasBeatenGame) return true;
     const best = p.bestRun;
-    return Boolean(best && (best.goldenCount || 0) >= 5 && (best.integrity || 0) >= 80);
+    const minGolden = minGoldenForSpeedrun();
+    return Boolean(best && (
+      ((best.goldenCount || 0) >= 5 && (best.integrity || 0) >= 80)
+      || ((best.goldenCount || 0) >= minGolden && (best.integrity || 0) >= 50)
+    ));
   }
 
   function blankTypingProfile() {
@@ -174,6 +182,7 @@
       journal: normalizeArray(raw.journal),
       metCharacters: new Set(normalizeArray(raw.metCharacters)),
       visitedRooms: new Set(normalizeArray(raw.visitedRooms).length ? raw.visitedRooms : [raw.currentNode || "start"]),
+      unlockedRooms: new Set(normalizeArray(raw.unlockedRooms).length ? raw.unlockedRooms : ["start"]),
       integrity: typeof raw.integrity === "number" ? raw.integrity : 100,
       reputation: typeof raw.reputation === "number" ? raw.reputation : 50,
       mentorTrust: raw.mentorTrust && typeof raw.mentorTrust === "object" ? raw.mentorTrust : {},
@@ -201,6 +210,7 @@
       journal: state.journal,
       metCharacters: [...state.metCharacters],
       visitedRooms: [...(state.visitedRooms || [])],
+      unlockedRooms: [...(state.unlockedRooms || ["start"])],
       integrity: state.integrity ?? 100,
       reputation: state.reputation ?? 50,
       mentorTrust: state.mentorTrust || {},
@@ -237,7 +247,10 @@
       totalMentorsMet: normalizeArray(raw.totalMentorsMet),
       bestRun,
       hasBeatenGame: Boolean(raw.hasBeatenGame)
-        || Boolean(bestRun && (bestRun.goldenCount || 0) >= 5 && (bestRun.integrity || 0) >= 80),
+        || Boolean(bestRun && (
+          ((bestRun.goldenCount || 0) >= 5 && (bestRun.integrity || 0) >= 80)
+          || ((bestRun.goldenCount || 0) >= minGoldenForSpeedrun() && (bestRun.integrity || 0) >= 50)
+        )),
       lastName: raw.lastName || "",
       lastClassroom: raw.lastClassroom || "",
       rosterVerified: Boolean(raw.rosterVerified),
@@ -258,7 +271,8 @@
     const durationSec = Math.max(0, Math.round((now() - (run.startedAt || now())) / 1000));
     const integrity = run.integrity ?? 100;
     const goldenCount = run.goldenRules.size;
-    const endingType = integrity >= 80 && goldenCount >= 5 ? "champion" : integrity >= 50 && goldenCount >= 3 ? "operative" : "probation";
+    const minGolden = minGoldenForSpeedrun();
+    const endingType = integrity >= 80 && goldenCount >= 5 ? "champion" : integrity >= 50 && goldenCount >= minGolden ? "operative" : "probation";
     return {
       badgesCount: run.badges.size,
       goldenCount,
@@ -299,7 +313,7 @@
         endedAt: now(),
       };
     }
-    if (summary.endingType === "champion") {
+    if (summary.endingType === "champion" || summary.endingType === "operative") {
       updated.hasBeatenGame = true;
     }
 

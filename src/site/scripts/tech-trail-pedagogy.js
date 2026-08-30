@@ -26,6 +26,24 @@
     v: "cfgb", w: "qase", x: "zsdc", y: "tghu", z: "asx",
   };
 
+  const SHORT_PATH_MAX_CHARS = 24;
+
+  function normalizePathText(text) {
+    return String(text || "").toLowerCase().replace(/\s+/g, " ").trim();
+  }
+
+  function isShortTranscriptionPath(target, maxLen = SHORT_PATH_MAX_CHARS) {
+    return normalizePathText(target).length <= maxLen;
+  }
+
+  function scaledSpeedGateRatio(speedGate, targetLength, maxLen = SHORT_PATH_MAX_CHARS) {
+    const len = Math.max(0, targetLength || 0);
+    if (len <= maxLen) return 0;
+    const rampEnd = 48;
+    if (len >= rampEnd) return speedGate ?? 0.85;
+    return (speedGate ?? 0.85) * ((len - maxLen) / (rampEnd - maxLen));
+  }
+
   /** Online register glossary — meaning + context, not memorization drills */
   const CHAT_TERMS = {
     gtg: { term: "GTG", meaning: "Got to go", lesson: "A polite way to end a conversation without disappearing." },
@@ -362,11 +380,14 @@
   function evaluateTranscriptionUnlock(cmp, cfg) {
     const errorAnalysis = classifyErrors(cfg.target, cfg.input, cmp);
     const accuracy = errorAnalysis.accuracy;
-    const complete = Boolean(cmp?.complete);
     const typoOk = !cmp || (cmp.typoCount || 0) <= (cfg.typoBudget ?? 0);
+    const complete = cfg.pathComplete ?? Boolean(cmp?.complete);
     const consistency = cfg.consistency ?? 0.9;
+    const targetLen = cmp?.targetLength || normalizePathText(cfg.target).length;
+    const shortPath = cfg.shortPath ?? isShortTranscriptionPath(cfg.target, cfg.shortPathMaxChars);
+    const speedGate = shortPath ? 0 : scaledSpeedGateRatio(cfg.speedGate ?? 0.85, targetLen, cfg.shortPathMaxChars);
     const speedRatio = cfg.targetCpm > 0 ? (cfg.liveCpm || 0) / cfg.targetCpm : 1;
-    const speedFactor = Math.min(1, Math.max(0.4, speedRatio * 0.6));
+    const speedFactor = shortPath ? 1 : Math.min(1, Math.max(0.4, speedRatio * 0.6));
     const tier = cfg.tier || "operative";
 
     const perf = computePerformanceScore({
@@ -380,9 +401,9 @@
     if (tier === "cadet") {
       unlocked = complete && typoOk && accuracy >= 0.75;
     } else if (tier === "analyst") {
-      unlocked = complete && typoOk && accuracy >= 0.92 && speedRatio >= (cfg.speedGate ?? 1);
+      unlocked = complete && typoOk && accuracy >= 0.92 && (shortPath || speedRatio >= speedGate);
     } else {
-      unlocked = complete && typoOk && accuracy >= 0.88 && perf.score >= 45;
+      unlocked = complete && typoOk && accuracy >= 0.88 && (shortPath || perf.score >= 45);
     }
 
     return {
@@ -390,11 +411,12 @@
       score: perf.score / 100,
       performanceScore: perf.score,
       accuracyOk: accuracy >= 0.85,
-      speedOk: speedRatio >= (cfg.speedGate ?? 0.85),
+      speedOk: shortPath || speedRatio >= speedGate,
       speedRatio,
       wordSoft: complete ? 1 : 0,
       errorAnalysis,
       perf,
+      shortPath,
     };
   }
 

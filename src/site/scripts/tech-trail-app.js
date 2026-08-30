@@ -4,8 +4,14 @@
 (() => {
   "use strict";
 
+  const touchMode =
+    window.matchMedia("(pointer: coarse)").matches
+    || window.matchMedia("(hover: none)").matches
+    || (navigator.maxTouchPoints > 0 && !window.matchMedia("(pointer: fine)").matches);
+  if (touchMode) document.body.classList.add("tt-touch-mode");
+
   const WriteTestCoreRef = window.WriteTestCore;
-  const { STORY, CHARACTERS, START_MISSIONS, GOLDEN_SPINE } = window.TechTrailStory || {};
+  const { STORY, CHARACTERS, START_MISSIONS, GOLDEN_SPINE, MIN_GOLDEN_FOR_SPEEDRUN = 3 } = window.TechTrailStory || {};
   const Visuals = window.TechTrailVisuals;
   const State = window.TechTrailState;
   const Audio = window.TechTrailAudio;
@@ -166,7 +172,18 @@
       },
       meetsSpeedGate(cpm, targetCpm, ratio = 0.85) {
         if (!targetCpm) return true;
+        if (ratio <= 0) return true;
         return cpm >= targetCpm * ratio;
+      },
+      isShortTranscriptionPath(target, maxLen = 24) {
+        return this.normalize(target).length <= maxLen;
+      },
+      scaledSpeedGateRatio(speedGate, targetLength, maxLen = 24) {
+        const len = Math.max(0, targetLength || 0);
+        if (len <= maxLen) return 0;
+        const rampEnd = 48;
+        if (len >= rampEnd) return speedGate ?? 0.85;
+        return (speedGate ?? 0.85) * ((len - maxLen) / (rampEnd - maxLen));
       },
       estimateTextAccuracy(text) {
         const raw = String(text || "");
@@ -254,7 +271,140 @@
   let typingPending = null;
   let metCharacters = new Set();
   let visitedRooms = new Set(["start"]);
+  let unlockedRooms = new Set(["start"]);
   let completedRooms = new Set();
+
+  function canReachFinalTrial() {
+    if (goldenRules.size >= 5) return true;
+    return goldenRules.size >= MIN_GOLDEN_FOR_SPEEDRUN && completedRooms.has("reflect_phase");
+  }
+
+  function isRoomUnlocked(roomId) {
+    return unlockedRooms.has(roomId);
+  }
+
+  function unlockRoom(roomId, opts = {}) {
+    if (!Visuals.MAP_ROOMS?.[roomId] || unlockedRooms.has(roomId)) return false;
+    unlockedRooms.add(roomId);
+    if (!opts.silent) {
+      const label = Visuals.MAP_ROOMS[roomId]?.label || roomId;
+      journal.push(`🔓 Circuit open: ${label}`);
+    }
+    window.__gtgWorld3D?.refreshCampus?.();
+    renderCampusLinkProgress();
+    return true;
+  }
+
+  function unlockAdjacentRooms(roomId) {
+    const newly = [];
+    for (const adj of Visuals.getAdjacentRooms?.(roomId) || []) {
+      if (unlockRoom(adj, { silent: true })) newly.push(adj);
+    }
+    if (newly.length) {
+      const names = newly.map((id) => Visuals.MAP_ROOMS[id]?.label || id).join(" · ");
+      toast(`Circuit linked — ${names} now open!`, "info");
+      reputation = Math.min(100, reputation + newly.length * 2);
+      journal.push(`⚡ Linked ${newly.length} new door${newly.length === 1 ? "" : "s"}`);
+      Audio?.playBadgeChime?.();
+    }
+    return newly;
+  }
+
+  function checkFinalTrialUnlock() {
+    if (unlockedRooms.has("final_trial")) return;
+    if (canReachFinalTrial()) {
+      unlockRoom("final_trial");
+      toast("🏟️ Final Trial unlocked! The Arena circuit is live.", "golden");
+      journal.push("🏟️ Final Trial — Arena circuit connected from Crawford's Bureau");
+      burstConfetti(20);
+      Audio?.playGoldenFanfare?.();
+    }
+  }
+
+  function onTravelToRoom(fromNodeId, toNodeId) {
+    const fromRoom = mapIdFor(fromNodeId);
+    const toRoom = mapIdFor(toNodeId);
+    if (fromRoom === toRoom) return;
+    unlockRoom(toRoom, { silent: fromNodeId === "start" });
+  }
+
+  function choiceLeadsToLockedRoom(choice, fromNodeId) {
+    const next = choice?.next;
+    if (!next) return false;
+    const fromRoom = mapIdFor(fromNodeId);
+    const toRoom = mapIdFor(next);
+    if (fromRoom === toRoom) return false;
+    return !isRoomUnlocked(toRoom);
+  }
+
+  function renderCampusLinkProgress() {
+    const el = document.getElementById("campusLinkProgress");
+    if (!el || !Visuals.MAP_ROOMS) return;
+    const total = Object.keys(Visuals.MAP_ROOMS).length - 1;
+    const count = [...unlockedRooms].filter((id) => id !== "start").length;
+    el.textContent = `Campus ${count}/${total}`;
+    el.title = `${count} of ${total} rooms on your circuit — branch out to link them all`;
+    el.classList.toggle("tt-campus-progress--ready", unlockedRooms.has("final_trial"));
+  }
+
+  function openFastTravel() {
+    if (!window.__gtgWorld3D?.active) return;
+    if (!document.body.classList.contains("tt-roam")) {
+      toast("Leave the room first (🚪) or press E outside to roam the campus.", "lesson");
+      return;
+    }
+    const gate = document.getElementById("fastTravelGate");
+    const input = document.getElementById("fastTravelInput");
+    const list = document.getElementById("fastTravelList");
+    if (!gate || !input) return;
+    gate.classList.remove("dw-hidden");
+    gate.setAttribute("aria-hidden", "false");
+    if (list) {
+      const rooms = [...unlockedRooms]
+        .filter((id) => id !== "start" && Visuals.MAP_ROOMS[id])
+        .map((id) => Visuals.MAP_ROOMS[id])
+        .sort((a, b) => a.label.localeCompare(b.label));
+      list.innerHTML = rooms.length
+        ? rooms.map((r) => `<button type="button" class="tt-fast-travel__room" data-room="${escapeHtml(r.id)}">${r.icon} ${escapeHtml(r.label)}</button>`).join("")
+        : `<p class="tt-fast-travel__empty">Pick your first path from the Briefing Room to open doors.</p>`;
+      list.querySelectorAll("[data-room]").forEach((btn) => {
+        btn.addEventListener("click", () => fastTravelTo(btn.dataset.room));
+      });
+    }
+    input.value = "";
+    setTimeout(() => input.focus(), 80);
+  }
+
+  function closeFastTravel() {
+    const gate = document.getElementById("fastTravelGate");
+    gate?.classList.add("dw-hidden");
+    gate?.setAttribute("aria-hidden", "true");
+  }
+
+  function fastTravelTo(roomId) {
+    if (!isRoomUnlocked(roomId)) {
+      toast("That room isn't on your circuit yet.", "lesson");
+      return;
+    }
+    closeFastTravel();
+    window.__gtgWorld3D?.teleportToRoom?.(roomId);
+    const label = Visuals.MAP_ROOMS[roomId]?.label || roomId;
+    toast(`Fast travel → ${label}`, "info");
+    journal.push(`🚀 Fast travel: ${label}`);
+  }
+
+  function submitFastTravel() {
+    const input = document.getElementById("fastTravelInput");
+    const query = input?.value?.trim();
+    if (!query) return;
+    const roomId = Visuals.matchRoomQuery?.(query);
+    if (!roomId) {
+      toast(`No room matches "${query}" — try Design Lab, Data Vault, etc.`, "lesson");
+      return;
+    }
+    fastTravelTo(roomId);
+  }
+
   let goldenQuizPassed = false;
   let dataFragments = [];
   let mentorPackets = [];
@@ -1500,7 +1650,9 @@
     const cfg = difficultyCfg();
     const budget = typoBudget();
     if (hint) {
-      hint.textContent = `Type the full highlighted path. Accuracy unlocks your choice · ${budget >= 10 ? "typos forgiven" : `up to ${budget} typo${budget === 1 ? "" : "s"}`}`;
+      hint.textContent = shortPath
+        ? "Short path — accuracy unlocks your choice (speed bar is just for practice)."
+        : `Type the full highlighted path. Accuracy unlocks your choice · ${budget >= 10 ? "typos forgiven" : `up to ${budget} typo${budget === 1 ? "" : "s"}`}`;
     }
 
     updateTypingMeterUI({
@@ -1519,6 +1671,7 @@
     const input = document.getElementById("choiceTypingInput");
     setTimeout(() => input?.focus(), prefersReducedMotion ? 0 : 480);
     if (!isImmersiveRail()) wrap.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    else if (touchMode) scrollTypingIntoView(input);
     syncImmersiveTypingOverlay();
   }
 
@@ -1555,6 +1708,11 @@
     const liveEl = document.getElementById("statLiveWpm");
     if (liveEl) liveEl.textContent = String(liveCpm);
     const errorAnalysis = Typing.classifyErrors?.(typeText, input.value, cmp) || { accuracy: 0.9 };
+    const shortPath = Typing.isShortTranscriptionPath?.(typeText) ?? (cmp.targetLength <= 24);
+    const speedGateRatio = Typing.scaledSpeedGateRatio?.(cfg.speedGate, cmp.targetLength) ?? cfg.speedGate;
+    const pathComplete = Typing.isChoiceComplete
+      ? Typing.isChoiceComplete(cmp, typoBudget())
+      : Boolean(cmp.complete);
     const transcriptionEval = Pedagogy?.evaluateTranscriptionUnlock
       ? Pedagogy.evaluateTranscriptionUnlock(cmp, {
           target: typeText,
@@ -1565,13 +1723,12 @@
           speedGate: cfg.speedGate,
           tier: difficulty,
           consistency: Pedagogy.consistencyFromKeystrokes?.(null),
+          pathComplete,
+          shortPath,
         })
       : null;
-    const speedOk = transcriptionEval?.speedOk ?? Typing.meetsSpeedGate(liveCpm, typingProfile.targetCpm, cfg.speedGate);
-    const pathComplete = Typing.isChoiceComplete
-      ? Typing.isChoiceComplete(cmp, typoBudget())
-      : Boolean(cmp.complete);
-    const unlocked = transcriptionEval?.unlocked ?? (pathComplete && speedOk);
+    const speedOk = transcriptionEval?.speedOk ?? Typing.meetsSpeedGate(liveCpm, typingProfile.targetCpm, speedGateRatio);
+    const unlocked = transcriptionEval?.unlocked ?? (pathComplete && (speedOk || shortPath));
 
     updateTypingMeterUI({
       progressPct: cmp.progress,
@@ -1611,8 +1768,12 @@
       if (hint) {
         if (accPct < 88 && difficulty !== "cadet") {
           hint.textContent = `Fix typos — accuracy ${accPct}% (need ~88%+). Speed is not the gate here.`;
+        } else if (shortPath) {
+          hint.textContent = pathComplete
+            ? `Fix typos — accuracy ${accPct}% (need ~88%+). Short paths unlock on accuracy, not speed.`
+            : `Type the full highlighted path — short choices unlock on accuracy, not speed.`;
         } else if (difficulty === "analyst" && !speedOk) {
-          const need = Math.round(typingProfile.targetCpm * cfg.speedGate);
+          const need = Math.round(typingProfile.targetCpm * speedGateRatio);
           hint.textContent = `Analyst tier: hit ${need} keys/min after the path is accurate (${liveCpm} now).`;
         } else {
           hint.textContent = `Almost — accuracy ${accPct}%. Keep going.`;
@@ -1836,6 +1997,13 @@
       journal = saved.journal;
       metCharacters = saved.metCharacters;
       visitedRooms = saved.visitedRooms instanceof Set ? saved.visitedRooms : new Set(saved.visitedRooms || [currentNode]);
+      if (saved.unlockedRooms instanceof Set && saved.unlockedRooms.size) {
+        unlockedRooms = saved.unlockedRooms;
+      } else if (Array.isArray(saved.unlockedRooms) && saved.unlockedRooms.length) {
+        unlockedRooms = new Set(saved.unlockedRooms);
+      } else {
+        unlockedRooms = Visuals.deriveUnlockedRooms?.([...visitedRooms], [...completedRooms]) || new Set(["start"]);
+      }
       integrity = saved.integrity ?? 100;
       reputation = saved.reputation ?? 50;
       mentorTrust = saved.mentorTrust || {};
@@ -1915,10 +2083,11 @@
     if (!list.length || node.dynamicChoices === "start" || nodeId === "start") return list;
 
     const spine = nextSpineMission();
-    const tooEarlyForFinale = goldenRules.size < 5;
 
     const mapped = list.map((c) => {
-      if ((c.next === "final_trial" || c.next === "mentor_ending") && tooEarlyForFinale && spine) {
+      const blockFinale = c.next === "final_trial" && !canReachFinalTrial();
+      const blockMentor = c.next === "mentor_ending" && goldenRules.size < 5;
+      if ((blockFinale || blockMentor) && spine) {
         return {
           ...c,
           label: `Keep hunting — ${spine.typeText}`,
@@ -2633,6 +2802,70 @@
     return document.getElementById("gameView")?.classList.contains("tt-game-layout--immersive") ?? false;
   }
 
+  function scrollTypingIntoView(el) {
+    if (!el) return;
+    if (touchMode || isImmersiveRail()) {
+      setTimeout(() => el.scrollIntoView({ behavior: "smooth", block: "center" }), touchMode ? 320 : 80);
+    } else {
+      el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+  }
+
+  function initTouchMode() {
+    if (!touchMode) return;
+
+    document.querySelector(".tt-world-controls__desktop")?.classList.add("dw-hidden");
+    document.querySelector(".tt-world-controls__touch")?.classList.remove("dw-hidden");
+
+    const bindTypingFocus = (el) => {
+      if (!el || el.dataset.ttTouchFocus) return;
+      el.dataset.ttTouchFocus = "1";
+      el.addEventListener("focus", () => scrollTypingIntoView(el));
+    };
+    document.querySelectorAll(".tt-typing-input, .tt-textarea, .tt-fast-travel__input, .dw-input").forEach(bindTypingFocus);
+    new MutationObserver((mutations) => {
+      mutations.forEach((m) => {
+        m.addedNodes.forEach((node) => {
+          if (node.nodeType !== 1) return;
+          if (node.matches?.(".tt-typing-input, .tt-textarea, .tt-fast-travel__input, .dw-input")) bindTypingFocus(node);
+          node.querySelectorAll?.(".tt-typing-input, .tt-textarea, .tt-fast-travel__input, .dw-input").forEach(bindTypingFocus);
+        });
+      });
+    }).observe(document.body, { childList: true, subtree: true });
+
+    const syncKeyboardOpen = () => {
+      const vv = window.visualViewport;
+      const open = !!(vv && vv.height < window.innerHeight * 0.78);
+      document.body.classList.toggle("tt-keyboard-open", open);
+      if (open && vv) {
+        document.documentElement.style.setProperty("--tt-vv-height", `${vv.height}px`);
+        document.documentElement.style.setProperty("--tt-vv-offset-top", `${vv.offsetTop}px`);
+      } else {
+        document.documentElement.style.removeProperty("--tt-vv-height");
+        document.documentElement.style.removeProperty("--tt-vv-offset-top");
+      }
+    };
+    window.visualViewport?.addEventListener("resize", syncKeyboardOpen);
+    window.visualViewport?.addEventListener("scroll", syncKeyboardOpen);
+    syncKeyboardOpen();
+
+    document.getElementById("worldTouchMapBtn")?.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleMap();
+    });
+    document.getElementById("worldTouchTravelBtn")?.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      openFastTravel();
+    });
+    document.getElementById("worldTouchEnterBtn")?.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      window.__gtgWorld3D?.triggerEnter?.();
+    });
+  }
+
   function syncImmersiveTypingOverlay() {
     const typingOverlay = document.getElementById("sceneTypingOverlay");
     if (!typingOverlay || !isImmersiveRail()) return;
@@ -2913,6 +3146,8 @@
 
   function markMapRoomComplete(nodeId) {
     completedRooms.add(mapIdFor(nodeId));
+    unlockAdjacentRooms(mapIdFor(nodeId));
+    checkFinalTrialUnlock();
     window.__gtgWorld3D?.refreshCampus?.();
   }
 
@@ -3095,10 +3330,11 @@
       const current = room.id === here;
       const visited = visitedRooms.has(room.id);
       const completed = completedRooms.has(room.id);
-      const exit = exits.has(room.id) && !current;
-      const cls = ["tt-map-room", current ? "tt-map-room--here" : "", visited ? "tt-map-room--seen" : "", completed ? "tt-map-room--completed" : "", exit ? "tt-map-room--exit" : ""].filter(Boolean).join(" ");
-      return `<button type="button" class="${cls}" data-room="${escapeHtml(room.id)}" style="--x:${room.x}%;--y:${room.y}%" ${current ? 'aria-current="true"' : ""}>
-        <span class="tt-map-room__cube" aria-hidden="true">${room.icon}</span>
+      const unlocked = isRoomUnlocked(room.id);
+      const exit = exits.has(room.id) && !current && unlocked;
+      const cls = ["tt-map-room", current ? "tt-map-room--here" : "", visited ? "tt-map-room--seen" : "", completed ? "tt-map-room--completed" : "", exit ? "tt-map-room--exit" : "", !unlocked ? "tt-map-room--locked" : ""].filter(Boolean).join(" ");
+      return `<button type="button" class="${cls}" data-room="${escapeHtml(room.id)}" style="--x:${room.x}%;--y:${room.y}%" ${current ? 'aria-current="true"' : ""} ${!unlocked ? "disabled" : ""}>
+        <span class="tt-map-room__cube" aria-hidden="true">${unlocked ? room.icon : "🔒"}</span>
         <span class="tt-map-room__name">${escapeHtml(room.label)}</span>
       </button>`;
     }).join("");
@@ -3114,11 +3350,16 @@
     links.innerHTML = edgeHtml;
 
     const hereRoom = pts[here];
-    const exitNames = [...exits].map((id) => pts[id]?.label).filter(Boolean);
+    const exitNames = [...exits].filter((id) => isRoomUnlocked(id)).map((id) => pts[id]?.label).filter(Boolean);
+    const lockedExitCount = [...exits].filter((id) => !isRoomUnlocked(id)).length;
     if (legend) {
-      legend.textContent = exitNames.length
-        ? `You are in ${hereRoom?.label || "Unknown"}. Next doors: ${exitNames.join(" · ")}.`
-        : `You are in ${hereRoom?.label || "Unknown"}. Finish the work in this room, then a door will light up.`;
+      if (exitNames.length) {
+        legend.textContent = `You are in ${hereRoom?.label || "Unknown"}. Open doors: ${exitNames.join(" · ")}.${lockedExitCount ? ` (${lockedExitCount} locked — link adjacent rooms first)` : ""}`;
+      } else if (lockedExitCount) {
+        legend.textContent = `You are in ${hereRoom?.label || "Unknown"}. Clear this room to link the next circuit.`;
+      } else {
+        legend.textContent = `You are in ${hereRoom?.label || "Unknown"}. Finish the work in this room, then a door will light up.`;
+      }
     }
 
     world.querySelectorAll("[data-room]").forEach((btn) => {
@@ -3129,10 +3370,19 @@
           toast("You are already here.", "lesson");
           return;
         }
+        if (!isRoomUnlocked(id)) {
+          toast(`🔒 ${label} isn't on your circuit yet — complete adjacent rooms first.`, "lesson");
+          return;
+        }
         if (exits.has(id)) {
           toast(`Type “${label}” as your path to walk there.`, "lesson");
           setMapOpen(false);
           document.getElementById("choiceTypingInput")?.focus();
+          return;
+        }
+        if (window.__gtgWorld3D?.active && document.body.classList.contains("tt-roam")) {
+          fastTravelTo(id);
+          setMapOpen(false);
           return;
         }
         toast("That door isn't open from this room yet. Solve the hologram conflict first.", "lesson");
@@ -3181,17 +3431,24 @@
     }
   }
 
+  function getGoldenQuizQuestions() {
+    const collected = GOLDEN_RULES_QUIZ.filter((q) => goldenRules.has(q.correct));
+    return collected.length ? collected : GOLDEN_RULES_QUIZ.slice(0, MIN_GOLDEN_FOR_SPEEDRUN);
+  }
+
   function renderGoldenRulesQuiz(choicesEl) {
     if (!choicesEl) return;
     const rules = Visuals.GOLDEN_RULES || [];
+    const quizQuestions = getGoldenQuizQuestions();
     let index = 0;
 
     function renderQuestion() {
-      const q = GOLDEN_RULES_QUIZ[index];
+      const q = quizQuestions[index];
       if (!q) {
         goldenQuizPassed = true;
         journal.push("🏟️ Golden Rules final exam passed");
-        toast("All five Golden Rules matched — write your oath.", "golden");
+        const n = quizQuestions.length;
+        toast(`${n} Golden Rule${n === 1 ? "" : "s"} matched — write your oath.`, "golden");
         Audio?.playGoldenFanfare?.();
         State.saveRun(withStudentRunFields({
           currentNode,
@@ -3205,6 +3462,7 @@
           journal,
           metCharacters,
           visitedRooms,
+          unlockedRooms,
           integrity,
           reputation,
           mentorTrust,
@@ -3227,7 +3485,7 @@
 
       choicesEl.innerHTML = `
         <div class="tt-golden-quiz">
-          <p class="tt-golden-quiz__progress">Final exam · Question ${index + 1} of ${GOLDEN_RULES_QUIZ.length}</p>
+          <p class="tt-golden-quiz__progress">Final exam · Question ${index + 1} of ${quizQuestions.length}</p>
           <p class="tt-golden-quiz__scenario">${escapeHtml(q.scenario)}</p>
           <p class="tt-golden-quiz__prompt">Which Golden Rule applies?</p>
           <div class="tt-golden-quiz__options">${options}</div>
@@ -3284,7 +3542,7 @@
       choices = node.choices || [];
     }
     const enhanced = enhanceChoices(node, nodeId, choices);
-    return shuffle(enhanced.map((c) => ({ ...c })));
+    return shuffle(enhanced.map((c) => ({ ...c }))).filter((c) => !choiceLeadsToLockedRoom(c, nodeId));
   }
 
   function maybeRollBonus(node) {
@@ -3330,6 +3588,7 @@
       startChoices = buildStartChoices();
       journal.push(`🎲 ${startChoices.length} missions on the board this run`);
     }
+    if (nodeId === "reflect_win") checkFinalTrialUnlock();
 
     applySceneZone(nodeId);
     renderMissionChrome(nodeId, node);
@@ -3412,6 +3671,7 @@
       Audio?.playGoldenFanfare?.();
       pulsePackButton();
       flashGoldenRule(node.goldenRule);
+      checkFinalTrialUnlock();
 
       const fragmentId = `fragment-${node.goldenRule}`;
       if (!dataFragments.includes(fragmentId)) {
@@ -3434,6 +3694,7 @@
 
     updateStats();
     renderGoldenTrack();
+    renderCampusLinkProgress();
 
     State.saveRun(withStudentRunFields({
       currentNode,
@@ -3447,6 +3708,7 @@
       journal,
       metCharacters,
       visitedRooms,
+      unlockedRooms,
       integrity,
       reputation,
       mentorTrust,
@@ -3499,6 +3761,7 @@
       updateChallengeUnlockUI(typingInput.value, min);
       setTimeout(() => typingInput?.focus(), prefersReducedMotion ? 0 : 420);
       if (!isImmersiveRail()) typingEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      else if (touchMode) scrollTypingIntoView(typingInput);
       syncImmersiveTypingOverlay();
     } else if (node.typingChallenge && isRoomCompleted) {
       typingEl.classList.add("dw-hidden");
@@ -3586,6 +3849,7 @@
           journal,
           metCharacters,
           visitedRooms,
+          unlockedRooms,
           integrity,
           reputation,
           mentorTrust,
@@ -3734,12 +3998,23 @@
 
   function navigate(nodeId, opts = {}) {
     const world = window.__gtgWorld3D;
+    const targetRoom = mapIdFor(nodeId);
+    const fromRoom = mapIdFor(currentNode);
+    if (targetRoom !== fromRoom && !STORY[nodeId]?.ending) {
+      const firstPathPick = currentNode === "start" && Visuals.isGoldenPathRoom?.(targetRoom);
+      if (!isRoomUnlocked(targetRoom) && !firstPathPick) {
+        const label = Visuals.MAP_ROOMS[targetRoom]?.label || targetRoom;
+        toast(`🔒 ${label} isn't on your circuit yet — link adjacent rooms first.`, "lesson");
+        return;
+      }
+      onTravelToRoom(currentNode, nodeId);
+    }
     const isRoomHop = !!(
       world?.active &&
       !opts.direct &&
       !STORY[nodeId]?.ending &&
       activeView === "game" &&
-      mapIdFor(nodeId) !== mapIdFor(currentNode)
+      targetRoom !== mapIdFor(currentNode)
     );
     if (isRoomHop) {
       world.requestWalkTo(nodeId, mapIdFor(nodeId));
@@ -4072,12 +4347,15 @@
 
   function computeEndingType() {
     if (integrity >= 80 && goldenRules.size >= 5) return "champion";
-    if (integrity >= 50 && goldenRules.size >= 3) return "operative";
+    if (integrity >= 50 && goldenRules.size >= MIN_GOLDEN_FOR_SPEEDRUN) return "operative";
     return "probation";
   }
 
   function renderEnding(node) {
-    const endingType = node.endingType === "fail" ? "fail" : computeEndingType();
+    let endingType = node.endingType === "fail" ? "fail" : computeEndingType();
+    if (node.endingType === "champion" && endingType === "probation" && goldenRules.size >= MIN_GOLDEN_FOR_SPEEDRUN) {
+      endingType = "operative";
+    }
     let title, narrativeOverride;
     if (endingType === "champion") {
       title = "Gauntlet Champion!";
@@ -4139,7 +4417,7 @@ Play again to rebuild your record clean.`;
     };
     const profile = State.loadProfile();
     const updated = State.mergeRunToProfile(runSnapshot, profile);
-    if (computeEndingType() === "champion") updated.hasBeatenGame = true;
+    if (endingType === "champion" || endingType === "operative") updated.hasBeatenGame = true;
     State.saveProfile(updated);
     State.clearRun();
     renderProfileMini();
@@ -4158,6 +4436,7 @@ Play again to rebuild your record clean.`;
     mentorPackets = [];
     metCharacters.clear();
     visitedRooms = new Set(["start"]);
+    unlockedRooms = new Set(["start"]);
     integrity = 100;
     reputation = 50;
     mentorTrust = {};
@@ -4180,6 +4459,7 @@ Play again to rebuild your record clean.`;
         journal,
         metCharacters,
         visitedRooms,
+        unlockedRooms,
         integrity,
         reputation,
         mentorTrust,
@@ -4221,6 +4501,7 @@ Play again to rebuild your record clean.`;
     updateTypoToleranceUI();
     updateTitleLaunchUI();
     renderTitleTypingMenu();
+    initTouchMode();
     window.addEventListener("resize", fitTitleScreenScale);
     window.visualViewport?.addEventListener("resize", fitTitleScreenScale);
     requestAnimationFrame(fitTitleScreenScale);
@@ -4297,8 +4578,27 @@ Play again to rebuild your record clean.`;
         e.preventDefault();
         toggleMap();
       }
+      if (e.key === "t" || e.key === "T") {
+        if (e.ctrlKey || e.metaKey || e.altKey) return;
+        if (isTypingTarget(e.target)) return;
+        if (window.TechTrailRhythm?.isActive?.()) return;
+        if (!document.getElementById("gameView")?.classList.contains("dw-hidden")) {
+          e.preventDefault();
+          openFastTravel();
+        }
+      }
     });
     document.getElementById("mapToggleBtn")?.addEventListener("click", () => toggleMap());
+    document.getElementById("fastTravelBtn")?.addEventListener("click", () => openFastTravel());
+    document.getElementById("fastTravelCloseBtn")?.addEventListener("click", () => closeFastTravel());
+    document.getElementById("fastTravelGoBtn")?.addEventListener("click", () => submitFastTravel());
+    document.getElementById("fastTravelInput")?.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        submitFastTravel();
+      }
+      if (e.key === "Escape") closeFastTravel();
+    });
     document.getElementById("mapFlyoverCloseBtn")?.addEventListener("click", () => setMapOpen(false));
     document.getElementById("mapCloseBtn")?.addEventListener("click", () => setMapOpen(false));
     document.getElementById("exitRoomBtn")?.addEventListener("click", () => exitToCampus());
@@ -4734,10 +5034,14 @@ Play again to rebuild your record clean.`;
       return {
         currentNode,
         visitedRooms: [...visitedRooms],
+        unlockedRooms: [...unlockedRooms],
         completedRooms: [...completedRooms],
         goldenRules: [...goldenRules],
       };
     },
+    isRoomUnlocked,
+    openFastTravel,
+    closeFastTravel,
     isOverlayOpen() {
       return !!(
         document.getElementById("rhythmGate") && !document.getElementById("rhythmGate").classList.contains("dw-hidden")
@@ -4747,6 +5051,8 @@ Play again to rebuild your record clean.`;
         document.getElementById("diagnosticOverlay") && !document.getElementById("diagnosticOverlay").classList.contains("dw-hidden")
       ) || !!(
         document.getElementById("npcDialog") && !document.getElementById("npcDialog").classList.contains("dw-hidden")
+      ) || !!(
+        document.getElementById("fastTravelGate") && !document.getElementById("fastTravelGate").classList.contains("dw-hidden")
       ) || !!(
         document.getElementById("chatMissionGate") && !document.getElementById("chatMissionGate").classList.contains("dw-hidden")
       ) || !!(
