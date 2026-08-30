@@ -573,6 +573,11 @@
   function renderPedagogyProgress() {
     const el = document.getElementById("pedagogyProgress");
     if (!el || !Pedagogy) return;
+    if (document.getElementById("titleView")?.classList.contains("tt-view--active")) {
+      el.classList.add("dw-hidden");
+      el.innerHTML = "";
+      return;
+    }
     const ped = ensurePedagogyProfile();
     if (!ped.sessions && !ped.termsLearned.length) {
       el.classList.add("dw-hidden");
@@ -903,7 +908,8 @@
     const isNew = !typingProfile.diagnosed;
     const hasRun = State.hasActiveRun();
     const welcome = document.getElementById("titleWelcome");
-    const extras = document.getElementById("titleExtras");
+    const titleMain = document.getElementById("titleMain");
+    const titleNewLaunch = document.getElementById("titleNewLaunch");
     const typingMenu = document.getElementById("titleTypingMenu");
     const startBtn = document.getElementById("startGameBtn");
     const startLabel = document.getElementById("startGameBtnLabel");
@@ -913,30 +919,26 @@
 
     if (isNew) {
       welcome?.classList.remove("dw-hidden");
-      extras?.classList.add("dw-hidden");
+      titleMain?.classList.add("dw-hidden");
+      titleNewLaunch?.classList.remove("dw-hidden");
       typingMenu?.classList.add("dw-hidden");
-      document.getElementById("titleLaunchBar")?.classList.remove("dw-hidden");
       if (startLabel) startLabel.textContent = "Start keystroke test";
       if (startHint) startHint.textContent = "Required before your first mission";
       startBtn?.setAttribute("aria-label", "Begin keystroke test — required for new players");
     } else {
       welcome?.classList.add("dw-hidden");
-      extras?.classList.remove("dw-hidden");
+      titleMain?.classList.remove("dw-hidden");
+      titleNewLaunch?.classList.add("dw-hidden");
       typingMenu?.classList.remove("dw-hidden");
-      document.getElementById("titleLaunchBar")?.classList.remove("dw-hidden");
-      if (startLabel) startLabel.textContent = hasRun ? "New mission" : "Play mission";
-      if (startHint) startHint.textContent = hasRun ? "Fresh run from the start" : "Tap or type ACCEPT MISSION";
-      startBtn?.setAttribute("aria-label", hasRun ? "Start a new mission" : "Play mission");
+      renderTitleTypingMenu();
     }
 
     if (hasRun) {
-      startBtn?.classList.add("dw-hidden");
       continueBtn?.classList.remove("dw-hidden");
       newRunBtn?.classList.remove("dw-hidden");
     } else {
-      startBtn?.classList.remove("dw-hidden");
       continueBtn?.classList.add("dw-hidden");
-      newRunBtn?.classList.add("dw-hidden");
+      newRunBtn?.classList.remove("dw-hidden");
     }
     fitTitleScreenScale();
   }
@@ -946,33 +948,33 @@
     const titleView = document.getElementById("titleView");
     if (!content || !titleView?.classList.contains("tt-view--active")) return;
 
-    // Never scale — transform caused letterboxing and misaligned click targets.
     content.style.transform = "";
     content.style.width = "";
-    content.style.gridTemplateRows = "";
-    content.style.gridAutoRows = "";
+    content.style.maxHeight = "";
 
-    const launchBar = document.getElementById("titleLaunchBar");
-    if (!launchBar) return;
+    const vh = window.visualViewport?.height || window.innerHeight;
+    const vw = window.visualViewport?.width || window.innerWidth;
+    content.style.setProperty("--tt-title-vh", `${vh}px`);
+    content.style.setProperty("--tt-title-vw", `${vw}px`);
 
+    const main = document.getElementById("titleMain");
     const welcome = document.getElementById("titleWelcome");
-    const extras = document.getElementById("titleExtras");
-    const scrollRegion = welcome && !welcome.classList.contains("dw-hidden") ? welcome : extras;
-    if (scrollRegion) scrollRegion.style.maxHeight = "";
+    const bodyRegion = main && !main.classList.contains("dw-hidden") ? main : welcome;
+    if (bodyRegion) bodyRegion.style.maxHeight = "";
 
-    const viewBottom = titleView.getBoundingClientRect().bottom;
-    const launchBottom = launchBar.getBoundingClientRect().bottom;
-    if (launchBottom <= viewBottom + 1 || !scrollRegion) return;
-
-    const footer = content.querySelector(".tt-title-footer");
     const hero = content.querySelector(".tt-title-hero");
+    const footer = content.querySelector(".tt-title-footer");
+    const newLaunch = document.getElementById("titleNewLaunch");
+    const launchBar = document.getElementById("titleLaunchBar");
     const reserved =
-      (hero?.getBoundingClientRect().height ?? 0)
-      + launchBar.getBoundingClientRect().height
-      + (footer?.getBoundingClientRect().height ?? 0)
-      + 12;
-    const available = titleView.clientHeight - reserved;
-    if (available > 48) scrollRegion.style.maxHeight = `${Math.floor(available)}px`;
+      (hero?.offsetHeight ?? 0)
+      + (footer?.offsetHeight ?? 0)
+      + (newLaunch && !newLaunch.classList.contains("dw-hidden") ? newLaunch.offsetHeight : 0)
+      + 8;
+    const available = vh - reserved;
+    if (bodyRegion && available > 120) {
+      bodyRegion.style.maxHeight = `${Math.floor(available)}px`;
+    }
   }
 
   function openDiagnosticForLaunch(onComplete) {
@@ -1551,10 +1553,9 @@
       return [
         { typeText: "CONTINUE MISSION", action: "continue" },
         { typeText: "NEW MISSION", action: "newrun" },
-        { typeText: "ACCEPT MISSION", action: "newrun" },
       ];
     }
-    return [{ typeText: "ACCEPT MISSION", action: "start" }];
+    return [{ typeText: "NEW MISSION", action: "newrun" }];
   }
 
   function resolveTitleCommand(inputVal) {
@@ -1623,7 +1624,7 @@
     if (!typeText) {
       if (typedEl) typedEl.innerHTML = "";
       updateTypingMeterUI({
-        progressPct: titlePrefixProgress(input.value, options[0] || "ACCEPT MISSION"),
+        progressPct: titlePrefixProgress(input.value, options[0] || "NEW MISSION"),
         progressFillId: "titleProgressFill",
         progressPctId: "titleProgressPct",
         inputEl: input,
@@ -2400,16 +2401,16 @@
     const container = document.getElementById("titleGoldenPreview");
     const detail = document.getElementById("goldenRuleDetail");
     if (!container) return;
-    container.querySelectorAll(".tt-golden-orb--interactive").forEach((btn) => {
+    container.querySelectorAll(".tt-golden-list__item, .tt-golden-orb--interactive").forEach((btn) => {
       btn.addEventListener("click", () => {
         const n = Number(btn.dataset.ruleN);
         const rule = Visuals.GOLDEN_RULES.find((r) => r.n === n);
         if (!rule) return;
-        container.querySelectorAll(".tt-golden-orb--interactive").forEach((b) => {
-          b.classList.remove("tt-golden-orb--selected");
+        container.querySelectorAll(".tt-golden-list__item, .tt-golden-orb--interactive").forEach((b) => {
+          b.classList.remove("tt-golden-orb--selected", "tt-golden-list__item--selected");
           b.setAttribute("aria-pressed", "false");
         });
-        btn.classList.add("tt-golden-orb--selected");
+        btn.classList.add("tt-golden-list__item--selected");
         btn.setAttribute("aria-pressed", "true");
         if (detail) {
           detail.classList.remove("dw-hidden");
@@ -2427,10 +2428,15 @@
   }
 
   function renderTitleGoldenPreview() {
-    renderGoldenTrack("titleGoldenPreview", { interactive: true });
-    document.querySelectorAll("#titleGoldenPreview .tt-golden-orb").forEach((orb, i) => {
-      setTimeout(() => orb.classList.add("tt-golden-orb--pulse"), 300 + i * 180);
-    });
+    const container = document.getElementById("titleGoldenPreview");
+    if (!container) return;
+    container.innerHTML = Visuals.GOLDEN_RULES.map((rule) => `
+      <li>
+        <button type="button" class="tt-golden-list__item" data-rule-n="${rule.n}" aria-label="Golden Rule ${rule.n}: ${escapeHtml(rule.short)}" aria-pressed="false">
+          <span class="tt-golden-list__icon" aria-hidden="true">${rule.icon}</span>
+          <span class="tt-golden-list__text">${escapeHtml(rule.short)}</span>
+        </button>
+      </li>`).join("");
     wireTitleGoldenRules();
   }
 
@@ -3943,6 +3949,7 @@ Play again to rebuild your record clean.`;
     updateTitleLaunchUI();
     renderTitleTypingMenu();
     window.addEventListener("resize", fitTitleScreenScale);
+    window.visualViewport?.addEventListener("resize", fitTitleScreenScale);
     requestAnimationFrame(fitTitleScreenScale);
 
     document.querySelectorAll(".tt-difficulty__btn").forEach((btn) => {

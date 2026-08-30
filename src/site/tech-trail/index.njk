@@ -78,88 +78,99 @@ layout: false
               </ol>
             </div>
 
-            <div id="titleExtras" class="tt-title-extras">
-            <div class="tt-title-extras__col tt-title-extras__col--settings">
-            <details class="tt-tutorial tt-tutorial--compact" id="titleTutorial">
-              <summary class="tt-tutorial__title">How to play ▼</summary>
-              <div class="tt-tutorial__body">
-                <ol class="tt-tutorial__list">
-                  <li><strong>Diagnose</strong> your keystroke speed by typing one <strong>complete sentence</strong> — only correct letters count.</li>
-                  <li><strong>Read</strong> each scene, then <strong>type</strong> your path — ghost text shows what to write. Branch options appear as <span class="tt-ghost-demo">Library<span class="tt-ghost-demo__slash">/</span>Tech Lab<span class="tt-ghost-demo__slash">/</span>Bridge</span>.</li>
-                  <li><strong>Type the whole path</strong> shown in ghost text — every letter of the choice you pick. Then hit your speed to unlock. Fix underlined typos before you continue.</li>
-                  <li><strong>Explore in 3D</strong> — walk the campus with <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> (drag to look around). Glowing buildings are rooms; walk up to a gold door and press <kbd>E</kbd> to enter.</li>
-                  <li><strong>Map</strong> — press <kbd>Z</kbd> (or tap 🗺️ Map) to fly over the campus. The glowing room is you. Gold doors are exits.</li>
-                  <li><strong>Phrase check</strong> before you leave a room: type a digital citizenship sentence and a SPARK sentence. The big letter is next — press space between words.</li>
-                  <li><strong>Collect</strong> trophies in your pack — tap 🎒 to inspect badges, Golden Rules, and mentor notes.</li>
-                  <li><strong>Win</strong> by reaching the Final Trial and typing your Digital Citizenship Oath.</li>
-                </ol>
-                <p class="tt-tutorial__note">Wrong turns rewind the scene — they aren't game over. Each run scrambles side missions, but the five Golden Rules stay the main quest. Built for grades 6–8 (ITEM 2025 · 8.3.2.1).</p>
-              </div>
-            </details>
-            <div id="typingProfileBar" class="tt-typing-profile dw-hidden">
-              <span class="tt-typing-profile__stat">⌨️ Test: <strong id="profileTestWpm">—</strong> keys/min</span>
-              <span class="tt-typing-profile__stat">🎯 Target: <strong id="profileTargetWpm">—</strong> keys/min</span>
-              <button id="retakeDiagnosticBtn" class="tt-settings-btn tt-settings-btn--sm" type="button">Retake keystroke test</button>
-            </div>
-            <div class="tt-title-controls-row">
-            <div class="tt-typo-settings">
-              <span class="tt-difficulty__label">Typos:</span>
-              <input id="typoToleranceRange" type="range" min="0" max="10" value="2" class="tt-typo-range" aria-label="Typo forgiveness" />
-              <span id="typoToleranceLabel" class="tt-typo-label">2</span>
-            </div>
-            <div class="tt-difficulty">
-              <span class="tt-difficulty__label">Mode:</span>
-              <button class="tt-difficulty__btn tt-difficulty__btn--active" type="button" data-tier="cadet">Cadet</button>
-              <button class="tt-difficulty__btn" type="button" data-tier="operative">Operative</button>
-              <button class="tt-difficulty__btn" type="button" data-tier="analyst">Analyst</button>
-            </div>
-            </div>
-            </div>
-            <div class="tt-title-extras__col tt-title-extras__col--rules">
-            <div class="tt-golden-preview-wrap">
-              <h2 class="tt-golden-preview__heading">Golden Rules</h2>
-              <div class="tt-golden-track tt-golden-track--title" id="titleGoldenPreview" aria-label="Golden Rules to recover"></div>
-              <div id="goldenRuleDetail" class="tt-golden-rule-detail dw-hidden" aria-live="polite"></div>
-            </div>
-            </div>
+            <div id="titleNewLaunch" class="tt-title-new-launch dw-hidden">
+              <button id="startGameBtn" class="tt-globe-btn tt-globe-btn--primary" type="button" aria-label="Start game">
+                <span class="tt-globe-btn__globe" aria-hidden="true">
+                  <span class="tt-globe-btn__sphere"></span>
+                  <span class="tt-globe-btn__ring tt-globe-btn__ring--1"></span>
+                  <span class="tt-globe-btn__ring tt-globe-btn__ring--2"></span>
+                  <span class="tt-globe-btn__ring tt-globe-btn__ring--3"></span>
+                </span>
+                <span class="tt-globe-btn__label" id="startGameBtnLabel">Start game</span>
+                <span class="tt-globe-btn__sublabel" id="startGameBtnHint">Keystroke test first</span>
+              </button>
             </div>
 
-            <div class="tt-title-launch-bar" id="titleLaunchBar">
-              <div class="tt-launch-actions">
-                <button id="startGameBtn" class="tt-globe-btn tt-globe-btn--primary" type="button" aria-label="Start game">
-                  <span class="tt-globe-btn__globe" aria-hidden="true">
-                    <span class="tt-globe-btn__sphere"></span>
-                    <span class="tt-globe-btn__ring tt-globe-btn__ring--1"></span>
-                    <span class="tt-globe-btn__ring tt-globe-btn__ring--2"></span>
-                    <span class="tt-globe-btn__ring tt-globe-btn__ring--3"></span>
-                  </span>
-                  <span class="tt-globe-btn__label" id="startGameBtnLabel">Start game</span>
-                  <span class="tt-globe-btn__sublabel" id="startGameBtnHint">Keystroke test first</span>
-                </button>
-                <button id="continueRunBtn" class="tt-globe-btn tt-globe-btn--sm dw-hidden" type="button" aria-label="Continue saved mission">
-                  <span class="tt-globe-btn__globe" aria-hidden="true">
-                    <span class="tt-globe-btn__sphere"></span>
-                    <span class="tt-globe-btn__ring tt-globe-btn__ring--1"></span>
-                    <span class="tt-globe-btn__ring tt-globe-btn__ring--2"></span>
-                  </span>
-                  <span class="tt-globe-btn__label">Continue</span>
-                </button>
-                <button id="newRunBtn" class="tt-launch-link-btn dw-hidden" type="button">New mission</button>
-              </div>
-              <div id="titleTypingMenu" class="tt-title-typing tt-typing-panel">
-                <p id="titleCommandHint" class="tt-title-command-hint">Type: <strong>ACCEPT MISSION</strong></p>
-                <div id="titleGhostPrompt" class="tt-ghost-prompt"></div>
-                <div class="tt-title-typing__controls">
-                  <input id="titleTypingInput" class="tt-typing-input tt-typing-input--title" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Type here…" aria-label="Title menu command" />
-                  <div class="tt-typing-meter tt-typing-meter--compact" id="titleTypingMeter" aria-hidden="true">
-                    <div class="tt-typing-meter__track">
-                      <div class="tt-typing-meter__fill" id="titleProgressFill"></div>
+            <div id="titleMain" class="tt-title-main dw-hidden">
+              <aside class="tt-title-panel tt-title-panel--rules" aria-label="Golden Rules">
+                <div class="tt-golden-preview-wrap">
+                  <h2 class="tt-golden-preview__heading">Golden Rules</h2>
+                  <ul class="tt-golden-list" id="titleGoldenPreview" aria-label="Golden Rules to recover"></ul>
+                  <div id="goldenRuleDetail" class="tt-golden-rule-detail dw-hidden" aria-live="polite"></div>
+                </div>
+              </aside>
+
+              <div class="tt-title-panel tt-title-panel--center">
+                <div class="tt-title-launch-bar" id="titleLaunchBar">
+                  <div class="tt-launch-actions">
+                    <button id="continueRunBtn" class="tt-globe-btn tt-globe-btn--primary dw-hidden" type="button" aria-label="Continue saved mission">
+                      <span class="tt-globe-btn__globe" aria-hidden="true">
+                        <span class="tt-globe-btn__sphere"></span>
+                        <span class="tt-globe-btn__ring tt-globe-btn__ring--1"></span>
+                        <span class="tt-globe-btn__ring tt-globe-btn__ring--2"></span>
+                      </span>
+                      <span class="tt-globe-btn__label">Continue mission</span>
+                    </button>
+                    <button id="newRunBtn" class="tt-globe-btn tt-globe-btn--sm" type="button" aria-label="Start a new mission">
+                      <span class="tt-globe-btn__globe" aria-hidden="true">
+                        <span class="tt-globe-btn__sphere"></span>
+                        <span class="tt-globe-btn__ring tt-globe-btn__ring--1"></span>
+                        <span class="tt-globe-btn__ring tt-globe-btn__ring--2"></span>
+                      </span>
+                      <span class="tt-globe-btn__label">New mission</span>
+                    </button>
+                  </div>
+                  <div id="titleTypingMenu" class="tt-title-typing tt-typing-panel">
+                    <p id="titleCommandHint" class="tt-title-command-hint">Type: <strong>NEW MISSION</strong></p>
+                    <div id="titleGhostPrompt" class="tt-ghost-prompt"></div>
+                    <div class="tt-title-typing__controls">
+                      <input id="titleTypingInput" class="tt-typing-input tt-typing-input--title" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Type here…" aria-label="Title menu command" />
+                      <div class="tt-typing-meter tt-typing-meter--compact" id="titleTypingMeter" aria-hidden="true">
+                        <div class="tt-typing-meter__track">
+                          <div class="tt-typing-meter__fill" id="titleProgressFill"></div>
+                        </div>
+                        <span class="tt-typing-meter__value" id="titleProgressPct">0%</span>
+                      </div>
                     </div>
-                    <span class="tt-typing-meter__value" id="titleProgressPct">0%</span>
+                    <div id="titleTypedDisplay" class="tt-typed-display" aria-live="polite"></div>
                   </div>
                 </div>
-                <div id="titleTypedDisplay" class="tt-typed-display" aria-live="polite"></div>
               </div>
+
+              <aside class="tt-title-panel tt-title-panel--settings" aria-label="Settings">
+                <details class="tt-tutorial tt-tutorial--compact" id="titleTutorial">
+                  <summary class="tt-tutorial__title">How to play ▼</summary>
+                  <div class="tt-tutorial__body">
+                    <ol class="tt-tutorial__list">
+                      <li><strong>Diagnose</strong> your keystroke speed by typing one <strong>complete sentence</strong> — only correct letters count.</li>
+                      <li><strong>Read</strong> each scene, then <strong>type</strong> your path — ghost text shows what to write. Branch options appear as <span class="tt-ghost-demo">Library<span class="tt-ghost-demo__slash">/</span>Tech Lab<span class="tt-ghost-demo__slash">/</span>Bridge</span>.</li>
+                      <li><strong>Type the whole path</strong> shown in ghost text — every letter of the choice you pick. Then hit your speed to unlock. Fix underlined typos before you continue.</li>
+                      <li><strong>Explore in 3D</strong> — walk the campus with <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> (drag to look around). Glowing buildings are rooms; walk up to a gold door and press <kbd>E</kbd> to enter.</li>
+                      <li><strong>Map</strong> — press <kbd>Z</kbd> (or tap 🗺️ Map) to fly over the campus. The glowing room is you. Gold doors are exits.</li>
+                      <li><strong>Phrase check</strong> before you leave a room: type a digital citizenship sentence and a SPARK sentence. The big letter is next — press space between words.</li>
+                      <li><strong>Collect</strong> trophies in your pack — tap 🎒 to inspect badges, Golden Rules, and mentor notes.</li>
+                      <li><strong>Win</strong> by reaching the Final Trial and typing your Digital Citizenship Oath.</li>
+                    </ol>
+                    <p class="tt-tutorial__note">Wrong turns rewind the scene — they aren't game over. Each run scrambles side missions, but the five Golden Rules stay the main quest. Built for grades 6–8 (ITEM 2025 · 8.3.2.1).</p>
+                  </div>
+                </details>
+                <div id="typingProfileBar" class="tt-typing-profile dw-hidden">
+                  <span class="tt-typing-profile__stat">⌨️ Test: <strong id="profileTestWpm">—</strong> keys/min</span>
+                  <span class="tt-typing-profile__stat">🎯 Target: <strong id="profileTargetWpm">—</strong> keys/min</span>
+                  <button id="retakeDiagnosticBtn" class="tt-settings-btn tt-settings-btn--sm" type="button">Retake keystroke test</button>
+                </div>
+                <div class="tt-typo-settings">
+                  <span class="tt-difficulty__label">Typos:</span>
+                  <input id="typoToleranceRange" type="range" min="0" max="10" value="2" class="tt-typo-range" aria-label="Typo forgiveness" />
+                  <span id="typoToleranceLabel" class="tt-typo-label">2</span>
+                </div>
+                <div class="tt-difficulty">
+                  <span class="tt-difficulty__label">Mode:</span>
+                  <button class="tt-difficulty__btn tt-difficulty__btn--active" type="button" data-tier="cadet">Cadet</button>
+                  <button class="tt-difficulty__btn" type="button" data-tier="operative">Operative</button>
+                  <button class="tt-difficulty__btn" type="button" data-tier="analyst">Analyst</button>
+                </div>
+              </aside>
             </div>
 
             <p id="gtgBootError" class="tt-boot-error dw-hidden" role="alert"></p>

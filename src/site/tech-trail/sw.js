@@ -1,7 +1,7 @@
 /**
  * Global Tech Gauntlet — service worker with network-first for scripts/styles.
  */
-const CACHE_NAME = "gtg-v68";
+const CACHE_NAME = "gtg-v69";
 
 function offlineResponse(message = "Offline") {
   return new Response(message, {
