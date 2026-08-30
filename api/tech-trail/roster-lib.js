@@ -41,12 +41,12 @@ export function rosterNamesForClassroom(classroom) {
   return names.map(normalizeGtgName).filter(Boolean).sort((a, b) => a.localeCompare(b));
 }
 
-export function matchRosterName(name, classroom) {
+export function matchRosterName(name, classroom, poolOverride) {
   const room = resolveClassroom(classroom);
   if (!room) return { ok: false, message: "Invalid classroom." };
   const target = rosterKey(name);
   if (!target) return { ok: false, message: "Enter your name." };
-  const pool = rosterNamesForClassroom(room);
+  const pool = Array.isArray(poolOverride) ? poolOverride : rosterNamesForClassroom(room);
   if (!pool.length) {
     return { ok: false, message: "No roster loaded for this class yet. Ask your teacher to add names to the Class Rosters sheet." };
   }

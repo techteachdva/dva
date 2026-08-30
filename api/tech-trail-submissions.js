@@ -95,6 +95,29 @@ function isRosterRequest(request) {
     || getQueryParam(request, "resource") === "roster";
 }
 
+async function rosterNamesForClassroomLive(classroom) {
+  const scriptUrl = getScriptUrl();
+  if (!scriptUrl) return rosterNamesForClassroom(classroom);
+
+  try {
+    const url = new URL(scriptUrl);
+    url.searchParams.set("action", "roster");
+    url.searchParams.set("secret", getApiSecret());
+    url.searchParams.set("classroom", classroom);
+    const data = await fetchScriptJson(url.toString(), { method: "GET" });
+    if (data.error) {
+      console.error("Tech Trail roster script error:", data.error);
+      return rosterNamesForClassroom(classroom);
+    }
+    if (Array.isArray(data.names) && data.names.length) {
+      return data.names;
+    }
+  } catch (e) {
+    console.error("Tech Trail roster from sheet:", e.message);
+  }
+  return rosterNamesForClassroom(classroom);
+}
+
 async function rosterGet(request) {
   const action = getQueryParam(request, "action");
   if (action === "classrooms") {
@@ -108,7 +131,7 @@ async function rosterGet(request) {
     return Response.json({ error: access.message, names: [] }, { status: 400, headers: corsHeaders() });
   }
 
-  const names = rosterNamesForClassroom(access.classroom);
+  const names = await rosterNamesForClassroomLive(access.classroom);
   return Response.json(
     { classroom: access.classroom, names, count: names.length },
     { headers: corsHeaders() }
@@ -127,7 +150,11 @@ async function rosterPost(request) {
     return Response.json({ error: nameCheck.message }, { status: 400, headers: corsHeaders() });
   }
 
-  const rosterCheck = matchRosterName(nameCheck.name, access.classroom);
+  const rosterCheck = matchRosterName(
+    nameCheck.name,
+    access.classroom,
+    await rosterNamesForClassroomLive(access.classroom)
+  );
   if (!rosterCheck.ok) {
     return Response.json({ error: rosterCheck.message }, { status: 400, headers: corsHeaders() });
   }
@@ -255,7 +282,11 @@ export async function POST(request) {
       );
     }
 
-    const rosterCheck = matchRosterName(nameCheck.name, classroom);
+    const rosterCheck = matchRosterName(
+      nameCheck.name,
+      classroom,
+      await rosterNamesForClassroomLive(classroom)
+    );
     if (!rosterCheck.ok) {
       return Response.json({ error: rosterCheck.message }, { status: 400, headers: corsHeaders() });
     }
