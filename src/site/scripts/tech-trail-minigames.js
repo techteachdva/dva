@@ -67,7 +67,7 @@
     ];
     const order = ["A", "B", "C", "D"];
     let step = 0;
-    let failed = false;
+    let locked = false;
     ui.arena.innerHTML = `<svg class="tt-minigame__wires" viewBox="0 0 100 100" aria-hidden="true">
       <path class="tt-minigame__wire" d="M12,50 L50,18 L88,50 L50,82 Z" />
     </svg>
@@ -76,22 +76,27 @@
     setStatus("Tap node A to start the circuit.");
     ui.arena.querySelectorAll(".tt-minigame__node").forEach((btn) => {
       btn.addEventListener("click", () => {
-        if (failed) return;
+        if (locked) return;
+        if (btn.classList.contains("tt-minigame__node--lit")) return;
         const id = btn.dataset.node;
         if (id === order[step]) {
           btn.classList.add("tt-minigame__node--lit");
           step += 1;
           if (step >= order.length) {
+            locked = true;
             setStatus("Circuit live! ✓");
             setTimeout(() => resolve(true), 500);
           } else {
             setStatus(`Good — now tap node ${order[step]}.`);
           }
         } else {
-          failed = true;
+          step = 0;
+          ui.arena.querySelectorAll(".tt-minigame__node").forEach((node) => {
+            node.classList.remove("tt-minigame__node--lit", "tt-minigame__node--fail");
+          });
           btn.classList.add("tt-minigame__node--fail");
-          setStatus("Wrong node — short circuit! Try again.");
-          setTimeout(() => resolve(false), 900);
+          setStatus(`Wrong order — start again from node ${order[0]}.`);
+          setTimeout(() => btn.classList.remove("tt-minigame__node--fail"), 500);
         }
       });
     });

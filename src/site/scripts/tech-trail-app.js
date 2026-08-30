@@ -347,6 +347,7 @@
     const fromRoom = mapIdFor(fromNodeId);
     const toRoom = mapIdFor(next);
     if (fromRoom === toRoom) return false;
+    if (fromNodeId === "start" && Visuals.isGoldenPathRoom?.(toRoom)) return false;
     return !isRoomUnlocked(toRoom);
   }
 
@@ -1664,11 +1665,11 @@
     }
 
     const hint = document.getElementById("choiceSpeedHint");
-    const cfg = difficultyCfg();
     const budget = typoBudget();
+    const allShort = branches.length > 0 && branches.every((t) => Typing.isShortTranscriptionPath?.(t));
     if (hint) {
-      hint.textContent = shortPath
-        ? "Short path — accuracy unlocks your choice (speed bar is just for practice)."
+      hint.textContent = allShort
+        ? "Type the room name to pick your path — accuracy unlocks your choice."
         : `Type the full highlighted path. Accuracy unlocks your choice · ${budget >= 10 ? "typos forgiven" : `up to ${budget} typo${budget === 1 ? "" : "s"}`}`;
     }
 
@@ -3832,28 +3833,32 @@
         clearChoiceTyping();
         if (choicesEl) choicesEl.innerHTML = `<p class="tt-minigame__loading">Powering room systems…</p>`;
         syncImmersiveTypingOverlay();
-        let ok = true;
-        try {
-          ok = await window.TechTrailMinigames.play(roomId);
-        } catch (err) {
-          console.error("[GTG] Room minigame failed:", err);
-          ok = true;
-        }
-        if (gen !== typewriterGen) return;
-        completedMinigames.add(roomId);
-        if (ok) {
-          journal.push(`⚡ Cleared ${mini.title}`);
-          toast("Room challenge cleared!", "info");
-        } else {
-          strikes = Math.min(MAX_STRIKES, strikes + 1);
-          journal.push(`⚠️ Failed room challenge — strike ${strikes}/${MAX_STRIKES}`);
-          updateStrikeMeter();
-          toast(`Challenge failed — strike ${strikes}/${MAX_STRIKES}`, "lesson");
-          if (strikes >= MAX_STRIKES) {
-            triggerMissionFailure("failed too many challenges");
-            return;
+        let ok = false;
+        while (!ok) {
+          if (gen !== typewriterGen) return;
+          try {
+            ok = await window.TechTrailMinigames.play(roomId);
+          } catch (err) {
+            console.error("[GTG] Room minigame failed:", err);
+            ok = true;
+          }
+          if (gen !== typewriterGen) return;
+          if (!ok) {
+            strikes = Math.min(MAX_STRIKES, strikes + 1);
+            journal.push(`⚠️ Failed room challenge — strike ${strikes}/${MAX_STRIKES}`);
+            updateStrikeMeter();
+            toast(`Challenge failed — try again (${strikes}/${MAX_STRIKES} strikes)`, "lesson");
+            if (strikes >= MAX_STRIKES) {
+              triggerMissionFailure("failed too many challenges");
+              return;
+            }
           }
         }
+        completedMinigames.add(roomId);
+        journal.push(`⚡ Cleared ${mini.title}`);
+        toast("Room challenge cleared!", "info");
+        if (choicesEl) choicesEl.innerHTML = "";
+        document.getElementById("sceneChoices")?.classList.remove("tt-layer--enter");
         State.saveRun(withStudentRunFields({
           currentNode,
           badges,

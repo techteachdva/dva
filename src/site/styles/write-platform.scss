@@ -1131,14 +1131,15 @@ $wp-sheet-min-height: 1056px;
 .tt-minigame__node {
   position: absolute;
   transform: translate(-50%, -50%);
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   border: 2px solid var(--node-color, #9d8cff);
   background: rgba(10, 6, 18, 0.85);
   color: #fff;
   font-weight: 700;
   cursor: pointer;
+  touch-action: manipulation;
   transition: transform 0.15s, box-shadow 0.15s;
 }
 
