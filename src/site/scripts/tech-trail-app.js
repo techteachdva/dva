@@ -2051,7 +2051,7 @@
   function exitToCampus() {
     window.__gtgWorld3D?.exitToCampus?.();
     document.getElementById("exitRoomBtn")?.classList.add("dw-hidden");
-    toast("Back on campus — walk to any open floor and press E to enter.", "info");
+    toast("Back on campus — use WASD to walk. Press E at a floor to enter.", "info");
   }
 
   function showNpcDialog(mentorKey, roomId) {
@@ -2351,6 +2351,14 @@
     applySceneZone(nodeId);
     renderMissionChrome(nodeId, node);
     if (mapIsOpen()) renderCampusMap(nodeId);
+
+    if (!node.ending && window.__gtgWorld3D?.active) {
+      if (opts.campusRoam) {
+        window.__gtgWorld3D.setCampusRoam?.(true);
+      } else if (!opts.fromWorld) {
+        window.__gtgWorld3D.setCampusRoam?.(false);
+      }
+    }
 
     const locEl = document.getElementById("sceneLocation");
     if (locEl) locEl.textContent = node.location || "Unknown";

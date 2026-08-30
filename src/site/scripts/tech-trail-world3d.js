@@ -251,6 +251,8 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture, FLOOR_PALETTES } fr
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     root.appendChild(renderer.domElement);
     renderer.domElement.classList.add("tt-world__canvas");
+    renderer.domElement.tabIndex = 0;
+    renderer.domElement.setAttribute("aria-label", "Campus walk view");
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(0x0a0612);
@@ -581,7 +583,34 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture, FLOOR_PALETTES } fr
     let camDist = CAM_DIST;
     const camPos = new THREE.Vector3(0, 40, 140);
     const camTarget = new THREE.Vector3();
-    const camDesired = new THREE.Vector3();
+    const roamCamPos = new THREE.Vector3();
+    const roamCamTarget = new THREE.Vector3();
+    const mapCamPos = new THREE.Vector3();
+    const mapCamTarget = new THREE.Vector3();
+    let mapBlend = 0;
+
+    function easeInOutCubic(t) {
+      return t < 0.5 ? 4 * t * t * t : 1 - ((-2 * t + 2) ** 3) / 2;
+    }
+
+    function roamCamera(outPos, outTarget, bob) {
+      const backX = -Math.sin(playerYaw) * camDist;
+      const backZ = -Math.cos(playerYaw) * camDist;
+      outPos.set(playerPos.x + backX, CAM_HEIGHT + bob, playerPos.z + backZ);
+      outTarget.set(
+        playerPos.x + Math.sin(playerYaw) * 3,
+        1.8 + bob,
+        playerPos.z + Math.cos(playerYaw) * 3
+      );
+    }
+
+    function mapCamera(outPos, outTarget, aspect) {
+      const h = mapCameraHeight(aspect);
+      const focusX = THREE.MathUtils.lerp(playerPos.x, 0, 0.5);
+      const focusZ = THREE.MathUtils.lerp(playerPos.z, 0, 0.5);
+      outPos.set(focusX, h, focusZ + 0.01);
+      outTarget.set(focusX, 0, focusZ);
+    }
 
     // --- interaction / game-state glue -------------------------------------------
     const promptEl = document.getElementById("worldPrompt");
@@ -601,6 +630,15 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture, FLOOR_PALETTES } fr
     const visitedSet = () => new Set(bridge.getRunState().visitedRooms);
     const completedSet = () => new Set(bridge.getRunState().completedRooms);
 
+    function movementBlocked() {
+      if (mapOpen()) return true;
+      if (bridge.isOverlayOpen()) return true;
+      if (document.body.classList.contains("tt-in-room")) return true;
+      const typingEl = document.getElementById("typingChallenge");
+      if (typingEl && !typingEl.classList.contains("dw-hidden") && typingFocused()) return true;
+      return false;
+    }
+
     function enterable(roomId) {
       if (!Visuals.MAP_ROOMS[roomId]) return null;
       if (pendingTarget?.roomId === roomId) return "target";
@@ -610,17 +648,21 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture, FLOOR_PALETTES } fr
     function setRoam(on) {
       roam = on;
       document.body.classList.toggle("tt-roam", on);
+      document.body.classList.toggle("tt-in-room", !on);
       hintEl?.classList.toggle("dw-hidden", !on);
       if (on) {
         const ae = document.activeElement;
         if (ae && ae !== document.body && ae !== document.documentElement) {
           ae.blur();
         }
+        renderer.domElement.focus({ preventScroll: true });
       } else {
         hidePrompt();
       }
       updateObjective();
     }
+
+    setRoam(false);
 
     function updateObjective() {
       if (!objectiveEl) return;
@@ -701,12 +743,15 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture, FLOOR_PALETTES } fr
     window.__gtgWorld3D.refreshCampus = refreshRings;
 
     window.__gtgWorld3D.exitToCampus = () => {
+      bridge.closeMap?.();
       const roomId = bridge.mapIdFor(bridge.getRunState().currentNode);
       setRoam(true);
       teleportToRoomDoor(roomId);
       refreshRings();
       updateObjective();
     };
+
+    window.__gtgWorld3D.setCampusRoam = setRoam;
 
     window.__gtgWorld3D.closeMap = () => bridge.closeMap?.();
 
@@ -811,12 +856,12 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture, FLOOR_PALETTES } fr
 
     window.addEventListener("keydown", (e) => {
       const k = e.key.toLowerCase();
-      if (k === "e" && roam && promptAction && !bridge.isOverlayOpen() && !mapOpen()) {
+      if (k === "e" && !movementBlocked() && promptAction) {
         e.preventDefault();
         promptAction();
         return;
       }
-      if (!roam || typingFocused() || bridge.isOverlayOpen() || mapOpen()) return;
+      if (movementBlocked()) return;
       if (["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright", "shift"].includes(k)) {
         keys.add(k);
         e.preventDefault();
@@ -826,7 +871,7 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture, FLOOR_PALETTES } fr
     window.addEventListener("blur", () => keys.clear());
 
     renderer.domElement.addEventListener("wheel", (e) => {
-      if (!roam) return;
+      if (movementBlocked()) return;
       camDist = Math.min(14, Math.max(5.5, camDist + e.deltaY * 0.01));
     }, { passive: true });
 
@@ -838,7 +883,7 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture, FLOOR_PALETTES } fr
     const turnLast = { x: 0, y: 0 };
     let turnDelta = 0;
     renderer.domElement.addEventListener("touchstart", (e) => {
-      if (!roam) return;
+      if (movementBlocked()) return;
       for (const t of e.changedTouches) {
         if (t.clientX < window.innerWidth * 0.45 && joyId === null) {
           joyId = t.identifier;
@@ -909,7 +954,7 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture, FLOOR_PALETTES } fr
 
     // --- proximity / prompts -----------------------------------------------------------
     function checkProximity() {
-      if (!roam) return;
+      if (movementBlocked()) return;
       let best = null;
       let bestD = Infinity;
       buildings.forEach((b, roomId) => {
@@ -966,31 +1011,29 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture, FLOOR_PALETTES } fr
 
     let mapFogDensity = 0.0042;
     function updateCamera(dt) {
-      const map = mapOpen();
-      if (map) {
-        const h = mapCameraHeight(camera.aspect || 1);
-        camDesired.set(0, h, 0.01);
-        camTarget.lerp(new THREE.Vector3(0, 0, 0), Math.min(1, dt * 4));
-        mapFogDensity = THREE.MathUtils.lerp(mapFogDensity, 0, Math.min(1, dt * 8));
-      } else {
-        mapFogDensity = THREE.MathUtils.lerp(mapFogDensity, 0.0042, Math.min(1, dt * 5));
-        const still = reducedMotion();
-        const bob = still ? 0 : Math.sin(performance.now() * 0.0011) * 0.12;
-        const backX = -Math.sin(playerYaw) * camDist;
-        const backZ = -Math.cos(playerYaw) * camDist;
-        camDesired.set(
-          playerPos.x + backX,
-          CAM_HEIGHT + bob,
-          playerPos.z + backZ
-        );
-        const lookX = playerPos.x + Math.sin(playerYaw) * 3;
-        const lookZ = playerPos.z + Math.cos(playerYaw) * 3;
-        camTarget.lerp(new THREE.Vector3(lookX, 1.8 + bob, lookZ), Math.min(1, dt * 10));
+      const mapWanted = mapOpen() ? 1 : 0;
+      const blendSpeed = reducedMotion() ? 14 : 2.6;
+      mapBlend = THREE.MathUtils.lerp(mapBlend, mapWanted, Math.min(1, dt * blendSpeed));
+      const t = easeInOutCubic(mapBlend);
+
+      const still = reducedMotion();
+      const bob = still ? 0 : Math.sin(performance.now() * 0.0011) * 0.12;
+      roamCamera(roamCamPos, roamCamTarget, bob);
+      mapCamera(mapCamPos, mapCamTarget, camera.aspect || 1);
+
+      camPos.copy(roamCamPos).lerp(mapCamPos, t);
+      camTarget.copy(roamCamTarget).lerp(mapCamTarget, t);
+
+      // Crane arc: rise above the straight-line path mid-transition.
+      if (t > 0.02 && t < 0.98) {
+        camPos.y += Math.sin(t * Math.PI) * 14;
       }
-      if (scene.fog?.density != null) scene.fog.density = mapFogDensity;
-      camPos.lerp(camDesired, Math.min(1, dt * (map ? 1.6 : 9)));
+
       camera.position.copy(camPos);
       camera.lookAt(camTarget);
+
+      mapFogDensity = THREE.MathUtils.lerp(0.0042, 0, t);
+      if (scene.fog?.density != null) scene.fog.density = mapFogDensity;
     }
 
     // --- adaptive pixel ratio ---------------------------------------------------------------
@@ -1041,7 +1084,7 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture, FLOOR_PALETTES } fr
     renderer.setAnimationLoop(() => {
       const dt = Math.min(clock.getDelta(), 0.05);
       ensureSpawn();
-      if (roam && !bridge.isOverlayOpen() && !mapOpen()) movePlayer(dt);
+      if (!movementBlocked()) movePlayer(dt);
       promptTick += dt;
       if (promptTick > 0.15) {
         promptTick = 0;
