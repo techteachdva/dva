@@ -11689,6 +11689,10 @@ body.tt-3d .tt-stage__viewport {
   min-height: min(78vh, 980px);
 }
 
+body.tt-3d .tt-game-layout--immersive .tt-stage__viewport {
+  min-height: 0 !important;
+}
+
 body.tt-3d.wp-theme--gauntlet .tt-game-layout .tt-stage__viewport {
   min-height: 0;
   height: 100%;
@@ -11820,8 +11824,8 @@ body.tt-3d .tt-game-layout.tt-game-layout--immersive:not(.dw-hidden) {
   inset: 0;
   z-index: 25;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) min(420px, 38vw);
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) clamp(400px, 44vw, 580px);
+  grid-template-rows: minmax(0, auto) minmax(0, 1fr);
   grid-template-areas:
     "hud hud"
     "stage rail";
@@ -11874,7 +11878,7 @@ body.tt-3d .tt-game-layout--immersive .tt-world::after {
   z-index: 2;
 }
 
-/* Top HUD strip */
+/* Top HUD strip — compact single row */
 body.tt-3d .tt-game-layout--immersive .tt-hud {
   grid-area: hud;
   position: relative;
@@ -11883,14 +11887,17 @@ body.tt-3d .tt-game-layout--immersive .tt-hud {
   right: auto;
   z-index: 70;
   margin: 0;
-  padding: 10px 14px;
+  padding: 6px 10px;
   pointer-events: none;
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: row;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: 8px 12px;
+  align-self: start;
+  gap: 6px 8px;
   min-height: 0;
-  max-height: none;
+  max-height: 56px;
+  overflow: hidden;
   background: linear-gradient(180deg, rgba(8, 4, 14, 0.96) 0%, rgba(8, 4, 14, 0.88) 100%);
   border-bottom: 1px solid rgba(255, 213, 74, 0.18);
 }
@@ -11900,60 +11907,74 @@ body.tt-3d .tt-game-layout--immersive .tt-hud > * {
 }
 
 body.tt-3d .tt-game-layout--immersive .tt-stats-bar {
-  flex: 1 1 280px;
+  flex: 1 1 auto;
+  min-width: 0;
   margin: 0;
-  padding: 8px 12px;
-  gap: 10px 14px;
-  font-size: clamp(15px, 0.9vw + 13px, 18px);
+  padding: 5px 10px;
+  gap: 8px 12px;
+  font-size: clamp(12px, 0.75vw + 11px, 15px);
+  flex-wrap: nowrap;
   overflow-x: auto;
   overflow-y: hidden;
   white-space: nowrap;
   scrollbar-width: thin;
 }
 
+body.tt-3d .tt-game-layout--immersive .tt-stat {
+  flex: 0 0 auto;
+}
+
 body.tt-3d .tt-game-layout--immersive .tt-stat__value {
-  font-size: 1.05em;
+  font-size: 1em;
   font-weight: 800;
 }
 
 body.tt-3d .tt-game-layout--immersive .tt-you-are-here {
-  order: 2;
+  order: unset;
+  flex: 0 0 auto;
   margin: 0;
-  padding: 8px 14px;
+  padding: 5px 10px;
   border-radius: 999px;
   background: rgba(12, 6, 20, 0.82);
   border: 1px solid rgba(255, 213, 74, 0.35);
-  font-size: clamp(15px, 0.85vw + 13px, 18px);
+  font-size: clamp(12px, 0.7vw + 11px, 14px);
   font-weight: 700;
+  white-space: nowrap;
   cursor: pointer;
 }
 
 body.tt-3d .tt-game-layout--immersive .tt-pack-btn {
-  order: 3;
-  font-size: clamp(15px, 0.85vw + 13px, 18px);
-  padding: 10px 16px;
+  order: unset;
+  flex: 0 0 auto;
+  font-size: clamp(12px, 0.7vw + 11px, 14px);
+  padding: 6px 10px;
   position: relative;
   z-index: 75;
 }
 
 body.tt-3d .tt-game-layout--immersive .tt-hud-actions {
-  order: 4;
+  order: unset;
+  flex: 0 0 auto;
   margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 body.tt-3d .tt-game-layout--immersive .tt-hud-btn,
 body.tt-3d .tt-game-layout--immersive .tt-map-btn,
 body.tt-3d .tt-game-layout--immersive .tt-mute-btn {
-  font-size: clamp(14px, 0.8vw + 12px, 17px);
-  padding: 9px 12px;
+  font-size: clamp(12px, 0.7vw + 11px, 14px);
+  padding: 6px 10px;
 }
 
-/* Left border — Golden Rules */
+/* Golden Rules — left edge of playfield below HUD */
 body.tt-3d .tt-game-layout--immersive .tt-golden-track {
-  position: absolute;
+  position: fixed;
   left: 8px;
-  top: 50%;
-  transform: translateY(-50%);
+  top: 56px;
+  bottom: 10px;
+  transform: none;
   z-index: 65;
   flex-direction: column;
   gap: 6px;
@@ -11963,31 +11984,18 @@ body.tt-3d .tt-game-layout--immersive .tt-golden-track {
   background: rgba(10, 5, 18, 0.78);
   border: 1px solid rgba(255, 213, 74, 0.22);
   pointer-events: auto;
-  max-height: calc(100dvh - 140px);
+  max-height: none;
   overflow-y: auto;
   overscroll-behavior: contain;
 }
 
 body.tt-3d .tt-game-layout--immersive .tt-golden-orb {
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
 }
 
-/* Fragment tracker — inline in HUD when immersive */
 body.tt-3d .tt-game-layout--immersive .tt-fragment-tracker {
-  position: static;
-  top: auto;
-  right: auto;
-  transform: none;
-  z-index: auto;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: rgba(10, 5, 18, 0.78);
-  border: 1px solid rgba(157, 140, 255, 0.25);
-  pointer-events: auto;
+  display: none;
 }
 
 /* Right column — mission UI + log/pack */
@@ -12006,13 +12014,13 @@ body.tt-3d .tt-game-layout--immersive .tt-immersive-rail {
 }
 
 body.tt-3d .tt-game-layout--immersive .tt-immersive-rail .tt-scene-panel {
-  flex: 1.15;
+  flex: 1.2;
   min-height: 0;
   display: flex;
   flex-direction: column;
   position: relative;
   margin: 0;
-  padding: 14px 16px;
+  padding: 16px 18px;
   border-radius: 0;
   border: none;
   border-bottom: 1px solid rgba(255, 213, 74, 0.18);
@@ -12024,6 +12032,7 @@ body.tt-3d .tt-game-layout--immersive .tt-immersive-rail .tt-scene-panel {
   box-shadow: none;
   transform: none;
   background: rgba(10, 5, 18, 0.55);
+  font-size: clamp(16px, 0.95vw + 14px, 18px);
 }
 
 body.tt-3d.tt-roam .tt-game-layout--immersive .tt-immersive-rail .tt-scene-panel {
@@ -12031,8 +12040,8 @@ body.tt-3d.tt-roam .tt-game-layout--immersive .tt-immersive-rail .tt-scene-panel
 }
 
 body.tt-3d .tt-game-layout--immersive .tt-immersive-rail .tt-sidebar {
-  flex: 0.85;
-  min-height: 140px;
+  flex: 0.8;
+  min-height: 160px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -12043,7 +12052,7 @@ body.tt-3d .tt-game-layout--immersive .tt-immersive-rail .tt-sidebar {
   width: 100%;
   height: auto;
   margin: 0;
-  padding: 12px 14px 14px;
+  padding: 14px 16px 16px;
   transform: none;
   transition: none;
   background: transparent;
@@ -12051,6 +12060,7 @@ body.tt-3d .tt-game-layout--immersive .tt-immersive-rail .tt-sidebar {
   box-shadow: none;
   backdrop-filter: none;
   overflow: hidden;
+  font-size: clamp(15px, 0.9vw + 13px, 17px);
 }
 
 body.tt-3d.tt-roam .tt-game-layout--immersive .tt-immersive-rail .tt-sidebar {
@@ -12118,7 +12128,7 @@ body.tt-3d .tt-game-layout--immersive .tt-scene-main {
 }
 
 body.tt-3d .tt-game-layout--immersive .tt-narrative {
-  font-size: clamp(16px, 0.9vw + 14px, 19px);
+  font-size: clamp(16px, 0.95vw + 14px, 19px);
   line-height: 1.55;
   flex: 1;
   min-height: 0;
@@ -12129,9 +12139,11 @@ body.tt-3d .tt-game-layout--immersive .tt-narrative {
 
 body.tt-3d .tt-game-layout--immersive .tt-holo {
   flex-shrink: 0;
-  max-height: 38%;
+  max-height: 42%;
   overflow-y: auto;
   overscroll-behavior: contain;
+  font-size: clamp(15px, 0.9vw + 13px, 18px);
+  line-height: 1.45;
 }
 
 body.tt-3d .tt-game-layout--immersive .tt-scene-header__meta,
@@ -12146,6 +12158,15 @@ body.tt-3d .tt-game-layout--immersive .tt-typing-challenge {
   max-height: none;
   overflow-y: auto;
   overscroll-behavior: contain;
+  font-size: clamp(15px, 0.9vw + 13px, 18px);
+  line-height: 1.45;
+}
+
+body.tt-3d .tt-game-layout--immersive .tt-typing-challenge__prompt,
+body.tt-3d .tt-game-layout--immersive .tt-choice,
+body.tt-3d .tt-game-layout--immersive .tt-typing-choice {
+  font-size: inherit;
+  line-height: 1.45;
 }
 
 body.tt-3d .tt-game-layout--immersive .tt-immersive-rail .tt-scene-panel > .tt-choices,
