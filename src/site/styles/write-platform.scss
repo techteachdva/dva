@@ -2102,6 +2102,7 @@ $wp-sheet-min-height: 1056px;
   position: fixed;
   inset: 0;
   z-index: 0;
+  pointer-events: none;
   background-color: #140818;
   background-image: url("/tech-trail/images/scenes/scene-gauntlet-arena.png");
   background-size: cover;
@@ -8450,6 +8451,7 @@ html:has(.tt-game-body #gameView:not(.dw-hidden)) {
   position: fixed;
   inset: 0;
   z-index: 0;
+  pointer-events: none;
   background-color: #140818;
   background-image: url("/tech-trail/images/scenes/scene-gauntlet-arena.png");
   background-size: cover;
@@ -8528,6 +8530,12 @@ html:has(.tt-game-body #gameView:not(.dw-hidden)) {
 .wp-theme--gauntlet #titleExtras {
   grid-row: 2;
   min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.wp-theme--gauntlet #titleExtras {
+  overflow-x: hidden;
 }
 
 .wp-theme--gauntlet #titleWelcome:not(.dw-hidden) + #titleExtras {
@@ -8546,6 +8554,8 @@ html:has(.tt-game-body #gameView:not(.dw-hidden)) {
   grid-row: 3;
   flex-shrink: 0;
   width: 100%;
+  position: relative;
+  z-index: 4;
 }
 
 .wp-theme--gauntlet .tt-title-launch-bar {

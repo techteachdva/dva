@@ -672,17 +672,43 @@
     const content = document.querySelector(".tt-title-screen__content");
     const titleView = document.getElementById("titleView");
     if (!content || !titleView?.classList.contains("tt-view--active")) return;
-    // Full-width dashboard — never scale (transform caused side letterboxing).
+
+    // Never scale — transform caused letterboxing and misaligned click targets.
     content.style.transform = "";
     content.style.width = "";
     content.style.gridTemplateRows = "";
     content.style.gridAutoRows = "";
+
+    const launchBar = document.getElementById("titleLaunchBar");
+    if (!launchBar) return;
+
+    const welcome = document.getElementById("titleWelcome");
+    const extras = document.getElementById("titleExtras");
+    const scrollRegion = welcome && !welcome.classList.contains("dw-hidden") ? welcome : extras;
+    if (scrollRegion) scrollRegion.style.maxHeight = "";
+
+    const viewBottom = titleView.getBoundingClientRect().bottom;
+    const launchBottom = launchBar.getBoundingClientRect().bottom;
+    if (launchBottom <= viewBottom + 1 || !scrollRegion) return;
+
+    const footer = content.querySelector(".tt-title-footer");
+    const hero = content.querySelector(".tt-title-hero");
+    const reserved =
+      (hero?.getBoundingClientRect().height ?? 0)
+      + launchBar.getBoundingClientRect().height
+      + (footer?.getBoundingClientRect().height ?? 0)
+      + 12;
+    const available = titleView.clientHeight - reserved;
+    if (available > 48) scrollRegion.style.maxHeight = `${Math.floor(available)}px`;
   }
 
   function openDiagnosticForLaunch(onComplete) {
-    const overlay = document.getElementById("diagnosticOverlay");
-    if (overlay && !overlay.classList.contains("dw-hidden")) return;
     pendingDiagnosticAction = onComplete;
+    const overlay = document.getElementById("diagnosticOverlay");
+    if (overlay && !overlay.classList.contains("dw-hidden")) {
+      setTimeout(() => document.getElementById("diagnosticInput")?.focus(), 60);
+      return;
+    }
     showDiagnostic();
   }
 
@@ -3484,12 +3510,16 @@ Play again to rebuild your record clean.`;
     const playLaunch = new URLSearchParams(window.location.search).get("play") === "1";
     if (playLaunch) {
       hookFullscreenOnFirstGesture();
-      if (typingProfile.diagnosed) {
-        setTimeout(() => {
+      setTimeout(() => {
+        fitTitleScreenScale();
+        document.getElementById("titleLaunchBar")?.scrollIntoView({ block: "nearest" });
+        if (typingProfile.diagnosed) {
           toast("Tip: tap ⛶ Fullscreen for the best arcade view.", "info");
           document.getElementById("titleTypingInput")?.focus();
-        }, 600);
-      }
+        } else {
+          document.getElementById("diagnosticInput")?.focus();
+        }
+      }, prefersReducedMotion ? 250 : 700);
     }
 
     document.getElementById("inventoryBtn")?.addEventListener("click", (e) => {
