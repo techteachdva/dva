@@ -933,6 +933,8 @@
       renderTitleTypingMenu();
     }
 
+    renderTitleGoldenPreview();
+
     if (hasRun) {
       continueBtn?.classList.remove("dw-hidden");
       newRunBtn?.classList.remove("dw-hidden");
@@ -974,6 +976,17 @@
     const available = vh - reserved;
     if (bodyRegion && available > 120) {
       bodyRegion.style.maxHeight = `${Math.floor(available)}px`;
+    }
+    if (main && !main.classList.contains("dw-hidden")) {
+      main.style.display = "grid";
+      main.style.gridTemplateColumns = "minmax(0, 1fr) minmax(0, 1.35fr) minmax(0, 1fr)";
+      main.style.width = "100%";
+      main.style.maxWidth = "none";
+    } else if (main) {
+      main.style.display = "";
+      main.style.gridTemplateColumns = "";
+      main.style.width = "";
+      main.style.maxWidth = "";
     }
   }
 
@@ -2370,6 +2383,55 @@
     }
   }
 
+  const TITLE_CORRUPT_ICONS = ["░", "▒", "▓", "█", "╳", "¿", "¤"];
+
+  function titleGarbleSeed(ruleN, salt = 0) {
+    return ruleN * 97 + salt * 31;
+  }
+
+  function titleSeededUnit(seed) {
+    const x = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
+    return x - Math.floor(x);
+  }
+
+  function jumbleRuleName(name, ruleN) {
+    return String(name || "")
+      .split(" ")
+      .map((word, wi) => {
+        const chars = [...word];
+        if (chars.length < 2) return word;
+        for (let i = chars.length - 1; i > 0; i--) {
+          const j = Math.floor(titleSeededUnit(titleGarbleSeed(ruleN, wi + 1) + i) * (i + 1));
+          [chars[i], chars[j]] = [chars[j], chars[i]];
+        }
+        let result = chars.join("");
+        if (result.toLowerCase() === word.toLowerCase() && chars.length > 2) {
+          result = chars.slice(1).join("") + chars[0];
+        }
+        return result;
+      })
+      .join(" ");
+  }
+
+  function corruptRuleText(text, ruleN) {
+    const glitch = ["█", "▓", "░", "▒", "¿", "§", "¤", "þ", "╳", "⌐", "▌", "▀", "╬"];
+    const symbols = "#@$%&*?/~\\|^<>{}[]═║";
+    return [...String(text || "")].map((ch, i) => {
+      if (ch === " " || ch === "—") {
+        return ch === " " && titleSeededUnit(titleGarbleSeed(ruleN, i + 3)) < 0.1 ? "_" : ch;
+      }
+      const r = titleSeededUnit(titleGarbleSeed(ruleN, i + 5));
+      if (r < 0.2) return glitch[Math.floor(titleSeededUnit(titleGarbleSeed(ruleN, i + 7)) * glitch.length)];
+      if (r < 0.34) return symbols[Math.floor(titleSeededUnit(titleGarbleSeed(ruleN, i + 11)) * symbols.length)];
+      if (r < 0.48) return ch;
+      return String.fromCharCode(33 + Math.floor(titleSeededUnit(titleGarbleSeed(ruleN, i + 13)) * 94));
+    }).join("");
+  }
+
+  function titleGoldenRulesUnlocked() {
+    return State.hasBeatenGame?.() ?? false;
+  }
+
   function renderGoldenTrack(containerId = "goldenRulesTrack", options = {}) {
     const el = document.getElementById(containerId);
     if (!el) return;
@@ -2403,6 +2465,7 @@
     if (!container) return;
     container.querySelectorAll(".tt-golden-list__item, .tt-golden-orb--interactive").forEach((btn) => {
       btn.addEventListener("click", () => {
+        const unlocked = titleGoldenRulesUnlocked();
         const n = Number(btn.dataset.ruleN);
         const rule = Visuals.GOLDEN_RULES.find((r) => r.n === n);
         if (!rule) return;
@@ -2414,15 +2477,27 @@
         btn.setAttribute("aria-pressed", "true");
         if (detail) {
           detail.classList.remove("dw-hidden");
-          detail.innerHTML = `<div class="tt-golden-rule-detail__badge">Golden Rule ${rule.n}</div>
-            <strong class="tt-golden-rule-detail__title">${escapeHtml(rule.short)}</strong>
-            <p class="tt-golden-rule-detail__body">${escapeHtml(rule.detail || rule.short)}</p>
-            ${rule.learnLine ? `<p class="tt-golden-rule-detail__hint">${escapeHtml(rule.learnLine)}</p>` : ""}
-            <p class="tt-golden-rule-detail__hint">Recover this rule during your mission by making smart digital choices.</p>`;
+          detail.classList.toggle("tt-golden-rule-detail--corrupted", !unlocked);
+          if (unlocked) {
+            detail.innerHTML = `<div class="tt-golden-rule-detail__badge">Golden Rule ${rule.n}</div>
+              <strong class="tt-golden-rule-detail__title">${escapeHtml(rule.short)}</strong>
+              <p class="tt-golden-rule-detail__body">${escapeHtml(rule.detail || rule.short)}</p>
+              ${rule.learnLine ? `<p class="tt-golden-rule-detail__hint">${escapeHtml(rule.learnLine)}</p>` : ""}
+              <p class="tt-golden-rule-detail__hint">Recover this rule during your mission by making smart digital choices.</p>`;
+            toast(`Golden Rule ${rule.n}: ${rule.short}`, "lesson");
+            Audio?.playPathUnlock?.();
+            burstConfetti(8);
+          } else {
+            const garbledName = jumbleRuleName(rule.short, rule.n);
+            detail.innerHTML = `<div class="tt-golden-rule-detail__badge tt-golden-rule-detail__badge--corrupt">Fragment ${rule.n} · signal corrupt</div>
+              <strong class="tt-golden-rule-detail__title tt-golden-rule-detail__title--corrupt">${escapeHtml(garbledName)}</strong>
+              <p class="tt-golden-rule-detail__body tt-golden-rule-detail__body--corrupt">${escapeHtml(corruptRuleText(rule.detail || rule.short, rule.n))}</p>
+              <p class="tt-golden-rule-detail__hint tt-golden-rule-detail__hint--corrupt">${escapeHtml(corruptRuleText(rule.learnLine || "Data unreadable until gauntlet complete.", rule.n + 9))}</p>
+              <p class="tt-golden-rule-detail__hint">Beat the Global Tech Gauntlet to decode the five Golden Rules.</p>`;
+            toast(`Encrypted fragment ${rule.n} — finish the gauntlet to decode`, "info");
+            window.TechTrailGlitch?.onWrongChoice?.({ label: "corrupt fragment" });
+          }
         }
-        toast(`Golden Rule ${rule.n}: ${rule.short}`, "lesson");
-        Audio?.playPathUnlock?.();
-        burstConfetti(8);
       });
     });
   }
@@ -2430,13 +2505,27 @@
   function renderTitleGoldenPreview() {
     const container = document.getElementById("titleGoldenPreview");
     if (!container) return;
-    container.innerHTML = Visuals.GOLDEN_RULES.map((rule) => `
+    const unlocked = titleGoldenRulesUnlocked();
+    const heading = document.querySelector(".tt-golden-preview__heading");
+    const rulesPanel = document.querySelector(".tt-title-panel--rules");
+    if (heading) heading.textContent = unlocked ? "Golden Rules" : "Corrupted fragments";
+    rulesPanel?.classList.toggle("tt-title-panel--rules-corrupted", !unlocked);
+    container.innerHTML = Visuals.GOLDEN_RULES.map((rule) => {
+      const label = unlocked ? rule.short : jumbleRuleName(rule.short, rule.n);
+      const icon = unlocked ? rule.icon : TITLE_CORRUPT_ICONS[rule.n % TITLE_CORRUPT_ICONS.length];
+      const itemClass = unlocked ? "tt-golden-list__item" : "tt-golden-list__item tt-golden-list__item--corrupted";
+      const aria = unlocked
+        ? `Golden Rule ${rule.n}: ${rule.short}`
+        : `Encrypted fragment ${rule.n}: ${label}`;
+      return `
       <li>
-        <button type="button" class="tt-golden-list__item" data-rule-n="${rule.n}" aria-label="Golden Rule ${rule.n}: ${escapeHtml(rule.short)}" aria-pressed="false">
-          <span class="tt-golden-list__icon" aria-hidden="true">${rule.icon}</span>
-          <span class="tt-golden-list__text">${escapeHtml(rule.short)}</span>
+        <button type="button" class="${itemClass}" data-rule-n="${rule.n}" aria-label="${escapeHtml(aria)}" aria-pressed="false">
+          <span class="tt-golden-list__icon" aria-hidden="true">${icon}</span>
+          <span class="tt-golden-list__text">${escapeHtml(label)}</span>
         </button>
-      </li>`).join("");
+      </li>`;
+    }).join("");
+    document.getElementById("goldenRuleDetail")?.classList.add("dw-hidden");
     wireTitleGoldenRules();
   }
 
@@ -3873,6 +3962,7 @@ Play again to rebuild your record clean.`;
     };
     const profile = State.loadProfile();
     const updated = State.mergeRunToProfile(runSnapshot, profile);
+    if (computeEndingType() === "champion") updated.hasBeatenGame = true;
     State.saveProfile(updated);
     State.clearRun();
     renderProfileMini();

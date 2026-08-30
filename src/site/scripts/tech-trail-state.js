@@ -72,11 +72,19 @@
       totalGoldenRules: [],
       totalMentorsMet: [],
       bestRun: null,
+      hasBeatenGame: false,
       lastName: "",
       lastClassroom: "",
       rosterVerified: false,
       rosterVerifiedAt: null,
     };
+  }
+
+  function hasBeatenGame(profile) {
+    const p = profile || loadProfile();
+    if (p.hasBeatenGame) return true;
+    const best = p.bestRun;
+    return Boolean(best && (best.goldenCount || 0) >= 5 && (best.integrity || 0) >= 80);
   }
 
   function blankTypingProfile() {
@@ -211,13 +219,16 @@
   function loadProfile() {
     const raw = tryGet(`${PREFIX}:${PROFILE_KEY}`);
     if (!raw || (raw.v !== 1 && raw.v !== 2)) return blankProfile();
+    const bestRun = raw.bestRun || null;
     return {
       v: 2,
       totalRuns: raw.totalRuns || 0,
       totalBadges: normalizeArray(raw.totalBadges),
       totalGoldenRules: normalizeArray(raw.totalGoldenRules),
       totalMentorsMet: normalizeArray(raw.totalMentorsMet),
-      bestRun: raw.bestRun || null,
+      bestRun,
+      hasBeatenGame: Boolean(raw.hasBeatenGame)
+        || Boolean(bestRun && (bestRun.goldenCount || 0) >= 5 && (bestRun.integrity || 0) >= 80),
       lastName: raw.lastName || "",
       lastClassroom: raw.lastClassroom || "",
       rosterVerified: Boolean(raw.rosterVerified),
@@ -278,6 +289,9 @@
         durationSec: summary.durationSec,
         endedAt: now(),
       };
+    }
+    if (summary.endingType === "champion") {
+      updated.hasBeatenGame = true;
     }
 
     return updated;
@@ -373,6 +387,7 @@
     markRunSubmitted,
     submissionRunKey,
     hasRosterProfile,
+    hasBeatenGame,
     blankRun,
     blankProfile,
     loadTypingProfile,

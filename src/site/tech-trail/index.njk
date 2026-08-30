@@ -37,6 +37,115 @@ layout: false
           radial-gradient(ellipse at 50% 25%, rgba(196, 30, 58, 0.16), transparent 52%),
           linear-gradient(180deg, rgba(10, 4, 14, 0.12), rgba(10, 4, 14, 0.52));
       }
+      /* GTG 2.0 — critical title layout (loads even if cached CSS is stale) */
+      html:has(.tt-game-body #titleView.tt-view--active),
+      html:has(.tt-game-body #titleView.tt-view--active) body {
+        height: 100%;
+        overflow: hidden;
+      }
+      .wp-theme--gauntlet.tt-game-body:has(#titleView.tt-view--active) {
+        overflow: hidden;
+        height: 100svh;
+        max-height: 100svh;
+      }
+      .wp-theme--gauntlet #titleView.tt-title-screen,
+      .wp-theme--gauntlet .tt-title-screen {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        justify-content: flex-start !important;
+        width: 100% !important;
+        min-height: 0 !important;
+        margin-top: 0 !important;
+        overflow: hidden !important;
+      }
+      .wp-theme--gauntlet .tt-title-screen__content {
+        display: grid !important;
+        grid-template-rows: auto minmax(0, 1fr) auto !important;
+        width: 100% !important;
+        max-width: none !important;
+        height: 100% !important;
+        max-height: 100svh !important;
+        min-height: 0 !important;
+        overflow: hidden !important;
+        margin: 0 !important;
+        padding: 6px clamp(12px, 2vw, 28px) 4px !important;
+        text-align: left !important;
+        box-sizing: border-box !important;
+      }
+      .wp-theme--gauntlet #titleMain.tt-title-main:not(.dw-hidden) {
+        display: grid !important;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr) minmax(0, 1fr) !important;
+        gap: clamp(10px, 1.5vw, 20px) !important;
+        align-items: stretch !important;
+        width: 100% !important;
+        max-width: none !important;
+        margin: 0 !important;
+        min-height: 0 !important;
+        overflow: hidden !important;
+      }
+      .wp-theme--gauntlet .tt-title-panel {
+        display: flex !important;
+        flex-direction: column !important;
+        min-height: 0 !important;
+        overflow: hidden !important;
+        padding: 8px 10px !important;
+        border-radius: 10px !important;
+        background: rgba(8, 4, 14, 0.78) !important;
+        border: 1px solid rgba(255, 213, 74, 0.24) !important;
+        box-sizing: border-box !important;
+      }
+      .wp-theme--gauntlet .tt-title-panel--center {
+        justify-content: center !important;
+      }
+      .wp-theme--gauntlet .tt-golden-list {
+        list-style: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 3px !important;
+      }
+      .wp-theme--gauntlet .tt-golden-list__item {
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 4px 6px !important;
+        border: none !important;
+        border-radius: 6px !important;
+        background: transparent !important;
+        color: #f0e6d0 !important;
+        text-align: left !important;
+        cursor: pointer !important;
+        font-size: clamp(0.72rem, 1.2vh, 0.84rem) !important;
+        line-height: 1.25 !important;
+      }
+      .wp-theme--gauntlet .tt-golden-list__item::before {
+        content: "•" !important;
+        color: #ffd54a !important;
+        font-weight: 700 !important;
+        flex-shrink: 0 !important;
+      }
+      .wp-theme--gauntlet .tt-title-launch-bar {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 8px !important;
+        width: 100% !important;
+      }
+      .wp-theme--gauntlet .tt-title-launch-bar .tt-launch-actions {
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        justify-content: center !important;
+        gap: 10px !important;
+        width: 100% !important;
+      }
+      .wp-theme--gauntlet .tt-title-screen__tagline {
+        margin: 0 !important;
+        max-width: none !important;
+      }
     </style>
     <title>Global Tech Gauntlet</title>
     <meta property="og:title" content="Global Tech Gauntlet" />
@@ -45,8 +154,8 @@ layout: false
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/styles/write-platform.css?v=gtg66" />
-    <link rel="stylesheet" href="/styles/custom-style.css?v=gtg66" />
+    <link rel="stylesheet" href="/styles/write-platform.css?v=gtg71" />
+    <link rel="stylesheet" href="/styles/custom-style.css?v=gtg71" />
   </head>
   <body class="dw-body wp-theme--gauntlet tt-game-body">
     <div class="dw-shell tt-shell">
@@ -622,7 +731,7 @@ layout: false
     <script src="/scripts/tech-trail-audio.js"></script>
     <script src="/scripts/tech-trail-glitch.js"></script>
     <script src="/scripts/tech-trail-rhythm.js"></script>
-    <script src="/scripts/tech-trail-app.js" defer></script>
+    <script src="/scripts/tech-trail-app.js?v=gtg71" defer></script>
     <script type="importmap">{"imports":{"three":"/scripts/vendor/three.module.js"}}</script>
     <script type="module" src="/scripts/tech-trail-world3d.js"></script>
     <script>

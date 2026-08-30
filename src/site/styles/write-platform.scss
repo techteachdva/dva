@@ -2293,6 +2293,67 @@ $wp-sheet-min-height: 1056px;
   font-style: italic;
 }
 
+.tt-golden-list__item--corrupted .tt-golden-list__text {
+  font-family: "Courier New", Consolas, monospace;
+  letter-spacing: 0.04em;
+  color: #ff8a9a;
+  text-shadow: 0 0 8px rgba(255, 60, 90, 0.35);
+}
+
+.tt-golden-list__item--corrupted .tt-golden-list__icon {
+  color: #7ee8ff;
+  filter: saturate(1.4);
+}
+
+.tt-title-panel--rules-corrupted {
+  border-color: rgba(255, 80, 110, 0.35) !important;
+  box-shadow: inset 0 0 24px rgba(255, 40, 90, 0.08);
+}
+
+.tt-title-panel--rules-corrupted .tt-golden-preview__heading {
+  color: #ff9aaa;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+}
+
+.tt-golden-rule-detail--corrupted {
+  background: rgba(20, 4, 12, 0.92);
+  border-color: rgba(255, 80, 110, 0.45);
+  box-shadow: inset 0 0 0 1px rgba(126, 232, 255, 0.12);
+}
+
+.tt-golden-rule-detail__badge--corrupt {
+  background: rgba(80, 10, 24, 0.75);
+  border-color: rgba(255, 80, 110, 0.45);
+  color: #ff9aaa;
+}
+
+.tt-golden-rule-detail__title--corrupt,
+.tt-golden-rule-detail__body--corrupt,
+.tt-golden-rule-detail__hint--corrupt {
+  font-family: "Courier New", Consolas, monospace;
+  letter-spacing: 0.03em;
+  word-break: break-word;
+}
+
+.tt-golden-rule-detail__title--corrupt {
+  color: #ffd0d8;
+  text-shadow: 1px 0 #7ee8ff, -1px 0 #ff4d6d;
+}
+
+.tt-golden-rule-detail__body--corrupt {
+  color: #c8f7ff;
+  line-height: 1.5;
+  opacity: 0.92;
+}
+
+.tt-golden-rule-detail__hint--corrupt {
+  color: #ff8a9a;
+  opacity: 0.85;
+  font-style: normal;
+}
+
 @keyframes tt-golden-detail-in {
   from {
     opacity: 0;
@@ -8513,6 +8574,7 @@ html:has(.tt-game-body #gameView:not(.dw-hidden)) {
   overflow: hidden;
   align-items: stretch !important;
   justify-content: flex-start !important;
+  width: 100%;
 }
 
 .wp-theme--gauntlet .tt-main {
@@ -8569,14 +8631,15 @@ html:has(.tt-game-body #gameView:not(.dw-hidden)) {
   min-height: 0;
 }
 
-.wp-theme--gauntlet .tt-title-main {
-  display: grid;
-  grid-template-columns: minmax(150px, 20vw) minmax(240px, 1fr) minmax(170px, 22vw);
-  gap: clamp(8px, 1.2vw, 16px);
+.wp-theme--gauntlet .tt-title-main,
+.wp-theme--gauntlet #titleMain.tt-title-main {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr) minmax(0, 1fr);
+  gap: clamp(10px, 1.5vw, 20px);
   align-items: stretch;
   width: 100%;
-  max-width: 1280px;
-  margin: 0 auto;
+  max-width: none;
+  margin: 0;
   min-height: 0;
   overflow: hidden;
 }
@@ -8594,20 +8657,23 @@ html:has(.tt-game-body #gameView:not(.dw-hidden)) {
   box-sizing: border-box;
 }
 
+.wp-theme--gauntlet .tt-title-panel--rules {
+  justify-content: flex-start;
+  grid-column: 1;
+}
+
 .wp-theme--gauntlet .tt-title-panel--center {
   justify-content: center;
   align-items: stretch;
   background: rgba(8, 4, 14, 0.55);
   border-color: rgba(255, 213, 74, 0.28);
-}
-
-.wp-theme--gauntlet .tt-title-panel--rules {
-  justify-content: flex-start;
+  grid-column: 2;
 }
 
 .wp-theme--gauntlet .tt-title-panel--settings {
   justify-content: flex-start;
   gap: 5px;
+  grid-column: 3;
 }
 
 .wp-theme--gauntlet #titleLaunchBar {
@@ -8764,7 +8830,7 @@ html:has(.tt-game-body #gameView:not(.dw-hidden)) {
   font-size: clamp(0.75rem, 1.35vw, 0.88rem);
   line-height: 1.25;
   margin: 0;
-  max-width: 36ch;
+  max-width: none;
   color: #e8c896;
 }
 
@@ -8792,11 +8858,11 @@ html:has(.tt-game-body #gameView:not(.dw-hidden)) {
 
 .wp-theme--gauntlet .tt-golden-list__item {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 8px;
   width: 100%;
   margin: 0;
-  padding: 5px 6px 5px 18px;
+  padding: 4px 6px;
   border: none;
   border-radius: 6px;
   background: transparent;
@@ -8804,17 +8870,15 @@ html:has(.tt-game-body #gameView:not(.dw-hidden)) {
   text-align: left;
   cursor: pointer;
   position: relative;
-  font-size: clamp(0.72rem, 1.2vh, 0.82rem);
+  font-size: clamp(0.72rem, 1.2vh, 0.84rem);
   line-height: 1.25;
 }
 
 .wp-theme--gauntlet .tt-golden-list__item::before {
   content: "•";
-  position: absolute;
-  left: 4px;
-  top: 5px;
   color: #ffd54a;
   font-weight: 700;
+  flex-shrink: 0;
 }
 
 .wp-theme--gauntlet .tt-golden-list__item:hover,
@@ -9168,8 +9232,9 @@ html:has(.tt-game-body #gameView:not(.dw-hidden)) {
 }
 
 @media (max-width: 900px) {
-  .wp-theme--gauntlet .tt-title-main {
-    grid-template-columns: minmax(130px, 28vw) minmax(0, 1fr);
+  .wp-theme--gauntlet .tt-title-main,
+  .wp-theme--gauntlet #titleMain.tt-title-main {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.2fr);
     grid-template-rows: minmax(0, 1fr) auto;
     grid-template-areas:
       "rules center"
@@ -9204,7 +9269,8 @@ html:has(.tt-game-body #gameView:not(.dw-hidden)) {
 }
 
 @media (max-width: 640px) {
-  .wp-theme--gauntlet .tt-title-main {
+  .wp-theme--gauntlet .tt-title-main,
+  .wp-theme--gauntlet #titleMain.tt-title-main {
     grid-template-columns: 1fr;
     grid-template-rows: auto minmax(0, 1fr) auto;
     grid-template-areas:
