@@ -1062,6 +1062,8 @@
       onPick?.(phraseTrack);
       return;
     }
+    const shell = document.querySelector(".dw-shell.tt-shell");
+    if (shell && picker.parentElement !== shell) shell.appendChild(picker);
     const citizen = window.TechTrailPhraseTracks?.citizen;
     const spark = window.TechTrailPhraseTracks?.spark;
     const citizenBtn = document.getElementById("phraseTrackCitizen");
