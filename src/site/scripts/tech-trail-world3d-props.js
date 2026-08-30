@@ -69,6 +69,33 @@ export function makeRoomFloorTexture(roomId, accent) {
   ctx.fillStyle = pal.bg;
   ctx.fillRect(0, 0, 256, 256);
 
+  // Circuit substrate traces on every room floor
+  ctx.strokeStyle = pal.grid;
+  ctx.globalAlpha = 0.16;
+  ctx.lineWidth = 2;
+  for (let i = 32; i < 256; i += 32) {
+    ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 256); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(256, i); ctx.stroke();
+  }
+  ctx.globalAlpha = 0.28;
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = pal.accent;
+  for (let i = 64; i < 256; i += 64) {
+    ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(256, i); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 256); ctx.stroke();
+  }
+  ctx.fillStyle = pal.accent;
+  ctx.globalAlpha = 0.35;
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      if ((row + col + seed) % 5 === 0) {
+        ctx.beginPath();
+        ctx.arc(col * 32 + 16, row * 32 + 16, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+
   ctx.strokeStyle = pal.grid;
   ctx.globalAlpha = 0.22;
   ctx.lineWidth = 1.5;
@@ -199,6 +226,80 @@ function neonStrip(group, x, y, z, len, color, axis = "x") {
   group.add(strip);
 }
 
+function serverRack(group, x, z, count = 3, ledColor = 0x44ff88) {
+  for (let i = 0; i < count; i++) {
+    const y = 0.5 + i * 0.55;
+    group.add(box(0.65, 0.45, 0.35, mat(0x1a1a28), x, y, z));
+    group.add(box(0.5, 0.06, 0.02, glow(ledColor), x, y + 0.12, z + 0.18));
+    for (let l = 0; l < 3; l++) {
+      group.add(cyl(0.02, 0.02, 0.02, 6, glow(l % 2 ? 0xffaa00 : ledColor), x - 0.2 + l * 0.2, y + 0.2, z + 0.18));
+    }
+  }
+}
+
+function routerBox(group, x, y, z) {
+  group.add(box(0.55, 0.12, 0.4, mat(0x222233), x, y, z));
+  for (let i = 0; i < 4; i++) {
+    group.add(cyl(0.03, 0.03, 0.18, 6, mat(0x888899), x - 0.15 + i * 0.1, y + 0.2, z - 0.15));
+    group.add(box(0.04, 0.04, 0.04, glow(i % 2 ? 0x44ff44 : 0xffaa00), x - 0.15 + i * 0.1, y + 0.06, z + 0.12));
+  }
+}
+
+function laptop(group, x, y, z, ry = 0) {
+  group.add(box(0.7, 0.04, 0.5, mat(0x333344), x, y, z, 0, ry));
+  group.add(box(0.65, 0.42, 0.04, mat(0x1a1a2e), x, y + 0.22, z - 0.22, -0.35, ry));
+  group.add(box(0.55, 0.32, 0.02, glow(0x44aaff), x, y + 0.24, z - 0.24, -0.35, ry));
+}
+
+function microchip(group, x, y, z, scale = 1) {
+  const s = scale;
+  group.add(box(0.5 * s, 0.06 * s, 0.5 * s, mat(0x1a1a28), x, y, z));
+  group.add(box(0.35 * s, 0.02 * s, 0.35 * s, glow(0xffd54a), x, y + 0.04 * s, z));
+  for (let i = 0; i < 8; i++) {
+    const side = i < 4;
+    const idx = i % 4;
+    const px = side ? x + (idx - 1.5) * 0.12 * s : x + (i < 6 ? -0.28 : 0.28) * s;
+    const pz = side ? z + (i < 6 ? -0.28 : 0.28) * s : z + (idx - 1.5) * 0.12 * s;
+    group.add(box(0.04 * s, 0.08 * s, 0.04 * s, mat(0x888899), px, y, pz));
+  }
+}
+
+function antennaTower(group, x, z, h = 3.5) {
+  group.add(cyl(0.04, 0.08, h, 6, mat(0x666677), x, h / 2, z));
+  group.add(box(0.02, 0.6, 0.02, mat(0x888899), x, h - 0.2, z));
+  group.add(box(0.02, 0.02, 0.6, mat(0x888899), x, h - 0.2, z));
+  group.add(cyl(0.06, 0.06, 0.06, 8, glow(0xff4444), x, h + 0.1, z));
+}
+
+function cableBundle(group, x, y, z, len = 2) {
+  for (let i = 0; i < 5; i++) {
+    const off = (i - 2) * 0.04;
+    group.add(cyl(0.025, 0.025, len, 6, mat(0x333344 + i * 0x050505), x + off, y, z, 0, Math.PI / 2));
+  }
+}
+
+function hologramProjector(group, x, y, z) {
+  group.add(cyl(0.35, 0.45, 0.15, 12, mat(0x2a2040), x, y, z));
+  group.add(cyl(0.02, 0.02, 1.2, 6, glow(0x9d8cff), x, y + 0.7, z));
+  group.add(box(0.8, 0.5, 0.02, glow(0x9d8cff), x, y + 1.3, z));
+}
+
+function droneProp(group, x, y, z) {
+  group.add(box(0.35, 0.08, 0.35, mat(0x333344), x, y, z));
+  for (let i = 0; i < 4; i++) {
+    const a = (i / 4) * Math.PI * 2 + Math.PI / 4;
+    group.add(cyl(0.25, 0.25, 0.02, 12, mat(0x555566), x + Math.cos(a) * 0.35, y + 0.06, z + Math.sin(a) * 0.35, Math.PI / 2));
+    group.add(cyl(0.04, 0.04, 0.06, 6, mat(0x888899), x + Math.cos(a) * 0.35, y + 0.1, z + Math.sin(a) * 0.35));
+  }
+  group.add(cyl(0.06, 0.06, 0.12, 8, glow(0x44aaff), x, y + 0.1, z));
+}
+
+function satelliteDish(group, x, y, z) {
+  group.add(cyl(0.04, 0.04, 0.8, 6, mat(0x666677), x, y, z));
+  group.add(cyl(0.45, 0.15, 0.08, 16, mat(0x888899), x, y + 0.5, z, -0.5));
+  group.add(cyl(0.06, 0.06, 0.12, 8, glow(0xff6644), x, y + 0.55, z, -0.5));
+}
+
 function bookStack(group, x, z, count, hue) {
   for (let i = 0; i < count; i++) {
     const h = 0.35 + (i % 3) * 0.08;
@@ -255,11 +356,18 @@ export function decorateRoom(roomId, group, h, accent) {
       group.add(box(3.4, 0.02, 1.9, glow(0x9d8cff), 0, 0.14, -2.5));
       group.add(box(2.4, 0.08, 1.2, mat(0x3a2850), 0, 0.75, 0));
       monitor(group, 0, 1.35, 0.6);
+      monitor(group, -2.5, 1.2, -1.5, 0.3);
+      monitor(group, 2.5, 1.2, -1.5, -0.3);
+      laptop(group, -1.2, 0.75, 1.8, 0.2);
+      laptop(group, 1.2, 0.75, 1.8, -0.2);
+      hologramProjector(group, 0, 0.08, -1.2);
       chair(group, -2.2, -1.5);
       chair(group, 2.2, -1.5);
       chair(group, -2.2, 1.5);
       chair(group, 2.2, 1.5);
       bookStack(group, 3.2, 2.2, 3, 0x5c4033);
+      serverRack(group, -3.5, -2.8, 2, 0x9d8cff);
+      microchip(group, 3.5, 0.5, 0, 1.4);
       group.add(cyl(0.08, 0.08, 4.5, 8, mat(0xffd54a), -3.8, 2.25, -3.8));
       group.add(cyl(0.08, 0.08, 4.5, 8, mat(0xffd54a), 3.8, 2.25, -3.8));
       neonStrip(group, 0, h + 0.15, 4.3, 2.8, 0x9d8cff, "x");
@@ -270,6 +378,9 @@ export function decorateRoom(roomId, group, h, accent) {
       group.add(box(2.2, 1.2, 0.06, mat(hi), -3.48, 1.5, 0.05, 0, Math.PI / 2));
       group.add(box(0.12, 1.8, 0.12, mat(0x666677), -3.5, 0.9, 0.3, 0, Math.PI / 2));
       group.add(cyl(0.5, 0.5, 0.08, 16, mat(0xff4466), 3.2, 1.6, -2, Math.PI / 2));
+      laptop(group, 2.8, 0.75, 1.5, -0.5);
+      microchip(group, 1.5, 0.4, 2.8, 1.2);
+      hologramProjector(group, 0, 0.08, 2.5);
       for (let i = 0; i < 3; i++) {
         group.add(box(0.5, 0.5, 0.5, mat(0x44aaff), 2.5 + i * 0.6, 0.25 + i * 0.15, 2 + i * 0.3));
       }
@@ -277,12 +388,16 @@ export function decorateRoom(roomId, group, h, accent) {
       break;
 
     case "data_vault":
+      serverRack(group, -3, -3.2, 4, 0x2dd4bf);
+      serverRack(group, -1.2, -3.2, 4, 0x44ffcc);
       for (let i = 0; i < 3; i++) {
         group.add(box(0.7, 2.2, 0.5, mat(0x1a2838), -3 + i * 0.9, 1.1, -3.2));
         group.add(box(0.55, 0.12, 0.02, glow(0x2dd4bf), -3 + i * 0.9, 1.8, -2.92));
       }
       group.add(box(1.2, 1.4, 0.08, mat(0x2dd4bf), 3.5, 1.2, 0, 0, -Math.PI / 2));
       group.add(cyl(0.35, 0.35, 0.5, 6, mat(0xffd54a), 3.5, 1.2, 0.3, 0, -Math.PI / 2));
+      microchip(group, 2.5, 0.5, 2.5, 1.5);
+      cableBundle(group, 0, 0.15, 3.2, 2.5);
       neonStrip(group, 0, h + 0.1, -3.5, 2.5, 0x2dd4bf, "x");
       break;
 
@@ -346,6 +461,9 @@ export function decorateRoom(roomId, group, h, accent) {
     case "debug_scene":
       group.add(box(2.5, 0.8, 0.08, mat(0x1a1a2e), -3.5, 1.2, 0, 0, Math.PI / 2));
       group.add(box(2.3, 0.6, 0.02, glow(0x44ff44), -3.48, 1.2, 0.05, 0, Math.PI / 2));
+      laptop(group, 2.5, 0.75, 1.5, -0.3);
+      serverRack(group, 3, -2.5, 2, 0x44ff88);
+      microchip(group, 0, 0.45, 2.8, 1.3);
       group.add(cyl(0.45, 0.25, 0.35, 6, mat(0x88cc44), 3, 0.5, 2.5));
       group.add(box(0.6, 0.15, 0.3, mat(0x88cc44), 3.3, 0.85, 2.3, 0, -0.5));
       for (let i = 0; i < 3; i++) {
@@ -370,18 +488,24 @@ export function decorateRoom(roomId, group, h, accent) {
           }
         }
       }
+      serverRack(group, -3, 2.5, 3, 0x44ffcc);
+      laptop(group, 1.5, 0.75, 2.5);
+      microchip(group, 0, 0.4, 3, 1.8);
       group.add(box(0.8, 1.0, 0.6, mat(0x8899aa), 3, 0.5, -2));
       group.add(box(0.5, 0.15, 0.15, glow(0x44ffcc), 3, 1.1, -1.85));
       group.add(box(0.15, 0.5, 0.15, mat(0x667788), 3.2, 0.5, -2));
       break;
 
     case "network_closet":
+      serverRack(group, -3.2, -2.5, 4, 0x44ff44);
+      routerBox(group, 2.5, 0.5, -2);
+      routerBox(group, 3.2, 1.2, 0.5);
       for (let i = 0; i < 4; i++) {
         group.add(box(0.55, 0.35, 0.4, mat(0x2a2a35), -3.2, 0.5 + i * 0.45, -2.5));
         group.add(box(0.4, 0.08, 0.02, glow(i % 2 ? 0x44ff44 : 0xffaa00), -3.2, 0.65 + i * 0.45, -2.28));
       }
-      group.add(cyl(0.05, 0.05, 3.5, 6, mat(0x555566), 3.5, 2, 0, 0, Math.PI / 2));
-      group.add(box(0.3, 0.6, 0.15, mat(0x666677), 3.5, 3.2, 0));
+      cableBundle(group, 0, 0.2, 0, 3.5);
+      antennaTower(group, 3.5, 2, 2.8);
       neonStrip(group, -3.2, 2.5, -2.5, 1.2, 0x44ff44, "z");
       break;
 
@@ -421,6 +545,8 @@ export function decorateRoom(roomId, group, h, accent) {
     case "trajectory_scene":
       group.add(cyl(0.35, 0.55, 2.5, 8, mat(0xcc4444), 3, 1.25, -2.5));
       group.add(cyl(0.2, 0.35, 0.6, 8, mat(0xff6644), 3, 2.6, -2.2, -0.4));
+      droneProp(group, -2.5, 1.5, 2);
+      satelliteDish(group, -1, 3.2, -2);
       for (let i = 0; i < 4; i++) {
         group.add(cyl(0.04, 0.04, 0.04, 6, mat(0xffffff), -2 + i * 0.8, 0.5 + i * 0.4, 3));
       }
@@ -431,6 +557,9 @@ export function decorateRoom(roomId, group, h, accent) {
       group.add(box(1.8, 0.1, 0.35, mat(0x666677), 0, 1.5, 3));
       group.add(box(0.5, 0.5, 0.08, mat(0x44aaff), -0.8, 1.85, 3.05));
       group.add(box(0.5, 0.5, 0.08, mat(0xff6688), 0.8, 1.85, 3.05));
+      monitor(group, -2.5, 1.2, 0, Math.PI / 2);
+      monitor(group, 2.5, 1.2, 0, -Math.PI / 2);
+      microchip(group, 0, 0.5, -2, 2);
       for (let i = 0; i < 2; i++) {
         group.add(box(0.35, 0.5, 0.06, mat(i ? 0x44aaff : 0xff6688), -2.5 + i * 5, 1.2, -2.5));
       }
@@ -443,6 +572,9 @@ export function decorateRoom(roomId, group, h, accent) {
       }
       group.add(box(1.0, 0.8, 0.8, mat(0x2a3530), 3, 0.4, -2.5));
       group.add(box(0.7, 0.12, 0.02, glow(0xff4444), 3, 0.85, -2.1));
+      laptop(group, -3, 0.75, -1.5, 0.4);
+      serverRack(group, 2.5, 2.8, 2, 0x88cc88);
+      microchip(group, 0, 0.35, -2.5, 1.1);
       break;
 
     case "open_source":

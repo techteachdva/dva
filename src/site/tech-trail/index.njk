@@ -154,8 +154,8 @@ layout: false
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/styles/write-platform.css?v=gtg71" />
-    <link rel="stylesheet" href="/styles/custom-style.css?v=gtg71" />
+    <link rel="stylesheet" href="/styles/write-platform.css?v=gtg72" />
+    <link rel="stylesheet" href="/styles/custom-style.css?v=gtg72" />
   </head>
   <body class="dw-body wp-theme--gauntlet tt-game-body">
     <div class="dw-shell tt-shell">
@@ -397,6 +397,7 @@ layout: false
               <span class="tt-stat">🗺️ <span class="tt-stat__value" id="statScenes">0</span> steps</span>
               <span class="tt-stat tt-stat--integrity">🛡️ <span class="tt-stat__value" id="statIntegrity">100</span> integrity</span>
               <span class="tt-stat tt-stat--reputation">⭐ <span class="tt-stat__value" id="statReputation">50</span> reputation</span>
+              <span class="tt-stat tt-stat--strikes" id="strikeMeter" title="Wrong choices — 3 strikes ends the run"></span>
               <span class="tt-stat tt-stat--speed">🎯 <span class="tt-stat__value" id="statTargetWpm">—</span> keys/min</span>
               <span class="tt-stat tt-stat--live-wpm dw-hidden" id="liveWpmStat">⚡ <span class="tt-stat__value" id="statLiveWpm">0</span> live keys/min</span>
             </div>
@@ -731,7 +732,8 @@ layout: false
     <script src="/scripts/tech-trail-audio.js"></script>
     <script src="/scripts/tech-trail-glitch.js"></script>
     <script src="/scripts/tech-trail-rhythm.js"></script>
-    <script src="/scripts/tech-trail-app.js?v=gtg71" defer></script>
+    <script src="/scripts/tech-trail-minigames.js"></script>
+    <script src="/scripts/tech-trail-app.js?v=gtg72" defer></script>
     <script type="importmap">{"imports":{"three":"/scripts/vendor/three.module.js"}}</script>
     <script type="module" src="/scripts/tech-trail-world3d.js"></script>
     <script>

@@ -10,9 +10,9 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture, FLOOR_PALETTES } fr
 (() => {
   const WORLD_HALF_X = 88;
   const WORLD_HALF_Z = 80;
-  const WALK_SPEED = 6.5;
-  const RUN_SPEED = 11;
-  const TURN_SPEED = 2.4;
+  const WALK_SPEED = 11;
+  const RUN_SPEED = 19;
+  const TURN_SPEED = 3.1;
   const DOOR_REACH = 3.4;
   const PLAYER_RADIUS = 0.55;
   const CAM_DIST = 9.5;
@@ -90,29 +90,76 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture, FLOOR_PALETTES } fr
     const canvas = document.createElement("canvas");
     canvas.width = canvas.height = 512;
     const ctx = canvas.getContext("2d");
-    const g = ctx.createRadialGradient(256, 256, 30, 256, 256, 290);
-    g.addColorStop(0, "#14101e");
-    g.addColorStop(1, "#08060e");
+    const g = ctx.createRadialGradient(256, 256, 20, 256, 256, 300);
+    g.addColorStop(0, "#16122a");
+    g.addColorStop(1, "#06040c");
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, 512, 512);
-    ctx.strokeStyle = "rgba(90, 72, 140, 0.12)";
+
+    // PCB substrate grid
+    ctx.strokeStyle = "rgba(70, 55, 110, 0.18)";
     ctx.lineWidth = 1;
-    for (let i = 0; i <= 512; i += 64) {
+    for (let i = 0; i <= 512; i += 32) {
       ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 512); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(512, i); ctx.stroke();
     }
-    ctx.strokeStyle = "rgba(120, 100, 180, 0.08)";
+
+    // Circuit traces — horizontal & vertical bus lines
+    ctx.strokeStyle = "rgba(45, 212, 191, 0.14)";
+    ctx.lineWidth = 3;
+    for (let i = 64; i < 512; i += 96) {
+      ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(512, i); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 512); ctx.stroke();
+    }
+    ctx.strokeStyle = "rgba(157, 140, 255, 0.1)";
     ctx.lineWidth = 2;
-    for (let i = 0; i <= 512; i += 128) {
+    for (let i = 32; i < 512; i += 64) {
       ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 512); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(512, i); ctx.stroke();
     }
-    ctx.fillStyle = "rgba(60, 48, 96, 0.35)";
-    for (let row = 0; row < 8; row++) {
-      for (let col = 0; col < 8; col++) {
-        if ((row + col) % 2 === 0) ctx.fillRect(col * 64 + 2, row * 64 + 2, 60, 60);
+
+    // Via pads & chip footprints
+    ctx.fillStyle = "rgba(90, 72, 140, 0.35)";
+    for (let row = 0; row < 16; row++) {
+      for (let col = 0; col < 16; col++) {
+        if ((row + col) % 3 === 0) {
+          const cx = col * 32 + 16;
+          const cy = row * 32 + 16;
+          ctx.beginPath();
+          ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+          ctx.fill();
+        }
       }
     }
+    ctx.fillStyle = "rgba(255, 213, 74, 0.08)";
+    for (let i = 0; i < 12; i++) {
+      const x = 48 + (i * 37) % 400;
+      const y = 48 + (i * 53) % 400;
+      ctx.fillRect(x, y, 20 + (i % 3) * 8, 14 + (i % 2) * 6);
+      ctx.strokeStyle = "rgba(255, 213, 74, 0.15)";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(x, y, 20 + (i % 3) * 8, 14 + (i % 2) * 6);
+      for (let p = 0; p < 4; p++) {
+        ctx.fillStyle = "rgba(157, 140, 255, 0.2)";
+        ctx.fillRect(x + 4 + p * 5, y - 3, 2, 3);
+        ctx.fillRect(x + 4 + p * 5, y + 14 + (i % 2) * 6, 2, 3);
+      }
+      ctx.fillStyle = "rgba(255, 213, 74, 0.08)";
+    }
+
+    // Junction nodes at trace intersections
+    ctx.fillStyle = "rgba(68, 255, 204, 0.22)";
+    for (let i = 64; i < 512; i += 96) {
+      for (let j = 64; j < 512; j += 96) {
+        ctx.beginPath();
+        ctx.arc(i, j, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(68, 255, 204, 0.35)";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+    }
+
     const tex = new THREE.CanvasTexture(canvas);
     tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
     tex.repeat.set(24, 24);
@@ -508,7 +555,7 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture, FLOOR_PALETTES } fr
         const glow = new THREE.Mesh(glowGeo, glowMat);
         glow.position.set(midX, 0.034, midZ);
         scene.add(glow);
-        rec = { traceMat, glowMat, pairs: [], junctions: [key.split("|")[0], key.split("|")[1]] };
+        rec = { traceMat, glowMat, pairs: [], junctions: [key.split("|")[0], key.split("|")[1]], glowLevel: 0 };
         drawnSegments.set(key, rec);
         circuitSegments.push(rec);
       }
@@ -694,7 +741,22 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture, FLOOR_PALETTES } fr
       return buildings.get(roomId)?.doorWorld || null;
     }
 
+    function teleportToBriefingHub() {
+      const b = buildings.get("start");
+      if (!b) return;
+      playerPos.copy(b.group.position);
+      playerPos.y = 0;
+      // Briefing sits at the south hub — face north toward the campus wings.
+      playerYaw = Math.PI;
+      syncPlayerTransform(0);
+      playerRoom = "start";
+    }
+
     function teleportToRoomDoor(roomId) {
+      if (roomId === "start") {
+        teleportToBriefingHub();
+        return;
+      }
       const b = buildings.get(roomId);
       if (!b) return;
       const away = b.doorWorld.clone().sub(b.group.position).normalize();
@@ -780,7 +842,8 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture, FLOOR_PALETTES } fr
         else if (enterable(roomId)) b.ringMat.color.set(0xb98a1e);
         else b.ringMat.color.set(0x4a3d63);
       });
-      circuitSegments.forEach(({ pairs, traceMat, glowMat }) => {
+      circuitSegments.forEach((seg) => {
+        const { pairs, traceMat, glowMat } = seg;
         let level = 0;
         pairs.forEach(([roomA, roomB]) => {
           const doneA = completedRooms.has(roomA);
@@ -788,23 +851,27 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture, FLOOR_PALETTES } fr
           if (doneA && doneB) level = 2;
           else if ((doneA || doneB) && level < 2) level = 1;
         });
+        seg.glowLevel = level;
         if (level === 2) {
           glowMat.color.set(0x44ffcc);
-          glowMat.opacity = 0.82;
-          traceMat.color.set(0x1a6058);
-          traceMat.emissive.set(0x22aa88);
-          traceMat.emissiveIntensity = 0.35;
-          traceMat.opacity = 0.92;
+          glowMat.opacity = 0.92;
+          seg.baseOpacity = 0.92;
+          traceMat.color.set(0x1a7068);
+          traceMat.emissive.set(0x33ccaa);
+          traceMat.emissiveIntensity = 0.55;
+          traceMat.opacity = 0.96;
         } else if (level === 1) {
-          glowMat.color.set(0x9d8cff);
-          glowMat.opacity = 0.42;
-          traceMat.color.set(0x2a2048);
-          traceMat.emissive.set(0x4433aa);
-          traceMat.emissiveIntensity = 0.15;
-          traceMat.opacity = 0.68;
+          glowMat.color.set(0xffd54a);
+          glowMat.opacity = 0.72;
+          seg.baseOpacity = 0.72;
+          traceMat.color.set(0x3a2858);
+          traceMat.emissive.set(0x8866ff);
+          traceMat.emissiveIntensity = 0.35;
+          traceMat.opacity = 0.82;
         } else {
           glowMat.color.set(0x5a4888);
-          glowMat.opacity = 0.1;
+          glowMat.opacity = 0.12;
+          seg.baseOpacity = 0.12;
           traceMat.color.set(0x1a1428);
           traceMat.emissive.set(0x000000);
           traceMat.emissiveIntensity = 0;
@@ -1102,8 +1169,13 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture, FLOOR_PALETTES } fr
         if (b && !reducedMotion()) b.ringMat.opacity = 0.6 + Math.sin(performance.now() * 0.006) * 0.35;
       }
       if (!reducedMotion()) {
-        const t = performance.now() * 0.001;
         motes.rotation.y += dt * 0.015;
+        const pulseT = performance.now() * 0.004;
+        circuitSegments.forEach((seg, i) => {
+          if (!seg.glowLevel) return;
+          const pulse = 0.78 + Math.sin(pulseT + i * 0.7) * 0.22;
+          seg.glowMat.opacity = (seg.baseOpacity || 0.5) * pulse;
+        });
       }
       const map = mapOpen();
       buildings.forEach((b) => {

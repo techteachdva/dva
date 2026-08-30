@@ -261,6 +261,9 @@
   let integrity = 100;
   let reputation = 50;
   let mentorTrust = {};
+  let strikes = 0;
+  let completedMinigames = new Set();
+  const MAX_STRIKES = 3;
   let runRng = Math.random;
   let startChoices = [];
   let startTime = Date.now();
@@ -1347,6 +1350,54 @@
     window.TechTrailGlitch?.onWrongChoice?.(choice);
   }
 
+  function isWrongChoice(choice) {
+    if (choice?.risky) return true;
+    if (typeof choice?.integrity === "number" && choice.integrity < 0) return true;
+    return /recovery|_fail|wrong/i.test(String(choice?.next || ""));
+  }
+
+  function triggerMissionFailure(reason) {
+    journal.push(`🚨 Mission suspended — ${reason}`);
+    toast("Mission failed — too many wrong calls. Play again!", "lesson");
+    window.TechTrailGlitch?.onWrongChoice?.({ integrity: -20, next: "mission_fail" });
+    setTimeout(() => {
+      navigate("mission_fail", { skipRhythm: true, direct: true });
+    }, prefersReducedMotion ? 0 : 1200);
+  }
+
+  function registerStrike(choice) {
+    if (!isWrongChoice(choice)) return false;
+    strikes = Math.min(MAX_STRIKES, strikes + 1);
+    journal.push(`⚠️ Strike ${strikes}/${MAX_STRIKES}`);
+    toast(`Strike ${strikes}/${MAX_STRIKES}! Wrong choices end runs.`, "lesson");
+    updateStrikeMeter();
+    return strikes >= MAX_STRIKES;
+  }
+
+  function processChoiceConsequences(choice) {
+    applyChoiceEffects(choice);
+    triggerGlitchIfWrong(choice);
+    if (integrity <= 0) {
+      triggerMissionFailure("integrity hit zero");
+      return true;
+    }
+    if (registerStrike(choice)) {
+      triggerMissionFailure(`${MAX_STRIKES} strikes`);
+      return true;
+    }
+    return false;
+  }
+
+  function updateStrikeMeter() {
+    const el = document.getElementById("strikeMeter");
+    if (!el) return;
+    el.className = `tt-strike-meter${strikes >= MAX_STRIKES - 1 ? " tt-strike-meter--danger" : ""}`;
+    el.title = `Strikes ${strikes}/${MAX_STRIKES} — wrong choices end the run`;
+    el.innerHTML = Array.from({ length: MAX_STRIKES }, (_, i) =>
+      `<span class="tt-strike-dot${i < strikes ? " tt-strike-dot--lit" : ""}"></span>`
+    ).join("");
+  }
+
   function renderClickChoices(node, choices) {
     const choicesEl = document.getElementById("sceneChoices");
     if (!choicesEl || !choices.length) return;
@@ -1377,8 +1428,7 @@
         const label = choice.label || choice.typeText || "";
         journal.push(`➤ ${label.slice(0, 80)}${label.length > 80 ? "…" : ""}`);
 
-        applyChoiceEffects(choice);
-        triggerGlitchIfWrong(choice);
+        if (processChoiceConsequences(choice)) return;
         navigate(choice.next, { finishRhythm: choiceFinishesRoom(choice) });
       });
     });
@@ -1555,8 +1605,7 @@
     journal.push(`⌨️ ${label.slice(0, 80)}${label.length > 80 ? "…" : ""}`);
 
     setTimeout(() => {
-      applyChoiceEffects(choiceData);
-      triggerGlitchIfWrong(choiceData);
+      if (processChoiceConsequences(choiceData)) return;
       navigate(choiceData.next, { finishRhythm: choiceFinishesRoom(choiceData) });
     }, prefersReducedMotion ? 0 : 1000);
   }
@@ -1747,6 +1796,10 @@
       integrity = saved.integrity ?? 100;
       reputation = saved.reputation ?? 50;
       mentorTrust = saved.mentorTrust || {};
+      strikes = saved.strikes ?? 0;
+      completedMinigames = saved.completedMinigames instanceof Set
+        ? saved.completedMinigames
+        : new Set(saved.completedMinigames || []);
       startTime = saved.startedAt || Date.now();
       hideDiagnostic();
       show("game");
@@ -1757,6 +1810,7 @@
           console.error("[GTG] Failed to load saved scene:", err);
         });
         hideSceneLoader();
+      updateStrikeMeter();
       }, SCENE_LOADER_MIN_MS);
     } else {
       startMissionCore();
@@ -3110,6 +3164,8 @@
           integrity,
           reputation,
           mentorTrust,
+          strikes,
+          completedMinigames,
           startedAt: startTime,
         }));
         renderScene(currentNode, { quizJustPassed: true }).catch((err) => console.error("[GTG] quiz:", err));
@@ -3182,7 +3238,8 @@
     } else {
       choices = node.choices || [];
     }
-    return enhanceChoices(node, nodeId, choices);
+    const enhanced = enhanceChoices(node, nodeId, choices);
+    return shuffle(enhanced.map((c) => ({ ...c })));
   }
 
   function maybeRollBonus(node) {
@@ -3347,6 +3404,8 @@
       integrity,
       reputation,
       mentorTrust,
+      strikes,
+      completedMinigames,
       startedAt: startTime,
     }));
 
@@ -3427,6 +3486,59 @@
           document.getElementById("sceneChoices")?.classList.add("tt-layer--enter");
         }
       };
+
+      const roomId = mapIdFor(nodeId);
+      const mini = window.TechTrailMinigames?.forRoom?.(roomId);
+      const needsMinigame = mini
+        && !completedMinigames.has(roomId)
+        && !isMapRoomComplete(nodeId)
+        && !node.ending
+        && !needsGoldenQuiz
+        && !node.typingChallenge;
+
+      if (needsMinigame) {
+        typingEl.classList.add("dw-hidden");
+        document.getElementById("typingChoices")?.classList.add("dw-hidden");
+        clearChoiceTyping();
+        if (choicesEl) choicesEl.innerHTML = `<p class="tt-minigame__loading">Powering room systems…</p>`;
+        const ok = await window.TechTrailMinigames.play(roomId);
+        if (gen !== typewriterGen) return;
+        if (ok) {
+          completedMinigames.add(roomId);
+          journal.push(`⚡ Cleared ${mini.title}`);
+          toast("Room challenge cleared!", "info");
+        } else {
+          completedMinigames.add(roomId);
+          strikes = Math.min(MAX_STRIKES, strikes + 1);
+          journal.push(`⚠️ Failed room challenge — strike ${strikes}/${MAX_STRIKES}`);
+          updateStrikeMeter();
+          toast(`Challenge failed — strike ${strikes}/${MAX_STRIKES}`, "lesson");
+          if (strikes >= MAX_STRIKES) {
+            triggerMissionFailure("failed too many challenges");
+            return;
+          }
+        }
+        State.saveRun(withStudentRunFields({
+          currentNode,
+          badges,
+          lessons,
+          goldenRules,
+          completedRooms,
+          goldenQuizPassed,
+          dataFragments,
+          mentorPackets,
+          journal,
+          metCharacters,
+          visitedRooms,
+          integrity,
+          reputation,
+          mentorTrust,
+          strikes,
+          completedMinigames,
+          startedAt: startTime,
+        }));
+      }
+
       if (node.chatMission && !needsGoldenQuiz) {
         maybeRunChatMission(node, nodeId, showChoices);
       } else {
@@ -3597,6 +3709,7 @@
       integrityEl.style.color = integrity >= 80 ? "#34d399" : integrity >= 50 ? "#fbbf24" : "#ef4444";
     }
     if (repEl) repEl.textContent = reputation;
+    updateStrikeMeter();
     updatePackCount();
   }
 
@@ -3635,7 +3748,11 @@
       toast(msgs.join(" · "), choice.integrity < 0 || choice.reputation < 0 ? "lesson" : "info");
     }
     if (integrity <= 0) {
-      toast("Mission integrity critical — one more misstep and you're on probation.", "lesson");
+      triggerMissionFailure("integrity hit zero");
+      return;
+    }
+    if (strikes >= MAX_STRIKES) {
+      toast("Mission integrity critical — one more misstep ends the run.", "lesson");
     }
   }
 
@@ -3902,12 +4019,14 @@
   }
 
   function renderEnding(node) {
-    const endingType = computeEndingType();
+    const endingType = node.endingType === "fail" ? "fail" : computeEndingType();
     let title, narrativeOverride;
     if (endingType === "champion") {
       title = "Gauntlet Champion!";
     } else if (endingType === "operative") {
       title = "Mission Operative";
+    } else if (endingType === "fail") {
+      title = "Mission Suspended";
     } else {
       title = "Operative on Probation";
       narrativeOverride = `The five Golden Rules line up on the main screen, but the audit log tells a harder story.
@@ -3932,7 +4051,7 @@ Play again to rebuild your record clean.`;
 
     renderGoldenTrack("endingGoldenTrack");
     renderResearchPanel();
-    burstConfetti(endingType === "probation" ? 16 : endingType === "operative" ? 32 : 48);
+    burstConfetti(endingType === "fail" ? 8 : endingType === "probation" ? 16 : endingType === "operative" ? 32 : 48);
 
     const mosaicEl = document.getElementById("endingMosaic");
     if (mosaicEl) {
@@ -3984,6 +4103,8 @@ Play again to rebuild your record clean.`;
     integrity = 100;
     reputation = 50;
     mentorTrust = {};
+    strikes = 0;
+    completedMinigames = new Set();
     journal = ["🌐 Mission accepted"];
     startTime = Date.now();
     const id = getStudentIdentity();
@@ -4003,6 +4124,8 @@ Play again to rebuild your record clean.`;
         integrity,
         reputation,
         mentorTrust,
+        strikes,
+        completedMinigames,
         studentName: id.name,
         classroom: id.classroom,
         startedAt: startTime,

@@ -163,7 +163,7 @@
 
 "Welcome to the Gauntlet. The <strong>Golden Rules of Digital Citizenship</strong> didn't vanish — people stopped using them. Each room has a mentor, a live conflict on the hologram, and a solution you type."
 
-Ada Lovelace flickers onto the main screen. "Don't wait for the perfect mission. Pick a door. Think on your feet. Wrong turns rewind — they don't end the run."`,
+Ada Lovelace flickers onto the main screen. "Wrong turns cost you — three strikes and you're pulled off the mission. Pick a door. Think on your feet."`,
       choicePrefix: "I sprint to the",
       dynamicChoices: "start",
       choices: [],
@@ -1817,6 +1817,22 @@ When you pass, you'll write your Digital Citizenship Oath in your own words.`,
 You'll help the next recruit through their first fork. The mission log stays open.`,
       choices: [
         { label: "Start a new run", next: "start", typeText: "new run" },
+      ],
+    },
+
+    mission_fail: {
+      location: "DaVinci Dragons — Mission Suspended",
+      character: "guide",
+      ending: true,
+      endingType: "fail",
+      enter: "The alarms don't stop. The badge goes dark.",
+      narrative: `Mr. Phil pulls the mission log off your screen. Too many wrong calls. Integrity collapsed.
+
+<strong>The Golden Rules are still out there — but this run is over.</strong>
+
+Wrong choices have real consequences online too. Play again: slower, sharper, and think before you click.`,
+      choices: [
+        { label: "Try again", next: "start", typeText: "try again" },
       ],
     },
 
