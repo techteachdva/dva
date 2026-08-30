@@ -10,7 +10,12 @@
     design_lab: { type: "wire", title: "Wire the user-research circuit", hint: "Connect the interview nodes before the ship timer hits zero." },
     data_vault: { type: "sequence", title: "Vault lock sequence", hint: "Memorize the glowing data keys, then repeat the pattern." },
     password_temple: { type: "pick", title: "Pick the strongest vault key", hint: "Only one password survives a real breach.", options: ["password123", "P@ssw0rd!2024#vault", "dragon"], correct: 1 },
-    footprint_scene: { type: "tap", title: "Scrub your digital footprints", hint: "Tap every glowing trace before it spreads." },
+    footprint_scene: {
+      type: "tap",
+      title: "Scrub your digital footprints",
+      hint: "Tap each glowing trace before it fades. Take your time — one at a time.",
+      tap: { count: 4, ttl: 5200, maxMiss: 3, concurrent: 1, spawnDelay: 900, icon: "👣", size: "lg" },
+    },
     media_chamber: { type: "pick", title: "Spot the real headline", hint: "Three screens, one verified source.", options: ["BREAKING: aliens confirmed", "Local school wins robotics — verified AP", "SHARE FAST: miracle cure found"], correct: 1 },
     prepare_phase: { type: "sort", title: "Order the simulation steps", hint: "Click the phases in the right build order.", items: ["Plan", "Prototype", "Test", "Ship"], order: [0, 1, 2, 3] },
     try_phase: { type: "tap", title: "Catch the prototype bugs", hint: "Tap the red glitches before they multiply." },
@@ -18,7 +23,13 @@
     reflect_phase: { type: "sort", title: "Stack the reflection chart", hint: "Order the review steps.", items: ["Observe", "Analyze", "Improve", "Share"], order: [0, 1, 2, 3] },
     code_bay: { type: "wire", title: "Route the algorithm bus", hint: "Complete the logic circuit left to right." },
     network_closet: { type: "pick", title: "Route the secure signal", hint: "Pick the connection that won't leak data.", options: ["Public café Wi-Fi", "School VPN + 2FA", "Neighbor's open hotspot"], correct: 1 },
-    sources_library: { type: "pick", title: "Find the primary source", hint: "Which link leads to the original study?", options: ["Random blog repost", "University research archive", "Screenshot chain on social"], correct: 1 },
+    sources_library: {
+      type: "sort",
+      title: "Build the citation trail",
+      hint: "Click the research steps in order — from finding the source to sharing it responsibly.",
+      items: ["Find the primary source", "Read and verify claims", "Write the citation", "Share with credit"],
+      order: [0, 1, 2, 3],
+    },
     ip_chamber: { type: "pick", title: "License the track", hint: "Which option respects the artist?", options: ["Rip the full song", "Royalty-free with credit", "Hope nobody notices"], correct: 1 },
     collaboration_bridge: { type: "sequence", title: "Kindness relay codes", hint: "Repeat the support signal pattern." },
     trajectory_scene: { type: "tap", title: "Plot the trajectory", hint: "Tap the nav beacons in launch order." },
@@ -173,38 +184,71 @@
     });
   }
 
-  function runTap(ui, resolve) {
-    const count = 5;
+  const TAP_DEFAULTS = {
+    count: 5,
+    ttl: 2200,
+    maxMiss: 1,
+    concurrent: 2,
+    spawnDelay: 400,
+    icon: "⚡",
+    size: "md",
+  };
+
+  function runTap(ui, game, resolve) {
+    const cfg = { ...TAP_DEFAULTS, ...(game.tap || {}) };
+    const count = cfg.count;
     let hits = 0;
+    let misses = 0;
     let live = true;
+    let active = 0;
     ui.arena.classList.add("tt-minigame__arena--tap");
     ui.arena.innerHTML = "";
     const setStatus = (msg) => { if (ui.status) ui.status.textContent = msg; };
-    setStatus(`Tap ${count} glitches — ${hits}/${count}`);
+    const label = cfg.icon === "👣" ? "traces" : "glitches";
+    setStatus(`Tap ${count} ${label} — ${hits}/${count}`);
+
+    function failRun(message) {
+      if (!live) return;
+      live = false;
+      setStatus(message);
+      setTimeout(() => resolve(false), 700);
+    }
+
+    function onMiss() {
+      if (!live) return;
+      misses += 1;
+      if (misses > cfg.maxMiss) {
+        failRun(cfg.maxMiss <= 1 ? "Too slow — glitch spread!" : "Too many traces faded — try again.");
+      } else if (cfg.maxMiss > 1) {
+        setStatus(`Missed one — ${misses}/${cfg.maxMiss} slips left. ${hits}/${count} cleared.`);
+      }
+    }
 
     function spawn() {
-      if (!live || hits >= count) return;
+      if (!live || hits >= count || active >= cfg.concurrent) return;
+      active += 1;
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = "tt-minigame__glitch";
-      btn.style.left = `${10 + Math.random() * 75}%`;
-      btn.style.top = `${12 + Math.random() * 68}%`;
-      btn.textContent = "⚡";
+      btn.className = `tt-minigame__glitch${cfg.size === "lg" ? " tt-minigame__glitch--lg" : ""}`;
+      btn.style.left = `${8 + Math.random() * 72}%`;
+      btn.style.top = `${10 + Math.random() * 70}%`;
+      btn.textContent = cfg.icon;
+      btn.setAttribute("aria-label", `Tap ${label.slice(0, -1)} ${hits + 1}`);
       const ttl = setTimeout(() => {
         if (!btn.isConnected) return;
         btn.remove();
-        if (live && hits < count) {
-          live = false;
-          setStatus("Too slow — glitch spread!");
-          setTimeout(() => resolve(false), 700);
-        }
-      }, 1400);
+        active = Math.max(0, active - 1);
+        if (live && hits < count) onMiss();
+        if (live && hits < count) spawn();
+      }, cfg.ttl);
       btn.addEventListener("click", () => {
+        if (!live) return;
         clearTimeout(ttl);
         btn.classList.add("tt-minigame__glitch--hit");
         hits += 1;
+        active = Math.max(0, active - 1);
         setTimeout(() => btn.remove(), 150);
-        setStatus(`Tap ${count} glitches — ${hits}/${count}`);
+        setStatus(`Tap ${count} ${label} — ${hits}/${count}`);
         if (hits >= count) {
           live = false;
           setStatus("Sector clear! ✓");
@@ -215,7 +259,10 @@
       });
       ui.arena.appendChild(btn);
     }
-    for (let i = 0; i < 3; i++) setTimeout(spawn, i * 350);
+
+    for (let i = 0; i < cfg.concurrent; i++) {
+      setTimeout(spawn, i * cfg.spawnDelay);
+    }
   }
 
   function runSort(ui, game, resolve) {
@@ -299,7 +346,7 @@
         case "wire": runWire(ui, done); break;
         case "sequence": runSequence(ui, done); break;
         case "pick": runPick(ui, game, done); break;
-        case "tap": runTap(ui, done); break;
+        case "tap": runTap(ui, game, done); break;
         case "sort": runSort(ui, game, done); break;
         case "patch": runPatch(ui, done); break;
         default: resolve(true);

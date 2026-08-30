@@ -130,7 +130,7 @@
       role: "Mission Host · DaVinci Dragons",
       emoji: "👓",
       era: "NOW",
-      research: "", // Mr. Phil. Add your bio / deep-dive later
+      research: "Mr. Phil teaches at DaVinci Dragons. He built the Gauntlet so students practice digital citizenship the way pilots practice in a simulator — wrong choices in a safe room before wrong choices in a real feed.",
     },
   };
 
@@ -1824,6 +1824,37 @@ When you pass, you'll write your Digital Citizenship Oath in your own words.`,
 You'll help the next recruit through their first fork. The mission log stays open.`,
       choices: [
         { label: "Start a new run", next: "start", typeText: "new run" },
+      ],
+    },
+
+    guide_deep: {
+      location: "Briefing Room. Host's Archive",
+      character: "guide",
+      enter: "The alarms dim. Mr. Phil pulls up a folder labeled SIMULATORS.",
+      job: "Learn why a typing gauntlet exists for digital citizenship — and what you're really practicing.",
+      conflict: { graphic: "sim", title: "Practice before the real post", situation: "In class you can rewind a choice. Online you often cannot. The Gauntlet is a flight simulator for your reputation.", question: "What are you training when you type a path instead of clicking a button?" },
+      narrative: `Mr. Phil leans on the holo-table. "I didn't build this because typing is the whole job. I built it because <strong>slowing down</strong> is the skill."
+
+"When you type the path to a door, your brain has to read the choice, spell it, and commit. That's the same pause you need before you post, reply, or share a screenshot."
+
+He taps the campus map. "Every room is a real conflict: privacy leaks, pile-ons, fake headlines, biased AI. The mentors aren't decoration. They're the people who solved versions of these problems."
+
+"The breakthrough: citizenship isn't a poster on the wall. It's a habit. The Gauntlet is where you rehearse the habit until it feels normal."`,
+      choicePrefix: "I learned that",
+      choices: [
+        { label: "The Gauntlet trains pause-before-you-post", next: "guide_deep_win", typeText: "The Gauntlet trains pause-before-you-post" },
+      ],
+    },
+
+    guide_deep_win: {
+      location: "Briefing Room. Archive Sealed",
+      character: "guide",
+      narrative: `"Type the path. Think on your feet. Then do the same thing when it counts," Mr. Phil says.`,
+      badge: "Host Scholar",
+      choicePrefix: "I will",
+      choices: [
+        { label: "Return to briefing", next: "start", typeText: "Briefing Room" },
+        { label: "Enter the Final Trial", next: "final_trial", typeText: "Final Trial" },
       ],
     },
 

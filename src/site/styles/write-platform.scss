@@ -1222,6 +1222,14 @@ $wp-sheet-min-height: 1056px;
   animation: tt-glitch-pop 1.4s ease-in-out infinite;
 }
 
+.tt-minigame__glitch--lg {
+  width: 56px;
+  height: 56px;
+  font-size: 24px;
+  border-width: 3px;
+  animation-duration: 2.4s;
+}
+
 .tt-minigame__glitch--hit {
   animation: none;
   opacity: 0;

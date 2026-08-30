@@ -2092,8 +2092,15 @@
   }
 
   function buildStartChoices() {
-    const missions = START_MISSIONS || [];
-    return shuffle(missions.map((m) => ({ ...m })));
+    const missions = shuffle((START_MISSIONS || []).map((m) => ({ ...m })));
+    if (visitedRooms.size > 1) {
+      missions.push({
+        label: "Ask Mr. Phil why he built the Gauntlet",
+        next: "guide_deep",
+        typeText: "Host Deep Dive",
+      });
+    }
+    return missions;
   }
 
   function enhanceChoices(node, nodeId, choices) {
@@ -2163,6 +2170,34 @@
       }
     } catch {}
     updateHighContrastButton();
+  }
+
+  function clickChoicePreferred() {
+    try {
+      return localStorage.getItem("techtrail:clickChoices") === "1";
+    } catch {
+      return false;
+    }
+  }
+
+  function loadClickChoiceMode() {
+    updateClickChoiceButton();
+  }
+
+  function updateClickChoiceButton() {
+    const btn = document.getElementById("clickChoiceToggle");
+    if (!btn) return;
+    const on = clickChoicePreferred();
+    btn.setAttribute("aria-pressed", on ? "true" : "false");
+    btn.classList.toggle("tt-settings-btn--on", on);
+    btn.textContent = on ? "🖱️ Click choices on" : "🖱️ Click choices";
+  }
+
+  function toggleClickChoiceMode() {
+    const on = !clickChoicePreferred();
+    try { localStorage.setItem("techtrail:clickChoices", on ? "1" : "0"); } catch {}
+    updateClickChoiceButton();
+    toast(on ? "Choices will use buttons instead of typing." : "Choices will use typing again.", "info");
   }
 
   function stillCameraPreferred() {
@@ -3806,7 +3841,7 @@
       const choices = resolveChoices(node, nodeId);
       const showChoices = () => {
         if (choices.length) {
-          const useTyping = typingProfile.diagnosed && node.typeChoices !== false;
+          const useTyping = typingProfile.diagnosed && node.typeChoices !== false && !clickChoicePreferred();
           if (useTyping) {
             setupTypingChoices(node, choices);
           } else {
@@ -3840,7 +3875,7 @@
             ok = await window.TechTrailMinigames.play(roomId);
           } catch (err) {
             console.error("[GTG] Room minigame failed:", err);
-            ok = true;
+            ok = false;
           }
           if (gen !== typewriterGen) return;
           if (!ok) {
@@ -4503,6 +4538,9 @@ Play again to rebuild your record clean.`;
 
     loadDifficulty();
     loadHighContrast();
+    loadClickChoiceMode();
+    flushOfflineSubmissions();
+    window.addEventListener("online", () => { flushOfflineSubmissions(); });
     updateStillCameraButtons();
     const loadedProfile = State.loadTypingProfile();
     typingProfile = loadedProfile;
@@ -4533,6 +4571,7 @@ Play again to rebuild your record clean.`;
     });
 
     document.getElementById("highContrastToggle")?.addEventListener("click", toggleHighContrast);
+    document.getElementById("clickChoiceToggle")?.addEventListener("click", toggleClickChoiceMode);
     document.getElementById("stillCameraToggle")?.addEventListener("click", toggleStillCamera);
     document.getElementById("stillCameraHudBtn")?.addEventListener("click", toggleStillCamera);
     document.getElementById("titleMuteBtn")?.addEventListener("click", toggleMute);
@@ -4873,6 +4912,49 @@ Play again to rebuild your record clean.`;
     window._identityGateCallback = null;
   }
 
+  let offlineFlushInFlight = false;
+
+  async function postSubmissionPayload(submission) {
+    const res = await fetch("/api/tech-trail/submissions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(submission),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.error) {
+      throw new Error(data.error || `HTTP ${res.status}`);
+    }
+    return data;
+  }
+
+  async function flushOfflineSubmissions() {
+    if (offlineFlushInFlight || !navigator.onLine || !State.hasOfflineSubmissions?.()) return;
+    offlineFlushInFlight = true;
+    const queue = State.dequeueOfflineSubmissions?.() || [];
+    const failed = [];
+    let synced = 0;
+    for (const submission of queue) {
+      try {
+        const data = await postSubmissionPayload(submission);
+        State.markRunSubmitted?.(
+          submission.name,
+          submission.classroom,
+          submission.runId,
+          data.id || "synced"
+        );
+        synced += 1;
+      } catch (err) {
+        console.warn("[GTG] Offline submission retry failed:", err);
+        failed.push(submission);
+      }
+    }
+    failed.forEach((entry) => State.queueOfflineSubmission?.(entry));
+    offlineFlushInFlight = false;
+    if (synced > 0) {
+      toast(synced === 1 ? "Offline oath synced!" : `${synced} offline oaths synced!`, "badge");
+    }
+  }
+
   async function handleIdentitySubmit() {
     if (identitySubmitting) return;
     const submitBtn = document.getElementById("identitySubmitBtn");
@@ -4990,15 +5072,7 @@ Play again to rebuild your record clean.`;
     };
 
     try {
-      const res = await fetch("/api/tech-trail/submissions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(submission),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || data.error) {
-        throw new Error(data.error || `HTTP ${res.status}`);
-      }
+      const data = await postSubmissionPayload(submission);
       State.markRunSubmitted?.(name, classroom, startTime, data.id);
       if (data.duplicate) {
         toast(data.message || "Already submitted for this class.", "info");

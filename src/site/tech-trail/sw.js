@@ -1,7 +1,7 @@
 /**
  * Global Tech Gauntlet — service worker with network-first for scripts/styles.
  */
-const CACHE_NAME = "gtg-v74";
+const CACHE_NAME = "gtg-v76";
 
 function offlineResponse(message = "Offline") {
   return new Response(message, {
@@ -38,8 +38,8 @@ function networkFirst(request) {
     .catch(() => caches.match(request).then((cached) => cached || offlineResponse()));
 }
 const PRECACHE = [
-  "/styles/write-platform.css?v=gtg74",
-  "/styles/custom-style.css?v=gtg74",
+  "/styles/write-platform.css?v=gtg76",
+  "/styles/custom-style.css?v=gtg76",
   "/scripts/vendor/three.module.js",
   "/scripts/tech-trail-world3d-props.js",
   "/scripts/tech-trail-world3d.js",
@@ -57,7 +57,7 @@ const PRECACHE = [
   "/scripts/tech-trail-room-phrases.js",
   "/scripts/tech-trail-rhythm.js",
   "/scripts/tech-trail-minigames.js",
-  "/scripts/tech-trail-app.js?v=gtg74",
+  "/scripts/tech-trail-app.js?v=gtg76",
   "/tech-trail/images/scenes/scene-dragons-briefing.png",
   "/tech-trail/images/scenes/scene-collaboration-bridge.png",
   "/tech-trail/images/scenes/scene-data-vault.png",
