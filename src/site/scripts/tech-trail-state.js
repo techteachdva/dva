@@ -66,7 +66,7 @@
 
   function blankProfile() {
     return {
-      v: 1,
+      v: 2,
       totalRuns: 0,
       totalBadges: [],
       totalGoldenRules: [],
@@ -74,6 +74,8 @@
       bestRun: null,
       lastName: "",
       lastClassroom: "",
+      rosterVerified: false,
+      rosterVerifiedAt: null,
     };
   }
 
@@ -164,6 +166,8 @@
       integrity: typeof raw.integrity === "number" ? raw.integrity : 100,
       reputation: typeof raw.reputation === "number" ? raw.reputation : 50,
       mentorTrust: raw.mentorTrust && typeof raw.mentorTrust === "object" ? raw.mentorTrust : {},
+      studentName: raw.studentName || "",
+      classroom: raw.classroom || "",
       startedAt: raw.startedAt || now(),
       updatedAt: raw.updatedAt || now(),
     };
@@ -186,6 +190,8 @@
       integrity: state.integrity ?? 100,
       reputation: state.reputation ?? 50,
       mentorTrust: state.mentorTrust || {},
+      studentName: state.studentName || "",
+      classroom: state.classroom || "",
       startedAt: state.startedAt,
       updatedAt: now(),
     };
@@ -204,9 +210,9 @@
 
   function loadProfile() {
     const raw = tryGet(`${PREFIX}:${PROFILE_KEY}`);
-    if (!raw || raw.v !== 1) return blankProfile();
+    if (!raw || (raw.v !== 1 && raw.v !== 2)) return blankProfile();
     return {
-      v: 1,
+      v: 2,
       totalRuns: raw.totalRuns || 0,
       totalBadges: normalizeArray(raw.totalBadges),
       totalGoldenRules: normalizeArray(raw.totalGoldenRules),
@@ -214,11 +220,18 @@
       bestRun: raw.bestRun || null,
       lastName: raw.lastName || "",
       lastClassroom: raw.lastClassroom || "",
+      rosterVerified: Boolean(raw.rosterVerified),
+      rosterVerifiedAt: raw.rosterVerifiedAt || null,
     };
   }
 
   function saveProfile(profile) {
-    trySet(`${PREFIX}:${PROFILE_KEY}`, { ...profile, v: 1 });
+    trySet(`${PREFIX}:${PROFILE_KEY}`, { ...profile, v: 2 });
+  }
+
+  function hasRosterProfile(profile) {
+    const p = profile || loadProfile();
+    return Boolean(p.rosterVerified && p.lastName && p.lastClassroom);
   }
 
   function summarizeRun(run) {
@@ -359,6 +372,7 @@
     hasSubmittedRun,
     markRunSubmitted,
     submissionRunKey,
+    hasRosterProfile,
     blankRun,
     blankProfile,
     loadTypingProfile,

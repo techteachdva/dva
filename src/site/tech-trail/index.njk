@@ -45,8 +45,8 @@ layout: false
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/styles/write-platform.css?v=gtg59" />
-    <link rel="stylesheet" href="/styles/custom-style.css?v=gtg59" />
+    <link rel="stylesheet" href="/styles/write-platform.css?v=gtg63" />
+    <link rel="stylesheet" href="/styles/custom-style.css?v=gtg63" />
   </head>
   <body class="dw-body wp-theme--gauntlet tt-game-body">
     <div class="dw-shell tt-shell">
@@ -167,6 +167,7 @@ layout: false
               <div id="profileMini" class="tt-profile-mini-wrap"></div>
               <div id="pedagogyProgress" class="tt-pedagogy-progress dw-hidden" aria-live="polite"></div>
               <div class="tt-settings-bar tt-title-settings">
+                <button id="switchStudentBtn" class="tt-settings-btn" type="button" title="Switch student profile">👤 Switch</button>
                 <button id="guildQuestBtn" class="tt-settings-btn" type="button" title="Chat Quest guild mode">💬 Chat Quest</button>
                 <button id="warmupBtn" class="tt-settings-btn" type="button" title="Targeted typing warm-up">⌨️ Warm-up</button>
                 <button id="fullscreenToggleBtn" class="tt-settings-btn" type="button" title="Toggle fullscreen">⛶ Fullscreen</button>
@@ -220,6 +221,37 @@ layout: false
           </div>
         </div>
 
+        <div id="studentProfileGate" class="tt-identity-gate dw-hidden" role="dialog" aria-modal="true" aria-labelledby="studentProfileTitle">
+          <div class="tt-identity-gate__panel tt-typing-panel">
+            <p class="tt-title-welcome__badge">Step 1 · Sign in</p>
+            <h2 id="studentProfileTitle" class="dw-h3">Who are you?</h2>
+            <p class="dw-muted dw-tiny">Pick your classroom, enter the class passcode, then choose your name from the roster. Everything you do in this mission is saved to your profile.</p>
+            <div class="tt-identity-gate__field">
+              <label class="dw-label" for="studentProfileClassroom">Classroom</label>
+              <select id="studentProfileClassroom" class="dw-input dw-select dw-select--compact"></select>
+            </div>
+            <div class="tt-identity-gate__field">
+              <label class="dw-label" for="studentProfileClassCode">Class passcode</label>
+              <input id="studentProfileClassCode" class="dw-input" type="password" maxlength="32" placeholder="••••" />
+            </div>
+            <div class="tt-identity-gate__field tt-identity-gate__field--row">
+              <button id="studentProfileLoadBtn" class="tt-settings-btn" type="button">Load roster</button>
+              <span id="studentProfileRosterStatus" class="dw-muted dw-tiny" aria-live="polite"></span>
+            </div>
+            <div class="tt-identity-gate__field">
+              <label class="dw-label" for="studentProfileFirstName">First name</label>
+              <input id="studentProfileFirstName" class="dw-input" type="text" maxlength="16" placeholder="Ada" list="studentProfileNameList" autocomplete="off" />
+            </div>
+            <div class="tt-identity-gate__field">
+              <label class="dw-label" for="studentProfileLastInitial">Last initial</label>
+              <input id="studentProfileLastInitial" class="dw-input" type="text" maxlength="2" placeholder="L" autocomplete="off" />
+            </div>
+            <datalist id="studentProfileNameList"></datalist>
+            <p id="studentProfileError" class="tt-boot-error dw-hidden" role="alert"></p>
+            <button id="studentProfileConfirmBtn" class="tt-cta-btn" type="button">Confirm &amp; continue →</button>
+          </div>
+        </div>
+
         <div id="warmupGate" class="tt-warmup dw-hidden" role="dialog" aria-modal="true" aria-labelledby="warmupTitle" aria-hidden="true">
           <div class="tt-warmup__panel tt-typing-panel">
             <p class="tt-warmup__kicker">Micro-session · deliberate practice</p>
@@ -262,24 +294,6 @@ layout: false
           </div>
 
           <div id="sceneLesson" class="tt-lesson-flash dw-hidden"></div>
-
-          <div id="inventoryOverlay" class="tt-inventory dw-hidden" role="dialog" aria-modal="true" aria-labelledby="inventoryTitle" aria-hidden="true">
-            <div class="tt-inventory__panel">
-              <header class="tt-inventory__header">
-                <h2 id="inventoryTitle" class="tt-inventory__title">Mission Pack</h2>
-                <button id="inventoryCloseBtn" class="tt-settings-btn" type="button">Close</button>
-              </header>
-              <div class="tt-inventory__tabs" role="tablist">
-                <button type="button" class="tt-inventory__tab tt-inventory__tab--active" data-inv-tab="trophies" role="tab">Trophies</button>
-                <button type="button" class="tt-inventory__tab" data-inv-tab="rules" role="tab">Golden Rules</button>
-                <button type="button" class="tt-inventory__tab" data-inv-tab="knowledge" role="tab">Knowledge</button>
-              </div>
-              <div class="tt-inventory__body">
-                <div id="inventoryGrid" class="tt-inventory__grid"></div>
-                <div id="inventoryDetail" class="tt-inventory__detail"></div>
-              </div>
-            </div>
-          </div>
 
           <div id="sceneLoader" class="tt-scene-loader dw-hidden" aria-hidden="true">
             <div class="tt-scene-loader__content">
@@ -514,16 +528,39 @@ layout: false
             </div>
           </div>
 
-          <div class="tt-sidebar">
-            <div class="tt-journal tt-journal--3d">
-              <h3 class="dw-h3">Mission log</h3>
-              <div id="journalEntries"></div>
+          <aside class="tt-immersive-rail" aria-label="Mission interface">
+            <div class="tt-sidebar" aria-label="Mission log and pack">
+            <div class="tt-sidebar__tabs" role="tablist" aria-label="Sidebar sections">
+              <button type="button" class="tt-sidebar__tab tt-sidebar__tab--active" data-sidebar-tab="log" role="tab" aria-selected="true">📋 Log</button>
+              <button type="button" class="tt-sidebar__tab" data-sidebar-tab="pack" role="tab" aria-selected="false">🎒 Pack</button>
             </div>
-            <div class="tt-journal tt-journal--3d">
-              <h3 class="dw-h3">Hero notes</h3>
-              <div id="researchPanel"><p class="dw-muted dw-tiny">Meet heroes during your mission to unlock notes.</p></div>
+            <div class="tt-sidebar__panels">
+              <div class="tt-sidebar__panel tt-sidebar__panel--active" data-sidebar-panel="log" role="tabpanel">
+                <div class="tt-sidebar__log-grid">
+                  <div class="tt-journal tt-journal--3d">
+                    <h3 class="dw-h3">Mission log</h3>
+                    <div id="journalEntries"></div>
+                  </div>
+                  <div class="tt-journal tt-journal--3d">
+                    <h3 class="dw-h3">Hero notes</h3>
+                    <div id="researchPanel"><p class="dw-muted dw-tiny">Meet heroes during your mission to unlock notes.</p></div>
+                  </div>
+                </div>
+              </div>
+              <div class="tt-sidebar__panel" data-sidebar-panel="pack" role="tabpanel">
+                <div class="tt-inventory__tabs" role="tablist" aria-label="Pack sections">
+                  <button type="button" class="tt-inventory__tab tt-inventory__tab--active" data-inv-tab="trophies" role="tab">Trophies</button>
+                  <button type="button" class="tt-inventory__tab" data-inv-tab="rules" role="tab">Golden Rules</button>
+                  <button type="button" class="tt-inventory__tab" data-inv-tab="knowledge" role="tab">Knowledge</button>
+                </div>
+                <div class="tt-inventory__body tt-inventory__body--sidebar">
+                  <div id="inventoryGrid" class="tt-inventory__grid"></div>
+                  <div id="inventoryDetail" class="tt-inventory__detail"></div>
+                </div>
+              </div>
             </div>
           </div>
+          </aside>
         </section>
 
         <section id="endingView" class="dw-hidden tt-view">

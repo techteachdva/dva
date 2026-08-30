@@ -281,6 +281,210 @@
   let pendingChatMission = null;
   let chatMissionCallback = null;
   let completedChatMissions = new Set();
+  let loadedRosterNames = [];
+  let studentProfileSubmitting = false;
+  let pendingBootCallback = null;
+
+  const CLASS_CODE_SESSION_KEY = "techtrail:classCode";
+
+  function getStudentIdentity() {
+    const profile = State.loadProfile();
+    return {
+      name: profile.lastName || "",
+      classroom: profile.lastClassroom || "",
+      runId: String(startTime || ""),
+    };
+  }
+
+  function getStoredClassCode() {
+    try {
+      return sessionStorage.getItem(CLASS_CODE_SESSION_KEY) || "";
+    } catch {
+      return "";
+    }
+  }
+
+  function storeClassCode(code) {
+    try {
+      if (code) sessionStorage.setItem(CLASS_CODE_SESSION_KEY, code);
+      else sessionStorage.removeItem(CLASS_CODE_SESSION_KEY);
+    } catch {}
+  }
+
+  async function fetchClassrooms() {
+    const res = await fetch("/api/tech-trail/roster?action=classrooms");
+    const data = await res.json().catch(() => ({}));
+    return Array.isArray(data.classrooms) ? data.classrooms : [];
+  }
+
+  async function fetchRosterNames(classroom, classCode) {
+    const params = new URLSearchParams({ classroom, classCode });
+    const res = await fetch(`/api/tech-trail/roster?${params}`);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.error) throw new Error(data.error || "Could not load roster.");
+    return Array.isArray(data.names) ? data.names : [];
+  }
+
+  function fillStudentNameDatalist(names) {
+    const list = document.getElementById("studentProfileNameList");
+    if (!list) return;
+    list.innerHTML = names.map((n) => {
+      const parts = n.split(/\s+/);
+      const last = parts.pop() || "";
+      const first = parts.join(" ");
+      return `<option value="${escapeHtml(first)}" label="${escapeHtml(n)}"></option>`;
+    }).join("");
+  }
+
+  function showStudentProfileGate(onComplete) {
+    const gate = document.getElementById("studentProfileGate");
+    if (!gate) {
+      onComplete?.();
+      return;
+    }
+    pendingBootCallback = onComplete;
+    show("title");
+    gate.classList.remove("dw-hidden");
+    const profile = State.loadProfile();
+    const classEl = document.getElementById("studentProfileClassroom");
+    const codeEl = document.getElementById("studentProfileClassCode");
+    const firstEl = document.getElementById("studentProfileFirstName");
+    const lastEl = document.getElementById("studentProfileLastInitial");
+    const statusEl = document.getElementById("studentProfileRosterStatus");
+    const errEl = document.getElementById("studentProfileError");
+    errEl?.classList.add("dw-hidden");
+
+    fetchClassrooms().then((rooms) => {
+      if (!classEl) return;
+      const selected = profile.lastClassroom || rooms[0] || "";
+      classEl.innerHTML = rooms.map((r) => `<option value="${escapeHtml(r)}"${r === selected ? " selected" : ""}>${escapeHtml(r)}</option>`).join("");
+    }).catch(() => {
+      if (classEl) classEl.innerHTML = `<option value="">Could not load classrooms</option>`;
+    });
+
+    if (profile.lastName && firstEl && lastEl) {
+      const parts = profile.lastName.split(/\s+/);
+      if (parts.length >= 2) {
+        firstEl.value = parts.slice(0, -1).join(" ");
+        lastEl.value = parts[parts.length - 1].slice(0, 2);
+      }
+    }
+    if (profile.lastClassroom && classEl) classEl.value = profile.lastClassroom;
+    if (codeEl) codeEl.value = getStoredClassCode() || codeEl.value || "";
+    if (statusEl) statusEl.textContent = "";
+    loadedRosterNames = [];
+    firstEl?.focus();
+  }
+
+  function hideStudentProfileGate() {
+    document.getElementById("studentProfileGate")?.classList.add("dw-hidden");
+  }
+
+  async function loadStudentRoster() {
+    const classEl = document.getElementById("studentProfileClassroom");
+    const codeEl = document.getElementById("studentProfileClassCode");
+    const statusEl = document.getElementById("studentProfileRosterStatus");
+    const errEl = document.getElementById("studentProfileError");
+    const classroom = String(classEl?.value || "").trim();
+    const classCode = String(codeEl?.value || "").trim();
+    if (!classroom || !classCode) {
+      toast("Pick your classroom and enter the class passcode first.", "lesson");
+      return;
+    }
+    try {
+      loadedRosterNames = await fetchRosterNames(classroom, classCode);
+      fillStudentNameDatalist(loadedRosterNames);
+      if (statusEl) statusEl.textContent = `${loadedRosterNames.length} names loaded`;
+      errEl?.classList.add("dw-hidden");
+    } catch (e) {
+      loadedRosterNames = [];
+      if (statusEl) statusEl.textContent = "";
+      if (errEl) {
+        errEl.textContent = e.message || "Could not load roster.";
+        errEl.classList.remove("dw-hidden");
+      }
+    }
+  }
+
+  async function confirmStudentProfile() {
+    if (studentProfileSubmitting) return;
+    const classEl = document.getElementById("studentProfileClassroom");
+    const codeEl = document.getElementById("studentProfileClassCode");
+    const firstEl = document.getElementById("studentProfileFirstName");
+    const lastEl = document.getElementById("studentProfileLastInitial");
+    const errEl = document.getElementById("studentProfileError");
+    const btn = document.getElementById("studentProfileConfirmBtn");
+    const classroom = String(classEl?.value || "").trim();
+    const classCode = String(codeEl?.value || "").trim();
+    const first = String(firstEl?.value || "").trim();
+    const last = String(lastEl?.value || "").trim();
+
+    if (!classroom || !classCode || !first || !last) {
+      toast("Fill in classroom, passcode, and your name.", "lesson");
+      return;
+    }
+
+    studentProfileSubmitting = true;
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "Checking roster…";
+    }
+    errEl?.classList.add("dw-hidden");
+
+    try {
+      const res = await fetch("/api/tech-trail/roster", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ classroom, classCode, firstName: first, lastInitial: last }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.error) throw new Error(data.error || "Roster check failed.");
+
+      const profile = State.loadProfile();
+      profile.lastName = data.name;
+      profile.lastClassroom = data.classroom;
+      profile.rosterVerified = true;
+      profile.rosterVerifiedAt = Date.now();
+      State.saveProfile(profile);
+      storeClassCode(classCode);
+
+      recordPedagogySession({
+        eventType: "profile_start",
+        detail: "Student profile confirmed at game start",
+        performanceScore: 100,
+        accuracyPct: 100,
+      });
+
+      hideStudentProfileGate();
+      renderProfileMini();
+      toast(`Welcome, ${data.name}!`, "badge");
+      const boot = pendingBootCallback;
+      pendingBootCallback = null;
+      boot?.();
+    } catch (e) {
+      if (errEl) {
+        errEl.textContent = e.message || "Could not verify your name on the roster.";
+        errEl.classList.remove("dw-hidden");
+      }
+    } finally {
+      studentProfileSubmitting = false;
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = "Confirm & continue →";
+      }
+    }
+  }
+
+  function switchStudentProfile() {
+    const profile = State.loadProfile();
+    profile.rosterVerified = false;
+    State.saveProfile(profile);
+    storeClassCode("");
+    showStudentProfileGate(() => {
+      updateTitleLaunchUI();
+      toast("Profile switched — your next run will use the new name.", "info");
+    });
+  }
 
   function ensurePedagogyProfile() {
     if (!typingProfile.pedagogy && Pedagogy) {
@@ -292,7 +496,14 @@
   function recordPedagogySession(data) {
     if (!Pedagogy) return;
     ensurePedagogyProfile();
-    Pedagogy.recordSession(typingProfile, data);
+    const id = getStudentIdentity();
+    Pedagogy.recordSession(typingProfile, {
+      ...data,
+      studentName: id.name || data.studentName || null,
+      classroom: id.classroom || data.classroom || null,
+      runId: id.runId || data.runId || null,
+      node: data.node || currentNode || null,
+    });
     saveTypingProfile();
     renderPedagogyProgress();
   }
@@ -1419,6 +1630,10 @@
   }
 
   function beginStartMission() {
+    if (!State.hasRosterProfile()) {
+      showStudentProfileGate(() => beginStartMission());
+      return;
+    }
     Audio?.init?.();
     requestGameFullscreen().then(updateFullscreenButton);
     if (!typingProfile.diagnosed) {
@@ -1429,6 +1644,10 @@
   }
 
   function beginContinueMission() {
+    if (!State.hasRosterProfile()) {
+      showStudentProfileGate(() => beginContinueMission());
+      return;
+    }
     Audio?.init?.();
     if (!typingProfile.diagnosed) {
       openDiagnosticForLaunch(() => beginContinueMission());
@@ -1735,12 +1954,25 @@
     const runs = profile.totalRuns || 0;
     const badges = (profile.totalBadges || []).length;
     const mentors = (profile.totalMentorsMet || []).length;
+    const studentChip = profile.rosterVerified && profile.lastName
+      ? `<span class="tt-profile-chip">🧑‍🚀 ${escapeHtml(profile.lastName)} · ${escapeHtml(profile.lastClassroom || "")}</span>`
+      : "";
     el.innerHTML = `
       <div class="tt-profile-mini">
+        ${studentChip}
         <span class="tt-profile-chip">🎖️ ${runs} run${runs === 1 ? "" : "s"}</span>
         <span class="tt-profile-chip">🏅 ${badges} badge${badges === 1 ? "" : "s"}</span>
         <span class="tt-profile-chip">👥 ${mentors} mentor${mentors === 1 ? "" : "s"}</span>
       </div>`;
+  }
+
+  function withStudentRunFields(payload) {
+    const id = getStudentIdentity();
+    return {
+      ...payload,
+      studentName: id.name || payload.studentName || "",
+      classroom: id.classroom || payload.classroom || "",
+    };
   }
 
   function shuffle(arr) {
@@ -2138,6 +2370,22 @@
     wireTitleGoldenRules();
   }
 
+  let scenePanelHome = null;
+
+  function mountImmersiveRail() {
+    const panel = document.getElementById("scenePanel");
+    const rail = document.querySelector(".tt-immersive-rail");
+    if (!panel || !rail) return;
+    if (!scenePanelHome) scenePanelHome = panel.parentElement;
+    if (panel.parentElement !== rail) rail.insertBefore(panel, rail.firstChild);
+  }
+
+  function unmountImmersiveRail() {
+    const panel = document.getElementById("scenePanel");
+    if (!panel || !scenePanelHome) return;
+    if (panel.parentElement !== scenePanelHome) scenePanelHome.appendChild(panel);
+  }
+
   function applySceneZone(nodeId) {
     const zone = Visuals.zoneForNode(nodeId);
     const world3d = window.__gtgWorld3D;
@@ -2145,8 +2393,10 @@
       world3d.resize?.();
       document.body.classList.add("tt-3d");
       document.getElementById("gameView")?.classList.add("tt-game-layout--immersive");
+      mountImmersiveRail();
       requestAnimationFrame(() => world3d.resize?.());
     } else {
+      unmountImmersiveRail();
       document.body.classList.remove("tt-3d");
       document.getElementById("gameView")?.classList.remove("tt-game-layout--immersive");
     }
@@ -2257,7 +2507,7 @@
 
   function tiltStage(clientX, clientY, target) {
     if (cameraLocked()) return;
-    if (target?.closest?.("button, a, input, textarea, select, label, .tt-typing-choices, .tt-ghost-prompt, .tt-hud, .tt-inventory, .tt-pack-btn, .tt-mute-btn")) {
+    if (target?.closest?.("button, a, input, textarea, select, label, .tt-typing-choices, .tt-ghost-prompt, .tt-hud, .tt-sidebar, .tt-pack-btn, .tt-mute-btn")) {
       resetStageTilt();
       return;
     }
@@ -2637,7 +2887,7 @@
         journal.push("🏟️ Golden Rules final exam passed");
         toast("All five Golden Rules matched — write your oath.", "golden");
         Audio?.playGoldenFanfare?.();
-        State.saveRun({
+        State.saveRun(withStudentRunFields({
           currentNode,
           badges,
           lessons,
@@ -2653,7 +2903,7 @@
           reputation,
           mentorTrust,
           startedAt: startTime,
-        });
+        }));
         renderScene(currentNode, { quizJustPassed: true }).catch((err) => console.error("[GTG] quiz:", err));
         return;
       }
@@ -2874,7 +3124,7 @@
     updateStats();
     renderGoldenTrack();
 
-    State.saveRun({
+    State.saveRun(withStudentRunFields({
       currentNode,
       badges,
       lessons,
@@ -2890,7 +3140,7 @@
       reputation,
       mentorTrust,
       startedAt: startTime,
-    });
+    }));
 
     const isRoomCompleted = isMapRoomComplete(nodeId);
     const needsGoldenQuiz = Boolean(node.goldenRulesQuiz && !goldenQuizPassed);
@@ -3218,6 +3468,63 @@
   }
 
   let inventoryTab = "trophies";
+  let sidebarMainTab = "log";
+
+  function sidebarNeedsOverlay() {
+    if (document.getElementById("gameView")?.classList.contains("tt-game-layout--immersive")) return false;
+    return window.matchMedia("(max-width: 1080px)").matches;
+  }
+
+  function setSidebarTab(tab) {
+    sidebarMainTab = tab;
+    document.querySelectorAll("[data-sidebar-tab]").forEach((btn) => {
+      const active = btn.dataset.sidebarTab === tab;
+      btn.classList.toggle("tt-sidebar__tab--active", active);
+      btn.setAttribute("aria-selected", active ? "true" : "false");
+    });
+    document.querySelectorAll("[data-sidebar-panel]").forEach((panel) => {
+      panel.classList.toggle("tt-sidebar__panel--active", panel.dataset.sidebarPanel === tab);
+    });
+  }
+
+  function openSidebar(tab = "log") {
+    const sidebar = document.querySelector(".tt-sidebar");
+    if (!sidebar) return;
+    setSidebarTab(tab);
+    if (sidebarNeedsOverlay()) {
+      sidebar.classList.add("tt-sidebar--overlay", "tt-sidebar--open");
+    }
+  }
+
+  function closeSidebar() {
+    const sidebar = document.querySelector(".tt-sidebar");
+    if (!sidebar) return;
+    if (sidebarNeedsOverlay()) {
+      sidebar.classList.remove("tt-sidebar--open", "tt-sidebar--overlay");
+    }
+    setSidebarTab("log");
+  }
+
+  function toggleSidebarLog() {
+    const sidebar = document.querySelector(".tt-sidebar");
+    if (!sidebar) return;
+    if (sidebarNeedsOverlay()) {
+      if (sidebar.classList.contains("tt-sidebar--open") && sidebarMainTab === "log") {
+        closeSidebar();
+        return;
+      }
+      openSidebar("log");
+      return;
+    }
+    setSidebarTab("log");
+  }
+
+  function isPackPanelOpen() {
+    const packPanel = document.querySelector('[data-sidebar-panel="pack"]');
+    if (!packPanel?.classList.contains("tt-sidebar__panel--active")) return false;
+    if (!sidebarNeedsOverlay()) return true;
+    return document.querySelector(".tt-sidebar")?.classList.contains("tt-sidebar--open") ?? false;
+  }
 
   function packCount() {
     return badges.size + goldenRules.size + lessons.size + metCharacters.size;
@@ -3238,28 +3545,16 @@
 
   function openInventory(tab = "trophies", focusId = "") {
     inventoryTab = tab;
-    const overlay = document.getElementById("inventoryOverlay");
-    if (!overlay) return;
-    if (overlay.parentElement !== document.body) {
-      document.body.appendChild(overlay);
-    }
-    overlay.classList.remove("dw-hidden");
-    overlay.classList.add("tt-inventory--open");
-    overlay.setAttribute("aria-hidden", "false");
+    openSidebar("pack");
     renderInventory(focusId);
-    document.getElementById("inventoryCloseBtn")?.focus();
     Audio?.playPathUnlock?.();
   }
 
   function closeInventory() {
-    const overlay = document.getElementById("inventoryOverlay");
-    if (!overlay) return;
-    overlay.classList.add("dw-hidden");
-    overlay.classList.remove("tt-inventory--open");
-    overlay.setAttribute("aria-hidden", "true");
-    const gameView = document.getElementById("gameView");
-    if (gameView && !gameView.contains(overlay)) {
-      gameView.insertBefore(overlay, gameView.querySelector(".tt-stage"));
+    setSidebarTab("log");
+    const sidebar = document.querySelector(".tt-sidebar");
+    if (sidebarNeedsOverlay() && sidebar?.classList.contains("tt-sidebar--open")) {
+      sidebar.classList.remove("tt-sidebar--open", "tt-sidebar--overlay");
     }
   }
 
@@ -3462,6 +3757,28 @@ Play again to rebuild your record clean.`;
     mentorTrust = {};
     journal = ["🌐 Mission accepted"];
     startTime = Date.now();
+    const id = getStudentIdentity();
+    if (id.name && id.classroom) {
+      State.saveRun({
+        currentNode: "start",
+        badges,
+        lessons,
+        goldenRules,
+        completedRooms,
+        goldenQuizPassed,
+        dataFragments,
+        mentorPackets,
+        journal,
+        metCharacters,
+        visitedRooms,
+        integrity,
+        reputation,
+        mentorTrust,
+        studentName: id.name,
+        classroom: id.classroom,
+        startedAt: startTime,
+      });
+    }
   }
 
   function init() {
@@ -3530,14 +3847,16 @@ Play again to rebuild your record clean.`;
       e.stopPropagation();
       openInventory("trophies");
     });
-    document.getElementById("inventoryCloseBtn")?.addEventListener("click", closeInventory);
-    document.getElementById("inventoryOverlay")?.addEventListener("click", (e) => {
-      if (e.target?.id === "inventoryOverlay") closeInventory();
-    });
     document.querySelectorAll("[data-inv-tab]").forEach((btn) => {
       btn.addEventListener("click", () => {
         inventoryTab = btn.dataset.invTab;
         renderInventory();
+      });
+    });
+    document.querySelectorAll("[data-sidebar-tab]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (btn.dataset.sidebarTab === "pack") openInventory(inventoryTab);
+        else openSidebar("log");
       });
     });
     document.getElementById("statBadges")?.closest(".tt-stat")?.addEventListener("click", () => openInventory("trophies"));
@@ -3552,10 +3871,6 @@ Play again to rebuild your record clean.`;
           return;
         }
         closeInventory();
-        const sidebar = document.querySelector(".tt-sidebar");
-        if (sidebar?.classList.contains("tt-sidebar--open")) {
-          sidebar.classList.remove("tt-sidebar--open", "tt-sidebar--overlay");
-        }
         return;
       }
       if (e.key === "z" || e.key === "Z") {
@@ -3575,23 +3890,17 @@ Play again to rebuild your record clean.`;
     document.getElementById("muteToggleBtn")?.addEventListener("click", toggleMute);
 
     document.getElementById("sidebarToggleBtn")?.addEventListener("click", () => {
-      const sidebar = document.querySelector(".tt-sidebar");
-      if (!sidebar) return;
-      if (document.body.classList.contains("tt-3d")) {
-        sidebar.classList.add("tt-sidebar--overlay");
-      } else {
-        sidebar.classList.toggle("tt-sidebar--overlay");
-      }
-      sidebar.classList.toggle("tt-sidebar--open");
+      toggleSidebarLog();
     });
 
     document.addEventListener("click", (e) => {
       const sidebar = document.querySelector(".tt-sidebar");
       const toggle = document.getElementById("sidebarToggleBtn");
+      const packBtn = document.getElementById("inventoryBtn");
       if (!sidebar || !sidebar.classList.contains("tt-sidebar--open")) return;
-      if (!sidebar.contains(e.target) && e.target !== toggle && !toggle?.contains(e.target)) {
-        sidebar.classList.remove("tt-sidebar--open", "tt-sidebar--overlay");
-      }
+      if (sidebar.contains(e.target) || toggle?.contains(e.target) || packBtn?.contains(e.target)) return;
+      sidebar.classList.remove("tt-sidebar--open", "tt-sidebar--overlay");
+      setSidebarTab("log");
     });
 
     const startBtn = document.getElementById("startGameBtn");
@@ -3739,13 +4048,25 @@ Play again to rebuild your record clean.`;
     const identitySubmit = document.getElementById("identitySubmitBtn");
     identitySubmit?.addEventListener("click", handleIdentitySubmit);
 
-    show("title");
+    document.getElementById("studentProfileLoadBtn")?.addEventListener("click", () => loadStudentRoster());
+    document.getElementById("studentProfileConfirmBtn")?.addEventListener("click", () => confirmStudentProfile());
+    document.getElementById("switchStudentBtn")?.addEventListener("click", () => switchStudentProfile());
 
-    if (!typingProfile.diagnosed && !State.hasActiveRun()) {
-      setTimeout(() => {
-        openDiagnosticForLaunch(() => openWarmupThen(() => startMissionCore()));
-        toast("Welcome! Complete the keystroke test to launch your mission.", "lesson");
-      }, prefersReducedMotion ? 200 : 650);
+    function bootTitleScreen() {
+      show("title");
+      if (!typingProfile.diagnosed && !State.hasActiveRun()) {
+        setTimeout(() => {
+          openDiagnosticForLaunch(() => openWarmupThen(() => startMissionCore()));
+          toast("Welcome! Complete the keystroke test to launch your mission.", "lesson");
+        }, prefersReducedMotion ? 200 : 650);
+      }
+    }
+
+    if (!State.hasRosterProfile()) {
+      show("title");
+      showStudentProfileGate(bootTitleScreen);
+    } else {
+      bootTitleScreen();
     }
   }
 
@@ -3766,22 +4087,37 @@ Play again to rebuild your record clean.`;
     const classEl = document.getElementById("identityClassroom");
     const codeEl = document.getElementById("identityClassCode");
     const submitBtn = document.getElementById("identitySubmitBtn");
+    const introEl = gate.querySelector(".dw-muted");
+    const fieldEls = gate.querySelectorAll(".tt-identity-gate__field");
+    const rosterOk = State.hasRosterProfile();
     if (submitBtn) {
       submitBtn.disabled = false;
-      submitBtn.textContent = "Submit and enter";
+      submitBtn.textContent = rosterOk ? "Submit oath" : "Submit and enter";
     }
     identitySubmitting = false;
-    if (profile.lastName && firstEl && lastEl) {
-      const parts = profile.lastName.split(/\s+/);
-      if (parts.length >= 2) {
-        firstEl.value = parts.slice(0, -1).join(" ");
-        lastEl.value = parts[parts.length - 1].slice(0, 1);
+    if (rosterOk) {
+      fieldEls.forEach((el) => el.classList.add("dw-hidden"));
+      if (introEl) {
+        introEl.textContent = `Submit your Digital Citizenship Oath as ${profile.lastName} (${profile.lastClassroom}).`;
       }
+      if (codeEl) codeEl.value = getStoredClassCode() || "";
+    } else {
+      fieldEls.forEach((el) => el.classList.remove("dw-hidden"));
+      if (introEl) introEl.textContent = "Enter your details to submit your Digital Citizenship Oath.";
+      if (profile.lastName && firstEl && lastEl) {
+        const parts = profile.lastName.split(/\s+/);
+        if (parts.length >= 2) {
+          firstEl.value = parts.slice(0, -1).join(" ");
+          lastEl.value = parts[parts.length - 1].slice(0, 1);
+        }
+      }
+      if (profile.lastClassroom && classEl) {
+        classEl.value = profile.lastClassroom;
+      }
+      if (codeEl) codeEl.value = getStoredClassCode() || "";
+      firstEl?.focus();
     }
-    if (profile.lastClassroom && classEl) {
-      classEl.value = profile.lastClassroom;
-    }
-    firstEl?.focus();
+    submitBtn?.focus();
   }
 
   function hideIdentityGate() {
@@ -3796,23 +4132,43 @@ Play again to rebuild your record clean.`;
     const lastEl = document.getElementById("identityLastInitial");
     const classEl = document.getElementById("identityClassroom");
     const codeEl = document.getElementById("identityClassCode");
-    const first = String(firstEl?.value || "").trim();
-    const last = String(lastEl?.value || "").trim();
-    const classroom = String(classEl?.value || "").trim();
-    const classCode = String(codeEl?.value || "").trim();
+    const profile = State.loadProfile();
+    const rosterOk = State.hasRosterProfile();
+    let first = String(firstEl?.value || "").trim();
+    let last = String(lastEl?.value || "").trim();
+    let classroom = String(classEl?.value || profile.lastClassroom || "").trim();
+    let classCode = String(codeEl?.value || getStoredClassCode() || "").trim();
 
-    const name = first && last ? `${first} ${last.toUpperCase()}` : "";
-    if (!first || !last || !classroom || !classCode) {
-      toast("Fill in all fields to submit.", "lesson");
+    if (rosterOk && profile.lastName) {
+      const parts = profile.lastName.split(/\s+/);
+      if (parts.length >= 2) {
+        first = first || parts.slice(0, -1).join(" ");
+        last = last || parts[parts.length - 1].slice(0, 1);
+      }
+      classroom = classroom || profile.lastClassroom || "";
+    }
+
+    const name = rosterOk && profile.lastName
+      ? profile.lastName
+      : (first && last ? `${first} ${last.toUpperCase()}` : "");
+    if (!name || !classroom || !classCode) {
+      toast(
+        rosterOk && !classCode
+          ? "Class passcode expired — tap Switch profile and sign in again."
+          : "Fill in all fields to submit.",
+        "lesson"
+      );
       return;
     }
-    if (!/^[\p{L}][\p{L}'-]{0,15}$/u.test(first)) {
-      toast("First name: letters only, up to 16 characters.", "lesson");
-      return;
-    }
-    if (!/^[\p{L}]$/u.test(last)) {
-      toast("Last initial must be one letter.", "lesson");
-      return;
+    if (!rosterOk) {
+      if (!/^[\p{L}][\p{L}'-]{0,15}$/u.test(first)) {
+        toast("First name: letters only, up to 16 characters.", "lesson");
+        return;
+      }
+      if (!/^[\p{L}]$/u.test(last)) {
+        toast("Last initial must be one letter.", "lesson");
+        return;
+      }
     }
 
     const oathText = document.getElementById("typingInput")?.value?.trim() || "";
@@ -3837,7 +4193,6 @@ Play again to rebuild your record clean.`;
       submitBtn.textContent = "Submitting…";
     }
 
-    const profile = State.loadProfile();
     profile.lastName = name;
     profile.lastClassroom = classroom;
     State.saveProfile(profile);
@@ -3870,7 +4225,13 @@ Play again to rebuild your record clean.`;
       overallScore: oathAnalysis?.scores?.overall ?? null,
       oathWpm: oathAnalysis?.wpm ?? null,
       pedagogy: Pedagogy?.snapshotForSubmit
-        ? Pedagogy.snapshotForSubmit(ensurePedagogyProfile(), typingProfile, { integrity, reputation })
+        ? Pedagogy.snapshotForSubmit(ensurePedagogyProfile(), typingProfile, {
+          integrity,
+          reputation,
+          studentName: name,
+          classroom,
+          runId: String(startTime),
+        })
         : null,
       testCpm: typingProfile.testCpm ?? null,
       targetCpm: typingProfile.targetCpm ?? null,
@@ -3956,9 +4317,7 @@ Play again to rebuild your record clean.`;
         document.getElementById("rhythmGate") && !document.getElementById("rhythmGate").classList.contains("dw-hidden")
       ) || !!(
         document.getElementById("identityGate") && !document.getElementById("identityGate").classList.contains("dw-hidden")
-      ) || !!(
-        document.getElementById("inventoryOverlay") && !document.getElementById("inventoryOverlay").classList.contains("dw-hidden")
-      ) || !!(
+      ) || isPackPanelOpen() || !!(
         document.getElementById("diagnosticOverlay") && !document.getElementById("diagnosticOverlay").classList.contains("dw-hidden")
       ) || !!(
         document.getElementById("npcDialog") && !document.getElementById("npcDialog").classList.contains("dw-hidden")
@@ -3977,6 +4336,8 @@ Play again to rebuild your record clean.`;
     showNpcDialog,
     exitToCampus,
   };
+
+  window.TechTrailUI = { openInventory, closeInventory };
 
   try {
     init();

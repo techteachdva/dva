@@ -502,11 +502,7 @@
   }
 
   function closePack() {
-    const inv = $("inventoryOverlay");
-    if (inv && !inv.classList.contains("dw-hidden")) {
-      inv.classList.add("dw-hidden");
-      inv.setAttribute("aria-hidden", "true");
-    }
+    window.TechTrailUI?.closeInventory?.();
   }
 
   function bindOnce() {

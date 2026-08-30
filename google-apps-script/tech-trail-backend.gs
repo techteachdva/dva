@@ -15,7 +15,55 @@
 
 const SPREADSHEET_ID = normalizeSheetId_("PASTE_YOUR_SHEET_ID_HERE");
 const SHEET_NAME = "TechTrailSubmissions";
+const ROSTER_SHEET_NAME = "ClassRosters";
 const API_SECRET = "studentsfirst";
+
+/** Auto-generated from api/tech-trail/class-roster.json — run: npm run sync:tech-trail-roster */
+const CLASS_ROSTER_EMBED = {
+  "Tech: Media Arts": [
+    "Aaron R.",
+    "Aleena O.",
+    "Alexi G.",
+    "Benjamin W.",
+    "Desmond S.",
+    "Eden T.",
+    "Evan M.",
+    "Evan S.",
+    "Finlay A.",
+    "Gael LG.",
+    "Glory R.",
+    "Greyson K.",
+    "Julia R.",
+    "Kamden B.",
+    "Kendrick N.",
+    "Kunshita Y.",
+    "Lucas S.",
+    "Magefera H.",
+    "Maryam M.",
+    "Mason R.",
+    "Mateo M.",
+    "Milan R.",
+    "MJ J.",
+    "Noah S.",
+    "Shaelyn GA.",
+    "Siinan R.",
+    "Tara I."
+  ],
+  "Tech 6-A-2": [],
+  "Tech 7-A-4": [],
+  "Mr. Phil's Advisory": [],
+  "Tech 6-A-5": [],
+  "Tech 7-A-6": [],
+  "Tech: Video Production": [],
+  "Tech 8-B-2": [],
+  "Tech: Game Design": [],
+  "Tech 7-B-5": [],
+  "Tech 6-B-6": [],
+  "Mrs. Eckart 6th Grade ELA": [],
+  "Mrs. McCarthy 7th Grade ELA": [],
+  "Mrs. Severson 8th Grade ELA": [],
+  "Teacher's Lounge": []
+};
 
 /** Use only the ID between /d/ and /edit in the sheet URL. */
 function normalizeSheetId_(raw) {
@@ -73,8 +121,106 @@ function ensureAnalysisColumns_(sheet) {
   sheet.setFrozenRows(1);
 }
 
+function getRosterSheet_() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  let sheet = ss.getSheetByName(ROSTER_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(ROSTER_SHEET_NAME);
+    sheet.getRange(1, 1, 1, 3).setValues([["classroom", "username", "active"]]);
+    sheet.getRange(1, 1, 1, 3).setFontWeight("bold");
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+function initRosterSheet() {
+  getRosterSheet_();
+}
+
+function rosterUsernameKey_(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\./g, "")
+    .replace(/[^a-z0-9]/g, "");
+}
+
+function normalizeGtgName_(raw) {
+  const s = String(raw || "").trim().replace(/\s+/g, " ");
+  if (!s) return "";
+  const parts = s.replace(/\.$/, "").split(/\s+/);
+  if (parts.length < 2) return s.replace(/\.$/, "");
+  const last = parts[parts.length - 1].replace(/\./g, "").toUpperCase().slice(0, 2);
+  const first = parts.slice(0, -1).join(" ");
+  return first + " " + last;
+}
+
+function listRosterEntries_() {
+  const sheet = getRosterSheet_();
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) {
+    return rosterEntriesFromEmbed_();
+  }
+  const rows = sheet.getRange(2, 1, lastRow - 1, 3).getValues();
+  const out = [];
+  for (let i = 0; i < rows.length; i++) {
+    const classroom = String(rows[i][0] || "").trim();
+    const username = String(rows[i][1] || "").trim();
+    const active = String(rows[i][2] || "TRUE").toUpperCase() !== "FALSE";
+    if (!classroom || !username || !active) continue;
+    out.push({ classroom: classroom, username: username, gtgName: normalizeGtgName_(username) });
+  }
+  return out.length ? out : rosterEntriesFromEmbed_();
+}
+
+function rosterEntriesFromEmbed_() {
+  const out = [];
+  const embed = CLASS_ROSTER_EMBED || {};
+  Object.keys(embed).forEach(function (classroom) {
+    const names = embed[classroom] || [];
+    for (let i = 0; i < names.length; i++) {
+      const username = String(names[i] || "").trim();
+      if (!username) continue;
+      out.push({ classroom: classroom, username: username, gtgName: normalizeGtgName_(username) });
+    }
+  });
+  return out;
+}
+
+function listRosterNames_(classroomFilter) {
+  const filter = String(classroomFilter || "").trim().toLowerCase();
+  const entries = listRosterEntries_();
+  const names = [];
+  const seen = {};
+  for (let i = 0; i < entries.length; i++) {
+    if (filter && entries[i].classroom.toLowerCase() !== filter) continue;
+    const name = entries[i].gtgName;
+    const key = rosterUsernameKey_(name);
+    if (!key || seen[key]) continue;
+    seen[key] = true;
+    names.push(name);
+  }
+  names.sort();
+  return names;
+}
+
+function validateRosterName_(name, classroom) {
+  const room = String(classroom || "").trim();
+  const key = rosterUsernameKey_(name);
+  if (!room || !key) throw new Error("Student name and classroom are required.");
+  const pool = listRosterNames_(room);
+  if (!pool.length) {
+    throw new Error("No roster loaded for this class. Ask your teacher to add names to the Class Rosters sheet.");
+  }
+  for (let i = 0; i < pool.length; i++) {
+    if (rosterUsernameKey_(pool[i]) === key) return normalizeGtgName_(pool[i]);
+  }
+  throw new Error("That name is not on your class roster. Use the exact spelling from the roster.");
+}
+
 function initSheet() {
   initHeaders_(getSheet_());
+  getRosterSheet_();
 }
 
 function doGet(e) {
@@ -99,6 +245,10 @@ function handle_(e, isGet) {
 
     if (action === "list") {
       return respond_({ submissions: listSubmissions_(params.classroom) });
+    }
+
+    if (action === "roster") {
+      return respond_({ names: listRosterNames_(params.classroom) });
     }
 
     if (action === "save") {
@@ -291,6 +441,7 @@ function saveSubmission_(params) {
   const runId = String(params.runId || "").trim().slice(0, 40);
 
   if (!classroom) throw new Error("Classroom is required.");
+  validateRosterName_(name, classroom);
   validateOath_(oathText);
 
   const sheet = getSheet_();

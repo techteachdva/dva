@@ -916,6 +916,13 @@ $wp-sheet-min-height: 1056px;
   backdrop-filter: blur(6px);
 }
 
+.tt-identity-gate__field--row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .tt-identity-gate__panel {
   width: min(92vw, 420px);
   padding: 24px;
@@ -1175,6 +1182,7 @@ $wp-sheet-min-height: 1056px;
 .wp-theme--gauntlet.tt-high-contrast .tt-diagnostic__panel,
 .wp-theme--gauntlet.tt-high-contrast .tt-identity-gate__panel,
 .wp-theme--gauntlet.tt-high-contrast .tt-inventory__panel,
+.wp-theme--gauntlet.tt-high-contrast .tt-sidebar__panel,
 .wp-theme--gauntlet.tt-high-contrast .tt-scene-panel,
 .wp-theme--gauntlet.tt-high-contrast .tt-journal {
   background: #000;
@@ -9511,7 +9519,7 @@ body.tt-warmup-active {
 .wp-theme--gauntlet .tt-game-layout:not(.dw-hidden) {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(240px, 280px);
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
   grid-template-rows: auto minmax(0, 1fr);
   grid-template-areas:
     "hud hud"
@@ -9697,6 +9705,10 @@ body.tt-warmup-active {
   overscroll-behavior: contain;
 }
 
+.wp-theme--gauntlet .tt-immersive-rail {
+  display: contents;
+}
+
 .wp-theme--gauntlet .tt-game-layout .tt-sidebar {
   grid-area: sidebar;
   margin-top: 0;
@@ -9708,13 +9720,108 @@ body.tt-warmup-active {
   gap: 10px;
 }
 
+.wp-theme--gauntlet .tt-sidebar__tabs {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.wp-theme--gauntlet .tt-sidebar__tab {
+  flex: 1;
+  border: 1px solid rgba(255, 215, 0, 0.25);
+  background: rgba(0, 0, 0, 0.25);
+  color: #fff8e7;
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-weight: 700;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.wp-theme--gauntlet .tt-sidebar__tab--active {
+  background: rgba(196, 30, 58, 0.45);
+  border-color: #ffd700;
+}
+
+.wp-theme--gauntlet .tt-sidebar__panels {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.wp-theme--gauntlet .tt-sidebar__panel {
+  display: none;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+  gap: 10px;
+}
+
+.wp-theme--gauntlet .tt-sidebar__panel--active {
+  display: flex;
+}
+
+.wp-theme--gauntlet .tt-sidebar__log-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.wp-theme--gauntlet .tt-sidebar__log-grid .tt-journal {
+  flex: 1 1 0;
+  min-height: 120px;
+}
+
+.wp-theme--gauntlet .tt-sidebar__log-grid .tt-journal {
+  min-height: 0;
+}
+
 .wp-theme--gauntlet .tt-game-layout .tt-journal {
   margin-top: 0;
   flex: 1;
-  min-height: 0;
+  min-height: 160px;
   max-height: none;
   overflow-y: auto;
   overscroll-behavior: contain;
+  padding: 14px 16px;
+}
+
+.wp-theme--gauntlet .tt-game-layout .tt-journal .dw-h3,
+body.tt-3d .tt-game-layout--immersive .tt-journal .dw-h3 {
+  font-size: 19px;
+  margin-bottom: 8px;
+}
+
+.wp-theme--gauntlet .tt-game-layout .tt-journal__entry,
+body.tt-3d .tt-game-layout--immersive .tt-journal__entry {
+  font-size: 15px;
+  line-height: 1.55;
+  padding: 8px 0;
+}
+
+.wp-theme--gauntlet .tt-game-layout .tt-journal .dw-tiny,
+.wp-theme--gauntlet .tt-game-layout .tt-journal .dw-muted,
+body.tt-3d .tt-game-layout--immersive .tt-journal .dw-tiny,
+body.tt-3d .tt-game-layout--immersive .tt-journal .dw-muted {
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.wp-theme--gauntlet .tt-game-layout .tt-hero-note p,
+body.tt-3d .tt-game-layout--immersive .tt-hero-note p {
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.wp-theme--gauntlet .tt-game-layout .tt-hero-note strong,
+body.tt-3d .tt-game-layout--immersive .tt-hero-note strong {
+  font-size: 16px;
 }
 
 .wp-theme--gauntlet.tt-is-fullscreen .breadcrumbs--standalone {
@@ -9841,7 +9948,7 @@ body.tt-warmup-active {
     position: fixed;
     top: 0;
     right: 0;
-    width: min(320px, 85vw);
+    width: min(380px, 90vw);
     height: 100dvh;
     z-index: 1000;
     background: rgba(12, 6, 18, 0.95);
@@ -10342,61 +10449,11 @@ body.tt-warmup-active {
   to { opacity: 1; transform: translateY(0); }
 }
 
-.wp-theme--gauntlet .tt-inventory {
-  position: fixed;
-  inset: 0;
-  z-index: 200;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-  background: rgba(6, 2, 10, 0.72);
-  backdrop-filter: blur(8px);
-  grid-column: 1 / -1;
-  pointer-events: auto;
-}
-
-.wp-theme--gauntlet .tt-inventory.tt-inventory--open {
-  z-index: 300;
-}
-
-.wp-theme--gauntlet .tt-inventory.dw-hidden {
-  display: none;
-}
-
-.wp-theme--gauntlet .tt-inventory__panel {
-  width: min(920px, 100%);
-  max-height: min(86vh, 760px);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  border-radius: 18px;
-  border: 1px solid rgba(255, 215, 0, 0.35);
-  background: linear-gradient(180deg, rgba(28, 10, 22, 0.96), rgba(12, 6, 18, 0.96));
-  box-shadow: 0 28px 64px rgba(0, 0, 0, 0.55);
-  transform: perspective(900px) rotateX(2deg);
-}
-
-.wp-theme--gauntlet .tt-inventory__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 18px 8px;
-}
-
-.wp-theme--gauntlet .tt-inventory__title {
-  margin: 0;
-  font-family: "Bebas Neue", Impact, sans-serif;
-  letter-spacing: 0.08em;
-  font-size: 28px;
-  color: #ffd700;
-}
-
 .wp-theme--gauntlet .tt-inventory__tabs {
   display: flex;
-  gap: 8px;
-  padding: 0 18px 12px;
+  gap: 6px;
+  flex-shrink: 0;
+  flex-wrap: wrap;
 }
 
 .wp-theme--gauntlet .tt-inventory__tab {
@@ -10404,8 +10461,9 @@ body.tt-warmup-active {
   background: rgba(0, 0, 0, 0.25);
   color: #fff8e7;
   border-radius: 999px;
-  padding: 6px 14px;
+  padding: 6px 12px;
   font-weight: 700;
+  font-size: 12px;
   cursor: pointer;
 }
 
@@ -10416,19 +10474,54 @@ body.tt-warmup-active {
 
 .wp-theme--gauntlet .tt-inventory__body {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(220px, 0.8fr);
-  gap: 16px;
-  padding: 8px 18px 18px;
+  grid-template-columns: minmax(0, 1.2fr) minmax(180px, 0.8fr);
+  gap: 12px;
   min-height: 0;
+  flex: 1;
   overflow: hidden;
+}
+
+.wp-theme--gauntlet .tt-inventory__body--sidebar {
+  display: flex;
+  flex-direction: column;
+  grid-template-columns: none;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+  padding: 0;
+}
+
+.wp-theme--gauntlet .tt-inventory__body--sidebar .tt-inventory__grid {
+  flex: 0 1 50%;
+  min-height: 160px;
+  max-height: 52%;
+}
+
+.wp-theme--gauntlet .tt-inventory__body--sidebar .tt-inventory__detail {
+  flex: 1 1 auto;
+  min-height: 140px;
+  max-height: none;
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+.wp-theme--gauntlet .tt-sidebar .tt-inventory__tab {
+  font-size: 14px;
+  padding: 8px 12px;
+}
+
+.wp-theme--gauntlet .tt-sidebar .tt-inv-slot__name {
+  font-size: 13px;
 }
 
 .wp-theme--gauntlet .tt-inventory__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+  gap: 8px;
   overflow: auto;
-  max-height: 52vh;
+  min-height: 0;
+  max-height: none;
+  flex: 1;
 }
 
 .wp-theme--gauntlet .tt-inv-slot {
@@ -10489,9 +10582,12 @@ body.tt-warmup-active {
 .wp-theme--gauntlet .tt-inventory__detail {
   border: 1px solid rgba(255, 215, 0, 0.18);
   border-radius: 14px;
-  padding: 16px;
+  padding: 12px;
   background: rgba(0, 0, 0, 0.28);
   overflow: auto;
+  min-height: 0;
+  max-height: 28vh;
+  flex-shrink: 0;
 }
 
 .wp-theme--gauntlet .tt-inv-detail__icon {
@@ -11708,7 +11804,12 @@ body.tt-3d .tt-game-layout.tt-game-layout--immersive:not(.dw-hidden) {
   position: fixed;
   inset: 0;
   z-index: 25;
-  display: block;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) min(420px, 38vw);
+  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-areas:
+    "hud hud"
+    "stage rail";
   width: 100%;
   height: 100dvh;
   max-height: 100dvh;
@@ -11719,11 +11820,13 @@ body.tt-3d .tt-game-layout.tt-game-layout--immersive:not(.dw-hidden) {
 }
 
 body.tt-3d .tt-game-layout--immersive .tt-stage {
-  position: absolute;
-  inset: 0;
+  grid-area: stage;
+  position: relative;
+  inset: auto;
   margin: 0;
   width: 100%;
   height: 100%;
+  min-height: 0;
   z-index: 0;
 }
 
@@ -11752,19 +11855,20 @@ body.tt-3d .tt-game-layout--immersive .tt-world {
 }
 
 body.tt-3d .tt-game-layout--immersive .tt-world::after {
-  background: radial-gradient(ellipse at center, transparent 68%, rgba(6, 3, 12, 0.42) 100%);
+  background: radial-gradient(ellipse at 35% center, transparent 62%, rgba(6, 3, 12, 0.48) 100%);
   z-index: 2;
 }
 
 /* Top HUD strip */
 body.tt-3d .tt-game-layout--immersive .tt-hud {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
+  grid-area: hud;
+  position: relative;
+  top: auto;
+  left: auto;
+  right: auto;
   z-index: 70;
   margin: 0;
-  padding: 10px 12px 34px;
+  padding: 10px 14px;
   pointer-events: none;
   display: flex;
   flex-wrap: wrap;
@@ -11772,7 +11876,8 @@ body.tt-3d .tt-game-layout--immersive .tt-hud {
   gap: 8px 12px;
   min-height: 0;
   max-height: none;
-  background: linear-gradient(180deg, rgba(8, 4, 14, 0.92) 0%, rgba(8, 4, 14, 0.55) 72%, transparent 100%);
+  background: linear-gradient(180deg, rgba(8, 4, 14, 0.96) 0%, rgba(8, 4, 14, 0.88) 100%);
+  border-bottom: 1px solid rgba(255, 213, 74, 0.18);
 }
 
 body.tt-3d .tt-game-layout--immersive .tt-hud > * {
@@ -11853,73 +11958,115 @@ body.tt-3d .tt-game-layout--immersive .tt-golden-orb {
   height: 40px;
 }
 
-/* Right border — fragment tracker */
+/* Fragment tracker — inline in HUD when immersive */
 body.tt-3d .tt-game-layout--immersive .tt-fragment-tracker {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 65;
-  flex-direction: column;
+  position: static;
+  top: auto;
+  right: auto;
+  transform: none;
+  z-index: auto;
+  flex-direction: row;
+  flex-wrap: wrap;
   gap: 6px;
-  padding: 8px 6px;
-  border-radius: 12px;
+  padding: 6px 10px;
+  border-radius: 999px;
   background: rgba(10, 5, 18, 0.78);
   border: 1px solid rgba(157, 140, 255, 0.25);
   pointer-events: auto;
 }
 
-/* Mission log slide-out (right edge) */
-body.tt-3d .tt-game-layout--immersive .tt-sidebar {
+/* Right column — mission UI + log/pack */
+body.tt-3d .tt-game-layout--immersive .tt-immersive-rail {
+  grid-area: rail;
   display: flex;
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: min(300px, 88vw);
-  z-index: 80;
-  margin: 0;
-  padding: 12px;
-  transform: translateX(100%);
-  transition: transform 0.28s ease;
-  background: rgba(10, 5, 18, 0.96);
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+  background: rgba(10, 5, 18, 0.94);
   border-left: 1px solid rgba(255, 213, 74, 0.28);
-  backdrop-filter: blur(10px);
-  box-shadow: -12px 0 40px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(12px);
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.35);
+  z-index: 60;
 }
 
-body.tt-3d .tt-game-layout--immersive .tt-sidebar.tt-sidebar--open,
-body.tt-3d .tt-game-layout--immersive .tt-sidebar.tt-sidebar--overlay.tt-sidebar--open {
-  transform: translateX(0);
+body.tt-3d .tt-game-layout--immersive .tt-immersive-rail .tt-scene-panel {
+  flex: 1.15;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 0;
+  border: none;
+  border-bottom: 1px solid rgba(255, 213, 74, 0.18);
+  max-height: none;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  pointer-events: auto;
+  box-shadow: none;
+  transform: none;
+  background: rgba(10, 5, 18, 0.55);
 }
 
-/* Bottom HUD — compact floating story popup when inside a room */
+body.tt-3d.tt-roam .tt-game-layout--immersive .tt-immersive-rail .tt-scene-panel {
+  display: none;
+}
+
+body.tt-3d .tt-game-layout--immersive .tt-immersive-rail .tt-sidebar {
+  flex: 0.85;
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  position: relative;
+  top: auto;
+  right: auto;
+  bottom: auto;
+  width: 100%;
+  height: auto;
+  margin: 0;
+  padding: 12px 14px 14px;
+  transform: none;
+  transition: none;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  overflow: hidden;
+}
+
+body.tt-3d.tt-roam .tt-game-layout--immersive .tt-immersive-rail .tt-sidebar {
+  flex: 1;
+  min-height: 0;
+}
+
+body.tt-3d .tt-game-layout--immersive .tt-sidebar__log-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+body.tt-3d .tt-game-layout--immersive .tt-journal {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 14px 16px;
+}
+
 body.tt-3d:not(.tt-roam) .tt-game-layout--immersive .tt-stage__room {
   pointer-events: none;
 }
 
-body.tt-3d:not(.tt-roam) .tt-game-layout--immersive .tt-scene-panel {
-  position: absolute;
-  right: 14px;
-  bottom: 14px;
-  left: auto;
-  width: min(520px, calc(100% - 28px));
-  z-index: 60;
-  max-height: min(44vh, 460px);
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  margin: 0;
-  padding: 14px 16px;
-  border-radius: 16px;
-  border: 1px solid rgba(157, 140, 255, 0.45);
-  background: rgba(10, 5, 18, 0.94);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
-  pointer-events: auto;
-}
-
 body.tt-3d .tt-game-layout--immersive .tt-scene-header {
+  flex-shrink: 0;
   margin-bottom: 6px;
 }
 
@@ -11938,15 +12085,38 @@ body.tt-3d .tt-game-layout--immersive .tt-character__era {
 }
 
 body.tt-3d .tt-game-layout--immersive .tt-scene-split {
-  grid-template-columns: 1fr minmax(150px, 36%);
-  gap: 12px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  overflow: hidden;
+}
+
+body.tt-3d .tt-game-layout--immersive .tt-scene-main {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 body.tt-3d .tt-game-layout--immersive .tt-narrative {
-  font-size: clamp(17px, 0.95vw + 14px, 21px);
+  font-size: clamp(16px, 0.9vw + 14px, 19px);
   line-height: 1.55;
-  max-height: 22vh;
+  flex: 1;
+  min-height: 0;
+  max-height: none;
   overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+body.tt-3d .tt-game-layout--immersive .tt-holo {
+  flex-shrink: 0;
+  max-height: 38%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 body.tt-3d .tt-game-layout--immersive .tt-scene-header__meta,
@@ -11957,7 +12127,17 @@ body.tt-3d .tt-game-layout--immersive .tt-scene-job {
 body.tt-3d .tt-game-layout--immersive .tt-choices,
 body.tt-3d .tt-game-layout--immersive .tt-typing-choices,
 body.tt-3d .tt-game-layout--immersive .tt-typing-challenge {
-  max-height: min(28vh, 220px);
+  flex-shrink: 0;
+  max-height: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+body.tt-3d .tt-game-layout--immersive .tt-immersive-rail .tt-scene-panel > .tt-choices,
+body.tt-3d .tt-game-layout--immersive .tt-immersive-rail .tt-scene-panel > .tt-typing-choices,
+body.tt-3d .tt-game-layout--immersive .tt-immersive-rail .tt-scene-panel > .tt-typing-challenge,
+body.tt-3d .tt-game-layout--immersive .tt-immersive-rail .tt-scene-panel > #narrativeContinueBtn {
+  margin-top: auto;
 }
 
 /* Bottom-center world prompts (roam mode) */
@@ -11996,11 +12176,11 @@ body.tt-3d .tt-game-layout--immersive .tt-map-flyover__sub {
 
 body.tt-3d .tt-game-layout--immersive #sceneLesson {
   position: absolute;
-  top: 58px;
-  left: 50%;
+  top: 12px;
+  left: 25%;
   transform: translateX(-50%);
   z-index: 68;
-  max-width: min(520px, calc(100% - 120px));
+  max-width: min(480px, calc(50vw - 48px));
   pointer-events: auto;
 }
 
@@ -12016,6 +12196,15 @@ body.tt-3d .tt-game-layout--immersive .tt-skip-link {
 }
 
 @media (max-width: 900px) {
+  body.tt-3d .tt-game-layout.tt-game-layout--immersive:not(.dw-hidden) {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr) minmax(0, 42vh);
+    grid-template-areas:
+      "hud"
+      "stage"
+      "rail";
+  }
+
   body.tt-3d .tt-game-layout--immersive .tt-golden-track {
     top: auto;
     bottom: 72px;
@@ -12029,11 +12218,8 @@ body.tt-3d .tt-game-layout--immersive .tt-skip-link {
   }
 
   body.tt-3d .tt-game-layout--immersive .tt-fragment-tracker {
-    top: auto;
-    bottom: 72px;
-    right: 6px;
-    transform: none;
     flex-direction: row;
+    flex-wrap: wrap;
   }
 
   body.tt-3d .tt-game-layout--immersive .tt-stats-bar {
@@ -12041,16 +12227,18 @@ body.tt-3d .tt-game-layout--immersive .tt-skip-link {
     padding: 5px 8px;
   }
 
-  body.tt-3d:not(.tt-roam) .tt-game-layout--immersive .tt-scene-panel {
-    right: 8px;
-    bottom: 8px;
-    left: 8px;
-    width: auto;
-    max-height: min(50vh, 420px);
+  body.tt-3d .tt-game-layout--immersive .tt-immersive-rail {
+    border-left: none;
+    border-top: 1px solid rgba(255, 213, 74, 0.22);
+    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.35);
   }
 
-  body.tt-3d .tt-game-layout--immersive .tt-scene-split {
-    grid-template-columns: 1fr;
+  body.tt-3d .tt-game-layout--immersive .tt-immersive-rail .tt-scene-panel {
+    flex: 1.1;
+  }
+
+  body.tt-3d .tt-game-layout--immersive .tt-immersive-rail .tt-sidebar {
+    flex: 0.9;
   }
 }
 

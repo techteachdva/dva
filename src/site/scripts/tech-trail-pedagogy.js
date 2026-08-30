@@ -474,6 +474,20 @@
     if (data.compositionUnlock) ped.compositionUnlocks = (ped.compositionUnlocks || 0) + 1;
     if (data.transcriptionUnlock) ped.transcriptionUnlocks = (ped.transcriptionUnlocks || 0) + 1;
 
+    if (!Array.isArray(ped.eventLog)) ped.eventLog = [];
+    ped.eventLog.push({
+      at: Date.now(),
+      type: data.eventType || "session",
+      studentName: data.studentName || null,
+      classroom: data.classroom || null,
+      runId: data.runId || null,
+      node: data.node || null,
+      accuracyPct: data.accuracyPct ?? null,
+      performanceScore: data.performanceScore ?? null,
+      detail: data.detail || null,
+    });
+    if (ped.eventLog.length > 250) ped.eventLog = ped.eventLog.slice(-250);
+
     profile.pedagogy = ped;
     return ped;
   }
@@ -616,6 +630,10 @@
       reputation: runState.reputation ?? null,
       compositionUnlocks: ped.compositionUnlocks || 0,
       transcriptionUnlocks: ped.transcriptionUnlocks || 0,
+      studentName: runState.studentName ?? null,
+      classroom: runState.classroom ?? null,
+      runId: runState.runId ?? null,
+      eventLog: Array.isArray(ped.eventLog) ? ped.eventLog.slice(-120) : [],
     };
   }
 

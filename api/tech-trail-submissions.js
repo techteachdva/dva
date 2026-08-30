@@ -10,6 +10,7 @@
  */
 
 import { VALID_CLASSROOMS, resolveClassroom, verifyClassroomCode, CLASSROOM_CODES } from "./diagnostic-writing/classrooms.js";
+import { matchRosterName } from "./tech-trail/roster-lib.js";
 
 const TEACHER_PASSWORD = "studentsfirst";
 const MIN_OATH_CHARS = 20;
@@ -189,6 +190,11 @@ export async function POST(request) {
       );
     }
 
+    const rosterCheck = matchRosterName(nameCheck.name, classroom);
+    if (!rosterCheck.ok) {
+      return Response.json({ error: rosterCheck.message }, { status: 400, headers: corsHeaders() });
+    }
+
     const oathCheck = validateOath(oathText);
     if (!oathCheck.ok) {
       return Response.json({ error: oathCheck.message }, { status: 400, headers: corsHeaders() });
@@ -200,7 +206,7 @@ export async function POST(request) {
       body: JSON.stringify({
         action: "save",
         secret: getApiSecret(),
-        name: nameCheck.name,
+        name: rosterCheck.name,
         classroom,
         classCode,
         oathText,
