@@ -3537,6 +3537,23 @@
     return window.matchMedia("(max-width: 1080px)").matches;
   }
 
+  function isImmersiveRail() {
+    return document.getElementById("gameView")?.classList.contains("tt-game-layout--immersive") ?? false;
+  }
+
+  function focusRailSidebar(tab = "log") {
+    const sidebar = document.querySelector(".tt-sidebar");
+    const rail = document.querySelector(".tt-immersive-rail");
+    if (!sidebar) return;
+    setSidebarTab(tab);
+    if (!isImmersiveRail()) return;
+    sidebar.classList.add("tt-sidebar--focused");
+    window.setTimeout(() => sidebar.classList.remove("tt-sidebar--focused"), 700);
+    rail?.querySelector(`[data-sidebar-tab="${tab}"]`)?.scrollIntoView?.({ block: "nearest", behavior: "smooth" });
+    sidebar.scrollIntoView?.({ block: "end", behavior: "smooth" });
+    rail?.querySelector(`[data-sidebar-tab="${tab}"]`)?.focus?.({ preventScroll: true });
+  }
+
   function setSidebarTab(tab) {
     sidebarMainTab = tab;
     document.querySelectorAll("[data-sidebar-tab]").forEach((btn) => {
@@ -3555,7 +3572,9 @@
     setSidebarTab(tab);
     if (sidebarNeedsOverlay()) {
       sidebar.classList.add("tt-sidebar--overlay", "tt-sidebar--open");
+      return;
     }
+    focusRailSidebar(tab);
   }
 
   function closeSidebar() {
@@ -3578,7 +3597,11 @@
       openSidebar("log");
       return;
     }
-    setSidebarTab("log");
+    if (sidebarMainTab === "log" && isImmersiveRail()) {
+      focusRailSidebar("log");
+      return;
+    }
+    openSidebar("log");
   }
 
   function isPackPanelOpen() {
@@ -3907,19 +3930,23 @@ Play again to rebuild your record clean.`;
     document.getElementById("inventoryBtn")?.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
-      openInventory("trophies");
+      openInventory(inventoryTab || "trophies");
     });
-    document.querySelectorAll("[data-inv-tab]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        inventoryTab = btn.dataset.invTab;
-        renderInventory();
-      });
-    });
-    document.querySelectorAll("[data-sidebar-tab]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        if (btn.dataset.sidebarTab === "pack") openInventory(inventoryTab);
+    document.getElementById("gameView")?.addEventListener("click", (e) => {
+      const sidebarTab = e.target.closest("[data-sidebar-tab]");
+      if (sidebarTab) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (sidebarTab.dataset.sidebarTab === "pack") openInventory(inventoryTab);
         else openSidebar("log");
-      });
+        return;
+      }
+      const invTab = e.target.closest("[data-inv-tab]");
+      if (invTab) {
+        e.preventDefault();
+        inventoryTab = invTab.dataset.invTab || "trophies";
+        renderInventory();
+      }
     });
     document.getElementById("statBadges")?.closest(".tt-stat")?.addEventListener("click", () => openInventory("trophies"));
     document.getElementById("statLessons")?.closest(".tt-stat")?.addEventListener("click", () => openInventory("knowledge"));
@@ -3951,7 +3978,9 @@ Play again to rebuild your record clean.`;
 
     document.getElementById("muteToggleBtn")?.addEventListener("click", toggleMute);
 
-    document.getElementById("sidebarToggleBtn")?.addEventListener("click", () => {
+    document.getElementById("sidebarToggleBtn")?.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       toggleSidebarLog();
     });
 

@@ -9720,7 +9720,7 @@ body.tt-warmup-active {
   overscroll-behavior: contain;
 }
 
-.wp-theme--gauntlet .tt-immersive-rail {
+.wp-theme--gauntlet .tt-game-layout:not(.tt-game-layout--immersive) .tt-immersive-rail {
   display: contents;
 }
 
@@ -10442,10 +10442,14 @@ body.tt-3d .tt-game-layout--immersive .tt-hero-note strong {
   pointer-events: none;
 }
 
-/* Hide sidebar toggle on desktop */
+/* Hide sidebar toggle on desktop (except immersive 3D — rail tabs are easy to miss) */
 @media (min-width: 1081px) {
   .wp-theme--gauntlet .tt-hud-btn--sidebar {
     display: none;
+  }
+
+  body.tt-3d .tt-game-layout--immersive .tt-hud-btn--sidebar {
+    display: inline-flex;
   }
 }
 
@@ -11885,10 +11889,10 @@ body.tt-3d .tt-game-layout--immersive .tt-hud {
   top: auto;
   left: auto;
   right: auto;
-  z-index: 70;
+  z-index: 80;
   margin: 0;
   padding: 6px 10px;
-  pointer-events: none;
+  pointer-events: auto;
   display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
@@ -12011,20 +12015,22 @@ body.tt-3d .tt-game-layout--immersive .tt-immersive-rail {
   backdrop-filter: blur(12px);
   box-shadow: -8px 0 32px rgba(0, 0, 0, 0.35);
   z-index: 60;
+  pointer-events: auto;
 }
 
 body.tt-3d .tt-game-layout--immersive .tt-immersive-rail .tt-scene-panel {
-  flex: 1.2;
+  flex: 1 1 58%;
   min-height: 0;
+  max-height: 62%;
   display: flex;
   flex-direction: column;
   position: relative;
+  z-index: 1;
   margin: 0;
   padding: 16px 18px;
   border-radius: 0;
   border: none;
   border-bottom: 1px solid rgba(255, 213, 74, 0.18);
-  max-height: none;
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -12039,13 +12045,15 @@ body.tt-3d.tt-roam .tt-game-layout--immersive .tt-immersive-rail .tt-scene-panel
   display: none;
 }
 
-body.tt-3d .tt-game-layout--immersive .tt-immersive-rail .tt-sidebar {
-  flex: 0.8;
-  min-height: 160px;
+body.tt-3d .tt-game-layout--immersive .tt-sidebar {
+  grid-area: unset;
+  flex: 1 1 42%;
+  min-height: 200px;
   display: flex;
   flex-direction: column;
   gap: 10px;
   position: relative;
+  z-index: 3;
   top: auto;
   right: auto;
   bottom: auto;
@@ -12055,12 +12063,32 @@ body.tt-3d .tt-game-layout--immersive .tt-immersive-rail .tt-sidebar {
   padding: 14px 16px 16px;
   transform: none;
   transition: none;
-  background: transparent;
+  background: rgba(8, 4, 14, 0.92);
   border: none;
+  border-top: 1px solid rgba(255, 213, 74, 0.16);
   box-shadow: none;
   backdrop-filter: none;
   overflow: hidden;
   font-size: clamp(15px, 0.9vw + 13px, 17px);
+  pointer-events: auto;
+}
+
+body.tt-3d .tt-game-layout--immersive .tt-sidebar__tabs {
+  position: relative;
+  z-index: 4;
+  pointer-events: auto;
+}
+
+body.tt-3d .tt-game-layout--immersive .tt-sidebar__tab,
+body.tt-3d .tt-game-layout--immersive .tt-pack-btn,
+body.tt-3d .tt-game-layout--immersive .tt-hud-btn--sidebar {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+body.tt-3d .tt-game-layout--immersive .tt-sidebar--focused {
+  outline: 2px solid rgba(255, 213, 74, 0.55);
+  outline-offset: -2px;
 }
 
 body.tt-3d.tt-roam .tt-game-layout--immersive .tt-immersive-rail .tt-sidebar {
