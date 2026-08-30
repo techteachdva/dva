@@ -182,6 +182,7 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture, FLOOR_PALETTES } fr
       group.add(leg);
     });
 
+    group.scale.setScalar(1.18);
     return group;
   }
 
@@ -395,6 +396,24 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture, FLOOR_PALETTES } fr
       label.position.y = 4.2;
       label.visible = false;
       group.add(label);
+
+      const markerMat = new THREE.MeshStandardMaterial({
+        color: trimColor,
+        emissive: new THREE.Color(trimColor),
+        emissiveIntensity: 0.45,
+        roughness: 0.4,
+        metalness: 0.2,
+      });
+      const marker = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.18, 3.4, 8), markerMat);
+      marker.position.set(0, 1.7, -padD * 0.38);
+      marker.castShadow = true;
+      group.add(marker);
+      const markerCap = new THREE.Mesh(
+        new THREE.SphereGeometry(0.22, 10, 10),
+        new THREE.MeshBasicMaterial({ color: golden ? 0xffd54a : trimColor })
+      );
+      markerCap.position.set(0, 3.55, -padD * 0.38);
+      group.add(markerCap);
 
       const ringMat = new THREE.MeshBasicMaterial({ color: 0x4a3d63, transparent: true, opacity: 0.85 });
       const ring = new THREE.Mesh(new THREE.RingGeometry(5.8, 6.5, 40), ringMat);
@@ -643,8 +662,13 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture, FLOOR_PALETTES } fr
         b.group.position.x - playerPos.x,
         b.group.position.z - playerPos.z
       );
-      player.rotation.y = playerYaw;
+      syncPlayerTransform(0);
       playerRoom = roomId;
+    }
+
+    function syncPlayerTransform(bob = 0) {
+      player.rotation.y = playerYaw;
+      player.position.set(playerPos.x, bob, playerPos.z);
     }
 
     function enterRoom(roomId) {
@@ -868,9 +892,11 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture, FLOOR_PALETTES } fr
       const dx = (forward * sin + strafe * cos) * speed * dt;
       const dz = (forward * cos - strafe * sin) * speed * dt;
       const mag = Math.hypot(dx, dz);
+      const bob = (!reducedMotion() && mag >= 0.0005)
+        ? Math.abs(Math.sin(performance.now() * 0.012)) * 0.08
+        : 0;
       if (mag < 0.0005) {
-        playerBody.position.y = 1.05;
-        player.rotation.y = playerYaw;
+        syncPlayerTransform(bob);
         return;
       }
       playerPos.x += dx;
@@ -878,11 +904,7 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture, FLOOR_PALETTES } fr
       playerPos.x = Math.max(-WORLD_HALF_X - 6, Math.min(WORLD_HALF_X + 6, playerPos.x));
       playerPos.z = Math.max(-WORLD_HALF_Z - 6, Math.min(WORLD_HALF_Z + 6, playerPos.z));
 
-      player.rotation.y = playerYaw;
-      if (!reducedMotion()) {
-        playerBody.position.y = 1.05 + Math.abs(Math.sin(performance.now() * 0.012)) * 0.12;
-      }
-      player.position.copy(playerPos);
+      syncPlayerTransform(bob);
     }
 
     // --- proximity / prompts -----------------------------------------------------------
@@ -947,9 +969,9 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture, FLOOR_PALETTES } fr
       const map = mapOpen();
       if (map) {
         const h = mapCameraHeight(camera.aspect || 1);
-        camDesired.set(0, h, 0);
+        camDesired.set(0, h, 0.01);
         camTarget.lerp(new THREE.Vector3(0, 0, 0), Math.min(1, dt * 4));
-        mapFogDensity = THREE.MathUtils.lerp(mapFogDensity, 0.0016, Math.min(1, dt * 5));
+        mapFogDensity = THREE.MathUtils.lerp(mapFogDensity, 0, Math.min(1, dt * 8));
       } else {
         mapFogDensity = THREE.MathUtils.lerp(mapFogDensity, 0.0042, Math.min(1, dt * 5));
         const still = reducedMotion();

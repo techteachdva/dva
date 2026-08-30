@@ -9436,7 +9436,7 @@ mark.wf-standard-hit,
 .wp-theme--gauntlet .tt-inventory {
   position: fixed;
   inset: 0;
-  z-index: 80;
+  z-index: 200;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -9444,6 +9444,11 @@ mark.wf-standard-hit,
   background: rgba(6, 2, 10, 0.72);
   backdrop-filter: blur(8px);
   grid-column: 1 / -1;
+  pointer-events: auto;
+}
+
+.wp-theme--gauntlet .tt-inventory.tt-inventory--open {
+  z-index: 300;
 }
 
 .wp-theme--gauntlet .tt-inventory.dw-hidden {
@@ -10708,13 +10713,13 @@ body.tt-roam .tt-scene-panel {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 18px;
+  padding: 12px 20px;
   border-radius: 999px;
   background: rgba(12, 6, 20, 0.88);
   border: 1px solid rgba(255, 213, 74, 0.65);
   box-shadow: 0 0 24px rgba(255, 213, 74, 0.25);
   color: #f5e9ff;
-  font-size: 15px;
+  font-size: clamp(15px, 0.85vw + 13px, 18px);
   font-weight: 600;
   cursor: pointer;
   user-select: none;
@@ -10735,12 +10740,12 @@ body.tt-roam .tt-scene-panel {
   left: 50%;
   transform: translateX(-50%);
   z-index: 40;
-  padding: 6px 14px;
+  padding: 8px 16px;
   border-radius: 999px;
   background: rgba(12, 6, 20, 0.72);
   border: 1px solid rgba(157, 140, 255, 0.35);
   color: #cfc3ec;
-  font-size: 12px;
+  font-size: clamp(14px, 0.8vw + 12px, 17px);
   white-space: nowrap;
   pointer-events: none;
 }
@@ -10759,12 +10764,12 @@ body.tt-roam .tt-scene-panel {
   left: 50%;
   transform: translateX(-50%);
   z-index: 40;
-  padding: 8px 18px;
+  padding: 10px 20px;
   border-radius: 10px;
   background: rgba(12, 6, 20, 0.85);
   border: 1px solid rgba(255, 213, 74, 0.5);
   color: #ffd54a;
-  font-size: 14px;
+  font-size: clamp(15px, 0.85vw + 13px, 18px);
   font-weight: 700;
   letter-spacing: 0.04em;
   pointer-events: none;
@@ -10801,6 +10806,7 @@ body.tt-3d .tt-game-layout.tt-game-layout--immersive:not(.dw-hidden) {
   padding: 0;
   gap: 0;
   overflow: hidden;
+  font-size: clamp(16px, 1.05vw + 14px, 19px);
 }
 
 body.tt-3d .tt-game-layout--immersive .tt-stage {
@@ -10849,12 +10855,12 @@ body.tt-3d .tt-game-layout--immersive .tt-hud {
   right: 0;
   z-index: 70;
   margin: 0;
-  padding: 8px 10px 28px;
+  padding: 10px 12px 34px;
   pointer-events: none;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px 10px;
+  gap: 8px 12px;
   min-height: 0;
   max-height: none;
   background: linear-gradient(180deg, rgba(8, 4, 14, 0.92) 0%, rgba(8, 4, 14, 0.55) 72%, transparent 100%);
@@ -10867,33 +10873,50 @@ body.tt-3d .tt-game-layout--immersive .tt-hud > * {
 body.tt-3d .tt-game-layout--immersive .tt-stats-bar {
   flex: 1 1 280px;
   margin: 0;
-  padding: 6px 10px;
-  gap: 8px;
-  font-size: 12px;
+  padding: 8px 12px;
+  gap: 10px 14px;
+  font-size: clamp(15px, 0.9vw + 13px, 18px);
   overflow-x: auto;
   overflow-y: hidden;
   white-space: nowrap;
   scrollbar-width: thin;
 }
 
+body.tt-3d .tt-game-layout--immersive .tt-stat__value {
+  font-size: 1.05em;
+  font-weight: 800;
+}
+
 body.tt-3d .tt-game-layout--immersive .tt-you-are-here {
   order: 2;
   margin: 0;
-  padding: 6px 12px;
+  padding: 8px 14px;
   border-radius: 999px;
   background: rgba(12, 6, 20, 0.82);
   border: 1px solid rgba(255, 213, 74, 0.35);
-  font-size: 13px;
+  font-size: clamp(15px, 0.85vw + 13px, 18px);
+  font-weight: 700;
   cursor: pointer;
 }
 
 body.tt-3d .tt-game-layout--immersive .tt-pack-btn {
   order: 3;
+  font-size: clamp(15px, 0.85vw + 13px, 18px);
+  padding: 10px 16px;
+  position: relative;
+  z-index: 75;
 }
 
 body.tt-3d .tt-game-layout--immersive .tt-hud-actions {
   order: 4;
   margin-left: auto;
+}
+
+body.tt-3d .tt-game-layout--immersive .tt-hud-btn,
+body.tt-3d .tt-game-layout--immersive .tt-map-btn,
+body.tt-3d .tt-game-layout--immersive .tt-mute-btn {
+  font-size: clamp(14px, 0.8vw + 12px, 17px);
+  padding: 9px 12px;
 }
 
 /* Left border — Golden Rules */
@@ -10961,28 +10984,29 @@ body.tt-3d .tt-game-layout--immersive .tt-sidebar.tt-sidebar--overlay.tt-sidebar
   transform: translateX(0);
 }
 
-/* Bottom HUD — story panel when inside a room */
+/* Bottom HUD — compact floating story popup when inside a room */
 body.tt-3d:not(.tt-roam) .tt-game-layout--immersive .tt-stage__room {
   pointer-events: none;
 }
 
 body.tt-3d:not(.tt-roam) .tt-game-layout--immersive .tt-scene-panel {
   position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: 10px;
+  right: 14px;
+  bottom: 14px;
+  left: auto;
+  width: min(520px, calc(100% - 28px));
   z-index: 60;
-  max-height: min(40vh, 400px);
+  max-height: min(44vh, 460px);
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
   margin: 0;
-  padding: 12px 14px;
-  border-radius: 14px;
-  border: 1px solid rgba(157, 140, 255, 0.35);
-  background: rgba(10, 5, 18, 0.9);
-  backdrop-filter: blur(8px);
-  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.45);
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(157, 140, 255, 0.45);
+  background: rgba(10, 5, 18, 0.94);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.55);
   pointer-events: auto;
 }
 
@@ -10991,20 +11015,34 @@ body.tt-3d .tt-game-layout--immersive .tt-scene-header {
 }
 
 body.tt-3d .tt-game-layout--immersive .tt-character--hero .tt-character__avatar {
-  width: 56px;
-  min-height: 70px;
+  width: 72px;
+  min-height: 88px;
+}
+
+body.tt-3d .tt-game-layout--immersive .tt-character__name {
+  font-size: clamp(16px, 0.9vw + 14px, 20px);
+}
+
+body.tt-3d .tt-game-layout--immersive .tt-character__role,
+body.tt-3d .tt-game-layout--immersive .tt-character__era {
+  font-size: clamp(13px, 0.7vw + 12px, 16px);
 }
 
 body.tt-3d .tt-game-layout--immersive .tt-scene-split {
-  grid-template-columns: 1fr minmax(140px, 34%);
-  gap: 10px;
+  grid-template-columns: 1fr minmax(150px, 36%);
+  gap: 12px;
 }
 
 body.tt-3d .tt-game-layout--immersive .tt-narrative {
-  font-size: 15px;
-  line-height: 1.5;
-  max-height: 18vh;
+  font-size: clamp(17px, 0.95vw + 14px, 21px);
+  line-height: 1.55;
+  max-height: 22vh;
   overflow-y: auto;
+}
+
+body.tt-3d .tt-game-layout--immersive .tt-scene-header__meta,
+body.tt-3d .tt-game-layout--immersive .tt-scene-job {
+  font-size: clamp(14px, 0.8vw + 12px, 17px);
 }
 
 body.tt-3d .tt-game-layout--immersive .tt-choices,
@@ -11035,8 +11073,16 @@ body.tt-3d.tt-roam .tt-game-layout--immersive .tt-world-prompt {
 }
 
 body.tt-3d .tt-game-layout--immersive .tt-map-flyover {
-  top: 58px;
+  top: 68px;
   z-index: 68;
+}
+
+body.tt-3d .tt-game-layout--immersive .tt-map-flyover__title {
+  font-size: clamp(22px, 1.4vw + 18px, 30px);
+}
+
+body.tt-3d .tt-game-layout--immersive .tt-map-flyover__sub {
+  font-size: clamp(14px, 0.8vw + 12px, 17px);
 }
 
 body.tt-3d .tt-game-layout--immersive #sceneLesson {
@@ -11087,10 +11133,11 @@ body.tt-3d .tt-game-layout--immersive .tt-skip-link {
   }
 
   body.tt-3d:not(.tt-roam) .tt-game-layout--immersive .tt-scene-panel {
-    left: 6px;
-    right: 6px;
-    bottom: 6px;
-    max-height: min(46vh, 360px);
+    right: 8px;
+    bottom: 8px;
+    left: 8px;
+    width: auto;
+    max-height: min(50vh, 420px);
   }
 
   body.tt-3d .tt-game-layout--immersive .tt-scene-split {

@@ -2772,7 +2772,11 @@
     inventoryTab = tab;
     const overlay = document.getElementById("inventoryOverlay");
     if (!overlay) return;
+    if (overlay.parentElement !== document.body) {
+      document.body.appendChild(overlay);
+    }
     overlay.classList.remove("dw-hidden");
+    overlay.classList.add("tt-inventory--open");
     overlay.setAttribute("aria-hidden", "false");
     renderInventory(focusId);
     document.getElementById("inventoryCloseBtn")?.focus();
@@ -2783,7 +2787,12 @@
     const overlay = document.getElementById("inventoryOverlay");
     if (!overlay) return;
     overlay.classList.add("dw-hidden");
+    overlay.classList.remove("tt-inventory--open");
     overlay.setAttribute("aria-hidden", "true");
+    const gameView = document.getElementById("gameView");
+    if (gameView && !gameView.contains(overlay)) {
+      gameView.insertBefore(overlay, gameView.querySelector(".tt-stage"));
+    }
   }
 
   function renderInventory(focusId = "") {
@@ -3039,7 +3048,11 @@ Play again to rebuild your record clean.`;
       }
     }
 
-    document.getElementById("inventoryBtn")?.addEventListener("click", () => openInventory("trophies"));
+    document.getElementById("inventoryBtn")?.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      openInventory("trophies");
+    });
     document.getElementById("inventoryCloseBtn")?.addEventListener("click", closeInventory);
     document.getElementById("inventoryOverlay")?.addEventListener("click", (e) => {
       if (e.target?.id === "inventoryOverlay") closeInventory();

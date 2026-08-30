@@ -253,10 +253,13 @@ export function decorateRoom(roomId, group, h, accent) {
     case "start":
       group.add(box(3.2, 0.12, 1.8, mat(0x2a2040), 0, 0.06, -2.5));
       group.add(box(3.4, 0.02, 1.9, glow(0x9d8cff), 0, 0.14, -2.5));
+      group.add(box(2.4, 0.08, 1.2, mat(0x3a2850), 0, 0.75, 0));
+      monitor(group, 0, 1.35, 0.6);
       chair(group, -2.2, -1.5);
       chair(group, 2.2, -1.5);
       chair(group, -2.2, 1.5);
       chair(group, 2.2, 1.5);
+      bookStack(group, 3.2, 2.2, 3, 0x5c4033);
       group.add(cyl(0.08, 0.08, 4.5, 8, mat(0xffd54a), -3.8, 2.25, -3.8));
       group.add(cyl(0.08, 0.08, 4.5, 8, mat(0xffd54a), 3.8, 2.25, -3.8));
       neonStrip(group, 0, h + 0.15, 4.3, 2.8, 0x9d8cff, "x");
@@ -485,6 +488,10 @@ export function decorateRoom(roomId, group, h, accent) {
       break;
 
     default:
+      for (let i = 0; i < 3; i++) {
+        group.add(box(0.4 + i * 0.1, 0.5 + i * 0.2, 0.4, mat(hi), -2 + i * 2, 0.25, 2.5 - i * 0.4));
+      }
+      group.add(cyl(0.35, 0.45, 0.08, 12, mat(lo), 3, 0.5, -2));
       neonStrip(group, 0, h + 0.1, 4.2, 2, hi, "x");
       break;
   }
