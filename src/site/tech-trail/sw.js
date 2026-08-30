@@ -1,7 +1,15 @@
 /**
  * Global Tech Gauntlet — service worker with network-first for scripts/styles.
  */
-const CACHE_NAME = "gtg-v52";
+const CACHE_NAME = "gtg-v54";
+
+function offlineResponse(message = "Offline") {
+  return new Response(message, {
+    status: 503,
+    statusText: "Service Unavailable",
+    headers: { "Content-Type": "text/plain; charset=utf-8" },
+  });
+}
 
 function isCacheableRequest(request) {
   try {
@@ -27,7 +35,7 @@ function networkFirst(request) {
       maybeCache(request, res);
       return res;
     })
-    .catch(() => caches.match(request));
+    .catch(() => caches.match(request).then((cached) => cached || offlineResponse()));
 }
 const PRECACHE = [
   "/styles/write-platform.css",
@@ -103,11 +111,19 @@ self.addEventListener("message", (e) => {
 
 self.addEventListener("fetch", (e) => {
   const { request } = e;
+
+  // Let the browser handle HTML navigations; only cache static assets.
+  if (request.mode === "navigate") return;
+
   if (!isCacheableRequest(request)) return;
 
   const url = new URL(request.url);
   if (/\.(mp3|wav|ogg|m4a)$/i.test(url.pathname)) {
-    e.respondWith(fetch(request).catch(() => caches.match(request)));
+    e.respondWith(
+      fetch(request).catch(() =>
+        caches.match(request).then((cached) => cached || offlineResponse())
+      )
+    );
     return;
   }
 
@@ -122,10 +138,12 @@ self.addEventListener("fetch", (e) => {
   e.respondWith(
     caches.match(request).then((cached) => {
       if (cached) return cached;
-      return fetch(request).then((res) => {
-        maybeCache(request, res);
-        return res;
-      }).catch(() => cached);
+      return fetch(request)
+        .then((res) => {
+          maybeCache(request, res);
+          return res;
+        })
+        .catch(() => offlineResponse());
     })
   );
 });

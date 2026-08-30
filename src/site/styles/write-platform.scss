@@ -8585,29 +8585,60 @@ html:has(.tt-game-body #gameView:not(.dw-hidden)) {
   display: none;
 }
 
-.wp-theme--gauntlet .tt-title-launch-bar .tt-globe-btn--primary .tt-globe-btn__globe {
-  width: clamp(44px, 7vh, 56px);
-  height: clamp(44px, 7vh, 56px);
+.wp-theme--gauntlet .tt-title-launch-bar .tt-globe-btn--primary .tt-globe-btn__globe,
+.wp-theme--gauntlet .tt-title-launch-bar .tt-globe-btn--sm .tt-globe-btn__globe {
+  width: clamp(48px, 6.5vh, 56px);
+  height: clamp(48px, 6.5vh, 56px);
+}
+
+.wp-theme--gauntlet .tt-title-launch-bar .tt-globe-btn--primary .tt-globe-btn__sphere,
+.wp-theme--gauntlet .tt-title-launch-bar .tt-globe-btn--sm .tt-globe-btn__sphere {
+  inset: 8px;
 }
 
 .wp-theme--gauntlet .tt-title-launch-bar .tt-globe-btn__label {
-  font-size: 0.9rem;
+  font-size: 0.88rem;
+  text-align: left;
+  max-width: none;
 }
 
 .wp-theme--gauntlet .tt-title-launch-bar .tt-globe-btn__sublabel {
-  font-size: 0.68rem;
+  font-size: 0.66rem;
+  text-align: left;
+  max-width: none;
 }
 
 .wp-theme--gauntlet .tt-title-launch-bar .tt-launch-actions {
   flex-direction: row;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
+  justify-content: flex-start;
+  gap: 8px;
 }
 
 .wp-theme--gauntlet .tt-title-launch-bar .tt-globe-btn {
-  gap: 4px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 8px;
+  row-gap: 0;
+  padding: 2px 4px;
+}
+
+.wp-theme--gauntlet .tt-title-launch-bar .tt-globe-btn__globe {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+}
+
+.wp-theme--gauntlet .tt-title-launch-bar .tt-globe-btn__label {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.wp-theme--gauntlet .tt-title-launch-bar .tt-globe-btn__sublabel {
+  grid-column: 2;
+  grid-row: 2;
 }
 
 .wp-theme--gauntlet .tt-title-hero {
@@ -8858,8 +8889,7 @@ html:has(.tt-game-body #gameView:not(.dw-hidden)) {
   overscroll-behavior: contain;
 }
 
-.wp-theme--gauntlet .tt-title-extras__col--launch .tt-globe-btn--primary .tt-globe-btn__globe,
-.wp-theme--gauntlet .tt-globe-btn--primary .tt-globe-btn__globe {
+.wp-theme--gauntlet .tt-title-extras__col--launch .tt-globe-btn--primary .tt-globe-btn__globe {
   width: clamp(44px, 7vh, 56px);
   height: clamp(44px, 7vh, 56px);
 }
@@ -8937,13 +8967,16 @@ html:has(.tt-game-body #gameView:not(.dw-hidden)) {
 
 .wp-theme--gauntlet .tt-launch-actions {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  justify-content: flex-start;
+  gap: 8px;
 }
 
-.wp-theme--gauntlet .tt-title-extras__col--launch .tt-launch-actions {
+.wp-theme--gauntlet .tt-title-launch-bar .tt-launch-actions {
   flex-direction: row;
+  flex-wrap: nowrap;
 }
 
 .wp-theme--gauntlet .tt-title-settings {
@@ -8993,18 +9026,9 @@ html:has(.tt-game-body #gameView:not(.dw-hidden)) {
   flex-shrink: 0;
 }
 
-@media (max-width: 900px) {
+@media (max-width: 640px) {
   .wp-theme--gauntlet .tt-title-extras {
     grid-template-columns: 1fr;
-  }
-
-  .wp-theme--gauntlet .tt-title-launch-bar {
-    grid-template-columns: 1fr;
-  }
-
-  .wp-theme--gauntlet .tt-title-launch-bar .tt-launch-actions,
-  .wp-theme--gauntlet .tt-title-launch-bar .tt-title-typing {
-    grid-column: 1;
   }
 
   .wp-theme--gauntlet .tt-title-controls-row {
@@ -9021,12 +9045,31 @@ html:has(.tt-game-body #gameView:not(.dw-hidden)) {
   }
 }
 
+@media (max-width: 520px) {
+  .wp-theme--gauntlet .tt-title-launch-bar {
+    grid-template-columns: 1fr;
+  }
+
+  .wp-theme--gauntlet .tt-title-launch-bar .tt-launch-actions,
+  .wp-theme--gauntlet .tt-title-launch-bar .tt-title-typing {
+    grid-column: 1;
+  }
+
+  .wp-theme--gauntlet .tt-title-launch-bar .tt-launch-actions {
+    justify-content: center;
+  }
+}
+
 @media (max-height: 820px) {
   .wp-theme--gauntlet .tt-title-screen__tagline {
     display: none;
   }
 
   .wp-theme--gauntlet .tt-title-launch-bar .tt-globe-btn__sublabel {
+    display: none;
+  }
+
+  .wp-theme--gauntlet .tt-title-launch-bar .tt-ghost-prompt {
     display: none;
   }
 }
