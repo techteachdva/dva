@@ -134,7 +134,7 @@ async function rosterGet(request) {
   const names = await rosterNamesForClassroomLive(access.classroom);
   return Response.json(
     { classroom: access.classroom, names, count: names.length },
-    { headers: corsHeaders() }
+    { headers: { ...corsHeaders(), "Cache-Control": "no-store" } }
   );
 }
 

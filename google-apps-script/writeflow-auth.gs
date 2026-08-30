@@ -336,6 +336,42 @@ function rosterUsernameKey_(value) {
   return normalizeStudentUsername_(value).toLowerCase().replace(/\.$/, "");
 }
 
+function rosterClassroomKey_(value) {
+  return String(value || "").trim().replace(/[\u2018\u2019\u201B\u2032]/g, "'").toLowerCase();
+}
+
+function canonicalRosterClassroom_(raw) {
+  const key = rosterClassroomKey_(raw);
+  if (!key) return "";
+  const embed = STUDENT_ROSTER_EMBED || {};
+  const keys = Object.keys(embed);
+  for (var i = 0; i < keys.length; i++) {
+    if (rosterClassroomKey_(keys[i]) === key) return keys[i];
+  }
+  return String(raw || "").trim().replace(/[\u2018\u2019\u201B\u2032]/g, "'");
+}
+
+function mergeRosterEntries_(sheetEntries, embedEntries) {
+  const merged = {};
+  function addEntry(entry) {
+    if (!entry || !entry.classroom || !entry.username || !entry.active) return;
+    const roomKey = rosterClassroomKey_(entry.classroom);
+    const userKey = rosterUsernameKey_(entry.username);
+    if (!roomKey || !userKey) return;
+    if (!merged[roomKey]) merged[roomKey] = {};
+    merged[roomKey][userKey] = entry;
+  }
+  embedEntries.forEach(addEntry);
+  sheetEntries.forEach(addEntry);
+  const out = [];
+  Object.keys(merged).forEach(function (roomKey) {
+    Object.keys(merged[roomKey]).forEach(function (userKey) {
+      out.push(merged[roomKey][userKey]);
+    });
+  });
+  return out;
+}
+
 function firstNameToken_(value) {
   return String(value || "").trim().split(/\s+/)[0].toLowerCase();
 }
@@ -391,7 +427,7 @@ function ensureStudentRosterPasswordColumn_(sheet) {
 
 function parseRosterRow_(row) {
   return {
-    classroom: String(row[0] || ""),
+    classroom: canonicalRosterClassroom_(row[0]),
     username: normalizeStudentUsername_(row[1]),
     active: String(row[2] || "").toUpperCase() === "TRUE",
     password: String(row[3] || "").trim(),
@@ -406,18 +442,20 @@ function storeRosterPassword_(password) {
 }
 
 function listActiveRosterEntries_() {
+  const embedEntries = rosterEntriesFromEmbed_();
   const sheet = getStudentRosterSheet_();
   ensureStudentRosterPasswordColumn_(sheet);
   const lastRow = sheet.getLastRow();
-  if (lastRow < 2) return rosterEntriesFromEmbed_();
+  if (lastRow < 2) return embedEntries;
   const rows = sheet.getRange(2, 1, lastRow - 1, 4).getValues();
-  const out = [];
+  const sheetEntries = [];
   for (var i = 0; i < rows.length; i++) {
     const entry = parseRosterRow_(rows[i]);
     if (!entry.active || !entry.username) continue;
-    out.push(entry);
+    sheetEntries.push(entry);
   }
-  return out.length ? out : rosterEntriesFromEmbed_();
+  if (!sheetEntries.length) return embedEntries;
+  return mergeRosterEntries_(sheetEntries, embedEntries);
 }
 
 function rosterEntriesFromEmbed_() {
@@ -429,7 +467,7 @@ function rosterEntriesFromEmbed_() {
       const username = normalizeStudentUsername_(String(names[i] || "").trim());
       if (!username) continue;
       out.push({
-        classroom: classroom,
+        classroom: canonicalRosterClassroom_(classroom),
         username: username,
         active: true,
         password: "",

@@ -1,7 +1,7 @@
 /**
  * Global Tech Gauntlet — service worker with network-first for scripts/styles.
  */
-const CACHE_NAME = "gtg-v63";
+const CACHE_NAME = "gtg-v64";
 
 function offlineResponse(message = "Offline") {
   return new Response(message, {
@@ -38,8 +38,8 @@ function networkFirst(request) {
     .catch(() => caches.match(request).then((cached) => cached || offlineResponse()));
 }
 const PRECACHE = [
-  "/styles/write-platform.css?v=gtg63",
-  "/styles/custom-style.css?v=gtg63",
+  "/styles/write-platform.css?v=gtg64",
+  "/styles/custom-style.css?v=gtg64",
   "/scripts/vendor/three.module.js",
   "/scripts/tech-trail-world3d-props.js",
   "/scripts/tech-trail-world3d.js",
@@ -118,6 +118,13 @@ self.addEventListener("fetch", (e) => {
   if (!isCacheableRequest(request)) return;
 
   const url = new URL(request.url);
+  if (url.pathname.startsWith("/api/")) {
+    e.respondWith(
+      fetch(request).catch(() => offlineResponse("Offline — connect to load roster."))
+    );
+    return;
+  }
+
   if (/\.(mp3|wav|ogg|m4a)$/i.test(url.pathname)) {
     e.respondWith(
       fetch(request).catch(() =>

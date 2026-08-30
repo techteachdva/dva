@@ -923,6 +923,21 @@ $wp-sheet-min-height: 1056px;
   flex-wrap: wrap;
 }
 
+.tt-identity-gate__roster {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  max-height: 9rem;
+  overflow-y: auto;
+  padding: 0.15rem 0;
+}
+
+.tt-identity-gate__roster-btn {
+  font-size: 0.82rem;
+  line-height: 1.2;
+  padding: 0.25rem 0.55rem;
+}
+
 .tt-identity-gate__panel {
   width: min(92vw, 420px);
   padding: 24px;

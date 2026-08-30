@@ -371,6 +371,52 @@ function rosterUsernameKey_(value) {
     .replace(/[^a-z0-9]/g, "");
 }
 
+function rosterClassroomKey_(value) {
+  return String(value || "")
+    .trim()
+    .replace(/[\u2018\u2019\u201B\u2032]/g, "'")
+    .toLowerCase();
+}
+
+function canonicalRosterClassroom_(raw) {
+  const key = rosterClassroomKey_(raw);
+  if (!key) return "";
+  const embed = CLASS_ROSTER_EMBED || {};
+  const keys = Object.keys(embed);
+  for (let i = 0; i < keys.length; i++) {
+    if (rosterClassroomKey_(keys[i]) === key) return keys[i];
+  }
+  return String(raw || "").trim().replace(/[\u2018\u2019\u201B\u2032]/g, "'");
+}
+
+function rosterEntryFromRow_(classroom, username) {
+  const room = canonicalRosterClassroom_(classroom);
+  const user = String(username || "").trim();
+  if (!room || !user) return null;
+  return { classroom: room, username: user, gtgName: normalizeGtgName_(user) };
+}
+
+function mergeRosterEntries_(sheetEntries, embedEntries) {
+  const merged = {};
+  function addEntry(entry) {
+    if (!entry || !entry.classroom || !entry.username) return;
+    const roomKey = rosterClassroomKey_(entry.classroom);
+    const userKey = rosterUsernameKey_(entry.username);
+    if (!roomKey || !userKey) return;
+    if (!merged[roomKey]) merged[roomKey] = {};
+    merged[roomKey][userKey] = entry;
+  }
+  embedEntries.forEach(addEntry);
+  sheetEntries.forEach(addEntry);
+  const out = [];
+  Object.keys(merged).forEach(function (roomKey) {
+    Object.keys(merged[roomKey]).forEach(function (userKey) {
+      out.push(merged[roomKey][userKey]);
+    });
+  });
+  return out;
+}
+
 function normalizeGtgName_(raw) {
   const s = String(raw || "").trim().replace(/\s+/g, " ");
   if (!s) return "";
@@ -382,21 +428,20 @@ function normalizeGtgName_(raw) {
 }
 
 function listRosterEntries_() {
+  const embedEntries = rosterEntriesFromEmbed_();
   const sheet = getRosterSheet_();
   const lastRow = sheet.getLastRow();
-  if (lastRow < 2) {
-    return rosterEntriesFromEmbed_();
-  }
+  if (lastRow < 2) return embedEntries;
   const rows = sheet.getRange(2, 1, lastRow - 1, 3).getValues();
-  const out = [];
+  const sheetEntries = [];
   for (let i = 0; i < rows.length; i++) {
-    const classroom = String(rows[i][0] || "").trim();
-    const username = String(rows[i][1] || "").trim();
     const active = String(rows[i][2] || "TRUE").toUpperCase() !== "FALSE";
-    if (!classroom || !username || !active) continue;
-    out.push({ classroom: classroom, username: username, gtgName: normalizeGtgName_(username) });
+    if (!active) continue;
+    const entry = rosterEntryFromRow_(rows[i][0], rows[i][1]);
+    if (entry) sheetEntries.push(entry);
   }
-  return out.length ? out : rosterEntriesFromEmbed_();
+  if (!sheetEntries.length) return embedEntries;
+  return mergeRosterEntries_(sheetEntries, embedEntries);
 }
 
 function rosterEntriesFromEmbed_() {
@@ -414,12 +459,12 @@ function rosterEntriesFromEmbed_() {
 }
 
 function listRosterNames_(classroomFilter) {
-  const filter = String(classroomFilter || "").trim().toLowerCase();
+  const filter = rosterClassroomKey_(classroomFilter);
   const entries = listRosterEntries_();
   const names = [];
   const seen = {};
   for (let i = 0; i < entries.length; i++) {
-    if (filter && entries[i].classroom.toLowerCase() !== filter) continue;
+    if (filter && rosterClassroomKey_(entries[i].classroom) !== filter) continue;
     const name = entries[i].gtgName;
     const key = rosterUsernameKey_(name);
     if (!key || seen[key]) continue;

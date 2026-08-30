@@ -283,6 +283,20 @@
   let completedChatMissions = new Set();
   let loadedRosterNames = [];
   let studentProfileSubmitting = false;
+  let rosterLoadTimer = null;
+
+  function normalizeClassroomApostrophe(value) {
+    return String(value || "").trim().replace(/[\u2018\u2019\u201B\u2032]/g, "'");
+  }
+
+  function resolveClassroomOption(classEl, preferred) {
+    if (!classEl) return "";
+    const want = normalizeClassroomApostrophe(preferred);
+    const options = Array.from(classEl.options || []);
+    const hit = options.find((opt) => normalizeClassroomApostrophe(opt.value) === want);
+    if (hit) return hit.value;
+    return options[0]?.value || "";
+  }
   let pendingBootCallback = null;
 
   const CLASS_CODE_SESSION_KEY = "techtrail:classCode";
@@ -336,6 +350,42 @@
     }).join("");
   }
 
+  function renderStudentRosterList(names) {
+    const el = document.getElementById("studentProfileRosterList");
+    if (!el) return;
+    if (!names.length) {
+      el.innerHTML = "";
+      el.classList.add("dw-hidden");
+      return;
+    }
+    el.innerHTML = names.map((n) => {
+      const parts = n.split(/\s+/);
+      const last = parts.pop() || "";
+      const first = parts.join(" ");
+      return `<button type="button" class="tt-settings-btn tt-identity-gate__roster-btn" data-roster-first="${escapeHtml(first)}" data-roster-last="${escapeHtml(last)}">${escapeHtml(n)}</button>`;
+    }).join("");
+    el.classList.remove("dw-hidden");
+  }
+
+  function pickStudentFromRoster(first, last) {
+    const firstEl = document.getElementById("studentProfileFirstName");
+    const lastEl = document.getElementById("studentProfileLastInitial");
+    if (firstEl) firstEl.value = first;
+    if (lastEl) lastEl.value = last;
+    document.getElementById("studentProfileError")?.classList.add("dw-hidden");
+  }
+
+  function scheduleStudentRosterLoad() {
+    clearTimeout(rosterLoadTimer);
+    rosterLoadTimer = setTimeout(() => {
+      const classEl = document.getElementById("studentProfileClassroom");
+      const codeEl = document.getElementById("studentProfileClassCode");
+      const classroom = String(classEl?.value || "").trim();
+      const classCode = String(codeEl?.value || "").trim();
+      if (classroom && classCode) void loadStudentRoster();
+    }, 350);
+  }
+
   function showStudentProfileGate(onComplete) {
     const gate = document.getElementById("studentProfileGate");
     if (!gate) {
@@ -356,8 +406,10 @@
 
     fetchClassrooms().then((rooms) => {
       if (!classEl) return;
-      const selected = profile.lastClassroom || rooms[0] || "";
+      const selected = resolveClassroomOption(classEl, profile.lastClassroom || rooms[0] || "");
       classEl.innerHTML = rooms.map((r) => `<option value="${escapeHtml(r)}"${r === selected ? " selected" : ""}>${escapeHtml(r)}</option>`).join("");
+      if (selected) classEl.value = selected;
+      scheduleStudentRosterLoad();
     }).catch(() => {
       if (classEl) classEl.innerHTML = `<option value="">Could not load classrooms</option>`;
     });
@@ -369,10 +421,14 @@
         lastEl.value = parts[parts.length - 1].slice(0, 2);
       }
     }
-    if (profile.lastClassroom && classEl) classEl.value = profile.lastClassroom;
+    if (profile.lastClassroom && classEl) {
+      const resolved = resolveClassroomOption(classEl, profile.lastClassroom);
+      if (resolved) classEl.value = resolved;
+    }
     if (codeEl) codeEl.value = getStoredClassCode() || codeEl.value || "";
     if (statusEl) statusEl.textContent = "";
     loadedRosterNames = [];
+    renderStudentRosterList([]);
     firstEl?.focus();
   }
 
@@ -394,10 +450,16 @@
     try {
       loadedRosterNames = await fetchRosterNames(classroom, classCode);
       fillStudentNameDatalist(loadedRosterNames);
-      if (statusEl) statusEl.textContent = `${loadedRosterNames.length} names loaded`;
+      renderStudentRosterList(loadedRosterNames);
+      if (statusEl) {
+        statusEl.textContent = loadedRosterNames.length
+          ? `${loadedRosterNames.length} names loaded — tap yours below or type it`
+          : "No names found for this class yet.";
+      }
       errEl?.classList.add("dw-hidden");
     } catch (e) {
       loadedRosterNames = [];
+      renderStudentRosterList([]);
       if (statusEl) statusEl.textContent = "";
       if (errEl) {
         errEl.textContent = e.message || "Could not load roster.";
@@ -4050,6 +4112,13 @@ Play again to rebuild your record clean.`;
 
     document.getElementById("studentProfileLoadBtn")?.addEventListener("click", () => loadStudentRoster());
     document.getElementById("studentProfileConfirmBtn")?.addEventListener("click", () => confirmStudentProfile());
+    document.getElementById("studentProfileClassroom")?.addEventListener("change", scheduleStudentRosterLoad);
+    document.getElementById("studentProfileClassCode")?.addEventListener("input", scheduleStudentRosterLoad);
+    document.getElementById("studentProfileRosterList")?.addEventListener("click", (e) => {
+      const btn = e.target.closest("[data-roster-first]");
+      if (!btn) return;
+      pickStudentFromRoster(btn.dataset.rosterFirst || "", btn.dataset.rosterLast || "");
+    });
     document.getElementById("switchStudentBtn")?.addEventListener("click", () => switchStudentProfile());
 
     function bootTitleScreen() {
