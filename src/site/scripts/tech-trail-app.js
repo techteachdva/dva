@@ -3293,7 +3293,8 @@
     if (!node.ending && window.__gtgWorld3D?.active) {
       if (opts.campusRoam) {
         window.__gtgWorld3D.setCampusRoam?.(true);
-      } else if (!opts.fromWorld) {
+      } else {
+        // Always leave roam when a story room is active — otherwise the typing bar is CSS-hidden.
         window.__gtgWorld3D.setCampusRoam?.(false);
       }
     }
@@ -3452,6 +3453,7 @@
       updateChallengeUnlockUI(typingInput.value, min);
       setTimeout(() => typingInput?.focus(), prefersReducedMotion ? 0 : 420);
       if (!isImmersiveRail()) typingEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      syncImmersiveTypingOverlay();
     } else if (node.typingChallenge && isRoomCompleted) {
       typingEl.classList.add("dw-hidden");
       typingPending = null;
@@ -3485,6 +3487,7 @@
           }
           document.getElementById("sceneChoices")?.classList.add("tt-layer--enter");
         }
+        syncImmersiveTypingOverlay();
       };
 
       const roomId = mapIdFor(nodeId);
@@ -3497,11 +3500,19 @@
         && !node.typingChallenge;
 
       if (needsMinigame) {
+        window.__gtgWorld3D?.setCampusRoam?.(false);
         typingEl.classList.add("dw-hidden");
         document.getElementById("typingChoices")?.classList.add("dw-hidden");
         clearChoiceTyping();
         if (choicesEl) choicesEl.innerHTML = `<p class="tt-minigame__loading">Powering room systems…</p>`;
-        const ok = await window.TechTrailMinigames.play(roomId);
+        syncImmersiveTypingOverlay();
+        let ok = true;
+        try {
+          ok = await window.TechTrailMinigames.play(roomId);
+        } catch (err) {
+          console.error("[GTG] Room minigame failed:", err);
+          ok = true;
+        }
         if (gen !== typewriterGen) return;
         if (ok) {
           completedMinigames.add(roomId);
