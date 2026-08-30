@@ -10,7 +10,13 @@
  */
 
 import { VALID_CLASSROOMS, resolveClassroom, verifyClassroomCode, CLASSROOM_CODES } from "./diagnostic-writing/classrooms.js";
-import { matchRosterName } from "./tech-trail/roster-lib.js";
+import {
+  listClassrooms,
+  rosterNamesForClassroom,
+  parseStudentName,
+  matchRosterName,
+  verifyClassAccess,
+} from "./tech-trail/roster-lib.js";
 
 const TEACHER_PASSWORD = "studentsfirst";
 const MIN_OATH_CHARS = 20;
@@ -83,6 +89,55 @@ function getQueryParam(request, key) {
   }
 }
 
+function isRosterRequest(request) {
+  const url = String(request?.url || "");
+  return url.includes("/tech-trail/roster") || url.includes("/tech-trail-roster")
+    || getQueryParam(request, "resource") === "roster";
+}
+
+async function rosterGet(request) {
+  const action = getQueryParam(request, "action");
+  if (action === "classrooms") {
+    return Response.json({ classrooms: listClassrooms() }, { headers: corsHeaders() });
+  }
+
+  const classroomRaw = getQueryParam(request, "classroom");
+  const classCode = getQueryParam(request, "classCode");
+  const access = verifyClassAccess(classroomRaw, classCode);
+  if (!access.ok) {
+    return Response.json({ error: access.message, names: [] }, { status: 400, headers: corsHeaders() });
+  }
+
+  const names = rosterNamesForClassroom(access.classroom);
+  return Response.json(
+    { classroom: access.classroom, names, count: names.length },
+    { headers: corsHeaders() }
+  );
+}
+
+async function rosterPost(request) {
+  const body = await request.json();
+  const access = verifyClassAccess(body?.classroom, body?.classCode);
+  if (!access.ok) {
+    return Response.json({ error: access.message }, { status: 400, headers: corsHeaders() });
+  }
+
+  const nameCheck = parseStudentName(body?.firstName, body?.lastInitial);
+  if (!nameCheck.ok) {
+    return Response.json({ error: nameCheck.message }, { status: 400, headers: corsHeaders() });
+  }
+
+  const rosterCheck = matchRosterName(nameCheck.name, access.classroom);
+  if (!rosterCheck.ok) {
+    return Response.json({ error: rosterCheck.message }, { status: 400, headers: corsHeaders() });
+  }
+
+  return Response.json(
+    { ok: true, name: rosterCheck.name, classroom: rosterCheck.classroom },
+    { headers: corsHeaders() }
+  );
+}
+
 function validateScoreName(firstRaw, lastRaw) {
   const first = String(firstRaw ?? "").trim();
   const last = String(lastRaw ?? "").trim();
@@ -100,6 +155,8 @@ function validateScoreName(firstRaw, lastRaw) {
 }
 
 export async function GET(request) {
+  if (isRosterRequest(request)) return rosterGet(request);
+
   const password = getQueryParam(request, "password");
   const classroomFilter = getQueryParam(request, "classroom");
 
@@ -141,6 +198,14 @@ export async function GET(request) {
 }
 
 export async function POST(request) {
+  if (isRosterRequest(request)) {
+    try {
+      return await rosterPost(request);
+    } catch (e) {
+      return Response.json({ error: e.message || "Invalid request" }, { status: 400, headers: corsHeaders() });
+    }
+  }
+
   const scriptUrl = getScriptUrl();
   if (!scriptUrl) return notConfiguredResponse();
 
