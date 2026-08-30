@@ -1,5 +1,5 @@
 /**
- * Global Tech Gauntlet — scene zones, portraits, and golden-rule metadata.
+ * Global Tech Gauntlet. Scene zones, portraits, and golden-rule metadata.
  */
 (() => {
   "use strict";
@@ -183,7 +183,7 @@
       n: 1,
       short: "Design for people",
       icon: "🎯",
-      detail: "Technology should help real humans — clear interfaces, accessibility, and empathy beat flashy tricks.",
+      detail: "Technology should help real humans. Clear interfaces, accessibility, and empathy beat flashy tricks.",
       learnLine: "Ask who it's for before you build.",
     },
     {
@@ -191,7 +191,7 @@
       short: "Protect data",
       icon: "🛡️",
       detail: "Treat personal information like treasure. Share only what is needed and know who can see it.",
-      learnLine: "Private info isn't yours to pass around — even as a joke.",
+      learnLine: "Private info isn't yours to pass around. Even as a joke.",
     },
     {
       n: 3,
@@ -225,23 +225,23 @@
     design_lab: { id: "design_lab", label: "Design Lab", icon: "🎯", x: 18, y: 68, job: "Stop a team from shipping the wrong app.", conflict: { graphic: "app", title: "Ship-it Friday", situation: "The app looks flashy. Nobody asked what problem it solves. The countdown says Friday.", question: "Interview real users, or ship a guess?" } },
     data_vault: { id: "data_vault", label: "Data Vault", icon: "🛡️", x: 38, y: 68, job: "Stop a private-info leak without spreading it.", conflict: { graphic: "leak", title: "The locker leak", situation: "A classmate's phone number and schedule are in a public thread 'as a joke.' Screenshots are already flying.", question: "Report it, or pass it along?" } },
     password_temple: { id: "password_temple", label: "Password Vault", icon: "🔑", x: 50, y: 68, job: "Lock accounts the right way: unique + 2FA.", conflict: { graphic: "keys", title: "One password, three doors", situation: "A recruit used the same password for school email, a game, and a second account. One crack opens all three.", question: "Unique passwords and 2FA, or one 'strong' password everywhere?" } },
-    footprint_scene: { id: "footprint_scene", label: "Footprint Gallery", icon: "✋", x: 62, y: 68, job: "Choose the post you'd still stand behind later.", conflict: { graphic: "post", title: "Two drafts", situation: "Same moment. One reply is kind. One tags someone to embarrass them — 'just a joke.'", question: "Which version still represents you in ten years?" } },
+    footprint_scene: { id: "footprint_scene", label: "Footprint Gallery", icon: "✋", x: 62, y: 68, job: "Choose the post you'd still stand behind later.", conflict: { graphic: "post", title: "Two drafts", situation: "Same moment. One reply is kind. One tags someone to embarrass them. 'just a joke.'", question: "Which version still represents you in ten years?" } },
     media_chamber: { id: "media_chamber", label: "Media Chamber", icon: "📰", x: 82, y: 68, job: "Decode three headlines before you pick a side.", conflict: { graphic: "headlines", title: "Same event, three stories", situation: "One headline is sourced. One is breathless. One is ALL CAPS with a question mark. The group chat is already picking sides.", question: "Compare sources, or share the loudest one?" } },
-    prepare_phase: { id: "prepare_phase", label: "Simulation Studio", icon: "🌍", x: 12, y: 50, job: "Name the real problem before you build.", conflict: { graphic: "cities", title: "No buzzwords", situation: "A blank sim city waits. Wright wants the problem in plain language — not 'make an app.'", question: "Who is this actually for?" } },
-    try_phase: { id: "try_phase", label: "Prototype Arena", icon: "♟️", x: 30, y: 50, job: "Test honestly with real users.", conflict: { graphic: "dice", title: "Login bug, live users", situation: "People are waiting behind the glass. The login is broken. You could watch the pain — or patch quietly and hide it.", question: "Watch users, or hide the bug?" } },
-    debug_scene: { id: "debug_scene", label: "Hopper's Fleet", icon: "🐛", x: 48, y: 50, job: "Find the real bug — don't guess.", conflict: { graphic: "loop", title: "Infinite loop", situation: "The program never stops. Guessing, rewriting everything, or walking it line by line are on the table.", question: "Trace the logic, or mash random lines?" } },
+    prepare_phase: { id: "prepare_phase", label: "Simulation Studio", icon: "🌍", x: 12, y: 50, job: "Name the real problem before you build.", conflict: { graphic: "cities", title: "No buzzwords", situation: "A blank sim city waits. Wright wants the problem in plain language. Not 'make an app.'", question: "Who is this actually for?" } },
+    try_phase: { id: "try_phase", label: "Prototype Arena", icon: "♟️", x: 30, y: 50, job: "Test honestly with real users.", conflict: { graphic: "dice", title: "Login bug, live users", situation: "People are waiting behind the glass. The login is broken. You could watch the pain. Or patch quietly and hide it.", question: "Watch users, or hide the bug?" } },
+    debug_scene: { id: "debug_scene", label: "Hopper's Fleet", icon: "🐛", x: 48, y: 50, job: "Find the real bug. Don't guess.", conflict: { graphic: "loop", title: "Infinite loop", situation: "The program never stops. Guessing, rewriting everything, or walking it line by line are on the table.", question: "Trace the logic, or mash random lines?" } },
     reflect_phase: { id: "reflect_phase", label: "Crawford's Bureau", icon: "🎮", x: 66, y: 50, job: "Say what version two should actually fix.", conflict: { graphic: "notes", title: "No PR voice", situation: "A chart: what worked, what flopped, what surprised you. Empty 'version two' column.", question: "What would you change before more people see this?" } },
     code_bay: { id: "code_bay", label: "Code Bay", icon: "📐", x: 84, y: 50, job: "Give the robot real instructions, not vibes.", conflict: { graphic: "robot", title: "Vibes vs steps", situation: "A delivery robot waits on a grid. One teammate wrote if/then turns. The other wrote 'go to the goal somehow.'", question: "Clear steps, or let it wander?" } },
     network_closet: { id: "network_closet", label: "Network Closet", icon: "📡", x: 10, y: 32, job: "Keep a login off café Wi-Fi.", conflict: { graphic: "wifi", title: "No padlock", situation: "A classmate is about to type a password into a school site on café Wi-Fi. No HTTPS padlock. 'I'll only be a minute.'", question: "Wait for trusted Wi-Fi, or let them hurry?" } },
     sources_library: { id: "sources_library", label: "Sources Library", icon: "🔍", x: 28, y: 32, job: "Hunt the original study before you react.", conflict: { graphic: "chart", title: "Viral chart, no author", situation: "A slick chart claims homework destroys brain cells. No study. No author. Your friend already reposted it.", question: "Find the source, or keep the post up?" } },
     ip_chamber: { id: "ip_chamber", label: "IP Chamber", icon: "🎵", x: 46, y: 32, job: "Use music you actually have permission for.", conflict: { graphic: "music", title: "Perfect song, zero license", situation: "The class video sounds great with a random upload. No license. No credit. Partner: 'We'll cut it if anyone complains.'", question: "Get permission, or just use it?" } },
-    collaboration_bridge: { id: "collaboration_bridge", label: "Collaboration Bridge", icon: "🌉", x: 64, y: 32, job: "Back someone up when the group chat turns mean.", conflict: { graphic: "chat", title: "Locked out, then roasted", situation: "A classmate is locked out of a shared doc — then roasted for asking why. You're in the thread. Everyone's watching.", question: "Speak up in public, or join the joke?" } },
+    collaboration_bridge: { id: "collaboration_bridge", label: "Collaboration Bridge", icon: "🌉", x: 64, y: 32, job: "Back someone up when the group chat turns mean.", conflict: { graphic: "chat", title: "Locked out, then roasted", situation: "A classmate is locked out of a shared doc. Then roasted for asking why. You're in the thread. Everyone's watching.", question: "Speak up in public, or join the joke?" } },
     trajectory_scene: { id: "trajectory_scene", label: "Johnson's Console", icon: "🚀", x: 82, y: 32, job: "Check if a viral quote is even real.", conflict: { graphic: "meme", title: "Famous face, no source", situation: "A meme puts a bold quote on a famous face. Shares are climbing. No citation anywhere.", question: "Verify first, or share with a disclaimer?" } },
-    ai_ethics: { id: "ai_ethics", label: "AI Ethics Lab", icon: "⚖️", x: 14, y: 16, job: "Don't ship a scanner that only works on some faces.", conflict: { graphic: "faces", title: "Good enough?", situation: "Face unlock works — on people who look like the engineers. Fails on everyone else. The team wants to launch.", question: "Test diverse faces first, or ship and patch later?" } },
+    ai_ethics: { id: "ai_ethics", label: "AI Ethics Lab", icon: "⚖️", x: 14, y: 16, job: "Don't ship a scanner that only works on some faces.", conflict: { graphic: "faces", title: "Good enough?", situation: "Face unlock works. On people who look like the engineers. Fails on everyone else. The team wants to launch.", question: "Test diverse faces first, or ship and patch later?" } },
     hardware_graveyard: { id: "hardware_graveyard", label: "Hardware Graveyard", icon: "📱", x: 32, y: 16, job: "Wipe devices the right way before they leave.", conflict: { graphic: "phones", title: "Still buzzing", situation: "A discarded phone still has photos, messages, and location history. It was tossed in e-waste without a wipe.", question: "Report and wipe properly, or walk away?" } },
     open_source: { id: "open_source", label: "Open Source Bazaar", icon: "📜", x: 50, y: 16, job: "Put the credits back where they belong.", conflict: { graphic: "credits", title: "Deleted credits", situation: "Two copies of the same tool. One fork deleted the original names and called it new. The creator is asking questions.", question: "Restore credit, or stay quiet?" } },
-    bias_unit: { id: "bias_unit", label: "Bias Detection", icon: "📊", x: 68, y: 16, job: "Catch a model that treats people differently.", conflict: { graphic: "split", title: "Same numbers, different yes", situation: "Two loan screens. Same income, same history — different approval. The team says overall numbers look fine.", question: "Demand a fairness audit, or leave it running?" } },
-    data_detective: { id: "data_detective", label: "Detective Agency", icon: "🕵️", x: 86, y: 16, job: "Show how tiny data points build a profile.", conflict: { graphic: "profiles", title: "Three apps, one person", situation: "Three apps each guessed something different about the same kid — and sold the guess. Friend: 'I have nothing to hide.'", question: "Explain the trail, or say privacy doesn't matter?" } },
+    bias_unit: { id: "bias_unit", label: "Bias Detection", icon: "📊", x: 68, y: 16, job: "Catch a model that treats people differently.", conflict: { graphic: "split", title: "Same numbers, different yes", situation: "Two loan screens. Same income, same history. Different approval. The team says overall numbers look fine.", question: "Demand a fairness audit, or leave it running?" } },
+    data_detective: { id: "data_detective", label: "Detective Agency", icon: "🕵️", x: 86, y: 16, job: "Show how tiny data points build a profile.", conflict: { graphic: "profiles", title: "Three apps, one person", situation: "Three apps each guessed something different about the same kid. And sold the guess. Friend: 'I have nothing to hide.'", question: "Explain the trail, or say privacy doesn't matter?" } },
     final_trial: { id: "final_trial", label: "Final Trial", icon: "🏟️", x: 50, y: 4, job: "Write your Digital Citizenship Oath.", conflict: { graphic: "oath", title: "The Arena", situation: "Mentors you met wait in the holo-ring. This is not a quiz. It is a promise: what will you actually do online when it counts?", question: "Name the Golden Rules you will use." } },
   };
 
@@ -337,7 +337,7 @@
   }
 
   const LESSONS = {
-    "8.3.3.1": { title: "Design for people", blurb: "Ask who it's for — and what problem you're actually solving — before you build." },
+    "8.3.3.1": { title: "Design for people", blurb: "Ask who it's for. And what problem you're actually solving. Before you build." },
     "8.3.3.2": { title: "Debug the truth", blurb: "Computers don't get tired. They do exactly what you wrote, even the silly part." },
     "8.3.3.3": { title: "Write clear steps", blurb: "An algorithm is boring, precise instructions. Vibes don't move robots." },
     "8.3.2.1": { title: "Shared air", blurb: "Public Wi‑Fi is a shared hallway. Padlocks (HTTPS) keep your login from walking off." },
@@ -345,7 +345,7 @@
     "8.2.2.1": { title: "Credit and permission", blurb: "You can be inspired without taking. Creators deserve both credit and a license." },
     "8.3.4.2": { title: "Show up", blurb: "Tools connect us. People choose whether that connection helps or hurts." },
     "8.1.3.3": { title: "Trending ≠ true", blurb: "Accuracy is a habit. Check whether a quote actually exists before you share it." },
-    "8.2.2.3": { title: "Protect data", blurb: "Private info isn't yours to broadcast — even when you think you're helping." },
+    "8.2.2.3": { title: "Protect data", blurb: "Private info isn't yours to broadcast. Even when you think you're helping." },
     "8.2.1.1": { title: "The long view", blurb: "The internet remembers slowly, but it remembers. Post the version you'd stand behind." },
     "8.2.2.4": { title: "Decode the packaging", blurb: "Same event, three headlines. Look past the ALL CAPS and ask who made it." },
   };
@@ -356,7 +356,7 @@
     "Lucky Roll": { icon: "🎲", blurb: "Meier's die landed on your number. Fortune favors the prepared." },
     "Iterative Builder": { icon: "🔁", blurb: "You watched users struggle and treated it as data, not failure." },
     "Debugger": { icon: "🐛", blurb: "You traced the logic instead of mashing random lines." },
-    "Reflector": { icon: "🪞", blurb: "You said what version two should actually fix — no PR spin." },
+    "Reflector": { icon: "🪞", blurb: "You said what version two should actually fix. No PR spin." },
     "Algorithm Architect": { icon: "📐", blurb: "Clear if/then steps beat 'go to the goal somehow.'" },
     "Network Navigator": { icon: "📡", blurb: "You kept a login off café Wi‑Fi. Public air is shared air." },
     "Fact Finder": { icon: "🔍", blurb: "You hunted the original study and saved a friend a bad take." },
@@ -371,25 +371,25 @@
     "Fairness Advocate": { icon: "⚖️", blurb: "You made them test on more than one kind of face." },
     "Data Destroyer": { icon: "📱", blurb: "You wiped the device the right way. Data outlives hardware." },
     "License Scholar": { icon: "📜", blurb: "You restored credits. Open source lives on named shoulders." },
-    "Bias Spotter": { icon: "📊", blurb: "Same numbers, different yes/no — you ordered a fairness audit." },
+    "Bias Spotter": { icon: "📊", blurb: "Same numbers, different yes/no. You ordered a fairness audit." },
     "Trail Tracker": { icon: "🕵️", blurb: "You showed how tiny data points build a detailed profile." },
     "Lovelace Scholar": { icon: "👑", blurb: "Ada wrote the first program so a machine could follow a human plan." },
-    "Turing Scholar": { icon: "🔐", blurb: "Turing designed tools to break wartime codes — and a fair test for thinking." },
+    "Turing Scholar": { icon: "🔐", blurb: "Turing designed tools to break wartime codes. And a fair test for thinking." },
     "Hopper Scholar": { icon: "⚓", blurb: "Hopper built a compiler so more people could write code in words." },
     "Johnson Scholar": { icon: "✏️", blurb: "Johnson calculated paths so astronauts came home." },
     "Babbage Scholar": { icon: "⚙️", blurb: "Babbage designed a general-purpose engine so bad tables wouldn't wreck ships." },
     "Wright Scholar": { icon: "🌍", blurb: "Wright built practice-cities so you can fail safely." },
-    "Meier Scholar": { icon: "♟️", blurb: "Meier made history playable — and insisted choices stay fun and fair to test." },
+    "Meier Scholar": { icon: "♟️", blurb: "Meier made history playable. And insisted choices stay fun and fair to test." },
     "Campbell Scholar": { icon: "📜", blurb: "Campbell mapped the Hero's Journey so people can see the story they're in." },
-    "Crawford Scholar": { icon: "🎮", blurb: "Crawford designed games where your choices teach — every click is a vote." },
+    "Crawford Scholar": { icon: "🎮", blurb: "Crawford designed games where your choices teach. Every click is a vote." },
     "Conway Scholar": { icon: "🔬", blurb: "Conway's Game of Life shows how tiny rules grow huge patterns." },
-    "Lamarr Scholar": { icon: "📡", blurb: "Lamarr taught signals to hop — a building block of Wi-Fi. Public air is still shared air." },
+    "Lamarr Scholar": { icon: "📡", blurb: "Lamarr taught signals to hop. A building block of Wi-Fi. Public air is still shared air." },
     "Perlman Scholar": { icon: "🌳", blurb: "Perlman designed spanning tree so extra cables don't melt the network." },
     "Hamilton Scholar": { icon: "🌙", blurb: "Hamilton's Apollo software shed extra jobs and still landed the ship." },
     "Sweeney Scholar": { icon: "🧩", blurb: "Sweeney proved ZIP + birth date + gender can unmask 'anonymous' data." },
-    "Buolamwini Scholar": { icon: "🪞", blurb: "Joy measured face scanners that fail on darker skin — then published." },
+    "Buolamwini Scholar": { icon: "🪞", blurb: "Joy measured face scanners that fail on darker skin. Then published." },
     "West Scholar": { icon: "🛰️", blurb: "West modeled the Earth so GPS could work. The blue dot is personal." },
-    "Noble Scholar": { icon: "🔎", blurb: "Noble showed search and headlines are designed — rank is not truth." },
+    "Noble Scholar": { icon: "🔎", blurb: "Noble showed search and headlines are designed. Rank is not truth." },
   };
 
   window.TechTrailVisuals = {

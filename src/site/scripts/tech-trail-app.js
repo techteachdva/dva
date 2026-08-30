@@ -263,6 +263,7 @@
   let mentorTrust = {};
   let strikes = 0;
   let completedMinigames = new Set();
+  let phraseTrack = null;
   const MAX_STRIKES = 3;
   let runRng = Math.random;
   let startChoices = [];
@@ -891,16 +892,58 @@
     showDiagnostic();
   }
 
+  function openPhraseTrackPicker(onPick) {
+    const picker = document.getElementById("phraseTrackPicker");
+    if (!picker) {
+      phraseTrack = phraseTrack || "citizen";
+      onPick?.(phraseTrack);
+      return;
+    }
+    const citizen = window.TechTrailPhraseTracks?.citizen;
+    const spark = window.TechTrailPhraseTracks?.spark;
+    const citizenBtn = document.getElementById("phraseTrackCitizen");
+    const sparkBtn = document.getElementById("phraseTrackSpark");
+    const citizenLabel = document.getElementById("phraseTrackCitizenLabel");
+    const sparkLabel = document.getElementById("phraseTrackSparkLabel");
+    if (citizenLabel && citizen) citizenLabel.textContent = citizen.title;
+    if (sparkLabel && spark) sparkLabel.textContent = spark.title;
+    const citizenBlurb = document.getElementById("phraseTrackCitizenBlurb");
+    const sparkBlurb = document.getElementById("phraseTrackSparkBlurb");
+    if (citizenBlurb && citizen) citizenBlurb.textContent = citizen.blurb;
+    if (sparkBlurb && spark) sparkBlurb.textContent = spark.blurb;
+
+    const choose = (track) => {
+      phraseTrack = track;
+      picker.classList.add("dw-hidden");
+      picker.setAttribute("aria-hidden", "true");
+      citizenBtn?.removeEventListener("click", onCitizen);
+      sparkBtn?.removeEventListener("click", onSpark);
+      onPick?.(track);
+    };
+    const onCitizen = () => choose("citizen");
+    const onSpark = () => choose("spark");
+    citizenBtn?.addEventListener("click", onCitizen);
+    sparkBtn?.addEventListener("click", onSpark);
+    picker.classList.remove("dw-hidden");
+    picker.setAttribute("aria-hidden", "false");
+  }
+
+  function promptPhraseTrackThen(next) {
+    openPhraseTrackPicker(() => next?.());
+  }
+
   function startMissionCore() {
+    const track = phraseTrack;
     hideDiagnostic();
     show("game");
     resetRun();
+    phraseTrack = track || "citizen";
     renderFragmentTracker();
     showSceneLoader();
     setTimeout(() => {
       renderScene("start").catch((err) => {
         console.error("[GTG] Failed to load start scene:", err);
-        toast("Mission failed to load — tap Play mission to try again.", "lesson");
+        toast("Mission failed to load. Tap Play mission to try again.", "lesson");
       });
       hideSceneLoader();
       updateTitleLaunchUI();
@@ -1764,10 +1807,10 @@
     Audio?.init?.();
     requestGameFullscreen().then(updateFullscreenButton);
     if (!typingProfile.diagnosed) {
-      openDiagnosticForLaunch(() => openWarmupThen(() => startMissionCore()));
+      openDiagnosticForLaunch(() => openWarmupThen(() => promptPhraseTrackThen(() => startMissionCore())));
       return;
     }
-    openWarmupThen(() => startMissionCore());
+    openWarmupThen(() => promptPhraseTrackThen(() => startMissionCore()));
   }
 
   function beginContinueMission() {
@@ -1800,6 +1843,7 @@
       completedMinigames = saved.completedMinigames instanceof Set
         ? saved.completedMinigames
         : new Set(saved.completedMinigames || []);
+      phraseTrack = saved.phraseTrack === "spark" ? "spark" : saved.phraseTrack === "citizen" ? "citizen" : null;
       startTime = saved.startedAt || Date.now();
       hideDiagnostic();
       show("game");
@@ -1823,7 +1867,7 @@
       openDiagnosticForLaunch(() => beginNewMission());
       return;
     }
-    openWarmupThen(() => startMissionCore());
+    openWarmupThen(() => promptPhraseTrackThen(() => startMissionCore()));
   }
 
   function loadDifficulty() {
@@ -3166,6 +3210,7 @@
           mentorTrust,
           strikes,
           completedMinigames,
+          phraseTrack,
           startedAt: startTime,
         }));
         renderScene(currentNode, { quizJustPassed: true }).catch((err) => console.error("[GTG] quiz:", err));
@@ -3407,6 +3452,7 @@
       mentorTrust,
       strikes,
       completedMinigames,
+      phraseTrack,
       startedAt: startTime,
     }));
 
@@ -3514,12 +3560,11 @@
           ok = true;
         }
         if (gen !== typewriterGen) return;
+        completedMinigames.add(roomId);
         if (ok) {
-          completedMinigames.add(roomId);
           journal.push(`⚡ Cleared ${mini.title}`);
           toast("Room challenge cleared!", "info");
         } else {
-          completedMinigames.add(roomId);
           strikes = Math.min(MAX_STRIKES, strikes + 1);
           journal.push(`⚠️ Failed room challenge — strike ${strikes}/${MAX_STRIKES}`);
           updateStrikeMeter();
@@ -3546,6 +3591,7 @@
           mentorTrust,
           strikes,
           completedMinigames,
+          phraseTrack,
           startedAt: startTime,
         }));
       }
@@ -3667,6 +3713,7 @@
     Rhythm.start({
       nodeId: fromId,
       difficulty,
+      phraseTrack,
       reducedMotion: prefersReducedMotion || document.body.classList.contains("tt-high-contrast"),
       onComplete(result) {
         if (result && !result.skipped && result.accuracy != null) {
@@ -4116,6 +4163,7 @@ Play again to rebuild your record clean.`;
     mentorTrust = {};
     strikes = 0;
     completedMinigames = new Set();
+    phraseTrack = null;
     journal = ["🌐 Mission accepted"];
     startTime = Date.now();
     const id = getStudentIdentity();
@@ -4137,6 +4185,7 @@ Play again to rebuild your record clean.`;
         mentorTrust,
         strikes,
         completedMinigames,
+        phraseTrack,
         studentName: id.name,
         classroom: id.classroom,
         startedAt: startTime,
@@ -4433,7 +4482,7 @@ Play again to rebuild your record clean.`;
       show("title");
       if (!typingProfile.diagnosed && !State.hasActiveRun()) {
         setTimeout(() => {
-          openDiagnosticForLaunch(() => openWarmupThen(() => startMissionCore()));
+          openDiagnosticForLaunch(() => openWarmupThen(() => promptPhraseTrackThen(() => startMissionCore())));
           toast("Welcome! Complete the keystroke test to launch your mission.", "lesson");
         }, prefersReducedMotion ? 200 : 650);
       }

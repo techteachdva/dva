@@ -1314,6 +1314,133 @@ $wp-sheet-min-height: 1056px;
   font-weight: 600;
 }
 
+.tt-track-picker {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.tt-track-picker.dw-hidden {
+  display: none;
+}
+
+.tt-track-picker__backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(6, 4, 12, 0.88);
+  backdrop-filter: blur(8px);
+}
+
+.tt-track-picker__panel {
+  position: relative;
+  z-index: 1;
+  width: min(920px, 100%);
+  padding: 24px 28px 28px;
+  border-radius: 16px;
+  border: 1px solid rgba(157, 140, 255, 0.35);
+  background: linear-gradient(160deg, rgba(22, 16, 36, 0.98), rgba(8, 6, 14, 0.96));
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55);
+}
+
+.tt-track-picker__kicker {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ffd54a;
+}
+
+.tt-track-picker__title {
+  margin: 0 0 8px;
+  font-size: clamp(1.25rem, 2vw, 1.6rem);
+  color: #f5e9ff;
+}
+
+.tt-track-picker__lead {
+  margin: 0 0 20px;
+  font-size: 14px;
+  color: rgba(245, 233, 255, 0.78);
+  max-width: 52ch;
+}
+
+.tt-track-picker__split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+@media (max-width: 640px) {
+  .tt-track-picker__split {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tt-track-picker__side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-height: 180px;
+  padding: 20px 22px;
+  border-radius: 14px;
+  border: 2px solid transparent;
+  background: rgba(12, 8, 20, 0.75);
+  color: #f5e9ff;
+  text-align: left;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tt-track-picker__side:hover,
+.tt-track-picker__side:focus-visible {
+  transform: translateY(-2px);
+  outline: none;
+}
+
+.tt-track-picker__side--citizen {
+  border-color: rgba(68, 255, 204, 0.35);
+}
+
+.tt-track-picker__side--citizen:hover,
+.tt-track-picker__side--citizen:focus-visible {
+  border-color: #44ffcc;
+  box-shadow: 0 0 28px rgba(68, 255, 204, 0.22);
+}
+
+.tt-track-picker__side--spark {
+  border-color: rgba(255, 213, 74, 0.35);
+}
+
+.tt-track-picker__side--spark:hover,
+.tt-track-picker__side--spark:focus-visible {
+  border-color: #ffd54a;
+  box-shadow: 0 0 28px rgba(255, 213, 74, 0.22);
+}
+
+.tt-track-picker__side-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+.tt-track-picker__side strong {
+  font-size: 1.15rem;
+}
+
+.tt-track-picker__side p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgba(245, 233, 255, 0.72);
+}
+
 /* Skip link and mute (Phase 5) */
 
 .tt-skip-link {

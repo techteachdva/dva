@@ -437,24 +437,31 @@
     };
   }
 
-  function pickPhrases(nodeId, difficulty) {
+  function pickPhrase(nodeId, difficulty, track) {
     const short = difficulty === "cadet";
     const bridge = window.TechTrailWorld;
     const roomId = bridge?.mapIdFor?.(nodeId) || "start";
-    const roomPack = ROOM_PHRASES[roomId];
-    let citizen;
-    if (roomPack?.citizen) {
-      citizen = roomPack.citizen;
-    } else {
-      citizen = CITIZEN_BY_THEME[themeForNode(nodeId)] || CITIZEN_BY_THEME.default;
+    const phrases = window.TechTrailRoomPhrases?.ROOM_PHRASES || ROOM_PHRASES;
+    const roomPack = phrases[roomId];
+    const useSpark = track === "spark";
+
+    if (useSpark) {
+      if (roomPack?.spark) return normalizePhrase(roomPack.spark, short);
+      const sparkId = roomPack?.sparkId;
+      const spark = sparkId
+        ? SPARK_PHRASES.find((p) => p.id === sparkId) || SPARK_PHRASES[0]
+        : SPARK_PHRASES[hash32(nodeId) % SPARK_PHRASES.length];
+      return normalizePhrase(spark, short);
     }
-    let spark;
-    if (roomPack?.sparkId) {
-      spark = SPARK_PHRASES.find((p) => p.id === roomPack.sparkId) || SPARK_PHRASES[0];
-    } else {
-      spark = SPARK_PHRASES[hash32(nodeId) % SPARK_PHRASES.length];
-    }
-    return [normalizePhrase(citizen, short), normalizePhrase(spark, short)];
+
+    const citizen = roomPack?.citizen
+      || CITIZEN_BY_THEME[themeForNode(nodeId)]
+      || CITIZEN_BY_THEME.default;
+    return normalizePhrase(citizen, short);
+  }
+
+  function pickPhrases(nodeId, difficulty, track) {
+    return [pickPhrase(nodeId, difficulty, track || "citizen")];
   }
 
   function isSpaceChar(ch) {
@@ -678,13 +685,13 @@
     const retry = $("rhythmRetryBtn");
     const cont = $("rhythmContinueBtn");
     setHidden(result, false);
-    const roundLabel = session.roundIndex === 0 ? "Digital citizenship" : "SPARK";
+    const roundLabel = session.trackMeta?.title || "Room phrase";
     if (text) {
-      text.textContent = `${roundLabel}: ${acc}% first-try · ${liveKeysPerMin()} keys/min — sentence complete.`;
+      text.textContent = `${roundLabel}: ${acc}% first-try · ${liveKeysPerMin()} keys/min. Sentence complete.`;
     }
     setHidden(retry, false);
     if (cont) {
-      cont.textContent = session.roundIndex === 0 ? "SPARK phrase ▶" : "Enter next room ▶";
+      cont.textContent = "Enter next room ▶";
       setHidden(cont, false);
     }
     if (retry) retry.disabled = false;
@@ -693,11 +700,6 @@
 
   function advanceOrFinish() {
     if (!session) return;
-    if (session.roundIndex === 0) {
-      session.roundIndex = 1;
-      startRound(session, { retry: false });
-      return;
-    }
     finishSession(true);
   }
 
@@ -730,10 +732,11 @@
     const title = $("rhythmTitle");
     const meaning = $("rhythmMeaning");
     const hint = $("rhythmHint");
+    const tracks = window.TechTrailPhraseTracks || {};
+    const trackMeta = sessionRef.track === "spark" ? tracks.spark : tracks.citizen;
+    sessionRef.trackMeta = trackMeta;
     if (kicker) {
-      kicker.textContent = sessionRef.roundIndex === 0
-        ? "Room phrase check · Digital citizenship"
-        : "Room phrase check · SPARK";
+      kicker.textContent = trackMeta?.kicker || "Room phrase check";
     }
     if (title) title.textContent = phrase.title;
     if (meaning) meaning.textContent = phrase.meaning;
@@ -812,12 +815,16 @@
     const difficulty = opts.difficulty || "operative";
     const cfg = DIFFICULTY[difficulty] || DIFFICULTY.operative;
     const maxAttempts = difficulty === "analyst" ? 4 : 3;
+    const track = opts.phraseTrack
+      || window.TechTrailState?.loadRun?.()?.phraseTrack
+      || "citizen";
     session = {
       nodeId: opts.nodeId,
       difficulty,
+      track,
       reducedMotion: Boolean(opts.reducedMotion),
       cfg,
-      rounds: pickPhrases(opts.nodeId, difficulty),
+      rounds: pickPhrases(opts.nodeId, difficulty, track),
       roundIndex: 0,
       roundScores: [],
       chart: null,
@@ -848,6 +855,7 @@
     start,
     isActive,
     pickPhrases,
+    pickPhrase,
     buildChart,
   };
 })();

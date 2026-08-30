@@ -61,6 +61,7 @@
       mentorTrust: {},
       strikes: 0,
       completedMinigames: [],
+      phraseTrack: null,
       startedAt: now(),
       updatedAt: now(),
     };
@@ -178,6 +179,7 @@
       mentorTrust: raw.mentorTrust && typeof raw.mentorTrust === "object" ? raw.mentorTrust : {},
       strikes: typeof raw.strikes === "number" ? raw.strikes : 0,
       completedMinigames: new Set(normalizeArray(raw.completedMinigames)),
+      phraseTrack: raw.phraseTrack === "spark" ? "spark" : raw.phraseTrack === "citizen" ? "citizen" : null,
       studentName: raw.studentName || "",
       classroom: raw.classroom || "",
       startedAt: raw.startedAt || now(),
@@ -204,6 +206,7 @@
       mentorTrust: state.mentorTrust || {},
       strikes: state.strikes ?? 0,
       completedMinigames: [...(state.completedMinigames || [])],
+      phraseTrack: state.phraseTrack === "spark" ? "spark" : state.phraseTrack === "citizen" ? "citizen" : null,
       studentName: state.studentName || "",
       classroom: state.classroom || "",
       startedAt: state.startedAt,
