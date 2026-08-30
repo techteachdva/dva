@@ -46,6 +46,25 @@
   function computeCpm(correctCharCount, durationMs, options = {}) {
     const count = Math.max(0, correctCharCount || 0);
     if (!count) return 0;
+
+    const mode = options.mode || "game";
+
+    if (mode === "live") {
+      const minSampleMs = options.minSampleMs ?? 1500;
+      const effectiveMs = Math.max(durationMs || 0, minSampleMs);
+      if (effectiveMs <= 0) return 0;
+      const maxCpm = options.maxCpm ?? 180;
+      return Math.min(Math.round(count / (effectiveMs / 60000)), maxCpm);
+    }
+
+    if (mode === "diagnostic") {
+      const minMsPerKey = options.minMsPerKey ?? 90;
+      const effectiveMs = Math.max(durationMs || 0, count * minMsPerKey);
+      if (effectiveMs <= 0) return 0;
+      const maxCpm = options.maxCpm ?? MAX_TEST_CPM;
+      return Math.min(Math.round(count / (effectiveMs / 60000)), maxCpm);
+    }
+
     const maxCpm = options.maxCpm ?? MAX_TEST_CPM;
     const msPerKey = options.minMsPerKey ?? MIN_MS_PER_KEY;
     const effectiveMs = Math.max(durationMs || 0, count * msPerKey);

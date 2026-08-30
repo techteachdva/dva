@@ -100,6 +100,19 @@
       computeCpm(correctCharCount, durationMs, options = {}) {
         const count = Math.max(0, correctCharCount || 0);
         if (!count) return 0;
+        const mode = options.mode || "game";
+        if (mode === "live") {
+          const minSampleMs = options.minSampleMs ?? 1500;
+          const effectiveMs = Math.max(durationMs || 0, minSampleMs);
+          if (effectiveMs <= 0) return 0;
+          return Math.min(Math.round(count / (effectiveMs / 60000)), options.maxCpm ?? 180);
+        }
+        if (mode === "diagnostic") {
+          const minMsPerKey = options.minMsPerKey ?? 90;
+          const effectiveMs = Math.max(durationMs || 0, count * minMsPerKey);
+          if (effectiveMs <= 0) return 0;
+          return Math.min(Math.round(count / (effectiveMs / 60000)), options.maxCpm ?? 120);
+        }
         const maxCpm = options.maxCpm ?? 120;
         const msPerKey = options.minMsPerKey ?? 320;
         const effectiveMs = Math.max(durationMs || 0, count * msPerKey);
@@ -1267,11 +1280,13 @@
     if (typedEl) typedEl.innerHTML = Typing.renderTypedCharsHtml(cmp.chars, typingProfile.maxTypos);
 
     const duration = diagnosticStartTime ? performance.now() - diagnosticStartTime : 0;
-    const liveCpm = duration > 0 ? Typing.computeCpm(cmp.correctCount, duration) : 0;
+    const liveCpm = duration > 0 && cmp.correctCount > 0
+      ? Typing.computeCpm(cmp.correctCount, duration, { mode: "live" })
+      : 0;
     updateTypingMeterUI({
       progressPct: cmp.progress,
       liveCpm,
-      targetCpm: typingProfile.targetCpm || Typing.DEFAULT_TARGET_CPM,
+      targetCpm: Typing.MAX_TEST_CPM || 120,
       progressFillId: "diagnosticProgressFill",
       speedFillId: "diagnosticWpmFill",
       progressPctId: "diagnosticProgressPct",
@@ -1302,7 +1317,7 @@
 
     if (cmp.complete) {
       const duration = diagnosticStartTime ? performance.now() - diagnosticStartTime : 0;
-      const cpm = Typing.computeCpm(cmp.correctCount, duration);
+      const cpm = Typing.computeCpm(cmp.correctCount, duration, { mode: "diagnostic" });
       typingProfile.testCpm = cpm;
       typingProfile.lastPhrase = diagnosticPhrase;
       typingProfile.diagnosedAt = Date.now();
