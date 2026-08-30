@@ -534,7 +534,14 @@ export async function POST(request) {
       if (data.error) {
         return Response.json({ error: data.error }, { status: 401, headers: corsHeaders() });
       }
-      return Response.json({ ok: true, updated: data.updated || 0 }, { headers: corsHeaders() });
+      return Response.json({
+        ok: true,
+        updated: data.updated || data.classroomsUpdated || 0,
+        classroomsUpdated: data.classroomsUpdated || data.updated || 0,
+        passwordsUpdated: data.passwordsUpdated || 0,
+        accountsCreated: data.accountsCreated || 0,
+        usernamesRenamed: data.usernamesRenamed || 0,
+      }, { headers: corsHeaders() });
     }
 
     if (action === "adminBulkAddRosterEntries") {

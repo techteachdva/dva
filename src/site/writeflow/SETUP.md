@@ -42,7 +42,7 @@ Backend connection steps (Google Sheets, Apps Script, Vercel) are **not** publis
 | Role | How accounts are created |
 |------|--------------------------|
 | **Teachers** | Add email to `api/writeflow/approved-teachers.json`, run `npm run sync:writeflow-auth`, redeploy Apps Script. Teacher completes email verification signup in Studio. |
-| **Students** | Add `First L.` names under each classroom in `api/writeflow/student-roster.json`, run sync, import `api/writeflow/student-roster-import.tsv` into the **StudentRoster** sheet (or paste rows manually). |
+| **Students** | Add `First L.` names under each classroom in `api/writeflow/student-roster.json`, run sync, import `api/writeflow/student-roster-import.tsv` into the **StudentRoster** sheet (or paste rows manually). Columns: `classroom`, `username`, `active`, optional `password`. Edits sync to the **Students** sheet on login or via Admin → Sync roster to student accounts. First login without a roster password uses default `SPARK`.
 | **Admin** | Username `Admin`, password via Apps Script property `WRITEFLOW_ADMIN_PASSWORD` (default `MNFlumph23`). Portal: `/writeflow/admin/`. |
 
 Student portal: `/writeflow/student/` — students view all their submissions after signing in.

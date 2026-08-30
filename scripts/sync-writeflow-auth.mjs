@@ -26,6 +26,30 @@ if (replaced === authGs) {
   console.log(`Updated ${path.relative(root, authGsPath)} (${teachers.emails.length} teacher emails)`);
 }
 
+const rosterMarker = "/** Auto-generated from api/writeflow/student-roster.json";
+const rosterEmbedBlock = `${rosterMarker} — run: npm run sync:writeflow-auth */\nconst STUDENT_ROSTER_EMBED = ${JSON.stringify(roster.classrooms || {}, null, 2)};`;
+
+let rosterReplaced = authGs.replace(
+  /\/\*\* Auto-generated from api\/writeflow\/student-roster\.json[\s\S]*?\*\/\s*const STUDENT_ROSTER_EMBED = \{[\s\S]*?\};/,
+  rosterEmbedBlock
+);
+
+if (rosterReplaced === authGs) {
+  const anchor = authGs.indexOf("const APPROVED_TEACHER_EMAILS_EMBED = [");
+  const end = authGs.indexOf("];", anchor);
+  if (anchor >= 0 && end >= 0) {
+    rosterReplaced =
+      authGs.slice(0, end + 3) + "\n\n" + rosterEmbedBlock + authGs.slice(end + 3);
+    fs.writeFileSync(authGsPath, rosterReplaced);
+    console.log(`Inserted STUDENT_ROSTER_EMBED in ${path.relative(root, authGsPath)}`);
+  } else {
+    console.warn("sync-writeflow-auth: STUDENT_ROSTER_EMBED block not found — update writeflow-auth.gs manually");
+  }
+} else {
+  fs.writeFileSync(authGsPath, rosterReplaced);
+  console.log(`Updated STUDENT_ROSTER_EMBED in ${path.relative(root, authGsPath)}`);
+}
+
 const rosterRows = [];
 for (const [classroom, names] of Object.entries(roster.classrooms || {})) {
   for (const name of names) {
@@ -36,7 +60,7 @@ for (const [classroom, names] of Object.entries(roster.classrooms || {})) {
 }
 
 const tsvPath = path.join(root, "api/writeflow/student-roster-import.tsv");
-const tsv = ["classroom\tusername\tactive", ...rosterRows.map((r) => r.join("\t"))].join("\n");
+const tsv = ["classroom\tusername\tactive\tpassword", ...rosterRows.map((r) => r.join("\t") + "\t")].join("\n");
 fs.writeFileSync(tsvPath, tsv);
 console.log(`Wrote ${path.relative(root, tsvPath)} (${rosterRows.length} roster rows)`);
 

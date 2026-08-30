@@ -241,7 +241,15 @@
       try {
         const data = await Admin().syncStudentClassrooms();
         if (statusEl) {
-          statusEl.textContent = `Updated classroom for ${data.updated || 0} registered student(s) from StudentRoster.`;
+          const parts = [];
+          const rooms = data.classroomsUpdated ?? data.updated ?? 0;
+          if (rooms) parts.push(`${rooms} classroom(s)`);
+          if (data.passwordsUpdated) parts.push(`${data.passwordsUpdated} password(s)`);
+          if (data.accountsCreated) parts.push(`${data.accountsCreated} account(s) created`);
+          if (data.usernamesRenamed) parts.push(`${data.usernamesRenamed} username(s) renamed`);
+          statusEl.textContent = parts.length
+            ? `Synced from StudentRoster: ${parts.join(", ")}.`
+            : "Roster already in sync — no changes needed.";
           statusEl.classList.remove("dw-hidden", "dw-error");
         }
         await refreshDashboard();
