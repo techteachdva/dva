@@ -10,6 +10,7 @@
   const DRAFT_KEY = "draft";
   const OFFLINE_KEY = "offlineQueue";
   const TYPING_KEY = "typingProfile";
+  const SUBMITTED_KEY = "submittedRuns";
 
   function now() {
     return Date.now();
@@ -283,8 +284,48 @@
     tryRemove(`${PREFIX}:${DRAFT_KEY}`);
   }
 
+  function loadSubmittedRuns() {
+    const raw = tryGet(`${PREFIX}:${SUBMITTED_KEY}`);
+    if (!raw || typeof raw !== "object") return {};
+    return raw;
+  }
+
+  function saveSubmittedRuns(map) {
+    trySet(`${PREFIX}:${SUBMITTED_KEY}`, map || {});
+  }
+
+  function submissionRunKey(name, classroom, runId) {
+    const n = String(name || "").trim().toLowerCase();
+    const c = String(classroom || "").trim().toLowerCase();
+    const r = String(runId || "").trim();
+    return `${n}|${c}|${r}`;
+  }
+
+  function hasSubmittedRun(name, classroom, runId) {
+    if (!name || !classroom || !runId) return false;
+    const map = loadSubmittedRuns();
+    return Boolean(map[submissionRunKey(name, classroom, runId)]);
+  }
+
+  function markRunSubmitted(name, classroom, runId, submissionId) {
+    if (!name || !classroom || !runId) return;
+    const map = loadSubmittedRuns();
+    map[submissionRunKey(name, classroom, runId)] = {
+      submissionId: String(submissionId || ""),
+      submittedAt: now(),
+    };
+    saveSubmittedRuns(map);
+  }
+
   function queueOfflineSubmission(entry) {
     const queue = normalizeArray(tryGet(`${PREFIX}:${OFFLINE_KEY}`));
+    const runId = entry?.runId;
+    const name = entry?.name;
+    const classroom = entry?.classroom;
+    if (runId && name && classroom) {
+      const key = submissionRunKey(name, classroom, runId);
+      if (queue.some((q) => submissionRunKey(q.name, q.classroom, q.runId) === key)) return;
+    }
     queue.push({ ...entry, queuedAt: now() });
     trySet(`${PREFIX}:${OFFLINE_KEY}`, queue);
   }
@@ -315,6 +356,9 @@
     queueOfflineSubmission,
     dequeueOfflineSubmissions,
     hasOfflineSubmissions,
+    hasSubmittedRun,
+    markRunSubmitted,
+    submissionRunKey,
     blankRun,
     blankProfile,
     loadTypingProfile,

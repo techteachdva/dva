@@ -158,6 +158,29 @@ layout: false
           return String(str || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
         }
 
+        function submissionScore(s) {
+          const golden = (s.goldenRules || []).length;
+          const score = Number(s.overallScore) || 0;
+          const champion = s.endingType === "champion" ? 1 : 0;
+          return champion * 1000 + golden * 100 + score;
+        }
+
+        function dedupeSubmissions(subs) {
+          const map = new Map();
+          for (const s of subs) {
+            const key = `${String(s.name || "").trim().toLowerCase()}|${String(s.classroom || "").trim().toLowerCase()}`;
+            const prev = map.get(key);
+            if (!prev) {
+              map.set(key, s);
+              continue;
+            }
+            const better = submissionScore(s) > submissionScore(prev)
+              || (submissionScore(s) === submissionScore(prev) && (s.submittedAt || 0) > (prev.submittedAt || 0));
+            if (better) map.set(key, s);
+          }
+          return [...map.values()].sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0));
+        }
+
         function aggregatePed(subs) {
           if (window.TechTrailPedagogy?.aggregateClassPedagogy) {
             return window.TechTrailPedagogy.aggregateClassPedagogy(subs);
@@ -199,12 +222,15 @@ layout: false
             if (data.setupRequired) { statusMsg.textContent = "Backend not configured yet."; return; }
             cachedClassrooms = data.classrooms || [];
             populateClassrooms();
-            const subs = Array.isArray(data.submissions) ? data.submissions : [];
+            const subs = dedupeSubmissions(Array.isArray(data.submissions) ? data.submissions : []);
+            const rawCount = Array.isArray(data.submissions) ? data.submissions.length : 0;
             currentSubmissions = subs;
             if (!subs.length) { statusMsg.textContent = "No submissions found."; return; }
             renderStats(subs);
             renderTable(subs);
-            statusMsg.textContent = `Loaded ${subs.length} submission${subs.length === 1 ? "" : "s"}.`;
+            statusMsg.textContent = rawCount > subs.length
+              ? `Showing ${subs.length} best per student (${rawCount} raw rows in sheet).`
+              : `Loaded ${subs.length} submission${subs.length === 1 ? "" : "s"}.`;
           } catch (e) { statusMsg.textContent = "Network error: " + e.message; }
         }
 

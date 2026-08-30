@@ -264,6 +264,7 @@
   let runRng = Math.random;
   let startChoices = [];
   let startTime = Date.now();
+  let identitySubmitting = false;
   let difficulty = "operative";
   let typingProfile = State.loadTypingProfile();
   let diagnosticPhrase = "";
@@ -3696,13 +3697,25 @@ Play again to rebuild your record clean.`;
   function showIdentityGate(onComplete) {
     const gate = document.getElementById("identityGate");
     if (!gate) { onComplete?.(); return; }
+    const profile = State.loadProfile();
+    const name = profile.lastName || "";
+    const classroom = profile.lastClassroom || "";
+    if (name && classroom && State.hasSubmittedRun?.(name, classroom, startTime)) {
+      onComplete?.();
+      return;
+    }
     window._identityGateCallback = onComplete;
     gate.classList.remove("dw-hidden");
-    const profile = State.loadProfile();
     const firstEl = document.getElementById("identityFirstName");
     const lastEl = document.getElementById("identityLastInitial");
     const classEl = document.getElementById("identityClassroom");
     const codeEl = document.getElementById("identityClassCode");
+    const submitBtn = document.getElementById("identitySubmitBtn");
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.textContent = "Submit and enter";
+    }
+    identitySubmitting = false;
     if (profile.lastName && firstEl && lastEl) {
       const parts = profile.lastName.split(/\s+/);
       if (parts.length >= 2) {
@@ -3722,6 +3735,8 @@ Play again to rebuild your record clean.`;
   }
 
   async function handleIdentitySubmit() {
+    if (identitySubmitting) return;
+    const submitBtn = document.getElementById("identitySubmitBtn");
     const firstEl = document.getElementById("identityFirstName");
     const lastEl = document.getElementById("identityLastInitial");
     const classEl = document.getElementById("identityClassroom");
@@ -3745,12 +3760,33 @@ Play again to rebuild your record clean.`;
       return;
     }
 
+    const oathText = document.getElementById("typingInput")?.value?.trim() || "";
+    const oathWords = oathText.split(/\s+/).filter(Boolean).length;
+    if (oathText.length < 20 || oathWords < 4) {
+      toast("Complete your Digital Citizenship Oath before submitting.", "lesson");
+      return;
+    }
+
+    if (State.hasSubmittedRun?.(name, classroom, startTime)) {
+      toast("This run was already submitted.", "info");
+      setTimeout(() => {
+        hideIdentityGate();
+        window._identityGateCallback?.();
+      }, prefersReducedMotion ? 0 : 400);
+      return;
+    }
+
+    identitySubmitting = true;
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = "Submitting…";
+    }
+
     const profile = State.loadProfile();
     profile.lastName = name;
     profile.lastClassroom = classroom;
     State.saveProfile(profile);
 
-    const oathText = document.getElementById("typingInput")?.value?.trim() || "";
     const challengeDurationSec = challengeStartTime
       ? Math.max(1, Math.round((Date.now() - challengeStartTime) / 1000))
       : Math.max(1, Math.round((Date.now() - startTime) / 1000 * 0.15));
@@ -3786,6 +3822,7 @@ Play again to rebuild your record clean.`;
       diagnosed: Boolean(typingProfile.diagnosed),
       integrity,
       reputation,
+      runId: String(startTime),
     };
 
     try {
@@ -3798,17 +3835,36 @@ Play again to rebuild your record clean.`;
       if (!res.ok || data.error) {
         throw new Error(data.error || `HTTP ${res.status}`);
       }
-      toast("Submission saved!", "badge");
-      celebrateTypedSuccess(name, document.getElementById("identitySubmitBtn"), {
-        badge: "OATH FILED!",
-        confetti: 24,
-        center: true,
-        container: document.querySelector(".tt-identity-gate__panel"),
-      });
+      State.markRunSubmitted?.(name, classroom, startTime, data.id);
+      if (data.duplicate) {
+        toast(data.message || "Already submitted for this class.", "info");
+      } else if (data.updated) {
+        toast("Better run saved — submission updated!", "badge");
+      } else {
+        toast("Submission saved!", "badge");
+      }
+      if (!data.duplicate) {
+        celebrateTypedSuccess(name, submitBtn, {
+          badge: "OATH FILED!",
+          confetti: 24,
+          center: true,
+          container: document.querySelector(".tt-identity-gate__panel"),
+        });
+      }
     } catch (e) {
+      if (String(e.message || "").includes("Oath") || String(e.message || "").includes("already submitted")) {
+        toast(e.message, "lesson");
+        identitySubmitting = false;
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Submit and enter";
+        }
+        return;
+      }
       State.queueOfflineSubmission(submission);
+      State.markRunSubmitted?.(name, classroom, startTime, "offline");
       toast("Saved locally — will retry when online.", "lesson");
-      celebrateTypedSuccess("SAVED LOCALLY", document.getElementById("identitySubmitBtn"), {
+      celebrateTypedSuccess("SAVED LOCALLY", submitBtn, {
         badge: "OFFLINE QUEUE",
         center: true,
         container: document.querySelector(".tt-identity-gate__panel"),
@@ -3818,6 +3874,7 @@ Play again to rebuild your record clean.`;
     setTimeout(() => {
       hideIdentityGate();
       window._identityGateCallback?.();
+      identitySubmitting = false;
     }, prefersReducedMotion ? 0 : 700);
   }
 

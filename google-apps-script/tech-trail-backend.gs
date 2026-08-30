@@ -38,8 +38,11 @@ function getSheet_() {
 }
 
 const PEDAGOGY_HEADERS = [
-  "pedagogyJson", "testCpm", "targetCpm", "diagnosed", "integrity", "reputation",
+  "pedagogyJson", "testCpm", "targetCpm", "diagnosed", "integrity", "reputation", "runId",
 ];
+
+const MIN_OATH_CHARS = 20;
+const MIN_OATH_WORDS = 4;
 
 function initHeaders_(sheet) {
   const base = [
@@ -130,8 +133,102 @@ function normalizeName_(name) {
 function readRows_(sheet) {
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return [];
-  const colCount = Math.max(22, sheet.getLastColumn());
-  return sheet.getRange(2, 1, lastRow - 1, colCount).getValues();
+  const colCount = Math.max(23, sheet.getLastColumn());
+  return sheet.getRange(2, 1, lastRow, colCount).getValues();
+}
+
+function countWords_(text) {
+  const s = String(text || "").trim();
+  if (!s) return 0;
+  return s.split(/\s+/).filter(Boolean).length;
+}
+
+function validateOath_(oathText) {
+  const text = String(oathText || "").trim();
+  if (text.length < MIN_OATH_CHARS) {
+    throw new Error("Complete your Digital Citizenship Oath before submitting (at least a few sentences).");
+  }
+  if (countWords_(text) < MIN_OATH_WORDS) {
+    throw new Error("Your oath needs a few more words before it can be submitted.");
+  }
+}
+
+function submissionScore_(goldenRules, overallScore, endingType) {
+  const golden = Array.isArray(goldenRules) ? goldenRules.length : 0;
+  const score = overallScore === "" || overallScore == null ? 0 : Number(overallScore) || 0;
+  const champion = String(endingType || "") === "champion" ? 1 : 0;
+  return champion * 1000 + golden * 100 + score;
+}
+
+function findSubmissionRow_(sheet, name, classroom, runId) {
+  const rows = readRows_(sheet);
+  const classKey = String(classroom || "").trim().toLowerCase();
+  const runKey = String(runId || "").trim();
+  let best = null;
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const rowName = String(row[2] || "").trim();
+    const rowClass = String(row[3] || "").trim().toLowerCase();
+    if (rowName !== name || rowClass !== classKey) continue;
+    const rowRunId = String(row[22] || "").trim();
+    if (runKey && rowRunId && rowRunId === runKey) {
+      return { rowIndex: i + 2, row: row, exactRun: true };
+    }
+    if (!best) best = { rowIndex: i + 2, row: row, exactRun: false };
+  }
+  return best;
+}
+
+function buildRowValues_(params, id, submittedAt) {
+  const name = normalizeName_(params.name);
+  const classroom = String(params.classroom || "").trim();
+  const oathText = String(params.oathText || "").trim().slice(0, 2000);
+  const badges = Array.isArray(params.badges) ? params.badges : [];
+  const goldenRules = Array.isArray(params.goldenRules) ? params.goldenRules : [];
+  const mentorsMet = Array.isArray(params.mentorsMet) ? params.mentorsMet : [];
+  const endingType = String(params.endingType || "").slice(0, 24);
+  const endingNode = String(params.endingNode || "").slice(0, 40);
+  const durationSec = Number(params.durationSec) || 0;
+  const challengeDurationSec = Number(params.challengeDurationSec) || 0;
+  const overallScore = params.overallScore == null || params.overallScore === "" ? "" : Number(params.overallScore);
+  const oathWpm = params.oathWpm == null || params.oathWpm === "" ? "" : Number(params.oathWpm);
+  const analysisJson = params.analysis ? JSON.stringify(params.analysis).slice(0, 12000) : "";
+  const diagnosticAnalysisJson = params.diagnosticAnalysis
+    ? JSON.stringify(params.diagnosticAnalysis).slice(0, 8000)
+    : "";
+  const pedagogyJson = params.pedagogy ? JSON.stringify(params.pedagogy).slice(0, 6000) : "";
+  const testCpm = params.testCpm == null || params.testCpm === "" ? "" : Number(params.testCpm);
+  const targetCpm = params.targetCpm == null || params.targetCpm === "" ? "" : Number(params.targetCpm);
+  const diagnosed = params.diagnosed ? "true" : "false";
+  const integrity = params.integrity == null || params.integrity === "" ? "" : Number(params.integrity);
+  const reputation = params.reputation == null || params.reputation === "" ? "" : Number(params.reputation);
+  const runId = String(params.runId || "").trim().slice(0, 40);
+
+  return [
+    id,
+    submittedAt,
+    name,
+    classroom,
+    oathText,
+    JSON.stringify(badges),
+    JSON.stringify(goldenRules),
+    JSON.stringify(mentorsMet),
+    endingType,
+    endingNode,
+    Math.round(durationSec),
+    analysisJson,
+    diagnosticAnalysisJson,
+    overallScore,
+    oathWpm,
+    Math.round(challengeDurationSec),
+    pedagogyJson,
+    testCpm,
+    targetCpm,
+    diagnosed,
+    integrity,
+    reputation,
+    runId,
+  ];
 }
 
 function rowToSubmission_(row) {
@@ -170,6 +267,7 @@ function rowToSubmission_(row) {
     diagnosed: row[19] === true || row[19] === "true" || row[19] === 1,
     integrity: row[20] === "" || row[20] == null ? null : Number(row[20]),
     reputation: row[21] === "" || row[21] == null ? null : Number(row[21]),
+    runId: String(row[22] || ""),
   };
 }
 
@@ -190,55 +288,35 @@ function saveSubmission_(params) {
   const name = normalizeName_(params.name);
   const classroom = String(params.classroom || "").trim();
   const oathText = String(params.oathText || "").trim().slice(0, 2000);
-  const badges = Array.isArray(params.badges) ? params.badges : [];
-  const goldenRules = Array.isArray(params.goldenRules) ? params.goldenRules : [];
-  const mentorsMet = Array.isArray(params.mentorsMet) ? params.mentorsMet : [];
-  const endingType = String(params.endingType || "").slice(0, 24);
-  const endingNode = String(params.endingNode || "").slice(0, 40);
-  const durationSec = Number(params.durationSec) || 0;
-  const challengeDurationSec = Number(params.challengeDurationSec) || 0;
-  const overallScore = params.overallScore == null || params.overallScore === "" ? "" : Number(params.overallScore);
-  const oathWpm = params.oathWpm == null || params.oathWpm === "" ? "" : Number(params.oathWpm);
-  const analysisJson = params.analysis ? JSON.stringify(params.analysis).slice(0, 12000) : "";
-  const diagnosticAnalysisJson = params.diagnosticAnalysis
-    ? JSON.stringify(params.diagnosticAnalysis).slice(0, 8000)
-    : "";
-  const pedagogyJson = params.pedagogy ? JSON.stringify(params.pedagogy).slice(0, 6000) : "";
-  const testCpm = params.testCpm == null || params.testCpm === "" ? "" : Number(params.testCpm);
-  const targetCpm = params.targetCpm == null || params.targetCpm === "" ? "" : Number(params.targetCpm);
-  const diagnosed = params.diagnosed ? "true" : "false";
-  const integrity = params.integrity == null || params.integrity === "" ? "" : Number(params.integrity);
-  const reputation = params.reputation == null || params.reputation === "" ? "" : Number(params.reputation);
+  const runId = String(params.runId || "").trim().slice(0, 40);
 
   if (!classroom) throw new Error("Classroom is required.");
+  validateOath_(oathText);
 
   const sheet = getSheet_();
-  const id = String(Date.now()) + "-" + Math.random().toString(36).slice(2, 9);
-  sheet.appendRow([
-    id,
-    Date.now(),
-    name,
-    classroom,
-    oathText,
-    JSON.stringify(badges),
-    JSON.stringify(goldenRules),
-    JSON.stringify(mentorsMet),
-    endingType,
-    endingNode,
-    Math.round(durationSec),
-    analysisJson,
-    diagnosticAnalysisJson,
-    overallScore,
-    oathWpm,
-    Math.round(challengeDurationSec),
-    pedagogyJson,
-    testCpm,
-    targetCpm,
-    diagnosed,
-    integrity,
-    reputation,
-  ]);
+  const existing = findSubmissionRow_(sheet, name, classroom, runId);
+  if (existing) {
+    const existingSub = rowToSubmission_(existing.row);
+    if (existing.exactRun) {
+      return { ok: true, id: existingSub.id, duplicate: true, message: "This run was already submitted." };
+    }
+    const newScore = submissionScore_(params.goldenRules, params.overallScore, params.endingType);
+    const oldScore = submissionScore_(existingSub.goldenRules, existingSub.overallScore, existingSub.endingType);
+    if (newScore <= oldScore) {
+      return {
+        ok: true,
+        id: existingSub.id,
+        duplicate: true,
+        message: "You already submitted for this class. Only a better run can replace it.",
+      };
+    }
+    const values = buildRowValues_(params, existingSub.id, Date.now());
+    sheet.getRange(existing.rowIndex, 1, 1, values.length).setValues([values]);
+    return { ok: true, id: existingSub.id, updated: true };
+  }
 
+  const id = String(Date.now()) + "-" + Math.random().toString(36).slice(2, 9);
+  sheet.appendRow(buildRowValues_(params, id, Date.now()));
   return { ok: true, id: id };
 }
 

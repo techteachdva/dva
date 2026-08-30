@@ -12,6 +12,25 @@
 import { VALID_CLASSROOMS, resolveClassroom, verifyClassroomCode, CLASSROOM_CODES } from "./diagnostic-writing/classrooms.js";
 
 const TEACHER_PASSWORD = "studentsfirst";
+const MIN_OATH_CHARS = 20;
+const MIN_OATH_WORDS = 4;
+
+function countWords(text) {
+  const s = String(text || "").trim();
+  if (!s) return 0;
+  return s.split(/\s+/).filter(Boolean).length;
+}
+
+function validateOath(oathText) {
+  const text = String(oathText || "").trim();
+  if (text.length < MIN_OATH_CHARS) {
+    return { ok: false, message: "Complete your Digital Citizenship Oath before submitting (at least a few sentences)." };
+  }
+  if (countWords(text) < MIN_OATH_WORDS) {
+    return { ok: false, message: "Your oath needs a few more words before it can be submitted." };
+  }
+  return { ok: true };
+}
 
 function corsHeaders() {
   return {
@@ -149,6 +168,7 @@ export async function POST(request) {
     const diagnosed = Boolean(body?.diagnosed);
     const integrity = Number(body?.integrity);
     const reputation = Number(body?.reputation);
+    const runId = String(body?.runId || "").trim().slice(0, 40);
 
     const nameParts = nameRaw.split(/\s+/);
     const lastInitial = nameParts.length >= 2 ? nameParts[nameParts.length - 1].slice(0, 1) : "";
@@ -167,6 +187,11 @@ export async function POST(request) {
         { error: "Incorrect class code for the selected classroom." },
         { status: 400, headers: corsHeaders() }
       );
+    }
+
+    const oathCheck = validateOath(oathText);
+    if (!oathCheck.ok) {
+      return Response.json({ error: oathCheck.message }, { status: 400, headers: corsHeaders() });
     }
 
     const data = await fetchScriptJson(scriptUrl, {
@@ -196,13 +221,24 @@ export async function POST(request) {
         diagnosed,
         integrity: Number.isFinite(integrity) ? integrity : null,
         reputation: Number.isFinite(reputation) ? reputation : null,
+        runId,
       }),
     });
 
     if (data.error) {
-      return Response.json({ error: data.error }, { status: 502, headers: corsHeaders() });
+      const status = String(data.error).includes("Oath") ? 400 : 502;
+      return Response.json({ error: data.error }, { status, headers: corsHeaders() });
     }
-    return Response.json({ ok: true, id: data.id || "" }, { headers: corsHeaders() });
+    return Response.json(
+      {
+        ok: true,
+        id: data.id || "",
+        duplicate: Boolean(data.duplicate),
+        updated: Boolean(data.updated),
+        message: data.message || "",
+      },
+      { headers: corsHeaders() }
+    );
   } catch (e) {
     console.error("Tech Trail POST error:", e.message);
     return Response.json({ error: e.message || "Server error" }, { status: 502, headers: corsHeaders() });
