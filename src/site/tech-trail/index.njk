@@ -94,26 +94,7 @@ layout: false
               <div id="goldenRuleDetail" class="tt-golden-rule-detail dw-hidden" aria-live="polite"></div>
             </div>
             </div>
-            </div>
-
-            <p id="gtgBootError" class="tt-boot-error dw-hidden" role="alert"></p>
-            <div class="tt-btn-group" id="titleBtnGroup">
-              <div id="titleTypingMenu" class="tt-title-typing tt-typing-panel">
-                <p class="tt-title-typing__hint">Type a command below — or tap the globe</p>
-                <p id="titleCommandHint" class="tt-title-command-hint">Type: <strong>ACCEPT MISSION</strong> to begin</p>
-                <div id="titleGhostPrompt" class="tt-ghost-prompt"></div>
-                <div class="tt-typing-meter" id="titleTypingMeter">
-                  <div class="tt-typing-meter__row">
-                    <span class="tt-typing-meter__label">Progress</span>
-                    <span class="tt-typing-meter__value" id="titleProgressPct">0%</span>
-                  </div>
-                  <div class="tt-typing-meter__track">
-                    <div class="tt-typing-meter__fill" id="titleProgressFill"></div>
-                  </div>
-                </div>
-                <input id="titleTypingInput" class="tt-typing-input tt-typing-input--title" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Type here…" aria-label="Title menu command" />
-                <div id="titleTypedDisplay" class="tt-typed-display" aria-live="polite"></div>
-              </div>
+            <div class="tt-title-extras__col tt-title-extras__col--launch">
               <div class="tt-launch-actions">
                 <button id="startGameBtn" class="tt-globe-btn tt-globe-btn--primary" type="button" aria-label="Start game">
                   <span class="tt-globe-btn__globe" aria-hidden="true">
@@ -136,17 +117,40 @@ layout: false
                 <button id="newRunBtn" class="tt-launch-link-btn dw-hidden" type="button">New mission</button>
               </div>
             </div>
-            <div id="profileMini" class="tt-profile-mini-wrap"></div>
-            <div id="pedagogyProgress" class="tt-pedagogy-progress dw-hidden" aria-live="polite"></div>
-            <div class="tt-settings-bar tt-title-settings">
-              <button id="guildQuestBtn" class="tt-settings-btn" type="button" title="Chat Quest guild mode">💬 Chat Quest</button>
-              <button id="warmupBtn" class="tt-settings-btn" type="button" title="Targeted typing warm-up">⌨️ Warm-up</button>
-              <button id="fullscreenToggleBtn" class="tt-settings-btn" type="button" title="Toggle fullscreen">⛶ Fullscreen</button>
-              <button id="highContrastToggle" class="tt-settings-btn" type="button" title="Toggle high contrast" aria-pressed="false">🔲 High contrast</button>
-              <button id="stillCameraToggle" class="tt-settings-btn" type="button" title="Keep the scene still so clicks stay easy" aria-pressed="true">📷 Still camera</button>
-              <button id="titleMuteBtn" class="tt-settings-btn" type="button" title="Toggle soundtrack">🔊 Sound</button>
             </div>
-            <p class="tt-credit">A Game by Mr. Phil · Soundtrack: &quot;The Complex&quot; Kevin MacLeod (CC BY 4.0)</p>
+
+            <p id="gtgBootError" class="tt-boot-error dw-hidden" role="alert"></p>
+            <div class="tt-title-command-row" id="titleBtnGroup">
+              <div id="titleTypingMenu" class="tt-title-typing tt-typing-panel">
+                <p class="tt-title-typing__hint">Type a command below — or tap the globe</p>
+                <p id="titleCommandHint" class="tt-title-command-hint">Type: <strong>ACCEPT MISSION</strong> to begin</p>
+                <div id="titleGhostPrompt" class="tt-ghost-prompt"></div>
+                <div class="tt-typing-meter" id="titleTypingMeter">
+                  <div class="tt-typing-meter__row">
+                    <span class="tt-typing-meter__label">Progress</span>
+                    <span class="tt-typing-meter__value" id="titleProgressPct">0%</span>
+                  </div>
+                  <div class="tt-typing-meter__track">
+                    <div class="tt-typing-meter__fill" id="titleProgressFill"></div>
+                  </div>
+                </div>
+                <input id="titleTypingInput" class="tt-typing-input tt-typing-input--title" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Type here…" aria-label="Title menu command" />
+                <div id="titleTypedDisplay" class="tt-typed-display" aria-live="polite"></div>
+              </div>
+            </div>
+            <footer class="tt-title-footer">
+              <div id="profileMini" class="tt-profile-mini-wrap"></div>
+              <div id="pedagogyProgress" class="tt-pedagogy-progress dw-hidden" aria-live="polite"></div>
+              <div class="tt-settings-bar tt-title-settings">
+                <button id="guildQuestBtn" class="tt-settings-btn" type="button" title="Chat Quest guild mode">💬 Chat Quest</button>
+                <button id="warmupBtn" class="tt-settings-btn" type="button" title="Targeted typing warm-up">⌨️ Warm-up</button>
+                <button id="fullscreenToggleBtn" class="tt-settings-btn" type="button" title="Toggle fullscreen">⛶ Fullscreen</button>
+                <button id="highContrastToggle" class="tt-settings-btn" type="button" title="Toggle high contrast" aria-pressed="false">🔲 High contrast</button>
+                <button id="stillCameraToggle" class="tt-settings-btn" type="button" title="Keep the scene still so clicks stay easy" aria-pressed="true">📷 Still camera</button>
+                <button id="titleMuteBtn" class="tt-settings-btn" type="button" title="Toggle soundtrack">🔊 Sound</button>
+              </div>
+              <p class="tt-credit">A Game by Mr. Phil · Soundtrack: &quot;The Complex&quot; Kevin MacLeod (CC BY 4.0)</p>
+            </footer>
           </div>
         </section>
 

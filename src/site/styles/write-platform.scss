@@ -8386,9 +8386,22 @@ mark.wf-standard-hit,
 }
 
 /* ── GTG immersive full-viewport layout ── */
+html:has(.tt-game-body #titleView.tt-view--active),
+html:has(.tt-game-body #gameView:not(.dw-hidden)) {
+  height: 100%;
+  overflow: hidden;
+}
+
 .tt-game-body.wp-theme--gauntlet {
   overflow-x: hidden;
   background: #0a0410;
+}
+
+.wp-theme--gauntlet.tt-game-body:has(#titleView.tt-view--active),
+.wp-theme--gauntlet.tt-game-body:has(#gameView:not(.dw-hidden)) {
+  overflow: hidden;
+  height: 100dvh;
+  max-height: 100dvh;
 }
 
 .wp-theme--gauntlet .dw-shell.tt-shell {
@@ -8401,13 +8414,21 @@ mark.wf-standard-hit,
   flex-direction: column;
 }
 
+.wp-theme--gauntlet.tt-game-body:has(#titleView.tt-view--active) .dw-shell.tt-shell,
+.wp-theme--gauntlet.tt-game-body:has(#gameView:not(.dw-hidden)) .dw-shell.tt-shell {
+  height: 100dvh;
+  max-height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .wp-theme--gauntlet #titleView {
   flex: 1;
   display: flex;
   flex-direction: column;
   width: 100%;
-  min-height: 100dvh;
-  max-height: 100dvh;
+  min-height: 0;
+  max-height: 100%;
   overflow: hidden;
 }
 
@@ -8434,8 +8455,8 @@ mark.wf-standard-hit,
   z-index: 2;
   isolation: isolate;
   flex: 1;
-  min-height: 100dvh;
-  max-height: 100dvh;
+  min-height: 0;
+  max-height: 100%;
   margin-top: 0;
   border-radius: 0;
   overflow: hidden;
@@ -8455,26 +8476,28 @@ mark.wf-standard-hit,
   position: relative;
   z-index: 2;
   flex: 1;
-  max-width: min(1180px, 94vw);
+  max-width: min(1320px, 98vw);
   width: 100%;
-  max-height: 100dvh;
+  height: auto;
+  max-height: 100%;
   min-height: 0;
   overflow: hidden;
   overscroll-behavior: none;
-  padding: clamp(10px, 1.6vh, 18px) clamp(14px, 2vw, 28px) clamp(8px, 1.2vh, 14px);
+  padding: clamp(8px, 1.2vh, 14px) clamp(12px, 1.8vw, 24px) clamp(6px, 0.8vh, 10px);
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: clamp(6px, 1vh, 10px);
+  gap: clamp(4px, 0.7vh, 8px);
   text-align: left;
 }
 
 .wp-theme--gauntlet .tt-title-hero {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
   justify-content: center;
   text-align: center;
+  flex-shrink: 0;
 }
 
 .wp-theme--gauntlet .tt-title-hero__text {
@@ -8507,11 +8530,73 @@ mark.wf-standard-hit,
 
 .wp-theme--gauntlet .tt-title-extras {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
-  gap: clamp(10px, 1.5vw, 16px);
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr) minmax(0, 0.72fr);
+  gap: clamp(8px, 1.2vw, 14px);
   align-items: stretch;
   flex: 1 1 auto;
   min-height: 0;
+}
+
+.wp-theme--gauntlet .tt-title-extras__col--launch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
+
+.wp-theme--gauntlet .tt-title-extras__col--launch .tt-launch-actions {
+  width: 100%;
+}
+
+.wp-theme--gauntlet .tt-title-command-row {
+  flex-shrink: 0;
+  width: 100%;
+  min-height: 0;
+}
+
+.wp-theme--gauntlet .tt-title-footer {
+  flex-shrink: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas:
+    "profile settings"
+    "pedagogy pedagogy"
+    "credit credit";
+  align-items: center;
+  gap: 4px 10px;
+  margin-top: auto;
+  padding-top: 2px;
+}
+
+.wp-theme--gauntlet .tt-title-footer .tt-profile-mini-wrap {
+  grid-area: profile;
+  margin: 0;
+}
+
+.wp-theme--gauntlet .tt-title-footer .tt-pedagogy-progress {
+  grid-area: pedagogy;
+  padding: 6px 10px;
+}
+
+.wp-theme--gauntlet .tt-title-footer .tt-pedagogy-progress__heading,
+.wp-theme--gauntlet .tt-title-footer .tt-pedagogy-progress__terms,
+.wp-theme--gauntlet .tt-title-footer .tt-pedagogy-progress__tip {
+  display: none;
+}
+
+.wp-theme--gauntlet .tt-title-footer .tt-pedagogy-progress__stats {
+  margin: 0;
+  gap: 8px;
+  font-size: 0.76rem;
+}
+
+.wp-theme--gauntlet .tt-title-footer .tt-title-settings {
+  grid-area: settings;
+  justify-content: flex-end;
+}
+
+.wp-theme--gauntlet .tt-title-footer .tt-credit {
+  grid-area: credit;
 }
 
 .wp-theme--gauntlet .tt-title-extras__col {
@@ -8640,6 +8725,11 @@ mark.wf-standard-hit,
   flex-shrink: 0;
 }
 
+.wp-theme--gauntlet .tt-title-command-row .tt-title-typing {
+  margin: 0;
+  padding: 8px 10px;
+}
+
 .wp-theme--gauntlet .tt-title-typing {
   margin: 0;
   padding: 10px 12px;
@@ -8661,14 +8751,14 @@ mark.wf-standard-hit,
 .wp-theme--gauntlet .tt-title-settings {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  justify-content: center;
+  gap: 6px;
+  justify-content: flex-end;
   margin: 0;
 }
 
 .wp-theme--gauntlet .tt-title-settings .tt-settings-btn {
-  font-size: 0.78rem;
-  padding: 6px 10px;
+  font-size: 0.72rem;
+  padding: 5px 8px;
 }
 
 .wp-theme--gauntlet .tt-credit {
@@ -8701,23 +8791,69 @@ mark.wf-standard-hit,
 }
 
 .wp-theme--gauntlet .tt-title-hero,
-.wp-theme--gauntlet .tt-title-settings,
+.wp-theme--gauntlet .tt-title-footer,
+.wp-theme--gauntlet .tt-title-command-row,
 .wp-theme--gauntlet .tt-credit {
   flex-shrink: 0;
 }
 
 @media (max-width: 900px) {
   .wp-theme--gauntlet .tt-title-extras {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "settings rules"
+      "launch launch";
   }
 
-  .wp-theme--gauntlet .tt-btn-group {
-    grid-template-columns: 1fr;
+  .wp-theme--gauntlet .tt-title-extras__col--settings {
+    grid-area: settings;
   }
 
-  .wp-theme--gauntlet .tt-launch-actions {
+  .wp-theme--gauntlet .tt-title-extras__col--rules {
+    grid-area: rules;
+  }
+
+  .wp-theme--gauntlet .tt-title-extras__col--launch {
+    grid-area: launch;
+  }
+
+  .wp-theme--gauntlet .tt-title-extras__col--launch .tt-launch-actions {
     flex-direction: row;
     justify-content: center;
+  }
+
+  .wp-theme--gauntlet .tt-title-footer {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "profile"
+      "settings"
+      "pedagogy"
+      "credit";
+  }
+
+  .wp-theme--gauntlet .tt-title-footer .tt-title-settings {
+    justify-content: center;
+  }
+}
+
+@media (max-height: 860px) {
+  .wp-theme--gauntlet .tt-title-screen__tagline {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .wp-theme--gauntlet .tt-golden-preview__sub {
+    display: none;
+  }
+
+  .wp-theme--gauntlet .tt-title-typing__hint {
+    display: none;
+  }
+
+  .wp-theme--gauntlet .tt-title-footer .tt-credit {
+    display: none;
   }
 }
 
@@ -9317,20 +9453,6 @@ body.tt-warmup-active {
   overscroll-behavior: contain;
 }
 
-/* Lock viewport on title + game — scroll inside panels, not the page */
-.wp-theme--gauntlet.tt-game-body:has(#titleView.tt-view--active),
-.wp-theme--gauntlet.tt-game-body:has(#gameView:not(.dw-hidden)) {
-  overflow: hidden;
-  height: 100dvh;
-}
-
-.wp-theme--gauntlet.tt-game-body:has(#titleView.tt-view--active) .dw-shell.tt-shell,
-.wp-theme--gauntlet.tt-game-body:has(#gameView:not(.dw-hidden)) .dw-shell.tt-shell {
-  height: 100dvh;
-  max-height: 100dvh;
-  overflow: hidden;
-}
-
 .wp-theme--gauntlet.tt-is-fullscreen .breadcrumbs--standalone {
   display: none;
 }
@@ -9351,11 +9473,11 @@ body.tt-warmup-active {
 
 .wp-theme--gauntlet.tt-is-fullscreen .tt-title-screen__content,
 .wp-theme--gauntlet.tt-is-fullscreen .tt-ending-screen__content {
-  max-height: 100dvh;
+  max-height: 100%;
   overflow: hidden;
   overscroll-behavior: none;
-  padding-top: clamp(10px, 1.6vh, 18px);
-  padding-bottom: clamp(8px, 1.2vh, 14px);
+  padding-top: clamp(8px, 1.2vh, 14px);
+  padding-bottom: clamp(6px, 0.8vh, 10px);
 }
 
 .wp-theme--gauntlet.tt-is-fullscreen .tt-game-layout:not(.dw-hidden) {
