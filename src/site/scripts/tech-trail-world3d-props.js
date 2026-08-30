@@ -3,7 +3,7 @@
  */
 import * as THREE from "three";
 
-const FLOOR_PALETTES = {
+export const FLOOR_PALETTES = {
   start: { bg: "#1a1428", grid: "#9d8cff", accent: "#ffd54a" },
   design_lab: { bg: "#221830", grid: "#c49bff", accent: "#ff6688" },
   data_vault: { bg: "#101c28", grid: "#2dd4bf", accent: "#44ffcc" },
@@ -28,6 +28,31 @@ const FLOOR_PALETTES = {
   final_trial: { bg: "#241830", grid: "#ffd54a", accent: "#ff88cc" },
 };
 
+const FLOOR_PATTERNS = {
+  start: "holo",
+  design_lab: "blueprint",
+  data_vault: "vault",
+  password_temple: "hex",
+  footprint_scene: "steps",
+  media_chamber: "wave",
+  prepare_phase: "globe",
+  try_phase: "checker",
+  debug_scene: "terminal",
+  reflect_phase: "chart",
+  code_bay: "matrix",
+  network_closet: "rack",
+  sources_library: "books",
+  ip_chamber: "vinyl",
+  collaboration_bridge: "bridge",
+  trajectory_scene: "orbit",
+  ai_ethics: "split",
+  hardware_graveyard: "scrap",
+  open_source: "fork",
+  bias_unit: "bars",
+  data_detective: "magnify",
+  final_trial: "arena",
+};
+
 export function makeRoomFloorTexture(roomId, accent) {
   const canvas = document.createElement("canvas");
   canvas.width = canvas.height = 256;
@@ -38,23 +63,94 @@ export function makeRoomFloorTexture(roomId, accent) {
     grid: `#${ac.getHexString()}`,
     accent: `#${ac.clone().offsetHSL(0.05, 0.1, 0.2).getHexString()}`,
   };
+  const seed = [...String(roomId)].reduce((s, ch) => s + ch.charCodeAt(0), 0);
+  const pattern = FLOOR_PATTERNS[roomId] || "grid";
+
   ctx.fillStyle = pal.bg;
   ctx.fillRect(0, 0, 256, 256);
+
   ctx.strokeStyle = pal.grid;
-  ctx.globalAlpha = 0.28;
-  ctx.lineWidth = 2;
-  for (let i = 0; i <= 256; i += 32) {
+  ctx.globalAlpha = 0.22;
+  ctx.lineWidth = 1.5;
+  const step = pattern === "matrix" ? 16 : 32;
+  for (let i = 0; i <= 256; i += step) {
     ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 256); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(256, i); ctx.stroke();
   }
-  ctx.globalAlpha = 0.45;
+
+  ctx.globalAlpha = 0.5;
   ctx.fillStyle = pal.accent;
-  const seed = [...String(roomId)].reduce((s, ch) => s + ch.charCodeAt(0), 0);
-  for (let i = 0; i < 6; i++) {
-    const x = ((seed * (i + 3) * 17) % 200) + 28;
-    const y = ((seed * (i + 7) * 13) % 200) + 28;
-    ctx.fillRect(x, y, 18 + (i % 3) * 8, 18 + (i % 2) * 10);
+  ctx.strokeStyle = pal.accent;
+
+  if (pattern === "hex") {
+    for (let row = 0; row < 5; row++) {
+      for (let col = 0; col < 5; col++) {
+        const cx = 28 + col * 48 + (row % 2) * 24;
+        const cy = 28 + row * 42;
+        ctx.beginPath();
+        for (let k = 0; k < 6; k++) {
+          const a = (k / 6) * Math.PI * 2 - Math.PI / 6;
+          const px = cx + Math.cos(a) * 16;
+          const py = cy + Math.sin(a) * 16;
+          if (k === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.stroke();
+      }
+    }
+  } else if (pattern === "wave") {
+    ctx.lineWidth = 3;
+    for (let w = 0; w < 4; w++) {
+      ctx.beginPath();
+      for (let x = 0; x <= 256; x += 8) {
+        const y = 64 + w * 48 + Math.sin(x * 0.05 + w) * 14;
+        if (x === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+  } else if (pattern === "checker") {
+    for (let gy = 0; gy < 8; gy++) {
+      for (let gx = 0; gx < 8; gx++) {
+        if ((gx + gy) % 2 === 0) ctx.fillRect(gx * 32, gy * 32, 32, 32);
+      }
+    }
+  } else if (pattern === "bars") {
+    for (let i = 0; i < 6; i++) {
+      const h = 24 + (seed + i * 17) % 80;
+      ctx.fillRect(24 + i * 38, 256 - h - 20, 22, h);
+    }
+  } else if (pattern === "orbit") {
+    ctx.lineWidth = 2;
+    for (let r = 30; r < 110; r += 28) {
+      ctx.beginPath();
+      ctx.arc(128, 128, r, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.fillRect(120, 118, 16, 16);
+  } else {
+    for (let i = 0; i < 7; i++) {
+      const x = ((seed * (i + 3) * 17) % 190) + 24;
+      const y = ((seed * (i + 7) * 13) % 190) + 24;
+      const w = 14 + (i % 4) * 10;
+      const h = 14 + (i % 3) * 8;
+      if (pattern === "steps") ctx.fillRect(x, y, w, 6);
+      else if (pattern === "terminal") ctx.strokeRect(x, y, w, h);
+      else if (pattern === "fork") {
+        ctx.fillRect(x, y + h / 2 - 2, w, 4);
+        ctx.fillRect(x + w / 2 - 2, y, 4, h);
+      } else ctx.fillRect(x, y, w, h);
+    }
   }
+
+  ctx.globalAlpha = 0.18;
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, 256, 18);
+  ctx.fillRect(0, 238, 256, 18);
+  ctx.fillRect(0, 0, 18, 256);
+  ctx.fillRect(238, 0, 18, 256);
+
   const tex = new THREE.CanvasTexture(canvas);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
   tex.repeat.set(2.2, 2.2);
@@ -224,6 +320,10 @@ export function decorateRoom(roomId, group, h, accent) {
         const ang = (i / 4) * Math.PI * 2;
         group.add(box(0.5, 0.8 + i * 0.15, 0.5, mat(hi), Math.cos(ang) * 2.8, 0.4, Math.sin(ang) * 2.8 - 2));
       }
+      group.add(box(2.2, 0.1, 1.4, mat(0x334455), 0, 0.05, 2.8));
+      monitor(group, 1.5, 1.1, 2.5);
+      group.add(cyl(0.25, 0.35, 0.6, 12, mat(0x88ddff), -3, 0.3, 2.5));
+      neonStrip(group, 0, 0.14, 2.8, 2.2, 0x44aa66, "x");
       break;
 
     case "try_phase":
@@ -233,6 +333,11 @@ export function decorateRoom(roomId, group, h, accent) {
       }
       group.add(cyl(0.4, 0.4, 1.0, 8, mat(0x44aaff), 3, 0.5, -2.5));
       group.add(box(2.5, 0.08, 1.5, mat(0x333344), 0, 0.04, 3.5));
+      for (let i = 0; i < 3; i++) {
+        group.add(cyl(0.22, 0.22, 0.08, 12, mat(i === 1 ? 0xffffff : 0x111111), -1 + i * 1, 0.9, 3.2));
+      }
+      group.add(box(1.2, 0.6, 0.08, mat(0x1a1a2e), 3.2, 1.4, 2.5, 0, -0.4));
+      neonStrip(group, 3.2, 1.75, 2.5, 1.0, 0x88aaff, "z");
       break;
 
     case "debug_scene":
@@ -342,6 +447,11 @@ export function decorateRoom(roomId, group, h, accent) {
       group.add(box(1.0, 0.08, 0.08, mat(0xffd54a), 3, 1.5, -2.5));
       group.add(box(0.08, 0.08, 1.0, mat(0xffd54a), 3, 1.5, -2));
       group.add(box(0.6, 0.5, 0.5, mat(0x44aa66), 2.5, 0.25, 2.5));
+      for (let i = 0; i < 3; i++) {
+        group.add(box(0.35, 0.5, 0.35, mat(i % 2 ? 0x44aa66 : 0x88dd88), -1 + i * 1.2, 0.25, -2.5));
+      }
+      bookStack(group, -2.5, 2.8, 3, 0x5c4033);
+      neonStrip(group, 0, 0.14, -2.8, 2.4, 0x88dd88, "x");
       break;
 
     case "bias_unit":
@@ -350,6 +460,9 @@ export function decorateRoom(roomId, group, h, accent) {
         group.add(box(0.35, bh, 0.35, mat(i < 2 ? 0x44aa66 : 0xff6644), -1.5 + i * 0.9, bh / 2, 3));
       }
       group.add(box(1.6, 0.08, 0.5, mat(0x555566), 0, 0.04, 3.2));
+      monitor(group, 3, 1.2, 0, Math.PI / 2);
+      group.add(box(0.8, 0.08, 0.5, mat(0x333344), 3, 0.65, 0));
+      neonStrip(group, -1.5, 2.2, 3, 2.8, 0xff8866, "x");
       break;
 
     case "data_detective":
@@ -393,6 +506,22 @@ export function roomSilhouette(roomId, group, h, color) {
       return { h: h - 1, roof: "antenna", trim: 0x44ff44 };
     case "collaboration_bridge":
       return { h: h + 1.5, roof: "arch", trim: 0x88ccff };
+    case "prepare_phase":
+      return { h: h + 0.8, roof: "dome", trim: 0x44aa66 };
+    case "try_phase":
+      return { h: h + 0.4, roof: "pyramid", trim: 0x88aaff };
+    case "debug_scene":
+      return { h: h + 0.3, roof: "antenna", trim: 0x44ff88 };
+    case "ai_ethics":
+      return { h: h + 1.2, roof: "arch", trim: 0xaa88ff };
+    case "hardware_graveyard":
+      return { h: h - 0.5, roof: "flat", trim: 0x88cc88 };
+    case "open_source":
+      return { h: h + 0.6, roof: "pyramid", trim: 0x88dd88 };
+    case "footprint_scene":
+      return { h: h + 0.5, roof: "flat", trim: 0xc4a8ff };
+    case "design_lab":
+      return { h: h + 0.7, roof: "dome", trim: 0xc49bff };
     default:
       return { h, roof: "pyramid", trim: c.clone().offsetHSL(0.05, 0.2, 0.2).getHex() };
   }

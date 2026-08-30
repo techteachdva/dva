@@ -5,7 +5,7 @@
  * and the flat game is untouched.
  */
 import * as THREE from "three";
-import { decorateRoom, roomSilhouette, makeRoomFloorTexture } from "./tech-trail-world3d-props.js";
+import { decorateRoom, roomSilhouette, makeRoomFloorTexture, FLOOR_PALETTES } from "./tech-trail-world3d-props.js";
 
 (() => {
   const WORLD_HALF_X = 88;
@@ -90,28 +90,99 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture } from "./tech-trail
     const canvas = document.createElement("canvas");
     canvas.width = canvas.height = 512;
     const ctx = canvas.getContext("2d");
-    const g = ctx.createRadialGradient(256, 256, 40, 256, 256, 280);
-    g.addColorStop(0, "#1c1528");
-    g.addColorStop(1, "#0e0a16");
+    const g = ctx.createRadialGradient(256, 256, 30, 256, 256, 290);
+    g.addColorStop(0, "#14101e");
+    g.addColorStop(1, "#08060e");
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, 512, 512);
-    ctx.strokeStyle = "rgba(146, 108, 255, 0.14)";
-    ctx.lineWidth = 2;
-    for (let i = 0; i <= 512; i += 32) {
+    ctx.strokeStyle = "rgba(90, 72, 140, 0.12)";
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 512; i += 64) {
       ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 512); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(512, i); ctx.stroke();
     }
-    for (let i = 0; i < 120; i++) {
-      const x = Math.random() * 512;
-      const y = Math.random() * 512;
-      ctx.fillStyle = `rgba(157, 140, 255, ${0.03 + Math.random() * 0.05})`;
-      ctx.fillRect(x, y, 2 + Math.random() * 4, 2 + Math.random() * 4);
+    ctx.strokeStyle = "rgba(120, 100, 180, 0.08)";
+    ctx.lineWidth = 2;
+    for (let i = 0; i <= 512; i += 128) {
+      ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 512); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(512, i); ctx.stroke();
+    }
+    ctx.fillStyle = "rgba(60, 48, 96, 0.35)";
+    for (let row = 0; row < 8; row++) {
+      for (let col = 0; col < 8; col++) {
+        if ((row + col) % 2 === 0) ctx.fillRect(col * 64 + 2, row * 64 + 2, 60, 60);
+      }
     }
     const tex = new THREE.CanvasTexture(canvas);
     tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
     tex.repeat.set(24, 24);
     tex.colorSpace = THREE.SRGBColorSpace;
     return tex;
+  }
+
+  function segmentKey(x1, z1, x2, z2) {
+    const a = `${Math.round(x1 * 4)},${Math.round(z1 * 4)}`;
+    const b = `${Math.round(x2 * 4)},${Math.round(z2 * 4)}`;
+    return a < b ? `${a}|${b}` : `${b}|${a}`;
+  }
+
+  function routeEdge(ax, az, bx, bz, padA, padB) {
+    const dx = bx - ax;
+    const dz = bz - az;
+    const dist = Math.hypot(dx, dz);
+    if (dist < 2) return [];
+    const ux = dx / dist;
+    const uz = dz / dist;
+    const sx = ax + ux * padA;
+    const sz = az + uz * padA;
+    const ex = bx - ux * padB;
+    const ez = bz - uz * padB;
+    if (Math.abs(ex - sx) < 0.5) return [{ x1: sx, z1: sz, x2: ex, z2: ez }];
+    if (Math.abs(ez - sz) < 0.5) return [{ x1: sx, z1: sz, x2: ex, z2: ez }];
+    const cornerX = ex;
+    const cornerZ = sz;
+    return [
+      { x1: sx, z1: sz, x2: cornerX, z2: cornerZ },
+      { x1: cornerX, z1: cornerZ, x2: ex, z2: ez },
+    ];
+  }
+
+  function buildMeeplePlayer() {
+    const group = new THREE.Group();
+    const skin = stdMat(0xd8c8f0, { roughness: 0.48, metalness: 0.06 });
+    const accent = stdMat(0xffd54a, { emissive: 0xc9a020, emissiveIntensity: 0.35 });
+    const limb = stdMat(0xb8a8d8, { roughness: 0.55 });
+
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.38, 0.1, 14), accent);
+    base.position.y = 0.05;
+    base.castShadow = true;
+    group.add(base);
+
+    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.32, 0.62, 12), skin);
+    torso.position.y = 0.44;
+    torso.castShadow = true;
+    group.add(torso);
+
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 14, 12), skin);
+    head.position.y = 0.92;
+    head.castShadow = true;
+    group.add(head);
+
+    const armGeo = new THREE.BoxGeometry(0.1, 0.42, 0.1);
+    const legGeo = new THREE.BoxGeometry(0.12, 0.38, 0.12);
+    [-1, 1].forEach((side) => {
+      const arm = new THREE.Mesh(armGeo, limb);
+      arm.position.set(side * 0.34, 0.48, 0);
+      arm.rotation.z = side * 0.25;
+      arm.castShadow = true;
+      group.add(arm);
+      const leg = new THREE.Mesh(legGeo, limb);
+      leg.position.set(side * 0.14, 0.19, 0.02);
+      leg.castShadow = true;
+      group.add(leg);
+    });
+
+    return group;
   }
 
   function skyDome() {
@@ -217,6 +288,7 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture } from "./tech-trail
       })
     );
     ground.rotation.x = -Math.PI / 2;
+    ground.position.y = 0;
     ground.receiveShadow = true;
     scene.add(ground);
 
@@ -264,17 +336,21 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture } from "./tech-trail
       const trimColor = sil.trim || 0x9d8cff;
 
       const floorTex = makeRoomFloorTexture(room.id, color);
+      const pal = FLOOR_PALETTES[room.id];
+      const floorTint = pal ? new THREE.Color(pal.bg) : color.clone().multiplyScalar(0.55);
       const floor = new THREE.Mesh(
         new THREE.PlaneGeometry(padW, padD),
         new THREE.MeshStandardMaterial({
           map: floorTex,
-          color: 0xffffff,
+          color: floorTint,
           roughness: 0.82,
           metalness: 0.08,
+          emissive: new THREE.Color(pal?.accent || trimColor),
+          emissiveIntensity: golden ? 0.12 : 0.04,
         })
       );
       floor.rotation.x = -Math.PI / 2;
-      floor.position.y = 0.05;
+      floor.position.y = 0.1;
       floor.receiveShadow = true;
       floor.userData = { type: "floor", roomId: room.id };
       group.add(floor);
@@ -284,7 +360,7 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture } from "./tech-trail
         new THREE.MeshBasicMaterial({ color: trimColor, transparent: true, opacity: golden ? 0.9 : 0.55 })
       );
       border.rotation.x = -Math.PI / 2;
-      border.position.y = 0.07;
+      border.position.y = 0.12;
       group.add(border);
 
       [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(([sx, sz]) => {
@@ -307,6 +383,10 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture } from "./tech-trail
         const accent = new THREE.PointLight(0xffd54a, 0.5, 18);
         accent.position.set(0, 2.5, 0);
         group.add(accent);
+      } else if (pal) {
+        const zoneLight = new THREE.PointLight(new THREE.Color(pal.accent), 0.28, 14);
+        zoneLight.position.set(0, 2.2, 0);
+        group.add(zoneLight);
       }
 
       decorateRoom(room.id, group, padH, color);
@@ -319,7 +399,7 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture } from "./tech-trail
       const ringMat = new THREE.MeshBasicMaterial({ color: 0x4a3d63, transparent: true, opacity: 0.85 });
       const ring = new THREE.Mesh(new THREE.RingGeometry(5.8, 6.5, 40), ringMat);
       ring.rotation.x = -Math.PI / 2;
-      ring.position.y = 0.04;
+      ring.position.y = 0.11;
       group.add(ring);
 
       scene.add(group);
@@ -363,44 +443,79 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture } from "./tech-trail
 
     Object.values(Visuals.MAP_ROOMS).forEach(buildRoom);
 
-    // Path ribbons along edges.
-    const pathMat = new THREE.MeshStandardMaterial({
-      color: 0x2a2240,
-      roughness: 0.88,
-      metalness: 0.06,
+    // Circuit traces — axis-aligned routes between room pads (no diagonal criss-cross).
+    const circuitSegments = [];
+    const drawnSegments = new Map();
+    const traceBaseMat = new THREE.MeshStandardMaterial({
+      color: 0x1a1428,
+      roughness: 0.9,
+      metalness: 0.1,
       transparent: true,
-      opacity: 0.72,
+      opacity: 0.55,
+      emissive: 0x000000,
+      emissiveIntensity: 0,
     });
-    const pathGlowMat = new THREE.MeshBasicMaterial({
-      color: 0x9d8cff,
+    const glowBaseMat = new THREE.MeshBasicMaterial({
+      color: 0x5a4888,
       transparent: true,
-      opacity: 0.28,
+      opacity: 0.14,
       depthWrite: false,
     });
+
+    function addTraceSegment(x1, z1, x2, z2, roomA, roomB) {
+      const key = segmentKey(x1, z1, x2, z2);
+      const len = Math.hypot(x2 - x1, z2 - z1);
+      if (len < 0.4) return;
+      let rec = drawnSegments.get(key);
+      if (!rec) {
+        const midX = (x1 + x2) / 2;
+        const midZ = (z1 + z2) / 2;
+        const alongX = Math.abs(x2 - x1) >= Math.abs(z2 - z1);
+        const traceW = 1.05;
+        const geo = alongX
+          ? new THREE.BoxGeometry(len, 0.025, traceW)
+          : new THREE.BoxGeometry(traceW, 0.025, len);
+        const traceMat = traceBaseMat.clone();
+        const trace = new THREE.Mesh(geo, traceMat);
+        trace.position.set(midX, 0.022, midZ);
+        trace.receiveShadow = true;
+        scene.add(trace);
+        const glowMat = glowBaseMat.clone();
+        const glowGeo = alongX
+          ? new THREE.BoxGeometry(len * 0.96, 0.012, traceW * 0.35)
+          : new THREE.BoxGeometry(traceW * 0.35, 0.012, len * 0.96);
+        const glow = new THREE.Mesh(glowGeo, glowMat);
+        glow.position.set(midX, 0.034, midZ);
+        scene.add(glow);
+        rec = { traceMat, glowMat, pairs: [], junctions: [key.split("|")[0], key.split("|")[1]] };
+        drawnSegments.set(key, rec);
+        circuitSegments.push(rec);
+      }
+      rec.pairs.push([roomA, roomB]);
+    }
+
     Visuals.MAP_EDGES.forEach(([a, b]) => {
       const ra = Visuals.MAP_ROOMS[a];
       const rb = Visuals.MAP_ROOMS[b];
       if (!ra || !rb) return;
       const pa = roomPos(ra);
       const pb = roomPos(rb);
-      const dx = pb.x - pa.x;
-      const dz = pb.z - pa.z;
-      const len = Math.hypot(dx, dz) - 13;
-      if (len <= 1) return;
-      const rotZ = -Math.atan2(dx, dz);
-      const midX = (pa.x + pb.x) / 2;
-      const midZ = (pa.z + pb.z) / 2;
-      const strip = new THREE.Mesh(new THREE.PlaneGeometry(1.9, len), pathMat);
-      strip.rotation.x = -Math.PI / 2;
-      strip.rotation.z = rotZ;
-      strip.position.set(midX, 0.03, midZ);
-      strip.receiveShadow = true;
-      scene.add(strip);
-      const glow = new THREE.Mesh(new THREE.PlaneGeometry(0.35, len * 0.92), pathGlowMat);
-      glow.rotation.x = -Math.PI / 2;
-      glow.rotation.z = rotZ;
-      glow.position.set(midX, 0.05, midZ);
-      scene.add(glow);
+      const padA = Math.max(ra.id === "final_trial" ? 14 : 12, ra.id === "final_trial" ? 13 : 11) * 0.44;
+      const padB = Math.max(rb.id === "final_trial" ? 14 : 12, rb.id === "final_trial" ? 13 : 11) * 0.44;
+      const segments = routeEdge(pa.x, pa.z, pb.x, pb.z, padA, padB);
+      segments.forEach((seg) => addTraceSegment(seg.x1, seg.z1, seg.x2, seg.z2, a, b));
+    });
+
+    const junctionPts = new Set();
+    drawnSegments.forEach((rec) => rec.junctions.forEach((pt) => junctionPts.add(pt)));
+    junctionPts.forEach((pt) => {
+      const [x, z] = pt.split(",").map((v) => Number(v) / 4);
+      const node = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.18, 0.22, 0.03, 8),
+        new THREE.MeshStandardMaterial({ color: 0x2a2040, emissive: 0x3a2860, emissiveIntensity: 0.4, roughness: 0.7 })
+      );
+      node.position.set(x, 0.028, z);
+      scene.add(node);
     });
 
     // Floating campus motes.
@@ -436,28 +551,9 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture } from "./tech-trail
     scene.add(beacon);
 
     // --- player -------------------------------------------------------------------
-    const player = new THREE.Group();
-    const playerBody = new THREE.Mesh(
-      new THREE.CapsuleGeometry(PLAYER_RADIUS, 1.0, 4, 12),
-      stdMat(0xc41e3a, { roughness: 0.55, metalness: 0.08 })
-    );
-    playerBody.position.y = 1.05;
-    playerBody.castShadow = true;
-    player.add(playerBody);
-    const visor = new THREE.Mesh(
-      new THREE.BoxGeometry(0.7, 0.25, 0.2),
-      new THREE.MeshStandardMaterial({
-        color: 0x7ef0ff,
-        emissive: 0x44c8e8,
-        emissiveIntensity: 0.85,
-        roughness: 0.2,
-        metalness: 0.35,
-      })
-    );
-    visor.position.set(0, 1.5, PLAYER_RADIUS - 0.05);
-    player.add(visor);
+    const player = buildMeeplePlayer();
     const playerLight = new THREE.PointLight(0xffd4b0, 0.55, 14);
-    playerLight.position.set(0, 2.2, 0.4);
+    playerLight.position.set(0, 1.6, 0.4);
     player.add(playerLight);
     scene.add(player);
 
@@ -578,6 +674,7 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture } from "./tech-trail
     };
 
     window.__gtgWorld3D.enterRoom = enterRoom;
+    window.__gtgWorld3D.refreshCampus = refreshRings;
 
     window.__gtgWorld3D.exitToCampus = () => {
       const roomId = bridge.mapIdFor(bridge.getRunState().currentNode);
@@ -613,6 +710,37 @@ import { decorateRoom, roomSilhouette, makeRoomFloorTexture } from "./tech-trail
         else if (visited.has(roomId)) b.ringMat.color.set(0x1f8f83);
         else if (enterable(roomId)) b.ringMat.color.set(0xb98a1e);
         else b.ringMat.color.set(0x4a3d63);
+      });
+      circuitSegments.forEach(({ pairs, traceMat, glowMat }) => {
+        let level = 0;
+        pairs.forEach(([roomA, roomB]) => {
+          const doneA = completedRooms.has(roomA);
+          const doneB = completedRooms.has(roomB);
+          if (doneA && doneB) level = 2;
+          else if ((doneA || doneB) && level < 2) level = 1;
+        });
+        if (level === 2) {
+          glowMat.color.set(0x44ffcc);
+          glowMat.opacity = 0.82;
+          traceMat.color.set(0x1a6058);
+          traceMat.emissive.set(0x22aa88);
+          traceMat.emissiveIntensity = 0.35;
+          traceMat.opacity = 0.92;
+        } else if (level === 1) {
+          glowMat.color.set(0x9d8cff);
+          glowMat.opacity = 0.42;
+          traceMat.color.set(0x2a2048);
+          traceMat.emissive.set(0x4433aa);
+          traceMat.emissiveIntensity = 0.15;
+          traceMat.opacity = 0.68;
+        } else {
+          glowMat.color.set(0x5a4888);
+          glowMat.opacity = 0.1;
+          traceMat.color.set(0x1a1428);
+          traceMat.emissive.set(0x000000);
+          traceMat.emissiveIntensity = 0;
+          traceMat.opacity = 0.45;
+        }
       });
     }
 

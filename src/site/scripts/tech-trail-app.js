@@ -1934,6 +1934,7 @@
 
   function markMapRoomComplete(nodeId) {
     completedRooms.add(mapIdFor(nodeId));
+    window.__gtgWorld3D?.refreshCampus?.();
   }
 
   const GOLDEN_RULES_QUIZ = [
