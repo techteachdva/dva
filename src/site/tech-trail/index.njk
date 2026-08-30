@@ -11,6 +11,32 @@ layout: false
     <meta name="theme-color" content="#140818" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
+    <link rel="preload" as="image" href="/tech-trail/images/scenes/scene-gauntlet-arena.png" fetchpriority="high" />
+    <style>
+      html,
+      body.dw-body.wp-theme--gauntlet.tt-game-body {
+        background: #140818;
+      }
+      .wp-theme--gauntlet .tt-title-screen__bg {
+        position: fixed !important;
+        inset: 0;
+        z-index: 0;
+        background-color: #140818 !important;
+        background-image: url("/tech-trail/images/scenes/scene-gauntlet-arena.png") !important;
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+      }
+      .wp-theme--gauntlet .tt-title-screen__overlay {
+        position: fixed !important;
+        inset: 0;
+        z-index: 1;
+        pointer-events: none;
+        background:
+          radial-gradient(ellipse at 50% 25%, rgba(196, 30, 58, 0.16), transparent 52%),
+          linear-gradient(180deg, rgba(10, 4, 14, 0.12), rgba(10, 4, 14, 0.52));
+      }
+    </style>
     <title>Global Tech Gauntlet</title>
     <meta property="og:title" content="Global Tech Gauntlet" />
     <meta property="og:description" content="A typing-powered choose-your-own-adventure about digital citizenship, technology heroes, and the golden rules of the internet." />
@@ -18,8 +44,8 @@ layout: false
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="/styles/write-platform.css" />
-    <link rel="stylesheet" href="/styles/custom-style.css" />
+    <link rel="stylesheet" href="/styles/write-platform.css?v=gtg56" />
+    <link rel="stylesheet" href="/styles/custom-style.css?v=gtg56" />
   </head>
   <body class="dw-body wp-theme--gauntlet tt-game-body">
     <div class="dw-shell tt-shell">
@@ -29,7 +55,7 @@ layout: false
 
       <main class="tt-main">
         <section id="titleView" class="tt-title-screen tt-view tt-view--active">
-          <div class="tt-title-screen__bg"></div>
+          <div class="tt-title-screen__bg" style="background-color:#140818;background-image:url('/tech-trail/images/scenes/scene-gauntlet-arena.png')"></div>
           <div class="tt-title-screen__overlay"></div>
           <div class="tt-title-screen__content">
             <header class="tt-title-hero">
