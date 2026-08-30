@@ -62,7 +62,10 @@ const CLASS_ROSTER_EMBED = {
   "Mrs. Eckart 6th Grade ELA": [],
   "Mrs. McCarthy 7th Grade ELA": [],
   "Mrs. Severson 8th Grade ELA": [],
-  "Teacher's Lounge": []
+  "Teacher's Lounge": [
+    "Cecelia E.",
+    "Phil C."
+  ]
 };
 
 /** Use only the ID between /d/ and /edit in the sheet URL. */
