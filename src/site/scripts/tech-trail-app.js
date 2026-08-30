@@ -200,6 +200,7 @@
   }
 
   const Typing = window.TechTrailTyping || buildTypingFallback();
+  const Pedagogy = window.TechTrailPedagogy || null;
   if (!window.TechTrailTyping) {
     console.warn("[GTG] tech-trail-typing-engine.js missing — using built-in fallback");
   }
@@ -276,6 +277,202 @@
   let diagnosticKeystrokeTracker = null;
   let challengeKeystrokeTracker = null;
   let challengeStartTime = 0;
+  let pendingChatMission = null;
+  let chatMissionCallback = null;
+  let completedChatMissions = new Set();
+
+  function ensurePedagogyProfile() {
+    if (!typingProfile.pedagogy && Pedagogy) {
+      typingProfile.pedagogy = Pedagogy.blankPedagogyProfile();
+    }
+    return typingProfile.pedagogy;
+  }
+
+  function recordPedagogySession(data) {
+    if (!Pedagogy) return;
+    ensurePedagogyProfile();
+    Pedagogy.recordSession(typingProfile, data);
+    saveTypingProfile();
+    renderPedagogyProgress();
+  }
+
+  function renderPedagogyProgress() {
+    const el = document.getElementById("pedagogyProgress");
+    if (!el || !Pedagogy) return;
+    const ped = ensurePedagogyProfile();
+    if (!ped.sessions && !ped.termsLearned.length) {
+      el.classList.add("dw-hidden");
+      return;
+    }
+    const tier = Pedagogy.staminaTier(ped);
+    const terms = ped.termsLearned.map((id) => Pedagogy.CHAT_TERMS[id]?.term || id).filter(Boolean);
+    el.innerHTML = `
+      <p class="tt-pedagogy-progress__heading">Your communication progress</p>
+      <div class="tt-pedagogy-progress__stats">
+        <span>Stamina <strong>${escapeHtml(tier.label)}</strong></span>
+        ${ped.bestAccuracyPct ? `<span>Best accuracy <strong>${ped.bestAccuracyPct}%</strong></span>` : ""}
+        ${ped.bestPerformanceScore ? `<span>Best score <strong>${ped.bestPerformanceScore}</strong></span>` : ""}
+        ${ped.accuracyStreak >= 2 ? `<span>Streak <strong>${ped.accuracyStreak}</strong></span>` : ""}
+        ${ped.compositionUnlocks ? `<span>Compositions <strong>${ped.compositionUnlocks}</strong></span>` : ""}
+        ${ped.transcriptionUnlocks ? `<span>Transcriptions <strong>${ped.transcriptionUnlocks}</strong></span>` : ""}
+      </div>
+      ${terms.length ? `<p class="tt-pedagogy-progress__terms">Chat terms learned: ${terms.join(", ")}</p>` : ""}
+      ${ped.lastTip ? `<p class="tt-pedagogy-progress__tip">${escapeHtml(ped.lastTip)}</p>` : ""}
+    `;
+    el.classList.remove("dw-hidden");
+  }
+
+  function showDiagnosticPedagogyFeedback(cmp, inputVal) {
+    const el = document.getElementById("diagnosticPedagogyFeedback");
+    if (!el || !Pedagogy) return;
+    const analysis = Pedagogy.classifyErrors(diagnosticPhrase, inputVal, cmp);
+    const tip = Pedagogy.buildAdaptiveTip(analysis, diagnosticKeystrokeTracker?.getStats?.());
+    const perf = Pedagogy.computePerformanceScore({
+      accuracy: analysis.accuracy,
+      usefulOutput: cmp.complete ? 1 : cmp.progress / 100,
+      consistency: Pedagogy.consistencyFromKeystrokes(diagnosticKeystrokeTracker?.getStats?.()),
+      speedFactor: 0.6,
+    });
+    recordPedagogySession({
+      accuracyPct: analysis.accuracyPct,
+      performanceScore: perf.score,
+      errorCounts: analysis.counts,
+      tip,
+    });
+    el.innerHTML = `
+      <p class="tt-pedagogy-feedback__score">Communication score: <strong>${perf.score}</strong> (accuracy ${analysis.accuracyPct}% — not just speed)</p>
+      <p class="tt-pedagogy-feedback__tip">${escapeHtml(tip)}</p>
+    `;
+    el.classList.remove("dw-hidden");
+  }
+
+  function openChatMission(missionId, onComplete) {
+    const mission = Pedagogy?.CHAT_MISSIONS?.[missionId];
+    const gate = document.getElementById("chatMissionGate");
+    if (!mission || !gate) {
+      onComplete?.();
+      return;
+    }
+    if (completedChatMissions.has(missionId)) {
+      onComplete?.();
+      return;
+    }
+    pendingChatMission = mission;
+    chatMissionCallback = onComplete;
+    pendingToneScenario = null;
+    toneMeterPassed = false;
+    document.getElementById("toneMeter")?.classList.add("dw-hidden");
+    document.getElementById("toneMeterLesson")?.classList.add("dw-hidden");
+    document.getElementById("chatMissionIntro")?.classList.add("dw-hidden");
+    document.getElementById("chatMissionSkill").textContent = mission.skill || "Digital literacy";
+    document.getElementById("chatMissionTitle").textContent = mission.title;
+    const thread = document.getElementById("chatMissionThread");
+    if (thread) {
+      thread.innerHTML = (mission.thread || []).map((m) => `
+        <div class="tt-chat-bubble tt-chat-bubble--${m.from === "npc" ? "npc" : "you"}">
+          <span class="tt-chat-bubble__name">${escapeHtml(m.name)}</span>
+          <p>${escapeHtml(m.text)}</p>
+        </div>
+      `).join("");
+    }
+    const promptEl = document.getElementById("chatMissionPrompt");
+    const inputEl = document.getElementById("chatMissionInput");
+    const toneMissionMap = { misunderstood_tone: "whatever", short_k: "short_k" };
+    const toneId = toneMissionMap[missionId];
+    if (toneId && Pedagogy?.TONE_SCENARIOS?.[toneId]) {
+      promptEl?.classList.add("dw-hidden");
+      inputEl?.classList.add("dw-hidden");
+      showToneMeter(toneId);
+    } else {
+      promptEl?.classList.remove("dw-hidden");
+      inputEl?.classList.remove("dw-hidden");
+      if (promptEl) promptEl.textContent = mission.prompt;
+    }
+    const regEl = document.getElementById("chatMissionRegister");
+    if (regEl && mission.registerExamples) {
+      regEl.innerHTML = `
+        <p class="tt-chat-mission__register-title">Different audiences, different register:</p>
+        <ul class="tt-chat-mission__register-list">
+          ${Object.entries(mission.registerExamples).map(([k, v]) => `<li><strong>${escapeHtml(k)}:</strong> ${escapeHtml(v)}</li>`).join("")}
+        </ul>
+      `;
+      regEl.classList.remove("dw-hidden");
+    } else {
+      regEl?.classList.add("dw-hidden");
+    }
+    const input = document.getElementById("chatMissionInput");
+    if (input) input.value = "";
+    document.getElementById("chatMissionFeedback")?.classList.add("dw-hidden");
+    gate.classList.remove("dw-hidden");
+    gate.setAttribute("aria-hidden", "false");
+    document.body.classList.add("tt-chat-mission-active");
+    if (!toneId) setTimeout(() => input?.focus(), 200);
+  }
+
+  function closeChatMission() {
+    const gate = document.getElementById("chatMissionGate");
+    gate?.classList.add("dw-hidden");
+    gate?.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("tt-chat-mission-active");
+    pendingChatMission = null;
+    chatMissionCallback = null;
+  }
+
+  function submitChatMission() {
+    if (!pendingChatMission || !Pedagogy) return;
+    const input = document.getElementById("chatMissionInput");
+    const feedback = document.getElementById("chatMissionFeedback");
+    if (pendingToneScenario && !toneMeterPassed) {
+      if (feedback) {
+        feedback.textContent = "Pick how the message might be read before you rewrite it.";
+        feedback.classList.remove("dw-hidden");
+      }
+      return;
+    }
+    if (pendingToneScenario?.scenario?.revisionPatterns) {
+      const raw = String(input?.value || "").trim();
+      const ok = pendingToneScenario.scenario.revisionPatterns.some((pat) => pat.test(raw));
+      if (!ok) {
+        if (feedback) {
+          feedback.textContent = "Add warmth and context — short replies are easy to misread.";
+          feedback.classList.remove("dw-hidden");
+        }
+        return;
+      }
+    }
+    const result = Pedagogy.scoreChatResponse(pendingChatMission, input?.value || "");
+    if (!result.passed) {
+      if (feedback) {
+        feedback.textContent = result.reason;
+        feedback.classList.remove("dw-hidden");
+      }
+      return;
+    }
+    const term = Pedagogy.CHAT_TERMS[pendingChatMission.termId];
+    completedChatMissions.add(pendingChatMission.id);
+    recordPedagogySession({
+      accuracyPct: 95,
+      performanceScore: 88,
+      tip: pendingChatMission.toneNote,
+      termId: pendingChatMission.termId,
+      chatMissionId: pendingChatMission.id,
+    });
+    toast(term ? `Learned: ${term.term} = ${term.meaning}` : "Message sent!", "lesson");
+    journal.push(`💬 Chat mission: ${pendingChatMission.title}`);
+    const cb = chatMissionCallback;
+    const missionId = pendingChatMission.id;
+    closeChatMission();
+    cb?.();
+  }
+
+  function maybeRunChatMission(node, nodeId, then) {
+    const missionId = node?.chatMission;
+    if (!missionId || completedChatMissions.has(missionId)) {
+      then?.();
+      return;
+    }
+    openChatMission(missionId, then);
+  }
 
   function serializeAnalysis(analysis) {
     if (!analysis) return null;
@@ -614,6 +811,7 @@
         skipAudio: true,
         container: document.querySelector(".tt-diagnostic__panel"),
       });
+      showDiagnosticPedagogyFeedback(cmp, input.value);
     }
   }
 
@@ -638,6 +836,145 @@
       toast(`Target: ${typingProfile.targetCpm} keys/min — launching mission!`, "badge");
       launch?.();
     }, prefersReducedMotion ? 0 : 450);
+  }
+
+  let warmupPhrases = [];
+  let warmupIndex = 0;
+  let warmupCallback = null;
+  let warmupStartTime = 0;
+  let pendingToneScenario = null;
+  let toneMeterPassed = false;
+
+  function openWarmupThen(callback) {
+    if (!Pedagogy || !typingProfile.diagnosed) {
+      callback?.();
+      return;
+    }
+    const ped = ensurePedagogyProfile();
+    warmupPhrases = Pedagogy.pickWarmupDrills(ped, 3);
+    warmupIndex = 0;
+    warmupCallback = callback;
+    const gate = document.getElementById("warmupGate");
+    if (!gate || !warmupPhrases.length) {
+      callback?.();
+      return;
+    }
+    const tip = Pedagogy.buildAdaptiveTip(
+      { counts: ped.errorTotals },
+      null
+    );
+    document.getElementById("warmupTip").textContent = tip;
+    gate.classList.remove("dw-hidden");
+    gate.setAttribute("aria-hidden", "false");
+    document.body.classList.add("tt-warmup-active");
+    renderWarmupPhrase();
+  }
+
+  function closeWarmup() {
+    document.getElementById("warmupGate")?.classList.add("dw-hidden");
+    document.getElementById("warmupGate")?.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("tt-warmup-active");
+    const cb = warmupCallback;
+    warmupCallback = null;
+    cb?.();
+  }
+
+  function renderWarmupPhrase() {
+    const phrase = warmupPhrases[warmupIndex];
+    document.getElementById("warmupProgress").textContent = `Phrase ${warmupIndex + 1} of ${warmupPhrases.length}`;
+    document.getElementById("warmupGhost").innerHTML = Typing.renderGhostHtml(phrase, 0);
+    const input = document.getElementById("warmupInput");
+    if (input) {
+      input.value = "";
+      input.disabled = false;
+      warmupStartTime = 0;
+      setTimeout(() => input.focus(), 120);
+    }
+    document.getElementById("warmupTyped").innerHTML = "";
+  }
+
+  function handleWarmupInput() {
+    const input = document.getElementById("warmupInput");
+    const phrase = warmupPhrases[warmupIndex];
+    if (!input || !phrase) return;
+    if (!warmupStartTime && input.value.length) warmupStartTime = performance.now();
+    const cmp = Typing.compareToTarget(phrase, input.value);
+    document.getElementById("warmupGhost").innerHTML = Typing.renderGhostHtml(phrase, input.value.length);
+    document.getElementById("warmupTyped").innerHTML = Typing.renderTypedCharsHtml(cmp.chars, 0);
+    if (!cmp.complete) return;
+    const analysis = Pedagogy?.classifyErrors(phrase, input.value, cmp);
+    recordPedagogySession({
+      accuracyPct: analysis?.accuracyPct ?? 100,
+      performanceScore: analysis ? Math.round(analysis.accuracy * 100) : 90,
+      errorCounts: analysis?.counts,
+      warmupCompleted: warmupIndex === warmupPhrases.length - 1,
+    });
+    input.disabled = true;
+    warmupIndex += 1;
+    if (warmupIndex >= warmupPhrases.length) {
+      toast("Warm-up complete — mission ready!", "badge");
+      setTimeout(closeWarmup, prefersReducedMotion ? 0 : 600);
+    } else {
+      setTimeout(renderWarmupPhrase, prefersReducedMotion ? 0 : 500);
+    }
+  }
+
+  function showToneMeter(scenarioId, onPass) {
+    const scenario = Pedagogy?.TONE_SCENARIOS?.[scenarioId];
+    const meter = document.getElementById("toneMeter");
+    if (!scenario || !meter) {
+      onPass?.();
+      return;
+    }
+    pendingToneScenario = { scenario, onPass };
+    toneMeterPassed = false;
+    meter.classList.remove("dw-hidden");
+    document.getElementById("chatMissionPrompt")?.classList.add("dw-hidden");
+    document.getElementById("chatMissionInput")?.classList.add("dw-hidden");
+    document.getElementById("toneMeterMessage").textContent = `"${scenario.message}"`;
+    document.getElementById("toneMeterContext").textContent = scenario.context;
+    const opts = document.getElementById("toneMeterOptions");
+    opts.innerHTML = scenario.interpretations.map((opt) =>
+      `<button type="button" class="tt-tone-meter__btn" data-id="${escapeHtml(opt.id)}">${escapeHtml(opt.label)}</button>`
+    ).join("");
+    opts.querySelectorAll(".tt-tone-meter__btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const pick = scenario.interpretations.find((o) => o.id === btn.dataset.id);
+        const lessonEl = document.getElementById("toneMeterLesson");
+        if (pick?.correct) {
+          lessonEl.textContent = scenario.lesson + " Now type a better version below.";
+          lessonEl.classList.remove("dw-hidden");
+          toneMeterPassed = true;
+          document.getElementById("chatMissionPrompt")?.classList.remove("dw-hidden");
+          document.getElementById("chatMissionInput")?.classList.remove("dw-hidden");
+          document.getElementById("chatMissionPrompt").textContent = scenario.revisionPrompt;
+          document.getElementById("chatMissionInput").value = "";
+          document.getElementById("chatMissionInput")?.focus();
+        } else {
+          lessonEl.textContent = "That reading is possible — text is ambiguous. " + scenario.lesson;
+          lessonEl.classList.remove("dw-hidden");
+        }
+      });
+    });
+  }
+
+  function startGuildQuest() {
+    if (!Pedagogy) return;
+    const ped = ensurePedagogyProfile();
+    const step = Pedagogy.guildQuestStep(ped);
+    if (!step) {
+      toast("Chat Quest complete — you know the guild lingo!", "badge");
+      return;
+    }
+    document.getElementById("chatMissionIntro").textContent = step.intro;
+    document.getElementById("chatMissionIntro").classList.remove("dw-hidden");
+    openChatMission(step.missionId, () => {
+      ped.guildQuestStep = step.index + 1;
+      saveTypingProfile();
+      renderPedagogyProgress();
+      const next = Pedagogy.guildQuestStep(ped);
+      if (next) toast("Next guild mission ready — tap Chat Quest again.", "lesson");
+    });
   }
 
   function handleDiagnosticKeydown(e) {
@@ -737,7 +1074,7 @@
     const cfg = difficultyCfg();
     const budget = typoBudget();
     if (hint) {
-      hint.textContent = `Type the full highlighted path. Speed unlocks it (${Math.round(cfg.speedGate * 100)}% of ${typingProfile.targetCpm} keys/min) · ${budget >= 10 ? "typos forgiven" : `up to ${budget} typo${budget === 1 ? "" : "s"}`}`;
+      hint.textContent = `Type the full highlighted path. Accuracy unlocks your choice · ${budget >= 10 ? "typos forgiven" : `up to ${budget} typo${budget === 1 ? "" : "s"}`}`;
     }
 
     updateTypingMeterUI({
@@ -790,10 +1127,24 @@
     const liveCpm = duration > 0 ? Typing.computeCpm(cmp.correctCount, duration) : 0;
     const liveEl = document.getElementById("statLiveWpm");
     if (liveEl) liveEl.textContent = String(liveCpm);
-    const speedOk = Typing.meetsSpeedGate(liveCpm, typingProfile.targetCpm, cfg.speedGate);
+    const errorAnalysis = Typing.classifyErrors?.(typeText, input.value, cmp) || { accuracy: 0.9 };
+    const transcriptionEval = Pedagogy?.evaluateTranscriptionUnlock
+      ? Pedagogy.evaluateTranscriptionUnlock(cmp, {
+          target: typeText,
+          input: input.value,
+          typoBudget: typoBudget(),
+          liveCpm,
+          targetCpm: typingProfile.targetCpm,
+          speedGate: cfg.speedGate,
+          tier: difficulty,
+          consistency: Pedagogy.consistencyFromKeystrokes?.(null),
+        })
+      : null;
+    const speedOk = transcriptionEval?.speedOk ?? Typing.meetsSpeedGate(liveCpm, typingProfile.targetCpm, cfg.speedGate);
     const pathComplete = Typing.isChoiceComplete
       ? Typing.isChoiceComplete(cmp, typoBudget())
       : Boolean(cmp.complete);
+    const unlocked = transcriptionEval?.unlocked ?? (pathComplete && speedOk);
 
     updateTypingMeterUI({
       progressPct: cmp.progress,
@@ -805,7 +1156,7 @@
       liveCpmId: "choiceLiveWpm",
       targetCpmId: "choiceTargetWpm",
       inputEl: input,
-      complete: pathComplete,
+      complete: unlocked,
       speedOk,
     });
 
@@ -828,9 +1179,18 @@
       return;
     }
 
-    if (!speedOk && !(pathComplete && difficulty !== "analyst")) {
-      const need = Math.round(typingProfile.targetCpm * cfg.speedGate);
-      if (hint) hint.textContent = `Path is complete — keep typing at about ${need} keys/min to unlock (${liveCpm} now).`;
+    if (!unlocked) {
+      const accPct = errorAnalysis.accuracyPct ?? Math.round((errorAnalysis.accuracy || 0) * 100);
+      if (hint) {
+        if (accPct < 88 && difficulty !== "cadet") {
+          hint.textContent = `Fix typos — accuracy ${accPct}% (need ~88%+). Speed is not the gate here.`;
+        } else if (difficulty === "analyst" && !speedOk) {
+          const need = Math.round(typingProfile.targetCpm * cfg.speedGate);
+          hint.textContent = `Analyst tier: hit ${need} keys/min after the path is accurate (${liveCpm} now).`;
+        } else {
+          hint.textContent = `Almost — accuracy ${accPct}%. Keep going.`;
+        }
+      }
       return;
     }
 
@@ -844,6 +1204,15 @@
       confetti: 14,
       container: document.getElementById("typingChoices"),
     });
+    if (transcriptionEval && Pedagogy) {
+      recordPedagogySession({
+        accuracyPct: errorAnalysis.accuracyPct,
+        performanceScore: transcriptionEval.performanceScore,
+        errorCounts: errorAnalysis.counts,
+        tip: Pedagogy.buildAdaptiveTip(errorAnalysis, null),
+        transcriptionUnlock: true,
+      });
+    }
     if (hint) hint.textContent = "Path unlocked!";
     document.getElementById("typingChoices")?.classList.add("tt-typing-choices--unlock");
 
@@ -1009,10 +1378,10 @@
     Audio?.init?.();
     requestGameFullscreen().then(updateFullscreenButton);
     if (!typingProfile.diagnosed) {
-      openDiagnosticForLaunch(() => startMissionCore());
+      openDiagnosticForLaunch(() => openWarmupThen(() => startMissionCore()));
       return;
     }
-    startMissionCore();
+    openWarmupThen(() => startMissionCore());
   }
 
   function beginContinueMission() {
@@ -1059,7 +1428,7 @@
       openDiagnosticForLaunch(() => beginNewMission());
       return;
     }
-    startMissionCore();
+    openWarmupThen(() => startMissionCore());
   }
 
   function loadDifficulty() {
@@ -1085,7 +1454,11 @@
 
   function scaleMinWords(base) {
     const cfg = DIFFICULTY_CONFIG[difficulty] || DIFFICULTY_CONFIG.operative;
-    return Math.max(5, Math.round(base * cfg.wordMult));
+    const ped = ensurePedagogyProfile();
+    const staminaBase = Pedagogy?.staminaMinWords
+      ? Pedagogy.staminaMinWords(base, ped)
+      : base;
+    return Math.max(3, Math.round(staminaBase * cfg.wordMult));
   }
 
   function nextSpineMission() {
@@ -2487,6 +2860,16 @@
       typingEl.classList.add("tt-layer--enter");
       if (choicesEl) choicesEl.innerHTML = "";
       document.getElementById("typingPrompt").textContent = node.typingChallenge.prompt;
+      const modeBadge = document.getElementById("typingModeBadge");
+      const challengeLabel = document.getElementById("typingChallengeLabel");
+      const mode = node.typingChallenge.mode || "composition";
+      if (modeBadge) {
+        modeBadge.textContent = mode === "transcription" ? "Transcription" : "Composition";
+        modeBadge.classList.toggle("tt-typing-mode-badge--transcription", mode === "transcription");
+      }
+      if (challengeLabel) {
+        challengeLabel.textContent = mode === "transcription" ? "⌨️ Transcription challenge" : "✍️ Composition challenge";
+      }
       renderOathRuleRecap(nodeId === "final_trial");
       const savedDraft = State.loadDraft();
       const typingInput = document.getElementById("typingInput");
@@ -2525,9 +2908,21 @@
       document.getElementById("typingChoices")?.classList.add("dw-hidden");
       clearChoiceTyping();
       const choices = resolveChoices(node, nodeId);
-      if (choices.length) {
-        renderClickChoices(node, choices);
-        document.getElementById("sceneChoices")?.classList.add("tt-layer--enter");
+      const showChoices = () => {
+        if (choices.length) {
+          const useTyping = typingProfile.diagnosed && node.typeChoices !== false;
+          if (useTyping) {
+            setupTypingChoices(node, choices);
+          } else {
+            renderClickChoices(node, choices);
+          }
+          document.getElementById("sceneChoices")?.classList.add("tt-layer--enter");
+        }
+      };
+      if (node.chatMission && !needsGoldenQuiz) {
+        maybeRunChatMission(node, nodeId, showChoices);
+      } else {
+        showChoices();
       }
     }
 
@@ -2552,6 +2947,7 @@
     const duration = challengeStartTime ? performance.now() - challengeStartTime : 0;
     const liveCpm = duration > 0 ? Typing.computeCpm(compactLen, duration) : 0;
     const accuracy = Typing.estimateTextAccuracy?.(text) ?? 1;
+    const consistency = Pedagogy?.consistencyFromKeystrokes?.(challengeKeystrokeTracker?.getStats?.()) ?? 0.85;
     const evalFn = Typing.evaluateChallengeUnlock;
     const result = evalFn
       ? evalFn({
@@ -2563,9 +2959,10 @@
           speedGate: cfg.speedGate,
           accuracyMin: cfg.accuracyMin,
           minWordsFloor: cfg.minWordsFloor,
+          consistency,
         })
       : { unlocked: words >= cfg.minWordsFloor, score: words >= minWords ? 1 : 0.4, speedOk: true, accuracyOk: true };
-    const pct = Math.min(100, Math.round((result.unlocked ? 100 : result.score * 100)));
+    const pct = Math.min(100, Math.round(result.performanceScore ?? (result.unlocked ? 100 : result.score * 100)));
     const fill = document.getElementById("typingProgressFill");
     const countEl = document.getElementById("typingWordCount");
     const challengeFill = document.getElementById("challengeWordFill");
@@ -2584,18 +2981,24 @@
     });
     if (countEl) {
       const accPct = Math.round(accuracy * 100);
+      const perf = result.performanceScore ?? Math.round((result.score || 0) * 100);
       countEl.textContent = result.unlocked
-        ? `${words} words · ${Math.round(liveCpm)} keys/min · ready`
-        : `${words} words · ${Math.round(liveCpm)} keys/min · ${accPct}% accuracy`;
+        ? `${words} words · score ${perf} · ready`
+        : `${words} words · ${accPct}% accuracy · score ${perf}`;
       countEl.classList.toggle("tt-typing-count--ready", result.unlocked);
+    }
+    const tipEl = document.getElementById("challengePedagogyTip");
+    if (tipEl && Pedagogy) {
+      tipEl.textContent = Pedagogy.buildCompositionTip(accuracy, words, minWords);
+      tipEl.classList.toggle("dw-hidden", result.unlocked);
     }
     const hint = document.getElementById("challengeUnlockHint");
     if (hint) {
-      if (result.unlocked) hint.textContent = "Unlocked — speed and accuracy are good. Submit whenever you're ready.";
-      else if (words < cfg.minWordsFloor) hint.textContent = `Type a few real words to start (${cfg.minWordsFloor}+). Speed does most of the unlocking.`;
-      else if (!result.accuracyOk) hint.textContent = "Accuracy is low for this difficulty — write in real sentences.";
-      else if (!result.speedOk) hint.textContent = `Keep typing — hit about ${Math.round(typingProfile.targetCpm * cfg.speedGate)} keys/min to unlock. Word count is a bonus, not a lock.`;
-      else hint.textContent = "Almost — keep going.";
+      if (result.unlocked) hint.textContent = "Unlocked — your ideas and accuracy are strong. Submit when ready.";
+      else if (words < cfg.minWordsFloor) hint.textContent = `Share a few real words to start (${cfg.minWordsFloor}+). Ideas matter more than speed.`;
+      else if (!result.accuracyOk) hint.textContent = "Write in real sentences — accuracy unlocks this, not raw speed.";
+      else if ((result.performanceScore ?? 0) < 52) hint.textContent = "Keep developing your answer — communication score builds with clarity and accuracy.";
+      else hint.textContent = "Almost — keep communicating clearly.";
     }
     const submitBtn = document.getElementById("typingSubmitBtn");
     if (submitBtn) {
@@ -2636,6 +3039,13 @@
       onComplete(result) {
         if (result && !result.skipped && result.accuracy != null) {
           journal.push(`⌨️ Phrase ${Math.round(result.accuracy)}% · ${result.title || "citizenship"}`);
+          if (Pedagogy) {
+            recordPedagogySession({
+              accuracyPct: Math.round(result.accuracy),
+              performanceScore: Math.round(result.accuracy * 0.85),
+              tip: result.accuracy >= 90 ? "Strong transcription — ideas come next." : "Slow down for accuracy — speed follows accuracy.",
+            });
+          }
         }
         markMapRoomComplete(fromId);
         then?.();
@@ -3023,6 +3433,9 @@ Play again to rebuild your record clean.`;
     }
     renderTitleGoldenPreview();
     renderProfileMini();
+    renderPedagogyProgress();
+    ensurePedagogyProfile();
+    (typingProfile.pedagogy?.chatMissionsCompleted || []).forEach((id) => completedChatMissions.add(id));
     updateDifficultyButtons();
     updateMuteButton();
     updateTypingProfileUI();
@@ -3159,6 +3572,25 @@ Play again to rebuild your record clean.`;
     });
 
     document.getElementById("diagnosticAcceptBtn")?.addEventListener("click", acceptDiagnostic);
+    document.getElementById("guildQuestBtn")?.addEventListener("click", startGuildQuest);
+    document.getElementById("warmupBtn")?.addEventListener("click", () => {
+      if (!typingProfile.diagnosed) {
+        toast("Complete the keystroke test first.", "lesson");
+        return;
+      }
+      openWarmupThen(() => toast("Warm-up done — ready when you are.", "badge"));
+    });
+    document.getElementById("warmupSkipBtn")?.addEventListener("click", closeWarmup);
+    const warmupInput = document.getElementById("warmupInput");
+    Core.setupPasteControl(warmupInput, false);
+    warmupInput?.addEventListener("input", handleWarmupInput);
+    document.getElementById("chatMissionSubmitBtn")?.addEventListener("click", submitChatMission);
+    document.getElementById("chatMissionSkipBtn")?.addEventListener("click", () => {
+      if (pendingChatMission) completedChatMissions.add(pendingChatMission.id);
+      const cb = chatMissionCallback;
+      closeChatMission();
+      cb?.();
+    });
 
     const diagnosticInput = document.getElementById("diagnosticInput");
     Core.setupPasteControl(diagnosticInput, false);
@@ -3200,6 +3632,19 @@ Play again to rebuild your record clean.`;
       const min = scaleMinWords(typingPending.minWords || 20);
       const result = updateChallengeUnlockUI(typingInput?.value || "", min);
       if (!result?.unlocked) return;
+      const mode = typingPending.mode || "composition";
+      if (Pedagogy && mode === "composition") {
+        recordPedagogySession({
+          accuracyPct: Math.round((Typing.estimateTextAccuracy?.(typingInput?.value) ?? 0.9) * 100),
+          performanceScore: result.performanceScore ?? 75,
+          compositionUnlock: true,
+          tip: Pedagogy.buildCompositionTip(
+            Typing.estimateTextAccuracy?.(typingInput?.value) ?? 0.9,
+            Core.countWords(typingInput?.value || ""),
+            min
+          ),
+        });
+      }
       const words = Core.countWords(typingInput?.value || "");
       journal.push(`⌨️ Response logged (${words} words)`);
       celebrateTypedSuccess(`${words} WORDS LOGGED`, typingInput, {
@@ -3242,7 +3687,7 @@ Play again to rebuild your record clean.`;
 
     if (!typingProfile.diagnosed && !State.hasActiveRun()) {
       setTimeout(() => {
-        openDiagnosticForLaunch(() => startMissionCore());
+        openDiagnosticForLaunch(() => openWarmupThen(() => startMissionCore()));
         toast("Welcome! Complete the keystroke test to launch your mission.", "lesson");
       }, prefersReducedMotion ? 200 : 650);
     }
@@ -3333,6 +3778,14 @@ Play again to rebuild your record clean.`;
       diagnosticAnalysis: typingProfile.diagnosticAnalysis || null,
       overallScore: oathAnalysis?.scores?.overall ?? null,
       oathWpm: oathAnalysis?.wpm ?? null,
+      pedagogy: Pedagogy?.snapshotForSubmit
+        ? Pedagogy.snapshotForSubmit(ensurePedagogyProfile(), typingProfile, { integrity, reputation })
+        : null,
+      testCpm: typingProfile.testCpm ?? null,
+      targetCpm: typingProfile.targetCpm ?? null,
+      diagnosed: Boolean(typingProfile.diagnosed),
+      integrity,
+      reputation,
     };
 
     try {
@@ -3397,6 +3850,10 @@ Play again to rebuild your record clean.`;
         document.getElementById("diagnosticOverlay") && !document.getElementById("diagnosticOverlay").classList.contains("dw-hidden")
       ) || !!(
         document.getElementById("npcDialog") && !document.getElementById("npcDialog").classList.contains("dw-hidden")
+      ) || !!(
+        document.getElementById("chatMissionGate") && !document.getElementById("chatMissionGate").classList.contains("dw-hidden")
+      ) || !!(
+        document.getElementById("warmupGate") && !document.getElementById("warmupGate").classList.contains("dw-hidden")
       );
     },
     isViewActive(name) {

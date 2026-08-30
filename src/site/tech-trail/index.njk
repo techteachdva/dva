@@ -23,24 +23,6 @@ layout: false
   </head>
   <body class="dw-body wp-theme--gauntlet tt-game-body">
     <div class="dw-shell tt-shell">
-      {% if breadcrumbs and breadcrumbs.length > 0 %}
-        <div class="breadcrumbs--standalone">{% include "components/breadcrumbs.njk" %}</div>
-      {% endif %}
-      <header class="dw-topbar tt-topbar">
-        <div class="dw-topbar-brand">
-          <div class="tt-logo-mark" aria-hidden="true"><img src="/tech-trail/images/dragons-logo.png" alt="" width="40" height="40" style="border-radius:8px;object-fit:cover;"></div>
-          <div>
-            <div class="dw-title">Global Tech Gauntlet</div>
-            <div class="dw-subtitle">Type your path · Digital citizenship adventure</div>
-          </div>
-        </div>
-        <div class="dw-actions">
-          <button id="fullscreenToggleBtn" class="tt-settings-btn" type="button" title="Toggle fullscreen">⛶ Fullscreen</button>
-          <a class="dw-link" href="/tech-escape/">Tech Escape</a>
-          <a class="dw-link" href="/">Back to site</a>
-        </div>
-      </header>
-
       <div id="fxLayer" class="tt-fx-layer" aria-hidden="true"></div>
       <div id="phrasePopLayer" class="tt-phrase-pop-layer" aria-hidden="true"></div>
       <div id="toastStack" class="tt-toast-stack" aria-live="polite"></div>
@@ -50,10 +32,14 @@ layout: false
           <div class="tt-title-screen__bg"></div>
           <div class="tt-title-screen__overlay"></div>
           <div class="tt-title-screen__content">
-            <div class="tt-title-logo" aria-hidden="true"><img src="/tech-trail/images/dragons-logo.png" alt="" width="96" height="96" style="border-radius:16px;object-fit:cover;box-shadow:0 6px 28px rgba(0,0,0,0.5);"></div>
-            <span class="tt-location-badge">DaVinci Dragons</span>
-            <h1 class="tt-title-screen__headline">Global Tech Gauntlet</h1>
-            <p class="tt-title-screen__tagline">Recover the five Golden Rules by <strong>typing your path</strong>. Meet the mentors who built computing. Punch in. Think fast. Don't ship the wrong thing.</p>
+            <header class="tt-title-hero">
+              <div class="tt-title-logo" aria-hidden="true"><img src="/tech-trail/images/dragons-logo.png" alt="" width="72" height="72" style="border-radius:14px;object-fit:cover;box-shadow:0 6px 28px rgba(0,0,0,0.5);"></div>
+              <div class="tt-title-hero__text">
+                <span class="tt-location-badge">DaVinci Dragons</span>
+                <h1 class="tt-title-screen__headline">Global Tech Gauntlet</h1>
+                <p class="tt-title-screen__tagline">Recover the five Golden Rules by <strong>typing your path</strong>. Meet the mentors who built computing.</p>
+              </div>
+            </header>
 
             <div id="titleWelcome" class="tt-title-welcome dw-hidden">
               <p class="tt-title-welcome__badge">Step 1 · New cadet briefing</p>
@@ -66,6 +52,7 @@ layout: false
             </div>
 
             <div id="titleExtras" class="tt-title-extras">
+            <div class="tt-title-extras__col tt-title-extras__col--settings">
             <details class="tt-tutorial tt-tutorial--compact" id="titleTutorial">
               <summary class="tt-tutorial__title">How to play ▼</summary>
               <div class="tt-tutorial__body">
@@ -98,11 +85,14 @@ layout: false
               <button class="tt-difficulty__btn" type="button" data-tier="operative">Operative</button>
               <button class="tt-difficulty__btn" type="button" data-tier="analyst">Analyst</button>
             </div>
+            </div>
+            <div class="tt-title-extras__col tt-title-extras__col--rules">
             <div class="tt-golden-preview-wrap">
               <h2 class="tt-golden-preview__heading">The Five Golden Rules</h2>
               <p class="tt-golden-preview__sub">Tap a rule to preview what you will recover on your mission.</p>
               <div class="tt-golden-track tt-golden-track--title" id="titleGoldenPreview" aria-label="Golden Rules to recover"></div>
               <div id="goldenRuleDetail" class="tt-golden-rule-detail dw-hidden" aria-live="polite"></div>
+            </div>
             </div>
             </div>
 
@@ -147,18 +137,16 @@ layout: false
               </div>
             </div>
             <div id="profileMini" class="tt-profile-mini-wrap"></div>
-            <div class="tt-settings-bar" style="margin-top:14px; display:flex; gap:12px; justify-content:center; flex-wrap:wrap;">
+            <div id="pedagogyProgress" class="tt-pedagogy-progress dw-hidden" aria-live="polite"></div>
+            <div class="tt-settings-bar tt-title-settings">
+              <button id="guildQuestBtn" class="tt-settings-btn" type="button" title="Chat Quest guild mode">💬 Chat Quest</button>
+              <button id="warmupBtn" class="tt-settings-btn" type="button" title="Targeted typing warm-up">⌨️ Warm-up</button>
+              <button id="fullscreenToggleBtn" class="tt-settings-btn" type="button" title="Toggle fullscreen">⛶ Fullscreen</button>
               <button id="highContrastToggle" class="tt-settings-btn" type="button" title="Toggle high contrast" aria-pressed="false">🔲 High contrast</button>
-              <button id="stillCameraToggle" class="tt-settings-btn" type="button" title="Keep the scene still so clicks stay easy" aria-pressed="true">📷 Still camera on</button>
-              <button id="titleMuteBtn" class="tt-settings-btn" type="button" title="Toggle soundtrack">🔊 Sound on</button>
+              <button id="stillCameraToggle" class="tt-settings-btn" type="button" title="Keep the scene still so clicks stay easy" aria-pressed="true">📷 Still camera</button>
+              <button id="titleMuteBtn" class="tt-settings-btn" type="button" title="Toggle soundtrack">🔊 Sound</button>
             </div>
-            <p class="tt-credit">A Game by Mr. Phil</p>
-            <p class="tt-music-credit">
-              Soundtrack: &quot;The Complex&quot; Kevin MacLeod
-              (<a href="https://incompetech.com" target="_blank" rel="noopener">incompetech.com</a>).
-              Licensed under
-              <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>.
-            </p>
+            <p class="tt-credit">A Game by Mr. Phil · Soundtrack: &quot;The Complex&quot; Kevin MacLeod (CC BY 4.0)</p>
           </div>
         </section>
 
@@ -166,8 +154,8 @@ layout: false
           <div class="tt-diagnostic__panel tt-diagnostic__panel--pop tt-typing-panel">
             <div class="tt-diagnostic__burst" aria-hidden="true"></div>
             <p id="diagnosticStep" class="tt-diagnostic__step">Step 1 of 2 · Type the full sentence</p>
-            <h2 id="diagnosticTitle" class="tt-diagnostic__title">⌨️ Keystroke test</h2>
-            <p id="diagnosticIntro" class="tt-diagnostic__intro">Type the <strong>complete sentence</strong> below — including the period at the end. Only correct keystrokes count toward your speed.</p>
+            <h2 id="diagnosticTitle" class="tt-diagnostic__title">⌨️ Fluency check</h2>
+            <p id="diagnosticIntro" class="tt-diagnostic__intro">Type the <strong>complete sentence</strong> below — including the period. <strong>Accuracy matters most</strong>; speed is measured but never the only goal.</p>
             <div class="tt-diagnostic__phrase-wrap">
               <div id="diagnosticGhost" class="tt-ghost-prompt tt-ghost-prompt--diagnostic" aria-live="polite"></div>
               <p id="diagnosticPhrasePlain" class="tt-diagnostic__phrase-plain dw-hidden" aria-hidden="true"></p>
@@ -198,6 +186,7 @@ layout: false
               </div>
               <button id="diagnosticAcceptBtn" class="tt-cta-btn tt-cta-btn--launch" type="button">Start mission →</button>
               <p id="diagnosticAlgoScore" class="tt-diagnostic__algo dw-muted dw-tiny dw-hidden"></p>
+              <div id="diagnosticPedagogyFeedback" class="tt-pedagogy-feedback dw-hidden" aria-live="polite"></div>
             </div>
             <p id="diagnosticStatus" class="tt-diagnostic__status dw-muted dw-tiny"></p>
           </div>
@@ -331,19 +320,21 @@ layout: false
                   </div>
                   <div id="typingChallenge" class="tt-typing-challenge tt-typing-panel dw-hidden">
                     <div class="tt-typing-challenge__header">
-                      <span class="tt-typing-challenge__label">⌨️ Typing challenge</span>
+                      <span class="tt-typing-challenge__label" id="typingChallengeLabel">✍️ Composition challenge</span>
+                      <span class="tt-typing-mode-badge" id="typingModeBadge">Composition</span>
                       <div class="tt-typing-progress"><div class="tt-typing-progress__fill" id="typingProgressFill"></div></div>
                     </div>
                     <div class="tt-typing-meter" id="challengeMeter">
                       <div class="tt-typing-meter__row">
-                        <span class="tt-typing-meter__label">Unlock (speed + accuracy)</span>
+                        <span class="tt-typing-meter__label">Communication score (accuracy + ideas)</span>
                         <span class="tt-typing-meter__value" id="challengeWordPct">0%</span>
                       </div>
                       <div class="tt-typing-meter__track">
                         <div class="tt-typing-meter__fill" id="challengeWordFill"></div>
                       </div>
-                      <p id="challengeUnlockHint" class="tt-speed-hint dw-muted dw-tiny">Speed does most of the unlocking. Word count is a bonus, not a lock.</p>
+                      <p id="challengeUnlockHint" class="tt-speed-hint dw-muted dw-tiny">Accuracy and clear ideas unlock this — speed is a bonus, not the goal.</p>
                     </div>
+                    <div id="challengePedagogyTip" class="tt-pedagogy-tip dw-hidden" aria-live="polite"></div>
                     <div id="oathRuleRecap" class="tt-oath-recap dw-hidden" aria-live="polite"></div>
                     <div class="tt-typing-challenge__prompt" id="typingPrompt"></div>
                     <textarea id="typingInput" class="dw-textarea tt-textarea" rows="5" placeholder="Type your response here…" spellcheck="true"></textarea>
@@ -353,7 +344,7 @@ layout: false
                     </div>
                   </div>
                   <div id="typingChoices" class="tt-typing-choices tt-typing-panel dw-hidden">
-                    <p class="tt-typing-choices__label">⌨️ Type your path</p>
+                    <p class="tt-typing-choices__label">⌨️ Type your path <span class="tt-typing-mode-badge tt-typing-mode-badge--transcription">Transcription</span></p>
                     <div id="choiceGhostPrompt" class="tt-ghost-prompt tt-ghost-prompt--choices" aria-hidden="true"></div>
                     <div class="tt-typing-meter" id="choiceTypingMeter">
                       <div class="tt-typing-meter__row">
@@ -403,6 +394,45 @@ layout: false
             <div class="tt-gtg-glitch__bar"></div>
           </div>
           <div id="gtgGlitchPopups" class="tt-gtg-glitch-popups" aria-hidden="true"></div>
+
+          <div id="chatMissionGate" class="tt-chat-mission dw-hidden" role="dialog" aria-modal="true" aria-labelledby="chatMissionTitle" aria-hidden="true">
+            <div class="tt-chat-mission__panel tt-typing-panel">
+              <p class="tt-chat-mission__skill" id="chatMissionSkill">Digital literacy</p>
+              <h2 id="chatMissionTitle" class="tt-chat-mission__title">Chat etiquette</h2>
+              <p id="chatMissionIntro" class="tt-chat-mission__intro dw-hidden"></p>
+              <div id="chatMissionThread" class="tt-chat-mission__thread" aria-live="polite"></div>
+              <div id="toneMeter" class="tt-tone-meter dw-hidden">
+                <p class="tt-tone-meter__label">How might this message be read?</p>
+                <p id="toneMeterMessage" class="tt-tone-meter__message"></p>
+                <p id="toneMeterContext" class="tt-tone-meter__context dw-muted dw-tiny"></p>
+                <div id="toneMeterOptions" class="tt-tone-meter__options"></div>
+                <p id="toneMeterLesson" class="tt-pedagogy-tip dw-hidden"></p>
+              </div>
+              <p id="chatMissionPrompt" class="tt-chat-mission__prompt"></p>
+              <div id="chatMissionRegister" class="tt-chat-mission__register dw-hidden"></div>
+              <textarea id="chatMissionInput" class="dw-textarea tt-textarea tt-chat-mission__input" rows="3" placeholder="Type your message…" spellcheck="true"></textarea>
+              <p id="chatMissionFeedback" class="tt-pedagogy-tip dw-hidden" aria-live="polite"></p>
+              <div class="tt-chat-mission__actions">
+                <button id="chatMissionSubmitBtn" class="tt-cta-btn tt-cta-btn--sm" type="button">Send message</button>
+                <button id="chatMissionSkipBtn" class="tt-launch-link-btn" type="button">Skip briefing</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="warmupGate" class="tt-warmup dw-hidden" role="dialog" aria-modal="true" aria-labelledby="warmupTitle" aria-hidden="true">
+            <div class="tt-warmup__panel tt-typing-panel">
+              <p class="tt-warmup__kicker">Micro-session · deliberate practice</p>
+              <h2 id="warmupTitle" class="tt-warmup__title">Typing warm-up</h2>
+              <p id="warmupTip" class="tt-pedagogy-tip"></p>
+              <p id="warmupProgress" class="tt-warmup__progress">Phrase 1 of 3</p>
+              <div id="warmupGhost" class="tt-ghost-prompt"></div>
+              <input id="warmupInput" class="tt-typing-input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Type the phrase…" />
+              <div id="warmupTyped" class="tt-typed-display" aria-live="polite"></div>
+              <div class="tt-warmup__actions">
+                <button id="warmupSkipBtn" class="tt-launch-link-btn" type="button">Skip warm-up</button>
+              </div>
+            </div>
+          </div>
 
           <div id="rhythmGate" class="tt-rhythm dw-hidden" role="dialog" aria-modal="true" aria-labelledby="rhythmTitle" aria-hidden="true">
             <div class="tt-rhythm__inner">
@@ -497,6 +527,7 @@ layout: false
     <script src="/scripts/write-test-core.js"></script>
     <script src="/scripts/diagnostic-writing-calibration.js"></script>
     <script src="/scripts/write-analysis-engine.js"></script>
+    <script src="/scripts/tech-trail-pedagogy.js"></script>
     <script src="/scripts/tech-trail-typing-engine.js"></script>
     <script src="/scripts/tech-trail-visuals.js"></script>
     <script src="/scripts/tech-trail-story.js"></script>

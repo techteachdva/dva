@@ -143,6 +143,12 @@ export async function POST(request) {
     const diagnosticAnalysis = body?.diagnosticAnalysis && typeof body.diagnosticAnalysis === "object"
       ? body.diagnosticAnalysis
       : null;
+    const pedagogy = body?.pedagogy && typeof body.pedagogy === "object" ? body.pedagogy : null;
+    const testCpm = Number(body?.testCpm);
+    const targetCpm = Number(body?.targetCpm);
+    const diagnosed = Boolean(body?.diagnosed);
+    const integrity = Number(body?.integrity);
+    const reputation = Number(body?.reputation);
 
     const nameParts = nameRaw.split(/\s+/);
     const lastInitial = nameParts.length >= 2 ? nameParts[nameParts.length - 1].slice(0, 1) : "";
@@ -184,6 +190,12 @@ export async function POST(request) {
         oathWpm: Number.isFinite(oathWpm) ? oathWpm : null,
         analysis,
         diagnosticAnalysis,
+        pedagogy,
+        testCpm: Number.isFinite(testCpm) ? testCpm : null,
+        targetCpm: Number.isFinite(targetCpm) ? targetCpm : null,
+        diagnosed,
+        integrity: Number.isFinite(integrity) ? integrity : null,
+        reputation: Number.isFinite(reputation) ? reputation : null,
       }),
     });
 

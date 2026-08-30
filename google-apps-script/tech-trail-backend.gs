@@ -37,37 +37,29 @@ function getSheet_() {
   return sheet;
 }
 
+const PEDAGOGY_HEADERS = [
+  "pedagogyJson", "testCpm", "targetCpm", "diagnosed", "integrity", "reputation",
+];
+
 function initHeaders_(sheet) {
-  sheet
-    .getRange(1, 1, 1, 16)
-    .setValues([[
-      "id",
-      "submittedAt",
-      "name",
-      "classroom",
-      "oathText",
-      "badgesJson",
-      "goldenRulesJson",
-      "mentorsMetJson",
-      "endingType",
-      "endingNode",
-      "durationSec",
-      "analysisJson",
-      "diagnosticAnalysisJson",
-      "overallScore",
-      "oathWpm",
-      "challengeDurationSec",
-    ]]);
-  sheet.getRange(1, 1, 1, 16).setFontWeight("bold");
+  const base = [
+    "id", "submittedAt", "name", "classroom", "oathText", "badgesJson", "goldenRulesJson",
+    "mentorsMetJson", "endingType", "endingNode", "durationSec", "analysisJson",
+    "diagnosticAnalysisJson", "overallScore", "oathWpm", "challengeDurationSec",
+  ];
+  const headers = base.concat(PEDAGOGY_HEADERS);
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  sheet.getRange(1, 1, 1, headers.length).setFontWeight("bold");
   sheet.setFrozenRows(1);
 }
 
 function ensureAnalysisColumns_(sheet) {
-  const headers = [
+  const base = [
     "id", "submittedAt", "name", "classroom", "oathText", "badgesJson", "goldenRulesJson",
-    "mentorsMetJson", "endingType", "endingNode", "durationSec",
-    "analysisJson", "diagnosticAnalysisJson", "overallScore", "oathWpm", "challengeDurationSec",
+    "mentorsMetJson", "endingType", "endingNode", "durationSec", "analysisJson",
+    "diagnosticAnalysisJson", "overallScore", "oathWpm", "challengeDurationSec",
   ];
+  const headers = base.concat(PEDAGOGY_HEADERS);
   const lastCol = Math.max(sheet.getLastColumn(), headers.length);
   const existing = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
   for (let i = 0; i < headers.length; i++) {
@@ -138,7 +130,7 @@ function normalizeName_(name) {
 function readRows_(sheet) {
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) return [];
-  const colCount = Math.max(16, sheet.getLastColumn());
+  const colCount = Math.max(22, sheet.getLastColumn());
   return sheet.getRange(2, 1, lastRow - 1, colCount).getValues();
 }
 
@@ -148,11 +140,13 @@ function rowToSubmission_(row) {
   let mentorsMet = [];
   let analysis = null;
   let diagnosticAnalysis = null;
+  let pedagogy = null;
   try { badges = JSON.parse(row[5] || "[]"); } catch (ignore) {}
   try { goldenRules = JSON.parse(row[6] || "[]"); } catch (ignore) {}
   try { mentorsMet = JSON.parse(row[7] || "[]"); } catch (ignore) {}
   try { analysis = JSON.parse(row[11] || "null"); } catch (ignore) {}
   try { diagnosticAnalysis = JSON.parse(row[12] || "null"); } catch (ignore) {}
+  try { pedagogy = JSON.parse(row[16] || "null"); } catch (ignore) {}
   return {
     id: String(row[0] || ""),
     submittedAt: Number(row[1]) || 0,
@@ -170,6 +164,12 @@ function rowToSubmission_(row) {
     overallScore: row[13] === "" || row[13] == null ? null : Number(row[13]),
     oathWpm: row[14] === "" || row[14] == null ? null : Number(row[14]),
     challengeDurationSec: Number(row[15]) || 0,
+    pedagogy: pedagogy,
+    testCpm: row[17] === "" || row[17] == null ? null : Number(row[17]),
+    targetCpm: row[18] === "" || row[18] == null ? null : Number(row[18]),
+    diagnosed: row[19] === true || row[19] === "true" || row[19] === 1,
+    integrity: row[20] === "" || row[20] == null ? null : Number(row[20]),
+    reputation: row[21] === "" || row[21] == null ? null : Number(row[21]),
   };
 }
 
@@ -203,6 +203,12 @@ function saveSubmission_(params) {
   const diagnosticAnalysisJson = params.diagnosticAnalysis
     ? JSON.stringify(params.diagnosticAnalysis).slice(0, 8000)
     : "";
+  const pedagogyJson = params.pedagogy ? JSON.stringify(params.pedagogy).slice(0, 6000) : "";
+  const testCpm = params.testCpm == null || params.testCpm === "" ? "" : Number(params.testCpm);
+  const targetCpm = params.targetCpm == null || params.targetCpm === "" ? "" : Number(params.targetCpm);
+  const diagnosed = params.diagnosed ? "true" : "false";
+  const integrity = params.integrity == null || params.integrity === "" ? "" : Number(params.integrity);
+  const reputation = params.reputation == null || params.reputation === "" ? "" : Number(params.reputation);
 
   if (!classroom) throw new Error("Classroom is required.");
 
@@ -225,6 +231,12 @@ function saveSubmission_(params) {
     overallScore,
     oathWpm,
     Math.round(challengeDurationSec),
+    pedagogyJson,
+    testCpm,
+    targetCpm,
+    diagnosed,
+    integrity,
+    reputation,
   ]);
 
   return { ok: true, id: id };

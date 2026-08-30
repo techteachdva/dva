@@ -78,13 +78,15 @@
 
   function blankTypingProfile() {
     return {
-      v: 3,
+      v: 4,
       diagnosed: false,
       testCpm: 0,
       targetCpm: 45,
       maxTypos: 2,
       lastPhrase: "",
       diagnosedAt: null,
+      diagnosticAnalysis: null,
+      pedagogy: null,
     };
   }
 
@@ -105,7 +107,7 @@
 
   function loadTypingProfile() {
     const raw = tryGet(`${PREFIX}:${TYPING_KEY}`);
-    if (!raw || (raw.v !== 1 && raw.v !== 2 && raw.v !== 3)) return blankTypingProfile();
+    if (!raw || (raw.v !== 1 && raw.v !== 2 && raw.v !== 3 && raw.v !== 4)) return blankTypingProfile();
     const speeds = migrateTypingSpeed(raw);
     let targetCpm = speeds.targetCpm;
     let v = Number(raw.v) || 2;
@@ -113,19 +115,24 @@
       targetCpm = Math.round(Math.min(95, Math.max(20, speeds.testCpm * 0.5)));
       v = 3;
     }
+    const pedagogy = window.TechTrailPedagogy?.mergePedagogyProfile
+      ? window.TechTrailPedagogy.mergePedagogyProfile(raw.pedagogy)
+      : raw.pedagogy || null;
     return {
-      v: 3,
+      v: 4,
       diagnosed: Boolean(raw.diagnosed),
       testCpm: speeds.testCpm,
       targetCpm,
       maxTypos: typeof raw.maxTypos === "number" ? raw.maxTypos : 2,
       lastPhrase: raw.lastPhrase || "",
       diagnosedAt: raw.diagnosedAt || null,
+      diagnosticAnalysis: raw.diagnosticAnalysis || null,
+      pedagogy,
     };
   }
 
   function saveTypingProfile(profile) {
-    trySet(`${PREFIX}:${TYPING_KEY}`, { ...profile, v: 3 });
+    trySet(`${PREFIX}:${TYPING_KEY}`, { ...profile, v: 4 });
   }
 
   function normalizeArray(arr) {

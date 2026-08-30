@@ -172,6 +172,7 @@ Ada Lovelace flickers onto the main screen. "Don't wait for the perfect mission.
     design_lab: {
       location: "Design Lab · London, 1843 (simulated)",
       character: "lovelace",
+      typeChoices: true,
       enter: "Whiteboards. Heat lamps. A half-built app blinking on the wall.",
       job: "Stop this team from shipping an app nobody asked for.",
       conflict: { graphic: "app", title: "Ship-it Friday", situation: "Kids were asked what they wanted. Nobody asked what problem they were solving. The countdown still says Friday.", question: "Interview real users, or ship a guess?" },
@@ -245,6 +246,7 @@ Lovelace doesn't yell. She zooms the bounce-rate chart. "Speed teaches too — b
 
 "Before you build, tell me what you're actually trying to fix. No buzzwords. The hologram stays empty until the problem is real."`,
       typingChallenge: {
+        mode: "composition",
         prompt: "In 2–3 sentences: What real problem would you solve with technology at your school or in your neighborhood? Who benefits?",
         minWords: 20,
         next: "prepare_win",
@@ -396,6 +398,7 @@ Katherine Johnson waves from a NASA sim upstairs. A fake quote is already trendi
 
 "No PR voice. The conflict is simple: what would version two actually fix?"`,
       typingChallenge: {
+        mode: "composition",
         prompt: "In 2–3 sentences: What did testing teach you? What would you change before sharing this with more people?",
         minWords: 15,
         next: "reflect_win",
@@ -644,6 +647,8 @@ The Collaboration Bridge is packed ahead. Media Chamber is still decoding three 
     collaboration_bridge: {
       location: "Collaboration Bridge",
       character: "campbell",
+      typeChoices: true,
+      chatMission: "going_afk",
       enter: "Captain's chair. Stars on the viewer. A group chat glowing on the main screen.",
       job: "Back someone up when the group chat turns mean.",
       conflict: { graphic: "chat", title: "Locked out, then roasted", situation: "A classmate is locked out of a shared doc — then roasted for asking why. You're in the thread. Everyone is watching.", question: "Speak up in public, or join the joke?" },
@@ -757,6 +762,8 @@ You can loop to briefing for a fresh mission — or take the Arena if you've ear
     data_vault: {
       location: "Data Vault · Dragons Sublevel 3",
       character: "turing",
+      typeChoices: true,
+      chatMission: "privacy_dm",
       enter: "Cold air. Lockers of light. Turing already has the thread open.",
       job: "Stop a privacy leak without spreading it further.",
       conflict: { graphic: "leak", title: "The locker leak", situation: "A classmate's phone number and schedule are in a public thread 'as a joke.' Screenshots are already flying.", question: "Report it — don't repost — or pass it along?" },
@@ -822,6 +829,8 @@ The poster deletes the thread — after calling you “the snitch.” The victim
     password_temple: {
       location: "Vault of Passwords · Security Gate",
       character: "guide",
+      typeChoices: true,
+      chatMission: "punctuation_tone",
       enter: "A gate that scans habits, not courage. Babbage mutters in the static.",
       job: "Lock accounts the new way: unique passwords plus 2FA.",
       conflict: { graphic: "keys", title: "One password, three doors", situation: "A recruit used the same password for school email, a game, and a second account. One crack opens all three.", question: "Unique passwords and 2FA, or one 'strong' password everywhere?" },
@@ -886,6 +895,8 @@ The gate flickers red. <em>Rewind available.</em>`,
     footprint_scene: {
       location: "Hall of Mirrors · Digital Footprint Gallery",
       character: "campbell",
+      typeChoices: true,
+      chatMission: "misunderstood_tone",
       enter: "Two drafts of the same post. One kind. One 'just a joke.'",
       job: "Choose the post you'd still stand behind in ten years.",
       conflict: { graphic: "post", title: "Two drafts", situation: "Same moment. One reply is kind. One tags someone to embarrass them — 'just a joke.'", question: "Which version still represents you later?" },
@@ -1787,6 +1798,7 @@ She fans the three headlines. "The breakthrough is a decode tool: ask who built 
 When you pass, you'll write your Digital Citizenship Oath in your own words.`,
       goldenRulesQuiz: true,
       typingChallenge: {
+        mode: "composition",
         prompt: "Write a short Digital Citizenship Oath (3–5 sentences). Name the Golden Rules you will actually use: Design for people. Protect data. Guard your login. Think before you post. Decode media.",
         minWords: 30,
         next: "victory",

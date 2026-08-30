@@ -281,10 +281,13 @@
   }
 
   /**
-   * Speed carries most of the unlock. Word count is a soft bonus, never a hard lock.
-   * accuracyMin / speedGate / minWordsFloor come from difficulty.
+   * Composition unlock — accuracy and communication before raw speed.
+   * Delegates to TechTrailPedagogy when loaded; falls back to accuracy-weighted score.
    */
   function evaluateChallengeUnlock(cfg) {
+    if (window.TechTrailPedagogy?.evaluateCompositionUnlock) {
+      return window.TechTrailPedagogy.evaluateCompositionUnlock(cfg);
+    }
     const words = Math.max(0, cfg.words || 0);
     const minWords = Math.max(1, cfg.minWords || 20);
     const liveCpm = Math.max(0, cfg.liveCpm || 0);
@@ -299,15 +302,30 @@
     const accuracyOk = accuracy >= accuracyMin;
     const enoughFloor = words >= minWordsFloor;
     const wordSoft = Math.min(1, words / minWords);
-    const score = Math.min(1, Math.max(0, speedRatio)) * 0.62 + accuracy * 0.28 + wordSoft * 0.1;
-    const unlocked = enoughFloor && accuracyOk && (speedOk || (wordSoft >= 0.5 && score >= 0.58));
+    const score = accuracy * 0.5 + wordSoft * 0.35 + Math.min(1, speedRatio) * 0.15;
+    const unlocked = enoughFloor && accuracyOk && (score >= 0.55 || (accuracy >= 0.82 && wordSoft >= 0.45));
     return {
       unlocked,
       score,
+      performanceScore: Math.round(score * 100),
       speedOk,
       accuracyOk,
       speedRatio,
       wordSoft,
+    };
+  }
+
+  function classifyErrors(target, input, cmp, keystrokeStats) {
+    if (window.TechTrailPedagogy?.classifyErrors) {
+      return window.TechTrailPedagogy.classifyErrors(target, input, cmp, keystrokeStats);
+    }
+    const correct = cmp?.correctCount ?? 0;
+    const len = cmp?.targetLength || 1;
+    return {
+      counts: {},
+      totalErrors: cmp?.typoCount || 0,
+      accuracy: correct / len,
+      accuracyPct: Math.round((correct / len) * 100),
     };
   }
 
@@ -340,6 +358,7 @@
     meetsSpeedGate,
     estimateTextAccuracy,
     evaluateChallengeUnlock,
+    classifyErrors,
     escapeHtml,
   };
 })();
