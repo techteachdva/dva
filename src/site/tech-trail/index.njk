@@ -33,11 +33,11 @@ layout: false
           <div class="tt-title-screen__overlay"></div>
           <div class="tt-title-screen__content">
             <header class="tt-title-hero">
-              <div class="tt-title-logo" aria-hidden="true"><img src="/tech-trail/images/dragons-logo.png" alt="" width="72" height="72" style="border-radius:14px;object-fit:cover;box-shadow:0 6px 28px rgba(0,0,0,0.5);"></div>
+              <div class="tt-title-logo" aria-hidden="true"><img src="/tech-trail/images/dragons-logo.png" alt="" width="48" height="48" style="border-radius:10px;object-fit:cover;box-shadow:0 4px 16px rgba(0,0,0,0.5);"></div>
               <div class="tt-title-hero__text">
                 <span class="tt-location-badge">DaVinci Dragons</span>
                 <h1 class="tt-title-screen__headline">Global Tech Gauntlet</h1>
-                <p class="tt-title-screen__tagline">Recover the five Golden Rules by <strong>typing your path</strong>. Meet the mentors who built computing.</p>
+                <p class="tt-title-screen__tagline">Recover the five Golden Rules by <strong>typing your path</strong>.</p>
               </div>
             </header>
 
@@ -74,22 +74,23 @@ layout: false
               <span class="tt-typing-profile__stat">🎯 Target: <strong id="profileTargetWpm">—</strong> keys/min</span>
               <button id="retakeDiagnosticBtn" class="tt-settings-btn tt-settings-btn--sm" type="button">Retake keystroke test</button>
             </div>
+            <div class="tt-title-controls-row">
             <div class="tt-typo-settings">
-              <span class="tt-difficulty__label">Typo forgiveness:</span>
+              <span class="tt-difficulty__label">Typos:</span>
               <input id="typoToleranceRange" type="range" min="0" max="10" value="2" class="tt-typo-range" aria-label="Typo forgiveness" />
-              <span id="typoToleranceLabel" class="tt-typo-label">2 typos</span>
+              <span id="typoToleranceLabel" class="tt-typo-label">2</span>
             </div>
             <div class="tt-difficulty">
-              <span class="tt-difficulty__label">Difficulty:</span>
+              <span class="tt-difficulty__label">Mode:</span>
               <button class="tt-difficulty__btn tt-difficulty__btn--active" type="button" data-tier="cadet">Cadet</button>
               <button class="tt-difficulty__btn" type="button" data-tier="operative">Operative</button>
               <button class="tt-difficulty__btn" type="button" data-tier="analyst">Analyst</button>
             </div>
             </div>
+            </div>
             <div class="tt-title-extras__col tt-title-extras__col--rules">
             <div class="tt-golden-preview-wrap">
-              <h2 class="tt-golden-preview__heading">The Five Golden Rules</h2>
-              <p class="tt-golden-preview__sub">Tap a rule to preview what you will recover on your mission.</p>
+              <h2 class="tt-golden-preview__heading">Golden Rules</h2>
               <div class="tt-golden-track tt-golden-track--title" id="titleGoldenPreview" aria-label="Golden Rules to recover"></div>
               <div id="goldenRuleDetail" class="tt-golden-rule-detail dw-hidden" aria-live="polite"></div>
             </div>
@@ -116,28 +117,24 @@ layout: false
                 </button>
                 <button id="newRunBtn" class="tt-launch-link-btn dw-hidden" type="button">New mission</button>
               </div>
+              <div id="titleTypingMenu" class="tt-title-typing tt-typing-panel">
+                <p id="titleCommandHint" class="tt-title-command-hint">Type: <strong>ACCEPT MISSION</strong></p>
+                <div id="titleGhostPrompt" class="tt-ghost-prompt"></div>
+                <div class="tt-title-typing__controls">
+                  <input id="titleTypingInput" class="tt-typing-input tt-typing-input--title" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Type here…" aria-label="Title menu command" />
+                  <div class="tt-typing-meter tt-typing-meter--compact" id="titleTypingMeter" aria-hidden="true">
+                    <div class="tt-typing-meter__track">
+                      <div class="tt-typing-meter__fill" id="titleProgressFill"></div>
+                    </div>
+                    <span class="tt-typing-meter__value" id="titleProgressPct">0%</span>
+                  </div>
+                </div>
+                <div id="titleTypedDisplay" class="tt-typed-display" aria-live="polite"></div>
+              </div>
             </div>
             </div>
 
             <p id="gtgBootError" class="tt-boot-error dw-hidden" role="alert"></p>
-            <div class="tt-title-command-row" id="titleBtnGroup">
-              <div id="titleTypingMenu" class="tt-title-typing tt-typing-panel">
-                <p class="tt-title-typing__hint">Type a command below — or tap the globe</p>
-                <p id="titleCommandHint" class="tt-title-command-hint">Type: <strong>ACCEPT MISSION</strong> to begin</p>
-                <div id="titleGhostPrompt" class="tt-ghost-prompt"></div>
-                <div class="tt-typing-meter" id="titleTypingMeter">
-                  <div class="tt-typing-meter__row">
-                    <span class="tt-typing-meter__label">Progress</span>
-                    <span class="tt-typing-meter__value" id="titleProgressPct">0%</span>
-                  </div>
-                  <div class="tt-typing-meter__track">
-                    <div class="tt-typing-meter__fill" id="titleProgressFill"></div>
-                  </div>
-                </div>
-                <input id="titleTypingInput" class="tt-typing-input tt-typing-input--title" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="Type here…" aria-label="Title menu command" />
-                <div id="titleTypedDisplay" class="tt-typed-display" aria-live="polite"></div>
-              </div>
-            </div>
             <footer class="tt-title-footer">
               <div id="profileMini" class="tt-profile-mini-wrap"></div>
               <div id="pedagogyProgress" class="tt-pedagogy-progress dw-hidden" aria-live="polite"></div>
@@ -145,11 +142,10 @@ layout: false
                 <button id="guildQuestBtn" class="tt-settings-btn" type="button" title="Chat Quest guild mode">💬 Chat Quest</button>
                 <button id="warmupBtn" class="tt-settings-btn" type="button" title="Targeted typing warm-up">⌨️ Warm-up</button>
                 <button id="fullscreenToggleBtn" class="tt-settings-btn" type="button" title="Toggle fullscreen">⛶ Fullscreen</button>
-                <button id="highContrastToggle" class="tt-settings-btn" type="button" title="Toggle high contrast" aria-pressed="false">🔲 High contrast</button>
-                <button id="stillCameraToggle" class="tt-settings-btn" type="button" title="Keep the scene still so clicks stay easy" aria-pressed="true">📷 Still camera</button>
+                <button id="highContrastToggle" class="tt-settings-btn" type="button" title="Toggle high contrast" aria-pressed="false">🔲 Contrast</button>
+                <button id="stillCameraToggle" class="tt-settings-btn" type="button" title="Keep the scene still so clicks stay easy" aria-pressed="true">📷 Camera</button>
                 <button id="titleMuteBtn" class="tt-settings-btn" type="button" title="Toggle soundtrack">🔊 Sound</button>
               </div>
-              <p class="tt-credit">A Game by Mr. Phil · Soundtrack: &quot;The Complex&quot; Kevin MacLeod (CC BY 4.0)</p>
             </footer>
           </div>
         </section>
