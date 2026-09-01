@@ -643,6 +643,121 @@ $wp-sheet-min-height: 1056px;
     border: 1px solid rgba(248, 113, 113, 0.35);
     color: #fecaca;
   }
+
+  .idt-groups {
+    gap: 18px;
+  }
+
+  .idt-class-group {
+    padding: 18px 20px;
+    border: 1px solid rgba(52, 211, 153, 0.22);
+    border-radius: var(--dw-radius);
+    background: rgba(0, 0, 0, 0.18);
+  }
+
+  .idt-class-group__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px 16px;
+    margin-bottom: 16px;
+  }
+
+  .idt-class-group__title {
+    margin: 0;
+    font-size: 1.15rem;
+  }
+
+  .idt-class-group__count {
+    font-size: 0.9rem;
+    color: var(--dw-muted);
+  }
+
+  .idt-class-group__section {
+    margin-top: 16px;
+  }
+
+  .idt-class-group__section-title {
+    margin: 0 0 10px;
+    font-size: 0.95rem;
+    color: #a7f3d0;
+  }
+
+  .idt-typing-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
+  }
+
+  .idt-typing-bucket {
+    padding: 12px;
+    border-radius: 12px;
+    border: 1px solid var(--dw-border);
+    background: rgba(0, 0, 0, 0.14);
+  }
+
+  .idt-typing-bucket__label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+    font-size: 0.84rem;
+    font-weight: 700;
+  }
+
+  .idt-student-chip {
+    display: inline-flex;
+    align-items: center;
+    margin: 0 6px 6px 0;
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(52, 211, 153, 0.28);
+    background: rgba(16, 185, 129, 0.12);
+    color: inherit;
+    font-size: 0.84rem;
+    cursor: pointer;
+  }
+
+  .idt-student-chip:hover,
+  .idt-student-chip:focus-visible {
+    background: rgba(16, 185, 129, 0.22);
+    outline: none;
+  }
+
+  .idt-std-group {
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1px solid rgba(251, 191, 36, 0.22);
+    background: rgba(251, 191, 36, 0.06);
+    margin-bottom: 10px;
+  }
+
+  .idt-std-group__head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    align-items: baseline;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+  }
+
+  .idt-std-group__code {
+    font-weight: 800;
+    color: #fcd34d;
+  }
+
+  .idt-gap-pill {
+    display: inline-block;
+    margin: 0 4px 4px 0;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba(251, 191, 36, 0.16);
+    border: 1px solid rgba(251, 191, 36, 0.28);
+    font-size: 0.78rem;
+    white-space: nowrap;
+  }
 }
 
 /* Global Tech Gauntlet — display typography */

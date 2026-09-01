@@ -142,23 +142,40 @@ layout: false
             </label>
           </div>
 
-          <div class="dw-card dw-table-wrap dw-table-wrap--fit">
+          <div class="dw-filter-bar" id="typingFilterBar" role="group" aria-label="Filter by typing level">
+            <button class="dw-filter dw-filter--active" data-typing-filter="all" type="button">All typing</button>
+            <button class="dw-filter" data-typing-filter="intervention" type="button">Needs intervention</button>
+            <button class="dw-filter" data-typing-filter="developing" type="button">Developing</button>
+            <button class="dw-filter" data-typing-filter="proficient" type="button">Proficient</button>
+            <button class="dw-filter" data-typing-filter="advanced" type="button">Advanced</button>
+          </div>
+
+          <div class="dw-teacher-view-tabs" id="teacherViewTabs" role="tablist" aria-label="Teacher dashboard view">
+            <button id="teacherTabTable" class="dw-teacher-tab dw-teacher-tab--active" type="button" role="tab" aria-selected="true">Scores table</button>
+            <button id="teacherTabGroups" class="dw-teacher-tab" type="button" role="tab" aria-selected="false">Group by class</button>
+          </div>
+
+          <div class="dw-card dw-table-wrap dw-table-wrap--fit" id="teacherTableWrap">
             <table class="dw-table dw-table--compact" id="teacherTable">
-              <thead>
+              <thead id="teacherTableHead">
                 <tr>
-                  <th class="dw-col-view"></th>
-                  <th>Name</th>
-                  <th>Class</th>
-                  <th>Quiz</th>
-                  <th>WPM</th>
-                  <th>Gaps</th>
-                  <th>Submitted</th>
+                  <th class="dw-col-view" scope="col"></th>
+                  <th scope="col">Name</th>
+                  <th scope="col">Class</th>
+                  <th scope="col">Quiz</th>
+                  <th scope="col">WPM</th>
+                  <th scope="col">Typing</th>
+                  <th scope="col">Gaps</th>
+                  <th scope="col">Standards to teach</th>
+                  <th scope="col">Submitted</th>
                 </tr>
               </thead>
               <tbody id="teacherTableBody"></tbody>
             </table>
             <p id="emptyState" class="dw-muted dw-center dw-hidden">No submissions yet.</p>
           </div>
+
+          <div id="teacherGroupsWrap" class="dw-hidden dw-stack idt-groups" aria-label="Class groups"></div>
 
           <div id="detailPanel" class="dw-card dw-detail dw-hidden">
             <div class="dw-detail-header">
