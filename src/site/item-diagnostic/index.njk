@@ -28,7 +28,7 @@ layout: false
             <div class="dw-subtitle">Typing warm-up · knowledge check · gap analysis</div>
           </div>
         </div>
-        <div class="dw-actions"><a class="dw-link" href="/tech-escape/">Tech Escape</a><a class="dw-link" href="/">Back to site</a></div>
+        <div class="dw-actions"><a class="dw-link" href="/tech-escape/">Tech Escape</a><a class="dw-link" href="/">Back to site</a><button id="teacherBtn" class="dw-btn dw-btn-ghost" type="button">Teacher view</button></div>
       </header>
 
       <main>
@@ -91,12 +91,90 @@ layout: false
             <h2 class="dw-h2">Your diagnostic, <span id="resultName">—</span></h2>
             <p class="dw-muted" id="resultClass"></p>
             <p class="dw-muted" id="resultSummary"></p>
+            <p id="saveStatus" class="dw-save-status dw-hidden" role="status"></p>
             <div id="gapSummary"></div>
           </div>
           <div class="dw-card"><h3 class="dw-h3">Typing warm-up</h3><div id="typingSummary"></div></div>
           <div class="dw-card"><h3 class="dw-h3">Topic areas</h3><div id="topicSummary"></div></div>
           <div class="dw-card"><h3 class="dw-h3">Standards breakdown</h3><div class="std-grid" id="standardsGrid"></div></div>
           <button id="restartBtn" class="dw-btn dw-btn-secondary" type="button">Try again</button>
+        </section>
+
+        <section id="teacherLoginView" class="dw-card dw-stack dw-hidden dw-narrow">
+          <h2 class="dw-h2">Teacher dashboard</h2>
+          <p class="dw-muted">Enter the teacher password to view class ITEM diagnostic results.</p>
+          <label class="dw-field">
+            <span class="dw-label">Password</span>
+            <input id="teacherPassword" class="dw-input" type="password" autocomplete="current-password" />
+          </label>
+          <div class="dw-row">
+            <button id="teacherLoginBtn" class="dw-btn" type="button">Enter</button>
+            <button id="teacherCancelBtn" class="dw-btn dw-btn-ghost" type="button">Cancel</button>
+          </div>
+          <p id="teacherLoginError" class="dw-error dw-hidden">Incorrect password.</p>
+        </section>
+
+        <section id="teacherView" class="dw-hidden dw-stack dw-teacher-shell">
+          <div class="dw-card dw-teacher-header">
+            <div>
+              <h2 class="dw-h2">ITEM 2025 Diagnostic · Class results</h2>
+              <p class="dw-muted" id="teacherMeta">Loading submissions…</p>
+            </div>
+            <div class="dw-row dw-row-wrap">
+              <button id="refreshBtn" class="dw-btn dw-btn-secondary" type="button">Refresh</button>
+              <button id="exportBtn" class="dw-btn dw-btn-ghost" type="button">Export CSV</button>
+              <button id="teacherLogoutBtn" class="dw-btn dw-btn-ghost" type="button">Log out</button>
+            </div>
+          </div>
+
+          <details class="dw-card dw-class-codes" id="classCodesPanel" open>
+            <summary class="dw-h3 dw-class-codes__summary">Class codes for students</summary>
+            <p class="dw-muted dw-tiny">Share the matching code when students start the diagnostic.</p>
+            <div class="dw-class-codes__grid" id="classCodesGrid"></div>
+          </details>
+
+          <div class="dw-filter-bar" id="classFilterBar">
+            <label class="dw-class-filter">
+              <span class="dw-muted">Class</span>
+              <select id="classFilter" class="dw-input dw-select dw-select--compact">
+                <option value="all">All classes</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="dw-card dw-table-wrap dw-table-wrap--fit">
+            <table class="dw-table dw-table--compact" id="teacherTable">
+              <thead>
+                <tr>
+                  <th class="dw-col-view"></th>
+                  <th>Name</th>
+                  <th>Class</th>
+                  <th>Quiz</th>
+                  <th>WPM</th>
+                  <th>Gaps</th>
+                  <th>Submitted</th>
+                </tr>
+              </thead>
+              <tbody id="teacherTableBody"></tbody>
+            </table>
+            <p id="emptyState" class="dw-muted dw-center dw-hidden">No submissions yet.</p>
+          </div>
+
+          <div id="detailPanel" class="dw-card dw-detail dw-hidden">
+            <div class="dw-detail-header">
+              <h3 class="dw-h3" id="detailName">—</h3>
+              <button id="closeDetailBtn" class="dw-btn dw-btn-ghost" type="button">Close</button>
+            </div>
+            <p class="dw-muted" id="detailSummary"></p>
+            <h4 class="dw-h3">Standards breakdown</h4>
+            <div class="std-grid" id="detailStandards"></div>
+            <h4 class="dw-h3">Topic areas</h4>
+            <div id="detailTopics"></div>
+            <h4 class="dw-h3">Typing warm-up</h4>
+            <div class="dw-story-preview" id="detailTyping"></div>
+            <h4 class="dw-h3">Quiz answers</h4>
+            <div id="detailQuiz"></div>
+          </div>
         </section>
       </main>
     </div>
@@ -109,5 +187,6 @@ layout: false
     <script src="/scripts/item-diagnostic-questions.js" defer></script>
     <script type="module" src="/scripts/item-diagnostic-loader.js"></script>
     <script src="/scripts/item-diagnostic-app.js" defer></script>
+    <script src="/scripts/item-diagnostic-teacher.js" defer></script>
   </body>
 </html>

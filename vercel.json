@@ -13,6 +13,7 @@
   ],
   "rewrites": [
     { "source": "/api/diagnostic-writing/submissions", "destination": "/api/diagnostic-writing-submissions" },
+    { "source": "/api/item-diagnostic/submissions", "destination": "/api/item-diagnostic-submissions" },
     { "source": "/api/writeflow/submissions", "destination": "/api/writeflow-submissions" },
     { "source": "/api/tech-trail/submissions", "destination": "/api/tech-trail-submissions" },
     { "source": "/api/tech-trail/roster", "destination": "/api/tech-trail-submissions" },

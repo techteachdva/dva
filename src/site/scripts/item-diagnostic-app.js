@@ -10,6 +10,7 @@
 
   const VALID_CLASSROOMS = Core.loadJsonScript("itemClassroomsJson", []);
   const CLASSROOM_CODES = Core.loadJsonScript("itemClassroomCodesJson", {});
+  const API_URL = "/api/item-diagnostic-submissions";
 
   const views = {
     welcome: document.getElementById("welcomeView"),
@@ -17,6 +18,8 @@
     quiz: document.getElementById("quizView"),
     analyzing: document.getElementById("analyzingView"),
     results: document.getElementById("resultsView"),
+    teacherLogin: document.getElementById("teacherLoginView"),
+    teacher: document.getElementById("teacherView"),
   };
 
   let timer = null;
@@ -150,12 +153,63 @@
     else renderQuestion();
   }
 
-  function finishQuiz() {
+  async function finishQuiz() {
     show("analyzing");
-    setTimeout(showResults, 800);
+
+    const name = document.getElementById("studentName")?.value.trim() || "Student";
+    const classroom = Core.resolveClassroom(document.getElementById("studentClass")?.value, VALID_CLASSROOMS) || "";
+    const classCode = document.getElementById("classCode")?.value || "";
+    const stdResults = Bank.mapResultsToStandards(quizAnswers);
+    const quizScore = quizAnswers.filter((a) => a.correct).length;
+    const quizPct = Math.round((quizScore / quizAnswers.length) * 100);
+    const topics = Bank.topicSummary(quizAnswers);
+
+    let saveOk = false;
+    let saveError = "";
+    if (!classroom) {
+      saveError = "Your class was not recognized. Go back, pick your class from the list, and try again.";
+    } else if (!Core.verifyClassroomCode(classroom, classCode, CLASSROOM_CODES)) {
+      saveError = "Your class code did not match. Go back and enter the code your teacher gave you.";
+    } else {
+      try {
+        await submitResult({
+          name,
+          classroom,
+          classCode,
+          typingText,
+          typingAnalysis,
+          quizAnswers,
+          standards: stdResults,
+          topics,
+          quizScore,
+          quizTotal: quizAnswers.length,
+          quizPct,
+          durationSec: Bank.TYPING_DURATION,
+        });
+        saveOk = true;
+      } catch (err) {
+        saveError = err.message || "Could not save your submission.";
+      }
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 800));
+    showResults(saveOk, saveError);
   }
 
-  function showResults() {
+  async function submitResult(payload) {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(data.error || `Save failed (${res.status})`);
+    }
+    return data;
+  }
+
+  function showResults(saveOk = false, saveError = "") {
     const name = document.getElementById("studentName")?.value.trim() || "Student";
     const classroom = Core.resolveClassroom(document.getElementById("studentClass")?.value, VALID_CLASSROOMS) || "—";
     const stdResults = Bank.mapResultsToStandards(quizAnswers);
@@ -166,6 +220,18 @@
     document.getElementById("resultClass").textContent = classroom;
     document.getElementById("resultSummary").textContent =
       `Knowledge: ${quizScore}/${quizAnswers.length} (${quizPct}%) · Typing: ${typingAnalysis?.wpm ?? "—"} WPM, ${typingAnalysis?.wordCount ?? 0} words`;
+
+    const saveStatus = document.getElementById("saveStatus");
+    if (saveStatus) {
+      saveStatus.classList.remove("dw-hidden", "dw-save-status--ok", "dw-save-status--error");
+      if (saveOk) {
+        saveStatus.textContent = "Saved to your class roster. Your teacher can view this from any computer.";
+        saveStatus.classList.add("dw-save-status--ok");
+      } else {
+        saveStatus.textContent = saveError || "Could not save to the class roster. Tell your teacher and try again.";
+        saveStatus.classList.add("dw-save-status--error");
+      }
+    }
 
     const gaps = stdResults.filter((s) => s.level === "gap");
     const strong = stdResults.filter((s) => s.level === "strong");

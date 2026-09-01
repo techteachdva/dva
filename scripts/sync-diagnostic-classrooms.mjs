@@ -51,6 +51,7 @@ export function isValidClassroom(value) {
 
 const targets = [
   path.join(root, "google-apps-script/diagnostic-writing-backend.gs"),
+  path.join(root, "google-apps-script/item-diagnostic-backend.gs"),
   path.join(root, "google-apps-script/writeflow-backend.gs"),
 ];
 

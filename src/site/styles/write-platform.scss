@@ -623,6 +623,26 @@ $wp-sheet-min-height: 1056px;
   .dw-btn {
     background: linear-gradient(135deg, #059669, #047857);
   }
+
+  .dw-save-status {
+    margin-top: 12px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .dw-save-status--ok {
+    background: rgba(16, 185, 129, 0.15);
+    border: 1px solid rgba(52, 211, 153, 0.35);
+    color: #6ee7b7;
+  }
+
+  .dw-save-status--error {
+    background: rgba(239, 68, 68, 0.12);
+    border: 1px solid rgba(248, 113, 113, 0.35);
+    color: #fecaca;
+  }
 }
 
 /* Global Tech Gauntlet — display typography */
