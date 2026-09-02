@@ -145,21 +145,37 @@
     const selected = new Set(selectedIdx || []);
     return (options || []).map((text, i) => {
       let cls = "idt-wrong-q__opt idt-wrong-q__opt--neutral";
-      if (correct.has(i)) cls = "idt-wrong-q__opt idt-wrong-q__opt--correct";
-      else if (selected.has(i)) cls = "idt-wrong-q__opt idt-wrong-q__opt--denied";
-      return `<li class="${cls}"><span class="idt-wrong-q__glyph">${GLYPHS[i] || "?"}</span><span>${escapeHtml(text)}</span></li>`;
+      let badge = "";
+      if (correct.has(i)) {
+        cls = "idt-wrong-q__opt idt-wrong-q__opt--correct";
+        badge = `<span class="idt-answer-key-q__badge">Correct</span>`;
+      } else if (selected.has(i)) {
+        cls = "idt-wrong-q__opt idt-wrong-q__opt--denied";
+        badge = `<span class="idt-answer-key-q__badge idt-answer-key-q__badge--wrong">Picked</span>`;
+      }
+      return `<li class="${cls}">
+        <span class="idt-answer-key-q__glyph" aria-hidden="true">${GLYPHS[i] || "?"}</span>
+        <span class="idt-answer-key-q__opt-text">${escapeHtml(text)}</span>
+        ${badge}
+      </li>`;
     }).join("");
   }
 
   function renderBankOptionList(q) {
     const correct = new Set(q.correct || []);
-    const multi = (q.correct || []).length > 1;
     return (q.a || []).map((text, i) => {
-      const cls = correct.has(i)
+      const isCorrect = correct.has(i);
+      const cls = isCorrect
         ? "idt-answer-key-q__opt idt-answer-key-q__opt--correct"
         : "idt-answer-key-q__opt idt-answer-key-q__opt--neutral";
-      const tag = correct.has(i) ? `<span class="idt-gap-pill">Correct${multi ? "" : ""}</span>` : "";
-      return `<li class="${cls}"><span class="idt-answer-key-q__glyph">${GLYPHS[i] || "?"}</span><span>${escapeHtml(text)}</span>${tag}</li>`;
+      const badge = isCorrect
+        ? `<span class="idt-answer-key-q__badge">Correct</span>`
+        : "";
+      return `<li class="${cls}">
+        <span class="idt-answer-key-q__glyph" aria-hidden="true">${GLYPHS[i] || "?"}</span>
+        <span class="idt-answer-key-q__opt-text">${escapeHtml(text)}</span>
+        ${badge}
+      </li>`;
     }).join("");
   }
 
@@ -182,9 +198,12 @@
           <span>${escapeHtml(enriched.stdLabel || meta?.title || "Standard")}</span>
           ${meta?.strand ? `<span class="dw-muted dw-tiny">${escapeHtml(meta.strand)}</span>` : ""}
         </div>
-        <p class="idt-wrong-q__prompt"><strong>Q:</strong> ${escapeHtml(enriched.question)}</p>
+        <p class="idt-answer-key-q__label">Question</p>
+        <p class="idt-wrong-q__prompt">${escapeHtml(enriched.question)}</p>
+        <p class="idt-answer-key-q__label">Answer choices</p>
         <ul class="idt-wrong-q__opts">${renderOptionList(enriched.options, enriched.correctIdx, enriched.selected)}</ul>
-        <p class="idt-wrong-q__why"><strong>Teaching note:</strong> ${escapeHtml(enriched.why || "—")}</p>
+        <p class="idt-answer-key-q__label">Teaching note</p>
+        <p class="idt-wrong-q__why">${escapeHtml(enriched.why || "—")}</p>
         ${enriched.selectedText?.length ? `<p class="idt-wrong-q__meta">Student chose: ${escapeHtml(enriched.selectedText.join(" · "))}</p>` : ""}
         ${enriched.correctText?.length ? `<p class="idt-wrong-q__meta">Correct: ${escapeHtml(enriched.correctText.join(" · "))}</p>` : ""}
         ${studentNote}
@@ -202,9 +221,12 @@
           <span class="idt-answer-key-q__id">${escapeHtml(q.id)}</span>
           ${multi ? `<span class="idt-gap-pill">Multi-select · ${q.correct.length} correct</span>` : ""}
         </div>
+        <p class="idt-answer-key-q__label">Question</p>
         <p class="idt-answer-key-q__prompt">${escapeHtml(q.q)}</p>
+        <p class="idt-answer-key-q__label">Answer choices</p>
         <ul class="idt-answer-key-q__opts">${renderBankOptionList(q)}</ul>
-        <p class="idt-answer-key-q__why"><strong>Why:</strong> ${escapeHtml(q.why || "—")}</p>
+        <p class="idt-answer-key-q__label">Teaching note</p>
+        <p class="idt-answer-key-q__why">${escapeHtml(q.why || "—")}</p>
         ${meta ? `<p class="dw-muted dw-tiny">${escapeHtml(meta.strand)} · ${escapeHtml(meta.title)}</p>` : ""}
       </article>`;
   }
@@ -525,6 +547,7 @@
         <section class="dw-card idt-answer-key-std">
           <h3 class="idt-answer-key-std__title">ITEM ${escapeHtml(std.code)} — ${escapeHtml(std.title)}</h3>
           <p class="dw-muted dw-tiny">${escapeHtml(std.strand || "")} · ${std.questions.length} question${std.questions.length === 1 ? "" : "s"} in bank</p>
+          ${std.benchmark ? `<p class="idt-answer-key-std__benchmark">${escapeHtml(std.benchmark)}</p>` : ""}
           <div class="idt-answer-key-std__questions">
             ${std.questions.map((q) => renderBankQuestionCard(q)).join("")}
           </div>

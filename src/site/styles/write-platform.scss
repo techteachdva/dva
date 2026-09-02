@@ -762,11 +762,11 @@ $wp-sheet-min-height: 1056px;
   .idt-wrong-q,
   .idt-lesson-q,
   .idt-answer-key-q {
-    padding: 14px 16px;
+    padding: 16px 18px;
     border-radius: 12px;
     border: 1px solid var(--dw-border);
     background: rgba(0, 0, 0, 0.16);
-    margin-bottom: 12px;
+    margin-bottom: 14px;
   }
 
   .idt-wrong-q__head,
@@ -787,31 +787,74 @@ $wp-sheet-min-height: 1056px;
 
   .idt-wrong-q__prompt,
   .idt-answer-key-q__prompt {
-    margin: 0 0 10px;
-    font-size: 0.98rem;
-    line-height: 1.45;
+    margin: 0 0 14px;
+    font-size: 1rem;
+    line-height: 1.55;
   }
 
   .idt-wrong-q__opts,
   .idt-answer-key-q__opts {
     list-style: none;
-    margin: 0 0 10px;
+    margin: 0 0 14px;
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 10px;
+  }
+
+  .idt-answer-key-q__label {
+    margin: 0 0 6px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #a7f3d0;
+  }
+
+  .idt-answer-key-q__label + .idt-answer-key-q__label,
+  .idt-answer-key-q__why + .idt-answer-key-q__label,
+  .idt-answer-key-q__opts + .idt-answer-key-q__label {
+    margin-top: 14px;
   }
 
   .idt-wrong-q__opt,
   .idt-answer-key-q__opt {
-    display: flex;
-    gap: 8px;
-    align-items: flex-start;
-    padding: 8px 10px;
-    border-radius: 8px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 12px 14px;
+    align-items: start;
+    padding: 12px 14px;
+    border-radius: 10px;
     border: 1px solid var(--dw-border);
-    font-size: 0.9rem;
-    line-height: 1.4;
+    font-size: 0.92rem;
+    line-height: 1.5;
+  }
+
+  .idt-answer-key-q__opt-text {
+    min-width: 0;
+    padding-top: 2px;
+  }
+
+  .idt-answer-key-q__badge {
+    flex-shrink: 0;
+    align-self: start;
+    margin-top: 1px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 800;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    background: rgba(16, 185, 129, 0.2);
+    border: 1px solid rgba(52, 211, 153, 0.4);
+    color: #6ee7b7;
+    white-space: nowrap;
+  }
+
+  .idt-answer-key-q__badge--wrong {
+    background: rgba(239, 68, 68, 0.16);
+    border-color: rgba(248, 113, 113, 0.4);
+    color: #fecaca;
   }
 
   .idt-wrong-q__opt--neutral,
@@ -833,9 +876,17 @@ $wp-sheet-min-height: 1056px;
   .idt-wrong-q__glyph,
   .idt-answer-key-q__glyph {
     flex-shrink: 0;
+    width: 1.75rem;
+    height: 1.75rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     font-weight: 800;
     font-size: 0.8rem;
-    opacity: 0.85;
+    line-height: 1;
   }
 
   .idt-wrong-q__why,
@@ -877,11 +928,19 @@ $wp-sheet-min-height: 1056px;
     font-size: 1.05rem;
   }
 
+  .idt-answer-key-std__benchmark {
+    margin: 8px 0 0;
+    font-size: 0.88rem;
+    line-height: 1.45;
+    color: var(--dw-text);
+    opacity: 0.92;
+  }
+
   .idt-answer-key-std__questions {
-    margin-top: 14px;
+    margin-top: 16px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 16px;
   }
 
   .idt-answer-key-q__id {

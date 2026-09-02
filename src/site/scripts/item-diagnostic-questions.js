@@ -1,43 +1,82 @@
 /**
  * ITEM 2025 standards reference + diagnostic question utilities.
+ * Official benchmark text from writeflow-item-standards.js.
  * Question bank loaded from Tech Escape via item-diagnostic-loader.js.
  */
 (() => {
   "use strict";
 
-  const ITEM_STANDARDS = [
-    { code: "8.1.2.3", strand: "Information Literacy", title: "Multiple perspectives", topic: "data" },
-    { code: "8.1.3.1", strand: "Information Literacy", title: "Source relevance", topic: "data" },
-    { code: "8.1.3.2", strand: "Information Literacy", title: "Credibility and authority", topic: "data" },
-    { code: "8.1.3.3", strand: "Information Literacy", title: "Reliability and accuracy", topic: "data" },
-    { code: "8.1.3.4", strand: "Information Literacy", title: "Bias and perspective", topic: "data" },
-    { code: "8.1.4.2", strand: "Information Literacy", title: "Recording sources", topic: "data" },
-    { code: "8.1.4.3", strand: "Information Literacy", title: "Organizing information", topic: "data" },
-    { code: "8.1.5.1", strand: "Information Literacy", title: "Sharing findings", topic: "data" },
-    { code: "8.1.5.2", strand: "Information Literacy", title: "Reflecting on work", topic: "data" },
-    { code: "8.2.1.1", strand: "Digital Citizenship", title: "Digital footprint", topic: "citizenship" },
-    { code: "8.2.1.2", strand: "Digital Citizenship", title: "Impact of technology", topic: "citizenship" },
-    { code: "8.2.1.3", strand: "Digital Citizenship", title: "Exchanging ideas online", topic: "citizenship" },
-    { code: "8.2.2.1", strand: "Digital Citizenship", title: "Intellectual property", topic: "citizenship" },
-    { code: "8.2.2.2", strand: "Digital Citizenship", title: "Crediting sources", topic: "citizenship" },
-    { code: "8.2.2.3", strand: "Digital Citizenship", title: "Privacy and security", topic: "citizenship" },
-    { code: "8.2.2.4", strand: "Digital Citizenship", title: "Decoding media", topic: "citizenship" },
-    { code: "8.3.1.1", strand: "Computing Systems", title: "Programs and devices", topic: "systems" },
-    { code: "8.3.1.2", strand: "Computing Systems", title: "Describing tech problems", topic: "systems" },
-    { code: "8.3.1.3", strand: "Computing Systems", title: "Troubleshooting", topic: "systems" },
-    { code: "8.3.2.1", strand: "Networks", title: "Protocols and tools", topic: "systems" },
-    { code: "8.3.3.1", strand: "Design Process", title: "Design process", topic: "design" },
-    { code: "8.3.3.2", strand: "Computational Thinking", title: "Debugging", topic: "code" },
-    { code: "8.3.3.3", strand: "Programming", title: "Algorithms and control flow", topic: "code" },
-    { code: "8.3.4.2", strand: "Collaboration", title: "Collaborating with peers", topic: "design" },
+  const DIAGNOSTIC_CODES = [
+    "8.1.2.3", "8.1.3.1", "8.1.3.2", "8.1.3.3", "8.1.3.4",
+    "8.1.4.2", "8.1.4.3", "8.1.5.1", "8.1.5.2",
+    "8.2.1.1", "8.2.1.2", "8.2.1.3", "8.2.2.1", "8.2.2.2", "8.2.2.3", "8.2.2.4",
+    "8.3.1.1", "8.3.1.2", "8.3.1.3", "8.3.2.1", "8.3.3.1", "8.3.3.2", "8.3.3.3", "8.3.4.2",
   ];
+
+  const CODE_TOPIC = {
+    "8.1.2.3": "data", "8.1.3.1": "data", "8.1.3.2": "data", "8.1.3.3": "data", "8.1.3.4": "data",
+    "8.1.4.2": "data", "8.1.4.3": "data", "8.1.5.1": "data", "8.1.5.2": "data",
+    "8.2.1.1": "citizenship", "8.2.1.2": "citizenship", "8.2.1.3": "citizenship",
+    "8.2.2.1": "citizenship", "8.2.2.2": "citizenship", "8.2.2.3": "citizenship", "8.2.2.4": "citizenship",
+    "8.3.1.1": "systems", "8.3.1.2": "systems", "8.3.1.3": "systems", "8.3.2.1": "systems",
+    "8.3.3.1": "design", "8.3.3.2": "code", "8.3.3.3": "code", "8.3.4.2": "design",
+  };
+
+  const FALLBACK_STANDARDS = [
+    { code: "8.1.2.3", strand: "Information Literacy and Research", title: "Sources with multiple perspectives", benchmark: "Identify sources that include multiple perspectives on the research topic (e.g. pro and con for an issue).", topic: "data" },
+    { code: "8.1.3.1", strand: "Information Literacy and Research", title: "Source relevance", benchmark: "Determine if the source is relevant for the personal or academic purpose, using a variety of strategies.", topic: "data" },
+    { code: "8.1.3.2", strand: "Information Literacy and Research", title: "Credibility and authority", benchmark: "Determine the credibility and authority of a source, and select the best sources for the personal or academic purpose.", topic: "data" },
+    { code: "8.1.3.3", strand: "Information Literacy and Research", title: "Reliability and accuracy", benchmark: "Determine if a source is reliable, accurate and current, using a variety of strategies.", topic: "data" },
+    { code: "8.1.3.4", strand: "Information Literacy and Research", title: "Diverse perspectives in sources", benchmark: "Select information and sources that represent diverse perspectives using a variety of strategies.", topic: "data" },
+    { code: "8.1.4.2", strand: "Information Literacy and Research", title: "Record and cite sources", benchmark: "Record information from sources with key identifiers (title, author, year, format/link); quote, paraphrase, summarize; avoid plagiarism.", topic: "data" },
+    { code: "8.1.4.3", strand: "Information Literacy and Research", title: "Organize information", benchmark: "Organize information gathered from sources to make sense of it and prepare to share findings.", topic: "data" },
+    { code: "8.1.5.1", strand: "Information Literacy and Research", title: "Synthesize and share findings", benchmark: "Synthesize information to new conclusions or understandings and share findings with a wide audience.", topic: "data" },
+    { code: "8.1.5.2", strand: "Information Literacy and Research", title: "Reflect on research process", benchmark: "Reflect on the effectiveness of completed research (self-evaluate, peer evaluation, rubric, identify improvements, ask additional questions).", topic: "data" },
+    { code: "8.2.1.1", strand: "Digital Citizenship", title: "Digital footprint", benchmark: "Describe how online actions create a digital footprint and affect future opportunities.", topic: "citizenship" },
+    { code: "8.2.1.2", strand: "Digital Citizenship", title: "Impact of technology", benchmark: "Describe positive and negative impacts of technology on society, culture, and the environment.", topic: "citizenship" },
+    { code: "8.2.1.3", strand: "Digital Citizenship", title: "Exchanging ideas online", benchmark: "Use technology to exchange ideas and information responsibly and respectfully.", topic: "citizenship" },
+    { code: "8.2.2.1", strand: "Digital Citizenship", title: "Intellectual property", benchmark: "Describe intellectual property rights and how they apply to digital content.", topic: "citizenship" },
+    { code: "8.2.2.2", strand: "Digital Citizenship", title: "Crediting sources", benchmark: "Credit sources appropriately when using others' work.", topic: "citizenship" },
+    { code: "8.2.2.3", strand: "Digital Citizenship", title: "Privacy and security", benchmark: "Describe strategies to protect privacy and security online.", topic: "citizenship" },
+    { code: "8.2.2.4", strand: "Digital Citizenship", title: "Decoding media messages", benchmark: "Analyze how media messages are constructed and how they influence audiences.", topic: "citizenship" },
+    { code: "8.3.1.1", strand: "Technology and Innovation", title: "Purpose of digital tools", benchmark: "Describe the purpose of common academic programs/devices (including AI) and how they support personal or academic goals.", topic: "systems" },
+    { code: "8.3.1.2", strand: "Technology and Innovation", title: "Describe tech problems", benchmark: "Describe technology problems in detail using accurate technology terminology.", topic: "systems" },
+    { code: "8.3.1.3", strand: "Technology and Innovation", title: "Troubleshooting strategies", benchmark: "Use strategies to solve technology problems (retry, restart, connectivity/hardware/software checks, cache, settings, guides).", topic: "systems" },
+    { code: "8.3.2.1", strand: "Technology and Innovation", title: "Select appropriate tools", benchmark: "Select appropriate technology for the task and purpose (communication, collaboration, creativity tools and features).", topic: "systems" },
+    { code: "8.3.3.1", strand: "Technology and Innovation", title: "Design process", benchmark: "Create artifacts or solve open-ended problems using a design process (identify, generate, prototype, test, improve).", topic: "design" },
+    { code: "8.3.3.2", strand: "Technology and Innovation", title: "Computational thinking", benchmark: "Use computational thinking strategies (decomposition, pattern recognition, abstraction, algorithms) to solve problems.", topic: "code" },
+    { code: "8.3.3.3", strand: "Technology and Innovation", title: "Algorithms and programming", benchmark: "Create programs using sequences, loops, events, conditionals, and variables to solve problems.", topic: "code" },
+    { code: "8.3.4.2", strand: "Technology and Innovation", title: "Collaborate with peers", benchmark: "Collaborate with peers using technology to create products and solve problems.", topic: "design" },
+  ];
+
+  function buildStandards() {
+    const catalog = window.WriteFlowItemStandards;
+    if (!catalog?.getByCode) return FALLBACK_STANDARDS;
+
+    return DIAGNOSTIC_CODES.map((code) => {
+      const row = catalog.getByCode(code);
+      const fallback = FALLBACK_STANDARDS.find((s) => s.code === code);
+      if (!row && !fallback) return null;
+      return {
+        code,
+        strand: row?.strand || fallback?.strand || "",
+        title: row?.shortTitle || fallback?.title || code,
+        benchmark: row?.benchmark || fallback?.benchmark || "",
+        topic: CODE_TOPIC[code] || "general",
+      };
+    }).filter(Boolean);
+  }
+
+  const ITEM_STANDARDS = buildStandards();
+  const DIAGNOSTIC_CODE_SET = new Set(DIAGNOSTIC_CODES);
 
   const QUIZ_COUNT = 20;
   const TYPING_DURATION = 120;
   const GLYPHS = ["A", "B", "C", "D", "E"];
 
   function getQuestions() {
-    return window.ITEMDiagnosticBank || [];
+    const pool = window.ITEMDiagnosticBank || [];
+    return pool.filter((q) => q?.std && DIAGNOSTIC_CODE_SET.has(q.std));
   }
 
   function findQuestionById(id) {
@@ -82,9 +121,6 @@
 
     const byStd = groupByStandard(pool);
     const canonicalCodes = ITEM_STANDARDS.map((s) => s.code).filter((code) => byStd.has(code));
-    for (const code of byStd.keys()) {
-      if (!canonicalCodes.includes(code)) canonicalCodes.push(code);
-    }
 
     const stdOrder = Core.shuffle([...canonicalCodes]);
     const picked = [];
@@ -153,6 +189,7 @@
       why,
       std,
       stdLabel: answer.stdLabel || bank?.stdLabel || meta?.title || "",
+      stdBenchmark: answer.stdBenchmark || meta?.benchmark || "",
       topic: answer.topic || bank?.topic || meta?.topic || "",
       selected,
       correctIdx,
@@ -172,13 +209,14 @@
   function mapResultsToStandards(answers) {
     const byStd = {};
     for (const a of answers) {
-      if (!byStd[a.std]) byStd[a.std] = { correct: 0, total: 0, title: "", strand: "" };
+      if (!byStd[a.std]) byStd[a.std] = { correct: 0, total: 0, title: "", strand: "", benchmark: "" };
       byStd[a.std].total++;
       if (a.correct) byStd[a.std].correct++;
       const ref = ITEM_STANDARDS.find((s) => s.code === a.std);
       if (ref) {
         byStd[a.std].title = ref.title;
         byStd[a.std].strand = ref.strand;
+        byStd[a.std].benchmark = ref.benchmark;
       } else if (a.stdLabel) {
         byStd[a.std].title = a.stdLabel;
       }
@@ -208,11 +246,13 @@
     return ITEM_STANDARDS.map((s) => ({
       code: s.code,
       title: s.title,
+      benchmark: s.benchmark,
       count: byStd.get(s.code)?.length || 0,
     }));
   }
 
   window.ITEMDiagnostic = {
+    DIAGNOSTIC_CODES,
     ITEM_STANDARDS,
     QUIZ_COUNT,
     TYPING_DURATION,
