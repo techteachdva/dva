@@ -5,6 +5,7 @@
   "use strict";
 
   const Core = window.WriteTestCore;
+  const Bank = window.ITEMDiagnostic;
   if (!Core) return;
 
   const TEACHER_PASSWORD = "studentsfirst";
@@ -65,6 +66,7 @@
   const teacherTableBody = document.getElementById("teacherTableBody");
   const teacherTableWrap = document.getElementById("teacherTableWrap");
   const teacherGroupsWrap = document.getElementById("teacherGroupsWrap");
+  const teacherAnswerKeyWrap = document.getElementById("teacherAnswerKeyWrap");
   const emptyState = document.getElementById("emptyState");
   const classFilterEl = document.getElementById("classFilter");
   const detailPanel = document.getElementById("detailPanel");
@@ -118,6 +120,93 @@
     if (codes.length <= max) return codes.map((code) => `ITEM ${code}`).join(", ");
     const shown = codes.slice(0, max).map((code) => `ITEM ${code}`).join(", ");
     return `${shown} +${codes.length - max} more`;
+  }
+
+  const GLYPHS = Bank?.GLYPHS || ["A", "B", "C", "D", "E"];
+
+  function enrichAnswer(answer) {
+    return Bank?.enrichAnswer?.(answer) || answer;
+  }
+
+  function getWrongAnswers(answers) {
+    if (Bank?.getWrongAnswers) return Bank.getWrongAnswers(answers);
+    return (Array.isArray(answers) ? answers : [])
+      .filter((a) => a && !a.correct)
+      .map((a) => enrichAnswer(a))
+      .filter(Boolean);
+  }
+
+  function standardMeta(code) {
+    return Bank?.ITEM_STANDARDS?.find((s) => s.code === code) || null;
+  }
+
+  function renderOptionList(options, correctIdx, selectedIdx) {
+    const correct = new Set(correctIdx || []);
+    const selected = new Set(selectedIdx || []);
+    return (options || []).map((text, i) => {
+      let cls = "idt-wrong-q__opt idt-wrong-q__opt--neutral";
+      if (correct.has(i)) cls = "idt-wrong-q__opt idt-wrong-q__opt--correct";
+      else if (selected.has(i)) cls = "idt-wrong-q__opt idt-wrong-q__opt--denied";
+      return `<li class="${cls}"><span class="idt-wrong-q__glyph">${GLYPHS[i] || "?"}</span><span>${escapeHtml(text)}</span></li>`;
+    }).join("");
+  }
+
+  function renderBankOptionList(q) {
+    const correct = new Set(q.correct || []);
+    const multi = (q.correct || []).length > 1;
+    return (q.a || []).map((text, i) => {
+      const cls = correct.has(i)
+        ? "idt-answer-key-q__opt idt-answer-key-q__opt--correct"
+        : "idt-answer-key-q__opt idt-answer-key-q__opt--neutral";
+      const tag = correct.has(i) ? `<span class="idt-gap-pill">Correct${multi ? "" : ""}</span>` : "";
+      return `<li class="${cls}"><span class="idt-answer-key-q__glyph">${GLYPHS[i] || "?"}</span><span>${escapeHtml(text)}</span>${tag}</li>`;
+    }).join("");
+  }
+
+  function renderWrongQuestionCard(answer, opts = {}) {
+    const enriched = enrichAnswer(answer);
+    if (!enriched) return "";
+    const meta = standardMeta(enriched.std);
+    const studentNote = opts.studentName
+      ? `<p class="idt-wrong-q__meta">Missed by <strong>${escapeHtml(opts.studentName)}</strong></p>`
+      : "";
+    const studentsNote = Array.isArray(opts.students) && opts.students.length
+      ? `<div class="idt-lesson-q__students">${opts.students.map((s) =>
+        `<button type="button" class="idt-student-chip" data-view="${escapeHtml(s.id)}">${escapeHtml(s.name)}</button>`).join("")}</div>`
+      : "";
+
+    return `
+      <article class="idt-wrong-q${opts.lesson ? " idt-lesson-q" : ""}">
+        <div class="idt-wrong-q__head">
+          <span class="idt-wrong-q__code">ITEM ${escapeHtml(enriched.std)}</span>
+          <span>${escapeHtml(enriched.stdLabel || meta?.title || "Standard")}</span>
+          ${meta?.strand ? `<span class="dw-muted dw-tiny">${escapeHtml(meta.strand)}</span>` : ""}
+        </div>
+        <p class="idt-wrong-q__prompt"><strong>Q:</strong> ${escapeHtml(enriched.question)}</p>
+        <ul class="idt-wrong-q__opts">${renderOptionList(enriched.options, enriched.correctIdx, enriched.selected)}</ul>
+        <p class="idt-wrong-q__why"><strong>Teaching note:</strong> ${escapeHtml(enriched.why || "—")}</p>
+        ${enriched.selectedText?.length ? `<p class="idt-wrong-q__meta">Student chose: ${escapeHtml(enriched.selectedText.join(" · "))}</p>` : ""}
+        ${enriched.correctText?.length ? `<p class="idt-wrong-q__meta">Correct: ${escapeHtml(enriched.correctText.join(" · "))}</p>` : ""}
+        ${studentNote}
+        ${studentsNote}
+      </article>`;
+  }
+
+  function renderBankQuestionCard(q) {
+    const meta = standardMeta(q.std);
+    const multi = (q.correct || []).length > 1;
+    return `
+      <article class="idt-answer-key-q">
+        <div class="idt-answer-key-q__head">
+          <span class="idt-answer-key-q__code">ITEM ${escapeHtml(q.std)}</span>
+          <span class="idt-answer-key-q__id">${escapeHtml(q.id)}</span>
+          ${multi ? `<span class="idt-gap-pill">Multi-select · ${q.correct.length} correct</span>` : ""}
+        </div>
+        <p class="idt-answer-key-q__prompt">${escapeHtml(q.q)}</p>
+        <ul class="idt-answer-key-q__opts">${renderBankOptionList(q)}</ul>
+        <p class="idt-answer-key-q__why"><strong>Why:</strong> ${escapeHtml(q.why || "—")}</p>
+        ${meta ? `<p class="dw-muted dw-tiny">${escapeHtml(meta.strand)} · ${escapeHtml(meta.title)}</p>` : ""}
+      </article>`;
   }
 
   function defaultSortDir(col) {
@@ -304,36 +393,62 @@
 
   function renderStandardGroups(classSubs) {
     const byStandard = new Map();
+
     for (const sub of classSubs) {
-      for (const gap of getGapStandards(sub)) {
-        const key = gap.code || "unknown";
+      for (const ans of getWrongAnswers(sub.quizAnswers)) {
+        const key = ans.std || "unknown";
         if (!byStandard.has(key)) {
-          byStandard.set(key, { code: gap.code, title: gap.title || "Standard", students: [] });
+          const meta = standardMeta(key);
+          byStandard.set(key, {
+            code: key,
+            title: meta?.title || ans.stdLabel || "Standard",
+            strand: meta?.strand || "",
+            questions: new Map(),
+          });
         }
-        byStandard.get(key).students.push(sub);
+        const group = byStandard.get(key);
+        const qKey = ans.id || ans.question;
+        if (!group.questions.has(qKey)) {
+          group.questions.set(qKey, { answer: ans, missedBy: [] });
+        }
+        if (!group.questions.get(qKey).missedBy.some((s) => s.id === sub.id)) {
+          group.questions.get(qKey).missedBy.push(sub);
+        }
       }
     }
 
     const groups = [...byStandard.values()].sort((a, b) => {
-      if (b.students.length !== a.students.length) return b.students.length - a.students.length;
+      const aMisses = [...a.questions.values()].reduce((n, q) => n + q.missedBy.length, 0);
+      const bMisses = [...b.questions.values()].reduce((n, q) => n + q.missedBy.length, 0);
+      if (bMisses !== aMisses) return bMisses - aMisses;
       return String(a.code).localeCompare(String(b.code), undefined, { numeric: true });
     });
 
     if (!groups.length) {
-      return `<p class="dw-muted dw-tiny">No major standard gaps in this class on the latest run.</p>`;
+      return `<p class="dw-muted dw-tiny">No missed questions in this class on the latest run.</p>`;
     }
 
-    return groups.map((group) => `
+    return groups.map((group) => {
+      const questionCards = [...group.questions.values()]
+        .sort((a, b) => b.missedBy.length - a.missedBy.length)
+        .map(({ answer, missedBy }) => renderWrongQuestionCard(answer, { lesson: true, students: missedBy }))
+        .join("");
+
+      const studentCount = new Set(
+        [...group.questions.values()].flatMap((q) => q.missedBy.map((s) => s.id))
+      ).size;
+
+      return `
       <div class="idt-std-group">
         <div class="idt-std-group__head">
           <span class="idt-std-group__code">ITEM ${escapeHtml(group.code)}</span>
           <span>${escapeHtml(group.title)}</span>
-          <span class="dw-muted dw-tiny">${group.students.length} student${group.students.length === 1 ? "" : "s"}</span>
+          ${group.strand ? `<span class="dw-muted dw-tiny">${escapeHtml(group.strand)}</span>` : ""}
+          <span class="dw-muted dw-tiny">${studentCount} student${studentCount === 1 ? "" : "s"} · ${group.questions.size} question${group.questions.size === 1 ? "" : "s"}</span>
         </div>
-        <div>
-          ${group.students.map((sub) => `<button type="button" class="idt-student-chip" data-view="${escapeHtml(sub.id)}">${escapeHtml(sub.name)}</button>`).join("")}
-        </div>
-      </div>`).join("");
+        ${questionCards}
+      </div>`;
+    }).join("");
   }
 
   function renderClassGroups() {
@@ -377,16 +492,62 @@
     });
   }
 
+  function renderAnswerKey() {
+    if (!teacherAnswerKeyWrap || !Bank) return;
+    const pool = Bank.getQuestions();
+    if (!pool.length) {
+      teacherAnswerKeyWrap.innerHTML = `<p class="dw-muted dw-center">Question bank not loaded yet.</p>`;
+      return;
+    }
+
+    const byStd = new Map();
+    for (const q of pool) {
+      if (!q?.std) continue;
+      if (!byStd.has(q.std)) byStd.set(q.std, []);
+      byStd.get(q.std).push(q);
+    }
+
+    const ordered = (Bank.ITEM_STANDARDS || [])
+      .filter((s) => byStd.has(s.code))
+      .map((s) => ({ ...s, questions: byStd.get(s.code) || [] }));
+
+    for (const [code, questions] of byStd.entries()) {
+      if (!ordered.find((s) => s.code === code)) {
+        ordered.push({ code, title: questions[0]?.stdLabel || "Standard", strand: "", questions });
+      }
+    }
+
+    teacherAnswerKeyWrap.innerHTML = `
+      <div class="dw-card">
+        <p class="dw-muted">Full question bank (${pool.length} questions) grouped by ITEM standard. Use for lesson planning, grading reference, and re-teaching missed concepts.</p>
+      </div>
+      ${ordered.map((std) => `
+        <section class="dw-card idt-answer-key-std">
+          <h3 class="idt-answer-key-std__title">ITEM ${escapeHtml(std.code)} — ${escapeHtml(std.title)}</h3>
+          <p class="dw-muted dw-tiny">${escapeHtml(std.strand || "")} · ${std.questions.length} question${std.questions.length === 1 ? "" : "s"} in bank</p>
+          <div class="idt-answer-key-std__questions">
+            ${std.questions.map((q) => renderBankQuestionCard(q)).join("")}
+          </div>
+        </section>`).join("")}`;
+  }
+
   function setTeacherViewMode(mode) {
-    teacherViewMode = mode === "groups" ? "groups" : "table";
+    teacherViewMode = mode === "groups" ? "groups" : mode === "answerkey" ? "answerkey" : "table";
     const tableTab = document.getElementById("teacherTabTable");
     const groupsTab = document.getElementById("teacherTabGroups");
+    const answerKeyTab = document.getElementById("teacherTabAnswerKey");
     tableTab?.classList.toggle("dw-teacher-tab--active", teacherViewMode === "table");
     groupsTab?.classList.toggle("dw-teacher-tab--active", teacherViewMode === "groups");
+    answerKeyTab?.classList.toggle("dw-teacher-tab--active", teacherViewMode === "answerkey");
     tableTab?.setAttribute("aria-selected", teacherViewMode === "table" ? "true" : "false");
     groupsTab?.setAttribute("aria-selected", teacherViewMode === "groups" ? "true" : "false");
+    answerKeyTab?.setAttribute("aria-selected", teacherViewMode === "answerkey" ? "true" : "false");
     teacherTableWrap?.classList.toggle("dw-hidden", teacherViewMode !== "table");
     teacherGroupsWrap?.classList.toggle("dw-hidden", teacherViewMode !== "groups");
+    teacherAnswerKeyWrap?.classList.toggle("dw-hidden", teacherViewMode !== "answerkey");
+    detailPanel?.classList.toggle("dw-hidden", teacherViewMode === "answerkey");
+    document.getElementById("classFilterBar")?.classList.toggle("dw-hidden", teacherViewMode === "answerkey");
+    document.getElementById("typingFilterBar")?.classList.toggle("dw-hidden", teacherViewMode === "answerkey");
     renderTeacherViews();
   }
 
@@ -401,6 +562,10 @@
     updateTeacherMeta();
     if (teacherViewMode === "groups") {
       renderClassGroups();
+      return;
+    }
+    if (teacherViewMode === "answerkey") {
+      renderAnswerKey();
       return;
     }
     renderTableHead();
@@ -444,13 +609,29 @@
 
     document.getElementById("detailTyping").textContent = sub.typingText || "(No typing text submitted)";
 
+    const wrong = getWrongAnswers(sub.quizAnswers);
+    const wrongEl = document.getElementById("detailWrongQuestions");
+    if (wrongEl) {
+      wrongEl.innerHTML = wrong.length
+        ? wrong.map((a) => renderWrongQuestionCard(a)).join("")
+        : `<p class="dw-muted">No missed questions on this run.</p>`;
+    }
+
     const answers = Array.isArray(sub.quizAnswers) ? sub.quizAnswers : [];
     document.getElementById("detailQuiz").innerHTML = answers.length
-      ? `<ul class="dw-feedback">${answers.map((a) => `
-          <li class="dw-feedback-section">
-            <strong>ITEM ${escapeHtml(a.std)}</strong> — ${a.correct ? "Correct" : "Incorrect"}
-            <span class="dw-muted dw-tiny">${escapeHtml(a.topic || "")}</span>
-          </li>`).join("")}</ul>`
+      ? answers.map((a) => {
+        const enriched = enrichAnswer(a);
+        if (!enriched) return "";
+        if (!enriched.correct) return "";
+        return `
+          <div class="idt-wrong-q" style="opacity:0.85">
+            <div class="idt-wrong-q__head">
+              <span class="idt-wrong-q__code">ITEM ${escapeHtml(enriched.std)}</span>
+              <span class="dw-muted dw-tiny">Correct</span>
+            </div>
+            <p class="idt-wrong-q__prompt">${escapeHtml(enriched.question)}</p>
+          </div>`;
+      }).join("") || `<p class="dw-muted dw-tiny">No additional correct-answer detail saved.</p>`
       : `<p class="dw-muted">No quiz answers saved.</p>`;
 
     detailPanel.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -535,10 +716,12 @@
 
     document.getElementById("refreshBtn")?.addEventListener("click", loadTeacherDashboard);
     document.getElementById("exportBtn")?.addEventListener("click", exportCsv);
+    document.getElementById("answerKeyBtn")?.addEventListener("click", () => setTeacherViewMode("answerkey"));
     document.getElementById("closeDetailBtn")?.addEventListener("click", () => detailPanel?.classList.add("dw-hidden"));
 
     document.getElementById("teacherTabTable")?.addEventListener("click", () => setTeacherViewMode("table"));
     document.getElementById("teacherTabGroups")?.addEventListener("click", () => setTeacherViewMode("groups"));
+    document.getElementById("teacherTabAnswerKey")?.addEventListener("click", () => setTeacherViewMode("answerkey"));
 
     classFilterEl?.addEventListener("change", () => {
       classFilter = classFilterEl.value || "all";
@@ -548,6 +731,12 @@
     document.querySelectorAll("[data-typing-filter]").forEach((btn) => {
       btn.addEventListener("click", () => setTypingFilter(btn.dataset.typingFilter));
     });
+
+    if (!Bank?.getQuestions?.()?.length) {
+      window.addEventListener("item-diagnostic-ready", () => {
+        if (teacherViewMode === "answerkey") renderAnswerKey();
+      }, { once: true });
+    }
   }
 
   bindEvents();

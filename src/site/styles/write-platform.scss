@@ -758,6 +758,137 @@ $wp-sheet-min-height: 1056px;
     font-size: 0.78rem;
     white-space: nowrap;
   }
+
+  .idt-wrong-q,
+  .idt-lesson-q,
+  .idt-answer-key-q {
+    padding: 14px 16px;
+    border-radius: 12px;
+    border: 1px solid var(--dw-border);
+    background: rgba(0, 0, 0, 0.16);
+    margin-bottom: 12px;
+  }
+
+  .idt-wrong-q__head,
+  .idt-answer-key-q__head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    align-items: baseline;
+    margin-bottom: 8px;
+    font-size: 0.84rem;
+  }
+
+  .idt-wrong-q__code,
+  .idt-answer-key-q__code {
+    font-weight: 800;
+    color: #6ee7b7;
+  }
+
+  .idt-wrong-q__prompt,
+  .idt-answer-key-q__prompt {
+    margin: 0 0 10px;
+    font-size: 0.98rem;
+    line-height: 1.45;
+  }
+
+  .idt-wrong-q__opts,
+  .idt-answer-key-q__opts {
+    list-style: none;
+    margin: 0 0 10px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .idt-wrong-q__opt,
+  .idt-answer-key-q__opt {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--dw-border);
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+
+  .idt-wrong-q__opt--neutral,
+  .idt-answer-key-q__opt--neutral {
+    background: rgba(0, 0, 0, 0.1);
+  }
+
+  .idt-wrong-q__opt--correct,
+  .idt-answer-key-q__opt--correct {
+    background: rgba(16, 185, 129, 0.14);
+    border-color: rgba(52, 211, 153, 0.35);
+  }
+
+  .idt-wrong-q__opt--denied {
+    background: rgba(239, 68, 68, 0.12);
+    border-color: rgba(248, 113, 113, 0.35);
+  }
+
+  .idt-wrong-q__glyph,
+  .idt-answer-key-q__glyph {
+    flex-shrink: 0;
+    font-weight: 800;
+    font-size: 0.8rem;
+    opacity: 0.85;
+  }
+
+  .idt-wrong-q__why,
+  .idt-answer-key-q__why {
+    margin: 0;
+    padding: 10px 12px;
+    border-radius: 8px;
+    background: rgba(251, 191, 36, 0.08);
+    border: 1px solid rgba(251, 191, 36, 0.2);
+    font-size: 0.88rem;
+    line-height: 1.45;
+  }
+
+  .idt-wrong-q__meta {
+    margin: 8px 0 0;
+    font-size: 0.82rem;
+    color: var(--dw-muted);
+  }
+
+  .idt-lesson-q {
+    border-color: rgba(251, 191, 36, 0.22);
+    background: rgba(251, 191, 36, 0.04);
+  }
+
+  .idt-lesson-q__students {
+    margin-top: 8px;
+  }
+
+  .idt-answer-key {
+    gap: 16px;
+  }
+
+  .idt-answer-key-std {
+    padding: 18px 20px;
+  }
+
+  .idt-answer-key-std__title {
+    margin: 0 0 4px;
+    font-size: 1.05rem;
+  }
+
+  .idt-answer-key-std__questions {
+    margin-top: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .idt-answer-key-q__id {
+    font-size: 0.78rem;
+    color: var(--dw-muted);
+    font-family: ui-monospace, Consolas, monospace;
+  }
 }
 
 /* Global Tech Gauntlet — display typography */

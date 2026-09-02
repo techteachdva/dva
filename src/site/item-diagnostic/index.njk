@@ -36,6 +36,7 @@ layout: false
           <div class="dw-card dw-hero">
             <h1 class="dw-h1">Find your technology learning gaps</h1>
             <p class="dw-lead">A short typing warm-up and a 20-question quiz show where you&rsquo;re strong and where to focus next.</p>
+            <p class="dw-muted dw-tiny">The quiz draws one random question per ITEM standard from a large bank (answer order and question order are shuffled every time).</p>
           </div>
           <div class="dw-card dw-stack">
             <h2 class="dw-h2">What gets measured</h2>
@@ -121,6 +122,7 @@ layout: false
               <p class="dw-muted" id="teacherMeta">Loading submissions…</p>
             </div>
             <div class="dw-row dw-row-wrap">
+              <button id="answerKeyBtn" class="dw-btn dw-btn-ghost" type="button">Answer key</button>
               <button id="refreshBtn" class="dw-btn dw-btn-secondary" type="button">Refresh</button>
               <button id="exportBtn" class="dw-btn dw-btn-ghost" type="button">Export CSV</button>
               <button id="teacherLogoutBtn" class="dw-btn dw-btn-ghost" type="button">Log out</button>
@@ -153,6 +155,7 @@ layout: false
           <div class="dw-teacher-view-tabs" id="teacherViewTabs" role="tablist" aria-label="Teacher dashboard view">
             <button id="teacherTabTable" class="dw-teacher-tab dw-teacher-tab--active" type="button" role="tab" aria-selected="true">Scores table</button>
             <button id="teacherTabGroups" class="dw-teacher-tab" type="button" role="tab" aria-selected="false">Group by class</button>
+            <button id="teacherTabAnswerKey" class="dw-teacher-tab" type="button" role="tab" aria-selected="false">Answer key</button>
           </div>
 
           <div class="dw-card dw-table-wrap dw-table-wrap--fit" id="teacherTableWrap">
@@ -177,6 +180,8 @@ layout: false
 
           <div id="teacherGroupsWrap" class="dw-hidden dw-stack idt-groups" aria-label="Class groups"></div>
 
+          <div id="teacherAnswerKeyWrap" class="dw-hidden dw-stack idt-answer-key" aria-label="Question bank answer key"></div>
+
           <div id="detailPanel" class="dw-card dw-detail dw-hidden">
             <div class="dw-detail-header">
               <h3 class="dw-h3" id="detailName">—</h3>
@@ -189,7 +194,9 @@ layout: false
             <div id="detailTopics"></div>
             <h4 class="dw-h3">Typing warm-up</h4>
             <div class="dw-story-preview" id="detailTyping"></div>
-            <h4 class="dw-h3">Quiz answers</h4>
+            <h4 class="dw-h3">Questions to review (missed)</h4>
+            <div id="detailWrongQuestions"></div>
+            <h4 class="dw-h3">All quiz answers</h4>
             <div id="detailQuiz"></div>
           </div>
         </section>

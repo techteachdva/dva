@@ -128,7 +128,20 @@
     const correct = [...q.correct].sort((a, b) => a - b);
     const isCorrect = selected.length === correct.length && selected.every((v, i) => v === correct[i]);
 
-    quizAnswers.push({ id: q.id, std: q.std, stdLabel: q.stdLabel, topic: q.topic, correct: isCorrect, selected, correctIdx: correct });
+    quizAnswers.push({
+      id: q.id,
+      std: q.std,
+      stdLabel: q.stdLabel,
+      topic: q.topic,
+      correct: isCorrect,
+      selected,
+      correctIdx: correct,
+      question: q.q,
+      options: [...q.a],
+      why: q.why,
+      selectedText: selected.map((i) => q.a[i]),
+      correctText: correct.map((i) => q.a[i]),
+    });
 
     quizPhase = "feedback";
     document.querySelectorAll(".qz-option").forEach((el, i) => {
