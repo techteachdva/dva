@@ -464,6 +464,25 @@
   50% { filter: brightness(1.2); }
 }
 
+/* ===== Somnia ===== */
+.cartridge--somnia .cartridge-cuboid__face--front {
+  background: linear-gradient(145deg, #c8c0d8 0%, #b0a8c4 100%);
+}
+.cartridge--somnia .cartridge-label {
+  background:
+    linear-gradient(180deg, rgba(8, 5, 20, 0.25) 0%, rgba(8, 5, 20, 0.55) 100%),
+    url("/somnia/images/somnia-box-art.jpg") center / cover no-repeat;
+}
+.cartridge--somnia .cartridge-label__title {
+  color: #f5eeff !important;
+  background: rgba(18, 8, 36, 0.88);
+  border: 1px solid rgba(180, 140, 255, 0.55);
+  font-family: var(--font-display, "Cinzel", serif);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  box-shadow: 0 0 28px rgba(140, 100, 255, 0.25);
+}
+
 /* ===== Purple Worm Escape ===== */
 .cartridge--worm .cartridge-cuboid__face--front {
   background: linear-gradient(145deg, #d0c0d8 0%, #b8a8c4 100%);

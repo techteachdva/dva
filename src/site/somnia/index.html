@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Somnia — Escape the Dreamscape</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/game.css">
+</head>
+<body>
+  <div id="app">
+    <header class="top-bar">
+      <div class="brand">
+        <h1>Somnia</h1>
+        <p class="tagline">Cooperative Dreamscape Roguelike</p>
+      </div>
+      <div id="hud" class="hud hidden">
+        <div class="hud-item"><span class="label">Goal</span><span id="hud-goal">12 pts</span></div>
+        <div class="hud-item"><span class="label">Points</span><span id="hud-points">0</span></div>
+        <div class="hud-item"><span class="label">Dreams Left</span><span id="hud-dreams">16</span></div>
+        <div class="hud-item"><span class="label">Round</span><span id="hud-round">1</span></div>
+        <div class="hud-item phase"><span class="label">Phase</span><span id="hud-phase">Reveal</span></div>
+      </div>
+    </header>
+
+    <main>
+      <section id="screen-setup" class="screen active">
+        <div class="setup-panel">
+          <h2>Enter the Dreamscape</h2>
+          <p class="intro">You are Dreamers trapped in a collapsing dream. Acquire Archetypes before the Dream Deck runs out.</p>
+
+          <label class="field">
+            <span>Players</span>
+            <select id="setup-players">
+              <option value="1">1</option>
+              <option value="2" selected>2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Length</span>
+            <select id="setup-length">
+              <option value="daydream">Daydream — 12 points (16 Dreams)</option>
+              <option value="nap">Nap — 18 points (20 Dreams)</option>
+              <option value="deep">Deep Sleep — 24 points (24 Dreams)</option>
+            </select>
+          </label>
+
+          <h3>Choose Dreamers</h3>
+          <div id="dreamer-picker" class="card-grid picker"></div>
+          <button id="btn-start" class="btn primary" disabled>Begin Dream</button>
+        </div>
+      </section>
+
+      <section id="screen-game" class="screen">
+        <div class="game-layout">
+          <aside class="sidebar left">
+            <h3>Dreamers</h3>
+            <div id="player-list"></div>
+            <h3>Decks</h3>
+            <div class="deck-tray" id="deck-tray"></div>
+          </aside>
+
+          <div class="center-stage">
+            <div id="phase-banner" class="phase-banner">Reveal Phase</div>
+            <div id="hex-board" class="hex-board"></div>
+            <div id="phase-actions" class="phase-actions"></div>
+            <div id="log" class="game-log" aria-live="polite"></div>
+          </div>
+
+          <aside class="sidebar right">
+            <h3>Active Archetype</h3>
+            <div id="active-archetype" class="active-card-slot"></div>
+            <h3>Encounter</h3>
+            <div id="active-encounter" class="active-card-slot"></div>
+            <h3>Acquired</h3>
+            <div id="acquired-archetypes" class="mini-card-row"></div>
+          </aside>
+        </div>
+
+        <footer class="hand-bar">
+          <div class="hand-section">
+            <div class="hand-header">
+              <h3>Your Psyche Hand</h3>
+              <span id="hand-stats"></span>
+            </div>
+            <div id="hand" class="hand"></div>
+          </div>
+          <div class="hand-section objects-section">
+            <div class="hand-header">
+              <h3>Objects</h3>
+            </div>
+            <div id="player-objects" class="hand objects-row"></div>
+          </div>
+        </footer>
+      </section>
+
+      <section id="screen-end" class="screen">
+        <div class="end-panel">
+          <h2 id="end-title"></h2>
+          <p id="end-message"></p>
+          <button id="btn-restart" class="btn primary">Dream Again</button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="card-modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+      <button class="modal-close" aria-label="Close">&times;</button>
+      <div id="modal-card"></div>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

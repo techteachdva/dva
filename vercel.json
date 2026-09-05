@@ -9,6 +9,7 @@
     { "source": "/crystalwizards", "destination": "/crystalwizards/", "permanent": true },
     { "source": "/uriel", "destination": "/uriel/", "permanent": true },
     { "source": "/dragon-trail", "destination": "/dragon-trail/", "permanent": true },
+    { "source": "/somnia", "destination": "/somnia/", "permanent": true },
     { "source": "/physix", "destination": "/physix/", "permanent": true }
   ],
   "rewrites": [

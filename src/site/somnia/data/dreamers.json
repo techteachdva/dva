@@ -1,0 +1,62 @@
+[
+  {
+    "id": "the-rested",
+    "name": "The Rested",
+    "image": "images/dreamers/dreamer-the-rested.png",
+    "lucidity": 2,
+    "elasticity": 1,
+    "willpower": 0,
+    "archetypeBonus": 1,
+    "power": "All Dreamers Draw top Psyche from Discard or Change Active Archetype."
+  },
+  {
+    "id": "the-visionary",
+    "name": "The Visionary",
+    "image": "images/dreamers/dreamer-the-visionary.png",
+    "lucidity": 2,
+    "elasticity": 0,
+    "willpower": 1,
+    "archetypeBonus": 1,
+    "power": "All Dreamers Flip the top card of a Deck or Reveal 1 Landscape."
+  },
+  {
+    "id": "the-runner",
+    "name": "The Runner",
+    "image": "images/dreamers/dreamer-the-runner.png",
+    "lucidity": 1,
+    "elasticity": 2,
+    "willpower": 0,
+    "archetypeBonus": 1,
+    "power": "All Dreamers Move 1 space towards or away from Bed."
+  },
+  {
+    "id": "the-hunter",
+    "name": "The Hunter",
+    "image": "images/dreamers/dreamer-the-hunter.png",
+    "lucidity": 0,
+    "elasticity": 2,
+    "willpower": 1,
+    "archetypeBonus": 1,
+    "power": "All Dreamers Move an Active Dreambeast 1 space closer or further from them."
+  },
+  {
+    "id": "the-immovable",
+    "name": "The Immovable",
+    "image": "images/dreamers/dreamer-the-immovable.png",
+    "lucidity": 1,
+    "elasticity": 0,
+    "willpower": 2,
+    "archetypeBonus": 1,
+    "power": "All Dreamers Cancel a Discard or Move."
+  },
+  {
+    "id": "the-weaver",
+    "name": "The Weaver",
+    "image": "images/dreamers/dreamer-the-weaver.png",
+    "lucidity": 0,
+    "elasticity": 1,
+    "willpower": 2,
+    "archetypeBonus": 1,
+    "power": "All Dreamers Trade 1 Card with themselves or Decks."
+  }
+]

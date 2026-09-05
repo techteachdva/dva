@@ -554,6 +554,7 @@ module.exports = function (eleventyConfig) {
   // URIEL holon analyzer (Pyodide) — static files from sibling URIEL repo via scripts/sync_to_dva_garden.py
   eleventyConfig.addPassthroughCopy("src/site/uriel");
   eleventyConfig.addPassthroughCopy("src/site/dragon-trail");
+  eleventyConfig.addPassthroughCopy("src/site/somnia");
   eleventyConfig.addPassthroughCopy("src/site/physix");
   eleventyConfig.addPassthroughCopy("src/site/tech-escape");
   eleventyConfig.addPassthroughCopy("src/site/tech-trail/images");

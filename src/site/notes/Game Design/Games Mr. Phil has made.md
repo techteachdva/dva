@@ -77,6 +77,27 @@ title: Games Mr. Phil has made
     </div>
   </article>
 
+  <article class="cartridge cartridge--somnia" aria-label="Somnia game cartridge">
+    <div class="cartridge__scene">
+      <div class="cartridge__shadow" aria-hidden="true"></div>
+      <div class="cartridge__tilt">
+        <div class="cartridge-cuboid">
+          <div class="cartridge-cuboid__face cartridge-cuboid__face--front">
+            <div class="cartridge-label">
+              <span class="cartridge-label__brand">Power_Word_Skill_Games</span>
+              <a class="cartridge-label__title external-link" href="/somnia/" target="_blank" rel="noopener noreferrer">Somnia</a>
+            </div>
+          </div>
+          <div class="cartridge-cuboid__face cartridge-cuboid__face--top" aria-hidden="true"></div>
+          <div class="cartridge-cuboid__face cartridge-cuboid__face--right" aria-hidden="true"></div>
+          <div class="cartridge-cuboid__face cartridge-cuboid__face--bottom" aria-hidden="true"></div>
+          <div class="cartridge-cuboid__face cartridge-cuboid__face--left" aria-hidden="true"></div>
+          <div class="cartridge-cuboid__face cartridge-cuboid__face--back" aria-hidden="true"></div>
+        </div>
+      </div>
+    </div>
+  </article>
+
   <article class="cartridge cartridge--worm" aria-label="Purple Worm Escape game cartridge">
     <div class="cartridge__scene">
       <div class="cartridge__shadow" aria-hidden="true"></div>

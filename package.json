@@ -30,7 +30,9 @@
         "untrack:physix": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/untrack-physix-binaries.ps1",
         "upload:physix-release": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/upload-physix-release.ps1",
         "audit:morphology": "node scripts/audit-morphology-bank.mjs",
-        "audit:morphology:lenient": "node scripts/audit-morphology-bank.mjs --lenient"
+        "audit:morphology:lenient": "node scripts/audit-morphology-bank.mjs --lenient",
+        "extract:somnia-pdf": "node scripts/extract-somnia-pdf.mjs",
+        "copy:somnia-images": "node scripts/copy-somnia-images.mjs"
     },
     "keywords": [],
     "author": "",
