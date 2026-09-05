@@ -41,7 +41,7 @@ export const TUTORIAL_STEPS = [
     id: "explore",
     title: "Explore Phase",
     body: "Select 1–2 yellow Elasticity cards, click Spend Elasticity, then click green highlighted hexes to move the active Dreamer.",
-    target: "#hex-board",
+    target: "#board-viewport",
     phase: "Explore",
   },
   {

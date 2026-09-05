@@ -256,11 +256,16 @@ export function hideModal() {
   document.getElementById("card-modal").classList.add("hidden");
 }
 
+/** Hex layout scale — half-width in pixel math (larger = bigger map). */
+const HEX_SIZE = 100;
+
 export function renderBoard(state, onSelectLandscape, legalMoveIds = []) {
   const board = document.getElementById("hex-board");
   board.innerHTML = "";
 
-  const size = 58;
+  const size = HEX_SIZE;
+  const scale = size / 58;
+  board.style.setProperty("--hex-scale", String(scale));
   const bounds = boardPixelBounds(state, size);
   board.style.position = "relative";
   board.style.width = `${bounds.width}px`;
