@@ -7,9 +7,9 @@
   --muted: #9b93c4;
   --accent: #c9a0ff;
   --accent-strong: #7b5cff;
-  --lucidity: #6ec8ff;
-  --elasticity: #5fe0b0;
-  --willpower: #ff8b6e;
+  --lucidity: #4a9eff;
+  --elasticity: #f0c830;
+  --willpower: #e84848;
   --gold: #f0c96a;
   --danger: #ff5d7a;
   --success: #6dffb0;
@@ -251,9 +251,9 @@ main { flex: 1; }
 .hex-tile .name { font-size: 0.72rem; font-weight: 600; line-height: 1.2; position: relative; z-index: 1; text-shadow: 0 1px 4px rgba(0,0,0,0.9); }
 .hex-tile .suit { font-size: 0.62rem; color: var(--muted); text-transform: uppercase; position: relative; z-index: 1; }
 .hex-tile .tokens { position: absolute; bottom: 4px; left: 0; right: 0; font-size: 0.6rem; color: var(--gold); z-index: 1; text-shadow: 0 1px 3px rgba(0,0,0,0.9); }
-.hex-tile.suit-lucidity { border-color: rgba(110, 200, 255, 0.4); }
-.hex-tile.suit-elasticity { border-color: rgba(95, 224, 176, 0.4); }
-.hex-tile.suit-willpower { border-color: rgba(255, 139, 110, 0.4); }
+.hex-tile.suit-lucidity { border-color: rgba(74, 158, 255, 0.45); }
+.hex-tile.suit-elasticity { border-color: rgba(240, 200, 48, 0.45); }
+.hex-tile.suit-willpower { border-color: rgba(232, 72, 72, 0.45); }
 
 .phase-actions {
   display: flex;
@@ -600,18 +600,21 @@ main { flex: 1; }
 }
 
 .game-card.psyche-card.lucidity {
-  background: linear-gradient(160deg, rgba(110, 200, 255, 0.2), rgba(20, 40, 80, 0.9));
+  background: linear-gradient(160deg, rgba(74, 158, 255, 0.35), rgba(16, 48, 96, 0.95));
   border-color: var(--lucidity);
+  color: #e8f4ff;
 }
 
 .game-card.psyche-card.elasticity {
-  background: linear-gradient(160deg, rgba(95, 224, 176, 0.2), rgba(20, 60, 50, 0.9));
+  background: linear-gradient(160deg, rgba(240, 200, 48, 0.3), rgba(72, 56, 8, 0.95));
   border-color: var(--elasticity);
+  color: #fff8e0;
 }
 
 .game-card.psyche-card.willpower {
-  background: linear-gradient(160deg, rgba(255, 139, 110, 0.2), rgba(80, 30, 20, 0.9));
+  background: linear-gradient(160deg, rgba(232, 72, 72, 0.32), rgba(80, 16, 16, 0.95));
   border-color: var(--willpower);
+  color: #ffe8e8;
 }
 
 .psyche-value {
@@ -622,9 +625,37 @@ main { flex: 1; }
 }
 
 .psyche-suit {
-  font-size: 1.1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   line-height: 1;
 }
+
+.psyche-suit.large .suit-icon svg {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.suit-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.suit-icon svg {
+  display: block;
+}
+
+.suit-lucidity,
+.suit-lucidity .suit-icon { color: var(--lucidity); }
+
+.suit-elasticity,
+.suit-elasticity .suit-icon { color: var(--elasticity); }
+
+.suit-willpower,
+.suit-willpower .suit-icon { color: var(--willpower); }
 
 .psyche-label {
   font-size: 0.55rem;
@@ -643,8 +674,22 @@ main { flex: 1; }
   margin-bottom: 1rem;
 }
 
+.psyche-modal-face.lucidity {
+  background: linear-gradient(160deg, rgba(74, 158, 255, 0.25), rgba(16, 48, 96, 0.6));
+  border: 1px solid var(--lucidity);
+}
+
+.psyche-modal-face.elasticity {
+  background: linear-gradient(160deg, rgba(240, 200, 48, 0.22), rgba(72, 56, 8, 0.6));
+  border: 1px solid var(--elasticity);
+}
+
+.psyche-modal-face.willpower {
+  background: linear-gradient(160deg, rgba(232, 72, 72, 0.22), rgba(80, 16, 16, 0.6));
+  border: 1px solid var(--willpower);
+}
+
 .psyche-modal-face .psyche-value.large { font-size: 4rem; }
-.psyche-modal-face .psyche-suit.large { font-size: 2.5rem; }
 
 /* Dreamer stats */
 .dreamer-stats {
@@ -655,11 +700,67 @@ main { flex: 1; }
 }
 
 .dreamer-stats .stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
   font-size: 0.68rem;
   font-weight: 600;
   padding: 0.1rem 0.35rem;
   border-radius: 4px;
   background: rgba(0,0,0,0.25);
+}
+
+.stat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.stat-pill.suit-lucidity { color: var(--lucidity); }
+.stat-pill.suit-elasticity { color: var(--elasticity); }
+.stat-pill.suit-willpower { color: var(--willpower); }
+
+.hand-stats-suits {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.hand-stats-suits .stat {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-weight: 600;
+}
+
+.intro-suits {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.intro-suit {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-weight: 600;
+}
+
+.intro-suit.suit-lucidity { color: var(--lucidity); }
+.intro-suit.suit-elasticity { color: var(--elasticity); }
+.intro-suit.suit-willpower { color: var(--willpower); }
+
+.mindstream-pick .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.deck-pile span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 .dreamer-pick {
@@ -675,6 +776,15 @@ main { flex: 1; }
 
 .dreamer-pick-stats {
   font-size: 0.75rem;
+  text-align: center;
+}
+
+.dreamer-pick-name {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+  color: var(--text);
 }
 
 .player-chip .dreamer-stats {

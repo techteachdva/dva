@@ -31,6 +31,8 @@ import {
   validateBossPlayShape,
   bossPlayShapeLabel,
   bossPlayShapeRequired,
+  formatDreamerStatsText,
+  SUIT_LABELS,
 } from "./rules.js";
 import { getLegalMoveTargets, canMoveTo, adjacentTiles, hexDistance, areHexAdjacent } from "./hex.js";
 import { repressCard, listSubconsciousCards } from "./subconscious.js";
@@ -142,7 +144,7 @@ export function getPhaseActions(state, handlers) {
   if (phase === "Explore") {
     if (!state.exploreActivated) {
       actions.push({
-        label: `Spend Elasticity (${exploreBudget(state, player) || "select 1–2 ◇"})`,
+        label: `Spend Elasticity (${exploreBudget(state, player) || `select 1–2 ${SUIT_LABELS.elasticity}`})`,
         disabled: exploreBudget(state, player) < 1,
         onClick: handlers.activateExplore,
       });
@@ -167,7 +169,7 @@ export function getPhaseActions(state, handlers) {
 
     if (state.meetActionBudget === 0) {
       actions.push({
-        label: `Gain Actions (${meetActionBudgetFromWillpower(state, player) || "active Dreamer: 1–2 ▲"})`,
+        label: `Gain Actions (${meetActionBudgetFromWillpower(state, player) || `active Dreamer: 1–2 ${SUIT_LABELS.willpower}`})`,
         onClick: handlers.gainMeetActions,
       });
     } else {
@@ -211,7 +213,7 @@ export function getPhaseActions(state, handlers) {
       onClick: handlers.landscapeAction,
     });
     actions.push({
-      label: "Draw Mindstream (◆/◇/▲ deck)",
+      label: "Draw Mindstream deck",
       disabled: !canUseMeetAction(state, MEET_ACTIONS.LANDSCAPE),
       onClick: handlers.drawMindstream,
     });
@@ -303,7 +305,7 @@ export function revealLandscape(state) {
   const player = activePlayer(state);
   const budget = revealBudget(state, player);
   if (budget < 1) {
-    addLog(state, "Select 1–2 Lucidity (◆) Psyche cards to Reveal Landscapes.");
+    addLog(state, `Select 1–2 ${SUIT_LABELS.lucidity} Psyche cards to Reveal Landscapes.`);
     return;
   }
   if (state.revealLandscapeUsed) return;
@@ -350,7 +352,7 @@ export function activateExplore(state) {
   const elaCards = selectedBySuit(state, player, "elasticity");
 
   if (!freeRound && (elaCards.length < 1 || elaCards.length > 2)) {
-    addLog(state, "Play 1 or 2 Elasticity (◇) Psyche cards to Move.");
+    addLog(state, `Play 1 or 2 ${SUIT_LABELS.elasticity} Psyche cards to Move.`);
     return;
   }
 
@@ -414,7 +416,7 @@ export function gainMeetActions(state) {
   const wilCards = selectedBySuit(state, player, "willpower");
 
   if (wilCards.length < 1 || wilCards.length > 2) {
-    addLog(state, "Play 1 or 2 Willpower (▲) Psyche cards for Meet Actions.");
+    addLog(state, `Play 1 or 2 ${SUIT_LABELS.willpower} Psyche cards for Meet Actions.`);
     return;
   }
 
@@ -889,9 +891,9 @@ export function getLegalExploreTargets(state) {
 export function getPhaseHint(state) {
   const phase = getPhase(state);
   const player = activePlayer(state);
-  const stats = `◆${player.dreamer.lucidity} ◇${player.dreamer.elasticity} ▲${player.dreamer.willpower}`;
+  const stats = formatDreamerStatsText(player.dreamer);
   if (phase === "Reveal") {
-    return `Reveal: select 1–2 ◆ Psyche to reveal Landscapes. ${stats}`;
+    return `Reveal: select 1–2 ${SUIT_LABELS.lucidity} Psyche to reveal Landscapes. ${stats}`;
   }
   if (phase === "Explore") {
     const legal = getLegalExploreTargets(state).length;
@@ -899,7 +901,7 @@ export function getPhaseHint(state) {
   }
   if (phase === "Meet") {
     if (state.meetActionBudget === 0) {
-      return `Meet: active Dreamer plays 1–2 ▲ for shared Actions. ${stats}`;
+      return `Meet: active Dreamer plays 1–2 ${SUIT_LABELS.willpower} for shared Actions. ${stats}`;
     }
     const pool = coopMeetPlayTotal(state);
     const count = allSelectedCards(state).length;

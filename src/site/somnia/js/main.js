@@ -31,6 +31,7 @@ import {
 import { pickReturnCard, cancelPendingReturn, subconsciousCount } from "./subconscious.js";
 import {
   renderDreamerPicker,
+  renderSetupIntro,
   renderBoard,
   renderPlayers,
   renderHand,
@@ -61,6 +62,7 @@ async function init() {
   gameData = await loadGameData();
   bindSetup();
   bindModal();
+  renderSetupIntro();
   renderDreamerPicker(gameData.dreamers, selectedDreamerIds, toggleDreamer);
   document.getElementById("btn-restart").addEventListener("click", () => {
     selectedDreamerIds = [];

@@ -333,7 +333,7 @@ export function advancePhase(state) {
   if (getPhase(state) === "Explore") {
     addLog(state, "Explore Phase — play Elasticity Psyche to move Dreamers.");
   } else if (getPhase(state) === "Meet") {
-    addLog(state, "Meet Phase — one Dreamer pays ▲ for shared Actions; all Dreamers pool Psyche.");
+    addLog(state, "Meet Phase — one Dreamer pays Willpower for shared Actions; all Dreamers pool Psyche.");
   }
 }
 

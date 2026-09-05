@@ -9,11 +9,45 @@ export const SUIT_LABELS = {
   willpower: "Willpower",
 };
 
+/** @deprecated Use suitIconHtml() in UI; kept for non-HTML fallbacks. */
 export const SUIT_SYMBOLS = {
-  lucidity: "◆",
-  elasticity: "◇",
-  willpower: "▲",
+  lucidity: "◉",
+  elasticity: "⇄",
+  willpower: "✊",
 };
+
+export const SUIT_COLORS = {
+  lucidity: "#4a9eff",
+  elasticity: "#f0c830",
+  willpower: "#e84848",
+};
+
+const SUIT_ICON_PATHS = {
+  lucidity: '<path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zm0 12a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9zm0-7a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5z"/>',
+  elasticity: '<path d="M16 5l-1.42 1.42L18.17 10H7v2h11.17l-3.59 3.58L16 17l6-6-6-6zM8 19l1.42-1.42L5.83 14H17v-2H5.83l3.59-3.58L8 7l-6 6 6 6z"/>',
+  willpower: '<path d="M17 8V6h-2V4h-2v2h-2V4H9v2H7v2H5v8c0 2.21 1.79 4 4 4h6c2.21 0 4-1.79 4-4V8h-2zm-2 8H9v-6h6v6z"/>',
+};
+
+export function suitIconHtml(suit, { className = "suit-icon", size = 14 } = {}) {
+  const label = SUIT_LABELS[suit] || suit;
+  const path = SUIT_ICON_PATHS[suit];
+  if (!path) return "";
+  return `<span class="${className} suit-${suit}" role="img" aria-label="${label}" title="${label}"><svg viewBox="0 0 24 24" width="${size}" height="${size}" fill="currentColor" aria-hidden="true">${path}</svg></span>`;
+}
+
+export function dreamerStatsHtml(dreamer) {
+  return `
+    <div class="dreamer-stats">
+      <span class="stat suit-lucidity" title="Lucidity">${suitIconHtml("lucidity", { size: 12 })}${dreamer.lucidity}</span>
+      <span class="stat suit-elasticity" title="Elasticity">${suitIconHtml("elasticity", { size: 12 })}${dreamer.elasticity}</span>
+      <span class="stat suit-willpower" title="Willpower">${suitIconHtml("willpower", { size: 12 })}${dreamer.willpower}</span>
+    </div>
+  `;
+}
+
+export function formatDreamerStatsText(dreamer) {
+  return `${SUIT_LABELS.lucidity} ${dreamer.lucidity} · ${SUIT_LABELS.elasticity} ${dreamer.elasticity} · ${SUIT_LABELS.willpower} ${dreamer.willpower}`;
+}
 
 export const MEET_ACTIONS = {
   MEET: "meet",

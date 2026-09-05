@@ -1,4 +1,5 @@
 import { recordQuestEvent } from "./quests.js";
+import { SUIT_LABELS } from "./rules.js";
 
 /** Face-up repressed card piles (The Subconscious / game box). */
 export function createSubconscious() {
@@ -180,9 +181,9 @@ export function subconsciousPilesForUI(state) {
   const sub = state.subconscious;
   return [
     { label: "Psyche", cards: sub.psyche },
-    { label: "Mindstream ◆", cards: sub.mindstream.lucidity },
-    { label: "Mindstream ◇", cards: sub.mindstream.elasticity },
-    { label: "Mindstream ▲", cards: sub.mindstream.willpower },
+    { label: `Mindstream ${SUIT_LABELS.lucidity}`, cards: sub.mindstream.lucidity },
+    { label: `Mindstream ${SUIT_LABELS.elasticity}`, cards: sub.mindstream.elasticity },
+    { label: `Mindstream ${SUIT_LABELS.willpower}`, cards: sub.mindstream.willpower },
     { label: "Objects", cards: sub.objects },
     { label: "Other", cards: sub.other },
   ].filter((p) => p.cards.length);

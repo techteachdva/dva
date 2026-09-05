@@ -1,7 +1,12 @@
 import { getPhase, activePlayer, headPlayer } from "./state.js";
-import { coopMeetPlayTotal, allSelectedCards } from "./rules.js";
+import {
+  coopMeetPlayTotal,
+  allSelectedCards,
+  SUIT_LABELS,
+  suitIconHtml,
+  dreamerStatsHtml,
+} from "./rules.js";
 import { handLimitForPlayer } from "./objects.js";
-import { SUIT_SYMBOLS, SUIT_LABELS } from "./rules.js";
 import { getQuestStatus } from "./quests.js";
 import { hexToPixel, boardPixelBounds } from "./hex.js";
 import { subconsciousCount, subconsciousPilesForUI } from "./subconscious.js";
@@ -11,6 +16,7 @@ function suitClass(suit) {
 }
 
 function cardTypeClass(card) {
+  if (card.type === "dreamer") return "dreamer";
   if (card.type === "dreambeast" || card.boss) return "dreambeast";
   if (card.type === "object") return "object";
   if (card.type === "event") return card.suit || "event";
@@ -53,7 +59,7 @@ function renderPsycheCard(card, { selected, onClick, mini }) {
     mini ? "mini" : "",
   ].filter(Boolean).join(" ");
 
-  const symbol = SUIT_SYMBOLS[card.suit] || "";
+  const symbol = suitIconHtml(card.suit, { size: mini ? 14 : 18 });
   const label = SUIT_LABELS[card.suit] || card.suit;
 
   el.innerHTML = `
@@ -66,21 +72,23 @@ function renderPsycheCard(card, { selected, onClick, mini }) {
   return el;
 }
 
-function dreamerStatsHtml(dreamer) {
+function handStatsHtml(state, player) {
+  const limit = handLimitForPlayer(state, player);
   return `
-    <div class="dreamer-stats">
-      <span class="stat suit-lucidity" title="Lucidity">◆${dreamer.lucidity}</span>
-      <span class="stat suit-elasticity" title="Elasticity">◇${dreamer.elasticity}</span>
-      <span class="stat suit-willpower" title="Willpower">▲${dreamer.willpower}</span>
-    </div>
+    <span class="hand-stats-suits">
+      <span class="stat suit-lucidity" title="Lucidity">${suitIconHtml("lucidity", { size: 12 })}${player.dreamer.lucidity}</span>
+      <span class="stat suit-elasticity" title="Elasticity">${suitIconHtml("elasticity", { size: 12 })}${player.dreamer.elasticity}</span>
+      <span class="stat suit-willpower" title="Willpower">${suitIconHtml("willpower", { size: 12 })}${player.dreamer.willpower}</span>
+    </span>
+    · ${player.hand.length}/${limit} · ${player.powerTokens} power
   `;
 }
 
 function suitGradient(card) {
   const colors = {
-    lucidity: "#1a3a5c",
-    elasticity: "#1a4a3a",
-    willpower: "#4a2a1a",
+    lucidity: "#1a4080",
+    elasticity: "#6a5010",
+    willpower: "#6a1818",
     dreambeast: "#3a1a2a",
     object: "#2a2a4a",
   };
@@ -109,10 +117,20 @@ export function renderCard(card, options = {}) {
     ? `<span class="meta"><span>A${card.accept}/R${card.repress}</span></span>`
     : "";
   const points = card.points != null ? `<span class="meta"><span>${card.points} pts</span></span>` : "";
-  const suit = card.suit ? `<span class="meta"><span class="${suitClass(card.suit)}">${card.suit}</span></span>` : "";
+  const showSuitMeta = card.suit && card.type !== "dreamer" && card.type !== "psyche";
+  const suit = showSuitMeta
+    ? `<span class="meta"><span class="${suitClass(card.suit)}">${SUIT_LABELS[card.suit] || card.suit}</span></span>`
+    : "";
   const subtype = card.subtype ? `<span class="meta"><span>${card.subtype}</span></span>` : "";
 
   const art = createArtElement(card);
+
+  if (card.type === "dreamer" && portrait) {
+    el.appendChild(art);
+    if (onClick) el.addEventListener("click", onClick);
+    return el;
+  }
+
   const body = document.createElement("div");
   body.className = "body";
   body.innerHTML = `
@@ -144,10 +162,10 @@ export function showModal(card) {
     detail.innerHTML = `
       <div class="psyche-modal-face ${card.suit}">
         <span class="psyche-value large">${card.value}</span>
-        <span class="psyche-suit large ${suitClass(card.suit)}">${SUIT_SYMBOLS[card.suit]}</span>
+        <span class="psyche-suit large ${suitClass(card.suit)}">${suitIconHtml(card.suit, { size: 40 })}</span>
       </div>
       <h2>${SUIT_LABELS[card.suit]} ${card.value}</h2>
-      <p>Psyche card — used for Reveal (◆), Explore (◇), and Meet (▲) phases.</p>
+      <p>Psyche card — used for Reveal (${SUIT_LABELS.lucidity}), Explore (${SUIT_LABELS.elasticity}), and Meet (${SUIT_LABELS.willpower}) phases.</p>
     `;
     container.appendChild(detail);
     modal.classList.remove("hidden");
@@ -222,9 +240,9 @@ export function showModal(card) {
     const row = document.createElement("div");
     row.className = "stat-row";
     row.innerHTML = `
-      <span class="stat-pill suit-lucidity">Lucidity +${card.lucidity}</span>
-      <span class="stat-pill suit-elasticity">Elasticity +${card.elasticity}</span>
-      <span class="stat-pill suit-willpower">Willpower +${card.willpower}</span>
+      <span class="stat-pill suit-lucidity">${suitIconHtml("lucidity", { size: 12 })}Lucidity +${card.lucidity}</span>
+      <span class="stat-pill suit-elasticity">${suitIconHtml("elasticity", { size: 12 })}Elasticity +${card.elasticity}</span>
+      <span class="stat-pill suit-willpower">${suitIconHtml("willpower", { size: 12 })}Willpower +${card.willpower}</span>
     `;
     detail.appendChild(row);
   }
@@ -359,9 +377,8 @@ export function renderHand(state, onCardClick) {
   const player = activePlayer(state);
   hand.innerHTML = "";
   hand.classList.remove("coop-mode");
-  const limit = handLimitForPlayer(state, player);
   if (title) title.textContent = "Your Psyche Hand";
-  stats.textContent = `◆${player.dreamer.lucidity} ◇${player.dreamer.elasticity} ▲${player.dreamer.willpower} · ${player.hand.length}/${limit} · ${player.powerTokens} power`;
+  stats.innerHTML = handStatsHtml(state, player);
 
   player.hand.forEach((card) => {
     const el = renderCard(card, {
@@ -426,9 +443,9 @@ export function renderDecks(state, onDeckClick) {
     { id: "archetype", label: "Archetype", count: state.archetypeDeck.length },
     { id: "dreambeast", label: "Dreambeasts", count: state.dreambeastDeck.length },
     { id: "object", label: "Objects", count: state.objectDeck.length },
-    { id: "mindstream-lucidity", label: "Mindstream ◆", count: state.mindstreamDecks.lucidity.length, suit: "lucidity" },
-    { id: "mindstream-elasticity", label: "Mindstream ◇", count: state.mindstreamDecks.elasticity.length, suit: "elasticity" },
-    { id: "mindstream-willpower", label: "Mindstream ▲", count: state.mindstreamDecks.willpower.length, suit: "willpower" },
+    { id: "mindstream-lucidity", label: "Mindstream Lucidity", count: state.mindstreamDecks.lucidity.length, suit: "lucidity" },
+    { id: "mindstream-elasticity", label: "Mindstream Elasticity", count: state.mindstreamDecks.elasticity.length, suit: "elasticity" },
+    { id: "mindstream-willpower", label: "Mindstream Willpower", count: state.mindstreamDecks.willpower.length, suit: "willpower" },
     { id: "subconscious", label: "Subconscious", count: subconsciousCount(state.subconscious) },
   ];
 
@@ -436,7 +453,8 @@ export function renderDecks(state, onDeckClick) {
     const el = document.createElement("button");
     el.type = "button";
     el.className = `deck-pile ${deck.suit ? `suit-${deck.suit}` : ""}`;
-    el.innerHTML = `<span>${deck.label}</span><strong>${deck.count}</strong>`;
+    const suitMark = deck.suit ? `${suitIconHtml(deck.suit, { size: 12 })} ` : "";
+    el.innerHTML = `<span>${suitMark}${deck.label}</span><strong>${deck.count}</strong>`;
     el.addEventListener("click", () => onDeckClick(deck.id));
     tray.appendChild(el);
   });
@@ -547,7 +565,7 @@ export function renderDreamerPicker(dreamers, selectedIds, onToggle) {
     const wrapper = document.createElement("div");
     wrapper.className = `dreamer-pick ${selected ? "selected" : ""}`;
     const card = renderCard(
-      { ...dreamer, suit: "lucidity" },
+      { ...dreamer, type: "dreamer" },
       {
         portrait: true,
         selected,
@@ -556,11 +574,23 @@ export function renderDreamerPicker(dreamers, selectedIds, onToggle) {
     );
     const stats = document.createElement("div");
     stats.className = "dreamer-pick-stats";
-    stats.innerHTML = dreamerStatsHtml(dreamer);
+    stats.innerHTML = `<div class="dreamer-pick-name">${dreamer.name}</div>${dreamerStatsHtml(dreamer)}`;
     wrapper.appendChild(card);
     wrapper.appendChild(stats);
     picker.appendChild(wrapper);
   });
+}
+
+export function renderSetupIntro() {
+  const intro = document.querySelector("#screen-setup .intro");
+  if (!intro) return;
+  intro.innerHTML = `
+    Cooperative dream escape. Each round:
+    <span class="intro-suit suit-lucidity">${suitIconHtml("lucidity", { size: 14 })} <strong>Reveal</strong> (Lucidity)</span> →
+    <span class="intro-suit suit-elasticity">${suitIconHtml("elasticity", { size: 14 })} <strong>Explore</strong> (Elasticity)</span> →
+    <span class="intro-suit suit-willpower">${suitIconHtml("willpower", { size: 14 })} <strong>Meet</strong> (Willpower)</span>.
+    Acquire Archetypes before the Dream Deck runs out.
+  `;
 }
 
 export function showScreen(id) {
@@ -582,10 +612,10 @@ export function showMindstreamPicker(onPick) {
   body.innerHTML = `
     <h2>Draw Mindstream</h2>
     <p>Choose a suit deck:</p>
-    <div class="utility-actions">
-      <button type="button" class="btn" data-suit="lucidity">◆ Lucidity</button>
-      <button type="button" class="btn" data-suit="elasticity">◇ Elasticity</button>
-      <button type="button" class="btn" data-suit="willpower">▲ Willpower</button>
+    <div class="utility-actions mindstream-pick">
+      <button type="button" class="btn suit-lucidity" data-suit="lucidity">${suitIconHtml("lucidity", { size: 14 })} Lucidity</button>
+      <button type="button" class="btn suit-elasticity" data-suit="elasticity">${suitIconHtml("elasticity", { size: 14 })} Elasticity</button>
+      <button type="button" class="btn suit-willpower" data-suit="willpower">${suitIconHtml("willpower", { size: 14 })} Willpower</button>
     </div>
   `;
   body.querySelectorAll("[data-suit]").forEach((btn) => {
@@ -632,14 +662,21 @@ export function showRespawnPicker(dreamers, onPick) {
   `;
   const picker = body.querySelector("#respawn-picker");
   dreamers.forEach((dreamer) => {
-    const card = renderCard({ ...dreamer, suit: "lucidity" }, {
+    const card = renderCard({ ...dreamer, type: "dreamer" }, {
       portrait: true,
       onClick: () => {
         hideUtilityModal();
         onPick(dreamer.id);
       },
     });
-    picker.appendChild(card);
+    const label = document.createElement("div");
+    label.className = "dreamer-pick-name";
+    label.textContent = dreamer.name;
+    const wrap = document.createElement("div");
+    wrap.className = "dreamer-pick";
+    wrap.appendChild(card);
+    wrap.appendChild(label);
+    picker.appendChild(wrap);
   });
   modal.classList.remove("hidden");
 }
