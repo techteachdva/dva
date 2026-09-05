@@ -30,6 +30,11 @@ import {
 } from "./game.js";
 import { pickReturnCard, cancelPendingReturn, subconsciousCount } from "./subconscious.js";
 import {
+  TUTORIAL_STEPS,
+  hasSeenTutorial,
+  markTutorialSeen,
+} from "./guide.js";
+import {
   renderDreamerPicker,
   renderSetupIntro,
   renderBoard,
@@ -42,6 +47,8 @@ import {
   renderHud,
   renderLog,
   renderPhaseActions,
+  renderPhaseStepper,
+  renderGuidePanel,
   showScreen,
   showEndScreen,
   showModal,
@@ -52,16 +59,23 @@ import {
   hideUtilityModal,
   showSubconsciousPicker,
   showSubconsciousBrowse,
+  showRulesModal,
+  showOverviewModal,
+  showTutorialStep,
+  hideTutorial,
 } from "./ui.js";
 
 let gameData = null;
 let state = null;
 let selectedDreamerIds = [];
+let tutorialIndex = -1;
+const lastCardClick = { id: null, time: 0 };
 
 async function init() {
   gameData = await loadGameData();
   bindSetup();
   bindModal();
+  bindHelp();
   renderSetupIntro();
   renderDreamerPicker(gameData.dreamers, selectedDreamerIds, toggleDreamer);
   document.getElementById("btn-restart").addEventListener("click", () => {
@@ -69,6 +83,25 @@ async function init() {
     showScreen("screen-setup");
     renderDreamerPicker(gameData.dreamers, selectedDreamerIds, toggleDreamer);
     document.getElementById("btn-start").disabled = true;
+  });
+}
+
+function bindHelp() {
+  document.getElementById("btn-setup-overview")?.addEventListener("click", showOverviewModal);
+  document.getElementById("btn-setup-help")?.addEventListener("click", showRulesModal);
+  document.getElementById("btn-setup-tutorial")?.addEventListener("click", () => startTutorial(false));
+  document.getElementById("btn-overview")?.addEventListener("click", showOverviewModal);
+  document.getElementById("btn-help")?.addEventListener("click", showRulesModal);
+  document.getElementById("btn-tutorial")?.addEventListener("click", () => startTutorial(true));
+  document.getElementById("btn-replay-tutorial")?.addEventListener("click", replayTutorialFromEnd);
+  document.getElementById("btn-end-overview")?.addEventListener("click", showOverviewModal);
+
+  document.getElementById("btn-toggle-decks")?.addEventListener("click", () => {
+    const tray = document.getElementById("deck-tray");
+    const btn = document.getElementById("btn-toggle-decks");
+    const hidden = tray.classList.toggle("collapsed");
+    btn.textContent = hidden ? "Show decks" : "Hide decks";
+    btn.setAttribute("aria-expanded", String(!hidden));
   });
 }
 
@@ -99,12 +132,73 @@ function toggleDreamer(id) {
   document.getElementById("btn-start").disabled = selectedDreamerIds.length !== playerCount;
 }
 
+function startTutorial(inGame) {
+  tutorialIndex = 0;
+  if (inGame && state) showScreen("screen-game");
+  else showScreen("screen-setup");
+  showTutorialAt(tutorialIndex);
+}
+
+function showTutorialAt(index) {
+  const step = TUTORIAL_STEPS[index];
+  if (!step) {
+    finishTutorial();
+    return;
+  }
+  showTutorialStep(step, index, TUTORIAL_STEPS.length, {
+    onNext: () => {
+      tutorialIndex += 1;
+      if (tutorialIndex >= TUTORIAL_STEPS.length) finishTutorial();
+      else showTutorialAt(tutorialIndex);
+    },
+    onSkip: finishTutorial,
+  });
+}
+
+function finishTutorial() {
+  hideTutorial();
+  tutorialIndex = -1;
+  markTutorialSeen();
+  if (state) renderAll();
+  else showScreen("screen-setup");
+}
+
+function replayTutorialFromEnd() {
+  state = null;
+  selectedDreamerIds = [];
+  showScreen("screen-setup");
+  renderDreamerPicker(gameData.dreamers, selectedDreamerIds, toggleDreamer);
+  document.getElementById("btn-start").disabled = true;
+  startTutorial(false);
+}
+
 function startGame() {
   const lengthKey = document.getElementById("setup-length").value;
   const selectedDreamers = selectedDreamerIds.map((id) => gameData.dreamers.find((d) => d.id === id));
   state = createInitialState(gameData, { lengthKey, selectedDreamers });
-  addLog(state, "Somnia 12 — Escape before the Dream Deck runs out.");
+  addLog(state, "Somnia — Escape before the Dream Deck runs out. Follow the Guide panel for your next step.");
   showScreen("screen-game");
+  renderAll();
+  if (!hasSeenTutorial()) startTutorial(true);
+}
+
+function onHandCardClick(card, owner) {
+  const now = Date.now();
+  const id = card.instanceId || card.id;
+  if (lastCardClick.id === id && now - lastCardClick.time < 400) {
+    showModal(card);
+    lastCardClick.id = null;
+    return;
+  }
+  lastCardClick.id = id;
+  lastCardClick.time = now;
+
+  toggleHandCard(state, card, owner);
+  if (state.tradeMode && state.trade?.step === "select-offer") {
+    renderAll();
+    maybeShowTradePanel();
+    return;
+  }
   renderAll();
 }
 
@@ -165,6 +259,9 @@ function renderAll() {
   }
 
   renderHud(state, getPhaseHint(state));
+  renderPhaseStepper(state);
+  renderGuidePanel(state);
+
   const legalMoves = getLegalExploreTargets(state).map((t) => t.id);
   renderBoard(state, (id) => {
     moveDreamer(state, id);
@@ -182,24 +279,13 @@ function renderAll() {
     state.activePlayerIndex = index;
     renderAll();
   });
-  const renderHands = () => {
-    const onCard = (card, owner) => {
-      toggleHandCard(state, card, owner);
-      if (state.tradeMode && state.trade?.step === "select-offer") {
-        renderAll();
-        maybeShowTradePanel();
-        return;
-      }
-      showModal(card);
-      renderAll();
-    };
-    if (getPhase(state) === "Meet" && state.meetActionBudget > 0) {
-      renderCoopMeetHands(state, onCard);
-    } else {
-      renderHand(state, onCard);
-    }
-  };
-  renderHands();
+
+  if (getPhase(state) === "Meet" && state.meetActionBudget > 0) {
+    renderCoopMeetHands(state, onHandCardClick);
+  } else {
+    renderHand(state, onHandCardClick);
+  }
+
   renderObjects(state, (card, zone) => {
     if (getPhase(state) === "Meet") {
       if (zone === "persistent") {

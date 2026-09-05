@@ -10,6 +10,7 @@ import { handLimitForPlayer } from "./objects.js";
 import { getQuestStatus } from "./quests.js";
 import { hexToPixel, boardPixelBounds } from "./hex.js";
 import { subconsciousCount, subconsciousPilesForUI } from "./subconscious.js";
+import { getCurrentObjective, rulesHtml, overviewHtml, getDreamerChipTooltip } from "./guide.js";
 
 function suitClass(suit) {
   return suit ? `suit-${suit}` : "";
@@ -324,6 +325,10 @@ export function renderPlayers(state, onSelectPlayer) {
       !player.alive ? "dead" : "",
       tradeTarget ? "trade-target" : "",
     ].filter(Boolean).join(" ");
+    const tooltip = getDreamerChipTooltip(state, player, index);
+    chip.dataset.tooltip = tooltip;
+    chip.title = tooltip;
+    chip.setAttribute("aria-label", `${player.name}. ${tooltip}`);
     chip.innerHTML = `
       <img src="${player.dreamer.image}" alt="" onerror="this.style.display='none'">
       <div class="info">
@@ -527,6 +532,7 @@ export function renderHud(state, hint = "") {
   document.getElementById("hud-dreams").textContent = String(state.dreamDeck.length);
   document.getElementById("hud-round").textContent = String(state.round);
   document.getElementById("hud-phase").textContent = getPhase(state);
+  const head = headPlayer(state);
   const meetInfo = state.meetActionBudget
     ? ` · ${state.meetActionsUsed}/${state.meetActionBudget} actions`
     : state.exploreMovesLeft
@@ -534,26 +540,157 @@ export function renderHud(state, hint = "") {
       : "";
   const bonus = state.pendingPowerBonus ? ` · +${state.pendingPowerBonus} pending` : "";
   document.getElementById("phase-banner").textContent =
-    `${getPhase(state)} — ${headPlayer(state).name} is Head${meetInfo}${bonus}${hint ? ` · ${hint}` : ""}`;
+    `Round ${state.round} · ${head.name} is Head ★${meetInfo}${bonus}${hint ? ` · ${hint}` : ""}`;
+}
+
+const PHASES = ["Reveal", "Explore", "Meet"];
+
+export function renderPhaseStepper(state) {
+  const el = document.getElementById("phase-stepper");
+  if (!el) return;
+  const current = getPhase(state);
+  el.innerHTML = PHASES.map((phase, i) => {
+    const active = phase === current;
+    const done = PHASES.indexOf(current) > i;
+    const suit = phase === "Reveal" ? "lucidity" : phase === "Explore" ? "elasticity" : "willpower";
+    const cls = ["step", active ? "active" : "", done ? "done" : ""].filter(Boolean).join(" ");
+    const arrow = i < PHASES.length - 1 ? '<span class="step-arrow">→</span>' : "";
+    return `
+      <div class="${cls}" data-phase="${phase}">
+        <span class="step-icon suit-${suit}">${suitIconHtml(suit, { size: 14 })}</span>
+        <span class="step-label">${phase}</span>
+      </div>${arrow}
+    `;
+  }).join("");
+}
+
+function formatGuideStep(text) {
+  return text.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+}
+
+export function renderGuidePanel(state) {
+  const el = document.getElementById("guide-panel");
+  if (!el) return;
+  const obj = getCurrentObjective(state);
+  if (!obj) {
+    el.innerHTML = "";
+    el.classList.add("hidden");
+    return;
+  }
+  el.classList.remove("hidden");
+  const steps = obj.steps.map((s) => `<li>${formatGuideStep(s)}</li>`).join("");
+  const tip = obj.tip ? `<p class="guide-tip">💡 ${obj.tip}</p>` : "";
+  el.innerHTML = `
+    <div class="guide-header suit-${obj.suit || "lucidity"}">
+      <span class="guide-icon">${suitIconHtml(obj.suit || "lucidity", { size: 16 })}</span>
+      <span class="guide-title">${obj.title}</span>
+      <span class="guide-phase">${obj.phase}</span>
+    </div>
+    <ol class="guide-steps">${steps}</ol>
+    ${tip}
+  `;
+}
+
+const ACTION_SECTIONS = {
+  main: "Do this now",
+  encounter: "Encounter",
+  phase: "Continue",
+  actions: "More actions",
+  progress: "Archetype & power",
+  round: "Round",
+};
+
+function createActionButton(action) {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = `btn ${action.primary ? "primary" : ""}`;
+  btn.textContent = action.label;
+  btn.title = action.hint || "";
+  btn.disabled = !!action.disabled;
+  btn.addEventListener("click", action.onClick);
+  return btn;
+}
+
+export function renderPhaseActions(actions) {
+  const container = document.getElementById("phase-actions");
+  if (!container) return;
+  container.innerHTML = "";
+
+  const grouped = {};
+  actions.forEach((action) => {
+    const section = action.section || "main";
+    if (!grouped[section]) grouped[section] = [];
+    grouped[section].push(action);
+  });
+
+  const primarySections = ["main", "encounter", "phase", "round"];
+  const secondarySections = ["actions", "progress"];
+
+  primarySections.forEach((section) => {
+    const items = grouped[section];
+    if (!items?.length) return;
+    const row = document.createElement("div");
+    row.className = "action-section action-section-primary";
+    if (section !== "main" && ACTION_SECTIONS[section]) {
+      const label = document.createElement("span");
+      label.className = "action-section-label";
+      label.textContent = ACTION_SECTIONS[section];
+      row.appendChild(label);
+    }
+    const btns = document.createElement("div");
+    btns.className = "action-buttons";
+    items.forEach((a) => btns.appendChild(createActionButton(a)));
+    row.appendChild(btns);
+    container.appendChild(row);
+  });
+
+  const secondaryItems = secondarySections.flatMap((s) => grouped[s] || []);
+  if (secondaryItems.length) {
+    const details = document.createElement("details");
+    details.className = "action-more";
+    const summary = document.createElement("summary");
+    summary.className = "btn";
+    summary.textContent = `More actions (${secondaryItems.length})`;
+    details.appendChild(summary);
+    const inner = document.createElement("div");
+    inner.className = "action-more-inner";
+    secondarySections.forEach((section) => {
+      const items = grouped[section];
+      if (!items?.length) return;
+      const group = document.createElement("div");
+      group.className = "action-section";
+      const label = document.createElement("span");
+      label.className = "action-section-label";
+      label.textContent = ACTION_SECTIONS[section];
+      group.appendChild(label);
+      const btns = document.createElement("div");
+      btns.className = "action-buttons";
+      items.forEach((a) => btns.appendChild(createActionButton(a)));
+      group.appendChild(btns);
+      inner.appendChild(group);
+    });
+    details.appendChild(inner);
+    container.appendChild(details);
+  }
+}
+
+export function showRulesModal() {
+  const modal = document.getElementById("utility-modal");
+  const body = document.getElementById("utility-modal-body");
+  body.innerHTML = `<div class="rules-modal">${rulesHtml()}</div>`;
+  modal.classList.remove("hidden");
+}
+
+export function showOverviewModal() {
+  const modal = document.getElementById("utility-modal");
+  const body = document.getElementById("utility-modal-body");
+  body.innerHTML = overviewHtml();
+  modal.classList.remove("hidden");
 }
 
 export function renderLog(state) {
   const log = document.getElementById("log");
   log.innerHTML = state.log.map((line) => `<div>${line}</div>`).join("");
-}
-
-export function renderPhaseActions(actions) {
-  const container = document.getElementById("phase-actions");
-  container.innerHTML = "";
-  actions.forEach((action) => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = `btn ${action.primary ? "primary" : ""}`;
-    btn.textContent = action.label;
-    btn.disabled = !!action.disabled;
-    btn.addEventListener("click", action.onClick);
-    container.appendChild(btn);
-  });
 }
 
 export function renderDreamerPicker(dreamers, selectedIds, onToggle) {
@@ -585,11 +722,13 @@ export function renderSetupIntro() {
   const intro = document.querySelector("#screen-setup .intro");
   if (!intro) return;
   intro.innerHTML = `
-    Cooperative dream escape. Each round:
-    <span class="intro-suit suit-lucidity">${suitIconHtml("lucidity", { size: 14 })} <strong>Reveal</strong> (Lucidity)</span> →
-    <span class="intro-suit suit-elasticity">${suitIconHtml("elasticity", { size: 14 })} <strong>Explore</strong> (Elasticity)</span> →
-    <span class="intro-suit suit-willpower">${suitIconHtml("willpower", { size: 14 })} <strong>Meet</strong> (Willpower)</span>.
-    Acquire Archetypes before the Dream Deck runs out.
+    <p class="setup-lead">You are Dreamers trapped in a collapsing Dreamscape. Work together to earn Archetype points before the Dream Deck runs out.</p>
+    <div class="setup-round-flow">
+      <div class="round-step suit-lucidity">${suitIconHtml("lucidity", { size: 18 })} <strong>Reveal</strong><span>Draw Dream · reveal Landscapes</span></div>
+      <div class="round-step suit-elasticity">${suitIconHtml("elasticity", { size: 18 })} <strong>Explore</strong><span>Spend Elasticity · move on the map</span></div>
+      <div class="round-step suit-willpower">${suitIconHtml("willpower", { size: 18 })} <strong>Meet</strong><span>Gain actions · face Encounters</span></div>
+    </div>
+    <p class="setup-tip">New to Somnia? Read the <strong>Game Overview</strong>, open <strong>How to Play</strong>, or try the <strong>Tutorial</strong> below.</p>
   `;
 }
 
@@ -597,7 +736,9 @@ export function showScreen(id) {
   document.querySelectorAll(".screen").forEach((screen) => {
     screen.classList.toggle("active", screen.id === id);
   });
-  document.getElementById("hud").classList.toggle("hidden", id !== "screen-game");
+  const inGame = id === "screen-game";
+  document.getElementById("hud").classList.toggle("hidden", !inGame);
+  document.getElementById("header-actions")?.classList.toggle("hidden", !inGame);
 }
 
 export function showEndScreen(won, message) {
@@ -755,4 +896,59 @@ export function showSubconsciousBrowse(state, onCardClick) {
 
 export function hideUtilityModal() {
   document.getElementById("utility-modal").classList.add("hidden");
+}
+
+let tutorialHighlightEl = null;
+
+function clearTutorialHighlight() {
+  if (tutorialHighlightEl) {
+    tutorialHighlightEl.classList.remove("tutorial-highlight");
+    tutorialHighlightEl = null;
+  }
+}
+
+export function showTutorialStep(step, stepIndex, total, { onNext, onSkip }) {
+  const overlay = document.getElementById("tutorial-overlay");
+  if (!overlay) return;
+
+  document.getElementById("tutorial-title").textContent = step.title;
+  document.getElementById("tutorial-body").textContent = step.body;
+  document.getElementById("tutorial-progress").textContent = `${stepIndex + 1} / ${total}`;
+  document.getElementById("tutorial-next").textContent = stepIndex >= total - 1 ? "Done" : "Next";
+
+  clearTutorialHighlight();
+  if (step.target) {
+    const target = document.querySelector(step.target);
+    if (target) {
+      target.classList.add("tutorial-highlight");
+      tutorialHighlightEl = target;
+      target.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }
+
+  const nextBtn = document.getElementById("tutorial-next");
+  const skipBtn = document.getElementById("tutorial-skip");
+  const backdrop = overlay.querySelector(".tutorial-backdrop");
+
+  const cleanup = () => {
+    nextBtn.replaceWith(nextBtn.cloneNode(true));
+    skipBtn.replaceWith(skipBtn.cloneNode(true));
+    backdrop?.replaceWith(backdrop.cloneNode(true));
+  };
+
+  cleanup();
+  const freshNext = document.getElementById("tutorial-next");
+  const freshSkip = document.getElementById("tutorial-skip");
+  const freshBackdrop = overlay.querySelector(".tutorial-backdrop");
+
+  freshNext.addEventListener("click", onNext);
+  freshSkip.addEventListener("click", onSkip);
+  freshBackdrop?.addEventListener("click", onSkip);
+
+  overlay.classList.remove("hidden");
+}
+
+export function hideTutorial() {
+  clearTutorialHighlight();
+  document.getElementById("tutorial-overlay")?.classList.add("hidden");
 }

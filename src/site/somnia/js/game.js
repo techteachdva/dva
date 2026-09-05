@@ -124,19 +124,24 @@ export function getPhaseActions(state, handlers) {
   if (phase === "Reveal") {
     if (headPlayer(state) === player) {
       actions.push({
-        label: "Head: Draw & Resolve Dream",
+        label: "Draw & Resolve Dream",
+        hint: "Head Dreamer only",
         primary: true,
+        section: "main",
         disabled: state.dreamDrawn,
         onClick: handlers.drawDream,
       });
     }
     actions.push({
-      label: `Reveal Landscapes (${revealBudget(state, player) || "?"} budget)`,
+      label: `Reveal Landscapes (${revealBudget(state, player) || "?"})`,
+      section: "main",
       disabled: state.revealLandscapeUsed || revealBudget(state, player) < 1,
       onClick: handlers.revealLandscape,
     });
     actions.push({
       label: "Next: Explore →",
+      section: "phase",
+      primary: true,
       onClick: handlers.nextPhase,
     });
   }
@@ -144,19 +149,24 @@ export function getPhaseActions(state, handlers) {
   if (phase === "Explore") {
     if (!state.exploreActivated) {
       actions.push({
-        label: `Spend Elasticity (${exploreBudget(state, player) || `select 1–2 ${SUIT_LABELS.elasticity}`})`,
+        label: `Spend Elasticity (${exploreBudget(state, player) || "select cards"})`,
+        section: "main",
+        primary: true,
         disabled: exploreBudget(state, player) < 1,
         onClick: handlers.activateExplore,
       });
     } else {
       actions.push({
-        label: `Moves left: ${state.exploreMovesLeft} — click board`,
+        label: `${state.exploreMovesLeft} move(s) — click green hexes`,
+        section: "main",
         disabled: true,
         onClick: () => {},
       });
     }
     actions.push({
       label: "Next: Meet →",
+      section: "phase",
+      primary: true,
       disabled: state.exploreActivated && state.exploreMovesLeft > 0,
       onClick: handlers.nextPhase,
     });
@@ -169,12 +179,15 @@ export function getPhaseActions(state, handlers) {
 
     if (state.meetActionBudget === 0) {
       actions.push({
-        label: `Gain Actions (${meetActionBudgetFromWillpower(state, player) || `active Dreamer: 1–2 ${SUIT_LABELS.willpower}`})`,
+        label: `Gain Actions (${meetActionBudgetFromWillpower(state, player) || "select Willpower"})`,
+        section: "main",
+        primary: true,
         onClick: handlers.gainMeetActions,
       });
     } else {
       actions.push({
-        label: `Shared Actions: ${state.meetActionsUsed}/${state.meetActionBudget}${poolHint}`,
+        label: `Actions ${state.meetActionsUsed}/${state.meetActionBudget}${poolHint}`,
+        section: "main",
         disabled: true,
         onClick: () => {},
       });
@@ -183,12 +196,14 @@ export function getPhaseActions(state, handlers) {
       const onTile = landscapeById(state, state.selectedLandscapeId);
       if (onTile?.finalArchetype && !onTile.finalArchetype.defeated) {
         actions.push({
-          label: `Defeat ${onTile.finalArchetype.name} (12 Psyche, pool ${poolTotal})`,
+          label: `Defeat ${onTile.finalArchetype.name} (${poolTotal} pool)`,
+          section: "encounter",
           disabled: !canUseMeetAction(state, MEET_ACTIONS.MEET),
           onClick: handlers.defeatFinalArchetype,
         });
         actions.push({
-          label: "Sacrifice acquired Archetypes to auto-defeat",
+          label: "Sacrifice Archetypes to auto-defeat",
+          section: "encounter",
           onClick: handlers.sacrificeForFinal,
         });
       }
@@ -197,67 +212,81 @@ export function getPhaseActions(state, handlers) {
       const shape = bossPlayShapeRequired(encounter);
       const shapeHint = shape ? ` · ${bossPlayShapeLabel(shape)}` : "";
       actions.push({
-        label: `Accept (${encounter.accept}) — ${poolCount}/3, total ${poolTotal}${shapeHint}`,
+        label: `Accept (${encounter.accept})${shapeHint}`,
+        section: "encounter",
+        primary: true,
         disabled: !canUseMeetAction(state, MEET_ACTIONS.MEET),
         onClick: () => handlers.meetEncounter("accept"),
       });
       actions.push({
-        label: `Repress (${encounter.repress}) — ${poolCount}/3, total ${poolTotal}${shapeHint}`,
+        label: `Repress (${encounter.repress})${shapeHint}`,
+        section: "encounter",
         disabled: !canUseMeetAction(state, MEET_ACTIONS.MEET),
         onClick: () => handlers.meetEncounter("repress"),
       });
     }
     actions.push({
       label: "Landscape Action",
+      section: "actions",
       disabled: !canUseMeetAction(state, MEET_ACTIONS.LANDSCAPE),
       onClick: handlers.landscapeAction,
     });
     actions.push({
-      label: "Draw Mindstream deck",
+      label: "Draw Mindstream",
+      section: "actions",
       disabled: !canUseMeetAction(state, MEET_ACTIONS.LANDSCAPE),
       onClick: handlers.drawMindstream,
     });
     actions.push({
       label: "Play Object",
+      section: "actions",
       disabled: !canUseMeetAction(state, MEET_ACTIONS.LANDSCAPE) || !player.objects.length,
       onClick: handlers.playObject,
     });
     actions.push({
-      label: "Activate Persistent (1 Power)",
+      label: "Activate Persistent",
+      section: "actions",
       disabled: !player.persistent?.length || player.powerTokens < 1,
       onClick: handlers.activateObject,
     });
     actions.push({
-      label: "Trade (adjacent/same tile)",
+      label: "Trade",
+      section: "actions",
       disabled: !canUseMeetAction(state, MEET_ACTIONS.TRADE),
       onClick: handlers.tradeAction,
     });
     actions.push({
-      label: "Power Bonus (coin flip +1/+2)",
+      label: "Power Bonus",
+      section: "progress",
       disabled: player.powerTokens < 1,
       onClick: handlers.powerBonus,
     });
     actions.push({
-      label: "Quest 1 (1 Power)",
+      label: "Quest 1",
+      section: "progress",
       disabled: !state.activeArchetype || state.activeArchetype.questProgress[0],
       onClick: () => handlers.completeQuest(0),
     });
     actions.push({
-      label: "Quest 2 (1 Power)",
+      label: "Quest 2",
+      section: "progress",
       disabled: !state.activeArchetype || state.activeArchetype.questProgress[1],
       onClick: () => handlers.completeQuest(1),
     });
     actions.push({
       label: "Acquire Archetype",
+      section: "progress",
       disabled: !state.activeArchetype?.questProgress?.every(Boolean),
       onClick: handlers.acquireArchetype,
     });
     actions.push({
-      label: "Dreamer Power (1 Power)",
+      label: "Dreamer Power",
+      section: "progress",
       onClick: handlers.useDreamerPower,
     });
     actions.push({
       label: "End Round",
+      section: "round",
       primary: true,
       onClick: handlers.nextPhase,
     });
