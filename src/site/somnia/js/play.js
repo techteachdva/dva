@@ -35,8 +35,6 @@ import {
   markTutorialSeen,
 } from "./guide.js";
 import {
-  renderDreamerPicker,
-  renderSetupIntro,
   renderBoard,
   renderPlayers,
   renderHand,
@@ -65,50 +63,98 @@ import {
   hideTutorial,
 } from "./ui.js";
 
+const LAUNCH_KEY = "somnia.launch";
+
 let gameData = null;
 let state = null;
-let selectedDreamerIds = [];
 let tutorialIndex = -1;
+let fullscreenReady = false;
 const lastCardClick = { id: null, time: 0 };
-
 let boardResizeTimer = null;
-
-function bindBoardResize() {
-  const vp = document.getElementById("board-viewport");
-  if (!vp || vp.dataset.resizeBound) return;
-  vp.dataset.resizeBound = "1";
-  const observer = new ResizeObserver(() => {
-    if (!state || !document.getElementById("screen-game")?.classList.contains("active")) return;
-    clearTimeout(boardResizeTimer);
-    boardResizeTimer = setTimeout(() => renderAll(), 80);
-  });
-  observer.observe(vp);
-}
 
 async function init() {
   gameData = await loadGameData();
-  bindSetup();
   bindModal();
   bindHelp();
   bindBoardResize();
-  renderSetupIntro();
-  renderDreamerPicker(gameData.dreamers, selectedDreamerIds, toggleDreamer);
+  bindFullscreenPrompt();
+  bindRestart();
+
+  const config = readLaunchConfig();
+  if (!config) {
+    window.location.replace("index.html");
+    return;
+  }
+
+  startGame(config);
+}
+
+function readLaunchConfig() {
+  try {
+    const raw = sessionStorage.getItem(LAUNCH_KEY);
+    if (!raw) return null;
+    const config = JSON.parse(raw);
+    if (!config?.lengthKey || !Array.isArray(config.selectedDreamerIds)) return null;
+    if (!config.selectedDreamerIds.length) return null;
+    return config;
+  } catch {
+    return null;
+  }
+}
+
+function bindFullscreenPrompt() {
+  const prompt = document.getElementById("fullscreen-prompt");
+  if (!prompt) return;
+
+  const enter = async () => {
+    if (fullscreenReady) return;
+    fullscreenReady = true;
+    prompt.classList.add("hidden");
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      }
+    } catch {
+      /* fullscreen denied or unsupported — game still runs */
+    }
+    prompt.remove();
+  };
+
+  prompt.addEventListener("click", enter);
+  prompt.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      enter();
+    }
+  });
+}
+
+function bindRestart() {
   document.getElementById("btn-restart").addEventListener("click", () => {
-    selectedDreamerIds = [];
-    showScreen("screen-setup");
-    renderDreamerPicker(gameData.dreamers, selectedDreamerIds, toggleDreamer);
-    document.getElementById("btn-start").disabled = true;
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
+    if (window.opener && !window.opener.closed) {
+      window.opener.focus();
+      window.close();
+      return;
+    }
+    window.location.href = "index.html";
+  });
+
+  document.getElementById("btn-replay-tutorial")?.addEventListener("click", () => {
+    tutorialIndex = 0;
+    showTutorialAt(tutorialIndex);
   });
 }
 
 function bindHelp() {
-  document.getElementById("btn-setup-overview")?.addEventListener("click", showOverviewModal);
-  document.getElementById("btn-setup-help")?.addEventListener("click", showRulesModal);
-  document.getElementById("btn-setup-tutorial")?.addEventListener("click", () => startTutorial(false));
   document.getElementById("btn-overview")?.addEventListener("click", showOverviewModal);
   document.getElementById("btn-help")?.addEventListener("click", showRulesModal);
-  document.getElementById("btn-tutorial")?.addEventListener("click", () => startTutorial(true));
-  document.getElementById("btn-replay-tutorial")?.addEventListener("click", replayTutorialFromEnd);
+  document.getElementById("btn-tutorial")?.addEventListener("click", () => {
+    tutorialIndex = 0;
+    showTutorialAt(tutorialIndex);
+  });
   document.getElementById("btn-end-overview")?.addEventListener("click", showOverviewModal);
 
   document.getElementById("btn-toggle-decks")?.addEventListener("click", () => {
@@ -120,15 +166,6 @@ function bindHelp() {
   });
 }
 
-function bindSetup() {
-  document.getElementById("btn-start").addEventListener("click", startGame);
-  document.getElementById("setup-players").addEventListener("change", () => {
-    selectedDreamerIds = [];
-    renderDreamerPicker(gameData.dreamers, selectedDreamerIds, toggleDreamer);
-    document.getElementById("btn-start").disabled = true;
-  });
-}
-
 function bindModal() {
   document.querySelector("#card-modal .modal-backdrop").addEventListener("click", hideModal);
   document.querySelector("#card-modal .modal-close").addEventListener("click", hideModal);
@@ -136,21 +173,40 @@ function bindModal() {
   document.querySelector("#utility-modal .utility-close")?.addEventListener("click", hideUtilityModal);
 }
 
-function toggleDreamer(id) {
-  const playerCount = Number(document.getElementById("setup-players").value);
-  if (selectedDreamerIds.includes(id)) {
-    selectedDreamerIds = selectedDreamerIds.filter((x) => x !== id);
-  } else if (selectedDreamerIds.length < playerCount) {
-    selectedDreamerIds.push(id);
-  }
-  renderDreamerPicker(gameData.dreamers, selectedDreamerIds, toggleDreamer);
-  document.getElementById("btn-start").disabled = selectedDreamerIds.length !== playerCount;
+function bindBoardResize() {
+  const vp = document.getElementById("board-viewport");
+  if (!vp || vp.dataset.resizeBound) return;
+  vp.dataset.resizeBound = "1";
+  const observer = new ResizeObserver(() => {
+    if (!state) return;
+    clearTimeout(boardResizeTimer);
+    boardResizeTimer = setTimeout(() => renderAll(), 80);
+  });
+  observer.observe(vp);
 }
 
-function startTutorial(inGame) {
+function startGame(config) {
+  const selectedDreamers = config.selectedDreamerIds
+    .map((id) => gameData.dreamers.find((d) => d.id === id))
+    .filter(Boolean);
+
+  if (!selectedDreamers.length) {
+    window.location.replace("index.html");
+    return;
+  }
+
+  state = createInitialState(gameData, {
+    lengthKey: config.lengthKey,
+    selectedDreamers,
+  });
+  addLog(state, "Somnia — Escape before the Dream Deck runs out. Follow the Guide panel for your next step.");
+  showScreen("screen-game");
+  renderAll();
+  if (!hasSeenTutorial()) startTutorial();
+}
+
+function startTutorial() {
   tutorialIndex = 0;
-  if (inGame && state) showScreen("screen-game");
-  else showScreen("screen-setup");
   showTutorialAt(tutorialIndex);
 }
 
@@ -174,28 +230,7 @@ function finishTutorial() {
   hideTutorial();
   tutorialIndex = -1;
   markTutorialSeen();
-  if (state) renderAll();
-  else showScreen("screen-setup");
-}
-
-function replayTutorialFromEnd() {
-  state = null;
-  selectedDreamerIds = [];
-  showScreen("screen-setup");
-  renderDreamerPicker(gameData.dreamers, selectedDreamerIds, toggleDreamer);
-  document.getElementById("btn-start").disabled = true;
-  startTutorial(false);
-}
-
-function startGame() {
-  const lengthKey = document.getElementById("setup-length").value;
-  const selectedDreamers = selectedDreamerIds.map((id) => gameData.dreamers.find((d) => d.id === id));
-  state = createInitialState(gameData, { lengthKey, selectedDreamers });
-  addLog(state, "Somnia — Escape before the Dream Deck runs out. Follow the Guide panel for your next step.");
-  showScreen("screen-game");
-  bindBoardResize();
   renderAll();
-  if (!hasSeenTutorial()) startTutorial(true);
 }
 
 function onHandCardClick(card, owner) {

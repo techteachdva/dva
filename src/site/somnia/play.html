@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Somnia — Dream Table</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/game.css">
+</head>
+<body class="in-game play-window">
+  <div id="fullscreen-prompt" class="fullscreen-prompt" role="button" tabindex="0">
+    <div class="fullscreen-prompt-card">
+      <h2>Enter the Dreamscape</h2>
+      <p>Click anywhere to begin and enter fullscreen.</p>
+      <span class="fullscreen-prompt-hint">Esc exits fullscreen</span>
+    </div>
+  </div>
+
+  <div id="app">
+    <header class="top-bar">
+      <div class="brand">
+        <h1>Somnia</h1>
+      </div>
+      <div id="hud" class="hud">
+        <div class="hud-item"><span class="label">Goal</span><span id="hud-goal">12 pts</span></div>
+        <div class="hud-item"><span class="label">Points</span><span id="hud-points">0</span></div>
+        <div class="hud-item"><span class="label">Dreams Left</span><span id="hud-dreams">16</span></div>
+        <div class="hud-item"><span class="label">Round</span><span id="hud-round">1</span></div>
+        <div class="hud-item phase"><span class="label">Phase</span><span id="hud-phase">Reveal</span></div>
+      </div>
+      <div id="header-actions" class="header-actions">
+        <button type="button" id="btn-overview" class="btn btn-sm">Overview</button>
+        <button type="button" id="btn-help" class="btn btn-icon" title="Full rules">?</button>
+        <button type="button" id="btn-tutorial" class="btn btn-sm">Tutorial</button>
+      </div>
+    </header>
+
+    <main>
+      <section id="screen-game" class="screen active">
+        <aside class="sidebar left">
+          <h3>Dreamers <span class="sidebar-hint">hover for tips</span></h3>
+          <div id="player-list"></div>
+          <h3>Decks</h3>
+          <button type="button" id="btn-toggle-decks" class="btn btn-sm deck-toggle" aria-expanded="true">Hide decks</button>
+          <div class="deck-tray" id="deck-tray"></div>
+        </aside>
+
+        <div class="table-surface" id="table-surface">
+          <div class="table-chrome">
+            <div id="phase-stepper" class="phase-stepper" aria-label="Round phases"></div>
+            <div id="guide-panel" class="guide-panel"></div>
+            <div id="phase-banner" class="phase-banner" aria-hidden="true"></div>
+          </div>
+          <div class="board-viewport" id="board-viewport">
+            <div id="hex-board" class="hex-board"></div>
+          </div>
+          <div class="table-footer">
+            <div id="phase-actions" class="phase-actions"></div>
+            <div id="log" class="game-log" aria-live="polite"></div>
+          </div>
+        </div>
+
+        <aside class="sidebar right">
+          <h3>Active Archetype</h3>
+          <div id="active-archetype" class="active-card-slot"></div>
+          <h3>Encounter</h3>
+          <div id="active-encounter" class="active-card-slot"></div>
+          <h3>Acquired</h3>
+          <div id="acquired-archetypes" class="mini-card-row"></div>
+        </aside>
+
+        <footer class="hand-bar" id="hand-bar">
+          <div class="hand-section">
+            <div class="hand-header">
+              <h3 id="hand-title">Your Psyche Hand</h3>
+              <span id="hand-stats"></span>
+              <span class="hand-hint">Click to select · double-click to inspect</span>
+            </div>
+            <div id="hand" class="hand"></div>
+          </div>
+          <div class="hand-section objects-section">
+            <div class="hand-header">
+              <h3>Objects (hand)</h3>
+            </div>
+            <div id="player-objects" class="hand objects-row"></div>
+          </div>
+          <div class="hand-section objects-section">
+            <div class="hand-header">
+              <h3>Persistent in play</h3>
+            </div>
+            <div id="player-persistent" class="hand objects-row"></div>
+          </div>
+        </footer>
+      </section>
+
+      <section id="screen-end" class="screen">
+        <div class="end-panel">
+          <h2 id="end-title"></h2>
+          <p id="end-message"></p>
+          <div class="end-actions">
+            <button id="btn-restart" class="btn primary">Return to Menu</button>
+            <button type="button" id="btn-replay-tutorial" class="btn">Replay Tutorial</button>
+            <button type="button" id="btn-end-overview" class="btn">Game Overview</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="card-modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+      <button class="modal-close" aria-label="Close">&times;</button>
+      <div id="modal-card"></div>
+    </div>
+  </div>
+
+  <div id="utility-modal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-backdrop utility-backdrop"></div>
+    <div class="modal-content utility-content">
+      <button class="modal-close utility-close" aria-label="Close">&times;</button>
+      <div id="utility-modal-body"></div>
+    </div>
+  </div>
+
+  <div id="tutorial-overlay" class="tutorial-overlay hidden" role="dialog" aria-modal="true">
+    <div class="tutorial-backdrop"></div>
+    <div class="tutorial-card">
+      <div class="tutorial-progress" id="tutorial-progress"></div>
+      <h2 id="tutorial-title"></h2>
+      <p id="tutorial-body"></p>
+      <div class="tutorial-actions">
+        <button type="button" id="tutorial-skip" class="btn">Skip</button>
+        <button type="button" id="tutorial-next" class="btn primary">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/play.js"></script>
+</body>
+</html>

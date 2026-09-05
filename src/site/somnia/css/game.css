@@ -53,6 +53,82 @@ body.in-game #app {
   overflow: hidden;
 }
 
+body.menu-window #app {
+  min-height: calc(100dvh - var(--topbar-h));
+}
+
+body.play-window #app {
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+body.play-window main {
+  flex: 1;
+  min-height: 0;
+}
+
+body.play-window #screen-game.active {
+  height: 100%;
+}
+
+.fullscreen-prompt {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  display: grid;
+  place-items: center;
+  background: rgba(4, 3, 12, 0.88);
+  backdrop-filter: blur(6px);
+  cursor: pointer;
+}
+
+.fullscreen-prompt.hidden {
+  display: none;
+}
+
+.fullscreen-prompt-card {
+  text-align: center;
+  padding: 2rem 2.5rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--accent);
+  background: var(--bg-panel);
+  box-shadow: var(--shadow);
+  max-width: 420px;
+  pointer-events: none;
+}
+
+.fullscreen-prompt-card h2 {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-display);
+}
+
+.fullscreen-prompt-card p {
+  margin: 0 0 0.75rem;
+  color: var(--muted);
+}
+
+.fullscreen-prompt-hint {
+  font-size: 0.78rem;
+  color: var(--accent);
+}
+
+body.play-window #screen-end.active {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.setup-launch-hint {
+  margin-top: 0.75rem;
+  font-size: 0.82rem;
+  text-align: center;
+}
+
 .top-bar {
   display: flex;
   justify-content: space-between;
@@ -1012,6 +1088,7 @@ body.in-game main {
 .game-card.elasticity { border-top: 3px solid var(--elasticity); }
 .game-card.willpower { border-top: 3px solid var(--willpower); }
 .game-card.archetype { border-top: 3px solid var(--gold); }
+.game-card.dream { border-top: 3px solid #b88cff; box-shadow: 0 0 18px rgba(184, 140, 255, 0.15); }
 .game-card.dreambeast { border-top: 3px solid var(--danger); }
 .game-card.object { border-top: 3px solid #a78bfa; }
 .game-card.event { border-top: 3px solid var(--muted); }

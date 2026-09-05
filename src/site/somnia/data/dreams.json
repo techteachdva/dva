@@ -3,72 +3,84 @@
     "id": "heroism",
     "name": "Heroism",
     "type": "dream",
+    "image": "images/dreams/heroism.png",
     "text": "You stand triumphant over your fallen foe and feel their essence enter your own. Each Persona Draws Psyche equal to their Willpower."
   },
   {
     "id": "injury",
     "name": "Injury",
     "type": "dream",
+    "image": "images/dreams/injury.png",
     "text": "You fall from a great height as the landscape undulates beneath your feet. Each Persona Discards Psyche Cards valued higher than their Willpower."
   },
   {
     "id": "chase",
     "name": "Chase",
     "type": "dream",
+    "image": "images/dreams/chase.png",
     "text": "The thing behind you seems to be gaining on you. Spawn 1 Encounter on each Persona-occupied Landscape."
   },
   {
     "id": "recovery",
     "name": "Recovery",
     "type": "dream",
+    "image": "images/dreams/recovery.png",
     "text": "The sun breaks through the misty clouds. Return 1 Card per Persona."
   },
   {
     "id": "well-being",
     "name": "Well Being",
     "type": "dream",
+    "image": "images/dreams/well-being.png",
     "text": "Suddenly you feel as if things are exactly the way they should be. All Personae Draw 3 Psyche."
   },
   {
     "id": "quiet",
     "name": "Quiet",
     "type": "dream",
+    "image": "images/dreams/quiet.png",
     "text": "Everything remains, nothing changes. Nothing Happens."
   },
   {
     "id": "betrayal",
     "name": "Betrayal",
     "type": "dream",
+    "image": "images/dreams/betrayal.png",
     "text": "The person who's been helping you suddenly vanishes with your Objects. Each Persona Represses Objects equal to Willpower minus Lucidity."
   },
   {
     "id": "travel",
     "name": "Travel",
     "type": "dream",
+    "image": "images/dreams/travel.png",
     "text": "You find yourself flying over the Patchwork Dreamscape. Next Explore Phase, each Persona may move anywhere for free."
   },
   {
     "id": "final-recurrence",
     "name": "The Final Recurrence",
     "type": "final",
+    "image": "images/dreams/final-recurrence.png",
     "text": "All hopes and fears flood the Dreamscape. Remaining Archetypes must be Met with 12 Psyche Plays using opposing suits."
   },
   {
     "id": "theta",
     "name": "Final Recurrence: THETA",
     "type": "final",
+    "image": "images/dreams/theta.png",
     "text": "You relax. Forget 8 Edge Landscapes. All Personae Draw 2 Psyche."
   },
   {
     "id": "alpha",
     "name": "Final Recurrence: ALPHA",
     "type": "final",
+    "image": "images/dreams/alpha.png",
     "text": "Everything is clear. Forget 4 Edge Landscapes. All Personae Draw 1 Object."
   },
   {
     "id": "you-never-wake",
     "name": "You Never Wake Up",
     "type": "final",
+    "image": "images/dreams/you-never-wake.png",
     "text": "You Lose. Bottom of Final Recurrence Deck."
   }
 ]

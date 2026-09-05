@@ -18,6 +18,7 @@ function suitClass(suit) {
 
 function cardTypeClass(card) {
   if (card.type === "dreamer") return "dreamer";
+  if (card.type === "dream" || card.type === "final" || card.type === "boss-dream") return "dream";
   if (card.type === "dreambeast" || card.boss) return "dreambeast";
   if (card.type === "object") return "object";
   if (card.type === "event") return card.suit || "event";
@@ -755,7 +756,8 @@ export function showScreen(id) {
   });
   const inGame = id === "screen-game";
   document.body.classList.toggle("in-game", inGame);
-  document.getElementById("hud").classList.toggle("hidden", !inGame);
+  const hud = document.getElementById("hud");
+  if (hud) hud.classList.toggle("hidden", !inGame);
   document.getElementById("header-actions")?.classList.toggle("hidden", !inGame);
 }
 

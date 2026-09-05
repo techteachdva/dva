@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
  * Copy generated Somnia art from Cursor assets into the repo.
- * Run after image generation batches complete.
+ * Expected asset filenames:
+ *   landscape-{id}.png, dreambeast-{id}.png, object-{id}.png, dream-{id}.png
  */
 import fs from "fs";
 import path from "path";
@@ -18,7 +19,7 @@ const ASSETS = path.join(
 );
 const SOMNIA = path.join(REPO, "src/site/somnia/images");
 
-function copyPattern(prefix, destDir, stripPrefix) {
+function copyPattern(prefix, destDir) {
   if (!fs.existsSync(ASSETS)) {
     console.warn(`Assets folder not found: ${ASSETS}`);
     return 0;
@@ -27,15 +28,20 @@ function copyPattern(prefix, destDir, stripPrefix) {
   let count = 0;
   for (const file of fs.readdirSync(ASSETS)) {
     if (!file.startsWith(prefix) || !file.endsWith(".png")) continue;
-    const id = file.slice(stripPrefix.length).replace(/\.png$/, "");
+    const id = file.slice(prefix.length).replace(/\.png$/, "");
     const dest = path.join(destDir, `${id}.png`);
     fs.copyFileSync(path.join(ASSETS, file), dest);
     count += 1;
+    console.log(`  ${file} -> ${path.relative(REPO, dest)}`);
   }
   return count;
 }
 
-const landscapes = copyPattern("landscape-", path.join(SOMNIA, "landscapes"), "landscape-".length);
-const dreambeasts = copyPattern("dreambeast-", path.join(SOMNIA, "dreambeasts"), "dreambeast-".length);
+const landscapes = copyPattern("landscape-", path.join(SOMNIA, "landscapes"));
+const dreambeasts = copyPattern("dreambeast-", path.join(SOMNIA, "dreambeasts"));
+const objects = copyPattern("object-", path.join(SOMNIA, "objects"));
+const dreams = copyPattern("dream-", path.join(SOMNIA, "dreams"));
 
-console.log(`Copied ${landscapes} landscapes, ${dreambeasts} dreambeasts to ${SOMNIA}`);
+console.log(
+  `Copied ${landscapes} landscapes, ${dreambeasts} dreambeasts, ${objects} objects, ${dreams} dreams`
+);
