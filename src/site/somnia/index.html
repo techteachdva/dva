@@ -69,35 +69,37 @@
       </section>
 
       <section id="screen-game" class="screen">
-        <div class="game-layout">
-          <aside class="sidebar left">
-            <h3>Dreamers <span class="sidebar-hint">hover for tips</span></h3>
-            <div id="player-list"></div>
-            <h3>Decks</h3>
-            <button type="button" id="btn-toggle-decks" class="btn btn-sm deck-toggle" aria-expanded="true">Hide decks</button>
-            <div class="deck-tray" id="deck-tray"></div>
-          </aside>
+        <aside class="sidebar left">
+          <h3>Dreamers <span class="sidebar-hint">hover for tips</span></h3>
+          <div id="player-list"></div>
+          <h3>Decks</h3>
+          <button type="button" id="btn-toggle-decks" class="btn btn-sm deck-toggle" aria-expanded="true">Hide decks</button>
+          <div class="deck-tray" id="deck-tray"></div>
+        </aside>
 
-          <div class="center-stage">
+        <div class="table-surface" id="table-surface">
+          <div class="table-chrome">
             <div id="phase-stepper" class="phase-stepper" aria-label="Round phases"></div>
             <div id="guide-panel" class="guide-panel"></div>
-            <div id="phase-banner" class="phase-banner">Reveal Phase</div>
-            <div class="board-viewport" id="board-viewport">
-              <div id="hex-board" class="hex-board"></div>
-            </div>
+            <div id="phase-banner" class="phase-banner" aria-hidden="true"></div>
+          </div>
+          <div class="board-viewport" id="board-viewport">
+            <div id="hex-board" class="hex-board"></div>
+          </div>
+          <div class="table-footer">
             <div id="phase-actions" class="phase-actions"></div>
             <div id="log" class="game-log" aria-live="polite"></div>
           </div>
-
-          <aside class="sidebar right">
-            <h3>Active Archetype</h3>
-            <div id="active-archetype" class="active-card-slot"></div>
-            <h3>Encounter</h3>
-            <div id="active-encounter" class="active-card-slot"></div>
-            <h3>Acquired</h3>
-            <div id="acquired-archetypes" class="mini-card-row"></div>
-          </aside>
         </div>
+
+        <aside class="sidebar right">
+          <h3>Active Archetype</h3>
+          <div id="active-archetype" class="active-card-slot"></div>
+          <h3>Encounter</h3>
+          <div id="active-encounter" class="active-card-slot"></div>
+          <h3>Acquired</h3>
+          <div id="acquired-archetypes" class="mini-card-row"></div>
+        </aside>
 
         <footer class="hand-bar" id="hand-bar">
           <div class="hand-section">

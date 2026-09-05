@@ -257,14 +257,28 @@ export function hideModal() {
 }
 
 /** Hex layout scale — half-width in pixel math (larger = bigger map). */
-const HEX_SIZE = 100;
+const HEX_BASE = 58;
+const HEX_MIN = 72;
+const HEX_MAX = 220;
+
+function fitHexSize(state) {
+  const viewport = document.getElementById("board-viewport");
+  if (!viewport) return 100;
+
+  const pad = 24;
+  const maxW = Math.max(120, viewport.clientWidth - pad);
+  const maxH = Math.max(120, viewport.clientHeight - pad);
+  const bounds = boardPixelBounds(state, HEX_BASE);
+  const fit = Math.min(maxW / bounds.width, maxH / bounds.height, 3.2);
+  return Math.max(HEX_MIN, Math.min(HEX_MAX, Math.floor(HEX_BASE * fit)));
+}
 
 export function renderBoard(state, onSelectLandscape, legalMoveIds = []) {
   const board = document.getElementById("hex-board");
   board.innerHTML = "";
 
-  const size = HEX_SIZE;
-  const scale = size / 58;
+  const size = fitHexSize(state);
+  const scale = size / HEX_BASE;
   board.style.setProperty("--hex-scale", String(scale));
   const bounds = boardPixelBounds(state, size);
   board.style.position = "relative";
@@ -583,16 +597,14 @@ export function renderGuidePanel(state) {
     return;
   }
   el.classList.remove("hidden");
-  const steps = obj.steps.map((s) => `<li>${formatGuideStep(s)}</li>`).join("");
-  const tip = obj.tip ? `<p class="guide-tip">💡 ${obj.tip}</p>` : "";
+  const step = obj.steps[0] ? formatGuideStep(obj.steps[0]) : "";
+  const tip = obj.tip ? `<span class="guide-tip-inline"> · ${obj.tip}</span>` : "";
   el.innerHTML = `
     <div class="guide-header suit-${obj.suit || "lucidity"}">
-      <span class="guide-icon">${suitIconHtml(obj.suit || "lucidity", { size: 16 })}</span>
+      <span class="guide-icon">${suitIconHtml(obj.suit || "lucidity", { size: 14 })}</span>
       <span class="guide-title">${obj.title}</span>
-      <span class="guide-phase">${obj.phase}</span>
+      <span class="guide-step-compact">${step}${tip}</span>
     </div>
-    <ol class="guide-steps">${steps}</ol>
-    ${tip}
   `;
 }
 
@@ -742,6 +754,7 @@ export function showScreen(id) {
     screen.classList.toggle("active", screen.id === id);
   });
   const inGame = id === "screen-game";
+  document.body.classList.toggle("in-game", inGame);
   document.getElementById("hud").classList.toggle("hidden", !inGame);
   document.getElementById("header-actions")?.classList.toggle("hidden", !inGame);
 }

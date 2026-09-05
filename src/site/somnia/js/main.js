@@ -71,11 +71,26 @@ let selectedDreamerIds = [];
 let tutorialIndex = -1;
 const lastCardClick = { id: null, time: 0 };
 
+let boardResizeTimer = null;
+
+function bindBoardResize() {
+  const vp = document.getElementById("board-viewport");
+  if (!vp || vp.dataset.resizeBound) return;
+  vp.dataset.resizeBound = "1";
+  const observer = new ResizeObserver(() => {
+    if (!state || !document.getElementById("screen-game")?.classList.contains("active")) return;
+    clearTimeout(boardResizeTimer);
+    boardResizeTimer = setTimeout(() => renderAll(), 80);
+  });
+  observer.observe(vp);
+}
+
 async function init() {
   gameData = await loadGameData();
   bindSetup();
   bindModal();
   bindHelp();
+  bindBoardResize();
   renderSetupIntro();
   renderDreamerPicker(gameData.dreamers, selectedDreamerIds, toggleDreamer);
   document.getElementById("btn-restart").addEventListener("click", () => {
@@ -178,6 +193,7 @@ function startGame() {
   state = createInitialState(gameData, { lengthKey, selectedDreamers });
   addLog(state, "Somnia — Escape before the Dream Deck runs out. Follow the Guide panel for your next step.");
   showScreen("screen-game");
+  bindBoardResize();
   renderAll();
   if (!hasSeenTutorial()) startTutorial(true);
 }
