@@ -1,4 +1,10 @@
 import { getPhase, activePlayer, headPlayer } from "./state.js";
+import { coopMeetPlayTotal, allSelectedCards } from "./rules.js";
+import { handLimitForPlayer } from "./objects.js";
+import { SUIT_SYMBOLS, SUIT_LABELS } from "./rules.js";
+import { getQuestStatus } from "./quests.js";
+import { hexToPixel, boardPixelBounds } from "./hex.js";
+import { subconsciousCount, subconsciousPilesForUI } from "./subconscious.js";
 
 function suitClass(suit) {
   return suit ? `suit-${suit}` : "";
@@ -36,6 +42,40 @@ function createArtElement(card) {
   return art;
 }
 
+function renderPsycheCard(card, { selected, onClick, mini }) {
+  const el = document.createElement("button");
+  el.type = "button";
+  el.className = [
+    "game-card",
+    "psyche-card",
+    card.suit,
+    selected ? "selected" : "",
+    mini ? "mini" : "",
+  ].filter(Boolean).join(" ");
+
+  const symbol = SUIT_SYMBOLS[card.suit] || "";
+  const label = SUIT_LABELS[card.suit] || card.suit;
+
+  el.innerHTML = `
+    <span class="psyche-value">${card.value}</span>
+    <span class="psyche-suit ${suitClass(card.suit)}">${symbol}</span>
+    <span class="psyche-label">${label}</span>
+  `;
+
+  if (onClick) el.addEventListener("click", onClick);
+  return el;
+}
+
+function dreamerStatsHtml(dreamer) {
+  return `
+    <div class="dreamer-stats">
+      <span class="stat suit-lucidity" title="Lucidity">◆${dreamer.lucidity}</span>
+      <span class="stat suit-elasticity" title="Elasticity">◇${dreamer.elasticity}</span>
+      <span class="stat suit-willpower" title="Willpower">▲${dreamer.willpower}</span>
+    </div>
+  `;
+}
+
 function suitGradient(card) {
   const colors = {
     lucidity: "#1a3a5c",
@@ -50,6 +90,11 @@ function suitGradient(card) {
 
 export function renderCard(card, options = {}) {
   const { portrait = false, mini = false, selected = false, onClick } = options;
+
+  if (card.type === "psyche" && !portrait) {
+    return renderPsycheCard(card, { selected, onClick, mini });
+  }
+
   const el = document.createElement("button");
   el.type = "button";
   el.className = [
@@ -92,6 +137,22 @@ export function showModal(card) {
   const modal = document.getElementById("card-modal");
   const container = document.getElementById("modal-card");
   container.innerHTML = "";
+
+  if (card.type === "psyche") {
+    const detail = document.createElement("div");
+    detail.className = "modal-detail psyche-modal";
+    detail.innerHTML = `
+      <div class="psyche-modal-face ${card.suit}">
+        <span class="psyche-value large">${card.value}</span>
+        <span class="psyche-suit large ${suitClass(card.suit)}">${SUIT_SYMBOLS[card.suit]}</span>
+      </div>
+      <h2>${SUIT_LABELS[card.suit]} ${card.value}</h2>
+      <p>Psyche card — used for Reveal (◆), Explore (◇), and Meet (▲) phases.</p>
+    `;
+    container.appendChild(detail);
+    modal.classList.remove("hidden");
+    return;
+  }
 
   const detail = document.createElement("div");
   detail.className = "modal-detail";
@@ -176,11 +237,21 @@ export function hideModal() {
   document.getElementById("card-modal").classList.add("hidden");
 }
 
-export function renderBoard(state, onSelectLandscape) {
+export function renderBoard(state, onSelectLandscape, legalMoveIds = []) {
   const board = document.getElementById("hex-board");
   board.innerHTML = "";
 
+  const size = 58;
+  const bounds = boardPixelBounds(state, size);
+  board.style.position = "relative";
+  board.style.width = `${bounds.width}px`;
+  board.style.height = `${bounds.height}px`;
+  board.style.margin = "0 auto";
+
+  const legalSet = new Set(legalMoveIds);
+
   state.board.forEach((tile) => {
+    const { x, y } = hexToPixel(tile.q, tile.r, size);
     const el = document.createElement("button");
     el.type = "button";
     el.className = [
@@ -189,8 +260,12 @@ export function renderBoard(state, onSelectLandscape) {
       tile.wasteland ? "wasteland" : "",
       !tile.revealed ? "hidden-tile" : "",
       state.selectedLandscapeId === tile.id ? "selected" : "",
+      legalSet.has(tile.id) ? "movable" : "",
       tile.suit ? `suit-${tile.suit}` : "",
     ].filter(Boolean).join(" ");
+
+    el.style.left = `${x + bounds.offsetX}px`;
+    el.style.top = `${y + bounds.offsetY}px`;
 
     if (tile.revealed && tile.image) {
       el.style.backgroundImage = `url('${tile.image}')`;
@@ -201,13 +276,15 @@ export function renderBoard(state, onSelectLandscape) {
 
     const occupants = state.players.filter((p) => p.landscapeId === tile.id && p.alive);
     const encounter = tile.encounter;
+    const finalArch = tile.finalArchetype;
     const encounterMark = encounter ? "⚔" : "";
+    const finalMark = finalArch && !finalArch.defeated ? "★" : "";
 
     el.innerHTML = `
       <div class="hex-overlay"></div>
       <div class="name">${tile.revealed ? tile.name : "???"}</div>
       <div class="suit">${tile.revealed ? (tile.suit || "neutral") : "hidden"}</div>
-      <div class="tokens">${occupants.map((p) => p.dreamer.name.split(" ").pop()).join(" · ")} ${encounterMark}${encounter ? ` ${encounter.name.split(" ")[0]}` : ""}</div>
+      <div class="tokens">${occupants.map((p) => p.dreamer.name.split(" ").pop()).join(" · ")} ${encounterMark}${encounter ? ` ${encounter.name.split(" ")[0]}` : ""}${finalMark}${finalArch && !finalArch.defeated ? ` ${finalArch.name.split(" ")[0]}` : ""}</div>
     `;
 
     el.addEventListener("click", () => onSelectLandscape(tile.id));
@@ -222,12 +299,19 @@ export function renderPlayers(state, onSelectPlayer) {
   state.players.forEach((player, index) => {
     const chip = document.createElement("button");
     chip.type = "button";
-    chip.className = `player-chip ${index === state.activePlayerIndex ? "active" : ""}`;
+    const tradeTarget = state.tradeMode && state.trade?.step === "pick-partner";
+    chip.className = [
+      "player-chip",
+      index === state.activePlayerIndex ? "active" : "",
+      !player.alive ? "dead" : "",
+      tradeTarget ? "trade-target" : "",
+    ].filter(Boolean).join(" ");
     chip.innerHTML = `
       <img src="${player.dreamer.image}" alt="" onerror="this.style.display='none'">
       <div class="info">
-        <div class="name">${player.name}${player.isHead ? " ★" : ""}</div>
-        <div class="sub">${player.powerTokens} power · ${player.hand.length} psyche · ${player.objects.length} obj</div>
+        <div class="name">${player.name}${player.isHead ? " ★" : ""}${!player.alive ? " (lost)" : ""}</div>
+        ${dreamerStatsHtml(player.dreamer)}
+        <div class="sub">${player.powerTokens} power · ${player.hand.length}/${handLimitForPlayer(state, player)} psyche · ${player.objects.length} obj · ${player.persistent?.length || 0} persistent</div>
       </div>
     `;
     chip.addEventListener("click", () => onSelectPlayer(index));
@@ -237,36 +321,98 @@ export function renderPlayers(state, onSelectPlayer) {
 
 export function renderObjects(state, onCardClick) {
   const container = document.getElementById("player-objects");
+  const persistentEl = document.getElementById("player-persistent");
   if (!container) return;
-  container.innerHTML = "";
   const player = activePlayer(state);
+  container.innerHTML = "";
+  if (persistentEl) persistentEl.innerHTML = "";
 
   if (!player.objects.length) {
-    container.textContent = "No Objects held.";
-    return;
+    container.textContent = "No Objects in hand.";
+  } else {
+    player.objects.forEach((card) => {
+      container.appendChild(renderCard(card, {
+        mini: true,
+        onClick: () => onCardClick(card, "hand"),
+      }));
+    });
   }
 
-  player.objects.forEach((card) => {
-    container.appendChild(renderCard(card, {
-      mini: true,
-      onClick: () => onCardClick(card),
-    }));
-  });
+  if (persistentEl) {
+    if (!player.persistent?.length) {
+      persistentEl.textContent = "No Persistent Objects in play.";
+    } else {
+      player.persistent.forEach((card) => {
+        persistentEl.appendChild(renderCard(card, {
+          mini: true,
+          onClick: () => onCardClick(card, "persistent"),
+        }));
+      });
+    }
+  }
 }
 
 export function renderHand(state, onCardClick) {
   const hand = document.getElementById("hand");
   const stats = document.getElementById("hand-stats");
+  const title = document.getElementById("hand-title");
   const player = activePlayer(state);
   hand.innerHTML = "";
-  stats.textContent = `${player.hand.length}/10 cards · ${player.powerTokens} power · ${player.objects.length} objects`;
+  hand.classList.remove("coop-mode");
+  const limit = handLimitForPlayer(state, player);
+  if (title) title.textContent = "Your Psyche Hand";
+  stats.textContent = `◆${player.dreamer.lucidity} ◇${player.dreamer.elasticity} ▲${player.dreamer.willpower} · ${player.hand.length}/${limit} · ${player.powerTokens} power`;
 
   player.hand.forEach((card) => {
     const el = renderCard(card, {
-      selected: state.selectedHand.includes(card.instanceId),
-      onClick: () => onCardClick(card),
+      selected: state.selectedHand.includes(card.instanceId)
+        || state.trade?.offerPsycheIds?.includes(card.instanceId),
+      onClick: () => onCardClick(card, player),
     });
     hand.appendChild(el);
+  });
+}
+
+export function renderCoopMeetHands(state, onCardClick) {
+  const hand = document.getElementById("hand");
+  const stats = document.getElementById("hand-stats");
+  const title = document.getElementById("hand-title");
+  hand.innerHTML = "";
+
+  const poolCount = allSelectedCards(state).length;
+  const poolTotal = coopMeetPlayTotal(state);
+  const bonus = state.pendingPowerBonus ? ` · +${state.pendingPowerBonus} bonus pending` : "";
+  if (title) title.textContent = "Cooperative Psyche Pool";
+  stats.textContent = `${poolCount}/3 cards · total ${poolTotal}${bonus} · click any Dreamer's Psyche`;
+  hand.classList.add("coop-mode");
+
+  state.players.filter((p) => p.alive).forEach((player, index) => {
+    const row = document.createElement("div");
+    row.className = [
+      "coop-hand-row",
+      index === state.activePlayerIndex ? "focused" : "",
+    ].filter(Boolean).join(" ");
+
+    const label = document.createElement("div");
+    label.className = "coop-hand-label";
+    label.textContent = `${player.name}${player.isHead ? " ★" : ""} · ${player.hand.length} cards`;
+    row.appendChild(label);
+
+    const cards = document.createElement("div");
+    cards.className = "coop-hand-cards";
+    if (!player.hand.length) {
+      cards.textContent = "Empty hand";
+      cards.classList.add("empty");
+    } else {
+      player.hand.forEach((card) => {
+        cards.appendChild(renderCard(card, {
+          selected: state.selectedHand.includes(card.instanceId),
+          onClick: () => onCardClick(card, player),
+        }));
+      });
+    }
+    row.appendChild(cards);
+    hand.appendChild(row);
   });
 }
 
@@ -283,7 +429,7 @@ export function renderDecks(state, onDeckClick) {
     { id: "mindstream-lucidity", label: "Mindstream ◆", count: state.mindstreamDecks.lucidity.length, suit: "lucidity" },
     { id: "mindstream-elasticity", label: "Mindstream ◇", count: state.mindstreamDecks.elasticity.length, suit: "elasticity" },
     { id: "mindstream-willpower", label: "Mindstream ▲", count: state.mindstreamDecks.willpower.length, suit: "willpower" },
-    { id: "subconscious", label: "Subconscious", count: state.subconscious.length },
+    { id: "subconscious", label: "Subconscious", count: subconsciousCount(state.subconscious) },
   ];
 
   decks.forEach((deck) => {
@@ -305,12 +451,30 @@ export function renderActiveSlots(state, onCardClick) {
   encounterSlot.innerHTML = "";
   acquired.innerHTML = "";
 
+  if (state.persistentArchetypes?.length) {
+    const kept = document.createElement("div");
+    kept.className = "kept-archetypes";
+    kept.innerHTML = `<h4>In Play</h4><div class="mini-card-row">${state.persistentArchetypes.map((a) =>
+      `<span class="kept-arch">${a.name} (+1 Persistent)</span>`).join("")}</div>`;
+    archetypeSlot.appendChild(kept);
+  }
+
   if (state.activeArchetype) {
     const card = { ...state.activeArchetype };
+    const statuses = getQuestStatus(state, card);
+    const questHtml = statuses.length
+      ? `<ul class="quest-list compact">${statuses.map((q) =>
+          `<li class="${q.done ? "done" : ""}">${q.index + 1}. ${q.text}${q.done ? " ✓" : ""}</li>`).join("")}</ul>`
+      : "";
     archetypeSlot.appendChild(renderCard(card, {
       portrait: true,
       onClick: () => onCardClick(card),
     }));
+    if (questHtml) {
+      const q = document.createElement("div");
+      q.innerHTML = questHtml;
+      archetypeSlot.appendChild(q);
+    }
   } else {
     archetypeSlot.textContent = "No active Archetype.";
   }
@@ -336,17 +500,23 @@ export function renderActiveSlots(state, onCardClick) {
   });
 }
 
-export function renderHud(state) {
-  document.getElementById("hud-goal").textContent = `${state.goalPoints} pts`;
+export function renderHud(state, hint = "") {
+  const goalText = state.finalRecurrence
+    ? `Final: ${state.finalArchetypes?.filter((a) => !a.defeated).length || 0} left`
+    : `${state.goalPoints} pts`;
+  document.getElementById("hud-goal").textContent = goalText;
   document.getElementById("hud-points").textContent = String(state.acquiredPoints);
   document.getElementById("hud-dreams").textContent = String(state.dreamDeck.length);
   document.getElementById("hud-round").textContent = String(state.round);
   document.getElementById("hud-phase").textContent = getPhase(state);
-  const meetInfo = state.meetActionLimit
-    ? ` · ${state.meetActions}/${state.meetActionLimit} actions`
-    : "";
+  const meetInfo = state.meetActionBudget
+    ? ` · ${state.meetActionsUsed}/${state.meetActionBudget} actions`
+    : state.exploreMovesLeft
+      ? ` · ${state.exploreMovesLeft} moves`
+      : "";
+  const bonus = state.pendingPowerBonus ? ` · +${state.pendingPowerBonus} pending` : "";
   document.getElementById("phase-banner").textContent =
-    `${getPhase(state)} Phase — ${headPlayer(state).name} is Head Dreamer${meetInfo}`;
+    `${getPhase(state)} — ${headPlayer(state).name} is Head${meetInfo}${bonus}${hint ? ` · ${hint}` : ""}`;
 }
 
 export function renderLog(state) {
@@ -374,6 +544,8 @@ export function renderDreamerPicker(dreamers, selectedIds, onToggle) {
 
   dreamers.forEach((dreamer) => {
     const selected = selectedIds.includes(dreamer.id);
+    const wrapper = document.createElement("div");
+    wrapper.className = `dreamer-pick ${selected ? "selected" : ""}`;
     const card = renderCard(
       { ...dreamer, suit: "lucidity" },
       {
@@ -382,7 +554,12 @@ export function renderDreamerPicker(dreamers, selectedIds, onToggle) {
         onClick: () => onToggle(dreamer.id),
       }
     );
-    picker.appendChild(card);
+    const stats = document.createElement("div");
+    stats.className = "dreamer-pick-stats";
+    stats.innerHTML = dreamerStatsHtml(dreamer);
+    wrapper.appendChild(card);
+    wrapper.appendChild(stats);
+    picker.appendChild(wrapper);
   });
 }
 
@@ -397,4 +574,148 @@ export function showEndScreen(won, message) {
   showScreen("screen-end");
   document.getElementById("end-title").textContent = won ? "You Wake Up!" : "Trapped Forever";
   document.getElementById("end-message").textContent = message;
+}
+
+export function showMindstreamPicker(onPick) {
+  const modal = document.getElementById("utility-modal");
+  const body = document.getElementById("utility-modal-body");
+  body.innerHTML = `
+    <h2>Draw Mindstream</h2>
+    <p>Choose a suit deck:</p>
+    <div class="utility-actions">
+      <button type="button" class="btn" data-suit="lucidity">◆ Lucidity</button>
+      <button type="button" class="btn" data-suit="elasticity">◇ Elasticity</button>
+      <button type="button" class="btn" data-suit="willpower">▲ Willpower</button>
+    </div>
+  `;
+  body.querySelectorAll("[data-suit]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      hideUtilityModal();
+      onPick(btn.dataset.suit);
+    });
+  });
+  modal.classList.remove("hidden");
+}
+
+export function showTradeControls(state, onConfirm, onCancel) {
+  const modal = document.getElementById("utility-modal");
+  const body = document.getElementById("utility-modal-body");
+  const partner = state.players.find((p) => p.id === state.trade?.partnerId);
+  const offerCount = state.trade?.offerPsycheIds?.length || 0;
+  body.innerHTML = `
+    <h2>Trade with ${partner?.name || "…"}</h2>
+    <p>Select up to 3 Psyche cards from your hand to offer, then confirm.</p>
+    <p><strong>Offering:</strong> ${offerCount} card(s)</p>
+    <div class="utility-actions">
+      <button type="button" class="btn primary" id="trade-confirm">Confirm Trade</button>
+      <button type="button" class="btn" id="trade-cancel">Cancel</button>
+    </div>
+  `;
+  body.querySelector("#trade-confirm").addEventListener("click", () => {
+    hideUtilityModal();
+    onConfirm();
+  });
+  body.querySelector("#trade-cancel").addEventListener("click", () => {
+    hideUtilityModal();
+    onCancel();
+  });
+  modal.classList.remove("hidden");
+}
+
+export function showRespawnPicker(dreamers, onPick) {
+  const modal = document.getElementById("utility-modal");
+  const body = document.getElementById("utility-modal-body");
+  body.innerHTML = `
+    <h2>Choose a New Dreamer</h2>
+    <p>A Dreamer was lost. Pick an unused Dreamer to continue on The Bed.</p>
+    <div class="card-grid picker" id="respawn-picker"></div>
+  `;
+  const picker = body.querySelector("#respawn-picker");
+  dreamers.forEach((dreamer) => {
+    const card = renderCard({ ...dreamer, suit: "lucidity" }, {
+      portrait: true,
+      onClick: () => {
+        hideUtilityModal();
+        onPick(dreamer.id);
+      },
+    });
+    picker.appendChild(card);
+  });
+  modal.classList.remove("hidden");
+}
+
+export function showSubconsciousPicker(state, onPick, onDone) {
+  const modal = document.getElementById("utility-modal");
+  const body = document.getElementById("utility-modal-body");
+  const pending = state.pendingReturn;
+  const remaining = pending ? pending.remaining - pending.picked.length : 0;
+
+  body.innerHTML = `
+    <h2>Return from Subconscious</h2>
+    <p>Choose ${remaining} card(s) to Return to discard piles.</p>
+    <div id="subconscious-piles" class="subconscious-piles"></div>
+    <div class="utility-actions">
+      <button type="button" class="btn" id="return-skip">Skip remaining</button>
+    </div>
+  `;
+
+  const container = body.querySelector("#subconscious-piles");
+  subconsciousPilesForUI(state).forEach((pile) => {
+    const section = document.createElement("div");
+    section.className = "subconscious-pile";
+    section.innerHTML = `<h4>${pile.label} (${pile.cards.length})</h4>`;
+    const row = document.createElement("div");
+    row.className = "mini-card-row";
+    pile.cards.forEach((card) => {
+      const picked = pending?.picked.some((c) => c.instanceId === card.instanceId);
+      row.appendChild(renderCard(card, {
+        mini: true,
+        selected: picked,
+        onClick: () => onPick(card.instanceId),
+      }));
+    });
+    section.appendChild(row);
+    container.appendChild(section);
+  });
+
+  body.querySelector("#return-skip")?.addEventListener("click", () => {
+    hideUtilityModal();
+    onDone();
+  });
+
+  modal.classList.remove("hidden");
+}
+
+export function showSubconsciousBrowse(state, onCardClick) {
+  const modal = document.getElementById("utility-modal");
+  const body = document.getElementById("utility-modal-body");
+  body.innerHTML = `
+    <h2>The Subconscious</h2>
+    <p>Face-up repressed cards (searchable when Returning).</p>
+    <div id="subconscious-browse" class="subconscious-piles"></div>
+  `;
+  const container = body.querySelector("#subconscious-browse");
+  subconsciousPilesForUI(state).forEach((pile) => {
+    const section = document.createElement("div");
+    section.className = "subconscious-pile";
+    section.innerHTML = `<h4>${pile.label}</h4>`;
+    const row = document.createElement("div");
+    row.className = "mini-card-row";
+    pile.cards.forEach((card) => {
+      row.appendChild(renderCard(card, {
+        mini: true,
+        onClick: () => onCardClick(card),
+      }));
+    });
+    section.appendChild(row);
+    container.appendChild(section);
+  });
+  if (!container.children.length) {
+    container.innerHTML = "<p>Empty — no repressed cards.</p>";
+  }
+  modal.classList.remove("hidden");
+}
+
+export function hideUtilityModal() {
+  document.getElementById("utility-modal").classList.add("hidden");
 }

@@ -49,14 +49,25 @@ export function uid(prefix = "id") {
   return `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-export function buildPsycheDeck(psycheData) {
+export function buildPsycheDeck(psycheConfig) {
+  const config = psycheConfig.copiesPerValue
+    ? psycheConfig
+    : { minValue: 1, maxValue: 6, copiesPerValue: 3, suits: ["lucidity", "elasticity", "willpower"] };
+
   const deck = [];
-  Object.values(psycheData).forEach((cards) => {
-    cards.forEach((card) => {
-      for (let i = 0; i < 3; i += 1) {
-        deck.push({ ...card, instanceId: uid("psyche") });
+  config.suits.forEach((suit) => {
+    for (let value = config.minValue; value <= config.maxValue; value += 1) {
+      for (let copy = 0; copy < config.copiesPerValue; copy += 1) {
+        deck.push({
+          id: `${suit}-${value}`,
+          type: "psyche",
+          suit,
+          value,
+          name: `${suit.charAt(0).toUpperCase()}${suit.slice(1)} ${value}`,
+          instanceId: uid("psyche"),
+        });
       }
-    });
+    }
   });
   return shuffle(deck);
 }
@@ -107,11 +118,3 @@ export function insertBossDreams(deck, dreambeasts) {
   return copy;
 }
 
-export function repressFromMindstream(state, suit, count, playerCount) {
-  const perPlayer = playerCount * 3;
-  const deck = state.mindstreamDecks[suit];
-  if (!deck) return;
-  for (let i = 0; i < perPlayer && deck.length; i += 1) {
-    state.subconscious.push(deck.shift());
-  }
-}

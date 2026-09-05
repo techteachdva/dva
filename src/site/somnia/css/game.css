@@ -185,6 +185,7 @@ main { flex: 1; }
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  overflow-x: auto;
 }
 
 .phase-banner {
@@ -201,28 +202,26 @@ main { flex: 1; }
 
 .hex-board {
   flex: 1;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-content: start;
-  gap: 0.5rem;
+  display: block;
   padding: 0.75rem;
   background: var(--bg-panel);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  min-height: 320px;
+  min-height: 360px;
+  overflow: auto;
 }
 
 .hex-tile {
+  position: absolute;
   width: 108px;
   min-height: 96px;
+  transform: translate(-50%, -50%);
   padding: 0.5rem;
   border-radius: 12px;
   border: 1px solid var(--border);
   background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.15)) center/cover no-repeat;
   text-align: center;
   cursor: pointer;
-  position: relative;
   transition: transform 0.15s, border-color 0.15s;
   overflow: hidden;
 }
@@ -239,12 +238,16 @@ main { flex: 1; }
   background: linear-gradient(180deg, rgba(20,10,30,0.3) 0%, rgba(0,0,0,0.75) 100%);
 }
 
-.hex-tile:hover { transform: translateY(-2px); border-color: var(--accent); }
+.hex-tile:hover { transform: translate(-50%, calc(-50% - 2px)); border-color: var(--accent); }
 .hex-tile.center { border-color: var(--gold); box-shadow: 0 0 20px rgba(240, 201, 106, 0.15); }
 .hex-tile.wasteland { filter: grayscale(0.6) brightness(0.7); }
 .hex-tile.wasteland .hex-overlay { background: linear-gradient(180deg, rgba(60,40,20,0.2) 0%, rgba(0,0,0,0.7) 100%); }
 .hex-tile.hidden-tile { filter: grayscale(0.9) brightness(0.5); }
 .hex-tile.selected { outline: 2px solid var(--accent-strong); }
+.hex-tile.movable {
+  outline: 2px dashed var(--success);
+  box-shadow: 0 0 12px rgba(95, 224, 176, 0.35);
+}
 .hex-tile .name { font-size: 0.72rem; font-weight: 600; line-height: 1.2; position: relative; z-index: 1; text-shadow: 0 1px 4px rgba(0,0,0,0.9); }
 .hex-tile .suit { font-size: 0.62rem; color: var(--muted); text-transform: uppercase; position: relative; z-index: 1; }
 .hex-tile .tokens { position: absolute; bottom: 4px; left: 0; right: 0; font-size: 0.6rem; color: var(--gold); z-index: 1; text-shadow: 0 1px 3px rgba(0,0,0,0.9); }
@@ -303,6 +306,45 @@ main { flex: 1; }
   gap: 0.5rem;
   overflow-x: auto;
   padding-bottom: 0.25rem;
+}
+
+.coop-hand-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.45rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  min-width: 100%;
+}
+
+.coop-hand-row.focused .coop-hand-label {
+  color: var(--accent);
+}
+
+.coop-hand-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.coop-hand-cards {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.15rem;
+}
+
+.coop-hand-cards.empty {
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
+#hand.coop-mode {
+  flex-direction: column;
+  align-items: stretch;
+  max-height: 220px;
+  overflow-y: auto;
 }
 
 .game-card {
@@ -543,6 +585,117 @@ main { flex: 1; }
   background: rgba(255,255,255,0.06);
   font-size: 0.75rem;
 }
+
+/* Psyche cards — numbered & suited */
+.game-card.psyche-card {
+  width: 72px;
+  min-height: 104px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  padding: 0.5rem 0.35rem;
+  border-width: 2px;
+}
+
+.game-card.psyche-card.lucidity {
+  background: linear-gradient(160deg, rgba(110, 200, 255, 0.2), rgba(20, 40, 80, 0.9));
+  border-color: var(--lucidity);
+}
+
+.game-card.psyche-card.elasticity {
+  background: linear-gradient(160deg, rgba(95, 224, 176, 0.2), rgba(20, 60, 50, 0.9));
+  border-color: var(--elasticity);
+}
+
+.game-card.psyche-card.willpower {
+  background: linear-gradient(160deg, rgba(255, 139, 110, 0.2), rgba(80, 30, 20, 0.9));
+  border-color: var(--willpower);
+}
+
+.psyche-value {
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.psyche-suit {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.psyche-label {
+  font-size: 0.55rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  text-align: center;
+}
+
+.psyche-modal-face {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+}
+
+.psyche-modal-face .psyche-value.large { font-size: 4rem; }
+.psyche-modal-face .psyche-suit.large { font-size: 2.5rem; }
+
+/* Dreamer stats */
+.dreamer-stats {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  margin: 0.2rem 0;
+}
+
+.dreamer-stats .stat {
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  background: rgba(0,0,0,0.25);
+}
+
+.dreamer-pick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.dreamer-pick.selected .game-card {
+  outline: 2px solid var(--accent);
+}
+
+.dreamer-pick-stats {
+  font-size: 0.75rem;
+}
+
+.player-chip .dreamer-stats {
+  margin-top: 0.15rem;
+}
+
+.quest-list.compact { font-size: 0.68rem; margin: 0.35rem 0 0; padding-left: 1rem; }
+.quest-list.compact li.done { color: var(--success); }
+
+.player-chip.dead { opacity: 0.55; }
+.player-chip.trade-target { outline: 1px dashed var(--accent); }
+
+.utility-content { max-width: 520px; }
+.utility-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; }
+
+.subconscious-piles { max-height: 50vh; overflow: auto; }
+.subconscious-pile { margin-bottom: 0.75rem; }
+.subconscious-pile h4 { margin: 0 0 0.35rem; font-size: 0.85rem; color: var(--muted); }
+
+.kept-archetypes { margin-top: 0.5rem; font-size: 0.75rem; }
+.kept-arch { display: inline-block; padding: 0.15rem 0.4rem; margin: 0.1rem; background: rgba(240,201,106,0.15); border-radius: 4px; }
 
 .hidden { display: none !important; }
 

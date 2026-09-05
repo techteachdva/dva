@@ -1,28 +1,40 @@
 import { loadGameData } from "./data.js";
-import { createInitialState, drawPsyche, addLog } from "./state.js";
+import { createInitialState, addLog, respawnDreamer, getPhase } from "./state.js";
 import {
   getPhaseActions,
   drawDreamCard,
   revealLandscape,
+  activateExplore,
   moveDreamer,
   gainMeetActions,
   meetEncounter,
   landscapeAction,
-  drawObjectAction,
-  drawMindstreamAction,
+  tradeAction,
+  selectTradePartner,
+  confirmTrade,
+  cancelTrade,
+  drawMindstreamCard,
+  playObject,
+  activateObject,
+  powerBonus,
   useDreamerPower,
   toggleHandCard,
   handleQuestComplete,
   handleAcquire,
+  handleDefeatFinalArchetype,
+  handleSacrificeForFinal,
   endPhase,
-  spawnRandomEncounter,
   getDeckTop,
+  getPhaseHint,
+  getLegalExploreTargets,
 } from "./game.js";
+import { pickReturnCard, cancelPendingReturn, subconsciousCount } from "./subconscious.js";
 import {
   renderDreamerPicker,
   renderBoard,
   renderPlayers,
   renderHand,
+  renderCoopMeetHands,
   renderObjects,
   renderDecks,
   renderActiveSlots,
@@ -33,6 +45,12 @@ import {
   showEndScreen,
   showModal,
   hideModal,
+  showMindstreamPicker,
+  showTradeControls,
+  showRespawnPicker,
+  hideUtilityModal,
+  showSubconsciousPicker,
+  showSubconsciousBrowse,
 } from "./ui.js";
 
 let gameData = null;
@@ -62,8 +80,10 @@ function bindSetup() {
 }
 
 function bindModal() {
-  document.querySelector(".modal-backdrop").addEventListener("click", hideModal);
-  document.querySelector(".modal-close").addEventListener("click", hideModal);
+  document.querySelector("#card-modal .modal-backdrop").addEventListener("click", hideModal);
+  document.querySelector("#card-modal .modal-close").addEventListener("click", hideModal);
+  document.querySelector("#utility-modal .utility-backdrop")?.addEventListener("click", hideUtilityModal);
+  document.querySelector("#utility-modal .utility-close")?.addEventListener("click", hideUtilityModal);
 }
 
 function toggleDreamer(id) {
@@ -81,22 +101,60 @@ function startGame() {
   const lengthKey = document.getElementById("setup-length").value;
   const selectedDreamers = selectedDreamerIds.map((id) => gameData.dreamers.find((d) => d.id === id));
   state = createInitialState(gameData, { lengthKey, selectedDreamers });
-  state.players.forEach((_, i) => {
-    state.activePlayerIndex = i;
-    drawPsyche(state, 2);
-  });
-  state.activePlayerIndex = 0;
-  spawnRandomEncounter(state);
-  addLog(state, `Mindstream repressed. Object deck: ${state.objectDeck.length} cards.`);
+  addLog(state, "Somnia 12 — Escape before the Dream Deck runs out.");
   showScreen("screen-game");
   renderAll();
+}
+
+function maybeShowRespawn() {
+  if (!state?.pendingRespawn || !state.availableDreamers.length) return;
+  showRespawnPicker(state.availableDreamers, (dreamerId) => {
+    respawnDreamer(state, state.pendingRespawn, dreamerId);
+    renderAll();
+  });
+}
+
+function maybeShowTradePanel() {
+  if (!state?.tradeMode || !state.trade) return;
+  if (state.trade.step === "select-offer") {
+    showTradeControls(
+      state,
+      () => {
+        confirmTrade(state);
+        renderAll();
+      },
+      () => {
+        cancelTrade(state);
+        renderAll();
+      }
+    );
+  }
+}
+
+function maybeShowReturnPicker() {
+  if (!state?.pendingReturn) return;
+  showSubconsciousPicker(
+    state,
+    (instanceId) => {
+      pickReturnCard(state, instanceId);
+      if (!state.pendingReturn) hideUtilityModal();
+      renderAll();
+    },
+    () => {
+      cancelPendingReturn(state);
+      renderAll();
+    }
+  );
 }
 
 function renderAll() {
   if (!state) return;
 
   if (state.status === "won") {
-    showEndScreen(true, `You collected ${state.acquiredPoints} Archetype points and escaped!`);
+    const msg = state.finalRecurrence
+      ? "All Remaining Archetypes defeated in the Final Recurrence!"
+      : `You collected ${state.acquiredPoints} Archetype points and escaped!`;
+    showEndScreen(true, msg);
     return;
   }
   if (state.status === "lost") {
@@ -104,26 +162,63 @@ function renderAll() {
     return;
   }
 
-  renderHud(state);
+  renderHud(state, getPhaseHint(state));
+  const legalMoves = getLegalExploreTargets(state).map((t) => t.id);
   renderBoard(state, (id) => {
-    state.selectedLandscapeId = id;
-    const phase = getPhaseFromState();
-    if (phase === "Explore" && !state.exploreUsed) {
-      moveDreamer(state, id);
-    }
+    moveDreamer(state, id);
     renderAll();
-  });
+  }, legalMoves);
   renderPlayers(state, (index) => {
+    if (state.tradeMode && state.trade?.step === "pick-partner") {
+      if (selectTradePartner(state, index)) {
+        state.trade.step = "select-offer";
+        renderAll();
+        maybeShowTradePanel();
+      }
+      return;
+    }
     state.activePlayerIndex = index;
     renderAll();
   });
-  renderHand(state, (card) => {
-    toggleHandCard(state, card);
+  const renderHands = () => {
+    const onCard = (card, owner) => {
+      toggleHandCard(state, card, owner);
+      if (state.tradeMode && state.trade?.step === "select-offer") {
+        renderAll();
+        maybeShowTradePanel();
+        return;
+      }
+      showModal(card);
+      renderAll();
+    };
+    if (getPhase(state) === "Meet" && state.meetActionBudget > 0) {
+      renderCoopMeetHands(state, onCard);
+    } else {
+      renderHand(state, onCard);
+    }
+  };
+  renderHands();
+  renderObjects(state, (card, zone) => {
+    if (getPhase(state) === "Meet") {
+      if (zone === "persistent") {
+        playObject(state, card.instanceId || card.id, { usePower: true });
+      } else if (state.meetActionBudget > 0 && state.meetActionsUsed < state.meetActionBudget) {
+        playObject(state, card.instanceId || card.id);
+      } else {
+        showModal(card);
+        return;
+      }
+      renderAll();
+      return;
+    }
     showModal(card);
-    renderAll();
   });
-  renderObjects(state, (card) => showModal(card));
   renderDecks(state, (deckId) => {
+    if (deckId.startsWith("mindstream-") && state.tradeMode) return;
+    if (deckId === "subconscious") {
+      showSubconsciousBrowse(state, (card) => showModal(card));
+      return;
+    }
     const top = getDeckTop(state, deckId);
     if (top) showModal(top);
     else addDeckMessage(deckId);
@@ -132,36 +227,44 @@ function renderAll() {
   renderLog(state);
 
   const handlers = {
-    drawDream: () => {
-      drawDreamCard(state, gameData, showModal);
-      renderAll();
-    },
+    drawDream: () => { drawDreamCard(state, showModal); renderAll(); },
     revealLandscape: () => { revealLandscape(state); renderAll(); },
-    moveDreamer: () => {
-      addMessage("Click a revealed Landscape on the board to move.");
-      renderAll();
-    },
+    activateExplore: () => { activateExplore(state); renderAll(); },
     gainMeetActions: () => { gainMeetActions(state); renderAll(); },
     meetEncounter: (mode) => { meetEncounter(state, mode); renderAll(); },
     landscapeAction: () => { landscapeAction(state); renderAll(); },
-    drawObjectAction: () => { drawObjectAction(state); renderAll(); },
-    drawMindstreamAction: () => { drawMindstreamAction(state, showModal); renderAll(); },
-    completeQuest: () => { handleQuestComplete(state, 0); renderAll(); },
+    drawMindstream: () => {
+      showMindstreamPicker((suit) => {
+        const card = drawMindstreamCard(state, suit);
+        if (card) showModal(card);
+        renderAll();
+      });
+    },
+    playObject: () => {
+      const card = playObject(state);
+      if (card) showModal(card);
+      renderAll();
+    },
+    activateObject: () => {
+      activateObject(state);
+      renderAll();
+    },
+    tradeAction: () => {
+      tradeAction(state);
+      renderAll();
+    },
+    powerBonus: () => { powerBonus(state); renderAll(); },
+    completeQuest: (i) => { handleQuestComplete(state, i); renderAll(); },
     acquireArchetype: () => { handleAcquire(state); renderAll(); },
     useDreamerPower: () => { useDreamerPower(state); renderAll(); },
+    defeatFinalArchetype: () => { handleDefeatFinalArchetype(state); renderAll(); },
+    sacrificeForFinal: () => { handleSacrificeForFinal(state); renderAll(); },
     nextPhase: () => { endPhase(state); renderAll(); },
   };
 
   renderPhaseActions(getPhaseActions(state, handlers));
-}
-
-function getPhaseFromState() {
-  const phases = ["Reveal", "Explore", "Meet"];
-  return phases[state.phaseIndex];
-}
-
-function addMessage(msg) {
-  addLog(state, msg);
+  maybeShowRespawn();
+  maybeShowReturnPicker();
 }
 
 function addDeckMessage(deckId) {
@@ -171,12 +274,12 @@ function addDeckMessage(deckId) {
     archetype: state.archetypeDeck.length,
     object: state.objectDeck.length,
     dreambeast: state.dreambeastDeck.length,
-    subconscious: state.subconscious.length,
+    subconscious: subconsciousCount(state.subconscious),
     "mindstream-lucidity": state.mindstreamDecks.lucidity.length,
     "mindstream-elasticity": state.mindstreamDecks.elasticity.length,
     "mindstream-willpower": state.mindstreamDecks.willpower.length,
   };
-  addMessage(`${deckId}: ${counts[deckId] ?? 0} cards remaining.`);
+  addLog(state, `${deckId}: ${counts[deckId] ?? 0} cards.`);
   renderLog(state);
 }
 
