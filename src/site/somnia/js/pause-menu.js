@@ -150,14 +150,16 @@ function bindAudioControls(root) {
   musicPan?.addEventListener("input", (e) => {
     const v = Number(e.target.value) / 100;
     setMusicPan(v);
-    root.querySelector("#pause-music-pan-label")?.textContent = panLabel(v);
+    const label = root.querySelector("#pause-music-pan-label");
+    if (label) label.textContent = panLabel(v);
   });
 
   const sfxPan = root.querySelector("#pause-sfx-pan");
   sfxPan?.addEventListener("input", (e) => {
     const v = Number(e.target.value) / 100;
     setSfxPan(v);
-    root.querySelector("#pause-sfx-pan-label")?.textContent = panLabel(v);
+    const label = root.querySelector("#pause-sfx-pan-label");
+    if (label) label.textContent = panLabel(v);
   });
 }
 
