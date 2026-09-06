@@ -8,6 +8,7 @@ import {
   SUIT_LABELS,
   suitIconHtml,
 } from "./rules.js";
+import { musicCreditHtml } from "./audio.js";
 
 const TUTORIAL_KEY = "somnia_tutorial_seen";
 
@@ -301,6 +302,7 @@ export function getDreamerChipTooltip(state, player, index) {
   return `Click to focus ${name}.`;
 }
 
+
 export function overviewHtml() {
   return `
     <div class="overview-page">
@@ -355,6 +357,7 @@ export function overviewHtml() {
       </section>
 
       <p class="overview-footer">Use the <strong>Guide</strong> panel in-game for your next step. Open <strong>How to Play</strong> for the full rules.</p>
+      ${musicCreditHtml()}
     </div>
   `;
 }

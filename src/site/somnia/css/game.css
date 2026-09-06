@@ -129,6 +129,32 @@ body.play-window #screen-end.active {
   text-align: center;
 }
 
+.menu-footer {
+  padding: 0.75rem 1rem 1.25rem;
+}
+
+.music-credit {
+  margin: 0;
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.45;
+}
+
+.music-credit a {
+  color: #b8a8e8;
+}
+
+.music-credit a:hover {
+  color: #d4c8f5;
+}
+
+.overview-page .music-credit {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
 .top-bar {
   display: flex;
   justify-content: space-between;

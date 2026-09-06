@@ -1,3 +1,4 @@
+import { bindMusicToggle, initSoundtrack, startSoundtrack } from "./audio.js";
 import { loadGameData } from "./data.js";
 import { createInitialState, addLog, respawnDreamer, getPhase } from "./state.js";
 import {
@@ -86,6 +87,8 @@ let lastRepressPickerKey = null;
 let lastReturnPickerKey = null;
 
 async function init() {
+  initSoundtrack();
+  bindMusicToggle();
   gameData = await loadGameData();
   bindModal();
   bindHelp();
@@ -147,6 +150,7 @@ function bindFullscreenPrompt() {
     if (fullscreenReady) return;
     fullscreenReady = true;
     prompt.classList.add("hidden");
+    startSoundtrack();
     try {
       if (!document.fullscreenElement) {
         await document.documentElement.requestFullscreen();
