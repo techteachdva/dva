@@ -1038,6 +1038,18 @@ body.in-game main {
   touch-action: none;
 }
 
+.board-viewport.board-pan-ready {
+  cursor: grab;
+}
+
+.board-viewport.board-panning {
+  cursor: grabbing;
+}
+
+.board-viewport.board-panning .hex-tile {
+  pointer-events: none;
+}
+
 .board-zoom-stage {
   position: absolute;
   top: 0;
@@ -1047,7 +1059,7 @@ body.in-game main {
 }
 
 .board-viewport::after {
-  content: "Scroll to zoom";
+  content: "Scroll zoom · middle-drag or Space+drag pan";
   position: absolute;
   right: 0.65rem;
   bottom: 0.45rem;

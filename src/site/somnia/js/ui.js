@@ -17,7 +17,7 @@ import { subconsciousCount, subconsciousPilesForUI, isDreambeastPsycheCard } fro
 import { getNarratorView, listPhaseActionHints } from "./narrator.js";
 import { getCurrentObjective, rulesHtml, overviewHtml, getDreamerChipTooltip } from "./guide.js";
 import { consumePhasePulse, consumeRevealedTiles } from "./fx.js";
-import { getLandscapeActionSummary } from "./landscape-actions.js";
+import { consumeBoardClickSuppression } from "./board-zoom.js";
 
 function suitClass(suit) {
   return suit ? `suit-${suit}` : "";
@@ -467,7 +467,10 @@ export function renderBoard(state, onSelectLandscape, legalMoveIds = [], pickHig
       <div class="tokens">${occupants.map((p) => p.dreamer.name.split(" ").pop()).join(" · ")} ${encounterMark}${encounter ? ` ${encounter.name.split(" ")[0]}` : ""}${finalMark}${finalArch && !finalArch.defeated ? ` ${finalArch.name.split(" ")[0]}` : ""}</div>
     `;
 
-    el.addEventListener("click", () => onSelectLandscape(tile.id));
+    el.addEventListener("click", () => {
+      if (consumeBoardClickSuppression()) return;
+      onSelectLandscape(tile.id);
+    });
     board.appendChild(el);
   });
 }
