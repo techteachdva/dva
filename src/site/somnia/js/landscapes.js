@@ -10,9 +10,13 @@ import { narrate } from "./narrator.js";
 import { recordQuestEvent } from "./quests.js";
 import { isEdgeLandscape } from "./hex.js";
 
-/** Revealed, non-center, not wasteland — valid Forget targets. */
+/** Revealed, non-center, not wasteland — valid Forget targets. Bed is last. */
 export function forgettableTiles(state) {
-  return state.board.filter((t) => !t.center && t.revealed && !t.wasteland);
+  const candidates = state.board.filter((t) => !t.center && t.revealed && !t.wasteland);
+  const nonBed = candidates.filter((t) => t.id !== "bed");
+  if (nonBed.length) return nonBed;
+  const bed = candidates.find((t) => t.id === "bed");
+  return bed ? [bed] : [];
 }
 
 /** All non-Bed tiles are wasteland (or unrevealed wasteland backs). */
@@ -40,6 +44,10 @@ export function beginRevealPicking(state, budget) {
 }
 
 function forgetTile(state, tile) {
+  if (tile.id === "bed" || tile.center) {
+    triggerBedFinalRecurrence(state, "The Bed is forgotten — it flips to The Final Recurrence.");
+    return;
+  }
   tile.revealed = false;
   tile.wasteland = true;
   if (tile.encounter) {
@@ -105,7 +113,8 @@ export function handleLandscapeTilePick(state, tileId) {
   if (!pick) return false;
 
   const tile = landscapeById(state, tileId);
-  if (!tile || tile.center) return false;
+  if (!tile) return false;
+  if (pick.mode === "reveal" && tile.center) return false;
 
   if (pick.mode === "reveal") {
     if (tile.revealed && !tile.wasteland) return false;
@@ -132,6 +141,7 @@ export function handleLandscapeTilePick(state, tileId) {
 
   if (pick.mode === "forget") {
     if (!tile.revealed || tile.wasteland) return false;
+    if (!forgettableTiles(state).some((t) => t.id === tileId)) return false;
     if (pick.remaining <= 0) return false;
 
     forgetTile(state, tile);

@@ -10,6 +10,12 @@ import { shuffle, uid } from "./data.js";
 import { recordQuestEvent } from "./quests.js";
 import { repressCard, requestReturnCards, enqueueRepressFromHand } from "./subconscious.js";
 import { adjacentTiles, edgeLandscapes } from "./hex.js";
+import {
+  pullDreambeastFromMindstream,
+  pullTwoDreambeastsForChoice,
+  encounterFromDreambeastCard,
+  discardToMindstream,
+} from "./mindstream-supply.js";
 
 function alive(state) {
   return state.players.filter((p) => p.alive);
@@ -152,11 +158,12 @@ function clearEncounters(state, keepOne = false) {
 }
 
 function spawnMindstreamEncounter(state, player, suit, helpers) {
-  const deck = state.mindstreamDecks[suit];
-  if (deck?.length) {
-    const echo = deck.shift();
-    state.mindstreamDiscard[suit].push(echo);
-    addLog(state, `Mindstream echoes: ${echo.name}.`);
+  const pulled = pullDreambeastFromMindstream(state, { suit });
+  if (pulled) {
+    const encounter = encounterFromDreambeastCard(pulled.card);
+    setEncounterOnLandscape(state, player.landscapeId, encounter);
+    addLog(state, `${encounter.name} emerges from the ${suit} Mindstream!`);
+    return;
   }
   helpers.spawnEncounter(state, player.landscapeId);
 }
@@ -502,7 +509,7 @@ export const MINDSTREAM_EFFECTS = {
     alive(state).forEach((p) => {
       if (p.objects.length) {
         const obj = p.objects.pop();
-        state.objectDiscard.push(obj);
+        discardToMindstream(state, obj);
       }
     });
     addLog(state, "No Time: each Dreamer discards 1 Object.");
@@ -538,7 +545,7 @@ export const MINDSTREAM_EFFECTS = {
       const all = [...player.objects, ...(player.persistent || [])];
       player.objects = [];
       player.persistent = [];
-      all.forEach((o) => state.objectDiscard.push(o));
+      all.forEach((o) => discardToMindstream(state, o));
       addLog(state, "Jaw Shark: discarded all Objects.");
     }
   },
@@ -556,21 +563,13 @@ export const MINDSTREAM_EFFECTS = {
   },
 
   "who-is-there": (state, player) => {
-    if (!state.dreambeastDeck.length) return;
-    const first = state.dreambeastDeck.shift();
-    const second = state.dreambeastDeck.length ? state.dreambeastDeck.shift() : null;
-    let pick = first;
-    let alt = second;
-    if (second && (second.accept || 0) > (first.accept || 0)) {
-      pick = second;
-      alt = first;
-    }
-    if (alt) state.dreambeastDeck.unshift(alt);
-    const encounter = { ...pick, instanceId: uid("enc") };
+    const choice = pullTwoDreambeastsForChoice(state);
+    if (!choice) return;
+    const encounter = encounterFromDreambeastCard(choice.pick);
     setEncounterOnLandscape(state, player.landscapeId, encounter);
     addLog(
       state,
-      `Who's There?: ${pick.name} appears${alt ? ` (over ${alt.name})` : ""}. Meet now if you can.`,
+      `Who's There?: ${choice.pick.name} appears${choice.alt ? ` (over ${choice.alt.name})` : ""}. Meet now if you can.`,
     );
   },
 

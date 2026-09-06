@@ -1,5 +1,6 @@
 import { recordQuestEvent } from "./quests.js";
 import { SUIT_LABELS } from "./rules.js";
+import { discardToMindstream } from "./mindstream-supply.js";
 
 /** Face-up repressed card piles (The Subconscious / graveyard). */
 export function createSubconscious() {
@@ -39,6 +40,7 @@ export function normalizeSubconscious(sub) {
 
 function pileForCard(sub, card) {
   if (card.type === "psyche-dreambeast" || card.isDreambeastPsyche) return sub.dreambeasts;
+  if (card.type === "psyche-power") return sub.other;
   if (card.type === "psyche") return sub.psyche;
   if (
     ["event", "power-token", "draw-dream"].includes(card.type)
@@ -102,21 +104,21 @@ export function removeFromSubconscious(state, instanceId) {
 export function routeReturnedToDiscard(state, card) {
   if (!card) return;
   if (card.type === "psyche-dreambeast" || card.isDreambeastPsyche) {
-    state.dreambeastDeck.push(card);
+    discardToMindstream(state, card);
     return;
   }
   if (card.type === "dreambeast" || card.boss) {
-    state.dreambeastDeck.push(card);
+    discardToMindstream(state, card);
     return;
   }
   if (card.type === "event" && card.suit) {
     state.mindstreamDiscard[card.suit]?.push(card);
   } else if (card.type === "object") {
-    state.objectDiscard.push(card);
+    discardToMindstream(state, card);
   } else if (card.type === "psyche") {
     state.psycheDiscard.push(card);
   } else {
-    state.objectDiscard.push(card);
+    discardToMindstream(state, card);
   }
 }
 

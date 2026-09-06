@@ -16,6 +16,7 @@ import {
   handleDreamerDeath,
   getPhase,
 } from "./state.js";
+import { countMindstreamDreambeasts } from "./mindstream-supply.js";
 import { spawnEncounterOnLandscape, drawMindstreamCard } from "./game.js";
 import { resolveCardEffect, createEffectHelpers } from "./effects.js";
 import { resolveOnAcquire } from "./archetypes.js";
@@ -116,7 +117,7 @@ function statusLines(state) {
     `Hand: ${p.hand.length} psyche · Objects: ${p.objects?.length || 0} · Power: ${p.powerTokens}`,
     `Meet: ${state.meetActionsUsed}/${state.meetActionBudget} · Explore moves: ${state.exploreMovesLeft}`,
     `Encounter: ${state.activeEncounter?.name || "none"} @ ${state.activeEncounterLandscapeId || "—"}`,
-    `Dream drawn: ${state.dreamDrawn} · Decks: dream ${state.dreamDeck.length}, psyche ${state.psycheDeck.length}, beast ${state.dreambeastDeck.length}`,
+    `Dream drawn: ${state.dreamDrawn} · Decks: dream ${state.dreamDeck.length}, psyche ${state.psycheDeck.length}, mindstream beasts ${countMindstreamDreambeasts(state)}`,
     `Subconscious: ${subconsciousCount(state.subconscious)} cards`,
     `Pickers: repress=${!!state.pendingRepress} return=${!!state.pendingReturn} map=${state.landscapePick?.mode || "none"}`,
     `Final recurrence: ${state.finalRecurrence}`,

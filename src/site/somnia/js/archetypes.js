@@ -5,6 +5,7 @@ import {
 import { drawObjects } from "./objects.js";
 import { recordQuestEvent } from "./quests.js";
 import { requestReturnCards } from "./subconscious.js";
+import { pullObjectsFromMindstreamDiscards, pullObjectFromMindstreamDiscards } from "./mindstream-supply.js";
 
 export function resolveOnAcquire(state, archetype, player, helpers) {
   if (!archetype) return;
@@ -65,7 +66,7 @@ export function resolveOnAcquire(state, archetype, player, helpers) {
 
     case "creator":
       state.players.filter((p) => p.alive).forEach((p) => {
-        const fromDiscard = state.objectDiscard.splice(-2);
+        const fromDiscard = pullObjectsFromMindstreamDiscards(state, 2);
         fromDiscard.forEach((obj) => p.objects.push(obj));
         if (fromDiscard.length) {
           addLog(state, `${p.name} returns ${fromDiscard.length} Object(s) from discard.`);
@@ -86,9 +87,8 @@ export function resolveOnAcquire(state, archetype, player, helpers) {
         for (let i = 0; i < 4 && state.psycheDiscard.length; i += 1) {
           p.hand.push(state.psycheDiscard.pop());
         }
-        if (state.objectDiscard.length) {
-          p.objects.push(state.objectDiscard.pop());
-        }
+        const obj = pullObjectFromMindstreamDiscards(state);
+        if (obj) p.objects.push(obj);
         recordQuestEvent(state, "draw_psyche", { count: 4 });
         recordQuestEvent(state, "draw_object", { count: 1 });
       });

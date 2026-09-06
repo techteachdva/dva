@@ -1,7 +1,8 @@
-import { createQuestTracker, canMarkQuest } from "./quests.js";
+import { createQuestTracker, canMarkQuest, recordQuestEvent } from "./quests.js";
 import { buildHexBoard } from "./hex.js";
 import { playSfx } from "./audio.js";
 import { markTileRevealed } from "./fx.js";
+import { queueCardDraw, queueHandDelta } from "./card-fx.js";
 import {
   createSubconscious,
   repressCard,
@@ -23,10 +24,10 @@ import {
   buildDreamDeck,
   insertBossDreams,
   buildMindstreamDecks,
-  buildObjectDeck,
   uid,
   PSYCHE_STARTING_HAND,
 } from "./data.js";
+import { discardToMindstream, pullObjectFromMindstream, objectForPlayer } from "./mindstream-supply.js";
 export function createInitialState(data, options) {
   const length = LENGTHS[options.lengthKey];
   const landscapes = data.landscapes.filter((l) => !l.hidden);
@@ -40,14 +41,7 @@ export function createInitialState(data, options) {
   const dreamDeck = insertBossDreams(buildDreamDeck(data.dreams, length.dreams), data.dreambeasts);
   const archetypeDeck = shuffle(data.archetypes.map((a) => ({ ...a, instanceId: uid("arch") })));
   const mindstreamDecks = buildMindstreamDecks(data.mindstream, data.dreambeasts, data.objects);
-  const objectDeck = buildObjectDeck(data.objects, 1);
-  const dreambeastDeck = shuffle(
-    data.dreambeasts
-      .filter((b) => !b.boss)
-      .map((b) => ({ ...b, type: "dreambeast", instanceId: uid("beast") }))
-  );
   const mindstreamDiscard = { lucidity: [], elasticity: [], willpower: [] };
-  const objectDiscard = [];
   const subconscious = createSubconscious();
 
   const players = options.selectedDreamers.map((dreamer, index) => ({
@@ -80,11 +74,8 @@ export function createInitialState(data, options) {
     psycheDeck,
     psycheDiscard: [],
     archetypeDeck,
-    dreambeastDeck,
     mindstreamDecks,
     mindstreamDiscard,
-    objectDeck,
-    objectDiscard,
     subconscious,
     board,
     players,
@@ -179,9 +170,21 @@ export function drawPsycheForPlayer(state, player, count = 1) {
     if (!state.psycheDeck.length && state.psycheDiscard.length) {
       state.psycheDeck = shuffle(state.psycheDiscard);
       state.psycheDiscard = [];
+      addLog(state, "Psyche discard pile shuffled into a new deck.");
     }
     if (!state.psycheDeck.length) break;
     const card = state.psycheDeck.shift();
+
+    if (card.type === "psyche-power") {
+      const tokens = card.powerTokens || 2;
+      player.powerTokens += tokens;
+      state.psycheDiscard.push(card);
+      recordQuestEvent(state, "power_token", { count: tokens });
+      addLog(state, `${player.name} draws ${card.name}: +${tokens} Power Tokens, then discards.`);
+      playSfx("draw");
+      continue;
+    }
+
     const limit = handLimitForPlayer(state, player);
     if (player.hand.length < limit) {
       player.hand.push(card);
@@ -190,7 +193,11 @@ export function drawPsycheForPlayer(state, player, count = 1) {
       state.psycheDiscard.push(card);
     }
   }
-  if (drawn.length) playSfx("draw", { count: drawn.length });
+  if (drawn.length) {
+    queueCardDraw(player.id, drawn, "psyche");
+    queueHandDelta(player.id, drawn.length);
+    playSfx("draw", { count: drawn.length });
+  }
   return drawn;
 }
 
@@ -217,12 +224,9 @@ export function drawObject(state, player, count = 1, helpers = null) {
   if (helpers) return drawObjects(state, player, count, helpers);
   const drawn = [];
   for (let i = 0; i < count; i += 1) {
-    if (!state.objectDeck.length && state.objectDiscard.length) {
-      state.objectDeck = shuffle(state.objectDiscard);
-      state.objectDiscard = [];
-    }
-    if (!state.objectDeck.length) break;
-    const card = state.objectDeck.shift();
+    const pulled = pullObjectFromMindstream(state);
+    if (!pulled) break;
+    const card = objectForPlayer(pulled.card);
     player.objects.push(card);
     drawn.push(card);
   }
@@ -305,7 +309,7 @@ export function handleDreamerDeath(state, player) {
 
   const objects = [...(player.objects || []), ...(player.persistent || [])];
   objects.forEach((obj) => {
-    state.objectDiscard.push(obj);
+    discardToMindstream(state, obj);
   });
   player.objects = [];
   player.persistent = [];

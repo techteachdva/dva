@@ -9,6 +9,11 @@ import {
 import { shuffle, uid } from "./data.js";
 import { recordQuestEvent } from "./quests.js";
 import { repressCard, requestReturnCards } from "./subconscious.js";
+import {
+  pullDreambeastFromMindstream,
+  encounterFromDreambeastCard,
+  reorderMindstreamTop,
+} from "./mindstream-supply.js";
 
 function alive(state) {
   return state.players.filter((p) => p.alive);
@@ -42,25 +47,25 @@ function spawnOnRandomTiles(state, helpers, count = 1, filterFn = null) {
   });
 }
 
-function spawnFilteredDreambeast(state, helpers, landscapeId, { maxAccept = null, minAccept = null } = {}) {
-  const pool = state.dreambeastDeck.filter((b) => {
-    if (maxAccept != null && b.accept > maxAccept) return false;
-    if (minAccept != null && b.accept < minAccept) return false;
-    return !b.boss;
+function spawnFilteredDreambeast(state, helpers, landscapeId, { maxAccept = null, minAccept = null, suit = null } = {}) {
+  const pulled = pullDreambeastFromMindstream(state, {
+    suit,
+    filter: (beast) => {
+      if (maxAccept != null && beast.accept > maxAccept) return false;
+      if (minAccept != null && beast.accept < minAccept) return false;
+      return !beast.boss;
+    },
   });
-  if (!pool.length) {
+  if (!pulled) {
     helpers.spawnEncounter(state, landscapeId);
     return;
   }
-  const pick = pool[Math.floor(Math.random() * pool.length)];
-  const idx = state.dreambeastDeck.findIndex((b) => b.id === pick.id);
-  const beast = state.dreambeastDeck.splice(idx, 1)[0];
-  const encounter = { ...beast, instanceId: uid("enc") };
+  const encounter = encounterFromDreambeastCard(pulled.card);
   const tile = landscapeById(state, landscapeId);
   if (tile) {
     setEncounterOnLandscape(state, landscapeId, encounter);
   }
-  addLog(state, `${beast.name} appears on ${tile?.name || "the Dreamscape"}!`);
+  addLog(state, `${pulled.card.name} appears on ${tile?.name || "the Dreamscape"}!`);
 }
 
 function drawMindstreamTop(state, suit) {
@@ -262,9 +267,17 @@ export const OBJECT_EFFECTS = {
   },
 
   knife: (state) => {
-    const decks = ["psycheDeck", "dreamDeck", "objectDeck", "dreambeastDeck"];
-    const key = decks.find((d) => state[d]?.length > 1) || "psycheDeck";
-    reorderDeckTop(state, key, 3);
+    const suits = ["lucidity", "elasticity", "willpower"];
+    const suit = suits.find((s) => state.mindstreamDecks[s]?.length > 1)
+      || suits.find((s) => state.dreamDeck.length > 1)
+      || suits.find((s) => state.psycheDeck.length > 1);
+    if (suit && state.mindstreamDecks[suit]?.length > 1) {
+      reorderMindstreamTop(state, suit, 3);
+      addLog(state, `Knife: reordered top 3 of ${suit} Mindstream.`);
+      return;
+    }
+    const deckKey = state.dreamDeck.length > 1 ? "dreamDeck" : "psycheDeck";
+    reorderDeckTop(state, deckKey, 3);
   },
 
   "crystal-bell": (state, player, helpers) => {

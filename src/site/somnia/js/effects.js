@@ -18,6 +18,7 @@ import {
   enqueueRepressObjects,
   enqueueRepressFromHand,
 } from "./subconscious.js";
+import { discardToMindstream } from "./mindstream-supply.js";
 import { MINDSTREAM_EFFECTS } from "./mindstream.js";
 import { OBJECT_EFFECTS } from "./object-effects.js";
 import { uid } from "./data.js";
@@ -292,7 +293,7 @@ const DREAM_EFFECTS = {
       } else {
         const objs = [...(p.objects || [])].slice(0, 2);
         p.objects = p.objects.filter((o) => !objs.includes(o));
-        objs.forEach((o) => state.objectDiscard.push(o));
+        objs.forEach((o) => discardToMindstream(state, o));
       }
     });
     addLog(state, "Mortality: each Dreamer pays the cost.");
@@ -403,7 +404,7 @@ const DREAM_EFFECTS = {
       state.psycheDiscard.push(player.hand.splice(idx, 1)[0]);
     }
     const repressed = player.objects.splice(toSave);
-    repressed.forEach((o) => state.objectDiscard.push(o));
+    repressed.forEach((o) => discardToMindstream(state, o));
     if (repressed.length) {
       addLog(state, `${player.name} Represses ${repressed.length} Object(s) (saved ${toSave}).`);
     } else {
@@ -422,7 +423,7 @@ const DREAM_EFFECTS = {
       const n = Math.min(3, p.objects.length);
       for (let i = 0; i < n; i += 1) {
         const obj = p.objects.pop();
-        if (obj) state.objectDiscard.push(obj);
+        if (obj) discardToMindstream(state, obj);
       }
       if (n) {
         const drawn = drawPsycheForPlayer(state, p, n);

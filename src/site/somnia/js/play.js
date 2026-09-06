@@ -2,6 +2,12 @@ import { bindMusicToggle, initGameAudio, startGameRadio, bindButtonRipples, play
 import { initPanelLayout } from "./panel-layout.js";
 import { initPauseMenu, openPauseMenu } from "./pause-menu.js";
 import { initFxLayer, burstSparklesAtElement } from "./fx.js";
+import {
+  runPendingCardFx,
+  syncHandRemovals,
+  updateHandSnapshots,
+  resetHandSnapshots,
+} from "./card-fx.js";
 import { loadGameData } from "./data.js";
 import { createInitialState, addLog, respawnDreamer, getPhase, activePlayer } from "./state.js";
 import {
@@ -14,11 +20,15 @@ import {
   gainMeetActions,
   meetEncounter,
   landscapeAction,
+  drawMindstreamOnLandscape,
+  uniqueLandscapeAction,
+  completeLandscapeAction,
+  finishLandscapeMindstreamPick,
+  finishLandscapeDeckFlip,
   tradeAction,
   selectTradePartner,
   confirmTrade,
   cancelTrade,
-  drawMindstreamCard,
   playObject,
   activateObject,
   powerBonus,
@@ -66,6 +76,8 @@ import {
   showModal,
   hideModal,
   showMindstreamPicker,
+  showLandscapeActionPicker,
+  showDeckFlipPicker,
   showTradeControls,
   showRespawnPicker,
   hideUtilityModal,
@@ -271,6 +283,7 @@ function startGame(config) {
     ["Reveal Phase: spend Lucidity to flip Landscapes on the hex map"],
   );
   showScreen("screen-game");
+  resetHandSnapshots(state);
   renderAll();
   if (!hasSeenTutorial()) startTutorial();
 }
@@ -421,6 +434,8 @@ function renderAll() {
     return;
   }
 
+  syncHandRemovals(state);
+
   renderHud(state, getPhaseHint(state));
   renderPhaseStepper(state);
 
@@ -436,13 +451,63 @@ function renderAll() {
     activateExplore: () => { activateExplore(state); renderAll(); },
     gainMeetActions: () => { gainMeetActions(state); renderAll(); },
     meetEncounter: (mode) => { meetEncounter(state, mode); renderAll(); },
-    landscapeAction: () => { landscapeAction(state); renderAll(); },
     drawMindstream: () => {
-      showMindstreamPicker((suit) => {
-        const card = drawMindstreamCard(state, suit);
-        if (card) showModal(card);
-        renderAll();
+      drawMindstreamOnLandscape(state, {
+        onResult: (card) => showModal(card),
       });
+      renderAll();
+    },
+    uniqueLandscapeAction: () => {
+      uniqueLandscapeAction(state, {
+        onChoose: (choices, tile, player) => {
+          showLandscapeActionPicker(tile, choices, (actionId) => {
+            const result = completeLandscapeAction(state, tile, player, actionId, (card) => showModal(card));
+            if (result?.pending === "pick-mindstream-suit" || result?.pending === "spawn-dreambeast-pick-suit") {
+              showMindstreamPicker((suit) => {
+                finishLandscapeMindstreamPick(state, tile, player, actionId, suit, (card) => showModal(card));
+                renderAll();
+              });
+              return;
+            }
+            if (result?.pending === "flip-top-3-pick-deck") {
+              showDeckFlipPicker((deckKey) => {
+                finishLandscapeDeckFlip(state, deckKey);
+                renderAll();
+              });
+              return;
+            }
+            renderAll();
+          });
+        },
+        onResult: (card) => showModal(card),
+      });
+      renderAll();
+    },
+    landscapeAction: () => {
+      uniqueLandscapeAction(state, {
+        onChoose: (choices, tile, player) => {
+          showLandscapeActionPicker(tile, choices, (actionId) => {
+            const result = completeLandscapeAction(state, tile, player, actionId, (card) => showModal(card));
+            if (result?.pending === "pick-mindstream-suit" || result?.pending === "spawn-dreambeast-pick-suit") {
+              showMindstreamPicker((suit) => {
+                finishLandscapeMindstreamPick(state, tile, player, actionId, suit, (card) => showModal(card));
+                renderAll();
+              });
+              return;
+            }
+            if (result?.pending === "flip-top-3-pick-deck") {
+              showDeckFlipPicker((deckKey) => {
+                finishLandscapeDeckFlip(state, deckKey);
+                renderAll();
+              });
+              return;
+            }
+            renderAll();
+          });
+        },
+        onResult: (card) => showModal(card),
+      });
+      renderAll();
     },
     playObject: () => {
       const card = playObject(state);
@@ -539,6 +604,9 @@ function renderAll() {
   maybeShowRespawn();
   maybeShowRepressPicker();
   maybeShowReturnPicker();
+
+  updateHandSnapshots(state);
+  requestAnimationFrame(() => runPendingCardFx(state));
 }
 
 function addDeckMessage(deckId) {
@@ -546,8 +614,6 @@ function addDeckMessage(deckId) {
     dream: state.dreamDeck.length,
     psyche: state.psycheDeck.length,
     archetype: state.archetypeDeck.length,
-    object: state.objectDeck.length,
-    dreambeast: state.dreambeastDeck.length,
     subconscious: subconsciousCount(state.subconscious),
     "mindstream-lucidity": state.mindstreamDecks.lucidity.length,
     "mindstream-elasticity": state.mindstreamDecks.elasticity.length,

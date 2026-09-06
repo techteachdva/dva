@@ -1456,6 +1456,18 @@ body.in-game main {
 .player-chip .name { font-size: 0.78rem; font-weight: 600; }
 .player-chip .sub { font-size: 0.65rem; color: var(--muted); }
 
+.deck-section-label {
+  margin: 0.55rem 0 0.35rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #d8d0f8;
+  line-height: 1.35;
+}
+
 .deck-pile {
   display: flex;
   justify-content: space-between;
@@ -1871,6 +1883,20 @@ body.in-game main {
 
 .utility-content { max-width: 520px; }
 .utility-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; }
+.landscape-action-choices { flex-direction: column; }
+.landscape-action-pick {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  gap: 0.25rem;
+  width: 100%;
+}
+.landscape-action-desc {
+  font-size: 0.85rem;
+  opacity: 0.85;
+  font-weight: normal;
+}
 
 .subconscious-piles { max-height: 50vh; overflow: auto; }
 .subconscious-pile { margin-bottom: 0.75rem; }
@@ -2099,7 +2125,11 @@ body.in-game main {
 @keyframes card-deal {
   from {
     opacity: 0;
-    transform: translateY(22px) scale(0.9) rotate(-2deg);
+    transform: translateY(28px) translateX(-8px) scale(0.82) rotate(-4deg);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(-4px) scale(1.03) rotate(1deg);
   }
   to {
     opacity: 1;
@@ -2247,6 +2277,19 @@ body.menu-window #app::before {
   .btn.primary {
     animation: none;
     background: linear-gradient(135deg, var(--accent-strong), #5a8dff);
+  }
+
+  .fx-flying-card,
+  .fx-float-label,
+  .game-card.card-landed,
+  .deck-pile.deck-pulse-gain,
+  .deck-pile.deck-pulse-loss,
+  .deck-pile.deck-pulse-repress,
+  .player-chip.life-gain,
+  .player-chip.life-loss,
+  #hand-stats.life-gain,
+  #hand-stats.life-loss {
+    animation: none !important;
   }
 }
 
@@ -2476,3 +2519,150 @@ body.panel-resizing {
 .view-mode-large .hud-item { font-size: 1.08rem; }
 .view-mode-large .sidebar h3 { font-size: 1.05rem; }
 .view-mode-large .deck-pile { font-size: 1rem; }
+
+/* ——— Card flow FX ——— */
+
+.fx-flying-card {
+  position: fixed;
+  border-radius: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1rem;
+  font-weight: 700;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  z-index: 8600;
+  opacity: 0.95;
+  transform: translate(0, 0) scale(1);
+  transition: none;
+}
+
+.fx-flying-card.fx-flying-active {
+  animation: fx-card-fly 0.58s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.fx-flying-card.suit-lucidity { background: linear-gradient(160deg, #2a5a9a, #1a3060); color: #e8f4ff; }
+.fx-flying-card.suit-elasticity { background: linear-gradient(160deg, #8a7018, #4a3810); color: #fff6c8; }
+.fx-flying-card.suit-willpower { background: linear-gradient(160deg, #8a2020, #4a1010); color: #ffe0e0; }
+.fx-flying-card.suit-wild { background: linear-gradient(160deg, #5a3a8a, #2a1848); color: #f0e8ff; }
+
+.fx-flying-draw { box-shadow: 0 0 18px rgba(109, 255, 176, 0.55); }
+.fx-flying-discard { box-shadow: 0 0 16px rgba(255, 120, 120, 0.45); }
+.fx-flying-spend { box-shadow: 0 0 20px rgba(201, 160, 255, 0.65); border-color: var(--accent); }
+.fx-flying-repress { box-shadow: 0 0 20px rgba(160, 80, 220, 0.65); border-color: #c878ff; }
+
+.fx-card-value { font-size: 1.15rem; line-height: 1; }
+.fx-card-suit { font-size: 0.75rem; opacity: 0.9; }
+
+.fx-float-label {
+  position: fixed;
+  transform: translate(-50%, -50%);
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.65);
+  z-index: 8700;
+  animation: fx-label-rise 1.1s ease-out forwards;
+  pointer-events: none;
+}
+
+.fx-float-label.fx-gain { color: #6dffb0; }
+.fx-float-label.fx-loss { color: #ff7a92; }
+
+.deck-pile.deck-pulse-gain {
+  animation: deck-pulse-gain 0.55s ease;
+}
+
+.deck-pile.deck-pulse-loss {
+  animation: deck-pulse-loss 0.55s ease;
+}
+
+.deck-pile.deck-pulse-repress {
+  animation: deck-pulse-repress 0.55s ease;
+}
+
+.player-chip.life-gain,
+#hand-stats.life-gain {
+  animation: life-gain-flash 0.65s ease;
+}
+
+.player-chip.life-loss,
+#hand-stats.life-loss {
+  animation: life-loss-flash 0.65s ease;
+}
+
+#hand.hand-gain,
+.coop-hand-row.hand-gain {
+  animation: hand-gain-flash 0.55s ease;
+}
+
+#hand.hand-loss,
+.coop-hand-row.hand-loss {
+  animation: hand-loss-flash 0.55s ease;
+}
+
+.game-card.card-landed {
+  animation: card-land-pop 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes fx-card-fly {
+  0% {
+    opacity: 0.15;
+    transform: translate(0, 0) scale(0.72) rotate(-6deg);
+  }
+  18% { opacity: 1; }
+  100% {
+    opacity: 0;
+    transform: translate(var(--fx-tx, 0), var(--fx-ty, 0)) scale(0.82) rotate(4deg);
+  }
+}
+
+@keyframes fx-label-rise {
+  0% { opacity: 0; transform: translate(-50%, -20%); }
+  15% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -120%); }
+}
+
+@keyframes deck-pulse-gain {
+  0%, 100% { box-shadow: none; }
+  50% { box-shadow: 0 0 0 2px rgba(109, 255, 176, 0.55), 0 0 18px rgba(109, 255, 176, 0.35); }
+}
+
+@keyframes deck-pulse-loss {
+  0%, 100% { box-shadow: none; }
+  50% { box-shadow: 0 0 0 2px rgba(255, 120, 120, 0.5), 0 0 16px rgba(255, 120, 120, 0.3); }
+}
+
+@keyframes deck-pulse-repress {
+  0%, 100% { box-shadow: none; }
+  50% { box-shadow: 0 0 0 2px rgba(200, 120, 255, 0.55), 0 0 18px rgba(160, 80, 220, 0.35); }
+}
+
+@keyframes life-gain-flash {
+  0%, 100% { filter: none; }
+  40% { filter: drop-shadow(0 0 8px rgba(109, 255, 176, 0.75)); }
+}
+
+@keyframes life-loss-flash {
+  0%, 100% { filter: none; }
+  40% { filter: drop-shadow(0 0 8px rgba(255, 120, 120, 0.75)); }
+}
+
+@keyframes hand-gain-flash {
+  0%, 100% { background: transparent; }
+  40% { background: rgba(109, 255, 176, 0.08); }
+}
+
+@keyframes hand-loss-flash {
+  0%, 100% { background: transparent; }
+  40% { background: rgba(255, 120, 120, 0.08); }
+}
+
+@keyframes card-land-pop {
+  0% { transform: scale(0.88); }
+  55% { transform: scale(1.04); }
+  100% { transform: scale(1); }
+}

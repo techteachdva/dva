@@ -60,9 +60,10 @@ export function uid(prefix = "id") {
   return `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-/** Canonical Psyche deck: 45 suited (5×1, 4×2, 3×3, 2×4, 1×5 per suit) + 6 Wild = 51. */
+/** Canonical Psyche deck: 45 suited + 6 Wild + 6 Power = 57. */
 export const PSYCHE_DISTRIBUTION = { 1: 5, 2: 4, 3: 3, 4: 2, 5: 1 };
 export const PSYCHE_WILD_COUNT = 6;
+export const PSYCHE_POWER_TOKEN_COUNT = 6;
 export const PSYCHE_STARTING_HAND = 5;
 export const PSYCHE_HAND_LIMIT = 10;
 
@@ -70,6 +71,7 @@ export function buildPsycheDeck(psycheConfig = {}) {
   const suits = psycheConfig.suits || ["lucidity", "elasticity", "willpower"];
   const distribution = psycheConfig.distribution || PSYCHE_DISTRIBUTION;
   const wildCount = psycheConfig.wildCount ?? PSYCHE_WILD_COUNT;
+  const powerCount = psycheConfig.powerTokenCount ?? PSYCHE_POWER_TOKEN_COUNT;
 
   const deck = [];
   suits.forEach((suit) => {
@@ -96,6 +98,19 @@ export function buildPsycheDeck(psycheConfig = {}) {
       suit: null,
       value: 5,
       name: "Wild Psyche",
+      instanceId: uid("psyche"),
+    });
+  }
+
+  for (let i = 0; i < powerCount; i += 1) {
+    deck.push({
+      id: `psyche-power-${i + 1}`,
+      type: "psyche-power",
+      suit: null,
+      value: 0,
+      powerTokens: 2,
+      name: "Power Surge",
+      text: "Draw 2 Power Tokens. Then Discard.",
       instanceId: uid("psyche"),
     });
   }

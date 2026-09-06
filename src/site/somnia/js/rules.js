@@ -10,6 +10,7 @@ import { persistentMeetBonus, sumEffectivePsycheValue } from "./objects.js";
 import { PHASES } from "./data.js";
 import { isWildPsyche, psycheCardValue } from "./psyche.js";
 import { playSfx } from "./audio.js";
+import { queueCardDiscard, queueHandDelta } from "./card-fx.js";
 
 export { isWildPsyche, psycheCardValue };
 
@@ -264,8 +265,15 @@ export function coopMeetPlayTotal(state) {
   return total;
 }
 
-function routeSpentHandCard(state, card, { toRepress = false } = {}) {
-  if (isWildPsyche(card)) {
+function routeSpentHandCard(state, player, card, { toRepress = false } = {}) {
+  const wild = isWildPsyche(card);
+  const repress = toRepress || isDreambeastPsycheCard(card) || wild;
+  const target = repress ? "subconscious" : "discard";
+  const reason = repress ? "repress" : "spend";
+  queueCardDiscard(player.id, card, target, reason);
+  queueHandDelta(player.id, -1);
+
+  if (wild) {
     repressCard(state, card);
     repressTopMindstreamFromEachDeck(state);
     playSfx("repress");
@@ -283,7 +291,7 @@ function routeSpentHandCard(state, card, { toRepress = false } = {}) {
 export function discardSelected(state, player, { toRepress = false } = {}) {
   const selected = selectedCards(state, player);
   player.hand = player.hand.filter((c) => !state.selectedHand.includes(c.instanceId));
-  selected.forEach((card) => routeSpentHandCard(state, card, { toRepress }));
+  selected.forEach((card) => routeSpentHandCard(state, player, card, { toRepress }));
   state.selectedHand = [];
   state.pendingPowerBonus = 0;
   if (state.checkPsycheDeath) state.checkPsycheDeath(player);
@@ -298,7 +306,7 @@ export function discardAllSelected(state, { toRepress = false } = {}) {
     const selected = player.hand.filter((c) => ids.has(c.instanceId));
     if (!selected.length) return;
     player.hand = player.hand.filter((c) => !ids.has(c.instanceId));
-    selected.forEach((card) => routeSpentHandCard(state, card, { toRepress }));
+    selected.forEach((card) => routeSpentHandCard(state, player, card, { toRepress }));
     byPlayer.push({ player, cards: selected });
     if (state.checkPsycheDeath) state.checkPsycheDeath(player);
   });

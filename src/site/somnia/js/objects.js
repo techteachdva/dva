@@ -10,6 +10,7 @@ import { repressCard, requestReturnCards } from "./subconscious.js";
 import { edgeLandscapes } from "./hex.js";
 import { checkObjectTagSet } from "./object-effects.js";
 import { psycheCardValue } from "./psyche.js";
+import { pullObjectFromMindstream, objectForPlayer, discardToMindstream } from "./mindstream-supply.js";
 
 export function ensureObjectZones(player) {
   if (!player.persistent) player.persistent = [];
@@ -115,7 +116,7 @@ export function playObjectCard(state, player, card, helpers, options = {}) {
     if (card.text?.toLowerCase().includes("repress this")) {
       repressCard(state, card);
     } else {
-      state.objectDiscard.push(card);
+      discardToMindstream(state, card);
     }
     return card;
   }
@@ -225,12 +226,9 @@ function activatePersistentObject(state, player, card) {
 export function drawObjects(state, player, count, helpers) {
   const drawn = [];
   for (let i = 0; i < count; i += 1) {
-    if (!state.objectDeck.length && state.objectDiscard.length) {
-      state.objectDeck = shuffle(state.objectDiscard);
-      state.objectDiscard = [];
-    }
-    if (!state.objectDeck.length) break;
-    const card = state.objectDeck.shift();
+    const pulled = pullObjectFromMindstream(state);
+    if (!pulled) break;
+    const card = objectForPlayer(pulled.card);
     onObjectDrawn(state, player, card, helpers);
     drawn.push(card);
     recordQuestEvent(state, "draw_object", { count: 1 });

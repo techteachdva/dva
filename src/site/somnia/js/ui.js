@@ -58,7 +58,13 @@ function createArtElement(card) {
   return art;
 }
 
-function renderPsycheDreambeastCard(card, { selected, onClick, mini, entering }) {
+function attachCardMeta(el, card, playerId = null) {
+  if (card?.instanceId) el.dataset.instanceId = card.instanceId;
+  if (playerId) el.dataset.playerId = playerId;
+  return el;
+}
+
+function renderPsycheDreambeastCard(card, { selected, onClick, mini, entering, playerId }) {
   const el = document.createElement("button");
   el.type = "button";
   el.className = [
@@ -92,12 +98,31 @@ function renderPsycheDreambeastCard(card, { selected, onClick, mini, entering })
   }
 
   if (onClick) el.addEventListener("click", onClick);
-  return el;
+  return attachCardMeta(el, card, playerId);
 }
 
-function renderPsycheCard(card, { selected, onClick, mini, entering }) {
+function renderPsycheCard(card, { selected, onClick, mini, entering, playerId }) {
   if (isDreambeastPsycheCard(card)) {
-    return renderPsycheDreambeastCard(card, { selected, onClick, mini, entering });
+    return renderPsycheDreambeastCard(card, { selected, onClick, mini, entering, playerId });
+  }
+  if (card.type === "psyche-power") {
+    const el = document.createElement("button");
+    el.type = "button";
+    el.className = [
+      "game-card",
+      "psyche-card",
+      "psyche-power",
+      selected ? "selected" : "",
+      entering ? "card-enter" : "",
+      mini ? "mini" : "",
+    ].filter(Boolean).join(" ");
+    el.innerHTML = `
+      <span class="psyche-value">⚡</span>
+      <span class="psyche-suit">+${card.powerTokens || 2}</span>
+      <span class="psyche-label">Power</span>
+    `;
+    if (onClick) el.addEventListener("click", onClick);
+    return attachCardMeta(el, card, playerId);
   }
   const el = document.createElement("button");
   el.type = "button";
@@ -128,7 +153,7 @@ function renderPsycheCard(card, { selected, onClick, mini, entering }) {
   }
 
   if (onClick) el.addEventListener("click", onClick);
-  return el;
+  return attachCardMeta(el, card, playerId);
 }
 
 function handStatsHtml(state, player) {
@@ -156,13 +181,20 @@ function suitGradient(card) {
 }
 
 export function renderCard(card, options = {}) {
-  const { portrait = false, mini = false, selected = false, onClick, entering = false } = options;
+  const {
+    portrait = false,
+    mini = false,
+    selected = false,
+    onClick,
+    entering = false,
+    playerId = null,
+  } = options;
 
-  if (card.type === "psyche" && !portrait) {
-    return renderPsycheCard(card, { selected, onClick, mini, entering });
+  if ((card.type === "psyche" || card.type === "psyche-power") && !portrait) {
+    return renderPsycheCard(card, { selected, onClick, mini, entering, playerId });
   }
   if (isDreambeastPsycheCard(card) && !portrait) {
-    return renderPsycheDreambeastCard(card, { selected, onClick, mini, entering });
+    return renderPsycheDreambeastCard(card, { selected, onClick, mini, entering, playerId });
   }
 
   const el = document.createElement("button");
@@ -191,7 +223,7 @@ export function renderCard(card, options = {}) {
   if (card.type === "dreamer" && portrait) {
     el.appendChild(art);
     if (onClick) el.addEventListener("click", onClick);
-    return el;
+    return attachCardMeta(el, card, playerId);
   }
 
   const body = document.createElement("div");
@@ -211,15 +243,13 @@ export function renderCard(card, options = {}) {
   }
 
   if (onClick) el.addEventListener("click", onClick);
-  return el;
+  return attachCardMeta(el, card, playerId);
 }
-
-export function showModal(card) {
   const modal = document.getElementById("card-modal");
   const container = document.getElementById("modal-card");
   container.innerHTML = "";
 
-  if (card.type === "psyche") {
+  if (card.type === "psyche" || card.type === "psyche-power") {
     const detail = document.createElement("div");
     detail.className = "modal-detail psyche-modal";
     if (isDreambeastPsycheCard(card)) {
@@ -237,6 +267,15 @@ export function showModal(card) {
         </div>
         <h2>Wild Psyche</h2>
         <p>Counts as <strong>5 Psyche of any suit</strong> when played. After playing, Repress this card plus the top card of each Mindstream deck.</p>
+      `;
+    } else if (card.type === "psyche-power") {
+      detail.innerHTML = `
+        <div class="psyche-modal-face psyche-power">
+          <span class="psyche-value large">⚡</span>
+          <span class="psyche-suit large">+${card.powerTokens || 2}</span>
+        </div>
+        <h2>${card.name}</h2>
+        <p>When drawn: take <strong>${card.powerTokens || 2} Power Tokens</strong>, then discard this card.</p>
       `;
     } else {
       detail.innerHTML = `
@@ -445,6 +484,7 @@ export function renderPlayers(state, onSelectPlayer) {
       tradeTarget ? "trade-target" : "",
     ].filter(Boolean).join(" ");
     const tooltip = getDreamerChipTooltip(state, player, index);
+    chip.dataset.playerId = player.id;
     chip.dataset.tooltip = tooltip;
     chip.title = tooltip;
     chip.setAttribute("aria-label", `${player.name}. ${tooltip}`);
@@ -510,6 +550,7 @@ export function renderHand(state, onCardClick, newCardIds = null) {
       selected: state.selectedHand.includes(card.instanceId)
         || state.trade?.offerPsycheIds?.includes(card.instanceId),
       entering: fresh.has(card.instanceId),
+      playerId: player.id,
       onClick: () => onCardClick(card, player),
     });
     if (fresh.has(card.instanceId)) {
@@ -541,6 +582,7 @@ export function renderPhaseSpendHands(state, onCardClick) {
   state.players.filter((p) => p.alive).forEach((player, index) => {
     const row = document.createElement("div");
     const isBest = best?.id === player.id;
+    row.dataset.playerId = player.id;
     row.className = [
       "coop-hand-row",
       "phase-spend-row",
@@ -564,6 +606,7 @@ export function renderPhaseSpendHands(state, onCardClick) {
         cards.appendChild(renderCard(card, {
           selected: state.selectedHand.includes(card.instanceId),
           mini: true,
+          playerId: player.id,
           onClick: canPick ? () => onCardClick(card, player) : undefined,
         }));
       });
@@ -588,6 +631,7 @@ export function renderCoopMeetHands(state, onCardClick) {
 
   state.players.filter((p) => p.alive).forEach((player, index) => {
     const row = document.createElement("div");
+    row.dataset.playerId = player.id;
     row.className = [
       "coop-hand-row",
       index === state.activePlayerIndex ? "focused" : "",
@@ -607,6 +651,7 @@ export function renderCoopMeetHands(state, onCardClick) {
       player.hand.forEach((card) => {
         cards.appendChild(renderCard(card, {
           selected: state.selectedHand.includes(card.instanceId),
+          playerId: player.id,
           onClick: () => onCardClick(card, player),
         }));
       });
@@ -620,19 +665,23 @@ export function renderDecks(state, onDeckClick) {
   const tray = document.getElementById("deck-tray");
   tray.innerHTML = "";
 
-  const decks = [
-    { id: "dream", label: "Dream", count: state.dreamDeck.length },
-    { id: "psyche", label: "Psyche", count: state.psycheDeck.length },
-    { id: "archetype", label: "Archetype", count: state.archetypeDeck.length },
-    { id: "dreambeast", label: "Dreambeasts", count: state.dreambeastDeck.length },
-    { id: "object", label: "Objects", count: state.objectDeck.length },
+  const coreDecks = [
+    { id: "dream", label: "💤 Dream", count: state.dreamDeck.length },
+    { id: "psyche", label: "🃏 Psyche", count: state.psycheDeck.length },
+    { id: "archetype", label: "👤 Archetype", count: state.archetypeDeck.length },
+  ];
+
+  const mindstreamDecks = [
     { id: "mindstream-lucidity", label: "◉ Mindstream", short: "Lucidity", count: state.mindstreamDecks.lucidity.length, suit: "lucidity" },
     { id: "mindstream-elasticity", label: "⇄ Mindstream", short: "Elasticity", count: state.mindstreamDecks.elasticity.length, suit: "elasticity" },
     { id: "mindstream-willpower", label: "✊ Mindstream", short: "Willpower", count: state.mindstreamDecks.willpower.length, suit: "willpower" },
+  ];
+
+  const footerDecks = [
     { id: "subconscious", label: "☠ Subconscious", count: subconsciousCount(state.subconscious) },
   ];
 
-  decks.forEach((deck) => {
+  const appendDeck = (deck) => {
     const el = document.createElement("button");
     el.type = "button";
     const isGraveyard = deck.id === "subconscious";
@@ -644,10 +693,21 @@ export function renderDecks(state, onDeckClick) {
     const labelText = deck.short
       ? `<span class="deck-label-main">${deck.label}</span><span class="deck-label-sub">${deck.short}</span>`
       : `<span class="deck-label-main">${deck.label}</span>`;
+    el.dataset.deckId = deck.id;
     el.innerHTML = `${labelText}<strong class="deck-count">${deck.count}</strong>`;
     el.addEventListener("click", () => onDeckClick(deck.id));
     tray.appendChild(el);
-  });
+  };
+
+  coreDecks.forEach(appendDeck);
+
+  const section = document.createElement("div");
+  section.className = "deck-section-label";
+  section.textContent = "Mindstream — Events · Beasts · Objects · Tokens · +Dream";
+  tray.appendChild(section);
+
+  mindstreamDecks.forEach(appendDeck);
+  footerDecks.forEach(appendDeck);
 }
 
 export function renderSubconsciousGraveyard(state, onBrowse) {
@@ -1024,6 +1084,54 @@ export function showEndScreen(won, message) {
   showScreen("screen-end");
   document.getElementById("end-title").textContent = won ? "You Wake Up!" : "Trapped Forever";
   document.getElementById("end-message").textContent = message;
+}
+
+export function showLandscapeActionPicker(tile, choices, onPick) {
+  const modal = document.getElementById("utility-modal");
+  const body = document.getElementById("utility-modal-body");
+  const buttons = choices.map((choice) => `
+    <button type="button" class="btn landscape-action-pick" data-action="${choice.id}">
+      <strong>${choice.label}</strong>
+      <span class="landscape-action-desc">${choice.description || ""}</span>
+    </button>
+  `).join("");
+
+  body.innerHTML = `
+    <h2>Landscape Action — ${tile.name}</h2>
+    <p>Choose one action (spends 1 Meet action):</p>
+    <div class="utility-actions landscape-action-choices">${buttons}</div>
+  `;
+
+  body.querySelectorAll("[data-action]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      hideUtilityModal();
+      onPick(btn.dataset.action);
+    });
+  });
+  modal.classList.remove("hidden");
+}
+
+export function showDeckFlipPicker(onPick) {
+  const modal = document.getElementById("utility-modal");
+  const body = document.getElementById("utility-modal-body");
+  body.innerHTML = `
+    <h2>Flip Top 3</h2>
+    <p>Choose a deck to flip the top 3 cards:</p>
+    <div class="utility-actions mindstream-pick">
+      <button type="button" class="btn" data-deck="psyche">Psyche Deck</button>
+      <button type="button" class="btn" data-deck="dream">Dream Deck</button>
+      <button type="button" class="btn suit-lucidity" data-deck="mindstream-lucidity">${suitIconHtml("lucidity", { size: 14 })} Lucidity Mindstream</button>
+      <button type="button" class="btn suit-elasticity" data-deck="mindstream-elasticity">${suitIconHtml("elasticity", { size: 14 })} Elasticity Mindstream</button>
+      <button type="button" class="btn suit-willpower" data-deck="mindstream-willpower">${suitIconHtml("willpower", { size: 14 })} Willpower Mindstream</button>
+    </div>
+  `;
+  body.querySelectorAll("[data-deck]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      hideUtilityModal();
+      onPick(btn.dataset.deck);
+    });
+  });
+  modal.classList.remove("hidden");
 }
 
 export function showMindstreamPicker(onPick) {
