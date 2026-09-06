@@ -37,6 +37,7 @@ import { enableDevMode } from "./dev-commands.js";
 import { narrate } from "./narrator.js";
 import { pickReturnCard, cancelPendingReturn, pickRepressCard, confirmRepressStep, subconsciousCount } from "./subconscious.js";
 import { getLandscapePickHighlights } from "./landscapes.js";
+import { phaseOpeningActive } from "./rules.js";
 import {
   TUTORIAL_STEPS,
   hasSeenTutorial,
@@ -46,6 +47,7 @@ import {
   renderBoard,
   renderPlayers,
   renderHand,
+  renderPhaseSpendHands,
   renderCoopMeetHands,
   renderObjects,
   renderDecks,
@@ -260,7 +262,7 @@ function startGame(config) {
   narrate(
     state,
     "The Dreamscape forms",
-    "Each Dreamer starts on The Bed with 5 Psyche and 2 Power. Round 1 begins in the Reveal Phase — everyone drew 2 Psyche. The Head Dreamer (★) should Draw the Dream card.",
+    "Each Dreamer starts on The Bed with 5 Psyche and 2 Power. Round 1 begins in the Reveal Phase — discuss, plan, and act in any order. The Head Dreamer (★) should Draw the Dream when the group is ready.",
     ["Reveal Phase: spend Lucidity to flip Landscapes on the hex map"],
   );
   showScreen("screen-game");
@@ -488,7 +490,9 @@ function renderAll() {
     renderAll();
   });
 
-  if (getPhase(state) === "Meet" && state.meetActionBudget > 0) {
+  if (phaseOpeningActive(state)) {
+    renderPhaseSpendHands(state, onHandCardClick);
+  } else if (getPhase(state) === "Meet" && state.meetActionBudget > 0) {
     renderCoopMeetHands(state, onHandCardClick);
   } else {
     renderHand(state, onHandCardClick, getNewHandCardIds(state));

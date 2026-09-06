@@ -478,6 +478,18 @@ body.in-game main {
   margin-bottom: 0.35rem;
 }
 
+.coop-play-banner {
+  margin: 0 0 0.45rem;
+  padding: 0.4rem 0.75rem;
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--accent);
+  font-style: italic;
+  border-radius: 8px;
+  background: rgba(123, 92, 255, 0.1);
+  border: 1px dashed rgba(201, 160, 255, 0.35);
+}
+
 .btn-advance {
   min-width: 220px;
   font-family: var(--font-display);
@@ -1170,6 +1182,17 @@ body.in-game main {
 
 .coop-hand-row.focused .coop-hand-label {
   color: var(--accent);
+}
+
+.coop-hand-row.best-spender {
+  background: rgba(240, 201, 106, 0.06);
+  border-radius: 8px;
+  padding-left: 0.35rem;
+  padding-right: 0.35rem;
+}
+
+.coop-hand-row.best-spender .coop-hand-label {
+  color: var(--gold);
 }
 
 .coop-hand-label {

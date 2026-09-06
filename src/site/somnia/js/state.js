@@ -379,9 +379,9 @@ export function advancePhase(state) {
   state.pendingPowerBonus = 0;
 
   if (getPhase(state) === "Explore") {
-    addLog(state, "Explore Phase — play Elasticity Psyche to move Dreamers.");
+    addLog(state, "Explore Phase — one Dreamer spends Elasticity to unlock shared moves.");
   } else if (getPhase(state) === "Meet") {
-    addLog(state, "Meet Phase — one Dreamer pays Willpower for shared Actions; all Dreamers pool Psyche.");
+    addLog(state, "Meet Phase — one Dreamer spends Willpower for shared Actions; all Dreamers pool Psyche.");
   }
 }
 

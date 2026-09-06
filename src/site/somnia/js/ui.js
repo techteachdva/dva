@@ -6,6 +6,9 @@ import {
   suitIconHtml,
   dreamerStatsHtml,
   isWildPsyche,
+  bestPhaseContributor,
+  statForPhaseBudget,
+  totalStat,
 } from "./rules.js";
 import { handLimitForPlayer } from "./objects.js";
 import { getQuestStatus } from "./quests.js";
@@ -513,6 +516,60 @@ export function renderHand(state, onCardClick, newCardIds = null) {
       el.style.setProperty("--deal-i", String(index));
     }
     hand.appendChild(el);
+  });
+}
+
+export function renderPhaseSpendHands(state, onCardClick) {
+  const hand = document.getElementById("hand");
+  const stats = document.getElementById("hand-stats");
+  const title = document.getElementById("hand-title");
+  const phase = getPhase(state);
+  const suit = phase === "Reveal" ? "lucidity" : phase === "Explore" ? "elasticity" : "willpower";
+  const suitLabel = SUIT_LABELS[suit];
+  const best = bestPhaseContributor(state);
+  const statKey = statForPhaseBudget(phase, state);
+
+  hand.innerHTML = "";
+  hand.classList.add("coop-mode");
+  if (title) title.textContent = `Spend ${suitLabel} — one Dreamer sets the team budget`;
+  if (stats) {
+    stats.textContent = best
+      ? `Tip: ${best.name} has the best ${suitLabel} bonus (+${totalStat(best, statKey)}) — have them play 1–2 cards`
+      : `Select 1–2 ${suitLabel} cards from one Dreamer's row`;
+  }
+
+  state.players.filter((p) => p.alive).forEach((player, index) => {
+    const row = document.createElement("div");
+    const isBest = best?.id === player.id;
+    row.className = [
+      "coop-hand-row",
+      "phase-spend-row",
+      isBest ? "best-spender" : "",
+      index === state.activePlayerIndex ? "focused" : "",
+    ].filter(Boolean).join(" ");
+
+    const label = document.createElement("div");
+    label.className = "coop-hand-label";
+    label.textContent = `${player.name}${player.isHead ? " ★" : ""} · +${totalStat(player, statKey)} ${suitLabel}${isBest ? " · best bonus" : ""}`;
+    row.appendChild(label);
+
+    const cards = document.createElement("div");
+    cards.className = "coop-hand-cards";
+    if (!player.hand.length) {
+      cards.textContent = "Empty hand";
+      cards.classList.add("empty");
+    } else {
+      player.hand.forEach((card) => {
+        const canPick = card.suit === suit || isWildPsyche(card);
+        cards.appendChild(renderCard(card, {
+          selected: state.selectedHand.includes(card.instanceId),
+          mini: true,
+          onClick: canPick ? () => onCardClick(card, player) : undefined,
+        }));
+      });
+    }
+    row.appendChild(cards);
+    hand.appendChild(row);
   });
 }
 

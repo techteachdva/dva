@@ -33,6 +33,14 @@ import {
   bossPlayShapeRequired,
   formatDreamerStatsText,
   SUIT_LABELS,
+  findPhaseContributor,
+  bestPhaseContributor,
+  projectedPhaseBudget,
+  phaseSuitForOpening,
+  statForPhaseBudget,
+  totalStat,
+  phaseOpeningActive,
+  cardCountsAsSuit,
 } from "./rules.js";
 import { getLegalMoveTargets, canMoveTo, adjacentTiles, hexDistance, areHexAdjacent } from "./hex.js";
 import { repressCard, listSubconsciousCards, dreambeastToHandCard, isDreambeastPsycheCard } from "./subconscious.js";
@@ -45,6 +53,7 @@ import { narrate } from "./narrator.js";
 import { playSfx } from "./audio.js";
 import { markPhasePulse } from "./fx.js";
 import { recordQuestEvent } from "./quests.js";
+import { COOP_PLAY_TIP } from "./guide.js";
 import {
   resolveCardEffect,
   createEffectHelpers,
@@ -137,20 +146,28 @@ export function getPhaseActions(state, handlers) {
   const encounter = state.activeEncounter;
 
   if (phase === "Reveal") {
-    if (headPlayer(state) === player) {
-      actions.push({
-        label: "Draw & Resolve Dream",
-        hint: "Head Dreamer only",
-        primary: true,
-        section: "main",
-        disabled: state.dreamDrawn,
-        onClick: handlers.drawDream,
-      });
-    }
+    const head = headPlayer(state);
     actions.push({
-      label: `Reveal Landscapes (${revealBudget(state, player) || "?"})`,
+      label: "Draw & Resolve Dream",
+      hint: `${head.name} is Head ★ — anyone may click after the group agrees`,
+      primary: !state.dreamDrawn,
       section: "main",
-      disabled: state.revealLandscapeUsed || revealBudget(state, player) < 1,
+      disabled: state.dreamDrawn,
+      onClick: handlers.drawDream,
+    });
+    const contributor = findPhaseContributor(state);
+    const budget = contributor ? revealBudget(state, contributor) : 0;
+    const best = bestPhaseContributor(state);
+    const stat = statForPhaseBudget("Reveal", state);
+    actions.push({
+      label: budget >= 1
+        ? `Reveal Landscapes (${budget} for team)`
+        : "Reveal Landscapes (select Lucidity)",
+      hint: best
+        ? `One Dreamer spends 1–2 Lucidity — ${best.name} adds +${totalStat(best, stat)} (best bonus).`
+        : "One Dreamer spends Lucidity to set everyone's reveal budget.",
+      section: "main",
+      disabled: state.revealLandscapeUsed || budget < 1,
       onClick: handlers.revealLandscape,
     });
     actions.push({
@@ -165,11 +182,20 @@ export function getPhaseActions(state, handlers) {
 
   if (phase === "Explore") {
     if (!state.exploreActivated) {
+      const contributor = findPhaseContributor(state);
+      const budget = contributor ? exploreBudget(state, contributor) : 0;
+      const best = bestPhaseContributor(state);
+      const stat = statForPhaseBudget("Explore", state);
       actions.push({
-        label: `Spend Elasticity (${exploreBudget(state, player) || "select cards"})`,
+        label: budget >= 1
+          ? `Spend Elasticity (${budget} team moves)`
+          : "Spend Elasticity (select cards)",
+        hint: best
+          ? `One Dreamer spends 1–2 Elasticity — ${best.name} adds +${totalStat(best, stat)} (best bonus).`
+          : "One Dreamer spends Elasticity to set everyone's move budget.",
         section: "main",
         primary: true,
-        disabled: exploreBudget(state, player) < 1,
+        disabled: budget < 1,
         onClick: handlers.activateExplore,
       });
     } else {
@@ -197,10 +223,20 @@ export function getPhaseActions(state, handlers) {
     const poolHint = state.meetActionBudget > 0 ? ` · pool ${poolCount}/3 (${poolTotal})` : "";
 
     if (state.meetActionBudget === 0) {
+      const contributor = findPhaseContributor(state);
+      const budget = contributor ? meetActionBudgetFromWillpower(state, contributor) : 0;
+      const best = bestPhaseContributor(state);
+      const stat = statForPhaseBudget("Meet", state);
       actions.push({
-        label: `Gain Actions (${meetActionBudgetFromWillpower(state, player) || "select Willpower"})`,
+        label: budget >= 1
+          ? `Gain Actions (${budget} for team)`
+          : "Gain Actions (select Willpower)",
+        hint: best
+          ? `One Dreamer spends 1–2 Willpower — ${best.name} adds +${totalStat(best, stat)} (best bonus).`
+          : "One Dreamer spends Willpower to set shared Meet actions.",
         section: "main",
         primary: true,
+        disabled: budget < 1,
         onClick: handlers.gainMeetActions,
       });
     } else {
@@ -372,10 +408,6 @@ export function drawAdditionalDream(state, onShowModal) {
 export function drawDreamCard(state, onShowModal) {
   if (state.dreamDrawn) return null;
   const head = headPlayer(state);
-  if (activePlayer(state) !== head) {
-    addLog(state, "Only the Head Dreamer draws the Dream card.");
-    return null;
-  }
 
   const card = state.dreamDeck.shift();
   if (!card) {
@@ -387,6 +419,7 @@ export function drawDreamCard(state, onShowModal) {
   state.dreamDrawn = true;
   if (!state.dreamDiscard) state.dreamDiscard = [];
   state.dreamDiscard.push(card);
+  addLog(state, `${head.name} (Head ★) draws the Dream: ${card.name}.`);
   narrate(
     state,
     `Dream: ${card.name}`,
@@ -413,13 +446,25 @@ export function drawDreamCard(state, onShowModal) {
 }
 
 export function revealLandscape(state) {
-  const player = activePlayer(state);
+  const player = findPhaseContributor(state);
+  if (!player) {
+    const best = bestPhaseContributor(state);
+    const stat = statForPhaseBudget("Reveal", state);
+    narrate(
+      state,
+      "Select Lucidity Psyche first",
+      best
+        ? `One Dreamer spends 1–2 blue ${SUIT_LABELS.lucidity} cards to set the team's reveal budget. ${best.name} has the highest Lucidity (+${totalStat(best, stat)}) — have them play the cards.`
+        : `Choose 1–2 blue ${SUIT_LABELS.lucidity} cards from any Dreamer's hand, then click Reveal Landscapes.`,
+    );
+    return;
+  }
   const budget = revealBudget(state, player);
   if (budget < 1) {
     narrate(
       state,
       "Select Lucidity Psyche first",
-      `Choose 1–2 blue ${SUIT_LABELS.lucidity} cards from your hand, then click Reveal Landscapes. Your Lucidity stat (${player.dreamer.lucidity}) is added to the card values.`,
+      `Choose 1–2 blue ${SUIT_LABELS.lucidity} cards from ${player.name}'s hand. Their Lucidity stat (+${totalStat(player, "lucidity")}) is added to the card values.`,
     );
     return;
   }
@@ -428,7 +473,7 @@ export function revealLandscape(state) {
 
   const lucidityCards = selectedBySuit(state, player, "lucidity");
   if (lucidityCards.length < 1 || lucidityCards.length > 2) {
-    narrate(state, "Select 1–2 Lucidity cards", "Click blue Psyche cards in your hand to select them for the Reveal action.");
+    narrate(state, "Select 1–2 Lucidity cards", `Click blue Psyche in ${player.name}'s row to select them for the Reveal action.`);
     return;
   }
 
@@ -436,13 +481,14 @@ export function revealLandscape(state) {
   trackPsycheDiscard(state, player, lucidityDiscarded);
 
   beginRevealPicking(state, budget);
+  addLog(state, `${player.name} spends Lucidity — the team may reveal up to ${budget} Landscapes.`);
   recordQuestEvent(state, "reveal_landscape", { count: 0 });
 }
 
 export function activateExplore(state) {
-  const player = activePlayer(state);
+  const player = findPhaseContributor(state);
   const freeRound = state.freeExploreNextRound;
-  let budget = exploreBudget(state, player);
+  let budget = player ? exploreBudget(state, player) : 0;
 
   if (freeRound) {
     budget = Math.max(budget, state.players.filter((p) => p.alive).length);
@@ -450,10 +496,19 @@ export function activateExplore(state) {
     addLog(state, "Travel dream: free moves for all Dreamers this round.");
   }
 
-  const elaCards = selectedBySuit(state, player, "elasticity");
+  if (!player && !freeRound) {
+    const best = bestPhaseContributor(state);
+    const stat = statForPhaseBudget("Explore", state);
+    addLog(state, best
+      ? `Select 1–2 Elasticity cards from a Dreamer's hand. ${best.name} has the best Elasticity bonus (+${totalStat(best, stat)}).`
+      : `Select 1–2 ${SUIT_LABELS.elasticity} Psyche cards from any Dreamer to set team moves.`);
+    return;
+  }
+
+  const elaCards = player ? selectedBySuit(state, player, "elasticity") : [];
 
   if (!freeRound && (elaCards.length < 1 || elaCards.length > 2)) {
-    addLog(state, `Play 1 or 2 ${SUIT_LABELS.elasticity} Psyche cards to Move.`);
+    addLog(state, `Play 1 or 2 ${SUIT_LABELS.elasticity} Psyche cards to unlock team movement.`);
     return;
   }
 
@@ -463,7 +518,7 @@ export function activateExplore(state) {
   }
   state.exploreMovesLeft = budget;
   state.exploreActivated = true;
-  addLog(state, `${player.name} gains ${budget} shared Explore moves (+Elasticity). Click a Landscape to move the active Dreamer.`);
+  addLog(state, `${player?.name || "The team"} unlocks ${budget} shared Explore moves. Click Dreamer chips to choose who moves.`);
 }
 
 export function moveDreamer(state, targetLandscapeId) {
@@ -514,12 +569,20 @@ export function moveDreamer(state, targetLandscapeId) {
 }
 
 export function gainMeetActions(state) {
-  const player = activePlayer(state);
+  const player = findPhaseContributor(state);
+  if (!player) {
+    const best = bestPhaseContributor(state);
+    const stat = statForPhaseBudget("Meet", state);
+    addLog(state, best
+      ? `Select 1–2 Willpower cards from a Dreamer's hand. ${best.name} has the best Willpower bonus (+${totalStat(best, stat)}).`
+      : `Play 1 or 2 ${SUIT_LABELS.willpower} Psyche cards from any Dreamer for shared Meet Actions.`);
+    return;
+  }
   const budget = meetActionBudgetFromWillpower(state, player);
   const wilCards = selectedBySuit(state, player, "willpower");
 
   if (wilCards.length < 1 || wilCards.length > 2) {
-    addLog(state, `Play 1 or 2 ${SUIT_LABELS.willpower} Psyche cards for Meet Actions.`);
+    addLog(state, `Play 1 or 2 ${SUIT_LABELS.willpower} Psyche cards from ${player.name}'s hand for Meet Actions.`);
     return;
   }
 
@@ -528,7 +591,7 @@ export function gainMeetActions(state) {
   state.meetActionBudget = budget;
   state.meetActionsUsed = 0;
   state.lastMeetAction = null;
-  addLog(state, `${player.name} gains ${budget} shared Meet Actions (+Willpower).`);
+  addLog(state, `${player.name} spends Willpower — the team gains ${budget} shared Meet Actions.`);
 }
 
 export function powerBonus(state) {
@@ -982,13 +1045,28 @@ export function toggleHandCard(state, card, owner = null) {
     return;
   }
 
-  if (player !== activePlayer(state)) return;
+  if (phaseOpeningActive(state)) {
+    if (!player.alive || !player.hand.some((c) => c.instanceId === id)) return;
+    const suit = phaseSuitForOpening(phase);
+    if (!cardCountsAsSuit(card, suit, state)) return;
 
-  if (phase === "Reveal" && card.suit !== "lucidity") return;
-  if (phase === "Explore" && card.suit !== "elasticity") return;
-  if (phase === "Meet" && state.meetActionBudget === 0 && card.suit !== "willpower") return;
+    if (state.selectedHand.includes(id)) {
+      state.selectedHand = state.selectedHand.filter((x) => x !== id);
+      return;
+    }
 
-  state.selectedHand.push(id);
+    const contributor = findPhaseContributor(state);
+    if (contributor && contributor.id !== player.id) {
+      state.selectedHand = state.selectedHand.filter((selId) =>
+        player.hand.some((c) => c.instanceId === selId),
+      );
+    }
+
+    const suited = selectedBySuit(state, player, suit);
+    if (suited.length >= 2) return;
+    state.selectedHand.push(id);
+    return;
+  }
 }
 
 export function handleQuestComplete(state, questIndex = 0) {
@@ -1029,10 +1107,10 @@ export function endPhase(state) {
     state,
     `${phase} Phase begins`,
     phase === "Reveal"
-      ? "Each Dreamer drew 2 Psyche at round start. Head Dreamer (★) should Draw the Dream. Anyone may spend Lucidity to Reveal Landscapes on the map."
+      ? `${COOP_PLAY_TIP} Head Dreamer (★) draws the Dream once. One Dreamer spends Lucidity to set team reveals.`
       : phase === "Explore"
-        ? "Spend Elasticity Psyche to move Dreamers across the hex map."
-        : "Spend Willpower for shared Meet actions — pool Psyche to face Encounters.",
+        ? `${COOP_PLAY_TIP} One Dreamer spends Elasticity to unlock shared moves — then move any Dreamer.`
+        : `${COOP_PLAY_TIP} One Dreamer spends Willpower to unlock shared Meet actions.`,
   );
 }
 
@@ -1062,21 +1140,26 @@ export function getLegalExploreTargets(state) {
 
 export function getPhaseHint(state) {
   const phase = getPhase(state);
-  const player = activePlayer(state);
-  const stats = formatDreamerStatsText(player.dreamer);
+  const head = headPlayer(state);
   if (phase === "Reveal") {
-    return `Reveal: select 1–2 ${SUIT_LABELS.lucidity} Psyche to reveal Landscapes. ${stats}`;
+    const parts = [COOP_PLAY_TIP];
+    if (!state.dreamDrawn) parts.push(`${head.name} (★) Dream not drawn yet.`);
+    if (!state.revealLandscapeUsed) parts.push("One Dreamer spends Lucidity for team reveals.");
+    return parts.join(" ");
   }
   if (phase === "Explore") {
     const legal = getLegalExploreTargets(state).length;
-    return `Explore: adjacent moves only (${legal} reachable). ${stats}`;
+    if (!state.exploreActivated) {
+      return `${COOP_PLAY_TIP} One Dreamer spends Elasticity to unlock shared moves.`;
+    }
+    return `${COOP_PLAY_TIP} ${state.exploreMovesLeft} team move(s) · ${legal} hexes reachable for focused Dreamer.`;
   }
   if (phase === "Meet") {
     if (state.meetActionBudget === 0) {
-      return `Meet: active Dreamer plays 1–2 ${SUIT_LABELS.willpower} for shared Actions. ${stats}`;
+      return `${COOP_PLAY_TIP} One Dreamer spends Willpower for shared Meet actions.`;
     }
     const pool = coopMeetPlayTotal(state);
     const count = allSelectedCards(state).length;
-    return `Cooperative Meet: pool up to 3 Psyche (${count}/3, total ${pool}). ${stats}`;
+    return `${COOP_PLAY_TIP} ${state.meetActionsUsed}/${state.meetActionBudget} actions · pool ${count}/3 (${pool}).`;
   }
 }

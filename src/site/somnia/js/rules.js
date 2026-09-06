@@ -82,6 +82,70 @@ export function totalStat(player, stat) {
   return dreamerStat(player.dreamer, stat);
 }
 
+export function phaseSuitForOpening(phase) {
+  if (phase === "Reveal") return "lucidity";
+  if (phase === "Explore") return "elasticity";
+  if (phase === "Meet") return "willpower";
+  return null;
+}
+
+/** True while the table is still waiting for one Dreamer to spend Psyche and set the phase budget. */
+export function phaseOpeningActive(state) {
+  const phase = PHASES[state.phaseIndex];
+  if (phase === "Reveal") return !state.revealLandscapeUsed && !state.landscapePick;
+  if (phase === "Explore") return !state.exploreActivated;
+  if (phase === "Meet") return !state.meetActionBudget;
+  return false;
+}
+
+export function statForPhaseBudget(phase, state) {
+  if (phase === "Explore" && state.paradoxMeet) return "willpower";
+  if (phase === "Meet" && state.paradoxMeet) return "elasticity";
+  return phaseSuitForOpening(phase);
+}
+
+/** Dreamer whose selected Psyche will be spent to open the current phase (if any). */
+export function findPhaseContributor(state) {
+  if (!phaseOpeningActive(state)) return null;
+  const ids = new Set(state.selectedHand);
+  if (!ids.size) return null;
+
+  const owners = [];
+  state.players.forEach((player) => {
+    if (!player.alive) return;
+    const has = player.hand.some((c) => ids.has(c.instanceId));
+    if (has) owners.push(player);
+  });
+
+  if (owners.length === 1) return owners[0];
+  return null;
+}
+
+/** Alive Dreamer with the highest stat bonus for the current phase opening. */
+export function bestPhaseContributor(state) {
+  const phase = PHASES[state.phaseIndex];
+  const stat = statForPhaseBudget(phase, state);
+  let best = null;
+  let bestValue = -1;
+  state.players.forEach((player) => {
+    if (!player.alive) return;
+    const value = totalStat(player, stat);
+    if (value > bestValue) {
+      bestValue = value;
+      best = player;
+    }
+  });
+  return best;
+}
+
+export function projectedPhaseBudget(state, player) {
+  const phase = PHASES[state.phaseIndex];
+  if (phase === "Reveal") return revealBudget(state, player);
+  if (phase === "Explore") return exploreBudget(state, player);
+  if (phase === "Meet") return meetActionBudgetFromWillpower(state, player);
+  return 0;
+}
+
 export function selectedCards(state, player) {
   return player.hand.filter((c) => state.selectedHand.includes(c.instanceId));
 }
@@ -115,6 +179,15 @@ export function canSelectCard(state, card, phase, player = null) {
   const active = player || state.players[state.activePlayerIndex];
   const selected = selectedCards(state, active);
   if (state.selectedHand.includes(card.instanceId)) return true;
+
+  if (phaseOpeningActive(state)) {
+    if (!active.alive || !active.hand.some((c) => c.instanceId === card.instanceId)) return false;
+    const suit = phaseSuitForOpening(phase);
+    if (!cardCountsAsSuit(card, suit, state)) return false;
+    const suited = selectedBySuit(state, active, suit);
+    if (suited.length >= 2) return false;
+    return true;
+  }
 
   if (phase === "Meet" && state.meetActionBudget > 0) {
     if (!active.alive || !active.hand.some((c) => c.instanceId === card.instanceId)) return false;
