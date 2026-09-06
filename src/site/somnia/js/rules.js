@@ -225,7 +225,6 @@ export function discardAllSelected(state, { toRepress = false } = {}) {
     byPlayer.push({ player, cards: selected });
     if (state.checkPsycheDeath) state.checkPsycheDeath(player);
   });
-  });
   state.selectedHand = [];
   state.pendingPowerBonus = 0;
   return byPlayer;
