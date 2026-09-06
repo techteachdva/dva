@@ -70,24 +70,24 @@ function launchGameWindow() {
     selectedDreamerIds: [...selectedDreamerIds],
     launchedAt: Date.now(),
   };
-  sessionStorage.setItem(LAUNCH_KEY, JSON.stringify(payload));
-
-  const features = [
-    "popup=yes",
-    "noopener",
-    "noreferrer",
-    "width=1440",
-    "height=900",
-  ].join(",");
 
   const playUrl = new URL("play.html", window.location.href);
+  playUrl.searchParams.set("launch", btoa(JSON.stringify(payload)));
   if (new URLSearchParams(window.location.search).get("dev") === "1") {
     playUrl.searchParams.set("dev", "1");
   }
   const playHref = playUrl.href;
+
+  const features = [
+    "popup=yes",
+    "width=1440",
+    "height=900",
+  ].join(",");
+
   const win = window.open(playHref, PLAY_WINDOW_NAME, features);
 
   if (!win) {
+    sessionStorage.setItem(LAUNCH_KEY, JSON.stringify(payload));
     window.location.href = playHref;
     return;
   }
@@ -95,7 +95,7 @@ function launchGameWindow() {
   try {
     win.focus();
   } catch {
-    /* cross-origin focus may fail in some browsers */
+    /* focus may fail in some browsers */
   }
 }
 

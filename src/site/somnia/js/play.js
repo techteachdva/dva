@@ -34,6 +34,7 @@ import { initDevConsole } from "./dev-console.js";
 import { enableDevMode } from "./dev-commands.js";
 import { narrate } from "./narrator.js";
 import { pickReturnCard, cancelPendingReturn, pickRepressCard, confirmRepressStep, subconsciousCount } from "./subconscious.js";
+import { getLandscapePickHighlights } from "./landscapes.js";
 import {
   TUTORIAL_STEPS,
   hasSeenTutorial,
@@ -114,6 +115,19 @@ async function init() {
 
 function readLaunchConfig() {
   try {
+    const params = new URLSearchParams(window.location.search);
+    const launchParam = params.get("launch");
+    if (launchParam) {
+      const config = JSON.parse(atob(decodeURIComponent(launchParam)));
+      if (config?.lengthKey && Array.isArray(config.selectedDreamerIds) && config.selectedDreamerIds.length) {
+        sessionStorage.setItem(LAUNCH_KEY, JSON.stringify(config));
+        const clean = new URL(window.location.href);
+        clean.searchParams.delete("launch");
+        history.replaceState(null, "", `${clean.pathname}${clean.search}${clean.hash}`);
+        return config;
+      }
+    }
+
     const raw = sessionStorage.getItem(LAUNCH_KEY);
     if (!raw) return null;
     const config = JSON.parse(raw);
