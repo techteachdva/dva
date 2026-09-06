@@ -245,6 +245,8 @@ export function renderCard(card, options = {}) {
   if (onClick) el.addEventListener("click", onClick);
   return attachCardMeta(el, card, playerId);
 }
+
+export function showModal(card) {
   const modal = document.getElementById("card-modal");
   const container = document.getElementById("modal-card");
   container.innerHTML = "";
