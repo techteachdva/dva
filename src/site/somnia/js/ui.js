@@ -626,10 +626,10 @@ export function renderDecks(state, onDeckClick) {
     { id: "archetype", label: "Archetype", count: state.archetypeDeck.length },
     { id: "dreambeast", label: "Dreambeasts", count: state.dreambeastDeck.length },
     { id: "object", label: "Objects", count: state.objectDeck.length },
-    { id: "mindstream-lucidity", label: "Mindstream Lucidity", count: state.mindstreamDecks.lucidity.length, suit: "lucidity" },
-    { id: "mindstream-elasticity", label: "Mindstream Elasticity", count: state.mindstreamDecks.elasticity.length, suit: "elasticity" },
-    { id: "mindstream-willpower", label: "Mindstream Willpower", count: state.mindstreamDecks.willpower.length, suit: "willpower" },
-    { id: "subconscious", label: "Subconscious", count: subconsciousCount(state.subconscious) },
+    { id: "mindstream-lucidity", label: "◉ Mindstream", short: "Lucidity", count: state.mindstreamDecks.lucidity.length, suit: "lucidity" },
+    { id: "mindstream-elasticity", label: "⇄ Mindstream", short: "Elasticity", count: state.mindstreamDecks.elasticity.length, suit: "elasticity" },
+    { id: "mindstream-willpower", label: "✊ Mindstream", short: "Willpower", count: state.mindstreamDecks.willpower.length, suit: "willpower" },
+    { id: "subconscious", label: "☠ Subconscious", count: subconsciousCount(state.subconscious) },
   ];
 
   decks.forEach((deck) => {
@@ -641,9 +641,10 @@ export function renderDecks(state, onDeckClick) {
       deck.suit ? `suit-${deck.suit}` : "",
       isGraveyard && deck.count > 0 ? "graveyard-active" : "",
     ].filter(Boolean).join(" ");
-    const suitMark = deck.suit ? `${suitIconHtml(deck.suit, { size: 12 })} ` : "";
-    const graveIcon = isGraveyard ? "☠ " : "";
-    el.innerHTML = `<span>${graveIcon}${suitMark}${deck.label}</span><strong>${deck.count}</strong>`;
+    const labelText = deck.short
+      ? `<span class="deck-label-main">${deck.label}</span><span class="deck-label-sub">${deck.short}</span>`
+      : `<span class="deck-label-main">${deck.label}</span>`;
+    el.innerHTML = `${labelText}<strong class="deck-count">${deck.count}</strong>`;
     el.addEventListener("click", () => onDeckClick(deck.id));
     tray.appendChild(el);
   });

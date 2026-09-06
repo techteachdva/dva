@@ -1,19 +1,28 @@
-const STORAGE_KEY = "somnia.musicMuted";
-const TRACK = "audio/dreams-become-real.mp3";
-const DEFAULT_VOLUME = 0.4;
+import {
+  loadSettings,
+  saveSettings,
+  MUSIC_TRACKS,
+  RADIO_PLAYLIST,
+  musicCreditHtml,
+} from "./audio-settings.js";
 
-export const MUSIC_ATTRIBUTION = {
-  title: "Dreams Become Real",
-  artist: "Kevin MacLeod",
-  license: "CC BY 4.0",
-  licenseUrl: "https://creativecommons.org/licenses/by/4.0/",
-  sourceUrl: "https://incompetech.com",
-};
+export { musicCreditHtml, MUSIC_TRACKS };
 
+let settings = loadSettings();
 let bgm = null;
-let started = false;
-let muted = false;
+let musicStarted = false;
+let radioIndex = 0;
 let audioCtx = null;
+let musicSource = null;
+let musicGain = null;
+let musicPan = null;
+let sfxGain = null;
+let sfxPan = null;
+let musicChainReady = false;
+
+function trackById(id) {
+  return MUSIC_TRACKS.find((t) => t.id === id) || MUSIC_TRACKS[0];
+}
 
 function ensureAudioContext() {
   if (!audioCtx) {
@@ -29,8 +38,64 @@ function ensureAudioContext() {
   return audioCtx;
 }
 
+function ensureMusicChain() {
+  if (musicChainReady || !bgm) return;
+  const ac = ensureAudioContext();
+  if (!ac) return;
+  try {
+    musicSource = ac.createMediaElementSource(bgm);
+    musicGain = ac.createGain();
+    musicPan = ac.createStereoPanner();
+    musicSource.connect(musicGain).connect(musicPan).connect(ac.destination);
+    musicChainReady = true;
+  } catch {
+    /* already connected or unsupported */
+  }
+}
+
+function ensureSfxChain() {
+  const ac = ensureAudioContext();
+  if (!ac || sfxGain) return;
+  sfxGain = ac.createGain();
+  sfxPan = ac.createStereoPanner();
+  sfxGain.connect(sfxPan).connect(ac.destination);
+  applySfxLevels();
+}
+
+function applyMusicLevels() {
+  settings = loadSettings();
+  if (musicGain) {
+    musicGain.gain.value = settings.musicMuted || settings.musicMode === "off" ? 0 : settings.musicVolume;
+  } else if (bgm) {
+    bgm.volume = settings.musicMuted || settings.musicMode === "off" ? 0 : settings.musicVolume;
+  }
+  if (musicPan) {
+    musicPan.pan.value = settings.musicPan;
+  }
+}
+
+function applySfxLevels() {
+  settings = loadSettings();
+  if (!sfxGain) return;
+  sfxGain.gain.value = settings.sfxMuted ? 0 : settings.sfxVolume;
+  if (sfxPan) {
+    sfxPan.pan.value = settings.sfxPan;
+  }
+}
+
+function connectSfxOutput(gainNode) {
+  ensureSfxChain();
+  if (sfxGain) {
+    gainNode.connect(sfxGain);
+  } else {
+    const ac = ensureAudioContext();
+    if (ac) gainNode.connect(ac.destination);
+  }
+}
+
 function isSfxMuted() {
-  return muted;
+  settings = loadSettings();
+  return settings.sfxMuted;
 }
 
 function tone({ freq = 440, dur = 0.1, type = "sine", vol = 0.12, slide = 0, delay = 0 }) {
@@ -44,21 +109,26 @@ function tone({ freq = 440, dur = 0.1, type = "sine", vol = 0.12, slide = 0, del
   if (slide) {
     osc.frequency.exponentialRampToValueAtTime(Math.max(40, freq + slide), t0 + dur);
   }
+  const peak = vol * settings.sfxVolume;
   gain.gain.setValueAtTime(0.001, t0);
-  gain.gain.exponentialRampToValueAtTime(vol, t0 + 0.008);
+  gain.gain.exponentialRampToValueAtTime(peak, t0 + 0.008);
   gain.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
-  osc.connect(gain).connect(ac.destination);
+  connectSfxOutput(gain);
   osc.start(t0);
   osc.stop(t0 + dur + 0.02);
 }
 
 export function initSfx() {
-  const unlock = () => ensureAudioContext();
+  const unlock = () => {
+    ensureAudioContext();
+    ensureSfxChain();
+  };
   window.addEventListener("click", unlock, { capture: true });
   window.addEventListener("keydown", unlock, { capture: true });
 }
 
 export function playSfx(name, opts = {}) {
+  settings = loadSettings();
   switch (name) {
     case "click":
       tone({ freq: 520, dur: 0.04, type: "triangle", vol: 0.07 });
@@ -133,91 +203,149 @@ export function bindButtonRipples() {
   }, { capture: true });
 }
 
-function loadMutedPref() {
-  try {
-    return localStorage.getItem(STORAGE_KEY) === "1";
-  } catch {
-    return false;
+function currentTrackFile() {
+  settings = loadSettings();
+  if (settings.musicMode === "track") {
+    return trackById(settings.trackId).file;
+  }
+  const id = RADIO_PLAYLIST[radioIndex % RADIO_PLAYLIST.length];
+  return trackById(id).file;
+}
+
+function advanceRadio() {
+  settings = loadSettings();
+  if (settings.musicMode !== "radio") return;
+  radioIndex = (radioIndex + 1) % RADIO_PLAYLIST.length;
+  loadCurrentTrack(true);
+}
+
+function loadCurrentTrack(autoplay = false) {
+  if (!bgm) return;
+  const file = currentTrackFile();
+  const needsSwap = !bgm.src || !bgm.src.includes(file.replace(/^\//, ""));
+  if (needsSwap) {
+    bgm.pause();
+    bgm.src = file;
+    bgm.load();
+    musicStarted = false;
+  }
+  bgm.loop = settings.musicMode === "track";
+  applyMusicLevels();
+  if (autoplay && !settings.musicMuted && settings.musicMode !== "off") {
+    playMusic();
   }
 }
 
-function saveMutedPref(value) {
-  try {
-    localStorage.setItem(STORAGE_KEY, value ? "1" : "0");
-  } catch {
-    /* ignore */
-  }
-}
-
-export function musicCreditHtml() {
-  const { title, artist, license, licenseUrl, sourceUrl } = MUSIC_ATTRIBUTION;
-  const host = sourceUrl.replace(/^https?:\/\//, "");
-  return `<p class="music-credit">Music: <a href="${sourceUrl}" rel="noopener noreferrer">"${title}"</a> by ${artist} (${host}), licensed under <a href="${licenseUrl}" rel="noopener noreferrer">${license}</a>.</p>`;
-}
-
-export function initSoundtrack() {
-  if (bgm) return;
-  initSfx();
-  muted = loadMutedPref();
-  bgm = new Audio(TRACK);
-  bgm.loop = true;
-  bgm.preload = "auto";
-  bgm.volume = muted ? 0 : DEFAULT_VOLUME;
-
-  const kick = () => {
-    if (!bgm || muted || started) return;
-    const playPromise = bgm.play();
-    if (playPromise?.then) {
-      playPromise.then(() => { started = true; }).catch(() => {});
-    } else {
-      started = true;
-    }
-  };
-
-  window.addEventListener("click", kick, { capture: true });
-  window.addEventListener("keydown", kick, { capture: true });
-}
-
-export function startSoundtrack() {
-  initSoundtrack();
-  if (!bgm || muted) return;
+function playMusic() {
+  if (!bgm) return;
+  settings = loadSettings();
+  if (settings.musicMuted || settings.musicMode === "off") return;
+  ensureMusicChain();
+  applyMusicLevels();
   const playPromise = bgm.play();
   if (playPromise?.then) {
-    playPromise.then(() => { started = true; }).catch(() => {});
+    playPromise.then(() => { musicStarted = true; }).catch(() => {});
   } else {
-    started = true;
+    musicStarted = true;
   }
 }
 
-export function isMusicMuted() {
-  return muted;
-}
-
-function updateMusicToggleButtons() {
-  document.querySelectorAll("[data-music-toggle]").forEach((btn) => {
-    const on = !muted;
-    btn.setAttribute("aria-pressed", on ? "true" : "false");
-    btn.textContent = on ? "🔊" : "🔇";
-    btn.title = on ? "Mute music" : "Unmute music";
+export function initGameAudio() {
+  if (bgm) return;
+  initSfx();
+  settings = loadSettings();
+  bgm = new Audio();
+  bgm.preload = "auto";
+  bgm.addEventListener("ended", () => {
+    if (settings.musicMode === "radio") advanceRadio();
   });
+  loadCurrentTrack(false);
 }
 
-export function setMusicMuted(value) {
-  muted = Boolean(value);
-  saveMutedPref(muted);
-  if (!bgm) return;
-  bgm.volume = muted ? 0 : DEFAULT_VOLUME;
-  if (muted) {
-    bgm.pause();
-    started = false;
-  } else {
-    startSoundtrack();
-  }
+export function startGameRadio() {
+  initGameAudio();
+  settings = loadSettings();
+  if (settings.musicMode === "off" || settings.musicMuted) return;
+  loadCurrentTrack(true);
+}
+
+export function applyAudioSettings() {
+  settings = loadSettings();
+  loadCurrentTrack(musicStarted || settings.musicMode !== "off");
+  applyMusicLevels();
+  applySfxLevels();
   updateMusicToggleButtons();
 }
 
+export function getAudioState() {
+  settings = loadSettings();
+  return { ...settings };
+}
+
+export function setMusicMode(mode) {
+  settings = saveSettings({ musicMode: mode });
+  if (mode === "radio") radioIndex = 0;
+  applyAudioSettings();
+}
+
+export function setTrackId(id) {
+  settings = saveSettings({ trackId: id });
+  applyAudioSettings();
+}
+
+export function setMusicMuted(value) {
+  settings = saveSettings({ musicMuted: Boolean(value) });
+  if (settings.musicMuted && bgm) {
+    bgm.pause();
+    musicStarted = false;
+  } else {
+    playMusic();
+  }
+  applyMusicLevels();
+  updateMusicToggleButtons();
+}
+
+export function setSfxMuted(value) {
+  settings = saveSettings({ sfxMuted: Boolean(value) });
+  applySfxLevels();
+}
+
+export function setMusicVolume(value) {
+  settings = saveSettings({ musicVolume: Math.min(1, Math.max(0, value)) });
+  applyMusicLevels();
+}
+
+export function setSfxVolume(value) {
+  settings = saveSettings({ sfxVolume: Math.min(1, Math.max(0, value)) });
+  applySfxLevels();
+}
+
+export function setMusicPan(value) {
+  settings = saveSettings({ musicPan: Math.min(1, Math.max(-1, value)) });
+  applyMusicLevels();
+}
+
+export function setSfxPan(value) {
+  settings = saveSettings({ sfxPan: Math.min(1, Math.max(-1, value)) });
+  applySfxLevels();
+}
+
+export function isMusicMuted() {
+  return loadSettings().musicMuted;
+}
+
+function updateMusicToggleButtons() {
+  settings = loadSettings();
+  const on = !settings.musicMuted && settings.musicMode !== "off";
+  document.querySelectorAll("[data-music-toggle]").forEach((btn) => {
+    btn.setAttribute("aria-pressed", on ? "true" : "false");
+    btn.textContent = on ? "🔊" : "🔇";
+    btn.title = on ? "Mute music (Esc for pause menu)" : "Unmute music";
+  });
+}
+
 export function toggleMusic() {
-  setMusicMuted(!muted);
+  setMusicMuted(!loadSettings().musicMuted);
 }
 
 export function bindMusicToggle() {
@@ -228,4 +356,9 @@ export function bindMusicToggle() {
     });
   });
   updateMusicToggleButtons();
+}
+
+/* Menu-only: settings UI without playback */
+export function initMenuAudioSettings() {
+  initSfx();
 }

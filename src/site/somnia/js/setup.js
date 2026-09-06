@@ -1,4 +1,5 @@
-import { bindMusicToggle, initSoundtrack, bindButtonRipples } from "./audio.js";
+import { bindMusicToggle, initMenuAudioSettings, bindButtonRipples, musicCreditHtml } from "./audio.js";
+import { buildSetupAudioControls } from "./pause-menu.js";
 import { initFxLayer } from "./fx.js";
 import { loadGameData } from "./data.js";
 import {
@@ -24,8 +25,11 @@ let tutorialIndex = -1;
 async function init() {
   initFxLayer();
   bindButtonRipples();
-  initSoundtrack();
+  initMenuAudioSettings();
   bindMusicToggle();
+  const creditEl = document.getElementById("menu-footer-credit");
+  if (creditEl) creditEl.innerHTML = musicCreditHtml();
+  buildSetupAudioControls(document.getElementById("setup-audio-display"));
   gameData = await loadGameData();
   bindSetup();
   bindHelp();

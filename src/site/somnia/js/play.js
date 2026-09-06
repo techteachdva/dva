@@ -1,4 +1,6 @@
-import { bindMusicToggle, initSoundtrack, startSoundtrack, bindButtonRipples, playSfx } from "./audio.js";
+import { bindMusicToggle, initGameAudio, startGameRadio, bindButtonRipples, playSfx } from "./audio.js";
+import { initPanelLayout } from "./panel-layout.js";
+import { initPauseMenu, openPauseMenu } from "./pause-menu.js";
 import { initFxLayer, burstSparklesAtElement } from "./fx.js";
 import { loadGameData } from "./data.js";
 import { createInitialState, addLog, respawnDreamer, getPhase, activePlayer } from "./state.js";
@@ -106,8 +108,10 @@ function getNewHandCardIds(state) {
 async function init() {
   initFxLayer();
   bindButtonRipples();
-  initSoundtrack();
+  initGameAudio();
   bindMusicToggle();
+  initPanelLayout();
+  initPauseMenu();
   gameData = await loadGameData();
   bindModal();
   bindHelp();
@@ -169,7 +173,7 @@ function bindFullscreenPrompt() {
     if (fullscreenReady) return;
     fullscreenReady = true;
     prompt.classList.add("hidden");
-    startSoundtrack();
+    startGameRadio();
     try {
       if (!document.fullscreenElement) {
         await document.documentElement.requestFullscreen();
@@ -216,6 +220,7 @@ function bindHelp() {
     showTutorialAt(tutorialIndex);
   });
   document.getElementById("btn-end-overview")?.addEventListener("click", showOverviewModal);
+  document.getElementById("btn-pause")?.addEventListener("click", openPauseMenu);
 
   document.getElementById("btn-toggle-decks")?.addEventListener("click", () => {
     const tray = document.getElementById("deck-tray");

@@ -14,7 +14,7 @@
     <div class="fullscreen-prompt-card">
       <h2>Enter the Dreamscape</h2>
       <p>Click anywhere to begin and enter fullscreen.</p>
-      <span class="fullscreen-prompt-hint">Esc exits fullscreen</span>
+      <span class="fullscreen-prompt-hint">Esc — pause menu · music starts here</span>
     </div>
   </div>
 
@@ -32,6 +32,7 @@
       </div>
       <div id="header-actions" class="header-actions">
         <button type="button" class="btn btn-icon" data-music-toggle aria-pressed="true" title="Mute music">🔊</button>
+        <button type="button" id="btn-pause" class="btn btn-sm" title="Pause menu (Esc)">⏸ Pause</button>
         <button type="button" id="btn-overview" class="btn btn-sm">Overview</button>
         <button type="button" id="btn-help" class="btn btn-icon" title="Full rules">?</button>
         <button type="button" id="btn-tutorial" class="btn btn-sm">Tutorial</button>
@@ -40,7 +41,8 @@
 
     <main>
       <section id="screen-game" class="screen active">
-        <aside class="sidebar left">
+        <aside class="sidebar left" id="sidebar-left">
+          <div class="resize-handle resize-col" id="resize-sidebar-left" title="Drag to resize sidebar"></div>
           <h3>Dreamers <span class="sidebar-hint">discuss · hover for tips</span></h3>
           <div id="player-list"></div>
           <h3>Decks</h3>
@@ -49,26 +51,32 @@
         </aside>
 
         <div class="table-surface" id="table-surface">
-          <div class="table-chrome">
+          <div class="table-chrome" id="table-chrome">
             <div id="phase-stepper" class="phase-stepper" aria-label="Round phases"></div>
-            <p class="coop-play-banner" id="coop-play-banner">Discuss and plan — act in any order each phase.</p>
+            <button type="button" id="btn-toggle-guide" class="btn btn-sm guide-toggle" aria-expanded="false" title="Show phase guide &amp; tips">📋 Guide</button>
             <div id="narrator-panel" class="narrator-panel" aria-live="polite"></div>
-            <div id="guide-panel" class="guide-panel"></div>
+            <div id="guide-panel-wrap" class="guide-panel-wrap collapsed">
+              <p class="coop-play-banner" id="coop-play-banner">💬 Discuss &amp; plan — act in any order each phase.</p>
+              <div id="guide-panel" class="guide-panel"></div>
+            </div>
             <div id="phase-advance-bar" class="phase-advance-bar hidden">
               <button type="button" id="btn-advance-phase" class="btn btn-advance primary">Next Phase</button>
             </div>
             <div id="phase-banner" class="phase-banner" aria-hidden="true"></div>
           </div>
+          <div class="resize-handle resize-row" id="resize-chrome" title="Drag to resize header area"></div>
           <div class="board-viewport" id="board-viewport">
             <div id="hex-board" class="hex-board"></div>
           </div>
+          <div class="resize-handle resize-row" id="resize-footer" title="Drag to resize action bar"></div>
           <div class="table-footer">
             <div id="phase-actions" class="phase-actions"></div>
             <div id="log" class="game-log" aria-live="polite"></div>
           </div>
         </div>
 
-        <aside class="sidebar right">
+        <aside class="sidebar right" id="sidebar-right">
+          <div class="resize-handle resize-col edge-left" id="resize-sidebar-right" title="Drag to resize sidebar"></div>
           <h3>Active Archetype</h3>
           <div id="active-archetype" class="active-card-slot"></div>
           <h3>Encounter</h3>
@@ -80,6 +88,7 @@
         </aside>
 
         <footer class="hand-bar" id="hand-bar">
+          <div class="resize-handle resize-row edge-top" id="resize-hand" title="Drag to resize hand area"></div>
           <div class="hand-section">
             <div class="hand-header">
               <h3 id="hand-title">Your Psyche Hand</h3>
@@ -143,6 +152,22 @@
         <button type="button" id="tutorial-skip" class="btn">Skip</button>
         <button type="button" id="tutorial-next" class="btn primary">Next</button>
       </div>
+    </div>
+  </div>
+
+  <div id="pause-menu" class="pause-menu hidden" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Pause menu">
+    <div class="pause-backdrop"></div>
+    <div class="pause-card">
+      <header class="pause-header">
+        <h2>⏸ Paused</h2>
+        <button type="button" id="pause-resume" class="btn primary">Resume</button>
+      </header>
+      <nav class="pause-tabs" aria-label="Pause sections">
+        <button type="button" class="pause-tab active" data-pause-tab="audio">🔊 Audio</button>
+        <button type="button" class="pause-tab" data-pause-tab="display">🖥 Display</button>
+        <button type="button" class="pause-tab" data-pause-tab="help">❓ Help</button>
+      </nav>
+      <div id="pause-menu-body" class="pause-body"></div>
     </div>
   </div>
 
