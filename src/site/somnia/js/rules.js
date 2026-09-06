@@ -1,6 +1,6 @@
 /** SOMNIA 12.0 rules helpers */
 
-import { repressCards } from "./subconscious.js";
+import { repressCard, isDreambeastPsycheCard } from "./subconscious.js";
 import { canTradeBetween as hexCanTradeBetween } from "./hex.js";
 import { persistentMeetBonus, sumEffectivePsycheValue } from "./objects.js";
 export const SUIT_LABELS = {
@@ -170,14 +170,18 @@ export function coopMeetPlayTotal(state) {
   return total;
 }
 
+function routeSpentHandCard(state, card, { toRepress = false } = {}) {
+  if (toRepress || isDreambeastPsycheCard(card)) {
+    repressCard(state, card);
+  } else {
+    state.psycheDiscard.push(card);
+  }
+}
+
 export function discardSelected(state, player, { toRepress = false } = {}) {
   const selected = selectedCards(state, player);
   player.hand = player.hand.filter((c) => !state.selectedHand.includes(c.instanceId));
-  if (toRepress) {
-    repressCards(state, selected);
-  } else {
-    state.psycheDiscard.push(...selected);
-  }
+  selected.forEach((card) => routeSpentHandCard(state, card, { toRepress }));
   state.selectedHand = [];
   state.pendingPowerBonus = 0;
   return selected;
@@ -191,8 +195,7 @@ export function discardAllSelected(state, { toRepress = false } = {}) {
     const selected = player.hand.filter((c) => ids.has(c.instanceId));
     if (!selected.length) return;
     player.hand = player.hand.filter((c) => !ids.has(c.instanceId));
-    if (toRepress) repressCards(state, selected);
-    else state.psycheDiscard.push(...selected);
+    selected.forEach((card) => routeSpentHandCard(state, card, { toRepress }));
     byPlayer.push({ player, cards: selected });
   });
   state.selectedHand = [];

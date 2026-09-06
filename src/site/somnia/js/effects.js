@@ -9,8 +9,9 @@ import { recordQuestEvent } from "./quests.js";
 import { opposingSuit } from "./rules.js";
 import {
   repressCard,
-  repressCards,
   requestReturnCards,
+  enqueueRepressObjects,
+  enqueueRepressFromHand,
 } from "./subconscious.js";
 import { MINDSTREAM_EFFECTS } from "./mindstream.js";
 import { OBJECT_EFFECTS } from "./object-effects.js";
@@ -39,12 +40,11 @@ export function allDrawPsyche(state, count) {
   });
 }
 
-export function repressFromHand(state, player, count) {
-  for (let i = 0; i < count && player.hand.length; i += 1) {
-    const card = player.hand.pop();
-    repressCard(state, card);
-    recordQuestEvent(state, "discard_psyche", { count: 1 });
-  }
+export function repressFromHand(state, player, count, { reason = "" } = {}) {
+  if (count <= 0) return;
+  enqueueRepressFromHand(state, player, count, {
+    reason: reason || `${player.name}: Repress ${count} Psyche card(s) from hand.`,
+  });
 }
 
 const DREAM_EFFECTS = {
@@ -73,9 +73,9 @@ const DREAM_EFFECTS = {
   betrayal: (state) => {
     alivePlayers(state).forEach((p) => {
       const n = Math.max(0, playerStat(p, "willpower") - playerStat(p, "lucidity"));
-      for (let i = 0; i < n && p.objects.length; i += 1) {
-        repressCard(state, p.objects.pop());
-      }
+      enqueueRepressObjects(state, p, n, {
+        reason: `Betrayal — ${p.name}: Repress ${n} Object(s) (Willpower ${playerStat(p, "willpower")} − Lucidity ${playerStat(p, "lucidity")}).`,
+      });
     });
   },
   travel: (state) => {

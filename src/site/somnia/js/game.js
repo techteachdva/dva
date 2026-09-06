@@ -35,11 +35,13 @@ import {
   SUIT_LABELS,
 } from "./rules.js";
 import { getLegalMoveTargets, canMoveTo, adjacentTiles, hexDistance, areHexAdjacent } from "./hex.js";
-import { repressCard, listSubconsciousCards } from "./subconscious.js";
+import { repressCard, listSubconsciousCards, dreambeastToHandCard, isDreambeastPsycheCard } from "./subconscious.js";
 import { playObjectCard, applySkeletonKeyAfterDream, drawObjects, handLimitForPlayer } from "./objects.js";
 import { applyBossAcceptEffect } from "./bosses.js";
 import { resolveOnAcquire } from "./archetypes.js";
 import { shuffle, uid } from "./data.js";
+import { beginRevealPicking, handleLandscapeTilePick, cancelLandscapePick } from "./landscapes.js";
+import { narrate } from "./narrator.js";
 import { recordQuestEvent } from "./quests.js";
 import {
   resolveCardEffect,
@@ -141,6 +143,8 @@ export function getPhaseActions(state, handlers) {
     actions.push({
       label: "Next: Explore →",
       section: "phase",
+      advance: true,
+      hidden: true,
       primary: true,
       onClick: handlers.nextPhase,
     });
@@ -166,6 +170,8 @@ export function getPhaseActions(state, handlers) {
     actions.push({
       label: "Next: Meet →",
       section: "phase",
+      advance: true,
+      hidden: true,
       primary: true,
       disabled: state.exploreActivated && state.exploreMovesLeft > 0,
       onClick: handlers.nextPhase,
@@ -214,6 +220,7 @@ export function getPhaseActions(state, handlers) {
       actions.push({
         label: `Accept (${encounter.accept})${shapeHint}`,
         section: "encounter",
+        hint: "Accept: Dreambeast → hand (3 Psyche) + draw 2",
         primary: true,
         disabled: !canUseMeetAction(state, MEET_ACTIONS.MEET),
         onClick: () => handlers.meetEncounter("accept"),
@@ -221,6 +228,7 @@ export function getPhaseActions(state, handlers) {
       actions.push({
         label: `Repress (${encounter.repress})${shapeHint}`,
         section: "encounter",
+        hint: "Repress reward: draw 1 Psyche",
         disabled: !canUseMeetAction(state, MEET_ACTIONS.MEET),
         onClick: () => handlers.meetEncounter("repress"),
       });
@@ -287,12 +295,20 @@ export function getPhaseActions(state, handlers) {
     actions.push({
       label: "End Round",
       section: "round",
+      advance: true,
+      hidden: true,
       primary: true,
       onClick: handlers.nextPhase,
     });
   }
 
   return actions;
+}
+
+export function getPhaseAdvanceAction(state, handlers) {
+  if (state.landscapePick || state.pendingRepress || state.pendingReturn) return null;
+  const actions = getPhaseActions(state, handlers);
+  return actions.find((a) => a.advance && !a.disabled) || null;
 }
 
 export function drawDreamCard(state, onShowModal) {
@@ -313,7 +329,14 @@ export function drawDreamCard(state, onShowModal) {
   state.dreamDrawn = true;
   if (!state.dreamDiscard) state.dreamDiscard = [];
   state.dreamDiscard.push(card);
-  addLog(state, `Dream: ${card.name}. ${card.text || ""}`);
+  narrate(
+    state,
+    `Dream: ${card.name}`,
+    card.text || card.effect || "The Dreamscape shifts.",
+    card.type === "boss-dream" || card.boss
+      ? [`${card.name} awakens on The Bed`]
+      : ["Resolve the Dream effect before continuing"],
+  );
 
   if (card.type === "boss-dream" || card.boss) {
     const encounter = { ...card, type: "dreambeast", instanceId: uid("enc") };
@@ -334,37 +357,27 @@ export function revealLandscape(state) {
   const player = activePlayer(state);
   const budget = revealBudget(state, player);
   if (budget < 1) {
-    addLog(state, `Select 1–2 ${SUIT_LABELS.lucidity} Psyche cards to Reveal Landscapes.`);
+    narrate(
+      state,
+      "Select Lucidity Psyche first",
+      `Choose 1–2 blue ${SUIT_LABELS.lucidity} cards from your hand, then click Reveal Landscapes. Your Lucidity stat (${player.dreamer.lucidity}) is added to the card values.`,
+    );
     return;
   }
   if (state.revealLandscapeUsed) return;
+  if (state.landscapePick?.mode === "reveal") return;
 
   const lucidityCards = selectedBySuit(state, player, "lucidity");
   if (lucidityCards.length < 1 || lucidityCards.length > 2) {
-    addLog(state, "Discard 1 or 2 Lucidity Psyche cards.");
+    narrate(state, "Select 1–2 Lucidity cards", "Click blue Psyche cards in your hand to select them for the Reveal action.");
     return;
   }
 
   const lucidityDiscarded = discardSelected(state, player);
   trackPsycheDiscard(state, player, lucidityDiscarded);
-  state.revealLandscapeUsed = true;
 
-  const hidden = state.board.filter((l) => !l.revealed && !l.center);
-  const wasteland = state.board.filter((l) => l.wasteland && !l.center);
-  let spent = 0;
-
-  while (spent < budget) {
-    if (hidden.length) {
-      revealLandscapeTile(state, hidden.shift());
-      spent += 1;
-    } else if (wasteland.length) {
-      revealLandscapeTile(state, wasteland.shift());
-      spent += 1;
-    } else break;
-  }
-
-  addLog(state, `${player.name} spent ${budget} Lucidity budget (${lucidityCards.map((c) => c.value).join("+")} + stat) to Reveal ${spent} Landscape(s).`);
-  recordQuestEvent(state, "reveal_landscape", { count: spent });
+  beginRevealPicking(state, budget);
+  recordQuestEvent(state, "reveal_landscape", { count: 0 });
 }
 
 export function activateExplore(state) {
@@ -508,11 +521,19 @@ export function meetEncounter(state, mode = "accept") {
   if (mode === "accept") {
     addLog(state, `${actor.name} Accepts ${encounter.name}${contributors ? ` (${contributors})` : ""}. ${encounter.effect || ""}`);
     applyBossAcceptEffect(state, encounter, actor);
+
+    const handCard = dreambeastToHandCard(encounter);
+    actor.hand.push(handCard);
+    addLog(state, `${encounter.name} joins ${actor.name}'s hand as 3 ${SUIT_LABELS[encounter.suit] || encounter.suit} Psyche.`);
+
     const drawn = drawPsycheForPlayer(state, actor, 2);
     trackPsycheDraw(state, actor, drawn.length);
+    addLog(state, `Accept reward: ${actor.name} draws ${drawn.length} Psyche.`);
+
     if (encounter.accept >= 10) {
       const objs = drawObjects(state, actor, 1, getEffectHelpers());
       recordQuestEvent(state, "draw_object", { count: objs.length });
+      if (objs.length) addLog(state, `High-tier Accept: ${actor.name} draws an Object.`);
     }
   } else {
     addLog(state, `${actor.name} Represses ${encounter.name}${contributors ? ` (${contributors})` : ""}.`);
@@ -520,7 +541,11 @@ export function meetEncounter(state, mode = "accept") {
       const repressed = actor.hand.pop();
       repressCard(state, repressed);
       recordQuestEvent(state, "discard_psyche", { count: 1, landscapeId: actor.landscapeId });
+      addLog(state, `Repress cost: 1 Psyche sent to the Subconscious.`);
     }
+    const drawn = drawPsycheForPlayer(state, actor, 1);
+    trackPsycheDraw(state, actor, drawn.length);
+    addLog(state, `Repress reward: ${actor.name} draws ${drawn.length} Psyche.`);
   }
 
   const landscapeId = state.activeEncounterLandscapeId;
@@ -854,6 +879,18 @@ export function toggleHandCard(state, card, owner = null) {
     return;
   }
 
+  if (isDreambeastPsycheCard(card)) {
+    if (phase !== "Meet" || state.meetActionBudget === 0) return;
+    if (!player.alive || !player.hand.some((c) => c.instanceId === id)) return;
+    if (state.selectedHand.includes(id)) {
+      state.selectedHand = state.selectedHand.filter((x) => x !== id);
+      return;
+    }
+    if (state.selectedHand.length >= 3) return;
+    state.selectedHand.push(id);
+    return;
+  }
+
   if (state.selectedHand.includes(id)) {
     state.selectedHand = state.selectedHand.filter((x) => x !== id);
     return;
@@ -863,7 +900,7 @@ export function toggleHandCard(state, card, owner = null) {
   const maxCards = coopMeet ? 3 : (phase === "Meet" ? 2 : 2);
   if (state.selectedHand.length >= maxCards) return;
 
-  if (coopMeet) {
+  if (phase === "Meet" && state.meetActionBudget > 0) {
     if (!player.alive || !player.hand.some((c) => c.instanceId === id)) return;
     state.selectedHand.push(id);
     return;
@@ -888,9 +925,28 @@ export function handleAcquire(state) {
   });
 }
 
+export function handleBoardTileClick(state, tileId) {
+  if (state.landscapePick) {
+    return handleLandscapeTilePick(state, tileId);
+  }
+  moveDreamer(state, tileId);
+  return false;
+}
+
 export function endPhase(state) {
+  cancelLandscapePick(state);
   advancePhase(state);
   checkDefeat(state);
+  const phase = getPhase(state);
+  narrate(
+    state,
+    `${phase} Phase begins`,
+    phase === "Reveal"
+      ? "Each Dreamer drew 2 Psyche at round start. Head Dreamer (★) should Draw the Dream. Anyone may spend Lucidity to Reveal Landscapes on the map."
+      : phase === "Explore"
+        ? "Spend Elasticity Psyche to move Dreamers across the hex map."
+        : "Spend Willpower for shared Meet actions — pool Psyche to face Encounters.",
+  );
 }
 
 export function getDeckTop(state, deckId) {

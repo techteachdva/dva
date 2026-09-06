@@ -80,11 +80,15 @@ function launchGameWindow() {
     "height=900",
   ].join(",");
 
-  const playUrl = new URL("play.html", window.location.href).href;
-  const win = window.open(playUrl, PLAY_WINDOW_NAME, features);
+  const playUrl = new URL("play.html", window.location.href);
+  if (new URLSearchParams(window.location.search).get("dev") === "1") {
+    playUrl.searchParams.set("dev", "1");
+  }
+  const playHref = playUrl.href;
+  const win = window.open(playHref, PLAY_WINDOW_NAME, features);
 
   if (!win) {
-    window.location.href = playUrl;
+    window.location.href = playHref;
     return;
   }
 

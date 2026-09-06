@@ -2,10 +2,11 @@ import { loadGameData } from "./data.js";
 import { createInitialState, addLog, respawnDreamer, getPhase } from "./state.js";
 import {
   getPhaseActions,
+  getPhaseAdvanceAction,
   drawDreamCard,
   revealLandscape,
   activateExplore,
-  moveDreamer,
+  handleBoardTileClick,
   gainMeetActions,
   meetEncounter,
   landscapeAction,
@@ -28,7 +29,10 @@ import {
   getPhaseHint,
   getLegalExploreTargets,
 } from "./game.js";
-import { pickReturnCard, cancelPendingReturn, subconsciousCount } from "./subconscious.js";
+import { initDevConsole } from "./dev-console.js";
+import { enableDevMode } from "./dev-commands.js";
+import { narrate } from "./narrator.js";
+import { pickReturnCard, cancelPendingReturn, pickRepressCard, confirmRepressStep, subconsciousCount } from "./subconscious.js";
 import {
   TUTORIAL_STEPS,
   hasSeenTutorial,
@@ -47,6 +51,8 @@ import {
   renderPhaseActions,
   renderPhaseStepper,
   renderGuidePanel,
+  renderNarratorPanel,
+  renderPhaseAdvanceBar,
   showScreen,
   showEndScreen,
   showModal,
@@ -57,6 +63,8 @@ import {
   hideUtilityModal,
   showSubconsciousPicker,
   showSubconsciousBrowse,
+  showRepressPicker,
+  renderSubconsciousGraveyard,
   showRulesModal,
   showOverviewModal,
   showTutorialStep,
@@ -67,10 +75,13 @@ const LAUNCH_KEY = "somnia.launch";
 
 let gameData = null;
 let state = null;
+let devConsole = null;
 let tutorialIndex = -1;
 let fullscreenReady = false;
 const lastCardClick = { id: null, time: 0 };
 let boardResizeTimer = null;
+let lastRepressPickerKey = null;
+let lastReturnPickerKey = null;
 
 async function init() {
   gameData = await loadGameData();
@@ -80,6 +91,10 @@ async function init() {
   bindFullscreenPrompt();
   bindRestart();
 
+  if (new URLSearchParams(window.location.search).get("dev") === "1") {
+    enableDevMode();
+  }
+
   const config = readLaunchConfig();
   if (!config) {
     window.location.replace("index.html");
@@ -87,6 +102,13 @@ async function init() {
   }
 
   startGame(config);
+  devConsole = initDevConsole(() => ({
+    state,
+    gameData,
+    renderAll,
+    endPhase,
+  }));
+  devConsole?.refresh();
 }
 
 function readLaunchConfig() {
@@ -199,7 +221,12 @@ function startGame(config) {
     lengthKey: config.lengthKey,
     selectedDreamers,
   });
-  addLog(state, "Somnia — Escape before the Dream Deck runs out. Follow the Guide panel for your next step.");
+  narrate(
+    state,
+    "The Dreamscape forms",
+    "Each Dreamer starts on The Bed with 5 Psyche and 2 Power. Round 1 begins in the Reveal Phase — everyone drew 2 Psyche. The Head Dreamer (★) should Draw the Dream card.",
+    ["Reveal Phase: spend Lucidity to flip Landscapes on the hex map"],
+  );
   showScreen("screen-game");
   renderAll();
   if (!hasSeenTutorial()) startTutorial();
@@ -278,17 +305,55 @@ function maybeShowTradePanel() {
   }
 }
 
+function maybeShowRepressPicker() {
+  if (!state?.pendingRepress) {
+    lastRepressPickerKey = null;
+    return;
+  }
+  const pending = state.pendingRepress;
+  const key = `${pending.playerId}:${pending.picked.length}:${pending.remaining}:${pending.confirmEmpty}`;
+  if (key === lastRepressPickerKey) return;
+  lastRepressPickerKey = key;
+
+  showRepressPicker(
+    state,
+    (instanceId) => {
+      pickRepressCard(state, instanceId);
+      lastRepressPickerKey = null;
+      if (state.pendingRepress) {
+        maybeShowRepressPicker();
+      }
+      renderAll();
+    },
+    () => {
+      confirmRepressStep(state);
+      lastRepressPickerKey = null;
+      renderAll();
+    }
+  );
+}
+
 function maybeShowReturnPicker() {
-  if (!state?.pendingReturn) return;
+  if (!state?.pendingReturn) {
+    lastReturnPickerKey = null;
+    return;
+  }
+  const pending = state.pendingReturn;
+  const key = `${pending.remaining}:${pending.picked.length}`;
+  if (key === lastReturnPickerKey) return;
+  lastReturnPickerKey = key;
   showSubconsciousPicker(
     state,
     (instanceId) => {
       pickReturnCard(state, instanceId);
+      lastReturnPickerKey = null;
+      if (state.pendingReturn) maybeShowReturnPicker();
       if (!state.pendingReturn) hideUtilityModal();
       renderAll();
     },
     () => {
       cancelPendingReturn(state);
+      lastReturnPickerKey = null;
       renderAll();
     }
   );
@@ -311,13 +376,54 @@ function renderAll() {
 
   renderHud(state, getPhaseHint(state));
   renderPhaseStepper(state);
-  renderGuidePanel(state);
 
+  const handlers = {
+    drawDream: () => { drawDreamCard(state, showModal); renderAll(); },
+    revealLandscape: () => { revealLandscape(state); renderAll(); },
+    activateExplore: () => { activateExplore(state); renderAll(); },
+    gainMeetActions: () => { gainMeetActions(state); renderAll(); },
+    meetEncounter: (mode) => { meetEncounter(state, mode); renderAll(); },
+    landscapeAction: () => { landscapeAction(state); renderAll(); },
+    drawMindstream: () => {
+      showMindstreamPicker((suit) => {
+        const card = drawMindstreamCard(state, suit);
+        if (card) showModal(card);
+        renderAll();
+      });
+    },
+    playObject: () => {
+      const card = playObject(state);
+      if (card) showModal(card);
+      renderAll();
+    },
+    activateObject: () => {
+      activateObject(state);
+      renderAll();
+    },
+    tradeAction: () => {
+      tradeAction(state);
+      renderAll();
+    },
+    powerBonus: () => { powerBonus(state); renderAll(); },
+    completeQuest: (i) => { handleQuestComplete(state, i); renderAll(); },
+    acquireArchetype: () => { handleAcquire(state); renderAll(); },
+    useDreamerPower: () => { useDreamerPower(state); renderAll(); },
+    defeatFinalArchetype: () => { handleDefeatFinalArchetype(state); renderAll(); },
+    sacrificeForFinal: () => { handleSacrificeForFinal(state); renderAll(); },
+    nextPhase: () => { endPhase(state); renderAll(); },
+  };
+
+  const phaseActions = getPhaseActions(state, handlers);
+  renderNarratorPanel(state);
+  renderGuidePanel(state, phaseActions);
+  renderPhaseAdvanceBar(getPhaseAdvanceAction(state, handlers));
+
+  const pickHighlights = getLandscapePickHighlights(state);
   const legalMoves = getLegalExploreTargets(state).map((t) => t.id);
   renderBoard(state, (id) => {
-    moveDreamer(state, id);
+    handleBoardTileClick(state, id);
     renderAll();
-  }, legalMoves);
+  }, legalMoves, pickHighlights);
   renderPlayers(state, (index) => {
     if (state.tradeMode && state.trade?.step === "pick-partner") {
       if (selectTradePartner(state, index)) {
@@ -363,46 +469,14 @@ function renderAll() {
     else addDeckMessage(deckId);
   });
   renderActiveSlots(state, (card) => showModal(card));
+  renderSubconsciousGraveyard(state, () => {
+    showSubconsciousBrowse(state, (card) => showModal(card));
+  });
   renderLog(state);
 
-  const handlers = {
-    drawDream: () => { drawDreamCard(state, showModal); renderAll(); },
-    revealLandscape: () => { revealLandscape(state); renderAll(); },
-    activateExplore: () => { activateExplore(state); renderAll(); },
-    gainMeetActions: () => { gainMeetActions(state); renderAll(); },
-    meetEncounter: (mode) => { meetEncounter(state, mode); renderAll(); },
-    landscapeAction: () => { landscapeAction(state); renderAll(); },
-    drawMindstream: () => {
-      showMindstreamPicker((suit) => {
-        const card = drawMindstreamCard(state, suit);
-        if (card) showModal(card);
-        renderAll();
-      });
-    },
-    playObject: () => {
-      const card = playObject(state);
-      if (card) showModal(card);
-      renderAll();
-    },
-    activateObject: () => {
-      activateObject(state);
-      renderAll();
-    },
-    tradeAction: () => {
-      tradeAction(state);
-      renderAll();
-    },
-    powerBonus: () => { powerBonus(state); renderAll(); },
-    completeQuest: (i) => { handleQuestComplete(state, i); renderAll(); },
-    acquireArchetype: () => { handleAcquire(state); renderAll(); },
-    useDreamerPower: () => { useDreamerPower(state); renderAll(); },
-    defeatFinalArchetype: () => { handleDefeatFinalArchetype(state); renderAll(); },
-    sacrificeForFinal: () => { handleSacrificeForFinal(state); renderAll(); },
-    nextPhase: () => { endPhase(state); renderAll(); },
-  };
-
-  renderPhaseActions(getPhaseActions(state, handlers));
+  renderPhaseActions(phaseActions);
   maybeShowRespawn();
+  maybeShowRepressPicker();
   maybeShowReturnPicker();
 }
 

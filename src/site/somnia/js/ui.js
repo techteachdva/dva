@@ -9,7 +9,8 @@ import {
 import { handLimitForPlayer } from "./objects.js";
 import { getQuestStatus } from "./quests.js";
 import { hexToPixel, boardPixelBounds } from "./hex.js";
-import { subconsciousCount, subconsciousPilesForUI } from "./subconscious.js";
+import { subconsciousCount, subconsciousPilesForUI, isDreambeastPsycheCard } from "./subconscious.js";
+import { getNarratorView, listPhaseActionHints } from "./narrator.js";
 import { getCurrentObjective, rulesHtml, overviewHtml, getDreamerChipTooltip } from "./guide.js";
 
 function suitClass(suit) {
@@ -19,7 +20,7 @@ function suitClass(suit) {
 function cardTypeClass(card) {
   if (card.type === "dreamer") return "dreamer";
   if (card.type === "dream" || card.type === "final" || card.type === "boss-dream") return "dream";
-  if (card.type === "dreambeast" || card.boss) return "dreambeast";
+  if (card.type === "dreambeast" || card.boss || card.type === "psyche-dreambeast") return "dreambeast";
   if (card.type === "object") return "object";
   if (card.type === "event") return card.suit || "event";
   return card.suit || card.type || "";
@@ -50,7 +51,46 @@ function createArtElement(card) {
   return art;
 }
 
+function renderPsycheDreambeastCard(card, { selected, onClick, mini }) {
+  const el = document.createElement("button");
+  el.type = "button";
+  el.className = [
+    "game-card",
+    "psyche-card",
+    "psyche-dreambeast",
+    card.suit,
+    selected ? "selected" : "",
+    mini ? "mini" : "",
+  ].filter(Boolean).join(" ");
+
+  const symbol = suitIconHtml(card.suit, { size: mini ? 14 : 18 });
+  const label = SUIT_LABELS[card.suit] || card.suit;
+
+  el.innerHTML = `
+    <span class="psyche-value">3</span>
+    <span class="psyche-suit ${suitClass(card.suit)}">${symbol}</span>
+    <span class="psyche-dreambeast-badge" title="Accepted Dreambeast">⚔</span>
+    <span class="psyche-label">${card.name.split(" ")[0]}</span>
+  `;
+
+  if (card.image) {
+    const art = document.createElement("div");
+    art.className = "psyche-dreambeast-thumb";
+    const img = document.createElement("img");
+    img.src = card.image;
+    img.alt = card.name;
+    art.appendChild(img);
+    el.appendChild(art);
+  }
+
+  if (onClick) el.addEventListener("click", onClick);
+  return el;
+}
+
 function renderPsycheCard(card, { selected, onClick, mini }) {
+  if (isDreambeastPsycheCard(card)) {
+    return renderPsycheDreambeastCard(card, { selected, onClick, mini });
+  }
   const el = document.createElement("button");
   el.type = "button";
   el.className = [
@@ -103,6 +143,9 @@ export function renderCard(card, options = {}) {
 
   if (card.type === "psyche" && !portrait) {
     return renderPsycheCard(card, { selected, onClick, mini });
+  }
+  if (isDreambeastPsycheCard(card) && !portrait) {
+    return renderPsycheDreambeastCard(card, { selected, onClick, mini });
   }
 
   const el = document.createElement("button");
@@ -161,14 +204,23 @@ export function showModal(card) {
   if (card.type === "psyche") {
     const detail = document.createElement("div");
     detail.className = "modal-detail psyche-modal";
-    detail.innerHTML = `
-      <div class="psyche-modal-face ${card.suit}">
-        <span class="psyche-value large">${card.value}</span>
-        <span class="psyche-suit large ${suitClass(card.suit)}">${suitIconHtml(card.suit, { size: 40 })}</span>
-      </div>
-      <h2>${SUIT_LABELS[card.suit]} ${card.value}</h2>
-      <p>Psyche card — used for Reveal (${SUIT_LABELS.lucidity}), Explore (${SUIT_LABELS.elasticity}), and Meet (${SUIT_LABELS.willpower}) phases.</p>
-    `;
+    if (isDreambeastPsycheCard(card)) {
+      detail.innerHTML = `
+        ${card.image ? `<img src="${card.image}" alt="${card.name}" class="modal-art">` : ""}
+        <h2>${card.name}</h2>
+        <p>Accepted Dreambeast — counts as <strong>3 ${SUIT_LABELS[card.suit]} Psyche</strong> when pooled in Meet. When spent, it is Repressed to the Subconscious.</p>
+        ${card.effect ? `<p><strong>Accept effect:</strong> ${card.effect}</p>` : ""}
+      `;
+    } else {
+      detail.innerHTML = `
+        <div class="psyche-modal-face ${card.suit}">
+          <span class="psyche-value large">${card.value}</span>
+          <span class="psyche-suit large ${suitClass(card.suit)}">${suitIconHtml(card.suit, { size: 40 })}</span>
+        </div>
+        <h2>${SUIT_LABELS[card.suit]} ${card.value}</h2>
+        <p>Psyche card — used for Reveal (${SUIT_LABELS.lucidity}), Explore (${SUIT_LABELS.elasticity}), and Meet (${SUIT_LABELS.willpower}) phases.</p>
+      `;
+    }
     container.appendChild(detail);
     modal.classList.remove("hidden");
     return;
@@ -212,9 +264,12 @@ export function showModal(card) {
     ["Repress", card.repress],
     ["Fail", card.fail],
     ["Ability", card.ability || card.power],
-    ["Effect", card.effect],
-    ["Text", card.text || card.flavor],
   ];
+
+  const description = card.text || card.flavor || card.effect;
+  if (description) {
+    fields.push(["Text", description]);
+  }
 
   fields.forEach(([label, value]) => {
     if (value == null || value === "") return;
@@ -274,7 +329,7 @@ function fitHexSize(state) {
   return Math.max(HEX_MIN, Math.min(HEX_MAX, Math.floor(HEX_BASE * fit)));
 }
 
-export function renderBoard(state, onSelectLandscape, legalMoveIds = []) {
+export function renderBoard(state, onSelectLandscape, legalMoveIds = [], pickHighlights = {}) {
   const board = document.getElementById("hex-board");
   board.innerHTML = "";
 
@@ -288,27 +343,37 @@ export function renderBoard(state, onSelectLandscape, legalMoveIds = []) {
   board.style.margin = "0 auto";
 
   const legalSet = new Set(legalMoveIds);
+  const revealSet = new Set(pickHighlights.reveal || []);
+  const forgetSet = new Set(pickHighlights.forget || []);
 
   state.board.forEach((tile) => {
     const { x, y } = hexToPixel(tile.q, tile.r, size);
     const el = document.createElement("button");
     el.type = "button";
+    const isBedFinal = tile.center && tile.finalRecurrenceSide;
+    const showFace = tile.revealed && !tile.wasteland;
     el.className = [
       "hex-tile",
       tile.center ? "center" : "",
-      tile.wasteland ? "wasteland" : "",
-      !tile.revealed ? "hidden-tile" : "",
+      tile.wasteland || !tile.revealed ? "wasteland" : "",
+      !tile.revealed && !tile.center ? "face-down" : "",
+      showFace ? "face-up" : "",
+      isBedFinal ? "bed-final" : "",
       state.selectedLandscapeId === tile.id ? "selected" : "",
       legalSet.has(tile.id) ? "movable" : "",
+      revealSet.has(tile.id) ? "pick-reveal" : "",
+      forgetSet.has(tile.id) ? "pick-forget" : "",
       tile.suit ? `suit-${tile.suit}` : "",
     ].filter(Boolean).join(" ");
 
     el.style.left = `${x + bounds.offsetX}px`;
     el.style.top = `${y + bounds.offsetY}px`;
 
-    if (tile.revealed && tile.image) {
+    if (isBedFinal) {
+      el.style.backgroundImage = "url('images/dreams/final-recurrence.png')";
+    } else if (showFace && tile.image) {
       el.style.backgroundImage = `url('${tile.image}')`;
-    } else if (!tile.revealed) {
+    } else {
       const wl = tile.wastelandImage || "images/landscapes/wasteland.png";
       el.style.backgroundImage = `url('${wl}')`;
     }
@@ -318,11 +383,16 @@ export function renderBoard(state, onSelectLandscape, legalMoveIds = []) {
     const finalArch = tile.finalArchetype;
     const encounterMark = encounter ? "⚔" : "";
     const finalMark = finalArch && !finalArch.defeated ? "★" : "";
+    const displayName = isBedFinal
+      ? "The Bed — Final Recurrence"
+      : showFace
+        ? tile.name
+        : "Wasteland";
 
     el.innerHTML = `
       <div class="hex-overlay"></div>
-      <div class="name">${tile.revealed ? tile.name : "???"}</div>
-      <div class="suit">${tile.revealed ? (tile.suit || "neutral") : "hidden"}</div>
+      <div class="name">${displayName}</div>
+      <div class="suit">${showFace ? (tile.suit || "neutral") : "hidden"}</div>
       <div class="tokens">${occupants.map((p) => p.dreamer.name.split(" ").pop()).join(" · ")} ${encounterMark}${encounter ? ` ${encounter.name.split(" ")[0]}` : ""}${finalMark}${finalArch && !finalArch.defeated ? ` ${finalArch.name.split(" ")[0]}` : ""}</div>
     `;
 
@@ -477,12 +547,66 @@ export function renderDecks(state, onDeckClick) {
   decks.forEach((deck) => {
     const el = document.createElement("button");
     el.type = "button";
-    el.className = `deck-pile ${deck.suit ? `suit-${deck.suit}` : ""}`;
+    const isGraveyard = deck.id === "subconscious";
+    el.className = [
+      "deck-pile",
+      deck.suit ? `suit-${deck.suit}` : "",
+      isGraveyard && deck.count > 0 ? "graveyard-active" : "",
+    ].filter(Boolean).join(" ");
     const suitMark = deck.suit ? `${suitIconHtml(deck.suit, { size: 12 })} ` : "";
-    el.innerHTML = `<span>${suitMark}${deck.label}</span><strong>${deck.count}</strong>`;
+    const graveIcon = isGraveyard ? "☠ " : "";
+    el.innerHTML = `<span>${graveIcon}${suitMark}${deck.label}</span><strong>${deck.count}</strong>`;
     el.addEventListener("click", () => onDeckClick(deck.id));
     tray.appendChild(el);
   });
+}
+
+export function renderSubconsciousGraveyard(state, onBrowse) {
+  const el = document.getElementById("subconscious-graveyard");
+  if (!el) return;
+
+  const count = subconsciousCount(state.subconscious);
+  const piles = subconsciousPilesForUI(state);
+  el.innerHTML = "";
+
+  const header = document.createElement("div");
+  header.className = "graveyard-header";
+  header.innerHTML = `
+    <span class="graveyard-icon">☠</span>
+    <span class="graveyard-count">${count} card${count === 1 ? "" : "s"}</span>
+    <button type="button" class="btn btn-sm graveyard-browse">Browse all</button>
+  `;
+  header.querySelector(".graveyard-browse").addEventListener("click", onBrowse);
+  el.appendChild(header);
+
+  if (!count) {
+    const empty = document.createElement("p");
+    empty.className = "graveyard-empty";
+    empty.textContent = "Empty — Repressed cards appear here face-up.";
+    el.appendChild(empty);
+    return;
+  }
+
+  const preview = document.createElement("div");
+  preview.className = "graveyard-preview";
+  piles.forEach((pile) => {
+    const chip = document.createElement("div");
+    chip.className = "graveyard-pile-chip";
+    chip.innerHTML = `<span>${pile.icon || ""} ${pile.label}</span><strong>${pile.cards.length}</strong>`;
+    preview.appendChild(chip);
+  });
+  el.appendChild(preview);
+
+  const recent = document.createElement("div");
+  recent.className = "graveyard-recent mini-card-row";
+  const all = piles.flatMap((p) => p.cards);
+  all.slice(-6).forEach((card) => {
+    recent.appendChild(renderCard(card, {
+      mini: true,
+      onClick: () => onBrowse(),
+    }));
+  });
+  el.appendChild(recent);
 }
 
 export function renderActiveSlots(state, onCardClick) {
@@ -588,7 +712,7 @@ function formatGuideStep(text) {
   return text.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
 }
 
-export function renderGuidePanel(state) {
+export function renderGuidePanel(state, actions = []) {
   const el = document.getElementById("guide-panel");
   if (!el) return;
   const obj = getCurrentObjective(state);
@@ -598,15 +722,58 @@ export function renderGuidePanel(state) {
     return;
   }
   el.classList.remove("hidden");
-  const step = obj.steps[0] ? formatGuideStep(obj.steps[0]) : "";
-  const tip = obj.tip ? `<span class="guide-tip-inline"> · ${obj.tip}</span>` : "";
+
+  const stepsHtml = obj.steps
+    .map((s, i) => `<li class="${i === 0 ? "current" : ""}">${formatGuideStep(s)}</li>`)
+    .join("");
+  const tip = obj.tip ? `<p class="guide-tip">${obj.tip}</p>` : "";
+  const actionHints = listPhaseActionHints(state, actions);
+  const actionsHtml = actionHints.length
+    ? `<div class="guide-actions"><h4>Available now</h4><ul>${actionHints.map((h) => `<li>${formatGuideStep(h)}</li>`).join("")}</ul></div>`
+    : "";
+
   el.innerHTML = `
     <div class="guide-header suit-${obj.suit || "lucidity"}">
-      <span class="guide-icon">${suitIconHtml(obj.suit || "lucidity", { size: 14 })}</span>
+      <span class="guide-icon">${suitIconHtml(obj.suit || "lucidity", { size: 16 })}</span>
       <span class="guide-title">${obj.title}</span>
-      <span class="guide-step-compact">${step}${tip}</span>
+      <span class="guide-phase-tag">${obj.phase} Phase</span>
     </div>
+    <ol class="guide-steps">${stepsHtml}</ol>
+    ${tip}
+    ${actionsHtml}
   `;
+}
+
+export function renderNarratorPanel(state) {
+  const el = document.getElementById("narrator-panel");
+  if (!el) return;
+  const view = getNarratorView(state);
+  const consequences = view.consequences?.length
+    ? `<ul class="narrator-consequences">${view.consequences.map((c) => `<li>${c}</li>`).join("")}</ul>`
+    : "";
+  el.innerHTML = `
+    <div class="narrator-label">What just happened</div>
+    <h3 class="narrator-title">${view.title}</h3>
+    <p class="narrator-detail">${view.detail}</p>
+    ${consequences}
+  `;
+}
+
+export function renderPhaseAdvanceBar(advanceAction) {
+  const bar = document.getElementById("phase-advance-bar");
+  const btn = document.getElementById("btn-advance-phase");
+  if (!bar || !btn) return;
+
+  if (!advanceAction) {
+    bar.classList.add("hidden");
+    return;
+  }
+
+  bar.classList.remove("hidden");
+  btn.textContent = advanceAction.label;
+  btn.disabled = !!advanceAction.disabled;
+  btn.title = advanceAction.hint || "Advance to the next phase when your group is ready";
+  btn.onclick = advanceAction.onClick;
 }
 
 const ACTION_SECTIONS = {
@@ -636,12 +803,13 @@ export function renderPhaseActions(actions) {
 
   const grouped = {};
   actions.forEach((action) => {
+    if (action.hidden) return;
     const section = action.section || "main";
     if (!grouped[section]) grouped[section] = [];
     grouped[section].push(action);
   });
 
-  const primarySections = ["main", "encounter", "phase", "round"];
+  const primarySections = ["main", "encounter", "actions", "progress"];
   const secondarySections = ["actions", "progress"];
 
   primarySections.forEach((section) => {
@@ -850,7 +1018,7 @@ export function showSubconsciousPicker(state, onPick, onDone) {
 
   body.innerHTML = `
     <h2>Return from Subconscious</h2>
-    <p>Choose ${remaining} card(s) to Return to discard piles.</p>
+    <p class="resolution-reason">${pending?.reason || `Choose ${remaining} card(s) to Return to discard piles.`}</p>
     <div id="subconscious-piles" class="subconscious-piles"></div>
     <div class="utility-actions">
       <button type="button" class="btn" id="return-skip">Skip remaining</button>
@@ -858,23 +1026,28 @@ export function showSubconsciousPicker(state, onPick, onDone) {
   `;
 
   const container = body.querySelector("#subconscious-piles");
-  subconsciousPilesForUI(state).forEach((pile) => {
-    const section = document.createElement("div");
-    section.className = "subconscious-pile";
-    section.innerHTML = `<h4>${pile.label} (${pile.cards.length})</h4>`;
-    const row = document.createElement("div");
-    row.className = "mini-card-row";
-    pile.cards.forEach((card) => {
-      const picked = pending?.picked.some((c) => c.instanceId === card.instanceId);
-      row.appendChild(renderCard(card, {
-        mini: true,
-        selected: picked,
-        onClick: () => onPick(card.instanceId),
-      }));
+  const piles = subconsciousPilesForUI(state);
+  if (!piles.length) {
+    container.innerHTML = "<p class='resolution-empty'>The Subconscious is empty — nothing to Return.</p>";
+  } else {
+    piles.forEach((pile) => {
+      const section = document.createElement("div");
+      section.className = "subconscious-pile";
+      section.innerHTML = `<h4>${pile.icon || ""} ${pile.label} (${pile.cards.length})</h4>`;
+      const row = document.createElement("div");
+      row.className = "mini-card-row";
+      pile.cards.forEach((card) => {
+        const picked = pending?.picked.some((c) => c.instanceId === card.instanceId);
+        row.appendChild(renderCard(card, {
+          mini: true,
+          selected: picked,
+          onClick: () => onPick(card.instanceId),
+        }));
+      });
+      section.appendChild(row);
+      container.appendChild(section);
     });
-    section.appendChild(row);
-    container.appendChild(section);
-  });
+  }
 
   body.querySelector("#return-skip")?.addEventListener("click", () => {
     hideUtilityModal();
@@ -884,12 +1057,73 @@ export function showSubconsciousPicker(state, onPick, onDone) {
   modal.classList.remove("hidden");
 }
 
+export function showRepressPicker(state, onPick, onConfirm) {
+  const modal = document.getElementById("utility-modal");
+  const body = document.getElementById("utility-modal-body");
+  const pending = state.pendingRepress;
+  if (!pending) return;
+
+  const player = state.players.find((p) => p.id === pending.playerId);
+  const playerName = player?.name || "Dreamer";
+  const sourceLabel = pending.source === "objects" ? "Objects" : "Psyche cards";
+  const pool = pending.source === "objects" ? (player?.objects || []) : (player?.hand || []);
+  const picked = pending.picked.length;
+  const needed = pending.remaining;
+  const isEmpty = pending.confirmEmpty;
+
+  let instruction;
+  if (isEmpty && needed <= 0) {
+    instruction = "No cards to Repress for this effect.";
+  } else if (isEmpty && pool.length === 0) {
+    instruction = `No ${sourceLabel} available to Repress (${needed} required).`;
+  } else {
+    instruction = `Choose ${needed - picked} more ${sourceLabel} to Repress (${picked}/${needed} selected).`;
+  }
+
+  body.innerHTML = `
+    <h2>Repress to Subconscious</h2>
+    <p class="resolution-reason">${pending.reason || instruction}</p>
+    <p class="resolution-player">${playerName}</p>
+    <p class="resolution-instruction">${instruction}</p>
+    <div id="repress-pool" class="subconscious-piles"></div>
+    <div class="utility-actions">
+      <button type="button" class="btn primary" id="repress-confirm">${isEmpty || pool.length === 0 ? "Continue" : picked >= needed ? "Done" : "Continue with selected"}</button>
+    </div>
+  `;
+
+  const container = body.querySelector("#repress-pool");
+  if (!pool.length) {
+    container.innerHTML = "<p class='resolution-empty'>Nothing in hand to choose — click Continue.</p>";
+  } else if (!isEmpty) {
+    const row = document.createElement("div");
+    row.className = "mini-card-row";
+    pool.forEach((card) => {
+      const selected = pending.picked.some((c) => c.instanceId === card.instanceId);
+      row.appendChild(renderCard(card, {
+        mini: true,
+        selected,
+        onClick: () => onPick(card.instanceId),
+      }));
+    });
+    container.appendChild(row);
+  }
+
+  body.querySelector("#repress-confirm").addEventListener("click", () => {
+    hideUtilityModal();
+    onConfirm();
+  });
+
+  modal.classList.remove("hidden");
+}
+
 export function showSubconsciousBrowse(state, onCardClick) {
   const modal = document.getElementById("utility-modal");
   const body = document.getElementById("utility-modal-body");
+  const count = subconsciousCount(state.subconscious);
   body.innerHTML = `
-    <h2>The Subconscious</h2>
-    <p>Face-up repressed cards (searchable when Returning).</p>
+    <h2>☠ The Subconscious</h2>
+    <p>Face-up graveyard — all Repressed cards. Choose cards here when an effect lets you <strong>Return</strong> cards to play.</p>
+    <p class="graveyard-total">${count} card${count === 1 ? "" : "s"} total</p>
     <div id="subconscious-browse" class="subconscious-piles"></div>
   `;
   const container = body.querySelector("#subconscious-browse");

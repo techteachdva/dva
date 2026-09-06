@@ -8,7 +8,7 @@ import {
 } from "./state.js";
 import { shuffle, uid } from "./data.js";
 import { recordQuestEvent } from "./quests.js";
-import { repressCard, requestReturnCards } from "./subconscious.js";
+import { repressCard, requestReturnCards, enqueueRepressFromHand } from "./subconscious.js";
 import { adjacentTiles, edgeLandscapes } from "./hex.js";
 
 function alive(state) {
@@ -108,11 +108,11 @@ function discardSuitPsyche(state, player, suit, count) {
   return n;
 }
 
-function repressFromHand(state, player, count) {
-  for (let i = 0; i < count && player.hand.length; i += 1) {
-    repressCard(state, player.hand.pop());
-    recordQuestEvent(state, "discard_psyche", { count: 1 });
-  }
+function repressFromHand(state, player, count, reason = "") {
+  if (count <= 0) return;
+  enqueueRepressFromHand(state, player, count, {
+    reason: reason || `${player.name}: Repress ${count} Psyche from hand.`,
+  });
 }
 
 function drawFromPsycheDiscard(state, player) {

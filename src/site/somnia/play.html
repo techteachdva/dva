@@ -50,7 +50,11 @@
         <div class="table-surface" id="table-surface">
           <div class="table-chrome">
             <div id="phase-stepper" class="phase-stepper" aria-label="Round phases"></div>
+            <div id="narrator-panel" class="narrator-panel" aria-live="polite"></div>
             <div id="guide-panel" class="guide-panel"></div>
+            <div id="phase-advance-bar" class="phase-advance-bar hidden">
+              <button type="button" id="btn-advance-phase" class="btn btn-advance primary">Next Phase</button>
+            </div>
             <div id="phase-banner" class="phase-banner" aria-hidden="true"></div>
           </div>
           <div class="board-viewport" id="board-viewport">
@@ -69,6 +73,8 @@
           <div id="active-encounter" class="active-card-slot"></div>
           <h3>Acquired</h3>
           <div id="acquired-archetypes" class="mini-card-row"></div>
+          <h3>☠ The Subconscious</h3>
+          <div id="subconscious-graveyard" class="subconscious-graveyard"></div>
         </aside>
 
         <footer class="hand-bar" id="hand-bar">
@@ -137,6 +143,17 @@
       </div>
     </div>
   </div>
+
+  <div id="dev-console" class="dev-console hidden" aria-hidden="true">
+    <div class="dev-console-header">
+      <span>Dev Commands</span>
+      <span class="dev-console-hint">` toggle · /help</span>
+      <button type="button" id="dev-console-close" class="dev-console-close" aria-label="Close">×</button>
+    </div>
+    <div id="dev-console-log" class="dev-console-log"></div>
+    <input type="text" id="dev-console-input" class="dev-console-input" placeholder="/help" spellcheck="false" autocomplete="off" />
+  </div>
+  <button type="button" id="dev-console-toggle" class="dev-console-toggle hidden" title="Dev console (`)">Dev</button>
 
   <script type="module" src="js/play.js"></script>
 </body>

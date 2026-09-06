@@ -47,7 +47,7 @@ export const TUTORIAL_STEPS = [
   {
     id: "meet",
     title: "Meet Phase",
-    body: "The focused Dreamer selects 1–2 red Willpower cards and clicks Gain Actions. Then everyone pools up to 3 Psyche to Accept or Repress Encounters.",
+    body: "The focused Dreamer selects 1–2 red Willpower cards and clicks Gain Actions. Pool up to 3 Psyche to Accept (Dreambeast → your hand as 3 Psyche + draw 2) or Repress (draw 1, pay 1 Psyche to the Subconscious).",
     target: "#phase-actions",
     phase: "Meet",
   },
@@ -90,6 +90,19 @@ export function getCurrentObjective(state) {
   const player = activePlayer(state);
   const head = headPlayer(state);
 
+  if (state.landscapePick?.mode === "forget") {
+    return {
+      phase: getPhase(state),
+      suit: "willpower",
+      title: "Click map tiles to Forget",
+      steps: [
+        `Click **${state.landscapePick.remaining}** active Landscape hex tile(s) on the map.`,
+        "Each becomes a Wasteland. If all Landscapes fall, The Bed flips to Final Recurrence.",
+      ],
+      tip: "Tiles glow red when clickable.",
+    };
+  }
+
   if (phase === "Reveal") {
     if (!state.dreamDrawn && head === player) {
       return {
@@ -114,6 +127,18 @@ export function getCurrentObjective(state) {
         ],
       };
     }
+  if (state.landscapePick?.mode === "reveal" && !state.revealLandscapeUsed) {
+    return {
+      phase: "Reveal",
+      suit: "lucidity",
+      title: "Click map tiles to Reveal",
+      steps: [
+        `Click **${state.landscapePick.remaining}** hex tile(s) with the Wasteland back on the map.`,
+        "Each click flips a tile to its active Landscape face.",
+      ],
+      tip: "Tiles glow cyan when clickable.",
+    };
+  }
     if (!state.revealLandscapeUsed) {
       const budget = revealBudget(state, player);
       return {
@@ -121,10 +146,10 @@ export function getCurrentObjective(state) {
         suit: "lucidity",
         title: "Reveal Landscapes",
         steps: [
-          "Click **1–2 blue Lucidity** cards in your hand to select them.",
+          "Select **1–2 blue Lucidity** cards in your hand.",
           budget >= 1
-            ? `Click **Reveal Landscapes** (budget: ${budget} = cards + ${player.dreamer.lucidity} Lucidity).`
-            : "Select 1–2 Lucidity cards — value + your Lucidity stat = reveal budget.",
+            ? `Click **Reveal Landscapes** (budget ${budget}), then **click hex tiles** on the map.`
+            : "Select Lucidity cards — value + your stat = reveal budget.",
         ],
         tip: "Revealing opens new hexes on the board.",
       };
@@ -290,7 +315,7 @@ export function overviewHtml() {
         </div>
         <div class="overview-phase suit-willpower">
           <div class="overview-phase-head">${suitIconHtml("willpower", { size: 16 })} <strong>Meet</strong></div>
-          <p>Focused Dreamer plays red <strong>Willpower</strong> for shared actions. Pool up to 3 Psyche to Accept/Repress Encounters or spend actions on tiles, Objects, Trade, and Quests.</p>
+          <p>Focused Dreamer plays red <strong>Willpower</strong> for shared actions. Pool up to 3 Psyche to Accept/Repress Encounters. <strong>Accept</strong> puts the Dreambeast in hand (worth 3 Psyche); <strong>Repress</strong> draws 1 Psyche. Spent Dreambeasts go to <strong>☠ The Subconscious</strong> (right panel).</p>
         </div>
       </section>
 
@@ -306,7 +331,8 @@ export function overviewHtml() {
         <div>
           <h3>Key Actions</h3>
           <ul>
-            <li><strong>Encounter</strong> — pool Psyche, Accept or Repress</li>
+            <li><strong>Encounter</strong> — Accept (beast → hand) or Repress (draw 1)</li>
+            <li><strong>Subconscious</strong> — face-up graveyard; Return cards from here</li>
             <li><strong>Quests</strong> — 1 Power each, then Acquire</li>
             <li><strong>Trade</strong> — same or adjacent hex</li>
             <li><strong>End Round</strong> — after Meet actions spent</li>

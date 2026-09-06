@@ -1,12 +1,13 @@
 import { recordQuestEvent } from "./quests.js";
 import { SUIT_LABELS } from "./rules.js";
 
-/** Face-up repressed card piles (The Subconscious / game box). */
+/** Face-up repressed card piles (The Subconscious / graveyard). */
 export function createSubconscious() {
   return {
     psyche: [],
     mindstream: { lucidity: [], elasticity: [], willpower: [] },
     objects: [],
+    dreambeasts: [],
     other: [],
   };
 }
@@ -20,6 +21,7 @@ export function subconsciousCount(sub) {
     + sub.mindstream.elasticity.length
     + sub.mindstream.willpower.length
     + sub.objects.length
+    + (sub.dreambeasts?.length || 0)
     + sub.other.length
   );
 }
@@ -31,15 +33,18 @@ export function normalizeSubconscious(sub) {
     return structured;
   }
   if (!sub.mindstream) sub.mindstream = { lucidity: [], elasticity: [], willpower: [] };
+  if (!sub.dreambeasts) sub.dreambeasts = [];
   return sub;
 }
 
 function pileForCard(sub, card) {
+  if (card.type === "psyche-dreambeast" || card.isDreambeastPsyche) return sub.dreambeasts;
   if (card.type === "psyche") return sub.psyche;
   if (card.type === "event" && card.suit && sub.mindstream[card.suit]) {
     return sub.mindstream[card.suit];
   }
   if (card.type === "object") return sub.objects;
+  if (card.type === "dreambeast" || card.boss) return sub.dreambeasts;
   return sub.other;
 }
 
@@ -63,6 +68,7 @@ export function listSubconsciousCards(state) {
     ...sub.mindstream.elasticity,
     ...sub.mindstream.willpower,
     ...sub.objects,
+    ...(sub.dreambeasts || []),
     ...sub.other,
   ];
 }
@@ -76,6 +82,7 @@ export function removeFromSubconscious(state, instanceId) {
     sub.mindstream.elasticity,
     sub.mindstream.willpower,
     sub.objects,
+    sub.dreambeasts || [],
     sub.other,
   ];
   for (const pile of piles) {
@@ -90,6 +97,14 @@ export function removeFromSubconscious(state, instanceId) {
 /** Return: remove from Subconscious and place on the matching discard pile. */
 export function routeReturnedToDiscard(state, card) {
   if (!card) return;
+  if (card.type === "psyche-dreambeast" || card.isDreambeastPsyche) {
+    state.dreambeastDeck.push(card);
+    return;
+  }
+  if (card.type === "dreambeast" || card.boss) {
+    state.dreambeastDeck.push(card);
+    return;
+  }
   if (card.type === "event" && card.suit) {
     state.mindstreamDiscard[card.suit]?.push(card);
   } else if (card.type === "object") {
@@ -139,6 +154,7 @@ export function requestReturnCards(state, count, player = null) {
     remaining: toReturn,
     picked: [],
     playerId: player?.id || null,
+    reason: `Return ${toReturn} card(s) from the Subconscious.`,
   };
   return { pending: true, count: toReturn };
 }
@@ -154,6 +170,7 @@ export function pickReturnCard(state, instanceId) {
   if (pending.picked.length >= pending.remaining) {
     finalizeReturn(state, pending.picked);
     state.pendingReturn = null;
+    advanceResolutionQueue(state);
     return true;
   }
   return true;
@@ -164,6 +181,171 @@ export function cancelPendingReturn(state) {
   const picked = state.pendingReturn.picked;
   if (picked.length) finalizeReturn(state, picked);
   state.pendingReturn = null;
+  advanceResolutionQueue(state);
+}
+
+// ─── Interactive Repression ───────────────────────────────────────────────
+
+export function hasPendingResolution(state) {
+  return !!(
+    state.pendingReturn
+    || state.pendingRepress
+    || (state.resolutionQueue && state.resolutionQueue.length > 0)
+  );
+}
+
+function playerById(state, id) {
+  return state.players.find((p) => p.id === id) || null;
+}
+
+function logRepress(state, message) {
+  state.log.unshift(message);
+  state.log = state.log.slice(0, 40);
+}
+
+function sourceCards(player, source) {
+  if (source === "objects") return player.objects || [];
+  if (source === "hand") return player.hand || [];
+  return [];
+}
+
+function beginRepressStep(state, step) {
+  const player = playerById(state, step.playerId);
+  if (!player) {
+    advanceResolutionQueue(state);
+    return;
+  }
+
+  const available = sourceCards(player, step.source);
+  const needed = step.count;
+
+  if (needed <= 0 || available.length === 0) {
+    state.pendingRepress = {
+      source: step.source,
+      playerId: step.playerId,
+      remaining: needed,
+      picked: [],
+      reason: step.reason,
+      confirmEmpty: true,
+    };
+    return;
+  }
+
+  if (needed === 1 && available.length === 1) {
+    const card = available[0];
+    removeFromSource(player, step.source, card.instanceId);
+    repressCard(state, card);
+    if (step.source === "hand") {
+      recordQuestEvent(state, "discard_psyche", { count: 1, landscapeId: player.landscapeId });
+    }
+    logRepress(state, `${player.name} Repressed ${card.name} → Subconscious.`);
+    advanceResolutionQueue(state);
+    return;
+  }
+
+  state.pendingRepress = {
+    source: step.source,
+    playerId: step.playerId,
+    remaining: needed,
+    picked: [],
+    reason: step.reason,
+    confirmEmpty: false,
+  };
+}
+
+function removeFromSource(player, source, instanceId) {
+  if (source === "objects") {
+    player.objects = player.objects.filter((c) => c.instanceId !== instanceId);
+  } else if (source === "hand") {
+    player.hand = player.hand.filter((c) => c.instanceId !== instanceId);
+  }
+}
+
+export function enqueueRepressObjects(state, player, count, { reason = "" } = {}) {
+  state.resolutionQueue = state.resolutionQueue || [];
+  state.resolutionQueue.push({
+    type: "repress",
+    source: "objects",
+    playerId: player.id,
+    count,
+    reason: reason || `${player.name}: Repress ${count} Object(s).`,
+  });
+  if (!state.pendingRepress && !state.pendingReturn) {
+    advanceResolutionQueue(state);
+  }
+}
+
+export function enqueueRepressFromHand(state, player, count, { reason = "" } = {}) {
+  state.resolutionQueue = state.resolutionQueue || [];
+  state.resolutionQueue.push({
+    type: "repress",
+    source: "hand",
+    playerId: player.id,
+    count,
+    reason: reason || `${player.name}: Repress ${count} Psyche card(s).`,
+  });
+  if (!state.pendingRepress && !state.pendingReturn) {
+    advanceResolutionQueue(state);
+  }
+}
+
+function advanceResolutionQueue(state) {
+  if (state.pendingRepress || state.pendingReturn) return;
+  const next = state.resolutionQueue?.shift();
+  if (!next) return;
+  if (next.type === "repress") beginRepressStep(state, next);
+}
+
+export function pickRepressCard(state, instanceId) {
+  const pending = state.pendingRepress;
+  if (!pending || pending.confirmEmpty) return false;
+
+  const player = playerById(state, pending.playerId);
+  if (!player) return false;
+
+  const pool = sourceCards(player, pending.source);
+  const card = pool.find((c) => c.instanceId === instanceId);
+  if (!card || pending.picked.some((c) => c.instanceId === instanceId)) return false;
+  if (pending.picked.length >= pending.remaining) return false;
+
+  removeFromSource(player, pending.source, instanceId);
+  repressCard(state, card);
+  pending.picked.push(card);
+  if (pending.source === "hand") {
+    recordQuestEvent(state, "discard_psyche", { count: 1, landscapeId: player.landscapeId });
+  }
+
+  if (pending.picked.length >= pending.remaining) {
+    const names = pending.picked.map((c) => c.name).join(", ");
+    logRepress(state, `${player.name} Repressed ${pending.picked.length} card(s): ${names}.`);
+    state.pendingRepress = null;
+    advanceResolutionQueue(state);
+  }
+  return true;
+}
+
+export function confirmRepressStep(state) {
+  const pending = state.pendingRepress;
+  if (!pending) return;
+
+  const player = playerById(state, pending.playerId);
+  if (pending.confirmEmpty && player) {
+    if (pending.remaining <= 0) {
+      logRepress(state, `${player.name}: nothing to Repress — continuing.`);
+    } else {
+      logRepress(state, `${player.name}: no ${pending.source === "objects" ? "Objects" : "Psyche"} to Repress (${pending.picked.length}/${pending.remaining} chosen).`);
+    }
+  } else if (player && pending.picked.length < pending.remaining) {
+    logRepress(state, `${player.name} Repressed ${pending.picked.length}/${pending.remaining} (all available).`);
+  }
+
+  state.pendingRepress = null;
+  advanceResolutionQueue(state);
+}
+
+export function cancelPendingRepress(state) {
+  state.pendingRepress = null;
+  advanceResolutionQueue(state);
 }
 
 export function repressFromMindstreamSetup(state, suit, playerCount) {
@@ -180,11 +362,30 @@ export function subconsciousPilesForUI(state) {
   state.subconscious = normalizeSubconscious(state.subconscious);
   const sub = state.subconscious;
   return [
-    { label: "Psyche", cards: sub.psyche },
-    { label: `Mindstream ${SUIT_LABELS.lucidity}`, cards: sub.mindstream.lucidity },
-    { label: `Mindstream ${SUIT_LABELS.elasticity}`, cards: sub.mindstream.elasticity },
-    { label: `Mindstream ${SUIT_LABELS.willpower}`, cards: sub.mindstream.willpower },
-    { label: "Objects", cards: sub.objects },
-    { label: "Other", cards: sub.other },
+    { label: "Psyche", cards: sub.psyche, icon: "🃏" },
+    { label: "Dreambeasts", cards: sub.dreambeasts || [], icon: "⚔" },
+    { label: `Mindstream ${SUIT_LABELS.lucidity}`, cards: sub.mindstream.lucidity, icon: "◉" },
+    { label: `Mindstream ${SUIT_LABELS.elasticity}`, cards: sub.mindstream.elasticity, icon: "⇄" },
+    { label: `Mindstream ${SUIT_LABELS.willpower}`, cards: sub.mindstream.willpower, icon: "✊" },
+    { label: "Objects", cards: sub.objects, icon: "✦" },
+    { label: "Other", cards: sub.other, icon: "?" },
   ].filter((p) => p.cards.length);
+}
+
+/** Convert an accepted Encounter into a hand card worth 3 Psyche in its suit. */
+export function dreambeastToHandCard(encounter) {
+  const suit = encounter.suit || "willpower";
+  return {
+    ...encounter,
+    type: "psyche-dreambeast",
+    isDreambeastPsyche: true,
+    value: 3,
+    psycheValue: 3,
+    suit,
+    name: encounter.name,
+  };
+}
+
+export function isDreambeastPsycheCard(card) {
+  return card?.type === "psyche-dreambeast" || card?.isDreambeastPsyche;
 }

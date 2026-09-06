@@ -1,5 +1,5 @@
 import { createQuestTracker, canMarkQuest } from "./quests.js";
-import { buildHexBoard, edgeLandscapes } from "./hex.js";
+import { buildHexBoard } from "./hex.js";
 import {
   createSubconscious,
   repressCard,
@@ -31,7 +31,7 @@ export function createInitialState(data, options) {
   const usedDreamerIds = new Set(options.selectedDreamers.map((d) => d.id));
   const availableDreamers = data.dreamers.filter((d) => !usedDreamerIds.has(d.id));
 
-  const board = buildHexBoard(landscapes, 6);
+  const board = buildHexBoard(landscapes);
 
   const psycheDeck = buildPsycheDeck(data.psyche);
   const dreamDeck = insertBossDreams(buildDreamDeck(data.dreams, length.dreams), data.dreambeasts);
@@ -116,6 +116,10 @@ export function createInitialState(data, options) {
     pendingRespawn: null,
     trade: null,
     pendingReturn: null,
+    pendingRepress: null,
+    resolutionQueue: [],
+    landscapePick: null,
+    narrator: null,
     exploreFreeMove: false,
     pendingHeatingUp: false,
     persistentArchetypes: [],
@@ -256,7 +260,7 @@ export function beginRoundReveal(state) {
   addLog(state, `Round ${state.round}: Reveal — each Dreamer draws 2 Psyche.`);
 }
 
-export function handleDreamerDeath(state, player) {
+export export function handleDreamerDeath(state, player) {
   addLog(state, `${player.name} had no Psyche and is lost to the Dreamscape!`);
   const beast = state.dreambeastDeck.shift();
   if (beast) {
@@ -446,27 +450,7 @@ export function completeQuest(state, questIndex, player) {
   return true;
 }
 
-export function forgetLandscapes(state, count) {
-  const edges = edgeLandscapes(state);
-  const toForget = edges.slice(0, count);
-  toForget.forEach((tile) => {
-    tile.revealed = false;
-    tile.wasteland = true;
-    if (tile.encounter) {
-      repressCard(state, tile.encounter);
-      tile.encounter = null;
-    }
-    state.players.filter((p) => p.landscapeId === tile.id).forEach((p) => {
-      if (p.hand.length) {
-        const discarded = p.hand.pop();
-        repressCard(state, discarded);
-      }
-    });
-  });
-  if (toForget.length) {
-    addLog(state, `Forgot ${toForget.length} edge Landscape(s): ${toForget.map((t) => t.name).join(", ")}.`);
-  }
-}
+export { forgetLandscapes } from "./landscapes.js";
 
 export function revealLandscapeTile(state, tile) {
   if (!tile.revealed) {

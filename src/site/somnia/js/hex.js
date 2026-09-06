@@ -142,12 +142,28 @@ export function boardPixelBounds(state, size = 58) {
 }
 
 /**
- * Build board with hex coordinates. Starters fixed; pool tiles fill ring-2+ slots.
+ * All hex coordinates within `maxRadius` of origin (uniform hex disk).
  */
-export function buildHexBoard(landscapes, poolCount = 6) {
+export function hexDiskCoords(maxRadius) {
+  const coords = [];
+  for (let q = -maxRadius; q <= maxRadius; q += 1) {
+    for (let r = -maxRadius; r <= maxRadius; r += 1) {
+      if (hexDistance({ q, r }, { q: 0, r: 0 }) <= maxRadius) {
+        coords.push({ q, r });
+      }
+    }
+  }
+  return coords;
+}
+
+/**
+ * Build board: Bed + starters revealed; every other landscape on the grid starts
+ * as Wasteland-back (unrevealed). Uses a uniform hex disk (radius 3).
+ */
+export function buildHexBoard(landscapes) {
   const all = landscapes.filter((l) => !l.hidden);
   const center = all.find((l) => l.center);
-  const starters = all.filter((l) => l.starting);
+  const starters = all.filter((l) => l.starting && !l.center);
   const pool = shufflePool(all.filter((l) => !l.starting && !l.center));
 
   const usedKeys = new Set();
@@ -155,33 +171,42 @@ export function buildHexBoard(landscapes, poolCount = 6) {
 
   if (center && STARTER_HEX.bed) {
     const { q, r } = STARTER_HEX.bed;
-    board.push({ ...center, q, r, revealed: true, wasteland: false });
+    board.push({ ...center, q, r, revealed: true, wasteland: false, finalRecurrenceSide: false });
     usedKeys.add(hexKey(q, r));
   }
 
   starters.forEach((landscape) => {
     const pos = STARTER_HEX[landscape.id];
     if (!pos) return;
-    board.push({ ...landscape, q: pos.q, r: pos.r, revealed: true, wasteland: false });
+    board.push({
+      ...landscape,
+      q: pos.q,
+      r: pos.r,
+      revealed: true,
+      wasteland: false,
+      finalRecurrenceSide: false,
+    });
     usedKeys.add(hexKey(pos.q, pos.r));
   });
 
+  const gridSlots = hexDiskCoords(3)
+    .filter(({ q, r }) => !usedKeys.has(hexKey(q, r)))
+    .sort((a, b) => hexDistance(a, { q: 0, r: 0 }) - hexDistance(b, { q: 0, r: 0 }));
+
   let poolIdx = 0;
-  for (const slot of POOL_HEX_SLOTS) {
-    if (poolIdx >= poolCount) break;
-    const key = hexKey(slot.q, slot.r);
-    if (usedKeys.has(key)) continue;
+  for (const slot of gridSlots) {
+    if (poolIdx >= pool.length) break;
     const landscape = pool[poolIdx];
-    if (!landscape) break;
+    poolIdx += 1;
     board.push({
       ...landscape,
       q: slot.q,
       r: slot.r,
       revealed: false,
       wasteland: true,
+      finalRecurrenceSide: false,
     });
-    usedKeys.add(key);
-    poolIdx += 1;
+    usedKeys.add(hexKey(slot.q, slot.r));
   }
 
   return board;
