@@ -1,4 +1,5 @@
-import { bindMusicToggle, initSoundtrack } from "./audio.js";
+import { bindMusicToggle, initSoundtrack, bindButtonRipples } from "./audio.js";
+import { initFxLayer } from "./fx.js";
 import { loadGameData } from "./data.js";
 import {
   TUTORIAL_STEPS,
@@ -21,6 +22,8 @@ let selectedDreamerIds = [];
 let tutorialIndex = -1;
 
 async function init() {
+  initFxLayer();
+  bindButtonRipples();
   initSoundtrack();
   bindMusicToggle();
   gameData = await loadGameData();

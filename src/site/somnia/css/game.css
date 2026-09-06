@@ -95,9 +95,10 @@ body.play-window #screen-game.active {
   border-radius: var(--radius);
   border: 1px solid var(--accent);
   background: var(--bg-panel);
-  box-shadow: var(--shadow);
+  box-shadow: var(--shadow), 0 0 40px rgba(123, 92, 255, 0.25);
   max-width: 420px;
   pointer-events: none;
+  animation: prompt-pulse 2.5s ease-in-out infinite;
 }
 
 .fullscreen-prompt-card h2 {
@@ -276,6 +277,7 @@ body.in-game main {
     rgba(8, 7, 18, 0.65);
   border-left: 1px solid var(--border);
   border-right: 1px solid var(--border);
+  animation: dream-breathe 10s ease-in-out infinite;
 }
 
 #screen-game .sidebar.right {
@@ -406,6 +408,12 @@ body.in-game main {
   color: var(--text);
   background: rgba(123, 92, 255, 0.18);
   border-color: var(--accent);
+  box-shadow: 0 0 18px rgba(123, 92, 255, 0.25);
+  animation: phase-glow 2.4s ease-in-out infinite;
+}
+
+.phase-stepper.phase-pulse .step.active {
+  animation: phase-bump 0.55s ease;
 }
 
 .phase-stepper .step.done {
@@ -476,6 +484,7 @@ body.in-game main {
   font-size: 0.95rem;
   padding: 0.65rem 1.5rem;
   box-shadow: 0 4px 20px rgba(123, 92, 255, 0.35);
+  animation: advance-glow 2.8s ease-in-out infinite;
 }
 
 .guide-phase-tag {
@@ -534,6 +543,11 @@ body.in-game main {
   outline: 2px solid #ff6b6b;
   box-shadow: 0 0 16px rgba(255, 107, 107, 0.5);
   animation: pulse-forget 1.5s ease-in-out infinite;
+}
+
+.hex-tile.just-revealed {
+  animation: hex-reveal 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  z-index: 3;
 }
 
 .hex-tile.bed-final {
@@ -845,14 +859,38 @@ body.in-game main {
   padding: 0.65rem 1rem;
   cursor: pointer;
   font: inherit;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.12s ease, border-color 0.15s, box-shadow 0.15s, background 0.15s;
+}
+
+.btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at var(--ripple-x, 50%) var(--ripple-y, 50%), rgba(255, 255, 255, 0.28), transparent 62%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.btn.ripple::after {
+  opacity: 1;
+  transition: opacity 0.35s ease;
 }
 
 .btn:hover:not(:disabled) { border-color: var(--accent); }
+
+.btn:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
 .btn.primary {
-  background: linear-gradient(135deg, var(--accent-strong), #5a8dff);
+  background: linear-gradient(135deg, var(--accent-strong), #5a8dff, #7b5cff);
+  background-size: 200% 200%;
   border: none;
   font-weight: 600;
   margin-top: 1rem;
+  animation: btn-shimmer 5s ease-in-out infinite;
 }
 
 #screen-game .btn.primary {
@@ -1170,7 +1208,12 @@ body.in-game main {
   overflow: hidden;
   cursor: pointer;
   position: relative;
-  transition: transform 0.15s, box-shadow 0.15s;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.game-card.card-enter {
+  animation: card-deal 0.42s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation-delay: calc(var(--deal-i, 0) * 45ms);
 }
 
 .game-card:hover {
@@ -1178,7 +1221,33 @@ body.in-game main {
   box-shadow: 0 10px 24px rgba(0,0,0,0.35);
 }
 
-.game-card.selected { outline: 2px solid var(--accent); }
+.game-card:active {
+  transform: translateY(-2px) scale(0.98);
+}
+
+.game-card.selected {
+  outline: 2px solid var(--accent);
+  box-shadow:
+    0 0 0 1px rgba(201, 160, 255, 0.35),
+    0 0 22px rgba(123, 92, 255, 0.45);
+  animation: card-selected-pulse 1.8s ease-in-out infinite;
+}
+
+.game-card.selected::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(
+    120deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.22) 45%,
+    transparent 70%
+  );
+  opacity: 0.65;
+  animation: card-shimmer 2.4s linear infinite;
+}
 .game-card.portrait { width: 140px; min-height: 196px; }
 
 .game-card .art {
@@ -1314,6 +1383,8 @@ body.in-game main {
 .player-chip.active {
   border-color: var(--accent);
   background: rgba(123, 92, 255, 0.12);
+  box-shadow: 0 0 16px rgba(123, 92, 255, 0.22);
+  animation: chip-glow 2.2s ease-in-out infinite;
 }
 
 .player-chip img {
@@ -1337,9 +1408,18 @@ body.in-game main {
   margin-bottom: 0.35rem;
   cursor: pointer;
   font-size: 0.78rem;
+  transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
 }
 
-.deck-pile:hover { background: rgba(255,255,255,0.06); }
+.deck-pile:hover {
+  background: rgba(255,255,255,0.06);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.deck-pile:active {
+  transform: translateY(0) scale(0.98);
+}
 
 .deck-pile.suit-lucidity { border-left: 3px solid var(--lucidity); }
 .deck-pile.suit-elasticity { border-left: 3px solid var(--elasticity); }
@@ -1905,4 +1985,165 @@ body.in-game main {
   .hand-bar { grid-template-columns: 1fr; }
   .objects-section { max-width: none; }
   .overview-cols { grid-template-columns: 1fr; }
+}
+
+/* === Polish, motion, and sparkle FX === */
+
+@keyframes btn-shimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes card-deal {
+  from {
+    opacity: 0;
+    transform: translateY(22px) scale(0.9) rotate(-2deg);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(0);
+  }
+}
+
+@keyframes card-selected-pulse {
+  0%, 100% {
+    box-shadow:
+      0 0 0 1px rgba(201, 160, 255, 0.35),
+      0 0 18px rgba(123, 92, 255, 0.35);
+  }
+  50% {
+    box-shadow:
+      0 0 0 2px rgba(201, 160, 255, 0.55),
+      0 0 30px rgba(123, 92, 255, 0.62);
+  }
+}
+
+@keyframes card-shimmer {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(120%); }
+}
+
+@keyframes hex-reveal {
+  0% {
+    transform: translate(-50%, -50%) scale(0.82);
+    filter: brightness(1.8) saturate(1.4);
+  }
+  55% {
+    transform: translate(-50%, -50%) scale(1.07);
+    filter: brightness(1.25);
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    filter: none;
+  }
+}
+
+@keyframes phase-glow {
+  0%, 100% { box-shadow: 0 0 10px rgba(123, 92, 255, 0.15); }
+  50% { box-shadow: 0 0 22px rgba(123, 92, 255, 0.38); }
+}
+
+@keyframes phase-bump {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+@keyframes advance-glow {
+  0%, 100% { box-shadow: 0 4px 20px rgba(123, 92, 255, 0.35); }
+  50% { box-shadow: 0 6px 28px rgba(123, 92, 255, 0.55), 0 0 24px rgba(90, 141, 255, 0.25); }
+}
+
+@keyframes chip-glow {
+  0%, 100% { box-shadow: 0 0 10px rgba(123, 92, 255, 0.15); }
+  50% { box-shadow: 0 0 20px rgba(123, 92, 255, 0.35); }
+}
+
+@keyframes dream-breathe {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.04); }
+}
+
+@keyframes prompt-pulse {
+  0%, 100% {
+    box-shadow: var(--shadow), 0 0 30px rgba(123, 92, 255, 0.2);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: var(--shadow), 0 0 50px rgba(123, 92, 255, 0.42);
+    transform: scale(1.02);
+  }
+}
+
+@keyframes sparkle-float {
+  from {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translate(var(--sx), var(--sy)) scale(0);
+  }
+}
+
+#fx-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10050;
+  overflow: hidden;
+}
+
+.fx-sparkle {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  margin-left: -3.5px;
+  margin-top: -3.5px;
+  animation: sparkle-float 0.85s ease-out forwards;
+}
+
+body.menu-window #app {
+  position: relative;
+}
+
+body.menu-window #app::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(1px 1px at 10% 20%, rgba(255, 255, 255, 0.35), transparent),
+    radial-gradient(1px 1px at 80% 12%, rgba(201, 160, 255, 0.45), transparent),
+    radial-gradient(1.5px 1.5px at 55% 78%, rgba(123, 92, 255, 0.35), transparent),
+    radial-gradient(1px 1px at 30% 65%, rgba(255, 255, 255, 0.25), transparent);
+  animation: stars-drift 80s linear infinite;
+  opacity: 0.55;
+  z-index: 0;
+}
+
+@keyframes stars-drift {
+  from { transform: translateY(0); }
+  to { transform: translateY(-40px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .game-card.card-enter,
+  .game-card.selected,
+  .hex-tile.just-revealed,
+  .phase-stepper .step.active,
+  .phase-stepper.phase-pulse .step.active,
+  .btn-advance,
+  .player-chip.active,
+  #screen-game .table-surface,
+  body.menu-window #app::before,
+  .fullscreen-prompt-card {
+    animation: none !important;
+  }
+
+  .btn.primary {
+    animation: none;
+    background: linear-gradient(135deg, var(--accent-strong), #5a8dff);
+  }
 }

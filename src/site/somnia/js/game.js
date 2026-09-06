@@ -42,6 +42,8 @@ import { resolveOnAcquire } from "./archetypes.js";
 import { shuffle, uid } from "./data.js";
 import { beginRevealPicking, handleLandscapeTilePick, cancelLandscapePick } from "./landscapes.js";
 import { narrate } from "./narrator.js";
+import { playSfx } from "./audio.js";
+import { markPhasePulse } from "./fx.js";
 import { recordQuestEvent } from "./quests.js";
 import {
   resolveCardEffect,
@@ -362,6 +364,7 @@ export function drawAdditionalDream(state, onShowModal) {
 
   checkDefeat(state);
   applySkeletonKeyAfterDream(state);
+  playSfx("dream");
   if (onShowModal) onShowModal(card);
   return card;
 }
@@ -404,6 +407,7 @@ export function drawDreamCard(state, onShowModal) {
 
   checkDefeat(state);
   applySkeletonKeyAfterDream(state);
+  playSfx("dream");
   if (onShowModal) onShowModal(card);
   return card;
 }
@@ -1019,6 +1023,8 @@ export function endPhase(state) {
   }
   checkDefeat(state);
   const phase = getPhase(state);
+  markPhasePulse();
+  playSfx("phase");
   narrate(
     state,
     `${phase} Phase begins`,

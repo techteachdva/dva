@@ -1,5 +1,7 @@
 import { createQuestTracker, canMarkQuest } from "./quests.js";
 import { buildHexBoard } from "./hex.js";
+import { playSfx } from "./audio.js";
+import { markTileRevealed } from "./fx.js";
 import {
   createSubconscious,
   repressCard,
@@ -188,6 +190,7 @@ export function drawPsycheForPlayer(state, player, count = 1) {
       state.psycheDiscard.push(card);
     }
   }
+  if (drawn.length) playSfx("draw", { count: drawn.length });
   return drawn;
 }
 
@@ -202,6 +205,7 @@ export function drawMindstream(state, suit, count = 1) {
     if (!deck.length) break;
     drawn.push(deck.shift());
   }
+  if (drawn.length) playSfx("draw", { count: drawn.length });
   return drawn;
 }
 
@@ -497,8 +501,12 @@ export function revealLandscapeTile(state, tile) {
     tile.revealed = true;
     tile.wasteland = false;
     addLog(state, `Revealed ${tile.name}.`);
+    markTileRevealed(tile.id);
+    playSfx("reveal");
   } else if (tile.wasteland) {
     tile.wasteland = false;
     addLog(state, `Restored ${tile.name} from Wasteland.`);
+    markTileRevealed(tile.id);
+    playSfx("reveal");
   }
 }

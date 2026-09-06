@@ -13,6 +13,7 @@ import { hexToPixel, boardPixelBounds } from "./hex.js";
 import { subconsciousCount, subconsciousPilesForUI, isDreambeastPsycheCard } from "./subconscious.js";
 import { getNarratorView, listPhaseActionHints } from "./narrator.js";
 import { getCurrentObjective, rulesHtml, overviewHtml, getDreamerChipTooltip } from "./guide.js";
+import { consumePhasePulse, consumeRevealedTiles } from "./fx.js";
 
 function suitClass(suit) {
   return suit ? `suit-${suit}` : "";
@@ -54,7 +55,7 @@ function createArtElement(card) {
   return art;
 }
 
-function renderPsycheDreambeastCard(card, { selected, onClick, mini }) {
+function renderPsycheDreambeastCard(card, { selected, onClick, mini, entering }) {
   const el = document.createElement("button");
   el.type = "button";
   el.className = [
@@ -63,6 +64,7 @@ function renderPsycheDreambeastCard(card, { selected, onClick, mini }) {
     "psyche-dreambeast",
     card.suit,
     selected ? "selected" : "",
+    entering ? "card-enter" : "",
     mini ? "mini" : "",
   ].filter(Boolean).join(" ");
 
@@ -90,9 +92,9 @@ function renderPsycheDreambeastCard(card, { selected, onClick, mini }) {
   return el;
 }
 
-function renderPsycheCard(card, { selected, onClick, mini }) {
+function renderPsycheCard(card, { selected, onClick, mini, entering }) {
   if (isDreambeastPsycheCard(card)) {
-    return renderPsycheDreambeastCard(card, { selected, onClick, mini });
+    return renderPsycheDreambeastCard(card, { selected, onClick, mini, entering });
   }
   const el = document.createElement("button");
   el.type = "button";
@@ -102,6 +104,7 @@ function renderPsycheCard(card, { selected, onClick, mini }) {
     "psyche-card",
     isWild ? "wild" : card.suit,
     selected ? "selected" : "",
+    entering ? "card-enter" : "",
     mini ? "mini" : "",
   ].filter(Boolean).join(" ");
 
@@ -150,13 +153,13 @@ function suitGradient(card) {
 }
 
 export function renderCard(card, options = {}) {
-  const { portrait = false, mini = false, selected = false, onClick } = options;
+  const { portrait = false, mini = false, selected = false, onClick, entering = false } = options;
 
   if (card.type === "psyche" && !portrait) {
-    return renderPsycheCard(card, { selected, onClick, mini });
+    return renderPsycheCard(card, { selected, onClick, mini, entering });
   }
   if (isDreambeastPsycheCard(card) && !portrait) {
-    return renderPsycheDreambeastCard(card, { selected, onClick, mini });
+    return renderPsycheDreambeastCard(card, { selected, onClick, mini, entering });
   }
 
   const el = document.createElement("button");
@@ -166,6 +169,7 @@ export function renderCard(card, options = {}) {
     cardTypeClass(card),
     portrait ? "portrait" : "",
     selected ? "selected" : "",
+    entering ? "card-enter" : "",
   ].filter(Boolean).join(" ");
 
   const value = card.value != null ? `<span class="value">${card.value}</span>` : "";
@@ -365,6 +369,7 @@ export function renderBoard(state, onSelectLandscape, legalMoveIds = [], pickHig
   const legalSet = new Set(legalMoveIds);
   const revealSet = new Set(pickHighlights.reveal || []);
   const forgetSet = new Set(pickHighlights.forget || []);
+  const justRevealed = new Set(consumeRevealedTiles());
 
   state.board.forEach((tile) => {
     const { x, y } = hexToPixel(tile.q, tile.r, size);
@@ -383,6 +388,7 @@ export function renderBoard(state, onSelectLandscape, legalMoveIds = [], pickHig
       legalSet.has(tile.id) ? "movable" : "",
       revealSet.has(tile.id) ? "pick-reveal" : "",
       forgetSet.has(tile.id) ? "pick-forget" : "",
+      justRevealed.has(tile.id) ? "just-revealed" : "",
       tile.suit ? `suit-${tile.suit}` : "",
     ].filter(Boolean).join(" ");
 
@@ -485,7 +491,7 @@ export function renderObjects(state, onCardClick) {
   }
 }
 
-export function renderHand(state, onCardClick) {
+export function renderHand(state, onCardClick, newCardIds = null) {
   const hand = document.getElementById("hand");
   const stats = document.getElementById("hand-stats");
   const title = document.getElementById("hand-title");
@@ -495,12 +501,17 @@ export function renderHand(state, onCardClick) {
   if (title) title.textContent = "Your Psyche Hand";
   stats.innerHTML = handStatsHtml(state, player);
 
-  player.hand.forEach((card) => {
+  const fresh = newCardIds || new Set();
+  player.hand.forEach((card, index) => {
     const el = renderCard(card, {
       selected: state.selectedHand.includes(card.instanceId)
         || state.trade?.offerPsycheIds?.includes(card.instanceId),
+      entering: fresh.has(card.instanceId),
       onClick: () => onCardClick(card, player),
     });
+    if (fresh.has(card.instanceId)) {
+      el.style.setProperty("--deal-i", String(index));
+    }
     hand.appendChild(el);
   });
 }
@@ -713,6 +724,8 @@ export function renderPhaseStepper(state) {
   const el = document.getElementById("phase-stepper");
   if (!el) return;
   const current = getPhase(state);
+  const pulse = consumePhasePulse();
+  el.className = pulse ? "phase-stepper phase-pulse" : "phase-stepper";
   el.innerHTML = PHASES.map((phase, i) => {
     const active = phase === current;
     const done = PHASES.indexOf(current) > i;

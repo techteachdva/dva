@@ -1,6 +1,7 @@
-import { bindMusicToggle, initSoundtrack, startSoundtrack } from "./audio.js";
+import { bindMusicToggle, initSoundtrack, startSoundtrack, bindButtonRipples, playSfx } from "./audio.js";
+import { initFxLayer, burstSparklesAtElement } from "./fx.js";
 import { loadGameData } from "./data.js";
-import { createInitialState, addLog, respawnDreamer, getPhase } from "./state.js";
+import { createInitialState, addLog, respawnDreamer, getPhase, activePlayer } from "./state.js";
 import {
   getPhaseActions,
   getPhaseAdvanceAction,
@@ -85,8 +86,24 @@ const lastCardClick = { id: null, time: 0 };
 let boardResizeTimer = null;
 let lastRepressPickerKey = null;
 let lastReturnPickerKey = null;
+let prevHandIds = new Set();
+
+function getNewHandCardIds(state) {
+  const player = activePlayer(state);
+  const current = new Set(player.hand.map((c) => c.instanceId));
+  const fresh = new Set();
+  if (prevHandIds.size) {
+    for (const id of current) {
+      if (!prevHandIds.has(id)) fresh.add(id);
+    }
+  }
+  prevHandIds = current;
+  return fresh;
+}
 
 async function init() {
+  initFxLayer();
+  bindButtonRipples();
   initSoundtrack();
   bindMusicToggle();
   gameData = await loadGameData();
@@ -290,7 +307,11 @@ function onHandCardClick(card, owner) {
   lastCardClick.id = id;
   lastCardClick.time = now;
 
+  const wasSelected = state.selectedHand.includes(id);
   toggleHandCard(state, card, owner);
+  const isSelected = state.selectedHand.includes(id);
+  if (isSelected && !wasSelected) playSfx("select");
+  else if (!isSelected && wasSelected) playSfx("deselect");
   if (state.tradeMode && state.trade?.step === "select-offer") {
     renderAll();
     maybeShowTradePanel();
@@ -397,7 +418,13 @@ function renderAll() {
   renderPhaseStepper(state);
 
   const handlers = {
-    drawDream: () => { drawDreamCard(state, showModal); renderAll(); },
+    drawDream: () => {
+      const card = drawDreamCard(state, showModal);
+      if (card) {
+        requestAnimationFrame(() => burstSparklesAtElement(document.getElementById("deck-tray"), 12));
+      }
+      renderAll();
+    },
     revealLandscape: () => { revealLandscape(state); renderAll(); },
     activateExplore: () => { activateExplore(state); renderAll(); },
     gainMeetActions: () => { gainMeetActions(state); renderAll(); },
@@ -425,7 +452,12 @@ function renderAll() {
     },
     powerBonus: () => { powerBonus(state); renderAll(); },
     completeQuest: (i) => { handleQuestComplete(state, i); renderAll(); },
-    acquireArchetype: () => { handleAcquire(state); renderAll(); },
+    acquireArchetype: () => {
+      handleAcquire(state);
+      playSfx("acquire");
+      requestAnimationFrame(() => burstSparklesAtElement(document.getElementById("active-archetype"), 16, "#f0c96a"));
+      renderAll();
+    },
     useDreamerPower: () => { useDreamerPower(state); renderAll(); },
     defeatFinalArchetype: () => { handleDefeatFinalArchetype(state); renderAll(); },
     sacrificeForFinal: () => { handleSacrificeForFinal(state); renderAll(); },
@@ -459,7 +491,7 @@ function renderAll() {
   if (getPhase(state) === "Meet" && state.meetActionBudget > 0) {
     renderCoopMeetHands(state, onHandCardClick);
   } else {
-    renderHand(state, onHandCardClick);
+    renderHand(state, onHandCardClick, getNewHandCardIds(state));
   }
 
   renderObjects(state, (card, zone) => {

@@ -9,6 +9,7 @@ import { canTradeBetween as hexCanTradeBetween } from "./hex.js";
 import { persistentMeetBonus, sumEffectivePsycheValue } from "./objects.js";
 import { PHASES } from "./data.js";
 import { isWildPsyche, psycheCardValue } from "./psyche.js";
+import { playSfx } from "./audio.js";
 
 export { isWildPsyche, psycheCardValue };
 
@@ -194,12 +195,15 @@ function routeSpentHandCard(state, card, { toRepress = false } = {}) {
   if (isWildPsyche(card)) {
     repressCard(state, card);
     repressTopMindstreamFromEachDeck(state);
+    playSfx("repress");
     return;
   }
   if (toRepress || isDreambeastPsycheCard(card)) {
     repressCard(state, card);
+    playSfx("repress");
   } else {
     state.psycheDiscard.push(card);
+    playSfx("discard");
   }
 }
 
