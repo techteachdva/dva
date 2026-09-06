@@ -260,7 +260,7 @@ export function beginRoundReveal(state) {
   addLog(state, `Round ${state.round}: Reveal — each Dreamer draws 2 Psyche.`);
 }
 
-export export function handleDreamerDeath(state, player) {
+export function handleDreamerDeath(state, player) {
   addLog(state, `${player.name} had no Psyche and is lost to the Dreamscape!`);
   const beast = state.dreambeastDeck.shift();
   if (beast) {

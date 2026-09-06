@@ -981,7 +981,11 @@ body.in-game main {
   padding: calc(0.5rem * var(--hex-scale, 1.72));
   border-radius: calc(12px * var(--hex-scale, 1.72));
   border: 1px solid var(--border);
-  background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.15)) center/cover no-repeat;
+  background-color: #120f22;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-image: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(0,0,0,0.15));
   text-align: center;
   cursor: pointer;
   transition: transform 0.15s, border-color 0.15s;
@@ -1162,7 +1166,9 @@ body.in-game main {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  object-position: center top;
   display: block;
+  backface-visibility: hidden;
 }
 
 .game-card .art.art-fallback::after {
@@ -1315,9 +1321,13 @@ body.in-game main {
 
 .modal-art {
   width: 100%;
+  max-height: min(52vh, 420px);
+  object-fit: contain;
+  object-position: center;
   border-radius: 10px;
   margin-bottom: 0.75rem;
   display: block;
+  backface-visibility: hidden;
 }
 
 .modal-art-fallback {
