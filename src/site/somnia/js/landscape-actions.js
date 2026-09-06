@@ -327,6 +327,34 @@ export function canDrawMindstreamOnLandscape(tile) {
   return !!(tile?.revealed && !tile.hidden && !tile.wasteland && tile.suit);
 }
 
+export function getLandscapeActionSummary(tile) {
+  if (!tile?.revealed || tile.hidden || tile.wasteland) {
+    return [];
+  }
+
+  const actions = [];
+
+  if (canDrawMindstreamOnLandscape(tile)) {
+    actions.push({
+      letter: "A",
+      label: `Draw ${SUIT_LABELS[tile.suit]} Mindstream`,
+      description: LANDSCAPE_ACTION_DEFS["draw-mindstream"].description,
+    });
+  }
+
+  getUniqueLandscapeActionChoices(tile).forEach((choice) => {
+    actions.push({
+      label: choice.label,
+      description: choice.description,
+    });
+  });
+
+  return actions.slice(0, 2).map((action, index) => ({
+    ...action,
+    letter: index === 0 ? "A" : "B",
+  }));
+}
+
 export function getLandscapeActionChoices(tile) {
   const choices = [];
   if (canDrawMindstreamOnLandscape(tile)) {

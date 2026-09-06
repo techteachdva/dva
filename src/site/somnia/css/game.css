@@ -1031,11 +1031,32 @@ body.in-game main {
   flex: 1;
   min-height: 0;
   width: 100%;
-  overflow: auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0.5rem;
+  overflow: hidden;
+  position: relative;
+  display: block;
+  padding: 0;
+  touch-action: none;
+}
+
+.board-zoom-stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+.board-viewport::after {
+  content: "Scroll to zoom";
+  position: absolute;
+  right: 0.65rem;
+  bottom: 0.45rem;
+  font-size: 0.65rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(240, 201, 106, 0.45);
+  pointer-events: none;
+  z-index: 2;
 }
 
 .hex-board {
@@ -1882,6 +1903,7 @@ body.in-game main {
 .player-chip.trade-target { outline: 1px dashed var(--accent); }
 
 .utility-content { max-width: 520px; }
+.utility-content.landscape-detail-modal { max-width: 760px; }
 .utility-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; }
 .landscape-action-choices { flex-direction: column; }
 .landscape-action-pick {
@@ -1896,6 +1918,80 @@ body.in-game main {
   font-size: 0.85rem;
   opacity: 0.85;
   font-weight: normal;
+}
+
+.landscape-detail {
+  display: grid;
+  grid-template-columns: minmax(140px, 42%) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
+.landscape-detail-art-wrap {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.35);
+  aspect-ratio: 1;
+}
+
+.landscape-detail-art {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.landscape-detail-body h2 {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-display);
+}
+
+.landscape-detail-suit {
+  margin: 0 0 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.landscape-detail-actions {
+  display: grid;
+  gap: 0.65rem;
+  margin-bottom: 0.85rem;
+}
+
+.landscape-detail-action {
+  padding: 0.55rem 0.65rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.landscape-detail-action-label {
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 0.2rem;
+}
+
+.landscape-detail-action p,
+.landscape-detail-occupants p,
+.landscape-detail-muted {
+  margin: 0.25rem 0 0;
+  font-size: 0.85rem;
+  opacity: 0.9;
+}
+
+.landscape-detail-occupants {
+  padding-top: 0.65rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+@media (max-width: 640px) {
+  .landscape-detail {
+    grid-template-columns: 1fr;
+  }
 }
 
 .subconscious-piles { max-height: 50vh; overflow: auto; }

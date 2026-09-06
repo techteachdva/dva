@@ -17,6 +17,7 @@ import { subconsciousCount, subconsciousPilesForUI, isDreambeastPsycheCard } fro
 import { getNarratorView, listPhaseActionHints } from "./narrator.js";
 import { getCurrentObjective, rulesHtml, overviewHtml, getDreamerChipTooltip } from "./guide.js";
 import { consumePhasePulse, consumeRevealedTiles } from "./fx.js";
+import { getLandscapeActionSummary } from "./landscape-actions.js";
 
 function suitClass(suit) {
   return suit ? `suit-${suit}` : "";
@@ -1350,7 +1351,73 @@ export function showSubconsciousBrowse(state, onCardClick) {
 }
 
 export function hideUtilityModal() {
-  document.getElementById("utility-modal").classList.add("hidden");
+  const modal = document.getElementById("utility-modal");
+  modal.classList.add("hidden");
+  modal.querySelector(".utility-content")?.classList.remove("landscape-detail-modal");
+}
+
+export function showLandscapeDetail(state, tileId) {
+  const tile = state.board.find((t) => t.id === tileId);
+  if (!tile) return;
+
+  const modal = document.getElementById("utility-modal");
+  const body = document.getElementById("utility-modal-body");
+  const isBedFinal = tile.center && tile.finalRecurrenceSide;
+  const showFace = tile.revealed && !tile.wasteland;
+  const imageUrl = isBedFinal
+    ? "images/dreams/final-recurrence.png"
+    : showFace && tile.image
+      ? tile.image
+      : tile.wastelandImage || "images/landscapes/wasteland.png";
+
+  const displayName = isBedFinal
+    ? "The Bed — Final Recurrence"
+    : showFace
+      ? tile.name
+      : "Wasteland";
+
+  const suitLabel = showFace
+    ? (tile.suit ? `${suitIconHtml(tile.suit, { size: 16 })} ${SUIT_LABELS[tile.suit]}` : "None (The Bed)")
+    : "Hidden";
+
+  const actions = getLandscapeActionSummary(tile);
+  const actionRows = actions.length
+    ? actions.map((action) => `
+        <div class="landscape-detail-action">
+          <div class="landscape-detail-action-label">Action ${action.letter}</div>
+          <strong>${action.label}</strong>
+          <p>${action.description || ""}</p>
+        </div>
+      `).join("")
+    : `<p class="landscape-detail-muted">${showFace ? "No Meet actions available on this tile." : "Reveal this Landscape to see its actions."}</p>`;
+
+  const dreamers = state.players.filter((p) => p.alive && p.landscapeId === tile.id);
+  const occupants = [];
+  dreamers.forEach((p) => occupants.push(`Dreamer: ${p.name}`));
+  if (tile.encounter) occupants.push(`Dreambeast: ${tile.encounter.name}`);
+  if (tile.finalArchetype && !tile.finalArchetype.defeated) {
+    occupants.push(`Remaining Archetype: ${tile.finalArchetype.name}`);
+  }
+  const occupantText = occupants.length ? occupants.join("<br>") : "Unoccupied";
+
+  body.innerHTML = `
+    <div class="landscape-detail">
+      <div class="landscape-detail-art-wrap">
+        <img class="landscape-detail-art" src="${imageUrl}" alt="${displayName}">
+      </div>
+      <div class="landscape-detail-body">
+        <h2>${displayName}</h2>
+        <p class="landscape-detail-suit"><strong>Suit:</strong> ${suitLabel}</p>
+        <div class="landscape-detail-actions">${actionRows}</div>
+        <div class="landscape-detail-occupants">
+          <strong>Occupied by</strong>
+          <p>${occupantText}</p>
+        </div>
+      </div>
+    </div>
+  `;
+  modal.querySelector(".utility-content")?.classList.add("landscape-detail-modal");
+  modal.classList.remove("hidden");
 }
 
 let tutorialHighlightEl = null;

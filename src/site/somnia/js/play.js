@@ -1,5 +1,6 @@
 import { bindMusicToggle, initGameAudio, startGameRadio, bindButtonRipples, playSfx } from "./audio.js";
 import { initPanelLayout } from "./panel-layout.js";
+import { initBoardZoom, syncBoardZoomAfterRender, resetBoardZoom } from "./board-zoom.js";
 import { initPauseMenu, openPauseMenu } from "./pause-menu.js";
 import { initFxLayer, burstSparklesAtElement } from "./fx.js";
 import {
@@ -77,6 +78,7 @@ import {
   hideModal,
   showMindstreamPicker,
   showLandscapeActionPicker,
+  showLandscapeDetail,
   showDeckFlipPicker,
   showTradeControls,
   showRespawnPicker,
@@ -128,6 +130,7 @@ async function init() {
   bindModal();
   bindHelp();
   bindBoardResize();
+  initBoardZoom();
   bindFullscreenPrompt();
   bindRestart();
 
@@ -283,6 +286,7 @@ function startGame(config) {
     ["Reveal Phase: spend Lucidity to flip Landscapes on the hex map"],
   );
   showScreen("screen-game");
+  resetBoardZoom();
   resetHandSnapshots(state);
   renderAll();
   if (!hasSeenTutorial()) startTutorial();
@@ -546,7 +550,9 @@ function renderAll() {
   renderBoard(state, (id) => {
     handleBoardTileClick(state, id);
     renderAll();
+    if (!state.landscapePick) showLandscapeDetail(state, id);
   }, legalMoves, pickHighlights);
+  syncBoardZoomAfterRender();
   renderPlayers(state, (index) => {
     if (state.tradeMode && state.trade?.step === "pick-partner") {
       if (selectTradePartner(state, index)) {
