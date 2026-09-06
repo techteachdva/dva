@@ -48,6 +48,10 @@ import {
   createEffectHelpers,
   defeatFinalArchetype,
   sacrificeAcquiredForFinal,
+  canSpendMeetAction,
+  onExploreMove,
+  onExplorePhaseEnd,
+  onMeetPhaseEnd,
 } from "./effects.js";
 
 const effectHelpers = { spawnEncounter: null, beginFinalRecurrence: null };
@@ -57,6 +61,9 @@ function getEffectHelpers() {
     Object.assign(effectHelpers, createEffectHelpers(spawnEncounterOnLandscape));
     effectHelpers.resolveCardEffect = resolveCardEffect;
     effectHelpers.drawObjects = drawObjects;
+    effectHelpers.drawAdditionalDream = (s) => drawAdditionalDream(s);
+    effectHelpers.spawnEncounterWithCard = (s, landscapeId, card) =>
+      spawnEncounterOnLandscape(s, landscapeId, card);
   }
   return effectHelpers;
 }
@@ -79,6 +86,10 @@ function trackPsycheDraw(state, player, count) {
 }
 
 function canUseMeetAction(state, action) {
+  const player = activePlayer(state);
+  if (!canSpendMeetAction(state, player, action, MEET_ACTIONS)) {
+    return false;
+  }
   if (state.lastMeetAction === action) return false;
   if (state.meetActionsUsed >= state.meetActionBudget) return false;
   return true;
@@ -86,7 +97,7 @@ function canUseMeetAction(state, action) {
 
 function spendMeetAction(state, action) {
   if (!canUseMeetAction(state, action)) {
-    addLog(state, "Cannot repeat the same Meet action twice, or no actions remain.");
+    addLog(state, "Cannot use this Meet action (restricted or no actions remain).");
     return false;
   }
   state.meetActionsUsed += 1;
@@ -311,6 +322,50 @@ export function getPhaseAdvanceAction(state, handlers) {
   return actions.find((a) => a.advance && !a.disabled) || null;
 }
 
+export function resolvePendingDeathDream(state, onShowModal) {
+  if (!state.pendingDeathAdditionalDream) return null;
+  state.pendingDeathAdditionalDream = false;
+  addLog(state, "A new Dream begins for the fallen Dreamer…");
+  return drawAdditionalDream(state, onShowModal);
+}
+
+export function drawAdditionalDream(state, onShowModal) {
+  const head = headPlayer(state);
+  const card = state.dreamDeck.shift();
+  if (!card) {
+    checkDefeat(state);
+    return null;
+  }
+
+  state.activeDream = card;
+  if (!state.dreamDiscard) state.dreamDiscard = [];
+  state.dreamDiscard.push(card);
+
+  narrate(
+    state,
+    `Additional Dream: ${card.name}`,
+    card.text || "The Dreamscape shifts again.",
+    ["Resolve this Dream effect before continuing"],
+  );
+
+  if (card.type === "boss-dream" || card.boss) {
+    const encounter = { ...card, type: "dreambeast", instanceId: uid("enc") };
+    setEncounterOnLandscape(state, "bed", encounter);
+    addLog(state, `${card.name} awakens on The Bed!`);
+  } else if (card.type === "final" && card.id === "you-never-wake") {
+    resolveCardEffect(state, card, head, getEffectHelpers());
+  } else if (card.type === "final" && card.id === "final-recurrence") {
+    resolveCardEffect(state, card, head, getEffectHelpers());
+  } else {
+    resolveCardEffect(state, card, head, getEffectHelpers());
+  }
+
+  checkDefeat(state);
+  applySkeletonKeyAfterDream(state);
+  if (onShowModal) onShowModal(card);
+  return card;
+}
+
 export function drawDreamCard(state, onShowModal) {
   if (state.dreamDrawn) return null;
   const head = headPlayer(state);
@@ -428,6 +483,7 @@ export function moveDreamer(state, targetLandscapeId) {
     player.landscapeId = targetLandscapeId;
     state.selectedLandscapeId = targetLandscapeId;
     state.exploreMovesLeft -= 1;
+    onExploreMove(state);
     recordQuestEvent(state, "move_player", { count: 1 });
 
     if (to.wasteland) {
@@ -436,6 +492,7 @@ export function moveDreamer(state, targetLandscapeId) {
         state.psycheDiscard.push(discarded);
         recordQuestEvent(state, "discard_psyche", { count: 1, landscapeId: targetLandscapeId });
         addLog(state, `${player.name} discards 1 Psyche on Wasteland.`);
+        if (state.checkPsycheDeath) state.checkPsycheDeath(player);
       }
     } else {
       addLog(state, `${player.name} moves to ${to.name}. (${state.exploreMovesLeft} moves left)`);
@@ -542,6 +599,7 @@ export function meetEncounter(state, mode = "accept") {
       repressCard(state, repressed);
       recordQuestEvent(state, "discard_psyche", { count: 1, landscapeId: actor.landscapeId });
       addLog(state, `Repress cost: 1 Psyche sent to the Subconscious.`);
+      if (state.checkPsycheDeath) state.checkPsycheDeath(actor);
     }
     const drawn = drawPsycheForPlayer(state, actor, 1);
     trackPsycheDraw(state, actor, drawn.length);
@@ -851,14 +909,28 @@ export function useDreamerPower(state) {
   }
 }
 
-export function spawnEncounterOnLandscape(state, landscapeId) {
-  if (!state.dreambeastDeck.length) return null;
-  const beast = state.dreambeastDeck.shift();
-  const encounter = { ...beast, instanceId: uid("enc") };
-  setEncounterOnLandscape(state, landscapeId, encounter);
+export function spawnEncounterOnLandscape(state, landscapeId, beastCard = null) {
+  let beast;
+  if (beastCard) {
+    beast = { ...beastCard, instanceId: uid("enc") };
+  } else if (state.pickEncounterOnSpawn && state.dreambeastDeck.length >= 2) {
+    const first = state.dreambeastDeck.shift();
+    const second = state.dreambeastDeck.shift();
+    beast = (second.accept || 0) >= (first.accept || 0) ? second : first;
+    const other = beast === second ? first : second;
+    state.dreambeastDeck.unshift(other);
+    beast = { ...beast, instanceId: uid("enc") };
+    state.pickEncounterOnSpawn = false;
+    addLog(state, `Transformation: chose ${beast.name} over ${other.name}.`);
+  } else {
+    if (!state.dreambeastDeck.length) return null;
+    beast = { ...state.dreambeastDeck.shift(), instanceId: uid("enc") };
+    if (state.pickEncounterOnSpawn) state.pickEncounterOnSpawn = false;
+  }
+  setEncounterOnLandscape(state, landscapeId, beast);
   const tile = landscapeById(state, landscapeId);
   addLog(state, `${beast.name} appears on ${tile?.name || "the Dreamscape"}!`);
-  return encounter;
+  return beast;
 }
 
 export function spawnRandomEncounter(state) {
@@ -935,7 +1007,16 @@ export function handleBoardTileClick(state, tileId) {
 
 export function endPhase(state) {
   cancelLandscapePick(state);
+  const leaving = getPhase(state);
+  if (leaving === "Explore") onExplorePhaseEnd(state);
+  if (leaving === "Meet") onMeetPhaseEnd(state);
   advancePhase(state);
+  if (leaving === "Reveal" && state.skipExploreNextRound) {
+    state.skipExploreNextRound = false;
+    addLog(state, "Trapped: skipping Explore Phase.");
+    onExplorePhaseEnd(state);
+    advancePhase(state);
+  }
   checkDefeat(state);
   const phase = getPhase(state);
   narrate(

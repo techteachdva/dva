@@ -23,6 +23,7 @@ import {
   buildMindstreamDecks,
   buildObjectDeck,
   uid,
+  PSYCHE_STARTING_HAND,
 } from "./data.js";
 export function createInitialState(data, options) {
   const length = LENGTHS[options.lengthKey];
@@ -36,7 +37,7 @@ export function createInitialState(data, options) {
   const psycheDeck = buildPsycheDeck(data.psyche);
   const dreamDeck = insertBossDreams(buildDreamDeck(data.dreams, length.dreams), data.dreambeasts);
   const archetypeDeck = shuffle(data.archetypes.map((a) => ({ ...a, instanceId: uid("arch") })));
-  const mindstreamDecks = buildMindstreamDecks(data.mindstream, 2);
+  const mindstreamDecks = buildMindstreamDecks(data.mindstream, data.dreambeasts, data.objects);
   const objectDeck = buildObjectDeck(data.objects, 1);
   const dreambeastDeck = shuffle(
     data.dreambeasts
@@ -124,9 +125,24 @@ export function createInitialState(data, options) {
     pendingHeatingUp: false,
     persistentArchetypes: [],
     skeletonKeyPending: false,
+    abductionCarried: [],
+    meetOnlyRound: false,
+    bargainingDream: false,
+    temptationDream: false,
+    wanderlustTarget: 0,
+    wanderlustMoves: 0,
+    pickEncounterOnSpawn: false,
+    skipExploreNextRound: false,
+    rivalryEncountersOnBed: 0,
+    rivalryLeftover: 0,
+    paradoxMeet: false,
+    chaseDream: false,
+    chaseTrapped: [],
+    skipLandscapeActionsNextMeet: false,
   };
 
   beginRoundReveal(state);
+  state.checkPsycheDeath = (player) => checkDreamerPsycheDeath(state, player);
   return state;
 }
 
@@ -240,6 +256,20 @@ export function resetPhaseFlags(state) {
   state.tradeMode = false;
   state.trade = null;
   state.questRoundFlags = { discardedOnBed: false };
+  state.abductionCarried = [];
+  state.meetOnlyRound = false;
+  state.bargainingDream = false;
+  state.temptationDream = false;
+  state.wanderlustTarget = 0;
+  state.wanderlustMoves = 0;
+  state.pickEncounterOnSpawn = false;
+  state.skipExploreNextRound = false;
+  state.rivalryEncountersOnBed = 0;
+  state.rivalryLeftover = 0;
+  state.paradoxMeet = false;
+  state.chaseDream = false;
+  state.chaseTrapped = [];
+  state.skipLandscapeActionsNextMeet = false;
 }
 
 export function beginRoundReveal(state) {
@@ -260,24 +290,34 @@ export function beginRoundReveal(state) {
   addLog(state, `Round ${state.round}: Reveal — each Dreamer draws 2 Psyche.`);
 }
 
+export function checkDreamerPsycheDeath(state, player) {
+  if (!player?.alive || player.hand.length > 0) return false;
+  handleDreamerDeath(state, player);
+  return true;
+}
+
 export function handleDreamerDeath(state, player) {
-  addLog(state, `${player.name} had no Psyche and is lost to the Dreamscape!`);
-  const beast = state.dreambeastDeck.shift();
-  if (beast) {
-    setEncounterOnLandscape(state, player.landscapeId, { ...beast, instanceId: uid("beast") });
-    addLog(state, `${beast.name} spawns where ${player.name} fell.`);
-  }
-  player.alive = false;
-  player.hand = [];
+  addLog(state, `${player.name} has no Psyche left and dies in the Dream!`);
+
+  const objects = [...(player.objects || []), ...(player.persistent || [])];
+  objects.forEach((obj) => {
+    state.objectDiscard.push(obj);
+  });
   player.objects = [];
   player.persistent = [];
-  player.pendingRespawn = true;
-  if (state.availableDreamers.length) {
-    state.pendingRespawn = player.id;
-    addLog(state, "Choose a new Dreamer to continue on The Bed.");
-  } else {
-    addLog(state, "No Dreamers remain. The Dreamscape claims another soul.");
-  }
+
+  player.landscapeId = "bed";
+  player.hand = [];
+  player.alive = true;
+  player.pendingRespawn = false;
+  state.pendingRespawn = null;
+
+  drawPsycheForPlayer(state, player, PSYCHE_STARTING_HAND);
+  addLog(
+    state,
+    `${player.name} begins a new Dream on The Bed with ${PSYCHE_STARTING_HAND} Psyche. Objects discarded.`,
+  );
+  state.pendingDeathAdditionalDream = true;
 }
 
 export function respawnDreamer(state, playerId, dreamerId) {

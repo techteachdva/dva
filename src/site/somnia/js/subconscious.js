@@ -40,7 +40,11 @@ export function normalizeSubconscious(sub) {
 function pileForCard(sub, card) {
   if (card.type === "psyche-dreambeast" || card.isDreambeastPsyche) return sub.dreambeasts;
   if (card.type === "psyche") return sub.psyche;
-  if (card.type === "event" && card.suit && sub.mindstream[card.suit]) {
+  if (
+    ["event", "power-token", "draw-dream"].includes(card.type)
+    && card.suit
+    && sub.mindstream[card.suit]
+  ) {
     return sub.mindstream[card.suit];
   }
   if (card.type === "object") return sub.objects;
@@ -239,6 +243,9 @@ function beginRepressStep(state, step) {
       recordQuestEvent(state, "discard_psyche", { count: 1, landscapeId: player.landscapeId });
     }
     logRepress(state, `${player.name} Repressed ${card.name} → Subconscious.`);
+    if (step.source === "hand" && state.checkPsycheDeath) {
+      state.checkPsycheDeath(player);
+    }
     advanceResolutionQueue(state);
     return;
   }
@@ -319,6 +326,9 @@ export function pickRepressCard(state, instanceId) {
     const names = pending.picked.map((c) => c.name).join(", ");
     logRepress(state, `${player.name} Repressed ${pending.picked.length} card(s): ${names}.`);
     state.pendingRepress = null;
+    if (pending.source === "hand" && state.checkPsycheDeath) {
+      state.checkPsycheDeath(player);
+    }
     advanceResolutionQueue(state);
   }
   return true;
@@ -356,6 +366,16 @@ export function repressFromMindstreamSetup(state, suit, playerCount) {
   for (let i = 0; i < perPlayer && deck.length; i += 1) {
     repressCard(state, deck.shift());
   }
+}
+
+/** Wild Psyche cost: repress top card of each Mindstream deck. */
+export function repressTopMindstreamFromEachDeck(state) {
+  ["lucidity", "elasticity", "willpower"].forEach((suit) => {
+    const deck = state.mindstreamDecks?.[suit];
+    if (deck?.length) {
+      repressCard(state, deck.shift());
+    }
+  });
 }
 
 export function subconsciousPilesForUI(state) {

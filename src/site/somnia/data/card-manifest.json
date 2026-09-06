@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "sourcePdf": "Somnia 11 Print Ready.pdf",
+  "sourcePdf": "Somnia 12.pdf",
   "notes": "Page numbers refer to PDF sheet markers (-- N of 85 --). Crop regions are approximate card zones for digitization.",
   "landscapes": {
     "lava": { "page": 61, "image": "images/cards/digitized/landscapes/lava.png" },

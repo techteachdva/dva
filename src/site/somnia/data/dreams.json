@@ -1,86 +1,256 @@
 [
   {
-    "id": "heroism",
-    "name": "Heroism",
+    "id": "betrayal",
+    "name": "Betrayal",
     "type": "dream",
-    "image": "images/dreams/heroism.png",
-    "text": "You stand triumphant over your fallen foe and feel their essence enter your own. Each Persona Draws Psyche equal to their Willpower."
-  },
-  {
-    "id": "injury",
-    "name": "Injury",
-    "type": "dream",
-    "image": "images/dreams/injury.png",
-    "text": "You fall from a great height as the landscape undulates beneath your feet. Each Persona Discards Psyche Cards valued higher than their Willpower."
+    "image": "images/dreams/betrayal.png",
+    "text": "The person who has been helping you suddenly vanishes with your Objects. Each Persona Represses Objects from Hand equal to Willpower minus Lucidity."
   },
   {
     "id": "chase",
     "name": "Chase",
     "type": "dream",
     "image": "images/dreams/chase.png",
-    "text": "The thing behind you seems to be gaining on you. Spawn 1 Encounter on each Persona-occupied Landscape."
+    "text": "Spawn 1 Encounter on each Persona-occupied Landscape. If Elasticity exceeds Willpower, you may escape; otherwise Meet is your only action this round."
+  },
+  {
+    "id": "heroism",
+    "name": "Heroism",
+    "type": "dream",
+    "image": "images/dreams/heroism.png",
+    "text": "You stand triumphant over your fallen foe. Each Persona Draws Psyche equal to their Willpower."
+  },
+  {
+    "id": "injury",
+    "name": "Injury",
+    "type": "dream",
+    "image": "images/dreams/injury.png",
+    "text": "Each Persona Discards Psyche Cards valued higher than their Willpower."
+  },
+  {
+    "id": "judgement",
+    "name": "Judgement",
+    "type": "dream",
+    "image": "images/dreams/judgement.png",
+    "text": "Awaken Leviathan on Sea of Teeth or Endless Ocean and move Leviathan to the nearest occupied Landscape."
+  },
+  {
+    "id": "loss",
+    "name": "Loss",
+    "type": "dream",
+    "image": "images/dreams/loss.png",
+    "text": "Forget the four corners of the Patchwork Dreamscape. If corners are Wasteland, Forget adjacent Landscapes instead."
+  },
+  {
+    "id": "misunderstanding",
+    "name": "Misunderstanding",
+    "type": "dream",
+    "image": "images/dreams/misunderstanding.png",
+    "text": "Repress top Mindstream cards equal to the number of players plus 3."
+  },
+  {
+    "id": "mortality",
+    "name": "Mortality",
+    "type": "dream",
+    "image": "images/dreams/mortality.png",
+    "text": "Each Persona must Discard either 4 Psyche or 2 Objects."
+  },
+  {
+    "id": "abandonment",
+    "name": "Abandonment",
+    "type": "dream",
+    "image": "images/dreams/abandonment.png",
+    "text": "Repress all Active Encounters. Personae on the same Landscape move to adjacent empty Landscapes."
+  },
+  {
+    "id": "abduction",
+    "name": "Abduction",
+    "type": "dream",
+    "image": "images/dreams/abduction.png",
+    "text": "Move each Active Encounter 2 Landscapes away from The Bed; Personae moved with Encounters may only Meet this round."
+  },
+  {
+    "id": "absurdity",
+    "name": "Absurdity",
+    "type": "dream",
+    "image": "images/dreams/absurdity.png",
+    "text": "Draw Personae+1 cards from each Mindstream. For each Event drawn, Forget Landscapes referenced on it."
+  },
+  {
+    "id": "bargaining",
+    "name": "Bargaining",
+    "type": "dream",
+    "image": "images/dreams/bargaining.png",
+    "text": "All Personae may Discard 6 Psyche to Acquire 1 Archetype matching their suit."
   },
   {
     "id": "recovery",
     "name": "Recovery",
     "type": "dream",
     "image": "images/dreams/recovery.png",
-    "text": "The sun breaks through the misty clouds. Return 1 Card per Persona."
+    "text": "The sun breaks through the mist. Return 1 Card per Persona."
   },
   {
-    "id": "well-being",
-    "name": "Well Being",
+    "id": "responsibility",
+    "name": "Responsibility",
     "type": "dream",
-    "image": "images/dreams/well-being.png",
-    "text": "Suddenly you feel as if things are exactly the way they should be. All Personae Draw 3 Psyche."
-  },
-  {
-    "id": "quiet",
-    "name": "Quiet",
-    "type": "dream",
-    "image": "images/dreams/quiet.png",
-    "text": "Everything remains, nothing changes. Nothing Happens."
-  },
-  {
-    "id": "betrayal",
-    "name": "Betrayal",
-    "type": "dream",
-    "image": "images/dreams/betrayal.png",
-    "text": "The person who's been helping you suddenly vanishes with your Objects. Each Persona Represses Objects equal to Willpower minus Lucidity."
+    "image": "images/dreams/responsibility.png",
+    "text": "Each Persona Discards Psyche equal to player count unless they discard Willpower Psyche totaling player count."
   },
   {
     "id": "travel",
     "name": "Travel",
     "type": "dream",
     "image": "images/dreams/travel.png",
-    "text": "You find yourself flying over the Patchwork Dreamscape. Next Explore Phase, each Persona may move anywhere for free."
+    "text": "Next Explore Phase, each Persona may move anywhere for free. Cannot take Landscape Actions next Meet Phase."
+  },
+  {
+    "id": "wanderlust",
+    "name": "Wanderlust",
+    "type": "dream",
+    "image": "images/dreams/wanderlust.png",
+    "text": "If Personae Explore a total of three times player count Landscapes this round, all Personae Draw 3 Psyche."
+  },
+  {
+    "id": "transformation",
+    "name": "Transformation",
+    "type": "dream",
+    "image": "images/dreams/transformation.png",
+    "text": "Next Meet phase, when Spawning an Encounter you may draw the top 2 Encounters and pick 1."
+  },
+  {
+    "id": "trapped",
+    "name": "Trapped",
+    "type": "dream",
+    "image": "images/dreams/trapped.png",
+    "text": "Skip the next Explore Phase."
+  },
+  {
+    "id": "lost",
+    "name": "Lost",
+    "type": "dream",
+    "image": "images/dreams/lost.png",
+    "text": "Forget all Landscapes adjacent to The Bed. Personae there pay the Wasteland cost."
+  },
+  {
+    "id": "misplaced",
+    "name": "Misplaced",
+    "type": "dream",
+    "image": "images/dreams/misplaced.png",
+    "text": "Repress all your Objects unless you discard Willpower Psyche equal to the number of Objects you wish to save."
+  },
+  {
+    "id": "rivalry",
+    "name": "Rivalry",
+    "type": "dream",
+    "image": "images/dreams/rivalry.png",
+    "text": "Draw 1 Encounter per 2 Players and place them on The Bed. Leftover Encounters cost 1 Psyche each at end of Meet."
+  },
+  {
+    "id": "temptation",
+    "name": "Temptation",
+    "type": "dream",
+    "image": "images/dreams/temptation.png",
+    "text": "All Personae may discard up to 3 Objects to Draw that many Psyche."
+  },
+  {
+    "id": "paradox",
+    "name": "Paradox",
+    "type": "dream",
+    "image": "images/dreams/paradox.png",
+    "text": "Next Meet Phase treat all Willpower costs as Elasticity and Elasticity as Willpower."
+  },
+  {
+    "id": "powerlessness",
+    "name": "Powerlessness",
+    "type": "dream",
+    "image": "images/dreams/powerlessness.png",
+    "text": "Spawn 1 Encounter per Persona on unoccupied edge Landscapes."
+  },
+  {
+    "id": "well-being",
+    "name": "Well Being",
+    "type": "dream",
+    "image": "images/dreams/well-being.png",
+    "text": "All Personae Draw 3 Psyche."
+  },
+  {
+    "id": "quiet",
+    "name": "Quiet",
+    "type": "dream",
+    "image": "images/dreams/quiet.png",
+    "text": "Everything remains, nothing changes. Nothing Happens.",
+    "copies": 5
   },
   {
     "id": "final-recurrence",
     "name": "The Final Recurrence",
     "type": "final",
     "image": "images/dreams/final-recurrence.png",
-    "text": "All hopes and fears flood the Dreamscape. Remaining Archetypes must be Met with 12 Psyche Plays using opposing suits."
+    "text": "All hopes and fears flood the Dreamscape. Remaining Archetypes must be Met with 12 Psyche using opposing suits."
+  },
+  {
+    "id": "delta",
+    "name": "Final Recurrence: DELTA",
+    "type": "final",
+    "image": "images/dreams/delta.png",
+    "text": "Forget 4 Edge Landscapes. All Personae Discard 1 Psyche."
   },
   {
     "id": "theta",
     "name": "Final Recurrence: THETA",
     "type": "final",
     "image": "images/dreams/theta.png",
-    "text": "You relax. Forget 8 Edge Landscapes. All Personae Draw 2 Psyche."
+    "text": "Forget 8 Edge Landscapes. All Personae Draw 2 Psyche."
   },
   {
     "id": "alpha",
     "name": "Final Recurrence: ALPHA",
     "type": "final",
     "image": "images/dreams/alpha.png",
-    "text": "Everything is clear. Forget 4 Edge Landscapes. All Personae Draw 1 Object."
+    "text": "Forget 4 Edge Landscapes. All Personae Draw 1 Object."
+  },
+  {
+    "id": "beta",
+    "name": "Final Recurrence: BETA",
+    "type": "final",
+    "image": "images/dreams/beta.png",
+    "text": "Forget 4 Edge Landscapes. All Personae Draw 1 Psyche."
+  },
+  {
+    "id": "circadia",
+    "name": "Final Recurrence: Circadia",
+    "type": "final",
+    "image": "images/dreams/circadia.png",
+    "text": "All Personae draw up to 4 Psyche from Discard."
+  },
+  {
+    "id": "somnambulance",
+    "name": "Final Recurrence: Somnambulance",
+    "type": "final",
+    "image": "images/dreams/somnambulance.png",
+    "text": "All Personae Move 1 Landscape."
+  },
+  {
+    "id": "homeostasis",
+    "name": "Final Recurrence: Homeostasis",
+    "type": "final",
+    "image": "images/dreams/homeostasis.png",
+    "text": "Draw 5 Psyche."
+  },
+  {
+    "id": "pineal-purge",
+    "name": "Final Recurrence: Pineal Purge",
+    "type": "final",
+    "image": "images/dreams/pineal-purge.png",
+    "text": "Discard 3 Psyche."
   },
   {
     "id": "you-never-wake",
     "name": "You Never Wake Up",
     "type": "final",
     "image": "images/dreams/you-never-wake.png",
-    "text": "You Lose. Bottom of Final Recurrence Deck."
+    "text": "You Lose. Bottom of Final Recurrence Deck.",
+    "bottomPinned": true
   }
 ]

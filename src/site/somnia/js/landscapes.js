@@ -8,6 +8,7 @@ import { shuffle } from "./data.js";
 import { repressCard } from "./subconscious.js";
 import { narrate } from "./narrator.js";
 import { recordQuestEvent } from "./quests.js";
+import { isEdgeLandscape } from "./hex.js";
 
 /** Revealed, non-center, not wasteland — valid Forget targets. */
 export function forgettableTiles(state) {
@@ -195,6 +196,30 @@ export function requestForgetLandscapes(state, count) {
 /** @deprecated Import from state.js — delegates here. */
 export function forgetLandscapes(state, count) {
   requestForgetLandscapes(state, count);
+}
+
+/** Forget up to `count` revealed edge Landscapes (auto-pick when possible). */
+export function forgetEdgeLandscapes(state, count) {
+  if (count <= 0) return 0;
+  const edges = forgettableTiles(state).filter((t) => isEdgeLandscape(state, t));
+  if (!edges.length) {
+    requestForgetLandscapes(state, count);
+    return 0;
+  }
+  const picks = shuffle(edges).slice(0, count);
+  picks.forEach((t) => forgetTile(state, t));
+  if (picks.length) {
+    recordQuestEvent(state, "forget_landscape", { count: picks.length });
+    narrate(
+      state,
+      `Forgot ${picks.length} edge Landscape(s).`,
+      picks.map((t) => t.name).join(", "),
+    );
+  }
+  if (picks.length < count) {
+    requestForgetLandscapes(state, count - picks.length);
+  }
+  return picks.length;
 }
 
 export function triggerBedFinalRecurrence(state, reason) {

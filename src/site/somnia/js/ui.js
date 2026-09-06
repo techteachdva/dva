@@ -5,6 +5,7 @@ import {
   SUIT_LABELS,
   suitIconHtml,
   dreamerStatsHtml,
+  isWildPsyche,
 } from "./rules.js";
 import { handLimitForPlayer } from "./objects.js";
 import { getQuestStatus } from "./quests.js";
@@ -22,7 +23,9 @@ function cardTypeClass(card) {
   if (card.type === "dream" || card.type === "final" || card.type === "boss-dream") return "dream";
   if (card.type === "dreambeast" || card.boss || card.type === "psyche-dreambeast") return "dreambeast";
   if (card.type === "object") return "object";
-  if (card.type === "event") return card.suit || "event";
+  if (card.type === "event" || card.type === "power-token" || card.type === "draw-dream") {
+    return card.suit || "event";
+  }
   return card.suit || card.type || "";
 }
 
@@ -93,22 +96,30 @@ function renderPsycheCard(card, { selected, onClick, mini }) {
   }
   const el = document.createElement("button");
   el.type = "button";
+  const isWild = isWildPsyche(card);
   el.className = [
     "game-card",
     "psyche-card",
-    card.suit,
+    isWild ? "wild" : card.suit,
     selected ? "selected" : "",
     mini ? "mini" : "",
   ].filter(Boolean).join(" ");
 
-  const symbol = suitIconHtml(card.suit, { size: mini ? 14 : 18 });
-  const label = SUIT_LABELS[card.suit] || card.suit;
-
-  el.innerHTML = `
-    <span class="psyche-value">${card.value}</span>
-    <span class="psyche-suit ${suitClass(card.suit)}">${symbol}</span>
-    <span class="psyche-label">${label}</span>
-  `;
+  if (isWild) {
+    el.innerHTML = `
+      <span class="psyche-value">5</span>
+      <span class="psyche-suit wild-gradient" title="Wild — any suit">★</span>
+      <span class="psyche-label">Wild</span>
+    `;
+  } else {
+    const symbol = suitIconHtml(card.suit, { size: mini ? 14 : 18 });
+    const label = SUIT_LABELS[card.suit] || card.suit;
+    el.innerHTML = `
+      <span class="psyche-value">${card.value}</span>
+      <span class="psyche-suit ${suitClass(card.suit)}">${symbol}</span>
+      <span class="psyche-label">${label}</span>
+    `;
+  }
 
   if (onClick) el.addEventListener("click", onClick);
   return el;
@@ -210,6 +221,15 @@ export function showModal(card) {
         <h2>${card.name}</h2>
         <p>Accepted Dreambeast — counts as <strong>3 ${SUIT_LABELS[card.suit]} Psyche</strong> when pooled in Meet. When spent, it is Repressed to the Subconscious.</p>
         ${card.effect ? `<p><strong>Accept effect:</strong> ${card.effect}</p>` : ""}
+      `;
+    } else if (isWildPsyche(card)) {
+      detail.innerHTML = `
+        <div class="psyche-modal-face wild">
+          <span class="psyche-value large">5</span>
+          <span class="psyche-suit large wild-gradient">★</span>
+        </div>
+        <h2>Wild Psyche</h2>
+        <p>Counts as <strong>5 Psyche of any suit</strong> when played. After playing, Repress this card plus the top card of each Mindstream deck.</p>
       `;
     } else {
       detail.innerHTML = `

@@ -28,6 +28,7 @@ import {
   getDeckTop,
   getPhaseHint,
   getLegalExploreTargets,
+  resolvePendingDeathDream,
 } from "./game.js";
 import { initDevConsole } from "./dev-console.js";
 import { enableDevMode } from "./dev-commands.js";
@@ -475,6 +476,7 @@ function renderAll() {
   renderLog(state);
 
   renderPhaseActions(phaseActions);
+  resolvePendingDeathDream(state, showModal);
   maybeShowRespawn();
   maybeShowRepressPicker();
   maybeShowReturnPicker();

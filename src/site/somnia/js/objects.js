@@ -9,6 +9,7 @@ import { recordQuestEvent } from "./quests.js";
 import { repressCard, requestReturnCards } from "./subconscious.js";
 import { edgeLandscapes } from "./hex.js";
 import { checkObjectTagSet } from "./object-effects.js";
+import { psycheCardValue } from "./psyche.js";
 
 export function ensureObjectZones(player) {
   if (!player.persistent) player.persistent = [];
@@ -35,9 +36,9 @@ export function persistentMeetBonus(state, player) {
 export function sumEffectivePsycheValue(state, player, selectedCards) {
   if (!selectedCards.length) return 0;
   const hasBody = player.persistent?.some((o) => o.tags?.some((t) => t.startsWith("body")));
-  const base = selectedCards.reduce((sum, c) => sum + (c.value || 0), 0);
+  const base = selectedCards.reduce((sum, c) => sum + psycheCardValue(c), 0);
   if (!hasBody) return base;
-  const maxVal = Math.max(...selectedCards.map((c) => c.value || 0));
+  const maxVal = Math.max(...selectedCards.map((c) => psycheCardValue(c)));
   return base + maxVal;
 }
 

@@ -86,6 +86,19 @@ export function resetTutorialFlag() {
 /** Plain-language next step for the guide panel. */
 export function getCurrentObjective(state) {
   if (!state) return null;
+
+  if (state.pendingDeathAdditionalDream) {
+    return {
+      phase: getPhase(state),
+      suit: "lucidity",
+      title: "Dreamer died — new Dream",
+      steps: [
+        "A Dreamer lost all Psyche and died in the Dream.",
+        "They respawned on The Bed with 5 Psyche; an Additional Dream is resolving.",
+      ],
+    };
+  }
+
   const phase = getPhase(state);
   const player = activePlayer(state);
   const head = headPlayer(state);
@@ -242,10 +255,6 @@ export function getDreamerChipTooltip(state, player, index) {
   const isActive = index === state.activePlayerIndex;
   const name = player.name;
 
-  if (!player.alive) {
-    return `${name} is lost. Choose a new Dreamer to respawn on The Bed.`;
-  }
-
   if (phase === "Reveal") {
     if (player.isHead && isActive) {
       return `${name} ★ Head — Draw the Dream, then play blue Lucidity to reveal Landscapes.`;
@@ -374,6 +383,6 @@ export function rulesHtml() {
     </ul>
 
     <h3>Win & Lose</h3>
-    <p>Acquire Archetypes by completing both quests. Reach your point goal before Dreams run out. If a Dreamer has 0 Psyche at round start, they are lost (respawn on The Bed).</p>
+    <p>Acquire Archetypes by completing both quests. Reach your point goal before Dreams run out. Psyche cards are your health (start 5, max 10). At 0 Psyche you die in the Dream, discard Objects, draw back to 5, and resolve an Additional Dream.</p>
   `;
 }

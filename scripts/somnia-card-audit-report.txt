@@ -1,0 +1,35 @@
+=== Somnia Card Audit ===
+PDF: C:\Users\phili\Downloads\Interdisciplinary Review\Somnia 12.pdf
+PDF exists: True
+Extract: C:\Users\phili\Desktop\coding-projects\dva\scripts\somnia-12-pdf-extract.txt
+
+--- Psyche Deck ---
+  Suited cards: 45 (expected 45)
+  Wild cards:   6 (expected 6)
+  Total:        51 (expected 51)
+
+--- Deck counts (JSON / built) ---
+  Dreams (regular pool):     30 unique entries, 30 expanded
+  Dreams (final recurrence): 10
+  Dreambeasts (all):         33 (3 bosses)
+  Dreambeast encounter deck: 30
+  Objects:                   46
+  Landscapes (visible):      25
+  Archetypes:                12
+  Dreamers:                  6
+  Mindstream events (JSON):  41 (13 per suit avg)
+  Mindstream built decks:    3 × 70 = 210
+
+--- PDF vs JSON name match ---
+  Dreambeasts: 33/33 found in PDF
+  Objects: 46/46 found in PDF
+  Landscapes: 25/25 found in PDF
+  Dreams: 26/26 found in PDF
+  Archetypes: 12/12 found in PDF
+  Mindstream events: 41/41 found in PDF
+
+--- Legacy checks ---
+  maxValue:6 / copiesPerValue:3 in JS: none
+  psyche.json maxValue 6: False
+
+RESULT: Psyche deck PASS

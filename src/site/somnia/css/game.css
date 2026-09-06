@@ -1469,6 +1469,18 @@ body.in-game main {
   color: #ffe8e8;
 }
 
+.game-card.psyche-card.wild {
+  background: conic-gradient(from 210deg, #e84848, #f0c830, #4a9eff, #e84848);
+  border-color: rgba(255, 255, 255, 0.45);
+  color: #fff;
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.15);
+}
+
+.game-card.psyche-card.wild .psyche-suit.wild-gradient {
+  font-size: 1.1rem;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+}
+
 .psyche-value {
   font-family: var(--font-display);
   font-size: 1.75rem;

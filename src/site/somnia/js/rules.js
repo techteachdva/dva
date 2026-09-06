@@ -1,8 +1,26 @@
 /** SOMNIA 12.0 rules helpers */
 
-import { repressCard, isDreambeastPsycheCard } from "./subconscious.js";
+import {
+  repressCard,
+  isDreambeastPsycheCard,
+  repressTopMindstreamFromEachDeck,
+} from "./subconscious.js";
 import { canTradeBetween as hexCanTradeBetween } from "./hex.js";
 import { persistentMeetBonus, sumEffectivePsycheValue } from "./objects.js";
+import { PHASES } from "./data.js";
+import { isWildPsyche, psycheCardValue } from "./psyche.js";
+
+export { isWildPsyche, psycheCardValue };
+
+/** Wild Psyche counts as the active phase suit when played for phase actions. */
+export function cardCountsAsSuit(card, suit, state) {
+  if (!isWildPsyche(card)) return card.suit === suit;
+  const phase = PHASES[state.phaseIndex];
+  if (phase === "Reveal") return suit === "lucidity";
+  if (phase === "Explore") return suit === "elasticity";
+  if (phase === "Meet" && !state.meetActionBudget) return suit === "willpower";
+  return true;
+}
 export const SUIT_LABELS = {
   lucidity: "Lucidity",
   elasticity: "Elasticity",
@@ -84,12 +102,12 @@ export function cardOwner(state, card) {
 }
 
 export function selectedBySuit(state, player, suit) {
-  return selectedCards(state, player).filter((c) => c.suit === suit);
+  return selectedCards(state, player).filter((c) => cardCountsAsSuit(c, suit, state));
 }
 
 export function sumSelectedValue(state, player, suit = null) {
   const cards = suit ? selectedBySuit(state, player, suit) : selectedCards(state, player);
-  return cards.reduce((sum, c) => sum + (c.value || 0), 0);
+  return cards.reduce((sum, c) => sum + psycheCardValue(c), 0);
 }
 
 export function canSelectCard(state, card, phase, player = null) {
@@ -105,11 +123,11 @@ export function canSelectCard(state, card, phase, player = null) {
 
   if (phase === "Reveal") {
     if (selected.length >= 2) return false;
-    return card.suit === "lucidity";
+    return card.suit === "lucidity" || isWildPsyche(card);
   }
   if (phase === "Explore") {
     if (selected.length >= 2) return false;
-    return card.suit === "elasticity";
+    return card.suit === "elasticity" || isWildPsyche(card);
   }
   if (phase === "Meet") {
     if (state.meetActionBudget > 0 && state.meetActionsUsed < state.meetActionBudget) {
@@ -118,7 +136,7 @@ export function canSelectCard(state, card, phase, player = null) {
     }
     if (state.meetActionBudget === 0) {
       if (selected.length >= 2) return false;
-      return card.suit === "willpower";
+      return card.suit === "willpower" || isWildPsyche(card);
     }
     return selected.length < 3;
   }
@@ -134,13 +152,15 @@ export function revealBudget(state, player) {
 export function exploreBudget(state, player) {
   const played = sumSelectedValue(state, player, "elasticity");
   if (played < 1) return 0;
-  return played + totalStat(player, "elasticity");
+  const stat = state.paradoxMeet ? "willpower" : "elasticity";
+  return played + totalStat(player, stat);
 }
 
 export function meetActionBudgetFromWillpower(state, player) {
   const played = sumSelectedValue(state, player, "willpower");
   if (played < 1) return 0;
-  return played + totalStat(player, "willpower");
+  const stat = state.paradoxMeet ? "elasticity" : "willpower";
+  return played + totalStat(player, stat);
 }
 
 export function meetPlayTotal(state, player) {
@@ -171,6 +191,11 @@ export function coopMeetPlayTotal(state) {
 }
 
 function routeSpentHandCard(state, card, { toRepress = false } = {}) {
+  if (isWildPsyche(card)) {
+    repressCard(state, card);
+    repressTopMindstreamFromEachDeck(state);
+    return;
+  }
   if (toRepress || isDreambeastPsycheCard(card)) {
     repressCard(state, card);
   } else {
@@ -184,6 +209,7 @@ export function discardSelected(state, player, { toRepress = false } = {}) {
   selected.forEach((card) => routeSpentHandCard(state, card, { toRepress }));
   state.selectedHand = [];
   state.pendingPowerBonus = 0;
+  if (state.checkPsycheDeath) state.checkPsycheDeath(player);
   return selected;
 }
 
@@ -197,6 +223,8 @@ export function discardAllSelected(state, { toRepress = false } = {}) {
     player.hand = player.hand.filter((c) => !ids.has(c.instanceId));
     selected.forEach((card) => routeSpentHandCard(state, card, { toRepress }));
     byPlayer.push({ player, cards: selected });
+    if (state.checkPsycheDeath) state.checkPsycheDeath(player);
+  });
   });
   state.selectedHand = [];
   state.pendingPowerBonus = 0;
@@ -242,8 +270,10 @@ export function validateBossPlayShape(encounter, cards) {
     if (cards.length !== 3) {
       return { ok: false, message: "Cerberus requires a Set: exactly 3 Psyche (same value or suit)." };
     }
-    const sameValue = cards.every((c) => c.value === cards[0].value);
-    const sameSuit = cards.every((c) => c.suit === cards[0].suit);
+    const nonWild = cards.filter((c) => !isWildPsyche(c));
+    if (nonWild.length <= 1) return { ok: true };
+    const sameValue = nonWild.every((c) => psycheCardValue(c) === psycheCardValue(nonWild[0]));
+    const sameSuit = nonWild.every((c) => c.suit === nonWild[0].suit);
     if (!sameValue && !sameSuit) {
       return { ok: false, message: "Cerberus Set: all 3 Psyche must share the same value or suit." };
     }
@@ -254,7 +284,7 @@ export function validateBossPlayShape(encounter, cards) {
     if (cards.length < 2) {
       return { ok: false, message: "Double requires a Pair: at least 2 Psyche with matching values." };
     }
-    const values = cards.map((c) => c.value);
+    const values = cards.map((c) => psycheCardValue(c));
     const hasPair = values.some((v) => values.filter((x) => x === v).length >= 2);
     if (!hasPair) {
       return { ok: false, message: "Double Pair: at least 2 played Psyche must share the same value." };
@@ -266,8 +296,10 @@ export function validateBossPlayShape(encounter, cards) {
     if (cards.length !== 3) {
       return { ok: false, message: "Leviathan requires Balance: exactly 3 Psyche, one of each suit." };
     }
-    const suits = new Set(cards.map((c) => c.suit));
-    if (suits.size !== 3) {
+    const suited = cards.filter((c) => !isWildPsyche(c));
+    const wildCount = cards.length - suited.length;
+    const suits = new Set(suited.map((c) => c.suit));
+    if (suits.size + wildCount < 3) {
       return { ok: false, message: "Leviathan Balance: play one Lucidity, Elasticity, and Willpower Psyche." };
     }
     return { ok: true };

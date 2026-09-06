@@ -275,7 +275,7 @@ const COMMANDS = {
       if (!["lucidity", "elasticity", "willpower"].includes(suit)) {
         return fail("Suit: lucidity | elasticity | willpower");
       }
-      if (Number.isNaN(value) || value < 1) return fail("Value must be 1–6");
+      if (Number.isNaN(value) || value < 1 || value > 5) return fail("Value must be 1–5");
       for (let i = 0; i < count; i += 1) {
         player.hand.push({
           id: `${suit}-${value}`,

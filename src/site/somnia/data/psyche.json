@@ -1,6 +1,11 @@
 {
-  "minValue": 1,
-  "maxValue": 6,
-  "copiesPerValue": 3,
-  "suits": ["lucidity", "elasticity", "willpower"]
+  "suits": ["lucidity", "elasticity", "willpower"],
+  "distribution": {
+    "1": 5,
+    "2": 4,
+    "3": 3,
+    "4": 2,
+    "5": 1
+  },
+  "wildCount": 6
 }
