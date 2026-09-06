@@ -185,11 +185,13 @@ export function getPhaseActions(state, handlers) {
       label: budget >= 1
         ? `Reveal Landscapes (${budget} for team)`
         : "Reveal Landscapes (select Lucidity)",
-      hint: best
-        ? `One Dreamer spends 1–2 Lucidity — ${best.name} adds +${totalStat(best, stat)} (best bonus).`
-        : "One Dreamer spends Lucidity to set everyone's reveal budget.",
+      hint: !state.dreamDrawn
+        ? "Draw & Resolve the Dream first, then spend Lucidity to reveal Landscapes."
+        : best
+          ? `One Dreamer spends 1–2 Lucidity — ${best.name} adds +${totalStat(best, stat)} (best bonus).`
+          : "One Dreamer spends Lucidity to set everyone's reveal budget.",
       section: "main",
-      disabled: state.revealLandscapeUsed || budget < 1,
+      disabled: !state.dreamDrawn || state.revealLandscapeUsed || budget < 1,
       onClick: handlers.revealLandscape,
     });
     actions.push({
@@ -198,6 +200,8 @@ export function getPhaseActions(state, handlers) {
       advance: true,
       hidden: true,
       primary: true,
+      disabled: !state.dreamDrawn,
+      hint: !state.dreamDrawn ? "Draw & Resolve the Dream before advancing to Explore." : undefined,
       onClick: handlers.nextPhase,
     });
   }
@@ -482,6 +486,10 @@ export function drawDreamCard(state, onShowModal) {
 }
 
 export function revealLandscape(state) {
+  if (!state.dreamDrawn) {
+    narrate(state, "Draw the Dream first", "Resolve the active Dream before spending Lucidity to reveal Landscapes.");
+    return;
+  }
   const player = findPhaseContributor(state);
   if (!player) {
     const best = bestPhaseContributor(state);
@@ -1206,6 +1214,10 @@ export function handleBoardTileClick(state, tileId) {
 export function endPhase(state) {
   cancelLandscapePick(state);
   const leaving = getPhase(state);
+  if (leaving === "Reveal" && !state.dreamDrawn) {
+    narrate(state, "Draw the Dream first", "Resolve the active Dream before advancing to Explore.");
+    return;
+  }
   if (leaving === "Explore") onExplorePhaseEnd(state);
   if (leaving === "Meet") onMeetPhaseEnd(state);
   advancePhase(state);
@@ -1257,8 +1269,8 @@ export function getPhaseHint(state) {
   const head = headPlayer(state);
   if (phase === "Reveal") {
     const parts = [COOP_PLAY_TIP];
-    if (!state.dreamDrawn) parts.push(`${head.name} (★) Dream not drawn yet.`);
-    if (!state.revealLandscapeUsed) parts.push("One Dreamer spends Lucidity for team reveals.");
+    if (!state.dreamDrawn) parts.push(`${head.name} (★) Draw & Resolve the Dream first.`);
+    else if (!state.revealLandscapeUsed) parts.push("One Dreamer spends Lucidity for team reveals.");
     return parts.join(" ");
   }
   if (phase === "Explore") {

@@ -215,7 +215,69 @@ function sourceCards(player, source) {
   return [];
 }
 
+function aliveHandOwners(state) {
+  return state.players.filter((p) => p.alive);
+}
+
+function collectiveHandPool(state) {
+  const pool = [];
+  aliveHandOwners(state).forEach((player) => {
+    (player.hand || []).forEach((card) => {
+      pool.push({ player, card });
+    });
+  });
+  return pool;
+}
+
+function findCollectiveHandCard(state, instanceId) {
+  for (const player of aliveHandOwners(state)) {
+    const card = (player.hand || []).find((c) => c.instanceId === instanceId);
+    if (card) return { player, card };
+  }
+  return null;
+}
+
 function beginRepressStep(state, step) {
+  if (step.collective && step.source === "hand") {
+    const available = collectiveHandPool(state);
+    const needed = step.count;
+
+    if (needed <= 0 || available.length === 0) {
+      state.pendingRepress = {
+        source: step.source,
+        collective: true,
+        playerId: null,
+        remaining: needed,
+        picked: [],
+        reason: step.reason,
+        confirmEmpty: true,
+      };
+      return;
+    }
+
+    if (needed === 1 && available.length === 1) {
+      const { player, card } = available[0];
+      removeFromSource(player, step.source, card.instanceId);
+      repressCard(state, card);
+      recordQuestEvent(state, "discard_psyche", { count: 1, landscapeId: player.landscapeId });
+      logRepress(state, `Team Repressed ${card.name} → Subconscious.`);
+      if (state.checkPsycheDeath) state.checkPsycheDeath(player);
+      advanceResolutionQueue(state);
+      return;
+    }
+
+    state.pendingRepress = {
+      source: step.source,
+      collective: true,
+      playerId: null,
+      remaining: needed,
+      picked: [],
+      reason: step.reason,
+      confirmEmpty: false,
+    };
+    return;
+  }
+
   const player = playerById(state, step.playerId);
   if (!player) {
     advanceResolutionQueue(state);
@@ -298,24 +360,54 @@ export function enqueueRepressFromHand(state, player, count, { reason = "" } = {
   }
 }
 
+export function enqueueCollectiveRepressFromHand(state, count, { reason = "" } = {}) {
+  state.resolutionQueue = state.resolutionQueue || [];
+  state.resolutionQueue.push({
+    type: "repress",
+    source: "hand",
+    collective: true,
+    count,
+    reason: reason || `Team: Repress ${count} Psyche card(s).`,
+  });
+  if (!state.pendingRepress && !state.pendingReturn) {
+    advanceResolutionQueue(state);
+  }
+}
+
 function advanceResolutionQueue(state) {
   if (state.pendingRepress || state.pendingReturn) return;
   const next = state.resolutionQueue?.shift();
-  if (!next) return;
+  if (!next) {
+    if (typeof state.onResolutionIdle === "function") {
+      const fn = state.onResolutionIdle;
+      state.onResolutionIdle = null;
+      fn(state);
+    }
+    return;
+  }
   if (next.type === "repress") beginRepressStep(state, next);
 }
 
 export function pickRepressCard(state, instanceId) {
   const pending = state.pendingRepress;
   if (!pending || pending.confirmEmpty) return false;
-
-  const player = playerById(state, pending.playerId);
-  if (!player) return false;
-
-  const pool = sourceCards(player, pending.source);
-  const card = pool.find((c) => c.instanceId === instanceId);
-  if (!card || pending.picked.some((c) => c.instanceId === instanceId)) return false;
   if (pending.picked.length >= pending.remaining) return false;
+  if (pending.picked.some((c) => c.instanceId === instanceId)) return false;
+
+  let player;
+  let card;
+  if (pending.collective) {
+    const found = findCollectiveHandCard(state, instanceId);
+    if (!found) return false;
+    player = found.player;
+    card = found.card;
+  } else {
+    player = playerById(state, pending.playerId);
+    if (!player) return false;
+    const pool = sourceCards(player, pending.source);
+    card = pool.find((c) => c.instanceId === instanceId);
+    if (!card) return false;
+  }
 
   removeFromSource(player, pending.source, instanceId);
   repressCard(state, card);
@@ -326,7 +418,11 @@ export function pickRepressCard(state, instanceId) {
 
   if (pending.picked.length >= pending.remaining) {
     const names = pending.picked.map((c) => c.name).join(", ");
-    logRepress(state, `${player.name} Repressed ${pending.picked.length} card(s): ${names}.`);
+    if (pending.collective) {
+      logRepress(state, `Team Repressed ${pending.picked.length} Psyche card(s): ${names}.`);
+    } else {
+      logRepress(state, `${player.name} Repressed ${pending.picked.length} card(s): ${names}.`);
+    }
     state.pendingRepress = null;
     if (pending.source === "hand" && state.checkPsycheDeath) {
       state.checkPsycheDeath(player);
@@ -340,15 +436,16 @@ export function confirmRepressStep(state) {
   const pending = state.pendingRepress;
   if (!pending) return;
 
-  const player = playerById(state, pending.playerId);
-  if (pending.confirmEmpty && player) {
+  const player = pending.collective ? null : playerById(state, pending.playerId);
+  const subject = pending.collective ? "Team" : player?.name;
+  if (pending.confirmEmpty && subject) {
     if (pending.remaining <= 0) {
-      logRepress(state, `${player.name}: nothing to Repress — continuing.`);
+      logRepress(state, `${subject}: nothing to Repress — continuing.`);
     } else {
-      logRepress(state, `${player.name}: no ${pending.source === "objects" ? "Objects" : "Psyche"} to Repress (${pending.picked.length}/${pending.remaining} chosen).`);
+      logRepress(state, `${subject}: no ${pending.source === "objects" ? "Objects" : "Psyche"} to Repress (${pending.picked.length}/${pending.remaining} chosen).`);
     }
-  } else if (player && pending.picked.length < pending.remaining) {
-    logRepress(state, `${player.name} Repressed ${pending.picked.length}/${pending.remaining} (all available).`);
+  } else if (subject && pending.picked.length < pending.remaining) {
+    logRepress(state, `${subject} Repressed ${pending.picked.length}/${pending.remaining} (all available).`);
   }
 
   state.pendingRepress = null;

@@ -93,7 +93,7 @@ export function phaseSuitForOpening(phase) {
 /** True while the table is still waiting for one Dreamer to spend Psyche and set the phase budget. */
 export function phaseOpeningActive(state) {
   const phase = PHASES[state.phaseIndex];
-  if (phase === "Reveal") return !state.revealLandscapeUsed && !state.landscapePick;
+  if (phase === "Reveal") return state.dreamDrawn && !state.revealLandscapeUsed && !state.landscapePick;
   if (phase === "Explore") return !state.exploreActivated;
   if (phase === "Meet") return !state.meetActionBudget;
   return false;

@@ -886,9 +886,14 @@ export function renderGuidePanel(state, actions = []) {
     ? `<div class="guide-actions"><h4>Available now</h4><ul>${actionHints.map((h) => `<li>${formatGuideStep(h)}</li>`).join("")}</ul></div>`
     : "";
 
+  const suitKey = obj.suit || null;
+  const suitHeader = suitKey
+    ? `<span class="guide-icon">${suitIconHtml(suitKey, { size: 16 })}</span>`
+    : "";
+
   el.innerHTML = `
-    <div class="guide-header suit-${obj.suit || "lucidity"}">
-      <span class="guide-icon">${suitIconHtml(obj.suit || "lucidity", { size: 16 })}</span>
+    <div class="guide-header${suitKey ? ` suit-${suitKey}` : ""}">
+      ${suitHeader}
       <span class="guide-title">${obj.title}</span>
       <span class="guide-phase-tag">${obj.phase} Phase</span>
     </div>
@@ -1265,10 +1270,13 @@ export function showRepressPicker(state, onPick, onConfirm) {
   const pending = state.pendingRepress;
   if (!pending) return;
 
-  const player = state.players.find((p) => p.id === pending.playerId);
-  const playerName = player?.name || "Dreamer";
+  const collective = !!pending.collective;
+  const player = collective ? null : state.players.find((p) => p.id === pending.playerId);
+  const playerName = collective ? "All Dreamers" : (player?.name || "Dreamer");
   const sourceLabel = pending.source === "objects" ? "Objects" : "Psyche cards";
-  const pool = pending.source === "objects" ? (player?.objects || []) : (player?.hand || []);
+  const pool = collective
+    ? state.players.filter((p) => p.alive).flatMap((p) => p.hand || [])
+    : (pending.source === "objects" ? (player?.objects || []) : (player?.hand || []));
   const picked = pending.picked.length;
   const needed = pending.remaining;
   const isEmpty = pending.confirmEmpty;
@@ -1279,7 +1287,9 @@ export function showRepressPicker(state, onPick, onConfirm) {
   } else if (isEmpty && pool.length === 0) {
     instruction = `No ${sourceLabel} available to Repress (${needed} required).`;
   } else {
-    instruction = `Choose ${needed - picked} more ${sourceLabel} to Repress (${picked}/${needed} selected).`;
+    instruction = collective
+      ? `Choose ${needed - picked} more Psyche from any hand (${picked}/${needed} selected).`
+      : `Choose ${needed - picked} more ${sourceLabel} to Repress (${picked}/${needed} selected).`;
   }
 
   body.innerHTML = `
@@ -1297,17 +1307,38 @@ export function showRepressPicker(state, onPick, onConfirm) {
   if (!pool.length) {
     container.innerHTML = "<p class='resolution-empty'>Nothing in hand to choose — click Continue.</p>";
   } else if (!isEmpty) {
-    const row = document.createElement("div");
-    row.className = "mini-card-row";
-    pool.forEach((card) => {
-      const selected = pending.picked.some((c) => c.instanceId === card.instanceId);
-      row.appendChild(renderCard(card, {
-        mini: true,
-        selected,
-        onClick: () => onPick(card.instanceId),
-      }));
-    });
-    container.appendChild(row);
+    if (collective) {
+      state.players.filter((p) => p.alive).forEach((p) => {
+        if (!p.hand?.length) return;
+        const section = document.createElement("div");
+        section.className = "repress-player-section";
+        section.innerHTML = `<h4>${p.name}</h4>`;
+        const row = document.createElement("div");
+        row.className = "mini-card-row";
+        p.hand.forEach((card) => {
+          const selected = pending.picked.some((c) => c.instanceId === card.instanceId);
+          row.appendChild(renderCard(card, {
+            mini: true,
+            selected,
+            onClick: () => onPick(card.instanceId),
+          }));
+        });
+        section.appendChild(row);
+        container.appendChild(section);
+      });
+    } else {
+      const row = document.createElement("div");
+      row.className = "mini-card-row";
+      pool.forEach((card) => {
+        const selected = pending.picked.some((c) => c.instanceId === card.instanceId);
+        row.appendChild(renderCard(card, {
+          mini: true,
+          selected,
+          onClick: () => onPick(card.instanceId),
+        }));
+      });
+      container.appendChild(row);
+    }
   }
 
   body.querySelector("#repress-confirm").addEventListener("click", () => {
@@ -1354,6 +1385,84 @@ export function hideUtilityModal() {
   const modal = document.getElementById("utility-modal");
   modal.classList.add("hidden");
   modal.querySelector(".utility-content")?.classList.remove("landscape-detail-modal");
+  modal.querySelector(".utility-content")?.classList.remove("phase-skip-modal");
+}
+
+function bindUtilityModalActions(body, { onCancel } = {}) {
+  const modal = document.getElementById("utility-modal");
+  const backdrop = modal?.querySelector(".utility-backdrop");
+  const closeBtn = modal?.querySelector(".utility-close");
+  const cancel = () => {
+    hideUtilityModal();
+    onCancel?.();
+  };
+  backdrop?.addEventListener("click", cancel, { once: true });
+  closeBtn?.addEventListener("click", cancel, { once: true });
+}
+
+export function showPhaseSkipConfirm({ title, message, confirmLabel = "Continue", onConfirm, onCancel }) {
+  const modal = document.getElementById("utility-modal");
+  const body = document.getElementById("utility-modal-body");
+  body.innerHTML = `
+    <div class="phase-skip-confirm">
+      <h2>${title}</h2>
+      <p>${message}</p>
+      <div class="utility-actions">
+        <button type="button" class="btn" id="phase-skip-cancel">Stay</button>
+        <button type="button" class="btn primary" id="phase-skip-confirm">${confirmLabel}</button>
+      </div>
+    </div>
+  `;
+  modal.querySelector(".utility-content")?.classList.add("phase-skip-modal");
+  body.querySelector("#phase-skip-cancel").addEventListener("click", () => {
+    hideUtilityModal();
+    onCancel?.();
+  });
+  body.querySelector("#phase-skip-confirm").addEventListener("click", () => {
+    hideUtilityModal();
+    onConfirm?.();
+  });
+  bindUtilityModalActions(body, { onCancel });
+  modal.classList.remove("hidden");
+}
+
+export function showMeetDreambeastSkipConfirm({
+  beastCount,
+  roster = "",
+  onRepressSouls,
+  onConsumeTimeline,
+  onCancel,
+}) {
+  const modal = document.getElementById("utility-modal");
+  const body = document.getElementById("utility-modal-body");
+  const n = beastCount;
+  body.innerHTML = `
+    <div class="phase-skip-confirm meet-beast-skip">
+      <h2>Dreambeasts remain</h2>
+      <p>You're ending <strong>Meet</strong> without spending <strong>Willpower</strong> for shared actions.</p>
+      <p><strong>${n} Dreambeast${n === 1 ? "" : "s"}</strong> still roam the Dreamscape${roster}. They hunger — pay the toll or they will <strong>consume the Timeline</strong> or <strong>consume your souls</strong>.</p>
+      <div class="utility-actions phase-skip-choices">
+        <button type="button" class="btn" id="meet-skip-cancel">Stay in Meet</button>
+        <button type="button" class="btn" id="meet-skip-repress">Repress ${n} Psyche</button>
+        <button type="button" class="btn primary" id="meet-skip-discard">Discard ${n} Dreams</button>
+      </div>
+    </div>
+  `;
+  modal.querySelector(".utility-content")?.classList.add("phase-skip-modal");
+  body.querySelector("#meet-skip-cancel").addEventListener("click", () => {
+    hideUtilityModal();
+    onCancel?.();
+  });
+  body.querySelector("#meet-skip-repress").addEventListener("click", () => {
+    hideUtilityModal();
+    onRepressSouls?.();
+  });
+  body.querySelector("#meet-skip-discard").addEventListener("click", () => {
+    hideUtilityModal();
+    onConsumeTimeline?.();
+  });
+  bindUtilityModalActions(body, { onCancel });
+  modal.classList.remove("hidden");
 }
 
 export function showLandscapeDetail(state, tileId) {

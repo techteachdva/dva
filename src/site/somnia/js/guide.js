@@ -148,7 +148,7 @@ export function getCurrentObjective(state) {
       if (!state.dreamDrawn) {
         steps.push(`When the group agrees, anyone clicks **Draw & Resolve Dream** (${head.name} is Head ★).`);
       }
-      if (!state.revealLandscapeUsed) {
+      if (state.dreamDrawn && !state.revealLandscapeUsed) {
         steps.push(
           "One Dreamer spends **1–2 Lucidity** to set the team reveal budget.",
           best
@@ -161,10 +161,12 @@ export function getCurrentObjective(state) {
       }
       return {
         phase: "Reveal",
-        suit: "lucidity",
-        title: state.dreamDrawn ? "Reveal Landscapes" : "Plan the Reveal phase",
+        suit: state.dreamDrawn ? "lucidity" : null,
+        title: state.dreamDrawn ? "Reveal Landscapes" : "Draw the Dream",
         steps,
-        tip: "Draw the Dream and spend Lucidity in whatever order helps the team.",
+        tip: state.dreamDrawn
+          ? "After the Dream is resolved, one Dreamer spends Lucidity for team reveals."
+          : "Draw & Resolve the Dream first — Lucidity reveals unlock afterward.",
       };
     }
     if (state.landscapePick?.mode === "reveal" && !state.revealLandscapeUsed) {

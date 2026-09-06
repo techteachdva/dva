@@ -45,6 +45,7 @@ import {
   getLegalExploreTargets,
   resolvePendingDeathDream,
 } from "./game.js";
+import { requestEndPhase } from "./phase-skip.js";
 import { initDevConsole } from "./dev-console.js";
 import { enableDevMode } from "./dev-commands.js";
 import { narrate } from "./narrator.js";
@@ -537,7 +538,7 @@ function renderAll() {
     useDreamerPower: () => { useDreamerPower(state); renderAll(); },
     defeatFinalArchetype: () => { handleDefeatFinalArchetype(state); renderAll(); },
     sacrificeForFinal: () => { handleSacrificeForFinal(state); renderAll(); },
-    nextPhase: () => { endPhase(state); renderAll(); },
+    nextPhase: () => { requestEndPhase(state, () => renderAll()); },
   };
 
   const phaseActions = getPhaseActions(state, handlers);
