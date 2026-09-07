@@ -88,6 +88,7 @@ import { playSfx } from "./audio.js";
 import { markPhasePulse } from "./fx.js";
 import { recordQuestEvent } from "./quests.js";
 import { COOP_PLAY_TIP } from "./guide.js";
+import { notifyTutorialEncounterResolved } from "./tutorial-mode.js";
 import {
   resolveCardEffect,
   createEffectHelpers,
@@ -814,6 +815,7 @@ export function meetEncounter(state, mode = "accept") {
   const landscapeId = state.activeEncounterLandscapeId;
   if (landscapeId) {
     recordQuestEvent(state, "meet_on_landscape", { landscapeId });
+    notifyTutorialEncounterResolved(state, landscapeId);
     if (encounter.boss || encounter.id === "cerberus" || encounter.id === "double" || encounter.id === "leviathan") {
       recordQuestEvent(state, "meet_boss", { bossId: encounter.id });
     }

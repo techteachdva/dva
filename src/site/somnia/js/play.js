@@ -455,6 +455,9 @@ function handleTutorialSkip() {
 }
 
 function handleTutorialNext() {
+  const current = syncTutorial(state);
+  if (current?.step?.until && !current.canAdvance) return;
+
   const fromRect = getTutorialSpotlightRect();
   advanceTutorialStep(state);
   if (state.tutorialComplete) {
@@ -463,7 +466,7 @@ function handleTutorialNext() {
     document.body.classList.remove("tutorial-mode-active");
     showEndScreen(
       true,
-      "Tutorial complete! You learned Reveal, Explore, Meet, Psyche, Power Tokens, Archetypes, Dreams, and Boss spawning.",
+      "Tutorial complete! You learned R.E.M., Encounters, Landscape actions, Dreams, Bosses, Power Tokens, and the Subconscious. Start a real game from the setup screen.",
     );
     return;
   }
@@ -499,7 +502,7 @@ function syncInteractiveTutorial() {
     document.body.classList.remove("tutorial-mode-active");
     showEndScreen(
       true,
-      "Tutorial complete! You learned Reveal, Explore, Meet, Psyche, Power Tokens, Archetypes, Dreams, and Boss spawning. Start a real game from the setup screen.",
+      "Tutorial complete! You learned R.E.M., Encounters, Landscape actions, Dreams, Bosses, Power Tokens, and the Subconscious. Start a real game from the setup screen.",
     );
     return;
   }
