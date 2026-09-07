@@ -549,23 +549,24 @@ export function renderBoard(state, onSelectLandscape, legalMoveIds = [], pickHig
 
 export function renderPlayers(state, onSelectPlayer) {
   const list = document.getElementById("player-list");
+  if (!list) return;
+  hideDreamerDetailTooltip();
   list.innerHTML = "";
 
   state.players.forEach((player, index) => {
     const chip = document.createElement("button");
     chip.type = "button";
     const tradeTarget = state.tradeMode && state.trade?.step === "pick-partner";
+    const isActive = index === state.activePlayerIndex;
     chip.className = [
       "player-chip",
-      index === state.activePlayerIndex ? "active" : "",
+      isActive ? "active" : "",
       !player.alive ? "dead" : "",
       tradeTarget ? "trade-target" : "",
     ].filter(Boolean).join(" ");
-    const tooltip = getDreamerChipTooltip(state, player, index);
+    const ariaHint = getDreamerChipTooltip(state, player, index);
     chip.dataset.playerId = player.id;
-    chip.dataset.tooltip = tooltip;
-    chip.title = tooltip;
-    chip.setAttribute("aria-label", `${player.name}. ${tooltip}`);
+    chip.setAttribute("aria-label", `${player.name}. ${ariaHint}`);
     chip.innerHTML = `
       <img src="${player.dreamer.image}" alt="" onerror="this.style.display='none'">
       <div class="info">
@@ -574,7 +575,26 @@ export function renderPlayers(state, onSelectPlayer) {
         <div class="sub">${player.powerTokens} power · ${formatHandPsycheLine(state, player)} · ${player.objects.length} obj · ${player.persistent?.length || 0} persistent</div>
       </div>
     `;
-    chip.addEventListener("click", () => onSelectPlayer(index));
+
+    const showTooltip = () => {
+      const focusHint = !isActive && player.alive
+        ? "Click to focus this Dreamer"
+        : tradeTarget
+          ? "Click to trade with this Dreamer"
+          : undefined;
+      showDreamerDetailTooltip(player.dreamer, chip, { player, focusHint });
+    };
+
+    chip.addEventListener("mouseenter", showTooltip);
+    chip.addEventListener("mouseleave", hideDreamerDetailTooltip);
+    chip.addEventListener("focusin", showTooltip);
+    chip.addEventListener("focusout", (event) => {
+      if (!chip.contains(event.relatedTarget)) hideDreamerDetailTooltip();
+    });
+    chip.addEventListener("click", () => {
+      hideDreamerDetailTooltip();
+      onSelectPlayer(index);
+    });
     list.appendChild(chip);
   });
 }
@@ -1599,7 +1619,7 @@ function dreamerDetailStatsHtml(dreamer) {
 }
 
 function buildDreamerDetailHtml(dreamer, options = {}) {
-  const { player, partySelected, playerSlot, setupHint, partyFull } = options;
+  const { player, partySelected, playerSlot, setupHint, partyFull, focusHint } = options;
   const flavor = formatDreamerFlavor(dreamer.flavor || "");
 
   let statusLine = "";
@@ -1609,6 +1629,9 @@ function buildDreamerDetailHtml(dreamer, options = {}) {
     const tokens = player.powerTokens ?? 0;
     const tokenLabel = tokens === 1 ? "Power Token" : "Power Tokens";
     statusLine = `<p class="dreamer-detail-status">${head}${life} · ${tokens} ${tokenLabel} held</p>`;
+    if (focusHint) {
+      statusLine += `<p class="dreamer-detail-status dreamer-detail-focus-hint">${focusHint}</p>`;
+    }
   } else if (playerSlot) {
     statusLine = `<p class="dreamer-detail-status">Selected · Player ${playerSlot}</p>`;
   } else if (setupHint) {
@@ -1669,18 +1692,22 @@ function positionDreamerDetailTooltip(tooltip, anchor) {
   const rect = anchor.getBoundingClientRect();
   const margin = 12;
   const tooltipRect = tooltip.getBoundingClientRect();
-  let left = rect.right + margin;
+  const preferRight = rect.left < window.innerWidth * 0.45;
+  let left = preferRight ? rect.right + margin : rect.left - tooltipRect.width - margin;
   let top = rect.top + (rect.height / 2) - (tooltipRect.height / 2);
 
-  if (left + tooltipRect.width > window.innerWidth - margin) {
+  if (preferRight && left + tooltipRect.width > window.innerWidth - margin) {
     left = rect.left - tooltipRect.width - margin;
+  } else if (!preferRight && left < margin) {
+    left = rect.right + margin;
   }
-  if (left < margin) {
-    left = Math.max(margin, rect.left + (rect.width / 2) - (tooltipRect.width / 2));
-    top = rect.bottom + margin;
+  if (top + tooltipRect.height > window.innerHeight - margin) {
+    top = window.innerHeight - tooltipRect.height - margin;
+  }
+  if (top < margin) {
+    top = margin;
   }
 
-  top = Math.max(margin, Math.min(top, window.innerHeight - tooltipRect.height - margin));
   tooltip.style.left = `${left}px`;
   tooltip.style.top = `${top}px`;
 }

@@ -1557,36 +1557,6 @@ body.in-game main {
   font: inherit;
 }
 
-.player-chip[data-tooltip]::after {
-  content: attr(data-tooltip);
-  position: absolute;
-  left: calc(100% + 8px);
-  top: 50%;
-  transform: translateY(-50%) translateX(-4px);
-  z-index: 50;
-  width: max(200px, 16vw);
-  max-width: 240px;
-  padding: 0.5rem 0.65rem;
-  font-size: 0.72rem;
-  line-height: 1.4;
-  color: var(--text);
-  background: rgba(12, 10, 24, 0.96);
-  border: 1px solid var(--accent);
-  border-radius: 8px;
-  box-shadow: var(--shadow);
-  opacity: 0;
-  visibility: hidden;
-  transition: opacity 0.15s, transform 0.15s, visibility 0.15s;
-  pointer-events: none;
-}
-
-.player-chip:hover::after,
-.player-chip:focus-visible::after {
-  opacity: 1;
-  visibility: visible;
-  transform: translateY(-50%) translateX(0);
-}
-
 .sidebar.left {
   overflow: visible;
 }
@@ -2229,6 +2199,11 @@ body.in-game main {
   opacity: 0.85;
 }
 
+.dreamer-detail-focus-hint {
+  margin-top: -0.35rem;
+  color: var(--accent);
+}
+
 .dreamer-detail-stats {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2525,18 +2500,6 @@ body.in-game main {
   .setup-round-flow { grid-template-columns: 1fr; }
   .sidebar.left { overflow: auto; }
   .table-footer { grid-template-columns: 1fr; max-height: 9rem; }
-  .player-chip[data-tooltip]::after {
-    left: 0;
-    right: 0;
-    top: calc(100% + 6px);
-    width: auto;
-    max-width: none;
-    transform: translateY(-4px);
-  }
-  .player-chip:hover::after,
-  .player-chip:focus-visible::after {
-    transform: translateY(0);
-  }
 }
 
 @media (max-width: 640px) {
