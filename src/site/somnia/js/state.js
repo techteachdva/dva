@@ -14,6 +14,7 @@ import {
 } from "./subconscious.js";
 import {
   handLimitForPlayer,
+  handRoomForPsycheDraw,
   extraPsycheDrawAtRoundStart,
   drawObjects,
 } from "./objects.js";
@@ -29,6 +30,7 @@ import {
   PSYCHE_STARTING_HAND,
 } from "./data.js";
 import { discardToMindstream, pullObjectFromMindstream, objectForPlayer } from "./mindstream-supply.js";
+import { psycheHandCount, hasPsycheHealth } from "./psyche.js";
 import {
   grantPowerTokens,
   spendPowerTokens,
@@ -197,7 +199,7 @@ export function drawPsycheForPlayer(state, player, count = 1) {
     }
 
     const limit = handLimitForPlayer(state, player);
-    if (player.hand.length < limit) {
+    if (psycheHandCount(player) < limit) {
       player.hand.push(card);
       drawn.push(card);
     } else {
@@ -298,7 +300,7 @@ export function beginRoundReveal(state) {
 
   state.players.forEach((player) => {
     if (!player.alive) return;
-    if (player.hand.length === 0) {
+    if (!hasPsycheHealth(player)) {
       handleDreamerDeath(state, player);
       return;
     }
@@ -311,7 +313,7 @@ export function beginRoundReveal(state) {
 }
 
 export function checkDreamerPsycheDeath(state, player) {
-  if (!player?.alive || player.hand.length > 0) return false;
+  if (!player?.alive || hasPsycheHealth(player)) return false;
   handleDreamerDeath(state, player);
   return true;
 }

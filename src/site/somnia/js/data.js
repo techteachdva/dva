@@ -124,14 +124,20 @@ function mindstreamDreambeastCard(beast, suit) {
     refId: beast.id,
     name: beast.name,
     type: "dreambeast",
+    beastKind: beast.beastKind,
     suit,
     mindstreamSuit: suit,
     image: beast.image,
     flavor: beast.flavor,
     accept: beast.accept,
-    repress: beast.repress,
+    reject: beast.reject ?? beast.repress,
+    repress: beast.repress ?? beast.reject,
+    rejectSuit: beast.rejectSuit,
+    rejectReward: beast.rejectReward,
+    rejectEffect: beast.rejectEffect,
     fail: beast.fail,
     effect: beast.effect,
+    boss: beast.boss,
     text: beast.effect || beast.flavor,
     instanceId: uid("mind"),
   };
@@ -207,11 +213,18 @@ function objectsForSuit(objects, suit) {
 
 function dreambeastsForSuit(dreambeasts, suit) {
   const suited = dreambeasts.filter((b) => !b.boss && b.suit === suit);
+  const perKind = Math.floor(MINDSTREAM_COMPOSITION.dreambeasts / 2);
+  const fantasy = suited.filter((b) => b.beastKind === "fantasy");
+  const nightmare = suited.filter((b) => b.beastKind === "nightmare");
+  const pool = [
+    ...pickPool(fantasy.length ? fantasy : suited, perKind),
+    ...pickPool(nightmare.length ? nightmare : suited, perKind),
+  ];
+  if (pool.length >= MINDSTREAM_COMPOSITION.dreambeasts) {
+    return pool.slice(0, MINDSTREAM_COMPOSITION.dreambeasts);
+  }
   const fallback = dreambeasts.filter((b) => !b.boss);
-  const pool = suited.length >= MINDSTREAM_COMPOSITION.dreambeasts
-    ? suited
-    : [...suited, ...fallback.filter((b) => !suited.includes(b))];
-  return pickPool(pool, MINDSTREAM_COMPOSITION.dreambeasts);
+  return pickPool([...pool, ...fallback.filter((b) => !pool.includes(b))], MINDSTREAM_COMPOSITION.dreambeasts);
 }
 
 /**

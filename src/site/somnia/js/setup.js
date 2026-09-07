@@ -13,6 +13,8 @@ import {
   showOverviewModal,
   showTutorialStep,
   hideTutorial,
+  showDreamerDetail,
+  hideUtilityModal,
 } from "./ui.js";
 
 const LAUNCH_KEY = "somnia.launch";
@@ -52,10 +54,6 @@ function bindModal() {
   document.querySelector("#utility-modal .utility-close")?.addEventListener("click", hideUtilityModal);
 }
 
-function hideUtilityModal() {
-  document.getElementById("utility-modal").classList.add("hidden");
-}
-
 function bindHelp() {
   document.getElementById("btn-setup-overview")?.addEventListener("click", showOverviewModal);
   document.getElementById("btn-setup-help")?.addEventListener("click", showRulesModal);
@@ -71,6 +69,10 @@ function toggleDreamer(id) {
   }
   renderDreamerPicker(gameData.dreamers, selectedDreamerIds, toggleDreamer);
   document.getElementById("btn-start").disabled = selectedDreamerIds.length !== playerCount;
+  const dreamer = gameData.dreamers.find((d) => d.id === id);
+  if (dreamer) {
+    showDreamerDetail(dreamer, { partySelected: selectedDreamerIds.includes(id) });
+  }
 }
 
 function launchGameWindow() {

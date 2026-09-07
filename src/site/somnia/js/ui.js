@@ -2,6 +2,9 @@ import { getPhase, activePlayer, headPlayer } from "./state.js";
 import {
   coopMeetPlayTotal,
   allSelectedCards,
+  spreadPsycheCount,
+  allyPsycheCount,
+  meetBonusBreakdown,
   SUIT_LABELS,
   suitIconHtml,
   dreamerStatsHtml,
@@ -10,7 +13,9 @@ import {
   statForPhaseBudget,
   totalStat,
 } from "./rules.js";
-import { handLimitForPlayer } from "./objects.js";
+import { DREAMER_KIND_AFFINITY, beastKindLabel, dreamerPrimarySuit } from "./dreambeasts.js";
+import { handLimitForPlayer, handRoomForPsycheDraw } from "./objects.js";
+import { psycheHandCount, alliesInHand, effectivePsycheHealth } from "./psyche.js";
 import { getQuestStatus } from "./quests.js";
 import { hexToPixel, boardPixelBounds } from "./hex.js";
 import { subconsciousCount, subconsciousPilesForUI, isDreambeastPsycheCard } from "./subconscious.js";
@@ -27,12 +32,23 @@ function suitClass(suit) {
 function cardTypeClass(card) {
   if (card.type === "dreamer") return "dreamer";
   if (card.type === "dream" || card.type === "final" || card.type === "boss-dream") return "dream";
-  if (card.type === "dreambeast" || card.boss || card.type === "psyche-dreambeast") return "dreambeast";
+  if (card.type === "dreambeast" || card.boss || card.type === "psyche-dreambeast") {
+    const kind = card.beastKind === "fantasy" ? "beast-fantasy" : card.beastKind === "nightmare" ? "beast-nightmare" : "";
+    return ["dreambeast", kind].filter(Boolean).join(" ");
+  }
   if (card.type === "object") return "object";
   if (card.type === "event" || card.type === "power-token" || card.type === "draw-dream") {
     return card.suit || "event";
   }
   return card.suit || card.type || "";
+}
+
+function dreambeastCostMeta(card) {
+  if (card.accept == null) return "";
+  const reject = card.reject ?? card.repress;
+  const rejectSuit = card.rejectSuit ? suitIconHtml(card.rejectSuit, { size: 10 }) : "";
+  const acceptSuit = card.suit ? suitIconHtml(card.suit, { size: 10 }) : "";
+  return `<span class="meta dreambeast-costs"><span title="Accept">A${card.accept} ${acceptSuit}</span><span title="Reject">J${reject} ${rejectSuit}</span></span>`;
 }
 
 function createArtElement(card) {
@@ -73,6 +89,8 @@ function renderPsycheDreambeastCard(card, { selected, onClick, mini, entering, p
     "game-card",
     "psyche-card",
     "psyche-dreambeast",
+    "dreambeast",
+    card.beastKind === "fantasy" ? "beast-fantasy" : card.beastKind === "nightmare" ? "beast-nightmare" : "",
     card.suit,
     selected ? "selected" : "",
     entering ? "card-enter" : "",
@@ -158,15 +176,29 @@ function renderPsycheCard(card, { selected, onClick, mini, entering, playerId })
   return attachCardMeta(el, card, playerId);
 }
 
-function handStatsHtml(state, player) {
+function formatHandPsycheLine(state, player) {
   const limit = handLimitForPlayer(state, player);
+  const psyche = psycheHandCount(player);
+  const allies = alliesInHand(player).length;
+  const total = effectivePsycheHealth(player);
+
+  if (allies && psyche === 0) {
+    return `${total} psyche (${allies} ${allies === 1 ? "ally" : "allies"})`;
+  }
+  if (allies) {
+    return `${total} psyche (${psyche}/${limit} + ${allies} ${allies === 1 ? "ally" : "allies"})`;
+  }
+  return `${psyche}/${limit} psyche`;
+}
+
+function handStatsHtml(state, player) {
   return `
     <span class="hand-stats-suits">
       <span class="stat suit-lucidity" title="Lucidity">${suitIconHtml("lucidity", { size: 12 })}${player.dreamer.lucidity}</span>
       <span class="stat suit-elasticity" title="Elasticity">${suitIconHtml("elasticity", { size: 12 })}${player.dreamer.elasticity}</span>
       <span class="stat suit-willpower" title="Willpower">${suitIconHtml("willpower", { size: 12 })}${player.dreamer.willpower}</span>
     </span>
-    · ${player.hand.length}/${limit} psyche
+    · ${formatHandPsycheLine(state, player)}
   `;
 }
 
@@ -244,10 +276,13 @@ export function renderCard(card, options = {}) {
 
   const value = card.value != null ? `<span class="value">${card.value}</span>` : "";
   const acceptRepress = card.accept != null
-    ? `<span class="meta"><span>A${card.accept}/R${card.repress}</span></span>`
+    ? dreambeastCostMeta(card)
     : "";
   const points = card.points != null ? `<span class="meta"><span>${card.points} pts</span></span>` : "";
   const showSuitMeta = card.suit && card.type !== "dreamer" && card.type !== "psyche";
+  const kindMeta = card.beastKind
+    ? `<span class="meta beast-kind-label beast-kind-${card.beastKind}">${beastKindLabel(card.beastKind)}</span>`
+    : "";
   const suit = showSuitMeta
     ? `<span class="meta"><span class="${suitClass(card.suit)}">${SUIT_LABELS[card.suit] || card.suit}</span></span>`
     : "";
@@ -265,7 +300,7 @@ export function renderCard(card, options = {}) {
   body.className = "body";
   body.innerHTML = `
     <div class="title">${card.name}</div>
-    ${acceptRepress || points || suit || subtype}
+    ${acceptRepress || points || kindMeta || suit || subtype}
   `;
 
   if (value) el.innerHTML = value;
@@ -364,7 +399,7 @@ export function showModal(card) {
     ["Points", card.points],
     ["Value", card.value],
     ["Accept", card.accept],
-    ["Repress", card.repress],
+    ["Reject", card.reject ?? card.repress],
     ["Fail", card.fail],
     ["Ability", card.ability || card.power],
   ];
@@ -536,7 +571,7 @@ export function renderPlayers(state, onSelectPlayer) {
       <div class="info">
         <div class="name">${player.name}${player.isHead ? " ★" : ""}${!player.alive ? " (lost)" : ""}</div>
         ${dreamerStatsHtml(player.dreamer)}
-        <div class="sub">${player.powerTokens} power · ${player.hand.length}/${handLimitForPlayer(state, player)} psyche · ${player.objects.length} obj · ${player.persistent?.length || 0} persistent</div>
+        <div class="sub">${player.powerTokens} power · ${formatHandPsycheLine(state, player)} · ${player.objects.length} obj · ${player.persistent?.length || 0} persistent</div>
       </div>
     `;
     chip.addEventListener("click", () => onSelectPlayer(index));
@@ -665,11 +700,14 @@ export function renderCoopMeetHands(state, onCardClick) {
   const title = document.getElementById("hand-title");
   hand.innerHTML = "";
 
-  const poolCount = allSelectedCards(state).length;
+  const poolCount = spreadPsycheCount(state);
+  const allyCount = allyPsycheCount(state);
   const poolTotal = coopMeetPlayTotal(state);
-  const bonus = state.pendingPowerBonus ? ` · +${state.pendingPowerBonus} bonus pending` : "";
+  const bonus = meetBonusBreakdown(state);
+  const bonusText = bonus.total ? ` · +${bonus.total} Dreamer (${bonus.parts.join(", ")})` : "";
+  const pending = state.pendingPowerBonus ? ` · +${state.pendingPowerBonus} bonus pending` : "";
   if (title) title.textContent = "Cooperative Psyche Pool";
-  stats.textContent = `${poolCount}/3 cards · total ${poolTotal}${bonus} · click any Dreamer's Psyche`;
+  stats.textContent = `${poolCount}/3 spread${allyCount ? ` + ${allyCount} ally` : ""} · total ${poolTotal}${bonusText}${pending} · click any Dreamer's Psyche`;
   hand.classList.add("coop-mode");
 
   state.players.filter((p) => p.alive).forEach((player, index) => {
@@ -1425,7 +1463,91 @@ export function hideUtilityModal() {
   const modal = document.getElementById("utility-modal");
   modal.classList.add("hidden");
   modal.querySelector(".utility-content")?.classList.remove("landscape-detail-modal");
+  modal.querySelector(".utility-content")?.classList.remove("dreamer-detail-modal");
   modal.querySelector(".utility-content")?.classList.remove("phase-skip-modal");
+}
+
+function formatDreamerFlavor(text) {
+  if (!text) return "";
+  const escaped = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+  return escaped.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+}
+
+function dreamerDetailStatsHtml(dreamer) {
+  const bonus = dreamer.archetypeBonus ?? 0;
+  return `
+    <div class="dreamer-detail-stats">
+      <div class="dreamer-detail-stat suit-lucidity">
+        ${suitIconHtml("lucidity", { size: 16 })}
+        <span class="dreamer-detail-stat-label">${SUIT_LABELS.lucidity}</span>
+        <strong>${dreamer.lucidity}</strong>
+      </div>
+      <div class="dreamer-detail-stat suit-elasticity">
+        ${suitIconHtml("elasticity", { size: 16 })}
+        <span class="dreamer-detail-stat-label">${SUIT_LABELS.elasticity}</span>
+        <strong>${dreamer.elasticity}</strong>
+      </div>
+      <div class="dreamer-detail-stat suit-willpower">
+        ${suitIconHtml("willpower", { size: 16 })}
+        <span class="dreamer-detail-stat-label">${SUIT_LABELS.willpower}</span>
+        <strong>${dreamer.willpower}</strong>
+      </div>
+      <div class="dreamer-detail-stat dreamer-detail-archetype">
+        <span class="dreamer-detail-stat-label">Archetype bonus</span>
+        <strong>+${bonus}</strong>
+      </div>
+    </div>
+  `;
+}
+
+export function showDreamerDetail(dreamer, options = {}) {
+  if (!dreamer) return;
+
+  const { player, partySelected } = options;
+  const modal = document.getElementById("utility-modal");
+  const body = document.getElementById("utility-modal-body");
+  const flavor = formatDreamerFlavor(dreamer.flavor || "");
+
+  let statusLine = "";
+  if (player) {
+    const head = player.isHead ? "Head Dreamer ★ · " : "";
+    const life = player.alive ? "Active" : "Lost in the Dream";
+    const tokens = player.powerTokens ?? 0;
+    const tokenLabel = tokens === 1 ? "Power Token" : "Power Tokens";
+    statusLine = `<p class="dreamer-detail-status">${head}${life} · ${tokens} ${tokenLabel} held</p>`;
+  } else if (partySelected !== undefined) {
+    statusLine = `<p class="dreamer-detail-status">${partySelected ? "Selected for this game" : "Not selected"}</p>`;
+  }
+
+  const affinity = DREAMER_KIND_AFFINITY[dreamer.id];
+  const affinityLine = affinity
+    ? `<p class="dreamer-detail-affinity">Meet bonus: +1 Psyche vs ${beastKindLabel(affinity)} Dreambeasts · +1 when ${SUIT_LABELS[dreamerPrimarySuit(dreamer)]} matches the Dreambeast's suit</p>`
+    : "";
+
+  body.innerHTML = `
+    <div class="dreamer-detail">
+      <div class="dreamer-detail-art-wrap">
+        <img class="dreamer-detail-art" src="${dreamer.image}" alt="${dreamer.name}">
+      </div>
+      <div class="dreamer-detail-body">
+        <h2>${dreamer.name}</h2>
+        ${flavor ? `<blockquote class="dreamer-detail-flavor">${flavor}</blockquote>` : ""}
+        ${statusLine}
+        ${affinityLine}
+        ${dreamerDetailStatsHtml(dreamer)}
+        <div class="dreamer-detail-power">
+          <div class="dreamer-detail-power-label">Dreamer Power</div>
+          <p class="dreamer-detail-power-cost">Costs 1 Power Token</p>
+          <p class="dreamer-detail-power-text">${dreamer.power}</p>
+        </div>
+      </div>
+    </div>
+  `;
+  modal.querySelector(".utility-content")?.classList.add("dreamer-detail-modal");
+  modal.classList.remove("hidden");
 }
 
 function bindUtilityModalActions(body, { onCancel } = {}) {

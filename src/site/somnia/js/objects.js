@@ -9,7 +9,7 @@ import { recordQuestEvent } from "./quests.js";
 import { repressCard, requestReturnCards } from "./subconscious.js";
 import { edgeLandscapes } from "./hex.js";
 import { checkObjectTagSet } from "./object-effects.js";
-import { psycheCardValue } from "./psyche.js";
+import { psycheHandCount, psycheCardValue } from "./psyche.js";
 import { pullObjectFromMindstream, objectForPlayer, discardToMindstream } from "./mindstream-supply.js";
 import { spendPowerTokens } from "./power-tokens.js";
 import { queueObjectDrawFx } from "./board-fx.js";
@@ -24,6 +24,10 @@ export function handLimitForPlayer(state, player) {
   let limit = 10;
   if (player.persistent.some((o) => o.id === "severed-torso")) limit = 12;
   return limit;
+}
+
+export function handRoomForPsycheDraw(state, player) {
+  return Math.max(0, handLimitForPlayer(state, player) - psycheHandCount(player));
 }
 
 export function persistentMeetBonus(state, player) {

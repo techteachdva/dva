@@ -82,6 +82,7 @@ import {
   showMindstreamPicker,
   showLandscapeActionPicker,
   showLandscapeDetail,
+  showDreamerDetail,
   showDeckFlipPicker,
   showTradeControls,
   showRespawnPicker,
@@ -563,6 +564,8 @@ function renderAll() {
       return;
     }
     state.activePlayerIndex = index;
+    const player = state.players[index];
+    showDreamerDetail(player.dreamer, { player, state });
     renderAll();
   });
 

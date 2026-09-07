@@ -10,11 +10,13 @@ import { shuffle, uid } from "./data.js";
 import { recordQuestEvent } from "./quests.js";
 import { grantPowerTokens } from "./power-tokens.js";
 import { repressCard, requestReturnCards } from "./subconscious.js";
+import { handRoomForPsycheDraw } from "./objects.js";
 import {
   pullDreambeastFromMindstream,
   encounterFromDreambeastCard,
   reorderMindstreamTop,
 } from "./mindstream-supply.js";
+import { encounterRejectCost } from "./dreambeasts.js";
 
 function alive(state) {
   return state.players.filter((p) => p.alive);
@@ -48,10 +50,11 @@ function spawnOnRandomTiles(state, helpers, count = 1, filterFn = null) {
   });
 }
 
-function spawnFilteredDreambeast(state, helpers, landscapeId, { maxAccept = null, minAccept = null, suit = null } = {}) {
+function spawnFilteredDreambeast(state, helpers, landscapeId, { beastKind = null, maxAccept = null, minAccept = null, suit = null } = {}) {
   const pulled = pullDreambeastFromMindstream(state, {
     suit,
     filter: (beast) => {
+      if (beastKind && beast.beastKind !== beastKind) return false;
       if (maxAccept != null && beast.accept > maxAccept) return false;
       if (minAccept != null && beast.accept < minAccept) return false;
       return !beast.boss;
@@ -194,14 +197,14 @@ export const OBJECT_EFFECTS = {
 
   "ivory-pawn": (state, player, helpers) => {
     const tile = state.board.find((t) => t.revealed && !t.encounter);
-    spawnFilteredDreambeast(state, helpers, tile?.id || player.landscapeId, { maxAccept: 8 });
+    spawnFilteredDreambeast(state, helpers, tile?.id || player.landscapeId, { beastKind: "fantasy" });
     trackChessPlay(state, player);
     returnN(state, personaCount(state) + 2, player);
   },
 
   "ebony-pawn": (state, player, helpers) => {
     const tile = state.board.find((t) => t.revealed && !t.encounter);
-    spawnFilteredDreambeast(state, helpers, tile?.id || player.landscapeId, { minAccept: 9 });
+    spawnFilteredDreambeast(state, helpers, tile?.id || player.landscapeId, { beastKind: "nightmare" });
     trackChessPlay(state, player);
     returnN(state, personaCount(state) + 2, player);
   },
@@ -258,8 +261,8 @@ export const OBJECT_EFFECTS = {
   },
 
   egg: (state, player) => {
-    const room = 10 - player.hand.length;
-    if (room > 0) drawPsycheForPlayer(state, player, Math.min(10, room));
+    const room = handRoomForPsycheDraw(state, player);
+    if (room > 0) drawPsycheForPlayer(state, player, room);
   },
 
   "the-all": (state, player, helpers) => {
@@ -300,15 +303,15 @@ export const OBJECT_EFFECTS = {
     const value = discarded.value || 0;
     const landscapeId = state.activeEncounterLandscapeId;
     addLog(state, `${player.name} discards ${value} Psyche for Tooth-Saber.`);
-    if (value >= enc.repress) {
+    if (value >= encounterRejectCost(enc)) {
       const tile = landscapeById(state, landscapeId);
       if (tile) tile.encounter = null;
       state.activeEncounter = null;
       state.activeEncounterLandscapeId = null;
-      addLog(state, `Meets ${enc.name} (${value} ≥ ${enc.repress}).`);
+      addLog(state, `Rejects ${enc.name} (${value} ≥ ${encounterRejectCost(enc)}).`);
       recordQuestEvent(state, "meet_on_landscape", { landscapeId });
     } else {
-      addLog(state, `Not enough Psyche (${value}) to Meet ${enc.name} (need ${enc.repress}).`);
+      addLog(state, `Not enough Psyche (${value}) to Reject ${enc.name} (need ${encounterRejectCost(enc)}).`);
     }
   },
 

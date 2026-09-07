@@ -2,7 +2,7 @@ import {
   addLog,
   drawPsycheForPlayer,
 } from "./state.js";
-import { drawObjects } from "./objects.js";
+import { drawObjects, handRoomForPsycheDraw } from "./objects.js";
 import { recordQuestEvent } from "./quests.js";
 import { requestReturnCards } from "./subconscious.js";
 import { pullObjectsFromMindstreamDiscards, pullObjectFromMindstreamDiscards } from "./mindstream-supply.js";
@@ -27,7 +27,7 @@ export function resolveOnAcquire(state, archetype, player, helpers) {
 
     case "caregiver":
       state.players.filter((p) => p.alive).forEach((p) => {
-        const need = Math.max(0, 10 - p.hand.length);
+        const need = handRoomForPsycheDraw(state, p);
         if (need) {
           const n = drawPsycheForPlayer(state, p, need);
           recordQuestEvent(state, "draw_psyche", { count: n.length });

@@ -1497,7 +1497,42 @@ body.in-game main {
 .game-card.willpower { border-top: 3px solid var(--willpower); }
 .game-card.archetype { border-top: 3px solid var(--gold); }
 .game-card.dream { border-top: 3px solid #b88cff; box-shadow: 0 0 18px rgba(184, 140, 255, 0.15); }
-.game-card.dreambeast { border-top: 3px solid var(--danger); }
+.game-card.dreambeast { position: relative; }
+.game-card.dreambeast.beast-fantasy,
+.game-card.psyche-dreambeast.beast-fantasy {
+  box-shadow:
+    0 0 0 2px #f472b6,
+    0 0 0 4px #c084fc,
+    0 0 0 6px #60a5fa,
+    0 4px 18px rgba(96, 165, 250, 0.28);
+}
+.game-card.dreambeast.beast-nightmare,
+.game-card.psyche-dreambeast.beast-nightmare {
+  box-shadow:
+    0 0 0 2px #0a0a0f,
+    0 0 0 4px #dc2626,
+    0 0 0 6px #312e81,
+    0 4px 18px rgba(49, 46, 129, 0.4);
+}
+.beast-kind-label {
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 700;
+}
+.beast-kind-fantasy { color: #e879f9; }
+.beast-kind-nightmare { color: #f87171; }
+.dreambeast-costs {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+.dreamer-detail-affinity {
+  margin: 0 0 0.75rem;
+  font-size: 0.82rem;
+  color: var(--gold);
+  line-height: 1.4;
+}
 .game-card.object { border-top: 3px solid #a78bfa; }
 .game-card.event { border-top: 3px solid var(--muted); }
 
@@ -2037,6 +2072,7 @@ body.in-game main {
 
 .utility-content { max-width: 520px; }
 .utility-content.landscape-detail-modal { max-width: 760px; }
+.utility-content.dreamer-detail-modal { max-width: 720px; }
 .utility-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; }
 .landscape-action-choices { flex-direction: column; }
 .landscape-action-pick {
@@ -2116,6 +2152,117 @@ body.in-game main {
   opacity: 0.9;
 }
 
+.dreamer-detail {
+  display: grid;
+  grid-template-columns: minmax(160px, 38%) minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+.dreamer-detail-art-wrap {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.35);
+  aspect-ratio: 5 / 7;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+}
+
+.dreamer-detail-art {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.dreamer-detail-body h2 {
+  margin: 0 0 0.5rem;
+  font-family: var(--font-display);
+}
+
+.dreamer-detail-flavor {
+  margin: 0 0 0.75rem;
+  padding: 0.55rem 0.75rem;
+  border-left: 3px solid var(--gold);
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-style: italic;
+  line-height: 1.45;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 0 8px 8px 0;
+}
+
+.dreamer-detail-flavor em {
+  font-style: italic;
+  color: var(--gold);
+}
+
+.dreamer-detail-status {
+  margin: 0 0 0.75rem;
+  font-size: 0.82rem;
+  opacity: 0.85;
+}
+
+.dreamer-detail-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+}
+
+.dreamer-detail-stat {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.85rem;
+}
+
+.dreamer-detail-stat-label {
+  flex: 1;
+  opacity: 0.85;
+}
+
+.dreamer-detail-stat strong {
+  font-size: 1rem;
+}
+
+.dreamer-detail-archetype {
+  grid-column: 1 / -1;
+}
+
+.dreamer-detail-power {
+  padding: 0.65rem 0.75rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.dreamer-detail-power-label {
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 0.25rem;
+}
+
+.dreamer-detail-power-cost {
+  margin: 0 0 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.dreamer-detail-power-text {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
 .landscape-detail-occupants {
   padding-top: 0.65rem;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
@@ -2170,7 +2317,6 @@ body.in-game main {
 
 .game-card.psyche-dreambeast {
   position: relative;
-  border: 2px solid rgba(240, 180, 80, 0.55);
   background: linear-gradient(145deg, #2a1838, #1a1028);
 }
 .psyche-dreambeast-badge {

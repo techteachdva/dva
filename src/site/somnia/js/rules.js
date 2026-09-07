@@ -5,6 +5,8 @@ import {
   isDreambeastPsycheCard,
   repressTopMindstreamFromEachDeck,
 } from "./subconscious.js";
+import { returnDreambeastToMindstreamDeck } from "./mindstream-supply.js";
+import { dreamerMeetBonuses } from "./dreambeasts.js";
 import { canTradeBetween as hexCanTradeBetween } from "./hex.js";
 import { persistentMeetBonus, sumEffectivePsycheValue } from "./objects.js";
 import { PHASES } from "./data.js";
@@ -163,6 +165,48 @@ export function allSelectedCards(state) {
   return cards;
 }
 
+/** Psyche cards in the Meet pool that count toward the 3-card spread limit. */
+export function spreadPsycheCount(state) {
+  return allSelectedCards(state).filter((c) => !isDreambeastPsycheCard(c)).length;
+}
+
+/** Accepted Dreambeast allies in the Meet pool (bonus cards, no spread limit). */
+export function allyPsycheCount(state) {
+  return allSelectedCards(state).filter((c) => isDreambeastPsycheCard(c)).length;
+}
+
+export function meetEncounterActor(state) {
+  const tileId = state.activeEncounterLandscapeId;
+  if (tileId) {
+    return state.players.find((p) => p.alive && p.landscapeId === tileId) || null;
+  }
+  const tile = state.board?.find((t) => {
+    if (!t.encounter || t.wasteland || !t.revealed) return false;
+    return state.players.some((p) => p.alive && p.landscapeId === t.id);
+  });
+  if (!tile) return null;
+  return state.players.find((p) => p.alive && p.landscapeId === tile.id) || null;
+}
+
+export function currentMeetEncounter(state) {
+  if (state.activeEncounter) {
+    return { encounter: state.activeEncounter, actor: meetEncounterActor(state) };
+  }
+  const tile = state.board?.find((t) => {
+    if (!t.encounter || t.wasteland || !t.revealed) return false;
+    return state.players.some((p) => p.alive && p.landscapeId === t.id);
+  });
+  if (!tile) return { encounter: null, actor: null };
+  const actor = state.players.find((p) => p.alive && p.landscapeId === tile.id) || null;
+  return { encounter: tile.encounter, actor };
+}
+
+export function meetBonusBreakdown(state) {
+  const { encounter, actor } = currentMeetEncounter(state);
+  if (!encounter || !actor) return { total: 0, parts: [] };
+  return dreamerMeetBonuses(actor.dreamer, encounter);
+}
+
 export function cardOwner(state, card) {
   return state.players.find((p) => p.hand.some((c) => c.instanceId === card.instanceId)) || null;
 }
@@ -192,7 +236,7 @@ export function canSelectCard(state, card, phase, player = null) {
 
   if (phase === "Meet" && state.meetActionBudget > 0) {
     if (!active.alive || !active.hand.some((c) => c.instanceId === card.instanceId)) return false;
-    if (allSelectedCards(state).length >= 3) return false;
+    if (!isDreambeastPsycheCard(card) && spreadPsycheCount(state) >= 3) return false;
     return true;
   }
 
@@ -206,7 +250,7 @@ export function canSelectCard(state, card, phase, player = null) {
   }
   if (phase === "Meet") {
     if (state.meetActionBudget > 0 && state.meetActionsUsed < state.meetActionBudget) {
-      if (selected.length >= 3) return false;
+      if (!isDreambeastPsycheCard(card) && spreadPsycheCount(state) >= 3) return false;
       return true;
     }
     if (state.meetActionBudget === 0) {
@@ -262,14 +306,18 @@ export function coopMeetPlayTotal(state) {
     total += sumEffectivePsycheValue(state, owner, cards);
     total += persistentMeetBonus(state, owner);
   });
+
+  const bonus = meetBonusBreakdown(state);
+  total += bonus.total;
   return total;
 }
 
 function routeSpentHandCard(state, player, card, { toRepress = false } = {}) {
   const wild = isWildPsyche(card);
-  const repress = toRepress || isDreambeastPsycheCard(card) || wild;
-  const target = repress ? "subconscious" : "discard";
-  const reason = repress ? "repress" : "spend";
+  const isAlly = isDreambeastPsycheCard(card);
+  const toSub = toRepress || wild;
+  const target = isAlly ? "mindstream" : (toSub ? "subconscious" : "discard");
+  const reason = isAlly ? "discard" : (toSub ? "repress" : "spend");
   queueCardDiscard(player.id, card, target, reason);
   queueHandDelta(player.id, -1);
 
@@ -279,7 +327,12 @@ function routeSpentHandCard(state, player, card, { toRepress = false } = {}) {
     playSfx("repress");
     return;
   }
-  if (toRepress || isDreambeastPsycheCard(card)) {
+  if (isAlly) {
+    returnDreambeastToMindstreamDeck(state, card);
+    playSfx("discard");
+    return;
+  }
+  if (toRepress) {
     repressCard(state, card);
     playSfx("repress");
   } else {

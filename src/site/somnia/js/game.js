@@ -22,6 +22,9 @@ import {
   meetActionBudgetFromWillpower,
   coopMeetPlayTotal,
   allSelectedCards,
+  spreadPsycheCount,
+  allyPsycheCount,
+  meetBonusBreakdown,
   discardSelected,
   discardAllSelected,
   selectedBySuit,
@@ -42,10 +45,12 @@ import {
   phaseOpeningActive,
   cardCountsAsSuit,
 } from "./rules.js";
+import { encounterRejectCost, applyRejectReward } from "./dreambeasts.js";
 import { getLegalMoveTargets, canMoveTo, adjacentTiles, hexDistance, areHexAdjacent } from "./hex.js";
 import { repressCard, listSubconsciousCards, dreambeastToHandCard, isDreambeastPsycheCard } from "./subconscious.js";
 import { spendPowerTokens } from "./power-tokens.js";
-import { playObjectCard, applySkeletonKeyAfterDream, drawObjects, handLimitForPlayer } from "./objects.js";
+import { playObjectCard, applySkeletonKeyAfterDream, drawObjects, handLimitForPlayer, handRoomForPsycheDraw } from "./objects.js";
+import { psycheHandCount, hasPsycheHealth } from "./psyche.js";
 import { queueDreamDrawFx } from "./board-fx.js";
 import { applyBossAcceptEffect } from "./bosses.js";
 import { resolveOnAcquire } from "./archetypes.js";
@@ -299,17 +304,17 @@ export function getPhaseActions(state, handlers) {
       actions.push({
         label: `Accept (${meetEnc.accept})${shapeHint}`,
         section: "encounter",
-        hint: "Accept: Dreambeast joins hand as 3 Psyche of its suit",
+        hint: `Accept: joins hand as 3 ${SUIT_LABELS[meetEnc.suit] || meetEnc.suit} Psyche ally`,
         primary: true,
         disabled: !canUseMeetAction(state, MEET_ACTIONS.MEET),
         onClick: () => handlers.meetEncounter("accept"),
       });
       actions.push({
-        label: `Repress (${meetEnc.repress})${shapeHint}`,
+        label: `Reject (${encounterRejectCost(meetEnc)})${shapeHint}`,
         section: "encounter",
-        hint: "Repress the Dreambeast on your Landscape",
+        hint: meetEnc.rejectReward || "Reject: Dreambeast exiled to the Subconscious",
         disabled: !canUseMeetAction(state, MEET_ACTIONS.MEET),
-        onClick: () => handlers.meetEncounter("repress"),
+        onClick: () => handlers.meetEncounter("reject"),
       });
     }
     if (meetTile && canDrawMindstreamOnLandscape(meetTile)) {
@@ -594,7 +599,7 @@ export function moveDreamer(state, targetLandscapeId) {
     recordQuestEvent(state, "move_player", { count: 1 });
 
     if (to.wasteland) {
-      if (player.hand.length) {
+      if (hasPsycheHealth(player)) {
         const discarded = player.hand.pop();
         state.psycheDiscard.push(discarded);
         recordQuestEvent(state, "discard_psyche", { count: 1, landscapeId: targetLandscapeId });
@@ -665,11 +670,12 @@ export function meetEncounter(state, mode = "accept") {
   state.activeEncounter = encounter;
   state.activeEncounterLandscapeId = tile.id;
   const actor = actorOnLandscape(state, tile.id);
-  const needed = mode === "accept" ? encounter.accept : encounter.repress;
+  const isReject = mode === "reject" || mode === "repress";
+  const needed = isReject ? encounterRejectCost(encounter) : encounter.accept;
   const selected = allSelectedCards(state);
 
-  if (selected.length > 3) {
-    addLog(state, "Play up to 3 Psyche cards for an Encounter.");
+  if (spreadPsycheCount(state) > 3) {
+    addLog(state, "Play up to 3 Psyche cards for an Encounter (allies don't count).");
     state.meetActionsUsed -= 1;
     state.lastMeetAction = null;
     return;
@@ -684,8 +690,10 @@ export function meetEncounter(state, mode = "accept") {
   }
 
   const played = coopMeetPlayTotal(state);
+  const bonus = meetBonusBreakdown(state);
   if (played < needed) {
-    addLog(state, `Need ${needed} Psyche to ${mode} (pool total ${played}).`);
+    const bonusNote = bonus.total ? ` (includes +${bonus.total} Dreamer bonus)` : "";
+    addLog(state, `Need ${needed} Psyche to ${isReject ? "Reject" : "Accept"} (pool total ${played}${bonusNote}).`);
     state.meetActionsUsed -= 1;
     state.lastMeetAction = null;
     return;
@@ -695,13 +703,13 @@ export function meetEncounter(state, mode = "accept") {
   const discardedBy = discardAllSelected(state);
   discardedBy.forEach(({ player: p, cards }) => trackPsycheDiscard(state, p, cards));
 
-  if (mode === "accept") {
+  if (!isReject) {
     addLog(state, `${actor.name} Accepts ${encounter.name}${contributors ? ` (${contributors})` : ""}. ${encounter.effect || ""}`);
     applyBossAcceptEffect(state, encounter, actor);
 
     const handCard = dreambeastToHandCard(encounter);
     actor.hand.push(handCard);
-    addLog(state, `${encounter.name} joins ${actor.name}'s hand as 3 ${SUIT_LABELS[encounter.suit] || encounter.suit} Psyche.`);
+    addLog(state, `${encounter.name} joins ${actor.name}'s hand as a 3 ${SUIT_LABELS[encounter.suit] || encounter.suit} Psyche ally.`);
 
     if (encounter.accept >= 10) {
       const objs = drawObjects(state, actor, 1, getEffectHelpers());
@@ -709,17 +717,9 @@ export function meetEncounter(state, mode = "accept") {
       if (objs.length) addLog(state, `High-tier Accept: ${actor.name} draws an Object.`);
     }
   } else {
-    addLog(state, `${actor.name} Represses ${encounter.name}${contributors ? ` (${contributors})` : ""}.`);
-    if (actor.hand.length) {
-      const repressed = actor.hand.pop();
-      repressCard(state, repressed);
-      recordQuestEvent(state, "discard_psyche", { count: 1, landscapeId: actor.landscapeId });
-      addLog(state, `Repress cost: 1 Psyche sent to the Subconscious.`);
-      if (state.checkPsycheDeath) state.checkPsycheDeath(actor);
-    }
-    const drawn = drawPsycheForPlayer(state, actor, 1);
-    trackPsycheDraw(state, actor, drawn.length);
-    addLog(state, `Repress reward: ${actor.name} draws ${drawn.length} Psyche.`);
+    addLog(state, `${actor.name} Rejects ${encounter.name}${contributors ? ` (${contributors})` : ""}. ${encounter.rejectReward || ""}`);
+    repressCard(state, { ...encounter, type: "dreambeast" });
+    applyRejectReward(state, encounter, actor, getEffectHelpers());
   }
 
   const landscapeId = state.activeEncounterLandscapeId;
@@ -735,19 +735,21 @@ export function meetEncounter(state, mode = "accept") {
   state.activeEncounterLandscapeId = null;
 
   if (state.pendingHeatingUp) {
-    if (mode === "accept") {
+    if (!isReject) {
       spawnEncounterOnLandscape(state, actor.landscapeId);
       addLog(state, "Heating Up: Accept spawns another Encounter.");
     } else {
       const limit = handLimitForPlayer(state, actor);
       let drew = 0;
-      while (actor.hand.length < limit) {
+      while (psycheHandCount(actor) < limit) {
         const n = drawPsycheForPlayer(state, actor, 1);
         if (!n.length) break;
         drew += n.length;
       }
       if (drew) trackPsycheDraw(state, actor, drew);
-      addLog(state, `Heating Up: drew Psyche up to hand limit (${actor.hand.length}/${limit}).`);
+      const allies = actor.hand.length - psycheHandCount(actor);
+      const allyNote = allies ? ` + ${allies} ${allies === 1 ? "ally" : "allies"}` : "";
+      addLog(state, `Heating Up: drew Psyche up to hand limit (${psycheHandCount(actor)}/${limit} psyche${allyNote}).`);
     }
     state.pendingHeatingUp = false;
   }
@@ -1151,7 +1153,6 @@ export function toggleHandCard(state, card, owner = null) {
       state.selectedHand = state.selectedHand.filter((x) => x !== id);
       return;
     }
-    if (state.selectedHand.length >= 3) return;
     state.selectedHand.push(id);
     return;
   }
@@ -1163,7 +1164,8 @@ export function toggleHandCard(state, card, owner = null) {
 
   const coopMeet = phase === "Meet" && state.meetActionBudget > 0;
   const maxCards = coopMeet ? 3 : (phase === "Meet" ? 2 : 2);
-  if (state.selectedHand.length >= maxCards) return;
+  if (!isDreambeastPsycheCard(card) && coopMeet && spreadPsycheCount(state) >= 3) return;
+  if (!coopMeet && state.selectedHand.length >= maxCards) return;
 
   if (phase === "Meet" && state.meetActionBudget > 0) {
     if (!player.alive || !player.hand.some((c) => c.instanceId === id)) return;

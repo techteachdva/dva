@@ -69,6 +69,14 @@ export function discardToMindstream(state, card) {
   return false;
 }
 
+/** Accepted Dreambeast allies return to the bottom of their Mindstream deck. */
+export function returnDreambeastToMindstreamDeck(state, card) {
+  const suit = card.mindstreamSuit || card.suit;
+  if (!suit || !state.mindstreamDecks?.[suit]) return false;
+  state.mindstreamDecks[suit].push(card);
+  return true;
+}
+
 export function reorderMindstreamTop(state, suit, count = 3) {
   const deck = state.mindstreamDecks[suit];
   if (!deck?.length) return false;

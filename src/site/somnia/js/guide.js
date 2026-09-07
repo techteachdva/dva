@@ -262,7 +262,8 @@ export function getCurrentObjective(state) {
       `Current pool: **${count}/3** cards, total **${pool}**.`,
     ];
     if (state.activeEncounter) {
-      lines.push(`Encounter **${state.activeEncounter.name}**: Accept (${state.activeEncounter.accept}) or Repress (${state.activeEncounter.repress}).`);
+      const enc = state.activeEncounter;
+      lines.push(`Encounter **${enc.name}**: Accept (${enc.accept}) or Reject (${enc.reject ?? enc.repress}).`);
     } else {
       lines.push("Use actions in any order — Landscape, Objects, Trade, Quests, or **End Round**.");
     }
@@ -373,7 +374,7 @@ export function overviewHtml() {
         <div>
           <h3>Key Actions</h3>
           <ul>
-            <li><strong>Encounter</strong> — Accept (beast → hand) or Repress (draw 1)</li>
+            <li><strong>Encounter</strong> — Accept (beast joins hand as 3 Psyche ally) or Reject (exile + reward)</li>
             <li><strong>Subconscious</strong> — face-up graveyard; Return cards from here</li>
             <li><strong>Quests</strong> — 1 Power each, then Acquire</li>
             <li><strong>Trade</strong> — same or adjacent hex</li>
@@ -420,6 +421,6 @@ export function rulesHtml() {
     </ul>
 
     <h3>Win & Lose</h3>
-    <p>Acquire Archetypes by completing both quests. Reach your point goal before Dreams run out. Psyche cards are your health (start 5, max 10). At 0 Psyche you die in the Dream, discard Objects, draw back to 5, and resolve an Additional Dream.</p>
+    <p>Acquire Archetypes by completing both quests. Reach your point goal before Dreams run out. Psyche cards are your health (start 5, max 10 hand limit). Accepted Dreambeast allies also count as Psyche for health but not toward the 10-card limit. At 0 Psyche you die in the Dream, discard Objects, draw back to 5, and resolve an Additional Dream.</p>
   `;
 }

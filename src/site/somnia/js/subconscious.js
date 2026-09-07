@@ -1,6 +1,5 @@
 import { recordQuestEvent } from "./quests.js";
-import { SUIT_LABELS } from "./rules.js";
-import { discardToMindstream } from "./mindstream-supply.js";
+import { discardToMindstream, returnDreambeastToMindstreamDeck } from "./mindstream-supply.js";
 import { queueRepressFx } from "./board-fx.js";
 
 /** Face-up repressed card piles (The Subconscious / graveyard). */
@@ -55,9 +54,13 @@ function pileForCard(sub, card) {
   return sub.other;
 }
 
-/** Repress: card goes face-up into the Subconscious. */
+/** Repress: card goes face-up into the Subconscious (or Mindstream for accepted allies). */
 export function repressCard(state, card) {
   if (!card) return;
+  if (isDreambeastPsycheCard(card)) {
+    returnDreambeastToMindstreamDeck(state, card);
+    return;
+  }
   state.subconscious = normalizeSubconscious(state.subconscious);
   pileForCard(state.subconscious, card).push(card);
 }
@@ -105,7 +108,7 @@ export function removeFromSubconscious(state, instanceId) {
 export function routeReturnedToDiscard(state, card) {
   if (!card) return;
   if (card.type === "psyche-dreambeast" || card.isDreambeastPsyche) {
-    discardToMindstream(state, card);
+    returnDreambeastToMindstreamDeck(state, card);
     return;
   }
   if (card.type === "dreambeast" || card.boss) {
@@ -487,9 +490,9 @@ export function subconsciousPilesForUI(state) {
   return [
     { label: "Psyche", cards: sub.psyche, icon: "🃏" },
     { label: "Dreambeasts", cards: sub.dreambeasts || [], icon: "⚔" },
-    { label: `Mindstream ${SUIT_LABELS.lucidity}`, cards: sub.mindstream.lucidity, icon: "◉" },
-    { label: `Mindstream ${SUIT_LABELS.elasticity}`, cards: sub.mindstream.elasticity, icon: "⇄" },
-    { label: `Mindstream ${SUIT_LABELS.willpower}`, cards: sub.mindstream.willpower, icon: "✊" },
+    { label: "Mindstream Lucidity", cards: sub.mindstream.lucidity, icon: "◉" },
+    { label: "Mindstream Elasticity", cards: sub.mindstream.elasticity, icon: "⇄" },
+    { label: "Mindstream Willpower", cards: sub.mindstream.willpower, icon: "✊" },
     { label: "Objects", cards: sub.objects, icon: "✦" },
     { label: "Other", cards: sub.other, icon: "?" },
   ].filter((p) => p.cards.length);
