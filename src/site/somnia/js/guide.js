@@ -394,7 +394,8 @@ export function rulesIntroHtml() {
           <h3>Each Round</h3>
           <ul>
             <li><strong>Head Dreamer (★)</strong> rotates; their name is on the Dream draw</li>
-            <li>Alive Dreamers draw <strong>2 Psyche</strong> at round start</li>
+            <li><strong>Round 1:</strong> each Dreamer starts with <strong>5 Psyche</strong></li>
+            <li><strong>Round 2+:</strong> alive Dreamers draw <strong>2 Psyche</strong> at round start</li>
             <li><strong>One Dreamer per phase</strong> spends 1–2 suited cards to set the team budget</li>
             <li>Unresolved Encounters fail at end of Meet; Head rotates; next round begins</li>
           </ul>
@@ -428,7 +429,8 @@ export function rulesRemHtml() {
           <ul>
             <li><strong>Reveal budget</strong> = card values + Lucidity stat → click that many Wasteland hexes to flip Landscapes face-up</li>
             <li>Draw the Dream and spend Lucidity in either order during Reveal</li>
-            <li>Each alive Dreamer with Psyche health draws <strong>2 Psyche</strong> at the start of Reveal (+1 with Persistent Beating Heart)</li>
+            <li><strong>Round 1:</strong> each Dreamer already has 5 Psyche — no round-start draw</li>
+            <li><strong>Round 2+:</strong> each alive Dreamer draws <strong>2 Psyche</strong> at the start of Reveal</li>
           </ul>
         </div>
 
