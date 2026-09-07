@@ -13,7 +13,7 @@ import {
   showOverviewModal,
   showTutorialStep,
   hideTutorial,
-  showDreamerDetail,
+  hideDreamerDetailTooltip,
   hideUtilityModal,
 } from "./ui.js";
 
@@ -23,6 +23,16 @@ const PLAY_WINDOW_NAME = "somnia-play";
 let gameData = null;
 let selectedDreamerIds = [];
 let tutorialIndex = -1;
+
+function playerCount() {
+  return Number(document.getElementById("setup-players").value);
+}
+
+function refreshDreamerPicker() {
+  renderDreamerPicker(gameData.dreamers, selectedDreamerIds, toggleDreamer, {
+    playerCount: playerCount(),
+  });
+}
 
 async function init() {
   initFxLayer();
@@ -37,14 +47,15 @@ async function init() {
   bindHelp();
   bindModal();
   renderSetupIntro();
-  renderDreamerPicker(gameData.dreamers, selectedDreamerIds, toggleDreamer);
+  refreshDreamerPicker();
 }
 
 function bindSetup() {
   document.getElementById("btn-start").addEventListener("click", launchGameWindow);
   document.getElementById("setup-players").addEventListener("change", () => {
     selectedDreamerIds = [];
-    renderDreamerPicker(gameData.dreamers, selectedDreamerIds, toggleDreamer);
+    hideDreamerDetailTooltip();
+    refreshDreamerPicker();
     document.getElementById("btn-start").disabled = true;
   });
 }
@@ -61,18 +72,14 @@ function bindHelp() {
 }
 
 function toggleDreamer(id) {
-  const playerCount = Number(document.getElementById("setup-players").value);
+  const count = playerCount();
   if (selectedDreamerIds.includes(id)) {
     selectedDreamerIds = selectedDreamerIds.filter((x) => x !== id);
-  } else if (selectedDreamerIds.length < playerCount) {
+  } else if (selectedDreamerIds.length < count) {
     selectedDreamerIds.push(id);
   }
-  renderDreamerPicker(gameData.dreamers, selectedDreamerIds, toggleDreamer);
-  document.getElementById("btn-start").disabled = selectedDreamerIds.length !== playerCount;
-  const dreamer = gameData.dreamers.find((d) => d.id === id);
-  if (dreamer) {
-    showDreamerDetail(dreamer, { partySelected: selectedDreamerIds.includes(id) });
-  }
+  refreshDreamerPicker();
+  document.getElementById("btn-start").disabled = selectedDreamerIds.length !== count;
 }
 
 function launchGameWindow() {

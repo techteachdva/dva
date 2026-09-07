@@ -1116,27 +1116,66 @@ export function renderLog(state) {
   log.innerHTML = state.log.map((line) => `<div>${line}</div>`).join("");
 }
 
-export function renderDreamerPicker(dreamers, selectedIds, onToggle) {
+export function renderDreamerPicker(dreamers, selectedIds, onToggle, options = {}) {
   const picker = document.getElementById("dreamer-picker");
+  if (!picker) return;
+  hideDreamerDetailTooltip();
   picker.innerHTML = "";
 
+  const playerCount = options.playerCount ?? selectedIds.length;
+
   dreamers.forEach((dreamer) => {
-    const selected = selectedIds.includes(dreamer.id);
+    const slotIndex = selectedIds.indexOf(dreamer.id);
+    const selected = slotIndex >= 0;
     const wrapper = document.createElement("div");
     wrapper.className = `dreamer-pick ${selected ? "selected" : ""}`;
+    wrapper.tabIndex = 0;
     const card = renderCard(
       { ...dreamer, type: "dreamer" },
       {
         portrait: true,
         selected,
-        onClick: () => onToggle(dreamer.id),
       }
     );
+    const selectDreamer = () => {
+      hideDreamerDetailTooltip();
+      onToggle(dreamer.id);
+    };
     const stats = document.createElement("div");
     stats.className = "dreamer-pick-stats";
     stats.innerHTML = `<div class="dreamer-pick-name">${dreamer.name}</div>${dreamerStatsHtml(dreamer)}`;
     wrapper.appendChild(card);
     wrapper.appendChild(stats);
+    if (selected) {
+      const badge = document.createElement("div");
+      badge.className = "dreamer-pick-slot";
+      badge.textContent = `Player ${slotIndex + 1}`;
+      wrapper.appendChild(badge);
+    }
+
+    const showTooltip = () => {
+      const nextSlot = selectedIds.length < playerCount ? selectedIds.length + 1 : null;
+      showDreamerDetailTooltip(dreamer, wrapper, {
+        playerSlot: selected ? slotIndex + 1 : undefined,
+        setupHint: !selected && nextSlot ? `Click to assign Player ${nextSlot}` : undefined,
+        partyFull: !selected && !nextSlot,
+      });
+    };
+
+    wrapper.addEventListener("mouseenter", showTooltip);
+    wrapper.addEventListener("mouseleave", hideDreamerDetailTooltip);
+    wrapper.addEventListener("focusin", showTooltip);
+    wrapper.addEventListener("focusout", (event) => {
+      if (!wrapper.contains(event.relatedTarget)) hideDreamerDetailTooltip();
+    });
+    wrapper.addEventListener("click", selectDreamer);
+    wrapper.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        selectDreamer();
+      }
+    });
+
     picker.appendChild(wrapper);
   });
 }
@@ -1559,12 +1598,8 @@ function dreamerDetailStatsHtml(dreamer) {
   `;
 }
 
-export function showDreamerDetail(dreamer, options = {}) {
-  if (!dreamer) return;
-
-  const { player, partySelected } = options;
-  const modal = document.getElementById("utility-modal");
-  const body = document.getElementById("utility-modal-body");
+function buildDreamerDetailHtml(dreamer, options = {}) {
+  const { player, partySelected, playerSlot, setupHint, partyFull } = options;
   const flavor = formatDreamerFlavor(dreamer.flavor || "");
 
   let statusLine = "";
@@ -1574,6 +1609,12 @@ export function showDreamerDetail(dreamer, options = {}) {
     const tokens = player.powerTokens ?? 0;
     const tokenLabel = tokens === 1 ? "Power Token" : "Power Tokens";
     statusLine = `<p class="dreamer-detail-status">${head}${life} · ${tokens} ${tokenLabel} held</p>`;
+  } else if (playerSlot) {
+    statusLine = `<p class="dreamer-detail-status">Selected · Player ${playerSlot}</p>`;
+  } else if (setupHint) {
+    statusLine = `<p class="dreamer-detail-status">${setupHint}</p>`;
+  } else if (partyFull) {
+    statusLine = `<p class="dreamer-detail-status">Party full — click a selected Dreamer to remove</p>`;
   } else if (partySelected !== undefined) {
     statusLine = `<p class="dreamer-detail-status">${partySelected ? "Selected for this game" : "Not selected"}</p>`;
   }
@@ -1583,7 +1624,7 @@ export function showDreamerDetail(dreamer, options = {}) {
     ? `<p class="dreamer-detail-affinity">Meet bonus: +1 Psyche vs ${beastKindLabel(affinity)} Dreambeasts · +1 when ${SUIT_LABELS[dreamerPrimarySuit(dreamer)]} matches the Dreambeast's suit</p>`
     : "";
 
-  body.innerHTML = `
+  return `
     <div class="dreamer-detail">
       <div class="dreamer-detail-art-wrap">
         <img class="dreamer-detail-art" src="${dreamer.image}" alt="${dreamer.name}">
@@ -1602,6 +1643,71 @@ export function showDreamerDetail(dreamer, options = {}) {
       </div>
     </div>
   `;
+}
+
+let dreamerTooltipEl = null;
+let dreamerTooltipAnchor = null;
+
+function ensureDreamerDetailTooltip() {
+  if (dreamerTooltipEl) return dreamerTooltipEl;
+  dreamerTooltipEl = document.createElement("div");
+  dreamerTooltipEl.id = "dreamer-detail-tooltip";
+  dreamerTooltipEl.className = "dreamer-detail-tooltip hidden";
+  dreamerTooltipEl.setAttribute("role", "tooltip");
+  document.body.appendChild(dreamerTooltipEl);
+  window.addEventListener("scroll", repositionDreamerDetailTooltip, true);
+  window.addEventListener("resize", repositionDreamerDetailTooltip);
+  return dreamerTooltipEl;
+}
+
+function repositionDreamerDetailTooltip() {
+  if (!dreamerTooltipEl || dreamerTooltipEl.classList.contains("hidden") || !dreamerTooltipAnchor) return;
+  positionDreamerDetailTooltip(dreamerTooltipEl, dreamerTooltipAnchor);
+}
+
+function positionDreamerDetailTooltip(tooltip, anchor) {
+  const rect = anchor.getBoundingClientRect();
+  const margin = 12;
+  const tooltipRect = tooltip.getBoundingClientRect();
+  let left = rect.right + margin;
+  let top = rect.top + (rect.height / 2) - (tooltipRect.height / 2);
+
+  if (left + tooltipRect.width > window.innerWidth - margin) {
+    left = rect.left - tooltipRect.width - margin;
+  }
+  if (left < margin) {
+    left = Math.max(margin, rect.left + (rect.width / 2) - (tooltipRect.width / 2));
+    top = rect.bottom + margin;
+  }
+
+  top = Math.max(margin, Math.min(top, window.innerHeight - tooltipRect.height - margin));
+  tooltip.style.left = `${left}px`;
+  tooltip.style.top = `${top}px`;
+}
+
+export function showDreamerDetailTooltip(dreamer, anchorEl, options = {}) {
+  if (!dreamer || !anchorEl) return;
+  const el = ensureDreamerDetailTooltip();
+  dreamerTooltipAnchor = anchorEl;
+  el.innerHTML = buildDreamerDetailHtml(dreamer, options);
+  el.classList.remove("hidden");
+  requestAnimationFrame(() => {
+    positionDreamerDetailTooltip(el, anchorEl);
+    requestAnimationFrame(() => positionDreamerDetailTooltip(el, anchorEl));
+  });
+}
+
+export function hideDreamerDetailTooltip() {
+  dreamerTooltipAnchor = null;
+  dreamerTooltipEl?.classList.add("hidden");
+}
+
+export function showDreamerDetail(dreamer, options = {}) {
+  if (!dreamer) return;
+
+  const modal = document.getElementById("utility-modal");
+  const body = document.getElementById("utility-modal-body");
+  body.innerHTML = buildDreamerDetailHtml(dreamer, options);
   modal.querySelector(".utility-content")?.classList.add("dreamer-detail-modal");
   modal.classList.remove("hidden");
 }

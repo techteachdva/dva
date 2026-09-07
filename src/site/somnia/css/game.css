@@ -2041,10 +2041,35 @@ body.in-game main {
   flex-direction: column;
   align-items: center;
   gap: 0.35rem;
+  position: relative;
+  cursor: pointer;
+  border-radius: 10px;
+  outline: none;
+}
+
+.dreamer-pick:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.dreamer-pick-slot {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--gold);
+  background: rgba(240, 201, 106, 0.12);
+  border: 1px solid rgba(240, 201, 106, 0.35);
+  border-radius: 999px;
+  padding: 0.15rem 0.5rem;
 }
 
 .dreamer-pick.selected .game-card {
   outline: 2px solid var(--accent);
+}
+
+.dreamer-pick .game-card {
+  pointer-events: none;
 }
 
 .dreamer-pick-stats {
@@ -2261,6 +2286,40 @@ body.in-game main {
   margin: 0;
   font-size: 0.9rem;
   line-height: 1.45;
+}
+
+.dreamer-detail-tooltip {
+  position: fixed;
+  z-index: 1200;
+  width: min(420px, calc(100vw - 24px));
+  padding: 0.85rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+
+.dreamer-detail-tooltip.hidden {
+  display: none;
+}
+
+.dreamer-detail-tooltip .dreamer-detail {
+  grid-template-columns: minmax(120px, 34%) minmax(0, 1fr);
+  gap: 0.85rem;
+}
+
+.dreamer-detail-tooltip .dreamer-detail-body h2 {
+  font-size: 1.05rem;
+}
+
+.dreamer-detail-tooltip .dreamer-detail-flavor {
+  font-size: 0.82rem;
+  margin-bottom: 0.55rem;
+}
+
+.dreamer-detail-tooltip .dreamer-detail-power-text {
+  font-size: 0.82rem;
 }
 
 .landscape-detail-occupants {
