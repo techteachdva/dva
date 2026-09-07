@@ -11,6 +11,7 @@ import {
   subconsciousCount,
   normalizeSubconscious,
   repressFromMindstreamSetup,
+  isDreambeastPsycheCard,
 } from "./subconscious.js";
 import {
   handLimitForPlayer,
@@ -38,6 +39,7 @@ import {
   resolvePowerCardsInHand,
   resolveAllPowerCardsInHands,
 } from "./power-tokens.js";
+
 export function createInitialState(data, options) {
   const length = LENGTHS[options.lengthKey];
   const landscapes = data.landscapes.filter((l) => !l.hidden);
@@ -54,19 +56,37 @@ export function createInitialState(data, options) {
   const mindstreamDiscard = { lucidity: [], elasticity: [], willpower: [] };
   const subconscious = createSubconscious();
 
+  function dealStartingPsyche(count) {
+    const hand = [];
+    const deferred = [];
+    let guard = psycheDeck.length + deferred.length + 1;
+    while (hand.length < count && guard-- > 0) {
+      if (!psycheDeck.length && deferred.length) {
+        psycheDeck.push(...deferred.splice(0));
+      }
+      if (!psycheDeck.length) break;
+      const card = psycheDeck.shift();
+      if (card.type === "psyche-power") deferred.push(card);
+      else hand.push(card);
+    }
+    if (deferred.length) psycheDeck.unshift(...deferred);
+    return hand;
+  }
+
   const players = options.selectedDreamers.map((dreamer, index) => ({
     id: uid("player"),
     name: dreamer.name,
     dreamer,
     landscapeId: "bed",
     powerTokens: 0,
-    hand: psycheDeck.splice(0, 5),
+    hand: dealStartingPsyche(PSYCHE_STARTING_HAND),
     objects: [],
     persistent: [],
     acquiredArchetypes: [],
     isHead: index === 0,
     alive: true,
     pendingRespawn: false,
+    deathCount: 0,
   }));
 
   ["lucidity", "elasticity", "willpower"].forEach((suit) => {
@@ -145,9 +165,12 @@ export function createInitialState(data, options) {
     pendingDreamerPower: null,
     cancellableDiscard: null,
     cancellableMove: null,
+    pendingDeathChoice: null,
   };
 
-  beginRoundReveal(state);
+  resetPhaseFlags(state);
+  state.phaseIndex = 0;
+  addLog(state, `Round ${state.round}: Reveal Phase — each Dreamer begins with ${PSYCHE_STARTING_HAND} Psyche.`);
   players.forEach((player) => {
     grantPowerTokens(state, player, 2, {
       reason: `${player.name} begins with 2 Power Tokens.`,
@@ -315,34 +338,131 @@ export function beginRoundReveal(state) {
   addLog(state, `Round ${state.round}: Reveal — each Dreamer draws 2 Psyche.`);
 }
 
-export function checkDreamerPsycheDeath(state, player) {
+const MAX_DREAMER_DEATHS = 5;
+
+export function deathAvoidTokenCost(state) {
+  const alive = state.players.filter((p) => p.alive).length;
+  return Math.max(1, Math.floor(alive / 2));
+}
+
+function respawnPsycheTarget(deathCount) {
+  return Math.max(0, PSYCHE_STARTING_HAND - deathCount);
+}
+
+function clearPlayerHandOnDeath(state, player) {
+  while (player.hand.length) {
+    const card = player.hand.pop();
+    if (isDreambeastPsycheCard(card)) {
+      repressCard(state, card);
+    } else {
+      if (!state.psycheDiscard) state.psycheDiscard = [];
+      state.psycheDiscard.push(card);
+    }
+  }
+}
+
+function discardPlayerObjects(state, player) {
+  const objects = [...(player.objects || []), ...(player.persistent || [])];
+  objects.forEach((obj) => discardToMindstream(state, obj));
+  player.objects = [];
+  player.persistent = [];
+}
+
+export function applyDreamerDeath(state, player) {
+  state.pendingDeathChoice = null;
+
+  const deaths = (player.deathCount || 0) + 1;
+  player.deathCount = deaths;
+
+  discardPlayerObjects(state, player);
+  player.powerTokens = 0;
+  clearPlayerHandOnDeath(state, player);
+  player.landscapeId = "bed";
+
+  if (deaths >= MAX_DREAMER_DEATHS) {
+    player.alive = false;
+    addLog(state, `${player.name} is lost to the Dreamscape forever (${MAX_DREAMER_DEATHS} deaths).`);
+    if (state.availableDreamers?.length) {
+      state.pendingRespawn = player.id;
+      addLog(state, "Choose a new Dreamer to continue.");
+    }
+    return;
+  }
+
+  const target = respawnPsycheTarget(deaths);
+  drawPsycheForPlayer(state, player, target);
+  resolvePowerCardsInHand(state, player);
+
+  state.pendingDeathAdditionalDream = true;
+  addLog(
+    state,
+    `${player.name} dies (${deaths}/${MAX_DREAMER_DEATHS}) — objects and Power lost. Returns to The Bed with ${target} Psyche. An Additional Dream resolves.`,
+  );
+}
+
+export function offerDreamerDeathChoice(state, player) {
   if (!player?.alive || hasPsycheHealth(player)) return false;
-  handleDreamerDeath(state, player);
+  if (state.pendingDeathChoice?.playerId === player.id) return true;
+
+  const cost = deathAvoidTokenCost(state);
+  if ((player.powerTokens || 0) >= cost) {
+    state.pendingDeathChoice = { playerId: player.id, cost };
+    addLog(
+      state,
+      `${player.name} has no Psyche! Spend ${cost} Power Token${cost === 1 ? "" : "s"} to draw 1 Psyche and survive, or accept death.`,
+    );
+    return true;
+  }
+
+  applyDreamerDeath(state, player);
   return true;
 }
 
-export function handleDreamerDeath(state, player) {
-  addLog(state, `${player.name} has no Psyche left and dies in the Dream!`);
+export function avoidDreamerDeath(state) {
+  const pending = state.pendingDeathChoice;
+  if (!pending) return false;
 
-  const objects = [...(player.objects || []), ...(player.persistent || [])];
-  objects.forEach((obj) => {
-    discardToMindstream(state, obj);
+  const player = state.players.find((p) => p.id === pending.playerId);
+  if (!player?.alive) {
+    state.pendingDeathChoice = null;
+    return false;
+  }
+
+  const spent = spendPowerTokens(state, player, pending.cost, {
+    reason: `${player.name} spends ${pending.cost} Power Token${pending.cost === 1 ? "" : "s"} to cling to the Dream.`,
   });
-  player.objects = [];
-  player.persistent = [];
+  if (!spent) return false;
 
-  player.landscapeId = "bed";
-  player.hand = [];
-  player.alive = true;
-  player.pendingRespawn = false;
-  state.pendingRespawn = null;
+  state.pendingDeathChoice = null;
+  drawPsycheForPlayer(state, player, 1);
 
-  drawPsycheForPlayer(state, player, PSYCHE_STARTING_HAND);
-  addLog(
-    state,
-    `${player.name} begins a new Dream on The Bed with ${PSYCHE_STARTING_HAND} Psyche. Objects discarded.`,
-  );
-  state.pendingDeathAdditionalDream = true;
+  if (!hasPsycheHealth(player)) {
+    applyDreamerDeath(state, player);
+  } else {
+    addLog(state, `${player.name} draws 1 Psyche and stays in the Dream.`);
+  }
+  return true;
+}
+
+export function acceptDreamerDeath(state) {
+  const pending = state.pendingDeathChoice;
+  if (!pending) return false;
+
+  const player = state.players.find((p) => p.id === pending.playerId);
+  state.pendingDeathChoice = null;
+  if (!player) return false;
+
+  applyDreamerDeath(state, player);
+  return true;
+}
+
+export function checkDreamerPsycheDeath(state, player) {
+  if (!player?.alive || hasPsycheHealth(player)) return false;
+  return offerDreamerDeathChoice(state, player);
+}
+
+export function handleDreamerDeath(state, player) {
+  offerDreamerDeathChoice(state, player);
 }
 
 export function respawnDreamer(state, playerId, dreamerId) {
@@ -355,14 +475,15 @@ export function respawnDreamer(state, playerId, dreamerId) {
   player.name = dreamer.name;
   player.alive = true;
   player.landscapeId = "bed";
+  player.deathCount = 0;
   player.powerTokens = 0;
   player.hand = [];
   grantPowerTokens(state, player, 2, { reason: `${dreamer.name} returns with 2 Power Tokens.`, logQuest: false, animate: false });
-  drawPsycheForPlayer(state, player, 5);
+  drawPsycheForPlayer(state, player, PSYCHE_STARTING_HAND);
   resolvePowerCardsInHand(state, player);
   player.pendingRespawn = false;
   state.pendingRespawn = null;
-  addLog(state, `${dreamer.name} enters the Dreamscape on The Bed with 5 Psyche and 2 Power.`);
+  addLog(state, `${dreamer.name} enters the Dreamscape on The Bed with ${PSYCHE_STARTING_HAND} Psyche and 2 Power.`);
   return true;
 }
 

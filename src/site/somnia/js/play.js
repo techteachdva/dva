@@ -11,7 +11,7 @@ import {
 } from "./card-fx.js";
 import { runPendingBoardFx } from "./board-fx.js";
 import { loadGameData } from "./data.js";
-import { createInitialState, addLog, respawnDreamer, getPhase, activePlayer } from "./state.js";
+import { createInitialState, addLog, respawnDreamer, getPhase, activePlayer, avoidDreamerDeath, acceptDreamerDeath } from "./state.js";
 import {
   getPhaseActions,
   getPhaseAdvanceAction,
@@ -92,6 +92,7 @@ import {
   showDeckFlipPicker,
   showTradeControls,
   showRespawnPicker,
+  showDeathChoiceModal,
   hideUtilityModal,
   showSubconsciousPicker,
   showSubconsciousBrowse,
@@ -352,6 +353,31 @@ function onHandCardClick(card, owner) {
     return;
   }
   renderAll();
+}
+
+let lastDeathChoiceKey = null;
+
+function maybeShowDeathChoice() {
+  if (!state?.pendingDeathChoice) {
+    lastDeathChoiceKey = null;
+    return;
+  }
+  const key = state.pendingDeathChoice.playerId;
+  if (key === lastDeathChoiceKey) return;
+  lastDeathChoiceKey = key;
+  showDeathChoiceModal(
+    state,
+    () => {
+      avoidDreamerDeath(state);
+      lastDeathChoiceKey = null;
+      renderAll();
+    },
+    () => {
+      acceptDreamerDeath(state);
+      lastDeathChoiceKey = null;
+      renderAll();
+    },
+  );
 }
 
 function maybeShowRespawn() {
@@ -660,6 +686,7 @@ function renderAll() {
 
   renderPhaseActions(phaseActions);
   resolvePendingDeathDream(state, showModal);
+  maybeShowDeathChoice();
   maybeShowRespawn();
   maybeShowRepressPicker();
   maybeShowReturnPicker();

@@ -102,7 +102,21 @@ export function getCurrentObjective(state) {
       title: "Dreamer died — new Dream",
       steps: [
         "A Dreamer lost all Psyche and died in the Dream.",
-        "They respawned on The Bed with 5 Psyche; an Additional Dream is resolving.",
+        "They return to The Bed with fewer Psyche; an Additional Dream is resolving.",
+      ],
+    };
+  }
+
+  if (state.pendingDeathChoice) {
+    const player = state.players.find((p) => p.id === state.pendingDeathChoice.playerId);
+    const cost = state.pendingDeathChoice.cost;
+    return {
+      phase: getPhase(state),
+      suit: "willpower",
+      title: "Avoid death?",
+      steps: [
+        `${player?.name || "A Dreamer"} has no Psyche left.`,
+        `Spend **${cost}** Power Token${cost === 1 ? "" : "s"} to draw 1 Psyche, or accept death.`,
       ],
     };
   }

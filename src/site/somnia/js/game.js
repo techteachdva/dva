@@ -416,7 +416,7 @@ export function getPhaseActions(state, handlers) {
 }
 
 export function getPhaseAdvanceAction(state, handlers) {
-  if (state.landscapePick || state.pendingRepress || state.pendingReturn || hasPendingDreamerPower(state)) return null;
+  if (state.landscapePick || state.pendingRepress || state.pendingReturn || state.pendingDeathChoice || hasPendingDreamerPower(state)) return null;
   const actions = getPhaseActions(state, handlers);
   return actions.find((a) => a.advance && !a.disabled) || null;
 }

@@ -572,7 +572,7 @@ export function renderPlayers(state, onSelectPlayer) {
       <div class="info">
         <div class="name">${player.name}${player.isHead ? " ★" : ""}${!player.alive ? " (lost)" : ""}</div>
         ${dreamerStatsHtml(player.dreamer)}
-        <div class="sub">${player.powerTokens} power · ${formatHandPsycheLine(state, player)} · ${player.objects.length} obj · ${player.persistent?.length || 0} persistent</div>
+        <div class="sub">${player.powerTokens} power · ${formatHandPsycheLine(state, player)} · ${player.deathCount || 0}/5 deaths · ${player.objects.length} obj · ${player.persistent?.length || 0} persistent</div>
       </div>
     `;
 
@@ -1390,6 +1390,42 @@ export function showTradeControls(state, onConfirm, onCancel) {
   body.querySelector("#trade-cancel").addEventListener("click", () => {
     hideUtilityModal();
     onCancel();
+  });
+  modal.classList.remove("hidden");
+}
+
+export function showDeathChoiceModal(state, onAvoid, onAccept) {
+  const pending = state.pendingDeathChoice;
+  if (!pending) return;
+
+  const player = state.players.find((p) => p.id === pending.playerId);
+  const modal = document.getElementById("utility-modal");
+  const body = document.getElementById("utility-modal-body");
+  const deaths = player?.deathCount || 0;
+
+  body.innerHTML = `
+    <div class="death-choice-modal">
+      <h2>${player?.name || "Dreamer"} has no Psyche</h2>
+      <p>Deaths this game: <strong>${deaths} / 5</strong></p>
+      <p class="death-choice-lead">Spend Power Tokens to draw 1 Psyche and stay alive, or accept death and return to The Bed.</p>
+      <div class="utility-actions landscape-action-choices">
+        <button type="button" class="btn primary" id="death-choice-avoid">
+          Spend ${pending.cost} Power Token${pending.cost === 1 ? "" : "s"} — draw 1 Psyche
+        </button>
+        <button type="button" class="btn" id="death-choice-accept">
+          Accept death (lose objects &amp; Power, respawn with fewer Psyche)
+        </button>
+      </div>
+    </div>
+  `;
+
+  body.querySelector("#death-choice-avoid")?.addEventListener("click", () => {
+    hideUtilityModal();
+    onAvoid?.();
+  });
+  body.querySelector("#death-choice-accept")?.addEventListener("click", () => {
+    hideUtilityModal();
+    onAccept?.();
   });
   modal.classList.remove("hidden");
 }
