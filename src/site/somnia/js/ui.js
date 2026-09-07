@@ -30,7 +30,12 @@ import {
   RULES_TAB_DETAILS,
   getDreamerChipTooltip,
 } from "./guide.js";
-import { burstSparklesAtElement, consumePhasePulse } from "./fx.js";
+import {
+  burstSparklesAtElement,
+  consumePhasePulse,
+  consumeRevealedTiles,
+  consumeForgottenTiles,
+} from "./fx.js";
 import { consumeBoardClickSuppression } from "./board-zoom.js";
 import { powerTokensInPool, MAX_POWER_TOKEN_POOL } from "./power-tokens.js";
 import {
