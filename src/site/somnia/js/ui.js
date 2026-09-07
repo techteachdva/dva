@@ -2127,6 +2127,14 @@ let tutorialHighlightEls = [];
 let tutorialSpotlightEl = null;
 let tutorialSparkleLayer = null;
 let tutorialSpotlightTracker = null;
+let tutorialScrollBound = false;
+
+function bindTutorialScrollRefresh() {
+  if (tutorialScrollBound) return;
+  tutorialScrollBound = true;
+  document.getElementById("table-chrome")?.addEventListener("scroll", () => positionTutorialSpotlight(), { passive: true });
+  window.addEventListener("resize", () => positionTutorialSpotlight(), { passive: true });
+}
 
 const SPARKLE_COUNT = 28;
 const SPARKLE_JUMP_MS = 720;
@@ -2276,7 +2284,6 @@ function startTutorialSpotlightTracker() {
     tutorialSpotlightTracker = new ResizeObserver(() => positionTutorialSpotlight());
     elements.forEach((el) => {
       tutorialSpotlightTracker.observe(el);
-      if (el.parentElement) tutorialSpotlightTracker.observe(el.parentElement);
     });
   }
   window.addEventListener("resize", positionTutorialSpotlight);
@@ -2331,6 +2338,7 @@ function applyTutorialHighlight(stepOrTarget, { animateIn = true } = {}) {
   tutorialHighlightEls = targets;
   tutorialHighlightEl = targets[0];
   tutorialSpotlightEl.classList.remove("hidden", "tutorial-spotlight-arriving");
+  bindTutorialScrollRefresh();
   positionTutorialSpotlight();
   startTutorialSpotlightTracker();
 
@@ -2341,7 +2349,9 @@ function applyTutorialHighlight(stepOrTarget, { animateIn = true } = {}) {
     }, 520);
   }
 
-  targets[0].scrollIntoView({ block: "nearest", behavior: "smooth" });
+  if (!targets[0].closest("#table-chrome")) {
+    targets[0].scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }
 }
 
 function animateTutorialSparkleJump(fromRect, step, onComplete) {
@@ -2409,12 +2419,51 @@ function clearTutorialHighlight({ keepLayer = false } = {}) {
   }
 }
 
+export function updateTutorialStepUI({
+  step,
+  stepIndex,
+  total,
+  canAdvance,
+  roundLabel = null,
+  objective = "",
+}) {
+  const overlay = document.getElementById("tutorial-overlay");
+  if (!overlay || overlay.classList.contains("hidden")) return;
+
+  const waiting = step?.until && !canAdvance;
+  const nextBtn = document.getElementById("tutorial-next");
+  if (nextBtn) nextBtn.disabled = waiting;
+
+  const card = overlay.querySelector(".tutorial-card");
+  card?.classList.toggle("tutorial-waiting", waiting);
+
+  let hintEl = card?.querySelector(".tutorial-next-hint");
+  if (!hintEl && card) {
+    hintEl = document.createElement("p");
+    hintEl.className = "tutorial-next-hint";
+    card.querySelector("p")?.after(hintEl);
+  }
+  if (hintEl) {
+    hintEl.innerHTML = waiting && objective
+      ? `<strong>Objective:</strong> ${objective}`
+      : (objective && !step?.until
+        ? `<strong>Tip:</strong> ${objective}`
+        : (canAdvance && step?.until ? "Objective complete — press Continue." : ""));
+  }
+
+  if (step && stepIndex != null && total) {
+    const roundPart = roundLabel ? `Round ${roundLabel} · ` : "";
+    document.getElementById("tutorial-progress").textContent = `${roundPart}Step ${stepIndex + 1} / ${total}`;
+  }
+}
+
 export function showTutorialStep(step, stepIndex, total, {
   onNext,
   onSkip,
   canAdvance = true,
   roundLabel = null,
   fromRect = null,
+  objective = "",
 }) {
   const overlay = document.getElementById("tutorial-overlay");
   if (!overlay) return;
@@ -2437,9 +2486,11 @@ export function showTutorialStep(step, stepIndex, total, {
     card.querySelector("p")?.after(hintEl);
   }
   if (hintEl) {
-    hintEl.textContent = waiting
-      ? "Complete the highlighted action to continue."
-      : "";
+    hintEl.innerHTML = waiting && objective
+      ? `<strong>Objective:</strong> ${objective}`
+      : (objective && !step.until
+        ? `<strong>Tip:</strong> ${objective}`
+        : (canAdvance && step.until ? "Objective complete — press Continue." : ""));
   }
 
   clearTutorialHighlight({ keepLayer: !!fromRect });

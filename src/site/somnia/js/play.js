@@ -117,6 +117,7 @@ import {
   showRulesModal,
   showOverviewModal,
   showTutorialStep,
+  updateTutorialStepUI,
   hideTutorial,
   getTutorialSpotlightRect,
   refreshTutorialSpotlight,
@@ -132,6 +133,7 @@ let devConsole = null;
 let tutorialIndex = -1;
 let interactiveTutorialActive = false;
 let lastTutorialSyncKey = null;
+let lastTutorialStepId = null;
 let fullscreenReady = false;
 const lastCardClick = { id: null, time: 0 };
 let boardResizeTimer = null;
@@ -464,12 +466,14 @@ function handleTutorialNext() {
     return;
   }
   lastTutorialSyncKey = null;
+  lastTutorialStepId = null;
   renderAll();
   const nextSync = syncTutorial(state);
   if (!nextSync || nextSync.complete) return;
   showTutorialStep(nextSync.step, nextSync.stepIndex, nextSync.total, {
     canAdvance: nextSync.canAdvance,
     roundLabel: nextSync.round,
+    objective: nextSync.objective,
     fromRect,
     onNext: handleTutorialNext,
     onSkip: handleTutorialSkip,
@@ -498,20 +502,31 @@ function syncInteractiveTutorial() {
     return;
   }
 
-  const { step, stepIndex, total, canAdvance, round } = sync;
-  const syncKey = `${stepIndex}:${canAdvance}:${step.id}`;
+  const { step, stepIndex, total, canAdvance, round, objective } = sync;
+  const syncKey = `${stepIndex}:${canAdvance}:${step.id}:${objective}`;
+  const overlayOpen = !document.getElementById("tutorial-overlay")?.classList.contains("hidden");
+
   if (syncKey === lastTutorialSyncKey) {
-    const nextBtn = document.getElementById("tutorial-next");
-    if (nextBtn) nextBtn.disabled = !!(step.until && !canAdvance);
     ensureTutorialStepTargetsVisible(step);
     refreshTutorialSpotlight();
     return;
   }
+
+  if (overlayOpen && lastTutorialStepId === step.id) {
+    updateTutorialStepUI({ step, stepIndex, total, canAdvance, roundLabel: round, objective });
+    ensureTutorialStepTargetsVisible(step);
+    refreshTutorialSpotlight();
+    lastTutorialSyncKey = syncKey;
+    return;
+  }
+
   lastTutorialSyncKey = syncKey;
+  lastTutorialStepId = step.id;
 
   showTutorialStep(step, stepIndex, total, {
     canAdvance,
     roundLabel: round,
+    objective,
     onNext: handleTutorialNext,
     onSkip: handleTutorialSkip,
   });

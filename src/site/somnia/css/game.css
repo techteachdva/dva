@@ -1326,9 +1326,26 @@ body.tutorial-mode-active .tutorial-sparkle-layer {
 
 .tutorial-card.tutorial-waiting .tutorial-next-hint {
   display: block;
-  font-size: 0.8rem;
+  font-size: 0.84rem;
   color: #f0c96a;
-  margin: -0.5rem 0 0.75rem;
+  margin: 0.35rem 0 0.85rem;
+  padding: 0.55rem 0.7rem;
+  line-height: 1.45;
+  background: rgba(240, 201, 106, 0.08);
+  border-radius: 8px;
+  border-left: 3px solid #f0c96a;
+}
+
+.tutorial-card.tutorial-waiting .tutorial-next-hint strong {
+  color: #fff8dc;
+  font-weight: 600;
+}
+
+.tutorial-card:not(.tutorial-waiting) .tutorial-next-hint {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--success);
+  margin: 0.35rem 0 0.75rem;
 }
 
 .tutorial-next-hint { display: none; }

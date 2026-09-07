@@ -114,20 +114,133 @@ function dreamerOnHouse(state) {
   return state.players.some((p) => p.alive && p.landscapeId === "house");
 }
 
+function phaseAfter(state, phase) {
+  const order = ["Reveal", "Explore", "Meet"];
+  const idx = order.indexOf(getPhase(state));
+  return idx > order.indexOf(phase);
+}
+
+function revealDone(state, minRound = 1) {
+  return state.round >= minRound
+    && state.dreamDrawn
+    && (state.revealLandscapeUsed || phaseAfter(state, "Reveal"));
+}
+
+/** R.E.M. loop steps for rounds 2, 4, and 5 (practice rounds). */
+function remPracticeSteps(round, { introTitle, introBody, endBody, endUntil } = {}) {
+  const r = round;
+  const endGate = endUntil === false
+    ? null
+    : (endUntil || ((s) => s.round >= r + 1));
+  return [
+    {
+      id: `r${r}-intro`,
+      round: r,
+      title: introTitle || `Round ${r} — R.E.M.`,
+      body: introBody || `Run the loop yourself: Reveal (Dream + Lucidity) → Explore (Elasticity + moves) → Meet (Willpower + actions). The phase tracker shows where you are.`,
+      target: "#phase-stepper",
+    },
+    {
+      id: `r${r}-dream`,
+      round: r,
+      title: `Round ${r} — Reveal: Draw Dream`,
+      body: "Reveal always starts with the Head Dreamer drawing one Dream card.",
+      target: "#phase-actions",
+      until: (s) => s.round >= r && s.dreamDrawn,
+      objective: (s) => (s.dreamDrawn
+        ? "Dream drawn — press Continue."
+        : "Click Draw & Resolve Dream in the action bar."),
+    },
+    {
+      id: `r${r}-lucidity`,
+      round: r,
+      title: `Round ${r} — Reveal: Spend Lucidity`,
+      body: "Select 1–2 blue Lucidity cards from a Dreamer's hand, then click Reveal Landscapes and flip at least one hidden hex.",
+      targets: ["#hand-bar", "#phase-actions"],
+      until: (s) => revealDone(s, r),
+      objective: (s) => {
+        if (!s.dreamDrawn) return "Draw the Dream first.";
+        if (s.revealLandscapeUsed || phaseAfter(s, "Reveal")) return "Reveal complete — press Continue.";
+        if (hasLuciditySelected(s)) return "Click Reveal Landscapes, then pick a hidden hex on the map.";
+        return "Select 1–2 Lucidity cards, then click Reveal Landscapes.";
+      },
+    },
+    {
+      id: `r${r}-to-explore`,
+      round: r,
+      title: `Round ${r} — Enter Explore`,
+      body: "When Reveal is finished, click Next Phase at the top of the table.",
+      target: "#phase-advance-bar",
+      until: (s) => s.round >= r && phaseAfter(s, "Reveal"),
+      objective: (s) => (phaseAfter(s, "Reveal")
+        ? "Explore phase started — press Continue."
+        : "Click Next Phase to leave Reveal."),
+    },
+    {
+      id: `r${r}-elasticity`,
+      round: r,
+      title: `Round ${r} — Explore: Spend Elasticity`,
+      body: "Select 1–2 yellow Elasticity cards, then Spend Elasticity to unlock shared moves.",
+      targets: ["#hand-bar", "#phase-actions"],
+      until: (s) => s.round >= r && (s.exploreActivated || getPhase(s) === "Meet"),
+      objective: (s) => (s.exploreActivated || getPhase(s) === "Meet"
+        ? "Elasticity spent — press Continue."
+        : "Select 1–2 Elasticity cards, then click Spend Elasticity."),
+    },
+    {
+      id: `r${r}-to-meet`,
+      round: r,
+      title: `Round ${r} — Enter Meet`,
+      body: "Move Dreamers on the map if you want, then click Next Phase. You may skip unused Explore moves.",
+      targets: ["#phase-advance-bar", "#board-viewport"],
+      until: (s) => s.round >= r && getPhase(s) === "Meet",
+      objective: (s) => (getPhase(s) === "Meet"
+        ? "Meet phase started — press Continue."
+        : "Click Next Phase to enter Meet."),
+    },
+    {
+      id: `r${r}-willpower`,
+      round: r,
+      title: `Round ${r} — Meet: Spend Willpower`,
+      body: "Select 1–2 red Willpower cards, then Gain Actions. Use Meet actions for Encounters, Landscapes, Trade, Objects, or Quests.",
+      targets: ["#hand-bar", "#phase-actions"],
+      until: (s) => s.round >= r && s.meetActionBudget > 0,
+      objective: (s) => (s.meetActionBudget > 0
+        ? "Meet actions unlocked — press Continue."
+        : "Select 1–2 Willpower cards, then click Gain Actions."),
+    },
+    {
+      id: `r${r}-end`,
+      round: r,
+      title: `End Round ${r}`,
+      body: endBody || "Spend any remaining Meet actions you want, then click Next Phase to end the round.",
+      target: "#phase-advance-bar",
+      ...(endGate ? {
+        until: endGate,
+        objective: (s) => (endGate(s)
+          ? "Round ended — press Continue."
+          : "Click Next Phase to end the Meet phase and start the next round."),
+      } : {
+        objective: "End the round when ready, then press Continue.",
+      }),
+    },
+  ];
+}
+
 /** Linear guided script — player must complete highlighted actions between steps. */
 export const TUTORIAL_SCRIPT = [
   {
     id: "welcome",
     round: 1,
     title: "Welcome to Somnia",
-    body: "This interactive tutorial walks you through 5 scripted rounds. Actions are highlighted; complete each step before pressing Continue. Talk with your partner — there is no turn order within a phase.",
+    body: "This walkthrough covers 5 rounds. Complete each objective to unlock Continue. Talk with your partner — there is no turn order within a phase.",
     target: null,
   },
   {
     id: "phases",
     round: 1,
-    title: "Reveal → Explore → Meet",
-    body: "Each round has three phases tied to Psyche suits: ◉ Lucidity (Reveal), ⇄ Elasticity (Explore), ▲ Willpower (Meet). Advance when your team is ready.",
+    title: "R.E.M. — Reveal, Explore, Meet",
+    body: "Each round has three phases tied to Psyche suits: ◉ Lucidity (Reveal), ⇄ Elasticity (Explore), ▲ Willpower (Meet). The phase tracker always shows your current step.",
     target: "#phase-stepper",
   },
   {
@@ -165,6 +278,9 @@ export const TUTORIAL_SCRIPT = [
     body: "The Head Dreamer (★) draws one Dream per round. Click Draw & Resolve Dream — this tutorial uses Quiet (nothing happens).",
     target: "#phase-actions",
     until: (s) => s.dreamDrawn,
+    objective: (s) => (s.dreamDrawn
+      ? "Dream drawn — press Continue."
+      : "Click Draw & Resolve Dream in the action bar."),
   },
   {
     id: "spend-lucidity-r1",
@@ -173,6 +289,11 @@ export const TUTORIAL_SCRIPT = [
     body: "Select 1–2 blue Lucidity cards from The Visionary's row, then click Reveal Landscapes in the action bar below the map.",
     targets: ["#hand-bar", "#phase-actions"],
     until: (s) => s.revealLandscapeUsed || s.landscapePick?.mode === "reveal",
+    objective: (s) => {
+      if (s.revealLandscapeUsed || s.landscapePick?.mode === "reveal") return "Lucidity spent — press Continue.";
+      if (hasLuciditySelected(s)) return "Click Reveal Landscapes in the action bar.";
+      return "Select 1–2 Lucidity cards from The Visionary's hand.";
+    },
   },
   {
     id: "reveal-pick-r1",
@@ -181,6 +302,9 @@ export const TUTORIAL_SCRIPT = [
     body: "Click hidden hex tiles on the map to flip them face-up. Reveal at least one Landscape, then continue.",
     target: "#board-viewport",
     until: (s) => s.revealLandscapeUsed,
+    objective: (s) => (s.revealLandscapeUsed
+      ? "Landscape revealed — press Continue."
+      : "Click a hidden hex on the map to reveal it."),
   },
   {
     id: "to-explore-r1",
@@ -189,6 +313,9 @@ export const TUTORIAL_SCRIPT = [
     body: "When Reveal is done, click Next Phase at the top of the table to enter Explore.",
     target: "#phase-advance-bar",
     until: (s) => getPhase(s) === "Explore",
+    objective: (s) => (getPhase(s) === "Explore"
+      ? "Explore phase started — press Continue."
+      : "Click Next Phase to enter Explore."),
   },
   {
     id: "spend-elasticity-r1",
@@ -197,6 +324,9 @@ export const TUTORIAL_SCRIPT = [
     body: "Select 1–2 yellow Elasticity cards from The Runner's row, then click Spend Elasticity in the action bar.",
     targets: ["#hand-bar", "#phase-actions"],
     until: (s) => s.exploreActivated,
+    objective: (s) => (s.exploreActivated
+      ? "Elasticity spent — press Continue."
+      : "Select 1–2 Elasticity cards, then click Spend Elasticity."),
   },
   {
     id: "explore-move-r1",
@@ -205,6 +335,9 @@ export const TUTORIAL_SCRIPT = [
     body: "Click a Dreamer chip, then move onto House — a Mandrake Encounter waits there. Unused Explore moves can be skipped when advancing.",
     targets: ["#player-list", "#board-viewport"],
     until: (s) => dreamerOnHouse(s),
+    objective: (s) => (dreamerOnHouse(s)
+      ? "Dreamer on House — press Continue."
+      : "Move a Dreamer onto the House hex."),
   },
   {
     id: "to-meet-r1",
@@ -213,6 +346,9 @@ export const TUTORIAL_SCRIPT = [
     body: "Click Next Phase to enter Meet. If you still have Explore moves left, confirm to forfeit them.",
     target: "#phase-advance-bar",
     until: (s) => getPhase(s) === "Meet",
+    objective: (s) => (getPhase(s) === "Meet"
+      ? "Meet phase started — press Continue."
+      : "Click Next Phase to enter Meet."),
   },
   {
     id: "spend-willpower-r1",
@@ -221,6 +357,9 @@ export const TUTORIAL_SCRIPT = [
     body: "Select 1–2 red Willpower cards, then click Gain Actions in the action bar.",
     targets: ["#hand-bar", "#phase-actions"],
     until: (s) => s.meetActionBudget > 0,
+    objective: (s) => (s.meetActionBudget > 0
+      ? "Meet actions unlocked — press Continue."
+      : "Select 1–2 Willpower cards, then click Gain Actions."),
   },
   {
     id: "encounter-r1",
@@ -229,125 +368,247 @@ export const TUTORIAL_SCRIPT = [
     body: "A Mandrake waits on House. Select the House hex, then pool up to 3 Psyche from the Dreamer standing there. Accept (ally joins hand) or Repress (draw 1 Psyche) from the encounter panel.",
     targets: ["#hand-bar", "#active-encounter"],
     until: (s) => hasMeetPool(s),
+    objective: (s) => {
+      if (hasMeetPool(s)) return "Psyche pooled — press Continue.";
+      if (!dreamerOnHouse(s)) return "Move a Dreamer onto House and select the House hex.";
+      return "Select up to 3 Psyche cards from the Dreamer on House.";
+    },
   },
   {
     id: "end-r1",
     round: 1,
     title: "End Round 1",
-    body: "Click Next Phase to end the Meet phase and start Round 2. Dreams and Psyche draws happen at round start.",
+    body: "Click Next Phase to end the Meet phase and start Round 2. Psyche draws happen at round start.",
     target: "#phase-advance-bar",
     until: (s) => s.round >= 2,
+    objective: (s) => (s.round >= 2
+      ? "Round 2 started — press Continue."
+      : "Click Next Phase to end Round 1."),
   },
+  ...remPracticeSteps(2, {
+    introTitle: "Round 2 — Practice R.E.M.",
+    introBody: "Round 1 taught each step in detail. Now run Reveal → Explore → Meet on your own. Each screen lists exactly what unlocks Continue.",
+    endBody: "Round 3 brings a Boss Dream. End this round when ready.",
+  }),
   {
-    id: "draw-dream-r2",
-    round: 2,
-    title: "Round 2 — Another Dream",
-    body: "Draw the second Quiet Dream. Each round the Head Dreamer draws once in Reveal.",
-    target: "#phase-actions",
-    until: (s) => s.round >= 2 && s.dreamDrawn,
-  },
-  {
-    id: "phases-r2",
-    round: 2,
-    title: "Psyche Plays Recap",
-    body: "Repeat the pattern: spend Lucidity → reveal, spend Elasticity → move, spend Willpower → Meet actions. Objects are free anytime; Persistent Objects cost 1 Power Token to activate.",
-    targets: ["#guide-panel-wrap", "#guide-panel"],
-    until: (s) => getPhase(s) === "Explore" || s.exploreActivated,
-  },
-  {
-    id: "explore-r2",
-    round: 2,
-    title: "Explore Again",
-    body: "Spend Elasticity and move on the map. Landscape unique actions are available during Meet on their tile.",
-    targets: ["#player-list", "#board-viewport"],
-    until: (s) => s.round >= 2 && (s.exploreActivated || getPhase(s) === "Meet"),
-  },
-  {
-    id: "meet-r2",
-    round: 2,
-    title: "Meet Again",
-    body: "Spend Willpower for Meet actions. Trade, play Objects, complete quests, and pool Psyche for Encounters.",
-    targets: ["#hand-bar", "#phase-actions"],
-    until: (s) => s.round >= 2 && s.meetActionBudget > 0,
-  },
-  {
-    id: "end-r2",
-    round: 2,
-    title: "End Round 2",
-    body: "Advance to Round 3 — the Boss Dream arrives.",
-    target: "#phase-advance-bar",
-    until: (s) => s.round >= 3,
-  },
-  {
-    id: "boss-dream",
+    id: "r3-intro",
     round: 3,
-    title: "Boss Dream — Cerberus",
-    body: "Draw & Resolve Dream now. The third Dream of this tutorial awakens Cerberus on The Bed — a Boss Dreambeast with a harsh Fail effect.",
-    target: "#phase-actions",
-    until: (s) => s.round >= 3 && (s.dreamDrawn && bossOnBed(s)),
+    title: "Round 3 — Boss Dream",
+    body: "The third Dream awakens Cerberus on The Bed — a Boss Dreambeast. Bosses have harsh Fail effects if ignored. You'll still run the full R.E.M. loop this round.",
+    target: "#phase-stepper",
   },
   {
-    id: "boss-explained",
+    id: "r3-dream",
     round: 3,
-    title: "Boss Spawning",
-    body: "Boss Dreams place a nightmare on The Bed. Meet them with pooled Psyche during Meet phase. Defeating or Repressing bosses is key to surviving the Dreamscape.",
+    title: "Round 3 — Reveal: Boss Dream",
+    body: "Draw & Resolve Dream now. Cerberus spawns on The Bed.",
+    target: "#phase-actions",
+    until: (s) => s.round >= 3 && s.dreamDrawn && bossOnBed(s),
+    objective: (s) => {
+      if (bossOnBed(s) && s.dreamDrawn) return "Cerberus awakened — press Continue.";
+      if (!s.dreamDrawn) return "Click Draw & Resolve Dream.";
+      return "Resolve the Dream to spawn Cerberus.";
+    },
+  },
+  {
+    id: "r3-boss-info",
+    round: 3,
+    title: "Boss Encounters",
+    body: "Boss Dreams place a nightmare on The Bed. During Meet, only the Dreamer on The Bed may pool Psyche to Accept or Repress the boss.",
     target: "#active-encounter",
   },
   {
-    id: "boss-meet",
+    id: "r3-lucidity",
     round: 3,
-    title: "Face the Boss",
-    body: "Spend Willpower, then move onto The Bed if needed. Only the Dreamer on The Bed may pool Psyche to Meet Cerberus — or advance when ready to continue the tutorial.",
-    targets: ["#board-viewport", "#active-encounter"],
-    until: (s) => s.round >= 3 && (s.meetActionBudget > 0 || getPhase(s) !== "Meet"),
+    title: "Round 3 — Reveal: Spend Lucidity",
+    body: "Continue Reveal — spend Lucidity and reveal Landscapes as usual.",
+    targets: ["#hand-bar", "#phase-actions"],
+    until: (s) => revealDone(s, 3),
+    objective: (s) => {
+      if (revealDone(s, 3)) return "Reveal complete — press Continue.";
+      if (!s.revealLandscapeUsed) return "Spend Lucidity and reveal at least one Landscape.";
+      return "Finish revealing, or advance to Explore.";
+    },
   },
   {
-    id: "end-r3",
+    id: "r3-to-explore",
+    round: 3,
+    title: "Round 3 — Enter Explore",
+    body: "Click Next Phase when Reveal is done.",
+    target: "#phase-advance-bar",
+    until: (s) => s.round >= 3 && phaseAfter(s, "Reveal"),
+    objective: (s) => (phaseAfter(s, "Reveal")
+      ? "Explore phase started — press Continue."
+      : "Click Next Phase to enter Explore."),
+  },
+  {
+    id: "r3-elasticity",
+    round: 3,
+    title: "Round 3 — Explore: Spend Elasticity",
+    body: "Spend Elasticity and move Dreamers. Consider moving onto The Bed before Meet.",
+    targets: ["#hand-bar", "#phase-actions"],
+    until: (s) => s.round >= 3 && (s.exploreActivated || getPhase(s) === "Meet"),
+    objective: (s) => (s.exploreActivated || getPhase(s) === "Meet"
+      ? "Elasticity spent — press Continue."
+      : "Select 1–2 Elasticity cards, then click Spend Elasticity."),
+  },
+  {
+    id: "r3-to-meet",
+    round: 3,
+    title: "Round 3 — Enter Meet",
+    body: "Click Next Phase to enter Meet. Face Cerberus if you can, or advance the tutorial when ready.",
+    target: "#phase-advance-bar",
+    until: (s) => s.round >= 3 && getPhase(s) === "Meet",
+    objective: (s) => (getPhase(s) === "Meet"
+      ? "Meet phase started — press Continue."
+      : "Click Next Phase to enter Meet."),
+  },
+  {
+    id: "r3-willpower",
+    round: 3,
+    title: "Round 3 — Meet: Spend Willpower",
+    body: "Gain Meet actions. Pool Psyche on The Bed to face Cerberus, or use other Meet actions.",
+    targets: ["#hand-bar", "#phase-actions"],
+    until: (s) => s.round >= 3 && s.meetActionBudget > 0,
+    objective: (s) => (s.meetActionBudget > 0
+      ? "Meet actions unlocked — press Continue."
+      : "Select 1–2 Willpower cards, then click Gain Actions."),
+  },
+  {
+    id: "r3-end",
     round: 3,
     title: "End Round 3",
-    body: "You've survived the first Boss. Two tutorial rounds remain.",
+    body: "You've seen a Boss spawn. Two tutorial rounds remain.",
     target: "#phase-advance-bar",
     until: (s) => s.round >= 4,
+    objective: (s) => (s.round >= 4
+      ? "Round 4 started — press Continue."
+      : "Click Next Phase to end Round 3."),
   },
   {
-    id: "round-4",
+    id: "r4-intro",
     round: 4,
-    title: "Round 4 — Heroism",
-    body: "Draw the Dream (Heroism — team draws Willpower Psyche). Death in the Dream Represses the top of each Mindstream deck, loses Objects/Power, respawns on Bed with fewer Psyche, then resolves an extra Dream.",
+    title: "Round 4 — Heroism & Death",
+    body: "This round's Dream is Heroism (team draws Willpower Psyche). Then run R.E.M. again.",
+    target: "#phase-stepper",
+  },
+  {
+    id: "r4-dream",
+    round: 4,
+    title: "Round 4 — Reveal: Draw Dream",
+    body: "Draw Heroism — each Dreamer draws one Willpower Psyche card.",
     target: "#phase-actions",
     until: (s) => s.round >= 4 && s.dreamDrawn,
+    objective: (s) => (s.dreamDrawn
+      ? "Dream drawn — press Continue."
+      : "Click Draw & Resolve Dream."),
   },
   {
-    id: "death-rules",
+    id: "r4-death-rules",
     round: 4,
     title: "Death & Respawn",
-    body: "At 0 Psyche you may spend Power Tokens to cling to life, or die: 1st death → 4 Psyche, 2nd → 3, 3rd → 2, 4th → 1. Fifth death removes that Dreamer permanently.",
-    target: "#hex-board",
+    body: "At 0 Psyche you may spend Power Tokens to survive, or die: 1st death → 4 Psyche, 2nd → 3, 3rd → 2, 4th → 1. Fifth death removes that Dreamer permanently. Death also Represses the top of each Mindstream deck.",
+    target: "#subconscious-graveyard",
   },
   {
-    id: "end-r4",
+    id: "r4-lucidity",
+    round: 4,
+    title: "Round 4 — Reveal: Spend Lucidity",
+    body: "Spend Lucidity and reveal Landscapes.",
+    targets: ["#hand-bar", "#phase-actions"],
+    until: (s) => revealDone(s, 4),
+    objective: (s) => {
+      if (revealDone(s, 4)) return "Reveal complete — press Continue.";
+      if (!s.revealLandscapeUsed) return "Spend Lucidity and reveal at least one Landscape.";
+      return "Finish Reveal or click Next Phase.";
+    },
+  },
+  {
+    id: "r4-to-explore",
+    round: 4,
+    title: "Round 4 — Enter Explore",
+    body: "Click Next Phase when Reveal is done.",
+    target: "#phase-advance-bar",
+    until: (s) => s.round >= 4 && phaseAfter(s, "Reveal"),
+    objective: (s) => (phaseAfter(s, "Reveal")
+      ? "Explore phase started — press Continue."
+      : "Click Next Phase to enter Explore."),
+  },
+  {
+    id: "r4-elasticity",
+    round: 4,
+    title: "Round 4 — Explore: Spend Elasticity",
+    body: "Spend Elasticity and move on the map.",
+    targets: ["#hand-bar", "#phase-actions"],
+    until: (s) => s.round >= 4 && (s.exploreActivated || getPhase(s) === "Meet"),
+    objective: (s) => (s.exploreActivated || getPhase(s) === "Meet"
+      ? "Elasticity spent — press Continue."
+      : "Select 1–2 Elasticity cards, then click Spend Elasticity."),
+  },
+  {
+    id: "r4-to-meet",
+    round: 4,
+    title: "Round 4 — Enter Meet",
+    body: "Click Next Phase to enter Meet.",
+    target: "#phase-advance-bar",
+    until: (s) => s.round >= 4 && getPhase(s) === "Meet",
+    objective: (s) => (getPhase(s) === "Meet"
+      ? "Meet phase started — press Continue."
+      : "Click Next Phase to enter Meet."),
+  },
+  {
+    id: "r4-willpower",
+    round: 4,
+    title: "Round 4 — Meet: Spend Willpower",
+    body: "Gain Meet actions and use them freely.",
+    targets: ["#hand-bar", "#phase-actions"],
+    until: (s) => s.round >= 4 && s.meetActionBudget > 0,
+    objective: (s) => (s.meetActionBudget > 0
+      ? "Meet actions unlocked — press Continue."
+      : "Select 1–2 Willpower cards, then click Gain Actions."),
+  },
+  {
+    id: "r4-end",
     round: 4,
     title: "End Round 4",
-    body: "One more round after this.",
+    body: "One more tutorial round after this.",
     target: "#phase-advance-bar",
     until: (s) => s.round >= 5,
+    objective: (s) => (s.round >= 5
+      ? "Round 5 started — press Continue."
+      : "Click Next Phase to end Round 4."),
   },
-  {
-    id: "round-5",
-    round: 5,
-    title: "Final Tutorial Round",
-    body: "Round 5: run through Reveal, Explore, and Meet one last time. Use the Guide panel anytime for hints.",
-    targets: ["#guide-panel-wrap", "#phase-stepper"],
-    until: (s) => s.round >= 5 && s.dreamDrawn,
-  },
+  ...remPracticeSteps(5, {
+    introTitle: "Round 5 — Final R.E.M.",
+    introBody: "Last practice round. Run Reveal → Explore → Meet one more time, then graduate.",
+    endBody: "Finish Meet when ready — this is your last practice round.",
+    endUntil: false,
+  }),
   {
     id: "graduate",
     round: 5,
     title: "Tutorial Complete!",
-    body: "You know the core loop: Dreams reshape the map, Psyche powers phases, Power Tokens fuel abilities, and the Subconscious cycles through Repress and Return. Press Finish to return to setup and start a real Dream.",
-    target: null,
+    body: "You know the core loop: Dreams reshape the map, Psyche powers R.E.M., Power Tokens fuel abilities, and the Subconscious cycles through Repress and Return. Press Finish to return to setup and start a real Dream.",
+    target: "#phase-stepper",
   },
 ];
+
+export function getTutorialObjective(state, step) {
+  if (!step) return "";
+
+  if (!step.until) {
+    if (typeof step.objective === "function") return step.objective(state);
+    if (typeof step.objective === "string") return step.objective;
+    return "";
+  }
+
+  if (step.until(state)) return "Objective complete — press Continue.";
+
+  if (typeof step.objective === "function") return step.objective(state);
+  if (typeof step.objective === "string") return step.objective;
+
+  return "Complete the highlighted action to unlock Continue.";
+}
 
 export function getTutorialStep(state) {
   if (!state?.tutorialMode) return null;
@@ -368,12 +629,15 @@ export function syncTutorial(state) {
     state.tutorialCanAdvance = true;
   }
 
+  const objective = getTutorialObjective(state, step);
+
   return {
     step,
     stepIndex: state.tutorialStepIndex,
     total: TUTORIAL_SCRIPT.length,
     canAdvance: state.tutorialCanAdvance,
     round: step.round || state.round,
+    objective,
   };
 }
 
