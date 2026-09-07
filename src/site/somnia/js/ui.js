@@ -44,6 +44,7 @@ import {
   landscapeImageForId,
   revealedLandscapeIds,
 } from "./event-landscapes.js";
+import { getLandscapeActionSummary } from "./landscape-actions.js";
 
 let uiRenderState = null;
 
@@ -2221,6 +2222,7 @@ export function showLandscapeDetail(state, tileId) {
 
 let tutorialHighlightEl = null;
 let tutorialHighlightEls = [];
+let tutorialSpotlightEls = [];
 let tutorialSpotlightEl = null;
 let tutorialSparkleLayer = null;
 let tutorialSpotlightTracker = null;
@@ -2243,15 +2245,74 @@ function getStepTargetSelectors(step) {
   return [];
 }
 
+const TUTORIAL_BOTTOM_SELECTORS = new Set(["#hand-bar", "#phase-actions", "#table-footer"]);
+const TUTORIAL_TOP_SELECTORS = new Set(["#btn-advance-phase", "#phase-advance-bar", "#phase-stepper", "#narrator-panel"]);
+const TUTORIAL_BOARD_SELECTORS = new Set(["#board-viewport", "#hex-board", "#player-list"]);
+
+function getSpotlightSelector(step) {
+  if (!step) return null;
+  if (step.spotlight) return step.spotlight;
+  const selectors = getStepTargetSelectors(step);
+  if (selectors.includes("#btn-advance-phase")) return "#btn-advance-phase";
+  if (selectors.includes("#phase-advance-bar") && !selectors.includes("#board-viewport")) {
+    return "#btn-advance-phase";
+  }
+  if (selectors.includes("#phase-actions")) return "#phase-actions";
+  if (selectors.length === 1) return selectors[0];
+  const focused = selectors.find((s) => !TUTORIAL_BOARD_SELECTORS.has(s) && s !== "#board-viewport");
+  return focused || selectors[0];
+}
+
 function resolveTutorialElements(step) {
   return getStepTargetSelectors(step)
     .map((sel) => document.querySelector(sel))
     .filter(Boolean);
 }
 
+function resolveSpotlightElements(step) {
+  const spotlightSel = getSpotlightSelector(step);
+  if (spotlightSel) {
+    const el = document.querySelector(spotlightSel);
+    if (el) return [el];
+  }
+  return resolveTutorialElements(step);
+}
+
+function inferTutorialCardDock(step) {
+  if (step?.cardDock) return step.cardDock;
+  const selectors = getStepTargetSelectors(step);
+  const spotlight = getSpotlightSelector(step);
+
+  if (TUTORIAL_BOTTOM_SELECTORS.has(spotlight) || selectors.some((s) => TUTORIAL_BOTTOM_SELECTORS.has(s))) {
+    return "top";
+  }
+  if (spotlight === "#btn-advance-phase" || selectors.includes("#phase-advance-bar")) {
+    return "bottom";
+  }
+  if (TUTORIAL_BOARD_SELECTORS.has(spotlight) || selectors.includes("#board-viewport")) {
+    return "top";
+  }
+  if (TUTORIAL_TOP_SELECTORS.has(spotlight)) {
+    return "bottom";
+  }
+  return "bottom";
+}
+
+function positionTutorialCard(step) {
+  const overlay = document.getElementById("tutorial-overlay");
+  if (!overlay) return;
+  const dock = inferTutorialCardDock(step);
+  overlay.classList.remove("tutorial-dock-top", "tutorial-dock-bottom", "tutorial-dock-left");
+  overlay.classList.add(`tutorial-dock-${dock}`);
+}
+
 export function ensureTutorialStepTargetsVisible(step) {
   const selectors = getStepTargetSelectors(step);
-  if (selectors.some((s) => s === "#btn-advance-phase" || s === "#phase-advance-bar")) {
+  const spotlight = getSpotlightSelector(step);
+  if (
+    selectors.some((s) => s === "#btn-advance-phase" || s === "#phase-advance-bar")
+    || spotlight === "#btn-advance-phase"
+  ) {
     document.getElementById("phase-advance-bar")?.classList.remove("hidden");
   }
   if (selectors.some((s) => s === "#guide-panel" || s === "#guide-panel-wrap")) {
@@ -2353,9 +2414,11 @@ function stopTutorialSpotlightTracker() {
 
 function positionTutorialSpotlight() {
   if (!tutorialSpotlightEl) return;
-  const elements = tutorialHighlightEls.length
-    ? tutorialHighlightEls
-    : (tutorialHighlightEl ? [tutorialHighlightEl] : []);
+  const elements = tutorialSpotlightEls.length
+    ? tutorialSpotlightEls
+    : (tutorialHighlightEls.length
+      ? tutorialHighlightEls
+      : (tutorialHighlightEl ? [tutorialHighlightEl] : []));
   if (!elements.length) return;
 
   const union = unionElementRects(elements);
@@ -2372,9 +2435,11 @@ function positionTutorialSpotlight() {
 
 function startTutorialSpotlightTracker() {
   stopTutorialSpotlightTracker();
-  const elements = tutorialHighlightEls.length
-    ? tutorialHighlightEls
-    : (tutorialHighlightEl ? [tutorialHighlightEl] : []);
+  const elements = tutorialSpotlightEls.length
+    ? tutorialSpotlightEls
+    : (tutorialHighlightEls.length
+      ? tutorialHighlightEls
+      : (tutorialHighlightEl ? [tutorialHighlightEl] : []));
   if (!elements.length) return;
   positionTutorialSpotlight();
   if (typeof ResizeObserver !== "undefined") {
@@ -2392,9 +2457,11 @@ export function refreshTutorialSpotlight() {
 }
 
 export function getTutorialSpotlightRect() {
-  const elements = tutorialHighlightEls.length
-    ? tutorialHighlightEls
-    : (tutorialHighlightEl ? [tutorialHighlightEl] : []);
+  const elements = tutorialSpotlightEls.length
+    ? tutorialSpotlightEls
+    : (tutorialHighlightEls.length
+      ? tutorialHighlightEls
+      : (tutorialHighlightEl ? [tutorialHighlightEl] : []));
   const union = unionElementRects(elements);
   if (union) {
     return {
@@ -2422,10 +2489,14 @@ function applyTutorialHighlight(stepOrTarget, { animateIn = true } = {}) {
   const targets = step
     ? resolveTutorialElements(step)
     : (stepOrTarget ? [stepOrTarget].flat().filter(Boolean) : []);
+  const spotlightTargets = step
+    ? resolveSpotlightElements(step)
+    : targets;
 
   if (step) ensureTutorialStepTargetsVisible(step);
 
   if (!targets.length) {
+    tutorialSpotlightEls = [];
     tutorialSpotlightEl?.classList.add("hidden");
     stopTutorialSpotlightTracker();
     return;
@@ -2434,10 +2505,12 @@ function applyTutorialHighlight(stepOrTarget, { animateIn = true } = {}) {
   targets.forEach((el) => el.classList.add("tutorial-highlight"));
   tutorialHighlightEls = targets;
   tutorialHighlightEl = targets[0];
+  tutorialSpotlightEls = spotlightTargets.length ? spotlightTargets : targets;
   tutorialSpotlightEl.classList.remove("hidden", "tutorial-spotlight-arriving");
   bindTutorialScrollRefresh();
   positionTutorialSpotlight();
   startTutorialSpotlightTracker();
+  if (step) positionTutorialCard(step);
 
   if (animateIn) {
     tutorialSpotlightEl.classList.add("tutorial-spotlight-arriving");
@@ -2446,8 +2519,12 @@ function applyTutorialHighlight(stepOrTarget, { animateIn = true } = {}) {
     }, 520);
   }
 
-  if (!targets[0].closest("#table-chrome")) {
-    targets[0].scrollIntoView({ block: "nearest", behavior: "smooth" });
+  const scrollEl = tutorialSpotlightEls[0] || targets[0];
+  if (scrollEl) {
+    const inChrome = scrollEl.closest("#table-chrome");
+    if (!inChrome || scrollEl.id === "btn-advance-phase") {
+      scrollEl.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
   }
 }
 
@@ -2455,7 +2532,8 @@ function animateTutorialSparkleJump(fromRect, step, onComplete) {
   ensureTutorialSparkleLayer();
   const flyer = document.getElementById("tutorial-flyer");
   const targets = step ? resolveTutorialElements(step) : [];
-  const toTarget = targets[0] || null;
+  const spotlightTargets = step ? resolveSpotlightElements(step) : targets;
+  const toTarget = spotlightTargets[0] || targets[0] || null;
   if (!flyer || !toTarget) {
     applyTutorialHighlight(step || toTarget, { animateIn: true });
     onComplete?.();
@@ -2464,7 +2542,7 @@ function animateTutorialSparkleJump(fromRect, step, onComplete) {
 
   if (step) ensureTutorialStepTargetsVisible(step);
 
-  const union = unionElementRects(targets);
+  const union = unionElementRects(spotlightTargets.length ? spotlightTargets : targets);
   const toRect = union || toTarget.getBoundingClientRect();
   const from = rectCenter(fromRect);
   const to = rectCenter(toRect);
@@ -2505,6 +2583,7 @@ function animateTutorialSparkleJump(fromRect, step, onComplete) {
 function clearTutorialHighlight({ keepLayer = false } = {}) {
   tutorialHighlightEls.forEach((el) => el.classList.remove("tutorial-highlight"));
   tutorialHighlightEls = [];
+  tutorialSpotlightEls = [];
   if (tutorialHighlightEl) {
     tutorialHighlightEl.classList.remove("tutorial-highlight");
     tutorialHighlightEl = null;
@@ -2551,6 +2630,10 @@ export function updateTutorialStepUI({
   if (step && stepIndex != null && total) {
     const roundPart = roundLabel ? `Round ${roundLabel} · ` : "";
     document.getElementById("tutorial-progress").textContent = `${roundPart}Step ${stepIndex + 1} / ${total}`;
+  }
+  if (step) {
+    positionTutorialCard(step);
+    refreshTutorialSpotlight();
   }
 }
 
@@ -2622,6 +2705,7 @@ export function showTutorialStep(step, stepIndex, total, {
   freshBackdrop?.addEventListener("click", onSkip);
 
   overlay.classList.remove("hidden");
+  positionTutorialCard(step);
 }
 
 export function hideTutorial() {

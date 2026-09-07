@@ -182,58 +182,82 @@ function remPracticeSteps(round, { introTitle, introBody, endBody, teachLandscap
       id: `r${r}-lucidity`,
       round: r,
       title: `Round ${r} — Reveal: Spend Lucidity`,
-      body: "Select 1–2 Lucidity cards from any Dreamer's hand, click Reveal Landscapes, then flip at least one hidden hex.",
-      targets: ["#hand-bar", "#phase-actions", "#board-viewport"],
+      body: "Select 1–2 Lucidity cards from any Dreamer's hand, then click Reveal Landscapes.",
+      targets: ["#hand-bar", "#phase-actions"],
+      spotlight: "#phase-actions",
+      until: (s) => atRound(s, r) && (s.revealLandscapeUsed || s.landscapePick?.mode === "reveal"),
+      objective: (s) => {
+        if (!atRound(s, r)) return `Finish Round ${r - 1} first (click Next Phase).`;
+        if (s.revealLandscapeUsed || s.landscapePick?.mode === "reveal") return "Lucidity spent — press Continue.";
+        if (hasLuciditySelected(s)) return "Click Reveal Landscapes in the action bar.";
+        return "Select 1–2 Lucidity cards, then click Reveal Landscapes.";
+      },
+    },
+    {
+      id: `r${r}-reveal-pick`,
+      round: r,
+      title: `Round ${r} — Reveal: Pick Landscapes`,
+      body: "Click hidden hex tiles on the map to flip them face-up. Reveal at least one Landscape.",
+      target: "#board-viewport",
       until: (s) => revealDone(s, r),
       objective: (s) => {
-        if (!s.dreamDrawn) return "Draw the Dream first.";
         if (revealDone(s, r)) return "Reveal complete — press Continue.";
-        if (s.landscapePick?.mode === "reveal") return "Click hidden hex tiles on the map to reveal them.";
-        if (hasLuciditySelected(s)) return "Click Reveal Landscapes, then pick hex tiles.";
-        return "Select 1–2 Lucidity cards, then click Reveal Landscapes.";
+        if (s.landscapePick?.mode === "reveal") return "Click hidden hex tiles on the map.";
+        return "Click Reveal Landscapes first, then pick hex tiles.";
       },
     },
     {
       id: `r${r}-to-explore`,
       round: r,
       title: `Round ${r} — Enter Explore`,
-      body: "When Reveal is finished, click Next Phase at the top of the table.",
-      target: "#phase-advance-bar",
+      body: "When Reveal is finished, click the glowing Next Phase button at the top of the table.",
+      target: "#btn-advance-phase",
       until: (s) => atRound(s, r) && phaseAfter(s, "Reveal"),
       objective: (s) => (phaseAfter(s, "Reveal")
         ? "Explore phase started — press Continue."
-        : "Click Next Phase to leave Reveal."),
+        : "Click Next Phase at the top of the table."),
     },
     {
       id: `r${r}-elasticity`,
       round: r,
       title: `Round ${r} — Explore: Spend Elasticity`,
-      body: "Select 1–2 Elasticity cards, then Spend Elasticity to unlock shared team moves.",
+      body: "Select 1–2 Elasticity cards, then click Spend Elasticity in the action bar to unlock shared team moves.",
       targets: ["#hand-bar", "#phase-actions"],
-      until: (s) => atRound(s, r) && (s.exploreActivated || getPhase(s) === "Meet"),
+      spotlight: "#phase-actions",
+      until: (s) => atRound(s, r) && s.exploreActivated,
       objective: (s) => {
-        if (s.exploreActivated || getPhase(s) === "Meet") return "Elasticity spent — press Continue.";
+        if (s.exploreActivated) return "Elasticity spent — press Continue.";
         if (hasElasticitySelected(s)) return "Click Spend Elasticity in the action bar.";
         return "Select 1–2 Elasticity cards, then click Spend Elasticity.";
       },
     },
     {
+      id: `r${r}-explore-move`,
+      round: r,
+      title: `Round ${r} — Explore: Move (optional)`,
+      body: "Click a Dreamer chip, then click a green hex to move. You can skip this and press Continue.",
+      targets: ["#player-list", "#board-viewport"],
+      spotlight: "#board-viewport",
+      objective: "Move Dreamers if you like, then press Continue.",
+    },
+    {
       id: `r${r}-to-meet`,
       round: r,
       title: `Round ${r} — Enter Meet`,
-      body: "Move Dreamers on the map if you want, then click Next Phase. Unused Explore moves can be skipped.",
-      targets: ["#phase-advance-bar", "#board-viewport"],
+      body: "Click the glowing Next Phase button at the top. Unused Explore moves can be skipped.",
+      target: "#btn-advance-phase",
       until: (s) => atRound(s, r) && getPhase(s) === "Meet",
       objective: (s) => (getPhase(s) === "Meet"
         ? "Meet phase started — press Continue."
-        : "Click Next Phase to enter Meet."),
+        : "Click Next Phase at the top of the table."),
     },
     {
       id: `r${r}-willpower`,
       round: r,
       title: `Round ${r} — Meet: Spend Willpower`,
-      body: "Select 1–2 Willpower cards, then Gain Actions. Each Landscape offers Draw [suit] Mindstream (Action A) plus a unique Action B.",
+      body: "Select 1–2 Willpower cards, then click Gain Actions. Each Landscape offers Draw [suit] Mindstream (Action A) plus a unique Action B.",
       targets: ["#hand-bar", "#phase-actions"],
+      spotlight: "#phase-actions",
       until: (s) => atRound(s, r) && s.meetActionBudget > 0,
       objective: (s) => {
         if (s.meetActionBudget > 0) return "Meet actions unlocked — press Continue.";
@@ -250,6 +274,7 @@ function remPracticeSteps(round, { introTitle, introBody, endBody, teachLandscap
       title: `Round ${r} — Landscape Actions`,
       body: "Stand on a Landscape, select its hex, and spend a Meet action. Action A draws that tile's Mindstream; Action B is unique. Switch Dreamer chips to act as a different Dreamer.",
       targets: ["#board-viewport", "#phase-actions", "#player-list"],
+      spotlight: "#phase-actions",
       objective: "Try a Landscape action if you like, then press Continue.",
     });
   }
@@ -259,7 +284,7 @@ function remPracticeSteps(round, { introTitle, introBody, endBody, teachLandscap
     round: r,
     title: `End Round ${r}`,
     body: endBody || "Spend remaining Meet actions if you want, then click Next Phase to end the round.",
-    target: "#phase-advance-bar",
+    target: "#btn-advance-phase",
     until: (s) => s.round >= r + 1,
     objective: (s) => (s.round >= r + 1
       ? `Round ${r + 1} started — press Continue.`
@@ -316,6 +341,7 @@ export const TUTORIAL_SCRIPT = [
     title: "Spend Lucidity",
     body: "Select 1–2 Lucidity cards from The Visionary's hand (best Lucidity stat), then click Reveal Landscapes.",
     targets: ["#hand-bar", "#phase-actions"],
+    spotlight: "#phase-actions",
     until: (s) => s.revealLandscapeUsed || s.landscapePick?.mode === "reveal",
     objective: (s) => {
       if (s.revealLandscapeUsed || s.landscapePick?.mode === "reveal") return "Lucidity spent — press Continue.";
@@ -338,8 +364,8 @@ export const TUTORIAL_SCRIPT = [
     id: "to-explore-r1",
     round: 1,
     title: "Advance to Explore",
-    body: "Click Next Phase at the top of the table to enter Explore.",
-    target: "#phase-advance-bar",
+    body: "Click the glowing Next Phase button at the top of the table to enter Explore.",
+    target: "#btn-advance-phase",
     until: (s) => getPhase(s) === "Explore",
     objective: (s) => (getPhase(s) === "Explore"
       ? "Explore phase started — press Continue."
@@ -351,6 +377,7 @@ export const TUTORIAL_SCRIPT = [
     title: "Spend Elasticity",
     body: "Select 1–2 Elasticity cards from The Runner's hand (best Elasticity stat), then click Spend Elasticity.",
     targets: ["#hand-bar", "#phase-actions"],
+    spotlight: "#phase-actions",
     until: (s) => s.exploreActivated,
     objective: (s) => {
       if (s.exploreActivated) return "Elasticity spent — press Continue.";
@@ -373,8 +400,8 @@ export const TUTORIAL_SCRIPT = [
     id: "to-meet-r1",
     round: 1,
     title: "Advance to Meet",
-    body: "Click Next Phase to enter Meet. Confirm if prompted to forfeit unused Explore moves.",
-    target: "#phase-advance-bar",
+    body: "Click the glowing Next Phase button at the top to enter Meet. Confirm if prompted to forfeit unused Explore moves.",
+    target: "#btn-advance-phase",
     until: (s) => getPhase(s) === "Meet",
     objective: (s) => (getPhase(s) === "Meet"
       ? "Meet phase started — press Continue."
@@ -386,6 +413,7 @@ export const TUTORIAL_SCRIPT = [
     title: "Spend Willpower",
     body: "Select 1–2 Willpower cards, then click Gain Actions to unlock shared Meet actions.",
     targets: ["#hand-bar", "#phase-actions"],
+    spotlight: "#phase-actions",
     until: (s) => s.meetActionBudget > 0,
     objective: (s) => {
       if (s.meetActionBudget > 0) return "Meet actions unlocked — press Continue.";
@@ -399,6 +427,7 @@ export const TUTORIAL_SCRIPT = [
     title: "Select House on the Map",
     body: "Click the House hex so the Encounter panel appears. Only the Dreamer standing on that Landscape may pool Psyche for it.",
     targets: ["#board-viewport", "#active-encounter"],
+    spotlight: "#board-viewport",
     until: (s) => houseMeetReady(s) || houseEncounterCleared(s),
     objective: (s) => {
       if (houseEncounterCleared(s)) return "Encounter already resolved — press Continue.";
@@ -413,6 +442,7 @@ export const TUTORIAL_SCRIPT = [
     title: "Resolve the Encounter",
     body: "Pool up to 3 Psyche from the Dreamer on House, then Accept (ally joins hand as 3 Psyche) or Reject (exile to Subconscious + reward).",
     targets: ["#hand-bar", "#active-encounter", "#phase-actions"],
+    spotlight: "#phase-actions",
     until: (s) => houseEncounterCleared(s) || s.tutorialFlags?.encounterResolved,
     objective: (s) => {
       if (houseEncounterCleared(s)) return "Encounter resolved — press Continue.";
@@ -425,8 +455,8 @@ export const TUTORIAL_SCRIPT = [
     id: "end-r1",
     round: 1,
     title: "End Round 1",
-    body: "Click Next Phase to end Meet and start Round 2. From Round 2 on, each Dreamer draws 2 Psyche at round start (Round 1 started with 5 each).",
-    target: "#phase-advance-bar",
+    body: "Click the glowing Next Phase button to end Meet and start Round 2. From Round 2 on, each Dreamer draws 2 Psyche at round start (Round 1 started with 5 each).",
+    target: "#btn-advance-phase",
     until: (s) => s.round >= 2,
     objective: (s) => (s.round >= 2
       ? "Round 2 started — press Continue."
@@ -451,6 +481,7 @@ export const TUTORIAL_SCRIPT = [
     title: "Round 3 — Reveal: Boss Dream",
     body: "Draw & Resolve Dream. Cerberus spawns on The Bed. During Meet, only the Dreamer on The Bed may pool Psyche to face a boss.",
     targets: ["#phase-actions", "#active-encounter"],
+    spotlight: "#phase-actions",
     until: (s) => atRound(s, 3) && s.dreamDrawn && bossOnBed(s),
     objective: (s) => {
       if (bossOnBed(s) && s.dreamDrawn) return "Cerberus awakened — press Continue.";
@@ -463,22 +494,36 @@ export const TUTORIAL_SCRIPT = [
     id: "r3-lucidity",
     round: 3,
     title: "Round 3 — Reveal: Spend Lucidity",
-    body: "Finish Reveal — spend Lucidity and reveal Landscapes as usual.",
+    body: "Select 1–2 Lucidity cards, then click Reveal Landscapes.",
     targets: ["#hand-bar", "#phase-actions"],
+    spotlight: "#phase-actions",
+    until: (s) => atRound(s, 3) && (s.revealLandscapeUsed || s.landscapePick?.mode === "reveal"),
+    objective: (s) => {
+      if (s.revealLandscapeUsed || s.landscapePick?.mode === "reveal") return "Lucidity spent — press Continue.";
+      if (!s.dreamDrawn) return "Draw the Dream first.";
+      if (hasLuciditySelected(s)) return "Click Reveal Landscapes in the action bar.";
+      return "Select 1–2 Lucidity cards, then click Reveal Landscapes.";
+    },
+  },
+  {
+    id: "r3-reveal-pick",
+    round: 3,
+    title: "Round 3 — Reveal: Pick Landscapes",
+    body: "Click hidden hex tiles to reveal at least one Landscape.",
+    target: "#board-viewport",
     until: (s) => revealDone(s, 3),
     objective: (s) => {
       if (revealDone(s, 3)) return "Reveal complete — press Continue.";
-      if (!s.dreamDrawn) return "Draw the Dream first.";
-      if (!s.revealLandscapeUsed) return "Spend Lucidity and reveal at least one Landscape.";
-      return "Finish revealing, or click Next Phase.";
+      if (s.landscapePick?.mode === "reveal") return "Click hidden hex tiles on the map.";
+      return "Click Reveal Landscapes first, then pick hex tiles.";
     },
   },
   {
     id: "r3-to-explore",
     round: 3,
     title: "Round 3 — Enter Explore",
-    body: "Click Next Phase when Reveal is done. Consider moving onto The Bed before Meet.",
-    target: "#phase-advance-bar",
+    body: "Click the glowing Next Phase button when Reveal is done. Consider moving onto The Bed before Meet.",
+    target: "#btn-advance-phase",
     until: (s) => atRound(s, 3) && phaseAfter(s, "Reveal"),
     objective: (s) => (phaseAfter(s, "Reveal")
       ? "Explore phase started — press Continue."
@@ -488,19 +533,31 @@ export const TUTORIAL_SCRIPT = [
     id: "r3-elasticity",
     round: 3,
     title: "Round 3 — Explore: Spend Elasticity",
-    body: "Spend Elasticity and move Dreamers. The Bed holds Cerberus if you want to face the boss during Meet.",
-    targets: ["#hand-bar", "#phase-actions", "#board-viewport"],
-    until: (s) => atRound(s, 3) && (s.exploreActivated || getPhase(s) === "Meet"),
-    objective: (s) => (s.exploreActivated || getPhase(s) === "Meet"
-      ? "Elasticity spent — press Continue."
-      : "Select 1–2 Elasticity cards, then click Spend Elasticity."),
+    body: "Select 1–2 Elasticity cards, then click Spend Elasticity. The Bed holds Cerberus if you want to face the boss during Meet.",
+    targets: ["#hand-bar", "#phase-actions"],
+    spotlight: "#phase-actions",
+    until: (s) => atRound(s, 3) && s.exploreActivated,
+    objective: (s) => {
+      if (s.exploreActivated) return "Elasticity spent — press Continue.";
+      if (hasElasticitySelected(s)) return "Click Spend Elasticity in the action bar.";
+      return "Select 1–2 Elasticity cards, then click Spend Elasticity.";
+    },
+  },
+  {
+    id: "r3-explore-move",
+    round: 3,
+    title: "Round 3 — Explore: Move (optional)",
+    body: "Move onto The Bed if you plan to face Cerberus during Meet, or press Continue.",
+    targets: ["#player-list", "#board-viewport"],
+    spotlight: "#board-viewport",
+    objective: "Move Dreamers if you like, then press Continue.",
   },
   {
     id: "r3-to-meet",
     round: 3,
     title: "Round 3 — Enter Meet",
-    body: "Click Next Phase to enter Meet. You may face Cerberus or end the round — bosses fail if left unresolved.",
-    target: "#phase-advance-bar",
+    body: "Click the glowing Next Phase button at the top. You may face Cerberus or end the round — bosses fail if left unresolved.",
+    target: "#btn-advance-phase",
     until: (s) => atRound(s, 3) && getPhase(s) === "Meet",
     objective: (s) => (getPhase(s) === "Meet"
       ? "Meet phase started — press Continue."
@@ -512,6 +569,7 @@ export const TUTORIAL_SCRIPT = [
     title: "Round 3 — Meet: Spend Willpower",
     body: "Gain Meet actions. Facing Cerberus requires a specific Psyche spread (set of 3) — read the Encounter panel.",
     targets: ["#hand-bar", "#phase-actions"],
+    spotlight: "#phase-actions",
     until: (s) => atRound(s, 3) && s.meetActionBudget > 0,
     objective: (s) => (s.meetActionBudget > 0
       ? "Meet actions unlocked — press Continue."
@@ -522,7 +580,7 @@ export const TUTORIAL_SCRIPT = [
     round: 3,
     title: "End Round 3",
     body: "You've seen a Boss spawn. Two practice rounds remain.",
-    target: "#phase-advance-bar",
+    target: "#btn-advance-phase",
     until: (s) => s.round >= 4,
     objective: (s) => (s.round >= 4
       ? "Round 4 started — press Continue."
@@ -560,22 +618,36 @@ export const TUTORIAL_SCRIPT = [
     id: "r4-lucidity",
     round: 4,
     title: "Round 4 — Reveal: Spend Lucidity",
-    body: "Spend Lucidity and reveal Landscapes.",
+    body: "Select 1–2 Lucidity cards, then click Reveal Landscapes.",
     targets: ["#hand-bar", "#phase-actions"],
+    spotlight: "#phase-actions",
+    until: (s) => atRound(s, 4) && (s.revealLandscapeUsed || s.landscapePick?.mode === "reveal"),
+    objective: (s) => {
+      if (s.revealLandscapeUsed || s.landscapePick?.mode === "reveal") return "Lucidity spent — press Continue.";
+      if (!s.dreamDrawn) return "Draw the Dream first.";
+      if (hasLuciditySelected(s)) return "Click Reveal Landscapes in the action bar.";
+      return "Select 1–2 Lucidity cards, then click Reveal Landscapes.";
+    },
+  },
+  {
+    id: "r4-reveal-pick",
+    round: 4,
+    title: "Round 4 — Reveal: Pick Landscapes",
+    body: "Click hidden hex tiles to reveal at least one Landscape.",
+    target: "#board-viewport",
     until: (s) => revealDone(s, 4),
     objective: (s) => {
       if (revealDone(s, 4)) return "Reveal complete — press Continue.";
-      if (!s.dreamDrawn) return "Draw the Dream first.";
-      if (!s.revealLandscapeUsed) return "Spend Lucidity and reveal at least one Landscape.";
-      return "Finish Reveal or click Next Phase.";
+      if (s.landscapePick?.mode === "reveal") return "Click hidden hex tiles on the map.";
+      return "Click Reveal Landscapes first, then pick hex tiles.";
     },
   },
   {
     id: "r4-to-explore",
     round: 4,
     title: "Round 4 — Enter Explore",
-    body: "Click Next Phase when Reveal is done.",
-    target: "#phase-advance-bar",
+    body: "Click the glowing Next Phase button when Reveal is done.",
+    target: "#btn-advance-phase",
     until: (s) => atRound(s, 4) && phaseAfter(s, "Reveal"),
     objective: (s) => (phaseAfter(s, "Reveal")
       ? "Explore phase started — press Continue."
@@ -585,19 +657,31 @@ export const TUTORIAL_SCRIPT = [
     id: "r4-elasticity",
     round: 4,
     title: "Round 4 — Explore: Spend Elasticity",
-    body: "Spend Elasticity and move on the map.",
+    body: "Select 1–2 Elasticity cards, then click Spend Elasticity in the action bar.",
     targets: ["#hand-bar", "#phase-actions"],
-    until: (s) => atRound(s, 4) && (s.exploreActivated || getPhase(s) === "Meet"),
-    objective: (s) => (s.exploreActivated || getPhase(s) === "Meet"
-      ? "Elasticity spent — press Continue."
-      : "Select 1–2 Elasticity cards, then click Spend Elasticity."),
+    spotlight: "#phase-actions",
+    until: (s) => atRound(s, 4) && s.exploreActivated,
+    objective: (s) => {
+      if (s.exploreActivated) return "Elasticity spent — press Continue.";
+      if (hasElasticitySelected(s)) return "Click Spend Elasticity in the action bar.";
+      return "Select 1–2 Elasticity cards, then click Spend Elasticity.";
+    },
+  },
+  {
+    id: "r4-explore-move",
+    round: 4,
+    title: "Round 4 — Explore: Move (optional)",
+    body: "Move Dreamers on the map if you like, then press Continue.",
+    targets: ["#player-list", "#board-viewport"],
+    spotlight: "#board-viewport",
+    objective: "Move Dreamers if you like, then press Continue.",
   },
   {
     id: "r4-to-meet",
     round: 4,
     title: "Round 4 — Enter Meet",
-    body: "Click Next Phase to enter Meet.",
-    target: "#phase-advance-bar",
+    body: "Click the glowing Next Phase button at the top to enter Meet.",
+    target: "#btn-advance-phase",
     until: (s) => atRound(s, 4) && getPhase(s) === "Meet",
     objective: (s) => (getPhase(s) === "Meet"
       ? "Meet phase started — press Continue."
@@ -609,6 +693,7 @@ export const TUTORIAL_SCRIPT = [
     title: "Round 4 — Meet: Spend Willpower",
     body: "Gain Meet actions and use them freely. Switch Dreamer chips to act as different Dreamers.",
     targets: ["#hand-bar", "#phase-actions", "#player-list"],
+    spotlight: "#phase-actions",
     until: (s) => atRound(s, 4) && s.meetActionBudget > 0,
     objective: (s) => (s.meetActionBudget > 0
       ? "Meet actions unlocked — press Continue."
@@ -619,7 +704,7 @@ export const TUTORIAL_SCRIPT = [
     round: 4,
     title: "End Round 4",
     body: "One more practice round after this.",
-    target: "#phase-advance-bar",
+    target: "#btn-advance-phase",
     until: (s) => s.round >= 5,
     objective: (s) => (s.round >= 5
       ? "Round 5 started — press Continue."

@@ -1,4 +1,4 @@
-/** SOMNIA 12.10 rules helpers */
+/** SOMNIA 12.11 rules helpers */
 
 import {
   repressCard,

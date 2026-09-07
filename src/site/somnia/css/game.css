@@ -1014,6 +1014,23 @@ body.menu-window #screen-setup .card-grid.picker {
   pointer-events: none;
 }
 
+.tutorial-overlay.tutorial-dock-top {
+  align-items: flex-start;
+  padding-top: 1rem;
+  padding-bottom: 1.5rem;
+}
+
+.tutorial-overlay.tutorial-dock-bottom {
+  align-items: flex-end;
+  padding-bottom: 1rem;
+}
+
+.tutorial-overlay.tutorial-dock-left {
+  align-items: center;
+  justify-content: flex-start;
+  padding-left: 1rem;
+}
+
 .tutorial-overlay:not(.hidden) { pointer-events: auto; }
 
 .tutorial-backdrop {
@@ -1370,6 +1387,15 @@ body.tutorial-mode-active .tutorial-card {
 
 body.tutorial-mode-active .tutorial-highlight {
   pointer-events: auto;
+}
+
+body.tutorial-mode-active #btn-advance-phase.tutorial-highlight {
+  animation: advance-glow 2.8s ease-in-out infinite;
+}
+
+body.tutorial-mode-active #phase-actions.tutorial-highlight .action-section-primary .btn:not(:disabled),
+body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
+  box-shadow: 0 4px 24px rgba(123, 92, 255, 0.5);
 }
 
 .rules-modal h2 {
