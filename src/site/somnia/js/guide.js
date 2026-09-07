@@ -55,7 +55,7 @@ export const TUTORIAL_STEPS = [
   {
     id: "meet",
     title: "Meet Phase",
-    body: "Discuss who spends Willpower, then take Meet actions in any order. Pool up to 3 Psyche from any Dreamers for Encounters and other actions.",
+    body: "Discuss who spends Willpower, then take Meet actions in any order. For Encounters, only the Dreamer on that Landscape may spend Psyche (up to 3).",
     target: "#phase-actions",
     phase: "Meet",
   },
@@ -234,7 +234,7 @@ export function getCurrentObjective(state) {
         title: "Move on the board",
         steps: [
           `Click a **green dashed hex** to move ${player.name}.`,
-          `${state.exploreMovesLeft} team move(s) remaining — any order.`,
+          `${state.exploreMovesLeft} team move(s) remaining — use all or click **Next Phase** to skip to Meet.`,
         ],
         tip: "Click Dreamer chips to choose who moves next.",
         tip: "Click a Dreamer chip (left) to change who moves.",
@@ -273,7 +273,7 @@ export function getCurrentObjective(state) {
     const count = allSelectedCards(state).length;
     const lines = [
       `**${state.meetActionsUsed}/${state.meetActionBudget}** shared actions used.`,
-      "All Dreamers: click Psyche cards to pool up to **3** for Meet plays.",
+      "Only the Dreamer on the selected Landscape may click Psyche to pool up to **3** for Meet plays there.",
       `Current pool: **${count}/3** cards, total **${pool}**.`,
     ];
     if (state.activeEncounter) {
@@ -369,7 +369,7 @@ export function overviewHtml() {
         </div>
         <div class="overview-phase suit-elasticity">
           <div class="overview-phase-head">${suitIconHtml("elasticity", { size: 16 })} <strong>Explore</strong></div>
-          <p><strong>One Dreamer</strong> spends yellow <strong>Elasticity</strong> to set shared moves; then anyone can move Dreamers across green hexes.</p>
+          <p><strong>One Dreamer</strong> spends yellow <strong>Elasticity</strong> to set shared moves; then anyone can move Dreamers across green hexes. You do not have to use every move — advance to Meet when ready.</p>
         </div>
         <div class="overview-phase suit-willpower">
           <div class="overview-phase-head">${suitIconHtml("willpower", { size: 16 })} <strong>Meet</strong></div>
@@ -429,7 +429,7 @@ export function rulesHtml() {
 
     <h3>Meet Actions</h3>
     <ul>
-      <li><strong>Meet Encounter</strong> — Pool up to 3 Psyche (any Dreamers). Accept or Repress.</li>
+      <li><strong>Meet Encounter</strong> — Stand on the Landscape with the Dreambeast. Only that Dreamer pools up to 3 Psyche. Accept or Repress.</li>
       <li><strong>Landscape / Mindstream / Objects</strong> — Use a shared action on the selected tile.</li>
       <li><strong>Trade</strong> — With a Dreamer on the same or adjacent hex.</li>
       <li><strong>Quests</strong> — Spend 1 Power Token on the Active Archetype when conditions are met.</li>

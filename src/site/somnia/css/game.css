@@ -1065,7 +1065,7 @@ body.menu-window #screen-setup .card-grid.picker {
 .tutorial-highlight {
   position: relative;
   z-index: 150;
-  box-shadow: 0 0 0 9999px rgba(4, 3, 10, 0.48);
+  box-shadow: 0 0 0 9999px rgba(4, 3, 10, 0.42);
 }
 
 .tutorial-sparkle-layer {
@@ -1078,9 +1078,10 @@ body.menu-window #screen-setup .card-grid.picker {
 
 .tutorial-spotlight {
   position: fixed;
-  border-radius: calc(var(--radius) + 4px);
+  border-radius: calc(var(--radius) + 6px);
   pointer-events: none;
-  transition: opacity 0.25s ease;
+  transition: opacity 0.35s ease, left 0.45s ease, top 0.45s ease, width 0.45s ease, height 0.45s ease;
+  --sparkle-count: 28;
 }
 
 .tutorial-spotlight.hidden {
@@ -1089,64 +1090,96 @@ body.menu-window #screen-setup .card-grid.picker {
 
 .tutorial-spotlight-glow {
   position: absolute;
-  inset: -6px;
+  inset: -10px;
   border-radius: inherit;
-  background: radial-gradient(ellipse at center, rgba(240, 201, 106, 0.22), transparent 68%);
-  animation: tutorial-glow-pulse 2.2s ease-in-out infinite;
+  background:
+    radial-gradient(ellipse 85% 70% at 28% 38%, rgba(255, 248, 220, 0.2), transparent 72%),
+    radial-gradient(ellipse 70% 85% at 72% 62%, rgba(200, 160, 255, 0.14), transparent 74%);
+  filter: blur(2px);
+  opacity: 0.72;
+  animation: tutorial-lavalamp-a 7.5s ease-in-out infinite;
+}
+
+.tutorial-spotlight-glow-alt {
+  inset: -14px;
+  background:
+    radial-gradient(ellipse 60% 55% at 55% 45%, rgba(240, 201, 106, 0.16), transparent 70%),
+    radial-gradient(ellipse 50% 60% at 35% 70%, rgba(140, 200, 255, 0.1), transparent 68%);
+  animation: tutorial-lavalamp-b 9s ease-in-out infinite;
+  opacity: 0.55;
 }
 
 .tutorial-spotlight-ring {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  border: 2px solid rgba(240, 201, 106, 0.95);
+  border: 1.5px solid rgba(255, 248, 230, 0.42);
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.15),
-    0 0 18px rgba(240, 201, 106, 0.55),
-    0 0 36px rgba(240, 201, 106, 0.25);
-  animation: tutorial-ring-pulse 2s ease-in-out infinite;
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 0 14px rgba(255, 248, 220, 0.35),
+    0 0 28px rgba(240, 201, 106, 0.22),
+    0 0 48px rgba(180, 140, 255, 0.12);
+  animation: tutorial-ring-pulse 3.6s ease-in-out infinite;
 }
 
 .tutorial-spotlight-sparkles {
   position: absolute;
-  inset: -4px;
+  inset: -6px;
+  animation: tutorial-ring-rotate 36s linear infinite;
 }
 
 .tutorial-sparkle {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 8px;
-  height: 8px;
-  margin: -4px 0 0 -4px;
-  border-radius: 50%;
-  background: #fff8dc;
-  box-shadow: 0 0 8px #f0c96a, 0 0 14px rgba(240, 201, 106, 0.8);
+  width: 10px;
+  height: 10px;
+  margin: -5px 0 0 -5px;
   --orbit-r: 42px;
-  animation: tutorial-sparkle-orbit 3.2s linear infinite;
-  animation-delay: calc(var(--sparkle-i) * -0.18s);
+  animation: tutorial-sparkle-orbit 5.4s ease-in-out infinite;
+  animation-delay: calc(var(--sparkle-i) * -0.14s);
 }
 
-.tutorial-sparkle::after {
-  content: "✦";
+.tutorial-sparkle-rays {
   position: absolute;
-  left: -3px;
-  top: -5px;
-  font-size: 11px;
+  inset: -7px;
+  border-radius: 50%;
+  background:
+    linear-gradient(0deg, transparent 42%, rgba(255, 248, 230, 0.55) 50%, transparent 58%),
+    linear-gradient(90deg, transparent 42%, rgba(255, 248, 230, 0.5) 50%, transparent 58%),
+    linear-gradient(45deg, transparent 44%, rgba(240, 201, 106, 0.35) 50%, transparent 56%),
+    linear-gradient(-45deg, transparent 44%, rgba(200, 170, 255, 0.3) 50%, transparent 56%);
+  filter: blur(0.4px);
+  opacity: 0.45;
+  animation: tutorial-rays-spin 4.8s linear infinite;
+  animation-delay: calc(var(--sparkle-i) * -0.2s);
+}
+
+.tutorial-sparkle-star {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -52%);
+  font-size: 9px;
   line-height: 1;
-  color: #f0c96a;
-  text-shadow: 0 0 6px #fff;
-  animation: tutorial-sparkle-twinkle 1.4s ease-in-out infinite;
-  animation-delay: calc(var(--sparkle-i) * -0.11s);
+  color: rgba(255, 252, 240, 0.92);
+  text-shadow:
+    0 0 4px rgba(255, 255, 255, 0.95),
+    0 0 10px rgba(255, 248, 220, 0.75),
+    0 0 18px rgba(240, 201, 106, 0.55),
+    0 0 28px rgba(180, 140, 255, 0.35);
+  animation: tutorial-sparkle-twinkle 2.6s ease-in-out infinite;
+  animation-delay: calc(var(--sparkle-i) * -0.09s);
 }
 
 .tutorial-spotlight-arriving .tutorial-spotlight-ring {
-  animation: tutorial-ring-pop 0.48s ease-out;
+  animation: tutorial-ring-pop 0.52s ease-out;
 }
 
 .tutorial-spotlight-traveling {
-  opacity: 0.35;
-  transform: scale(0.96);
+  opacity: 0.28;
+  transform: scale(0.97);
+  filter: blur(0.4px);
 }
 
 .tutorial-flyer {
@@ -1165,29 +1198,53 @@ body.menu-window #screen-setup .card-grid.picker {
 .tutorial-flyer-core {
   display: block;
   font-size: 1.65rem;
-  color: #fff8dc;
+  color: rgba(255, 252, 240, 0.95);
   text-shadow:
-    0 0 8px #fff,
-    0 0 16px #f0c96a,
-    0 0 28px rgba(240, 201, 106, 0.9);
-  animation: tutorial-flyer-spin 0.45s linear infinite;
+    0 0 6px rgba(255, 255, 255, 0.9),
+    0 0 14px rgba(255, 248, 220, 0.7),
+    0 0 24px rgba(240, 201, 106, 0.55),
+    0 0 36px rgba(180, 140, 255, 0.35);
+  animation: tutorial-flyer-spin 0.55s linear infinite;
 }
 
 .tutorial-flyer-trail {
   position: absolute;
   left: 50%;
   top: 50%;
-  width: 48px;
-  height: 48px;
-  margin: -24px 0 0 -24px;
+  width: 56px;
+  height: 56px;
+  margin: -28px 0 0 -28px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(240, 201, 106, 0.55), transparent 70%);
-  filter: blur(2px);
-  animation: tutorial-flyer-trail 0.35s ease-in-out infinite alternate;
+  background:
+    radial-gradient(circle, rgba(255, 248, 220, 0.42), rgba(240, 201, 106, 0.18) 45%, transparent 72%);
+  filter: blur(3px);
+  animation: tutorial-flyer-trail 0.55s ease-in-out infinite alternate;
 }
 
 .tutorial-flyer-active .tutorial-flyer-core {
-  animation: tutorial-flyer-spin 0.28s linear infinite, tutorial-flyer-pulse 0.35s ease-in-out infinite alternate;
+  animation: tutorial-flyer-spin 0.32s linear infinite, tutorial-flyer-pulse 0.45s ease-in-out infinite alternate;
+}
+
+@keyframes tutorial-lavalamp-a {
+  0%, 100% { transform: scale(1) translate(0, 0); opacity: 0.62; }
+  33% { transform: scale(1.07) translate(2%, -1.5%); opacity: 0.82; }
+  66% { transform: scale(0.96) translate(-1.5%, 2%); opacity: 0.7; }
+}
+
+@keyframes tutorial-lavalamp-b {
+  0%, 100% { transform: scale(1.02) translate(0, 0); opacity: 0.45; }
+  40% { transform: scale(1.08) translate(-2%, 1%); opacity: 0.68; }
+  75% { transform: scale(0.94) translate(1.5%, -1%); opacity: 0.52; }
+}
+
+@keyframes tutorial-ring-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes tutorial-rays-spin {
+  from { transform: rotate(0deg) scale(0.9); }
+  to { transform: rotate(360deg) scale(1.05); }
 }
 
 @keyframes tutorial-glow-pulse {
@@ -1196,34 +1253,56 @@ body.menu-window #screen-setup .card-grid.picker {
 }
 
 @keyframes tutorial-ring-pulse {
-  0%, 100% { border-color: rgba(240, 201, 106, 0.95); box-shadow: 0 0 0 1px rgba(255,255,255,0.15), 0 0 18px rgba(240,201,106,0.55), 0 0 36px rgba(240,201,106,0.25); }
-  50% { border-color: #fff8dc; box-shadow: 0 0 0 1px rgba(255,255,255,0.25), 0 0 26px rgba(255,248,220,0.75), 0 0 48px rgba(240,201,106,0.45); }
+  0%, 100% {
+    border-color: rgba(255, 248, 230, 0.38);
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.06),
+      0 0 12px rgba(255, 248, 220, 0.28),
+      0 0 24px rgba(240, 201, 106, 0.18),
+      0 0 40px rgba(180, 140, 255, 0.1);
+  }
+  50% {
+    border-color: rgba(255, 252, 245, 0.62);
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.12),
+      0 0 18px rgba(255, 248, 230, 0.45),
+      0 0 34px rgba(240, 201, 106, 0.28),
+      0 0 56px rgba(200, 170, 255, 0.16);
+  }
 }
 
 @keyframes tutorial-ring-pop {
-  0% { transform: scale(0.88); opacity: 0.4; }
-  70% { transform: scale(1.04); opacity: 1; }
+  0% { transform: scale(0.9); opacity: 0.35; }
+  70% { transform: scale(1.03); opacity: 1; }
   100% { transform: scale(1); opacity: 1; }
 }
 
 @keyframes tutorial-sparkle-orbit {
-  from {
-    transform: rotate(calc(var(--sparkle-i) * (360deg / 14))) translateY(calc(-1 * var(--orbit-r))) scale(0.85);
-    opacity: 0.35;
+  0% {
+    transform: rotate(calc(var(--sparkle-i) * (360deg / var(--sparkle-count)))) translateY(calc(-1 * var(--orbit-r))) scale(0.82);
+    opacity: 0.28;
+  }
+  25% {
+    opacity: 0.62;
+    transform: rotate(calc(var(--sparkle-i) * (360deg / var(--sparkle-count)) + 90deg)) translateY(calc(-1 * var(--orbit-r) - 5px)) scale(1.02);
   }
   50% {
-    opacity: 1;
-    transform: rotate(calc(var(--sparkle-i) * (360deg / 14) + 180deg)) translateY(calc(-1 * var(--orbit-r) - 4px)) scale(1.15);
+    opacity: 0.88;
+    transform: rotate(calc(var(--sparkle-i) * (360deg / var(--sparkle-count)) + 180deg)) translateY(calc(-1 * var(--orbit-r) - 2px)) scale(1.08);
   }
-  to {
-    transform: rotate(calc(var(--sparkle-i) * (360deg / 14) + 360deg)) translateY(calc(-1 * var(--orbit-r))) scale(0.85);
-    opacity: 0.35;
+  75% {
+    opacity: 0.58;
+    transform: rotate(calc(var(--sparkle-i) * (360deg / var(--sparkle-count)) + 270deg)) translateY(calc(-1 * var(--orbit-r) + 3px)) scale(0.95);
+  }
+  100% {
+    transform: rotate(calc(var(--sparkle-i) * (360deg / var(--sparkle-count)) + 360deg)) translateY(calc(-1 * var(--orbit-r))) scale(0.82);
+    opacity: 0.28;
   }
 }
 
 @keyframes tutorial-sparkle-twinkle {
-  0%, 100% { opacity: 0.35; transform: scale(0.8); }
-  50% { opacity: 1; transform: scale(1.2); }
+  0%, 100% { opacity: 0.35; transform: translate(-50%, -52%) scale(0.75); }
+  50% { opacity: 1; transform: translate(-50%, -52%) scale(1.15); }
 }
 
 @keyframes tutorial-flyer-spin {
@@ -1232,13 +1311,13 @@ body.menu-window #screen-setup .card-grid.picker {
 }
 
 @keyframes tutorial-flyer-pulse {
-  from { filter: brightness(1); }
-  to { filter: brightness(1.35); }
+  from { filter: brightness(1) saturate(1); }
+  to { filter: brightness(1.25) saturate(1.15); }
 }
 
 @keyframes tutorial-flyer-trail {
-  from { transform: scale(0.75); opacity: 0.45; }
-  to { transform: scale(1.15); opacity: 0.85; }
+  from { transform: scale(0.7); opacity: 0.35; }
+  to { transform: scale(1.2); opacity: 0.72; }
 }
 
 body.tutorial-mode-active .tutorial-sparkle-layer {
@@ -1851,6 +1930,19 @@ body.tutorial-mode-active .tutorial-highlight {
   color: var(--accent);
 }
 
+.coop-hand-row.meet-actor {
+  border-color: var(--accent);
+}
+
+.coop-hand-row.meet-actor-disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.coop-hand-row.meet-actor-disabled .coop-hand-cards {
+  pointer-events: none;
+}
+
 .coop-hand-row.best-spender {
   background: rgba(240, 201, 106, 0.06);
   border-radius: 8px;
@@ -2386,6 +2478,15 @@ body.tutorial-mode-active .tutorial-highlight {
   z-index: 100;
   display: grid;
   place-items: center;
+}
+
+body.card-detail-open #card-modal {
+  z-index: 350;
+}
+
+body.card-detail-open .tutorial-card {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .modal.hidden { display: none; }

@@ -236,6 +236,8 @@ export function canSelectCard(state, card, phase, player = null) {
 
   if (phase === "Meet" && state.meetActionBudget > 0) {
     if (!active.alive || !active.hand.some((c) => c.instanceId === card.instanceId)) return false;
+    const actor = meetPsycheActor(state);
+    if (!actor || active.id !== actor.id) return false;
     if (!isDreambeastPsycheCard(card) && spreadPsycheCount(state) >= 3) return false;
     return true;
   }
@@ -288,28 +290,53 @@ export function meetPlayTotal(state, player) {
   return base + (state.pendingPowerBonus || 0) + persistentMeetBonus(state, player);
 }
 
-/** Cooperative Meet total — pool up to 3 Psyche from any Dreamers. */
-export function coopMeetPlayTotal(state) {
-  const selected = allSelectedCards(state);
-  if (!selected.length) return state.pendingPowerBonus || 0;
+/** Dreamer on the selected Landscape — only they may spend Psyche for Meet plays there. */
+export function meetPsycheActor(state) {
+  const tileId = state.selectedLandscapeId;
+  if (!tileId) return null;
+  const tile = state.board?.find((t) => t.id === tileId);
+  if (!tile || tile.wasteland || !tile.revealed) return null;
+  return state.players.find((p) => p.alive && p.landscapeId === tileId) || null;
+}
 
+/** Psyche total for Meet — only the Dreamer on the Encounter Landscape may pay. */
+export function meetPsychePlayTotal(state) {
+  const actor = meetPsycheActor(state);
+  if (!actor) return state.pendingPowerBonus || 0;
+  const selected = selectedCards(state, actor);
   let total = state.pendingPowerBonus || 0;
-  const owners = new Set();
-  selected.forEach((card) => {
-    const owner = cardOwner(state, card);
-    if (owner) owners.add(owner.id);
-  });
-  owners.forEach((ownerId) => {
-    const owner = state.players.find((p) => p.id === ownerId);
-    if (!owner) return;
-    const cards = selected.filter((c) => cardOwner(state, c)?.id === ownerId);
-    total += sumEffectivePsycheValue(state, owner, cards);
-    total += persistentMeetBonus(state, owner);
-  });
-
+  total += sumEffectivePsycheValue(state, actor, selected);
+  total += persistentMeetBonus(state, actor);
   const bonus = meetBonusBreakdown(state);
   total += bonus.total;
   return total;
+}
+
+/** Meet pool total — Final Recurrence may still pool from multiple Dreamers; Encounters are local. */
+export function coopMeetPlayTotal(state) {
+  if (state.finalRecurrence) {
+    const selected = allSelectedCards(state);
+    if (!selected.length) return state.pendingPowerBonus || 0;
+
+    let total = state.pendingPowerBonus || 0;
+    const owners = new Set();
+    selected.forEach((card) => {
+      const owner = cardOwner(state, card);
+      if (owner) owners.add(owner.id);
+    });
+    owners.forEach((ownerId) => {
+      const owner = state.players.find((p) => p.id === ownerId);
+      if (!owner) return;
+      const cards = selected.filter((c) => cardOwner(state, c)?.id === ownerId);
+      total += sumEffectivePsycheValue(state, owner, cards);
+      total += persistentMeetBonus(state, owner);
+    });
+
+    const bonus = meetBonusBreakdown(state);
+    total += bonus.total;
+    return total;
+  }
+  return meetPsychePlayTotal(state);
 }
 
 function routeSpentHandCard(state, player, card, { toRepress = false } = {}) {

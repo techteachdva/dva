@@ -1,6 +1,8 @@
 import { getPhase, activePlayer, headPlayer } from "./state.js";
 import {
   coopMeetPlayTotal,
+  meetPsycheActor,
+  meetPsychePlayTotal,
   allSelectedCards,
   spreadPsycheCount,
   allyPsycheCount,
@@ -452,6 +454,7 @@ export function showModal(card) {
     }
     container.appendChild(detail);
     modal.classList.remove("hidden");
+    document.body.classList.add("card-detail-open");
     return;
   }
 
@@ -564,10 +567,12 @@ export function showModal(card) {
 
   container.appendChild(detail);
   modal.classList.remove("hidden");
+  document.body.classList.add("card-detail-open");
 }
 
 export function hideModal() {
   document.getElementById("card-modal").classList.add("hidden");
+  document.body.classList.remove("card-detail-open");
 }
 
 /** Hex layout scale — half-width in pixel math (larger = bigger map). */
@@ -840,27 +845,37 @@ export function renderCoopMeetHands(state, onCardClick) {
   const title = document.getElementById("hand-title");
   hand.innerHTML = "";
 
+  const meetActor = meetPsycheActor(state);
   const poolCount = spreadPsycheCount(state);
   const allyCount = allyPsycheCount(state);
-  const poolTotal = coopMeetPlayTotal(state);
+  const poolTotal = meetPsychePlayTotal(state);
   const bonus = meetBonusBreakdown(state);
   const bonusText = bonus.total ? ` · +${bonus.total} Dreamer (${bonus.parts.join(", ")})` : "";
   const pending = state.pendingPowerBonus ? ` · +${state.pendingPowerBonus} bonus pending` : "";
-  if (title) title.textContent = "Cooperative Psyche Pool";
-  stats.textContent = `${poolCount}/3 spread${allyCount ? ` + ${allyCount} ally` : ""} · total ${poolTotal}${bonusText}${pending} · click any Dreamer's Psyche`;
+  if (title) {
+    title.textContent = meetActor
+      ? `${meetActor.name} — Meet Encounter`
+      : "Meet Encounter — move onto the Landscape";
+  }
+  stats.textContent = meetActor
+    ? `${poolCount}/3 spread${allyCount ? ` + ${allyCount} ally` : ""} · total ${poolTotal}${bonusText}${pending} · only ${meetActor.name} may spend Psyche`
+    : "Select a Landscape with an Encounter and stand on it with a Dreamer.";
   hand.classList.add("coop-mode");
 
   state.players.filter((p) => p.alive).forEach((player, index) => {
     const row = document.createElement("div");
     row.dataset.playerId = player.id;
+    const isActor = meetActor?.id === player.id;
     row.className = [
       "coop-hand-row",
       index === state.activePlayerIndex ? "focused" : "",
+      isActor ? "meet-actor" : "",
+      meetActor && !isActor ? "meet-actor-disabled" : "",
     ].filter(Boolean).join(" ");
 
     const label = document.createElement("div");
     label.className = "coop-hand-label";
-    label.textContent = `${player.name}${player.isHead ? " ★" : ""} · ${player.hand.length} cards`;
+    label.textContent = `${player.name}${player.isHead ? " ★" : ""} · ${player.landscapeId === meetActor?.landscapeId ? "on Encounter" : player.landscapeId}${isActor ? " · spending Psyche" : ""}`;
     row.appendChild(label);
 
     const cards = document.createElement("div");
@@ -873,7 +888,7 @@ export function renderCoopMeetHands(state, onCardClick) {
         cards.appendChild(renderCard(card, {
           selected: state.selectedHand.includes(card.instanceId),
           playerId: player.id,
-          onClick: () => onCardClick(card, player),
+          onClick: isActor ? () => onCardClick(card, player) : undefined,
         }));
       });
     }
@@ -2108,12 +2123,62 @@ export function showLandscapeDetail(state, tileId) {
 }
 
 let tutorialHighlightEl = null;
+let tutorialHighlightEls = [];
 let tutorialSpotlightEl = null;
 let tutorialSparkleLayer = null;
 let tutorialSpotlightTracker = null;
 
-const SPARKLE_COUNT = 14;
+const SPARKLE_COUNT = 28;
 const SPARKLE_JUMP_MS = 720;
+
+function getStepTargetSelectors(step) {
+  if (!step) return [];
+  if (Array.isArray(step.targets) && step.targets.length) return step.targets;
+  if (step.target) return [step.target];
+  return [];
+}
+
+function resolveTutorialElements(step) {
+  return getStepTargetSelectors(step)
+    .map((sel) => document.querySelector(sel))
+    .filter(Boolean);
+}
+
+export function ensureTutorialStepTargetsVisible(step) {
+  const selectors = getStepTargetSelectors(step);
+  if (selectors.some((s) => s === "#btn-advance-phase" || s === "#phase-advance-bar")) {
+    document.getElementById("phase-advance-bar")?.classList.remove("hidden");
+  }
+  if (selectors.some((s) => s === "#guide-panel" || s === "#guide-panel-wrap")) {
+    document.getElementById("guide-panel-wrap")?.classList.remove("collapsed");
+    document.getElementById("btn-toggle-guide")?.setAttribute("aria-expanded", "true");
+  }
+}
+
+function unionElementRects(elements) {
+  if (!elements.length) return null;
+  let left = Infinity;
+  let top = Infinity;
+  let right = -Infinity;
+  let bottom = -Infinity;
+  elements.forEach((el) => {
+    const r = el.getBoundingClientRect();
+    if (r.width <= 0 && r.height <= 0) return;
+    left = Math.min(left, r.left);
+    top = Math.min(top, r.top);
+    right = Math.max(right, r.right);
+    bottom = Math.max(bottom, r.bottom);
+  });
+  if (!Number.isFinite(left)) return null;
+  return {
+    left,
+    top,
+    width: Math.max(right - left, 48),
+    height: Math.max(bottom - top, 48),
+    right,
+    bottom,
+  };
+}
 
 function ensureTutorialSparkleLayer() {
   if (tutorialSparkleLayer) return tutorialSparkleLayer;
@@ -2127,14 +2192,20 @@ function ensureTutorialSparkleLayer() {
   tutorialSpotlightEl.className = "tutorial-spotlight hidden";
   tutorialSpotlightEl.innerHTML = `
     <div class="tutorial-spotlight-glow"></div>
+    <div class="tutorial-spotlight-glow tutorial-spotlight-glow-alt"></div>
     <div class="tutorial-spotlight-ring"></div>
     <div class="tutorial-spotlight-sparkles"></div>
   `;
+  tutorialSpotlightEl.style.setProperty("--sparkle-count", String(SPARKLE_COUNT));
   const sparkleHost = tutorialSpotlightEl.querySelector(".tutorial-spotlight-sparkles");
   for (let i = 0; i < SPARKLE_COUNT; i += 1) {
     const sparkle = document.createElement("span");
     sparkle.className = "tutorial-sparkle";
     sparkle.style.setProperty("--sparkle-i", String(i));
+    sparkle.innerHTML = `
+      <span class="tutorial-sparkle-rays" aria-hidden="true"></span>
+      <span class="tutorial-sparkle-star" aria-hidden="true">✦</span>
+    `;
     sparkleHost.appendChild(sparkle);
   }
 
@@ -2176,27 +2247,37 @@ function stopTutorialSpotlightTracker() {
 }
 
 function positionTutorialSpotlight() {
-  if (!tutorialSpotlightEl || !tutorialHighlightEl) return;
-  const rect = tutorialHighlightEl.getBoundingClientRect();
-  const pad = 10;
-  tutorialSpotlightEl.style.left = `${rect.left - pad}px`;
-  tutorialSpotlightEl.style.top = `${rect.top - pad}px`;
-  tutorialSpotlightEl.style.width = `${Math.max(rect.width + pad * 2, 48)}px`;
-  tutorialSpotlightEl.style.height = `${Math.max(rect.height + pad * 2, 48)}px`;
-  const orbit = Math.max(rect.width, rect.height) / 2 + pad + 4;
+  if (!tutorialSpotlightEl) return;
+  const elements = tutorialHighlightEls.length
+    ? tutorialHighlightEls
+    : (tutorialHighlightEl ? [tutorialHighlightEl] : []);
+  if (!elements.length) return;
+
+  const union = unionElementRects(elements);
+  if (!union) return;
+
+  const pad = 12;
+  tutorialSpotlightEl.style.left = `${union.left - pad}px`;
+  tutorialSpotlightEl.style.top = `${union.top - pad}px`;
+  tutorialSpotlightEl.style.width = `${Math.max(union.width + pad * 2, 56)}px`;
+  tutorialSpotlightEl.style.height = `${Math.max(union.height + pad * 2, 56)}px`;
+  const orbit = Math.max(union.width, union.height) / 2 + pad + 8;
   tutorialSpotlightEl.style.setProperty("--orbit-r", `${orbit}px`);
 }
 
 function startTutorialSpotlightTracker() {
   stopTutorialSpotlightTracker();
-  if (!tutorialHighlightEl) return;
+  const elements = tutorialHighlightEls.length
+    ? tutorialHighlightEls
+    : (tutorialHighlightEl ? [tutorialHighlightEl] : []);
+  if (!elements.length) return;
   positionTutorialSpotlight();
   if (typeof ResizeObserver !== "undefined") {
     tutorialSpotlightTracker = new ResizeObserver(() => positionTutorialSpotlight());
-    tutorialSpotlightTracker.observe(tutorialHighlightEl);
-    if (tutorialHighlightEl.parentElement) {
-      tutorialSpotlightTracker.observe(tutorialHighlightEl.parentElement);
-    }
+    elements.forEach((el) => {
+      tutorialSpotlightTracker.observe(el);
+      if (el.parentElement) tutorialSpotlightTracker.observe(el.parentElement);
+    });
   }
   window.addEventListener("resize", positionTutorialSpotlight);
   window.addEventListener("scroll", positionTutorialSpotlight, true);
@@ -2207,8 +2288,19 @@ export function refreshTutorialSpotlight() {
 }
 
 export function getTutorialSpotlightRect() {
-  if (tutorialHighlightEl) {
-    return tutorialHighlightEl.getBoundingClientRect();
+  const elements = tutorialHighlightEls.length
+    ? tutorialHighlightEls
+    : (tutorialHighlightEl ? [tutorialHighlightEl] : []);
+  const union = unionElementRects(elements);
+  if (union) {
+    return {
+      left: union.left,
+      top: union.top,
+      width: union.width,
+      height: union.height,
+      right: union.right,
+      bottom: union.bottom,
+    };
   }
   if (tutorialSpotlightEl && !tutorialSpotlightEl.classList.contains("hidden")) {
     return tutorialSpotlightEl.getBoundingClientRect();
@@ -2216,18 +2308,28 @@ export function getTutorialSpotlightRect() {
   return null;
 }
 
-function applyTutorialHighlight(target, { animateIn = true } = {}) {
+function applyTutorialHighlight(stepOrTarget, { animateIn = true } = {}) {
   ensureTutorialSparkleLayer();
   clearTutorialHighlight({ keepLayer: true });
 
-  if (!target) {
+  const step = typeof stepOrTarget === "object" && stepOrTarget !== null && !stepOrTarget.nodeType
+    ? stepOrTarget
+    : null;
+  const targets = step
+    ? resolveTutorialElements(step)
+    : (stepOrTarget ? [stepOrTarget].flat().filter(Boolean) : []);
+
+  if (step) ensureTutorialStepTargetsVisible(step);
+
+  if (!targets.length) {
     tutorialSpotlightEl?.classList.add("hidden");
     stopTutorialSpotlightTracker();
     return;
   }
 
-  target.classList.add("tutorial-highlight");
-  tutorialHighlightEl = target;
+  targets.forEach((el) => el.classList.add("tutorial-highlight"));
+  tutorialHighlightEls = targets;
+  tutorialHighlightEl = targets[0];
   tutorialSpotlightEl.classList.remove("hidden", "tutorial-spotlight-arriving");
   positionTutorialSpotlight();
   startTutorialSpotlightTracker();
@@ -2236,22 +2338,27 @@ function applyTutorialHighlight(target, { animateIn = true } = {}) {
     tutorialSpotlightEl.classList.add("tutorial-spotlight-arriving");
     window.setTimeout(() => {
       tutorialSpotlightEl?.classList.remove("tutorial-spotlight-arriving");
-    }, 480);
+    }, 520);
   }
 
-  target.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  targets[0].scrollIntoView({ block: "nearest", behavior: "smooth" });
 }
 
-function animateTutorialSparkleJump(fromRect, toTarget, onComplete) {
+function animateTutorialSparkleJump(fromRect, step, onComplete) {
   ensureTutorialSparkleLayer();
   const flyer = document.getElementById("tutorial-flyer");
+  const targets = step ? resolveTutorialElements(step) : [];
+  const toTarget = targets[0] || null;
   if (!flyer || !toTarget) {
-    applyTutorialHighlight(toTarget, { animateIn: true });
+    applyTutorialHighlight(step || toTarget, { animateIn: true });
     onComplete?.();
     return;
   }
 
-  const toRect = toTarget.getBoundingClientRect();
+  if (step) ensureTutorialStepTargetsVisible(step);
+
+  const union = unionElementRects(targets);
+  const toRect = union || toTarget.getBoundingClientRect();
   const from = rectCenter(fromRect);
   const to = rectCenter(toRect);
   const arcLift = Math.min(220, Math.max(72, Math.abs(to.x - from.x) * 0.22 + Math.abs(to.y - from.y) * 0.12));
@@ -2280,7 +2387,7 @@ function animateTutorialSparkleJump(fromRect, toTarget, onComplete) {
 
     flyer.classList.remove("tutorial-flyer-active");
     flyer.classList.add("hidden");
-    applyTutorialHighlight(toTarget, { animateIn: true });
+    applyTutorialHighlight(step, { animateIn: true });
     tutorialSpotlightEl.classList.remove("tutorial-spotlight-traveling");
     onComplete?.();
   };
@@ -2289,6 +2396,8 @@ function animateTutorialSparkleJump(fromRect, toTarget, onComplete) {
 }
 
 function clearTutorialHighlight({ keepLayer = false } = {}) {
+  tutorialHighlightEls.forEach((el) => el.classList.remove("tutorial-highlight"));
+  tutorialHighlightEls = [];
   if (tutorialHighlightEl) {
     tutorialHighlightEl.classList.remove("tutorial-highlight");
     tutorialHighlightEl = null;
@@ -2334,12 +2443,13 @@ export function showTutorialStep(step, stepIndex, total, {
   }
 
   clearTutorialHighlight({ keepLayer: !!fromRect });
-  const target = step.target ? document.querySelector(step.target) : null;
+  ensureTutorialStepTargetsVisible(step);
+  const targets = resolveTutorialElements(step);
 
-  if (fromRect && target && fromRect.width > 0 && fromRect.height > 0) {
-    animateTutorialSparkleJump(fromRect, target);
+  if (fromRect && targets.length && fromRect.width > 0 && fromRect.height > 0) {
+    animateTutorialSparkleJump(fromRect, step);
   } else {
-    applyTutorialHighlight(target, { animateIn: true });
+    applyTutorialHighlight(step, { animateIn: true });
   }
 
   const skipBtn = document.getElementById("tutorial-skip");

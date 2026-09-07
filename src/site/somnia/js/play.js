@@ -75,6 +75,7 @@ import {
   notifyTutorialDreamDrawn,
   notifyTutorialExploreMove,
   isInteractiveTutorialActive,
+  getTutorialStep,
 } from "./tutorial-mode.js";
 import {
   renderBoard,
@@ -120,6 +121,7 @@ import {
   getTutorialSpotlightRect,
   refreshTutorialSpotlight,
   bindUiRenderState,
+  ensureTutorialStepTargetsVisible,
 } from "./ui.js";
 
 const LAUNCH_KEY = "somnia.launch";
@@ -501,6 +503,7 @@ function syncInteractiveTutorial() {
   if (syncKey === lastTutorialSyncKey) {
     const nextBtn = document.getElementById("tutorial-next");
     if (nextBtn) nextBtn.disabled = !!(step.until && !canAdvance);
+    ensureTutorialStepTargetsVisible(step);
     refreshTutorialSpotlight();
     return;
   }
@@ -927,7 +930,10 @@ function renderAll() {
   maybeShowDreamerPowerUI();
 
   if (isInteractiveTutorialActive(state)) {
+    const step = getTutorialStep(state);
+    if (step) ensureTutorialStepTargetsVisible(step);
     syncInteractiveTutorial();
+    refreshTutorialSpotlight();
   }
 
   updateHandSnapshots(state);

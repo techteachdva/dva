@@ -5,6 +5,7 @@ import {
   setEncounterOnLandscape,
   landscapeById,
 } from "./state.js";
+import { meetPsycheActor } from "./rules.js";
 import { uid } from "./data.js";
 import { encounterFromDreambeastCard } from "./mindstream-supply.js";
 
@@ -103,7 +104,14 @@ function hasLuciditySelected(state) {
 }
 
 function hasMeetPool(state) {
-  return state.selectedHand.length > 0 && getPhase(state) === "Meet" && state.meetActionBudget > 0;
+  const actor = meetPsycheActor(state);
+  if (!actor || getPhase(state) !== "Meet" || state.meetActionBudget <= 0) return false;
+  const ids = new Set(state.selectedHand);
+  return actor.hand.some((c) => ids.has(c.instanceId));
+}
+
+function dreamerOnHouse(state) {
+  return state.players.some((p) => p.alive && p.landscapeId === "house");
 }
 
 /** Linear guided script — player must complete highlighted actions between steps. */
@@ -140,7 +148,7 @@ export const TUTORIAL_SCRIPT = [
     id: "psyche",
     round: 1,
     title: "Psyche Cards",
-    body: "Psyche is your health and your budget. Blue Lucidity, green Elasticity, red Willpower. One Dreamer spends 1–2 suited cards per phase to set the team budget; their Dreamer stat adds bonus value.",
+    body: "Psyche is your health and your budget. Blue Lucidity, yellow Elasticity, red Willpower. One Dreamer spends 1–2 suited cards per phase to set the team budget; their Dreamer stat adds bonus value.",
     target: "#hand-bar",
   },
   {
@@ -162,8 +170,8 @@ export const TUTORIAL_SCRIPT = [
     id: "spend-lucidity-r1",
     round: 1,
     title: "Spend Lucidity",
-    body: "Select 1–2 blue Lucidity cards from The Visionary's row (best Lucidity bonus), then click Reveal Landscapes.",
-    target: "#hand-bar",
+    body: "Select 1–2 blue Lucidity cards from The Visionary's row, then click Reveal Landscapes in the action bar below the map.",
+    targets: ["#hand-bar", "#phase-actions"],
     until: (s) => s.revealLandscapeUsed || s.landscapePick?.mode === "reveal",
   },
   {
@@ -178,48 +186,48 @@ export const TUTORIAL_SCRIPT = [
     id: "to-explore-r1",
     round: 1,
     title: "Advance to Explore",
-    body: "When Reveal is done, click Next Phase to enter Explore.",
-    target: "#btn-advance-phase",
+    body: "When Reveal is done, click Next Phase at the top of the table to enter Explore.",
+    target: "#phase-advance-bar",
     until: (s) => getPhase(s) === "Explore",
   },
   {
     id: "spend-elasticity-r1",
     round: 1,
     title: "Spend Elasticity",
-    body: "Select 1–2 green Elasticity cards from The Runner's row, then click Spend Elasticity to unlock shared moves.",
-    target: "#hand-bar",
+    body: "Select 1–2 yellow Elasticity cards from The Runner's row, then click Spend Elasticity in the action bar.",
+    targets: ["#hand-bar", "#phase-actions"],
     until: (s) => s.exploreActivated,
   },
   {
     id: "explore-move-r1",
     round: 1,
     title: "Explore the Map",
-    body: "Click a Dreamer chip, then a highlighted green hex to move. Move at least one Dreamer off The Bed.",
-    target: "#board-viewport",
-    until: (s) => s.tutorialFlags.movedExplore,
+    body: "Click a Dreamer chip, then move onto House — a Mandrake Encounter waits there. Unused Explore moves can be skipped when advancing.",
+    targets: ["#player-list", "#board-viewport"],
+    until: (s) => dreamerOnHouse(s),
   },
   {
     id: "to-meet-r1",
     round: 1,
     title: "Advance to Meet",
-    body: "Click Next Phase to enter Meet — the Willpower phase for Encounters and actions.",
-    target: "#btn-advance-phase",
+    body: "Click Next Phase to enter Meet. If you still have Explore moves left, confirm to forfeit them.",
+    target: "#phase-advance-bar",
     until: (s) => getPhase(s) === "Meet",
   },
   {
     id: "spend-willpower-r1",
     round: 1,
     title: "Spend Willpower",
-    body: "Select 1–2 red Willpower cards, then click the Spend Willpower button to gain shared Meet actions.",
-    target: "#hand-bar",
+    body: "Select 1–2 red Willpower cards, then click Gain Actions in the action bar.",
+    targets: ["#hand-bar", "#phase-actions"],
     until: (s) => s.meetActionBudget > 0,
   },
   {
     id: "encounter-r1",
     round: 1,
     title: "Encounters",
-    body: "A Mandrake waits on House. Pool up to 3 Psyche from any Dreamers to Accept (ally joins hand as 3 Psyche) or Repress (draw 1 Psyche). Select cards in the hand area during Meet.",
-    target: "#active-encounter",
+    body: "A Mandrake waits on House. Select the House hex, then pool up to 3 Psyche from the Dreamer standing there. Accept (ally joins hand) or Repress (draw 1 Psyche) from the encounter panel.",
+    targets: ["#hand-bar", "#active-encounter"],
     until: (s) => hasMeetPool(s),
   },
   {
@@ -227,7 +235,7 @@ export const TUTORIAL_SCRIPT = [
     round: 1,
     title: "End Round 1",
     body: "Click Next Phase to end the Meet phase and start Round 2. Dreams and Psyche draws happen at round start.",
-    target: "#btn-advance-phase",
+    target: "#phase-advance-bar",
     until: (s) => s.round >= 2,
   },
   {
@@ -243,7 +251,7 @@ export const TUTORIAL_SCRIPT = [
     round: 2,
     title: "Psyche Plays Recap",
     body: "Repeat the pattern: spend Lucidity → reveal, spend Elasticity → move, spend Willpower → Meet actions. Objects are free anytime; Persistent Objects cost 1 Power Token to activate.",
-    target: "#guide-panel",
+    targets: ["#guide-panel-wrap", "#guide-panel"],
     until: (s) => getPhase(s) === "Explore" || s.exploreActivated,
   },
   {
@@ -251,7 +259,7 @@ export const TUTORIAL_SCRIPT = [
     round: 2,
     title: "Explore Again",
     body: "Spend Elasticity and move on the map. Landscape unique actions are available during Meet on their tile.",
-    target: "#board-viewport",
+    targets: ["#player-list", "#board-viewport"],
     until: (s) => s.round >= 2 && (s.exploreActivated || getPhase(s) === "Meet"),
   },
   {
@@ -259,7 +267,7 @@ export const TUTORIAL_SCRIPT = [
     round: 2,
     title: "Meet Again",
     body: "Spend Willpower for Meet actions. Trade, play Objects, complete quests, and pool Psyche for Encounters.",
-    target: "#phase-actions",
+    targets: ["#hand-bar", "#phase-actions"],
     until: (s) => s.round >= 2 && s.meetActionBudget > 0,
   },
   {
@@ -267,7 +275,7 @@ export const TUTORIAL_SCRIPT = [
     round: 2,
     title: "End Round 2",
     body: "Advance to Round 3 — the Boss Dream arrives.",
-    target: "#btn-advance-phase",
+    target: "#phase-advance-bar",
     until: (s) => s.round >= 3,
   },
   {
@@ -289,8 +297,8 @@ export const TUTORIAL_SCRIPT = [
     id: "boss-meet",
     round: 3,
     title: "Face the Boss",
-    body: "Spend Willpower, then pool Psyche to Meet Cerberus on The Bed — or advance when ready to continue the tutorial.",
-    target: "#hex-board",
+    body: "Spend Willpower, then move onto The Bed if needed. Only the Dreamer on The Bed may pool Psyche to Meet Cerberus — or advance when ready to continue the tutorial.",
+    targets: ["#board-viewport", "#active-encounter"],
     until: (s) => s.round >= 3 && (s.meetActionBudget > 0 || getPhase(s) !== "Meet"),
   },
   {
@@ -298,7 +306,7 @@ export const TUTORIAL_SCRIPT = [
     round: 3,
     title: "End Round 3",
     body: "You've survived the first Boss. Two tutorial rounds remain.",
-    target: "#btn-advance-phase",
+    target: "#phase-advance-bar",
     until: (s) => s.round >= 4,
   },
   {
@@ -321,7 +329,7 @@ export const TUTORIAL_SCRIPT = [
     round: 4,
     title: "End Round 4",
     body: "One more round after this.",
-    target: "#btn-advance-phase",
+    target: "#phase-advance-bar",
     until: (s) => s.round >= 5,
   },
   {
@@ -329,7 +337,7 @@ export const TUTORIAL_SCRIPT = [
     round: 5,
     title: "Final Tutorial Round",
     body: "Round 5: run through Reveal, Explore, and Meet one last time. Use the Guide panel anytime for hints.",
-    target: "#guide-panel",
+    targets: ["#guide-panel-wrap", "#phase-stepper"],
     until: (s) => s.round >= 5 && s.dreamDrawn,
   },
   {

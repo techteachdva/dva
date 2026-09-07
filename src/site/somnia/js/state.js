@@ -538,7 +538,11 @@ export function advancePhase(state) {
   if (getPhase(state) === "Explore") {
     addLog(state, "Explore Phase — one Dreamer spends Elasticity to unlock shared moves.");
   } else if (getPhase(state) === "Meet") {
-    addLog(state, "Meet Phase — one Dreamer spends Willpower for shared Actions; all Dreamers pool Psyche.");
+    const meetHere = state.board?.find((t) =>
+      t.revealed && t.encounter && state.players.some((p) => p.alive && p.landscapeId === t.id),
+    );
+    if (meetHere) state.selectedLandscapeId = meetHere.id;
+    addLog(state, "Meet Phase — one Dreamer spends Willpower for shared Actions; Encounters are Met by the Dreamer on that Landscape.");
   }
 }
 

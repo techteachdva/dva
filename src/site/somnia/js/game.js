@@ -22,6 +22,9 @@ import {
   exploreBudget,
   meetActionBudgetFromWillpower,
   coopMeetPlayTotal,
+  meetPsycheActor,
+  meetPsychePlayTotal,
+  selectedCards,
   allSelectedCards,
   spreadPsycheCount,
   allyPsycheCount,
@@ -148,16 +151,16 @@ function spendMeetAction(state, action) {
 }
 
 function actorOnLandscape(state, landscapeId) {
-  if (!landscapeId) return activePlayer(state);
+  if (!landscapeId) return null;
   const onTile = state.players.filter((p) => p.alive && p.landscapeId === landscapeId);
-  return onTile[0] || activePlayer(state);
+  return onTile[0] || null;
 }
 
 function meetLandscapeTile(state) {
   const tile = landscapeById(state, state.selectedLandscapeId);
   if (!tile?.revealed || tile.wasteland) return null;
   const actor = actorOnLandscape(state, tile.id);
-  if (actor.landscapeId !== tile.id) return null;
+  if (!actor) return null;
   return tile;
 }
 
@@ -253,20 +256,26 @@ export function getPhaseActions(state, handlers) {
       });
     } else {
       actions.push({
-        label: `${state.exploreMovesLeft} move(s) — click green hexes`,
+        label: `${state.exploreMovesLeft} move(s) — click highlighted hexes`,
         section: "main",
         disabled: true,
         onClick: () => {},
       });
     }
     actions.push(dreamerPowerAction());
+    const movesLeft = state.exploreMovesLeft || 0;
     actions.push({
-      label: "Next: Meet →",
+      label: movesLeft > 0 ? `Next: Meet → (${movesLeft} move${movesLeft === 1 ? "" : "s"} left)` : "Next: Meet →",
       section: "phase",
       advance: true,
       hidden: true,
       primary: true,
-      disabled: state.exploreActivated && state.exploreMovesLeft > 0,
+      disabled: !state.exploreActivated,
+      hint: !state.exploreActivated
+        ? "Spend Elasticity to unlock team moves before advancing."
+        : movesLeft > 0
+          ? `${movesLeft} unused move(s) — advance to Meet anytime (confirmation required).`
+          : "Advance to the Meet phase.",
       onClick: handlers.nextPhase,
     });
   }
@@ -700,11 +709,17 @@ export function meetEncounter(state, mode = "accept") {
   state.activeEncounter = encounter;
   state.activeEncounterLandscapeId = tile.id;
   const actor = actorOnLandscape(state, tile.id);
+  if (!actor) {
+    addLog(state, "A Dreamer must be on this Landscape to Meet the Encounter.");
+    state.meetActionsUsed -= 1;
+    state.lastMeetAction = null;
+    return;
+  }
   const isReject = mode === "reject" || mode === "repress";
   const needed = isReject ? encounterRejectCost(encounter) : encounter.accept;
-  const selected = allSelectedCards(state);
+  const selected = selectedCards(state, actor);
 
-  if (spreadPsycheCount(state) > 3) {
+  if (selected.filter((c) => !isDreambeastPsycheCard(c)).length > 3) {
     addLog(state, "Play up to 3 Psyche cards for an Encounter (allies don't count).");
     state.meetActionsUsed -= 1;
     state.lastMeetAction = null;
@@ -719,22 +734,21 @@ export function meetEncounter(state, mode = "accept") {
     return;
   }
 
-  const played = coopMeetPlayTotal(state);
+  const played = meetPsychePlayTotal(state);
   const bonus = meetBonusBreakdown(state);
   if (played < needed) {
     const bonusNote = bonus.total ? ` (includes +${bonus.total} Dreamer bonus)` : "";
-    addLog(state, `Need ${needed} Psyche to ${isReject ? "Reject" : "Accept"} (pool total ${played}${bonusNote}).`);
+    addLog(state, `Need ${needed} Psyche to ${isReject ? "Reject" : "Accept"} (${actor.name} on ${tile.name}: ${played}${bonusNote}).`);
     state.meetActionsUsed -= 1;
     state.lastMeetAction = null;
     return;
   }
 
-  const contributors = coopContributorLabel(state);
-  const discardedBy = discardAllSelected(state);
-  discardedBy.forEach(({ player: p, cards }) => trackPsycheDiscard(state, p, cards));
+  const discarded = discardSelected(state, actor);
+  trackPsycheDiscard(state, actor, discarded);
 
   if (!isReject) {
-    addLog(state, `${actor.name} Accepts ${encounter.name}${contributors ? ` (${contributors})` : ""}. ${encounter.effect || ""}`);
+    addLog(state, `${actor.name} Accepts ${encounter.name}. ${encounter.effect || ""}`);
     applyBossAcceptEffect(state, encounter, actor);
 
     const handCard = dreambeastToHandCard(encounter);
@@ -747,7 +761,7 @@ export function meetEncounter(state, mode = "accept") {
       if (objs.length) addLog(state, `High-tier Accept: ${actor.name} draws an Object.`);
     }
   } else {
-    addLog(state, `${actor.name} Rejects ${encounter.name}${contributors ? ` (${contributors})` : ""}. ${encounter.rejectReward || ""}`);
+    addLog(state, `${actor.name} Rejects ${encounter.name}. ${encounter.rejectReward || ""}`);
     repressCard(state, { ...encounter, type: "dreambeast" });
     applyRejectReward(state, encounter, actor, getEffectHelpers());
   }
@@ -1136,6 +1150,8 @@ export function toggleHandCard(state, card, owner = null) {
   if (isDreambeastPsycheCard(card)) {
     if (phase !== "Meet" || state.meetActionBudget === 0) return;
     if (!player.alive || !player.hand.some((c) => c.instanceId === id)) return;
+    const actor = meetPsycheActor(state);
+    if (!actor || player.id !== actor.id) return;
     if (state.selectedHand.includes(id)) {
       state.selectedHand = state.selectedHand.filter((x) => x !== id);
       return;
@@ -1156,6 +1172,11 @@ export function toggleHandCard(state, card, owner = null) {
 
   if (phase === "Meet" && state.meetActionBudget > 0) {
     if (!player.alive || !player.hand.some((c) => c.instanceId === id)) return;
+    const actor = meetPsycheActor(state);
+    if (!actor || player.id !== actor.id) return;
+    state.selectedHand = state.selectedHand.filter((selId) =>
+      actor.hand.some((c) => c.instanceId === selId),
+    );
     state.selectedHand.push(id);
     return;
   }
@@ -1290,7 +1311,7 @@ export function getPhaseHint(state) {
     if (!state.exploreActivated) {
       return `${COOP_PLAY_TIP} One Dreamer spends Elasticity to unlock shared moves.`;
     }
-    return `${COOP_PLAY_TIP} ${state.exploreMovesLeft} team move(s) · ${legal} hexes reachable for focused Dreamer.`;
+    return `${COOP_PLAY_TIP} ${state.exploreMovesLeft} team move(s) · ${legal} hexes reachable — or advance to Meet with moves unused.`;
   }
   if (phase === "Meet") {
     if (state.meetActionBudget === 0) {

@@ -57,6 +57,29 @@ function finishPhaseAdvance(state, onComplete) {
   onComplete?.();
 }
 
+function forfeitRemainingExploreMoves(state) {
+  const left = state.exploreMovesLeft || 0;
+  if (left <= 0) return;
+  state.exploreMovesLeft = 0;
+  addLog(
+    state,
+    `Explore ends early — ${left} unused team move${left === 1 ? "" : "s"} forfeited.`,
+  );
+}
+
+function showExploreMovesLeftWarning(state, movesLeft, onConfirm, onCancel) {
+  showPhaseSkipConfirm({
+    title: "Moves remaining",
+    message: `Your team still has <strong>${movesLeft}</strong> shared Explore move${movesLeft === 1 ? "" : "s"} left. Advance to <strong>Meet</strong> anyway? Unused moves are lost.`,
+    confirmLabel: "Go to Meet",
+    onConfirm: () => {
+      forfeitRemainingExploreMoves(state);
+      onConfirm();
+    },
+    onCancel,
+  });
+}
+
 function applyMeetDreambeastPenalty(state, count, method, onComplete) {
   if (method === "discard") {
     discardDreamCardsFromDeck(state, count);
@@ -115,6 +138,16 @@ export function requestEndPhase(state, onComplete = () => {}) {
       state,
       beastCount,
       onComplete,
+      () => {},
+    );
+    return false;
+  }
+
+  if (phase === "Explore" && state.exploreActivated && (state.exploreMovesLeft || 0) > 0) {
+    showExploreMovesLeftWarning(
+      state,
+      state.exploreMovesLeft,
+      () => finishPhaseAdvance(state, onComplete),
       () => {},
     );
     return false;
