@@ -74,7 +74,6 @@ import {
   advanceTutorialStep,
   completeTutorialGame,
   notifyTutorialDreamDrawn,
-  notifyTutorialExploreMove,
   isInteractiveTutorialActive,
   getTutorialStep,
 } from "./tutorial-mode.js";
@@ -907,10 +906,6 @@ function renderAll() {
   const legalMoves = getLegalExploreTargets(state).map((t) => t.id);
   renderBoard(state, (id) => {
     handleBoardTileClick(state, id);
-    if (isInteractiveTutorialActive(state) && getPhase(state) === "Explore") {
-      const offBed = state.players.some((p) => p.alive && p.landscapeId !== "bed");
-      if (offBed) notifyTutorialExploreMove(state);
-    }
     renderAll();
     if (!state.landscapePick) showLandscapeDetail(state, id);
   }, legalMoves, pickHighlights);
