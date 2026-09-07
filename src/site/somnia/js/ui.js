@@ -1053,9 +1053,17 @@ function createActionButton(action) {
   return btn;
 }
 
+let moreActionsOpen = false;
+
 export function renderPhaseActions(actions) {
   const container = document.getElementById("phase-actions");
   if (!container) return;
+
+  const previousDetails = container.querySelector("details.action-more");
+  if (previousDetails) {
+    moreActionsOpen = previousDetails.open;
+  }
+
   container.innerHTML = "";
 
   const grouped = {};
@@ -1091,6 +1099,10 @@ export function renderPhaseActions(actions) {
   if (secondaryItems.length) {
     const details = document.createElement("details");
     details.className = "action-more";
+    details.open = moreActionsOpen;
+    details.addEventListener("toggle", () => {
+      moreActionsOpen = details.open;
+    });
     const summary = document.createElement("summary");
     summary.className = "btn";
     summary.textContent = `More actions (${secondaryItems.length})`;
@@ -1114,6 +1126,8 @@ export function renderPhaseActions(actions) {
     });
     details.appendChild(inner);
     container.appendChild(details);
+  } else {
+    moreActionsOpen = false;
   }
 }
 

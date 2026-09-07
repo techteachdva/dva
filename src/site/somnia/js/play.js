@@ -270,7 +270,7 @@ function bindBoardResize() {
   const observer = new ResizeObserver(() => {
     if (!state) return;
     clearTimeout(boardResizeTimer);
-    boardResizeTimer = setTimeout(() => renderAll(), 80);
+    boardResizeTimer = setTimeout(() => syncBoardZoomAfterRender(), 80);
   });
   observer.observe(vp);
 }
