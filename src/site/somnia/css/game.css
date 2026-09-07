@@ -1934,7 +1934,150 @@ body.tutorial-mode-active .tutorial-highlight {
   padding-bottom: 0.25rem;
 }
 
-.coop-hand-row {
+.hand-dreamer-display {
+  display: flex;
+  align-items: flex-end;
+  gap: 0;
+  width: 100%;
+  min-height: 108px;
+  max-height: 116px;
+  overflow: hidden;
+  padding: 0.1rem 0;
+  border-radius: 10px;
+  transition: box-shadow 0.25s ease;
+}
+
+.hand-dreamer-display.hand-switch-sparkle {
+  animation: hand-focus-pop 0.48s ease-out;
+}
+
+.hand-section-focus {
+  animation: hand-section-glow 0.48s ease-out;
+}
+
+.hand-primary {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: flex-end;
+  gap: 0.38rem;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0.15rem 0.2rem 0.1rem;
+}
+
+.hand-primary.empty {
+  align-items: center;
+  color: var(--muted);
+  font-size: 0.82rem;
+  min-height: 104px;
+}
+
+.hand-spillover::before {
+  content: "Allies";
+  position: absolute;
+  top: -0.05rem;
+  left: 0.55rem;
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  pointer-events: none;
+}
+
+.hand-spillover {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  flex: 0 0 auto;
+  max-width: 42%;
+  padding: 0.65rem 0.35rem 0.1rem 0.55rem;
+  margin-left: 0.15rem;
+  border-left: 1px dashed rgba(255, 255, 255, 0.14);
+  overflow: hidden;
+}
+
+.hand-primary-empty-note {
+  font-size: 0.78rem;
+  color: var(--muted);
+  align-self: center;
+  padding: 0 0.35rem;
+}
+
+.hand-spillover.hidden {
+  display: none;
+}
+
+.hand-spillover .game-card.hand-dense {
+  width: 54px;
+  min-height: 78px;
+  margin-left: -24px;
+  z-index: 1;
+}
+
+.hand-spillover .game-card.hand-dense:first-child {
+  margin-left: 0;
+}
+
+.hand-spillover .game-card.hand-dense:hover {
+  z-index: 3;
+  transform: translateY(-6px) scale(1.04);
+}
+
+.hand-spillover .game-card.hand-dense .psyche-value {
+  font-size: 1.2rem;
+}
+
+.hand-spillover .game-card.hand-dense .psyche-label {
+  font-size: 0.55rem;
+}
+
+.hand-primary .game-card.psyche-card {
+  flex: 0 0 auto;
+}
+
+.hand-link-sparkle {
+  position: fixed;
+  z-index: 9500;
+  pointer-events: none;
+  font-size: 1rem;
+  color: #fff8dc;
+  text-shadow:
+    0 0 6px #fff,
+    0 0 14px #f0c96a,
+    0 0 22px #c9a0ff;
+}
+
+@keyframes hand-focus-pop {
+  0% { box-shadow: inset 0 0 0 0 rgba(240, 201, 106, 0); }
+  45% { box-shadow: inset 0 0 28px rgba(201, 160, 255, 0.28); }
+  100% { box-shadow: inset 0 0 0 rgba(240, 201, 106, 0); }
+}
+
+@keyframes hand-section-glow {
+  0% { filter: brightness(1); }
+  40% { filter: brightness(1.12); }
+  100% { filter: brightness(1); }
+}
+
+#screen-game .hand-section:has(.hand-dreamer-display) {
+  min-height: 0;
+  overflow: hidden;
+}
+
+#screen-game .hand-section:has(.hand-dreamer-display) .hand-header {
+  margin-bottom: 0.35rem;
+}
+
+.game-card.hand-inactive {
+  opacity: 0.45;
+  filter: grayscale(0.15);
+  cursor: default;
+}
+
+.game-card.hand-inactive:hover {
+  transform: none;
+  box-shadow: none;
+}
   display: flex;
   flex-direction: column;
   gap: 0.35rem;

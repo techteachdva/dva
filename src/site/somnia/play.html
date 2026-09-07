@@ -21,7 +21,7 @@
   <div id="app">
     <header class="top-bar">
       <div class="brand">
-        <span class="version-label">Version 12.4</span>
+        <span class="version-label">Version 12.8</span>
         <h1>Somnia</h1>
       </div>
       <div id="hud" class="hud">
@@ -109,9 +109,12 @@
             <div class="hand-header">
               <h3 id="hand-title">Your Psyche Hand</h3>
               <span id="hand-stats"></span>
-              <span class="hand-hint">Click to select · double-click to inspect</span>
+              <span class="hand-hint">Active Dreamer hand · click chips to switch · double-click to inspect</span>
             </div>
-            <div id="hand" class="hand"></div>
+            <div id="hand" class="hand-dreamer-display" data-player-id="">
+              <div id="hand-primary" class="hand-primary" aria-label="Psyche hand cards"></div>
+              <div id="hand-spillover" class="hand-spillover hidden" aria-label="Extra hand cards"></div>
+            </div>
           </div>
           <div class="hand-section objects-section">
             <div class="hand-header">

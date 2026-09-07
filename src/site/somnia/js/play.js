@@ -81,6 +81,7 @@ import {
   renderBoard,
   renderPlayers,
   renderHand,
+  playDreamerHandSparkle,
   renderPowerTokens,
   renderPhaseSpendHands,
   renderCoopMeetHands,
@@ -898,7 +899,12 @@ function renderAll() {
       }
       return;
     }
+    const prevId = state.players[state.activePlayerIndex]?.id;
     state.activePlayerIndex = index;
+    const nextId = state.players[index]?.id;
+    if (prevId && nextId && prevId !== nextId) {
+      playDreamerHandSparkle(prevId, nextId);
+    }
     renderAll();
   });
 

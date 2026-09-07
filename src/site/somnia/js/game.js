@@ -62,7 +62,7 @@ import {
   recordCancellableMove,
 } from "./dreamer-powers.js";
 import { playObjectCard, applySkeletonKeyAfterDream, drawObjects, handLimitForPlayer, handRoomForPsycheDraw } from "./objects.js";
-import { psycheHandCount, hasPsycheHealth } from "./psyche.js";
+import { psycheHandCount, hasPsycheHealth, canAddAllyToHand, allyHandLimitForPlayer, allyHandCount } from "./psyche.js";
 import { queueDreamDrawFx } from "./board-fx.js";
 import { applyBossAcceptEffect } from "./bosses.js";
 import { resolveOnAcquire, useArchetypePower, handleArchetypePowerTilePick } from "./archetypes.js";
@@ -719,6 +719,13 @@ export function meetEncounter(state, mode = "accept") {
   const needed = isReject ? encounterRejectCost(encounter) : encounter.accept;
   const selected = selectedCards(state, actor);
 
+  if (!isReject && !canAddAllyToHand(state, actor)) {
+    addLog(state, `${actor.name} already has ${allyHandLimitForPlayer(state, actor)} allies (max). Repress this Encounter or spend allies first.`);
+    state.meetActionsUsed -= 1;
+    state.lastMeetAction = null;
+    return;
+  }
+
   if (selected.filter((c) => !isDreambeastPsycheCard(c)).length > 3) {
     addLog(state, "Play up to 3 Psyche cards for an Encounter (allies don't count).");
     state.meetActionsUsed -= 1;
@@ -791,9 +798,10 @@ export function meetEncounter(state, mode = "accept") {
         drew += n.length;
       }
       if (drew) trackPsycheDraw(state, actor, drew);
-      const allies = actor.hand.length - psycheHandCount(actor);
-      const allyNote = allies ? ` + ${allies} ${allies === 1 ? "ally" : "allies"}` : "";
-      addLog(state, `Heating Up: drew Psyche up to hand limit (${psycheHandCount(actor)}/${limit} psyche${allyNote}).`);
+      const allyLimit = allyHandLimitForPlayer(state, actor);
+      const allies = allyHandCount(actor);
+      const allyNote = allies ? ` + ${allies}/${allyLimit} allies` : "";
+      addLog(state, `Heating Up: drew Psyche up to hand limit (${psycheHandCount(actor)}/${limit} Psyche${allyNote}).`);
     }
     state.pendingHeatingUp = false;
   }

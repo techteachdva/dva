@@ -116,10 +116,12 @@ function handCardEl(playerId, instanceId) {
 }
 
 function handAreaEl(playerId) {
-  const row = document.querySelector(`.coop-hand-row[data-player-id="${playerId}"] .coop-hand-cards`);
-  if (row) return row;
-  const hand = document.getElementById("hand");
-  if (hand && !hand.classList.contains("coop-mode")) return hand;
+  const handRoot = document.getElementById("hand");
+  if (handRoot?.dataset.playerId === playerId) {
+    return document.getElementById("hand-primary") || handRoot;
+  }
+  const primary = document.getElementById("hand-primary");
+  if (primary) return primary;
   return document.getElementById("hand-bar") || document.getElementById("hand");
 }
 

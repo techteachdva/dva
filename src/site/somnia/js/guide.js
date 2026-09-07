@@ -436,6 +436,6 @@ export function rulesHtml() {
     </ul>
 
     <h3>Win & Lose</h3>
-    <p>Acquire Archetypes by completing both quests. Reach your point goal before Dreams run out. Psyche cards are your health (start 5, max 10 hand limit). At 0 Psyche you may spend Power Tokens to avoid death, or accept death: Repress the top card of each Mindstream deck, lose all Objects and Power Tokens, return to The Bed with 4/3/2/1 Psyche (by death count) and 2 Power Tokens, then resolve an Additional Dream. Fifth death removes that Dreamer permanently.</p>
+    <p>Acquire Archetypes by completing both quests. Reach your point goal before Dreams run out. Each Dreamer may hold up to <strong>10 Psyche cards</strong> and <strong>10 accepted allies</strong> (separate limits). At 0 Psyche you may spend Power Tokens to avoid death, or accept death: Repress the top card of each Mindstream deck, lose all Objects and Power Tokens, return to The Bed with 4/3/2/1 Psyche (by death count) and 2 Power Tokens, then resolve an Additional Dream. Fifth death removes that Dreamer permanently.</p>
   `;
 }

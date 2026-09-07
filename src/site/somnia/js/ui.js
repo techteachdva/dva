@@ -17,14 +17,14 @@ import {
 } from "./rules.js";
 import { DREAMER_KIND_AFFINITY, beastKindLabel, dreamerPrimarySuit } from "./dreambeasts.js";
 import { handLimitForPlayer, handRoomForPsycheDraw } from "./objects.js";
-import { psycheHandCount, alliesInHand, effectivePsycheHealth } from "./psyche.js";
+import { psycheHandCount, alliesInHand, psycheCardsInHand, allyHandCount, allyHandLimitForPlayer, effectivePsycheHealth, MAX_ALLIES_IN_HAND, MAX_PSYCHE_IN_HAND } from "./psyche.js";
 import { getQuestStatus } from "./quests.js";
 import { effectiveDreamerStat } from "./archetype-stats.js";
 import { hexToPixel, boardPixelBounds } from "./hex.js";
 import { subconsciousCount, subconsciousPilesForUI, isDreambeastPsycheCard } from "./subconscious.js";
 import { getNarratorView, listPhaseActionHints } from "./narrator.js";
 import { getCurrentObjective, rulesHtml, overviewHtml, getDreamerChipTooltip } from "./guide.js";
-import { consumePhasePulse, consumeRevealedTiles, consumeForgottenTiles } from "./fx.js";
+import { burstSparklesAtElement } from "./fx.js";
 import { consumeBoardClickSuppression } from "./board-zoom.js";
 import { powerTokensInPool, MAX_POWER_TOKEN_POOL } from "./power-tokens.js";
 import {
@@ -146,7 +146,7 @@ function createEventLandscapeIconRow(card, board = null) {
   return row;
 }
 
-function renderPsycheDreambeastCard(card, { selected, onClick, mini, entering, playerId }) {
+function renderPsycheDreambeastCard(card, { selected, onClick, mini, dense, entering, playerId }) {
   const el = document.createElement("button");
   el.type = "button";
   el.className = [
@@ -156,6 +156,7 @@ function renderPsycheDreambeastCard(card, { selected, onClick, mini, entering, p
     "dreambeast",
     card.beastKind === "fantasy" ? "beast-fantasy" : card.beastKind === "nightmare" ? "beast-nightmare" : "",
     card.suit,
+    dense ? "hand-dense" : "",
     selected ? "selected" : "",
     entering ? "card-enter" : "",
     mini ? "mini" : "",
@@ -185,9 +186,9 @@ function renderPsycheDreambeastCard(card, { selected, onClick, mini, entering, p
   return attachCardMeta(el, card, playerId);
 }
 
-function renderPsycheCard(card, { selected, onClick, mini, entering, playerId }) {
+function renderPsycheCard(card, { selected, onClick, mini, dense, entering, playerId }) {
   if (isDreambeastPsycheCard(card)) {
-    return renderPsycheDreambeastCard(card, { selected, onClick, mini, entering, playerId });
+    return renderPsycheDreambeastCard(card, { selected, onClick, mini, dense, entering, playerId });
   }
   if (card.type === "psyche-power") {
     const el = document.createElement("button");
@@ -196,6 +197,7 @@ function renderPsycheCard(card, { selected, onClick, mini, entering, playerId })
       "game-card",
       "psyche-card",
       "psyche-power",
+      dense ? "hand-dense" : "",
       selected ? "selected" : "",
       entering ? "card-enter" : "",
       mini ? "mini" : "",
@@ -215,6 +217,7 @@ function renderPsycheCard(card, { selected, onClick, mini, entering, playerId })
     "game-card",
     "psyche-card",
     isWild ? "wild" : card.suit,
+    dense ? "hand-dense" : "",
     selected ? "selected" : "",
     entering ? "card-enter" : "",
     mini ? "mini" : "",
@@ -243,16 +246,17 @@ function renderPsycheCard(card, { selected, onClick, mini, entering, playerId })
 function formatHandPsycheLine(state, player) {
   const limit = handLimitForPlayer(state, player);
   const psyche = psycheHandCount(player);
-  const allies = alliesInHand(player).length;
+  const allies = allyHandCount(player);
+  const allyLimit = allyHandLimitForPlayer(state, player);
   const total = effectivePsycheHealth(player);
 
   if (allies && psyche === 0) {
-    return `${total} psyche (${allies} ${allies === 1 ? "ally" : "allies"})`;
+    return `${total} health (${allies}/${allyLimit} allies)`;
   }
   if (allies) {
-    return `${total} psyche (${psyche}/${limit} + ${allies} ${allies === 1 ? "ally" : "allies"})`;
+    return `${total} health · ${psyche}/${limit} Psyche · ${allies}/${allyLimit} allies`;
   }
-  return `${psyche}/${limit} psyche`;
+  return `${psyche}/${limit} Psyche`;
 }
 
 function handStatsHtml(state, player) {
@@ -264,6 +268,155 @@ function handStatsHtml(state, player) {
     </span>
     · ${formatHandPsycheLine(state, player)}
   `;
+}
+
+const HAND_MAIN_SLOTS = MAX_PSYCHE_IN_HAND;
+const HAND_SPILL_SLOTS = MAX_ALLIES_IN_HAND;
+
+function splitHandCards(player) {
+  const main = psycheCardsInHand(player).slice(0, HAND_MAIN_SLOTS);
+  const spill = alliesInHand(player).slice(0, HAND_SPILL_SLOTS);
+  return { main, spill };
+}
+
+function appendHandCard(container, card, options) {
+  const el = renderCard(card, options);
+  if (options.entering) {
+    el.style.setProperty("--deal-i", String(options.dealIndex ?? 0));
+  }
+  if (!options.onClick) {
+    el.classList.add("hand-inactive");
+    el.disabled = true;
+  }
+  container.appendChild(el);
+  return el;
+}
+
+/**
+ * Single-row active Dreamer hand — main slots (left) + dense spillover (right).
+ */
+export function renderActiveDreamerHand(state, onCardClick, {
+  title = null,
+  statsHtml = null,
+  statsText = null,
+  newCardIds = null,
+  canClickCard = () => true,
+  emptyText = "Empty hand",
+} = {}) {
+  const handRoot = document.getElementById("hand");
+  const primary = document.getElementById("hand-primary");
+  const spillover = document.getElementById("hand-spillover");
+  const stats = document.getElementById("hand-stats");
+  const titleEl = document.getElementById("hand-title");
+  const player = activePlayer(state);
+
+  if (!handRoot || !primary || !spillover) return;
+
+  handRoot.dataset.playerId = player.id;
+  primary.innerHTML = "";
+  spillover.innerHTML = "";
+  handRoot.classList.remove("coop-mode");
+
+  const displayTitle = title || `${player.name}${player.isHead ? " ★" : ""} — Psyche Hand`;
+  if (titleEl) titleEl.textContent = displayTitle;
+  if (stats) {
+    if (statsHtml) stats.innerHTML = statsHtml;
+    else if (statsText) stats.textContent = statsText;
+    else stats.innerHTML = handStatsHtml(state, player);
+  }
+
+  const fresh = newCardIds || new Set();
+  const { main, spill } = splitHandCards(player);
+
+  if (!main.length && !spill.length) {
+    primary.textContent = emptyText;
+    primary.classList.add("empty");
+    spillover.classList.add("hidden");
+    return;
+  }
+
+  primary.classList.remove("empty");
+  primary.innerHTML = "";
+  if (!main.length) {
+    primary.classList.add("empty");
+    const note = document.createElement("span");
+    note.className = "hand-primary-empty-note";
+    note.textContent = "No Psyche cards";
+    primary.appendChild(note);
+  } else {
+    primary.classList.remove("empty");
+  }
+
+  main.forEach((card, index) => {
+    const clickable = canClickCard(card, player);
+    appendHandCard(primary, card, {
+      selected: state.selectedHand.includes(card.instanceId)
+        || state.trade?.offerPsycheIds?.includes(card.instanceId),
+      entering: fresh.has(card.instanceId),
+      dealIndex: index,
+      playerId: player.id,
+      onClick: clickable ? () => onCardClick(card, player) : undefined,
+    });
+  });
+
+  if (spill.length) {
+    spillover.classList.remove("hidden");
+    spillover.dataset.count = String(spill.length);
+    spill.forEach((card, index) => {
+      const clickable = canClickCard(card, player);
+      appendHandCard(spillover, card, {
+        selected: state.selectedHand.includes(card.instanceId)
+          || state.trade?.offerPsycheIds?.includes(card.instanceId),
+        entering: fresh.has(card.instanceId),
+        dealIndex: index,
+        playerId: player.id,
+        dense: true,
+        onClick: clickable ? () => onCardClick(card, player) : undefined,
+      });
+    });
+  } else {
+    spillover.classList.add("hidden");
+  }
+}
+
+/** Sparkle link when the focused Dreamer changes — chip ↔ hand panel. */
+export function playDreamerHandSparkle(fromPlayerId, toPlayerId) {
+  if (!toPlayerId || fromPlayerId === toPlayerId) return;
+
+  const chip = document.querySelector(`.player-chip[data-player-id="${toPlayerId}"]`);
+  const handRoot = document.getElementById("hand");
+  const handSection = handRoot?.closest(".hand-section");
+
+  if (chip) burstSparklesAtElement(chip, 10, "#f0c96a");
+  if (handRoot) {
+    handRoot.classList.remove("hand-switch-sparkle");
+    void handRoot.offsetWidth;
+    handRoot.classList.add("hand-switch-sparkle");
+    window.setTimeout(() => handRoot.classList.remove("hand-switch-sparkle"), 520);
+    burstSparklesAtElement(handRoot, 14, "#c9a0ff");
+  }
+  if (handSection) {
+    handSection.classList.add("hand-section-focus");
+    window.setTimeout(() => handSection.classList.remove("hand-section-focus"), 520);
+  }
+
+  if (chip && handRoot && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    const from = chip.getBoundingClientRect();
+    const to = handRoot.getBoundingClientRect();
+    const flyer = document.createElement("span");
+    flyer.className = "hand-link-sparkle";
+    flyer.textContent = "✦";
+    flyer.style.left = `${from.left + from.width / 2}px`;
+    flyer.style.top = `${from.top + from.height / 2}px`;
+    document.body.appendChild(flyer);
+    const dx = to.left + 40 - (from.left + from.width / 2);
+    const dy = to.top + to.height / 2 - (from.top + from.height / 2);
+    flyer.animate([
+      { transform: "translate(0, 0) scale(1)", opacity: 1 },
+      { transform: `translate(${dx * 0.55}px, ${dy * 0.55}px) scale(1.2)`, opacity: 0.9 },
+      { transform: `translate(${dx}px, ${dy}px) scale(0.4)`, opacity: 0 },
+    ], { duration: 420, easing: "cubic-bezier(0.22, 1, 0.36, 1)" }).onfinish = () => flyer.remove();
+  }
 }
 
 export function renderPowerTokens(state) {
@@ -338,6 +491,7 @@ export function renderCard(card, options = {}) {
   const {
     portrait = false,
     mini = false,
+    dense = false,
     selected = false,
     onClick,
     entering = false,
@@ -345,10 +499,10 @@ export function renderCard(card, options = {}) {
   } = options;
 
   if ((card.type === "psyche" || card.type === "psyche-power") && !portrait) {
-    return renderPsycheCard(card, { selected, onClick, mini, entering, playerId });
+    return renderPsycheCard(card, { selected, onClick, mini, dense, entering, playerId });
   }
   if (isDreambeastPsycheCard(card) && !portrait) {
-    return renderPsycheDreambeastCard(card, { selected, onClick, mini, entering, playerId });
+    return renderPsycheDreambeastCard(card, { selected, onClick, mini, dense, entering, playerId });
   }
 
   const el = document.createElement("button");
@@ -357,6 +511,7 @@ export function renderCard(card, options = {}) {
     "game-card",
     cardTypeClass(card),
     portrait ? "portrait" : "",
+    dense ? "hand-dense" : "",
     selected ? "selected" : "",
     entering ? "card-enter" : "",
   ].filter(Boolean).join(" ");
@@ -758,93 +913,36 @@ export function renderObjects(state, onCardClick) {
 }
 
 export function renderHand(state, onCardClick, newCardIds = null) {
-  const hand = document.getElementById("hand");
-  const stats = document.getElementById("hand-stats");
-  const title = document.getElementById("hand-title");
   const player = activePlayer(state);
-  hand.innerHTML = "";
-  hand.classList.remove("coop-mode");
-  if (title) title.textContent = "Your Psyche Hand";
-  stats.innerHTML = handStatsHtml(state, player);
-
-  const fresh = newCardIds || new Set();
-  player.hand.forEach((card, index) => {
-    const el = renderCard(card, {
-      selected: state.selectedHand.includes(card.instanceId)
-        || state.trade?.offerPsycheIds?.includes(card.instanceId),
-      entering: fresh.has(card.instanceId),
-      playerId: player.id,
-      onClick: () => onCardClick(card, player),
-    });
-    if (fresh.has(card.instanceId)) {
-      el.style.setProperty("--deal-i", String(index));
-    }
-    hand.appendChild(el);
+  renderActiveDreamerHand(state, onCardClick, {
+    newCardIds,
+    title: `${player.name}${player.isHead ? " ★" : ""} — Psyche Hand`,
+    statsHtml: handStatsHtml(state, player),
   });
 }
 
 export function renderPhaseSpendHands(state, onCardClick) {
-  const hand = document.getElementById("hand");
-  const stats = document.getElementById("hand-stats");
-  const title = document.getElementById("hand-title");
   const phase = getPhase(state);
   const suit = phase === "Reveal" ? "lucidity" : phase === "Explore" ? "elasticity" : "willpower";
   const suitLabel = SUIT_LABELS[suit];
+  const player = activePlayer(state);
   const best = bestPhaseContributor(state);
   const statKey = statForPhaseBudget(phase, state);
+  const isBest = best?.id === player.id;
 
-  hand.innerHTML = "";
-  hand.classList.add("coop-mode");
-  if (title) title.textContent = `Spend ${suitLabel} — one Dreamer sets the team budget`;
-  if (stats) {
-    stats.textContent = best
-      ? `Tip: ${best.name} has the best ${suitLabel} bonus (+${totalStat(best, statKey)}) — have them play 1–2 cards`
-      : `Select 1–2 ${suitLabel} cards from one Dreamer's row`;
-  }
-
-  state.players.filter((p) => p.alive).forEach((player, index) => {
-    const row = document.createElement("div");
-    const isBest = best?.id === player.id;
-    row.dataset.playerId = player.id;
-    row.className = [
-      "coop-hand-row",
-      "phase-spend-row",
-      isBest ? "best-spender" : "",
-      index === state.activePlayerIndex ? "focused" : "",
-    ].filter(Boolean).join(" ");
-
-    const label = document.createElement("div");
-    label.className = "coop-hand-label";
-    label.textContent = `${player.name}${player.isHead ? " ★" : ""} · +${totalStat(player, statKey)} ${suitLabel}${isBest ? " · best bonus" : ""}`;
-    row.appendChild(label);
-
-    const cards = document.createElement("div");
-    cards.className = "coop-hand-cards";
-    if (!player.hand.length) {
-      cards.textContent = "Empty hand";
-      cards.classList.add("empty");
-    } else {
-      player.hand.forEach((card) => {
-        const canPick = card.suit === suit || isWildPsyche(card);
-        cards.appendChild(renderCard(card, {
-          selected: state.selectedHand.includes(card.instanceId),
-          mini: true,
-          playerId: player.id,
-          onClick: canPick ? () => onCardClick(card, player) : undefined,
-        }));
-      });
-    }
-    row.appendChild(cards);
-    hand.appendChild(row);
+  renderActiveDreamerHand(state, onCardClick, {
+    title: `${player.name} — Spend ${suitLabel}`,
+    statsText: isBest
+      ? `Best ${suitLabel} bonus (+${totalStat(player, statKey)}) · select 1–2 cards · click another Dreamer to switch hands`
+      : best
+        ? `Tip: ${best.name} has +${totalStat(best, statKey)} ${suitLabel} · select 1–2 suited cards`
+        : `Select 1–2 ${suitLabel} cards · click a Dreamer chip to switch hands`,
+    canClickCard: (card) => card.suit === suit || isWildPsyche(card),
   });
 }
 
 export function renderCoopMeetHands(state, onCardClick) {
-  const hand = document.getElementById("hand");
-  const stats = document.getElementById("hand-stats");
-  const title = document.getElementById("hand-title");
-  hand.innerHTML = "";
-
+  const player = activePlayer(state);
   const meetActor = meetPsycheActor(state);
   const poolCount = spreadPsycheCount(state);
   const allyCount = allyPsycheCount(state);
@@ -852,48 +950,16 @@ export function renderCoopMeetHands(state, onCardClick) {
   const bonus = meetBonusBreakdown(state);
   const bonusText = bonus.total ? ` · +${bonus.total} Dreamer (${bonus.parts.join(", ")})` : "";
   const pending = state.pendingPowerBonus ? ` · +${state.pendingPowerBonus} bonus pending` : "";
-  if (title) {
-    title.textContent = meetActor
-      ? `${meetActor.name} — Meet Encounter`
-      : "Meet Encounter — move onto the Landscape";
-  }
-  stats.textContent = meetActor
-    ? `${poolCount}/3 spread${allyCount ? ` + ${allyCount} ally` : ""} · total ${poolTotal}${bonusText}${pending} · only ${meetActor.name} may spend Psyche`
-    : "Select a Landscape with an Encounter and stand on it with a Dreamer.";
-  hand.classList.add("coop-mode");
+  const isActor = meetActor?.id === player.id;
 
-  state.players.filter((p) => p.alive).forEach((player, index) => {
-    const row = document.createElement("div");
-    row.dataset.playerId = player.id;
-    const isActor = meetActor?.id === player.id;
-    row.className = [
-      "coop-hand-row",
-      index === state.activePlayerIndex ? "focused" : "",
-      isActor ? "meet-actor" : "",
-      meetActor && !isActor ? "meet-actor-disabled" : "",
-    ].filter(Boolean).join(" ");
-
-    const label = document.createElement("div");
-    label.className = "coop-hand-label";
-    label.textContent = `${player.name}${player.isHead ? " ★" : ""} · ${player.landscapeId === meetActor?.landscapeId ? "on Encounter" : player.landscapeId}${isActor ? " · spending Psyche" : ""}`;
-    row.appendChild(label);
-
-    const cards = document.createElement("div");
-    cards.className = "coop-hand-cards";
-    if (!player.hand.length) {
-      cards.textContent = "Empty hand";
-      cards.classList.add("empty");
-    } else {
-      player.hand.forEach((card) => {
-        cards.appendChild(renderCard(card, {
-          selected: state.selectedHand.includes(card.instanceId),
-          playerId: player.id,
-          onClick: isActor ? () => onCardClick(card, player) : undefined,
-        }));
-      });
-    }
-    row.appendChild(cards);
-    hand.appendChild(row);
+  renderActiveDreamerHand(state, onCardClick, {
+    title: `${player.name} — Meet Hand`,
+    statsText: meetActor
+      ? (isActor
+        ? `${poolCount}/3 spread${allyCount ? ` + ${allyCount} ally` : ""} · total ${poolTotal}${bonusText}${pending} · you may spend Psyche`
+        : `Only ${meetActor.name} on the Encounter Landscape may spend Psyche · switch to them with their chip`)
+      : "Stand on a Landscape with an Encounter to Meet · click Dreamer chips to switch hands",
+    canClickCard: () => !meetActor || isActor,
   });
 }
 
