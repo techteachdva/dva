@@ -474,6 +474,7 @@ export function executeLandscapeActionChoice(state, tile, player, actionId, help
       prev.questProgress = prev.questProgress || [false, false];
       state.activeArchetype = next;
       next.questProgress = [false, false];
+      next.powerTokensOnArchetype = 0;
       state.archetypeDeck.unshift(prev);
       addLog(state, `${landscapeName}: swapped Active Archetype to ${next.name}.`);
       return { ok: true };

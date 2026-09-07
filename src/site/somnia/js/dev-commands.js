@@ -631,7 +631,7 @@ const COMMANDS = {
       }
       player.powerTokens = Math.max(player.powerTokens, 1);
       acquireArchetype(state, player, (s, arch, p) => {
-        resolveOnAcquire(s, arch, p, effectHelpers());
+        resolveOnAcquire(s, arch, p);
       });
       return ok(`Acquire attempted. Points: ${state.acquiredPoints}.`);
     },

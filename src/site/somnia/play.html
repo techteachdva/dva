@@ -21,6 +21,7 @@
   <div id="app">
     <header class="top-bar">
       <div class="brand">
+        <span class="version-label">Version 12.3</span>
         <h1>Somnia</h1>
       </div>
       <div id="hud" class="hud">
@@ -122,9 +123,22 @@
       </section>
 
       <section id="screen-end" class="screen">
+        <div id="victory-fx" class="victory-fx" aria-hidden="true"></div>
         <div class="end-panel">
           <h2 id="end-title"></h2>
           <p id="end-message"></p>
+          <div id="end-score-breakdown" class="end-score-breakdown hidden"></div>
+          <div id="end-leaderboard" class="end-leaderboard hidden">
+            <h3>Leaderboard</h3>
+            <p class="end-leaderboard-hint">Enter your name to save your score.</p>
+            <div class="end-name-row">
+              <input type="text" id="end-score-first" class="input" placeholder="First name" maxlength="16" autocomplete="given-name">
+              <input type="text" id="end-score-last" class="input end-score-last" placeholder="Last initial" maxlength="1" autocomplete="family-name">
+              <button type="button" id="end-score-submit" class="btn primary">Submit</button>
+            </div>
+            <p id="end-score-status" class="end-score-status" role="status"></p>
+            <ol id="end-score-list" class="end-score-list"></ol>
+          </div>
           <div class="end-actions">
             <button id="btn-restart" class="btn primary">Return to Menu</button>
             <button type="button" id="btn-replay-tutorial" class="btn">Replay Tutorial</button>

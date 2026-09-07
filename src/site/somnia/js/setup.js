@@ -19,10 +19,51 @@ import {
 
 const LAUNCH_KEY = "somnia.launch";
 const PLAY_WINDOW_NAME = "somnia-play";
+const SPLASH_MIN_MS = 1500;
+const SPLASH_DISSOLVE_MS = 1100;
 
 let gameData = null;
 let selectedDreamerIds = [];
 let tutorialIndex = -1;
+
+function prefersReducedMotion() {
+  return window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
+}
+
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function preloadMenuSplashImage() {
+  const img = document.querySelector(".menu-splash-art");
+  if (!img) return Promise.resolve();
+  if (img.complete) return Promise.resolve();
+  return new Promise((resolve) => {
+    img.addEventListener("load", resolve, { once: true });
+    img.addEventListener("error", resolve, { once: true });
+  });
+}
+
+async function dissolveMenuSplash() {
+  const splash = document.getElementById("menu-splash");
+  if (!splash) return;
+
+  document.body.classList.add("menu-splash-ready");
+  splash.classList.add("dissolving");
+  splash.setAttribute("aria-hidden", "true");
+
+  const duration = prefersReducedMotion() ? 0 : SPLASH_DISSOLVE_MS;
+  await wait(duration);
+  splash.remove();
+  document.body.classList.remove("menu-splash-active", "menu-splash-ready");
+}
+
+async function runMenuSplash(startedAt) {
+  const minMs = prefersReducedMotion() ? 0 : SPLASH_MIN_MS;
+  const elapsed = Date.now() - startedAt;
+  if (elapsed < minMs) await wait(minMs - elapsed);
+  await dissolveMenuSplash();
+}
 
 function playerCount() {
   return Number(document.getElementById("setup-players").value);
@@ -35,19 +76,23 @@ function refreshDreamerPicker() {
 }
 
 async function init() {
+  const startedAt = Date.now();
   initFxLayer();
   bindButtonRipples();
   initMenuAudioSettings();
   bindMusicToggle();
   const creditEl = document.getElementById("menu-footer-credit");
   if (creditEl) creditEl.innerHTML = musicCreditHtml();
-  buildSetupAudioControls(document.getElementById("setup-audio-display"));
+
+  await preloadMenuSplashImage();
   gameData = await loadGameData();
+  buildSetupAudioControls(document.getElementById("setup-audio-display"));
   bindSetup();
   bindHelp();
   bindModal();
   renderSetupIntro();
   refreshDreamerPicker();
+  await runMenuSplash(startedAt);
 }
 
 function bindSetup() {

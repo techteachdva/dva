@@ -5,9 +5,9 @@
     "points": 3,
     "image": "images/archetypes/archetype-sage.png",
     "suit": "lucidity",
-    "ability": "All Dreamers Persistent: +1",
-    "quests": ["Psyche Cycle on Bed", "Meet Double"],
-    "onAcquire": "Keep in play"
+    "passive": "All Dreamers +1 Lucidity",
+    "power": null,
+    "quests": ["Meet Double", "Have 10 Psyche"]
   },
   {
     "id": "innocent",
@@ -15,9 +15,9 @@
     "points": 1,
     "image": "images/archetypes/archetype-innocent.png",
     "suit": "lucidity",
-    "ability": "Return 4 Repressed Cards. Place this Archetype on bottom of pile.",
-    "quests": ["Draw Mindstream on The Attic", "Draw Mindstream on The Basement"],
-    "onAcquire": "Bottom of pile"
+    "passive": null,
+    "power": "Return 4 Repressed Cards from Subconscious",
+    "quests": ["Draw Mindstream on The Attic", "Draw Mindstream on The Basement"]
   },
   {
     "id": "caregiver",
@@ -25,9 +25,9 @@
     "points": 2,
     "image": "images/archetypes/archetype-caregiver.png",
     "suit": "willpower",
-    "ability": "All Dreamers Draw up to 10 Psyche. Place on bottom of pile.",
-    "quests": ["Complete a Landscape Action on House", "Return 2 Cards from Subconscious"],
-    "onAcquire": "Bottom of pile"
+    "passive": null,
+    "power": "1 Dreamer Draw 5 Psyche up to hand limit",
+    "quests": ["Draw Mindstream on Sea of Teeth or Field of Broken Glass", "Meet a Dreambeast on Sea of Teeth or Field of Broken Glass"]
   },
   {
     "id": "lover",
@@ -35,9 +35,9 @@
     "points": 2,
     "image": "images/archetypes/archetype-lover.png",
     "suit": "elasticity",
-    "ability": "1 Dreamer Draw 3 Objects. Place on bottom of pile.",
-    "quests": ["Draw Mindstream on Awards or The Party", "Meet a Dreambeast on Awards or The Party"],
-    "onAcquire": "Bottom of pile"
+    "passive": null,
+    "power": "All Dreamers Draw same-suit Mindstream until draw 1 Object, discard the rest",
+    "quests": ["Draw Mindstream on Awards or The Party", "Meet a Dreambeast on Awards or The Party"]
   },
   {
     "id": "explorer",
@@ -45,9 +45,9 @@
     "points": 2,
     "image": "images/archetypes/archetype-explorer.png",
     "suit": "elasticity",
-    "ability": "Swap positions of any 4 Dreamers or Dreambeasts. Place on bottom of pile.",
-    "quests": ["Reveal 2 Landscapes", "Move 2 Dreamers 1 Landscape each"],
-    "onAcquire": "Bottom of pile"
+    "passive": null,
+    "power": "1 Dreamer moves to any other Dreamer or Dreambeast",
+    "quests": ["Draw Mindstream on Endless Ocean or Lava", "Meet a Dreambeast on Endless Ocean or Lava"]
   },
   {
     "id": "magician",
@@ -55,9 +55,9 @@
     "points": 3,
     "image": "images/archetypes/archetype-magician.png",
     "suit": "lucidity",
-    "ability": "All Dreamers Persistent: +1",
-    "quests": ["Psyche Cycle on Bed", "Meet Cerberus"],
-    "onAcquire": "Keep in play"
+    "passive": "All Dreamers +1 Elasticity",
+    "power": null,
+    "quests": ["Meet Cerberus", "Have 10 Psyche"]
   },
   {
     "id": "orphan",
@@ -65,9 +65,9 @@
     "points": 1,
     "image": "images/archetypes/archetype-orphan.png",
     "suit": "willpower",
-    "ability": "Draw 4 Psyche and/or Objects. Place on bottom of pile.",
-    "quests": ["Draw 3 Psyche", "Return 1 Card from Subconscious"],
-    "onAcquire": "Bottom of pile"
+    "passive": null,
+    "power": "All Dreamers Draw 3 Psyche, Discard 1",
+    "quests": ["Draw Mindstream on Naked Classroom", "Draw Mindstream on Candy Mountain"]
   },
   {
     "id": "fool",
@@ -75,9 +75,9 @@
     "points": 2,
     "image": "images/archetypes/archetype-fool.png",
     "suit": "elasticity",
-    "ability": "Return Dreamers+3 Cards. Place on bottom of pile.",
-    "quests": ["Discard 2 Psyche then Draw equal", "Take 1 Power Token"],
-    "onAcquire": "Bottom of pile"
+    "passive": null,
+    "power": "Return Dreamers+3 Cards from Subconscious",
+    "quests": ["Draw Mindstream on Insanity or Black Void", "Meet a Dreambeast on Insanity or Black Void"]
   },
   {
     "id": "creator",
@@ -85,9 +85,9 @@
     "points": 2,
     "image": "images/archetypes/archetype-creator.png",
     "suit": "lucidity",
-    "ability": "Each Dreamer Return 2 Objects and choose 1 to keep. Place on bottom of pile.",
-    "quests": ["Draw 1 Object", "Reveal 1 Landscape"],
-    "onAcquire": "Bottom of pile"
+    "passive": null,
+    "power": "Return 2 Objects per Dreamer. Place on top of objects suited Mindstream",
+    "quests": ["Draw Mindstream on Day in the Life or Inner Sanctum", "Meet a Dreambeast on Day in the Life or Inner Sanctum"]
   },
   {
     "id": "ruler",
@@ -95,9 +95,9 @@
     "points": 2,
     "image": "images/archetypes/archetype-ruler.png",
     "suit": "willpower",
-    "ability": "All Dreamers Return & Spawn a Dreambeast on any Revealed Landscape. Place on bottom of pile.",
-    "quests": ["Take 2 Power Tokens", "Meet a Dreambeast on City"],
-    "onAcquire": "Bottom of pile"
+    "passive": null,
+    "power": "All Dreamers Return up to 1 Dreambeast from Unconscious and place on any Landscape occupied by a Dreamer",
+    "quests": ["Draw Mindstream on Tranquil Grove or Endless Hallway", "Meet a Dreambeast on Tranquil Grove or Endless Hallway"]
   },
   {
     "id": "warrior",
@@ -105,9 +105,9 @@
     "points": 3,
     "image": "images/archetypes/archetype-warrior.png",
     "suit": "willpower",
-    "ability": "All Dreamers Persistent: +1",
-    "quests": ["Discard 12 Psyche on Bed", "Meet Leviathan"],
-    "onAcquire": "Keep in play"
+    "passive": "All Dreamers +1 Willpower",
+    "power": null,
+    "quests": ["Meet Leviathan", "Have 10 Psyche"]
   },
   {
     "id": "outlaw",
@@ -115,8 +115,8 @@
     "points": 1,
     "image": "images/archetypes/archetype-outlaw.png",
     "suit": "elasticity",
-    "ability": "All Dreamers Draw top 4 Psyche and top 1 Object from Discard Piles. Place on bottom of pile.",
-    "quests": ["Draw 2 Psyche from any Discard", "Move 1 Dreambeast 2 Landscapes"],
-    "onAcquire": "Bottom of pile"
+    "passive": null,
+    "power": "All Dreamers Draw top 1 Mindstream of same Suit and 1 from top of same suit Mindstream Discard, Choose 1 to resolve/play, discard other",
+    "quests": ["Draw Mindstream on Desert", "Draw Mindstream on Silver Mist"]
   }
 ]

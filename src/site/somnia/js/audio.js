@@ -180,6 +180,12 @@ export function playSfx(name, opts = {}) {
       tone({ freq: 659, dur: 0.12, type: "sine", vol: 0.1, delay: 0.12 });
       tone({ freq: 784, dur: 0.2, type: "triangle", vol: 0.12, delay: 0.24 });
       break;
+    case "victory":
+      [523, 659, 784, 988, 1175].forEach((freq, i) => {
+        tone({ freq, dur: 0.18, type: "sine", vol: 0.11, delay: i * 0.14 });
+      });
+      tone({ freq: 1568, dur: 0.45, type: "triangle", vol: 0.14, delay: 0.75 });
+      break;
     case "sparkle":
       tone({ freq: 900 + Math.random() * 400, dur: 0.08, type: "sine", vol: 0.05 });
       break;

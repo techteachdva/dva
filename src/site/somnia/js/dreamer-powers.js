@@ -100,6 +100,7 @@ function swapActiveArchetype(state) {
   prev.questProgress = prev.questProgress || [false, false];
   state.activeArchetype = next;
   next.questProgress = [false, false];
+  next.powerTokensOnArchetype = 0;
   state.archetypeDeck.unshift(prev);
   addLog(state, `Active Archetype changed to ${next.name}.`);
   return true;

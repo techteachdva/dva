@@ -1,7 +1,9 @@
 /**
  * Tracks game events for Archetype quest validation.
- * Events accumulate each round; some persist for the whole game.
+ * Quest conditions persist once met so players can spend Power Tokens later.
  */
+import { psycheHandCount } from "./psyche.js";
+
 export function createQuestTracker() {
   return {
     meetBoss: { cerberus: false, double: false, leviathan: false },
@@ -70,43 +72,70 @@ export function recordQuestEvent(state, event, data = {}) {
     default:
       break;
   }
+
+  syncQuestConditions(state);
+}
+
+function teamPsycheInHands(state) {
+  return state.players
+    .filter((p) => p.alive)
+    .reduce((sum, p) => sum + psycheHandCount(p), 0);
+}
+
+function meetOnAny(t, ids) {
+  return ids.some((id) => (t.meetOnLandscape[id] || 0) > 0);
+}
+
+function mindstreamOnAny(t, ids) {
+  return ids.some((id) => t.mindstreamOnLandscape[id]);
 }
 
 const QUEST_CHECKS = {
-  "psyche cycle on bed": (t) => t.psycheCycleOnBed,
   "meet cerberus": (t) => t.meetBoss.cerberus,
   "meet double": (t) => t.meetBoss.double,
   "meet leviathan": (t) => t.meetBoss.leviathan,
+  "have 10 psyche": (_t, state) => teamPsycheInHands(state) >= 10,
   "draw mindstream on the attic": (t) => t.mindstreamOnLandscape["the-attic"],
   "draw mindstream on the basement": (t) => t.mindstreamOnLandscape["the-basement"],
   "draw mindstream on awards or the party": (t) =>
-    t.mindstreamOnLandscape.awards || t.mindstreamOnLandscape["the-party"],
+    mindstreamOnAny(t, ["awards", "the-party"]),
   "meet a dreambeast on awards or the party": (t) =>
-    (t.meetOnLandscape.awards || 0) > 0 || (t.meetOnLandscape["the-party"] || 0) > 0,
-  "complete a landscape action on house": (t) => t.landscapeActions.house,
-  "return 2 cards from subconscious": (t) => t.returnsFromSubconscious >= 2,
-  "reveal 2 landscapes": (t) => t.landscapesRevealed >= 2,
-  "move 2 dreamers 1 landscape each": (t) => t.playersMoved >= 2,
-  "draw 3 psyche": (t) => t.psycheDrawnTotal >= 3,
-  "return 1 card from subconscious": (t) => t.returnsFromSubconscious >= 1,
-  "discard 2 psyche then draw equal": (t) => t.psycheDiscardedTotal >= 2,
-  "take 1 power token": (t) => t.powerTokensTaken >= 1,
-  "take 2 power tokens": (t) => t.powerTokensTaken >= 2,
-  "draw 1 object": (t) => t.objectsDrawn >= 1,
-  "reveal 1 landscape": (t) => t.landscapesRevealed >= 1,
-  "meet a dreambeast on city": (t) => (t.meetOnLandscape.city || 0) > 0,
-  "discard 12 psyche on bed": (t, state) => {
-    return (state.questTracker?.psycheDiscardedOnBed || 0) >= 12;
-  },
-  "draw 2 psyche from any discard": (t) => t.psycheDrawnTotal >= 2,
-  "move 1 dreambeast 2 landscapes": (t) => t.dreambeastsMoved >= 1,
+    meetOnAny(t, ["awards", "the-party"]),
+  "draw mindstream on sea of teeth or field of broken glass": (t) =>
+    mindstreamOnAny(t, ["sea-of-teeth", "field-of-broken-glass"]),
+  "meet a dreambeast on sea of teeth or field of broken glass": (t) =>
+    meetOnAny(t, ["sea-of-teeth", "field-of-broken-glass"]),
+  "draw mindstream on naked classroom": (t) => t.mindstreamOnLandscape["naked-classroom"],
+  "draw mindstream on candy mountain": (t) => t.mindstreamOnLandscape["candy-mountain"],
+  "draw mindstream on endless ocean or lava": (t) =>
+    mindstreamOnAny(t, ["endless-ocean", "lava"]),
+  "meet a dreambeast on endless ocean or lava": (t) =>
+    meetOnAny(t, ["endless-ocean", "lava"]),
+  "draw mindstream on insanity or black void": (t) =>
+    mindstreamOnAny(t, ["insanity", "black-void"]),
+  "meet a dreambeast on insanity or black void": (t) =>
+    meetOnAny(t, ["insanity", "black-void"]),
+  "draw mindstream on desert": (t) => t.mindstreamOnLandscape.desert,
+  "draw mindstream on silver mist": (t) => t.mindstreamOnLandscape["silver-mist"],
+  "draw mindstream on tranquil grove or endless hallway": (t) =>
+    mindstreamOnAny(t, ["tranquil-grove", "endless-hallway"]),
+  "meet a dreambeast on tranquil grove or endless hallway": (t) =>
+    meetOnAny(t, ["tranquil-grove", "endless-hallway"]),
+  "draw mindstream on day in the life or inner sanctum": (t) =>
+    mindstreamOnAny(t, ["day-in-the-life", "inner-sanctum"]),
+  "meet a dreambeast on day in the life or inner sanctum": (t) =>
+    meetOnAny(t, ["day-in-the-life", "inner-sanctum"]),
 };
 
 function normalizeQuest(text) {
   return text.toLowerCase().replace(/\s+/g, " ").trim();
 }
 
-export function isQuestComplete(state, questText) {
+export function questConditionKey(archetypeId, questText) {
+  return `${archetypeId}::${normalizeQuest(questText)}`;
+}
+
+function isQuestMetByTracker(state, questText) {
   if (!state.questTracker) return false;
   const key = normalizeQuest(questText);
   const checker = QUEST_CHECKS[key];
@@ -114,20 +143,60 @@ export function isQuestComplete(state, questText) {
   return checker(state.questTracker, state);
 }
 
+export function ensureQuestConditions(state) {
+  if (!state.questConditionsMet) state.questConditionsMet = {};
+  const archetypes = [
+    ...(state.activeArchetype ? [state.activeArchetype] : []),
+    ...state.archetypeDeck,
+    ...state.players.flatMap((p) => p.acquiredArchetypes || []),
+  ];
+  archetypes.forEach((arch) => {
+    (arch.quests || []).forEach((quest) => {
+      const key = questConditionKey(arch.id, quest);
+      if (!state.questConditionsMet[key] && isQuestMetByTracker(state, quest)) {
+        state.questConditionsMet[key] = true;
+      }
+    });
+  });
+}
+
+export function syncQuestConditions(state) {
+  ensureQuestConditions(state);
+}
+
+export function isQuestConditionMet(state, archetypeId, questText) {
+  if (!state.questConditionsMet) state.questConditionsMet = {};
+  const key = questConditionKey(archetypeId, questText);
+  if (state.questConditionsMet[key]) return true;
+  if (isQuestMetByTracker(state, questText)) {
+    state.questConditionsMet[key] = true;
+    return true;
+  }
+  return false;
+}
+
 export function getQuestStatus(state, archetype) {
   if (!archetype?.quests) return [];
-  return archetype.quests.map((q, i) => ({
-    text: q,
-    done: archetype.questProgress?.[i] || isQuestComplete(state, q),
-    index: i,
-  }));
+  return archetype.quests.map((q, i) => {
+    const tokenSpent = Boolean(archetype.questProgress?.[i]);
+    const conditionMet = isQuestConditionMet(state, archetype.id, q);
+    return {
+      text: q,
+      conditionMet,
+      tokenSpent,
+      done: tokenSpent,
+      ready: conditionMet && !tokenSpent,
+      index: i,
+    };
+  });
 }
 
 export function canMarkQuest(state, questIndex) {
   const arch = state.activeArchetype;
-  if (!arch || arch.questProgress[questIndex]) return { ok: false, reason: "Already complete." };
+  if (!arch) return { ok: false, reason: "No active Archetype." };
+  if (arch.questProgress[questIndex]) return { ok: false, reason: "Quest already complete." };
   const quest = arch.quests[questIndex];
-  if (!isQuestComplete(state, quest)) {
+  if (!isQuestConditionMet(state, arch.id, quest)) {
     return { ok: false, reason: `Quest not met: ${quest}` };
   }
   return { ok: true };

@@ -10,7 +10,10 @@ import {
   resetHandSnapshots,
 } from "./card-fx.js";
 import { runPendingBoardFx } from "./board-fx.js";
-import { loadGameData } from "./data.js";
+import { calculateFinalScore } from "./scoring.js";
+import { fetchHighScores, submitHighScore, validateScoreName } from "./highscores.js";
+import { startVictoryCelebration, stopVictoryCelebration } from "./victory-celebration.js";
+import { LENGTHS } from "./data.js";
 import { createInitialState, addLog, respawnDreamer, getPhase, activePlayer, avoidDreamerDeath, acceptDreamerDeath } from "./state.js";
 import {
   getPhaseActions,
@@ -37,7 +40,7 @@ import {
   useDreamerPower,
   toggleHandCard,
   handleQuestComplete,
-  handleAcquire,
+  handleUseArchetypePower,
   handleDefeatFinalArchetype,
   handleSacrificeForFinal,
   endPhase,
@@ -116,6 +119,9 @@ let boardResizeTimer = null;
 let lastRepressPickerKey = null;
 let lastReturnPickerKey = null;
 let prevHandIds = new Set();
+let pendingScoreResult = null;
+let scoreSubmitted = false;
+let victoryShown = false;
 
 function getNewHandCardIds(state) {
   const player = activePlayer(state);
@@ -144,6 +150,7 @@ async function init() {
   initBoardZoom();
   bindFullscreenPrompt();
   bindRestart();
+  bindEndLeaderboard();
 
   if (new URLSearchParams(window.location.search).get("dev") === "1") {
     enableDevMode();
@@ -219,8 +226,67 @@ function bindFullscreenPrompt() {
   });
 }
 
+function bindEndLeaderboard() {
+  document.getElementById("end-score-submit")?.addEventListener("click", async () => {
+    if (!pendingScoreResult || scoreSubmitted) return;
+    const first = document.getElementById("end-score-first")?.value || "";
+    const last = document.getElementById("end-score-last")?.value || "";
+    const status = document.getElementById("end-score-status");
+    const valid = validateScoreName(first, last);
+    if (!valid.ok) {
+      if (status) status.textContent = valid.message;
+      return;
+    }
+    try {
+      if (status) status.textContent = "Saving score…";
+      const result = await submitHighScore({
+        name: valid.name,
+        score: pendingScoreResult.breakdown.total,
+        won: true,
+        seconds: pendingScoreResult.seconds,
+        difficulty: pendingScoreResult.difficulty,
+        breakdown: pendingScoreResult.breakdown,
+      });
+      scoreSubmitted = true;
+      if (status) {
+        status.textContent = result.inTop
+          ? `Saved! Rank #${result.rank} on the leaderboard.`
+          : "Score saved!";
+      }
+      renderLeaderboardList(result.scores || []);
+    } catch (err) {
+      if (status) status.textContent = err.message || "Could not save score.";
+    }
+  });
+}
+
+function renderLeaderboardList(scores) {
+  const list = document.getElementById("end-score-list");
+  if (!list) return;
+  if (!scores.length) {
+    list.innerHTML = "<li>No scores yet.</li>";
+    return;
+  }
+  list.innerHTML = scores.slice(0, 20).map((entry) =>
+    `<li><strong>${entry.rank}.</strong> ${entry.name} — ${entry.score} pts</li>`).join("");
+}
+
+async function loadLeaderboardPreview() {
+  try {
+    const { scores, setupRequired } = await fetchHighScores();
+    const status = document.getElementById("end-score-status");
+    if (setupRequired && status) {
+      status.textContent = "Leaderboard not configured yet. See google-apps-script/somnia-highscores-backend.gs";
+    }
+    renderLeaderboardList(scores);
+  } catch {
+    /* optional */
+  }
+}
+
 function bindRestart() {
   document.getElementById("btn-restart").addEventListener("click", () => {
+    stopVictoryCelebration();
     if (document.fullscreenElement) {
       document.exitFullscreen().catch(() => {});
     }
@@ -504,13 +570,28 @@ function renderAll() {
   if (!state) return;
 
   if (state.status === "won") {
+    if (!pendingScoreResult) {
+      const breakdown = calculateFinalScore(state);
+      const lengthLabel = state.lengthKey && LENGTHS[state.lengthKey]
+        ? LENGTHS[state.lengthKey].label
+        : `${state.goalPoints} pts`;
+      const seconds = Math.max(0, Math.round((Date.now() - (state.gameStartedAt || Date.now())) / 1000));
+      pendingScoreResult = { breakdown, seconds, difficulty: lengthLabel };
+    }
     const msg = state.finalRecurrence
       ? "All Remaining Archetypes defeated in the Final Recurrence!"
-      : `You collected ${state.acquiredPoints} Archetype points and escaped!`;
-    showEndScreen(true, msg);
+      : `You collected ${state.acquiredPoints} Archetype points and all Dreamers returned to the Bed!`;
+    showEndScreen(true, msg, pendingScoreResult);
+    if (!victoryShown) {
+      victoryShown = true;
+      startVictoryCelebration();
+      playSfx("victory");
+      loadLeaderboardPreview();
+    }
     return;
   }
   if (state.status === "lost") {
+    stopVictoryCelebration();
     showEndScreen(false, state.log[0] || "The Dreamscape collapses.");
     return;
   }
@@ -601,11 +682,16 @@ function renderAll() {
       renderAll();
     },
     powerBonus: () => { powerBonus(state); renderAll(); },
-    completeQuest: (i) => { handleQuestComplete(state, i); renderAll(); },
-    acquireArchetype: () => {
-      handleAcquire(state);
-      playSfx("acquire");
-      requestAnimationFrame(() => burstSparklesAtElement(document.getElementById("active-archetype"), 16, "#f0c96a"));
+    completeQuest: (i) => {
+      const result = handleQuestComplete(state, i);
+      if (result === "acquired") {
+        playSfx("acquire");
+        requestAnimationFrame(() => burstSparklesAtElement(document.getElementById("acquired-archetypes"), 16, "#f0c96a"));
+      }
+      renderAll();
+    },
+    useArchetypePower: (id) => {
+      handleUseArchetypePower(state, id);
       renderAll();
     },
     useDreamerPower: () => {

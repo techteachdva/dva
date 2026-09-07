@@ -95,10 +95,12 @@ export function createInitialState(data, options) {
 
   const activeArchetype = archetypeDeck.shift();
   activeArchetype.questProgress = [false, false];
+  activeArchetype.powerTokensOnArchetype = 0;
 
   const state = {
     phaseIndex: 0,
     round: 1,
+    lengthKey: options.lengthKey,
     goalPoints: length.points,
     dreamDeck,
     psycheDeck,
@@ -134,6 +136,8 @@ export function createInitialState(data, options) {
     availableDreamers,
     allDreamers: data.dreamers,
     questTracker: createQuestTracker(),
+    questConditionsMet: {},
+    gameStartedAt: Date.now(),
     questRoundFlags: { discardedOnBed: false },
     finalArchetypes: [],
     freeExploreNextRound: false,
@@ -564,6 +568,11 @@ function applyEncounterFail(state, player, encounter) {
   addLog(state, encounter.fail || "Encounter Fail resolved.");
 }
 
+export function allDreamersOnBed(state) {
+  const alive = state.players.filter((p) => p.alive);
+  return alive.length > 0 && alive.every((p) => p.landscapeId === "bed");
+}
+
 export function checkVictory(state) {
   if (state.finalRecurrence) {
     const left = state.finalArchetypes?.filter((a) => !a.defeated).length || 0;
@@ -574,8 +583,13 @@ export function checkVictory(state) {
     return;
   }
   if (state.acquiredPoints >= state.goalPoints) {
-    state.status = "won";
-    addLog(state, "The Dreamers wake up! You escaped the Dreamscape.");
+    if (allDreamersOnBed(state)) {
+      state.status = "won";
+      addLog(state, "The Dreamers wake up! You escaped the Dreamscape.");
+    } else if (!state.victoryPendingLogged) {
+      state.victoryPendingLogged = true;
+      addLog(state, "Archetype goal reached! All Dreamers must return to the Bed to wake up.");
+    }
   }
 }
 
@@ -600,27 +614,27 @@ export function acquireArchetype(state, player, onAcquireFn) {
 
   player.acquiredArchetypes.push(archetype);
   state.acquiredPoints += archetype.points;
-  addLog(state, `${player.name} acquired ${archetype.name} (${archetype.points} pts).`);
+  addLog(state, `${player.name} acquired ${archetype.name} (+${archetype.points} Archetype pts).`);
 
   if (onAcquireFn) onAcquireFn(state, archetype, player);
-
-  if (archetype.onAcquire === "Bottom of pile") {
-    state.archetypeDeck.push(archetype);
-  }
 
   state.activeArchetype = state.archetypeDeck.shift() || null;
   if (state.activeArchetype) {
     state.activeArchetype.questProgress = [false, false];
+    state.activeArchetype.powerTokensOnArchetype = 0;
   }
 
   checkVictory(state);
   return true;
 }
 
-export function completeQuest(state, questIndex, player) {
+export function completeQuest(state, questIndex, player, onAcquireFn) {
   const archetype = state.activeArchetype;
   if (!archetype || archetype.questProgress[questIndex]) return false;
-  if (player.powerTokens < 1) return false;
+  if (player.powerTokens < 1) {
+    addLog(state, "Spend 1 Power Token to complete this Quest.");
+    return false;
+  }
 
   const check = canMarkQuest(state, questIndex);
   if (!check.ok) {
@@ -630,12 +644,14 @@ export function completeQuest(state, questIndex, player) {
 
   spendPowerTokens(state, player, 1);
   archetype.questProgress[questIndex] = true;
-  addLog(state, `${player.name} completed quest: ${archetype.quests[questIndex]}.`);
+  archetype.powerTokensOnArchetype = (archetype.powerTokensOnArchetype || 0) + 1;
+  addLog(state, `${player.name} placed a Power Token on ${archetype.name}: ${archetype.quests[questIndex]}.`);
 
   if (archetype.questProgress.every(Boolean)) {
-    addLog(state, `${archetype.name} is ready to acquire!`);
+    acquireArchetype(state, player, onAcquireFn);
+    return "acquired";
   }
-  return true;
+  return "quest";
 }
 
 export { forgetLandscapes } from "./landscapes.js";

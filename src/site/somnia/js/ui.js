@@ -17,6 +17,7 @@ import { DREAMER_KIND_AFFINITY, beastKindLabel, dreamerPrimarySuit } from "./dre
 import { handLimitForPlayer, handRoomForPsycheDraw } from "./objects.js";
 import { psycheHandCount, alliesInHand, effectivePsycheHealth } from "./psyche.js";
 import { getQuestStatus } from "./quests.js";
+import { effectiveDreamerStat } from "./archetype-stats.js";
 import { hexToPixel, boardPixelBounds } from "./hex.js";
 import { subconsciousCount, subconsciousPilesForUI, isDreambeastPsycheCard } from "./subconscious.js";
 import { getNarratorView, listPhaseActionHints } from "./narrator.js";
@@ -401,7 +402,7 @@ export function showModal(card) {
     ["Accept", card.accept],
     ["Reject", card.reject ?? card.repress],
     ["Fail", card.fail],
-    ["Ability", card.ability || card.power],
+    ["Ability", card.ability || card.power || card.passive],
   ];
 
   const description = card.text || card.flavor || card.effect;
@@ -582,7 +583,7 @@ export function renderPlayers(state, onSelectPlayer) {
         : tradeTarget
           ? "Click to trade with this Dreamer"
           : undefined;
-      showDreamerDetailTooltip(player.dreamer, chip, { player, focusHint });
+      showDreamerDetailTooltip(player.dreamer, chip, { player, focusHint, state });
     };
 
     chip.addEventListener("mouseenter", showTooltip);
@@ -870,18 +871,20 @@ export function renderActiveSlots(state, onCardClick) {
 
   if (state.persistentArchetypes?.length) {
     const kept = document.createElement("div");
-    kept.className = "kept-archetypes";
-    kept.innerHTML = `<h4>In Play</h4><div class="mini-card-row">${state.persistentArchetypes.map((a) =>
-      `<span class="kept-arch">${a.name} (+1 Persistent)</span>`).join("")}</div>`;
+    kept.className = "kept-archetypes hidden";
     archetypeSlot.appendChild(kept);
   }
 
   if (state.activeArchetype) {
     const card = { ...state.activeArchetype };
     const statuses = getQuestStatus(state, card);
+    const tokensOn = card.powerTokensOnArchetype || 0;
     const questHtml = statuses.length
-      ? `<ul class="quest-list compact">${statuses.map((q) =>
-          `<li class="${q.done ? "done" : ""}">${q.index + 1}. ${q.text}${q.done ? " ✓" : ""}</li>`).join("")}</ul>`
+      ? `<ul class="quest-list compact">${statuses.map((q) => {
+          const cls = q.done ? "done" : (q.ready ? "ready" : "");
+          const mark = q.done ? " ✓" : (q.ready ? " · ready" : "");
+          return `<li class="${cls}">${q.index + 1}. ${q.text}${mark}</li>`;
+        }).join("")}</ul><p class="archetype-tokens">${tokensOn}/2 Power Tokens on Archetype</p>`
       : "";
     archetypeSlot.appendChild(renderCard(card, {
       portrait: true,
@@ -1239,10 +1242,32 @@ export function showScreen(id) {
   document.getElementById("header-actions")?.classList.toggle("hidden", !inGame);
 }
 
-export function showEndScreen(won, message) {
+export function showEndScreen(won, message, scoreResult = null) {
   showScreen("screen-end");
   document.getElementById("end-title").textContent = won ? "You Wake Up!" : "Trapped Forever";
   document.getElementById("end-message").textContent = message;
+
+  const breakdownEl = document.getElementById("end-score-breakdown");
+  const leaderboardEl = document.getElementById("end-leaderboard");
+  if (won && scoreResult?.breakdown) {
+    const b = scoreResult.breakdown;
+    breakdownEl.classList.remove("hidden");
+    breakdownEl.innerHTML = `
+      <h3>Final Score: ${b.total}</h3>
+      <ul class="score-breakdown-list">
+        <li>Archetype goal: <strong>${b.archetypePoints}</strong></li>
+        <li>Psyche in hands: <strong>${b.psyche}</strong></li>
+        <li>Objects: <strong>${b.objects}</strong></li>
+        <li>Power Tokens: <strong>${b.tokens}</strong></li>
+        <li>Accepted allies: <strong>${b.allies}</strong></li>
+        <li>Dreams remaining: <strong>${b.dreams}</strong></li>
+      </ul>
+    `;
+    leaderboardEl?.classList.remove("hidden");
+  } else {
+    breakdownEl?.classList.add("hidden");
+    leaderboardEl?.classList.add("hidden");
+  }
 }
 
 export function showLandscapeActionPicker(tile, choices, onPick) {
@@ -1641,28 +1666,26 @@ function formatDreamerFlavor(text) {
   return escaped.replace(/\*([^*]+)\*/g, "<em>$1</em>");
 }
 
-function dreamerDetailStatsHtml(dreamer) {
-  const bonus = dreamer.archetypeBonus ?? 0;
+function dreamerDetailStatsHtml(dreamer, state = null) {
+  const lucidity = effectiveDreamerStat(state, dreamer, "lucidity");
+  const elasticity = effectiveDreamerStat(state, dreamer, "elasticity");
+  const willpower = effectiveDreamerStat(state, dreamer, "willpower");
   return `
     <div class="dreamer-detail-stats">
       <div class="dreamer-detail-stat suit-lucidity">
         ${suitIconHtml("lucidity", { size: 16 })}
         <span class="dreamer-detail-stat-label">${SUIT_LABELS.lucidity}</span>
-        <strong>${dreamer.lucidity}</strong>
+        <strong>${lucidity}</strong>
       </div>
       <div class="dreamer-detail-stat suit-elasticity">
         ${suitIconHtml("elasticity", { size: 16 })}
         <span class="dreamer-detail-stat-label">${SUIT_LABELS.elasticity}</span>
-        <strong>${dreamer.elasticity}</strong>
+        <strong>${elasticity}</strong>
       </div>
       <div class="dreamer-detail-stat suit-willpower">
         ${suitIconHtml("willpower", { size: 16 })}
         <span class="dreamer-detail-stat-label">${SUIT_LABELS.willpower}</span>
-        <strong>${dreamer.willpower}</strong>
-      </div>
-      <div class="dreamer-detail-stat dreamer-detail-archetype">
-        <span class="dreamer-detail-stat-label">Archetype bonus</span>
-        <strong>+${bonus}</strong>
+        <strong>${willpower}</strong>
       </div>
     </div>
   `;
@@ -1707,7 +1730,7 @@ function buildDreamerDetailHtml(dreamer, options = {}) {
         ${flavor ? `<blockquote class="dreamer-detail-flavor">${flavor}</blockquote>` : ""}
         ${statusLine}
         ${affinityLine}
-        ${dreamerDetailStatsHtml(dreamer)}
+        ${dreamerDetailStatsHtml(dreamer, options.state || null)}
         <div class="dreamer-detail-power">
           <div class="dreamer-detail-power-label">Dreamer Power</div>
           <p class="dreamer-detail-power-cost">Costs 1 Power Token</p>

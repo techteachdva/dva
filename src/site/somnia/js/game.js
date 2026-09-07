@@ -9,6 +9,7 @@ import {
   completeQuest,
   acquireArchetype,
   checkDefeat,
+  checkVictory,
   landscapeById,
   setEncounterOnLandscape,
   encounterOnLandscape,
@@ -61,7 +62,9 @@ import { playObjectCard, applySkeletonKeyAfterDream, drawObjects, handLimitForPl
 import { psycheHandCount, hasPsycheHealth } from "./psyche.js";
 import { queueDreamDrawFx } from "./board-fx.js";
 import { applyBossAcceptEffect } from "./bosses.js";
-import { resolveOnAcquire } from "./archetypes.js";
+import { resolveOnAcquire, useArchetypePower, handleArchetypePowerTilePick } from "./archetypes.js";
+import { getActivatableArchetypePowers } from "./archetype-stats.js";
+import { isQuestConditionMet } from "./quests.js";
 import { shuffle, uid } from "./data.js";
 import {
   getLandscapeActionChoices,
@@ -383,23 +386,26 @@ export function getPhaseActions(state, handlers) {
       disabled: player.powerTokens < 1,
       onClick: handlers.powerBonus,
     });
+    const arch = state.activeArchetype;
     actions.push({
       label: "Quest 1",
       section: "progress",
-      disabled: !state.activeArchetype || state.activeArchetype.questProgress[0],
+      disabled: !arch || arch.questProgress[0] || !isQuestConditionMet(state, arch.id, arch.quests[0]),
       onClick: () => handlers.completeQuest(0),
     });
     actions.push({
       label: "Quest 2",
       section: "progress",
-      disabled: !state.activeArchetype || state.activeArchetype.questProgress[1],
+      disabled: !arch || arch.questProgress[1] || !isQuestConditionMet(state, arch.id, arch.quests[1]),
       onClick: () => handlers.completeQuest(1),
     });
-    actions.push({
-      label: "Acquire Archetype",
-      section: "progress",
-      disabled: !state.activeArchetype?.questProgress?.every(Boolean),
-      onClick: handlers.acquireArchetype,
+    getActivatableArchetypePowers(state).forEach((acquired) => {
+      actions.push({
+        label: `${acquired.name} Power`,
+        section: "progress",
+        disabled: activePlayer(state).powerTokens < 1,
+        onClick: () => handlers.useArchetypePower(acquired.id),
+      });
     });
     actions.push(dreamerPowerAction());
     actions.push({
@@ -627,6 +633,8 @@ export function moveDreamer(state, targetLandscapeId) {
     } else {
       addLog(state, `${player.name} moves to ${to.name}. (${state.exploreMovesLeft} moves left)`);
     }
+
+    if (targetLandscapeId === "bed") checkVictory(state);
 
     const enc = encounterOnLandscape(state, targetLandscapeId);
     if (enc) {
@@ -1187,16 +1195,26 @@ export function toggleHandCard(state, card, owner = null) {
 }
 
 export function handleQuestComplete(state, questIndex = 0) {
-  completeQuest(state, questIndex, activePlayer(state));
+  return completeQuest(state, questIndex, activePlayer(state), (s, arch, p) => {
+    resolveOnAcquire(s, arch, p);
+  });
+}
+
+export function handleUseArchetypePower(state, archetypeId) {
+  const powers = getActivatableArchetypePowers(state);
+  const archetype = powers.find((a) => a.id === archetypeId);
+  if (!archetype) return false;
+  return useArchetypePower(state, archetype, activePlayer(state), getEffectHelpers());
 }
 
 export function handleAcquire(state) {
   acquireArchetype(state, activePlayer(state), (s, arch, p) => {
-    resolveOnAcquire(s, arch, p, getEffectHelpers());
+    resolveOnAcquire(s, arch, p);
   });
 }
 
 export function handleBoardTileClick(state, tileId) {
+  if (handleArchetypePowerTilePick(state, tileId)) return true;
   if (handleDreamerPowerTilePick(state, tileId)) return true;
   if (state.pendingDreamerPower?.step === "reveal-landscape") {
     addLog(state, "Visionary Power: choose a hidden Landscape to reveal.");

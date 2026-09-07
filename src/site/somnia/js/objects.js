@@ -32,7 +32,7 @@ export function handRoomForPsycheDraw(state, player) {
 
 export function persistentMeetBonus(state, player) {
   ensureObjectZones(player);
-  let bonus = (state.persistentArchetypes || []).length;
+  let bonus = 0;
   player.persistent.forEach((obj) => {
     const tags = obj.tags || [];
     if (tags.some((t) => t.startsWith("jewelry") || t.startsWith("stick"))) bonus += 1;

@@ -6,7 +6,6 @@
     "lucidity": 2,
     "elasticity": 1,
     "willpower": 0,
-    "archetypeBonus": 1,
     "flavor": "Though waves may break, my ship shall take me off to the Land of Nod.",
     "power": "All Dreamers Draw top Psyche from Discard or Change Active Archetype."
   },
@@ -17,7 +16,6 @@
     "lucidity": 2,
     "elasticity": 0,
     "willpower": 1,
-    "archetypeBonus": 1,
     "flavor": "Peer deep enough within yourself and you will find the seed of everything.",
     "power": "Flip and show the top unrevealed card of 1 Deck, 1 per Dreamer, or Reveal 1 Landscape per Dreamer."
   },
@@ -28,7 +26,6 @@
     "lucidity": 1,
     "elasticity": 2,
     "willpower": 0,
-    "archetypeBonus": 1,
     "flavor": "Nothing's faster than thought, and I *am* thought.",
     "power": "All Dreamers Move 1 space towards or away from Bed/Final Recurrence."
   },
@@ -39,7 +36,6 @@
     "lucidity": 0,
     "elasticity": 2,
     "willpower": 1,
-    "archetypeBonus": 1,
     "flavor": "No Prey can escape my chase.",
     "power": "Move each Active Dreambeast a number of Spaces equal to Dreamers."
   },
@@ -50,7 +46,6 @@
     "lucidity": 1,
     "elasticity": 0,
     "willpower": 2,
-    "archetypeBonus": 1,
     "flavor": "Even Time stands still for those who wait long enough.",
     "power": "All Dreamers Cancel a Discard or Forced Move."
   },
@@ -61,7 +56,6 @@
     "lucidity": 0,
     "elasticity": 1,
     "willpower": 2,
-    "archetypeBonus": 1,
     "flavor": "Strands of fate, woven as I will it.",
     "power": "All Dreamers Trade up to 1 Card each with selves or Decks."
   }
