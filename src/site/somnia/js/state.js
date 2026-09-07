@@ -142,6 +142,9 @@ export function createInitialState(data, options) {
     chaseDream: false,
     chaseTrapped: [],
     skipLandscapeActionsNextMeet: false,
+    pendingDreamerPower: null,
+    cancellableDiscard: null,
+    cancellableMove: null,
   };
 
   beginRoundReveal(state);

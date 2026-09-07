@@ -1046,7 +1046,7 @@ export function renderPhaseActions(actions) {
     grouped[section].push(action);
   });
 
-  const primarySections = ["main", "encounter", "actions", "progress"];
+  const primarySections = ["main", "encounter"];
   const secondarySections = ["actions", "progress"];
 
   primarySections.forEach((section) => {
@@ -1192,6 +1192,61 @@ export function showLandscapeActionPicker(tile, choices, onPick) {
     btn.addEventListener("click", () => {
       hideUtilityModal();
       onPick(btn.dataset.action);
+    });
+  });
+  modal.classList.remove("hidden");
+}
+
+export function showDreamerPowerChoice(ui, onPick) {
+  const modal = document.getElementById("utility-modal");
+  const body = document.getElementById("utility-modal-body");
+  const buttons = (ui.choices || []).map((choice) => `
+    <button type="button" class="btn dreamer-power-pick" data-choice="${choice.id}">
+      <strong>${choice.label}</strong>
+      ${choice.hint ? `<span class="landscape-action-desc">${choice.hint}</span>` : ""}
+    </button>
+  `).join("");
+  body.innerHTML = `
+    <div class="dreamer-power-modal">
+      <h2>${ui.title || "Dreamer Power"}</h2>
+      <p>${ui.message || ""}</p>
+      <div class="utility-actions landscape-action-choices">${buttons}</div>
+    </div>
+  `;
+  modal.querySelector(".utility-content")?.classList.add("dreamer-power-modal-wrap");
+  body.querySelectorAll("[data-choice]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      modal.querySelector(".utility-content")?.classList.remove("dreamer-power-modal-wrap");
+      hideUtilityModal();
+      onPick(btn.dataset.choice);
+    });
+  });
+  modal.classList.remove("hidden");
+}
+
+export function showDreamerPowerDeckPicker(ui, onPick) {
+  const modal = document.getElementById("utility-modal");
+  const body = document.getElementById("utility-modal-body");
+  body.innerHTML = `
+    <div class="dreamer-power-modal">
+      <h2>${ui.title || "Choose a Deck"}</h2>
+      <p>${ui.message || "Flip and show the top card:"}</p>
+      <div class="utility-actions mindstream-pick">
+        <button type="button" class="btn" data-deck="psyche">Psyche Deck</button>
+        <button type="button" class="btn" data-deck="dream">Dream Deck</button>
+        <button type="button" class="btn" data-deck="archetype">Archetype Deck</button>
+        <button type="button" class="btn suit-lucidity" data-deck="mindstream-lucidity">${suitIconHtml("lucidity", { size: 14 })} Lucidity Mindstream</button>
+        <button type="button" class="btn suit-elasticity" data-deck="mindstream-elasticity">${suitIconHtml("elasticity", { size: 14 })} Elasticity Mindstream</button>
+        <button type="button" class="btn suit-willpower" data-deck="mindstream-willpower">${suitIconHtml("willpower", { size: 14 })} Willpower Mindstream</button>
+      </div>
+    </div>
+  `;
+  modal.querySelector(".utility-content")?.classList.add("dreamer-power-modal-wrap");
+  body.querySelectorAll("[data-deck]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      modal.querySelector(".utility-content")?.classList.remove("dreamer-power-modal-wrap");
+      hideUtilityModal();
+      onPick(btn.dataset.deck);
     });
   });
   modal.classList.remove("hidden");
@@ -1464,6 +1519,7 @@ export function hideUtilityModal() {
   modal.classList.add("hidden");
   modal.querySelector(".utility-content")?.classList.remove("landscape-detail-modal");
   modal.querySelector(".utility-content")?.classList.remove("dreamer-detail-modal");
+  modal.querySelector(".utility-content")?.classList.remove("dreamer-power-modal-wrap");
   modal.querySelector(".utility-content")?.classList.remove("phase-skip-modal");
 }
 

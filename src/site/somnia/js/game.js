@@ -49,6 +49,14 @@ import { encounterRejectCost, applyRejectReward } from "./dreambeasts.js";
 import { getLegalMoveTargets, canMoveTo, adjacentTiles, hexDistance, areHexAdjacent } from "./hex.js";
 import { repressCard, listSubconsciousCards, dreambeastToHandCard, isDreambeastPsycheCard } from "./subconscious.js";
 import { spendPowerTokens } from "./power-tokens.js";
+import {
+  beginDreamerPower,
+  cancelDreamerPower,
+  hasPendingDreamerPower,
+  handleDreamerPowerTilePick,
+  recordCancellableDiscard,
+  recordCancellableMove,
+} from "./dreamer-powers.js";
 import { playObjectCard, applySkeletonKeyAfterDream, drawObjects, handLimitForPlayer, handRoomForPsycheDraw } from "./objects.js";
 import { psycheHandCount, hasPsycheHealth } from "./psyche.js";
 import { queueDreamDrawFx } from "./board-fx.js";
@@ -174,6 +182,14 @@ export function getPhaseActions(state, handlers) {
   const player = activePlayer(state);
   const actions = [];
 
+  const dreamerPowerAction = () => ({
+    label: "Dreamer Power",
+    section: "progress",
+    hint: player.dreamer.power,
+    disabled: player.powerTokens < 1 || hasPendingDreamerPower(state),
+    onClick: handlers.useDreamerPower,
+  });
+
   if (phase === "Reveal") {
     const head = headPlayer(state);
     actions.push({
@@ -201,6 +217,7 @@ export function getPhaseActions(state, handlers) {
       disabled: !state.dreamDrawn || state.revealLandscapeUsed || budget < 1,
       onClick: handlers.revealLandscape,
     });
+    actions.push(dreamerPowerAction());
     actions.push({
       label: "Next: Explore →",
       section: "phase",
@@ -239,6 +256,7 @@ export function getPhaseActions(state, handlers) {
         onClick: () => {},
       });
     }
+    actions.push(dreamerPowerAction());
     actions.push({
       label: "Next: Meet →",
       section: "phase",
@@ -383,11 +401,7 @@ export function getPhaseActions(state, handlers) {
       disabled: !state.activeArchetype?.questProgress?.every(Boolean),
       onClick: handlers.acquireArchetype,
     });
-    actions.push({
-      label: "Dreamer Power",
-      section: "progress",
-      onClick: handlers.useDreamerPower,
-    });
+    actions.push(dreamerPowerAction());
     actions.push({
       label: "End Round",
       section: "round",
@@ -402,7 +416,7 @@ export function getPhaseActions(state, handlers) {
 }
 
 export function getPhaseAdvanceAction(state, handlers) {
-  if (state.landscapePick || state.pendingRepress || state.pendingReturn) return null;
+  if (state.landscapePick || state.pendingRepress || state.pendingReturn || hasPendingDreamerPower(state)) return null;
   const actions = getPhaseActions(state, handlers);
   return actions.find((a) => a.advance && !a.disabled) || null;
 }
@@ -592,16 +606,20 @@ export function moveDreamer(state, targetLandscapeId) {
       return;
     }
 
+    const fromId = player.landscapeId;
+
     player.landscapeId = targetLandscapeId;
     state.selectedLandscapeId = targetLandscapeId;
     state.exploreMovesLeft -= 1;
     onExploreMove(state);
     recordQuestEvent(state, "move_player", { count: 1 });
+    recordCancellableMove(state, player, fromId, targetLandscapeId);
 
     if (to.wasteland) {
       if (hasPsycheHealth(player)) {
         const discarded = player.hand.pop();
         state.psycheDiscard.push(discarded);
+        recordCancellableDiscard(state, player, discarded, "wasteland");
         recordQuestEvent(state, "discard_psyche", { count: 1, landscapeId: targetLandscapeId });
         addLog(state, `${player.name} discards 1 Psyche on Wasteland.`);
         if (state.checkPsycheDeath) state.checkPsycheDeath(player);
@@ -1063,46 +1081,17 @@ export function handleSacrificeForFinal(state) {
 
 export function useDreamerPower(state) {
   const player = activePlayer(state);
+  if (hasPendingDreamerPower(state)) {
+    addLog(state, "Finish the current Dreamer Power first.");
+    return null;
+  }
   if (!spendPowerTokens(state, player, 1)) {
     addLog(state, "Need 1 Power Token.");
-    return;
+    return null;
   }
-  const d = player.dreamer;
-  addLog(state, `${player.name} uses ${d.name}: ${d.power}`);
-
-  if (d.id === "the-rested") {
-    drawPsycheForPlayer(state, player, 1);
-  } else if (d.id === "the-visionary") {
-    const hidden = state.board.find((l) => !l.revealed && !l.center);
-    if (hidden) revealLandscapeTile(state, hidden);
-  } else if (d.id === "the-runner") {
-    const bed = landscapeById(state, "bed");
-    const current = landscapeById(state, player.landscapeId);
-    if (bed && current) {
-      const neighbors = adjacentTiles(state, current.id);
-      if (hexDistance(current, bed) > 0) {
-        const toward = neighbors
-          .filter((t) => t.revealed && hexDistance(t, bed) < hexDistance(current, bed))
-          .sort((a, b) => hexDistance(a, bed) - hexDistance(b, bed))[0];
-        const away = neighbors
-          .filter((t) => t.revealed && hexDistance(t, bed) > hexDistance(current, bed))
-          .sort((a, b) => hexDistance(b, bed) - hexDistance(a, bed))[0];
-        const dest = toward || away;
-        if (dest) {
-          player.landscapeId = dest.id;
-          addLog(state, `${player.name} moves toward Bed → ${dest.name}.`);
-        }
-      }
-    }
-  } else if (d.id === "the-hunter") {
-    if (state.activeEncounter) {
-      addLog(state, "Moved active Encounter 1 step (simplified).");
-    }
-  } else if (d.id === "the-immovable") {
-    addLog(state, "Cancelled last discard or move (simplified).");
-  } else if (d.id === "the-weaver") {
-    drawPsycheForPlayer(state, player, 1);
-  }
+  addLog(state, `${player.name} activates ${player.dreamer.name} Power (1 Power Token).`);
+  state.pendingDreamerPower = { dreamerId: player.dreamer.id, actorId: player.id };
+  return beginDreamerPower(state);
 }
 
 export function spawnEncounterOnLandscape(state, landscapeId, beastCard = null) {
@@ -1208,6 +1197,11 @@ export function handleAcquire(state) {
 }
 
 export function handleBoardTileClick(state, tileId) {
+  if (handleDreamerPowerTilePick(state, tileId)) return true;
+  if (state.pendingDreamerPower?.step === "reveal-landscape") {
+    addLog(state, "Visionary Power: choose a hidden Landscape to reveal.");
+    return false;
+  }
   if (state.landscapePick) {
     return handleLandscapeTilePick(state, tileId);
   }
@@ -1217,6 +1211,7 @@ export function handleBoardTileClick(state, tileId) {
 
 export function endPhase(state) {
   cancelLandscapePick(state);
+  cancelDreamerPower(state);
   const leaving = getPhase(state);
   if (leaving === "Reveal" && !state.dreamDrawn) {
     narrate(state, "Draw the Dream first", "Resolve the active Dream before advancing to Explore.");
@@ -1269,6 +1264,11 @@ export function getLegalExploreTargets(state) {
 }
 
 export function getPhaseHint(state) {
+  const pendingPower = state.pendingDreamerPower;
+  if (pendingPower?.step === "reveal-landscape" && (pendingPower.revealRemaining ?? 0) > 0) {
+    return `Visionary Power: reveal ${pendingPower.revealRemaining} hidden Landscape(s) on the map.`;
+  }
+
   const phase = getPhase(state);
   const head = headPlayer(state);
   if (phase === "Reveal") {

@@ -52,6 +52,10 @@ import { enableDevMode } from "./dev-commands.js";
 import { narrate } from "./narrator.js";
 import { pickReturnCard, cancelPendingReturn, pickRepressCard, confirmRepressStep, subconsciousCount } from "./subconscious.js";
 import { getLandscapePickHighlights } from "./landscapes.js";
+import {
+  resolveDreamerPowerChoice,
+  resolveDreamerPowerDeckPick,
+} from "./dreamer-powers.js";
 import { phaseOpeningActive } from "./rules.js";
 import {
   TUTORIAL_STEPS,
@@ -83,6 +87,8 @@ import {
   showLandscapeActionPicker,
   showLandscapeDetail,
   showDreamerDetail,
+  showDreamerPowerChoice,
+  showDreamerPowerDeckPicker,
   showDeckFlipPicker,
   showTradeControls,
   showRespawnPicker,
@@ -401,6 +407,47 @@ function maybeShowRepressPicker() {
   );
 }
 
+let dreamerPowerModalKey = null;
+
+function presentDreamerPowerUI(ui) {
+  if (ui.type === "choice") {
+    showDreamerPowerChoice(ui, (choiceId) => {
+      dreamerPowerModalKey = null;
+      processDreamerPowerResult(resolveDreamerPowerChoice(state, choiceId));
+    });
+    return;
+  }
+  if (ui.type === "deck") {
+    showDreamerPowerDeckPicker(ui, (deckKey) => {
+      dreamerPowerModalKey = null;
+      processDreamerPowerResult(resolveDreamerPowerDeckPick(state, deckKey));
+    });
+  }
+}
+
+function processDreamerPowerResult(result) {
+  if (result?.card) showModal(result.card);
+  if (result?.ui) {
+    const pending = state.pendingDreamerPower;
+    if (pending) pending.ui = result.ui;
+    presentDreamerPowerUI(result.ui);
+    return;
+  }
+  renderAll();
+}
+
+function maybeShowDreamerPowerUI() {
+  const ui = state?.pendingDreamerPower?.ui;
+  if (!ui) {
+    dreamerPowerModalKey = null;
+    return;
+  }
+  const key = JSON.stringify(ui);
+  if (key === dreamerPowerModalKey) return;
+  dreamerPowerModalKey = key;
+  presentDreamerPowerUI(ui);
+}
+
 function maybeShowReturnPicker() {
   if (!state?.pendingReturn) {
     lastReturnPickerKey = null;
@@ -535,7 +582,11 @@ function renderAll() {
       requestAnimationFrame(() => burstSparklesAtElement(document.getElementById("active-archetype"), 16, "#f0c96a"));
       renderAll();
     },
-    useDreamerPower: () => { useDreamerPower(state); renderAll(); },
+    useDreamerPower: () => {
+      const result = useDreamerPower(state);
+      if (result?.ui) processDreamerPowerResult(result);
+      else renderAll();
+    },
     defeatFinalArchetype: () => { handleDefeatFinalArchetype(state); renderAll(); },
     sacrificeForFinal: () => { handleSacrificeForFinal(state); renderAll(); },
     nextPhase: () => { requestEndPhase(state, () => renderAll()); },
@@ -614,6 +665,7 @@ function renderAll() {
   maybeShowRespawn();
   maybeShowRepressPicker();
   maybeShowReturnPicker();
+  maybeShowDreamerPowerUI();
 
   updateHandSnapshots(state);
   requestAnimationFrame(() => {

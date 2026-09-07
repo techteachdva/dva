@@ -187,6 +187,14 @@ export function cancelLandscapePick(state) {
 }
 
 export function getLandscapePickHighlights(state) {
+  const pendingPower = state.pendingDreamerPower;
+  if (pendingPower?.step === "reveal-landscape" && (pendingPower.revealRemaining ?? 0) > 0) {
+    return {
+      reveal: revealableTiles(state).map((t) => t.id),
+      forget: [],
+    };
+  }
+
   const pick = state.landscapePick;
   if (!pick) return { reveal: [], forget: [] };
 

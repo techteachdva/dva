@@ -19,7 +19,7 @@
     "willpower": 1,
     "archetypeBonus": 1,
     "flavor": "Peer deep enough within yourself and you will find the seed of everything.",
-    "power": "All Dreamers Flip the top card of a Deck or Reveal 1 Landscape."
+    "power": "Flip and show the top unrevealed card of 1 Deck, 1 per Dreamer, or Reveal 1 Landscape per Dreamer."
   },
   {
     "id": "the-runner",
@@ -30,7 +30,7 @@
     "willpower": 0,
     "archetypeBonus": 1,
     "flavor": "Nothing's faster than thought, and I *am* thought.",
-    "power": "All Dreamers Move 1 space towards or away from Bed."
+    "power": "All Dreamers Move 1 space towards or away from Bed/Final Recurrence."
   },
   {
     "id": "the-hunter",
@@ -41,7 +41,7 @@
     "willpower": 1,
     "archetypeBonus": 1,
     "flavor": "No Prey can escape my chase.",
-    "power": "All Dreamers Move an Active Dreambeast 1 space closer or further from them."
+    "power": "Move each Active Dreambeast a number of Spaces equal to Dreamers."
   },
   {
     "id": "the-immovable",
@@ -52,7 +52,7 @@
     "willpower": 2,
     "archetypeBonus": 1,
     "flavor": "Even Time stands still for those who wait long enough.",
-    "power": "All Dreamers Cancel a Discard or Move."
+    "power": "All Dreamers Cancel a Discard or Forced Move."
   },
   {
     "id": "the-weaver",
@@ -63,6 +63,6 @@
     "willpower": 2,
     "archetypeBonus": 1,
     "flavor": "Strands of fate, woven as I will it.",
-    "power": "All Dreamers Trade 1 Card with themselves or Decks."
+    "power": "All Dreamers Trade up to 1 Card each with selves or Decks."
   }
 ]
