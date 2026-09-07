@@ -359,7 +359,7 @@ const COMMANDS = {
       state.phaseIndex = 2;
       state.meetActionBudget = n;
       state.meetActionsUsed = 0;
-      state.lastMeetAction = null;
+      state.lastMeetActionByPlayer = {};
       return ok(`Meet phase · budget ${n}.`);
     },
   },

@@ -287,7 +287,7 @@ export function getCurrentObjective(state) {
       suit: "willpower",
       title: state.activeEncounter ? "Meet the Encounter" : "Spend Meet actions",
       steps: lines,
-      tip: "You cannot repeat the same action type twice in a row.",
+      tip: "A Dreamer cannot repeat the same action twice in a row — switch Dreamers or use a different action.",
     };
   }
 
@@ -450,7 +450,8 @@ export function rulesRemHtml() {
           <p><strong>One Dreamer</strong> spends 1–2 Willpower cards to gain <strong>shared Meet actions</strong> for the team.</p>
           <ul>
             <li><strong>Action budget</strong> = card values + Willpower stat → spend on Encounters, Landscapes, Trade, or End Round</li>
-            <li><strong>Cannot repeat</strong> the same Meet action type twice in a row (Meet / Landscape / Trade)</li>
+            <li><strong>Cannot repeat</strong> the same action twice in a row for the same Dreamer — another Dreamer may take the same action</li>
+            <li>Each Landscape offers <strong>Action A</strong> (Draw matching Mindstream) and <strong>Action B</strong> (its unique action from the rulebook)</li>
             <li><strong>Objects</strong> are free during Meet; Persistent Objects cost 1 Power Token to activate</li>
             <li>At Meet end, unresolved Encounters <strong>fail</strong> — Dreamers on those tiles lose Psyche to the Subconscious</li>
             <li><strong>Paradox Dream:</strong> Meet uses Elasticity stat instead</li>

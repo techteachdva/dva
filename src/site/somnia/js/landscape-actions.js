@@ -339,7 +339,7 @@ export function getLandscapeActionSummary(tile) {
   if (canDrawMindstreamOnLandscape(tile)) {
     actions.push({
       letter: "A",
-      label: `Draw ${SUIT_LABELS[tile.suit]} Mindstream`,
+      label: `Draw [${SUIT_LABELS[tile.suit]}] Mindstream`,
       description: LANDSCAPE_ACTION_DEFS["draw-mindstream"].description,
     });
   }
@@ -362,7 +362,7 @@ export function getLandscapeActionChoices(tile) {
   if (canDrawMindstreamOnLandscape(tile)) {
     choices.push({
       id: "draw-mindstream",
-      label: `Draw ${SUIT_LABELS[tile.suit]} Mindstream`,
+      label: `Draw [${SUIT_LABELS[tile.suit]}] Mindstream`,
       description: LANDSCAPE_ACTION_DEFS["draw-mindstream"].description,
       suit: tile.suit,
     });

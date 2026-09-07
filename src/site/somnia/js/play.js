@@ -27,6 +27,7 @@ import {
   meetEncounter,
   landscapeAction,
   drawMindstreamOnLandscape,
+  performLandscapeAction,
   uniqueLandscapeAction,
   completeLandscapeAction,
   finishLandscapeMindstreamPick,
@@ -786,6 +787,27 @@ function renderAll() {
       });
       renderAll();
     },
+    landscapeAction: (actionId) => {
+      const result = performLandscapeAction(state, actionId, {
+        onResult: (card) => showModal(card),
+      });
+      if (result?.pending === "pick-mindstream-suit" || result?.pending === "spawn-dreambeast-pick-suit") {
+        const { tile, player, actionId: pendingActionId } = result;
+        showMindstreamPicker((suit) => {
+          finishLandscapeMindstreamPick(state, tile, player, pendingActionId, suit, (card) => showModal(card));
+          renderAll();
+        });
+        return;
+      }
+      if (result?.pending === "flip-top-3-pick-deck") {
+        showDeckFlipPicker((deckKey) => {
+          finishLandscapeDeckFlip(state, deckKey);
+          renderAll();
+        });
+        return;
+      }
+      renderAll();
+    },
     uniqueLandscapeAction: () => {
       uniqueLandscapeAction(state, {
         onChoose: (choices, tile, player) => {
@@ -901,6 +923,10 @@ function renderAll() {
     }
     const prevId = state.players[state.activePlayerIndex]?.id;
     state.activePlayerIndex = index;
+    const player = state.players[index];
+    if (getPhase(state) === "Meet" && player?.landscapeId) {
+      state.selectedLandscapeId = player.landscapeId;
+    }
     const nextId = state.players[index]?.id;
     if (prevId && nextId && prevId !== nextId) {
       playDreamerHandSparkle(prevId, nextId);

@@ -130,7 +130,7 @@ export function createInitialState(data, options) {
     exploreActivated: false,
     meetActionBudget: 0,
     meetActionsUsed: 0,
-    lastMeetAction: null,
+    lastMeetActionByPlayer: {},
     pendingPowerBonus: 0,
     tradeMode: false,
     viewingDeck: null,
@@ -304,7 +304,7 @@ export function resetPhaseFlags(state) {
   state.exploreActivated = false;
   state.meetActionBudget = 0;
   state.meetActionsUsed = 0;
-  state.lastMeetAction = null;
+  state.lastMeetActionByPlayer = {};
   state.pendingPowerBonus = 0;
   state.selectedHand = [];
   state.tradeMode = false;
