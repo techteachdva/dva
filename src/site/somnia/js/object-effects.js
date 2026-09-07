@@ -8,6 +8,7 @@ import {
 } from "./state.js";
 import { shuffle, uid } from "./data.js";
 import { recordQuestEvent } from "./quests.js";
+import { grantPowerTokens } from "./power-tokens.js";
 import { repressCard, requestReturnCards } from "./subconscious.js";
 import {
   pullDreambeastFromMindstream,
@@ -250,7 +251,7 @@ export const OBJECT_EFFECTS = {
 
   coins: (state) => {
     alive(state).forEach((p) => {
-      p.powerTokens += 1;
+      grantPowerTokens(state, p, 1);
       recordQuestEvent(state, "power_token", { count: 1 });
     });
     addLog(state, "Coins: each Dreamer gains 1 Power Token.");

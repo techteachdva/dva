@@ -9,6 +9,7 @@ import {
   updateHandSnapshots,
   resetHandSnapshots,
 } from "./card-fx.js";
+import { runPendingBoardFx } from "./board-fx.js";
 import { loadGameData } from "./data.js";
 import { createInitialState, addLog, respawnDreamer, getPhase, activePlayer } from "./state.js";
 import {
@@ -61,6 +62,7 @@ import {
   renderBoard,
   renderPlayers,
   renderHand,
+  renderPowerTokens,
   renderPhaseSpendHands,
   renderCoopMeetHands,
   renderObjects,
@@ -447,9 +449,6 @@ function renderAll() {
   const handlers = {
     drawDream: () => {
       const card = drawDreamCard(state, showModal);
-      if (card) {
-        requestAnimationFrame(() => burstSparklesAtElement(document.getElementById("deck-tray"), 12));
-      }
       renderAll();
     },
     revealLandscape: () => { revealLandscape(state); renderAll(); },
@@ -574,6 +573,7 @@ function renderAll() {
   } else {
     renderHand(state, onHandCardClick, getNewHandCardIds(state));
   }
+  renderPowerTokens(state);
 
   renderObjects(state, (card, zone) => {
     if (getPhase(state) === "Meet") {
@@ -613,7 +613,10 @@ function renderAll() {
   maybeShowReturnPicker();
 
   updateHandSnapshots(state);
-  requestAnimationFrame(() => runPendingCardFx(state));
+  requestAnimationFrame(() => {
+    runPendingCardFx(state);
+    runPendingBoardFx();
+  });
 }
 
 function addDeckMessage(deckId) {

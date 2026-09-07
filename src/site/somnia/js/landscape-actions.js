@@ -6,6 +6,8 @@ import {
   setEncounterOnLandscape,
 } from "./state.js";
 import { SUIT_LABELS } from "./rules.js";
+import { grantPowerTokens, spendPowerTokens } from "./power-tokens.js";
+import { queueMindstreamDrawFx } from "./board-fx.js";
 import { adjacentTiles, hexDistance } from "./hex.js";
 import {
   listSubconsciousCards,
@@ -383,6 +385,7 @@ export function executeLandscapeActionChoice(state, tile, player, actionId, help
       const card = cards[0];
       addLog(state, `${landscapeName}: ${card.name} — ${card.text || ""}`);
       recordQuestEvent(state, "mindstream_on_landscape", { landscapeId: tile.id });
+      queueMindstreamDrawFx(tile.id, suit, card);
       if (helpers.resolveCardEffect) {
         helpers.resolveCardEffect(state, card, player, helpers);
       }
@@ -477,7 +480,7 @@ export function executeLandscapeActionChoice(state, tile, player, actionId, help
     }
 
     case "take-power": {
-      player.powerTokens += 1;
+      grantPowerTokens(state, player, 1);
       recordQuestEvent(state, "power_token", { count: 1 });
       addLog(state, `${landscapeName}: ${player.name} takes 1 Power Token.`);
       return { ok: true };
@@ -570,11 +573,10 @@ export function executeLandscapeActionChoice(state, tile, player, actionId, help
     }
 
     case "power-draw-psyche": {
-      if (player.powerTokens < 1) {
+      if (!spendPowerTokens(state, player, 1)) {
         addLog(state, "Need 1 Power Token.");
         return { ok: false };
       }
-      player.powerTokens -= 1;
       const drawn = drawPsycheForPlayer(state, player, 3);
       addLog(state, `${landscapeName}: discarded 1 Power, drew ${drawn.length} Psyche.`);
       recordQuestEvent(state, "draw_psyche", { count: drawn.length });

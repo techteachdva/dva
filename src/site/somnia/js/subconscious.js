@@ -1,6 +1,7 @@
 import { recordQuestEvent } from "./quests.js";
 import { SUIT_LABELS } from "./rules.js";
 import { discardToMindstream } from "./mindstream-supply.js";
+import { queueRepressFx } from "./board-fx.js";
 
 /** Face-up repressed card piles (The Subconscious / graveyard). */
 export function createSubconscious() {
@@ -258,6 +259,7 @@ function beginRepressStep(state, step) {
     if (needed === 1 && available.length === 1) {
       const { player, card } = available[0];
       removeFromSource(player, step.source, card.instanceId);
+      queueRepressFx(card, { playerId: player.id });
       repressCard(state, card);
       recordQuestEvent(state, "discard_psyche", { count: 1, landscapeId: player.landscapeId });
       logRepress(state, `Team Repressed ${card.name} → Subconscious.`);
@@ -302,6 +304,7 @@ function beginRepressStep(state, step) {
   if (needed === 1 && available.length === 1) {
     const card = available[0];
     removeFromSource(player, step.source, card.instanceId);
+    queueRepressFx(card, { playerId: player.id });
     repressCard(state, card);
     if (step.source === "hand") {
       recordQuestEvent(state, "discard_psyche", { count: 1, landscapeId: player.landscapeId });
@@ -411,6 +414,7 @@ export function pickRepressCard(state, instanceId) {
 
   removeFromSource(player, pending.source, instanceId);
   repressCard(state, card);
+  queueRepressFx(card, { playerId: player.id });
   pending.picked.push(card);
   if (pending.source === "hand") {
     recordQuestEvent(state, "discard_psyche", { count: 1, landscapeId: player.landscapeId });

@@ -10,6 +10,7 @@ import {
 } from "./state.js";
 import { forgetEdgeLandscapes } from "./landscapes.js";
 import { recordQuestEvent } from "./quests.js";
+import { grantPowerTokens } from "./power-tokens.js";
 import { opposingSuit } from "./rules.js";
 import { adjacentTiles, hexDistance, edgeLandscapes } from "./hex.js";
 import {
@@ -582,8 +583,7 @@ function matchTextEffect(card, state, player, helpers) {
   if (text.includes("take") && text.includes("power")) {
     const m = text.match(/(\d+) power/);
     const n = m ? parseInt(m[1], 10) : 1;
-    player.powerTokens += n;
-    recordQuestEvent(state, "power_token", { count: n });
+    grantPowerTokens(state, player, n);
     return true;
   }
   if (text.includes("repress")) {
@@ -601,9 +601,10 @@ export function resolveCardEffect(state, card, player, helpers) {
 
   if (card.type === "power-token") {
     const n = card.powerTokens || 2;
-    player.powerTokens += n;
-    recordQuestEvent(state, "power_token", { count: n });
-    addLog(state, `${player.name} takes ${n} Power Token(s).`);
+    grantPowerTokens(state, player, n, {
+      reason: `${player.name} takes ${n} Power Token${n === 1 ? "" : "s"}.`,
+      logQuest: false,
+    });
     return;
   }
 

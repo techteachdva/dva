@@ -8,6 +8,7 @@ import {
 } from "./state.js";
 import { shuffle, uid } from "./data.js";
 import { recordQuestEvent } from "./quests.js";
+import { grantPowerTokens } from "./power-tokens.js";
 import { repressCard, requestReturnCards, enqueueRepressFromHand } from "./subconscious.js";
 import { adjacentTiles, edgeLandscapes } from "./hex.js";
 import {
@@ -233,7 +234,7 @@ export const MINDSTREAM_EFFECTS = {
     drawPsycheForPlayer(state, player, 2);
     alive(state).forEach((p) => {
       drawPsycheForPlayer(state, p, 1);
-      p.powerTokens += 1;
+      grantPowerTokens(state, p, 1);
       recordQuestEvent(state, "power_token", { count: 1 });
     });
     moveAdjacent(state, player);
@@ -335,7 +336,7 @@ export const MINDSTREAM_EFFECTS = {
   // —— Elasticity ——
   "a-shining-wind": (state, player) => {
     if (stat(player, "elasticity") >= 3) {
-      player.powerTokens += 2;
+      grantPowerTokens(state, player, 2);
       recordQuestEvent(state, "power_token", { count: 2 });
     }
     moveToIfRevealed(state, player, ["silver-mist", "endless-ocean"]);
@@ -378,7 +379,7 @@ export const MINDSTREAM_EFFECTS = {
 
   "undulating-floor": (state, player) => {
     moveToAnyRevealed(state, player);
-    player.powerTokens += 1;
+    grantPowerTokens(state, player, 1);
     recordQuestEvent(state, "power_token", { count: 1 });
     addLog(state, "Place this Power on an Archetype quest when its condition is met.");
   },
@@ -484,7 +485,7 @@ export const MINDSTREAM_EFFECTS = {
   "flashing-lights": (state, player) => {
     const n = drawPsycheForPlayer(state, player, 2);
     recordQuestEvent(state, "draw_psyche", { count: n.length });
-    player.powerTokens += 2;
+    grantPowerTokens(state, player, 2);
     recordQuestEvent(state, "power_token", { count: 2 });
   },
 

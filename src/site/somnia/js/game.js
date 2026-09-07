@@ -44,7 +44,9 @@ import {
 } from "./rules.js";
 import { getLegalMoveTargets, canMoveTo, adjacentTiles, hexDistance, areHexAdjacent } from "./hex.js";
 import { repressCard, listSubconsciousCards, dreambeastToHandCard, isDreambeastPsycheCard } from "./subconscious.js";
+import { spendPowerTokens } from "./power-tokens.js";
 import { playObjectCard, applySkeletonKeyAfterDream, drawObjects, handLimitForPlayer } from "./objects.js";
+import { queueDreamDrawFx } from "./board-fx.js";
 import { applyBossAcceptEffect } from "./bosses.js";
 import { resolveOnAcquire } from "./archetypes.js";
 import { shuffle, uid } from "./data.js";
@@ -441,6 +443,7 @@ export function drawAdditionalDream(state, onShowModal) {
   checkDefeat(state);
   applySkeletonKeyAfterDream(state);
   playSfx("dream");
+  queueDreamDrawFx(card);
   if (onShowModal) onShowModal(card);
   return card;
 }
@@ -481,6 +484,7 @@ export function drawDreamCard(state, onShowModal) {
   checkDefeat(state);
   applySkeletonKeyAfterDream(state);
   playSfx("dream");
+  queueDreamDrawFx(card);
   if (onShowModal) onShowModal(card);
   return card;
 }
@@ -640,11 +644,10 @@ export function gainMeetActions(state) {
 
 export function powerBonus(state) {
   const player = activePlayer(state);
-  if (player.powerTokens < 1) {
+  if (!spendPowerTokens(state, player, 1)) {
     addLog(state, "Need 1 Power Token.");
     return;
   }
-  player.powerTokens -= 1;
   const bonus = flipPowerBonus();
   state.pendingPowerBonus = bonus;
   addLog(state, `Coin flip: +${bonus} to next Psyche Play.`);
@@ -1058,11 +1061,10 @@ export function handleSacrificeForFinal(state) {
 
 export function useDreamerPower(state) {
   const player = activePlayer(state);
-  if (player.powerTokens < 1) {
+  if (!spendPowerTokens(state, player, 1)) {
     addLog(state, "Need 1 Power Token.");
     return;
   }
-  player.powerTokens -= 1;
   const d = player.dreamer;
   addLog(state, `${player.name} uses ${d.name}: ${d.power}`);
 

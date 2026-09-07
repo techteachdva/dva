@@ -11,6 +11,8 @@ import { edgeLandscapes } from "./hex.js";
 import { checkObjectTagSet } from "./object-effects.js";
 import { psycheCardValue } from "./psyche.js";
 import { pullObjectFromMindstream, objectForPlayer, discardToMindstream } from "./mindstream-supply.js";
+import { spendPowerTokens } from "./power-tokens.js";
+import { queueObjectDrawFx } from "./board-fx.js";
 
 export function ensureObjectZones(player) {
   if (!player.persistent) player.persistent = [];
@@ -122,11 +124,10 @@ export function playObjectCard(state, player, card, helpers, options = {}) {
   }
 
   if (inPlay) {
-    if (options.usePower && player.powerTokens < 1) {
+    if (options.usePower && !spendPowerTokens(state, player, 1)) {
       addLog(state, "Need 1 Power Token to activate an Object.");
       return null;
     }
-    if (options.usePower) player.powerTokens -= 1;
     addLog(state, `${player.name} activates ${card.name}.`);
     activatePersistentObject(state, player, card);
     return card;
@@ -203,7 +204,7 @@ function activatePersistentObject(state, player, card) {
   if (card.id === "monkey-paw") {
     if (!card.powerSlots) card.powerSlots = 0;
     if (player.powerTokens > 0 && card.powerSlots < 3) {
-      player.powerTokens -= 1;
+      spendPowerTokens(state, player, 1);
       card.powerSlots += 1;
       addLog(state, `Monkey Paw: ${card.powerSlots}/3 Power placed.`);
       if (card.powerSlots >= 3) {
@@ -230,6 +231,7 @@ export function drawObjects(state, player, count, helpers) {
     if (!pulled) break;
     const card = objectForPlayer(pulled.card);
     onObjectDrawn(state, player, card, helpers);
+    queueObjectDrawFx(player.id, card, pulled.suit);
     drawn.push(card);
     recordQuestEvent(state, "draw_object", { count: 1 });
   }

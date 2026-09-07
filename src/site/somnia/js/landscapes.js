@@ -9,6 +9,8 @@ import { repressCard } from "./subconscious.js";
 import { narrate } from "./narrator.js";
 import { recordQuestEvent } from "./quests.js";
 import { isEdgeLandscape } from "./hex.js";
+import { markTileForgotten } from "./fx.js";
+import { queueTileForgetFx, queueRepressFx } from "./board-fx.js";
 
 /** Revealed, non-center, not wasteland — valid Forget targets. Bed is last. */
 export function forgettableTiles(state) {
@@ -51,6 +53,7 @@ function forgetTile(state, tile) {
   tile.revealed = false;
   tile.wasteland = true;
   if (tile.encounter) {
+    queueRepressFx(tile.encounter, { tileId: tile.id });
     repressCard(state, tile.encounter);
     tile.encounter = null;
   }
@@ -58,10 +61,14 @@ function forgetTile(state, tile) {
     .filter((p) => p.alive && p.landscapeId === tile.id)
     .forEach((p) => {
       if (p.hand.length) {
-        repressCard(state, p.hand.pop());
+        const card = p.hand.pop();
+        queueRepressFx(card, { playerId: p.id, tileId: tile.id });
+        repressCard(state, card);
         addLog(state, `${p.name} on ${tile.name} discards 1 Psyche to the Subconscious.`);
       }
     });
+  markTileForgotten(tile.id);
+  queueTileForgetFx(tile.id);
   addLog(state, `Forgot ${tile.name} — now a Wasteland.`);
 }
 

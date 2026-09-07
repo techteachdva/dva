@@ -1,5 +1,7 @@
 /** Card flow animations — draws, discards, spends, and life (hand size) feedback. */
 
+import { burstSparkles } from "./fx.js";
+
 const queue = [];
 const queuedDiscardIds = new Set();
 
@@ -159,7 +161,12 @@ function flyCard(from, to, card, kind, delay = 0) {
     ghost.classList.add("fx-flying-active");
   });
 
-  setTimeout(() => ghost.remove(), 650 + delay);
+  setTimeout(() => {
+    ghost.remove();
+    if (kind === "draw" || kind === "spend") {
+      burstSparkles(to.x, to.y, kind === "draw" ? 8 : 6, kind === "draw" ? "#6dffb0" : "#c9a0ff");
+    }
+  }, 650 + delay);
 }
 
 function floatLabel(x, y, text, className, delay = 0) {

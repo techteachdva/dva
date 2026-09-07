@@ -1,4 +1,5 @@
 let revealedTiles = new Set();
+let forgottenTiles = new Set();
 let phasePulse = false;
 
 export function initFxLayer() {
@@ -13,9 +14,19 @@ export function markTileRevealed(id) {
   if (id) revealedTiles.add(id);
 }
 
+export function markTileForgotten(id) {
+  if (id) forgottenTiles.add(id);
+}
+
 export function consumeRevealedTiles() {
   const tiles = [...revealedTiles];
   revealedTiles.clear();
+  return tiles;
+}
+
+export function consumeForgottenTiles() {
+  const tiles = [...forgottenTiles];
+  forgottenTiles.clear();
   return tiles;
 }
 

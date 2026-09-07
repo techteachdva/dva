@@ -406,7 +406,10 @@ export function rulesHtml() {
     </ol>
 
     <h3>Psyche Cards</h3>
-    <p>Click cards to <strong>select</strong> (highlighted border). Double-click to inspect. Play 1–2 suited cards per phase action; your Dreamer's matching stat adds to the budget.</p>
+    <p>Click cards to <strong>select</strong> (highlighted border). Double-click to inspect. Play 1–2 suited cards per phase action; your Dreamer's matching stat adds to the budget. <strong>Power</strong> Psyche is resolved immediately for 2 tokens (never kept in hand).</p>
+
+    <h3>Power Tokens</h3>
+    <p>Held separately from your Psyche hand (max <strong>24</strong> across all Dreamers). Spend on Dreamer powers, Archetype quest marks, and some Objects. Gain from Power Psyche, Mindstream, Meet rewards, and other effects.</p>
 
     <h3>Meet Actions</h3>
     <ul>

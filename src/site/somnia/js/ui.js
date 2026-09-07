@@ -16,8 +16,9 @@ import { hexToPixel, boardPixelBounds } from "./hex.js";
 import { subconsciousCount, subconsciousPilesForUI, isDreambeastPsycheCard } from "./subconscious.js";
 import { getNarratorView, listPhaseActionHints } from "./narrator.js";
 import { getCurrentObjective, rulesHtml, overviewHtml, getDreamerChipTooltip } from "./guide.js";
-import { consumePhasePulse, consumeRevealedTiles } from "./fx.js";
+import { consumePhasePulse, consumeRevealedTiles, consumeForgottenTiles } from "./fx.js";
 import { consumeBoardClickSuppression } from "./board-zoom.js";
+import { powerTokensInPool, MAX_POWER_TOKEN_POOL } from "./power-tokens.js";
 
 function suitClass(suit) {
   return suit ? `suit-${suit}` : "";
@@ -165,8 +166,41 @@ function handStatsHtml(state, player) {
       <span class="stat suit-elasticity" title="Elasticity">${suitIconHtml("elasticity", { size: 12 })}${player.dreamer.elasticity}</span>
       <span class="stat suit-willpower" title="Willpower">${suitIconHtml("willpower", { size: 12 })}${player.dreamer.willpower}</span>
     </span>
-    · ${player.hand.length}/${limit} · ${player.powerTokens} power
+    · ${player.hand.length}/${limit} psyche
   `;
+}
+
+export function renderPowerTokens(state) {
+  const tokensEl = document.getElementById("power-tokens");
+  const statsEl = document.getElementById("power-token-stats");
+  if (!tokensEl) return;
+
+  const player = activePlayer(state);
+  const held = player.powerTokens || 0;
+  const pool = powerTokensInPool(state);
+
+  if (statsEl) {
+    statsEl.textContent = `${held} held · ${pool}/${MAX_POWER_TOKEN_POOL} in pool`;
+    statsEl.title = "Spend on Dreamer powers, Archetype quests, and Object activations";
+  }
+
+  tokensEl.innerHTML = "";
+  if (!held) {
+    const empty = document.createElement("p");
+    empty.className = "power-tokens-empty";
+    empty.textContent = "No tokens yet — draw Power Psyche, Mindstream, or Meet rewards.";
+    tokensEl.appendChild(empty);
+    return;
+  }
+
+  for (let i = 0; i < held; i += 1) {
+    const token = document.createElement("span");
+    token.className = "power-token-chip";
+    token.title = `${player.name}'s Power Token`;
+    token.setAttribute("aria-label", "Power token");
+    token.textContent = "⚡";
+    tokensEl.appendChild(token);
+  }
 }
 
 function suitGradient(card) {
@@ -415,11 +449,13 @@ export function renderBoard(state, onSelectLandscape, legalMoveIds = [], pickHig
   const revealSet = new Set(pickHighlights.reveal || []);
   const forgetSet = new Set(pickHighlights.forget || []);
   const justRevealed = new Set(consumeRevealedTiles());
+  const justForgotten = new Set(consumeForgottenTiles());
 
   state.board.forEach((tile) => {
     const { x, y } = hexToPixel(tile.q, tile.r, size);
     const el = document.createElement("button");
     el.type = "button";
+    el.dataset.tileId = tile.id;
     const isBedFinal = tile.center && tile.finalRecurrenceSide;
     const showFace = tile.revealed && !tile.wasteland;
     el.className = [
@@ -434,6 +470,7 @@ export function renderBoard(state, onSelectLandscape, legalMoveIds = [], pickHig
       revealSet.has(tile.id) ? "pick-reveal" : "",
       forgetSet.has(tile.id) ? "pick-forget" : "",
       justRevealed.has(tile.id) ? "just-revealed" : "",
+      justForgotten.has(tile.id) ? "just-forgotten" : "",
       tile.suit ? `suit-${tile.suit}` : "",
     ].filter(Boolean).join(" ");
 

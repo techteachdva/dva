@@ -1,7 +1,8 @@
 import { createQuestTracker, canMarkQuest, recordQuestEvent } from "./quests.js";
 import { buildHexBoard } from "./hex.js";
 import { playSfx } from "./audio.js";
-import { markTileRevealed } from "./fx.js";
+import { markTileRevealed, markTileForgotten } from "./fx.js";
+import { queueTileRevealFx, queueEncounterSpawnFx } from "./board-fx.js";
 import { queueCardDraw, queueHandDelta } from "./card-fx.js";
 import {
   createSubconscious,
@@ -28,6 +29,13 @@ import {
   PSYCHE_STARTING_HAND,
 } from "./data.js";
 import { discardToMindstream, pullObjectFromMindstream, objectForPlayer } from "./mindstream-supply.js";
+import {
+  grantPowerTokens,
+  spendPowerTokens,
+  resolvePsychePowerCard,
+  resolvePowerCardsInHand,
+  resolveAllPowerCardsInHands,
+} from "./power-tokens.js";
 export function createInitialState(data, options) {
   const length = LENGTHS[options.lengthKey];
   const landscapes = data.landscapes.filter((l) => !l.hidden);
@@ -49,7 +57,7 @@ export function createInitialState(data, options) {
     name: dreamer.name,
     dreamer,
     landscapeId: "bed",
-    powerTokens: 2,
+    powerTokens: 0,
     hand: psycheDeck.splice(0, 5),
     objects: [],
     persistent: [],
@@ -135,6 +143,14 @@ export function createInitialState(data, options) {
   };
 
   beginRoundReveal(state);
+  players.forEach((player) => {
+    grantPowerTokens(state, player, 2, {
+      reason: `${player.name} begins with 2 Power Tokens.`,
+      logQuest: false,
+      animate: false,
+    });
+  });
+  resolveAllPowerCardsInHands(state);
   state.checkPsycheDeath = (player) => checkDreamerPsycheDeath(state, player);
   return state;
 }
@@ -176,12 +192,7 @@ export function drawPsycheForPlayer(state, player, count = 1) {
     const card = state.psycheDeck.shift();
 
     if (card.type === "psyche-power") {
-      const tokens = card.powerTokens || 2;
-      player.powerTokens += tokens;
-      state.psycheDiscard.push(card);
-      recordQuestEvent(state, "power_token", { count: tokens });
-      addLog(state, `${player.name} draws ${card.name}: +${tokens} Power Tokens, then discards.`);
-      playSfx("draw");
+      resolvePsychePowerCard(state, player, card);
       continue;
     }
 
@@ -245,6 +256,7 @@ export function setEncounterOnLandscape(state, landscapeId, encounter) {
   if (encounter) {
     state.activeEncounter = encounter;
     state.activeEncounterLandscapeId = landscapeId;
+    queueEncounterSpawnFx(landscapeId, encounter, tile.suit || encounter.suit);
   } else if (state.activeEncounterLandscapeId === landscapeId) {
     state.activeEncounter = null;
     state.activeEncounterLandscapeId = null;
@@ -338,9 +350,11 @@ export function respawnDreamer(state, playerId, dreamerId) {
   player.name = dreamer.name;
   player.alive = true;
   player.landscapeId = "bed";
-  player.powerTokens = 2;
+  player.powerTokens = 0;
   player.hand = [];
+  grantPowerTokens(state, player, 2, { reason: `${dreamer.name} returns with 2 Power Tokens.`, logQuest: false, animate: false });
   drawPsycheForPlayer(state, player, 5);
+  resolvePowerCardsInHand(state, player);
   player.pendingRespawn = false;
   state.pendingRespawn = null;
   addLog(state, `${dreamer.name} enters the Dreamscape on The Bed with 5 Psyche and 2 Power.`);
@@ -488,7 +502,7 @@ export function completeQuest(state, questIndex, player) {
     return false;
   }
 
-  player.powerTokens -= 1;
+  spendPowerTokens(state, player, 1);
   archetype.questProgress[questIndex] = true;
   addLog(state, `${player.name} completed quest: ${archetype.quests[questIndex]}.`);
 
@@ -506,11 +520,13 @@ export function revealLandscapeTile(state, tile) {
     tile.wasteland = false;
     addLog(state, `Revealed ${tile.name}.`);
     markTileRevealed(tile.id);
+    queueTileRevealFx(tile.id);
     playSfx("reveal");
   } else if (tile.wasteland) {
     tile.wasteland = false;
     addLog(state, `Restored ${tile.name} from Wasteland.`);
     markTileRevealed(tile.id);
+    queueTileRevealFx(tile.id);
     playSfx("reveal");
   }
 }
