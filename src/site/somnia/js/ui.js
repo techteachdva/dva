@@ -23,7 +23,13 @@ import { effectiveDreamerStat } from "./archetype-stats.js";
 import { hexToPixel, boardPixelBounds } from "./hex.js";
 import { subconsciousCount, subconsciousPilesForUI, isDreambeastPsycheCard } from "./subconscious.js";
 import { getNarratorView, listPhaseActionHints } from "./narrator.js";
-import { getCurrentObjective, rulesHtml, overviewHtml, getDreamerChipTooltip } from "./guide.js";
+import {
+  getCurrentObjective,
+  rulesReferenceHtml,
+  RULES_TAB_INTRO,
+  RULES_TAB_DETAILS,
+  getDreamerChipTooltip,
+} from "./guide.js";
 import { burstSparklesAtElement } from "./fx.js";
 import { consumeBoardClickSuppression } from "./board-zoom.js";
 import { powerTokensInPool, MAX_POWER_TOKEN_POOL } from "./power-tokens.js";
@@ -1335,18 +1341,37 @@ export function renderPhaseActions(actions) {
   }
 }
 
-export function showRulesModal() {
+function bindRulesReferenceTabs(root) {
+  root.querySelectorAll("[data-rules-tab]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const tab = btn.dataset.rulesTab;
+      root.querySelectorAll("[data-rules-tab]").forEach((b) => {
+        b.classList.toggle("active", b.dataset.rulesTab === tab);
+      });
+      root.querySelectorAll("[data-rules-panel]").forEach((panel) => {
+        panel.classList.toggle("active", panel.dataset.rulesPanel === tab);
+      });
+    });
+  });
+}
+
+export function showRulesReferenceModal(activeTab = RULES_TAB_INTRO) {
   const modal = document.getElementById("utility-modal");
+  const content = modal?.querySelector(".utility-content");
   const body = document.getElementById("utility-modal-body");
-  body.innerHTML = `<div class="rules-modal">${rulesHtml()}</div>`;
+  if (!modal || !body) return;
+  content?.classList.add("rules-reference-modal");
+  body.innerHTML = `<div class="rules-modal">${rulesReferenceHtml(activeTab)}</div>`;
+  bindRulesReferenceTabs(body);
   modal.classList.remove("hidden");
 }
 
+export function showRulesModal() {
+  showRulesReferenceModal(RULES_TAB_DETAILS);
+}
+
 export function showOverviewModal() {
-  const modal = document.getElementById("utility-modal");
-  const body = document.getElementById("utility-modal-body");
-  body.innerHTML = overviewHtml();
-  modal.classList.remove("hidden");
+  showRulesReferenceModal(RULES_TAB_INTRO);
 }
 
 export function renderLog(state) {
@@ -1890,6 +1915,7 @@ export function hideUtilityModal() {
   modal.querySelector(".utility-content")?.classList.remove("dreamer-detail-modal");
   modal.querySelector(".utility-content")?.classList.remove("dreamer-power-modal-wrap");
   modal.querySelector(".utility-content")?.classList.remove("phase-skip-modal");
+  modal.querySelector(".utility-content")?.classList.remove("rules-reference-modal");
 }
 
 function formatDreamerFlavor(text) {

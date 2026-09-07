@@ -1484,6 +1484,102 @@ body.tutorial-mode-active .tutorial-highlight {
   font-style: italic;
 }
 
+/* ── Rules reference (3-tab modal) ── */
+.utility-content.rules-reference-modal {
+  max-width: 680px;
+  max-height: min(88vh, 820px);
+}
+
+.rules-reference-tabs {
+  display: flex;
+  gap: 0.35rem;
+  margin: 0 0 1rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.rules-reference-tab {
+  flex: 1;
+  padding: 0.5rem 0.6rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--muted);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.rules-reference-tab:hover {
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.rules-reference-tab.active {
+  border-color: var(--accent);
+  background: rgba(122, 162, 255, 0.12);
+  color: var(--text);
+}
+
+.rules-reference-panels {
+  max-height: min(72vh, 680px);
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.rules-reference-panel {
+  display: none;
+}
+
+.rules-reference-panel.active {
+  display: block;
+}
+
+.rules-page h2 {
+  margin: 0 0 0.35rem;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+}
+
+.rules-formula {
+  margin: 0 0 1rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  line-height: 1.45;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.04);
+  border-left: 3px solid var(--accent);
+}
+
+.rules-page-details h3 {
+  margin: 1.1rem 0 0.4rem;
+  font-size: 0.88rem;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.rules-page-details h3:first-of-type {
+  margin-top: 0.5rem;
+}
+
+.rules-page-details ul,
+.rules-page-rem ul {
+  margin: 0.35rem 0 0;
+  padding-left: 1.15rem;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.rules-page-rem .overview-phase ul {
+  margin-top: 0.35rem;
+}
+
 .end-actions {
   display: flex;
   flex-wrap: wrap;

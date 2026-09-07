@@ -18,7 +18,7 @@ import {
   setSfxPan,
 } from "./audio.js";
 import { applyLayout, resetPanelLayout, setViewMode } from "./panel-layout.js";
-import { showOverviewModal, showRulesModal } from "./ui.js";
+import { showOverviewModal, showRulesModal, showRulesReferenceModal } from "./ui.js";
 
 let open = false;
 let onResume = null;
@@ -109,8 +109,9 @@ function renderHelpTab() {
     <div class="pause-section">
       <h3>Learn &amp; reference</h3>
       <div class="pause-btn-row pause-btn-col">
-        <button type="button" class="btn" id="pause-overview">Game overview</button>
-        <button type="button" class="btn" id="pause-rules">Full rules</button>
+        <button type="button" class="btn" id="pause-overview">Overview</button>
+        <button type="button" class="btn" id="pause-rules">Details</button>
+        <button type="button" class="btn" id="pause-rem">R.E.M. phases</button>
         <button type="button" class="btn" id="pause-tutorial">Tutorial</button>
       </div>
     </div>
@@ -198,6 +199,10 @@ function showTab(tabId) {
     body.querySelector("#pause-rules")?.addEventListener("click", () => {
       closePauseMenu();
       showRulesModal();
+    });
+    body.querySelector("#pause-rem")?.addEventListener("click", () => {
+      closePauseMenu();
+      showRulesReferenceModal("rem");
     });
     body.querySelector("#pause-tutorial")?.addEventListener("click", () => {
       closePauseMenu();
