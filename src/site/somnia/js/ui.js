@@ -1467,7 +1467,7 @@ export function renderSetupIntro() {
       <div class="round-step suit-elasticity">${suitIconHtml("elasticity", { size: 18 })} <strong>Explore</strong><span>Spend Elasticity · move on the map</span></div>
       <div class="round-step suit-willpower">${suitIconHtml("willpower", { size: 18 })} <strong>Meet</strong><span>Gain actions · face Encounters</span></div>
     </div>
-    <p class="setup-tip">New to Somnia? Try <strong>Tutorial Mode</strong> for a guided 5-round lesson, read the <strong>Game Overview</strong>, or open <strong>How to Play</strong>.</p>
+    <p class="setup-tip">New to Somnia? Try <strong>Tutorial Mode</strong> for a guided 5-round lesson, or read <strong>Game Overview</strong> for the full rules.</p>
   `;
 }
 

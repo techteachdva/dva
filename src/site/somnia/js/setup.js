@@ -4,28 +4,20 @@ import { buildSetupAudioControls } from "./pause-menu.js";
 import { initFxLayer } from "./fx.js";
 import { loadGameData } from "./data.js";
 import {
-  TUTORIAL_STEPS,
-  markTutorialSeen,
-} from "./guide.js";
-import {
   renderDreamerPicker,
   renderSetupIntro,
-  showRulesModal,
   showOverviewModal,
-  showTutorialStep,
-  hideTutorial,
   hideDreamerDetailTooltip,
   hideUtilityModal,
 } from "./ui.js";
 
 const LAUNCH_KEY = "somnia.launch";
 const PLAY_WINDOW_NAME = "somnia-play";
-const SPLASH_MIN_MS = 1500;
-const SPLASH_DISSOLVE_MS = 1100;
+const SPLASH_MIN_MS = 3200;
+const SPLASH_DISSOLVE_MS = 1600;
 
 let gameData = null;
 let selectedDreamerIds = [];
-let tutorialIndex = -1;
 
 function prefersReducedMotion() {
   return window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
@@ -70,10 +62,20 @@ function playerCount() {
   return Number(document.getElementById("setup-players").value);
 }
 
+function updateBeginDreamButton() {
+  const btn = document.getElementById("btn-start");
+  if (!btn) return;
+  const ready = selectedDreamerIds.length === playerCount();
+  btn.disabled = !ready;
+  btn.classList.toggle("begin-dream-ready", ready);
+  btn.setAttribute("aria-disabled", String(!ready));
+}
+
 function refreshDreamerPicker() {
   renderDreamerPicker(gameData.dreamers, selectedDreamerIds, toggleDreamer, {
     playerCount: playerCount(),
   });
+  updateBeginDreamButton();
 }
 
 async function init() {
@@ -90,7 +92,6 @@ async function init() {
   gameData = await loadGameData();
   buildSetupAudioControls(document.getElementById("setup-audio-display"));
   bindSetup();
-  bindHelp();
   bindModal();
   renderSetupIntro();
   refreshDreamerPicker();
@@ -103,20 +104,14 @@ function bindSetup() {
     selectedDreamerIds = [];
     hideDreamerDetailTooltip();
     refreshDreamerPicker();
-    document.getElementById("btn-start").disabled = true;
   });
+  document.getElementById("btn-setup-overview")?.addEventListener("click", showOverviewModal);
+  document.getElementById("btn-tutorial-mode")?.addEventListener("click", () => launchTutorialMode());
 }
 
 function bindModal() {
   document.querySelector("#utility-modal .utility-backdrop")?.addEventListener("click", hideUtilityModal);
   document.querySelector("#utility-modal .utility-close")?.addEventListener("click", hideUtilityModal);
-}
-
-function bindHelp() {
-  document.getElementById("btn-setup-overview")?.addEventListener("click", showOverviewModal);
-  document.getElementById("btn-setup-help")?.addEventListener("click", showRulesModal);
-  document.getElementById("btn-setup-tutorial")?.addEventListener("click", () => startMenuTutorial());
-  document.getElementById("btn-tutorial-mode")?.addEventListener("click", () => launchTutorialMode());
 }
 
 function toggleDreamer(id) {
@@ -127,7 +122,6 @@ function toggleDreamer(id) {
     selectedDreamerIds.push(id);
   }
   refreshDreamerPicker();
-  document.getElementById("btn-start").disabled = selectedDreamerIds.length !== count;
 }
 
 function launchGameWindow(config = null) {
@@ -173,33 +167,6 @@ function launchTutorialMode() {
     tutorialMode: true,
     launchedAt: Date.now(),
   });
-}
-
-function startMenuTutorial() {
-  tutorialIndex = 0;
-  showTutorialAt(tutorialIndex);
-}
-
-function showTutorialAt(index) {
-  const step = TUTORIAL_STEPS[index];
-  if (!step) {
-    finishMenuTutorial();
-    return;
-  }
-  showTutorialStep(step, index, TUTORIAL_STEPS.length, {
-    onNext: () => {
-      tutorialIndex += 1;
-      if (tutorialIndex >= TUTORIAL_STEPS.length) finishMenuTutorial();
-      else showTutorialAt(tutorialIndex);
-    },
-    onSkip: finishMenuTutorial,
-  });
-}
-
-function finishMenuTutorial() {
-  hideTutorial();
-  tutorialIndex = -1;
-  markTutorialSeen();
 }
 
 init();

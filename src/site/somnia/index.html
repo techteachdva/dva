@@ -23,7 +23,7 @@
   <div id="app">
     <header class="top-bar">
       <div class="brand">
-        <span class="version-label">Version 12.14</span>
+        <span class="version-label">Version 12.15</span>
         <h1>Somnia</h1>
         <p class="tagline">Cooperative Dreamscape Roguelike</p>
       </div>
@@ -65,12 +65,12 @@
 
           <div class="setup-actions">
             <button type="button" id="btn-setup-overview" class="btn">Game Overview</button>
-            <button type="button" id="btn-setup-help" class="btn">How to Play</button>
-            <button type="button" id="btn-setup-tutorial" class="btn">View Tutorial</button>
-            <button type="button" id="btn-tutorial-mode" class="btn primary">Tutorial Mode</button>
+            <button type="button" id="btn-tutorial-mode" class="btn">Tutorial Mode</button>
           </div>
-          <button id="btn-start" class="btn" disabled>Begin Dream</button>
-          <p class="setup-tip setup-launch-hint">Tutorial Mode opens a guided 5-round lesson with fixed cards. Begin Dream starts a full game in a new window.</p>
+          <div class="setup-launch">
+            <button type="button" id="btn-start" class="btn begin-dream-btn" disabled>Begin Dream</button>
+          </div>
+          <p class="setup-tip setup-launch-hint">Tutorial Mode opens a guided 5-round lesson with fixed cards. Begin Dream starts a full game once every Dreamer is chosen.</p>
         </div>
       </section>
     </main>
@@ -83,19 +83,6 @@
     <div class="modal-content utility-content">
       <button class="modal-close utility-close" aria-label="Close">&times;</button>
       <div id="utility-modal-body"></div>
-    </div>
-  </div>
-
-  <div id="tutorial-overlay" class="tutorial-overlay hidden" role="dialog" aria-modal="true">
-    <div class="tutorial-backdrop"></div>
-    <div class="tutorial-card">
-      <div class="tutorial-progress" id="tutorial-progress"></div>
-      <h2 id="tutorial-title"></h2>
-      <p id="tutorial-body"></p>
-      <div class="tutorial-actions">
-        <button type="button" id="tutorial-skip" class="btn">Skip</button>
-        <button type="button" id="tutorial-next" class="btn primary">Next</button>
-      </div>
     </div>
   </div>
 
