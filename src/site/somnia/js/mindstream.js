@@ -17,6 +17,12 @@ import {
   encounterFromDreambeastCard,
   discardToMindstream,
 } from "./mindstream-supply.js";
+import {
+  countAffectedLandscapes,
+  hasAffectedLandscapes,
+  dreamersOnAffectedLandscapes,
+  logAffectedStatus,
+} from "./event-landscapes.js";
 
 function alive(state) {
   return state.players.filter((p) => p.alive);
@@ -28,11 +34,6 @@ function stat(player, key) {
 
 function personaCount(state) {
   return alive(state).length;
-}
-
-/** Dreamers sharing the active player's Landscape. */
-function affectedCount(state, player) {
-  return alive(state).filter((p) => p.landscapeId === player.landscapeId).length;
 }
 
 function returnN(state, count, player = null) {
@@ -252,20 +253,20 @@ export const MINDSTREAM_EFFECTS = {
       drawPsycheForPlayer(state, p, 1);
       grantPowerTokens(state, p, 1);
       recordQuestEvent(state, "power_token", { count: 1 });
-      repressFromHand(state, p, 1, `${p.name}: Centering — Repress 1 Psyche from hand.`);
     });
     moveAdjacent(state, player);
   },
 
-  "the-ascent": (state, player) => {
+  "the-ascent": (state, player, helpers, event) => {
     const run = (p) => {
       discardHighestPsyche(state, p);
       const n = drawPsycheForPlayer(state, p, 2);
       recordQuestEvent(state, "draw_psyche", { count: n.length });
     };
     run(player);
-    alive(state)
-      .filter((p) => p.id !== player.id && p.landscapeId === player.landscapeId)
+    logAffectedStatus(state, event, "The Ascent");
+    dreamersOnAffectedLandscapes(state, event)
+      .filter((p) => p.id !== player.id)
       .forEach(run);
   },
 
@@ -276,27 +277,40 @@ export const MINDSTREAM_EFFECTS = {
     }
   },
 
-  "just-a-dream": (state, player) => {
+  "just-a-dream": (state, player, helpers, event) => {
     const n = drawPsycheForPlayer(state, player, 3);
     recordQuestEvent(state, "draw_psyche", { count: n.length });
-    returnN(state, affectedCount(state, player), player);
+    logAffectedStatus(state, event, "Just a Dream");
+    const affected = countAffectedLandscapes(state, event);
+    if (affected > 0) {
+      returnN(state, affected, player);
+      addLog(state, `Just a Dream — Return ${affected} (Affected Landscapes).`);
+    }
   },
 
-  "morning-routine": (state, player) => {
+  "morning-routine": (state, player, helpers, event) => {
     const n = drawPsycheForPlayer(state, player, 1);
     recordQuestEvent(state, "draw_psyche", { count: n.length });
-    const extra = drawPsycheForPlayer(state, player, affectedCount(state, player));
-    recordQuestEvent(state, "draw_psyche", { count: extra.length });
     repressTopMindstreamSuit(state, "lucidity");
+    logAffectedStatus(state, event, "Morning Routine");
+    const affected = countAffectedLandscapes(state, event);
+    if (affected > 0) {
+      const extra = drawPsycheForPlayer(state, player, affected);
+      recordQuestEvent(state, "draw_psyche", { count: extra.length });
+      addLog(state, `Morning Routine — drew ${extra.length} extra Psyche (${affected} Affected).`);
+    }
   },
 
   "i-know-this-place": (state, player) => {
     returnN(state, 1 + personaCount(state), player);
   },
 
-  "a-face-appears": (state, player, helpers) => {
+  "a-face-appears": (state, player, helpers, event) => {
     spawnMindstreamEncounter(state, player, "lucidity", helpers);
-    if (stat(player, "lucidity") >= 3) returnN(state, 3, player);
+    logAffectedStatus(state, event, "A Face Appears");
+    if (hasAffectedLandscapes(state, event) && stat(player, "lucidity") >= 3) {
+      returnN(state, 3, player);
+    }
   },
 
   transported: (state, player) => {
@@ -346,25 +360,36 @@ export const MINDSTREAM_EFFECTS = {
     }
   },
 
-  "sacred-geometry": (state, player) => {
+  "sacred-geometry": (state, player, helpers, event) => {
     moveNearBed(state, player);
-    returnN(state, 2 * affectedCount(state, player), player);
+    logAffectedStatus(state, event, "Sacred Geometry");
+    const affected = countAffectedLandscapes(state, event);
+    if (affected > 0) {
+      returnN(state, 2 * affected, player);
+      addLog(state, `Sacred Geometry — Return ${2 * affected} (${affected} Affected).`);
+    }
   },
 
   // —— Elasticity ——
-  "a-shining-wind": (state, player) => {
+  "a-shining-wind": (state, player, helpers, event) => {
     if (stat(player, "elasticity") >= 3) {
       grantPowerTokens(state, player, 2);
       recordQuestEvent(state, "power_token", { count: 2 });
     }
-    moveToIfRevealed(state, player, ["silver-mist", "endless-ocean"]);
+    logAffectedStatus(state, event, "A Shining Wind");
+    if (hasAffectedLandscapes(state, event)) {
+      moveToIfRevealed(state, player, ["silver-mist", "endless-ocean"]);
+    }
   },
 
-  "roof-dive": (state, player) => {
-    if (stat(player, "elasticity") >= 3) {
-      moveToIfRevealed(state, player, ["sky", "the-party", "candy-mountain"]);
-    } else {
+  "roof-dive": (state, player, helpers, event) => {
+    if (stat(player, "elasticity") < 3) {
       addLog(state, "Need Elasticity 3+ for Roof Dive.");
+      return;
+    }
+    logAffectedStatus(state, event, "Roof Dive");
+    if (hasAffectedLandscapes(state, event)) {
+      moveToIfRevealed(state, player, ["sky", "the-party", "candy-mountain"]);
     }
   },
 
@@ -378,10 +403,15 @@ export const MINDSTREAM_EFFECTS = {
     grantFreeMeetAction(state);
   },
 
-  "running-somewhere": (state, player) => {
+  "running-somewhere": (state, player, helpers, event) => {
     const n = drawPsycheForPlayer(state, player, 1);
     recordQuestEvent(state, "draw_psyche", { count: n.length });
-    if (stat(player, "elasticity") >= 3 && player.hand.length) {
+    logAffectedStatus(state, event, "Running Somewhere?");
+    if (
+      hasAffectedLandscapes(state, event)
+      && stat(player, "elasticity") >= 3
+      && player.hand.length
+    ) {
       const card = player.hand.pop();
       state.psycheDiscard.push(card);
       returnN(state, card.value || 1, player);
@@ -403,7 +433,7 @@ export const MINDSTREAM_EFFECTS = {
     addLog(state, "Place this Power on an Archetype quest when its condition is met.");
   },
 
-  "freezing-night": (state, player, helpers) => {
+  "freezing-night": (state, player, helpers, event) => {
     const ela = stat(player, "elasticity");
     const wp = stat(player, "willpower");
     if (ela <= 2) {
@@ -421,7 +451,8 @@ export const MINDSTREAM_EFFECTS = {
       }
       recordQuestEvent(state, "draw_psyche", { count: 1 });
     }
-    if (wp >= 3 && helpers?.drawObjects) {
+    logAffectedStatus(state, event, "Freezing Night");
+    if (wp >= 3 && hasAffectedLandscapes(state, event) && helpers?.drawObjects) {
       const objs = helpers.drawObjects(state, player, 2, helpers);
       if (objs.length > 1) {
         player.objects = player.objects.filter((o) => o.instanceId === objs[0].instanceId);
@@ -429,7 +460,7 @@ export const MINDSTREAM_EFFECTS = {
     }
   },
 
-  friendship: (state, player) => {
+  friendship: (state, player, helpers, event) => {
     const hidden = state.board.filter((l) => !l.revealed && !l.center);
     const revealed = hidden.slice(0, 2).map((t) => {
       revealLandscapeTile(state, t);
@@ -442,25 +473,34 @@ export const MINDSTREAM_EFFECTS = {
       addLog(state, `${player.name} moves to ${dest.name}.`);
       recordQuestEvent(state, "move_player", { count: 1 });
     }
-    if (stat(player, "elasticity") >= 3) grantFreeMeetAction(state);
+    logAffectedStatus(state, event, "Friendship");
+    if (hasAffectedLandscapes(state, event) && stat(player, "elasticity") >= 3) {
+      grantFreeMeetAction(state);
+    }
   },
 
-  "get-up": (state, player) => {
+  "get-up": (state, player, helpers, event) => {
     drawFromPsycheDiscard(state, player);
-    if (landscapeById(state, "forest")?.revealed) {
-      moveToIfRevealed(state, player, ["forest"]);
+    logAffectedStatus(state, event, "Get Up");
+    if (hasAffectedLandscapes(state, event)) {
+      if (landscapeById(state, "forest")?.revealed) {
+        moveToIfRevealed(state, player, ["forest"]);
+      }
+      moveToIfRevealed(state, player, ["the-attic"]);
+      grantFreeMeetAction(state);
     }
-    moveToIfRevealed(state, player, ["the-attic"]);
-    grantFreeMeetAction(state);
   },
 
-  "get-down": (state, player) => {
+  "get-down": (state, player, helpers, event) => {
     drawFromPsycheDiscard(state, player);
-    if (landscapeById(state, "city")?.revealed) {
-      moveToIfRevealed(state, player, ["city"]);
+    logAffectedStatus(state, event, "Get Down");
+    if (hasAffectedLandscapes(state, event)) {
+      if (landscapeById(state, "city")?.revealed) {
+        moveToIfRevealed(state, player, ["city"]);
+      }
+      moveToIfRevealed(state, player, ["the-basement"]);
+      grantFreeMeetAction(state);
     }
-    moveToIfRevealed(state, player, ["the-basement"]);
-    grantFreeMeetAction(state);
   },
 
   revolving: (state, player) => {
@@ -615,17 +655,24 @@ export const MINDSTREAM_EFFECTS = {
     }
   },
 
-  metamorphosis: (state, player) => {
+  metamorphosis: (state, player, helpers, event) => {
     const encCount = state.board.filter((t) => t.encounter).length;
     clearEncounters(state);
     repressFromHand(state, player, encCount + 2);
-    forgetLandscapes(state, 2 * affectedCount(state, player));
+    logAffectedStatus(state, event, "Metamorphosis");
+    const affected = countAffectedLandscapes(state, event);
+    if (affected > 0) {
+      forgetLandscapes(state, 2 * affected);
+      addLog(state, `Metamorphosis — Forgot ${2 * affected} Landscapes (${affected} Affected).`);
+    }
   },
 
-  contagion: (state, player) => {
+  contagion: (state, player, helpers, event) => {
     repressFromHand(state, player, 2);
-    if (stat(player, "lucidity") <= 2) {
-      repressFromHand(state, player, affectedCount(state, player));
+    logAffectedStatus(state, event, "Contagion");
+    if (stat(player, "lucidity") <= 2 && hasAffectedLandscapes(state, event)) {
+      const affected = countAffectedLandscapes(state, event);
+      repressFromHand(state, player, affected);
     }
   },
 };

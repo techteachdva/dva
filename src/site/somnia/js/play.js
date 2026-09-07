@@ -117,6 +117,9 @@ import {
   showOverviewModal,
   showTutorialStep,
   hideTutorial,
+  getTutorialSpotlightRect,
+  refreshTutorialSpotlight,
+  bindUiRenderState,
 } from "./ui.js";
 
 const LAUNCH_KEY = "somnia.launch";
@@ -436,6 +439,42 @@ function finishTutorial() {
   renderAll();
 }
 
+function handleTutorialSkip() {
+  if (confirm("Skip the interactive tutorial? You can replay it from the setup screen.")) {
+    state.tutorialComplete = true;
+    hideTutorial();
+    document.body.classList.remove("tutorial-mode-active");
+    showEndScreen(true, "Tutorial skipped. Try a full game when you're ready.");
+  }
+}
+
+function handleTutorialNext() {
+  const fromRect = getTutorialSpotlightRect();
+  advanceTutorialStep(state);
+  if (state.tutorialComplete) {
+    completeTutorialGame(state);
+    hideTutorial();
+    document.body.classList.remove("tutorial-mode-active");
+    showEndScreen(
+      true,
+      "Tutorial complete! You learned Reveal, Explore, Meet, Psyche, Power Tokens, Archetypes, Dreams, and Boss spawning.",
+    );
+    return;
+  }
+  lastTutorialSyncKey = null;
+  renderAll();
+  const nextSync = syncTutorial(state);
+  if (!nextSync || nextSync.complete) return;
+  showTutorialStep(nextSync.step, nextSync.stepIndex, nextSync.total, {
+    canAdvance: nextSync.canAdvance,
+    roundLabel: nextSync.round,
+    fromRect,
+    onNext: handleTutorialNext,
+    onSkip: handleTutorialSkip,
+  });
+  lastTutorialSyncKey = `${nextSync.stepIndex}:${nextSync.canAdvance}:${nextSync.step.id}`;
+}
+
 function syncInteractiveTutorial() {
   if (!isInteractiveTutorialActive(state)) {
     hideTutorial();
@@ -462,6 +501,7 @@ function syncInteractiveTutorial() {
   if (syncKey === lastTutorialSyncKey) {
     const nextBtn = document.getElementById("tutorial-next");
     if (nextBtn) nextBtn.disabled = !!(step.until && !canAdvance);
+    refreshTutorialSpotlight();
     return;
   }
   lastTutorialSyncKey = syncKey;
@@ -469,29 +509,8 @@ function syncInteractiveTutorial() {
   showTutorialStep(step, stepIndex, total, {
     canAdvance,
     roundLabel: round,
-    onNext: () => {
-      advanceTutorialStep(state);
-      if (state.tutorialComplete) {
-        completeTutorialGame(state);
-        hideTutorial();
-        document.body.classList.remove("tutorial-mode-active");
-        showEndScreen(
-          true,
-          "Tutorial complete! You learned Reveal, Explore, Meet, Psyche, Power Tokens, Archetypes, Dreams, and Boss spawning.",
-        );
-        return;
-      }
-      syncInteractiveTutorial();
-      renderAll();
-    },
-    onSkip: () => {
-      if (confirm("Skip the interactive tutorial? You can replay it from the setup screen.")) {
-        state.tutorialComplete = true;
-        hideTutorial();
-        document.body.classList.remove("tutorial-mode-active");
-        showEndScreen(true, "Tutorial skipped. Try a full game when you're ready.");
-      }
-    },
+    onNext: handleTutorialNext,
+    onSkip: handleTutorialSkip,
   });
 }
 
@@ -691,6 +710,7 @@ function maybeShowReturnPicker() {
 
 function renderAll() {
   if (!state) return;
+  bindUiRenderState(state);
 
   if (state.status === "won") {
     if (state.tutorialVictory) {

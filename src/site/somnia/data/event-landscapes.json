@@ -1,0 +1,180 @@
+{
+  "fantastic-imagination": {
+    "landscapes": ["sky", "awards", "day-in-the-life", "silver-mist", "naked-classroom", "tranquil-grove"],
+    "effectTop": "Reveal 1 Landscape. If Lucidity 0-2, Reveal +1. If Lucidity 3+, Return 3 Cards."
+  },
+  "centering": {
+    "landscapes": ["tranquil-grove", "silver-mist", "day-in-the-life", "the-attic"],
+    "effectTop": "Draw 2 Psyche. All Dreamers Draw 1 Psyche & 1 Power Token. Then Move to an adjacent Landscape."
+  },
+  "the-ascent": {
+    "landscapes": ["sky", "the-attic", "awards", "silver-mist", "desert"],
+    "effectTop": "Discard your highest Psyche, then Draw 2 Psyche.",
+    "effectBottom": "Dreamers on Affected Landscapes may also use this effect."
+  },
+  "beyond-comprehension": {
+    "landscapes": ["black-void", "field-of-broken-glass", "desert", "silver-mist"],
+    "effectTop": "Flip Leviathan. Instead, Forget 4 Landscapes. Return 4 cards."
+  },
+  "just-a-dream": {
+    "landscapes": ["sky", "awards", "day-in-the-life", "silver-mist", "naked-classroom", "tranquil-grove", "the-attic", "desert"],
+    "effectTop": "Draw 3 Psyche.",
+    "effectBottom": "Return 1 Card for each Affected Landscape."
+  },
+  "morning-routine": {
+    "landscapes": ["day-in-the-life", "naked-classroom", "awards", "tranquil-grove", "silver-mist"],
+    "effectTop": "Draw 1 Psyche. Repress top 1 Lucidity Mindstream card.",
+    "effectBottom": "Draw Psyche up to the number of Affected Landscapes."
+  },
+  "i-know-this-place": {
+    "landscapes": ["road", "forest", "house", "city", "suburbia", "day-in-the-life"],
+    "effectTop": "Return 1 Card. Return +Dreamers Cards."
+  },
+  "a-face-appears": {
+    "landscapes": ["naked-classroom", "awards", "black-void", "field-of-broken-glass", "silver-mist"],
+    "effectTop": "Spawn 1 Encounter from Lucidity Mindstream.",
+    "effectBottom": "If Lucidity 3+, Return 3 Cards."
+  },
+  "transported": {
+    "landscapes": ["sky", "desert", "field-of-broken-glass", "black-void", "the-attic", "awards"],
+    "effectTop": "Draw 2 Psyche. 1st is column, 2nd is row of Dreamscape. Move to this Landscape."
+  },
+  "harmonic-resonance": {
+    "landscapes": ["tranquil-grove", "silver-mist", "day-in-the-life", "awards"],
+    "effectTop": "If Lucidity 1, Draw 1 Psyche. If Lucidity 3+, Return 2 Cards. Draw +1 Psyche or Return +2."
+  },
+  "denial": {
+    "landscapes": ["insanity", "naked-classroom", "black-void", "field-of-broken-glass"],
+    "effectTop": "Return 4 Cards. If Lucidity 3+, Return +Personae."
+  },
+  "forgot-clothes": {
+    "landscapes": ["naked-classroom", "awards", "day-in-the-life", "tranquil-grove"],
+    "effectTop": "Repress 1 Psyche from hand. If Lucidity 1-2, Move adjacent. If Lucidity 3+, Move anywhere."
+  },
+  "pop-quiz": {
+    "landscapes": ["naked-classroom", "awards", "day-in-the-life"],
+    "effectTop": "Draw 1 Psyche. Guess if next Psyche is Higher or Lower. Correct: Return Personae+3."
+  },
+  "sacred-geometry": {
+    "landscapes": ["inner-sanctum", "black-void", "the-attic", "tranquil-grove", "silver-mist"],
+    "effectTop": "Move to any Landscape adjacent to Bed.",
+    "effectBottom": "Return 2 Cards per Affected Landscape."
+  },
+  "a-shining-wind": {
+    "landscapes": ["silver-mist", "endless-ocean"],
+    "effectTop": "If Elasticity 3+, take 2 Power Tokens.",
+    "effectBottom": "Move to Silver Mist or Endless Ocean."
+  },
+  "roof-dive": {
+    "landscapes": ["sky", "the-party", "candy-mountain"],
+    "effectTop": "Elasticity 3+ required.",
+    "effectBottom": "Move to Sky, The Party, or Candy Mountain."
+  },
+  "into-the-next": {
+    "landscapes": ["forest", "road", "endless-hallway", "the-party"],
+    "effectTop": "All Dreamers Draw 1 Psyche. Move to adjacent Landscape & take a free Action."
+  },
+  "running-somewhere": {
+    "landscapes": ["road", "endless-hallway", "the-party", "forest", "endless-ocean"],
+    "effectTop": "Draw 1 Psyche.",
+    "effectBottom": "Elasticity 3+, may Discard 1 Psyche to Return cards equal to its value."
+  },
+  "portal-another-world": {
+    "landscapes": ["endless-ocean", "endless-hallway", "candy-mountain", "road"],
+    "effectTop": "Elasticity 0-2 Move 1. Elasticity 3+ Move 3. Move to edge of Dreamscape."
+  },
+  "undulating-floor": {
+    "landscapes": ["forest", "road", "the-party", "endless-ocean", "candy-mountain", "endless-hallway"],
+    "effectTop": "Move to Any Landscape. Place 1 Power Token on an available Archetype."
+  },
+  "freezing-night": {
+    "landscapes": ["forest", "tranquil-grove", "desert", "inner-sanctum"],
+    "effectTop": "Elasticity 0-2, Draw 2 Psyche keep 1.",
+    "effectBottom": "Willpower 3+, Draw 2 Objects keep 1."
+  },
+  "friendship": {
+    "landscapes": ["the-party", "forest", "road", "endless-hallway"],
+    "effectTop": "Reveal 2 Landscapes. Move to either.",
+    "effectBottom": "Elasticity 3+, 1 Free Action."
+  },
+  "get-up": {
+    "landscapes": ["forest", "the-attic"],
+    "effectTop": "Draw 1 Psyche from Discard.",
+    "effectBottom": "May Move to Forest if Revealed. Move to Attic and take free Meet."
+  },
+  "get-down": {
+    "landscapes": ["city", "the-basement"],
+    "effectTop": "Draw 1 Psyche from Discard.",
+    "effectBottom": "May Move to City if Revealed. Move to Basement and take free Meet."
+  },
+  "revolving": {
+    "landscapes": ["endless-hallway", "the-party", "road", "candy-mountain"],
+    "effectTop": "Draw 3 Psyche. Repress 1 Psyche from hand. Swap Positions with any other Dreamer."
+  },
+  "blooming": {
+    "landscapes": ["forest", "candy-mountain", "the-party", "endless-ocean"],
+    "effectTop": "Swap Positions of any 4 unoccupied Landscape Hexes. Repress 1 Psyche from hand."
+  },
+  "break-out": {
+    "landscapes": ["house", "the-basement", "insanity", "inner-sanctum"],
+    "effectTop": "Discard 1 Psyche. Draw 1 Psyche. If it matches hand, Return 4 Cards."
+  },
+  "a-thousand-daggers": {
+    "landscapes": ["sea-of-teeth", "lava", "insanity", "house"],
+    "effectTop": "All Dreamers collectively Discard Dreamers+2 Psyche."
+  },
+  "flashing-lights": {
+    "landscapes": ["city", "suburbia", "lava", "house"],
+    "effectTop": "Draw 2 Psyche. Take 2 Power Tokens."
+  },
+  "heating-up": {
+    "landscapes": ["lava", "insanity", "sea-of-teeth", "the-basement"],
+    "effectTop": "Spawn 1 Encounter, Meet it. If Accept spawn another; if Repress Draw Psyche up to hand limit."
+  },
+  "no-thing": {
+    "landscapes": ["black-void", "insanity", "inner-sanctum"],
+    "effectTop": "Discard 3 Dream Cards. Willpower 3+, Return 1 Dream card to deck and shuffle."
+  },
+  "no-time": {
+    "landscapes": ["city", "house", "suburbia", "the-basement"],
+    "effectTop": "Collectively Discard 1 Object per Persona."
+  },
+  "no-where": {
+    "landscapes": ["field-of-broken-glass", "desert", "black-void", "endless-ocean"],
+    "effectTop": "Forget 4 Landscapes. Repress top 1 Psyche from Psyche deck. Draw 2 Psyche for grid move without Meet."
+  },
+  "choppy-water": {
+    "landscapes": ["endless-ocean", "sea-of-teeth", "lava"],
+    "effectTop": "Discard 1 Willpower Psyche to Draw 1 Psyche and Return 4 Cards."
+  },
+  "clear-as-crystal": {
+    "landscapes": ["inner-sanctum", "tranquil-grove", "silver-mist", "awards"],
+    "effectTop": "Willpower 2 or less: Draw 3 Psyche. Willpower 3+: Draw 3 Psyche and Return 2."
+  },
+  "jaw-shark": {
+    "landscapes": ["sea-of-teeth", "endless-ocean", "lava"],
+    "effectTop": "Discard 2 Willpower Psyche or else Repress 2 Psyche from hand. If unable, Discard all Objects."
+  },
+  "golden-tooth": {
+    "landscapes": ["house", "suburbia", "inner-sanctum"],
+    "effectTop": "Willpower 1-2: Draw 2 Psyche. Willpower 3+: Draw 1 Object from any Mindstream."
+  },
+  "who-is-there": {
+    "landscapes": ["the-basement", "the-attic", "house", "insanity"],
+    "effectTop": "Spawn an Encounter and Meet Now. Instead, Draw 2 Encounters, Pick 1. Repress top 1 Willpower Mindstream card."
+  },
+  "no-one": {
+    "landscapes": ["black-void", "insanity", "inner-sanctum"],
+    "effectTop": "Discard all active Encounters. Willpower 3+, Instead Discard 1 Encounter."
+  },
+  "metamorphosis": {
+    "landscapes": ["insanity", "inner-sanctum", "sea-of-teeth", "the-basement", "naked-classroom"],
+    "effectTop": "Repress Active Encounters+2 top Psyche.",
+    "effectBottom": "Forget 2 Landscapes per Affected Landscape."
+  },
+  "contagion": {
+    "landscapes": ["insanity", "naked-classroom", "sea-of-teeth", "house", "the-basement"],
+    "effectTop": "Repress top 2 Psyche.",
+    "effectBottom": "Lucidity 2 or less, Repress +1 Psyche per Affected Landscape."
+  }
+}

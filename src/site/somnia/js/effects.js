@@ -646,7 +646,7 @@ export function resolveCardEffect(state, card, player, helpers) {
     return;
   }
   if (card.type === "event" && MINDSTREAM_EFFECTS[id]) {
-    MINDSTREAM_EFFECTS[id](state, player, helpers);
+    MINDSTREAM_EFFECTS[id](state, player, helpers, card);
     return;
   }
   if (card.type === "object" && OBJECT_EFFECTS[id]) {

@@ -7,6 +7,7 @@ export async function loadGameData() {
     "dreams",
     "psyche",
     "mindstream",
+    "event-landscapes",
     "objects",
     "card-manifest",
   ];
@@ -19,7 +20,28 @@ export async function loadGameData() {
     })
   );
 
+  data.mindstream = enrichMindstreamEvents(data.mindstream, data["event-landscapes"] || {});
   return data;
+}
+
+function enrichMindstreamEvents(mindstream, catalog) {
+  const out = { lucidity: [], elasticity: [], willpower: [] };
+  MINDSTREAM_SUITS.forEach((suit) => {
+    out[suit] = (mindstream[suit] || []).map((evt) => {
+      const extra = catalog[evt.id] || {};
+      const landscapes = extra.landscapes ?? evt.landscapes ?? [];
+      const effectTop = extra.effectTop ?? evt.effectTop;
+      const effectBottom = extra.effectBottom ?? evt.effectBottom;
+      let text = evt.text;
+      if (effectTop && effectBottom) {
+        text = `${effectTop}\n\n— If any Affected Landscape is Revealed —\n${effectBottom}`;
+      } else if (effectTop) {
+        text = effectTop;
+      }
+      return { ...evt, landscapes, effectTop, effectBottom, text };
+    });
+  });
+  return out;
 }
 
 export const LENGTHS = {

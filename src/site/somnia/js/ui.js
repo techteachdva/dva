@@ -25,6 +25,18 @@ import { getCurrentObjective, rulesHtml, overviewHtml, getDreamerChipTooltip } f
 import { consumePhasePulse, consumeRevealedTiles, consumeForgottenTiles } from "./fx.js";
 import { consumeBoardClickSuppression } from "./board-zoom.js";
 import { powerTokensInPool, MAX_POWER_TOKEN_POOL } from "./power-tokens.js";
+import {
+  eventLandscapeIds,
+  hasAffectedLandscapes,
+  landscapeImageForId,
+  revealedLandscapeIds,
+} from "./event-landscapes.js";
+
+let uiRenderState = null;
+
+export function bindUiRenderState(state) {
+  uiRenderState = state;
+}
 
 function suitClass(suit) {
   return suit ? `suit-${suit}` : "";
@@ -81,6 +93,55 @@ function attachCardMeta(el, card, playerId = null) {
   if (card?.instanceId) el.dataset.instanceId = card.instanceId;
   if (playerId) el.dataset.playerId = playerId;
   return el;
+}
+
+function landscapeNameForId(id, board = []) {
+  const tile = board.find((t) => t.id === id);
+  return tile?.name || id.replace(/-/g, " ");
+}
+
+function createEventLandscapeIconRow(card, board = null) {
+  const ids = eventLandscapeIds(card);
+  if (!ids.length) return null;
+
+  const tiles = board || uiRenderState?.board || [];
+  const revealed = revealedLandscapeIds(tiles);
+  const bottomActive = card.effectBottom && ids.some((id) => revealed.has(id));
+
+  const row = document.createElement("div");
+  row.className = [
+    "event-landscape-icons",
+    card.effectBottom ? "has-bottom-effect" : "",
+    bottomActive ? "bottom-active" : "",
+  ].filter(Boolean).join(" ");
+
+  if (card.effectBottom) {
+    const hint = document.createElement("span");
+    hint.className = "event-landscape-hint";
+    hint.textContent = bottomActive
+      ? "Bottom effect active"
+      : "Reveal any landscape below on the board";
+    row.appendChild(hint);
+  }
+
+  const chips = document.createElement("div");
+  chips.className = "event-landscape-chips";
+
+  ids.forEach((id) => {
+    const chip = document.createElement("span");
+    const isRevealed = revealed.has(id);
+    chip.className = `event-landscape-icon${isRevealed ? " revealed" : ""}`;
+    chip.title = `${landscapeNameForId(id, tiles)}${isRevealed ? " — Revealed" : " — Hidden"}`;
+    const img = document.createElement("img");
+    img.src = landscapeImageForId(id, tiles);
+    img.alt = landscapeNameForId(id, tiles);
+    img.loading = "lazy";
+    chip.appendChild(img);
+    chips.appendChild(chip);
+  });
+
+  row.appendChild(chips);
+  return row;
 }
 
 function renderPsycheDreambeastCard(card, { selected, onClick, mini, entering, playerId }) {
@@ -331,6 +392,12 @@ export function renderCard(card, options = {}) {
   el.appendChild(art);
   el.appendChild(body);
 
+  if (card.type === "event") {
+    const icons = createEventLandscapeIconRow(card, options.board);
+    if (icons) el.appendChild(icons);
+    el.classList.add("event-card");
+  }
+
   if (mini) {
     el.style.width = "72px";
     el.style.minHeight = "96px";
@@ -417,6 +484,34 @@ export function showModal(card) {
   title.textContent = card.name;
   detail.appendChild(title);
 
+  if (card.type === "event") {
+    if (card.effectTop) {
+      const top = document.createElement("p");
+      top.className = "event-effect-top";
+      top.innerHTML = `<strong>Always:</strong> ${card.effectTop}`;
+      detail.appendChild(top);
+    }
+    if (card.effectBottom) {
+      const bottomActive = uiRenderState ? hasAffectedLandscapes(uiRenderState, card) : false;
+      const bottom = document.createElement("p");
+      bottom.className = `event-effect-bottom${bottomActive ? " active" : " inactive"}`;
+      bottom.innerHTML = `<strong>If any Affected Landscape is Revealed:</strong> ${card.effectBottom}`;
+      detail.appendChild(bottom);
+    }
+    const icons = createEventLandscapeIconRow(card);
+    if (icons) {
+      icons.classList.add("event-landscape-icons--modal");
+      detail.appendChild(icons);
+    }
+    if (!card.effectTop && !card.effectBottom) {
+      const description = card.text || card.flavor || card.effect;
+      if (description) {
+        const p = document.createElement("p");
+        p.textContent = description;
+        detail.appendChild(p);
+      }
+    }
+  } else {
   const fields = [
     ["Type", card.type || card.suit || "—"],
     ["Subtype", card.subtype],
@@ -464,6 +559,7 @@ export function showModal(card) {
       <span class="stat-pill suit-willpower">${suitIconHtml("willpower", { size: 12 })}Willpower +${card.willpower}</span>
     `;
     detail.appendChild(row);
+  }
   }
 
   container.appendChild(detail);
@@ -2012,15 +2108,205 @@ export function showLandscapeDetail(state, tileId) {
 }
 
 let tutorialHighlightEl = null;
+let tutorialSpotlightEl = null;
+let tutorialSparkleLayer = null;
+let tutorialSpotlightTracker = null;
 
-function clearTutorialHighlight() {
+const SPARKLE_COUNT = 14;
+const SPARKLE_JUMP_MS = 720;
+
+function ensureTutorialSparkleLayer() {
+  if (tutorialSparkleLayer) return tutorialSparkleLayer;
+
+  tutorialSparkleLayer = document.createElement("div");
+  tutorialSparkleLayer.id = "tutorial-sparkle-layer";
+  tutorialSparkleLayer.className = "tutorial-sparkle-layer";
+  tutorialSparkleLayer.setAttribute("aria-hidden", "true");
+
+  tutorialSpotlightEl = document.createElement("div");
+  tutorialSpotlightEl.className = "tutorial-spotlight hidden";
+  tutorialSpotlightEl.innerHTML = `
+    <div class="tutorial-spotlight-glow"></div>
+    <div class="tutorial-spotlight-ring"></div>
+    <div class="tutorial-spotlight-sparkles"></div>
+  `;
+  const sparkleHost = tutorialSpotlightEl.querySelector(".tutorial-spotlight-sparkles");
+  for (let i = 0; i < SPARKLE_COUNT; i += 1) {
+    const sparkle = document.createElement("span");
+    sparkle.className = "tutorial-sparkle";
+    sparkle.style.setProperty("--sparkle-i", String(i));
+    sparkleHost.appendChild(sparkle);
+  }
+
+  const flyer = document.createElement("div");
+  flyer.id = "tutorial-flyer";
+  flyer.className = "tutorial-flyer hidden";
+  flyer.innerHTML = `
+    <span class="tutorial-flyer-trail"></span>
+    <span class="tutorial-flyer-core">✦</span>
+  `;
+
+  tutorialSparkleLayer.append(tutorialSpotlightEl, flyer);
+  document.body.appendChild(tutorialSparkleLayer);
+  return tutorialSparkleLayer;
+}
+
+function rectCenter(rect) {
+  return {
+    x: rect.left + rect.width / 2,
+    y: rect.top + rect.height / 2,
+  };
+}
+
+function bezierPoint(t, p0, p1, p2) {
+  const u = 1 - t;
+  return {
+    x: u * u * p0.x + 2 * u * t * p1.x + t * t * p2.x,
+    y: u * u * p0.y + 2 * u * t * p1.y + t * t * p2.y,
+  };
+}
+
+function stopTutorialSpotlightTracker() {
+  if (tutorialSpotlightTracker) {
+    tutorialSpotlightTracker.disconnect();
+    tutorialSpotlightTracker = null;
+  }
+  window.removeEventListener("resize", positionTutorialSpotlight);
+  window.removeEventListener("scroll", positionTutorialSpotlight, true);
+}
+
+function positionTutorialSpotlight() {
+  if (!tutorialSpotlightEl || !tutorialHighlightEl) return;
+  const rect = tutorialHighlightEl.getBoundingClientRect();
+  const pad = 10;
+  tutorialSpotlightEl.style.left = `${rect.left - pad}px`;
+  tutorialSpotlightEl.style.top = `${rect.top - pad}px`;
+  tutorialSpotlightEl.style.width = `${Math.max(rect.width + pad * 2, 48)}px`;
+  tutorialSpotlightEl.style.height = `${Math.max(rect.height + pad * 2, 48)}px`;
+  const orbit = Math.max(rect.width, rect.height) / 2 + pad + 4;
+  tutorialSpotlightEl.style.setProperty("--orbit-r", `${orbit}px`);
+}
+
+function startTutorialSpotlightTracker() {
+  stopTutorialSpotlightTracker();
+  if (!tutorialHighlightEl) return;
+  positionTutorialSpotlight();
+  if (typeof ResizeObserver !== "undefined") {
+    tutorialSpotlightTracker = new ResizeObserver(() => positionTutorialSpotlight());
+    tutorialSpotlightTracker.observe(tutorialHighlightEl);
+    if (tutorialHighlightEl.parentElement) {
+      tutorialSpotlightTracker.observe(tutorialHighlightEl.parentElement);
+    }
+  }
+  window.addEventListener("resize", positionTutorialSpotlight);
+  window.addEventListener("scroll", positionTutorialSpotlight, true);
+}
+
+export function refreshTutorialSpotlight() {
+  positionTutorialSpotlight();
+}
+
+export function getTutorialSpotlightRect() {
+  if (tutorialHighlightEl) {
+    return tutorialHighlightEl.getBoundingClientRect();
+  }
+  if (tutorialSpotlightEl && !tutorialSpotlightEl.classList.contains("hidden")) {
+    return tutorialSpotlightEl.getBoundingClientRect();
+  }
+  return null;
+}
+
+function applyTutorialHighlight(target, { animateIn = true } = {}) {
+  ensureTutorialSparkleLayer();
+  clearTutorialHighlight({ keepLayer: true });
+
+  if (!target) {
+    tutorialSpotlightEl?.classList.add("hidden");
+    stopTutorialSpotlightTracker();
+    return;
+  }
+
+  target.classList.add("tutorial-highlight");
+  tutorialHighlightEl = target;
+  tutorialSpotlightEl.classList.remove("hidden", "tutorial-spotlight-arriving");
+  positionTutorialSpotlight();
+  startTutorialSpotlightTracker();
+
+  if (animateIn) {
+    tutorialSpotlightEl.classList.add("tutorial-spotlight-arriving");
+    window.setTimeout(() => {
+      tutorialSpotlightEl?.classList.remove("tutorial-spotlight-arriving");
+    }, 480);
+  }
+
+  target.scrollIntoView({ block: "nearest", behavior: "smooth" });
+}
+
+function animateTutorialSparkleJump(fromRect, toTarget, onComplete) {
+  ensureTutorialSparkleLayer();
+  const flyer = document.getElementById("tutorial-flyer");
+  if (!flyer || !toTarget) {
+    applyTutorialHighlight(toTarget, { animateIn: true });
+    onComplete?.();
+    return;
+  }
+
+  const toRect = toTarget.getBoundingClientRect();
+  const from = rectCenter(fromRect);
+  const to = rectCenter(toRect);
+  const arcLift = Math.min(220, Math.max(72, Math.abs(to.x - from.x) * 0.22 + Math.abs(to.y - from.y) * 0.12));
+  const control = {
+    x: (from.x + to.x) / 2,
+    y: Math.min(from.y, to.y) - arcLift,
+  };
+
+  tutorialSpotlightEl.classList.add("tutorial-spotlight-traveling");
+  flyer.classList.remove("hidden");
+  flyer.classList.add("tutorial-flyer-active");
+
+  const start = performance.now();
+
+  const frame = (now) => {
+    const raw = Math.min(1, (now - start) / SPARKLE_JUMP_MS);
+    const eased = 1 - Math.pow(1 - raw, 3);
+    const point = bezierPoint(eased, from, control, to);
+    const scale = 0.85 + Math.sin(eased * Math.PI) * 0.55;
+    flyer.style.transform = `translate(${point.x}px, ${point.y}px) translate(-50%, -50%) scale(${scale})`;
+
+    if (raw < 1) {
+      requestAnimationFrame(frame);
+      return;
+    }
+
+    flyer.classList.remove("tutorial-flyer-active");
+    flyer.classList.add("hidden");
+    applyTutorialHighlight(toTarget, { animateIn: true });
+    tutorialSpotlightEl.classList.remove("tutorial-spotlight-traveling");
+    onComplete?.();
+  };
+
+  requestAnimationFrame(frame);
+}
+
+function clearTutorialHighlight({ keepLayer = false } = {}) {
   if (tutorialHighlightEl) {
     tutorialHighlightEl.classList.remove("tutorial-highlight");
     tutorialHighlightEl = null;
   }
+  if (!keepLayer) {
+    tutorialSpotlightEl?.classList.add("hidden");
+    document.getElementById("tutorial-flyer")?.classList.add("hidden");
+    stopTutorialSpotlightTracker();
+  }
 }
 
-export function showTutorialStep(step, stepIndex, total, { onNext, onSkip, canAdvance = true, roundLabel = null }) {
+export function showTutorialStep(step, stepIndex, total, {
+  onNext,
+  onSkip,
+  canAdvance = true,
+  roundLabel = null,
+  fromRect = null,
+}) {
   const overlay = document.getElementById("tutorial-overlay");
   if (!overlay) return;
 
@@ -2047,14 +2333,13 @@ export function showTutorialStep(step, stepIndex, total, { onNext, onSkip, canAd
       : "";
   }
 
-  clearTutorialHighlight();
-  if (step.target) {
-    const target = document.querySelector(step.target);
-    if (target) {
-      target.classList.add("tutorial-highlight");
-      tutorialHighlightEl = target;
-      target.scrollIntoView({ block: "nearest", behavior: "smooth" });
-    }
+  clearTutorialHighlight({ keepLayer: !!fromRect });
+  const target = step.target ? document.querySelector(step.target) : null;
+
+  if (fromRect && target && fromRect.width > 0 && fromRect.height > 0) {
+    animateTutorialSparkleJump(fromRect, target);
+  } else {
+    applyTutorialHighlight(target, { animateIn: true });
   }
 
   const skipBtn = document.getElementById("tutorial-skip");
@@ -2083,5 +2368,8 @@ export function showTutorialStep(step, stepIndex, total, { onNext, onSkip, canAd
 
 export function hideTutorial() {
   clearTutorialHighlight();
+  document.getElementById("tutorial-sparkle-layer")?.remove();
+  tutorialSparkleLayer = null;
+  tutorialSpotlightEl = null;
   document.getElementById("tutorial-overlay")?.classList.add("hidden");
 }
