@@ -67,6 +67,15 @@ export function getNarratorView(state) {
     };
   }
 
+  if (state.pendingNothingChoice) {
+    const count = state.players.filter((p) => p.alive).length + 6;
+    return {
+      title: "The Nothing",
+      detail: `Lose 1 Power Token, or Repress ${count} Psyche from the top of the Psyche deck.`,
+      consequences: ["Then The Nothing is discarded to its Mindstream discard pile."],
+    };
+  }
+
   if (state.narrator) {
     return state.narrator;
   }

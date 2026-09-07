@@ -102,7 +102,8 @@ export function getCurrentObjective(state) {
       title: "Dreamer died — new Dream",
       steps: [
         "A Dreamer lost all Psyche and died in the Dream.",
-        "They return to The Bed with fewer Psyche; an Additional Dream is resolving.",
+        "Top card of each Mindstream deck is Repressed; objects and Power Tokens are lost.",
+        "They return to The Bed with 4/3/2/1 Psyche (by death count) and 2 Power Tokens; an Additional Dream resolves.",
       ],
     };
   }
@@ -279,7 +280,7 @@ export function getCurrentObjective(state) {
       const enc = state.activeEncounter;
       lines.push(`Encounter **${enc.name}**: Accept (${enc.accept}) or Reject (${enc.reject ?? enc.repress}).`);
     } else {
-      lines.push("Use actions in any order — Landscape, Objects, Trade, Quests, or **End Round**.");
+      lines.push("Use actions in any order — Landscape, Trade, Quests, or **End Round**. **Objects** are free anytime (Persistent Objects cost 1 Power Token to activate).");
     }
     return {
       phase: "Meet",
@@ -435,6 +436,6 @@ export function rulesHtml() {
     </ul>
 
     <h3>Win & Lose</h3>
-    <p>Acquire Archetypes by completing both quests. Reach your point goal before Dreams run out. Psyche cards are your health (start 5, max 10 hand limit). Accepted Dreambeast allies also count as Psyche for health but not toward the 10-card limit. At 0 Psyche you die in the Dream, discard Objects, draw back to 5, and resolve an Additional Dream.</p>
+    <p>Acquire Archetypes by completing both quests. Reach your point goal before Dreams run out. Psyche cards are your health (start 5, max 10 hand limit). At 0 Psyche you may spend Power Tokens to avoid death, or accept death: Repress the top card of each Mindstream deck, lose all Objects and Power Tokens, return to The Bed with 4/3/2/1 Psyche (by death count) and 2 Power Tokens, then resolve an Additional Dream. Fifth death removes that Dreamer permanently.</p>
   `;
 }

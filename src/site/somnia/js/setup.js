@@ -1,4 +1,5 @@
 import { bindMusicToggle, initMenuAudioSettings, bindButtonRipples, musicCreditHtml } from "./audio.js";
+import { initDeviceMode } from "./device-mode.js";
 import { buildSetupAudioControls } from "./pause-menu.js";
 import { initFxLayer } from "./fx.js";
 import { loadGameData } from "./data.js";
@@ -77,6 +78,7 @@ function refreshDreamerPicker() {
 
 async function init() {
   const startedAt = Date.now();
+  initDeviceMode();
   initFxLayer();
   bindButtonRipples();
   initMenuAudioSettings();
@@ -96,7 +98,7 @@ async function init() {
 }
 
 function bindSetup() {
-  document.getElementById("btn-start").addEventListener("click", launchGameWindow);
+  document.getElementById("btn-start").addEventListener("click", () => launchGameWindow());
   document.getElementById("setup-players").addEventListener("change", () => {
     selectedDreamerIds = [];
     hideDreamerDetailTooltip();
@@ -114,6 +116,7 @@ function bindHelp() {
   document.getElementById("btn-setup-overview")?.addEventListener("click", showOverviewModal);
   document.getElementById("btn-setup-help")?.addEventListener("click", showRulesModal);
   document.getElementById("btn-setup-tutorial")?.addEventListener("click", () => startMenuTutorial());
+  document.getElementById("btn-tutorial-mode")?.addEventListener("click", () => launchTutorialMode());
 }
 
 function toggleDreamer(id) {
@@ -127,9 +130,9 @@ function toggleDreamer(id) {
   document.getElementById("btn-start").disabled = selectedDreamerIds.length !== count;
 }
 
-function launchGameWindow() {
+function launchGameWindow(config = null) {
   const lengthKey = document.getElementById("setup-length").value;
-  const payload = {
+  const payload = config || {
     lengthKey,
     selectedDreamerIds: [...selectedDreamerIds],
     launchedAt: Date.now(),
@@ -161,6 +164,15 @@ function launchGameWindow() {
   } catch {
     /* focus may fail in some browsers */
   }
+}
+
+function launchTutorialMode() {
+  launchGameWindow({
+    lengthKey: "daydream",
+    selectedDreamerIds: ["the-visionary", "the-runner"],
+    tutorialMode: true,
+    launchedAt: Date.now(),
+  });
 }
 
 function startMenuTutorial() {

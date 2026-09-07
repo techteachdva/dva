@@ -12,6 +12,7 @@ import {
   normalizeSubconscious,
   repressFromMindstreamSetup,
   isDreambeastPsycheCard,
+  repressTopMindstreamFromEachDeck,
 } from "./subconscious.js";
 import {
   handLimitForPlayer,
@@ -170,6 +171,7 @@ export function createInitialState(data, options) {
     cancellableDiscard: null,
     cancellableMove: null,
     pendingDeathChoice: null,
+    pendingNothingChoice: null,
   };
 
   resetPhaseFlags(state);
@@ -343,6 +345,7 @@ export function beginRoundReveal(state) {
 }
 
 const MAX_DREAMER_DEATHS = 5;
+const RESPAWN_PSYCHE_BY_DEATH = [4, 3, 2, 1];
 
 export function deathAvoidTokenCost(state) {
   const alive = state.players.filter((p) => p.alive).length;
@@ -350,7 +353,7 @@ export function deathAvoidTokenCost(state) {
 }
 
 function respawnPsycheTarget(deathCount) {
-  return Math.max(0, PSYCHE_STARTING_HAND - deathCount);
+  return RESPAWN_PSYCHE_BY_DEATH[deathCount - 1] ?? 0;
 }
 
 function clearPlayerHandOnDeath(state, player) {
@@ -378,6 +381,7 @@ export function applyDreamerDeath(state, player) {
   const deaths = (player.deathCount || 0) + 1;
   player.deathCount = deaths;
 
+  repressTopMindstreamFromEachDeck(state);
   discardPlayerObjects(state, player);
   player.powerTokens = 0;
   clearPlayerHandOnDeath(state, player);
@@ -396,11 +400,16 @@ export function applyDreamerDeath(state, player) {
   const target = respawnPsycheTarget(deaths);
   drawPsycheForPlayer(state, player, target);
   resolvePowerCardsInHand(state, player);
+  grantPowerTokens(state, player, 2, {
+    reason: `${player.name} returns with 2 Power Tokens.`,
+    logQuest: false,
+    animate: false,
+  });
 
   state.pendingDeathAdditionalDream = true;
   addLog(
     state,
-    `${player.name} dies (${deaths}/${MAX_DREAMER_DEATHS}) — objects and Power lost. Returns to The Bed with ${target} Psyche. An Additional Dream resolves.`,
+    `${player.name} dies (${deaths}/${MAX_DREAMER_DEATHS}) — Repressed top of each Mindstream deck; objects and Power lost. Returns to The Bed with ${target} Psyche and 2 Power. An Additional Dream resolves.`,
   );
 }
 

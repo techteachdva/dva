@@ -14,6 +14,67 @@ import { pullObjectFromMindstream, objectForPlayer, discardToMindstream } from "
 import { spendPowerTokens } from "./power-tokens.js";
 import { queueObjectDrawFx } from "./board-fx.js";
 
+export function isNothingCard(card) {
+  return card?.id?.startsWith("the-nothing");
+}
+
+function alivePlayers(state) {
+  return state.players.filter((p) => p.alive);
+}
+
+function repressPsycheFromDeck(state, count) {
+  let repressed = 0;
+  for (let i = 0; i < count && state.psycheDeck.length; i += 1) {
+    repressCard(state, state.psycheDeck.shift());
+    repressed += 1;
+  }
+  return repressed;
+}
+
+function finishNothingDiscard(state, card) {
+  discardToMindstream(state, card);
+  const suit = card.mindstreamSuit || card.suit || "Mindstream";
+  addLog(state, `${card.name} discarded to ${suit} Mindstream discard.`);
+}
+
+export function beginNothingResolution(state, player, card) {
+  const anyoneHasToken = state.players.some((p) => p.alive && (p.powerTokens || 0) > 0);
+  if (!anyoneHasToken) {
+    const count = alivePlayers(state).length + 6;
+    const repressed = repressPsycheFromDeck(state, count);
+    addLog(state, `The Nothing: Repress ${repressed} Psyche from top of Psyche deck (no Power Tokens available).`);
+    finishNothingDiscard(state, card);
+    return;
+  }
+  state.pendingNothingChoice = { card, playerId: player.id };
+  addLog(state, "The Nothing: lose 1 Power Token or Repress Dreamers+6 Psyche from the Psyche deck.");
+}
+
+export function resolveNothingChoice(state, choice) {
+  const pending = state.pendingNothingChoice;
+  if (!pending) return false;
+
+  const { card } = pending;
+  if (choice === "token") {
+    const spender = state.players.find((p) => p.alive && (p.powerTokens || 0) > 0);
+    if (!spender) {
+      const count = alivePlayers(state).length + 6;
+      repressPsycheFromDeck(state, count);
+      addLog(state, `The Nothing: Repress ${count} Psyche from top of Psyche deck.`);
+    } else {
+      spendPowerTokens(state, spender, 1, { reason: `${spender.name} loses 1 Power Token to The Nothing.` });
+    }
+  } else {
+    const count = alivePlayers(state).length + 6;
+    const repressed = repressPsycheFromDeck(state, count);
+    addLog(state, `The Nothing: Repress ${repressed} Psyche from top of Psyche deck.`);
+  }
+
+  state.pendingNothingChoice = null;
+  finishNothingDiscard(state, card);
+  return true;
+}
+
 export function ensureObjectZones(player) {
   if (!player.persistent) player.persistent = [];
   if (!player.objects) player.objects = [];
@@ -70,17 +131,8 @@ export function onObjectDrawn(state, player, card, helpers) {
 }
 
 function resolveMustPlayObject(state, player, card, helpers) {
-  if (card.id === "the-nothing") {
-    const alive = state.players.filter((p) => p.alive);
-    let left = alive.length + 6;
-    alive.forEach((p) => {
-      while (left > 0 && p.hand.length) {
-        repressCard(state, p.hand.pop());
-        left -= 1;
-      }
-    });
-    addLog(state, `The Nothing represses ${alive.length + 6} Psyche across the Dreamers.`);
-    repressCard(state, card);
+  if (isNothingCard(card)) {
+    beginNothingResolution(state, player, card);
     return;
   }
   if (card.id === "the-all-seeing-eye") {

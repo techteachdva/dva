@@ -122,6 +122,22 @@ function repressFromHand(state, player, count, reason = "") {
   });
 }
 
+function repressTopMindstreamSuit(state, suit) {
+  const deck = state.mindstreamDecks?.[suit];
+  if (!deck?.length) return;
+  repressCard(state, deck.shift());
+  addLog(state, `Repress top ${suit} Mindstream card → Subconscious.`);
+}
+
+function repressTopPsycheDeck(state, count = 1) {
+  let repressed = 0;
+  for (let i = 0; i < count && state.psycheDeck.length; i += 1) {
+    repressCard(state, state.psycheDeck.shift());
+    repressed += 1;
+  }
+  if (repressed) addLog(state, `Repress ${repressed} Psyche from top of Psyche deck → Subconscious.`);
+}
+
 function drawFromPsycheDiscard(state, player) {
   if (!state.psycheDiscard.length) return;
   player.hand.push(state.psycheDiscard.pop());
@@ -236,6 +252,7 @@ export const MINDSTREAM_EFFECTS = {
       drawPsycheForPlayer(state, p, 1);
       grantPowerTokens(state, p, 1);
       recordQuestEvent(state, "power_token", { count: 1 });
+      repressFromHand(state, p, 1, `${p.name}: Centering — Repress 1 Psyche from hand.`);
     });
     moveAdjacent(state, player);
   },
@@ -270,6 +287,7 @@ export const MINDSTREAM_EFFECTS = {
     recordQuestEvent(state, "draw_psyche", { count: n.length });
     const extra = drawPsycheForPlayer(state, player, affectedCount(state, player));
     recordQuestEvent(state, "draw_psyche", { count: extra.length });
+    repressTopMindstreamSuit(state, "lucidity");
   },
 
   "i-know-this-place": (state, player) => {
@@ -355,6 +373,7 @@ export const MINDSTREAM_EFFECTS = {
       const n = drawPsycheForPlayer(state, p, 1);
       recordQuestEvent(state, "draw_psyche", { count: n.length });
     });
+    repressTopMindstreamSuit(state, "elasticity");
     moveAdjacent(state, player);
     grantFreeMeetAction(state);
   },
@@ -447,12 +466,14 @@ export const MINDSTREAM_EFFECTS = {
   revolving: (state, player) => {
     const n = drawPsycheForPlayer(state, player, 3);
     recordQuestEvent(state, "draw_psyche", { count: n.length });
+    repressFromHand(state, player, 1, `${player.name}: Revolving — Repress 1 Psyche from hand.`);
     const others = alive(state).filter((p) => p.id !== player.id);
     if (others.length) swapDreamers(state, player, others[0]);
   },
 
-  blooming: (state) => {
+  blooming: (state, player) => {
     swapUnoccupiedTiles(state, 4);
+    repressFromHand(state, player, 1, `${player.name}: Blooming — Repress 1 Psyche from hand.`);
   },
 
   "break-out": (state, player) => {
@@ -474,12 +495,11 @@ export const MINDSTREAM_EFFECTS = {
     let left = personaCount(state) + 2;
     alive(state).forEach((p) => {
       while (left > 0 && p.hand.length) {
-        state.psycheDiscard.push(p.hand.pop());
+        repressCard(state, p.hand.pop());
         left -= 1;
       }
     });
-    recordQuestEvent(state, "discard_psyche", { count: personaCount(state) + 2 });
-    addLog(state, "A Thousand Daggers: collective discard.");
+    addLog(state, "A Thousand Daggers: team Represses Psyche → Subconscious.");
   },
 
   "flashing-lights": (state, player) => {
@@ -518,6 +538,7 @@ export const MINDSTREAM_EFFECTS = {
 
   "no-where": (state) => {
     forgetLandscapes(state, 4);
+    repressTopPsycheDeck(state, 1);
     alive(state).forEach((p) => {
       const n = drawPsycheForPlayer(state, p, 2);
       recordQuestEvent(state, "draw_psyche", { count: n.length });
@@ -542,13 +563,18 @@ export const MINDSTREAM_EFFECTS = {
   },
 
   "jaw-shark": (state, player) => {
-    if (discardSuitPsyche(state, player, "willpower", 2) < 2) {
-      const all = [...player.objects, ...(player.persistent || [])];
-      player.objects = [];
-      player.persistent = [];
-      all.forEach((o) => discardToMindstream(state, o));
-      addLog(state, "Jaw Shark: discarded all Objects.");
+    const discarded = discardSuitPsyche(state, player, "willpower", 2);
+    if (discarded >= 2) return;
+    const remaining = 2 - discarded;
+    if (player.hand.length) {
+      repressFromHand(state, player, remaining, `${player.name}: Jaw Shark — Repress ${remaining} Psyche from hand.`);
+      return;
     }
+    const all = [...(player.objects || []), ...(player.persistent || [])];
+    player.objects = [];
+    player.persistent = [];
+    all.forEach((o) => discardToMindstream(state, o));
+    addLog(state, "Jaw Shark: unable to pay — discarded all Objects.");
   },
 
   "golden-tooth": (state, player, helpers) => {
@@ -568,6 +594,7 @@ export const MINDSTREAM_EFFECTS = {
     if (!choice) return;
     const encounter = encounterFromDreambeastCard(choice.pick);
     setEncounterOnLandscape(state, player.landscapeId, encounter);
+    repressTopMindstreamSuit(state, "willpower");
     addLog(
       state,
       `Who's There?: ${choice.pick.name} appears${choice.alt ? ` (over ${choice.alt.name})` : ""}. Meet now if you can.`,

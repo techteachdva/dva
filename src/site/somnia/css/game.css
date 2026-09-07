@@ -1068,6 +1068,43 @@ body.menu-window #screen-setup .card-grid.picker {
   outline: 3px solid var(--accent) !important;
   outline-offset: 4px;
   box-shadow: 0 0 0 9999px rgba(4, 3, 10, 0.45);
+  animation: tutorial-pulse 2s ease-in-out infinite;
+}
+
+@keyframes tutorial-pulse {
+  0%, 100% { outline-color: var(--accent); }
+  50% { outline-color: #f0c96a; }
+}
+
+.tutorial-card.tutorial-waiting .tutorial-next-hint {
+  display: block;
+  font-size: 0.8rem;
+  color: #f0c96a;
+  margin: -0.5rem 0 0.75rem;
+}
+
+.tutorial-next-hint { display: none; }
+
+.tutorial-card .btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+body.tutorial-mode-active .tutorial-overlay {
+  pointer-events: none;
+}
+
+body.tutorial-mode-active .tutorial-backdrop {
+  pointer-events: none;
+  background: transparent;
+}
+
+body.tutorial-mode-active .tutorial-card {
+  pointer-events: auto;
+}
+
+body.tutorial-mode-active .tutorial-highlight {
+  pointer-events: auto;
 }
 
 .rules-modal h2 {
@@ -1549,7 +1586,29 @@ body.menu-window #screen-setup .card-grid.picker {
   padding-right: 0.55rem;
 }
 
-.power-token-stats {
+.power-token-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.35rem;
+}
+
+.power-bonus-btn {
+  align-self: flex-start;
+  white-space: normal;
+  text-align: left;
+  line-height: 1.25;
+}
+
+.power-bonus-pending {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--gold);
+}
+
+.power-bonus-btn.hidden {
+  display: none;
+}
   font-size: 0.68rem;
   color: var(--muted);
 }
@@ -2791,6 +2850,87 @@ body.menu-window #screen-setup .card-grid.picker {
   .hand-bar { grid-template-columns: 1fr; }
   .objects-section { max-width: none; }
   .overview-cols { grid-template-columns: 1fr; }
+}
+
+/* Device-mode layouts (set by device-mode.js on <html data-device>) */
+html[data-device="mobile"] body.play-window,
+html[data-device="tablet"] body.play-window {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+html[data-device="mobile"] .top-bar,
+html[data-device="tablet"] .top-bar {
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+html[data-device="mobile"] .hud {
+  width: 100%;
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  gap: 0.35rem;
+  padding-bottom: 0.15rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+html[data-device="mobile"] .hud-item {
+  flex: 0 0 auto;
+  min-width: 4.2rem;
+}
+
+html[data-device="mobile"] .btn,
+html[data-device="tablet"] .btn,
+html[data-touch="true"] .btn {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+html[data-device="mobile"] .phase-actions .btn {
+  font-size: 0.82rem;
+  padding: 0.55rem 0.7rem;
+}
+
+html[data-device="mobile"] .phase-actions {
+  overflow-x: auto;
+  flex-wrap: nowrap;
+  -webkit-overflow-scrolling: touch;
+  max-height: none;
+}
+
+html[data-device="mobile"] .resize-handle,
+html[data-device="tablet"] .resize-handle,
+html[data-touch="true"] .resize-handle {
+  display: none;
+}
+
+html[data-device="mobile"] #screen-game.active {
+  grid-template-rows: auto minmax(0, 1fr) auto minmax(140px, 28vh);
+}
+
+html[data-device="mobile"] .hand-section.power-section {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.35rem;
+}
+
+html[data-device="mobile"] .sidebar-hint,
+html[data-device="tablet"] .sidebar-hint {
+  display: none;
+}
+
+html[data-device="tablet"] #screen-game.active {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto minmax(150px, 24vh);
+}
+
+html[data-device="tablet"] .hand-bar {
+  grid-template-columns: minmax(140px, 1fr) minmax(0, 2fr);
+}
+
+html[data-device="desktop"] .power-bonus-btn {
+  max-width: 16rem;
 }
 
 /* === Polish, motion, and sparkle FX === */

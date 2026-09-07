@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Somnia — Enter the Dreamscape</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -23,7 +23,7 @@
   <div id="app">
     <header class="top-bar">
       <div class="brand">
-        <span class="version-label">Version 12.3</span>
+        <span class="version-label">Version 12.4</span>
         <h1>Somnia</h1>
         <p class="tagline">Cooperative Dreamscape Roguelike</p>
       </div>
@@ -67,9 +67,10 @@
             <button type="button" id="btn-setup-overview" class="btn">Game Overview</button>
             <button type="button" id="btn-setup-help" class="btn">How to Play</button>
             <button type="button" id="btn-setup-tutorial" class="btn">View Tutorial</button>
+            <button type="button" id="btn-tutorial-mode" class="btn primary">Tutorial Mode</button>
           </div>
-          <button id="btn-start" class="btn primary" disabled>Begin Dream</button>
-          <p class="setup-tip setup-launch-hint">Opens the game table in a new window. Click once inside to go fullscreen.</p>
+          <button id="btn-start" class="btn" disabled>Begin Dream</button>
+          <p class="setup-tip setup-launch-hint">Tutorial Mode opens a guided 5-round lesson with fixed cards. Begin Dream starts a full game in a new window.</p>
         </div>
       </section>
     </main>

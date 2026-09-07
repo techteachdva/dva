@@ -206,22 +206,45 @@ function handStatsHtml(state, player) {
 export function renderPowerTokens(state) {
   const tokensEl = document.getElementById("power-tokens");
   const statsEl = document.getElementById("power-token-stats");
+  const bonusBtn = document.getElementById("btn-power-bonus");
+  const bonusPending = document.getElementById("power-bonus-pending");
   if (!tokensEl) return;
 
   const player = activePlayer(state);
   const held = player.powerTokens || 0;
   const pool = powerTokensInPool(state);
+  const isMeet = getPhase(state) === "Meet";
+  const pending = state.pendingPowerBonus || 0;
 
   if (statsEl) {
-    statsEl.textContent = `${held} held · ${pool}/${MAX_POWER_TOKEN_POOL} in pool`;
-    statsEl.title = "Spend on Dreamer powers, Archetype quests, and Object activations";
+    const pendingNote = pending ? ` · +${pending} spread bonus` : "";
+    statsEl.textContent = `${held} held · ${pool}/${MAX_POWER_TOKEN_POOL} in pool${pendingNote}`;
+    statsEl.title = "Spend on Dreamer powers, Archetype quests, coin flips, and Object activations";
+  }
+
+  if (bonusBtn) {
+    bonusBtn.disabled = !isMeet || held < 1 || pending > 0;
+    bonusBtn.classList.toggle("hidden", !isMeet);
+    bonusBtn.textContent = pending > 0 ? `Spread bonus: +${pending}` : "Flip coin (+1 or +2 Spread)";
+  }
+
+  if (bonusPending) {
+    if (pending > 0 && isMeet) {
+      bonusPending.classList.remove("hidden");
+      bonusPending.textContent = `Next Psyche spread gets +${pending} from your coin flip.`;
+    } else {
+      bonusPending.classList.add("hidden");
+      bonusPending.textContent = "";
+    }
   }
 
   tokensEl.innerHTML = "";
   if (!held) {
     const empty = document.createElement("p");
     empty.className = "power-tokens-empty";
-    empty.textContent = "No tokens yet — draw Power Psyche, Mindstream, or Meet rewards.";
+    empty.textContent = isMeet
+      ? "No tokens yet — draw Power Psyche, Mindstream, or Meet rewards."
+      : "No tokens held.";
     tokensEl.appendChild(empty);
     return;
   }
@@ -936,8 +959,9 @@ export function renderHud(state, hint = "") {
       ? ` · ${state.exploreMovesLeft} moves`
       : "";
   const bonus = state.pendingPowerBonus ? ` · +${state.pendingPowerBonus} pending` : "";
+  const tutorialTag = state.tutorialMode ? " · Tutorial" : "";
   document.getElementById("phase-banner").textContent =
-    `Round ${state.round} · ${head.name} is Head ★${meetInfo}${bonus}${hint ? ` · ${hint}` : ""}`;
+    `Round ${state.round} · ${head.name} is Head ★${meetInfo}${bonus}${tutorialTag}${hint ? ` · ${hint}` : ""}`;
 }
 
 const PHASES = ["Reveal", "Explore", "Meet"];
@@ -1227,7 +1251,7 @@ export function renderSetupIntro() {
       <div class="round-step suit-elasticity">${suitIconHtml("elasticity", { size: 18 })} <strong>Explore</strong><span>Spend Elasticity · move on the map</span></div>
       <div class="round-step suit-willpower">${suitIconHtml("willpower", { size: 18 })} <strong>Meet</strong><span>Gain actions · face Encounters</span></div>
     </div>
-    <p class="setup-tip">New to Somnia? Read the <strong>Game Overview</strong>, open <strong>How to Play</strong>, or try the <strong>Tutorial</strong> below.</p>
+    <p class="setup-tip">New to Somnia? Try <strong>Tutorial Mode</strong> for a guided 5-round lesson, read the <strong>Game Overview</strong>, or open <strong>How to Play</strong>.</p>
   `;
 }
 
@@ -1415,6 +1439,40 @@ export function showTradeControls(state, onConfirm, onCancel) {
   body.querySelector("#trade-cancel").addEventListener("click", () => {
     hideUtilityModal();
     onCancel();
+  });
+  modal.classList.remove("hidden");
+}
+
+export function showNothingChoiceModal(state, onToken, onRepress) {
+  const pending = state.pendingNothingChoice;
+  if (!pending) return;
+
+  const count = state.players.filter((p) => p.alive).length + 6;
+  const modal = document.getElementById("utility-modal");
+  const body = document.getElementById("utility-modal-body");
+
+  body.innerHTML = `
+    <div class="nothing-choice-modal">
+      <h2>The Nothing</h2>
+      <p class="death-choice-lead">Must resolve immediately when drawn.</p>
+      <div class="utility-actions landscape-action-choices">
+        <button type="button" class="btn primary" id="nothing-choice-token">
+          Lose 1 Power Token
+        </button>
+        <button type="button" class="btn" id="nothing-choice-repress">
+          Repress Dreamers+6 (${count}) Psyche from top of Psyche deck
+        </button>
+      </div>
+    </div>
+  `;
+
+  body.querySelector("#nothing-choice-token")?.addEventListener("click", () => {
+    hideUtilityModal();
+    onToken?.();
+  });
+  body.querySelector("#nothing-choice-repress")?.addEventListener("click", () => {
+    hideUtilityModal();
+    onRepress?.();
   });
   modal.classList.remove("hidden");
 }
@@ -1962,14 +2020,32 @@ function clearTutorialHighlight() {
   }
 }
 
-export function showTutorialStep(step, stepIndex, total, { onNext, onSkip }) {
+export function showTutorialStep(step, stepIndex, total, { onNext, onSkip, canAdvance = true, roundLabel = null }) {
   const overlay = document.getElementById("tutorial-overlay");
   if (!overlay) return;
 
+  const waiting = step.until && !canAdvance;
   document.getElementById("tutorial-title").textContent = step.title;
   document.getElementById("tutorial-body").textContent = step.body;
-  document.getElementById("tutorial-progress").textContent = `${stepIndex + 1} / ${total}`;
-  document.getElementById("tutorial-next").textContent = stepIndex >= total - 1 ? "Done" : "Next";
+  const roundPart = roundLabel ? `Round ${roundLabel} · ` : "";
+  document.getElementById("tutorial-progress").textContent = `${roundPart}Step ${stepIndex + 1} / ${total}`;
+  const nextBtn = document.getElementById("tutorial-next");
+  nextBtn.textContent = stepIndex >= total - 1 ? "Finish" : "Continue";
+  nextBtn.disabled = waiting;
+
+  const card = overlay.querySelector(".tutorial-card");
+  card?.classList.toggle("tutorial-waiting", waiting);
+  let hintEl = card?.querySelector(".tutorial-next-hint");
+  if (!hintEl && card) {
+    hintEl = document.createElement("p");
+    hintEl.className = "tutorial-next-hint";
+    card.querySelector("p")?.after(hintEl);
+  }
+  if (hintEl) {
+    hintEl.textContent = waiting
+      ? "Complete the highlighted action to continue."
+      : "";
+  }
 
   clearTutorialHighlight();
   if (step.target) {
@@ -1981,13 +2057,12 @@ export function showTutorialStep(step, stepIndex, total, { onNext, onSkip }) {
     }
   }
 
-  const nextBtn = document.getElementById("tutorial-next");
   const skipBtn = document.getElementById("tutorial-skip");
   const backdrop = overlay.querySelector(".tutorial-backdrop");
 
   const cleanup = () => {
     nextBtn.replaceWith(nextBtn.cloneNode(true));
-    skipBtn.replaceWith(skipBtn.cloneNode(true));
+    skipBtn?.replaceWith(skipBtn.cloneNode(true));
     backdrop?.replaceWith(backdrop.cloneNode(true));
   };
 
@@ -1996,7 +2071,10 @@ export function showTutorialStep(step, stepIndex, total, { onNext, onSkip }) {
   const freshSkip = document.getElementById("tutorial-skip");
   const freshBackdrop = overlay.querySelector(".tutorial-backdrop");
 
-  freshNext.addEventListener("click", onNext);
+  freshNext.addEventListener("click", () => {
+    if (freshNext.disabled) return;
+    onNext?.();
+  });
   freshSkip.addEventListener("click", onSkip);
   freshBackdrop?.addEventListener("click", onSkip);
 

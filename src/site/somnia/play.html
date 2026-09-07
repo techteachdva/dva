@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>Somnia — Dream Table</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,7 +21,7 @@
   <div id="app">
     <header class="top-bar">
       <div class="brand">
-        <span class="version-label">Version 12.3</span>
+        <span class="version-label">Version 12.4</span>
         <h1>Somnia</h1>
       </div>
       <div id="hud" class="hud">
@@ -96,6 +96,12 @@
             <div class="hand-header">
               <h3>Power Tokens</h3>
               <span id="power-token-stats" class="power-token-stats"></span>
+            </div>
+            <div id="power-token-actions" class="power-token-actions">
+              <button type="button" id="btn-power-bonus" class="btn btn-sm power-bonus-btn" disabled title="Meet phase: spend 1 token to flip +1 or +2 on your next Psyche spread">
+                Flip coin (+1 or +2 Spread)
+              </button>
+              <p id="power-bonus-pending" class="power-bonus-pending hidden" aria-live="polite"></p>
             </div>
             <div id="power-tokens" class="power-tokens" aria-label="Power tokens held"></div>
           </div>

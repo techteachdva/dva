@@ -365,7 +365,7 @@ export function getPhaseActions(state, handlers) {
     actions.push({
       label: "Play Object",
       section: "actions",
-      disabled: !canUseMeetAction(state, MEET_ACTIONS.LANDSCAPE) || !player.objects.length,
+      disabled: !player.objects?.length,
       onClick: handlers.playObject,
     });
     actions.push({
@@ -380,12 +380,7 @@ export function getPhaseActions(state, handlers) {
       disabled: !canUseMeetAction(state, MEET_ACTIONS.TRADE),
       onClick: handlers.tradeAction,
     });
-    actions.push({
-      label: "Power Bonus",
-      section: "progress",
-      disabled: player.powerTokens < 1,
-      onClick: handlers.powerBonus,
-    });
+    actions.push(dreamerPowerAction());
     const arch = state.activeArchetype;
     actions.push({
       label: "Quest 1",
@@ -407,7 +402,6 @@ export function getPhaseActions(state, handlers) {
         onClick: () => handlers.useArchetypePower(acquired.id),
       });
     });
-    actions.push(dreamerPowerAction());
     actions.push({
       label: "End Round",
       section: "round",
@@ -422,7 +416,7 @@ export function getPhaseActions(state, handlers) {
 }
 
 export function getPhaseAdvanceAction(state, handlers) {
-  if (state.landscapePick || state.pendingRepress || state.pendingReturn || state.pendingDeathChoice || hasPendingDreamerPower(state)) return null;
+  if (state.landscapePick || state.pendingRepress || state.pendingReturn || state.pendingDeathChoice || state.pendingNothingChoice || hasPendingDreamerPower(state)) return null;
   const actions = getPhaseActions(state, handlers);
   return actions.find((a) => a.advance && !a.disabled) || null;
 }
@@ -674,14 +668,24 @@ export function gainMeetActions(state) {
 }
 
 export function powerBonus(state) {
+  if (getPhase(state) !== "Meet") {
+    addLog(state, "Coin flip bonus is only available during the Meet phase.");
+    return;
+  }
   const player = activePlayer(state);
-  if (!spendPowerTokens(state, player, 1)) {
+  if (player.powerTokens < 1) {
     addLog(state, "Need 1 Power Token.");
     return;
   }
+  if (state.pendingPowerBonus) {
+    addLog(state, "You already have a spread bonus pending.");
+    return;
+  }
+  if (!spendPowerTokens(state, player, 1)) return;
   const bonus = flipPowerBonus();
   state.pendingPowerBonus = bonus;
-  addLog(state, `Coin flip: +${bonus} to next Psyche Play.`);
+  addLog(state, `${player.name} flips a coin: +${bonus} to the next Psyche spread this Meet phase.`);
+  playSfx("select");
 }
 
 export function meetEncounter(state, mode = "accept") {
@@ -938,11 +942,6 @@ export function drawMindstreamCard(state, suit) {
 }
 
 export function playObject(state, objectId = null, { usePower = false } = {}) {
-  if (getPhase(state) !== "Meet") {
-    addLog(state, "Play Objects during the Meet phase.");
-    return null;
-  }
-
   const player = activePlayer(state);
   const all = [...(player.objects || []), ...(player.persistent || [])];
   const card = objectId
@@ -955,16 +954,7 @@ export function playObject(state, objectId = null, { usePower = false } = {}) {
   }
 
   const isPersistentActivate = player.persistent?.some((o) => o.instanceId === card.instanceId);
-  if (!isPersistentActivate && !usePower) {
-    if (!spendMeetAction(state, MEET_ACTIONS.LANDSCAPE)) return null;
-  }
-
-  const result = playObjectCard(state, player, card, getEffectHelpers(), { usePower: isPersistentActivate || usePower });
-  if (!result && !isPersistentActivate) {
-    state.meetActionsUsed -= 1;
-    state.lastMeetAction = null;
-  }
-  return result;
+  return playObjectCard(state, player, card, getEffectHelpers(), { usePower: isPersistentActivate || usePower });
 }
 
 export function activateObject(state) {

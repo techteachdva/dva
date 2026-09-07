@@ -10,7 +10,7 @@ import { shuffle, uid } from "./data.js";
 import { recordQuestEvent } from "./quests.js";
 import { grantPowerTokens } from "./power-tokens.js";
 import { repressCard, requestReturnCards } from "./subconscious.js";
-import { handRoomForPsycheDraw } from "./objects.js";
+import { handRoomForPsycheDraw, beginNothingResolution } from "./objects.js";
 import {
   pullDreambeastFromMindstream,
   encounterFromDreambeastCard,
@@ -117,7 +117,8 @@ function trackChessPlay(state, player) {
 export function checkObjectTagSet(state, player, tag) {
   if (!player.persistent) player.persistent = [];
   const tagged = player.persistent.filter((o) => o.tags?.some((t) => t.startsWith(tag)));
-  if (tagged.length < 3) return;
+  const required = tag === "element" ? 4 : 3;
+  if (tagged.length < required) return;
 
   if (tag === "chess") {
     returnN(state, personaCount(state) + 2, player);
@@ -128,12 +129,15 @@ export function checkObjectTagSet(state, player, tag) {
   } else if (tag === "body") {
     returnN(state, personaCount(state) + 5, player);
     addLog(state, "Body Set complete: Return Dreamers+5 Cards.");
+  } else if (tag === "element") {
+    returnN(state, personaCount(state) + 4, player);
+    addLog(state, "Element Set complete: Return Dreamers+4 Cards.");
   } else if (tag === "jewelry") {
+    returnN(state, personaCount(state) + 4, player);
+    addLog(state, "Jewelry Set complete: Return Dreamers+4 Cards.");
     if (state.activeArchetype?.questProgress?.every(Boolean)) {
       acquireArchetype(state, player);
-      addLog(state, "Jewelry Set complete: Acquired available Archetype.");
-    } else {
-      addLog(state, "Jewelry Set complete, but Archetype quests are not finished.");
+      addLog(state, "Jewelry Set: Acquired available Archetype.");
     }
   }
 }
@@ -323,15 +327,10 @@ export const OBJECT_EFFECTS = {
   "the-one": (state) => {
     addLog(state, "The One counts as 1 Object toward a Set (passive).");
   },
-
-  "the-nothing": (state) => {
-    let left = personaCount(state) + 6;
-    alive(state).forEach((p) => {
-      while (left > 0 && p.hand.length) {
-        repressCard(state, p.hand.pop());
-        left -= 1;
-      }
-    });
-    addLog(state, "The Nothing represses Psyche across the Dreamers.");
-  },
 };
+
+["the-nothing-elasticity", "the-nothing-lucidity", "the-nothing-willpower"].forEach((id) => {
+  OBJECT_EFFECTS[id] = (state, player) => {
+    beginNothingResolution(state, player, { id, name: "The Nothing" });
+  };
+});

@@ -144,12 +144,13 @@ function mindstreamDreambeastCard(beast, suit) {
 }
 
 function mindstreamObjectCard(obj, suit) {
+  const cardSuit = obj.suit || suit;
   return {
     id: `ms-${suit}-${obj.id}`,
     refId: obj.id,
     name: obj.name,
     type: "object",
-    suit,
+    suit: cardSuit,
     mindstreamSuit: suit,
     subtype: obj.subtype,
     tags: obj.tags,
@@ -206,9 +207,11 @@ function pickPool(items, count) {
 }
 
 function objectsForSuit(objects, suit) {
-  const suitIndex = MINDSTREAM_SUITS.indexOf(suit);
-  const assigned = objects.filter((_, i) => i % MINDSTREAM_SUITS.length === suitIndex);
-  return pickPool(assigned.length ? assigned : objects, MINDSTREAM_COMPOSITION.objects);
+  const assigned = objects.filter((obj) => obj.suit === suit);
+  if (!assigned.length) {
+    throw new Error(`No objects assigned to Mindstream suit: ${suit}`);
+  }
+  return pickPool(assigned, MINDSTREAM_COMPOSITION.objects);
 }
 
 function dreambeastsForSuit(dreambeasts, suit) {

@@ -1,4 +1,5 @@
 import { bindMusicToggle, initGameAudio, startGameRadio, bindButtonRipples, playSfx } from "./audio.js";
+import { initDeviceMode } from "./device-mode.js";
 import { initPanelLayout } from "./panel-layout.js";
 import { initBoardZoom, syncBoardZoomAfterRender, resetBoardZoom } from "./board-zoom.js";
 import { initPauseMenu, openPauseMenu } from "./pause-menu.js";
@@ -59,12 +60,22 @@ import {
   resolveDreamerPowerChoice,
   resolveDreamerPowerDeckPick,
 } from "./dreamer-powers.js";
+import { resolveNothingChoice } from "./objects.js";
 import { phaseOpeningActive } from "./rules.js";
 import {
   TUTORIAL_STEPS,
   hasSeenTutorial,
   markTutorialSeen,
 } from "./guide.js";
+import {
+  createTutorialState,
+  syncTutorial,
+  advanceTutorialStep,
+  completeTutorialGame,
+  notifyTutorialDreamDrawn,
+  notifyTutorialExploreMove,
+  isInteractiveTutorialActive,
+} from "./tutorial-mode.js";
 import {
   renderBoard,
   renderPlayers,
@@ -96,6 +107,7 @@ import {
   showTradeControls,
   showRespawnPicker,
   showDeathChoiceModal,
+  showNothingChoiceModal,
   hideUtilityModal,
   showSubconsciousPicker,
   showSubconsciousBrowse,
@@ -113,6 +125,8 @@ let gameData = null;
 let state = null;
 let devConsole = null;
 let tutorialIndex = -1;
+let interactiveTutorialActive = false;
+let lastTutorialSyncKey = null;
 let fullscreenReady = false;
 const lastCardClick = { id: null, time: 0 };
 let boardResizeTimer = null;
@@ -137,6 +151,7 @@ function getNewHandCardIds(state) {
 }
 
 async function init() {
+  initDeviceMode();
   initFxLayer();
   bindButtonRipples();
   initGameAudio();
@@ -151,6 +166,7 @@ async function init() {
   bindFullscreenPrompt();
   bindRestart();
   bindEndLeaderboard();
+  bindPowerBonus();
 
   if (new URLSearchParams(window.location.search).get("dev") === "1") {
     enableDevMode();
@@ -223,6 +239,15 @@ function bindFullscreenPrompt() {
       e.preventDefault();
       enter();
     }
+  });
+}
+
+function bindPowerBonus() {
+  document.getElementById("btn-power-bonus")?.addEventListener("click", () => {
+    if (!state) return;
+    powerBonus(state);
+    playSfx("select");
+    renderAll();
   });
 }
 
@@ -352,21 +377,35 @@ function startGame(config) {
     return;
   }
 
-  state = createInitialState(gameData, {
-    lengthKey: config.lengthKey,
-    selectedDreamers,
-  });
-  narrate(
-    state,
-    "The Dreamscape forms",
-    "Each Dreamer starts on The Bed with 5 Psyche and 2 Power. Round 1 begins in the Reveal Phase — discuss, plan, and act in any order. The Head Dreamer (★) should Draw the Dream when the group is ready.",
-    ["Reveal Phase: spend Lucidity to flip Landscapes on the hex map"],
-  );
+  if (config.tutorialMode) {
+    state = createTutorialState(gameData);
+    interactiveTutorialActive = true;
+    document.body.classList.add("tutorial-mode-active");
+    narrate(
+      state,
+      "Tutorial Mode",
+      "Five guided rounds with fixed Dreams and hands. Follow the highlighted steps — Cerberus awakens on Round 3.",
+      ["Complete each highlighted action before pressing Continue."],
+    );
+  } else {
+    state = createInitialState(gameData, {
+      lengthKey: config.lengthKey,
+      selectedDreamers,
+    });
+    narrate(
+      state,
+      "The Dreamscape forms",
+      "Each Dreamer starts on The Bed with 5 Psyche and 2 Power. Round 1 begins in the Reveal Phase — discuss, plan, and act in any order. The Head Dreamer (★) should Draw the Dream when the group is ready.",
+      ["Reveal Phase: spend Lucidity to flip Landscapes on the hex map"],
+    );
+  }
+
   showScreen("screen-game");
   resetBoardZoom();
   resetHandSnapshots(state);
   renderAll();
-  if (!hasSeenTutorial()) startTutorial();
+  if (!config.tutorialMode && !hasSeenTutorial()) startTutorial();
+  else if (config.tutorialMode) syncInteractiveTutorial();
 }
 
 function startTutorial() {
@@ -397,6 +436,65 @@ function finishTutorial() {
   renderAll();
 }
 
+function syncInteractiveTutorial() {
+  if (!isInteractiveTutorialActive(state)) {
+    hideTutorial();
+    document.body.classList.remove("tutorial-mode-active");
+    return;
+  }
+
+  const sync = syncTutorial(state);
+  if (!sync) return;
+
+  if (sync.complete) {
+    completeTutorialGame(state);
+    hideTutorial();
+    document.body.classList.remove("tutorial-mode-active");
+    showEndScreen(
+      true,
+      "Tutorial complete! You learned Reveal, Explore, Meet, Psyche, Power Tokens, Archetypes, Dreams, and Boss spawning. Start a real game from the setup screen.",
+    );
+    return;
+  }
+
+  const { step, stepIndex, total, canAdvance, round } = sync;
+  const syncKey = `${stepIndex}:${canAdvance}:${step.id}`;
+  if (syncKey === lastTutorialSyncKey) {
+    const nextBtn = document.getElementById("tutorial-next");
+    if (nextBtn) nextBtn.disabled = !!(step.until && !canAdvance);
+    return;
+  }
+  lastTutorialSyncKey = syncKey;
+
+  showTutorialStep(step, stepIndex, total, {
+    canAdvance,
+    roundLabel: round,
+    onNext: () => {
+      advanceTutorialStep(state);
+      if (state.tutorialComplete) {
+        completeTutorialGame(state);
+        hideTutorial();
+        document.body.classList.remove("tutorial-mode-active");
+        showEndScreen(
+          true,
+          "Tutorial complete! You learned Reveal, Explore, Meet, Psyche, Power Tokens, Archetypes, Dreams, and Boss spawning.",
+        );
+        return;
+      }
+      syncInteractiveTutorial();
+      renderAll();
+    },
+    onSkip: () => {
+      if (confirm("Skip the interactive tutorial? You can replay it from the setup screen.")) {
+        state.tutorialComplete = true;
+        hideTutorial();
+        document.body.classList.remove("tutorial-mode-active");
+        showEndScreen(true, "Tutorial skipped. Try a full game when you're ready.");
+      }
+    },
+  });
+}
+
 function onHandCardClick(card, owner) {
   const now = Date.now();
   const id = card.instanceId || card.id;
@@ -422,6 +520,31 @@ function onHandCardClick(card, owner) {
 }
 
 let lastDeathChoiceKey = null;
+
+function maybeShowNothingChoice() {
+  if (!state?.pendingNothingChoice) {
+    lastNothingChoiceKey = null;
+    return;
+  }
+  const key = state.pendingNothingChoice.playerId;
+  if (key === lastNothingChoiceKey) return;
+  lastNothingChoiceKey = key;
+  showNothingChoiceModal(
+    state,
+    () => {
+      resolveNothingChoice(state, "token");
+      lastNothingChoiceKey = null;
+      renderAll();
+    },
+    () => {
+      resolveNothingChoice(state, "repress");
+      lastNothingChoiceKey = null;
+      renderAll();
+    },
+  );
+}
+
+let lastNothingChoiceKey = null;
 
 function maybeShowDeathChoice() {
   if (!state?.pendingDeathChoice) {
@@ -570,6 +693,13 @@ function renderAll() {
   if (!state) return;
 
   if (state.status === "won") {
+    if (state.tutorialVictory) {
+      showEndScreen(
+        true,
+        "Tutorial complete! You learned Reveal, Explore, Meet, Psyche, Power Tokens, Archetypes, Dreams, and Boss spawning.",
+      );
+      return;
+    }
     if (!pendingScoreResult) {
       const breakdown = calculateFinalScore(state);
       const lengthLabel = state.lengthKey && LENGTHS[state.lengthKey]
@@ -604,6 +734,7 @@ function renderAll() {
   const handlers = {
     drawDream: () => {
       const card = drawDreamCard(state, showModal);
+      if (card) notifyTutorialDreamDrawn(state);
       renderAll();
     },
     revealLandscape: () => { revealLandscape(state); renderAll(); },
@@ -681,7 +812,6 @@ function renderAll() {
       tradeAction(state);
       renderAll();
     },
-    powerBonus: () => { powerBonus(state); renderAll(); },
     completeQuest: (i) => {
       const result = handleQuestComplete(state, i);
       if (result === "acquired") {
@@ -713,6 +843,10 @@ function renderAll() {
   const legalMoves = getLegalExploreTargets(state).map((t) => t.id);
   renderBoard(state, (id) => {
     handleBoardTileClick(state, id);
+    if (isInteractiveTutorialActive(state) && getPhase(state) === "Explore") {
+      const offBed = state.players.some((p) => p.alive && p.landscapeId !== "bed");
+      if (offBed) notifyTutorialExploreMove(state);
+    }
     renderAll();
     if (!state.landscapePick) showLandscapeDetail(state, id);
   }, legalMoves, pickHighlights);
@@ -740,19 +874,12 @@ function renderAll() {
   renderPowerTokens(state);
 
   renderObjects(state, (card, zone) => {
-    if (getPhase(state) === "Meet") {
-      if (zone === "persistent") {
-        playObject(state, card.instanceId || card.id, { usePower: true });
-      } else if (state.meetActionBudget > 0 && state.meetActionsUsed < state.meetActionBudget) {
-        playObject(state, card.instanceId || card.id);
-      } else {
-        showModal(card);
-        return;
-      }
-      renderAll();
-      return;
+    if (zone === "persistent") {
+      playObject(state, card.instanceId || card.id, { usePower: true });
+    } else {
+      playObject(state, card.instanceId || card.id);
     }
-    showModal(card);
+    renderAll();
   });
   renderDecks(state, (deckId) => {
     if (deckId.startsWith("mindstream-") && state.tradeMode) return;
@@ -773,10 +900,15 @@ function renderAll() {
   renderPhaseActions(phaseActions);
   resolvePendingDeathDream(state, showModal);
   maybeShowDeathChoice();
+  maybeShowNothingChoice();
   maybeShowRespawn();
   maybeShowRepressPicker();
   maybeShowReturnPicker();
   maybeShowDreamerPowerUI();
+
+  if (isInteractiveTutorialActive(state)) {
+    syncInteractiveTutorial();
+  }
 
   updateHandSnapshots(state);
   requestAnimationFrame(() => {
