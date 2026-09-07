@@ -907,8 +907,7 @@ function renderAll() {
   renderBoard(state, (id) => {
     handleBoardTileClick(state, id);
     renderAll();
-    if (!state.landscapePick) showLandscapeDetail(state, id);
-  }, legalMoves, pickHighlights);
+  }, legalMoves, pickHighlights, (id) => showLandscapeDetail(state, id));
   syncBoardZoomAfterRender();
   renderPlayers(state, (index) => {
     if (state.tradeMode && state.trade?.step === "pick-partner") {

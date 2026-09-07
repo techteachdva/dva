@@ -759,7 +759,7 @@ function fitHexSize(state) {
   return Math.max(HEX_MIN, Math.min(HEX_MAX, Math.floor(HEX_BASE * fit)));
 }
 
-export function renderBoard(state, onSelectLandscape, legalMoveIds = [], pickHighlights = {}) {
+export function renderBoard(state, onSelectLandscape, legalMoveIds = [], pickHighlights = {}, onInspectLandscape = null) {
   const board = document.getElementById("hex-board");
   board.innerHTML = "";
 
@@ -835,6 +835,14 @@ export function renderBoard(state, onSelectLandscape, legalMoveIds = [], pickHig
       if (consumeBoardClickSuppression()) return;
       onSelectLandscape(tile.id);
     });
+    if (onInspectLandscape) {
+      el.addEventListener("contextmenu", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        onInspectLandscape(tile.id);
+      });
+      el.title = "Left-click to select · right-click for details";
+    }
     board.appendChild(el);
   });
 }
