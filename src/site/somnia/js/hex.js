@@ -1,6 +1,7 @@
 /** Axial hex coordinates (q, r) for the Somnia Dreamscape board. */
 
-export const BOARD_RADIUS = 2;
+/** Inner disk (bed + starters + ring 2) plus six ring-3 corners = 25 landscape tiles. */
+export const BOARD_RADIUS = 3;
 
 export const HEX_DIRS = [
   { q: 1, r: 0 },
@@ -38,8 +39,31 @@ export function hexRingCoords(radius) {
   return results;
 }
 
-/** Ring-2 pool slots — twelve outer landscapes in a symmetric hex around the starters. */
-export const POOL_HEX_SLOTS = hexRingCoords(2);
+/** Ring-2 pool slots (twelve tiles between the starters). */
+export const POOL_RING2_SLOTS = hexRingCoords(2);
+
+/** Six symmetric corner extensions on ring 3 (one per axial direction). */
+export const POOL_RING3_CORNER_SLOTS = [
+  { q: 3, r: 0 },
+  { q: 3, r: -3 },
+  { q: 0, r: -3 },
+  { q: -3, r: 0 },
+  { q: -3, r: 3 },
+  { q: 0, r: 3 },
+];
+
+/** @deprecated Use POOL_RING2_SLOTS — kept for older imports. */
+export const POOL_HEX_SLOTS = POOL_RING2_SLOTS;
+
+/** All non-starter pool coordinates: ring 2, then ring-3 corners (18 slots). */
+export function poolBoardSlots() {
+  return [...POOL_RING2_SLOTS, ...POOL_RING3_CORNER_SLOTS];
+}
+
+/** Every landscape coordinate on the board (25 cells). */
+export function allBoardSlots() {
+  return [...hexDiskCoords(2), ...POOL_RING3_CORNER_SLOTS];
+}
 
 export function hexKey(q, r) {
   return `${q},${r}`;
@@ -162,14 +186,19 @@ export function hexDiskCoords(maxRadius) {
 }
 
 /**
- * Build board: Bed + six starters (revealed) + twelve shuffled pool landscapes
- * on ring 2 (face-down). Forms a perfect radius-2 hex disk (19 tiles).
+ * Build board: Bed + six starters (revealed) + all eighteen pool landscapes
+ * (twelve on ring 2, six on ring-3 corners). Twenty-five tiles total.
  */
 export function buildHexBoard(landscapes) {
   const all = landscapes.filter((l) => !l.hidden);
   const center = all.find((l) => l.center);
   const starters = all.filter((l) => l.starting && !l.center);
   const pool = shufflePool(all.filter((l) => !l.starting && !l.center));
+  const poolSlots = poolBoardSlots();
+
+  if (pool.length > poolSlots.length) {
+    console.warn(`Somnia board: ${pool.length} pool landscapes but only ${poolSlots.length} slots.`);
+  }
 
   const board = [];
 
@@ -191,8 +220,7 @@ export function buildHexBoard(landscapes) {
     });
   });
 
-  const ringSlots = POOL_HEX_SLOTS.slice(0, Math.min(pool.length, POOL_HEX_SLOTS.length));
-  ringSlots.forEach((slot, index) => {
+  poolSlots.forEach((slot, index) => {
     const landscape = pool[index];
     if (!landscape) return;
     board.push({
