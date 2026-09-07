@@ -13,7 +13,7 @@ import { runPendingBoardFx } from "./board-fx.js";
 import { calculateFinalScore } from "./scoring.js";
 import { fetchHighScores, submitHighScore, validateScoreName } from "./highscores.js";
 import { startVictoryCelebration, stopVictoryCelebration } from "./victory-celebration.js";
-import { LENGTHS } from "./data.js";
+import { LENGTHS, loadGameData } from "./data.js";
 import { createInitialState, addLog, respawnDreamer, getPhase, activePlayer, avoidDreamerDeath, acceptDreamerDeath } from "./state.js";
 import {
   getPhaseActions,
