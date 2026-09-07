@@ -1,5 +1,7 @@
 /** Axial hex coordinates (q, r) for the Somnia Dreamscape board. */
 
+export const BOARD_RADIUS = 2;
+
 export const HEX_DIRS = [
   { q: 1, r: 0 },
   { q: 1, r: -1 },
@@ -20,21 +22,24 @@ export const STARTER_HEX = {
   suburbia: { q: 0, r: 1 },
 };
 
-/** One outward slot per starter direction (ring 2). */
-export const POOL_HEX_SLOTS = [
-  { q: 2, r: 0 },
-  { q: 2, r: -1 },
-  { q: 1, r: -2 },
-  { q: -1, r: -1 },
-  { q: -2, r: 0 },
-  { q: -1, r: 2 },
-  { q: 0, r: 2 },
-  { q: 2, r: -2 },
-  { q: -2, r: 1 },
-  { q: 1, r: 1 },
-  { q: -2, r: 2 },
-  { q: 0, r: -2 },
-];
+/** All coordinates on a single hex ring (radius 0 = center only). */
+export function hexRingCoords(radius) {
+  if (radius === 0) return [{ q: 0, r: 0 }];
+  const results = [];
+  let q = HEX_DIRS[4].q * radius;
+  let r = HEX_DIRS[4].r * radius;
+  for (let i = 0; i < 6; i += 1) {
+    for (let step = 0; step < radius; step += 1) {
+      results.push({ q, r });
+      q += HEX_DIRS[i].q;
+      r += HEX_DIRS[i].r;
+    }
+  }
+  return results;
+}
+
+/** Ring-2 pool slots — twelve outer landscapes in a symmetric hex around the starters. */
+export const POOL_HEX_SLOTS = hexRingCoords(2);
 
 export function hexKey(q, r) {
   return `${q},${r}`;
@@ -157,8 +162,8 @@ export function hexDiskCoords(maxRadius) {
 }
 
 /**
- * Build board: Bed + starters revealed; every other landscape on the grid starts
- * as Wasteland-back (unrevealed). Uses a uniform hex disk (radius 3).
+ * Build board: Bed + six starters (revealed) + twelve shuffled pool landscapes
+ * on ring 2 (face-down). Forms a perfect radius-2 hex disk (19 tiles).
  */
 export function buildHexBoard(landscapes) {
   const all = landscapes.filter((l) => !l.hidden);
@@ -166,13 +171,11 @@ export function buildHexBoard(landscapes) {
   const starters = all.filter((l) => l.starting && !l.center);
   const pool = shufflePool(all.filter((l) => !l.starting && !l.center));
 
-  const usedKeys = new Set();
   const board = [];
 
   if (center && STARTER_HEX.bed) {
     const { q, r } = STARTER_HEX.bed;
     board.push({ ...center, q, r, revealed: true, wasteland: false, finalRecurrenceSide: false });
-    usedKeys.add(hexKey(q, r));
   }
 
   starters.forEach((landscape) => {
@@ -186,18 +189,12 @@ export function buildHexBoard(landscapes) {
       wasteland: false,
       finalRecurrenceSide: false,
     });
-    usedKeys.add(hexKey(pos.q, pos.r));
   });
 
-  const gridSlots = hexDiskCoords(3)
-    .filter(({ q, r }) => !usedKeys.has(hexKey(q, r)))
-    .sort((a, b) => hexDistance(a, { q: 0, r: 0 }) - hexDistance(b, { q: 0, r: 0 }));
-
-  let poolIdx = 0;
-  for (const slot of gridSlots) {
-    if (poolIdx >= pool.length) break;
-    const landscape = pool[poolIdx];
-    poolIdx += 1;
+  const ringSlots = POOL_HEX_SLOTS.slice(0, Math.min(pool.length, POOL_HEX_SLOTS.length));
+  ringSlots.forEach((slot, index) => {
+    const landscape = pool[index];
+    if (!landscape) return;
     board.push({
       ...landscape,
       q: slot.q,
@@ -206,8 +203,7 @@ export function buildHexBoard(landscapes) {
       wasteland: true,
       finalRecurrenceSide: false,
     });
-    usedKeys.add(hexKey(slot.q, slot.r));
-  }
+  });
 
   return board;
 }
