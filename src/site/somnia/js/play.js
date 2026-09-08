@@ -72,6 +72,7 @@ import {
   createTutorialState,
   syncTutorial,
   advanceTutorialStep,
+  retreatTutorialStep,
   completeTutorialGame,
   notifyTutorialDreamDrawn,
   isInteractiveTutorialActive,
@@ -434,7 +435,34 @@ function showTutorialAt(index) {
       else showTutorialAt(tutorialIndex);
     },
     onSkip: finishTutorial,
+    onBack: handleTutorialBack,
   });
+}
+
+function handleTutorialBack() {
+  if (state?.tutorialMode && isInteractiveTutorialActive(state)) {
+    if (!retreatTutorialStep(state)) return;
+    lastTutorialSyncKey = null;
+    lastTutorialStepId = null;
+    renderAll();
+    const sync = syncTutorial(state);
+    if (!sync || sync.complete) return;
+    showTutorialStep(sync.step, sync.stepIndex, sync.total, {
+      canAdvance: sync.canAdvance,
+      roundLabel: sync.round,
+      objective: sync.objective,
+      onNext: handleTutorialNext,
+      onSkip: handleTutorialSkip,
+      onBack: handleTutorialBack,
+    });
+    lastTutorialSyncKey = `${sync.stepIndex}:${sync.canAdvance}:${sync.step.id}`;
+    return;
+  }
+
+  if (tutorialIndex > 0) {
+    tutorialIndex -= 1;
+    showTutorialAt(tutorialIndex);
+  }
 }
 
 function finishTutorial() {
@@ -481,6 +509,7 @@ function handleTutorialNext() {
     fromRect,
     onNext: handleTutorialNext,
     onSkip: handleTutorialSkip,
+    onBack: handleTutorialBack,
   });
   lastTutorialSyncKey = `${nextSync.stepIndex}:${nextSync.canAdvance}:${nextSync.step.id}`;
 }
@@ -533,6 +562,7 @@ function syncInteractiveTutorial() {
     objective,
     onNext: handleTutorialNext,
     onSkip: handleTutorialSkip,
+    onBack: handleTutorialBack,
   });
 }
 

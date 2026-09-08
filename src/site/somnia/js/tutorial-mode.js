@@ -748,6 +748,7 @@ export function getTutorialStep(state) {
 
 /** Skip past steps whose gates are already satisfied (e.g. after reload or fast play). */
 function catchUpTutorialIndex(state) {
+  if (state.tutorialSuppressCatchUp) return;
   let guard = 0;
   while (guard++ < TUTORIAL_SCRIPT.length) {
     const step = TUTORIAL_SCRIPT[state.tutorialStepIndex];
@@ -790,9 +791,19 @@ export function advanceTutorialStep(state) {
   if (!state?.tutorialMode) return;
   state.tutorialStepIndex += 1;
   state.tutorialCanAdvance = false;
+  state.tutorialSuppressCatchUp = false;
   if (state.tutorialStepIndex >= TUTORIAL_SCRIPT.length) {
     state.tutorialComplete = true;
   }
+}
+
+export function retreatTutorialStep(state) {
+  if (!state?.tutorialMode || state.tutorialStepIndex <= 0) return false;
+  state.tutorialStepIndex -= 1;
+  state.tutorialCanAdvance = false;
+  state.tutorialComplete = false;
+  state.tutorialSuppressCatchUp = true;
+  return true;
 }
 
 export function notifyTutorialDreamDrawn(state) {

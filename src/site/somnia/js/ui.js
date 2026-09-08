@@ -2235,6 +2235,47 @@ let tutorialSpotlightEl = null;
 let tutorialSparkleLayer = null;
 let tutorialSpotlightTracker = null;
 let tutorialScrollBound = false;
+const TUTORIAL_CONTINUE_DELAY_MS = 1800;
+let tutorialContinueTimer = null;
+
+function clearTutorialContinueTimer() {
+  if (!tutorialContinueTimer) return;
+  clearInterval(tutorialContinueTimer);
+  tutorialContinueTimer = null;
+}
+
+function tutorialContinueLabel(stepIndex, total) {
+  return stepIndex >= total - 1 ? "Finish" : "Continue";
+}
+
+function applyTutorialContinueDelay(btn, waiting, label) {
+  clearTutorialContinueTimer();
+  if (!btn) return;
+
+  if (waiting) {
+    btn.disabled = true;
+    btn.textContent = label;
+    return;
+  }
+
+  btn.disabled = true;
+  const deadline = Date.now() + TUTORIAL_CONTINUE_DELAY_MS;
+  const tick = () => {
+    const leftMs = deadline - Date.now();
+    if (leftMs > 0) {
+      const leftSec = Math.max(1, Math.ceil(leftMs / 1000));
+      btn.textContent = `${label} (${leftSec}s)`;
+      btn.disabled = true;
+      return;
+    }
+    btn.textContent = label;
+    btn.disabled = false;
+    clearTutorialContinueTimer();
+  };
+
+  tick();
+  tutorialContinueTimer = setInterval(tick, 200);
+}
 
 function bindTutorialScrollRefresh() {
   if (tutorialScrollBound) return;
@@ -2616,7 +2657,11 @@ export function updateTutorialStepUI({
 
   const waiting = step?.until && !canAdvance;
   const nextBtn = document.getElementById("tutorial-next");
-  if (nextBtn) nextBtn.disabled = waiting;
+  const label = tutorialContinueLabel(stepIndex, total);
+  applyTutorialContinueDelay(nextBtn, waiting, label);
+
+  const backBtn = document.getElementById("tutorial-back");
+  if (backBtn) backBtn.disabled = stepIndex <= 0;
 
   const card = overlay.querySelector(".tutorial-card");
   card?.classList.toggle("tutorial-waiting", waiting);
@@ -2648,6 +2693,7 @@ export function updateTutorialStepUI({
 export function showTutorialStep(step, stepIndex, total, {
   onNext,
   onSkip,
+  onBack,
   canAdvance = true,
   roundLabel = null,
   fromRect = null,
@@ -2662,8 +2708,11 @@ export function showTutorialStep(step, stepIndex, total, {
   const roundPart = roundLabel ? `Round ${roundLabel} · ` : "";
   document.getElementById("tutorial-progress").textContent = `${roundPart}Step ${stepIndex + 1} / ${total}`;
   const nextBtn = document.getElementById("tutorial-next");
-  nextBtn.textContent = stepIndex >= total - 1 ? "Finish" : "Continue";
-  nextBtn.disabled = waiting;
+  const label = tutorialContinueLabel(stepIndex, total);
+  applyTutorialContinueDelay(nextBtn, waiting, label);
+
+  const backBtn = document.getElementById("tutorial-back");
+  if (backBtn) backBtn.disabled = stepIndex <= 0;
 
   const card = overlay.querySelector(".tutorial-card");
   card?.classList.toggle("tutorial-waiting", waiting);
@@ -2697,26 +2746,33 @@ export function showTutorialStep(step, stepIndex, total, {
   const cleanup = () => {
     nextBtn.replaceWith(nextBtn.cloneNode(true));
     skipBtn?.replaceWith(skipBtn.cloneNode(true));
+    backBtn?.replaceWith(backBtn.cloneNode(true));
     backdrop?.replaceWith(backdrop.cloneNode(true));
   };
 
   cleanup();
   const freshNext = document.getElementById("tutorial-next");
   const freshSkip = document.getElementById("tutorial-skip");
-  const freshBackdrop = overlay.querySelector(".tutorial-backdrop");
+  const freshBack = document.getElementById("tutorial-back");
 
   freshNext.addEventListener("click", () => {
     if (freshNext.disabled) return;
+    clearTutorialContinueTimer();
     onNext?.();
   });
   freshSkip.addEventListener("click", onSkip);
-  freshBackdrop?.addEventListener("click", onSkip);
+  freshBack?.addEventListener("click", () => {
+    if (freshBack.disabled) return;
+    clearTutorialContinueTimer();
+    onBack?.();
+  });
 
   overlay.classList.remove("hidden");
   positionTutorialCard(step);
 }
 
 export function hideTutorial() {
+  clearTutorialContinueTimer();
   clearTutorialHighlight();
   document.getElementById("tutorial-sparkle-layer")?.remove();
   tutorialSparkleLayer = null;
