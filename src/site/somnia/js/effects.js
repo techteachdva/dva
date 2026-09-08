@@ -55,7 +55,7 @@ export function repressFromHand(state, player, count, { reason = "" } = {}) {
   });
 }
 
-function personaCount(state) {
+function dreamerCount(state) {
   return alivePlayers(state).length;
 }
 
@@ -275,7 +275,7 @@ const DREAM_EFFECTS = {
     }
   },
   misunderstanding: (state) => {
-    let left = personaCount(state) + 3;
+    let left = dreamerCount(state) + 3;
     ["lucidity", "elasticity", "willpower"].forEach((suit) => {
       const deck = state.mindstreamDiscard[suit];
       while (deck.length && left > 0) {
@@ -311,7 +311,7 @@ const DREAM_EFFECTS = {
     addLog(state, "Abduction: carried Dreamers may only Meet this round.");
   },
   absurdity: (state, player) => {
-    const drawCount = personaCount(state) + 1;
+    const drawCount = dreamerCount(state) + 1;
     ["lucidity", "elasticity", "willpower"].forEach((suit) => {
       const deck = state.mindstreamDecks[suit];
       for (let i = 0; i < drawCount && deck.length; i += 1) {
@@ -342,7 +342,7 @@ const DREAM_EFFECTS = {
     state.bargainingDream = true;
   },
   responsibility: (state) => {
-    const n = personaCount(state);
+    const n = dreamerCount(state);
     alivePlayers(state).forEach((p) => {
       const wpCards = p.hand.filter((c) => c.suit === "willpower");
       const wpSum = wpCards.slice(0, n).reduce((s, c) => s + (c.value || 0), 0);
@@ -359,7 +359,7 @@ const DREAM_EFFECTS = {
     });
   },
   wanderlust: (state) => {
-    state.wanderlustTarget = personaCount(state) * 3;
+    state.wanderlustTarget = dreamerCount(state) * 3;
     state.wanderlustMoves = 0;
     addLog(state, `Wanderlust: Explore ${state.wanderlustTarget} Landscapes this round for a reward.`);
   },
@@ -413,7 +413,7 @@ const DREAM_EFFECTS = {
     }
   },
   rivalry: (state, _player, helpers) => {
-    const count = Math.max(1, Math.floor(personaCount(state) / 2));
+    const count = Math.max(1, Math.floor(dreamerCount(state) / 2));
     helpers.spawnEncounter(state, "bed");
     state.rivalryLeftover = Math.max(0, count - 1);
     state.rivalryEncountersOnBed = count;
@@ -503,7 +503,7 @@ const DREAM_EFFECTS = {
     alivePlayers(state).forEach((p) => {
       if (p.hand.length) state.psycheDiscard.push(p.hand.pop());
     });
-    recordQuestEvent(state, "discard_psyche", { count: personaCount(state) });
+    recordQuestEvent(state, "discard_psyche", { count: dreamerCount(state) });
   },
   theta: (state) => {
     forgetEdgeLandscapes(state, 8);

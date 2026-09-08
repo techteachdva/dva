@@ -45,7 +45,7 @@
   },
   "denial": {
     "landscapes": ["insanity", "naked-classroom", "black-void", "field-of-broken-glass"],
-    "effectTop": "Return 4 Cards. If Lucidity 3+, Return +Personae."
+    "effectTop": "Return 4 Cards. If Lucidity 3+, Return +Dreamers."
   },
   "forgot-clothes": {
     "landscapes": ["naked-classroom", "awards", "day-in-the-life", "tranquil-grove"],
@@ -53,7 +53,7 @@
   },
   "pop-quiz": {
     "landscapes": ["naked-classroom", "awards", "day-in-the-life"],
-    "effectTop": "Draw 1 Psyche. Guess if next Psyche is Higher or Lower. Correct: Return Personae+3."
+    "effectTop": "Draw 1 Psyche. Guess if next Psyche is Higher or Lower. Correct: Return Dreamers+3."
   },
   "sacred-geometry": {
     "landscapes": ["inner-sanctum", "black-void", "the-attic", "tranquil-grove", "silver-mist"],
@@ -137,7 +137,7 @@
   },
   "no-time": {
     "landscapes": ["city", "house", "suburbia", "the-basement"],
-    "effectTop": "Collectively Discard 1 Object per Persona."
+    "effectTop": "Collectively Discard 1 Object per Dreamer."
   },
   "no-where": {
     "landscapes": ["field-of-broken-glass", "desert", "black-void", "endless-ocean"],
