@@ -31,7 +31,7 @@ import {
   uid,
   PSYCHE_STARTING_HAND,
 } from "./data.js";
-import { discardToMindstream, pullObjectFromMindstream, objectForPlayer } from "./mindstream-supply.js";
+import { discardToMindstream, pullObjectFromMindstream, objectForPlayer, reshuffleMindstreamDiscardIfNeeded } from "./mindstream-supply.js";
 import { psycheHandCount, hasPsycheHealth } from "./psyche.js";
 import {
   grantPowerTokens,
@@ -251,9 +251,10 @@ export function drawPsyche(state, count = 1) {
 }
 
 export function drawMindstream(state, suit, count = 1) {
-  const deck = state.mindstreamDecks[suit];
   const drawn = [];
   for (let i = 0; i < count; i += 1) {
+    reshuffleMindstreamDiscardIfNeeded(state, suit);
+    const deck = state.mindstreamDecks[suit];
     if (!deck.length) break;
     drawn.push(deck.shift());
   }

@@ -910,9 +910,9 @@ export function uniqueLandscapeAction(state, { onChoose, onResult } = {}) {
     return null;
   }
   const { tile, player } = ctx;
-  const choices = getUniqueLandscapeActionChoices(tile);
+  const choices = getLandscapeActionChoices(tile);
   if (!choices.length) {
-    addLog(state, "No special Landscape Action here.");
+    addLog(state, "No Landscape Action here.");
     return null;
   }
 

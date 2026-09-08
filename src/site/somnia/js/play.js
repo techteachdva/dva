@@ -29,7 +29,6 @@ import {
   drawMindstreamOnLandscape,
   performLandscapeAction,
   uniqueLandscapeAction,
-  completeLandscapeAction,
   finishLandscapeMindstreamPick,
   finishLandscapeDeckFlip,
   tradeAction,
@@ -844,33 +843,9 @@ function renderAll() {
       uniqueLandscapeAction(state, {
         onChoose: (choices, tile, player) => {
           showLandscapeActionPicker(tile, choices, (actionId) => {
-            const result = completeLandscapeAction(state, tile, player, actionId, (card) => showModal(card));
-            if (result?.pending === "pick-mindstream-suit" || result?.pending === "spawn-dreambeast-pick-suit") {
-              showMindstreamPicker((suit) => {
-                finishLandscapeMindstreamPick(state, tile, player, actionId, suit, (card) => showModal(card));
-                renderAll();
-              });
-              return;
-            }
-            if (result?.pending === "flip-top-3-pick-deck") {
-              showDeckFlipPicker((deckKey) => {
-                finishLandscapeDeckFlip(state, deckKey);
-                renderAll();
-              });
-              return;
-            }
-            renderAll();
-          });
-        },
-        onResult: (card) => showModal(card),
-      });
-      renderAll();
-    },
-    landscapeAction: () => {
-      uniqueLandscapeAction(state, {
-        onChoose: (choices, tile, player) => {
-          showLandscapeActionPicker(tile, choices, (actionId) => {
-            const result = completeLandscapeAction(state, tile, player, actionId, (card) => showModal(card));
+            const result = performLandscapeAction(state, actionId, {
+              onResult: (card) => showModal(card),
+            });
             if (result?.pending === "pick-mindstream-suit" || result?.pending === "spawn-dreambeast-pick-suit") {
               showMindstreamPicker((suit) => {
                 finishLandscapeMindstreamPick(state, tile, player, actionId, suit, (card) => showModal(card));
