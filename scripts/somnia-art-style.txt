@@ -2,3 +2,14 @@ Somnia fantasy trading card art. Painterly digital illustration, dramatic cinema
 rich purple indigo and gold palette, surreal dreamlike atmosphere, highly detailed,
 single focal subject, subtle vignette, no text, no logos, no watermarks, no borders in image.
 Portrait orientation suitable for game card.
+
+Landscape hex tiles (1024x1024 square):
+- Square outer frame with ornate corner filigree in all four corners
+- Centered point-up hexagon window (vertex at top and bottom, flat vertical sides)
+- Ornate metallic hex border around the scene, colored by suit:
+  - Lucidity: blue (#4a9eff family)
+  - Elasticity: yellow (#f0c830 family)
+  - Willpower: red (#e84848 family)
+  - Bed / neutral: gold
+- Scene art fills only the inner hex; never octagon, circle, or flat-top hex shapes
+- Match the frame layout of house.png exactly; wasteland.png is not reframed

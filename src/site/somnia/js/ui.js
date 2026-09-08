@@ -824,8 +824,25 @@ export function renderBoard(state, onSelectLandscape, legalMoveIds = [], pickHig
         ? tile.name
         : "Wasteland";
 
+    const occupantTokens = [];
+    occupants.forEach((p) => {
+      if (!p.dreamer?.image) return;
+      occupantTokens.push(
+        `<img class="hex-occupant-token hex-occupant-dreamer" src="${p.dreamer.image}" alt="" title="${p.dreamer.name}" onerror="this.remove()">`
+      );
+    });
+    if (encounter?.image) {
+      occupantTokens.push(
+        `<img class="hex-occupant-token hex-occupant-beast" src="${encounter.image}" alt="" title="${encounter.name}" onerror="this.remove()">`
+      );
+    }
+    const occupantsHtml = occupantTokens.length
+      ? `<div class="hex-occupants" aria-hidden="true">${occupantTokens.join("")}</div>`
+      : "";
+
     el.innerHTML = `
       <div class="hex-overlay"></div>
+      ${occupantsHtml}
       <div class="name">${displayName}</div>
       <div class="suit">${showFace ? (tile.suit || "neutral") : "hidden"}</div>
       <div class="tokens">${occupants.map((p) => p.dreamer.name.split(" ").pop()).join(" · ")} ${encounterMark}${encounter ? ` ${encounter.name.split(" ")[0]}` : ""}${finalMark}${finalArch && !finalArch.defeated ? ` ${finalArch.name.split(" ")[0]}` : ""}</div>
@@ -1925,6 +1942,7 @@ export function showSubconsciousBrowse(state, onCardClick) {
 export function hideUtilityModal() {
   const modal = document.getElementById("utility-modal");
   modal.classList.add("hidden");
+  document.body.classList.remove("utility-modal-open");
   modal.querySelector(".utility-content")?.classList.remove("landscape-detail-modal");
   modal.querySelector(".utility-content")?.classList.remove("dreamer-detail-modal");
   modal.querySelector(".utility-content")?.classList.remove("dreamer-power-modal-wrap");
@@ -2235,6 +2253,8 @@ let tutorialSpotlightEl = null;
 let tutorialSparkleLayer = null;
 let tutorialSpotlightTracker = null;
 let tutorialScrollBound = false;
+let activeTutorialStep = null;
+let lastUtilityModalSpotlightState = false;
 const TUTORIAL_CONTINUE_DELAY_MS = 1800;
 let tutorialContinueTimer = null;
 let tutorialDelayState = null;
@@ -2311,8 +2331,18 @@ const TUTORIAL_BOTTOM_SELECTORS = new Set(["#hand-bar", "#phase-actions", "#tabl
 const TUTORIAL_TOP_SELECTORS = new Set(["#btn-advance-phase", "#phase-advance-bar", "#phase-stepper", "#narrator-panel"]);
 const TUTORIAL_BOARD_SELECTORS = new Set(["#board-viewport", "#hex-board", "#player-list"]);
 
+function isUtilityModalOpen() {
+  const modal = document.getElementById("utility-modal");
+  return modal && !modal.classList.contains("hidden");
+}
+
+function getUtilityModalSpotlightEl() {
+  return document.querySelector("#utility-modal .utility-content");
+}
+
 function getSpotlightSelector(step) {
   if (!step) return null;
+  if (isUtilityModalOpen()) return "#utility-modal .utility-content";
   if (step.spotlight) return step.spotlight;
   const selectors = getStepTargetSelectors(step);
   if (selectors.includes("#btn-advance-phase")) return "#btn-advance-phase";
@@ -2342,6 +2372,7 @@ function resolveSpotlightElements(step) {
 
 function inferTutorialCardDock(step) {
   if (step?.cardDock) return step.cardDock;
+  if (isUtilityModalOpen()) return "top";
   const selectors = getStepTargetSelectors(step);
   const spotlight = getSpotlightSelector(step);
 
@@ -2515,6 +2546,11 @@ function startTutorialSpotlightTracker() {
 }
 
 export function refreshTutorialSpotlight() {
+  const modalOpen = isUtilityModalOpen();
+  if (activeTutorialStep && modalOpen !== lastUtilityModalSpotlightState) {
+    applyTutorialHighlight(activeTutorialStep, { animateIn: false });
+  }
+  lastUtilityModalSpotlightState = modalOpen;
   positionTutorialSpotlight();
 }
 
@@ -2554,20 +2590,21 @@ function applyTutorialHighlight(stepOrTarget, { animateIn = true } = {}) {
   const spotlightTargets = step
     ? resolveSpotlightElements(step)
     : targets;
+  const highlightTargets = isUtilityModalOpen() ? [] : targets;
 
   if (step) ensureTutorialStepTargetsVisible(step);
 
-  if (!targets.length) {
+  if (!spotlightTargets.length && !highlightTargets.length) {
     tutorialSpotlightEls = [];
     tutorialSpotlightEl?.classList.add("hidden");
     stopTutorialSpotlightTracker();
     return;
   }
 
-  targets.forEach((el) => el.classList.add("tutorial-highlight"));
-  tutorialHighlightEls = targets;
-  tutorialHighlightEl = targets[0];
-  tutorialSpotlightEls = spotlightTargets.length ? spotlightTargets : targets;
+  highlightTargets.forEach((el) => el.classList.add("tutorial-highlight"));
+  tutorialHighlightEls = highlightTargets;
+  tutorialHighlightEl = highlightTargets[0] || null;
+  tutorialSpotlightEls = spotlightTargets.length ? spotlightTargets : highlightTargets;
   tutorialSpotlightEl.classList.remove("hidden", "tutorial-spotlight-arriving");
   bindTutorialScrollRefresh();
   positionTutorialSpotlight();
@@ -2581,7 +2618,7 @@ function applyTutorialHighlight(stepOrTarget, { animateIn = true } = {}) {
     }, 520);
   }
 
-  const scrollEl = tutorialSpotlightEls[0] || targets[0];
+  const scrollEl = tutorialSpotlightEls[0] || highlightTargets[0];
   if (scrollEl) {
     const inChrome = scrollEl.closest("#table-chrome");
     if (!inChrome || scrollEl.id === "btn-advance-phase") {
@@ -2715,6 +2752,7 @@ export function showTutorialStep(step, stepIndex, total, {
   const overlay = document.getElementById("tutorial-overlay");
   if (!overlay) return;
 
+  activeTutorialStep = step;
   const waiting = step.until && !canAdvance;
   document.getElementById("tutorial-title").textContent = step.title;
   document.getElementById("tutorial-body").textContent = step.body;
@@ -2785,6 +2823,8 @@ export function showTutorialStep(step, stepIndex, total, {
 }
 
 export function hideTutorial() {
+  activeTutorialStep = null;
+  lastUtilityModalSpotlightState = false;
   clearTutorialContinueTimer();
   clearTutorialHighlight();
   document.getElementById("tutorial-sparkle-layer")?.remove();

@@ -1,0 +1,685 @@
+{
+  "mode_size": [
+    1024,
+    1024
+  ],
+  "median_fill": 1.0,
+  "tiles": [
+    {
+      "file": "awards.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "ratio": 1.0,
+      "content_bbox": [
+        0,
+        0,
+        1024,
+        1024
+      ],
+      "content_size": [
+        1024,
+        1024
+      ],
+      "content_fill": 1.0,
+      "center_offset": [
+        0.0,
+        0.0
+      ],
+      "corner_opaque": 4,
+      "opaque_pct": 100.0,
+      "flags": []
+    },
+    {
+      "file": "bed.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "ratio": 1.0,
+      "content_bbox": [
+        0,
+        0,
+        1024,
+        1024
+      ],
+      "content_size": [
+        1024,
+        1024
+      ],
+      "content_fill": 1.0,
+      "center_offset": [
+        0.0,
+        0.0
+      ],
+      "corner_opaque": 4,
+      "opaque_pct": 100.0,
+      "flags": []
+    },
+    {
+      "file": "black-void.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "ratio": 1.0,
+      "content_bbox": [
+        0,
+        0,
+        1024,
+        1024
+      ],
+      "content_size": [
+        1024,
+        1024
+      ],
+      "content_fill": 1.0,
+      "center_offset": [
+        0.0,
+        0.0
+      ],
+      "corner_opaque": 4,
+      "opaque_pct": 100.0,
+      "flags": []
+    },
+    {
+      "file": "candy-mountain.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "ratio": 1.0,
+      "content_bbox": [
+        0,
+        0,
+        1024,
+        1024
+      ],
+      "content_size": [
+        1024,
+        1024
+      ],
+      "content_fill": 1.0,
+      "center_offset": [
+        0.0,
+        0.0
+      ],
+      "corner_opaque": 4,
+      "opaque_pct": 100.0,
+      "flags": []
+    },
+    {
+      "file": "city.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "ratio": 1.0,
+      "content_bbox": [
+        0,
+        0,
+        1024,
+        1024
+      ],
+      "content_size": [
+        1024,
+        1024
+      ],
+      "content_fill": 1.0,
+      "center_offset": [
+        0.0,
+        0.0
+      ],
+      "corner_opaque": 4,
+      "opaque_pct": 100.0,
+      "flags": []
+    },
+    {
+      "file": "day-in-the-life.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "ratio": 1.0,
+      "content_bbox": [
+        0,
+        0,
+        1024,
+        1024
+      ],
+      "content_size": [
+        1024,
+        1024
+      ],
+      "content_fill": 1.0,
+      "center_offset": [
+        0.0,
+        0.0
+      ],
+      "corner_opaque": 4,
+      "opaque_pct": 100.0,
+      "flags": []
+    },
+    {
+      "file": "desert.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "ratio": 1.0,
+      "content_bbox": [
+        0,
+        0,
+        1024,
+        1024
+      ],
+      "content_size": [
+        1024,
+        1024
+      ],
+      "content_fill": 1.0,
+      "center_offset": [
+        0.0,
+        0.0
+      ],
+      "corner_opaque": 4,
+      "opaque_pct": 100.0,
+      "flags": []
+    },
+    {
+      "file": "endless-hallway.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "ratio": 1.0,
+      "content_bbox": [
+        0,
+        0,
+        1024,
+        1024
+      ],
+      "content_size": [
+        1024,
+        1024
+      ],
+      "content_fill": 1.0,
+      "center_offset": [
+        0.0,
+        0.0
+      ],
+      "corner_opaque": 4,
+      "opaque_pct": 100.0,
+      "flags": []
+    },
+    {
+      "file": "endless-ocean.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "ratio": 1.0,
+      "content_bbox": [
+        0,
+        0,
+        1024,
+        1024
+      ],
+      "content_size": [
+        1024,
+        1024
+      ],
+      "content_fill": 1.0,
+      "center_offset": [
+        0.0,
+        0.0
+      ],
+      "corner_opaque": 4,
+      "opaque_pct": 100.0,
+      "flags": []
+    },
+    {
+      "file": "field-of-broken-glass.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "ratio": 1.0,
+      "content_bbox": [
+        0,
+        0,
+        1024,
+        1024
+      ],
+      "content_size": [
+        1024,
+        1024
+      ],
+      "content_fill": 1.0,
+      "center_offset": [
+        0.0,
+        0.0
+      ],
+      "corner_opaque": 4,
+      "opaque_pct": 100.0,
+      "flags": []
+    },
+    {
+      "file": "forest.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "ratio": 1.0,
+      "content_bbox": [
+        0,
+        0,
+        1024,
+        1024
+      ],
+      "content_size": [
+        1024,
+        1024
+      ],
+      "content_fill": 1.0,
+      "center_offset": [
+        0.0,
+        0.0
+      ],
+      "corner_opaque": 4,
+      "opaque_pct": 100.0,
+      "flags": []
+    },
+    {
+      "file": "house.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "ratio": 1.0,
+      "content_bbox": [
+        0,
+        0,
+        1024,
+        1024
+      ],
+      "content_size": [
+        1024,
+        1024
+      ],
+      "content_fill": 1.0,
+      "center_offset": [
+        0.0,
+        0.0
+      ],
+      "corner_opaque": 4,
+      "opaque_pct": 100.0,
+      "flags": []
+    },
+    {
+      "file": "inner-sanctum.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "ratio": 1.0,
+      "content_bbox": [
+        0,
+        0,
+        1024,
+        1024
+      ],
+      "content_size": [
+        1024,
+        1024
+      ],
+      "content_fill": 1.0,
+      "center_offset": [
+        0.0,
+        0.0
+      ],
+      "corner_opaque": 4,
+      "opaque_pct": 100.0,
+      "flags": []
+    },
+    {
+      "file": "insanity.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "ratio": 1.0,
+      "content_bbox": [
+        0,
+        0,
+        1024,
+        1024
+      ],
+      "content_size": [
+        1024,
+        1024
+      ],
+      "content_fill": 1.0,
+      "center_offset": [
+        0.0,
+        0.0
+      ],
+      "corner_opaque": 4,
+      "opaque_pct": 100.0,
+      "flags": []
+    },
+    {
+      "file": "lava.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "ratio": 1.0,
+      "content_bbox": [
+        0,
+        0,
+        1024,
+        1024
+      ],
+      "content_size": [
+        1024,
+        1024
+      ],
+      "content_fill": 1.0,
+      "center_offset": [
+        0.0,
+        0.0
+      ],
+      "corner_opaque": 4,
+      "opaque_pct": 100.0,
+      "flags": []
+    },
+    {
+      "file": "naked-classroom.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "ratio": 1.0,
+      "content_bbox": [
+        0,
+        0,
+        1024,
+        1024
+      ],
+      "content_size": [
+        1024,
+        1024
+      ],
+      "content_fill": 1.0,
+      "center_offset": [
+        0.0,
+        0.0
+      ],
+      "corner_opaque": 4,
+      "opaque_pct": 100.0,
+      "flags": []
+    },
+    {
+      "file": "road.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "ratio": 1.0,
+      "content_bbox": [
+        0,
+        0,
+        1024,
+        1024
+      ],
+      "content_size": [
+        1024,
+        1024
+      ],
+      "content_fill": 1.0,
+      "center_offset": [
+        0.0,
+        0.0
+      ],
+      "corner_opaque": 4,
+      "opaque_pct": 100.0,
+      "flags": []
+    },
+    {
+      "file": "sea-of-teeth.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "ratio": 1.0,
+      "content_bbox": [
+        0,
+        0,
+        1024,
+        1024
+      ],
+      "content_size": [
+        1024,
+        1024
+      ],
+      "content_fill": 1.0,
+      "center_offset": [
+        0.0,
+        0.0
+      ],
+      "corner_opaque": 4,
+      "opaque_pct": 100.0,
+      "flags": []
+    },
+    {
+      "file": "silver-mist.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "ratio": 1.0,
+      "content_bbox": [
+        0,
+        0,
+        1024,
+        1024
+      ],
+      "content_size": [
+        1024,
+        1024
+      ],
+      "content_fill": 1.0,
+      "center_offset": [
+        0.0,
+        0.0
+      ],
+      "corner_opaque": 4,
+      "opaque_pct": 100.0,
+      "flags": []
+    },
+    {
+      "file": "sky.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "ratio": 1.0,
+      "content_bbox": [
+        0,
+        0,
+        1024,
+        1024
+      ],
+      "content_size": [
+        1024,
+        1024
+      ],
+      "content_fill": 1.0,
+      "center_offset": [
+        0.0,
+        0.0
+      ],
+      "corner_opaque": 4,
+      "opaque_pct": 100.0,
+      "flags": []
+    },
+    {
+      "file": "suburbia.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "ratio": 1.0,
+      "content_bbox": [
+        0,
+        0,
+        1024,
+        1024
+      ],
+      "content_size": [
+        1024,
+        1024
+      ],
+      "content_fill": 1.0,
+      "center_offset": [
+        0.0,
+        0.0
+      ],
+      "corner_opaque": 4,
+      "opaque_pct": 100.0,
+      "flags": []
+    },
+    {
+      "file": "the-attic.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "ratio": 1.0,
+      "content_bbox": [
+        0,
+        0,
+        1024,
+        1024
+      ],
+      "content_size": [
+        1024,
+        1024
+      ],
+      "content_fill": 1.0,
+      "center_offset": [
+        0.0,
+        0.0
+      ],
+      "corner_opaque": 4,
+      "opaque_pct": 100.0,
+      "flags": []
+    },
+    {
+      "file": "the-basement.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "ratio": 1.0,
+      "content_bbox": [
+        0,
+        0,
+        1024,
+        1024
+      ],
+      "content_size": [
+        1024,
+        1024
+      ],
+      "content_fill": 1.0,
+      "center_offset": [
+        0.0,
+        0.0
+      ],
+      "corner_opaque": 4,
+      "opaque_pct": 100.0,
+      "flags": []
+    },
+    {
+      "file": "the-party.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "ratio": 1.0,
+      "content_bbox": [
+        0,
+        0,
+        1024,
+        1024
+      ],
+      "content_size": [
+        1024,
+        1024
+      ],
+      "content_fill": 1.0,
+      "center_offset": [
+        0.0,
+        0.0
+      ],
+      "corner_opaque": 4,
+      "opaque_pct": 100.0,
+      "flags": []
+    },
+    {
+      "file": "tranquil-grove.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "ratio": 1.0,
+      "content_bbox": [
+        0,
+        0,
+        1024,
+        1024
+      ],
+      "content_size": [
+        1024,
+        1024
+      ],
+      "content_fill": 1.0,
+      "center_offset": [
+        0.0,
+        0.0
+      ],
+      "corner_opaque": 4,
+      "opaque_pct": 100.0,
+      "flags": []
+    },
+    {
+      "file": "wasteland.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "ratio": 1.0,
+      "content_bbox": [
+        0,
+        0,
+        1024,
+        1024
+      ],
+      "content_size": [
+        1024,
+        1024
+      ],
+      "content_fill": 1.0,
+      "center_offset": [
+        0.0,
+        0.0
+      ],
+      "corner_opaque": 4,
+      "opaque_pct": 100.0,
+      "flags": []
+    }
+  ]
+}

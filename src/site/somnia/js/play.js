@@ -978,6 +978,12 @@ function renderAll() {
   maybeShowReturnPicker();
   maybeShowDreamerPowerUI();
 
+  const utilityModal = document.getElementById("utility-modal");
+  document.body.classList.toggle(
+    "utility-modal-open",
+    utilityModal && !utilityModal.classList.contains("hidden")
+  );
+
   if (isInteractiveTutorialActive(state)) {
     const step = getTutorialStep(state);
     if (step) ensureTutorialStepTargetsVisible(step);
