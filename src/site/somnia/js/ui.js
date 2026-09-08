@@ -2237,11 +2237,13 @@ let tutorialSpotlightTracker = null;
 let tutorialScrollBound = false;
 const TUTORIAL_CONTINUE_DELAY_MS = 1800;
 let tutorialContinueTimer = null;
+let tutorialDelayState = null;
 
 function clearTutorialContinueTimer() {
   if (!tutorialContinueTimer) return;
   clearInterval(tutorialContinueTimer);
   tutorialContinueTimer = null;
+  tutorialDelayState = null;
 }
 
 function tutorialContinueLabel(stepIndex, total) {
@@ -2249,8 +2251,19 @@ function tutorialContinueLabel(stepIndex, total) {
 }
 
 function applyTutorialContinueDelay(btn, waiting, label) {
+  const stateKey = `${waiting}:${label}`;
+  if (
+    tutorialContinueTimer
+    && tutorialDelayState?.btn === btn
+    && tutorialDelayState?.stateKey === stateKey
+  ) {
+    return;
+  }
+
   clearTutorialContinueTimer();
   if (!btn) return;
+
+  tutorialDelayState = { btn, stateKey };
 
   if (waiting) {
     btn.disabled = true;
@@ -2708,11 +2721,8 @@ export function showTutorialStep(step, stepIndex, total, {
   const roundPart = roundLabel ? `Round ${roundLabel} · ` : "";
   document.getElementById("tutorial-progress").textContent = `${roundPart}Step ${stepIndex + 1} / ${total}`;
   const nextBtn = document.getElementById("tutorial-next");
-  const label = tutorialContinueLabel(stepIndex, total);
-  applyTutorialContinueDelay(nextBtn, waiting, label);
-
   const backBtn = document.getElementById("tutorial-back");
-  if (backBtn) backBtn.disabled = stepIndex <= 0;
+  const label = tutorialContinueLabel(stepIndex, total);
 
   const card = overlay.querySelector(".tutorial-card");
   card?.classList.toggle("tutorial-waiting", waiting);
@@ -2754,6 +2764,9 @@ export function showTutorialStep(step, stepIndex, total, {
   const freshNext = document.getElementById("tutorial-next");
   const freshSkip = document.getElementById("tutorial-skip");
   const freshBack = document.getElementById("tutorial-back");
+
+  if (freshBack) freshBack.disabled = stepIndex <= 0;
+  applyTutorialContinueDelay(freshNext, waiting, label);
 
   freshNext.addEventListener("click", () => {
     if (freshNext.disabled) return;
