@@ -80,3 +80,19 @@ export function musicCreditHtml() {
     .join(", ");
   return `<p class="music-credit">Music: ${list} by ${artist} (${host}), licensed under <a href="${licenseUrl}" rel="noopener noreferrer">${license}</a>.</p>`;
 }
+
+export function artCreditHtml() {
+  return `<p class="music-credit">Card illustrations: AI-generated in <a href="https://cursor.com" rel="noopener noreferrer">Cursor</a>, from prompts written by Philip Carroll.</p>`;
+}
+
+export function boxArtCreditHtml() {
+  return `<p class="music-credit">Somnia splash and background art by David Paul Seymour. Somnia artwork © Philip Carroll.</p>`;
+}
+
+export function boxArtSplashCreditHtml() {
+  return `<p class="menu-splash-credit">Art by David Paul Seymour · Somnia artwork © Philip Carroll</p>`;
+}
+
+export function footerCreditsHtml() {
+  return `${musicCreditHtml()}${boxArtCreditHtml()}${artCreditHtml()}`;
+}

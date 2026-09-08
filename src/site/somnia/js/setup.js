@@ -1,4 +1,4 @@
-import { bindMusicToggle, initMenuAudioSettings, bindButtonRipples, musicCreditHtml } from "./audio.js";
+import { bindMusicToggle, initMenuAudioSettings, bindButtonRipples, footerCreditsHtml, boxArtSplashCreditHtml } from "./audio.js";
 import { initDeviceMode } from "./device-mode.js";
 import { buildSetupAudioControls } from "./pause-menu.js";
 import { initFxLayer } from "./fx.js";
@@ -85,8 +85,10 @@ async function init() {
   bindButtonRipples();
   initMenuAudioSettings();
   bindMusicToggle();
+  const splashCreditEl = document.getElementById("menu-splash-credit");
+  if (splashCreditEl) splashCreditEl.innerHTML = boxArtSplashCreditHtml();
   const creditEl = document.getElementById("menu-footer-credit");
-  if (creditEl) creditEl.innerHTML = musicCreditHtml();
+  if (creditEl) creditEl.innerHTML = footerCreditsHtml();
 
   await preloadMenuSplashImage();
   gameData = await loadGameData();

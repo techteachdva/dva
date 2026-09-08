@@ -3,7 +3,7 @@ import {
   saveSettings,
   MUSIC_TRACKS,
   VIEW_PRESETS,
-  musicCreditHtml,
+  footerCreditsHtml,
 } from "./audio-settings.js";
 import {
   applyAudioSettings,
@@ -80,7 +80,7 @@ function renderAudioTab() {
         <span class="pan-readout" id="pause-sfx-pan-label">${panLabel(s.sfxPan)}</span>
       </label>
     </div>
-    ${musicCreditHtml()}
+    ${footerCreditsHtml()}
   `;
 }
 
@@ -285,7 +285,7 @@ export function buildSetupAudioControls(container) {
         <option value="large" ${s.viewMode === "large" ? "selected" : ""}>Large</option>
       </select>
     </label>
-    ${musicCreditHtml()}
+    ${footerCreditsHtml()}
   `;
 
   const persist = () => {

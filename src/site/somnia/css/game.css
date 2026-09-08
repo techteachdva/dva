@@ -74,6 +74,13 @@ body.menu-window #app {
   transition: opacity 1.6s ease, visibility 1.6s ease;
 }
 
+.menu-splash-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
 .menu-splash-art {
   width: min(92vw, 520px);
   max-height: min(82vh, 720px);
@@ -83,6 +90,15 @@ body.menu-window #app {
     0 24px 80px rgba(0, 0, 0, 0.65),
     0 0 48px rgba(123, 92, 255, 0.22);
   animation: menu-splash-intro 1.4s ease both;
+}
+
+.menu-splash-credit {
+  margin: 0;
+  font-size: 0.72rem;
+  color: rgba(200, 190, 230, 0.88);
+  text-align: center;
+  max-width: min(92vw, 520px);
+  line-height: 1.45;
 }
 
 .menu-splash.dissolving {
@@ -339,6 +355,10 @@ body.victory-celebrating .end-panel {
 
 .music-credit a:hover {
   color: #d4c8f5;
+}
+
+.music-credit + .music-credit {
+  margin-top: 0.35rem;
 }
 
 .overview-page .music-credit {

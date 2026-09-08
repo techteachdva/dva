@@ -13,7 +13,7 @@ import {
   statForPhaseBudget,
   totalStat,
 } from "./rules.js";
-import { musicCreditHtml } from "./audio.js";
+import { footerCreditsHtml } from "./audio.js";
 
 const TUTORIAL_KEY = "somnia_tutorial_seen";
 
@@ -408,7 +408,7 @@ export function rulesIntroHtml() {
       </section>
 
       <p class="overview-footer">Somnia 12.9 — cooperative rules reference.</p>
-      ${musicCreditHtml()}
+      ${footerCreditsHtml()}
     </div>
   `;
 }
