@@ -865,54 +865,61 @@ export function renderBoard(state, onSelectLandscape, legalMoveIds = [], pickHig
 }
 
 export function renderPlayers(state, onSelectPlayer) {
-  const list = document.getElementById("player-list");
-  if (!list) return;
+  const dock = document.getElementById("player-list");
+  const dropdown = document.getElementById("dreamers-dropdown-list");
   hideDreamerDetailTooltip();
-  list.innerHTML = "";
+  if (dock) dock.innerHTML = "";
+  if (dropdown) dropdown.innerHTML = "";
 
   state.players.forEach((player, index) => {
-    const chip = document.createElement("button");
-    chip.type = "button";
-    const tradeTarget = state.tradeMode && state.trade?.step === "pick-partner";
-    const isActive = index === state.activePlayerIndex;
-    chip.className = [
-      "player-chip",
-      isActive ? "active" : "",
-      !player.alive ? "dead" : "",
-      tradeTarget ? "trade-target" : "",
-    ].filter(Boolean).join(" ");
-    const ariaHint = getDreamerChipTooltip(state, player, index);
-    chip.dataset.playerId = player.id;
-    chip.setAttribute("aria-label", `${player.name}. ${ariaHint}`);
-    chip.innerHTML = `
-      <img src="${player.dreamer.image}" alt="" onerror="this.style.display='none'">
-      <div class="info">
-        <div class="name">${player.name}${player.isHead ? " ★" : ""}${!player.alive ? " (lost)" : ""}</div>
-        ${dreamerStatsHtml(player.dreamer)}
-        <div class="sub">${player.powerTokens} power · ${formatHandPsycheLine(state, player)} · ${player.deathCount || 0}/5 deaths · ${player.objects.length} obj · ${player.persistent?.length || 0} persistent</div>
-      </div>
-    `;
+    const appendChip = (list, compact) => {
+      if (!list) return;
+      const chip = document.createElement("button");
+      chip.type = "button";
+      const tradeTarget = state.tradeMode && state.trade?.step === "pick-partner";
+      const isActive = index === state.activePlayerIndex;
+      chip.className = [
+        "player-chip",
+        isActive ? "active" : "",
+        !player.alive ? "dead" : "",
+        tradeTarget ? "trade-target" : "",
+      ].filter(Boolean).join(" ");
+      const ariaHint = getDreamerChipTooltip(state, player, index);
+      chip.dataset.playerId = player.id;
+      chip.setAttribute("aria-label", `${player.name}. ${ariaHint}`);
+      chip.innerHTML = `
+        <img src="${player.dreamer.image}" alt="" onerror="this.style.display='none'">
+        <div class="info">
+          <div class="name">${player.name}${player.isHead ? " ★" : ""}${!player.alive ? " (lost)" : ""}</div>
+          ${compact ? "" : dreamerStatsHtml(player.dreamer)}
+          <div class="sub">${player.powerTokens} power · ${formatHandPsycheLine(state, player)} · ${player.deathCount || 0}/5 deaths · ${player.objects.length} obj · ${player.persistent?.length || 0} persistent</div>
+        </div>
+      `;
 
-    const showTooltip = () => {
-      const focusHint = !isActive && player.alive
-        ? "Click to focus this Dreamer"
-        : tradeTarget
-          ? "Click to trade with this Dreamer"
-          : undefined;
-      showDreamerDetailTooltip(player.dreamer, chip, { player, focusHint, state });
+      const showTooltip = () => {
+        const focusHint = !isActive && player.alive
+          ? "Click to focus this Dreamer"
+          : tradeTarget
+            ? "Click to trade with this Dreamer"
+            : undefined;
+        showDreamerDetailTooltip(player.dreamer, chip, { player, focusHint, state });
+      };
+
+      chip.addEventListener("mouseenter", showTooltip);
+      chip.addEventListener("mouseleave", hideDreamerDetailTooltip);
+      chip.addEventListener("focusin", showTooltip);
+      chip.addEventListener("focusout", (event) => {
+        if (!chip.contains(event.relatedTarget)) hideDreamerDetailTooltip();
+      });
+      chip.addEventListener("click", () => {
+        hideDreamerDetailTooltip();
+        onSelectPlayer(index);
+      });
+      list.appendChild(chip);
     };
 
-    chip.addEventListener("mouseenter", showTooltip);
-    chip.addEventListener("mouseleave", hideDreamerDetailTooltip);
-    chip.addEventListener("focusin", showTooltip);
-    chip.addEventListener("focusout", (event) => {
-      if (!chip.contains(event.relatedTarget)) hideDreamerDetailTooltip();
-    });
-    chip.addEventListener("click", () => {
-      hideDreamerDetailTooltip();
-      onSelectPlayer(index);
-    });
-    list.appendChild(chip);
+    appendChip(dock, true);
+    appendChip(dropdown, false);
   });
 }
 
@@ -1000,8 +1007,54 @@ export function renderCoopMeetHands(state, onCardClick) {
   });
 }
 
-export function renderDecks(state, onDeckClick) {
+const DECK_LABELS = {
+  dream: "💤 Dream",
+  psyche: "🃏 Psyche",
+  archetype: "👤 Archetype",
+  "mindstream-lucidity": "◉ Mindstream Lucidity",
+  "mindstream-elasticity": "⇄ Mindstream Elasticity",
+  "mindstream-willpower": "✊ Mindstream Willpower",
+};
+
+function discardPileForDeck(state, deckId) {
+  switch (deckId) {
+    case "dream": return state.dreamDiscard || [];
+    case "psyche": return state.psycheDiscard || [];
+    case "archetype": return [];
+    case "mindstream-lucidity": return state.mindstreamDiscard?.lucidity || [];
+    case "mindstream-elasticity": return state.mindstreamDiscard?.elasticity || [];
+    case "mindstream-willpower": return state.mindstreamDiscard?.willpower || [];
+    default: return [];
+  }
+}
+
+export function showDiscardPileModal(state, deckId, onCardClick) {
+  const modal = document.getElementById("utility-modal");
+  const body = document.getElementById("utility-modal-body");
+  const label = DECK_LABELS[deckId] || deckId;
+  const pile = [...discardPileForDeck(state, deckId)].reverse();
+  body.innerHTML = `
+    <h2>${label} — Discard</h2>
+    <p class="graveyard-total">${pile.length} card${pile.length === 1 ? "" : "s"} face-up in discard</p>
+    <div id="discard-browse" class="mini-card-row"></div>
+  `;
+  const container = body.querySelector("#discard-browse");
+  if (!pile.length) {
+    container.innerHTML = "<p>Discard pile is empty.</p>";
+  } else {
+    pile.forEach((card) => {
+      container.appendChild(renderCard(card, {
+        mini: true,
+        onClick: () => onCardClick(card),
+      }));
+    });
+  }
+  modal.classList.remove("hidden");
+}
+
+export function renderDecks(state, onViewDiscard) {
   const tray = document.getElementById("deck-tray");
+  if (!tray) return;
   tray.innerHTML = "";
 
   const coreDecks = [
@@ -1016,26 +1069,30 @@ export function renderDecks(state, onDeckClick) {
     { id: "mindstream-willpower", label: "✊ Mindstream", short: "Willpower", count: state.mindstreamDecks.willpower.length, suit: "willpower" },
   ];
 
-  const footerDecks = [
-    { id: "subconscious", label: "☠ Subconscious", count: subconsciousCount(state.subconscious) },
-  ];
-
   const appendDeck = (deck) => {
-    const el = document.createElement("button");
-    el.type = "button";
-    const isGraveyard = deck.id === "subconscious";
-    el.className = [
-      "deck-pile",
+    const discardCount = discardPileForDeck(state, deck.id).length;
+    const row = document.createElement("div");
+    row.className = [
+      "deck-dropdown-row",
       deck.suit ? `suit-${deck.suit}` : "",
-      isGraveyard && deck.count > 0 ? "graveyard-active" : "",
     ].filter(Boolean).join(" ");
+    row.dataset.deckId = deck.id;
     const labelText = deck.short
-      ? `<span class="deck-label-main">${deck.label}</span><span class="deck-label-sub">${deck.short}</span>`
-      : `<span class="deck-label-main">${deck.label}</span>`;
-    el.dataset.deckId = deck.id;
-    el.innerHTML = `${labelText}<strong class="deck-count">${deck.count}</strong>`;
-    el.addEventListener("click", () => onDeckClick(deck.id));
-    tray.appendChild(el);
+      ? `${deck.label} <span class="deck-dropdown-suit">${deck.short}</span>`
+      : deck.label;
+    row.innerHTML = `
+      <div class="deck-dropdown-label">${labelText}</div>
+      <div class="deck-dropdown-meta">${deck.count} in deck · ${discardCount} in discard</div>
+    `;
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "btn btn-sm";
+    btn.textContent = "View discard";
+    btn.disabled = discardCount === 0;
+    btn.title = discardCount === 0 ? "Discard pile is empty" : "Browse face-up discard cards";
+    btn.addEventListener("click", () => onViewDiscard(deck.id));
+    row.appendChild(btn);
+    tray.appendChild(row);
   };
 
   coreDecks.forEach(appendDeck);
@@ -1046,7 +1103,6 @@ export function renderDecks(state, onDeckClick) {
   tray.appendChild(section);
 
   mindstreamDecks.forEach(appendDeck);
-  footerDecks.forEach(appendDeck);
 }
 
 export function renderSubconsciousGraveyard(state, onBrowse) {
@@ -2330,9 +2386,11 @@ function getStepTargetSelectors(step) {
   return [];
 }
 
-const TUTORIAL_BOTTOM_SELECTORS = new Set(["#hand-bar", "#phase-actions", "#table-footer"]);
+const TUTORIAL_BOTTOM_SELECTORS = new Set([
+  "#hand-bar", "#phase-actions", "#table-footer", "#dreamer-dock", "#player-list",
+]);
 const TUTORIAL_TOP_SELECTORS = new Set(["#btn-advance-phase", "#phase-advance-bar", "#phase-stepper", "#narrator-panel"]);
-const TUTORIAL_BOARD_SELECTORS = new Set(["#board-viewport", "#hex-board", "#player-list"]);
+const TUTORIAL_BOARD_SELECTORS = new Set(["#board-viewport", "#hex-board", "#player-list", "#dreamer-dock"]);
 
 function isUtilityModalOpen() {
   const modal = document.getElementById("utility-modal");
@@ -2352,7 +2410,12 @@ function getSpotlightSelector(step) {
   if (selectors.includes("#phase-advance-bar") && !selectors.includes("#board-viewport")) {
     return "#btn-advance-phase";
   }
-  if (selectors.includes("#phase-actions")) return "#phase-actions";
+  if (selectors.includes("#phase-actions") && !selectors.includes("#board-viewport")) {
+    return "#phase-actions";
+  }
+  if (selectors.includes("#board-viewport")) return "#board-viewport";
+  if (selectors.includes("#dreamer-dock")) return "#dreamer-dock";
+  if (selectors.includes("#player-list")) return "#player-list";
   if (selectors.length === 1) return selectors[0];
   const focused = selectors.find((s) => !TUTORIAL_BOARD_SELECTORS.has(s) && s !== "#board-viewport");
   return focused || selectors[0];
@@ -2414,6 +2477,9 @@ export function ensureTutorialStepTargetsVisible(step) {
   if (selectors.some((s) => s === "#guide-panel" || s === "#guide-panel-wrap")) {
     document.getElementById("guide-panel-wrap")?.classList.remove("collapsed");
     document.getElementById("btn-toggle-guide")?.setAttribute("aria-expanded", "true");
+  }
+  if (selectors.some((s) => s === "#player-list" || s === "#dreamer-dock")) {
+    document.getElementById("dreamer-dock")?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }
 }
 

@@ -37,16 +37,37 @@ function centerBoard() {
   applyTransform();
 }
 
+function fitBoardToViewport() {
+  if (!viewport || !stage) return;
+  const board = stage.querySelector("#hex-board");
+  if (!board) return;
+  const bw = board.offsetWidth;
+  const bh = board.offsetHeight;
+  if (!bw || !bh) return;
+  const padding = 20;
+  const vw = viewport.clientWidth;
+  const vh = viewport.clientHeight;
+  const fitScale = Math.min(
+    (vw - padding * 2) / bw,
+    (vh - padding * 2) / bh,
+    MAX_SCALE,
+  );
+  scale = Math.max(MIN_SCALE, fitScale);
+  panX = (vw - bw * scale) / 2;
+  panY = (vh - bh * scale) / 2;
+  applyTransform();
+}
+
 export function resetBoardZoom() {
   scale = 1;
   panX = 0;
   panY = 0;
   userAdjusted = false;
-  centerBoard();
+  fitBoardToViewport();
 }
 
 export function syncBoardZoomAfterRender() {
-  if (!userAdjusted) centerBoard();
+  if (!userAdjusted) fitBoardToViewport();
   else applyTransform();
 }
 

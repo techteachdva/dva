@@ -18,9 +18,9 @@ export const MUSIC_ATTRIBUTION = {
 };
 
 export const VIEW_PRESETS = {
-  small: { sidebarW: 148, handH: 108, chromeH: 68, footerH: 88, uiScale: 0.92 },
-  medium: { sidebarW: 210, handH: 155, chromeH: 96, footerH: 108, uiScale: 1 },
-  large: { sidebarW: 280, handH: 210, chromeH: 128, footerH: 132, uiScale: 1.12 },
+  small: { sidebarW: 240, handH: 108, chromeH: 68, footerH: 88, uiScale: 0.92 },
+  medium: { sidebarW: 300, handH: 155, chromeH: 96, footerH: 108, uiScale: 1 },
+  large: { sidebarW: 360, handH: 210, chromeH: 128, footerH: 132, uiScale: 1.12 },
 };
 
 const DEFAULT_SETTINGS = {

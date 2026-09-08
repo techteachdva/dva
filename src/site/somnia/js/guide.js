@@ -48,7 +48,7 @@ export const TUTORIAL_STEPS = [
   {
     id: "explore",
     title: "Explore Phase",
-    body: "Discuss who should spend Elasticity, then unlock shared moves. Click Dreamer chips and green hexes in any order until moves run out.",
+    body: "Discuss who should spend Elasticity, then unlock shared moves. Click Dreamer chips in the bottom-left dock and green hexes in any order until moves run out.",
     target: "#board-viewport",
     phase: "Explore",
   },

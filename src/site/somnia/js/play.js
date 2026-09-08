@@ -45,7 +45,6 @@ import {
   handleDefeatFinalArchetype,
   handleSacrificeForFinal,
   endPhase,
-  getDeckTop,
   getPhaseHint,
   getLegalExploreTargets,
   resolvePendingDeathDream,
@@ -54,7 +53,7 @@ import { requestEndPhase } from "./phase-skip.js";
 import { initDevConsole } from "./dev-console.js";
 import { enableDevMode } from "./dev-commands.js";
 import { narrate } from "./narrator.js";
-import { pickReturnCard, cancelPendingReturn, pickRepressCard, confirmRepressStep, subconsciousCount } from "./subconscious.js";
+import { pickReturnCard, cancelPendingReturn, pickRepressCard, confirmRepressStep } from "./subconscious.js";
 import { getLandscapePickHighlights } from "./landscapes.js";
 import {
   resolveDreamerPowerChoice,
@@ -113,6 +112,7 @@ import {
   hideUtilityModal,
   showSubconsciousPicker,
   showSubconsciousBrowse,
+  showDiscardPileModal,
   showRepressPicker,
   renderSubconsciousGraveyard,
   showRulesModal,
@@ -337,6 +337,46 @@ function bindRestart() {
   });
 }
 
+function bindHeaderDropdowns() {
+  const menus = [
+    { btnId: "btn-header-decks", panelId: "decks-dropdown-panel" },
+    { btnId: "btn-header-dreamers", panelId: "dreamers-dropdown-panel" },
+  ];
+
+  const closeAll = (exceptPanel = null) => {
+    menus.forEach(({ btnId, panelId }) => {
+      const panel = document.getElementById(panelId);
+      const btn = document.getElementById(btnId);
+      if (panel && panel !== exceptPanel) panel.classList.add("hidden");
+      if (btn && panel !== exceptPanel) btn.setAttribute("aria-expanded", "false");
+    });
+  };
+
+  menus.forEach(({ btnId, panelId }) => {
+    const btn = document.getElementById(btnId);
+    const panel = document.getElementById(panelId);
+    if (!btn || !panel) return;
+    btn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const willOpen = panel.classList.contains("hidden");
+      closeAll();
+      if (willOpen) {
+        panel.classList.remove("hidden");
+        btn.setAttribute("aria-expanded", "true");
+      }
+    });
+  });
+
+  document.addEventListener("click", (event) => {
+    if (event.target.closest(".header-dropdown")) return;
+    closeAll();
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeAll();
+  });
+}
+
 function bindHelp() {
   document.getElementById("btn-overview")?.addEventListener("click", showOverviewModal);
   document.getElementById("btn-help")?.addEventListener("click", showRulesModal);
@@ -346,14 +386,7 @@ function bindHelp() {
   });
   document.getElementById("btn-end-overview")?.addEventListener("click", showOverviewModal);
   document.getElementById("btn-pause")?.addEventListener("click", openPauseMenu);
-
-  document.getElementById("btn-toggle-decks")?.addEventListener("click", () => {
-    const tray = document.getElementById("deck-tray");
-    const btn = document.getElementById("btn-toggle-decks");
-    const hidden = tray.classList.toggle("collapsed");
-    btn.textContent = hidden ? "Show decks" : "Hide decks";
-    btn.setAttribute("aria-expanded", String(!hidden));
-  });
+  bindHeaderDropdowns();
 }
 
 function bindModal() {
@@ -957,13 +990,7 @@ function renderAll() {
   });
   renderDecks(state, (deckId) => {
     if (deckId.startsWith("mindstream-") && state.tradeMode) return;
-    if (deckId === "subconscious") {
-      showSubconsciousBrowse(state, (card) => showModal(card));
-      return;
-    }
-    const top = getDeckTop(state, deckId);
-    if (top) showModal(top);
-    else addDeckMessage(deckId);
+    showDiscardPileModal(state, deckId, (card) => showModal(card));
   });
   renderActiveSlots(state, (card) => showModal(card));
   renderSubconsciousGraveyard(state, () => {
@@ -997,20 +1024,6 @@ function renderAll() {
     runPendingCardFx(state);
     runPendingBoardFx();
   });
-}
-
-function addDeckMessage(deckId) {
-  const counts = {
-    dream: state.dreamDeck.length,
-    psyche: state.psycheDeck.length,
-    archetype: state.archetypeDeck.length,
-    subconscious: subconsciousCount(state.subconscious),
-    "mindstream-lucidity": state.mindstreamDecks.lucidity.length,
-    "mindstream-elasticity": state.mindstreamDecks.elasticity.length,
-    "mindstream-willpower": state.mindstreamDecks.willpower.length,
-  };
-  addLog(state, `${deckId}: ${counts[deckId] ?? 0} cards.`);
-  renderLog(state);
 }
 
 init();

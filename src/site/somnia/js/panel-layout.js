@@ -1,7 +1,7 @@
 import { loadSettings, saveSettings, VIEW_PRESETS } from "./audio-settings.js";
 
 const MIN = { sidebarW: 120, handH: 80, chromeH: 48, footerH: 56 };
-const MAX = { sidebarW: 420, handH: 320, chromeH: 280, footerH: 220 };
+const MAX = { sidebarW: 480, handH: 320, chromeH: 280, footerH: 220 };
 
 let settings = loadSettings();
 
@@ -119,18 +119,6 @@ export function initPanelLayout() {
   document.getElementById("btn-toggle-guide")?.addEventListener("click", () => toggleGuidePanel());
 
   const panels = resolvedPanels();
-
-  bindResizeHandle(
-    document.getElementById("resize-sidebar-left"),
-    "x",
-    "sidebarW",
-    (e) => ({ x: e.clientX, w: panels.sidebarW }),
-    (e, start) => {
-      const w = clamp(start.w + (e.clientX - start.x), MIN.sidebarW, MAX.sidebarW);
-      document.documentElement.style.setProperty("--sidebar-w", `${w}px`);
-      persistPanel("sidebarW", w);
-    },
-  );
 
   bindResizeHandle(
     document.getElementById("resize-sidebar-right"),
