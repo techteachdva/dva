@@ -216,7 +216,7 @@ function renderPsycheCard(card, { selected, onClick, mini, dense, entering, play
     ].filter(Boolean).join(" ");
     el.innerHTML = `
       <span class="psyche-value">⚡</span>
-      <span class="psyche-suit">+${card.powerTokens || 2}</span>
+      <span class="psyche-suit">+${card.powerTokens ?? 1}</span>
       <span class="psyche-label">Power</span>
     `;
     if (onClick) el.addEventListener("click", onClick);
@@ -604,10 +604,10 @@ export function showModal(card) {
       detail.innerHTML = `
         <div class="psyche-modal-face psyche-power">
           <span class="psyche-value large">⚡</span>
-          <span class="psyche-suit large">+${card.powerTokens || 2}</span>
+          <span class="psyche-suit large">+${card.powerTokens ?? 1}</span>
         </div>
         <h2>${card.name}</h2>
-        <p>When drawn: take <strong>${card.powerTokens || 2} Power Tokens</strong>, then discard this card.</p>
+        <p>When drawn: take <strong>${card.powerTokens ?? 1} Power Token${(card.powerTokens ?? 1) === 1 ? "" : "s"}</strong>, then discard this card.</p>
       `;
     } else {
       detail.innerHTML = `

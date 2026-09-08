@@ -178,8 +178,8 @@ export function createInitialState(data, options) {
   state.phaseIndex = 0;
   addLog(state, `Round ${state.round}: Reveal Phase — each Dreamer begins with ${PSYCHE_STARTING_HAND} Psyche.`);
   players.forEach((player) => {
-    grantPowerTokens(state, player, 2, {
-      reason: `${player.name} begins with 2 Power Tokens.`,
+    grantPowerTokens(state, player, 1, {
+      reason: `${player.name} begins with 1 Power Token.`,
       logQuest: false,
       animate: false,
     });

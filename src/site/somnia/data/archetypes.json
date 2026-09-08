@@ -7,7 +7,7 @@
     "suit": "lucidity",
     "passive": "All Dreamers +1 Lucidity",
     "power": null,
-    "quests": ["Meet Double", "Have 10 Psyche"]
+    "quests": ["Meet Double", "1 Dreamer holds 10 Psyche cards"]
   },
   {
     "id": "innocent",
@@ -57,7 +57,7 @@
     "suit": "lucidity",
     "passive": "All Dreamers +1 Elasticity",
     "power": null,
-    "quests": ["Meet Cerberus", "Have 10 Psyche"]
+    "quests": ["Meet Cerberus", "1 Dreamer holds 10 Psyche cards"]
   },
   {
     "id": "orphan",
@@ -107,7 +107,7 @@
     "suit": "willpower",
     "passive": "All Dreamers +1 Willpower",
     "power": null,
-    "quests": ["Meet Leviathan", "Have 10 Psyche"]
+    "quests": ["Meet Leviathan", "1 Dreamer holds 10 Psyche cards"]
   },
   {
     "id": "outlaw",

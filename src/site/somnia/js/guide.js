@@ -371,7 +371,7 @@ export function rulesIntroHtml() {
 
       <section class="overview-block">
         <h3>How You Lose</h3>
-        <p>The <strong>Dream Deck</strong> empties before you reach your goal. In <strong>Final Recurrence</strong>, you lose if Dreams run out while Remaining Archetypes still stand on the map.</p>
+        <p>The <strong>Dream Deck</strong> empties before you reach your goal (<strong>14 / 17 / 21</strong> Dreams for Daydream, Nap, or Deep Sleep, plus Final Recurrence cards). In <strong>Final Recurrence</strong>, you lose if Dreams run out while Remaining Archetypes still stand on the map.</p>
       </section>
 
       <section class="overview-block">
@@ -397,7 +397,7 @@ export function rulesIntroHtml() {
             <li><strong>Round 1:</strong> each Dreamer starts with <strong>5 Psyche</strong></li>
             <li><strong>Round 2+:</strong> alive Dreamers draw <strong>2 Psyche</strong> at round start</li>
             <li><strong>One Dreamer per phase</strong> spends 1–2 suited cards to set the team budget</li>
-            <li>Unresolved Encounters fail at end of Meet; Head rotates; next round begins</li>
+            <li>Unresolved Encounters fail at end of Meet; roaming Dreambeasts hunger for the Timeline (see Encounters)</li>
           </ul>
         </div>
       </section>
@@ -407,7 +407,7 @@ export function rulesIntroHtml() {
         <p>Use the <strong>R.E.M.</strong> tab for the three phases in depth. Use <strong>Details</strong> for encounters, death, bosses, objects, Mindstream, and Final Recurrence. The in-game <strong>Guide</strong> panel shows your next step every turn.</p>
       </section>
 
-      <p class="overview-footer">Somnia 12.9 — cooperative rules reference.</p>
+      <p class="overview-footer">Somnia 13 — cooperative rules reference.</p>
       ${footerCreditsHtml()}
     </div>
   `;
@@ -485,7 +485,7 @@ export function rulesDetailsHtml() {
         <li>Max <strong>10 Psyche cards</strong> in hand (+2 with Persistent Severed Torso); overflow discards to the Psyche discard pile</li>
         <li>Max <strong>10 accepted allies</strong> (Dreambeasts) — separate from the Psyche limit</li>
         <li><strong>Wild Psyche</strong> (value 5) counts as any suit; also Represses the top card of each Mindstream deck when spent</li>
-        <li><strong>Power Psyche</strong> resolves immediately for 2 Power Tokens — never kept in hand</li>
+        <li><strong>Power Psyche</strong> resolves immediately for 1 Power Token (Power Surge) — never kept in hand</li>
         <li>Effective health = regular Psyche + allies; at 0 you face death</li>
       </ul>
 
@@ -495,6 +495,7 @@ export function rulesDetailsHtml() {
         <li><strong>Accept</strong> — meet or exceed Accept threshold; beast joins hand as a 3-value ally. Accept ≥ 10: draw 1 Object</li>
         <li><strong>Repress</strong> — meet Reject threshold; beast goes to Subconscious; resolve the Reject reward (draw Psyche, Power, Object, Return, etc.)</li>
         <li><strong>Fail</strong> — end of Meet with no resolution: lose Psyche to Subconscious per the Encounter's fail count</li>
+        <li><strong>Timeline hunger</strong> — at end of Meet, each Dreambeast still on the map costs <strong>1 Power Token</strong> (team-wide). If you cannot pay, <strong>1 Dream card is discarded</strong> from the deck per unpaid beast ("The Timeline frays")</li>
         <li>Meet bonuses: +1 if fantasy/nightmare affinity matches; +1 if primary suit matches Encounter suit; jewelry/stick Objects +1 each; body tag doubles highest card</li>
         <li>Spent allies return to their Mindstream deck; spent Psyche goes to discard or Subconscious</li>
       </ul>
@@ -504,14 +505,14 @@ export function rulesDetailsHtml() {
         <li><strong>Cerberus</strong> — Accept with exactly 3 Psyche sharing a value or suit; on Accept, Repress top 3 Psyche from team hands</li>
         <li><strong>Double</strong> — Accept with at least 2 Psyche of matching values; on Accept, Forget Day in the Life + Naked Classroom</li>
         <li><strong>Leviathan</strong> — Accept with exactly 3 Psyche, one of each suit (Wilds fill gaps); on Accept, Forget 1 Landscape + Repress top 3 Psyche</li>
-        <li>Boss Dreams spawn the boss as an Encounter on <strong>The Bed</strong></li>
+        <li>Boss Dreams spawn the boss as an Encounter on <strong>The Bed</strong> (typically Reveal rounds <strong>3, 6, and 9</strong>)</li>
       </ul>
 
       <h3>Power Tokens</h3>
-      <p>Team pool cap <strong>24</strong>. Start with 2 per Dreamer. Spend on quest marks (1 each), Dreamer Powers (1), Archetype Powers (1), Persistent Object activation (1), coin-flip Meet bonus (1), and avoiding death.</p>
+      <p>Team pool cap <strong>24</strong>. Start with <strong>1</strong> per Dreamer. Spend on quest marks (1 each), Dreamer Powers (1), Archetype Powers (1), Persistent Object activation (1), coin-flip Meet bonus (1), Timeline hunger (1 per roaming Dreambeast at end of Meet), and avoiding death.</p>
 
       <h3>Archetypes &amp; Quests</h3>
-      <p>Active Archetype shows 2 quests. Meet each condition, spend 1 Power Token to mark it, then Acquire for points (1–3). Quintessential Archetypes (Sage, Magician, Warrior) grant passive stat bonuses only. Others have activatable powers during Meet for 1 Power Token.</p>
+      <p>Active Archetype shows 2 quests. Meet each condition, spend 1 Power Token to mark it, then Acquire for points (1–3). Quintessential Archetypes (Sage, Magician, Warrior) grant passive stat bonuses only; their Psyche quest requires <strong>one Dreamer to hold 10 Psyche cards</strong> (full hand). Others have activatable powers during Meet for 1 Power Token.</p>
 
       <h3>Objects</h3>
       <ul>
