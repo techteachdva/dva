@@ -903,9 +903,11 @@ function renderAll() {
   };
 
   const phaseActions = getPhaseActions(state, handlers);
+  const advanceAction = getPhaseAdvanceAction(state, handlers);
   renderNarratorPanel(state);
   renderGuidePanel(state, phaseActions);
-  renderPhaseAdvanceBar(getPhaseAdvanceAction(state, handlers));
+  renderPhaseAdvanceBar();
+  renderPhaseActions(phaseActions, advanceAction);
 
   const pickHighlights = getLandscapePickHighlights(state);
   const legalMoves = getLegalExploreTargets(state).map((t) => t.id);
@@ -969,7 +971,6 @@ function renderAll() {
   });
   renderLog(state);
 
-  renderPhaseActions(phaseActions);
   resolvePendingDeathDream(state, showModal);
   maybeShowDeathChoice();
   maybeShowNothingChoice();

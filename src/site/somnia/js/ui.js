@@ -1257,21 +1257,8 @@ export function renderNarratorPanel(state) {
   `;
 }
 
-export function renderPhaseAdvanceBar(advanceAction) {
-  const bar = document.getElementById("phase-advance-bar");
-  const btn = document.getElementById("btn-advance-phase");
-  if (!bar || !btn) return;
-
-  if (!advanceAction) {
-    bar.classList.add("hidden");
-    return;
-  }
-
-  bar.classList.remove("hidden");
-  btn.textContent = advanceAction.label;
-  btn.disabled = !!advanceAction.disabled;
-  btn.title = advanceAction.hint || "Advance to the next phase when your group is ready";
-  btn.onclick = advanceAction.onClick;
+export function renderPhaseAdvanceBar() {
+  // Advance button is rendered inside #phase-actions via renderPhaseActions.
 }
 
 const ACTION_SECTIONS = {
@@ -1296,7 +1283,7 @@ function createActionButton(action) {
 
 let moreActionsOpen = false;
 
-export function renderPhaseActions(actions) {
+export function renderPhaseActions(actions, advanceAction = null) {
   const container = document.getElementById("phase-actions");
   if (!container) return;
 
@@ -1307,9 +1294,25 @@ export function renderPhaseActions(actions) {
 
   container.innerHTML = "";
 
+  if (advanceAction) {
+    const row = document.createElement("div");
+    row.className = "action-section action-section-advance";
+    row.id = "phase-advance-bar";
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.id = "btn-advance-phase";
+    btn.className = "btn btn-advance primary";
+    btn.textContent = advanceAction.label;
+    btn.disabled = !!advanceAction.disabled;
+    btn.title = advanceAction.hint || "Advance to the next phase when your group is ready";
+    btn.addEventListener("click", advanceAction.onClick);
+    row.appendChild(btn);
+    container.appendChild(row);
+  }
+
   const grouped = {};
   actions.forEach((action) => {
-    if (action.hidden) return;
+    if (action.hidden || action.advance) return;
     const section = action.section || "main";
     if (!grouped[section]) grouped[section] = [];
     grouped[section].push(action);
@@ -2406,7 +2409,7 @@ export function ensureTutorialStepTargetsVisible(step) {
     selectors.some((s) => s === "#btn-advance-phase" || s === "#phase-advance-bar")
     || spotlight === "#btn-advance-phase"
   ) {
-    document.getElementById("phase-advance-bar")?.classList.remove("hidden");
+    document.getElementById("btn-advance-phase")?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }
   if (selectors.some((s) => s === "#guide-panel" || s === "#guide-panel-wrap")) {
     document.getElementById("guide-panel-wrap")?.classList.remove("collapsed");
