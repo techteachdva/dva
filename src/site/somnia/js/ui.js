@@ -1530,16 +1530,12 @@ export function renderDreamerPicker(dreamers, selectedIds, onToggle, options = {
 }
 
 export function renderSetupIntro() {
-  const intro = document.querySelector("#screen-setup .intro");
-  if (!intro) return;
-  intro.innerHTML = `
-    <p class="setup-lead">You are Dreamers trapped in a collapsing Dreamscape. Work together to earn Archetype points before the Dream Deck runs out.</p>
-    <div class="setup-round-flow">
-      <div class="round-step suit-lucidity">${suitIconHtml("lucidity", { size: 18 })} <strong>Reveal</strong><span>Draw Dream · reveal Landscapes</span></div>
-      <div class="round-step suit-elasticity">${suitIconHtml("elasticity", { size: 18 })} <strong>Explore</strong><span>Spend Elasticity · move on the map</span></div>
-      <div class="round-step suit-willpower">${suitIconHtml("willpower", { size: 18 })} <strong>Meet</strong><span>Gain actions · face Encounters</span></div>
-    </div>
-    <p class="setup-tip">New to Somnia? Try <strong>Tutorial Mode</strong> for a guided 5-round lesson, or read <strong>Game Overview</strong> for the full rules.</p>
+  const legend = document.getElementById("setup-phase-legend");
+  if (!legend) return;
+  legend.innerHTML = `
+    <div class="round-step suit-lucidity">${suitIconHtml("lucidity", { size: 22 })} <strong>Reveal</strong><span>Draw Dream · reveal Landscapes</span></div>
+    <div class="round-step suit-elasticity">${suitIconHtml("elasticity", { size: 22 })} <strong>Explore</strong><span>Spend Elasticity · move on the map</span></div>
+    <div class="round-step suit-willpower">${suitIconHtml("willpower", { size: 22 })} <strong>Meet</strong><span>Gain actions · face Encounters</span></div>
   `;
 }
 

@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Kalnia+Glaze&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/game.css">
 </head>
-<body class="menu-window menu-splash-active">
+<body class="menu-window menu-splash-active view-mode-large">
   <div id="menu-splash" class="menu-splash" aria-hidden="false">
     <div class="menu-splash-inner">
       <img
@@ -26,7 +26,7 @@
   <div id="app">
     <header class="top-bar">
       <div class="brand">
-        <span class="version-label">Somnia v 14.0</span>
+        <span class="version-label">Somnia v 14.1</span>
         <h1>Somnia</h1>
         <p class="tagline">Cooperative Dreamscape Roguelike</p>
       </div>
@@ -36,44 +36,43 @@
     </header>
 
     <main>
-      <section id="screen-setup" class="screen active">
-        <div class="setup-panel">
-          <h2>Enter the Dreamscape</h2>
-          <p class="intro">Cooperative dream escape — <strong>discuss and plan</strong> each phase, act in <strong>any order</strong>, then advance together. Each round: <strong>Reveal</strong> (◆ Lucidity) → <strong>Explore</strong> (◇ Elasticity) → <strong>Meet</strong> (▲ Willpower).</p>
-
-          <label class="field">
-            <span>Players</span>
-            <select id="setup-players">
-              <option value="1">1</option>
-              <option value="2" selected>2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-              <option value="5">5</option>
-              <option value="6">6</option>
-            </select>
-          </label>
-
-          <label class="field">
-            <span>Length</span>
-            <select id="setup-length">
-              <option value="daydream">Daydream — 12 points (14 Dreams)</option>
-              <option value="nap">Nap — 18 points (17 Dreams)</option>
-              <option value="deep">Deep Sleep — 24 points (21 Dreams)</option>
-            </select>
-          </label>
-
-          <h3>Choose Dreamers</h3>
-          <div id="dreamer-picker" class="card-grid picker"></div>
-          <div id="setup-audio-display" class="setup-audio-display"></div>
-
-          <div class="setup-actions">
-            <button type="button" id="btn-setup-overview" class="btn">Game Overview</button>
-            <button type="button" id="btn-tutorial-mode" class="btn">Tutorial Mode</button>
+      <section id="screen-setup" class="screen active" aria-label="Main menu">
+        <div class="setup-triad">
+          <div class="setup-panel-left menu-glass-panel">
+            <h2 class="menu-panel-title">Dream Settings</h2>
+            <label class="field">
+              <span>Players</span>
+              <select id="setup-players">
+                <option value="1">1</option>
+                <option value="2" selected>2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+              </select>
+            </label>
+            <label class="field">
+              <span>Difficulty</span>
+              <select id="setup-length">
+                <option value="daydream">Daydream — 12 pts · 14 Dreams</option>
+                <option value="nap">Nap — 18 pts · 17 Dreams</option>
+                <option value="deep">Deep Sleep — 24 pts · 21 Dreams</option>
+              </select>
+            </label>
           </div>
-          <div class="setup-launch">
-            <button type="button" id="btn-start" class="btn begin-dream-btn" disabled>Begin Dream</button>
+
+          <div class="setup-panel-center menu-glass-panel">
+            <h2 class="menu-panel-title">Choose Dreamers</h2>
+            <div id="dreamer-picker" class="card-grid picker menu-dreamer-picker"></div>
+            <div id="setup-phase-legend" class="setup-round-flow menu-phase-legend" aria-label="Round phases"></div>
           </div>
-          <p class="setup-tip setup-launch-hint">Tutorial Mode opens a guided 5-round lesson with fixed cards. Begin Dream starts a full game once every Dreamer is chosen.</p>
+
+          <div class="setup-panel-right menu-glass-panel">
+            <div class="setup-launch-row">
+              <button type="button" id="btn-start" class="btn begin-dream-btn" disabled>Begin Dreaming</button>
+              <button type="button" id="btn-tutorial-mode" class="btn btn-tutorial-menu">Tutorial Mode</button>
+            </div>
+          </div>
         </div>
       </section>
     </main>

@@ -2,13 +2,11 @@ import { bindMusicToggle, initMenuAudioSettings, bindButtonRipples, footerCredit
 import { isStandaloneMode } from "./standalone.js";
 import { initDeviceMode } from "./device-mode.js";
 import { initDialogAccessibility } from "./dialog-a11y.js";
-import { buildSetupAudioControls } from "./pause-menu.js";
 import { initFxLayer } from "./fx.js";
 import { loadGameData } from "./data.js";
 import {
   renderDreamerPicker,
   renderSetupIntro,
-  showOverviewModal,
   hideDreamerDetailTooltip,
   hideUtilityModal,
 } from "./ui.js";
@@ -95,7 +93,6 @@ async function init() {
 
   await preloadMenuSplashImage();
   gameData = await loadGameData();
-  buildSetupAudioControls(document.getElementById("setup-audio-display"));
   bindSetup();
   bindModal();
   renderSetupIntro();
@@ -110,7 +107,6 @@ function bindSetup() {
     hideDreamerDetailTooltip();
     refreshDreamerPicker();
   });
-  document.getElementById("btn-setup-overview")?.addEventListener("click", showOverviewModal);
   document.getElementById("btn-tutorial-mode")?.addEventListener("click", () => launchTutorialMode());
 }
 
