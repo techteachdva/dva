@@ -1,5 +1,4 @@
 import { bindMusicToggle, initMenuAudioSettings, bindButtonRipples, footerCreditsHtml, boxArtSplashCreditHtml } from "./audio.js";
-import { isStandaloneMode } from "./standalone.js";
 import { initDeviceMode } from "./device-mode.js";
 import { initDialogAccessibility } from "./dialog-a11y.js";
 import { initFxLayer } from "./fx.js";
@@ -12,7 +11,6 @@ import {
 } from "./ui.js";
 
 const LAUNCH_KEY = "somnia.launch";
-const PLAY_WINDOW_NAME = "somnia-play";
 const SPLASH_MIN_MS = 3200;
 const SPLASH_DISSOLVE_MS = 1600;
 
@@ -101,7 +99,7 @@ async function init() {
 }
 
 function bindSetup() {
-  document.getElementById("btn-start").addEventListener("click", () => launchGameWindow());
+  document.getElementById("btn-start").addEventListener("click", () => launchGame());
   document.getElementById("setup-players").addEventListener("change", () => {
     selectedDreamerIds = [];
     hideDreamerDetailTooltip();
@@ -125,7 +123,7 @@ function toggleDreamer(id) {
   refreshDreamerPicker();
 }
 
-function launchGameWindow(config = null) {
+function launchGame(config = null) {
   const lengthKey = document.getElementById("setup-length").value;
   const payload = config || {
     lengthKey,
@@ -133,42 +131,17 @@ function launchGameWindow(config = null) {
     launchedAt: Date.now(),
   };
 
+  sessionStorage.setItem(LAUNCH_KEY, JSON.stringify(payload));
+
   const playUrl = new URL("play.html", window.location.href);
-  playUrl.searchParams.set("launch", btoa(JSON.stringify(payload)));
   if (new URLSearchParams(window.location.search).get("dev") === "1") {
     playUrl.searchParams.set("dev", "1");
   }
-  const playHref = playUrl.href;
-
-  if (isStandaloneMode()) {
-    sessionStorage.setItem(LAUNCH_KEY, JSON.stringify(payload));
-    window.location.href = playHref;
-    return;
-  }
-
-  const features = [
-    "popup=yes",
-    "width=1440",
-    "height=900",
-  ].join(",");
-
-  const win = window.open(playHref, PLAY_WINDOW_NAME, features);
-
-  if (!win) {
-    sessionStorage.setItem(LAUNCH_KEY, JSON.stringify(payload));
-    window.location.href = playHref;
-    return;
-  }
-
-  try {
-    win.focus();
-  } catch {
-    /* focus may fail in some browsers */
-  }
+  window.location.href = playUrl.href;
 }
 
 function launchTutorialMode() {
-  launchGameWindow({
+  launchGame({
     lengthKey: "daydream",
     selectedDreamerIds: ["the-visionary", "the-runner"],
     tutorialMode: true,

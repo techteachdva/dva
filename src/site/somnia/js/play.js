@@ -332,11 +332,6 @@ function bindRestart() {
     if (document.fullscreenElement) {
       document.exitFullscreen().catch(() => {});
     }
-    if (window.opener && !window.opener.closed) {
-      window.opener.focus();
-      window.close();
-      return;
-    }
     window.location.href = "index.html";
   });
 
