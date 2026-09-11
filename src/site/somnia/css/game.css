@@ -19,9 +19,9 @@
   --font-logo: "Kalnia Glaze", serif;
   --font-body: "Source Sans 3", sans-serif;
   --topbar-h: 3.5rem;
-  --sidebar-w: clamp(240px, 20vw, 340px);
-  --hand-h: clamp(132px, 16vh, 188px);
-  --chrome-h: 96px;
+  --sidebar-w: clamp(280px, 28vw, 420px);
+  --hand-h: clamp(210px, 26vh, 300px);
+  --chrome-h: 72px;
   --footer-h: 108px;
   --ui-scale: 1;
 }
@@ -4488,4 +4488,434 @@ body.panel-resizing {
   0% { transform: scale(0.88); }
   55% { transform: scale(1.04); }
   100% { transform: scale(1); }
+}
+
+/* ── Somnia v14 layout ───────────────────────────────────────────── */
+
+.hud-phase-cluster {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.btn-dream-feed {
+  width: 1.85rem;
+  height: 1.85rem;
+  min-width: 1.85rem;
+  padding: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  border-radius: 999px;
+  border: 1px solid rgba(201, 160, 255, 0.55);
+  background: rgba(123, 92, 255, 0.22);
+  color: #f4ebff;
+  box-shadow: 0 0 12px rgba(123, 92, 255, 0.35);
+}
+
+.btn-dream-feed:hover:not(:disabled) {
+  background: rgba(123, 92, 255, 0.38);
+  border-color: var(--accent);
+}
+
+.narrator-panel-hidden,
+.game-log-hidden {
+  display: none !important;
+}
+
+#screen-game .table-surface {
+  border-right: none;
+}
+
+#screen-game.active {
+  grid-template-columns: minmax(0, 1fr) var(--sidebar-w);
+}
+
+#screen-game .sidebar.right.sidebar-v14 {
+  border-left: 2px solid rgba(201, 160, 255, 0.35);
+  box-shadow: -8px 0 28px rgba(0, 0, 0, 0.35);
+  padding: 0.75rem 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+#screen-game .sidebar.right.sidebar-v14 h3 {
+  font-size: 0.95rem;
+  margin-bottom: 0.35rem;
+}
+
+#screen-game .sidebar.right .active-card-slot {
+  min-height: 120px;
+  max-height: 32vh;
+  flex: 0 0 auto;
+}
+
+#screen-game .sidebar.right .active-card-slot .game-card.portrait {
+  max-width: 200px;
+}
+
+#screen-game .sidebar.right .subconscious-graveyard {
+  flex: 1 1 auto;
+  min-height: 6rem;
+  display: flex;
+  flex-direction: column;
+}
+
+#screen-game .hand-bar {
+  grid-template-columns: minmax(120px, 14vw) minmax(88px, 140px) minmax(0, 1fr) minmax(0, 11vw) minmax(0, 11vw);
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 0.45rem 0.65rem;
+  padding-top: 0.35rem;
+}
+
+.action-dock-wrap {
+  grid-column: 1 / 4;
+  grid-row: 1;
+  min-width: 0;
+  border: 1px solid rgba(201, 160, 255, 0.28);
+  border-radius: 12px;
+  background: rgba(8, 6, 18, 0.72);
+  padding: 0.4rem 0.55rem 0.5rem;
+}
+
+#screen-game .hand-bar > .dreamer-dock { grid-column: 1; grid-row: 2; }
+#screen-game .hand-bar > .power-section { grid-column: 2; grid-row: 2; }
+#screen-game .hand-bar > .hand-section:not(.objects-section) { grid-column: 3; grid-row: 2; }
+#screen-game .hand-bar > .objects-section:first-of-type { grid-column: 4; grid-row: 1 / span 2; }
+#screen-game .hand-bar > .objects-section:last-of-type { grid-column: 5; grid-row: 1 / span 2; }
+
+.action-dock {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.action-dock-advance {
+  display: flex;
+  justify-content: center;
+}
+
+.action-dock-advance .btn-advance {
+  width: 100%;
+  max-width: 420px;
+  font-size: 1rem;
+  padding: 0.55rem 1.25rem;
+}
+
+.action-dock-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
+.action-dock-btn {
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.25;
+  padding: 0.5rem 0.85rem;
+  min-height: 2.35rem;
+  white-space: normal;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(232, 228, 255, 0.55);
+  opacity: 0.72;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s, opacity 0.15s, transform 0.12s;
+}
+
+.action-dock-btn.btn-ready:not(:disabled) {
+  opacity: 1;
+  color: var(--text);
+  border-color: rgba(201, 160, 255, 0.45);
+  background: rgba(123, 92, 255, 0.18);
+  box-shadow: 0 0 14px rgba(123, 92, 255, 0.22);
+}
+
+.action-dock-btn.btn-ready.primary:not(:disabled) {
+  background: linear-gradient(135deg, rgba(123, 92, 255, 0.85), rgba(74, 158, 255, 0.65));
+  border-color: rgba(201, 160, 255, 0.7);
+  color: #fff;
+}
+
+.action-dock-btn.btn-ready:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 18px rgba(123, 92, 255, 0.38);
+}
+
+.action-dock-empty {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.header-dropdown-panel#dreamers-dropdown-panel {
+  width: min(520px, calc(100vw - 1.5rem));
+  max-height: min(78vh, 640px);
+}
+
+.dreamers-dropdown-list .player-chip {
+  padding: 0.65rem 0.75rem;
+  min-height: 4.5rem;
+}
+
+.dreamers-dropdown-list .player-chip img {
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+}
+
+.dreamers-dropdown-list .player-chip .name {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.dreamers-dropdown-list .player-chip .sub,
+.dreamers-dropdown-list .player-chip .dreamer-stats {
+  display: block;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.dreamer-detail-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+  background: rgba(4, 3, 12, 0.82);
+  backdrop-filter: blur(6px);
+  pointer-events: none;
+}
+
+.dreamer-detail-overlay:not(.hidden) {
+  pointer-events: auto;
+}
+
+.dreamer-detail-overlay.hidden {
+  display: none;
+}
+
+.dreamer-overlay-shell {
+  width: min(960px, 96vw);
+  max-height: min(88vh, 760px);
+  overflow: auto;
+  display: grid;
+  grid-template-columns: minmax(240px, 42%) minmax(0, 1fr);
+  gap: 1.25rem;
+  padding: 1.25rem 1.35rem;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.dreamer-overlay-art-wrap {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(201, 160, 255, 0.35);
+  background: rgba(0, 0, 0, 0.35);
+}
+
+.dreamer-overlay-art {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 42vh;
+  object-fit: cover;
+}
+
+.dreamer-overlay-hand h4 {
+  margin: 0.75rem 0 0.45rem;
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  color: var(--accent);
+}
+
+.dreamer-overlay-hand-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.dreamer-overlay-hand-cards .game-card {
+  width: 88px;
+  min-height: 118px;
+}
+
+.dreamer-overlay-right .dreamer-detail {
+  display: block;
+}
+
+.dreamer-overlay-right .dreamer-detail-body h2 {
+  font-size: 1.65rem;
+}
+
+.dreamer-overlay-right .dreamer-detail-flavor {
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.dreamer-overlay-right .dreamer-detail-power-text {
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.dreamer-overlay-right .dreamer-detail-stat {
+  font-size: 1rem;
+}
+
+.utility-content.fullscreen-browser {
+  width: min(96vw, 1440px);
+  max-width: none;
+  height: min(92vh, 920px);
+  max-height: 92vh;
+  display: flex;
+  flex-direction: column;
+  padding: 1rem 1.15rem;
+}
+
+.fullscreen-browser-header h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.45rem;
+}
+
+.fullscreen-browser-lead {
+  margin: 0 0 0.35rem;
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+
+.fullscreen-browser-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  margin-top: 0.65rem;
+}
+
+.gallery-pile h4 {
+  font-size: 1rem;
+  margin: 0.75rem 0 0.45rem;
+  color: var(--accent);
+}
+
+.gallery-pile-count {
+  font-weight: 400;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.gallery-card-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.gallery-card-row .game-card {
+  width: 108px;
+  min-height: 148px;
+}
+
+.gallery-card-row .game-card .art {
+  height: 72px;
+}
+
+.gallery-card-row .game-card .body {
+  display: block;
+  padding: 0.25rem 0.35rem;
+}
+
+.gallery-card-row .game-card .title {
+  font-size: 0.68rem;
+  line-height: 1.2;
+}
+
+.gallery-card-row .game-card .meta {
+  font-size: 0.62rem;
+}
+
+.utility-content.rules-reference-modal {
+  width: min(92vw, 900px);
+  max-width: none;
+  max-height: min(90vh, 820px);
+}
+
+.dream-feed-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.dream-feed-label {
+  margin: 0 0 0.35rem;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.dream-feed-title {
+  margin: 0 0 0.45rem;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  color: #b8e0ff;
+}
+
+.dream-feed-detail {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.dream-feed-consequences {
+  margin: 0.55rem 0 0;
+  padding-left: 1.1rem;
+  color: var(--accent);
+}
+
+.dream-feed-log-scroll {
+  max-height: 42vh;
+  overflow: auto;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.22);
+  padding: 0.55rem 0.65rem;
+}
+
+.dream-feed-log-line {
+  font-size: 0.92rem;
+  line-height: 1.45;
+  padding: 0.2rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.dream-feed-log-line:last-child {
+  border-bottom: none;
+}
+
+.dream-feed-empty {
+  margin: 0;
+  color: var(--muted);
+  font-style: italic;
+}
+
+@media (max-width: 900px) {
+  .dreamer-overlay-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .action-dock-wrap {
+    grid-column: 1 / -1;
+  }
+
+  #screen-game .hand-bar > .dreamer-dock,
+  #screen-game .hand-bar > .power-section,
+  #screen-game .hand-bar > .hand-section:not(.objects-section),
+  #screen-game .hand-bar > .objects-section:first-of-type,
+  #screen-game .hand-bar > .objects-section:last-of-type {
+    grid-column: auto;
+    grid-row: auto;
+  }
 }

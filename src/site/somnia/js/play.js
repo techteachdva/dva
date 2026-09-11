@@ -117,7 +117,9 @@ import {
   showRepressPicker,
   renderSubconsciousGraveyard,
   showRulesModal,
+  showDreamFeedModal,
   showOverviewModal,
+  hideDreamerDetailOverlay,
   showTutorialStep,
   updateTutorialStepUI,
   hideTutorial,
@@ -357,6 +359,7 @@ function bindHeaderDropdowns() {
       if (panel && panel !== exceptPanel) panel.classList.add("hidden");
       if (btn && panel !== exceptPanel) btn.setAttribute("aria-expanded", "false");
     });
+    hideDreamerDetailOverlay();
   };
 
   menus.forEach(({ btnId, panelId }) => {
@@ -385,8 +388,8 @@ function bindHeaderDropdowns() {
 }
 
 function bindHelp() {
-  document.getElementById("btn-overview")?.addEventListener("click", showOverviewModal);
-  document.getElementById("btn-help")?.addEventListener("click", showRulesModal);
+  document.getElementById("btn-overview")?.addEventListener("click", () => showOverviewModal(state));
+  document.getElementById("btn-dream-feed")?.addEventListener("click", () => showDreamFeedModal(state));
   document.getElementById("btn-tutorial")?.addEventListener("click", () => {
     tutorialIndex = 0;
     showTutorialAt(tutorialIndex);

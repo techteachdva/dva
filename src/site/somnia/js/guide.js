@@ -347,11 +347,13 @@ export function getDreamerChipTooltip(state, player, index) {
 }
 
 
+export const RULES_TAB_FEED = "feed";
 export const RULES_TAB_INTRO = "intro";
 export const RULES_TAB_REM = "rem";
 export const RULES_TAB_DETAILS = "details";
 
 const RULES_TABS = [
+  { id: RULES_TAB_FEED, label: "Dream Feed" },
   { id: RULES_TAB_INTRO, label: "Overview" },
   { id: RULES_TAB_REM, label: "R.E.M." },
   { id: RULES_TAB_DETAILS, label: "Details" },
@@ -407,7 +409,7 @@ export function rulesIntroHtml() {
         <p>Use the <strong>R.E.M.</strong> tab for the three phases in depth. Use <strong>Details</strong> for encounters, death, bosses, objects, Mindstream, and Final Recurrence. The in-game <strong>Guide</strong> panel shows your next step every turn.</p>
       </section>
 
-            <p class="overview-footer">Somnia v 13.0 — cooperative rules reference.</p>
+            <p class="overview-footer">Somnia v 14.0 — cooperative rules reference.</p>
       ${footerCreditsHtml()}
     </div>
   `;
@@ -542,12 +544,14 @@ export function rulesDetailsHtml() {
 }
 
 /** Tabbed rules reference shell — activeTab is intro | rem | details. */
-export function rulesReferenceHtml(activeTab = RULES_TAB_INTRO) {
+export function rulesReferenceHtml(activeTab = RULES_TAB_FEED, options = {}) {
+  const { feedHtml = "<p class=\"dream-feed-empty\">Start a game to see the dream feed.</p>" } = options;
   const tabs = RULES_TABS.map(
     (t) => `<button type="button" class="rules-reference-tab${t.id === activeTab ? " active" : ""}" data-rules-tab="${t.id}">${t.label}</button>`,
   ).join("");
 
   const pages = [
+    { id: RULES_TAB_FEED, html: feedHtml },
     { id: RULES_TAB_INTRO, html: rulesIntroHtml() },
     { id: RULES_TAB_REM, html: rulesRemHtml() },
     { id: RULES_TAB_DETAILS, html: rulesDetailsHtml() },

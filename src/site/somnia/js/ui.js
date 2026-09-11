@@ -26,6 +26,7 @@ import { getNarratorView, listPhaseActionHints } from "./narrator.js";
 import {
   getCurrentObjective,
   rulesReferenceHtml,
+  RULES_TAB_FEED,
   RULES_TAB_INTRO,
   RULES_TAB_DETAILS,
   getDreamerChipTooltip,
@@ -868,6 +869,7 @@ export function renderPlayers(state, onSelectPlayer) {
   const dock = document.getElementById("player-list");
   const dropdown = document.getElementById("dreamers-dropdown-list");
   hideDreamerDetailTooltip();
+  hideDreamerDetailOverlay();
   if (dock) dock.innerHTML = "";
   if (dropdown) dropdown.innerHTML = "";
 
@@ -902,14 +904,23 @@ export function renderPlayers(state, onSelectPlayer) {
           : tradeTarget
             ? "Click to trade with this Dreamer"
             : undefined;
-        showDreamerDetailTooltip(player.dreamer, chip, { player, focusHint, state });
+        if (compact) {
+          showDreamerDetailTooltip(player.dreamer, chip, { player, focusHint, state });
+        } else {
+          showDreamerDetailOverlay(player.dreamer, { player, focusHint, state });
+        }
+      };
+
+      const hideTooltip = () => {
+        if (compact) hideDreamerDetailTooltip();
+        else hideDreamerDetailOverlay();
       };
 
       chip.addEventListener("mouseenter", showTooltip);
-      chip.addEventListener("mouseleave", hideDreamerDetailTooltip);
+      chip.addEventListener("mouseleave", hideTooltip);
       chip.addEventListener("focusin", showTooltip);
       chip.addEventListener("focusout", (event) => {
-        if (!chip.contains(event.relatedTarget)) hideDreamerDetailTooltip();
+        if (!chip.contains(event.relatedTarget)) hideTooltip();
       });
       chip.addEventListener("click", () => {
         hideDreamerDetailTooltip();
@@ -1298,18 +1309,34 @@ export function renderGuidePanel(state, actions = []) {
   `;
 }
 
-export function renderNarratorPanel(state) {
-  const el = document.getElementById("narrator-panel");
-  if (!el) return;
+export function renderNarratorPanel(_state) {
+  // Narrator content is shown in the Dream Feed modal (v14).
+}
+
+function buildDreamFeedHtml(state) {
+  if (!state) {
+    return "<p class=\"dream-feed-empty\">Start a game to see the dream feed.</p>";
+  }
   const view = getNarratorView(state);
   const consequences = view.consequences?.length
-    ? `<ul class="narrator-consequences">${view.consequences.map((c) => `<li>${c}</li>`).join("")}</ul>`
+    ? `<ul class="dream-feed-consequences">${view.consequences.map((c) => `<li>${c}</li>`).join("")}</ul>`
     : "";
-  el.innerHTML = `
-    <div class="narrator-label">What just happened</div>
-    <h3 class="narrator-title">${view.title}</h3>
-    <p class="narrator-detail">${view.detail}</p>
-    ${consequences}
+  const logLines = (state.log || [])
+    .map((line) => `<div class="dream-feed-log-line">${line}</div>`)
+    .join("");
+  return `
+    <div class="dream-feed-page">
+      <section class="dream-feed-now">
+        <h3 class="dream-feed-label">What just happened</h3>
+        <h2 class="dream-feed-title">${view.title}</h2>
+        <p class="dream-feed-detail">${view.detail}</p>
+        ${consequences}
+      </section>
+      <section class="dream-feed-log">
+        <h3 class="dream-feed-label">Play-by-play</h3>
+        <div class="dream-feed-log-scroll">${logLines || "<p class=\"dream-feed-empty\">No events yet this dream.</p>"}</div>
+      </section>
+    </div>
   `;
 }
 
@@ -1329,35 +1356,33 @@ const ACTION_SECTIONS = {
 function createActionButton(action) {
   const btn = document.createElement("button");
   btn.type = "button";
-  btn.className = `btn ${action.primary ? "primary" : ""}`;
+  const classes = ["btn", "action-dock-btn"];
+  if (action.primary) classes.push("primary");
+  if (!action.disabled) classes.push("btn-ready");
+  btn.className = classes.join(" ");
   btn.textContent = action.label;
-  btn.title = action.hint || "";
+  btn.title = action.hint || action.label;
   btn.disabled = !!action.disabled;
+  if (action.section) btn.dataset.section = action.section;
   btn.addEventListener("click", action.onClick);
   return btn;
 }
-
-let moreActionsOpen = false;
 
 export function renderPhaseActions(actions, advanceAction = null) {
   const container = document.getElementById("phase-actions");
   if (!container) return;
 
-  const previousDetails = container.querySelector("details.action-more");
-  if (previousDetails) {
-    moreActionsOpen = previousDetails.open;
-  }
-
   container.innerHTML = "";
+  container.className = "phase-actions action-dock";
 
   if (advanceAction) {
     const row = document.createElement("div");
-    row.className = "action-section action-section-advance";
+    row.className = "action-dock-advance";
     row.id = "phase-advance-bar";
     const btn = document.createElement("button");
     btn.type = "button";
     btn.id = "btn-advance-phase";
-    btn.className = "btn btn-advance primary";
+    btn.className = `btn btn-advance primary${advanceAction.disabled ? "" : " btn-ready"}`;
     btn.textContent = advanceAction.label;
     btn.disabled = !!advanceAction.disabled;
     btn.title = advanceAction.hint || "Advance to the next phase when your group is ready";
@@ -1374,60 +1399,21 @@ export function renderPhaseActions(actions, advanceAction = null) {
     grouped[section].push(action);
   });
 
-  const primarySections = ["main", "encounter"];
-  const secondarySections = ["actions", "progress"];
+  const grid = document.createElement("div");
+  grid.className = "action-dock-grid";
 
-  primarySections.forEach((section) => {
+  ["main", "encounter", "actions", "progress"].forEach((section) => {
     const items = grouped[section];
     if (!items?.length) return;
-    const row = document.createElement("div");
-    row.className = "action-section action-section-primary";
-    if (section !== "main" && ACTION_SECTIONS[section]) {
-      const label = document.createElement("span");
-      label.className = "action-section-label";
-      label.textContent = ACTION_SECTIONS[section];
-      row.appendChild(label);
-    }
-    const btns = document.createElement("div");
-    btns.className = "action-buttons";
-    items.forEach((a) => btns.appendChild(createActionButton(a)));
-    row.appendChild(btns);
-    container.appendChild(row);
+    items.forEach((action) => {
+      grid.appendChild(createActionButton(action));
+    });
   });
 
-  const secondaryItems = secondarySections.flatMap((s) => grouped[s] || []);
-  if (secondaryItems.length) {
-    const details = document.createElement("details");
-    details.className = "action-more";
-    details.open = moreActionsOpen;
-    details.addEventListener("toggle", () => {
-      moreActionsOpen = details.open;
-    });
-    const summary = document.createElement("summary");
-    summary.className = "btn";
-    summary.textContent = `More actions (${secondaryItems.length})`;
-    details.appendChild(summary);
-    const inner = document.createElement("div");
-    inner.className = "action-more-inner";
-    secondarySections.forEach((section) => {
-      const items = grouped[section];
-      if (!items?.length) return;
-      const group = document.createElement("div");
-      group.className = "action-section";
-      const label = document.createElement("span");
-      label.className = "action-section-label";
-      label.textContent = ACTION_SECTIONS[section];
-      group.appendChild(label);
-      const btns = document.createElement("div");
-      btns.className = "action-buttons";
-      items.forEach((a) => btns.appendChild(createActionButton(a)));
-      group.appendChild(btns);
-      inner.appendChild(group);
-    });
-    details.appendChild(inner);
-    container.appendChild(details);
-  } else {
-    moreActionsOpen = false;
+  if (grid.children.length) {
+    container.appendChild(grid);
+  } else if (!advanceAction) {
+    container.innerHTML = "<p class=\"action-dock-empty\">No actions available right now.</p>";
   }
 }
 
@@ -1441,27 +1427,37 @@ function bindRulesReferenceTabs(root) {
       root.querySelectorAll("[data-rules-panel]").forEach((panel) => {
         panel.classList.toggle("active", panel.dataset.rulesPanel === tab);
       });
+      if (tab === RULES_TAB_FEED && uiRenderState) {
+        const feedPanel = root.querySelector('[data-rules-panel="feed"]');
+        if (feedPanel) feedPanel.innerHTML = buildDreamFeedHtml(uiRenderState);
+      }
     });
   });
 }
 
-export function showRulesReferenceModal(activeTab = RULES_TAB_INTRO) {
+export function showRulesReferenceModal(activeTab = RULES_TAB_INTRO, state = null) {
   const modal = document.getElementById("utility-modal");
   const content = modal?.querySelector(".utility-content");
   const body = document.getElementById("utility-modal-body");
   if (!modal || !body) return;
+  content?.classList.remove("fullscreen-browser");
   content?.classList.add("rules-reference-modal");
-  body.innerHTML = `<div class="rules-modal">${rulesReferenceHtml(activeTab)}</div>`;
+  const feedHtml = state ? buildDreamFeedHtml(state) : undefined;
+  body.innerHTML = `<div class="rules-modal">${rulesReferenceHtml(activeTab, { feedHtml })}</div>`;
   bindRulesReferenceTabs(body);
   modal.classList.remove("hidden");
 }
 
-export function showRulesModal() {
-  showRulesReferenceModal(RULES_TAB_DETAILS);
+export function showDreamFeedModal(state, activeTab = RULES_TAB_FEED) {
+  showRulesReferenceModal(activeTab, state);
 }
 
-export function showOverviewModal() {
-  showRulesReferenceModal(RULES_TAB_INTRO);
+export function showRulesModal(state = null) {
+  showRulesReferenceModal(RULES_TAB_DETAILS, state);
+}
+
+export function showOverviewModal(state = null) {
+  showRulesReferenceModal(RULES_TAB_INTRO, state);
 }
 
 export function renderLog(state) {
@@ -1836,14 +1832,19 @@ export function showRespawnPicker(dreamers, onPick) {
 
 export function showSubconsciousPicker(state, onPick, onDone) {
   const modal = document.getElementById("utility-modal");
+  const content = modal?.querySelector(".utility-content");
   const body = document.getElementById("utility-modal-body");
+  content?.classList.remove("rules-reference-modal");
+  content?.classList.add("fullscreen-browser");
   const pending = state.pendingReturn;
   const remaining = pending ? pending.remaining - pending.picked.length : 0;
 
   body.innerHTML = `
-    <h2>Return from Subconscious</h2>
-    <p class="resolution-reason">${pending?.reason || `Choose ${remaining} card(s) to Return to discard piles.`}</p>
-    <div id="subconscious-piles" class="subconscious-piles"></div>
+    <header class="fullscreen-browser-header">
+      <h2>Return from Subconscious</h2>
+      <p class="resolution-reason">${pending?.reason || `Choose ${remaining} card(s) to Return to discard piles.`}</p>
+    </header>
+    <div id="subconscious-piles" class="subconscious-piles fullscreen-browser-body"></div>
     <div class="utility-actions">
       <button type="button" class="btn" id="return-skip">Skip remaining</button>
     </div>
@@ -1968,24 +1969,29 @@ export function showRepressPicker(state, onPick, onConfirm) {
 
 export function showSubconsciousBrowse(state, onCardClick) {
   const modal = document.getElementById("utility-modal");
+  const content = modal?.querySelector(".utility-content");
   const body = document.getElementById("utility-modal-body");
   const count = subconsciousCount(state.subconscious);
+  content?.classList.remove("rules-reference-modal", "dreamer-detail-modal");
+  content?.classList.add("fullscreen-browser");
   body.innerHTML = `
-    <h2>☠ The Subconscious</h2>
-    <p>Face-up graveyard — all Repressed cards. Choose cards here when an effect lets you <strong>Return</strong> cards to play.</p>
-    <p class="graveyard-total">${count} card${count === 1 ? "" : "s"} total</p>
-    <div id="subconscious-browse" class="subconscious-piles"></div>
+    <header class="fullscreen-browser-header">
+      <h2>☠ The Subconscious</h2>
+      <p class="fullscreen-browser-lead">Face-up graveyard — all Repressed cards. Choose cards here when an effect lets you <strong>Return</strong> cards to play.</p>
+      <p class="graveyard-total">${count} card${count === 1 ? "" : "s"} total</p>
+    </header>
+    <div id="subconscious-browse" class="subconscious-piles fullscreen-browser-body"></div>
   `;
   const container = body.querySelector("#subconscious-browse");
   subconsciousPilesForUI(state).forEach((pile) => {
     const section = document.createElement("div");
-    section.className = "subconscious-pile";
-    section.innerHTML = `<h4>${pile.label}</h4>`;
+    section.className = "subconscious-pile gallery-pile";
+    section.innerHTML = `<h4>${pile.label} <span class="gallery-pile-count">(${pile.cards.length})</span></h4>`;
     const row = document.createElement("div");
-    row.className = "mini-card-row";
+    row.className = "gallery-card-row";
     pile.cards.forEach((card) => {
       row.appendChild(renderCard(card, {
-        mini: true,
+        dense: true,
         onClick: () => onCardClick(card),
       }));
     });
@@ -1993,7 +1999,7 @@ export function showSubconsciousBrowse(state, onCardClick) {
     container.appendChild(section);
   });
   if (!container.children.length) {
-    container.innerHTML = "<p>Empty — no repressed cards.</p>";
+    container.innerHTML = "<p class=\"dream-feed-empty\">Empty — no repressed cards.</p>";
   }
   modal.classList.remove("hidden");
 }
@@ -2007,6 +2013,7 @@ export function hideUtilityModal() {
   modal.querySelector(".utility-content")?.classList.remove("dreamer-power-modal-wrap");
   modal.querySelector(".utility-content")?.classList.remove("phase-skip-modal");
   modal.querySelector(".utility-content")?.classList.remove("rules-reference-modal");
+  modal.querySelector(".utility-content")?.classList.remove("fullscreen-browser");
 }
 
 function formatDreamerFlavor(text) {
@@ -2072,23 +2079,31 @@ function buildDreamerDetailHtml(dreamer, options = {}) {
     ? `<p class="dreamer-detail-affinity">Meet bonus: +1 Psyche vs ${beastKindLabel(affinity)} Dreambeasts · +1 when ${SUIT_LABELS[dreamerPrimarySuit(dreamer)]} matches the Dreambeast's suit</p>`
     : "";
 
+  const bodyHtml = `
+    <div class="dreamer-detail-body">
+      <h2>${dreamer.name}</h2>
+      ${flavor ? `<blockquote class="dreamer-detail-flavor">${flavor}</blockquote>` : ""}
+      ${statusLine}
+      ${affinityLine}
+      ${dreamerDetailStatsHtml(dreamer, options.state || null)}
+      <div class="dreamer-detail-power">
+        <div class="dreamer-detail-power-label">Dreamer Power</div>
+        <p class="dreamer-detail-power-cost">Costs 1 Power Token</p>
+        <p class="dreamer-detail-power-text">${dreamer.power}</p>
+      </div>
+    </div>
+  `;
+
+  if (options.textOnly) {
+    return bodyHtml;
+  }
+
   return `
     <div class="dreamer-detail">
       <div class="dreamer-detail-art-wrap">
         <img class="dreamer-detail-art" src="${dreamer.image}" alt="${dreamer.name}">
       </div>
-      <div class="dreamer-detail-body">
-        <h2>${dreamer.name}</h2>
-        ${flavor ? `<blockquote class="dreamer-detail-flavor">${flavor}</blockquote>` : ""}
-        ${statusLine}
-        ${affinityLine}
-        ${dreamerDetailStatsHtml(dreamer, options.state || null)}
-        <div class="dreamer-detail-power">
-          <div class="dreamer-detail-power-label">Dreamer Power</div>
-          <p class="dreamer-detail-power-cost">Costs 1 Power Token</p>
-          <p class="dreamer-detail-power-text">${dreamer.power}</p>
-        </div>
-      </div>
+      ${bodyHtml}
     </div>
   `;
 }
@@ -2152,6 +2167,71 @@ export function showDreamerDetailTooltip(dreamer, anchorEl, options = {}) {
 export function hideDreamerDetailTooltip() {
   dreamerTooltipAnchor = null;
   dreamerTooltipEl?.classList.add("hidden");
+}
+
+let dreamerOverlayEl = null;
+
+function ensureDreamerDetailOverlay() {
+  if (dreamerOverlayEl) return dreamerOverlayEl;
+  dreamerOverlayEl = document.createElement("div");
+  dreamerOverlayEl.id = "dreamer-detail-overlay";
+  dreamerOverlayEl.className = "dreamer-detail-overlay hidden";
+  dreamerOverlayEl.setAttribute("role", "dialog");
+  dreamerOverlayEl.setAttribute("aria-modal", "true");
+  document.body.appendChild(dreamerOverlayEl);
+  return dreamerOverlayEl;
+}
+
+export function showDreamerDetailOverlay(dreamer, options = {}) {
+  if (!dreamer) return;
+  hideDreamerDetailTooltip();
+  const overlay = ensureDreamerDetailOverlay();
+  overlay.innerHTML = "";
+
+  const shell = document.createElement("div");
+  shell.className = "dreamer-overlay-shell";
+
+  const left = document.createElement("div");
+  left.className = "dreamer-overlay-left";
+  const artWrap = document.createElement("div");
+  artWrap.className = "dreamer-overlay-art-wrap";
+  const art = document.createElement("img");
+  art.className = "dreamer-overlay-art";
+  art.src = dreamer.image;
+  art.alt = dreamer.name;
+  artWrap.appendChild(art);
+  left.appendChild(artWrap);
+
+  const handWrap = document.createElement("div");
+  handWrap.className = "dreamer-overlay-hand";
+  const handTitle = document.createElement("h4");
+  handTitle.textContent = "Psyche Hand";
+  handWrap.appendChild(handTitle);
+  const handRow = document.createElement("div");
+  handRow.className = "dreamer-overlay-hand-cards";
+  const player = options.player;
+  if (player?.hand?.length) {
+    player.hand.forEach((card) => {
+      handRow.appendChild(renderCard(card, { dense: true, playerId: player.id }));
+    });
+  } else {
+    handRow.innerHTML = "<p class=\"dream-feed-empty\">No Psyche in hand.</p>";
+  }
+  handWrap.appendChild(handRow);
+  left.appendChild(handWrap);
+
+  const right = document.createElement("div");
+  right.className = "dreamer-overlay-right";
+  right.innerHTML = buildDreamerDetailHtml(dreamer, { ...options, textOnly: true });
+
+  shell.appendChild(left);
+  shell.appendChild(right);
+  overlay.appendChild(shell);
+  overlay.classList.remove("hidden");
+}
+
+export function hideDreamerDetailOverlay() {
+  dreamerOverlayEl?.classList.add("hidden");
 }
 
 export function showDreamerDetail(dreamer, options = {}) {
