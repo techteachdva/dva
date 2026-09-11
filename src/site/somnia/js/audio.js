@@ -4,20 +4,9 @@ import {
   MUSIC_TRACKS,
   RADIO_PLAYLIST,
   musicCreditHtml,
-  artCreditHtml,
-  boxArtCreditHtml,
-  boxArtSplashCreditHtml,
-  footerCreditsHtml,
 } from "./audio-settings.js";
 
-export {
-  musicCreditHtml,
-  artCreditHtml,
-  boxArtCreditHtml,
-  boxArtSplashCreditHtml,
-  footerCreditsHtml,
-  MUSIC_TRACKS,
-};
+export { musicCreditHtml, MUSIC_TRACKS };
 
 let settings = loadSettings();
 let bgm = null;

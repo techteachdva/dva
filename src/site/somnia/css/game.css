@@ -19,7 +19,7 @@
   --font-logo: "Kalnia Glaze", serif;
   --font-body: "Source Sans 3", sans-serif;
   --topbar-h: 3.5rem;
-  --sidebar-w: clamp(240px, 20vw, 340px);
+  --sidebar-w: clamp(172px, 13vw, 228px);
   --hand-h: clamp(132px, 16vh, 188px);
   --chrome-h: 96px;
   --footer-h: 108px;
@@ -74,13 +74,6 @@ body.menu-window #app {
   transition: opacity 1.6s ease, visibility 1.6s ease;
 }
 
-.menu-splash-inner {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
-}
-
 .menu-splash-art {
   width: min(92vw, 520px);
   max-height: min(82vh, 720px);
@@ -90,15 +83,6 @@ body.menu-window #app {
     0 24px 80px rgba(0, 0, 0, 0.65),
     0 0 48px rgba(123, 92, 255, 0.22);
   animation: menu-splash-intro 1.4s ease both;
-}
-
-.menu-splash-credit {
-  margin: 0;
-  font-size: 0.72rem;
-  color: rgba(200, 190, 230, 0.88);
-  text-align: center;
-  max-width: min(92vw, 520px);
-  line-height: 1.45;
 }
 
 .menu-splash.dissolving {
@@ -174,7 +158,6 @@ body.play-window #screen-game.active {
   place-items: center;
   background: rgba(4, 3, 12, 0.88);
   backdrop-filter: blur(6px);
-  cursor: pointer;
 }
 
 .fullscreen-prompt.hidden {
@@ -189,7 +172,6 @@ body.play-window #screen-game.active {
   background: var(--bg-panel);
   box-shadow: var(--shadow), 0 0 40px rgba(123, 92, 255, 0.25);
   max-width: 420px;
-  pointer-events: none;
   animation: prompt-pulse 2.5s ease-in-out infinite;
 }
 
@@ -201,6 +183,19 @@ body.play-window #screen-game.active {
 .fullscreen-prompt-card p {
   margin: 0 0 0.75rem;
   color: var(--muted);
+}
+
+.fullscreen-prompt-actions {
+  display: flex;
+  justify-content: center;
+  gap: 0.65rem;
+  margin: 1.1rem 0 0.85rem;
+  flex-wrap: wrap;
+}
+
+.fullscreen-prompt-actions .btn {
+  min-width: 150px;
+  margin-top: 0;
 }
 
 .fullscreen-prompt-hint {
@@ -357,10 +352,6 @@ body.victory-celebrating .end-panel {
   color: #d4c8f5;
 }
 
-.music-credit + .music-credit {
-  margin-top: 0.35rem;
-}
-
 .overview-page .music-credit {
   margin-top: 1rem;
   padding-top: 0.75rem;
@@ -403,173 +394,6 @@ body.in-game .brand h1 {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  position: relative;
-}
-
-.header-dropdown {
-  position: relative;
-}
-
-.header-dropdown-toggle[aria-expanded="true"] {
-  border-color: var(--accent);
-  background: rgba(123, 92, 255, 0.18);
-}
-
-.header-dropdown-panel {
-  position: absolute;
-  top: calc(100% + 0.35rem);
-  right: 0;
-  z-index: 400;
-  width: min(360px, calc(100vw - 1.5rem));
-  max-height: min(70vh, 520px);
-  overflow: auto;
-  padding: 0.65rem 0.75rem;
-  background: var(--bg-panel);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-}
-
-.header-dropdown-panel.hidden {
-  display: none;
-}
-
-.header-dropdown-hint {
-  margin: 0 0 0.5rem;
-  font-size: 0.72rem;
-  color: var(--muted);
-  font-style: italic;
-}
-
-.deck-dropdown-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-}
-
-.deck-dropdown-row {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.35rem 0.65rem;
-  align-items: center;
-  padding: 0.45rem 0.55rem;
-  border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(0, 0, 0, 0.18);
-}
-
-.deck-dropdown-row.suit-lucidity { border-left: 3px solid var(--lucidity); }
-.deck-dropdown-row.suit-elasticity { border-left: 3px solid var(--elasticity); }
-.deck-dropdown-row.suit-willpower { border-left: 3px solid var(--willpower); }
-
-.deck-dropdown-label {
-  font-size: 0.88rem;
-  font-weight: 600;
-}
-
-.deck-dropdown-meta {
-  font-size: 0.72rem;
-  color: var(--muted);
-}
-
-.deck-dropdown-suit {
-  font-weight: 500;
-  opacity: 0.85;
-}
-
-.deck-dropdown-row .btn {
-  grid-column: 2;
-  grid-row: 1 / span 2;
-  align-self: center;
-  white-space: nowrap;
-}
-
-.dreamers-dropdown-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-}
-
-.dreamers-dropdown-list .player-chip {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 0.5rem;
-  width: 100%;
-}
-
-.dreamers-dropdown-list .player-chip img {
-  width: 40px;
-  height: 40px;
-}
-
-.dreamer-dock {
-  min-width: 0;
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
-  padding-right: 0.55rem;
-}
-
-.dreamer-dock-header {
-  margin-bottom: 0.35rem;
-}
-
-.player-list-dock {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  align-items: flex-end;
-  max-height: 100%;
-  overflow: auto;
-}
-
-.player-list-dock .player-chip {
-  flex-direction: column;
-  align-items: center;
-  width: 72px;
-  min-width: 72px;
-  padding: 0.35rem 0.3rem 0.45rem;
-  text-align: center;
-}
-
-.player-list-dock .player-chip img {
-  width: 52px;
-  height: 72px;
-  border-radius: 8px;
-  object-fit: contain;
-  object-position: center bottom;
-}
-
-.player-list-dock .player-chip .info {
-  width: 100%;
-}
-
-.player-list-dock .player-chip .name {
-  font-size: 0.68rem;
-  line-height: 1.15;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.player-list-dock .player-chip .sub,
-.player-list-dock .player-chip .dreamer-stats {
-  display: none;
-}
-
-#screen-game .hand-bar {
-  grid-area: hand;
-  margin: 0;
-  border-radius: 0;
-  border-left: none;
-  border-right: none;
-  border-bottom: none;
-  max-height: var(--hand-h);
-  overflow: hidden;
-  position: relative;
-  display: grid;
-  grid-template-columns: minmax(108px, 14vw) minmax(88px, 140px) minmax(0, 1fr) minmax(0, 11vw) minmax(0, 11vw);
-  gap: 0.65rem;
-  align-items: stretch;
 }
 
 .btn-sm {
@@ -622,11 +446,11 @@ body.in-game main {
 
 #screen-game.active {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) var(--sidebar-w);
+  grid-template-columns: var(--sidebar-w) minmax(0, 1fr) var(--sidebar-w);
   grid-template-rows: minmax(0, 1fr) var(--hand-h);
   grid-template-areas:
-    "table sidebar-right"
-    "hand hand";
+    "sidebar-left table sidebar-right"
+    "hand hand hand";
   flex: 1;
   width: 100%;
   min-height: 0;
@@ -637,7 +461,13 @@ body.in-game main {
 }
 
 #screen-game .sidebar.left {
-  display: none;
+  grid-area: sidebar-left;
+  border-radius: 0;
+  border-top: none;
+  border-bottom: none;
+  border-left: none;
+  max-height: none;
+  height: 100%;
 }
 
 #screen-game .table-surface {
@@ -651,6 +481,7 @@ body.in-game main {
     radial-gradient(ellipse at 50% 40%, rgba(123, 92, 255, 0.14), transparent 55%),
     radial-gradient(ellipse at 50% 80%, rgba(74, 158, 255, 0.08), transparent 50%),
     rgba(8, 7, 18, 0.65);
+  border-left: 1px solid var(--border);
   border-right: 1px solid var(--border);
   animation: dream-breathe 10s ease-in-out infinite;
 }
@@ -667,6 +498,18 @@ body.in-game main {
 
 #screen-game .sidebar.left,
 #screen-game .sidebar.right {
+  position: relative;
+}
+
+#screen-game .hand-bar {
+  grid-area: hand;
+  margin: 0;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  border-bottom: none;
+  max-height: var(--hand-h);
+  overflow: hidden;
   position: relative;
 }
 
@@ -984,17 +827,11 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
   color: var(--accent);
 }
 
-.phase-advance-bar,
-.action-section-advance {
+.phase-advance-bar {
   display: flex;
   justify-content: center;
-  padding: 0.15rem 0 0.35rem;
-  margin-bottom: 0.15rem;
-}
-
-.action-section-advance .btn-advance {
-  width: 100%;
-  max-width: 360px;
+  padding: 0.5rem 0;
+  margin-bottom: 0.35rem;
 }
 
 .coop-play-banner {
@@ -1302,13 +1139,6 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
 }
 
 .tutorial-actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.tutorial-actions-main {
   display: flex;
   justify-content: flex-end;
   gap: 0.5rem;
@@ -1624,15 +1454,6 @@ body.tutorial-mode-active .tutorial-highlight {
   pointer-events: auto;
 }
 
-body.tutorial-mode-active #hand-bar:has(.tutorial-highlight) {
-  overflow: visible;
-  z-index: 151;
-}
-
-body.tutorial-mode-active #dreamer-dock.tutorial-highlight {
-  z-index: 152;
-}
-
 body.tutorial-mode-active #btn-advance-phase.tutorial-highlight {
   animation: advance-glow 2.8s ease-in-out infinite;
 }
@@ -1901,6 +1722,18 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
 
 .btn:hover:not(:disabled) { border-color: var(--accent); }
 
+.btn:focus-visible,
+.game-card:focus-visible,
+.hex-tile:focus-visible,
+.player-chip:focus-visible,
+.deck-pile:focus-visible,
+.fullscreen-prompt:focus-visible,
+select:focus-visible,
+input:focus-visible {
+  outline: 3px solid #f0c96a;
+  outline-offset: 3px;
+}
+
 .btn:active:not(:disabled) {
   transform: scale(0.96);
 }
@@ -2141,37 +1974,6 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
   background: linear-gradient(180deg, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.55) 100%);
   pointer-events: none;
   border-radius: inherit;
-  z-index: 0;
-}
-
-.hex-tile .hex-occupants {
-  position: absolute;
-  left: 6%;
-  right: 6%;
-  bottom: 10%;
-  height: 50%;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  gap: calc(3px * var(--hex-scale, 1.72));
-  z-index: 1;
-  pointer-events: none;
-}
-
-.hex-tile .hex-occupant-token {
-  flex: 1 1 0;
-  min-width: 0;
-  max-width: 48%;
-  height: 100%;
-  width: auto;
-  object-fit: contain;
-  object-position: bottom center;
-  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.72));
-  border-radius: calc(5px * var(--hex-scale, 1.72));
-}
-
-.hex-tile .hex-occupant-beast {
-  max-width: 54%;
 }
 
 .hex-tile.hidden-tile .hex-overlay {
@@ -2193,7 +1995,7 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
   font-weight: 600;
   line-height: 1.2;
   position: relative;
-  z-index: 2;
+  z-index: 1;
   text-shadow: 0 1px 4px rgba(0,0,0,0.9);
 }
 .hex-tile .suit {
@@ -2201,7 +2003,7 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
   color: var(--muted);
   text-transform: uppercase;
   position: relative;
-  z-index: 2;
+  z-index: 1;
 }
 .hex-tile .tokens {
   position: absolute;
@@ -2210,7 +2012,7 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
   right: 0;
   font-size: calc(0.6rem * var(--hex-scale, 1.72));
   color: var(--gold);
-  z-index: 3;
+  z-index: 1;
   text-shadow: 0 1px 3px rgba(0,0,0,0.9);
 }
 .hex-tile.suit-lucidity { border-color: rgba(74, 158, 255, 0.45); }
@@ -2271,8 +2073,6 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
 .power-bonus-btn.hidden {
   display: none;
 }
-
-.power-token-stats {
   font-size: 0.68rem;
   color: var(--muted);
 }
@@ -3039,23 +2839,6 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
   place-items: center;
 }
 
-#utility-modal:not(.hidden) {
-  z-index: 260;
-}
-
-body.utility-modal-open.tutorial-mode-active .tutorial-overlay {
-  pointer-events: none;
-}
-
-body.utility-modal-open.tutorial-mode-active .tutorial-card {
-  pointer-events: auto;
-}
-
-body.utility-modal-open.tutorial-mode-active .tutorial-backdrop {
-  pointer-events: none;
-  opacity: 0.35;
-}
-
 body.card-detail-open #card-modal {
   z-index: 350;
 }
@@ -3790,19 +3573,22 @@ body.card-detail-open .tutorial-card {
 
   #screen-game.active {
     grid-template-columns: 1fr;
-    grid-template-rows: minmax(0, 1fr) auto var(--hand-h);
+    grid-template-rows: auto minmax(0, 1fr) auto var(--hand-h);
     grid-template-areas:
+      "sidebar-left"
       "table"
       "sidebar-right"
       "hand";
   }
 
+  #screen-game .sidebar.left,
   #screen-game .sidebar.right {
     height: auto;
     max-height: 22vh;
   }
 
   .setup-round-flow { grid-template-columns: 1fr; }
+  .sidebar.left { overflow: auto; }
   .table-footer { grid-template-columns: 1fr; max-height: 9rem; }
 }
 
@@ -4389,18 +4175,15 @@ body.panel-resizing {
 .fx-float-label.fx-gain { color: #6dffb0; }
 .fx-float-label.fx-loss { color: #ff7a92; }
 
-.deck-pile.deck-pulse-gain,
-.deck-dropdown-row.deck-pulse-gain {
+.deck-pile.deck-pulse-gain {
   animation: deck-pulse-gain 0.55s ease;
 }
 
-.deck-pile.deck-pulse-loss,
-.deck-dropdown-row.deck-pulse-loss {
+.deck-pile.deck-pulse-loss {
   animation: deck-pulse-loss 0.55s ease;
 }
 
-.deck-pile.deck-pulse-repress,
-.deck-dropdown-row.deck-pulse-repress {
+.deck-pile.deck-pulse-repress {
   animation: deck-pulse-repress 0.55s ease;
 }
 

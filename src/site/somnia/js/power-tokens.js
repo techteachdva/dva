@@ -1,7 +1,6 @@
 import { recordQuestEvent } from "./quests.js";
 import { playSfx } from "./audio.js";
 import { queuePowerTokensFx } from "./board-fx.js";
-import { PSYCHE_POWER_GRANT } from "./data.js";
 
 export const MAX_POWER_TOKEN_POOL = 24;
 
@@ -53,31 +52,9 @@ export function spendPowerTokens(state, player, requested, { reason = "" } = {})
   return spent;
 }
 
-/** Spend from any living Dreamers (richest first) until the amount is paid or tokens run out. */
-export function spendPowerTokensCollectively(state, requested, { reason = "" } = {}) {
-  let left = Math.max(0, Math.floor(requested || 0));
-  if (left <= 0) return 0;
-
-  const players = state.players
-    .filter((p) => p.alive)
-    .sort((a, b) => (b.powerTokens || 0) - (a.powerTokens || 0));
-
-  let spent = 0;
-  for (const player of players) {
-    while (left > 0 && (player.powerTokens || 0) > 0) {
-      player.powerTokens -= 1;
-      left -= 1;
-      spent += 1;
-    }
-  }
-
-  if (spent > 0 && reason) log(state, reason);
-  return spent;
-}
-
 export function resolvePsychePowerCard(state, player, card) {
   if (!card || card.type !== "psyche-power") return 0;
-  const tokens = card.powerTokens ?? PSYCHE_POWER_GRANT;
+  const tokens = card.powerTokens || 2;
   const granted = grantPowerTokens(state, player, tokens, {
     reason: `${player.name} draws ${card.name}: +${tokens} Power Token${tokens === 1 ? "" : "s"}, then discards.`,
     logQuest: true,

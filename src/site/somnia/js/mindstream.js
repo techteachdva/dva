@@ -32,7 +32,7 @@ function stat(player, key) {
   return player.dreamer[key] ?? 0;
 }
 
-function dreamerCount(state) {
+function personaCount(state) {
   return alive(state).length;
 }
 
@@ -302,7 +302,7 @@ export const MINDSTREAM_EFFECTS = {
   },
 
   "i-know-this-place": (state, player) => {
-    returnN(state, 1 + dreamerCount(state), player);
+    returnN(state, 1 + personaCount(state), player);
   },
 
   "a-face-appears": (state, player, helpers, event) => {
@@ -334,7 +334,7 @@ export const MINDSTREAM_EFFECTS = {
   },
 
   denial: (state, player) => {
-    const extra = stat(player, "lucidity") >= 3 ? dreamerCount(state) : 0;
+    const extra = stat(player, "lucidity") >= 3 ? personaCount(state) : 0;
     returnN(state, 4 + extra, player);
   },
 
@@ -353,7 +353,7 @@ export const MINDSTREAM_EFFECTS = {
     const drawn = n[0]?.value ?? 0;
     const correct = (guess === "higher" && next > drawn) || (guess === "lower" && next < drawn);
     if (correct) {
-      returnN(state, dreamerCount(state) + 3, player);
+      returnN(state, personaCount(state) + 3, player);
       addLog(state, `Pop Quiz: guessed ${guess} — correct!`);
     } else {
       addLog(state, `Pop Quiz: guessed ${guess} — wrong.`);
@@ -532,7 +532,7 @@ export const MINDSTREAM_EFFECTS = {
 
   // —— Willpower ——
   "a-thousand-daggers": (state) => {
-    let left = dreamerCount(state) + 2;
+    let left = personaCount(state) + 2;
     alive(state).forEach((p) => {
       while (left > 0 && p.hand.length) {
         repressCard(state, p.hand.pop());

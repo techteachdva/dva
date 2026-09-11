@@ -63,7 +63,7 @@ export function eventDisplayText(event) {
 
 export function landscapeImageForId(id, board = []) {
   const tile = board.find((t) => t.id === id);
-  return tile?.image || `images/landscapes/${id}.png`;
+  return tile?.image || `images/landscapes/${id}.webp`;
 }
 
 export function revealedLandscapeIds(board = []) {

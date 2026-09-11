@@ -1,5 +1,6 @@
 import { bindMusicToggle, initGameAudio, startGameRadio, bindButtonRipples, playSfx } from "./audio.js";
 import { initDeviceMode } from "./device-mode.js";
+import { initDialogAccessibility } from "./dialog-a11y.js";
 import { initPanelLayout } from "./panel-layout.js";
 import { initBoardZoom, syncBoardZoomAfterRender, resetBoardZoom } from "./board-zoom.js";
 import { initPauseMenu, openPauseMenu } from "./pause-menu.js";
@@ -29,6 +30,7 @@ import {
   drawMindstreamOnLandscape,
   performLandscapeAction,
   uniqueLandscapeAction,
+  completeLandscapeAction,
   finishLandscapeMindstreamPick,
   finishLandscapeDeckFlip,
   tradeAction,
@@ -45,6 +47,7 @@ import {
   handleDefeatFinalArchetype,
   handleSacrificeForFinal,
   endPhase,
+  getDeckTop,
   getPhaseHint,
   getLegalExploreTargets,
   resolvePendingDeathDream,
@@ -53,7 +56,7 @@ import { requestEndPhase } from "./phase-skip.js";
 import { initDevConsole } from "./dev-console.js";
 import { enableDevMode } from "./dev-commands.js";
 import { narrate } from "./narrator.js";
-import { pickReturnCard, cancelPendingReturn, pickRepressCard, confirmRepressStep } from "./subconscious.js";
+import { pickReturnCard, cancelPendingReturn, pickRepressCard, confirmRepressStep, subconsciousCount } from "./subconscious.js";
 import { getLandscapePickHighlights } from "./landscapes.js";
 import {
   resolveDreamerPowerChoice,
@@ -70,7 +73,6 @@ import {
   createTutorialState,
   syncTutorial,
   advanceTutorialStep,
-  retreatTutorialStep,
   completeTutorialGame,
   notifyTutorialDreamDrawn,
   isInteractiveTutorialActive,
@@ -112,7 +114,6 @@ import {
   hideUtilityModal,
   showSubconsciousPicker,
   showSubconsciousBrowse,
-  showDiscardPileModal,
   showRepressPicker,
   renderSubconsciousGraveyard,
   showRulesModal,
@@ -160,6 +161,7 @@ function getNewHandCardIds(state) {
 
 async function init() {
   initDeviceMode();
+  initDialogAccessibility();
   initFxLayer();
   bindButtonRipples();
   initGameAudio();
@@ -226,13 +228,13 @@ function bindFullscreenPrompt() {
   const prompt = document.getElementById("fullscreen-prompt");
   if (!prompt) return;
 
-  const enter = async () => {
+  const enter = async (requestFullscreen = false) => {
     if (fullscreenReady) return;
     fullscreenReady = true;
     prompt.classList.add("hidden");
     startGameRadio();
     try {
-      if (!document.fullscreenElement) {
+      if (requestFullscreen && !document.fullscreenElement) {
         await document.documentElement.requestFullscreen();
       }
     } catch {
@@ -241,13 +243,8 @@ function bindFullscreenPrompt() {
     prompt.remove();
   };
 
-  prompt.addEventListener("click", enter);
-  prompt.addEventListener("keydown", (e) => {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      enter();
-    }
-  });
+  document.getElementById("btn-enter-game")?.addEventListener("click", () => enter(false));
+  document.getElementById("btn-enter-fullscreen")?.addEventListener("click", () => enter(true));
 }
 
 function bindPowerBonus() {
@@ -337,46 +334,6 @@ function bindRestart() {
   });
 }
 
-function bindHeaderDropdowns() {
-  const menus = [
-    { btnId: "btn-header-decks", panelId: "decks-dropdown-panel" },
-    { btnId: "btn-header-dreamers", panelId: "dreamers-dropdown-panel" },
-  ];
-
-  const closeAll = (exceptPanel = null) => {
-    menus.forEach(({ btnId, panelId }) => {
-      const panel = document.getElementById(panelId);
-      const btn = document.getElementById(btnId);
-      if (panel && panel !== exceptPanel) panel.classList.add("hidden");
-      if (btn && panel !== exceptPanel) btn.setAttribute("aria-expanded", "false");
-    });
-  };
-
-  menus.forEach(({ btnId, panelId }) => {
-    const btn = document.getElementById(btnId);
-    const panel = document.getElementById(panelId);
-    if (!btn || !panel) return;
-    btn.addEventListener("click", (event) => {
-      event.stopPropagation();
-      const willOpen = panel.classList.contains("hidden");
-      closeAll();
-      if (willOpen) {
-        panel.classList.remove("hidden");
-        btn.setAttribute("aria-expanded", "true");
-      }
-    });
-  });
-
-  document.addEventListener("click", (event) => {
-    if (event.target.closest(".header-dropdown")) return;
-    closeAll();
-  });
-
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") closeAll();
-  });
-}
-
 function bindHelp() {
   document.getElementById("btn-overview")?.addEventListener("click", showOverviewModal);
   document.getElementById("btn-help")?.addEventListener("click", showRulesModal);
@@ -386,7 +343,14 @@ function bindHelp() {
   });
   document.getElementById("btn-end-overview")?.addEventListener("click", showOverviewModal);
   document.getElementById("btn-pause")?.addEventListener("click", openPauseMenu);
-  bindHeaderDropdowns();
+
+  document.getElementById("btn-toggle-decks")?.addEventListener("click", () => {
+    const tray = document.getElementById("deck-tray");
+    const btn = document.getElementById("btn-toggle-decks");
+    const hidden = tray.classList.toggle("collapsed");
+    btn.textContent = hidden ? "Show decks" : "Hide decks";
+    btn.setAttribute("aria-expanded", String(!hidden));
+  });
 }
 
 function bindModal() {
@@ -467,34 +431,7 @@ function showTutorialAt(index) {
       else showTutorialAt(tutorialIndex);
     },
     onSkip: finishTutorial,
-    onBack: handleTutorialBack,
   });
-}
-
-function handleTutorialBack() {
-  if (state?.tutorialMode && isInteractiveTutorialActive(state)) {
-    if (!retreatTutorialStep(state)) return;
-    lastTutorialSyncKey = null;
-    lastTutorialStepId = null;
-    renderAll();
-    const sync = syncTutorial(state);
-    if (!sync || sync.complete) return;
-    showTutorialStep(sync.step, sync.stepIndex, sync.total, {
-      canAdvance: sync.canAdvance,
-      roundLabel: sync.round,
-      objective: sync.objective,
-      onNext: handleTutorialNext,
-      onSkip: handleTutorialSkip,
-      onBack: handleTutorialBack,
-    });
-    lastTutorialSyncKey = `${sync.stepIndex}:${sync.canAdvance}:${sync.step.id}`;
-    return;
-  }
-
-  if (tutorialIndex > 0) {
-    tutorialIndex -= 1;
-    showTutorialAt(tutorialIndex);
-  }
 }
 
 function finishTutorial() {
@@ -541,7 +478,6 @@ function handleTutorialNext() {
     fromRect,
     onNext: handleTutorialNext,
     onSkip: handleTutorialSkip,
-    onBack: handleTutorialBack,
   });
   lastTutorialSyncKey = `${nextSync.stepIndex}:${nextSync.canAdvance}:${nextSync.step.id}`;
 }
@@ -594,7 +530,6 @@ function syncInteractiveTutorial() {
     objective,
     onNext: handleTutorialNext,
     onSkip: handleTutorialSkip,
-    onBack: handleTutorialBack,
   });
 }
 
@@ -876,9 +811,33 @@ function renderAll() {
       uniqueLandscapeAction(state, {
         onChoose: (choices, tile, player) => {
           showLandscapeActionPicker(tile, choices, (actionId) => {
-            const result = performLandscapeAction(state, actionId, {
-              onResult: (card) => showModal(card),
-            });
+            const result = completeLandscapeAction(state, tile, player, actionId, (card) => showModal(card));
+            if (result?.pending === "pick-mindstream-suit" || result?.pending === "spawn-dreambeast-pick-suit") {
+              showMindstreamPicker((suit) => {
+                finishLandscapeMindstreamPick(state, tile, player, actionId, suit, (card) => showModal(card));
+                renderAll();
+              });
+              return;
+            }
+            if (result?.pending === "flip-top-3-pick-deck") {
+              showDeckFlipPicker((deckKey) => {
+                finishLandscapeDeckFlip(state, deckKey);
+                renderAll();
+              });
+              return;
+            }
+            renderAll();
+          });
+        },
+        onResult: (card) => showModal(card),
+      });
+      renderAll();
+    },
+    landscapeAction: () => {
+      uniqueLandscapeAction(state, {
+        onChoose: (choices, tile, player) => {
+          showLandscapeActionPicker(tile, choices, (actionId) => {
+            const result = completeLandscapeAction(state, tile, player, actionId, (card) => showModal(card));
             if (result?.pending === "pick-mindstream-suit" || result?.pending === "spawn-dreambeast-pick-suit") {
               showMindstreamPicker((suit) => {
                 finishLandscapeMindstreamPick(state, tile, player, actionId, suit, (card) => showModal(card));
@@ -936,11 +895,9 @@ function renderAll() {
   };
 
   const phaseActions = getPhaseActions(state, handlers);
-  const advanceAction = getPhaseAdvanceAction(state, handlers);
   renderNarratorPanel(state);
   renderGuidePanel(state, phaseActions);
-  renderPhaseAdvanceBar();
-  renderPhaseActions(phaseActions, advanceAction);
+  renderPhaseAdvanceBar(getPhaseAdvanceAction(state, handlers));
 
   const pickHighlights = getLandscapePickHighlights(state);
   const legalMoves = getLegalExploreTargets(state).map((t) => t.id);
@@ -990,7 +947,13 @@ function renderAll() {
   });
   renderDecks(state, (deckId) => {
     if (deckId.startsWith("mindstream-") && state.tradeMode) return;
-    showDiscardPileModal(state, deckId, (card) => showModal(card));
+    if (deckId === "subconscious") {
+      showSubconsciousBrowse(state, (card) => showModal(card));
+      return;
+    }
+    const top = getDeckTop(state, deckId);
+    if (top) showModal(top);
+    else addDeckMessage(deckId);
   });
   renderActiveSlots(state, (card) => showModal(card));
   renderSubconsciousGraveyard(state, () => {
@@ -998,6 +961,7 @@ function renderAll() {
   });
   renderLog(state);
 
+  renderPhaseActions(phaseActions);
   resolvePendingDeathDream(state, showModal);
   maybeShowDeathChoice();
   maybeShowNothingChoice();
@@ -1005,12 +969,6 @@ function renderAll() {
   maybeShowRepressPicker();
   maybeShowReturnPicker();
   maybeShowDreamerPowerUI();
-
-  const utilityModal = document.getElementById("utility-modal");
-  document.body.classList.toggle(
-    "utility-modal-open",
-    utilityModal && !utilityModal.classList.contains("hidden")
-  );
 
   if (isInteractiveTutorialActive(state)) {
     const step = getTutorialStep(state);
@@ -1024,6 +982,20 @@ function renderAll() {
     runPendingCardFx(state);
     runPendingBoardFx();
   });
+}
+
+function addDeckMessage(deckId) {
+  const counts = {
+    dream: state.dreamDeck.length,
+    psyche: state.psycheDeck.length,
+    archetype: state.archetypeDeck.length,
+    subconscious: subconsciousCount(state.subconscious),
+    "mindstream-lucidity": state.mindstreamDecks.lucidity.length,
+    "mindstream-elasticity": state.mindstreamDecks.elasticity.length,
+    "mindstream-willpower": state.mindstreamDecks.willpower.length,
+  };
+  addLog(state, `${deckId}: ${counts[deckId] ?? 0} cards.`);
+  renderLog(state);
 }
 
 init();

@@ -31,7 +31,7 @@ import {
   uid,
   PSYCHE_STARTING_HAND,
 } from "./data.js";
-import { discardToMindstream, pullObjectFromMindstream, objectForPlayer, reshuffleMindstreamDiscardIfNeeded } from "./mindstream-supply.js";
+import { discardToMindstream, pullObjectFromMindstream, objectForPlayer } from "./mindstream-supply.js";
 import { psycheHandCount, hasPsycheHealth } from "./psyche.js";
 import {
   grantPowerTokens,
@@ -178,8 +178,8 @@ export function createInitialState(data, options) {
   state.phaseIndex = 0;
   addLog(state, `Round ${state.round}: Reveal Phase — each Dreamer begins with ${PSYCHE_STARTING_HAND} Psyche.`);
   players.forEach((player) => {
-    grantPowerTokens(state, player, 1, {
-      reason: `${player.name} begins with 1 Power Token.`,
+    grantPowerTokens(state, player, 2, {
+      reason: `${player.name} begins with 2 Power Tokens.`,
       logQuest: false,
       animate: false,
     });
@@ -251,10 +251,9 @@ export function drawPsyche(state, count = 1) {
 }
 
 export function drawMindstream(state, suit, count = 1) {
+  const deck = state.mindstreamDecks[suit];
   const drawn = [];
   for (let i = 0; i < count; i += 1) {
-    reshuffleMindstreamDiscardIfNeeded(state, suit);
-    const deck = state.mindstreamDecks[suit];
     if (!deck.length) break;
     drawn.push(deck.shift());
   }

@@ -18,9 +18,9 @@ export const MUSIC_ATTRIBUTION = {
 };
 
 export const VIEW_PRESETS = {
-  small: { sidebarW: 240, handH: 108, chromeH: 68, footerH: 88, uiScale: 0.92 },
-  medium: { sidebarW: 300, handH: 155, chromeH: 96, footerH: 108, uiScale: 1 },
-  large: { sidebarW: 360, handH: 210, chromeH: 128, footerH: 132, uiScale: 1.12 },
+  small: { sidebarW: 148, handH: 108, chromeH: 68, footerH: 88, uiScale: 0.92 },
+  medium: { sidebarW: 210, handH: 155, chromeH: 96, footerH: 108, uiScale: 1 },
+  large: { sidebarW: 280, handH: 210, chromeH: 128, footerH: 132, uiScale: 1.12 },
 };
 
 const DEFAULT_SETTINGS = {
@@ -79,20 +79,4 @@ export function musicCreditHtml() {
     .map((t) => `<a href="${sourceUrl}" rel="noopener noreferrer">"${t.title}"</a>`)
     .join(", ");
   return `<p class="music-credit">Music: ${list} by ${artist} (${host}), licensed under <a href="${licenseUrl}" rel="noopener noreferrer">${license}</a>.</p>`;
-}
-
-export function artCreditHtml() {
-  return `<p class="music-credit">Card illustrations: AI-generated in <a href="https://cursor.com" rel="noopener noreferrer">Cursor</a>, from prompts written by Philip Carroll.</p>`;
-}
-
-export function boxArtCreditHtml() {
-  return `<p class="music-credit">Somnia splash and background art by David Paul Seymour. Somnia artwork © Philip Carroll.</p>`;
-}
-
-export function boxArtSplashCreditHtml() {
-  return `<p class="menu-splash-credit">Art by David Paul Seymour · Somnia artwork © Philip Carroll</p>`;
-}
-
-export function footerCreditsHtml() {
-  return `${musicCreditHtml()}${boxArtCreditHtml()}${artCreditHtml()}`;
 }

@@ -32,7 +32,9 @@
         "audit:morphology": "node scripts/audit-morphology-bank.mjs",
         "audit:morphology:lenient": "node scripts/audit-morphology-bank.mjs --lenient",
         "extract:somnia-pdf": "node scripts/extract-somnia-pdf.mjs",
-        "copy:somnia-images": "node scripts/copy-somnia-images.mjs"
+        "copy:somnia-images": "node scripts/copy-somnia-images.mjs",
+        "package": "node scripts/package-somnia-standalone.mjs",
+        "package:somnia-standalone": "node scripts/package-somnia-standalone.mjs"
     },
     "keywords": [],
     "author": "",

@@ -286,9 +286,10 @@ export function getPhaseActions(state, handlers) {
       label: "Next: Explore →",
       section: "phase",
       advance: true,
+      hidden: true,
       primary: true,
       disabled: !state.dreamDrawn,
-      hint: !state.dreamDrawn ? "Draw & Resolve the Dream before advancing to Explore." : "Advance to the Explore phase.",
+      hint: !state.dreamDrawn ? "Draw & Resolve the Dream before advancing to Explore." : undefined,
       onClick: handlers.nextPhase,
     });
   }
@@ -325,6 +326,7 @@ export function getPhaseActions(state, handlers) {
       label: movesLeft > 0 ? `Next: Meet → (${movesLeft} move${movesLeft === 1 ? "" : "s"} left)` : "Next: Meet →",
       section: "phase",
       advance: true,
+      hidden: true,
       primary: true,
       disabled: !state.exploreActivated,
       hint: !state.exploreActivated
@@ -454,11 +456,11 @@ export function getPhaseActions(state, handlers) {
       });
     });
     actions.push({
-      label: "End Round →",
+      label: "End Round",
       section: "round",
       advance: true,
+      hidden: true,
       primary: true,
-      hint: "Finish the Meet phase and start the next round when your group is ready.",
       onClick: handlers.nextPhase,
     });
   }
@@ -466,29 +468,10 @@ export function getPhaseActions(state, handlers) {
   return actions;
 }
 
-function phaseAdvanceBlocked(state) {
-  return !!(
-    state.landscapePick
-    || state.pendingRepress
-    || state.pendingReturn
-    || state.pendingDeathChoice
-    || state.pendingNothingChoice
-    || hasPendingDreamerPower(state)
-  );
-}
-
 export function getPhaseAdvanceAction(state, handlers) {
+  if (state.landscapePick || state.pendingRepress || state.pendingReturn || state.pendingDeathChoice || state.pendingNothingChoice || hasPendingDreamerPower(state)) return null;
   const actions = getPhaseActions(state, handlers);
-  const advance = actions.find((a) => a.advance);
-  if (!advance) return null;
-  if (phaseAdvanceBlocked(state)) {
-    return {
-      ...advance,
-      disabled: true,
-      hint: "Resolve the open prompt before advancing.",
-    };
-  }
-  return advance.disabled ? { ...advance } : advance;
+  return actions.find((a) => a.advance && !a.disabled) || null;
 }
 
 export function resolvePendingDeathDream(state, onShowModal) {
@@ -927,9 +910,9 @@ export function uniqueLandscapeAction(state, { onChoose, onResult } = {}) {
     return null;
   }
   const { tile, player } = ctx;
-  const choices = getLandscapeActionChoices(tile);
+  const choices = getUniqueLandscapeActionChoices(tile);
   if (!choices.length) {
-    addLog(state, "No Landscape Action here.");
+    addLog(state, "No special Landscape Action here.");
     return null;
   }
 

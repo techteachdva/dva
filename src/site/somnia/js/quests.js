@@ -76,10 +76,10 @@ export function recordQuestEvent(state, event, data = {}) {
   syncQuestConditions(state);
 }
 
-function anyDreamerPsycheHand(state, minCards) {
+function teamPsycheInHands(state) {
   return state.players
     .filter((p) => p.alive)
-    .some((p) => psycheHandCount(p) >= minCards);
+    .reduce((sum, p) => sum + psycheHandCount(p), 0);
 }
 
 function meetOnAny(t, ids) {
@@ -94,8 +94,7 @@ const QUEST_CHECKS = {
   "meet cerberus": (t) => t.meetBoss.cerberus,
   "meet double": (t) => t.meetBoss.double,
   "meet leviathan": (t) => t.meetBoss.leviathan,
-  "have 10 psyche": (_t, state) => anyDreamerPsycheHand(state, 10),
-  "1 dreamer holds 10 psyche cards": (_t, state) => anyDreamerPsycheHand(state, 10),
+  "have 10 psyche": (_t, state) => teamPsycheInHands(state) >= 10,
   "draw mindstream on the attic": (t) => t.mindstreamOnLandscape["the-attic"],
   "draw mindstream on the basement": (t) => t.mindstreamOnLandscape["the-basement"],
   "draw mindstream on awards or the party": (t) =>

@@ -2,7 +2,7 @@
   {
     "id": "the-rested",
     "name": "The Rested",
-    "image": "images/dreamers/dreamer-the-rested.png",
+    "image": "images/dreamers/dreamer-the-rested.webp",
     "lucidity": 2,
     "elasticity": 1,
     "willpower": 0,
@@ -12,7 +12,7 @@
   {
     "id": "the-visionary",
     "name": "The Visionary",
-    "image": "images/dreamers/dreamer-the-visionary.png",
+    "image": "images/dreamers/dreamer-the-visionary.webp",
     "lucidity": 2,
     "elasticity": 0,
     "willpower": 1,
@@ -22,7 +22,7 @@
   {
     "id": "the-runner",
     "name": "The Runner",
-    "image": "images/dreamers/dreamer-the-runner.png",
+    "image": "images/dreamers/dreamer-the-runner.webp",
     "lucidity": 1,
     "elasticity": 2,
     "willpower": 0,
@@ -32,7 +32,7 @@
   {
     "id": "the-hunter",
     "name": "The Hunter",
-    "image": "images/dreamers/dreamer-the-hunter.png",
+    "image": "images/dreamers/dreamer-the-hunter.webp",
     "lucidity": 0,
     "elasticity": 2,
     "willpower": 1,
@@ -42,7 +42,7 @@
   {
     "id": "the-immovable",
     "name": "The Immovable",
-    "image": "images/dreamers/dreamer-the-immovable.png",
+    "image": "images/dreamers/dreamer-the-immovable.webp",
     "lucidity": 1,
     "elasticity": 0,
     "willpower": 2,
@@ -52,7 +52,7 @@
   {
     "id": "the-weaver",
     "name": "The Weaver",
-    "image": "images/dreamers/dreamer-the-weaver.png",
+    "image": "images/dreamers/dreamer-the-weaver.webp",
     "lucidity": 0,
     "elasticity": 1,
     "willpower": 2,
