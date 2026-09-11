@@ -1,11 +1,19 @@
 /**
- * Somnia global leaderboard — Google Sheets via Vercel API proxy.
+ * High score facade — local storage in standalone builds, remote API on the web site.
  */
 
-const API_URL = "/api/somnia-highscores";
+import * as localStore from "./local-score-store.js";
+import * as remoteStore from "./remote-score-store.js";
+import { isStandaloneMode } from "./standalone.js";
 
 const FIRST_RE = /^[\p{L}][\p{L}'-]{0,15}$/u;
 const LAST_RE = /^[\p{L}]$/u;
+
+function activeStore() {
+  return isStandaloneMode() ? localStore : remoteStore;
+}
+
+export { isStandaloneMode } from "./standalone.js";
 
 export function validateScoreName(firstRaw, lastRaw) {
   const first = String(firstRaw ?? "").trim();
@@ -35,27 +43,9 @@ export function splitNameHint(raw) {
 }
 
 export async function fetchHighScores() {
-  const res = await fetch(API_URL, { method: "GET", cache: "no-store" });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok && !data.scores) {
-    throw new Error(data.error || `Could not load scores (${res.status}).`);
-  }
-  return {
-    scores: Array.isArray(data.scores) ? data.scores : [],
-    setupRequired: Boolean(data.setupRequired),
-    error: data.error || null,
-  };
+  return activeStore().fetchHighScores();
 }
 
 export async function submitHighScore(entry) {
-  const res = await fetch(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(entry),
-  });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok || data.error) {
-    throw new Error(data.error || `Could not save score (${res.status}).`);
-  }
-  return data;
+  return activeStore().submitHighScore(entry);
 }

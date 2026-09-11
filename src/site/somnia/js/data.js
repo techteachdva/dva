@@ -45,10 +45,13 @@ function enrichMindstreamEvents(mindstream, catalog) {
 }
 
 export const LENGTHS = {
-  daydream: { label: "Daydream", points: 12, dreams: 16 },
-  nap: { label: "Nap", points: 18, dreams: 20 },
-  deep: { label: "Deep Sleep", points: 24, dreams: 24 },
+  daydream: { label: "Daydream", points: 12, dreams: 14 },
+  nap: { label: "Nap", points: 18, dreams: 17 },
+  deep: { label: "Deep Sleep", points: 24, dreams: 21 },
 };
+
+/** Deck insert indices (0-based) — bosses appear on Reveal rounds 3, 6, and 9. */
+export const BOSS_DREAM_DECK_SLOTS = [2, 5, 8];
 
 export const PHASES = ["Reveal", "Explore", "Meet"];
 
@@ -86,6 +89,7 @@ export function uid(prefix = "id") {
 export const PSYCHE_DISTRIBUTION = { 1: 5, 2: 4, 3: 3, 4: 2, 5: 1 };
 export const PSYCHE_WILD_COUNT = 6;
 export const PSYCHE_POWER_TOKEN_COUNT = 6;
+export const PSYCHE_POWER_GRANT = 1;
 export const PSYCHE_STARTING_HAND = 5;
 export const PSYCHE_HAND_LIMIT = 10;
 
@@ -130,9 +134,9 @@ export function buildPsycheDeck(psycheConfig = {}) {
       type: "psyche-power",
       suit: null,
       value: 0,
-      powerTokens: 2,
+      powerTokens: PSYCHE_POWER_GRANT,
       name: "Power Surge",
-      text: "Draw 2 Power Tokens. Then Discard.",
+      text: "Draw 1 Power Token. Then Discard.",
       instanceId: uid("psyche"),
     });
   }
@@ -313,7 +317,7 @@ export function expandDreamPool(dreams) {
 
 /**
  * Build session Dream deck from the full 30-card regular pool plus 10 Final Recurrence cards.
- * `sessionCount` is how many regular dreams to include (16 / 20 / 24 by game length).
+ * `sessionCount` is how many regular dreams to include (14 / 17 / 21 by game length).
  */
 export function buildDreamDeck(dreams, sessionCount) {
   const regularPool = shuffle(expandDreamPool(dreams));
@@ -333,8 +337,8 @@ export function insertBossDreams(deck, dreambeasts) {
     .map((b) => ({ ...b, type: "boss-dream" }));
 
   const copy = [...deck];
-  const slots = [2, 5, 8];
   bosses.forEach((boss, index) => {
+    const slots = BOSS_DREAM_DECK_SLOTS;
     if (slots[index] <= copy.length) copy.splice(slots[index], 0, boss);
   });
   return copy;

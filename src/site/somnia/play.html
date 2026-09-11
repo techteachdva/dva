@@ -10,15 +10,11 @@
   <link rel="stylesheet" href="css/game.css">
 </head>
 <body class="in-game play-window">
-  <div id="fullscreen-prompt" class="fullscreen-prompt" role="dialog" aria-modal="true" aria-labelledby="fullscreen-prompt-title">
+  <div id="fullscreen-prompt" class="fullscreen-prompt" role="button" tabindex="0">
     <div class="fullscreen-prompt-card">
-      <h2 id="fullscreen-prompt-title">Enter the Dreamscape</h2>
-      <p>Choose how you would like to play. You can change display settings from the pause menu at any time.</p>
-      <div class="fullscreen-prompt-actions">
-        <button type="button" id="btn-enter-game" class="btn primary">Start Playing</button>
-        <button type="button" id="btn-enter-fullscreen" class="btn">Play in Fullscreen</button>
-      </div>
-      <span class="fullscreen-prompt-hint">Esc starts without fullscreen · music begins when you enter</span>
+      <h2>Enter the Dreamscape</h2>
+      <p>Click anywhere to begin and enter fullscreen.</p>
+      <span class="fullscreen-prompt-hint">Esc — pause menu · music starts here</span>
     </div>
   </div>
 
@@ -36,6 +32,20 @@
         <div class="hud-item phase"><span class="label">Phase</span><span id="hud-phase">Reveal</span></div>
       </div>
       <div id="header-actions" class="header-actions">
+        <div class="header-dropdown" id="header-decks-menu">
+          <button type="button" id="btn-header-decks" class="btn btn-sm header-dropdown-toggle" aria-expanded="false" aria-haspopup="true">🃏 Decks</button>
+          <div id="decks-dropdown-panel" class="header-dropdown-panel hidden" role="menu" aria-label="Deck counts">
+            <p class="header-dropdown-hint">Draw pile counts only — browse discard piles for face-up cards.</p>
+            <div id="deck-tray" class="deck-dropdown-list"></div>
+          </div>
+        </div>
+        <div class="header-dropdown" id="header-dreamers-menu">
+          <button type="button" id="btn-header-dreamers" class="btn btn-sm header-dropdown-toggle" aria-expanded="false" aria-haspopup="true">Dreamers</button>
+          <div id="dreamers-dropdown-panel" class="header-dropdown-panel hidden" role="menu" aria-label="Dreamer roster">
+            <p class="header-dropdown-hint">Discuss · hover for tips · click to focus</p>
+            <div id="dreamers-dropdown-list" class="dreamers-dropdown-list"></div>
+          </div>
+        </div>
         <button type="button" class="btn btn-icon" data-music-toggle aria-pressed="true" title="Mute music">🔊</button>
         <button type="button" id="btn-pause" class="btn btn-sm" title="Pause menu (Esc)">⏸ Pause</button>
         <button type="button" id="btn-overview" class="btn btn-sm" title="Game overview">Overview</button>
@@ -46,15 +56,6 @@
 
     <main>
       <section id="screen-game" class="screen active">
-        <aside class="sidebar left" id="sidebar-left">
-          <div class="resize-handle resize-col" id="resize-sidebar-left" title="Drag to resize sidebar"></div>
-          <h3>Dreamers <span class="sidebar-hint">discuss · hover for tips</span></h3>
-          <div id="player-list"></div>
-          <h3>Decks</h3>
-          <button type="button" id="btn-toggle-decks" class="btn btn-sm deck-toggle" aria-expanded="true">Hide decks</button>
-          <div class="deck-tray" id="deck-tray"></div>
-        </aside>
-
         <div class="table-surface" id="table-surface">
           <div class="table-chrome" id="table-chrome">
             <div id="phase-stepper" class="phase-stepper" aria-label="Round phases"></div>
@@ -63,9 +64,6 @@
             <div id="guide-panel-wrap" class="guide-panel-wrap collapsed">
               <p class="coop-play-banner" id="coop-play-banner">💬 Discuss &amp; plan — act in any order each phase.</p>
               <div id="guide-panel" class="guide-panel"></div>
-            </div>
-            <div id="phase-advance-bar" class="phase-advance-bar hidden">
-              <button type="button" id="btn-advance-phase" class="btn btn-advance primary">Next Phase</button>
             </div>
             <div id="phase-banner" class="phase-banner" aria-hidden="true"></div>
           </div>
@@ -96,6 +94,13 @@
 
         <footer class="hand-bar" id="hand-bar">
           <div class="resize-handle resize-row edge-top" id="resize-hand" title="Drag to resize hand area"></div>
+          <div class="dreamer-dock" id="dreamer-dock">
+            <div class="hand-header dreamer-dock-header">
+              <h3>Dreamers</h3>
+              <span class="hand-hint">click to focus</span>
+            </div>
+            <div id="player-list" class="player-list-dock"></div>
+          </div>
           <div class="hand-section power-section">
             <div class="hand-header">
               <h3>Power Tokens</h3>
@@ -185,8 +190,11 @@
       <h2 id="tutorial-title"></h2>
       <p id="tutorial-body"></p>
       <div class="tutorial-actions">
-        <button type="button" id="tutorial-skip" class="btn">Skip</button>
-        <button type="button" id="tutorial-next" class="btn primary">Next</button>
+        <button type="button" id="tutorial-back" class="btn" disabled>Back</button>
+        <div class="tutorial-actions-main">
+          <button type="button" id="tutorial-skip" class="btn">Skip</button>
+          <button type="button" id="tutorial-next" class="btn primary">Next</button>
+        </div>
       </div>
     </div>
   </div>

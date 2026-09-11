@@ -22,7 +22,7 @@ function alive(state) {
   return state.players.filter((p) => p.alive);
 }
 
-function personaCount(state) {
+function dreamerCount(state) {
   return alive(state).length;
 }
 
@@ -109,7 +109,7 @@ function trackChessPlay(state, player) {
   player.chessPlayed = (player.chessPlayed || 0) + 1;
   if (player.chessPlayed >= 3) {
     player.chessPlayed = 0;
-    returnN(state, personaCount(state) + 2, player);
+    returnN(state, dreamerCount(state) + 2, player);
     addLog(state, "Chess Set complete: Return Dreamers+2 Cards.");
   }
 }
@@ -121,19 +121,19 @@ export function checkObjectTagSet(state, player, tag) {
   if (tagged.length < required) return;
 
   if (tag === "chess") {
-    returnN(state, personaCount(state) + 2, player);
+    returnN(state, dreamerCount(state) + 2, player);
     addLog(state, "Chess Set complete: Return Dreamers+2 Cards.");
   } else if (tag === "stick") {
-    returnN(state, personaCount(state) + 3, player);
+    returnN(state, dreamerCount(state) + 3, player);
     addLog(state, "Stick Set complete: Return Dreamers+3 Cards.");
   } else if (tag === "body") {
-    returnN(state, personaCount(state) + 5, player);
+    returnN(state, dreamerCount(state) + 5, player);
     addLog(state, "Body Set complete: Return Dreamers+5 Cards.");
   } else if (tag === "element") {
-    returnN(state, personaCount(state) + 4, player);
+    returnN(state, dreamerCount(state) + 4, player);
     addLog(state, "Element Set complete: Return Dreamers+4 Cards.");
   } else if (tag === "jewelry") {
-    returnN(state, personaCount(state) + 4, player);
+    returnN(state, dreamerCount(state) + 4, player);
     addLog(state, "Jewelry Set complete: Return Dreamers+4 Cards.");
     if (state.activeArchetype?.questProgress?.every(Boolean)) {
       acquireArchetype(state, player);
@@ -146,7 +146,7 @@ export function checkObjectTagSet(state, player, tag) {
 export const OBJECT_EFFECTS = {
   candle: (state) => {
     const hidden = state.board.filter((l) => !l.revealed && !l.center);
-    const count = Math.min(hidden.length, personaCount(state) + 1);
+    const count = Math.min(hidden.length, dreamerCount(state) + 1);
     hidden.slice(0, count).forEach((t) => revealLandscapeTile(state, t));
     if (count) {
       recordQuestEvent(state, "reveal_landscape", { count });
@@ -191,7 +191,7 @@ export const OBJECT_EFFECTS = {
 
   "marble-grid": (state, player, helpers) => {
     spawnOnRandomTiles(state, helpers, 2);
-    returnN(state, personaCount(state) + 2, player);
+    returnN(state, dreamerCount(state) + 2, player);
     if (player.hand.length) {
       repressCard(state, player.hand.pop());
       recordQuestEvent(state, "discard_psyche", { count: 1 });
@@ -203,14 +203,14 @@ export const OBJECT_EFFECTS = {
     const tile = state.board.find((t) => t.revealed && !t.encounter);
     spawnFilteredDreambeast(state, helpers, tile?.id || player.landscapeId, { beastKind: "fantasy" });
     trackChessPlay(state, player);
-    returnN(state, personaCount(state) + 2, player);
+    returnN(state, dreamerCount(state) + 2, player);
   },
 
   "ebony-pawn": (state, player, helpers) => {
     const tile = state.board.find((t) => t.revealed && !t.encounter);
     spawnFilteredDreambeast(state, helpers, tile?.id || player.landscapeId, { beastKind: "nightmare" });
     trackChessPlay(state, player);
-    returnN(state, personaCount(state) + 2, player);
+    returnN(state, dreamerCount(state) + 2, player);
   },
 
   flower: (state, player) => {
@@ -270,7 +270,7 @@ export const OBJECT_EFFECTS = {
   },
 
   "the-all": (state, player, helpers) => {
-    returnN(state, personaCount(state) + 8);
+    returnN(state, dreamerCount(state) + 8);
     replayDreamFromDiscard(state, player, helpers);
   },
 

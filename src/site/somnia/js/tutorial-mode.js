@@ -235,8 +235,8 @@ function remPracticeSteps(round, { introTitle, introBody, endBody, teachLandscap
       id: `r${r}-explore-move`,
       round: r,
       title: `Round ${r} — Explore: Move (optional)`,
-      body: "Click a Dreamer chip, then click a green hex to move. You can skip this and press Continue.",
-      targets: ["#player-list", "#board-viewport"],
+      body: "Click a Dreamer chip in the bottom-left dock, then click a green hex to move. You can skip this and press Continue.",
+      targets: ["#dreamer-dock", "#board-viewport"],
       spotlight: "#board-viewport",
       objective: "Move Dreamers if you like, then press Continue.",
     },
@@ -273,7 +273,7 @@ function remPracticeSteps(round, { introTitle, introBody, endBody, teachLandscap
       round: r,
       title: `Round ${r} — Landscape Actions`,
       body: "Stand on a Landscape, select its hex, and spend a Meet action. Action A draws that tile's Mindstream; Action B is unique. Switch Dreamer chips to act as a different Dreamer.",
-      targets: ["#board-viewport", "#phase-actions", "#player-list"],
+      targets: ["#board-viewport", "#phase-actions", "#dreamer-dock"],
       spotlight: "#phase-actions",
       objective: "Try a Landscape action if you like, then press Continue.",
     });
@@ -389,8 +389,9 @@ export const TUTORIAL_SCRIPT = [
     id: "explore-move-r1",
     round: 1,
     title: "Explore the Map",
-    body: "Click a Dreamer chip, then move onto House — a Mandrake Encounter waits there.",
-    targets: ["#player-list", "#board-viewport"],
+    body: "Click a Dreamer chip in the bottom-left dock, then move onto House — a Mandrake Encounter waits there.",
+    targets: ["#dreamer-dock", "#board-viewport"],
+    spotlight: "#board-viewport",
     until: (s) => dreamerOnHouse(s),
     objective: (s) => (dreamerOnHouse(s)
       ? "Dreamer on House — press Continue."
@@ -548,7 +549,7 @@ export const TUTORIAL_SCRIPT = [
     round: 3,
     title: "Round 3 — Explore: Move (optional)",
     body: "Move onto The Bed if you plan to face Cerberus during Meet, or press Continue.",
-    targets: ["#player-list", "#board-viewport"],
+    targets: ["#dreamer-dock", "#board-viewport"],
     spotlight: "#board-viewport",
     objective: "Move Dreamers if you like, then press Continue.",
   },
@@ -672,7 +673,7 @@ export const TUTORIAL_SCRIPT = [
     round: 4,
     title: "Round 4 — Explore: Move (optional)",
     body: "Move Dreamers on the map if you like, then press Continue.",
-    targets: ["#player-list", "#board-viewport"],
+    targets: ["#dreamer-dock", "#board-viewport"],
     spotlight: "#board-viewport",
     objective: "Move Dreamers if you like, then press Continue.",
   },
@@ -692,7 +693,7 @@ export const TUTORIAL_SCRIPT = [
     round: 4,
     title: "Round 4 — Meet: Spend Willpower",
     body: "Gain Meet actions and use them freely. Switch Dreamer chips to act as different Dreamers.",
-    targets: ["#hand-bar", "#phase-actions", "#player-list"],
+    targets: ["#hand-bar", "#phase-actions", "#dreamer-dock"],
     spotlight: "#phase-actions",
     until: (s) => atRound(s, 4) && s.meetActionBudget > 0,
     objective: (s) => (s.meetActionBudget > 0
@@ -748,6 +749,7 @@ export function getTutorialStep(state) {
 
 /** Skip past steps whose gates are already satisfied (e.g. after reload or fast play). */
 function catchUpTutorialIndex(state) {
+  if (state.tutorialSuppressCatchUp) return;
   let guard = 0;
   while (guard++ < TUTORIAL_SCRIPT.length) {
     const step = TUTORIAL_SCRIPT[state.tutorialStepIndex];
@@ -790,9 +792,19 @@ export function advanceTutorialStep(state) {
   if (!state?.tutorialMode) return;
   state.tutorialStepIndex += 1;
   state.tutorialCanAdvance = false;
+  state.tutorialSuppressCatchUp = false;
   if (state.tutorialStepIndex >= TUTORIAL_SCRIPT.length) {
     state.tutorialComplete = true;
   }
+}
+
+export function retreatTutorialStep(state) {
+  if (!state?.tutorialMode || state.tutorialStepIndex <= 0) return false;
+  state.tutorialStepIndex -= 1;
+  state.tutorialCanAdvance = false;
+  state.tutorialComplete = false;
+  state.tutorialSuppressCatchUp = true;
+  return true;
 }
 
 export function notifyTutorialDreamDrawn(state) {

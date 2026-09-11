@@ -1,5 +1,6 @@
 import {
   addLog,
+  checkDefeat,
   drawPsycheForPlayer,
   forgetLandscapes,
   revealLandscapeTile,
@@ -10,7 +11,8 @@ import {
 } from "./state.js";
 import { forgetEdgeLandscapes } from "./landscapes.js";
 import { recordQuestEvent } from "./quests.js";
-import { grantPowerTokens } from "./power-tokens.js";
+import { grantPowerTokens, spendPowerTokensCollectively } from "./power-tokens.js";
+import { countBoardDreambeasts } from "./phase-skip.js";
 import { opposingSuit } from "./rules.js";
 import { adjacentTiles, hexDistance, edgeLandscapes } from "./hex.js";
 import {
@@ -55,7 +57,7 @@ export function repressFromHand(state, player, count, { reason = "" } = {}) {
   });
 }
 
-function personaCount(state) {
+function dreamerCount(state) {
   return alivePlayers(state).length;
 }
 
@@ -175,7 +177,45 @@ export function onExplorePhaseEnd(state) {
   state.wanderlustMoves = 0;
 }
 
+function discardDreamCardsFromDeck(state, count) {
+  let discarded = 0;
+  for (let i = 0; i < count; i += 1) {
+    const card = state.dreamDeck.shift();
+    if (!card) break;
+    if (!state.dreamDiscard) state.dreamDiscard = [];
+    state.dreamDiscard.push(card);
+    discarded += 1;
+  }
+  return discarded;
+}
+
+function applyDreambeastTimelineHunger(state) {
+  const beastCount = countBoardDreambeasts(state);
+  if (beastCount <= 0) return;
+
+  const paid = spendPowerTokensCollectively(state, beastCount);
+  if (paid > 0) {
+    addLog(
+      state,
+      `${beastCount} roaming Dreambeast${beastCount === 1 ? "" : "s"} — the team spends ${paid} Power Token${paid === 1 ? "" : "s"} to steady the Timeline.`,
+    );
+  }
+  const unpaid = beastCount - paid;
+  if (unpaid <= 0) return;
+
+  const discarded = discardDreamCardsFromDeck(state, unpaid);
+  if (discarded > 0) {
+    addLog(
+      state,
+      `The Timeline frays — ${discarded} Dream card${discarded === 1 ? "" : "s"} discarded (${unpaid} Dreambeast${unpaid === 1 ? "" : "s"} still hunger; not enough Power).`,
+    );
+    checkDefeat(state);
+  }
+}
+
 export function onMeetPhaseEnd(state) {
+  applyDreambeastTimelineHunger(state);
+
   if (state.rivalryLeftover > 0) {
     let cost = state.rivalryLeftover;
     alivePlayers(state).forEach((p) => {
@@ -275,7 +315,7 @@ const DREAM_EFFECTS = {
     }
   },
   misunderstanding: (state) => {
-    let left = personaCount(state) + 3;
+    let left = dreamerCount(state) + 3;
     ["lucidity", "elasticity", "willpower"].forEach((suit) => {
       const deck = state.mindstreamDiscard[suit];
       while (deck.length && left > 0) {
@@ -311,7 +351,7 @@ const DREAM_EFFECTS = {
     addLog(state, "Abduction: carried Dreamers may only Meet this round.");
   },
   absurdity: (state, player) => {
-    const drawCount = personaCount(state) + 1;
+    const drawCount = dreamerCount(state) + 1;
     ["lucidity", "elasticity", "willpower"].forEach((suit) => {
       const deck = state.mindstreamDecks[suit];
       for (let i = 0; i < drawCount && deck.length; i += 1) {
@@ -342,7 +382,7 @@ const DREAM_EFFECTS = {
     state.bargainingDream = true;
   },
   responsibility: (state) => {
-    const n = personaCount(state);
+    const n = dreamerCount(state);
     alivePlayers(state).forEach((p) => {
       const wpCards = p.hand.filter((c) => c.suit === "willpower");
       const wpSum = wpCards.slice(0, n).reduce((s, c) => s + (c.value || 0), 0);
@@ -359,7 +399,7 @@ const DREAM_EFFECTS = {
     });
   },
   wanderlust: (state) => {
-    state.wanderlustTarget = personaCount(state) * 3;
+    state.wanderlustTarget = dreamerCount(state) * 3;
     state.wanderlustMoves = 0;
     addLog(state, `Wanderlust: Explore ${state.wanderlustTarget} Landscapes this round for a reward.`);
   },
@@ -413,7 +453,7 @@ const DREAM_EFFECTS = {
     }
   },
   rivalry: (state, _player, helpers) => {
-    const count = Math.max(1, Math.floor(personaCount(state) / 2));
+    const count = Math.max(1, Math.floor(dreamerCount(state) / 2));
     helpers.spawnEncounter(state, "bed");
     state.rivalryLeftover = Math.max(0, count - 1);
     state.rivalryEncountersOnBed = count;
@@ -503,7 +543,7 @@ const DREAM_EFFECTS = {
     alivePlayers(state).forEach((p) => {
       if (p.hand.length) state.psycheDiscard.push(p.hand.pop());
     });
-    recordQuestEvent(state, "discard_psyche", { count: personaCount(state) });
+    recordQuestEvent(state, "discard_psyche", { count: dreamerCount(state) });
   },
   theta: (state) => {
     forgetEdgeLandscapes(state, 8);

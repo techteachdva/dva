@@ -10,9 +10,9 @@
     { "id": "a-face-appears", "name": "A Face Appears", "suit": "lucidity", "type": "event", "image": "images/cards/mindstream/lucidity/a-face-appears.webp", "text": "Spawn 1 Encounter from Lucidity Mindstream. If Lucidity 3+, Return 3 Cards." },
     { "id": "transported", "name": "Transported", "suit": "lucidity", "type": "event", "image": "images/cards/mindstream/lucidity/transported.webp", "text": "Draw 2 Psyche. 1st is column, 2nd is row of Dreamscape. Move to this Landscape." },
     { "id": "harmonic-resonance", "name": "Harmonic Resonance", "suit": "lucidity", "type": "event", "image": "images/cards/mindstream/lucidity/harmonic-resonance.webp", "text": "If Lucidity 1, Draw 1 Psyche. If Lucidity 3+, Return 2 Cards. Draw +1 Psyche or Return +2." },
-    { "id": "denial", "name": "Denial", "suit": "lucidity", "type": "event", "image": "images/cards/mindstream/lucidity/denial.webp", "text": "Return 4 Cards. If Lucidity 3+, Return +Personae." },
+    { "id": "denial", "name": "Denial", "suit": "lucidity", "type": "event", "image": "images/cards/mindstream/lucidity/denial.webp", "text": "Return 4 Cards. If Lucidity 3+, Return +Dreamers." },
     { "id": "forgot-clothes", "name": "Forgot Clothes", "suit": "lucidity", "type": "event", "image": "images/cards/mindstream/lucidity/forgot-clothes.webp", "text": "Repress 1 Psyche from hand. If Lucidity 1-2, Move adjacent. If Lucidity 3+, Move anywhere." },
-    { "id": "pop-quiz", "name": "Pop Quiz", "suit": "lucidity", "type": "event", "image": "images/cards/mindstream/lucidity/pop-quiz.webp", "text": "Draw 1 Psyche. Guess if next Psyche is Higher or Lower. Correct: Return Personae+3." },
+    { "id": "pop-quiz", "name": "Pop Quiz", "suit": "lucidity", "type": "event", "image": "images/cards/mindstream/lucidity/pop-quiz.webp", "text": "Draw 1 Psyche. Guess if next Psyche is Higher or Lower. Correct: Return Dreamers+3." },
     { "id": "sacred-geometry", "name": "Sacred Geometry", "suit": "lucidity", "type": "event", "image": "images/cards/mindstream/lucidity/sacred-geometry.webp", "text": "Move to any Landscape adjacent to Bed. Return 2 Cards per Affected Landscape." }
   ],
   "elasticity": [
@@ -35,7 +35,7 @@
     { "id": "flashing-lights", "name": "Flashing Lights", "suit": "willpower", "type": "event", "image": "images/cards/mindstream/willpower/flashing-lights.webp", "text": "Draw 2 Psyche. Take 2 Power Tokens." },
     { "id": "heating-up", "name": "Heating Up", "suit": "willpower", "type": "event", "image": "images/cards/mindstream/willpower/heating-up.webp", "text": "Spawn 1 Encounter, Meet it. If Accept spawn another; if Repress Draw Psyche up to hand limit." },
     { "id": "no-thing", "name": "No Thing", "suit": "willpower", "type": "event", "image": "images/cards/mindstream/willpower/no-thing.webp", "text": "Discard 3 Dream Cards. Willpower 3+, Return 1 Dream card to deck and shuffle." },
-    { "id": "no-time", "name": "No Time", "suit": "willpower", "type": "event", "image": "images/cards/mindstream/willpower/no-time.webp", "text": "Collectively Discard 1 Object per Persona. May Repress 4 Mindstream to ignore." },
+    { "id": "no-time", "name": "No Time", "suit": "willpower", "type": "event", "image": "images/cards/mindstream/willpower/no-time.webp", "text": "Collectively Discard 1 Object per Dreamer. May Repress 4 Mindstream to ignore." },
     { "id": "no-where", "name": "No Where", "suit": "willpower", "type": "event", "image": "images/cards/mindstream/willpower/no-where.webp", "text": "Forget 4 Landscapes. Repress top 1 Psyche from the Psyche deck. Draw 2 Psyche for grid move without Meet." },
     { "id": "choppy-water", "name": "Choppy Water", "suit": "willpower", "type": "event", "image": "images/cards/mindstream/willpower/choppy-water.webp", "text": "Discard 1 Willpower Psyche to Draw 1 Psyche and Return 4 Cards." },
     { "id": "clear-as-crystal", "name": "Clear as Crystal", "suit": "willpower", "type": "event", "image": "images/cards/mindstream/willpower/clear-as-crystal.webp", "text": "Willpower 2 or less: Draw 3 Psyche. Willpower 3+: Draw 3 Psyche and Return 2." },

@@ -1,4 +1,5 @@
-import { bindMusicToggle, initMenuAudioSettings, bindButtonRipples, musicCreditHtml } from "./audio.js";
+import { bindMusicToggle, initMenuAudioSettings, bindButtonRipples, footerCreditsHtml, boxArtSplashCreditHtml } from "./audio.js";
+import { isStandaloneMode } from "./standalone.js";
 import { initDeviceMode } from "./device-mode.js";
 import { initDialogAccessibility } from "./dialog-a11y.js";
 import { buildSetupAudioControls } from "./pause-menu.js";
@@ -13,6 +14,7 @@ import {
 } from "./ui.js";
 
 const LAUNCH_KEY = "somnia.launch";
+const PLAY_WINDOW_NAME = "somnia-play";
 const SPLASH_MIN_MS = 3200;
 const SPLASH_DISSOLVE_MS = 1600;
 
@@ -86,8 +88,10 @@ async function init() {
   bindButtonRipples();
   initMenuAudioSettings();
   bindMusicToggle();
+  const splashCreditEl = document.getElementById("menu-splash-credit");
+  if (splashCreditEl) splashCreditEl.innerHTML = boxArtSplashCreditHtml();
   const creditEl = document.getElementById("menu-footer-credit");
-  if (creditEl) creditEl.innerHTML = musicCreditHtml();
+  if (creditEl) creditEl.innerHTML = footerCreditsHtml();
 
   await preloadMenuSplashImage();
   gameData = await loadGameData();
@@ -140,8 +144,31 @@ function launchGameWindow(config = null) {
   }
   const playHref = playUrl.href;
 
-  sessionStorage.setItem(LAUNCH_KEY, JSON.stringify(payload));
-  window.location.assign(playHref);
+  if (isStandaloneMode()) {
+    sessionStorage.setItem(LAUNCH_KEY, JSON.stringify(payload));
+    window.location.href = playHref;
+    return;
+  }
+
+  const features = [
+    "popup=yes",
+    "width=1440",
+    "height=900",
+  ].join(",");
+
+  const win = window.open(playHref, PLAY_WINDOW_NAME, features);
+
+  if (!win) {
+    sessionStorage.setItem(LAUNCH_KEY, JSON.stringify(payload));
+    window.location.href = playHref;
+    return;
+  }
+
+  try {
+    win.focus();
+  } catch {
+    /* focus may fail in some browsers */
+  }
 }
 
 function launchTutorialMode() {
