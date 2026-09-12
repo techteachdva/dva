@@ -358,6 +358,57 @@ const RULES_TABS = [
   { id: RULES_TAB_DETAILS, label: "Details" },
 ];
 
+/** One-page brief shown before the interactive tutorial walkthrough. */
+export function tutorialBriefHtml() {
+  return `
+    <div class="rules-page tutorial-brief-page">
+      <h2>Somnia — Quick Start</h2>
+      <p class="rules-lead">You are Dreamers in a shared Dreamscape. Cooperate to earn Archetype points and escape before the Dream Deck runs out.</p>
+
+      <section class="overview-block">
+        <h3>Goal</h3>
+        <p>Complete both quests on the <strong>Active Archetype</strong>, spend <strong>1 Power Token</strong> to mark each quest, then <strong>Acquire</strong> it for points. Reach <strong>12 points</strong> (this tutorial), then get every living Dreamer onto <strong>The Bed</strong> to win.</p>
+      </section>
+
+      <section class="overview-block">
+        <h3>Every Round: R.E.M.</h3>
+        <p>Phases always run in order. Within each phase, talk first — then act in any order. There is <strong>no turn order</strong>.</p>
+        <ul class="tutorial-brief-rem">
+          <li><strong>Reveal</strong> (${SUIT_LABELS.lucidity}) — Head Dreamer (★) draws a Dream; one Dreamer spends Lucidity to reveal Landscapes on the map.</li>
+          <li><strong>Explore</strong> (${SUIT_LABELS.elasticity}) — one Dreamer spends Elasticity to unlock shared team moves on the hex board.</li>
+          <li><strong>Meet</strong> (${SUIT_LABELS.willpower}) — one Dreamer spends Willpower to unlock shared Meet actions for Encounters, Landscapes, and quests.</li>
+        </ul>
+        <p class="tutorial-brief-note">Each phase spender plays <strong>1–2 suited Psyche cards</strong>. Higher matching Dreamer stats add bonus budget.</p>
+      </section>
+
+      <section class="overview-block overview-cols">
+        <div>
+          <h3>Core Pieces</h3>
+          <ul>
+            <li><strong>Psyche</strong> — your hand (Lucidity, Elasticity, Willpower)</li>
+            <li><strong>Landscapes</strong> — hex tiles; reveal, move onto, and use their actions</li>
+            <li><strong>Encounters</strong> — Dreambeasts; <strong>Accept</strong> (join your hand) or <strong>Reject</strong> (Subconscious + reward)</li>
+            <li><strong>Power Tokens</strong> — mark quests, powers, and survival (team pool, max 24)</li>
+            <li><strong>Subconscious</strong> — face-up repressed cards; Return effects recycle them</li>
+          </ul>
+        </div>
+        <div>
+          <h3>This Tutorial</h3>
+          <ul>
+            <li><strong>5 rounds</strong> with a guided step card you can move and resize</li>
+            <li>Round 1: full R.E.M. loop + your first Encounter</li>
+            <li>Round 2: earn <strong>The Innocent</strong> Archetype</li>
+            <li>Round 3: a <strong>Boss Dream</strong></li>
+            <li>Rounds 4–5: death rules and final practice</li>
+          </ul>
+        </div>
+      </section>
+
+      <p class="tutorial-brief-footer-note">Press <strong>Begin Guided Tutorial</strong> when ready. The guide will highlight what to click and unlock Continue after each action.</p>
+    </div>
+  `;
+}
+
 /** Page 1 — one-page intro brief. */
 export function rulesIntroHtml() {
   return `
@@ -408,7 +459,7 @@ export function rulesIntroHtml() {
         <p>Use the <strong>R.E.M.</strong> tab for the three phases in depth. Use <strong>Details</strong> for encounters, death, bosses, objects, Mindstream, and Final Recurrence. The in-game <strong>Guide</strong> panel shows your next step every turn.</p>
       </section>
 
-            <p class="overview-footer">Somnia v 14.5 — cooperative rules reference.</p>
+            <p class="overview-footer">Somnia v 14.6 — cooperative rules reference.</p>
       ${footerCreditsHtml()}
     </div>
   `;

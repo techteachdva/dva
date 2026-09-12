@@ -21,7 +21,7 @@
   <div id="app">
     <header class="top-bar play-top-bar">
       <div class="brand">
-        <span class="version-label">Somnia v 14.5</span>
+        <span class="version-label">Somnia v 14.6</span>
         <h1>Somnia</h1>
       </div>
       <div id="phase-stepper" class="phase-stepper top-bar-stepper" aria-label="Round phases"></div>
@@ -170,6 +170,20 @@
     <div class="modal-content utility-content">
       <button class="modal-close utility-close" aria-label="Close">&times;</button>
       <div id="utility-modal-body"></div>
+    </div>
+  </div>
+
+  <div id="tutorial-brief" class="tutorial-brief hidden" role="dialog" aria-modal="true" aria-labelledby="tutorial-brief-title">
+    <div class="tutorial-brief-backdrop"></div>
+    <div class="tutorial-brief-card">
+      <header class="tutorial-brief-header">
+        <h2 id="tutorial-brief-title">Before You Begin</h2>
+        <p>Read this one-page overview, then play through five guided rounds.</p>
+      </header>
+      <div id="tutorial-brief-body" class="tutorial-brief-body"></div>
+      <footer class="tutorial-brief-footer">
+        <button type="button" id="tutorial-brief-begin" class="btn primary">Begin Guided Tutorial</button>
+      </footer>
     </div>
   </div>
 

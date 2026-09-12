@@ -64,6 +64,7 @@ import { resolveNothingChoice } from "./objects.js";
 import { phaseOpeningActive } from "./rules.js";
 import {
   TUTORIAL_STEPS,
+  tutorialBriefHtml,
   hasSeenTutorial,
   markTutorialSeen,
 } from "./guide.js";
@@ -123,6 +124,8 @@ import {
   showOverviewModal,
   hideDreamerDetailOverlay,
   showTutorialStep,
+  showTutorialBrief,
+  hideTutorialBrief,
   updateTutorialStepUI,
   hideTutorial,
   getTutorialSpotlightRect,
@@ -456,7 +459,9 @@ function startGame(config) {
   resetHandSnapshots(state);
   renderAll();
   if (!config.tutorialMode && !hasSeenTutorial()) startTutorial();
-  else if (config.tutorialMode) syncInteractiveTutorial();
+  else if (config.tutorialMode) {
+    showTutorialBrief(tutorialBriefHtml(), () => syncInteractiveTutorial());
+  }
 }
 
 function startTutorial() {

@@ -3485,3 +3485,25 @@ export function hideTutorial() {
   tutorialSpotlightEl = null;
   document.getElementById("tutorial-overlay")?.classList.add("hidden");
 }
+
+export function showTutorialBrief(html, onBegin) {
+  const modal = document.getElementById("tutorial-brief");
+  const body = document.getElementById("tutorial-brief-body");
+  const beginBtn = document.getElementById("tutorial-brief-begin");
+  if (!modal || !body || !beginBtn) {
+    onBegin?.();
+    return;
+  }
+  body.innerHTML = html;
+  modal.classList.remove("hidden");
+  const handler = () => {
+    beginBtn.removeEventListener("click", handler);
+    modal.classList.add("hidden");
+    onBegin?.();
+  };
+  beginBtn.addEventListener("click", handler);
+}
+
+export function hideTutorialBrief() {
+  document.getElementById("tutorial-brief")?.classList.add("hidden");
+}
