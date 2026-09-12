@@ -175,21 +175,31 @@
 
   <div id="tutorial-overlay" class="tutorial-overlay hidden" role="dialog" aria-modal="true">
     <div class="tutorial-backdrop"></div>
-    <div class="tutorial-card">
-      <div class="tutorial-progress" id="tutorial-progress"></div>
-      <div class="tutorial-jump-row">
-        <label for="tutorial-jump" class="tutorial-jump-label">Jump to topic</label>
-        <select id="tutorial-jump" class="tutorial-jump-select" aria-label="Jump to tutorial topic"></select>
-      </div>
-      <h2 id="tutorial-title"></h2>
-      <p id="tutorial-body"></p>
-      <div class="tutorial-actions">
-        <button type="button" id="tutorial-back" class="btn" disabled>Back</button>
-        <div class="tutorial-actions-main">
-          <button type="button" id="tutorial-skip" class="btn">Skip</button>
-          <button type="button" id="tutorial-next" class="btn primary">Next</button>
+    <div class="tutorial-card" id="tutorial-card">
+      <header class="tutorial-card-header" id="tutorial-card-header">
+        <span class="tutorial-card-drag-label" id="tutorial-card-drag-label">Tutorial Guide</span>
+        <div class="tutorial-card-window-actions">
+          <button type="button" id="tutorial-minimize" class="tutorial-window-btn" aria-label="Minimize tutorial window" title="Minimize">−</button>
+          <button type="button" id="tutorial-expand" class="tutorial-window-btn hidden" aria-label="Expand tutorial window" title="Expand">□</button>
+        </div>
+      </header>
+      <div class="tutorial-card-body" id="tutorial-card-body">
+        <div class="tutorial-progress" id="tutorial-progress"></div>
+        <div class="tutorial-jump-row">
+          <label for="tutorial-jump" class="tutorial-jump-label">Jump to topic</label>
+          <select id="tutorial-jump" class="tutorial-jump-select" aria-label="Jump to tutorial topic"></select>
+        </div>
+        <h2 id="tutorial-title"></h2>
+        <p id="tutorial-body"></p>
+        <div class="tutorial-actions">
+          <button type="button" id="tutorial-back" class="btn" disabled>Back</button>
+          <div class="tutorial-actions-main">
+            <button type="button" id="tutorial-skip" class="btn">Skip</button>
+            <button type="button" id="tutorial-next" class="btn primary">Next</button>
+          </div>
         </div>
       </div>
+      <div class="tutorial-card-resize-handle" id="tutorial-resize-handle" aria-hidden="true" title="Resize"></div>
     </div>
   </div>
 

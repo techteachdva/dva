@@ -2712,11 +2712,254 @@ function inferTutorialCardDock(step) {
   return "bottom";
 }
 
-function positionTutorialCard() {
-  const overlay = document.getElementById("tutorial-overlay");
-  if (!overlay) return;
-  overlay.classList.remove("tutorial-dock-top", "tutorial-dock-bottom", "tutorial-dock-left");
-  overlay.classList.add("tutorial-dock-center");
+const TUTORIAL_WINDOW_STORAGE_KEY = "somnia_tutorial_window_v1";
+const TUTORIAL_WINDOW_MIN_WIDTH = 320;
+const TUTORIAL_WINDOW_MIN_HEIGHT = 220;
+const TUTORIAL_WINDOW_MARGIN = 12;
+
+let tutorialWindowChromeReady = false;
+let tutorialWindowState = null;
+let tutorialWindowDrag = null;
+let tutorialWindowResize = null;
+
+function loadTutorialWindowState() {
+  try {
+    const raw = localStorage.getItem(TUTORIAL_WINDOW_STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
+function saveTutorialWindowState() {
+  if (!tutorialWindowState) return;
+  try {
+    localStorage.setItem(TUTORIAL_WINDOW_STORAGE_KEY, JSON.stringify(tutorialWindowState));
+  } catch {
+    /* ignore */
+  }
+}
+
+function defaultTutorialWindowState() {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const width = Math.min(720, Math.max(420, Math.round(vw * 0.38)));
+  const height = Math.min(560, Math.max(280, Math.round(vh * 0.55)));
+  return {
+    left: TUTORIAL_WINDOW_MARGIN,
+    top: Math.max(TUTORIAL_WINDOW_MARGIN, vh - height - TUTORIAL_WINDOW_MARGIN),
+    width,
+    height: null,
+    minimized: false,
+    userPositioned: false,
+  };
+}
+
+function clampTutorialWindowToViewport() {
+  if (!tutorialWindowState) return;
+  const card = document.getElementById("tutorial-card");
+  if (!card) return;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const rect = card.getBoundingClientRect();
+  const w = tutorialWindowState.width || rect.width;
+  const h = tutorialWindowState.height || rect.height;
+
+  tutorialWindowState.width = Math.min(
+    Math.max(w, TUTORIAL_WINDOW_MIN_WIDTH),
+    vw - TUTORIAL_WINDOW_MARGIN * 2,
+  );
+
+  if (tutorialWindowState.height != null) {
+    tutorialWindowState.height = Math.min(
+      Math.max(tutorialWindowState.height, TUTORIAL_WINDOW_MIN_HEIGHT),
+      vh - TUTORIAL_WINDOW_MARGIN * 2,
+    );
+  }
+
+  const maxLeft = vw - tutorialWindowState.width - TUTORIAL_WINDOW_MARGIN;
+  const maxTop = vh - (tutorialWindowState.height || rect.height) - TUTORIAL_WINDOW_MARGIN;
+  tutorialWindowState.left = Math.min(
+    Math.max(tutorialWindowState.left, TUTORIAL_WINDOW_MARGIN),
+    maxLeft,
+  );
+  tutorialWindowState.top = Math.min(
+    Math.max(tutorialWindowState.top, TUTORIAL_WINDOW_MARGIN),
+    maxTop,
+  );
+}
+
+function applyTutorialWindowGeometry() {
+  const card = document.getElementById("tutorial-card");
+  if (!card || !tutorialWindowState) return;
+
+  card.style.left = `${tutorialWindowState.left}px`;
+  card.style.top = `${tutorialWindowState.top}px`;
+  card.style.bottom = "";
+  card.style.right = "";
+  card.style.width = `${tutorialWindowState.width}px`;
+
+  if (tutorialWindowState.height != null && !tutorialWindowState.minimized) {
+    card.style.height = `${tutorialWindowState.height}px`;
+    card.classList.add("tutorial-card-sized");
+  } else {
+    card.style.height = "";
+    card.classList.remove("tutorial-card-sized");
+  }
+
+  card.classList.toggle("tutorial-minimized", !!tutorialWindowState.minimized);
+
+  const minimizeBtn = document.getElementById("tutorial-minimize");
+  const expandBtn = document.getElementById("tutorial-expand");
+  const resizeHandle = document.getElementById("tutorial-resize-handle");
+  minimizeBtn?.classList.toggle("hidden", !!tutorialWindowState.minimized);
+  expandBtn?.classList.toggle("hidden", !tutorialWindowState.minimized);
+  resizeHandle?.classList.toggle("hidden", !!tutorialWindowState.minimized);
+}
+
+function ensureTutorialWindowState() {
+  if (!tutorialWindowState) {
+    tutorialWindowState = loadTutorialWindowState() || defaultTutorialWindowState();
+  }
+  clampTutorialWindowToViewport();
+  applyTutorialWindowGeometry();
+}
+
+function setTutorialMinimized(minimized) {
+  if (!tutorialWindowState) return;
+  tutorialWindowState.minimized = minimized;
+  saveTutorialWindowState();
+  applyTutorialWindowGeometry();
+}
+
+function onTutorialWindowPointerMove(e) {
+  const card = document.getElementById("tutorial-card");
+  if (!card) return;
+
+  if (tutorialWindowDrag) {
+    const dx = e.clientX - tutorialWindowDrag.startX;
+    const dy = e.clientY - tutorialWindowDrag.startY;
+    tutorialWindowState.left = tutorialWindowDrag.origLeft + dx;
+    tutorialWindowState.top = tutorialWindowDrag.origTop + dy;
+    tutorialWindowState.userPositioned = true;
+    clampTutorialWindowToViewport();
+    applyTutorialWindowGeometry();
+  }
+
+  if (tutorialWindowResize) {
+    const dx = e.clientX - tutorialWindowResize.startX;
+    const dy = e.clientY - tutorialWindowResize.startY;
+    tutorialWindowState.width = tutorialWindowResize.origWidth + dx;
+    tutorialWindowState.height = tutorialWindowResize.origHeight + dy;
+    tutorialWindowState.userPositioned = true;
+    clampTutorialWindowToViewport();
+    applyTutorialWindowGeometry();
+  }
+}
+
+function endTutorialWindowPointer() {
+  if (!tutorialWindowDrag && !tutorialWindowResize) return;
+  const card = document.getElementById("tutorial-card");
+  card?.classList.remove("is-dragging", "is-resizing");
+  if (tutorialWindowDrag || tutorialWindowResize) {
+    saveTutorialWindowState();
+  }
+  tutorialWindowDrag = null;
+  tutorialWindowResize = null;
+}
+
+function suggestTutorialWindowPosition(step) {
+  if (!tutorialWindowState || tutorialWindowState.userPositioned) return;
+  const selectors = getStepTargetSelectors(step);
+  const spotlight = getSpotlightSelector(step);
+  const boardFocus = TUTORIAL_BOARD_SELECTORS.has(spotlight)
+    || selectors.includes("#board-viewport");
+  if (!boardFocus) return;
+
+  const card = document.getElementById("tutorial-card");
+  if (!card) return;
+  const rect = card.getBoundingClientRect();
+  const vh = window.innerHeight;
+  tutorialWindowState.left = TUTORIAL_WINDOW_MARGIN;
+  tutorialWindowState.top = Math.max(TUTORIAL_WINDOW_MARGIN, Math.round((vh - rect.height) / 2));
+  tutorialWindowState.width = Math.min(tutorialWindowState.width, Math.round(window.innerWidth * 0.34));
+  clampTutorialWindowToViewport();
+  applyTutorialWindowGeometry();
+}
+
+function ensureTutorialWindowChrome() {
+  if (tutorialWindowChromeReady) return;
+  tutorialWindowChromeReady = true;
+
+  const header = document.getElementById("tutorial-card-header");
+  const resizeHandle = document.getElementById("tutorial-resize-handle");
+  const minimizeBtn = document.getElementById("tutorial-minimize");
+  const expandBtn = document.getElementById("tutorial-expand");
+  const card = document.getElementById("tutorial-card");
+
+  header?.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0 || e.target.closest("button")) return;
+    ensureTutorialWindowState();
+    const rect = card.getBoundingClientRect();
+    tutorialWindowDrag = {
+      startX: e.clientX,
+      startY: e.clientY,
+      origLeft: rect.left,
+      origTop: rect.top,
+    };
+    card.classList.add("is-dragging");
+    header.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+
+  header?.addEventListener("pointermove", onTutorialWindowPointerMove);
+  header?.addEventListener("pointerup", endTutorialWindowPointer);
+  header?.addEventListener("pointercancel", endTutorialWindowPointer);
+
+  resizeHandle?.addEventListener("pointerdown", (e) => {
+    if (e.button !== 0) return;
+    ensureTutorialWindowState();
+    if (tutorialWindowState.minimized) return;
+    const rect = card.getBoundingClientRect();
+    tutorialWindowState.height = rect.height;
+    tutorialWindowResize = {
+      startX: e.clientX,
+      startY: e.clientY,
+      origWidth: rect.width,
+      origHeight: rect.height,
+    };
+    card.classList.add("is-resizing");
+    resizeHandle.setPointerCapture(e.pointerId);
+    e.preventDefault();
+    e.stopPropagation();
+  });
+
+  resizeHandle?.addEventListener("pointermove", onTutorialWindowPointerMove);
+  resizeHandle?.addEventListener("pointerup", endTutorialWindowPointer);
+  resizeHandle?.addEventListener("pointercancel", endTutorialWindowPointer);
+
+  minimizeBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    setTutorialMinimized(true);
+  });
+
+  expandBtn?.addEventListener("click", (e) => {
+    e.stopPropagation();
+    setTutorialMinimized(false);
+  });
+
+  window.addEventListener("resize", () => {
+    if (!tutorialWindowState) return;
+    clampTutorialWindowToViewport();
+    applyTutorialWindowGeometry();
+  });
+}
+
+function positionTutorialCard(step) {
+  ensureTutorialWindowChrome();
+  ensureTutorialWindowState();
+  if (step) suggestTutorialWindowPosition(step);
 }
 
 function populateTutorialJumpMenu(stepIndex, onJump) {
@@ -2944,7 +3187,7 @@ function applyTutorialHighlight(stepOrTarget, { animateIn = true } = {}) {
   bindTutorialScrollRefresh();
   positionTutorialSpotlight();
   startTutorialSpotlightTracker();
-  if (step) positionTutorialCard();
+  if (step) positionTutorialCard(step);
 
   if (animateIn) {
     tutorialSpotlightEl.classList.add("tutorial-spotlight-arriving");
@@ -3067,7 +3310,7 @@ export function updateTutorialStepUI({
     document.getElementById("tutorial-progress").textContent = `${roundPart}Step ${stepIndex + 1} / ${total}`;
   }
   if (step) {
-    positionTutorialCard();
+    positionTutorialCard(step);
     refreshTutorialSpotlight();
   }
 }
@@ -3154,7 +3397,7 @@ export function showTutorialStep(step, stepIndex, total, {
   });
 
   overlay.classList.remove("hidden");
-  positionTutorialCard();
+  positionTutorialCard(step);
 }
 
 export function hideTutorial() {

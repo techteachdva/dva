@@ -208,7 +208,7 @@ export const TUTORIAL_SCRIPT = [
     id: "welcome",
     round: 1,
     title: "Welcome to Somnia",
-    body: "You are Dreamers in a shared Dreamscape. Work together. Talk through each phase. There is no turn order inside a phase.",
+    body: "This guide window can be moved and resized. Drag the top bar to reposition it, or use the buttons to minimize or expand. You are Dreamers in a shared Dreamscape. Work together. Talk through each phase. There is no turn order inside a phase.",
     target: null,
   },
   {
