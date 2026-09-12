@@ -223,7 +223,7 @@ export function classifyPhaseAction(action) {
   if (label === "Quest 1") return "completeQuest0";
   if (label === "Quest 2") return "completeQuest1";
   if (label.includes("Next:") || label.startsWith("End Round")) return "advancePhase";
-  if (/Action A/i.test(label)) return "landscapeActionA";
+  if (/Action A/i.test(label) || label.startsWith("Draw [")) return "landscapeActionA";
   if (label === "Dreamer Power") return "dreamerPower";
   if (label === "Trade" || label === "Play Object" || label === "Activate Persistent") return "blockedExtra";
   return "other";
@@ -828,11 +828,24 @@ export const TUTORIAL_SCRIPT = [
   {
     id: "r2-move-quests",
     round: 2,
-    title: "Round 2 — Explore: Move Toward Quests",
-    body: "Click a Dreamer chip, then click a green hex to move. Head toward the glowing Attic and Basement tiles so a Dreamer can stand on each one during Meet.",
+    title: "Round 2 — Explore: Move Onto Quests",
+    body: "Click a Dreamer chip, then click a green hex to move. Place one Dreamer on The Attic and one on The Basement before entering Meet — you cannot move during Meet.",
     targets: ["#dreamer-dock", "#board-viewport"],
     spotlight: "#board-viewport",
-    objective: "Move Dreamers toward the quest Landscapes, then press Continue.",
+    until: (s) => atRound(s, 2)
+      && dreamerOnLandscape(s, "the-attic")
+      && dreamerOnLandscape(s, "the-basement"),
+    objective: (s) => {
+      if (!atRound(s, 2)) return "End Round 1 first.";
+      const onAttic = dreamerOnLandscape(s, "the-attic");
+      const onBasement = dreamerOnLandscape(s, "the-basement");
+      if (onAttic && onBasement) return "Dreamers in position. Press Continue.";
+      if (!onAttic && !onBasement) {
+        return "Move one Dreamer onto The Attic and one onto The Basement.";
+      }
+      if (!onAttic) return "Move a Dreamer onto The Attic.";
+      return "Move a Dreamer onto The Basement.";
+    },
   },
   {
     id: "r2-to-meet",
