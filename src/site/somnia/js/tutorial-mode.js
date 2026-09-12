@@ -4,6 +4,7 @@ import {
   addLog,
   setEncounterOnLandscape,
   landscapeById,
+  checkDreamerPsycheDeath,
 } from "./state.js";
 import { meetPsycheActor } from "./rules.js";
 import { uid } from "./data.js";
@@ -115,6 +116,11 @@ export function createTutorialState(data) {
 
 // ── Step snapshots (Back / jump restores game state) ─────────────────
 
+function reattachStateRuntime(state) {
+  state.checkPsycheDeath = (player) => checkDreamerPsycheDeath(state, player);
+  delete state.onResolutionIdle;
+}
+
 function snapshotGameData(state) {
   const {
     tutorialSnapshots,
@@ -122,9 +128,11 @@ function snapshotGameData(state) {
     tutorialCanAdvance,
     tutorialComplete,
     tutorialSuppressCatchUp,
+    checkPsycheDeath,
+    onResolutionIdle,
     ...game
   } = state;
-  return structuredClone(game);
+  return JSON.parse(JSON.stringify(game));
 }
 
 function saveTutorialSnapshot(state, stepIndex) {
@@ -146,7 +154,8 @@ function restoreTutorialSnapshot(state, stepIndex) {
     tutorialComplete: false,
     tutorialSuppressCatchUp: true,
   };
-  Object.assign(state, structuredClone(snap), preserved);
+  Object.assign(state, JSON.parse(JSON.stringify(snap)), preserved);
+  reattachStateRuntime(state);
   return true;
 }
 
