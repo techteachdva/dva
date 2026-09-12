@@ -791,6 +791,7 @@ export function renderBoard(state, onSelectLandscape, legalMoveIds = [], pickHig
   const size = fitHexSize(state);
   const scale = size / HEX_BASE;
   board.style.setProperty("--hex-scale", String(scale));
+  board.style.setProperty("--hex-size", `${size}px`);
   const bounds = boardPixelBounds(state, size);
   board.style.position = "relative";
   board.style.width = `${bounds.width}px`;
@@ -835,13 +836,14 @@ export function renderBoard(state, onSelectLandscape, legalMoveIds = [], pickHig
     el.style.left = `${x + bounds.offsetX}px`;
     el.style.top = `${y + bounds.offsetY}px`;
 
+    let faceImage = "";
     if (isBedFinal) {
-      el.style.backgroundImage = "url('images/dreams/final-recurrence.webp')";
+      faceImage = "url('images/dreams/final-recurrence.webp')";
     } else if (showFace && tile.image) {
-      el.style.backgroundImage = `url('${tile.image}')`;
+      faceImage = `url('${tile.image}')`;
     } else {
       const wl = tile.wastelandImage || "images/landscapes/wasteland.webp";
-      el.style.backgroundImage = `url('${wl}')`;
+      faceImage = `url('${wl}')`;
     }
 
     const occupants = state.players.filter((p) => p.landscapeId === tile.id && p.alive);
@@ -871,6 +873,7 @@ export function renderBoard(state, onSelectLandscape, legalMoveIds = [], pickHig
       : "";
 
     el.innerHTML = `
+      <div class="hex-face" style="background-image: ${faceImage}"></div>
       <div class="hex-overlay"></div>
       ${occupantsHtml}
       <div class="name">${displayName}</div>
