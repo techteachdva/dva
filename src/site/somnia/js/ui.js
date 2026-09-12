@@ -21,7 +21,6 @@ import {
   findPhaseContributor,
 } from "./rules.js";
 import { countBoardDreambeasts, timelineTollPreview } from "./phase-skip.js";
-import { COOP_PLAY_TIP } from "./guide.js";
 import { DREAMER_KIND_AFFINITY, beastKindLabel, dreamerPrimarySuit } from "./dreambeasts.js";
 import { handLimitForPlayer, handRoomForPsycheDraw } from "./objects.js";
 import { psycheHandCount, alliesInHand, psycheCardsInHand, allyHandCount, allyHandLimitForPlayer, effectivePsycheHealth, MAX_ALLIES_IN_HAND, MAX_PSYCHE_IN_HAND } from "./psyche.js";
@@ -345,14 +344,18 @@ export function renderActiveDreamerHand(state, onCardClick, {
   spillover.innerHTML = "";
   handRoot.classList.remove("coop-mode");
 
-  const displayTitle = title || `${player.name}${player.isHead ? " ★" : ""} — Psyche Hand`;
-  if (titleEl) titleEl.textContent = displayTitle;
+  const phaseSpend = Boolean(title?.includes("Spend"));
+  if (titleEl) titleEl.textContent = phaseSpend ? "Spend Psyche" : "Psyche Hand";
   if (stats) {
-    if (statsHtml) stats.innerHTML = statsHtml;
-    else if (statsText) {
+    const playerLabel = `${player.name}${player.isHead ? " ★" : ""}`;
+    if (statsHtml) {
+      stats.innerHTML = `<span class="hand-stats-player">${playerLabel}</span> ${statsHtml}`;
+    } else if (statsText) {
       stats.textContent = statsText;
-      stats.title = statsText;
-    } else stats.innerHTML = handStatsHtml(state, player);
+      stats.title = `${playerLabel} · ${statsText}`;
+    } else {
+      stats.innerHTML = `<span class="hand-stats-player">${playerLabel}</span> · ${handStatsHtml(state, player)}`;
+    }
   }
 
   const fresh = newCardIds || new Set();
@@ -1315,11 +1318,6 @@ function phaseBudgetChipLabel(state) {
 function renderCoopBanner(state) {
   const el = document.getElementById("coop-play-banner");
   if (!el) return;
-  if (phaseOpeningActive(state)) {
-    el.textContent = COOP_PLAY_TIP;
-    el.classList.remove("hidden");
-    return;
-  }
   el.classList.add("hidden");
   el.textContent = "";
 }
@@ -1388,19 +1386,8 @@ export function renderHud(state, hint = "") {
     window.setTimeout(() => feedBtn.classList.remove("dream-feed-nudge"), 3200);
   }
 
-  const head = headPlayer(state);
-  const meetInfo = state.meetActionBudget
-    ? ` · ${state.meetActionsUsed}/${state.meetActionBudget} actions`
-    : state.exploreMovesLeft
-      ? ` · ${state.exploreMovesLeft} moves`
-      : "";
-  const bonus = state.pendingPowerBonus ? ` · +${state.pendingPowerBonus} pending` : "";
-  const tutorialTag = state.tutorialMode ? " · Tutorial" : "";
   const banner = document.getElementById("phase-banner");
-  if (banner) {
-    banner.textContent =
-      `Round ${state.round} · ${head.name} is Head ★${meetInfo}${bonus}${tutorialTag}${hint ? ` · ${hint}` : ""}`;
-  }
+  if (banner) banner.textContent = "";
 
   renderCoopBanner(state);
 }

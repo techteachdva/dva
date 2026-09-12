@@ -715,7 +715,7 @@ body.in-game .brand h1 {
   overflow-y: auto;
   position: relative;
   display: grid;
-  grid-template-columns: minmax(108px, 14vw) minmax(100px, 155px) minmax(0, 1fr) minmax(0, 11vw) minmax(0, 11vw);
+  grid-template-columns: minmax(108px, 13vw) minmax(96px, 130px) minmax(0, 1fr) minmax(0, 22vw);
   gap: 0.65rem;
   align-items: stretch;
 }
@@ -981,16 +981,20 @@ body.in-game main {
   grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
   gap: 0.55rem;
   align-items: stretch;
-  min-height: 4.25rem;
+  min-height: auto;
 }
 
 .btn-tutorial-menu {
-  font-size: calc(0.78rem * var(--setup-type-scale));
+  font-size: calc(0.82rem * var(--setup-type-scale));
   font-weight: 600;
-  min-height: 100%;
+  min-height: 3.25rem;
   white-space: normal;
-  line-height: 1.25;
-  padding: 0.65rem 0.55rem;
+  line-height: 1.2;
+  padding: 0.55rem 0.65rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(180, 160, 255, 0.22);
   color: var(--muted);
@@ -2755,8 +2759,42 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
 
 .hand-section { min-width: 0; }
 
-#screen-game .objects-section {
-  max-width: 200px;
+#screen-game .objects-section,
+#screen-game .objects-panel {
+  max-width: none;
+}
+
+.objects-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.45rem;
+  min-width: 0;
+  min-height: 0;
+  align-self: stretch;
+}
+
+.objects-subsection {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.objects-subsection h3 {
+  margin: 0 0 0.25rem;
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.objects-subsection .objects-row {
+  flex: 1 1 auto;
+  min-height: 4.5rem;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 .objects-row { min-height: 72px; }
@@ -3093,7 +3131,12 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
   opacity: 0.65;
   animation: card-shimmer 2.4s linear infinite;
 }
-.game-card.portrait { width: 140px; min-height: 196px; }
+.game-card.portrait {
+  width: 140px;
+  min-height: auto;
+  height: auto;
+  overflow: visible;
+}
 
 .game-card .art {
   height: 96px;
@@ -3125,14 +3168,25 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
   text-shadow: 0 1px 3px rgba(0,0,0,0.8);
 }
 
-.game-card.portrait .art { height: 120px; }
+.game-card.portrait .art {
+  height: auto;
+  min-height: 96px;
+  aspect-ratio: 5 / 7;
+  max-height: 150px;
+}
+
+.game-card.portrait .body {
+  padding: 0.45rem 0.5rem 0.55rem;
+  overflow: visible;
+}
 
 .game-card .body { padding: 0.45rem 0.5rem 0.55rem; }
 .game-card .title {
   font-family: var(--font-display);
   font-size: 0.72rem;
-  line-height: 1.2;
+  line-height: 1.25;
   margin-bottom: 0.25rem;
+  overflow-wrap: anywhere;
 }
 
 .game-card .meta {
@@ -3531,16 +3585,17 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
 }
 
 #screen-game .active-card-slot {
-  min-height: 100px;
-  max-height: 28vh;
-  overflow: auto;
+  min-height: 0;
+  max-height: none;
+  overflow: visible;
 }
 
 #screen-game .active-card-slot .game-card.portrait {
   width: 100%;
-  max-width: 160px;
+  max-width: 180px;
   margin: 0 auto;
   display: block;
+  min-height: auto;
 }
 
 .mini-card-row {
@@ -5287,6 +5342,7 @@ html[data-device="mobile"] .action-dock-btn {
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
+  overflow-y: auto;
 }
 
 #screen-game .sidebar.right.sidebar-v14 h3 {
@@ -5295,13 +5351,25 @@ html[data-device="mobile"] .action-dock-btn {
 }
 
 #screen-game .sidebar.right .active-card-slot {
-  min-height: 120px;
-  max-height: 32vh;
+  min-height: 0;
+  max-height: none;
   flex: 0 0 auto;
+  overflow: visible;
 }
 
 #screen-game .sidebar.right .active-card-slot .game-card.portrait {
-  max-width: 200px;
+  max-width: 100%;
+}
+
+#screen-game .sidebar.right .active-card-slot .game-card.portrait .art {
+  max-height: 170px;
+}
+
+#screen-game .sidebar.right .active-card-slot .game-card.portrait .title,
+#screen-game .sidebar.right .active-card-slot .game-card.portrait .meta {
+  overflow: visible;
+  text-overflow: unset;
+  white-space: normal;
 }
 
 #screen-game .sidebar.right .subconscious-graveyard {
@@ -5312,14 +5380,19 @@ html[data-device="mobile"] .action-dock-btn {
 }
 
 #screen-game .hand-bar {
-  grid-template-columns: minmax(120px, 14vw) minmax(100px, 155px) minmax(0, 1fr) minmax(0, 11vw) minmax(0, 11vw);
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-columns: minmax(112px, 13vw) minmax(96px, 130px) minmax(0, 1fr) minmax(0, 22vw);
+  grid-template-rows: auto minmax(10rem, 1fr);
   gap: 0.45rem 0.65rem;
   padding-top: 0.35rem;
 }
 
+#screen-game .phase-banner,
+#screen-game .coop-play-banner {
+  display: none !important;
+}
+
 .action-dock-wrap {
-  grid-column: 1 / 4;
+  grid-column: 1 / -1;
   grid-row: 1;
   min-width: 0;
   max-height: min(34vh, 240px);
@@ -5333,9 +5406,8 @@ html[data-device="mobile"] .action-dock-btn {
 
 #screen-game .hand-bar > .dreamer-dock { grid-column: 1; grid-row: 2; }
 #screen-game .hand-bar > .power-section { grid-column: 2; grid-row: 2; }
-#screen-game .hand-bar > .hand-section:not(.objects-section) { grid-column: 3; grid-row: 2; }
-#screen-game .hand-bar > .objects-section:first-of-type { grid-column: 4; grid-row: 1 / span 2; }
-#screen-game .hand-bar > .objects-section:last-of-type { grid-column: 5; grid-row: 1 / span 2; }
+#screen-game .hand-bar > .psyche-hand-section { grid-column: 3; grid-row: 2; }
+#screen-game .hand-bar > .objects-panel { grid-column: 4; grid-row: 2; }
 
 .action-dock {
   display: flex;
@@ -5687,11 +5759,14 @@ html[data-device="mobile"] .action-dock-btn {
 
   #screen-game .hand-bar > .dreamer-dock,
   #screen-game .hand-bar > .power-section,
-  #screen-game .hand-bar > .hand-section:not(.objects-section),
-  #screen-game .hand-bar > .objects-section:first-of-type,
-  #screen-game .hand-bar > .objects-section:last-of-type {
+  #screen-game .hand-bar > .psyche-hand-section,
+  #screen-game .hand-bar > .objects-panel {
     grid-column: auto;
     grid-row: auto;
+  }
+
+  .objects-panel {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -5831,11 +5906,17 @@ body.play-window .subconscious-graveyard {
 
 #screen-game .hand-bar > .dreamer-dock,
 #screen-game .hand-bar > .power-section,
-#screen-game .hand-bar > .hand-section:not(.objects-section) {
+#screen-game .hand-bar > .psyche-hand-section,
+#screen-game .hand-bar > .objects-panel {
   align-self: stretch;
   min-height: 0;
   overflow: hidden;
   padding-bottom: 0.25rem;
+}
+
+.hand-stats-player {
+  font-weight: 600;
+  color: var(--text);
 }
 
 #screen-game .hand-bar > .power-section .power-token-actions {
