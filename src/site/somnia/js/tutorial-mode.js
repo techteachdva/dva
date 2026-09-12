@@ -8,9 +8,11 @@ import {
 import { meetPsycheActor } from "./rules.js";
 import { uid } from "./data.js";
 import { encounterFromDreambeastCard } from "./mindstream-supply.js";
+import { hexNeighbors } from "./hex.js";
 
 export const TUTORIAL_DREAMER_IDS = ["the-visionary", "the-runner"];
 export const TUTORIAL_MAX_ROUND = 5;
+const TUTORIAL_STARTER_IDS = ["city", "sky", "forest", "road", "house", "suburbia"];
 
 function makePsyche(suit, value, tag) {
   const label = suit.charAt(0).toUpperCase() + suit.slice(1);
@@ -91,19 +93,21 @@ export function createTutorialState(data) {
     ...state.dreamDeck.slice(5),
   ];
 
-  ["bed", "house", "forest", "sky", "the-attic", "the-basement"].forEach((id) => {
-    const tile = landscapeById(state, id);
-    if (tile) tile.revealed = true;
-  });
+  setupTutorialQuestLandscapes(state);
 
   const mandrake = data.dreambeasts.find((b) => b.id === "mandrake");
   if (mandrake) {
     setEncounterOnLandscape(state, "house", encounterFromDreambeastCard(mandrake));
   }
 
+  const placementNote = (state.tutorialFlags.questPlacements || [])
+    .map((p) => `${p.questId === "the-attic" ? "The Attic" : "The Basement"} beside ${p.starterName}`)
+    .join("; ");
+
   state.log = [
-    "Tutorial Mode: five rounds teach the full game. Follow the guide card in the center of the screen.",
+    "Tutorial Mode: five rounds teach the full game. Drag the guide window out of the way when you need the map.",
     "Round 1 begins in the Reveal Phase. Your Active Archetype is The Innocent.",
+    placementNote ? `Quest Landscapes revealed: ${placementNote}.` : "Quest Landscapes The Attic and The Basement are revealed near the center.",
   ];
   return state;
 }
@@ -169,6 +173,110 @@ function houseMeetReady(state) {
   return dreamerOnHouse(state) && houseSelected(state);
 }
 
+function shuffleIds(ids) {
+  const copy = [...ids];
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+function swapBoardTilePositions(tileA, tileB) {
+  const q = tileA.q;
+  const r = tileA.r;
+  tileA.q = tileB.q;
+  tileA.r = tileB.r;
+  tileB.q = q;
+  tileB.r = r;
+}
+
+function ring2SlotsBesideStarter(state, starterId) {
+  const starter = landscapeById(state, starterId);
+  if (!starter) return [];
+  return hexNeighbors(starter.q, starter.r)
+    .map(({ q, r }) => state.board.find((t) => t.q === q && t.r === r))
+    .filter((t) => t && !t.center && !t.starting);
+}
+
+function setupTutorialQuestLandscapes(state) {
+  const questIds = ["the-attic", "the-basement"];
+  const usedCoords = new Set();
+  const placements = [];
+
+  const bed = landscapeById(state, "bed");
+  if (bed) {
+    bed.revealed = true;
+    bed.wasteland = false;
+  }
+
+  TUTORIAL_STARTER_IDS.forEach((id) => {
+    const tile = landscapeById(state, id);
+    if (tile) {
+      tile.revealed = true;
+      tile.wasteland = false;
+    }
+  });
+
+  questIds.forEach((questId) => {
+    const questTile = landscapeById(state, questId);
+    if (!questTile) return;
+
+    let placed = false;
+    for (const starterId of shuffleIds(TUTORIAL_STARTER_IDS)) {
+      const slots = ring2SlotsBesideStarter(state, starterId).filter((slot) => {
+        const key = `${slot.q},${slot.r}`;
+        if (usedCoords.has(key)) return false;
+        if (questIds.includes(slot.id)) return false;
+        return true;
+      });
+      if (!slots.length) continue;
+
+      const targetSlot = slots[Math.floor(Math.random() * slots.length)];
+      swapBoardTilePositions(questTile, targetSlot);
+      usedCoords.add(`${questTile.q},${questTile.r}`);
+      questTile.revealed = true;
+      questTile.wasteland = false;
+
+      const starter = landscapeById(state, starterId);
+      placements.push({
+        questId,
+        starterId,
+        starterName: starter?.name || starterId,
+      });
+      placed = true;
+      break;
+    }
+
+    if (!placed) {
+      questTile.revealed = true;
+      questTile.wasteland = false;
+    }
+  });
+
+  state.tutorialFlags.questPlacements = placements;
+}
+
+function dreamerOnLandscape(state, landscapeId) {
+  return state.players.some((p) => p.alive && p.landscapeId === landscapeId);
+}
+
+function dreamerAdjacentToLandscape(state, landscapeId) {
+  const tile = landscapeById(state, landscapeId);
+  if (!tile) return false;
+  const neighborIds = hexNeighbors(tile.q, tile.r)
+    .map(({ q, r }) => state.board.find((t) => t.q === q && t.r === r)?.id)
+    .filter(Boolean);
+  return state.players.some((p) => p.alive && neighborIds.includes(p.landscapeId));
+}
+
+function questPlacementLabel(state, questId) {
+  const placement = state.tutorialFlags?.questPlacements?.find((p) => p.questId === questId);
+  if (placement?.starterName) return `beside ${placement.starterName}`;
+  const tile = landscapeById(state, questId);
+  return tile?.name || "the quest Landscape";
+}
+
 function innocentAtticDone(state) {
   return !!state.questTracker?.mindstreamOnLandscape?.["the-attic"];
 }
@@ -197,12 +305,12 @@ export const TUTORIAL_SECTIONS = [
   { id: "archetype", label: "The Innocent", stepIndex: 4 },
   { id: "encounter", label: "Accept & Reject", stepIndex: 13 },
   { id: "acquire", label: "Earn Innocent", stepIndex: 15 },
-  { id: "boss", label: "Boss Dreams", stepIndex: 21 },
-  { id: "death", label: "Death & Respawn", stepIndex: 24 },
-  { id: "graduate", label: "Finish", stepIndex: 27 },
+  { id: "boss", label: "Boss Dreams", stepIndex: 29 },
+  { id: "death", label: "Death & Respawn", stepIndex: 32 },
+  { id: "graduate", label: "Finish", stepIndex: 35 },
 ];
 
-/** Linear guided script — five rounds, ~28 steps. */
+/** Linear guided script — five rounds, ~36 steps. */
 export const TUTORIAL_SCRIPT = [
   {
     id: "welcome",
@@ -236,8 +344,8 @@ export const TUTORIAL_SCRIPT = [
     id: "archetype-innocent",
     round: 1,
     title: "The Innocent Archetype",
-    body: "Your Active Archetype is The Innocent (1 point). Quest 1: Draw Mindstream on The Attic. Quest 2: Draw Mindstream on The Basement. Both Landscapes are already revealed. You will earn this Archetype in Round 2.",
-    target: "#active-archetype",
+    body: "Your Active Archetype is The Innocent (1 point). Quest 1: Draw Mindstream on The Attic. Quest 2: Draw Mindstream on The Basement. Both quest Landscapes are already revealed on the map beside starting tiles. Glowing hexes mark quest locations.",
+    targets: ["#active-archetype", "#board-viewport"],
   },
   {
     id: "draw-dream-r1",
@@ -367,43 +475,148 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-intro",
     round: 2,
     title: "Round 2: Earn The Innocent",
-    body: "Run Reveal, Explore, and Meet again. During Meet, stand on The Attic and The Basement and use each Landscape Action A to draw Mindstream. That completes both Innocent quests.",
+    body: "Round 2 completes both Innocent quests. You will run Reveal, Explore, and Meet again, then visit The Attic and The Basement to draw Mindstream. Each quest earns a checkbox on the Active Archetype.",
     target: "#active-archetype",
+  },
+  {
+    id: "r2-map",
+    round: 2,
+    title: "Find Your Quest Landscapes",
+    body: "Look at the map. The Attic and The Basement are revealed beside starting Landscapes near the center. Glowing hexes mark open Innocent quests. You must stand on a quest tile during Meet to use its Action A.",
+    targets: ["#board-viewport", "#active-archetype"],
+    spotlight: "#board-viewport",
+  },
+  {
+    id: "r2-dream",
+    round: 2,
+    title: "Round 2 — Reveal: Draw the Dream",
+    body: "Round 2 starts the same way as Round 1. The Head Dreamer draws one Dream card to open Reveal.",
+    target: "#phase-actions",
+    until: (s) => atRound(s, 2) && s.dreamDrawn,
+    objective: (s) => {
+      if (!atRound(s, 2)) return "End Round 1 first.";
+      return s.dreamDrawn
+        ? "Dream drawn. Press Continue."
+        : "Click Draw & Resolve Dream.";
+    },
+  },
+  {
+    id: "r2-lucidity",
+    round: 2,
+    title: "Round 2 — Reveal: Spend Lucidity",
+    body: "Select 1 to 2 Lucidity cards, then click Reveal Landscapes. You do not need to reveal new tiles this round, but you must spend Lucidity to finish Reveal.",
+    targets: ["#hand-bar", "#phase-actions"],
+    spotlight: "#phase-actions",
+    until: (s) => atRound(s, 2) && (s.revealLandscapeUsed || s.landscapePick?.mode === "reveal"),
+    objective: (s) => {
+      if (s.revealLandscapeUsed || s.landscapePick?.mode === "reveal") return "Reveal budget spent. Press Continue.";
+      if (hasLuciditySelected(s)) return "Click Reveal Landscapes.";
+      return "Select 1 to 2 Lucidity cards.";
+    },
+  },
+  {
+    id: "r2-to-explore",
+    round: 2,
+    title: "Round 2 — Enter Explore",
+    body: "Click Next Phase at the top. Explore is when Dreamers move across the map toward quest Landscapes.",
+    target: "#btn-advance-phase",
+    until: (s) => atRound(s, 2) && getPhase(s) === "Explore",
+    objective: (s) => (getPhase(s) === "Explore"
+      ? "Explore started. Press Continue."
+      : "Click Next Phase to enter Explore."),
+  },
+  {
+    id: "r2-elasticity",
+    round: 2,
+    title: "Round 2 — Explore: Spend Elasticity",
+    body: "Select 1 to 2 Elasticity cards, then click Spend Elasticity. This unlocks team moves so you can reach The Attic and The Basement.",
+    targets: ["#hand-bar", "#phase-actions", "#dreamer-dock"],
+    spotlight: "#phase-actions",
+    until: (s) => atRound(s, 2) && s.exploreActivated,
+    objective: (s) => {
+      if (s.exploreActivated) return "Elasticity spent. Press Continue.";
+      if (hasElasticitySelected(s)) return "Click Spend Elasticity.";
+      return "Select 1 to 2 Elasticity cards.";
+    },
+  },
+  {
+    id: "r2-move-quests",
+    round: 2,
+    title: "Round 2 — Explore: Move Toward Quests",
+    body: "Click a Dreamer chip, then click a green hex to move. Head toward the glowing Attic and Basement tiles so a Dreamer can stand on each one during Meet.",
+    targets: ["#dreamer-dock", "#board-viewport"],
+    spotlight: "#board-viewport",
+    objective: "Move Dreamers toward the quest Landscapes, then press Continue.",
+  },
+  {
+    id: "r2-to-meet",
+    round: 2,
+    title: "Round 2 — Enter Meet",
+    body: "Click Next Phase at the top. Meet is when you spend actions on Landscapes, Encounters, and quests.",
+    target: "#btn-advance-phase",
+    until: (s) => atRound(s, 2) && getPhase(s) === "Meet",
+    objective: (s) => (getPhase(s) === "Meet"
+      ? "Meet started. Press Continue."
+      : "Click Next Phase to enter Meet."),
+  },
+  {
+    id: "r2-willpower",
+    round: 2,
+    title: "Round 2 — Meet: Spend Willpower",
+    body: "Select 1 to 2 Willpower cards, then click Gain Actions. Meet actions pay for Landscape Action A on The Attic and The Basement.",
+    targets: ["#hand-bar", "#phase-actions"],
+    spotlight: "#phase-actions",
+    until: (s) => atRound(s, 2) && s.meetActionBudget > 0,
+    objective: (s) => {
+      if (s.meetActionBudget > 0) return "Meet actions unlocked. Press Continue.";
+      if (hasWillpowerSelected(s)) return "Click Gain Actions.";
+      return "Select 1 to 2 Willpower cards.";
+    },
   },
   {
     id: "r2-attic",
     round: 2,
-    title: "Quest: The Attic",
-    body: "During Meet, move a Dreamer onto The Attic, select the hex, spend a Meet action, and use Action A to draw Lucidity Mindstream.",
-    targets: ["#board-viewport", "#phase-actions"],
+    title: "Quest 1: The Attic",
+    body: "Why: Innocent Quest 1 needs Lucidity Mindstream from The Attic. How: 1) Move a Dreamer onto The Attic. 2) Click the Attic hex. 3) Spend a Meet action. 4) Choose Action A to draw Lucidity Mindstream.",
+    targets: ["#board-viewport", "#phase-actions", "#dreamer-dock"],
     spotlight: "#board-viewport",
     until: (s) => atRound(s, 2) && innocentAtticDone(s),
     objective: (s) => {
       if (!atRound(s, 2)) return "End Round 1 first.";
       if (innocentAtticDone(s)) return "Attic quest complete. Press Continue.";
-      if (getPhase(s) !== "Meet") return "Advance to Meet, then use The Attic Action A.";
-      return "Draw Mindstream on The Attic.";
+      if (getPhase(s) !== "Meet") return "You must be in Meet to use Landscape actions.";
+      if (!dreamerOnLandscape(s, "the-attic")) {
+        return `Move a Dreamer onto The Attic (${questPlacementLabel(s, "the-attic")}).`;
+      }
+      if (s.selectedLandscapeId !== "the-attic") return "Click The Attic hex on the map.";
+      if (s.meetActionBudget <= 0) return "Spend Willpower first to gain Meet actions.";
+      return "Spend a Meet action and choose Action A on The Attic.";
     },
   },
   {
     id: "r2-basement",
     round: 2,
-    title: "Quest: The Basement",
-    body: "During Meet, stand on The Basement, select the hex, and use Action A to draw Willpower Mindstream.",
-    targets: ["#board-viewport", "#phase-actions"],
+    title: "Quest 2: The Basement",
+    body: "Why: Innocent Quest 2 needs Willpower Mindstream from The Basement. How: 1) Move a Dreamer onto The Basement. 2) Click the Basement hex. 3) Spend a Meet action. 4) Choose Action A to draw Willpower Mindstream.",
+    targets: ["#board-viewport", "#phase-actions", "#dreamer-dock"],
     spotlight: "#board-viewport",
     until: (s) => atRound(s, 2) && innocentBasementDone(s),
     objective: (s) => {
       if (innocentBasementDone(s)) return "Basement quest complete. Press Continue.";
-      if (getPhase(s) !== "Meet") return "Advance to Meet, then use The Basement Action A.";
-      return "Draw Mindstream on The Basement.";
+      if (getPhase(s) !== "Meet") return "You must be in Meet to use Landscape actions.";
+      if (!dreamerOnLandscape(s, "the-basement")) {
+        return `Move a Dreamer onto The Basement (${questPlacementLabel(s, "the-basement")}).`;
+      }
+      if (s.selectedLandscapeId !== "the-basement") return "Click The Basement hex on the map.";
+      if (s.meetActionBudget <= 0) return "Spend Willpower first to gain Meet actions.";
+      return "Spend a Meet action and choose Action A on The Basement.";
     },
   },
   {
     id: "r2-mark",
     round: 2,
     title: "Mark Both Quests",
-    body: "Both quest conditions are met. Spend 1 Power Token on each quest checkbox in the Active Archetype panel.",
+    body: "Why: You proved both quest conditions. How: In the Active Archetype panel, click each quest checkbox and spend 1 Power Token to mark it complete.",
     target: "#active-archetype",
     until: (s) => innocentQuestsMarked(s),
     objective: (s) => (innocentQuestsMarked(s)
@@ -414,7 +627,7 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-acquire",
     round: 2,
     title: "Acquire The Innocent",
-    body: "Click Acquire on the Active Archetype. You gain 1 point toward your goal of 12.",
+    body: "Why: Both quests are marked, so you can claim the Archetype. How: Click Acquire on the Active Archetype. You gain 1 point toward your goal of 12.",
     target: "#active-archetype",
     until: (s) => innocentAcquired(s),
     objective: (s) => (innocentAcquired(s)
