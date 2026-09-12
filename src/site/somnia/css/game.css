@@ -2807,7 +2807,7 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
 
 .hex-tile {
   --hex-clip: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
-  --hex-border-width: calc(3px * var(--hex-scale, 1));
+  --hex-border-width: calc(2px * var(--hex-scale, 1));
   position: absolute;
   width: calc(var(--hex-size, 58px) * 1.732050808);
   height: calc(var(--hex-size, 58px) * 2);
@@ -2815,12 +2815,13 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
   padding: 0;
   border: none;
   border-radius: 0;
-  background: var(--hex-border-color, rgba(150, 140, 170, 0.75));
+  background: var(--hex-border-color, rgba(150, 140, 170, 0.32));
   clip-path: var(--hex-clip);
   text-align: center;
   cursor: pointer;
   transition: transform 0.15s, filter 0.15s;
   overflow: hidden;
+  isolation: isolate;
 }
 
 .hex-tile .hex-face {
@@ -2881,7 +2882,7 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
   transform: translate(-50%, calc(-50% - 2px));
   filter: drop-shadow(0 0 10px rgba(123, 92, 255, 0.45));
 }
-.hex-tile.center { --hex-border-color: #f0c96a; background: #f0c96a; }
+.hex-tile.center { --hex-border-color: rgba(240, 201, 106, 0.42); background: rgba(240, 201, 106, 0.42); }
 .hex-tile.center:not(.selected) {
   filter: drop-shadow(0 0 12px rgba(240, 201, 106, 0.28));
 }
@@ -2925,9 +2926,9 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
   z-index: 3;
   text-shadow: 0 1px 3px rgba(0,0,0,0.9);
 }
-.hex-tile.suit-lucidity { --hex-border-color: #4a9eff; background: #4a9eff; }
-.hex-tile.suit-elasticity { --hex-border-color: #f0c830; background: #f0c830; }
-.hex-tile.suit-willpower { --hex-border-color: #e84848; background: #e84848; }
+.hex-tile.suit-lucidity { --hex-border-color: rgba(74, 158, 255, 0.38); background: rgba(74, 158, 255, 0.38); }
+.hex-tile.suit-elasticity { --hex-border-color: rgba(240, 200, 48, 0.38); background: rgba(240, 200, 48, 0.38); }
+.hex-tile.suit-willpower { --hex-border-color: rgba(232, 72, 72, 0.38); background: rgba(232, 72, 72, 0.38); }
 
 .game-log {
   min-height: 56px;
@@ -4710,7 +4711,6 @@ body.card-detail-open .tutorial-card {
 @media (max-width: 640px) {
   .top-bar { flex-direction: column; align-items: flex-start; }
   .hand-hint { display: none; }
-  .hex-tile { width: calc(92px * var(--hex-scale, 1.72)); }
   .game-card { width: 104px; min-height: 150px; }
   .hand-bar { grid-template-columns: 1fr; }
   .objects-section { max-width: none; }

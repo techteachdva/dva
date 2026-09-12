@@ -142,26 +142,28 @@ export function canMoveTo(state, player, targetId, { freeMove = false } = {}) {
   return targets.some((t) => t.id === targetId);
 }
 
-/** Pixel offset for pointy-top hex layout (size = half-width). */
+/** Pixel offset for pointy-top hex layout (size = circumradius, center to vertex). */
 export function hexToPixel(q, r, size = 58) {
-  const x = size * 1.5 * q;
-  const y = size * Math.sqrt(3) * (r + q / 2);
+  const x = size * Math.sqrt(3) * (q + r / 2);
+  const y = size * 1.5 * r;
   return { x, y };
 }
 
 export function boardPixelBounds(state, size = 58) {
-  let minX = 0;
-  let maxX = 0;
-  let minY = 0;
-  let maxY = 0;
+  const halfW = (size * Math.sqrt(3)) / 2;
+  const halfH = size;
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
   state.board.forEach((tile) => {
     const { x, y } = hexToPixel(tile.q, tile.r, size);
-    minX = Math.min(minX, x);
-    maxX = Math.max(maxX, x);
-    minY = Math.min(minY, y);
-    maxY = Math.max(maxY, y);
+    minX = Math.min(minX, x - halfW);
+    maxX = Math.max(maxX, x + halfW);
+    minY = Math.min(minY, y - halfH);
+    maxY = Math.max(maxY, y + halfH);
   });
-  const pad = size * 1.2;
+  const pad = Math.max(8, size * 0.12);
   return {
     width: maxX - minX + pad * 2,
     height: maxY - minY + pad * 2,

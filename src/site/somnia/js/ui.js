@@ -835,6 +835,7 @@ export function renderBoard(state, onSelectLandscape, legalMoveIds = [], pickHig
 
     el.style.left = `${x + bounds.offsetX}px`;
     el.style.top = `${y + bounds.offsetY}px`;
+    el.style.zIndex = String(1000 + Math.round(y + bounds.offsetY));
 
     let faceImage = "";
     if (isBedFinal) {
