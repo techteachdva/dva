@@ -715,7 +715,7 @@ body.in-game .brand h1 {
   overflow-y: auto;
   position: relative;
   display: grid;
-  grid-template-columns: minmax(108px, 14vw) minmax(88px, 140px) minmax(0, 1fr) minmax(0, 11vw) minmax(0, 11vw);
+  grid-template-columns: minmax(108px, 14vw) minmax(100px, 155px) minmax(0, 1fr) minmax(0, 11vw) minmax(0, 11vw);
   gap: 0.65rem;
   align-items: stretch;
 }
@@ -2674,10 +2674,13 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
 }
 
 .power-section {
-  min-width: 88px;
-  max-width: 140px;
+  min-width: 100px;
+  max-width: 155px;
   border-right: 1px solid rgba(255, 255, 255, 0.06);
   padding-right: 0.55rem;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .power-token-actions {
@@ -2705,8 +2708,19 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
 }
 
 .power-token-stats {
-  font-size: 0.68rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  font-size: 0.67rem;
+  line-height: 1.35;
   color: var(--muted);
+  white-space: normal;
+  word-break: break-word;
+}
+
+.power-token-pending {
+  color: var(--gold);
+  font-size: 0.64rem;
 }
 
 .power-tokens {
@@ -2714,7 +2728,9 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
   flex-wrap: wrap;
   gap: 0.28rem;
   min-height: 2.1rem;
+  flex: 1 1 auto;
   align-content: flex-start;
+  overflow-y: auto;
 }
 
 .power-token-chip {
@@ -2749,13 +2765,52 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 0.35rem 0.5rem;
   margin-bottom: 0.5rem;
+  min-width: 0;
+}
+
+.hand-header-stacked {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.2rem;
+  margin-bottom: 0.4rem;
+  flex-shrink: 0;
+}
+
+.hand-header-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
 }
 
 .hand-header h3 {
   margin: 0;
   font-family: var(--font-display);
   font-size: 0.9rem;
+  line-height: 1.2;
+}
+
+.hand-header-stacked h3 {
+  font-size: 0.82rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hand-stats-line {
+  font-size: 0.67rem;
+  line-height: 1.35;
+  color: var(--muted);
+  white-space: normal;
+  word-break: break-word;
+}
+
+.hand-hint-subtle {
+  font-size: 0.62rem;
+  line-height: 1.3;
+  white-space: normal;
 }
 
 .hand {
@@ -2893,6 +2948,21 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
 #screen-game .hand-section:has(.hand-dreamer-display) {
   min-height: 0;
   overflow: hidden;
+}
+
+#screen-game .psyche-hand-section {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
+#screen-game .psyche-hand-section .hand-header-stacked {
+  margin-bottom: 0.3rem;
+}
+
+#screen-game .psyche-hand-section .hand-hint-subtle {
+  display: none;
 }
 
 #screen-game .hand-section:has(.hand-dreamer-display) .hand-header {
@@ -5242,7 +5312,7 @@ html[data-device="mobile"] .action-dock-btn {
 }
 
 #screen-game .hand-bar {
-  grid-template-columns: minmax(120px, 14vw) minmax(88px, 140px) minmax(0, 1fr) minmax(0, 11vw) minmax(0, 11vw);
+  grid-template-columns: minmax(120px, 14vw) minmax(100px, 155px) minmax(0, 1fr) minmax(0, 11vw) minmax(0, 11vw);
   grid-template-rows: auto minmax(0, 1fr);
   gap: 0.45rem 0.65rem;
   padding-top: 0.35rem;
@@ -5768,19 +5838,44 @@ body.play-window .subconscious-graveyard {
   padding-bottom: 0.25rem;
 }
 
-#screen-game .hand-bar > .power-section .power-tokens {
-  max-height: 5.5rem;
-  overflow-y: auto;
+#screen-game .hand-bar > .power-section .power-token-actions {
+  flex-shrink: 0;
 }
 
-#screen-game .hand-bar > .hand-section:has(.hand-dreamer-display) {
+#screen-game .hand-bar > .power-section .power-bonus-btn {
+  width: 100%;
+  max-width: none;
+  font-size: 0.7rem;
+  padding: 0.35rem 0.45rem;
+  line-height: 1.25;
+}
+
+#screen-game .hand-bar > .power-section .power-bonus-pending {
+  font-size: 0.65rem;
+  line-height: 1.3;
+}
+
+#screen-game .hand-bar > .power-section .power-tokens {
+  max-height: 4.5rem;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+#screen-game .hand-bar > .hand-section:has(.hand-dreamer-display),
+#screen-game .psyche-hand-section {
   min-height: 8.5rem;
 }
 
 #screen-game .hand-dreamer-display {
-  max-height: 9.5rem;
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
   overflow-x: auto;
   overflow-y: hidden;
+}
+
+#screen-game .psyche-hand-section .hand-stats-line .hand-stats-suits {
+  gap: 0.45rem;
 }
 
 @media (max-width: 1100px) {

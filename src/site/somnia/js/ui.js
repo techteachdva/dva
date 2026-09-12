@@ -349,8 +349,10 @@ export function renderActiveDreamerHand(state, onCardClick, {
   if (titleEl) titleEl.textContent = displayTitle;
   if (stats) {
     if (statsHtml) stats.innerHTML = statsHtml;
-    else if (statsText) stats.textContent = statsText;
-    else stats.innerHTML = handStatsHtml(state, player);
+    else if (statsText) {
+      stats.textContent = statsText;
+      stats.title = statsText;
+    } else stats.innerHTML = handStatsHtml(state, player);
   }
 
   const fresh = newCardIds || new Set();
@@ -463,8 +465,8 @@ export function renderPowerTokens(state) {
   const pending = state.pendingPowerBonus || 0;
 
   if (statsEl) {
-    const pendingNote = pending ? ` · +${pending} spread bonus` : "";
-    statsEl.textContent = `${held} held · ${pool}/${MAX_POWER_TOKEN_POOL} in pool${pendingNote}`;
+    const pendingNote = pending ? `<span class="power-token-pending">+${pending} spread bonus</span>` : "";
+    statsEl.innerHTML = `<span class="power-token-held">${held} held</span><span class="power-token-pool">${pool}/${MAX_POWER_TOKEN_POOL} in pool</span>${pendingNote}`;
     statsEl.title = "Spend on Dreamer powers, Archetype quests, coin flips, and Object activations";
   }
 

@@ -96,7 +96,7 @@
             <div id="player-list" class="player-list-dock"></div>
           </div>
           <div class="hand-section power-section">
-            <div class="hand-header">
+            <div class="hand-header hand-header-stacked">
               <h3>Power Tokens</h3>
               <span id="power-token-stats" class="power-token-stats"></span>
             </div>
@@ -108,11 +108,13 @@
             </div>
             <div id="power-tokens" class="power-tokens" aria-label="Power tokens held"></div>
           </div>
-          <div class="hand-section">
-            <div class="hand-header">
-              <h3 id="hand-title">Your Psyche Hand</h3>
-              <span id="hand-stats"></span>
-              <span class="hand-hint">Active Dreamer hand · click chips to switch · double-click to inspect</span>
+          <div class="hand-section psyche-hand-section">
+            <div class="hand-header hand-header-stacked">
+              <div class="hand-header-row">
+                <h3 id="hand-title">Your Psyche Hand</h3>
+                <span id="hand-stats" class="hand-stats-line"></span>
+              </div>
+              <span class="hand-hint hand-hint-subtle">Click Dreamer chips to switch · double-click cards to inspect</span>
             </div>
             <div id="hand" class="hand-dreamer-display" data-player-id="">
               <div id="hand-primary" class="hand-primary" aria-label="Psyche hand cards"></div>
