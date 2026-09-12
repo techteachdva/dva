@@ -31,11 +31,7 @@
         <div class="hud-item hud-dreams-wrap"><span class="label">Dreams Left</span><span id="hud-dreams">16</span></div>
         <div class="hud-item hud-beasts-wrap hidden" id="hud-beasts-wrap"><span class="label">Roaming</span><span id="hud-beasts">0</span></div>
         <div class="hud-item hud-round-wrap"><span class="label">Round</span><span id="hud-round">1</span><span id="hud-boss-rounds" class="hud-boss-rounds" aria-hidden="true"></span></div>
-        <div class="hud-item phase hud-phase-cluster">
-          <span class="label">Phase</span>
-          <span id="hud-phase">Reveal</span>
-          <button type="button" id="btn-dream-feed" class="btn btn-icon btn-dream-feed" title="Dream feed, log &amp; rules reference">?</button>
-        </div>
+        <button type="button" id="btn-dream-feed" class="btn btn-icon btn-dream-feed hud-dream-feed-btn" title="Dream feed, log &amp; rules reference" aria-label="Dream feed and rules">?</button>
       </div>
       <div id="header-actions" class="header-actions">
         <div class="header-dropdown" id="header-decks-menu">
@@ -53,7 +49,7 @@
             <div id="dreamers-dropdown-list" class="dreamers-dropdown-list"></div>
           </div>
         </div>
-        <button type="button" class="btn btn-icon" data-music-toggle aria-pressed="true" title="Mute music">🔊</button>
+        <button type="button" class="btn btn-icon btn-music-toggle" data-music-toggle aria-pressed="true" title="Mute music" aria-label="Mute music">🔊</button>
         <button type="button" id="btn-pause" class="btn btn-sm" title="Pause menu (Esc)">⏸ Pause</button>
         <button type="button" id="btn-overview" class="btn btn-sm" title="Game overview">Overview</button>
         <button type="button" id="btn-tutorial" class="btn btn-sm">Tutorial</button>

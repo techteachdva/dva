@@ -726,9 +726,15 @@ body.in-game .brand h1 {
 }
 
 .btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 2.25rem;
   height: 2.25rem;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
   padding: 0;
+  line-height: 1;
   border-radius: 50%;
   font-weight: 700;
   font-size: 1rem;
@@ -5395,13 +5401,14 @@ html[data-device="mobile"] .action-dock-btn {
   grid-column: 1 / -1;
   grid-row: 1;
   min-width: 0;
-  max-height: min(34vh, 240px);
+  min-height: 8.5rem;
+  max-height: min(48vh, 360px);
   overflow-x: hidden;
   overflow-y: auto;
   border: 1px solid rgba(201, 160, 255, 0.28);
   border-radius: 12px;
   background: rgba(8, 6, 18, 0.72);
-  padding: 0.4rem 0.55rem 0.5rem;
+  padding: 0.5rem 0.65rem 0.6rem;
 }
 
 #screen-game .hand-bar > .dreamer-dock { grid-column: 1; grid-row: 2; }
@@ -5422,34 +5429,34 @@ html[data-device="mobile"] .action-dock-btn {
 
 .action-dock-advance .btn-advance {
   width: 100%;
-  max-width: 420px;
-  font-size: 1rem;
-  padding: 0.55rem 1.25rem;
+  max-width: 480px;
+  font-size: 1.02rem;
+  min-height: 2.75rem;
+  padding: 0.65rem 1.35rem;
 }
 
 .action-dock-grid {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.28rem;
   align-items: stretch;
   width: 100%;
 }
 
 .action-section-label {
-  font-size: 0.68rem;
+  font-size: 0.64rem;
   font-weight: 700;
   letter-spacing: 0.07em;
   text-transform: uppercase;
   color: var(--muted);
-  margin-top: 0.15rem;
+  margin-top: 0.05rem;
 }
 
 .action-section-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+  gap: 0.4rem;
   align-items: stretch;
-  justify-content: flex-start;
 }
 
 .action-dock-btn.action-disabled-hint:disabled {
@@ -5458,17 +5465,19 @@ html[data-device="mobile"] .action-dock-btn {
 }
 
 .action-dock-btn {
-  font-size: 0.88rem;
+  font-size: 0.86rem;
   font-weight: 600;
-  line-height: 1.25;
-  padding: 0.5rem 0.85rem;
-  min-height: 2.35rem;
+  line-height: 1.2;
+  padding: 0.55rem 0.9rem;
+  min-height: 2.65rem;
+  width: 100%;
   white-space: normal;
   text-align: center;
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(255, 255, 255, 0.04);
   color: rgba(232, 228, 255, 0.55);
   opacity: 0.72;
+  border-radius: 999px;
   transition: background 0.15s, border-color 0.15s, box-shadow 0.15s, opacity 0.15s, transform 0.12s;
 }
 
@@ -5775,42 +5784,97 @@ html[data-device="mobile"] .action-dock-btn {
 body.play-window {
   --radius: 22px;
   --btn-pill-radius: 999px;
-  --topbar-h: 4.75rem;
+  --topbar-h: 3.35rem;
 }
 
 body.play-window .top-bar.play-top-bar {
-  flex-wrap: wrap;
+  display: flex;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: 0.45rem 0.85rem;
-  padding: 0.55rem 0.9rem;
+  justify-content: flex-start;
+  gap: 0.45rem 0.6rem;
+  padding: 0.4rem 0.75rem;
   min-height: var(--topbar-h);
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+body.play-window .top-bar.play-top-bar .brand {
+  flex: 0 0 auto;
+  min-width: 0;
 }
 
 body.play-window .brand h1 {
-  font-size: 2.15rem;
-  line-height: 1.05;
+  font-size: 1.35rem;
+  line-height: 1;
 }
 
 body.play-window .version-label {
-  font-size: 0.82rem;
-  letter-spacing: 0.14em;
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
   color: #d8c8ff;
+  margin-bottom: 0;
+}
+
+body.play-window .top-bar.play-top-bar .hud {
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  gap: 0.35rem;
+}
+
+body.play-window .top-bar.play-top-bar .header-actions {
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  gap: 0.35rem;
 }
 
 .top-bar-stepper {
-  flex: 1 1 280px;
+  flex: 0 1 auto;
+  min-width: 11.5rem;
+  max-width: 20rem;
   justify-content: center;
   margin: 0;
-  padding: 0.3rem 0.65rem;
+  padding: 0.22rem 0.5rem;
   background: rgba(0, 0, 0, 0.28);
   border: 1px solid rgba(201, 160, 255, 0.35);
   border-radius: 999px;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  flex-shrink: 0;
 }
 
 .top-bar-stepper .step {
-  font-size: 0.92rem;
-  padding: 0.4rem 0.95rem;
+  font-size: 0.8rem;
+  padding: 0.3rem 0.7rem;
+}
+
+.top-bar-stepper .step-budget {
+  font-size: 0.62rem;
+  padding: 0.08rem 0.35rem;
+}
+
+.hud-dream-feed-btn {
+  flex-shrink: 0;
+  align-self: center;
+}
+
+body.play-window .header-actions .btn-music-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  min-width: 2.35rem;
+  min-height: 2.35rem;
+  padding: 0;
+  line-height: 1;
+  font-size: 1.05rem;
+  border-radius: 50%;
+}
+
+body.play-window .header-actions .btn-music-toggle::before {
+  content: none;
 }
 
 body.play-window .btn:not(.btn-icon) {
@@ -5824,8 +5888,10 @@ body.play-window .btn-sm {
 
 body.play-window .hud-item {
   border-radius: 999px;
-  font-size: 0.9rem;
-  padding: 0.4rem 0.95rem;
+  font-size: 0.82rem;
+  padding: 0.32rem 0.75rem;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 body.play-window .action-dock-wrap {
@@ -5834,11 +5900,18 @@ body.play-window .action-dock-wrap {
 
 body.play-window .action-dock-btn {
   border-radius: 999px;
-  padding: 0.55rem 1.1rem;
+  padding: 0.58rem 1rem;
+  min-height: 2.7rem;
 }
 
 body.play-window .action-dock-advance .btn-advance {
   border-radius: 999px;
+  min-height: 2.85rem;
+}
+
+body.play-window .action-dock-wrap {
+  min-height: 9rem;
+  max-height: min(48vh, 360px);
 }
 
 body.play-window #screen-game .hand-bar {
@@ -5960,8 +6033,17 @@ body.play-window .subconscious-graveyard {
 }
 
 @media (max-width: 1100px) {
+  body.play-window .top-bar.play-top-bar {
+    gap: 0.35rem 0.45rem;
+  }
+
   .top-bar-stepper {
-    order: 4;
-    flex: 1 1 100%;
+    min-width: 9.5rem;
+    max-width: 16rem;
+  }
+
+  body.play-window .hud-item {
+    font-size: 0.76rem;
+    padding: 0.28rem 0.6rem;
   }
 }

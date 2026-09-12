@@ -1378,8 +1378,6 @@ export function renderHud(state, hint = "") {
     bossEl.setAttribute("aria-label", `Boss dream rounds: ${bossRounds.join(", ")}`);
     bossEl.removeAttribute("aria-hidden");
   }
-  document.getElementById("hud-phase").textContent = getPhase(state);
-
   const feedBtn = document.getElementById("btn-dream-feed");
   if (feedBtn && consumeDreamFeedNudge()) {
     feedBtn.classList.add("dream-feed-nudge");
@@ -1571,8 +1569,6 @@ export function renderPhaseActions(actions, advanceAction = null, state = null) 
   const grid = document.createElement("div");
   grid.className = "action-dock-grid";
 
-  const collapseMore = state && getPhase(state) === "Meet" && state.meetActionBudget > 0;
-
   ["main", "encounter", "actions", "progress", "round"].forEach((section) => {
     const items = grouped[section];
     if (!items?.length) return;
@@ -1581,18 +1577,6 @@ export function renderPhaseActions(actions, advanceAction = null, state = null) 
     items.forEach((action) => {
       row.appendChild(createActionButton(action));
     });
-
-    if (section === "actions" && collapseMore) {
-      const details = document.createElement("details");
-      details.className = "action-section-collapsible";
-      const summary = document.createElement("summary");
-      summary.className = "action-section-label";
-      summary.textContent = `${ACTION_SECTIONS[section] || section} (${items.length})`;
-      details.appendChild(summary);
-      details.appendChild(row);
-      grid.appendChild(details);
-      return;
-    }
 
     if (items.length > 1 || section === "encounter") {
       const heading = document.createElement("div");
