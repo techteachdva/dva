@@ -1,7 +1,7 @@
 import { loadSettings, saveSettings, VIEW_PRESETS } from "./audio-settings.js";
 
 const MIN = { sidebarW: 120, handH: 80, chromeH: 48, footerH: 56 };
-const MAX = { sidebarW: 480, handH: 320, chromeH: 280, footerH: 220 };
+const MAX = { sidebarW: 480, handH: 400, chromeH: 120, footerH: 220 };
 
 let settings = loadSettings();
 
@@ -37,23 +37,11 @@ export function applyLayout() {
   document.body.classList.remove("view-mode-small", "view-mode-medium", "view-mode-large");
   document.body.classList.add(`view-mode-${settings.viewMode || "medium"}`);
 
-  const guideOpen = settings.guideOpen === true;
-  document.getElementById("guide-panel-wrap")?.classList.toggle("collapsed", !guideOpen);
-  const guideBtn = document.getElementById("btn-toggle-guide");
-  if (guideBtn) {
-    guideBtn.setAttribute("aria-expanded", guideOpen ? "true" : "false");
-    guideBtn.textContent = guideOpen ? "📋 Hide guide" : "📋 Guide";
-  }
 }
 
 export function setViewMode(mode) {
   if (!VIEW_PRESETS[mode]) return;
   settings = saveSettings({ viewMode: mode, panels: { sidebarW: null, handH: null, chromeH: null, footerH: null } });
-  applyLayout();
-}
-
-export function toggleGuidePanel() {
-  settings = saveSettings({ guideOpen: !settings.guideOpen });
   applyLayout();
 }
 
@@ -115,8 +103,6 @@ function bindResizeHandle(handle, axis, key, getStart, onMove) {
 export function initPanelLayout() {
   settings = loadSettings();
   applyLayout();
-
-  document.getElementById("btn-toggle-guide")?.addEventListener("click", () => toggleGuidePanel());
 
   const panels = resolvedPanels();
 

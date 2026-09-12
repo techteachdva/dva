@@ -19,11 +19,12 @@
   </div>
 
   <div id="app">
-    <header class="top-bar">
+    <header class="top-bar play-top-bar">
       <div class="brand">
         <span class="version-label">Somnia v 14.1</span>
         <h1>Somnia</h1>
       </div>
+      <div id="phase-stepper" class="phase-stepper top-bar-stepper" aria-label="Round phases"></div>
       <div id="hud" class="hud">
         <div class="hud-item"><span class="label">Goal</span><span id="hud-goal">12 pts</span></div>
         <div class="hud-item"><span class="label">Points</span><span id="hud-points">0</span></div>
@@ -60,17 +61,9 @@
     <main>
       <section id="screen-game" class="screen active">
         <div class="table-surface" id="table-surface">
-          <div class="table-chrome" id="table-chrome">
-            <div id="phase-stepper" class="phase-stepper" aria-label="Round phases"></div>
-            <button type="button" id="btn-toggle-guide" class="btn btn-sm guide-toggle" aria-expanded="false" title="Show phase guide &amp; tips">📋 Guide</button>
-            <div id="narrator-panel" class="narrator-panel narrator-panel-hidden" aria-live="polite" hidden></div>
-            <div id="guide-panel-wrap" class="guide-panel-wrap collapsed">
-              <p class="coop-play-banner" id="coop-play-banner">💬 Discuss &amp; plan — act in any order each phase.</p>
-              <div id="guide-panel" class="guide-panel"></div>
-            </div>
-            <div id="phase-banner" class="phase-banner" aria-hidden="true"></div>
-          </div>
-          <div class="resize-handle resize-row" id="resize-chrome" title="Drag to resize header area"></div>
+          <div id="phase-banner" class="phase-banner" aria-hidden="true" hidden></div>
+          <div id="narrator-panel" class="narrator-panel narrator-panel-hidden" aria-live="polite" hidden></div>
+          <div id="guide-panel" class="guide-panel guide-panel-legacy" hidden></div>
           <div class="board-viewport" id="board-viewport" title="Scroll to zoom · middle-drag or hold Space and drag to pan">
             <div class="board-zoom-stage" id="board-zoom-stage">
               <div id="hex-board" class="hex-board"></div>

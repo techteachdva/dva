@@ -2448,7 +2448,7 @@ function applyTutorialContinueDelay(btn, waiting, label) {
 function bindTutorialScrollRefresh() {
   if (tutorialScrollBound) return;
   tutorialScrollBound = true;
-  document.getElementById("table-chrome")?.addEventListener("scroll", () => positionTutorialSpotlight(), { passive: true });
+  document.getElementById("hand-bar")?.addEventListener("scroll", () => positionTutorialSpotlight(), { passive: true });
   window.addEventListener("resize", () => positionTutorialSpotlight(), { passive: true });
 }
 
@@ -2549,10 +2549,6 @@ export function ensureTutorialStepTargetsVisible(step) {
     || spotlight === "#btn-advance-phase"
   ) {
     document.getElementById("btn-advance-phase")?.scrollIntoView({ block: "nearest", behavior: "smooth" });
-  }
-  if (selectors.some((s) => s === "#guide-panel" || s === "#guide-panel-wrap")) {
-    document.getElementById("guide-panel-wrap")?.classList.remove("collapsed");
-    document.getElementById("btn-toggle-guide")?.setAttribute("aria-expanded", "true");
   }
   if (selectors.some((s) => s === "#player-list" || s === "#dreamer-dock")) {
     document.getElementById("dreamer-dock")?.scrollIntoView({ block: "nearest", behavior: "smooth" });
@@ -2765,10 +2761,7 @@ function applyTutorialHighlight(stepOrTarget, { animateIn = true } = {}) {
 
   const scrollEl = tutorialSpotlightEls[0] || highlightTargets[0];
   if (scrollEl) {
-    const inChrome = scrollEl.closest("#table-chrome");
-    if (!inChrome || scrollEl.id === "btn-advance-phase") {
-      scrollEl.scrollIntoView({ block: "nearest", behavior: "smooth" });
-    }
+    scrollEl.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }
 }
 

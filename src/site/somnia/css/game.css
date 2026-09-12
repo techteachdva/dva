@@ -20,8 +20,8 @@
   --font-body: "Source Sans 3", sans-serif;
   --topbar-h: 3.5rem;
   --sidebar-w: clamp(280px, 28vw, 420px);
-  --hand-h: clamp(210px, 26vh, 300px);
-  --chrome-h: 72px;
+  --hand-h: clamp(240px, 30vh, 360px);
+  --chrome-h: 0px;
   --footer-h: 108px;
   --ui-scale: 1;
 }
@@ -668,8 +668,10 @@ body.in-game .brand h1 {
   border-left: none;
   border-right: none;
   border-bottom: none;
-  max-height: var(--hand-h);
-  overflow: hidden;
+  min-height: var(--hand-h);
+  max-height: min(42vh, 400px);
+  overflow-x: hidden;
+  overflow-y: auto;
   position: relative;
   display: grid;
   grid-template-columns: minmax(108px, 14vw) minmax(88px, 140px) minmax(0, 1fr) minmax(0, 11vw) minmax(0, 11vw);
@@ -728,7 +730,7 @@ body.in-game main {
 #screen-game.active {
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--sidebar-w);
-  grid-template-rows: minmax(0, 1fr) var(--hand-h);
+  grid-template-rows: minmax(0, 1fr) auto;
   grid-template-areas:
     "table sidebar-right"
     "hand hand";
@@ -5309,5 +5311,153 @@ body.panel-resizing {
   #screen-game .hand-bar > .objects-section:last-of-type {
     grid-column: auto;
     grid-row: auto;
+  }
+}
+
+/* ── Somnia v14.1 play UI — round panels, top phase bar ─────────── */
+
+body.play-window {
+  --radius: 22px;
+  --btn-pill-radius: 999px;
+  --topbar-h: 4.75rem;
+}
+
+body.play-window .top-bar.play-top-bar {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.85rem;
+  padding: 0.55rem 0.9rem;
+  min-height: var(--topbar-h);
+}
+
+body.play-window .brand h1 {
+  font-size: 2.15rem;
+  line-height: 1.05;
+}
+
+body.play-window .version-label {
+  font-size: 0.82rem;
+  letter-spacing: 0.14em;
+  color: #d8c8ff;
+}
+
+.top-bar-stepper {
+  flex: 1 1 280px;
+  justify-content: center;
+  margin: 0;
+  padding: 0.3rem 0.65rem;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(201, 160, 255, 0.35);
+  border-radius: 999px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.top-bar-stepper .step {
+  font-size: 0.92rem;
+  padding: 0.4rem 0.95rem;
+}
+
+body.play-window .btn:not(.btn-icon) {
+  border-radius: var(--btn-pill-radius);
+}
+
+body.play-window .btn-sm {
+  border-radius: var(--btn-pill-radius);
+  padding: 0.45rem 1rem;
+}
+
+body.play-window .hud-item {
+  border-radius: 999px;
+  font-size: 0.9rem;
+  padding: 0.4rem 0.95rem;
+}
+
+body.play-window .action-dock-wrap {
+  border-radius: 22px;
+}
+
+body.play-window .action-dock-btn {
+  border-radius: 999px;
+  padding: 0.55rem 1.1rem;
+}
+
+body.play-window .action-dock-advance .btn-advance {
+  border-radius: 999px;
+}
+
+body.play-window #screen-game .hand-bar {
+  border-radius: 22px 22px 0 0;
+  padding-bottom: 0.65rem;
+}
+
+body.play-window #screen-game .sidebar.right.sidebar-v14 {
+  border-radius: 22px 0 0 0;
+}
+
+body.play-window .game-card.psyche-card {
+  border-radius: 18px;
+}
+
+body.play-window .player-list-dock .player-chip {
+  border-radius: 18px;
+}
+
+body.play-window .player-list-dock .player-chip img {
+  border-radius: 14px;
+}
+
+body.play-window .subconscious-graveyard {
+  border-radius: 18px;
+}
+
+#screen-game .sidebar.right.sidebar-v14 h3 {
+  font-size: 1.05rem;
+}
+
+#screen-game .sidebar.right .quest-list {
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+#screen-game .sidebar.right .quest-list li {
+  margin-bottom: 0.2rem;
+}
+
+#screen-game .sidebar.right .graveyard-count,
+#screen-game .sidebar.right .graveyard-total {
+  font-size: 0.95rem;
+}
+
+#screen-game .sidebar.right .graveyard-pile-chip {
+  font-size: 0.82rem;
+  border-radius: 999px;
+  padding: 0.22rem 0.55rem;
+}
+
+#screen-game .sidebar.right .graveyard-empty {
+  font-size: 0.88rem;
+}
+
+#screen-game .sidebar.right .active-card-slot .game-card .body,
+#screen-game .sidebar.right .active-card-slot .card-caption {
+  font-size: 0.9rem;
+}
+
+#screen-game .hand-bar {
+  grid-template-rows: auto auto;
+  align-content: start;
+}
+
+#screen-game .hand-bar > .dreamer-dock,
+#screen-game .hand-bar > .power-section,
+#screen-game .hand-bar > .hand-section:not(.objects-section) {
+  align-self: start;
+  padding-bottom: 0.25rem;
+}
+
+@media (max-width: 1100px) {
+  .top-bar-stepper {
+    order: 4;
+    flex: 1 1 100%;
   }
 }
