@@ -1499,13 +1499,21 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
 }
 
 .hex-tile.pick-reveal {
-  filter: drop-shadow(0 0 0 2px #4ad4ff) drop-shadow(0 0 16px rgba(74, 212, 255, 0.55));
+  --hex-border-color: rgba(74, 212, 255, 0.72);
   animation: pulse-reveal 1.5s ease-in-out infinite;
 }
 
+.hex-tile.pick-reveal .hex-face {
+  box-shadow: inset 0 0 0 2px rgba(74, 212, 255, 0.75);
+}
+
 .hex-tile.pick-forget {
-  filter: drop-shadow(0 0 0 2px #ff6b6b) drop-shadow(0 0 16px rgba(255, 107, 107, 0.5));
+  --hex-border-color: rgba(255, 107, 107, 0.72);
   animation: pulse-forget 1.5s ease-in-out infinite;
+}
+
+.hex-tile.pick-forget .hex-face {
+  box-shadow: inset 0 0 0 2px rgba(255, 107, 107, 0.75);
 }
 
 .hex-tile.just-revealed {
@@ -1536,7 +1544,11 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
 }
 
 .hex-tile.bed-final {
-  filter: drop-shadow(0 0 0 2px gold) drop-shadow(0 0 20px rgba(255, 215, 0, 0.45));
+  --hex-border-color: rgba(255, 215, 0, 0.62);
+}
+
+.hex-tile.bed-final .hex-face {
+  box-shadow: inset 0 0 0 2px rgba(255, 215, 0, 0.55);
 }
 
 @keyframes pulse-reveal {
@@ -2744,6 +2756,7 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
   left: 0;
   transform-origin: 0 0;
   will-change: transform;
+  backface-visibility: hidden;
 }
 
 .board-viewport::after {
@@ -2811,7 +2824,7 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
   position: absolute;
   width: calc(var(--hex-size, 58px) * 1.732050808);
   height: calc(var(--hex-size, 58px) * 2);
-  transform: translate(-50%, -50%);
+  transform: translate3d(-50%, -50%, 0);
   padding: 0;
   border: none;
   border-radius: 0;
@@ -2819,7 +2832,7 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
   clip-path: var(--hex-clip);
   text-align: center;
   cursor: pointer;
-  transition: transform 0.15s, filter 0.15s;
+  transition: background-color 0.15s ease;
   overflow: hidden;
   isolation: isolate;
 }
@@ -2833,6 +2846,8 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
   background-position: center;
   background-repeat: no-repeat;
   z-index: 0;
+  box-shadow: inset 0 0 0 0 transparent;
+  transition: box-shadow 0.15s ease;
 }
 
 .hex-tile .hex-overlay {
@@ -2878,28 +2893,35 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
   background: linear-gradient(180deg, rgba(20,10,30,0.3) 0%, rgba(0,0,0,0.75) 100%);
 }
 
-.hex-tile:hover {
-  transform: translate(-50%, calc(-50% - 2px));
-  filter: drop-shadow(0 0 10px rgba(123, 92, 255, 0.45));
+.hex-tile:hover .hex-overlay {
+  background: linear-gradient(180deg, rgba(123, 92, 255, 0.1) 0%, rgba(0, 0, 0, 0.42) 100%);
 }
+
+.hex-tile:hover .hex-face {
+  box-shadow: inset 0 0 0 2px rgba(123, 92, 255, 0.42);
+}
+
 .hex-tile.center { --hex-border-color: rgba(240, 201, 106, 0.42); background: rgba(240, 201, 106, 0.42); }
-.hex-tile.center:not(.selected) {
-  filter: drop-shadow(0 0 12px rgba(240, 201, 106, 0.28));
-}
 .hex-tile.wasteland .hex-face { filter: grayscale(0.6) brightness(0.7); }
 .hex-tile.wasteland .hex-overlay { background: linear-gradient(180deg, rgba(60,40,20,0.2) 0%, rgba(0,0,0,0.7) 100%); }
 .hex-tile.hidden-tile .hex-face { filter: grayscale(0.9) brightness(0.5); }
-.hex-tile.selected {
-  filter: drop-shadow(0 0 0 2px var(--accent-strong)) drop-shadow(0 0 14px rgba(123, 92, 255, 0.5));
+.hex-tile.selected .hex-face {
+  box-shadow: inset 0 0 0 2px var(--accent-strong);
 }
-.hex-tile.has-encounter.selected-encounter {
-  filter: drop-shadow(0 0 0 2px #e88a9a) drop-shadow(0 0 16px rgba(232, 138, 154, 0.45));
+.hex-tile.has-encounter.selected-encounter .hex-face {
+  box-shadow: inset 0 0 0 2px #e88a9a;
 }
 .hex-tile.quest-highlight:not(.selected) {
-  filter: drop-shadow(0 0 0 1px rgba(240, 201, 106, 0.85)) drop-shadow(0 0 10px rgba(240, 201, 106, 0.35));
+  --hex-border-color: rgba(240, 201, 106, 0.62);
+}
+.hex-tile.quest-highlight:not(.selected) .hex-face {
+  box-shadow: inset 0 0 0 2px rgba(240, 201, 106, 0.72);
 }
 .hex-tile.movable {
-  filter: drop-shadow(0 0 0 2px var(--success)) drop-shadow(0 0 12px rgba(95, 224, 176, 0.4));
+  --hex-border-color: rgba(95, 224, 176, 0.58);
+}
+.hex-tile.movable .hex-face {
+  box-shadow: inset 0 0 0 2px var(--success);
 }
 .hex-tile .name {
   font-size: calc(0.72rem * var(--hex-scale, 1.72));

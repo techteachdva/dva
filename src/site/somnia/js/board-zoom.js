@@ -23,7 +23,7 @@ let suppressClick = false;
 
 function applyTransform() {
   if (!stage) return;
-  stage.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+  stage.style.transform = `translate3d(${panX}px, ${panY}px, 0) scale(${scale})`;
 }
 
 function centerBoard() {
