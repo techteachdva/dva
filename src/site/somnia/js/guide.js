@@ -167,7 +167,7 @@ export function getCurrentObjective(state) {
         steps.push(
           "One Dreamer spends **1–2 Lucidity** to set the team reveal budget.",
           best
-            ? `**${best.name}** has the best Lucidity bonus (+${totalStat(best, stat)}).`
+            ? `**${best.name}** has the best Lucidity bonus (+${totalStat(best, stat, state)}).`
             : "Pick the Dreamer with the highest Lucidity stat.",
         );
         if (budget >= 1) {
@@ -218,7 +218,7 @@ export function getCurrentObjective(state) {
           COOP_PLAY_TIP,
           "One Dreamer spends **1–2 Elasticity** cards to set **shared team moves**.",
           best
-            ? `**${best.name}** has the best Elasticity bonus (+${totalStat(best, stat)}).`
+            ? `**${best.name}** has the best Elasticity bonus (+${totalStat(best, stat, state)}).`
             : "Pick the Dreamer with the highest Elasticity stat.",
           budget >= 1
             ? `Click **Spend Elasticity** (${budget} moves for everyone).`
@@ -236,7 +236,6 @@ export function getCurrentObjective(state) {
           `Click a **green dashed hex** to move ${player.name}.`,
           `${state.exploreMovesLeft} team move(s) remaining — use all or click **Next Phase** to skip to Meet.`,
         ],
-        tip: "Click Dreamer chips to choose who moves next.",
         tip: "Click a Dreamer chip (left) to change who moves.",
       };
     }
@@ -262,7 +261,7 @@ export function getCurrentObjective(state) {
           COOP_PLAY_TIP,
           "One Dreamer spends **1–2 Willpower** cards to set **shared Meet actions**.",
           best
-            ? `**${best.name}** has the best Willpower bonus (+${totalStat(best, stat)}).`
+            ? `**${best.name}** has the best Willpower bonus (+${totalStat(best, stat, state)}).`
             : "Pick the Dreamer with the highest Willpower stat.",
           budget >= 1 ? `Budget will be: **${budget}** team actions.` : "Cards played + Willpower stat = action count.",
         ],
@@ -306,7 +305,7 @@ export function getDreamerChipTooltip(state, player, index) {
       return `${name} ★ Head — anyone can Draw the Dream after the group agrees.`;
     }
     if (best?.id === player.id) {
-      return `${name} — best Lucidity bonus (+${totalStat(player, "lucidity")}). Strong candidate to spend for reveals.`;
+      return `${name} — best Lucidity bonus (+${totalStat(player, "lucidity", state)}). Strong candidate to spend for reveals.`;
     }
     return `${name} — discuss Reveal plans. Anyone may draw the Dream or spend Lucidity when ready.`;
   }
@@ -314,7 +313,7 @@ export function getDreamerChipTooltip(state, player, index) {
   if (phase === "Explore") {
     const best = bestPhaseContributor(state);
     if (!state.exploreActivated && best?.id === player.id) {
-      return `${name} — best Elasticity bonus (+${totalStat(player, statForPhaseBudget("Explore", state))}). Strong candidate to unlock team moves.`;
+      return `${name} — best Elasticity bonus (+${totalStat(player, statForPhaseBudget("Explore", state), state)}). Strong candidate to unlock team moves.`;
     }
     if (isActive && state.exploreActivated) {
       return `Moving ${name} — ${state.exploreMovesLeft} team move(s) left. Switch chips anytime.`;
@@ -328,7 +327,7 @@ export function getDreamerChipTooltip(state, player, index) {
   if (phase === "Meet") {
     const best = bestPhaseContributor(state);
     if (state.meetActionBudget === 0 && best?.id === player.id) {
-      return `${name} — best Willpower bonus (+${totalStat(player, statForPhaseBudget("Meet", state))}). Strong candidate to unlock Meet actions.`;
+      return `${name} — best Willpower bonus (+${totalStat(player, statForPhaseBudget("Meet", state), state)}). Strong candidate to unlock Meet actions.`;
     }
     if (isActive) {
       if (state.meetActionBudget === 0) {

@@ -9,6 +9,7 @@ import { returnDreambeastToMindstreamDeck } from "./mindstream-supply.js";
 import { dreamerMeetBonuses } from "./dreambeasts.js";
 import { canTradeBetween as hexCanTradeBetween } from "./hex.js";
 import { persistentMeetBonus, sumEffectivePsycheValue } from "./objects.js";
+import { effectiveDreamerStat } from "./archetype-stats.js";
 import { PHASES } from "./data.js";
 import { isWildPsyche, psycheCardValue } from "./psyche.js";
 import { playSfx } from "./audio.js";
@@ -81,7 +82,9 @@ export function dreamerStat(dreamer, stat) {
   return dreamer[stat] ?? 0;
 }
 
-export function totalStat(player, stat) {
+/** Dreamer stat for phase budgets, including team-wide Quintessential Archetype bonuses. */
+export function totalStat(player, stat, state = null) {
+  if (state) return effectiveDreamerStat(state, player.dreamer, stat);
   return dreamerStat(player.dreamer, stat);
 }
 
@@ -132,7 +135,7 @@ export function bestPhaseContributor(state) {
   let bestValue = -1;
   state.players.forEach((player) => {
     if (!player.alive) return;
-    const value = totalStat(player, stat);
+    const value = totalStat(player, stat, state);
     if (value > bestValue) {
       bestValue = value;
       best = player;
@@ -267,21 +270,21 @@ export function canSelectCard(state, card, phase, player = null) {
 export function revealBudget(state, player) {
   const played = sumSelectedValue(state, player, "lucidity");
   if (played < 1) return 0;
-  return played + totalStat(player, "lucidity");
+  return played + totalStat(player, "lucidity", state);
 }
 
 export function exploreBudget(state, player) {
   const played = sumSelectedValue(state, player, "elasticity");
   if (played < 1) return 0;
   const stat = state.paradoxMeet ? "willpower" : "elasticity";
-  return played + totalStat(player, stat);
+  return played + totalStat(player, stat, state);
 }
 
 export function meetActionBudgetFromWillpower(state, player) {
   const played = sumSelectedValue(state, player, "willpower");
   if (played < 1) return 0;
   const stat = state.paradoxMeet ? "elasticity" : "willpower";
-  return played + totalStat(player, stat);
+  return played + totalStat(player, stat, state);
 }
 
 export function meetPlayTotal(state, player) {

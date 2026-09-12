@@ -130,29 +130,6 @@ export function initPanelLayout() {
     },
   );
 
-  bindResizeHandle(
-    document.getElementById("resize-chrome"),
-    "y",
-    "chromeH",
-    (e) => ({ y: e.clientY, h: panels.chromeH }),
-    (e, start) => {
-      const h = clamp(start.h + (e.clientY - start.y), MIN.chromeH, MAX.chromeH);
-      document.documentElement.style.setProperty("--chrome-h", `${h}px`);
-      persistPanel("chromeH", h);
-    },
-  );
-
-  bindResizeHandle(
-    document.getElementById("resize-footer"),
-    "y",
-    "footerH",
-    (e) => ({ y: e.clientY, h: panels.footerH }),
-    (e, start) => {
-      const h = clamp(start.h - (e.clientY - start.y), MIN.footerH, MAX.footerH);
-      document.documentElement.style.setProperty("--footer-h", `${h}px`);
-      persistPanel("footerH", h);
-    },
-  );
 }
 
 export function getViewMode() {

@@ -25,6 +25,18 @@ export function countBoardDreambeasts(state) {
   ).length;
 }
 
+/** Read-only preview of Timeline hunger at end of Meet (no state mutation). */
+export function timelineTollPreview(state) {
+  const beastCount = countBoardDreambeasts(state);
+  if (beastCount <= 0) return null;
+  const available = state.players
+    .filter((p) => p.alive)
+    .reduce((sum, p) => sum + (p.powerTokens || 0), 0);
+  const paid = Math.min(beastCount, available);
+  const unpaid = beastCount - paid;
+  return { beastCount, paid, unpaid };
+}
+
 export function phasePsycheSpent(state) {
   const phase = getPhase(state);
   if (phase === "Reveal") return state.revealLandscapeUsed;

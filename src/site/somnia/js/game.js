@@ -191,6 +191,17 @@ function canUseMeetAction(state, action, landscapeActionId = null) {
   );
 }
 
+function meetActionHint(state, action, landscapeActionId, baseHint = "") {
+  const actor = meetActionActor(state, action);
+  if (!actor) return "A Dreamer must stand on this Landscape.";
+  if (state.meetActionsUsed >= state.meetActionBudget) return "No Meet actions remaining.";
+  if (getLastMeetAction(state, actor) === meetActionKey(action, landscapeActionId)) {
+    return "This Dreamer cannot repeat the same Meet action — switch Dreamer or choose another.";
+  }
+  if (!canSpendMeetAction(state, actor, action, MEET_ACTIONS)) return baseHint || "This Meet action is restricted right now.";
+  return baseHint;
+}
+
 function spendMeetAction(state, action, landscapeActionId = null) {
   const actor = meetActionActor(state, action);
   if (!canUseMeetActionForActor(state, actor, action, landscapeActionId)) {
@@ -275,7 +286,7 @@ export function getPhaseActions(state, handlers) {
       hint: !state.dreamDrawn
         ? "Draw & Resolve the Dream first, then spend Lucidity to reveal Landscapes."
         : best
-          ? `One Dreamer spends 1–2 Lucidity — ${best.name} adds +${totalStat(best, stat)} (best bonus).`
+          ? `One Dreamer spends 1–2 Lucidity — ${best.name} adds +${totalStat(best, stat, state)} (best bonus).`
           : "One Dreamer spends Lucidity to set everyone's reveal budget.",
       section: "main",
       disabled: !state.dreamDrawn || state.revealLandscapeUsed || budget < 1,
@@ -304,7 +315,7 @@ export function getPhaseActions(state, handlers) {
           ? `Spend Elasticity (${budget} team moves)`
           : "Spend Elasticity (select cards)",
         hint: best
-          ? `One Dreamer spends 1–2 Elasticity — ${best.name} adds +${totalStat(best, stat)} (best bonus).`
+          ? `One Dreamer spends 1–2 Elasticity — ${best.name} adds +${totalStat(best, stat, state)} (best bonus).`
           : "One Dreamer spends Elasticity to set everyone's move budget.",
         section: "main",
         primary: true,
@@ -351,7 +362,7 @@ export function getPhaseActions(state, handlers) {
           ? `Gain Actions (${budget} for team)`
           : "Gain Actions (select Willpower)",
         hint: best
-          ? `One Dreamer spends 1–2 Willpower — ${best.name} adds +${totalStat(best, stat)} (best bonus).`
+          ? `One Dreamer spends 1–2 Willpower — ${best.name} adds +${totalStat(best, stat, state)} (best bonus).`
           : "One Dreamer spends Willpower to set shared Meet actions.",
         section: "main",
         primary: true,
@@ -373,6 +384,7 @@ export function getPhaseActions(state, handlers) {
           label: `Defeat ${onTile.finalArchetype.name} (${poolTotal} pool)`,
           section: "encounter",
           disabled: !canUseMeetAction(state, MEET_ACTIONS.MEET),
+          hint: meetActionHint(state, MEET_ACTIONS.MEET, null, "Pool Psyche from all Dreamers to defeat this Remaining Archetype."),
           onClick: handlers.defeatFinalArchetype,
         });
         actions.push({
@@ -390,7 +402,12 @@ export function getPhaseActions(state, handlers) {
       actions.push({
         label: `Accept (${meetEnc.accept})${shapeHint}`,
         section: "encounter",
-        hint: `Accept: joins hand as 3 ${SUIT_LABELS[meetEnc.suit] || meetEnc.suit} Psyche ally`,
+        hint: meetActionHint(
+          state,
+          MEET_ACTIONS.MEET,
+          null,
+          `Accept: joins hand as 3 ${SUIT_LABELS[meetEnc.suit] || meetEnc.suit} Psyche ally`,
+        ),
         primary: true,
         disabled: !canUseMeetAction(state, MEET_ACTIONS.MEET),
         onClick: () => handlers.meetEncounter("accept"),
@@ -398,7 +415,12 @@ export function getPhaseActions(state, handlers) {
       actions.push({
         label: `Reject (${encounterRejectCost(meetEnc)})${shapeHint}`,
         section: "encounter",
-        hint: meetEnc.rejectReward || "Reject: Dreambeast exiled to the Subconscious",
+        hint: meetActionHint(
+          state,
+          MEET_ACTIONS.MEET,
+          null,
+          meetEnc.rejectReward || "Reject: Dreambeast exiled to the Subconscious",
+        ),
         disabled: !canUseMeetAction(state, MEET_ACTIONS.MEET),
         onClick: () => handlers.meetEncounter("reject"),
       });
@@ -408,7 +430,7 @@ export function getPhaseActions(state, handlers) {
       actions.push({
         label: choice.label,
         section: "actions",
-        hint: choice.description,
+        hint: meetActionHint(state, MEET_ACTIONS.LANDSCAPE, choice.id, choice.description),
         disabled: !canUseLandscapeAction(state, choice.id),
         onClick: () => handlers.landscapeAction(choice.id),
       });
@@ -428,6 +450,7 @@ export function getPhaseActions(state, handlers) {
     actions.push({
       label: "Trade",
       section: "actions",
+      hint: meetActionHint(state, MEET_ACTIONS.TRADE, null, "Trade up to 3 Psyche with an adjacent Dreamer."),
       disabled: !canUseMeetAction(state, MEET_ACTIONS.TRADE),
       onClick: handlers.tradeAction,
     });
@@ -591,7 +614,7 @@ export function revealLandscape(state) {
       state,
       "Select Lucidity Psyche first",
       best
-        ? `One Dreamer spends 1–2 blue ${SUIT_LABELS.lucidity} cards to set the team's reveal budget. ${best.name} has the highest Lucidity (+${totalStat(best, stat)}) — have them play the cards.`
+        ? `One Dreamer spends 1–2 blue ${SUIT_LABELS.lucidity} cards to set the team's reveal budget. ${best.name} has the highest Lucidity (+${totalStat(best, stat, state)}) — have them play the cards.`
         : `Choose 1–2 blue ${SUIT_LABELS.lucidity} cards from any Dreamer's hand, then click Reveal Landscapes.`,
     );
     return;
@@ -601,7 +624,7 @@ export function revealLandscape(state) {
     narrate(
       state,
       "Select Lucidity Psyche first",
-      `Choose 1–2 blue ${SUIT_LABELS.lucidity} cards from ${player.name}'s hand. Their Lucidity stat (+${totalStat(player, "lucidity")}) is added to the card values.`,
+      `Choose 1–2 blue ${SUIT_LABELS.lucidity} cards from ${player.name}'s hand. Their Lucidity stat (+${totalStat(player, "lucidity", state)}) is added to the card values.`,
     );
     return;
   }
@@ -637,7 +660,7 @@ export function activateExplore(state) {
     const best = bestPhaseContributor(state);
     const stat = statForPhaseBudget("Explore", state);
     addLog(state, best
-      ? `Select 1–2 Elasticity cards from a Dreamer's hand. ${best.name} has the best Elasticity bonus (+${totalStat(best, stat)}).`
+      ? `Select 1–2 Elasticity cards from a Dreamer's hand. ${best.name} has the best Elasticity bonus (+${totalStat(best, stat, state)}).`
       : `Select 1–2 ${SUIT_LABELS.elasticity} Psyche cards from any Dreamer to set team moves.`);
     return;
   }
@@ -717,7 +740,7 @@ export function gainMeetActions(state) {
     const best = bestPhaseContributor(state);
     const stat = statForPhaseBudget("Meet", state);
     addLog(state, best
-      ? `Select 1–2 Willpower cards from a Dreamer's hand. ${best.name} has the best Willpower bonus (+${totalStat(best, stat)}).`
+      ? `Select 1–2 Willpower cards from a Dreamer's hand. ${best.name} has the best Willpower bonus (+${totalStat(best, stat, state)}).`
       : `Play 1 or 2 ${SUIT_LABELS.willpower} Psyche cards from any Dreamer for shared Meet Actions.`);
     return;
   }

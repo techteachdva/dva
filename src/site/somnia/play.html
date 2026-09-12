@@ -26,9 +26,10 @@
       </div>
       <div id="phase-stepper" class="phase-stepper top-bar-stepper" aria-label="Round phases"></div>
       <div id="hud" class="hud">
-        <div class="hud-item"><span class="label">Goal</span><span id="hud-goal">12 pts</span></div>
+        <div class="hud-item hud-goal-wrap"><span class="label">Goal</span><span id="hud-goal">12 pts</span><span id="hud-goal-bar" class="hud-goal-bar" aria-hidden="true"></span></div>
         <div class="hud-item"><span class="label">Points</span><span id="hud-points">0</span></div>
-        <div class="hud-item"><span class="label">Dreams Left</span><span id="hud-dreams">16</span></div>
+        <div class="hud-item hud-dreams-wrap"><span class="label">Dreams Left</span><span id="hud-dreams">16</span></div>
+        <div class="hud-item hud-beasts-wrap hidden" id="hud-beasts-wrap"><span class="label">Roaming</span><span id="hud-beasts">0</span></div>
         <div class="hud-item"><span class="label">Round</span><span id="hud-round">1</span></div>
         <div class="hud-item phase hud-phase-cluster">
           <span class="label">Phase</span>
@@ -61,8 +62,8 @@
     <main>
       <section id="screen-game" class="screen active">
         <div class="table-surface" id="table-surface">
-          <div id="phase-banner" class="phase-banner" aria-hidden="true" hidden></div>
-          <div id="narrator-panel" class="narrator-panel narrator-panel-hidden" aria-live="polite" hidden></div>
+          <div id="coop-play-banner" class="coop-play-banner hidden" aria-live="polite"></div>
+          <div id="phase-banner" class="phase-banner" aria-live="polite"></div>
           <div id="guide-panel" class="guide-panel guide-panel-legacy" hidden></div>
           <div class="board-viewport" id="board-viewport" title="Scroll to zoom · middle-drag or hold Space and drag to pan">
             <div class="board-zoom-stage" id="board-zoom-stage">
@@ -88,7 +89,6 @@
           <div class="action-dock-wrap" id="action-dock-wrap">
             <div id="phase-actions" class="phase-actions action-dock" aria-label="Phase actions"></div>
           </div>
-          <div id="log" class="game-log game-log-hidden" aria-live="polite" hidden></div>
           <div class="dreamer-dock" id="dreamer-dock">
             <div class="hand-header dreamer-dock-header">
               <h3>Dreamers</h3>

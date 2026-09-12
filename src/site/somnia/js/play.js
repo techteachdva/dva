@@ -945,7 +945,7 @@ function renderAll() {
   renderNarratorPanel(state);
   renderGuidePanel(state, phaseActions);
   renderPhaseAdvanceBar();
-  renderPhaseActions(phaseActions, advanceAction);
+  renderPhaseActions(phaseActions, advanceAction, state);
 
   const pickHighlights = getLandscapePickHighlights(state);
   const legalMoves = getLegalExploreTargets(state).map((t) => t.id);
