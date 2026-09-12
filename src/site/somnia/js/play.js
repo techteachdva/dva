@@ -2,7 +2,12 @@ import { bindMusicToggle, initGameAudio, startGameRadio, bindButtonRipples, play
 import { initDeviceMode } from "./device-mode.js";
 import { initDialogAccessibility } from "./dialog-a11y.js";
 import { initPanelLayout } from "./panel-layout.js";
-import { initBoardZoom, syncBoardZoomAfterRender, resetBoardZoom } from "./board-zoom.js";
+import {
+  initBoardZoom,
+  syncBoardZoomAfterRender,
+  resetBoardZoom,
+  setBoardZoomChangeHandler,
+} from "./board-zoom.js";
 import { initPauseMenu, openPauseMenu } from "./pause-menu.js";
 import { initFxLayer, burstSparklesAtElement } from "./fx.js";
 import {
@@ -180,6 +185,9 @@ async function init() {
   bindHelp();
   bindBoardResize();
   initBoardZoom();
+  setBoardZoomChangeHandler(() => {
+    renderBoardArea();
+  });
   bindFullscreenPrompt();
   bindRestart();
   bindEndLeaderboard();
@@ -416,7 +424,7 @@ function bindBoardResize() {
   const observer = new ResizeObserver(() => {
     if (!state) return;
     clearTimeout(boardResizeTimer);
-    boardResizeTimer = setTimeout(() => syncBoardZoomAfterRender(), 80);
+    boardResizeTimer = setTimeout(() => renderAll(), 80);
   });
   observer.observe(vp);
 }
@@ -831,6 +839,17 @@ function maybeShowReturnPicker() {
   );
 }
 
+function renderBoardArea() {
+  if (!state) return;
+  const pickHighlights = getLandscapePickHighlights(state);
+  const legalMoves = getLegalExploreTargets(state).map((t) => t.id);
+  renderBoard(state, (id) => {
+    handleBoardTileClick(state, id);
+    renderAll();
+  }, legalMoves, pickHighlights, (id) => showLandscapeDetail(state, id));
+  syncBoardZoomAfterRender();
+}
+
 function renderAll() {
   if (!state) return;
   bindUiRenderState(state);
@@ -983,13 +1002,7 @@ function renderAll() {
   renderPhaseAdvanceBar();
   renderPhaseActions(phaseActions, advanceAction, state);
 
-  const pickHighlights = getLandscapePickHighlights(state);
-  const legalMoves = getLegalExploreTargets(state).map((t) => t.id);
-  renderBoard(state, (id) => {
-    handleBoardTileClick(state, id);
-    renderAll();
-  }, legalMoves, pickHighlights, (id) => showLandscapeDetail(state, id));
-  syncBoardZoomAfterRender();
+  renderBoardArea();
   renderPlayers(state, (index) => {
     if (state.tradeMode && state.trade?.step === "pick-partner") {
       if (selectTradePartner(state, index)) {

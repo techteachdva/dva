@@ -2848,6 +2848,8 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
   z-index: 0;
   box-shadow: inset 0 0 0 0 transparent;
   transition: box-shadow 0.15s ease;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 .hex-tile .hex-overlay {
@@ -2883,6 +2885,9 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
   object-position: bottom center;
   filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.72));
   border-radius: calc(5px * var(--hex-scale, 1.72));
+  image-rendering: auto;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 .hex-tile .hex-occupant-beast {

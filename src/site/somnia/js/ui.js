@@ -46,7 +46,7 @@ import {
   consumeDreamFeedNudge,
 } from "./fx.js";
 import { BOSS_DREAM_DECK_SLOTS } from "./data.js";
-import { consumeBoardClickSuppression } from "./board-zoom.js";
+import { consumeBoardClickSuppression, getBoardZoom } from "./board-zoom.js";
 import { powerTokensInPool, MAX_POWER_TOKEN_POOL } from "./power-tokens.js";
 import {
   eventLandscapeIds,
@@ -767,10 +767,11 @@ export function hideModal() {
   document.body.classList.remove("card-detail-open");
 }
 
-/** Hex layout scale — half-width in pixel math (larger = bigger map). */
+/** Hex layout scale — circumradius in pixel math (larger = bigger map). */
 const HEX_BASE = 58;
-const HEX_MIN = 72;
-const HEX_MAX = 220;
+const HEX_MIN = 48;
+/** ~1024px source art / sqrt(3) — keeps landscape faces sharp when zoomed in. */
+const HEX_MAX_NATIVE = 580;
 
 function fitHexSize(state) {
   const viewport = document.getElementById("board-viewport");
@@ -780,8 +781,10 @@ function fitHexSize(state) {
   const maxW = Math.max(120, viewport.clientWidth - pad);
   const maxH = Math.max(120, viewport.clientHeight - pad);
   const bounds = boardPixelBounds(state, HEX_BASE);
-  const fit = Math.min(maxW / bounds.width, maxH / bounds.height, 3.2);
-  return Math.max(HEX_MIN, Math.min(HEX_MAX, Math.floor(HEX_BASE * fit)));
+  const fit = Math.min(maxW / bounds.width, maxH / bounds.height);
+  const base = Math.max(HEX_MIN, Math.floor(HEX_BASE * fit));
+  const zoomed = Math.floor(base * getBoardZoom());
+  return Math.min(HEX_MAX_NATIVE, Math.max(HEX_MIN, zoomed));
 }
 
 export function renderBoard(state, onSelectLandscape, legalMoveIds = [], pickHighlights = {}, onInspectLandscape = null) {
@@ -861,12 +864,12 @@ export function renderBoard(state, onSelectLandscape, legalMoveIds = [], pickHig
     occupants.forEach((p) => {
       if (!p.dreamer?.image) return;
       occupantTokens.push(
-        `<img class="hex-occupant-token hex-occupant-dreamer" src="${p.dreamer.image}" alt="" title="${p.dreamer.name}" onerror="this.remove()">`
+        `<img class="hex-occupant-token hex-occupant-dreamer" src="${p.dreamer.image}" alt="" title="${p.dreamer.name}" decoding="async" draggable="false" onerror="this.remove()">`
       );
     });
     if (encounter?.image) {
       occupantTokens.push(
-        `<img class="hex-occupant-token hex-occupant-beast" src="${encounter.image}" alt="" title="${encounter.name}" onerror="this.remove()">`
+        `<img class="hex-occupant-token hex-occupant-beast" src="${encounter.image}" alt="" title="${encounter.name}" decoding="async" draggable="false" onerror="this.remove()">`
       );
     }
     const occupantsHtml = occupantTokens.length

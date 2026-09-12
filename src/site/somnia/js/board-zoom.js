@@ -1,15 +1,19 @@
-const MIN_SCALE = 0.45;
-const MAX_SCALE = 3.5;
+const MIN_ZOOM = 0.45;
+const MAX_ZOOM = 3.5;
 const ZOOM_SENSITIVITY = 0.0012;
 const PAN_CLICK_THRESHOLD = 5;
 
 let viewport = null;
 let stage = null;
-let scale = 1;
+/** Multiplier on the viewport-fit hex size (native resize, not CSS scale). */
+let zoom = 1;
 let panX = 0;
 let panY = 0;
 let userAdjusted = false;
 let bound = false;
+let zoomChangeHandler = null;
+let zoomRaf = 0;
+let pendingPan = null;
 
 let spaceHeld = false;
 let panning = false;
@@ -21,53 +25,57 @@ let panOriginY = 0;
 let panMoved = false;
 let suppressClick = false;
 
+export function getBoardZoom() {
+  return zoom;
+}
+
+export function setBoardZoomChangeHandler(handler) {
+  zoomChangeHandler = handler;
+}
+
 function applyTransform() {
   if (!stage) return;
-  stage.style.transform = `translate3d(${panX}px, ${panY}px, 0) scale(${scale})`;
+  stage.style.transform = `translate3d(${panX}px, ${panY}px, 0)`;
 }
 
-function centerBoard() {
-  if (!viewport || !stage) return;
-  const board = stage.querySelector("#hex-board");
+function getBoardEl() {
+  return stage?.querySelector("#hex-board");
+}
+
+export function centerBoardPan() {
+  if (!viewport) return;
+  const board = getBoardEl();
   if (!board) return;
-  const bw = board.offsetWidth;
-  const bh = board.offsetHeight;
-  panX = (viewport.clientWidth - bw * scale) / 2;
-  panY = (viewport.clientHeight - bh * scale) / 2;
+  panX = (viewport.clientWidth - board.offsetWidth) / 2;
+  panY = (viewport.clientHeight - board.offsetHeight) / 2;
   applyTransform();
 }
 
-function fitBoardToViewport() {
-  if (!viewport || !stage) return;
-  const board = stage.querySelector("#hex-board");
-  if (!board) return;
-  const bw = board.offsetWidth;
-  const bh = board.offsetHeight;
-  if (!bw || !bh) return;
-  const padding = 20;
-  const vw = viewport.clientWidth;
-  const vh = viewport.clientHeight;
-  const fitScale = Math.min(
-    (vw - padding * 2) / bw,
-    (vh - padding * 2) / bh,
-    MAX_SCALE,
-  );
-  scale = Math.max(MIN_SCALE, fitScale);
-  panX = (vw - bw * scale) / 2;
-  panY = (vh - bh * scale) / 2;
+function flushZoomRender() {
+  zoomRaf = 0;
+  zoomChangeHandler?.();
+  if (pendingPan) {
+    panX = pendingPan.panX;
+    panY = pendingPan.panY;
+    pendingPan = null;
+  }
   applyTransform();
+}
+
+function scheduleZoomRender() {
+  if (zoomRaf) return;
+  zoomRaf = requestAnimationFrame(flushZoomRender);
 }
 
 export function resetBoardZoom() {
-  scale = 1;
+  zoom = 1;
   panX = 0;
   panY = 0;
   userAdjusted = false;
-  fitBoardToViewport();
 }
 
 export function syncBoardZoomAfterRender() {
-  if (!userAdjusted) fitBoardToViewport();
+  if (!userAdjusted) centerBoardPan();
   else applyTransform();
 }
 
@@ -170,16 +178,16 @@ function onWheel(event) {
   const mx = event.clientX - rect.left;
   const my = event.clientY - rect.top;
   const factor = 1 - event.deltaY * ZOOM_SENSITIVITY;
-  const nextScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale * factor));
-  if (nextScale === scale) return;
+  const nextZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom * factor));
+  if (nextZoom === zoom) return;
 
-  const wx = (mx - panX) / scale;
-  const wy = (my - panY) / scale;
-  panX = mx - wx * nextScale;
-  panY = my - wy * nextScale;
-  scale = nextScale;
+  const bx = mx - panX;
+  const by = my - panY;
+  const ratio = nextZoom / zoom;
+  zoom = nextZoom;
   userAdjusted = true;
-  applyTransform();
+  pendingPan = { panX: mx - bx * ratio, panY: my - by * ratio };
+  scheduleZoomRender();
 }
 
 export function initBoardZoom() {
