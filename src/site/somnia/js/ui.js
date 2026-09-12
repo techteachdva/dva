@@ -805,6 +805,8 @@ export function renderBoard(state, onSelectLandscape, legalMoveIds = [], pickHig
     el.dataset.tileId = tile.id;
     const isBedFinal = tile.center && tile.finalRecurrenceSide;
     const showFace = tile.revealed && !tile.wasteland;
+    const encounter = tile.encounter;
+    const isSelected = state.selectedLandscapeId === tile.id;
     el.className = [
       "hex-tile",
       tile.center ? "center" : "",
@@ -837,9 +839,7 @@ export function renderBoard(state, onSelectLandscape, legalMoveIds = [], pickHig
     }
 
     const occupants = state.players.filter((p) => p.landscapeId === tile.id && p.alive);
-    const encounter = tile.encounter;
     const finalArch = tile.finalArchetype;
-    const isSelected = state.selectedLandscapeId === tile.id;
     const encounterMark = encounter ? "⚔" : "";
     const finalMark = finalArch && !finalArch.defeated ? "★" : "";
     const displayName = isBedFinal
