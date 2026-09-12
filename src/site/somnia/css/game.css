@@ -1713,12 +1713,20 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
 
 .tutorial-card.tutorial-minimized {
   max-height: none;
-  height: auto !important;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 10px;
 }
 
 .tutorial-card.tutorial-minimized .tutorial-card-body,
 .tutorial-card.tutorial-minimized .tutorial-card-resize-handle {
-  display: none;
+  display: none !important;
+}
+
+.tutorial-card.tutorial-minimized .tutorial-card-header {
+  border-bottom: none;
+  padding: 0.45rem 0.65rem 0.45rem 0.85rem;
+  min-height: 2.5rem;
 }
 
 .tutorial-card-header {

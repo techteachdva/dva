@@ -2790,25 +2790,41 @@ function clampTutorialWindowToViewport() {
   );
 }
 
+function measureTutorialBarHeight() {
+  const header = document.getElementById("tutorial-card-header");
+  return Math.max(40, Math.ceil(header?.getBoundingClientRect().height || 40));
+}
+
+function updateTutorialHeaderLabel(step, stepIndex, total, roundLabel = null) {
+  const label = document.getElementById("tutorial-card-drag-label");
+  if (!label) return;
+  if (!step) {
+    label.textContent = "Tutorial Guide";
+    label.title = "";
+    return;
+  }
+  const roundPart = roundLabel ? `Round ${roundLabel} · ` : "";
+  const progress = stepIndex != null && total ? `Step ${stepIndex + 1}/${total} · ` : "";
+  const shortTitle = step.title.length > 36 ? `${step.title.slice(0, 34)}…` : step.title;
+  if (tutorialWindowState?.minimized) {
+    label.textContent = `${progress}${shortTitle}`;
+  } else {
+    label.textContent = "Tutorial Guide";
+  }
+  label.title = `${roundPart}${step.title}`;
+}
+
 function applyTutorialWindowGeometry() {
   const card = document.getElementById("tutorial-card");
   if (!card || !tutorialWindowState) return;
+
+  card.classList.toggle("tutorial-minimized", !!tutorialWindowState.minimized);
+  card.setAttribute("aria-expanded", tutorialWindowState.minimized ? "false" : "true");
 
   card.style.left = `${tutorialWindowState.left}px`;
   card.style.top = `${tutorialWindowState.top}px`;
   card.style.bottom = "";
   card.style.right = "";
-  card.style.width = `${tutorialWindowState.width}px`;
-
-  if (tutorialWindowState.height != null && !tutorialWindowState.minimized) {
-    card.style.height = `${tutorialWindowState.height}px`;
-    card.classList.add("tutorial-card-sized");
-  } else {
-    card.style.height = "";
-    card.classList.remove("tutorial-card-sized");
-  }
-
-  card.classList.toggle("tutorial-minimized", !!tutorialWindowState.minimized);
 
   const minimizeBtn = document.getElementById("tutorial-minimize");
   const expandBtn = document.getElementById("tutorial-expand");
@@ -2816,6 +2832,28 @@ function applyTutorialWindowGeometry() {
   minimizeBtn?.classList.toggle("hidden", !!tutorialWindowState.minimized);
   expandBtn?.classList.toggle("hidden", !tutorialWindowState.minimized);
   resizeHandle?.classList.toggle("hidden", !!tutorialWindowState.minimized);
+
+  if (tutorialWindowState.minimized) {
+    const barHeight = measureTutorialBarHeight();
+    card.style.width = `${tutorialWindowState.width}px`;
+    card.style.height = `${barHeight}px`;
+    card.style.minHeight = `${barHeight}px`;
+    card.style.maxHeight = `${barHeight}px`;
+    card.classList.remove("tutorial-card-sized");
+    return;
+  }
+
+  card.style.minHeight = "";
+  card.style.maxHeight = "";
+  card.style.width = `${tutorialWindowState.width}px`;
+
+  if (tutorialWindowState.height != null) {
+    card.style.height = `${tutorialWindowState.height}px`;
+    card.classList.add("tutorial-card-sized");
+  } else {
+    card.style.height = "";
+    card.classList.remove("tutorial-card-sized");
+  }
 }
 
 function ensureTutorialWindowState() {
@@ -2827,10 +2865,42 @@ function ensureTutorialWindowState() {
 }
 
 function setTutorialMinimized(minimized) {
+  ensureTutorialWindowState();
   if (!tutorialWindowState) return;
+
+  if (minimized && !tutorialWindowState.minimized) {
+    const card = document.getElementById("tutorial-card");
+    const rect = card?.getBoundingClientRect();
+    tutorialWindowState.savedWidth = tutorialWindowState.width;
+    tutorialWindowState.savedHeight = tutorialWindowState.height;
+    const barWidth = Math.min(
+      Math.max(280, Math.round((rect?.width || tutorialWindowState.width) * 0.55)),
+      420,
+    );
+    tutorialWindowState.width = barWidth;
+  } else if (!minimized && tutorialWindowState.minimized) {
+    if (tutorialWindowState.savedWidth != null) {
+      tutorialWindowState.width = tutorialWindowState.savedWidth;
+    }
+    if (tutorialWindowState.savedHeight != null) {
+      tutorialWindowState.height = tutorialWindowState.savedHeight;
+    }
+  }
+
   tutorialWindowState.minimized = minimized;
   saveTutorialWindowState();
   applyTutorialWindowGeometry();
+
+  if (activeTutorialStep) {
+    const progressText = document.getElementById("tutorial-progress")?.textContent || "";
+    const roundLabel = progressText.match(/Round (\d+)/)?.[1] || null;
+    const progressMatch = progressText.match(/Step (\d+) \/ (\d+)/);
+    const stepIndex = progressMatch ? parseInt(progressMatch[1], 10) - 1 : null;
+    const total = progressMatch ? parseInt(progressMatch[2], 10) : null;
+    updateTutorialHeaderLabel(activeTutorialStep, stepIndex, total, roundLabel);
+  } else {
+    updateTutorialHeaderLabel(null);
+  }
 }
 
 function onTutorialWindowPointerMove(e) {
@@ -3310,6 +3380,7 @@ export function updateTutorialStepUI({
     document.getElementById("tutorial-progress").textContent = `${roundPart}Step ${stepIndex + 1} / ${total}`;
   }
   if (step) {
+    updateTutorialHeaderLabel(step, stepIndex, total, roundLabel);
     positionTutorialCard(step);
     refreshTutorialSpotlight();
   }
@@ -3355,6 +3426,7 @@ export function showTutorialStep(step, stepIndex, total, {
   }
 
   populateTutorialJumpMenu(stepIndex, onJump);
+  updateTutorialHeaderLabel(step, stepIndex, total, roundLabel);
 
   clearTutorialHighlight({ keepLayer: !!fromRect });
   ensureTutorialStepTargetsVisible(step);
