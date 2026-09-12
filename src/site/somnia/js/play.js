@@ -84,6 +84,9 @@ import {
   notifyTutorialArchetypeAcquired,
   isInteractiveTutorialActive,
   getTutorialStep,
+  isTutorialActionAllowed,
+  tutorialActionBlocked,
+  applyTutorialPhaseGates,
 } from "./tutorial-mode.js";
 import {
   renderBoard,
@@ -376,6 +379,12 @@ function bindHeaderDropdowns() {
     if (!btn || !panel) return;
     btn.addEventListener("click", (event) => {
       event.stopPropagation();
+      const headerKind = btnId === "btn-header-decks" ? "headerDecks" : "headerDreamers";
+      if (!isTutorialActionAllowed(state, headerKind)) {
+        tutorialActionBlocked(state);
+        renderAll();
+        return;
+      }
       const willOpen = panel.classList.contains("hidden");
       closeAll();
       if (willOpen) {
@@ -396,9 +405,28 @@ function bindHeaderDropdowns() {
 }
 
 function bindHelp() {
-  document.getElementById("btn-overview")?.addEventListener("click", () => showOverviewModal(state));
-  document.getElementById("btn-dream-feed")?.addEventListener("click", () => showDreamFeedModal(state));
+  document.getElementById("btn-overview")?.addEventListener("click", () => {
+    if (!isTutorialActionAllowed(state, "headerOverview")) {
+      tutorialActionBlocked(state);
+      renderAll();
+      return;
+    }
+    showOverviewModal(state);
+  });
+  document.getElementById("btn-dream-feed")?.addEventListener("click", () => {
+    if (!isTutorialActionAllowed(state, "headerDreamFeed")) {
+      tutorialActionBlocked(state);
+      renderAll();
+      return;
+    }
+    showDreamFeedModal(state);
+  });
   document.getElementById("btn-header-subconscious")?.addEventListener("click", () => {
+    if (!isTutorialActionAllowed(state, "headerSubconscious")) {
+      tutorialActionBlocked(state);
+      renderAll();
+      return;
+    }
     showSubconsciousBrowse(state, (card) => showModal(card));
   });
   document.getElementById("btn-tutorial")?.addEventListener("click", () => {
@@ -406,7 +434,14 @@ function bindHelp() {
     showTutorialAt(tutorialIndex);
   });
   document.getElementById("btn-end-overview")?.addEventListener("click", showOverviewModal);
-  document.getElementById("btn-pause")?.addEventListener("click", openPauseMenu);
+  document.getElementById("btn-pause")?.addEventListener("click", () => {
+    if (!isTutorialActionAllowed(state, "headerPause")) {
+      tutorialActionBlocked(state);
+      renderAll();
+      return;
+    }
+    openPauseMenu();
+  });
   bindHeaderDropdowns();
 }
 
@@ -657,6 +692,11 @@ function onHandCardClick(card, owner) {
   lastCardClick.time = now;
 
   const wasSelected = state.selectedHand.includes(id);
+  if (!wasSelected && !isTutorialActionAllowed(state, "handToggle", { card, owner })) {
+    tutorialActionBlocked(state);
+    renderAll();
+    return;
+  }
   toggleHandCard(state, card, owner);
   const isSelected = state.selectedHand.includes(id);
   if (isSelected && !wasSelected) playSfx("select");
@@ -842,8 +882,16 @@ function maybeShowReturnPicker() {
 function renderBoardArea() {
   if (!state) return;
   const pickHighlights = getLandscapePickHighlights(state);
-  const legalMoves = getLegalExploreTargets(state).map((t) => t.id);
+  let legalMoves = getLegalExploreTargets(state).map((t) => t.id);
+  if (isInteractiveTutorialActive(state)) {
+    legalMoves = legalMoves.filter((id) => isTutorialActionAllowed(state, "exploreMove", { tileId: id }));
+  }
   renderBoard(state, (id) => {
+    if (!isTutorialActionAllowed(state, "boardClick", { tileId: id })) {
+      tutorialActionBlocked(state);
+      renderAll();
+      return;
+    }
     handleBoardTileClick(state, id);
     renderAll();
   }, legalMoves, pickHighlights, (id) => showLandscapeDetail(state, id));
@@ -995,8 +1043,24 @@ function renderAll() {
     nextPhase: () => { requestEndPhase(state, () => renderAll()); },
   };
 
-  const phaseActions = getPhaseActions(state, handlers);
-  const advanceAction = getPhaseAdvanceAction(state, handlers);
+  const phaseActions = applyTutorialPhaseGates(state, getPhaseActions(state, handlers));
+  let advanceAction = getPhaseAdvanceAction(state, handlers);
+  if (advanceAction && isInteractiveTutorialActive(state)) {
+    const advanceAllowed = isTutorialActionAllowed(state, "advancePhase");
+    const onClick = advanceAction.onClick;
+    advanceAction = {
+      ...advanceAction,
+      disabled: advanceAction.disabled || !advanceAllowed,
+      onClick: () => {
+        if (!isTutorialActionAllowed(state, "advancePhase")) {
+          tutorialActionBlocked(state);
+          renderAll();
+          return;
+        }
+        onClick();
+      },
+    };
+  }
   renderNarratorPanel(state);
   renderGuidePanel(state, phaseActions);
   renderPhaseAdvanceBar();
@@ -1004,6 +1068,11 @@ function renderAll() {
 
   renderBoardArea();
   renderPlayers(state, (index) => {
+    if (!isTutorialActionAllowed(state, "dreamerSelect", { playerIndex: index })) {
+      tutorialActionBlocked(state);
+      renderAll();
+      return;
+    }
     if (state.tradeMode && state.trade?.step === "pick-partner") {
       if (selectTradePartner(state, index)) {
         state.trade.step = "select-offer";
