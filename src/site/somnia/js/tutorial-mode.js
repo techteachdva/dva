@@ -321,8 +321,8 @@ export const TUTORIAL_SCRIPT = [
     id: "subconscious",
     round: 1,
     title: "The Subconscious",
-    body: "Repressed cards go face-up here. Return effects pull cards back to discard piles so decks cycle. Repress and Return are core to survival.",
-    target: "#subconscious-graveyard",
+    body: "Repressed cards go face-up in The Subconscious — open it from the top bar. Return effects pull cards back to discard piles so decks cycle. Repress and Return are core to survival.",
+    target: "#btn-header-subconscious",
   },
   {
     id: "draw-dream-r1",
@@ -612,8 +612,8 @@ export const TUTORIAL_SCRIPT = [
     id: "r4-death-rules",
     round: 4,
     title: "Death & Respawn",
-    body: "At 0 Psyche, spend Power Tokens to survive or accept death: respawn on The Bed with 4/3/2/1 Psyche (by death count) and 2 Power. Fifth death removes that Dreamer. Death Represses the top of each Mindstream deck.",
-    target: "#subconscious-graveyard",
+    body: "At 0 Psyche, spend Power Tokens to survive or accept death: respawn on The Bed with 4/3/2/1 Psyche (by death count) and 2 Power. Fifth death removes that Dreamer. Death Represses the top of each Mindstream deck into The Subconscious (top bar).",
+    target: "#btn-header-subconscious",
   },
   {
     id: "r4-lucidity",

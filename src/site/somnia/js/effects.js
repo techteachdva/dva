@@ -23,6 +23,7 @@ import {
 } from "./subconscious.js";
 import { discardToMindstream } from "./mindstream-supply.js";
 import { MINDSTREAM_EFFECTS } from "./mindstream.js";
+import { markDreamFeedNudge } from "./fx.js";
 import { OBJECT_EFFECTS } from "./object-effects.js";
 import { uid } from "./data.js";
 
@@ -209,6 +210,7 @@ function applyDreambeastTimelineHunger(state) {
       state,
       `The Timeline frays — ${discarded} Dream card${discarded === 1 ? "" : "s"} discarded (${unpaid} Dreambeast${unpaid === 1 ? "" : "s"} still hunger; not enough Power).`,
     );
+    markDreamFeedNudge();
     checkDefeat(state);
   }
 }

@@ -208,4 +208,17 @@ export function initBoardZoom() {
   });
 
   resetBoardZoom();
+  showBoardPanHint();
+}
+
+function showBoardPanHint() {
+  if (!viewport || localStorage.getItem("somnia.boardPanHintSeen")) return;
+  const hint = document.createElement("div");
+  hint.className = "board-pan-hint";
+  hint.setAttribute("role", "status");
+  hint.textContent = "Scroll to zoom · Space + drag or middle-click to pan";
+  viewport.appendChild(hint);
+  localStorage.setItem("somnia.boardPanHintSeen", "1");
+  window.setTimeout(() => hint.classList.add("fade-out"), 4200);
+  window.setTimeout(() => hint.remove(), 5000);
 }

@@ -85,7 +85,7 @@ import {
 import { beginRevealPicking, handleLandscapeTilePick, cancelLandscapePick } from "./landscapes.js";
 import { narrate } from "./narrator.js";
 import { playSfx } from "./audio.js";
-import { markPhasePulse } from "./fx.js";
+import { markPhasePulse, markDreamFeedNudge } from "./fx.js";
 import { recordQuestEvent } from "./quests.js";
 import { COOP_PLAY_TIP } from "./guide.js";
 import { notifyTutorialEncounterResolved } from "./tutorial-mode.js";
@@ -544,6 +544,7 @@ export function drawAdditionalDream(state, onShowModal) {
     const encounter = { ...card, type: "dreambeast", instanceId: uid("enc") };
     setEncounterOnLandscape(state, "bed", encounter);
     addLog(state, `${card.name} awakens on The Bed!`);
+    markDreamFeedNudge();
   } else if (card.type === "final" && card.id === "you-never-wake") {
     resolveCardEffect(state, card, head, getEffectHelpers());
   } else if (card.type === "final" && card.id === "final-recurrence") {
@@ -589,6 +590,7 @@ export function drawDreamCard(state, onShowModal) {
     setEncounterOnLandscape(state, "bed", encounter);
     addLog(state, `${card.name} awakens on The Bed!`);
     recordQuestEvent(state, "meet_boss", { bossId: card.id });
+    markDreamFeedNudge();
   } else {
     resolveCardEffect(state, card, head, getEffectHelpers());
   }
@@ -732,6 +734,22 @@ export function moveDreamer(state, targetLandscapeId) {
   }
 
   state.selectedLandscapeId = targetLandscapeId;
+
+  if (getPhase(state) === "Meet") {
+    const occupantIdx = state.players.findIndex(
+      (p) => p.alive && p.landscapeId === targetLandscapeId,
+    );
+    if (occupantIdx >= 0) state.activePlayerIndex = occupantIdx;
+
+    const enc = encounterOnLandscape(state, targetLandscapeId);
+    if (enc) {
+      state.activeEncounter = enc;
+      state.activeEncounterLandscapeId = targetLandscapeId;
+    } else if (state.activeEncounterLandscapeId === targetLandscapeId) {
+      state.activeEncounter = null;
+      state.activeEncounterLandscapeId = null;
+    }
+  }
 }
 
 export function gainMeetActions(state) {

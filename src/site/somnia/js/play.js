@@ -115,7 +115,7 @@ import {
   showSubconsciousBrowse,
   showDiscardPileModal,
   showRepressPicker,
-  renderSubconsciousGraveyard,
+  renderSubconsciousButton,
   showRulesModal,
   showDreamFeedModal,
   showOverviewModal,
@@ -385,6 +385,9 @@ function bindHeaderDropdowns() {
 function bindHelp() {
   document.getElementById("btn-overview")?.addEventListener("click", () => showOverviewModal(state));
   document.getElementById("btn-dream-feed")?.addEventListener("click", () => showDreamFeedModal(state));
+  document.getElementById("btn-header-subconscious")?.addEventListener("click", () => {
+    showSubconsciousBrowse(state, (card) => showModal(card));
+  });
   document.getElementById("btn-tutorial")?.addEventListener("click", () => {
     tutorialIndex = 0;
     showTutorialAt(tutorialIndex);
@@ -998,9 +1001,7 @@ function renderAll() {
     showDiscardPileModal(state, deckId, (card) => showModal(card));
   });
   renderActiveSlots(state, (card) => showModal(card));
-  renderSubconsciousGraveyard(state, () => {
-    showSubconsciousBrowse(state, (card) => showModal(card));
-  });
+  renderSubconsciousButton(state);
   renderLog(state);
 
   resolvePendingDeathDream(state, showModal);

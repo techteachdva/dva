@@ -1,6 +1,7 @@
 let revealedTiles = new Set();
 let forgottenTiles = new Set();
 let phasePulse = false;
+let dreamFeedNudge = false;
 
 export function initFxLayer() {
   if (document.getElementById("fx-layer")) return;
@@ -38,6 +39,16 @@ export function consumePhasePulse() {
   const pulse = phasePulse;
   phasePulse = false;
   return pulse;
+}
+
+export function markDreamFeedNudge() {
+  dreamFeedNudge = true;
+}
+
+export function consumeDreamFeedNudge() {
+  const nudge = dreamFeedNudge;
+  dreamFeedNudge = false;
+  return nudge;
 }
 
 export function burstSparkles(x, y, count = 10, color = "#c9a0ff") {

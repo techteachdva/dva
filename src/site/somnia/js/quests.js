@@ -176,6 +176,40 @@ export function isQuestConditionMet(state, archetypeId, questText) {
   return false;
 }
 
+const QUEST_LANDSCAPE_HINTS = {
+  "draw mindstream on the attic": ["the-attic"],
+  "draw mindstream on the basement": ["the-basement"],
+  "draw mindstream on awards or the party": ["awards", "the-party"],
+  "meet a dreambeast on awards or the party": ["awards", "the-party"],
+  "draw mindstream on sea of teeth or field of broken glass": ["sea-of-teeth", "field-of-broken-glass"],
+  "meet a dreambeast on sea of teeth or field of broken glass": ["sea-of-teeth", "field-of-broken-glass"],
+  "draw mindstream on naked classroom": ["naked-classroom"],
+  "draw mindstream on candy mountain": ["candy-mountain"],
+  "draw mindstream on endless ocean or lava": ["endless-ocean", "lava"],
+  "meet a dreambeast on endless ocean or lava": ["endless-ocean", "lava"],
+  "draw mindstream on insanity or black void": ["insanity", "black-void"],
+  "meet a dreambeast on insanity or black void": ["insanity", "black-void"],
+  "draw mindstream on desert": ["desert"],
+  "draw mindstream on silver mist": ["silver-mist"],
+  "draw mindstream on tranquil grove or endless hallway": ["tranquil-grove", "endless-hallway"],
+  "meet a dreambeast on tranquil grove or endless hallway": ["tranquil-grove", "endless-hallway"],
+  "draw mindstream on day in the life or inner sanctum": ["day-in-the-life", "inner-sanctum"],
+  "meet a dreambeast on day in the life or inner sanctum": ["day-in-the-life", "inner-sanctum"],
+};
+
+export function activeQuestLandscapeIds(state) {
+  const arch = state.activeArchetype;
+  if (!arch?.quests) return [];
+  const ids = new Set();
+  arch.quests.forEach((q, i) => {
+    if (arch.questProgress?.[i]) return;
+    if (isQuestConditionMet(state, arch.id, q)) return;
+    const hinted = QUEST_LANDSCAPE_HINTS[normalizeQuest(q)];
+    if (hinted) hinted.forEach((id) => ids.add(id));
+  });
+  return [...ids];
+}
+
 export function getQuestStatus(state, archetype) {
   if (!archetype?.quests) return [];
   return archetype.quests.map((q, i) => {

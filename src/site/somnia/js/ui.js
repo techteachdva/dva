@@ -25,7 +25,7 @@ import { COOP_PLAY_TIP } from "./guide.js";
 import { DREAMER_KIND_AFFINITY, beastKindLabel, dreamerPrimarySuit } from "./dreambeasts.js";
 import { handLimitForPlayer, handRoomForPsycheDraw } from "./objects.js";
 import { psycheHandCount, alliesInHand, psycheCardsInHand, allyHandCount, allyHandLimitForPlayer, effectivePsycheHealth, MAX_ALLIES_IN_HAND, MAX_PSYCHE_IN_HAND } from "./psyche.js";
-import { getQuestStatus } from "./quests.js";
+import { getQuestStatus, activeQuestLandscapeIds } from "./quests.js";
 import { effectiveDreamerStat } from "./archetype-stats.js";
 import { hexToPixel, boardPixelBounds } from "./hex.js";
 import { subconsciousCount, subconsciousPilesForUI, isDreambeastPsycheCard } from "./subconscious.js";
@@ -43,7 +43,9 @@ import {
   consumePhasePulse,
   consumeRevealedTiles,
   consumeForgottenTiles,
+  consumeDreamFeedNudge,
 } from "./fx.js";
+import { BOSS_DREAM_DECK_SLOTS } from "./data.js";
 import { consumeBoardClickSuppression } from "./board-zoom.js";
 import { powerTokensInPool, MAX_POWER_TOKEN_POOL } from "./power-tokens.js";
 import {
@@ -792,6 +794,7 @@ export function renderBoard(state, onSelectLandscape, legalMoveIds = [], pickHig
   const legalSet = new Set(legalMoveIds);
   const revealSet = new Set(pickHighlights.reveal || []);
   const forgetSet = new Set(pickHighlights.forget || []);
+  const questHighlightSet = new Set(activeQuestLandscapeIds(state));
   const justRevealed = new Set(consumeRevealedTiles());
   const justForgotten = new Set(consumeForgottenTiles());
 
@@ -809,7 +812,10 @@ export function renderBoard(state, onSelectLandscape, legalMoveIds = [], pickHig
       !tile.revealed && !tile.center ? "face-down" : "",
       showFace ? "face-up" : "",
       isBedFinal ? "bed-final" : "",
-      state.selectedLandscapeId === tile.id ? "selected" : "",
+      isSelected ? "selected" : "",
+      isSelected && encounter ? "selected-encounter" : "",
+      encounter ? "has-encounter" : "",
+      questHighlightSet.has(tile.id) ? "quest-highlight" : "",
       legalSet.has(tile.id) ? "movable" : "",
       revealSet.has(tile.id) ? "pick-reveal" : "",
       forgetSet.has(tile.id) ? "pick-forget" : "",
@@ -833,6 +839,7 @@ export function renderBoard(state, onSelectLandscape, legalMoveIds = [], pickHig
     const occupants = state.players.filter((p) => p.landscapeId === tile.id && p.alive);
     const encounter = tile.encounter;
     const finalArch = tile.finalArchetype;
+    const isSelected = state.selectedLandscapeId === tile.id;
     const encounterMark = encounter ? "⚔" : "";
     const finalMark = finalArch && !finalArch.defeated ? "★" : "";
     const displayName = isBedFinal
@@ -891,6 +898,8 @@ export function renderPlayers(state, onSelectPlayer) {
 
   const phaseOpening = phaseOpeningActive(state);
   const suggestedSpender = phaseOpening ? bestPhaseContributor(state) : null;
+  const meetPhase = getPhase(state) === "Meet" && state.meetActionBudget > 0;
+  const sceneTileId = meetPhase ? state.selectedLandscapeId : null;
 
   state.players.forEach((player, index) => {
     const appendChip = (list, compact) => {
@@ -902,12 +911,14 @@ export function renderPlayers(state, onSelectPlayer) {
       const isSuggestedSpender = phaseOpening
         && player.alive
         && suggestedSpender?.id === player.id;
+      const onScene = sceneTileId && player.alive && player.landscapeId === sceneTileId;
       chip.className = [
         "player-chip",
         isActive ? "active" : "",
         !player.alive ? "dead" : "",
         tradeTarget ? "trade-target" : "",
         isSuggestedSpender ? "phase-suggested" : "",
+        onScene ? "on-scene" : "",
       ].filter(Boolean).join(" ");
       const ariaHint = getDreamerChipTooltip(state, player, index);
       chip.dataset.playerId = player.id;
@@ -915,7 +926,7 @@ export function renderPlayers(state, onSelectPlayer) {
       chip.innerHTML = `
         <img src="${player.dreamer.image}" alt="" onerror="this.style.display='none'">
         <div class="info">
-          <div class="name">${player.name}${player.isHead ? " ★" : ""}${isSuggestedSpender ? " ☆" : ""}${!player.alive ? " (lost)" : ""}</div>
+          <div class="name">${player.name}${player.isHead ? " ★" : ""}${isSuggestedSpender ? " ☆" : ""}${onScene ? " ●" : ""}${!player.alive ? " (lost)" : ""}</div>
           ${compact ? "" : dreamerStatsHtml(player.dreamer)}
           <div class="sub">${player.powerTokens} power · ${formatHandPsycheLine(state, player)} · ${player.deathCount || 0}/5 deaths · ${player.objects.length} obj · ${player.persistent?.length || 0} persistent</div>
         </div>
@@ -1021,6 +1032,9 @@ export function renderPhaseSpendHands(state, onCardClick) {
   const isBest = best?.id === player.id;
   const contributor = findPhaseContributor(state);
   const projected = projectedPhaseBudget(state, player);
+  const opener = contributor
+    ? `Opening as ${contributor.name} (+${totalStat(contributor, statKey, state)} ${suitLabel}) → ${projectedPhaseBudget(state, contributor)} for team`
+    : null;
   const budgetNote = contributor?.id === player.id && projected > 0
     ? ` → ${projected} for team`
     : isBest
@@ -1029,11 +1043,12 @@ export function renderPhaseSpendHands(state, onCardClick) {
 
   renderActiveDreamerHand(state, onCardClick, {
     title: `${player.name} — Spend ${suitLabel}`,
-    statsText: isBest
-      ? `Best ${suitLabel} bonus (+${totalStat(player, statKey, state)})${budgetNote} · select 1–2 highlighted cards`
-      : best
-        ? `Tip: ${best.name} has +${totalStat(best, statKey, state)} ${suitLabel} — click their chip · highlighted cards count`
-        : `Select 1–2 ${suitLabel} or Wild cards · click a Dreamer chip to switch hands`,
+    statsText: opener
+      || (isBest
+        ? `Best ${suitLabel} bonus (+${totalStat(player, statKey, state)})${budgetNote} · select 1–2 highlighted cards`
+        : best
+          ? `Tip: ${best.name} has +${totalStat(best, statKey, state)} ${suitLabel} — click their chip · highlighted cards count`
+          : `Select 1–2 ${suitLabel} or Wild cards · click a Dreamer chip to switch hands`),
     canClickCard: (card) => isPhaseSpendPsycheCard(card, state),
     suggestCard: (card) => isPhaseSpendPsycheCard(card, state),
   });
@@ -1159,52 +1174,46 @@ export function renderDecks(state, onViewDiscard) {
   mindstreamDecks.forEach(appendDeck);
 }
 
-export function renderSubconsciousGraveyard(state, onBrowse) {
-  const el = document.getElementById("subconscious-graveyard");
-  if (!el) return;
+export function renderSubconsciousButton(state) {
+  const btn = document.getElementById("btn-header-subconscious");
+  if (!btn) return;
 
   const count = subconsciousCount(state.subconscious);
-  const piles = subconsciousPilesForUI(state);
-  el.innerHTML = "";
+  const pending = state.pendingReturn || state.pendingRepress;
+  const label = count > 0 ? `☠ Subconscious (${count})` : "☠ Subconscious";
+  btn.textContent = label;
+  btn.classList.toggle("subconscious-pending", !!pending);
+  btn.title = pending
+    ? "Return or Repress pending — browse The Subconscious"
+    : count > 0
+      ? `${count} repressed card${count === 1 ? "" : "s"} face-up — browse The Subconscious`
+      : "Browse The Subconscious (empty)";
+}
 
-  const header = document.createElement("div");
-  header.className = "graveyard-header";
-  header.innerHTML = `
-    <span class="graveyard-icon">☠</span>
-    <span class="graveyard-count">${count} card${count === 1 ? "" : "s"}</span>
-    <button type="button" class="btn btn-sm graveyard-browse">Browse all</button>
-  `;
-  header.querySelector(".graveyard-browse").addEventListener("click", onBrowse);
-  el.appendChild(header);
-
-  if (!count) {
-    const empty = document.createElement("p");
-    empty.className = "graveyard-empty";
-    empty.textContent = "Empty — Repressed cards appear here face-up.";
-    el.appendChild(empty);
-    return;
-  }
-
-  const preview = document.createElement("div");
-  preview.className = "graveyard-preview";
-  piles.forEach((pile) => {
-    const chip = document.createElement("div");
-    chip.className = "graveyard-pile-chip";
-    chip.innerHTML = `<span>${pile.icon || ""} ${pile.label}</span><strong>${pile.cards.length}</strong>`;
-    preview.appendChild(chip);
+function renderQuestProgressList(statuses) {
+  const ul = document.createElement("ul");
+  ul.className = "quest-list compact quest-progress-list";
+  statuses.forEach((q) => {
+    const li = document.createElement("li");
+    li.className = [q.done ? "done" : "", q.ready ? "ready" : ""].filter(Boolean).join(" ");
+    const bar = document.createElement("span");
+    bar.className = "quest-progress";
+    bar.setAttribute("aria-label", `Quest ${q.index + 1}: ${q.conditionMet ? "condition met" : "in progress"}, ${q.tokenSpent ? "marked" : "not marked"}`);
+    bar.innerHTML = `
+      <span class="quest-seg ${q.conditionMet ? "met" : ""}" title="Condition met"></span>
+      <span class="quest-seg ${q.tokenSpent ? "done" : ""}" title="Power token spent"></span>
+    `;
+    li.innerHTML = `<span class="quest-text">${q.index + 1}. ${q.text}</span>`;
+    li.appendChild(bar);
+    if (q.ready) {
+      const mark = document.createElement("span");
+      mark.className = "quest-ready-mark";
+      mark.textContent = " · ready";
+      li.appendChild(mark);
+    }
+    ul.appendChild(li);
   });
-  el.appendChild(preview);
-
-  const recent = document.createElement("div");
-  recent.className = "graveyard-recent mini-card-row";
-  const all = piles.flatMap((p) => p.cards);
-  all.slice(-6).forEach((card) => {
-    recent.appendChild(renderCard(card, {
-      mini: true,
-      onClick: () => onBrowse(),
-    }));
-  });
-  el.appendChild(recent);
+  return ul;
 }
 
 export function renderActiveSlots(state, onCardClick) {
@@ -1226,36 +1235,43 @@ export function renderActiveSlots(state, onCardClick) {
     const card = { ...state.activeArchetype };
     const statuses = getQuestStatus(state, card);
     const tokensOn = card.powerTokensOnArchetype || 0;
-    const questHtml = statuses.length
-      ? `<ul class="quest-list compact">${statuses.map((q) => {
-          const cls = q.done ? "done" : (q.ready ? "ready" : "");
-          const mark = q.done ? " ✓" : (q.ready ? " · ready" : "");
-          return `<li class="${cls}">${q.index + 1}. ${q.text}${mark}</li>`;
-        }).join("")}</ul><p class="archetype-tokens">${tokensOn}/2 Power Tokens on Archetype</p>`
-      : "";
     archetypeSlot.appendChild(renderCard(card, {
       portrait: true,
       onClick: () => onCardClick(card),
     }));
-    if (questHtml) {
-      const q = document.createElement("div");
-      q.innerHTML = questHtml;
-      archetypeSlot.appendChild(q);
+    if (statuses.length) {
+      archetypeSlot.appendChild(renderQuestProgressList(statuses));
+      const tokens = document.createElement("p");
+      tokens.className = "archetype-tokens";
+      tokens.textContent = `${tokensOn}/2 Power Tokens on Archetype`;
+      archetypeSlot.appendChild(tokens);
     }
   } else {
     archetypeSlot.textContent = "No active Archetype.";
   }
 
-  if (state.activeEncounter) {
-    encounterSlot.appendChild(renderCard(state.activeEncounter, {
-      onClick: () => onCardClick(state.activeEncounter),
-    }));
-  } else if (state.activeDream) {
-    encounterSlot.appendChild(renderCard(state.activeDream, {
-      onClick: () => onCardClick(state.activeDream),
+  const selectedTile = state.board.find((t) => t.id === state.selectedLandscapeId);
+  const tileEncounter = selectedTile?.encounter || null;
+  encounterSlot.classList.toggle("scene-linked", !!tileEncounter);
+  if (tileEncounter) {
+    if (selectedTile?.name) {
+      const scene = document.createElement("p");
+      scene.className = "encounter-scene-label";
+      scene.textContent = `On ${selectedTile.name}`;
+      encounterSlot.appendChild(scene);
+    }
+    encounterSlot.appendChild(renderCard(tileEncounter, {
+      onClick: () => onCardClick(tileEncounter),
     }));
   } else {
-    encounterSlot.textContent = "No active Encounter.";
+    const tileName = selectedTile?.revealed ? selectedTile.name : "selected tile";
+    const meetPhase = getPhase(state) === "Meet";
+    const empty = document.createElement("p");
+    empty.className = "encounter-empty";
+    empty.textContent = meetPhase
+      ? `No encounter on ${tileName}. Select a Landscape with a Dreambeast.`
+      : `No encounter on ${tileName}.`;
+    encounterSlot.appendChild(empty);
   }
 
   const allAcquired = state.players.flatMap((p) => p.acquiredArchetypes);
@@ -1352,7 +1368,23 @@ export function renderHud(state, hint = "") {
   }
 
   document.getElementById("hud-round").textContent = String(state.round);
+  const bossRounds = BOSS_DREAM_DECK_SLOTS.map((slot) => slot + 1);
+  const bossEl = document.getElementById("hud-boss-rounds");
+  if (bossEl) {
+    bossEl.innerHTML = bossRounds.map((round) => {
+      const cls = state.round > round ? "passed" : state.round === round ? "now" : "upcoming";
+      return `<span class="hud-boss-tick ${cls}" title="Boss Dream round ${round}">☠</span>`;
+    }).join("");
+    bossEl.setAttribute("aria-label", `Boss dream rounds: ${bossRounds.join(", ")}`);
+    bossEl.removeAttribute("aria-hidden");
+  }
   document.getElementById("hud-phase").textContent = getPhase(state);
+
+  const feedBtn = document.getElementById("btn-dream-feed");
+  if (feedBtn && consumeDreamFeedNudge()) {
+    feedBtn.classList.add("dream-feed-nudge");
+    window.setTimeout(() => feedBtn.classList.remove("dream-feed-nudge"), 3200);
+  }
 
   const head = headPlayer(state);
   const meetInfo = state.meetActionBudget
@@ -1489,6 +1521,7 @@ function createActionButton(action) {
   btn.type = "button";
   const classes = ["btn", "action-dock-btn"];
   if (action.primary) classes.push("primary");
+  else classes.push("btn-sm");
   if (!action.disabled) classes.push("btn-ready");
   if (action.disabled && action.hint) classes.push("action-disabled-hint");
   btn.className = classes.join(" ");
@@ -1550,18 +1583,33 @@ export function renderPhaseActions(actions, advanceAction = null, state = null) 
   const grid = document.createElement("div");
   grid.className = "action-dock-grid";
 
+  const collapseMore = state && getPhase(state) === "Meet" && state.meetActionBudget > 0;
+
   ["main", "encounter", "actions", "progress", "round"].forEach((section) => {
     const items = grouped[section];
     if (!items?.length) return;
-    const heading = document.createElement("div");
-    heading.className = "action-section-label";
-    heading.textContent = ACTION_SECTIONS[section] || section;
-    grid.appendChild(heading);
     const row = document.createElement("div");
     row.className = "action-section-row";
     items.forEach((action) => {
       row.appendChild(createActionButton(action));
     });
+
+    if (section === "actions" && collapseMore) {
+      const details = document.createElement("details");
+      details.className = "action-section-collapsible";
+      const summary = document.createElement("summary");
+      summary.className = "action-section-label";
+      summary.textContent = `${ACTION_SECTIONS[section] || section} (${items.length})`;
+      details.appendChild(summary);
+      details.appendChild(row);
+      grid.appendChild(details);
+      return;
+    }
+
+    const heading = document.createElement("div");
+    heading.className = "action-section-label";
+    heading.textContent = ACTION_SECTIONS[section] || section;
+    grid.appendChild(heading);
     grid.appendChild(row);
   });
 

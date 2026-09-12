@@ -1,7 +1,7 @@
 import { createQuestTracker, canMarkQuest, recordQuestEvent } from "./quests.js";
 import { buildHexBoard } from "./hex.js";
 import { playSfx } from "./audio.js";
-import { markTileRevealed, markTileForgotten } from "./fx.js";
+import { markTileRevealed, markTileForgotten, markDreamFeedNudge } from "./fx.js";
 import { queueTileRevealFx, queueEncounterSpawnFx } from "./board-fx.js";
 import { queueCardDraw, queueHandDelta } from "./card-fx.js";
 import {
@@ -519,6 +519,7 @@ export function beginFinalRecurrence(state) {
   });
 
   addLog(state, "Defeat each Remaining Archetype with a 12 Psyche Play using opposing suits.");
+  markDreamFeedNudge();
 }
 
 export function advancePhase(state) {

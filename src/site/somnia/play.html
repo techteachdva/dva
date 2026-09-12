@@ -30,7 +30,7 @@
         <div class="hud-item"><span class="label">Points</span><span id="hud-points">0</span></div>
         <div class="hud-item hud-dreams-wrap"><span class="label">Dreams Left</span><span id="hud-dreams">16</span></div>
         <div class="hud-item hud-beasts-wrap hidden" id="hud-beasts-wrap"><span class="label">Roaming</span><span id="hud-beasts">0</span></div>
-        <div class="hud-item"><span class="label">Round</span><span id="hud-round">1</span></div>
+        <div class="hud-item hud-round-wrap"><span class="label">Round</span><span id="hud-round">1</span><span id="hud-boss-rounds" class="hud-boss-rounds" aria-hidden="true"></span></div>
         <div class="hud-item phase hud-phase-cluster">
           <span class="label">Phase</span>
           <span id="hud-phase">Reveal</span>
@@ -45,6 +45,7 @@
             <div id="deck-tray" class="deck-dropdown-list"></div>
           </div>
         </div>
+        <button type="button" id="btn-header-subconscious" class="btn btn-sm btn-header-subconscious" data-deck-id="subconscious" title="Browse The Subconscious">☠ Subconscious</button>
         <div class="header-dropdown" id="header-dreamers-menu">
           <button type="button" id="btn-header-dreamers" class="btn btn-sm header-dropdown-toggle" aria-expanded="false" aria-haspopup="true">Dreamers</button>
           <div id="dreamers-dropdown-panel" class="header-dropdown-panel hidden" role="menu" aria-label="Dreamer roster">
@@ -80,8 +81,6 @@
           <div id="active-encounter" class="active-card-slot"></div>
           <h3>Acquired</h3>
           <div id="acquired-archetypes" class="mini-card-row"></div>
-          <h3>☠ The Subconscious</h3>
-          <div id="subconscious-graveyard" class="subconscious-graveyard"></div>
         </aside>
 
         <footer class="hand-bar" id="hand-bar">
