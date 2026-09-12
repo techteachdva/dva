@@ -5795,8 +5795,13 @@ body.play-window .top-bar.play-top-bar {
   gap: 0.45rem 0.6rem;
   padding: 0.4rem 0.75rem;
   min-height: var(--topbar-h);
-  overflow-x: auto;
-  overflow-y: hidden;
+  position: relative;
+  z-index: 600;
+  overflow: visible;
+}
+
+body.play-window .header-dropdown-panel {
+  z-index: 700;
 }
 
 body.play-window .top-bar.play-top-bar .brand {
@@ -5828,6 +5833,9 @@ body.play-window .top-bar.play-top-bar .header-actions {
   flex: 0 0 auto;
   flex-wrap: nowrap;
   gap: 0.35rem;
+  position: relative;
+  z-index: 1;
+  overflow: visible;
 }
 
 .top-bar-stepper {

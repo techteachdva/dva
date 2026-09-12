@@ -23,6 +23,7 @@ import {
   dreamersOnAffectedLandscapes,
   logAffectedStatus,
 } from "./event-landscapes.js";
+import { EXTRA_MINDSTREAM_EFFECTS } from "./mindstream-extra.js";
 
 function alive(state) {
   return state.players.filter((p) => p.alive);
@@ -675,4 +676,6 @@ export const MINDSTREAM_EFFECTS = {
       repressFromHand(state, player, affected);
     }
   },
+
+  ...EXTRA_MINDSTREAM_EFFECTS,
 };

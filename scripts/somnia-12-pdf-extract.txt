@@ -13,7 +13,6 @@ Use a Coin:
     Tails = +1
 Dreamer Pieces
 
-
 === PAGE 3 ===
 Return 1 Dreambeast/Psyche/Object/Event
 Choose 1 card of specific type from 
@@ -56,7 +55,6 @@ in the Dream deck.
 Cycle Psyche
 Discard a Psyche then draw Psyche equal to the value3
 
-
 === PAGE 4 ===
 Swap 2 Active 
 Dreambeasts/ Psyche / 
@@ -96,7 +94,6 @@ Discard 12 Psyche on Bed and Meet Leviathan
 3
 3
 
-
 === PAGE 5 ===
 Sage
 All Dreamers Persistent: +1
@@ -132,7 +129,6 @@ Lucidity: +2
 Elasticity: 0
 Willpower: +1
 +1
-
 
 === PAGE 6 ===
 The Runner
@@ -171,7 +167,6 @@ Elasticity: +2
 Willpower: +1
 +1
 
-
 === PAGE 7 ===
 Creator
 Special Ability: 
@@ -209,9 +204,8 @@ Elasticity: +1
 Willpower: +2
 +1
 
-
 === PAGE 8 ===
-       Awake Leviathan
+Awake Leviathan
 “A terrible foe rises from the depths.”
 Place Leviathan on any Landscape.
 Forget 1 Landscape,
@@ -244,11 +238,9 @@ Accept:         12, Draw 2 Objects
 Repress:          7, Reveal 2 Landscapes 
 Fail: Repress top 4 Psyche
 
-
 === PAGE 9 ===
 Lucidity Mindstream Back Willpower Mindstream Back
 Elasticity Mindstream Back
-
 
 === PAGE 10 ===
 Psychic 
@@ -264,7 +256,6 @@ Power
 Take 2 Power Tokens and
 Discard this card.
 X6            X6            X6
-
 
 === PAGE 11 ===
 Draw 1 DREAM,
@@ -307,7 +298,6 @@ Accept:         8, Move to a           Landscape
 Repress:        6, Draw 1 Psyche   
 Fail: Discard a Power Token.
 
-
 === PAGE 13 ===
 Merperson
 “Sit, let me sing for you.
@@ -335,7 +325,6 @@ Accept:     8, Keep as Wild Psyche 3
 Repress:       6, Return 2 Repressed
 Fail: Discard 1 Psyche
 
-
 === PAGE 14 ===
 “Child of Light, join me on the path.”
 Move Unicorn & Dreamer 
@@ -351,7 +340,6 @@ Accept:       10, Respawn Guardian
 Repress:        7, Draw 4 Psyche   
 Fail: Repress 2 Psyche from Hand
 Unicorn
-
 
 === PAGE 15 ===
 Row Boat Rope
@@ -373,7 +361,6 @@ Persistent
 Move an Dreambeast to  
 Field of Broken Glass, 
 Desert, or Black Void.
-
 
 === PAGE 16 ===
 Marble Grid
@@ -398,7 +385,6 @@ Your Hand Limit is now 12.
 Set: Return Dreamers+5 
 cards. Repress this set.
 
-
 === PAGE 17 ===
 Brass Emerald 
 Bracelet
@@ -420,7 +406,6 @@ Persistent [Body 3/5]
 1 Psyche card counts as            
 Set: Return Dreamers+5 
 cards. Repress this set.
-
 
 === PAGE 18 ===
 Water
@@ -447,7 +432,6 @@ Choose 1 Dream from Discard and
 resolve it again as the Active 
 Dream. Repress this Card.
 
-
 === PAGE 19 ===
 A Shining Wind
 If Elasticity 3+, take 2 Power 
@@ -470,7 +454,6 @@ To Draw 1 Psyche.
 Elasticity 3+, 
 Take 1 Power Token and Move 
 to Awards or The Party.
-
 
 === PAGE 20 ===
 Roof Dive
@@ -575,7 +558,6 @@ May Discard 1 Psyche to
 Return 1 Encounter from 
 Accept Pile
 
-
 === PAGE 24 ===
 Lost Treasure
 Elasticity 0-2, 
@@ -606,9 +588,8 @@ Draw 1 Object.
 If All Affected Landscapes Revealed 
 All Dreamers Draw 2 Psyche.
 
-
 === PAGE 25 ===
-    Undulating Floor
+Undulating Floor
 The Right Door
  Just out of Reach
 Move to Any Landscape
@@ -716,7 +697,6 @@ Accept:         9, Gain 1 Power Token
 Repress:          6, Return 1 Psyche 
 Fail: Repress top 3 Lucidity Mindstream
 
-
 === PAGE 29 ===
 Sandman
 “Aren’t you sleepy? Here, I’ll help you.”
@@ -746,7 +726,6 @@ Accept:      10, Return 2 Repressed
 Repress:       6, Draw 3 Psyche   
 Fail: Discard 2 Psyche
 
-
 === PAGE 30 ===
 The Watcher
 “I have witnessed your waking world.”
@@ -760,7 +739,6 @@ Discard highest       Psyche.
 Accept:       6, Return 2 Repressed
 Repress:      6, Draw 2 Power Tokens  
 Fail: Discard 1 Psyche
-
 
 === PAGE 31 ===
 Candle
@@ -783,10 +761,10 @@ Spawn a Dreambeast from any
 Mindstream and place on any 
 Landscape.
 
-
 === PAGE 32 ===
 Ivory Pawn
-Instant [Chess 1/3]Spawn 1 Fantasy Dreambeast 
+Instant [Chess 1/3]
+Spawn 1 Fantasy Dreambeast 
 from any Mindstream on any 
 Landscape. 
 Set:Return Dreamers+2 Cards. 
@@ -805,7 +783,6 @@ Instant
 Move any Persona to any 
 Landscape. Return 2 Cards.
 
-
 === PAGE 33 ===
 Red Apple
 Instant
@@ -813,7 +790,8 @@ Draw an Event from each
 Mindstream. Choose 1 to 
 resolve. Discard others.
 Golden Ruby 
-NecklaceEgg
+Necklace
+Egg
 Instant
 Draw up to 10 Psyche.
 Repress this card.
@@ -825,7 +803,6 @@ Tear of Moon
 Instant
 Each Dreamer Draw 2 Psyche 
 Cards & Return 2 Repressed.
-
 
 === PAGE 34 ===
 The Middle Stick
@@ -903,7 +880,7 @@ Return 1 Card for each
 Landscape Affected.
 
 === PAGE 37 ===
-  Morning Routine
+Morning Routine
  Afternoon Nap
  Evening Plans
 Draw 1 Psyche.
@@ -925,7 +902,7 @@ Return 1 Card.
 Return +Dreamers Cards.
 
 === PAGE 38 ===
-    I’m Still Dreaming
+I’m Still Dreaming
 Discard 2 Psyche.
 Move to Insanity
 Or Day in The Life.
@@ -949,9 +926,8 @@ place on any Landscape.
 Instead, Draw 2 Encounters
 Choose 1, Discard other
 
-
 === PAGE 39 ===
-  A Face Appears
+A Face Appears
  Mist Swirls
  Transported
 Spawn 1             Encounter
@@ -975,7 +951,6 @@ Discard 1 Psyche, all
 Personae may Draw Psyche 
 up to the value of the card.
 
-
 === PAGE 40 ===
 Revolving
  Serenity
@@ -996,7 +971,6 @@ Hexes.
 If Lucidity 1, Draw 1 Psyche.
 If Lucidity 3+, Return 2 Cards
 Draw +1 Psyche or Return +2
-
 
 === PAGE 41 ===
 Return 4 Cards.
@@ -1022,9 +996,8 @@ Repress +Affected
 Landscapes
 Denial
 
-
 === PAGE 42 ===
-   Forgot Clothes
+Forgot Clothes
 Wrong 
 Classroom
 Everyone’s 
@@ -1105,7 +1078,6 @@ Accept:       10, Draw 1 Object & 1 Psyche
 Repress:        8, Draw 2 Psyche
 Fail: Repress 3 Psyche
 
-
 === PAGE 45 ===
 Pooka
 “What have you got to trade?”
@@ -1132,7 +1104,6 @@ Accept:       10, Return 2 Repressed
 Repress:       6, Draw 2 Objects   
 Fail: Discard 3 Psyche
 
-
 === PAGE 46 ===
 Winged Turtle
 “Where there’s wings, there’s a way.”
@@ -1146,7 +1117,6 @@ Discard Psyche Cards = ½ Dreamers
 Accept:       10, Return 3 Repressed
 Repress:       8, Draw 1 Set Object   
 Fail: Discard 3 Psyche
-
 
 === PAGE 47 ===
 Knife
@@ -1169,7 +1139,6 @@ Persistent
 Flip the top of 1 Mindstream 
 deck after a Dream Card is 
 drawn.
-
 
 === PAGE 48 ===
 Ebony Pawn
@@ -1199,7 +1168,6 @@ Token Slots are full, Repress
 this card and return Tokens to 
 Power Pool.
 
-
 === PAGE 49 ===
 Beating Heart
 Persistent [Body 5/5]
@@ -1225,7 +1193,6 @@ Dreamers+6 Psyche Cards
 from top of Deck.
 Discard this card.
 
-
 === PAGE 50 ===
 The One
 Instant
@@ -1248,7 +1215,6 @@ Lava or Desert.
 Set: 
 Return Dreamers+4 cards. 
 Repress this set.
-
 
 === PAGE 51 ===
 I Remember!
@@ -1297,7 +1263,6 @@ Discard other
 Meet both in order of your 
 choice.
 
-
 === PAGE 53 ===
 Cooling Obsidian
 From the Fire
@@ -1324,7 +1289,6 @@ Spawn 1 Discard other
 Repress 1 Active Encounter.
 Move to Endless Ocean or 
 Field of Broken Glass.
-
 
 === PAGE 54 ===
 No Thing 
@@ -1365,7 +1329,6 @@ Discard 1 Willpower Psyche
 to Draw 2 Psyche
 Move to Silver Mist.
 
-
 === PAGE 56 ===
 Clear as Crystal
  A Mouth Rises
@@ -1391,7 +1354,6 @@ Take 1 Power Token.
 Persona 
 Draw 1 Psyche.
 Move to Candy Mountain.
-
 
 === PAGE 57 ===
 Peppermint Peak
@@ -1481,37 +1443,30 @@ Instead Discard 1 Encounter
 === PAGE 61 ===
 Lucidity Mindstream Willpower Mindstream Elasticity Mindstream
 
-
 === PAGE 62 ===
 Lava
  Black Void
-
 
 === PAGE 63 ===
 Road
  Sky
 
-
 === PAGE 64 ===
 Field of Broken Glass
  The Attic
-
 
 === PAGE 65 ===
 The Basement
  Desert
 
-
 === PAGE 66 ===
 Endless Hallway
  The Party
-
 
 === PAGE 67 ===
 Awards
 2
 Sea of Teeth
-
 
 === PAGE 68 ===
 Endless Ocean
@@ -1522,27 +1477,22 @@ Candy Mountain
 House
  Suburbia
 
-
 === PAGE 70 ===
 Naked Classroom
 3
 Tranquil Grove
 
-
 === PAGE 71 ===
 City
  Day in the Life
-
 
 === PAGE 72 ===
 Insanity
  Inner Sanctum
 
-
 === PAGE 73 ===
 Forest
  Silver Mist
-
 
 === PAGE 74 ===
 12
@@ -1596,7 +1546,7 @@ undulates beneath your
 feet. 
 Each Persona Discards 
 Psyche Cards Valued higher 
-than their Willpower. 
+than their Willpower.
 
 === PAGE 77 ===
 DREAM
@@ -1730,7 +1680,7 @@ If Personae Explore a
 number of total Landscapes 
 this round equal to three 
 times the number of Players, 
-All Personae Draw 3 Psyche. 
+All Personae Draw 3 Psyche.
 
 === PAGE 80 ===
 DREAM
@@ -1770,7 +1720,7 @@ Repress all your Objects
 unless you discard 
 Willpower equal to the 
 number of objects you wish 
-to save. 
+to save.
 
 === PAGE 81 ===
 DREAM
@@ -1825,7 +1775,30 @@ feel warm and tingly as the
 Dreamscape seems brighter 
 somehow. 
 All Personae Draw 3 Psyche. 
-The Final RecurrenceAll your hopes, all your fears, everything you’ve experienced to this point, it all comes flooding back to you and spills over into every corner of the Dreamscape.  Any Acquired Archetypes may be discarded to immediately Defeat the same number of Remaining Archetypes.Any Remaining Archetypes,Place on Landscapes of their Suit. Each Remaining Archetype must be Met and defeated by playing a 12 Psyche Play.Only Psyche of opposing Suits may be used to Defeat the remaining Archetypes.If the Dream deck runs out before the Remaining Archetypes are Defeated, Dreamers lose Somnia & never wake up.
+The Final Recurrence
+All your hopes, all your fears, 
+everything you’ve experienced to this 
+point, it all comes flooding back to you 
+and spills over into every corner of the 
+Dreamscape. 
+ 
+Any Acquired Archetypes may be 
+discarded to immediately Defeat the 
+same number of Remaining 
+Archetypes.
+Any Remaining Archetypes,
+Place on Landscapes of their Suit.
+ 
+Each Remaining Archetype must be 
+Met and defeated by playing a 12 
+Psyche Play.
+Only Psyche of opposing Suits may be 
+used to Defeat the remaining 
+Archetypes.
+If the Dream deck runs out before the 
+Remaining Archetypes are Defeated, 
+Dreamers lose Somnia & never wake 
+up.
 DREAM
 Quiet- Everything remains, 
 nothing changes, nothing 
@@ -1837,7 +1810,6 @@ DREAM
 
 === PAGE 83 ===
 The Final Recurrence
-
 
 === PAGE 84 ===
 Final Recurrence
@@ -1862,7 +1834,7 @@ BETA You know what you must
 do. Your plan is coming to 
 fruition. 
 Forget 4 Edge Landscapes
-All Personae Draw 1 Psyche. 
+All Personae Draw 1 Psyche.
 
 === PAGE 85 ===
 Final Recurrence

@@ -1,6 +1,7 @@
 /** Dreambeast type affinities, Meet bonuses, and reject rewards. */
 
-import { addLog, drawPsycheForPlayer } from "./state.js";
+import { addLog, drawPsycheForPlayer, revealLandscapeTile } from "./state.js";
+import { recordQuestEvent } from "./quests.js";
 import { grantPowerTokens } from "./power-tokens.js";
 import { repressCard, requestReturnCards } from "./subconscious.js";
 
@@ -104,6 +105,16 @@ export function applyRejectReward(state, encounter, actor, helpers = {}) {
     }
     case "return-subconscious": {
       requestReturnCards(state, effect.count || 1, actor);
+      break;
+    }
+    case "reveal-landscapes": {
+      const hidden = state.board.filter((l) => !l.revealed && !l.center);
+      const n = Math.min(effect.count || 1, hidden.length);
+      hidden.slice(0, n).forEach((t) => revealLandscapeTile(state, t));
+      if (n) {
+        recordQuestEvent(state, "reveal_landscape", { count: n });
+        addLog(state, `Reject reward: Reveal ${n} Landscape${n === 1 ? "" : "s"}.`);
+      }
       break;
     }
     case "repress-hand": {

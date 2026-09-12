@@ -1,49 +1,848 @@
 {
   "lucidity": [
-    { "id": "fantastic-imagination", "name": "Fantastic Imagination", "suit": "lucidity", "type": "event", "image": "images/cards/mindstream/lucidity/fantastic-imagination.webp", "text": "Reveal 1 Landscape. If Lucidity 0-2, Reveal +1. If Lucidity 3+, Return 3 Cards." },
-    { "id": "centering", "name": "Centering", "suit": "lucidity", "type": "event", "image": "images/cards/mindstream/lucidity/centering.webp", "text": "Draw 2 Psyche. All Dreamers Draw 1 Psyche & 1 Power Token. Each Dreamer Represses 1 Psyche from hand. Then Move to an adjacent Landscape." },
-    { "id": "the-ascent", "name": "The Ascent", "suit": "lucidity", "type": "event", "image": "images/cards/mindstream/lucidity/the-ascent.webp", "text": "Discard your highest Psyche, then Draw 2 Psyche. Dreamers on Affected Landscapes may also use this effect." },
-    { "id": "beyond-comprehension", "name": "Beyond Comprehension", "suit": "lucidity", "type": "event", "image": "images/cards/mindstream/lucidity/beyond-comprehension.webp", "text": "Flip Leviathan. Instead, Forget 4 Landscapes. Return 4 cards." },
-    { "id": "just-a-dream", "name": "Just a Dream", "suit": "lucidity", "type": "event", "image": "images/cards/mindstream/lucidity/just-a-dream.webp", "text": "Draw 3 Psyche. Return 1 Card for each Landscape Affected." },
-    { "id": "morning-routine", "name": "Morning Routine", "suit": "lucidity", "type": "event", "image": "images/cards/mindstream/lucidity/morning-routine.webp", "text": "Draw 1 Psyche. Draw Psyche up to Landscapes Affected. Repress top 1 Lucidity Mindstream card." },
-    { "id": "i-know-this-place", "name": "I Know This Place!", "suit": "lucidity", "type": "event", "image": "images/cards/mindstream/lucidity/i-know-this-place.webp", "text": "Return 1 Card. Return +Dreamers Cards." },
-    { "id": "a-face-appears", "name": "A Face Appears", "suit": "lucidity", "type": "event", "image": "images/cards/mindstream/lucidity/a-face-appears.webp", "text": "Spawn 1 Encounter from Lucidity Mindstream. If Lucidity 3+, Return 3 Cards." },
-    { "id": "transported", "name": "Transported", "suit": "lucidity", "type": "event", "image": "images/cards/mindstream/lucidity/transported.webp", "text": "Draw 2 Psyche. 1st is column, 2nd is row of Dreamscape. Move to this Landscape." },
-    { "id": "harmonic-resonance", "name": "Harmonic Resonance", "suit": "lucidity", "type": "event", "image": "images/cards/mindstream/lucidity/harmonic-resonance.webp", "text": "If Lucidity 1, Draw 1 Psyche. If Lucidity 3+, Return 2 Cards. Draw +1 Psyche or Return +2." },
-    { "id": "denial", "name": "Denial", "suit": "lucidity", "type": "event", "image": "images/cards/mindstream/lucidity/denial.webp", "text": "Return 4 Cards. If Lucidity 3+, Return +Dreamers." },
-    { "id": "forgot-clothes", "name": "Forgot Clothes", "suit": "lucidity", "type": "event", "image": "images/cards/mindstream/lucidity/forgot-clothes.webp", "text": "Repress 1 Psyche from hand. If Lucidity 1-2, Move adjacent. If Lucidity 3+, Move anywhere." },
-    { "id": "pop-quiz", "name": "Pop Quiz", "suit": "lucidity", "type": "event", "image": "images/cards/mindstream/lucidity/pop-quiz.webp", "text": "Draw 1 Psyche. Guess if next Psyche is Higher or Lower. Correct: Return Dreamers+3." },
-    { "id": "sacred-geometry", "name": "Sacred Geometry", "suit": "lucidity", "type": "event", "image": "images/cards/mindstream/lucidity/sacred-geometry.webp", "text": "Move to any Landscape adjacent to Bed. Return 2 Cards per Affected Landscape." }
+    {
+      "id": "fantastic-imagination",
+      "name": "Fantastic Imagination",
+      "suit": "lucidity",
+      "type": "event",
+      "image": "images/cards/mindstream/lucidity/fantastic-imagination.webp",
+      "text": "Reveal 1 Landscape. If Lucidity 0-2, Reveal +1. If Lucidity 3+, Return 3 Cards."
+    },
+    {
+      "id": "centering",
+      "name": "Centering",
+      "suit": "lucidity",
+      "type": "event",
+      "image": "images/cards/mindstream/lucidity/centering.webp",
+      "text": "Draw 2 Psyche. All Dreamers Draw 1 Psyche & 1 Power Token. Then Move to an adjacent Landscape."
+    },
+    {
+      "id": "the-ascent",
+      "name": "The Ascent",
+      "suit": "lucidity",
+      "type": "event",
+      "image": "images/cards/mindstream/lucidity/the-ascent.webp",
+      "text": "Discard your highest Psyche, then Draw 2 Psyche. Dreamers on Affected Landscapes may also use this effect."
+    },
+    {
+      "id": "beyond-comprehension",
+      "name": "Beyond Comprehension",
+      "suit": "lucidity",
+      "type": "event",
+      "image": "images/cards/mindstream/lucidity/beyond-comprehension.webp",
+      "text": "Flip Leviathan. Instead, Forget 4 Landscapes. Return 4 cards."
+    },
+    {
+      "id": "just-a-dream",
+      "name": "Just a Dream",
+      "suit": "lucidity",
+      "type": "event",
+      "image": "images/cards/mindstream/lucidity/just-a-dream.webp",
+      "text": "Draw 3 Psyche. Return 1 Card for each Affected Landscape."
+    },
+    {
+      "id": "morning-routine",
+      "name": "Morning Routine",
+      "suit": "lucidity",
+      "type": "event",
+      "image": "images/cards/mindstream/lucidity/morning-routine.webp",
+      "text": "Draw 1 Psyche. Draw Psyche up to Landscapes Affected. Repress top 1 Lucidity Mindstream card."
+    },
+    {
+      "id": "afternoon-nap",
+      "name": "Afternoon Nap",
+      "suit": "lucidity",
+      "type": "event",
+      "image": "images/cards/mindstream/lucidity/afternoon-nap.webp",
+      "text": "Draw 1 Psyche. If less than your Lucidity, Return cards up to your Lucidity. Keep Psyche."
+    },
+    {
+      "id": "evening-plans",
+      "name": "Evening Plans",
+      "suit": "lucidity",
+      "type": "event",
+      "image": "images/cards/mindstream/lucidity/evening-plans.webp",
+      "text": "Draw 1 Psyche OR flip top of 1 Deck. Draw 2 Lucidity Encounters and place on Landscapes adjacent to Day in the Life."
+    },
+    {
+      "id": "i-know-this-place",
+      "name": "I Know This Place!",
+      "suit": "lucidity",
+      "type": "event",
+      "image": "images/cards/mindstream/lucidity/i-know-this-place.webp",
+      "text": "Return 1 Card. Return +Dreamers Cards."
+    },
+    {
+      "id": "im-still-dreaming",
+      "name": "I'm Still Dreaming",
+      "suit": "lucidity",
+      "type": "event",
+      "image": "images/cards/mindstream/lucidity/im-still-dreaming.webp",
+      "text": "Discard 2 Psyche. Move to Insanity or Day in the Life."
+    },
+    {
+      "id": "a-way-out-forms",
+      "name": "A Way Out Forms",
+      "suit": "lucidity",
+      "type": "event",
+      "image": "images/cards/mindstream/lucidity/a-way-out-forms.webp",
+      "text": "Discard 1 Psyche. May Discard Psyche up to Landscapes Affected to flip top cards of any deck."
+    },
+    {
+      "id": "voice-in-the-distance",
+      "name": "Voice in the Distance",
+      "suit": "lucidity",
+      "type": "event",
+      "image": "images/cards/mindstream/lucidity/voice-in-the-distance.webp",
+      "text": "Take 1 Power Token. Move to Road or Endless Hallway."
+    },
+    {
+      "id": "somethings-over-there",
+      "name": "Something's Over There",
+      "suit": "lucidity",
+      "type": "event",
+      "image": "images/cards/mindstream/lucidity/somethings-over-there.webp",
+      "text": "May Discard 1 Psyche to Draw a Dreambeast and place on any Landscape. Instead, Draw 2 Encounters, Choose 1."
+    },
+    {
+      "id": "a-face-appears",
+      "name": "A Face Appears",
+      "suit": "lucidity",
+      "type": "event",
+      "image": "images/cards/mindstream/lucidity/a-face-appears.webp",
+      "text": "Spawn 1 Encounter from Lucidity Mindstream. If Lucidity 3+, Return 3 Cards."
+    },
+    {
+      "id": "mist-swirls",
+      "name": "Mist Swirls",
+      "suit": "lucidity",
+      "type": "event",
+      "image": "images/cards/mindstream/lucidity/mist-swirls.webp",
+      "text": "Discard 1 Dream. If Lucidity 3+, Discard 1 Psyche to Reveal Persona+1 Landscapes."
+    },
+    {
+      "id": "transported",
+      "name": "Transported",
+      "suit": "lucidity",
+      "type": "event",
+      "image": "images/cards/mindstream/lucidity/transported.webp",
+      "text": "Draw 2 Psyche. 1st is column, 2nd is row of Dreamscape. Move to this Landscape."
+    },
+    {
+      "id": "lightness",
+      "name": "Lightness",
+      "suit": "lucidity",
+      "type": "event",
+      "image": "images/cards/mindstream/lucidity/lightness.webp",
+      "text": "Draw 2 Psyche. Discard 1 Psyche; all Dreamers may Draw Psyche up to the value of the card."
+    },
+    {
+      "id": "the-council-of-the-years",
+      "name": "The Council of The Years",
+      "suit": "lucidity",
+      "type": "event",
+      "image": "images/cards/mindstream/lucidity/the-council-of-the-years.webp",
+      "text": "Draw 4 Psyche, Repress 3, keep 1. Instead, Draw 4 Dreambeasts, Repress 3, Meet 1 now."
+    },
+    {
+      "id": "sublimation",
+      "name": "Sublimation",
+      "suit": "lucidity",
+      "type": "event",
+      "image": "images/cards/mindstream/lucidity/sublimation.webp",
+      "text": "Discard 1 Psyche to Return 1 Card and take 1 Power Token. Discard up to 4 Psyche to Return up to 4 cards from the Subconscious."
+    },
+    {
+      "id": "serenity",
+      "name": "Serenity",
+      "suit": "lucidity",
+      "type": "event",
+      "image": "images/cards/mindstream/lucidity/serenity.webp",
+      "text": "Draw +3 Psyche. Take 1 Power Token. Move to The Party or Day in the Life."
+    },
+    {
+      "id": "harmonic-resonance",
+      "name": "Harmonic Resonance",
+      "suit": "lucidity",
+      "type": "event",
+      "image": "images/cards/mindstream/lucidity/harmonic-resonance.webp",
+      "text": "If Lucidity 1, Draw 1 Psyche. If Lucidity 3+, Return 2 Cards. Draw +1 Psyche or Return +2."
+    },
+    {
+      "id": "denial",
+      "name": "Denial",
+      "suit": "lucidity",
+      "type": "event",
+      "image": "images/cards/mindstream/lucidity/denial.webp",
+      "text": "Return 4 Cards. If Lucidity 3+, Return +Dreamers."
+    },
+    {
+      "id": "keep-it-together",
+      "name": "Keep it Together",
+      "suit": "lucidity",
+      "type": "event",
+      "image": "images/cards/mindstream/lucidity/keep-it-together.webp",
+      "text": "Repress Objects from hand unless you Discard Psyche equal to the number of Objects you wish to spare."
+    },
+    {
+      "id": "metamorphosis",
+      "name": "Metamorphosis",
+      "suit": "lucidity",
+      "type": "event",
+      "image": "images/cards/mindstream/lucidity/metamorphosis.webp",
+      "text": "Repress Active Encounters+2 top Psyche. Forget 2 Landscapes per Affected Landscape."
+    },
+    {
+      "id": "contagion",
+      "name": "Contagion",
+      "suit": "lucidity",
+      "type": "event",
+      "image": "images/cards/mindstream/lucidity/contagion.webp",
+      "text": "Repress top 2 Psyche. Lucidity 2 or less, Repress +1 per Affected Landscape."
+    },
+    {
+      "id": "forgot-clothes",
+      "name": "Forgot Clothes",
+      "suit": "lucidity",
+      "type": "event",
+      "image": "images/cards/mindstream/lucidity/forgot-clothes.webp",
+      "text": "Repress 1 Psyche from hand. If Lucidity 1-2, Move adjacent. If Lucidity 3+, Move anywhere."
+    },
+    {
+      "id": "wrong-classroom",
+      "name": "Wrong Classroom",
+      "suit": "lucidity",
+      "type": "event",
+      "image": "images/cards/mindstream/lucidity/wrong-classroom.webp",
+      "text": "Repress top of Lucidity Mindstream. Discard Active Encounters+1 Psyche from hand."
+    },
+    {
+      "id": "everyones-laughing",
+      "name": "Everyone's Laughing",
+      "suit": "lucidity",
+      "type": "event",
+      "image": "images/cards/mindstream/lucidity/everyones-laughing.webp",
+      "text": "Discard 2 Objects. Lucidity 3+, Instead Discard 1 Psyche. Discard Psyche equal to half Active Encounters (min 1)."
+    },
+    {
+      "id": "pop-quiz",
+      "name": "Pop Quiz",
+      "suit": "lucidity",
+      "type": "event",
+      "image": "images/cards/mindstream/lucidity/pop-quiz.webp",
+      "text": "Draw 1 Psyche. Guess if next Psyche is Higher or Lower. Correct: Return Dreamers+3."
+    },
+    {
+      "id": "revolving",
+      "name": "Revolving",
+      "suit": "lucidity",
+      "type": "event",
+      "image": "images/cards/mindstream/lucidity/revolving.webp",
+      "text": "Draw 3 Psyche. Repress 1 Psyche from hand. Swap Positions with any other Dreamer."
+    },
+    {
+      "id": "blooming",
+      "name": "Blooming",
+      "suit": "lucidity",
+      "type": "event",
+      "image": "images/cards/mindstream/lucidity/blooming.webp",
+      "text": "Swap Positions of any 4 unoccupied Landscape Hexes. Repress 1 Psyche from hand."
+    },
+    {
+      "id": "break-out",
+      "name": "Break-out",
+      "suit": "lucidity",
+      "type": "event",
+      "image": "images/cards/mindstream/lucidity/break-out.webp",
+      "text": "Discard 1 Psyche. Draw 1 Psyche. If it matches a Psyche in your hand, Return 4 Cards."
+    },
+    {
+      "id": "sacred-geometry",
+      "name": "Sacred Geometry",
+      "suit": "lucidity",
+      "type": "event",
+      "image": "images/cards/mindstream/lucidity/sacred-geometry.webp",
+      "text": "Move to any Landscape adjacent to Bed. Return 2 Cards per Affected Landscape."
+    },
+    {
+      "id": "caught-cheating",
+      "name": "Caught Cheating",
+      "suit": "lucidity",
+      "type": "event",
+      "image": "images/cards/mindstream/lucidity/caught-cheating.webp",
+      "text": "Discard 1 Psyche. Draw 1 Psyche. If it matches hand, Return 4 Cards; if not, discard 1 Psyche."
+    },
+    {
+      "id": "feel-deal-heal",
+      "name": "Feel, Deal, Heal",
+      "suit": "lucidity",
+      "type": "event",
+      "image": "images/cards/mindstream/lucidity/feel-deal-heal.webp",
+      "text": "Flip Leviathan. Discard your lowest Psyche, shuffle Psyche Discard into Deck, Draw 1 Psyche. Draw +1 per Affected Landscape."
+    }
   ],
   "elasticity": [
-    { "id": "a-shining-wind", "name": "A Shining Wind", "suit": "elasticity", "type": "event", "image": "images/cards/mindstream/elasticity/a-shining-wind.webp", "text": "If Elasticity 3+, take 2 Power Tokens. Move to Silver Mist or Endless Ocean." },
-    { "id": "roof-dive", "name": "Roof Dive", "suit": "elasticity", "type": "event", "image": "images/cards/mindstream/elasticity/roof-dive.webp", "text": "Elasticity 3+, Move to Sky, The Party, or Candy Mountain." },
-    { "id": "into-the-next", "name": "Into The Next", "suit": "elasticity", "type": "event", "image": "images/cards/mindstream/elasticity/into-the-next.webp", "text": "All Dreamers Draw 1 Psyche. Repress top 1 Elasticity Mindstream card. Move to adjacent Landscape & take a free Action." },
-    { "id": "running-somewhere", "name": "Running Somewhere?", "suit": "elasticity", "type": "event", "image": "images/cards/mindstream/elasticity/running-somewhere.webp", "text": "Draw 1 Psyche. Elasticity 3+, may Discard 1 Psyche to Return cards equal to value." },
-    { "id": "portal-another-world", "name": "Portal to Another World", "suit": "elasticity", "type": "event", "image": "images/cards/mindstream/elasticity/portal-another-world.webp", "text": "Elasticity 0-2 Move 1. Elasticity 3+ Move 3. Move to edge of Dreamscape." },
-    { "id": "undulating-floor", "name": "Undulating Floor", "suit": "elasticity", "type": "event", "image": "images/cards/mindstream/elasticity/undulating-floor.webp", "text": "Move to Any Landscape. Place 1 Power Token on an available Archetype." },
-    { "id": "freezing-night", "name": "Freezing Night", "suit": "elasticity", "type": "event", "image": "images/cards/mindstream/elasticity/freezing-night.webp", "text": "Elasticity 0-2, Draw 2 Psyche keep 1. Willpower 3+, Draw 2 Objects keep 1." },
-    { "id": "friendship", "name": "Friendship", "suit": "elasticity", "type": "event", "image": "images/cards/mindstream/elasticity/friendship.webp", "text": "Reveal 2 Landscapes. Move to either. Elasticity 3+, 1 Free Action." },
-    { "id": "get-up", "name": "Get Up", "suit": "elasticity", "type": "event", "image": "images/cards/mindstream/elasticity/get-up.webp", "text": "Draw 1 Psyche from Discard. May Move to Forest if Revealed. Move to Attic and take free Meet." },
-    { "id": "get-down", "name": "Get Down", "suit": "elasticity", "type": "event", "image": "images/cards/mindstream/elasticity/get-down.webp", "text": "Draw 1 Psyche from Discard. May Move to City if Revealed. Move to Basement and take free Meet." },
-    { "id": "revolving", "name": "Revolving", "suit": "elasticity", "type": "event", "image": "images/cards/mindstream/elasticity/revolving.webp", "text": "Draw 3 Psyche. Repress 1 Psyche from hand. You swap Positions with any other Dreamer." },
-    { "id": "blooming", "name": "Blooming", "suit": "elasticity", "type": "event", "image": "images/cards/mindstream/elasticity/blooming.webp", "text": "Swap Positions of any 4 unoccupied Landscape Hexes. Repress 1 Psyche from hand." },
-    { "id": "break-out", "name": "Break-out", "suit": "elasticity", "type": "event", "image": "images/cards/mindstream/elasticity/break-out.webp", "text": "Discard 1 Psyche. Draw 1 Psyche. If it matches hand, Return 4 Cards." }
+    {
+      "id": "a-shining-wind",
+      "name": "A Shining Wind",
+      "suit": "elasticity",
+      "type": "event",
+      "image": "images/cards/mindstream/elasticity/a-shining-wind.webp",
+      "text": "If Elasticity 3+, take 2 Power Tokens. Move to Silver Mist or Endless Ocean."
+    },
+    {
+      "id": "a-million-reflections",
+      "name": "A Million Reflections",
+      "suit": "elasticity",
+      "type": "event",
+      "image": "images/cards/mindstream/elasticity/a-million-reflections.webp",
+      "text": "Repress choice of 4 Discarded Mindstream Cards. Return 4 Cards."
+    },
+    {
+      "id": "this-will-have-to-do",
+      "name": "This Will Have to Do",
+      "suit": "elasticity",
+      "type": "event",
+      "image": "images/cards/mindstream/elasticity/this-will-have-to-do.webp",
+      "text": "May Discard 1 Psyche less than or equal to your Elasticity to Draw 2 Psyche."
+    },
+    {
+      "id": "is-that-music",
+      "name": "Is That Music?",
+      "suit": "elasticity",
+      "type": "event",
+      "image": "images/cards/mindstream/elasticity/is-that-music.webp",
+      "text": "Discard 1 Psyche to Draw 1 Psyche. Elasticity 3+, Take 1 Power Token and Move to Awards or The Party."
+    },
+    {
+      "id": "roof-dive",
+      "name": "Roof Dive",
+      "suit": "elasticity",
+      "type": "event",
+      "image": "images/cards/mindstream/elasticity/roof-dive.webp",
+      "text": "Elasticity 3+, Move to Sky, The Party, or Candy Mountain."
+    },
+    {
+      "id": "cotton-candy",
+      "name": "Cotton Candy",
+      "suit": "elasticity",
+      "type": "event",
+      "image": "images/cards/mindstream/elasticity/cotton-candy.webp",
+      "text": "May Discard 1 Psyche to Draw Psyche up to value. Move to Candy Mountain Refreshed! Draw 3 Psyche."
+    },
+    {
+      "id": "insulation",
+      "name": "Insulation",
+      "suit": "elasticity",
+      "type": "event",
+      "image": "images/cards/mindstream/elasticity/insulation.webp",
+      "text": "Keep this card. Next Explore, Move+1. Then Discard this card."
+    },
+    {
+      "id": "shimmering-slivers",
+      "name": "Shimmering Slivers",
+      "suit": "elasticity",
+      "type": "event",
+      "image": "images/cards/mindstream/elasticity/shimmering-slivers.webp",
+      "text": "Draw 1 Object. Draw 1 Psyche for each Affected Landscape."
+    },
+    {
+      "id": "diamonds",
+      "name": "Diamonds",
+      "suit": "elasticity",
+      "type": "event",
+      "image": "images/cards/mindstream/elasticity/diamonds.webp",
+      "text": "Discard 1 Psyche to Draw 1 Psyche and Return 4 Cards from Subconscious and Take 1 Power Token."
+    },
+    {
+      "id": "desert-oasis",
+      "name": "Desert Oasis",
+      "suit": "elasticity",
+      "type": "event",
+      "image": "images/cards/mindstream/elasticity/desert-oasis.webp",
+      "text": "Draw 3 Psyche and Take 1 Power Token. Move to House or Suburbia."
+    },
+    {
+      "id": "need-water",
+      "name": "Need Water!",
+      "suit": "elasticity",
+      "type": "event",
+      "image": "images/cards/mindstream/elasticity/need-water.webp",
+      "text": "Discard 1 Psyche. Discard 1 Willpower Psyche or Discard all Objects."
+    },
+    {
+      "id": "into-the-next",
+      "name": "Into The Next",
+      "suit": "elasticity",
+      "type": "event",
+      "image": "images/cards/mindstream/elasticity/into-the-next.webp",
+      "text": "All Dreamers Draw 1 Psyche. Repress top 1 Elasticity Mindstream. Move to adjacent Landscape & take a free Action."
+    },
+    {
+      "id": "broken-toys",
+      "name": "Broken Toys",
+      "suit": "elasticity",
+      "type": "event",
+      "image": "images/cards/mindstream/elasticity/broken-toys.webp",
+      "text": "Discard 2 Psyche. Draw 2 Psyche."
+    },
+    {
+      "id": "flooded",
+      "name": "Flooded",
+      "suit": "elasticity",
+      "type": "event",
+      "image": "images/cards/mindstream/elasticity/flooded.webp",
+      "text": "Elasticity 1-2, Move to Endless Ocean. Elasticity 3+, Move to House or Suburbia."
+    },
+    {
+      "id": "running-somewhere",
+      "name": "Running Somewhere?",
+      "suit": "elasticity",
+      "type": "event",
+      "image": "images/cards/mindstream/elasticity/running-somewhere.webp",
+      "text": "Draw 1 Psyche. Elasticity 3+, May Discard 1 Psyche to Return cards equal to value."
+    },
+    {
+      "id": "portal-another-world",
+      "name": "Portal to Another World",
+      "suit": "elasticity",
+      "type": "event",
+      "image": "images/cards/mindstream/elasticity/portal-another-world.webp",
+      "text": "Elasticity 0-2 Move 1. Elasticity 3+ Move 3. Move to edge of Dreamscape."
+    },
+    {
+      "id": "giant-animated-pile",
+      "name": "Giant Animated Pile",
+      "suit": "elasticity",
+      "type": "event",
+      "image": "images/cards/mindstream/elasticity/giant-animated-pile.webp",
+      "text": "Draw 1 Dreambeast, Meet Now at half Accept & Repress cost."
+    },
+    {
+      "id": "dust-bunnies",
+      "name": "Dust Bunnies",
+      "suit": "elasticity",
+      "type": "event",
+      "image": "images/cards/mindstream/elasticity/dust-bunnies.webp",
+      "text": "Draw 1 Dreambeast. Repress this Dreambeast & 1 Psyche. Draw 1 Object."
+    },
+    {
+      "id": "lost-treasure",
+      "name": "Lost Treasure",
+      "suit": "elasticity",
+      "type": "event",
+      "image": "images/cards/mindstream/elasticity/lost-treasure.webp",
+      "text": "Elasticity 0-2, Discard 1 Psyche. Elasticity 3+, Draw 3 Psyche. Return 1 Card per Affected Landscape."
+    },
+    {
+      "id": "wrong-door",
+      "name": "Wrong Door",
+      "suit": "elasticity",
+      "type": "event",
+      "image": "images/cards/mindstream/elasticity/wrong-door.webp",
+      "text": "Return 2 Dreambeasts from Accept Pile and Spawn on adjacent Landscapes. If can't, Discard 4 Psyche."
+    },
+    {
+      "id": "hidden-in-the-walls",
+      "name": "Hidden in the Walls",
+      "suit": "elasticity",
+      "type": "event",
+      "image": "images/cards/mindstream/elasticity/hidden-in-the-walls.webp",
+      "text": "Draw 1 Psyche. Draw 1 Dreambeast: Draw 5 Psyche, Meet Now, Fail cost doubled."
+    },
+    {
+      "id": "deeper-darker",
+      "name": "Deeper Darker",
+      "suit": "elasticity",
+      "type": "event",
+      "image": "images/cards/mindstream/elasticity/deeper-darker.webp",
+      "text": "Elasticity 1-2, Discard 1 Psyche. Elasticity 3+, Draw 1 Object. If all Affected Landscapes Revealed, All Dreamers Draw 2 Psyche."
+    },
+    {
+      "id": "undulating-floor",
+      "name": "Undulating Floor",
+      "suit": "elasticity",
+      "type": "event",
+      "image": "images/cards/mindstream/elasticity/undulating-floor.webp",
+      "text": "Move to Any Landscape. Place 1 Power Token on an available Archetype."
+    },
+    {
+      "id": "the-right-door",
+      "name": "The Right Door",
+      "suit": "elasticity",
+      "type": "event",
+      "image": "images/cards/mindstream/elasticity/the-right-door.webp",
+      "text": "Elasticity 0-2, Discard 1 Psyche. Elasticity 3+, Draw 3 Psyche."
+    },
+    {
+      "id": "just-out-of-reach",
+      "name": "Just out of Reach",
+      "suit": "elasticity",
+      "type": "event",
+      "image": "images/cards/mindstream/elasticity/just-out-of-reach.webp",
+      "text": "Elasticity 3+, Discard 1 Psyche to Return cards up to Affected Landscapes."
+    },
+    {
+      "id": "splinters",
+      "name": "Splinters",
+      "suit": "elasticity",
+      "type": "event",
+      "image": "images/cards/mindstream/elasticity/splinters.webp",
+      "text": "Draw 2 Dreambeasts. Spawn 1 on Endless Hallway and 1 on Attic. If not, Discard 2 Psyche."
+    },
+    {
+      "id": "freezing-night",
+      "name": "Freezing Night",
+      "suit": "elasticity",
+      "type": "event",
+      "image": "images/cards/mindstream/elasticity/freezing-night.webp",
+      "text": "Elasticity 0-2, Draw 2 Psyche keep 1. Willpower 3+, Draw 2 Objects keep 1."
+    },
+    {
+      "id": "searing-day",
+      "name": "Searing Day",
+      "suit": "elasticity",
+      "type": "event",
+      "image": "images/cards/mindstream/elasticity/searing-day.webp",
+      "text": "Elasticity 0-2, Discard 2 Psyche. Elasticity 3+, Draw 2 Psyche."
+    },
+    {
+      "id": "a-mirage",
+      "name": "A Mirage?",
+      "suit": "elasticity",
+      "type": "event",
+      "image": "images/cards/mindstream/elasticity/a-mirage.webp",
+      "text": "Spawn 1 Dreambeast, pay Fail cost first then resolve."
+    },
+    {
+      "id": "sandstorm",
+      "name": "Sandstorm!",
+      "suit": "elasticity",
+      "type": "event",
+      "image": "images/cards/mindstream/elasticity/sandstorm.webp",
+      "text": "Elasticity 0-2, Discard 1 Object or Psyche. Elasticity 3+, Move to Tranquil Grove or Inner Sanctum."
+    },
+    {
+      "id": "friendship",
+      "name": "Friendship",
+      "suit": "elasticity",
+      "type": "event",
+      "image": "images/cards/mindstream/elasticity/friendship.webp",
+      "text": "Reveal 2 Landscapes. Move to either. Elasticity 3+, 1 Free Action."
+    },
+    {
+      "id": "get-up",
+      "name": "Get Up",
+      "suit": "elasticity",
+      "type": "event",
+      "image": "images/cards/mindstream/elasticity/get-up.webp",
+      "text": "Draw 1 Psyche from Discard. May Move to Forest if Revealed. Move to Attic and take free Meet."
+    },
+    {
+      "id": "get-down",
+      "name": "Get Down",
+      "suit": "elasticity",
+      "type": "event",
+      "image": "images/cards/mindstream/elasticity/get-down.webp",
+      "text": "Draw 1 Psyche from Discard. May Move to City if Revealed. Move to Basement and take free Meet."
+    },
+    {
+      "id": "bronze",
+      "name": "Bronze",
+      "suit": "elasticity",
+      "type": "event",
+      "image": "images/cards/mindstream/elasticity/bronze.webp",
+      "text": "Return 2 Dreambeasts from Accept Pile. Spawn 1 Dreambeast on any Affected Landscape."
+    },
+    {
+      "id": "silver",
+      "name": "Silver",
+      "suit": "elasticity",
+      "type": "event",
+      "image": "images/cards/mindstream/elasticity/silver.webp",
+      "text": "Spawn 1 Dreambeast. Accept 1 Dreambeast on any Affected Landscape."
+    }
   ],
   "willpower": [
-    { "id": "a-thousand-daggers", "name": "A Thousand Daggers", "suit": "willpower", "type": "event", "image": "images/cards/mindstream/willpower/a-thousand-daggers.webp", "text": "All Dreamers collectively Repress Dreamers+2 Psyche from hand." },
-    { "id": "flashing-lights", "name": "Flashing Lights", "suit": "willpower", "type": "event", "image": "images/cards/mindstream/willpower/flashing-lights.webp", "text": "Draw 2 Psyche. Take 2 Power Tokens." },
-    { "id": "heating-up", "name": "Heating Up", "suit": "willpower", "type": "event", "image": "images/cards/mindstream/willpower/heating-up.webp", "text": "Spawn 1 Encounter, Meet it. If Accept spawn another; if Repress Draw Psyche up to hand limit." },
-    { "id": "no-thing", "name": "No Thing", "suit": "willpower", "type": "event", "image": "images/cards/mindstream/willpower/no-thing.webp", "text": "Discard 3 Dream Cards. Willpower 3+, Return 1 Dream card to deck and shuffle." },
-    { "id": "no-time", "name": "No Time", "suit": "willpower", "type": "event", "image": "images/cards/mindstream/willpower/no-time.webp", "text": "Collectively Discard 1 Object per Dreamer. May Repress 4 Mindstream to ignore." },
-    { "id": "no-where", "name": "No Where", "suit": "willpower", "type": "event", "image": "images/cards/mindstream/willpower/no-where.webp", "text": "Forget 4 Landscapes. Repress top 1 Psyche from the Psyche deck. Draw 2 Psyche for grid move without Meet." },
-    { "id": "choppy-water", "name": "Choppy Water", "suit": "willpower", "type": "event", "image": "images/cards/mindstream/willpower/choppy-water.webp", "text": "Discard 1 Willpower Psyche to Draw 1 Psyche and Return 4 Cards." },
-    { "id": "clear-as-crystal", "name": "Clear as Crystal", "suit": "willpower", "type": "event", "image": "images/cards/mindstream/willpower/clear-as-crystal.webp", "text": "Willpower 2 or less: Draw 3 Psyche. Willpower 3+: Draw 3 Psyche and Return 2." },
-    { "id": "jaw-shark", "name": "Jaw Shark", "suit": "willpower", "type": "event", "image": "images/cards/mindstream/willpower/jaw-shark.webp", "text": "Discard 2 Willpower Psyche or else Repress 2 Psyche from hand. If unable, Discard all Objects." },
-    { "id": "golden-tooth", "name": "Golden Tooth", "suit": "willpower", "type": "event", "image": "images/cards/mindstream/willpower/golden-tooth.webp", "text": "Willpower 1-2: Draw 2 Psyche. Willpower 3+: Draw 1 Object from any Mindstream." },
-    { "id": "who-is-there", "name": "Who's There?", "suit": "willpower", "type": "event", "image": "images/cards/mindstream/willpower/who-is-there.webp", "text": "Spawn an Encounter and Meet Now. Instead, Draw 2 Encounters, Pick 1. Repress top 1 Willpower Mindstream card." },
-    { "id": "no-one", "name": "No One", "suit": "willpower", "type": "event", "image": "images/cards/mindstream/willpower/no-one.webp", "text": "Discard all active Encounters. Willpower 3+, Instead Discard 1 Encounter." },
-    { "id": "metamorphosis", "name": "Metamorphosis", "suit": "willpower", "type": "event", "image": "images/cards/mindstream/willpower/metamorphosis.webp", "text": "Repress Active Encounters+2 top Psyche. Forget 2 Landscapes per Affected Landscape." },
-    { "id": "contagion", "name": "Contagion", "suit": "willpower", "type": "event", "image": "images/cards/mindstream/willpower/contagion.webp", "text": "Repress top 2 Psyche. Lucidity 2 or less, Repress +Affected Landscapes." }
+    {
+      "id": "a-thousand-daggers",
+      "name": "A Thousand Daggers",
+      "suit": "willpower",
+      "type": "event",
+      "image": "images/cards/mindstream/willpower/a-thousand-daggers.webp",
+      "text": "All Dreamers collectively Repress Dreamers+2 Psyche from hand."
+    },
+    {
+      "id": "flashing-lights",
+      "name": "Flashing Lights",
+      "suit": "willpower",
+      "type": "event",
+      "image": "images/cards/mindstream/willpower/flashing-lights.webp",
+      "text": "Draw 2 Psyche. Take 2 Power Tokens."
+    },
+    {
+      "id": "rhythm-of-the-night",
+      "name": "Rhythm of the Night",
+      "suit": "willpower",
+      "type": "event",
+      "image": "images/cards/mindstream/willpower/rhythm-of-the-night.webp",
+      "text": "May Discard 1 Object for all Dreamers to Draw 2 Psyche."
+    },
+    {
+      "id": "roiling-doom",
+      "name": "Roiling Doom",
+      "suit": "willpower",
+      "type": "event",
+      "image": "images/cards/mindstream/willpower/roiling-doom.webp",
+      "text": "Discard 2 Psyche. Draw 2 Encounters, Immediately Meet 1, Discard other."
+    },
+    {
+      "id": "perilous-pinnacle",
+      "name": "Perilous Pinnacle",
+      "suit": "willpower",
+      "type": "event",
+      "image": "images/cards/mindstream/willpower/perilous-pinnacle.webp",
+      "text": "Discard 2 Objects. Meet both Encounters in order of your choice."
+    },
+    {
+      "id": "cooling-obsidian",
+      "name": "Cooling Obsidian",
+      "suit": "willpower",
+      "type": "event",
+      "image": "images/cards/mindstream/willpower/cooling-obsidian.webp",
+      "text": "Repress 1 Active Encounter. Move to Endless Ocean or Field of Broken Glass."
+    },
+    {
+      "id": "from-the-fire",
+      "name": "From the Fire",
+      "suit": "willpower",
+      "type": "event",
+      "image": "images/cards/mindstream/willpower/from-the-fire.webp",
+      "text": "Return 2 Repressed Encounters. Return +2 Cards."
+    },
+    {
+      "id": "a-sacrifice",
+      "name": "A Sacrifice!",
+      "suit": "willpower",
+      "type": "event",
+      "image": "images/cards/mindstream/willpower/a-sacrifice.webp",
+      "text": "Discard 1 Object to Return Dreamers+1 Objects. Repress Encounters on Affected Landscapes."
+    },
+    {
+      "id": "heating-up",
+      "name": "Heating Up",
+      "suit": "willpower",
+      "type": "event",
+      "image": "images/cards/mindstream/willpower/heating-up.webp",
+      "text": "Spawn 1 Encounter, Meet it. If Accept spawn another; if Repress Draw Psyche up to hand limit."
+    },
+    {
+      "id": "no-thing",
+      "name": "No Thing",
+      "suit": "willpower",
+      "type": "event",
+      "image": "images/cards/mindstream/willpower/no-thing.webp",
+      "text": "Discard 3 Dream Cards. Willpower 3+, Return 1 Dream card to deck and shuffle."
+    },
+    {
+      "id": "no-time",
+      "name": "No Time",
+      "suit": "willpower",
+      "type": "event",
+      "image": "images/cards/mindstream/willpower/no-time.webp",
+      "text": "Collectively Discard 1 Object per Dreamer. May Repress 4 Mindstream to ignore."
+    },
+    {
+      "id": "no-where",
+      "name": "No Where",
+      "suit": "willpower",
+      "type": "event",
+      "image": "images/cards/mindstream/willpower/no-where.webp",
+      "text": "Forget 4 Landscapes. Repress top 1 Psyche from Psyche deck. Draw 2 Psyche for grid move without Meet."
+    },
+    {
+      "id": "choppy-water",
+      "name": "Choppy Water",
+      "suit": "willpower",
+      "type": "event",
+      "image": "images/cards/mindstream/willpower/choppy-water.webp",
+      "text": "Discard 1 Willpower Psyche to Draw 1 Psyche and Return 4 Cards."
+    },
+    {
+      "id": "big-wave",
+      "name": "Big Wave",
+      "suit": "willpower",
+      "type": "event",
+      "image": "images/cards/mindstream/willpower/big-wave.webp",
+      "text": "Draw 1 Psyche. May Discard 1 Higher Value Psyche to Return 3 Cards."
+    },
+    {
+      "id": "fog",
+      "name": "Fog",
+      "suit": "willpower",
+      "type": "event",
+      "image": "images/cards/mindstream/willpower/fog.webp",
+      "text": "Discard 1 Willpower Psyche to Draw 2 Psyche. Move to Silver Mist."
+    },
+    {
+      "id": "clear-as-crystal",
+      "name": "Clear as Crystal",
+      "suit": "willpower",
+      "type": "event",
+      "image": "images/cards/mindstream/willpower/clear-as-crystal.webp",
+      "text": "Willpower 2 or less: Draw 3 Psyche. Willpower 3+: Draw 3 Psyche and Return 2."
+    },
+    {
+      "id": "a-mouth-rises",
+      "name": "A Mouth Rises",
+      "suit": "willpower",
+      "type": "event",
+      "image": "images/cards/mindstream/willpower/a-mouth-rises.webp",
+      "text": "Flip Leviathan. If Awake, Move it to Endless Ocean."
+    },
+    {
+      "id": "whirlpool",
+      "name": "Whirlpool",
+      "suit": "willpower",
+      "type": "event",
+      "image": "images/cards/mindstream/willpower/whirlpool.webp",
+      "text": "Willpower 1-2, Flip Leviathan. Willpower 3+, Move 2 toward Endless Ocean."
+    },
+    {
+      "id": "syrup-lake",
+      "name": "Syrup Lake",
+      "suit": "willpower",
+      "type": "event",
+      "image": "images/cards/mindstream/willpower/syrup-lake.webp",
+      "text": "Take 1 Power Token. Draw 1 Psyche. Move to Candy Mountain."
+    },
+    {
+      "id": "peppermint-peak",
+      "name": "Peppermint Peak",
+      "suit": "willpower",
+      "type": "event",
+      "image": "images/cards/mindstream/willpower/peppermint-peak.webp",
+      "text": "Discard 1 Willpower Psyche up to your Willpower to Draw 3 Psyche."
+    },
+    {
+      "id": "licorice-bridge",
+      "name": "Licorice Bridge",
+      "suit": "willpower",
+      "type": "event",
+      "image": "images/cards/mindstream/willpower/licorice-bridge.webp",
+      "text": "Draw 1 Psyche and skip your next Explore phase."
+    },
+    {
+      "id": "chocolate-mines",
+      "name": "Chocolate Mines",
+      "suit": "willpower",
+      "type": "event",
+      "image": "images/cards/mindstream/willpower/chocolate-mines.webp",
+      "text": "Draw 1 Psyche. Draw +2 Psyche for each Affected Landscape."
+    },
+    {
+      "id": "marshmallow-clouds",
+      "name": "Marshmallow Clouds",
+      "suit": "willpower",
+      "type": "event",
+      "image": "images/cards/mindstream/willpower/marshmallow-clouds.webp",
+      "text": "Take 2 Power Tokens. May Draw 1 any Mindstream. All Dreamers Take 1 Power Token."
+    },
+    {
+      "id": "jaw-shark",
+      "name": "Jaw Shark",
+      "suit": "willpower",
+      "type": "event",
+      "image": "images/cards/mindstream/willpower/jaw-shark.webp",
+      "text": "Discard 2 Willpower Psyche or else Repress 2 Psyche from hand. If unable, Discard all Objects."
+    },
+    {
+      "id": "ivory-calm",
+      "name": "Ivory Calm",
+      "suit": "willpower",
+      "type": "event",
+      "image": "images/cards/mindstream/willpower/ivory-calm.webp",
+      "text": "Willpower 1-2: Draw 1 Psyche. Willpower 3+, Draw 1 Psyche and Return 3."
+    },
+    {
+      "id": "tartar-algae",
+      "name": "Tartar Algae",
+      "suit": "willpower",
+      "type": "event",
+      "image": "images/cards/mindstream/willpower/tartar-algae.webp",
+      "text": "Draw +1 Psyche and Return +1 for Each Affected Landscape."
+    },
+    {
+      "id": "caramel-forest",
+      "name": "Caramel Forest",
+      "suit": "willpower",
+      "type": "event",
+      "image": "images/cards/mindstream/willpower/caramel-forest.webp",
+      "text": "Draw 2 Encounters. Spawn 1 on Adjacent Landscape. Discard other."
+    },
+    {
+      "id": "chewed-to-dust",
+      "name": "Chewed to Dust",
+      "suit": "willpower",
+      "type": "event",
+      "image": "images/cards/mindstream/willpower/chewed-to-dust.webp",
+      "text": "Repress top of Each Mindstream. Discard 3 Psyche or else Discard 1 Dream."
+    },
+    {
+      "id": "gap-in-the-teeth",
+      "name": "Gap in the Teeth",
+      "suit": "willpower",
+      "type": "event",
+      "image": "images/cards/mindstream/willpower/gap-in-the-teeth.webp",
+      "text": "Draw 2 Psyche. Move to Candy Mountain or Endless Ocean."
+    },
+    {
+      "id": "golden-tooth",
+      "name": "Golden Tooth",
+      "suit": "willpower",
+      "type": "event",
+      "image": "images/cards/mindstream/willpower/golden-tooth.webp",
+      "text": "Willpower 1-2: Draw 2 Psyche. Willpower 3+: Draw 1 Object from any Mindstream."
+    },
+    {
+      "id": "who-is-there",
+      "name": "Who's There?",
+      "suit": "willpower",
+      "type": "event",
+      "image": "images/cards/mindstream/willpower/who-is-there.webp",
+      "text": "Spawn an Encounter and Meet Now. Instead, Draw 2 Encounters, Pick 1. Repress top 1 Willpower Mindstream card."
+    },
+    {
+      "id": "no-why",
+      "name": "No Why",
+      "suit": "willpower",
+      "type": "event",
+      "image": "images/cards/mindstream/willpower/no-why.webp",
+      "text": "Draw from any Mindstream. All Dreamers may each Draw from any Mindstream."
+    },
+    {
+      "id": "no-one",
+      "name": "No One",
+      "suit": "willpower",
+      "type": "event",
+      "image": "images/cards/mindstream/willpower/no-one.webp",
+      "text": "Discard all active Encounters. Willpower 3+, Instead Discard 1 Encounter."
+    },
+    {
+      "id": "i-remember",
+      "name": "I Remember!",
+      "suit": "willpower",
+      "type": "event",
+      "image": "images/cards/mindstream/willpower/i-remember.webp",
+      "text": "May Discard 1 Psyche up to your Willpower to Return 1 Card. Return +Cards equal to your Willpower."
+    },
+    {
+      "id": "dream-for-landscapes",
+      "name": "Dream Toll",
+      "suit": "willpower",
+      "type": "event",
+      "image": "images/cards/mindstream/willpower/dream-for-landscapes.webp",
+      "text": "Discard 1 Dream for Each Affected Landscape."
+    }
   ]
 }
