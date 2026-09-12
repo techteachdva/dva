@@ -337,9 +337,8 @@ export function getPhaseActions(state, handlers) {
       section: "phase",
       advance: true,
       primary: true,
-      disabled: !state.exploreActivated,
       hint: !state.exploreActivated
-        ? "Spend Elasticity to unlock team moves before advancing."
+        ? "Skip Explore without spending Elasticity (confirmation required)."
         : movesLeft > 0
           ? `${movesLeft} unused move(s) — advance to Meet anytime (confirmation required).`
           : "Advance to the Meet phase.",
@@ -489,26 +488,26 @@ export function getPhaseActions(state, handlers) {
   return actions;
 }
 
-function phaseAdvanceBlocked(state) {
-  return !!(
-    state.landscapePick
-    || state.pendingRepress
-    || state.pendingReturn
-    || state.pendingDeathChoice
-    || state.pendingNothingChoice
-    || hasPendingDreamerPower(state)
-  );
+function phaseAdvanceBlockReason(state) {
+  if (state.landscapePick) return "Finish map selection (or reveal/forget all valid tiles) before advancing.";
+  if (state.pendingRepress) return "Complete Repress selection before advancing.";
+  if (state.pendingReturn) return "Complete Return selection before advancing.";
+  if (state.pendingDeathChoice) return "Resolve the death choice before advancing.";
+  if (state.pendingNothingChoice) return "Resolve the Nothing Object choice before advancing.";
+  if (hasPendingDreamerPower(state)) return "Finish or cancel Dreamer Power before advancing.";
+  return null;
 }
 
 export function getPhaseAdvanceAction(state, handlers) {
   const actions = getPhaseActions(state, handlers);
   const advance = actions.find((a) => a.advance);
   if (!advance) return null;
-  if (phaseAdvanceBlocked(state)) {
+  const blockReason = phaseAdvanceBlockReason(state);
+  if (blockReason) {
     return {
       ...advance,
       disabled: true,
-      hint: "Resolve the open prompt before advancing.",
+      hint: blockReason,
     };
   }
   return advance.disabled ? { ...advance } : advance;

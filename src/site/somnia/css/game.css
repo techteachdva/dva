@@ -710,7 +710,7 @@ body.in-game .brand h1 {
   border-right: none;
   border-bottom: none;
   min-height: var(--hand-h);
-  max-height: min(42vh, 400px);
+  max-height: min(50vh, 460px);
   overflow-x: hidden;
   overflow-y: auto;
   position: relative;
@@ -2909,6 +2909,8 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
   transform: none;
   box-shadow: none;
 }
+
+.coop-hand-row {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
@@ -5250,6 +5252,9 @@ html[data-device="mobile"] .action-dock-btn {
   grid-column: 1 / 4;
   grid-row: 1;
   min-width: 0;
+  max-height: min(34vh, 240px);
+  overflow-x: hidden;
+  overflow-y: auto;
   border: 1px solid rgba(201, 160, 255, 0.28);
   border-radius: 12px;
   background: rgba(8, 6, 18, 0.72);
@@ -5750,15 +5755,32 @@ body.play-window .subconscious-graveyard {
 }
 
 #screen-game .hand-bar {
-  grid-template-rows: auto auto;
-  align-content: start;
+  grid-template-rows: minmax(0, auto) minmax(9.5rem, 1fr);
+  align-content: stretch;
 }
 
 #screen-game .hand-bar > .dreamer-dock,
 #screen-game .hand-bar > .power-section,
 #screen-game .hand-bar > .hand-section:not(.objects-section) {
-  align-self: start;
+  align-self: stretch;
+  min-height: 0;
+  overflow: hidden;
   padding-bottom: 0.25rem;
+}
+
+#screen-game .hand-bar > .power-section .power-tokens {
+  max-height: 5.5rem;
+  overflow-y: auto;
+}
+
+#screen-game .hand-bar > .hand-section:has(.hand-dreamer-display) {
+  min-height: 8.5rem;
+}
+
+#screen-game .hand-dreamer-display {
+  max-height: 9.5rem;
+  overflow-x: auto;
+  overflow-y: hidden;
 }
 
 @media (max-width: 1100px) {

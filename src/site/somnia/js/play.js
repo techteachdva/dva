@@ -55,7 +55,7 @@ import { initDevConsole } from "./dev-console.js";
 import { enableDevMode } from "./dev-commands.js";
 import { narrate } from "./narrator.js";
 import { pickReturnCard, cancelPendingReturn, pickRepressCard, confirmRepressStep } from "./subconscious.js";
-import { getLandscapePickHighlights } from "./landscapes.js";
+import { getLandscapePickHighlights, resolveStaleLandscapePick } from "./landscapes.js";
 import {
   resolveDreamerPowerChoice,
   resolveDreamerPowerDeckPick,
@@ -803,6 +803,7 @@ function maybeShowReturnPicker() {
 function renderAll() {
   if (!state) return;
   bindUiRenderState(state);
+  resolveStaleLandscapePick(state);
 
   if (state.status === "won") {
     if (state.tutorialVictory) {

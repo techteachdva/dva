@@ -186,6 +186,24 @@ export function cancelLandscapePick(state) {
   state.landscapePick = null;
 }
 
+/** Clear map pickers that have no valid targets left (prevents advance lock). */
+export function resolveStaleLandscapePick(state) {
+  const pick = state.landscapePick;
+  if (!pick) return;
+
+  if (pick.mode === "reveal" && pick.remaining > 0 && revealableTiles(state).length === 0) {
+    if (pick.picked.length > 0) state.revealLandscapeUsed = true;
+    state.landscapePick = null;
+    addLog(state, "No more Landscapes to reveal — reveal action complete.");
+    return;
+  }
+
+  if (pick.mode === "forget" && pick.remaining > 0 && forgettableTiles(state).length === 0) {
+    state.landscapePick = null;
+    addLog(state, "No Landscapes left to forget — forget action complete.");
+  }
+}
+
 export function getLandscapePickHighlights(state) {
   const pendingPower = state.pendingDreamerPower;
   if (pendingPower?.step === "reveal-landscape" && (pendingPower.revealRemaining ?? 0) > 0) {

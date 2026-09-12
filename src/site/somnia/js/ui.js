@@ -1521,7 +1521,6 @@ function createActionButton(action) {
   btn.type = "button";
   const classes = ["btn", "action-dock-btn"];
   if (action.primary) classes.push("primary");
-  else classes.push("btn-sm");
   if (!action.disabled) classes.push("btn-ready");
   if (action.disabled && action.hint) classes.push("action-disabled-hint");
   btn.className = classes.join(" ");
@@ -1606,10 +1605,12 @@ export function renderPhaseActions(actions, advanceAction = null, state = null) 
       return;
     }
 
-    const heading = document.createElement("div");
-    heading.className = "action-section-label";
-    heading.textContent = ACTION_SECTIONS[section] || section;
-    grid.appendChild(heading);
+    if (items.length > 1 || section === "encounter") {
+      const heading = document.createElement("div");
+      heading.className = "action-section-label";
+      heading.textContent = ACTION_SECTIONS[section] || section;
+      grid.appendChild(heading);
+    }
     grid.appendChild(row);
   });
 
