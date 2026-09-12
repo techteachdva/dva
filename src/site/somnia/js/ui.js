@@ -28,6 +28,7 @@ import { getQuestStatus, activeQuestLandscapeIds } from "./quests.js";
 import { effectiveDreamerStat } from "./archetype-stats.js";
 import { hexToPixel, boardPixelBounds } from "./hex.js";
 import { subconsciousCount, subconsciousPilesForUI, isDreambeastPsycheCard } from "./subconscious.js";
+import { TUTORIAL_SECTIONS } from "./tutorial-mode.js";
 import { getNarratorView, listPhaseActionHints } from "./narrator.js";
 import {
   getCurrentObjective,
@@ -84,7 +85,7 @@ function dreambeastCostMeta(card) {
   const reject = card.reject ?? card.repress;
   const rejectSuit = card.rejectSuit ? suitIconHtml(card.rejectSuit, { size: 10 }) : "";
   const acceptSuit = card.suit ? suitIconHtml(card.suit, { size: 10 }) : "";
-  return `<span class="meta dreambeast-costs"><span title="Accept">A${card.accept} ${acceptSuit}</span><span title="Reject">J${reject} ${rejectSuit}</span></span>`;
+  return `<span class="meta dreambeast-costs"><span title="Accept">A${card.accept} ${acceptSuit}</span><span title="Reject">R${reject} ${rejectSuit}</span></span>`;
 }
 
 function createArtElement(card) {
@@ -2711,12 +2712,27 @@ function inferTutorialCardDock(step) {
   return "bottom";
 }
 
-function positionTutorialCard(step) {
+function positionTutorialCard() {
   const overlay = document.getElementById("tutorial-overlay");
   if (!overlay) return;
-  const dock = inferTutorialCardDock(step);
   overlay.classList.remove("tutorial-dock-top", "tutorial-dock-bottom", "tutorial-dock-left");
-  overlay.classList.add(`tutorial-dock-${dock}`);
+  overlay.classList.add("tutorial-dock-center");
+}
+
+function populateTutorialJumpMenu(stepIndex, onJump) {
+  const select = document.getElementById("tutorial-jump");
+  if (!select) return;
+  select.innerHTML = TUTORIAL_SECTIONS.map((section) =>
+    `<option value="${section.stepIndex}">${section.label}</option>`).join("");
+  const active = TUTORIAL_SECTIONS.find((s) => s.stepIndex === stepIndex)
+    || [...TUTORIAL_SECTIONS].reverse().find((s) => s.stepIndex <= stepIndex)
+    || TUTORIAL_SECTIONS[0];
+  select.value = String(active.stepIndex);
+  select.onchange = () => {
+    const target = parseInt(select.value, 10);
+    if (!Number.isNaN(target) && target !== stepIndex) onJump?.(target);
+    else select.value = String(active.stepIndex);
+  };
 }
 
 export function ensureTutorialStepTargetsVisible(step) {
@@ -2928,7 +2944,7 @@ function applyTutorialHighlight(stepOrTarget, { animateIn = true } = {}) {
   bindTutorialScrollRefresh();
   positionTutorialSpotlight();
   startTutorialSpotlightTracker();
-  if (step) positionTutorialCard(step);
+  if (step) positionTutorialCard();
 
   if (animateIn) {
     tutorialSpotlightEl.classList.add("tutorial-spotlight-arriving");
@@ -3051,7 +3067,7 @@ export function updateTutorialStepUI({
     document.getElementById("tutorial-progress").textContent = `${roundPart}Step ${stepIndex + 1} / ${total}`;
   }
   if (step) {
-    positionTutorialCard(step);
+    positionTutorialCard();
     refreshTutorialSpotlight();
   }
 }
@@ -3060,6 +3076,7 @@ export function showTutorialStep(step, stepIndex, total, {
   onNext,
   onSkip,
   onBack,
+  onJump,
   canAdvance = true,
   roundLabel = null,
   fromRect = null,
@@ -3093,6 +3110,8 @@ export function showTutorialStep(step, stepIndex, total, {
         ? `<strong>Tip:</strong> ${objective}`
         : (canAdvance && step.until ? "Objective complete — press Continue." : ""));
   }
+
+  populateTutorialJumpMenu(stepIndex, onJump);
 
   clearTutorialHighlight({ keepLayer: !!fromRect });
   ensureTutorialStepTargetsVisible(step);
@@ -3135,7 +3154,7 @@ export function showTutorialStep(step, stepIndex, total, {
   });
 
   overlay.classList.remove("hidden");
-  positionTutorialCard(step);
+  positionTutorialCard();
 }
 
 export function hideTutorial() {

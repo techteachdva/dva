@@ -72,8 +72,10 @@ import {
   syncTutorial,
   advanceTutorialStep,
   retreatTutorialStep,
+  jumpTutorialToStep,
   completeTutorialGame,
   notifyTutorialDreamDrawn,
+  notifyTutorialArchetypeAcquired,
   isInteractiveTutorialActive,
   getTutorialStep,
 } from "./tutorial-mode.js";
@@ -479,6 +481,27 @@ function showTutorialAt(index) {
   });
 }
 
+function handleTutorialJump(stepIndex) {
+  if (!state?.tutorialMode || !isInteractiveTutorialActive(state)) return;
+  if (stepIndex === state.tutorialStepIndex) return;
+  jumpTutorialToStep(state, stepIndex);
+  lastTutorialSyncKey = null;
+  lastTutorialStepId = null;
+  renderAll();
+  const sync = syncTutorial(state);
+  if (!sync || sync.complete) return;
+  showTutorialStep(sync.step, sync.stepIndex, sync.total, {
+    canAdvance: sync.canAdvance,
+    roundLabel: sync.round,
+    objective: sync.objective,
+    onNext: handleTutorialNext,
+    onSkip: handleTutorialSkip,
+    onBack: handleTutorialBack,
+    onJump: handleTutorialJump,
+  });
+  lastTutorialSyncKey = `${sync.stepIndex}:${sync.canAdvance}:${sync.step.id}`;
+}
+
 function handleTutorialBack() {
   if (state?.tutorialMode && isInteractiveTutorialActive(state)) {
     if (!retreatTutorialStep(state)) return;
@@ -494,6 +517,7 @@ function handleTutorialBack() {
       onNext: handleTutorialNext,
       onSkip: handleTutorialSkip,
       onBack: handleTutorialBack,
+      onJump: handleTutorialJump,
     });
     lastTutorialSyncKey = `${sync.stepIndex}:${sync.canAdvance}:${sync.step.id}`;
     return;
@@ -550,6 +574,7 @@ function handleTutorialNext() {
     onNext: handleTutorialNext,
     onSkip: handleTutorialSkip,
     onBack: handleTutorialBack,
+    onJump: handleTutorialJump,
   });
   lastTutorialSyncKey = `${nextSync.stepIndex}:${nextSync.canAdvance}:${nextSync.step.id}`;
 }
@@ -603,6 +628,7 @@ function syncInteractiveTutorial() {
     onNext: handleTutorialNext,
     onSkip: handleTutorialSkip,
     onBack: handleTutorialBack,
+    onJump: handleTutorialJump,
   });
 }
 
@@ -925,6 +951,7 @@ function renderAll() {
     completeQuest: (i) => {
       const result = handleQuestComplete(state, i);
       if (result === "acquired") {
+        notifyTutorialArchetypeAcquired(state);
         playSfx("acquire");
         requestAnimationFrame(() => burstSparklesAtElement(document.getElementById("acquired-archetypes"), 16, "#f0c96a"));
       }

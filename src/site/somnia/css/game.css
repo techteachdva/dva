@@ -1670,9 +1670,9 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
   inset: 0;
   z-index: 200;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
-  padding: 1.5rem;
+  padding: 2rem;
   pointer-events: none;
 }
 
@@ -1685,6 +1685,12 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
 .tutorial-overlay.tutorial-dock-bottom {
   align-items: flex-end;
   padding-bottom: 1rem;
+}
+
+.tutorial-overlay.tutorial-dock-center {
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
 }
 
 .tutorial-overlay.tutorial-dock-left {
@@ -1705,34 +1711,66 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
 .tutorial-card {
   position: relative;
   z-index: 1;
-  width: min(480px, 100%);
+  width: min(960px, 92vw);
+  max-height: min(88vh, 920px);
+  overflow-y: auto;
   background: var(--bg-panel);
-  border: 1px solid var(--accent);
-  border-radius: var(--radius);
-  padding: 1.25rem;
-  box-shadow: var(--shadow);
+  border: 2px solid var(--accent);
+  border-radius: calc(var(--radius) + 4px);
+  padding: 2.5rem 3rem;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.06);
   pointer-events: auto;
 }
 
 .tutorial-progress {
-  font-size: 0.72rem;
-  color: var(--muted);
+  font-size: 0.95rem;
+  color: var(--accent);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin-bottom: 0.5rem;
+  letter-spacing: 0.08em;
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+}
+
+.tutorial-jump-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.tutorial-jump-label {
+  font-size: 1rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+  white-space: nowrap;
+}
+
+.tutorial-jump-select {
+  flex: 1;
+  min-width: 12rem;
+  font-size: 1.05rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
 }
 
 .tutorial-card h2 {
-  margin: 0 0 0.5rem;
+  margin: 0 0 1rem;
   font-family: var(--font-display);
-  font-size: 1.1rem;
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.2;
 }
 
 .tutorial-card p {
-  margin: 0 0 1rem;
-  color: var(--muted);
-  line-height: 1.5;
-  font-size: 0.92rem;
+  margin: 0 0 1.5rem;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.65;
+  font-size: 1.35rem;
 }
 
 .tutorial-actions {
@@ -2010,15 +2048,21 @@ body.tutorial-mode-active .tutorial-sparkle-layer {
   pointer-events: none;
 }
 
+.tutorial-card .tutorial-actions .btn {
+  font-size: 1.1rem;
+  padding: 0.65rem 1.35rem;
+  min-height: 2.75rem;
+}
+
 .tutorial-card.tutorial-waiting .tutorial-next-hint {
   display: block;
-  font-size: 0.84rem;
+  font-size: 1.15rem;
   color: #f0c96a;
-  margin: 0.35rem 0 0.85rem;
-  padding: 0.55rem 0.7rem;
-  line-height: 1.45;
-  background: rgba(240, 201, 106, 0.08);
-  border-radius: 8px;
+  margin: 0.5rem 0 1rem;
+  padding: 0.85rem 1rem;
+  line-height: 1.5;
+  background: rgba(240, 201, 106, 0.12);
+  border-radius: 10px;
   border-left: 3px solid #f0c96a;
 }
 
@@ -2029,9 +2073,9 @@ body.tutorial-mode-active .tutorial-sparkle-layer {
 
 .tutorial-card:not(.tutorial-waiting) .tutorial-next-hint {
   display: block;
-  font-size: 0.8rem;
+  font-size: 1.05rem;
   color: var(--success);
-  margin: 0.35rem 0 0.75rem;
+  margin: 0.5rem 0 1rem;
 }
 
 .tutorial-next-hint { display: none; }

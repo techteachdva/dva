@@ -9,7 +9,7 @@ import {
 import { shuffle, uid } from "./data.js";
 import { recordQuestEvent } from "./quests.js";
 import { grantPowerTokens } from "./power-tokens.js";
-import { repressCard, requestReturnCards } from "./subconscious.js";
+import { repressCard, requestReturnCards, enqueueReturnCards } from "./subconscious.js";
 import { handRoomForPsycheDraw, beginNothingResolution } from "./objects.js";
 import {
   pullDreambeastFromMindstream,
@@ -243,17 +243,25 @@ export const OBJECT_EFFECTS = {
   },
 
   "tear-of-moon": (state) => {
-    alive(state).forEach((p) => {
+    const players = alive(state);
+    players.forEach((p) => {
       drawPsycheForPlayer(state, p, 2);
-      returnN(state, 2, p);
+      enqueueReturnCards(state, 2, p, {
+        reason: `${p.name}: Return 2 Repressed card(s).`,
+      });
     });
+    if (players.length) addLog(state, "Tear of Moon: each Dreamer draws 2 Psyche and Returns 2 Repressed.");
   },
 
   "spark-of-sun": (state) => {
-    alive(state).forEach((p) => {
+    const players = alive(state);
+    players.forEach((p) => {
       drawPsycheForPlayer(state, p, 2);
-      returnN(state, 2, p);
+      enqueueReturnCards(state, 2, p, {
+        reason: `${p.name}: Return 2 Repressed card(s).`,
+      });
     });
+    if (players.length) addLog(state, "Spark of Sun: each Dreamer draws 2 Psyche and Returns 2 Repressed.");
   },
 
   coins: (state) => {

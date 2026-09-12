@@ -169,6 +169,43 @@ export function requestReturnCards(state, count, player = null) {
   return { pending: true, count: toReturn };
 }
 
+/** Queue a Return step; processes sequentially when multiple effects fire in one resolution. */
+export function enqueueReturnCards(state, count, player = null, { reason = "" } = {}) {
+  if (count <= 0) return [];
+  state.resolutionQueue = state.resolutionQueue || [];
+  const label = player?.name || "Team";
+  state.resolutionQueue.push({
+    type: "return",
+    count,
+    playerId: player?.id || null,
+    reason: reason || `${label}: Return ${count} card(s) from the Subconscious.`,
+  });
+  if (!state.pendingRepress && !state.pendingReturn) {
+    advanceResolutionQueue(state);
+  }
+  return { queued: true, count };
+}
+
+function beginReturnStep(state, step) {
+  const available = listSubconsciousCards(state);
+  if (!available.length || step.count <= 0) {
+    advanceResolutionQueue(state);
+    return;
+  }
+  const toReturn = Math.min(step.count, available.length);
+  if (toReturn === 1 && available.length === 1) {
+    finalizeReturn(state, [available[0]]);
+    advanceResolutionQueue(state);
+    return;
+  }
+  state.pendingReturn = {
+    remaining: toReturn,
+    picked: [],
+    playerId: step.playerId || null,
+    reason: step.reason,
+  };
+}
+
 export function pickReturnCard(state, instanceId) {
   const pending = state.pendingReturn;
   if (!pending) return false;
@@ -392,6 +429,7 @@ function advanceResolutionQueue(state) {
     return;
   }
   if (next.type === "repress") beginRepressStep(state, next);
+  else if (next.type === "return") beginReturnStep(state, next);
 }
 
 export function pickRepressCard(state, instanceId) {

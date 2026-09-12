@@ -18,6 +18,7 @@ import { adjacentTiles, hexDistance, edgeLandscapes } from "./hex.js";
 import {
   repressCard,
   requestReturnCards,
+  enqueueReturnCards,
   enqueueRepressObjects,
   enqueueRepressFromHand,
 } from "./subconscious.js";
@@ -267,7 +268,14 @@ const DREAM_EFFECTS = {
     addLog(state, "Chase: Dreamers who cannot outrun must Meet this round.");
   },
   recovery: (state) => {
-    alivePlayers(state).forEach(() => returnCards(state, 1));
+    const players = alivePlayers(state);
+    if (!players.length) return;
+    addLog(state, "Recovery: each Dreamer Returns 1 card from the Subconscious.");
+    players.forEach((p) => {
+      enqueueReturnCards(state, 1, p, {
+        reason: `${p.name}: Return 1 card from the Subconscious.`,
+      });
+    });
   },
   "well-being": (state) => allDrawPsyche(state, 3),
   quiet: (state) => addLog(state, "Nothing happens."),
