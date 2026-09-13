@@ -1,8 +1,15 @@
 /** Board & special card flow animations — dreams, mindstream, tiles, encounters, repress. */
 
-import { burstSparkles, playDreamRipple, playMeetFlash, playPointRipple } from "./fx.js";
+import { burstSparkles, playDreamRipple, playMeetFlash, playPointRipple, playDreamWarble } from "./fx.js";
+import { playSfx } from "./audio.js";
 
 const queue = [];
+const prevDreamerTiles = new Map();
+const prevEncounterTiles = new Map();
+const arrivingDreamers = new Set();
+const arrivingBeasts = new Set();
+
+const FLY_MS = 820;
 
 function reducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -20,6 +27,124 @@ function deckEl(id) {
 
 function hexTileEl(tileId) {
   return document.querySelector(`.hex-tile[data-tile-id="${tileId}"]`);
+}
+
+function encounterKey(encounter) {
+  return encounter?.instanceId || encounter?.id || "";
+}
+
+export function isDreamerTokenHidden(playerId) {
+  return arrivingDreamers.has(playerId);
+}
+
+export function isBeastTokenHidden(encKey) {
+  return !!encKey && arrivingBeasts.has(encKey);
+}
+
+export function resetBoardMotion(state) {
+  prevDreamerTiles.clear();
+  prevEncounterTiles.clear();
+  arrivingDreamers.clear();
+  arrivingBeasts.clear();
+  if (!state?.players) return;
+  state.players.forEach((player) => {
+    if (player.alive && player.landscapeId) prevDreamerTiles.set(player.id, player.landscapeId);
+  });
+  (state.board || []).forEach((tile) => {
+    const key = encounterKey(tile.encounter);
+    if (key) prevEncounterTiles.set(key, tile.id);
+  });
+}
+
+/** Diff Dreamer / encounter locations after state changes. Visual only. */
+export function syncBoardMotion(state) {
+  if (!state?.players) return;
+  const animate = !reducedMotion();
+
+  state.players.forEach((player) => {
+    const prev = prevDreamerTiles.get(player.id);
+    if (animate && player.alive && prev && player.landscapeId && prev !== player.landscapeId) {
+      arrivingDreamers.add(player.id);
+      queue.push({
+        type: "dreamer-move",
+        playerId: player.id,
+        name: player.dreamer?.name || player.name,
+        image: player.dreamer?.image || "",
+        fromId: prev,
+        toId: player.landscapeId,
+      });
+    }
+    if (player.alive && player.landscapeId) prevDreamerTiles.set(player.id, player.landscapeId);
+    else prevDreamerTiles.delete(player.id);
+  });
+
+  const current = new Map();
+  (state.board || []).forEach((tile) => {
+    const key = encounterKey(tile.encounter);
+    if (key) current.set(key, { tileId: tile.id, encounter: tile.encounter });
+  });
+  current.forEach((now, key) => {
+    const prevId = prevEncounterTiles.get(key);
+    if (animate && prevId && prevId !== now.tileId) {
+      arrivingBeasts.add(key);
+      queue.push({
+        type: "encounter-move",
+        encounter: now.encounter,
+        fromId: prevId,
+        toId: now.tileId,
+      });
+    }
+  });
+  prevEncounterTiles.clear();
+  current.forEach((now, key) => prevEncounterTiles.set(key, now.tileId));
+}
+
+function revealArriving(kind, id) {
+  if (kind === "dreamer") {
+    arrivingDreamers.delete(id);
+    document.querySelectorAll(`.hex-occupant-dreamer[data-dreamer-id="${id}"]`).forEach((el) => {
+      el.classList.remove("is-arriving");
+    });
+  } else {
+    arrivingBeasts.delete(id);
+    document.querySelectorAll(`.hex-occupant-beast[data-encounter-key="${id}"]`).forEach((el) => {
+      el.classList.remove("is-arriving");
+    });
+  }
+}
+
+function flyDriftSnap(from, to, { html, className = "", duration = FLY_MS } = {}) {
+  const layer = document.getElementById("fx-layer");
+  if (!layer || !from || !to) return;
+  const el = document.createElement("div");
+  el.className = `fx-board-flyer ${className}`;
+  el.innerHTML = html;
+  el.style.left = `${from.x}px`;
+  el.style.top = `${from.y}px`;
+  layer.appendChild(el);
+
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const dist = Math.hypot(dx, dy);
+  const lift = Math.min(128, 42 + dist * 0.32);
+  const drift = (dx === 0 && dy === 0) ? 0 : 26;
+  const midX = dx * 0.42 + (dy >= 0 ? -drift : drift);
+  const midY = dy * 0.32 - lift;
+  const overX = dx + (dx === 0 ? 0 : Math.sign(dx) * 14);
+  const overY = dy - 10;
+
+  el.animate(
+    [
+      { transform: "translate(-50%, -50%) scale(0.78) rotate(-12deg)", offset: 0, opacity: 0.12 },
+      { transform: `translate(calc(-50% + ${midX}px), calc(-50% + ${midY}px)) scale(1.12) rotate(8deg)`, offset: 0.48, opacity: 1 },
+      { transform: `translate(calc(-50% + ${overX}px), calc(-50% + ${overY}px)) scale(1.2) rotate(-3deg)`, offset: 0.78, opacity: 1 },
+      { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(0.9) rotate(2deg)`, offset: 0.9, opacity: 1 },
+      { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(1) rotate(0deg)`, offset: 1, opacity: 1 },
+    ],
+    { duration, easing: "cubic-bezier(0.14, 0.72, 0.18, 1.18)", fill: "forwards" },
+  );
+
+  window.setTimeout(() => el.remove(), duration + 40);
 }
 
 function handAreaEl(playerId) {
@@ -165,6 +290,9 @@ export function runPendingBoardFx() {
   }
 
   const items = queue.splice(0);
+  const movedEncKeys = new Set(
+    items.filter((evt) => evt.type === "encounter-move").map((evt) => encounterKey(evt.encounter)),
+  );
   let delay = 0;
   const step = 85;
 
@@ -177,6 +305,7 @@ export function runPendingBoardFx() {
       burstSparkles(from.x, from.y, 14, "#c9a0ff");
       burstSparkles(to.x, to.y, 10, "#f0c96a");
       playDreamRipple();
+      playDreamWarble();
       delay += step;
     } else if (evt.type === "mindstream-draw") {
       const deckKey = `mindstream-${evt.suit || "lucidity"}`;
@@ -193,7 +322,48 @@ export function runPendingBoardFx() {
         }
       }
       delay += step;
+    } else if (evt.type === "dreamer-move") {
+      const from = centerOf(hexTileEl(evt.fromId)) || boardCenter();
+      const to = centerOf(hexTileEl(evt.toId)) || boardCenter();
+      const img = evt.image
+        ? `<img src="${evt.image}" alt="">`
+        : `<span class="fx-board-flyer-fallback">${(evt.name || "?").slice(0, 1)}</span>`;
+      flyDriftSnap(from, to, {
+        className: "fx-dreamer-flyer",
+        html: `<span class="fx-board-flyer-trail"></span>${img}`,
+      });
+      burstSparkles(from.x, from.y, 8, "#c9a0ff");
+      window.setTimeout(() => {
+        burstSparkles(to.x, to.y, 10, "#f0c96a");
+        playPointRipple(to.x, to.y, "fx-land-ripple");
+        revealArriving("dreamer", evt.playerId);
+      }, FLY_MS - 60);
+      playDreamWarble(0.4);
+      playSfx("move");
+      delay += 40;
+    } else if (evt.type === "encounter-move") {
+      const from = centerOf(hexTileEl(evt.fromId)) || boardCenter();
+      const to = centerOf(hexTileEl(evt.toId)) || boardCenter();
+      const key = encounterKey(evt.encounter);
+      const img = evt.encounter?.image
+        ? `<img src="${evt.encounter.image}" alt="">`
+        : `<span class="fx-board-flyer-fallback">⚔</span>`;
+      flyDriftSnap(from, to, {
+        className: "fx-beast-flyer",
+        html: `<span class="fx-board-flyer-trail"></span>${img}`,
+      });
+      burstSparkles(from.x, from.y, 8, "#ff6b9d");
+      window.setTimeout(() => {
+        burstSparkles(to.x, to.y, 12, "#e84848");
+        playPointRipple(to.x, to.y, "fx-summon-ripple");
+        flashEl(hexTileEl(evt.toId), "hex-encounter-spawn", 700);
+        revealArriving("beast", key);
+      }, FLY_MS - 60);
+      playDreamWarble(0.5);
+      playSfx("move");
+      delay += 40;
     } else if (evt.type === "encounter-spawn") {
+      if (movedEncKeys.has(encounterKey(evt.encounter))) return;
       const tile = hexTileEl(evt.landscapeId);
       const to = centerOf(tile) || boardCenter();
       const suit = evt.suit || evt.encounter?.suit || "willpower";
@@ -211,6 +381,8 @@ export function runPendingBoardFx() {
       const c = centerOf(tile);
       flashEl(tile, "hex-flash-reveal", 800);
       if (c) burstSparkles(c.x, c.y, 14, "#4ad4ff");
+      playDreamWarble(0.55);
+      playSfx("flip");
       delay += step * 0.5;
     } else if (evt.type === "tile-forget") {
       const tile = hexTileEl(evt.tileId);
@@ -250,6 +422,7 @@ export function runPendingBoardFx() {
       delay += step;
     } else if (evt.type === "meet-flash") {
       playMeetFlash(evt.mode);
+      playDreamWarble(evt.mode === "reject" ? 0.85 : 0.7);
       const tile = hexTileEl(evt.tileId);
       flashEl(tile, evt.mode === "reject" ? "hex-meet-reject" : "hex-meet-accept", 700);
       delay += step;

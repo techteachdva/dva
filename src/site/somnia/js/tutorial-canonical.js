@@ -188,17 +188,14 @@ function placePlayerOnLandscape(state, playerIndex, targetId) {
 }
 
 function completeRevealPick(state) {
-  const tileId = firstHiddenTileId(state);
-  if (!tileId) {
-    state.revealLandscapeUsed = true;
-    state.landscapePick = null;
-    return;
-  }
-  handleBoardTileClick(state, tileId);
-  if (state.landscapePick?.mode === "reveal") {
+  let guard = 12;
+  while (state.landscapePick?.mode === "reveal" && guard-- > 0) {
+    const tileId = firstHiddenTileId(state);
+    if (!tileId) break;
     handleBoardTileClick(state, tileId);
   }
-  if (!state.revealLandscapeUsed) state.revealLandscapeUsed = true;
+  state.revealLandscapeUsed = true;
+  state.landscapePick = null;
 }
 
 function acceptHouseEncounter(state) {

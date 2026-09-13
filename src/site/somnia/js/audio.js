@@ -70,6 +70,7 @@ function ensureSfxChain() {
   sfxGain = ac.createGain();
   sfxPan = ac.createStereoPanner();
   sfxGain.connect(sfxPan).connect(ac.destination);
+  attachCathedral(ac);
   applySfxLevels();
 }
 
@@ -104,12 +105,35 @@ function connectSfxOutput(gainNode) {
   }
 }
 
+function attachCathedral(ac) {
+  if (!sfxGain) return;
+  try {
+    const delay = ac.createDelay(1.4);
+    delay.delayTime.value = 0.18;
+    const wet = ac.createGain();
+    wet.gain.value = 0.26;
+    const feedback = ac.createGain();
+    feedback.gain.value = 0.24;
+    const filter = ac.createBiquadFilter();
+    filter.type = "lowpass";
+    filter.frequency.value = 2200;
+    sfxGain.connect(delay);
+    delay.connect(filter);
+    filter.connect(wet);
+    wet.connect(ac.destination);
+    delay.connect(feedback);
+    feedback.connect(delay);
+  } catch {
+    /* delay graph unsupported */
+  }
+}
+
 function isSfxMuted() {
   settings = loadSettings();
   return settings.sfxMuted;
 }
 
-function tone({ freq = 440, dur = 0.1, type = "sine", vol = 0.12, slide = 0, delay = 0 }) {
+function tone({ freq = 440, dur = 0.1, type = "sine", vol = 0.12, slide = 0, delay = 0, echo = 0 }) {
   const ac = ensureAudioContext();
   if (!ac || isSfxMuted()) return;
   const t0 = ac.currentTime + delay;
@@ -122,11 +146,50 @@ function tone({ freq = 440, dur = 0.1, type = "sine", vol = 0.12, slide = 0, del
   }
   const peak = vol * settings.sfxVolume;
   gain.gain.setValueAtTime(0.001, t0);
-  gain.gain.exponentialRampToValueAtTime(peak, t0 + 0.008);
+  gain.gain.exponentialRampToValueAtTime(peak, t0 + 0.01);
   gain.gain.exponentialRampToValueAtTime(0.001, t0 + dur);
   connectSfxOutput(gain);
+  osc.connect(gain);
+  if (type === "sine" || type === "triangle") {
+    const lfo = ac.createOscillator();
+    const lfoGain = ac.createGain();
+    lfo.type = "sine";
+    lfo.frequency.setValueAtTime(4.6, t0);
+    lfoGain.gain.setValueAtTime(Math.max(3, freq * 0.012), t0);
+    lfo.connect(lfoGain);
+    lfoGain.connect(osc.frequency);
+    lfo.start(t0);
+    lfo.stop(t0 + dur + 0.03);
+  }
   osc.start(t0);
-  osc.stop(t0 + dur + 0.02);
+  osc.stop(t0 + dur + 0.03);
+  if (echo > 0) {
+    tone({
+      freq: freq * 0.995,
+      dur: dur * 1.15,
+      type,
+      vol: vol * 0.36,
+      slide: slide * 0.4,
+      delay: delay + echo,
+      echo: 0,
+    });
+    if (echo >= 0.1) {
+      tone({
+        freq: freq * 0.5,
+        dur: dur * 1.35,
+        type: "sine",
+        vol: vol * 0.16,
+        delay: delay + echo * 2,
+        echo: 0,
+      });
+    }
+  }
+}
+
+function organ({ freq = 220, dur = 0.28, vol = 0.07, delay = 0 }) {
+  tone({ freq, dur, type: "sine", vol, delay, echo: 0.14 });
+  tone({ freq: freq * 2, dur: dur * 0.85, type: "triangle", vol: vol * 0.45, delay: delay + 0.012, echo: 0.12 });
+  tone({ freq: freq * 3, dur: dur * 0.55, type: "sine", vol: vol * 0.18, delay: delay + 0.02 });
 }
 
 export function initSfx() {
@@ -142,66 +205,64 @@ export function playSfx(name, opts = {}) {
   settings = loadSettings();
   switch (name) {
     case "click":
-      tone({ freq: 520, dur: 0.04, type: "triangle", vol: 0.07 });
+      tone({ freq: 523, dur: 0.055, type: "triangle", vol: 0.055, echo: 0.11 });
+      tone({ freq: 784, dur: 0.04, type: "sine", vol: 0.028, delay: 0.008 });
       break;
     case "select":
-      tone({ freq: 660, dur: 0.05, type: "sine", vol: 0.08, slide: 120 });
+      tone({ freq: 659, dur: 0.07, type: "sine", vol: 0.07, slide: 90, echo: 0.1 });
       break;
     case "deselect":
-      tone({ freq: 440, dur: 0.04, type: "sine", vol: 0.05, slide: -60 });
+      tone({ freq: 392, dur: 0.06, type: "sine", vol: 0.045, slide: -70, echo: 0.1 });
       break;
     case "draw": {
       const n = Math.min(opts.count || 1, 4);
       for (let i = 0; i < n; i += 1) {
-        tone({
-          freq: 360 + i * 45,
-          dur: 0.12,
-          type: "sine",
-          vol: 0.09,
-          slide: 180,
-          delay: i * 0.055,
-        });
+        organ({ freq: 196 + i * 28, dur: 0.2, vol: 0.055, delay: i * 0.055 });
       }
       break;
     }
     case "discard":
-      tone({ freq: 280, dur: 0.1, type: "triangle", vol: 0.08, slide: -140 });
-      tone({ freq: 180, dur: 0.08, type: "sine", vol: 0.05, slide: -80, delay: 0.04 });
+      tone({ freq: 247, dur: 0.14, type: "triangle", vol: 0.07, slide: -120, echo: 0.12 });
       break;
     case "repress":
-      tone({ freq: 200, dur: 0.15, type: "sawtooth", vol: 0.07, slide: -100 });
-      tone({ freq: 140, dur: 0.2, type: "sine", vol: 0.06, delay: 0.08 });
+      tone({ freq: 175, dur: 0.22, type: "sawtooth", vol: 0.05, slide: -80, echo: 0.16 });
+      organ({ freq: 110, dur: 0.28, vol: 0.04, delay: 0.04 });
       break;
     case "dream":
-      tone({ freq: 220, dur: 0.25, type: "sine", vol: 0.1, slide: 400 });
-      tone({ freq: 440, dur: 0.35, type: "triangle", vol: 0.08, slide: 200, delay: 0.15 });
-      tone({ freq: 660, dur: 0.4, type: "sine", vol: 0.06, delay: 0.3 });
+      organ({ freq: 220, dur: 0.42, vol: 0.075 });
+      organ({ freq: 277, dur: 0.38, vol: 0.05, delay: 0.16 });
+      tone({ freq: 659, dur: 0.45, type: "triangle", vol: 0.045, slide: 80, delay: 0.28, echo: 0.18 });
       break;
     case "reveal":
-      tone({ freq: 520, dur: 0.2, type: "sine", vol: 0.1, slide: 300 });
-      tone({ freq: 880, dur: 0.25, type: "triangle", vol: 0.07, delay: 0.1 });
+    case "flip":
+      organ({ freq: 262, dur: 0.32, vol: 0.065 });
+      tone({ freq: 784, dur: 0.22, type: "triangle", vol: 0.05, slide: 140, delay: 0.08, echo: 0.14 });
+      break;
+    case "move":
+      tone({ freq: 196, dur: 0.18, type: "sine", vol: 0.05, slide: 220, echo: 0.12 });
+      tone({ freq: 523, dur: 0.16, type: "triangle", vol: 0.04, delay: 0.1, echo: 0.14 });
       break;
     case "phase":
-      tone({ freq: 440, dur: 0.12, type: "sine", vol: 0.1 });
-      tone({ freq: 554, dur: 0.12, type: "sine", vol: 0.1, delay: 0.1 });
-      tone({ freq: 659, dur: 0.18, type: "sine", vol: 0.12, delay: 0.2 });
+      organ({ freq: 220, dur: 0.2, vol: 0.055 });
+      organ({ freq: 277, dur: 0.2, vol: 0.05, delay: 0.1 });
+      organ({ freq: 330, dur: 0.26, vol: 0.06, delay: 0.2 });
       break;
     case "acquire":
-      tone({ freq: 523, dur: 0.12, type: "sine", vol: 0.1 });
-      tone({ freq: 659, dur: 0.12, type: "sine", vol: 0.1, delay: 0.12 });
-      tone({ freq: 784, dur: 0.2, type: "triangle", vol: 0.12, delay: 0.24 });
+      organ({ freq: 262, dur: 0.2, vol: 0.06 });
+      organ({ freq: 330, dur: 0.2, vol: 0.055, delay: 0.12 });
+      organ({ freq: 392, dur: 0.28, vol: 0.07, delay: 0.24 });
       break;
     case "victory":
-      [523, 659, 784, 988, 1175].forEach((freq, i) => {
-        tone({ freq, dur: 0.18, type: "sine", vol: 0.11, delay: i * 0.14 });
+      [262, 330, 392, 523, 659].forEach((freq, i) => {
+        organ({ freq, dur: 0.22, vol: 0.07, delay: i * 0.13 });
       });
-      tone({ freq: 1568, dur: 0.45, type: "triangle", vol: 0.14, delay: 0.75 });
+      tone({ freq: 784, dur: 0.5, type: "triangle", vol: 0.08, delay: 0.72, echo: 0.2 });
       break;
     case "sparkle":
-      tone({ freq: 900 + Math.random() * 400, dur: 0.08, type: "sine", vol: 0.05 });
+      tone({ freq: 880 + Math.random() * 360, dur: 0.09, type: "sine", vol: 0.04, echo: 0.1 });
       break;
     default:
-      tone({ freq: 440, dur: 0.05, type: "sine", vol: 0.06 });
+      tone({ freq: 440, dur: 0.05, type: "sine", vol: 0.05, echo: 0.1 });
   }
 }
 

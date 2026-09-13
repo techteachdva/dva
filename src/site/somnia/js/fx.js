@@ -3,6 +3,36 @@ let forgottenTiles = new Set();
 let phasePulse = false;
 let dreamFeedNudge = false;
 
+const FLIP_LINGER_MS = 980;
+const flipLinger = new Map();
+
+function nowMs() {
+  return typeof performance !== "undefined" ? performance.now() : Date.now();
+}
+
+function lingerFlip(id, kind) {
+  if (!id) return;
+  flipLinger.set(id, { kind, started: nowMs() });
+  globalThis.setTimeout(() => {
+    const cur = flipLinger.get(id);
+    if (cur && cur.kind === kind && nowMs() - cur.started >= FLIP_LINGER_MS - 30) {
+      flipLinger.delete(id);
+    }
+  }, FLIP_LINGER_MS);
+}
+
+function lingeringIds(kind) {
+  const now = nowMs();
+  return [...flipLinger.entries()]
+    .filter(([, session]) => session.kind === kind && now - session.started < FLIP_LINGER_MS)
+    .map(([id]) => id);
+}
+
+export function tileFlipElapsedMs(id) {
+  const session = flipLinger.get(id);
+  return session ? Math.max(0, nowMs() - session.started) : 0;
+}
+
 export function initFxLayer() {
   if (document.getElementById("fx-layer")) return;
   const layer = document.createElement("div");
@@ -12,23 +42,25 @@ export function initFxLayer() {
 }
 
 export function markTileRevealed(id) {
-  if (id) revealedTiles.add(id);
+  if (!id) return;
+  revealedTiles.add(id);
+  lingerFlip(id, "reveal");
 }
 
 export function markTileForgotten(id) {
-  if (id) forgottenTiles.add(id);
+  if (!id) return;
+  forgottenTiles.add(id);
+  lingerFlip(id, "forget");
 }
 
 export function consumeRevealedTiles() {
-  const tiles = [...revealedTiles];
   revealedTiles.clear();
-  return tiles;
+  return lingeringIds("reveal");
 }
 
 export function consumeForgottenTiles() {
-  const tiles = [...forgottenTiles];
   forgottenTiles.clear();
-  return tiles;
+  return lingeringIds("forget");
 }
 
 export function markPhasePulse() {
@@ -140,4 +172,19 @@ export function playPointRippleAtElement(el, className) {
   }
   const rect = el.getBoundingClientRect();
   playPointRipple(rect.left + rect.width / 2, rect.top + rect.height / 2, className);
+}
+
+/** Brief hue-warble over the dreamscape — does not block input. */
+export function playDreamWarble(strength = 0.7) {
+  if (typeof document === "undefined" || reducedMotion()) return;
+  const el = ensureOverlay("fx-dream-warble", "fx-screen-overlay fx-dream-warble");
+  el.style.setProperty("--warble-strength", String(strength));
+  el.classList.remove("hidden");
+  el.classList.remove("is-playing");
+  void el.offsetWidth;
+  el.classList.add("is-playing");
+  window.setTimeout(() => {
+    el.classList.remove("is-playing");
+    el.classList.add("hidden");
+  }, 640);
 }

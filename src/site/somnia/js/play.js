@@ -16,7 +16,7 @@ import {
   updateHandSnapshots,
   resetHandSnapshots,
 } from "./card-fx.js";
-import { runPendingBoardFx } from "./board-fx.js";
+import { runPendingBoardFx, syncBoardMotion, resetBoardMotion } from "./board-fx.js";
 import { calculateFinalScore } from "./scoring.js";
 import { fetchHighScores, submitHighScore, validateScoreName, isStandaloneMode } from "./highscores.js";
 import { startVictoryCelebration, stopVictoryCelebration } from "./victory-celebration.js";
@@ -502,6 +502,7 @@ function startGame(config) {
   showScreen("screen-game");
   resetBoardZoom();
   resetHandSnapshots(state);
+  resetBoardMotion(state);
   renderAll();
   if (!config.tutorialMode && !hasSeenTutorial()) startTutorial();
   else if (config.tutorialMode) {
@@ -1149,6 +1150,7 @@ function renderAll() {
   }
 
   updateHandSnapshots(state);
+  syncBoardMotion(state);
   requestAnimationFrame(() => {
     runPendingCardFx(state);
     runPendingBoardFx();

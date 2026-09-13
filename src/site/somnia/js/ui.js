@@ -48,9 +48,11 @@ import {
   consumeRevealedTiles,
   consumeForgottenTiles,
   consumeDreamFeedNudge,
+  tileFlipElapsedMs,
 } from "./fx.js";
 import { BOSS_DREAM_DECK_SLOTS } from "./data.js";
 import { consumeBoardClickSuppression, getBoardZoom } from "./board-zoom.js";
+import { isBeastTokenHidden, isDreamerTokenHidden } from "./board-fx.js";
 import { powerTokensInPool, MAX_POWER_TOKEN_POOL } from "./power-tokens.js";
 import {
   eventLandscapeIds,
@@ -846,16 +848,28 @@ export function renderBoard(state, onSelectLandscape, legalMoveIds = [], pickHig
     el.style.left = `${x + bounds.offsetX}px`;
     el.style.top = `${y + bounds.offsetY}px`;
     el.style.zIndex = String(1000 + Math.round(y + bounds.offsetY));
+    if (justRevealed.has(tile.id) || justForgotten.has(tile.id)) {
+      el.style.setProperty("--hex-flip-elapsed", `${-tileFlipElapsedMs(tile.id)}ms`);
+    }
 
+    const wastelandSrc = tile.wastelandImage || "images/landscapes/wasteland.webp";
     let faceImage = "";
     if (isBedFinal) {
       faceImage = "url('images/dreams/final-recurrence.webp')";
     } else if (showFace && tile.image) {
       faceImage = `url('${tile.image}')`;
     } else {
-      const wl = tile.wastelandImage || "images/landscapes/wasteland.webp";
-      faceImage = `url('${wl}')`;
+      faceImage = `url('${wastelandSrc}')`;
     }
+    const reduceMotion = typeof window !== "undefined"
+      && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const flippingOver = !reduceMotion && justRevealed.has(tile.id) && showFace && !!tile.image;
+    const flippingBack = !reduceMotion && justForgotten.has(tile.id) && !!tile.image;
+    const backImage = flippingBack ? `url('${tile.image}')` : `url('${wastelandSrc}')`;
+    const frontImage = flippingBack ? `url('${wastelandSrc}')` : faceImage;
+    const faceHtml = (flippingOver || flippingBack)
+      ? `<div class="hex-flip" aria-hidden="true"><div class="hex-flip-inner"><div class="hex-face hex-flip-back" style="background-image: ${backImage}"></div><div class="hex-face hex-flip-front" style="background-image: ${frontImage}"></div></div></div>`
+      : `<div class="hex-face" style="background-image: ${faceImage}"></div>`;
 
     const occupants = state.players.filter((p) => p.landscapeId === tile.id && p.alive);
     const finalArch = tile.finalArchetype;
@@ -870,13 +884,16 @@ export function renderBoard(state, onSelectLandscape, legalMoveIds = [], pickHig
     const occupantTokens = [];
     occupants.forEach((p) => {
       if (!p.dreamer?.image) return;
+      const arriving = isDreamerTokenHidden(p.id) ? " is-arriving" : "";
       occupantTokens.push(
-        `<img class="hex-occupant-token hex-occupant-dreamer" src="${p.dreamer.image}" alt="" title="${p.dreamer.name}" decoding="async" draggable="false" onerror="this.remove()">`
+        `<img class="hex-occupant-token hex-occupant-dreamer${arriving}" data-dreamer-id="${p.id}" src="${p.dreamer.image}" alt="" title="${p.dreamer.name}" decoding="async" draggable="false" onerror="this.remove()">`
       );
     });
     if (encounter?.image) {
+      const encKey = encounter.instanceId || encounter.id || "";
+      const arriving = encKey && isBeastTokenHidden(encKey) ? " is-arriving" : "";
       occupantTokens.push(
-        `<img class="hex-occupant-token hex-occupant-beast" src="${encounter.image}" alt="" title="${encounter.name}" decoding="async" draggable="false" onerror="this.remove()">`
+        `<img class="hex-occupant-token hex-occupant-beast${arriving}" data-encounter-key="${encKey}" src="${encounter.image}" alt="" title="${encounter.name}" decoding="async" draggable="false" onerror="this.remove()">`
       );
     }
     const occupantsHtml = occupantTokens.length
@@ -884,7 +901,7 @@ export function renderBoard(state, onSelectLandscape, legalMoveIds = [], pickHig
       : "";
 
     el.innerHTML = `
-      <div class="hex-face" style="background-image: ${faceImage}"></div>
+      ${faceHtml}
       <div class="hex-overlay"></div>
       ${occupantsHtml}
       <div class="name">${displayName}</div>

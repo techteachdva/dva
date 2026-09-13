@@ -274,7 +274,7 @@ body.play-window #screen-game.active {
 .fullscreen-prompt {
   position: fixed;
   inset: 0;
-  z-index: 300;
+  z-index: 900;
   display: grid;
   place-items: center;
   background: rgba(4, 3, 12, 0.88);
@@ -811,6 +811,7 @@ body.in-game main {
 
 #screen-game .table-surface {
   grid-area: table;
+  position: relative;
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -822,6 +823,18 @@ body.in-game main {
     rgba(8, 7, 18, 0.65);
   border-right: 1px solid var(--border);
   animation: dream-breathe 10s ease-in-out infinite;
+}
+
+#screen-game .table-surface::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(201, 160, 255, 0.07), transparent 42%),
+    radial-gradient(ellipse at 78% 70%, rgba(74, 158, 255, 0.06), transparent 46%);
+  animation: dream-haze-drift 18s ease-in-out infinite;
+  z-index: 0;
 }
 
 #screen-game .sidebar.right {
@@ -1540,14 +1553,87 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
   box-shadow: inset 0 0 0 2px rgba(201, 160, 255, 0.78);
 }
 
-.hex-tile.just-revealed {
-  animation: hex-reveal 0.7s cubic-bezier(0.22, 1, 0.36, 1);
-  z-index: 3;
+.hex-tile.just-revealed,
+.hex-tile.just-forgotten {
+  perspective: 720px;
+  z-index: 18;
+  isolation: auto;
+  transform-style: preserve-3d;
+  overflow: visible;
+  clip-path: none;
+  background: transparent;
+  animation: none;
 }
 
-.hex-tile.just-forgotten {
-  animation: hex-forget 0.85s cubic-bezier(0.55, 0, 0.85, 0.36) forwards;
-  z-index: 2;
+.board-zoom-stage:has(.hex-tile.just-revealed),
+.board-zoom-stage:has(.hex-tile.just-forgotten) {
+  backface-visibility: visible;
+}
+
+.hex-flip {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  transform-style: preserve-3d;
+  filter: drop-shadow(0 10px 16px rgba(8, 4, 22, 0.55));
+}
+
+.hex-flip-inner {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+
+.hex-tile.just-revealed .hex-flip-inner,
+.hex-tile.just-forgotten .hex-flip-inner {
+  animation: hex-flip-over 0.92s cubic-bezier(0.42, 0.08, 0.18, 1) both;
+  animation-delay: var(--hex-flip-elapsed, 0ms);
+}
+
+.hex-flip-back,
+.hex-flip-front {
+  inset: 0;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
+
+.hex-flip-back {
+  filter: grayscale(0.55) brightness(0.72);
+}
+
+.hex-flip-front {
+  transform: rotateY(180deg);
+}
+
+.hex-tile.just-revealed .hex-overlay,
+.hex-tile.just-forgotten .hex-overlay,
+.hex-tile.just-revealed .name,
+.hex-tile.just-revealed .suit,
+.hex-tile.just-revealed .tokens,
+.hex-tile.just-revealed .hex-occupants,
+.hex-tile.just-forgotten .name,
+.hex-tile.just-forgotten .suit,
+.hex-tile.just-forgotten .tokens,
+.hex-tile.just-forgotten .hex-occupants {
+  animation: hex-flip-labels 0.92s ease both;
+  animation-delay: var(--hex-flip-elapsed, 0ms);
+}
+
+@keyframes hex-flip-over {
+  0% { transform: rotateY(0deg) rotateX(6deg) translateZ(0); }
+  38% { transform: rotateY(88deg) rotateX(12deg) translateZ(18px) scale(1.04); }
+  62% { transform: rotateY(128deg) rotateX(7deg) translateZ(10px); }
+  100% { transform: rotateY(180deg) rotateX(0deg) translateZ(0); }
+}
+
+@keyframes hex-flip-labels {
+  0%, 44% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+.hex-occupant-token.is-arriving {
+  opacity: 0;
 }
 
 .hex-tile.hex-flash-reveal {
@@ -1733,7 +1819,7 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
 .tutorial-brief {
   position: fixed;
   inset: 0;
-  z-index: 240;
+  z-index: 750;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1854,7 +1940,7 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
 .tutorial-overlay {
   position: fixed;
   inset: 0;
-  z-index: 200;
+  z-index: 740;
   pointer-events: none;
 }
 
@@ -2061,6 +2147,17 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
   gap: 0.5rem;
 }
 
+/* Play stacking (root):
+   HUD / board / hand          auto–152
+   play top-bar                600  (dropdowns stay inside this context)
+   tutorial sparkles + flyer   680  (must sit above HUD chrome)
+   tutorial overlay + card     740
+   tutorial brief              750
+   utility modal               800
+   card detail modal           820
+   dreamer overlay             840
+   dreamer tooltip             1200
+   pause / FX / dev            8600+ */
 .tutorial-highlight {
   position: relative;
   z-index: 150;
@@ -2069,7 +2166,7 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
 .tutorial-sparkle-layer {
   position: fixed;
   inset: 0;
-  z-index: 165;
+  z-index: 680;
   pointer-events: none;
   overflow: hidden;
 }
@@ -2181,7 +2278,7 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
   position: fixed;
   left: 0;
   top: 0;
-  z-index: 170;
+  z-index: 1;
   pointer-events: none;
   will-change: transform;
 }
@@ -2781,6 +2878,7 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
   width: 100%;
   overflow: hidden;
   position: relative;
+  z-index: 1;
   display: block;
   padding: 0;
   touch-action: none;
@@ -4003,7 +4101,7 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
 }
 
 #utility-modal:not(.hidden) {
-  z-index: 260;
+  z-index: 800;
 }
 
 body.utility-modal-open.tutorial-mode-active .tutorial-overlay {
@@ -4020,7 +4118,7 @@ body.utility-modal-open.tutorial-mode-active .tutorial-backdrop {
 }
 
 body.card-detail-open #card-modal {
-  z-index: 350;
+  z-index: 820;
 }
 
 body.card-detail-open .tutorial-card {
@@ -4954,6 +5052,17 @@ html[data-device="desktop"] .power-bonus-btn {
   50% { filter: brightness(1.04); }
 }
 
+@keyframes dream-haze-shift {
+  0%, 100% { filter: brightness(1) hue-rotate(0deg); }
+  40% { filter: brightness(1.03) hue-rotate(8deg); }
+  70% { filter: brightness(1.01) hue-rotate(-6deg); }
+}
+
+@keyframes dream-haze-drift {
+  0%, 100% { opacity: 0.55; transform: translate3d(0, 0, 0) scale(1); }
+  50% { opacity: 0.9; transform: translate3d(1.4%, -1.2%, 0) scale(1.04); }
+}
+
 @keyframes prompt-pulse {
   0%, 100% {
     box-shadow: var(--shadow), 0 0 30px rgba(123, 92, 255, 0.2);
@@ -5091,6 +5200,8 @@ body.menu-window #app::before {
   .game-card.selected,
   .hex-tile.just-revealed,
   .hex-tile.just-forgotten,
+  .hex-tile.just-revealed .hex-flip-inner,
+  .hex-tile.just-forgotten .hex-flip-inner,
   .hex-tile.hex-flash-reveal,
   .hex-tile.hex-flash-forget,
   .hex-tile.hex-mindstream-hit,
@@ -5099,8 +5210,12 @@ body.menu-window #app::before {
   .hex-tile.hex-meet-reject,
   .hex-tile.hex-psyche-gold,
   .fx-screen-overlay,
+  .fx-dream-warble,
+  #screen-game .table-surface::after,
+  .fx-board-flyer,
   .fx-point-ripple,
   .fx-summon-ripple,
+  .fx-land-ripple,
   .fx-psyche-swirl,
   .phase-stepper .step.active,
   .phase-stepper.phase-pulse .step.active,
@@ -5432,6 +5547,52 @@ body.panel-resizing {
     radial-gradient(circle at 50% 42%, rgba(240, 201, 106, 0.12) 0%, transparent 62%);
 }
 
+.fx-dream-warble.is-playing {
+  animation: fx-dream-warble 0.64s ease-out forwards;
+  background:
+    radial-gradient(ellipse at 42% 40%, rgba(180, 140, 255, calc(0.16 * var(--warble-strength, 0.7))), transparent 48%),
+    radial-gradient(ellipse at 62% 58%, rgba(90, 190, 255, calc(0.12 * var(--warble-strength, 0.7))), transparent 52%);
+  mix-blend-mode: screen;
+}
+
+.fx-board-flyer {
+  position: fixed;
+  width: 56px;
+  height: 72px;
+  pointer-events: none;
+  z-index: 10051;
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 12px rgba(201, 160, 255, 0.45));
+}
+
+.fx-board-flyer img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: bottom center;
+}
+
+.fx-board-flyer-trail {
+  position: absolute;
+  inset: -18%;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 248, 220, 0.35), rgba(180, 140, 255, 0.12) 55%, transparent 72%);
+  filter: blur(4px);
+  z-index: -1;
+}
+
+.fx-beast-flyer {
+  filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 14px rgba(232, 72, 72, 0.5));
+}
+
+.fx-board-flyer-fallback {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  font-size: 1.6rem;
+  color: #fff8dc;
+}
+
 .fx-meet-accept.is-playing {
   animation: fx-meet-accept 0.62s ease-out forwards;
   background:
@@ -5449,7 +5610,8 @@ body.panel-resizing {
 }
 
 .fx-point-ripple,
-.fx-summon-ripple {
+.fx-summon-ripple,
+.fx-land-ripple {
   position: absolute;
   width: 24px;
   height: 24px;
@@ -5461,6 +5623,11 @@ body.panel-resizing {
   animation: fx-point-ripple 0.88s ease-out forwards;
 }
 
+.fx-land-ripple {
+  border-color: rgba(201, 160, 255, 0.75);
+  box-shadow: 0 0 20px rgba(240, 201, 106, 0.45);
+}
+
 .fx-psyche-swirl {
   animation: fx-psyche-swirl 0.52s ease-out forwards;
   box-shadow: 0 0 18px rgba(240, 201, 106, 0.55);
@@ -5470,6 +5637,13 @@ body.panel-resizing {
   0% { opacity: 0; transform: scale(0.86); }
   28% { opacity: 1; }
   100% { opacity: 0; transform: scale(1.18); }
+}
+
+@keyframes fx-dream-warble {
+  0% { opacity: 0; filter: hue-rotate(0deg) blur(10px); }
+  22% { opacity: 1; filter: hue-rotate(18deg) blur(2px); }
+  55% { opacity: 0.7; filter: hue-rotate(-14deg) blur(4px); }
+  100% { opacity: 0; filter: hue-rotate(0deg) blur(12px); }
 }
 
 @keyframes fx-meet-accept {
@@ -5575,15 +5749,22 @@ body.panel-resizing {
 @keyframes fx-card-fly {
   0% {
     opacity: 0.1;
-    transform: translate(0, 0) scale(0.68) rotate(-8deg);
+    transform: translate(0, 0) scale(0.68) rotate(-10deg);
   }
   12% { opacity: 1; }
-  55% {
-    transform: translate(calc(var(--fx-tx, 0) * 0.55), calc(var(--fx-ty, 0) * 0.45 - 18px)) scale(1.05) rotate(2deg);
+  48% {
+    transform: translate(calc(var(--fx-tx, 0) * 0.48), calc(var(--fx-ty, 0) * 0.38 - 28px)) scale(1.08) rotate(6deg);
+  }
+  78% {
+    transform: translate(calc(var(--fx-tx, 0) * 1.06), calc(var(--fx-ty, 0) * 1.04 - 6px)) scale(1.14) rotate(-2deg);
+  }
+  90% {
+    opacity: 1;
+    transform: translate(var(--fx-tx, 0), var(--fx-ty, 0)) scale(0.92) rotate(1deg);
   }
   100% {
     opacity: 0;
-    transform: translate(var(--fx-tx, 0), var(--fx-ty, 0)) scale(0.78) rotate(6deg);
+    transform: translate(var(--fx-tx, 0), var(--fx-ty, 0)) scale(0.82) rotate(0deg);
   }
 }
 
@@ -5977,7 +6158,7 @@ html[data-device="mobile"] .action-dock-btn {
 .dreamer-detail-overlay {
   position: fixed;
   inset: 0;
-  z-index: 500;
+  z-index: 840;
   display: grid;
   place-items: center;
   padding: 1.25rem;

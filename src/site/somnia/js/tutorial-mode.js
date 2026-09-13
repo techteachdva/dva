@@ -9,6 +9,7 @@ import {
 import { meetPsycheActor } from "./rules.js";
 import { hexNeighbors, getLegalMoveTargets } from "./hex.js";
 import { precomputeTutorialSnapshots } from "./tutorial-canonical.js";
+import { resetBoardMotion } from "./board-fx.js";
 
 export const TUTORIAL_DREAMER_IDS = ["the-visionary", "the-runner"];
 export const TUTORIAL_MAX_ROUND = 5;
@@ -236,6 +237,7 @@ function restoreTutorialSnapshot(state, stepIndex) {
   };
   Object.assign(state, JSON.parse(JSON.stringify(snap)), preserved);
   reattachStateRuntime(state);
+  resetBoardMotion(state);
   return true;
 }
 
