@@ -141,7 +141,6 @@ function hasPlayableAction(state, step) {
     ["landscapeActionA", {}],
     ["completeQuest0", {}],
     ["completeQuest1", {}],
-    ["dreamerSelect", { playerIndex: 0 }],
     ["exploreMove", { tileId: "house" }],
     ["exploreMove", { tileId: "the-attic" }],
     ["exploreMove", { tileId: "the-basement" }],
@@ -176,6 +175,25 @@ const STEP_ENTRY_CHECKS = {
       .slice(0, 2)
       .map((c) => c.instanceId);
     if (meetPsychePlayTotal(s) < enc.accept) return "Cannot Accept Mandrake from snapshot hand";
+    return true;
+  },
+  "r2-to-explore": (s) => {
+    if (s.round < 2) return "Round 2 not started";
+    if (getPhase(s) !== "Reveal") return `Expected Reveal, got ${getPhase(s)}`;
+    if (!s.dreamDrawn) return "Dream not drawn";
+    if (s.landscapePick) return "Leftover landscape picker would block Next Phase";
+    if (!isTutorialActionAllowed(s, "advancePhase")) return "Next Phase gated on step 20";
+    return true;
+  },
+  "r2-elasticity": (s) => {
+    if (getPhase(s) !== "Explore") return `Expected Explore, got ${getPhase(s)}`;
+    if (s.exploreActivated) return "Explore already activated at step entry";
+    const hasEla = s.players.some((p) => p.hand.some((c) => c.suit === "elasticity" && c.type === "psyche"));
+    if (!hasEla) return "No Elasticity cards in any hand";
+    if (!isTutorialActionAllowed(s, "dreamerSelect", { playerIndex: 1 })) {
+      return "Dreamer switch gated during Elasticity spend";
+    }
+    if (!isTutorialActionAllowed(s, "spendElasticity")) return "Spend Elasticity gated";
     return true;
   },
   "r2-move-quests": (s) => {

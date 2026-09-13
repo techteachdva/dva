@@ -3072,10 +3072,21 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
   box-shadow: inset 0 0 0 2px rgba(240, 201, 106, 0.72);
 }
 .hex-tile.movable {
-  --hex-border-color: rgba(95, 224, 176, 0.58);
+  --hex-border-color: rgba(109, 255, 176, 0.78);
 }
 .hex-tile.movable .hex-face {
-  box-shadow: inset 0 0 0 2px var(--success);
+  box-shadow: inset 0 0 0 2px rgba(109, 255, 176, 0.92), inset 0 0 22px rgba(109, 255, 176, 0.32);
+}
+.hex-tile.movable .hex-overlay {
+  background: linear-gradient(180deg, rgba(109, 255, 176, 0.26) 0%, rgba(28, 72, 48, 0.2) 100%);
+  animation: hex-move-glow 2.1s ease-in-out infinite;
+}
+.hex-tile.movable:hover .hex-overlay {
+  background: linear-gradient(180deg, rgba(109, 255, 176, 0.38) 0%, rgba(28, 72, 48, 0.28) 100%);
+}
+@keyframes hex-move-glow {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
 }
 .hex-tile .name {
   font-size: calc(0.72rem * var(--hex-scale, 1.72));
@@ -5212,6 +5223,7 @@ body.menu-window #app::before {
   .hex-tile.hex-meet-accept,
   .hex-tile.hex-meet-reject,
   .hex-tile.hex-psyche-gold,
+  .hex-tile.movable .hex-overlay,
   .fx-screen-overlay,
   .fx-dream-warble,
   #screen-game .table-surface::after,

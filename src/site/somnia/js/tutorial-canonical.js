@@ -320,6 +320,8 @@ export function applyCanonicalTutorialStep(state, step) {
     case "r2-to-explore":
       advanceToPhase(state, "Explore");
       resetDreamersToBed(state);
+      state.landscapePick = null;
+      state.activePlayerIndex = pickPlayerWithSuit(state, "elasticity", 1);
       return;
 
     case "r2-move-quests":

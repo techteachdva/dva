@@ -217,8 +217,11 @@ function simulate() {
       const before = auditStep(state, scriptIdx);
       if (step.until && !step.until(state)) {
         const needed = ACTION_KINDS.filter((k) => {
-          if (k === "boardClick") return isTutorialActionAllowed(state, k, { tileId: "the-attic" });
-          if (k === "exploreMove") return isTutorialActionAllowed(state, k, { tileId: "the-attic" });
+          if (k === "boardClick" || k === "exploreMove") {
+            return ["house", "the-attic", "the-basement"].some((tileId) => (
+              isTutorialActionAllowed(state, k, { tileId })
+            ));
+          }
           return isTutorialActionAllowed(state, k);
         });
         if (needed.length === 0 && !["welcome", "win-goal", "rem-intro", "subconscious", "archetype-innocent", "r2-intro", "r2-map", "r3-boss", "r4-death", "graduate"].includes(step.id)) {

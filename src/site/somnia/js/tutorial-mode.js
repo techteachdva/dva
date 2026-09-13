@@ -103,7 +103,7 @@ const TUTORIAL_QUEST_PLACEMENT = [
   { questId: "the-basement", beside: "city", besideName: "City" },
 ];
 
-const TUTORIAL_SNAPSHOT_VERSION = 8;
+const TUTORIAL_SNAPSHOT_VERSION = 9;
 let tutorialSnapshotCache = null;
 let tutorialSnapshotCacheVersion = 0;
 
@@ -314,7 +314,7 @@ function allowsRemEndRoundAction(state, kind, detail = {}) {
       return phase === "Explore" && state.exploreActivated
         && exploreMoveAllowed(state, detail.tileId, null);
     case "dreamerSelect":
-      return phase === "Explore" && state.exploreActivated;
+      return true;
     case "spendElasticity":
       return phase === "Explore" && !state.exploreActivated;
     case "gainMeetActions":
@@ -400,7 +400,10 @@ function stepAllowsAction(state, stepId, kind, detail = {}) {
     case "r2-to-meet":
     case "end-r1":
     case "end-r2":
-      return kind === "advancePhase";
+      if (kind === "advancePhase") return true;
+      // Leftover Reveal picker must stay completable so Next Phase is not hard-locked.
+      if (kind === "boardClick" && state.landscapePick?.mode === "reveal") return true;
+      return false;
 
     case "end-r3":
     case "end-r4":
@@ -415,6 +418,9 @@ function stepAllowsAction(state, stepId, kind, detail = {}) {
 
     case "r2-elasticity":
       if (kind === "handToggle") return allowsSuitHand(state, detail, "elasticity");
+      if (kind === "phasePowerToken") {
+        return getPhase(state) === "Explore" && !state.exploreActivated;
+      }
       return kind === "spendElasticity";
 
     case "explore-move-r1":
@@ -500,6 +506,8 @@ function stepAllowsAction(state, stepId, kind, detail = {}) {
 export function isTutorialActionAllowed(state, kind, detail = {}) {
   if (!isInteractiveTutorialActive(state)) return true;
   if (kind === "tutorialNav") return true;
+  // Switching Dreamers only changes whose hand and move is focused.
+  if (kind === "dreamerSelect") return true;
 
   const step = getTutorialStep(state);
   if (!step) return true;
@@ -525,7 +533,9 @@ export function isTutorialActionAllowed(state, kind, detail = {}) {
   }
 
   if (kind === "boardClick" && state.landscapePick?.mode === "reveal") {
-    if (["end-r3", "end-r4", "r5-practice"].includes(step.id)) return true;
+    if (["end-r3", "end-r4", "r5-practice", "to-explore-r1", "r2-to-explore"].includes(step.id)) {
+      return true;
+    }
     return ["spend-lucidity-r1", "r2-lucidity", "reveal-pick-r1"].includes(step.id);
   }
 
@@ -790,8 +800,8 @@ export const TUTORIAL_SCRIPT = [
     id: "spend-lucidity-r1",
     round: 1,
     title: "Reveal: Spend Lucidity",
-    body: "Select 1 to 2 Lucidity cards, then click Reveal Landscapes.",
-    targets: ["#hand-bar", "#phase-actions"],
+    body: "Click a Dreamer chip to see their hand. Select 1 to 2 Lucidity cards, then click Reveal Landscapes.",
+    targets: ["#hand-bar", "#phase-actions", "#dreamer-dock"],
     spotlight: "#phase-actions",
     until: (s) => s.revealLandscapeUsed || s.landscapePick?.mode === "reveal",
     objective: (s) => {
@@ -827,7 +837,7 @@ export const TUTORIAL_SCRIPT = [
     round: 1,
     title: "Explore: Pay with a Power Token",
     body: "A Power Token can pay an R.E.M. phase cost instead of a Psyche card. Click Power Token as 1 Elasticity (do not select cards), then click Spend Elasticity to unlock team moves.",
-    targets: ["#phase-actions", "#power-tokens"],
+    targets: ["#phase-actions", "#power-tokens", "#dreamer-dock"],
     spotlight: "#phase-actions",
     until: (s) => s.exploreActivated,
     objective: (s) => {
@@ -863,8 +873,8 @@ export const TUTORIAL_SCRIPT = [
     id: "spend-willpower-r1",
     round: 1,
     title: "Meet: Spend Willpower",
-    body: "Select 1 to 2 Willpower cards, then click Gain Actions.",
-    targets: ["#hand-bar", "#phase-actions"],
+    body: "Click a Dreamer chip to see their hand. Select 1 to 2 Willpower cards, then click Gain Actions.",
+    targets: ["#hand-bar", "#phase-actions", "#dreamer-dock"],
     spotlight: "#phase-actions",
     until: (s) => s.meetActionBudget > 0,
     objective: (s) => {
@@ -932,8 +942,8 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-lucidity",
     round: 2,
     title: "Round 2 — Reveal: Spend Lucidity",
-    body: "Select 1 to 2 Lucidity cards, then click Reveal Landscapes. You do not need to reveal new tiles this round, but you must spend Lucidity to finish Reveal.",
-    targets: ["#hand-bar", "#phase-actions"],
+    body: "Click a Dreamer chip to see their hand. Select 1 to 2 Lucidity cards, then click Reveal Landscapes. You do not need to reveal new tiles this round, but you must spend Lucidity to finish Reveal.",
+    targets: ["#hand-bar", "#phase-actions", "#dreamer-dock"],
     spotlight: "#phase-actions",
     until: (s) => atRound(s, 2) && (s.revealLandscapeUsed || s.landscapePick?.mode === "reveal"),
     objective: (s) => {
@@ -957,7 +967,7 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-elasticity",
     round: 2,
     title: "Round 2 — Explore: Spend Elasticity",
-    body: "Select 1 to 2 Elasticity cards, then click Spend Elasticity. This unlocks team moves so you can reach The Attic and The Basement.",
+    body: "Click a Dreamer chip to see their hand. Select 1 to 2 Elasticity cards, then click Spend Elasticity. This unlocks team moves so you can reach The Attic and The Basement.",
     targets: ["#hand-bar", "#phase-actions", "#dreamer-dock"],
     spotlight: "#phase-actions",
     until: (s) => atRound(s, 2) && s.exploreActivated,
@@ -1004,8 +1014,8 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-willpower",
     round: 2,
     title: "Round 2 — Meet: Spend Willpower",
-    body: "Select 1 to 2 Willpower cards, then click Gain Actions. Meet actions pay for Landscape Action A on The Attic and The Basement.",
-    targets: ["#hand-bar", "#phase-actions"],
+    body: "Click a Dreamer chip to see their hand. Select 1 to 2 Willpower cards, then click Gain Actions. Meet actions pay for Landscape Action A on The Attic and The Basement.",
+    targets: ["#hand-bar", "#phase-actions", "#dreamer-dock"],
     spotlight: "#phase-actions",
     until: (s) => atRound(s, 2) && s.meetActionBudget > 0,
     objective: (s) => {
@@ -1175,6 +1185,24 @@ export function getTutorialStep(state) {
   return TUTORIAL_SCRIPT[state.tutorialStepIndex] || null;
 }
 
+const TUTORIAL_ADVANCE_ONLY_STEPS = new Set([
+  "to-explore-r1",
+  "r2-to-explore",
+  "to-meet-r1",
+  "r2-to-meet",
+  "end-r1",
+  "end-r2",
+]);
+
+function releaseTutorialAdvanceBlockers(state, step) {
+  if (!step || !TUTORIAL_ADVANCE_ONLY_STEPS.has(step.id)) return;
+  if (!state.landscapePick) return;
+  if (state.landscapePick.mode === "reveal" && state.landscapePick.picked?.length) {
+    state.revealLandscapeUsed = true;
+  }
+  state.landscapePick = null;
+}
+
 export function syncTutorial(state) {
   if (!state?.tutorialMode || state.tutorialComplete) return null;
 
@@ -1182,6 +1210,8 @@ export function syncTutorial(state) {
   if (!step) {
     return { complete: true };
   }
+
+  releaseTutorialAdvanceBlockers(state, step);
 
   if (step.until) {
     state.tutorialCanAdvance = step.until(state);

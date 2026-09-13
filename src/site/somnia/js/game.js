@@ -1453,6 +1453,7 @@ export function getDeckTop(state, deckId) {
 export function getLegalExploreTargets(state) {
   const player = activePlayer(state);
   if (getPhase(state) !== "Explore" || !state.exploreActivated) return [];
+  if ((state.exploreMovesLeft || 0) < 1) return [];
   return getLegalMoveTargets(state, player);
 }
 
