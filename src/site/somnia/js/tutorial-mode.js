@@ -7,14 +7,79 @@ import {
   checkDreamerPsycheDeath,
 } from "./state.js";
 import { meetPsycheActor } from "./rules.js";
-import { uid } from "./data.js";
-import { encounterFromDreambeastCard } from "./mindstream-supply.js";
 import { hexNeighbors, getLegalMoveTargets } from "./hex.js";
 import { precomputeTutorialSnapshots } from "./tutorial-canonical.js";
 
 export const TUTORIAL_DREAMER_IDS = ["the-visionary", "the-runner"];
 export const TUTORIAL_MAX_ROUND = 5;
 const TUTORIAL_STARTER_IDS = ["city", "sky", "forest", "road", "house", "suburbia"];
+
+let tutorialUidSeq = 0;
+
+function resetTutorialUidSeq() {
+  tutorialUidSeq = 0;
+}
+
+function tutorialUid(prefix) {
+  tutorialUidSeq += 1;
+  return `${prefix}-tut-${String(tutorialUidSeq).padStart(4, "0")}`;
+}
+
+function stableCardSort(cards) {
+  return [...cards].sort((a, b) => {
+    const key = (c) => `${c.type || ""}|${c.suit || ""}|${c.value ?? ""}|${c.id || ""}|${c.name || ""}`;
+    return key(a).localeCompare(key(b));
+  });
+}
+
+function stabilizeTutorialDecks(state) {
+  state.psycheDeck = stableCardSort(state.psycheDeck);
+  state.psycheDiscard = stableCardSort(state.psycheDiscard);
+  state.archetypeDeck = stableCardSort(state.archetypeDeck);
+  Object.keys(state.mindstreamDecks).forEach((suit) => {
+    state.mindstreamDecks[suit] = stableCardSort(state.mindstreamDecks[suit]);
+  });
+  Object.keys(state.mindstreamDiscard).forEach((suit) => {
+    state.mindstreamDiscard[suit] = stableCardSort(state.mindstreamDiscard[suit]);
+  });
+}
+
+function reseedTutorialInstanceIds(state) {
+  resetTutorialUidSeq();
+  const stamp = (card, prefix) => {
+    if (!card || typeof card !== "object") return;
+    card.instanceId = tutorialUid(prefix);
+  };
+  const stampList = (cards, prefix) => {
+    cards?.forEach((card, index) => stamp(card, `${prefix}-${index}-${card.id || card.type}`));
+  };
+
+  state.players.forEach((player, playerIndex) => {
+    stamp(player, `player-${playerIndex}`);
+    stampList(player.hand, `p${playerIndex}-hand`);
+    stampList(player.objects, `p${playerIndex}-obj`);
+    stampList(player.persistent, `p${playerIndex}-per`);
+    stampList(player.acquiredArchetypes, `p${playerIndex}-arch`);
+  });
+
+  stampList(state.psycheDeck, "psyche-deck");
+  stampList(state.psycheDiscard, "psyche-discard");
+  stampList(state.dreamDeck, "dream-deck");
+  stampList(state.archetypeDeck, "archetype-deck");
+  if (state.activeArchetype) stamp(state.activeArchetype, `arch-${state.activeArchetype.id}`);
+  if (state.activeDream) stamp(state.activeDream, `dream-active`);
+
+  Object.entries(state.mindstreamDecks).forEach(([suit, cards]) => {
+    stampList(cards, `ms-deck-${suit}`);
+  });
+  Object.entries(state.mindstreamDiscard).forEach(([suit, cards]) => {
+    stampList(cards, `ms-discard-${suit}`);
+  });
+
+  state.board?.forEach((tile) => {
+    if (tile.encounter) stamp(tile.encounter, `enc-${tile.id}-${tile.encounter.id}`);
+  });
+}
 
 function makePsyche(suit, value, tag) {
   const label = suit.charAt(0).toUpperCase() + suit.slice(1);
@@ -24,12 +89,12 @@ function makePsyche(suit, value, tag) {
     suit,
     value,
     name: `${label} ${value}`,
-    instanceId: uid(`tut-${tag}`),
+    instanceId: tutorialUid(`psyche-${tag}`),
   };
 }
 
 function mkDream(template, extra = {}) {
-  return { ...template, ...extra, instanceId: uid("tut-dream") };
+  return { ...template, ...extra, instanceId: tutorialUid("dream") };
 }
 
 const TUTORIAL_QUEST_PLACEMENT = [
@@ -37,11 +102,13 @@ const TUTORIAL_QUEST_PLACEMENT = [
   { questId: "the-basement", beside: "city", besideName: "City" },
 ];
 
-const TUTORIAL_SNAPSHOT_VERSION = 4;
+const TUTORIAL_SNAPSHOT_VERSION = 7;
 let tutorialSnapshotCache = null;
 let tutorialSnapshotCacheVersion = 0;
 
 export function createTutorialBaseState(data) {
+  resetTutorialUidSeq();
+
   const dreamers = TUTORIAL_DREAMER_IDS
     .map((id) => data.dreamers.find((d) => d.id === id))
     .filter(Boolean);
@@ -65,14 +132,15 @@ export function createTutorialBaseState(data) {
   if (innocent) {
     state.activeArchetype = {
       ...innocent,
-      instanceId: uid("tut-arch"),
+      instanceId: tutorialUid("arch-innocent"),
       questProgress: [false, false],
       powerTokensOnArchetype: 0,
     };
     state.archetypeDeck = state.archetypeDeck.filter((a) => a.id !== "innocent");
   }
 
-  state.players.forEach((p) => {
+  state.players.forEach((p, index) => {
+    p.id = tutorialUid(`player-${index}`);
     p.powerTokens = 4;
   });
 
@@ -101,15 +169,22 @@ export function createTutorialBaseState(data) {
     mkDream(cerberus, { type: "boss-dream", boss: true }),
     mkDream(heroism),
     mkDream(quiet),
-    ...state.dreamDeck.slice(5),
   ];
+  state.dreamDiscard = [];
 
   setupTutorialQuestLandscapes(state);
 
   const mandrake = data.dreambeasts.find((b) => b.id === "mandrake");
   if (mandrake) {
-    setEncounterOnLandscape(state, "house", encounterFromDreambeastCard(mandrake));
+    setEncounterOnLandscape(state, "house", {
+      ...mandrake,
+      type: "dreambeast",
+      instanceId: tutorialUid("enc-mandrake"),
+    });
   }
+
+  stabilizeTutorialDecks(state);
+  reseedTutorialInstanceIds(state);
 
   const placementNote = (state.tutorialFlags.questPlacements || [])
     .map((p) => `${p.questId === "the-attic" ? "The Attic" : "The Basement"} beside ${p.starterName}`)
@@ -683,6 +758,7 @@ export const TUTORIAL_SCRIPT = [
     title: "The Innocent Archetype",
     body: "Your Active Archetype is The Innocent (1 point). Quest 1: Draw Mindstream on The Attic (beside House). Quest 2: Draw Mindstream on The Basement (beside City). Both quest Landscapes are already revealed on the map. Glowing hexes mark quest locations.",
     targets: ["#active-archetype", "#board-viewport"],
+    spotlight: "#active-archetype",
   },
   {
     id: "draw-dream-r1",
@@ -1048,8 +1124,8 @@ export const TUTORIAL_SCRIPT = [
     title: "Round 5: Final Practice",
     body: "One last guided round. Run the full R.E.M. loop, then end Meet to finish the tutorial.",
     targets: ["#phase-stepper", "#phase-actions"],
-    until: (s) => s.round > 5 || s.tutorialComplete,
-    objective: (s) => (s.round > 5
+    until: (s) => s.tutorialFlags?.practiceRoundComplete || s.round > 5 || s.tutorialComplete,
+    objective: (s) => (s.tutorialFlags?.practiceRoundComplete || s.round > 5
       ? "Tutorial rounds complete. Press Continue."
       : remEndRoundObjective(s, 6)),
   },
@@ -1172,4 +1248,41 @@ export function completeTutorialGame(state) {
 
 export function isInteractiveTutorialActive(state) {
   return !!(state?.tutorialMode && !state.tutorialComplete);
+}
+
+// ── Tutorial spotlight (pure — safe for Node audits) ─────────────────
+
+const TUTORIAL_BOARD_SELECTORS = new Set([
+  "#board-viewport", "#hex-board", "#player-list", "#dreamer-dock",
+]);
+
+export function getTutorialStepTargetSelectors(step) {
+  if (!step) return [];
+  if (Array.isArray(step.targets) && step.targets.length) return step.targets;
+  if (step.target) return [step.target];
+  return [];
+}
+
+export function getTutorialSpotlightSelector(step, { utilityModalOpen = false } = {}) {
+  if (!step) return null;
+  if (utilityModalOpen) return "#utility-modal .utility-content";
+  if (step.spotlight) return step.spotlight;
+  const selectors = getTutorialStepTargetSelectors(step);
+  if (!selectors.length) return null;
+  if (selectors.includes("#btn-advance-phase")) return "#btn-advance-phase";
+  if (selectors.includes("#phase-advance-bar") && !selectors.includes("#board-viewport")) {
+    return "#btn-advance-phase";
+  }
+  if (selectors.includes("#active-encounter")) return "#active-encounter";
+  if (selectors.includes("#phase-actions") && !selectors.includes("#board-viewport")) {
+    return "#phase-actions";
+  }
+  if (selectors.length > 1) {
+    const primary = selectors.find((s) => !TUTORIAL_BOARD_SELECTORS.has(s));
+    if (primary) return primary;
+  }
+  if (selectors.includes("#board-viewport")) return "#board-viewport";
+  if (selectors.includes("#dreamer-dock")) return "#dreamer-dock";
+  if (selectors.includes("#player-list")) return "#player-list";
+  return selectors[0];
 }

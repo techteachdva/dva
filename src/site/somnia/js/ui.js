@@ -28,7 +28,11 @@ import { getQuestStatus, activeQuestLandscapeIds } from "./quests.js";
 import { effectiveDreamerStat } from "./archetype-stats.js";
 import { hexToPixel, boardPixelBounds } from "./hex.js";
 import { subconsciousCount, subconsciousPilesForUI, isDreambeastPsycheCard } from "./subconscious.js";
-import { TUTORIAL_SECTIONS } from "./tutorial-mode.js";
+import {
+  TUTORIAL_SECTIONS,
+  getTutorialSpotlightSelector,
+  getTutorialStepTargetSelectors,
+} from "./tutorial-mode.js";
 import { getNarratorView, listPhaseActionHints } from "./narrator.js";
 import {
   getCurrentObjective,
@@ -2638,14 +2642,11 @@ function bindTutorialScrollRefresh() {
   window.addEventListener("resize", () => positionTutorialSpotlight(), { passive: true });
 }
 
-const SPARKLE_COUNT = 28;
+const SPARKLE_COUNT = 32;
 const SPARKLE_JUMP_MS = 720;
 
 function getStepTargetSelectors(step) {
-  if (!step) return [];
-  if (Array.isArray(step.targets) && step.targets.length) return step.targets;
-  if (step.target) return [step.target];
-  return [];
+  return getTutorialStepTargetSelectors(step);
 }
 
 const TUTORIAL_BOTTOM_SELECTORS = new Set([
@@ -2663,24 +2664,8 @@ function getUtilityModalSpotlightEl() {
   return document.querySelector("#utility-modal .utility-content");
 }
 
-function getSpotlightSelector(step) {
-  if (!step) return null;
-  if (isUtilityModalOpen()) return "#utility-modal .utility-content";
-  if (step.spotlight) return step.spotlight;
-  const selectors = getStepTargetSelectors(step);
-  if (selectors.includes("#btn-advance-phase")) return "#btn-advance-phase";
-  if (selectors.includes("#phase-advance-bar") && !selectors.includes("#board-viewport")) {
-    return "#btn-advance-phase";
-  }
-  if (selectors.includes("#phase-actions") && !selectors.includes("#board-viewport")) {
-    return "#phase-actions";
-  }
-  if (selectors.includes("#board-viewport")) return "#board-viewport";
-  if (selectors.includes("#dreamer-dock")) return "#dreamer-dock";
-  if (selectors.includes("#player-list")) return "#player-list";
-  if (selectors.length === 1) return selectors[0];
-  const focused = selectors.find((s) => !TUTORIAL_BOARD_SELECTORS.has(s) && s !== "#board-viewport");
-  return focused || selectors[0];
+export function getSpotlightSelector(step) {
+  return getTutorialSpotlightSelector(step, { utilityModalOpen: isUtilityModalOpen() });
 }
 
 function resolveTutorialElements(step) {
@@ -3245,7 +3230,9 @@ function applyTutorialHighlight(stepOrTarget, { animateIn = true } = {}) {
   const spotlightTargets = step
     ? resolveSpotlightElements(step)
     : targets;
-  const highlightTargets = isUtilityModalOpen() ? [] : targets;
+  const highlightTargets = isUtilityModalOpen()
+    ? []
+    : (spotlightTargets.length ? spotlightTargets : targets);
 
   if (step) ensureTutorialStepTargetsVisible(step);
 

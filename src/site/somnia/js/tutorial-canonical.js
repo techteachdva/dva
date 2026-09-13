@@ -2,7 +2,13 @@
  * Precomputes a fixed game-state snapshot for every tutorial step so
  * Continue / Back / Jump always restore the same on-rails experience.
  */
-import { getPhase, landscapeById, checkDreamerPsycheDeath } from "./state.js";
+import {
+  getPhase,
+  landscapeById,
+  checkDreamerPsycheDeath,
+  resetPhaseFlags,
+  beginRoundReveal,
+} from "./state.js";
 import { hexDistance } from "./hex.js";
 import {
   drawDreamCard,
@@ -104,16 +110,16 @@ function advanceToPhase(state, phase) {
   }
 }
 
-function advanceToRound(state, minRound) {
+function advanceToRound(state, minRound, { allowDreamDraw = false } = {}) {
   let guard = 80;
   while (state.round < minRound && state.status === "playing" && guard-- > 0) {
-    closeRound(state);
+    closeRound(state, { allowDreamDraw });
   }
 }
 
 /** Finish the current round's R.E.M. loop and advance to the next round's Reveal. */
-function closeRound(state) {
-  if (getPhase(state) === "Reveal" && !state.dreamDrawn) {
+function closeRound(state, { allowDreamDraw = true } = {}) {
+  if (allowDreamDraw && getPhase(state) === "Reveal" && !state.dreamDrawn) {
     drawDreamCard(state);
   }
   if (getPhase(state) === "Reveal" && !state.revealLandscapeUsed) {
@@ -328,15 +334,21 @@ export function applyCanonicalTutorialStep(state, step) {
       return;
 
     case "end-r3":
-      closeRound(state);
+      state.round = 4;
+      resetPhaseFlags(state);
+      state.phaseIndex = 0;
+      beginRoundReveal(state);
       return;
 
     case "end-r4":
-      closeRound(state);
+      state.round = 5;
+      resetPhaseFlags(state);
+      state.phaseIndex = 0;
+      beginRoundReveal(state);
       return;
 
     case "r5-practice":
-      closeRound(state);
+      state.tutorialFlags.practiceRoundComplete = true;
       return;
 
     default:
