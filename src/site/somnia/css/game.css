@@ -20,7 +20,7 @@
   --font-body: "Source Sans 3", sans-serif;
   --topbar-h: 3.5rem;
   --sidebar-w: clamp(280px, 28vw, 420px);
-  --hand-h: clamp(240px, 30vh, 360px);
+  --hand-h: clamp(280px, 36vh, 480px);
   --chrome-h: 0px;
   --footer-h: 108px;
   --ui-scale: 1;
@@ -725,7 +725,7 @@ body.in-game .brand h1 {
   border-right: none;
   border-bottom: none;
   min-height: var(--hand-h);
-  max-height: min(50vh, 460px);
+  max-height: min(68vh, 640px);
   overflow-x: hidden;
   overflow-y: auto;
   position: relative;
@@ -1386,15 +1386,18 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
 }
 
 .timeline-toll-preview {
-  margin: 0 0 0.35rem;
-  padding: 0.35rem 0.55rem;
-  font-size: 0.78rem;
-  line-height: 1.35;
+  margin: 0;
+  padding: 0.12rem 0.25rem;
+  font-size: 1.05rem;
+  line-height: 1.2;
   color: #ffcba8;
-  background: rgba(255, 120, 60, 0.1);
-  border: 1px solid rgba(255, 140, 80, 0.28);
-  border-radius: 8px;
-  text-align: center;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .guide-panel {
@@ -2487,6 +2490,7 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight {
 }
 
 body.tutorial-mode-active #phase-actions.tutorial-highlight .action-section-primary .btn:not(:disabled),
+body.tutorial-mode-active #phase-actions.tutorial-highlight .action-group-main .btn:not(:disabled),
 body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
   box-shadow: 0 4px 24px rgba(123, 92, 255, 0.5);
 }
@@ -2957,7 +2961,7 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
 
 #screen-game .phase-actions {
   flex-shrink: 0;
-  gap: 0.35rem;
+  gap: 0.14rem;
 }
 
 #screen-game .game-log {
@@ -3158,11 +3162,23 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
   margin-bottom: 0.35rem;
 }
 
+.power-bonus-row {
+  display: flex;
+  gap: 0.3rem;
+  align-items: stretch;
+}
+
 .power-bonus-btn {
-  align-self: flex-start;
+  align-self: stretch;
+  flex: 1 1 0;
   white-space: normal;
-  text-align: left;
+  text-align: center;
   line-height: 1.25;
+}
+
+.power-bonus-undo:not(:disabled) {
+  border-color: rgba(240, 201, 106, 0.45);
+  color: #f0c96a;
 }
 
 .power-bonus-pending {
@@ -3205,13 +3221,90 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.65rem;
-  height: 1.65rem;
+  width: 1.85rem;
+  height: 1.85rem;
+  padding: 0;
+  border: none;
   border-radius: 999px;
   background: linear-gradient(145deg, #f0c96a, #c48a1a);
   color: #1a1208;
   font-size: 0.95rem;
+  cursor: pointer;
   box-shadow: 0 0 0 1px rgba(240, 201, 106, 0.35), 0 2px 6px rgba(0, 0, 0, 0.35);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.power-token-chip:hover,
+.power-token-chip:focus-visible {
+  transform: translateY(-1px) scale(1.08);
+  box-shadow: 0 0 0 2px rgba(240, 201, 106, 0.7), 0 4px 10px rgba(0, 0, 0, 0.4);
+  outline: none;
+}
+
+.power-token-radial-layer {
+  position: fixed;
+  inset: 0;
+  z-index: 240;
+  pointer-events: none;
+}
+
+.power-token-radial-layer.open {
+  pointer-events: auto;
+}
+
+.power-token-radial-scrim {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: rgba(6, 4, 14, 0.35);
+  cursor: pointer;
+}
+
+.power-token-radial {
+  position: absolute;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.power-token-radial-item {
+  position: absolute;
+  left: 0;
+  top: 0;
+  min-width: 6.4rem;
+  max-width: 8.2rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid rgba(201, 160, 255, 0.35);
+  background: rgba(16, 10, 32, 0.94);
+  color: rgba(232, 228, 255, 0.55);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.15;
+  text-align: center;
+  pointer-events: auto;
+  transform: translate(-50%, -50%) translate(var(--x), var(--y)) scale(0.72);
+  opacity: 0;
+  transition: transform 0.18s ease, opacity 0.18s ease, box-shadow 0.15s ease;
+}
+
+.power-token-radial-layer.open .power-token-radial-item {
+  transform: translate(-50%, -50%) translate(var(--x), var(--y)) scale(1);
+  opacity: 1;
+}
+
+.power-token-radial-item.ready:not(:disabled) {
+  color: var(--text);
+  border-color: rgba(240, 201, 106, 0.65);
+  background: linear-gradient(135deg, rgba(123, 92, 255, 0.55), rgba(74, 158, 255, 0.4));
+  box-shadow: 0 0 14px rgba(240, 201, 106, 0.22);
+}
+
+.power-token-radial-item.ready:not(:disabled):hover {
+  transform: translate(-50%, -50%) translate(var(--x), var(--y)) scale(1.06);
+  box-shadow: 0 0 18px rgba(240, 201, 106, 0.4);
 }
 
 .power-tokens-empty {
@@ -4874,7 +4967,7 @@ body.card-detail-open .tutorial-card {
 @media (max-width: 980px) {
   :root {
     --sidebar-w: 100%;
-    --hand-h: clamp(160px, 22vh, 220px);
+    --hand-h: clamp(280px, 42vh, 420px);
   }
 
   #screen-game.active {
@@ -4940,14 +5033,14 @@ html[data-touch="true"] .btn {
 }
 
 html[data-device="mobile"] .phase-actions .btn {
-  font-size: 0.82rem;
-  padding: 0.55rem 0.7rem;
+  font-size: 1.85rem;
+  padding: 0.55rem 0.85rem;
 }
 
 html[data-device="mobile"] .phase-actions {
-  overflow-x: auto;
+  overflow: hidden;
   flex-wrap: nowrap;
-  -webkit-overflow-scrolling: touch;
+  flex-direction: column;
   max-height: none;
 }
 
@@ -5958,8 +6051,7 @@ body.panel-resizing {
   max-width: 18rem;
 }
 
-html[data-device="mobile"] .player-chip,
-html[data-device="mobile"] .action-dock-btn {
+html[data-device="mobile"] .player-chip {
   min-height: 44px;
 }
 
@@ -6022,7 +6114,7 @@ html[data-device="mobile"] .action-dock-btn {
 
 #screen-game .hand-bar {
   grid-template-columns: minmax(112px, 13vw) minmax(96px, 130px) minmax(0, 1fr) minmax(0, 22vw);
-  grid-template-rows: auto minmax(10rem, 1fr);
+  grid-template-rows: auto minmax(6.5rem, 1fr);
   gap: 0.45rem 0.65rem;
   padding-top: 0.35rem;
 }
@@ -6036,14 +6128,14 @@ html[data-device="mobile"] .action-dock-btn {
   grid-column: 1 / -1;
   grid-row: 1;
   min-width: 0;
-  min-height: 8.5rem;
-  max-height: min(48vh, 360px);
-  overflow-x: hidden;
-  overflow-y: auto;
-  border: 1px solid rgba(201, 160, 255, 0.28);
-  border-radius: 12px;
-  background: rgba(8, 6, 18, 0.72);
-  padding: 0.5rem 0.65rem 0.6rem;
+  min-height: calc(3 * 5.1rem + 2.6rem);
+  max-height: none;
+  overflow: visible;
+  border: 1px solid rgba(201, 160, 255, 0.38);
+  border-radius: 10px;
+  background: rgba(8, 6, 18, 0.78);
+  padding: 0.4rem 0.5rem 0.45rem;
+  box-shadow: inset 0 0 0 1px rgba(201, 160, 255, 0.08);
 }
 
 #screen-game .hand-bar > .dreamer-dock { grid-column: 1; grid-row: 2; }
@@ -6054,44 +6146,104 @@ html[data-device="mobile"] .action-dock-btn {
 .action-dock {
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
+  gap: 0.28rem;
+  min-width: 0;
+}
+
+.action-dock-strip {
+  display: flex;
+  flex-direction: column;
+  gap: 0.32rem;
+  width: 100%;
+}
+
+.action-dock-row {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 0.35rem 0.7rem;
+  min-width: 0;
+  width: 100%;
+}
+
+.action-group {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.3rem 0.4rem;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.action-dock-row-scene .action-group-encounter {
+  flex: 2 1 0;
+}
+
+.action-dock-row-scene .action-group-actions {
+  flex: 5 1 0;
+}
+
+.action-dock-row-scene .action-group + .action-group {
+  padding-left: 0.65rem;
+  border-left: 1px solid rgba(201, 160, 255, 0.22);
+}
+
+.action-group-label {
+  flex: 0 0 auto;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  line-height: 1.1;
+  padding: 0 0.1rem;
+}
+
+.action-group-btns {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  gap: 0.35rem;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .action-dock-advance {
   display: flex;
-  justify-content: center;
+  flex: 1 1 0;
+  min-width: 0;
 }
 
+.action-dock .btn-advance,
 .action-dock-advance .btn-advance {
   width: 100%;
-  max-width: 480px;
-  font-size: 1.02rem;
-  min-height: 2.75rem;
-  padding: 0.65rem 1.35rem;
-}
-
-.action-dock-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 0.28rem;
-  align-items: stretch;
-  width: 100%;
+  max-width: none;
+  min-width: 0;
+  font-size: 2.05rem;
+  height: 5.1rem;
+  min-height: 5.1rem;
+  max-height: 5.1rem;
+  padding: 0.35rem 0.7rem;
+  box-shadow: 0 2px 10px rgba(123, 92, 255, 0.28);
 }
 
 .action-section-label {
-  font-size: 0.64rem;
+  font-size: 0.56rem;
   font-weight: 700;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
-  margin-top: 0.05rem;
+  margin: 0;
 }
 
 .action-section-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
-  gap: 0.4rem;
-  align-items: stretch;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+  align-items: center;
 }
 
 .action-dock-btn.action-disabled-hint:disabled {
@@ -6100,19 +6252,23 @@ html[data-device="mobile"] .action-dock-btn {
 }
 
 .action-dock-btn {
-  font-size: 0.86rem;
-  font-weight: 600;
-  line-height: 1.2;
-  padding: 0.55rem 0.9rem;
-  min-height: 2.65rem;
-  width: 100%;
+  font-size: 2.05rem;
+  font-weight: 700;
+  line-height: 1.05;
+  padding: 0.35rem 0.65rem;
+  height: 5.1rem;
+  min-height: 5.1rem;
+  max-height: 5.1rem;
+  width: auto;
+  flex: 1 1 0;
+  min-width: 0;
   white-space: normal;
   text-align: center;
   border: 1px solid rgba(255, 255, 255, 0.14);
   background: rgba(255, 255, 255, 0.04);
   color: rgba(232, 228, 255, 0.55);
   opacity: 0.72;
-  border-radius: 999px;
+  border-radius: 18px;
   transition: background 0.15s, border-color 0.15s, box-shadow 0.15s, opacity 0.15s, transform 0.12s;
 }
 
@@ -6133,6 +6289,20 @@ html[data-device="mobile"] .action-dock-btn {
 .action-dock-btn.btn-ready:not(:disabled):hover {
   transform: translateY(-1px);
   box-shadow: 0 0 18px rgba(123, 92, 255, 0.38);
+}
+
+html[data-device="mobile"] .action-dock-btn,
+html[data-device="tablet"] .action-dock-btn,
+html[data-touch="true"] .action-dock-btn,
+html[data-device="mobile"] .action-dock .btn-advance,
+html[data-device="tablet"] .action-dock .btn-advance,
+html[data-touch="true"] .action-dock .btn-advance {
+  height: 5.1rem;
+  min-height: 5.1rem;
+  max-height: 5.1rem;
+  min-width: 0;
+  font-size: 1.85rem;
+  padding: 0.35rem 0.55rem;
 }
 
 .action-dock-empty {
@@ -6538,23 +6708,24 @@ body.play-window .hud-item {
 }
 
 body.play-window .action-dock-wrap {
-  border-radius: 22px;
+  border-radius: 12px;
+  min-height: 0;
+  max-height: none;
 }
 
 body.play-window .action-dock-btn {
-  border-radius: 999px;
-  padding: 0.58rem 1rem;
-  min-height: 2.7rem;
+  border-radius: 18px;
+  padding: 0.35rem 0.65rem;
+  height: 5.1rem;
+  min-height: 5.1rem;
+  font-size: 2.05rem;
 }
 
 body.play-window .action-dock-advance .btn-advance {
-  border-radius: 999px;
-  min-height: 2.85rem;
-}
-
-body.play-window .action-dock-wrap {
-  min-height: 9rem;
-  max-height: min(48vh, 360px);
+  border-radius: 18px;
+  height: 5.1rem;
+  min-height: 5.1rem;
+  font-size: 2.05rem;
 }
 
 body.play-window #screen-game .hand-bar {
@@ -6616,7 +6787,7 @@ body.play-window .subconscious-graveyard {
 }
 
 #screen-game .hand-bar {
-  grid-template-rows: minmax(0, auto) minmax(9.5rem, 1fr);
+  grid-template-rows: minmax(0, auto) minmax(6.5rem, 1fr);
   align-content: stretch;
 }
 

@@ -97,9 +97,14 @@
               <span id="power-token-stats" class="power-token-stats"></span>
             </div>
             <div id="power-token-actions" class="power-token-actions">
-              <button type="button" id="btn-power-bonus" class="btn btn-sm power-bonus-btn" disabled title="Spend any number of Power Tokens. Each adds +1 to the current Psyche spread.">
-                +1 to Spread
-              </button>
+              <div class="power-bonus-row">
+                <button type="button" id="btn-power-bonus" class="btn btn-sm power-bonus-btn" disabled title="Spend any number of Power Tokens. Each adds +1 to the current Psyche spread.">
+                  +1 to Spread
+                </button>
+                <button type="button" id="btn-power-bonus-undo" class="btn btn-sm power-bonus-btn power-bonus-undo hidden" disabled title="Return 1 Power Token and remove +1 from the current Psyche spread.">
+                  -1 Spread
+                </button>
+              </div>
               <p id="power-bonus-pending" class="power-bonus-pending hidden" aria-live="polite"></p>
             </div>
             <div id="power-tokens" class="power-tokens" aria-label="Power tokens held"></div>

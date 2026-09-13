@@ -325,6 +325,16 @@ function allowsRemEndRoundAction(state, kind, detail = {}) {
       return phase === "Meet" && state.meetActionBudget <= 0;
     case "advancePhase":
       return true;
+    case "powerBonus":
+    case "refundPowerBonus":
+      return phase === "Meet" && state.meetActionBudget > 0;
+    case "phasePowerToken":
+      if (phase === "Reveal") return state.dreamDrawn && !state.revealLandscapeUsed;
+      if (phase === "Explore") return !state.exploreActivated;
+      return phase === "Meet" && state.meetActionBudget <= 0;
+    case "completeQuest0":
+    case "completeQuest1":
+      return true;
     default:
       return false;
   }
@@ -368,6 +378,8 @@ export function classifyPhaseAction(action) {
   if (label.startsWith("Reject")) return "meetReject";
   if (label === "Quest 1") return "completeQuest0";
   if (label === "Quest 2") return "completeQuest1";
+  if (label.startsWith("+1 Spread") || label === "+1 to Spread") return "powerBonus";
+  if (label.startsWith("-1 Spread")) return "refundPowerBonus";
   if (label.includes("Next:") || label.startsWith("End Round")) return "advancePhase";
   if (/Action A/i.test(label) || label.startsWith("Draw [")) return "landscapeActionA";
   if (label === "Dreamer Power") return "dreamerPower";
@@ -512,6 +524,7 @@ export function isTutorialActionAllowed(state, kind, detail = {}) {
   if (kind === "tutorialNav") return true;
   // Switching Dreamers only changes whose hand and move is focused.
   if (kind === "dreamerSelect") return true;
+  if (kind === "powerTokenMenu") return true;
 
   const step = getTutorialStep(state);
   if (!step) return true;

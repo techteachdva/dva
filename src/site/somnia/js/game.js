@@ -55,7 +55,7 @@ import {
 import { encounterRejectCost, applyRejectReward } from "./dreambeasts.js";
 import { getLegalMoveTargets, canMoveTo, adjacentTiles, hexDistance, areHexAdjacent } from "./hex.js";
 import { repressCard, listSubconsciousCards, dreambeastToHandCard, isDreambeastPsycheCard } from "./subconscious.js";
-import { spendPowerTokens, playPsychePowerFromHand } from "./power-tokens.js";
+import { spendPowerTokens, grantPowerTokens, playPsychePowerFromHand } from "./power-tokens.js";
 import {
   beginDreamerPower,
   cancelDreamerPower,
@@ -422,6 +422,14 @@ export function getPhaseActions(state, handlers) {
         disabled: player.powerTokens < 1,
         onClick: handlers.powerBonus,
       });
+      if ((state.pendingPowerBonusTokens || 0) > 0) {
+        actions.push({
+          label: `-1 Spread (now +${state.pendingPowerBonus})`,
+          section: "main",
+          hint: "Return 1 Power Token and remove +1 from the current Psyche spread.",
+          onClick: handlers.refundPowerBonus,
+        });
+      }
     }
     if (state.finalRecurrence) {
       const onTile = landscapeById(state, state.selectedLandscapeId);
@@ -843,14 +851,99 @@ export function togglePhasePowerToken(state) {
 
 export function powerBonus(state) {
   const player = activePlayer(state);
+  if (getPhase(state) !== "Meet") {
+    addLog(state, "Spend Power Tokens for +1 spread during Meet, when Psyche is played.");
+    return false;
+  }
   if (player.powerTokens < 1) {
     addLog(state, "Need 1 Power Token.");
-    return;
+    return false;
   }
-  if (!spendPowerTokens(state, player, 1)) return;
+  if (!spendPowerTokens(state, player, 1)) return false;
   state.pendingPowerBonus = (state.pendingPowerBonus || 0) + 1;
+  state.pendingPowerBonusTokens = (state.pendingPowerBonusTokens || 0) + 1;
   addLog(state, `${player.name} spends 1 Power Token: +1 to the Psyche spread (now +${state.pendingPowerBonus}).`);
   playSfx("select");
+  return true;
+}
+
+export function refundPowerBonus(state) {
+  const player = activePlayer(state);
+  if ((state.pendingPowerBonusTokens || 0) < 1) {
+    addLog(state, "No Power Token spread bonus to undo.");
+    return false;
+  }
+  state.pendingPowerBonusTokens -= 1;
+  state.pendingPowerBonus = Math.max(0, (state.pendingPowerBonus || 0) - 1);
+  grantPowerTokens(state, player, 1, { logQuest: false, animate: false });
+  addLog(state, `${player.name} returns 1 Power Token from the Psyche spread (now +${state.pendingPowerBonus}).`);
+  playSfx("select");
+  return true;
+}
+
+export function getPowerTokenRadialOptions(state) {
+  const player = activePlayer(state);
+  const phase = getPhase(state);
+  const suit = phaseSuitForOpening(phase);
+  const suitLabel = SUIT_LABELS[suit] || "Psyche";
+  const pending = state.pendingPowerBonus || 0;
+  const refundable = state.pendingPowerBonusTokens || 0;
+  const arch = state.activeArchetype;
+  const held = player.powerTokens || 0;
+  const questHint = (index) => {
+    if (!arch) return "No active Archetype.";
+    if (arch.questProgress[index]) return "This quest is already marked.";
+    if (held < 1) return "Need 1 Power Token.";
+    if (!isQuestConditionMet(state, arch.id, arch.quests[index])) {
+      return `Quest not met yet: ${arch.quests[index]}`;
+    }
+    return "Spend 1 Power Token to mark this quest.";
+  };
+  const options = [
+    {
+      id: "quest0",
+      kind: "completeQuest0",
+      label: "Quest 1",
+      hint: questHint(0),
+      disabled: !arch || arch.questProgress[0] || !isQuestConditionMet(state, arch.id, arch.quests[0]) || held < 1,
+    },
+    {
+      id: "quest1",
+      kind: "completeQuest1",
+      label: "Quest 2",
+      hint: questHint(1),
+      disabled: !arch || arch.questProgress[1] || !isQuestConditionMet(state, arch.id, arch.quests[1]) || held < 1,
+    },
+    {
+      id: "spreadPlus",
+      kind: "powerBonus",
+      label: pending > 0 ? `+1 Spread (now +${pending})` : "+1 Spread",
+      hint: phase === "Meet"
+        ? "Spend 1 Power Token. Adds +1 to the current Psyche spread."
+        : "Spread bonuses are spent during Meet, when Psyche is played.",
+      disabled: phase !== "Meet" || held < 1,
+    },
+  ];
+  if (refundable > 0) {
+    options.push({
+      id: "spreadMinus",
+      kind: "refundPowerBonus",
+      label: `-1 Spread (now +${pending})`,
+      hint: "Return 1 Power Token and remove +1 from the current Psyche spread.",
+      disabled: false,
+    });
+  }
+  const phaseOn = state.phaseTokenAsPsyche === player.id;
+  options.push({
+    id: "phasePsyche",
+    kind: "phasePowerToken",
+    label: phaseOn ? `Cancel ${suitLabel}` : `As 1 ${suitLabel}`,
+    hint: phaseOn
+      ? "Stop using a Power Token as 1 suited Psyche for this phase opener."
+      : "Spend 1 Power Token in place of 1 suited Psyche for this phase opener (max 1).",
+    disabled: !phaseOn && !canUsePhasePowerToken(state, player),
+  });
+  return options;
 }
 
 export function meetEncounter(state, mode = "accept") {

@@ -44,7 +44,9 @@ import {
   playObject,
   activateObject,
   powerBonus,
+  refundPowerBonus,
   togglePhasePowerToken,
+  getPowerTokenRadialOptions,
   useDreamerPower,
   toggleHandCard,
   handleQuestComplete,
@@ -95,6 +97,7 @@ import {
   renderHand,
   playDreamerHandSparkle,
   renderPowerTokens,
+  showPowerTokenRadial,
   renderPhaseSpendHands,
   renderCoopMeetHands,
   renderObjects,
@@ -272,11 +275,79 @@ function bindFullscreenPrompt() {
   });
 }
 
+function applyPowerTokenUse(id) {
+  if (!state) return;
+  if (id === "quest0") {
+    const result = handleQuestComplete(state, 0);
+    if (result === "acquired") {
+      notifyTutorialArchetypeAcquired(state);
+      playSfx("acquire");
+      requestAnimationFrame(() => burstSparklesAtElement(document.getElementById("acquired-archetypes"), 16, "#f0c96a"));
+    }
+    renderAll();
+    return;
+  }
+  if (id === "quest1") {
+    const result = handleQuestComplete(state, 1);
+    if (result === "acquired") {
+      notifyTutorialArchetypeAcquired(state);
+      playSfx("acquire");
+      requestAnimationFrame(() => burstSparklesAtElement(document.getElementById("acquired-archetypes"), 16, "#f0c96a"));
+    }
+    renderAll();
+    return;
+  }
+  if (id === "spreadPlus") {
+    powerBonus(state);
+    renderAll();
+    return;
+  }
+  if (id === "spreadMinus") {
+    refundPowerBonus(state);
+    renderAll();
+    return;
+  }
+  if (id === "phasePsyche") {
+    togglePhasePowerToken(state);
+    renderAll();
+  }
+}
+
+function openPowerTokenRadial(anchorEl) {
+  if (!state) return;
+  const options = getPowerTokenRadialOptions(state).map((opt) => ({
+    ...opt,
+    disabled: opt.disabled || !isTutorialActionAllowed(state, opt.kind),
+  }));
+  showPowerTokenRadial(anchorEl, options, (opt) => {
+    if (!isTutorialActionAllowed(state, opt.kind)) {
+      tutorialActionBlocked(state);
+      renderAll();
+      return;
+    }
+    applyPowerTokenUse(opt.id);
+  });
+}
+
 function bindPowerBonus() {
   document.getElementById("btn-power-bonus")?.addEventListener("click", () => {
     if (!state) return;
+    if (!isTutorialActionAllowed(state, "powerBonus")) {
+      tutorialActionBlocked(state);
+      renderAll();
+      return;
+    }
     powerBonus(state);
-    playSfx("select");
+    renderAll();
+  });
+  document.getElementById("btn-power-bonus-undo")?.addEventListener("click", () => {
+    if (!state) return;
+    if (!isTutorialActionAllowed(state, "refundPowerBonus")) {
+      tutorialActionBlocked(state);
+      renderAll();
+      return;
+    }
+    refundPowerBonus(state);
     renderAll();
   });
 }
@@ -1049,6 +1120,14 @@ function renderAll() {
       togglePhasePowerToken(state);
       renderAll();
     },
+    powerBonus: () => {
+      powerBonus(state);
+      renderAll();
+    },
+    refundPowerBonus: () => {
+      refundPowerBonus(state);
+      renderAll();
+    },
     defeatFinalArchetype: () => { handleDefeatFinalArchetype(state); renderAll(); },
     sacrificeForFinal: () => { handleSacrificeForFinal(state); renderAll(); },
     nextPhase: () => { requestEndPhase(state, () => renderAll()); },
@@ -1112,7 +1191,9 @@ function renderAll() {
   } else {
     renderHand(state, onHandCardClick, getNewHandCardIds(state));
   }
-  renderPowerTokens(state);
+  renderPowerTokens(state, {
+    onTokenClick: (el) => openPowerTokenRadial(el),
+  });
 
   renderObjects(state, (card, zone) => {
     if (zone === "persistent") {

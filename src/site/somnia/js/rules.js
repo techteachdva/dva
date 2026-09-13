@@ -399,6 +399,7 @@ export function discardSelected(state, player, { toRepress = false } = {}) {
   selected.forEach((card) => routeSpentHandCard(state, player, card, { toRepress }));
   state.selectedHand = [];
   state.pendingPowerBonus = 0;
+  state.pendingPowerBonusTokens = 0;
   if (state.checkPsycheDeath) state.checkPsycheDeath(player);
   return selected;
 }
@@ -417,6 +418,7 @@ export function discardAllSelected(state, { toRepress = false } = {}) {
   });
   state.selectedHand = [];
   state.pendingPowerBonus = 0;
+  state.pendingPowerBonusTokens = 0;
   return byPlayer;
 }
 

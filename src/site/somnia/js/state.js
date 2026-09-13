@@ -132,6 +132,7 @@ export function createInitialState(data, options) {
     meetActionsUsed: 0,
     lastMeetActionByPlayer: {},
     pendingPowerBonus: 0,
+    pendingPowerBonusTokens: 0,
     phaseTokenAsPsyche: null,
     tradeMode: false,
     viewingDeck: null,
@@ -344,6 +345,7 @@ export function resetPhaseFlags(state) {
   state.meetActionsUsed = 0;
   state.lastMeetActionByPlayer = {};
   state.pendingPowerBonus = 0;
+  state.pendingPowerBonusTokens = 0;
   state.phaseTokenAsPsyche = null;
   state.selectedHand = [];
   state.tradeMode = false;
@@ -584,6 +586,7 @@ export function advancePhase(state) {
   state.phaseIndex += 1;
   state.selectedHand = [];
   state.pendingPowerBonus = 0;
+  state.pendingPowerBonusTokens = 0;
 
   if (getPhase(state) === "Explore") {
     addLog(state, "Explore Phase — one Dreamer spends Elasticity to unlock shared moves.");

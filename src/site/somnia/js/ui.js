@@ -461,10 +461,96 @@ export function playDreamerHandSparkle(fromPlayerId, toPlayerId) {
   }
 }
 
-export function renderPowerTokens(state) {
+let powerTokenRadialRoot = null;
+
+function onPowerTokenRadialOutside(event) {
+  if (!powerTokenRadialRoot) return;
+  if (powerTokenRadialRoot.contains(event.target)) return;
+  if (event.target.closest?.(".power-token-chip")) return;
+  hidePowerTokenRadial();
+}
+
+function onPowerTokenRadialKey(event) {
+  if (event.key === "Escape") hidePowerTokenRadial();
+}
+
+export function hidePowerTokenRadial() {
+  if (!powerTokenRadialRoot) return;
+  document.removeEventListener("pointerdown", onPowerTokenRadialOutside, true);
+  document.removeEventListener("keydown", onPowerTokenRadialKey, true);
+  powerTokenRadialRoot.remove();
+  powerTokenRadialRoot = null;
+}
+
+export function showPowerTokenRadial(anchorEl, options, onPick) {
+  hidePowerTokenRadial();
+  if (!anchorEl || !options?.length) return;
+
+  const rect = anchorEl.getBoundingClientRect();
+  const cx = rect.left + rect.width / 2;
+  const cy = rect.top + rect.height / 2;
+  const layer = document.createElement("div");
+  layer.className = "power-token-radial-layer";
+  layer.setAttribute("role", "menu");
+  layer.setAttribute("aria-label", "Spend a Power Token");
+
+  const scrim = document.createElement("button");
+  scrim.type = "button";
+  scrim.className = "power-token-radial-scrim";
+  scrim.setAttribute("aria-label", "Close Power Token menu");
+  scrim.addEventListener("click", hidePowerTokenRadial);
+  layer.appendChild(scrim);
+
+  const root = document.createElement("div");
+  root.className = "power-token-radial";
+  root.style.left = `${cx}px`;
+  root.style.top = `${cy}px`;
+
+  const count = options.length;
+  const radius = Math.max(96, 72 + count * 6);
+  options.forEach((opt, index) => {
+    const angle = count === 1
+      ? -Math.PI / 2
+      : -Math.PI + (Math.PI * index) / (count - 1);
+    let dx = Math.cos(angle) * radius;
+    let dy = Math.sin(angle) * radius;
+    const pad = 72;
+    const sx = Math.min(window.innerWidth - pad, Math.max(pad, cx + dx));
+    const sy = Math.min(window.innerHeight - pad, Math.max(pad, cy + dy));
+    dx = sx - cx;
+    dy = sy - cy;
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = `power-token-radial-item${opt.disabled ? "" : " ready"}`;
+    btn.setAttribute("role", "menuitem");
+    btn.textContent = opt.label;
+    btn.title = opt.hint || opt.label;
+    btn.disabled = !!opt.disabled;
+    btn.style.setProperty("--x", `${dx}px`);
+    btn.style.setProperty("--y", `${dy}px`);
+    btn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      if (opt.disabled) return;
+      hidePowerTokenRadial();
+      onPick?.(opt);
+    });
+    root.appendChild(btn);
+  });
+
+  layer.appendChild(root);
+  document.body.appendChild(layer);
+  powerTokenRadialRoot = layer;
+  requestAnimationFrame(() => layer.classList.add("open"));
+  document.addEventListener("pointerdown", onPowerTokenRadialOutside, true);
+  document.addEventListener("keydown", onPowerTokenRadialKey, true);
+}
+
+export function renderPowerTokens(state, { onTokenClick } = {}) {
+  hidePowerTokenRadial();
   const tokensEl = document.getElementById("power-tokens");
   const statsEl = document.getElementById("power-token-stats");
   const bonusBtn = document.getElementById("btn-power-bonus");
+  const undoBtn = document.getElementById("btn-power-bonus-undo");
   const bonusPending = document.getElementById("power-bonus-pending");
   if (!tokensEl) return;
 
@@ -473,11 +559,12 @@ export function renderPowerTokens(state) {
   const pool = powerTokensInPool(state);
   const isMeet = getPhase(state) === "Meet";
   const pending = state.pendingPowerBonus || 0;
+  const refundable = state.pendingPowerBonusTokens || 0;
 
   if (statsEl) {
     const pendingNote = pending ? `<span class="power-token-pending">+${pending} spread bonus</span>` : "";
     statsEl.innerHTML = `<span class="power-token-held">${held} held</span><span class="power-token-pool">${pool}/${MAX_POWER_TOKEN_POOL} in pool</span>${pendingNote}`;
-    statsEl.title = "Spend on quests, Dreamer Powers, +1 spread bonuses, 1 Psyche for a phase opener, and Object activations";
+    statsEl.title = "Click a token to spend it on a quest, +1 spread, or 1 Psyche for the phase opener";
   }
 
   if (bonusBtn) {
@@ -487,10 +574,19 @@ export function renderPowerTokens(state) {
     bonusBtn.textContent = pending > 0 ? `+1 Spread (now +${pending})` : "+1 to Spread";
   }
 
+  if (undoBtn) {
+    const canUndo = isMeet && refundable > 0;
+    undoBtn.disabled = !canUndo;
+    undoBtn.classList.toggle("hidden", !isMeet);
+    undoBtn.textContent = refundable > 0 ? `-1 Spread (now +${pending})` : "-1 Spread";
+  }
+
   if (bonusPending) {
     if (pending > 0 && isMeet) {
       bonusPending.classList.remove("hidden");
-      bonusPending.textContent = `Psyche spread bonus +${pending} from Power Tokens (stacking).`;
+      bonusPending.textContent = refundable
+        ? `Psyche spread bonus +${pending} from Power Tokens (stacking). Use -1 to undo a token.`
+        : `Psyche spread bonus +${pending}.`;
     } else {
       bonusPending.classList.add("hidden");
       bonusPending.textContent = "";
@@ -502,18 +598,23 @@ export function renderPowerTokens(state) {
     const empty = document.createElement("p");
     empty.className = "power-tokens-empty";
     empty.textContent = isMeet
-      ? "No tokens yet — draw Power Psyche, Mindstream, or Meet rewards."
-      : "No tokens held.";
+      ? "No tokens yet. Draw Power Psyche, Mindstream, or Meet rewards."
+      : "No tokens held. Click a token to spend it when you have one.";
     tokensEl.appendChild(empty);
     return;
   }
 
   for (let i = 0; i < held; i += 1) {
-    const token = document.createElement("span");
+    const token = document.createElement("button");
+    token.type = "button";
     token.className = "power-token-chip";
-    token.title = `${player.name}'s Power Token`;
-    token.setAttribute("aria-label", "Power token");
+    token.title = "Click to spend this Power Token";
+    token.setAttribute("aria-label", "Power token. Click for spend options.");
     token.textContent = "⚡";
+    token.addEventListener("click", (event) => {
+      event.stopPropagation();
+      onTokenClick?.(token);
+    });
     tokensEl.appendChild(token);
   }
 }
@@ -1567,13 +1668,17 @@ export function renderPhaseAdvanceBar() {
 }
 
 const ACTION_SECTIONS = {
-  main: "Do this now",
+  main: "Phase",
   encounter: "Encounter",
-  phase: "Continue",
-  actions: "More actions",
-  progress: "Archetype & power",
-  round: "Round",
+  actions: "Landscape",
+  progress: "Power",
 };
+
+const ACTION_DOCK_ROWS = [
+  { id: "phase", sections: ["main"] },
+  { id: "scene", sections: ["encounter", "actions"] },
+  { id: "power", sections: ["progress"] },
+];
 
 function createActionButton(action) {
   const btn = document.createElement("button");
@@ -1589,6 +1694,22 @@ function createActionButton(action) {
   if (action.section) btn.dataset.section = action.section;
   btn.addEventListener("click", action.onClick);
   return btn;
+}
+
+function createAdvanceButton(advanceAction) {
+  const wrap = document.createElement("div");
+  wrap.className = "action-dock-advance";
+  wrap.id = "phase-advance-bar";
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.id = "btn-advance-phase";
+  btn.className = `btn btn-advance action-dock-btn primary${advanceAction.disabled ? "" : " btn-ready"}`;
+  btn.textContent = advanceAction.label;
+  btn.disabled = !!advanceAction.disabled;
+  btn.title = advanceAction.hint || "Advance to the next phase when your group is ready";
+  btn.addEventListener("click", advanceAction.onClick);
+  wrap.appendChild(btn);
+  return wrap;
 }
 
 export function renderPhaseActions(actions, advanceAction = null, state = null) {
@@ -1614,54 +1735,56 @@ export function renderPhaseActions(actions, advanceAction = null, state = null) 
     }
   }
 
-  if (advanceAction) {
-    const row = document.createElement("div");
-    row.className = "action-dock-advance";
-    row.id = "phase-advance-bar";
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.id = "btn-advance-phase";
-    btn.className = `btn btn-advance primary${advanceAction.disabled ? "" : " btn-ready"}`;
-    btn.textContent = advanceAction.label;
-    btn.disabled = !!advanceAction.disabled;
-    btn.title = advanceAction.hint || "Advance to the next phase when your group is ready";
-    btn.addEventListener("click", advanceAction.onClick);
-    row.appendChild(btn);
-    container.appendChild(row);
-  }
-
   const grouped = {};
   actions.forEach((action) => {
     if (action.hidden || action.advance) return;
-    const section = action.section || "main";
+    const section = ACTION_SECTIONS[action.section] ? action.section : "main";
     if (!grouped[section]) grouped[section] = [];
     grouped[section].push(action);
   });
 
-  const grid = document.createElement("div");
-  grid.className = "action-dock-grid";
+  const strip = document.createElement("div");
+  strip.className = "action-dock-strip";
 
-  ["main", "encounter", "actions", "progress", "round"].forEach((section) => {
-    const items = grouped[section];
-    if (!items?.length) return;
+  ACTION_DOCK_ROWS.forEach((rowDef) => {
     const row = document.createElement("div");
-    row.className = "action-section-row";
-    items.forEach((action) => {
-      row.appendChild(createActionButton(action));
+    row.className = `action-dock-row action-dock-row-${rowDef.id}`;
+    let used = false;
+
+    rowDef.sections.forEach((section) => {
+      const items = grouped[section] || [];
+      const isPhase = section === "main";
+      if (!items.length && !(isPhase && advanceAction)) return;
+
+      const group = document.createElement("section");
+      group.className = `action-group action-group-${section}`;
+      if (isPhase) group.classList.add("action-section-primary");
+      group.setAttribute("aria-label", ACTION_SECTIONS[section]);
+
+      const heading = document.createElement("span");
+      heading.className = "action-group-label";
+      heading.textContent = ACTION_SECTIONS[section];
+      group.appendChild(heading);
+
+      const buttons = document.createElement("div");
+      buttons.className = "action-group-btns";
+      items.forEach((action) => {
+        buttons.appendChild(createActionButton(action));
+      });
+      if (isPhase && advanceAction) {
+        buttons.appendChild(createAdvanceButton(advanceAction));
+      }
+      group.appendChild(buttons);
+      row.appendChild(group);
+      used = true;
     });
 
-    if (items.length > 1 || section === "encounter") {
-      const heading = document.createElement("div");
-      heading.className = "action-section-label";
-      heading.textContent = ACTION_SECTIONS[section] || section;
-      grid.appendChild(heading);
-    }
-    grid.appendChild(row);
+    if (used) strip.appendChild(row);
   });
 
-  if (grid.children.length) {
-    container.appendChild(grid);
-  } else if (!advanceAction) {
+  if (strip.children.length) {
+    container.appendChild(strip);
+  } else {
     container.innerHTML = "<p class=\"action-dock-empty\">No actions available right now.</p>";
   }
 }
