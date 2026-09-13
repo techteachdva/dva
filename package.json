@@ -35,7 +35,9 @@
         "copy:somnia-images": "node scripts/copy-somnia-images.mjs",
         "package": "node scripts/package-somnia-standalone.mjs",
         "package:somnia-standalone": "node scripts/package-somnia-standalone.mjs",
-        "audit:tutorial": "node scripts/tutorial-flow-audit.mjs && node scripts/tutorial-snapshot-audit.mjs"
+        "audit:tutorial": "node scripts/tutorial-flow-audit.mjs && node scripts/tutorial-snapshot-audit.mjs",
+        "audit:final-recurrence": "node scripts/final-recurrence-audit.mjs",
+        "audit:somnia": "npm run audit:tutorial && npm run audit:final-recurrence"
     },
     "keywords": [],
     "author": "",

@@ -9,7 +9,7 @@ import {
   setEncounterOnLandscape,
   acquireArchetype,
 } from "./state.js";
-import { forgetEdgeLandscapes } from "./landscapes.js";
+import { forgetEdgeLandscapes, triggerBedFinalRecurrence } from "./landscapes.js";
 import { recordQuestEvent } from "./quests.js";
 import { grantPowerTokens, spendPowerTokensCollectively } from "./power-tokens.js";
 import { countBoardDreambeasts } from "./phase-skip.js";
@@ -593,8 +593,11 @@ const DREAM_EFFECTS = {
     recordQuestEvent(state, "discard_psyche", { count: n, landscapeId: player.landscapeId });
     addLog(state, `${player.name} discards ${n} Psyche (Pineal Purge).`);
   },
-  "final-recurrence": (state, _player, h) => h.beginFinalRecurrence(state),
+  "final-recurrence": (state) => {
+    triggerBedFinalRecurrence(state, "The Final Recurrence is drawn — The Bed flips.");
+  },
   "you-never-wake": (state) => {
+    if (state.tutorialMode) return;
     state.status = "lost";
   },
 };

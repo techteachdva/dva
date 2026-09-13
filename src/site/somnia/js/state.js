@@ -540,8 +540,15 @@ export function respawnDreamer(state, playerId, dreamerId) {
 }
 
 export function beginFinalRecurrence(state) {
+  if (state.finalRecurrence) return;
   state.finalRecurrence = true;
   state.goalPoints = 0;
+  const bed = landscapeById(state, "bed");
+  if (bed) {
+    bed.finalRecurrenceSide = true;
+    bed.revealed = true;
+    bed.wasteland = false;
+  }
   const remaining = [...state.archetypeDeck];
   if (state.activeArchetype) remaining.unshift(state.activeArchetype);
   state.archetypeDeck = [];
@@ -560,6 +567,7 @@ export function beginFinalRecurrence(state) {
 
   addLog(state, "Defeat each Remaining Archetype with a 12 Psyche Play using opposing suits.");
   markDreamFeedNudge();
+  checkVictory(state);
 }
 
 export function advancePhase(state) {
@@ -649,6 +657,7 @@ export function checkVictory(state) {
 }
 
 export function checkDefeat(state) {
+  if (state.tutorialMode) return;
   if (state.finalRecurrence) {
     const left = state.finalArchetypes?.filter((a) => !a.defeated).length || 0;
     if (state.dreamDeck.length === 0 && left > 0) {

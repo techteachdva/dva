@@ -71,6 +71,51 @@ function selectSuitCards(state, playerIndex, suit, count = 1) {
     });
 }
 
+function makeTutorialQuiet(index) {
+  return {
+    id: "quiet",
+    type: "dream",
+    name: "Quiet",
+    text: "Everything remains, nothing changes. Nothing Happens.",
+    instanceId: `quiet-restock-${index}`,
+  };
+}
+
+function takeCard(pool, predicate) {
+  const index = pool.findIndex(predicate);
+  if (index < 0) return null;
+  return pool.splice(index, 1)[0];
+}
+
+/** Pin Cerberus, then Heroism, then spare Quiets so Round 3 always draws the boss. */
+function prepareTutorialBossRound(state) {
+  const pool = [...(state.dreamDeck || []), ...(state.dreamDiscard || [])];
+  const bed = landscapeById(state, "bed");
+  let cerberus = takeCard(pool, (c) => c.id === "cerberus");
+  if (!cerberus && bed?.encounter?.id === "cerberus") {
+    cerberus = { ...bed.encounter, type: "boss-dream", boss: true };
+  }
+  if (bed?.encounter?.id === "cerberus") {
+    bed.encounter = null;
+  }
+  if (cerberus) {
+    cerberus.type = "boss-dream";
+    cerberus.boss = true;
+  }
+  const heroism = takeCard(pool, (c) => c.id === "heroism");
+  const quiets = pool.filter((c) => c.id === "quiet");
+  const deck = [];
+  if (cerberus) deck.push(cerberus);
+  if (heroism) deck.push(heroism);
+  deck.push(...quiets);
+  while (deck.length < 12) {
+    deck.push(makeTutorialQuiet(deck.length));
+  }
+  state.dreamDeck = deck;
+  state.dreamDiscard = pool.filter((c) => c.id !== "quiet" && c.id !== "cerberus" && c.id !== "heroism");
+  state.status = "playing";
+}
+
 function resetDreamersToBed(state) {
   state.players.forEach((player) => {
     if (player.alive) player.landscapeId = "bed";
@@ -344,6 +389,7 @@ export function applyCanonicalTutorialStep(state, step) {
 
     case "end-r2":
       advanceToRound(state, 3);
+      prepareTutorialBossRound(state);
       return;
 
     case "end-r3":

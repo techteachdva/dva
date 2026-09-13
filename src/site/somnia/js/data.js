@@ -325,9 +325,17 @@ export function buildDreamDeck(dreams, sessionCount) {
 
   const finals = dreams.filter((d) => d.type === "final");
   const neverWake = finals.find((d) => d.id === "you-never-wake");
-  const otherFinals = shuffle(finals.filter((d) => d.id !== "you-never-wake"));
+  const startCard = finals.find((d) => d.id === "final-recurrence");
+  const effectFinals = shuffle(
+    finals.filter((d) => d.id !== "you-never-wake" && d.id !== "final-recurrence"),
+  ).map((d) => ({ ...d, instanceId: uid("dream") }));
 
-  return [...picked, ...otherFinals, ...(neverWake ? [{ ...neverWake, instanceId: uid("dream") }] : [])];
+  return [
+    ...picked,
+    ...(startCard ? [{ ...startCard, instanceId: uid("dream") }] : []),
+    ...effectFinals,
+    ...(neverWake ? [{ ...neverWake, instanceId: uid("dream") }] : []),
+  ];
 }
 
 export function insertBossDreams(deck, dreambeasts) {

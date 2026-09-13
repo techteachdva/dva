@@ -103,7 +103,7 @@ const TUTORIAL_QUEST_PLACEMENT = [
   { questId: "the-basement", beside: "city", besideName: "City" },
 ];
 
-const TUTORIAL_SNAPSHOT_VERSION = 9;
+const TUTORIAL_SNAPSHOT_VERSION = 10;
 let tutorialSnapshotCache = null;
 let tutorialSnapshotCacheVersion = 0;
 
@@ -164,12 +164,16 @@ export function createTutorialBaseState(data) {
   const heroism = data.dreams.find((d) => d.id === "heroism");
   const cerberus = data.dreambeasts.find((b) => b.id === "cerberus");
 
+  const extraQuiets = [];
+  for (let i = 0; i < 8; i += 1) {
+    extraQuiets.push(mkDream(quiet));
+  }
   state.dreamDeck = [
     mkDream(quiet),
     mkDream(quiet),
     mkDream(cerberus, { type: "boss-dream", boss: true }),
     mkDream(heroism),
-    mkDream(quiet),
+    ...extraQuiets,
   ];
   state.dreamDiscard = [];
 

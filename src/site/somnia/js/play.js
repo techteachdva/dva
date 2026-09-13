@@ -935,9 +935,13 @@ function renderAll() {
     return;
   }
   if (state.status === "lost") {
-    stopVictoryCelebration();
-    showEndScreen(false, state.log[0] || "The Dreamscape collapses.");
-    return;
+    if (state.tutorialMode && !state.tutorialComplete) {
+      state.status = "playing";
+    } else {
+      stopVictoryCelebration();
+      showEndScreen(false, state.log[0] || "The Dreamscape collapses.");
+      return;
+    }
   }
 
   syncHandRemovals(state);

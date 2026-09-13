@@ -23,7 +23,7 @@ export function allOuterTilesWasteland(state) {
   const outer = state.board.filter((t) => !t.center && t.id !== "bed");
   if (!outer.length) return false;
   if (outer.some((t) => t.revealed && !t.wasteland)) return false;
-  return outer.every((t) => t.wasteland && t.forgotten);
+  return outer.some((t) => t.wasteland || t.forgotten);
 }
 
 /** Tiles that can be revealed (wasteland back or hidden pool). */
@@ -365,24 +365,20 @@ export function forgetEdgeLandscapes(state, count) {
   return picks.length;
 }
 
+function assembleFinalRecurrenceDeck(state) {
+  const deck = state.dreamDeck || [];
+  const discard = state.dreamDiscard || [];
+  const neverWake = [...deck, ...discard].find((c) => c.id === "you-never-wake");
+  const remainingEffects = deck.filter(
+    (c) => c.type === "final" && c.id !== "you-never-wake" && c.id !== "final-recurrence",
+  );
+  state.dreamDeck = [...shuffle(remainingEffects), ...(neverWake ? [neverWake] : [])];
+}
+
 export function triggerBedFinalRecurrence(state, reason) {
   if (state.finalRecurrence) return;
 
-  const bed = landscapeById(state, "bed");
-  if (bed) {
-    bed.finalRecurrenceSide = true;
-    bed.revealed = true;
-    bed.wasteland = false;
-  }
-
-  const allInPlay = [
-    ...state.dreamDeck,
-    ...(state.dreamDiscard || []),
-  ];
-  const finals = allInPlay.filter((c) => c.type === "final");
-  state.dreamDeck = shuffle(finals.length ? finals : allInPlay.filter((c) => c.type === "final" || c.id === "final-recurrence"));
-  state.dreamDiscard = [];
-
+  assembleFinalRecurrenceDeck(state);
   beginFinalRecurrence(state);
 
   narrate(

@@ -237,7 +237,7 @@ function tryFlipLeviathan(state, helpers) {
     addLog(state, "Leviathan flips — encounter intensifies!");
     return true;
   }
-  const inDream = state.dreamDeck.findIndex((c) => c.id === "leviathan" || c.boss);
+  const inDream = state.dreamDeck.findIndex((c) => c.id === "leviathan");
   if (inDream >= 0) {
     const boss = state.dreamDeck.splice(inDream, 1)[0];
     helpers.spawnEncounter(state, "bed");

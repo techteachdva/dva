@@ -241,7 +241,17 @@ const STEP_ENTRY_CHECKS = {
     if (!s.questTracker?.mindstreamOnLandscape?.["the-basement"]) return "Basement quest not complete in snapshot";
     return true;
   },
-  "r3-draw": (s) => s.round >= 3 && getPhase(s) === "Reveal" && !s.dreamDrawn,
+  "r3-draw": (s) => {
+    if (s.round < 3 || getPhase(s) !== "Reveal" || s.dreamDrawn) {
+      return "Round 3 Reveal should be waiting to draw";
+    }
+    if (s.dreamDeck[0]?.id !== "cerberus") {
+      return `Expected Cerberus on top, got ${s.dreamDeck[0]?.id || "empty"}`;
+    }
+    if (s.dreamDeck.length < 4) return `Dream deck too thin for tutorial (${s.dreamDeck.length})`;
+    if (s.status === "lost") return "Tutorial must not be in a lost state";
+    return true;
+  },
 };
 
 /** After canonical step completion — card/effect triggers. */
@@ -254,6 +264,8 @@ const STEP_EFFECT_CHECKS = {
     || s.players.some((p) => (p.acquiredArchetypes || []).some((a) => a.id === "innocent")),
   "r3-draw": (s) => {
     const bed = landscapeById(s, "bed");
+    if (s.status === "lost") return false;
+    if (s.dreamDeck.length < 1) return false;
     return s.dreamDrawn && bed?.encounter && (bed.encounter.id === "cerberus" || bed.encounter.name === "Cerberus");
   },
   "end-r1": (s) => s.round >= 2,
