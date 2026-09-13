@@ -1,6 +1,6 @@
 /** Board & special card flow animations — dreams, mindstream, tiles, encounters, repress. */
 
-import { burstSparkles } from "./fx.js";
+import { burstSparkles, playDreamRipple, playMeetFlash, playPointRipple } from "./fx.js";
 
 const queue = [];
 
@@ -148,6 +148,15 @@ export function queueObjectDrawFx(playerId, card, suit = "lucidity") {
   queue.push({ type: "object-draw", playerId, card, suit });
 }
 
+export function queueMeetFlashFx(mode, tileId, cards = []) {
+  queue.push({ type: "meet-flash", mode, tileId, cards });
+}
+
+export function queuePsycheSwirlFx(cards, tileId) {
+  if (!cards?.length) return;
+  queue.push({ type: "psyche-swirl", cards, tileId });
+}
+
 export function runPendingBoardFx() {
   if (!queue.length) return;
   if (reducedMotion()) {
@@ -167,6 +176,7 @@ export function runPendingBoardFx() {
       pulseDeck("dream", "deck-pulse-gain");
       burstSparkles(from.x, from.y, 14, "#c9a0ff");
       burstSparkles(to.x, to.y, 10, "#f0c96a");
+      playDreamRipple();
       delay += step;
     } else if (evt.type === "mindstream-draw") {
       const deckKey = `mindstream-${evt.suit || "lucidity"}`;
@@ -193,6 +203,7 @@ export function runPendingBoardFx() {
         flashEl(tile, "hex-encounter-spawn", 900);
         burstSparkles(to.x, to.y, 16, "#e84848");
         floatLabel(to.x, to.y - 28, "⚔ Dreambeast", "fx-spawn-label", delay + 120);
+        window.setTimeout(() => playPointRipple(to.x, to.y, "fx-summon-ripple"), delay + 280);
       }
       delay += step;
     } else if (evt.type === "tile-reveal") {
@@ -237,6 +248,37 @@ export function runPendingBoardFx() {
         pulseDeck("subconscious", "deck-pulse-repress");
       }
       delay += step;
+    } else if (evt.type === "meet-flash") {
+      playMeetFlash(evt.mode);
+      const tile = hexTileEl(evt.tileId);
+      flashEl(tile, evt.mode === "reject" ? "hex-meet-reject" : "hex-meet-accept", 700);
+      delay += step;
+    } else if (evt.type === "psyche-swirl") {
+      const tile = hexTileEl(evt.tileId);
+      const to = centerOf(tile) || boardCenter();
+      const discard = centerOf(deckEl("psyche")) || { x: window.innerWidth * 0.12, y: window.innerHeight * 0.82 };
+      const cards = evt.cards.slice(0, 3);
+      cards.forEach((card, i) => {
+        const ghost = ghostCard(card, "swirl");
+        const layer = document.getElementById("fx-layer");
+        if (!layer) return;
+        ghost.style.width = "46px";
+        ghost.style.height = "64px";
+        ghost.style.left = `${to.x - 23}px`;
+        ghost.style.top = `${to.y - 32}px`;
+        ghost.style.setProperty("--swirl-i", String(i));
+        ghost.classList.add("fx-psyche-swirl");
+        layer.appendChild(ghost);
+        window.setTimeout(() => {
+          ghost.classList.remove("fx-psyche-swirl");
+          ghost.style.setProperty("--fx-tx", `${discard.x - to.x}px`);
+          ghost.style.setProperty("--fx-ty", `${discard.y - to.y}px`);
+          ghost.classList.add("fx-flying-active");
+          window.setTimeout(() => ghost.remove(), 520);
+        }, 520 + i * 40);
+      });
+      flashEl(tile, "hex-psyche-gold", 720);
+      delay += 220;
     } else if (evt.type === "object-draw") {
       const deckKey = evt.suit ? `mindstream-${evt.suit}` : "mindstream-lucidity";
       const from = centerOf(deckEl(deckKey));

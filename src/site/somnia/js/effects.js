@@ -422,11 +422,11 @@ const DREAM_EFFECTS = {
     addLog(state, "Trapped: skip the next Explore Phase.");
   },
   lost: (state) => {
-    const bed = landscapeById(state, "bed");
-    const neighbors = adjacentTiles(state, "bed").filter((t) => t.revealed);
+    const neighbors = adjacentTiles(state, "bed").filter((t) => t.revealed && !t.center && t.id !== "bed");
     neighbors.forEach((t) => {
       t.revealed = false;
       t.wasteland = true;
+      t.forgotten = true;
       if (t.encounter) {
         repressCard(state, t.encounter);
         t.encounter = null;

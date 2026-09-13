@@ -126,6 +126,19 @@ export function getCurrentObjective(state) {
   const player = activePlayer(state);
   const head = headPlayer(state);
 
+  if (state.landscapePick?.mode === "choose") {
+    return {
+      phase: getPhase(state),
+      suit: null,
+      title: state.landscapePick.title || "Choose a Landscape",
+      steps: [
+        state.landscapePick.detail || "Click a highlighted hex on the map.",
+        "Violet glow marks the Landscapes you may choose.",
+      ],
+      tip: "The card asked you to choose — pick the hex that fits the dream.",
+    };
+  }
+
   if (state.landscapePick?.mode === "forget") {
     return {
       phase: getPhase(state),
@@ -133,7 +146,7 @@ export function getCurrentObjective(state) {
       title: "Click map tiles to Forget",
       steps: [
         `Click **${state.landscapePick.remaining}** active Landscape hex tile(s) on the map.`,
-        "Each becomes a Wasteland. If all Landscapes fall, The Bed flips to Final Recurrence.",
+        "Each becomes a Wasteland. The Bed cannot be forgotten. If every outer Landscape falls, The Bed flips to Final Recurrence.",
       ],
       tip: "Tiles glow red when clickable.",
     };
@@ -459,7 +472,7 @@ export function rulesIntroHtml() {
         <p>Use the <strong>R.E.M.</strong> tab for the three phases in depth. Use <strong>Details</strong> for encounters, death, bosses, objects, Mindstream, and Final Recurrence. The in-game <strong>Guide</strong> panel shows your next step every turn.</p>
       </section>
 
-            <p class="overview-footer">Somnia v 15.4 — cooperative rules reference.</p>
+            <p class="overview-footer">Somnia v 15.5 — cooperative rules reference.</p>
       ${footerCreditsHtml()}
     </div>
   `;
@@ -472,7 +485,7 @@ export function rulesRemHtml() {
       <h2>R.E.M. — Every Round</h2>
       <p class="rules-lead">Each round has three phases in order. One Dreamer spends 1–2 suited Psyche cards to open each phase; the whole team shares the resulting budget.</p>
 
-      <p class="rules-formula"><strong>Budget formula:</strong> sum of card values + that Dreamer's matching stat (minimum 1 card).</p>
+      <p class="rules-formula"><strong>Budget formula:</strong> sum of card values + that Dreamer's matching stat. You may spend <strong>1 Power Token as 1 suited Psyche</strong> instead of (or with) a card. Minimum 1 Psyche or 1 token.</p>
 
       <section class="overview-block overview-phases">
         <div class="overview-phase suit-lucidity">
@@ -537,7 +550,7 @@ export function rulesDetailsHtml() {
         <li>Max <strong>10 Psyche cards</strong> in hand (+2 with Persistent Severed Torso); overflow discards to the Psyche discard pile</li>
         <li>Max <strong>10 accepted allies</strong> (Dreambeasts) — separate from the Psyche limit</li>
         <li><strong>Wild Psyche</strong> (value 5) counts as any suit; also Represses the top card of each Mindstream deck when spent</li>
-        <li><strong>Power Psyche</strong> resolves immediately for 1 Power Token (Power Surge) — never kept in hand</li>
+        <li><strong>Power Psyche</strong> (Power Surge) stays in hand — click it anytime, any phase, for 1 Power Token</li>
         <li>Effective health = regular Psyche + allies; at 0 you face death</li>
       </ul>
 
@@ -561,7 +574,7 @@ export function rulesDetailsHtml() {
       </ul>
 
       <h3>Power Tokens</h3>
-      <p>Team pool cap <strong>24</strong>. Start with <strong>1</strong> per Dreamer. Spend on quest marks (1 each), Dreamer Powers (1), Archetype Powers (1), Persistent Object activation (1), coin-flip Meet bonus (1), Timeline hunger (1 per roaming Dreambeast at end of Meet), and avoiding death.</p>
+      <p>Team pool cap <strong>24</strong>. Start with <strong>1</strong> per Dreamer. Spend on quest marks (1 each, any phase), Dreamer Powers (1, any phase), Archetype Powers (1), Persistent Object activation (1), <strong>1 as a suited Psyche</strong> for a Reveal / Explore / Meet opener (max 1 per opener), stacking <strong>+1 per token</strong> on a Psyche spread (no coin flip), Timeline hunger (1 per roaming Dreambeast at end of Meet), and avoiding death.</p>
 
       <h3>Archetypes &amp; Quests</h3>
       <p>Active Archetype shows 2 quests. Meet each condition, spend 1 Power Token to mark it, then Acquire for points (1–3). Quintessential Archetypes (Sage, Magician, Warrior) grant passive stat bonuses only; their Psyche quest requires <strong>one Dreamer to hold 10 Psyche cards</strong> (full hand). Others have activatable powers during Meet for 1 Power Token.</p>
@@ -588,7 +601,7 @@ export function rulesDetailsHtml() {
       <p>At 0 Psyche, spend Power Tokens (cost = max(1, floor(alive/2))) to draw 1 Psyche and survive, or accept death: Repress top of each Mindstream deck, lose all Objects/Persistent/Power, return to The Bed with 4/3/2/1 Psyche (by death #), gain 2 Power, resolve an Additional Dream. Fifth death removes the Dreamer permanently.</p>
 
       <h3>Final Recurrence</h3>
-      <p>Triggered when The Bed is Forgotten or all outer Landscapes become Wasteland. Goal points reset; remaining Archetypes become map Encounters. Defeat each with a Meet action, <strong>≥ 12</strong> pooled Psyche from <strong>all Dreamers</strong>, including at least one card of the <strong>opposing suit</strong>. Or sacrifice acquired Archetypes 1:1 to auto-defeat. Win by clearing all; lose if Dreams run out first.</p>
+      <p>Triggered when the Final Recurrence Dream is drawn, or when every outer Landscape has been forgotten. The Bed cannot be forgotten and leftover Forgets do not flip it. Goal points reset; remaining Archetypes become map Encounters. Defeat each with a Meet action, <strong>≥ 12</strong> pooled Psyche from <strong>all Dreamers</strong>, including at least one card of the <strong>opposing suit</strong>. Or sacrifice acquired Archetypes 1:1 to auto-defeat. Win by clearing all; lose if Dreams run out first.</p>
     </div>
   `;
 }

@@ -13,6 +13,7 @@ export function reshuffleMindstreamDiscardIfNeeded(state, suit) {
   if (!deck.length && discard.length) {
     state.mindstreamDecks[suit] = shuffle(discard);
     state.mindstreamDiscard[suit] = [];
+    if (state.revealedDeckTops) delete state.revealedDeckTops[`mindstream-${suit}`];
   }
 }
 

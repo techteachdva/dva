@@ -4,6 +4,8 @@ import {
   addLog,
   revealLandscapeTile,
   landscapeById,
+  rememberRevealedTops,
+  consumeRevealedTop,
 } from "./state.js";
 import { SUIT_LABELS } from "./rules.js";
 import { recordQuestEvent } from "./quests.js";
@@ -145,6 +147,7 @@ function flipShowTopCard(state, deckKey, dreamerName) {
     addLog(state, `${formatDeckLabel(deckKey)} is empty.`);
     return null;
   }
+  rememberRevealedTops(state, deckKey, card);
   addLog(
     state,
     `${dreamerName} flips the top of ${formatDeckLabel(deckKey)}: ${card.name}${card.text ? ` — ${card.text}` : ""}`,
@@ -458,11 +461,13 @@ export function resolveDreamerPowerDeckPick(state, deckKey) {
         reshuffleMindstreamDiscardIfNeeded(state, suit);
         const deck = state.mindstreamDecks[suit];
         const drawn = deck.shift();
+        consumeRevealedTop(state, deckKey);
         player.hand.push(drawn);
         discardToMindstream(state, handCard);
         addLog(state, `${player.name} trades with ${formatDeckLabel(deckKey)}.`);
       } else if (deckKey === "psyche") {
         const drawn = state.psycheDeck.shift();
+        consumeRevealedTop(state, "psyche");
         if (drawn) {
           player.hand.push(drawn);
           state.psycheDiscard.push(handCard);
@@ -472,6 +477,7 @@ export function resolveDreamerPowerDeckPick(state, deckKey) {
         }
       } else if (deckKey === "dream") {
         const drawn = state.dreamDeck.shift();
+        consumeRevealedTop(state, "dream");
         if (drawn) {
           player.hand.push(drawn);
           state.dreamDeck.unshift(handCard);
@@ -481,6 +487,7 @@ export function resolveDreamerPowerDeckPick(state, deckKey) {
         }
       } else if (deckKey === "archetype") {
         const drawn = state.archetypeDeck.shift();
+        consumeRevealedTop(state, "archetype");
         if (drawn) {
           player.hand.push(drawn);
           state.archetypeDeck.unshift(handCard);

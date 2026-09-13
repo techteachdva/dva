@@ -4,7 +4,9 @@ import {
   drawMindstream,
   landscapeById,
   setEncounterOnLandscape,
+  rememberRevealedTops,
 } from "./state.js";
+import { requestChooseTile } from "./landscapes.js";
 import { SUIT_LABELS } from "./rules.js";
 import { grantPowerTokens, spendPowerTokens } from "./power-tokens.js";
 import { queueMindstreamDrawFx } from "./board-fx.js";
@@ -143,33 +145,63 @@ function stepTowardBed(state, player) {
   return true;
 }
 
-function moveDreamerSteps(state, player, steps) {
-  let current = landscapeById(state, player.landscapeId);
-  if (!current) return false;
-
+function destinationsAtSteps(state, startId, steps) {
+  let frontier = [startId];
+  const seen = new Set([startId]);
   for (let i = 0; i < steps; i += 1) {
-    const adj = adjacentTiles(state, current.id).filter((t) => t.revealed);
-    if (!adj.length) return i > 0;
-    const dest = adj[Math.floor(Math.random() * adj.length)];
-    player.landscapeId = dest.id;
-    current = dest;
+    const next = [];
+    frontier.forEach((id) => {
+      adjacentTiles(state, id).forEach((t) => {
+        if (!t.revealed || seen.has(t.id)) return;
+        seen.add(t.id);
+        next.push(t.id);
+      });
+    });
+    frontier = next;
+    if (!frontier.length) break;
   }
+  return frontier.filter((id) => id !== startId);
+}
 
-  addLog(state, `${player.name} moves ${steps} Landscape(s) to ${current.name}.`);
-  recordQuestEvent(state, "move_player", { count: steps });
-  return true;
+function moveDreamerSteps(state, player, steps) {
+  const destIds = destinationsAtSteps(state, player.landscapeId, steps);
+  if (!destIds.length) return false;
+  if (state.tutorialMode) {
+    const dest = landscapeById(state, destIds[Math.floor(Math.random() * destIds.length)]);
+    if (!dest) return false;
+    player.landscapeId = dest.id;
+    addLog(state, `${player.name} moves ${steps} Landscape(s) to ${dest.name}.`);
+    recordQuestEvent(state, "move_player", { count: steps });
+    return true;
+  }
+  return requestChooseTile(state, {
+    allowedIds: destIds,
+    action: "movePlayer",
+    playerId: player.id,
+    title: `Move ${player.name} ${steps} step${steps === 1 ? "" : "s"}`,
+    detail: `Choose a Landscape ${steps} step${steps === 1 ? "" : "s"} away.`,
+  });
 }
 
 function moveEncounterOneStep(state, tile) {
   if (!tile?.encounter) return false;
   const adj = adjacentTiles(state, tile.id).filter((t) => t.revealed && !t.encounter);
   if (!adj.length) return false;
-  const dest = adj[Math.floor(Math.random() * adj.length)];
-  const enc = tile.encounter;
-  tile.encounter = null;
-  setEncounterOnLandscape(state, dest.id, enc);
-  addLog(state, `${enc.name} moves to ${dest.name}.`);
-  return true;
+  if (state.tutorialMode) {
+    const dest = adj[Math.floor(Math.random() * adj.length)];
+    const enc = tile.encounter;
+    tile.encounter = null;
+    setEncounterOnLandscape(state, dest.id, enc);
+    addLog(state, `${enc.name} moves to ${dest.name}.`);
+    return true;
+  }
+  return requestChooseTile(state, {
+    allowedIds: adj.map((t) => t.id),
+    action: "moveEncounter",
+    fromTileId: tile.id,
+    title: `Move ${tile.encounter.name}`,
+    detail: `Choose an adjacent empty Landscape for ${tile.encounter.name}.`,
+  });
 }
 
 function swapTilePositions(tileA, tileB) {
@@ -239,10 +271,20 @@ function spawnDreambeastFromMindstream(state, suit) {
     return null;
   }
 
-  const tile = targets[Math.floor(Math.random() * targets.length)];
   const encounter = encounterFromDreambeastCard(beast);
-  setEncounterOnLandscape(state, tile.id, encounter);
-  addLog(state, `${beast.name} spawns on ${tile.name} from the ${SUIT_LABELS[suit]} Mindstream.`);
+  if (state.tutorialMode || targets.length === 1) {
+    const tile = targets[Math.floor(Math.random() * targets.length)];
+    setEncounterOnLandscape(state, tile.id, encounter);
+    addLog(state, `${beast.name} spawns on ${tile.name} from the ${SUIT_LABELS[suit]} Mindstream.`);
+    return encounter;
+  }
+  requestChooseTile(state, {
+    allowedIds: targets.map((t) => t.id),
+    action: "spawnEncounter",
+    encounter,
+    title: `${beast.name} emerges`,
+    detail: `Choose a ${SUIT_LABELS[suit]} Landscape for ${beast.name}.`,
+  });
   return encounter;
 }
 
@@ -631,13 +673,16 @@ export function flipTopThreeOfDeck(state, deckKey) {
   if (deckKey.startsWith("mindstream-")) {
     const suit = deckKey.replace("mindstream-", "");
     if (reorderMindstreamTop(state, suit, 3)) {
+      rememberRevealedTops(state, deckKey, state.mindstreamDecks[suit].slice(0, 3));
       addLog(state, `Flipped top 3 of ${SUIT_LABELS[suit]} Mindstream.`);
       return true;
     }
     return false;
   }
 
-  const deck = state[deckKey];
+  const map = { psyche: "psycheDeck", dream: "dreamDeck", archetype: "archetypeDeck" };
+  const key = map[deckKey] || deckKey;
+  const deck = state[key];
   if (!deck?.length) {
     addLog(state, "Deck is empty.");
     return false;
@@ -645,6 +690,8 @@ export function flipTopThreeOfDeck(state, deckKey) {
   const top = deck.splice(0, Math.min(3, deck.length));
   top.reverse();
   deck.unshift(...top);
+  const peekKey = deckKey === "psycheDeck" ? "psyche" : deckKey === "dreamDeck" ? "dream" : deckKey;
+  rememberRevealedTops(state, peekKey, top);
   addLog(state, `Flipped top ${top.length} of ${deckKey} deck.`);
   return true;
 }

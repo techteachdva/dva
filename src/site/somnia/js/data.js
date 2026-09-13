@@ -136,7 +136,7 @@ export function buildPsycheDeck(psycheConfig = {}) {
       value: 0,
       powerTokens: PSYCHE_POWER_GRANT,
       name: "Power Surge",
-      text: "Draw 1 Power Token. Then Discard.",
+      text: "Play anytime, any phase: gain 1 Power Token, then discard.",
       instanceId: uid("psyche"),
     });
   }

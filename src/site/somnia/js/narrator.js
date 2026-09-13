@@ -43,6 +43,13 @@ export function getLandscapePickNarration(state) {
         : [],
     };
   }
+  if (pick.mode === "choose") {
+    return {
+      title: pick.title || "Choose a Landscape",
+      detail: pick.detail || "Click a highlighted hex on the map.",
+      consequences: ["Click 1 highlighted Landscape"],
+    };
+  }
   return null;
 }
 

@@ -301,6 +301,9 @@ function allowsRemEndRoundAction(state, kind, detail = {}) {
       return phase === "Reveal" && state.dreamDrawn && !state.revealLandscapeUsed;
     case "boardClick":
       if (state.landscapePick?.mode === "reveal") return true;
+      if (state.landscapePick?.mode === "choose") {
+        return (state.landscapePick.allowed || []).includes(detail.tileId);
+      }
       if (phase === "Explore" && state.exploreActivated) {
         return exploreMoveAllowed(state, detail.tileId, null);
       }
@@ -506,7 +509,11 @@ export function isTutorialActionAllowed(state, kind, detail = {}) {
   }
 
   if (kind === "headerDecks" || kind === "headerDreamers") {
-    return false;
+    return (state.tutorialStepIndex ?? 0) >= 3;
+  }
+
+  if (kind === "boardClick" && state.landscapePick?.mode === "choose") {
+    return (state.landscapePick.allowed || []).includes(detail?.tileId);
   }
 
   if (kind === "boardClick" && state.landscapePick?.mode === "reveal") {
@@ -749,7 +756,7 @@ export const TUTORIAL_SCRIPT = [
     id: "subconscious",
     round: 1,
     title: "The Subconscious",
-    body: "Repressed cards sit face-up in The Subconscious. Open it from the top bar. Return effects pull cards back to discard piles. Repress and Return keep your decks cycling.",
+    body: "Repressed cards sit face-up in The Subconscious. Open it from the top bar. After this step you can also open Decks to browse discards, or any top cards a power has revealed. Return effects pull cards back to discard piles.",
     target: "#btn-header-subconscious",
   },
   {

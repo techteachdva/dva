@@ -16,6 +16,7 @@ import {
   revealLandscapeTile,
   drawPsycheForPlayer,
   drawMindstream,
+  consumeRevealedTop,
 } from "./state.js";
 import {
   revealBudget,
@@ -32,7 +33,9 @@ import {
   discardSelected,
   discardAllSelected,
   selectedBySuit,
-  flipPowerBonus,
+  consumePhasePowerToken,
+  canUsePhasePowerToken,
+  phaseTokenValue,
   MEET_ACTIONS,
   canTradeBetween,
   validateBossPlayShape,
@@ -52,7 +55,7 @@ import {
 import { encounterRejectCost, applyRejectReward } from "./dreambeasts.js";
 import { getLegalMoveTargets, canMoveTo, adjacentTiles, hexDistance, areHexAdjacent } from "./hex.js";
 import { repressCard, listSubconsciousCards, dreambeastToHandCard, isDreambeastPsycheCard } from "./subconscious.js";
-import { spendPowerTokens } from "./power-tokens.js";
+import { spendPowerTokens, playPsychePowerFromHand } from "./power-tokens.js";
 import {
   beginDreamerPower,
   cancelDreamerPower,
@@ -63,7 +66,7 @@ import {
 } from "./dreamer-powers.js";
 import { playObjectCard, applySkeletonKeyAfterDream, drawObjects, handLimitForPlayer, handRoomForPsycheDraw } from "./objects.js";
 import { psycheHandCount, hasPsycheHealth, canAddAllyToHand, allyHandLimitForPlayer, allyHandCount } from "./psyche.js";
-import { queueDreamDrawFx } from "./board-fx.js";
+import { queueDreamDrawFx, queueMeetFlashFx, queuePsycheSwirlFx } from "./board-fx.js";
 import { applyBossAcceptEffect } from "./bosses.js";
 import { resolveOnAcquire, useArchetypePower, handleArchetypePowerTilePick } from "./archetypes.js";
 import { getActivatableArchetypePowers } from "./archetype-stats.js";
@@ -82,7 +85,7 @@ import {
   pullTwoDreambeastsForChoice,
   encounterFromDreambeastCard,
 } from "./mindstream-supply.js";
-import { beginRevealPicking, handleLandscapeTilePick, cancelLandscapePick } from "./landscapes.js";
+import { beginRevealPicking, handleLandscapeTilePick, cancelLandscapePick, requestChooseTile } from "./landscapes.js";
 import { narrate } from "./narrator.js";
 import { playSfx } from "./audio.js";
 import { markPhasePulse, markDreamFeedNudge } from "./fx.js";
@@ -265,6 +268,36 @@ export function getPhaseActions(state, handlers) {
     onClick: handlers.useDreamerPower,
   });
 
+  const questActions = () => {
+    const arch = state.activeArchetype;
+    return [
+      {
+        label: "Quest 1",
+        section: "progress",
+        hint: "Spend 1 Power Token to mark this quest — any phase, once the condition is met.",
+        disabled: !arch || arch.questProgress[0] || !isQuestConditionMet(state, arch.id, arch.quests[0]) || player.powerTokens < 1,
+        onClick: () => handlers.completeQuest(0),
+      },
+      {
+        label: "Quest 2",
+        section: "progress",
+        hint: "Spend 1 Power Token to mark this quest — any phase, once the condition is met.",
+        disabled: !arch || arch.questProgress[1] || !isQuestConditionMet(state, arch.id, arch.quests[1]) || player.powerTokens < 1,
+        onClick: () => handlers.completeQuest(1),
+      },
+    ];
+  };
+
+  const phaseTokenAction = (suitLabel) => ({
+    label: state.phaseTokenAsPsyche === player.id
+      ? `Power Token as 1 ${suitLabel} (on)`
+      : `Power Token as 1 ${suitLabel}`,
+    section: "main",
+    hint: "Spend 1 Power Token in place of 1 suited Psyche for this phase opener (max 1).",
+    disabled: !canUsePhasePowerToken(state, player) && state.phaseTokenAsPsyche !== player.id,
+    onClick: handlers.togglePhasePowerToken,
+  });
+
   if (phase === "Reveal") {
     const head = headPlayer(state);
     actions.push({
@@ -292,7 +325,9 @@ export function getPhaseActions(state, handlers) {
       disabled: !state.dreamDrawn || state.revealLandscapeUsed || budget < 1,
       onClick: handlers.revealLandscape,
     });
+    if (state.dreamDrawn && !state.revealLandscapeUsed) actions.push(phaseTokenAction("Lucidity"));
     actions.push(dreamerPowerAction());
+    actions.push(...questActions());
     actions.push({
       label: "Next: Explore →",
       section: "phase",
@@ -322,6 +357,7 @@ export function getPhaseActions(state, handlers) {
         disabled: budget < 1,
         onClick: handlers.activateExplore,
       });
+      actions.push(phaseTokenAction("Elasticity"));
     } else {
       actions.push({
         label: `${state.exploreMovesLeft} move(s) — click highlighted hexes`,
@@ -331,6 +367,7 @@ export function getPhaseActions(state, handlers) {
       });
     }
     actions.push(dreamerPowerAction());
+    actions.push(...questActions());
     const movesLeft = state.exploreMovesLeft || 0;
     actions.push({
       label: movesLeft > 0 ? `Next: Meet → (${movesLeft} move${movesLeft === 1 ? "" : "s"} left)` : "Next: Meet →",
@@ -368,12 +405,22 @@ export function getPhaseActions(state, handlers) {
         disabled: budget < 1,
         onClick: handlers.gainMeetActions,
       });
+      actions.push(phaseTokenAction("Willpower"));
     } else {
       actions.push({
         label: `Actions ${state.meetActionsUsed}/${state.meetActionBudget}${poolHint}`,
         section: "main",
         disabled: true,
         onClick: () => {},
+      });
+      actions.push({
+        label: state.pendingPowerBonus
+          ? `+1 Spread (now +${state.pendingPowerBonus})`
+          : "+1 to Spread",
+        section: "main",
+        hint: "Spend any number of Power Tokens. Each adds +1 to the current Psyche spread.",
+        disabled: player.powerTokens < 1,
+        onClick: handlers.powerBonus,
       });
     }
     if (state.finalRecurrence) {
@@ -454,19 +501,7 @@ export function getPhaseActions(state, handlers) {
       onClick: handlers.tradeAction,
     });
     actions.push(dreamerPowerAction());
-    const arch = state.activeArchetype;
-    actions.push({
-      label: "Quest 1",
-      section: "progress",
-      disabled: !arch || arch.questProgress[0] || !isQuestConditionMet(state, arch.id, arch.quests[0]),
-      onClick: () => handlers.completeQuest(0),
-    });
-    actions.push({
-      label: "Quest 2",
-      section: "progress",
-      disabled: !arch || arch.questProgress[1] || !isQuestConditionMet(state, arch.id, arch.quests[1]),
-      onClick: () => handlers.completeQuest(1),
-    });
+    actions.push(...questActions());
     getActivatableArchetypePowers(state).forEach((acquired) => {
       actions.push({
         label: `${acquired.name} Power`,
@@ -523,6 +558,7 @@ export function resolvePendingDeathDream(state, onShowModal) {
 export function drawAdditionalDream(state, onShowModal) {
   const head = headPlayer(state);
   const card = state.dreamDeck.shift();
+  consumeRevealedTop(state, "dream");
   if (!card) {
     checkDefeat(state);
     return null;
@@ -565,6 +601,7 @@ export function drawDreamCard(state, onShowModal) {
   const head = headPlayer(state);
 
   const card = state.dreamDeck.shift();
+  consumeRevealedTop(state, "dream");
   if (!card) {
     checkDefeat(state);
     return null;
@@ -633,13 +670,17 @@ export function revealLandscape(state) {
   if (state.landscapePick?.mode === "reveal") return;
 
   const lucidityCards = selectedBySuit(state, player, "lucidity");
-  if (lucidityCards.length < 1 || lucidityCards.length > 2) {
-    narrate(state, "Select 1–2 Lucidity cards", `Click blue Psyche in ${player.name}'s row to select them for the Reveal action.`);
+  const tokenValue = phaseTokenValue(state, player);
+  if (lucidityCards.length > 2 || (lucidityCards.length < 1 && tokenValue < 1)) {
+    narrate(state, "Select Lucidity or 1 Power Token", `Play 1–2 blue Psyche from ${player.name}, or spend 1 Power Token as 1 Lucidity.`);
     return;
   }
 
   const lucidityDiscarded = discardSelected(state, player);
   trackPsycheDiscard(state, player, lucidityDiscarded);
+  if (consumePhasePowerToken(state, player)) {
+    addLog(state, `${player.name} spends 1 Power Token as 1 Lucidity.`);
+  }
 
   beginRevealPicking(state, budget);
   addLog(state, `${player.name} spends Lucidity — the team may reveal up to ${budget} Landscapes.`);
@@ -668,14 +709,18 @@ export function activateExplore(state) {
 
   const elaCards = player ? selectedBySuit(state, player, "elasticity") : [];
 
-  if (!freeRound && (elaCards.length < 1 || elaCards.length > 2)) {
-    addLog(state, `Play 1 or 2 ${SUIT_LABELS.elasticity} Psyche cards to unlock team movement.`);
+  const tokenValue = player ? phaseTokenValue(state, player) : 0;
+  if (!freeRound && (elaCards.length > 2 || (elaCards.length < 1 && tokenValue < 1))) {
+    addLog(state, `Play 1 or 2 ${SUIT_LABELS.elasticity} Psyche cards, or spend 1 Power Token as 1 Elasticity.`);
     return;
   }
 
   if (elaCards.length) {
     const discarded = discardSelected(state, player);
     trackPsycheDiscard(state, player, discarded);
+  }
+  if (player && consumePhasePowerToken(state, player)) {
+    addLog(state, `${player.name} spends 1 Power Token as 1 Elasticity.`);
   }
   state.exploreMovesLeft = budget;
   state.exploreActivated = true;
@@ -764,37 +809,47 @@ export function gainMeetActions(state) {
   const budget = meetActionBudgetFromWillpower(state, player);
   const wilCards = selectedBySuit(state, player, "willpower");
 
-  if (wilCards.length < 1 || wilCards.length > 2) {
-    addLog(state, `Play 1 or 2 ${SUIT_LABELS.willpower} Psyche cards from ${player.name}'s hand for Meet Actions.`);
+  const tokenValue = phaseTokenValue(state, player);
+  if (wilCards.length > 2 || (wilCards.length < 1 && tokenValue < 1)) {
+    addLog(state, `Play 1 or 2 ${SUIT_LABELS.willpower} Psyche cards from ${player.name}, or spend 1 Power Token as 1 Willpower.`);
     return;
   }
 
   const wilDiscarded = discardSelected(state, player);
   trackPsycheDiscard(state, player, wilDiscarded);
+  if (consumePhasePowerToken(state, player)) {
+    addLog(state, `${player.name} spends 1 Power Token as 1 Willpower.`);
+  }
   state.meetActionBudget = budget;
   state.meetActionsUsed = 0;
   clearAllLastMeetActions(state);
   addLog(state, `${player.name} spends Willpower — the team gains ${budget} shared Meet Actions.`);
 }
 
-export function powerBonus(state) {
-  if (getPhase(state) !== "Meet") {
-    addLog(state, "Coin flip bonus is only available during the Meet phase.");
+export function togglePhasePowerToken(state) {
+  const player = activePlayer(state);
+  if (state.phaseTokenAsPsyche === player.id) {
+    state.phaseTokenAsPsyche = null;
+    addLog(state, `${player.name} will not spend a Power Token as Psyche.`);
     return;
   }
+  if (!canUsePhasePowerToken(state, player)) {
+    addLog(state, "Spend 1 Power Token as 1 suited Psyche for this phase opener (max 1, and not with 2 cards).");
+    return;
+  }
+  state.phaseTokenAsPsyche = player.id;
+  addLog(state, `${player.name} will spend 1 Power Token as 1 ${SUIT_LABELS[phaseSuitForOpening(getPhase(state))] || "Psyche"}.`);
+}
+
+export function powerBonus(state) {
   const player = activePlayer(state);
   if (player.powerTokens < 1) {
     addLog(state, "Need 1 Power Token.");
     return;
   }
-  if (state.pendingPowerBonus) {
-    addLog(state, "You already have a spread bonus pending.");
-    return;
-  }
   if (!spendPowerTokens(state, player, 1)) return;
-  const bonus = flipPowerBonus();
-  state.pendingPowerBonus = bonus;
-  addLog(state, `${player.name} flips a coin: +${bonus} to the next Psyche spread this Meet phase.`);
+  state.pendingPowerBonus = (state.pendingPowerBonus || 0) + 1;
+  addLog(state, `${player.name} spends 1 Power Token: +1 to the Psyche spread (now +${state.pendingPowerBonus}).`);
   playSfx("select");
 }
 
@@ -847,6 +902,8 @@ export function meetEncounter(state, mode = "accept") {
     return;
   }
 
+  queuePsycheSwirlFx(selected, tile.id);
+  queueMeetFlashFx(isReject ? "reject" : "accept", tile.id, selected);
   const discarded = discardSelected(state, actor);
   trackPsycheDiscard(state, actor, discarded);
 
@@ -1220,9 +1277,22 @@ export function spawnEncounterOnLandscape(state, landscapeId, beastCard = null) 
 
 export function spawnRandomEncounter(state) {
   const revealed = state.board.filter((l) => l.revealed && !l.encounter);
-  if (!revealed.length) return;
-  const tile = revealed[Math.floor(Math.random() * revealed.length)];
-  return spawnEncounterOnLandscape(state, tile.id);
+  if (!revealed.length) return null;
+  if (state.tutorialMode || revealed.length === 1) {
+    const tile = revealed[Math.floor(Math.random() * revealed.length)];
+    return spawnEncounterOnLandscape(state, tile.id);
+  }
+  const pulled = pullDreambeastFromMindstream(state);
+  if (!pulled) return null;
+  const encounter = encounterFromDreambeastCard(pulled.card);
+  requestChooseTile(state, {
+    allowedIds: revealed.map((t) => t.id),
+    action: "spawnEncounter",
+    encounter,
+    title: "A Dreambeast stirs",
+    detail: "Choose a revealed Landscape for the Dreambeast to appear on.",
+  });
+  return encounter;
 }
 
 export function toggleHandCard(state, card, owner = null) {
@@ -1233,6 +1303,11 @@ export function toggleHandCard(state, card, owner = null) {
   if (state.tradeMode && state.trade?.step === "select-offer") {
     if (player !== activePlayer(state)) return;
     toggleTradeOffer(state, card);
+    return;
+  }
+
+  if (card.type === "psyche-power") {
+    playPsychePowerFromHand(state, player, card);
     return;
   }
 

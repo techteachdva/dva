@@ -132,6 +132,7 @@ export function createInitialState(data, options) {
     meetActionsUsed: 0,
     lastMeetActionByPlayer: {},
     pendingPowerBonus: 0,
+    phaseTokenAsPsyche: null,
     tradeMode: false,
     viewingDeck: null,
     availableDreamers,
@@ -172,6 +173,7 @@ export function createInitialState(data, options) {
     cancellableMove: null,
     pendingDeathChoice: null,
     pendingNothingChoice: null,
+    revealedDeckTops: {},
   };
 
   resetPhaseFlags(state);
@@ -184,7 +186,7 @@ export function createInitialState(data, options) {
       animate: false,
     });
   });
-  resolveAllPowerCardsInHands(state);
+  if (state.tutorialMode) resolveAllPowerCardsInHands(state);
   state.checkPsycheDeath = (player) => checkDreamerPsycheDeath(state, player);
   return state;
 }
@@ -214,18 +216,52 @@ export function addLog(state, message) {
   state.log = state.log.slice(0, 40);
 }
 
+function peekCardSummary(card) {
+  return {
+    id: card.id,
+    name: card.name,
+    type: card.type,
+    suit: card.suit,
+    value: card.value,
+    image: card.image,
+    text: card.text,
+    isWild: card.isWild,
+    isDreambeast: card.isDreambeast,
+  };
+}
+
+export function rememberRevealedTops(state, deckKey, cards) {
+  if (!state.revealedDeckTops) state.revealedDeckTops = {};
+  const list = (Array.isArray(cards) ? cards : [cards]).filter(Boolean).map(peekCardSummary);
+  if (!list.length) return;
+  state.revealedDeckTops[deckKey] = list;
+}
+
+export function consumeRevealedTop(state, deckKey, count = 1) {
+  const list = state.revealedDeckTops?.[deckKey];
+  if (!list?.length) return;
+  list.splice(0, count);
+  if (!list.length) delete state.revealedDeckTops[deckKey];
+}
+
+export function clearRevealedTops(state, deckKey) {
+  if (state.revealedDeckTops) delete state.revealedDeckTops[deckKey];
+}
+
 export function drawPsycheForPlayer(state, player, count = 1) {
   const drawn = [];
   for (let i = 0; i < count; i += 1) {
     if (!state.psycheDeck.length && state.psycheDiscard.length) {
       state.psycheDeck = shuffle(state.psycheDiscard);
       state.psycheDiscard = [];
+      clearRevealedTops(state, "psyche");
       addLog(state, "Psyche discard pile shuffled into a new deck.");
     }
     if (!state.psycheDeck.length) break;
     const card = state.psycheDeck.shift();
+    consumeRevealedTop(state, "psyche");
 
-    if (card.type === "psyche-power") {
+    if (card.type === "psyche-power" && state.tutorialMode) {
       resolvePsychePowerCard(state, player, card);
       continue;
     }
@@ -257,6 +293,7 @@ export function drawMindstream(state, suit, count = 1) {
     const deck = state.mindstreamDecks[suit];
     if (!deck.length) break;
     drawn.push(deck.shift());
+    consumeRevealedTop(state, `mindstream-${suit}`);
   }
   if (drawn.length) playSfx("draw", { count: drawn.length });
   return drawn;
@@ -307,6 +344,7 @@ export function resetPhaseFlags(state) {
   state.meetActionsUsed = 0;
   state.lastMeetActionByPlayer = {};
   state.pendingPowerBonus = 0;
+  state.phaseTokenAsPsyche = null;
   state.selectedHand = [];
   state.tradeMode = false;
   state.trade = null;
@@ -400,7 +438,7 @@ export function applyDreamerDeath(state, player) {
 
   const target = respawnPsycheTarget(deaths);
   drawPsycheForPlayer(state, player, target);
-  resolvePowerCardsInHand(state, player);
+  if (state.tutorialMode) resolvePowerCardsInHand(state, player);
   grantPowerTokens(state, player, 2, {
     reason: `${player.name} returns with 2 Power Tokens.`,
     logQuest: false,
@@ -494,7 +532,7 @@ export function respawnDreamer(state, playerId, dreamerId) {
   player.hand = [];
   grantPowerTokens(state, player, 2, { reason: `${dreamer.name} returns with 2 Power Tokens.`, logQuest: false, animate: false });
   drawPsycheForPlayer(state, player, PSYCHE_STARTING_HAND);
-  resolvePowerCardsInHand(state, player);
+  if (state.tutorialMode) resolvePowerCardsInHand(state, player);
   player.pendingRespawn = false;
   state.pendingRespawn = null;
   addLog(state, `${dreamer.name} enters the Dreamscape on The Bed with ${PSYCHE_STARTING_HAND} Psyche and 2 Power.`);
@@ -510,7 +548,9 @@ export function beginFinalRecurrence(state) {
   state.activeArchetype = null;
 
   state.finalArchetypes = remaining.map((arch) => {
-    const tile = state.board.find((l) => l.revealed && l.suit === arch.suit && !l.center);
+    const tile = state.board.find((l) => l.revealed && l.suit === arch.suit && !l.center && !l.wasteland && !l.finalArchetype)
+      || state.board.find((l) => l.revealed && !l.center && !l.wasteland && !l.finalArchetype)
+      || landscapeById(state, "bed");
     if (tile) {
       tile.finalArchetype = { ...arch, defeated: false };
       addLog(state, `${arch.name} appears on ${tile.name}.`);

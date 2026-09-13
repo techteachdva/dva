@@ -624,10 +624,25 @@ body.in-game .brand h1 {
 }
 
 .deck-dropdown-row .btn {
+  white-space: nowrap;
+}
+
+.deck-dropdown-actions {
   grid-column: 2;
   grid-row: 1 / span 2;
-  align-self: center;
-  white-space: nowrap;
+  display: flex;
+  flex-direction: column;
+  gap: 0.28rem;
+  align-items: stretch;
+}
+
+.deck-dropdown-row.has-peek {
+  box-shadow: inset 0 0 0 1px rgba(201, 160, 255, 0.35);
+}
+
+.deck-dropdown-row .btn-peek {
+  background: linear-gradient(160deg, rgba(90, 60, 140, 0.55), rgba(40, 24, 70, 0.55));
+  border-color: rgba(201, 160, 255, 0.45);
 }
 
 .dreamers-dropdown-list {
@@ -1516,6 +1531,15 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
   box-shadow: inset 0 0 0 2px rgba(255, 107, 107, 0.75);
 }
 
+.hex-tile.pick-choose {
+  --hex-border-color: rgba(186, 140, 255, 0.8);
+  animation: pulse-choose 1.5s ease-in-out infinite;
+}
+
+.hex-tile.pick-choose .hex-face {
+  box-shadow: inset 0 0 0 2px rgba(201, 160, 255, 0.78);
+}
+
 .hex-tile.just-revealed {
   animation: hex-reveal 0.7s cubic-bezier(0.22, 1, 0.36, 1);
   z-index: 3;
@@ -1561,6 +1585,11 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
   50% { box-shadow: 0 0 18px rgba(255, 107, 107, 0.7); }
 }
 
+@keyframes pulse-choose {
+  0%, 100% { box-shadow: 0 0 8px rgba(186, 140, 255, 0.4); }
+  50% { box-shadow: 0 0 22px rgba(201, 160, 255, 0.85); }
+}
+
 @keyframes hex-forget {
   0% { transform: translate(-50%, -50%) scale(1); filter: none; opacity: 1; }
   40% { transform: translate(-50%, -50%) scale(0.96); filter: grayscale(0.5) brightness(0.7); }
@@ -1587,6 +1616,33 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
   0% { transform: translate(-50%, -50%) scale(0.9); filter: brightness(1.4); }
   25% { transform: translate(-50%, -50%) scale(1.08); box-shadow: 0 0 30px rgba(232, 72, 72, 0.75); }
   100% { transform: translate(-50%, -50%) scale(1); box-shadow: none; filter: none; }
+}
+
+.hex-tile.hex-meet-accept {
+  animation: hex-meet-accept 0.7s ease;
+}
+
+.hex-tile.hex-meet-reject {
+  animation: hex-meet-reject 0.7s ease;
+}
+
+.hex-tile.hex-psyche-gold {
+  animation: hex-psyche-gold 0.72s ease;
+}
+
+@keyframes hex-meet-accept {
+  0%, 100% { box-shadow: none; }
+  40% { box-shadow: 0 0 28px rgba(180, 160, 255, 0.85), 0 0 16px rgba(240, 201, 106, 0.45); }
+}
+
+@keyframes hex-meet-reject {
+  0%, 100% { box-shadow: none; filter: none; }
+  35% { box-shadow: 0 0 28px rgba(255, 90, 40, 0.8); filter: contrast(1.15) brightness(1.08); }
+}
+
+@keyframes hex-psyche-gold {
+  0%, 100% { box-shadow: none; }
+  40% { box-shadow: 0 0 26px rgba(240, 201, 106, 0.9); }
 }
 
 .guide-header {
@@ -5039,6 +5095,13 @@ body.menu-window #app::before {
   .hex-tile.hex-flash-forget,
   .hex-tile.hex-mindstream-hit,
   .hex-tile.hex-encounter-spawn,
+  .hex-tile.hex-meet-accept,
+  .hex-tile.hex-meet-reject,
+  .hex-tile.hex-psyche-gold,
+  .fx-screen-overlay,
+  .fx-point-ripple,
+  .fx-summon-ripple,
+  .fx-psyche-swirl,
   .phase-stepper .step.active,
   .phase-stepper.phase-pulse .step.active,
   .btn-advance,
@@ -5345,6 +5408,93 @@ body.panel-resizing {
 .fx-card-label { font-size: 1.2rem; line-height: 1; }
 .fx-card-name { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.9; }
 .fx-float-label.fx-spawn-label { color: #ff8a9a; font-size: 0.9rem; }
+
+.fx-screen-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10040;
+  opacity: 0;
+}
+
+.fx-screen-overlay.hidden {
+  display: none;
+}
+
+.fx-screen-overlay.is-playing {
+  display: block;
+}
+
+.fx-dream-ripple.is-playing {
+  animation: fx-dream-ripple 0.72s ease-out forwards;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(201, 160, 255, 0.28) 0%, transparent 42%),
+    radial-gradient(circle at 50% 42%, rgba(240, 201, 106, 0.12) 0%, transparent 62%);
+}
+
+.fx-meet-accept.is-playing {
+  animation: fx-meet-accept 0.62s ease-out forwards;
+  background:
+    radial-gradient(circle at 30% 28%, rgba(130, 190, 255, 0.28), transparent 36%),
+    radial-gradient(circle at 70% 60%, rgba(240, 201, 106, 0.22), transparent 38%),
+    radial-gradient(circle at 50% 45%, rgba(140, 90, 210, 0.32), transparent 55%);
+}
+
+.fx-meet-reject.is-playing {
+  animation: fx-meet-reject 0.68s ease-out forwards;
+  background:
+    radial-gradient(circle at 48% 40%, rgba(0, 0, 0, 0.55), transparent 38%),
+    repeating-linear-gradient(118deg, transparent 0 18px, rgba(255, 80, 30, 0.18) 18px 20px),
+    linear-gradient(160deg, rgba(255, 90, 40, 0.28), rgba(255, 200, 60, 0.16), transparent 70%);
+}
+
+.fx-point-ripple,
+.fx-summon-ripple {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  margin-left: -12px;
+  margin-top: -12px;
+  border-radius: 50%;
+  border: 2px solid rgba(232, 72, 72, 0.7);
+  box-shadow: 0 0 18px rgba(232, 72, 72, 0.45);
+  animation: fx-point-ripple 0.88s ease-out forwards;
+}
+
+.fx-psyche-swirl {
+  animation: fx-psyche-swirl 0.52s ease-out forwards;
+  box-shadow: 0 0 18px rgba(240, 201, 106, 0.55);
+}
+
+@keyframes fx-dream-ripple {
+  0% { opacity: 0; transform: scale(0.86); }
+  28% { opacity: 1; }
+  100% { opacity: 0; transform: scale(1.18); }
+}
+
+@keyframes fx-meet-accept {
+  0% { opacity: 0; filter: blur(8px); }
+  22% { opacity: 1; filter: blur(0); }
+  100% { opacity: 0; }
+}
+
+@keyframes fx-meet-reject {
+  0% { opacity: 0; clip-path: inset(40% 40% 40% 40%); }
+  18% { opacity: 1; clip-path: inset(0 0 0 0); }
+  45% { opacity: 0.85; filter: contrast(1.2); }
+  100% { opacity: 0; }
+}
+
+@keyframes fx-point-ripple {
+  0% { transform: scale(0.4); opacity: 0.95; }
+  100% { transform: scale(8); opacity: 0; }
+}
+
+@keyframes fx-psyche-swirl {
+  0% { transform: rotate(calc(var(--swirl-i, 0) * 28deg)) translateY(0) scale(0.7); opacity: 0; }
+  40% { opacity: 1; }
+  100% { transform: rotate(calc(var(--swirl-i, 0) * 28deg + 140deg)) translateY(-36px) scale(1); opacity: 0.95; }
+}
 
 .power-tokens.power-tokens-gain {
   animation: power-tokens-gain 0.6s ease;

@@ -79,7 +79,7 @@ export function resolvePsychePowerCard(state, player, card) {
   if (!card || card.type !== "psyche-power") return 0;
   const tokens = card.powerTokens ?? PSYCHE_POWER_GRANT;
   const granted = grantPowerTokens(state, player, tokens, {
-    reason: `${player.name} draws ${card.name}: +${tokens} Power Token${tokens === 1 ? "" : "s"}, then discards.`,
+    reason: `${player.name} plays ${card.name}: +${tokens} Power Token${tokens === 1 ? "" : "s"}.`,
     logQuest: true,
   });
   if (!state.psycheDiscard) state.psycheDiscard = [];
@@ -88,7 +88,19 @@ export function resolvePsychePowerCard(state, player, card) {
   return granted;
 }
 
-/** Power Psyche cards never stay in hand — resolve any that slipped in (e.g. starting deal). */
+/** Play a Power Surge from hand (any phase) for its Power Token(s). */
+export function playPsychePowerFromHand(state, player, card) {
+  if (!player || !card || card.type !== "psyche-power") return 0;
+  const idx = player.hand.findIndex((c) => c.instanceId === card.instanceId);
+  if (idx < 0) return 0;
+  player.hand.splice(idx, 1);
+  if (state.selectedHand) {
+    state.selectedHand = state.selectedHand.filter((id) => id !== card.instanceId);
+  }
+  return resolvePsychePowerCard(state, player, card);
+}
+
+/** Resolve every Power Surge still in hand (tutorial / bot convenience). */
 export function resolvePowerCardsInHand(state, player) {
   const powerCards = player.hand.filter((card) => card.type === "psyche-power");
   if (!powerCards.length) return 0;

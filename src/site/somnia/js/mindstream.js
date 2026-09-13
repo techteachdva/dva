@@ -11,6 +11,7 @@ import { recordQuestEvent } from "./quests.js";
 import { grantPowerTokens } from "./power-tokens.js";
 import { repressCard, requestReturnCards, enqueueRepressFromHand } from "./subconscious.js";
 import { adjacentTiles, edgeLandscapes } from "./hex.js";
+import { requestChooseTile } from "./landscapes.js";
 import {
   pullDreambeastFromMindstream,
   pullTwoDreambeastsForChoice,
@@ -53,20 +54,27 @@ function revealHidden(state, count) {
 }
 
 function moveToIfRevealed(state, player, ids) {
-  const id = ids.find((i) => landscapeById(state, i)?.revealed);
-  if (!id) return false;
-  player.landscapeId = id;
-  addLog(state, `${player.name} moves to ${landscapeById(state, id).name}.`);
-  recordQuestEvent(state, "move_player", { count: 1 });
-  return true;
+  const allowed = ids.filter((i) => landscapeById(state, i)?.revealed);
+  if (!allowed.length) return false;
+  return requestChooseTile(state, {
+    allowedIds: allowed,
+    action: "movePlayer",
+    playerId: player.id,
+    title: `Move ${player.name}`,
+    detail: `Choose one of the named Landscapes for ${player.name}.`,
+  });
 }
 
 function moveAdjacent(state, player) {
   const adj = adjacentTiles(state, player.landscapeId).filter((t) => t.revealed);
   if (!adj.length) return;
-  player.landscapeId = adj[0].id;
-  addLog(state, `${player.name} moves to ${adj[0].name}.`);
-  recordQuestEvent(state, "move_player", { count: 1 });
+  requestChooseTile(state, {
+    allowedIds: adj.map((t) => t.id),
+    action: "movePlayer",
+    playerId: player.id,
+    title: `Move ${player.name}`,
+    detail: `Choose an adjacent Landscape for ${player.name}.`,
+  });
 }
 
 function moveToAnyRevealed(state, player) {

@@ -3,6 +3,7 @@ import {
   revealLandscapeTile,
   beginFinalRecurrence,
   landscapeById,
+  setEncounterOnLandscape,
 } from "./state.js";
 import { shuffle } from "./data.js";
 import { repressCard } from "./subconscious.js";
@@ -12,20 +13,17 @@ import { isEdgeLandscape } from "./hex.js";
 import { markTileForgotten } from "./fx.js";
 import { queueTileForgetFx, queueRepressFx } from "./board-fx.js";
 
-/** Revealed, non-center, not wasteland — valid Forget targets. Bed is last. */
+/** Revealed outer Landscapes — The Bed can never be forgotten. */
 export function forgettableTiles(state) {
-  const candidates = state.board.filter((t) => !t.center && t.revealed && !t.wasteland);
-  const nonBed = candidates.filter((t) => t.id !== "bed");
-  if (nonBed.length) return nonBed;
-  const bed = candidates.find((t) => t.id === "bed");
-  return bed ? [bed] : [];
+  return state.board.filter((t) => !t.center && t.id !== "bed" && t.revealed && !t.wasteland);
 }
 
-/** All non-Bed tiles are wasteland (or unrevealed wasteland backs). */
+/** Every outer Landscape has been forgotten — face-down pool tiles do not count. */
 export function allOuterTilesWasteland(state) {
-  const outer = state.board.filter((t) => !t.center);
+  const outer = state.board.filter((t) => !t.center && t.id !== "bed");
   if (!outer.length) return false;
-  return outer.every((t) => t.wasteland || !t.revealed);
+  if (outer.some((t) => t.revealed && !t.wasteland)) return false;
+  return outer.every((t) => t.wasteland && t.forgotten);
 }
 
 /** Tiles that can be revealed (wasteland back or hidden pool). */
@@ -47,11 +45,12 @@ export function beginRevealPicking(state, budget) {
 
 function forgetTile(state, tile) {
   if (tile.id === "bed" || tile.center) {
-    triggerBedFinalRecurrence(state, "The Bed is forgotten — it flips to The Final Recurrence.");
+    addLog(state, "The Bed cannot be forgotten.");
     return;
   }
   tile.revealed = false;
   tile.wasteland = true;
+  tile.forgotten = true;
   if (tile.encounter) {
     queueRepressFx(tile.encounter, { tileId: tile.id });
     repressCard(state, tile.encounter);
@@ -89,12 +88,16 @@ export function beginForgetPicking(state, count) {
 
   const targets = forgettableTiles(state);
   if (!targets.length) {
-    return triggerBedFinalRecurrence(state, "No Landscapes left to Forget — The Bed flips to Final Recurrence.");
+    if (allOuterTilesWasteland(state)) {
+      return triggerBedFinalRecurrence(state, "All Landscapes are Wastelands — The Bed flips to Final Recurrence.");
+    }
+    addLog(state, "Nothing to Forget — The Bed stays. Final Recurrence does not begin.");
+    return false;
   }
 
   if (targets.length <= count) {
     targets.forEach((t) => forgetTile(state, t));
-    if (allOuterTilesWasteland(state) || count > targets.length) {
+    if (allOuterTilesWasteland(state)) {
       return triggerBedFinalRecurrence(state, "The Dreamscape collapses — Final Recurrence begins on The Bed.");
     }
     narrate(
@@ -115,12 +118,92 @@ export function beginForgetPicking(state, count) {
   return true;
 }
 
+function shouldAutoChooseTile(state) {
+  return !!state.tutorialMode;
+}
+
+export function resolveChooseTile(state, tileId, opts) {
+  const tile = landscapeById(state, tileId);
+  if (!tile) return false;
+  const { action, playerId, fromTileId, encounter } = opts;
+
+  if (action === "movePlayer") {
+    const player = state.players.find((p) => p.id === playerId);
+    if (!player) return false;
+    player.landscapeId = tile.id;
+    addLog(state, `${player.name} moves to ${tile.name}.`);
+    recordQuestEvent(state, "move_player", { count: 1 });
+    return true;
+  }
+
+  if (action === "spawnEncounter") {
+    if (!encounter || tile.encounter) return false;
+    setEncounterOnLandscape(state, tile.id, encounter);
+    addLog(state, `${encounter.name} appears on ${tile.name}!`);
+    return true;
+  }
+
+  if (action === "moveEncounter") {
+    const from = landscapeById(state, fromTileId);
+    if (!from?.encounter || tile.encounter) return false;
+    const enc = from.encounter;
+    from.encounter = null;
+    setEncounterOnLandscape(state, tile.id, enc);
+    addLog(state, `${enc.name} moves to ${tile.name}.`);
+    return true;
+  }
+
+  return false;
+}
+
+/** Ask the player to pick a tile, or auto-pick when only one option / tutorial. */
+export function requestChooseTile(state, {
+  allowedIds,
+  action,
+  playerId = null,
+  fromTileId = null,
+  encounter = null,
+  title = "Choose a Landscape",
+  detail = "Click a highlighted hex on the map.",
+} = {}) {
+  const allowed = [...new Set(allowedIds || [])].filter((id) => landscapeById(state, id));
+  if (!allowed.length) return false;
+
+  if (state.landscapePick?.mode === "choose") {
+    return resolveChooseTile(state, allowed[0], { action, playerId, fromTileId, encounter });
+  }
+
+  if (allowed.length === 1 || shouldAutoChooseTile(state)) {
+    return resolveChooseTile(state, allowed[0], { action, playerId, fromTileId, encounter });
+  }
+
+  state.landscapePick = {
+    mode: "choose",
+    remaining: 1,
+    allowed,
+    action,
+    playerId,
+    fromTileId,
+    encounter,
+    title,
+    detail,
+  };
+  narrate(state, title, detail, ["Click 1 highlighted Landscape"]);
+  return "pending";
+}
+
 export function handleLandscapeTilePick(state, tileId) {
   const pick = state.landscapePick;
   if (!pick) return false;
 
   const tile = landscapeById(state, tileId);
   if (!tile) return false;
+  if (pick.mode === "choose") {
+    if (!pick.allowed?.includes(tileId)) return false;
+    const ok = resolveChooseTile(state, tileId, pick);
+    if (ok) state.landscapePick = null;
+    return ok;
+  }
   if (pick.mode === "reveal" && tile.center) return false;
 
   if (pick.mode === "reveal") {
@@ -164,8 +247,7 @@ export function handleLandscapeTilePick(state, tileId) {
 
     if (pick.remaining <= 0) {
       state.landscapePick = null;
-      const extra = (pick.totalRequested || pick.picked.length) - pick.picked.length;
-      if (allOuterTilesWasteland(state) || extra > 0) {
+      if (allOuterTilesWasteland(state)) {
         triggerBedFinalRecurrence(state, "Landscapes collapsed — The Bed flips to Final Recurrence.");
       }
     } else if (allOuterTilesWasteland(state)) {
@@ -201,6 +283,15 @@ export function resolveStaleLandscapePick(state) {
   if (pick.mode === "forget" && pick.remaining > 0 && forgettableTiles(state).length === 0) {
     state.landscapePick = null;
     addLog(state, "No Landscapes left to forget — forget action complete.");
+    return;
+  }
+
+  if (pick.mode === "choose") {
+    const valid = (pick.allowed || []).filter((id) => landscapeById(state, id));
+    if (!valid.length) {
+      state.landscapePick = null;
+      addLog(state, "No valid Landscapes left to choose.");
+    }
   }
 }
 
@@ -210,16 +301,18 @@ export function getLandscapePickHighlights(state) {
     return {
       reveal: revealableTiles(state).map((t) => t.id),
       forget: [],
+      choose: [],
     };
   }
 
   const pick = state.landscapePick;
-  if (!pick) return { reveal: [], forget: [] };
+  if (!pick) return { reveal: [], forget: [], choose: [] };
 
   if (pick.mode === "reveal") {
     return {
       reveal: revealableTiles(state).map((t) => t.id),
       forget: [],
+      choose: [],
     };
   }
   if (pick.mode === "forget") {
@@ -228,7 +321,14 @@ export function getLandscapePickHighlights(state) {
       forget: forgettableTiles(state).map((t) => t.id),
     };
   }
-  return { reveal: [], forget: [] };
+  if (pick.mode === "choose") {
+    return {
+      reveal: [],
+      forget: [],
+      choose: pick.allowed || [],
+    };
+  }
+  return { reveal: [], forget: [], choose: [] };
 }
 
 export function requestForgetLandscapes(state, count) {

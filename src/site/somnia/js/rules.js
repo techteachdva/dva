@@ -1,4 +1,4 @@
-/** SOMNIA 15.4 rules helpers */
+/** SOMNIA 15.5 rules helpers */
 
 import {
   repressCard,
@@ -110,12 +110,33 @@ export function statForPhaseBudget(phase, state) {
   return phaseSuitForOpening(phase);
 }
 
-/** Dreamer whose selected Psyche will be spent to open the current phase (if any). */
+export function phaseTokenPlayer(state) {
+  if (!state.phaseTokenAsPsyche) return null;
+  return state.players.find((p) => p.alive && p.id === state.phaseTokenAsPsyche) || null;
+}
+
+export function phaseTokenValue(state, player) {
+  if (!player || state.phaseTokenAsPsyche !== player.id) return 0;
+  const phase = PHASES[state.phaseIndex];
+  const suit = phaseSuitForOpening(phase);
+  const cards = suit ? selectedBySuit(state, player, suit) : selectedCards(state, player);
+  if (cards.length >= 2) return 0;
+  return 1;
+}
+
+export function canUsePhasePowerToken(state, player) {
+  if (!player?.alive || (player.powerTokens || 0) < 1) return false;
+  if (!phaseOpeningActive(state)) return false;
+  const phase = PHASES[state.phaseIndex];
+  const suit = phaseSuitForOpening(phase);
+  const cards = suit ? selectedBySuit(state, player, suit) : selectedCards(state, player);
+  return cards.length < 2;
+}
+
+/** Dreamer whose selected Psyche (or 1 Power Token) will open the current phase. */
 export function findPhaseContributor(state) {
   if (!phaseOpeningActive(state)) return null;
   const ids = new Set(state.selectedHand);
-  if (!ids.size) return null;
-
   const owners = [];
   state.players.forEach((player) => {
     if (!player.alive) return;
@@ -124,6 +145,7 @@ export function findPhaseContributor(state) {
   });
 
   if (owners.length === 1) return owners[0];
+  if (!ids.size) return phaseTokenPlayer(state);
   return null;
 }
 
@@ -268,20 +290,20 @@ export function canSelectCard(state, card, phase, player = null) {
 }
 
 export function revealBudget(state, player) {
-  const played = sumSelectedValue(state, player, "lucidity");
+  const played = sumSelectedValue(state, player, "lucidity") + phaseTokenValue(state, player);
   if (played < 1) return 0;
   return played + totalStat(player, "lucidity", state);
 }
 
 export function exploreBudget(state, player) {
-  const played = sumSelectedValue(state, player, "elasticity");
+  const played = sumSelectedValue(state, player, "elasticity") + phaseTokenValue(state, player);
   if (played < 1) return 0;
   const stat = state.paradoxMeet ? "willpower" : "elasticity";
   return played + totalStat(player, stat, state);
 }
 
 export function meetActionBudgetFromWillpower(state, player) {
-  const played = sumSelectedValue(state, player, "willpower");
+  const played = sumSelectedValue(state, player, "willpower") + phaseTokenValue(state, player);
   if (played < 1) return 0;
   const stat = state.paradoxMeet ? "elasticity" : "willpower";
   return played + totalStat(player, stat, state);
@@ -398,8 +420,15 @@ export function discardAllSelected(state, { toRepress = false } = {}) {
   return byPlayer;
 }
 
-export function flipPowerBonus() {
-  return Math.random() < 0.5 ? 2 : 1;
+export function consumePhasePowerToken(state, player) {
+  if (!player || phaseTokenValue(state, player) < 1) {
+    state.phaseTokenAsPsyche = null;
+    return 0;
+  }
+  const spent = player.powerTokens > 0 ? 1 : 0;
+  if (spent) player.powerTokens -= 1;
+  state.phaseTokenAsPsyche = null;
+  return spent;
 }
 
 export function canTradeBetween(state, landscapeA, landscapeB) {

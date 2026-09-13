@@ -475,19 +475,20 @@ export function renderPowerTokens(state) {
   if (statsEl) {
     const pendingNote = pending ? `<span class="power-token-pending">+${pending} spread bonus</span>` : "";
     statsEl.innerHTML = `<span class="power-token-held">${held} held</span><span class="power-token-pool">${pool}/${MAX_POWER_TOKEN_POOL} in pool</span>${pendingNote}`;
-    statsEl.title = "Spend on Dreamer powers, Archetype quests, coin flips, and Object activations";
+    statsEl.title = "Spend on quests, Dreamer Powers, +1 spread bonuses, 1 Psyche for a phase opener, and Object activations";
   }
 
   if (bonusBtn) {
-    bonusBtn.disabled = !isMeet || held < 1 || pending > 0;
+    const canStack = isMeet && held >= 1;
+    bonusBtn.disabled = !canStack;
     bonusBtn.classList.toggle("hidden", !isMeet);
-    bonusBtn.textContent = pending > 0 ? `Spread bonus: +${pending}` : "Flip coin (+1 or +2 Spread)";
+    bonusBtn.textContent = pending > 0 ? `+1 Spread (now +${pending})` : "+1 to Spread";
   }
 
   if (bonusPending) {
     if (pending > 0 && isMeet) {
       bonusPending.classList.remove("hidden");
-      bonusPending.textContent = `Next Psyche spread gets +${pending} from your coin flip.`;
+      bonusPending.textContent = `Psyche spread bonus +${pending} from Power Tokens (stacking).`;
     } else {
       bonusPending.classList.add("hidden");
       bonusPending.textContent = "";
@@ -636,7 +637,7 @@ export function showModal(card) {
           <span class="psyche-suit large">+${card.powerTokens ?? 1}</span>
         </div>
         <h2>${card.name}</h2>
-        <p>When drawn: take <strong>${card.powerTokens ?? 1} Power Token${(card.powerTokens ?? 1) === 1 ? "" : "s"}</strong>, then discard this card.</p>
+        <p>Click to play at any time, in any phase: take <strong>${card.powerTokens ?? 1} Power Token${(card.powerTokens ?? 1) === 1 ? "" : "s"}</strong>, then discard this card.</p>
       `;
     } else {
       detail.innerHTML = `
@@ -808,6 +809,7 @@ export function renderBoard(state, onSelectLandscape, legalMoveIds = [], pickHig
   const legalSet = new Set(legalMoveIds);
   const revealSet = new Set(pickHighlights.reveal || []);
   const forgetSet = new Set(pickHighlights.forget || []);
+  const chooseSet = new Set(pickHighlights.choose || []);
   const questHighlightSet = new Set(activeQuestLandscapeIds(state));
   const justRevealed = new Set(consumeRevealedTiles());
   const justForgotten = new Set(consumeForgottenTiles());
@@ -835,6 +837,7 @@ export function renderBoard(state, onSelectLandscape, legalMoveIds = [], pickHig
       legalSet.has(tile.id) ? "movable" : "",
       revealSet.has(tile.id) ? "pick-reveal" : "",
       forgetSet.has(tile.id) ? "pick-forget" : "",
+      chooseSet.has(tile.id) ? "pick-choose" : "",
       justRevealed.has(tile.id) ? "just-revealed" : "",
       justForgotten.has(tile.id) ? "just-forgotten" : "",
       tile.suit ? `suit-${tile.suit}` : "",
@@ -1066,7 +1069,7 @@ export function renderPhaseSpendHands(state, onCardClick) {
         : best
           ? `Tip: ${best.name} has +${totalStat(best, statKey, state)} ${suitLabel} — click their chip · highlighted cards count`
           : `Select 1–2 ${suitLabel} or Wild cards · click a Dreamer chip to switch hands`),
-    canClickCard: (card) => isPhaseSpendPsycheCard(card, state),
+    canClickCard: (card) => card.type === "psyche-power" || isPhaseSpendPsycheCard(card, state),
     suggestCard: (card) => isPhaseSpendPsycheCard(card, state),
   });
 }
@@ -1114,6 +1117,30 @@ function discardPileForDeck(state, deckId) {
   }
 }
 
+export function showRevealedTopsModal(state, deckId, onCardClick) {
+  const modal = document.getElementById("utility-modal");
+  const body = document.getElementById("utility-modal-body");
+  const label = DECK_LABELS[deckId] || deckId;
+  const pile = state.revealedDeckTops?.[deckId] || [];
+  body.innerHTML = `
+    <h2>${label} — Revealed top</h2>
+    <p class="graveyard-total">${pile.length} card${pile.length === 1 ? "" : "s"} currently revealed by a power</p>
+    <div id="peek-browse" class="mini-card-row"></div>
+  `;
+  const container = body.querySelector("#peek-browse");
+  if (!pile.length) {
+    container.innerHTML = "<p>No revealed top cards. Draw or flip a power to peek.</p>";
+  } else {
+    pile.forEach((card) => {
+      container.appendChild(renderCard(card, {
+        mini: true,
+        onClick: () => onCardClick(card),
+      }));
+    });
+  }
+  modal.classList.remove("hidden");
+}
+
 export function showDiscardPileModal(state, deckId, onCardClick) {
   const modal = document.getElementById("utility-modal");
   const body = document.getElementById("utility-modal-body");
@@ -1138,7 +1165,7 @@ export function showDiscardPileModal(state, deckId, onCardClick) {
   modal.classList.remove("hidden");
 }
 
-export function renderDecks(state, onViewDiscard) {
+export function renderDecks(state, onViewDiscard, onViewPeek = null) {
   const tray = document.getElementById("deck-tray");
   if (!tray) return;
   tray.innerHTML = "";
@@ -1157,19 +1184,33 @@ export function renderDecks(state, onViewDiscard) {
 
   const appendDeck = (deck) => {
     const discardCount = discardPileForDeck(state, deck.id).length;
+    const peeked = state.revealedDeckTops?.[deck.id] || [];
     const row = document.createElement("div");
     row.className = [
       "deck-dropdown-row",
+      peeked.length ? "has-peek" : "",
       deck.suit ? `suit-${deck.suit}` : "",
     ].filter(Boolean).join(" ");
     row.dataset.deckId = deck.id;
     const labelText = deck.short
       ? `${deck.label} <span class="deck-dropdown-suit">${deck.short}</span>`
       : deck.label;
+    const peekNames = peeked.map((c) => c.name).join(", ");
     row.innerHTML = `
       <div class="deck-dropdown-label">${labelText}</div>
-      <div class="deck-dropdown-meta">${deck.count} in deck · ${discardCount} in discard</div>
+      <div class="deck-dropdown-meta">${deck.count} in deck · ${discardCount} in discard${peeked.length ? ` · peek: ${peekNames}` : ""}</div>
     `;
+    const actions = document.createElement("div");
+    actions.className = "deck-dropdown-actions";
+    if (peeked.length && onViewPeek) {
+      const peekBtn = document.createElement("button");
+      peekBtn.type = "button";
+      peekBtn.className = "btn btn-sm btn-peek";
+      peekBtn.textContent = peeked.length === 1 ? "View peek" : `View peek (${peeked.length})`;
+      peekBtn.title = "Browse cards a power revealed on top of this deck";
+      peekBtn.addEventListener("click", () => onViewPeek(deck.id));
+      actions.appendChild(peekBtn);
+    }
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "btn btn-sm";
@@ -1177,7 +1218,8 @@ export function renderDecks(state, onViewDiscard) {
     btn.disabled = discardCount === 0;
     btn.title = discardCount === 0 ? "Discard pile is empty" : "Browse face-up discard cards";
     btn.addEventListener("click", () => onViewDiscard(deck.id));
-    row.appendChild(btn);
+    actions.appendChild(btn);
+    row.appendChild(actions);
     tray.appendChild(row);
   };
 
@@ -1310,6 +1352,7 @@ function phaseBudgetChipLabel(state) {
   const phase = getPhase(state);
   if (phase === "Reveal") {
     if (!state.dreamDrawn) return null;
+    if (state.landscapePick?.mode === "choose") return "Choose a hex";
     if (state.landscapePick?.mode === "reveal" && state.landscapePick.remaining > 0) {
       return `${state.landscapePick.remaining} reveal${state.landscapePick.remaining === 1 ? "" : "s"}`;
     }

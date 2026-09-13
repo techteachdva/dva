@@ -44,6 +44,7 @@ import {
   playObject,
   activateObject,
   powerBonus,
+  togglePhasePowerToken,
   useDreamerPower,
   toggleHandCard,
   handleQuestComplete,
@@ -125,6 +126,7 @@ import {
   showSubconsciousPicker,
   showSubconsciousBrowse,
   showDiscardPileModal,
+  showRevealedTopsModal,
   showRepressPicker,
   renderSubconsciousButton,
   showRulesModal,
@@ -1038,6 +1040,10 @@ function renderAll() {
       if (result?.ui) processDreamerPowerResult(result);
       else renderAll();
     },
+    togglePhasePowerToken: () => {
+      togglePhasePowerToken(state);
+      renderAll();
+    },
     defeatFinalArchetype: () => { handleDefeatFinalArchetype(state); renderAll(); },
     sacrificeForFinal: () => { handleSacrificeForFinal(state); renderAll(); },
     nextPhase: () => { requestEndPhase(state, () => renderAll()); },
@@ -1114,6 +1120,8 @@ function renderAll() {
   renderDecks(state, (deckId) => {
     if (deckId.startsWith("mindstream-") && state.tradeMode) return;
     showDiscardPileModal(state, deckId, (card) => showModal(card));
+  }, (deckId) => {
+    showRevealedTopsModal(state, deckId, (card) => showModal(card));
   });
   renderActiveSlots(state, (card) => showModal(card));
   renderSubconsciousButton(state);
