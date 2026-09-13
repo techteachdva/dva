@@ -391,7 +391,7 @@ export function tutorialBriefHtml() {
           <li><strong>Explore</strong> (${SUIT_LABELS.elasticity}) — one Dreamer spends Elasticity to unlock shared team moves on the hex board.</li>
           <li><strong>Meet</strong> (${SUIT_LABELS.willpower}) — one Dreamer spends Willpower to unlock shared Meet actions for Encounters, Landscapes, and quests.</li>
         </ul>
-        <p class="tutorial-brief-note">Each phase spender plays <strong>1–2 suited Psyche cards</strong>. Higher matching Dreamer stats add bonus budget.</p>
+        <p class="tutorial-brief-note">Each phase spender plays <strong>1–2 suited Psyche cards</strong>, or <strong>1 Power Token</strong> as that phase cost. Higher matching Dreamer stats add bonus budget.</p>
       </section>
 
       <section class="overview-block overview-cols">
@@ -401,7 +401,7 @@ export function tutorialBriefHtml() {
             <li><strong>Psyche</strong> — your hand (Lucidity, Elasticity, Willpower)</li>
             <li><strong>Landscapes</strong> — hex tiles; reveal, move onto, and use their actions</li>
             <li><strong>Encounters</strong> — Dreambeasts; <strong>Accept</strong> (join your hand) or <strong>Reject</strong> (Subconscious + reward)</li>
-            <li><strong>Power Tokens</strong> — mark quests, powers, and survival (team pool, max 24)</li>
+            <li><strong>Power Tokens</strong> — mark quests here; in the full game also boost Spreads (+1 each), activate Objects and Persistent cards, and avoid death (team pool, max 24)</li>
             <li><strong>Subconscious</strong> — face-up repressed cards; Return effects recycle them</li>
           </ul>
         </div>

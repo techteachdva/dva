@@ -103,7 +103,7 @@ const TUTORIAL_QUEST_PLACEMENT = [
   { questId: "the-basement", beside: "city", besideName: "City" },
 ];
 
-const TUTORIAL_SNAPSHOT_VERSION = 7;
+const TUTORIAL_SNAPSHOT_VERSION = 8;
 let tutorialSnapshotCache = null;
 let tutorialSnapshotCacheVersion = 0;
 
@@ -358,6 +358,7 @@ export function classifyPhaseAction(action) {
   if (label.startsWith("Draw & Resolve")) return "drawDream";
   if (label.startsWith("Reveal Landscapes")) return "revealLandscape";
   if (label.startsWith("Spend Elasticity")) return "spendElasticity";
+  if (label.startsWith("Power Token as 1")) return "phasePowerToken";
   if (label.startsWith("Gain Actions")) return "gainMeetActions";
   if (label.startsWith("Accept")) return "meetAccept";
   if (label.startsWith("Reject")) return "meetReject";
@@ -407,6 +408,11 @@ function stepAllowsAction(state, stepId, kind, detail = {}) {
       return allowsRemEndRoundAction(state, kind, detail);
 
     case "spend-elasticity-r1":
+      if (kind === "phasePowerToken") {
+        return getPhase(state) === "Explore" && !state.exploreActivated;
+      }
+      return kind === "spendElasticity" && !!state.phaseTokenAsPsyche;
+
     case "r2-elasticity":
       if (kind === "handToggle") return allowsSuitHand(state, detail, "elasticity");
       return kind === "spendElasticity";
@@ -744,14 +750,14 @@ export const TUTORIAL_SCRIPT = [
     id: "win-goal",
     round: 1,
     title: "How You Win",
-    body: "Complete both quests on the Active Archetype, spend 1 Power Token to mark each quest, then Acquire it for points. Reach 12 points before the Dream Deck runs out. Every living Dreamer must stand on The Bed to escape.",
+    body: "Complete both quests on the Active Archetype, spend 1 Power Token to mark each quest, then Acquire it for points. Reach 12 points before the Dream Deck runs out. Every living Dreamer must stand on The Bed to escape. This walkthrough will show quest marks. In the full game, Power Tokens also boost a Psyche Spread (+1 per token), activate Objects and Persistent cards (Persistent costs 1 token), and can be spent to avoid death.",
     targets: ["#active-archetype", "#power-tokens"],
   },
   {
     id: "rem-intro",
     round: 1,
     title: "R.E.M. Every Round",
-    body: "Each round has three phases in order: Reveal (Lucidity), Explore (Elasticity), Meet (Willpower). One Dreamer spends 1 to 2 suited Psyche cards per phase to set the team budget. Higher matching Dreamer stats add bonus value.",
+    body: "Each round has three phases in order: Reveal (Lucidity), Explore (Elasticity), Meet (Willpower). One Dreamer spends 1 to 2 suited Psyche cards per phase to set the team budget. Higher matching Dreamer stats add bonus value. You can also spend 1 Power Token as that phase's Psyche cost. In the full game, extra tokens can still boost a Spread (+1 each).",
     target: "#phase-stepper",
   },
   {
@@ -819,22 +825,22 @@ export const TUTORIAL_SCRIPT = [
   {
     id: "spend-elasticity-r1",
     round: 1,
-    title: "Explore: Spend Elasticity",
-    body: "Select 1 to 2 Elasticity cards, then click Spend Elasticity to unlock team moves.",
-    targets: ["#hand-bar", "#phase-actions"],
+    title: "Explore: Pay with a Power Token",
+    body: "A Power Token can pay an R.E.M. phase cost instead of a Psyche card. Click Power Token as 1 Elasticity (do not select cards), then click Spend Elasticity to unlock team moves.",
+    targets: ["#phase-actions", "#power-tokens"],
     spotlight: "#phase-actions",
     until: (s) => s.exploreActivated,
     objective: (s) => {
-      if (s.exploreActivated) return "Elasticity spent. Press Continue.";
-      if (hasElasticitySelected(s)) return "Click Spend Elasticity.";
-      return "Select 1 to 2 Elasticity cards.";
+      if (s.exploreActivated) return "Phase paid with a Power Token. Press Continue.";
+      if (s.phaseTokenAsPsyche) return "Click Spend Elasticity.";
+      return "Click Power Token as 1 Elasticity.";
     },
   },
   {
     id: "explore-move-r1",
     round: 1,
     title: "Explore: Move to House",
-    body: "Click a Dreamer chip, then move onto House. A Mandrake Encounter waits there.",
+    body: "Click a Dreamer Chip in the bottom left corner to select them, then click a Landscape to move there. Move to House to meet the Mandrake.",
     targets: ["#dreamer-dock", "#board-viewport"],
     spotlight: "#board-viewport",
     until: (s) => dreamerOnHouse(s),
@@ -1051,7 +1057,7 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-mark",
     round: 2,
     title: "Mark Both Quests",
-    body: "Why: You proved both quest conditions. How: In the Active Archetype panel, click each quest checkbox and spend 1 Power Token to mark it complete.",
+    body: "Why: You proved both quest conditions. How: In the Active Archetype panel, click each quest checkbox and spend 1 Power Token to mark it complete. Other full-game uses (not required here): boost a Spread with +1 per token, and activate Objects or Persistent cards (Persistent costs 1 token).",
     target: "#active-archetype",
     until: (s) => innocentQuestsMarked(s) || innocentAcquired(s),
     objective: (s) => (innocentQuestsMarked(s) || innocentAcquired(s)
@@ -1142,7 +1148,7 @@ export const TUTORIAL_SCRIPT = [
     id: "graduate",
     round: 5,
     title: "Tutorial Complete",
-    body: "You learned the goal, R.E.M. phases, Accept and Reject, Archetype quests, Boss Dreams, death, and the Subconscious. Use Guide and Help for the full rules. Press Finish to return to setup.",
+    body: "You learned the goal, R.E.M. phases, Accept and Reject, Archetype quests, Boss Dreams, death, and the Subconscious. In the full game, Power Tokens also boost Spreads and activate Objects or Persistent cards. Use Guide and Help for the full rules. Press Finish to return to setup.",
     target: "#phase-stepper",
   },
 ];

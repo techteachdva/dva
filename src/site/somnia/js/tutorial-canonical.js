@@ -14,6 +14,7 @@ import {
   drawDreamCard,
   revealLandscape,
   activateExplore,
+  togglePhasePowerToken,
   gainMeetActions,
   meetEncounter,
   handleBoardTileClick,
@@ -84,6 +85,19 @@ function spendElasticityPhase(state, preferredPlayer = null) {
   if (!state.exploreActivated) {
     state.exploreActivated = true;
     state.exploreMovesLeft = Math.max(3, state.exploreMovesLeft || 0);
+  }
+}
+
+function spendElasticityWithPowerToken(state, playerIndex = 0) {
+  const player = state.players[playerIndex];
+  if (!player) return;
+  state.activePlayerIndex = playerIndex;
+  state.selectedHand = [];
+  if (state.phaseTokenAsPsyche !== player.id) togglePhasePowerToken(state);
+  activateExplore(state);
+  if (!state.exploreActivated) {
+    state.exploreActivated = true;
+    state.exploreMovesLeft = Math.max(1, state.exploreMovesLeft || 0);
   }
 }
 
@@ -268,7 +282,7 @@ export function applyCanonicalTutorialStep(state, step) {
       return;
 
     case "spend-elasticity-r1":
-      spendElasticityPhase(state, 0);
+      spendElasticityWithPowerToken(state, 0);
       return;
 
     case "r2-elasticity":

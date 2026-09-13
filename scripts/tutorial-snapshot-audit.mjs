@@ -133,6 +133,7 @@ function hasPlayableAction(state, step) {
     ["drawDream", {}],
     ["revealLandscape", {}],
     ["spendElasticity", {}],
+    ["phasePowerToken", {}],
     ["gainMeetActions", {}],
     ["advancePhase", {}],
     ["meetAccept", {}],

@@ -2764,9 +2764,9 @@ function inferTutorialCardDock(step) {
   return "bottom";
 }
 
-const TUTORIAL_WINDOW_STORAGE_KEY = "somnia_tutorial_window_v1";
+const TUTORIAL_WINDOW_STORAGE_KEY = "somnia_tutorial_window_v2";
 const TUTORIAL_WINDOW_MIN_WIDTH = 320;
-const TUTORIAL_WINDOW_MIN_HEIGHT = 220;
+const TUTORIAL_WINDOW_MIN_HEIGHT = 180;
 const TUTORIAL_WINDOW_MARGIN = 12;
 
 let tutorialWindowChromeReady = false;
@@ -2777,7 +2777,11 @@ let tutorialWindowResize = null;
 function loadTutorialWindowState() {
   try {
     const raw = localStorage.getItem(TUTORIAL_WINDOW_STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
+    if (!raw) return null;
+    const saved = JSON.parse(raw);
+    if (!saved || typeof saved !== "object") return null;
+    if (!saved.userResized) saved.height = null;
+    return saved;
   } catch {
     /* ignore */
   }
@@ -2797,14 +2801,14 @@ function defaultTutorialWindowState() {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
   const width = Math.min(720, Math.max(420, Math.round(vw * 0.38)));
-  const height = Math.min(560, Math.max(280, Math.round(vh * 0.55)));
   return {
     left: TUTORIAL_WINDOW_MARGIN,
-    top: Math.max(TUTORIAL_WINDOW_MARGIN, vh - height - TUTORIAL_WINDOW_MARGIN),
+    top: TUTORIAL_WINDOW_MARGIN + 64,
     width,
     height: null,
     minimized: false,
     userPositioned: false,
+    userResized: false,
   };
 }
 
@@ -2875,8 +2879,8 @@ function applyTutorialWindowGeometry() {
 
   card.style.left = `${tutorialWindowState.left}px`;
   card.style.top = `${tutorialWindowState.top}px`;
-  card.style.bottom = "";
-  card.style.right = "";
+  card.style.bottom = "auto";
+  card.style.right = "auto";
 
   const minimizeBtn = document.getElementById("tutorial-minimize");
   const expandBtn = document.getElementById("tutorial-expand");
@@ -2899,11 +2903,11 @@ function applyTutorialWindowGeometry() {
   card.style.maxHeight = "";
   card.style.width = `${tutorialWindowState.width}px`;
 
-  if (tutorialWindowState.height != null) {
+  if (tutorialWindowState.userResized && tutorialWindowState.height != null) {
     card.style.height = `${tutorialWindowState.height}px`;
     card.classList.add("tutorial-card-sized");
   } else {
-    card.style.height = "";
+    card.style.height = "auto";
     card.classList.remove("tutorial-card-sized");
   }
 }
@@ -2912,6 +2916,7 @@ function ensureTutorialWindowState() {
   if (!tutorialWindowState) {
     tutorialWindowState = loadTutorialWindowState() || defaultTutorialWindowState();
   }
+  if (!tutorialWindowState.userResized) tutorialWindowState.height = null;
   clampTutorialWindowToViewport();
   applyTutorialWindowGeometry();
 }
@@ -2974,6 +2979,7 @@ function onTutorialWindowPointerMove(e) {
     const dy = e.clientY - tutorialWindowResize.startY;
     tutorialWindowState.width = tutorialWindowResize.origWidth + dx;
     tutorialWindowState.height = tutorialWindowResize.origHeight + dy;
+    tutorialWindowState.userResized = true;
     tutorialWindowState.userPositioned = true;
     clampTutorialWindowToViewport();
     applyTutorialWindowGeometry();
@@ -3045,6 +3051,7 @@ function ensureTutorialWindowChrome() {
     if (tutorialWindowState.minimized) return;
     const rect = card.getBoundingClientRect();
     tutorialWindowState.height = rect.height;
+    tutorialWindowState.userResized = true;
     tutorialWindowResize = {
       startX: e.clientX,
       startY: e.clientY,
@@ -3437,6 +3444,8 @@ export function updateTutorialStepUI({
     updateTutorialHeaderLabel(step, stepIndex, total, roundLabel);
     positionTutorialCard(step);
     refreshTutorialSpotlight();
+  } else {
+    applyTutorialWindowGeometry();
   }
 }
 

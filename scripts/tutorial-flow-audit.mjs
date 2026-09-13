@@ -62,7 +62,7 @@ const ACTION_KINDS = [
   "drawDream", "revealLandscape", "spendElasticity", "gainMeetActions",
   "meetAccept", "meetReject", "advancePhase", "landscapeActionA",
   "completeQuest0", "completeQuest1", "handToggle", "dreamerSelect",
-  "exploreMove", "boardClick", "dreamerPower",
+  "exploreMove", "boardClick", "dreamerPower", "phasePowerToken",
 ];
 
 function phaseActionKinds(state) {
@@ -168,7 +168,12 @@ function simulate() {
     () => { selectLucidity(state, 1); revealLandscape(state); },
     () => { pickHiddenTile(state); },
     () => { advancePhasesTo(state, "Explore"); },
-    () => { selectElasticity(state, 1); activateExplore(state); },
+    () => {
+      state.activePlayerIndex = 0;
+      state.selectedHand = [];
+      state.phaseTokenAsPsyche = state.players[0].id;
+      activateExplore(state);
+    },
     () => { setPlayerOn(state, 0, "bed"); moveActiveTo(state, "house"); },
     () => { advancePhasesTo(state, "Meet"); },
     () => { selectWillpower(state, 1); gainMeetActions(state); },
