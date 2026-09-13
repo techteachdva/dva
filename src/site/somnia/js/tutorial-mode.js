@@ -10,6 +10,7 @@ import { meetPsycheActor } from "./rules.js";
 import { uid } from "./data.js";
 import { encounterFromDreambeastCard } from "./mindstream-supply.js";
 import { hexNeighbors, getLegalMoveTargets } from "./hex.js";
+import { precomputeTutorialSnapshots } from "./tutorial-canonical.js";
 
 export const TUTORIAL_DREAMER_IDS = ["the-visionary", "the-runner"];
 export const TUTORIAL_MAX_ROUND = 5;
@@ -31,7 +32,16 @@ function mkDream(template, extra = {}) {
   return { ...template, ...extra, instanceId: uid("tut-dream") };
 }
 
-export function createTutorialState(data) {
+const TUTORIAL_QUEST_PLACEMENT = [
+  { questId: "the-attic", beside: "house", besideName: "House" },
+  { questId: "the-basement", beside: "city", besideName: "City" },
+];
+
+const TUTORIAL_SNAPSHOT_VERSION = 4;
+let tutorialSnapshotCache = null;
+let tutorialSnapshotCacheVersion = 0;
+
+export function createTutorialBaseState(data) {
   const dreamers = TUTORIAL_DREAMER_IDS
     .map((id) => data.dreamers.find((d) => d.id === id))
     .filter(Boolean);
@@ -106,11 +116,27 @@ export function createTutorialState(data) {
     .join("; ");
 
   state.log = [
-    "Tutorial Mode: five rounds teach the full game. Drag the guide window out of the way when you need the map.",
+    "Tutorial Mode: five guided rounds on a fixed script. Drag the guide window out of the way when you need the map.",
     "Round 1 begins in the Reveal Phase. Your Active Archetype is The Innocent.",
-    placementNote ? `Quest Landscapes revealed: ${placementNote}.` : "Quest Landscapes The Attic and The Basement are revealed near the center.",
+    placementNote ? `Quest Landscapes revealed: ${placementNote}.` : "Quest Landscapes The Attic and The Basement are revealed beside House and City.",
   ];
-  initTutorialSnapshots(state);
+  return state;
+}
+
+export function createTutorialState(data) {
+  if (!tutorialSnapshotCache || tutorialSnapshotCacheVersion !== TUTORIAL_SNAPSHOT_VERSION) {
+    tutorialSnapshotCache = precomputeTutorialSnapshots(data, TUTORIAL_SCRIPT, createTutorialBaseState);
+    tutorialSnapshotCacheVersion = TUTORIAL_SNAPSHOT_VERSION;
+  }
+  const snapshots = tutorialSnapshotCache;
+  const state = JSON.parse(JSON.stringify(snapshots[0]));
+  reattachStateRuntime(state);
+  state.tutorialMode = true;
+  state.tutorialSnapshots = snapshots;
+  state.tutorialStepIndex = 0;
+  state.tutorialCanAdvance = false;
+  state.tutorialComplete = false;
+  state.tutorialSuppressCatchUp = true;
   return state;
 }
 
@@ -121,29 +147,8 @@ function reattachStateRuntime(state) {
   delete state.onResolutionIdle;
 }
 
-function snapshotGameData(state) {
-  const {
-    tutorialSnapshots,
-    tutorialStepIndex,
-    tutorialCanAdvance,
-    tutorialComplete,
-    tutorialSuppressCatchUp,
-    checkPsycheDeath,
-    onResolutionIdle,
-    ...game
-  } = state;
-  return JSON.parse(JSON.stringify(game));
-}
-
-function saveTutorialSnapshot(state, stepIndex) {
-  if (!state.tutorialSnapshots) state.tutorialSnapshots = [];
-  state.tutorialSnapshots[stepIndex] = snapshotGameData(state);
-}
-
 function restoreTutorialSnapshot(state, stepIndex) {
-  let idx = stepIndex;
-  while (idx >= 0 && !state.tutorialSnapshots?.[idx]) idx -= 1;
-  const snap = idx >= 0 ? state.tutorialSnapshots[idx] : null;
+  const snap = state.tutorialSnapshots?.[stepIndex];
   if (!snap) return false;
 
   const preserved = {
@@ -159,11 +164,6 @@ function restoreTutorialSnapshot(state, stepIndex) {
   return true;
 }
 
-export function initTutorialSnapshots(state) {
-  state.tutorialSnapshots = [];
-  saveTutorialSnapshot(state, 0);
-}
-
 // ── Hard action locks per tutorial step ──────────────────────────────
 
 const TUTORIAL_INFO_STEPS = new Set([
@@ -177,12 +177,6 @@ const TUTORIAL_INFO_STEPS = new Set([
   "r3-boss",
   "r4-death",
   "graduate",
-]);
-
-const TUTORIAL_FREE_PLAY_STEPS = new Set([
-  "end-r3",
-  "end-r4",
-  "r5-practice",
 ]);
 
 function allowsSuitHand(state, detail, suit) {
@@ -212,6 +206,73 @@ function boardSelectAllowed(state, tileId, allowedTiles) {
   return allowedTiles.includes(tileId);
 }
 
+function allowsRemEndRoundAction(state, kind, detail = {}) {
+  const phase = getPhase(state);
+  switch (kind) {
+    case "drawDream":
+      return phase === "Reveal" && !state.dreamDrawn;
+    case "handToggle":
+      if (phase === "Reveal" && !state.revealLandscapeUsed) {
+        return allowsSuitHand(state, detail, "lucidity");
+      }
+      if (phase === "Explore" && !state.exploreActivated) {
+        return allowsSuitHand(state, detail, "elasticity");
+      }
+      if (phase === "Meet" && state.meetActionBudget <= 0) {
+        return allowsSuitHand(state, detail, "willpower");
+      }
+      return phase === "Meet" && state.meetActionBudget > 0;
+    case "revealLandscape":
+      return phase === "Reveal" && state.dreamDrawn && !state.revealLandscapeUsed;
+    case "boardClick":
+      if (state.landscapePick?.mode === "reveal") return true;
+      if (phase === "Explore" && state.exploreActivated) {
+        return exploreMoveAllowed(state, detail.tileId, null);
+      }
+      return false;
+    case "exploreMove":
+      return phase === "Explore" && state.exploreActivated
+        && exploreMoveAllowed(state, detail.tileId, null);
+    case "dreamerSelect":
+      return phase === "Explore" && state.exploreActivated;
+    case "spendElasticity":
+      return phase === "Explore" && !state.exploreActivated;
+    case "gainMeetActions":
+      return phase === "Meet" && state.meetActionBudget <= 0;
+    case "advancePhase":
+      return true;
+    default:
+      return false;
+  }
+}
+
+function remEndRoundObjective(state, targetRound) {
+  if (state.round >= targetRound) {
+    return `Round ${targetRound} started. Press Continue.`;
+  }
+  const phase = getPhase(state);
+  if (phase === "Reveal") {
+    if (!state.dreamDrawn) return "Draw & Resolve Dream.";
+    if (!state.revealLandscapeUsed) {
+      if (hasLuciditySelected(state)) return "Click Reveal Landscapes.";
+      return "Select 1 to 2 Lucidity cards.";
+    }
+    return "Click Next Phase to enter Explore.";
+  }
+  if (phase === "Explore") {
+    if (!state.exploreActivated) {
+      if (hasElasticitySelected(state)) return "Click Spend Elasticity.";
+      return "Select 1 to 2 Elasticity cards.";
+    }
+    return "Move Dreamers if you like, then click Next Phase to enter Meet.";
+  }
+  if (state.meetActionBudget <= 0) {
+    if (hasWillpowerSelected(state)) return "Click Gain Actions.";
+    return "Select 1 to 2 Willpower cards.";
+  }
+  return "Use Meet actions if you wish, then click Next Phase to end the round.";
+}
+
 export function classifyPhaseAction(action) {
   const label = action?.label || "";
   if (label.startsWith("Draw & Resolve")) return "drawDream";
@@ -230,8 +291,6 @@ export function classifyPhaseAction(action) {
 }
 
 function stepAllowsAction(state, stepId, kind, detail = {}) {
-  if (TUTORIAL_FREE_PLAY_STEPS.has(stepId)) return true;
-
   if (TUTORIAL_INFO_STEPS.has(stepId)) {
     if (stepId === "subconscious" && kind === "headerSubconscious") return true;
     return false;
@@ -262,6 +321,11 @@ function stepAllowsAction(state, stepId, kind, detail = {}) {
     case "end-r2":
       return kind === "advancePhase";
 
+    case "end-r3":
+    case "end-r4":
+    case "r5-practice":
+      return allowsRemEndRoundAction(state, kind, detail);
+
     case "spend-elasticity-r1":
     case "r2-elasticity":
       if (kind === "handToggle") return allowsSuitHand(state, detail, "elasticity");
@@ -277,7 +341,12 @@ function stepAllowsAction(state, stepId, kind, detail = {}) {
     case "r2-move-quests":
       if (kind === "dreamerSelect") return true;
       if (kind === "exploreMove" || kind === "boardClick") {
-        return exploreMoveAllowed(state, detail.tileId, ["the-attic", "the-basement"]);
+        return exploreMoveAllowed(state, detail.tileId, [
+          "the-attic",
+          "the-basement",
+          "house",
+          "city",
+        ]);
       }
       return false;
 
@@ -358,7 +427,7 @@ export function isTutorialActionAllowed(state, kind, detail = {}) {
   }
 
   if (kind === "headerSubconscious") {
-    return step.id === "subconscious" || step.id === "r4-death" || TUTORIAL_FREE_PLAY_STEPS.has(step.id);
+    return step.id === "subconscious" || step.id === "r4-death";
   }
 
   if (kind === "headerDecks" || kind === "headerDreamers") {
@@ -366,6 +435,7 @@ export function isTutorialActionAllowed(state, kind, detail = {}) {
   }
 
   if (kind === "boardClick" && state.landscapePick?.mode === "reveal") {
+    if (["end-r3", "end-r4", "r5-practice"].includes(step.id)) return true;
     return ["spend-lucidity-r1", "r2-lucidity", "reveal-pick-r1"].includes(step.id);
   }
 
@@ -459,15 +529,6 @@ function houseMeetReady(state) {
   return dreamerOnHouse(state) && houseSelected(state);
 }
 
-function shuffleIds(ids) {
-  const copy = [...ids];
-  for (let i = copy.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
-  }
-  return copy;
-}
-
 function swapBoardTilePositions(tileA, tileB) {
   const q = tileA.q;
   const r = tileA.r;
@@ -486,7 +547,6 @@ function ring2SlotsBesideStarter(state, starterId) {
 }
 
 function setupTutorialQuestLandscapes(state) {
-  const questIds = ["the-attic", "the-basement"];
   const usedCoords = new Set();
   const placements = [];
 
@@ -504,40 +564,31 @@ function setupTutorialQuestLandscapes(state) {
     }
   });
 
-  questIds.forEach((questId) => {
+  TUTORIAL_QUEST_PLACEMENT.forEach(({ questId, beside, besideName }) => {
     const questTile = landscapeById(state, questId);
     if (!questTile) return;
 
-    let placed = false;
-    for (const starterId of shuffleIds(TUTORIAL_STARTER_IDS)) {
-      const slots = ring2SlotsBesideStarter(state, starterId).filter((slot) => {
+    const slots = ring2SlotsBesideStarter(state, beside)
+      .filter((slot) => {
         const key = `${slot.q},${slot.r}`;
         if (usedCoords.has(key)) return false;
-        if (questIds.includes(slot.id)) return false;
-        return true;
-      });
-      if (!slots.length) continue;
+        return !TUTORIAL_QUEST_PLACEMENT.some((p) => p.questId === slot.id);
+      })
+      .sort((a, b) => a.q - b.q || a.r - b.r);
 
-      const targetSlot = slots[Math.floor(Math.random() * slots.length)];
+    if (slots.length) {
+      const targetSlot = slots[0];
       swapBoardTilePositions(questTile, targetSlot);
       usedCoords.add(`${questTile.q},${questTile.r}`);
-      questTile.revealed = true;
-      questTile.wasteland = false;
-
-      const starter = landscapeById(state, starterId);
-      placements.push({
-        questId,
-        starterId,
-        starterName: starter?.name || starterId,
-      });
-      placed = true;
-      break;
     }
 
-    if (!placed) {
-      questTile.revealed = true;
-      questTile.wasteland = false;
-    }
+    questTile.revealed = true;
+    questTile.wasteland = false;
+    placements.push({
+      questId,
+      starterId: beside,
+      starterName: besideName,
+    });
   });
 
   state.tutorialFlags.questPlacements = placements;
@@ -630,7 +681,7 @@ export const TUTORIAL_SCRIPT = [
     id: "archetype-innocent",
     round: 1,
     title: "The Innocent Archetype",
-    body: "Your Active Archetype is The Innocent (1 point). Quest 1: Draw Mindstream on The Attic. Quest 2: Draw Mindstream on The Basement. Both quest Landscapes are already revealed on the map beside starting tiles. Glowing hexes mark quest locations.",
+    body: "Your Active Archetype is The Innocent (1 point). Quest 1: Draw Mindstream on The Attic (beside House). Quest 2: Draw Mindstream on The Basement (beside City). Both quest Landscapes are already revealed on the map. Glowing hexes mark quest locations.",
     targets: ["#active-archetype", "#board-viewport"],
   },
   {
@@ -768,7 +819,7 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-map",
     round: 2,
     title: "Find Your Quest Landscapes",
-    body: "Look at the map. The Attic and The Basement are revealed beside starting Landscapes near the center. Glowing hexes mark open Innocent quests. You must stand on a quest tile during Meet to use its Action A.",
+    body: "The Attic is beside House; The Basement is beside City. Glowing hexes mark open Innocent quests. During Explore, move one Dreamer onto each quest tile before entering Meet.",
     targets: ["#board-viewport", "#active-archetype"],
     spotlight: "#board-viewport",
   },
@@ -917,8 +968,8 @@ export const TUTORIAL_SCRIPT = [
     title: "Mark Both Quests",
     body: "Why: You proved both quest conditions. How: In the Active Archetype panel, click each quest checkbox and spend 1 Power Token to mark it complete.",
     target: "#active-archetype",
-    until: (s) => innocentQuestsMarked(s),
-    objective: (s) => (innocentQuestsMarked(s)
+    until: (s) => innocentQuestsMarked(s) || innocentAcquired(s),
+    objective: (s) => (innocentQuestsMarked(s) || innocentAcquired(s)
       ? "Quests marked. Press Continue."
       : "Click each quest checkbox and spend 1 Power Token."),
   },
@@ -970,12 +1021,10 @@ export const TUTORIAL_SCRIPT = [
     id: "end-r3",
     round: 3,
     title: "End Round 3",
-    body: "You may face Cerberus during Meet or end the round. Unresolved bosses fail at end of Meet. Click Next Phase when ready.",
-    target: "#btn-advance-phase",
+    body: "Run the full R.E.M. loop for Round 3. Cerberus is on The Bed — you may face it during Meet or end the round (unresolved bosses fail at end of Meet).",
+    targets: ["#phase-stepper", "#phase-actions", "#board-viewport"],
     until: (s) => s.round >= 4,
-    objective: (s) => (s.round >= 4
-      ? "Round 4 started. Press Continue."
-      : "Click Next Phase to end Round 3."),
+    objective: (s) => remEndRoundObjective(s, 4),
   },
   {
     id: "r4-death",
@@ -988,21 +1037,21 @@ export const TUTORIAL_SCRIPT = [
     id: "end-r4",
     round: 4,
     title: "End Round 4",
-    body: "Run Reveal, Explore, and Meet on your own this round. Click Next Phase when ready.",
-    target: "#btn-advance-phase",
+    body: "Round 4 Dream is Heroism: each Dreamer draws Psyche equal to their Willpower when it resolves. Run the full R.E.M. loop, then end the round.",
+    targets: ["#phase-stepper", "#phase-actions"],
     until: (s) => s.round >= 5,
-    objective: (s) => (s.round >= 5
-      ? "Round 5 started. Press Continue."
-      : "Click Next Phase to end Round 4."),
+    objective: (s) => remEndRoundObjective(s, 5),
   },
   {
     id: "r5-practice",
     round: 5,
     title: "Round 5: Final Practice",
-    body: "One last round with less guidance. Run the full R.E.M. loop, use Landscape actions, and manage Power Tokens. Click Next Phase after Meet to finish.",
-    target: "#phase-stepper",
+    body: "One last guided round. Run the full R.E.M. loop, then end Meet to finish the tutorial.",
+    targets: ["#phase-stepper", "#phase-actions"],
     until: (s) => s.round > 5 || s.tutorialComplete,
-    objective: "Finish Meet and click Next Phase to complete the tutorial.",
+    objective: (s) => (s.round > 5
+      ? "Tutorial rounds complete. Press Continue."
+      : remEndRoundObjective(s, 6)),
   },
   {
     id: "graduate",
@@ -1035,23 +1084,8 @@ export function getTutorialStep(state) {
   return TUTORIAL_SCRIPT[state.tutorialStepIndex] || null;
 }
 
-/** Skip past steps whose gates are already satisfied (e.g. after reload or fast play). */
-function catchUpTutorialIndex(state) {
-  if (state.tutorialSuppressCatchUp) return;
-  let guard = 0;
-  while (guard++ < TUTORIAL_SCRIPT.length) {
-    const step = TUTORIAL_SCRIPT[state.tutorialStepIndex];
-    if (!step) break;
-    if (!step.until || !step.until(state)) break;
-    if (state.tutorialStepIndex >= TUTORIAL_SCRIPT.length - 1) break;
-    state.tutorialStepIndex += 1;
-  }
-}
-
 export function syncTutorial(state) {
   if (!state?.tutorialMode || state.tutorialComplete) return null;
-
-  catchUpTutorialIndex(state);
 
   const step = getTutorialStep(state);
   if (!step) {
@@ -1078,13 +1112,16 @@ export function syncTutorial(state) {
 
 export function advanceTutorialStep(state) {
   if (!state?.tutorialMode) return;
-  state.tutorialStepIndex += 1;
-  saveTutorialSnapshot(state, state.tutorialStepIndex);
-  state.tutorialCanAdvance = false;
-  state.tutorialSuppressCatchUp = false;
-  if (state.tutorialStepIndex >= TUTORIAL_SCRIPT.length) {
+  const next = state.tutorialStepIndex + 1;
+  if (next >= TUTORIAL_SCRIPT.length) {
     state.tutorialComplete = true;
+    return;
   }
+  if (!restoreTutorialSnapshot(state, next)) return;
+  state.tutorialStepIndex = next;
+  state.tutorialCanAdvance = false;
+  state.tutorialComplete = false;
+  state.tutorialSuppressCatchUp = true;
 }
 
 export function retreatTutorialStep(state) {
