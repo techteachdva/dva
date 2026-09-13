@@ -11,7 +11,8 @@ import {
 import { psycheHandCount, psycheCardValue } from "./psyche.js";
 import { pullObjectFromMindstream, objectForPlayer, discardToMindstream } from "./mindstream-supply.js";
 import { spendPowerTokens, grantPowerTokens } from "./power-tokens.js";
-import { queueObjectDrawFx } from "./board-fx.js";
+import { queueObjectDrawFx, queueObjectPlayFx } from "./board-fx.js";
+import { playSfx } from "./audio.js";
 
 export function isNothingCard(card) {
   return card?.id?.startsWith("the-nothing");
@@ -155,6 +156,8 @@ export function playObjectCard(state, player, card, helpers, options = {}) {
     player.objects = player.objects.filter((o) => o.instanceId !== card.instanceId);
     player.persistent.push(card);
     addLog(state, `${card.name} placed in play (Persistent).`);
+    playSfx("acquire");
+    queueObjectPlayFx(card, { to: "persistent" });
     const tag = card.tags?.[0]?.split("/")?.[0];
     if (tag) checkObjectTagSet(state, player, tag);
     return card;
@@ -163,14 +166,17 @@ export function playObjectCard(state, player, card, helpers, options = {}) {
   if (inHand?.subtype === "instant") {
     player.objects = player.objects.filter((o) => o.instanceId !== card.instanceId);
     addLog(state, `${player.name} plays ${card.name}.`);
+    playSfx("acquire");
     if (helpers?.resolveCardEffect) {
       helpers.resolveCardEffect(state, card, player, helpers);
     }
     const tag = card.tags?.[0]?.split("/")?.[0];
     if (tag) checkObjectTagSet(state, player, tag);
     if (card.text?.toLowerCase().includes("repress this")) {
+      queueObjectPlayFx(card, { to: "subconscious" });
       repressCard(state, card);
     } else {
+      queueObjectPlayFx(card, { to: "mindstream", suit: card.mindstreamSuit || card.suit });
       discardToMindstream(state, card);
     }
     return card;
@@ -189,6 +195,8 @@ export function playObjectCard(state, player, card, helpers, options = {}) {
       }
       return null;
     }
+    playSfx("acquire");
+    queueObjectPlayFx(card, { to: "activate" });
     if (result?.monkeyPaw) finishMonkeyPaw(state, player, card);
     return card;
   }

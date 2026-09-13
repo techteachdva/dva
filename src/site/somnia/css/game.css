@@ -5355,7 +5355,13 @@ body.menu-window #app::before {
   .player-chip.life-gain,
   .player-chip.life-loss,
   #hand-stats.life-gain,
-  #hand-stats.life-loss {
+  #hand-stats.life-loss,
+  #hand.hand-gain,
+  #hand.hand-loss,
+  #hand-primary.hand-gain,
+  #hand-primary.hand-loss,
+  .coop-hand-row.hand-gain,
+  .coop-hand-row.hand-loss {
     animation: none !important;
   }
 }
@@ -5782,7 +5788,8 @@ body.panel-resizing {
   animation: power-tokens-gain 0.6s ease;
 }
 
-#player-objects.objects-gain {
+#player-objects.objects-gain,
+#player-persistent.objects-gain {
   animation: objects-gain 0.55s ease;
 }
 
@@ -5841,11 +5848,13 @@ body.panel-resizing {
 }
 
 #hand.hand-gain,
+#hand-primary.hand-gain,
 .coop-hand-row.hand-gain {
   animation: hand-gain-flash 0.55s ease;
 }
 
 #hand.hand-loss,
+#hand-primary.hand-loss,
 .coop-hand-row.hand-loss {
   animation: hand-loss-flash 0.55s ease;
 }

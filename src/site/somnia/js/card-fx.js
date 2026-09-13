@@ -238,6 +238,7 @@ export function runPendingCardFx(state) {
       floatLabel(area.x, area.y - 10, text, gain ? "fx-gain" : "fx-loss", delay);
       flashEl(chip, gain ? "life-gain" : "life-loss");
       flashEl(handStats, gain ? "life-gain" : "life-loss");
+      flashEl(document.getElementById("hand"), gain ? "hand-gain" : "hand-loss");
       flashEl(handAreaEl(evt.playerId), gain ? "hand-gain" : "hand-loss");
       delay += step;
     }

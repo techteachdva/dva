@@ -273,6 +273,11 @@ export function queueObjectDrawFx(playerId, card, suit = "lucidity") {
   queue.push({ type: "object-draw", playerId, card, suit });
 }
 
+export function queueObjectPlayFx(card, { to = "mindstream", suit = null } = {}) {
+  if (!card) return;
+  queue.push({ type: "object-play", card, to, suit });
+}
+
 export function queueMeetFlashFx(mode, tileId, cards = []) {
   queue.push({ type: "meet-flash", mode, tileId, cards });
 }
@@ -460,6 +465,27 @@ export function runPendingBoardFx() {
         flyCard(from, to, { ...evt.card, type: "object" }, "draw", delay, { w: 46, h: 64 });
         pulseDeck(deckKey, "deck-pulse-gain");
         flashEl(objectsAreaEl(), "objects-gain", 600);
+      }
+      delay += step;
+    } else if (evt.type === "object-play") {
+      const persistentEl = document.getElementById("player-persistent");
+      const from = centerOf(objectsAreaEl()) || centerOf(persistentEl);
+      const suit = evt.suit || evt.card?.mindstreamSuit || evt.card?.suit;
+      const deckKey = suit ? `mindstream-${suit}` : "mindstream-lucidity";
+      let to = centerOf(deckEl(deckKey));
+      if (evt.to === "persistent") to = centerOf(persistentEl);
+      else if (evt.to === "subconscious") to = centerOf(deckEl("subconscious"));
+      else if (evt.to === "activate") to = centerOf(persistentEl) || from;
+      if (from && to) {
+        const kind = evt.to === "persistent" || evt.to === "activate" ? "draw" : evt.to === "subconscious" ? "repress" : "discard";
+        flyCard(from, to, { ...evt.card, type: "object" }, kind, delay, { w: 46, h: 64 });
+        if (evt.to === "persistent" || evt.to === "activate") {
+          flashEl(persistentEl, "objects-gain", 600);
+        } else if (evt.to === "subconscious") {
+          pulseDeck("subconscious", "deck-pulse-repress");
+        } else {
+          pulseDeck(deckKey, "deck-pulse-loss");
+        }
       }
       delay += step;
     }
