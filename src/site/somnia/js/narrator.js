@@ -83,6 +83,23 @@ export function getNarratorView(state) {
     };
   }
 
+  if (state.pendingObjectFollowup) {
+    return {
+      title: "Finish the Object",
+      detail: "The Object still needs a map pick or a follow-up choice.",
+      consequences: ["Complete the highlighted hexes or popup."],
+    };
+  }
+
+  if (state.pendingObjectChoice) {
+    const pending = state.pendingObjectChoice;
+    return {
+      title: pending.title || "Object effect",
+      detail: pending.message || "Choose one effect.",
+      consequences: (pending.choices || []).map((choice) => choice.label),
+    };
+  }
+
   if (state.narrator) {
     return state.narrator;
   }

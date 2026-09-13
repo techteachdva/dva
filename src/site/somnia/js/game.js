@@ -65,6 +65,7 @@ import {
   recordCancellableMove,
 } from "./dreamer-powers.js";
 import { playObjectCard, applySkeletonKeyAfterDream, drawObjects, handLimitForPlayer, handRoomForPsycheDraw } from "./objects.js";
+import { resumeObjectEffect } from "./object-effects.js";
 import { psycheHandCount, hasPsycheHealth, canAddAllyToHand, allyHandLimitForPlayer, allyHandCount } from "./psyche.js";
 import { queueDreamDrawFx, queueMeetFlashFx, queuePsycheSwirlFx } from "./board-fx.js";
 import { applyBossAcceptEffect } from "./bosses.js";
@@ -105,7 +106,7 @@ import {
 
 const effectHelpers = { spawnEncounter: null, beginFinalRecurrence: null };
 
-function getEffectHelpers() {
+export function getEffectHelpers() {
   if (!effectHelpers.spawnEncounter) {
     Object.assign(effectHelpers, createEffectHelpers(spawnEncounterOnLandscape));
     effectHelpers.resolveCardEffect = resolveCardEffect;
@@ -141,23 +142,39 @@ function meetActionKey(action, landscapeActionId = null) {
   return action;
 }
 
-function getLastMeetAction(state, player) {
-  if (!player) return null;
-  return state.lastMeetActionByPlayer?.[player.id] ?? null;
+function usedMeetActionList(state, player) {
+  if (!player) return [];
+  const used = state.usedMeetActionsByPlayer?.[player.id];
+  if (Array.isArray(used) && used.length) return used;
+  const last = state.lastMeetActionByPlayer?.[player.id];
+  return last ? [last] : [];
 }
 
-function setLastMeetAction(state, player, action) {
+function hasUsedMeetAction(state, player, key) {
+  return usedMeetActionList(state, player).includes(key);
+}
+
+function markUsedMeetAction(state, player, key) {
   if (!player) return;
-  if (!state.lastMeetActionByPlayer) state.lastMeetActionByPlayer = {};
-  state.lastMeetActionByPlayer[player.id] = action;
+  if (!state.usedMeetActionsByPlayer) state.usedMeetActionsByPlayer = {};
+  const list = usedMeetActionList(state, player).filter(Boolean);
+  if (!list.includes(key)) list.push(key);
+  state.usedMeetActionsByPlayer[player.id] = list;
 }
 
-function clearLastMeetAction(state, player) {
-  if (!player?.id || !state.lastMeetActionByPlayer) return;
-  delete state.lastMeetActionByPlayer[player.id];
+function unmarkUsedMeetAction(state, player, key) {
+  if (!player?.id) return;
+  if (!state.usedMeetActionsByPlayer) state.usedMeetActionsByPlayer = {};
+  const list = usedMeetActionList(state, player).filter((entry) => entry && entry !== key);
+  if (list.length) state.usedMeetActionsByPlayer[player.id] = list;
+  else delete state.usedMeetActionsByPlayer[player.id];
+  if (state.lastMeetActionByPlayer?.[player.id] === key) {
+    delete state.lastMeetActionByPlayer[player.id];
+  }
 }
 
-function clearAllLastMeetActions(state) {
+function clearAllUsedMeetActions(state) {
+  state.usedMeetActionsByPlayer = {};
   state.lastMeetActionByPlayer = {};
 }
 
@@ -171,7 +188,7 @@ function meetActionActor(state, action) {
 function canUseMeetActionForActor(state, actor, action, landscapeActionId = null) {
   if (!actor) return false;
   if (!canSpendMeetAction(state, actor, action, MEET_ACTIONS)) return false;
-  if (getLastMeetAction(state, actor) === meetActionKey(action, landscapeActionId)) return false;
+  if (hasUsedMeetAction(state, actor, meetActionKey(action, landscapeActionId))) return false;
   if (state.meetActionsUsed >= state.meetActionBudget) return false;
   return true;
 }
@@ -198,8 +215,8 @@ function meetActionHint(state, action, landscapeActionId, baseHint = "") {
   const actor = meetActionActor(state, action);
   if (!actor) return "A Dreamer must stand on this Landscape.";
   if (state.meetActionsUsed >= state.meetActionBudget) return "No Meet actions remaining.";
-  if (getLastMeetAction(state, actor) === meetActionKey(action, landscapeActionId)) {
-    return "This Dreamer cannot repeat the same Meet action — switch Dreamer or choose another.";
+  if (hasUsedMeetAction(state, actor, meetActionKey(action, landscapeActionId))) {
+    return "This Dreamer already used that action this Meet.";
   }
   if (!canSpendMeetAction(state, actor, action, MEET_ACTIONS)) return baseHint || "This Meet action is restricted right now.";
   return baseHint;
@@ -212,13 +229,13 @@ function spendMeetAction(state, action, landscapeActionId = null) {
     return false;
   }
   state.meetActionsUsed += 1;
-  setLastMeetAction(state, actor, meetActionKey(action, landscapeActionId));
+  markUsedMeetAction(state, actor, meetActionKey(action, landscapeActionId));
   return true;
 }
 
-function refundMeetAction(state, player) {
-  state.meetActionsUsed -= 1;
-  clearLastMeetAction(state, player);
+function refundMeetAction(state, player, action = null, landscapeActionId = null) {
+  state.meetActionsUsed = Math.max(0, state.meetActionsUsed - 1);
+  if (action) unmarkUsedMeetAction(state, player, meetActionKey(action, landscapeActionId));
 }
 
 function actorOnLandscape(state, landscapeId) {
@@ -537,6 +554,8 @@ function phaseAdvanceBlockReason(state) {
   if (state.pendingReturn) return "Complete Return selection before advancing.";
   if (state.pendingDeathChoice) return "Resolve the death choice before advancing.";
   if (state.pendingNothingChoice) return "Resolve the Nothing Object choice before advancing.";
+  if (state.pendingObjectChoice) return "Choose an Object effect before advancing.";
+  if (state.pendingObjectFollowup) return "Finish the Object effect before advancing.";
   if (hasPendingDreamerPower(state)) return "Finish or cancel Dreamer Power before advancing.";
   return null;
 }
@@ -830,7 +849,7 @@ export function gainMeetActions(state) {
   }
   state.meetActionBudget = budget;
   state.meetActionsUsed = 0;
-  clearAllLastMeetActions(state);
+  clearAllUsedMeetActions(state);
   addLog(state, `${player.name} spends Willpower — the team gains ${budget} shared Meet Actions.`);
 }
 
@@ -960,7 +979,7 @@ export function meetEncounter(state, mode = "accept") {
   const actor = actorOnLandscape(state, tile.id);
   if (!actor) {
     addLog(state, "A Dreamer must be on this Landscape to Meet the Encounter.");
-    refundMeetAction(state, meetActionActor(state, MEET_ACTIONS.MEET));
+    refundMeetAction(state, meetActionActor(state, MEET_ACTIONS.MEET), MEET_ACTIONS.MEET);
     return;
   }
   const isReject = mode === "reject" || mode === "repress";
@@ -969,20 +988,20 @@ export function meetEncounter(state, mode = "accept") {
 
   if (!isReject && !canAddAllyToHand(state, actor)) {
     addLog(state, `${actor.name} already has ${allyHandLimitForPlayer(state, actor)} allies (max). Repress this Encounter or spend allies first.`);
-    refundMeetAction(state, actor);
+    refundMeetAction(state, actor, MEET_ACTIONS.MEET);
     return;
   }
 
   if (selected.filter((c) => !isDreambeastPsycheCard(c)).length > 3) {
     addLog(state, "Play up to 3 Psyche cards for an Encounter (allies don't count).");
-    refundMeetAction(state, actor);
+    refundMeetAction(state, actor, MEET_ACTIONS.MEET);
     return;
   }
 
   const shapeCheck = validateBossPlayShape(encounter, selected);
   if (!shapeCheck.ok) {
     addLog(state, shapeCheck.message);
-    refundMeetAction(state, actor);
+    refundMeetAction(state, actor, MEET_ACTIONS.MEET);
     return;
   }
 
@@ -991,7 +1010,7 @@ export function meetEncounter(state, mode = "accept") {
   if (played < needed) {
     const bonusNote = bonus.total ? ` (includes +${bonus.total} Dreamer bonus)` : "";
     addLog(state, `Need ${needed} Psyche to ${isReject ? "Reject" : "Accept"} (${actor.name} on ${tile.name}: ${played}${bonusNote}).`);
-    refundMeetAction(state, actor);
+    refundMeetAction(state, actor, MEET_ACTIONS.MEET);
     return;
   }
 
@@ -1078,29 +1097,45 @@ function validateMeetLandscape(state) {
   return { tile, player };
 }
 
+function landscapeActionPreflight(state, actionId) {
+  if (actionId !== "bed-spend-10-draw-3") return true;
+  const helpers = landscapeActionHelpers(state);
+  if (!helpers?.psychePoolTotal) {
+    addLog(state, "Select Psyche cards totaling 10 from hand.");
+    return false;
+  }
+  const pool = helpers.psychePoolTotal(state);
+  if (pool < 10) {
+    addLog(state, `Need 10 Psyche in the pool (currently ${pool}).`);
+    return false;
+  }
+  return true;
+}
+
 export function performLandscapeAction(state, actionId, { onResult } = {}) {
   const actorBefore = meetActionActor(state, MEET_ACTIONS.LANDSCAPE);
-  if (!spendMeetAction(state, MEET_ACTIONS.LANDSCAPE, actionId)) return null;
-
-  const ctx = validateMeetLandscape(state);
-  if (!ctx) {
-    refundMeetAction(state, actorBefore);
+  if (!canUseMeetActionForActor(state, actorBefore, MEET_ACTIONS.LANDSCAPE, actionId)) {
+    addLog(state, "Cannot use this Meet action (restricted or no actions remain).");
     return null;
   }
+
+  const ctx = validateMeetLandscape(state);
+  if (!ctx) return null;
 
   const { tile, player } = ctx;
   const available = getLandscapeActionChoices(tile);
   if (!available.some((choice) => choice.id === actionId)) {
     addLog(state, "That action is not available on this Landscape.");
-    refundMeetAction(state, player);
     return null;
   }
 
   if (actionId === "draw-mindstream" && !canDrawMindstreamOnLandscape(tile)) {
     addLog(state, "This Landscape has no matching Mindstream deck.");
-    refundMeetAction(state, player);
     return null;
   }
+
+  if (!landscapeActionPreflight(state, actionId)) return null;
+  if (!spendMeetAction(state, MEET_ACTIONS.LANDSCAPE, actionId)) return null;
 
   const result = completeLandscapeAction(state, tile, player, actionId, onResult);
   return result;
@@ -1157,8 +1192,9 @@ export function completeLandscapeAction(state, tile, player, actionId, onResult)
     return { pending: result.pending, tile, player, actionId, onResult };
   }
 
-  if (result?.refund) refundMeetAction(state, player);
-  if (!result?.ok && !result?.pending) refundMeetAction(state, player);
+  if (result?.refund || (!result?.ok && !result?.pending)) {
+    refundMeetAction(state, player, MEET_ACTIONS.LANDSCAPE, actionId);
+  }
 
   if (result?.card && onResult) onResult(result.card);
   return result;
@@ -1173,7 +1209,7 @@ export function finishLandscapeMindstreamPick(state, tile, player, actionId, sui
     actionId,
     landscapeActionHelpers(state),
   );
-  if (result?.refund) refundMeetAction(state, player);
+  if (result?.refund) refundMeetAction(state, player, MEET_ACTIONS.LANDSCAPE, actionId);
   if (result?.card && onResult) onResult(result.card);
   return result;
 }
@@ -1295,7 +1331,7 @@ export function handleDefeatFinalArchetype(state) {
   const arch = tile?.finalArchetype;
   if (!arch || arch.defeated) {
     addLog(state, "Select a Landscape with an undefeated Remaining Archetype.");
-    refundMeetAction(state, landscapeActor(state));
+    refundMeetAction(state, landscapeActor(state), MEET_ACTIONS.MEET);
     return;
   }
 
@@ -1309,7 +1345,7 @@ export function handleDefeatFinalArchetype(state) {
     const entry = state.finalArchetypes.find((a) => a.id === arch.id);
     if (entry) entry.defeated = true;
   } else {
-    refundMeetAction(state, actor);
+    refundMeetAction(state, actor, MEET_ACTIONS.MEET);
   }
 }
 
@@ -1489,7 +1525,9 @@ export function handleBoardTileClick(state, tileId) {
     return false;
   }
   if (state.landscapePick) {
-    return handleLandscapeTilePick(state, tileId);
+    const ok = handleLandscapeTilePick(state, tileId);
+    if (ok && state.pendingObjectFollowup) resumeObjectEffect(state, getEffectHelpers());
+    return ok;
   }
   moveDreamer(state, tileId);
   return false;

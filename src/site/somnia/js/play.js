@@ -57,6 +57,7 @@ import {
   getPhaseHint,
   getLegalExploreTargets,
   resolvePendingDeathDream,
+  getEffectHelpers,
 } from "./game.js";
 import { requestEndPhase } from "./phase-skip.js";
 import { initDevConsole } from "./dev-console.js";
@@ -69,6 +70,7 @@ import {
   resolveDreamerPowerDeckPick,
 } from "./dreamer-powers.js";
 import { resolveNothingChoice } from "./objects.js";
+import { resolveObjectChoice } from "./object-effects.js";
 import { phaseOpeningActive } from "./rules.js";
 import {
   TUTORIAL_STEPS,
@@ -119,6 +121,9 @@ import {
   showLandscapeDetail,
   hideDreamerDetailTooltip,
   showDreamerPowerChoice,
+  showObjectCardPicker,
+  showObjectReorderPicker,
+  showObjectSpendPicker,
   showDreamerPowerDeckPicker,
   showDeckFlipPicker,
   showTradeControls,
@@ -809,6 +814,38 @@ function maybeShowNothingChoice() {
 }
 
 let lastNothingChoiceKey = null;
+let lastObjectChoiceKey = null;
+
+function maybeShowObjectChoice() {
+  const pending = state?.pendingObjectChoice;
+  if (!pending) {
+    lastObjectChoiceKey = null;
+    return;
+  }
+  const key = `${pending.cardId}:${pending.step}:${pending.ui}:${(pending.choices || []).map((c) => c.id).join(",")}:${(pending.order || []).length}:${(pending.cards || []).length}`;
+  const modalHidden = document.getElementById("utility-modal")?.classList.contains("hidden");
+  if (key === lastObjectChoiceKey && !modalHidden) return;
+  lastObjectChoiceKey = key;
+  const finish = (choiceId) => {
+    hideUtilityModal();
+    resolveObjectChoice(state, choiceId, getEffectHelpers());
+    lastObjectChoiceKey = null;
+    renderAll();
+  };
+  if (pending.ui === "cards") {
+    showObjectCardPicker(pending, finish);
+    return;
+  }
+  if (pending.ui === "reorder") {
+    showObjectReorderPicker(pending, finish);
+    return;
+  }
+  if (pending.ui === "spend") {
+    showObjectSpendPicker(pending, finish, () => finish("confirm"));
+    return;
+  }
+  showDreamerPowerChoice(pending, finish);
+}
 
 function maybeShowDeathChoice() {
   if (!state?.pendingDeathChoice) {
@@ -928,6 +965,7 @@ function maybeShowDreamerPowerUI() {
 }
 
 function maybeShowReturnPicker() {
+  if (state?.pendingObjectChoice) return;
   if (!state?.pendingReturn) {
     lastReturnPickerKey = null;
     return;
@@ -1216,6 +1254,7 @@ function renderAll() {
   resolvePendingDeathDream(state, showModal);
   maybeShowDeathChoice();
   maybeShowNothingChoice();
+  maybeShowObjectChoice();
   maybeShowRespawn();
   maybeShowRepressPicker();
   maybeShowReturnPicker();

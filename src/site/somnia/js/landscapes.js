@@ -43,6 +43,24 @@ export function beginRevealPicking(state, budget) {
   return true;
 }
 
+export function beginFreeRevealPicking(state, budget, followup = null) {
+  if (budget <= 0) return false;
+  state.landscapePick = {
+    mode: "reveal",
+    remaining: budget,
+    picked: [],
+    freeReveal: true,
+    followup,
+  };
+  narrate(
+    state,
+    `Reveal ${budget} Landscape${budget === 1 ? "" : "s"}`,
+    `Click ${budget} hex tile${budget === 1 ? "" : "s"} on the map that show the Wasteland back.`,
+    [`${budget} tile(s) to reveal`],
+  );
+  return "pending";
+}
+
 function forgetTile(state, tile) {
   if (tile.id === "bed" || tile.center) {
     addLog(state, "The Bed cannot be forgotten.");
@@ -153,10 +171,23 @@ export function resolveChooseTile(state, tileId, opts) {
     return true;
   }
 
+  if (action === "record") return true;
+
   return false;
 }
 
 /** Ask the player to pick a tile, or auto-pick when only one option / tutorial. */
+function finishChoosePick(state, pick) {
+  state.landscapePick = null;
+  if (pick.followup) {
+    state.pendingObjectFollowup = {
+      ...pick.followup,
+      lastTileId: pick.picked?.[pick.picked.length - 1] || null,
+      pickedIds: pick.picked || [],
+    };
+  }
+}
+
 export function requestChooseTile(state, {
   allowedIds,
   action,
@@ -165,21 +196,30 @@ export function requestChooseTile(state, {
   encounter = null,
   title = "Choose a Landscape",
   detail = "Click a highlighted hex on the map.",
+  remaining = 1,
+  followup = null,
 } = {}) {
   const allowed = [...new Set(allowedIds || [])].filter((id) => landscapeById(state, id));
   if (!allowed.length) return false;
 
-  if (state.landscapePick?.mode === "choose") {
-    return resolveChooseTile(state, allowed[0], { action, playerId, fromTileId, encounter });
-  }
-
-  if (allowed.length === 1 || shouldAutoChooseTile(state)) {
-    return resolveChooseTile(state, allowed[0], { action, playerId, fromTileId, encounter });
+  const count = Math.max(1, remaining);
+  const autoOne = count === 1 && (allowed.length === 1 || shouldAutoChooseTile(state));
+  if (autoOne) {
+    const ok = resolveChooseTile(state, allowed[0], { action, playerId, fromTileId, encounter });
+    if (ok && followup) {
+      state.pendingObjectFollowup = {
+        ...followup,
+        lastTileId: allowed[0],
+        pickedIds: [allowed[0]],
+      };
+    }
+    return ok;
   }
 
   state.landscapePick = {
     mode: "choose",
-    remaining: 1,
+    remaining: Math.min(count, allowed.length),
+    picked: [],
     allowed,
     action,
     playerId,
@@ -187,8 +227,9 @@ export function requestChooseTile(state, {
     encounter,
     title,
     detail,
+    followup,
   };
-  narrate(state, title, detail, ["Click 1 highlighted Landscape"]);
+  narrate(state, title, detail, [`Click ${state.landscapePick.remaining} highlighted Landscape(s)`]);
   return "pending";
 }
 
@@ -201,8 +242,22 @@ export function handleLandscapeTilePick(state, tileId) {
   if (pick.mode === "choose") {
     if (!pick.allowed?.includes(tileId)) return false;
     const ok = resolveChooseTile(state, tileId, pick);
-    if (ok) state.landscapePick = null;
-    return ok;
+    if (!ok) return false;
+    pick.picked = pick.picked || [];
+    pick.picked.push(tileId);
+    pick.remaining = (pick.remaining || 1) - 1;
+    pick.allowed = (pick.allowed || []).filter((id) => id !== tileId);
+    if (pick.remaining > 0 && pick.allowed.length) {
+      narrate(
+        state,
+        pick.title || "Choose a Landscape",
+        `${tile.name} selected. ${pick.remaining} more to pick.`,
+        [`${pick.remaining} Landscape(s) left`],
+      );
+      return true;
+    }
+    finishChoosePick(state, pick);
+    return true;
   }
   if (pick.mode === "reveal" && tile.center) return false;
 
@@ -223,8 +278,9 @@ export function handleLandscapeTilePick(state, tileId) {
 
     if (pick.remaining <= 0) {
       state.landscapePick = null;
-      state.revealLandscapeUsed = true;
+      if (!pick.freeReveal) state.revealLandscapeUsed = true;
       recordQuestEvent(state, "reveal_landscape", { count: pick.picked.length });
+      if (pick.followup) state.pendingObjectFollowup = pick.followup;
     }
     return true;
   }
@@ -262,7 +318,11 @@ export function handleLandscapeTilePick(state, tileId) {
 
 export function cancelLandscapePick(state) {
   if (!state.landscapePick) return;
-  if (state.landscapePick.mode === "reveal" && state.landscapePick.picked.length > 0) {
+  if (
+    state.landscapePick.mode === "reveal"
+    && state.landscapePick.picked.length > 0
+    && !state.landscapePick.freeReveal
+  ) {
     state.revealLandscapeUsed = true;
   }
   state.landscapePick = null;
@@ -274,7 +334,8 @@ export function resolveStaleLandscapePick(state) {
   if (!pick) return;
 
   if (pick.mode === "reveal" && pick.remaining > 0 && revealableTiles(state).length === 0) {
-    if (pick.picked.length > 0) state.revealLandscapeUsed = true;
+    if (pick.picked.length > 0 && !pick.freeReveal) state.revealLandscapeUsed = true;
+    if (pick.followup) state.pendingObjectFollowup = pick.followup;
     state.landscapePick = null;
     addLog(state, "No more Landscapes to reveal — reveal action complete.");
     return;

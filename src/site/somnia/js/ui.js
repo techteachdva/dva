@@ -23,7 +23,7 @@ import {
 import { countBoardDreambeasts, timelineTollPreview } from "./phase-skip.js";
 import { DREAMER_KIND_AFFINITY, beastKindLabel, dreamerPrimarySuit } from "./dreambeasts.js";
 import { handLimitForPlayer, handRoomForPsycheDraw } from "./objects.js";
-import { psycheHandCount, alliesInHand, psycheCardsInHand, allyHandCount, allyHandLimitForPlayer, effectivePsycheHealth, MAX_ALLIES_IN_HAND, MAX_PSYCHE_IN_HAND } from "./psyche.js";
+import { psycheHandCount, alliesInHand, psycheCardsInHand, allyHandCount, allyHandLimitForPlayer, effectivePsycheHealth, MAX_ALLIES_IN_HAND, MAX_PSYCHE_IN_HAND, psycheCardValue } from "./psyche.js";
 import { getQuestStatus, activeQuestLandscapeIds } from "./quests.js";
 import { effectiveDreamerStat } from "./archetype-stats.js";
 import { hexToPixel, boardPixelBounds } from "./hex.js";
@@ -1980,7 +1980,7 @@ export function showDreamerPowerChoice(ui, onPick) {
   const modal = document.getElementById("utility-modal");
   const body = document.getElementById("utility-modal-body");
   const buttons = (ui.choices || []).map((choice) => `
-    <button type="button" class="btn dreamer-power-pick" data-choice="${choice.id}">
+    <button type="button" class="btn dreamer-power-pick" data-choice="${choice.id}"${choice.disabled ? " disabled" : ""}>
       <strong>${choice.label}</strong>
       ${choice.hint ? `<span class="landscape-action-desc">${choice.hint}</span>` : ""}
     </button>
@@ -1994,12 +1994,99 @@ export function showDreamerPowerChoice(ui, onPick) {
   `;
   modal.querySelector(".utility-content")?.classList.add("dreamer-power-modal-wrap");
   body.querySelectorAll("[data-choice]").forEach((btn) => {
+    if (btn.disabled) return;
     btn.addEventListener("click", () => {
       modal.querySelector(".utility-content")?.classList.remove("dreamer-power-modal-wrap");
       hideUtilityModal();
       onPick(btn.dataset.choice);
     });
   });
+  modal.classList.remove("hidden");
+}
+
+export function showObjectCardPicker(ui, onPick) {
+  const modal = document.getElementById("utility-modal");
+  const body = document.getElementById("utility-modal-body");
+  body.innerHTML = `
+    <div class="dreamer-power-modal">
+      <h2>${ui.title || "Choose a card"}</h2>
+      <p>${ui.message || ""}</p>
+      <div class="mini-card-row object-choice-cards"></div>
+    </div>
+  `;
+  const row = body.querySelector(".object-choice-cards");
+  (ui.cards || []).forEach((card) => {
+    row.appendChild(renderCard(card, {
+      mini: true,
+      onClick: () => {
+        hideUtilityModal();
+        onPick(card.instanceId || card.id);
+      },
+    }));
+  });
+  modal.querySelector(".utility-content")?.classList.add("dreamer-power-modal-wrap");
+  modal.classList.remove("hidden");
+}
+
+export function showObjectReorderPicker(ui, onPick) {
+  const modal = document.getElementById("utility-modal");
+  const body = document.getElementById("utility-modal-body");
+  const picked = new Set((ui.order || []).map((c) => c.instanceId || c.id));
+  body.innerHTML = `
+    <div class="dreamer-power-modal">
+      <h2>${ui.title || "Reorder"}</h2>
+      <p>${ui.message || ""}</p>
+      <div class="mini-card-row object-choice-cards"></div>
+    </div>
+  `;
+  const row = body.querySelector(".object-choice-cards");
+  (ui.top || []).forEach((card) => {
+    const id = card.instanceId || card.id;
+    const el = renderCard(card, {
+      mini: true,
+      onClick: picked.has(id) ? null : () => onPick(id),
+    });
+    if (picked.has(id)) el.classList.add("is-selected");
+    row.appendChild(el);
+  });
+  modal.querySelector(".utility-content")?.classList.add("dreamer-power-modal-wrap");
+  modal.classList.remove("hidden");
+}
+
+export function showObjectSpendPicker(ui, onToggle, onConfirm) {
+  const modal = document.getElementById("utility-modal");
+  const body = document.getElementById("utility-modal-body");
+  const selected = new Set(ui.order || []);
+  const total = (ui.cards || [])
+    .filter((c) => selected.has(c.instanceId))
+    .reduce((sum, c) => sum + psycheCardValue(c), 0);
+  const need = ui.need || 0;
+  body.innerHTML = `
+    <div class="dreamer-power-modal">
+      <h2>${ui.title || "Spend Psyche"}</h2>
+      <p>${ui.message || ""}</p>
+      <p><strong>Selected ${total} / ${need}</strong></p>
+      <div class="mini-card-row object-choice-cards"></div>
+      <div class="utility-actions">
+        <button type="button" class="btn primary" id="object-spend-confirm"${total < need ? " disabled" : ""}>Confirm</button>
+      </div>
+    </div>
+  `;
+  const row = body.querySelector(".object-choice-cards");
+  (ui.cards || []).forEach((card) => {
+    const el = renderCard(card, {
+      mini: true,
+      onClick: () => onToggle(card.instanceId),
+    });
+    if (selected.has(card.instanceId)) el.classList.add("is-selected");
+    row.appendChild(el);
+  });
+  body.querySelector("#object-spend-confirm")?.addEventListener("click", () => {
+    if (total < need) return;
+    hideUtilityModal();
+    onConfirm();
+  });
+  modal.querySelector(".utility-content")?.classList.add("dreamer-power-modal-wrap");
   modal.classList.remove("hidden");
 }
 

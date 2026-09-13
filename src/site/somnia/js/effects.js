@@ -25,7 +25,7 @@ import {
 import { discardToMindstream } from "./mindstream-supply.js";
 import { MINDSTREAM_EFFECTS } from "./mindstream.js";
 import { markDreamFeedNudge } from "./fx.js";
-import { OBJECT_EFFECTS } from "./object-effects.js";
+import { OBJECT_EFFECTS, rememberObjectHelpers } from "./object-effects.js";
 import { uid } from "./data.js";
 
 function alivePlayers(state) {
@@ -682,6 +682,7 @@ export function resolveCardEffect(state, card, player, helpers) {
   if (card.type === "object") {
     const effectId = card.refId || card.id;
     if (OBJECT_EFFECTS[effectId]) {
+      rememberObjectHelpers(helpers);
       OBJECT_EFFECTS[effectId](state, player, helpers);
       return;
     }
@@ -703,6 +704,7 @@ export function resolveCardEffect(state, card, player, helpers) {
     return;
   }
   if (card.type === "object" && OBJECT_EFFECTS[id]) {
+    rememberObjectHelpers(helpers);
     OBJECT_EFFECTS[id](state, player, helpers);
     return;
   }

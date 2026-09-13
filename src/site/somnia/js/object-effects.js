@@ -1,22 +1,36 @@
 import {
   addLog,
   drawPsycheForPlayer,
-  revealLandscapeTile,
   landscapeById,
   acquireArchetype,
   setEncounterOnLandscape,
 } from "./state.js";
-import { shuffle, uid } from "./data.js";
 import { recordQuestEvent } from "./quests.js";
 import { grantPowerTokens } from "./power-tokens.js";
-import { repressCard, requestReturnCards, enqueueReturnCards } from "./subconscious.js";
+import { repressCard, requestReturnCards, enqueueReturnCards, dreambeastToHandCard } from "./subconscious.js";
 import { handRoomForPsycheDraw, beginNothingResolution } from "./objects.js";
 import {
   pullDreambeastFromMindstream,
+  pullFromMindstreamByType,
   encounterFromDreambeastCard,
-  reorderMindstreamTop,
 } from "./mindstream-supply.js";
-import { encounterRejectCost } from "./dreambeasts.js";
+import { encounterRejectCost, applyRejectReward } from "./dreambeasts.js";
+import { applyBossAcceptEffect } from "./bosses.js";
+import { canAddAllyToHand, allyHandLimitForPlayer, psycheCardValue } from "./psyche.js";
+import { requestChooseTile, beginFreeRevealPicking } from "./landscapes.js";
+import { edgeLandscapes } from "./hex.js";
+import { SUIT_LABELS } from "./rules.js";
+
+let lastHelpers = null;
+
+export function rememberObjectHelpers(helpers) {
+  if (helpers) lastHelpers = helpers;
+  return lastHelpers;
+}
+
+function useHelpers(helpers) {
+  return rememberObjectHelpers(helpers);
+}
 
 function alive(state) {
   return state.players.filter((p) => p.alive);
@@ -32,77 +46,117 @@ function returnN(state, count, player = null) {
   if (result?.pending) addLog(state, `Choose ${result.count} card(s) to Return.`);
 }
 
-function movePlayerTo(state, player, ids) {
-  const id = ids.find((i) => landscapeById(state, i)?.revealed);
-  if (!id) return false;
-  player.landscapeId = id;
-  addLog(state, `${player.name} moves to ${landscapeById(state, id).name}.`);
+function landscapeReady(state, id) {
+  const tile = landscapeById(state, id);
+  return !!(tile?.revealed && !tile.wasteland);
+}
+
+function revealedTiles(state, { empty = false } = {}) {
+  return state.board.filter((t) => t.revealed && !t.wasteland && (!empty || !t.encounter));
+}
+
+function tileName(state, id) {
+  return landscapeById(state, id)?.name || id;
+}
+
+function playerById(state, id) {
+  return state.players.find((p) => p.id === id) || null;
+}
+
+function movePlayerToId(state, player, landscapeId) {
+  if (!player || !landscapeReady(state, landscapeId)) return false;
+  player.landscapeId = landscapeId;
+  addLog(state, `${player.name} moves to ${tileName(state, landscapeId)}.`);
   recordQuestEvent(state, "move_player", { count: 1 });
   return true;
 }
 
-function spawnOnRandomTiles(state, helpers, count = 1, filterFn = null) {
-  const tiles = state.board.filter((t) => t.revealed && !t.encounter && !t.center);
-  const picks = shuffle(tiles).slice(0, count);
-  picks.forEach((tile) => {
-    if (filterFn && !filterFn()) return;
-    helpers.spawnEncounter(state, tile.id);
+function offerChoice(state, player, spec) {
+  state.pendingObjectChoice = {
+    ui: spec.ui || "choice",
+    cardId: spec.cardId,
+    playerId: player.id,
+    step: spec.step || "choice",
+    title: spec.title,
+    message: spec.message,
+    choices: spec.choices || [],
+    cards: spec.cards || [],
+    top: spec.top || [],
+    order: spec.order || [],
+    need: spec.need || 0,
+    payload: spec.payload || {},
+  };
+  addLog(state, spec.log || `${spec.title}: choose.`);
+}
+
+function dreamerChoices(state, { disabledHint = "" } = {}) {
+  return alive(state).map((p) => ({
+    id: p.id,
+    label: p.name,
+    hint: disabledHint || `Move ${p.name}.`,
+  }));
+}
+
+function destChoices(state, ids) {
+  return ids.map((id) => {
+    const ready = landscapeReady(state, id);
+    return {
+      id,
+      label: tileName(state, id),
+      hint: ready ? `Move there now.` : "Not revealed yet.",
+      disabled: !ready,
+    };
   });
 }
 
-function spawnFilteredDreambeast(state, helpers, landscapeId, { beastKind = null, maxAccept = null, minAccept = null, suit = null } = {}) {
-  const pulled = pullDreambeastFromMindstream(state, {
-    suit,
-    filter: (beast) => {
-      if (beastKind && beast.beastKind !== beastKind) return false;
-      if (maxAccept != null && beast.accept > maxAccept) return false;
-      if (minAccept != null && beast.accept < minAccept) return false;
-      return !beast.boss;
-    },
+function psycheSpendCards(player) {
+  return (player.hand || []).filter((c) => c.type === "psyche" || c.type === "dreambeast");
+}
+
+function discardPsycheCard(state, player, card) {
+  player.hand = player.hand.filter((c) => c.instanceId !== card.instanceId);
+  state.psycheDiscard.push(card);
+  recordQuestEvent(state, "discard_psyche", { count: 1 });
+}
+
+function askDiscardPsyche(state, player, spec) {
+  const cards = psycheSpendCards(player);
+  if (!cards.length) return false;
+  offerChoice(state, player, {
+    cardId: spec.cardId,
+    ui: "cards",
+    step: "discard-psyche",
+    title: spec.title,
+    message: spec.message || "Discard 1 Psyche:",
+    cards,
+    payload: spec.payload || {},
   });
+  return true;
+}
+
+const ELEMENT_MOVES = {
+  water: ["endless-ocean", "sea-of-teeth"],
+  air: ["sky", "silver-mist"],
+  earth: ["forest", "candy-mountain"],
+  fire: ["lava", "desert"],
+};
+
+function setRequiredForTag(tag) {
+  if (tag === "body") return 5;
+  if (tag === "element") return 4;
+  return 3;
+}
+
+function spawnBeastOn(state, helpers, landscapeId, options = {}) {
+  const pulled = pullDreambeastFromMindstream(state, options);
   if (!pulled) {
-    helpers.spawnEncounter(state, landscapeId);
+    helpers?.spawnEncounter?.(state, landscapeId);
     return;
   }
   const encounter = encounterFromDreambeastCard(pulled.card);
   const tile = landscapeById(state, landscapeId);
-  if (tile) {
-    setEncounterOnLandscape(state, landscapeId, encounter);
-  }
+  if (tile) setEncounterOnLandscape(state, landscapeId, encounter);
   addLog(state, `${pulled.card.name} appears on ${tile?.name || "the Dreamscape"}!`);
-}
-
-function drawMindstreamTop(state, suit) {
-  const deck = state.mindstreamDecks[suit];
-  if (!deck?.length) return null;
-  const card = deck.shift();
-  state.mindstreamDiscard[suit].push(card);
-  return card;
-}
-
-function replayDreamFromDiscard(state, player, helpers) {
-  const pile = state.dreamDiscard || [];
-  if (!pile.length) {
-    addLog(state, "No Dreams in the discard pile.");
-    return;
-  }
-  const card = pile[pile.length - 1];
-  addLog(state, `Replay Dream: ${card.name}.`);
-  if (helpers?.resolveCardEffect) {
-    helpers.resolveCardEffect(state, card, player, helpers);
-  }
-}
-
-function reorderDeckTop(state, deckKey, count = 3) {
-  const deck = state[deckKey];
-  if (!deck?.length) {
-    addLog(state, "Deck is empty.");
-    return;
-  }
-  const top = deck.splice(0, Math.min(count, deck.length));
-  top.reverse();
-  deck.unshift(...top);
-  addLog(state, `Knife: reordered top ${top.length} of ${deckKey}.`);
 }
 
 function trackChessPlay(state, player) {
@@ -114,11 +168,542 @@ function trackChessPlay(state, player) {
   }
 }
 
-export function checkObjectTagSet(state, player, tag) {
+function askMoveDreamer(state, player, { cardId, title, destIds, thenReturn = 0, log }) {
+  const dests = destIds.filter((id) => landscapeReady(state, id));
+  if (!dests.length) {
+    addLog(state, `${title}: destination is not revealed.`);
+    if (thenReturn) returnN(state, thenReturn, player);
+    return;
+  }
+  offerChoice(state, player, {
+    cardId,
+    step: dests.length > 1 || alive(state).length > 1 ? "pick-dreamer" : "pick-dest",
+    title,
+    message: alive(state).length > 1 ? "Choose a Dreamer to move:" : "Choose a destination:",
+    log,
+    choices: alive(state).length > 1 ? dreamerChoices(state) : destChoices(state, destIds),
+    payload: { destIds, thenReturn, moverId: player.id },
+  });
+}
+
+function askTile(state, player, {
+  cardId,
+  step,
+  title,
+  detail,
+  allowedIds,
+  action = "record",
+  remaining = 1,
+  payload = {},
+}) {
+  const result = requestChooseTile(state, {
+    allowedIds,
+    action,
+    playerId: payload.moverId || player.id,
+    title,
+    detail,
+    remaining,
+    followup: { cardId, playerId: player.id, step, payload },
+  });
+  if (result === "pending") return;
+  if (result && state.pendingObjectFollowup) resumeObjectEffect(state, lastHelpers);
+}
+
+function deckForKey(state, key) {
+  if (key === "psyche") return state.psycheDeck;
+  if (key === "dream") return state.dreamDeck;
+  if (key === "archetype") return state.archetypeDeck;
+  if (key?.startsWith("mindstream-")) return state.mindstreamDecks[key.replace("mindstream-", "")];
+  return null;
+}
+
+function applyDeckOrder(state, key, ordered) {
+  const deck = deckForKey(state, key);
+  if (!deck || !ordered?.length) return;
+  const ids = new Set(ordered.map((c) => c.instanceId || c.id));
+  const leftover = [];
+  for (let i = 0; i < deck.length; i += 1) {
+    const card = deck[i];
+    if (ids.has(card.instanceId || card.id)) leftover.push(i);
+  }
+  leftover.reverse().forEach((idx) => deck.splice(idx, 1));
+  deck.unshift(...ordered);
+  addLog(state, `Knife: top ${ordered.length} of ${key} reordered.`);
+}
+
+function finishToothSaber(state, player, helpers, { landscapeId, mode, cardIds }) {
+  const tile = landscapeById(state, landscapeId);
+  const enc = tile?.encounter;
+  if (!enc) {
+    addLog(state, "Tooth-Saber: that Encounter is gone.");
+    return;
+  }
+  const selected = (cardIds || [])
+    .map((id) => player.hand.find((c) => c.instanceId === id))
+    .filter(Boolean);
+  const total = selected.reduce((sum, c) => sum + psycheCardValue(c), 0);
+  const need = mode === "accept" ? enc.accept : encounterRejectCost(enc);
+  if (total < need) {
+    addLog(state, `Tooth-Saber: need ${need} Psyche (have ${total}).`);
+    return;
+  }
+  selected.forEach((card) => {
+    player.hand = player.hand.filter((c) => c.instanceId !== card.instanceId);
+    state.psycheDiscard.push(card);
+  });
+  recordQuestEvent(state, "discard_psyche", { count: selected.length });
+
+  if (mode === "accept") {
+    if (!canAddAllyToHand(state, player)) {
+      addLog(state, `${player.name} already has ${allyHandLimitForPlayer(state, player)} allies.`);
+      selected.forEach((card) => player.hand.push(card));
+      state.psycheDiscard = state.psycheDiscard.filter((c) => !selected.includes(c));
+      return;
+    }
+    addLog(state, `${player.name} Accepts ${enc.name}.`);
+    applyBossAcceptEffect(state, enc, player);
+    player.hand.push(dreambeastToHandCard(enc));
+    tile.encounter = null;
+    if (state.activeEncounterLandscapeId === landscapeId) {
+      state.activeEncounter = null;
+      state.activeEncounterLandscapeId = null;
+    }
+    recordQuestEvent(state, "meet_on_landscape", { landscapeId });
+    return;
+  }
+
+  repressCard(state, { ...enc, type: "dreambeast" });
+  applyRejectReward(state, enc, player, helpers);
+  tile.encounter = null;
+  if (state.activeEncounterLandscapeId === landscapeId) {
+    state.activeEncounter = null;
+    state.activeEncounterLandscapeId = null;
+  }
+  addLog(state, `${player.name} Rejects ${enc.name}.`);
+  recordQuestEvent(state, "meet_on_landscape", { landscapeId });
+}
+
+function continueFlow(state, follow, helpers) {
+  const player = playerById(state, follow.playerId);
+  if (!player) return;
+  const step = follow.step;
+  const payload = follow.payload || {};
+  const cardId = follow.cardId;
+  const lastTileId = follow.lastTileId;
+  const pickedIds = follow.pickedIds || (lastTileId ? [lastTileId] : []);
+
+  if (cardId === "psychic-owl" && step === "moved") {
+    returnN(state, 2, player);
+    return;
+  }
+  if ((cardId === "flower" || cardId === "hammer" || cardId === "bag-of-teeth" || cardId === "raven-claw") && step === "moved") {
+    if (payload.thenReturn) returnN(state, payload.thenReturn, player);
+    return;
+  }
+  if ((cardId === "ivory-pawn" || cardId === "ebony-pawn") && step === "spawned") {
+    spawnBeastOn(state, helpers, lastTileId, {
+      beastKind: cardId === "ivory-pawn" ? "fantasy" : "nightmare",
+    });
+    trackChessPlay(state, player);
+    return;
+  }
+  if (cardId === "possibility-polyhedral" && step === "place") {
+    const pulled = pullDreambeastFromMindstream(state, { suit: payload.suit });
+    if (!pulled) {
+      helpers?.spawnEncounter?.(state, lastTileId);
+      return;
+    }
+    const encounter = encounterFromDreambeastCard(pulled.card);
+    setEncounterOnLandscape(state, lastTileId, encounter);
+    addLog(state, `${pulled.card.name} appears on ${tileName(state, lastTileId)}!`);
+    return;
+  }
+  if (cardId === "marble-grid" && step === "spawned") {
+    pickedIds.forEach((id) => spawnBeastOn(state, helpers, id));
+    const psyche = psycheSpendCards(player);
+    if (!psyche.length) {
+      trackChessPlay(state, player);
+      return;
+    }
+    offerChoice(state, player, {
+      cardId: "marble-grid",
+      step: "repress-psyche",
+      ui: "cards",
+      title: "Marble Grid",
+      message: "Repress 1 Psyche:",
+      cards: psyche,
+      payload: {},
+    });
+    return;
+  }
+  if (step === "after-element-discard") {
+    offerChoice(state, player, {
+      cardId,
+      step: "pick-element-dest",
+      title: payload.title || cardId,
+      message: "Move to:",
+      choices: destChoices(state, payload.destIds || []),
+      payload,
+    });
+    return;
+  }
+  if (cardId === "mobius-crystal" && step === "after-mobius-discard") {
+    const edges = edgeLandscapes(state).filter((t) => t.revealed && !t.wasteland);
+    const sources = edges.filter((t) => t.encounter);
+    if (!sources.length) {
+      addLog(state, "Mobius Crystal: no edge Dreambeast.");
+      return;
+    }
+    offerChoice(state, player, {
+      cardId: "mobius-crystal",
+      step: "pick-beast-source",
+      title: "Mobius Crystal",
+      message: "Move which edge Dreambeast?",
+      choices: sources.map((t) => ({ id: t.id, label: `${t.encounter.name} on ${t.name}` })),
+      payload: { destIds: edges.map((t) => t.id), title: "Mobius Crystal" },
+    });
+    return;
+  }
+  if ((cardId === "row-boat" || cardId === "hourglass" || cardId === "conch-shell" || cardId === "rope") && step === "dest") {
+    const dests = (payload.destIds || []).filter((id) => landscapeReady(state, id) && !landscapeById(state, id)?.encounter);
+    if (!dests.length) {
+      addLog(state, `${payload.title || "Object"}: no open destination.`);
+      return;
+    }
+    if (dests.length === 1) {
+      continueFlow(state, {
+        cardId,
+        playerId: player.id,
+        step: "moved-beast",
+        lastTileId: dests[0],
+        payload,
+      }, helpers);
+      return;
+    }
+    offerChoice(state, player, {
+      cardId,
+      step: "pick-beast-dest",
+      title: payload.title,
+      message: "Move the Dreambeast to:",
+      choices: destChoices(state, dests),
+      payload,
+    });
+    return;
+  }
+  if ((cardId === "row-boat" || cardId === "hourglass" || cardId === "conch-shell" || cardId === "rope") && step === "moved-beast") {
+    const from = landscapeById(state, payload.fromId);
+    const dest = lastTileId;
+    if (!from?.encounter || !landscapeReady(state, dest)) return;
+    const enc = from.encounter;
+    from.encounter = null;
+    setEncounterOnLandscape(state, dest, enc);
+    addLog(state, `Moved ${enc.name} to ${tileName(state, dest)}.`);
+    return;
+  }
+  if (cardId === "mobius-crystal" && step === "dest") {
+    const dests = (payload.destIds || []).filter((id) => id !== payload.fromId && landscapeReady(state, id) && !landscapeById(state, id)?.encounter);
+    if (!dests.length) {
+      addLog(state, "Mobius Crystal: no open edge Landscape.");
+      return;
+    }
+    offerChoice(state, player, {
+      cardId: "mobius-crystal",
+      step: "pick-mobius-dest",
+      title: "Mobius Crystal",
+      message: "Move that Dreambeast to:",
+      choices: dests.map((id) => ({ id, label: tileName(state, id), hint: "Other edge Landscape." })),
+      payload,
+    });
+    return;
+  }
+}
+
+export function resumeObjectEffect(state, helpers = null) {
+  const follow = state.pendingObjectFollowup;
+  if (!follow) return false;
+  const h = useHelpers(helpers);
+  state.pendingObjectFollowup = null;
+  continueFlow(state, follow, h);
+  if (state.pendingObjectFollowup && !state.landscapePick && !state.pendingObjectChoice) {
+    resumeObjectEffect(state, helpers);
+  }
+  return true;
+}
+
+export function resolveObjectChoice(state, choiceId, helpers = null) {
+  const pending = state.pendingObjectChoice;
+  if (!pending) return false;
+  helpers = useHelpers(helpers);
+  const player = playerById(state, pending.playerId);
+  const step = pending.step;
+  const payload = pending.payload || {};
+  const cardId = pending.cardId;
+
+  if (pending.ui === "spend") {
+    if (choiceId === "confirm") {
+      state.pendingObjectChoice = null;
+      finishToothSaber(state, player, helpers, {
+        landscapeId: payload.landscapeId,
+        mode: payload.mode,
+        cardIds: pending.order || [],
+      });
+      return true;
+    }
+    const card = (pending.cards || []).find((c) => c.instanceId === choiceId);
+    if (!card) return false;
+    const order = pending.order || [];
+    pending.order = order.includes(choiceId)
+      ? order.filter((id) => id !== choiceId)
+      : [...order, choiceId];
+    return true;
+  }
+
+  if (pending.ui === "reorder") {
+    if (choiceId === "done") {
+      if ((pending.order || []).length !== (pending.top || []).length) return false;
+      state.pendingObjectChoice = null;
+      applyDeckOrder(state, payload.deckKey, pending.order);
+      return true;
+    }
+    const card = (pending.top || []).find((c) => (c.instanceId || c.id) === choiceId);
+    if (!card || (pending.order || []).some((c) => (c.instanceId || c.id) === choiceId)) return false;
+    pending.order = [...(pending.order || []), card];
+    if (pending.order.length >= pending.top.length) {
+      state.pendingObjectChoice = null;
+      applyDeckOrder(state, payload.deckKey, pending.order);
+    }
+    return true;
+  }
+
+  if (pending.ui === "cards") {
+    const card = (pending.cards || []).find((c) => (c.instanceId || c.id) === choiceId);
+    if (!card) return false;
+    state.pendingObjectChoice = null;
+    if (cardId === "red-apple") {
+      (pending.cards || []).filter((c) => c !== card).forEach((extra) => {
+        const suit = extra.suit || extra.mindstreamSuit;
+        if (suit && state.mindstreamDiscard[suit]) state.mindstreamDiscard[suit].push(extra);
+      });
+      addLog(state, `Red Apple resolves: ${card.name}.`);
+      helpers?.resolveCardEffect?.(state, card, player, helpers);
+      return true;
+    }
+    if (cardId === "crystal-bell" || cardId === "the-all") {
+      addLog(state, `Replay Dream: ${card.name}.`);
+      helpers?.resolveCardEffect?.(state, card, player, helpers);
+      if (cardId === "the-all") returnN(state, dreamerCount(state) + 8, player);
+      return true;
+    }
+    if (cardId === "marble-grid" && step === "repress-psyche") {
+      player.hand = player.hand.filter((c) => c.instanceId !== card.instanceId);
+      repressCard(state, card);
+      recordQuestEvent(state, "discard_psyche", { count: 1 });
+      addLog(state, `${player.name} represses ${card.name || "Psyche"}.`);
+      trackChessPlay(state, player);
+      return true;
+    }
+    if (step === "discard-psyche") {
+      discardPsycheCard(state, player, card);
+      continueFlow(state, {
+        cardId: payload.nextCardId || cardId,
+        playerId: player.id,
+        step: payload.nextStep,
+        payload: { ...payload, discarded: true },
+      }, helpers);
+      if (state.pendingObjectFollowup) resumeObjectEffect(state, helpers);
+      return true;
+    }
+    return true;
+  }
+
+  const choice = (pending.choices || []).find((entry) => entry.id === choiceId);
+  if (!choice || choice.disabled) return false;
+  state.pendingObjectChoice = null;
+
+  if (cardId === "mirror") {
+    if (choiceId === "move-field") movePlayerToId(state, player, "field-of-broken-glass");
+    else returnN(state, 1, player);
+    return true;
+  }
+  if (cardId === "candle") {
+    if (choiceId === "return-2") {
+      returnN(state, 2);
+      return true;
+    }
+    const hidden = state.board.filter((l) => !l.revealed && !l.center);
+    const count = Math.min(hidden.length, dreamerCount(state) + 1);
+    if (count) beginFreeRevealPicking(state, count);
+    return true;
+  }
+  if (cardId === "the-one") {
+    if (choiceId === "chess") trackChessPlay(state, player);
+    else checkObjectTagSet(state, player, choiceId, { extra: 1 });
+    addLog(state, `The One counts toward the ${choiceId} set.`);
+    return true;
+  }
+
+  if (step === "pick-dreamer") {
+    const mover = playerById(state, choiceId) || player;
+    const dests = (payload.destIds || []).filter((id) => landscapeReady(state, id));
+    if (dests.length === 1) {
+      movePlayerToId(state, mover, dests[0]);
+      if (payload.thenReturn) returnN(state, payload.thenReturn, player);
+      return true;
+    }
+    if (cardId === "psychic-owl") {
+      askTile(state, player, {
+        cardId,
+        step: "moved",
+        title: "Psychic Owl",
+        detail: `Choose any revealed Landscape for ${mover.name}.`,
+        allowedIds: revealedTiles(state).map((t) => t.id),
+        action: "movePlayer",
+        payload: { moverId: mover.id, thenReturn: 2 },
+      });
+      if (state.pendingObjectFollowup) resumeObjectEffect(state, helpers);
+      return true;
+    }
+    offerChoice(state, player, {
+      cardId,
+      step: "pick-dest",
+      title: pending.title,
+      message: `Move ${mover.name} to:`,
+      choices: destChoices(state, payload.destIds || []),
+      payload: { ...payload, moverId: mover.id },
+    });
+    return true;
+  }
+
+  if (step === "pick-dest") {
+    const mover = playerById(state, payload.moverId) || player;
+    movePlayerToId(state, mover, choiceId);
+    if (payload.thenReturn) returnN(state, payload.thenReturn, player);
+    return true;
+  }
+
+  if (cardId === "possibility-polyhedral" && step === "pick-suit") {
+    askTile(state, player, {
+      cardId,
+      step: "place",
+      title: "Possibility Polyhedral",
+      detail: "Choose a Landscape for the Dreambeast.",
+      allowedIds: revealedTiles(state, { empty: true }).map((t) => t.id),
+      payload: { suit: choiceId },
+    });
+    if (state.pendingObjectFollowup) resumeObjectEffect(state, helpers);
+    return true;
+  }
+
+  if (cardId === "knife" && step === "pick-deck") {
+    const deck = deckForKey(state, choiceId);
+    const top = (deck || []).slice(0, 3);
+    if (top.length < 1) {
+      addLog(state, "That deck is empty.");
+      return true;
+    }
+    offerChoice(state, player, {
+      cardId: "knife",
+      ui: "reorder",
+      step: "reorder",
+      title: "Knife",
+      message: "Click the cards in the order you want on top (first click becomes the new top).",
+      top,
+      order: [],
+      payload: { deckKey: choiceId },
+    });
+    return true;
+  }
+
+  if (cardId === "skeleton-key" && step === "pick-suit") {
+    const suit = choiceId.replace("mindstream-", "");
+    const deck = state.mindstreamDecks[suit];
+    if (deck?.length) {
+      const top = deck.shift();
+      deck.push(top);
+      addLog(state, `Skeleton Key flips ${SUIT_LABELS[suit] || suit} Mindstream.`);
+    }
+    return true;
+  }
+
+  if (cardId === "tooth-saber" && step === "pick-encounter") {
+    const enc = landscapeById(state, choiceId)?.encounter;
+    if (!enc) return true;
+    offerChoice(state, player, {
+      cardId: "tooth-saber",
+      step: "pick-mode",
+      title: "Tooth-Saber",
+      message: `${enc.name}: Accept or Reject?`,
+      choices: [
+        { id: "accept", label: `Accept (${enc.accept})`, hint: "Joins hand as a Psyche ally." },
+        { id: "reject", label: `Reject (${encounterRejectCost(enc)})`, hint: "Repress the Encounter." },
+      ],
+      payload: { landscapeId: choiceId },
+    });
+    return true;
+  }
+
+  if (cardId === "tooth-saber" && step === "pick-mode") {
+    const enc = landscapeById(state, payload.landscapeId)?.encounter;
+    const need = choiceId === "accept" ? enc?.accept : encounterRejectCost(enc);
+    offerChoice(state, player, {
+      cardId: "tooth-saber",
+      ui: "spend",
+      step: "spend",
+      title: "Tooth-Saber",
+      message: `Select Psyche totaling ${need} or more, then confirm.`,
+      cards: player.hand.filter((c) => c.type === "psyche" || c.type === "dreambeast"),
+      need,
+      order: [],
+      payload: { landscapeId: payload.landscapeId, mode: choiceId },
+    });
+    return true;
+  }
+
+  if (cardId === "water" || cardId === "air" || cardId === "earth" || cardId === "fire") {
+    if (step === "pick-element-dest") {
+      movePlayerToId(state, player, choiceId);
+      return true;
+    }
+  }
+
+  if (step === "pick-beast-source") {
+    continueFlow(state, {
+      cardId,
+      playerId: player.id,
+      step: "dest",
+      payload: { ...payload, fromId: choiceId },
+    }, helpers);
+    if (state.pendingObjectFollowup) resumeObjectEffect(state, helpers);
+    return true;
+  }
+
+  if (step === "pick-beast-dest" || step === "pick-mobius-dest") {
+    continueFlow(state, {
+      cardId,
+      playerId: player.id,
+      step: cardId === "mobius-crystal" ? "moved-beast" : "moved-beast",
+      lastTileId: choiceId,
+      payload,
+    }, helpers);
+    if (cardId === "mobius-crystal") {
+      const from = landscapeById(state, payload.fromId);
+      if (from?.encounter && landscapeReady(state, choiceId)) {
+        const enc = from.encounter;
+        from.encounter = null;
+        setEncounterOnLandscape(state, choiceId, enc);
+        addLog(state, `Moved ${enc.name} to ${tileName(state, choiceId)}.`);
+      }
+    }
+    return true;
+  }
+
+  return true;
+}
+
+export function checkObjectTagSet(state, player, tag, { extra = 0 } = {}) {
   if (!player.persistent) player.persistent = [];
   const tagged = player.persistent.filter((o) => o.tags?.some((t) => t.startsWith(tag)));
-  const required = tag === "element" ? 4 : 3;
-  if (tagged.length < required) return;
+  if (tagged.length + extra < setRequiredForTag(tag)) return;
 
   if (tag === "chess") {
     returnN(state, dreamerCount(state) + 2, player);
@@ -142,27 +727,44 @@ export function checkObjectTagSet(state, player, tag) {
   }
 }
 
-/** All instant Object play effects keyed by card id. */
 export const OBJECT_EFFECTS = {
-  candle: (state) => {
+  candle: (state, player) => {
     const hidden = state.board.filter((l) => !l.revealed && !l.center);
-    const count = Math.min(hidden.length, dreamerCount(state) + 1);
-    hidden.slice(0, count).forEach((t) => revealLandscapeTile(state, t));
-    if (count) {
-      recordQuestEvent(state, "reveal_landscape", { count });
-      addLog(state, `Candle reveals ${count} Landscape(s).`);
-    } else {
-      returnN(state, 2);
-    }
+    const revealCount = Math.min(hidden.length, dreamerCount(state) + 1);
+    offerChoice(state, player, {
+      cardId: "candle",
+      title: "Candle",
+      message: "Choose one effect:",
+      log: "Candle: choose Reveal Landscapes or Return 2 Repressed cards.",
+      choices: [
+        {
+          id: "reveal",
+          label: `Reveal Dreamers+1 Landscapes (${revealCount})`,
+          hint: revealCount ? "Click that many hidden hexes." : "No hidden Landscapes left.",
+          disabled: revealCount < 1,
+        },
+        { id: "return-2", label: "Return 2 Repressed Cards", hint: "Pick from the Subconscious." },
+      ],
+    });
   },
 
   mirror: (state, player) => {
-    if (landscapeById(state, "field-of-broken-glass")?.revealed) {
-      player.landscapeId = "field-of-broken-glass";
-      addLog(state, `${player.name} moves to Field of Broken Glass.`);
-    } else {
-      returnN(state, 1, player);
-    }
+    const fieldReady = landscapeReady(state, "field-of-broken-glass");
+    offerChoice(state, player, {
+      cardId: "mirror",
+      title: "Mirror",
+      message: "Choose one effect:",
+      log: "Mirror: choose Move or Return.",
+      choices: [
+        {
+          id: "move-field",
+          label: "Move to Field of Broken Glass",
+          hint: fieldReady ? "Move this Dreamer there now." : "Field of Broken Glass is not revealed yet.",
+          disabled: !fieldReady,
+        },
+        { id: "return-1", label: "Return 1 Repressed Card", hint: "Pick 1 card from the Subconscious." },
+      ],
+    });
   },
 
   "rabbits-foot": (state) => {
@@ -170,85 +772,168 @@ export const OBJECT_EFFECTS = {
     addLog(state, "Rabbit's Foot: +3 wild to next Psyche play.");
   },
 
-  "possibility-polyhedral": (state, player, helpers) => {
+  "possibility-polyhedral": (state, player) => {
     const suits = ["lucidity", "elasticity", "willpower"];
-    const suit = suits.find((s) => state.mindstreamDecks[s]?.length);
-    if (suit) {
-      const echo = drawMindstreamTop(state, suit);
-      addLog(state, `Possibility Polyhedral echoes ${echo?.name || "Mindstream"}.`);
-    }
-    const tile = state.board.find((t) => t.revealed && !t.encounter);
-    helpers.spawnEncounter(state, tile?.id || player.landscapeId);
+    offerChoice(state, player, {
+      cardId: "possibility-polyhedral",
+      step: "pick-suit",
+      title: "Possibility Polyhedral",
+      message: "Spawn a Dreambeast from which Mindstream?",
+      log: "Possibility Polyhedral: choose a Mindstream, then a Landscape.",
+      choices: suits.map((suit) => ({
+        id: suit,
+        label: `${SUIT_LABELS[suit]} Mindstream`,
+        hint: state.mindstreamDecks[suit]?.some((c) => c.type === "dreambeast")
+          ? "Has a Dreambeast."
+          : "No Dreambeast left; will spawn a random Encounter.",
+      })),
+    });
   },
 
   "raven-claw": (state, player) => {
-    movePlayerTo(state, player, ["sky"]);
+    askMoveDreamer(state, player, {
+      cardId: "raven-claw",
+      title: "Raven Claw",
+      destIds: ["sky"],
+      log: "Raven Claw: choose a Dreamer to move to Sky.",
+    });
   },
 
   "bag-of-teeth": (state, player) => {
-    movePlayerTo(state, player, ["sea-of-teeth", "house"]);
+    askMoveDreamer(state, player, {
+      cardId: "bag-of-teeth",
+      title: "Bag of Teeth",
+      destIds: ["sea-of-teeth", "house"],
+      log: "Bag of Teeth: choose a Dreamer and a destination.",
+    });
   },
 
-  "marble-grid": (state, player, helpers) => {
-    spawnOnRandomTiles(state, helpers, 2);
-    returnN(state, dreamerCount(state) + 2, player);
-    if (player.hand.length) {
-      repressCard(state, player.hand.pop());
-      recordQuestEvent(state, "discard_psyche", { count: 1 });
+  "marble-grid": (state, player) => {
+    const empty = revealedTiles(state, { empty: true }).map((t) => t.id);
+    if (empty.length < 1) {
+      addLog(state, "Marble Grid: no empty Landscapes to spawn on.");
+      const psyche = psycheSpendCards(player);
+      if (psyche.length) {
+        offerChoice(state, player, {
+          cardId: "marble-grid",
+          step: "repress-psyche",
+          ui: "cards",
+          title: "Marble Grid",
+          message: "Repress 1 Psyche:",
+          cards: psyche,
+        });
+      } else {
+        trackChessPlay(state, player);
+      }
+      return;
     }
-    trackChessPlay(state, player);
+    askTile(state, player, {
+      cardId: "marble-grid",
+      step: "spawned",
+      title: "Marble Grid",
+      detail: `Choose ${Math.min(2, empty.length)} empty Landscape(s) to spawn Dreambeasts.`,
+      allowedIds: empty,
+      remaining: Math.min(2, empty.length),
+    });
+    if (state.pendingObjectFollowup) resumeObjectEffect(state);
   },
 
-  "ivory-pawn": (state, player, helpers) => {
-    const tile = state.board.find((t) => t.revealed && !t.encounter);
-    spawnFilteredDreambeast(state, helpers, tile?.id || player.landscapeId, { beastKind: "fantasy" });
-    trackChessPlay(state, player);
-    returnN(state, dreamerCount(state) + 2, player);
+  "ivory-pawn": (state, player) => {
+    const empty = revealedTiles(state, { empty: true }).map((t) => t.id);
+    if (!empty.length) {
+      addLog(state, "Ivory Pawn: no empty Landscapes to spawn on.");
+      trackChessPlay(state, player);
+      return;
+    }
+    askTile(state, player, {
+      cardId: "ivory-pawn",
+      step: "spawned",
+      title: "Ivory Pawn",
+      detail: "Choose a Landscape for the Fantasy Dreambeast.",
+      allowedIds: empty,
+    });
+    if (state.pendingObjectFollowup) resumeObjectEffect(state);
   },
 
-  "ebony-pawn": (state, player, helpers) => {
-    const tile = state.board.find((t) => t.revealed && !t.encounter);
-    spawnFilteredDreambeast(state, helpers, tile?.id || player.landscapeId, { beastKind: "nightmare" });
-    trackChessPlay(state, player);
-    returnN(state, dreamerCount(state) + 2, player);
+  "ebony-pawn": (state, player) => {
+    const empty = revealedTiles(state, { empty: true }).map((t) => t.id);
+    if (!empty.length) {
+      addLog(state, "Ebony Pawn: no empty Landscapes to spawn on.");
+      trackChessPlay(state, player);
+      return;
+    }
+    askTile(state, player, {
+      cardId: "ebony-pawn",
+      step: "spawned",
+      title: "Ebony Pawn",
+      detail: "Choose a Landscape for the Nightmare Encounter.",
+      allowedIds: empty,
+    });
+    if (state.pendingObjectFollowup) resumeObjectEffect(state);
   },
 
   flower: (state, player) => {
-    movePlayerTo(state, player, ["tranquil-grove"]);
-    returnN(state, 4, player);
+    askMoveDreamer(state, player, {
+      cardId: "flower",
+      title: "Flower",
+      destIds: ["tranquil-grove"],
+      thenReturn: 4,
+      log: "Flower: choose a Dreamer to move to Tranquil Grove, then Return 4.",
+    });
   },
 
   "psychic-owl": (state, player) => {
-    const revealed = state.board.filter((t) => t.revealed);
-    if (revealed.length) {
-      player.landscapeId = revealed[0].id;
-      addLog(state, `${player.name} moves to ${revealed[0].name}.`);
+    if (alive(state).length <= 1) {
+      askTile(state, player, {
+        cardId: "psychic-owl",
+        step: "moved",
+        title: "Psychic Owl",
+        detail: "Choose any revealed Landscape.",
+        allowedIds: revealedTiles(state).map((t) => t.id),
+        action: "movePlayer",
+        payload: { moverId: player.id, thenReturn: 2 },
+      });
+      if (state.pendingObjectFollowup) resumeObjectEffect(state);
+      return;
     }
-    returnN(state, 2, player);
+    offerChoice(state, player, {
+      cardId: "psychic-owl",
+      step: "pick-dreamer",
+      title: "Psychic Owl",
+      message: "Choose a Dreamer to move:",
+      log: "Psychic Owl: choose a Dreamer, then any Landscape, then Return 2.",
+      choices: dreamerChoices(state),
+      payload: { destIds: revealedTiles(state).map((t) => t.id), thenReturn: 2 },
+    });
   },
 
   "red-apple": (state, player, helpers) => {
     const drawn = ["lucidity", "elasticity", "willpower"]
-      .map((suit) => drawMindstreamTop(state, suit))
+      .map((suit) => pullFromMindstreamByType(state, "event", { suit })?.card)
       .filter(Boolean);
     if (!drawn.length) {
-      addLog(state, "No Mindstream cards to draw.");
+      addLog(state, "Red Apple: no Events left in the Mindstreams.");
       return;
     }
-    const pick = drawn[Math.floor(Math.random() * drawn.length)];
-    addLog(state, `Red Apple resolves: ${pick.name}.`);
-    if (helpers?.resolveCardEffect) {
-      helpers.resolveCardEffect(state, pick, player, helpers);
+    if (drawn.length === 1) {
+      addLog(state, `Red Apple resolves: ${drawn[0].name}.`);
+      helpers?.resolveCardEffect?.(state, drawn[0], player, helpers);
+      return;
     }
+    offerChoice(state, player, {
+      cardId: "red-apple",
+      ui: "cards",
+      title: "Red Apple",
+      message: "Choose 1 Event to resolve. The others are discarded.",
+      cards: drawn,
+    });
   },
 
   "tear-of-moon": (state) => {
     const players = alive(state);
     players.forEach((p) => {
       drawPsycheForPlayer(state, p, 2);
-      enqueueReturnCards(state, 2, p, {
-        reason: `${p.name}: Return 2 Repressed card(s).`,
-      });
+      enqueueReturnCards(state, 2, p, { reason: `${p.name}: Return 2 Repressed card(s).` });
     });
     if (players.length) addLog(state, "Tear of Moon: each Dreamer draws 2 Psyche and Returns 2 Repressed.");
   },
@@ -257,9 +942,7 @@ export const OBJECT_EFFECTS = {
     const players = alive(state);
     players.forEach((p) => {
       drawPsycheForPlayer(state, p, 2);
-      enqueueReturnCards(state, 2, p, {
-        reason: `${p.name}: Return 2 Repressed card(s).`,
-      });
+      enqueueReturnCards(state, 2, p, { reason: `${p.name}: Return 2 Repressed card(s).` });
     });
     if (players.length) addLog(state, "Spark of Sun: each Dreamer draws 2 Psyche and Returns 2 Repressed.");
   },
@@ -273,67 +956,107 @@ export const OBJECT_EFFECTS = {
   },
 
   egg: (state, player) => {
-    const room = handRoomForPsycheDraw(state, player);
-    if (room > 0) drawPsycheForPlayer(state, player, room);
+    const room = Math.min(10, handRoomForPsycheDraw(state, player));
+    if (room > 0) {
+      const drawn = drawPsycheForPlayer(state, player, room);
+      addLog(state, `Egg: ${player.name} draws ${drawn.length} Psyche.`);
+    } else {
+      addLog(state, "Egg: hand is already full.");
+    }
   },
 
   "the-all": (state, player, helpers) => {
-    returnN(state, dreamerCount(state) + 8);
-    replayDreamFromDiscard(state, player, helpers);
-  },
-
-  knife: (state) => {
-    const suits = ["lucidity", "elasticity", "willpower"];
-    const suit = suits.find((s) => state.mindstreamDecks[s]?.length > 1)
-      || suits.find((s) => state.dreamDeck.length > 1)
-      || suits.find((s) => state.psycheDeck.length > 1);
-    if (suit && state.mindstreamDecks[suit]?.length > 1) {
-      reorderMindstreamTop(state, suit, 3);
-      addLog(state, `Knife: reordered top 3 of ${suit} Mindstream.`);
+    const pile = [...(state.dreamDiscard || [])];
+    if (!pile.length) {
+      addLog(state, "No Dreams in the discard pile.");
+      returnN(state, dreamerCount(state) + 8);
       return;
     }
-    const deckKey = state.dreamDeck.length > 1 ? "dreamDeck" : "psycheDeck";
-    reorderDeckTop(state, deckKey, 3);
+    offerChoice(state, player, {
+      cardId: "the-all",
+      ui: "cards",
+      title: "The All",
+      message: "Choose 1 Dream from discard to resolve again:",
+      cards: pile,
+    });
   },
 
-  "crystal-bell": (state, player, helpers) => {
-    replayDreamFromDiscard(state, player, helpers);
+  knife: (state, player) => {
+    offerChoice(state, player, {
+      cardId: "knife",
+      step: "pick-deck",
+      title: "Knife",
+      message: "Look at the top 3 of which deck?",
+      log: "Knife: choose a deck, then reorder the top 3.",
+      choices: [
+        { id: "psyche", label: "Psyche Deck", disabled: !state.psycheDeck.length },
+        { id: "dream", label: "Dream Deck", disabled: !state.dreamDeck.length },
+        { id: "archetype", label: "Archetype Deck", disabled: !state.archetypeDeck.length },
+        { id: "mindstream-lucidity", label: `${SUIT_LABELS.lucidity} Mindstream`, disabled: !state.mindstreamDecks.lucidity?.length },
+        { id: "mindstream-elasticity", label: `${SUIT_LABELS.elasticity} Mindstream`, disabled: !state.mindstreamDecks.elasticity?.length },
+        { id: "mindstream-willpower", label: `${SUIT_LABELS.willpower} Mindstream`, disabled: !state.mindstreamDecks.willpower?.length },
+      ],
+    });
+  },
+
+  "crystal-bell": (state, player) => {
+    const pile = [...(state.dreamDiscard || [])];
+    if (!pile.length) {
+      addLog(state, "No Dreams in the discard pile.");
+      return;
+    }
+    offerChoice(state, player, {
+      cardId: "crystal-bell",
+      ui: "cards",
+      title: "Crystal Bell",
+      message: "Choose 1 Dream from discard to resolve again:",
+      cards: pile,
+    });
   },
 
   "tooth-saber": (state, player) => {
-    if (!state.activeEncounter) {
-      addLog(state, "Tooth-Saber: no active Encounter.");
+    const tiles = state.board.filter((t) => t.encounter);
+    if (!tiles.length) {
+      addLog(state, "Tooth-Saber: no Encounter on the map.");
       return;
     }
-    if (!player.hand.length) {
-      addLog(state, "Tooth-Saber: discard 1 Psyche to Meet an Encounter.");
-      return;
-    }
-    const discarded = player.hand.pop();
-    state.psycheDiscard.push(discarded);
-    const enc = state.activeEncounter;
-    const value = discarded.value || 0;
-    const landscapeId = state.activeEncounterLandscapeId;
-    addLog(state, `${player.name} discards ${value} Psyche for Tooth-Saber.`);
-    if (value >= encounterRejectCost(enc)) {
-      const tile = landscapeById(state, landscapeId);
-      if (tile) tile.encounter = null;
-      state.activeEncounter = null;
-      state.activeEncounterLandscapeId = null;
-      addLog(state, `Rejects ${enc.name} (${value} ≥ ${encounterRejectCost(enc)}).`);
-      recordQuestEvent(state, "meet_on_landscape", { landscapeId });
-    } else {
-      addLog(state, `Not enough Psyche (${value}) to Reject ${enc.name} (need ${encounterRejectCost(enc)}).`);
-    }
+    offerChoice(state, player, {
+      cardId: "tooth-saber",
+      step: "pick-encounter",
+      title: "Tooth-Saber",
+      message: "Choose an Encounter:",
+      log: "Tooth-Saber: choose an Encounter, then Accept or Reject.",
+      choices: tiles.map((t) => ({
+        id: t.id,
+        label: `${t.encounter.name} on ${t.name}`,
+        hint: `Accept ${t.encounter.accept} · Reject ${encounterRejectCost(t.encounter)}`,
+      })),
+    });
   },
 
   hammer: (state, player) => {
-    movePlayerTo(state, player, ["house"]);
-    returnN(state, 1, player);
+    askMoveDreamer(state, player, {
+      cardId: "hammer",
+      title: "Hammer",
+      destIds: ["house"],
+      thenReturn: 1,
+      log: "Hammer: choose a Dreamer to move to House, then Return 1.",
+    });
   },
 
-  "the-one": (state) => {
-    addLog(state, "The One counts as 1 Object toward a Set (passive).");
+  "the-one": (state, player) => {
+    offerChoice(state, player, {
+      cardId: "the-one",
+      title: "The One",
+      message: "Count as 1 Object toward which set?",
+      choices: [
+        { id: "chess", label: "Chess", hint: "Need 3 chess Objects." },
+        { id: "stick", label: "Stick", hint: "Need 3 stick Objects." },
+        { id: "body", label: "Body", hint: "Need 5 body Objects." },
+        { id: "element", label: "Element", hint: "Need 4 element Objects." },
+        { id: "jewelry", label: "Jewelry", hint: "Need 3 jewelry Objects." },
+      ],
+    });
   },
 };
 
@@ -342,3 +1065,142 @@ export const OBJECT_EFFECTS = {
     beginNothingResolution(state, player, { id, name: "The Nothing" });
   };
 });
+
+const BEAST_MOVERS = {
+  "row-boat": { title: "Row Boat", destIds: ["lava", "endless-ocean", "sea-of-teeth"] },
+  rope: { title: "Rope", destIds: ["endless-hallway", "the-attic", "the-basement"] },
+  hourglass: { title: "Hourglass", destIds: ["day-in-the-life", "insanity", "naked-classroom"] },
+  "conch-shell": { title: "Conch Shell", destIds: ["field-of-broken-glass", "desert", "black-void"] },
+};
+
+export function activatePersistentObjectEffect(state, player, card) {
+  const mover = BEAST_MOVERS[card.id];
+  if (mover) {
+    const sources = state.board.filter((t) => t.encounter);
+    if (!sources.length) {
+      addLog(state, `${card.name}: no Dreambeast to move.`);
+      return false;
+    }
+    offerChoice(state, player, {
+      cardId: card.id,
+      step: "pick-beast-source",
+      title: mover.title,
+      message: "Move which Dreambeast?",
+      choices: sources.map((t) => ({
+        id: t.id,
+        label: `${t.encounter.name} on ${t.name}`,
+      })),
+      payload: { destIds: mover.destIds, title: mover.title },
+    });
+    return true;
+  }
+
+  const elementDests = ELEMENT_MOVES[card.id];
+  if (elementDests) {
+    const ready = elementDests.filter((id) => landscapeReady(state, id));
+    if (!psycheSpendCards(player).length) {
+      addLog(state, `Discard 1 Psyche to activate ${card.name}.`);
+      return false;
+    }
+    if (!ready.length) {
+      addLog(state, `${card.name}: destination is not revealed.`);
+      return false;
+    }
+    return askDiscardPsyche(state, player, {
+      cardId: card.id,
+      title: card.name,
+      payload: {
+        destIds: elementDests,
+        title: card.name,
+        nextCardId: card.id,
+        nextStep: "after-element-discard",
+      },
+    });
+  }
+
+  if (card.id === "mobius-crystal") {
+    const edges = edgeLandscapes(state).filter((t) => t.revealed && !t.wasteland);
+    const sources = edges.filter((t) => t.encounter);
+    const dests = edges.filter((t) => !t.encounter);
+    if (!psycheSpendCards(player).length) {
+      addLog(state, "Discard 1 Psyche to activate Mobius Crystal.");
+      return false;
+    }
+    if (!sources.length) {
+      addLog(state, "Mobius Crystal: no edge Dreambeast.");
+      return false;
+    }
+    if (!dests.length) {
+      addLog(state, "Mobius Crystal: no open edge Landscape.");
+      return false;
+    }
+    return askDiscardPsyche(state, player, {
+      cardId: "mobius-crystal",
+      title: "Mobius Crystal",
+      payload: {
+        destIds: edges.map((t) => t.id),
+        title: "Mobius Crystal",
+        nextCardId: "mobius-crystal",
+        nextStep: "after-mobius-discard",
+      },
+    });
+  }
+
+  if (card.id === "skeleton-key") {
+    state.skeletonKeyPending = true;
+    addLog(state, "Skeleton Key armed: after the next Dream, choose a Mindstream to flip.");
+    return true;
+  }
+
+  if (card.id === "monkey-paw") {
+    if (!card.powerSlots) card.powerSlots = 0;
+    if (card.powerSlots >= 3) {
+      addLog(state, "Monkey Paw is already full.");
+      return false;
+    }
+    return { spendExtra: false, monkeyPaw: true };
+  }
+
+  return false;
+}
+
+export function finishMonkeyPaw(state, player, card) {
+  card.powerSlots = (card.powerSlots || 0) + 1;
+  addLog(state, `Monkey Paw: ${card.powerSlots}/3 Power placed.`);
+  if (card.powerSlots >= 3) {
+    requestReturnCards(state, 3, player);
+    card.powerSlots = 0;
+    player.persistent = player.persistent.filter((o) => o.instanceId !== card.instanceId);
+    repressCard(state, card);
+    addLog(state, "Monkey Paw is full: Return 3 cards, then it is Repressed.");
+  }
+}
+
+export function applySkeletonKeyAfterDream(state, player = null) {
+  if (!state.skeletonKeyPending) return;
+  state.skeletonKeyPending = false;
+  const actor = player || state.players.find((p) => p.persistent?.some((o) => o.id === "skeleton-key")) || alive(state)[0];
+  if (!actor) return;
+  const suits = ["lucidity", "elasticity", "willpower"];
+  offerChoice(state, actor, {
+    cardId: "skeleton-key",
+    step: "pick-suit",
+    title: "Skeleton Key",
+    message: "Flip the top card of which Mindstream?",
+    choices: suits.map((suit) => ({
+      id: suit,
+      label: `${SUIT_LABELS[suit]} Mindstream`,
+      disabled: !state.mindstreamDecks[suit]?.length,
+    })),
+  });
+}
+
+export function revealWithAllSeeingEye(state) {
+  const hidden = state.board.filter((l) => !l.revealed && !l.center);
+  const count = Math.min(hidden.length, dreamerCount(state) + 1);
+  if (!count) {
+    addLog(state, "The All Seeing Eye: no Landscapes left to reveal.");
+    return;
+  }
+  beginFreeRevealPicking(state, count);
+}

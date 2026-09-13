@@ -86,6 +86,8 @@ function playerAt(state, token) {
 function clearPickers(state) {
   state.pendingRepress = null;
   state.pendingReturn = null;
+  state.pendingObjectChoice = null;
+  state.pendingObjectFollowup = null;
   state.resolutionQueue = [];
   state.landscapePick = null;
   state.tradeMode = false;
@@ -359,6 +361,7 @@ const COMMANDS = {
       state.phaseIndex = 2;
       state.meetActionBudget = n;
       state.meetActionsUsed = 0;
+      state.usedMeetActionsByPlayer = {};
       state.lastMeetActionByPlayer = {};
       return ok(`Meet phase · budget ${n}.`);
     },

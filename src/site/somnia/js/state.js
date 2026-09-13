@@ -130,6 +130,7 @@ export function createInitialState(data, options) {
     exploreActivated: false,
     meetActionBudget: 0,
     meetActionsUsed: 0,
+    usedMeetActionsByPlayer: {},
     lastMeetActionByPlayer: {},
     pendingPowerBonus: 0,
     pendingPowerBonusTokens: 0,
@@ -174,6 +175,8 @@ export function createInitialState(data, options) {
     cancellableMove: null,
     pendingDeathChoice: null,
     pendingNothingChoice: null,
+    pendingObjectChoice: null,
+    pendingObjectFollowup: null,
     revealedDeckTops: {},
   };
 
@@ -343,6 +346,7 @@ export function resetPhaseFlags(state) {
   state.exploreActivated = false;
   state.meetActionBudget = 0;
   state.meetActionsUsed = 0;
+  state.usedMeetActionsByPlayer = {};
   state.lastMeetActionByPlayer = {};
   state.pendingPowerBonus = 0;
   state.pendingPowerBonusTokens = 0;

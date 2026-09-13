@@ -1,17 +1,16 @@
-import {
-  addLog,
-  landscapeById,
-  revealLandscapeTile,
-  setEncounterOnLandscape,
-} from "./state.js";
-import { shuffle } from "./data.js";
+import { addLog } from "./state.js";
 import { recordQuestEvent } from "./quests.js";
-import { repressCard, requestReturnCards } from "./subconscious.js";
-import { edgeLandscapes } from "./hex.js";
-import { checkObjectTagSet } from "./object-effects.js";
+import { repressCard } from "./subconscious.js";
+import {
+  checkObjectTagSet,
+  activatePersistentObjectEffect,
+  finishMonkeyPaw,
+  applySkeletonKeyAfterDream as applySkeletonKeyChoice,
+  revealWithAllSeeingEye,
+} from "./object-effects.js";
 import { psycheHandCount, psycheCardValue } from "./psyche.js";
 import { pullObjectFromMindstream, objectForPlayer, discardToMindstream } from "./mindstream-supply.js";
-import { spendPowerTokens } from "./power-tokens.js";
+import { spendPowerTokens, grantPowerTokens } from "./power-tokens.js";
 import { queueObjectDrawFx } from "./board-fx.js";
 
 export function isNothingCard(card) {
@@ -136,11 +135,9 @@ function resolveMustPlayObject(state, player, card, helpers) {
     return;
   }
   if (card.id === "the-all-seeing-eye") {
-    const hidden = state.board.filter((l) => !l.revealed && !l.center);
-    const count = state.players.filter((p) => p.alive).length + 1;
-    hidden.slice(0, count).forEach((t) => revealLandscapeTile(state, t));
+    revealWithAllSeeingEye(state);
     repressCard(state, card);
-    addLog(state, "The All Seeing Eye reveals Landscapes, then is Repressed.");
+    addLog(state, "The All Seeing Eye: choose Landscapes to reveal, then it is Repressed.");
     return;
   }
   if (helpers?.resolveCardEffect) {
@@ -185,99 +182,19 @@ export function playObjectCard(state, player, card, helpers, options = {}) {
       return null;
     }
     addLog(state, `${player.name} activates ${card.name}.`);
-    activatePersistentObject(state, player, card);
+    const result = activatePersistentObjectEffect(state, player, card);
+    if (result === false) {
+      if (options.usePower) {
+        grantPowerTokens(state, player, 1, { reason: `${card.name} did nothing.`, logQuest: false, animate: false });
+      }
+      return null;
+    }
+    if (result?.monkeyPaw) finishMonkeyPaw(state, player, card);
     return card;
   }
 
   addLog(state, "Object not found.");
   return null;
-}
-
-function activatePersistentObject(state, player, card) {
-  const dreambeastMovers = {
-    "row-boat": ["lava", "endless-ocean", "sea-of-teeth"],
-    rope: ["endless-hallway", "the-attic", "the-basement"],
-    hourglass: ["day-in-the-life", "insanity", "naked-classroom"],
-    "conch-shell": ["field-of-broken-glass", "desert", "black-void"],
-  };
-
-  if (dreambeastMovers[card.id]) {
-    const source = state.board.find((t) => t.encounter);
-    const dest = dreambeastMovers[card.id].find((id) => landscapeById(state, id)?.revealed);
-    if (source && dest) {
-      const enc = source.encounter;
-      setEncounterOnLandscape(state, dest, enc);
-      source.encounter = null;
-      addLog(state, `Moved ${enc.name} to ${landscapeById(state, dest).name}.`);
-    }
-    return;
-  }
-
-  const elementMoves = {
-    water: ["endless-ocean", "sea-of-teeth"],
-    air: ["sky", "silver-mist"],
-    earth: ["forest", "candy-mountain"],
-    fire: ["lava", "desert"],
-  };
-
-  if (elementMoves[card.id]) {
-    if (!player.hand.length) {
-      addLog(state, `Discard 1 Psyche to activate ${card.name}.`);
-      return;
-    }
-    state.psycheDiscard.push(player.hand.pop());
-    recordQuestEvent(state, "discard_psyche", { count: 1 });
-    const dest = elementMoves[card.id].find((id) => landscapeById(state, id)?.revealed);
-    if (dest) {
-      player.landscapeId = dest;
-      addLog(state, `${player.name} moves to ${landscapeById(state, dest).name}.`);
-    }
-    return;
-  }
-
-  if (card.id === "mobius-crystal") {
-    const edges = edgeLandscapes(state).filter((t) => t.encounter);
-    if (edges.length >= 2 && player.hand.length) {
-      player.hand.pop();
-      const from = edges[0];
-      const to = edges[1];
-      const enc = from.encounter;
-      if (enc) {
-        setEncounterOnLandscape(state, to.id, enc);
-        from.encounter = null;
-        addLog(state, `Moved ${enc.name} to ${to.name}.`);
-      }
-    }
-    return;
-  }
-
-  if (card.id === "skeleton-key") {
-    state.skeletonKeyPending = true;
-    addLog(state, "Skeleton Key armed: will flip a Mindstream deck after the next Dream.");
-    return;
-  }
-
-  if (card.id === "monkey-paw") {
-    if (!card.powerSlots) card.powerSlots = 0;
-    if (player.powerTokens > 0 && card.powerSlots < 3) {
-      spendPowerTokens(state, player, 1);
-      card.powerSlots += 1;
-      addLog(state, `Monkey Paw: ${card.powerSlots}/3 Power placed.`);
-      if (card.powerSlots >= 3) {
-        requestReturnCards(state, 3, player);
-        card.powerSlots = 0;
-        repressCard(state, card);
-        player.persistent = player.persistent.filter((o) => o.instanceId !== card.instanceId);
-      }
-    }
-    return;
-  }
-
-  const text = (card.text || "").toLowerCase();
-  if (text.includes("return") && text.includes("card")) {
-    const m = text.match(/return (\d+)/);
-    requestReturnCards(state, m ? parseInt(m[1], 10) : 1, player);
-  }
 }
 
 export function drawObjects(state, player, count, helpers) {
@@ -294,15 +211,6 @@ export function drawObjects(state, player, count, helpers) {
   return drawn;
 }
 
-export function applySkeletonKeyAfterDream(state) {
-  if (!state.skeletonKeyPending) return;
-  state.skeletonKeyPending = false;
-  const suits = ["lucidity", "elasticity", "willpower"];
-  const suit = suits.find((s) => state.mindstreamDecks[s]?.length > 1);
-  if (suit) {
-    const deck = state.mindstreamDecks[suit];
-    const top = deck.shift();
-    deck.push(top);
-    addLog(state, `Skeleton Key flips ${suit} Mindstream.`);
-  }
+export function applySkeletonKeyAfterDream(state, player) {
+  applySkeletonKeyChoice(state, player);
 }

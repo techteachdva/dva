@@ -108,6 +108,20 @@ export function getCurrentObjective(state) {
     };
   }
 
+  if (state.pendingObjectChoice) {
+    const pending = state.pendingObjectChoice;
+    return {
+      phase: getPhase(state),
+      suit: "lucidity",
+      title: pending.title || "Choose an Object effect",
+      steps: [
+        pending.message || "This Object asks you to pick one effect.",
+        ...(pending.choices || []).map((choice) => `**${choice.label}**${choice.hint ? `: ${choice.hint}` : ""}`),
+      ],
+      tip: "The popup stays until you pick an effect.",
+    };
+  }
+
   if (state.pendingDeathChoice) {
     const player = state.players.find((p) => p.id === state.pendingDeathChoice.playerId);
     const cost = state.pendingDeathChoice.cost;
@@ -299,7 +313,7 @@ export function getCurrentObjective(state) {
       suit: "willpower",
       title: state.activeEncounter ? "Meet the Encounter" : "Spend Meet actions",
       steps: lines,
-      tip: "A Dreamer cannot repeat the same action twice in a row — switch Dreamers or use a different action.",
+      tip: "Each Dreamer can take each Meet action only once this phase. Another Dreamer may take the same action.",
     };
   }
 
@@ -515,7 +529,7 @@ export function rulesRemHtml() {
           <p><strong>One Dreamer</strong> spends 1–2 Willpower cards to gain <strong>shared Meet actions</strong> for the team.</p>
           <ul>
             <li><strong>Action budget</strong> = card values + Willpower stat → spend on Encounters, Landscapes, Trade, or End Round</li>
-            <li><strong>Cannot repeat</strong> the same action twice in a row for the same Dreamer — another Dreamer may take the same action</li>
+            <li><strong>Once per action</strong> for each Dreamer this Meet. Another Dreamer may take the same action. Power Tokens, 1–2 Psyche to open a phase, and 1–3 Psyche on a Play Spread can still stack</li>
             <li>Each Landscape offers <strong>Action A</strong> (Draw matching Mindstream) and <strong>Action B</strong> (its unique action from the rulebook)</li>
             <li><strong>Objects</strong> are free during Meet; Persistent Objects cost 1 Power Token to activate</li>
             <li>At Meet end, unresolved Encounters <strong>fail</strong> — Dreamers on those tiles lose Psyche to the Subconscious</li>
