@@ -6,15 +6,13 @@ import {
   revealLandscapeTile,
   beginFinalRecurrence,
   landscapeById,
-  setEncounterOnLandscape,
-  acquireArchetype,
 } from "./state.js";
 import { forgetEdgeLandscapes, triggerBedFinalRecurrence } from "./landscapes.js";
 import { recordQuestEvent } from "./quests.js";
 import { grantPowerTokens, spendPowerTokensCollectively } from "./power-tokens.js";
 import { countBoardDreambeasts } from "./phase-skip.js";
 import { opposingSuit } from "./rules.js";
-import { adjacentTiles, hexDistance, edgeLandscapes } from "./hex.js";
+import { adjacentTiles, hexDistance } from "./hex.js";
 import {
   repressCard,
   requestReturnCards,
@@ -22,10 +20,25 @@ import {
   enqueueRepressObjects,
   enqueueRepressFromHand,
 } from "./subconscious.js";
-import { discardToMindstream } from "./mindstream-supply.js";
 import { MINDSTREAM_EFFECTS } from "./mindstream.js";
 import { markDreamFeedNudge } from "./fx.js";
 import { OBJECT_EFFECTS, rememberObjectHelpers } from "./object-effects.js";
+import {
+  rememberDreamHelpers,
+  beginMortalityChoices,
+  beginBargainingChoices,
+  beginTemptationChoices,
+  beginResponsibilityChoices,
+  beginMisplacedChoices,
+  beginCircadiaChoices,
+  beginPinealPurgeChoices,
+  beginSomnambulanceChoices,
+  beginAbandonmentMoves,
+  beginChaseEscapeChoices,
+  beginJudgementChoice,
+  beginPowerlessnessChoices,
+} from "./dream-choices.js";
+import { eventLandscapeIds } from "./event-landscapes.js";
 import { uid } from "./data.js";
 
 function alivePlayers(state) {
@@ -61,15 +74,6 @@ export function repressFromHand(state, player, count, { reason = "" } = {}) {
 
 function dreamerCount(state) {
   return alivePlayers(state).length;
-}
-
-function dominantSuit(player) {
-  const stats = {
-    lucidity: playerStat(player, "lucidity"),
-    elasticity: playerStat(player, "elasticity"),
-    willpower: playerStat(player, "willpower"),
-  };
-  return Object.entries(stats).sort((a, b) => b[1] - a[1])[0][0];
 }
 
 function cornerTiles(state) {
@@ -111,26 +115,6 @@ function moveEncounterAwayFromBed(state, fromTileId, steps = 2) {
   });
   addLog(state, `${encounter.name} abducted to ${to.name}.`);
   return carried;
-}
-
-function drawPsycheFromDiscard(state, player, count) {
-  let drawn = 0;
-  for (let i = 0; i < count && state.psycheDiscard.length; i += 1) {
-    player.hand.push(state.psycheDiscard.pop());
-    drawn += 1;
-  }
-  if (drawn) recordQuestEvent(state, "draw_psyche", { count: drawn });
-  return drawn;
-}
-
-function movePlayerOneLandscape(state, player) {
-  const adj = adjacentTiles(state, player.landscapeId).filter((t) => t.revealed);
-  if (!adj.length) return false;
-  const dest = adj[0];
-  player.landscapeId = dest.id;
-  addLog(state, `${player.name} moves to ${dest.name}.`);
-  recordQuestEvent(state, "move_player", { count: 1 });
-  return true;
 }
 
 /** Clear per-round dream flags at the start of a new round. */
@@ -257,15 +241,8 @@ const DREAM_EFFECTS = {
     });
   },
   chase: (state, _player, helpers) => {
-    state.chaseTrapped = [];
-    alivePlayers(state).forEach((p) => {
-      helpers.spawnEncounter(state, p.landscapeId);
-      if (playerStat(p, "elasticity") <= playerStat(p, "willpower")) {
-        state.chaseTrapped.push(p.id);
-      }
-    });
-    state.chaseDream = true;
-    addLog(state, "Chase: Dreamers who cannot outrun must Meet this round.");
+    rememberDreamHelpers(helpers);
+    beginChaseEscapeChoices(state, helpers);
   },
   recovery: (state) => {
     const players = alivePlayers(state);
@@ -293,36 +270,8 @@ const DREAM_EFFECTS = {
     addLog(state, "Next Explore: each Dreamer may move anywhere for free.");
   },
   judgement: (state, _player, helpers) => {
-    const targets = ["sea-of-teeth", "endless-ocean"];
-    const spawnTile = targets
-      .map((id) => landscapeById(state, id))
-      .find((t) => t?.revealed)
-      || state.board.find((t) => t.revealed && !t.center);
-    if (!spawnTile) return;
-
-    const leviathan = {
-      id: "leviathan",
-      name: "Leviathan",
-      type: "dreambeast",
-      boss: true,
-      suit: "willpower",
-      accept: 12,
-      repress: 10,
-      instanceId: uid("enc"),
-    };
-    setEncounterOnLandscape(state, spawnTile.id, leviathan);
-
-    const occupied = state.board
-      .filter((t) => t.revealed && alivePlayers(state).some((p) => p.landscapeId === t.id))
-      .sort((a, b) => hexDistance(a, spawnTile) - hexDistance(b, spawnTile))[0];
-
-    if (occupied && occupied.id !== spawnTile.id) {
-      spawnTile.encounter = null;
-      setEncounterOnLandscape(state, occupied.id, leviathan);
-      addLog(state, `Judgement awakens Leviathan on ${occupied.name}!`);
-    } else {
-      addLog(state, `Judgement awakens Leviathan on ${spawnTile.name}!`);
-    }
+    rememberDreamHelpers(helpers);
+    beginJudgementChoice(state, helpers);
   },
   misunderstanding: (state) => {
     let left = dreamerCount(state) + 3;
@@ -336,18 +285,8 @@ const DREAM_EFFECTS = {
     addLog(state, "Misunderstanding: Mindstream cards Repressed.");
   },
   mortality: (state) => {
-    alivePlayers(state).forEach((p) => {
-      if (p.hand.length >= 4) {
-        for (let i = 0; i < 4 && p.hand.length; i += 1) {
-          state.psycheDiscard.push(p.hand.pop());
-        }
-      } else {
-        const objs = [...(p.objects || [])].slice(0, 2);
-        p.objects = p.objects.filter((o) => !objs.includes(o));
-        objs.forEach((o) => discardToMindstream(state, o));
-      }
-    });
-    addLog(state, "Mortality: each Dreamer pays the cost.");
+    rememberDreamHelpers();
+    beginMortalityChoices(state);
   },
   abduction: (state) => {
     state.abductionCarried = [];
@@ -360,53 +299,39 @@ const DREAM_EFFECTS = {
     state.meetOnlyRound = true;
     addLog(state, "Abduction: carried Dreamers may only Meet this round.");
   },
-  absurdity: (state, player) => {
+  absurdity: (state) => {
     const drawCount = dreamerCount(state) + 1;
+    const events = [];
     ["lucidity", "elasticity", "willpower"].forEach((suit) => {
       const deck = state.mindstreamDecks[suit];
       for (let i = 0; i < drawCount && deck.length; i += 1) {
         const card = deck.shift();
-        if (card?.type === "event") forgetLandscapes(state, 1);
+        if (card?.type === "event") events.push(card);
         state.mindstreamDiscard[suit].push(card);
       }
     });
-    addLog(state, "Absurdity: Mindstream Events reshape the Dreamscape.");
+    events.forEach((event) => {
+      const ids = eventLandscapeIds(event);
+      ids.forEach((id) => {
+        const tile = landscapeById(state, id);
+        if (!tile?.revealed || tile.wasteland || tile.center || tile.id === "bed") return;
+        tile.revealed = false;
+        tile.wasteland = true;
+        tile.forgotten = true;
+        if (tile.encounter) {
+          repressCard(state, tile.encounter);
+          tile.encounter = null;
+        }
+        addLog(state, `Absurdity: ${event.name} forgets ${tile.name}.`);
+      });
+    });
+    addLog(state, `Absurdity: ${events.length} Event${events.length === 1 ? "" : "s"} reshape the Dreamscape.`);
   },
   bargaining: (state) => {
-    const arch = state.activeArchetype;
-    alivePlayers(state).forEach((p) => {
-      if (p.hand.length < 6) return;
-      const suit = dominantSuit(p);
-      if (!arch || arch.suit !== suit) return;
-      for (let i = 0; i < 6; i += 1) {
-        if (p.hand.length) state.psycheDiscard.push(p.hand.pop());
-      }
-      recordQuestEvent(state, "discard_psyche", { count: 6, landscapeId: p.landscapeId });
-      if (arch.questProgress?.every(Boolean)) {
-        acquireArchetype(state, p);
-        addLog(state, `${p.name} bargains for ${arch.name}.`);
-      } else {
-        addLog(state, `${p.name} discards 6 Psyche toward ${arch.name} (quests incomplete).`);
-      }
-    });
-    state.bargainingDream = true;
+    beginBargainingChoices(state);
   },
   responsibility: (state) => {
-    const n = dreamerCount(state);
-    alivePlayers(state).forEach((p) => {
-      const wpCards = p.hand.filter((c) => c.suit === "willpower");
-      const wpSum = wpCards.slice(0, n).reduce((s, c) => s + (c.value || 0), 0);
-      if (wpSum >= n) {
-        wpCards.slice(0, n).forEach((c) => {
-          p.hand = p.hand.filter((x) => x.instanceId !== c.instanceId);
-          state.psycheDiscard.push(c);
-        });
-      } else {
-        for (let i = 0; i < n && p.hand.length; i += 1) {
-          state.psycheDiscard.push(p.hand.pop());
-        }
-      }
-    });
+    beginResponsibilityChoices(state);
   },
   wanderlust: (state) => {
     state.wanderlustTarget = dreamerCount(state) * 3;
@@ -444,59 +369,38 @@ const DREAM_EFFECTS = {
     });
     addLog(state, "Lost: Landscapes adjacent to The Bed become Wasteland.");
   },
-  misplaced: (state, player) => {
-    const count = player.objects.length;
-    if (!count) return;
-    const wpCards = player.hand.filter((c) => c.suit === "willpower");
-    const toSave = Math.min(count, wpCards.length);
-    for (let i = 0; i < toSave; i += 1) {
-      const idx = player.hand.findIndex((c) => c.suit === "willpower");
-      if (idx < 0) break;
-      state.psycheDiscard.push(player.hand.splice(idx, 1)[0]);
-    }
-    const repressed = player.objects.splice(toSave);
-    repressed.forEach((o) => discardToMindstream(state, o));
-    if (repressed.length) {
-      addLog(state, `${player.name} Represses ${repressed.length} Object(s) (saved ${toSave}).`);
-    } else {
-      addLog(state, `${player.name} saves all Objects with Willpower Psyche.`);
-    }
+  misplaced: (state) => {
+    beginMisplacedChoices(state);
   },
   rivalry: (state, _player, helpers) => {
     const count = Math.max(1, Math.floor(dreamerCount(state) / 2));
     helpers.spawnEncounter(state, "bed");
-    state.rivalryLeftover = Math.max(0, count - 1);
+    const overflow = adjacentTiles(state, "bed").filter((t) => t.revealed && !t.encounter && !t.wasteland);
+    let placed = 1;
+    for (let i = 1; i < count && overflow.length; i += 1) {
+      const tile = overflow.shift();
+      helpers.spawnEncounter(state, tile.id);
+      placed += 1;
+    }
+    state.rivalryLeftover = Math.max(0, count - placed);
     state.rivalryEncountersOnBed = count;
-    addLog(state, `Rivalry: ${count} Encounter(s) on The Bed (${state.rivalryLeftover} leftover cost at end of Meet).`);
+    addLog(
+      state,
+      state.rivalryLeftover
+        ? `Rivalry: ${placed} Encounter(s) near The Bed; ${state.rivalryLeftover} leftover cost 1 Psyche each at end of Meet.`
+        : `Rivalry: ${placed} Encounter(s) placed on and beside The Bed.`,
+    );
   },
   temptation: (state) => {
-    alivePlayers(state).forEach((p) => {
-      const n = Math.min(3, p.objects.length);
-      for (let i = 0; i < n; i += 1) {
-        const obj = p.objects.pop();
-        if (obj) discardToMindstream(state, obj);
-      }
-      if (n) {
-        const drawn = drawPsycheForPlayer(state, p, n);
-        recordQuestEvent(state, "draw_psyche", { count: drawn.length });
-        addLog(state, `${p.name} discards ${n} Object(s) and Draws ${drawn.length} Psyche.`);
-      }
-    });
-    state.temptationDream = true;
+    beginTemptationChoices(state);
   },
   paradox: (state) => {
     state.paradoxMeet = true;
     addLog(state, "Paradox: Willpower and Elasticity costs swap next Meet Phase.");
   },
   powerlessness: (state, _player, helpers) => {
-    const edges = edgeLandscapes(state).filter(
-      (t) => t.revealed && !t.encounter && !alivePlayers(state).some((p) => p.landscapeId === t.id),
-    );
-    alivePlayers(state).forEach((p, i) => {
-      const tile = edges[i % edges.length];
-      if (tile) helpers.spawnEncounter(state, tile.id);
-    });
-    addLog(state, "Powerlessness: Encounters spawn on unoccupied edge Landscapes.");
+    rememberDreamHelpers(helpers);
+    beginPowerlessnessChoices(state, helpers);
   },
   loss: (state) => {
     let corners = cornerTiles(state).filter((t) => !t.wasteland);
@@ -530,23 +434,8 @@ const DREAM_EFFECTS = {
         t.encounter = null;
       }
     });
-    const grouped = {};
-    alivePlayers(state).forEach((p) => {
-      (grouped[p.landscapeId] ||= []).push(p);
-    });
-    Object.entries(grouped).forEach(([landId, players]) => {
-      if (players.length < 2) return;
-      players.forEach((p) => {
-        const empty = adjacentTiles(state, landId).find(
-          (t) => t.revealed && !alivePlayers(state).some((x) => x.landscapeId === t.id),
-        );
-        if (empty) {
-          p.landscapeId = empty.id;
-          addLog(state, `${p.name} abandons to ${empty.name}.`);
-        }
-      });
-    });
     addLog(state, "All Encounters abandoned to Subconscious.");
+    beginAbandonmentMoves(state);
   },
   delta: (state) => {
     forgetEdgeLandscapes(state, 4);
@@ -570,28 +459,17 @@ const DREAM_EFFECTS = {
     alivePlayers(state).forEach((p) => drawPsycheForPlayer(state, p, 1));
   },
   circadia: (state) => {
-    alivePlayers(state).forEach((p) => {
-      const n = drawPsycheFromDiscard(state, p, 4);
-      if (n) addLog(state, `${p.name} draws ${n} Psyche from Discard.`);
-    });
+    beginCircadiaChoices(state);
   },
   somnambulance: (state) => {
-    alivePlayers(state).forEach((p) => movePlayerOneLandscape(state, p));
-    addLog(state, "Somnambulance: each Dreamer moves 1 Landscape.");
+    beginSomnambulanceChoices(state);
   },
-  homeostasis: (state, player) => {
-    const n = drawPsycheForPlayer(state, player, 5);
-    recordQuestEvent(state, "draw_psyche", { count: n.length });
-    addLog(state, `${player.name} Draws 5 Psyche (Homeostasis).`);
+  homeostasis: (state) => {
+    allDrawPsyche(state, 5);
+    addLog(state, "Homeostasis: all Dreamers Draw 5 Psyche.");
   },
-  "pineal-purge": (state, player) => {
-    let n = 0;
-    for (let i = 0; i < 3 && player.hand.length; i += 1) {
-      state.psycheDiscard.push(player.hand.pop());
-      n += 1;
-    }
-    recordQuestEvent(state, "discard_psyche", { count: n, landscapeId: player.landscapeId });
-    addLog(state, `${player.name} discards ${n} Psyche (Pineal Purge).`);
+  "pineal-purge": (state) => {
+    beginPinealPurgeChoices(state);
   },
   "final-recurrence": (state) => {
     triggerBedFinalRecurrence(state, "The Final Recurrence is drawn — The Bed flips.");
@@ -691,11 +569,8 @@ export function resolveCardEffect(state, card, player, helpers) {
     return;
   }
 
-  if (card.type === "dream" && DREAM_EFFECTS[id]) {
-    DREAM_EFFECTS[id](state, player, helpers);
-    return;
-  }
-  if (card.type === "final" && DREAM_EFFECTS[id]) {
+  if ((card.type === "dream" || card.type === "final") && DREAM_EFFECTS[id]) {
+    rememberDreamHelpers(helpers);
     DREAM_EFFECTS[id](state, player, helpers);
     return;
   }

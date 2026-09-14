@@ -47,17 +47,25 @@ export function pullObjectFromMindstream(state, options = {}) {
   return pullFromMindstreamByType(state, "object", options);
 }
 
-export function pullTwoDreambeastsForChoice(state, { suit = null } = {}) {
+export function drawTwoDreambeasts(state, { suit = null } = {}) {
   const first = pullDreambeastFromMindstream(state, { suit });
   if (!first) return null;
   const second = pullDreambeastFromMindstream(state, { suit: first.suit });
-  if (!second) {
-    return { pick: first.card, alt: null, suit: first.suit };
+  return { first, second };
+}
+
+export function pullTwoDreambeastsForChoice(state, { suit = null, autoPick = true } = {}) {
+  const pair = drawTwoDreambeasts(state, { suit });
+  if (!pair) return null;
+  if (!pair.second) {
+    return { pick: pair.first.card, alt: null, suit: pair.first.suit };
   }
-  const pick = (second.card.accept || 0) > (first.card.accept || 0) ? second : first;
-  const alt = pick === second ? first : second;
-  const returnCard = alt === first ? first : second;
-  state.mindstreamDecks[returnCard.suit].push(returnCard.card);
+  if (!autoPick) {
+    return { first: pair.first, second: pair.second, pick: pair.first.card, alt: pair.second.card, suit: pair.first.suit };
+  }
+  const pick = (pair.second.card.accept || 0) > (pair.first.card.accept || 0) ? pair.second : pair.first;
+  const alt = pick === pair.second ? pair.first : pair.second;
+  state.mindstreamDecks[alt.suit].push(alt.card);
   return { pick: pick.card, alt: alt.card, suit: pick.suit };
 }
 

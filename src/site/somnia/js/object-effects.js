@@ -14,12 +14,14 @@ import {
   pullFromMindstreamByType,
   encounterFromDreambeastCard,
 } from "./mindstream-supply.js";
-import { encounterRejectCost, applyRejectReward } from "./dreambeasts.js";
-import { applyBossAcceptEffect } from "./bosses.js";
+import { encounterRejectCost, applyRejectReward, applyAcceptEffect } from "./dreambeasts.js";
 import { canAddAllyToHand, allyHandLimitForPlayer, psycheCardValue } from "./psyche.js";
 import { requestChooseTile, beginFreeRevealPicking } from "./landscapes.js";
 import { edgeLandscapes } from "./hex.js";
 import { SUIT_LABELS } from "./rules.js";
+import { resumeLandscapeAction } from "./landscape-actions.js";
+import { resumeArchetypeFollowup, continueArchetypeQueues } from "./archetypes.js";
+import { continueDeferredEventQueues } from "./event-choices.js";
 
 let lastHelpers = null;
 
@@ -260,8 +262,8 @@ function finishToothSaber(state, player, helpers, { landscapeId, mode, cardIds }
       state.psycheDiscard = state.psycheDiscard.filter((c) => !selected.includes(c));
       return;
     }
-    addLog(state, `${player.name} Accepts ${enc.name}.`);
-    applyBossAcceptEffect(state, enc, player);
+    addLog(state, `${player.name} Accepts ${enc.name}. ${enc.effect || ""}`);
+    applyAcceptEffect(state, enc, player, helpers);
     player.hand.push(dreambeastToHandCard(enc));
     tile.encounter = null;
     if (state.activeEncounterLandscapeId === landscapeId) {
@@ -421,6 +423,30 @@ function continueFlow(state, follow, helpers) {
 export function resumeObjectEffect(state, helpers = null) {
   const follow = state.pendingObjectFollowup;
   if (!follow) return false;
+  if (follow.landscapeAction) {
+    const ok = resumeLandscapeAction(state, helpers);
+    continueDeferredEventQueues(state);
+    continueArchetypeQueues(state);
+    return ok;
+  }
+  if (follow.archetypeFollowup) {
+    const ok = resumeArchetypeFollowup(state, helpers);
+    continueDeferredEventQueues(state);
+    continueArchetypeQueues(state);
+    return ok;
+  }
+  if (follow.cardId === "silver-accept") {
+    state.pendingObjectFollowup = null;
+    const player = playerById(state, follow.playerId);
+    const tile = landscapeById(state, follow.lastTileId);
+    if (player && tile?.encounter) {
+      applyAcceptEffect(state, tile.encounter, player, helpers);
+      player.hand.push(dreambeastToHandCard(tile.encounter));
+      addLog(state, `Silver: ${player.name} Accepts ${tile.encounter.name}.`);
+      tile.encounter = null;
+    }
+    return true;
+  }
   const h = useHelpers(helpers);
   state.pendingObjectFollowup = null;
   continueFlow(state, follow, h);
@@ -491,7 +517,6 @@ export function resolveObjectChoice(state, choiceId, helpers = null) {
     if (cardId === "crystal-bell" || cardId === "the-all") {
       addLog(state, `Replay Dream: ${card.name}.`);
       helpers?.resolveCardEffect?.(state, card, player, helpers);
-      if (cardId === "the-all") returnN(state, dreamerCount(state) + 8, player);
       return true;
     }
     if (cardId === "marble-grid" && step === "repress-psyche") {
@@ -703,7 +728,12 @@ export function resolveObjectChoice(state, choiceId, helpers = null) {
 export function checkObjectTagSet(state, player, tag, { extra = 0 } = {}) {
   if (!player.persistent) player.persistent = [];
   const tagged = player.persistent.filter((o) => o.tags?.some((t) => t.startsWith(tag)));
-  if (tagged.length + extra < setRequiredForTag(tag)) return;
+  const wild = (player.setWildcards || []).filter((t) => t === tag).length;
+  if (tagged.length + extra + wild < setRequiredForTag(tag)) return;
+  if (wild) {
+    const idx = player.setWildcards.indexOf(tag);
+    if (idx >= 0) player.setWildcards.splice(idx, 1);
+  }
 
   if (tag === "chess") {
     returnN(state, dreamerCount(state) + 2, player);
@@ -966,10 +996,10 @@ export const OBJECT_EFFECTS = {
   },
 
   "the-all": (state, player, helpers) => {
+    returnN(state, dreamerCount(state) + 8, player);
     const pile = [...(state.dreamDiscard || [])];
     if (!pile.length) {
-      addLog(state, "No Dreams in the discard pile.");
-      returnN(state, dreamerCount(state) + 8);
+      addLog(state, "The All: Return Dreamers+8. No Dreams in the discard pile to replay.");
       return;
     }
     offerChoice(state, player, {
@@ -1166,13 +1196,15 @@ export function activatePersistentObjectEffect(state, player, card) {
 
 export function finishMonkeyPaw(state, player, card) {
   card.powerSlots = (card.powerSlots || 0) + 1;
-  addLog(state, `Monkey Paw: ${card.powerSlots}/3 Power placed.`);
+  requestReturnCards(state, 3, player);
+  addLog(state, `Monkey Paw: ${card.powerSlots}/3 Power placed. Return 3 cards.`);
   if (card.powerSlots >= 3) {
-    requestReturnCards(state, 3, player);
+    const refund = card.powerSlots;
     card.powerSlots = 0;
+    grantPowerTokens(state, player, refund, { reason: "Monkey Paw returns its Power Tokens.", logQuest: false });
     player.persistent = player.persistent.filter((o) => o.instanceId !== card.instanceId);
     repressCard(state, card);
-    addLog(state, "Monkey Paw is full: Return 3 cards, then it is Repressed.");
+    addLog(state, "Monkey Paw is full: it is Repressed and its Power Tokens return.");
   }
 }
 

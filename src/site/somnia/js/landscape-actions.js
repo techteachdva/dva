@@ -23,6 +23,8 @@ import {
 } from "./mindstream-supply.js";
 import { recordQuestEvent } from "./quests.js";
 import { shuffle } from "./data.js";
+import { offerEffectChoice, registerEffectResolver } from "./effect-choices.js";
+import { recordCancellableMove } from "./dreamer-powers.js";
 
 export const LANDSCAPE_ACTION_DEFS = {
   "draw-mindstream": {
@@ -139,7 +141,9 @@ function stepTowardBed(state, player) {
   const dest = adj[0];
   if (hexDistance(dest, bed) >= hexDistance(current, bed)) return false;
 
+  const fromId = player.landscapeId;
   player.landscapeId = dest.id;
+  recordCancellableMove(state, player, fromId, dest.id);
   addLog(state, `${player.name} moves toward The Bed (${dest.name}).`);
   recordQuestEvent(state, "move_player", { count: 1 });
   return true;
@@ -349,6 +353,446 @@ function drawTwoKeepOne(state, player, helpers) {
   return keep;
 }
 
+function playerById(state, id) {
+  return state.players.find((p) => p.id === id) || null;
+}
+
+function rememberLandscapeHelpers(helpers) {
+  if (helpers) stateLandscapeHelpers = helpers;
+  return stateLandscapeHelpers;
+}
+
+let stateLandscapeHelpers = null;
+
+function beginSwapPsyche(state, player) {
+  const players = alivePlayers(state).filter((p) => p.hand.length >= 1);
+  if (players.length < 2) {
+    addLog(state, "Need 2 Dreamers with Psyche to swap.");
+    return { ok: false };
+  }
+  if (state.tutorialMode) {
+    const [a, b] = shuffle(players).slice(0, 2);
+    const cardA = a.hand.pop();
+    const cardB = b.hand.pop();
+    a.hand.push(cardB);
+    b.hand.push(cardA);
+    addLog(state, `Swapped Psyche between ${a.name} and ${b.name}.`);
+    return { ok: true };
+  }
+  offerEffectChoice(state, player, {
+    cardId: "landscape-action",
+    title: "Swap 2 Psyche",
+    message: "Choose the first Dreamer.",
+    choices: players.map((p) => ({ id: p.id, label: p.name })),
+    payload: { actionId: "swap-psyche", step: "pick-a" },
+  });
+  return { ok: true, pending: true };
+}
+
+function beginMoveTwoDreamers(state, player) {
+  const movers = alivePlayers(state);
+  if (!movers.length) return { ok: false };
+  if (state.tutorialMode) {
+    shuffle(movers).slice(0, 2).forEach((p) => {
+      const current = landscapeById(state, p.landscapeId);
+      const adj = adjacentTiles(state, current.id).filter((t) => t.revealed);
+      if (!adj.length) return;
+      const dest = adj[Math.floor(Math.random() * adj.length)];
+      const fromId = p.landscapeId;
+      p.landscapeId = dest.id;
+      recordCancellableMove(state, p, fromId, dest.id);
+      addLog(state, `${p.name} moves to ${dest.name}.`);
+      recordQuestEvent(state, "move_player", { count: 1 });
+    });
+    return { ok: true };
+  }
+  offerEffectChoice(state, player, {
+    cardId: "landscape-action",
+    title: "Move 2 Dreamers",
+    message: "Choose the first Dreamer to move.",
+    choices: movers.map((p) => ({ id: p.id, label: `${p.name} (${landscapeById(state, p.landscapeId)?.name || "map"})` })),
+    payload: { actionId: "move-2-dreamers-1", remaining: 2, moved: [] },
+  });
+  return { ok: true, pending: true };
+}
+
+function continueMoveDreamer(state, playerId, remaining, moved) {
+  const mover = playerById(state, playerId);
+  const current = landscapeById(state, mover?.landscapeId);
+  const adj = current ? adjacentTiles(state, current.id).filter((t) => t.revealed) : [];
+  if (!mover || !adj.length) {
+    addLog(state, `${mover?.name || "That Dreamer"} has no adjacent Landscape.`);
+    presentNextDreamerMove(state, remaining, moved);
+    return;
+  }
+  requestChooseTile(state, {
+    allowedIds: adj.map((t) => t.id),
+    action: "movePlayer",
+    playerId: mover.id,
+    title: `Move ${mover.name}`,
+    detail: "Choose an adjacent revealed Landscape.",
+    followup: { landscapeAction: "move-2-dreamers-1", remaining, moved: [...moved, mover.id] },
+  });
+}
+
+function presentNextDreamerMove(state, remaining, moved) {
+  const left = Math.max(0, remaining - 1);
+  if (left <= 0) return;
+  const actor = alivePlayers(state)[0];
+  const choices = alivePlayers(state)
+    .filter((p) => !moved.includes(p.id))
+    .map((p) => ({ id: p.id, label: `${p.name} (${landscapeById(state, p.landscapeId)?.name || "map"})` }));
+  if (!choices.length || !actor) return;
+  offerEffectChoice(state, actor, {
+    cardId: "landscape-action",
+    title: "Move 2 Dreamers",
+    message: "Choose another Dreamer to move.",
+    choices,
+    payload: { actionId: "move-2-dreamers-1", remaining: left, moved },
+  });
+}
+
+function beginSwapLandscapes(state, player) {
+  const swapables = state.board.filter((t) => t.revealed && !t.center);
+  if (swapables.length < 2) {
+    addLog(state, "Not enough Landscapes to swap.");
+    return { ok: false };
+  }
+  if (state.tutorialMode) {
+    const [a, b] = shuffle(swapables).slice(0, 2);
+    swapTilePositions(a, b);
+    addLog(state, `Swapped positions of ${a.name} and ${b.name}.`);
+    return { ok: true };
+  }
+  requestChooseTile(state, {
+    allowedIds: swapables.map((t) => t.id),
+    action: "record",
+    remaining: 2,
+    title: "Swap Landscapes",
+    detail: "Choose 2 Landscapes to swap.",
+    followup: { landscapeAction: "swap-landscapes" },
+  });
+  return { ok: true, pending: true };
+}
+
+function beginMoveTwoDreambeasts(state) {
+  const withEnc = state.board.filter((t) => t.encounter);
+  if (!withEnc.length) {
+    addLog(state, "No Dreambeasts to move.");
+    return { ok: false };
+  }
+  if (state.tutorialMode) {
+    shuffle(withEnc).slice(0, 2).forEach((t) => moveEncounterOneStep(state, t));
+    return { ok: true };
+  }
+  offerBeastMove(state, withEnc, 2, []);
+  return { ok: true, pending: true };
+}
+
+function offerBeastMove(state, tiles, remaining, movedIds) {
+  const actor = alivePlayers(state)[0];
+  const choices = tiles
+    .filter((t) => !movedIds.includes(t.id))
+    .map((t) => ({ id: t.id, label: `${t.encounter.name} on ${t.name}` }));
+  if (!choices.length || remaining <= 0) return;
+  offerEffectChoice(state, actor, {
+    cardId: "landscape-action",
+    title: "Move Dreambeasts",
+    message: "Choose a Dreambeast to move 1 Landscape.",
+    choices,
+    payload: { actionId: "move-2-dreambeasts-1", remaining, movedIds },
+  });
+}
+
+function beginSwapDreambeasts(state) {
+  const withEnc = state.board.filter((t) => t.encounter);
+  if (withEnc.length < 2) {
+    addLog(state, "Need 2 active Dreambeasts to swap.");
+    return { ok: false };
+  }
+  if (state.tutorialMode) {
+    const [a, b] = shuffle(withEnc).slice(0, 2);
+    const encA = a.encounter;
+    const encB = b.encounter;
+    a.encounter = encB;
+    b.encounter = encA;
+    addLog(state, `Swapped ${encA.name} and ${encB.name}.`);
+    return { ok: true };
+  }
+  requestChooseTile(state, {
+    allowedIds: withEnc.map((t) => t.id),
+    action: "record",
+    remaining: 2,
+    title: "Swap Dreambeasts",
+    detail: "Choose 2 Dreambeasts to swap.",
+    followup: { landscapeAction: "swap-dreambeasts" },
+  });
+  return { ok: true, pending: true };
+}
+
+function beginDrawTwoKeepOne(state, player, helpers) {
+  rememberLandscapeHelpers(helpers);
+  const options = [];
+  if (state.psycheDeck.length >= 2) options.push({ id: "psyche", label: "Psyche deck" });
+  for (const suit of ["lucidity", "elasticity", "willpower"]) {
+    reshuffleMindstreamDiscardIfNeeded(state, suit);
+    if (state.mindstreamDecks[suit].length >= 2) {
+      options.push({ id: `mindstream-${suit}`, label: `${SUIT_LABELS[suit]} Mindstream` });
+    }
+  }
+  if (state.dreamDeck.length >= 2) options.push({ id: "dream", label: "Dream deck" });
+  if (!options.length) {
+    addLog(state, "No deck has 2 cards to draw from.");
+    return { ok: false };
+  }
+  if (state.tutorialMode) {
+    drawTwoKeepOne(state, player, helpers);
+    return { ok: true };
+  }
+  offerEffectChoice(state, player, {
+    cardId: "landscape-action",
+    title: "Draw 2, Keep 1",
+    message: "Choose a deck.",
+    choices: options,
+    payload: { actionId: "draw-2-keep-1", step: "pick-deck" },
+  });
+  return { ok: true, pending: true };
+}
+
+function beginCyclePsyche(state, player, tile) {
+  if (!player.hand.length) {
+    addLog(state, "No Psyche to cycle.");
+    return { ok: false };
+  }
+  if (state.tutorialMode) {
+    const card = player.hand.reduce((best, c) => ((c.value || 0) > (best.value || 0) ? c : best), player.hand[0]);
+    const idx = player.hand.findIndex((c) => c.instanceId === card.instanceId);
+    if (idx >= 0) player.hand.splice(idx, 1);
+    state.psycheDiscard.push(card);
+    const drawn = drawPsycheForPlayer(state, player, card.value || 1);
+    addLog(state, `Cycled ${card.suit} ${card.value || 1} for ${drawn.length} Psyche.`);
+    recordQuestEvent(state, "draw_psyche", { count: drawn.length });
+    if (tile.id === "bed") recordQuestEvent(state, "psyche_cycle_bed");
+    return { ok: true };
+  }
+  offerEffectChoice(state, player, {
+    cardId: "landscape-action",
+    ui: "spend",
+    title: "Cycle Psyche",
+    message: `${player.name}: discard 1 Psyche, then draw that many.`,
+    cards: player.hand,
+    needCount: 1,
+    payload: { actionId: "cycle-psyche", tileId: tile.id },
+  });
+  return { ok: true, pending: true };
+}
+
+function applyKeptDraw(state, player, deckId, keep, discard) {
+  const helpers = rememberLandscapeHelpers();
+  if (deckId === "psyche") {
+    player.hand.push(keep);
+    state.psycheDiscard.push(discard);
+    addLog(state, `Kept Psyche ${keep.value}, discarded ${discard.value}.`);
+    recordQuestEvent(state, "draw_psyche", { count: 1 });
+    return;
+  }
+  if (deckId === "dream") {
+    state.dreamDiscard.push(discard);
+    addLog(state, `Resolving ${keep.name}; discarded ${discard.name}.`);
+    helpers?.resolveCardEffect?.(state, keep, player, helpers);
+    return;
+  }
+  const suit = deckId.replace("mindstream-", "");
+  state.mindstreamDiscard[suit]?.push(discard);
+  addLog(state, `Kept ${keep.name}; discarded ${discard.name}.`);
+  helpers?.resolveCardEffect?.(state, keep, player, helpers);
+  if (keep.type !== "object" && keep.type !== "dreambeast") {
+    state.mindstreamDiscard[suit]?.push(keep);
+  }
+}
+
+registerEffectResolver("landscape-action", (state, choiceId) => {
+  const pending = state.pendingEffectChoice;
+  const actionId = pending?.payload?.actionId;
+  const player = playerById(state, pending?.playerId);
+
+  if (actionId === "cycle-psyche") {
+    if (choiceId !== "confirm") {
+      const order = pending.order || [];
+      const idx = order.indexOf(choiceId);
+      if (idx >= 0) pending.order = order.filter((id) => id !== choiceId);
+      else pending.order = [...order, choiceId].slice(-1);
+      return true;
+    }
+    const card = (pending.cards || []).find((c) => pending.order?.includes(c.instanceId));
+    state.pendingEffectChoice = null;
+    if (player && card) {
+      player.hand = player.hand.filter((c) => c.instanceId !== card.instanceId);
+      state.psycheDiscard.push(card);
+      const drawn = drawPsycheForPlayer(state, player, card.value || 1);
+      addLog(state, `${player.name} cycled ${card.suit} ${card.value || 1} for ${drawn.length} Psyche.`);
+      recordQuestEvent(state, "draw_psyche", { count: drawn.length });
+      if (pending.payload?.tileId === "bed") recordQuestEvent(state, "psyche_cycle_bed");
+    }
+    return true;
+  }
+
+  if (actionId === "draw-2-keep-1" && pending.payload?.step === "pick-keep") {
+    const cards = pending.cards || [];
+    const keep = cards.find((c) => (c.instanceId || c.id) === choiceId) || cards[0];
+    const discard = cards.find((c) => c !== keep);
+    state.pendingEffectChoice = null;
+    if (player && keep) applyKeptDraw(state, player, pending.payload.deckId, keep, discard);
+    return true;
+  }
+
+  if (actionId === "draw-2-keep-1") {
+    state.pendingEffectChoice = null;
+    if (!player) return false;
+    let drawn = [];
+    if (choiceId === "psyche") drawn = [state.psycheDeck.shift(), state.psycheDeck.shift()];
+    else if (choiceId === "dream") drawn = [state.dreamDeck.shift(), state.dreamDeck.shift()];
+    else if (choiceId.startsWith("mindstream-")) {
+      const suit = choiceId.replace("mindstream-", "");
+      drawn = [state.mindstreamDecks[suit].shift(), state.mindstreamDecks[suit].shift()];
+    }
+    drawn = drawn.filter(Boolean);
+    if (drawn.length < 2) {
+      addLog(state, "Could not draw 2 cards from that deck.");
+      return true;
+    }
+    offerEffectChoice(state, player, {
+      cardId: "landscape-action",
+      ui: "cards",
+      title: "Draw 2, Keep 1",
+      message: "Choose which card to keep.",
+      cards: drawn,
+      payload: { actionId: "draw-2-keep-1", step: "pick-keep", deckId: choiceId },
+    });
+    return true;
+  }
+
+  if (actionId === "swap-psyche") {
+    if (pending.payload.step === "pick-a") {
+      pending.payload.firstId = choiceId;
+      pending.payload.step = "pick-b";
+      pending.message = "Choose the second Dreamer.";
+      pending.choices = alivePlayers(state)
+        .filter((p) => p.id !== choiceId && p.hand.length)
+        .map((p) => ({ id: p.id, label: p.name }));
+      return true;
+    }
+    if (pending.payload.step === "pick-b") {
+      pending.payload.secondId = choiceId;
+      pending.payload.step = "card-a";
+      const first = playerById(state, pending.payload.firstId);
+      pending.ui = "cards";
+      pending.title = "Swap 2 Psyche";
+      pending.message = `${first?.name || "Dreamer"}: choose a Psyche to swap.`;
+      pending.cards = first?.hand || [];
+      pending.choices = [];
+      return true;
+    }
+    if (pending.payload.step === "card-a") {
+      pending.payload.cardA = choiceId;
+      pending.payload.step = "card-b";
+      const second = playerById(state, pending.payload.secondId);
+      pending.message = `${second?.name || "Dreamer"}: choose a Psyche to swap.`;
+      pending.cards = second?.hand || [];
+      return true;
+    }
+    const first = playerById(state, pending.payload.firstId);
+    const second = playerById(state, pending.payload.secondId);
+    const cardA = first?.hand.find((c) => c.instanceId === pending.payload.cardA);
+    const cardB = second?.hand.find((c) => c.instanceId === choiceId);
+    state.pendingEffectChoice = null;
+    if (first && second && cardA && cardB) {
+      first.hand = first.hand.filter((c) => c.instanceId !== cardA.instanceId);
+      second.hand = second.hand.filter((c) => c.instanceId !== cardB.instanceId);
+      first.hand.push(cardB);
+      second.hand.push(cardA);
+      addLog(state, `Swapped Psyche between ${first.name} and ${second.name}.`);
+    }
+    return true;
+  }
+
+  if (actionId === "move-2-dreamers-1") {
+    const remaining = pending.payload.remaining ?? 2;
+    const moved = pending.payload.moved || [];
+    state.pendingEffectChoice = null;
+    continueMoveDreamer(state, choiceId, remaining, moved);
+    return true;
+  }
+
+  if (actionId === "move-2-dreambeasts-1") {
+    const tile = landscapeById(state, choiceId);
+    const remaining = pending.payload.remaining ?? 2;
+    const movedIds = pending.payload.movedIds || [];
+    state.pendingEffectChoice = null;
+    if (tile?.encounter) {
+      moveEncounterOneStep(state, tile);
+      const nextMoved = [...movedIds, tile.id];
+      if (state.landscapePick) {
+        state.landscapePick.followup = {
+          landscapeAction: "move-2-dreambeasts-1",
+          remaining: remaining - 1,
+          movedIds: nextMoved,
+        };
+      } else {
+        offerBeastMove(state, state.board.filter((t) => t.encounter), remaining - 1, nextMoved);
+      }
+    }
+    return true;
+  }
+
+  state.pendingEffectChoice = null;
+  return false;
+});
+
+export function resumeLandscapeAction(state) {
+  const follow = state.pendingObjectFollowup;
+  if (!follow?.landscapeAction) return false;
+  const action = follow.landscapeAction;
+  state.pendingObjectFollowup = null;
+
+  if (action === "swap-landscapes") {
+    const ids = follow.pickedIds || [];
+    const a = landscapeById(state, ids[0]);
+    const b = landscapeById(state, ids[1]);
+    if (a && b) {
+      swapTilePositions(a, b);
+      addLog(state, `Swapped positions of ${a.name} and ${b.name}.`);
+    }
+    return true;
+  }
+
+  if (action === "swap-dreambeasts") {
+    const ids = follow.pickedIds || [];
+    const a = landscapeById(state, ids[0]);
+    const b = landscapeById(state, ids[1]);
+    if (a?.encounter && b?.encounter) {
+      const encA = a.encounter;
+      const encB = b.encounter;
+      a.encounter = encB;
+      b.encounter = encA;
+      addLog(state, `Swapped ${encA.name} and ${encB.name}.`);
+    }
+    return true;
+  }
+
+  if (action === "move-2-dreamers-1") {
+    presentNextDreamerMove(state, follow.remaining ?? 1, follow.moved || []);
+    return true;
+  }
+
+  if (action === "move-2-dreambeasts-1") {
+    offerBeastMove(state, state.board.filter((t) => t.encounter), follow.remaining ?? 0, follow.movedIds || []);
+    return true;
+  }
+
+  return true;
+}
+
 export function getUniqueLandscapeActionChoices(tile) {
   if (!tile?.revealed || tile.hidden || tile.wasteland) return [];
 
@@ -449,57 +893,22 @@ export function executeLandscapeActionChoice(state, tile, player, actionId, help
       return { ok: false, refund: true };
     }
 
-    case "swap-psyche": {
-      const players = alivePlayers(state).filter((p) => p.hand.length >= 1);
-      if (players.length < 2) {
-        addLog(state, "Need 2 Dreamers with Psyche to swap.");
-        return { ok: false };
-      }
-      const [a, b] = shuffle(players).slice(0, 2);
-      const cardA = a.hand.pop();
-      const cardB = b.hand.pop();
-      a.hand.push(cardB);
-      b.hand.push(cardA);
-      addLog(state, `${landscapeName}: swapped Psyche between ${a.name} and ${b.name}.`);
-      return { ok: true };
-    }
+    case "swap-psyche":
+      return beginSwapPsyche(state, player);
 
-    case "move-2-dreamers-1": {
-      const movers = shuffle(alivePlayers(state)).slice(0, 2);
-      movers.forEach((p) => {
-        const current = landscapeById(state, p.landscapeId);
-        const adj = adjacentTiles(state, current.id).filter((t) => t.revealed);
-        if (!adj.length) return;
-        const dest = adj[Math.floor(Math.random() * adj.length)];
-        p.landscapeId = dest.id;
-        addLog(state, `${p.name} moves to ${dest.name}.`);
-        recordQuestEvent(state, "move_player", { count: 1 });
-      });
-      return { ok: true };
-    }
+    case "move-2-dreamers-1":
+      return beginMoveTwoDreamers(state, player);
 
-    case "swap-landscapes": {
-      const swapables = state.board.filter((t) => t.revealed && !t.center);
-      if (swapables.length < 2) {
-        addLog(state, "Not enough Landscapes to swap.");
-        return { ok: false };
-      }
-      const [a, b] = shuffle(swapables).slice(0, 2);
-      swapTilePositions(a, b);
-      addLog(state, `${landscapeName}: swapped positions of ${a.name} and ${b.name}.`);
-      return { ok: true };
-    }
+    case "swap-landscapes":
+      return beginSwapLandscapes(state, player);
 
     case "move-1-dreamer-2": {
       moveDreamerSteps(state, player, 2);
       return { ok: true };
     }
 
-    case "move-2-dreambeasts-1": {
-      const withEnc = state.board.filter((t) => t.encounter);
-      shuffle(withEnc).slice(0, 2).forEach((t) => moveEncounterOneStep(state, t));
-      return { ok: true };
-    }
+    case "move-2-dreambeasts-1":
+      return beginMoveTwoDreambeasts(state);
 
     case "all-toward-bed": {
       alivePlayers(state).forEach((p) => stepTowardBed(state, p));
@@ -529,25 +938,11 @@ export function executeLandscapeActionChoice(state, tile, player, actionId, help
       return { ok: true };
     }
 
-    case "swap-dreambeasts": {
-      const withEnc = state.board.filter((t) => t.encounter);
-      if (withEnc.length < 2) {
-        addLog(state, "Need 2 active Dreambeasts to swap.");
-        return { ok: false };
-      }
-      const [a, b] = shuffle(withEnc).slice(0, 2);
-      const encA = a.encounter;
-      const encB = b.encounter;
-      a.encounter = encB;
-      b.encounter = encA;
-      addLog(state, `${landscapeName}: swapped ${encA.name} and ${encB.name}.`);
-      return { ok: true };
-    }
+    case "swap-dreambeasts":
+      return beginSwapDreambeasts(state);
 
-    case "draw-2-keep-1": {
-      drawTwoKeepOne(state, player, helpers);
-      return { ok: true };
-    }
+    case "draw-2-keep-1":
+      return beginDrawTwoKeepOne(state, player, helpers);
 
     case "return-2":
       return { ok: true, ...returnTypedCard(state, null, 2) };
@@ -571,22 +966,8 @@ export function executeLandscapeActionChoice(state, tile, player, actionId, help
       return { ok: false, refund: true };
     }
 
-    case "cycle-psyche": {
-      if (!player.hand.length) {
-        addLog(state, "No Psyche to cycle.");
-        return { ok: false };
-      }
-      const card = player.hand.reduce((best, c) => ((c.value || 0) > (best.value || 0) ? c : best), player.hand[0]);
-      const idx = player.hand.findIndex((c) => c.instanceId === card.instanceId);
-      if (idx >= 0) player.hand.splice(idx, 1);
-      state.psycheDiscard.push(card);
-      const value = card.value || 1;
-      const drawn = drawPsycheForPlayer(state, player, value);
-      addLog(state, `${landscapeName}: cycled ${card.suit} ${value} for ${drawn.length} Psyche.`);
-      recordQuestEvent(state, "draw_psyche", { count: drawn.length });
-      if (tile.id === "bed") recordQuestEvent(state, "psyche_cycle_bed");
-      return { ok: true };
-    }
+    case "cycle-psyche":
+      return beginCyclePsyche(state, player, tile);
 
     case "draw-3-psyche": {
       const drawn = drawPsycheForPlayer(state, player, 3);

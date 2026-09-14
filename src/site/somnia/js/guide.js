@@ -108,6 +108,20 @@ export function getCurrentObjective(state) {
     };
   }
 
+  if (state.pendingDreamChoice || state.pendingEffectChoice) {
+    const pending = state.pendingDreamChoice || state.pendingEffectChoice;
+    return {
+      phase: getPhase(state),
+      suit: "lucidity",
+      title: pending.title || "Choose a Dream effect",
+      steps: [
+        pending.message || "This Dream asks you to pick one effect.",
+        ...(pending.choices || []).map((choice) => `**${choice.label}**${choice.hint ? `: ${choice.hint}` : ""}`),
+      ],
+      tip: "The popup stays until you pick.",
+    };
+  }
+
   if (state.pendingObjectChoice) {
     const pending = state.pendingObjectChoice;
     return {

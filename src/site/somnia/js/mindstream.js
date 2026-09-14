@@ -25,6 +25,21 @@ import {
   logAffectedStatus,
 } from "./event-landscapes.js";
 import { EXTRA_MINDSTREAM_EFFECTS } from "./mindstream-extra.js";
+import { flipLeviathan } from "./dreambeasts.js";
+import {
+  beginPopQuiz,
+  beginHarmonicResonance,
+  beginKeepItTogether,
+  beginEveryonesLaughing,
+  beginRevolving,
+  beginFriendship,
+  beginFreezingNight,
+  beginNoTime,
+  beginWhoIsThere,
+  beginNoOne,
+  beginUndulatingFloor,
+  beginGetUpDown,
+} from "./event-choices.js";
 
 function alive(state) {
   return state.players.filter((p) => p.alive);
@@ -232,19 +247,7 @@ function swapUnoccupiedTiles(state, count = 4) {
 }
 
 function tryFlipLeviathan(state, helpers) {
-  const onBoard = state.board.find((t) => t.encounter?.id === "leviathan");
-  if (onBoard) {
-    addLog(state, "Leviathan flips — encounter intensifies!");
-    return true;
-  }
-  const inDream = state.dreamDeck.findIndex((c) => c.id === "leviathan");
-  if (inDream >= 0) {
-    const boss = state.dreamDeck.splice(inDream, 1)[0];
-    helpers.spawnEncounter(state, "bed");
-    addLog(state, "Leviathan emerges from the Dream Deck!");
-    return true;
-  }
-  return false;
+  return !!flipLeviathan(state, helpers);
 }
 
 /** All 41 Mindstream event handlers keyed by card id. */
@@ -327,19 +330,7 @@ export const MINDSTREAM_EFFECTS = {
   },
 
   "harmonic-resonance": (state, player) => {
-    const luc = stat(player, "lucidity");
-    if (luc <= 1) {
-      const n = drawPsycheForPlayer(state, player, 1);
-      recordQuestEvent(state, "draw_psyche", { count: n.length });
-    } else if (luc >= 3) {
-      returnN(state, 2, player);
-      const n = drawPsycheForPlayer(state, player, 1);
-      recordQuestEvent(state, "draw_psyche", { count: n.length });
-      returnN(state, 2, player);
-    } else {
-      const n = drawPsycheForPlayer(state, player, 1);
-      recordQuestEvent(state, "draw_psyche", { count: n.length });
-    }
+    beginHarmonicResonance(state, player);
   },
 
   denial: (state, player) => {
@@ -350,23 +341,20 @@ export const MINDSTREAM_EFFECTS = {
   "forgot-clothes": (state, player) => {
     repressFromHand(state, player, 1);
     const luc = stat(player, "lucidity");
-    if (luc >= 3) moveToAnyRevealed(state, player);
-    else moveAdjacent(state, player);
+    if (luc >= 3) {
+      const dests = state.board.filter((t) => t.revealed && !t.wasteland);
+      requestChooseTile(state, {
+        allowedIds: dests.map((t) => t.id),
+        action: "movePlayer",
+        playerId: player.id,
+        title: "Forgot Clothes",
+        detail: "Move to any Landscape.",
+      });
+    } else moveAdjacent(state, player);
   },
 
   "pop-quiz": (state, player) => {
-    const n = drawPsycheForPlayer(state, player, 1);
-    recordQuestEvent(state, "draw_psyche", { count: n.length });
-    const guess = Math.random() < 0.5 ? "higher" : "lower";
-    const next = state.psycheDeck[0]?.value ?? 3;
-    const drawn = n[0]?.value ?? 0;
-    const correct = (guess === "higher" && next > drawn) || (guess === "lower" && next < drawn);
-    if (correct) {
-      returnN(state, dreamerCount(state) + 3, player);
-      addLog(state, `Pop Quiz: guessed ${guess} — correct!`);
-    } else {
-      addLog(state, `Pop Quiz: guessed ${guess} — wrong.`);
-    }
+    beginPopQuiz(state, player);
   },
 
   "sacred-geometry": (state, player, helpers, event) => {
@@ -436,88 +424,35 @@ export const MINDSTREAM_EFFECTS = {
   },
 
   "undulating-floor": (state, player) => {
-    moveToAnyRevealed(state, player);
-    grantPowerTokens(state, player, 1);
-    recordQuestEvent(state, "power_token", { count: 1 });
-    addLog(state, "Place this Power on an Archetype quest when its condition is met.");
+    beginUndulatingFloor(state, player);
   },
 
   "freezing-night": (state, player, helpers, event) => {
-    const ela = stat(player, "elasticity");
-    const wp = stat(player, "willpower");
-    if (ela <= 2) {
-      const drawn = [];
-      for (let i = 0; i < 2; i += 1) {
-        const n = drawPsycheForPlayer(state, player, 1);
-        drawn.push(...n);
-      }
-      if (drawn.length > 1) {
-        const keep = drawn[Math.floor(Math.random() * drawn.length)];
-        drawn.filter((c) => c.instanceId !== keep.instanceId).forEach((c) => {
-          player.hand = player.hand.filter((x) => x.instanceId !== c.instanceId);
-          state.psycheDiscard.push(c);
-        });
-      }
-      recordQuestEvent(state, "draw_psyche", { count: 1 });
-    }
     logAffectedStatus(state, event, "Freezing Night");
-    if (wp >= 3 && hasAffectedLandscapes(state, event) && helpers?.drawObjects) {
-      const objs = helpers.drawObjects(state, player, 2, helpers);
-      if (objs.length > 1) {
-        player.objects = player.objects.filter((o) => o.instanceId === objs[0].instanceId);
-      }
+    beginFreezingNight(state, player, helpers);
+    if (hasAffectedLandscapes(state, event) && stat(player, "elasticity") >= 3) {
+      grantFreeMeetAction(state);
     }
   },
 
   friendship: (state, player, helpers, event) => {
-    const hidden = state.board.filter((l) => !l.revealed && !l.center);
-    const revealed = hidden.slice(0, 2).map((t) => {
-      revealLandscapeTile(state, t);
-      return t;
-    });
-    recordQuestEvent(state, "reveal_landscape", { count: revealed.length });
-    const dest = revealed.find((t) => t.id === state.selectedLandscapeId) || revealed[0];
-    if (dest) {
-      player.landscapeId = dest.id;
-      addLog(state, `${player.name} moves to ${dest.name}.`);
-      recordQuestEvent(state, "move_player", { count: 1 });
-    }
+    beginFriendship(state, player);
     logAffectedStatus(state, event, "Friendship");
     if (hasAffectedLandscapes(state, event) && stat(player, "elasticity") >= 3) {
       grantFreeMeetAction(state);
     }
   },
 
-  "get-up": (state, player, helpers, event) => {
-    drawFromPsycheDiscard(state, player);
-    logAffectedStatus(state, event, "Get Up");
-    if (hasAffectedLandscapes(state, event)) {
-      if (landscapeById(state, "forest")?.revealed) {
-        moveToIfRevealed(state, player, ["forest"]);
-      }
-      moveToIfRevealed(state, player, ["the-attic"]);
-      grantFreeMeetAction(state);
-    }
+  "get-up": (state, player) => {
+    beginGetUpDown(state, player, { optionalId: "forest", forcedId: "the-attic", label: "Get Up" });
   },
 
-  "get-down": (state, player, helpers, event) => {
-    drawFromPsycheDiscard(state, player);
-    logAffectedStatus(state, event, "Get Down");
-    if (hasAffectedLandscapes(state, event)) {
-      if (landscapeById(state, "city")?.revealed) {
-        moveToIfRevealed(state, player, ["city"]);
-      }
-      moveToIfRevealed(state, player, ["the-basement"]);
-      grantFreeMeetAction(state);
-    }
+  "get-down": (state, player) => {
+    beginGetUpDown(state, player, { optionalId: "city", forcedId: "the-basement", label: "Get Down" });
   },
 
   revolving: (state, player) => {
-    const n = drawPsycheForPlayer(state, player, 3);
-    recordQuestEvent(state, "draw_psyche", { count: n.length });
-    repressFromHand(state, player, 1, `${player.name}: Revolving — Repress 1 Psyche from hand.`);
-    const others = alive(state).filter((p) => p.id !== player.id);
-    if (others.length) swapDreamers(state, player, others[0]);
+    beginRevolving(state, player);
   },
 
   blooming: (state, player) => {
@@ -562,6 +497,7 @@ export const MINDSTREAM_EFFECTS = {
     helpers.spawnEncounter(state, player.landscapeId);
     addLog(state, "Heating Up: Meet this Encounter. Accept spawns another; Repress draws to hand limit.");
     state.pendingHeatingUp = true;
+    grantFreeMeetAction(state);
   },
 
   "no-thing": (state, player) => {
@@ -575,14 +511,8 @@ export const MINDSTREAM_EFFECTS = {
     }
   },
 
-  "no-time": (state) => {
-    alive(state).forEach((p) => {
-      if (p.objects.length) {
-        const obj = p.objects.pop();
-        discardToMindstream(state, obj);
-      }
-    });
-    addLog(state, "No Time: each Dreamer discards 1 Object.");
+  "no-time": (state, player) => {
+    beginNoTime(state, player);
   },
 
   "no-where": (state) => {
@@ -639,35 +569,17 @@ export const MINDSTREAM_EFFECTS = {
   },
 
   "who-is-there": (state, player) => {
-    const choice = pullTwoDreambeastsForChoice(state);
-    if (!choice) return;
-    const encounter = encounterFromDreambeastCard(choice.pick);
-    setEncounterOnLandscape(state, player.landscapeId, encounter);
-    repressTopMindstreamSuit(state, "willpower");
-    addLog(
-      state,
-      `Who's There?: ${choice.pick.name} appears${choice.alt ? ` (over ${choice.alt.name})` : ""}. Meet now if you can.`,
-    );
+    beginWhoIsThere(state, player);
   },
 
   "no-one": (state, player) => {
-    if (stat(player, "willpower") >= 3) {
-      const tile = state.board.find((t) => t.encounter);
-      if (tile) {
-        repressCard(state, tile.encounter);
-        tile.encounter = null;
-        addLog(state, "No One: discarded 1 Encounter.");
-      }
-    } else {
-      clearEncounters(state);
-      addLog(state, "No One: all active Encounters discarded.");
-    }
+    beginNoOne(state, player);
   },
 
   metamorphosis: (state, player, helpers, event) => {
     const encCount = state.board.filter((t) => t.encounter).length;
     clearEncounters(state);
-    repressFromHand(state, player, encCount + 2);
+    repressTopPsycheDeck(state, encCount + 2);
     logAffectedStatus(state, event, "Metamorphosis");
     const affected = countAffectedLandscapes(state, event);
     if (affected > 0) {
@@ -677,11 +589,11 @@ export const MINDSTREAM_EFFECTS = {
   },
 
   contagion: (state, player, helpers, event) => {
-    repressFromHand(state, player, 2);
+    repressTopPsycheDeck(state, 2);
     logAffectedStatus(state, event, "Contagion");
     if (stat(player, "lucidity") <= 2 && hasAffectedLandscapes(state, event)) {
       const affected = countAffectedLandscapes(state, event);
-      repressFromHand(state, player, affected);
+      repressTopPsycheDeck(state, affected);
     }
   },
 

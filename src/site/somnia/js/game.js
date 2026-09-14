@@ -38,7 +38,7 @@ import {
   phaseTokenValue,
   MEET_ACTIONS,
   canTradeBetween,
-  validateBossPlayShape,
+  validateEncounterPlayShape,
   bossPlayShapeLabel,
   bossPlayShapeRequired,
   formatDreamerStatsText,
@@ -51,8 +51,9 @@ import {
   totalStat,
   phaseOpeningActive,
   cardCountsAsSuit,
+  isWildPsyche,
 } from "./rules.js";
-import { encounterRejectCost, applyRejectReward } from "./dreambeasts.js";
+import { encounterRejectCost, applyRejectReward, applyAcceptEffect } from "./dreambeasts.js";
 import { getLegalMoveTargets, canMoveTo, adjacentTiles, hexDistance, areHexAdjacent } from "./hex.js";
 import { repressCard, listSubconsciousCards, dreambeastToHandCard, isDreambeastPsycheCard } from "./subconscious.js";
 import { spendPowerTokens, grantPowerTokens, playPsychePowerFromHand } from "./power-tokens.js";
@@ -68,7 +69,6 @@ import { playObjectCard, applySkeletonKeyAfterDream, drawObjects, handLimitForPl
 import { resumeObjectEffect } from "./object-effects.js";
 import { psycheHandCount, hasPsycheHealth, canAddAllyToHand, allyHandLimitForPlayer, allyHandCount } from "./psyche.js";
 import { queueDreamDrawFx, queueMeetFlashFx, queuePsycheSwirlFx } from "./board-fx.js";
-import { applyBossAcceptEffect } from "./bosses.js";
 import { resolveOnAcquire, useArchetypePower, handleArchetypePowerTilePick } from "./archetypes.js";
 import { getActivatableArchetypePowers } from "./archetype-stats.js";
 import { isQuestConditionMet } from "./quests.js";
@@ -83,9 +83,11 @@ import {
 } from "./landscape-actions.js";
 import {
   pullDreambeastFromMindstream,
-  pullTwoDreambeastsForChoice,
+  drawTwoDreambeasts,
   encounterFromDreambeastCard,
+  discardToMindstream,
 } from "./mindstream-supply.js";
+import { beginTransformationPick } from "./dream-choices.js";
 import { beginRevealPicking, handleLandscapeTilePick, cancelLandscapePick, requestChooseTile } from "./landscapes.js";
 import { narrate } from "./narrator.js";
 import { playSfx } from "./audio.js";
@@ -555,6 +557,9 @@ function phaseAdvanceBlockReason(state) {
   if (state.pendingDeathChoice) return "Resolve the death choice before advancing.";
   if (state.pendingNothingChoice) return "Resolve the Nothing Object choice before advancing.";
   if (state.pendingObjectChoice) return "Choose an Object effect before advancing.";
+  if (state.pendingDreamChoice || state.pendingDreamQueue?.length) return "Choose a Dream effect before advancing.";
+  if (state.pendingEffectChoice) return "Choose an Event or Encounter effect before advancing.";
+  if (state.pendingArchetypePower) return "Finish the Archetype Power before advancing.";
   if (state.pendingObjectFollowup) return "Finish the Object effect before advancing.";
   if (hasPendingDreamerPower(state)) return "Finish or cancel Dreamer Power before advancing.";
   return null;
@@ -626,6 +631,13 @@ export function drawAdditionalDream(state, onShowModal) {
 export function drawDreamCard(state, onShowModal) {
   if (state.dreamDrawn) return null;
   const head = headPlayer(state);
+
+  if (state.skipNextDreamDraw) {
+    state.skipNextDreamDraw = false;
+    state.dreamDrawn = true;
+    addLog(state, "Sandman cancels this Dream draw.");
+    return null;
+  }
 
   const card = state.dreamDeck.shift();
   consumeRevealedTop(state, "dream");
@@ -751,7 +763,28 @@ export function activateExplore(state) {
   }
   state.exploreMovesLeft = budget;
   state.exploreActivated = true;
-  addLog(state, `${player?.name || "The team"} unlocks ${budget} shared Explore moves. Click Dreamer chips to choose who moves.`);
+  const insulationBonus = consumeInsulationMoves(state);
+  if (insulationBonus) {
+    state.exploreMovesLeft += insulationBonus;
+    addLog(state, `Insulation grants +${insulationBonus} Explore move${insulationBonus === 1 ? "" : "s"}, then is discarded.`);
+  }
+  addLog(state, `${player?.name || "The team"} unlocks ${state.exploreMovesLeft} shared Explore moves. Click Dreamer chips to choose who moves.`);
+}
+
+function consumeInsulationMoves(state) {
+  let extra = 0;
+  state.players.filter((p) => p.alive).forEach((p) => {
+    [p.objects, p.persistent].forEach((bag) => {
+      if (!Array.isArray(bag)) return;
+      for (let i = bag.length - 1; i >= 0; i -= 1) {
+        if (bag[i]?.id !== "insulation") continue;
+        const [card] = bag.splice(i, 1);
+        discardToMindstream(state, card);
+        extra += 1;
+      }
+    });
+  });
+  return extra;
 }
 
 export function moveDreamer(state, targetLandscapeId) {
@@ -998,11 +1031,15 @@ export function meetEncounter(state, mode = "accept") {
     return;
   }
 
-  const shapeCheck = validateBossPlayShape(encounter, selected);
+  const shapeCheck = validateEncounterPlayShape(encounter, selected, { accept: !isReject });
   if (!shapeCheck.ok) {
     addLog(state, shapeCheck.message);
     refundMeetAction(state, actor, MEET_ACTIONS.MEET);
     return;
+  }
+  if (!isReject && (encounter.refId || encounter.id) === "chimera") {
+    const declared = selected.find((c) => !isDreambeastPsycheCard(c) && !isWildPsyche(c));
+    if (declared) addLog(state, `Chimera Declared Card: ${declared.name || `${declared.suit} ${declared.value}`}.`);
   }
 
   const played = meetPsychePlayTotal(state);
@@ -1021,7 +1058,7 @@ export function meetEncounter(state, mode = "accept") {
 
   if (!isReject) {
     addLog(state, `${actor.name} Accepts ${encounter.name}. ${encounter.effect || ""}`);
-    applyBossAcceptEffect(state, encounter, actor);
+    applyAcceptEffect(state, encounter, actor, getEffectHelpers());
 
     const handCard = dreambeastToHandCard(encounter);
     actor.hand.push(handCard);
@@ -1386,13 +1423,10 @@ export function spawnEncounterOnLandscape(state, landscapeId, beastCard = null) 
   if (beastCard) {
     beast = encounterFromDreambeastCard(beastCard);
   } else if (state.pickEncounterOnSpawn) {
-    const choice = pullTwoDreambeastsForChoice(state);
-    if (!choice) return null;
-    beast = encounterFromDreambeastCard(choice.pick);
+    const pair = drawTwoDreambeasts(state);
+    if (!pair) return null;
     state.pickEncounterOnSpawn = false;
-    if (choice.alt) {
-      addLog(state, `Transformation: chose ${choice.pick.name} over ${choice.alt.name}.`);
-    }
+    return beginTransformationPick(state, landscapeId, pair.first, pair.second);
   } else {
     const pulled = pullDreambeastFromMindstream(state);
     if (!pulled) return null;

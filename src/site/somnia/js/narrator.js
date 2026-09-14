@@ -91,6 +91,15 @@ export function getNarratorView(state) {
     };
   }
 
+  if (state.pendingDreamChoice || state.pendingEffectChoice) {
+    const pending = state.pendingDreamChoice || state.pendingEffectChoice;
+    return {
+      title: pending.title || "Dream effect",
+      detail: pending.message || "Choose one effect.",
+      consequences: (pending.choices || []).map((choice) => choice.label),
+    };
+  }
+
   if (state.pendingObjectChoice) {
     const pending = state.pendingObjectChoice;
     return {

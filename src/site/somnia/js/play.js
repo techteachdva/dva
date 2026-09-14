@@ -71,6 +71,10 @@ import {
 } from "./dreamer-powers.js";
 import { resolveNothingChoice } from "./objects.js";
 import { resolveObjectChoice } from "./object-effects.js";
+import { resolveDreamChoice } from "./dream-choices.js";
+import { resolveEffectChoice } from "./effect-choices.js";
+import { continueDeferredEventQueues } from "./event-choices.js";
+import { continueArchetypeQueues } from "./archetypes.js";
 import { phaseOpeningActive } from "./rules.js";
 import {
   TUTORIAL_STEPS,
@@ -817,18 +821,23 @@ let lastNothingChoiceKey = null;
 let lastObjectChoiceKey = null;
 
 function maybeShowObjectChoice() {
-  const pending = state?.pendingObjectChoice;
+  const pending = state?.pendingDreamChoice || state?.pendingEffectChoice || state?.pendingObjectChoice;
+  const kind = state?.pendingDreamChoice ? "dream" : state?.pendingEffectChoice ? "effect" : "object";
   if (!pending) {
     lastObjectChoiceKey = null;
     return;
   }
-  const key = `${pending.cardId}:${pending.step}:${pending.ui}:${(pending.choices || []).map((c) => c.id).join(",")}:${(pending.order || []).length}:${(pending.cards || []).length}`;
+  const key = `${kind}:${pending.cardId || pending.dreamId}:${pending.step}:${pending.ui}:${(pending.choices || []).map((c) => c.id).join(",")}:${(pending.order || []).length}:${(pending.cards || []).length}`;
   const modalHidden = document.getElementById("utility-modal")?.classList.contains("hidden");
   if (key === lastObjectChoiceKey && !modalHidden) return;
   lastObjectChoiceKey = key;
   const finish = (choiceId) => {
     hideUtilityModal();
-    resolveObjectChoice(state, choiceId, getEffectHelpers());
+    if (kind === "dream") resolveDreamChoice(state, choiceId, getEffectHelpers());
+    else if (kind === "effect") resolveEffectChoice(state, choiceId, getEffectHelpers());
+    else resolveObjectChoice(state, choiceId, getEffectHelpers());
+    continueDeferredEventQueues(state);
+    continueArchetypeQueues(state);
     lastObjectChoiceKey = null;
     renderAll();
   };
@@ -896,6 +905,7 @@ function maybeShowTradePanel() {
 }
 
 function maybeShowRepressPicker() {
+  if (state?.pendingDreamChoice || state?.pendingEffectChoice || state?.pendingObjectChoice) return;
   if (!state?.pendingRepress) {
     lastRepressPickerKey = null;
     return;
@@ -965,7 +975,7 @@ function maybeShowDreamerPowerUI() {
 }
 
 function maybeShowReturnPicker() {
-  if (state?.pendingObjectChoice) return;
+  if (state?.pendingObjectChoice || state?.pendingDreamChoice || state?.pendingEffectChoice) return;
   if (!state?.pendingReturn) {
     lastReturnPickerKey = null;
     return;

@@ -12,6 +12,7 @@ import { recordQuestEvent } from "./quests.js";
 import { isEdgeLandscape } from "./hex.js";
 import { markTileForgotten } from "./fx.js";
 import { queueTileForgetFx, queueRepressFx } from "./board-fx.js";
+import { recordCancellableMove } from "./dreamer-powers.js";
 
 /** Revealed outer Landscapes — The Bed can never be forgotten. */
 export function forgettableTiles(state) {
@@ -148,7 +149,9 @@ export function resolveChooseTile(state, tileId, opts) {
   if (action === "movePlayer") {
     const player = state.players.find((p) => p.id === playerId);
     if (!player) return false;
+    const fromId = player.landscapeId;
     player.landscapeId = tile.id;
+    recordCancellableMove(state, player, fromId, tile.id);
     addLog(state, `${player.name} moves to ${tile.name}.`);
     recordQuestEvent(state, "move_player", { count: 1 });
     return true;
@@ -168,6 +171,29 @@ export function resolveChooseTile(state, tileId, opts) {
     from.encounter = null;
     setEncounterOnLandscape(state, tile.id, enc);
     addLog(state, `${enc.name} moves to ${tile.name}.`);
+    return true;
+  }
+
+  if (action === "movePlayerAndEncounter") {
+    const player = state.players.find((p) => p.id === playerId);
+    if (!player) return false;
+    const fromId = player.landscapeId;
+    player.landscapeId = tile.id;
+    recordCancellableMove(state, player, fromId, tile.id);
+    const from = landscapeById(state, fromTileId);
+    if (from?.encounter && from.id !== tile.id) {
+      if (tile.encounter) {
+        repressCard(state, tile.encounter);
+        tile.encounter = null;
+      }
+      const enc = from.encounter;
+      from.encounter = null;
+      setEncounterOnLandscape(state, tile.id, enc);
+      addLog(state, `${player.name} and ${enc.name} move to ${tile.name}.`);
+    } else {
+      addLog(state, `${player.name} moves to ${tile.name}.`);
+    }
+    recordQuestEvent(state, "move_player", { count: 1 });
     return true;
   }
 
@@ -395,6 +421,21 @@ export function getLandscapePickHighlights(state) {
 export function requestForgetLandscapes(state, count) {
   if (count <= 0) return;
   beginForgetPicking(state, count);
+}
+
+/** Forget specific revealed Landscapes by id (Bed cannot be forgotten). */
+export function forgetNamedLandscapes(state, ids) {
+  const forgotten = [];
+  (ids || []).forEach((id) => {
+    const tile = landscapeById(state, id);
+    if (!tile || tile.center || tile.id === "bed" || !tile.revealed || tile.wasteland) return;
+    forgetTile(state, tile);
+    forgotten.push(tile);
+  });
+  if (forgotten.length) {
+    recordQuestEvent(state, "forget_landscape", { count: forgotten.length });
+  }
+  return forgotten.length;
 }
 
 /** @deprecated Import from state.js — delegates here. */

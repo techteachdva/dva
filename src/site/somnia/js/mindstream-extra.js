@@ -27,6 +27,43 @@ import {
   dreamersOnAffectedLandscapes,
   logAffectedStatus,
 } from "./event-landscapes.js";
+import {
+  beginAfternoonNap,
+  beginEveningPlans,
+  beginImStillDreaming,
+  beginWayOut,
+  beginSomethingOverThere,
+  beginLightness,
+  beginCouncil,
+  beginSublimation,
+  beginKeepItTogether,
+  beginEveryonesLaughing,
+  beginMillionReflections,
+  beginCottonCandy,
+  beginNeedWater,
+  beginGiantPile,
+  beginWrongDoor,
+  beginHiddenInTheWalls,
+  beginAMirage,
+  beginBronze,
+  beginSilver,
+  beginRhythm,
+  beginRoilingDoom,
+  beginPerilousPinnacle,
+  beginASacrifice,
+  beginBigWave,
+  beginMouthRises,
+  beginMarshmallow,
+  beginCaramelForest,
+  beginChewedToDust,
+  beginNoWhy,
+  beginFromTheFire,
+  beginMistSwirls,
+  beginThisWillHaveToDo,
+  beginIRemember,
+  rememberEventHelpers,
+} from "./event-choices.js";
+import { flipLeviathan } from "./dreambeasts.js";
 
 function alive(state) {
   return state.players.filter((p) => p.alive);
@@ -123,100 +160,43 @@ function spawnMindstreamEncounter(state, player, suit, helpers) {
 }
 
 function tryFlipLeviathan(state, helpers) {
-  const onBoard = state.board.find((t) => t.encounter?.id === "leviathan");
-  if (onBoard) {
-    addLog(state, "Leviathan flips — encounter intensifies!");
-    return true;
-  }
-  return false;
-}
-
-function drawFromAnyMindstream(state, player, count = 1) {
-  const suits = shuffle(["lucidity", "elasticity", "willpower"]);
-  for (let i = 0; i < count; i += 1) {
-    for (const suit of suits) {
-      const deck = state.mindstreamDecks[suit];
-      if (deck?.length) {
-        const card = deck.shift();
-        if (card.type === "object") player.objects.push({ ...card, instanceId: uid("obj") });
-        else if (card.type === "dreambeast") {
-          setEncounterOnLandscape(state, player.landscapeId, encounterFromDreambeastCard(card));
-        }
-        addLog(state, `${player.name} draws ${card.name} from ${suit} Mindstream.`);
-        break;
-      }
-    }
-  }
+  return !!flipLeviathan(state, helpers);
 }
 
 export const EXTRA_MINDSTREAM_EFFECTS = {
   // —— Lucidity (new) ——
   "afternoon-nap": (state, player) => {
-    const n = drawPsycheForPlayer(state, player, 1);
-    recordQuestEvent(state, "draw_psyche", { count: n.length });
-    const luc = stat(player, "lucidity");
-    if (player.hand.length < luc) returnN(state, luc, player);
+    beginAfternoonNap(state, player);
   },
   "evening-plans": (state, player, helpers) => {
-    const n = drawPsycheForPlayer(state, player, 1);
-    recordQuestEvent(state, "draw_psyche", { count: n.length });
-    if (Math.random() < 0.5) {
-      revealHidden(state, 1);
-    } else {
-      spawnMindstreamEncounter(state, player, "lucidity", helpers);
-    }
+    rememberEventHelpers(helpers);
+    beginEveningPlans(state, player);
   },
   "im-still-dreaming": (state, player) => {
-    if (player.hand.length) {
-      state.psycheDiscard.push(player.hand.pop());
-      recordQuestEvent(state, "discard_psyche", { count: 1 });
-    }
-    moveToIfRevealed(state, player, ["insanity", "day-in-the-life"]);
+    beginImStillDreaming(state, player);
   },
   "a-way-out-forms": (state, player, helpers, event) => {
-    if (player.hand.length) state.psycheDiscard.push(player.hand.pop());
     logAffectedStatus(state, event, "A Way Out Forms");
-    const affected = countAffectedLandscapes(state, event);
-    revealHidden(state, Math.min(affected, 3));
+    beginWayOut(state, player, event);
   },
   "voice-in-the-distance": (state, player) => {
     grantPowerTokens(state, player, 1);
     moveToIfRevealed(state, player, ["road", "endless-hallway"]);
   },
-  "somethings-over-there": (state, player, helpers) => {
-    const choice = pullTwoDreambeastsForChoice(state);
-    if (choice?.pick) {
-      setEncounterOnLandscape(state, player.landscapeId, encounterFromDreambeastCard(choice.pick));
-      addLog(state, `Something's Over There: ${choice.pick.name} appears.`);
-    } else {
-      spawnMindstreamEncounter(state, player, "lucidity", helpers);
-    }
+  "somethings-over-there": (state, player) => {
+    beginSomethingOverThere(state, player);
   },
   "mist-swirls": (state, player) => {
-    if (state.dreamDeck.length) state.dreamDiscard.push(state.dreamDeck.pop());
-    if (stat(player, "lucidity") >= 3 && player.hand.length) {
-      state.psycheDiscard.push(player.hand.pop());
-      revealHidden(state, dreamerCount(state) + 1);
-    }
+    beginMistSwirls(state, player);
   },
   lightness: (state, player) => {
-    const n = drawPsycheForPlayer(state, player, 2);
-    recordQuestEvent(state, "draw_psyche", { count: n.length });
-    if (player.hand.length) {
-      const card = player.hand.pop();
-      state.psycheDiscard.push(card);
-      alive(state).forEach((p) => drawPsycheForPlayer(state, p, card.value || 1));
-    }
+    beginLightness(state, player);
   },
-  "the-council-of-the-years": (state, player, helpers) => {
-    const drawn = drawPsycheForPlayer(state, player, 4);
-    drawn.slice(0, 3).forEach((c) => repressCard(state, c));
-    if (drawn[3]) player.hand.push(drawn[3]);
+  "the-council-of-the-years": (state, player) => {
+    beginCouncil(state, player);
   },
   sublimation: (state, player) => {
-    if (player.hand.length) state.psycheDiscard.push(player.hand.pop());
-    returnN(state, 1, player);
-    grantPowerTokens(state, player, 1);
+    beginSublimation(state, player);
   },
   serenity: (state, player) => {
     const n = drawPsycheForPlayer(state, player, 3);
@@ -225,23 +205,17 @@ export const EXTRA_MINDSTREAM_EFFECTS = {
     moveToIfRevealed(state, player, ["the-party", "day-in-the-life"]);
   },
   "keep-it-together": (state, player) => {
-    const objs = [...(player.objects || []), ...(player.persistent || [])];
-    if (!objs.length) return;
-    repressFromHand(state, player, objs.length, "Keep it Together: Repress or discard Psyche per Object.");
+    beginKeepItTogether(state, player);
   },
   "wrong-classroom": (state, player) => {
     repressTopMindstreamSuit(state, "lucidity");
-    const enc = state.board.find((t) => t.encounter);
-    if (enc?.encounter && player.hand.length) {
-      repressCard(state, player.hand.pop());
-    }
+    const n = state.board.filter((t) => t.encounter).length + 1;
+    enqueueRepressFromHand(state, player, n, {
+      reason: `Wrong Classroom: discard ${n} Psyche (Encounters+1).`,
+    });
   },
   "everyones-laughing": (state, player) => {
-    if (player.objects?.length >= 2) {
-      player.objects.splice(0, 2).forEach((o) => discardToMindstream(state, o));
-    }
-    const encCount = state.board.filter((t) => t.encounter).length;
-    repressFromHand(state, player, Math.max(1, Math.floor(encCount / 2)));
+    beginEveryonesLaughing(state, player);
   },
   "caught-cheating": (state, player) => {
     if (player.hand.length) state.psycheDiscard.push(player.hand.pop());
@@ -266,25 +240,10 @@ export const EXTRA_MINDSTREAM_EFFECTS = {
 
   // —— Elasticity (new) ——
   "a-million-reflections": (state, player) => {
-    const piles = ["lucidity", "elasticity", "willpower"];
-    let repressed = 0;
-    piles.forEach((suit) => {
-      const discard = state.mindstreamDiscard[suit];
-      if (discard?.length && repressed < 4) {
-        repressCard(state, discard.pop());
-        repressed += 1;
-      }
-    });
-    returnN(state, 4, player);
+    beginMillionReflections(state, player);
   },
   "this-will-have-to-do": (state, player) => {
-    const ela = stat(player, "elasticity");
-    if (player.hand.length) {
-      const card = player.hand.find((c) => (c.value || 0) <= ela) || player.hand[0];
-      player.hand = player.hand.filter((c) => c.instanceId !== card.instanceId);
-      state.psycheDiscard.push(card);
-    }
-    drawPsycheForPlayer(state, player, 2);
+    beginThisWillHaveToDo(state, player);
   },
   "is-that-music": (state, player) => {
     if (player.hand.length) state.psycheDiscard.push(player.hand.pop());
@@ -295,11 +254,7 @@ export const EXTRA_MINDSTREAM_EFFECTS = {
     }
   },
   "cotton-candy": (state, player) => {
-    if (player.hand.length) state.psycheDiscard.push(player.hand.pop());
-    const val = player.hand.at(-1)?.value || 3;
-    drawPsycheForPlayer(state, player, val);
-    moveToIfRevealed(state, player, ["candy-mountain"]);
-    drawPsycheForPlayer(state, player, 3);
+    beginCottonCandy(state, player);
   },
   insulation: (state, player) => {
     player.objects.push({
@@ -307,6 +262,7 @@ export const EXTRA_MINDSTREAM_EFFECTS = {
       name: "Insulation",
       type: "object",
       subtype: "persistent",
+      suit: "elasticity",
       instanceId: uid("obj"),
       text: "Next Explore, Move+1. Then Discard.",
     });
@@ -329,14 +285,7 @@ export const EXTRA_MINDSTREAM_EFFECTS = {
     moveToIfRevealed(state, player, ["house", "suburbia"]);
   },
   "need-water": (state, player) => {
-    if (player.hand.length) state.psycheDiscard.push(player.hand.pop());
-    const wp = player.hand.find((c) => c.suit === "willpower");
-    if (wp) {
-      player.hand = player.hand.filter((c) => c.instanceId !== wp.instanceId);
-      state.psycheDiscard.push(wp);
-    } else {
-      player.objects.splice(0).forEach((o) => discardToMindstream(state, o));
-    }
+    beginNeedWater(state, player);
   },
   "broken-toys": (state, player) => {
     repressFromHand(state, player, 2);
@@ -347,16 +296,7 @@ export const EXTRA_MINDSTREAM_EFFECTS = {
     else moveToIfRevealed(state, player, ["house", "suburbia"]);
   },
   "giant-animated-pile": (state, player, helpers) => {
-    const pulled = pullDreambeastFromMindstream(state);
-    if (pulled) {
-      const enc = encounterFromDreambeastCard(pulled.card);
-      enc.accept = Math.ceil((enc.accept || 8) / 2);
-      enc.reject = Math.ceil((enc.reject || 6) / 2);
-      setEncounterOnLandscape(state, player.landscapeId, enc);
-      addLog(state, `${enc.name} emerges (half Accept/Repress costs).`);
-    } else {
-      helpers.spawnEncounter(state, player.landscapeId);
-    }
+    beginGiantPile(state, player, helpers);
   },
   "dust-bunnies": (state, player, helpers) => {
     const pulled = pullDreambeastFromMindstream(state);
@@ -375,12 +315,11 @@ export const EXTRA_MINDSTREAM_EFFECTS = {
     logAffectedStatus(state, event, "Lost Treasure");
     returnN(state, countAffectedLandscapes(state, event), player);
   },
-  "wrong-door": (state) => {
-    addLog(state, "Wrong Door: Return 2 Dreambeasts from Accept Pile (if able).");
+  "wrong-door": (state, player) => {
+    beginWrongDoor(state, player);
   },
   "hidden-in-the-walls": (state, player, helpers) => {
-    drawPsycheForPlayer(state, player, 1);
-    spawnMindstreamEncounter(state, player, "elasticity", helpers);
+    beginHiddenInTheWalls(state, player, helpers);
   },
   "deeper-darker": (state, player, helpers, event) => {
     if (stat(player, "elasticity") <= 2 && player.hand.length) {
@@ -423,7 +362,7 @@ export const EXTRA_MINDSTREAM_EFFECTS = {
     else drawPsycheForPlayer(state, player, 2);
   },
   "a-mirage": (state, player, helpers) => {
-    spawnMindstreamEncounter(state, player, "elasticity", helpers);
+    beginAMirage(state, player, helpers);
   },
   sandstorm: (state, player) => {
     if (stat(player, "elasticity") <= 2) {
@@ -435,23 +374,14 @@ export const EXTRA_MINDSTREAM_EFFECTS = {
   },
 
   // —— Willpower (new) ——
-  "rhythm-of-the-night": (state) => {
-    alive(state).forEach((p) => {
-      if (p.objects?.length) p.objects.pop();
-      drawPsycheForPlayer(state, p, 2);
-    });
+  "rhythm-of-the-night": (state, player) => {
+    beginRhythm(state, player);
   },
-  "roiling-doom": (state, player, helpers) => {
-    repressFromHand(state, player, 2);
-    const choice = pullTwoDreambeastsForChoice(state);
-    if (choice?.pick) {
-      setEncounterOnLandscape(state, player.landscapeId, encounterFromDreambeastCard(choice.pick));
-      addLog(state, `Roiling Doom: Meet ${choice.pick.name} now!`);
-    }
+  "roiling-doom": (state, player) => {
+    beginRoilingDoom(state, player);
   },
   "perilous-pinnacle": (state, player) => {
-    player.objects.splice(0, 2).forEach((o) => discardToMindstream(state, o));
-    addLog(state, "Perilous Pinnacle: Meet both active Encounters in order.");
+    beginPerilousPinnacle(state, player);
   },
   "cooling-obsidian": (state, player) => {
     const tile = state.board.find((t) => t.encounter);
@@ -462,29 +392,13 @@ export const EXTRA_MINDSTREAM_EFFECTS = {
     moveToIfRevealed(state, player, ["endless-ocean", "field-of-broken-glass"]);
   },
   "from-the-fire": (state, player) => {
-    returnN(state, 2, player);
+    beginFromTheFire(state, player);
   },
-  "a-sacrifice": (state, player) => {
-    if (player.objects?.length) {
-      const obj = player.objects.pop();
-      discardToMindstream(state, obj);
-      returnN(state, dreamerCount(state) + 1, player);
-    }
-    state.board.filter((t) => t.encounter).forEach((t) => {
-      repressCard(state, t.encounter);
-      t.encounter = null;
-    });
+  "a-sacrifice": (state, player, helpers, event) => {
+    beginASacrifice(state, player, event);
   },
   "big-wave": (state, player) => {
-    drawPsycheForPlayer(state, player, 1);
-    const high = player.hand.reduce((best, c) => ((c.value || 0) > (best?.value || 0) ? c : best), null);
-    if (high) {
-      player.hand = player.hand.filter((c) => c.instanceId !== high.instanceId);
-      state.psycheDiscard.push(high);
-      returnN(state, 3, player);
-    } else {
-      repressFromHand(state, player, countAffectedLandscapes(state, { landscapes: [] }));
-    }
+    beginBigWave(state, player);
   },
   fog: (state, player) => {
     const idx = player.hand.findIndex((c) => c.suit === "willpower");
@@ -495,8 +409,7 @@ export const EXTRA_MINDSTREAM_EFFECTS = {
     moveToIfRevealed(state, player, ["silver-mist"]);
   },
   "a-mouth-rises": (state, player, helpers) => {
-    tryFlipLeviathan(state, helpers);
-    moveToIfRevealed(state, player, ["endless-ocean"]);
+    beginMouthRises(state, player, helpers);
   },
   whirlpool: (state, player, helpers) => {
     if (stat(player, "willpower") <= 2) tryFlipLeviathan(state, helpers);
@@ -527,9 +440,8 @@ export const EXTRA_MINDSTREAM_EFFECTS = {
     drawPsycheForPlayer(state, player, 2 * countAffectedLandscapes(state, event));
   },
   "marshmallow-clouds": (state, player, helpers) => {
-    grantPowerTokens(state, player, 2);
-    drawFromAnyMindstream(state, player, 1);
-    alive(state).forEach((p) => grantPowerTokens(state, p, 1));
+    rememberEventHelpers(helpers);
+    beginMarshmallow(state, player, helpers);
   },
   "ivory-calm": (state, player) => {
     if (stat(player, "willpower") <= 2) drawPsycheForPlayer(state, player, 1);
@@ -544,37 +456,22 @@ export const EXTRA_MINDSTREAM_EFFECTS = {
     drawPsycheForPlayer(state, player, n);
     returnN(state, n, player);
   },
-  "caramel-forest": (state, player, helpers) => {
-    const choice = pullTwoDreambeastsForChoice(state);
-    if (choice?.pick) {
-      const adj = adjacentTiles(state, player.landscapeId).find((t) => t.revealed);
-      if (adj) setEncounterOnLandscape(state, adj.id, encounterFromDreambeastCard(choice.pick));
-    }
+  "caramel-forest": (state, player) => {
+    beginCaramelForest(state, player);
   },
   "chewed-to-dust": (state, player) => {
-    ["lucidity", "elasticity", "willpower"].forEach((s) => repressTopMindstreamSuit(state, s));
-    if (player.hand.length >= 3) {
-      repressFromHand(state, player, 3);
-    } else if (state.dreamDeck.length) {
-      state.dreamDeck.pop();
-      addLog(state, "Chewed to Dust: discarded 1 Dream.");
-    }
+    beginChewedToDust(state, player);
   },
   "gap-in-the-teeth": (state, player) => {
     drawPsycheForPlayer(state, player, 2);
     moveToIfRevealed(state, player, ["candy-mountain", "endless-ocean"]);
   },
-  "no-why": (state) => {
-    alive(state).forEach((p) => drawFromAnyMindstream(state, p, 1));
+  "no-why": (state, player, helpers) => {
+    rememberEventHelpers(helpers);
+    beginNoWhy(state, player, helpers);
   },
   "i-remember": (state, player) => {
-    const wp = stat(player, "willpower");
-    const card = player.hand.find((c) => (c.value || 0) <= wp);
-    if (card) {
-      player.hand = player.hand.filter((c) => c.instanceId !== card.instanceId);
-      state.psycheDiscard.push(card);
-    }
-    returnN(state, 1 + wp, player);
+    beginIRemember(state, player);
   },
   "dream-for-landscapes": (state, player, helpers, event) => {
     logAffectedStatus(state, event, "Dream Toll");
@@ -585,35 +482,10 @@ export const EXTRA_MINDSTREAM_EFFECTS = {
   },
   bronze: (state, player, helpers, event) => {
     logAffectedStatus(state, event, "Bronze");
-    const beast = pullDreambeastFromMindstream(state);
-    if (beast && hasAffectedLandscapes(state, event)) {
-      const tiles = state.board.filter((t) => t.revealed && !t.encounter && event.landscapes?.includes(t.id));
-      if (tiles.length) {
-        requestChooseTile(state, {
-          allowedIds: tiles.map((t) => t.id),
-          action: "spawnEncounter",
-          encounter: encounterFromDreambeastCard(beast),
-          title: "Bronze — spawn a Dreambeast",
-          detail: "Choose an affected Landscape for the Dreambeast.",
-        });
-      }
-    }
-    addLog(state, "Bronze: return 2 Dreambeasts from Accept pile (simplified).");
+    beginBronze(state, player, event);
   },
   silver: (state, player, helpers, event) => {
     logAffectedStatus(state, event, "Silver");
-    const beast = pullDreambeastFromMindstream(state);
-    if (beast && hasAffectedLandscapes(state, event)) {
-      const tiles = state.board.filter((t) => t.revealed && !t.encounter && event.landscapes?.includes(t.id));
-      if (tiles.length) {
-        requestChooseTile(state, {
-          allowedIds: tiles.map((t) => t.id),
-          action: "spawnEncounter",
-          encounter: encounterFromDreambeastCard(beast),
-          title: "Silver — spawn a Dreambeast",
-          detail: "Choose an affected Landscape for the Dreambeast.",
-        });
-      }
-    }
+    beginSilver(state, player, event);
   },
 };

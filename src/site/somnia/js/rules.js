@@ -457,7 +457,24 @@ export function bossPlayShapeLabel(shape) {
   if (shape === "set") return "Set (3 same value or suit)";
   if (shape === "pair") return "Pair (2 matching values)";
   if (shape === "balance") return "Balance (one of each suit)";
+  if (shape === "declared") return "Declared Card (1 regular Psyche)";
   return shape;
+}
+
+export function validateEncounterPlayShape(encounter, cards, { accept = true } = {}) {
+  const boss = validateBossPlayShape(encounter, cards);
+  if (!boss.ok) return boss;
+  const id = encounter?.refId || encounter?.id;
+  if (accept && id === "chimera") {
+    const declared = (cards || []).filter((c) => !isDreambeastPsycheCard(c) && !isWildPsyche(c));
+    if (!declared.length) {
+      return {
+        ok: false,
+        message: "Chimera requires one Declared Card: include at least 1 regular Psyche (not an ally or wild).",
+      };
+    }
+  }
+  return { ok: true };
 }
 
 export function validateBossPlayShape(encounter, cards) {

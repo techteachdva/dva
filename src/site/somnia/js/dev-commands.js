@@ -88,6 +88,9 @@ function clearPickers(state) {
   state.pendingReturn = null;
   state.pendingObjectChoice = null;
   state.pendingObjectFollowup = null;
+  state.pendingDreamChoice = null;
+  state.pendingDreamQueue = [];
+  state.pendingEffectChoice = null;
   state.resolutionQueue = [];
   state.landscapePick = null;
   state.tradeMode = false;

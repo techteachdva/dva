@@ -10,13 +10,12 @@ import { recordQuestEvent } from "./quests.js";
 const BOSS_IDS = new Set(["cerberus", "double", "leviathan"]);
 
 function repressTopPsyche(state, count) {
-  for (let i = 0; i < count; i += 1) {
-    const alive = state.players.filter((p) => p.alive && p.hand.length);
-    const player = alive[0];
-    if (!player) break;
-    repressCard(state, player.hand.pop());
-    recordQuestEvent(state, "discard_psyche", { count: 1 });
+  let n = 0;
+  for (let i = 0; i < count && state.psycheDeck.length; i += 1) {
+    repressCard(state, state.psycheDeck.shift());
+    n += 1;
   }
+  if (n) recordQuestEvent(state, "discard_psyche", { count: n });
 }
 
 export function applyBossAcceptEffect(state, encounter, actor) {

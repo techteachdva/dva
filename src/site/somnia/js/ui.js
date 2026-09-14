@@ -2057,18 +2057,22 @@ export function showObjectSpendPicker(ui, onToggle, onConfirm) {
   const modal = document.getElementById("utility-modal");
   const body = document.getElementById("utility-modal-body");
   const selected = new Set(ui.order || []);
-  const total = (ui.cards || [])
-    .filter((c) => selected.has(c.instanceId))
-    .reduce((sum, c) => sum + psycheCardValue(c), 0);
-  const need = ui.need || 0;
+  const countMode = ui.needCount != null;
+  const total = countMode
+    ? selected.size
+    : (ui.cards || [])
+      .filter((c) => selected.has(c.instanceId))
+      .reduce((sum, c) => sum + psycheCardValue(c), 0);
+  const need = countMode ? ui.needCount : (ui.need || 0);
+  const overMax = ui.maxCount != null && selected.size > ui.maxCount;
   body.innerHTML = `
     <div class="dreamer-power-modal">
       <h2>${ui.title || "Spend Psyche"}</h2>
       <p>${ui.message || ""}</p>
-      <p><strong>Selected ${total} / ${need}</strong></p>
+      <p><strong>Selected ${total}${need || ui.maxCount != null ? ` / ${ui.maxCount ?? need}` : ""}</strong></p>
       <div class="mini-card-row object-choice-cards"></div>
       <div class="utility-actions">
-        <button type="button" class="btn primary" id="object-spend-confirm"${total < need ? " disabled" : ""}>Confirm</button>
+        <button type="button" class="btn primary" id="object-spend-confirm"${total < need || overMax ? " disabled" : ""}>Confirm</button>
       </div>
     </div>
   `;

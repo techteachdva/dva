@@ -20,6 +20,7 @@ import {
   extraPsycheDrawAtRoundStart,
   drawObjects,
 } from "./objects.js";
+import { applyFailEffect } from "./dreambeasts.js";
 import {
   LENGTHS,
   PHASES,
@@ -177,6 +178,10 @@ export function createInitialState(data, options) {
     pendingNothingChoice: null,
     pendingObjectChoice: null,
     pendingObjectFollowup: null,
+    pendingDreamChoice: null,
+    pendingDreamQueue: [],
+    pendingEffectChoice: null,
+    skipNextDreamDraw: false,
     revealedDeckTops: {},
   };
 
@@ -631,11 +636,7 @@ function resolveEncounterFails(state) {
 }
 
 function applyEncounterFail(state, player, encounter) {
-  const failCount = parseInt(encounter.fail?.match(/\d+/)?.[0] || "1", 10);
-  for (let i = 0; i < failCount && player.hand.length; i += 1) {
-    repressCard(state, player.hand.pop());
-  }
-  addLog(state, encounter.fail || "Encounter Fail resolved.");
+  applyFailEffect(state, player, encounter);
 }
 
 export function allDreamersOnBed(state) {
@@ -725,7 +726,7 @@ export function completeQuest(state, questIndex, player, onAcquireFn) {
   return "quest";
 }
 
-export { forgetLandscapes } from "./landscapes.js";
+export { forgetLandscapes, forgetNamedLandscapes } from "./landscapes.js";
 
 export function revealLandscapeTile(state, tile) {
   if (!tile.revealed) {

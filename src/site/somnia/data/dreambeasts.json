@@ -57,7 +57,7 @@
     "rejectReward": "Return 6 Psyche (Slumber).",
     "rejectEffect": {
       "type": "return-subconscious",
-      "count": 1
+      "count": 6
     },
     "type": "dreambeast",
     "image": "images/dreambeasts/leviathan.webp"
@@ -317,7 +317,8 @@
     "rejectReward": "Draw 1 Psyche, Return 1.",
     "rejectEffect": {
       "type": "draw-psyche",
-      "count": 1
+      "count": 1,
+      "alsoReturn": 1
     },
     "type": "dreambeast",
     "image": "images/dreambeasts/baku.webp"
@@ -376,8 +377,7 @@
     "effect": "Forget House & Road.",
     "rejectReward": "Cancel a Dream Draw, then Repress this card.",
     "rejectEffect": {
-      "type": "draw-psyche",
-      "count": 0
+      "type": "cancel-dream-draw"
     },
     "type": "dreambeast",
     "image": "images/dreambeasts/sandman.webp"
@@ -496,7 +496,7 @@
     "effect": "Repress a Psyche card at least value 3 or else Repress 3.",
     "rejectReward": "Draw 2 Psyche or Objects.",
     "rejectEffect": {
-      "type": "draw-psyche",
+      "type": "draw-psyche-or-objects",
       "count": 2
     },
     "type": "dreambeast",
@@ -516,8 +516,7 @@
     "effect": "Forget Endless Hallway and Silver Mist.",
     "rejectReward": "Keep as if 1 Object of a set.",
     "rejectEffect": {
-      "type": "gain-power",
-      "count": 1
+      "type": "set-wildcard"
     },
     "type": "dreambeast",
     "image": "images/dreambeasts/minotaur.webp"
@@ -537,7 +536,8 @@
     "rejectReward": "Draw 1 Object & 1 Psyche.",
     "rejectEffect": {
       "type": "draw-object",
-      "count": 1
+      "count": 1,
+      "alsoPsyche": 1
     },
     "type": "dreambeast",
     "image": "images/dreambeasts/ghost-light.webp"
