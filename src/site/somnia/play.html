@@ -34,13 +34,6 @@
         <button type="button" id="btn-dream-feed" class="btn btn-icon btn-dream-feed hud-dream-feed-btn" title="Dream feed, log &amp; rules reference" aria-label="Dream feed and rules">?</button>
       </div>
       <div id="header-actions" class="header-actions">
-        <div class="header-dropdown" id="header-decks-menu">
-          <button type="button" id="btn-header-decks" class="btn btn-sm header-dropdown-toggle" aria-expanded="false" aria-haspopup="true">🃏 Decks</button>
-          <div id="decks-dropdown-panel" class="header-dropdown-panel hidden" role="menu" aria-label="Deck counts">
-            <p class="header-dropdown-hint">Browse discards anytime. If a power revealed top cards, View peek shows them here.</p>
-            <div id="deck-tray" class="deck-dropdown-list"></div>
-          </div>
-        </div>
         <button type="button" id="btn-header-subconscious" class="btn btn-sm btn-header-subconscious" data-deck-id="subconscious" title="Browse The Subconscious">☠ Subconscious</button>
         <div class="header-dropdown" id="header-dreamers-menu">
           <button type="button" id="btn-header-dreamers" class="btn btn-sm header-dropdown-toggle" aria-expanded="false" aria-haspopup="true">Dreamers</button>
@@ -59,6 +52,7 @@
     <main>
       <section id="screen-game" class="screen active">
         <div class="table-surface" id="table-surface">
+          <aside id="deck-column" class="deck-column" aria-label="Game decks"></aside>
           <div id="coop-play-banner" class="coop-play-banner hidden" aria-live="polite"></div>
           <div id="phase-banner" class="phase-banner" aria-live="polite"></div>
           <div id="moment-overlay" class="moment-overlay hidden" role="status" aria-live="assertive"></div>

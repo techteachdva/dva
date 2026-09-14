@@ -121,6 +121,7 @@ import {
   renderCoopMeetHands,
   renderObjects,
   renderDecks,
+  resetDeckColumnRender,
   renderActiveSlots,
   renderHud,
   renderLog,
@@ -462,7 +463,6 @@ function bindRestart() {
 
 function bindHeaderDropdowns() {
   const menus = [
-    { btnId: "btn-header-decks", panelId: "decks-dropdown-panel" },
     { btnId: "btn-header-dreamers", panelId: "dreamers-dropdown-panel" },
   ];
 
@@ -482,7 +482,7 @@ function bindHeaderDropdowns() {
     if (!btn || !panel) return;
     btn.addEventListener("click", (event) => {
       event.stopPropagation();
-      const headerKind = btnId === "btn-header-decks" ? "headerDecks" : "headerDreamers";
+      const headerKind = "headerDreamers";
       if (!isTutorialActionAllowed(state, headerKind)) {
         tutorialActionBlocked(state);
         renderAll();
@@ -620,6 +620,7 @@ function applyLoadedGame(loaded) {
   showScreen("screen-game");
   resetBoardZoom();
   resetHandSnapshots(state);
+  resetDeckColumnRender();
   resetBoardMotion(state);
   renderAll();
   narrate(state, "Dream resumed", loaded.label || "Your saved dream continues.");
@@ -686,6 +687,7 @@ async function startGame(config) {
   showScreen("screen-game");
   resetBoardZoom();
   resetHandSnapshots(state);
+  resetDeckColumnRender();
   resetBoardMotion(state);
   renderAll();
   if (!config.tutorialMode && !hasSeenTutorial()) startTutorial();

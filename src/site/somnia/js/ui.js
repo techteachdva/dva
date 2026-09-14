@@ -461,33 +461,13 @@ export function playDreamerHandSparkle(fromPlayerId, toPlayerId) {
 }
 
 let powerTokenRadialRoot = null;
-let powerTokenRadialDismissTimer = null;
-
-function onPowerTokenRadialOutside(event) {
-  if (!powerTokenRadialRoot) return;
-  if (powerTokenRadialRoot.contains(event.target)) return;
-  if (event.target.closest?.(".power-token-chip")) return;
-  hidePowerTokenRadial();
-}
 
 function onPowerTokenRadialKey(event) {
   if (event.key === "Escape") hidePowerTokenRadial();
 }
 
-function bindPowerTokenRadialDismiss() {
-  document.removeEventListener("pointerdown", onPowerTokenRadialOutside, true);
-  document.removeEventListener("keydown", onPowerTokenRadialKey, true);
-  document.addEventListener("pointerdown", onPowerTokenRadialOutside, true);
-  document.addEventListener("keydown", onPowerTokenRadialKey, true);
-}
-
 export function hidePowerTokenRadial() {
-  if (powerTokenRadialDismissTimer) {
-    window.clearTimeout(powerTokenRadialDismissTimer);
-    powerTokenRadialDismissTimer = null;
-  }
   if (!powerTokenRadialRoot) return;
-  document.removeEventListener("pointerdown", onPowerTokenRadialOutside, true);
   document.removeEventListener("keydown", onPowerTokenRadialKey, true);
   powerTokenRadialRoot.remove();
   powerTokenRadialRoot = null;
@@ -509,13 +489,12 @@ export function showPowerTokenRadial(anchorEl, options, onPick) {
   scrim.type = "button";
   scrim.className = "power-token-radial-scrim";
   scrim.setAttribute("aria-label", "Close Power Token menu");
+  scrim.tabIndex = -1;
   scrim.addEventListener("click", hidePowerTokenRadial);
   layer.appendChild(scrim);
 
-  const root = document.createElement("div");
-  root.className = "power-token-radial";
-  root.style.left = `${cx}px`;
-  root.style.top = `${cy}px`;
+  const menu = document.createElement("div");
+  menu.className = "power-token-radial-menu";
 
   const count = options.length;
   const radius = Math.max(96, 72 + count * 6);
@@ -523,13 +502,11 @@ export function showPowerTokenRadial(anchorEl, options, onPick) {
     const angle = count === 1
       ? -Math.PI / 2
       : -Math.PI + (Math.PI * index) / (count - 1);
-    let dx = Math.cos(angle) * radius;
-    let dy = Math.sin(angle) * radius;
+    const dx = Math.cos(angle) * radius;
+    const dy = Math.sin(angle) * radius;
     const pad = 72;
-    const sx = Math.min(window.innerWidth - pad, Math.max(pad, cx + dx));
-    const sy = Math.min(window.innerHeight - pad, Math.max(pad, cy + dy));
-    dx = sx - cx;
-    dy = sy - cy;
+    const px = Math.min(window.innerWidth - pad, Math.max(pad, cx + dx));
+    const py = Math.min(window.innerHeight - pad, Math.max(pad, cy + dy));
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = `power-token-radial-item${opt.disabled ? "" : " ready"}`;
@@ -537,28 +514,22 @@ export function showPowerTokenRadial(anchorEl, options, onPick) {
     btn.textContent = opt.label;
     btn.title = opt.hint || opt.label;
     btn.disabled = !!opt.disabled;
-    btn.style.setProperty("--x", `${dx}px`);
-    btn.style.setProperty("--y", `${dy}px`);
-    const pick = (event) => {
-      event.preventDefault();
+    btn.style.setProperty("--px", `${px}px`);
+    btn.style.setProperty("--py", `${py}px`);
+    btn.addEventListener("click", (event) => {
       event.stopPropagation();
       if (opt.disabled) return;
       hidePowerTokenRadial();
       onPick?.(opt);
-    };
-    btn.addEventListener("pointerdown", pick);
-    btn.addEventListener("click", (event) => event.preventDefault());
-    root.appendChild(btn);
+    });
+    menu.appendChild(btn);
   });
 
-  layer.appendChild(root);
+  layer.appendChild(menu);
   document.body.appendChild(layer);
   powerTokenRadialRoot = layer;
   layer.classList.add("open");
-  powerTokenRadialDismissTimer = window.setTimeout(() => {
-    powerTokenRadialDismissTimer = null;
-    bindPowerTokenRadialDismiss();
-  }, 0);
+  document.addEventListener("keydown", onPowerTokenRadialKey, true);
 }
 
 export function renderPowerTokens(state, { onTokenClick } = {}) {
@@ -1333,72 +1304,201 @@ export function showDiscardPileModal(state, deckId, onCardClick) {
   modal.classList.remove("hidden");
 }
 
+function drawPileForDeck(state, deckId) {
+  switch (deckId) {
+    case "dream": return state.dreamDeck || [];
+    case "psyche": return state.psycheDeck || [];
+    case "mindstream-lucidity": return state.mindstreamDecks?.lucidity || [];
+    case "mindstream-elasticity": return state.mindstreamDecks?.elasticity || [];
+    case "mindstream-willpower": return state.mindstreamDecks?.willpower || [];
+    default: return [];
+  }
+}
+
+function deckFaceCard(card, { onClick } = {}) {
+  if (!card) {
+    const empty = document.createElement("div");
+    empty.className = "deck-discard-empty";
+    empty.textContent = "—";
+    empty.setAttribute("aria-hidden", "true");
+    return empty;
+  }
+  const isPsyche = card.type === "psyche"
+    || card.type === "psyche-power"
+    || isDreambeastPsycheCard(card);
+  const el = isPsyche
+    ? renderPsycheCard(card, { mini: true, onClick })
+    : renderCard(card, { mini: true, onClick });
+  el.classList.add("deck-discard-top-card");
+  el.title = card.name || "Card";
+  return el;
+}
+
+function fillRectStack(container, count, variant = "draw") {
+  container.replaceChildren();
+  container.style.setProperty("--stack-count", String(count));
+  if (!count) {
+    container.classList.add("is-empty");
+    return;
+  }
+  container.classList.remove("is-empty");
+  for (let i = 0; i < count; i += 1) {
+    const rect = document.createElement("span");
+    rect.className = `deck-rect deck-rect-${variant}`;
+    rect.style.setProperty("--stack-i", String(i));
+    container.appendChild(rect);
+  }
+}
+
+function appendPeekCards(parent, cards, onViewPeek, deckId) {
+  if (!cards.length) return;
+  const peekWrap = document.createElement("div");
+  peekWrap.className = "deck-peek-cards";
+  cards.forEach((card, index) => {
+    const face = deckFaceCard(card, {
+      onClick: onViewPeek ? () => onViewPeek(deckId) : null,
+    });
+    face.classList.add("deck-peek-card");
+    face.style.setProperty("--peek-i", String(index));
+    face.title = `Revealed top: ${card.name}`;
+    peekWrap.appendChild(face);
+  });
+  parent.appendChild(peekWrap);
+}
+
+const DECK_COLUMN_DEFS = [
+  { id: "dream", label: "Dream", emoji: "💤", kind: "dream" },
+  { id: "psyche", label: "Psyche", emoji: "🃏", kind: "psyche" },
+  { id: "mindstream-lucidity", label: "Mindstream", sub: "Lucidity", emoji: "◉", suit: "lucidity", kind: "mindstream" },
+  { id: "mindstream-elasticity", label: "Mindstream", sub: "Elasticity", emoji: "⇄", suit: "elasticity", kind: "mindstream" },
+  { id: "mindstream-willpower", label: "Mindstream", sub: "Willpower", emoji: "✊", suit: "willpower", kind: "mindstream" },
+];
+
+let lastDeckColumnKey = "";
+
+export function resetDeckColumnRender() {
+  lastDeckColumnKey = "";
+}
+
+function deckColumnSignature(state) {
+  const parts = DECK_COLUMN_DEFS.map((deck) => {
+    const draw = drawPileForDeck(state, deck.id);
+    const discard = discardPileForDeck(state, deck.id);
+    const peek = state.revealedDeckTops?.[deck.id] || [];
+    const topDiscard = discard.length ? discard[discard.length - 1] : null;
+    return [
+      deck.id,
+      draw.length,
+      discard.length,
+      topDiscard?.instanceId || topDiscard?.id || "",
+      peek.map((c) => c.instanceId || c.id).join(","),
+    ].join(":");
+  });
+  parts.push(state.activeDream?.instanceId || state.activeDream?.id || "");
+  return parts.join("|");
+}
+
 export function renderDecks(state, onViewDiscard, onViewPeek = null) {
-  const tray = document.getElementById("deck-tray");
-  if (!tray) return;
-  tray.innerHTML = "";
+  const column = document.getElementById("deck-column");
+  if (!column) return;
 
-  const coreDecks = [
-    { id: "dream", label: "💤 Dream", count: state.dreamDeck.length },
-    { id: "psyche", label: "🃏 Psyche", count: state.psycheDeck.length },
-    { id: "archetype", label: "👤 Archetype", count: state.archetypeDeck.length },
-  ];
+  const sig = deckColumnSignature(state);
+  if (sig === lastDeckColumnKey && column.childElementCount > 0) return;
+  lastDeckColumnKey = sig;
+  column.innerHTML = "";
 
-  const mindstreamDecks = [
-    { id: "mindstream-lucidity", label: "◉ Mindstream", short: "Lucidity", count: state.mindstreamDecks.lucidity.length, suit: "lucidity" },
-    { id: "mindstream-elasticity", label: "⇄ Mindstream", short: "Elasticity", count: state.mindstreamDecks.elasticity.length, suit: "elasticity" },
-    { id: "mindstream-willpower", label: "✊ Mindstream", short: "Willpower", count: state.mindstreamDecks.willpower.length, suit: "willpower" },
-  ];
-
-  const appendDeck = (deck) => {
-    const discardCount = discardPileForDeck(state, deck.id).length;
+  DECK_COLUMN_DEFS.forEach((deck) => {
+    const drawCount = drawPileForDeck(state, deck.id).length;
+    const discardPile = discardPileForDeck(state, deck.id);
+    const discardCount = discardPile.length;
+    const topDiscard = discardCount ? discardPile[discardCount - 1] : null;
     const peeked = state.revealedDeckTops?.[deck.id] || [];
-    const row = document.createElement("div");
+    const blockDiscard = deck.id.startsWith("mindstream-") && state.tradeMode;
+
+    const row = document.createElement("article");
     row.className = [
-      "deck-dropdown-row",
+      "deck-rail-row",
+      deck.suit ? `suit-${deck.suit}` : `kind-${deck.kind}`,
       peeked.length ? "has-peek" : "",
-      deck.suit ? `suit-${deck.suit}` : "",
+      topDiscard ? "has-discard" : "",
     ].filter(Boolean).join(" ");
     row.dataset.deckId = deck.id;
-    const labelText = deck.short
-      ? `${deck.label} <span class="deck-dropdown-suit">${deck.short}</span>`
-      : deck.label;
-    const peekNames = peeked.map((c) => c.name).join(", ");
-    row.innerHTML = `
-      <div class="deck-dropdown-label">${labelText}</div>
-      <div class="deck-dropdown-meta">${deck.count} in deck · ${discardCount} in discard${peeked.length ? ` · peek: ${peekNames}` : ""}</div>
-    `;
-    const actions = document.createElement("div");
-    actions.className = "deck-dropdown-actions";
-    if (peeked.length && onViewPeek) {
-      const peekBtn = document.createElement("button");
-      peekBtn.type = "button";
-      peekBtn.className = "btn btn-sm btn-peek";
-      peekBtn.textContent = peeked.length === 1 ? "View peek" : `View peek (${peeked.length})`;
-      peekBtn.title = "Browse cards a power revealed on top of this deck";
-      peekBtn.addEventListener("click", () => onViewPeek(deck.id));
-      actions.appendChild(peekBtn);
+
+    const head = document.createElement("header");
+    head.className = "deck-rail-head";
+    const label = document.createElement("span");
+    label.className = "deck-rail-label";
+    label.innerHTML = deck.sub
+      ? `${deck.emoji} ${deck.label} <span class="deck-rail-sub">${deck.sub}</span>`
+      : `${deck.emoji} ${deck.label}`;
+    const meta = document.createElement("span");
+    meta.className = "deck-rail-meta";
+    meta.textContent = `${drawCount} · ${discardCount} disc`;
+    head.append(label, meta);
+    row.appendChild(head);
+
+    const piles = document.createElement("div");
+    piles.className = "deck-rail-piles";
+
+    const drawZone = document.createElement("div");
+    drawZone.className = "deck-rail-draw";
+    drawZone.dataset.deckId = deck.id;
+    drawZone.title = `${drawCount} card${drawCount === 1 ? "" : "s"} in draw pile`;
+    const drawRects = document.createElement("div");
+    drawRects.className = "deck-rect-stack deck-rect-stack-draw";
+    fillRectStack(drawRects, drawCount, "draw");
+    drawZone.appendChild(drawRects);
+    appendPeekCards(drawZone, peeked, onViewPeek, deck.id);
+    piles.appendChild(drawZone);
+
+    const sep = document.createElement("span");
+    sep.className = "deck-rail-sep";
+    sep.setAttribute("aria-hidden", "true");
+    sep.textContent = "⇄";
+    piles.appendChild(sep);
+
+    const discardZone = document.createElement("div");
+    discardZone.className = "deck-rail-discard";
+    discardZone.title = discardCount
+      ? (blockDiscard ? "Discard hidden during trade" : "Click top card to browse discard pile")
+      : "Discard pile is empty";
+    const discardRects = document.createElement("div");
+    discardRects.className = "deck-rect-stack deck-rect-stack-discard";
+    const discardUnder = Math.max(0, discardCount - (topDiscard ? 1 : 0));
+    fillRectStack(discardRects, discardUnder, "discard");
+    discardZone.style.setProperty("--stack-count", String(discardUnder));
+    discardZone.appendChild(discardRects);
+
+    if (topDiscard && !blockDiscard) {
+      const face = deckFaceCard(topDiscard, {
+        onClick: () => onViewDiscard(deck.id),
+      });
+      if (deck.id === "dream") {
+        face.classList.add("deck-last-dream");
+        if (state.activeDream
+          && (state.activeDream.instanceId === topDiscard.instanceId
+            || state.activeDream.id === topDiscard.id)) {
+          const badge = document.createElement("span");
+          badge.className = "deck-last-dream-badge";
+          badge.textContent = "Last Dream";
+          discardZone.appendChild(badge);
+        }
+      }
+      discardZone.appendChild(face);
+    } else if (!topDiscard) {
+      discardZone.appendChild(deckFaceCard(null));
+    } else {
+      const blocked = document.createElement("div");
+      blocked.className = "deck-discard-blocked";
+      blocked.textContent = "Trade";
+      blocked.title = "Discard hidden during trade";
+      discardZone.appendChild(blocked);
     }
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "btn btn-sm";
-    btn.textContent = "View discard";
-    btn.disabled = discardCount === 0;
-    btn.title = discardCount === 0 ? "Discard pile is empty" : "Browse face-up discard cards";
-    btn.addEventListener("click", () => onViewDiscard(deck.id));
-    actions.appendChild(btn);
-    row.appendChild(actions);
-    tray.appendChild(row);
-  };
 
-  coreDecks.forEach(appendDeck);
-
-  const section = document.createElement("div");
-  section.className = "deck-section-label";
-  section.textContent = "Mindstream — Events · Beasts · Objects · Tokens · +Dream";
-  tray.appendChild(section);
-
-  mindstreamDecks.forEach(appendDeck);
+    piles.appendChild(discardZone);
+    row.appendChild(piles);
+    column.appendChild(row);
+  });
 }
 
 export function renderSubconsciousButton(state) {
