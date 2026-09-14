@@ -571,11 +571,13 @@ function bindBoardResize() {
 
 function bindDeckColumnResize() {
   const column = document.getElementById("deck-column");
+  const table = document.getElementById("table-surface");
   if (!column || column.dataset.resizeBound) return;
   column.dataset.resizeBound = "1";
   const sync = () => syncDeckColumnFit();
   const observer = new ResizeObserver(sync);
   observer.observe(column);
+  if (table) observer.observe(table);
   window.addEventListener("resize", sync);
 }
 

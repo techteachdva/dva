@@ -1385,11 +1385,12 @@ export function syncDeckColumnFit() {
   if (!column || !column.childElementCount) return;
 
   const rowCount = column.childElementCount;
-  const rowH = column.clientHeight / rowCount;
-  const cap = Math.max(5, Math.min(15, rowH * 0.17));
-  const base = Math.max(9, Math.min(17, rowH * 0.26));
-  const faceH = Math.max(24, Math.min(42, rowH * 0.4));
-  const faceW = Math.max(18, Math.min(32, faceH * 0.76));
+  const colH = column.clientHeight || column.getBoundingClientRect().height;
+  const rowH = colH / rowCount;
+  const cap = Math.max(10, Math.min(32, rowH * 0.24));
+  const base = Math.max(14, Math.min(30, rowH * 0.34));
+  const faceH = Math.max(34, Math.min(76, rowH * 0.54));
+  const faceW = Math.max(26, Math.min(56, faceH * 0.72));
 
   column.style.setProperty("--deck-stack-cap", `${cap}px`);
   column.style.setProperty("--deck-stack-base", `${base}px`);
@@ -1518,7 +1519,10 @@ export function renderDecks(state, onViewDiscard, onViewPeek = null) {
   });
   }
 
-  requestAnimationFrame(() => syncDeckColumnFit());
+  requestAnimationFrame(() => {
+    syncDeckColumnFit();
+    requestAnimationFrame(syncDeckColumnFit);
+  });
 }
 
 export function renderSubconsciousButton(state) {
