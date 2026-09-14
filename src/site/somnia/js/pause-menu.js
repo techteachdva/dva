@@ -2,7 +2,8 @@ import {
   loadSettings,
   saveSettings,
   MUSIC_TRACKS,
-  VIEW_PRESETS,
+  VIEW_MODE_ORDER,
+  VIEW_MODE_LABELS,
   footerCreditsHtml,
 } from "./audio-settings.js";
 import {
@@ -85,15 +86,15 @@ function renderAudioTab() {
 }
 
 function renderDisplayTab() {
-  const mode = loadSettings().viewMode || "medium";
-  const modes = Object.keys(VIEW_PRESETS).map(
-    (m) => `<button type="button" class="btn ${mode === m ? "primary" : ""}" data-view-mode="${m}">${m.charAt(0).toUpperCase() + m.slice(1)}</button>`,
+  const mode = loadSettings().viewMode || "auto";
+  const modes = VIEW_MODE_ORDER.map(
+    (m) => `<button type="button" class="btn ${mode === m ? "primary" : ""}" data-view-mode="${m}">${VIEW_MODE_LABELS[m] || m}</button>`,
   ).join("");
 
   return `
     <div class="pause-section">
       <h3>Interface size</h3>
-      <p class="pause-hint">Quick presets for sidebar, hand, and text scale.</p>
+      <p class="pause-hint">Auto matches your screen resolution and Windows display scaling. Presets still shrink so the table fits on smaller windows.</p>
       <div class="pause-btn-row">${modes}</div>
     </div>
     <div class="pause-section">

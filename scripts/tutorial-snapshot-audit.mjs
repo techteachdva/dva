@@ -181,6 +181,7 @@ const STEP_ENTRY_CHECKS = {
     if (s.round < 2) return "Round 2 not started";
     if (getPhase(s) !== "Reveal") return `Expected Reveal, got ${getPhase(s)}`;
     if (!s.dreamDrawn) return "Dream not drawn";
+    if (!s.revealLandscapeUsed) return "Lucidity spend not marked; Next Phase would prompt skip confirm";
     if (s.landscapePick) return "Leftover landscape picker would block Next Phase";
     if (!isTutorialActionAllowed(s, "advancePhase")) return "Next Phase gated on step 20";
     return true;

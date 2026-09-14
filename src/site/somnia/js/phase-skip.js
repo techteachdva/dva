@@ -166,6 +166,12 @@ export function requestEndPhase(state, onComplete = () => {}) {
   }
 
   if (!psycheSpent && PHASE_SKIP_COPY[phase]) {
+    // Tutorial advance steps must not stall on the skip confirm (the guide
+    // card can cover the modal, and Lucidity may be spent without flipping).
+    if (state.tutorialMode) {
+      finishPhaseAdvance(state, onComplete);
+      return true;
+    }
     showGenericPhaseSkipWarning(
       state,
       () => finishPhaseAdvance(state, onComplete),

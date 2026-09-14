@@ -842,8 +842,9 @@ export const TUTORIAL_SCRIPT = [
     id: "to-explore-r1",
     round: 1,
     title: "Enter Explore",
-    body: "Click Next Phase at the top when Reveal is done.",
+    body: "Click Next: Explore in the action bar when Reveal is done.",
     target: "#btn-advance-phase",
+    cardDock: "top",
     until: (s) => getPhase(s) === "Explore",
     objective: (s) => (getPhase(s) === "Explore"
       ? "Explore started. Press Continue."
@@ -879,8 +880,9 @@ export const TUTORIAL_SCRIPT = [
     id: "to-meet-r1",
     round: 1,
     title: "Enter Meet",
-    body: "Click Next Phase at the top to enter Meet.",
+    body: "Click Next: Meet in the action bar to enter Meet.",
     target: "#btn-advance-phase",
+    cardDock: "top",
     until: (s) => getPhase(s) === "Meet",
     objective: (s) => (getPhase(s) === "Meet"
       ? "Meet started. Press Continue."
@@ -921,6 +923,7 @@ export const TUTORIAL_SCRIPT = [
     title: "End Round 1",
     body: "Click Next Phase to end Meet and start Round 2. From Round 2 on, each Dreamer draws 2 Psyche at round start.",
     target: "#btn-advance-phase",
+    cardDock: "top",
     until: (s) => s.round >= 2,
     objective: (s) => (s.round >= 2
       ? "Round 2 started. Press Continue."
@@ -973,8 +976,9 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-to-explore",
     round: 2,
     title: "Round 2 — Enter Explore",
-    body: "Click Next Phase at the top. Explore is when Dreamers move across the map toward quest Landscapes.",
+    body: "Click Next: Explore in the action bar. Explore is when Dreamers move across the map toward quest Landscapes.",
     target: "#btn-advance-phase",
+    cardDock: "top",
     until: (s) => atRound(s, 2) && getPhase(s) === "Explore",
     objective: (s) => (getPhase(s) === "Explore"
       ? "Explore started. Press Continue."
@@ -1020,8 +1024,9 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-to-meet",
     round: 2,
     title: "Round 2 — Enter Meet",
-    body: "Click Next Phase at the top. Meet is when you spend actions on Landscapes, Encounters, and quests.",
+    body: "Click Next: Meet in the action bar. Meet is when you spend actions on Landscapes, Encounters, and quests.",
     target: "#btn-advance-phase",
+    cardDock: "top",
     until: (s) => atRound(s, 2) && getPhase(s) === "Meet",
     objective: (s) => (getPhase(s) === "Meet"
       ? "Meet started. Press Continue."
@@ -1108,6 +1113,7 @@ export const TUTORIAL_SCRIPT = [
     title: "End Round 2",
     body: "Click Next Phase when ready. Round 3 introduces a Boss Dream.",
     target: "#btn-advance-phase",
+    cardDock: "top",
     until: (s) => s.round >= 3,
     objective: (s) => (s.round >= 3
       ? "Round 3 started. Press Continue."
@@ -1214,7 +1220,7 @@ const TUTORIAL_ADVANCE_ONLY_STEPS = new Set([
 function releaseTutorialAdvanceBlockers(state, step) {
   if (!step || !TUTORIAL_ADVANCE_ONLY_STEPS.has(step.id)) return;
   if (!state.landscapePick) return;
-  if (state.landscapePick.mode === "reveal" && state.landscapePick.picked?.length) {
+  if (state.landscapePick.mode === "reveal" && !state.landscapePick.freeReveal) {
     state.revealLandscapeUsed = true;
   }
   state.landscapePick = null;

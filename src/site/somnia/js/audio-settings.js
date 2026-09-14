@@ -21,6 +21,15 @@ export const VIEW_PRESETS = {
   large: { sidebarW: 360, handH: 280, chromeH: 72, footerH: 132, uiScale: 1.22 },
 };
 
+export const VIEW_MODE_ORDER = ["auto", "small", "medium", "large"];
+
+export const VIEW_MODE_LABELS = {
+  auto: "Auto",
+  small: "Small",
+  medium: "Medium",
+  large: "Large",
+};
+
 const DEFAULT_SETTINGS = {
   musicMode: "radio",
   trackId: "dreams-become-real",
@@ -30,7 +39,7 @@ const DEFAULT_SETTINGS = {
   sfxMuted: false,
   musicPan: 0,
   sfxPan: 0,
-  viewMode: "large",
+  viewMode: "auto",
   guideOpen: false,
   panels: {
     sidebarW: null,

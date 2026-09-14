@@ -4,25 +4,96 @@ const MIN = { sidebarW: 120, handH: 80, chromeH: 48, footerH: 56 };
 const MAX = { sidebarW: 480, handH: 400, chromeH: 120, footerH: 220 };
 
 let settings = loadSettings();
+let viewportBound = false;
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
+function readViewport() {
+  const vv = window.visualViewport;
+  const w = Math.max(320, Math.round(vv?.width || window.innerWidth || 1280));
+  const h = Math.max(320, Math.round(vv?.height || window.innerHeight || 720));
+  return {
+    w,
+    h,
+    dpr: window.devicePixelRatio || 1,
+  };
+}
+
+/** Layout metrics derived from the actual CSS viewport (includes OS display scaling). */
+export function computeViewportMetrics() {
+  const { w, h, dpr } = readViewport();
+  const widthScale = w / 1600;
+  const heightScale = h / 900;
+  const uiScale = Number(clamp(Math.min(widthScale, heightScale), 0.7, 1.08).toFixed(3));
+
+  const chromeH = Math.round(clamp(h * 0.055, 44, 58));
+  const sidebarW = Math.round(clamp(w * 0.2, 196, 340));
+  const maxHand = Math.round(h * 0.46);
+  const minBoard = Math.round(h * 0.36);
+  const handH = Math.round(clamp(h * 0.34, 168, Math.min(maxHand, h - chromeH - minBoard)));
+  const dockBudget = Math.round(handH * 0.58);
+  const btnH = Math.round(clamp((dockBudget - 36) / 3, 34, 64));
+  const btnFs = Number(clamp(btnH / 40, 0.82, 1.55).toFixed(2));
+
+  return {
+    w,
+    h,
+    dpr,
+    uiScale,
+    sidebarW,
+    handH,
+    chromeH,
+    footerH: Math.round(handH * 0.35),
+    actionBtnH: `${btnH}px`,
+    actionBtnFs: `${btnFs}rem`,
+    heightBand: h < 760 ? "short" : h < 960 ? "standard" : "tall",
+    widthBand: w < 1180 ? "narrow" : w < 1600 ? "standard" : "wide",
+  };
+}
+
 function presetForMode(mode) {
+  if (!mode || mode === "auto") return null;
   return VIEW_PRESETS[mode] || VIEW_PRESETS.medium;
 }
 
 function resolvedPanels() {
-  const preset = presetForMode(settings.viewMode);
+  const metrics = computeViewportMetrics();
+  const mode = settings.viewMode || "auto";
   const p = settings.panels || {};
+  const preset = presetForMode(mode);
+
+  if (!preset) {
+    return {
+      sidebarW: p.sidebarW ?? metrics.sidebarW,
+      handH: p.handH ?? metrics.handH,
+      chromeH: p.chromeH ?? metrics.chromeH,
+      footerH: p.footerH ?? metrics.footerH,
+      uiScale: metrics.uiScale,
+      actionBtnH: metrics.actionBtnH,
+      actionBtnFs: metrics.actionBtnFs,
+      metrics,
+    };
+  }
+
   return {
-    sidebarW: p.sidebarW ?? preset.sidebarW,
-    handH: p.handH ?? preset.handH,
+    sidebarW: p.sidebarW ?? Math.min(preset.sidebarW, Math.round(metrics.sidebarW * 1.15)),
+    handH: p.handH ?? Math.min(preset.handH, metrics.handH),
     chromeH: p.chromeH ?? preset.chromeH,
     footerH: p.footerH ?? preset.footerH,
-    uiScale: preset.uiScale,
+    uiScale: Math.min(preset.uiScale, Number((metrics.uiScale * 1.12).toFixed(3))),
+    actionBtnH: metrics.actionBtnH,
+    actionBtnFs: metrics.actionBtnFs,
+    metrics,
   };
+}
+
+function applyViewportDataset(metrics) {
+  const root = document.documentElement;
+  root.dataset.viewportHeight = metrics.heightBand;
+  root.dataset.viewportWidth = metrics.widthBand;
+  root.dataset.viewportDpr = String(Math.round((metrics.dpr || 1) * 10) / 10);
 }
 
 export function applyLayout() {
@@ -34,14 +105,19 @@ export function applyLayout() {
   root.style.setProperty("--chrome-h", `${panels.chromeH}px`);
   root.style.setProperty("--footer-h", `${panels.footerH}px`);
   root.style.setProperty("--ui-scale", String(panels.uiScale));
-  document.body.classList.remove("view-mode-small", "view-mode-medium", "view-mode-large");
-  document.body.classList.add(`view-mode-${settings.viewMode || "medium"}`);
-
+  root.style.setProperty("--action-btn-h", panels.actionBtnH);
+  root.style.setProperty("--action-btn-fs", panels.actionBtnFs);
+  applyViewportDataset(panels.metrics);
+  document.body.classList.remove("view-mode-small", "view-mode-medium", "view-mode-large", "view-mode-auto");
+  document.body.classList.add(`view-mode-${settings.viewMode || "auto"}`);
 }
 
 export function setViewMode(mode) {
-  if (!VIEW_PRESETS[mode]) return;
-  settings = saveSettings({ viewMode: mode, panels: { sidebarW: null, handH: null, chromeH: null, footerH: null } });
+  if (mode !== "auto" && !VIEW_PRESETS[mode]) return;
+  settings = saveSettings({
+    viewMode: mode,
+    panels: { sidebarW: null, handH: null, chromeH: null, footerH: null },
+  });
   applyLayout();
 }
 
@@ -100,9 +176,23 @@ function bindResizeHandle(handle, axis, key, getStart, onMove) {
   }, { passive: false });
 }
 
+function bindViewportFit() {
+  if (viewportBound) return;
+  viewportBound = true;
+  let resizeTimer = null;
+  const onResize = () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => applyLayout(), 80);
+  };
+  window.addEventListener("resize", onResize);
+  window.addEventListener("orientationchange", () => setTimeout(applyLayout, 180));
+  window.visualViewport?.addEventListener("resize", onResize);
+}
+
 export function initPanelLayout() {
   settings = loadSettings();
   applyLayout();
+  bindViewportFit();
 
   const panels = resolvedPanels();
 
@@ -129,9 +219,8 @@ export function initPanelLayout() {
       persistPanel("handH", h);
     },
   );
-
 }
 
 export function getViewMode() {
-  return loadSettings().viewMode || "medium";
+  return loadSettings().viewMode || "auto";
 }

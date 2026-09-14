@@ -20,10 +20,12 @@
   --font-body: "Source Sans 3", sans-serif;
   --topbar-h: 3.5rem;
   --sidebar-w: clamp(280px, 28vw, 420px);
-  --hand-h: clamp(280px, 36vh, 480px);
+  --hand-h: clamp(168px, 34vh, 380px);
   --chrome-h: 0px;
   --footer-h: 108px;
   --ui-scale: 1;
+  --action-btn-h: clamp(2.35rem, 6.2vh, 4rem);
+  --action-btn-fs: clamp(0.9rem, 1.85vh, 1.5rem);
 }
 
 * { box-sizing: border-box; }
@@ -725,7 +727,7 @@ body.in-game .brand h1 {
   border-right: none;
   border-bottom: none;
   min-height: var(--hand-h);
-  max-height: min(68vh, 640px);
+  max-height: min(46vh, 520px);
   overflow-x: hidden;
   overflow-y: auto;
   position: relative;
@@ -2481,7 +2483,8 @@ body.tutorial-mode-active .tutorial-highlight {
   pointer-events: auto;
 }
 
-body.tutorial-mode-active #hand-bar:has(.tutorial-highlight) {
+body.tutorial-mode-active #hand-bar:has(.tutorial-highlight),
+body.tutorial-mode-active #hand-bar:has(#btn-advance-phase.tutorial-highlight) {
   overflow: visible;
   z-index: 151;
 }
@@ -4264,7 +4267,8 @@ body.utility-modal-open.tutorial-mode-active .tutorial-overlay {
 }
 
 body.utility-modal-open.tutorial-mode-active .tutorial-card {
-  pointer-events: auto;
+  pointer-events: none;
+  opacity: 0.4;
 }
 
 body.utility-modal-open.tutorial-mode-active .tutorial-backdrop {
@@ -6185,7 +6189,7 @@ html[data-device="mobile"] .player-chip {
   grid-column: 1 / -1;
   grid-row: 1;
   min-width: 0;
-  min-height: calc(3 * 5.1rem + 2.6rem);
+  min-height: 0;
   max-height: none;
   overflow: visible;
   border: 1px solid rgba(201, 160, 255, 0.38);
@@ -6279,10 +6283,10 @@ html[data-device="mobile"] .player-chip {
   width: 100%;
   max-width: none;
   min-width: 0;
-  font-size: 2.05rem;
-  height: 5.1rem;
-  min-height: 5.1rem;
-  max-height: 5.1rem;
+  font-size: var(--action-btn-fs);
+  height: var(--action-btn-h);
+  min-height: var(--action-btn-h);
+  max-height: var(--action-btn-h);
   padding: 0.35rem 0.7rem;
   box-shadow: 0 2px 10px rgba(123, 92, 255, 0.28);
 }
@@ -6309,13 +6313,13 @@ html[data-device="mobile"] .player-chip {
 }
 
 .action-dock-btn {
-  font-size: 2.05rem;
+  font-size: var(--action-btn-fs);
   font-weight: 700;
   line-height: 1.05;
   padding: 0.35rem 0.65rem;
-  height: 5.1rem;
-  min-height: 5.1rem;
-  max-height: 5.1rem;
+  height: var(--action-btn-h);
+  min-height: var(--action-btn-h);
+  max-height: var(--action-btn-h);
   width: auto;
   flex: 1 1 0;
   min-width: 0;
@@ -6354,11 +6358,11 @@ html[data-touch="true"] .action-dock-btn,
 html[data-device="mobile"] .action-dock .btn-advance,
 html[data-device="tablet"] .action-dock .btn-advance,
 html[data-touch="true"] .action-dock .btn-advance {
-  height: 5.1rem;
-  min-height: 5.1rem;
-  max-height: 5.1rem;
+  height: var(--action-btn-h);
+  min-height: var(--action-btn-h);
+  max-height: var(--action-btn-h);
   min-width: 0;
-  font-size: 1.85rem;
+  font-size: var(--action-btn-fs);
   padding: 0.35rem 0.55rem;
 }
 
@@ -6773,16 +6777,16 @@ body.play-window .action-dock-wrap {
 body.play-window .action-dock-btn {
   border-radius: 18px;
   padding: 0.35rem 0.65rem;
-  height: 5.1rem;
-  min-height: 5.1rem;
-  font-size: 2.05rem;
+  height: var(--action-btn-h);
+  min-height: var(--action-btn-h);
+  font-size: var(--action-btn-fs);
 }
 
 body.play-window .action-dock-advance .btn-advance {
   border-radius: 18px;
-  height: 5.1rem;
-  min-height: 5.1rem;
-  font-size: 2.05rem;
+  height: var(--action-btn-h);
+  min-height: var(--action-btn-h);
+  font-size: var(--action-btn-fs);
 }
 
 body.play-window #screen-game .hand-bar {
@@ -6917,4 +6921,33 @@ body.play-window .subconscious-graveyard {
     font-size: 0.76rem;
     padding: 0.28rem 0.6rem;
   }
+}
+
+html[data-viewport-height="short"] #screen-game .hand-bar {
+  max-height: min(40vh, 300px);
+}
+
+html[data-viewport-height="short"] #screen-game .hand-bar > .hand-section:has(.hand-dreamer-display),
+html[data-viewport-height="short"] #screen-game .psyche-hand-section {
+  min-height: 5.5rem;
+}
+
+html[data-viewport-height="short"] .tutorial-card {
+  max-height: min(48vh, 380px);
+  width: min(42vw, 440px);
+  min-width: 280px;
+}
+
+html[data-viewport-height="short"] .action-group-label {
+  font-size: 0.78rem;
+}
+
+html[data-viewport-width="narrow"] #screen-game .hand-bar {
+  grid-template-columns: minmax(88px, 16vw) minmax(80px, 110px) minmax(0, 1fr) minmax(0, 26vw);
+  gap: 0.35rem 0.45rem;
+}
+
+html[data-viewport-width="narrow"] .top-bar-stepper {
+  min-width: 8.5rem;
+  max-width: 14rem;
 }

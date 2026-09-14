@@ -2764,6 +2764,7 @@ export function showPhaseSkipConfirm({ title, message, confirmLabel = "Continue"
   });
   bindUtilityModalActions(body, { onCancel });
   modal.classList.remove("hidden");
+  document.body.classList.add("utility-modal-open");
 }
 
 export function showMeetDreambeastSkipConfirm({
@@ -2803,6 +2804,7 @@ export function showMeetDreambeastSkipConfirm({
   });
   bindUtilityModalActions(body, { onCancel });
   modal.classList.remove("hidden");
+  document.body.classList.add("utility-modal-open");
 }
 
 export function showLandscapeDetail(state, tileId) {
@@ -2949,8 +2951,9 @@ function getStepTargetSelectors(step) {
 
 const TUTORIAL_BOTTOM_SELECTORS = new Set([
   "#hand-bar", "#phase-actions", "#table-footer", "#dreamer-dock", "#player-list",
+  "#btn-advance-phase", "#phase-advance-bar",
 ]);
-const TUTORIAL_TOP_SELECTORS = new Set(["#btn-advance-phase", "#phase-advance-bar", "#phase-stepper", "#narrator-panel"]);
+const TUTORIAL_TOP_SELECTORS = new Set(["#phase-stepper", "#narrator-panel"]);
 const TUTORIAL_BOARD_SELECTORS = new Set(["#board-viewport", "#hex-board", "#player-list", "#dreamer-dock"]);
 
 function isUtilityModalOpen() {
@@ -2989,9 +2992,6 @@ function inferTutorialCardDock(step) {
 
   if (TUTORIAL_BOTTOM_SELECTORS.has(spotlight) || selectors.some((s) => TUTORIAL_BOTTOM_SELECTORS.has(s))) {
     return "top";
-  }
-  if (spotlight === "#btn-advance-phase" || selectors.includes("#phase-advance-bar")) {
-    return "bottom";
   }
   if (TUTORIAL_BOARD_SELECTORS.has(spotlight) || selectors.includes("#board-viewport")) {
     return "top";
@@ -3235,23 +3235,107 @@ function endTutorialWindowPointer() {
   tutorialWindowResize = null;
 }
 
-function suggestTutorialWindowPosition(step) {
-  if (!tutorialWindowState || tutorialWindowState.userPositioned) return;
+function rectsOverlap(a, b, pad = 12) {
+  if (!a || !b) return false;
+  return !(
+    a.right + pad < b.left
+    || a.left - pad > b.right
+    || a.bottom + pad < b.top
+    || a.top - pad > b.bottom
+  );
+}
+
+function isAdvanceButtonTutorialStep(step) {
   const selectors = getStepTargetSelectors(step);
   const spotlight = getSpotlightSelector(step);
-  const boardFocus = TUTORIAL_BOARD_SELECTORS.has(spotlight)
-    || selectors.includes("#board-viewport");
-  if (!boardFocus) return;
+  return spotlight === "#btn-advance-phase"
+    || selectors.includes("#btn-advance-phase")
+    || selectors.includes("#phase-advance-bar");
+}
 
+function suggestTutorialWindowPosition(step) {
+  if (!tutorialWindowState) return;
   const card = document.getElementById("tutorial-card");
   if (!card) return;
-  const rect = card.getBoundingClientRect();
+
+  const spotlightRect = getTutorialSpotlightRect();
+  const mustClearAdvance = isAdvanceButtonTutorialStep(step);
+  if (tutorialWindowState.userPositioned && !mustClearAdvance) return;
+
+  const vw = window.innerWidth;
   const vh = window.innerHeight;
-  tutorialWindowState.left = TUTORIAL_WINDOW_MARGIN;
-  tutorialWindowState.top = Math.max(TUTORIAL_WINDOW_MARGIN, Math.round((vh - rect.height) / 2));
-  tutorialWindowState.width = Math.min(tutorialWindowState.width, Math.round(window.innerWidth * 0.34));
+  tutorialWindowState.width = Math.min(
+    Math.max(tutorialWindowState.width, TUTORIAL_WINDOW_MIN_WIDTH),
+    Math.round(vw * 0.36),
+    560,
+  );
+
+  const reservedBottom = mustClearAdvance ? Math.round(vh * 0.42) : 0;
+  const maxCardH = Math.max(
+    TUTORIAL_WINDOW_MIN_HEIGHT,
+    vh - TUTORIAL_WINDOW_MARGIN * 2 - reservedBottom,
+  );
+  if (mustClearAdvance && tutorialWindowState.height != null) {
+    tutorialWindowState.height = Math.min(tutorialWindowState.height, maxCardH);
+  }
+
+  applyTutorialWindowGeometry();
+
+  const measured = card.getBoundingClientRect();
+  let cardH = tutorialWindowState.height || measured.height || 280;
+  if (mustClearAdvance && cardH > maxCardH) {
+    tutorialWindowState.height = maxCardH;
+    applyTutorialWindowGeometry();
+    cardH = maxCardH;
+  }
+  const cardW = tutorialWindowState.width;
+  const topY = TUTORIAL_WINDOW_MARGIN + 8;
+  const bottomY = Math.max(TUTORIAL_WINDOW_MARGIN, vh - cardH - TUTORIAL_WINDOW_MARGIN);
+  const leftX = TUTORIAL_WINDOW_MARGIN;
+  const rightX = Math.max(TUTORIAL_WINDOW_MARGIN, vw - cardW - TUTORIAL_WINDOW_MARGIN);
+  const midY = Math.max(topY, Math.round((vh - cardH) / 2));
+  const dock = inferTutorialCardDock(step);
+
+  const candidates = dock === "top" || mustClearAdvance
+    ? [
+      { left: leftX, top: topY },
+      { left: rightX, top: topY },
+      { left: leftX, top: midY },
+    ]
+    : [
+      { left: leftX, top: midY },
+      { left: leftX, top: topY },
+      { left: rightX, top: topY },
+      { left: leftX, top: bottomY },
+    ];
+
+  const pick = candidates.find((pos) => {
+    const box = {
+      left: pos.left,
+      top: pos.top,
+      right: pos.left + cardW,
+      bottom: pos.top + cardH,
+    };
+    return !rectsOverlap(box, spotlightRect, 18);
+  }) || candidates[0];
+
+  if (tutorialWindowState.userPositioned) {
+    const current = {
+      left: tutorialWindowState.left,
+      top: tutorialWindowState.top,
+      right: tutorialWindowState.left + cardW,
+      bottom: tutorialWindowState.top + cardH,
+    };
+    if (!rectsOverlap(current, spotlightRect, 18)) return;
+  }
+
+  tutorialWindowState.left = pick.left;
+  tutorialWindowState.top = pick.top;
   clampTutorialWindowToViewport();
   applyTutorialWindowGeometry();
+  if (mustClearAdvance) {
+    card.style.maxHeight = `${maxCardH}px`;
+  }
 }
 
 function ensureTutorialWindowChrome() {

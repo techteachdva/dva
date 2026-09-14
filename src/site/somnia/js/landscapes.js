@@ -344,11 +344,8 @@ export function handleLandscapeTilePick(state, tileId) {
 
 export function cancelLandscapePick(state) {
   if (!state.landscapePick) return;
-  if (
-    state.landscapePick.mode === "reveal"
-    && state.landscapePick.picked.length > 0
-    && !state.landscapePick.freeReveal
-  ) {
+  // Paid Lucidity spend is complete even if the team reveals 0 tiles.
+  if (state.landscapePick.mode === "reveal" && !state.landscapePick.freeReveal) {
     state.revealLandscapeUsed = true;
   }
   state.landscapePick = null;

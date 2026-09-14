@@ -1024,6 +1024,9 @@ function renderAll() {
   if (!state) return;
   bindUiRenderState(state);
   resolveStaleLandscapePick(state);
+  if (isInteractiveTutorialActive(state)) {
+    syncTutorial(state);
+  }
 
   if (state.status === "won") {
     if (state.tutorialVictory) {
