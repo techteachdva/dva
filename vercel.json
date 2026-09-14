@@ -13,6 +13,7 @@
     { "source": "/physix", "destination": "/physix/", "permanent": true }
   ],
   "rewrites": [
+    { "source": "/api/somnia-saves", "destination": "/api/somnia-highscores?somniaApi=saves" },
     { "source": "/api/diagnostic-writing/submissions", "destination": "/api/diagnostic-writing-submissions" },
     { "source": "/api/item-diagnostic/submissions", "destination": "/api/item-diagnostic-submissions" },
     { "source": "/api/writeflow/submissions", "destination": "/api/writeflow-submissions" },
