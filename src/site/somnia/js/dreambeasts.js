@@ -8,6 +8,7 @@ import {
   setEncounterOnLandscape,
 } from "./state.js";
 import { recordQuestEvent } from "./quests.js";
+import { logMoment } from "./narrator.js";
 import { grantPowerTokens, spendPowerTokens } from "./power-tokens.js";
 import { repressCard, requestReturnCards, enqueueRepressFromHand, isDreambeastPsycheCard } from "./subconscious.js";
 import { applyBossAcceptEffect } from "./bosses.js";
@@ -673,7 +674,7 @@ export function applyRejectReward(state, encounter, actor, helpers = {}) {
     }
     case "cancel-dream-draw": {
       state.skipNextDreamDraw = true;
-      addLog(state, "Sandman: the next Dream draw is cancelled.");
+      logMoment(state, "Sandman — the next Dream draw is cancelled.");
       break;
     }
     case "set-wildcard": {

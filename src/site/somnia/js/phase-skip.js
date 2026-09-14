@@ -1,4 +1,5 @@
 import { getPhase, addLog, checkDefeat } from "./state.js";
+import { logMoment } from "./narrator.js";
 import { SUIT_LABELS, phaseSuitForOpening } from "./rules.js";
 import { endPhase } from "./game.js";
 import { enqueueCollectiveRepressFromHand } from "./subconscious.js";
@@ -55,7 +56,7 @@ function discardDreamCardsFromDeck(state, count) {
     discarded += 1;
   }
   if (discarded > 0) {
-    addLog(
+    logMoment(
       state,
       `The Timeline frays — ${discarded} Dream card${discarded === 1 ? "" : "s"} discarded from the deck.`,
     );

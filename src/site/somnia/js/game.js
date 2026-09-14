@@ -89,7 +89,8 @@ import {
 } from "./mindstream-supply.js";
 import { beginTransformationPick } from "./dream-choices.js";
 import { beginRevealPicking, handleLandscapeTilePick, cancelLandscapePick, requestChooseTile } from "./landscapes.js";
-import { narrate } from "./narrator.js";
+import { narrate, logMoment } from "./narrator.js";
+import { flashPhaseEntryMoments } from "./moment-overlay.js";
 import { playSfx } from "./audio.js";
 import { markPhasePulse, markDreamFeedNudge } from "./fx.js";
 import { recordQuestEvent } from "./quests.js";
@@ -610,7 +611,7 @@ export function drawAdditionalDream(state, onShowModal) {
   if (card.type === "boss-dream" || card.boss) {
     const encounter = { ...card, type: "dreambeast", instanceId: uid("enc") };
     setEncounterOnLandscape(state, "bed", encounter);
-    addLog(state, `${card.name} awakens on The Bed!`);
+    logMoment(state, `${card.name} awakens on The Bed!`);
     markDreamFeedNudge();
   } else if (card.type === "final" && card.id === "you-never-wake") {
     resolveCardEffect(state, card, head, getEffectHelpers());
@@ -635,7 +636,7 @@ export function drawDreamCard(state, onShowModal) {
   if (state.skipNextDreamDraw) {
     state.skipNextDreamDraw = false;
     state.dreamDrawn = true;
-    addLog(state, "Sandman cancels this Dream draw.");
+    logMoment(state, "Sandman cancels this Dream draw.");
     return null;
   }
 
@@ -663,7 +664,7 @@ export function drawDreamCard(state, onShowModal) {
   if (card.type === "boss-dream" || card.boss) {
     const encounter = { ...card, type: "dreambeast", instanceId: uid("enc") };
     setEncounterOnLandscape(state, "bed", encounter);
-    addLog(state, `${card.name} awakens on The Bed!`);
+    logMoment(state, `${card.name} awakens on The Bed!`);
     recordQuestEvent(state, "meet_boss", { bossId: card.id });
     markDreamFeedNudge();
   } else {
@@ -734,7 +735,7 @@ export function activateExplore(state) {
   if (freeRound) {
     budget = Math.max(budget, state.players.filter((p) => p.alive).length);
     state.freeExploreNextRound = false;
-    addLog(state, "Travel dream: free moves for all Dreamers this round.");
+    logMoment(state, "Travel Dream — free movement for every Dreamer this Explore Phase.");
   }
 
   if (!player && !freeRound) {
@@ -1579,13 +1580,16 @@ export function endPhase(state) {
   if (leaving === "Meet") onMeetPhaseEnd(state);
   advancePhase(state);
   if (leaving === "Reveal" && state.skipExploreNextRound) {
+    const reason = state.skipExploreReason || "drawn Dream";
     state.skipExploreNextRound = false;
-    addLog(state, "Trapped: skipping Explore Phase.");
+    state.skipExploreReason = null;
+    logMoment(state, `Explore Phase skipped — ${reason}.`);
     onExplorePhaseEnd(state);
     advancePhase(state);
   }
   checkDefeat(state);
   const phase = getPhase(state);
+  flashPhaseEntryMoments(state, phase);
   markPhasePulse();
   playSfx("phase");
   narrate(

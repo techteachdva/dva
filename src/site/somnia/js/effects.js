@@ -22,6 +22,7 @@ import {
 } from "./subconscious.js";
 import { MINDSTREAM_EFFECTS } from "./mindstream.js";
 import { markDreamFeedNudge } from "./fx.js";
+import { logMoment } from "./narrator.js";
 import { OBJECT_EFFECTS, rememberObjectHelpers } from "./object-effects.js";
 import {
   rememberDreamHelpers,
@@ -127,6 +128,7 @@ export function clearDreamRoundFlags(state) {
   state.wanderlustMoves = 0;
   state.pickEncounterOnSpawn = false;
   state.skipExploreNextRound = false;
+  state.skipExploreReason = null;
   state.rivalryEncountersOnBed = 0;
   state.rivalryLeftover = 0;
   state.paradoxMeet = false;
@@ -157,7 +159,7 @@ export function onExplorePhaseEnd(state) {
   if (!state.wanderlustTarget) return;
   if ((state.wanderlustMoves || 0) >= state.wanderlustTarget) {
     allDrawPsyche(state, 3);
-    addLog(state, "Wanderlust fulfilled — all Dreamers Draw 3 Psyche!");
+    logMoment(state, "Wanderlust fulfilled — all Dreamers draw 3 Psyche.");
   }
   state.wanderlustTarget = 0;
   state.wanderlustMoves = 0;
@@ -181,7 +183,7 @@ function applyDreambeastTimelineHunger(state) {
 
   const paid = spendPowerTokensCollectively(state, beastCount);
   if (paid > 0) {
-    addLog(
+    logMoment(
       state,
       `${beastCount} roaming Dreambeast${beastCount === 1 ? "" : "s"} — the team spends ${paid} Power Token${paid === 1 ? "" : "s"} to steady the Timeline.`,
     );
@@ -191,7 +193,7 @@ function applyDreambeastTimelineHunger(state) {
 
   const discarded = discardDreamCardsFromDeck(state, unpaid);
   if (discarded > 0) {
-    addLog(
+    logMoment(
       state,
       `The Timeline frays — ${discarded} Dream card${discarded === 1 ? "" : "s"} discarded (${unpaid} Dreambeast${unpaid === 1 ? "" : "s"} still hunger; not enough Power).`,
     );
@@ -212,7 +214,7 @@ export function onMeetPhaseEnd(state) {
       }
     });
     recordQuestEvent(state, "discard_psyche", { count: state.rivalryLeftover });
-    addLog(state, `Rivalry: leftover Encounters cost ${state.rivalryLeftover} Psyche.`);
+    logMoment(state, `Rivalry — leftover Encounters cost ${state.rivalryLeftover} Psyche.`);
   }
   state.rivalryLeftover = 0;
   state.rivalryEncountersOnBed = 0;
@@ -255,7 +257,7 @@ const DREAM_EFFECTS = {
   recovery: (state) => {
     const players = alivePlayers(state);
     if (!players.length) return;
-    addLog(state, "Recovery: each Dreamer Returns 1 card from the Subconscious.");
+    logMoment(state, "Recovery — each Dreamer returns 1 card from the Subconscious.");
     players.forEach((p) => {
       enqueueReturnCards(state, 1, p, {
         reason: `${p.name}: Return 1 card from the Subconscious.`,
@@ -275,7 +277,7 @@ const DREAM_EFFECTS = {
   travel: (state) => {
     state.freeExploreNextRound = true;
     state.skipLandscapeActionsNextMeet = true;
-    addLog(state, "Next Explore: each Dreamer may move anywhere for free.");
+    logMoment(state, "Travel Dream — free Explore movement next round; Landscape Meet actions skipped next Meet.");
   },
   judgement: (state, _player, helpers) => {
     rememberDreamHelpers(helpers);
@@ -290,7 +292,7 @@ const DREAM_EFFECTS = {
         left -= 1;
       }
     });
-    addLog(state, "Misunderstanding: Mindstream cards Repressed.");
+    logMoment(state, "Misunderstanding — Mindstream cards repressed.");
   },
   mortality: (state) => {
     rememberDreamHelpers();
@@ -305,7 +307,7 @@ const DREAM_EFFECTS = {
         state.abductionCarried.push(...carried);
       });
     state.meetOnlyRound = true;
-    addLog(state, "Abduction: carried Dreamers may only Meet this round.");
+    logMoment(state, "Abduction — carried Encounters may only be Met this round.");
   },
   absurdity: (state) => {
     const drawCount = dreamerCount(state) + 1;
@@ -333,7 +335,7 @@ const DREAM_EFFECTS = {
         addLog(state, `Absurdity: ${event.name} forgets ${tile.name}.`);
       });
     });
-    addLog(state, `Absurdity: ${events.length} Event${events.length === 1 ? "" : "s"} reshape the Dreamscape.`);
+    logMoment(state, `Absurdity — ${events.length} Event${events.length === 1 ? "" : "s"} reshape the Dreamscape.`);
   },
   bargaining: (state) => {
     beginBargainingChoices(state);
@@ -344,15 +346,18 @@ const DREAM_EFFECTS = {
   wanderlust: (state) => {
     state.wanderlustTarget = dreamerCount(state) * 3;
     state.wanderlustMoves = 0;
-    addLog(state, `Wanderlust: Explore ${state.wanderlustTarget} Landscapes this round for a reward.`);
+    logMoment(state, `Wanderlust — explore ${state.wanderlustTarget} Landscapes this round for a reward.`);
   },
   transformation: (state) => {
     state.pickEncounterOnSpawn = true;
-    addLog(state, "Transformation: next Spawn lets you pick from 2 Encounters.");
+    logMoment(state, "Transformation — next Spawn lets you pick from 2 Encounters.");
   },
   trapped: (state) => {
     state.skipExploreNextRound = true;
-    addLog(state, "Trapped: skip the next Explore Phase.");
+    state.skipExploreReason = state.activeDream?.name
+      ? `${state.activeDream.name} Dream`
+      : "drawn Dream";
+    logMoment(state, "Trapped — the next Explore Phase will be skipped.");
   },
   lost: (state) => {
     const neighbors = adjacentTiles(state, "bed").filter((t) => t.revealed && !t.center && t.id !== "bed");
@@ -375,7 +380,7 @@ const DREAM_EFFECTS = {
           }
         });
     });
-    addLog(state, "Lost: Landscapes adjacent to The Bed become Wasteland.");
+    logMoment(state, "Lost — Landscapes adjacent to The Bed become Wasteland.");
   },
   misplaced: (state) => {
     beginMisplacedChoices(state);
@@ -392,11 +397,11 @@ const DREAM_EFFECTS = {
     }
     state.rivalryLeftover = Math.max(0, count - placed);
     state.rivalryEncountersOnBed = count;
-    addLog(
+    logMoment(
       state,
       state.rivalryLeftover
-        ? `Rivalry: ${placed} Encounter(s) near The Bed; ${state.rivalryLeftover} leftover cost 1 Psyche each at end of Meet.`
-        : `Rivalry: ${placed} Encounter(s) placed on and beside The Bed.`,
+        ? `Rivalry — ${placed} Encounter(s) near The Bed; ${state.rivalryLeftover} leftover cost 1 Psyche each at end of Meet.`
+        : `Rivalry — ${placed} Encounter(s) placed on and beside The Bed.`,
     );
   },
   temptation: (state) => {
@@ -404,7 +409,7 @@ const DREAM_EFFECTS = {
   },
   paradox: (state) => {
     state.paradoxMeet = true;
-    addLog(state, "Paradox: Willpower and Elasticity costs swap next Meet Phase.");
+    logMoment(state, "Paradox — Willpower and Elasticity costs swap next Meet Phase.");
   },
   powerlessness: (state, _player, helpers) => {
     rememberDreamHelpers(helpers);
@@ -434,6 +439,7 @@ const DREAM_EFFECTS = {
       addLog(state, `Loss: Forgot ${t.name}.`);
     });
     if (!corners.length) forgetLandscapes(state, 4);
+    else logMoment(state, "Loss — distant Landscapes become Wasteland.");
   },
   abandonment: (state) => {
     state.board.forEach((t) => {
@@ -442,7 +448,7 @@ const DREAM_EFFECTS = {
         t.encounter = null;
       }
     });
-    addLog(state, "All Encounters abandoned to Subconscious.");
+    logMoment(state, "Abandonment — all Encounters sent to the Subconscious.");
     beginAbandonmentMoves(state);
   },
   delta: (state) => {
@@ -474,7 +480,7 @@ const DREAM_EFFECTS = {
   },
   homeostasis: (state) => {
     allDrawPsyche(state, 5);
-    addLog(state, "Homeostasis: all Dreamers Draw 5 Psyche.");
+    logMoment(state, "Homeostasis — all Dreamers draw 5 Psyche.");
   },
   "pineal-purge": (state) => {
     beginPinealPurgeChoices(state);
@@ -485,6 +491,7 @@ const DREAM_EFFECTS = {
   "you-never-wake": (state) => {
     if (state.tutorialMode) return;
     state.status = "lost";
+    logMoment(state, "You Never Wake — the Dream collapses.");
   },
 };
 
@@ -548,7 +555,7 @@ export function resolveCardEffect(state, card, player, helpers) {
   }
 
   if (card.type === "draw-dream") {
-    addLog(state, "Draw 1 Additional Dream Card!");
+    logMoment(state, "Draw 1 additional Dream card.");
     if (helpers?.drawAdditionalDream) {
       helpers.drawAdditionalDream(state);
     }
@@ -618,7 +625,7 @@ export function defeatFinalArchetype(state, archetype, player, selectedCards, me
     return false;
   }
   archetype.defeated = true;
-  addLog(state, `${archetype.name} defeated in the Final Recurrence!`);
+  logMoment(state, `${archetype.name} defeated in the Final Recurrence!`);
   checkFinalRecurrenceVictory(state);
   return true;
 }

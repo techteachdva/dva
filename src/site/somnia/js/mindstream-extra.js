@@ -11,6 +11,7 @@ import {
 } from "./state.js";
 import { shuffle, uid } from "./data.js";
 import { recordQuestEvent } from "./quests.js";
+import { logMoment } from "./narrator.js";
 import { grantPowerTokens } from "./power-tokens.js";
 import { repressCard, requestReturnCards, enqueueRepressFromHand } from "./subconscious.js";
 import { adjacentTiles, edgeLandscapes } from "./hex.js";
@@ -143,7 +144,7 @@ function repressTopPsycheDeck(state, count = 1) {
 
 function grantFreeMeetAction(state) {
   state.meetActionBudget = (state.meetActionBudget || 0) + 1;
-  addLog(state, "Gain 1 free Meet Action this phase.");
+  logMoment(state, "Gain 1 free Meet Action this phase.");
 }
 
 function spawnMindstreamEncounter(state, player, suit, helpers) {
@@ -329,7 +330,7 @@ export const EXTRA_MINDSTREAM_EFFECTS = {
     logAffectedStatus(state, event, "Deeper Darker");
     if (allListedLandscapesRevealed(state, event)) {
       alive(state).forEach((p) => drawPsycheForPlayer(state, p, 2));
-      addLog(state, "Deeper Darker: all listed Landscapes are Revealed. All Dreamers draw 2 Psyche.");
+      logMoment(state, "Deeper Darker — all listed Landscapes revealed; all Dreamers draw 2 Psyche.");
     }
   },
   "the-right-door": (state, player) => {
@@ -432,7 +433,8 @@ export const EXTRA_MINDSTREAM_EFFECTS = {
   "licorice-bridge": (state, player) => {
     drawPsycheForPlayer(state, player, 1);
     state.skipExploreNextRound = true;
-    addLog(state, "Licorice Bridge: skip next Explore phase.");
+    state.skipExploreReason = "Licorice Bridge";
+    logMoment(state, "Licorice Bridge — the next Explore Phase will be skipped.");
   },
   "chocolate-mines": (state, player, helpers, event) => {
     drawPsycheForPlayer(state, player, 1);

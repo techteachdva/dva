@@ -488,5 +488,6 @@ export function triggerBedFinalRecurrence(state, reason) {
       `${state.dreamDeck.length} Final Dream cards remain`,
       "Goal changes: defeat all Remaining Archetypes",
     ],
+    { moment: "The Bed flips — Final Recurrence begins." },
   );
 }

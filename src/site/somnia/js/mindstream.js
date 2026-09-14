@@ -8,6 +8,7 @@ import {
 } from "./state.js";
 import { shuffle, uid } from "./data.js";
 import { recordQuestEvent } from "./quests.js";
+import { logMoment } from "./narrator.js";
 import { grantPowerTokens } from "./power-tokens.js";
 import { repressCard, requestReturnCards, enqueueRepressFromHand } from "./subconscious.js";
 import { adjacentTiles, edgeLandscapes } from "./hex.js";
@@ -523,7 +524,7 @@ export const MINDSTREAM_EFFECTS = {
       recordQuestEvent(state, "draw_psyche", { count: n.length });
     });
     state.freeExploreNextRound = true;
-    addLog(state, "No Where: next Explore allows free grid movement.");
+    logMoment(state, "No Where — free movement anywhere next Explore Phase.");
   },
 
   "choppy-water": (state, player) => {

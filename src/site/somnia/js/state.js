@@ -165,6 +165,7 @@ export function createInitialState(data, options) {
     wanderlustMoves: 0,
     pickEncounterOnSpawn: false,
     skipExploreNextRound: false,
+    skipExploreReason: null,
     rivalryEncountersOnBed: 0,
     rivalryLeftover: 0,
     paradoxMeet: false,
@@ -368,6 +369,7 @@ export function resetPhaseFlags(state) {
   state.wanderlustMoves = 0;
   state.pickEncounterOnSpawn = false;
   state.skipExploreNextRound = false;
+  state.skipExploreReason = null;
   state.rivalryEncountersOnBed = 0;
   state.rivalryLeftover = 0;
   state.paradoxMeet = false;

@@ -10,6 +10,7 @@ import {
 } from "./board-zoom.js";
 import { initPauseMenu, openPauseMenu } from "./pause-menu.js";
 import { initFxLayer, burstSparklesAtElement } from "./fx.js";
+import { initMomentOverlay } from "./moment-overlay.js";
 import {
   runPendingCardFx,
   syncHandRemovals,
@@ -206,6 +207,7 @@ async function init() {
   initDeviceMode();
   initDialogAccessibility();
   initFxLayer();
+  initMomentOverlay();
   bindButtonRipples();
   initGameAudio();
   bindMusicToggle();

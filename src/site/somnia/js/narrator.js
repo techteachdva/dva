@@ -1,9 +1,18 @@
 /** Player-facing explanations: what just happened + what to do next. */
 
-import { getPhase } from "./state.js";
+import { getPhase, addLog } from "./state.js";
 import { getCurrentObjective } from "./guide.js";
+import { showMomentFromNarration, flashMoment } from "./moment-overlay.js";
 
-export function announce(state, { title, detail, consequences = [] }) {
+/** Log to the dream feed and flash a one-line HUD moment. */
+export function logMoment(state, message) {
+  const text = String(message || "").trim();
+  if (!text) return;
+  addLog(state, text);
+  flashMoment(text.endsWith(".") ? text : `${text}.`);
+}
+
+export function announce(state, { title, detail, consequences = [], moment = null }) {
   state.narrator = {
     title: title || "Something happened",
     detail: detail || title || "",
@@ -14,12 +23,20 @@ export function announce(state, { title, detail, consequences = [] }) {
     state.log.unshift(title);
     state.log = state.log.slice(0, 40);
   }
+  if (moment) {
+    showMomentFromNarration({ title, detail, consequences, moment });
+  }
 }
 
 /** Log + narrator detail (use instead of bare addLog for player-visible events). */
-export function narrate(state, shortMessage, detail = null, consequences = []) {
+export function narrate(state, shortMessage, detail = null, consequences = [], options = {}) {
   const fullDetail = detail || shortMessage;
-  announce(state, { title: shortMessage, detail: fullDetail, consequences });
+  announce(state, {
+    title: shortMessage,
+    detail: fullDetail,
+    consequences,
+    moment: options.moment ?? null,
+  });
 }
 
 export function getLandscapePickNarration(state) {
