@@ -250,7 +250,11 @@ function readLaunchConfig() {
     const launchParam = params.get("launch");
     if (launchParam) {
       const config = JSON.parse(atob(decodeURIComponent(launchParam)));
-      if (config?.lengthKey && Array.isArray(config.selectedDreamerIds) && config.selectedDreamerIds.length) {
+      const validResume = Boolean(config?.resumeSaveId);
+      const validNewGame = config?.lengthKey
+        && Array.isArray(config.selectedDreamerIds)
+        && config.selectedDreamerIds.length;
+      if (validResume || validNewGame) {
         sessionStorage.setItem(LAUNCH_KEY, JSON.stringify(config));
         const clean = new URL(window.location.href);
         clean.searchParams.delete("launch");
@@ -262,6 +266,7 @@ function readLaunchConfig() {
     const raw = sessionStorage.getItem(LAUNCH_KEY);
     if (!raw) return null;
     const config = JSON.parse(raw);
+    if (config?.resumeSaveId) return config;
     if (!config?.lengthKey || !Array.isArray(config.selectedDreamerIds)) return null;
     if (!config.selectedDreamerIds.length) return null;
     return config;
