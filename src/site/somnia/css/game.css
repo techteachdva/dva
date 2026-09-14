@@ -3330,6 +3330,7 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
   color: #1a1208;
   font-size: 0.95rem;
   cursor: pointer;
+  touch-action: manipulation;
   box-shadow: 0 0 0 1px rgba(240, 201, 106, 0.35), 0 2px 6px rgba(0, 0, 0, 0.35);
   transition: transform 0.12s ease, box-shadow 0.12s ease;
 }
@@ -3344,7 +3345,7 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
 .power-token-radial-layer {
   position: fixed;
   inset: 0;
-  z-index: 240;
+  z-index: 8500;
   pointer-events: none;
 }
 

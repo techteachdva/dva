@@ -936,6 +936,7 @@ export function refundPowerBonus(state) {
 
 export function getPowerTokenRadialOptions(state) {
   const player = activePlayer(state);
+  if (!player) return [];
   const phase = getPhase(state);
   const suit = phaseSuitForOpening(phase);
   const suitLabel = SUIT_LABELS[suit] || "Psyche";

@@ -461,6 +461,7 @@ export function playDreamerHandSparkle(fromPlayerId, toPlayerId) {
 }
 
 let powerTokenRadialRoot = null;
+let powerTokenRadialDismissTimer = null;
 
 function onPowerTokenRadialOutside(event) {
   if (!powerTokenRadialRoot) return;
@@ -473,7 +474,18 @@ function onPowerTokenRadialKey(event) {
   if (event.key === "Escape") hidePowerTokenRadial();
 }
 
+function bindPowerTokenRadialDismiss() {
+  document.removeEventListener("pointerdown", onPowerTokenRadialOutside, true);
+  document.removeEventListener("keydown", onPowerTokenRadialKey, true);
+  document.addEventListener("pointerdown", onPowerTokenRadialOutside, true);
+  document.addEventListener("keydown", onPowerTokenRadialKey, true);
+}
+
 export function hidePowerTokenRadial() {
+  if (powerTokenRadialDismissTimer) {
+    window.clearTimeout(powerTokenRadialDismissTimer);
+    powerTokenRadialDismissTimer = null;
+  }
   if (!powerTokenRadialRoot) return;
   document.removeEventListener("pointerdown", onPowerTokenRadialOutside, true);
   document.removeEventListener("keydown", onPowerTokenRadialKey, true);
@@ -527,25 +539,29 @@ export function showPowerTokenRadial(anchorEl, options, onPick) {
     btn.disabled = !!opt.disabled;
     btn.style.setProperty("--x", `${dx}px`);
     btn.style.setProperty("--y", `${dy}px`);
-    btn.addEventListener("click", (event) => {
+    const pick = (event) => {
+      event.preventDefault();
       event.stopPropagation();
       if (opt.disabled) return;
       hidePowerTokenRadial();
       onPick?.(opt);
-    });
+    };
+    btn.addEventListener("pointerdown", pick);
+    btn.addEventListener("click", (event) => event.preventDefault());
     root.appendChild(btn);
   });
 
   layer.appendChild(root);
   document.body.appendChild(layer);
   powerTokenRadialRoot = layer;
-  requestAnimationFrame(() => layer.classList.add("open"));
-  document.addEventListener("pointerdown", onPowerTokenRadialOutside, true);
-  document.addEventListener("keydown", onPowerTokenRadialKey, true);
+  layer.classList.add("open");
+  powerTokenRadialDismissTimer = window.setTimeout(() => {
+    powerTokenRadialDismissTimer = null;
+    bindPowerTokenRadialDismiss();
+  }, 0);
 }
 
 export function renderPowerTokens(state, { onTokenClick } = {}) {
-  hidePowerTokenRadial();
   const tokensEl = document.getElementById("power-tokens");
   const statsEl = document.getElementById("power-token-stats");
   const bonusBtn = document.getElementById("btn-power-bonus");
@@ -554,11 +570,16 @@ export function renderPowerTokens(state, { onTokenClick } = {}) {
   if (!tokensEl) return;
 
   const player = activePlayer(state);
-  const held = player.powerTokens || 0;
+  const held = player?.powerTokens || 0;
   const pool = powerTokensInPool(state);
   const isMeet = getPhase(state) === "Meet";
   const pending = state.pendingPowerBonus || 0;
   const refundable = state.pendingPowerBonusTokens || 0;
+  const chipCount = tokensEl.querySelectorAll(".power-token-chip").length;
+  const hasEmptyMessage = Boolean(tokensEl.querySelector(".power-tokens-empty"));
+  const domMode = chipCount > 0 ? "chips" : (hasEmptyMessage ? "empty" : "none");
+  const targetMode = held > 0 ? "chips" : "empty";
+  const rebuildChips = domMode !== targetMode || chipCount !== held;
 
   if (statsEl) {
     const pendingNote = pending ? `<span class="power-token-pending">+${pending} spread bonus</span>` : "";
@@ -592,6 +613,9 @@ export function renderPowerTokens(state, { onTokenClick } = {}) {
     }
   }
 
+  if (!rebuildChips) return;
+
+  hidePowerTokenRadial();
   tokensEl.innerHTML = "";
   if (!held) {
     const empty = document.createElement("p");
@@ -610,7 +634,9 @@ export function renderPowerTokens(state, { onTokenClick } = {}) {
     token.title = "Click to spend this Power Token";
     token.setAttribute("aria-label", "Power token. Click for spend options.");
     token.textContent = "⚡";
-    token.addEventListener("click", (event) => {
+    token.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0) return;
+      event.preventDefault();
       event.stopPropagation();
       onTokenClick?.(token);
     });
