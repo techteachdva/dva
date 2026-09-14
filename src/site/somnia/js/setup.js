@@ -2,7 +2,10 @@ import { bindMusicToggle, initMenuAudioSettings, bindButtonRipples, footerCredit
 import { initDeviceMode } from "./device-mode.js";
 import { initDialogAccessibility } from "./dialog-a11y.js";
 import { initFxLayer } from "./fx.js";
-import { loadGameData } from "./data.js";
+import { initPanelLayout, setViewMode } from "./panel-layout.js";
+import { loadSettings, VIEW_MODE_ORDER } from "./audio-settings.js";
+import { loadGameData, LENGTHS } from "./data.js";
+import { listLocalSaves } from "./game-save.js";
 import {
   renderDreamerPicker,
   renderSetupIntro,
@@ -76,11 +79,30 @@ function refreshDreamerPicker() {
   updateBeginDreamButton();
 }
 
+function refreshContinueDream() {
+  const wrap = document.getElementById("setup-continue-wrap");
+  const meta = document.getElementById("setup-continue-meta");
+  if (!wrap || !meta) return;
+  const saves = listLocalSaves();
+  const autosave = saves.find((s) => s.id === "autosave") || saves[0];
+  if (!autosave || autosave.status !== "playing") {
+    wrap.classList.add("hidden");
+    return;
+  }
+  const lengthLabel = LENGTHS[autosave.lengthKey]?.label || autosave.lengthKey || "Dream";
+  const when = autosave.updatedAt
+    ? new Date(autosave.updatedAt).toLocaleString()
+    : "recently";
+  wrap.classList.remove("hidden");
+  meta.textContent = `${autosave.label || `Round ${autosave.round}`} · ${lengthLabel} · saved ${when}`;
+}
+
 async function init() {
   const startedAt = Date.now();
   initDeviceMode();
   initDialogAccessibility();
   initFxLayer();
+  initPanelLayout();
   bindButtonRipples();
   initMenuAudioSettings();
   bindMusicToggle();
@@ -92,14 +114,27 @@ async function init() {
   await preloadMenuSplashImage();
   gameData = await loadGameData();
   bindSetup();
+  bindViewMode();
   bindModal();
   renderSetupIntro();
   refreshDreamerPicker();
+  refreshContinueDream();
   await runMenuSplash(startedAt);
+}
+
+function bindViewMode() {
+  const select = document.getElementById("setup-view-mode");
+  if (!select) return;
+  const mode = loadSettings().viewMode || "auto";
+  if (VIEW_MODE_ORDER.includes(mode)) select.value = mode;
+  select.addEventListener("change", () => setViewMode(select.value));
 }
 
 function bindSetup() {
   document.getElementById("btn-start").addEventListener("click", () => launchGame());
+  document.getElementById("btn-continue")?.addEventListener("click", () => {
+    launchGame({ resumeSaveId: "autosave" });
+  });
   document.getElementById("setup-players").addEventListener("change", () => {
     selectedDreamerIds = [];
     hideDreamerDetailTooltip();
@@ -130,6 +165,9 @@ function launchGame(config = null) {
     selectedDreamerIds: [...selectedDreamerIds],
     launchedAt: Date.now(),
   };
+  if (payload.resumeSaveId) {
+    payload.launchedAt = Date.now();
+  }
 
   sessionStorage.setItem(LAUNCH_KEY, JSON.stringify(payload));
 

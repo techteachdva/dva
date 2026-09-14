@@ -5,7 +5,7 @@
  * 1. Create a new Google Sheet (e.g. "Somnia High Scores")
  * 2. Extensions → Apps Script → paste this file → Save
  * 3. Set SPREADSHEET_ID below (from the sheet URL)
- * 4. Run initSheet once (authorize when prompted)
+ * 4. Run initSheet once (authorize when prompted) — creates HighScores + SavedGames tabs
  * 5. Deploy → New deployment → Web app (Execute as: Me, Anyone)
  * 6. Copy Web app URL into Vercel env: SOMNIA_HIGHSCORES_SCRIPT_URL
  * 7. Set SOMNIA_HIGHSCORES_API_SECRET in Vercel to match API_SECRET below
@@ -13,8 +13,11 @@
 
 const SPREADSHEET_ID = normalizeSheetId_("PASTE_YOUR_SHEET_ID_HERE");
 const SHEET_NAME = "HighScores";
+const SAVES_SHEET_NAME = "SavedGames";
 const API_SECRET = "studentsfirst";
 const MAX_ROWS = 100;
+const MAX_SAVES_PER_NAME = 5;
+const MAX_STATE_CHARS = 50000;
 
 function normalizeSheetId_(raw) {
   const s = String(raw || "").trim();
@@ -51,8 +54,38 @@ function initHeaders_(sheet) {
   sheet.setFrozenRows(1);
 }
 
+function getSavesSheet_() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  let sheet = ss.getSheetByName(SAVES_SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(SAVES_SHEET_NAME);
+    initSaveHeaders_(sheet);
+  }
+  return sheet;
+}
+
+function initSaveHeaders_(sheet) {
+  sheet
+    .getRange(1, 1, 1, 10)
+    .setValues([[
+      "id",
+      "updatedAt",
+      "name",
+      "label",
+      "lengthKey",
+      "round",
+      "phase",
+      "status",
+      "compressed",
+      "stateData",
+    ]]);
+  sheet.getRange(1, 1, 1, 10).setFontWeight("bold");
+  sheet.setFrozenRows(1);
+}
+
 function initSheet() {
   initHeaders_(getSheet_());
+  initSaveHeaders_(getSavesSheet_());
 }
 
 function doGet(e) {
@@ -81,6 +114,22 @@ function handle_(e, isGet) {
 
     if (action === "save") {
       return respond_(saveScore_(params));
+    }
+
+    if (action === "listSaves") {
+      return respond_({ saves: listSaves_(params.name || "") });
+    }
+
+    if (action === "saveGame") {
+      return respond_(saveGame_(params));
+    }
+
+    if (action === "load") {
+      return respond_(loadSave_(params.id));
+    }
+
+    if (action === "delete") {
+      return respond_(deleteSave_(params.id));
     }
 
     return respond_({ error: "Unknown action" });
@@ -225,6 +274,148 @@ function saveScore_(params) {
     inTop: rank > 0 && rank <= MAX_ROWS,
     scores: scores,
   };
+}
+
+function rowToSaveMeta_(row) {
+  return {
+    id: String(row[0] || ""),
+    updatedAt: Number(row[1]) || 0,
+    name: String(row[2] || ""),
+    label: String(row[3] || ""),
+    lengthKey: String(row[4] || ""),
+    round: Number(row[5]) || 0,
+    phase: String(row[6] || ""),
+    status: String(row[7] || "playing"),
+    compressed: Boolean(row[8]),
+  };
+}
+
+function rowToSave_(row) {
+  return {
+    id: String(row[0] || ""),
+    updatedAt: Number(row[1]) || 0,
+    name: String(row[2] || ""),
+    label: String(row[3] || ""),
+    lengthKey: String(row[4] || ""),
+    round: Number(row[5]) || 0,
+    phase: String(row[6] || ""),
+    status: String(row[7] || "playing"),
+    compressed: Boolean(row[8]),
+    stateData: String(row[9] || ""),
+  };
+}
+
+function readSaveRows_(sheet) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return [];
+  return sheet.getRange(2, 1, lastRow, 10).getValues();
+}
+
+function listSaves_(nameFilter) {
+  const sheet = getSavesSheet_();
+  const filter = String(nameFilter || "").trim().toLowerCase();
+  const rows = readSaveRows_(sheet)
+    .map(rowToSaveMeta_)
+    .filter(function (save) {
+      if (!save.id) return false;
+      if (!filter) return true;
+      return String(save.name || "").toLowerCase() === filter;
+    });
+  rows.sort(function (a, b) {
+    return Number(b.updatedAt) - Number(a.updatedAt);
+  });
+  return rows;
+}
+
+function saveGame_(params) {
+  const name = normalizeName_(params.name);
+  const label = String(params.label || "Saved dream").trim().slice(0, 80);
+  const lengthKey = String(params.lengthKey || "").trim().slice(0, 24);
+  const round = Number(params.round);
+  const phase = String(params.phase || "").trim().slice(0, 16);
+  const status = String(params.status || "playing").trim().slice(0, 16);
+  const compressed = params.compressed ? 1 : 0;
+  const stateData = String(params.stateData || "");
+
+  if (!stateData) throw new Error("Missing save data.");
+  if (stateData.length > MAX_STATE_CHARS) {
+    throw new Error("Save data is too large for cloud storage.");
+  }
+  if (!Number.isFinite(round) || round < 1) throw new Error("Invalid round.");
+
+  const sheet = getSavesSheet_();
+  const rows = readSaveRows_(sheet);
+  const matching = rows.filter(function (row) {
+    return String(row[2] || "").toLowerCase() === name.toLowerCase();
+  });
+
+  if (matching.length >= MAX_SAVES_PER_NAME) {
+    matching.sort(function (a, b) {
+      return Number(a[1]) - Number(b[1]);
+    });
+    const oldest = matching[0];
+    for (let i = 0; i < rows.length; i++) {
+      if (rows[i][0] === oldest[0]) {
+        rows.splice(i, 1);
+        break;
+      }
+    }
+  }
+
+  const id = String(Date.now()) + "-" + Math.random().toString(36).slice(2, 9);
+  rows.push([
+    id,
+    Date.now(),
+    name,
+    label,
+    lengthKey,
+    Math.round(round),
+    phase,
+    status,
+    compressed,
+    stateData,
+  ]);
+
+  writeSaveRows_(sheet, rows);
+  return {
+    ok: true,
+    id: id,
+    saves: listSaves_(name),
+  };
+}
+
+function loadSave_(id) {
+  const saveId = String(id || "").trim();
+  if (!saveId) throw new Error("Missing save id.");
+  const sheet = getSavesSheet_();
+  const row = readSaveRows_(sheet).find(function (entry) {
+    return String(entry[0]) === saveId;
+  });
+  if (!row) throw new Error("Save not found.");
+  return { save: rowToSave_(row) };
+}
+
+function deleteSave_(id) {
+  const saveId = String(id || "").trim();
+  if (!saveId) throw new Error("Missing save id.");
+  const sheet = getSavesSheet_();
+  const rows = readSaveRows_(sheet).filter(function (entry) {
+    return String(entry[0]) !== saveId;
+  });
+  writeSaveRows_(sheet, rows);
+  return { ok: true };
+}
+
+function writeSaveRows_(sheet, rows) {
+  const lastRow = sheet.getLastRow();
+  if (lastRow > 1) {
+    sheet.getRange(2, 1, lastRow, 10).clearContent();
+    if (lastRow > rows.length + 1) {
+      sheet.deleteRows(rows.length + 2, lastRow - rows.length - 1);
+    }
+  }
+  if (!rows.length) return;
+  sheet.getRange(2, 1, 1 + rows.length, 10).setValues(rows);
 }
 
 function respond_(obj) {

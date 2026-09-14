@@ -64,8 +64,8 @@ body.menu-window {
   /* Square box art: side gutters = letterbox; panels sit left / center / right. */
   --menu-art-size: min(100vw, 100dvh);
   --menu-ui-scale: 0.57;
-  --setup-type-scale: 2.65;
-  --ui-scale: 1.22;
+  --setup-type-scale: 2.1;
+  --ui-scale: 1;
   background-color: #000;
   background-image: url("../images/somnia-box-art.jpg");
   background-position: center center;
@@ -1135,11 +1135,25 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
   letter-spacing: 0.05em;
 }
 
-@media (max-width: 980px), (max-aspect-ratio: 5/6) {
-  body.menu-window {
-    --menu-ui-scale: 0.62;
-  }
+html[data-menu-layout="stack"] .setup-triad {
+  grid-template-columns: 1fr;
+  padding: 3.5rem 0.75rem 1rem;
+  gap: 0.75rem;
+}
 
+html[data-menu-layout="stack"] .setup-panel-left.menu-glass-panel,
+html[data-menu-layout="stack"] .setup-panel-center.menu-glass-panel,
+html[data-menu-layout="stack"] .setup-panel-right.menu-glass-panel {
+  grid-column: 1;
+  grid-row: auto;
+  width: min(92vw, 420px);
+}
+
+html[data-menu-layout="stack"] .setup-launch-row {
+  min-height: 4rem;
+}
+
+@media (max-width: 980px), (max-aspect-ratio: 5/6) {
   .setup-triad {
     grid-template-columns: 1fr;
     padding: 3.5rem 0.75rem 1rem;
@@ -1157,6 +1171,29 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
   .setup-launch-row {
     min-height: 4rem;
   }
+}
+
+.setup-continue-wrap {
+  margin-bottom: 0.65rem;
+}
+
+.setup-continue-wrap.hidden {
+  display: none;
+}
+
+.btn-continue-dream {
+  width: 100%;
+  font-size: calc(0.95rem * var(--setup-type-scale));
+  padding: calc(0.55rem * var(--setup-type-scale)) 0.85rem;
+  border-color: rgba(109, 255, 176, 0.55);
+  background: rgba(109, 255, 176, 0.12);
+}
+
+.setup-continue-meta {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.35;
 }
 
 .setup-panel, .end-panel {
@@ -5614,6 +5651,34 @@ body.panel-resizing {
   color: var(--muted);
   line-height: 1.45;
   margin: 0 0 0.65rem;
+}
+
+.pause-save-error {
+  color: var(--danger);
+}
+
+.pause-save-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-top: 0.5rem;
+}
+
+.pause-save-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 0.35rem 0.5rem;
+  align-items: center;
+  padding: 0.45rem 0.55rem;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.pause-save-meta {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--muted);
 }
 
 .setup-audio-display {

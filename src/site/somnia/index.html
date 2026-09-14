@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Kalnia+Glaze&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/game.css">
 </head>
-<body class="menu-window menu-splash-active view-mode-large">
+<body class="menu-window menu-splash-active">
   <div id="menu-splash" class="menu-splash" aria-hidden="false">
     <div class="menu-splash-inner">
       <img
@@ -59,6 +59,15 @@
                 <option value="deep">Deep Sleep — 24 pts · 21 Dreams</option>
               </select>
             </label>
+            <label class="field">
+              <span>Interface size</span>
+              <select id="setup-view-mode">
+                <option value="auto">Auto — fits your screen</option>
+                <option value="small">Small</option>
+                <option value="medium">Medium</option>
+                <option value="large">Large</option>
+              </select>
+            </label>
           </div>
 
           <div class="setup-panel-center menu-glass-panel">
@@ -68,6 +77,10 @@
           </div>
 
           <div class="setup-panel-right menu-glass-panel">
+            <div id="setup-continue-wrap" class="setup-continue-wrap hidden">
+              <button type="button" id="btn-continue" class="btn btn-continue-dream">Continue Dream</button>
+              <p id="setup-continue-meta" class="setup-continue-meta"></p>
+            </div>
             <div class="setup-launch-row">
               <button type="button" id="btn-start" class="btn begin-dream-btn" disabled>Begin Dreaming</button>
               <button type="button" id="btn-tutorial-mode" class="btn btn-tutorial-menu" title="Five guided rounds with step-by-step coaching">Tutorial</button>

@@ -23,6 +23,7 @@ import { showOverviewModal, showRulesModal, showRulesReferenceModal } from "./ui
 
 let open = false;
 let onResume = null;
+let gameSaveHooks = null;
 
 function panLabel(value) {
   if (value < -0.25) return "◀ Left";
@@ -103,6 +104,122 @@ function renderDisplayTab() {
       <button type="button" class="btn" id="pause-reset-panels">Reset panel sizes</button>
     </div>
   `;
+}
+
+function renderGameTab() {
+  const hooks = gameSaveHooks || {};
+  const canSave = hooks.canSave?.() ?? false;
+  const label = hooks.saveLabel?.() || "Current dream";
+  const standalone = hooks.isStandalone?.() ?? false;
+  return `
+    <div class="pause-section">
+      <h3>Save progress</h3>
+      <p class="pause-hint">${canSave ? `Autosave keeps <strong>${label}</strong> on this device.` : "Saving is available during an active dream (not in guided tutorial)."}</p>
+      <div class="pause-btn-row pause-btn-col">
+        <button type="button" class="btn primary" id="pause-save-local" ${canSave ? "" : "disabled"}>Save on this device</button>
+        <button type="button" class="btn" id="pause-save-cloud" ${canSave && !standalone ? "" : "disabled"}>${standalone ? "Cloud save (web only)" : "Save to cloud"}</button>
+      </div>
+      <p id="pause-save-status" class="pause-hint" aria-live="polite"></p>
+    </div>
+    <div class="pause-section">
+      <h3>Load dream</h3>
+      <p class="pause-hint">Enter the same first name and last initial you use for high scores.</p>
+      <label class="pause-field">
+        <span>Name</span>
+        <input type="text" id="pause-save-name" maxlength="18" placeholder="First name + last initial" autocomplete="name" />
+      </label>
+      <div class="pause-btn-row">
+        <button type="button" class="btn" id="pause-load-list">List saves</button>
+        <button type="button" class="btn" id="pause-load-local">Load device save</button>
+      </div>
+      <div id="pause-save-list" class="pause-save-list"></div>
+    </div>
+  `;
+}
+
+function bindGameControls(root) {
+  const status = root.querySelector("#pause-save-status");
+  const setStatus = (msg, isError = false) => {
+    if (!status) return;
+    status.textContent = msg;
+    status.classList.toggle("pause-save-error", isError);
+  };
+
+  root.querySelector("#pause-save-local")?.addEventListener("click", async () => {
+    try {
+      await gameSaveHooks?.saveLocal?.();
+      setStatus("Saved on this device.");
+    } catch (e) {
+      setStatus(e.message || "Could not save.", true);
+    }
+  });
+
+  root.querySelector("#pause-save-cloud")?.addEventListener("click", async () => {
+    const nameInput = root.querySelector("#pause-save-name");
+    try {
+      await gameSaveHooks?.saveCloud?.(nameInput?.value || "");
+      setStatus("Saved to cloud.");
+    } catch (e) {
+      setStatus(e.message || "Could not save to cloud.", true);
+    }
+  });
+
+  root.querySelector("#pause-load-local")?.addEventListener("click", async () => {
+    try {
+      await gameSaveHooks?.loadLocal?.();
+      closePauseMenu();
+    } catch (e) {
+      setStatus(e.message || "Could not load device save.", true);
+    }
+  });
+
+  root.querySelector("#pause-load-list")?.addEventListener("click", async () => {
+    const nameInput = root.querySelector("#pause-save-name");
+    const listEl = root.querySelector("#pause-save-list");
+    if (!listEl) return;
+    listEl.innerHTML = "<p class=\"pause-hint\">Loading…</p>";
+    try {
+      const saves = await gameSaveHooks?.listCloud?.(nameInput?.value || "");
+      if (!saves?.length) {
+        listEl.innerHTML = "<p class=\"pause-hint\">No cloud saves for that name.</p>";
+        return;
+      }
+      listEl.innerHTML = saves.map((save) => `
+        <div class="pause-save-row">
+          <div>
+            <strong>${save.label || `Round ${save.round}`}</strong>
+            <span class="pause-save-meta">${save.phase || ""} · ${new Date(save.updatedAt).toLocaleString()}</span>
+          </div>
+          <button type="button" class="btn btn-sm" data-load-save="${save.id}">Load</button>
+          <button type="button" class="btn btn-sm" data-delete-save="${save.id}">Delete</button>
+        </div>
+      `).join("");
+      listEl.querySelectorAll("[data-load-save]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          try {
+            await gameSaveHooks?.loadCloud?.(btn.dataset.loadSave);
+            closePauseMenu();
+          } catch (e) {
+            setStatus(e.message || "Could not load save.", true);
+          }
+        });
+      });
+      listEl.querySelectorAll("[data-delete-save]").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          try {
+            await gameSaveHooks?.deleteCloud?.(btn.dataset.deleteSave);
+            btn.closest(".pause-save-row")?.remove();
+            setStatus("Cloud save deleted.");
+          } catch (e) {
+            setStatus(e.message || "Could not delete save.", true);
+          }
+        });
+      });
+    } catch (e) {
+      listEl.innerHTML = "";
+      setStatus(e.message || "Could not list saves.", true);
+    }
+  });
 }
 
 function renderHelpTab() {
@@ -191,6 +308,9 @@ function showTab(tabId) {
   } else if (tabId === "display") {
     body.innerHTML = renderDisplayTab();
     bindDisplayControls(body);
+  } else if (tabId === "game") {
+    body.innerHTML = renderGameTab();
+    bindGameControls(body);
   } else if (tabId === "help") {
     body.innerHTML = renderHelpTab();
     body.querySelector("#pause-overview")?.addEventListener("click", () => {
@@ -234,8 +354,9 @@ export function closePauseMenu() {
   onResume?.();
 }
 
-export function initPauseMenu({ onResumeCallback } = {}) {
+export function initPauseMenu({ onResumeCallback, gameSaveHooks: hooks } = {}) {
   onResume = onResumeCallback || null;
+  gameSaveHooks = hooks || null;
   const menu = document.getElementById("pause-menu");
   if (!menu || menu.dataset.bound) return;
   menu.dataset.bound = "1";
@@ -281,6 +402,7 @@ export function buildSetupAudioControls(container) {
     <label class="field">
       <span>Interface size</span>
       <select id="setup-view-mode">
+        <option value="auto" ${s.viewMode === "auto" ? "selected" : ""}>Auto — fits your screen</option>
         <option value="small" ${s.viewMode === "small" ? "selected" : ""}>Small</option>
         <option value="medium" ${s.viewMode === "medium" ? "selected" : ""}>Medium</option>
         <option value="large" ${s.viewMode === "large" ? "selected" : ""}>Large</option>
@@ -290,11 +412,13 @@ export function buildSetupAudioControls(container) {
   `;
 
   const persist = () => {
+    const viewMode = container.querySelector("#setup-view-mode")?.value || "auto";
     saveSettings({
       musicMode: container.querySelector("#setup-music-mode")?.value || "radio",
       trackId: container.querySelector("#setup-track")?.value || "dreams-become-real",
-      viewMode: container.querySelector("#setup-view-mode")?.value || "medium",
+      viewMode,
     });
+    setViewMode(viewMode);
   };
 
   container.querySelector("#setup-music-mode")?.addEventListener("change", (e) => {

@@ -18,7 +18,19 @@ import {
 } from "./card-fx.js";
 import { runPendingBoardFx, syncBoardMotion, resetBoardMotion } from "./board-fx.js";
 import { calculateFinalScore } from "./scoring.js";
-import { fetchHighScores, submitHighScore, validateScoreName, isStandaloneMode } from "./highscores.js";
+import { fetchHighScores, submitHighScore, validateScoreName, isStandaloneMode, splitNameHint } from "./highscores.js";
+import {
+  canSaveGame,
+  buildSaveLabel,
+  saveGameLocal,
+  loadGameLocal,
+  saveGameCloud,
+  listCloudSaves,
+  loadCloudSave,
+  deleteCloudSave,
+  deleteLocalSave,
+  reattachGameRuntime,
+} from "./game-save.js";
 import { startVictoryCelebration, stopVictoryCelebration } from "./victory-celebration.js";
 import { LENGTHS, loadGameData } from "./data.js";
 import { createInitialState, addLog, respawnDreamer, getPhase, activePlayer, avoidDreamerDeath, acceptDreamerDeath } from "./state.js";
@@ -160,6 +172,8 @@ const LAUNCH_KEY = "somnia.launch";
 
 let gameData = null;
 let state = null;
+let launchConfig = null;
+let autoSaveTimer = null;
 let devConsole = null;
 let tutorialIndex = -1;
 let interactiveTutorialActive = false;
@@ -196,7 +210,7 @@ async function init() {
   initGameAudio();
   bindMusicToggle();
   initPanelLayout();
-  initPauseMenu();
+  initPauseMenu({ gameSaveHooks: buildPauseSaveHooks() });
   gameData = await loadGameData();
   bindModal();
   bindHelp();
@@ -220,7 +234,7 @@ async function init() {
     return;
   }
 
-  startGame(config);
+  await startGame(config);
   devConsole = initDevConsole(() => ({
     state,
     gameData,
@@ -546,7 +560,90 @@ function bindBoardResize() {
   observer.observe(vp);
 }
 
-function startGame(config) {
+function buildPauseSaveHooks() {
+  return {
+    canSave: () => canSaveGame(state),
+    saveLabel: () => (state ? buildSaveLabel(state) : ""),
+    isStandalone: () => isStandaloneMode(),
+    saveLocal: async () => {
+      if (!canSaveGame(state)) throw new Error("Cannot save right now.");
+      await saveGameLocal(state, launchConfig, { id: "autosave" });
+    },
+    saveCloud: async (nameRaw) => {
+      if (!canSaveGame(state)) throw new Error("Cannot save right now.");
+      const parts = splitNameHint(nameRaw);
+      const playerName = `${parts.first} ${parts.last}`.trim();
+      await saveGameCloud(state, launchConfig, { playerName });
+    },
+    loadLocal: async () => {
+      const loaded = await loadGameLocal("autosave");
+      if (!loaded) throw new Error("No device save found.");
+      applyLoadedGame(loaded);
+    },
+    listCloud: async (nameRaw) => {
+      const parts = splitNameHint(nameRaw);
+      const playerName = `${parts.first} ${parts.last}`.trim();
+      const result = await listCloudSaves(playerName);
+      if (result.setupRequired) {
+        throw new Error("Cloud saves are not configured on this server yet.");
+      }
+      return result.saves || [];
+    },
+    loadCloud: async (id) => {
+      const loaded = await loadCloudSave(id);
+      if (!loaded) throw new Error("Save not found.");
+      applyLoadedGame(loaded);
+    },
+    deleteCloud: async (id) => {
+      await deleteCloudSave(id);
+    },
+  };
+}
+
+function applyLoadedGame(loaded) {
+  state = reattachGameRuntime(loaded.state);
+  launchConfig = {
+    ...loaded.launchConfig,
+    launchedAt: Date.now(),
+    resumeSaveId: "autosave",
+  };
+  interactiveTutorialActive = false;
+  document.body.classList.remove("tutorial-mode-active");
+  hideTutorial();
+  showScreen("screen-game");
+  resetBoardZoom();
+  resetHandSnapshots(state);
+  resetBoardMotion(state);
+  renderAll();
+  narrate(state, "Dream resumed", loaded.label || "Your saved dream continues.");
+}
+
+function scheduleAutoSave() {
+  if (!canSaveGame(state)) return;
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(() => {
+    saveGameLocal(state, launchConfig, { id: "autosave" }).catch(() => {});
+  }, 1500);
+}
+
+function clearAutosave() {
+  clearTimeout(autoSaveTimer);
+  deleteLocalSave("autosave");
+}
+
+async function startGame(config) {
+  launchConfig = config;
+
+  if (config.resumeSaveId) {
+    const loaded = await loadGameLocal(config.resumeSaveId);
+    if (!loaded) {
+      window.location.replace("index.html");
+      return;
+    }
+    applyLoadedGame(loaded);
+    return;
+  }
+
   const selectedDreamers = config.selectedDreamerIds
     .map((id) => gameData.dreamers.find((d) => d.id === id))
     .filter(Boolean);
@@ -1029,6 +1126,7 @@ function renderAll() {
   }
 
   if (state.status === "won") {
+    clearAutosave();
     if (state.tutorialVictory) {
       showEndScreen(
         true,
@@ -1060,6 +1158,7 @@ function renderAll() {
     if (state.tutorialMode && !state.tutorialComplete) {
       state.status = "playing";
     } else {
+      clearAutosave();
       stopVictoryCelebration();
       showEndScreen(false, state.log[0] || "The Dreamscape collapses.");
       return;
@@ -1294,6 +1393,7 @@ function renderAll() {
 
   updateHandSnapshots(state);
   syncBoardMotion(state);
+  scheduleAutoSave();
   requestAnimationFrame(() => {
     runPendingCardFx(state);
     runPendingBoardFx();

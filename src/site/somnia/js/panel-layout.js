@@ -21,6 +21,14 @@ function readViewport() {
   };
 }
 
+function heightBand(h) {
+  return h < 760 ? "short" : h < 960 ? "standard" : "tall";
+}
+
+function widthBand(w) {
+  return w < 1180 ? "narrow" : w < 1600 ? "standard" : "wide";
+}
+
 /** Layout metrics derived from the actual CSS viewport (includes OS display scaling). */
 export function computeViewportMetrics() {
   const { w, h, dpr } = readViewport();
@@ -48,8 +56,39 @@ export function computeViewportMetrics() {
     footerH: Math.round(handH * 0.35),
     actionBtnH: `${btnH}px`,
     actionBtnFs: `${btnFs}rem`,
-    heightBand: h < 760 ? "short" : h < 960 ? "standard" : "tall",
-    widthBand: w < 1180 ? "narrow" : w < 1600 ? "standard" : "wide",
+    heightBand: heightBand(h),
+    widthBand: widthBand(w),
+  };
+}
+
+/** Menu/setup scaling — keeps triad panels inside side gutters around box art. */
+export function computeMenuViewportMetrics() {
+  const { w, h, dpr } = readViewport();
+  const artSize = Math.min(w, h);
+  const gutter = Math.max(0, (w - artSize) / 2);
+  const menuUiScale = Number(clamp(
+    Math.min(gutter / 300, h / 980, w / 1500),
+    0.42,
+    0.74,
+  ).toFixed(3));
+  const setupTypeScale = Number(clamp(
+    Math.min(w / 620, h / 420, menuUiScale * 4.2),
+    1.35,
+    2.75,
+  ).toFixed(2));
+  const uiScale = Number(clamp(Math.min(w / 1600, h / 900), 0.75, 1.12).toFixed(3));
+
+  return {
+    w,
+    h,
+    dpr,
+    artSize: `${artSize}px`,
+    menuUiScale,
+    setupTypeScale,
+    uiScale,
+    heightBand: heightBand(h),
+    widthBand: widthBand(w),
+    stackMenu: w < 980 || w / h < 0.85,
   };
 }
 
@@ -96,8 +135,31 @@ function applyViewportDataset(metrics) {
   root.dataset.viewportDpr = String(Math.round((metrics.dpr || 1) * 10) / 10);
 }
 
+function applyMenuDataset(metrics) {
+  const root = document.documentElement;
+  root.dataset.menuLayout = metrics.stackMenu ? "stack" : "triad";
+  applyViewportDataset(metrics);
+}
+
+function applyMenuLayout() {
+  const metrics = computeMenuViewportMetrics();
+  const root = document.documentElement;
+  root.style.setProperty("--menu-art-size", metrics.artSize);
+  root.style.setProperty("--menu-ui-scale", String(metrics.menuUiScale));
+  root.style.setProperty("--setup-type-scale", String(metrics.setupTypeScale));
+  root.style.setProperty("--ui-scale", String(metrics.uiScale));
+  applyMenuDataset(metrics);
+  document.body.classList.remove("view-mode-small", "view-mode-medium", "view-mode-large", "view-mode-auto");
+  document.body.classList.add(`view-mode-${settings.viewMode || "auto"}`);
+}
+
 export function applyLayout() {
   settings = loadSettings();
+  if (document.body.classList.contains("menu-window")) {
+    applyMenuLayout();
+    return;
+  }
+
   const panels = resolvedPanels();
   const root = document.documentElement;
   root.style.setProperty("--sidebar-w", `${panels.sidebarW}px`);
