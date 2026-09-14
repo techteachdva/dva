@@ -19,6 +19,7 @@ import {
   setSfxPan,
 } from "./audio.js";
 import { applyLayout, resetPanelLayout, setViewMode } from "./panel-layout.js";
+import { validateScoreName } from "./highscores.js";
 import { showOverviewModal, showRulesModal, showRulesReferenceModal } from "./ui.js";
 
 let open = false;
@@ -124,10 +125,16 @@ function renderGameTab() {
     <div class="pause-section">
       <h3>Load dream</h3>
       <p class="pause-hint">Enter the same first name and last initial you use for high scores.</p>
-      <label class="pause-field">
-        <span>Name</span>
-        <input type="text" id="pause-save-name" maxlength="18" placeholder="First name + last initial" autocomplete="name" />
-      </label>
+      <div class="pause-save-name-row">
+        <label class="pause-field">
+          <span>First name</span>
+          <input type="text" id="pause-save-first" maxlength="16" placeholder="First name" autocomplete="given-name" />
+        </label>
+        <label class="pause-field pause-save-last-field">
+          <span>Last initial</span>
+          <input type="text" id="pause-save-last" class="pause-save-last" maxlength="1" placeholder="K" autocomplete="family-name" />
+        </label>
+      </div>
       <div class="pause-btn-row">
         <button type="button" class="btn" id="pause-load-list">List saves</button>
         <button type="button" class="btn" id="pause-load-local">Load device save</button>
@@ -135,6 +142,12 @@ function renderGameTab() {
       <div id="pause-save-list" class="pause-save-list"></div>
     </div>
   `;
+}
+
+function readPauseSaveName(root) {
+  const first = root.querySelector("#pause-save-first")?.value || "";
+  const last = root.querySelector("#pause-save-last")?.value || "";
+  return validateScoreName(first, last);
 }
 
 function bindGameControls(root) {
@@ -155,9 +168,13 @@ function bindGameControls(root) {
   });
 
   root.querySelector("#pause-save-cloud")?.addEventListener("click", async () => {
-    const nameInput = root.querySelector("#pause-save-name");
+    const valid = readPauseSaveName(root);
+    if (!valid.ok) {
+      setStatus(valid.message, true);
+      return;
+    }
     try {
-      await gameSaveHooks?.saveCloud?.(nameInput?.value || "");
+      await gameSaveHooks?.saveCloud?.(valid);
       setStatus("Saved to cloud.");
     } catch (e) {
       setStatus(e.message || "Could not save to cloud.", true);
@@ -174,12 +191,16 @@ function bindGameControls(root) {
   });
 
   root.querySelector("#pause-load-list")?.addEventListener("click", async () => {
-    const nameInput = root.querySelector("#pause-save-name");
+    const valid = readPauseSaveName(root);
+    if (!valid.ok) {
+      setStatus(valid.message, true);
+      return;
+    }
     const listEl = root.querySelector("#pause-save-list");
     if (!listEl) return;
     listEl.innerHTML = "<p class=\"pause-hint\">Loading…</p>";
     try {
-      const saves = await gameSaveHooks?.listCloud?.(nameInput?.value || "");
+      const saves = await gameSaveHooks?.listCloud?.(valid);
       if (!saves?.length) {
         listEl.innerHTML = "<p class=\"pause-hint\">No cloud saves for that name.</p>";
         return;

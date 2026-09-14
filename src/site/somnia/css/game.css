@@ -5622,6 +5622,26 @@ body.panel-resizing {
   color: var(--muted);
 }
 
+.pause-save-name-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.35rem;
+}
+
+.pause-save-name-row .pause-field {
+  flex: 1 1 8rem;
+  margin-bottom: 0;
+}
+
+.pause-save-last-field {
+  flex: 0 1 5rem;
+}
+
+.pause-save-last {
+  max-width: 4.5rem;
+}
+
 .pause-toggle {
   display: flex;
   align-items: center;

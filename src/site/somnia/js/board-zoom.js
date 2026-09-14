@@ -154,8 +154,16 @@ function onPointerCancel(event) {
   endPan(event);
 }
 
+function isTypingTarget(target) {
+  if (!(target instanceof HTMLElement)) return false;
+  if (target.isContentEditable) return true;
+  const tag = target.tagName;
+  return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
+}
+
 function onKeyDown(event) {
   if (event.code !== "Space" || event.repeat) return;
+  if (isTypingTarget(event.target)) return;
   spaceHeld = true;
   viewport?.classList.add("board-pan-ready");
   if (document.getElementById("screen-game")?.classList.contains("active")) {

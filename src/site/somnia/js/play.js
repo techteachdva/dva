@@ -18,7 +18,7 @@ import {
 } from "./card-fx.js";
 import { runPendingBoardFx, syncBoardMotion, resetBoardMotion } from "./board-fx.js";
 import { calculateFinalScore } from "./scoring.js";
-import { fetchHighScores, submitHighScore, validateScoreName, isStandaloneMode, splitNameHint } from "./highscores.js";
+import { fetchHighScores, submitHighScore, validateScoreName, isStandaloneMode } from "./highscores.js";
 import {
   canSaveGame,
   buildSaveLabel,
@@ -569,21 +569,21 @@ function buildPauseSaveHooks() {
       if (!canSaveGame(state)) throw new Error("Cannot save right now.");
       await saveGameLocal(state, launchConfig, { id: "autosave" });
     },
-    saveCloud: async (nameRaw) => {
+    saveCloud: async (name) => {
       if (!canSaveGame(state)) throw new Error("Cannot save right now.");
-      const parts = splitNameHint(nameRaw);
-      const playerName = `${parts.first} ${parts.last}`.trim();
-      await saveGameCloud(state, launchConfig, { playerName });
+      const valid = name?.ok ? name : validateScoreName(name?.first, name?.last);
+      if (!valid.ok) throw new Error(valid.message);
+      await saveGameCloud(state, launchConfig, { playerName: valid.name });
     },
     loadLocal: async () => {
       const loaded = await loadGameLocal("autosave");
       if (!loaded) throw new Error("No device save found.");
       applyLoadedGame(loaded);
     },
-    listCloud: async (nameRaw) => {
-      const parts = splitNameHint(nameRaw);
-      const playerName = `${parts.first} ${parts.last}`.trim();
-      const result = await listCloudSaves(playerName);
+    listCloud: async (name) => {
+      const valid = name?.ok ? name : validateScoreName(name?.first, name?.last);
+      if (!valid.ok) throw new Error(valid.message);
+      const result = await listCloudSaves(valid.name);
       if (result.setupRequired) {
         throw new Error("Cloud saves are not configured on this server yet.");
       }
