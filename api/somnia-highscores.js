@@ -33,14 +33,55 @@ function getApiSecret() {
   return (process.env.SOMNIA_HIGHSCORES_API_SECRET || "studentsfirst").trim();
 }
 
+function assertScriptUrl(scriptUrl) {
+  if (!scriptUrl) return;
+  if (!scriptUrl.includes("script.google.com")) {
+    throw new Error(
+      "SOMNIA_HIGHSCORES_SCRIPT_URL must be a Google Apps Script web app URL (https://script.google.com/.../exec), not a Google Sheet link.",
+    );
+  }
+  if (scriptUrl.includes("/dev")) {
+    throw new Error(
+      "SOMNIA_HIGHSCORES_SCRIPT_URL is using a /dev test URL. Deploy the script as a web app and use the /exec URL.",
+    );
+  }
+}
+
+function parseScriptResponse(text) {
+  const trimmed = String(text || "").trim();
+  if (!trimmed) {
+    throw new Error("Google Script returned an empty response. Redeploy the Somnia Apps Script web app.");
+  }
+  if (trimmed.startsWith("<")) {
+    if (/sign in|accounts\.google/i.test(trimmed)) {
+      throw new Error(
+        "Google Script is not public. Redeploy with Who has access: Anyone, then update SOMNIA_HIGHSCORES_SCRIPT_URL on Vercel.",
+      );
+    }
+    if (/script function not found|page not found/i.test(trimmed)) {
+      throw new Error(
+        "Google Script deployment not found. Create a new web app deployment and paste the /exec URL into SOMNIA_HIGHSCORES_SCRIPT_URL.",
+      );
+    }
+    throw new Error(
+      "Google Script returned HTML instead of JSON. Set SPREADSHEET_ID in google-apps-script/somnia-highscores-backend.gs, run initSheet(), deploy as web app (/exec), then update Vercel.",
+    );
+  }
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    throw new Error(`Google Script returned an unexpected response: ${trimmed.slice(0, 120)}`);
+  }
+}
+
 async function fetchScriptJson(url, options) {
   const res = await fetch(url, { ...options, redirect: "follow" });
   const text = await res.text();
   try {
-    return JSON.parse(text);
-  } catch {
+    return parseScriptResponse(text);
+  } catch (e) {
     console.error("Somnia Apps Script non-JSON response:", text.slice(0, 200));
-    throw new Error("Google Script returned an invalid response. Check deployment URL and permissions.");
+    throw e;
   }
 }
 
@@ -113,6 +154,7 @@ async function handleScoresGet() {
   if (!scriptUrl) return notConfiguredScoresResponse();
 
   try {
+    assertScriptUrl(scriptUrl);
     const url = new URL(scriptUrl);
     url.searchParams.set("action", "list");
     url.searchParams.set("secret", getApiSecret());
@@ -144,6 +186,7 @@ async function handleSavesGet(request) {
   if (!scriptUrl) return notConfiguredSavesResponse();
 
   try {
+    assertScriptUrl(scriptUrl);
     const { searchParams } = new URL(request.url);
     const name = (searchParams.get("name") || "").trim().slice(0, 24);
     const url = new URL(scriptUrl);
@@ -176,6 +219,7 @@ async function handleSavesGet(request) {
 async function handleScoresPost(body) {
   const scriptUrl = getScriptUrl();
   if (!scriptUrl) return notConfiguredScoresResponse();
+  assertScriptUrl(scriptUrl);
 
   const name = typeof body?.name === "string" ? body.name.trim().slice(0, 24) : "";
   const score = Number(body?.score);
@@ -232,6 +276,7 @@ async function handleScoresPost(body) {
 async function handleSavesPost(body) {
   const scriptUrl = getScriptUrl();
   if (!scriptUrl) return notConfiguredSavesResponse();
+  assertScriptUrl(scriptUrl);
 
   let action = String(body?.action || "saveGame");
   if (action === "save") action = "saveGame";

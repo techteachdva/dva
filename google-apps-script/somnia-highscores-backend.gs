@@ -26,8 +26,22 @@ function normalizeSheetId_(raw) {
   return s.split("/")[0].split("?")[0].split("#")[0];
 }
 
+function assertSpreadsheetConfigured_() {
+  if (!SPREADSHEET_ID || SPREADSHEET_ID === "PASTE_YOUR_SHEET_ID_HERE") {
+    throw new Error(
+      "Somnia Apps Script is not linked to a Google Sheet yet. " +
+        "Open the script editor and set SPREADSHEET_ID to your sheet ID (the long string between /d/ and /edit in the sheet URL)."
+    );
+  }
+}
+
+function getSpreadsheet_() {
+  assertSpreadsheetConfigured_();
+  return SpreadsheetApp.openById(SPREADSHEET_ID);
+}
+
 function getSheet_() {
-  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const ss = getSpreadsheet_();
   let sheet = ss.getSheetByName(SHEET_NAME);
   if (!sheet) {
     sheet = ss.insertSheet(SHEET_NAME);
@@ -55,7 +69,7 @@ function initHeaders_(sheet) {
 }
 
 function getSavesSheet_() {
-  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const ss = getSpreadsheet_();
   let sheet = ss.getSheetByName(SAVES_SHEET_NAME);
   if (!sheet) {
     sheet = ss.insertSheet(SAVES_SHEET_NAME);
@@ -415,7 +429,7 @@ function writeSaveRows_(sheet, rows) {
     }
   }
   if (!rows.length) return;
-  sheet.getRange(2, 1, 1 + rows.length, 10).setValues(rows);
+  sheet.getRange(2, 1, rows.length, 10).setValues(rows);
 }
 
 function respond_(obj) {
