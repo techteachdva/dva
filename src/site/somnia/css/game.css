@@ -4954,7 +4954,16 @@ body.card-detail-open .tutorial-card {
 .player-chip.trade-target { outline: 1px dashed var(--accent); }
 
 .utility-content { max-width: 520px; }
-.utility-content.landscape-detail-modal { max-width: 760px; }
+.utility-content.landscape-detail-modal {
+  width: min(96vw, 1180px);
+  max-width: none;
+  height: min(94vh, 960px);
+  max-height: 94vh;
+  display: flex;
+  flex-direction: column;
+  padding: clamp(0.85rem, 1.8vh, 1.35rem) clamp(1rem, 2.2vw, 1.5rem);
+  overflow: hidden;
+}
 .utility-content.dreamer-detail-modal { max-width: 720px; }
 .utility-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; }
 .landscape-action-choices { flex-direction: column; }
@@ -4972,55 +4981,90 @@ body.card-detail-open .tutorial-card {
   font-weight: normal;
 }
 
+.utility-content.landscape-detail-modal #utility-modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+
 .landscape-detail {
-  display: grid;
-  grid-template-columns: minmax(140px, 42%) minmax(0, 1fr);
-  gap: 1rem;
-  align-items: start;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(0.85rem, 1.8vh, 1.35rem);
+  min-height: 0;
+  height: 100%;
 }
 
 .landscape-detail-art-wrap {
-  border-radius: 12px;
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: min(100%, 78vh);
+  min-height: min(48vh, 520px);
+  max-height: min(68vh, 760px);
+  border-radius: 16px;
   overflow: hidden;
-  border: 1px solid var(--border);
-  background: rgba(0, 0, 0, 0.35);
-  aspect-ratio: 1;
+  border: 1px solid rgba(201, 160, 255, 0.35);
+  background:
+    radial-gradient(ellipse at 50% 35%, rgba(123, 92, 255, 0.18), transparent 58%),
+    rgba(0, 0, 0, 0.42);
+  box-shadow:
+    0 18px 48px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .landscape-detail-art {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  max-height: min(68vh, 760px);
+  object-fit: contain;
+  object-position: center;
   display: block;
 }
 
+.landscape-detail-body {
+  flex: 0 0 auto;
+  width: min(100%, 920px);
+  text-align: center;
+}
+
 .landscape-detail-body h2 {
-  margin: 0 0 0.5rem;
+  margin: 0 0 0.45rem;
   font-family: var(--font-display);
+  font-size: clamp(1.35rem, 2.8vh, 2rem);
+  letter-spacing: 0.03em;
 }
 
 .landscape-detail-suit {
-  margin: 0 0 0.75rem;
+  margin: 0 0 0.85rem;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.35rem;
+  font-size: clamp(0.92rem, 1.6vh, 1.05rem);
 }
 
 .landscape-detail-actions {
   display: grid;
-  gap: 0.65rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
   margin-bottom: 0.85rem;
+  text-align: left;
 }
 
 .landscape-detail-action {
-  padding: 0.55rem 0.65rem;
-  border-radius: 8px;
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .landscape-detail-action-label {
-  font-size: 0.68rem;
+  font-size: 0.72rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--gold);
@@ -5031,7 +5075,8 @@ body.card-detail-open .tutorial-card {
 .landscape-detail-occupants p,
 .landscape-detail-muted {
   margin: 0.25rem 0 0;
-  font-size: 0.85rem;
+  font-size: clamp(0.88rem, 1.5vh, 0.98rem);
+  line-height: 1.45;
   opacity: 0.9;
 }
 
@@ -5186,12 +5231,26 @@ body.card-detail-open .tutorial-card {
 }
 
 .landscape-detail-occupants {
-  padding-top: 0.65rem;
+  padding-top: 0.75rem;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: clamp(0.88rem, 1.5vh, 0.98rem);
 }
 
 @media (max-width: 640px) {
-  .landscape-detail {
+  .utility-content.landscape-detail-modal {
+    width: 98vw;
+    height: 96vh;
+    max-height: 96vh;
+    padding: 0.75rem;
+  }
+
+  .landscape-detail-art-wrap {
+    min-height: 38vh;
+    max-height: 52vh;
+    width: 100%;
+  }
+
+  .landscape-detail-actions {
     grid-template-columns: 1fr;
   }
 }

@@ -3017,8 +3017,17 @@ export function showLandscapeDetail(state, tileId) {
       </div>
     </div>
   `;
-  modal.querySelector(".utility-content")?.classList.add("landscape-detail-modal");
+  const shell = modal.querySelector(".utility-content");
+  shell?.classList.remove(
+    "fullscreen-browser",
+    "dreamer-detail-modal",
+    "dreamer-power-modal-wrap",
+    "phase-skip-modal",
+    "rules-reference-modal",
+  );
+  shell?.classList.add("landscape-detail-modal");
   modal.classList.remove("hidden");
+  document.body.classList.add("utility-modal-open");
 }
 
 let tutorialHighlightEl = null;
