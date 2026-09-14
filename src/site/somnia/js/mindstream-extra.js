@@ -23,8 +23,7 @@ import {
 } from "./mindstream-supply.js";
 import {
   countAffectedLandscapes,
-  hasAffectedLandscapes,
-  dreamersOnAffectedLandscapes,
+  allListedLandscapesRevealed,
   logAffectedStatus,
 } from "./event-landscapes.js";
 import {
@@ -328,8 +327,9 @@ export const EXTRA_MINDSTREAM_EFFECTS = {
       helpers.drawObjects(state, player, 1, helpers);
     }
     logAffectedStatus(state, event, "Deeper Darker");
-    if (hasAffectedLandscapes(state, event)) {
+    if (allListedLandscapesRevealed(state, event)) {
       alive(state).forEach((p) => drawPsycheForPlayer(state, p, 2));
+      addLog(state, "Deeper Darker: all listed Landscapes are Revealed. All Dreamers draw 2 Psyche.");
     }
   },
   "the-right-door": (state, player) => {

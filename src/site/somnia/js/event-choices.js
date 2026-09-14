@@ -104,7 +104,12 @@ function applyMindstreamDraw(state, player, suit) {
   const helpers = rememberEventHelpers();
   if (helpers?.resolveCardEffect) {
     helpers.resolveCardEffect(state, card, player, helpers);
-    if (card.type !== "dreambeast") discardToMindstream(state, card);
+    if (card.type !== "dreambeast") {
+      discardToMindstream(state, card);
+      if (card.type === "event" && card.eventWasted) {
+        addLog(state, `${card.name} is discarded unused.`);
+      }
+    }
     return;
   }
   if (card.type === "object") player.objects.push({ ...card, instanceId: uid("obj") });

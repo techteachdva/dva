@@ -9,7 +9,7 @@ import {
 import { requestChooseTile } from "./landscapes.js";
 import { SUIT_LABELS } from "./rules.js";
 import { grantPowerTokens, spendPowerTokens } from "./power-tokens.js";
-import { queueMindstreamDrawFx } from "./board-fx.js";
+import { queueMindstreamDrawFx, queueMindstreamDiscardFx } from "./board-fx.js";
 import { adjacentTiles, hexDistance } from "./hex.js";
 import {
   listSubconsciousCards,
@@ -869,13 +869,21 @@ export function executeLandscapeActionChoice(state, tile, player, actionId, help
         return { ok: false, refund: true };
       }
       const card = cards[0];
-      addLog(state, `${landscapeName}: ${card.name} — ${card.text || ""}`);
+      addLog(state, `${landscapeName}: draws ${card.name}.`);
       recordQuestEvent(state, "mindstream_on_landscape", { landscapeId: tile.id });
       queueMindstreamDrawFx(tile.id, suit, card);
       if (helpers.resolveCardEffect) {
         helpers.resolveCardEffect(state, card, player, helpers);
       }
       state.mindstreamDiscard[suit].push(card);
+      if (card.type === "event") {
+        if (card.eventWasted) {
+          addLog(state, `${card.name} is discarded unused to the ${SUIT_LABELS[suit] || suit} Mindstream discard pile.`);
+        } else {
+          addLog(state, `${card.name} is discarded to the ${SUIT_LABELS[suit] || suit} Mindstream discard pile.`);
+        }
+        queueMindstreamDiscardFx(tile.id, suit, card, { wasted: !!card.eventWasted });
+      }
       return { ok: true, card };
     }
 
@@ -1039,12 +1047,20 @@ export function resolveLandscapeMindstreamPick(state, tile, player, suit, action
       return { ok: false, refund: true };
     }
     const card = cards[0];
-    addLog(state, `${tile.name}: ${card.name} — ${card.text || ""}`);
+    addLog(state, `${tile.name}: draws ${card.name}.`);
     recordQuestEvent(state, "mindstream_on_landscape", { landscapeId: tile.id });
     if (helpers.resolveCardEffect) {
       helpers.resolveCardEffect(state, card, player, helpers);
     }
     state.mindstreamDiscard[suit].push(card);
+    if (card.type === "event") {
+      if (card.eventWasted) {
+        addLog(state, `${card.name} is discarded unused to the ${SUIT_LABELS[suit] || suit} Mindstream discard pile.`);
+      } else {
+        addLog(state, `${card.name} is discarded to the ${SUIT_LABELS[suit] || suit} Mindstream discard pile.`);
+      }
+      queueMindstreamDiscardFx(tile.id, suit, card, { wasted: !!card.eventWasted });
+    }
     return { ok: true, card };
   }
   return { ok: false };

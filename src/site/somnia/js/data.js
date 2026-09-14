@@ -34,7 +34,7 @@ function enrichMindstreamEvents(mindstream, catalog) {
       const effectBottom = extra.effectBottom ?? evt.effectBottom;
       let text = evt.text;
       if (effectTop && effectBottom) {
-        text = `${effectTop}\n\n— If any Affected Landscape is Revealed —\n${effectBottom}`;
+        text = `${effectTop}\n\n${effectBottom}`;
       } else if (effectTop) {
         text = effectTop;
       }

@@ -38,7 +38,7 @@ import {
   beginJudgementChoice,
   beginPowerlessnessChoices,
 } from "./dream-choices.js";
-import { eventLandscapeIds } from "./event-landscapes.js";
+import { eventLandscapeIds, beginEventOrWaste } from "./event-landscapes.js";
 import { uid } from "./data.js";
 
 function alivePlayers(state) {
@@ -234,10 +234,18 @@ const DREAM_EFFECTS = {
   injury: (state) => {
     alivePlayers(state).forEach((p) => {
       const wp = playerStat(p, "willpower");
-      const kept = p.hand.filter((c) => (c.value || 0) <= wp);
-      const removed = p.hand.length - kept.length;
+      const kept = [];
+      const discarded = [];
+      (p.hand || []).forEach((c) => {
+        if ((c.value || 0) <= wp) kept.push(c);
+        else discarded.push(c);
+      });
       p.hand = kept;
-      recordQuestEvent(state, "discard_psyche", { count: removed });
+      discarded.forEach((c) => state.psycheDiscard.push(c));
+      if (discarded.length) {
+        recordQuestEvent(state, "discard_psyche", { count: discarded.length });
+        addLog(state, `${p.name}: Injury discards ${discarded.length} Psyche above Willpower ${wp}.`);
+      }
     });
   },
   chase: (state, _player, helpers) => {
@@ -574,9 +582,12 @@ export function resolveCardEffect(state, card, player, helpers) {
     DREAM_EFFECTS[id](state, player, helpers);
     return;
   }
-  if (card.type === "event" && MINDSTREAM_EFFECTS[id]) {
-    MINDSTREAM_EFFECTS[id](state, player, helpers, card);
-    return;
+  if (card.type === "event") {
+    if (!beginEventOrWaste(state, card)) return;
+    if (MINDSTREAM_EFFECTS[id]) {
+      MINDSTREAM_EFFECTS[id](state, player, helpers, card);
+      return;
+    }
   }
   if (card.type === "object" && OBJECT_EFFECTS[id]) {
     rememberObjectHelpers(helpers);

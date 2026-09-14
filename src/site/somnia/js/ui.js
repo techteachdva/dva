@@ -56,7 +56,8 @@ import { isBeastTokenHidden, isDreamerTokenHidden } from "./board-fx.js";
 import { powerTokensInPool, MAX_POWER_TOKEN_POOL } from "./power-tokens.js";
 import {
   eventLandscapeIds,
-  hasAffectedLandscapes,
+  describeEventResolution,
+  formatNameList,
   landscapeImageForId,
   revealedLandscapeIds,
 } from "./event-landscapes.js";
@@ -136,23 +137,21 @@ function createEventLandscapeIconRow(card, board = null) {
 
   const tiles = board || uiRenderState?.board || [];
   const revealed = revealedLandscapeIds(tiles);
-  const bottomActive = card.effectBottom && ids.some((id) => revealed.has(id));
+  const active = ids.some((id) => revealed.has(id));
 
   const row = document.createElement("div");
   row.className = [
     "event-landscape-icons",
-    card.effectBottom ? "has-bottom-effect" : "",
-    bottomActive ? "bottom-active" : "",
-  ].filter(Boolean).join(" ");
+    "needs-landscapes",
+    active ? "event-active" : "event-inactive",
+  ].join(" ");
 
-  if (card.effectBottom) {
-    const hint = document.createElement("span");
-    hint.className = "event-landscape-hint";
-    hint.textContent = bottomActive
-      ? "Bottom effect active"
-      : "Reveal any landscape below on the board";
-    row.appendChild(hint);
-  }
+  const hint = document.createElement("span");
+  hint.className = "event-landscape-hint";
+  hint.textContent = active
+    ? "Event fires"
+    : "Needs a listed Landscape Revealed or this Event is discarded unused";
+  row.appendChild(hint);
 
   const chips = document.createElement("div");
   chips.className = "event-landscape-chips";
@@ -161,7 +160,7 @@ function createEventLandscapeIconRow(card, board = null) {
     const chip = document.createElement("span");
     const isRevealed = revealed.has(id);
     chip.className = `event-landscape-icon${isRevealed ? " revealed" : ""}`;
-    chip.title = `${landscapeNameForId(id, tiles)}${isRevealed ? " — Revealed" : " — Hidden"}`;
+    chip.title = `${landscapeNameForId(id, tiles)}${isRevealed ? " (Revealed)" : " (Hidden)"}`;
     const img = document.createElement("img");
     img.src = landscapeImageForId(id, tiles);
     img.alt = landscapeNameForId(id, tiles);
@@ -788,17 +787,42 @@ export function showModal(card) {
   detail.appendChild(title);
 
   if (card.type === "event") {
+    const info = uiRenderState
+      ? describeEventResolution(uiRenderState, card)
+      : { needed: eventLandscapeIds(card), activeNames: [], wasted: Boolean(card.eventWasted), discardPile: "Mindstream discard pile" };
+    const wasted = Boolean(card.eventWasted || info.wasted);
+    const active = !wasted && info.activeNames?.length;
+
+    const banner = document.createElement("div");
+    banner.className = `event-resolution-banner${wasted ? " wasted" : active ? " resolves" : ""}`;
+    if (wasted) {
+      banner.innerHTML = `
+        <strong>Discarded unused</strong>
+        <span>None of this Event's Landscapes are Revealed${info.needed?.length ? ` (${formatNameList(info.needed)})` : ""}. No effect happens. The card is placed in the ${info.discardPile}.</span>
+      `;
+    } else if (active) {
+      banner.innerHTML = `
+        <strong>Resolves</strong>
+        <span>${formatNameList(info.activeNames)} ${info.activeNames.length === 1 ? "is" : "are"} Revealed, so this Event fires. After it resolves it is discarded to the ${info.discardPile}.</span>
+      `;
+    } else {
+      banner.innerHTML = `
+        <strong>Needs a Revealed Landscape</strong>
+        <span>This Event only fires if any listed Landscape is Revealed. Otherwise it is discarded unused to the ${info.discardPile}.</span>
+      `;
+    }
+    detail.appendChild(banner);
+
     if (card.effectTop) {
       const top = document.createElement("p");
-      top.className = "event-effect-top";
-      top.innerHTML = `<strong>Always:</strong> ${card.effectTop}`;
+      top.className = `event-effect-top${wasted ? " inactive" : " active"}`;
+      top.innerHTML = `<strong>Effect:</strong> ${card.effectTop}`;
       detail.appendChild(top);
     }
     if (card.effectBottom) {
-      const bottomActive = uiRenderState ? hasAffectedLandscapes(uiRenderState, card) : false;
       const bottom = document.createElement("p");
-      bottom.className = `event-effect-bottom${bottomActive ? " active" : " inactive"}`;
-      bottom.innerHTML = `<strong>If any Affected Landscape is Revealed:</strong> ${card.effectBottom}`;
+      bottom.className = `event-effect-bottom${wasted ? " inactive" : " active"}`;
+      bottom.innerHTML = `<strong>Also:</strong> ${card.effectBottom}`;
       detail.appendChild(bottom);
     }
     const icons = createEventLandscapeIconRow(card);

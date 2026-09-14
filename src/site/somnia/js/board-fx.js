@@ -22,7 +22,8 @@ function centerOf(el) {
 }
 
 function deckEl(id) {
-  return document.querySelector(`[data-deck-id="${id}"]`);
+  return document.querySelector(`[data-deck-id="${id}"]`)
+    || document.querySelector(`[data-deck="${id}"]`);
 }
 
 function hexTileEl(tileId) {
@@ -249,6 +250,10 @@ export function queueMindstreamDrawFx(tileId, suit, card) {
   queue.push({ type: "mindstream-draw", tileId, suit, card });
 }
 
+export function queueMindstreamDiscardFx(tileId, suit, card, { wasted = false } = {}) {
+  queue.push({ type: "mindstream-discard", tileId, suit, card, wasted });
+}
+
 export function queueEncounterSpawnFx(landscapeId, encounter, suit = null) {
   queue.push({ type: "encounter-spawn", landscapeId, encounter, suit });
 }
@@ -325,6 +330,18 @@ export function runPendingBoardFx() {
         if (evt.card?.type === "dreambeast") {
           burstSparkles(to.x, to.y, 12, "#ff6b9d");
         }
+      }
+      delay += step;
+    } else if (evt.type === "mindstream-discard") {
+      const deckKey = `mindstream-${evt.suit || "lucidity"}`;
+      const tile = hexTileEl(evt.tileId);
+      const from = centerOf(tile) || boardCenter();
+      const to = centerOf(deckEl(deckKey)) || boardCenter();
+      if (from && to) {
+        const ghostCard = evt.wasted ? { ...evt.card, name: "Unused" } : evt.card;
+        flyCard(from, to, ghostCard, "discard", delay, { w: 48, h: 66 });
+        pulseDeck(deckKey, "deck-pulse-loss");
+        flashEl(tile, evt.wasted ? "hex-event-wasted" : "hex-mindstream-hit", 700);
       }
       delay += step;
     } else if (evt.type === "dreamer-move") {

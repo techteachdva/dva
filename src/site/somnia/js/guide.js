@@ -623,7 +623,7 @@ export function rulesDetailsHtml() {
       </ul>
 
       <h3>Mindstream &amp; Dreams</h3>
-      <p>Three 70-card decks (Lucidity, Elasticity, Willpower): Dreambeasts, Objects, Events, Power cards, Draw-Dream cards. During Meet, draw from a Landscape's matching suit → resolve event → discard. Dreams are drawn once per round by the Head Dreamer and resolve their printed effects.</p>
+      <p>Three 70-card decks (Lucidity, Elasticity, Willpower): Dreambeasts, Objects, Events, Power cards, Draw-Dream cards. During Meet, draw from a Landscape's matching suit. An Event only resolves if any listed Landscape is Revealed; otherwise it is discarded unused. Resolved Events are also discarded. Dreams are drawn once per round by the Head Dreamer and resolve their printed effects.</p>
 
       <h3>Death</h3>
       <p>At 0 Psyche, spend Power Tokens (cost = max(1, floor(alive/2))) to draw 1 Psyche and survive, or accept death: Repress top of each Mindstream deck, lose all Objects/Persistent/Power, return to The Bed with 4/3/2/1 Psyche (by death #), gain 2 Power, resolve an Additional Dream. Fifth death removes the Dreamer permanently.</p>

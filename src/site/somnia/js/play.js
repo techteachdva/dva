@@ -1261,6 +1261,12 @@ function renderAll() {
   renderSubconsciousButton(state);
   renderLog(state);
 
+  if (state.pendingEventModal) {
+    const eventCard = state.pendingEventModal;
+    state.pendingEventModal = null;
+    showModal(eventCard);
+  }
+
   resolvePendingDeathDream(state, showModal);
   maybeShowDeathChoice();
   maybeShowNothingChoice();
