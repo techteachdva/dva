@@ -23,7 +23,7 @@ import {
 import { MINDSTREAM_EFFECTS } from "./mindstream.js";
 import { markDreamFeedNudge } from "./fx.js";
 import { logMoment } from "./narrator.js";
-import { OBJECT_EFFECTS, rememberObjectHelpers } from "./object-effects.js";
+import { onObjectDrawn } from "./objects.js";
 import {
   rememberDreamHelpers,
   beginMortalityChoices,
@@ -573,14 +573,7 @@ export function resolveCardEffect(state, card, player, helpers) {
   }
 
   if (card.type === "object") {
-    const effectId = card.refId || card.id;
-    if (OBJECT_EFFECTS[effectId]) {
-      rememberObjectHelpers(helpers);
-      OBJECT_EFFECTS[effectId](state, player, helpers);
-      return;
-    }
-    player.objects.push({ ...card, instanceId: uid("obj") });
-    addLog(state, `${player.name} gains ${card.name}.`);
+    onObjectDrawn(state, player, card, helpers);
     return;
   }
 
@@ -595,11 +588,6 @@ export function resolveCardEffect(state, card, player, helpers) {
       MINDSTREAM_EFFECTS[id](state, player, helpers, card);
       return;
     }
-  }
-  if (card.type === "object" && OBJECT_EFFECTS[id]) {
-    rememberObjectHelpers(helpers);
-    OBJECT_EFFECTS[id](state, player, helpers);
-    return;
   }
   matchTextEffect(card, state, player, helpers);
 }

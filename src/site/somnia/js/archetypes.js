@@ -62,7 +62,7 @@ function resolveOutlawCard(state, player, keep, other, suit) {
   if (helpers?.resolveCardEffect) {
     helpers.resolveCardEffect(state, keep, player, helpers);
   }
-  if (keep && keep.type !== "dreambeast") {
+  if (keep && keep.type !== "dreambeast" && keep.type !== "object") {
     state.mindstreamDiscard[suit]?.push(keep);
   }
   if (other) state.mindstreamDiscard[suit]?.push(other);

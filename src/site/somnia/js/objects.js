@@ -7,6 +7,8 @@ import {
   finishMonkeyPaw,
   applySkeletonKeyAfterDream as applySkeletonKeyChoice,
   revealWithAllSeeingEye,
+  OBJECT_EFFECTS,
+  rememberObjectHelpers,
 } from "./object-effects.js";
 import { psycheHandCount, psycheCardValue } from "./psyche.js";
 import { pullObjectFromMindstream, objectForPlayer, discardToMindstream } from "./mindstream-supply.js";
@@ -122,12 +124,15 @@ export function onObjectDrawn(state, player, card, helpers) {
     resolveMustPlayObject(state, player, card, helpers);
     return;
   }
-  if (card.subtype === "persistent") {
-    player.persistent.push(card);
-    addLog(state, `${card.name} enters play (Persistent).`);
-    return;
-  }
   player.objects.push(card);
+  addLog(state, `${player.name} draws ${card.name}.`);
+}
+
+function resolveObjectEffect(state, player, card, helpers) {
+  const effectId = card.refId || card.id;
+  if (!OBJECT_EFFECTS[effectId]) return;
+  rememberObjectHelpers(helpers);
+  OBJECT_EFFECTS[effectId](state, player, helpers);
 }
 
 function resolveMustPlayObject(state, player, card, helpers) {
@@ -141,9 +146,7 @@ function resolveMustPlayObject(state, player, card, helpers) {
     addLog(state, "The All Seeing Eye: choose Landscapes to reveal, then it is Repressed.");
     return;
   }
-  if (helpers?.resolveCardEffect) {
-    helpers.resolveCardEffect(state, card, player, helpers);
-  }
+  resolveObjectEffect(state, player, card, helpers);
   repressCard(state, card);
 }
 
@@ -167,9 +170,7 @@ export function playObjectCard(state, player, card, helpers, options = {}) {
     player.objects = player.objects.filter((o) => o.instanceId !== card.instanceId);
     addLog(state, `${player.name} plays ${card.name}.`);
     playSfx("acquire");
-    if (helpers?.resolveCardEffect) {
-      helpers.resolveCardEffect(state, card, player, helpers);
-    }
+    resolveObjectEffect(state, player, card, helpers);
     const tag = card.tags?.[0]?.split("/")?.[0];
     if (tag) checkObjectTagSet(state, player, tag);
     if (card.text?.toLowerCase().includes("repress this")) {

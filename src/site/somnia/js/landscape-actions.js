@@ -337,7 +337,9 @@ function drawTwoKeepOne(state, player, helpers) {
       helpers.spawnEncounter(state, player.landscapeId, keep);
     } else if (helpers.resolveCardEffect) {
       helpers.resolveCardEffect(state, keep, player, helpers);
-      state.mindstreamDiscard[suit].push(keep);
+      if (keep.type !== "object" && keep.type !== "dreambeast") {
+        state.mindstreamDiscard[suit].push(keep);
+      }
     }
     state.mindstreamDiscard[suit].push(discard);
     return keep;
@@ -875,14 +877,16 @@ export function executeLandscapeActionChoice(state, tile, player, actionId, help
       if (helpers.resolveCardEffect) {
         helpers.resolveCardEffect(state, card, player, helpers);
       }
-      state.mindstreamDiscard[suit].push(card);
-      if (card.type === "event") {
-        if (card.eventWasted) {
-          addLog(state, `${card.name} is discarded unused to the ${SUIT_LABELS[suit] || suit} Mindstream discard pile.`);
-        } else {
-          addLog(state, `${card.name} is discarded to the ${SUIT_LABELS[suit] || suit} Mindstream discard pile.`);
+      if (card.type !== "object" && card.type !== "dreambeast") {
+        state.mindstreamDiscard[suit].push(card);
+        if (card.type === "event") {
+          if (card.eventWasted) {
+            addLog(state, `${card.name} is discarded unused to the ${SUIT_LABELS[suit] || suit} Mindstream discard pile.`);
+          } else {
+            addLog(state, `${card.name} is discarded to the ${SUIT_LABELS[suit] || suit} Mindstream discard pile.`);
+          }
+          queueMindstreamDiscardFx(tile.id, suit, card, { wasted: !!card.eventWasted });
         }
-        queueMindstreamDiscardFx(tile.id, suit, card, { wasted: !!card.eventWasted });
       }
       return { ok: true, card };
     }
@@ -1052,14 +1056,16 @@ export function resolveLandscapeMindstreamPick(state, tile, player, suit, action
     if (helpers.resolveCardEffect) {
       helpers.resolveCardEffect(state, card, player, helpers);
     }
-    state.mindstreamDiscard[suit].push(card);
-    if (card.type === "event") {
-      if (card.eventWasted) {
-        addLog(state, `${card.name} is discarded unused to the ${SUIT_LABELS[suit] || suit} Mindstream discard pile.`);
-      } else {
-        addLog(state, `${card.name} is discarded to the ${SUIT_LABELS[suit] || suit} Mindstream discard pile.`);
+    if (card.type !== "object" && card.type !== "dreambeast") {
+      state.mindstreamDiscard[suit].push(card);
+      if (card.type === "event") {
+        if (card.eventWasted) {
+          addLog(state, `${card.name} is discarded unused to the ${SUIT_LABELS[suit] || suit} Mindstream discard pile.`);
+        } else {
+          addLog(state, `${card.name} is discarded to the ${SUIT_LABELS[suit] || suit} Mindstream discard pile.`);
+        }
+        queueMindstreamDiscardFx(tile.id, suit, card, { wasted: !!card.eventWasted });
       }
-      queueMindstreamDiscardFx(tile.id, suit, card, { wasted: !!card.eventWasted });
     }
     return { ok: true, card };
   }
