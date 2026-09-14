@@ -1380,6 +1380,23 @@ export function resetDeckColumnRender() {
   lastDeckColumnKey = "";
 }
 
+export function syncDeckColumnFit() {
+  const column = document.getElementById("deck-column");
+  if (!column || !column.childElementCount) return;
+
+  const rowCount = column.childElementCount;
+  const rowH = column.clientHeight / rowCount;
+  const cap = Math.max(5, Math.min(15, rowH * 0.17));
+  const base = Math.max(9, Math.min(17, rowH * 0.26));
+  const faceH = Math.max(24, Math.min(42, rowH * 0.4));
+  const faceW = Math.max(18, Math.min(32, faceH * 0.76));
+
+  column.style.setProperty("--deck-stack-cap", `${cap}px`);
+  column.style.setProperty("--deck-stack-base", `${base}px`);
+  column.style.setProperty("--deck-face-h", `${faceH}px`);
+  column.style.setProperty("--deck-face-w", `${faceW}px`);
+}
+
 function deckColumnSignature(state) {
   const parts = DECK_COLUMN_DEFS.map((deck) => {
     const draw = drawPileForDeck(state, deck.id);
@@ -1403,19 +1420,19 @@ export function renderDecks(state, onViewDiscard, onViewPeek = null) {
   if (!column) return;
 
   const sig = deckColumnSignature(state);
-  if (sig === lastDeckColumnKey && column.childElementCount > 0) return;
-  lastDeckColumnKey = sig;
-  column.innerHTML = "";
+  if (sig !== lastDeckColumnKey || column.childElementCount === 0) {
+    lastDeckColumnKey = sig;
+    column.innerHTML = "";
 
-  DECK_COLUMN_DEFS.forEach((deck) => {
-    const drawCount = drawPileForDeck(state, deck.id).length;
-    const discardPile = discardPileForDeck(state, deck.id);
-    const discardCount = discardPile.length;
-    const topDiscard = discardCount ? discardPile[discardCount - 1] : null;
-    const peeked = state.revealedDeckTops?.[deck.id] || [];
-    const blockDiscard = deck.id.startsWith("mindstream-") && state.tradeMode;
+    DECK_COLUMN_DEFS.forEach((deck) => {
+      const drawCount = drawPileForDeck(state, deck.id).length;
+      const discardPile = discardPileForDeck(state, deck.id);
+      const discardCount = discardPile.length;
+      const topDiscard = discardCount ? discardPile[discardCount - 1] : null;
+      const peeked = state.revealedDeckTops?.[deck.id] || [];
+      const blockDiscard = deck.id.startsWith("mindstream-") && state.tradeMode;
 
-    const row = document.createElement("article");
+      const row = document.createElement("article");
     row.className = [
       "deck-rail-row",
       deck.suit ? `suit-${deck.suit}` : `kind-${deck.kind}`,
@@ -1499,6 +1516,9 @@ export function renderDecks(state, onViewDiscard, onViewPeek = null) {
     row.appendChild(piles);
     column.appendChild(row);
   });
+  }
+
+  requestAnimationFrame(() => syncDeckColumnFit());
 }
 
 export function renderSubconsciousButton(state) {

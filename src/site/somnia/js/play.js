@@ -122,6 +122,7 @@ import {
   renderObjects,
   renderDecks,
   resetDeckColumnRender,
+  syncDeckColumnFit,
   renderActiveSlots,
   renderHud,
   renderLog,
@@ -218,6 +219,7 @@ async function init() {
   bindModal();
   bindHelp();
   bindBoardResize();
+  bindDeckColumnResize();
   initBoardZoom();
   setBoardZoomChangeHandler(() => {
     renderBoardArea();
@@ -565,6 +567,16 @@ function bindBoardResize() {
     boardResizeTimer = setTimeout(() => renderAll(), 80);
   });
   observer.observe(vp);
+}
+
+function bindDeckColumnResize() {
+  const column = document.getElementById("deck-column");
+  if (!column || column.dataset.resizeBound) return;
+  column.dataset.resizeBound = "1";
+  const sync = () => syncDeckColumnFit();
+  const observer = new ResizeObserver(sync);
+  observer.observe(column);
+  window.addEventListener("resize", sync);
 }
 
 function buildPauseSaveHooks() {

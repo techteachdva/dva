@@ -832,18 +832,23 @@ body.in-game main {
 }
 
 .deck-column {
-  position: absolute;
-  top: 0.45rem;
-  left: 0.45rem;
+  --deck-stack-cap: clamp(0.42rem, 1.65vh, 0.82rem);
+  --deck-stack-base: clamp(0.68rem, 2vh, 1rem);
+  --deck-face-w: clamp(1.55rem, 2.6vh, 2rem);
+  --deck-face-h: clamp(2rem, 3.4vh, 2.65rem);
+  position: fixed;
+  top: var(--topbar-h);
+  bottom: var(--hand-h);
+  left: 0.4rem;
   z-index: 30;
   display: flex;
   flex-direction: column;
-  gap: 0.42rem;
-  width: clamp(148px, 14.5vw, 206px);
-  max-height: calc(100% - 0.9rem);
-  overflow-x: hidden;
-  overflow-y: auto;
-  padding: 0.45rem 0.5rem 0.5rem;
+  gap: clamp(0.08rem, 0.28vh, 0.22rem);
+  width: clamp(136px, 13.5vw, 188px);
+  height: auto;
+  max-height: none;
+  overflow: hidden;
+  padding: clamp(0.22rem, 0.55vh, 0.38rem) 0.38rem;
   border-radius: 12px;
   border: 1px solid rgba(201, 160, 255, 0.24);
   background: rgba(8, 6, 20, 0.86);
@@ -852,17 +857,19 @@ body.in-game main {
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(10px);
   pointer-events: auto;
-  scrollbar-width: thin;
 }
 
 .deck-rail-row {
+  flex: 1 1 0;
+  min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.28rem;
-  padding: 0.34rem 0.36rem 0.4rem;
-  border-radius: 9px;
+  gap: 0.08rem;
+  padding: 0.16rem 0.22rem 0.18rem;
+  border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.03);
+  overflow: hidden;
 }
 
 .deck-rail-row.kind-dream { border-left: 3px solid #c9a0ff; }
@@ -876,6 +883,7 @@ body.in-game main {
 }
 
 .deck-rail-head {
+  flex: 0 0 auto;
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -884,16 +892,17 @@ body.in-game main {
 }
 
 .deck-rail-label {
-  font-size: 0.72rem;
+  font-size: clamp(0.58rem, 1.1vh, 0.68rem);
   font-weight: 700;
   letter-spacing: 0.02em;
   color: #f4f0ff;
-  line-height: 1.2;
+  line-height: 1.15;
 }
 
 .deck-rail-sub {
-  display: block;
-  font-size: 0.64rem;
+  display: inline;
+  margin-left: 0.12rem;
+  font-size: clamp(0.52rem, 0.95vh, 0.6rem);
   font-weight: 600;
   opacity: 0.88;
 }
@@ -903,42 +912,50 @@ body.in-game main {
 .deck-rail-row.suit-willpower .deck-rail-sub { color: #ffb0b0; }
 
 .deck-rail-meta {
-  font-size: 0.62rem;
+  font-size: clamp(0.5rem, 0.9vh, 0.58rem);
   font-weight: 600;
   color: rgba(220, 214, 245, 0.78);
   white-space: nowrap;
 }
 
 .deck-rail-piles {
+  flex: 1 1 auto;
+  min-height: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: end;
-  gap: 0.2rem;
+  gap: 0.14rem;
 }
 
 .deck-rail-sep {
-  font-size: 0.62rem;
+  font-size: clamp(0.5rem, 0.9vh, 0.58rem);
   color: rgba(201, 160, 255, 0.55);
-  padding-bottom: 1.1rem;
+  align-self: center;
   user-select: none;
 }
 
 .deck-rail-draw,
 .deck-rail-discard {
   position: relative;
-  min-height: 3.4rem;
+  min-height: 0;
+  height: 100%;
+  max-height: 100%;
 }
 
 .deck-rect-stack {
-  --stack-step: 1.35px;
+  --stack-step: min(1.1px, calc(var(--deck-stack-cap) / max(var(--stack-count), 1)));
   position: relative;
   width: 100%;
-  min-height: 2.2rem;
-  height: calc(var(--stack-count, 0) * var(--stack-step) + 2.2rem);
+  min-height: var(--deck-stack-base);
+  height: min(
+    calc(var(--stack-count, 0) * var(--stack-step) + var(--deck-stack-base)),
+    calc(var(--deck-stack-cap) + var(--deck-stack-base))
+  );
+  max-height: calc(var(--deck-stack-cap) + var(--deck-stack-base));
 }
 
 .deck-rect-stack.is-empty {
-  height: 2.2rem;
+  height: var(--deck-stack-base);
 }
 
 .deck-rect {
@@ -984,11 +1001,11 @@ body.in-game main {
 
 .deck-peek-card {
   position: absolute;
-  bottom: calc(var(--peek-i) * 4px);
+  bottom: calc(var(--peek-i) * 3px);
   left: 50%;
   transform: translateX(-50%);
-  width: 2.35rem !important;
-  min-height: 3.2rem !important;
+  width: var(--deck-face-w) !important;
+  min-height: var(--deck-face-h) !important;
   pointer-events: auto;
   z-index: 4;
   box-shadow:
@@ -1001,8 +1018,8 @@ body.in-game main {
   left: 50%;
   bottom: calc(var(--stack-count, 0) * var(--stack-step));
   transform: translateX(-50%);
-  width: 2.45rem !important;
-  min-height: 3.35rem !important;
+  width: var(--deck-face-w) !important;
+  min-height: var(--deck-face-h) !important;
   z-index: 3;
   cursor: pointer;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.42);
@@ -1032,9 +1049,9 @@ body.in-game main {
 .deck-last-dream-badge {
   position: absolute;
   left: 50%;
-  bottom: calc(var(--stack-count, 0) * var(--stack-step) + 3.55rem);
+  bottom: calc(var(--stack-count, 0) * var(--stack-step) + var(--deck-face-h) + 0.12rem);
   transform: translateX(-50%);
-  font-size: 0.52rem;
+  font-size: clamp(0.44rem, 0.8vh, 0.5rem);
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -1042,7 +1059,7 @@ body.in-game main {
   background: rgba(123, 92, 255, 0.72);
   border: 1px solid rgba(201, 160, 255, 0.55);
   border-radius: 999px;
-  padding: 0.08rem 0.35rem;
+  padding: 0.05rem 0.28rem;
   white-space: nowrap;
   z-index: 5;
   pointer-events: none;
@@ -1052,22 +1069,22 @@ body.in-game main {
 .deck-discard-blocked {
   position: absolute;
   left: 50%;
-  bottom: 0.15rem;
+  bottom: 0.1rem;
   transform: translateX(-50%);
-  width: 2.45rem;
-  height: 3.35rem;
+  width: var(--deck-face-w);
+  height: var(--deck-face-h);
   border-radius: 5px;
   border: 1px dashed rgba(255, 255, 255, 0.18);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.72rem;
+  font-size: clamp(0.58rem, 1vh, 0.68rem);
   color: rgba(220, 214, 245, 0.45);
   background: rgba(0, 0, 0, 0.18);
 }
 
 .deck-discard-blocked {
-  font-size: 0.58rem;
+  font-size: clamp(0.48rem, 0.85vh, 0.56rem);
   font-weight: 700;
   letter-spacing: 0.03em;
   text-transform: uppercase;
@@ -5386,8 +5403,7 @@ body.card-detail-open .tutorial-card {
   }
 
   .deck-column {
-    width: clamp(128px, 32vw, 168px);
-    max-height: min(52vh, 420px);
+    width: clamp(120px, 30vw, 156px);
   }
 
   .setup-round-flow { grid-template-columns: 1fr; }
