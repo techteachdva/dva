@@ -37,7 +37,17 @@ import {
 } from "./game-save.js";
 import { startVictoryCelebration, stopVictoryCelebration } from "./victory-celebration.js";
 import { LENGTHS, loadGameData } from "./data.js";
-import { createInitialState, addLog, respawnDreamer, getPhase, activePlayer, avoidDreamerDeath, acceptDreamerDeath } from "./state.js";
+import {
+  createInitialState,
+  addLog,
+  respawnDreamer,
+  getPhase,
+  activePlayer,
+  avoidDreamerDeath,
+  acceptDreamerDeath,
+  isBlockingGameChoice,
+  blockingChoiceLabel,
+} from "./state.js";
 import {
   getPhaseActions,
   getPhaseAdvanceAction,
@@ -81,7 +91,7 @@ import { requestEndPhase } from "./phase-skip.js";
 import { initDevConsole } from "./dev-console.js";
 import { enableDevMode } from "./dev-commands.js";
 import { narrate } from "./narrator.js";
-import { pickReturnCard, cancelPendingReturn, pickRepressCard, confirmRepressStep } from "./subconscious.js";
+import { cancelPendingReturn, pickRepressCard, confirmRepressStep } from "./subconscious.js";
 import { getLandscapePickHighlights, resolveStaleLandscapePick } from "./landscapes.js";
 import {
   resolveDreamerPowerChoice,
@@ -159,6 +169,9 @@ import {
   showDeathChoiceModal,
   showNothingChoiceModal,
   hideUtilityModal,
+  handleUtilityModalDismiss,
+  setUtilityModalRequired,
+  restoreUtilityModal,
   showSubconsciousPicker,
   showSubconsciousBrowse,
   showDiscardPileModal,
@@ -573,8 +586,23 @@ function bindHelp() {
 function bindModal() {
   document.querySelector("#card-modal .modal-backdrop").addEventListener("click", hideModal);
   document.querySelector("#card-modal .modal-close").addEventListener("click", hideModal);
-  document.querySelector("#utility-modal .utility-backdrop")?.addEventListener("click", hideUtilityModal);
-  document.querySelector("#utility-modal .utility-close")?.addEventListener("click", hideUtilityModal);
+  document.querySelector("#utility-modal .utility-backdrop")?.addEventListener("click", handleUtilityModalDismiss);
+  document.querySelector("#utility-modal .utility-close")?.addEventListener("click", handleUtilityModalDismiss);
+  document.getElementById("utility-choice-restore")?.addEventListener("click", restoreUtilityModal);
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    const utilityModal = document.getElementById("utility-modal");
+    if (!utilityModal || utilityModal.classList.contains("hidden")) return;
+    if (utilityModal.classList.contains("utility-modal-minimized")) {
+      event.preventDefault();
+      restoreUtilityModal();
+      return;
+    }
+    if (isBlockingGameChoice(state)) {
+      event.preventDefault();
+      handleUtilityModalDismiss();
+    }
+  });
 }
 
 function bindBoardResize() {
@@ -1079,7 +1107,11 @@ function openDreamerBoardRadial(anchorEl, playerId, tileId) {
   showRadialMenu(anchorEl, options, (opt) => {
     opt.onPick?.();
     renderAll();
-  }, { ariaLabel: `${player.name} actions` });
+  }, {
+    ariaLabel: `${player.name} actions`,
+    resolveAnchor: () => document.querySelector(`.hex-occupant-dreamer[data-dreamer-id="${playerId}"]`)
+      || document.querySelector(`.hex-tile[data-tile-id="${tileId}"]`),
+  });
 }
 
 function openBeastBoardRadial(anchorEl, encounter, tileId) {
@@ -1196,7 +1228,7 @@ function maybeShowObjectChoice() {
   if (key === lastObjectChoiceKey && !modalHidden) return;
   lastObjectChoiceKey = key;
   const finish = (choiceId) => {
-    hideUtilityModal();
+    hideUtilityModal(true);
     if (kind === "dream") resolveDreamChoice(state, choiceId, getEffectHelpers());
     else if (kind === "effect") resolveEffectChoice(state, choiceId, getEffectHelpers());
     else resolveObjectChoice(state, choiceId, getEffectHelpers());
@@ -1214,7 +1246,12 @@ function maybeShowObjectChoice() {
     return;
   }
   if (pending.ui === "spend") {
-    showObjectSpendPicker(pending, finish, () => finish("confirm"));
+    const toggleSpend = (choiceId) => {
+      if (kind === "dream") resolveDreamChoice(state, choiceId, getEffectHelpers());
+      else if (kind === "effect") resolveEffectChoice(state, choiceId, getEffectHelpers());
+      else resolveObjectChoice(state, choiceId, getEffectHelpers());
+    };
+    showObjectSpendPicker(pending, toggleSpend, () => finish("confirm"));
     return;
   }
   showDreamerPowerChoice(pending, finish);
@@ -1348,21 +1385,17 @@ function maybeShowReturnPicker() {
   const key = `${pending.remaining}:${pending.picked.length}`;
   if (key === lastReturnPickerKey) return;
   lastReturnPickerKey = key;
-  showSubconsciousPicker(
-    state,
-    (instanceId) => {
-      pickReturnCard(state, instanceId);
+  showSubconsciousPicker(state, {
+    onConfirm: () => {
       lastReturnPickerKey = null;
-      if (state.pendingReturn) maybeShowReturnPicker();
-      if (!state.pendingReturn) hideUtilityModal();
       renderAll();
     },
-    () => {
+    onSkip: () => {
       cancelPendingReturn(state);
       lastReturnPickerKey = null;
       renderAll();
-    }
-  );
+    },
+  });
 }
 
 function renderBoardArea() {
@@ -1548,10 +1581,12 @@ function renderAll() {
   maybeShowReturnPicker();
   maybeShowDreamerPowerUI();
 
+  const blocking = isBlockingGameChoice(state);
+  setUtilityModalRequired(blocking, blockingChoiceLabel(state));
   const utilityModal = document.getElementById("utility-modal");
   document.body.classList.toggle(
     "utility-modal-open",
-    utilityModal && !utilityModal.classList.contains("hidden")
+    utilityModal && !utilityModal.classList.contains("hidden") && !utilityModal.classList.contains("utility-modal-minimized")
   );
 
   if (isInteractiveTutorialActive(state)) {

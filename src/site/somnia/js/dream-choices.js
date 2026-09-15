@@ -210,7 +210,7 @@ function presentBargaining(state, player) {
   offer(state, player, {
     dreamId: "bargaining",
     title: "Bargaining",
-    message: `${player.name} may discard 6 Psyche to Acquire ${arch.name} if its quests are marked.`,
+    message: `${player.name} may discard 6 Psyche to Acquire ${arch.name} (matching suit — quests need not be complete).`,
     choices: [
       { id: "bargain", label: `Discard 6 Psyche`, hint: `Toward ${arch.name}.` },
       { id: "skip", label: "Decline", hint: "Keep your Psyche." },
@@ -772,11 +772,18 @@ function applySpend(state, player, dreamId, step, picked, pending) {
   if (dreamId === "bargaining" && step === "pay-six") {
     discardPsyche(state, player, picked);
     const arch = state.activeArchetype;
-    if (arch?.questProgress?.every(Boolean)) {
-      acquireArchetype(state, player);
+    const stats = {
+      lucidity: player.dreamer.lucidity ?? 0,
+      elasticity: player.dreamer.elasticity ?? 0,
+      willpower: player.dreamer.willpower ?? 0,
+    };
+    const suit = Object.entries(stats).sort((a, b) => b[1] - a[1])[0][0];
+    if (arch && arch.suit === suit && acquireArchetype(state, player, undefined, { skipQuestCheck: true })) {
       addLog(state, `${player.name} bargains for ${arch.name}.`);
+    } else if (arch && arch.suit === suit) {
+      addLog(state, `${player.name} discards 6 Psyche but could not acquire ${arch.name}.`);
     } else {
-      addLog(state, `${player.name} discards 6 Psyche toward ${arch?.name || "the Archetype"} (quests incomplete).`);
+      addLog(state, `${player.name} discards 6 Psyche (no matching Active Archetype).`);
     }
     return;
   }

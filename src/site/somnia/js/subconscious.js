@@ -225,6 +225,31 @@ export function pickReturnCard(state, instanceId) {
   return true;
 }
 
+/** Confirm a multi-select Return picker (new card-choice UI). */
+export function completeReturnSelection(state) {
+  const pending = state.pendingReturn;
+  if (!pending || !pending.picked.length) return false;
+  finalizeReturn(state, pending.picked.slice(0, pending.remaining));
+  state.pendingReturn = null;
+  advanceResolutionQueue(state);
+  return true;
+}
+
+export function toggleReturnPick(state, instanceId) {
+  const pending = state.pendingReturn;
+  if (!pending) return false;
+  const card = listSubconsciousCards(state).find((c) => c.instanceId === instanceId);
+  if (!card) return false;
+  const idx = pending.picked.findIndex((c) => c.instanceId === instanceId);
+  if (idx >= 0) {
+    pending.picked.splice(idx, 1);
+    return true;
+  }
+  if (pending.picked.length >= pending.remaining) return false;
+  pending.picked.push(card);
+  return true;
+}
+
 export function cancelPendingReturn(state) {
   if (!state.pendingReturn) return;
   const picked = state.pendingReturn.picked;

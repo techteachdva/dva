@@ -8156,3 +8156,204 @@ body.menu-window .brand h1 {
     transition: none;
   }
 }
+
+/* ── Card choice picker (18.2) ── */
+.utility-content.card-choice-modal-wrap {
+  width: min(960px, 96vw);
+  max-height: 92vh;
+  overflow: auto;
+}
+
+.card-choice-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.card-choice-picker h2 {
+  margin: 0;
+}
+
+.card-choice-message,
+.card-choice-hint,
+.card-choice-status {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.card-choice-hint {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.card-choice-status {
+  font-weight: 600;
+  color: var(--gold);
+}
+
+.card-choice-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 0.5rem 0;
+}
+
+.card-choice-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 168px;
+}
+
+.card-choice-wrap .game-card.portrait {
+  width: 156px;
+}
+
+.card-choice-wrap .game-card.portrait .art {
+  max-height: 210px;
+}
+
+.card-choice-wrap .game-card.selected {
+  box-shadow:
+    0 0 0 3px rgba(240, 201, 106, 0.95),
+    0 0 22px rgba(123, 92, 255, 0.45);
+  transform: translateY(-4px) scale(1.03);
+}
+
+.card-choice-order {
+  position: absolute;
+  top: -0.35rem;
+  right: -0.2rem;
+  z-index: 3;
+  min-width: 1.35rem;
+  height: 1.35rem;
+  padding: 0 0.3rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #f0c96a, #c9a0ff);
+  color: #1a0e28;
+  font-size: 0.72rem;
+  font-weight: 800;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+
+.card-choice-order.hidden {
+  display: none;
+}
+
+.card-choice-caption {
+  font-size: 0.78rem;
+  text-align: center;
+  color: var(--text);
+  line-height: 1.2;
+}
+
+.card-choice-actions {
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.card-choice-piles .subconscious-pile h4 {
+  margin: 0.75rem 0 0.35rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.modal-content.card-inspect-carousel {
+  max-width: min(520px, 94vw);
+}
+
+.card-inspect-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid rgba(201, 160, 255, 0.22);
+}
+
+.card-inspect-prev,
+.card-inspect-next {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 999px;
+  border: 1px solid rgba(201, 160, 255, 0.45);
+  background: rgba(16, 10, 32, 0.85);
+  color: var(--gold);
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.card-inspect-prev:disabled,
+.card-inspect-next:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.card-inspect-counter {
+  font-weight: 700;
+  min-width: 4rem;
+  text-align: center;
+}
+
+.card-inspect-hint {
+  width: 100%;
+  margin: 0;
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+/* Required choice modal guard */
+#utility-modal.utility-modal-required .utility-backdrop {
+  cursor: default;
+}
+
+#utility-modal.utility-modal-minimized {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.utility-choice-dock {
+  position: fixed;
+  left: 50%;
+  bottom: 1rem;
+  transform: translateX(-50%);
+  z-index: 8600;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid rgba(240, 201, 106, 0.55);
+  background: rgba(12, 8, 24, 0.94);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.55);
+  pointer-events: auto;
+}
+
+.utility-choice-dock.hidden {
+  display: none;
+}
+
+#utility-choice-dock-label {
+  font-size: 0.82rem;
+  color: var(--gold);
+  max-width: min(52vw, 420px);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.btn-minimize-choice {
+  margin-right: auto;
+  font-size: 0.78rem;
+}

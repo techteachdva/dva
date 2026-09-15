@@ -788,9 +788,10 @@ export function checkDefeat(state) {
   }
 }
 
-export function acquireArchetype(state, player, onAcquireFn) {
+export function acquireArchetype(state, player, onAcquireFn, { skipQuestCheck = false } = {}) {
   const archetype = state.activeArchetype;
-  if (!archetype || !archetype.questProgress.every(Boolean)) return false;
+  if (!archetype) return false;
+  if (!skipQuestCheck && !archetype.questProgress.every(Boolean)) return false;
 
   player.acquiredArchetypes.push(archetype);
   state.acquiredPoints += archetype.points;
@@ -806,6 +807,39 @@ export function acquireArchetype(state, player, onAcquireFn) {
 
   checkVictory(state);
   return true;
+}
+
+/** True while the player must resolve a modal/board choice before continuing. */
+export function isBlockingGameChoice(state) {
+  if (!state) return false;
+  return !!(
+    state.pendingDreamChoice
+    || state.pendingEffectChoice
+    || state.pendingObjectChoice
+    || state.pendingReturn
+    || state.pendingRepress
+    || state.pendingDeathChoice
+    || state.pendingNothingChoice
+    || state.pendingRespawn
+    || state.landscapePick
+    || state.pendingDreamerPower?.ui
+  );
+}
+
+export function blockingChoiceLabel(state) {
+  if (!state) return "Required choice";
+  const pending = state.pendingDreamChoice
+    || state.pendingEffectChoice
+    || state.pendingObjectChoice;
+  if (pending?.title) return pending.title;
+  if (state.pendingReturn) return "Return from Subconscious";
+  if (state.pendingRepress) return "Repress to Subconscious";
+  if (state.pendingDeathChoice) return "Psyche death choice";
+  if (state.pendingNothingChoice) return "The Nothing";
+  if (state.pendingRespawn) return "Choose a new Dreamer";
+  if (state.landscapePick?.title) return state.landscapePick.title;
+  if (state.pendingDreamerPower?.ui?.title) return state.pendingDreamerPower.ui.title;
+  return "Required choice";
 }
 
 export function completeQuest(state, questIndex, player, onAcquireFn) {

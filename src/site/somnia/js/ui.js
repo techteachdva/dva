@@ -34,7 +34,13 @@ import { psycheHandCount, alliesInHand, psycheCardsInHand, allyHandCount, allyHa
 import { getQuestStatus, activeQuestLandscapeIds } from "./quests.js";
 import { effectiveDreamerStat } from "./archetype-stats.js";
 import { hexToPixel, boardPixelBounds } from "./hex.js";
-import { subconsciousCount, subconsciousPilesForUI, isDreambeastPsycheCard } from "./subconscious.js";
+import {
+  subconsciousCount,
+  subconsciousPilesForUI,
+  isDreambeastPsycheCard,
+  toggleReturnPick,
+  completeReturnSelection,
+} from "./subconscious.js";
 import {
   TUTORIAL_SECTIONS,
   getTutorialSpotlightSelector,
@@ -498,11 +504,11 @@ export function hideRadialMenu() {
 
 export const hidePowerTokenRadial = hideRadialMenu;
 
-export function showRadialMenu(anchorEl, options, onPick, { ariaLabel = "Actions" } = {}) {
-  hideRadialMenu();
-  if (!anchorEl || !options?.length) return;
+function paintRadialMenu(anchorEl, options, onPick, { ariaLabel = "Actions" } = {}) {
+  if (!anchorEl?.isConnected || !options?.length) return;
 
   const rect = anchorEl.getBoundingClientRect();
+  if (!rect.width && !rect.height && rect.left === 0 && rect.top === 0) return;
   const cx = rect.left + rect.width / 2;
   const cy = rect.top + rect.height / 2;
   const layer = document.createElement("div");
@@ -555,6 +561,24 @@ export function showRadialMenu(anchorEl, options, onPick, { ariaLabel = "Actions
   radialMenuRoot = layer;
   layer.classList.add("open");
   document.addEventListener("keydown", onRadialMenuKey, true);
+}
+
+/** Open after board pan/zoom re-layout (anchor may be replaced in the DOM). */
+export function showRadialMenu(anchorEl, options, onPick, { ariaLabel = "Actions", resolveAnchor = null } = {}) {
+  hideRadialMenu();
+  if (!options?.length) return;
+
+  const open = () => {
+    const el = resolveAnchor?.() || anchorEl;
+    paintRadialMenu(el, options, onPick, { ariaLabel });
+  };
+
+  if (resolveAnchor) {
+    requestAnimationFrame(() => requestAnimationFrame(open));
+    return;
+  }
+
+  open();
 }
 
 export function showPowerTokenRadial(anchorEl, options, onPick) {
@@ -1023,8 +1047,210 @@ export function showModal(card) {
 export function hideModal() {
   const modal = document.getElementById("card-modal");
   modal?.classList.add("hidden");
-  modal?.querySelector(".modal-content")?.classList.remove("dreambeast-detail-modal", "dream-detail-modal");
+  modal?.querySelector(".modal-content")?.classList.remove(
+    "dreambeast-detail-modal",
+    "dream-detail-modal",
+    "card-inspect-carousel",
+  );
   document.body.classList.remove("card-detail-open");
+}
+
+const CARD_CHOICE_HINT = "Left-click a card to select it · Right-click any card for a full-size preview with details.";
+
+function cardChoiceKey(card) {
+  return card?.instanceId || card?.id;
+}
+
+function prepareCardChoiceModal() {
+  const modal = document.getElementById("utility-modal");
+  const content = modal?.querySelector(".utility-content");
+  content?.classList.remove(
+    "fullscreen-browser",
+    "landscape-detail-modal",
+    "dreamer-detail-modal",
+    "phase-skip-modal",
+    "rules-reference-modal",
+  );
+  content?.classList.add("card-choice-modal-wrap");
+  document.body.classList.add("utility-modal-open");
+  modal?.classList.remove("hidden", "utility-modal-minimized");
+  utilityModalMinimized = false;
+  syncUtilityChoiceDock();
+  wireChoiceMinimizeButton(document.getElementById("utility-modal-body"));
+}
+
+function openCardInspectCarousel(cards, startIndex = 0) {
+  if (!cards?.length) return;
+  let index = Math.max(0, Math.min(startIndex, cards.length - 1));
+  const modal = document.getElementById("card-modal");
+  const content = modal?.querySelector(".modal-content");
+  if (!modal || !content) return;
+
+  let nav = content.querySelector(".card-inspect-nav");
+  const renderInspect = () => {
+    showModal(cards[index]);
+    content.classList.add("card-inspect-carousel");
+    nav.querySelector(".card-inspect-counter").textContent = `${index + 1} / ${cards.length}`;
+    const prevBtn = nav.querySelector(".card-inspect-prev");
+    const nextBtn = nav.querySelector(".card-inspect-next");
+    if (prevBtn) prevBtn.disabled = index <= 0;
+    if (nextBtn) nextBtn.disabled = index >= cards.length - 1;
+  };
+
+  if (!nav) {
+    nav = document.createElement("div");
+    nav.className = "card-inspect-nav";
+    nav.innerHTML = `
+      <button type="button" class="card-inspect-prev" aria-label="Previous card">‹</button>
+      <span class="card-inspect-counter" aria-live="polite"></span>
+      <button type="button" class="card-inspect-next" aria-label="Next card">›</button>
+      <p class="card-inspect-hint">Browsing options in this choice</p>
+    `;
+    content.insertBefore(nav, content.firstChild);
+    nav.querySelector(".card-inspect-prev")?.addEventListener("click", () => {
+      if (index > 0) {
+        index -= 1;
+        renderInspect();
+      }
+    });
+    nav.querySelector(".card-inspect-next")?.addEventListener("click", () => {
+      if (index < cards.length - 1) {
+        index += 1;
+        renderInspect();
+      }
+    });
+  }
+
+  renderInspect();
+}
+
+function mountChoicePickerCard(row, card, { cards, selected, orderIndex, disabled, onSelect }) {
+  const wrap = document.createElement("div");
+  wrap.className = "card-choice-wrap";
+  wrap.dataset.cardId = cardChoiceKey(card);
+  const el = renderCard(card, { portrait: true, selected: !!selected });
+  el.classList.add("card-choice-card");
+  if (disabled) el.classList.add("is-disabled");
+  if (orderIndex != null) {
+    const badge = document.createElement("span");
+    badge.className = "card-choice-order";
+    badge.textContent = String(orderIndex + 1);
+    wrap.appendChild(badge);
+  }
+  wrap.appendChild(el);
+  el.addEventListener("click", (event) => {
+    event.preventDefault();
+    if (disabled) return;
+    onSelect?.(card);
+  });
+  el.addEventListener("contextmenu", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const idx = cards.findIndex((c) => cardChoiceKey(c) === cardChoiceKey(card));
+    openCardInspectCarousel(cards, idx >= 0 ? idx : 0);
+  });
+  row.appendChild(wrap);
+  return wrap;
+}
+
+function cardChoiceShellHtml({ title, message, statusText = "", showConfirm = true, confirmLabel = "Confirm", showCancel = false }) {
+  return `
+    <div class="card-choice-picker">
+      <h2>${title || "Choose a card"}</h2>
+      ${message ? `<p class="card-choice-message">${message}</p>` : ""}
+      <p class="card-choice-hint">${CARD_CHOICE_HINT}</p>
+      <div class="card-choice-row"></div>
+      <p class="card-choice-status">${statusText}</p>
+      <div class="utility-actions card-choice-actions">
+        <button type="button" class="btn btn-minimize-choice" id="utility-minimize-btn">Minimize — view board</button>
+        ${showCancel ? '<button type="button" class="btn" id="card-choice-cancel">Cancel</button>' : ""}
+        ${showConfirm ? `<button type="button" class="btn primary" id="card-choice-confirm" disabled>${confirmLabel}</button>` : ""}
+      </div>
+    </div>
+  `;
+}
+
+function wireChoiceMinimizeButton(root) {
+  root?.querySelector("#utility-minimize-btn")?.addEventListener("click", () => minimizeUtilityModal());
+}
+
+let utilityModalRequired = false;
+let utilityModalMinimized = false;
+let utilityModalRequiredLabel = "Required choice";
+
+export function isUtilityModalMinimized() {
+  return utilityModalMinimized;
+}
+
+export function setUtilityModalRequired(required, label = "Required choice") {
+  utilityModalRequired = !!required;
+  utilityModalRequiredLabel = label || "Required choice";
+  const modal = document.getElementById("utility-modal");
+  modal?.classList.toggle("utility-modal-required", utilityModalRequired);
+  const closeBtn = modal?.querySelector(".utility-close");
+  if (closeBtn) closeBtn.hidden = utilityModalRequired;
+  syncUtilityChoiceDock();
+  if (!utilityModalRequired) {
+    utilityModalMinimized = false;
+    modal?.classList.remove("utility-modal-minimized");
+  }
+  const modalOpen = !modal?.classList.contains("hidden");
+  if (utilityModalRequired && modalOpen) ensureChoiceMinimizeChrome();
+}
+
+export function minimizeUtilityModal() {
+  if (!utilityModalRequired) {
+    hideUtilityModal(true);
+    return;
+  }
+  utilityModalMinimized = true;
+  document.getElementById("utility-modal")?.classList.add("utility-modal-minimized");
+  document.body.classList.remove("utility-modal-open");
+  syncUtilityChoiceDock();
+}
+
+export function restoreUtilityModal() {
+  if (!utilityModalRequired) return;
+  utilityModalMinimized = false;
+  document.getElementById("utility-modal")?.classList.remove("utility-modal-minimized");
+  document.body.classList.add("utility-modal-open");
+  syncUtilityChoiceDock();
+}
+
+export function handleUtilityModalDismiss() {
+  if (utilityModalRequired) {
+    minimizeUtilityModal();
+    return;
+  }
+  hideUtilityModal(true);
+}
+
+function syncUtilityChoiceDock() {
+  const dock = document.getElementById("utility-choice-dock");
+  const label = document.getElementById("utility-choice-dock-label");
+  if (!dock) return;
+  const show = utilityModalRequired && utilityModalMinimized;
+  dock.classList.toggle("hidden", !show);
+  if (label) label.textContent = `${utilityModalRequiredLabel} — paused (board visible)`;
+}
+
+function ensureChoiceMinimizeChrome() {
+  const body = document.getElementById("utility-modal-body");
+  if (!body || body.querySelector("#utility-minimize-btn")) return;
+  const row = body.querySelector(".utility-actions, .card-choice-actions, .phase-skip-choices");
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "btn btn-minimize-choice";
+  btn.id = "utility-minimize-btn";
+  btn.textContent = "Minimize — view board";
+  btn.addEventListener("click", () => minimizeUtilityModal());
+  if (row) row.prepend(btn);
+  else {
+    const wrap = document.createElement("div");
+    wrap.className = "utility-actions card-choice-actions";
+    wrap.appendChild(btn);
+    body.appendChild(wrap);
+  }
 }
 
 /** Hex layout scale — circumradius in pixel math (larger = bigger map). */
@@ -2408,7 +2634,7 @@ export function showLandscapeActionPicker(tile, choices, onPick) {
 
   body.querySelectorAll("[data-action]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      hideUtilityModal();
+      hideUtilityModal(true);
       onPick(btn.dataset.action);
     });
   });
@@ -2436,7 +2662,7 @@ export function showDreamerPowerChoice(ui, onPick) {
     if (btn.disabled) return;
     btn.addEventListener("click", () => {
       modal.querySelector(".utility-content")?.classList.remove("dreamer-power-modal-wrap");
-      hideUtilityModal();
+      hideUtilityModal(true);
       onPick(btn.dataset.choice);
     });
   });
@@ -2444,93 +2670,165 @@ export function showDreamerPowerChoice(ui, onPick) {
 }
 
 export function showObjectCardPicker(ui, onPick) {
-  const modal = document.getElementById("utility-modal");
   const body = document.getElementById("utility-modal-body");
-  body.innerHTML = `
-    <div class="dreamer-power-modal">
-      <h2>${ui.title || "Choose a card"}</h2>
-      <p>${ui.message || ""}</p>
-      <div class="mini-card-row object-choice-cards"></div>
-    </div>
-  `;
-  const row = body.querySelector(".object-choice-cards");
-  (ui.cards || []).forEach((card) => {
-    row.appendChild(renderCard(card, {
-      mini: true,
-      onClick: () => {
-        hideUtilityModal();
-        onPick(card.instanceId || card.id);
-      },
-    }));
+  const cards = ui.cards || [];
+  let selectedId = null;
+
+  body.innerHTML = cardChoiceShellHtml({
+    title: ui.title || "Choose a card",
+    message: ui.message || "",
+    statusText: "Select a card, then Confirm.",
+    confirmLabel: "Confirm choice",
   });
-  modal.querySelector(".utility-content")?.classList.add("dreamer-power-modal-wrap");
-  modal.classList.remove("hidden");
+  prepareCardChoiceModal();
+
+  const row = body.querySelector(".card-choice-row");
+  const confirmBtn = body.querySelector("#card-choice-confirm");
+  const statusEl = body.querySelector(".card-choice-status");
+
+  const refresh = () => {
+    row.querySelectorAll(".card-choice-wrap").forEach((wrap) => {
+      const selected = wrap.dataset.cardId === selectedId;
+      wrap.querySelector(".game-card")?.classList.toggle("selected", selected);
+    });
+    const picked = cards.find((c) => cardChoiceKey(c) === selectedId);
+    confirmBtn.disabled = !selectedId;
+    statusEl.textContent = picked
+      ? `Selected: ${picked.name}`
+      : "Select a card, then Confirm.";
+  };
+
+  cards.forEach((card) => {
+    mountChoicePickerCard(row, card, {
+      cards,
+      onSelect: () => {
+        selectedId = cardChoiceKey(card);
+        refresh();
+      },
+    });
+  });
+  refresh();
+
+  confirmBtn?.addEventListener("click", () => {
+    if (!selectedId) return;
+    hideModal();
+    hideUtilityModal(true);
+    onPick(selectedId);
+  });
 }
 
 export function showObjectReorderPicker(ui, onPick) {
-  const modal = document.getElementById("utility-modal");
   const body = document.getElementById("utility-modal-body");
-  const picked = new Set((ui.order || []).map((c) => c.instanceId || c.id));
-  body.innerHTML = `
-    <div class="dreamer-power-modal">
-      <h2>${ui.title || "Reorder"}</h2>
-      <p>${ui.message || ""}</p>
-      <div class="mini-card-row object-choice-cards"></div>
-    </div>
-  `;
-  const row = body.querySelector(".object-choice-cards");
-  (ui.top || []).forEach((card) => {
-    const id = card.instanceId || card.id;
-    const el = renderCard(card, {
-      mini: true,
-      onClick: picked.has(id) ? null : () => onPick(id),
-    });
-    if (picked.has(id)) el.classList.add("is-selected");
-    row.appendChild(el);
+  const cards = ui.top || [];
+  const order = ui.order || [];
+  const picked = new Set(order.map((c) => cardChoiceKey(c)));
+  const total = cards.length;
+
+  body.innerHTML = cardChoiceShellHtml({
+    title: ui.title || "Reorder",
+    message: ui.message || "",
+    statusText: `Pick cards in the new top order (${order.length}/${total}).`,
+    showConfirm: false,
   });
-  modal.querySelector(".utility-content")?.classList.add("dreamer-power-modal-wrap");
-  modal.classList.remove("hidden");
+  prepareCardChoiceModal();
+
+  const row = body.querySelector(".card-choice-row");
+  const statusEl = body.querySelector(".card-choice-status");
+
+  const refresh = () => {
+    const currentOrder = ui.order || [];
+    const pickedNow = new Set(currentOrder.map((c) => cardChoiceKey(c)));
+    row.querySelectorAll(".card-choice-wrap").forEach((wrap) => {
+      const id = wrap.dataset.cardId;
+      const orderIndex = currentOrder.findIndex((c) => cardChoiceKey(c) === id);
+      const badge = wrap.querySelector(".card-choice-order");
+      if (badge) {
+        badge.textContent = orderIndex >= 0 ? String(orderIndex + 1) : "";
+        badge.classList.toggle("hidden", orderIndex < 0);
+      }
+      wrap.querySelector(".game-card")?.classList.toggle("selected", pickedNow.has(id));
+      wrap.classList.toggle("is-picked", pickedNow.has(id));
+    });
+    statusEl.textContent = order.length >= total
+      ? "Order complete."
+      : `Pick cards in the new top order (${order.length}/${total}).`;
+  };
+
+  cards.forEach((card) => {
+    const id = cardChoiceKey(card);
+    const orderIndex = order.findIndex((c) => cardChoiceKey(c) === id);
+    mountChoicePickerCard(row, card, {
+      cards,
+      selected: picked.has(id),
+      orderIndex: orderIndex >= 0 ? orderIndex : null,
+      disabled: picked.has(id),
+      onSelect: () => {
+        if (picked.has(id)) return;
+        onPick(id);
+      },
+    });
+  });
+  refresh();
 }
 
 export function showObjectSpendPicker(ui, onToggle, onConfirm) {
-  const modal = document.getElementById("utility-modal");
   const body = document.getElementById("utility-modal-body");
-  const selected = new Set(ui.order || []);
-  const countMode = ui.needCount != null;
-  const total = countMode
-    ? selected.size
-    : (ui.cards || [])
-      .filter((c) => selected.has(c.instanceId))
-      .reduce((sum, c) => sum + psycheCardValue(c), 0);
-  const need = countMode ? ui.needCount : (ui.need || 0);
-  const overMax = ui.maxCount != null && selected.size > ui.maxCount;
-  body.innerHTML = `
-    <div class="dreamer-power-modal">
-      <h2>${ui.title || "Spend Psyche"}</h2>
-      <p>${ui.message || ""}</p>
-      <p><strong>Selected ${total}${need || ui.maxCount != null ? ` / ${ui.maxCount ?? need}` : ""}</strong></p>
-      <div class="mini-card-row object-choice-cards"></div>
-      <div class="utility-actions">
-        <button type="button" class="btn primary" id="object-spend-confirm"${total < need || overMax ? " disabled" : ""}>Confirm</button>
-      </div>
-    </div>
-  `;
-  const row = body.querySelector(".object-choice-cards");
-  (ui.cards || []).forEach((card) => {
-    const el = renderCard(card, {
-      mini: true,
-      onClick: () => onToggle(card.instanceId),
-    });
-    if (selected.has(card.instanceId)) el.classList.add("is-selected");
-    row.appendChild(el);
+  const cards = ui.cards || [];
+
+  body.innerHTML = cardChoiceShellHtml({
+    title: ui.title || "Spend Psyche",
+    message: ui.message || "",
+    statusText: "Select cards to spend, then Confirm.",
+    confirmLabel: "Confirm selection",
   });
-  body.querySelector("#object-spend-confirm")?.addEventListener("click", () => {
-    if (total < need) return;
-    hideUtilityModal();
+  prepareCardChoiceModal();
+
+  const row = body.querySelector(".card-choice-row");
+  const confirmBtn = body.querySelector("#card-choice-confirm");
+  const statusEl = body.querySelector(".card-choice-status");
+
+  const spendTotals = () => {
+    const selected = new Set(ui.order || []);
+    const countMode = ui.needCount != null;
+    const total = countMode
+      ? selected.size
+      : cards.filter((c) => selected.has(c.instanceId)).reduce((sum, c) => sum + psycheCardValue(c), 0);
+    const need = countMode ? ui.needCount : (ui.need || 0);
+    const overMax = ui.maxCount != null && selected.size > ui.maxCount;
+    return { selected, total, need, overMax };
+  };
+
+  const refresh = () => {
+    const { selected, total, need, overMax } = spendTotals();
+    row.querySelectorAll(".card-choice-wrap").forEach((wrap) => {
+      const id = wrap.dataset.cardId;
+      wrap.querySelector(".game-card")?.classList.toggle("selected", selected.has(id));
+    });
+    const cap = ui.maxCount ?? need;
+    statusEl.textContent = need || ui.maxCount != null
+      ? `Selected ${total} / ${cap}`
+      : `Selected ${total} Psyche`;
+    confirmBtn.disabled = total < need || overMax;
+  };
+
+  cards.forEach((card) => {
+    mountChoicePickerCard(row, card, {
+      cards,
+      onSelect: () => {
+        onToggle(card.instanceId);
+        refresh();
+      },
+    });
+  });
+  refresh();
+
+  confirmBtn?.addEventListener("click", () => {
+    const { total, need, overMax } = spendTotals();
+    if (total < need || overMax) return;
+    hideModal();
+    hideUtilityModal(true);
     onConfirm();
   });
-  modal.querySelector(".utility-content")?.classList.add("dreamer-power-modal-wrap");
-  modal.classList.remove("hidden");
 }
 
 export function showDreamerPowerDeckPicker(ui, onPick) {
@@ -2554,7 +2852,7 @@ export function showDreamerPowerDeckPicker(ui, onPick) {
   body.querySelectorAll("[data-deck]").forEach((btn) => {
     btn.addEventListener("click", () => {
       modal.querySelector(".utility-content")?.classList.remove("dreamer-power-modal-wrap");
-      hideUtilityModal();
+      hideUtilityModal(true);
       onPick(btn.dataset.deck);
     });
   });
@@ -2577,7 +2875,7 @@ export function showDeckFlipPicker(onPick) {
   `;
   body.querySelectorAll("[data-deck]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      hideUtilityModal();
+      hideUtilityModal(true);
       onPick(btn.dataset.deck);
     });
   });
@@ -2598,7 +2896,7 @@ export function showMindstreamPicker(onPick) {
   `;
   body.querySelectorAll("[data-suit]").forEach((btn) => {
     btn.addEventListener("click", () => {
-      hideUtilityModal();
+      hideUtilityModal(true);
       onPick(btn.dataset.suit);
     });
   });
@@ -2620,11 +2918,11 @@ export function showTradeControls(state, onConfirm, onCancel) {
     </div>
   `;
   body.querySelector("#trade-confirm").addEventListener("click", () => {
-    hideUtilityModal();
+    hideUtilityModal(true);
     onConfirm();
   });
   body.querySelector("#trade-cancel").addEventListener("click", () => {
-    hideUtilityModal();
+    hideUtilityModal(true);
     onCancel();
   });
   modal.classList.remove("hidden");
@@ -2654,11 +2952,11 @@ export function showNothingChoiceModal(state, onToken, onRepress) {
   `;
 
   body.querySelector("#nothing-choice-token")?.addEventListener("click", () => {
-    hideUtilityModal();
+    hideUtilityModal(true);
     onToken?.();
   });
   body.querySelector("#nothing-choice-repress")?.addEventListener("click", () => {
-    hideUtilityModal();
+    hideUtilityModal(true);
     onRepress?.();
   });
   modal.classList.remove("hidden");
@@ -2690,95 +2988,141 @@ export function showDeathChoiceModal(state, onAvoid, onAccept) {
   `;
 
   body.querySelector("#death-choice-avoid")?.addEventListener("click", () => {
-    hideUtilityModal();
+    hideUtilityModal(true);
     onAvoid?.();
   });
   body.querySelector("#death-choice-accept")?.addEventListener("click", () => {
-    hideUtilityModal();
+    hideUtilityModal(true);
     onAccept?.();
   });
   modal.classList.remove("hidden");
 }
 
 export function showRespawnPicker(dreamers, onPick) {
-  const modal = document.getElementById("utility-modal");
   const body = document.getElementById("utility-modal-body");
-  body.innerHTML = `
-    <h2>Choose a New Dreamer</h2>
-    <p>A Dreamer was lost. Pick an unused Dreamer to continue on The Bed.</p>
-    <div class="card-grid picker" id="respawn-picker"></div>
-  `;
-  const picker = body.querySelector("#respawn-picker");
-  dreamers.forEach((dreamer) => {
-    const card = renderCard({ ...dreamer, type: "dreamer" }, {
-      portrait: true,
-      onClick: () => {
-        hideUtilityModal();
-        onPick(dreamer.id);
+  let selectedId = null;
+  const cards = dreamers.map((dreamer) => ({ ...dreamer, type: "dreamer" }));
+
+  body.innerHTML = cardChoiceShellHtml({
+    title: "Choose a New Dreamer",
+    message: "A Dreamer was lost. Pick an unused Dreamer to continue on The Bed.",
+    statusText: "Select a Dreamer, then Confirm.",
+    confirmLabel: "Confirm Dreamer",
+  });
+  prepareCardChoiceModal();
+
+  const row = body.querySelector(".card-choice-row");
+  const confirmBtn = body.querySelector("#card-choice-confirm");
+  const statusEl = body.querySelector(".card-choice-status");
+
+  const refresh = () => {
+    row.querySelectorAll(".card-choice-wrap").forEach((wrap) => {
+      wrap.querySelector(".game-card")?.classList.toggle("selected", wrap.dataset.cardId === selectedId);
+    });
+    const picked = dreamers.find((d) => d.id === selectedId);
+    confirmBtn.disabled = !selectedId;
+    statusEl.textContent = picked ? `Selected: ${picked.name}` : "Select a Dreamer, then Confirm.";
+  };
+
+  cards.forEach((card) => {
+    mountChoicePickerCard(row, card, {
+      cards,
+      onSelect: () => {
+        selectedId = card.id;
+        refresh();
       },
     });
     const label = document.createElement("div");
-    label.className = "dreamer-pick-name";
-    label.textContent = dreamer.name;
-    const wrap = document.createElement("div");
-    wrap.className = "dreamer-pick";
-    wrap.appendChild(card);
-    wrap.appendChild(label);
-    picker.appendChild(wrap);
+    label.className = "card-choice-caption";
+    label.textContent = card.name;
+    row.lastElementChild?.appendChild(label);
   });
-  modal.classList.remove("hidden");
+  refresh();
+
+  confirmBtn?.addEventListener("click", () => {
+    if (!selectedId) return;
+    hideModal();
+    hideUtilityModal(true);
+    onPick(selectedId);
+  });
 }
 
-export function showSubconsciousPicker(state, onPick, onDone) {
-  const modal = document.getElementById("utility-modal");
-  const content = modal?.querySelector(".utility-content");
+export function showSubconsciousPicker(state, { onConfirm, onSkip } = {}) {
   const body = document.getElementById("utility-modal-body");
-  content?.classList.remove("rules-reference-modal");
-  content?.classList.add("fullscreen-browser");
   const pending = state.pendingReturn;
-  const remaining = pending ? pending.remaining - pending.picked.length : 0;
+  const need = pending?.remaining || 0;
 
   body.innerHTML = `
-    <header class="fullscreen-browser-header">
+    <div class="card-choice-picker card-choice-picker-wide">
       <h2>Return from Subconscious</h2>
-      <p class="resolution-reason">${pending?.reason || `Choose ${remaining} card(s) to Return to discard piles.`}</p>
-    </header>
-    <div id="subconscious-piles" class="subconscious-piles fullscreen-browser-body"></div>
-    <div class="utility-actions">
-      <button type="button" class="btn" id="return-skip">Skip remaining</button>
+      <p class="card-choice-message">${pending?.reason || `Choose up to ${need} card(s) to Return to discard piles.`}</p>
+      <p class="card-choice-hint">${CARD_CHOICE_HINT}</p>
+      <div id="subconscious-piles" class="subconscious-piles card-choice-piles"></div>
+      <p class="card-choice-status">Selected 0 / ${need}</p>
+      <div class="utility-actions card-choice-actions">
+        <button type="button" class="btn" id="return-skip">Return selected &amp; skip rest</button>
+        <button type="button" class="btn primary" id="card-choice-confirm" disabled>Confirm Return</button>
+      </div>
     </div>
   `;
+  prepareCardChoiceModal();
 
   const container = body.querySelector("#subconscious-piles");
+  const confirmBtn = body.querySelector("#card-choice-confirm");
+  const statusEl = body.querySelector(".card-choice-status");
   const piles = subconsciousPilesForUI(state);
+  const allCards = piles.flatMap((pile) => pile.cards);
+
+  const refresh = () => {
+    const picked = pending?.picked || [];
+    container.querySelectorAll(".card-choice-wrap").forEach((wrap) => {
+      const id = wrap.dataset.cardId;
+      wrap.querySelector(".game-card")?.classList.toggle(
+        "selected",
+        picked.some((c) => c.instanceId === id),
+      );
+    });
+    statusEl.textContent = `Selected ${picked.length} / ${need}`;
+    confirmBtn.disabled = picked.length === 0;
+  };
+
   if (!piles.length) {
     container.innerHTML = "<p class='resolution-empty'>The Subconscious is empty — nothing to Return.</p>";
+    confirmBtn.disabled = true;
   } else {
     piles.forEach((pile) => {
       const section = document.createElement("div");
       section.className = "subconscious-pile";
       section.innerHTML = `<h4>${pile.icon || ""} ${pile.label} (${pile.cards.length})</h4>`;
       const row = document.createElement("div");
-      row.className = "mini-card-row";
+      row.className = "card-choice-row";
       pile.cards.forEach((card) => {
-        const picked = pending?.picked.some((c) => c.instanceId === card.instanceId);
-        row.appendChild(renderCard(card, {
-          mini: true,
-          selected: picked,
-          onClick: () => onPick(card.instanceId),
-        }));
+        mountChoicePickerCard(row, card, {
+          cards: allCards,
+          selected: pending?.picked.some((c) => c.instanceId === card.instanceId),
+          onSelect: () => {
+            toggleReturnPick(state, card.instanceId);
+            refresh();
+          },
+        });
       });
       section.appendChild(row);
       container.appendChild(section);
     });
+    refresh();
   }
 
-  body.querySelector("#return-skip")?.addEventListener("click", () => {
-    hideUtilityModal();
-    onDone();
+  confirmBtn?.addEventListener("click", () => {
+    hideModal();
+    hideUtilityModal(true);
+    completeReturnSelection(state);
+    onConfirm?.();
   });
-
-  modal.classList.remove("hidden");
+  body.querySelector("#return-skip")?.addEventListener("click", () => {
+    hideModal();
+    hideUtilityModal(true);
+    onSkip?.();
+  });
 }
 
 export function showRepressPicker(state, onPick, onConfirm) {
@@ -2810,17 +3154,26 @@ export function showRepressPicker(state, onPick, onConfirm) {
   }
 
   body.innerHTML = `
-    <h2>Repress to Subconscious</h2>
-    <p class="resolution-reason">${pending.reason || instruction}</p>
-    <p class="resolution-player">${playerName}</p>
-    <p class="resolution-instruction">${instruction}</p>
-    <div id="repress-pool" class="subconscious-piles"></div>
-    <div class="utility-actions">
-      <button type="button" class="btn primary" id="repress-confirm">${isEmpty || pool.length === 0 ? "Continue" : picked >= needed ? "Done" : "Continue with selected"}</button>
+    <div class="card-choice-picker card-choice-picker-wide">
+      <h2>Repress to Subconscious</h2>
+      <p class="card-choice-message">${pending.reason || instruction}</p>
+      <p class="resolution-player">${playerName}</p>
+      <p class="resolution-instruction">${instruction}</p>
+      <p class="card-choice-hint">${CARD_CHOICE_HINT}</p>
+      <div id="repress-pool" class="subconscious-piles card-choice-piles"></div>
+      <p class="card-choice-status">${picked}/${needed} repressed</p>
+      <div class="utility-actions card-choice-actions">
+        <button type="button" class="btn primary" id="repress-confirm">${isEmpty || pool.length === 0 ? "Continue" : picked >= needed ? "Done" : "Continue with selected"}</button>
+      </div>
     </div>
   `;
+  prepareCardChoiceModal();
 
   const container = body.querySelector("#repress-pool");
+  const allCards = collective
+    ? state.players.filter((p) => p.alive).flatMap((p) => p.hand || [])
+    : pool;
+
   if (!pool.length) {
     container.innerHTML = "<p class='resolution-empty'>Nothing in hand to choose — click Continue.</p>";
   } else if (!isEmpty) {
@@ -2831,35 +3184,33 @@ export function showRepressPicker(state, onPick, onConfirm) {
         section.className = "repress-player-section";
         section.innerHTML = `<h4>${p.name}</h4>`;
         const row = document.createElement("div");
-        row.className = "mini-card-row";
+        row.className = "card-choice-row";
         p.hand.forEach((card) => {
-          const selected = pending.picked.some((c) => c.instanceId === card.instanceId);
-          row.appendChild(renderCard(card, {
-            mini: true,
-            selected,
-            onClick: () => onPick(card.instanceId),
-          }));
+          mountChoicePickerCard(row, card, {
+            cards: allCards,
+            selected: pending.picked.some((c) => c.instanceId === card.instanceId),
+            onSelect: () => onPick(card.instanceId),
+          });
         });
         section.appendChild(row);
         container.appendChild(section);
       });
     } else {
       const row = document.createElement("div");
-      row.className = "mini-card-row";
+      row.className = "card-choice-row";
       pool.forEach((card) => {
-        const selected = pending.picked.some((c) => c.instanceId === card.instanceId);
-        row.appendChild(renderCard(card, {
-          mini: true,
-          selected,
-          onClick: () => onPick(card.instanceId),
-        }));
+        mountChoicePickerCard(row, card, {
+          cards: allCards,
+          selected: pending.picked.some((c) => c.instanceId === card.instanceId),
+          onSelect: () => onPick(card.instanceId),
+        });
       });
       container.appendChild(row);
     }
   }
 
   body.querySelector("#repress-confirm").addEventListener("click", () => {
-    hideUtilityModal();
+    hideUtilityModal(true);
     onConfirm();
   });
 
@@ -2903,16 +3254,30 @@ export function showSubconsciousBrowse(state, onCardClick) {
   modal.classList.remove("hidden");
 }
 
-export function hideUtilityModal() {
+export function hideUtilityModal(force = false) {
+  if (utilityModalRequired && !force) {
+    minimizeUtilityModal();
+    return;
+  }
   const modal = document.getElementById("utility-modal");
-  modal.classList.add("hidden");
+  modal?.classList.add("hidden");
+  modal?.classList.remove("utility-modal-minimized", "utility-modal-required");
   document.body.classList.remove("utility-modal-open");
-  modal.querySelector(".utility-content")?.classList.remove("landscape-detail-modal");
-  modal.querySelector(".utility-content")?.classList.remove("dreamer-detail-modal");
-  modal.querySelector(".utility-content")?.classList.remove("dreamer-power-modal-wrap");
-  modal.querySelector(".utility-content")?.classList.remove("phase-skip-modal");
-  modal.querySelector(".utility-content")?.classList.remove("rules-reference-modal");
-  modal.querySelector(".utility-content")?.classList.remove("fullscreen-browser");
+  utilityModalRequired = false;
+  utilityModalMinimized = false;
+  hideModal();
+  syncUtilityChoiceDock();
+  modal?.querySelector(".utility-content")?.classList.remove(
+    "landscape-detail-modal",
+    "dreamer-detail-modal",
+    "dreamer-power-modal-wrap",
+    "phase-skip-modal",
+    "rules-reference-modal",
+    "fullscreen-browser",
+    "card-choice-modal-wrap",
+  );
+  const closeBtn = modal?.querySelector(".utility-close");
+  if (closeBtn) closeBtn.hidden = false;
 }
 
 function formatDreamerFlavor(text) {
@@ -3148,7 +3513,11 @@ function bindUtilityModalActions(body, { onCancel } = {}) {
   const backdrop = modal?.querySelector(".utility-backdrop");
   const closeBtn = modal?.querySelector(".utility-close");
   const cancel = () => {
-    hideUtilityModal();
+    if (utilityModalRequired) {
+      minimizeUtilityModal();
+      return;
+    }
+    hideUtilityModal(true);
     onCancel?.();
   };
   backdrop?.addEventListener("click", cancel, { once: true });
@@ -3170,11 +3539,11 @@ export function showPhaseSkipConfirm({ title, message, confirmLabel = "Continue"
   `;
   modal.querySelector(".utility-content")?.classList.add("phase-skip-modal");
   body.querySelector("#phase-skip-cancel").addEventListener("click", () => {
-    hideUtilityModal();
+    hideUtilityModal(true);
     onCancel?.();
   });
   body.querySelector("#phase-skip-confirm").addEventListener("click", () => {
-    hideUtilityModal();
+    hideUtilityModal(true);
     onConfirm?.();
   });
   bindUtilityModalActions(body, { onCancel });
@@ -3206,15 +3575,15 @@ export function showMeetDreambeastSkipConfirm({
   `;
   modal.querySelector(".utility-content")?.classList.add("phase-skip-modal");
   body.querySelector("#meet-skip-cancel").addEventListener("click", () => {
-    hideUtilityModal();
+    hideUtilityModal(true);
     onCancel?.();
   });
   body.querySelector("#meet-skip-repress").addEventListener("click", () => {
-    hideUtilityModal();
+    hideUtilityModal(true);
     onRepressSouls?.();
   });
   body.querySelector("#meet-skip-discard").addEventListener("click", () => {
-    hideUtilityModal();
+    hideUtilityModal(true);
     onConsumeTimeline?.();
   });
   bindUtilityModalActions(body, { onCancel });

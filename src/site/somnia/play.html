@@ -21,7 +21,7 @@
   <div id="app">
     <header class="top-bar play-top-bar">
       <div class="brand">
-        <span class="version-label">Somnia v 18.0</span>
+        <span class="version-label">Somnia v 18.3</span>
         <h1>Somnia</h1>
       </div>
       <div id="phase-stepper" class="phase-stepper top-bar-stepper" aria-label="Round phases"></div>
@@ -175,6 +175,11 @@
       <button class="modal-close utility-close" aria-label="Close">&times;</button>
       <div id="utility-modal-body"></div>
     </div>
+  </div>
+
+  <div id="utility-choice-dock" class="utility-choice-dock hidden" role="status" aria-live="polite">
+    <span id="utility-choice-dock-label">Choice required</span>
+    <button type="button" class="btn btn-sm primary" id="utility-choice-restore">Resume choice</button>
   </div>
 
   <div id="tutorial-brief" class="tutorial-brief hidden" role="dialog" aria-modal="true" aria-labelledby="tutorial-brief-title">
