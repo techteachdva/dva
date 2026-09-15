@@ -4694,9 +4694,58 @@ body.card-detail-open .tutorial-card {
   border-radius: 12px;
 }
 
-.modal-content.dreambeast-detail-modal h2 {
+.modal-content.dreambeast-detail-modal h2,
+.modal-content.dream-detail-modal h2 {
   font-size: clamp(1.35rem, 2.5vh, 1.85rem);
   text-align: center;
+  text-transform: none;
+}
+
+.modal-content.dream-detail-modal {
+  width: min(96vw, 720px);
+  max-width: none;
+  padding: clamp(1rem, 2vw, 1.5rem);
+}
+
+.modal-content.dream-detail-modal .modal-art,
+.modal-content.dream-detail-modal .modal-art-fallback {
+  width: min(100%, 380px);
+  max-height: min(48vh, 380px);
+  margin: 0 auto 0.85rem;
+  display: block;
+  object-fit: contain;
+  border-radius: 12px;
+}
+
+.dream-kind-banner {
+  margin: 0.35rem 0 0.65rem;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.dream-meta-note {
+  margin-top: 0.65rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-style: italic;
+}
+
+.dream-card-teaser {
+  margin: 0.35rem 0 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.78);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.game-card.dream .dream-kind-label {
+  color: #c9a0ff;
 }
 
 .modal-flavor {

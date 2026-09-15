@@ -689,6 +689,12 @@ export function renderCard(card, options = {}) {
     ? `<span class="meta"><span class="${suitClass(card.suit)}">${SUIT_LABELS[card.suit] || card.suit}</span></span>`
     : "";
   const subtype = card.subtype ? `<span class="meta"><span>${card.subtype}</span></span>` : "";
+  const dreamMeta = isDreamCard(card)
+    ? `<span class="meta dream-kind-label">${dreamCardKindLabel(card)}</span>`
+    : "";
+  const dreamTeaser = isDreamCard(card) && dreamCardEffectText(card)
+    ? `<p class="dream-card-teaser">${dreamCardEffectText(card)}</p>`
+    : "";
 
   const art = createArtElement(card);
 
@@ -702,7 +708,8 @@ export function renderCard(card, options = {}) {
   body.className = "body";
   body.innerHTML = `
     <div class="title">${card.name}</div>
-    ${acceptRepress || points || kindMeta || suit || subtype}
+    ${acceptRepress || points || kindMeta || suit || subtype || dreamMeta}
+    ${dreamTeaser}
   `;
 
   if (value) el.innerHTML = value;
@@ -722,6 +729,49 @@ export function renderCard(card, options = {}) {
 
   if (onClick) el.addEventListener("click", onClick);
   return attachCardMeta(el, card, playerId);
+}
+
+function isDreamCard(card) {
+  return card?.type === "dream" || card?.type === "final" || card?.type === "boss-dream";
+}
+
+function dreamCardEffectText(card) {
+  return card.text || card.effect || "";
+}
+
+function dreamCardKindLabel(card) {
+  if (card.type === "boss-dream" || card.boss) return "Boss Dream";
+  if (card.type === "final") return "Final Recurrence";
+  return "Dream";
+}
+
+function appendDreamModalDetail(detail, card) {
+  const kind = document.createElement("p");
+  kind.className = "dream-kind-banner";
+  kind.innerHTML = `<strong>${dreamCardKindLabel(card)}</strong>`;
+  detail.appendChild(kind);
+
+  if (card.flavor) {
+    const flavor = document.createElement("blockquote");
+    flavor.className = "modal-flavor";
+    flavor.textContent = card.flavor;
+    detail.appendChild(flavor);
+  }
+
+  const effectText = dreamCardEffectText(card);
+  if (effectText) {
+    const effect = document.createElement("p");
+    effect.className = "modal-effect dream-effect";
+    effect.innerHTML = `<strong>Effect:</strong> ${effectText}`;
+    detail.appendChild(effect);
+  }
+
+  if (card.bottomPinned) {
+    const note = document.createElement("p");
+    note.className = "dream-meta-note";
+    note.textContent = "Pinned to the bottom of the Final Recurrence deck.";
+    detail.appendChild(note);
+  }
 }
 
 function appendDreambeastModalDetail(detail, card) {
@@ -777,6 +827,7 @@ export function showModal(card) {
   const container = document.getElementById("modal-card");
   container.innerHTML = "";
   modalContent?.classList.toggle("dreambeast-detail-modal", isDreambeastCard(card));
+  modalContent?.classList.toggle("dream-detail-modal", isDreamCard(card) && !isDreambeastCard(card));
 
   if (card.type === "psyche" || card.type === "psyche-power") {
     const detail = document.createElement("div");
@@ -905,6 +956,8 @@ export function showModal(card) {
     }
   } else if (isDreambeastCard(card)) {
     appendDreambeastModalDetail(detail, card);
+  } else if (isDreamCard(card)) {
+    appendDreamModalDetail(detail, card);
   } else {
   const fields = [
     ["Type", card.type || card.suit || "—"],
@@ -915,7 +968,8 @@ export function showModal(card) {
   ];
 
   if (card.flavor) fields.push(["Flavor", card.flavor]);
-  if (card.effect && card.effect !== card.flavor) fields.push(["Effect", card.effect]);
+  const effectText = dreamCardEffectText(card);
+  if (effectText && effectText !== card.flavor) fields.push(["Effect", effectText]);
 
   fields.forEach(([label, value]) => {
     if (value == null || value === "") return;
@@ -959,7 +1013,7 @@ export function showModal(card) {
 export function hideModal() {
   const modal = document.getElementById("card-modal");
   modal?.classList.add("hidden");
-  modal?.querySelector(".modal-content")?.classList.remove("dreambeast-detail-modal");
+  modal?.querySelector(".modal-content")?.classList.remove("dreambeast-detail-modal", "dream-detail-modal");
   document.body.classList.remove("card-detail-open");
 }
 
