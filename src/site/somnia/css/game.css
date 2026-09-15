@@ -117,6 +117,102 @@ body.menu-window .brand h1 {
   margin: 0;
 }
 
+.brand-logo-btn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+
+.brand-logo-btn:hover,
+.brand-logo-btn:focus-visible {
+  background: rgba(123, 92, 255, 0.12);
+  box-shadow: 0 0 0 1px rgba(180, 160, 255, 0.25);
+  outline: none;
+}
+
+.utility-content.somnia-changelog-modal-wrap {
+  width: min(96vw, 720px);
+  max-width: 720px;
+  max-height: min(92vh, 880px);
+  display: flex;
+  flex-direction: column;
+}
+
+.somnia-changelog-modal {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 0;
+}
+
+.somnia-changelog-modal h2 {
+  margin: 0;
+  font-family: var(--font-display, "Cinzel", serif);
+}
+
+.changelog-lead,
+.changelog-credits-lead {
+  margin: 0;
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+.changelog-scroll {
+  overflow-y: auto;
+  max-height: min(42vh, 360px);
+  padding-right: 0.35rem;
+  border-top: 1px solid rgba(180, 160, 255, 0.15);
+  border-bottom: 1px solid rgba(180, 160, 255, 0.15);
+}
+
+.changelog-entry {
+  margin: 0.85rem 0;
+}
+
+.changelog-entry h3 {
+  margin: 0 0 0.35rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.changelog-version {
+  color: var(--accent, #b4a0ff);
+  font-family: var(--font-display, "Cinzel", serif);
+}
+
+.changelog-entry ul {
+  margin: 0;
+  padding-left: 1.15rem;
+  font-size: 0.85rem;
+  opacity: 0.92;
+}
+
+.changelog-credits-section h3 {
+  margin: 0.5rem 0 0.35rem;
+  font-size: 0.95rem;
+}
+
+.changelog-landscape-credits {
+  margin: 0.35rem 0 0;
+  padding-left: 1.15rem;
+  font-size: 0.78rem;
+  max-height: min(28vh, 240px);
+  overflow-y: auto;
+}
+
+.changelog-credits-section .music-credit {
+  font-size: 0.82rem;
+  margin: 0.25rem 0;
+}
+
 body.menu-window .tagline {
   display: none;
 }

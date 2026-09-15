@@ -3275,6 +3275,7 @@ export function hideUtilityModal(force = false) {
     "rules-reference-modal",
     "fullscreen-browser",
     "card-choice-modal-wrap",
+    "somnia-changelog-modal-wrap",
   );
   const closeBtn = modal?.querySelector(".utility-close");
   if (closeBtn) closeBtn.hidden = false;

@@ -6,6 +6,7 @@ import { initPanelLayout, setViewMode } from "./panel-layout.js";
 import { loadSettings, VIEW_MODE_ORDER } from "./audio-settings.js";
 import { loadGameData, LENGTHS } from "./data.js";
 import { listLocalSaves } from "./game-save.js";
+import { showSomniaChangelogModal } from "./changelog.js";
 import {
   renderDreamerPicker,
   renderSetupIntro,
@@ -114,6 +115,7 @@ async function init() {
   await preloadMenuSplashImage();
   gameData = await loadGameData();
   bindSetup();
+  bindChangelog();
   bindViewMode();
   bindModal();
   renderSetupIntro();
@@ -128,6 +130,12 @@ function bindViewMode() {
   const mode = loadSettings().viewMode || "auto";
   if (VIEW_MODE_ORDER.includes(mode)) select.value = mode;
   select.addEventListener("change", () => setViewMode(select.value));
+}
+
+function bindChangelog() {
+  document.getElementById("btn-somnia-changelog")?.addEventListener("click", () => {
+    showSomniaChangelogModal();
+  });
 }
 
 function bindSetup() {

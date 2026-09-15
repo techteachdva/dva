@@ -1,0 +1,217 @@
+import {
+  musicCreditHtml,
+  artCreditHtml,
+  boxArtCreditHtml,
+} from "./audio-settings.js";
+import { hideUtilityModal } from "./ui.js";
+
+export const SOMNIA_VERSION = "18.5";
+
+/** Major releases and notable revisions (newest first). */
+export const CHANGELOG = [
+  {
+    version: "18.5",
+    title: "Changelog & landscape soundscape",
+    notes: [
+      "Click the Somnia logo on the main menu to open the running changelog and full credits.",
+      "All 26 landscapes now use Pixabay ambient stings (replacing procedural placeholders).",
+    ],
+  },
+  {
+    version: "18.4",
+    title: "Tutorial & stacked encounters",
+    notes: [
+      "Tutorial snapshots and copy aligned with stacked Dreambeasts and radial board menus.",
+      "Effect-wire audit handles quoted beast ids; seven wiring gaps closed.",
+    ],
+  },
+  {
+    version: "18.3",
+    title: "Choice modal guard & Bargaining fix",
+    notes: [
+      "Required card choices minimize instead of dismissing; dock bar to resume.",
+      "Bargaining dream now grants a matching Active Archetype when you pay 6 Psyche.",
+    ],
+  },
+  {
+    version: "18.2",
+    title: "Card choice UX",
+    notes: [
+      "Left-click to select, right-click to preview, Confirm to commit across pickers.",
+      "Larger portrait cards for encounters, psyche spends, and subconscious returns.",
+    ],
+  },
+  {
+    version: "18.1",
+    title: "Radial menu positioning",
+    notes: [
+      "Dreamer radial menus anchor to live board tokens after camera focus moves.",
+    ],
+  },
+  {
+    version: "18.0",
+    title: "Audio & atmosphere mega-update",
+    notes: [
+      "Four BGM tracks with menu attribution; landscape SFX system and camera focus stings.",
+      "Psyche holographic energy, golden power sparkle, HD landscapes, parallax mist.",
+      "Boss stingers, moment FX, menu motion, suit table washes, victory layer.",
+    ],
+  },
+  {
+    version: "17.7",
+    title: "Stacked encounters & moment narration",
+    notes: [
+      "Dreambeasts stack on landscapes; moment toasts and history panel.",
+      "Bot sim stability and multi-encounter migration across game systems.",
+    ],
+  },
+  {
+    version: "17.6",
+    title: "Dream card detail modal",
+    notes: ["Draw and discard views show art, name, kind, flavor, and effect text."],
+  },
+  {
+    version: "17.5",
+    title: "Meet phase skip gate",
+    notes: ["End Meet with unused actions after confirmation, mirroring Explore."],
+  },
+  {
+    version: "17.4",
+    title: "Board feel & radial menus",
+    notes: [
+      "Click ripple/sparkle FX, phase-aware cursors, Dreamer/Dreambeast radial menus.",
+      "Meet pooling banner and object click-to-view.",
+    ],
+  },
+  {
+    version: "17.3",
+    title: "Board interactivity",
+    notes: [
+      "Fit-table hotkey (F), larger default board zoom, single-click Explore moves.",
+      "Clickable Dreamer and Dreambeast tokens; cleaner move animation.",
+    ],
+  },
+  {
+    version: "17.2",
+    title: "Landscape occupants as cards",
+    notes: ["Detail modal shows occupant cards instead of text-only lists."],
+  },
+  {
+    version: "17.1",
+    title: "Object draw vs play",
+    notes: [
+      "Objects go to hand on draw; instants resolve on play. Set completion fixes.",
+    ],
+  },
+  {
+    version: "17.0",
+    title: "Fullscreen landscape detail",
+    notes: ["Right-click landscape view expands to near-fullscreen hero art layout."],
+  },
+  {
+    version: "16.x",
+    title: "Co-op polish & saves",
+    notes: [
+      "Continue Dream, autosave, tutorial mode, and expanded rules reference.",
+      "Dreamer powers, subconscious deck, and encounter balance passes.",
+    ],
+  },
+  {
+    version: "15.x",
+    title: "Dreamscape core loop",
+    notes: [
+      "Hex board, Reveal/Explore/Meet phases, Dreambeasts, quests, and mindstream.",
+      "Dreamer archetypes, landscape actions, and cooperative win conditions.",
+    ],
+  },
+  {
+    version: "14.x",
+    title: "Play shell & layout",
+    notes: [
+      "Dedicated play window, resizable panels, top phase bar, and device view modes.",
+      "Foundation for standalone packaging and itch.io distribution.",
+    ],
+  },
+];
+
+function changelogHtml() {
+  return CHANGELOG.map((entry) => {
+    const items = entry.notes.map((n) => `<li>${n}</li>`).join("");
+    return `
+      <article class="changelog-entry">
+        <h3><span class="changelog-version">v ${entry.version}</span> ${entry.title}</h3>
+        <ul>${items}</ul>
+      </article>`;
+  }).join("");
+}
+
+function landscapeCreditRow(id, meta) {
+  const artistLink = meta.artistUrl
+    ? `<a href="${meta.artistUrl}" rel="noopener noreferrer">${meta.artist}</a>`
+    : meta.artist;
+  const sourceLink = meta.sourceUrl
+    ? `<a href="${meta.sourceUrl}" rel="noopener noreferrer">${meta.title}</a>`
+    : meta.title;
+  const label = meta.label || id.replace(/-/g, " ");
+  return `<li><strong>${label}</strong> — ${sourceLink} by ${artistLink}</li>`;
+}
+
+async function landscapeCreditsHtml() {
+  try {
+    const res = await fetch("data/landscape-sfx.json");
+    if (!res.ok) throw new Error(String(res.status));
+    const map = await res.json();
+    const rows = Object.entries(map)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([id, meta]) => landscapeCreditRow(id, meta))
+      .join("");
+    return `
+      <section class="changelog-credits-section">
+        <h3>Landscape sound effects</h3>
+        <p class="changelog-credits-lead">Ambient stings from <a href="https://pixabay.com/sound-effects/" rel="noopener noreferrer">Pixabay</a> (Pixabay Content License).</p>
+        <ul class="changelog-landscape-credits">${rows}</ul>
+      </section>`;
+  } catch {
+    return `<p class="changelog-credits-lead">Landscape sound attributions are listed in <code>data/landscape-sfx.json</code>.</p>`;
+  }
+}
+
+export async function showSomniaChangelogModal() {
+  const modal = document.getElementById("utility-modal");
+  const body = document.getElementById("utility-modal-body");
+  if (!modal || !body) return;
+
+  body.innerHTML = `
+    <div class="somnia-changelog-modal">
+      <h2>Somnia Changelog</h2>
+      <p class="changelog-lead">Major versions and revisions for <strong>Somnia v ${SOMNIA_VERSION}</strong>.</p>
+      <div class="changelog-scroll">${changelogHtml()}</div>
+      <section class="changelog-credits-section">
+        <h3>Credits &amp; attributions</h3>
+        ${musicCreditHtml()}
+        ${boxArtCreditHtml()}
+        ${artCreditHtml()}
+      </section>
+      <div id="changelog-landscape-credits"><p class="changelog-credits-lead">Loading landscape credits…</p></div>
+    </div>`;
+
+  modal.querySelector(".utility-content")?.classList.add("somnia-changelog-modal-wrap");
+  modal.classList.remove("hidden");
+  document.body.classList.add("utility-modal-open");
+
+  const landscapeEl = document.getElementById("changelog-landscape-credits");
+  if (landscapeEl) {
+    landscapeEl.innerHTML = await landscapeCreditsHtml();
+  }
+
+  const closeBtn = modal.querySelector(".utility-close");
+  const backdrop = modal.querySelector(".utility-backdrop");
+  const onClose = () => {
+    hideUtilityModal(true);
+    modal.querySelector(".utility-content")?.classList.remove("somnia-changelog-modal-wrap");
+    closeBtn?.removeEventListener("click", onClose);
+    backdrop?.removeEventListener("click", onClose);
+  };
+  closeBtn?.addEventListener("click", onClose);
+  backdrop?.addEventListener("click", onClose);
+}

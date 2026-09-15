@@ -1,132 +1,236 @@
 {
-  "bed": {
-    "file": "audio/landscapes/bed.wav",
-    "label": "bed",
-    "license": "CC0 placeholder (procedural) — replace with your own sample"
-  },
-  "city": {
-    "file": "audio/landscapes/city.wav",
-    "label": "city",
-    "license": "CC0 placeholder (procedural) — replace with your own sample"
-  },
-  "forest": {
-    "file": "audio/landscapes/forest.wav",
-    "label": "forest",
-    "license": "CC0 placeholder (procedural) — replace with your own sample"
-  },
-  "house": {
-    "file": "audio/landscapes/house.wav",
-    "label": "house",
-    "license": "CC0 placeholder (procedural) — replace with your own sample"
-  },
-  "road": {
-    "file": "audio/landscapes/road.wav",
-    "label": "road",
-    "license": "CC0 placeholder (procedural) — replace with your own sample"
-  },
-  "sky": {
-    "file": "audio/landscapes/sky.wav",
-    "label": "sky",
-    "license": "CC0 placeholder (procedural) — replace with your own sample"
-  },
   "suburbia": {
-    "file": "audio/landscapes/suburbia.wav",
+    "file": "audio/landscapes/suburbia.mp3",
     "label": "suburbia",
-    "license": "CC0 placeholder (procedural) — replace with your own sample"
+    "title": "Night Crickets Back Porch",
+    "artist": "freesound_community",
+    "artistUrl": "https://pixabay.com/users/freesound_community-46691455/",
+    "sourceUrl": "https://pixabay.com/sound-effects/night-crickets-back-porch-6180/",
+    "license": "Pixabay Content License"
   },
   "lava": {
-    "file": "audio/landscapes/lava.wav",
+    "file": "audio/landscapes/lava.mp3",
     "label": "lava",
-    "license": "CC0 placeholder (procedural) — replace with your own sample"
-  },
-  "black-void": {
-    "file": "audio/landscapes/black-void.wav",
-    "label": "black void",
-    "license": "CC0 placeholder (procedural) — replace with your own sample"
+    "title": "Hot Bubbling Mud",
+    "artist": "freesound_community",
+    "artistUrl": "https://pixabay.com/users/freesound_community-46691455/",
+    "sourceUrl": "https://pixabay.com/sound-effects/hot-bubbling-mud-99785/",
+    "license": "Pixabay Content License"
   },
   "field-of-broken-glass": {
-    "file": "audio/landscapes/field-of-broken-glass.wav",
+    "file": "audio/landscapes/field-of-broken-glass.mp3",
     "label": "field of broken glass",
-    "license": "CC0 placeholder (procedural) — replace with your own sample"
-  },
-  "the-attic": {
-    "file": "audio/landscapes/the-attic.wav",
-    "label": "the attic",
-    "license": "CC0 placeholder (procedural) — replace with your own sample"
-  },
-  "the-basement": {
-    "file": "audio/landscapes/the-basement.wav",
-    "label": "the basement",
-    "license": "CC0 placeholder (procedural) — replace with your own sample"
-  },
-  "desert": {
-    "file": "audio/landscapes/desert.wav",
-    "label": "desert",
-    "license": "CC0 placeholder (procedural) — replace with your own sample"
-  },
-  "endless-hallway": {
-    "file": "audio/landscapes/endless-hallway.wav",
-    "label": "endless hallway",
-    "license": "CC0 placeholder (procedural) — replace with your own sample"
-  },
-  "the-party": {
-    "file": "audio/landscapes/the-party.wav",
-    "label": "the party",
-    "license": "CC0 placeholder (procedural) — replace with your own sample"
-  },
-  "awards": {
-    "file": "audio/landscapes/awards.wav",
-    "label": "awards",
-    "license": "CC0 placeholder (procedural) — replace with your own sample"
-  },
-  "sea-of-teeth": {
-    "file": "audio/landscapes/sea-of-teeth.wav",
-    "label": "sea of teeth",
-    "license": "CC0 placeholder (procedural) — replace with your own sample"
-  },
-  "endless-ocean": {
-    "file": "audio/landscapes/endless-ocean.wav",
-    "label": "endless ocean",
-    "license": "CC0 placeholder (procedural) — replace with your own sample"
+    "title": "Glass_breaking",
+    "artist": "Mauricio Póvoa",
+    "artistUrl": "https://pixabay.com/users/magiaz-10236927/",
+    "sourceUrl": "https://pixabay.com/sound-effects/glass-breaking-363541/",
+    "license": "Pixabay Content License"
   },
   "candy-mountain": {
-    "file": "audio/landscapes/candy-mountain.wav",
+    "file": "audio/landscapes/candy-mountain.mp3",
     "label": "candy mountain",
-    "license": "CC0 placeholder (procedural) — replace with your own sample"
+    "title": "Eating pop-rocks",
+    "artist": "freesound_community",
+    "artistUrl": "https://pixabay.com/users/freesound_community-46691455/",
+    "sourceUrl": "https://pixabay.com/sound-effects/eating-pop-rocks-69995/",
+    "license": "Pixabay Content License"
+  },
+  "bed": {
+    "file": "audio/landscapes/bed.mp3",
+    "label": "bed",
+    "title": "Sleep breathing",
+    "artist": "freesound_community",
+    "artistUrl": "https://pixabay.com/users/freesound_community-46691455/",
+    "sourceUrl": "https://pixabay.com/sound-effects/sleep-breathing-67336/",
+    "license": "Pixabay Content License"
+  },
+  "city": {
+    "file": "audio/landscapes/city.mp3",
+    "label": "city",
+    "title": "City night crickets",
+    "artist": "freesound_community",
+    "artistUrl": "https://pixabay.com/users/freesound_community-46691455/",
+    "sourceUrl": "https://pixabay.com/sound-effects/city-night-crickets-24013/",
+    "license": "Pixabay Content License"
+  },
+  "forest": {
+    "file": "audio/landscapes/forest.mp3",
+    "label": "forest",
+    "title": "Forest ambience",
+    "artist": "arpeggio1980 (Freesound)",
+    "artistUrl": "https://pixabay.com/users/arpeggio1980-17457684/",
+    "sourceUrl": "https://pixabay.com/sound-effects/nature-forest-quiet-birdsong-distant-roar-of-trees-branches-in-wind-could-pass-as-a-distant-river-16798/",
+    "license": "Pixabay Content License"
+  },
+  "house": {
+    "file": "audio/landscapes/house.mp3",
+    "label": "house",
+    "title": "Creaking door",
+    "artist": "freesound_community",
+    "artistUrl": "https://pixabay.com/users/freesound_community-46691455/",
+    "sourceUrl": "https://pixabay.com/sound-effects/creaking-door-41706/",
+    "license": "Pixabay Content License"
+  },
+  "road": {
+    "file": "audio/landscapes/road.mp3",
+    "label": "road",
+    "title": "Car passing by",
+    "artist": "freesound_community",
+    "artistUrl": "https://pixabay.com/users/freesound_community-46691455/",
+    "sourceUrl": "https://pixabay.com/sound-effects/car-passing-by-6208/",
+    "license": "Pixabay Content License"
+  },
+  "sky": {
+    "file": "audio/landscapes/sky.mp3",
+    "label": "sky",
+    "title": "Howling wind",
+    "artist": "freesound_community",
+    "artistUrl": "https://pixabay.com/users/freesound_community-46691455/",
+    "sourceUrl": "https://pixabay.com/sound-effects/howling-wind-14499/",
+    "license": "Pixabay Content License"
+  },
+  "black-void": {
+    "file": "audio/landscapes/black-void.mp3",
+    "label": "black void",
+    "title": "Synth wind",
+    "artist": "freesound_community",
+    "artistUrl": "https://pixabay.com/users/freesound_community-46691455/",
+    "sourceUrl": "https://pixabay.com/sound-effects/synth-wind-25628/",
+    "license": "Pixabay Content License"
+  },
+  "the-attic": {
+    "file": "audio/landscapes/the-attic.mp3",
+    "label": "the attic",
+    "title": "Creaking attic door",
+    "artist": "freesound_community",
+    "artistUrl": "https://pixabay.com/users/freesound_community-46691455/",
+    "sourceUrl": "https://pixabay.com/sound-effects/creaking-attic-door-30908/",
+    "license": "Pixabay Content License"
+  },
+  "the-basement": {
+    "file": "audio/landscapes/the-basement.mp3",
+    "label": "the basement",
+    "title": "Dripping water tap",
+    "artist": "freesound_community",
+    "artistUrl": "https://pixabay.com/users/freesound_community-46691455/",
+    "sourceUrl": "https://pixabay.com/sound-effects/dripping-water-tap-233602/",
+    "license": "Pixabay Content License"
+  },
+  "desert": {
+    "file": "audio/landscapes/desert.mp3",
+    "label": "desert",
+    "title": "Desert monolith",
+    "artist": "freesound_community",
+    "artistUrl": "https://pixabay.com/users/freesound_community-46691455/",
+    "sourceUrl": "https://pixabay.com/sound-effects/desert-monolith-6369/",
+    "license": "Pixabay Content License"
+  },
+  "endless-hallway": {
+    "file": "audio/landscapes/endless-hallway.mp3",
+    "label": "endless hallway",
+    "title": "Footsteps echo hallway",
+    "artist": "freesound_community",
+    "artistUrl": "https://pixabay.com/users/freesound_community-46691455/",
+    "sourceUrl": "https://pixabay.com/sound-effects/footsteps-echo-hallway-6290/",
+    "license": "Pixabay Content License"
+  },
+  "the-party": {
+    "file": "audio/landscapes/the-party.mp3",
+    "label": "the party",
+    "title": "Party crowd",
+    "artist": "freesound_community",
+    "artistUrl": "https://pixabay.com/users/freesound_community-46691455/",
+    "sourceUrl": "https://pixabay.com/sound-effects/party-crowd-6112/",
+    "license": "Pixabay Content License"
+  },
+  "awards": {
+    "file": "audio/landscapes/awards.mp3",
+    "label": "awards",
+    "title": "Applause",
+    "artist": "freesound_community",
+    "artistUrl": "https://pixabay.com/users/freesound_community-46691455/",
+    "sourceUrl": "https://pixabay.com/sound-effects/applause-86759/",
+    "license": "Pixabay Content License"
+  },
+  "sea-of-teeth": {
+    "file": "audio/landscapes/sea-of-teeth.mp3",
+    "label": "sea of teeth",
+    "title": "Bone cracking",
+    "artist": "freesound_community",
+    "artistUrl": "https://pixabay.com/users/freesound_community-46691455/",
+    "sourceUrl": "https://pixabay.com/sound-effects/bone-cracking-sound-effect-6829/",
+    "license": "Pixabay Content License"
+  },
+  "endless-ocean": {
+    "file": "audio/landscapes/endless-ocean.mp3",
+    "label": "endless ocean",
+    "title": "Ocean waves",
+    "artist": "freesound_community",
+    "artistUrl": "https://pixabay.com/users/freesound_community-46691455/",
+    "sourceUrl": "https://pixabay.com/sound-effects/ocean-waves-6176/",
+    "license": "Pixabay Content License"
   },
   "naked-classroom": {
-    "file": "audio/landscapes/naked-classroom.wav",
+    "file": "audio/landscapes/naked-classroom.mp3",
     "label": "naked classroom",
-    "license": "CC0 placeholder (procedural) — replace with your own sample"
+    "title": "Classroom ambience",
+    "artist": "freesound_community",
+    "artistUrl": "https://pixabay.com/users/freesound_community-46691455/",
+    "sourceUrl": "https://pixabay.com/sound-effects/classroom-ambience-6113/",
+    "license": "Pixabay Content License"
   },
   "tranquil-grove": {
-    "file": "audio/landscapes/tranquil-grove.wav",
+    "file": "audio/landscapes/tranquil-grove.mp3",
     "label": "tranquil grove",
-    "license": "CC0 placeholder (procedural) — replace with your own sample"
+    "title": "Stream with birds",
+    "artist": "freesound_community",
+    "artistUrl": "https://pixabay.com/users/freesound_community-46691455/",
+    "sourceUrl": "https://pixabay.com/sound-effects/stream-birds-6177/",
+    "license": "Pixabay Content License"
   },
   "day-in-the-life": {
-    "file": "audio/landscapes/day-in-the-life.wav",
+    "file": "audio/landscapes/day-in-the-life.mp3",
     "label": "day in the life",
-    "license": "CC0 placeholder (procedural) — replace with your own sample"
+    "title": "Alarm clock short",
+    "artist": "freesound_community",
+    "artistUrl": "https://pixabay.com/users/freesound_community-46691455/",
+    "sourceUrl": "https://pixabay.com/sound-effects/alarm-clock-short-6402/",
+    "license": "Pixabay Content License"
   },
   "insanity": {
-    "file": "audio/landscapes/insanity.wav",
+    "file": "audio/landscapes/insanity.mp3",
     "label": "insanity",
-    "license": "CC0 placeholder (procedural) — replace with your own sample"
+    "title": "Horror scary violins",
+    "artist": "freesound_community",
+    "artistUrl": "https://pixabay.com/users/freesound_community-46691455/",
+    "sourceUrl": "https://pixabay.com/sound-effects/horror-scaryviolins-6829/",
+    "license": "Pixabay Content License"
   },
   "inner-sanctum": {
-    "file": "audio/landscapes/inner-sanctum.wav",
+    "file": "audio/landscapes/inner-sanctum.mp3",
     "label": "inner sanctum",
-    "license": "CC0 placeholder (procedural) — replace with your own sample"
+    "title": "Church ambience",
+    "artist": "freesound_community",
+    "artistUrl": "https://pixabay.com/users/freesound_community-46691455/",
+    "sourceUrl": "https://pixabay.com/sound-effects/church-ambience-6114/",
+    "license": "Pixabay Content License"
   },
   "silver-mist": {
-    "file": "audio/landscapes/silver-mist.wav",
+    "file": "audio/landscapes/silver-mist.mp3",
     "label": "silver mist",
-    "license": "CC0 placeholder (procedural) — replace with your own sample"
+    "title": "Mist wind",
+    "artist": "freesound_community",
+    "artistUrl": "https://pixabay.com/users/freesound_community-46691455/",
+    "sourceUrl": "https://pixabay.com/sound-effects/mist-wind-52608/",
+    "license": "Pixabay Content License"
   },
   "wasteland": {
-    "file": "audio/landscapes/wasteland.wav",
+    "file": "audio/landscapes/wasteland.mp3",
     "label": "wasteland",
-    "license": "CC0 placeholder (procedural) — replace with your own sample"
+    "title": "Desolate wind",
+    "artist": "freesound_community",
+    "artistUrl": "https://pixabay.com/users/freesound_community-46691455/",
+    "sourceUrl": "https://pixabay.com/sound-effects/desolate-wind-7597/",
+    "license": "Pixabay Content License"
   }
 }
