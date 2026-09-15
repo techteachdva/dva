@@ -54,8 +54,10 @@ export function resetBoardMotion(state) {
     if (player.alive && player.landscapeId) prevDreamerTiles.set(player.id, player.landscapeId);
   });
   (state.board || []).forEach((tile) => {
-    const key = encounterKey(tile.encounter);
-    if (key) prevEncounterTiles.set(key, tile.id);
+    (tile.encounters || (tile.encounter ? [tile.encounter] : [])).forEach((enc) => {
+      const key = encounterKey(enc);
+      if (key) prevEncounterTiles.set(key, tile.id);
+    });
   });
 }
 
@@ -84,8 +86,11 @@ export function syncBoardMotion(state) {
 
   const current = new Map();
   (state.board || []).forEach((tile) => {
-    const key = encounterKey(tile.encounter);
-    if (key) current.set(key, { tileId: tile.id, encounter: tile.encounter });
+    const list = tile.encounters || (tile.encounter ? [tile.encounter] : []);
+    list.forEach((encounter) => {
+      const key = encounterKey(encounter);
+      if (key) current.set(key, { tileId: tile.id, encounter });
+    });
   });
   current.forEach((now, key) => {
     const prevId = prevEncounterTiles.get(key);

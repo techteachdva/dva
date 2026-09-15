@@ -1,4 +1,5 @@
 import { recordQuestEvent } from "./quests.js";
+import { flashMoment } from "./moment-overlay.js";
 import { discardToMindstream, returnDreambeastToMindstreamDeck } from "./mindstream-supply.js";
 import { queueRepressFx } from "./board-fx.js";
 
@@ -204,6 +205,7 @@ function beginReturnStep(state, step) {
     playerId: step.playerId || null,
     reason: step.reason,
   };
+  if (step.reason) flashMoment(step.reason);
 }
 
 export function pickReturnCard(state, instanceId) {
@@ -317,6 +319,7 @@ function beginRepressStep(state, step) {
       reason: step.reason,
       confirmEmpty: false,
     };
+    if (step.reason) flashMoment(step.reason);
     return;
   }
 
@@ -365,6 +368,7 @@ function beginRepressStep(state, step) {
     reason: step.reason,
     confirmEmpty: false,
   };
+  if (step.reason) flashMoment(step.reason);
 }
 
 function removeFromSource(player, source, instanceId) {

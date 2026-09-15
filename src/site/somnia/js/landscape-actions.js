@@ -4,6 +4,16 @@ import {
   drawMindstream,
   landscapeById,
   setEncounterOnLandscape,
+  moveEncounterBetweenLandscapes,
+  encounterOnLandscape,
+  encounterKey,
+  addEncounterOnLandscape,
+  removeEncounterFromLandscape,
+  tileEncounters,
+  tileHasEncounters,
+  allEncountersOnBoard,
+  countEncountersOnBoard,
+  revealedLandscapeTiles,
   rememberRevealedTops,
 } from "./state.js";
 import { requestChooseTile } from "./landscapes.js";
@@ -187,15 +197,14 @@ function moveDreamerSteps(state, player, steps) {
   });
 }
 
-function moveEncounterOneStep(state, tile) {
-  if (!tile?.encounter) return false;
-  const adj = adjacentTiles(state, tile.id).filter((t) => t.revealed && !t.encounter);
+function moveEncounterOneStep(state, tile, encounter = null) {
+  const enc = encounter || encounterOnLandscape(state, tile?.id);
+  if (!tile || !enc) return false;
+  const adj = adjacentTiles(state, tile.id).filter((t) => t.revealed && !t.wasteland);
   if (!adj.length) return false;
   if (state.tutorialMode) {
     const dest = adj[Math.floor(Math.random() * adj.length)];
-    const enc = tile.encounter;
-    tile.encounter = null;
-    setEncounterOnLandscape(state, dest.id, enc);
+    moveEncounterBetweenLandscapes(state, tile.id, dest.id, enc);
     addLog(state, `${enc.name} moves to ${dest.name}.`);
     return true;
   }
@@ -203,8 +212,9 @@ function moveEncounterOneStep(state, tile) {
     allowedIds: adj.map((t) => t.id),
     action: "moveEncounter",
     fromTileId: tile.id,
-    title: `Move ${tile.encounter.name}`,
-    detail: `Choose an adjacent empty Landscape for ${tile.encounter.name}.`,
+    encounter: enc,
+    title: `Move ${enc.name}`,
+    detail: `Choose an adjacent Landscape for ${enc.name}.`,
   });
 }
 
@@ -268,7 +278,7 @@ function spawnDreambeastFromMindstream(state, suit) {
     return null;
   }
 
-  const targets = state.board.filter((t) => t.revealed && t.suit === suit && !t.encounter);
+  const targets = revealedLandscapeTiles(state, { suit });
   if (!targets.length) {
     state.mindstreamDiscard[suit].push(beast);
     addLog(state, `No open ${SUIT_LABELS[suit]} Landscape for ${beast.name}.`);
@@ -477,56 +487,110 @@ function beginSwapLandscapes(state, player) {
   return { ok: true, pending: true };
 }
 
+function beastMoveChoices(state, movedKeys = []) {
+  return allEncountersOnBoard(state)
+    .filter(({ encounter }) => !movedKeys.includes(encounterKey(encounter)))
+    .map(({ tile, encounter }) => ({
+      id: `${tile.id}:${encounterKey(encounter)}`,
+      label: `${encounter.name} on ${tile.name}`,
+    }));
+}
+
 function beginMoveTwoDreambeasts(state) {
-  const withEnc = state.board.filter((t) => t.encounter);
-  if (!withEnc.length) {
+  if (!countEncountersOnBoard(state)) {
     addLog(state, "No Dreambeasts to move.");
     return { ok: false };
   }
   if (state.tutorialMode) {
-    shuffle(withEnc).slice(0, 2).forEach((t) => moveEncounterOneStep(state, t));
+    allEncountersOnBoard(state).slice(0, 2).forEach(({ tile, encounter }) => {
+      moveEncounterOneStep(state, tile, encounter);
+    });
     return { ok: true };
   }
-  offerBeastMove(state, withEnc, 2, []);
+  offerBeastMove(state, 2, []);
   return { ok: true, pending: true };
 }
 
-function offerBeastMove(state, tiles, remaining, movedIds) {
+function offerBeastMove(state, remaining, movedKeys) {
   const actor = alivePlayers(state)[0];
-  const choices = tiles
-    .filter((t) => !movedIds.includes(t.id))
-    .map((t) => ({ id: t.id, label: `${t.encounter.name} on ${t.name}` }));
+  const choices = beastMoveChoices(state, movedKeys);
   if (!choices.length || remaining <= 0) return;
   offerEffectChoice(state, actor, {
     cardId: "landscape-action",
     title: "Move Dreambeasts",
     message: "Choose a Dreambeast to move 1 Landscape.",
     choices,
-    payload: { actionId: "move-2-dreambeasts-1", remaining, movedIds },
+    payload: { actionId: "move-2-dreambeasts-1", remaining, movedKeys },
   });
 }
 
+function swapEncounterChoices(state, excludeKey = null) {
+  return allEncountersOnBoard(state)
+    .filter(({ tile, encounter }) => {
+      const key = `${tile.id}:${encounterKey(encounter)}`;
+      return key !== excludeKey;
+    })
+    .map(({ tile, encounter }) => ({
+      id: `${tile.id}:${encounterKey(encounter)}`,
+      label: `${encounter.name} on ${tile.name}`,
+    }));
+}
+
+function swapEncountersByKeys(state, keyA, keyB) {
+  const sepA = String(keyA).indexOf(":");
+  const sepB = String(keyB).indexOf(":");
+  const tileAId = String(keyA).slice(0, sepA);
+  const encKeyA = String(keyA).slice(sepA + 1);
+  const tileBId = String(keyB).slice(0, sepB);
+  const encKeyB = String(keyB).slice(sepB + 1);
+  const encA = tileEncounters(landscapeById(state, tileAId)).find((e) => encounterKey(e) === encKeyA);
+  const encB = tileEncounters(landscapeById(state, tileBId)).find((e) => encounterKey(e) === encKeyB);
+  if (!encA || !encB) return false;
+  removeEncounterFromLandscape(state, tileAId, encA);
+  removeEncounterFromLandscape(state, tileBId, encB);
+  addEncounterOnLandscape(state, tileAId, encB);
+  addEncounterOnLandscape(state, tileBId, encA);
+  addLog(state, `Swapped ${encA.name} and ${encB.name}.`);
+  return true;
+}
+
 function beginSwapDreambeasts(state) {
-  const withEnc = state.board.filter((t) => t.encounter);
-  if (withEnc.length < 2) {
+  if (countEncountersOnBoard(state) < 2) {
     addLog(state, "Need 2 active Dreambeasts to swap.");
     return { ok: false };
   }
+  const encounters = allEncountersOnBoard(state);
+  const tileCount = state.board.filter((t) => tileHasEncounters(t)).length;
+  const needsEncounterPick = encounters.length > tileCount;
+
   if (state.tutorialMode) {
-    const [a, b] = shuffle(withEnc).slice(0, 2);
-    const encA = a.encounter;
-    const encB = b.encounter;
-    a.encounter = encB;
-    b.encounter = encA;
-    addLog(state, `Swapped ${encA.name} and ${encB.name}.`);
+    const [a, b] = encounters.slice(0, 2);
+    if (a && b) {
+      swapEncountersByKeys(state, `${a.tile.id}:${encounterKey(a.encounter)}`, `${b.tile.id}:${encounterKey(b.encounter)}`);
+    }
     return { ok: true };
   }
+
+  if (needsEncounterPick) {
+    const actor = alivePlayers(state)[0];
+    const choices = swapEncounterChoices(state);
+    offerEffectChoice(state, actor, {
+      cardId: "landscape-action",
+      title: "Swap Dreambeasts",
+      message: "Choose the first Dreambeast to swap.",
+      choices,
+      payload: { actionId: "swap-dreambeasts", step: "pick-first" },
+    });
+    return { ok: true, pending: true };
+  }
+
+  const withEnc = state.board.filter((t) => tileHasEncounters(t));
   requestChooseTile(state, {
     allowedIds: withEnc.map((t) => t.id),
     action: "record",
     remaining: 2,
     title: "Swap Dreambeasts",
-    detail: "Choose 2 Dreambeasts to swap.",
+    detail: "Choose 2 Landscapes with Dreambeasts to swap.",
     followup: { landscapeAction: "swap-dreambeasts" },
   });
   return { ok: true, pending: true };
@@ -726,22 +790,44 @@ registerEffectResolver("landscape-action", (state, choiceId) => {
     return true;
   }
 
-  if (actionId === "move-2-dreambeasts-1") {
-    const tile = landscapeById(state, choiceId);
-    const remaining = pending.payload.remaining ?? 2;
-    const movedIds = pending.payload.movedIds || [];
+  if (actionId === "swap-dreambeasts" && pending.payload?.step === "pick-first") {
     state.pendingEffectChoice = null;
-    if (tile?.encounter) {
-      moveEncounterOneStep(state, tile);
-      const nextMoved = [...movedIds, tile.id];
+    const second = swapEncounterChoices(state, choiceId);
+    if (!second.length) return true;
+    offerEffectChoice(state, player, {
+      cardId: "landscape-action",
+      title: "Swap Dreambeasts",
+      message: "Choose the second Dreambeast to swap.",
+      choices: second,
+      payload: { actionId: "swap-dreambeasts", step: "pick-second", firstKey: choiceId },
+    });
+    return true;
+  }
+
+  if (actionId === "swap-dreambeasts" && pending.payload?.step === "pick-second") {
+    state.pendingEffectChoice = null;
+    swapEncountersByKeys(state, pending.payload.firstKey, choiceId);
+    return true;
+  }
+
+  if (actionId === "move-2-dreambeasts-1") {
+    const [tileId, encKey] = String(choiceId).split(":");
+    const tile = landscapeById(state, tileId);
+    const encounter = tileEncounters(tile).find((enc) => encounterKey(enc) === encKey);
+    const remaining = pending.payload.remaining ?? 2;
+    const movedKeys = pending.payload.movedKeys || [];
+    state.pendingEffectChoice = null;
+    if (tile && encounter) {
+      moveEncounterOneStep(state, tile, encounter);
+      const nextMoved = [...movedKeys, encounterKey(encounter)];
       if (state.landscapePick) {
         state.landscapePick.followup = {
           landscapeAction: "move-2-dreambeasts-1",
           remaining: remaining - 1,
-          movedIds: nextMoved,
+          movedKeys: nextMoved,
         };
       } else {
-        offerBeastMove(state, state.board.filter((t) => t.encounter), remaining - 1, nextMoved);
+        offerBeastMove(state, remaining - 1, nextMoved);
       }
     }
     return true;
@@ -772,11 +858,13 @@ export function resumeLandscapeAction(state) {
     const ids = follow.pickedIds || [];
     const a = landscapeById(state, ids[0]);
     const b = landscapeById(state, ids[1]);
-    if (a?.encounter && b?.encounter) {
-      const encA = a.encounter;
-      const encB = b.encounter;
-      a.encounter = encB;
-      b.encounter = encA;
+    const encA = encounterOnLandscape(state, a.id);
+    const encB = encounterOnLandscape(state, b.id);
+    if (encA && encB) {
+      removeEncounterFromLandscape(state, a.id, encA);
+      removeEncounterFromLandscape(state, b.id, encB);
+      addEncounterOnLandscape(state, a.id, encB);
+      addEncounterOnLandscape(state, b.id, encA);
       addLog(state, `Swapped ${encA.name} and ${encB.name}.`);
     }
     return true;
@@ -788,7 +876,7 @@ export function resumeLandscapeAction(state) {
   }
 
   if (action === "move-2-dreambeasts-1") {
-    offerBeastMove(state, state.board.filter((t) => t.encounter), follow.remaining ?? 0, follow.movedIds || []);
+    offerBeastMove(state, follow.remaining ?? 0, follow.movedKeys || []);
     return true;
   }
 

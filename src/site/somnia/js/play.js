@@ -12,7 +12,7 @@ import {
 } from "./board-zoom.js";
 import { initPauseMenu, openPauseMenu } from "./pause-menu.js";
 import { initFxLayer, burstSparklesAtElement } from "./fx.js";
-import { initMomentOverlay } from "./moment-overlay.js";
+import { initMomentOverlay, resetMomentOverlay } from "./moment-overlay.js";
 import {
   runPendingCardFx,
   syncHandRemovals,
@@ -166,7 +166,9 @@ import {
   renderSubconsciousButton,
   showRulesModal,
   showDreamFeedModal,
+  showMomentHistoryModal,
   showOverviewModal,
+  resetQuestReadyFlashes,
   hideDreamerDetailOverlay,
   showTutorialStep,
   showTutorialBrief,
@@ -527,6 +529,14 @@ function bindHelp() {
     }
     showOverviewModal(state);
   });
+  document.getElementById("btn-moment-history")?.addEventListener("click", () => {
+    if (!isTutorialActionAllowed(state, "headerMomentHistory")) {
+      tutorialActionBlocked(state);
+      renderAll();
+      return;
+    }
+    showMomentHistoryModal();
+  });
   document.getElementById("btn-dream-feed")?.addEventListener("click", () => {
     if (!isTutorialActionAllowed(state, "headerDreamFeed")) {
       tutorialActionBlocked(state);
@@ -708,6 +718,8 @@ async function startGame(config) {
   }
 
   showScreen("screen-game");
+  resetMomentOverlay();
+  resetQuestReadyFlashes();
   fitBoardToViewport();
   resetHandSnapshots(state);
   resetDeckColumnRender();

@@ -4,10 +4,16 @@ import {
   beginFinalRecurrence,
   landscapeById,
   setEncounterOnLandscape,
+  encountersOnLandscape,
+  moveEncounterBetweenLandscapes,
+  removeEncounterFromLandscape,
+  tileEncounters,
+  tileHasEncounters,
+  clearEncountersOnLandscape,
 } from "./state.js";
 import { shuffle } from "./data.js";
 import { repressCard } from "./subconscious.js";
-import { narrate } from "./narrator.js";
+import { narrate, logMoment } from "./narrator.js";
 import { recordQuestEvent } from "./quests.js";
 import { isEdgeLandscape } from "./hex.js";
 import { markTileForgotten } from "./fx.js";
@@ -70,11 +76,11 @@ function forgetTile(state, tile) {
   tile.revealed = false;
   tile.wasteland = true;
   tile.forgotten = true;
-  if (tile.encounter) {
-    queueRepressFx(tile.encounter, { tileId: tile.id });
-    repressCard(state, tile.encounter);
-    tile.encounter = null;
-  }
+  tileEncounters(tile).forEach((enc) => {
+    queueRepressFx(enc, { tileId: tile.id });
+    repressCard(state, enc);
+  });
+  clearEncountersOnLandscape(state, tile.id);
   state.players
     .filter((p) => p.alive && p.landscapeId === tile.id)
     .forEach((p) => {
@@ -158,18 +164,17 @@ export function resolveChooseTile(state, tileId, opts) {
   }
 
   if (action === "spawnEncounter") {
-    if (!encounter || tile.encounter) return false;
+    if (!encounter) return false;
     setEncounterOnLandscape(state, tile.id, encounter);
-    addLog(state, `${encounter.name} appears on ${tile.name}!`);
+    logMoment(state, `${encounter.name} appears on ${tile.name}!`);
     return true;
   }
 
   if (action === "moveEncounter") {
     const from = landscapeById(state, fromTileId);
-    if (!from?.encounter || tile.encounter) return false;
-    const enc = from.encounter;
-    from.encounter = null;
-    setEncounterOnLandscape(state, tile.id, enc);
+    const enc = encounter || encountersOnLandscape(state, fromTileId)[0];
+    if (!from || !enc) return false;
+    moveEncounterBetweenLandscapes(state, fromTileId, tile.id, enc);
     addLog(state, `${enc.name} moves to ${tile.name}.`);
     return true;
   }
@@ -181,15 +186,14 @@ export function resolveChooseTile(state, tileId, opts) {
     player.landscapeId = tile.id;
     recordCancellableMove(state, player, fromId, tile.id);
     const from = landscapeById(state, fromTileId);
-    if (from?.encounter && from.id !== tile.id) {
-      if (tile.encounter) {
-        repressCard(state, tile.encounter);
-        tile.encounter = null;
+    if (from && tileHasEncounters(from) && from.id !== tile.id) {
+      const enc = tileEncounters(from)[0];
+      if (enc) {
+        moveEncounterBetweenLandscapes(state, from.id, tile.id, enc);
+        addLog(state, `${player.name} and ${enc.name} move to ${tile.name}.`);
+      } else {
+        addLog(state, `${player.name} moves to ${tile.name}.`);
       }
-      const enc = from.encounter;
-      from.encounter = null;
-      setEncounterOnLandscape(state, tile.id, enc);
-      addLog(state, `${player.name} and ${enc.name} move to ${tile.name}.`);
     } else {
       addLog(state, `${player.name} moves to ${tile.name}.`);
     }

@@ -8,6 +8,9 @@ import {
   revealLandscapeTile,
   landscapeById,
   setEncounterOnLandscape,
+  countEncountersOnBoard,
+  allEncountersOnBoard,
+  removeEncounterFromLandscape,
 } from "./state.js";
 import { shuffle, uid } from "./data.js";
 import { recordQuestEvent } from "./quests.js";
@@ -209,7 +212,7 @@ export const EXTRA_MINDSTREAM_EFFECTS = {
   },
   "wrong-classroom": (state, player) => {
     repressTopMindstreamSuit(state, "lucidity");
-    const n = state.board.filter((t) => t.encounter).length + 1;
+    const n = countEncountersOnBoard(state) + 1;
     enqueueRepressFromHand(state, player, n, {
       reason: `Wrong Classroom: discard ${n} Psyche (Encounters+1).`,
     });
@@ -385,10 +388,10 @@ export const EXTRA_MINDSTREAM_EFFECTS = {
     beginPerilousPinnacle(state, player);
   },
   "cooling-obsidian": (state, player) => {
-    const tile = state.board.find((t) => t.encounter);
-    if (tile) {
-      repressCard(state, tile.encounter);
-      tile.encounter = null;
+    const entry = allEncountersOnBoard(state)[0];
+    if (entry) {
+      repressCard(state, entry.encounter);
+      removeEncounterFromLandscape(state, entry.tile.id, entry.encounter);
     }
     moveToIfRevealed(state, player, ["endless-ocean", "field-of-broken-glass"]);
   },

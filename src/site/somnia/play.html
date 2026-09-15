@@ -21,7 +21,7 @@
   <div id="app">
     <header class="top-bar play-top-bar">
       <div class="brand">
-        <span class="version-label">Somnia v 17.6</span>
+        <span class="version-label">Somnia v 17.7</span>
         <h1>Somnia</h1>
       </div>
       <div id="phase-stepper" class="phase-stepper top-bar-stepper" aria-label="Round phases"></div>
@@ -31,7 +31,10 @@
         <div class="hud-item hud-dreams-wrap"><span class="label">Dreams Left</span><span id="hud-dreams">16</span></div>
         <div class="hud-item hud-beasts-wrap hidden" id="hud-beasts-wrap"><span class="label">Roaming</span><span id="hud-beasts">0</span></div>
         <div class="hud-item hud-round-wrap"><span class="label">Round</span><span id="hud-round">1</span><span id="hud-boss-rounds" class="hud-boss-rounds" aria-hidden="true"></span></div>
-        <button type="button" id="btn-dream-feed" class="btn btn-icon btn-dream-feed hud-dream-feed-btn" title="Dream feed, log &amp; rules reference" aria-label="Dream feed and rules">?</button>
+        <div class="hud-feed-cluster">
+          <button type="button" id="btn-moment-history" class="btn btn-icon btn-moment-history hud-moment-history-btn" title="Moment narration history" aria-label="Moment narration history">!</button>
+          <button type="button" id="btn-dream-feed" class="btn btn-icon btn-dream-feed hud-dream-feed-btn" title="Dream feed, log &amp; rules reference" aria-label="Dream feed and rules">?</button>
+        </div>
       </div>
       <div id="header-actions" class="header-actions">
         <button type="button" id="btn-header-subconscious" class="btn btn-sm btn-header-subconscious" data-deck-id="subconscious" title="Browse The Subconscious">☠ Subconscious</button>
@@ -55,7 +58,7 @@
           <aside id="deck-column" class="deck-column" aria-label="Game decks"></aside>
           <div id="coop-play-banner" class="coop-play-banner hidden" aria-live="polite"></div>
           <div id="phase-banner" class="phase-banner" aria-live="polite"></div>
-          <div id="moment-overlay" class="moment-overlay hidden" role="status" aria-live="assertive"></div>
+          <div id="moment-overlay-stack" class="moment-overlay-stack" role="status" aria-live="polite"></div>
           <div id="guide-panel" class="guide-panel guide-panel-legacy" hidden></div>
           <div class="board-viewport" id="board-viewport" title="Scroll to zoom · middle-drag or hold Space and drag to pan">
             <div class="board-zoom-stage" id="board-zoom-stage">

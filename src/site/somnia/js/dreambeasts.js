@@ -6,6 +6,13 @@ import {
   revealLandscapeTile,
   landscapeById,
   setEncounterOnLandscape,
+  findEncounterOnBoard,
+  moveEncounterBetweenLandscapes,
+  tileEncounters,
+  encountersOnLandscape,
+  allEncountersOnBoard,
+  encounterKey,
+  encounterOnLandscape,
 } from "./state.js";
 import { recordQuestEvent } from "./quests.js";
 import { logMoment } from "./narrator.js";
@@ -149,20 +156,25 @@ function wastelandCount(state) {
 
 function moveEncounter(state, encounter, toId) {
   const dest = landscapeById(state, toId);
-  if (!dest?.revealed || dest.encounter) return false;
-  const from = state.board.find((t) => t.encounter && (t.encounter.instanceId === encounter.instanceId || t.encounter.id === encounter.id));
-  if (from) from.encounter = null;
-  setEncounterOnLandscape(state, toId, encounter);
-  addLog(state, `${encounter.name} moves to ${dest.name}.`);
+  if (!dest?.revealed) return false;
+  const located = findEncounterOnBoard(state, encounter);
+  if (!located) return false;
+  moveEncounterBetweenLandscapes(state, located.tile.id, toId, located.encounter);
+  addLog(state, `${located.encounter.name} moves to ${dest.name}.`);
   return true;
 }
 
 export function flipLeviathan(state, helpers = {}) {
-  const onBoard = state.board.find((t) => t.encounter?.id === "leviathan" || t.encounter?.refId === "leviathan");
-  if (onBoard?.encounter) {
-    onBoard.encounter.awake = true;
+  const located = state.board
+    .map((tile) => {
+      const enc = tileEncounters(tile).find((e) => e.id === "leviathan" || e.refId === "leviathan");
+      return enc ? { tile, encounter: enc } : null;
+    })
+    .find(Boolean);
+  if (located?.encounter) {
+    located.encounter.awake = true;
     addLog(state, "Leviathan flips — it is Awake.");
-    return onBoard.encounter;
+    return located.encounter;
   }
 
   const pullFrom = (list) => {
@@ -185,17 +197,22 @@ export function flipLeviathan(state, helpers = {}) {
   const dest = landscapeById(state, "endless-ocean")?.revealed ? "endless-ocean" : "bed";
   if (helpers.spawnEncounter) helpers.spawnEncounter(state, dest);
   else setEncounterOnLandscape(state, dest, encounter);
+  const spawned = encountersOnLandscape(state, dest).find((e) => e.id === "leviathan" || e.refId === "leviathan") || encounter;
+  spawned.awake = true;
   const tile = landscapeById(state, dest);
-  if (tile && !tile.encounter) setEncounterOnLandscape(state, dest, encounter);
-  if (tile?.encounter) tile.encounter.awake = true;
   addLog(state, `Leviathan emerges Awake on ${tile?.name || dest}!`);
-  return tile?.encounter || encounter;
+  return spawned;
 }
 
 function moveLeviathanToOcean(state) {
-  const tile = state.board.find((t) => t.encounter?.id === "leviathan" || t.encounter?.refId === "leviathan");
-  if (!tile?.encounter) return;
-  moveEncounter(state, tile.encounter, "endless-ocean");
+  const located = state.board
+    .map((tile) => {
+      const enc = tileEncounters(tile).find((e) => e.id === "leviathan" || e.refId === "leviathan");
+      return enc ? { tile, encounter: enc } : null;
+    })
+    .find(Boolean);
+  if (!located) return;
+  moveEncounter(state, located.encounter, "endless-ocean");
 }
 
 const ACCEPT_EFFECTS = {
@@ -381,7 +398,7 @@ function runSimpleEffect(state, actor, effect, helpers) {
 }
 
 function beginAutomatonMove(state, actor) {
-  const beasts = state.board.filter((t) => t.encounter);
+  const beasts = allEncountersOnBoard(state);
   offerEffectChoice(state, actor, {
     source: "beast",
     cardId: "automaton",
@@ -393,9 +410,9 @@ function beginAutomatonMove(state, actor) {
         label: p.name,
         hint: "Move 1 adjacent Landscape",
       })),
-      ...beasts.map((t) => ({
-        id: `beast:${t.id}`,
-        label: `${t.encounter.name} on ${t.name}`,
+      ...beasts.map(({ tile, encounter }) => ({
+        id: `beast:${tile.id}:${encounterKey(encounter)}`,
+        label: `${encounter.name} on ${tile.name}`,
         hint: "Move 1 adjacent Landscape",
       })),
     ],
@@ -418,7 +435,10 @@ function beginGuardianMove(state, _actor, distance) {
 
 function beginUnicornMove(state, actor) {
   const dests = state.board.filter((t) => t.revealed && !t.wasteland);
-  const from = state.board.find((t) => t.encounter?.id === "unicorn" || t.encounter?.refId === "unicorn");
+  const unicornEntry = allEncountersOnBoard(state).find(
+    ({ encounter }) => encounter.id === "unicorn" || encounter.refId === "unicorn",
+  );
+  const from = unicornEntry?.tile;
   if (!dests.length) return;
   requestChooseTile(state, {
     allowedIds: dests.map((t) => t.id),
@@ -453,7 +473,9 @@ registerEffectResolver("automaton", (state, choiceId) => {
   const player = state.players.find((p) => p.id === pending?.playerId);
   state.pendingEffectChoice = null;
   if (!player || !choiceId) return true;
-  const [kind, id] = choiceId.split(":");
+  const colon = choiceId.indexOf(":");
+  const kind = choiceId.slice(0, colon);
+  const id = choiceId.slice(colon + 1);
   if (kind === "dreamer") {
     const adj = adjacentTiles(state, state.players.find((p) => p.id === id)?.landscapeId).filter((t) => t.revealed);
     if (adj.length) {
@@ -468,15 +490,21 @@ registerEffectResolver("automaton", (state, choiceId) => {
     return true;
   }
   if (kind === "beast") {
-    const adj = adjacentTiles(state, id).filter((t) => t.revealed && !t.encounter);
-    const src = landscapeById(state, id);
-    if (src?.encounter && adj.length) {
+    const sep = id.indexOf(":");
+    const tileId = id.slice(0, sep);
+    const encKey = id.slice(sep + 1);
+    const src = landscapeById(state, tileId);
+    const encounter = tileEncounters(src).find((enc) => encounterKey(enc) === encKey)
+      || encounterOnLandscape(state, tileId);
+    const adj = adjacentTiles(state, tileId).filter((t) => t.revealed && !t.wasteland);
+    if (encounter && adj.length) {
       requestChooseTile(state, {
         allowedIds: adj.map((t) => t.id),
         action: "moveEncounter",
-        fromTileId: id,
+        fromTileId: tileId,
+        encounter,
         title: "Automaton",
-        detail: `Move ${src.encounter.name} 1 space.`,
+        detail: `Move ${encounter.name} 1 space.`,
       });
     }
   }

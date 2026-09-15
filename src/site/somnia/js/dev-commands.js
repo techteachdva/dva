@@ -12,6 +12,7 @@ import {
   revealLandscapeTile,
   drawPsycheForPlayer,
   setEncounterOnLandscape,
+  removeEncounterFromLandscape,
   acquireArchetype,
   handleDreamerDeath,
   getPhase,
@@ -388,12 +389,9 @@ const COMMANDS = {
     desc: "Remove active Encounter from the board.",
     run: (state) => {
       const id = state.activeEncounterLandscapeId;
-      if (id) {
-        const tile = landscapeById(state, id);
-        if (tile) tile.encounter = null;
+      if (id && state.activeEncounter) {
+        removeEncounterFromLandscape(state, id, state.activeEncounter);
       }
-      state.activeEncounter = null;
-      state.activeEncounterLandscapeId = null;
       return ok("Encounter cleared.");
     },
   },

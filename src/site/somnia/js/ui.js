@@ -1,4 +1,4 @@
-import { getPhase, activePlayer, headPlayer } from "./state.js";
+import { getPhase, activePlayer, headPlayer, tileEncounters, encounterKey } from "./state.js";
 import {
   coopMeetPlayTotal,
   meetPsycheActor,
@@ -59,6 +59,7 @@ import {
 } from "./fx.js";
 import { BOSS_DREAM_DECK_SLOTS } from "./data.js";
 import { consumeBoardClickSuppression, getBoardZoom } from "./board-zoom.js";
+import { getMomentHistory, flashMoment } from "./moment-overlay.js";
 import { isBeastTokenHidden, isDreamerTokenHidden } from "./board-fx.js";
 import { powerTokensInPool, MAX_POWER_TOKEN_POOL } from "./power-tokens.js";
 import {
@@ -1073,7 +1074,7 @@ export function renderBoard(
     el.dataset.tileId = tile.id;
     const isBedFinal = tile.center && tile.finalRecurrenceSide;
     const showFace = tile.revealed && !tile.wasteland;
-    const encounter = tile.encounter;
+    const encounters = tileEncounters(tile);
     const isSelected = state.selectedLandscapeId === tile.id;
     el.className = [
       "hex-tile",
@@ -1083,8 +1084,8 @@ export function renderBoard(
       showFace ? "face-up" : "",
       isBedFinal ? "bed-final" : "",
       isSelected ? "selected" : "",
-      isSelected && encounter ? "selected-encounter" : "",
-      encounter ? "has-encounter" : "",
+      isSelected && encounters.length ? "selected-encounter" : "",
+      encounters.length ? "has-encounter" : "",
       questHighlightSet.has(tile.id) ? "quest-highlight" : "",
       legalSet.has(tile.id) ? "movable" : "",
       revealSet.has(tile.id) ? "pick-reveal" : "",
@@ -1123,7 +1124,7 @@ export function renderBoard(
 
     const occupants = state.players.filter((p) => p.landscapeId === tile.id && p.alive);
     const finalArch = tile.finalArchetype;
-    const encounterMark = encounter ? "⚔" : "";
+    const encounterMark = encounters.length ? "⚔".repeat(Math.min(encounters.length, 3)) : "";
     const finalMark = finalArch && !finalArch.defeated ? "★" : "";
     const displayName = isBedFinal
       ? "The Bed — Final Recurrence"
@@ -1140,13 +1141,15 @@ export function renderBoard(
         `<img class="hex-occupant-token hex-occupant-dreamer${arriving}" data-dreamer-id="${p.id}" src="${p.dreamer.image}" alt="${p.dreamer.name}" title="${p.name} — click for actions" decoding="async" draggable="false" onerror="this.remove()">`
       );
     });
-    if (encounter?.image) {
-      const encKey = encounter.instanceId || encounter.id || "";
+    encounters.forEach((encounter, encIndex) => {
+      if (!encounter?.image) return;
+      const encKey = encounterKey(encounter);
       const arriving = encKey && isBeastTokenHidden(encKey) ? " is-arriving" : "";
+      const offset = encIndex > 0 ? ` style="--beast-stack: ${encIndex}"` : "";
       occupantTokens.push(
-        `<img class="hex-occupant-token hex-occupant-beast${arriving}" data-encounter-key="${encKey}" src="${encounter.image}" alt="${encounter.name}" title="${encounter.name} — Accept, Reject, or View" decoding="async" draggable="false" onerror="this.remove()">`
+        `<img class="hex-occupant-token hex-occupant-beast${arriving}" data-encounter-key="${encKey}"${offset} src="${encounter.image}" alt="${encounter.name}" title="${encounter.name} — Accept, Reject, or View" decoding="async" draggable="false" onerror="this.remove()">`
       );
-    }
+    });
     const occupantsHtml = occupantTokens.length
       ? `<div class="hex-occupants" aria-hidden="true">${occupantTokens.join("")}</div>`
       : "";
@@ -1157,7 +1160,7 @@ export function renderBoard(
       ${occupantsHtml}
       <div class="name">${displayName}</div>
       <div class="suit">${showFace ? (tile.suit || "neutral") : "hidden"}</div>
-      <div class="tokens">${occupants.map((p) => p.dreamer.name.split(" ").pop()).join(" · ")} ${encounterMark}${encounter ? ` ${encounter.name.split(" ")[0]}` : ""}${finalMark}${finalArch && !finalArch.defeated ? ` ${finalArch.name.split(" ")[0]}` : ""}</div>
+      <div class="tokens">${occupants.map((p) => p.dreamer.name.split(" ").pop()).join(" · ")} ${encounterMark}${encounters.length ? ` ${encounters.map((e) => e.name.split(" ")[0]).join(" · ")}` : ""}${finalMark}${finalArch && !finalArch.defeated ? ` ${finalArch.name.split(" ")[0]}` : ""}</div>
     `;
 
     el.addEventListener("click", (event) => {
@@ -1169,10 +1172,13 @@ export function renderBoard(
         return;
       }
       const beastEl = event.target.closest(".hex-occupant-beast");
-      if (beastEl?.dataset.encounterKey && encounter) {
-        event.stopPropagation();
-        boardOptions.onBeastTokenClick?.(encounter, tile.id, beastEl);
-        return;
+      if (beastEl?.dataset.encounterKey) {
+        const enc = encounters.find((e) => encounterKey(e) === beastEl.dataset.encounterKey);
+        if (enc) {
+          event.stopPropagation();
+          boardOptions.onBeastTokenClick?.(enc, tile.id, beastEl);
+          return;
+        }
       }
       onSelectLandscape(tile.id);
     });
@@ -1905,6 +1911,8 @@ export function renderHud(state, hint = "") {
     window.setTimeout(() => feedBtn.classList.remove("dream-feed-nudge"), 3200);
   }
 
+  flashQuestReadyMoments(state);
+
   const banner = document.getElementById("phase-banner");
   if (banner) banner.textContent = "";
 
@@ -2178,6 +2186,60 @@ export function showRulesModal(state = null) {
 
 export function showOverviewModal(state = null) {
   showRulesReferenceModal(RULES_TAB_INTRO, state);
+}
+
+function formatMomentHistoryTime(at) {
+  const date = new Date(at);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit", second: "2-digit" });
+}
+
+function buildMomentHistoryHtml() {
+  const entries = getMomentHistory();
+  if (!entries.length) {
+    return "<p class=\"dream-feed-empty\">No dream moments yet — they'll appear here as play unfolds.</p>";
+  }
+  return entries.map((entry) => `
+    <article class="moment-history-entry">
+      <time datetime="${new Date(entry.at).toISOString()}">${formatMomentHistoryTime(entry.at)}</time>
+      <p>${entry.message}</p>
+    </article>
+  `).join("");
+}
+
+export function showMomentHistoryModal() {
+  const modal = document.getElementById("utility-modal");
+  const content = modal?.querySelector(".utility-content");
+  const body = document.getElementById("utility-modal-body");
+  if (!modal || !body) return;
+  content?.classList.remove("fullscreen-browser", "rules-reference-modal");
+  body.innerHTML = `
+    <div class="moment-history-page">
+      <h3 class="dream-feed-label">Dream moments</h3>
+      <p class="moment-history-hint">Brief flashes from the dreamscape — newest first.</p>
+      <div class="moment-history-scroll">${buildMomentHistoryHtml()}</div>
+    </div>
+  `;
+  modal.classList.remove("hidden");
+  document.body.classList.add("utility-modal-open");
+}
+
+const questReadyFlashed = new Set();
+
+export function resetQuestReadyFlashes() {
+  questReadyFlashed.clear();
+}
+
+function flashQuestReadyMoments(state) {
+  const arch = state.activeArchetype;
+  if (!arch) return;
+  getQuestStatus(state, arch).forEach((q) => {
+    if (!q.ready) return;
+    const key = `${arch.id}:${q.index}`;
+    if (questReadyFlashed.has(key)) return;
+    questReadyFlashed.add(key);
+    flashMoment(`Quest ready — spend 1 Power Token: ${q.text}`);
+  });
 }
 
 export function renderLog(state) {
@@ -3212,8 +3274,7 @@ export function showLandscapeDetail(state, tileId) {
   }));
 
   const beastEntries = [];
-  if (tile.encounter) {
-    const enc = tile.encounter;
+  tileEncounters(tile).forEach((enc) => {
     const rejectCost = encounterRejectCost(enc);
     const rejectSuit = enc.rejectSuit ? suitIconHtml(enc.rejectSuit, { size: 12 }) : "";
     const acceptSuit = enc.suit ? suitIconHtml(enc.suit, { size: 12 }) : "";
@@ -3227,7 +3288,7 @@ export function showLandscapeDetail(state, tileId) {
         ${enc.flavor ? `<div class="landscape-detail-beast-flavor">${enc.flavor}</div>` : ""}
       `,
     });
-  }
+  });
   if (tile.finalArchetype && !tile.finalArchetype.defeated) {
     const arch = tile.finalArchetype;
     beastEntries.push({

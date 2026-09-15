@@ -2,6 +2,7 @@ import {
   addLog,
   drawPsycheForPlayer,
   landscapeById,
+  tileHasEncounters,
 } from "./state.js";
 import { handRoomForPsycheDraw } from "./objects.js";
 import { recordQuestEvent } from "./quests.js";
@@ -32,7 +33,7 @@ function explorerDestinations(state, mover) {
   return state.board.filter((t) => {
     if (!t.revealed || t.wasteland) return false;
     const hasDreamer = state.players.some((p) => p.alive && p.id !== mover.id && p.landscapeId === t.id);
-    return hasDreamer || Boolean(t.encounter);
+    return hasDreamer || tileHasEncounters(t);
   }).map((t) => t.id);
 }
 
@@ -364,7 +365,7 @@ export function handleArchetypePowerTilePick(state, tileId) {
   if (!mover || !tile?.revealed) return false;
 
   const hasTarget = state.players.some((p) => p.alive && p.id !== mover.id && p.landscapeId === tileId)
-    || Boolean(tile.encounter);
+    || tileHasEncounters(tile);
   if (!hasTarget) {
     addLog(state, "Choose a Landscape occupied by another Dreamer or a Dreambeast.");
     return false;

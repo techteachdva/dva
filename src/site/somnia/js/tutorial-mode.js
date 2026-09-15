@@ -78,7 +78,8 @@ function reseedTutorialInstanceIds(state) {
   });
 
   state.board?.forEach((tile) => {
-    if (tile.encounter) stamp(tile.encounter, `enc-${tile.id}-${tile.encounter.id}`);
+    const encounters = tile.encounters || (tile.encounter ? [tile.encounter] : []);
+    encounters.forEach((enc, i) => stamp(enc, `enc-${tile.id}-${enc.id}-${i}`));
   });
 }
 
@@ -533,7 +534,7 @@ export function isTutorialActionAllowed(state, kind, detail = {}) {
     kind = classifyPhaseAction(detail.action);
   }
 
-  if (kind === "headerOverview" || kind === "headerDreamFeed" || kind === "headerPause") {
+  if (kind === "headerOverview" || kind === "headerDreamFeed" || kind === "headerMomentHistory" || kind === "headerPause") {
     return TUTORIAL_INFO_STEPS.has(step.id);
   }
 

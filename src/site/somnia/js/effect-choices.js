@@ -1,6 +1,6 @@
 /** Shared player-choice popup for Event and Dreambeast effects. */
 
-import { addLog } from "./state.js";
+import { logMoment } from "./narrator.js";
 
 const resolvers = {};
 
@@ -25,7 +25,7 @@ export function offerEffectChoice(state, player, spec) {
     order: spec.order || [],
     payload: spec.payload || {},
   };
-  addLog(state, spec.log || `${spec.title}: choose.`);
+  logMoment(state, spec.log || `${spec.title} — choose an option.`);
 }
 
 export function resolveEffectChoice(state, choiceId, helpers = null) {

@@ -6,6 +6,11 @@ import {
   landscapeById,
   rememberRevealedTops,
   consumeRevealedTop,
+  moveEncounterBetweenLandscapes,
+  encounterOnLandscape,
+  encounterKey,
+  allEncountersOnBoard,
+  tileEncounters,
 } from "./state.js";
 import { SUIT_LABELS } from "./rules.js";
 import { recordQuestEvent } from "./quests.js";
@@ -63,32 +68,30 @@ export function stepAwayFromBed(state, player) {
   return true;
 }
 
-export function moveEncounterOneStep(state, tile) {
-  if (!tile?.encounter) return false;
-  const adj = adjacentTiles(state, tile.id).filter((t) => t.revealed && !t.encounter);
+export function moveEncounterOneStep(state, tile, encounter = null) {
+  const enc = encounter || encounterOnLandscape(state, tile?.id);
+  if (!tile || !enc) return false;
+  const adj = adjacentTiles(state, tile.id).filter((t) => t.revealed && !t.wasteland);
   if (!adj.length) return false;
   const dest = adj[Math.floor(Math.random() * adj.length)];
-  const enc = tile.encounter;
-  tile.encounter = null;
-  dest.encounter = enc;
-  if (state.activeEncounterLandscapeId === tile.id) {
-    state.activeEncounterLandscapeId = dest.id;
-    state.activeEncounter = enc;
-  }
+  const encKey = encounterKey(enc);
+  moveEncounterBetweenLandscapes(state, tile.id, dest.id, enc);
   addLog(state, `${enc.name} moves to ${dest.name}.`);
-  return true;
+  return dest.id;
 }
 
-function moveEncounterSteps(state, startTileId, steps) {
+function moveEncounterSteps(state, startTileId, steps, encounter = null) {
   let tileId = startTileId;
+  const enc = encounter || encounterOnLandscape(state, startTileId);
+  if (!enc) return;
+  const encKey = encounterKey(enc);
   for (let i = 0; i < steps; i += 1) {
     const tile = landscapeById(state, tileId);
-    if (!tile?.encounter) break;
-    const encId = tile.encounter.instanceId;
-    if (!moveEncounterOneStep(state, tile)) break;
-    const next = state.board.find((t) => t.encounter?.instanceId === encId);
-    if (!next) break;
-    tileId = next.id;
+    const current = tileEncounters(tile).find((e) => encounterKey(e) === encKey);
+    if (!current) break;
+    const nextId = moveEncounterOneStep(state, tile, current);
+    if (!nextId) break;
+    tileId = nextId;
   }
 }
 
@@ -263,13 +266,13 @@ function weaverPowerStart(state) {
 
 function hunterPowerExecute(state) {
   const steps = alivePlayers(state).length;
-  const tiles = state.board.filter((t) => t.encounter);
-  if (!tiles.length) {
+  const beasts = allEncountersOnBoard(state);
+  if (!beasts.length) {
     addLog(state, "No active Dreambeasts to move.");
     clearDreamerPower(state);
     return { done: true };
   }
-  tiles.forEach((tile) => moveEncounterSteps(state, tile.id, steps));
+  beasts.forEach(({ tile, encounter }) => moveEncounterSteps(state, tile.id, steps, encounter));
   addLog(state, `Hunter Power: each Dreambeast moves ${steps} space(s).`);
   clearDreamerPower(state);
   return { done: true };

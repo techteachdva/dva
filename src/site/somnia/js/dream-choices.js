@@ -6,6 +6,7 @@ import {
   setEncounterOnLandscape,
 } from "./state.js";
 import { recordQuestEvent } from "./quests.js";
+import { logMoment } from "./narrator.js";
 import { repressCard } from "./subconscious.js";
 import { discardToMindstream, encounterFromDreambeastCard } from "./mindstream-supply.js";
 import { adjacentTiles, hexDistance, edgeLandscapes } from "./hex.js";
@@ -84,7 +85,7 @@ function offer(state, player, spec) {
     order: spec.order || [],
     payload: spec.payload || {},
   };
-  addLog(state, spec.log || `${spec.title}: choose.`);
+  logMoment(state, spec.log || `${spec.title} — choose an option.`);
 }
 
 function queuePlayers(state, dreamId, players, extra = {}) {
@@ -513,29 +514,29 @@ function awakenLeviathan(state, tileId) {
 export function beginPowerlessnessChoices(state, spawnHelpers) {
   rememberDreamHelpers(spawnHelpers);
   const edges = edgeLandscapes(state).filter(
-    (t) => t.revealed && !t.encounter && !alive(state).some((p) => p.landscapeId === t.id),
+    (t) => t.revealed && !t.wasteland,
   );
   const n = alive(state).length;
   if (!edges.length || !n) {
-    addLog(state, "Powerlessness finds no unoccupied edge Landscapes.");
+    addLog(state, "Powerlessness finds no revealed edge Landscapes.");
     return;
   }
   if (edges.length <= n) {
     edges.forEach((tile) => spawnHelpers.spawnEncounter(state, tile.id));
-    addLog(state, "Powerlessness: Encounters spawn on unoccupied edge Landscapes.");
+    addLog(state, "Powerlessness: Encounters spawn on edge Landscapes.");
     return;
   }
   state.pendingDreamQueue = [
     ...(state.pendingDreamQueue || []),
     ...Array.from({ length: n }, () => ({ dreamId: "powerlessness", playerId: alive(state)[0].id })),
   ];
-  addLog(state, "Powerlessness: choose an unoccupied edge for each Encounter.");
+  addLog(state, "Powerlessness: choose an edge Landscape for each Encounter.");
   advanceDreamQueue(state);
 }
 
 function presentPowerlessness(state, player) {
   const edges = edgeLandscapes(state).filter(
-    (t) => t.revealed && !t.encounter && !alive(state).some((p) => p.landscapeId === t.id),
+    (t) => t.revealed && !t.wasteland,
   );
   if (!edges.length) {
     advanceDreamQueue(state);

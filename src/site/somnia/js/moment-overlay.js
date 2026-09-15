@@ -1,32 +1,70 @@
-/** Brief HUD text that flashes on the dreamscape, then fades — one sentence explaining what just happened. */
+/** Brief HUD toasts stacked at the top of the table viewport — up to 6 at once. */
 
-const DEFAULT_DURATION_MS = 2600;
-const QUEUE_GAP_MS = 140;
+const DEFAULT_DURATION_MS = 3000;
+const MAX_VISIBLE = 6;
+const HISTORY_MAX = 80;
+const REDUCED_MOTION_MS = 2200;
 
-let momentQueue = [];
-let momentPlaying = false;
-let playTimer = null;
+let activeToasts = [];
+let momentHistory = [];
+let toastIdCounter = 0;
 
 function reducedMotion() {
   return typeof window !== "undefined"
-    && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    && window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches;
 }
 
-function ensureElement() {
-  let el = document.getElementById("moment-overlay");
-  if (el) return el;
+function ensureStack() {
+  const legacy = document.getElementById("moment-overlay");
+  if (legacy?.parentNode) legacy.remove();
+
+  let stack = document.getElementById("moment-overlay-stack");
+  if (stack) return stack;
+
   const surface = document.getElementById("table-surface");
-  el = document.createElement("div");
-  el.id = "moment-overlay";
-  el.className = "moment-overlay hidden";
-  el.setAttribute("role", "status");
-  el.setAttribute("aria-live", "assertive");
-  (surface || document.body).appendChild(el);
-  return el;
+  stack = document.createElement("div");
+  stack.id = "moment-overlay-stack";
+  stack.className = "moment-overlay-stack";
+  stack.setAttribute("role", "status");
+  stack.setAttribute("aria-live", "polite");
+  (surface || document.body).appendChild(stack);
+  return stack;
 }
 
 export function initMomentOverlay() {
-  ensureElement();
+  ensureStack();
+}
+
+/** Clear visible toasts and history (new game). */
+export function resetMomentOverlay() {
+  activeToasts.forEach((toast) => {
+    window.clearTimeout(toast.timerId);
+    window.clearTimeout(toast.fadeTimerId);
+    toast.el?.remove?.();
+  });
+  activeToasts = [];
+  momentHistory = [];
+  updateHistoryBadge();
+}
+
+export function getMomentHistory() {
+  return momentHistory.slice();
+}
+
+function recordHistory(message) {
+  momentHistory.unshift({ message, at: Date.now() });
+  if (momentHistory.length > HISTORY_MAX) momentHistory.length = HISTORY_MAX;
+  updateHistoryBadge();
+}
+
+function updateHistoryBadge() {
+  const btn = document.getElementById("btn-moment-history");
+  if (!btn) return;
+  const count = momentHistory.length;
+  btn.classList.toggle("moment-history-has-items", count > 0);
+  btn.title = count
+    ? `Moment narration history (${count} entries)`
+    : "Moment narration history";
 }
 
 /**
@@ -62,18 +100,57 @@ function isInstructionalDetail(detail) {
   return /Head Dreamer|One Dreamer spends|click to focus|Cooperate/i.test(detail);
 }
 
-/** Queue a one-line moment overlay. Newest message replaces the queue when not playing. */
+function removeToast(toast, immediate = false) {
+  if (!toast) return;
+  window.clearTimeout(toast.timerId);
+  window.clearTimeout(toast.fadeTimerId);
+  activeToasts = activeToasts.filter((t) => t.id !== toast.id);
+  const el = toast.el;
+  if (!el) return;
+  el.classList.remove("is-playing");
+  if (immediate) {
+    el.remove?.();
+    return;
+  }
+  el.classList.add("is-fading");
+  toast.fadeTimerId = window.setTimeout(() => {
+    el.remove?.();
+  }, 300);
+}
+
+/** Show a one-line moment toast. Multiple moments stack (max 6 visible). */
 export function showMomentOverlay(message, options = {}) {
   const text = String(message || "").trim();
   if (!text || typeof document === "undefined") return;
 
-  const item = { message: text, durationMs: options.durationMs || DEFAULT_DURATION_MS };
-  if (momentPlaying) {
-    momentQueue = [item];
-    return;
+  recordHistory(text);
+
+  const stack = ensureStack();
+  const duration = reducedMotion() ? REDUCED_MOTION_MS : (options.durationMs || DEFAULT_DURATION_MS);
+  const id = ++toastIdCounter;
+
+  const el = document.createElement("div");
+  el.className = "moment-toast";
+  el.textContent = text;
+  if (typeof el.style?.setProperty === "function") {
+    el.style.setProperty("--moment-duration", `${duration}ms`);
   }
-  momentQueue.push(item);
-  playNextMoment();
+
+  stack.insertBefore(el, stack.firstChild);
+
+  const toast = { id, message: text, el, timerId: null, fadeTimerId: null };
+  activeToasts.unshift(toast);
+
+  while (activeToasts.length > MAX_VISIBLE) {
+    removeToast(activeToasts[activeToasts.length - 1], true);
+  }
+
+  requestAnimationFrame(() => {
+    void el.offsetWidth;
+    el.classList.add("is-playing");
+  });
+
+  toast.timerId = window.setTimeout(() => removeToast(toast, false), duration);
 }
 
 /** Build and show a moment from narrator-style data. */
@@ -110,35 +187,4 @@ export function flashPhaseEntryMoments(state, phase) {
     }
   }
   lines.forEach((line) => showMomentOverlay(line));
-}
-
-function playNextMoment() {
-  if (playTimer) {
-    window.clearTimeout(playTimer);
-    playTimer = null;
-  }
-  const next = momentQueue.shift();
-  if (!next) {
-    momentPlaying = false;
-    return;
-  }
-
-  momentPlaying = true;
-  const el = ensureElement();
-  const duration = reducedMotion() ? 1200 : next.durationMs;
-
-  el.textContent = next.message;
-  el.style.setProperty("--moment-duration", `${duration}ms`);
-  el.classList.remove("hidden", "is-playing");
-  void el.offsetWidth;
-  el.classList.add("is-playing");
-
-  playTimer = window.setTimeout(() => {
-    el.classList.remove("is-playing");
-    el.classList.add("hidden");
-    playTimer = window.setTimeout(() => {
-      playTimer = null;
-      playNextMoment();
-    }, QUEUE_GAP_MS);
-  }, duration);
 }

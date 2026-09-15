@@ -6,6 +6,14 @@ import {
   landscapeById,
   setEncounterOnLandscape,
   revealLandscapeTile,
+  removeEncounterFromLandscape,
+  encounterOnLandscape,
+  encounterKey,
+  findEncounterOnBoard,
+  allEncountersOnBoard,
+  clearEncountersOnLandscape,
+  tileEncounters,
+  revealedLandscapeTiles,
 } from "./state.js";
 import { recordQuestEvent } from "./quests.js";
 import { grantPowerTokens } from "./power-tokens.js";
@@ -288,7 +296,7 @@ export function beginEveningPlans(state, player) {
 
 function placeLucidityBeastsNearDay(state) {
   const day = landscapeById(state, "day-in-the-life");
-  const adj = (day ? adjacentTiles(state, "day-in-the-life") : []).filter((t) => t.revealed && !t.encounter);
+  const adj = (day ? adjacentTiles(state, "day-in-the-life") : []).filter((t) => t.revealed && !t.wasteland);
   for (let i = 0; i < 2; i += 1) {
     const pulled = pullDreambeastFromMindstream(state, { suit: "lucidity" });
     if (!pulled) break;
@@ -336,7 +344,7 @@ registerEffectResolver("somethings-over-there", (state, choiceId) => {
     state.pendingEffectChoice = null;
     if (card) {
       returnUnusedBeast(state, pending, card);
-      const dests = state.board.filter((t) => t.revealed && !t.encounter);
+      const dests = revealedLandscapeTiles(state);
       if (dests.length > 1) {
         requestChooseTile(state, {
           allowedIds: dests.map((t) => t.id),
@@ -355,7 +363,7 @@ registerEffectResolver("somethings-over-there", (state, choiceId) => {
     if (card) discardPsyche(state, player, [card]);
     const pulled = pullDreambeastFromMindstream(state);
     if (pulled) {
-      const dests = state.board.filter((t) => t.revealed && !t.encounter);
+      const dests = revealedLandscapeTiles(state);
       requestChooseTile(state, {
         allowedIds: dests.map((t) => t.id),
         action: "spawnEncounter",
@@ -519,7 +527,7 @@ registerEffectResolver("keep-it-together", (state, choiceId) => {
 
 export function beginEveryonesLaughing(state, player) {
   const luc = player.dreamer?.lucidity ?? 0;
-  const encCount = Math.max(1, Math.floor(state.board.filter((t) => t.encounter).length / 2));
+  const encCount = Math.max(1, Math.floor(allEncountersOnBoard(state).length / 2));
   if (luc >= 3) {
     offerEffectChoice(state, player, {
       cardId: "everyones-laughing",
@@ -964,7 +972,7 @@ registerEffectResolver("caramel-forest", (state, choiceId) => {
   const card = (pending.cards || []).find((c) => (c.instanceId || c.id) === choiceId);
   state.pendingEffectChoice = null;
   if (card) returnUnusedBeast(state, pending, card);
-  const adj = adjacentTiles(state, player?.landscapeId).filter((t) => t.revealed && !t.encounter);
+  const adj = adjacentTiles(state, player?.landscapeId).filter((t) => t.revealed && !t.wasteland);
   if (card && adj.length) {
     requestChooseTile(state, {
       allowedIds: adj.map((t) => t.id),
@@ -1103,10 +1111,12 @@ registerEffectResolver("a-sacrifice", (state, choiceId) => {
     returnN(state, alive(state).length + 1, player);
   }
   const ids = pending.payload?.landscapes || [];
-  state.board.filter((t) => t.encounter && ids.includes(t.id)).forEach((t) => {
-    repressCard(state, t.encounter);
-    t.encounter = null;
-  });
+  allEncountersOnBoard(state)
+    .filter(({ tile }) => ids.includes(tile.id))
+    .forEach(({ tile, encounter }) => {
+      repressCard(state, encounter);
+      removeEncounterFromLandscape(state, tile.id, encounter);
+    });
   addLog(state, "A Sacrifice: Encounters on Affected Landscapes are Repressed.");
   return true;
 });
@@ -1137,7 +1147,7 @@ registerEffectResolver("wrong-door", (state, choiceId) => {
   if (pending.order.length < 2) return true;
   const picked = pending.order.slice(0, 2);
   state.pendingEffectChoice = null;
-  const adj = adjacentTiles(state, player?.landscapeId).filter((t) => t.revealed && !t.encounter);
+  const adj = adjacentTiles(state, player?.landscapeId).filter((t) => t.revealed && !t.wasteland);
   picked.forEach((ally, i) => {
     removeAcceptedAlly(state, ally.instanceId);
     const dest = adj[i] || adj[0];
@@ -1167,7 +1177,7 @@ export function beginBronze(state, player, event) {
 function spawnBronzeOrSilver(state, player, event, title) {
   const pulled = pullDreambeastFromMindstream(state);
   if (!pulled) return;
-  const tiles = state.board.filter((t) => t.revealed && !t.encounter && event?.landscapes?.includes(t.id));
+  const tiles = revealedLandscapeTiles(state, { landscapeIds: event?.landscapes || [] });
   if (tiles.length) {
     requestChooseTile(state, {
       allowedIds: tiles.map((t) => t.id),
@@ -1201,11 +1211,11 @@ registerEffectResolver("bronze", (state, choiceId) => {
 export function beginSilver(state, player, event) {
   const pulled = pullDreambeastFromMindstream(state);
   if (!pulled) return;
-  const tiles = state.board.filter((t) => t.revealed && !t.encounter && event?.landscapes?.includes(t.id));
-  const dests = tiles.length ? tiles : state.board.filter((t) => t.revealed && !t.encounter);
+  const tiles = revealedLandscapeTiles(state, { landscapeIds: event?.landscapes || [] });
+  const dests = tiles.length ? tiles : revealedLandscapeTiles(state);
   if (!dests.length) {
     spawnPulled(state, player.landscapeId, pulled.card);
-    acceptEncounterFor(state, player, landscapeById(state, player.landscapeId)?.encounter);
+    acceptEncounterFor(state, player, encounterOnLandscape(state, player.landscapeId));
     return;
   }
   requestChooseTile(state, {
@@ -1222,14 +1232,14 @@ function acceptEncounterFor(state, player, enc) {
   if (!enc) return;
   applyAcceptEffect(state, enc, player);
   player.hand.push(dreambeastToHandCard(enc));
-  const tile = state.board.find((t) => t.encounter && (t.encounter.instanceId === enc.instanceId || t.encounter.id === enc.id));
-  if (tile) tile.encounter = null;
+  const located = findEncounterOnBoard(state, enc);
+  if (located) removeEncounterFromLandscape(state, located.tile.id, enc);
   addLog(state, `Silver: ${player.name} Accepts ${enc.name}.`);
 }
 
 export function finishSilverAccept(state, tileId, player) {
-  const tile = landscapeById(state, tileId);
-  if (tile?.encounter) acceptEncounterFor(state, player, tile.encounter);
+  const enc = state.activeEncounter || encounterOnLandscape(state, tileId);
+  if (enc) acceptEncounterFor(state, player, enc);
 }
 
 export function beginMillionReflections(state, player) {
@@ -1298,8 +1308,8 @@ export function beginAMirage(state, player, helpers) {
     setEncounterOnLandscape(state, player.landscapeId, enc);
   } else {
     helpers.spawnEncounter(state, player.landscapeId);
-    const tile = landscapeById(state, player.landscapeId);
-    if (tile?.encounter) applyFailEffect(state, player, tile.encounter);
+    const enc = encounterOnLandscape(state, player.landscapeId);
+    if (enc) applyFailEffect(state, player, enc);
   }
 }
 
@@ -1321,10 +1331,15 @@ export function beginGiantPile(state, player, helpers) {
 export function beginPerilousPinnacle(state, player) {
   const objs = (player.objects || []).slice(0, 2);
   discardObjects(state, player, objs);
-  const encounters = state.board.filter((t) => t.encounter);
+  const encounters = allEncountersOnBoard(state);
   grantFreeMeet(state, Math.max(encounters.length, 2));
   if (encounters.length <= 1) {
-    if (encounters[0]) state.selectedLandscapeId = encounters[0].id;
+    const first = encounters[0];
+    if (first) {
+      state.selectedLandscapeId = first.tile.id;
+      state.activeEncounter = first.encounter;
+      state.activeEncounterLandscapeId = first.tile.id;
+    }
     addLog(state, "Perilous Pinnacle: Meet the remaining Encounter.");
     return;
   }
@@ -1332,19 +1347,23 @@ export function beginPerilousPinnacle(state, player) {
     cardId: "perilous-pinnacle",
     title: "Perilous Pinnacle",
     message: "Choose which Encounter to Meet first.",
-    choices: encounters.map((t) => ({
-      id: t.id,
-      label: `${t.encounter.name} on ${t.name}`,
+    choices: encounters.map(({ tile, encounter }) => ({
+      id: `${tile.id}:${encounterKey(encounter)}`,
+      label: `${encounter.name} on ${tile.name}`,
     })),
   });
 }
 
 registerEffectResolver("perilous-pinnacle", (state, choiceId) => {
   state.pendingEffectChoice = null;
-  const tile = landscapeById(state, choiceId);
-  if (tile) {
+  const [tileId, encKey] = String(choiceId).split(":");
+  const tile = landscapeById(tileId);
+  const encounter = tileEncounters(tile).find((enc) => encounterKey(enc) === encKey);
+  if (tile && encounter) {
     state.selectedLandscapeId = tile.id;
-    addLog(state, `Perilous Pinnacle: Meet ${tile.encounter?.name || tile.name} first.`);
+    state.activeEncounter = encounter;
+    state.activeEncounterLandscapeId = tile.id;
+    addLog(state, `Perilous Pinnacle: Meet ${encounter.name} first.`);
   }
   return true;
 });
@@ -1367,13 +1386,12 @@ export function beginMouthRises(state, player, helpers) {
   const lev = flipLeviathan(state, helpers);
   if (lev?.awake) {
     const dest = landscapeById(state, "endless-ocean");
-    const from = state.board.find((t) => t.encounter?.id === "leviathan" || t.encounter?.refId === "leviathan");
+    const leviathanEntry = allEncountersOnBoard(state).find(
+      ({ encounter }) => encounter.id === "leviathan" || encounter.refId === "leviathan",
+    );
+    const from = leviathanEntry?.tile;
     if (dest?.revealed && from && dest.id !== from.id) {
-      if (dest.encounter) {
-        repressCard(state, dest.encounter);
-        dest.encounter = null;
-      }
-      from.encounter = null;
+      if (leviathanEntry) removeEncounterFromLandscape(state, from.id, leviathanEntry.encounter);
       setEncounterOnLandscape(state, dest.id, lev);
       addLog(state, "Leviathan moves to Endless Ocean.");
     }
@@ -1720,33 +1738,35 @@ registerEffectResolver("i-remember", (state, choiceId) => {
 
 export function beginNoOne(state, player) {
   const wp = player.dreamer?.willpower ?? 0;
-  const encounters = state.board.filter((t) => t.encounter);
+  const encounters = allEncountersOnBoard(state);
   if (wp >= 3 && encounters.length) {
     offerEffectChoice(state, player, {
       cardId: "no-one",
       title: "No One",
       message: "Willpower 3+: discard 1 Encounter instead of all.",
-      choices: encounters.map((t) => ({
-        id: t.id,
-        label: `${t.encounter.name} on ${t.name}`,
+      choices: encounters.map(({ tile, encounter }) => ({
+        id: `${tile.id}:${encounterKey(encounter)}`,
+        label: `${encounter.name} on ${tile.name}`,
       })),
     });
     return;
   }
-  encounters.forEach((t) => {
-    repressCard(state, t.encounter);
-    t.encounter = null;
+  encounters.forEach(({ tile, encounter }) => {
+    repressCard(state, encounter);
+    removeEncounterFromLandscape(state, tile.id, encounter);
   });
   addLog(state, "No One: all active Encounters discarded.");
 }
 
 registerEffectResolver("no-one", (state, choiceId) => {
   state.pendingEffectChoice = null;
-  const tile = landscapeById(state, choiceId);
-  if (tile?.encounter) {
-    addLog(state, `No One: discarded ${tile.encounter.name}.`);
-    repressCard(state, tile.encounter);
-    tile.encounter = null;
+  const [tileId, encKey] = String(choiceId).split(":");
+  const tile = landscapeById(tileId);
+  const encounter = tileEncounters(tile).find((enc) => encounterKey(enc) === encKey);
+  if (encounter) {
+    addLog(state, `No One: discarded ${encounter.name}.`);
+    repressCard(state, encounter);
+    removeEncounterFromLandscape(state, tileId, encounter);
   }
   return true;
 });

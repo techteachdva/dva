@@ -1,4 +1,4 @@
-import { getPhase, addLog, checkDefeat } from "./state.js";
+import { getPhase, addLog, checkDefeat, countEncountersOnBoard, tileEncounters, encounterKey } from "./state.js";
 import { logMoment } from "./narrator.js";
 import { SUIT_LABELS, phaseSuitForOpening } from "./rules.js";
 import { endPhase } from "./game.js";
@@ -21,9 +21,10 @@ const PHASE_SKIP_COPY = {
 };
 
 export function countBoardDreambeasts(state) {
-  return state.board.filter(
-    (t) => t.encounter && (t.encounter.type === "dreambeast" || t.encounter.boss),
-  ).length;
+  return countEncountersOnBoard(
+    state,
+    (enc) => enc.type === "dreambeast" || enc.boss || enc.type === "boss-dream",
+  );
 }
 
 /** Read-only preview of Timeline hunger at end of Meet (no state mutation). */
@@ -80,7 +81,7 @@ function forfeitRemainingExploreMoves(state) {
   const left = state.exploreMovesLeft || 0;
   if (left <= 0) return;
   state.exploreMovesLeft = 0;
-  addLog(
+  logMoment(
     state,
     `Explore ends early — ${left} unused team move${left === 1 ? "" : "s"} forfeited.`,
   );
@@ -92,7 +93,7 @@ function forfeitRemainingMeetActions(state) {
   const left = Math.max(0, budget - used);
   if (left <= 0) return;
   state.meetActionsUsed = budget;
-  addLog(
+  logMoment(
     state,
     `Meet ends early — ${left} unused team action${left === 1 ? "" : "s"} forfeited.`,
   );
@@ -154,11 +155,14 @@ function showGenericPhaseSkipWarning(state, onConfirm, onCancel) {
 }
 
 function showMeetDreambeastWarning(state, beastCount, onComplete, onCancel) {
-  const names = state.board
-    .filter((t) => t.encounter && (t.encounter.type === "dreambeast" || t.encounter.boss))
-    .map((t) => t.encounter.name)
-    .slice(0, 4);
-  const roster = names.length ? ` (${names.join(", ")}${beastCount > names.length ? ", …" : ""})` : "";
+  const names = [];
+  state.board.forEach((tile) => {
+    tileEncounters(tile).forEach((enc) => {
+      if (enc.type === "dreambeast" || enc.boss || enc.type === "boss-dream") names.push(enc.name);
+    });
+  });
+  const rosterNames = names.slice(0, 4);
+  const roster = rosterNames.length ? ` (${rosterNames.join(", ")}${beastCount > rosterNames.length ? ", …" : ""})` : "";
 
   showMeetDreambeastSkipConfirm({
     beastCount,

@@ -326,23 +326,131 @@ export function drawObject(state, player, count = 1, helpers = null) {
   return drawn;
 }
 
-export function encounterOnLandscape(state, landscapeId) {
-  const tile = landscapeById(state, landscapeId);
-  return tile?.encounter || null;
+export function encounterKey(encounter) {
+  return encounter?.instanceId || encounter?.id || "";
 }
 
+/** All Dreambeasts/encounters on a landscape (no per-tile limit). */
+export function tileEncounters(tile) {
+  if (!tile) return [];
+  if (!Array.isArray(tile.encounters)) {
+    tile.encounters = tile.encounter ? [tile.encounter] : [];
+    delete tile.encounter;
+  }
+  return tile.encounters;
+}
+
+export function tileHasEncounters(tile) {
+  return tileEncounters(tile).length > 0;
+}
+
+export function encountersOnLandscape(state, landscapeId) {
+  return tileEncounters(landscapeById(state, landscapeId));
+}
+
+export function findEncounterOnBoard(state, encounter) {
+  const key = encounterKey(encounter);
+  if (!key) return null;
+  for (const tile of state.board || []) {
+    const match = tileEncounters(tile).find((enc) => encounterKey(enc) === key);
+    if (match) return { tile, encounter: match };
+  }
+  return null;
+}
+
+export function encounterOnLandscape(state, landscapeId) {
+  const encounters = encountersOnLandscape(state, landscapeId);
+  if (!encounters.length) return null;
+  if (state.activeEncounterLandscapeId === landscapeId && state.activeEncounter) {
+    const activeKey = encounterKey(state.activeEncounter);
+    const match = encounters.find((enc) => encounterKey(enc) === activeKey);
+    if (match) return match;
+  }
+  return encounters[0];
+}
+
+export function addEncounterOnLandscape(state, landscapeId, encounter) {
+  const tile = landscapeById(state, landscapeId);
+  if (!tile || !encounter) return null;
+  const card = { ...encounter };
+  if (!card.instanceId) card.instanceId = uid("enc");
+  tileEncounters(tile).push(card);
+  state.activeEncounter = card;
+  state.activeEncounterLandscapeId = landscapeId;
+  queueEncounterSpawnFx(landscapeId, card, tile.suit || card.suit);
+  return card;
+}
+
+/** Spawn an encounter on a landscape (stacks with existing occupants). */
 export function setEncounterOnLandscape(state, landscapeId, encounter) {
+  if (!encounter) {
+    clearEncountersOnLandscape(state, landscapeId);
+    return null;
+  }
+  return addEncounterOnLandscape(state, landscapeId, encounter);
+}
+
+export function removeEncounterFromLandscape(state, landscapeId, encounter) {
   const tile = landscapeById(state, landscapeId);
   if (!tile) return;
-  tile.encounter = encounter;
-  if (encounter) {
-    state.activeEncounter = encounter;
-    state.activeEncounterLandscapeId = landscapeId;
-    queueEncounterSpawnFx(landscapeId, encounter, tile.suit || encounter.suit);
-  } else if (state.activeEncounterLandscapeId === landscapeId) {
+  const list = tileEncounters(tile);
+  const key = encounterKey(encounter);
+  const idx = list.findIndex((enc) => encounterKey(enc) === key);
+  if (idx < 0) return;
+  list.splice(idx, 1);
+  if (state.activeEncounterLandscapeId === landscapeId && encounterKey(state.activeEncounter) === key) {
+    state.activeEncounter = list[0] || null;
+    if (!list.length) state.activeEncounterLandscapeId = null;
+  }
+}
+
+export function clearEncountersOnLandscape(state, landscapeId) {
+  const tile = landscapeById(state, landscapeId);
+  if (!tile) return;
+  tile.encounters = [];
+  delete tile.encounter;
+  if (state.activeEncounterLandscapeId === landscapeId) {
     state.activeEncounter = null;
     state.activeEncounterLandscapeId = null;
   }
+}
+
+export function moveEncounterBetweenLandscapes(state, fromId, toId, encounter) {
+  const located = findEncounterOnBoard(state, encounter);
+  const enc = located?.encounter || encounter;
+  const from = located?.tile?.id || fromId;
+  if (!enc || !from || !toId) return false;
+  removeEncounterFromLandscape(state, from, enc);
+  addEncounterOnLandscape(state, toId, enc);
+  return true;
+}
+
+export function countEncountersOnBoard(state, filterFn = () => true) {
+  let count = 0;
+  (state.board || []).forEach((tile) => {
+    tileEncounters(tile).forEach((enc) => {
+      if (filterFn(enc)) count += 1;
+    });
+  });
+  return count;
+}
+
+/** Revealed, non-wasteland Landscapes (Dreambeasts may stack on any of these). */
+export function revealedLandscapeTiles(state, { suit = null, landscapeIds = null } = {}) {
+  let tiles = (state.board || []).filter((t) => t.revealed && !t.wasteland);
+  if (suit) tiles = tiles.filter((t) => t.suit === suit);
+  if (landscapeIds?.length) tiles = tiles.filter((t) => landscapeIds.includes(t.id));
+  return tiles;
+}
+
+export function allEncountersOnBoard(state) {
+  const out = [];
+  (state.board || []).forEach((tile) => {
+    tileEncounters(tile).forEach((encounter) => {
+      out.push({ tile, encounter });
+    });
+  });
+  return out;
 }
 
 export function resetPhaseFlags(state) {
@@ -603,7 +711,7 @@ export function advancePhase(state) {
     addLog(state, "Explore Phase — one Dreamer spends Elasticity to unlock shared moves.");
   } else if (getPhase(state) === "Meet") {
     const meetHere = state.board?.find((t) =>
-      t.revealed && t.encounter && state.players.some((p) => p.alive && p.landscapeId === t.id),
+      t.revealed && tileHasEncounters(t) && state.players.some((p) => p.alive && p.landscapeId === t.id),
     );
     if (meetHere) state.selectedLandscapeId = meetHere.id;
     addLog(state, "Meet Phase — one Dreamer spends Willpower for shared Actions; Encounters are Met by the Dreamer on that Landscape.");
@@ -624,16 +732,14 @@ function passHeadDreamer(state) {
 function resolveEncounterFails(state) {
   state.players.forEach((player) => {
     if (!player.alive) return;
-    const enc = encounterOnLandscape(state, player.landscapeId);
-    if (!enc) return;
-    addLog(state, `${player.name} failed to Meet ${enc.name} on ${landscapeById(state, player.landscapeId)?.name}.`);
-    applyEncounterFail(state, player, enc);
     const tile = landscapeById(state, player.landscapeId);
-    if (tile) tile.encounter = null;
-    if (state.activeEncounterLandscapeId === player.landscapeId) {
-      state.activeEncounter = null;
-      state.activeEncounterLandscapeId = null;
-    }
+    const encounters = [...encountersOnLandscape(state, player.landscapeId)];
+    if (!encounters.length) return;
+    encounters.forEach((enc) => {
+      addLog(state, `${player.name} failed to Meet ${enc.name} on ${tile?.name}.`);
+      applyEncounterFail(state, player, enc);
+      removeEncounterFromLandscape(state, player.landscapeId, enc);
+    });
   });
 }
 

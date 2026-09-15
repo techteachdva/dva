@@ -4,6 +4,14 @@ import {
   landscapeById,
   acquireArchetype,
   setEncounterOnLandscape,
+  removeEncounterFromLandscape,
+  encounterOnLandscape,
+  encounterKey,
+  findEncounterOnBoard,
+  tileEncounters,
+  revealedLandscapeTiles,
+  allEncountersOnBoard,
+  moveEncounterBetweenLandscapes,
 } from "./state.js";
 import { recordQuestEvent } from "./quests.js";
 import { grantPowerTokens } from "./power-tokens.js";
@@ -53,8 +61,8 @@ function landscapeReady(state, id) {
   return !!(tile?.revealed && !tile.wasteland);
 }
 
-function revealedTiles(state, { empty = false } = {}) {
-  return state.board.filter((t) => t.revealed && !t.wasteland && (!empty || !t.encounter));
+function revealedTiles(state) {
+  return revealedLandscapeTiles(state);
 }
 
 function tileName(state, id) {
@@ -233,9 +241,11 @@ function applyDeckOrder(state, key, ordered) {
   addLog(state, `Knife: top ${ordered.length} of ${key} reordered.`);
 }
 
-function finishToothSaber(state, player, helpers, { landscapeId, mode, cardIds }) {
+function finishToothSaber(state, player, helpers, { landscapeId, mode, cardIds, encounterId = null }) {
   const tile = landscapeById(state, landscapeId);
-  const enc = tile?.encounter;
+  const enc = (encounterId && tileEncounters(tile).find((e) => encounterKey(e) === encounterId))
+    || state.activeEncounter
+    || encounterOnLandscape(state, landscapeId);
   if (!enc) {
     addLog(state, "Tooth-Saber: that Encounter is gone.");
     return;
@@ -265,22 +275,14 @@ function finishToothSaber(state, player, helpers, { landscapeId, mode, cardIds }
     addLog(state, `${player.name} Accepts ${enc.name}. ${enc.effect || ""}`);
     applyAcceptEffect(state, enc, player, helpers);
     player.hand.push(dreambeastToHandCard(enc));
-    tile.encounter = null;
-    if (state.activeEncounterLandscapeId === landscapeId) {
-      state.activeEncounter = null;
-      state.activeEncounterLandscapeId = null;
-    }
+    removeEncounterFromLandscape(state, landscapeId, enc);
     recordQuestEvent(state, "meet_on_landscape", { landscapeId });
     return;
   }
 
   repressCard(state, { ...enc, type: "dreambeast" });
   applyRejectReward(state, enc, player, helpers);
-  tile.encounter = null;
-  if (state.activeEncounterLandscapeId === landscapeId) {
-    state.activeEncounter = null;
-    state.activeEncounterLandscapeId = null;
-  }
+  removeEncounterFromLandscape(state, landscapeId, enc);
   addLog(state, `${player.name} Rejects ${enc.name}.`);
   recordQuestEvent(state, "meet_on_landscape", { landscapeId });
 }
@@ -351,7 +353,7 @@ function continueFlow(state, follow, helpers) {
   }
   if (cardId === "mobius-crystal" && step === "after-mobius-discard") {
     const edges = edgeLandscapes(state).filter((t) => t.revealed && !t.wasteland);
-    const sources = edges.filter((t) => t.encounter);
+    const sources = allEncountersOnBoard(state).filter(({ tile }) => edges.some((e) => e.id === tile.id));
     if (!sources.length) {
       addLog(state, "Mobius Crystal: no edge Dreambeast.");
       return;
@@ -361,13 +363,16 @@ function continueFlow(state, follow, helpers) {
       step: "pick-beast-source",
       title: "Mobius Crystal",
       message: "Move which edge Dreambeast?",
-      choices: sources.map((t) => ({ id: t.id, label: `${t.encounter.name} on ${t.name}` })),
+      choices: sources.map(({ tile, encounter }) => ({
+        id: `${tile.id}:${encounterKey(encounter)}`,
+        label: `${encounter.name} on ${tile.name}`,
+      })),
       payload: { destIds: edges.map((t) => t.id), title: "Mobius Crystal" },
     });
     return;
   }
   if ((cardId === "row-boat" || cardId === "hourglass" || cardId === "conch-shell" || cardId === "rope") && step === "dest") {
-    const dests = (payload.destIds || []).filter((id) => landscapeReady(state, id) && !landscapeById(state, id)?.encounter);
+    const dests = (payload.destIds || []).filter((id) => landscapeReady(state, id));
     if (!dests.length) {
       addLog(state, `${payload.title || "Object"}: no open destination.`);
       return;
@@ -393,17 +398,18 @@ function continueFlow(state, follow, helpers) {
     return;
   }
   if ((cardId === "row-boat" || cardId === "hourglass" || cardId === "conch-shell" || cardId === "rope") && step === "moved-beast") {
-    const from = landscapeById(state, payload.fromId);
+    const [fromTileId, encKey] = String(payload.fromId || "").split(":");
+    const from = landscapeById(state, fromTileId);
     const dest = lastTileId;
-    if (!from?.encounter || !landscapeReady(state, dest)) return;
-    const enc = from.encounter;
-    from.encounter = null;
-    setEncounterOnLandscape(state, dest, enc);
+    const enc = tileEncounters(from).find((e) => encounterKey(e) === encKey);
+    if (!enc || !landscapeReady(state, dest)) return;
+    moveEncounterBetweenLandscapes(state, fromTileId, dest, enc);
     addLog(state, `Moved ${enc.name} to ${tileName(state, dest)}.`);
     return;
   }
   if (cardId === "mobius-crystal" && step === "dest") {
-    const dests = (payload.destIds || []).filter((id) => id !== payload.fromId && landscapeReady(state, id) && !landscapeById(state, id)?.encounter);
+    const fromTileId = String(payload.fromId || "").split(":")[0];
+    const dests = (payload.destIds || []).filter((id) => id !== fromTileId && landscapeReady(state, id));
     if (!dests.length) {
       addLog(state, "Mobius Crystal: no open edge Landscape.");
       return;
@@ -439,11 +445,12 @@ export function resumeObjectEffect(state, helpers = null) {
     state.pendingObjectFollowup = null;
     const player = playerById(state, follow.playerId);
     const tile = landscapeById(state, follow.lastTileId);
-    if (player && tile?.encounter) {
-      applyAcceptEffect(state, tile.encounter, player, helpers);
-      player.hand.push(dreambeastToHandCard(tile.encounter));
-      addLog(state, `Silver: ${player.name} Accepts ${tile.encounter.name}.`);
-      tile.encounter = null;
+    const enc = state.activeEncounter || encounterOnLandscape(state, follow.lastTileId);
+    if (player && enc) {
+      applyAcceptEffect(state, enc, player, helpers);
+      player.hand.push(dreambeastToHandCard(enc));
+      addLog(state, `Silver: ${player.name} Accepts ${enc.name}.`);
+      removeEncounterFromLandscape(state, follow.lastTileId, enc);
     }
     return true;
   }
@@ -470,6 +477,7 @@ export function resolveObjectChoice(state, choiceId, helpers = null) {
       state.pendingObjectChoice = null;
       finishToothSaber(state, player, helpers, {
         landscapeId: payload.landscapeId,
+        encounterId: payload.encounterId,
         mode: payload.mode,
         cardIds: pending.order || [],
       });
@@ -612,7 +620,7 @@ export function resolveObjectChoice(state, choiceId, helpers = null) {
       step: "place",
       title: "Possibility Polyhedral",
       detail: "Choose a Landscape for the Dreambeast.",
-      allowedIds: revealedTiles(state, { empty: true }).map((t) => t.id),
+      allowedIds: revealedTiles(state).map((t) => t.id),
       payload: { suit: choiceId },
     });
     if (state.pendingObjectFollowup) resumeObjectEffect(state, helpers);
@@ -651,7 +659,9 @@ export function resolveObjectChoice(state, choiceId, helpers = null) {
   }
 
   if (cardId === "tooth-saber" && step === "pick-encounter") {
-    const enc = landscapeById(state, choiceId)?.encounter;
+    const [tileId, encKey] = String(choiceId).split(":");
+    const tile = landscapeById(state, tileId);
+    const enc = tileEncounters(tile).find((e) => encounterKey(e) === encKey);
     if (!enc) return true;
     offerChoice(state, player, {
       cardId: "tooth-saber",
@@ -662,13 +672,15 @@ export function resolveObjectChoice(state, choiceId, helpers = null) {
         { id: "accept", label: `Accept (${enc.accept})`, hint: "Joins hand as a Psyche ally." },
         { id: "reject", label: `Reject (${encounterRejectCost(enc)})`, hint: "Repress the Encounter." },
       ],
-      payload: { landscapeId: choiceId },
+      payload: { landscapeId: tileId, encounterId: encKey },
     });
     return true;
   }
 
   if (cardId === "tooth-saber" && step === "pick-mode") {
-    const enc = landscapeById(state, payload.landscapeId)?.encounter;
+    const enc = tileEncounters(landscapeById(state, payload.landscapeId))
+      .find((e) => encounterKey(e) === payload.encounterId)
+      || encounterOnLandscape(state, payload.landscapeId);
     const need = choiceId === "accept" ? enc?.accept : encounterRejectCost(enc);
     offerChoice(state, player, {
       cardId: "tooth-saber",
@@ -679,7 +691,7 @@ export function resolveObjectChoice(state, choiceId, helpers = null) {
       cards: player.hand.filter((c) => c.type === "psyche" || c.type === "dreambeast"),
       need,
       order: [],
-      payload: { landscapeId: payload.landscapeId, mode: choiceId },
+      payload: { landscapeId: payload.landscapeId, encounterId: payload.encounterId, mode: choiceId },
     });
     return true;
   }
@@ -711,11 +723,11 @@ export function resolveObjectChoice(state, choiceId, helpers = null) {
       payload,
     }, helpers);
     if (cardId === "mobius-crystal") {
-      const from = landscapeById(state, payload.fromId);
-      if (from?.encounter && landscapeReady(state, choiceId)) {
-        const enc = from.encounter;
-        from.encounter = null;
-        setEncounterOnLandscape(state, choiceId, enc);
+      const [fromTileId, encKey] = String(payload.fromId || "").split(":");
+      const from = landscapeById(state, fromTileId);
+      const enc = tileEncounters(from).find((e) => encounterKey(e) === encKey);
+      if (enc && landscapeReady(state, choiceId)) {
+        moveEncounterBetweenLandscapes(state, fromTileId, choiceId, enc);
         addLog(state, `Moved ${enc.name} to ${tileName(state, choiceId)}.`);
       }
     }
@@ -839,9 +851,9 @@ export const OBJECT_EFFECTS = {
   },
 
   "marble-grid": (state, player) => {
-    const empty = revealedTiles(state, { empty: true }).map((t) => t.id);
+    const empty = revealedTiles(state).map((t) => t.id);
     if (empty.length < 1) {
-      addLog(state, "Marble Grid: no empty Landscapes to spawn on.");
+      addLog(state, "Marble Grid: no revealed Landscapes to spawn on.");
       const psyche = psycheSpendCards(player);
       if (psyche.length) {
         offerChoice(state, player, {
@@ -861,7 +873,7 @@ export const OBJECT_EFFECTS = {
       cardId: "marble-grid",
       step: "spawned",
       title: "Marble Grid",
-      detail: `Choose ${Math.min(2, empty.length)} empty Landscape(s) to spawn Dreambeasts.`,
+      detail: `Choose ${Math.min(2, empty.length)} Landscape(s) to spawn Dreambeasts.`,
       allowedIds: empty,
       remaining: Math.min(2, empty.length),
     });
@@ -869,9 +881,9 @@ export const OBJECT_EFFECTS = {
   },
 
   "ivory-pawn": (state, player) => {
-    const empty = revealedTiles(state, { empty: true }).map((t) => t.id);
+    const empty = revealedTiles(state).map((t) => t.id);
     if (!empty.length) {
-      addLog(state, "Ivory Pawn: no empty Landscapes to spawn on.");
+      addLog(state, "Ivory Pawn: no revealed Landscapes to spawn on.");
       trackChessPlay(state, player);
       return;
     }
@@ -886,9 +898,9 @@ export const OBJECT_EFFECTS = {
   },
 
   "ebony-pawn": (state, player) => {
-    const empty = revealedTiles(state, { empty: true }).map((t) => t.id);
+    const empty = revealedTiles(state).map((t) => t.id);
     if (!empty.length) {
-      addLog(state, "Ebony Pawn: no empty Landscapes to spawn on.");
+      addLog(state, "Ebony Pawn: no revealed Landscapes to spawn on.");
       trackChessPlay(state, player);
       return;
     }
@@ -1045,8 +1057,8 @@ export const OBJECT_EFFECTS = {
   },
 
   "tooth-saber": (state, player) => {
-    const tiles = state.board.filter((t) => t.encounter);
-    if (!tiles.length) {
+    const encounters = allEncountersOnBoard(state);
+    if (!encounters.length) {
       addLog(state, "Tooth-Saber: no Encounter on the map.");
       return;
     }
@@ -1056,10 +1068,10 @@ export const OBJECT_EFFECTS = {
       title: "Tooth-Saber",
       message: "Choose an Encounter:",
       log: "Tooth-Saber: choose an Encounter, then Accept or Reject.",
-      choices: tiles.map((t) => ({
-        id: t.id,
-        label: `${t.encounter.name} on ${t.name}`,
-        hint: `Accept ${t.encounter.accept} · Reject ${encounterRejectCost(t.encounter)}`,
+      choices: encounters.map(({ tile, encounter }) => ({
+        id: `${tile.id}:${encounterKey(encounter)}`,
+        label: `${encounter.name} on ${tile.name}`,
+        hint: `Accept ${encounter.accept} · Reject ${encounterRejectCost(encounter)}`,
       })),
     });
   },
@@ -1106,7 +1118,7 @@ const BEAST_MOVERS = {
 export function activatePersistentObjectEffect(state, player, card) {
   const mover = BEAST_MOVERS[card.id];
   if (mover) {
-    const sources = state.board.filter((t) => t.encounter);
+    const sources = allEncountersOnBoard(state);
     if (!sources.length) {
       addLog(state, `${card.name}: no Dreambeast to move.`);
       return false;
@@ -1116,9 +1128,9 @@ export function activatePersistentObjectEffect(state, player, card) {
       step: "pick-beast-source",
       title: mover.title,
       message: "Move which Dreambeast?",
-      choices: sources.map((t) => ({
-        id: t.id,
-        label: `${t.encounter.name} on ${t.name}`,
+      choices: sources.map(({ tile, encounter }) => ({
+        id: `${tile.id}:${encounterKey(encounter)}`,
+        label: `${encounter.name} on ${tile.name}`,
       })),
       payload: { destIds: mover.destIds, title: mover.title },
     });
@@ -1150,8 +1162,8 @@ export function activatePersistentObjectEffect(state, player, card) {
 
   if (card.id === "mobius-crystal") {
     const edges = edgeLandscapes(state).filter((t) => t.revealed && !t.wasteland);
-    const sources = edges.filter((t) => t.encounter);
-    const dests = edges.filter((t) => !t.encounter);
+    const sources = edges.filter((t) => tileEncounters(t).length);
+    const dests = edges;
     if (!psycheSpendCards(player).length) {
       addLog(state, "Discard 1 Psyche to activate Mobius Crystal.");
       return false;

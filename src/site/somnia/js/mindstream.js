@@ -5,6 +5,10 @@ import {
   revealLandscapeTile,
   landscapeById,
   setEncounterOnLandscape,
+  tileEncounters,
+  removeEncounterFromLandscape,
+  allEncountersOnBoard,
+  countEncountersOnBoard,
 } from "./state.js";
 import { shuffle, uid } from "./data.js";
 import { recordQuestEvent } from "./quests.js";
@@ -184,15 +188,11 @@ function swapDreamers(state, player, other) {
 }
 
 function clearEncounters(state, keepOne = false) {
-  let kept = 0;
-  state.board.forEach((t) => {
-    if (!t.encounter) return;
-    if (keepOne && kept === 0) {
-      kept = 1;
-      return;
-    }
-    repressCard(state, t.encounter);
-    t.encounter = null;
+  const encounters = allEncountersOnBoard(state);
+  const toClear = keepOne ? encounters.slice(1) : encounters;
+  toClear.forEach(({ tile, encounter }) => {
+    repressCard(state, encounter);
+    removeEncounterFromLandscape(state, tile.id, encounter);
   });
   if (!keepOne) {
     state.activeEncounter = null;
@@ -578,7 +578,7 @@ export const MINDSTREAM_EFFECTS = {
   },
 
   metamorphosis: (state, player, helpers, event) => {
-    const encCount = state.board.filter((t) => t.encounter).length;
+    const encCount = countEncountersOnBoard(state);
     clearEncounters(state);
     repressTopPsycheDeck(state, encCount + 2);
     logAffectedStatus(state, event, "Metamorphosis");

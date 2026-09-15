@@ -1,4 +1,5 @@
 import { addLog } from "./state.js";
+import { logMoment } from "./narrator.js";
 import { recordQuestEvent } from "./quests.js";
 import { repressCard } from "./subconscious.js";
 import {
@@ -49,7 +50,7 @@ export function beginNothingResolution(state, player, card) {
     return;
   }
   state.pendingNothingChoice = { card, playerId: player.id };
-  addLog(state, "The Nothing: lose 1 Power Token or Repress Dreamers+6 Psyche from the Psyche deck.");
+  logMoment(state, "The Nothing — lose 1 Power Token or Repress Dreamers+6 Psyche.");
 }
 
 export function resolveNothingChoice(state, choice) {

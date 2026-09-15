@@ -12,7 +12,9 @@ import {
   checkVictory,
   landscapeById,
   setEncounterOnLandscape,
+  removeEncounterFromLandscape,
   encounterOnLandscape,
+  revealedLandscapeTiles,
   revealLandscapeTile,
   drawPsycheForPlayer,
   drawMindstream,
@@ -1104,16 +1106,13 @@ export function meetEncounter(state, mode = "accept") {
     if (encounter.boss || encounter.id === "cerberus" || encounter.id === "double" || encounter.id === "leviathan") {
       recordQuestEvent(state, "meet_boss", { bossId: encounter.id });
     }
-    const tile = landscapeById(state, landscapeId);
-    if (tile) tile.encounter = null;
+    removeEncounterFromLandscape(state, landscapeId, encounter);
   }
-  state.activeEncounter = null;
-  state.activeEncounterLandscapeId = null;
 
   if (state.pendingHeatingUp) {
     if (!isReject) {
       spawnEncounterOnLandscape(state, actor.landscapeId);
-      addLog(state, "Heating Up: Accept spawns another Encounter.");
+      logMoment(state, "Heating Up — Accept spawns another Encounter.");
     } else {
       const limit = handLimitForPlayer(state, actor);
       let drew = 0;
@@ -1126,7 +1125,7 @@ export function meetEncounter(state, mode = "accept") {
       const allyLimit = allyHandLimitForPlayer(state, actor);
       const allies = allyHandCount(actor);
       const allyNote = allies ? ` + ${allies}/${allyLimit} allies` : "";
-      addLog(state, `Heating Up: drew Psyche up to hand limit (${psycheHandCount(actor)}/${limit} Psyche${allyNote}).`);
+      logMoment(state, `Heating Up — drew Psyche up to hand limit (${psycheHandCount(actor)}/${limit} Psyche${allyNote}).`);
     }
     state.pendingHeatingUp = false;
   }
@@ -1456,12 +1455,12 @@ export function spawnEncounterOnLandscape(state, landscapeId, beastCard = null) 
   }
   setEncounterOnLandscape(state, landscapeId, beast);
   const tile = landscapeById(state, landscapeId);
-  addLog(state, `${beast.name} appears on ${tile?.name || "the Dreamscape"}!`);
+  logMoment(state, `${beast.name} appears on ${tile?.name || "the Dreamscape"}!`);
   return beast;
 }
 
 export function spawnRandomEncounter(state) {
-  const revealed = state.board.filter((l) => l.revealed && !l.encounter);
+  const revealed = revealedLandscapeTiles(state);
   if (!revealed.length) return null;
   if (state.tutorialMode || revealed.length === 1) {
     const tile = revealed[Math.floor(Math.random() * revealed.length)];
@@ -1633,6 +1632,8 @@ export function endPhase(state) {
       : phase === "Explore"
         ? `${COOP_PLAY_TIP} One Dreamer spends Elasticity to unlock shared moves — then move any Dreamer.`
         : `${COOP_PLAY_TIP} One Dreamer spends Willpower to unlock shared Meet actions.`,
+    [],
+    { moment: `${phase} Phase begins.` },
   );
 }
 

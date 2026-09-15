@@ -1,4 +1,4 @@
-/** SOMNIA 17.6 rules helpers */
+/** SOMNIA 17.7 rules helpers */
 
 import {
   repressCard,
@@ -206,7 +206,9 @@ export function meetEncounterActor(state) {
     return state.players.find((p) => p.alive && p.landscapeId === tileId) || null;
   }
   const tile = state.board?.find((t) => {
-    if (!t.encounter || t.wasteland || !t.revealed) return false;
+    if (t.wasteland || !t.revealed) return false;
+    const encounters = t.encounters || (t.encounter ? [t.encounter] : []);
+    if (!encounters.length) return false;
     return state.players.some((p) => p.alive && p.landscapeId === t.id);
   });
   if (!tile) return null;
@@ -218,12 +220,15 @@ export function currentMeetEncounter(state) {
     return { encounter: state.activeEncounter, actor: meetEncounterActor(state) };
   }
   const tile = state.board?.find((t) => {
-    if (!t.encounter || t.wasteland || !t.revealed) return false;
+    if (t.wasteland || !t.revealed) return false;
+    const encounters = t.encounters || (t.encounter ? [t.encounter] : []);
+    if (!encounters.length) return false;
     return state.players.some((p) => p.alive && p.landscapeId === t.id);
   });
   if (!tile) return { encounter: null, actor: null };
   const actor = state.players.find((p) => p.alive && p.landscapeId === tile.id) || null;
-  return { encounter: tile.encounter, actor };
+  const encounters = tile.encounters || (tile.encounter ? [tile.encounter] : []);
+  return { encounter: encounters[0] || null, actor };
 }
 
 export function meetBonusBreakdown(state) {

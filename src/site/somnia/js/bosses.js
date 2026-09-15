@@ -3,6 +3,8 @@ import {
   drawPsycheForPlayer,
   forgetLandscapes,
   landscapeById,
+  tileEncounters,
+  clearEncountersOnLandscape,
 } from "./state.js";
 import { repressCard } from "./subconscious.js";
 import { recordQuestEvent } from "./quests.js";
@@ -32,10 +34,8 @@ export function applyBossAcceptEffect(state, encounter, actor) {
         if (tile?.revealed) {
           tile.revealed = false;
           tile.wasteland = true;
-          if (tile.encounter) {
-            repressCard(state, tile.encounter);
-            tile.encounter = null;
-          }
+          tileEncounters(tile).forEach((enc) => repressCard(state, enc));
+          clearEncountersOnLandscape(state, tile.id);
         }
       });
       addLog(state, "Double: Forgot Day in the Life and Naked Classroom.");

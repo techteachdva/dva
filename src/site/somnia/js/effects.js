@@ -6,6 +6,12 @@ import {
   revealLandscapeTile,
   beginFinalRecurrence,
   landscapeById,
+  encounterOnLandscape,
+  moveEncounterBetweenLandscapes,
+  tileEncounters,
+  clearEncountersOnLandscape,
+  removeEncounterFromLandscape,
+  allEncountersOnBoard,
 } from "./state.js";
 import { forgetEdgeLandscapes, triggerBedFinalRecurrence } from "./landscapes.js";
 import { recordQuestEvent } from "./quests.js";
@@ -85,12 +91,12 @@ function cornerTiles(state) {
   return outer.filter((t) => hexDistance(t, bed) === maxDist);
 }
 
-function moveEncounterAwayFromBed(state, fromTileId, steps = 2) {
+function moveEncounterAwayFromBed(state, fromTileId, steps = 2, encounter = null) {
   const bed = landscapeById(state, "bed");
   const from = landscapeById(state, fromTileId);
-  if (!from?.encounter || !bed) return [];
+  const enc = encounter || encounterOnLandscape(state, fromTileId);
+  if (!enc || !from || !bed) return [];
 
-  const encounter = from.encounter;
   const carried = alivePlayers(state)
     .filter((p) => p.landscapeId === fromTileId)
     .map((p) => p.id);
@@ -98,7 +104,7 @@ function moveEncounterAwayFromBed(state, fromTileId, steps = 2) {
   let currentId = fromTileId;
   for (let step = 0; step < steps; step += 1) {
     const neighbors = adjacentTiles(state, currentId).filter(
-      (t) => t.revealed && !t.encounter && t.id !== "bed",
+      (t) => t.revealed && !t.wasteland && t.id !== "bed",
     );
     if (!neighbors.length) break;
     const next = neighbors.sort((a, b) => hexDistance(b, bed) - hexDistance(a, bed))[0];
@@ -108,13 +114,12 @@ function moveEncounterAwayFromBed(state, fromTileId, steps = 2) {
   if (currentId === fromTileId) return carried;
 
   const to = landscapeById(state, currentId);
-  from.encounter = null;
-  to.encounter = encounter;
+  moveEncounterBetweenLandscapes(state, fromTileId, currentId, enc);
   carried.forEach((pid) => {
     const player = state.players.find((p) => p.id === pid);
     if (player) player.landscapeId = currentId;
   });
-  addLog(state, `${encounter.name} abducted to ${to.name}.`);
+  if (to) addLog(state, `${enc.name} abducted to ${to.name}.`);
   return carried;
 }
 
@@ -300,12 +305,10 @@ const DREAM_EFFECTS = {
   },
   abduction: (state) => {
     state.abductionCarried = [];
-    state.board
-      .filter((t) => t.encounter)
-      .forEach((t) => {
-        const carried = moveEncounterAwayFromBed(state, t.id, 2);
-        state.abductionCarried.push(...carried);
-      });
+    allEncountersOnBoard(state).forEach(({ tile, encounter }) => {
+      const carried = moveEncounterAwayFromBed(state, tile.id, 2, encounter);
+      state.abductionCarried.push(...carried);
+    });
     state.meetOnlyRound = true;
     logMoment(state, "Abduction — carried Encounters may only be Met this round.");
   },
@@ -328,10 +331,8 @@ const DREAM_EFFECTS = {
         tile.revealed = false;
         tile.wasteland = true;
         tile.forgotten = true;
-        if (tile.encounter) {
-          repressCard(state, tile.encounter);
-          tile.encounter = null;
-        }
+        tileEncounters(tile).forEach((enc) => repressCard(state, enc));
+        clearEncountersOnLandscape(state, tile.id);
         addLog(state, `Absurdity: ${event.name} forgets ${tile.name}.`);
       });
     });
@@ -365,10 +366,8 @@ const DREAM_EFFECTS = {
       t.revealed = false;
       t.wasteland = true;
       t.forgotten = true;
-      if (t.encounter) {
-        repressCard(state, t.encounter);
-        t.encounter = null;
-      }
+      tileEncounters(t).forEach((enc) => repressCard(state, enc));
+      clearEncountersOnLandscape(state, t.id);
     });
     neighbors.forEach((t) => {
       alivePlayers(state)
@@ -388,7 +387,7 @@ const DREAM_EFFECTS = {
   rivalry: (state, _player, helpers) => {
     const count = Math.max(1, Math.floor(dreamerCount(state) / 2));
     helpers.spawnEncounter(state, "bed");
-    const overflow = adjacentTiles(state, "bed").filter((t) => t.revealed && !t.encounter && !t.wasteland);
+    const overflow = adjacentTiles(state, "bed").filter((t) => t.revealed && !t.wasteland);
     let placed = 1;
     for (let i = 1; i < count && overflow.length; i += 1) {
       const tile = overflow.shift();
@@ -432,21 +431,17 @@ const DREAM_EFFECTS = {
     corners.slice(0, 4).forEach((t) => {
       t.revealed = false;
       t.wasteland = true;
-      if (t.encounter) {
-        repressCard(state, t.encounter);
-        t.encounter = null;
-      }
+      tileEncounters(t).forEach((enc) => repressCard(state, enc));
+      clearEncountersOnLandscape(state, t.id);
       addLog(state, `Loss: Forgot ${t.name}.`);
     });
     if (!corners.length) forgetLandscapes(state, 4);
     else logMoment(state, "Loss — distant Landscapes become Wasteland.");
   },
   abandonment: (state) => {
-    state.board.forEach((t) => {
-      if (t.encounter) {
-        repressCard(state, t.encounter);
-        t.encounter = null;
-      }
+    allEncountersOnBoard(state).forEach(({ tile, encounter }) => {
+      repressCard(state, encounter);
+      removeEncounterFromLandscape(state, tile.id, encounter);
     });
     logMoment(state, "Abandonment — all Encounters sent to the Subconscious.");
     beginAbandonmentMoves(state);
