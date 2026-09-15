@@ -5,16 +5,24 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "18.5";
+export const SOMNIA_VERSION = "18.5.1";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "18.5.1",
+    title: "Brief landscape stings & credits cleanup",
+    notes: [
+      "Landscape stings trimmed to ~2.6s with smooth fade in/out on every play.",
+      "Main-menu footer and splash attributions removed; credits live in the logo panel only.",
+    ],
+  },
   {
     version: "18.5",
     title: "Changelog & landscape soundscape",
     notes: [
       "Click the Somnia logo on the main menu to open the running changelog and full credits.",
-      "All 26 landscapes now use Pixabay ambient stings (replacing procedural placeholders).",
+      "All 26 landscapes use Pixabay ambient stings with per-landscape attribution.",
     ],
   },
   {

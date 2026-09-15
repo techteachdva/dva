@@ -35,6 +35,12 @@ let landscapeSfxLoading = null;
 const landscapeAudioCache = new Map();
 let lastLandscapeSfxId = "";
 let lastLandscapeSfxAt = 0;
+let activeLandscapePlayback = null;
+
+const LANDSCAPE_FADE_IN = 0.12;
+const LANDSCAPE_FADE_OUT = 0.5;
+const LANDSCAPE_MAX_SEC = 2.6;
+const LANDSCAPE_INTERRUPT_FADE = 0.1;
 
 function trackById(id) {
   return MUSIC_TRACKS.find((t) => t.id === id) || MUSIC_TRACKS[0];
@@ -232,8 +238,116 @@ function proceduralLandscapeTone(landscapeId) {
   tone({ freq, dur: 1.1 + (hash % 80) / 100, type: "sine", vol: 0.08, slide, echo: 0.12 });
 }
 
+function stopLandscapePlayback(fadeOut = true) {
+  const active = activeLandscapePlayback;
+  if (!active) return;
+  activeLandscapePlayback = null;
+  if (active.stopTimer) clearTimeout(active.stopTimer);
+  const { audio, gain, ac } = active;
+  if (fadeOut && ac && gain) {
+    const now = ac.currentTime;
+    gain.gain.cancelScheduledValues(now);
+    gain.gain.setValueAtTime(gain.gain.value, now);
+    gain.gain.linearRampToValueAtTime(0, now + LANDSCAPE_INTERRUPT_FADE);
+    setTimeout(() => {
+      audio.pause();
+      audio.currentTime = 0;
+    }, LANDSCAPE_INTERRUPT_FADE * 1000 + 30);
+  } else {
+    audio.pause();
+    audio.currentTime = 0;
+  }
+}
+
+function connectLandscapeAudio(audio, ac) {
+  if (audio.__landscapeGain) return audio.__landscapeGain;
+  const src = ac.createMediaElementSource(audio);
+  const gain = ac.createGain();
+  gain.gain.value = 0;
+  src.connect(gain).connect(sfxGain);
+  audio.__landscapeGain = gain;
+  audio.__sfxConnected = true;
+  return gain;
+}
+
+function fadeLandscapeVolume(audio, target, durationMs) {
+  const steps = Math.max(4, Math.round(durationMs / 25));
+  const start = audio.volume;
+  const delta = (target - start) / steps;
+  let step = 0;
+  const tick = () => {
+    step += 1;
+    audio.volume = Math.max(0, Math.min(1, start + delta * step));
+    if (step < steps) setTimeout(tick, durationMs / steps);
+  };
+  tick();
+}
+
+function playLandscapeElement(audio, landscapeId, onFail) {
+  stopLandscapePlayback(true);
+  ensureSfxChain();
+  const ac = ensureAudioContext();
+  if (!ac || !sfxGain) {
+    audio.volume = 0;
+    audio.currentTime = 0;
+    const stopTimer = setTimeout(() => {
+      fadeLandscapeVolume(audio, 0, LANDSCAPE_FADE_OUT * 1000);
+      setTimeout(() => {
+        audio.pause();
+        audio.currentTime = 0;
+        if (activeLandscapePlayback?.audio === audio) activeLandscapePlayback = null;
+      }, LANDSCAPE_FADE_OUT * 1000 + 40);
+    }, LANDSCAPE_MAX_SEC * 1000);
+    activeLandscapePlayback = { audio, stopTimer };
+    audio.play()
+      .then(() => fadeLandscapeVolume(audio, settings.sfxVolume, LANDSCAPE_FADE_IN * 1000))
+      .catch(() => onFail?.());
+    return;
+  }
+
+  let gain;
+  try {
+    gain = connectLandscapeAudio(audio, ac);
+  } catch {
+    onFail?.();
+    return;
+  }
+
+  const startPlayback = () => {
+    const fileDur = audio.duration && Number.isFinite(audio.duration) ? audio.duration : LANDSCAPE_MAX_SEC;
+    const playSec = Math.min(fileDur, LANDSCAPE_MAX_SEC);
+    const now = ac.currentTime;
+
+    gain.gain.cancelScheduledValues(now);
+    gain.gain.setValueAtTime(0, now);
+    gain.gain.linearRampToValueAtTime(1, now + LANDSCAPE_FADE_IN);
+
+    const fadeStart = now + Math.max(LANDSCAPE_FADE_IN + 0.05, playSec - LANDSCAPE_FADE_OUT);
+    gain.gain.setValueAtTime(1, fadeStart);
+    gain.gain.linearRampToValueAtTime(0, fadeStart + LANDSCAPE_FADE_OUT);
+
+    const stopTimer = setTimeout(() => {
+      audio.pause();
+      audio.currentTime = 0;
+      if (activeLandscapePlayback?.audio === audio) activeLandscapePlayback = null;
+    }, playSec * 1000 + 60);
+
+    activeLandscapePlayback = { audio, gain, ac, stopTimer };
+    audio.currentTime = 0;
+    audio.play().catch(() => {
+      if (activeLandscapePlayback?.audio === audio) activeLandscapePlayback = null;
+      onFail?.();
+    });
+  };
+
+  audio.currentTime = 0;
+  if (audio.readyState >= 1) startPlayback();
+  else audio.addEventListener("loadedmetadata", startPlayback, { once: true });
+}
+
 export function playLandscapeSfx(landscapeId) {
   if (!landscapeId || isSfxMuted()) return;
+  settings = loadSettings();
   const now = Date.now();
   if (landscapeId === lastLandscapeSfxId && now - lastLandscapeSfxAt < 450) return;
   lastLandscapeSfxId = landscapeId;
@@ -251,26 +365,8 @@ export function playLandscapeSfx(landscapeId) {
       audio.preload = "auto";
       landscapeAudioCache.set(landscapeId, audio);
     }
-    ensureSfxChain();
-    const ac = ensureAudioContext();
-    if (!ac || !sfxGain) {
-      audio.volume = settings.sfxVolume;
-      audio.currentTime = 0;
-      audio.play().catch(() => proceduralLandscapeTone(landscapeId));
-      return;
-    }
-    try {
-      if (!audio.__sfxConnected) {
-        const src = ac.createMediaElementSource(audio);
-        src.connect(sfxGain);
-        audio.__sfxConnected = true;
-      }
-    } catch {
-      /* already connected */
-    }
     audio.volume = 1;
-    audio.currentTime = 0;
-    audio.play().catch(() => proceduralLandscapeTone(landscapeId));
+    playLandscapeElement(audio, landscapeId, () => proceduralLandscapeTone(landscapeId));
   });
 }
 
