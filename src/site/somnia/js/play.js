@@ -124,6 +124,7 @@ import {
   isTutorialActionAllowed,
   tutorialActionBlocked,
   applyTutorialPhaseGates,
+  classifyPhaseAction,
 } from "./tutorial-mode.js";
 import {
   renderBoard,
@@ -1092,6 +1093,8 @@ function openDreamerBoardRadial(anchorEl, playerId, tileId) {
       hint: action.hint || action.label,
       disabled: !!action.disabled,
       primary: !!action.primary,
+      kind: classifyPhaseAction(action),
+      action,
       onPick: action.onClick,
     }));
 
@@ -1105,6 +1108,11 @@ function openDreamerBoardRadial(anchorEl, playerId, tileId) {
   });
 
   showRadialMenu(anchorEl, options, (opt) => {
+    if (opt.kind && !isTutorialActionAllowed(state, opt.kind, { action: opt.action, tileId })) {
+      tutorialActionBlocked(state);
+      renderAll();
+      return;
+    }
     opt.onPick?.();
     renderAll();
   }, {
@@ -1135,6 +1143,7 @@ function openBeastBoardRadial(anchorEl, encounter, tileId) {
       hint: `${encounterAcceptSummary(encounter)} · pool Psyche on ${occupant?.name || "Dreamer"}'s hand`,
       disabled: !canMeet,
       primary: true,
+      kind: "meetAccept",
       onPick: () => handlers.meetEncounter("accept"),
     },
     {
@@ -1142,6 +1151,7 @@ function openBeastBoardRadial(anchorEl, encounter, tileId) {
       label: `Reject ${rejectCost}`,
       hint: `${encounterRejectSummary(encounter)} · pool Psyche on ${occupant?.name || "Dreamer"}'s hand`,
       disabled: !canMeet,
+      kind: "meetReject",
       onPick: () => handlers.meetEncounter("reject"),
     },
     {
@@ -1154,6 +1164,11 @@ function openBeastBoardRadial(anchorEl, encounter, tileId) {
   ];
 
   showRadialMenu(anchorEl, options, (opt) => {
+    if (opt.kind && !isTutorialActionAllowed(state, opt.kind, { tileId, encounterId: encounter?.id })) {
+      tutorialActionBlocked(state);
+      renderAll();
+      return;
+    }
     opt.onPick?.();
     renderAll();
   }, { ariaLabel: `${encounter.name} encounter` });

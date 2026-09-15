@@ -46,7 +46,7 @@ const {
   applyCanonicalTutorialStep,
   snapshotTutorialGame,
 } = canonicalMod;
-const { getPhase, landscapeById } = stateMod;
+const { getPhase, landscapeById, encounterOnLandscape, tileEncounters } = stateMod;
 const {
   getPhaseActions,
   meetEncounter,
@@ -85,8 +85,8 @@ function hashState(state, { semantic = false } = {}) {
 function summarizeStep(state, stepIndex) {
   const step = TUTORIAL_SCRIPT[stepIndex];
   const sync = syncTutorial(state);
-  const houseEnc = landscapeById(state, "house")?.encounter?.name || null;
-  const bedEnc = landscapeById(state, "bed")?.encounter?.name || null;
+  const houseEnc = encounterOnLandscape(state, "house")?.name || null;
+  const bedEnc = encounterOnLandscape(state, "bed")?.name || null;
   return {
     index: stepIndex,
     id: step.id,
@@ -164,7 +164,7 @@ function hasPlayableAction(state, step) {
 const STEP_ENTRY_CHECKS = {
   "draw-dream-r1": (s) => s.round === 1 && getPhase(s) === "Reveal" && !s.dreamDrawn,
   "accept-reject": (s) => {
-    const enc = landscapeById(s, "house")?.encounter;
+    const enc = encounterOnLandscape(s, "house");
     if (!enc || enc.name !== "Mandrake") return "Mandrake missing on House";
     if (getPhase(s) !== "Meet" || s.meetActionBudget <= 0) return "Meet budget not ready";
     s.selectedLandscapeId = "house";
@@ -258,16 +258,16 @@ const STEP_ENTRY_CHECKS = {
 /** After canonical step completion — card/effect triggers. */
 const STEP_EFFECT_CHECKS = {
   "draw-dream-r1": (s) => s.dreamDrawn,
-  "accept-reject": (s) => !landscapeById(s, "house")?.encounter || s.tutorialFlags?.encounterResolved,
+  "accept-reject": (s) => !encounterOnLandscape(s, "house") || s.tutorialFlags?.encounterResolved,
   "r2-attic": (s) => !!s.questTracker?.mindstreamOnLandscape?.["the-attic"],
   "r2-basement": (s) => !!s.questTracker?.mindstreamOnLandscape?.["the-basement"],
   "r2-mark": (s) => s.tutorialFlags?.archetypeAcquired
     || s.players.some((p) => (p.acquiredArchetypes || []).some((a) => a.id === "innocent")),
   "r3-draw": (s) => {
-    const bed = landscapeById(s, "bed");
     if (s.status === "lost") return false;
     if (s.dreamDeck.length < 1) return false;
-    return s.dreamDrawn && bed?.encounter && (bed.encounter.id === "cerberus" || bed.encounter.name === "Cerberus");
+    const boss = encounterOnLandscape(s, "bed");
+    return s.dreamDrawn && boss && (boss.id === "cerberus" || boss.name === "Cerberus");
   },
   "end-r1": (s) => s.round >= 2,
   "end-r2": (s) => s.round >= 3,
@@ -372,7 +372,7 @@ function auditLiveCardEffects() {
   const mandrakeInHand = state.players[0].hand.some(
     (c) => c.id === "mandrake" || c.name === "Mandrake",
   );
-  if (landscapeById(state, "house")?.encounter && !state.tutorialFlags?.encounterResolved) {
+  if (encounterOnLandscape(state, "house") && !state.tutorialFlags?.encounterResolved) {
     fail("live-accept-mandrake", { reason: "encounter still on house" });
   }
   if (!mandrakeInHand && !state.tutorialFlags?.encounterResolved) {

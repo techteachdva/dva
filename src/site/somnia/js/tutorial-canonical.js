@@ -5,6 +5,8 @@
 import {
   getPhase,
   landscapeById,
+  encounterOnLandscape,
+  clearEncountersOnLandscape,
   checkDreamerPsycheDeath,
   resetPhaseFlags,
   beginRoundReveal,
@@ -92,11 +94,12 @@ function prepareTutorialBossRound(state) {
   const pool = [...(state.dreamDeck || []), ...(state.dreamDiscard || [])];
   const bed = landscapeById(state, "bed");
   let cerberus = takeCard(pool, (c) => c.id === "cerberus");
-  if (!cerberus && bed?.encounter?.id === "cerberus") {
-    cerberus = { ...bed.encounter, type: "boss-dream", boss: true };
+  const bedCerberus = encounterOnLandscape(state, "bed");
+  if (!cerberus && bedCerberus?.id === "cerberus") {
+    cerberus = { ...bedCerberus, type: "boss-dream", boss: true };
   }
-  if (bed?.encounter?.id === "cerberus") {
-    bed.encounter = null;
+  if (bedCerberus?.id === "cerberus") {
+    clearEncountersOnLandscape(state, "bed");
   }
   if (cerberus) {
     cerberus.type = "boss-dream";
@@ -265,9 +268,7 @@ function acceptHouseEncounter(state) {
   hand.sort((a, b) => b.value - a.value);
   hand.slice(0, 3).forEach((c) => state.selectedHand.push(c.instanceId));
   meetEncounter(state, "accept");
-  const house = landscapeById(state, "house");
-  if (house?.encounter) {
-    house.encounter = null;
+  if (!encounterOnLandscape(state, "house")) {
     state.tutorialFlags.encounterResolved = true;
   }
 }

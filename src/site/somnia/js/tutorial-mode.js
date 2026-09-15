@@ -4,6 +4,8 @@ import {
   addLog,
   setEncounterOnLandscape,
   landscapeById,
+  encounterOnLandscape,
+  tileEncounters,
   checkDreamerPsycheDeath,
 } from "./state.js";
 import { meetPsycheActor } from "./rules.js";
@@ -104,7 +106,7 @@ const TUTORIAL_QUEST_PLACEMENT = [
   { questId: "the-basement", beside: "city", besideName: "City" },
 ];
 
-const TUTORIAL_SNAPSHOT_VERSION = 10;
+const TUTORIAL_SNAPSHOT_VERSION = 11;
 let tutorialSnapshotCache = null;
 let tutorialSnapshotCacheVersion = 0;
 
@@ -324,6 +326,10 @@ function allowsRemEndRoundAction(state, kind, detail = {}) {
       return phase === "Explore" && !state.exploreActivated;
     case "gainMeetActions":
       return phase === "Meet" && state.meetActionBudget <= 0;
+    case "meetAccept":
+    case "meetReject":
+    case "beastRadial":
+      return phase === "Meet" && state.meetActionBudget > 0;
     case "advancePhase":
       return true;
     case "powerBonus":
@@ -467,6 +473,11 @@ function stepAllowsAction(state, stepId, kind, detail = {}) {
     case "accept-reject":
       if (kind === "dreamerSelect") return true;
       if (kind === "handToggle") return getPhase(state) === "Meet" && state.meetActionBudget > 0;
+      if (kind === "beastRadial") {
+        return detail.tileId === "house"
+          && houseMeetReady(state)
+          && !houseEncounterCleared(state);
+      }
       if (kind === "meetAccept" || kind === "meetReject") {
         return houseMeetReady(state) && !houseEncounterCleared(state);
       }
@@ -589,8 +600,8 @@ export function applyTutorialPhaseGates(state, actions) {
 // ── Progress helpers (robust gates for tutorial steps) ──
 
 function bossOnBed(state) {
-  return landscapeById(state, "bed")?.encounter?.id === "cerberus"
-    || state.activeDream?.id === "cerberus";
+  const bedBoss = encounterOnLandscape(state, "bed");
+  return bedBoss?.id === "cerberus" || state.activeDream?.id === "cerberus";
 }
 
 function hasLuciditySelected(state) {
@@ -624,7 +635,7 @@ function houseSelected(state) {
 }
 
 function houseEncounterCleared(state) {
-  return !landscapeById(state, "house")?.encounter;
+  return tileEncounters(landscapeById(state, "house")).length === 0;
 }
 
 function phaseAfter(state, phase) {
@@ -818,7 +829,7 @@ export const TUTORIAL_SCRIPT = [
     id: "spend-lucidity-r1",
     round: 1,
     title: "Reveal: Spend Lucidity",
-    body: "Click a Dreamer chip to see their hand. Select 1 to 2 Lucidity cards, then click Reveal Landscapes.",
+    body: "Click a Dreamer token on the map or chip in the dock to open their radial menu and view their hand. Select 1 to 2 Lucidity cards, then click Reveal Landscapes (radial or action bar).",
     targets: ["#hand-bar", "#phase-actions", "#dreamer-dock"],
     spotlight: "#phase-actions",
     until: (s) => s.revealLandscapeUsed || s.landscapePick?.mode === "reveal",
@@ -832,7 +843,7 @@ export const TUTORIAL_SCRIPT = [
     id: "reveal-pick-r1",
     round: 1,
     title: "Reveal: Flip a Landscape",
-    body: "Click a hidden hex on the map to flip it face-up.",
+    body: "Click a hidden hex on the map to flip it face-up. Right-click a Landscape for details.",
     target: "#board-viewport",
     until: (s) => s.revealLandscapeUsed,
     objective: (s) => (s.revealLandscapeUsed
@@ -869,7 +880,7 @@ export const TUTORIAL_SCRIPT = [
     id: "explore-move-r1",
     round: 1,
     title: "Explore: Move to House",
-    body: "Click a Dreamer Chip in the bottom left corner to select them, then click a Landscape to move there. Move to House to meet the Mandrake.",
+    body: "Click a Dreamer token on the map (or chip in the dock) for a radial menu, then click a highlighted hex to move — or pick Move from the radial. Place a Dreamer on House to meet the Mandrake.",
     targets: ["#dreamer-dock", "#board-viewport"],
     spotlight: "#board-viewport",
     until: (s) => dreamerOnHouse(s),
@@ -893,7 +904,7 @@ export const TUTORIAL_SCRIPT = [
     id: "spend-willpower-r1",
     round: 1,
     title: "Meet: Spend Willpower",
-    body: "Click a Dreamer chip to see their hand. Select 1 to 2 Willpower cards, then click Gain Actions.",
+    body: "Click a Dreamer token on the map or chip in the dock to view their hand. Select 1 to 2 Willpower cards, then click Gain Actions (radial or action bar).",
     targets: ["#hand-bar", "#phase-actions", "#dreamer-dock"],
     spotlight: "#phase-actions",
     until: (s) => s.meetActionBudget > 0,
@@ -907,14 +918,14 @@ export const TUTORIAL_SCRIPT = [
     id: "accept-reject",
     round: 1,
     title: "Accept and Reject",
-    body: "Select House on the map. Pool up to 3 Psyche from the Dreamer standing there. Dreambeast costs read A# for Accept and R# for Reject, each with a suit symbol. Accept adds the beast to your hand as 3 Psyche. Reject sends it to the Subconscious and grants the Reject reward.",
-    targets: ["#board-viewport", "#active-encounter", "#hand-bar", "#phase-actions"],
-    spotlight: "#active-encounter",
+    body: "A Dreamer must stand on House. Click their token to pool Psyche from their hand (up to 3). Click the Mandrake token on House for a radial menu — Accept (A#) adds 3 matching Psyche to hand; Reject (R#) exiles the beast and grants its reward. You can also use Accept/Reject in the action bar.",
+    targets: ["#board-viewport", "#hand-bar", "#phase-actions"],
+    spotlight: "#board-viewport",
     until: (s) => houseEncounterCleared(s) || s.tutorialFlags?.encounterResolved,
     objective: (s) => {
       if (houseEncounterCleared(s)) return "Encounter resolved. Press Continue.";
-      if (hasMeetPool(s)) return "Click Accept or Reject.";
-      if (!houseMeetReady(s)) return "Select House on the map.";
+      if (hasMeetPool(s)) return "Click the Mandrake token (or Accept/Reject in the action bar).";
+      if (!houseMeetReady(s)) return "Move a Dreamer onto House and click their token.";
       return "Pool up to 3 Psyche from the Dreamer on House.";
     },
   },
@@ -963,7 +974,7 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-lucidity",
     round: 2,
     title: "Round 2 — Reveal: Spend Lucidity",
-    body: "Click a Dreamer chip to see their hand. Select 1 to 2 Lucidity cards, then click Reveal Landscapes. You do not need to reveal new tiles this round, but you must spend Lucidity to finish Reveal.",
+    body: "Click a Dreamer token on the map or chip in the dock to view their hand. Select 1 to 2 Lucidity cards, then click Reveal Landscapes (radial or action bar). You do not need to reveal new tiles this round, but you must spend Lucidity to finish Reveal.",
     targets: ["#hand-bar", "#phase-actions", "#dreamer-dock"],
     spotlight: "#phase-actions",
     until: (s) => atRound(s, 2) && (s.revealLandscapeUsed || s.landscapePick?.mode === "reveal"),
@@ -989,7 +1000,7 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-elasticity",
     round: 2,
     title: "Round 2 — Explore: Spend Elasticity",
-    body: "Click a Dreamer chip to see their hand. Select 1 to 2 Elasticity cards, then click Spend Elasticity. This unlocks team moves so you can reach The Attic and The Basement.",
+    body: "Click a Dreamer token on the map or chip in the dock to view their hand. Select 1 to 2 Elasticity cards, then click Spend Elasticity (radial or action bar). This unlocks team moves toward The Attic and The Basement.",
     targets: ["#hand-bar", "#phase-actions", "#dreamer-dock"],
     spotlight: "#phase-actions",
     until: (s) => atRound(s, 2) && s.exploreActivated,
@@ -1003,7 +1014,7 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-move-quests",
     round: 2,
     title: "Round 2 — Explore: Move Onto Quests",
-    body: "Click a Dreamer chip, then click a green hex to move. Place one Dreamer on The Attic and one on The Basement before entering Meet — you cannot move during Meet.",
+    body: "Click a Dreamer token, then click a highlighted hex to move (or use Move from their radial menu). Place one Dreamer on The Attic and one on The Basement before entering Meet — you cannot move during Meet.",
     targets: ["#dreamer-dock", "#board-viewport"],
     spotlight: "#board-viewport",
     until: (s) => atRound(s, 2)
@@ -1037,7 +1048,7 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-willpower",
     round: 2,
     title: "Round 2 — Meet: Spend Willpower",
-    body: "Click a Dreamer chip to see their hand. Select 1 to 2 Willpower cards, then click Gain Actions. Meet actions pay for Landscape Action A on The Attic and The Basement.",
+    body: "Click a Dreamer token on the map or chip in the dock to view their hand. Select 1 to 2 Willpower cards, then click Gain Actions (radial or action bar). Meet actions pay for Landscape Action A on The Attic and The Basement.",
     targets: ["#hand-bar", "#phase-actions", "#dreamer-dock"],
     spotlight: "#phase-actions",
     until: (s) => atRound(s, 2) && s.meetActionBudget > 0,
@@ -1051,7 +1062,7 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-attic",
     round: 2,
     title: "Quest 1: The Attic",
-    body: "Why: Innocent Quest 1 needs Lucidity Mindstream from The Attic. How: 1) Move a Dreamer onto The Attic. 2) Click the Attic hex. 3) Spend a Meet action. 4) Choose Action A to draw Lucidity Mindstream.",
+    body: "Why: Innocent Quest 1 needs Lucidity Mindstream from The Attic. How: 1) Dreamer on The Attic. 2) Click the Attic hex or their token. 3) Spend a Meet action. 4) Choose Action A (radial or action bar) to draw Lucidity Mindstream.",
     targets: ["#board-viewport", "#phase-actions", "#dreamer-dock"],
     spotlight: "#board-viewport",
     until: (s) => atRound(s, 2) && innocentAtticDone(s),
@@ -1071,7 +1082,7 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-basement",
     round: 2,
     title: "Quest 2: The Basement",
-    body: "Why: Innocent Quest 2 needs Willpower Mindstream from The Basement. How: 1) Move a Dreamer onto The Basement. 2) Click the Basement hex. 3) Spend a Meet action. 4) Choose Action A to draw Willpower Mindstream.",
+    body: "Why: Innocent Quest 2 needs Willpower Mindstream from The Basement. How: 1) Dreamer on The Basement. 2) Click the Basement hex or their token. 3) Spend a Meet action. 4) Choose Action A (radial or action bar) to draw Willpower Mindstream.",
     targets: ["#board-viewport", "#phase-actions", "#dreamer-dock"],
     spotlight: "#board-viewport",
     until: (s) => atRound(s, 2) && innocentBasementDone(s),
@@ -1124,14 +1135,14 @@ export const TUTORIAL_SCRIPT = [
     id: "r3-boss",
     round: 3,
     title: "Round 3: Boss Dreams",
-    body: "The third Dream awakens Cerberus on The Bed. Bosses have strict Accept costs and harsh Fail effects if left unresolved at end of Meet. Only the Dreamer on The Bed may pool Psyche to face a boss.",
-    targets: ["#phase-actions", "#active-encounter"],
+    body: "The third Dream awakens Cerberus on The Bed. Click the Cerberus token for Accept/Reject. Bosses have strict Accept costs and harsh Fail effects if left unresolved at end of Meet. Only the Dreamer on The Bed may pool Psyche to face a boss.",
+    targets: ["#phase-actions", "#board-viewport"],
   },
   {
     id: "r3-draw",
     round: 3,
     title: "Awaken Cerberus",
-    body: "Click Draw & Resolve Dream. Cerberus spawns on The Bed.",
+    body: "Click Draw & Resolve Dream. Cerberus spawns on The Bed — look for its token on the map.",
     targets: ["#phase-actions", "#board-viewport"],
     spotlight: "#phase-actions",
     until: (s) => atRound(s, 3) && s.dreamDrawn && bossOnBed(s),
