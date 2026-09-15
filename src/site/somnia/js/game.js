@@ -553,12 +553,17 @@ export function getPhaseActions(state, handlers) {
         onClick: () => handlers.useArchetypePower(acquired.id),
       });
     });
+    const actionsLeft = Math.max(0, (state.meetActionBudget || 0) - (state.meetActionsUsed || 0));
     actions.push({
-      label: "End Round →",
+      label: state.meetActionBudget > 0 && actionsLeft > 0
+        ? `End Round → (${actionsLeft} action${actionsLeft === 1 ? "" : "s"} left)`
+        : "End Round →",
       section: "round",
       advance: true,
       primary: true,
-      hint: "Finish the Meet phase and start the next round when your group is ready.",
+      hint: state.meetActionBudget > 0 && actionsLeft > 0
+        ? `${actionsLeft} unused Meet action${actionsLeft === 1 ? "" : "s"} — end the round anytime (confirmation required).`
+        : "Finish the Meet phase and start the next round when your group is ready.",
       onClick: handlers.nextPhase,
     });
   }
@@ -1681,6 +1686,10 @@ export function getPhaseHint(state) {
     }
     const pool = coopMeetPlayTotal(state);
     const count = allSelectedCards(state).length;
-    return `${COOP_PLAY_TIP} ${state.meetActionsUsed}/${state.meetActionBudget} actions · pool ${count}/3 (${pool}).`;
+    const actionsLeft = Math.max(0, state.meetActionBudget - (state.meetActionsUsed || 0));
+    const actionsTail = actionsLeft > 0
+      ? ` · ${actionsLeft} action${actionsLeft === 1 ? "" : "s"} left — End Round anytime`
+      : "";
+    return `${COOP_PLAY_TIP} ${state.meetActionsUsed}/${state.meetActionBudget} actions · pool ${count}/3 (${pool})${actionsTail}.`;
   }
 }

@@ -66,6 +66,12 @@ function discardDreamCardsFromDeck(state, count) {
 }
 
 function finishPhaseAdvance(state, onComplete) {
+  if (state.tradeMode) {
+    state.tradeMode = false;
+    state.trade = null;
+    state.selectedHand = [];
+    addLog(state, "Trade cancelled — the round is ending.");
+  }
   endPhase(state);
   onComplete?.();
 }
@@ -80,6 +86,18 @@ function forfeitRemainingExploreMoves(state) {
   );
 }
 
+function forfeitRemainingMeetActions(state) {
+  const budget = state.meetActionBudget || 0;
+  const used = state.meetActionsUsed || 0;
+  const left = Math.max(0, budget - used);
+  if (left <= 0) return;
+  state.meetActionsUsed = budget;
+  addLog(
+    state,
+    `Meet ends early — ${left} unused team action${left === 1 ? "" : "s"} forfeited.`,
+  );
+}
+
 function showExploreMovesLeftWarning(state, movesLeft, onConfirm, onCancel) {
   showPhaseSkipConfirm({
     title: "Moves remaining",
@@ -87,6 +105,19 @@ function showExploreMovesLeftWarning(state, movesLeft, onConfirm, onCancel) {
     confirmLabel: "Go to Meet",
     onConfirm: () => {
       forfeitRemainingExploreMoves(state);
+      onConfirm();
+    },
+    onCancel,
+  });
+}
+
+function showMeetActionsLeftWarning(state, actionsLeft, onConfirm, onCancel) {
+  showPhaseSkipConfirm({
+    title: "Meet actions remaining",
+    message: `Your team still has <strong>${actionsLeft}</strong> shared Meet action${actionsLeft === 1 ? "" : "s"} left. <strong>End Round</strong> anyway? Unused actions are lost.`,
+    confirmLabel: "End Round",
+    onConfirm: () => {
+      forfeitRemainingMeetActions(state);
       onConfirm();
     },
     onCancel,
@@ -154,6 +185,19 @@ export function requestEndPhase(state, onComplete = () => {}) {
       () => {},
     );
     return false;
+  }
+
+  if (phase === "Meet" && state.meetActionBudget > 0) {
+    const actionsLeft = state.meetActionBudget - (state.meetActionsUsed || 0);
+    if (actionsLeft > 0) {
+      showMeetActionsLeftWarning(
+        state,
+        actionsLeft,
+        () => requestEndPhase(state, onComplete),
+        () => {},
+      );
+      return false;
+    }
   }
 
   if (phase === "Explore" && state.exploreActivated && (state.exploreMovesLeft || 0) > 0) {
