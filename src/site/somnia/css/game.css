@@ -829,6 +829,7 @@ body.in-game main {
 
 #screen-game .board-viewport {
   padding-left: clamp(156px, 15vw, 212px);
+  min-height: clamp(320px, 44vh, 720px);
 }
 
 .deck-column {
@@ -1936,7 +1937,8 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
   100% { opacity: 1; }
 }
 
-.hex-occupant-token.is-arriving {
+.hex-occupant-token.is-arriving,
+.hex-occupant-token.is-departing {
   opacity: 0;
 }
 
@@ -3224,7 +3226,7 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
 }
 
 .board-viewport::after {
-  content: "Scroll zoom · middle-drag or Space+drag pan";
+  content: "F fit table · scroll zoom · Space+drag or middle-drag pan";
   position: absolute;
   right: 0.65rem;
   bottom: 0.45rem;
@@ -3403,6 +3405,15 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
   image-rendering: auto;
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
+  pointer-events: auto;
+  cursor: pointer;
+  transition: transform 0.16s ease, filter 0.16s ease;
+}
+
+.hex-tile .hex-occupant-token:hover {
+  transform: translateY(calc(-4px * var(--hex-scale, 1))) scale(1.06);
+  filter: drop-shadow(0 6px 14px rgba(201, 160, 255, 0.55));
+  z-index: 4;
 }
 
 .hex-tile .hex-occupant-beast {
@@ -4667,6 +4678,71 @@ body.card-detail-open .tutorial-card {
   box-shadow: var(--shadow);
 }
 
+.modal-content.dreambeast-detail-modal {
+  width: min(96vw, 760px);
+  max-width: none;
+  padding: clamp(1rem, 2vw, 1.5rem);
+}
+
+.modal-content.dreambeast-detail-modal .modal-art,
+.modal-content.dreambeast-detail-modal .modal-art-fallback {
+  width: min(100%, 420px);
+  max-height: min(52vh, 420px);
+  margin: 0 auto 0.85rem;
+  display: block;
+  object-fit: contain;
+  border-radius: 12px;
+}
+
+.modal-content.dreambeast-detail-modal h2 {
+  font-size: clamp(1.35rem, 2.5vh, 1.85rem);
+  text-align: center;
+}
+
+.modal-flavor {
+  margin: 0.5rem 0 0.85rem;
+  padding: 0.65rem 0.8rem;
+  border-left: 3px solid rgba(201, 160, 255, 0.55);
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.88);
+  line-height: 1.45;
+}
+
+.dreambeast-cost-breakdown {
+  display: grid;
+  gap: 0.65rem;
+  margin: 0.85rem 0;
+}
+
+.dreambeast-cost-row {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  line-height: 1.4;
+}
+
+.dreambeast-cost-row.accept {
+  border-color: rgba(120, 200, 140, 0.35);
+}
+
+.dreambeast-cost-row.reject {
+  border-color: rgba(232, 120, 120, 0.35);
+}
+
+.dreambeast-cost-row span {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.modal-effect,
+.modal-fail {
+  margin: 0.45rem 0;
+  line-height: 1.45;
+}
+
 .modal-close {
   position: absolute;
   top: 0.5rem;
@@ -4955,7 +5031,7 @@ body.card-detail-open .tutorial-card {
 
 .utility-content { max-width: 520px; }
 .utility-content.landscape-detail-modal {
-  width: min(96vw, 1180px);
+  width: min(98vw, 1380px);
   max-width: none;
   height: min(94vh, 960px);
   max-height: 94vh;
@@ -5014,10 +5090,10 @@ body.card-detail-open .tutorial-card {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.65rem;
-  width: clamp(108px, 12vw, 148px);
+  gap: 0.75rem;
+  width: clamp(148px, 17vw, 220px);
   min-height: 0;
-  max-height: min(68vh, 760px);
+  max-height: min(72vh, 820px);
   overflow-y: auto;
   padding: 0.2rem 0;
 }
@@ -5054,8 +5130,61 @@ body.card-detail-open .tutorial-card {
   cursor: default;
 }
 
-.landscape-detail-occupant-card .game-card.portrait .art {
-  max-height: min(36vh, 240px);
+.landscape-detail-occupant-showcase .game-card.portrait {
+  width: 100%;
+}
+
+.landscape-detail-occupant-showcase .game-card.portrait .art {
+  max-height: min(44vh, 320px);
+}
+
+.landscape-detail-occupant-detail {
+  width: 100%;
+  font-size: 0.78rem;
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.86);
+  text-align: center;
+}
+
+.landscape-detail-occupant-meta {
+  margin-top: 0.35rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.landscape-detail-beast-cost {
+  display: grid;
+  gap: 0.15rem;
+  margin-bottom: 0.45rem;
+  padding: 0.45rem 0.5rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  text-align: left;
+}
+
+.landscape-detail-beast-cost.accept {
+  border: 1px solid rgba(120, 200, 140, 0.28);
+}
+
+.landscape-detail-beast-cost.reject {
+  border: 1px solid rgba(232, 120, 120, 0.28);
+}
+
+.landscape-detail-beast-cost span {
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+.landscape-detail-beast-effect,
+.landscape-detail-beast-flavor {
+  margin-top: 0.35rem;
+  text-align: left;
+  font-size: 0.74rem;
+}
+
+.landscape-detail-beast-flavor {
+  font-style: italic;
+  color: var(--muted);
 }
 
 .landscape-detail-occupant-caption {

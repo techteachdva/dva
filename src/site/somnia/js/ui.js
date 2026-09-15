@@ -21,7 +21,14 @@ import {
   findPhaseContributor,
 } from "./rules.js";
 import { countBoardDreambeasts, timelineTollPreview } from "./phase-skip.js";
-import { DREAMER_KIND_AFFINITY, beastKindLabel, dreamerPrimarySuit } from "./dreambeasts.js";
+import {
+  DREAMER_KIND_AFFINITY,
+  beastKindLabel,
+  dreamerPrimarySuit,
+  encounterAcceptSummary,
+  encounterRejectSummary,
+  encounterRejectCost,
+} from "./dreambeasts.js";
 import { handLimitForPlayer, handRoomForPsycheDraw } from "./objects.js";
 import { psycheHandCount, alliesInHand, psycheCardsInHand, allyHandCount, allyHandLimitForPlayer, effectivePsycheHealth, MAX_ALLIES_IN_HAND, MAX_PSYCHE_IN_HAND, psycheCardValue } from "./psyche.js";
 import { getQuestStatus, activeQuestLandscapeIds } from "./quests.js";
@@ -92,7 +99,13 @@ function dreambeastCostMeta(card) {
   const reject = card.reject ?? card.repress;
   const rejectSuit = card.rejectSuit ? suitIconHtml(card.rejectSuit, { size: 10 }) : "";
   const acceptSuit = card.suit ? suitIconHtml(card.suit, { size: 10 }) : "";
-  return `<span class="meta dreambeast-costs"><span title="Accept">A${card.accept} ${acceptSuit}</span><span title="Reject">R${reject} ${rejectSuit}</span></span>`;
+  const acceptGain = card.suit ? ` → 3 ${SUIT_LABELS[card.suit]}` : "";
+  const rejectGain = card.rejectReward ? ` → ${card.rejectReward}` : "";
+  return `<span class="meta dreambeast-costs"><span title="Accept cost and reward">A${card.accept}${acceptGain} ${acceptSuit}</span><span title="Reject cost and reward">R${reject}${rejectGain} ${rejectSuit}</span></span>`;
+}
+
+function isDreambeastCard(card) {
+  return card?.type === "dreambeast" || card?.boss || card?.type === "psyche-dreambeast";
 }
 
 function createArtElement(card) {
@@ -705,10 +718,59 @@ export function renderCard(card, options = {}) {
   return attachCardMeta(el, card, playerId);
 }
 
+function appendDreambeastModalDetail(detail, card) {
+  const rejectCost = encounterRejectCost(card);
+  const rejectSuit = card.rejectSuit ? ` ${suitIconHtml(card.rejectSuit, { size: 14 })}` : "";
+  const acceptSuit = card.suit ? ` ${suitIconHtml(card.suit, { size: 14 })}` : "";
+
+  if (card.flavor) {
+    const flavor = document.createElement("blockquote");
+    flavor.className = "modal-flavor";
+    flavor.textContent = card.flavor;
+    detail.appendChild(flavor);
+  }
+
+  const costs = document.createElement("div");
+  costs.className = "dreambeast-cost-breakdown";
+  costs.innerHTML = `
+    <div class="dreambeast-cost-row accept">
+      <strong>Accept ${card.accept}${acceptSuit}</strong>
+      <span>${encounterAcceptSummary(card)}</span>
+    </div>
+    <div class="dreambeast-cost-row reject">
+      <strong>Reject ${rejectCost}${rejectSuit}</strong>
+      <span>${encounterRejectSummary(card)}</span>
+    </div>
+  `;
+  detail.appendChild(costs);
+
+  if (card.effect) {
+    const effect = document.createElement("p");
+    effect.className = "modal-effect";
+    effect.innerHTML = `<strong>Effect:</strong> ${card.effect}`;
+    detail.appendChild(effect);
+  }
+
+  if (card.fail) {
+    const fail = document.createElement("p");
+    fail.className = "modal-fail";
+    fail.innerHTML = `<strong>Fail:</strong> ${card.fail}`;
+    detail.appendChild(fail);
+  }
+
+  if (card.beastKind) {
+    const kind = document.createElement("p");
+    kind.innerHTML = `<strong>Kind:</strong> ${beastKindLabel(card.beastKind)}`;
+    detail.appendChild(kind);
+  }
+}
+
 export function showModal(card) {
   const modal = document.getElementById("card-modal");
+  const modalContent = modal?.querySelector(".modal-content");
   const container = document.getElementById("modal-card");
   container.innerHTML = "";
+  modalContent?.classList.toggle("dreambeast-detail-modal", isDreambeastCard(card));
 
   if (card.type === "psyche" || card.type === "psyche-power") {
     const detail = document.createElement("div");
@@ -835,22 +897,19 @@ export function showModal(card) {
         detail.appendChild(p);
       }
     }
+  } else if (isDreambeastCard(card)) {
+    appendDreambeastModalDetail(detail, card);
   } else {
   const fields = [
     ["Type", card.type || card.suit || "—"],
     ["Subtype", card.subtype],
     ["Points", card.points],
     ["Value", card.value],
-    ["Accept", card.accept],
-    ["Reject", card.reject ?? card.repress],
-    ["Fail", card.fail],
     ["Ability", card.ability || card.power || card.passive],
   ];
 
-  const description = card.text || card.flavor || card.effect;
-  if (description) {
-    fields.push(["Text", description]);
-  }
+  if (card.flavor) fields.push(["Flavor", card.flavor]);
+  if (card.effect && card.effect !== card.flavor) fields.push(["Effect", card.effect]);
 
   fields.forEach(([label, value]) => {
     if (value == null || value === "") return;
@@ -892,23 +951,25 @@ export function showModal(card) {
 }
 
 export function hideModal() {
-  document.getElementById("card-modal").classList.add("hidden");
+  const modal = document.getElementById("card-modal");
+  modal?.classList.add("hidden");
+  modal?.querySelector(".modal-content")?.classList.remove("dreambeast-detail-modal");
   document.body.classList.remove("card-detail-open");
 }
 
 /** Hex layout scale — circumradius in pixel math (larger = bigger map). */
 const HEX_BASE = 58;
-const HEX_MIN = 48;
+const HEX_MIN = 44;
 /** ~1024px source art / sqrt(3) — keeps landscape faces sharp when zoomed in. */
-const HEX_MAX_NATIVE = 580;
+const HEX_MAX_NATIVE = 640;
 
 function fitHexSize(state) {
   const viewport = document.getElementById("board-viewport");
   if (!viewport) return 100;
 
-  const pad = 24;
-  const maxW = Math.max(120, viewport.clientWidth - pad);
-  const maxH = Math.max(120, viewport.clientHeight - pad);
+  const pad = 10;
+  const maxW = Math.max(160, viewport.clientWidth - pad);
+  const maxH = Math.max(160, viewport.clientHeight - pad);
   const bounds = boardPixelBounds(state, HEX_BASE);
   const fit = Math.min(maxW / bounds.width, maxH / bounds.height);
   const base = Math.max(HEX_MIN, Math.floor(HEX_BASE * fit));
@@ -916,7 +977,14 @@ function fitHexSize(state) {
   return Math.min(HEX_MAX_NATIVE, Math.max(HEX_MIN, zoomed));
 }
 
-export function renderBoard(state, onSelectLandscape, legalMoveIds = [], pickHighlights = {}, onInspectLandscape = null) {
+export function renderBoard(
+  state,
+  onSelectLandscape,
+  legalMoveIds = [],
+  pickHighlights = {},
+  onInspectLandscape = null,
+  boardOptions = {},
+) {
   const board = document.getElementById("hex-board");
   board.innerHTML = "";
 
@@ -1006,16 +1074,17 @@ export function renderBoard(state, onSelectLandscape, legalMoveIds = [], pickHig
     const occupantTokens = [];
     occupants.forEach((p) => {
       if (!p.dreamer?.image) return;
-      const arriving = isDreamerTokenHidden(p.id) ? " is-arriving" : "";
+      const hidden = isDreamerTokenHidden(p.id);
+      const arriving = hidden ? " is-arriving is-departing" : "";
       occupantTokens.push(
-        `<img class="hex-occupant-token hex-occupant-dreamer${arriving}" data-dreamer-id="${p.id}" src="${p.dreamer.image}" alt="" title="${p.dreamer.name}" decoding="async" draggable="false" onerror="this.remove()">`
+        `<img class="hex-occupant-token hex-occupant-dreamer${arriving}" data-dreamer-id="${p.id}" src="${p.dreamer.image}" alt="${p.dreamer.name}" title="${p.name} — click for details" decoding="async" draggable="false" onerror="this.remove()">`
       );
     });
     if (encounter?.image) {
       const encKey = encounter.instanceId || encounter.id || "";
       const arriving = encKey && isBeastTokenHidden(encKey) ? " is-arriving" : "";
       occupantTokens.push(
-        `<img class="hex-occupant-token hex-occupant-beast${arriving}" data-encounter-key="${encKey}" src="${encounter.image}" alt="" title="${encounter.name}" decoding="async" draggable="false" onerror="this.remove()">`
+        `<img class="hex-occupant-token hex-occupant-beast${arriving}" data-encounter-key="${encKey}" src="${encounter.image}" alt="${encounter.name}" title="${encounter.name} — click for details" decoding="async" draggable="false" onerror="this.remove()">`
       );
     }
     const occupantsHtml = occupantTokens.length
@@ -1031,8 +1100,20 @@ export function renderBoard(state, onSelectLandscape, legalMoveIds = [], pickHig
       <div class="tokens">${occupants.map((p) => p.dreamer.name.split(" ").pop()).join(" · ")} ${encounterMark}${encounter ? ` ${encounter.name.split(" ")[0]}` : ""}${finalMark}${finalArch && !finalArch.defeated ? ` ${finalArch.name.split(" ")[0]}` : ""}</div>
     `;
 
-    el.addEventListener("click", () => {
+    el.addEventListener("click", (event) => {
       if (consumeBoardClickSuppression()) return;
+      const dreamerEl = event.target.closest(".hex-occupant-dreamer");
+      if (dreamerEl?.dataset.dreamerId) {
+        event.stopPropagation();
+        boardOptions.onDreamerTokenClick?.(dreamerEl.dataset.dreamerId, tile.id);
+        return;
+      }
+      const beastEl = event.target.closest(".hex-occupant-beast");
+      if (beastEl?.dataset.encounterKey && encounter) {
+        event.stopPropagation();
+        boardOptions.onBeastTokenClick?.(encounter, tile.id);
+        return;
+      }
       onSelectLandscape(tile.id);
     });
     if (onInspectLandscape) {
@@ -1041,7 +1122,7 @@ export function renderBoard(state, onSelectLandscape, legalMoveIds = [], pickHig
         event.stopPropagation();
         onInspectLandscape(tile.id);
       });
-      el.title = "Left-click to select · right-click for details";
+      el.title = "Click landscape to interact · click Dreamer or Dreambeast for details · right-click landscape for overview";
     }
     board.appendChild(el);
   });
@@ -2957,9 +3038,9 @@ export function showMeetDreambeastSkipConfirm({
   document.body.classList.add("utility-modal-open");
 }
 
-function mountLandscapeOccupantCard(container, card, caption) {
+function mountLandscapeOccupantCard(container, card, caption, detailHtml = "") {
   const wrap = document.createElement("div");
-  wrap.className = "landscape-detail-occupant-card";
+  wrap.className = "landscape-detail-occupant-card landscape-detail-occupant-showcase";
   const el = renderCard(card, { portrait: true });
   el.tabIndex = -1;
   wrap.appendChild(el);
@@ -2968,6 +3049,12 @@ function mountLandscapeOccupantCard(container, card, caption) {
     cap.className = "landscape-detail-occupant-caption";
     cap.textContent = caption;
     wrap.appendChild(cap);
+  }
+  if (detailHtml) {
+    const detail = document.createElement("div");
+    detail.className = "landscape-detail-occupant-detail";
+    detail.innerHTML = detailHtml;
+    wrap.appendChild(detail);
   }
   container.appendChild(wrap);
 }
@@ -2986,7 +3073,7 @@ function mountLandscapeOccupantColumn(container, label, entries) {
     return;
   }
 
-  entries.forEach(({ card, caption }) => mountLandscapeOccupantCard(container, card, caption));
+  entries.forEach(({ card, caption, detailHtml }) => mountLandscapeOccupantCard(container, card, caption, detailHtml));
 }
 
 export function showLandscapeDetail(state, tileId) {
@@ -3028,19 +3115,32 @@ export function showLandscapeDetail(state, tileId) {
   const dreamerEntries = dreamers.map((player) => ({
     card: { ...player.dreamer, type: "dreamer" },
     caption: `${player.name}${player.isHead ? " ★" : ""}`,
+    detailHtml: `${dreamerStatsHtml(player.dreamer)}<div class="landscape-detail-occupant-meta">${(player.hand || []).length} Psyche · ${player.powerTokens || 0} Power</div>`,
   }));
 
   const beastEntries = [];
   if (tile.encounter) {
+    const enc = tile.encounter;
+    const rejectCost = encounterRejectCost(enc);
+    const rejectSuit = enc.rejectSuit ? suitIconHtml(enc.rejectSuit, { size: 12 }) : "";
+    const acceptSuit = enc.suit ? suitIconHtml(enc.suit, { size: 12 }) : "";
     beastEntries.push({
-      card: { ...tile.encounter, type: tile.encounter.type || "dreambeast" },
-      caption: tile.encounter.name,
+      card: { ...enc, type: enc.type || "dreambeast" },
+      caption: enc.name,
+      detailHtml: `
+        <div class="landscape-detail-beast-cost accept"><strong>A${enc.accept}</strong> ${acceptSuit}<span>${encounterAcceptSummary(enc)}</span></div>
+        <div class="landscape-detail-beast-cost reject"><strong>R${rejectCost}</strong> ${rejectSuit}<span>${encounterRejectSummary(enc)}</span></div>
+        ${enc.effect ? `<div class="landscape-detail-beast-effect"><strong>Effect:</strong> ${enc.effect}</div>` : ""}
+        ${enc.flavor ? `<div class="landscape-detail-beast-flavor">${enc.flavor}</div>` : ""}
+      `,
     });
   }
   if (tile.finalArchetype && !tile.finalArchetype.defeated) {
+    const arch = tile.finalArchetype;
     beastEntries.push({
-      card: { ...tile.finalArchetype, type: "dreambeast" },
-      caption: `${tile.finalArchetype.name} (Archetype)`,
+      card: { ...arch, type: "dreambeast" },
+      caption: `${arch.name} (Archetype)`,
+      detailHtml: `<div class="landscape-detail-beast-effect">Remaining Archetype on this Landscape.</div>`,
     });
   }
 

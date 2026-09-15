@@ -500,7 +500,7 @@ export function rulesIntroHtml() {
         <p>Use the <strong>R.E.M.</strong> tab for the three phases in depth. Use <strong>Details</strong> for encounters, death, bosses, objects, Mindstream, and Final Recurrence. The in-game <strong>Guide</strong> panel shows your next step every turn.</p>
       </section>
 
-            <p class="overview-footer">Somnia v 17.2 — cooperative rules reference.</p>
+            <p class="overview-footer">Somnia v 17.3 — cooperative rules reference.</p>
       ${footerCreditsHtml()}
     </div>
   `;

@@ -7,6 +7,7 @@ const queue = [];
 const prevDreamerTiles = new Map();
 const prevEncounterTiles = new Map();
 const arrivingDreamers = new Set();
+const departingDreamers = new Set();
 const arrivingBeasts = new Set();
 
 const FLY_MS = 820;
@@ -35,7 +36,7 @@ function encounterKey(encounter) {
 }
 
 export function isDreamerTokenHidden(playerId) {
-  return arrivingDreamers.has(playerId);
+  return arrivingDreamers.has(playerId) || departingDreamers.has(playerId);
 }
 
 export function isBeastTokenHidden(encKey) {
@@ -46,6 +47,7 @@ export function resetBoardMotion(state) {
   prevDreamerTiles.clear();
   prevEncounterTiles.clear();
   arrivingDreamers.clear();
+  departingDreamers.clear();
   arrivingBeasts.clear();
   if (!state?.players) return;
   state.players.forEach((player) => {
@@ -65,6 +67,7 @@ export function syncBoardMotion(state) {
   state.players.forEach((player) => {
     const prev = prevDreamerTiles.get(player.id);
     if (animate && player.alive && prev && player.landscapeId && prev !== player.landscapeId) {
+      departingDreamers.add(player.id);
       arrivingDreamers.add(player.id);
       queue.push({
         type: "dreamer-move",
@@ -103,8 +106,9 @@ export function syncBoardMotion(state) {
 function revealArriving(kind, id) {
   if (kind === "dreamer") {
     arrivingDreamers.delete(id);
+    departingDreamers.delete(id);
     document.querySelectorAll(`.hex-occupant-dreamer[data-dreamer-id="${id}"]`).forEach((el) => {
-      el.classList.remove("is-arriving");
+      el.classList.remove("is-arriving", "is-departing");
     });
   } else {
     arrivingBeasts.delete(id);

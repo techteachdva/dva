@@ -52,6 +52,15 @@ export function encounterRejectCost(encounter) {
   return encounter.reject ?? encounter.repress ?? 0;
 }
 
+export function encounterAcceptSummary(encounter) {
+  const suit = SUIT_LABELS[encounter?.suit] || encounter?.suit || "matching";
+  return `Gain 3 ${suit} Psyche ally in hand`;
+}
+
+export function encounterRejectSummary(encounter) {
+  return encounter?.rejectReward || "Exile Dreambeast to the Subconscious";
+}
+
 export function dreamerMeetBonuses(dreamer, encounter) {
   const parts = [];
   let total = 0;

@@ -53,7 +53,13 @@ import {
   cardCountsAsSuit,
   isWildPsyche,
 } from "./rules.js";
-import { encounterRejectCost, applyRejectReward, applyAcceptEffect } from "./dreambeasts.js";
+import {
+  encounterRejectCost,
+  encounterAcceptSummary,
+  encounterRejectSummary,
+  applyRejectReward,
+  applyAcceptEffect,
+} from "./dreambeasts.js";
 import { getLegalMoveTargets, canMoveTo, adjacentTiles, hexDistance, areHexAdjacent } from "./hex.js";
 import { repressCard, listSubconsciousCards, dreambeastToHandCard, isDreambeastPsycheCard } from "./subconscious.js";
 import { spendPowerTokens, grantPowerTokens, playPsychePowerFromHand } from "./power-tokens.js";
@@ -474,26 +480,26 @@ export function getPhaseActions(state, handlers) {
       const shape = bossPlayShapeRequired(meetEnc);
       const shapeHint = shape ? ` · ${bossPlayShapeLabel(shape)}` : "";
       actions.push({
-        label: `Accept (${meetEnc.accept})${shapeHint}`,
+        label: `Accept ${meetEnc.accept} — ${encounterAcceptSummary(meetEnc)}${shapeHint}`,
         section: "encounter",
         hint: meetActionHint(
           state,
           MEET_ACTIONS.MEET,
           null,
-          `Accept: joins hand as 3 ${SUIT_LABELS[meetEnc.suit] || meetEnc.suit} Psyche ally`,
+          meetEnc.effect ? `Effect: ${meetEnc.effect}` : encounterAcceptSummary(meetEnc),
         ),
         primary: true,
         disabled: !canUseMeetAction(state, MEET_ACTIONS.MEET),
         onClick: () => handlers.meetEncounter("accept"),
       });
       actions.push({
-        label: `Reject (${encounterRejectCost(meetEnc)})${shapeHint}`,
+        label: `Reject ${encounterRejectCost(meetEnc)} — ${encounterRejectSummary(meetEnc)}${shapeHint}`,
         section: "encounter",
         hint: meetActionHint(
           state,
           MEET_ACTIONS.MEET,
           null,
-          meetEnc.rejectReward || "Reject: Dreambeast exiled to the Subconscious",
+          encounterRejectSummary(meetEnc),
         ),
         disabled: !canUseMeetAction(state, MEET_ACTIONS.MEET),
         onClick: () => handlers.meetEncounter("reject"),
@@ -1553,6 +1559,17 @@ export function handleAcquire(state) {
   });
 }
 
+function canAutoActivateExplore(state) {
+  if (getPhase(state) !== "Explore" || state.exploreActivated) return false;
+  if (state.freeExploreNextRound) return true;
+  const player = findPhaseContributor(state);
+  if (!player) return false;
+  const elaCards = selectedBySuit(state, player, "elasticity");
+  if (elaCards.length > 2) return false;
+  if (elaCards.length >= 1) return true;
+  return phaseTokenValue(state, player) >= 1;
+}
+
 export function handleBoardTileClick(state, tileId) {
   if (handleArchetypePowerTilePick(state, tileId)) return true;
   if (handleDreamerPowerTilePick(state, tileId)) return true;
@@ -1565,6 +1582,7 @@ export function handleBoardTileClick(state, tileId) {
     if (ok && state.pendingObjectFollowup) resumeObjectEffect(state, getEffectHelpers());
     return ok;
   }
+  if (canAutoActivateExplore(state)) activateExplore(state);
   moveDreamer(state, tileId);
   return false;
 }

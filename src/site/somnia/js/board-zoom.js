@@ -1,5 +1,5 @@
 const MIN_ZOOM = 0.45;
-const MAX_ZOOM = 3.5;
+const MAX_ZOOM = 5.5;
 const ZOOM_SENSITIVITY = 0.0012;
 const PAN_CLICK_THRESHOLD = 5;
 
@@ -72,6 +72,15 @@ export function resetBoardZoom() {
   panX = 0;
   panY = 0;
   userAdjusted = false;
+}
+
+/** Fit the full hex board in the viewport at maximum size (default table view). */
+export function fitBoardToViewport() {
+  zoom = 1;
+  panX = 0;
+  panY = 0;
+  userAdjusted = false;
+  zoomChangeHandler?.();
 }
 
 export function syncBoardZoomAfterRender() {
@@ -162,13 +171,19 @@ function isTypingTarget(target) {
 }
 
 function onKeyDown(event) {
-  if (event.code !== "Space" || event.repeat) return;
   if (isTypingTarget(event.target)) return;
+  if (!document.getElementById("screen-game")?.classList.contains("active")) return;
+
+  if ((event.key === "f" || event.key === "F") && !event.repeat) {
+    event.preventDefault();
+    fitBoardToViewport();
+    return;
+  }
+
+  if (event.code !== "Space" || event.repeat) return;
   spaceHeld = true;
   viewport?.classList.add("board-pan-ready");
-  if (document.getElementById("screen-game")?.classList.contains("active")) {
-    event.preventDefault();
-  }
+  event.preventDefault();
 }
 
 function onKeyUp(event) {
@@ -232,7 +247,7 @@ function showBoardPanHint() {
   const hint = document.createElement("div");
   hint.className = "board-pan-hint";
   hint.setAttribute("role", "status");
-  hint.textContent = "Scroll to zoom · Space + drag or middle-click to pan";
+  hint.textContent = "F fit table · scroll zoom · Space + drag or middle-click to pan";
   viewport.appendChild(hint);
   localStorage.setItem("somnia.boardPanHintSeen", "1");
   window.setTimeout(() => hint.classList.add("fade-out"), 4200);

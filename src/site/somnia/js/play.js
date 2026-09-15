@@ -5,7 +5,7 @@ import { initPanelLayout } from "./panel-layout.js";
 import {
   initBoardZoom,
   syncBoardZoomAfterRender,
-  resetBoardZoom,
+  fitBoardToViewport,
   setBoardZoomChangeHandler,
 } from "./board-zoom.js";
 import { initPauseMenu, openPauseMenu } from "./pause-menu.js";
@@ -138,6 +138,7 @@ import {
   showMindstreamPicker,
   showLandscapeActionPicker,
   showLandscapeDetail,
+  showDreamerDetailOverlay,
   hideDreamerDetailTooltip,
   showDreamerPowerChoice,
   showObjectCardPicker,
@@ -632,7 +633,7 @@ function applyLoadedGame(loaded) {
   document.body.classList.remove("tutorial-mode-active");
   hideTutorial();
   showScreen("screen-game");
-  resetBoardZoom();
+  fitBoardToViewport();
   resetHandSnapshots(state);
   resetDeckColumnRender();
   resetBoardMotion(state);
@@ -699,7 +700,7 @@ async function startGame(config) {
   }
 
   showScreen("screen-game");
-  resetBoardZoom();
+  fitBoardToViewport();
   resetHandSnapshots(state);
   resetDeckColumnRender();
   resetBoardMotion(state);
@@ -1136,7 +1137,27 @@ function renderBoardArea() {
     }
     handleBoardTileClick(state, id);
     renderAll();
-  }, legalMoves, pickHighlights, (id) => showLandscapeDetail(state, id));
+  }, legalMoves, pickHighlights, (id) => showLandscapeDetail(state, id), {
+    onDreamerTokenClick: (playerId, tileId) => {
+      const playerIndex = state.players.findIndex((p) => p.id === playerId);
+      if (playerIndex < 0) return;
+      if (!isTutorialActionAllowed(state, "dreamerSelect", { playerIndex })) {
+        tutorialActionBlocked(state);
+        renderAll();
+        return;
+      }
+      state.activePlayerIndex = playerIndex;
+      if (getPhase(state) === "Meet") state.selectedLandscapeId = tileId;
+      const player = state.players[playerIndex];
+      showDreamerDetailOverlay(player.dreamer, { player, state });
+    },
+    onBeastTokenClick: (encounter, tileId) => {
+      state.selectedLandscapeId = tileId;
+      state.activeEncounter = encounter;
+      state.activeEncounterLandscapeId = tileId;
+      showModal(encounter);
+    },
+  });
   syncBoardZoomAfterRender();
 }
 

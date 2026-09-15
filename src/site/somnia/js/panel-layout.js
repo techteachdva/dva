@@ -39,8 +39,8 @@ export function computeViewportMetrics() {
   const chromeH = Math.round(clamp(h * 0.055, 44, 58));
   const sidebarW = Math.round(clamp(w * 0.2, 196, 340));
   const maxHand = Math.round(h * 0.46);
-  const minBoard = Math.round(h * 0.36);
-  const handH = Math.round(clamp(h * 0.34, 168, Math.min(maxHand, h - chromeH - minBoard)));
+  const minBoard = Math.round(h * 0.44);
+  const handH = Math.round(clamp(h * 0.30, 168, Math.min(maxHand, h - chromeH - minBoard)));
   const dockBudget = Math.round(handH * 0.58);
   const btnH = Math.round(clamp((dockBudget - 36) / 3, 34, 64));
   const btnFs = Number(clamp(btnH / 40, 0.82, 1.55).toFixed(2));
