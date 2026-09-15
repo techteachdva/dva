@@ -2957,6 +2957,38 @@ export function showMeetDreambeastSkipConfirm({
   document.body.classList.add("utility-modal-open");
 }
 
+function mountLandscapeOccupantCard(container, card, caption) {
+  const wrap = document.createElement("div");
+  wrap.className = "landscape-detail-occupant-card";
+  const el = renderCard(card, { portrait: true });
+  el.tabIndex = -1;
+  wrap.appendChild(el);
+  if (caption) {
+    const cap = document.createElement("div");
+    cap.className = "landscape-detail-occupant-caption";
+    cap.textContent = caption;
+    wrap.appendChild(cap);
+  }
+  container.appendChild(wrap);
+}
+
+function mountLandscapeOccupantColumn(container, label, entries) {
+  const labelEl = document.createElement("div");
+  labelEl.className = "landscape-detail-side-label";
+  labelEl.textContent = label;
+  container.appendChild(labelEl);
+
+  if (!entries.length) {
+    const empty = document.createElement("p");
+    empty.className = "landscape-detail-side-empty";
+    empty.textContent = "None";
+    container.appendChild(empty);
+    return;
+  }
+
+  entries.forEach(({ card, caption }) => mountLandscapeOccupantCard(container, card, caption));
+}
+
 export function showLandscapeDetail(state, tileId) {
   const tile = state.board.find((t) => t.id === tileId);
   if (!tile) return;
@@ -2993,30 +3025,62 @@ export function showLandscapeDetail(state, tileId) {
     : `<p class="landscape-detail-muted">${showFace ? "No Meet actions available on this tile." : "Reveal this Landscape to see its actions."}</p>`;
 
   const dreamers = state.players.filter((p) => p.alive && p.landscapeId === tile.id);
-  const occupants = [];
-  dreamers.forEach((p) => occupants.push(`Dreamer: ${p.name}`));
-  if (tile.encounter) occupants.push(`Dreambeast: ${tile.encounter.name}`);
-  if (tile.finalArchetype && !tile.finalArchetype.defeated) {
-    occupants.push(`Remaining Archetype: ${tile.finalArchetype.name}`);
-  }
-  const occupantText = occupants.length ? occupants.join("<br>") : "Unoccupied";
+  const dreamerEntries = dreamers.map((player) => ({
+    card: { ...player.dreamer, type: "dreamer" },
+    caption: `${player.name}${player.isHead ? " ★" : ""}`,
+  }));
 
-  body.innerHTML = `
-    <div class="landscape-detail">
-      <div class="landscape-detail-art-wrap">
-        <img class="landscape-detail-art" src="${imageUrl}" alt="${displayName}">
-      </div>
-      <div class="landscape-detail-body">
-        <h2>${displayName}</h2>
-        <p class="landscape-detail-suit"><strong>Suit:</strong> ${suitLabel}</p>
-        <div class="landscape-detail-actions">${actionRows}</div>
-        <div class="landscape-detail-occupants">
-          <strong>Occupied by</strong>
-          <p>${occupantText}</p>
-        </div>
-      </div>
-    </div>
+  const beastEntries = [];
+  if (tile.encounter) {
+    beastEntries.push({
+      card: { ...tile.encounter, type: tile.encounter.type || "dreambeast" },
+      caption: tile.encounter.name,
+    });
+  }
+  if (tile.finalArchetype && !tile.finalArchetype.defeated) {
+    beastEntries.push({
+      card: { ...tile.finalArchetype, type: "dreambeast" },
+      caption: `${tile.finalArchetype.name} (Archetype)`,
+    });
+  }
+
+  body.innerHTML = "";
+  const root = document.createElement("div");
+  root.className = "landscape-detail";
+
+  const stage = document.createElement("div");
+  stage.className = "landscape-detail-stage";
+
+  const dreamersCol = document.createElement("div");
+  dreamersCol.className = "landscape-detail-dreamers";
+  mountLandscapeOccupantColumn(dreamersCol, "Dreamers", dreamerEntries);
+
+  const artWrap = document.createElement("div");
+  artWrap.className = "landscape-detail-art-wrap";
+  const art = document.createElement("img");
+  art.className = "landscape-detail-art";
+  art.src = imageUrl;
+  art.alt = displayName;
+  artWrap.appendChild(art);
+
+  const beastsCol = document.createElement("div");
+  beastsCol.className = "landscape-detail-beasts";
+  mountLandscapeOccupantColumn(beastsCol, "Dreambeasts", beastEntries);
+
+  stage.appendChild(dreamersCol);
+  stage.appendChild(artWrap);
+  stage.appendChild(beastsCol);
+  root.appendChild(stage);
+
+  const detailBody = document.createElement("div");
+  detailBody.className = "landscape-detail-body";
+  detailBody.innerHTML = `
+    <h2>${displayName}</h2>
+    <p class="landscape-detail-suit"><strong>Suit:</strong> ${suitLabel}</p>
+    <div class="landscape-detail-actions">${actionRows}</div>
   `;
+  root.appendChild(detailBody);
+  body.appendChild(root);
   const shell = modal.querySelector(".utility-content");
   shell?.classList.remove(
     "fullscreen-browser",
