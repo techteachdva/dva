@@ -30,6 +30,11 @@ let musicPan = null;
 let sfxGain = null;
 let sfxPan = null;
 let musicChainReady = false;
+let landscapeSfxMap = null;
+let landscapeSfxLoading = null;
+const landscapeAudioCache = new Map();
+let lastLandscapeSfxId = "";
+let lastLandscapeSfxAt = 0;
 
 function trackById(id) {
   return MUSIC_TRACKS.find((t) => t.id === id) || MUSIC_TRACKS[0];
@@ -196,9 +201,81 @@ export function initSfx() {
   const unlock = () => {
     ensureAudioContext();
     ensureSfxChain();
+    loadLandscapeSfxMap();
   };
   window.addEventListener("click", unlock, { capture: true });
   window.addEventListener("keydown", unlock, { capture: true });
+}
+
+async function loadLandscapeSfxMap() {
+  if (landscapeSfxMap || landscapeSfxLoading) return landscapeSfxLoading;
+  landscapeSfxLoading = fetch("data/landscape-sfx.json")
+    .then((res) => (res.ok ? res.json() : {}))
+    .then((data) => {
+      landscapeSfxMap = data || {};
+      return landscapeSfxMap;
+    })
+    .catch(() => {
+      landscapeSfxMap = {};
+      return landscapeSfxMap;
+    });
+  return landscapeSfxLoading;
+}
+
+function proceduralLandscapeTone(landscapeId) {
+  let hash = 0;
+  for (let i = 0; i < landscapeId.length; i += 1) {
+    hash = (hash * 31 + landscapeId.charCodeAt(i)) >>> 0;
+  }
+  const freq = 80 + (hash % 720);
+  const slide = ((hash >> 8) % 200) - 80;
+  tone({ freq, dur: 1.1 + (hash % 80) / 100, type: "sine", vol: 0.08, slide, echo: 0.12 });
+}
+
+export function playLandscapeSfx(landscapeId) {
+  if (!landscapeId || isSfxMuted()) return;
+  const now = Date.now();
+  if (landscapeId === lastLandscapeSfxId && now - lastLandscapeSfxAt < 450) return;
+  lastLandscapeSfxId = landscapeId;
+  lastLandscapeSfxAt = now;
+
+  loadLandscapeSfxMap().then((map) => {
+    const entry = map?.[landscapeId];
+    if (!entry?.file) {
+      proceduralLandscapeTone(landscapeId);
+      return;
+    }
+    let audio = landscapeAudioCache.get(landscapeId);
+    if (!audio) {
+      audio = new Audio(entry.file);
+      audio.preload = "auto";
+      landscapeAudioCache.set(landscapeId, audio);
+    }
+    ensureSfxChain();
+    const ac = ensureAudioContext();
+    if (!ac || !sfxGain) {
+      audio.volume = settings.sfxVolume;
+      audio.currentTime = 0;
+      audio.play().catch(() => proceduralLandscapeTone(landscapeId));
+      return;
+    }
+    try {
+      if (!audio.__sfxConnected) {
+        const src = ac.createMediaElementSource(audio);
+        src.connect(sfxGain);
+        audio.__sfxConnected = true;
+      }
+    } catch {
+      /* already connected */
+    }
+    audio.volume = 1;
+    audio.currentTime = 0;
+    audio.play().catch(() => proceduralLandscapeTone(landscapeId));
+  });
+}
+
+export function playBossStinger() {
+  playSfx("boss-stinger");
 }
 
 export function playSfx(name, opts = {}) {
@@ -260,6 +337,12 @@ export function playSfx(name, opts = {}) {
       break;
     case "sparkle":
       tone({ freq: 880 + Math.random() * 360, dur: 0.09, type: "sine", vol: 0.04, echo: 0.1 });
+      break;
+    case "boss-stinger":
+      organ({ freq: 110, dur: 0.35, vol: 0.09 });
+      organ({ freq: 146, dur: 0.32, vol: 0.08, delay: 0.08 });
+      tone({ freq: 220, dur: 0.55, type: "sawtooth", vol: 0.06, slide: -80, delay: 0.16, echo: 0.18 });
+      tone({ freq: 55, dur: 0.7, type: "sine", vol: 0.08, delay: 0.05, echo: 0.22 });
       break;
     default:
       tone({ freq: 440, dur: 0.05, type: "sine", vol: 0.05, echo: 0.1 });
@@ -331,6 +414,7 @@ function playMusic() {
 export function initGameAudio() {
   if (bgm) return;
   initSfx();
+  loadLandscapeSfxMap();
   settings = loadSettings();
   bgm = new Audio();
   bgm.preload = "auto";

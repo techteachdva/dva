@@ -1,0 +1,132 @@
+{
+  "bed": {
+    "file": "audio/landscapes/bed.wav",
+    "label": "bed",
+    "license": "CC0 placeholder (procedural) — replace with your own sample"
+  },
+  "city": {
+    "file": "audio/landscapes/city.wav",
+    "label": "city",
+    "license": "CC0 placeholder (procedural) — replace with your own sample"
+  },
+  "forest": {
+    "file": "audio/landscapes/forest.wav",
+    "label": "forest",
+    "license": "CC0 placeholder (procedural) — replace with your own sample"
+  },
+  "house": {
+    "file": "audio/landscapes/house.wav",
+    "label": "house",
+    "license": "CC0 placeholder (procedural) — replace with your own sample"
+  },
+  "road": {
+    "file": "audio/landscapes/road.wav",
+    "label": "road",
+    "license": "CC0 placeholder (procedural) — replace with your own sample"
+  },
+  "sky": {
+    "file": "audio/landscapes/sky.wav",
+    "label": "sky",
+    "license": "CC0 placeholder (procedural) — replace with your own sample"
+  },
+  "suburbia": {
+    "file": "audio/landscapes/suburbia.wav",
+    "label": "suburbia",
+    "license": "CC0 placeholder (procedural) — replace with your own sample"
+  },
+  "lava": {
+    "file": "audio/landscapes/lava.wav",
+    "label": "lava",
+    "license": "CC0 placeholder (procedural) — replace with your own sample"
+  },
+  "black-void": {
+    "file": "audio/landscapes/black-void.wav",
+    "label": "black void",
+    "license": "CC0 placeholder (procedural) — replace with your own sample"
+  },
+  "field-of-broken-glass": {
+    "file": "audio/landscapes/field-of-broken-glass.wav",
+    "label": "field of broken glass",
+    "license": "CC0 placeholder (procedural) — replace with your own sample"
+  },
+  "the-attic": {
+    "file": "audio/landscapes/the-attic.wav",
+    "label": "the attic",
+    "license": "CC0 placeholder (procedural) — replace with your own sample"
+  },
+  "the-basement": {
+    "file": "audio/landscapes/the-basement.wav",
+    "label": "the basement",
+    "license": "CC0 placeholder (procedural) — replace with your own sample"
+  },
+  "desert": {
+    "file": "audio/landscapes/desert.wav",
+    "label": "desert",
+    "license": "CC0 placeholder (procedural) — replace with your own sample"
+  },
+  "endless-hallway": {
+    "file": "audio/landscapes/endless-hallway.wav",
+    "label": "endless hallway",
+    "license": "CC0 placeholder (procedural) — replace with your own sample"
+  },
+  "the-party": {
+    "file": "audio/landscapes/the-party.wav",
+    "label": "the party",
+    "license": "CC0 placeholder (procedural) — replace with your own sample"
+  },
+  "awards": {
+    "file": "audio/landscapes/awards.wav",
+    "label": "awards",
+    "license": "CC0 placeholder (procedural) — replace with your own sample"
+  },
+  "sea-of-teeth": {
+    "file": "audio/landscapes/sea-of-teeth.wav",
+    "label": "sea of teeth",
+    "license": "CC0 placeholder (procedural) — replace with your own sample"
+  },
+  "endless-ocean": {
+    "file": "audio/landscapes/endless-ocean.wav",
+    "label": "endless ocean",
+    "license": "CC0 placeholder (procedural) — replace with your own sample"
+  },
+  "candy-mountain": {
+    "file": "audio/landscapes/candy-mountain.wav",
+    "label": "candy mountain",
+    "license": "CC0 placeholder (procedural) — replace with your own sample"
+  },
+  "naked-classroom": {
+    "file": "audio/landscapes/naked-classroom.wav",
+    "label": "naked classroom",
+    "license": "CC0 placeholder (procedural) — replace with your own sample"
+  },
+  "tranquil-grove": {
+    "file": "audio/landscapes/tranquil-grove.wav",
+    "label": "tranquil grove",
+    "license": "CC0 placeholder (procedural) — replace with your own sample"
+  },
+  "day-in-the-life": {
+    "file": "audio/landscapes/day-in-the-life.wav",
+    "label": "day in the life",
+    "license": "CC0 placeholder (procedural) — replace with your own sample"
+  },
+  "insanity": {
+    "file": "audio/landscapes/insanity.wav",
+    "label": "insanity",
+    "license": "CC0 placeholder (procedural) — replace with your own sample"
+  },
+  "inner-sanctum": {
+    "file": "audio/landscapes/inner-sanctum.wav",
+    "label": "inner sanctum",
+    "license": "CC0 placeholder (procedural) — replace with your own sample"
+  },
+  "silver-mist": {
+    "file": "audio/landscapes/silver-mist.wav",
+    "label": "silver mist",
+    "license": "CC0 placeholder (procedural) — replace with your own sample"
+  },
+  "wasteland": {
+    "file": "audio/landscapes/wasteland.wav",
+    "label": "wasteland",
+    "license": "CC0 placeholder (procedural) — replace with your own sample"
+  }
+}

@@ -130,7 +130,7 @@ export function showMomentOverlay(message, options = {}) {
   const id = ++toastIdCounter;
 
   const el = document.createElement("div");
-  el.className = "moment-toast";
+  el.className = `moment-toast${options.boss ? " moment-toast-boss" : ""}${options.victory ? " moment-toast-victory" : ""}`;
   el.textContent = text;
   if (typeof el.style?.setProperty === "function") {
     el.style.setProperty("--moment-duration", `${duration}ms`);

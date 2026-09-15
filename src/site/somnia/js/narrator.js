@@ -5,11 +5,11 @@ import { getCurrentObjective } from "./guide.js";
 import { showMomentFromNarration, flashMoment } from "./moment-overlay.js";
 
 /** Log to the dream feed and flash a one-line HUD moment. */
-export function logMoment(state, message) {
+export function logMoment(state, message, options = {}) {
   const text = String(message || "").trim();
   if (!text) return;
   addLog(state, text);
-  flashMoment(text.endsWith(".") ? text : `${text}.`);
+  flashMoment(text.endsWith(".") ? text : `${text}.`, options);
 }
 
 export function announce(state, { title, detail, consequences = [], moment = null }) {

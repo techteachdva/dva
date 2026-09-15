@@ -37,7 +37,13 @@ export function startVictoryCelebration() {
   celebrationActive = true;
   document.body.classList.add("victory-celebrating");
   const layer = document.getElementById("victory-fx");
-  if (layer) layer.innerHTML = "";
+  if (layer) {
+    layer.innerHTML = "";
+    const aurora = document.createElement("div");
+    aurora.className = "victory-aurora";
+    aurora.setAttribute("aria-hidden", "true");
+    layer.appendChild(aurora);
+  }
   spawnStars();
   spawnConfetti();
   if (celebrationTimer) clearInterval(celebrationTimer);
@@ -46,9 +52,10 @@ export function startVictoryCelebration() {
     spawnConfetti();
     const w = window.innerWidth;
     const h = window.innerHeight;
-    burstSparkles(w * 0.2 + Math.random() * w * 0.6, h * 0.15 + Math.random() * h * 0.4, 8, "#f0c96a");
-    burstSparkles(w * 0.1 + Math.random() * w * 0.8, h * 0.2 + Math.random() * h * 0.5, 6, "#c9a0ff");
-  }, 1400);
+    burstSparkles(w * 0.2 + Math.random() * w * 0.6, h * 0.15 + Math.random() * h * 0.4, 10, "#f0c96a");
+    burstSparkles(w * 0.1 + Math.random() * w * 0.8, h * 0.2 + Math.random() * h * 0.5, 8, "#c9a0ff");
+    burstSparkles(w * 0.15 + Math.random() * w * 0.7, h * 0.25 + Math.random() * h * 0.45, 6, "#6dffb0");
+  }, 1200);
 }
 
 export function stopVictoryCelebration() {

@@ -1,4 +1,4 @@
-import { bindMusicToggle, initGameAudio, startGameRadio, bindButtonRipples, playSfx } from "./audio.js";
+import { bindMusicToggle, initGameAudio, startGameRadio, bindButtonRipples, playSfx, playLandscapeSfx } from "./audio.js";
 import { initClickFeedback } from "./click-feedback.js";
 import { syncGameCursor, flashRevealOpenCursor } from "./game-cursor.js";
 import { initDeviceMode } from "./device-mode.js";
@@ -9,6 +9,7 @@ import {
   syncBoardZoomAfterRender,
   fitBoardToViewport,
   setBoardZoomChangeHandler,
+  focusOnLandscape,
 } from "./board-zoom.js";
 import { initPauseMenu, openPauseMenu } from "./pause-menu.js";
 import { initFxLayer, burstSparklesAtElement } from "./fx.js";
@@ -1049,6 +1050,8 @@ function openDreamerBoardRadial(anchorEl, playerId, tileId) {
   if (playerIndex < 0) return;
   state.activePlayerIndex = playerIndex;
   if (getPhase(state) === "Meet") state.selectedLandscapeId = tileId;
+  focusOnLandscape(tileId);
+  playLandscapeSfx(tileId);
 
   const player = state.players[playerIndex];
   const handlers = buildPhaseHandlers();
@@ -1495,6 +1498,10 @@ function renderAll() {
     const player = state.players[index];
     if (getPhase(state) === "Meet" && player?.landscapeId) {
       state.selectedLandscapeId = player.landscapeId;
+    }
+    if (player?.alive && player.landscapeId) {
+      focusOnLandscape(player.landscapeId);
+      playLandscapeSfx(player.landscapeId);
     }
     const nextId = state.players[index]?.id;
     if (prevId && nextId && prevId !== nextId) {

@@ -7850,3 +7850,309 @@ html[data-viewport-width="narrow"] .top-bar-stepper {
   min-width: 8.5rem;
   max-width: 14rem;
 }
+
+/* ── Somnia 18.0 polish ── */
+
+#board-zoom-stage.board-focus-snap {
+  transition: transform 0.38s cubic-bezier(0.22, 0.82, 0.24, 1);
+}
+
+#screen-game .table-surface.table-wash-lucidity {
+  background:
+    radial-gradient(ellipse at 50% 40%, rgba(74, 158, 255, 0.16), transparent 58%),
+    radial-gradient(ellipse at 50% 80%, rgba(123, 92, 255, 0.1), transparent 50%),
+    rgba(8, 7, 18, 0.65);
+}
+
+#screen-game .table-surface.table-wash-elasticity {
+  background:
+    radial-gradient(ellipse at 50% 40%, rgba(240, 201, 106, 0.14), transparent 58%),
+    radial-gradient(ellipse at 50% 80%, rgba(240, 200, 48, 0.1), transparent 50%),
+    rgba(8, 7, 18, 0.65);
+}
+
+#screen-game .table-surface.table-wash-willpower {
+  background:
+    radial-gradient(ellipse at 50% 40%, rgba(232, 72, 72, 0.14), transparent 58%),
+    radial-gradient(ellipse at 50% 80%, rgba(180, 40, 60, 0.1), transparent 50%),
+    rgba(8, 7, 18, 0.65);
+}
+
+.hex-tile .hex-face.hex-face-hd {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  filter: saturate(1.06) contrast(1.04);
+}
+
+.hex-tile.face-up .hex-face.hex-face-hd {
+  filter: saturate(1.08) contrast(1.05) brightness(1.02);
+}
+
+.hex-tile .hex-mist {
+  position: absolute;
+  inset: var(--hex-border-width);
+  clip-path: var(--hex-clip);
+  pointer-events: none;
+  z-index: 1;
+  mix-blend-mode: screen;
+  opacity: 0.55;
+}
+
+.hex-tile .hex-mist-a {
+  background: radial-gradient(ellipse at 30% 80%, rgba(201, 160, 255, 0.35), transparent 62%);
+  animation: hex-mist-drift-a 9s ease-in-out infinite;
+}
+
+.hex-tile .hex-mist-b {
+  background: radial-gradient(ellipse at 72% 20%, rgba(74, 158, 255, 0.22), transparent 58%);
+  animation: hex-mist-drift-b 12s ease-in-out infinite;
+}
+
+.hex-tile .hex-mist-wasteland-a {
+  background: radial-gradient(ellipse at 40% 70%, rgba(120, 90, 60, 0.45), transparent 65%);
+  animation: hex-mist-drift-a 14s ease-in-out infinite;
+  opacity: 0.7;
+}
+
+.hex-tile .hex-mist-wasteland-b {
+  background: radial-gradient(ellipse at 65% 30%, rgba(80, 60, 40, 0.35), transparent 55%);
+  animation: hex-mist-drift-b 18s ease-in-out infinite reverse;
+  opacity: 0.65;
+}
+
+.hex-tile .hex-mist-wasteland-c {
+  background: linear-gradient(180deg, rgba(180, 160, 140, 0.12), transparent 45%, rgba(40, 30, 20, 0.2));
+  animation: hex-mist-drift-c 22s linear infinite;
+  mix-blend-mode: overlay;
+  opacity: 0.5;
+}
+
+.hex-tile.wasteland .hex-face {
+  filter: grayscale(0.55) brightness(0.72) contrast(1.08);
+}
+
+@keyframes hex-mist-drift-a {
+  0%, 100% { transform: translate3d(0, 0, 0); opacity: 0.45; }
+  50% { transform: translate3d(4%, -3%, 0); opacity: 0.72; }
+}
+
+@keyframes hex-mist-drift-b {
+  0%, 100% { transform: translate3d(0, 0, 0); opacity: 0.35; }
+  50% { transform: translate3d(-5%, 4%, 0); opacity: 0.62; }
+}
+
+@keyframes hex-mist-drift-c {
+  0% { transform: translate3d(-3%, 0, 0); }
+  100% { transform: translate3d(3%, 0, 0); }
+}
+
+.hex-tile.hex-boss-stinger .hex-face {
+  box-shadow: inset 0 0 0 3px rgba(232, 72, 72, 0.75);
+  animation: hex-boss-pulse 0.9s ease-out 2;
+}
+
+@keyframes hex-boss-pulse {
+  0% { filter: brightness(1) saturate(1); }
+  40% { filter: brightness(1.35) saturate(1.4); }
+  100% { filter: brightness(1) saturate(1); }
+}
+
+.fx-boss-ripple {
+  width: 120px;
+  height: 120px;
+  border: 2px solid rgba(232, 72, 72, 0.65);
+  box-shadow: 0 0 24px rgba(232, 72, 72, 0.45);
+}
+
+.fx-boss-label {
+  color: #ffb4b4;
+  text-shadow: 0 0 12px rgba(232, 72, 72, 0.8);
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+
+.fx-screen-overlay.fx-boss-stinger {
+  background:
+    radial-gradient(ellipse at 50% 45%, rgba(232, 72, 72, 0.22), transparent 55%),
+    radial-gradient(ellipse at 50% 50%, rgba(0, 0, 0, 0.55), transparent 70%);
+  animation: fx-boss-vignette 0.92s ease-out forwards;
+}
+
+@keyframes fx-boss-vignette {
+  0% { opacity: 0; }
+  20% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+.game-card.psyche-card {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.game-card.psyche-card .psyche-holo,
+.game-card.psyche-card .psyche-quanta,
+.game-card.psyche-card .psyche-sparkle {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.game-card.psyche-card .psyche-holo {
+  opacity: 0.55;
+  mix-blend-mode: screen;
+  animation: psyche-holo-shift 4.5s ease-in-out infinite;
+}
+
+.game-card.psyche-card .psyche-holo-lucidity {
+  background: linear-gradient(125deg, transparent 30%, rgba(74, 158, 255, 0.55) 45%, rgba(180, 220, 255, 0.35) 55%, transparent 70%);
+}
+
+.game-card.psyche-card .psyche-holo-elasticity {
+  background: linear-gradient(125deg, transparent 28%, rgba(240, 200, 48, 0.5) 44%, rgba(255, 240, 160, 0.35) 56%, transparent 72%);
+}
+
+.game-card.psyche-card .psyche-holo-willpower {
+  background: linear-gradient(125deg, transparent 30%, rgba(232, 72, 72, 0.5) 46%, rgba(255, 160, 160, 0.32) 58%, transparent 74%);
+}
+
+.game-card.psyche-card .psyche-holo-wild {
+  background: conic-gradient(from 0deg, rgba(232, 72, 72, 0.35), rgba(240, 200, 48, 0.35), rgba(74, 158, 255, 0.35), rgba(232, 72, 72, 0.35));
+  animation: psyche-holo-rainbow 6s linear infinite;
+}
+
+.game-card.psyche-card .psyche-holo-gold {
+  background: linear-gradient(130deg, transparent 25%, rgba(240, 201, 106, 0.65) 48%, rgba(255, 255, 220, 0.4) 58%, transparent 75%);
+}
+
+.game-card.psyche-card .psyche-quanta {
+  background-image:
+    radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.35) 0 1px, transparent 2px),
+    radial-gradient(circle at 70% 60%, rgba(255, 255, 255, 0.25) 0 1px, transparent 2px),
+    radial-gradient(circle at 45% 80%, rgba(255, 255, 255, 0.2) 0 1px, transparent 2px);
+  animation: psyche-quanta-float 5s ease-in-out infinite;
+  opacity: 0.5;
+}
+
+.game-card.psyche-card.psyche-power {
+  box-shadow: 0 0 16px rgba(240, 201, 106, 0.35), inset 0 0 12px rgba(240, 201, 106, 0.12);
+  border-color: rgba(240, 201, 106, 0.75);
+  background: linear-gradient(160deg, rgba(240, 201, 106, 0.42), rgba(72, 56, 8, 0.92));
+}
+
+.game-card.psyche-card.psyche-power .psyche-sparkle {
+  background:
+    radial-gradient(circle at 30% 40%, rgba(255, 255, 200, 0.5), transparent 35%),
+    radial-gradient(circle at 65% 55%, rgba(240, 201, 106, 0.4), transparent 40%);
+  animation: psyche-sparkle-pulse 2.2s ease-in-out infinite;
+  mix-blend-mode: screen;
+}
+
+.game-card.psyche-card.lucidity {
+  box-shadow: 0 0 14px rgba(74, 158, 255, 0.22);
+}
+
+.game-card.psyche-card.elasticity {
+  box-shadow: 0 0 14px rgba(240, 200, 48, 0.2);
+}
+
+.game-card.psyche-card.willpower {
+  box-shadow: 0 0 14px rgba(232, 72, 72, 0.22);
+}
+
+.game-card.psyche-card.wild {
+  animation: psyche-wild-glow 5s ease-in-out infinite;
+}
+
+@keyframes psyche-holo-shift {
+  0%, 100% { transform: translateX(-18%) skewX(-8deg); }
+  50% { transform: translateX(18%) skewX(8deg); }
+}
+
+@keyframes psyche-holo-rainbow {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes psyche-quanta-float {
+  0%, 100% { transform: translateY(0); opacity: 0.4; }
+  50% { transform: translateY(-3px); opacity: 0.65; }
+}
+
+@keyframes psyche-sparkle-pulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.85; }
+}
+
+@keyframes psyche-wild-glow {
+  0%, 100% { box-shadow: 0 0 12px rgba(255, 255, 255, 0.15); }
+  50% { box-shadow: 0 0 18px rgba(201, 160, 255, 0.35); }
+}
+
+.game-card .art img.card-art-sharp {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: high-quality;
+  transform: translateZ(0) scale(1.01);
+  filter: saturate(1.04) contrast(1.03);
+}
+
+body.menu-window .menu-glass-panel {
+  animation: menu-panel-float 8s ease-in-out infinite;
+}
+
+body.menu-window .setup-panel-left.menu-glass-panel { animation-delay: 0s; }
+body.menu-window .setup-panel-center.menu-glass-panel { animation-delay: -2.5s; }
+body.menu-window .setup-panel-right.menu-glass-panel { animation-delay: -5s; }
+
+body.menu-window .brand h1 {
+  animation: menu-title-glow 6s ease-in-out infinite;
+}
+
+@keyframes menu-panel-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes menu-title-glow {
+  0%, 100% { text-shadow: 0 0 12px rgba(201, 160, 255, 0.25); }
+  50% { text-shadow: 0 0 22px rgba(201, 160, 255, 0.45); }
+}
+
+.moment-toast.moment-toast-boss {
+  border-color: rgba(232, 72, 72, 0.55);
+  box-shadow: 0 8px 28px rgba(232, 72, 72, 0.25);
+}
+
+.moment-toast.moment-toast-victory {
+  border-color: rgba(240, 201, 106, 0.55);
+  box-shadow: 0 8px 28px rgba(240, 201, 106, 0.22);
+}
+
+.victory-aurora {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(105deg, transparent 30%, rgba(201, 160, 255, 0.18) 45%, rgba(109, 255, 176, 0.12) 55%, transparent 70%);
+  animation: victory-aurora-sweep 4s ease-in-out infinite;
+}
+
+@keyframes victory-aurora-sweep {
+  0%, 100% { transform: translateX(-8%) skewX(-6deg); opacity: 0.35; }
+  50% { transform: translateX(8%) skewX(6deg); opacity: 0.75; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hex-tile .hex-mist,
+  .game-card.psyche-card .psyche-holo,
+  .game-card.psyche-card .psyche-quanta,
+  body.menu-window .menu-glass-panel,
+  body.menu-window .brand h1,
+  .victory-aurora {
+    animation: none !important;
+  }
+
+  #board-zoom-stage.board-focus-snap {
+    transition: none;
+  }
+}

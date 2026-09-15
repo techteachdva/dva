@@ -76,7 +76,7 @@ import {
 import { playObjectCard, applySkeletonKeyAfterDream, drawObjects, handLimitForPlayer, handRoomForPsycheDraw } from "./objects.js";
 import { resumeObjectEffect } from "./object-effects.js";
 import { psycheHandCount, hasPsycheHealth, canAddAllyToHand, allyHandLimitForPlayer, allyHandCount } from "./psyche.js";
-import { queueDreamDrawFx, queueMeetFlashFx, queuePsycheSwirlFx } from "./board-fx.js";
+import { queueDreamDrawFx, queueMeetFlashFx, queuePsycheSwirlFx, queueBossStingerFx } from "./board-fx.js";
 import { resolveOnAcquire, useArchetypePower, handleArchetypePowerTilePick } from "./archetypes.js";
 import { getActivatableArchetypePowers } from "./archetype-stats.js";
 import { isQuestConditionMet } from "./quests.js";
@@ -633,8 +633,9 @@ export function drawAdditionalDream(state, onShowModal) {
   if (card.type === "boss-dream" || card.boss) {
     const encounter = { ...card, type: "dreambeast", instanceId: uid("enc") };
     setEncounterOnLandscape(state, "bed", encounter);
-    logMoment(state, `${card.name} awakens on The Bed!`);
+    logMoment(state, `${card.name} awakens on The Bed!`, { boss: true });
     markDreamFeedNudge();
+    queueBossStingerFx(card.id, "bed");
   } else if (card.type === "final" && card.id === "you-never-wake") {
     resolveCardEffect(state, card, head, getEffectHelpers());
   } else if (card.type === "final" && card.id === "final-recurrence") {
@@ -686,9 +687,10 @@ export function drawDreamCard(state, onShowModal) {
   if (card.type === "boss-dream" || card.boss) {
     const encounter = { ...card, type: "dreambeast", instanceId: uid("enc") };
     setEncounterOnLandscape(state, "bed", encounter);
-    logMoment(state, `${card.name} awakens on The Bed!`);
+    logMoment(state, `${card.name} awakens on The Bed!`, { boss: true });
     recordQuestEvent(state, "meet_boss", { bossId: card.id });
     markDreamFeedNudge();
+    queueBossStingerFx(card.id, "bed");
   } else {
     resolveCardEffect(state, card, head, getEffectHelpers());
   }

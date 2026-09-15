@@ -118,6 +118,8 @@ function createArtElement(card) {
     img.src = card.image;
     img.alt = card.name;
     img.loading = "lazy";
+    img.decoding = "async";
+    img.className = "card-art-sharp";
     img.addEventListener("error", () => {
       img.remove();
       art.classList.add("art-fallback");
@@ -245,6 +247,9 @@ function renderPsycheCard(card, { selected, suggested, onClick, mini, dense, ent
       mini ? "mini" : "",
     ].filter(Boolean).join(" ");
     el.innerHTML = `
+      <span class="psyche-holo psyche-holo-gold" aria-hidden="true"></span>
+      <span class="psyche-quanta psyche-quanta-gold" aria-hidden="true"></span>
+      <span class="psyche-sparkle" aria-hidden="true"></span>
       <span class="psyche-value">⚡</span>
       <span class="psyche-suit">+${card.powerTokens ?? 1}</span>
       <span class="psyche-label">Power</span>
@@ -268,6 +273,8 @@ function renderPsycheCard(card, { selected, suggested, onClick, mini, dense, ent
 
   if (isWild) {
     el.innerHTML = `
+      <span class="psyche-holo psyche-holo-wild" aria-hidden="true"></span>
+      <span class="psyche-quanta" aria-hidden="true"></span>
       <span class="psyche-value">5</span>
       <span class="psyche-suit wild-gradient" title="Wild — any suit">★</span>
       <span class="psyche-label">Wild</span>
@@ -276,6 +283,8 @@ function renderPsycheCard(card, { selected, suggested, onClick, mini, dense, ent
     const symbol = suitIconHtml(card.suit, { size: mini ? 14 : 18 });
     const label = SUIT_LABELS[card.suit] || card.suit;
     el.innerHTML = `
+      <span class="psyche-holo psyche-holo-${card.suit}" aria-hidden="true"></span>
+      <span class="psyche-quanta psyche-quanta-${card.suit}" aria-hidden="true"></span>
       <span class="psyche-value">${card.value}</span>
       <span class="psyche-suit ${suitClass(card.suit)}">${symbol}</span>
       <span class="psyche-label">${label}</span>
@@ -1119,8 +1128,15 @@ export function renderBoard(
     const backImage = flippingBack ? `url('${tile.image}')` : `url('${wastelandSrc}')`;
     const frontImage = flippingBack ? `url('${wastelandSrc}')` : faceImage;
     const faceHtml = (flippingOver || flippingBack)
-      ? `<div class="hex-flip" aria-hidden="true"><div class="hex-flip-inner"><div class="hex-face hex-flip-back" style="background-image: ${backImage}"></div><div class="hex-face hex-flip-front" style="background-image: ${frontImage}"></div></div></div>`
-      : `<div class="hex-face" style="background-image: ${faceImage}"></div>`;
+      ? `<div class="hex-flip" aria-hidden="true"><div class="hex-flip-inner"><div class="hex-face hex-face-hd hex-flip-back" style="background-image: ${backImage}"></div><div class="hex-face hex-face-hd hex-flip-front" style="background-image: ${frontImage}"></div></div></div>`
+      : `<div class="hex-face hex-face-hd" style="background-image: ${faceImage}"></div>`;
+
+    const isWastelandFace = tile.wasteland || !tile.revealed;
+    const mistHtml = isWastelandFace
+      ? `<div class="hex-mist hex-mist-wasteland-a" aria-hidden="true"></div><div class="hex-mist hex-mist-wasteland-b" aria-hidden="true"></div><div class="hex-mist hex-mist-wasteland-c" aria-hidden="true"></div>`
+      : showFace
+        ? `<div class="hex-mist hex-mist-a" aria-hidden="true"></div><div class="hex-mist hex-mist-b" aria-hidden="true"></div>`
+        : "";
 
     const occupants = state.players.filter((p) => p.landscapeId === tile.id && p.alive);
     const finalArch = tile.finalArchetype;
@@ -1157,6 +1173,7 @@ export function renderBoard(
     el.innerHTML = `
       ${faceHtml}
       <div class="hex-overlay"></div>
+      ${mistHtml}
       ${occupantsHtml}
       <div class="name">${displayName}</div>
       <div class="suit">${showFace ? (tile.suit || "neutral") : "hidden"}</div>
@@ -1917,6 +1934,18 @@ export function renderHud(state, hint = "") {
   if (banner) banner.textContent = "";
 
   renderCoopBanner(state);
+
+  const table = document.getElementById("table-surface");
+  if (table) {
+    table.classList.remove("table-wash-lucidity", "table-wash-elasticity", "table-wash-willpower");
+    const phase = getPhase(state);
+    const wash = phase === "Reveal"
+      ? "table-wash-lucidity"
+      : phase === "Explore"
+        ? "table-wash-elasticity"
+        : "table-wash-willpower";
+    table.classList.add(wash);
+  }
 }
 
 const PHASES = ["Reveal", "Explore", "Meet"];

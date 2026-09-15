@@ -3,6 +3,8 @@ export const SETTINGS_KEY = "somnia.settings";
 export const MUSIC_TRACKS = [
   { id: "dreams-become-real", title: "Dreams Become Real", file: "audio/dreams-become-real.mp3" },
   { id: "that-zen-moment", title: "That Zen Moment", file: "audio/that-zen-moment.mp3" },
+  { id: "ethereal-relaxation", title: "Ethereal Relaxation", file: "audio/ethereal-relaxation.mp3" },
+  { id: "magic-escape-room", title: "Magic Escape Room", file: "audio/magic-escape-room.mp3" },
 ];
 
 export const RADIO_PLAYLIST = MUSIC_TRACKS.map((t) => t.id);

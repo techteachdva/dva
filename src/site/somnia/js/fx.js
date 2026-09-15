@@ -203,3 +203,8 @@ export function playDreamWarble(strength = 0.7) {
     el.classList.add("hidden");
   }, 640);
 }
+
+/** Dark crimson vignette when a Boss Dream awakens. */
+export function playBossFlash() {
+  playOverlay("fx-boss-stinger", "fx-screen-overlay fx-boss-stinger", 920);
+}

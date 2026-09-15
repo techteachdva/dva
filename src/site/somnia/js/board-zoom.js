@@ -88,6 +88,35 @@ export function syncBoardZoomAfterRender() {
   else applyTransform();
 }
 
+/** Snap pan/zoom to center a landscape hex (e.g. dreamer selection). */
+export function focusOnLandscape(landscapeId, { zoom: targetZoom = 2.35, animate = true } = {}) {
+  if (!viewport || !stage || !landscapeId) return false;
+  zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, targetZoom));
+  userAdjusted = true;
+  zoomChangeHandler?.();
+
+  const applyFocus = () => {
+    const tile = document.querySelector(`.hex-tile[data-tile-id="${landscapeId}"]`);
+    if (!tile || !viewport) return;
+    const tileRect = tile.getBoundingClientRect();
+    const vpRect = viewport.getBoundingClientRect();
+    const tileCx = tileRect.left + tileRect.width / 2;
+    const tileCy = tileRect.top + tileRect.height / 2;
+    const vpCx = vpRect.left + vpRect.width / 2;
+    const vpCy = vpRect.top + vpRect.height / 2;
+    panX += vpCx - tileCx;
+    panY += vpCy - tileCy;
+    if (animate && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      stage.classList.add("board-focus-snap");
+      window.setTimeout(() => stage.classList.remove("board-focus-snap"), 420);
+    }
+    applyTransform();
+  };
+
+  requestAnimationFrame(() => requestAnimationFrame(applyFocus));
+  return true;
+}
+
 /** Suppress the next hex click after a space/alt pan drag so tiles are not selected accidentally. */
 export function consumeBoardClickSuppression() {
   if (!suppressClick) return false;

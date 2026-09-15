@@ -1,7 +1,7 @@
 /** Board & special card flow animations — dreams, mindstream, tiles, encounters, repress. */
 
-import { burstSparkles, playDreamRipple, playMeetFlash, playPointRipple, playDreamWarble } from "./fx.js";
-import { playSfx } from "./audio.js";
+import { burstSparkles, playDreamRipple, playMeetFlash, playPointRipple, playDreamWarble, playBossFlash } from "./fx.js";
+import { playSfx, playLandscapeSfx, playBossStinger } from "./audio.js";
 
 const queue = [];
 const prevDreamerTiles = new Map();
@@ -301,6 +301,10 @@ export function queuePsycheSwirlFx(cards, tileId) {
   queue.push({ type: "psyche-swirl", cards, tileId });
 }
 
+export function queueBossStingerFx(bossId, tileId = "bed") {
+  queue.push({ type: "boss-stinger", bossId, tileId });
+}
+
 export function runPendingBoardFx() {
   if (!queue.length) return;
   if (reducedMotion()) {
@@ -367,6 +371,7 @@ export function runPendingBoardFx() {
       window.setTimeout(() => {
         burstSparkles(to.x, to.y, 10, "#f0c96a");
         playPointRipple(to.x, to.y, "fx-land-ripple");
+        playLandscapeSfx(evt.toId);
         revealArriving("dreamer", evt.playerId);
       }, FLY_MS - 60);
       playDreamWarble(0.4);
@@ -414,6 +419,7 @@ export function runPendingBoardFx() {
       if (c) burstSparkles(c.x, c.y, 14, "#4ad4ff");
       playDreamWarble(0.55);
       playSfx("flip");
+      playLandscapeSfx(evt.tileId);
       delay += step * 0.5;
     } else if (evt.type === "tile-forget") {
       const tile = hexTileEl(evt.tileId);
@@ -514,6 +520,19 @@ export function runPendingBoardFx() {
         }
       }
       delay += step;
+    } else if (evt.type === "boss-stinger") {
+      playBossFlash();
+      playBossStinger(evt.bossId);
+      const tile = hexTileEl(evt.tileId || "bed");
+      const c = centerOf(tile) || boardCenter();
+      flashEl(tile, "hex-boss-stinger", 1100);
+      if (c) {
+        burstSparkles(c.x, c.y, 22, "#e84848");
+        burstSparkles(c.x, c.y, 14, "#f0c96a");
+        floatLabel(c.x, c.y - 32, "☠ Boss", "fx-boss-label", delay);
+        playPointRipple(c.x, c.y, "fx-boss-ripple");
+      }
+      delay += step * 1.2;
     }
   });
 }
