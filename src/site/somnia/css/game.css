@@ -6458,6 +6458,64 @@ body.panel-resizing {
     linear-gradient(160deg, rgba(255, 90, 40, 0.28), rgba(255, 200, 60, 0.16), transparent 70%);
 }
 
+.fx-click-ripple {
+  border-color: rgba(201, 160, 255, 0.75);
+  box-shadow:
+    0 0 16px rgba(240, 201, 106, 0.45),
+    0 0 28px rgba(123, 92, 255, 0.35);
+  animation: fx-point-ripple 0.72s ease-out forwards;
+}
+
+.fx-click-shimmer {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  margin-left: -5px;
+  margin-top: -5px;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.95), rgba(201, 160, 255, 0.35) 42%, transparent 72%);
+  animation: fx-click-shimmer 0.5s ease-out forwards;
+}
+
+@keyframes fx-click-shimmer {
+  0% { transform: scale(0.4); opacity: 0.95; }
+  100% { transform: scale(2.8); opacity: 0; }
+}
+
+.meet-pool-guide {
+  margin: 0.35rem 0 0.55rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 10px;
+  border: 1px solid rgba(232, 120, 120, 0.35);
+  background: rgba(40, 12, 20, 0.55);
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.meet-pool-guide.hidden {
+  display: none;
+}
+
+.meet-pool-targets {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-top: 0.25rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.meet-pool-targets .meet-pool-ready {
+  color: #8fd4a0;
+  font-weight: 700;
+}
+
+.power-token-radial-item.radial-primary.ready:not(:disabled) {
+  border-color: rgba(240, 201, 106, 0.85);
+}
+
 .fx-point-ripple,
 .fx-summon-ripple,
 .fx-land-ripple {

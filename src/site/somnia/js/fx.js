@@ -165,6 +165,21 @@ export function playPointRipple(x, y, className = "fx-point-ripple") {
   window.setTimeout(() => el.remove(), 900);
 }
 
+/** Soft UI click — ripple plus sparkle burst. */
+export function playClickFeedback(x, y, { color = "#c9a0ff", sparkles = 7 } = {}) {
+  if (reducedMotion()) return;
+  playPointRipple(x, y, "fx-click-ripple");
+  burstSparkles(x, y, sparkles, color);
+  const layer = document.getElementById("fx-layer");
+  if (!layer) return;
+  const shimmer = document.createElement("span");
+  shimmer.className = "fx-click-shimmer";
+  shimmer.style.left = `${x}px`;
+  shimmer.style.top = `${y}px`;
+  layer.appendChild(shimmer);
+  window.setTimeout(() => shimmer.remove(), 520);
+}
+
 export function playPointRippleAtElement(el, className) {
   if (!el) {
     playPointRipple(window.innerWidth / 2, window.innerHeight * 0.42, className);

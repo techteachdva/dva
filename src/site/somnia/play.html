@@ -21,7 +21,7 @@
   <div id="app">
     <header class="top-bar play-top-bar">
       <div class="brand">
-        <span class="version-label">Somnia v 17.3</span>
+        <span class="version-label">Somnia v 17.4</span>
         <h1>Somnia</h1>
       </div>
       <div id="phase-stepper" class="phase-stepper top-bar-stepper" aria-label="Round phases"></div>
@@ -112,6 +112,7 @@
               </div>
               <span class="hand-hint hand-hint-subtle">Click Dreamer chips to switch · double-click cards to inspect</span>
             </div>
+            <div id="meet-pool-guide" class="meet-pool-guide hidden" aria-live="polite"></div>
             <div id="hand" class="hand-dreamer-display" data-player-id="">
               <div id="hand-primary" class="hand-primary" aria-label="Psyche hand cards"></div>
               <div id="hand-spillover" class="hand-spillover hidden" aria-label="Extra hand cards"></div>
@@ -119,7 +120,7 @@
           </div>
           <div class="hand-section objects-panel">
             <div class="objects-subsection">
-              <h3>Objects (hand)</h3>
+              <h3>Objects (hand) <span class="hand-hint-subtle">click to view · double-click to play</span></h3>
               <div id="player-objects" class="hand objects-row"></div>
             </div>
             <div class="objects-subsection">

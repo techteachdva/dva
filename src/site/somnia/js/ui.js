@@ -473,48 +473,50 @@ export function playDreamerHandSparkle(fromPlayerId, toPlayerId) {
   }
 }
 
-let powerTokenRadialRoot = null;
+let radialMenuRoot = null;
 
-function onPowerTokenRadialKey(event) {
-  if (event.key === "Escape") hidePowerTokenRadial();
+function onRadialMenuKey(event) {
+  if (event.key === "Escape") hideRadialMenu();
 }
 
-export function hidePowerTokenRadial() {
-  if (!powerTokenRadialRoot) return;
-  document.removeEventListener("keydown", onPowerTokenRadialKey, true);
-  powerTokenRadialRoot.remove();
-  powerTokenRadialRoot = null;
+export function hideRadialMenu() {
+  if (!radialMenuRoot) return;
+  document.removeEventListener("keydown", onRadialMenuKey, true);
+  radialMenuRoot.remove();
+  radialMenuRoot = null;
 }
 
-export function showPowerTokenRadial(anchorEl, options, onPick) {
-  hidePowerTokenRadial();
+export const hidePowerTokenRadial = hideRadialMenu;
+
+export function showRadialMenu(anchorEl, options, onPick, { ariaLabel = "Actions" } = {}) {
+  hideRadialMenu();
   if (!anchorEl || !options?.length) return;
 
   const rect = anchorEl.getBoundingClientRect();
   const cx = rect.left + rect.width / 2;
   const cy = rect.top + rect.height / 2;
   const layer = document.createElement("div");
-  layer.className = "power-token-radial-layer";
+  layer.className = "power-token-radial-layer radial-menu-layer";
   layer.setAttribute("role", "menu");
-  layer.setAttribute("aria-label", "Spend a Power Token");
+  layer.setAttribute("aria-label", ariaLabel);
 
   const scrim = document.createElement("button");
   scrim.type = "button";
-  scrim.className = "power-token-radial-scrim";
-  scrim.setAttribute("aria-label", "Close Power Token menu");
+  scrim.className = "power-token-radial-scrim radial-menu-scrim";
+  scrim.setAttribute("aria-label", "Close menu");
   scrim.tabIndex = -1;
-  scrim.addEventListener("click", hidePowerTokenRadial);
+  scrim.addEventListener("click", hideRadialMenu);
   layer.appendChild(scrim);
 
   const menu = document.createElement("div");
-  menu.className = "power-token-radial-menu";
+  menu.className = "power-token-radial-menu radial-menu";
 
   const count = options.length;
-  const radius = Math.max(96, 72 + count * 6);
+  const radius = Math.max(96, 72 + count * 8);
   options.forEach((opt, index) => {
     const angle = count === 1
       ? -Math.PI / 2
-      : -Math.PI + (Math.PI * index) / (count - 1);
+      : -Math.PI + (Math.PI * index) / Math.max(1, count - 1);
     const dx = Math.cos(angle) * radius;
     const dy = Math.sin(angle) * radius;
     const pad = 72;
@@ -522,7 +524,7 @@ export function showPowerTokenRadial(anchorEl, options, onPick) {
     const py = Math.min(window.innerHeight - pad, Math.max(pad, cy + dy));
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = `power-token-radial-item${opt.disabled ? "" : " ready"}`;
+    btn.className = `power-token-radial-item radial-menu-item${opt.disabled ? "" : " ready"}${opt.primary ? " radial-primary" : ""}`;
     btn.setAttribute("role", "menuitem");
     btn.textContent = opt.label;
     btn.title = opt.hint || opt.label;
@@ -532,7 +534,7 @@ export function showPowerTokenRadial(anchorEl, options, onPick) {
     btn.addEventListener("click", (event) => {
       event.stopPropagation();
       if (opt.disabled) return;
-      hidePowerTokenRadial();
+      hideRadialMenu();
       onPick?.(opt);
     });
     menu.appendChild(btn);
@@ -540,9 +542,13 @@ export function showPowerTokenRadial(anchorEl, options, onPick) {
 
   layer.appendChild(menu);
   document.body.appendChild(layer);
-  powerTokenRadialRoot = layer;
+  radialMenuRoot = layer;
   layer.classList.add("open");
-  document.addEventListener("keydown", onPowerTokenRadialKey, true);
+  document.addEventListener("keydown", onRadialMenuKey, true);
+}
+
+export function showPowerTokenRadial(anchorEl, options, onPick) {
+  showRadialMenu(anchorEl, options, onPick, { ariaLabel: "Spend a Power Token" });
 }
 
 export function renderPowerTokens(state, { onTokenClick } = {}) {
@@ -1077,14 +1083,14 @@ export function renderBoard(
       const hidden = isDreamerTokenHidden(p.id);
       const arriving = hidden ? " is-arriving is-departing" : "";
       occupantTokens.push(
-        `<img class="hex-occupant-token hex-occupant-dreamer${arriving}" data-dreamer-id="${p.id}" src="${p.dreamer.image}" alt="${p.dreamer.name}" title="${p.name} — click for details" decoding="async" draggable="false" onerror="this.remove()">`
+        `<img class="hex-occupant-token hex-occupant-dreamer${arriving}" data-dreamer-id="${p.id}" src="${p.dreamer.image}" alt="${p.dreamer.name}" title="${p.name} — click for actions" decoding="async" draggable="false" onerror="this.remove()">`
       );
     });
     if (encounter?.image) {
       const encKey = encounter.instanceId || encounter.id || "";
       const arriving = encKey && isBeastTokenHidden(encKey) ? " is-arriving" : "";
       occupantTokens.push(
-        `<img class="hex-occupant-token hex-occupant-beast${arriving}" data-encounter-key="${encKey}" src="${encounter.image}" alt="${encounter.name}" title="${encounter.name} — click for details" decoding="async" draggable="false" onerror="this.remove()">`
+        `<img class="hex-occupant-token hex-occupant-beast${arriving}" data-encounter-key="${encKey}" src="${encounter.image}" alt="${encounter.name}" title="${encounter.name} — Accept, Reject, or View" decoding="async" draggable="false" onerror="this.remove()">`
       );
     }
     const occupantsHtml = occupantTokens.length
@@ -1105,13 +1111,13 @@ export function renderBoard(
       const dreamerEl = event.target.closest(".hex-occupant-dreamer");
       if (dreamerEl?.dataset.dreamerId) {
         event.stopPropagation();
-        boardOptions.onDreamerTokenClick?.(dreamerEl.dataset.dreamerId, tile.id);
+        boardOptions.onDreamerTokenClick?.(dreamerEl.dataset.dreamerId, tile.id, dreamerEl);
         return;
       }
       const beastEl = event.target.closest(".hex-occupant-beast");
       if (beastEl?.dataset.encounterKey && encounter) {
         event.stopPropagation();
-        boardOptions.onBeastTokenClick?.(encounter, tile.id);
+        boardOptions.onBeastTokenClick?.(encounter, tile.id, beastEl);
         return;
       }
       onSelectLandscape(tile.id);
@@ -1122,7 +1128,7 @@ export function renderBoard(
         event.stopPropagation();
         onInspectLandscape(tile.id);
       });
-      el.title = "Click landscape to interact · click Dreamer or Dreambeast for details · right-click landscape for overview";
+      el.title = "Click landscape to interact · Dreamer or Dreambeast opens action menu · right-click landscape for overview";
     }
     board.appendChild(el);
   });
@@ -1294,6 +1300,38 @@ export function renderPhaseSpendHands(state, onCardClick) {
   });
 }
 
+export function renderMeetPoolGuide(state) {
+  const el = document.getElementById("meet-pool-guide");
+  if (!el) return;
+  const phase = getPhase(state);
+  const tile = state.board.find((t) => t.id === state.selectedLandscapeId);
+  const enc = tile?.encounter;
+  if (phase !== "Meet" || !state.meetActionBudget || !enc) {
+    el.classList.add("hidden");
+    el.innerHTML = "";
+    return;
+  }
+  const poolCount = spreadPsycheCount(state);
+  const poolTotal = coopMeetPlayTotal(state);
+  const bonus = state.pendingPowerBonus || 0;
+  const acceptCost = enc.accept;
+  const rejectCost = encounterRejectCost(enc);
+  const actor = meetPsycheActor(state);
+  const acceptOk = poolTotal >= acceptCost;
+  const rejectOk = poolTotal >= rejectCost;
+  el.classList.remove("hidden");
+  el.innerHTML = `
+    <strong>Meet pool:</strong>
+    Select <strong>1–3 Psyche</strong> from ${actor?.name || "the Dreamer on this Encounter"}'s hand
+    ${bonus ? ` · <strong>+${bonus}</strong> from Power Token spread` : ""}
+    · current <strong>${poolCount}/3</strong> cards = <strong>${poolTotal}</strong> total
+    <span class="meet-pool-targets">
+      <span class="${acceptOk ? "meet-pool-ready" : ""}">Accept needs ${acceptCost}</span>
+      <span class="${rejectOk ? "meet-pool-ready" : ""}">Reject needs ${rejectCost}</span>
+    </span>
+  `;
+}
+
 export function renderCoopMeetHands(state, onCardClick) {
   const player = activePlayer(state);
   const meetActor = meetPsycheActor(state);
@@ -1304,14 +1342,15 @@ export function renderCoopMeetHands(state, onCardClick) {
   const bonusText = bonus.total ? ` · +${bonus.total} Dreamer (${bonus.parts.join(", ")})` : "";
   const pending = state.pendingPowerBonus ? ` · +${state.pendingPowerBonus} bonus pending` : "";
   const isActor = meetActor?.id === player.id;
+  renderMeetPoolGuide(state);
 
   renderActiveDreamerHand(state, onCardClick, {
     title: `${player.name} — Meet Hand`,
     statsText: meetActor
       ? (isActor
-        ? `${poolCount}/3 spread${allyCount ? ` + ${allyCount} ally` : ""} · total ${poolTotal}${bonusText}${pending} · you may spend Psyche`
-        : `Only ${meetActor.name} on the Encounter Landscape may spend Psyche · switch to them with their chip`)
-      : "Stand on a Landscape with an Encounter to Meet · click Dreamer chips to switch hands",
+        ? `Pool ${poolCount}/3 Psyche${allyCount ? ` + ${allyCount} ally` : ""} = ${poolTotal} total${bonusText}${pending} · double-click to inspect`
+        : `Only ${meetActor.name} on the Encounter may add to the pool · click their chip or board token`)
+      : "Click a Dreamer on an Encounter Landscape · pool 1–3 Psyche (+ Power spread bonus) to Accept or Reject",
     canClickCard: () => !meetActor || isActor,
   });
 }

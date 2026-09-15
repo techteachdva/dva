@@ -1,4 +1,6 @@
 import { bindMusicToggle, initGameAudio, startGameRadio, bindButtonRipples, playSfx } from "./audio.js";
+import { initClickFeedback } from "./click-feedback.js";
+import { syncGameCursor, flashRevealOpenCursor } from "./game-cursor.js";
 import { initDeviceMode } from "./device-mode.js";
 import { initDialogAccessibility } from "./dialog-a11y.js";
 import { initPanelLayout } from "./panel-layout.js";
@@ -71,7 +73,9 @@ import {
   getLegalExploreTargets,
   resolvePendingDeathDream,
   getEffectHelpers,
+  canDreamerMeetOnLandscape,
 } from "./game.js";
+import { encounterRejectCost, encounterAcceptSummary, encounterRejectSummary } from "./dreambeasts.js";
 import { requestEndPhase } from "./phase-skip.js";
 import { initDevConsole } from "./dev-console.js";
 import { enableDevMode } from "./dev-commands.js";
@@ -117,6 +121,9 @@ import {
   playDreamerHandSparkle,
   renderPowerTokens,
   showPowerTokenRadial,
+  showRadialMenu,
+  hideRadialMenu,
+  renderMeetPoolGuide,
   renderPhaseSpendHands,
   renderCoopMeetHands,
   renderObjects,
@@ -212,6 +219,7 @@ async function init() {
   initFxLayer();
   initMomentOverlay();
   bindButtonRipples();
+  initClickFeedback();
   initGameAudio();
   bindMusicToggle();
   initPanelLayout();
@@ -884,6 +892,226 @@ function syncInteractiveTutorial() {
   });
 }
 
+function buildPhaseHandlers() {
+  return {
+    drawDream: () => {
+      const card = drawDreamCard(state, showModal);
+      if (card) notifyTutorialDreamDrawn(state);
+      renderAll();
+    },
+    revealLandscape: () => { revealLandscape(state); renderAll(); },
+    activateExplore: () => { activateExplore(state); renderAll(); },
+    gainMeetActions: () => { gainMeetActions(state); renderAll(); },
+    meetEncounter: (mode) => { meetEncounter(state, mode); renderAll(); },
+    drawMindstream: () => {
+      drawMindstreamOnLandscape(state, {
+        onResult: (card) => showModal(card),
+      });
+      renderAll();
+    },
+    landscapeAction: (actionId) => {
+      const result = performLandscapeAction(state, actionId, {
+        onResult: (card) => showModal(card),
+      });
+      if (result?.pending === "pick-mindstream-suit" || result?.pending === "spawn-dreambeast-pick-suit") {
+        const { tile, player, actionId: pendingActionId } = result;
+        showMindstreamPicker((suit) => {
+          finishLandscapeMindstreamPick(state, tile, player, pendingActionId, suit, (card) => showModal(card));
+          renderAll();
+        });
+        return;
+      }
+      if (result?.pending === "flip-top-3-pick-deck") {
+        showDeckFlipPicker((deckKey) => {
+          finishLandscapeDeckFlip(state, deckKey);
+          renderAll();
+        });
+        return;
+      }
+      renderAll();
+    },
+    uniqueLandscapeAction: () => {
+      uniqueLandscapeAction(state, {
+        onChoose: (choices, tile, player) => {
+          showLandscapeActionPicker(tile, choices, (actionId) => {
+            const result = performLandscapeAction(state, actionId, {
+              onResult: (card) => showModal(card),
+            });
+            if (result?.pending === "pick-mindstream-suit" || result?.pending === "spawn-dreambeast-pick-suit") {
+              showMindstreamPicker((suit) => {
+                finishLandscapeMindstreamPick(state, tile, player, actionId, suit, (card) => showModal(card));
+                renderAll();
+              });
+              return;
+            }
+            if (result?.pending === "flip-top-3-pick-deck") {
+              showDeckFlipPicker((deckKey) => {
+                finishLandscapeDeckFlip(state, deckKey);
+                renderAll();
+              });
+              return;
+            }
+            renderAll();
+          });
+        },
+        onResult: (card) => showModal(card),
+      });
+      renderAll();
+    },
+    playObject: () => {
+      const card = playObject(state);
+      if (card) showModal(card);
+      renderAll();
+    },
+    activateObject: () => {
+      activateObject(state);
+      renderAll();
+    },
+    tradeAction: () => {
+      tradeAction(state);
+      renderAll();
+    },
+    completeQuest: (i) => {
+      const result = handleQuestComplete(state, i);
+      if (result === "acquired") {
+        notifyTutorialArchetypeAcquired(state);
+        playSfx("acquire");
+        requestAnimationFrame(() => burstSparklesAtElement(document.getElementById("acquired-archetypes"), 16, "#f0c96a"));
+      }
+      renderAll();
+    },
+    useArchetypePower: (id) => {
+      handleUseArchetypePower(state, id);
+      renderAll();
+    },
+    useDreamerPower: () => {
+      const result = useDreamerPower(state);
+      if (result?.ui) processDreamerPowerResult(result);
+      else renderAll();
+    },
+    togglePhasePowerToken: () => {
+      togglePhasePowerToken(state);
+      renderAll();
+    },
+    powerBonus: () => {
+      powerBonus(state);
+      renderAll();
+    },
+    refundPowerBonus: () => {
+      refundPowerBonus(state);
+      renderAll();
+    },
+    defeatFinalArchetype: () => { handleDefeatFinalArchetype(state); renderAll(); },
+    sacrificeForFinal: () => { handleSacrificeForFinal(state); renderAll(); },
+    nextPhase: () => { requestEndPhase(state, () => renderAll()); },
+  };
+}
+
+let lastObjectClick = { id: null, time: 0 };
+
+function onObjectCardClick(card, zone) {
+  const now = Date.now();
+  const id = card.instanceId || card.id;
+  if (lastObjectClick.id === id && now - lastObjectClick.time < 450) {
+    if (zone === "persistent") {
+      playObject(state, card.instanceId || card.id, { usePower: true });
+    } else {
+      playObject(state, card.instanceId || card.id);
+    }
+    lastObjectClick.id = null;
+    renderAll();
+    return;
+  }
+  lastObjectClick.id = id;
+  lastObjectClick.time = now;
+  showModal(card);
+}
+
+function shortenRadialLabel(text, max = 22) {
+  if (!text || text.length <= max) return text || "";
+  return `${text.slice(0, max - 1)}…`;
+}
+
+function openDreamerBoardRadial(anchorEl, playerId, tileId) {
+  const playerIndex = state.players.findIndex((p) => p.id === playerId);
+  if (playerIndex < 0) return;
+  state.activePlayerIndex = playerIndex;
+  if (getPhase(state) === "Meet") state.selectedLandscapeId = tileId;
+
+  const player = state.players[playerIndex];
+  const handlers = buildPhaseHandlers();
+  const actions = getPhaseActions(state, handlers);
+  const options = actions
+    .filter((action) => !action.hidden && !action.advance && action.section !== "phase")
+    .map((action) => ({
+      id: action.label,
+      label: shortenRadialLabel(action.label),
+      hint: action.hint || action.label,
+      disabled: !!action.disabled,
+      primary: !!action.primary,
+      onPick: action.onClick,
+    }));
+
+  options.push({
+    id: "view",
+    label: "View",
+    hint: "Zoomed character details and hand",
+    disabled: false,
+    primary: true,
+    onPick: () => showDreamerDetailOverlay(player.dreamer, { player, state }),
+  });
+
+  showRadialMenu(anchorEl, options, (opt) => {
+    opt.onPick?.();
+    renderAll();
+  }, { ariaLabel: `${player.name} actions` });
+}
+
+function openBeastBoardRadial(anchorEl, encounter, tileId) {
+  const occupant = state.players.find((p) => p.alive && p.landscapeId === tileId) || null;
+  if (occupant) {
+    const idx = state.players.findIndex((p) => p.id === occupant.id);
+    if (idx >= 0) state.activePlayerIndex = idx;
+  }
+  state.selectedLandscapeId = tileId;
+  state.activeEncounter = encounter;
+  state.activeEncounterLandscapeId = tileId;
+
+  const handlers = buildPhaseHandlers();
+  const canMeet = occupant && canDreamerMeetOnLandscape(state, occupant, tileId);
+  const rejectCost = encounterRejectCost(encounter);
+
+  const options = [
+    {
+      id: "accept",
+      label: `Accept ${encounter.accept}`,
+      hint: `${encounterAcceptSummary(encounter)} · pool Psyche on ${occupant?.name || "Dreamer"}'s hand`,
+      disabled: !canMeet,
+      primary: true,
+      onPick: () => handlers.meetEncounter("accept"),
+    },
+    {
+      id: "reject",
+      label: `Reject ${rejectCost}`,
+      hint: `${encounterRejectSummary(encounter)} · pool Psyche on ${occupant?.name || "Dreamer"}'s hand`,
+      disabled: !canMeet,
+      onPick: () => handlers.meetEncounter("reject"),
+    },
+    {
+      id: "view",
+      label: "View",
+      hint: "Dreambeast details, costs, and rewards",
+      disabled: false,
+      onPick: () => showModal(encounter),
+    },
+  ];
+
+  showRadialMenu(anchorEl, options, (opt) => {
+    opt.onPick?.();
+    renderAll();
+  }, { ariaLabel: `${encounter.name} encounter` });
+}
+
 function onHandCardClick(card, owner) {
   const now = Date.now();
   const id = card.instanceId || card.id;
@@ -1135,10 +1363,13 @@ function renderBoardArea() {
       renderAll();
       return;
     }
+    if (pickHighlights.reveal?.includes(id) || pickHighlights.choose?.includes(id)) {
+      flashRevealOpenCursor();
+    }
     handleBoardTileClick(state, id);
     renderAll();
   }, legalMoves, pickHighlights, (id) => showLandscapeDetail(state, id), {
-    onDreamerTokenClick: (playerId, tileId) => {
+    onDreamerTokenClick: (playerId, tileId, anchorEl) => {
       const playerIndex = state.players.findIndex((p) => p.id === playerId);
       if (playerIndex < 0) return;
       if (!isTutorialActionAllowed(state, "dreamerSelect", { playerIndex })) {
@@ -1146,16 +1377,10 @@ function renderBoardArea() {
         renderAll();
         return;
       }
-      state.activePlayerIndex = playerIndex;
-      if (getPhase(state) === "Meet") state.selectedLandscapeId = tileId;
-      const player = state.players[playerIndex];
-      showDreamerDetailOverlay(player.dreamer, { player, state });
+      openDreamerBoardRadial(anchorEl, playerId, tileId);
     },
-    onBeastTokenClick: (encounter, tileId) => {
-      state.selectedLandscapeId = tileId;
-      state.activeEncounter = encounter;
-      state.activeEncounterLandscapeId = tileId;
-      showModal(encounter);
+    onBeastTokenClick: (encounter, tileId, anchorEl) => {
+      openBeastBoardRadial(anchorEl, encounter, tileId);
     },
   });
   syncBoardZoomAfterRender();
@@ -1214,119 +1439,7 @@ function renderAll() {
   renderHud(state, getPhaseHint(state));
   renderPhaseStepper(state);
 
-  const handlers = {
-    drawDream: () => {
-      const card = drawDreamCard(state, showModal);
-      if (card) notifyTutorialDreamDrawn(state);
-      renderAll();
-    },
-    revealLandscape: () => { revealLandscape(state); renderAll(); },
-    activateExplore: () => { activateExplore(state); renderAll(); },
-    gainMeetActions: () => { gainMeetActions(state); renderAll(); },
-    meetEncounter: (mode) => { meetEncounter(state, mode); renderAll(); },
-    drawMindstream: () => {
-      drawMindstreamOnLandscape(state, {
-        onResult: (card) => showModal(card),
-      });
-      renderAll();
-    },
-    landscapeAction: (actionId) => {
-      const result = performLandscapeAction(state, actionId, {
-        onResult: (card) => showModal(card),
-      });
-      if (result?.pending === "pick-mindstream-suit" || result?.pending === "spawn-dreambeast-pick-suit") {
-        const { tile, player, actionId: pendingActionId } = result;
-        showMindstreamPicker((suit) => {
-          finishLandscapeMindstreamPick(state, tile, player, pendingActionId, suit, (card) => showModal(card));
-          renderAll();
-        });
-        return;
-      }
-      if (result?.pending === "flip-top-3-pick-deck") {
-        showDeckFlipPicker((deckKey) => {
-          finishLandscapeDeckFlip(state, deckKey);
-          renderAll();
-        });
-        return;
-      }
-      renderAll();
-    },
-    uniqueLandscapeAction: () => {
-      uniqueLandscapeAction(state, {
-        onChoose: (choices, tile, player) => {
-          showLandscapeActionPicker(tile, choices, (actionId) => {
-            const result = performLandscapeAction(state, actionId, {
-              onResult: (card) => showModal(card),
-            });
-            if (result?.pending === "pick-mindstream-suit" || result?.pending === "spawn-dreambeast-pick-suit") {
-              showMindstreamPicker((suit) => {
-                finishLandscapeMindstreamPick(state, tile, player, actionId, suit, (card) => showModal(card));
-                renderAll();
-              });
-              return;
-            }
-            if (result?.pending === "flip-top-3-pick-deck") {
-              showDeckFlipPicker((deckKey) => {
-                finishLandscapeDeckFlip(state, deckKey);
-                renderAll();
-              });
-              return;
-            }
-            renderAll();
-          });
-        },
-        onResult: (card) => showModal(card),
-      });
-      renderAll();
-    },
-    playObject: () => {
-      const card = playObject(state);
-      if (card) showModal(card);
-      renderAll();
-    },
-    activateObject: () => {
-      activateObject(state);
-      renderAll();
-    },
-    tradeAction: () => {
-      tradeAction(state);
-      renderAll();
-    },
-    completeQuest: (i) => {
-      const result = handleQuestComplete(state, i);
-      if (result === "acquired") {
-        notifyTutorialArchetypeAcquired(state);
-        playSfx("acquire");
-        requestAnimationFrame(() => burstSparklesAtElement(document.getElementById("acquired-archetypes"), 16, "#f0c96a"));
-      }
-      renderAll();
-    },
-    useArchetypePower: (id) => {
-      handleUseArchetypePower(state, id);
-      renderAll();
-    },
-    useDreamerPower: () => {
-      const result = useDreamerPower(state);
-      if (result?.ui) processDreamerPowerResult(result);
-      else renderAll();
-    },
-    togglePhasePowerToken: () => {
-      togglePhasePowerToken(state);
-      renderAll();
-    },
-    powerBonus: () => {
-      powerBonus(state);
-      renderAll();
-    },
-    refundPowerBonus: () => {
-      refundPowerBonus(state);
-      renderAll();
-    },
-    defeatFinalArchetype: () => { handleDefeatFinalArchetype(state); renderAll(); },
-    sacrificeForFinal: () => { handleSacrificeForFinal(state); renderAll(); },
-    nextPhase: () => { requestEndPhase(state, () => renderAll()); },
-  };
-
+  const handlers = buildPhaseHandlers();
   const phaseActions = applyTutorialPhaseGates(state, getPhaseActions(state, handlers));
   let advanceAction = getPhaseAdvanceAction(state, handlers);
   if (advanceAction && isInteractiveTutorialActive(state)) {
@@ -1383,20 +1496,14 @@ function renderAll() {
   } else if (getPhase(state) === "Meet" && state.meetActionBudget > 0) {
     renderCoopMeetHands(state, onHandCardClick);
   } else {
+    renderMeetPoolGuide(state);
     renderHand(state, onHandCardClick, getNewHandCardIds(state));
   }
   renderPowerTokens(state, {
     onTokenClick: (el) => openPowerTokenRadial(el),
   });
 
-  renderObjects(state, (card, zone) => {
-    if (zone === "persistent") {
-      playObject(state, card.instanceId || card.id, { usePower: true });
-    } else {
-      playObject(state, card.instanceId || card.id);
-    }
-    renderAll();
-  });
+  renderObjects(state, onObjectCardClick);
   renderDecks(state, (deckId) => {
     if (deckId.startsWith("mindstream-") && state.tradeMode) return;
     showDiscardPileModal(state, deckId, (card) => showModal(card));
@@ -1437,6 +1544,7 @@ function renderAll() {
 
   updateHandSnapshots(state);
   syncBoardMotion(state);
+  syncGameCursor(state);
   scheduleAutoSave();
   requestAnimationFrame(() => {
     runPendingCardFx(state);

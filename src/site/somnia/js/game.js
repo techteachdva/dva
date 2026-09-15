@@ -220,6 +220,15 @@ function canUseMeetAction(state, action, landscapeActionId = null) {
   );
 }
 
+export function canDreamerMeetOnLandscape(state, player, tileId) {
+  if (!player?.alive || player.landscapeId !== tileId) return false;
+  const enc = encounterOnLandscape(state, tileId);
+  if (!enc || getPhase(state) !== "Meet" || state.meetActionBudget < 1) return false;
+  if (state.meetActionsUsed >= state.meetActionBudget) return false;
+  if (hasUsedMeetAction(state, player, meetActionKey(MEET_ACTIONS.MEET))) return false;
+  return canSpendMeetAction(state, player, MEET_ACTIONS.MEET, MEET_ACTIONS);
+}
+
 function meetActionHint(state, action, landscapeActionId, baseHint = "") {
   const actor = meetActionActor(state, action);
   if (!actor) return "A Dreamer must stand on this Landscape.";
