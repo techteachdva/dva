@@ -56,6 +56,16 @@ function pickPlayerWithSuit(state, suit, preferredIndex = null) {
   return preferredIndex ?? 0;
 }
 
+function selectExactCards(state, playerIndex, cardIds) {
+  state.activePlayerIndex = playerIndex;
+  state.selectedHand = [];
+  const hand = state.players[playerIndex]?.hand || [];
+  cardIds.forEach((cardId) => {
+    const card = hand.find((c) => c.id === cardId);
+    if (card) state.selectedHand.push(card.instanceId);
+  });
+}
+
 function selectSuitCards(state, playerIndex, suit, count = 1) {
   state.activePlayerIndex = playerIndex;
   state.selectedHand = [];
@@ -67,6 +77,18 @@ function selectSuitCards(state, playerIndex, suit, count = 1) {
     .forEach((c) => {
       state.selectedHand.push(c.instanceId);
     });
+}
+
+function closeRevealPick(state) {
+  state.revealLandscapeUsed = true;
+  state.landscapePick = null;
+}
+
+function revealNamedTile(state, tileId) {
+  if (state.landscapePick?.mode === "reveal") {
+    handleBoardTileClick(state, tileId);
+  }
+  closeRevealPick(state);
 }
 
 function resetDreamersToBed(state) {
@@ -200,10 +222,7 @@ function completeRevealPick(state) {
 function acceptHouseEncounter(state) {
   state.activePlayerIndex = 0;
   state.selectedLandscapeId = "house";
-  state.selectedHand = [];
-  const hand = state.players[0].hand.filter((c) => c.suit === "lucidity" && c.type === "psyche");
-  hand.sort((a, b) => b.value - a.value);
-  hand.slice(0, 3).forEach((c) => state.selectedHand.push(c.instanceId));
+  selectExactCards(state, 0, ["lucidity-3-v-l3", "lucidity-2-v-l2"]);
   meetEncounter(state, "accept");
   if (!encounterOnLandscape(state, "house")) {
     state.tutorialFlags.encounterResolved = true;
@@ -241,91 +260,64 @@ function markInnocentQuests(state) {
 export function applyCanonicalTutorialStep(state, step) {
   switch (step.id) {
     case "draw-dream-r1":
-    case "r2-dream":
       drawDreamCard(state);
       return;
 
-    case "spend-lucidity-r1":
-    case "r2-lucidity":
-      selectSuitCards(state, 0, "lucidity", 1);
+    case "reveal-r1":
+      selectExactCards(state, 0, ["lucidity-1-v-l1"]);
       revealLandscape(state);
-      if (step.id === "r2-lucidity") {
-        state.revealLandscapeUsed = true;
-        state.landscapePick = null;
-      }
-      return;
-
-    case "reveal-pick-r1":
-      completeRevealPick(state);
-      return;
-
-    case "to-explore-r1":
+      revealNamedTile(state, "candy-mountain");
       advanceToPhase(state, "Explore");
       return;
 
-    case "spend-elasticity-r1":
-      spendElasticityPhase(state, 0);
-      return;
-
-    case "r2-elasticity":
-      spendElasticityPhase(state, 1);
-      state.players[0].landscapeId = "house";
-      state.players[1].landscapeId = "city";
-      state.selectedLandscapeId = "house";
-      return;
-
-    case "explore-move-r1":
+    case "explore-r1":
+      selectExactCards(state, 0, ["elasticity-2-v-e2"]);
+      activateExplore(state);
+      if (!state.exploreActivated) {
+        state.exploreActivated = true;
+        state.exploreMovesLeft = Math.max(2, state.exploreMovesLeft || 0);
+      }
       placePlayerOnLandscape(state, 0, "house");
-      return;
-
-    case "to-meet-r1":
-    case "r2-to-meet":
       advanceToPhase(state, "Meet");
       return;
 
-    case "spend-willpower-r1":
+    case "meet-r1":
+      selectExactCards(state, 0, ["willpower-2-v-w2"]);
       spendWillpowerPhase(state, 0);
-      return;
-
-    case "r2-willpower":
-      spendWillpowerPhase(state, 1);
-      return;
-
-    case "accept-reject":
       acceptHouseEncounter(state);
-      return;
-
-    case "end-r1":
       advanceToRound(state, 2);
       return;
 
-    case "r2-to-explore":
+    case "r2-reveal":
+      drawDreamCard(state);
+      selectExactCards(state, 0, ["lucidity-2-r2-a"]);
+      revealLandscape(state);
+      closeRevealPick(state);
       advanceToPhase(state, "Explore");
-      resetDreamersToBed(state);
-      state.landscapePick = null;
-      state.activePlayerIndex = pickPlayerWithSuit(state, "elasticity", 1);
       return;
 
-    case "r2-move-quests":
-      placePlayerOnLandscape(state, 1, "the-basement");
+    case "r2-explore":
+      selectExactCards(state, 1, ["elasticity-3-i-e3"]);
+      activateExplore(state);
+      if (!state.exploreActivated) {
+        state.exploreActivated = true;
+        state.exploreMovesLeft = Math.max(3, state.exploreMovesLeft || 0);
+      }
       placePlayerOnLandscape(state, 0, "the-attic");
+      placePlayerOnLandscape(state, 1, "the-basement");
+      advanceToPhase(state, "Meet");
       return;
 
-    case "r2-attic":
+    case "r2-meet":
+      selectExactCards(state, 1, ["willpower-3-i-w3"]);
+      gainMeetActions(state);
+      if (state.meetActionBudget <= 0) state.meetActionBudget = 5;
       drawMindstreamOn(state, 0, "the-attic");
-      return;
-
-    case "r2-basement":
       drawMindstreamOn(state, 1, "the-basement");
       return;
 
-    case "r2-mark":
     case "r2-acquire":
       markInnocentQuests(state);
-      return;
-
-    case "end-r2":
-      advanceToRound(state, 3);
       return;
 
     default:

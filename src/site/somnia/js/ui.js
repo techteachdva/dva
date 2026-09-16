@@ -45,6 +45,7 @@ import {
   TUTORIAL_SECTIONS,
   getTutorialSpotlightSelector,
   getTutorialStepTargetSelectors,
+  getTutorialRevealTargetId,
 } from "./tutorial-mode.js";
 import { getNarratorView, listPhaseActionHints } from "./narrator.js";
 import {
@@ -1301,6 +1302,7 @@ export function renderBoard(
   const questHighlightSet = new Set(activeQuestLandscapeIds(state));
   const justRevealed = new Set(consumeRevealedTiles());
   const justForgotten = new Set(consumeForgottenTiles());
+  const tutorialRevealId = getTutorialRevealTargetId(state);
 
   state.board.forEach((tile) => {
     const { x, y } = hexToPixel(tile.q, tile.r, size);
@@ -1311,6 +1313,8 @@ export function renderBoard(
     const showFace = tile.revealed && !tile.wasteland;
     const encounters = tileEncounters(tile);
     const isSelected = state.selectedLandscapeId === tile.id;
+    const pickRevealHidden = revealSet.has(tile.id) && !showFace;
+    const tutorialRevealTarget = tutorialRevealId === tile.id && !showFace;
     el.className = [
       "hex-tile",
       tile.center ? "center" : "",
@@ -1324,6 +1328,7 @@ export function renderBoard(
       questHighlightSet.has(tile.id) ? "quest-highlight" : "",
       legalSet.has(tile.id) ? "movable" : "",
       revealSet.has(tile.id) ? "pick-reveal" : "",
+      tutorialRevealTarget ? "tutorial-reveal-target" : "",
       forgetSet.has(tile.id) ? "pick-forget" : "",
       chooseSet.has(tile.id) ? "pick-choose" : "",
       justRevealed.has(tile.id) ? "just-revealed" : "",
@@ -1333,7 +1338,10 @@ export function renderBoard(
 
     el.style.left = `${x + bounds.offsetX}px`;
     el.style.top = `${y + bounds.offsetY}px`;
-    el.style.zIndex = String(1000 + Math.round(y + bounds.offsetY));
+    el.style.zIndex = String(
+      (tutorialRevealTarget || revealSet.has(tile.id) || legalSet.has(tile.id) ? 4000 : 1000)
+      + Math.round(y + bounds.offsetY)
+    );
     if (justRevealed.has(tile.id) || justForgotten.has(tile.id)) {
       el.style.setProperty("--hex-flip-elapsed", `${-tileFlipElapsedMs(tile.id)}ms`);
     }
@@ -1368,11 +1376,32 @@ export function renderBoard(
     const finalArch = tile.finalArchetype;
     const encounterMark = encounters.length ? "⚔".repeat(Math.min(encounters.length, 3)) : "";
     const finalMark = finalArch && !finalArch.defeated ? "★" : "";
+    const namedWasteland = tutorialRevealTarget || pickRevealHidden;
     const displayName = isBedFinal
       ? "The Bed — Final Recurrence"
-      : showFace
+      : tutorialRevealTarget
         ? tile.name
-        : "Wasteland";
+        : showFace
+          ? tile.name
+          : "Wasteland";
+    const suitLabel = tutorialRevealTarget
+      ? "click to reveal"
+      : showFace
+        ? (tile.suit || "neutral")
+        : "hidden";
+    el.setAttribute(
+      "aria-label",
+      tutorialRevealTarget
+        ? `Wasteland. Click to reveal ${tile.name}`
+        : pickRevealHidden
+          ? "Wasteland. Click to reveal this Landscape."
+          : showFace
+            ? `${tile.name}${tile.suit ? `, ${tile.suit}` : ""}`
+            : "Wasteland, hidden Landscape"
+    );
+    const revealCueHtml = namedWasteland
+      ? `<div class="hex-reveal-cue" aria-hidden="true">Reveal</div>`
+      : "";
 
     const occupantTokens = [];
     occupants.forEach((p) => {
@@ -1401,8 +1430,9 @@ export function renderBoard(
       <div class="hex-overlay"></div>
       ${mistHtml}
       ${occupantsHtml}
+      ${revealCueHtml}
       <div class="name">${displayName}</div>
-      <div class="suit">${showFace ? (tile.suit || "neutral") : "hidden"}</div>
+      <div class="suit">${suitLabel}</div>
       <div class="tokens">${occupants.map((p) => p.dreamer.name.split(" ").pop()).join(" · ")} ${encounterMark}${encounters.length ? ` ${encounters.map((e) => e.name.split(" ")[0]).join(" · ")}` : ""}${finalMark}${finalArch && !finalArch.defeated ? ` ${finalArch.name.split(" ")[0]}` : ""}</div>
     `;
 
@@ -1425,13 +1455,18 @@ export function renderBoard(
       }
       onSelectLandscape(tile.id);
     });
+    if (tutorialRevealTarget) {
+      el.title = `Click to reveal ${tile.name}`;
+    }
     if (onInspectLandscape) {
       el.addEventListener("contextmenu", (event) => {
         event.preventDefault();
         event.stopPropagation();
         onInspectLandscape(tile.id);
       });
-      el.title = "Click landscape to interact · Dreamer or Dreambeast opens action menu · right-click landscape for overview";
+      if (!tutorialRevealTarget) {
+        el.title = "Click landscape to interact · Dreamer or Dreambeast opens action menu · right-click landscape for overview";
+      }
     }
     board.appendChild(el);
   });
@@ -3784,6 +3819,23 @@ function tutorialContinueLabel(stepIndex, total) {
   return stepIndex >= total - 1 ? "Finish" : "Continue";
 }
 
+function setTutorialProgress(stepIndex, total, roundLabel = null) {
+  const progressEl = document.getElementById("tutorial-progress");
+  const fillEl = document.getElementById("tutorial-progress-fill");
+  const barEl = document.getElementById("tutorial-progress-bar");
+  if (stepIndex == null || !total) return;
+  const roundPart = roundLabel ? `Round ${roundLabel} · ` : "";
+  if (progressEl) progressEl.textContent = `${roundPart}Step ${stepIndex + 1} / ${total}`;
+  const pct = Math.round(((stepIndex + 1) / total) * 100);
+  if (fillEl) fillEl.style.width = `${pct}%`;
+  if (barEl) {
+    barEl.setAttribute("aria-valuenow", String(stepIndex + 1));
+    barEl.setAttribute("aria-valuemax", String(total));
+    barEl.setAttribute("aria-valuemin", "1");
+    barEl.setAttribute("aria-label", `Tutorial step ${stepIndex + 1} of ${total}`);
+  }
+}
+
 function applyTutorialContinueDelay(btn, waiting, label) {
   const stateKey = `${waiting}:${label}`;
   if (
@@ -4648,8 +4700,7 @@ export function updateTutorialStepUI({
   }
 
   if (step && stepIndex != null && total) {
-    const roundPart = roundLabel ? `Round ${roundLabel} · ` : "";
-    document.getElementById("tutorial-progress").textContent = `${roundPart}Step ${stepIndex + 1} / ${total}`;
+    setTutorialProgress(stepIndex, total, roundLabel);
   }
   if (step) {
     updateTutorialHeaderLabel(step, stepIndex, total, roundLabel);
@@ -4677,8 +4728,7 @@ export function showTutorialStep(step, stepIndex, total, {
   const waiting = step.until && !canAdvance;
   document.getElementById("tutorial-title").textContent = step.title;
   document.getElementById("tutorial-body").textContent = step.body;
-  const roundPart = roundLabel ? `Round ${roundLabel} · ` : "";
-  document.getElementById("tutorial-progress").textContent = `${roundPart}Step ${stepIndex + 1} / ${total}`;
+  setTutorialProgress(stepIndex, total, roundLabel);
   const nextBtn = document.getElementById("tutorial-next");
   const backBtn = document.getElementById("tutorial-back");
   const label = tutorialContinueLabel(stepIndex, total);

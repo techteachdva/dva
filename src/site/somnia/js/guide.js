@@ -421,43 +421,40 @@ export function tutorialBriefHtml() {
   return `
     <div class="rules-page tutorial-brief-page">
       <h2>Somnia — Quick Start</h2>
-      <p class="rules-lead">You are Dreamers in a shared Dreamscape. Cooperate to earn Archetype points and escape before the Dream Deck runs out.</p>
+      <p class="rules-lead">Cooperate as Dreamers. Learn the loop, then play — the cards teach the rest.</p>
 
       <section class="overview-block">
-        <h3>Goal</h3>
-        <p>This walkthrough earns <strong>The Innocent</strong> (1 point): complete both quests, spend <strong>1 Power Token</strong> to mark each, then <strong>Acquire</strong>. A real Daydream needs <strong>12 points</strong>, then every living Dreamer on <strong>The Bed</strong>.</p>
+        <h3>The Loop</h3>
+        <p>Every round is <strong>Reveal → Explore → Meet</strong>. Early on, flip wasteland into Landscapes, walk onto them, then Meet: draw <strong>Mindstream</strong> (luck — good and bad) or deal with Dreambeasts. Once the map is open, chase quests on the <strong>Active Archetype</strong>.</p>
       </section>
 
       <section class="overview-block">
         <h3>Every Round: R.E.M.</h3>
-        <p>Phases always run in order. Within each phase, talk first — then act in any order. There is <strong>no turn order</strong>.</p>
+        <p>Phases always run in order. Talk first, then act in any order — there is <strong>no turn order</strong>.</p>
         <ul class="tutorial-brief-rem">
-          <li><strong>Reveal</strong> (${SUIT_LABELS.lucidity}) — Head Dreamer (★) draws a Dream; one Dreamer spends Lucidity to reveal Landscapes on the map.</li>
-          <li><strong>Explore</strong> (${SUIT_LABELS.elasticity}) — one Dreamer spends Elasticity to unlock shared team moves on the hex board.</li>
-          <li><strong>Meet</strong> (${SUIT_LABELS.willpower}) — one Dreamer spends Willpower to unlock shared Meet actions for Encounters, Landscapes, and quests.</li>
+          <li><strong>Reveal</strong> (${SUIT_LABELS.lucidity}) — Head (*) draws a Dream. Spend Lucidity to flip wasteland hexes into Landscapes. Early game: more map is the priority.</li>
+          <li><strong>Explore</strong> (${SUIT_LABELS.elasticity}) — Spend Elasticity for a shared move budget, then walk onto those Landscapes. You cannot move during Meet.</li>
+          <li><strong>Meet</strong> (${SUIT_LABELS.willpower}) — Spend Willpower for shared actions. <strong>Accept</strong> or <strong>Reject</strong> Dreambeasts, or use a Landscape's <strong>Action A</strong> to draw Mindstream.</li>
         </ul>
-        <p class="tutorial-brief-note">Each phase spender plays <strong>1–2 suited Psyche cards</strong>, or <strong>1 Power Token</strong> as that phase cost. Higher matching Dreamer stats add bonus budget.</p>
+        <p class="tutorial-brief-note">Each phase spender plays <strong>1–2 suited Psyche cards</strong>, or <strong>1 Power Token</strong>. Matching Dreamer stats add bonus budget. Overview and Tips hold the wider ruleset.</p>
       </section>
 
       <section class="overview-block overview-cols">
         <div>
-          <h3>Core Pieces</h3>
+          <h3>How You Win</h3>
           <ul>
-            <li><strong>Psyche</strong> — your hand (Lucidity, Elasticity, Willpower)</li>
-            <li><strong>Landscapes</strong> — hex tiles; reveal, move onto, and use their actions</li>
-            <li><strong>Encounters</strong> — Dreambeasts; <strong>Accept</strong> (join your hand) or <strong>Reject</strong> (Subconscious + reward)</li>
-            <li><strong>Power Tokens</strong> — mark quests here; in the full game also boost Spreads (+1 each), activate Objects and Persistent cards, and avoid death (team pool, max 24)</li>
-            <li><strong>Subconscious</strong> — face-up repressed cards; Return effects recycle them</li>
+            <li>Complete both quests on the Active Archetype, spend <strong>1 Power Token</strong> to mark each, then Acquire</li>
+            <li>This walkthrough earns <strong>The Innocent</strong> (1 point)</li>
+            <li>A real Daydream needs <strong>12 points</strong>, then every living Dreamer on <strong>The Bed</strong></li>
           </ul>
         </div>
         <div>
           <h3>This Tutorial</h3>
           <ul>
-            <li><strong>2 rounds</strong> with a guided step card you can move and resize</li>
-            <li>Round 1: full R.E.M. loop + your first Encounter</li>
-            <li>Round 2: earn <strong>The Innocent</strong> Archetype</li>
-            <li>Each step advances when you finish the highlighted action</li>
-            <li>Bosses, death, and Objects wait for a real Daydream</li>
+            <li><strong>2 rounds</strong> — click only the highlights</li>
+            <li>Round 1: Reveal, Explore, Meet (your first Encounter)</li>
+            <li>Round 2: draw Mindstream and earn The Innocent</li>
+            <li>Bosses, death, and Objects wait for a real game</li>
           </ul>
         </div>
       </section>

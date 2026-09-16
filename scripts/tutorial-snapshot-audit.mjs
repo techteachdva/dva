@@ -51,6 +51,7 @@ const {
   getPhaseActions,
   meetEncounter,
   performLandscapeAction,
+  gainMeetActions,
 } = gameMod;
 const { meetPsychePlayTotal } = await import(pathToFileURL(path.join(JS_DIR, "rules.js")).href);
 
@@ -141,13 +142,20 @@ function hasPlayableAction(state, step) {
     ["landscapeActionA", {}],
     ["completeQuest0", {}],
     ["completeQuest1", {}],
+    ["boardClick", { tileId: "candy-mountain" }],
     ["exploreMove", { tileId: "house" }],
     ["exploreMove", { tileId: "the-attic" }],
     ["exploreMove", { tileId: "the-basement" }],
     ["boardClick", { tileId: "house" }],
     ["boardClick", { tileId: "the-attic" }],
     ["boardClick", { tileId: "the-basement" }],
+    ["boardClick", { tileId: "city" }],
+    ["dreamerSelect", { playerIndex: 0 }],
+    ["dreamerSelect", { playerIndex: 1 }],
     ["handToggle", { card: state.players[0]?.hand[0], owner: state.players[0] }],
+    ["handToggle", { card: state.players[1]?.hand[0], owner: state.players[1] }],
+    ...((state.players[0]?.hand || []).map((card) => ["handToggle", { card, owner: state.players[0] }])),
+    ...((state.players[1]?.hand || []).map((card) => ["handToggle", { card, owner: state.players[1] }])),
   ];
 
   const actions = getPhaseActions(state, noopHandlers());
@@ -163,81 +171,35 @@ function hasPlayableAction(state, step) {
 /** Per-step invariants at snapshot entry (before player acts). */
 const STEP_ENTRY_CHECKS = {
   "draw-dream-r1": (s) => s.round === 1 && getPhase(s) === "Reveal" && !s.dreamDrawn,
-  "accept-reject": (s) => {
+  "reveal-r1": (s) => s.dreamDrawn && getPhase(s) === "Reveal",
+  "explore-r1": (s) => getPhase(s) === "Explore",
+  "meet-r1": (s) => {
     const enc = encounterOnLandscape(s, "house");
+    if (getPhase(s) !== "Meet") return `Expected Meet, got ${getPhase(s)}`;
+    if (!s.players.some((p) => p.landscapeId === "house")) return "Visionary not on House";
     if (!enc || enc.name !== "Mandrake") return "Mandrake missing on House";
-    if (getPhase(s) !== "Meet" || s.meetActionBudget <= 0) return "Meet budget not ready";
-    s.selectedLandscapeId = "house";
-    s.activePlayerIndex = 0;
-    s.selectedHand = s.players[0].hand
-      .filter((c) => c.suit === "lucidity")
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 2)
-      .map((c) => c.instanceId);
-    if (meetPsychePlayTotal(s) < enc.accept) return "Cannot Accept Mandrake from snapshot hand";
     return true;
   },
-  "r2-to-explore": (s) => {
+  "r2-reveal": (s) => {
     if (s.round < 2) return "Round 2 not started";
     if (getPhase(s) !== "Reveal") return `Expected Reveal, got ${getPhase(s)}`;
-    if (!s.dreamDrawn) return "Dream not drawn";
-    if (!s.revealLandscapeUsed) return "Lucidity spend not marked; Next Phase would prompt skip confirm";
-    if (s.landscapePick) return "Leftover landscape picker would block Next Phase";
-    if (!isTutorialActionAllowed(s, "advancePhase")) return "Next Phase gated on step 20";
     return true;
   },
-  "r2-elasticity": (s) => {
+  "r2-explore": (s) => {
     if (getPhase(s) !== "Explore") return `Expected Explore, got ${getPhase(s)}`;
     if (s.exploreActivated) return "Explore already activated at step entry";
-    const hasEla = s.players.some((p) => p.hand.some((c) => c.suit === "elasticity" && c.type === "psyche"));
-    if (!hasEla) return "No Elasticity cards in any hand";
-    if (!isTutorialActionAllowed(s, "dreamerSelect", { playerIndex: 1 })) {
-      return "Dreamer switch gated during Elasticity spend";
-    }
-    if (!isTutorialActionAllowed(s, "spendElasticity")) return "Spend Elasticity gated";
-    return true;
-  },
-  "r2-move-quests": (s) => {
-    if (s.players[0].landscapeId !== "house" || s.players[1].landscapeId !== "city") {
-      return `Expected House/City staging, got ${s.players[0].landscapeId}/${s.players[1].landscapeId}`;
-    }
-    if (!s.exploreActivated) return "Explore not activated";
-    s.activePlayerIndex = 0;
-    if (!isTutorialActionAllowed(s, "exploreMove", { tileId: "the-attic" })) {
-      return "Visionary cannot move to Attic from House";
-    }
-    s.activePlayerIndex = 1;
-    if (!isTutorialActionAllowed(s, "exploreMove", { tileId: "the-basement" })) {
-      return "Immovable cannot move to Basement from City";
+    if (s.players[0].landscapeId !== "house") {
+      return `Expected Visionary on House, got ${s.players[0].landscapeId}`;
     }
     return true;
   },
-  "r2-attic": (s) => {
+  "r2-meet": (s) => {
+    if (getPhase(s) !== "Meet") return `Expected Meet, got ${getPhase(s)}`;
     if (!s.players.some((p) => p.landscapeId === "the-attic")) return "No Dreamer on Attic";
-    if (s.meetActionBudget <= 0) return "No meet budget for Attic action";
-    s.selectedLandscapeId = "the-attic";
-    s.activePlayerIndex = s.players.findIndex((p) => p.landscapeId === "the-attic");
-    const actions = getPhaseActions(s, noopHandlers()).filter((a) => !a.disabled);
-    const draw = actions.find((a) => a.label?.includes("Mindstream"));
-    if (!draw) return "Draw Mindstream not available on Attic";
-    const kind = classifyPhaseAction(draw);
-    if (!isTutorialActionAllowed(s, kind, { action: draw })) return "Draw Mindstream blocked by tutorial gate";
-    return true;
-  },
-  "r2-basement": (s) => {
     if (!s.players.some((p) => p.landscapeId === "the-basement")) return "No Dreamer on Basement";
-    if (s.meetActionBudget <= 0) return "No meet budget for Basement action";
-    s.selectedLandscapeId = "the-basement";
-    s.activePlayerIndex = s.players.findIndex((p) => p.landscapeId === "the-basement");
-    if (s.activePlayerIndex < 0) return "Basement Dreamer index not found";
-    const actions = getPhaseActions(s, noopHandlers());
-    const draw = actions.find((a) => !a.disabled && a.label?.includes("Mindstream"));
-    if (!draw && s.meetActionBudget > 0) {
-      return "Draw Mindstream not available on Basement";
-    }
     return true;
   },
-  "r2-mark": (s) => {
+  "r2-acquire": (s) => {
     if (!s.questTracker?.mindstreamOnLandscape?.["the-attic"]) return "Attic quest not complete in snapshot";
     if (!s.questTracker?.mindstreamOnLandscape?.["the-basement"]) return "Basement quest not complete in snapshot";
     return true;
@@ -247,13 +209,17 @@ const STEP_ENTRY_CHECKS = {
 /** After canonical step completion — card/effect triggers. */
 const STEP_EFFECT_CHECKS = {
   "draw-dream-r1": (s) => s.dreamDrawn,
-  "accept-reject": (s) => !encounterOnLandscape(s, "house") || s.tutorialFlags?.encounterResolved,
-  "r2-attic": (s) => !!s.questTracker?.mindstreamOnLandscape?.["the-attic"],
-  "r2-basement": (s) => !!s.questTracker?.mindstreamOnLandscape?.["the-basement"],
-  "r2-mark": (s) => s.tutorialFlags?.archetypeAcquired
+  "reveal-r1": (s) => getPhase(s) === "Explore" && landscapeById(s, "candy-mountain")?.revealed,
+  "explore-r1": (s) => getPhase(s) === "Meet" && s.players[0].landscapeId === "house",
+  "meet-r1": (s) => s.round >= 2 && (!encounterOnLandscape(s, "house") || s.tutorialFlags?.encounterResolved),
+  "r2-reveal": (s) => getPhase(s) === "Explore",
+  "r2-explore": (s) => getPhase(s) === "Meet"
+    && s.players.some((p) => p.landscapeId === "the-attic")
+    && s.players.some((p) => p.landscapeId === "the-basement"),
+  "r2-meet": (s) => !!s.questTracker?.mindstreamOnLandscape?.["the-attic"]
+    && !!s.questTracker?.mindstreamOnLandscape?.["the-basement"],
+  "r2-acquire": (s) => s.tutorialFlags?.archetypeAcquired
     || s.players.some((p) => (p.acquiredArchetypes || []).some((a) => a.id === "innocent")),
-  "end-r1": (s) => s.round >= 2,
-  "end-r2": (s) => s.round >= 3,
 };
 
 function auditDeterminism() {
@@ -342,15 +308,16 @@ function auditStepsAndEffects() {
 
 function auditLiveCardEffects() {
   const state = createTutorialState(gameData);
-  jumpTutorialToStep(state, TUTORIAL_SCRIPT.findIndex((s) => s.id === "accept-reject"));
-  state.selectedLandscapeId = "house";
+  jumpTutorialToStep(state, TUTORIAL_SCRIPT.findIndex((s) => s.id === "meet-r1"));
   state.activePlayerIndex = 0;
   state.selectedHand = state.players[0].hand
-    .filter((c) => c.suit === "lucidity")
-    .sort((a, b) => b.value - a.value)
-    .slice(0, 2)
+    .filter((c) => c.id === "willpower-2-v-w2")
     .map((c) => c.instanceId);
-  const handBefore = state.players[0].hand.length;
+  gainMeetActions(state);
+  state.selectedLandscapeId = "house";
+  state.selectedHand = state.players[0].hand
+    .filter((c) => c.id === "lucidity-3-v-l3" || c.id === "lucidity-2-v-l2")
+    .map((c) => c.instanceId);
   meetEncounter(state, "accept");
   const mandrakeInHand = state.players[0].hand.some(
     (c) => c.id === "mandrake" || c.name === "Mandrake",
@@ -362,7 +329,12 @@ function auditLiveCardEffects() {
     fail("live-accept-mandrake", { reason: "Mandrake not accepted into hand" });
   }
 
-  jumpTutorialToStep(state, TUTORIAL_SCRIPT.findIndex((s) => s.id === "r2-attic"));
+  jumpTutorialToStep(state, TUTORIAL_SCRIPT.findIndex((s) => s.id === "r2-meet"));
+  state.activePlayerIndex = 1;
+  state.selectedHand = state.players[1].hand
+    .filter((c) => c.id === "willpower-3-i-w3")
+    .map((c) => c.instanceId);
+  gainMeetActions(state);
   state.selectedLandscapeId = "the-attic";
   state.activePlayerIndex = 0;
   performLandscapeAction(state, "draw-mindstream");

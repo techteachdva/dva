@@ -208,7 +208,12 @@
         </div>
       </header>
       <div class="tutorial-card-body" id="tutorial-card-body">
-        <div class="tutorial-progress" id="tutorial-progress"></div>
+        <div class="tutorial-progress-wrap">
+          <div class="tutorial-progress" id="tutorial-progress"></div>
+          <div class="tutorial-progress-bar" role="progressbar" aria-valuemin="1" aria-valuemax="11" aria-valuenow="1" id="tutorial-progress-bar">
+            <span class="tutorial-progress-fill" id="tutorial-progress-fill"></span>
+          </div>
+        </div>
         <div class="tutorial-jump-row">
           <label for="tutorial-jump" class="tutorial-jump-label">Jump to topic</label>
           <select id="tutorial-jump" class="tutorial-jump-select" aria-label="Jump to tutorial topic"></select>

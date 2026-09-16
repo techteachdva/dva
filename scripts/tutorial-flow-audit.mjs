@@ -165,39 +165,31 @@ function simulate() {
 
   const steps = [
     () => { drawDreamCard(state); },
-    () => { selectLucidity(state, 1); revealLandscape(state); },
-    () => { pickHiddenTile(state); },
-    () => { advancePhasesTo(state, "Explore"); },
-    () => { selectElasticity(state, 1); activateExplore(state); },
-    () => { setPlayerOn(state, 0, "bed"); moveActiveTo(state, "house"); },
-    () => { advancePhasesTo(state, "Meet"); },
-    () => { selectWillpower(state, 1); gainMeetActions(state); },
+    () => { selectLucidity(state, 1); revealLandscape(state); pickHiddenTile(state); advancePhasesTo(state, "Explore"); },
+    () => { selectElasticity(state, 1); activateExplore(state); setPlayerOn(state, 0, "bed"); moveActiveTo(state, "house"); advancePhasesTo(state, "Meet"); },
     () => {
+      selectWillpower(state, 1); gainMeetActions(state);
       state.selectedLandscapeId = "house";
-      meetEncounter(state, "reject");
+      meetEncounter(state, "accept");
+      while (state.round < 2) endPhase(state);
     },
-    () => { while (state.round < 2) endPhase(state); },
-    // Round 2
-    () => { drawDreamCard(state); },
-    () => { selectLucidity(state, 1); revealLandscape(state); },
-    () => { advancePhasesTo(state, "Explore", 2); },
-    () => { selectElasticity(state, 1); activateExplore(state); },
+    () => { drawDreamCard(state); selectLucidity(state, 1); revealLandscape(state); advancePhasesTo(state, "Explore", 2); },
     () => {
-      setPlayerOn(state, 0, "bed");
+      selectElasticity(state, 1); activateExplore(state);
+      setPlayerOn(state, 0, "house");
       moveActiveTo(state, "the-attic");
       setPlayerOn(state, 1, "bed");
       state.activePlayerIndex = 1;
-      moveActiveTo(state, "the-basement");
+      moveActiveTo(state, "city") || setPlayerOn(state, 1, "city");
+      moveActiveTo(state, "the-basement") || setPlayerOn(state, 1, "the-basement");
+      advancePhasesTo(state, "Meet", 2);
     },
-    () => { advancePhasesTo(state, "Meet", 2); },
-    () => { selectWillpower(state, 1); gainMeetActions(state); },
     () => {
+      selectWillpower(state, 1); gainMeetActions(state);
       state.activePlayerIndex = 0;
       setPlayerOn(state, 0, "the-attic");
       state.selectedLandscapeId = "the-attic";
       gameMod.performLandscapeAction(state, "draw-mindstream");
-    },
-    () => {
       state.activePlayerIndex = 1;
       setPlayerOn(state, 1, "the-basement");
       state.selectedLandscapeId = "the-basement";
@@ -219,7 +211,7 @@ function simulate() {
           }
           return isTutorialActionAllowed(state, k);
         });
-        if (needed.length === 0 && !["welcome", "win-goal", "rem-intro", "archetype-innocent", "r2-intro", "r2-map", "graduate"].includes(step.id)) {
+        if (needed.length === 0 && !["welcome", "r2-intro", "graduate"].includes(step.id)) {
           issues.push({
             step: step.id,
             index: scriptIdx,
@@ -242,17 +234,17 @@ function simulate() {
 
   // Scan all steps for action-lock dead ends at representative game states
   const scanStates = [
-    { label: "r2-move-quests explore, nobody on quests", fn: () => {
+    { label: "r2-explore, nobody on quests", fn: () => {
       const s = createTutorialState(gameData);
-      s.tutorialStepIndex = TUTORIAL_SCRIPT.findIndex((step) => step.id === "r2-move-quests");
+      s.tutorialStepIndex = TUTORIAL_SCRIPT.findIndex((step) => step.id === "r2-explore");
       s.round = 2;
       s.phaseIndex = 1;
       s.exploreActivated = true;
       return s;
     }},
-    { label: "r2-attic meet, nobody on attic", fn: () => {
+    { label: "r2-meet, nobody on attic", fn: () => {
       const s = createTutorialState(gameData);
-      s.tutorialStepIndex = TUTORIAL_SCRIPT.findIndex((step) => step.id === "r2-attic");
+      s.tutorialStepIndex = TUTORIAL_SCRIPT.findIndex((step) => step.id === "r2-meet");
       s.round = 2;
       s.phaseIndex = 2;
       s.meetActionBudget = 2;
@@ -267,9 +259,9 @@ function simulate() {
       s.activeArchetype.questProgress = [true, true];
       return s;
     }},
-    { label: "r2-attic meet, on attic with budget", fn: () => {
+    { label: "r2-meet, on attic with budget", fn: () => {
       const s = createTutorialState(gameData);
-      s.tutorialStepIndex = TUTORIAL_SCRIPT.findIndex((step) => step.id === "r2-attic");
+      s.tutorialStepIndex = TUTORIAL_SCRIPT.findIndex((step) => step.id === "r2-meet");
       s.round = 2;
       s.phaseIndex = 2;
       s.meetActionBudget = 2;
@@ -325,35 +317,18 @@ function simulate() {
 }
 
 /** Expected spotlight targets — display should match step text focus. */
-const EXPECTED_SPOTLIGHT = {
-  "win-goal": "#active-archetype",
-  "archetype-innocent": "#active-archetype",
-  "explore-move-r1": "#board-viewport",
-  "accept-reject": "#active-encounter",
-  "r2-map": "#board-viewport",
-  "r2-move-quests": "#board-viewport",
-  "r2-attic": "#board-viewport",
-  "r2-basement": "#board-viewport",
-};
+const EXPECTED_SPOTLIGHT = {};
 
 function auditSpotlights() {
   const failures = [];
   TUTORIAL_SCRIPT.forEach((step, index) => {
     const spotlight = getTutorialSpotlightSelector(step);
-    const expected = step.spotlight || EXPECTED_SPOTLIGHT[step.id] || null;
+    const expected = step.spotlight || null;
     if (expected && spotlight !== expected) {
       failures.push({
         step: step.id,
         index,
         expected,
-        got: spotlight,
-      });
-    }
-    if (step.id === "archetype-innocent" && spotlight === "#board-viewport") {
-      failures.push({
-        step: step.id,
-        index,
-        problem: "step 5 must spotlight Active Archetype, not board",
         got: spotlight,
       });
     }

@@ -13,7 +13,10 @@ export const CHANGELOG = [
     version: "18.6",
     title: "First-session tutorial & Guide",
     notes: [
-      "Tutorial Mode is two guided rounds: card spend first, then earn The Innocent.",
+      "Tutorial Mode is two guided rounds: Reveal, Explore, Meet, then earn The Innocent.",
+      "On-rails clicks: the table keeps your Reveal/Explore/Meet choices; Continue no longer swaps Landscapes.",
+      "Shorter 11-step script with a visible step progress bar.",
+      "Candy Mountain's wasteland side is named and glowing so the Reveal click is obvious.",
       "Steps auto-advance; Skip leaves a practice table. First visit leads with Tutorial.",
       "Contextual Guide strip is visible in real games; first Daydream pins Innocent and Quiet.",
     ],

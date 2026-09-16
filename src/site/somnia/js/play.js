@@ -126,6 +126,8 @@ import {
   tutorialActionBlocked,
   applyTutorialPhaseGates,
   classifyPhaseAction,
+  getTutorialPickHighlights,
+  getTutorialCameraFocus,
   RECOMMENDED_STARTER_IDS,
 } from "./tutorial-mode.js";
 import {
@@ -209,6 +211,7 @@ let tutorialIndex = -1;
 let interactiveTutorialActive = false;
 let lastTutorialSyncKey = null;
 let lastTutorialStepId = null;
+let lastTutorialCameraKey = null;
 let tutorialAutoAdvanceTimer = null;
 let fullscreenReady = false;
 const lastCardClick = { id: null, time: 0 };
@@ -743,8 +746,8 @@ async function startGame(config) {
     narrate(
       state,
       "Tutorial Mode",
-      "Two guided rounds with fixed Dreams and hands. Follow the highlighted steps — the card advances when you finish each action.",
-      ["Select suited Psyche cards, then use the highlighted action."],
+      "On-rails: click the highlighted Dreamer, cards, and hexes. The table keeps what you reveal.",
+      ["Follow the progress bar — each step names the exact click."],
     );
   } else {
     state = createInitialState(gameData, {
@@ -802,6 +805,7 @@ function handleTutorialJump(stepIndex) {
   jumpTutorialToStep(state, stepIndex);
   lastTutorialSyncKey = null;
   lastTutorialStepId = null;
+  lastTutorialCameraKey = null;
   renderAll();
   const sync = syncTutorial(state);
   if (!sync || sync.complete) return;
@@ -822,6 +826,7 @@ function handleTutorialBack() {
     if (!retreatTutorialStep(state)) return;
     lastTutorialSyncKey = null;
     lastTutorialStepId = null;
+    lastTutorialCameraKey = null;
     renderAll();
     const sync = syncTutorial(state);
     if (!sync || sync.complete) return;
@@ -862,6 +867,7 @@ function handleTutorialSkip() {
   markTutorialSeen();
   lastTutorialSyncKey = null;
   lastTutorialStepId = null;
+  lastTutorialCameraKey = null;
   narrate(
     state,
     "Practice table",
@@ -921,6 +927,7 @@ function handleTutorialNext() {
   }
   lastTutorialSyncKey = null;
   lastTutorialStepId = null;
+  lastTutorialCameraKey = null;
   renderAll();
   const nextSync = syncTutorial(state);
   if (!nextSync || nextSync.complete) return;
@@ -987,6 +994,18 @@ function syncInteractiveTutorial() {
     onBack: handleTutorialBack,
     onJump: handleTutorialJump,
   });
+}
+
+function maybeFocusTutorialLandscape() {
+  if (!isInteractiveTutorialActive(state)) {
+    lastTutorialCameraKey = null;
+    return;
+  }
+  const focus = getTutorialCameraFocus(state);
+  if (!focus?.tileId) return;
+  if (focus.key === lastTutorialCameraKey) return;
+  lastTutorialCameraKey = focus.key;
+  focusOnLandscape(focus.tileId, { zoom: focus.zoom });
 }
 
 function buildPhaseHandlers() {
@@ -1470,7 +1489,7 @@ function maybeShowReturnPicker() {
 
 function renderBoardArea() {
   if (!state) return;
-  const pickHighlights = getLandscapePickHighlights(state);
+  const pickHighlights = getTutorialPickHighlights(state, getLandscapePickHighlights(state));
   let legalMoves = getLegalExploreTargets(state).map((t) => t.id);
   if (isInteractiveTutorialActive(state)) {
     legalMoves = legalMoves.filter((id) => isTutorialActionAllowed(state, "exploreMove", { tileId: id }));
@@ -1661,6 +1680,7 @@ function renderAll() {
     if (step) ensureTutorialStepTargetsVisible(step);
     syncInteractiveTutorial();
     refreshTutorialSpotlight();
+    maybeFocusTutorialLandscape();
   }
 
   updateHandSnapshots(state);
