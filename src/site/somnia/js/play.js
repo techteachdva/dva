@@ -118,6 +118,7 @@ import {
   jumpTutorialToStep,
   completeTutorialGame,
   releaseTutorialToPractice,
+  graduateTutorialToPlay,
   notifyTutorialDreamDrawn,
   notifyTutorialArchetypeAcquired,
   isInteractiveTutorialActive,
@@ -215,6 +216,7 @@ let lastTutorialSyncKey = null;
 let lastTutorialStepId = null;
 let lastTutorialCameraKey = null;
 let pendingDreamerFocusId = null;
+let pendingDreamerRadial = null;
 let tutorialAutoAdvanceTimer = null;
 let fullscreenReady = false;
 const lastCardClick = { id: null, time: 0 };
@@ -890,14 +892,67 @@ function scheduleTutorialAutoAdvance() {
   }, 650);
 }
 
-function showTutorialGraduation() {
+function showTutorialGraduationPanel() {
+  const modal = document.getElementById("utility-modal");
+  const body = document.getElementById("utility-modal-body");
+  if (!modal || !body) return;
+
+  body.innerHTML = `
+    <div class="tutorial-graduate-panel">
+      <h2>You're on your own now</h2>
+      <p>You finished the guided steps. The full table is unlocked — trade, save, and explore freely on this practice dream.</p>
+      <ul class="tutorial-graduate-list">
+        <li><strong>Keep playing</strong> on this table to try what you learned.</li>
+        <li><strong>Pause → Save</strong> stores this practice dream on your device.</li>
+        <li><strong>Start Daydream</strong> begins a scored run toward 12 points.</li>
+      </ul>
+      <div class="utility-actions tutorial-graduate-actions">
+        <button type="button" class="btn primary" id="tutorial-graduate-continue">Keep playing</button>
+        <button type="button" class="btn" id="tutorial-graduate-save">Save &amp; pause</button>
+        <button type="button" class="btn" id="tutorial-graduate-daydream">Start Daydream</button>
+      </div>
+    </div>
+  `;
+
+  body.querySelector("#tutorial-graduate-continue")?.addEventListener("click", () => {
+    hideUtilityModal(true);
+    narrate(state, "Practice table", "Use the Guide strip for hints. Pause anytime to save or adjust audio.");
+    renderAll();
+  });
+  body.querySelector("#tutorial-graduate-save")?.addEventListener("click", async () => {
+    hideUtilityModal(true);
+    try {
+      await saveGameLocal(state, launchConfig, { id: "autosave", label: "Tutorial practice" });
+      openPauseMenu();
+    } catch (err) {
+      narrate(state, "Could not save", err?.message || "Try again from Pause.");
+      renderAll();
+    }
+  });
+  body.querySelector("#tutorial-graduate-daydream")?.addEventListener("click", () => {
+    hideUtilityModal(true);
+    launchGentleDaydream();
+  });
+
+  modal.classList.remove("hidden");
+  modal.setAttribute("aria-hidden", "false");
+}
+
+function finishTutorialGuidance() {
+  graduateTutorialToPlay(state);
+  hideTutorial();
   interactiveTutorialActive = false;
-  showEndScreen(
-    true,
-    "You learned Reveal, Explore, Meet, Encounters, and how to earn an Archetype. A Daydream needs 12 points, then every living Dreamer on The Bed.",
-  );
-  const startBtn = document.getElementById("btn-start-daydream");
-  startBtn?.classList.remove("hidden");
+  document.body.classList.remove("tutorial-mode-active");
+  markTutorialSeen();
+  lastTutorialSyncKey = null;
+  lastTutorialStepId = null;
+  lastTutorialCameraKey = null;
+  renderAll();
+  showTutorialGraduationPanel();
+}
+
+function showTutorialGraduation() {
+  finishTutorialGuidance();
 }
 
 function launchGentleDaydream() {
@@ -921,11 +976,7 @@ function handleTutorialNext() {
   const fromRect = getTutorialSpotlightRect();
   advanceTutorialStep(state);
   if (state.tutorialComplete) {
-    completeTutorialGame(state);
-    hideTutorial();
-    document.body.classList.remove("tutorial-mode-active");
-    markTutorialSeen();
-    showTutorialGraduation();
+    finishTutorialGuidance();
     return;
   }
   lastTutorialSyncKey = null;
@@ -958,11 +1009,7 @@ function syncInteractiveTutorial() {
   if (!sync) return;
 
   if (sync.complete) {
-    completeTutorialGame(state);
-    hideTutorial();
-    document.body.classList.remove("tutorial-mode-active");
-    markTutorialSeen();
-    showTutorialGraduation();
+    finishTutorialGuidance();
     return;
   }
 
@@ -1165,15 +1212,7 @@ function shortenRadialLabel(text, max = 22) {
   return `${text.slice(0, max - 1)}…`;
 }
 
-function openDreamerBoardRadial(anchorEl, playerId, tileId) {
-  const playerIndex = state.players.findIndex((p) => p.id === playerId);
-  if (playerIndex < 0) return;
-  state.activePlayerIndex = playerIndex;
-  if (getPhase(state) === "Meet") state.selectedLandscapeId = tileId;
-  focusOnLandscape(tileId);
-  playLandscapeSfx(tileId);
-
-  const player = state.players[playerIndex];
+function showDreamerBoardRadialMenu(playerId, tileId, player) {
   const handlers = buildPhaseHandlers();
   const actions = getPhaseActions(state, handlers);
   const options = actions
@@ -1198,7 +1237,7 @@ function openDreamerBoardRadial(anchorEl, playerId, tileId) {
     onPick: () => showDreamerDetailOverlay(player.dreamer, { player, state }),
   });
 
-  showRadialMenu(anchorEl, options, (opt) => {
+  showRadialMenu(null, options, (opt) => {
     if (opt.kind && !isTutorialActionAllowed(state, opt.kind, { action: opt.action, tileId })) {
       tutorialActionBlocked(state);
       renderAll();
@@ -1211,6 +1250,21 @@ function openDreamerBoardRadial(anchorEl, playerId, tileId) {
     resolveAnchor: () => document.querySelector(`.hex-occupant-dreamer[data-dreamer-id="${playerId}"]`)
       || document.querySelector(`.hex-tile[data-tile-id="${tileId}"]`),
   });
+}
+
+function openDreamerBoardRadial(anchorEl, playerId, tileId) {
+  const playerIndex = state.players.findIndex((p) => p.id === playerId);
+  if (playerIndex < 0) return;
+  state.activePlayerIndex = playerIndex;
+  if (getPhase(state) === "Meet") state.selectedLandscapeId = tileId;
+  queueDreamerBoardFocus(tileId);
+  playLandscapeSfx(tileId);
+  pendingDreamerRadial = {
+    playerId,
+    tileId,
+    player: state.players[playerIndex],
+  };
+  renderAll();
 }
 
 function openBeastBoardRadial(anchorEl, encounter, tileId) {
@@ -1721,6 +1775,12 @@ function renderAll() {
     }
   } else {
     flushDreamerBoardFocus();
+  }
+
+  if (pendingDreamerRadial) {
+    const radial = pendingDreamerRadial;
+    pendingDreamerRadial = null;
+    showDreamerBoardRadialMenu(radial.playerId, radial.tileId, radial.player);
   }
 
   updateHandSnapshots(state);

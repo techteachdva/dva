@@ -203,8 +203,8 @@ function powerTokenCard(suit, index) {
     type: "power-token",
     suit,
     mindstreamSuit: suit,
-    powerTokens: 2,
-    text: "Take 2 Power Tokens.",
+    powerTokens: 1,
+    text: "Take 1 Power Token.",
     image: `images/cards/mindstream/${suit}/power-token.webp`,
     instanceId: uid("mind"),
   };

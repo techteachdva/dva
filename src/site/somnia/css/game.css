@@ -5348,6 +5348,25 @@ body.card-detail-open .tutorial-card {
 }
 .utility-content.dreamer-detail-modal { max-width: 720px; }
 .utility-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1rem; }
+
+.tutorial-graduate-panel h2 {
+  margin: 0 0 0.75rem;
+  font-family: var(--font-display, "Cinzel", serif);
+}
+
+.tutorial-graduate-list {
+  margin: 0 0 1rem 1.1rem;
+  color: var(--text-muted, #9b93c4);
+  line-height: 1.55;
+}
+
+.tutorial-graduate-actions {
+  flex-direction: column;
+}
+
+.tutorial-graduate-actions .btn {
+  width: 100%;
+}
 .landscape-action-choices { flex-direction: column; }
 .landscape-action-pick {
   display: flex;

@@ -1,0 +1,35 @@
+name: Somnia audits
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src/site/somnia/**"
+      - "scripts/tutorial-*.mjs"
+      - "scripts/somnia-*.mjs"
+      - ".github/workflows/somnia-audit.yml"
+  pull_request:
+    paths:
+      - "src/site/somnia/**"
+      - "scripts/tutorial-*.mjs"
+      - "scripts/somnia-*.mjs"
+      - ".github/workflows/somnia-audit.yml"
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Tutorial e2e playthrough
+        run: node scripts/tutorial-e2e-playthrough.mjs
+      - name: Tutorial flow audit
+        run: node scripts/tutorial-flow-audit.mjs
+      - name: Tutorial snapshot audit
+        run: node scripts/tutorial-snapshot-audit.mjs
+      - name: Dreamer focus + radial audit
+        run: node scripts/somnia-radial-focus-audit.mjs
+      - name: Balance simulation smoke
+        run: node scripts/somnia-balance-sim.mjs

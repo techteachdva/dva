@@ -121,7 +121,7 @@ const TUTORIAL_QUEST_PLACEMENT = [
 ];
 
 export const TUTORIAL_REVEAL_TILE = "candy-mountain";
-const TUTORIAL_SNAPSHOT_VERSION = 16;
+const TUTORIAL_SNAPSHOT_VERSION = 17;
 let tutorialSnapshotCache = null;
 let tutorialSnapshotCacheVersion = 0;
 
@@ -1117,7 +1117,7 @@ export const TUTORIAL_SCRIPT = [
     id: "graduate",
     round: 2,
     title: "Go Play",
-    body: "You know the loop: Reveal the map, Explore onto it, Meet to draw Mindstream and finish quests. The rest is the cards. Press Finish for a gentle Daydream. Overview and Tips are there if you want them.",
+    body: "You know the loop. Click Finish to unlock the full table — save from Pause, or start a scored Daydream.",
     target: "#phase-stepper",
   },
 ];
@@ -1237,6 +1237,15 @@ export function completeTutorialGame(state) {
   state.status = "won";
   state.tutorialVictory = true;
   addLog(state, "Tutorial complete — start a Daydream when you are ready.");
+}
+
+export function graduateTutorialToPlay(state) {
+  if (!state?.tutorialMode) return;
+  state.tutorialComplete = true;
+  state.tutorialVictory = false;
+  state.tutorialGraduated = true;
+  state.status = "playing";
+  addLog(state, "Tutorial complete — full rules unlocked. Open Pause to save this practice table.");
 }
 
 export function releaseTutorialToPractice(state) {

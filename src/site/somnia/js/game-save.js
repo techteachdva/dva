@@ -46,7 +46,7 @@ export function buildSaveLabel(state) {
 
 export function canSaveGame(state) {
   if (!state || state.status !== "playing") return false;
-  if (state.tutorialMode) return false;
+  if (state.tutorialMode && !state.tutorialComplete) return false;
   return true;
 }
 
@@ -87,6 +87,7 @@ export async function packGameSave(state, launchConfig, { label, playerName } = 
       selectedDreamerIds: launchConfig?.selectedDreamerIds
         || state.players?.map((p) => p.dreamer?.id).filter(Boolean),
       tutorialMode: false,
+      gentleStart: launchConfig?.gentleStart ?? false,
     },
     game,
   };

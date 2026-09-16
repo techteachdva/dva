@@ -115,7 +115,7 @@ function renderGameTab() {
   return `
     <div class="pause-section">
       <h3>Save progress</h3>
-      <p class="pause-hint">${canSave ? `Autosave keeps <strong>${label}</strong> on this device.` : "Saving is available during an active dream (not in guided tutorial)."}</p>
+      <p class="pause-hint">${canSave ? `Autosave keeps <strong>${label}</strong> on this device.` : "Finish the guided tutorial steps to unlock saving, or start a Daydream from the menu."}</p>
       <div class="pause-btn-row pause-btn-col">
         <button type="button" class="btn primary" id="pause-save-local" ${canSave ? "" : "disabled"}>Save on this device</button>
         <button type="button" class="btn" id="pause-save-cloud" ${canSave && !standalone ? "" : "disabled"}>${standalone ? "Cloud save (web only)" : "Save to cloud"}</button>

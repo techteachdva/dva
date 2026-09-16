@@ -35,9 +35,12 @@
         "copy:somnia-images": "node scripts/copy-somnia-images.mjs",
         "package": "node scripts/package-somnia-standalone.mjs",
         "package:somnia-standalone": "node scripts/package-somnia-standalone.mjs",
+        "test:tutorial-e2e": "node scripts/tutorial-e2e-playthrough.mjs",
         "audit:tutorial": "node scripts/tutorial-flow-audit.mjs && node scripts/tutorial-snapshot-audit.mjs",
         "audit:final-recurrence": "node scripts/final-recurrence-audit.mjs",
-        "audit:somnia": "npm run audit:tutorial && npm run audit:final-recurrence",
+        "audit:radial-focus": "node scripts/somnia-radial-focus-audit.mjs",
+        "audit:balance": "node scripts/somnia-balance-sim.mjs",
+        "audit:somnia": "npm run test:tutorial-e2e && npm run audit:tutorial && npm run audit:radial-focus && npm run audit:balance && npm run audit:final-recurrence",
         "audit:somnia-18-3": "node scripts/somnia-18-3-check.mjs"
     },
     "keywords": [],

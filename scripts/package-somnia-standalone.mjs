@@ -21,7 +21,7 @@ const OUT_DIR = path.join(REPO, "dist/somnia-standalone");
 const OUT_ZIP = path.join(REPO, "dist/somnia-standalone.zip");
 
 const GOOGLE_FONTS_CSS =
-  "https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Kalnia+Glaze&family=Source+Sans+3:wght@400;600&display=swap";
+  "https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Kalnia+Glaze&family=Source+Sans+3:wght@400;600&display=swap";
 
 const FONT_USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
@@ -60,6 +60,27 @@ function copyDir(src, dest) {
     if (entry.isDirectory()) copyDir(from, to);
     else fs.copyFileSync(from, to);
   }
+}
+
+/** Drop duplicate WAV stings when MP3 is used in landscape-sfx.json. */
+function pruneStandaloneAssets(outDir) {
+  let removed = 0;
+  let savedBytes = 0;
+  const landscapesDir = path.join(outDir, "audio/landscapes");
+  if (!fs.existsSync(landscapesDir)) return { removed, savedBytes };
+
+  for (const file of fs.readdirSync(landscapesDir)) {
+    if (!file.endsWith(".wav")) continue;
+    const mp3 = file.replace(/\.wav$/i, ".mp3");
+    const wavPath = path.join(landscapesDir, file);
+    const mp3Path = path.join(landscapesDir, mp3);
+    if (!fs.existsSync(mp3Path)) continue;
+    savedBytes += fs.statSync(wavPath).size;
+    fs.unlinkSync(wavPath);
+    removed += 1;
+  }
+
+  return { removed, savedBytes };
 }
 
 function injectBootLoader(html, moduleSrc) {
@@ -297,6 +318,11 @@ async function main() {
 
   for (const { file, module } of HTML_FILES) {
     patchHtml(path.join(OUT_DIR, file), module);
+  }
+
+  const pruned = pruneStandaloneAssets(OUT_DIR);
+  if (pruned.removed) {
+    console.log(`Pruned ${pruned.removed} duplicate landscape WAV files (${(pruned.savedBytes / (1024 * 1024)).toFixed(1)} MB saved).`);
   }
 
   await downloadFonts(OUT_DIR);
