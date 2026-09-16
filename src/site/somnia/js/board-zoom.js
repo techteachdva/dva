@@ -2,6 +2,7 @@ const MIN_ZOOM = 0.45;
 const MAX_ZOOM = 5.5;
 const ZOOM_SENSITIVITY = 0.0012;
 const PAN_CLICK_THRESHOLD = 5;
+const ARROW_PAN_FRACTION = 0.06;
 
 let viewport = null;
 let stage = null;
@@ -199,13 +200,55 @@ function isTypingTarget(target) {
   return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
 }
 
+function canUseBoardKeyboard() {
+  const active = document.activeElement;
+  if (isTypingTarget(active instanceof HTMLElement ? active : null)) return false;
+  if (!document.getElementById("screen-game")?.classList.contains("active")) return false;
+  if (!document.getElementById("card-modal")?.classList.contains("hidden")) return false;
+  const utilityModal = document.getElementById("utility-modal");
+  if (
+    utilityModal
+    && !utilityModal.classList.contains("hidden")
+    && !utilityModal.classList.contains("utility-modal-minimized")
+  ) {
+    return false;
+  }
+  if (!document.getElementById("pause-menu")?.classList.contains("hidden")) return false;
+  return true;
+}
+
+function getArrowPanStep() {
+  if (!viewport) return 56;
+  return Math.max(32, Math.round(Math.min(viewport.clientWidth, viewport.clientHeight) * ARROW_PAN_FRACTION));
+}
+
+function panBoardBy(dx, dy) {
+  if (!stage) return false;
+  panX += dx;
+  panY += dy;
+  userAdjusted = true;
+  applyTransform();
+  return true;
+}
+
 function onKeyDown(event) {
-  if (isTypingTarget(event.target)) return;
-  if (!document.getElementById("screen-game")?.classList.contains("active")) return;
+  if (!canUseBoardKeyboard()) return;
 
   if ((event.key === "f" || event.key === "F") && !event.repeat) {
     event.preventDefault();
     fitBoardToViewport();
+    return;
+  }
+
+  const arrowPan = {
+    ArrowUp: [0, getArrowPanStep()],
+    ArrowDown: [0, -getArrowPanStep()],
+    ArrowLeft: [getArrowPanStep(), 0],
+    ArrowRight: [-getArrowPanStep(), 0],
+  }[event.key];
+  if (arrowPan) {
+    event.preventDefault();
+    panBoardBy(...arrowPan);
     return;
   }
 
@@ -276,7 +319,7 @@ function showBoardPanHint() {
   const hint = document.createElement("div");
   hint.className = "board-pan-hint";
   hint.setAttribute("role", "status");
-  hint.textContent = "F fit table · scroll zoom · Space + drag or middle-click to pan";
+  hint.textContent = "F fit table · scroll zoom · arrow keys or Space + drag to pan";
   viewport.appendChild(hint);
   localStorage.setItem("somnia.boardPanHintSeen", "1");
   window.setTimeout(() => hint.classList.add("fade-out"), 4200);

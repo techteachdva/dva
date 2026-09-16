@@ -283,13 +283,25 @@ function allowsSuitHand(state, detail, suit) {
   return owner.hand.some((c) => c.instanceId === id);
 }
 
-function exploreMoveAllowed(state, tileId, allowedTiles = null) {
-  const player = state.players[state.activePlayerIndex];
+function exploreMoveAllowed(state, tileId, allowedTiles = null, playerIndex = null) {
+  const idx = playerIndex ?? state.activePlayerIndex;
+  const player = state.players[idx];
   if (!player?.alive || getPhase(state) !== "Explore" || !state.exploreActivated) return false;
   const legal = getLegalMoveTargets(state, player).map((t) => t.id);
   if (!legal.includes(tileId)) return false;
   if (allowedTiles && !allowedTiles.includes(tileId)) return false;
   return true;
+}
+
+function dreamerSelectBeatComplete(state, beat) {
+  if (state.activePlayerIndex === beat.playerIndex) return true;
+  const step = getTutorialStep(state);
+  const beatIndex = step?.rail?.indexOf(beat) ?? -1;
+  if (beatIndex < 0 || !step?.rail) return false;
+  for (let i = beatIndex + 1; i < step.rail.length; i += 1) {
+    if (isRailBeatComplete(state, step.rail[i])) return true;
+  }
+  return false;
 }
 
 function requiredCardIds(beat) {
@@ -312,7 +324,7 @@ function requiredCardsSelected(state, beat) {
 function isRailBeatComplete(state, beat) {
   switch (beat.kind) {
     case "dreamerSelect":
-      return state.activePlayerIndex === beat.playerIndex;
+      return dreamerSelectBeatComplete(state, beat);
     case "handToggle": {
       if (requiredCardsSelected(state, beat)) return true;
       const player = state.players[beat.playerIndex ?? 0];
@@ -393,7 +405,7 @@ function railBeatAllows(state, beat, kind, detail = {}) {
       return kind === "spendElasticity";
     case "exploreMove":
       if (kind !== "exploreMove" && kind !== "boardClick") return false;
-      return exploreMoveAllowed(state, detail.tileId, [beat.tileId]);
+      return exploreMoveAllowed(state, detail.tileId, [beat.tileId], beat.playerIndex);
     case "gainMeetActions":
       return kind === "gainMeetActions";
     case "meetAccept":
@@ -435,6 +447,21 @@ function settleTutorialRail(state) {
     }
     state.landscapePick = null;
   }
+}
+
+/** Legal Explore hex ids for board highlighting during on-rails movement beats. */
+export function getTutorialExploreLegalMoveIds(state, defaultLegalMoveIds = []) {
+  if (!isInteractiveTutorialActive(state)) return defaultLegalMoveIds;
+  const beat = currentRailBeat(state);
+  if (beat?.kind !== "exploreMove" || beat.playerIndex == null) {
+    return defaultLegalMoveIds.filter((id) =>
+      isTutorialActionAllowed(state, "exploreMove", { tileId: id }));
+  }
+  const player = state.players[beat.playerIndex];
+  if (!player) return [];
+  return getLegalMoveTargets(state, player)
+    .map((t) => t.id)
+    .filter((id) => isTutorialActionAllowed(state, "exploreMove", { tileId: id }));
 }
 
 export function getTutorialPickHighlights(state, raw) {
@@ -825,7 +852,7 @@ export const TUTORIAL_SECTIONS = [
   { id: "explore", label: "Explore", stepIndex: 3 },
   { id: "meet", label: "Meet", stepIndex: 4 },
   { id: "round2", label: "Round 2", stepIndex: 5 },
-  { id: "quests", label: "Quests", stepIndex: 8 },
+  { id: "quests", label: "Quests", stepIndex: 7 },
   { id: "graduate", label: "Finish", stepIndex: 10 },
 ];
 
@@ -884,7 +911,7 @@ export const TUTORIAL_SCRIPT = [
     id: "meet-r1",
     round: 1,
     title: "Meet: Dreambeasts and Luck",
-    body: "Meet is where the table happens. Spend Willpower for shared actions, then Accept or Reject Dreambeasts. The Accept icon's color is the Psyche you must play: Mandrake's Accept 6 blue eye means at least 1 Lucidity, and The Visionary's Lucidity is added to the total. Click The Visionary, Willpower 2, Gain Actions, Lucidity 3 and 2, then Accept Mandrake. Then Next Phase.",
+    body: "Meet is where the table comes alive, with Dreambeasts, Events, Objects, and Actions. Spend Willpower for shared actions, then Accept or Reject Dreambeasts. The Accept icon's color is the Psyche you must play: Mandrake's Accept 6 blue eye means at least 1 Lucidity, and The Visionary's Lucidity is added to the total. Click The Visionary, Willpower 2, Gain Actions, Lucidity 3 and 2, then Accept Mandrake. Then Next Phase.",
     targets: ["#hand-bar", "#phase-actions", "#board-viewport"],
     rail: [
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary." },

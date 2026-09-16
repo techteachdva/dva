@@ -127,6 +127,7 @@ import {
   applyTutorialPhaseGates,
   classifyPhaseAction,
   getTutorialPickHighlights,
+  getTutorialExploreLegalMoveIds,
   getTutorialCameraFocus,
   RECOMMENDED_STARTER_IDS,
 } from "./tutorial-mode.js";
@@ -1492,7 +1493,7 @@ function renderBoardArea() {
   const pickHighlights = getTutorialPickHighlights(state, getLandscapePickHighlights(state));
   let legalMoves = getLegalExploreTargets(state).map((t) => t.id);
   if (isInteractiveTutorialActive(state)) {
-    legalMoves = legalMoves.filter((id) => isTutorialActionAllowed(state, "exploreMove", { tileId: id }));
+    legalMoves = getTutorialExploreLegalMoveIds(state, legalMoves);
   }
   renderBoard(state, (id) => {
     if (!isTutorialActionAllowed(state, "boardClick", { tileId: id })) {

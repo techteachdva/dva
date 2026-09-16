@@ -3458,7 +3458,7 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
 }
 
 .board-viewport::after {
-  content: "F fit table · scroll zoom · Space+drag or middle-drag pan";
+  content: "F fit table · scroll zoom · arrow keys or Space+drag pan";
   position: absolute;
   right: 0.65rem;
   bottom: 0.45rem;
