@@ -121,7 +121,7 @@ const TUTORIAL_QUEST_PLACEMENT = [
 ];
 
 export const TUTORIAL_REVEAL_TILE = "candy-mountain";
-const TUTORIAL_SNAPSHOT_VERSION = 15;
+const TUTORIAL_SNAPSHOT_VERSION = 16;
 let tutorialSnapshotCache = null;
 let tutorialSnapshotCacheVersion = 0;
 
@@ -145,6 +145,7 @@ export function createTutorialBaseState(data) {
     dreamsDrawn: 0,
     encounterResolved: false,
     archetypeAcquired: false,
+    acquirePowerPrimed: false,
   };
 
   const innocent = data.archetypes.find((a) => a.id === "innocent");
@@ -160,6 +161,7 @@ export function createTutorialBaseState(data) {
 
   state.players.forEach((p, index) => {
     p.id = tutorialUid(`player-${index}`);
+    p.powerTokens = 1;
   });
 
   state.players[0].hand = [
@@ -324,6 +326,16 @@ function exploreMoveBeatComplete(state, beat) {
   );
 }
 
+function powerSurgeHandToggleBeatComplete(state, beat) {
+  const player = state.players[beat.playerIndex ?? 0];
+  return railBeatStickyComplete(
+    state,
+    beat,
+    () => (player?.powerTokens || 0) >= 2,
+    { skipKinds: ["dreamerSelect"] },
+  );
+}
+
 function requiredCardIds(beat) {
   if (!beat) return [];
   if (Array.isArray(beat.cardIds) && beat.cardIds.length) return beat.cardIds;
@@ -350,6 +362,9 @@ function isRailBeatComplete(state, beat) {
       const player = state.players[beat.playerIndex ?? 0];
       const ids = requiredCardIds(beat);
       if (!ids.length || !player) return false;
+      if (ids.includes("psyche-power-r2")) {
+        return powerSurgeHandToggleBeatComplete(state, beat);
+      }
       return ids.every((cardId) => !player.hand.some((c) => c.id === cardId));
     }
     case "drawDream":
@@ -439,9 +454,8 @@ function railBeatAllows(state, beat, kind, detail = {}) {
       if (kind === "landscapeActionA") return true;
       return kind === "boardClick" && detail.tileId === beat.landscapeId;
     case "completeQuest0":
-      return kind === "completeQuest0";
     case "completeQuest1":
-      return kind === "completeQuest1";
+      return kind === beat.kind && state.activePlayerIndex === (beat.playerIndex ?? 0);
     default:
       return false;
   }
@@ -450,6 +464,15 @@ function railBeatAllows(state, beat, kind, detail = {}) {
 function settleTutorialRail(state) {
   const step = getTutorialStep(state);
   if (!step) return;
+
+  if (step.id === "r2-acquire" && !innocentAcquired(state)) {
+    if (!state.tutorialFlags.acquirePowerPrimed) {
+      primeTutorialAcquirePower(state);
+      state.tutorialFlags.acquirePowerPrimed = true;
+    }
+  } else if (state.tutorialFlags) {
+    state.tutorialFlags.acquirePowerPrimed = false;
+  }
 
   const revealBeat = step.rail?.find((beat) => beat.kind === "boardClick" && beat.reveal);
   if (revealBeat && landscapeById(state, revealBeat.tileId)?.revealed && state.landscapePick?.mode === "reveal") {
@@ -601,7 +624,10 @@ function railHighlight(state, step, beat) {
       };
     case "completeQuest0":
     case "completeQuest1":
-      return { targets: ["#active-archetype", "#phase-actions"], spotlight: "#active-archetype" };
+      return {
+        targets: ["#active-archetype", "#phase-actions"],
+        spotlight: "#active-archetype",
+      };
     default:
       return {
         targets: getTutorialStepTargetSelectors(step),
@@ -651,7 +677,15 @@ function stepAllowsAction(state, step, kind, detail = {}) {
 
 export function isTutorialActionAllowed(state, kind, detail = {}) {
   if (!isInteractiveTutorialActive(state)) return true;
-  if (kind === "handToggle" && detail.card?.type === "psyche-power") return true;
+  if (kind === "handToggle" && detail.card?.type === "psyche-power") {
+    const step = getTutorialStep(state);
+    if (step?.id !== "r2-acquire") return false;
+    const beat = currentRailBeat(state);
+    return beat?.kind === "handToggle" && requiredCardIds(beat).includes(detail.card?.id);
+  }
+  if (kind === "phasePowerToken" || kind === "dreamerPower" || kind === "powerBonus" || kind === "refundPowerBonus") {
+    return false;
+  }
   if (kind === "tutorialNav") return true;
   if (kind === "powerTokenMenu") {
     const current = getTutorialStep(state);
@@ -871,6 +905,31 @@ function innocentAcquired(state) {
     (p.acquiredArchetypes || []).some((a) => a.id === "innocent"));
 }
 
+/** Reset power tokens and quests for the Mark Quests step so two tokens are available. */
+function primeTutorialAcquirePower(state) {
+  if (!state?.tutorialMode || innocentAcquired(state)) return;
+
+  state.players.forEach((player) => {
+    if (player.alive) player.powerTokens = 1;
+  });
+
+  const visionary = state.players[0];
+  if (visionary && !visionary.hand.some((c) => c.id === "psyche-power-r2")) {
+    visionary.hand.push(makePowerSurge("r2"));
+  }
+
+  if (state.activeArchetype) {
+    state.activeArchetype.questProgress = [false, false];
+    state.activeArchetype.powerTokensOnArchetype = 0;
+  }
+
+  state.activePlayerIndex = 0;
+  addLog(
+    state,
+    "Tutorial — each Dreamer begins with 1 Power Token. Play Power Surge on The Visionary for a second, then mark both quests.",
+  );
+}
+
 /** Jump menu sections map to step indices in TUTORIAL_SCRIPT. */
 export const TUTORIAL_SECTIONS = [
   { id: "welcome", label: "Welcome", stepIndex: 0 },
@@ -958,7 +1017,7 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-intro",
     round: 2,
     title: "Now Chase the Archetype",
-    body: "Priority shifts to the Active Archetype. You just drew Power Surge from the Psyche deck - click it anytime, any phase, for 1 Power Token. The Innocent wants Mindstream on The Attic and The Basement (glowing). Same R.E.M. loop - reveal and explore only as needed, then Meet on those tiles.",
+    body: "Priority shifts to the Active Archetype. The Innocent wants Mindstream on The Attic and The Basement (glowing). Same R.E.M. loop — reveal and explore only as needed, then Meet on those tiles. Save Power Surge for the next step, when you mark both quests.",
     targets: ["#active-archetype", "#board-viewport"],
     spotlight: "#board-viewport",
   },
@@ -1030,13 +1089,15 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-acquire",
     round: 2,
     title: "Mark Quests and Acquire",
-    body: "Each quest costs 1 Power Token to mark. You started with 1, so click Power Surge for a second token, then Quest 1 and Quest 2. Marking the last one acquires the Archetype.",
+    body: "Each Dreamer begins with 1 Power Token. Quests cost 1 token to mark. Click The Visionary, play Power Surge for a second token, then Quest 1 and Quest 2. Marking the last quest acquires The Innocent.",
     target: "#active-archetype",
     rail: [
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary — they hold Power Surge." },
-      { kind: "handToggle", playerIndex: 0, cardId: "psyche-power-r2", prompt: "Click Power Surge for 1 Power Token." },
-      { kind: "completeQuest0", prompt: "Click Quest 1 and spend 1 Power Token." },
-      { kind: "completeQuest1", prompt: "Click Quest 2 and spend 1 Power Token to acquire The Innocent." },
+      { kind: "handToggle", playerIndex: 0, cardId: "psyche-power-r2", prompt: "Click Power Surge to gain 1 Power Token (2 total on The Visionary)." },
+      { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary to mark Quest 1." },
+      { kind: "completeQuest0", playerIndex: 0, prompt: "Click Quest 1 and spend 1 Power Token." },
+      { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary to mark Quest 2." },
+      { kind: "completeQuest1", playerIndex: 0, prompt: "Click Quest 2 and spend 1 Power Token to acquire The Innocent." },
     ],
     until: (s) => innocentAcquired(s),
   },
