@@ -86,6 +86,19 @@ function reseedTutorialInstanceIds(state) {
   });
 }
 
+function makePowerSurge(tag) {
+  return {
+    id: `psyche-power-${tag}`,
+    type: "psyche-power",
+    suit: null,
+    value: 0,
+    powerTokens: 1,
+    name: "Power Surge",
+    text: "Play anytime, any phase: gain 1 Power Token, then discard.",
+    instanceId: tutorialUid(`psyche-power-${tag}`),
+  };
+}
+
 function makePsyche(suit, value, tag) {
   const label = suit.charAt(0).toUpperCase() + suit.slice(1);
   return {
@@ -108,7 +121,7 @@ const TUTORIAL_QUEST_PLACEMENT = [
 ];
 
 export const TUTORIAL_REVEAL_TILE = "candy-mountain";
-const TUTORIAL_SNAPSHOT_VERSION = 13;
+const TUTORIAL_SNAPSHOT_VERSION = 15;
 let tutorialSnapshotCache = null;
 let tutorialSnapshotCacheVersion = 0;
 
@@ -147,7 +160,6 @@ export function createTutorialBaseState(data) {
 
   state.players.forEach((p, index) => {
     p.id = tutorialUid(`player-${index}`);
-    p.powerTokens = 2;
   });
 
   state.players[0].hand = [
@@ -156,6 +168,8 @@ export function createTutorialBaseState(data) {
     makePsyche("elasticity", 2, "v-e2"),
     makePsyche("willpower", 2, "v-w2"),
     makePsyche("lucidity", 1, "v-l1"),
+    makePsyche("elasticity", 1, "v-e1"),
+    makePsyche("willpower", 1, "v-w1"),
   ];
   state.players[1].hand = [
     makePsyche("willpower", 3, "i-w3"),
@@ -190,9 +204,10 @@ export function createTutorialBaseState(data) {
 
   stabilizeTutorialDecks(state);
   state.psycheDeck = [
+    makePowerSurge("r2"),
     makePsyche("lucidity", 2, "r2-a"),
     makePsyche("lucidity", 1, "r2-b"),
-    ...state.psycheDeck,
+    ...state.psycheDeck.filter((card) => card.type !== "psyche-power"),
   ];
   reseedTutorialInstanceIds(state);
 
@@ -583,6 +598,7 @@ function stepAllowsAction(state, step, kind, detail = {}) {
 
 export function isTutorialActionAllowed(state, kind, detail = {}) {
   if (!isInteractiveTutorialActive(state)) return true;
+  if (kind === "handToggle" && detail.card?.type === "psyche-power") return true;
   if (kind === "tutorialNav") return true;
   if (kind === "powerTokenMenu") {
     const current = getTutorialStep(state);
@@ -868,7 +884,7 @@ export const TUTORIAL_SCRIPT = [
     id: "meet-r1",
     round: 1,
     title: "Meet: Dreambeasts and Luck",
-    body: "Meet is where the table happens. Spend Willpower for shared actions, then Accept or Reject Dreambeasts, or use a Landscape's Action A to draw Mindstream. Click The Visionary, Willpower 2, Gain Actions, Lucidity 3 and 2, then Accept Mandrake. Then Next Phase.",
+    body: "Meet is where the table happens. Spend Willpower for shared actions, then Accept or Reject Dreambeasts. The Accept icon's color is the Psyche you must play: Mandrake's Accept 6 blue eye means at least 1 Lucidity, and The Visionary's Lucidity is added to the total. Click The Visionary, Willpower 2, Gain Actions, Lucidity 3 and 2, then Accept Mandrake. Then Next Phase.",
     targets: ["#hand-bar", "#phase-actions", "#board-viewport"],
     rail: [
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary." },
@@ -880,7 +896,7 @@ export const TUTORIAL_SCRIPT = [
         cardIds: ["lucidity-3-v-l3", "lucidity-2-v-l2"],
         prompt: "Select Lucidity 3 and Lucidity 2.",
       },
-      { kind: "meetAccept", prompt: "Click Accept on Mandrake (House token or action bar)." },
+      { kind: "meetAccept", prompt: "Click Accept on Mandrake. The blue eye means play at least 1 Lucidity; The Visionary's Lucidity adds to the total." },
       { kind: "advancePhase", toRound: 2, prompt: "Click Next Phase to end Round 1." },
     ],
     until: (s) => s.round >= 2,
@@ -889,7 +905,7 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-intro",
     round: 2,
     title: "Now Chase the Archetype",
-    body: "Priority shifts to the Active Archetype. The Innocent wants Mindstream on The Attic and The Basement (glowing). Same R.E.M. loop - reveal and explore only as needed, then Meet on those tiles.",
+    body: "Priority shifts to the Active Archetype. You just drew Power Surge from the Psyche deck - click it anytime, any phase, for 1 Power Token. The Innocent wants Mindstream on The Attic and The Basement (glowing). Same R.E.M. loop - reveal and explore only as needed, then Meet on those tiles.",
     targets: ["#active-archetype", "#board-viewport"],
     spotlight: "#board-viewport",
   },
@@ -961,9 +977,11 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-acquire",
     round: 2,
     title: "Mark Quests and Acquire",
-    body: "Each quest costs 1 Power Token to mark. Marking the last one acquires the Archetype. Power Tokens also boost spreads, Objects, and saves - you will see those in play. Click Quest 1, then Quest 2.",
+    body: "Each quest costs 1 Power Token to mark. You started with 1, so click Power Surge for a second token, then Quest 1 and Quest 2. Marking the last one acquires the Archetype.",
     target: "#active-archetype",
     rail: [
+      { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary — they hold Power Surge." },
+      { kind: "handToggle", playerIndex: 0, cardId: "psyche-power-r2", prompt: "Click Power Surge for 1 Power Token." },
       { kind: "completeQuest0", prompt: "Click Quest 1 and spend 1 Power Token." },
       { kind: "completeQuest1", prompt: "Click Quest 2 and spend 1 Power Token to acquire The Innocent." },
     ],

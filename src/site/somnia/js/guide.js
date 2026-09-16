@@ -56,7 +56,7 @@ export const TUTORIAL_STEPS = [
   {
     id: "meet",
     title: "Meet Phase",
-    body: "Discuss who spends Willpower, then take Meet actions in any order. For Encounters, only the Dreamer on that Landscape may spend Psyche (up to 3).",
+    body: "Discuss who spends Willpower, then take Meet actions in any order. For Encounters, only the Dreamer on that Landscape may spend Psyche (up to 3). The Accept or Reject icon color is the Psyche you must include at least one of, and that Dreamer's matching stat is added to the total.",
     target: "#phase-actions",
     phase: "Meet",
   },
@@ -434,7 +434,7 @@ export function tutorialBriefHtml() {
         <ul class="tutorial-brief-rem">
           <li><strong>Reveal</strong> (${SUIT_LABELS.lucidity}) — Head (*) draws a Dream. Spend Lucidity to flip wasteland hexes into Landscapes. Early game: more map is the priority.</li>
           <li><strong>Explore</strong> (${SUIT_LABELS.elasticity}) — Spend Elasticity for a shared move budget, then walk onto those Landscapes. You cannot move during Meet.</li>
-          <li><strong>Meet</strong> (${SUIT_LABELS.willpower}) — Spend Willpower for shared actions. <strong>Accept</strong> or <strong>Reject</strong> Dreambeasts, or use a Landscape's <strong>Action A</strong> to draw Mindstream.</li>
+          <li><strong>Meet</strong> (${SUIT_LABELS.willpower}) — Spend Willpower for shared actions. <strong>Accept</strong> or <strong>Reject</strong> Dreambeasts: the icon color is the Psyche you must play at least one of, and that Dreamer's matching stat is added. Or use a Landscape's <strong>Action A</strong> to draw Mindstream.</li>
         </ul>
         <p class="tutorial-brief-note">Each phase spender plays <strong>1–2 suited Psyche cards</strong>, or <strong>1 Power Token</strong>. Matching Dreamer stats add bonus budget. Overview and Tips hold the wider ruleset.</p>
       </section>

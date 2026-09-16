@@ -369,6 +369,22 @@ function beginRepressStep(state, step) {
     return;
   }
 
+  if (state.tutorialMode && needed === 1 && available.length >= 1) {
+    const card = available.find((c) => c.type === "psyche" && !isDreambeastPsycheCard(c)) || available[0];
+    removeFromSource(player, step.source, card.instanceId);
+    queueRepressFx(card, { playerId: player.id });
+    repressCard(state, card);
+    if (step.source === "hand") {
+      recordQuestEvent(state, "discard_psyche", { count: 1, landscapeId: player.landscapeId });
+    }
+    logRepress(state, `${player.name} Repressed ${card.name} → Subconscious.`);
+    if (step.source === "hand" && state.checkPsycheDeath) {
+      state.checkPsycheDeath(player);
+    }
+    advanceResolutionQueue(state);
+    return;
+  }
+
   if (needed === 1 && available.length === 1) {
     const card = available[0];
     removeFromSource(player, step.source, card.instanceId);

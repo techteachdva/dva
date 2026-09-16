@@ -26,7 +26,6 @@ import {
   meetActionBudgetFromWillpower,
   coopMeetPlayTotal,
   meetPsycheActor,
-  meetPsychePlayTotal,
   selectedCards,
   allSelectedCards,
   spreadPsycheCount,
@@ -54,6 +53,8 @@ import {
   phaseOpeningActive,
   cardCountsAsSuit,
   isWildPsyche,
+  encounterPlayTotal,
+  encounterPayHint,
 } from "./rules.js";
 import {
   encounterRejectCost,
@@ -490,6 +491,7 @@ export function getPhaseActions(state, handlers) {
     if (meetEnc && !state.finalRecurrence) {
       const shape = bossPlayShapeRequired(meetEnc);
       const shapeHint = shape ? ` · ${bossPlayShapeLabel(shape)}` : "";
+      const payHint = encounterPayHint(meetEnc, true);
       actions.push({
         label: `Accept ${meetEnc.accept} — ${encounterAcceptSummary(meetEnc)}${shapeHint}`,
         section: "encounter",
@@ -497,7 +499,7 @@ export function getPhaseActions(state, handlers) {
           state,
           MEET_ACTIONS.MEET,
           null,
-          meetEnc.effect ? `Effect: ${meetEnc.effect}` : encounterAcceptSummary(meetEnc),
+          [payHint, meetEnc.effect ? `Effect: ${meetEnc.effect}` : encounterAcceptSummary(meetEnc)].filter(Boolean).join(" "),
         ),
         primary: true,
         disabled: !canUseMeetAction(state, MEET_ACTIONS.MEET),
@@ -510,7 +512,7 @@ export function getPhaseActions(state, handlers) {
           state,
           MEET_ACTIONS.MEET,
           null,
-          encounterRejectSummary(meetEnc),
+          [encounterPayHint(meetEnc, false), encounterRejectSummary(meetEnc)].filter(Boolean).join(" "),
         ),
         disabled: !canUseMeetAction(state, MEET_ACTIONS.MEET),
         onClick: () => handlers.meetEncounter("reject"),
@@ -1068,7 +1070,7 @@ export function meetEncounter(state, mode = "accept") {
     if (declared) addLog(state, `Chimera Declared Card: ${declared.name || `${declared.suit} ${declared.value}`}.`);
   }
 
-  const played = meetPsychePlayTotal(state);
+  const played = encounterPlayTotal(state, { accept: !isReject });
   const bonus = meetBonusBreakdown(state);
   if (played < needed) {
     const bonusNote = bonus.total ? ` (includes +${bonus.total} Dreamer bonus)` : "";

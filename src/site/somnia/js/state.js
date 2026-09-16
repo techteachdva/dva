@@ -37,7 +37,6 @@ import { psycheHandCount, hasPsycheHealth } from "./psyche.js";
 import {
   grantPowerTokens,
   spendPowerTokens,
-  resolvePsychePowerCard,
   resolvePowerCardsInHand,
   resolveAllPowerCardsInHands,
 } from "./power-tokens.js";
@@ -298,8 +297,14 @@ export function drawPsycheForPlayer(state, player, count = 1) {
     const card = state.psycheDeck.shift();
     consumeRevealedTop(state, "psyche");
 
-    if (card.type === "psyche-power" && state.tutorialMode) {
-      resolvePsychePowerCard(state, player, card);
+    if (card.type === "psyche-power") {
+      const limit = handLimitForPlayer(state, player);
+      if (psycheHandCount(player) < limit) {
+        player.hand.push(card);
+        drawn.push(card);
+      } else {
+        state.psycheDiscard.push(card);
+      }
       continue;
     }
 

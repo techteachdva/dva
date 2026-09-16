@@ -6,7 +6,7 @@ import {
   repressTopMindstreamFromEachDeck,
 } from "./subconscious.js";
 import { returnDreambeastToMindstreamDeck } from "./mindstream-supply.js";
-import { dreamerMeetBonuses } from "./dreambeasts.js";
+import { dreamerMeetBonuses, encounterRejectCost } from "./dreambeasts.js";
 import { canTradeBetween as hexCanTradeBetween } from "./hex.js";
 import { persistentMeetBonus, sumEffectivePsycheValue } from "./objects.js";
 import { effectiveDreamerStat } from "./archetype-stats.js";
@@ -190,6 +190,76 @@ export function allSelectedCards(state) {
   return cards;
 }
 
+/** Live breakdown of selected Psyche for the cursor HUD. */
+export function psycheCursorBreakdown(state) {
+  const cards = allSelectedCards(state);
+  if (!cards.length) return null;
+
+  const bySuit = { lucidity: 0, elasticity: 0, willpower: 0 };
+  let wild = 0;
+  cards.forEach((card) => {
+    if (card.type === "psyche-power") return;
+    const value = psycheCardValue(card);
+    if (isWildPsyche(card)) wild += value;
+    else if (card.suit && bySuit[card.suit] != null) bySuit[card.suit] += value;
+  });
+  const cardTotal = bySuit.lucidity + bySuit.elasticity + bySuit.willpower + wild;
+  const extras = [];
+  const phase = PHASES[state.phaseIndex];
+
+  if (phaseOpeningActive(state)) {
+    const player = findPhaseContributor(state);
+    const suit = phaseSuitForOpening(phase);
+    const statKey = statForPhaseBudget(phase, state);
+    if (player && suit) {
+      const stat = totalStat(player, statKey, state);
+      extras.push({ suit, value: stat, label: player.name });
+      return {
+        bySuit,
+        wild,
+        cardTotal,
+        extras,
+        total: projectedPhaseBudget(state, player),
+      };
+    }
+  }
+
+  if (phase === "Meet" && state.meetActionBudget > 0) {
+    const { encounter, actor } = currentMeetEncounter(state);
+    const selected = actor ? selectedCards(state, actor) : cards;
+    ["accept", "reject"].forEach((mode) => {
+      const accept = mode === "accept";
+      const suit = encounterPaySuit(encounter, accept);
+      if (!suit || !selectedHasPaySuit(selected, suit) || !actor) return;
+      extras.push({
+        suit,
+        value: totalStat(actor, suit, state),
+        label: accept ? "Accept" : "Reject",
+      });
+    });
+    const affinity = meetBonusBreakdown(state);
+    if (affinity.total) {
+      extras.push({ suit: null, value: affinity.total, label: affinity.parts.join(", ") });
+    }
+    if (state.pendingPowerBonus) {
+      extras.push({ suit: null, value: state.pendingPowerBonus, label: "Power spread" });
+    }
+    return {
+      bySuit,
+      wild,
+      cardTotal,
+      extras,
+      total: encounterPlayTotal(state, { accept: selectedHasPaySuit(selected, encounterPaySuit(encounter, true)) }),
+      acceptTotal: encounter ? encounterPlayTotal(state, { accept: true }) : null,
+      rejectTotal: encounter ? encounterPlayTotal(state, { accept: false }) : null,
+      acceptNeed: encounter?.accept ?? null,
+      rejectNeed: encounter ? encounterRejectCost(encounter) : null,
+    };
+  }
+
+  return { bySuit, wild, cardTotal, extras, total: cardTotal };
+}
+
 /** Psyche cards in the Meet pool that count toward the 3-card spread limit. */
 export function spreadPsycheCount(state) {
   return allSelectedCards(state).filter((c) => !isDreambeastPsycheCard(c)).length;
@@ -329,8 +399,26 @@ export function meetPsycheActor(state) {
   return state.players.find((p) => p.alive && p.landscapeId === tileId) || null;
 }
 
-/** Psyche total for Meet — only the Dreamer on the Encounter Landscape may pay. */
-export function meetPsychePlayTotal(state) {
+/** Suit the Accept/Reject icon demands: Accept uses the beast's suit, Reject uses rejectSuit. */
+export function encounterPaySuit(encounter, accept = true) {
+  if (!encounter) return null;
+  return accept ? (encounter.suit || null) : (encounter.rejectSuit || encounter.suit || null);
+}
+
+export function selectedHasPaySuit(cards, suit) {
+  if (!suit) return true;
+  return (cards || []).some((c) => isWildPsyche(c) || c.suit === suit);
+}
+
+export function encounterPayHint(encounter, accept = true) {
+  const suit = encounterPaySuit(encounter, accept);
+  if (!suit) return "";
+  const verb = accept ? "Accept" : "Reject";
+  return `${verb} needs at least 1 ${SUIT_LABELS[suit]} Psyche. That Dreamer's ${SUIT_LABELS[suit]} is added to the total.`;
+}
+
+/** Meet pay total for Accept or Reject, including matching Dreamer stat when the required color is played. */
+export function encounterPlayTotal(state, { accept = true } = {}) {
   const actor = meetPsycheActor(state);
   if (!actor) return state.pendingPowerBonus || 0;
   const selected = selectedCards(state, actor);
@@ -339,7 +427,17 @@ export function meetPsychePlayTotal(state) {
   total += persistentMeetBonus(state, actor);
   const bonus = meetBonusBreakdown(state);
   total += bonus.total;
+  const { encounter } = currentMeetEncounter(state);
+  const suit = encounterPaySuit(encounter, accept);
+  if (suit && selectedHasPaySuit(selected, suit)) {
+    total += totalStat(actor, suit, state);
+  }
   return total;
+}
+
+/** Psyche total for Meet Accept — only the Dreamer on the Encounter Landscape may pay. */
+export function meetPsychePlayTotal(state) {
+  return encounterPlayTotal(state, { accept: true });
 }
 
 /** Meet pool total — Final Recurrence may still pool from multiple Dreamers; Encounters are local. */
@@ -469,6 +567,13 @@ export function bossPlayShapeLabel(shape) {
 export function validateEncounterPlayShape(encounter, cards, { accept = true } = {}) {
   const boss = validateBossPlayShape(encounter, cards);
   if (!boss.ok) return boss;
+  const paySuit = encounterPaySuit(encounter, accept);
+  if (paySuit && !selectedHasPaySuit(cards, paySuit)) {
+    return {
+      ok: false,
+      message: encounterPayHint(encounter, accept),
+    };
+  }
   const id = encounter?.refId || encounter?.id;
   if (accept && id === "chimera") {
     const declared = (cards || []).filter((c) => !isDreambeastPsycheCard(c) && !isWildPsyche(c));

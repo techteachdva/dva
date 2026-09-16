@@ -169,7 +169,14 @@ function simulate() {
     () => { selectElasticity(state, 1); activateExplore(state); setPlayerOn(state, 0, "bed"); moveActiveTo(state, "house"); advancePhasesTo(state, "Meet"); },
     () => {
       selectWillpower(state, 1); gainMeetActions(state);
+      state.activePlayerIndex = 0;
       state.selectedLandscapeId = "house";
+      state.selectedHand = [];
+      const visionary = state.players[0];
+      ["lucidity-3-v-l3", "lucidity-2-v-l2"].forEach((cardId) => {
+        const card = visionary.hand.find((c) => c.id === cardId);
+        if (card) state.selectedHand.push(card.instanceId);
+      });
       meetEncounter(state, "accept");
       while (state.round < 2) endPhase(state);
     },

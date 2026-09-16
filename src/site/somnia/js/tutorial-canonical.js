@@ -21,6 +21,7 @@ import {
   handleQuestComplete,
   getLegalExploreTargets,
 } from "./game.js";
+import { playPsychePowerFromHand } from "./power-tokens.js";
 
 function reattachStateRuntime(state) {
   state.checkPsycheDeath = (player) => checkDreamerPsycheDeath(state, player);
@@ -244,7 +245,14 @@ function drawMindstreamOn(state, playerIndex, landscapeId) {
   state.questTracker.mindstreamOnLandscape[landscapeId] = true;
 }
 
+function playTutorialPowerSurge(state, playerIndex = 0) {
+  const player = state.players[playerIndex];
+  const card = player?.hand?.find((c) => c.type === "psyche-power");
+  if (player && card) playPsychePowerFromHand(state, player, card);
+}
+
 function markInnocentQuests(state) {
+  playTutorialPowerSurge(state, 0);
   state.activePlayerIndex = 0;
   if (!state.activeArchetype?.questProgress?.[0]) handleQuestComplete(state, 0);
   state.activePlayerIndex = 0;
@@ -283,7 +291,8 @@ export function applyCanonicalTutorialStep(state, step) {
 
     case "meet-r1":
       selectExactCards(state, 0, ["willpower-2-v-w2"]);
-      spendWillpowerPhase(state, 0);
+      gainMeetActions(state);
+      if (state.meetActionBudget <= 0) spendWillpowerPhase(state, 0);
       acceptHouseEncounter(state);
       advanceToRound(state, 2);
       return;

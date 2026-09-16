@@ -19,6 +19,9 @@ import {
   cardCountsAsSuit,
   projectedPhaseBudget,
   findPhaseContributor,
+  encounterPlayTotal,
+  encounterPayHint,
+  currentMeetEncounter,
 } from "./rules.js";
 import { countBoardDreambeasts, timelineTollPreview } from "./phase-skip.js";
 import {
@@ -109,7 +112,9 @@ function dreambeastCostMeta(card) {
   const acceptSuit = card.suit ? suitIconHtml(card.suit, { size: 10 }) : "";
   const acceptGain = card.suit ? ` → 3 ${SUIT_LABELS[card.suit]}` : "";
   const rejectGain = card.rejectReward ? ` → ${card.rejectReward}` : "";
-  return `<span class="meta dreambeast-costs"><span title="Accept cost and reward">A${card.accept}${acceptGain} ${acceptSuit}</span><span title="Reject cost and reward">R${reject}${rejectGain} ${rejectSuit}</span></span>`;
+  const acceptTitle = encounterPayHint(card, true);
+  const rejectTitle = encounterPayHint(card, false);
+  return `<span class="meta dreambeast-costs"><span title="${acceptTitle}">A${card.accept}${acceptGain} ${acceptSuit}</span><span title="${rejectTitle}">R${reject}${rejectGain} ${rejectSuit}</span></span>`;
 }
 
 function isDreambeastCard(card) {
@@ -826,10 +831,12 @@ function appendDreambeastModalDetail(detail, card) {
   costs.innerHTML = `
     <div class="dreambeast-cost-row accept">
       <strong>Accept ${card.accept}${acceptSuit}</strong>
+      <span>${encounterPayHint(card, true)}</span>
       <span>${encounterAcceptSummary(card)}</span>
     </div>
     <div class="dreambeast-cost-row reject">
       <strong>Reject ${rejectCost}${rejectSuit}</strong>
+      <span>${encounterPayHint(card, false)}</span>
       <span>${encounterRejectSummary(card)}</span>
     </div>
   `;
@@ -1643,29 +1650,31 @@ export function renderMeetPoolGuide(state) {
   if (!el) return;
   const phase = getPhase(state);
   const tile = state.board.find((t) => t.id === state.selectedLandscapeId);
-  const enc = tile?.encounter;
+  const enc = tileEncounters(tile)[0] || currentMeetEncounter(state).encounter;
   if (phase !== "Meet" || !state.meetActionBudget || !enc) {
     el.classList.add("hidden");
     el.innerHTML = "";
     return;
   }
   const poolCount = spreadPsycheCount(state);
-  const poolTotal = coopMeetPlayTotal(state);
+  const acceptTotal = encounterPlayTotal(state, { accept: true });
+  const rejectTotal = encounterPlayTotal(state, { accept: false });
   const bonus = state.pendingPowerBonus || 0;
   const acceptCost = enc.accept;
   const rejectCost = encounterRejectCost(enc);
   const actor = meetPsycheActor(state);
-  const acceptOk = poolTotal >= acceptCost;
-  const rejectOk = poolTotal >= rejectCost;
+  const acceptOk = acceptTotal >= acceptCost;
+  const rejectOk = rejectTotal >= rejectCost;
   el.classList.remove("hidden");
   el.innerHTML = `
     <strong>Meet pool:</strong>
-    Select <strong>1–3 Psyche</strong> from ${actor?.name || "the Dreamer on this Encounter"}'s hand
+    Select <strong>1–3 Psyche</strong> from ${actor?.name || "the Dreamer on this Encounter"}'s hand.
+    ${encounterPayHint(enc, true)} ${encounterPayHint(enc, false)}
     ${bonus ? ` · <strong>+${bonus}</strong> from Power Token spread` : ""}
-    · current <strong>${poolCount}/3</strong> cards = <strong>${poolTotal}</strong> total
+    · current <strong>${poolCount}/3</strong> cards
     <span class="meet-pool-targets">
-      <span class="${acceptOk ? "meet-pool-ready" : ""}">Accept needs ${acceptCost}</span>
-      <span class="${rejectOk ? "meet-pool-ready" : ""}">Reject needs ${rejectCost}</span>
+      <span class="${acceptOk ? "meet-pool-ready" : ""}">Accept ${acceptTotal}/${acceptCost}</span>
+      <span class="${rejectOk ? "meet-pool-ready" : ""}">Reject ${rejectTotal}/${rejectCost}</span>
     </span>
   `;
 }
@@ -1689,7 +1698,7 @@ export function renderCoopMeetHands(state, onCardClick) {
         ? `Pool ${poolCount}/3 Psyche${allyCount ? ` + ${allyCount} ally` : ""} = ${poolTotal} total${bonusText}${pending} · double-click to inspect`
         : `Only ${meetActor.name} on the Encounter may add to the pool · click their chip or board token`)
       : "Click a Dreamer on an Encounter Landscape · pool 1–3 Psyche (+ Power spread bonus) to Accept or Reject",
-    canClickCard: () => !meetActor || isActor,
+    canClickCard: (card) => card.type === "psyche-power" || !meetActor || isActor,
   });
 }
 
@@ -3729,8 +3738,8 @@ export function showLandscapeDetail(state, tileId) {
       card: { ...enc, type: enc.type || "dreambeast" },
       caption: enc.name,
       detailHtml: `
-        <div class="landscape-detail-beast-cost accept"><strong>A${enc.accept}</strong> ${acceptSuit}<span>${encounterAcceptSummary(enc)}</span></div>
-        <div class="landscape-detail-beast-cost reject"><strong>R${rejectCost}</strong> ${rejectSuit}<span>${encounterRejectSummary(enc)}</span></div>
+        <div class="landscape-detail-beast-cost accept"><strong>A${enc.accept}</strong> ${acceptSuit}<span>${encounterPayHint(enc, true)}</span></div>
+        <div class="landscape-detail-beast-cost reject"><strong>R${rejectCost}</strong> ${rejectSuit}<span>${encounterPayHint(enc, false)}</span></div>
         ${enc.effect ? `<div class="landscape-detail-beast-effect"><strong>Effect:</strong> ${enc.effect}</div>` : ""}
         ${enc.flavor ? `<div class="landscape-detail-beast-flavor">${enc.flavor}</div>` : ""}
       `,

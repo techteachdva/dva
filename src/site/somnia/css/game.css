@@ -6805,6 +6805,68 @@ body.panel-resizing {
   display: none;
 }
 
+#psyche-play-cursor {
+  position: fixed;
+  z-index: 9200;
+  pointer-events: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.28rem 0.4rem;
+  max-width: 16rem;
+  padding: 0.28rem 0.5rem;
+  border-radius: 10px;
+  background: rgba(12, 10, 22, 0.92);
+  border: 1px solid rgba(180, 160, 255, 0.45);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.45);
+  color: #f4f0ff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1.2;
+  transform: translate(0, -50%);
+}
+
+#psyche-play-cursor.hidden {
+  display: none;
+}
+
+.psyche-play-suits {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.28rem;
+}
+
+.psyche-play-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.12rem;
+  padding: 0.08rem 0.28rem;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.psyche-play-chip.suit-lucidity { color: #7ec8ff; }
+.psyche-play-chip.suit-elasticity { color: #f0d56a; }
+.psyche-play-chip.suit-willpower { color: #ff8a8a; }
+.psyche-play-chip.wild { color: #d8c4ff; }
+.psyche-play-chip.is-zero { opacity: 0.42; }
+
+.psyche-play-extra {
+  color: rgba(255, 255, 255, 0.78);
+  font-weight: 600;
+}
+
+.psyche-play-total {
+  color: #fff;
+  font-size: 0.8rem;
+}
+
+.psyche-play-need {
+  width: 100%;
+  color: rgba(232, 200, 255, 0.85);
+  font-weight: 600;
+}
+
 .meet-pool-targets {
   display: flex;
   gap: 0.75rem;

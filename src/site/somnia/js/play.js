@@ -103,7 +103,7 @@ import { resolveDreamChoice } from "./dream-choices.js";
 import { resolveEffectChoice } from "./effect-choices.js";
 import { continueDeferredEventQueues } from "./event-choices.js";
 import { continueArchetypeQueues } from "./archetypes.js";
-import { phaseOpeningActive } from "./rules.js";
+import { phaseOpeningActive, encounterPayHint } from "./rules.js";
 import {
   TUTORIAL_STEPS,
   tutorialBriefHtml,
@@ -1214,7 +1214,7 @@ function openBeastBoardRadial(anchorEl, encounter, tileId) {
     {
       id: "accept",
       label: `Accept ${encounter.accept}`,
-      hint: `${encounterAcceptSummary(encounter)} · pool Psyche on ${occupant?.name || "Dreamer"}'s hand`,
+      hint: `${encounterPayHint(encounter, true)} ${encounterAcceptSummary(encounter)} · pool Psyche on ${occupant?.name || "Dreamer"}'s hand`,
       disabled: !canMeet,
       primary: true,
       kind: "meetAccept",
@@ -1223,7 +1223,7 @@ function openBeastBoardRadial(anchorEl, encounter, tileId) {
     {
       id: "reject",
       label: `Reject ${rejectCost}`,
-      hint: `${encounterRejectSummary(encounter)} · pool Psyche on ${occupant?.name || "Dreamer"}'s hand`,
+      hint: `${encounterPayHint(encounter, false)} ${encounterRejectSummary(encounter)} · pool Psyche on ${occupant?.name || "Dreamer"}'s hand`,
       disabled: !canMeet,
       kind: "meetReject",
       onPick: () => handlers.meetEncounter("reject"),

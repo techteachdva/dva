@@ -17,6 +17,8 @@ export const CHANGELOG = [
       "On-rails clicks: the table keeps your Reveal/Explore/Meet choices; Continue no longer swaps Landscapes.",
       "Shorter 11-step script with a visible step progress bar.",
       "Candy Mountain's wasteland side is named and glowing so the Reveal click is obvious.",
+      "Selecting Psyche shows a live suit total beside the cursor; Accept/Reject need at least one matching color plus that Dreamer's stat.",
+      "Tutorial starts each Dreamer with 1 Power Token, leaves Visionary Psyche after Mandrake, and draws Power Surge in Round 2.",
       "Steps auto-advance; Skip leaves a practice table. First visit leads with Tutorial.",
       "Contextual Guide strip is visible in real games; first Daydream pins Innocent and Quiet.",
     ],

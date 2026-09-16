@@ -1,5 +1,6 @@
 import { getPhase } from "./state.js";
 import { getLegalExploreTargets } from "./game.js";
+import { psycheCursorBreakdown, suitIconHtml } from "./rules.js";
 
 const SVG = {
   reveal: encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 28 28"><ellipse cx="14" cy="14" rx="11" ry="7" fill="#5eb0ff" stroke="#1a4080" stroke-width="1.4"/><path d="M5 14 Q14 9 23 14" fill="none" stroke="#1a4080" stroke-width="2.2"/></svg>'),
@@ -50,6 +51,7 @@ export function syncGameCursor(state) {
   if (!screen?.classList.contains("active") || !state) {
     document.body.dataset.gameCursor = "";
     applyCursorRules("");
+    syncPsychePlayCursor(null);
     return;
   }
 
@@ -77,6 +79,7 @@ export function syncGameCursor(state) {
     document.body.dataset.gameCursor = mode;
   }
   applyCursorRules(mode);
+  syncPsychePlayCursor(state);
 }
 
 function applyCursorRules(mode) {
@@ -96,4 +99,73 @@ function applyCursorRules(mode) {
   }
   const rules = selectors.split(",").map((sel) => `${sel.trim()} { cursor: ${cursor} !important; }`).join("\n");
   style.textContent = rules;
+}
+
+let psycheHudEl = null;
+let psycheHudX = 0;
+let psycheHudY = 0;
+let psycheHudMoveBound = false;
+
+function ensurePsychePlayCursor() {
+  if (!psycheHudEl) {
+    psycheHudEl = document.createElement("div");
+    psycheHudEl.id = "psyche-play-cursor";
+    psycheHudEl.className = "hidden";
+    psycheHudEl.setAttribute("aria-hidden", "true");
+    document.body.appendChild(psycheHudEl);
+  }
+  if (!psycheHudMoveBound) {
+    psycheHudMoveBound = true;
+    window.addEventListener("pointermove", (event) => {
+      psycheHudX = event.clientX;
+      psycheHudY = event.clientY;
+      positionPsychePlayCursor();
+    }, { passive: true });
+  }
+}
+
+function positionPsychePlayCursor() {
+  if (!psycheHudEl || psycheHudEl.classList.contains("hidden")) return;
+  psycheHudEl.style.left = `${psycheHudX + 18}px`;
+  psycheHudEl.style.top = `${psycheHudY + 6}px`;
+}
+
+function suitChip(suit, value) {
+  return `<span class="psyche-play-chip suit-${suit}${value ? "" : " is-zero"}">${suitIconHtml(suit, { size: 12 })}<strong>${value || 0}</strong></span>`;
+}
+
+function syncPsychePlayCursor(state) {
+  ensurePsychePlayCursor();
+  const breakdown = state ? psycheCursorBreakdown(state) : null;
+  if (!breakdown) {
+    psycheHudEl.classList.add("hidden");
+    psycheHudEl.innerHTML = "";
+    return;
+  }
+
+  const extras = (breakdown.extras || [])
+    .filter((extra) => extra.value)
+    .map((extra) => {
+      const icon = extra.suit ? suitIconHtml(extra.suit, { size: 11 }) : "";
+      return `<span class="psyche-play-extra">${icon}+${extra.value}${extra.label ? ` ${extra.label}` : ""}</span>`;
+    })
+    .join("");
+
+  const meetLine = breakdown.acceptNeed != null
+    ? `<span class="psyche-play-need">A ${breakdown.acceptTotal}/${breakdown.acceptNeed}${breakdown.rejectNeed != null ? ` · R ${breakdown.rejectTotal}/${breakdown.rejectNeed}` : ""}</span>`
+    : "";
+
+  psycheHudEl.innerHTML = `
+    <span class="psyche-play-suits">
+      ${suitChip("lucidity", breakdown.bySuit.lucidity)}
+      ${suitChip("elasticity", breakdown.bySuit.elasticity)}
+      ${suitChip("willpower", breakdown.bySuit.willpower)}
+      ${breakdown.wild ? `<span class="psyche-play-chip wild">Wild <strong>${breakdown.wild}</strong></span>` : ""}
+    </span>
+    ${extras}
+    <span class="psyche-play-total">= ${breakdown.total}</span>
+    ${meetLine}
+  `;
+  psycheHudEl.classList.remove("hidden");
+  positionPsychePlayCursor();
 }

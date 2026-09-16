@@ -99,7 +99,8 @@ function summarizeStep(state, stepIndex) {
     exploreMovesLeft: state.exploreMovesLeft,
     meetActionBudget: state.meetActionBudget,
     positions: state.players.map((p) => p.landscapeId),
-    hands: state.players.map((p) => p.hand.map((c) => `${c.suit}:${c.value}`)),
+    hands: state.players.map((p) => p.hand.map((c) => `${c.type || "psyche"}:${c.suit || "-"}:${c.value ?? 0}`)),
+    powerTokens: state.players.map((p) => p.powerTokens || 0),
     houseEncounter: houseEnc,
     bedEncounter: bedEnc,
     encounterResolved: state.tutorialFlags?.encounterResolved || false,
@@ -170,7 +171,12 @@ function hasPlayableAction(state, step) {
 
 /** Per-step invariants at snapshot entry (before player acts). */
 const STEP_ENTRY_CHECKS = {
-  "draw-dream-r1": (s) => s.round === 1 && getPhase(s) === "Reveal" && !s.dreamDrawn,
+  "welcome": (s) => s.players.every((p) => (p.powerTokens || 0) === 1) || "Dreamers should start with 1 Power Token",
+  "draw-dream-r1": (s) => {
+    if (!(s.round === 1 && getPhase(s) === "Reveal" && !s.dreamDrawn)) return "Expected Round 1 Reveal before the Dream";
+    if (!s.players.every((p) => (p.powerTokens || 0) === 1)) return "Dreamers should start with 1 Power Token";
+    return true;
+  },
   "reveal-r1": (s) => s.dreamDrawn && getPhase(s) === "Reveal",
   "explore-r1": (s) => getPhase(s) === "Explore",
   "meet-r1": (s) => {
@@ -180,9 +186,16 @@ const STEP_ENTRY_CHECKS = {
     if (!enc || enc.name !== "Mandrake") return "Mandrake missing on House";
     return true;
   },
+  "r2-intro": (s) => {
+    if (s.round < 2) return "Round 2 not started";
+    if (!s.players[0].hand.some((c) => c.type === "psyche-power")) return "Visionary should have drawn Power Surge";
+    if (!s.players[0].hand.some((c) => c.type === "psyche")) return "Visionary should still hold leftover Psyche after Mandrake";
+    return true;
+  },
   "r2-reveal": (s) => {
     if (s.round < 2) return "Round 2 not started";
     if (getPhase(s) !== "Reveal") return `Expected Reveal, got ${getPhase(s)}`;
+    if (!s.players[0].hand.some((c) => c.type === "psyche-power")) return "Visionary should have drawn Power Surge";
     return true;
   },
   "r2-explore": (s) => {
@@ -327,6 +340,10 @@ function auditLiveCardEffects() {
   }
   if (!mandrakeInHand && !state.tutorialFlags?.encounterResolved) {
     fail("live-accept-mandrake", { reason: "Mandrake not accepted into hand" });
+  }
+  const leftoverPsyche = state.players[0].hand.filter((c) => c.type === "psyche");
+  if (leftoverPsyche.length < 1) {
+    fail("live-accept-mandrake", { reason: "Visionary has no leftover Psyche after Mandrake" });
   }
 
   jumpTutorialToStep(state, TUTORIAL_SCRIPT.findIndex((s) => s.id === "r2-meet"));
