@@ -2209,13 +2209,18 @@ function formatGuideStep(text) {
 export function renderGuidePanel(state, actions = []) {
   const el = document.getElementById("guide-panel");
   if (!el) return;
-  const obj = getCurrentObjective(state);
+  const hideGuide = !state
+    || (state.tutorialMode && !state.tutorialComplete)
+    || state.status !== "playing";
+  const obj = hideGuide ? null : getCurrentObjective(state);
   if (!obj) {
     el.innerHTML = "";
     el.classList.add("hidden");
+    el.setAttribute("hidden", "");
     return;
   }
   el.classList.remove("hidden");
+  el.removeAttribute("hidden");
 
   const stepsHtml = obj.steps
     .map((s, i) => `<li class="${i === 0 ? "current" : ""}">${formatGuideStep(s)}</li>`)
@@ -2510,12 +2515,13 @@ export function renderDreamerPicker(dreamers, selectedIds, onToggle, options = {
   picker.innerHTML = "";
 
   const playerCount = options.playerCount ?? selectedIds.length;
+  const recommendedIds = new Set(options.recommendedIds || []);
 
   dreamers.forEach((dreamer) => {
     const slotIndex = selectedIds.indexOf(dreamer.id);
     const selected = slotIndex >= 0;
     const wrapper = document.createElement("div");
-    wrapper.className = `dreamer-pick ${selected ? "selected" : ""}`;
+    wrapper.className = `dreamer-pick${selected ? " selected" : ""}${recommendedIds.has(dreamer.id) ? " recommended" : ""}`;
     wrapper.tabIndex = 0;
     const card = renderCard(
       { ...dreamer, type: "dreamer" },
@@ -2533,6 +2539,12 @@ export function renderDreamerPicker(dreamers, selectedIds, onToggle, options = {
     stats.innerHTML = `<div class="dreamer-pick-name">${dreamer.name}</div>${dreamerStatsHtml(dreamer)}`;
     wrapper.appendChild(card);
     wrapper.appendChild(stats);
+    if (recommendedIds.has(dreamer.id) && !selected) {
+      const rec = document.createElement("div");
+      rec.className = "dreamer-pick-recommended";
+      rec.textContent = "Recommended";
+      wrapper.appendChild(rec);
+    }
     if (selected) {
       const badge = document.createElement("div");
       badge.className = "dreamer-pick-slot";
@@ -2592,6 +2604,7 @@ export function showEndScreen(won, message, scoreResult = null) {
   showScreen("screen-end");
   document.getElementById("end-title").textContent = won ? "You Wake Up!" : "Trapped Forever";
   document.getElementById("end-message").textContent = message;
+  document.getElementById("btn-start-daydream")?.classList.add("hidden");
 
   const breakdownEl = document.getElementById("end-score-breakdown");
   const leaderboardEl = document.getElementById("end-leaderboard");
@@ -4683,7 +4696,7 @@ export function showTutorialStep(step, stepIndex, total, {
       ? `<strong>Objective:</strong> ${objective}`
       : (objective && !step.until
         ? `<strong>Tip:</strong> ${objective}`
-        : (canAdvance && step.until ? "Objective complete — press Continue." : ""));
+        : (canAdvance && step.until ? "Objective complete." : ""));
   }
 
   populateTutorialJumpMenu(stepIndex, onJump);

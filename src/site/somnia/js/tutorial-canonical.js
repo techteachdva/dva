@@ -6,17 +6,13 @@ import {
   getPhase,
   landscapeById,
   encounterOnLandscape,
-  clearEncountersOnLandscape,
   checkDreamerPsycheDeath,
-  resetPhaseFlags,
-  beginRoundReveal,
 } from "./state.js";
 import { hexDistance } from "./hex.js";
 import {
   drawDreamCard,
   revealLandscape,
   activateExplore,
-  togglePhasePowerToken,
   gainMeetActions,
   meetEncounter,
   handleBoardTileClick,
@@ -73,52 +69,6 @@ function selectSuitCards(state, playerIndex, suit, count = 1) {
     });
 }
 
-function makeTutorialQuiet(index) {
-  return {
-    id: "quiet",
-    type: "dream",
-    name: "Quiet",
-    text: "Everything remains, nothing changes. Nothing Happens.",
-    instanceId: `quiet-restock-${index}`,
-  };
-}
-
-function takeCard(pool, predicate) {
-  const index = pool.findIndex(predicate);
-  if (index < 0) return null;
-  return pool.splice(index, 1)[0];
-}
-
-/** Pin Cerberus, then Heroism, then spare Quiets so Round 3 always draws the boss. */
-function prepareTutorialBossRound(state) {
-  const pool = [...(state.dreamDeck || []), ...(state.dreamDiscard || [])];
-  const bed = landscapeById(state, "bed");
-  let cerberus = takeCard(pool, (c) => c.id === "cerberus");
-  const bedCerberus = encounterOnLandscape(state, "bed");
-  if (!cerberus && bedCerberus?.id === "cerberus") {
-    cerberus = { ...bedCerberus, type: "boss-dream", boss: true };
-  }
-  if (bedCerberus?.id === "cerberus") {
-    clearEncountersOnLandscape(state, "bed");
-  }
-  if (cerberus) {
-    cerberus.type = "boss-dream";
-    cerberus.boss = true;
-  }
-  const heroism = takeCard(pool, (c) => c.id === "heroism");
-  const quiets = pool.filter((c) => c.id === "quiet");
-  const deck = [];
-  if (cerberus) deck.push(cerberus);
-  if (heroism) deck.push(heroism);
-  deck.push(...quiets);
-  while (deck.length < 12) {
-    deck.push(makeTutorialQuiet(deck.length));
-  }
-  state.dreamDeck = deck;
-  state.dreamDiscard = pool.filter((c) => c.id !== "quiet" && c.id !== "cerberus" && c.id !== "heroism");
-  state.status = "playing";
-}
-
 function resetDreamersToBed(state) {
   state.players.forEach((player) => {
     if (player.alive) player.landscapeId = "bed";
@@ -133,19 +83,6 @@ function spendElasticityPhase(state, preferredPlayer = null) {
   if (!state.exploreActivated) {
     state.exploreActivated = true;
     state.exploreMovesLeft = Math.max(3, state.exploreMovesLeft || 0);
-  }
-}
-
-function spendElasticityWithPowerToken(state, playerIndex = 0) {
-  const player = state.players[playerIndex];
-  if (!player) return;
-  state.activePlayerIndex = playerIndex;
-  state.selectedHand = [];
-  if (state.phaseTokenAsPsyche !== player.id) togglePhasePowerToken(state);
-  activateExplore(state);
-  if (!state.exploreActivated) {
-    state.exploreActivated = true;
-    state.exploreMovesLeft = Math.max(1, state.exploreMovesLeft || 0);
   }
 }
 
@@ -305,7 +242,6 @@ export function applyCanonicalTutorialStep(state, step) {
   switch (step.id) {
     case "draw-dream-r1":
     case "r2-dream":
-    case "r3-draw":
       drawDreamCard(state);
       return;
 
@@ -328,7 +264,7 @@ export function applyCanonicalTutorialStep(state, step) {
       return;
 
     case "spend-elasticity-r1":
-      spendElasticityWithPowerToken(state, 0);
+      spendElasticityPhase(state, 0);
       return;
 
     case "r2-elasticity":
@@ -390,25 +326,6 @@ export function applyCanonicalTutorialStep(state, step) {
 
     case "end-r2":
       advanceToRound(state, 3);
-      prepareTutorialBossRound(state);
-      return;
-
-    case "end-r3":
-      state.round = 4;
-      resetPhaseFlags(state);
-      state.phaseIndex = 0;
-      beginRoundReveal(state);
-      return;
-
-    case "end-r4":
-      state.round = 5;
-      resetPhaseFlags(state);
-      state.phaseIndex = 0;
-      beginRoundReveal(state);
-      return;
-
-    case "r5-practice":
-      state.tutorialFlags.practiceRoundComplete = true;
       return;
 
     default:

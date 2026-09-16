@@ -13,8 +13,9 @@ import { hexNeighbors, getLegalMoveTargets } from "./hex.js";
 import { precomputeTutorialSnapshots } from "./tutorial-canonical.js";
 import { resetBoardMotion } from "./board-fx.js";
 
-export const TUTORIAL_DREAMER_IDS = ["the-visionary", "the-runner"];
-export const TUTORIAL_MAX_ROUND = 5;
+export const TUTORIAL_DREAMER_IDS = ["the-visionary", "the-immovable"];
+export const RECOMMENDED_STARTER_IDS = TUTORIAL_DREAMER_IDS;
+export const TUTORIAL_MAX_ROUND = 2;
 const TUTORIAL_STARTER_IDS = ["city", "sky", "forest", "road", "house", "suburbia"];
 
 let tutorialUidSeq = 0;
@@ -106,7 +107,7 @@ const TUTORIAL_QUEST_PLACEMENT = [
   { questId: "the-basement", beside: "city", besideName: "City" },
 ];
 
-const TUTORIAL_SNAPSHOT_VERSION = 11;
+const TUTORIAL_SNAPSHOT_VERSION = 12;
 let tutorialSnapshotCache = null;
 let tutorialSnapshotCacheVersion = 0;
 
@@ -145,7 +146,7 @@ export function createTutorialBaseState(data) {
 
   state.players.forEach((p, index) => {
     p.id = tutorialUid(`player-${index}`);
-    p.powerTokens = 4;
+    p.powerTokens = 2;
   });
 
   state.players[0].hand = [
@@ -156,17 +157,14 @@ export function createTutorialBaseState(data) {
     makePsyche("lucidity", 1, "v-l1"),
   ];
   state.players[1].hand = [
-    makePsyche("elasticity", 3, "r-e3"),
-    makePsyche("elasticity", 2, "r-e2"),
-    makePsyche("lucidity", 2, "r-l2"),
-    makePsyche("willpower", 3, "r-w3"),
-    makePsyche("elasticity", 1, "r-e1"),
+    makePsyche("willpower", 3, "i-w3"),
+    makePsyche("elasticity", 3, "i-e3"),
+    makePsyche("elasticity", 2, "i-e2"),
+    makePsyche("lucidity", 2, "i-l2"),
+    makePsyche("willpower", 1, "i-w1"),
   ];
 
   const quiet = data.dreams.find((d) => d.id === "quiet");
-  const heroism = data.dreams.find((d) => d.id === "heroism");
-  const cerberus = data.dreambeasts.find((b) => b.id === "cerberus");
-
   const extraQuiets = [];
   for (let i = 0; i < 8; i += 1) {
     extraQuiets.push(mkDream(quiet));
@@ -174,8 +172,6 @@ export function createTutorialBaseState(data) {
   state.dreamDeck = [
     mkDream(quiet),
     mkDream(quiet),
-    mkDream(cerberus, { type: "boss-dream", boss: true }),
-    mkDream(heroism),
     ...extraQuiets,
   ];
   state.dreamDiscard = [];
@@ -199,7 +195,7 @@ export function createTutorialBaseState(data) {
     .join("; ");
 
   state.log = [
-    "Tutorial Mode: five guided rounds on a fixed script. Drag the guide window out of the way when you need the map.",
+    "Tutorial Mode: two guided rounds on a fixed script. Drag the guide window out of the way when you need the map.",
     "Round 1 begins in the Reveal Phase. Your Active Archetype is The Innocent.",
     placementNote ? `Quest Landscapes revealed: ${placementNote}.` : "Quest Landscapes The Attic and The Basement are revealed beside House and City.",
   ];
@@ -254,12 +250,9 @@ const TUTORIAL_INFO_STEPS = new Set([
   "welcome",
   "win-goal",
   "rem-intro",
-  "subconscious",
   "archetype-innocent",
   "r2-intro",
   "r2-map",
-  "r3-boss",
-  "r4-death",
   "graduate",
 ]);
 
@@ -428,17 +421,7 @@ function stepAllowsAction(state, stepId, kind, detail = {}) {
       if (kind === "boardClick" && state.landscapePick?.mode === "reveal") return true;
       return false;
 
-    case "end-r3":
-    case "end-r4":
-    case "r5-practice":
-      return allowsRemEndRoundAction(state, kind, detail);
-
     case "spend-elasticity-r1":
-      if (kind === "phasePowerToken") {
-        return getPhase(state) === "Explore" && !state.exploreActivated;
-      }
-      return kind === "spendElasticity" && !!state.phaseTokenAsPsyche;
-
     case "r2-elasticity":
       if (kind === "handToggle") return allowsSuitHand(state, detail, "elasticity");
       if (kind === "phasePowerToken") {
@@ -550,7 +533,7 @@ export function isTutorialActionAllowed(state, kind, detail = {}) {
   }
 
   if (kind === "headerSubconscious") {
-    return step.id === "subconscious" || step.id === "r4-death";
+    return (state.tutorialStepIndex ?? 0) >= 3;
   }
 
   if (kind === "headerDecks" || kind === "headerDreamers") {
@@ -562,7 +545,7 @@ export function isTutorialActionAllowed(state, kind, detail = {}) {
   }
 
   if (kind === "boardClick" && state.landscapePick?.mode === "reveal") {
-    if (["end-r3", "end-r4", "r5-practice", "to-explore-r1", "r2-to-explore"].includes(step.id)) {
+    if (["to-explore-r1", "r2-to-explore"].includes(step.id)) {
       return true;
     }
     return ["spend-lucidity-r1", "r2-lucidity", "reveal-pick-r1"].includes(step.id);
@@ -767,16 +750,13 @@ export const TUTORIAL_SECTIONS = [
   { id: "welcome", label: "Welcome", stepIndex: 0 },
   { id: "overview", label: "How You Win", stepIndex: 1 },
   { id: "rem", label: "R.E.M. Phases", stepIndex: 2 },
-  { id: "subconscious", label: "Subconscious", stepIndex: 3 },
-  { id: "archetype", label: "The Innocent", stepIndex: 4 },
-  { id: "encounter", label: "Accept & Reject", stepIndex: 13 },
-  { id: "acquire", label: "Earn Innocent", stepIndex: 15 },
-  { id: "boss", label: "Boss Dreams", stepIndex: 29 },
-  { id: "death", label: "Death & Respawn", stepIndex: 32 },
-  { id: "graduate", label: "Finish", stepIndex: 35 },
+  { id: "archetype", label: "The Innocent", stepIndex: 3 },
+  { id: "encounter", label: "Accept & Reject", stepIndex: 12 },
+  { id: "acquire", label: "Earn Innocent", stepIndex: 14 },
+  { id: "graduate", label: "Finish", stepIndex: 28 },
 ];
 
-/** Linear guided script — five rounds, ~36 steps. */
+/** Linear guided script — two rounds. */
 export const TUTORIAL_SCRIPT = [
   {
     id: "welcome",
@@ -789,22 +769,15 @@ export const TUTORIAL_SCRIPT = [
     id: "win-goal",
     round: 1,
     title: "How You Win",
-    body: "Complete both quests on the Active Archetype, spend 1 Power Token to mark each quest, then Acquire it for points. Reach 12 points before the Dream Deck runs out. Every living Dreamer must stand on The Bed to escape. This walkthrough will show quest marks. In the full game, Power Tokens also boost a Psyche Spread (+1 per token), activate Objects and Persistent cards (Persistent costs 1 token), and can be spent to avoid death.",
+    body: "This walkthrough earns The Innocent (1 point). Complete both quests, spend 1 Power Token to mark each, then Acquire it. A real Daydream needs 12 points, then every living Dreamer on The Bed. Power Tokens also boost Spreads, activate Objects, and can save you from death — later.",
     targets: ["#active-archetype", "#power-tokens"],
   },
   {
     id: "rem-intro",
     round: 1,
     title: "R.E.M. Every Round",
-    body: "Each round has three phases in order: Reveal (Lucidity), Explore (Elasticity), Meet (Willpower). One Dreamer spends 1 to 2 suited Psyche cards per phase to set the team budget. Higher matching Dreamer stats add bonus value. You can also spend 1 Power Token as that phase's Psyche cost. In the full game, extra tokens can still boost a Spread (+1 each).",
+    body: "Each round has three phases in order: Reveal (Lucidity), Explore (Elasticity), Meet (Willpower). One Dreamer spends 1 to 2 suited Psyche cards per phase to set the team budget. Higher matching Dreamer stats add bonus value.",
     target: "#phase-stepper",
-  },
-  {
-    id: "subconscious",
-    round: 1,
-    title: "The Subconscious",
-    body: "Repressed cards sit face-up in The Subconscious. Open it from the top bar. After this step you can also open Decks to browse discards, or any top cards a power has revealed. Return effects pull cards back to discard piles.",
-    target: "#btn-header-subconscious",
   },
   {
     id: "archetype-innocent",
@@ -865,15 +838,15 @@ export const TUTORIAL_SCRIPT = [
   {
     id: "spend-elasticity-r1",
     round: 1,
-    title: "Explore: Pay with a Power Token",
-    body: "A Power Token can pay an R.E.M. phase cost instead of a Psyche card. Click Power Token as 1 Elasticity (do not select cards), then click Spend Elasticity to unlock team moves.",
-    targets: ["#phase-actions", "#power-tokens", "#dreamer-dock"],
+    title: "Explore: Spend Elasticity",
+    body: "Click a Dreamer token on the map or chip in the dock to view their hand. Select 1 to 2 Elasticity cards, then click Spend Elasticity (radial or action bar) to unlock team moves.",
+    targets: ["#hand-bar", "#phase-actions", "#dreamer-dock"],
     spotlight: "#phase-actions",
     until: (s) => s.exploreActivated,
     objective: (s) => {
-      if (s.exploreActivated) return "Phase paid with a Power Token. Press Continue.";
-      if (s.phaseTokenAsPsyche) return "Click Spend Elasticity.";
-      return "Click Power Token as 1 Elasticity.";
+      if (s.exploreActivated) return "Elasticity spent.";
+      if (hasElasticitySelected(s)) return "Click Spend Elasticity.";
+      return "Select 1 to 2 Elasticity cards.";
     },
   },
   {
@@ -1123,77 +1096,19 @@ export const TUTORIAL_SCRIPT = [
     id: "end-r2",
     round: 2,
     title: "End Round 2",
-    body: "Click Next Phase when ready. Round 3 introduces a Boss Dream.",
+    body: "Click Next Phase when ready. That finishes the guided rounds.",
     target: "#btn-advance-phase",
     cardDock: "top",
     until: (s) => s.round >= 3,
     objective: (s) => (s.round >= 3
-      ? "Round 3 started. Press Continue."
+      ? "Guided rounds complete."
       : "Click Next Phase to end Round 2."),
   },
   {
-    id: "r3-boss",
-    round: 3,
-    title: "Round 3: Boss Dreams",
-    body: "The third Dream awakens Cerberus on The Bed. Click the Cerberus token for Accept/Reject. Bosses have strict Accept costs and harsh Fail effects if left unresolved at end of Meet. Only the Dreamer on The Bed may pool Psyche to face a boss.",
-    targets: ["#phase-actions", "#board-viewport"],
-  },
-  {
-    id: "r3-draw",
-    round: 3,
-    title: "Awaken Cerberus",
-    body: "Click Draw & Resolve Dream. Cerberus spawns on The Bed — look for its token on the map.",
-    targets: ["#phase-actions", "#board-viewport"],
-    spotlight: "#phase-actions",
-    until: (s) => atRound(s, 3) && s.dreamDrawn && bossOnBed(s),
-    objective: (s) => {
-      if (bossOnBed(s) && s.dreamDrawn) return "Cerberus awakened. Press Continue.";
-      if (!atRound(s, 3)) return "End Round 2 first.";
-      if (!s.dreamDrawn) return "Click Draw & Resolve Dream.";
-      return "Resolve the Dream to spawn Cerberus.";
-    },
-  },
-  {
-    id: "end-r3",
-    round: 3,
-    title: "End Round 3",
-    body: "Run the full R.E.M. loop for Round 3. Cerberus is on The Bed — you may face it during Meet or end the round (unresolved bosses fail at end of Meet).",
-    targets: ["#phase-stepper", "#phase-actions", "#board-viewport"],
-    until: (s) => s.round >= 4,
-    objective: (s) => remEndRoundObjective(s, 4),
-  },
-  {
-    id: "r4-death",
-    round: 4,
-    title: "Death and Respawn",
-    body: "Round 4 Dream is Heroism: each Dreamer draws Psyche equal to their Willpower. At 0 Psyche, spend Power Tokens to survive or accept death. Death respawns you on The Bed with 4, 3, 2, or 1 Psyche by death count, plus 2 Power. Fifth death removes that Dreamer. Death Represses the top of each Mindstream deck into The Subconscious.",
-    target: "#btn-header-subconscious",
-  },
-  {
-    id: "end-r4",
-    round: 4,
-    title: "End Round 4",
-    body: "Round 4 Dream is Heroism: each Dreamer draws Psyche equal to their Willpower when it resolves. Run the full R.E.M. loop, then end the round.",
-    targets: ["#phase-stepper", "#phase-actions"],
-    until: (s) => s.round >= 5,
-    objective: (s) => remEndRoundObjective(s, 5),
-  },
-  {
-    id: "r5-practice",
-    round: 5,
-    title: "Round 5: Final Practice",
-    body: "One last guided round. Run the full R.E.M. loop, then end Meet to finish the tutorial.",
-    targets: ["#phase-stepper", "#phase-actions"],
-    until: (s) => s.tutorialFlags?.practiceRoundComplete || s.round > 5 || s.tutorialComplete,
-    objective: (s) => (s.tutorialFlags?.practiceRoundComplete || s.round > 5
-      ? "Tutorial rounds complete. Press Continue."
-      : remEndRoundObjective(s, 6)),
-  },
-  {
     id: "graduate",
-    round: 5,
+    round: 2,
     title: "Tutorial Complete",
-    body: "You learned the goal, R.E.M. phases, Accept and Reject, Archetype quests, Boss Dreams, death, and the Subconscious. In the full game, Power Tokens also boost Spreads and activate Objects or Persistent cards. Use Guide and Help for the full rules. Press Finish to return to setup.",
+    body: "You learned the R.E.M. loop, Accept and Reject, and how to earn an Archetype. A real Daydream needs 12 points, then every living Dreamer on The Bed. The Guide strip will tell you the next step. Press Finish to start a gentle Daydream with these Dreamers.",
     target: "#phase-stepper",
   },
 ];
@@ -1207,7 +1122,7 @@ export function getTutorialObjective(state, step) {
     return "Read the step, then press Continue.";
   }
 
-  if (step.until(state)) return "Objective complete — press Continue.";
+  if (step.until(state)) return "Objective complete.";
 
   if (typeof step.objective === "function") return step.objective(state);
   if (typeof step.objective === "string") return step.objective;
@@ -1323,7 +1238,15 @@ export function completeTutorialGame(state) {
   state.tutorialComplete = true;
   state.status = "won";
   state.tutorialVictory = true;
-  addLog(state, "Tutorial complete — you're ready for the full Dreamscape.");
+  addLog(state, "Tutorial complete — start a Daydream when you are ready.");
+}
+
+export function releaseTutorialToPractice(state) {
+  if (!state?.tutorialMode) return;
+  state.tutorialComplete = true;
+  state.tutorialVictory = false;
+  state.status = "playing";
+  addLog(state, "Guided steps ended — practice freely on this table, or return to the menu for a Daydream.");
 }
 
 export function isInteractiveTutorialActive(state) {

@@ -21,7 +21,7 @@
   <div id="app">
     <header class="top-bar play-top-bar">
       <div class="brand">
-        <span class="version-label">Somnia v 18.5.1</span>
+        <span class="version-label">Somnia v 18.6</span>
         <h1>Somnia</h1>
       </div>
       <div id="phase-stepper" class="phase-stepper top-bar-stepper" aria-label="Round phases"></div>
@@ -48,7 +48,7 @@
         <button type="button" class="btn btn-icon btn-music-toggle" data-music-toggle aria-pressed="true" title="Mute music" aria-label="Mute music">🔊</button>
         <button type="button" id="btn-pause" class="btn btn-sm" title="Pause menu (Esc)">⏸ Pause</button>
         <button type="button" id="btn-overview" class="btn btn-sm" title="Game overview">Overview</button>
-        <button type="button" id="btn-tutorial" class="btn btn-sm">Tutorial</button>
+        <button type="button" id="btn-tutorial" class="btn btn-sm">Tips</button>
       </div>
     </header>
 
@@ -59,7 +59,7 @@
           <div id="coop-play-banner" class="coop-play-banner hidden" aria-live="polite"></div>
           <div id="phase-banner" class="phase-banner" aria-live="polite"></div>
           <div id="moment-overlay-stack" class="moment-overlay-stack" role="status" aria-live="polite"></div>
-          <div id="guide-panel" class="guide-panel guide-panel-legacy" hidden></div>
+          <div id="guide-panel" class="guide-panel" hidden></div>
           <div class="board-viewport" id="board-viewport" title="Scroll to zoom · middle-drag or hold Space and drag to pan">
             <div class="board-zoom-stage" id="board-zoom-stage">
               <div id="hex-board" class="hex-board"></div>
@@ -152,7 +152,8 @@
             <ol id="end-score-list" class="end-score-list"></ol>
           </div>
           <div class="end-actions">
-            <button id="btn-restart" class="btn primary">Return to Menu</button>
+            <button type="button" id="btn-start-daydream" class="btn primary hidden">Start Daydream</button>
+            <button id="btn-restart" class="btn">Return to Menu</button>
             <button type="button" id="btn-replay-tutorial" class="btn">Replay Tutorial</button>
             <button type="button" id="btn-end-overview" class="btn">Game Overview</button>
           </div>
@@ -187,7 +188,7 @@
     <div class="tutorial-brief-card">
       <header class="tutorial-brief-header">
         <h2 id="tutorial-brief-title">Before You Begin</h2>
-        <p>Read this one-page overview, then play through five guided rounds.</p>
+        <p>Read this one-page overview, then play through two guided rounds.</p>
       </header>
       <div id="tutorial-brief-body" class="tutorial-brief-body"></div>
       <footer class="tutorial-brief-footer">

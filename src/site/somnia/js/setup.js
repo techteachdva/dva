@@ -13,6 +13,8 @@ import {
   hideDreamerDetailTooltip,
   hideUtilityModal,
 } from "./ui.js";
+import { hasSeenTutorial, hasUsedGentleStart } from "./guide.js";
+import { RECOMMENDED_STARTER_IDS } from "./tutorial-mode.js";
 
 const LAUNCH_KEY = "somnia.launch";
 const SPLASH_MIN_MS = 3200;
@@ -20,6 +22,7 @@ const SPLASH_DISSOLVE_MS = 1600;
 
 let gameData = null;
 let selectedDreamerIds = [];
+let firstVisit = !hasSeenTutorial();
 
 function prefersReducedMotion() {
   return window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ?? false;
@@ -76,6 +79,7 @@ function updateBeginDreamButton() {
 function refreshDreamerPicker() {
   renderDreamerPicker(gameData.dreamers, selectedDreamerIds, toggleDreamer, {
     playerCount: playerCount(),
+    recommendedIds: RECOMMENDED_STARTER_IDS,
   });
   updateBeginDreamButton();
 }
@@ -113,6 +117,10 @@ async function init() {
   bindChangelog();
   bindViewMode();
   bindModal();
+  applyFirstVisitMenu();
+  if (firstVisit && playerCount() === 2) {
+    selectedDreamerIds = [...RECOMMENDED_STARTER_IDS];
+  }
   renderSetupIntro();
   refreshDreamerPicker();
   refreshContinueDream();
@@ -131,6 +139,21 @@ function bindChangelog() {
   document.getElementById("btn-somnia-changelog")?.addEventListener("click", () => {
     showSomniaChangelogModal();
   });
+}
+
+function applyFirstVisitMenu() {
+  const row = document.querySelector(".setup-launch-row");
+  const tutorial = document.getElementById("btn-tutorial-mode");
+  const hint = document.querySelector(".menu-tutorial-hint");
+  row?.classList.toggle("setup-launch-row--first-visit", firstVisit);
+  if (hint) {
+    hint.innerHTML = firstVisit
+      ? "New here? Start with <strong>Tutorial</strong> — two guided rounds. The Visionary and The Immovable are a balanced first pair."
+      : "Tutorial Mode walks you through two guided rounds. The in-game <strong>Tips</strong> button shows a short reminder anytime.";
+  }
+  if (firstVisit && tutorial) {
+    tutorial.title = "Two guided rounds with step-by-step coaching";
+  }
 }
 
 function bindSetup() {
@@ -167,6 +190,7 @@ function launchGame(config = null) {
     lengthKey,
     selectedDreamerIds: [...selectedDreamerIds],
     launchedAt: Date.now(),
+    gentleStart: lengthKey === "daydream" && !hasUsedGentleStart(),
   };
   if (payload.resumeSaveId) {
     payload.launchedAt = Date.now();
@@ -184,7 +208,7 @@ function launchGame(config = null) {
 function launchTutorialMode() {
   launchGame({
     lengthKey: "daydream",
-    selectedDreamerIds: ["the-visionary", "the-runner"],
+    selectedDreamerIds: [...RECOMMENDED_STARTER_IDS],
     tutorialMode: true,
     launchedAt: Date.now(),
   });

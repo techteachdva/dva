@@ -1403,6 +1403,51 @@ body.in-game main {
   color: var(--text);
 }
 
+.setup-launch-row--first-visit {
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+}
+
+.setup-launch-row--first-visit #btn-tutorial-mode {
+  order: -1;
+  font-family: var(--font-display);
+  font-size: calc(1rem * var(--setup-type-scale));
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #fff;
+  border: none;
+  background: linear-gradient(135deg, #f3ebff 0%, #b89bff 28%, #6a9dff 58%, #ffd98a 82%, #9b7bff 100%);
+  background-size: 240% 240%;
+  animation: btn-shimmer 3.2s ease-in-out infinite;
+}
+
+.dreamer-pick-recommended {
+  position: absolute;
+  top: 0.35rem;
+  left: 0.35rem;
+  z-index: 2;
+  padding: 0.12rem 0.4rem;
+  border-radius: 999px;
+  font-size: 0.62rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #1b1328;
+  background: #f0c830;
+}
+
+#screen-game .guide-panel {
+  flex: 0 0 auto;
+  margin: 0.4rem 0.6rem 0 clamp(168px, 16vw, 228px);
+  max-height: 7.2rem;
+  overflow: auto;
+  z-index: 25;
+}
+
+#screen-game .guide-panel[hidden],
+#screen-game .guide-panel.hidden {
+  display: none !important;
+}
+
 body.menu-window #screen-setup h2 {
   font-size: calc(0.95rem * var(--setup-type-scale));
 }

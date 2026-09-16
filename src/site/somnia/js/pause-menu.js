@@ -251,7 +251,7 @@ function renderHelpTab() {
         <button type="button" class="btn" id="pause-overview">Overview</button>
         <button type="button" class="btn" id="pause-rules">Details</button>
         <button type="button" class="btn" id="pause-rem">R.E.M. phases</button>
-        <button type="button" class="btn" id="pause-tutorial">Tutorial</button>
+        <button type="button" class="btn" id="pause-tutorial">Tips</button>
       </div>
     </div>
   `;

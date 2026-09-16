@@ -42,6 +42,28 @@ import {
   resolveAllPowerCardsInHands,
 } from "./power-tokens.js";
 
+function pinFirstById(list, id) {
+  const index = list.findIndex((item) => item.id === id);
+  if (index <= 0) return;
+  const [card] = list.splice(index, 1);
+  list.unshift(card);
+}
+
+function pinOpeningDream(dreamDeck, dreams, id) {
+  if (dreamDeck[0]?.id === id) return;
+  const index = dreamDeck.findIndex((card) => card.id === id);
+  if (index > 0) {
+    const swap = dreamDeck[0];
+    dreamDeck[0] = dreamDeck[index];
+    dreamDeck[index] = swap;
+    return;
+  }
+  const template = dreams?.find((dream) => dream.id === id);
+  if (template) {
+    dreamDeck[0] = { ...template, instanceId: uid("dream") };
+  }
+}
+
 export function createInitialState(data, options) {
   const length = LENGTHS[options.lengthKey];
   const landscapes = data.landscapes.filter((l) => !l.hidden);
@@ -94,6 +116,11 @@ export function createInitialState(data, options) {
   ["lucidity", "elasticity", "willpower"].forEach((suit) => {
     repressFromMindstreamSetup({ mindstreamDecks, subconscious }, suit, players.length);
   });
+
+  if (options.gentleStart) {
+    pinFirstById(archetypeDeck, "innocent");
+    pinOpeningDream(dreamDeck, data.dreams, "quiet");
+  }
 
   const activeArchetype = archetypeDeck.shift();
   activeArchetype.questProgress = [false, false];

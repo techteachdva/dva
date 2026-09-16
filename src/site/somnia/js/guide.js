@@ -16,6 +16,7 @@ import {
 import { footerCreditsHtml } from "./audio.js";
 
 const TUTORIAL_KEY = "somnia_tutorial_seen";
+const GENTLE_START_KEY = "somnia_gentle_daydream_used";
 
 export const COOP_PLAY_TIP = "Discuss and plan together — there is no turn order within a phase. Act in whatever sequence helps the team.";
 
@@ -62,7 +63,7 @@ export const TUTORIAL_STEPS = [
   {
     id: "done",
     title: "You're Ready",
-    body: "Use the Guide panel anytime for your next step. Open Overview or Help for the three-page rules reference (Overview · R.E.M. · Details). Good luck escaping the Dreamscape!",
+    body: "The Guide strip at the top of the map shows your next step. Open Overview or Help for the three-page rules reference (Overview · R.E.M. · Details). Good luck escaping the Dreamscape!",
     target: "#guide-panel",
   },
 ];
@@ -86,6 +87,22 @@ export function markTutorialSeen() {
 export function resetTutorialFlag() {
   try {
     localStorage.removeItem(TUTORIAL_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function hasUsedGentleStart() {
+  try {
+    return localStorage.getItem(GENTLE_START_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function markGentleStartUsed() {
+  try {
+    localStorage.setItem(GENTLE_START_KEY, "1");
   } catch {
     /* ignore */
   }
@@ -408,7 +425,7 @@ export function tutorialBriefHtml() {
 
       <section class="overview-block">
         <h3>Goal</h3>
-        <p>Complete both quests on the <strong>Active Archetype</strong>, spend <strong>1 Power Token</strong> to mark each quest, then <strong>Acquire</strong> it for points. Reach <strong>12 points</strong> (this tutorial), then get every living Dreamer onto <strong>The Bed</strong> to win.</p>
+        <p>This walkthrough earns <strong>The Innocent</strong> (1 point): complete both quests, spend <strong>1 Power Token</strong> to mark each, then <strong>Acquire</strong>. A real Daydream needs <strong>12 points</strong>, then every living Dreamer on <strong>The Bed</strong>.</p>
       </section>
 
       <section class="overview-block">
@@ -436,16 +453,16 @@ export function tutorialBriefHtml() {
         <div>
           <h3>This Tutorial</h3>
           <ul>
-            <li><strong>5 rounds</strong> with a guided step card you can move and resize</li>
+            <li><strong>2 rounds</strong> with a guided step card you can move and resize</li>
             <li>Round 1: full R.E.M. loop + your first Encounter</li>
             <li>Round 2: earn <strong>The Innocent</strong> Archetype</li>
-            <li>Round 3: a <strong>Boss Dream</strong></li>
-            <li>Rounds 4–5: death rules and final practice</li>
+            <li>Each step advances when you finish the highlighted action</li>
+            <li>Bosses, death, and Objects wait for a real Daydream</li>
           </ul>
         </div>
       </section>
 
-      <p class="tutorial-brief-footer-note">Press <strong>Begin Guided Tutorial</strong> when ready. The guide will highlight what to click and unlock Continue after each action.</p>
+      <p class="tutorial-brief-footer-note">Press <strong>Begin Guided Tutorial</strong> when ready. The guide highlights what to click and advances when you finish each action.</p>
     </div>
   `;
 }
@@ -500,7 +517,7 @@ export function rulesIntroHtml() {
         <p>Use the <strong>R.E.M.</strong> tab for the three phases in depth. Use <strong>Details</strong> for encounters, death, bosses, objects, Mindstream, and Final Recurrence. The in-game <strong>Guide</strong> panel shows your next step every turn.</p>
       </section>
 
-            <p class="overview-footer">Somnia v 18.5.1 — cooperative rules reference.</p>
+            <p class="overview-footer">Somnia v 18.6 — cooperative rules reference.</p>
       ${footerCreditsHtml()}
     </div>
   `;

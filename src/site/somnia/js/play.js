@@ -107,8 +107,8 @@ import { phaseOpeningActive } from "./rules.js";
 import {
   TUTORIAL_STEPS,
   tutorialBriefHtml,
-  hasSeenTutorial,
   markTutorialSeen,
+  markGentleStartUsed,
 } from "./guide.js";
 import {
   createTutorialState,
@@ -117,6 +117,7 @@ import {
   retreatTutorialStep,
   jumpTutorialToStep,
   completeTutorialGame,
+  releaseTutorialToPractice,
   notifyTutorialDreamDrawn,
   notifyTutorialArchetypeAcquired,
   isInteractiveTutorialActive,
@@ -125,6 +126,7 @@ import {
   tutorialActionBlocked,
   applyTutorialPhaseGates,
   classifyPhaseAction,
+  RECOMMENDED_STARTER_IDS,
 } from "./tutorial-mode.js";
 import {
   renderBoard,
@@ -207,6 +209,7 @@ let tutorialIndex = -1;
 let interactiveTutorialActive = false;
 let lastTutorialSyncKey = null;
 let lastTutorialStepId = null;
+let tutorialAutoAdvanceTimer = null;
 let fullscreenReady = false;
 const lastCardClick = { id: null, time: 0 };
 let boardResizeTimer = null;
@@ -484,8 +487,17 @@ function bindRestart() {
   });
 
   document.getElementById("btn-replay-tutorial")?.addEventListener("click", () => {
-    tutorialIndex = 0;
-    showTutorialAt(tutorialIndex);
+    sessionStorage.setItem(LAUNCH_KEY, JSON.stringify({
+      lengthKey: "daydream",
+      selectedDreamerIds: [...RECOMMENDED_STARTER_IDS],
+      tutorialMode: true,
+      launchedAt: Date.now(),
+    }));
+    window.location.href = "play.html";
+  });
+  document.getElementById("btn-start-daydream")?.addEventListener("click", () => {
+    stopVictoryCelebration();
+    launchGentleDaydream();
   });
 }
 
@@ -731,18 +743,20 @@ async function startGame(config) {
     narrate(
       state,
       "Tutorial Mode",
-      "Five guided rounds with fixed Dreams and hands. Follow the highlighted steps — Cerberus awakens on Round 3.",
-      ["Complete each highlighted action before pressing Continue."],
+      "Two guided rounds with fixed Dreams and hands. Follow the highlighted steps — the card advances when you finish each action.",
+      ["Select suited Psyche cards, then use the highlighted action."],
     );
   } else {
     state = createInitialState(gameData, {
       lengthKey: config.lengthKey,
       selectedDreamers,
+      gentleStart: !!config.gentleStart,
     });
+    if (config.gentleStart) markGentleStartUsed();
     narrate(
       state,
       "The Dreamscape forms",
-      "Each Dreamer starts on The Bed with 5 Psyche and 2 Power. Round 1 begins in the Reveal Phase — discuss, plan, and act in any order. The Head Dreamer (★) should Draw the Dream when the group is ready.",
+      "Each Dreamer starts on The Bed with 5 Psyche and 1 Power Token. Round 1 begins in the Reveal Phase — discuss, plan, and act in any order. The Head Dreamer (★) should Draw the Dream when the group is ready.",
       ["Reveal Phase: spend Lucidity to flip Landscapes on the hex map"],
     );
   }
@@ -755,8 +769,7 @@ async function startGame(config) {
   resetDeckColumnRender();
   resetBoardMotion(state);
   renderAll();
-  if (!config.tutorialMode && !hasSeenTutorial()) startTutorial();
-  else if (config.tutorialMode) {
+  if (config.tutorialMode) {
     showTutorialBrief(tutorialBriefHtml(), () => syncInteractiveTutorial());
   }
 }
@@ -839,12 +852,57 @@ function finishTutorial() {
 }
 
 function handleTutorialSkip() {
-  if (confirm("Skip the interactive tutorial? You can replay it from the setup screen.")) {
-    state.tutorialComplete = true;
-    hideTutorial();
-    document.body.classList.remove("tutorial-mode-active");
-    showEndScreen(true, "Tutorial skipped. Try a full game when you're ready.");
+  if (!confirm("Leave the guided steps? You can keep practicing on this table.")) return;
+  clearTimeout(tutorialAutoAdvanceTimer);
+  tutorialAutoAdvanceTimer = null;
+  releaseTutorialToPractice(state);
+  hideTutorial();
+  interactiveTutorialActive = false;
+  document.body.classList.remove("tutorial-mode-active");
+  markTutorialSeen();
+  lastTutorialSyncKey = null;
+  lastTutorialStepId = null;
+  narrate(
+    state,
+    "Practice table",
+    "The Guide strip at the top of the map shows the next step. Return to the menu when you want a real Daydream.",
+  );
+  renderAll();
+}
+
+function scheduleTutorialAutoAdvance() {
+  clearTimeout(tutorialAutoAdvanceTimer);
+  tutorialAutoAdvanceTimer = setTimeout(() => {
+    tutorialAutoAdvanceTimer = null;
+    if (!isInteractiveTutorialActive(state)) return;
+    const latest = syncTutorial(state);
+    if (!latest?.step?.until || !latest.canAdvance) return;
+    handleTutorialNext();
+  }, 650);
+}
+
+function showTutorialGraduation() {
+  interactiveTutorialActive = false;
+  showEndScreen(
+    true,
+    "You learned Reveal, Explore, Meet, Encounters, and how to earn an Archetype. A Daydream needs 12 points, then every living Dreamer on The Bed.",
+  );
+  const startBtn = document.getElementById("btn-start-daydream");
+  startBtn?.classList.remove("hidden");
+}
+
+function launchGentleDaydream() {
+  sessionStorage.setItem(LAUNCH_KEY, JSON.stringify({
+    lengthKey: "daydream",
+    selectedDreamerIds: [...RECOMMENDED_STARTER_IDS],
+    gentleStart: true,
+    launchedAt: Date.now(),
+  }));
+  const playUrl = new URL("play.html", window.location.href);
+  if (new URLSearchParams(window.location.search).get("dev") === "1") {
+    playUrl.searchParams.set("dev", "1");
   }
+  window.location.href = playUrl.href;
 }
 
 function handleTutorialNext() {
@@ -857,10 +915,8 @@ function handleTutorialNext() {
     completeTutorialGame(state);
     hideTutorial();
     document.body.classList.remove("tutorial-mode-active");
-    showEndScreen(
-      true,
-      "Tutorial complete! You learned R.E.M., Encounters, Landscape actions, Dreams, Bosses, Power Tokens, and the Subconscious. Start a real game from the setup screen.",
-    );
+    markTutorialSeen();
+    showTutorialGraduation();
     return;
   }
   lastTutorialSyncKey = null;
@@ -895,10 +951,8 @@ function syncInteractiveTutorial() {
     completeTutorialGame(state);
     hideTutorial();
     document.body.classList.remove("tutorial-mode-active");
-    showEndScreen(
-      true,
-      "Tutorial complete! You learned R.E.M., Encounters, Landscape actions, Dreams, Bosses, Power Tokens, and the Subconscious. Start a real game from the setup screen.",
-    );
+    markTutorialSeen();
+    showTutorialGraduation();
     return;
   }
 
@@ -917,6 +971,7 @@ function syncInteractiveTutorial() {
     ensureTutorialStepTargetsVisible(step);
     refreshTutorialSpotlight();
     lastTutorialSyncKey = syncKey;
+    if (step.until && canAdvance) scheduleTutorialAutoAdvance();
     return;
   }
 
@@ -1460,10 +1515,7 @@ function renderAll() {
   if (state.status === "won") {
     clearAutosave();
     if (state.tutorialVictory) {
-      showEndScreen(
-        true,
-        "Tutorial complete! You learned Reveal, Explore, Meet, Psyche, Power Tokens, Archetypes, Dreams, and Boss spawning.",
-      );
+      showTutorialGraduation();
       return;
     }
     if (!pendingScoreResult) {

@@ -161,19 +161,14 @@ function moveActiveTo(state, tileId) {
 function simulate() {
   const issues = [];
   const state = createTutorialState(gameData);
-  state.tutorialStepIndex = 5; // start at draw-dream-r1
+  state.tutorialStepIndex = TUTORIAL_SCRIPT.findIndex((s) => s.id === "draw-dream-r1");
 
   const steps = [
     () => { drawDreamCard(state); },
     () => { selectLucidity(state, 1); revealLandscape(state); },
     () => { pickHiddenTile(state); },
     () => { advancePhasesTo(state, "Explore"); },
-    () => {
-      state.activePlayerIndex = 0;
-      state.selectedHand = [];
-      state.phaseTokenAsPsyche = state.players[0].id;
-      activateExplore(state);
-    },
+    () => { selectElasticity(state, 1); activateExplore(state); },
     () => { setPlayerOn(state, 0, "bed"); moveActiveTo(state, "house"); },
     () => { advancePhasesTo(state, "Meet"); },
     () => { selectWillpower(state, 1); gainMeetActions(state); },
@@ -210,7 +205,7 @@ function simulate() {
     },
   ];
 
-  let scriptIdx = 5;
+  let scriptIdx = TUTORIAL_SCRIPT.findIndex((s) => s.id === "draw-dream-r1");
   for (const action of steps) {
     while (scriptIdx < TUTORIAL_SCRIPT.length) {
       const step = TUTORIAL_SCRIPT[scriptIdx];
@@ -224,7 +219,7 @@ function simulate() {
           }
           return isTutorialActionAllowed(state, k);
         });
-        if (needed.length === 0 && !["welcome", "win-goal", "rem-intro", "subconscious", "archetype-innocent", "r2-intro", "r2-map", "r3-boss", "r4-death", "graduate"].includes(step.id)) {
+        if (needed.length === 0 && !["welcome", "win-goal", "rem-intro", "archetype-innocent", "r2-intro", "r2-map", "graduate"].includes(step.id)) {
           issues.push({
             step: step.id,
             index: scriptIdx,
@@ -249,7 +244,7 @@ function simulate() {
   const scanStates = [
     { label: "r2-move-quests explore, nobody on quests", fn: () => {
       const s = createTutorialState(gameData);
-      s.tutorialStepIndex = 21;
+      s.tutorialStepIndex = TUTORIAL_SCRIPT.findIndex((step) => step.id === "r2-move-quests");
       s.round = 2;
       s.phaseIndex = 1;
       s.exploreActivated = true;
@@ -257,7 +252,7 @@ function simulate() {
     }},
     { label: "r2-attic meet, nobody on attic", fn: () => {
       const s = createTutorialState(gameData);
-      s.tutorialStepIndex = 24;
+      s.tutorialStepIndex = TUTORIAL_SCRIPT.findIndex((step) => step.id === "r2-attic");
       s.round = 2;
       s.phaseIndex = 2;
       s.meetActionBudget = 2;
@@ -266,23 +261,15 @@ function simulate() {
     }},
     { label: "r2-acquire quests marked not acquired", fn: () => {
       const s = createTutorialState(gameData);
-      s.tutorialStepIndex = 27;
+      s.tutorialStepIndex = TUTORIAL_SCRIPT.findIndex((step) => step.id === "r2-acquire");
       s.round = 2;
       s.phaseIndex = 2;
       s.activeArchetype.questProgress = [true, true];
       return s;
     }},
-    { label: "r3-draw round 3 reveal", fn: () => {
-      const s = createTutorialState(gameData);
-      s.tutorialStepIndex = 30;
-      s.round = 3;
-      s.phaseIndex = 0;
-      s.dreamDrawn = false;
-      return s;
-    }},
     { label: "r2-attic meet, on attic with budget", fn: () => {
       const s = createTutorialState(gameData);
-      s.tutorialStepIndex = 24;
+      s.tutorialStepIndex = TUTORIAL_SCRIPT.findIndex((step) => step.id === "r2-attic");
       s.round = 2;
       s.phaseIndex = 2;
       s.meetActionBudget = 2;
@@ -299,13 +286,6 @@ function simulate() {
       });
       const drawAction = actions.find((a) => a.label?.startsWith("Draw ["));
       return { s, drawAction };
-    }},
-    { label: "r5-practice round 5 meet", fn: () => {
-      const s = createTutorialState(gameData);
-      s.tutorialStepIndex = 34;
-      s.round = 5;
-      s.phaseIndex = 2;
-      return s;
     }},
   ];
 
@@ -354,8 +334,6 @@ const EXPECTED_SPOTLIGHT = {
   "r2-move-quests": "#board-viewport",
   "r2-attic": "#board-viewport",
   "r2-basement": "#board-viewport",
-  "r3-draw": "#phase-actions",
-  "end-r3": "#phase-stepper",
 };
 
 function auditSpotlights() {

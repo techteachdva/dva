@@ -188,19 +188,15 @@ function revealAllOuter(state) {
 
 {
   const state = tutorialMod.createTutorialState(gameData);
-  const idx = tutorialMod.TUTORIAL_SCRIPT.findIndex((s) => s.id === "r3-draw");
-  tutorialMod.jumpTutorialToStep(state, idx);
-  if (state.dreamDeck[0]?.id !== "cerberus") {
-    fail("tutorial-cerberus-not-on-top", { top: state.dreamDeck[0]?.id });
+  if (state.status === "lost") fail("tutorial-starts-lost", {});
+  if (state.dreamDeck[0]?.id !== "quiet") {
+    fail("tutorial-first-dream", { top: state.dreamDeck[0]?.id });
   }
-  const before = state.dreamDeck.length;
   const drawn = drawDreamCard(state);
-  if (drawn?.id !== "cerberus") fail("tutorial-did-not-draw-cerberus", { got: drawn?.id });
-  if (state.status === "lost") fail("tutorial-lost-on-cerberus", {});
-  if (state.dreamDeck.length < 4) fail("tutorial-deck-too-thin", { left: state.dreamDeck.length, before });
+  if (drawn?.id !== "quiet") fail("tutorial-did-not-draw-quiet", { got: drawn?.id });
+  if (state.status === "lost") fail("tutorial-lost-on-quiet", {});
   checkDefeat(state);
   if (state.status === "lost") fail("tutorial-checkdefeat-lost", {});
-  landscapeById(state, "bed");
 }
 
 const report = { pass: failures.length === 0, failureCount: failures.length, failures };
@@ -209,5 +205,5 @@ if (!report.pass) {
   console.error("FAIL: final recurrence audit");
   process.exitCode = 1;
 } else {
-  console.log("PASS: Final Recurrence deck, collapse, fight, and tutorial Cerberus");
+  console.log("PASS: Final Recurrence deck, collapse, fight, and tutorial opening");
 }
