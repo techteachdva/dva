@@ -293,8 +293,8 @@ function exploreMoveAllowed(state, tileId, allowedTiles = null, playerIndex = nu
   return true;
 }
 
-function dreamerSelectBeatComplete(state, beat) {
-  if (state.activePlayerIndex === beat.playerIndex) return true;
+function railBeatStickyComplete(state, beat, directComplete) {
+  if (directComplete()) return true;
   const step = getTutorialStep(state);
   const beatIndex = step?.rail?.indexOf(beat) ?? -1;
   if (beatIndex < 0 || !step?.rail) return false;
@@ -302,6 +302,18 @@ function dreamerSelectBeatComplete(state, beat) {
     if (isRailBeatComplete(state, step.rail[i])) return true;
   }
   return false;
+}
+
+function dreamerSelectBeatComplete(state, beat) {
+  return railBeatStickyComplete(state, beat, () => state.activePlayerIndex === beat.playerIndex);
+}
+
+function exploreMoveBeatComplete(state, beat) {
+  return railBeatStickyComplete(
+    state,
+    beat,
+    () => state.players[beat.playerIndex]?.landscapeId === beat.tileId,
+  );
 }
 
 function requiredCardIds(beat) {
@@ -344,7 +356,7 @@ function isRailBeatComplete(state, beat) {
     case "spendElasticity":
       return !!state.exploreActivated;
     case "exploreMove":
-      return state.players[beat.playerIndex]?.landscapeId === beat.tileId;
+      return exploreMoveBeatComplete(state, beat);
     case "gainMeetActions":
       return state.meetActionBudget > 0;
     case "meetAccept":
