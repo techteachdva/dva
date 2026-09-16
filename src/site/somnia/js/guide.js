@@ -416,50 +416,19 @@ const RULES_TABS = [
   { id: RULES_TAB_DETAILS, label: "Details" },
 ];
 
-/** One-page brief shown before the interactive tutorial walkthrough. */
+/** Short welcome shown before the interactive tutorial walkthrough. */
 export function tutorialBriefHtml() {
   return `
     <div class="rules-page tutorial-brief-page">
-      <h2>Somnia — Quick Start</h2>
-      <p class="rules-lead">Cooperate as Dreamers. Learn the loop, then play — the cards teach the rest.</p>
-
-      <section class="overview-block">
-        <h3>The Loop</h3>
-        <p>Every round is <strong>Reveal → Explore → Meet</strong>. Early on, flip wasteland into Landscapes, walk onto them, then Meet: draw <strong>Mindstream</strong> (luck — good and bad) or deal with Dreambeasts. Once the map is open, chase quests on the <strong>Active Archetype</strong>.</p>
-      </section>
-
-      <section class="overview-block">
-        <h3>Every Round: R.E.M.</h3>
-        <p>Phases always run in order. Talk first, then act in any order — there is <strong>no turn order</strong>.</p>
-        <ul class="tutorial-brief-rem">
-          <li><strong>Reveal</strong> (${SUIT_LABELS.lucidity}) — Head (*) draws a Dream. Spend Lucidity to flip wasteland hexes into Landscapes. Early game: more map is the priority.</li>
-          <li><strong>Explore</strong> (${SUIT_LABELS.elasticity}) — Spend Elasticity for a shared move budget, then walk onto those Landscapes. You cannot move during Meet.</li>
-          <li><strong>Meet</strong> (${SUIT_LABELS.willpower}) — Spend Willpower for shared actions. <strong>Accept</strong> or <strong>Reject</strong> Dreambeasts: the icon color is the Psyche you must play at least one of, and that Dreamer's matching stat is added. Or use a Landscape's <strong>Action A</strong> to draw Mindstream.</li>
+      <p class="rules-lead">Welcome to Somnia — follow the sparkles through two guided rounds and learn the dream by playing.</p>
+      <section class="overview-block tutorial-brief-outcomes">
+        <h3>You will learn</h3>
+        <ul>
+          <li>The <strong>Reveal → Explore → Meet</strong> loop each round</li>
+          <li>How to open the map, move Dreamers, and resolve your first Dreambeast</li>
+          <li>How Mindstream and Archetype quests earn <strong>The Innocent</strong></li>
         </ul>
-        <p class="tutorial-brief-note">Each phase spender plays <strong>1–2 suited Psyche cards</strong>, or <strong>1 Power Token</strong>. Matching Dreamer stats add bonus budget. Overview and Tips hold the wider ruleset.</p>
       </section>
-
-      <section class="overview-block overview-cols">
-        <div>
-          <h3>How You Win</h3>
-          <ul>
-            <li>Complete both quests on the Active Archetype, spend <strong>1 Power Token</strong> to mark each, then Acquire</li>
-            <li>This walkthrough earns <strong>The Innocent</strong> (1 point)</li>
-            <li>A real Daydream needs <strong>12 points</strong>, then every living Dreamer on <strong>The Bed</strong></li>
-          </ul>
-        </div>
-        <div>
-          <h3>This Tutorial</h3>
-          <ul>
-            <li><strong>2 rounds</strong> — click only the highlights</li>
-            <li>Round 1: Reveal, Explore, Meet (your first Encounter)</li>
-            <li>Round 2: draw Mindstream and earn The Innocent</li>
-            <li>Bosses, death, and Objects wait for a real game</li>
-          </ul>
-        </div>
-      </section>
-
-      <p class="tutorial-brief-footer-note">Press <strong>Begin Guided Tutorial</strong> when ready. The guide highlights what to click and advances when you finish each action.</p>
     </div>
   `;
 }

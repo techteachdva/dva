@@ -212,6 +212,7 @@ let autoSaveTimer = null;
 let devConsole = null;
 let tutorialIndex = -1;
 let interactiveTutorialActive = false;
+let tutorialBriefPending = false;
 let lastTutorialSyncKey = null;
 let lastTutorialStepId = null;
 let lastTutorialCameraKey = null;
@@ -487,21 +488,11 @@ async function loadLeaderboardPreview() {
 
 function bindRestart() {
   document.getElementById("btn-restart").addEventListener("click", () => {
-    stopVictoryCelebration();
-    if (document.fullscreenElement) {
-      document.exitFullscreen().catch(() => {});
-    }
-    window.location.href = "index.html";
+    returnToMainMenu();
   });
 
   document.getElementById("btn-replay-tutorial")?.addEventListener("click", () => {
-    sessionStorage.setItem(LAUNCH_KEY, JSON.stringify({
-      lengthKey: "daydream",
-      selectedDreamerIds: [...RECOMMENDED_STARTER_IDS],
-      tutorialMode: true,
-      launchedAt: Date.now(),
-    }));
-    window.location.href = "play.html";
+    launchReplayTutorial();
   });
   document.getElementById("btn-start-daydream")?.addEventListener("click", () => {
     stopVictoryCelebration();
@@ -747,6 +738,7 @@ async function startGame(config) {
   if (config.tutorialMode) {
     state = createTutorialState(gameData);
     interactiveTutorialActive = true;
+    tutorialBriefPending = true;
     document.body.classList.add("tutorial-mode-active");
     narrate(
       state,
@@ -778,7 +770,10 @@ async function startGame(config) {
   resetBoardMotion(state);
   renderAll();
   if (config.tutorialMode) {
-    showTutorialBrief(tutorialBriefHtml(), () => syncInteractiveTutorial());
+    showTutorialBrief(tutorialBriefHtml(), () => {
+      tutorialBriefPending = false;
+      syncInteractiveTutorial();
+    });
   }
 }
 
@@ -899,35 +894,23 @@ function showTutorialGraduationPanel() {
 
   body.innerHTML = `
     <div class="tutorial-graduate-panel">
-      <h2>You're on your own now</h2>
-      <p>You finished the guided steps. The full table is unlocked — trade, save, and explore freely on this practice dream.</p>
-      <ul class="tutorial-graduate-list">
-        <li><strong>Keep playing</strong> on this table to try what you learned.</li>
-        <li><strong>Pause → Save</strong> stores this practice dream on your device.</li>
-        <li><strong>Start Daydream</strong> begins a scored run toward 12 points.</li>
-      </ul>
+      <h2>Tutorial complete</h2>
+      <p>You finished the guided walkthrough. What would you like to do next?</p>
       <div class="utility-actions tutorial-graduate-actions">
-        <button type="button" class="btn primary" id="tutorial-graduate-continue">Keep playing</button>
-        <button type="button" class="btn" id="tutorial-graduate-save">Save &amp; pause</button>
+        <button type="button" class="btn primary" id="tutorial-graduate-replay">Replay Tutorial</button>
+        <button type="button" class="btn" id="tutorial-graduate-menu">Main Menu</button>
         <button type="button" class="btn" id="tutorial-graduate-daydream">Start Daydream</button>
       </div>
     </div>
   `;
 
-  body.querySelector("#tutorial-graduate-continue")?.addEventListener("click", () => {
+  body.querySelector("#tutorial-graduate-replay")?.addEventListener("click", () => {
     hideUtilityModal(true);
-    narrate(state, "Practice table", "Use the Guide strip for hints. Pause anytime to save or adjust audio.");
-    renderAll();
+    launchReplayTutorial();
   });
-  body.querySelector("#tutorial-graduate-save")?.addEventListener("click", async () => {
+  body.querySelector("#tutorial-graduate-menu")?.addEventListener("click", () => {
     hideUtilityModal(true);
-    try {
-      await saveGameLocal(state, launchConfig, { id: "autosave", label: "Tutorial practice" });
-      openPauseMenu();
-    } catch (err) {
-      narrate(state, "Could not save", err?.message || "Try again from Pause.");
-      renderAll();
-    }
+    returnToMainMenu();
   });
   body.querySelector("#tutorial-graduate-daydream")?.addEventListener("click", () => {
     hideUtilityModal(true);
@@ -969,6 +952,24 @@ function launchGentleDaydream() {
   window.location.href = playUrl.href;
 }
 
+function launchReplayTutorial() {
+  sessionStorage.setItem(LAUNCH_KEY, JSON.stringify({
+    lengthKey: "daydream",
+    selectedDreamerIds: [...RECOMMENDED_STARTER_IDS],
+    tutorialMode: true,
+    launchedAt: Date.now(),
+  }));
+  window.location.href = "play.html";
+}
+
+function returnToMainMenu() {
+  stopVictoryCelebration();
+  if (document.fullscreenElement) {
+    document.exitFullscreen().catch(() => {});
+  }
+  window.location.href = "index.html";
+}
+
 function handleTutorialNext() {
   const current = syncTutorial(state);
   if (current?.step?.until && !current.canAdvance) return;
@@ -999,6 +1000,10 @@ function handleTutorialNext() {
 }
 
 function syncInteractiveTutorial() {
+  if (tutorialBriefPending) {
+    hideTutorial();
+    return;
+  }
   if (!isInteractiveTutorialActive(state)) {
     hideTutorial();
     document.body.classList.remove("tutorial-mode-active");

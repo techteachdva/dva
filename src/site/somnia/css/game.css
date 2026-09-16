@@ -2427,6 +2427,14 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
   margin-top: 0.45rem;
 }
 
+.tutorial-brief-outcomes {
+  margin-top: 1rem;
+}
+
+.tutorial-brief-outcomes ul {
+  margin-bottom: 0;
+}
+
 .tutorial-brief-rem li {
   margin-bottom: 0.35rem;
 }
@@ -5361,11 +5369,13 @@ body.card-detail-open .tutorial-card {
 }
 
 .tutorial-graduate-actions {
-  flex-direction: column;
+  flex-direction: row;
+  gap: 0.65rem;
 }
 
 .tutorial-graduate-actions .btn {
-  width: 100%;
+  flex: 1 1 10rem;
+  width: auto;
 }
 .landscape-action-choices { flex-direction: column; }
 .landscape-action-pick {

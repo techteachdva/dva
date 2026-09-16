@@ -46,6 +46,7 @@ import {
 } from "./subconscious.js";
 import {
   TUTORIAL_SECTIONS,
+  classifyPhaseAction,
   getTutorialSpotlightSelector,
   getTutorialStepTargetSelectors,
   getTutorialRevealTargetId,
@@ -2352,6 +2353,10 @@ function createActionButton(action) {
   btn.title = action.hint || action.label;
   btn.disabled = !!action.disabled;
   if (action.section) btn.dataset.section = action.section;
+  const tutorialAction = classifyPhaseAction(action);
+  if (tutorialAction && tutorialAction !== "other") {
+    btn.dataset.tutorialAction = tutorialAction;
+  }
   btn.addEventListener("click", action.onClick);
   return btn;
 }
@@ -3928,8 +3933,10 @@ function resolveTutorialElements(step) {
 function resolveSpotlightElements(step) {
   const spotlightSel = getSpotlightSelector(step);
   if (spotlightSel) {
-    const el = document.querySelector(spotlightSel);
-    if (el) return [el];
+    const els = spotlightSel.includes(",")
+      ? [...document.querySelectorAll(spotlightSel)]
+      : [document.querySelector(spotlightSel)].filter(Boolean);
+    if (els.length) return els;
   }
   return resolveTutorialElements(step);
 }

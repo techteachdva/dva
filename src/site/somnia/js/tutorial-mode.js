@@ -566,6 +566,10 @@ export function getTutorialCameraFocus(state) {
   };
 }
 
+function tutorialPhaseActionSelector(kind) {
+  return `#phase-actions button[data-tutorial-action="${kind}"]`;
+}
+
 function railHighlight(state, step, beat) {
   if (!beat) {
     return {
@@ -606,13 +610,17 @@ function railHighlight(state, step, beat) {
     case "drawDream":
     case "revealLandscape":
     case "spendElasticity":
-    case "gainMeetActions":
-      return { targets: ["#phase-actions"], spotlight: "#phase-actions" };
-    case "meetAccept":
+    case "gainMeetActions": {
+      const actionSel = tutorialPhaseActionSelector(beat.kind);
+      return { targets: [actionSel, "#phase-actions"], spotlight: actionSel };
+    }
+    case "meetAccept": {
+      const acceptSel = tutorialPhaseActionSelector("meetAccept");
       return {
-        targets: ["#phase-actions", `.hex-tile[data-tile-id="house"]`],
-        spotlight: "#phase-actions",
+        targets: [acceptSel, `.hex-tile[data-tile-id="house"]`, "#phase-actions"],
+        spotlight: acceptSel,
       };
+    }
     case "boardClick":
     case "exploreMove":
       return {
@@ -624,21 +632,30 @@ function railHighlight(state, step, beat) {
       };
     case "advancePhase":
       return { targets: ["#btn-advance-phase"], spotlight: "#btn-advance-phase" };
-    case "landscapeActionA":
+    case "landscapeActionA": {
+      const hexSel = `.hex-tile[data-tile-id="${beat.landscapeId}"]`;
+      const actionSel = tutorialPhaseActionSelector("landscapeActionA");
+      const onTile = state.players[beat.playerIndex]?.landscapeId === beat.landscapeId;
+      const selected = state.selectedLandscapeId === beat.landscapeId;
+      if (onTile && selected) {
+        return {
+          targets: [actionSel, hexSel, "#phase-actions"],
+          spotlight: actionSel,
+        };
+      }
       return {
-        targets: [
-          `.hex-tile[data-tile-id="${beat.landscapeId}"]`,
-          "#phase-actions",
-          "#board-viewport",
-        ],
-        spotlight: `.hex-tile[data-tile-id="${beat.landscapeId}"]`,
+        targets: [hexSel, "#board-viewport"],
+        spotlight: hexSel,
       };
+    }
     case "completeQuest0":
-    case "completeQuest1":
+    case "completeQuest1": {
+      const questSel = tutorialPhaseActionSelector(beat.kind);
       return {
-        targets: ["#active-archetype", "#phase-actions"],
-        spotlight: "#active-archetype",
+        targets: [questSel, "#active-archetype", "#phase-actions"],
+        spotlight: questSel,
       };
+    }
     default:
       return {
         targets: getTutorialStepTargetSelectors(step),
@@ -1117,7 +1134,7 @@ export const TUTORIAL_SCRIPT = [
     id: "graduate",
     round: 2,
     title: "Go Play",
-    body: "You know the loop. Click Finish to unlock the full table — save from Pause, or start a scored Daydream.",
+    body: "You know the loop. Click Finish, then replay the tutorial, return to the menu, or start a scored Daydream.",
     target: "#phase-stepper",
   },
 ];
