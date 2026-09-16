@@ -293,19 +293,26 @@ function exploreMoveAllowed(state, tileId, allowedTiles = null, playerIndex = nu
   return true;
 }
 
-function railBeatStickyComplete(state, beat, directComplete) {
+function railBeatStickyComplete(state, beat, directComplete, { skipKinds = [] } = {}) {
   if (directComplete()) return true;
   const step = getTutorialStep(state);
   const beatIndex = step?.rail?.indexOf(beat) ?? -1;
   if (beatIndex < 0 || !step?.rail) return false;
   for (let i = beatIndex + 1; i < step.rail.length; i += 1) {
-    if (isRailBeatComplete(state, step.rail[i])) return true;
+    const later = step.rail[i];
+    if (skipKinds.includes(later.kind)) continue;
+    if (isRailBeatComplete(state, later)) return true;
   }
   return false;
 }
 
 function dreamerSelectBeatComplete(state, beat) {
-  return railBeatStickyComplete(state, beat, () => state.activePlayerIndex === beat.playerIndex);
+  return railBeatStickyComplete(
+    state,
+    beat,
+    () => state.activePlayerIndex === beat.playerIndex,
+    { skipKinds: ["dreamerSelect"] },
+  );
 }
 
 function exploreMoveBeatComplete(state, beat) {
@@ -313,6 +320,7 @@ function exploreMoveBeatComplete(state, beat) {
     state,
     beat,
     () => state.players[beat.playerIndex]?.landscapeId === beat.tileId,
+    { skipKinds: ["dreamerSelect"] },
   );
 }
 
@@ -378,11 +386,13 @@ function isRailBeatComplete(state, beat) {
 export function currentRailBeat(state) {
   const step = getTutorialStep(state);
   if (!step?.rail?.length) return null;
+  if (step.until?.(state)) return null;
   return step.rail.find((beat) => !isRailBeatComplete(state, beat)) || null;
 }
 
 function railComplete(state, step) {
   if (!step?.rail?.length) return true;
+  if (step.until?.(state)) return true;
   return step.rail.every((beat) => isRailBeatComplete(state, beat));
 }
 
@@ -542,9 +552,13 @@ function railHighlight(state, step, beat) {
       return {
         targets: [
           playerId ? `.player-chip[data-player-id="${playerId}"]` : "#dreamer-dock",
+          playerId ? `.hex-occupant-dreamer[data-dreamer-id="${playerId}"]` : "#dreamer-dock",
           "#dreamer-dock",
+          "#board-viewport",
         ],
-        spotlight: playerId ? `.player-chip[data-player-id="${playerId}"]` : "#dreamer-dock",
+        spotlight: playerId
+          ? `.player-chip[data-player-id="${playerId}"], .hex-occupant-dreamer[data-dreamer-id="${playerId}"]`
+          : "#dreamer-dock",
       };
     case "handToggle":
       return {

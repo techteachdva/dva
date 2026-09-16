@@ -129,6 +129,7 @@ import {
   getTutorialPickHighlights,
   getTutorialExploreLegalMoveIds,
   getTutorialCameraFocus,
+  currentRailBeat,
   RECOMMENDED_STARTER_IDS,
 } from "./tutorial-mode.js";
 import {
@@ -1504,6 +1505,10 @@ function renderBoardArea() {
     if (pickHighlights.reveal?.includes(id) || pickHighlights.choose?.includes(id)) {
       flashRevealOpenCursor();
     }
+    const beat = currentRailBeat(state);
+    if (isInteractiveTutorialActive(state) && beat?.kind === "exploreMove" && beat.playerIndex != null) {
+      state.activePlayerIndex = beat.playerIndex;
+    }
     handleBoardTileClick(state, id);
     renderAll();
   }, legalMoves, pickHighlights, (id) => showLandscapeDetail(state, id), {
@@ -1512,6 +1517,21 @@ function renderBoardArea() {
       if (playerIndex < 0) return;
       if (!isTutorialActionAllowed(state, "dreamerSelect", { playerIndex })) {
         tutorialActionBlocked(state);
+        renderAll();
+        return;
+      }
+      const beat = currentRailBeat(state);
+      if (
+        isInteractiveTutorialActive(state)
+        && beat?.kind === "dreamerSelect"
+        && beat.playerIndex === playerIndex
+      ) {
+        state.activePlayerIndex = playerIndex;
+        if (getPhase(state) === "Meet" && state.players[playerIndex]?.landscapeId) {
+          state.selectedLandscapeId = state.players[playerIndex].landscapeId;
+        }
+        focusOnLandscape(tileId);
+        playLandscapeSfx(tileId);
         renderAll();
         return;
       }
