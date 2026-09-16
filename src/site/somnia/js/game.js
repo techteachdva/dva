@@ -960,6 +960,34 @@ export function refundPowerBonus(state) {
   return true;
 }
 
+export function getDreamerBoardRadialOptions(state, player, tileId, handlers) {
+  const options = [];
+  const phase = getPhase(state);
+  const tile = landscapeById(state, tileId);
+
+  if (phase === "Meet" && tile && player?.landscapeId === tileId) {
+    getLandscapeActionChoices(tile).forEach((choice) => {
+      const label = choice.label || "";
+      let kind = "landscapeAction";
+      if (choice.id === "A" || /Action A/i.test(label) || label.startsWith("Draw [")) {
+        kind = "landscapeActionA";
+      } else if (choice.id === "B" || /Action B/i.test(label)) {
+        kind = "landscapeActionB";
+      }
+      options.push({
+        id: choice.id,
+        kind,
+        label,
+        hint: choice.description,
+        disabled: !canUseLandscapeAction(state, choice.id),
+        onPick: () => handlers.landscapeAction(choice.id),
+      });
+    });
+  }
+
+  return options;
+}
+
 export function getPowerTokenRadialOptions(state) {
   const player = activePlayer(state);
   if (!player) return [];

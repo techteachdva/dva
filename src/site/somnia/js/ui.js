@@ -50,6 +50,7 @@ import {
   getTutorialSpotlightSelector,
   getTutorialStepTargetSelectors,
   getTutorialRevealTargetId,
+  tutorialPhaseActionSelector,
 } from "./tutorial-mode.js";
 import { getNarratorView, listPhaseActionHints } from "./narrator.js";
 import {
@@ -535,11 +536,10 @@ function paintRadialMenu(anchorEl, options, onPick, { ariaLabel = "Actions" } = 
   menu.className = "power-token-radial-menu radial-menu";
 
   const count = options.length;
-  const radius = Math.max(96, 72 + count * 8);
+  const radius = Math.min(148, Math.max(92, 76 + count * 11));
+  const startAngle = -Math.PI / 2;
   options.forEach((opt, index) => {
-    const angle = count === 1
-      ? -Math.PI / 2
-      : -Math.PI + (Math.PI * index) / Math.max(1, count - 1);
+    const angle = startAngle + (2 * Math.PI * index) / count;
     const dx = Math.cos(angle) * radius;
     const dy = Math.sin(angle) * radius;
     const pad = 72;
@@ -549,6 +549,7 @@ function paintRadialMenu(anchorEl, options, onPick, { ariaLabel = "Actions" } = 
     btn.type = "button";
     btn.className = `power-token-radial-item radial-menu-item${opt.disabled ? "" : " ready"}${opt.primary ? " radial-primary" : ""}`;
     btn.setAttribute("role", "menuitem");
+    if (opt.kind) btn.dataset.tutorialAction = opt.kind;
     btn.textContent = opt.label;
     btn.title = opt.hint || opt.label;
     btn.disabled = !!opt.disabled;
@@ -568,6 +569,9 @@ function paintRadialMenu(anchorEl, options, onPick, { ariaLabel = "Actions" } = 
   radialMenuRoot = layer;
   layer.classList.add("open");
   document.addEventListener("keydown", onRadialMenuKey, true);
+  if (document.body.classList.contains("tutorial-mode-active")) {
+    refreshTutorialSpotlight();
+  }
 }
 
 /** Open after board pan/zoom re-layout (anchor may be replaced in the DOM). */
@@ -3930,14 +3934,38 @@ function resolveTutorialElements(step) {
     .filter(Boolean);
 }
 
-function resolveSpotlightElements(step) {
-  const spotlightSel = getSpotlightSelector(step);
-  if (spotlightSel) {
-    const els = spotlightSel.includes(",")
-      ? [...document.querySelectorAll(spotlightSel)]
-      : [document.querySelector(spotlightSel)].filter(Boolean);
-    if (els.length) return els;
+function resolvePrimarySpotlightElement(step) {
+  const beat = step?.spotlightBeat;
+
+  if (beat?.kind === "dreamerSelect" && beat.playerId) {
+    return document.querySelector(`.hex-occupant-dreamer[data-dreamer-id="${beat.playerId}"]`)
+      || document.querySelector(`.player-chip[data-player-id="${beat.playerId}"]`);
   }
+
+  if (beat?.kind === "meetAccept") {
+    return document.querySelector('.radial-menu-item.ready[data-tutorial-action="meetAccept"]')
+      || document.querySelector(`${tutorialPhaseActionSelector("meetAccept")}:not(:disabled)`)
+      || document.querySelector(tutorialPhaseActionSelector("meetAccept"))
+      || document.querySelector('.hex-tile[data-tile-id="house"] .hex-occupant-beast');
+  }
+
+  const spotlightSel = getSpotlightSelector(step);
+  if (!spotlightSel) return null;
+
+  if (spotlightSel.includes(",")) {
+    for (const sel of spotlightSel.split(",").map((part) => part.trim())) {
+      const el = document.querySelector(sel);
+      if (el) return el;
+    }
+    return null;
+  }
+
+  return document.querySelector(spotlightSel);
+}
+
+function resolveSpotlightElements(step) {
+  const el = resolvePrimarySpotlightElement(step);
+  if (el) return [el];
   return resolveTutorialElements(step);
 }
 

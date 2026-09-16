@@ -3956,6 +3956,11 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
   cursor: default;
 }
 
+body.tutorial-mode-active .radial-menu-item.tutorial-highlight {
+  pointer-events: auto;
+  z-index: 8601;
+}
+
 .power-tokens-empty {
   margin: 0;
   font-size: 0.68rem;

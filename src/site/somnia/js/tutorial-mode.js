@@ -570,6 +570,8 @@ function tutorialPhaseActionSelector(kind) {
   return `#phase-actions button[data-tutorial-action="${kind}"]`;
 }
 
+export { tutorialPhaseActionSelector };
+
 function railHighlight(state, step, beat) {
   if (!beat) {
     return {
@@ -580,10 +582,6 @@ function railHighlight(state, step, beat) {
 
   const player = beat.playerIndex != null ? state.players[beat.playerIndex] : null;
   const playerId = player?.id;
-  const cardIds = requiredCardIds(beat);
-  const firstCard = player && cardIds.length === 1
-    ? player.hand.find((c) => c.id === cardIds[0])
-    : null;
 
   switch (beat.kind) {
     case "dreamerSelect":
@@ -592,21 +590,32 @@ function railHighlight(state, step, beat) {
           playerId ? `.player-chip[data-player-id="${playerId}"]` : "#dreamer-dock",
           playerId ? `.hex-occupant-dreamer[data-dreamer-id="${playerId}"]` : "#dreamer-dock",
           "#dreamer-dock",
-          "#board-viewport",
         ],
         spotlight: playerId
-          ? `.player-chip[data-player-id="${playerId}"], .hex-occupant-dreamer[data-dreamer-id="${playerId}"]`
+          ? `.player-chip[data-player-id="${playerId}"]`
           : "#dreamer-dock",
       };
-    case "handToggle":
+    case "handToggle": {
+      const ids = requiredCardIds(beat);
+      const selected = new Set(state.selectedHand);
+      const nextCard = ids
+        .map((cardId) => player?.hand.find((c) => c.id === cardId))
+        .find((card) => card && !selected.has(card.instanceId));
+      const focusCard = nextCard || (player && ids.length
+        ? player.hand.find((c) => ids.includes(c.id))
+        : null);
+      if (focusCard) {
+        const cardSel = `.game-card[data-instance-id="${focusCard.instanceId}"]`;
+        return {
+          targets: ["#hand-bar", cardSel],
+          spotlight: cardSel,
+        };
+      }
       return {
-        targets: firstCard
-          ? [`#hand-bar`, `.game-card[data-instance-id="${firstCard.instanceId}"]`]
-          : ["#hand-bar"],
-        spotlight: firstCard
-          ? `.game-card[data-instance-id="${firstCard.instanceId}"]`
-          : "#hand-bar",
+        targets: ["#hand-bar"],
+        spotlight: "#hand-bar",
       };
+    }
     case "drawDream":
     case "revealLandscape":
     case "spendElasticity":
@@ -617,7 +626,11 @@ function railHighlight(state, step, beat) {
     case "meetAccept": {
       const acceptSel = tutorialPhaseActionSelector("meetAccept");
       return {
-        targets: [acceptSel, `.hex-tile[data-tile-id="house"]`, "#phase-actions"],
+        targets: [
+          acceptSel,
+          `.hex-tile[data-tile-id="house"] .hex-occupant-beast`,
+          "#phase-actions",
+        ],
         spotlight: acceptSel,
       };
     }
@@ -671,6 +684,12 @@ function decorateTutorialStep(state, step, objective) {
     ...step,
     targets,
     spotlight: spotlight || step.spotlight || null,
+    spotlightBeat: beat
+      ? {
+        ...beat,
+        playerId: beat.playerIndex != null ? state.players[beat.playerIndex]?.id : null,
+      }
+      : null,
     objectiveText: objective,
   };
 }

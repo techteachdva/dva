@@ -73,6 +73,7 @@ import {
   refundPowerBonus,
   togglePhasePowerToken,
   getPowerTokenRadialOptions,
+  getDreamerBoardRadialOptions,
   useDreamerPower,
   toggleHandCard,
   handleQuestComplete,
@@ -1219,18 +1220,11 @@ function shortenRadialLabel(text, max = 22) {
 
 function showDreamerBoardRadialMenu(playerId, tileId, player) {
   const handlers = buildPhaseHandlers();
-  const actions = getPhaseActions(state, handlers);
-  const options = actions
-    .filter((action) => !action.hidden && !action.advance && action.section !== "phase")
-    .map((action) => ({
-      id: action.label,
-      label: shortenRadialLabel(action.label),
-      hint: action.hint || action.label,
-      disabled: !!action.disabled,
-      primary: !!action.primary,
-      kind: classifyPhaseAction(action),
-      action,
-      onPick: action.onClick,
+  const options = getDreamerBoardRadialOptions(state, player, tileId, handlers)
+    .map((opt) => ({
+      ...opt,
+      label: shortenRadialLabel(opt.label),
+      kind: opt.kind || classifyPhaseAction({ label: opt.label }),
     }));
 
   options.push({
@@ -1238,9 +1232,13 @@ function showDreamerBoardRadialMenu(playerId, tileId, player) {
     label: "View",
     hint: "Zoomed character details and hand",
     disabled: false,
-    primary: true,
+    primary: options.length === 0,
     onPick: () => showDreamerDetailOverlay(player.dreamer, { player, state }),
   });
+
+  if (options.length === 1 && options[0].id === "view") {
+    return;
+  }
 
   showRadialMenu(null, options, (opt) => {
     if (opt.kind && !isTutorialActionAllowed(state, opt.kind, { action: opt.action, tileId })) {
