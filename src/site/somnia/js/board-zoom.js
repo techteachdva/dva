@@ -15,6 +15,8 @@ let bound = false;
 let zoomChangeHandler = null;
 let zoomRaf = 0;
 let pendingPan = null;
+/** Applied after the hex board is in the DOM (avoids focus races with re-render). */
+let pendingFocus = null;
 
 let spaceHeld = false;
 let panning = false;
@@ -84,37 +86,53 @@ export function fitBoardToViewport() {
   zoomChangeHandler?.();
 }
 
+function applyQueuedBoardFocus() {
+  if (!pendingFocus || !viewport || !stage) return false;
+  const { landscapeId, animate } = pendingFocus;
+  pendingFocus = null;
+
+  const tile = document.querySelector(`.hex-tile[data-tile-id="${landscapeId}"]`);
+  if (!tile) return false;
+
+  const tileRect = tile.getBoundingClientRect();
+  const vpRect = viewport.getBoundingClientRect();
+  const tileCx = tileRect.left + tileRect.width / 2;
+  const tileCy = tileRect.top + tileRect.height / 2;
+  const vpCx = vpRect.left + vpRect.width / 2;
+  const vpCy = vpRect.top + vpRect.height / 2;
+  panX += vpCx - tileCx;
+  panY += vpCy - tileCy;
+
+  const useMotion = animate && !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (useMotion) {
+    stage.classList.add("board-focus-snap");
+    window.setTimeout(() => stage.classList.remove("board-focus-snap"), 420);
+  }
+  applyTransform();
+  return true;
+}
+
 export function syncBoardZoomAfterRender() {
   if (!userAdjusted) centerBoardPan();
   else applyTransform();
+  applyQueuedBoardFocus();
 }
 
 /** Snap pan/zoom to center a landscape hex (e.g. dreamer selection). */
 export function focusOnLandscape(landscapeId, { zoom: targetZoom = 2.35, animate = true } = {}) {
   if (!viewport || !stage || !landscapeId) return false;
-  zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, targetZoom));
+  const nextZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, targetZoom));
+  const zoomChanged = Math.abs(nextZoom - zoom) > 0.001;
+  zoom = nextZoom;
   userAdjusted = true;
-  zoomChangeHandler?.();
+  pendingFocus = { landscapeId, animate: animate !== false };
 
-  const applyFocus = () => {
-    const tile = document.querySelector(`.hex-tile[data-tile-id="${landscapeId}"]`);
-    if (!tile || !viewport) return;
-    const tileRect = tile.getBoundingClientRect();
-    const vpRect = viewport.getBoundingClientRect();
-    const tileCx = tileRect.left + tileRect.width / 2;
-    const tileCy = tileRect.top + tileRect.height / 2;
-    const vpCx = vpRect.left + vpRect.width / 2;
-    const vpCy = vpRect.top + vpRect.height / 2;
-    panX += vpCx - tileCx;
-    panY += vpCy - tileCy;
-    if (animate && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      stage.classList.add("board-focus-snap");
-      window.setTimeout(() => stage.classList.remove("board-focus-snap"), 420);
-    }
-    applyTransform();
-  };
+  if (zoomChanged) {
+    zoomChangeHandler?.();
+    return true;
+  }
 
-  requestAnimationFrame(() => requestAnimationFrame(applyFocus));
+  applyQueuedBoardFocus();
   return true;
 }
 

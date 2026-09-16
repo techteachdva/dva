@@ -214,6 +214,7 @@ let interactiveTutorialActive = false;
 let lastTutorialSyncKey = null;
 let lastTutorialStepId = null;
 let lastTutorialCameraKey = null;
+let pendingDreamerFocusId = null;
 let tutorialAutoAdvanceTimer = null;
 let fullscreenReady = false;
 const lastCardClick = { id: null, time: 0 };
@@ -998,6 +999,20 @@ function syncInteractiveTutorial() {
   });
 }
 
+function queueDreamerBoardFocus(landscapeId) {
+  if (!landscapeId) return;
+  pendingDreamerFocusId = landscapeId;
+  lastTutorialCameraKey = null;
+}
+
+function flushDreamerBoardFocus() {
+  if (!pendingDreamerFocusId) return false;
+  const tileId = pendingDreamerFocusId;
+  pendingDreamerFocusId = null;
+  focusOnLandscape(tileId);
+  return true;
+}
+
 function maybeFocusTutorialLandscape() {
   if (!isInteractiveTutorialActive(state)) {
     lastTutorialCameraKey = null;
@@ -1530,7 +1545,7 @@ function renderBoardArea() {
         if (getPhase(state) === "Meet" && state.players[playerIndex]?.landscapeId) {
           state.selectedLandscapeId = state.players[playerIndex].landscapeId;
         }
-        focusOnLandscape(tileId);
+        queueDreamerBoardFocus(tileId);
         playLandscapeSfx(tileId);
         renderAll();
         return;
@@ -1640,7 +1655,7 @@ function renderAll() {
       state.selectedLandscapeId = player.landscapeId;
     }
     if (player?.alive && player.landscapeId) {
-      focusOnLandscape(player.landscapeId);
+      queueDreamerBoardFocus(player.landscapeId);
       playLandscapeSfx(player.landscapeId);
     }
     const nextId = state.players[index]?.id;
@@ -1701,7 +1716,11 @@ function renderAll() {
     if (step) ensureTutorialStepTargetsVisible(step);
     syncInteractiveTutorial();
     refreshTutorialSpotlight();
-    maybeFocusTutorialLandscape();
+    if (!flushDreamerBoardFocus()) {
+      maybeFocusTutorialLandscape();
+    }
+  } else {
+    flushDreamerBoardFocus();
   }
 
   updateHandSnapshots(state);

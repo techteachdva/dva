@@ -539,6 +539,17 @@ export function getTutorialCameraFocus(state) {
   if (!step) return null;
   const beat = currentRailBeat(state);
 
+  if (beat?.kind === "dreamerSelect" && beat.playerIndex != null) {
+    const player = state.players[beat.playerIndex];
+    if (player?.landscapeId) {
+      return {
+        tileId: player.landscapeId,
+        key: `${state.tutorialStepIndex}:dreamerSelect:${beat.playerIndex}:${player.landscapeId}`,
+        zoom: 1.55,
+      };
+    }
+  }
+
   if (step.id === "reveal-r1") {
     return { tileId: "candy-mountain", key: "reveal-r1:candy-mountain", zoom: 1.7 };
   }
@@ -699,7 +710,8 @@ export function isTutorialActionAllowed(state, kind, detail = {}) {
     kind = classifyPhaseAction(detail.action);
   }
 
-  if (kind === "headerOverview" || kind === "headerDreamFeed" || kind === "headerMomentHistory" || kind === "headerPause") {
+  if (kind === "headerPause") return true;
+  if (kind === "headerOverview" || kind === "headerDreamFeed" || kind === "headerMomentHistory") {
     return TUTORIAL_INFO_STEPS.has(step.id);
   }
 
