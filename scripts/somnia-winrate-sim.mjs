@@ -97,7 +97,7 @@ gameData.mindstream = dataModule.enrichMindstreamEvents?.(
   gameData["event-landscapes"] || {},
 ) ?? gameData.mindstream;
 
-const { createInitialState, getPhase, landscapeById, avoidDreamerDeath, acceptDreamerDeath } =
+const { createInitialState, getPhase, landscapeById, avoidDreamerDeath, acceptDreamerDeath, allEncountersOnBoard } =
   await import(pathToFileURL(join(JS_DIR, "state.js")).href);
 const {
   drawDreamCard,
@@ -140,6 +140,7 @@ const {
   cancelDreamerPower,
   resolveDreamerPowerChoice,
   resolveDreamerPowerDeckPick,
+  resolveDreamerPowerHandPick,
   handleDreamerPowerTilePick,
 } = await import(pathToFileURL(join(JS_DIR, "dreamer-powers.js")).href);
 const { psycheHandCount, psycheCardValue } = await import(pathToFileURL(join(JS_DIR, "psyche.js")).href);
@@ -261,16 +262,20 @@ function dreamerPowerWorthIt(state, player, skill) {
     if (state.botVisionaryRound === state.round) return false;
     return questsHidden || (hidden.length >= 4 && state.round <= 4);
   }
-  if (id === "the-rested") return (state.psycheDiscard?.length || 0) >= 2;
+  if (id === "the-rested") return (state.psycheDiscard?.length || 0) >= 1 || getPhase(state) === "Reveal";
   if (id === "the-runner") {
     if (state.finalRecurrence) return true;
     const phase = getPhase(state);
     if (phase !== "Explore") return false;
     return alivePlayers(state).some((p) => destForPlayer(state, p, skill) !== p.landscapeId);
   }
-  if (id === "the-hunter") return needsMeetQuest(state) || needsBossQuest(state);
-  if (id === "the-immovable") return !!(state.cancellableDiscard || state.cancellableMove);
-  if (id === "the-weaver") return false;
+  if (id === "the-hunter") {
+    return allEncountersOnBoard(state).length > 0;
+  }
+  if (id === "the-immovable") return getPhase(state) !== "Reveal" || state.round > 1;
+  if (id === "the-weaver") {
+    return alivePlayers(state).some((p) => (p.hand || []).some((c) => c.type === "psyche" || c.type === "psyche-power"));
+  }
   return false;
 }
 
@@ -279,20 +284,19 @@ function chooseDreamerPowerOption(state, skill, pending, choices) {
   const pickId = (wanted) => ids.find((id) => id === wanted) || ids[0];
   if (skill === "sloppy") return pick(ids) || ids[0];
   if (pending.dreamerId === "the-visionary") {
-    return revealableTiles(state).length ? pickId("reveal-landscapes") : pickId("flip-decks");
+    if (pending.step === "peek-resolve") return pickId("peek-keep");
+    return revealableTiles(state).length ? pickId("reveal-landscapes") : pickId("peek-decks");
   }
   if (pending.dreamerId === "the-rested") {
-    return (state.psycheDiscard?.length || 0) > 0 ? pickId("discard-draw") : pickId("swap-archetype");
+    return (state.psycheDiscard?.length || 0) > 0 ? pickId("discard-draw") : pickId("refresh-hand");
   }
   if (pending.dreamerId === "the-runner") {
     const camping = !readyToExpedition(state, skill) || state.finalRecurrence || state.acquiredPoints >= state.goalPoints;
     return camping ? pickId("toward-bed") : pickId("away-bed");
   }
-  if (pending.dreamerId === "the-weaver") {
-    const player = state.players.find((p) => p.id === (pending.weaverQueue || [])[pending.weaverIndex || 0]);
-    return (player?.hand?.length || 0) >= 8 ? pickId("weaver-deck") : pickId("weaver-skip");
+  if (pending.dreamerId === "the-hunter") {
+    return pickId("toward-dreamers");
   }
-  if (pending.dreamerId === "the-immovable") return pickId("cancel-discard") || pickId("cancel-move");
   return ids[0];
 }
 
@@ -319,6 +323,12 @@ function resolveDreamerPowerPending(state, skill) {
   }
   if (ui.type === "deck") {
     resolveDreamerPowerDeckPick(state, "psyche");
+    return true;
+  }
+  if (ui.type === "hand") {
+    const card = (ui.cards || [])[0];
+    if (card) resolveDreamerPowerHandPick(state, card.instanceId || card.id);
+    else cancelDreamerPower(state);
     return true;
   }
   if (ui.type === "choice") {

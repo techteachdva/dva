@@ -244,6 +244,9 @@ export function psycheCursorBreakdown(state) {
     if (state.pendingPowerBonus) {
       extras.push({ suit: null, value: state.pendingPowerBonus, label: "Power spread" });
     }
+    if (state.anchorMeetSpreadBonus) {
+      extras.push({ suit: null, value: state.anchorMeetSpreadBonus, label: "Hold the Line" });
+    }
     return {
       bySuit,
       wild,
@@ -432,6 +435,7 @@ export function encounterPlayTotal(state, { accept = true } = {}) {
   if (suit && selectedHasPaySuit(selected, suit)) {
     total += totalStat(actor, suit, state);
   }
+  total += state.anchorMeetSpreadBonus || 0;
   return total;
 }
 

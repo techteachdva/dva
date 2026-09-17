@@ -71,6 +71,7 @@ import {
   cancelDreamerPower,
   hasPendingDreamerPower,
   handleDreamerPowerTilePick,
+  canActivateDreamerPower,
   recordCancellableDiscard,
   recordCancellableMove,
 } from "./dreamer-powers.js";
@@ -302,7 +303,7 @@ export function getPhaseActions(state, handlers) {
     label: "Dreamer Power",
     section: "progress",
     hint: player.dreamer.power,
-    disabled: player.powerTokens < 1 || hasPendingDreamerPower(state),
+    disabled: player.powerTokens < 1 || hasPendingDreamerPower(state) || !canActivateDreamerPower(state, player),
     onClick: handlers.useDreamerPower,
   });
 
@@ -1460,6 +1461,10 @@ export function useDreamerPower(state) {
   const player = activePlayer(state);
   if (hasPendingDreamerPower(state)) {
     addLog(state, "Finish the current Dreamer Power first.");
+    return null;
+  }
+  if (!canActivateDreamerPower(state, player)) {
+    addLog(state, `${player.dreamer.name} Power cannot be used right now.`);
     return null;
   }
   if (!spendPowerTokens(state, player, 1)) {

@@ -14,7 +14,7 @@ import {
   hideUtilityModal,
 } from "./ui.js";
 import { hasSeenTutorial, hasUsedGentleStart } from "./guide.js";
-import { RECOMMENDED_STARTER_IDS } from "./tutorial-mode.js";
+import { TUTORIAL_DREAMER_IDS } from "./tutorial-mode.js";
 
 const LAUNCH_KEY = "somnia.launch";
 const SPLASH_MIN_MS = 3200;
@@ -79,7 +79,6 @@ function updateBeginDreamButton() {
 function refreshDreamerPicker() {
   renderDreamerPicker(gameData.dreamers, selectedDreamerIds, toggleDreamer, {
     playerCount: playerCount(),
-    recommendedIds: RECOMMENDED_STARTER_IDS,
   });
   updateBeginDreamButton();
 }
@@ -118,9 +117,6 @@ async function init() {
   bindViewMode();
   bindModal();
   applyFirstVisitMenu();
-  if (firstVisit && playerCount() === 2) {
-    selectedDreamerIds = [...RECOMMENDED_STARTER_IDS];
-  }
   renderSetupIntro();
   refreshDreamerPicker();
   refreshContinueDream();
@@ -208,7 +204,7 @@ function launchGame(config = null) {
 function launchTutorialMode() {
   launchGame({
     lengthKey: "daydream",
-    selectedDreamerIds: [...RECOMMENDED_STARTER_IDS],
+    selectedDreamerIds: [...TUTORIAL_DREAMER_IDS],
     tutorialMode: true,
     launchedAt: Date.now(),
   });

@@ -1153,7 +1153,7 @@ export const TUTORIAL_SCRIPT = [
     id: "graduate",
     round: 2,
     title: "Go Play",
-    body: "You know the loop. Click Finish, then replay the tutorial, return to the menu, or start a scored Daydream.",
+    body: "You know the loop. Click Finish, then replay the tutorial or return to the main menu.",
     target: "#phase-stepper",
   },
 ];

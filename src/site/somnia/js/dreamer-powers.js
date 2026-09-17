@@ -11,6 +11,7 @@ import {
   encounterKey,
   allEncountersOnBoard,
   tileEncounters,
+  drawPsycheForPlayer,
 } from "./state.js";
 import { SUIT_LABELS } from "./rules.js";
 import { recordQuestEvent } from "./quests.js";
@@ -20,16 +21,17 @@ import {
   reshuffleMindstreamDiscardIfNeeded,
   discardToMindstream,
 } from "./mindstream-supply.js";
-import {
-  repressCard,
-  requestReturnCards,
-  listSubconsciousCards,
-  isDreambeastPsycheCard,
-} from "./subconscious.js";
+import { isDreambeastPsycheCard } from "./subconscious.js";
 import { handRoomForPsycheDraw } from "./objects.js";
 
 function alivePlayers(state) {
   return state.players.filter((p) => p.alive);
+}
+
+function cyclablePsycheCards(player) {
+  return (player.hand || []).filter(
+    (c) => (c.type === "psyche" || c.type === "psyche-power") && !isDreambeastPsycheCard(c),
+  );
 }
 
 export function stepTowardBed(state, player) {
@@ -68,47 +70,62 @@ export function stepAwayFromBed(state, player) {
   return true;
 }
 
-export function moveEncounterOneStep(state, tile, encounter = null) {
+function moveAllDreamers(state, mover, steps = 1) {
+  alivePlayers(state).forEach((player) => {
+    for (let i = 0; i < steps; i += 1) {
+      if (!mover(state, player)) break;
+    }
+  });
+}
+
+function moveEncounterOneStep(state, tile, encounter = null, { toward = null, awayFrom = null } = {}) {
   const enc = encounter || encounterOnLandscape(state, tile?.id);
   if (!tile || !enc) return false;
   const adj = adjacentTiles(state, tile.id).filter((t) => t.revealed && !t.wasteland);
   if (!adj.length) return false;
-  const dest = adj[Math.floor(Math.random() * adj.length)];
-  const encKey = encounterKey(enc);
+
+  let dest;
+  if (toward) {
+    adj.sort((a, b) => hexDistance(a, toward) - hexDistance(b, toward));
+    dest = adj.find((t) => hexDistance(t, toward) < hexDistance(tile, toward));
+  } else if (awayFrom) {
+    adj.sort((a, b) => hexDistance(b, awayFrom) - hexDistance(a, awayFrom));
+    dest = adj.find((t) => hexDistance(t, awayFrom) > hexDistance(tile, awayFrom)) || adj[0];
+  } else {
+    dest = adj[Math.floor(Math.random() * adj.length)];
+  }
+  if (!dest) return false;
+
   moveEncounterBetweenLandscapes(state, tile.id, dest.id, enc);
   addLog(state, `${enc.name} moves to ${dest.name}.`);
   return dest.id;
 }
 
-function moveEncounterSteps(state, startTileId, steps, encounter = null) {
-  let tileId = startTileId;
-  const enc = encounter || encounterOnLandscape(state, startTileId);
-  if (!enc) return;
-  const encKey = encounterKey(enc);
-  for (let i = 0; i < steps; i += 1) {
-    const tile = landscapeById(state, tileId);
-    const current = tileEncounters(tile).find((e) => encounterKey(e) === encKey);
-    if (!current) break;
-    const nextId = moveEncounterOneStep(state, tile, current);
-    if (!nextId) break;
-    tileId = nextId;
-  }
+function nearestDreamerTile(state, fromTile) {
+  let nearest = null;
+  let nearestDist = Infinity;
+  alivePlayers(state).forEach((player) => {
+    const tile = landscapeById(state, player.landscapeId);
+    if (!tile) return;
+    const dist = hexDistance(fromTile, tile);
+    if (dist < nearestDist) {
+      nearestDist = dist;
+      nearest = tile;
+    }
+  });
+  return nearest;
 }
 
-function swapActiveArchetype(state) {
-  if (!state.activeArchetype || !state.archetypeDeck.length) {
-    addLog(state, "No Archetypes available to swap.");
-    return false;
-  }
-  const next = state.archetypeDeck.shift();
-  const prev = state.activeArchetype;
-  prev.questProgress = prev.questProgress || [false, false];
-  state.activeArchetype = next;
-  next.questProgress = [false, false];
-  next.powerTokensOnArchetype = 0;
-  state.archetypeDeck.unshift(prev);
-  addLog(state, `Active Archetype changed to ${next.name}.`);
-  return true;
+function moveEncounterTowardNearestDreamer(state, tile, encounter = null) {
+  const target = nearestDreamerTile(state, tile);
+  if (!target) return false;
+  return moveEncounterOneStep(state, tile, encounter, { toward: target });
+}
+
+function moveEncounterAwayFromBed(state, tile, encounter = null) {
+  const bed = landscapeById(state, "bed");
+  if (!bed) return false;
+  return moveEncounterOneStep(state, tile, encounter, { awayFrom: bed });
 }
 
 function drawPsycheFromDiscardForAll(state) {
@@ -133,6 +150,26 @@ function drawPsycheFromDiscardForAll(state) {
   return drew > 0;
 }
 
+function sendTopToBottom(state, deckKey) {
+  if (deckKey.startsWith("mindstream-")) {
+    const suit = deckKey.replace("mindstream-", "");
+    reshuffleMindstreamDiscardIfNeeded(state, suit);
+    const deck = state.mindstreamDecks[suit];
+    if (!deck?.length) return null;
+    const top = deck.shift();
+    deck.push(top);
+    consumeRevealedTop(state, deckKey);
+    return top;
+  }
+  const map = { psyche: "psycheDeck", dream: "dreamDeck", archetype: "archetypeDeck" };
+  const key = map[deckKey];
+  if (!state[key]?.length) return null;
+  const top = state[key].shift();
+  state[key].push(top);
+  consumeRevealedTop(state, deckKey);
+  return top;
+}
+
 function peekTopDeckCard(state, deckKey) {
   if (deckKey.startsWith("mindstream-")) {
     const suit = deckKey.replace("mindstream-", "");
@@ -142,20 +179,6 @@ function peekTopDeckCard(state, deckKey) {
   const map = { psyche: "psycheDeck", dream: "dreamDeck", archetype: "archetypeDeck" };
   const key = map[deckKey] || deckKey;
   return state[key]?.[0] || null;
-}
-
-function flipShowTopCard(state, deckKey, dreamerName) {
-  const card = peekTopDeckCard(state, deckKey);
-  if (!card) {
-    addLog(state, `${formatDeckLabel(deckKey)} is empty.`);
-    return null;
-  }
-  rememberRevealedTops(state, deckKey, card);
-  addLog(
-    state,
-    `${dreamerName} flips the top of ${formatDeckLabel(deckKey)}: ${card.name}${card.text ? ` — ${card.text}` : ""}`,
-  );
-  return card;
 }
 
 function formatDeckLabel(deckKey) {
@@ -193,89 +216,185 @@ function setChoiceUI(state, title, message, choices) {
 
 function restedPowerStart(state) {
   setChoiceUI(state, "The Rested — Dreamer Power", "All Dreamers choose one:", [
-    { id: "discard-draw", label: "Draw from Psyche Discard", hint: "Each Dreamer draws the top Psyche card from the discard pile." },
-    { id: "swap-archetype", label: "Change Active Archetype", hint: "Swap the Active Archetype with the next Archetype in the deck." },
+    {
+      id: "discard-draw",
+      label: "Draw from Psyche Discard",
+      hint: "Each Dreamer draws the top Psyche card from the discard pile.",
+    },
+    {
+      id: "refresh-hand",
+      label: "Refresh Hands",
+      hint: "Each Dreamer puts 1 Psyche on the bottom of the Psyche deck and draws 1.",
+    },
   ]);
 }
 
 function visionaryPowerStart(state) {
   setChoiceUI(state, "The Visionary — Dreamer Power", "All Dreamers choose one:", [
-    { id: "flip-decks", label: "Flip Top of a Deck", hint: "Each Dreamer flips and reveals the top card of one deck." },
-    { id: "reveal-landscapes", label: "Reveal Landscapes", hint: "Each Dreamer reveals 1 hidden Landscape on the map." },
+    {
+      id: "reveal-landscapes",
+      label: "Reveal Landscapes",
+      hint: "Each Dreamer reveals 1 hidden Landscape on the map.",
+    },
+    {
+      id: "peek-decks",
+      label: "Peek at Deck Tops",
+      hint: "Each Dreamer peeks at 1 deck top and may send it to the bottom.",
+    },
   ]);
 }
 
 function runnerPowerStart(state) {
-  setChoiceUI(state, "The Runner — Dreamer Power", "Move every Dreamer 1 space:", [
-    { id: "toward-bed", label: "Toward The Bed / Final Recurrence", hint: "Step closer to The Bed." },
-    { id: "away-bed", label: "Away from The Bed", hint: "Step farther from The Bed." },
+  setChoiceUI(state, "The Runner — Dreamer Power", "Move every Dreamer 2 spaces:", [
+    {
+      id: "toward-bed",
+      label: "Toward The Bed / Final Recurrence",
+      hint: "Step closer to The Bed.",
+    },
+    {
+      id: "away-bed",
+      label: "Away from The Bed",
+      hint: "Step farther from The Bed.",
+    },
   ]);
 }
 
-function immovablePowerStart(state) {
-  const choices = [];
-  if (state.cancellableDiscard) {
-    choices.push({
-      id: "cancel-discard",
-      label: "Cancel Last Discard",
-      hint: `Return ${state.cancellableDiscard.card?.name || "Psyche"} to ${state.cancellableDiscard.playerName}.`,
-    });
-  }
-  if (state.cancellableMove) {
-    choices.push({
-      id: "cancel-move",
-      label: "Cancel Last Forced Move",
-      hint: `Return ${state.cancellableMove.playerName} to ${state.cancellableMove.fromName}.`,
-    });
-  }
-  if (!choices.length) {
-    addLog(state, "Nothing to cancel — no recent discard or forced move.");
-    clearDreamerPower(state);
-    return { done: true };
-  }
-  setChoiceUI(state, "The Immovable — Dreamer Power", "Cancel one recent effect:", choices);
-}
-
-function advanceWeaverStep(state) {
-  const pending = state.pendingDreamerPower;
-  const queue = pending.weaverQueue || [];
-  const index = pending.weaverIndex ?? 0;
-  if (index >= queue.length) {
-    addLog(state, "Weaver trades complete.");
-    clearDreamerPower(state);
-    return { done: true };
-  }
-  const player = state.players.find((p) => p.id === queue[index]);
-  if (!player) {
-    pending.weaverIndex = index + 1;
-    return advanceWeaverStep(state);
-  }
-  setChoiceUI(state, `The Weaver — ${player.name}`, "Trade up to 1 card, or skip:", [
-    { id: "weaver-deck", label: "Trade with a Deck", hint: "Swap 1 hand card for the top card of a deck." },
-    { id: "weaver-subconscious", label: "Trade with the Subconscious", hint: "Repress 1 hand card and Return 1 from the Subconscious." },
-    { id: "weaver-skip", label: "Skip", hint: "No trade for this Dreamer." },
-  ]);
-  return { ui: pending.ui };
-}
-
-function weaverPowerStart(state) {
-  state.pendingDreamerPower.weaverQueue = alivePlayers(state).map((p) => p.id);
-  state.pendingDreamerPower.weaverIndex = 0;
-  return advanceWeaverStep(state);
-}
-
-function hunterPowerExecute(state) {
-  const steps = alivePlayers(state).length;
+function hunterPowerStart(state) {
   const beasts = allEncountersOnBoard(state);
   if (!beasts.length) {
     addLog(state, "No active Dreambeasts to move.");
     clearDreamerPower(state);
     return { done: true };
   }
-  beasts.forEach(({ tile, encounter }) => moveEncounterSteps(state, tile.id, steps, encounter));
-  addLog(state, `Hunter Power: each Dreambeast moves ${steps} space(s).`);
+  setChoiceUI(state, "The Hunter — Dreamer Power", "Move each active Dreambeast 1 space:", [
+    {
+      id: "toward-dreamers",
+      label: "Toward the nearest Dreamer",
+      hint: "Each Dreambeast steps closer to the nearest Dreamer.",
+    },
+    {
+      id: "away-bed",
+      label: "Away from The Bed",
+      hint: "Each Dreambeast steps farther from The Bed.",
+    },
+  ]);
+}
+
+function immovablePowerExecute(state) {
+  state.anchorMeetSpreadBonus = 1;
+  addLog(state, "Hold the Line: during the next Meet Phase, all Accept and Reject spreads gain +1 Psyche.");
   clearDreamerPower(state);
   return { done: true };
+}
+
+function advanceCycleStep(state, label) {
+  const pending = state.pendingDreamerPower;
+  const queue = pending.cycleQueue || [];
+  let index = pending.cycleIndex ?? 0;
+
+  while (index < queue.length) {
+    const player = state.players.find((p) => p.id === queue[index]);
+    index += 1;
+    if (!player) continue;
+    const cards = cyclablePsycheCards(player);
+    if (!cards.length) {
+      addLog(state, `${player.name} has no Psyche to cycle.`);
+      continue;
+    }
+    pending.cycleIndex = index;
+    pending.cyclePlayerId = player.id;
+    pending.step = "cycle-hand";
+    pending.ui = {
+      type: "hand",
+      title: `${label} — ${player.name}`,
+      message: "Choose 1 Psyche to discard and draw a replacement:",
+      cards,
+    };
+    return { ui: pending.ui };
+  }
+
+  addLog(state, `${label} complete.`);
+  clearDreamerPower(state);
+  return { done: true };
+}
+
+function weaverPowerStart(state) {
+  state.pendingDreamerPower.cycleQueue = alivePlayers(state).map((p) => p.id);
+  state.pendingDreamerPower.cycleIndex = 0;
+  return advanceCycleStep(state, "Threads of Will");
+}
+
+function restedRefreshStart(state) {
+  state.pendingDreamerPower.cycleQueue = alivePlayers(state).map((p) => p.id);
+  state.pendingDreamerPower.cycleIndex = 0;
+  state.pendingDreamerPower.cycleMode = "bottom";
+  return advanceCycleStep(state, "The Rested");
+}
+
+function cycleHandCard(state, player, card, { toBottom = false } = {}) {
+  const idx = player.hand.findIndex((c) => c.instanceId === card.instanceId);
+  if (idx < 0) return false;
+
+  player.hand.splice(idx, 1);
+  if (toBottom) {
+    state.psycheDeck.push(card);
+    addLog(state, `${player.name} puts ${card.name || "Psyche"} on the bottom of the Psyche deck.`);
+  } else {
+    state.psycheDiscard.push(card);
+    addLog(state, `${player.name} discards ${card.name || "Psyche"}.`);
+  }
+
+  const drawn = drawPsycheForPlayer(state, player, 1);
+  if (!drawn.length) addLog(state, `${player.name} could not draw a replacement Psyche.`);
+  if (state.checkPsycheDeath) state.checkPsycheDeath(player);
+  return true;
+}
+
+function advanceVisionaryPeek(state) {
+  const pending = state.pendingDreamerPower;
+  const queue = pending.peekQueue || [];
+  const index = pending.peekIndex ?? 0;
+  if (index >= queue.length) {
+    clearDreamerPower(state);
+    return { done: true };
+  }
+  const player = state.players.find((p) => p.id === queue[index]);
+  pending.step = "peek-deck";
+  pending.peekPlayerId = player?.id;
+  pending.ui = {
+    type: "deck",
+    title: `The Visionary — ${player?.name || "Dreamer"}`,
+    message: "Peek at the top card of a deck:",
+  };
+  return { ui: pending.ui };
+}
+
+function showVisionaryPeekChoice(state, deckKey, card, dreamerName) {
+  rememberRevealedTops(state, deckKey, card);
+  setChoiceUI(
+    state,
+    `The Visionary — ${dreamerName}`,
+    `Top of ${formatDeckLabel(deckKey)}: ${card.name}${card.text ? ` — ${card.text}` : ""}`,
+    [
+      { id: "peek-keep", label: "Leave on top", hint: "Keep this card on top of the deck." },
+      { id: "peek-bottom", label: "Send to bottom", hint: "Move this card to the bottom of the deck." },
+    ],
+  );
+  state.pendingDreamerPower.step = "peek-resolve";
+  state.pendingDreamerPower.peekDeckKey = deckKey;
+  return { ui: state.pendingDreamerPower.ui };
+}
+
+export function canActivateDreamerPower(state, player) {
+  if (!player?.dreamer) return false;
+  switch (player.dreamer.id) {
+    case "the-hunter":
+      return allEncountersOnBoard(state).length > 0;
+    case "the-weaver":
+      return alivePlayers(state).some((p) => cyclablePsycheCards(p).length > 0);
+    default:
+      return true;
+  }
 }
 
 export function beginDreamerPower(state) {
@@ -293,34 +412,15 @@ export function beginDreamerPower(state) {
       runnerPowerStart(state);
       return { ui: state.pendingDreamerPower.ui };
     case "the-hunter":
-      return hunterPowerExecute(state);
+      return hunterPowerStart(state);
     case "the-immovable":
-      return immovablePowerStart(state);
+      return immovablePowerExecute(state);
     case "the-weaver":
       return weaverPowerStart(state);
     default:
       clearDreamerPower(state);
       return { done: true };
   }
-}
-
-function advanceVisionaryFlip(state) {
-  const pending = state.pendingDreamerPower;
-  const queue = pending.flipQueue || [];
-  const index = pending.flipIndex ?? 0;
-  if (index >= queue.length) {
-    clearDreamerPower(state);
-    return { done: true };
-  }
-  const player = state.players.find((p) => p.id === queue[index]);
-  pending.step = "flip-deck";
-  pending.flipPlayerId = player?.id;
-  pending.ui = {
-    type: "deck",
-    title: `The Visionary — ${player?.name || "Dreamer"}`,
-    message: "Flip and show the top card of a deck:",
-  };
-  return { ui: pending.ui };
 }
 
 export function resolveDreamerPowerChoice(state, choiceId) {
@@ -331,18 +431,12 @@ export function resolveDreamerPowerChoice(state, choiceId) {
 
   if (pending.dreamerId === "the-rested") {
     if (choiceId === "discard-draw") drawPsycheFromDiscardForAll(state);
-    else if (choiceId === "swap-archetype") swapActiveArchetype(state);
+    else if (choiceId === "refresh-hand") return restedRefreshStart(state);
     clearDreamerPower(state);
     return { done: true };
   }
 
   if (pending.dreamerId === "the-visionary") {
-    if (choiceId === "flip-decks") {
-      pending.flipQueue = alivePlayers(state).map((p) => p.id);
-      pending.flipIndex = 0;
-      pending.step = "flip-deck";
-      return advanceVisionaryFlip(state);
-    }
     if (choiceId === "reveal-landscapes") {
       const count = alivePlayers(state).length;
       if (!count || !revealableTiles(state).length) {
@@ -355,11 +449,27 @@ export function resolveDreamerPowerChoice(state, choiceId) {
       addLog(state, `Visionary Power: reveal ${count} Landscape(s) — click hidden tiles on the map.`);
       return { needsBoard: true };
     }
+    if (choiceId === "peek-decks") {
+      pending.peekQueue = alivePlayers(state).map((p) => p.id);
+      pending.peekIndex = 0;
+      return advanceVisionaryPeek(state);
+    }
+    if (pending.step === "peek-resolve") {
+      const player = state.players.find((p) => p.id === pending.peekPlayerId);
+      if (choiceId === "peek-bottom") {
+        sendTopToBottom(state, pending.peekDeckKey);
+        addLog(state, `${player?.name || "Dreamer"} sends the peeked card to the bottom.`);
+      } else {
+        addLog(state, `${player?.name || "Dreamer"} leaves the peeked card on top.`);
+      }
+      pending.peekIndex = (pending.peekIndex ?? 0) + 1;
+      return advanceVisionaryPeek(state);
+    }
   }
 
   if (pending.dreamerId === "the-runner") {
     const mover = choiceId === "toward-bed" ? stepTowardBed : stepAwayFromBed;
-    alivePlayers(state).forEach((p) => mover(state, p));
+    moveAllDreamers(state, mover, 2);
     addLog(state, choiceId === "toward-bed"
       ? "Runner Power: all Dreamers step toward The Bed."
       : "Runner Power: all Dreamers step away from The Bed.");
@@ -367,145 +477,57 @@ export function resolveDreamerPowerChoice(state, choiceId) {
     return { done: true };
   }
 
-  if (pending.dreamerId === "the-immovable") {
-    if (choiceId === "cancel-discard" && state.cancellableDiscard) {
-      const { playerId, card } = state.cancellableDiscard;
-      const player = state.players.find((p) => p.id === playerId);
-      if (player && card) {
-        player.hand.push(card);
-        addLog(state, `Immovable Power: returned ${card.name || "Psyche"} to ${player.name}.`);
-      }
-      state.cancellableDiscard = null;
-    } else if (choiceId === "cancel-move" && state.cancellableMove) {
-      const { playerId, fromId, fromName } = state.cancellableMove;
-      const player = state.players.find((p) => p.id === playerId);
-      if (player && fromId) {
-        player.landscapeId = fromId;
-        addLog(state, `Immovable Power: ${player.name} returns to ${fromName}.`);
-      }
-      state.cancellableMove = null;
-    }
+  if (pending.dreamerId === "the-hunter") {
+    const beasts = allEncountersOnBoard(state);
+    const mover = choiceId === "toward-dreamers"
+      ? moveEncounterTowardNearestDreamer
+      : moveEncounterAwayFromBed;
+    beasts.forEach(({ tile, encounter }) => mover(state, tile, encounter));
+    addLog(state, choiceId === "toward-dreamers"
+      ? "Hunter Power: each Dreambeast moves toward the nearest Dreamer."
+      : "Hunter Power: each Dreambeast moves away from The Bed.");
     clearDreamerPower(state);
     return { done: true };
-  }
-
-  if (pending.dreamerId === "the-weaver") {
-    const queue = pending.weaverQueue || [];
-    const index = pending.weaverIndex ?? 0;
-    const player = state.players.find((p) => p.id === queue[index]);
-    if (!player) {
-      pending.weaverIndex = index + 1;
-      return advanceWeaverStep(state);
-    }
-
-    if (choiceId === "weaver-skip") {
-      pending.weaverIndex = index + 1;
-      return advanceWeaverStep(state);
-    }
-    if (choiceId === "weaver-deck") {
-      pending.step = "weaver-pick-deck";
-      pending.weaverPlayerId = player.id;
-      pending.ui = {
-        type: "deck",
-        title: `${player.name} — trade with a deck`,
-        message: "Choose a deck to swap with the top card:",
-      };
-      return { ui: pending.ui };
-    }
-    if (choiceId === "weaver-subconscious") {
-      if (!player.hand.length) {
-        addLog(state, `${player.name} has no cards to trade.`);
-        pending.weaverIndex = index + 1;
-        return advanceWeaverStep(state);
-      }
-      if (!listSubconsciousCards(state).length) {
-        addLog(state, "The Subconscious is empty.");
-        pending.weaverIndex = index + 1;
-        return advanceWeaverStep(state);
-      }
-      const card = player.hand.pop();
-      repressCard(state, card);
-      addLog(state, `${player.name} Represses 1 card to trade with the Subconscious.`);
-      requestReturnCards(state, 1, player);
-      if (state.checkPsycheDeath) state.checkPsycheDeath(player);
-      pending.weaverIndex = index + 1;
-      return advanceWeaverStep(state);
-    }
   }
 
   clearDreamerPower(state);
   return { done: true };
 }
 
+export function resolveDreamerPowerHandPick(state, cardKey) {
+  const pending = state.pendingDreamerPower;
+  if (!pending || pending.step !== "cycle-hand") return { done: true };
+
+  const player = state.players.find((p) => p.id === pending.cyclePlayerId);
+  const card = cyclablePsycheCards(player).find(
+    (c) => c.instanceId === cardKey || c.id === cardKey,
+  );
+  if (!player || !card) {
+    addLog(state, "Invalid card choice.");
+    clearDreamerPower(state);
+    return { done: true };
+  }
+
+  cycleHandCard(state, player, card, { toBottom: pending.cycleMode === "bottom" });
+  pending.cycleIndex = pending.cycleIndex ?? 0;
+  const label = pending.dreamerId === "the-weaver" ? "Threads of Will" : "The Rested";
+  return advanceCycleStep(state, label);
+}
+
 export function resolveDreamerPowerDeckPick(state, deckKey) {
   const pending = state.pendingDreamerPower;
   if (!pending) return { done: true };
 
-  if (pending.dreamerId === "the-visionary" && pending.step === "flip-deck") {
-    const player = state.players.find((p) => p.id === pending.flipPlayerId);
-    const card = flipShowTopCard(state, deckKey, player?.name || "Dreamer");
-    pending.flipIndex = (pending.flipIndex ?? 0) + 1;
-    const next = advanceVisionaryFlip(state);
-    return { done: !!next.done, card, ui: next.ui };
-  }
-
-  if (pending.dreamerId === "the-weaver" && pending.step === "weaver-pick-deck") {
-    const player = state.players.find((p) => p.id === pending.weaverPlayerId);
-    if (!player?.hand.length) {
-      addLog(state, `${player?.name || "Dreamer"} has no card to trade.`);
-    } else {
-      const handCard = player.hand.pop();
-      const top = peekTopDeckCard(state, deckKey);
-      if (!top) {
-        player.hand.push(handCard);
-        addLog(state, "Deck is empty — trade cancelled.");
-      } else if (deckKey.startsWith("mindstream-")) {
-        const suit = deckKey.replace("mindstream-", "");
-        reshuffleMindstreamDiscardIfNeeded(state, suit);
-        const deck = state.mindstreamDecks[suit];
-        const drawn = deck.shift();
-        consumeRevealedTop(state, deckKey);
-        player.hand.push(drawn);
-        discardToMindstream(state, handCard);
-        addLog(state, `${player.name} trades with ${formatDeckLabel(deckKey)}.`);
-      } else if (deckKey === "psyche") {
-        const drawn = state.psycheDeck.shift();
-        consumeRevealedTop(state, "psyche");
-        if (drawn) {
-          player.hand.push(drawn);
-          state.psycheDiscard.push(handCard);
-          addLog(state, `${player.name} trades with the Psyche deck.`);
-        } else {
-          player.hand.push(handCard);
-        }
-      } else if (deckKey === "dream") {
-        const drawn = state.dreamDeck.shift();
-        consumeRevealedTop(state, "dream");
-        if (drawn) {
-          player.hand.push(drawn);
-          state.dreamDeck.unshift(handCard);
-          addLog(state, `${player.name} trades with the Dream deck.`);
-        } else {
-          player.hand.push(handCard);
-        }
-      } else if (deckKey === "archetype") {
-        const drawn = state.archetypeDeck.shift();
-        consumeRevealedTop(state, "archetype");
-        if (drawn) {
-          player.hand.push(drawn);
-          state.archetypeDeck.unshift(handCard);
-          addLog(state, `${player.name} trades with the Archetype deck.`);
-        } else {
-          player.hand.push(handCard);
-        }
-      } else {
-        player.hand.push(handCard);
-        addLog(state, "That deck cannot be traded with.");
-      }
-      if (state.checkPsycheDeath) state.checkPsycheDeath(player);
+  if (pending.dreamerId === "the-visionary" && pending.step === "peek-deck") {
+    const player = state.players.find((p) => p.id === pending.peekPlayerId);
+    const card = peekTopDeckCard(state, deckKey);
+    if (!card) {
+      addLog(state, `${formatDeckLabel(deckKey)} is empty.`);
+      pending.peekIndex = (pending.peekIndex ?? 0) + 1;
+      return advanceVisionaryPeek(state);
     }
-    pending.weaverIndex = (pending.weaverIndex ?? 0) + 1;
-    return advanceWeaverStep(state);
+    pending.peekDeckKey = deckKey;
+    return showVisionaryPeekChoice(state, deckKey, card, player?.name || "Dreamer");
   }
 
   clearDreamerPower(state);

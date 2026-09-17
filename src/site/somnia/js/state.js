@@ -201,6 +201,7 @@ export function createInitialState(data, options) {
     pendingDreamerPower: null,
     cancellableDiscard: null,
     cancellableMove: null,
+    anchorMeetSpreadBonus: 0,
     pendingDeathChoice: null,
     pendingNothingChoice: null,
     pendingObjectChoice: null,
@@ -516,6 +517,7 @@ export function resetPhaseFlags(state) {
   state.chaseDream = false;
   state.chaseTrapped = [];
   state.skipLandscapeActionsNextMeet = false;
+  state.anchorMeetSpreadBonus = 0;
 }
 
 export function beginRoundReveal(state) {
@@ -729,6 +731,7 @@ export function advancePhase(state) {
   if (phase === "Meet") {
     resolveEncounterFails(state);
     passHeadDreamer(state);
+    state.anchorMeetSpreadBonus = 0;
     state.round += 1;
     beginRoundReveal(state);
     return;

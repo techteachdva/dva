@@ -7,7 +7,7 @@
     "elasticity": 1,
     "willpower": 0,
     "flavor": "Though waves may break, my ship shall take me off to the Land of Nod.",
-    "power": "All Dreamers Draw top Psyche from Discard or Change Active Archetype."
+    "power": "All Dreamers Draw from Psyche Discard or Refresh: put 1 Psyche on the deck bottom and Draw 1."
   },
   {
     "id": "the-visionary",
@@ -17,7 +17,7 @@
     "elasticity": 0,
     "willpower": 1,
     "flavor": "Peer deep enough within yourself and you will find the seed of everything.",
-    "power": "Flip and show the top unrevealed card of 1 Deck, 1 per Dreamer, or Reveal 1 Landscape per Dreamer."
+    "power": "Reveal 1 Landscape per Dreamer, or each Dreamer Peeks at 1 deck top and may send it to the bottom."
   },
   {
     "id": "the-runner",
@@ -27,7 +27,7 @@
     "elasticity": 2,
     "willpower": 0,
     "flavor": "Nothing's faster than thought, and I *am* thought.",
-    "power": "All Dreamers Move 1 space towards or away from Bed/Final Recurrence."
+    "power": "All Dreamers Move 2 spaces toward or away from The Bed / Final Recurrence."
   },
   {
     "id": "the-hunter",
@@ -37,7 +37,7 @@
     "elasticity": 2,
     "willpower": 1,
     "flavor": "No Prey can escape my chase.",
-    "power": "Move each Active Dreambeast a number of Spaces equal to Dreamers."
+    "power": "Move each active Dreambeast 1 space toward the nearest Dreamer or away from The Bed."
   },
   {
     "id": "the-immovable",
@@ -47,7 +47,7 @@
     "elasticity": 0,
     "willpower": 2,
     "flavor": "Even Time stands still for those who wait long enough.",
-    "power": "All Dreamers Cancel a Discard or Forced Move."
+    "power": "Hold the Line: during the next Meet Phase, all Accept and Reject spreads gain +1 Psyche."
   },
   {
     "id": "the-weaver",
@@ -57,6 +57,6 @@
     "elasticity": 1,
     "willpower": 2,
     "flavor": "Strands of fate, woven as I will it.",
-    "power": "All Dreamers Trade up to 1 Card each with selves or Decks."
+    "power": "Threads of Will: each Dreamer Discards 1 Psyche and Draws 1."
   }
 ]

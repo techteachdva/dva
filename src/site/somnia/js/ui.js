@@ -1665,6 +1665,7 @@ export function renderMeetPoolGuide(state) {
   const acceptTotal = encounterPlayTotal(state, { accept: true });
   const rejectTotal = encounterPlayTotal(state, { accept: false });
   const bonus = state.pendingPowerBonus || 0;
+  const anchor = state.anchorMeetSpreadBonus || 0;
   const acceptCost = enc.accept;
   const rejectCost = encounterRejectCost(enc);
   const actor = meetPsycheActor(state);
@@ -1676,6 +1677,7 @@ export function renderMeetPoolGuide(state) {
     Select <strong>1–3 Psyche</strong> from ${actor?.name || "the Dreamer on this Encounter"}'s hand.
     ${encounterPayHint(enc, true)} ${encounterPayHint(enc, false)}
     ${bonus ? ` · <strong>+${bonus}</strong> from Power Token spread` : ""}
+    ${anchor ? ` · <strong>+${anchor}</strong> Hold the Line` : ""}
     · current <strong>${poolCount}/3</strong> cards
     <span class="meet-pool-targets">
       <span class="${acceptOk ? "meet-pool-ready" : ""}">Accept ${acceptTotal}/${acceptCost}</span>

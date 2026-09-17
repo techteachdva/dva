@@ -97,6 +97,7 @@ import { getLandscapePickHighlights, resolveStaleLandscapePick } from "./landsca
 import {
   resolveDreamerPowerChoice,
   resolveDreamerPowerDeckPick,
+  resolveDreamerPowerHandPick,
 } from "./dreamer-powers.js";
 import { resolveNothingChoice } from "./objects.js";
 import { resolveObjectChoice } from "./object-effects.js";
@@ -897,11 +898,10 @@ function showTutorialGraduationPanel() {
   body.innerHTML = `
     <div class="tutorial-graduate-panel">
       <h2>Tutorial complete</h2>
-      <p>You finished the guided walkthrough. What would you like to do next?</p>
+      <p>You finished the guided walkthrough. Replay it or return to the main menu.</p>
       <div class="utility-actions tutorial-graduate-actions">
         <button type="button" class="btn primary" id="tutorial-graduate-replay">Replay Tutorial</button>
         <button type="button" class="btn" id="tutorial-graduate-menu">Main Menu</button>
-        <button type="button" class="btn" id="tutorial-graduate-daydream">Start Daydream</button>
       </div>
     </div>
   `;
@@ -913,10 +913,6 @@ function showTutorialGraduationPanel() {
   body.querySelector("#tutorial-graduate-menu")?.addEventListener("click", () => {
     hideUtilityModal(true);
     returnToMainMenu();
-  });
-  body.querySelector("#tutorial-graduate-daydream")?.addEventListener("click", () => {
-    hideUtilityModal(true);
-    launchGentleDaydream();
   });
 
   modal.classList.remove("hidden");
@@ -1506,6 +1502,13 @@ function presentDreamerPowerUI(ui) {
     showDreamerPowerChoice(ui, (choiceId) => {
       dreamerPowerModalKey = null;
       processDreamerPowerResult(resolveDreamerPowerChoice(state, choiceId));
+    });
+    return;
+  }
+  if (ui.type === "hand") {
+    showObjectCardPicker(ui, (cardKey) => {
+      dreamerPowerModalKey = null;
+      processDreamerPowerResult(resolveDreamerPowerHandPick(state, cardKey));
     });
     return;
   }
