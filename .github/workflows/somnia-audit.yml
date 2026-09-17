@@ -29,6 +29,8 @@ jobs:
         run: node scripts/tutorial-flow-audit.mjs
       - name: Tutorial snapshot audit
         run: node scripts/tutorial-snapshot-audit.mjs
+      - name: Tutorial spotlight audit
+        run: node scripts/tutorial-spotlight-audit.mjs
       - name: Dreamer focus + radial audit
         run: node scripts/somnia-radial-focus-audit.mjs
       - name: Balance simulation smoke

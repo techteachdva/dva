@@ -3949,6 +3949,18 @@ function resolvePrimarySpotlightElement(step) {
       || document.querySelector('.hex-tile[data-tile-id="house"] .hex-occupant-beast');
   }
 
+  if (beat?.kind === "drawDream"
+    || beat?.kind === "revealLandscape"
+    || beat?.kind === "spendElasticity"
+    || beat?.kind === "gainMeetActions"
+    || beat?.kind === "completeQuest0"
+    || beat?.kind === "completeQuest1"
+    || beat?.kind === "landscapeActionA") {
+    const kind = beat.kind === "landscapeActionA" ? "landscapeActionA" : beat.kind;
+    return document.querySelector(`${tutorialPhaseActionSelector(kind)}:not(:disabled)`)
+      || document.querySelector(tutorialPhaseActionSelector(kind));
+  }
+
   const spotlightSel = getSpotlightSelector(step);
   if (!spotlightSel) return null;
 
@@ -3966,6 +3978,10 @@ function resolvePrimarySpotlightElement(step) {
 function resolveSpotlightElements(step) {
   const el = resolvePrimarySpotlightElement(step);
   if (el) return [el];
+  const beat = step?.spotlightBeat;
+  if (beat?.kind && beat.kind !== "dreamerSelect") {
+    return [];
+  }
   return resolveTutorialElements(step);
 }
 
@@ -4591,7 +4607,7 @@ export function getTutorialSpotlightRect() {
   return null;
 }
 
-function applyTutorialHighlight(stepOrTarget, { animateIn = true } = {}) {
+export function applyTutorialHighlight(stepOrTarget, { animateIn = true } = {}) {
   ensureTutorialSparkleLayer();
   clearTutorialHighlight({ keepLayer: true });
 
@@ -4749,7 +4765,7 @@ export function updateTutorialStepUI({
   if (step) {
     updateTutorialHeaderLabel(step, stepIndex, total, roundLabel);
     positionTutorialCard(step);
-    refreshTutorialSpotlight();
+    applyTutorialHighlight(step, { animateIn: false });
   } else {
     applyTutorialWindowGeometry();
   }

@@ -200,6 +200,7 @@ import {
   hideTutorial,
   getTutorialSpotlightRect,
   refreshTutorialSpotlight,
+  applyTutorialHighlight,
   bindUiRenderState,
   ensureTutorialStepTargetsVisible,
 } from "./ui.js";
@@ -997,7 +998,7 @@ function handleTutorialNext() {
     onBack: handleTutorialBack,
     onJump: handleTutorialJump,
   });
-  lastTutorialSyncKey = `${nextSync.stepIndex}:${nextSync.canAdvance}:${nextSync.step.id}`;
+  lastTutorialSyncKey = `${nextSync.stepIndex}:${nextSync.canAdvance}:${nextSync.step.id}:${nextSync.step.spotlightBeat?.kind || "none"}:${nextSync.objective}`;
 }
 
 function syncInteractiveTutorial() {
@@ -1020,7 +1021,8 @@ function syncInteractiveTutorial() {
   }
 
   const { step, stepIndex, total, canAdvance, round, objective } = sync;
-  const syncKey = `${stepIndex}:${canAdvance}:${step.id}:${objective}`;
+  const beatKind = step.spotlightBeat?.kind || "none";
+  const syncKey = `${stepIndex}:${canAdvance}:${step.id}:${beatKind}:${objective}`;
   const overlayOpen = !document.getElementById("tutorial-overlay")?.classList.contains("hidden");
 
   if (syncKey === lastTutorialSyncKey) {
@@ -1771,11 +1773,18 @@ function renderAll() {
   if (isInteractiveTutorialActive(state)) {
     const step = getTutorialStep(state);
     if (step) ensureTutorialStepTargetsVisible(step);
+    const tutorialSync = syncTutorial(state);
+    if (typeof window !== "undefined") {
+      window.__lastTutorialDecoratedStep = tutorialSync?.step || null;
+    }
     syncInteractiveTutorial();
-    refreshTutorialSpotlight();
     if (!flushDreamerBoardFocus()) {
       maybeFocusTutorialLandscape();
     }
+    requestAnimationFrame(() => {
+      const active = syncTutorial(state)?.step;
+      if (active) applyTutorialHighlight(active, { animateIn: false });
+    });
   } else {
     flushDreamerBoardFocus();
   }
