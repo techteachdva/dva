@@ -995,7 +995,7 @@ export const TUTORIAL_SCRIPT = [
     id: "welcome",
     round: 1,
     title: "Welcome to Somnia",
-    body: "Every round is Reveal, Explore, Meet. Flip wasteland into Landscapes, walk onto them, then Meet: draw Mindstream (luck, good and bad) or deal with Dreambeasts. Once the map is open, chase the Active Archetype's quests. Click only the highlights. Overview and Tips hold the rest of the rules - you will learn the cards by playing.",
+    body: "Every round is Reveal, Explore, Meet. Flip wasteland into Landscapes, walk onto them, then Meet: draw Mindstream (luck, good and bad) or deal with Dreambeasts. Once the map is open, chase the Active Archetype's quests. Click only the highlights. The ? Dream Guide and Tips hold the rest of the rules — you will learn the cards by playing.",
     targets: ["#active-archetype", "#phase-stepper"],
     spotlight: "#active-archetype",
   },

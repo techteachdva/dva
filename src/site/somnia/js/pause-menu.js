@@ -20,7 +20,7 @@ import {
 } from "./audio.js";
 import { applyLayout, resetPanelLayout, setViewMode } from "./panel-layout.js";
 import { validateScoreName } from "./highscores.js";
-import { showOverviewModal, showRulesModal, showRulesReferenceModal } from "./ui.js";
+import { showDreamFeedModal } from "./ui.js";
 
 let open = false;
 let onResume = null;
@@ -248,9 +248,7 @@ function renderHelpTab() {
     <div class="pause-section">
       <h3>Learn &amp; reference</h3>
       <div class="pause-btn-row pause-btn-col">
-        <button type="button" class="btn" id="pause-overview">Overview</button>
-        <button type="button" class="btn" id="pause-rules">Details</button>
-        <button type="button" class="btn" id="pause-rem">R.E.M. phases</button>
+        <button type="button" class="btn" id="pause-info-hub">Dream Guide</button>
         <button type="button" class="btn" id="pause-tutorial">Tips</button>
       </div>
     </div>
@@ -334,17 +332,9 @@ function showTab(tabId) {
     bindGameControls(body);
   } else if (tabId === "help") {
     body.innerHTML = renderHelpTab();
-    body.querySelector("#pause-overview")?.addEventListener("click", () => {
+    body.querySelector("#pause-info-hub")?.addEventListener("click", () => {
       closePauseMenu();
-      showOverviewModal();
-    });
-    body.querySelector("#pause-rules")?.addEventListener("click", () => {
-      closePauseMenu();
-      showRulesModal();
-    });
-    body.querySelector("#pause-rem")?.addEventListener("click", () => {
-      closePauseMenu();
-      showRulesReferenceModal("rem");
+      showDreamFeedModal();
     });
     body.querySelector("#pause-tutorial")?.addEventListener("click", () => {
       closePauseMenu();

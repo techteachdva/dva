@@ -874,7 +874,7 @@ function handleTutorialSkip() {
   narrate(
     state,
     "Practice table",
-    "The Guide strip at the top of the map shows the next step. Return to the menu when you want a real Daydream.",
+    "Open ? for the Dream Guide anytime. Return to the menu when you want a real Daydream.",
   );
   renderAll();
 }

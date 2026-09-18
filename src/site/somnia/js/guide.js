@@ -63,8 +63,8 @@ export const TUTORIAL_STEPS = [
   {
     id: "done",
     title: "You're Ready",
-    body: "The Guide strip at the top of the map shows your next step. Open Overview or Help for the three-page rules reference (Overview · R.E.M. · Details). Good luck escaping the Dreamscape!",
-    target: "#guide-panel",
+    body: "Open ? anytime for the Dream Feed and a concise rules hub. Good luck escaping the Dreamscape!",
+    target: "#btn-dream-feed",
   },
 ];
 
@@ -409,13 +409,6 @@ export const RULES_TAB_INTRO = "intro";
 export const RULES_TAB_REM = "rem";
 export const RULES_TAB_DETAILS = "details";
 
-const RULES_TABS = [
-  { id: RULES_TAB_FEED, label: "Dream Feed" },
-  { id: RULES_TAB_INTRO, label: "Overview" },
-  { id: RULES_TAB_REM, label: "R.E.M." },
-  { id: RULES_TAB_DETAILS, label: "Details" },
-];
-
 /** Short welcome shown before the interactive tutorial walkthrough. */
 export function tutorialBriefHtml() {
   return `
@@ -483,7 +476,7 @@ export function rulesIntroHtml() {
         <p>Use the <strong>R.E.M.</strong> tab for the three phases in depth. Use <strong>Details</strong> for encounters, death, bosses, objects, Mindstream, and Final Recurrence. The in-game <strong>Guide</strong> panel shows your next step every turn.</p>
       </section>
 
-            <p class="overview-footer">Somnia v 18.6 — cooperative rules reference.</p>
+            <p class="overview-footer">Somnia v 19.0 — cooperative rules reference.</p>
       ${footerCreditsHtml()}
     </div>
   `;
@@ -617,30 +610,63 @@ export function rulesDetailsHtml() {
   `;
 }
 
-/** Tabbed rules reference shell — activeTab is intro | rem | details. */
-export function rulesReferenceHtml(activeTab = RULES_TAB_FEED, options = {}) {
+/** Full-screen info hub: live Dream Feed plus a concise rules digest. */
+export function infoHubHtml(options = {}) {
   const { feedHtml = "<p class=\"dream-feed-empty\">Start a game to see the dream feed.</p>" } = options;
-  const tabs = RULES_TABS.map(
-    (t) => `<button type="button" class="rules-reference-tab${t.id === activeTab ? " active" : ""}" data-rules-tab="${t.id}">${t.label}</button>`,
-  ).join("");
-
-  const pages = [
-    { id: RULES_TAB_FEED, html: feedHtml },
-    { id: RULES_TAB_INTRO, html: rulesIntroHtml() },
-    { id: RULES_TAB_REM, html: rulesRemHtml() },
-    { id: RULES_TAB_DETAILS, html: rulesDetailsHtml() },
-  ]
-    .map(
-      (p) => `<div class="rules-reference-panel${p.id === activeTab ? " active" : ""}" data-rules-panel="${p.id}">${p.html}</div>`,
-    )
-    .join("");
-
   return `
-    <div class="rules-reference">
-      <nav class="rules-reference-tabs" aria-label="Rules sections">${tabs}</nav>
-      <div class="rules-reference-panels">${pages}</div>
+    <div class="info-hub">
+      <header class="info-hub-header">
+        <div class="info-hub-brand">
+          <p class="info-hub-kicker">Somnia v 19.0</p>
+          <h2>Dream Guide</h2>
+          <p class="info-hub-lead">What just happened, and the rules you need to wake up.</p>
+        </div>
+        <button type="button" class="btn primary info-hub-play" data-info-hub-play>PLAY</button>
+      </header>
+      <div class="info-hub-grid">
+        <section class="info-hub-feed" aria-label="Dream Feed">
+          ${feedHtml}
+        </section>
+        <section class="info-hub-rules" aria-label="Rules highlights">
+          <div class="info-hub-rule">
+            <h3>Win &amp; Lose</h3>
+            <p><strong>Win:</strong> finish both Active Archetype quests (1 Power Token each), <strong>Acquire</strong> for 1–3 points, and repeat to your goal (<strong>12 / 18 / 24</strong>). Then every living Dreamer stands on <strong>The Bed</strong>.</p>
+            <p><strong>Lose:</strong> the Dream Deck empties first (<strong>14 / 17 / 21</strong> Dreams). In Final Recurrence you lose if Dreams run out while remaining Archetypes still stand.</p>
+          </div>
+          <div class="info-hub-rule">
+            <h3>Play Together</h3>
+            <p>${COOP_PLAY_TIP} One Dreamer opens each phase with <strong>1–2 suited Psyche</strong> (or <strong>1 Power Token as 1 Psyche</strong>). Budget = card values + that Dreamer's matching stat.</p>
+          </div>
+          <div class="info-hub-rule info-hub-rem">
+            <h3>R.E.M. — Every Round</h3>
+            <ul>
+              <li class="suit-lucidity"><strong>Reveal</strong> — Head (★) draws a Dream. Spend Lucidity to flip Wastelands into Landscapes.</li>
+              <li class="suit-elasticity"><strong>Explore</strong> — Spend Elasticity for shared moves. Entering Wasteland discards 1 Psyche.</li>
+              <li class="suit-willpower"><strong>Meet</strong> — Spend Willpower for shared actions: Encounters, Landscape A/B, Trade, or End Round. Each Dreamer may take each action once. Unresolved Encounters fail.</li>
+            </ul>
+          </div>
+          <div class="info-hub-rule">
+            <h3>Encounters</h3>
+            <p>Only the Dreamer on the tile may Meet and pool up to <strong>3 Psyche</strong>. <strong>Accept</strong> meets the threshold and the beast joins as a 3-value ally (Accept ≥ 10 draws an Object). <strong>Repress</strong> meets Reject and pays that reward. Fail at Meet end: lose Psyche. Each beast still on the map costs <strong>1 Power Token</strong> at round end — or a Dream card frays.</p>
+          </div>
+          <div class="info-hub-rule">
+            <h3>Hands, Tokens &amp; Objects</h3>
+            <p>Max <strong>10 Psyche</strong>. Wild (5) is any suit. Power Surge stays in hand — click anytime for 1 Power Token. Tokens cap at <strong>24</strong>: quests, powers, phase openers, Persistent Objects, Timeline hunger, and death. Instant Objects are free in Meet; Persistent cost 1 Token to activate.</p>
+          </div>
+          <div class="info-hub-rule">
+            <h3>Death &amp; Final Recurrence</h3>
+            <p>At 0 Psyche, spend Power Tokens to draw 1 and live, or die: return to The Bed with 4/3/2/1 Psyche. Fifth death is permanent. Forget every outer Landscape — or draw <strong>The Final Recurrence</strong> — to start the endgame. Defeat remaining Archetypes with <strong>≥ 12</strong> pooled Psyche including the opposing suit, or sacrifice acquired Archetypes 1:1. Last card: <strong>You Never Wake Up</strong>.</p>
+          </div>
+          <p class="info-hub-footer">Landscapes are named in their suit color — Lucidity, Elasticity, Willpower. Action A draws that Mindstream; Action B is the tile's unique Meet action.</p>
+        </section>
+      </div>
     </div>
   `;
+}
+
+/** @deprecated Tabs were replaced by the v19 info hub. */
+export function rulesReferenceHtml(_activeTab = RULES_TAB_FEED, options = {}) {
+  return infoHubHtml(options);
 }
 
 /** @deprecated Use rulesIntroHtml — kept for imports that expect overviewHtml. */

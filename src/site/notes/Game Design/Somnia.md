@@ -17,14 +17,14 @@ A cooperative psychic adventure — escape the collapsing Dreamscape before time
 New players should start in **Tutorial Mode** (two guided rounds), then a **Daydream**.
 
 1. **Tutorial** — Visionary + Immovable, Quiet Dreams, The Innocent. Round 1 teaches Reveal / Explore / Meet and Accept. Round 2 teaches Landscape Action A, quest marks, and Acquire.
-2. **First Daydream** — 12 points, 14 Dreams. The first game pins Innocent and a Quiet opening Dream. The Guide strip at the top of the map names the next step.
+2. **First Daydream** — 12 points, 14 Dreams. The first game pins Innocent and a Quiet opening Dream. Open ? for the Dream Feed and a concise rules hub.
 3. **Win** — Reach the point goal, then get every living Dreamer onto **The Bed**. **Lose** if the Dream Deck empties first.
 
 Recommended first pair: **The Visionary** (Lucidity) and **The Immovable** (Willpower). Elasticity comes from the cards in hand.
 
-Bosses, death, Objects, Trade, and Final Recurrence are in Overview → Details. They are not on the required tutorial path.
+Bosses, death, Objects, Trade, and Final Recurrence are in the ? Dream Guide. They are not on the required tutorial path.
 
-Live rules match Somnia **v 18.6** (`src/site/somnia/js/guide.js`).
+Live rules match Somnia **v 19.0** (`src/site/somnia/js/guide.js`).
 
 <iframe
     src="/somnia/"

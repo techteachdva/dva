@@ -52,13 +52,10 @@ import {
   getTutorialRevealTargetId,
   tutorialPhaseActionSelector,
 } from "./tutorial-mode.js";
-import { getNarratorView, listPhaseActionHints } from "./narrator.js";
+import { getNarratorView } from "./narrator.js";
 import {
-  getCurrentObjective,
   rulesReferenceHtml,
   RULES_TAB_FEED,
-  RULES_TAB_INTRO,
-  RULES_TAB_DETAILS,
   getDreamerChipTooltip,
 } from "./guide.js";
 import {
@@ -1083,6 +1080,7 @@ function prepareCardChoiceModal() {
     "dreamer-detail-modal",
     "phase-skip-modal",
     "rules-reference-modal",
+    "info-hub-modal",
   );
   content?.classList.add("card-choice-modal-wrap");
   document.body.classList.add("utility-modal-open");
@@ -1396,11 +1394,6 @@ export function renderBoard(
         : showFace
           ? tile.name
           : "Wasteland";
-    const suitLabel = tutorialRevealTarget
-      ? "click to reveal"
-      : showFace
-        ? (tile.suit || "neutral")
-        : "hidden";
     el.setAttribute(
       "aria-label",
       tutorialRevealTarget
@@ -1444,7 +1437,6 @@ export function renderBoard(
       ${occupantsHtml}
       ${revealCueHtml}
       <div class="name">${displayName}</div>
-      <div class="suit">${suitLabel}</div>
       <div class="tokens">${occupants.map((p) => p.dreamer.name.split(" ").pop()).join(" · ")} ${encounterMark}${encounters.length ? ` ${encounters.map((e) => e.name.split(" ")[0]).join(" · ")}` : ""}${finalMark}${finalArch && !finalArch.defeated ? ` ${finalArch.name.split(" ")[0]}` : ""}</div>
     `;
 
@@ -2253,50 +2245,12 @@ export function renderPhaseStepper(state) {
   }).join("");
 }
 
-function formatGuideStep(text) {
-  return text.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-}
-
-export function renderGuidePanel(state, actions = []) {
+export function renderGuidePanel() {
   const el = document.getElementById("guide-panel");
   if (!el) return;
-  const hideGuide = !state
-    || (state.tutorialMode && !state.tutorialComplete)
-    || state.status !== "playing";
-  const obj = hideGuide ? null : getCurrentObjective(state);
-  if (!obj) {
-    el.innerHTML = "";
-    el.classList.add("hidden");
-    el.setAttribute("hidden", "");
-    return;
-  }
-  el.classList.remove("hidden");
-  el.removeAttribute("hidden");
-
-  const stepsHtml = obj.steps
-    .map((s, i) => `<li class="${i === 0 ? "current" : ""}">${formatGuideStep(s)}</li>`)
-    .join("");
-  const tip = obj.tip ? `<p class="guide-tip">${obj.tip}</p>` : "";
-  const actionHints = listPhaseActionHints(state, actions);
-  const actionsHtml = actionHints.length
-    ? `<div class="guide-actions"><h4>Available now</h4><ul>${actionHints.map((h) => `<li>${formatGuideStep(h)}</li>`).join("")}</ul></div>`
-    : "";
-
-  const suitKey = obj.suit || null;
-  const suitHeader = suitKey
-    ? `<span class="guide-icon">${suitIconHtml(suitKey, { size: 16 })}</span>`
-    : "";
-
-  el.innerHTML = `
-    <div class="guide-header${suitKey ? ` suit-${suitKey}` : ""}">
-      ${suitHeader}
-      <span class="guide-title">${obj.title}</span>
-      <span class="guide-phase-tag">${obj.phase} Phase</span>
-    </div>
-    <ol class="guide-steps">${stepsHtml}</ol>
-    ${tip}
-    ${actionsHtml}
-  `;
+  el.innerHTML = "";
+  el.classList.add("hidden");
+  el.setAttribute("hidden", "");
 }
 
 export function renderNarratorPanel(_state) {
@@ -2460,47 +2414,33 @@ export function renderPhaseActions(actions, advanceAction = null, state = null) 
   }
 }
 
-function bindRulesReferenceTabs(root) {
-  root.querySelectorAll("[data-rules-tab]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const tab = btn.dataset.rulesTab;
-      root.querySelectorAll("[data-rules-tab]").forEach((b) => {
-        b.classList.toggle("active", b.dataset.rulesTab === tab);
-      });
-      root.querySelectorAll("[data-rules-panel]").forEach((panel) => {
-        panel.classList.toggle("active", panel.dataset.rulesPanel === tab);
-      });
-      if (tab === RULES_TAB_FEED && uiRenderState) {
-        const feedPanel = root.querySelector('[data-rules-panel="feed"]');
-        if (feedPanel) feedPanel.innerHTML = buildDreamFeedHtml(uiRenderState);
-      }
-    });
-  });
-}
-
-export function showRulesReferenceModal(activeTab = RULES_TAB_INTRO, state = null) {
+export function showRulesReferenceModal(_activeTab = RULES_TAB_FEED, state = null) {
   const modal = document.getElementById("utility-modal");
   const content = modal?.querySelector(".utility-content");
   const body = document.getElementById("utility-modal-body");
   if (!modal || !body) return;
   content?.classList.remove("fullscreen-browser");
-  content?.classList.add("rules-reference-modal");
-  const feedHtml = state ? buildDreamFeedHtml(state) : undefined;
-  body.innerHTML = `<div class="rules-modal">${rulesReferenceHtml(activeTab, { feedHtml })}</div>`;
-  bindRulesReferenceTabs(body);
-  modal.classList.remove("hidden");
+  content?.classList.add("rules-reference-modal", "info-hub-modal");
+  const feedState = state || uiRenderState;
+  const feedHtml = feedState ? buildDreamFeedHtml(feedState) : undefined;
+  body.innerHTML = `<div class="rules-modal">${rulesReferenceHtml(RULES_TAB_FEED, { feedHtml })}</div>`;
+  body.querySelector("[data-info-hub-play]")?.addEventListener("click", () => hideUtilityModal(true));
+  const closeBtn = modal.querySelector(".utility-close");
+  if (closeBtn) closeBtn.hidden = true;
+  modal.classList.remove("hidden", "utility-modal-minimized");
+  document.body.classList.add("utility-modal-open");
 }
 
-export function showDreamFeedModal(state, activeTab = RULES_TAB_FEED) {
-  showRulesReferenceModal(activeTab, state);
+export function showDreamFeedModal(state) {
+  showRulesReferenceModal(RULES_TAB_FEED, state);
 }
 
 export function showRulesModal(state = null) {
-  showRulesReferenceModal(RULES_TAB_DETAILS, state);
+  showRulesReferenceModal(RULES_TAB_FEED, state);
 }
 
 export function showOverviewModal(state = null) {
-  showRulesReferenceModal(RULES_TAB_INTRO, state);
+  showRulesReferenceModal(RULES_TAB_FEED, state);
 }
 
 function formatMomentHistoryTime(at) {
@@ -2527,7 +2467,7 @@ export function showMomentHistoryModal() {
   const content = modal?.querySelector(".utility-content");
   const body = document.getElementById("utility-modal-body");
   if (!modal || !body) return;
-  content?.classList.remove("fullscreen-browser", "rules-reference-modal");
+  content?.classList.remove("fullscreen-browser", "rules-reference-modal", "info-hub-modal");
   body.innerHTML = `
     <div class="moment-history-page">
       <h3 class="dream-feed-label">Dream moments</h3>
@@ -3290,7 +3230,7 @@ export function showSubconsciousBrowse(state, onCardClick) {
   const content = modal?.querySelector(".utility-content");
   const body = document.getElementById("utility-modal-body");
   const count = subconsciousCount(state.subconscious);
-  content?.classList.remove("rules-reference-modal", "dreamer-detail-modal");
+  content?.classList.remove("rules-reference-modal", "info-hub-modal", "dreamer-detail-modal");
   content?.classList.add("fullscreen-browser");
   body.innerHTML = `
     <header class="fullscreen-browser-header">
@@ -3341,6 +3281,7 @@ export function hideUtilityModal(force = false) {
     "dreamer-power-modal-wrap",
     "phase-skip-modal",
     "rules-reference-modal",
+    "info-hub-modal",
     "fullscreen-browser",
     "card-choice-modal-wrap",
     "somnia-changelog-modal-wrap",
@@ -3809,6 +3750,7 @@ export function showLandscapeDetail(state, tileId) {
     "dreamer-power-modal-wrap",
     "phase-skip-modal",
     "rules-reference-modal",
+    "info-hub-modal",
   );
   shell?.classList.add("landscape-detail-modal");
   modal.classList.remove("hidden");
