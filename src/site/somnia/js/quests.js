@@ -98,6 +98,12 @@ const QUEST_CHECKS = {
   "1 dreamer holds 10 psyche cards": (_t, state) => anyDreamerPsycheHand(state, 10),
   "draw mindstream on the attic": (t) => t.mindstreamOnLandscape["the-attic"],
   "draw mindstream on the basement": (t) => t.mindstreamOnLandscape["the-basement"],
+  "meet a dreambeast on the attic or the basement": (t) =>
+    meetOnAny(t, ["the-attic", "the-basement"]),
+  "meet a dreambeast on naked classroom or candy mountain": (t) =>
+    meetOnAny(t, ["naked-classroom", "candy-mountain"]),
+  "meet a dreambeast on desert or silver mist": (t) =>
+    meetOnAny(t, ["desert", "silver-mist"]),
   "draw mindstream on awards or the party": (t) =>
     mindstreamOnAny(t, ["awards", "the-party"]),
   "meet a dreambeast on awards or the party": (t) =>
@@ -179,6 +185,9 @@ export function isQuestConditionMet(state, archetypeId, questText) {
 const QUEST_LANDSCAPE_HINTS = {
   "draw mindstream on the attic": ["the-attic"],
   "draw mindstream on the basement": ["the-basement"],
+  "meet a dreambeast on the attic or the basement": ["the-attic", "the-basement"],
+  "meet a dreambeast on naked classroom or candy mountain": ["naked-classroom", "candy-mountain"],
+  "meet a dreambeast on desert or silver mist": ["desert", "silver-mist"],
   "draw mindstream on awards or the party": ["awards", "the-party"],
   "meet a dreambeast on awards or the party": ["awards", "the-party"],
   "draw mindstream on sea of teeth or field of broken glass": ["sea-of-teeth", "field-of-broken-glass"],

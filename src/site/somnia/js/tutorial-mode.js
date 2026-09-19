@@ -203,6 +203,12 @@ export function createTutorialBaseState(data) {
       type: "dreambeast",
       instanceId: tutorialUid("enc-mandrake"),
     });
+    setEncounterOnLandscape(state, "the-basement", {
+      ...mandrake,
+      name: "Mandrake",
+      type: "dreambeast",
+      instanceId: tutorialUid("enc-mandrake-basement"),
+    });
   }
 
   stabilizeTutorialDecks(state);
@@ -950,8 +956,9 @@ function innocentAtticDone(state) {
   return !!state.questTracker?.mindstreamOnLandscape?.["the-attic"];
 }
 
-function innocentBasementDone(state) {
-  return !!state.questTracker?.mindstreamOnLandscape?.["the-basement"];
+function innocentMeetQuestDone(state) {
+  const meets = state.questTracker?.meetOnLandscape || {};
+  return (meets["the-attic"] || 0) > 0 || (meets["the-basement"] || 0) > 0;
 }
 
 function innocentQuestsMarked(state) {
@@ -1079,7 +1086,7 @@ export const TUTORIAL_SCRIPT = [
     round: 2,
     title: "Now Chase the Archetype",
     body: "",
-    objective: "The Innocent wants Mindstream on The Attic and The Basement.",
+    objective: "The Innocent wants Mindstream on The Attic and a Dreambeast Met on The Attic or The Basement.",
     targets: ["#active-archetype", "#board-viewport"],
     spotlight: "#board-viewport",
   },
@@ -1121,13 +1128,10 @@ export const TUTORIAL_SCRIPT = [
   {
     id: "r2-meet",
     round: 2,
-    title: "Round 2 - Draw Mindstream",
+    title: "Round 2 - Quest Landscapes",
     body: "",
     targets: ["#board-viewport"],
     rail: [
-      { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Immovable on the board." },
-      { kind: "handToggle", playerIndex: 1, cardId: "willpower-3-i-w3", prompt: "Select Willpower 3." },
-      { kind: "gainMeetActions", prompt: "Click The Immovable on the board, then Gain Actions." },
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on The Attic." },
       {
         kind: "landscapeActionA",
@@ -1137,15 +1141,21 @@ export const TUTORIAL_SCRIPT = [
         prompt: "Click The Visionary on The Attic, then Action A (Draw Lucidity Mindstream).",
       },
       { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Immovable on The Basement." },
+      { kind: "handToggle", playerIndex: 1, cardId: "willpower-3-i-w3", prompt: "Select Willpower 3." },
+      { kind: "gainMeetActions", prompt: "Click The Immovable on The Basement, then Gain Actions." },
       {
-        kind: "landscapeActionA",
+        kind: "handToggle",
         playerIndex: 1,
-        landscapeId: "the-basement",
-        done: (s) => innocentBasementDone(s),
-        prompt: "Click The Immovable on The Basement, then Action A (Draw Willpower Mindstream).",
+        cardIds: ["elasticity-3-i-e3", "elasticity-2-i-e2"],
+        prompt: "Select Elasticity 3 and Elasticity 2 for Accept.",
+      },
+      {
+        kind: "meetAccept",
+        done: (s) => innocentMeetQuestDone(s),
+        prompt: "Click The Immovable or the Dreambeast on The Basement, then Accept.",
       },
     ],
-    until: (s) => atRound(s, 2) && innocentAtticDone(s) && innocentBasementDone(s),
+    until: (s) => atRound(s, 2) && innocentAtticDone(s) && innocentMeetQuestDone(s),
   },
   {
     id: "r2-acquire",

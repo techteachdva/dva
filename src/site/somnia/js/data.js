@@ -45,8 +45,8 @@ function enrichMindstreamEvents(mindstream, catalog) {
 }
 
 export const LENGTHS = {
-  daydream: { label: "Daydream", points: 12, dreams: 11 },
-  nap: { label: "Nap", points: 18, dreams: 14 },
+  daydream: { label: "Daydream", points: 8, dreams: 11 },
+  nap: { label: "Nap", points: 12, dreams: 14 },
   deep: { label: "Deep Sleep", points: 24, dreams: 18 },
 };
 

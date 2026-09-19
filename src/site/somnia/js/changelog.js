@@ -5,10 +5,18 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "22.0";
+export const SOMNIA_VERSION = "22.1";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "22.1",
+    title: "Archetype goals 8/12/24 & meet quests on 1-point Archetypes",
+    notes: [
+      "Victory goals are now 8 (Daydream), 12 (Nap), and 24 (Deep Sleep — the maximum if you acquire every Archetype: three 1-pt, six 2-pt, three 3-pt).",
+      "Innocent, Orphan, and Outlaw now require Meeting a Dreambeast on their quest Landscapes (not just Mindstream draws).",
+    ],
+  },
   {
     version: "22.0",
     title: "Final Nightmare — recurrence pressure & Meet toll",
