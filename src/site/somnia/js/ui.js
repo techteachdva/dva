@@ -69,7 +69,7 @@ import {
 import { BOSS_DREAM_DECK_SLOTS } from "./data.js";
 import { consumeBoardClickSuppression, getBoardZoom, cancelPendingBoardGesture, suppressNextBoardClick, isBoardCameraBusy } from "./board-zoom.js";
 import { bindLongPress, bindInspectGesture } from "./pointer-gestures.js";
-import { prefersTouchUi } from "./device-mode.js";
+import { prefersTouchUi, getCapabilityProfile } from "./device-mode.js";
 import { getMomentHistory, flashMoment } from "./moment-overlay.js";
 import { isBeastTokenHidden, isDreamerTokenHidden } from "./board-fx.js";
 import { powerTokensInPool, MAX_POWER_TOKEN_POOL } from "./power-tokens.js";
@@ -4101,9 +4101,9 @@ function inferTutorialCardDock(step) {
   return "bottom";
 }
 
-const TUTORIAL_WINDOW_STORAGE_KEY = "somnia_tutorial_window_v2";
-const TUTORIAL_WINDOW_MIN_WIDTH = 320;
-const TUTORIAL_WINDOW_MIN_HEIGHT = 180;
+const TUTORIAL_WINDOW_STORAGE_KEY = "somnia_tutorial_window_v3";
+const TUTORIAL_WINDOW_MIN_WIDTH = 240;
+const TUTORIAL_WINDOW_MIN_HEIGHT = 160;
 const TUTORIAL_WINDOW_MARGIN = 12;
 
 let tutorialWindowChromeReady = false;
@@ -4137,15 +4137,22 @@ function saveTutorialWindowState() {
 function defaultTutorialWindowState() {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  const width = Math.min(720, Math.max(420, Math.round(vw * 0.38)));
+  const { form } = getCapabilityProfile();
+  const phone = form === "phone";
+  const tablet = form === "tablet";
+  const width = phone
+    ? Math.max(TUTORIAL_WINDOW_MIN_WIDTH, vw - TUTORIAL_WINDOW_MARGIN * 2)
+    : tablet
+      ? Math.min(340, Math.max(260, Math.round(vw * 0.3)))
+      : Math.min(720, Math.max(420, Math.round(vw * 0.38)));
   return {
     left: TUTORIAL_WINDOW_MARGIN,
-    top: TUTORIAL_WINDOW_MARGIN + 64,
+    top: phone ? Math.max(TUTORIAL_WINDOW_MARGIN, Math.round(vh * 0.08)) : TUTORIAL_WINDOW_MARGIN + 64,
     width,
-    height: null,
+    height: phone ? Math.min(280, Math.round(vh * 0.36)) : tablet ? Math.min(420, Math.round(vh * 0.48)) : null,
     minimized: false,
     userPositioned: false,
-    userResized: false,
+    userResized: phone || tablet,
   };
 }
 

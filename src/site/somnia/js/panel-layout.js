@@ -1,4 +1,5 @@
 import { loadSettings, saveSettings, VIEW_PRESETS } from "./audio-settings.js";
+import { getCapabilityProfile } from "./device-mode.js";
 
 const MIN = { sidebarW: 120, handH: 80, chromeH: 48, footerH: 56 };
 const MAX = { sidebarW: 480, handH: 400, chromeH: 120, footerH: 220 };
@@ -32,18 +33,31 @@ function widthBand(w) {
 /** Layout metrics derived from the actual CSS viewport (includes OS display scaling). */
 export function computeViewportMetrics() {
   const { w, h, dpr } = readViewport();
+  const { form, orientation } = getCapabilityProfile();
+  const compact = form === "phone" || form === "tablet";
+  const phone = form === "phone";
   const widthScale = w / 1600;
   const heightScale = h / 900;
-  const uiScale = Number(clamp(Math.min(widthScale, heightScale), 0.7, 1.08).toFixed(3));
+  const uiScale = Number(clamp(
+    Math.min(widthScale, heightScale),
+    phone ? 0.78 : 0.7,
+    phone ? 0.92 : 1.08,
+  ).toFixed(3));
 
-  const chromeH = Math.round(clamp(h * 0.055, 44, 58));
-  const sidebarW = Math.round(clamp(w * 0.2, 196, 340));
-  const maxHand = Math.round(h * 0.46);
-  const minBoard = Math.round(h * 0.44);
-  const handH = Math.round(clamp(h * 0.30, 168, Math.min(maxHand, h - chromeH - minBoard)));
-  const dockBudget = Math.round(handH * 0.58);
-  const btnH = Math.round(clamp((dockBudget - 36) / 3, 34, 64));
-  const btnFs = Number(clamp(btnH / 40, 0.82, 1.55).toFixed(2));
+  const chromeH = Math.round(clamp(h * (phone ? 0.048 : 0.055), phone ? 40 : 44, phone ? 48 : 58));
+  const sidebarW = phone || (form === "tablet" && orientation === "portrait")
+    ? 0
+    : Math.round(clamp(w * (compact ? 0.18 : 0.2), compact ? 168 : 196, compact ? 228 : 340));
+  const maxHand = Math.round(h * (phone ? 0.28 : compact ? 0.26 : 0.46));
+  const minBoard = Math.round(h * (phone ? 0.52 : compact ? 0.5 : 0.44));
+  const handH = Math.round(clamp(
+    h * (phone ? 0.22 : compact ? 0.2 : 0.30),
+    phone ? 128 : compact ? 140 : 168,
+    Math.min(maxHand, h - chromeH - minBoard),
+  ));
+  const dockBudget = Math.round(handH * (phone ? 0.48 : 0.58));
+  const btnH = Math.round(clamp((dockBudget - 36) / 3, phone ? 32 : 34, phone ? 44 : 64));
+  const btnFs = Number(clamp(btnH / 40, 0.78, 1.55).toFixed(2));
 
   return {
     w,
@@ -53,30 +67,41 @@ export function computeViewportMetrics() {
     sidebarW,
     handH,
     chromeH,
-    footerH: Math.round(handH * 0.35),
+    footerH: Math.round(handH * (phone ? 0.28 : 0.35)),
     actionBtnH: `${btnH}px`,
     actionBtnFs: `${btnFs}rem`,
     heightBand: heightBand(h),
     widthBand: widthBand(w),
+    form,
+    orientation,
   };
 }
 
 /** Menu/setup scaling — keeps triad panels inside side gutters around box art. */
 export function computeMenuViewportMetrics() {
   const { w, h, dpr } = readViewport();
+  const { form } = getCapabilityProfile();
   const artSize = Math.min(w, h);
   const gutter = Math.max(0, (w - artSize) / 2);
+  const compact = form === "phone" || form === "tablet";
   const menuUiScale = Number(clamp(
-    Math.min(gutter / 300, h / 980, w / 1500),
-    0.42,
-    0.74,
+    compact ? 1 : Math.min(gutter / 300, h / 980, w / 1500),
+    compact ? 1 : 0.42,
+    compact ? 1 : 0.74,
   ).toFixed(3));
   const setupTypeScale = Number(clamp(
-    Math.min(w / 620, h / 420, menuUiScale * 4.2),
-    1.35,
-    2.75,
+    compact
+      ? Math.min(w / 820, h / 720, form === "phone" ? 1.05 : 1.12)
+      : Math.min(w / 620, h / 420, menuUiScale * 4.2),
+    compact ? 0.95 : 1.35,
+    compact ? (form === "phone" ? 1.08 : 1.16) : 2.75,
   ).toFixed(2));
   const uiScale = Number(clamp(Math.min(w / 1600, h / 900), 0.75, 1.12).toFixed(3));
+  const menuLayout = form === "phone" || w < 720 || w / h < 0.78
+    ? "stack"
+    : form === "tablet" || w < 1180
+      ? "split"
+      : "triad";
 
   return {
     w,
@@ -88,7 +113,8 @@ export function computeMenuViewportMetrics() {
     uiScale,
     heightBand: heightBand(h),
     widthBand: widthBand(w),
-    stackMenu: w < 980 || w / h < 0.85,
+    stackMenu: menuLayout !== "triad",
+    menuLayout,
   };
 }
 
@@ -102,6 +128,20 @@ function resolvedPanels() {
   const mode = settings.viewMode || "auto";
   const p = settings.panels || {};
   const preset = presetForMode(mode);
+  const compact = metrics.form === "phone" || metrics.form === "tablet";
+
+  if (compact) {
+    return {
+      sidebarW: metrics.sidebarW,
+      handH: metrics.handH,
+      chromeH: metrics.chromeH,
+      footerH: metrics.footerH,
+      uiScale: metrics.uiScale,
+      actionBtnH: metrics.actionBtnH,
+      actionBtnFs: metrics.actionBtnFs,
+      metrics,
+    };
+  }
 
   if (!preset) {
     return {
@@ -137,7 +177,7 @@ function applyViewportDataset(metrics) {
 
 function applyMenuDataset(metrics) {
   const root = document.documentElement;
-  root.dataset.menuLayout = metrics.stackMenu ? "stack" : "triad";
+  root.dataset.menuLayout = metrics.menuLayout || (metrics.stackMenu ? "stack" : "triad");
   applyViewportDataset(metrics);
 }
 

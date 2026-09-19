@@ -6,7 +6,7 @@
 const MODES = ["desktop", "tablet", "mobile"];
 
 function hasTouch() {
-  return navigator.maxTouchPoints > 0 || "ontouchstart" in window;
+  return navigator.maxTouchPoints > 0;
 }
 
 function isCoarsePointer() {
@@ -57,6 +57,10 @@ function detectForm() {
   if (coarse) return "tablet";
   if (touch && minSide <= 1100 && maxSide <= 1400) return "tablet";
   if (touch && !hybrid && maxSide <= 1366) return "tablet";
+  const dpr = window.devicePixelRatio || 1;
+  if (minSide >= 700 && maxSide <= 1400 && (touch || coarse || (dpr >= 2 && maxSide <= 1366))) {
+    return "tablet";
+  }
   if (w <= 1100) return "tablet";
   return "desktop";
 }

@@ -18,6 +18,7 @@ export const CHANGELOG = [
       "Double-tap a Dreamer chip or board token to zoom in on them.",
       "The table detects phone, tablet, and desktop, including large iPads, and swaps hover-only chrome for touch copy.",
       "Audio unlocks on the first tap, not only click or key.",
+      "iPad menu is a two-column split with no horizontal scroll; phones stack. Play chrome yields the hex map on both.",
     ],
   },
   {
