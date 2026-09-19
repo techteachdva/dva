@@ -5,10 +5,20 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "21.3";
+export const SOMNIA_VERSION = "21.4";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "21.4",
+    title: "Boss dreams, Silver spawn, save repair",
+    notes: [
+      "Boss Dreambeasts (Cerberus, Double, Leviathan) spawn on The Bed when discarded instead of vanishing in the Dream Discard pile.",
+      "Continuing a saved game moves misplaced bosses from Dream Discard into the Subconscious so Silver and quests can reach them.",
+      "Silver lets you pick a Dreambeast from Mindstream discard, Dream Discard, or Subconscious, spawn it on a landscape with a Dreamer, and Meet with Accept only.",
+      "Radial focus audit no longer crashes in CI when document stubs are minimal.",
+    ],
+  },
   {
     version: "21.3",
     title: "Taller table chrome & object use modal",

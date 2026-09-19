@@ -62,6 +62,7 @@ import {
   encounterRejectSummary,
   applyRejectReward,
   applyAcceptEffect,
+  applyFailEffect,
 } from "./dreambeasts.js";
 import { getLegalMoveTargets, canMoveTo, adjacentTiles, hexDistance, areHexAdjacent } from "./hex.js";
 import { repressCard, listSubconsciousCards, dreambeastToHandCard, isDreambeastPsycheCard } from "./subconscious.js";
@@ -227,6 +228,9 @@ function canUseMeetAction(state, action, landscapeActionId = null) {
 export function canDreamerMeetOnLandscape(state, player, tileId) {
   if (!player?.alive || player.landscapeId !== tileId) return false;
   const enc = encounterOnLandscape(state, tileId);
+  if (state.forcedAccept && player.id === state.forcedAccept.playerId && tileId === state.forcedAccept.tileId) {
+    return !!enc;
+  }
   if (!enc || getPhase(state) !== "Meet" || state.meetActionBudget < 1) return false;
   if (state.meetActionsUsed >= state.meetActionBudget) return false;
   if (hasUsedMeetAction(state, player, meetActionKey(MEET_ACTIONS.MEET))) return false;
@@ -503,21 +507,23 @@ export function getPhaseActions(state, handlers) {
           [payHint, meetEnc.effect ? `Effect: ${meetEnc.effect}` : encounterAcceptSummary(meetEnc)].filter(Boolean).join(" "),
         ),
         primary: true,
-        disabled: !canUseMeetAction(state, MEET_ACTIONS.MEET),
+        disabled: !state.forcedAccept && !canUseMeetAction(state, MEET_ACTIONS.MEET),
         onClick: () => handlers.meetEncounter("accept"),
       });
-      actions.push({
-        label: `Reject ${encounterRejectCost(meetEnc)} — ${encounterRejectSummary(meetEnc)}${shapeHint}`,
-        section: "encounter",
-        hint: meetActionHint(
-          state,
-          MEET_ACTIONS.MEET,
-          null,
-          [encounterPayHint(meetEnc, false), encounterRejectSummary(meetEnc)].filter(Boolean).join(" "),
-        ),
-        disabled: !canUseMeetAction(state, MEET_ACTIONS.MEET),
-        onClick: () => handlers.meetEncounter("reject"),
-      });
+      if (!state.forcedAccept) {
+        actions.push({
+          label: `Reject ${encounterRejectCost(meetEnc)} — ${encounterRejectSummary(meetEnc)}${shapeHint}`,
+          section: "encounter",
+          hint: meetActionHint(
+            state,
+            MEET_ACTIONS.MEET,
+            null,
+            [encounterPayHint(meetEnc, false), encounterRejectSummary(meetEnc)].filter(Boolean).join(" "),
+          ),
+          disabled: !canUseMeetAction(state, MEET_ACTIONS.MEET),
+          onClick: () => handlers.meetEncounter("reject"),
+        });
+      }
     }
     const landscapeChoices = meetTile ? getLandscapeActionChoices(meetTile) : [];
     landscapeChoices.forEach((choice) => {
@@ -588,6 +594,7 @@ function phaseAdvanceBlockReason(state) {
   if (state.pendingArchetypePower) return "Finish the Archetype Power before advancing.";
   if (state.pendingObjectFollowup) return "Finish the Object effect before advancing.";
   if (hasPendingDreamerPower(state)) return "Finish or cancel Dreamer Power before advancing.";
+  if (state.forcedAccept) return "Silver: Accept the spawned Dreambeast (Reject is not allowed).";
   return null;
 }
 
@@ -961,8 +968,39 @@ export function refundPowerBonus(state) {
   return true;
 }
 
+export function failForcedAccept(state) {
+  const fa = state.forcedAccept;
+  if (!fa) return;
+  const player = state.players.find((p) => p.id === fa.playerId);
+  const enc = encounterOnLandscape(state, fa.tileId);
+  if (player && enc) {
+    applyFailEffect(state, player, enc);
+    removeEncounterFromLandscape(state, fa.tileId, enc);
+    addLog(state, `Silver: ${player.name} failed to Accept ${enc.name}.`);
+  }
+  state.forcedAccept = null;
+  state.activeEncounter = null;
+  state.activeEncounterLandscapeId = null;
+}
+
 export function getDreamerBoardRadialOptions(state, player, tileId, handlers) {
   const options = [];
+  const forced = state.forcedAccept;
+  if (forced && player?.id === forced.playerId && tileId === forced.tileId) {
+    options.push({
+      id: "silverAccept",
+      label: "Accept",
+      hint: "Silver: play the Accept spread. This Dreambeast cannot be Rejected.",
+      primary: true,
+      onPick: () => handlers.meetEncounter("accept"),
+    });
+    options.push({
+      id: "silverFail",
+      label: "Fail Accept",
+      hint: "Cannot make the Accept cost — the Dreambeast fails.",
+      onPick: () => failForcedAccept(state),
+    });
+  }
   for (const action of getPhaseActions(state, handlers)) {
     if (action.advance) continue;
     const label = action.label || "";
@@ -1082,20 +1120,31 @@ export function getPowerTokenRadialOptions(state) {
 }
 
 export function meetEncounter(state, mode = "accept") {
+  if (state.forcedAccept) {
+    state.selectedLandscapeId = state.forcedAccept.tileId;
+    if (mode !== "accept") {
+      addLog(state, "Silver: this Dreambeast must be Accepted. It cannot be Rejected.");
+      return;
+    }
+  }
   const tile = meetLandscapeTile(state);
   const encounter = encounterForMeet(state);
   if (!encounter || !tile) {
     addLog(state, "Meet a Dreambeast on a Landscape you occupy.");
     return;
   }
-  if (!spendMeetAction(state, MEET_ACTIONS.MEET)) return;
+  if (!state.forcedAccept && !spendMeetAction(state, MEET_ACTIONS.MEET)) return;
 
   state.activeEncounter = encounter;
   state.activeEncounterLandscapeId = tile.id;
   const actor = actorOnLandscape(state, tile.id);
+  const abortMeet = (message) => {
+    if (message) addLog(state, message);
+    if (state.forcedAccept) return;
+    refundMeetAction(state, actor || meetActionActor(state, MEET_ACTIONS.MEET), MEET_ACTIONS.MEET);
+  };
   if (!actor) {
-    addLog(state, "A Dreamer must be on this Landscape to Meet the Encounter.");
-    refundMeetAction(state, meetActionActor(state, MEET_ACTIONS.MEET), MEET_ACTIONS.MEET);
+    abortMeet("A Dreamer must be on this Landscape to Meet the Encounter.");
     return;
   }
   const isReject = mode === "reject" || mode === "repress";
@@ -1103,21 +1152,18 @@ export function meetEncounter(state, mode = "accept") {
   const selected = selectedCards(state, actor);
 
   if (!isReject && !canAddAllyToHand(state, actor)) {
-    addLog(state, `${actor.name} already has ${allyHandLimitForPlayer(state, actor)} allies (max). Repress this Encounter or spend allies first.`);
-    refundMeetAction(state, actor, MEET_ACTIONS.MEET);
+    abortMeet(`${actor.name} already has ${allyHandLimitForPlayer(state, actor)} allies (max). Repress this Encounter or spend allies first.`);
     return;
   }
 
   if (selected.filter((c) => !isDreambeastPsycheCard(c)).length > 3) {
-    addLog(state, "Play up to 3 Psyche cards for an Encounter (allies don't count).");
-    refundMeetAction(state, actor, MEET_ACTIONS.MEET);
+    abortMeet("Play up to 3 Psyche cards for an Encounter (allies don't count).");
     return;
   }
 
   const shapeCheck = validateEncounterPlayShape(encounter, selected, { accept: !isReject });
   if (!shapeCheck.ok) {
-    addLog(state, shapeCheck.message);
-    refundMeetAction(state, actor, MEET_ACTIONS.MEET);
+    abortMeet(shapeCheck.message);
     return;
   }
   if (!isReject && (encounter.refId || encounter.id) === "chimera") {
@@ -1129,8 +1175,7 @@ export function meetEncounter(state, mode = "accept") {
   const bonus = meetBonusBreakdown(state);
   if (played < needed) {
     const bonusNote = bonus.total ? ` (includes +${bonus.total} Dreamer bonus)` : "";
-    addLog(state, `Need ${needed} Psyche to ${isReject ? "Reject" : "Accept"} (${actor.name} on ${tile.name}: ${played}${bonusNote}).`);
-    refundMeetAction(state, actor, MEET_ACTIONS.MEET);
+    abortMeet(`Need ${needed} Psyche to ${isReject ? "Reject" : "Accept"} (${actor.name} on ${tile.name}: ${played}${bonusNote}).`);
     return;
   }
 
@@ -1167,6 +1212,7 @@ export function meetEncounter(state, mode = "accept") {
     }
     removeEncounterFromLandscape(state, landscapeId, encounter);
   }
+  state.forcedAccept = null;
 
   if (state.pendingHeatingUp) {
     if (!isReject) {

@@ -476,7 +476,7 @@ export function rulesIntroHtml() {
         <p>Use the <strong>R.E.M.</strong> tab for the three phases in depth. Use <strong>Details</strong> for encounters, death, bosses, objects, Mindstream, and Final Recurrence. The in-game <strong>Guide</strong> panel shows your next step every turn.</p>
       </section>
 
-            <p class="overview-footer">Somnia v 21.3 — cooperative rules reference.</p>
+            <p class="overview-footer">Somnia v 21.4 — cooperative rules reference.</p>
       ${footerCreditsHtml()}
     </div>
   `;
@@ -580,6 +580,17 @@ export function rulesDetailsHtml() {
       <h3>Power Tokens</h3>
       <p>Team pool cap <strong>24</strong>. Start with <strong>1</strong> per Dreamer. Spend on quest marks (1 each, any phase), Dreamer Powers (1, any phase), Archetype Powers (1), Persistent Object activation (1), <strong>1 as a suited Psyche</strong> for a Reveal / Explore / Meet opener (max 1 per opener), stacking <strong>+1 per token</strong> on a Psyche spread (no coin flip), Timeline hunger (1 per roaming Dreambeast at end of Meet), and avoiding death.</p>
 
+      <h3>Dreamer Powers</h3>
+      <p>Each costs <strong>1 Power Token</strong> and can be used in any phase. Lucidity Dreamers help Reveal, Elasticity Dreamers help Explore, Willpower Dreamers help Meet.</p>
+      <ul>
+        <li><strong>The Rested</strong> — All Dreamers Draw from the Psyche Discard, or Refresh: put 1 Psyche on the deck bottom and Draw 1.</li>
+        <li><strong>The Visionary</strong> — Reveal 1 Landscape per Dreamer, or each Dreamer Peeks at 1 deck top and may send it to the bottom.</li>
+        <li><strong>The Runner</strong> — All Dreamers Move 2 spaces toward or away from The Bed / Final Recurrence.</li>
+        <li><strong>The Hunter</strong> — Move each active Dreambeast 1 space toward the nearest Dreamer or away from The Bed.</li>
+        <li><strong>The Immovable</strong> — Hold the Line: during the next Meet Phase, all Dreamers may add +1 Psyche to any Accept or Reject spread.</li>
+        <li><strong>The Weaver</strong> — Threads of Will: each Dreamer Discards 1 Psyche and Draws 1.</li>
+      </ul>
+
       <h3>Archetypes &amp; Quests</h3>
       <p>Active Archetype shows 2 quests. Meet each condition, spend 1 Power Token to mark it, then Acquire for points (1–3). Quintessential Archetypes (Sage, Magician, Warrior) grant passive stat bonuses only; their Psyche quest requires <strong>one Dreamer to hold 10 Psyche cards</strong> (full hand). Others have activatable powers during Meet for 1 Power Token.</p>
 
@@ -617,7 +628,7 @@ export function infoHubHtml(options = {}) {
     <div class="info-hub">
       <header class="info-hub-header">
         <div class="info-hub-brand">
-          <p class="info-hub-kicker">Somnia v 21.3</p>
+          <p class="info-hub-kicker">Somnia v 21.4</p>
           <h2>Dream Guide</h2>
           <p class="info-hub-lead">What just happened, and the rules you need to wake up.</p>
         </div>

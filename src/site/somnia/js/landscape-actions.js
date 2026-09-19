@@ -35,6 +35,7 @@ import { recordQuestEvent } from "./quests.js";
 import { shuffle } from "./data.js";
 import { offerEffectChoice, registerEffectResolver } from "./effect-choices.js";
 import { recordCancellableMove } from "./dreamer-powers.js";
+import { discardDreamCard, isBossDreamCard, spawnBossEncounterOnBed } from "./dream-deck.js";
 
 export const LANDSCAPE_ACTION_DEFS = {
   "draw-mindstream": {
@@ -358,8 +359,12 @@ function drawTwoKeepOne(state, player, helpers) {
   state.dreamDeck.shift();
   state.dreamDeck.shift();
   addLog(state, `Drew 2 Dreams: resolving ${keep.name}, discarding ${discard.name}.`);
-  state.dreamDiscard.push(discard);
-  if (helpers.resolveCardEffect) {
+  discardDreamCard(state, discard);
+  if (isBossDreamCard(keep)) {
+    spawnBossEncounterOnBed(state, keep);
+    if (!state.dreamDiscard) state.dreamDiscard = [];
+    state.dreamDiscard.push(keep);
+  } else if (helpers.resolveCardEffect) {
     helpers.resolveCardEffect(state, keep, player, helpers);
   }
   return keep;
@@ -663,9 +668,15 @@ function applyKeptDraw(state, player, deckId, keep, discard) {
     return;
   }
   if (deckId === "dream") {
-    state.dreamDiscard.push(discard);
+    discardDreamCard(state, discard);
     addLog(state, `Resolving ${keep.name}; discarded ${discard.name}.`);
-    helpers?.resolveCardEffect?.(state, keep, player, helpers);
+    if (isBossDreamCard(keep)) {
+      spawnBossEncounterOnBed(state, keep);
+      if (!state.dreamDiscard) state.dreamDiscard = [];
+      state.dreamDiscard.push(keep);
+    } else {
+      helpers?.resolveCardEffect?.(state, keep, player, helpers);
+    }
     return;
   }
   const suit = deckId.replace("mindstream-", "");

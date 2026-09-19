@@ -7,6 +7,7 @@ import { validateScoreName, splitNameHint } from "./highscores.js";
 import * as localSaveStore from "./local-save-store.js";
 import * as remoteSaveStore from "./remote-save-store.js";
 import { isStandaloneMode } from "./standalone.js";
+import { repairMisplacedBossDreams } from "./dream-deck.js";
 
 export const SAVE_VERSION = 1;
 const MAX_STATE_CHARS = 48000;
@@ -35,6 +36,7 @@ function stripRuntime(state) {
 export function reattachGameRuntime(state) {
   state.checkPsycheDeath = (player) => checkDreamerPsycheDeath(state, player);
   delete state.onResolutionIdle;
+  repairMisplacedBossDreams(state);
   return state;
 }
 

@@ -17,7 +17,7 @@ import {
 } from "./state.js";
 import { recordQuestEvent } from "./quests.js";
 import { grantPowerTokens } from "./power-tokens.js";
-import { repressCard, requestReturnCards, enqueueRepressFromHand, listSubconsciousCards, isDreambeastPsycheCard, dreambeastToHandCard } from "./subconscious.js";
+import { repressCard, requestReturnCards, enqueueRepressFromHand, listSubconsciousCards, isDreambeastPsycheCard, dreambeastToHandCard, removeFromSubconscious } from "./subconscious.js";
 import { adjacentTiles } from "./hex.js";
 import { requestChooseTile, beginFreeRevealPicking } from "./landscapes.js";
 import {
@@ -38,6 +38,7 @@ import {
 } from "./dreambeasts.js";
 import { countAffectedLandscapes } from "./event-landscapes.js";
 import { recordCancellableDiscard } from "./dreamer-powers.js";
+import { discardDreamCard, isBossDreamCard, isDreambeastLike } from "./dream-deck.js";
 
 function alive(state) {
   return state.players.filter((p) => p.alive);
@@ -954,7 +955,7 @@ registerEffectResolver("chewed-to-dust", (state, choiceId) => {
   state.pendingEffectChoice = null;
   if (choiceId === "psyche" && player) discardPsyche(state, player, psycheCards(player).slice(0, 3));
   else if (state.dreamDeck?.length) {
-    state.dreamDiscard.push(state.dreamDeck.pop());
+    discardDreamCard(state, state.dreamDeck.pop());
     addLog(state, "Chewed to Dust: discarded 1 Dream.");
   }
   return true;
@@ -1208,38 +1209,147 @@ registerEffectResolver("bronze", (state, choiceId) => {
   return true;
 });
 
-export function beginSilver(state, player, event) {
-  const pulled = pullDreambeastFromMindstream(state);
-  if (!pulled) return;
-  const tiles = revealedLandscapeTiles(state, { landscapeIds: event?.landscapes || [] });
-  const dests = tiles.length ? tiles : revealedLandscapeTiles(state);
-  if (!dests.length) {
-    spawnPulled(state, player.landscapeId, pulled.card);
-    acceptEncounterFor(state, player, encounterOnLandscape(state, player.landscapeId));
+function listSilverSpawnCandidates(state) {
+  const out = [];
+  const seen = new Set();
+  const add = (card, source) => {
+    if (!isDreambeastLike(card)) return;
+    const key = card.instanceId || `${source}:${card.id}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push({ ...card, _silverSource: source });
+  };
+  ["lucidity", "elasticity", "willpower"].forEach((suit) => {
+    (state.mindstreamDiscard?.[suit] || []).forEach((card) => add(card, "mindstream"));
+  });
+  (state.dreamDiscard || []).forEach((card) => add(card, "dream"));
+  listSubconsciousCards(state).forEach((card) => add(card, "subconscious"));
+  return out;
+}
+
+function takeSilverCandidate(state, card) {
+  const source = card._silverSource;
+  if (source === "subconscious" && card.instanceId) {
+    return removeFromSubconscious(state, card.instanceId) || card;
+  }
+  const piles = source === "dream"
+    ? [state.dreamDiscard || []]
+    : ["lucidity", "elasticity", "willpower"].map((suit) => state.mindstreamDiscard?.[suit] || []);
+  for (const pile of piles) {
+    const idx = pile.findIndex((c) => (
+      (card.instanceId && c.instanceId === card.instanceId) || c.id === card.id
+    ));
+    if (idx >= 0) return pile.splice(idx, 1)[0];
+  }
+  return card;
+}
+
+function occupiedLandscapeIds(state) {
+  return [...new Set(
+    state.players
+      .filter((p) => p.alive)
+      .map((p) => p.landscapeId)
+      .filter((id) => {
+        const tile = landscapeById(state, id);
+        return tile?.revealed && !tile.wasteland;
+      }),
+  )];
+}
+
+export function startSilverForcedAccept(state, player, tileId, enc) {
+  if (!player || !enc) return;
+  const tile = landscapeById(state, tileId);
+  state.selectedLandscapeId = tileId;
+  state.activeEncounter = enc;
+  state.activeEncounterLandscapeId = tileId;
+  state.forcedAccept = {
+    playerId: player.id,
+    tileId,
+    encounterId: enc.instanceId || enc.id,
+  };
+  addLog(
+    state,
+    `Silver: ${enc.name} appears on ${tile?.name || tileId}. ${player.name} must Accept it — Reject is not allowed.`,
+  );
+}
+
+function startSilverSpawn(state, player, card) {
+  const beast = takeSilverCandidate(state, card);
+  const encounter = encounterFromDreambeastCard({
+    ...beast,
+    type: "dreambeast",
+    boss: !!(beast.boss || beast.type === "boss-dream" || isBossDreamCard(beast)),
+  });
+  const dests = occupiedLandscapeIds(state);
+  const fallback = dests.length ? dests : [player.landscapeId].filter(Boolean);
+  if (fallback.length === 1) {
+    spawnPulled(state, fallback[0], encounter);
+    const enc = encounterOnLandscape(state, fallback[0]);
+    const actor = state.players.find((p) => p.alive && p.landscapeId === fallback[0]) || player;
+    startSilverForcedAccept(state, actor, fallback[0], enc || encounter);
     return;
   }
   requestChooseTile(state, {
-    allowedIds: dests.map((t) => t.id),
+    allowedIds: fallback,
     action: "spawnEncounter",
-    encounter: encounterFromDreambeastCard(pulled.card),
-    title: "Silver — spawn, then Accept",
-    detail: "Choose an Affected Landscape. That Dreambeast is Accepted.",
+    encounter,
+    title: "Silver — spawn on a Dreamer",
+    detail: "Click a Landscape that has a Dreamer. That Dreamer must then Accept this Dreambeast (no Reject).",
     followup: { cardId: "silver-accept", playerId: player.id },
   });
 }
 
-function acceptEncounterFor(state, player, enc) {
-  if (!enc) return;
-  applyAcceptEffect(state, enc, player);
-  player.hand.push(dreambeastToHandCard(enc));
-  const located = findEncounterOnBoard(state, enc);
-  if (located) removeEncounterFromLandscape(state, located.tile.id, enc);
-  addLog(state, `Silver: ${player.name} Accepts ${enc.name}.`);
+export function recoverLegacySilver(state) {
+  const pick = state.landscapePick;
+  const stuck = pick && (
+    pick.followup?.cardId === "silver-accept"
+    || /^Silver/i.test(pick.title || "")
+  );
+  if (!stuck) return false;
+  if (pick.encounter && !isBossDreamCard(pick.encounter) && pick.encounter.suit) {
+    discardToMindstream(state, pick.encounter);
+  }
+  const player = state.players.find((p) => p.id === pick.followup?.playerId)
+    || state.players.find((p) => p.isHead)
+    || state.players[0];
+  state.landscapePick = null;
+  state.pendingObjectFollowup = null;
+  if (player) beginSilver(state, player, {});
+  return true;
 }
+
+export function beginSilver(state, player) {
+  const cards = listSilverSpawnCandidates(state);
+  if (!cards.length) {
+    addLog(state, "Silver: no Dreambeasts in Discard or Subconscious.");
+    return;
+  }
+  if (cards.length === 1) {
+    startSilverSpawn(state, player, cards[0]);
+    return;
+  }
+  offerEffectChoice(state, player, {
+    cardId: "silver",
+    ui: "cards",
+    title: "Silver — choose a Dreambeast",
+    message: "Pick any Dreambeast from Discard or Subconscious. It spawns on a Dreamer's Landscape and must be Accepted (no Reject).",
+    cards,
+  });
+}
+
+registerEffectResolver("silver", (state, choiceId) => {
+  const pending = state.pendingEffectChoice;
+  const player = playerById(state, pending?.playerId);
+  const card = (pending?.cards || []).find((c) => (c.instanceId || c.id) === choiceId);
+  state.pendingEffectChoice = null;
+  if (!player || !card) return false;
+  startSilverSpawn(state, player, card);
+  return true;
+});
 
 export function finishSilverAccept(state, tileId, player) {
   const enc = state.activeEncounter || encounterOnLandscape(state, tileId);
-  if (enc) acceptEncounterFor(state, player, enc);
+  if (enc) startSilverForcedAccept(state, player, tileId, enc);
 }
 
 export function beginMillionReflections(state, player) {
@@ -1595,7 +1705,7 @@ registerEffectResolver("a-way-out-forms", (state, choiceId) => {
 });
 
 export function beginMistSwirls(state, player) {
-  if (state.dreamDeck.length) state.dreamDiscard.push(state.dreamDeck.pop());
+  if (state.dreamDeck.length) discardDreamCard(state, state.dreamDeck.pop());
   addLog(state, "Mist Swirls: discarded 1 Dream.");
   const luc = player.dreamer?.lucidity ?? 0;
   if (luc < 3 || !psycheCards(player).length) return;

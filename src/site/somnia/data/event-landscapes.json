@@ -1218,6 +1218,6 @@
       "tranquil-grove",
       "silver-mist"
     ],
-    "effectTop": "Spawn 1 Dreambeast. Accept 1 Dreambeast on any Affected Landscape."
+    "effectTop": "Choose any Dreambeast from Discard or Subconscious. Spawn it on a Landscape with a Dreamer. That Dreamer must Accept it (no Reject); otherwise it fails."
   }
 }

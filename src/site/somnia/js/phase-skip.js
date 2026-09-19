@@ -4,6 +4,7 @@ import { SUIT_LABELS, phaseSuitForOpening } from "./rules.js";
 import { endPhase } from "./game.js";
 import { enqueueCollectiveRepressFromHand } from "./subconscious.js";
 import { showPhaseSkipConfirm, showMeetDreambeastSkipConfirm } from "./ui.js";
+import { discardDreamsFromDeck } from "./dream-deck.js";
 
 const PHASE_SKIP_COPY = {
   Reveal: {
@@ -48,21 +49,13 @@ export function phasePsycheSpent(state) {
 }
 
 function discardDreamCardsFromDeck(state, count) {
-  let discarded = 0;
-  for (let i = 0; i < count; i += 1) {
-    const card = state.dreamDeck.shift();
-    if (!card) break;
-    if (!state.dreamDiscard) state.dreamDiscard = [];
-    state.dreamDiscard.push(card);
-    discarded += 1;
-  }
+  const discarded = discardDreamsFromDeck(state, count);
   if (discarded > 0) {
     logMoment(
       state,
       `The Timeline frays — ${discarded} Dream card${discarded === 1 ? "" : "s"} discarded from the deck.`,
     );
   }
-  checkDefeat(state);
   return discarded;
 }
 

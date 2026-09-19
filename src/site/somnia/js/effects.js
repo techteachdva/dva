@@ -28,6 +28,7 @@ import {
 } from "./subconscious.js";
 import { MINDSTREAM_EFFECTS } from "./mindstream.js";
 import { markDreamFeedNudge } from "./fx.js";
+import { discardDreamsFromDeck } from "./dream-deck.js";
 import { logMoment } from "./narrator.js";
 import { onObjectDrawn } from "./objects.js";
 import {
@@ -171,15 +172,7 @@ export function onExplorePhaseEnd(state) {
 }
 
 function discardDreamCardsFromDeck(state, count) {
-  let discarded = 0;
-  for (let i = 0; i < count; i += 1) {
-    const card = state.dreamDeck.shift();
-    if (!card) break;
-    if (!state.dreamDiscard) state.dreamDiscard = [];
-    state.dreamDiscard.push(card);
-    discarded += 1;
-  }
-  return discarded;
+  return discardDreamsFromDeck(state, count);
 }
 
 function applyDreambeastTimelineHunger(state) {

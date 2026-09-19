@@ -9732,6 +9732,67 @@ body.play-window #screen-game.active .hand-bar {
   height: auto;
 }
 
+.game-card.dreamer-live-card {
+  position: relative;
+}
+
+.dreamer-live-face {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 1.6rem 0.7rem 0.65rem;
+  background: linear-gradient(180deg, transparent 0%, rgba(8, 6, 16, 0.55) 28%, rgba(8, 6, 16, 0.92) 72%);
+  color: #f4eefc;
+  text-align: left;
+  pointer-events: none;
+}
+
+.dreamer-live-name {
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.dreamer-live-stats {
+  display: flex;
+  gap: 0.45rem;
+  margin: 0.28rem 0 0.4rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.dreamer-live-stats span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.18rem;
+}
+
+.dreamer-live-power span {
+  display: block;
+  font-size: 0.58rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold, #e4c36a);
+}
+
+.dreamer-live-power p {
+  margin: 0.18rem 0 0;
+  font-size: 0.68rem;
+  line-height: 1.3;
+}
+
+#screen-setup .dreamer-live-face,
+#dreamer-picker .dreamer-live-face {
+  padding: 0.85rem 0.4rem 0.35rem;
+}
+
+#screen-setup .dreamer-live-power p,
+#dreamer-picker .dreamer-live-power p {
+  display: none;
+}
+
 .dreamer-inspect-info .dreamer-detail-body h2 {
   font-size: 1.85rem;
 }

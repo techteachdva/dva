@@ -560,7 +560,7 @@
       "suit": "elasticity",
       "type": "event",
       "image": "images/cards/mindstream/elasticity/silver.webp",
-      "text": "Spawn 1 Dreambeast. Accept 1 Dreambeast on any Affected Landscape."
+      "text": "Choose any Dreambeast from Discard or Subconscious. Spawn it on a Landscape with a Dreamer. That Dreamer must Accept it (no Reject); otherwise it fails."
     }
   ],
   "willpower": [

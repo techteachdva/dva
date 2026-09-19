@@ -803,7 +803,25 @@ export function renderCard(card, options = {}) {
   const art = createArtElement(card);
 
   if (card.type === "dreamer" && portrait) {
+    el.classList.add("dreamer-live-card");
     el.appendChild(art);
+    if (card.power) {
+      const face = document.createElement("div");
+      face.className = "dreamer-live-face";
+      face.innerHTML = `
+        <div class="dreamer-live-name">${card.name}</div>
+        <div class="dreamer-live-stats">
+          <span class="suit-lucidity">${suitIconHtml("lucidity", { size: 12 })} ${card.lucidity ?? 0}</span>
+          <span class="suit-elasticity">${suitIconHtml("elasticity", { size: 12 })} ${card.elasticity ?? 0}</span>
+          <span class="suit-willpower">${suitIconHtml("willpower", { size: 12 })} ${card.willpower ?? 0}</span>
+        </div>
+        <div class="dreamer-live-power">
+          <span>Dreamer Power · 1 PT</span>
+          <p>${card.power}</p>
+        </div>
+      `;
+      el.appendChild(face);
+    }
     attachCardActions(el, { onClick, onInspect });
     return attachCardMeta(el, card, playerId);
   }
@@ -2999,7 +3017,7 @@ export function showDreamerPowerDeckPicker(ui, onPick) {
   body.innerHTML = `
     <div class="dreamer-power-modal">
       <h2>${ui.title || "Choose a Deck"}</h2>
-      <p>${ui.message || "Flip and show the top card:"}</p>
+      <p>${ui.message || "Peek at the top card of a deck:"}</p>
       <div class="utility-actions mindstream-pick">
         <button type="button" class="btn" data-deck="psyche">Psyche Deck</button>
         <button type="button" class="btn" data-deck="dream">Dream Deck</button>

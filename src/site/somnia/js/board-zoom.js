@@ -571,7 +571,7 @@ function onWheel(event) {
 
 function boardHintText() {
   if (prefersTouchUi()) return "Pinch to zoom · drag to pan · tap Fit";
-  if (document.documentElement.dataset.pointer === "hybrid") {
+  if (document.documentElement?.dataset?.pointer === "hybrid") {
     return "Pinch or scroll to zoom · drag or Space+drag to pan · F fits";
   }
   return "F fit table · scroll zoom · arrow keys or Space + drag to pan";

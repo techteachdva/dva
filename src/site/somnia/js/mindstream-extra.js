@@ -67,6 +67,7 @@ import {
   rememberEventHelpers,
 } from "./event-choices.js";
 import { flipLeviathan } from "./dreambeasts.js";
+import { discardDreamCard } from "./dream-deck.js";
 
 function alive(state) {
   return state.players.filter((p) => p.alive);
@@ -482,7 +483,7 @@ export const EXTRA_MINDSTREAM_EFFECTS = {
     logAffectedStatus(state, event, "Dream Toll");
     const n = countAffectedLandscapes(state, event);
     for (let i = 0; i < n && state.dreamDeck.length; i += 1) {
-      state.dreamDiscard.push(state.dreamDeck.pop());
+      discardDreamCard(state, state.dreamDeck.pop());
     }
   },
   bronze: (state, player, helpers, event) => {

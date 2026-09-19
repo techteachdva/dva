@@ -29,7 +29,7 @@ import { edgeLandscapes } from "./hex.js";
 import { SUIT_LABELS } from "./rules.js";
 import { resumeLandscapeAction } from "./landscape-actions.js";
 import { resumeArchetypeFollowup, continueArchetypeQueues } from "./archetypes.js";
-import { continueDeferredEventQueues } from "./event-choices.js";
+import { continueDeferredEventQueues, startSilverForcedAccept } from "./event-choices.js";
 
 let lastHelpers = null;
 
@@ -444,14 +444,8 @@ export function resumeObjectEffect(state, helpers = null) {
   if (follow.cardId === "silver-accept") {
     state.pendingObjectFollowup = null;
     const player = playerById(state, follow.playerId);
-    const tile = landscapeById(state, follow.lastTileId);
     const enc = state.activeEncounter || encounterOnLandscape(state, follow.lastTileId);
-    if (player && enc) {
-      applyAcceptEffect(state, enc, player, helpers);
-      player.hand.push(dreambeastToHandCard(enc));
-      addLog(state, `Silver: ${player.name} Accepts ${enc.name}.`);
-      removeEncounterFromLandscape(state, follow.lastTileId, enc);
-    }
+    if (player && enc) startSilverForcedAccept(state, player, follow.lastTileId, enc);
     return true;
   }
   const h = useHelpers(helpers);

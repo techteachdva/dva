@@ -41,6 +41,7 @@ import {
   reattachGameRuntime,
   listLocalSaves,
 } from "./game-save.js";
+import { recoverLegacySilver } from "./event-choices.js";
 import { startVictoryCelebration, stopVictoryCelebration } from "./victory-celebration.js";
 import { LENGTHS, loadGameData } from "./data.js";
 import {
@@ -653,6 +654,7 @@ function buildPauseSaveHooks() {
 
 function applyLoadedGame(loaded) {
   state = reattachGameRuntime(loaded.state);
+  recoverLegacySilver(state);
   launchConfig = {
     ...loaded.launchConfig,
     launchedAt: Date.now(),
@@ -1301,7 +1303,7 @@ function openBeastBoardRadial(anchorEl, encounter, tileId) {
       kind: "meetAccept",
       onPick: () => handlers.meetEncounter("accept"),
     },
-    {
+    !state.forcedAccept && {
       id: "reject",
       label: `Reject ${rejectCost}`,
       hint: `${encounterPayHint(encounter, false)} ${encounterRejectSummary(encounter)} · pool Psyche on ${occupant?.name || "Dreamer"}'s hand`,
@@ -1316,7 +1318,7 @@ function openBeastBoardRadial(anchorEl, encounter, tileId) {
       disabled: false,
       onPick: () => showModal(encounter),
     },
-  ];
+  ].filter(Boolean);
 
   showRadialMenu(anchorEl, options, (opt) => {
     if (opt.kind && !isTutorialActionAllowed(state, opt.kind, { tileId, encounterId: encounter?.id })) {

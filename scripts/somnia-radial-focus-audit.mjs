@@ -19,10 +19,28 @@ function stubEl(id = "") {
   const rect = { left: 100, top: 80, width: 48, height: 48, right: 148, bottom: 128 };
   return {
     id,
+    className: "",
+    innerHTML: "",
+    title: "",
     dataset: { tileId: id.replace("tile-", ""), dreamerId: id.replace("dreamer-", "") },
     classList: { add() {}, remove() {}, toggle() {}, contains: () => false },
     style: {},
+    children: [],
     getBoundingClientRect: () => rect,
+    addEventListener() {},
+    removeEventListener() {},
+    setAttribute() {},
+    setPointerCapture() {},
+    releasePointerCapture() {},
+    contains: () => true,
+    closest: () => null,
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    appendChild(child) {
+      this.children.push(child);
+      return child;
+    },
+    remove() {},
   };
 }
 
@@ -48,6 +66,8 @@ globalThis.localStorage = {
   setItem: () => {},
 };
 globalThis.document = {
+  documentElement: { dataset: {} },
+  createElement: (tag) => stubEl(tag),
   getElementById: (id) => {
     if (id === "board-viewport") return viewport;
     if (id === "board-zoom-stage") return stage;

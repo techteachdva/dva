@@ -202,10 +202,12 @@ export function createInitialState(data, options) {
     cancellableDiscard: null,
     cancellableMove: null,
     anchorMeetSpreadBonus: 0,
+    anchorMeetSpreadPending: 0,
     pendingDeathChoice: null,
     pendingNothingChoice: null,
     pendingObjectChoice: null,
     pendingObjectFollowup: null,
+    forcedAccept: null,
     pendingDreamChoice: null,
     pendingDreamQueue: [],
     pendingEffectChoice: null,
@@ -745,6 +747,10 @@ export function advancePhase(state) {
   if (getPhase(state) === "Explore") {
     addLog(state, "Explore Phase — one Dreamer spends Elasticity to unlock shared moves.");
   } else if (getPhase(state) === "Meet") {
+    if (state.anchorMeetSpreadPending) {
+      state.anchorMeetSpreadBonus = state.anchorMeetSpreadPending;
+      state.anchorMeetSpreadPending = 0;
+    }
     const meetHere = state.board?.find((t) =>
       t.revealed && tileHasEncounters(t) && state.players.some((p) => p.alive && p.landscapeId === t.id),
     );

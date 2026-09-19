@@ -12,6 +12,7 @@ import {
   allEncountersOnBoard,
   tileEncounters,
   drawPsycheForPlayer,
+  getPhase,
 } from "./state.js";
 import { SUIT_LABELS } from "./rules.js";
 import { recordQuestEvent } from "./quests.js";
@@ -281,8 +282,13 @@ function hunterPowerStart(state) {
 }
 
 function immovablePowerExecute(state) {
-  state.anchorMeetSpreadBonus = 1;
-  addLog(state, "Hold the Line: during the next Meet Phase, all Accept and Reject spreads gain +1 Psyche.");
+  if (getPhase(state) === "Meet") {
+    state.anchorMeetSpreadPending = 1;
+    addLog(state, "Hold the Line: during the next Meet Phase, all Dreamers may add +1 Psyche to any Accept or Reject spread.");
+  } else {
+    state.anchorMeetSpreadBonus = 1;
+    addLog(state, "Hold the Line: this Meet Phase, all Dreamers may add +1 Psyche to any Accept or Reject spread.");
+  }
   clearDreamerPower(state);
   return { done: true };
 }
@@ -438,8 +444,9 @@ export function resolveDreamerPowerChoice(state, choiceId) {
 
   if (pending.dreamerId === "the-visionary") {
     if (choiceId === "reveal-landscapes") {
-      const count = alivePlayers(state).length;
-      if (!count || !revealableTiles(state).length) {
+      const available = revealableTiles(state).length;
+      const count = Math.min(alivePlayers(state).length, available);
+      if (!count) {
         addLog(state, "No Landscapes available to reveal.");
         clearDreamerPower(state);
         return { done: true };
@@ -547,7 +554,7 @@ export function handleDreamerPowerTilePick(state, tileId) {
   pending.revealRemaining -= 1;
   addLog(state, `Visionary Power reveals ${tile.name}.`);
 
-  if (pending.revealRemaining <= 0) clearDreamerPower(state);
+  if (pending.revealRemaining <= 0 || !revealableTiles(state).length) clearDreamerPower(state);
   return true;
 }
 

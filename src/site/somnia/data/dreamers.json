@@ -7,7 +7,7 @@
     "elasticity": 1,
     "willpower": 0,
     "flavor": "Though waves may break, my ship shall take me off to the Land of Nod.",
-    "power": "All Dreamers Draw from Psyche Discard or Refresh: put 1 Psyche on the deck bottom and Draw 1."
+    "power": "All Dreamers Draw from the Psyche Discard, or Refresh: put 1 Psyche on the deck bottom and Draw 1."
   },
   {
     "id": "the-visionary",
@@ -47,7 +47,7 @@
     "elasticity": 0,
     "willpower": 2,
     "flavor": "Even Time stands still for those who wait long enough.",
-    "power": "Hold the Line: during the next Meet Phase, all Accept and Reject spreads gain +1 Psyche."
+    "power": "Hold the Line: during the next Meet Phase, all Dreamers may add +1 Psyche to any Accept or Reject spread."
   },
   {
     "id": "the-weaver",

@@ -51,7 +51,7 @@ function pileForCard(sub, card) {
     return sub.mindstream[card.suit];
   }
   if (card.type === "object") return sub.objects;
-  if (card.type === "dreambeast" || card.boss) return sub.dreambeasts;
+  if (card.type === "dreambeast" || card.boss || card.type === "boss-dream") return sub.dreambeasts;
   return sub.other;
 }
 

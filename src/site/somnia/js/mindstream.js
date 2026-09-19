@@ -31,6 +31,7 @@ import {
 } from "./event-landscapes.js";
 import { EXTRA_MINDSTREAM_EFFECTS } from "./mindstream-extra.js";
 import { flipLeviathan } from "./dreambeasts.js";
+import { discardDreamCard } from "./dream-deck.js";
 import {
   beginPopQuiz,
   beginHarmonicResonance,
@@ -503,7 +504,8 @@ export const MINDSTREAM_EFFECTS = {
 
   "no-thing": (state, player) => {
     const discard = Math.min(3, state.dreamDeck.length);
-    state.dreamDeck.splice(-discard, discard);
+    const yanked = state.dreamDeck.splice(-discard, discard);
+    yanked.forEach((card) => discardDreamCard(state, card));
     addLog(state, `Discarded ${discard} Dream card(s) from the deck.`);
     if (stat(player, "willpower") >= 3 && state.dreamDeck.length) {
       const card = state.dreamDeck.pop();
