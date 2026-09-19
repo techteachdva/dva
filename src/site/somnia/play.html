@@ -34,7 +34,7 @@
   <div id="app">
     <header class="top-bar play-top-bar">
       <div class="brand">
-        <span class="version-label">Somnia v 21.2</span>
+        <span class="version-label">Somnia v 21.3</span>
         <h1>Somnia</h1>
       </div>
       <div id="phase-stepper" class="phase-stepper top-bar-stepper" aria-label="Round phases"></div>
@@ -51,20 +51,8 @@
       </div>
       <div id="header-actions" class="header-actions">
         <button type="button" id="btn-header-subconscious" class="btn btn-sm btn-header-subconscious" data-deck-id="subconscious" data-chrome-overflow="compact" title="Browse The Subconscious">☠ Subconscious</button>
-        <div class="header-dropdown" id="header-dreamers-menu" data-chrome-overflow="phone">
-          <button type="button" id="btn-header-dreamers" class="btn btn-sm header-dropdown-toggle" aria-expanded="false" aria-haspopup="true">Dreamers</button>
-          <div id="dreamers-dropdown-panel" class="header-dropdown-panel hidden" role="menu" aria-label="Dreamer roster">
-            <p class="header-dropdown-hint input-hint">
-              <span class="hint-fine">Discuss · hover for tips · click to focus</span>
-              <span class="hint-coarse">Discuss · hold for tips · tap to focus</span>
-            </p>
-            <div id="dreamers-dropdown-list" class="dreamers-dropdown-list"></div>
-          </div>
-        </div>
         <button type="button" class="btn btn-icon btn-music-toggle" data-music-toggle aria-pressed="true" title="Mute music" aria-label="Mute music">🔊</button>
         <button type="button" id="btn-pause" class="btn btn-sm" title="Pause menu (Esc)">⏸ Pause</button>
-        <button type="button" id="btn-overview" class="btn btn-sm" data-chrome-overflow="compact" title="Game overview">Overview</button>
-        <button type="button" id="btn-tutorial" class="btn btn-sm" data-chrome-overflow="compact">Tips</button>
         <div class="header-dropdown chrome-more" id="header-more-menu" hidden>
           <button type="button" id="btn-header-more" class="btn btn-sm btn-icon" aria-expanded="false" aria-haspopup="true" title="More table actions" aria-label="More table actions">⋯</button>
           <div id="header-more-panel" class="header-dropdown-panel hidden" role="menu" aria-label="More table actions"></div>
@@ -145,18 +133,25 @@
             <div id="meet-pool-guide" class="meet-pool-guide hidden" hidden aria-hidden="true"></div>
             <div id="hand" class="hand-dreamer-display" data-player-id="">
               <div id="hand-primary" class="hand-primary" aria-label="Psyche hand cards"></div>
-              <div id="hand-spillover" class="hand-spillover hidden" aria-label="Extra hand cards"></div>
             </div>
           </div>
-          <div class="hand-section objects-panel">
-            <div class="objects-subsection">
-              <h3>Objects (hand) <span class="hand-hint-subtle input-hint"><span class="hint-fine">click to view · double-click to play</span><span class="hint-coarse">tap to view · double-tap to play</span></span></h3>
-              <div id="player-objects" class="hand objects-row"></div>
+          <div class="hand-section allies-section">
+            <div class="hand-header">
+              <h3>Allies</h3>
             </div>
-            <div class="objects-subsection">
+            <div id="hand-allies" class="hand objects-row allies-row" aria-label="Accepted Dreambeast allies"></div>
+          </div>
+          <div class="hand-section objects-hand-section">
+            <div class="hand-header">
+              <h3>Objects</h3>
+            </div>
+            <div id="player-objects" class="hand objects-row"></div>
+          </div>
+          <div class="hand-section persistent-section">
+            <div class="hand-header">
               <h3>Persistent</h3>
-              <div id="player-persistent" class="hand objects-row"></div>
             </div>
+            <div id="player-persistent" class="hand objects-row"></div>
           </div>
         </footer>
       </section>
@@ -194,6 +189,7 @@
     <div class="modal-content">
       <button class="modal-close" aria-label="Close">&times;</button>
       <div id="modal-card"></div>
+      <div id="modal-card-actions" class="modal-card-actions" hidden></div>
     </div>
   </div>
 

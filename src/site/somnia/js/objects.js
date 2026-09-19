@@ -21,6 +21,13 @@ export function isNothingCard(card) {
   return card?.id?.startsWith("the-nothing");
 }
 
+export function objectUseFate(card) {
+  const text = `${card?.text || ""} ${card?.effect || ""}`.toLowerCase();
+  if (card?.subtype === "persistent") return "play";
+  if (text.includes("repress this")) return "repress";
+  return "discard";
+}
+
 function alivePlayers(state) {
   return state.players.filter((p) => p.alive);
 }
@@ -174,7 +181,7 @@ export function playObjectCard(state, player, card, helpers, options = {}) {
     resolveObjectEffect(state, player, card, helpers);
     const tag = card.tags?.[0]?.split("/")?.[0];
     if (tag) checkObjectTagSet(state, player, tag);
-    if (card.text?.toLowerCase().includes("repress this")) {
+    if (objectUseFate(card) === "repress") {
       queueObjectPlayFx(card, { to: "subconscious" });
       repressCard(state, card);
     } else {

@@ -83,7 +83,7 @@ function caseStudy(title, viewport, expect) {
     assert("sidebar hidden", play.sidebarW === 0, String(play.sidebarW));
   }
   if (expect.sidebarNarrow) {
-    assert("sidebar narrow", play.sidebarW > 0 && play.sidebarW <= 228, String(play.sidebarW));
+    assert("sidebar narrow", play.sidebarW > 0 && play.sidebarW <= 268, String(play.sidebarW));
   }
   if (expect.boardMajority) {
     const board = play.h - play.chromeH - play.handH;

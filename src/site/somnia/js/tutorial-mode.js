@@ -1008,7 +1008,7 @@ export const TUTORIAL_SCRIPT = [
     round: 1,
     title: "Welcome to Somnia",
     body: "",
-    objective: "Click Continue. Rules live in ? and Tips (!).",
+    objective: "Click Continue. Rules live in ? and Pause → Help.",
     targets: ["#active-archetype", "#phase-stepper"],
     spotlight: "#active-archetype",
   },

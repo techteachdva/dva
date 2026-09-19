@@ -147,7 +147,7 @@ function applyFirstVisitMenu() {
   if (hint) {
     hint.innerHTML = firstVisit
       ? "New here? Start with <strong>Tutorial</strong> — two guided rounds. The Visionary and The Immovable are a balanced first pair."
-      : "Tutorial Mode walks you through two guided rounds. The in-game <strong>Tips</strong> button shows a short reminder anytime.";
+      : "Tutorial Mode walks you through two guided rounds. Open <strong>?</strong> or Pause → Help anytime for rules.";
   }
   if (firstVisit && tutorial) {
     tutorial.title = "Two guided rounds with step-by-step coaching";

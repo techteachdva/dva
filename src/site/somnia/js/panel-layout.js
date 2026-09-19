@@ -1,8 +1,8 @@
 import { loadSettings, saveSettings, VIEW_PRESETS } from "./audio-settings.js";
 import { getCapabilityProfile } from "./device-mode.js";
 
-const MIN = { sidebarW: 120, handH: 80, chromeH: 48, footerH: 56 };
-const MAX = { sidebarW: 480, handH: 400, chromeH: 120, footerH: 220 };
+const MIN = { sidebarW: 120, handH: 80, chromeH: 72, footerH: 56 };
+const MAX = { sidebarW: 480, handH: 480, chromeH: 140, footerH: 220 };
 
 let settings = loadSettings();
 let viewportBound = false;
@@ -44,15 +44,15 @@ export function computeViewportMetrics() {
     phone ? 0.78 : 1.08,
   ).toFixed(3));
 
-  const chromeH = Math.round(clamp(h * (phone ? 0.048 : 0.055), phone ? 40 : 44, phone ? 48 : 58));
+  const chromeH = Math.round(clamp(h * (phone ? 0.10 : 0.11), phone ? 76 : 88, phone ? 104 : 120));
   const sidebarW = phone || (form === "tablet" && orientation === "portrait")
     ? 0
-    : Math.round(clamp(w * (compact ? 0.18 : 0.2), compact ? 168 : 196, compact ? 228 : 340));
-  const maxHand = Math.round(h * (phone ? 0.24 : compact ? 0.22 : 0.42));
-  const minBoard = Math.round(h * (phone ? 0.56 : compact ? 0.54 : 0.46));
+    : Math.round(clamp(w * (compact ? 0.20 : 0.22), compact ? 188 : 220, compact ? 260 : 380));
+  const maxHand = Math.round(h * (phone ? 0.34 : compact ? 0.34 : 0.36));
+  const minBoard = Math.round(h * (phone ? 0.48 : compact ? 0.46 : 0.40));
   const handH = Math.round(clamp(
-    h * (phone ? 0.18 : compact ? 0.16 : 0.28),
-    phone ? 108 : compact ? 118 : 160,
+    h * (phone ? 0.30 : compact ? 0.31 : 0.33),
+    phone ? 140 : compact ? 168 : 210,
     Math.min(maxHand, h - chromeH - minBoard),
   ));
   const dockBudget = Math.round(handH * (phone ? 0.48 : 0.58));
@@ -214,6 +214,7 @@ export function applyLayout() {
   root.style.setProperty("--sidebar-w", `${panels.sidebarW}px`);
   root.style.setProperty("--hand-h", `${panels.handH}px`);
   root.style.setProperty("--chrome-h", `${panels.chromeH}px`);
+  root.style.setProperty("--topbar-h", `${panels.chromeH}px`);
   root.style.setProperty("--footer-h", `${panels.footerH}px`);
   root.style.setProperty("--ui-scale", String(panels.uiScale));
   root.style.setProperty("--action-btn-h", panels.actionBtnH);

@@ -31,7 +31,7 @@ import {
   encounterRejectSummary,
   encounterRejectCost,
 } from "./dreambeasts.js";
-import { handLimitForPlayer, handRoomForPsycheDraw } from "./objects.js";
+import { handLimitForPlayer, handRoomForPsycheDraw, objectUseFate } from "./objects.js";
 import { psycheHandCount, alliesInHand, psycheCardsInHand, allyHandCount, allyHandLimitForPlayer, effectivePsycheHealth, MAX_ALLIES_IN_HAND, MAX_PSYCHE_IN_HAND, psycheCardValue } from "./psyche.js";
 import { getQuestStatus, activeQuestLandscapeIds } from "./quests.js";
 import { effectiveDreamerStat } from "./archetype-stats.js";
@@ -380,16 +380,18 @@ export function renderActiveDreamerHand(state, onCardClick, {
 } = {}) {
   const handRoot = document.getElementById("hand");
   const primary = document.getElementById("hand-primary");
+  const alliesEl = document.getElementById("hand-allies");
   const spillover = document.getElementById("hand-spillover");
   const stats = document.getElementById("hand-stats");
   const titleEl = document.getElementById("hand-title");
   const player = activePlayer(state);
 
-  if (!handRoot || !primary || !spillover) return;
+  if (!handRoot || !primary) return;
 
   handRoot.dataset.playerId = player.id;
   primary.innerHTML = "";
-  spillover.innerHTML = "";
+  if (spillover) spillover.innerHTML = "";
+  if (alliesEl) alliesEl.innerHTML = "";
   handRoot.classList.remove("coop-mode");
 
   const phaseSpend = Boolean(title?.includes("Spend"));
@@ -412,7 +414,11 @@ export function renderActiveDreamerHand(state, onCardClick, {
   if (!main.length && !spill.length) {
     primary.textContent = emptyText;
     primary.classList.add("empty");
-    spillover.classList.add("hidden");
+    spillover?.classList.add("hidden");
+    if (alliesEl) {
+      alliesEl.textContent = "No allies";
+      alliesEl.classList.add("empty");
+    }
     return;
   }
 
@@ -442,25 +448,29 @@ export function renderActiveDreamerHand(state, onCardClick, {
     });
   });
 
-  if (spill.length) {
-    spillover.classList.remove("hidden");
-    spillover.dataset.count = String(spill.length);
-    spill.forEach((card, index) => {
-      const clickable = canClickCard(card, player);
-      appendHandCard(spillover, card, {
-        selected: state.selectedHand.includes(card.instanceId)
-          || state.trade?.offerPsycheIds?.includes(card.instanceId),
-        suggested: suggestCard(card, player),
-        entering: fresh.has(card.instanceId),
-        dealIndex: index,
-        playerId: player.id,
-        dense: true,
-        onClick: clickable ? () => onCardClick(card, player) : undefined,
-        onInspect: () => showModal(card),
+  const allyHost = alliesEl || spillover;
+  if (allyHost) {
+    allyHost.classList.toggle("hidden", !spill.length && allyHost === spillover);
+    allyHost.classList.toggle("empty", !spill.length);
+    allyHost.dataset.count = String(spill.length);
+    if (!spill.length) {
+      if (alliesEl) alliesEl.textContent = "No allies";
+    } else {
+      spill.forEach((card, index) => {
+        const clickable = canClickCard(card, player);
+        appendHandCard(allyHost, card, {
+          selected: state.selectedHand.includes(card.instanceId)
+            || state.trade?.offerPsycheIds?.includes(card.instanceId),
+          suggested: suggestCard(card, player),
+          entering: fresh.has(card.instanceId),
+          dealIndex: index,
+          playerId: player.id,
+          dense: true,
+          onClick: clickable ? () => onCardClick(card, player) : undefined,
+          onInspect: () => showModal(card),
+        });
       });
-    });
-  } else {
-    spillover.classList.add("hidden");
+    }
   }
 }
 
@@ -917,13 +927,55 @@ function appendDreambeastModalDetail(detail, card) {
   }
 }
 
-export function showModal(card) {
+function fillModalObjectActions(card, options = {}) {
+  const actions = document.getElementById("modal-card-actions");
+  if (!actions) return;
+  actions.innerHTML = "";
+  const zone = options.objectZone;
+  if (!zone || card?.type !== "object") {
+    actions.hidden = true;
+    return;
+  }
+
+  const fate = objectUseFate(card);
+  const hint = document.createElement("p");
+  hint.className = "modal-object-fate";
+  if (zone === "persistent") {
+    hint.textContent = "Spend 1 Power Token to activate this Persistent Object.";
+  } else if (fate === "play") {
+    hint.textContent = "Put this Persistent Object into play. It stays on the table until used.";
+  } else if (fate === "repress") {
+    hint.textContent = "Use: this Object is Repressed to the Subconscious.";
+  } else {
+    hint.textContent = "Use: discard this Object to its Mindstream pile.";
+  }
+  actions.appendChild(hint);
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "btn primary";
+  btn.textContent = zone === "persistent"
+    ? "Spend 1 Power Token"
+    : fate === "play"
+      ? "Put into play"
+      : "Use Object";
+  if (zone === "persistent" && options.canSpendPower === false) {
+    btn.disabled = true;
+    btn.title = "Need 1 Power Token";
+  }
+  btn.addEventListener("click", () => options.onUse?.());
+  actions.appendChild(btn);
+  actions.hidden = false;
+}
+
+export function showModal(card, options = {}) {
   const modal = document.getElementById("card-modal");
   const modalContent = modal?.querySelector(".modal-content");
   const container = document.getElementById("modal-card");
   container.innerHTML = "";
   modalContent?.classList.toggle("dreambeast-detail-modal", isDreambeastCard(card));
   modalContent?.classList.toggle("dream-detail-modal", isDreamCard(card) && !isDreambeastCard(card));
+  fillModalObjectActions(card, options);
 
   if (card.type === "psyche" || card.type === "psyche-power") {
     const detail = document.createElement("div");
@@ -1114,6 +1166,11 @@ export function hideModal() {
     "dream-detail-modal",
     "card-inspect-carousel",
   );
+  const actions = document.getElementById("modal-card-actions");
+  if (actions) {
+    actions.innerHTML = "";
+    actions.hidden = true;
+  }
   document.body.classList.remove("card-detail-open");
 }
 
@@ -1783,8 +1840,10 @@ export function renderObjects(state, onCardClick) {
   if (persistentEl) persistentEl.innerHTML = "";
 
   if (!player.objects.length) {
-    container.textContent = "No Objects in hand.";
+    container.classList.add("empty");
+    container.textContent = "No Objects";
   } else {
+    container.classList.remove("empty");
     player.objects.forEach((card) => {
       container.appendChild(renderCard(card, {
         mini: true,
@@ -1796,8 +1855,10 @@ export function renderObjects(state, onCardClick) {
 
   if (persistentEl) {
     if (!player.persistent?.length) {
-      persistentEl.textContent = "No Persistent Objects in play.";
+      persistentEl.classList.add("empty");
+      persistentEl.textContent = "None";
     } else {
+      persistentEl.classList.remove("empty");
       player.persistent.forEach((card) => {
         persistentEl.appendChild(renderCard(card, {
           mini: true,
@@ -2433,7 +2494,7 @@ export function renderPhaseStepper(state) {
       : "";
     return `
       <div class="${cls}" data-phase="${phase}">
-        <span class="step-icon suit-${suit}">${suitIconHtml(suit, { size: 14 })}</span>
+        <span class="step-icon suit-${suit}">${suitIconHtml(suit, { size: 22 })}</span>
         <span class="step-label">${phase}</span>
         ${chip}
       </div>${arrow}
@@ -3371,6 +3432,7 @@ export function hideUtilityModal(force = false) {
   modal?.querySelector(".utility-content")?.classList.remove(
     "landscape-detail-modal",
     "dreamer-detail-modal",
+    "dreamer-inspect-modal",
     "dreamer-power-modal-wrap",
     "phase-skip-modal",
     "rules-reference-modal",
@@ -3613,14 +3675,79 @@ export function hideDreamerDetailOverlay() {
   dreamerOverlayEl?.classList.add("hidden");
 }
 
+function appendInspectRow(parent, title, cards, emptyText, playerId) {
+  const section = document.createElement("section");
+  section.className = "dreamer-inspect-row";
+  const heading = document.createElement("h3");
+  heading.textContent = title;
+  section.appendChild(heading);
+  const row = document.createElement("div");
+  row.className = "dreamer-inspect-cards";
+  if (!cards?.length) {
+    row.innerHTML = `<p class="dream-feed-empty">${emptyText}</p>`;
+  } else {
+    cards.forEach((card) => {
+      row.appendChild(renderCard(card, {
+        mini: true,
+        dense: true,
+        playerId,
+        onInspect: () => showModal(card),
+        onClick: () => showModal(card),
+      }));
+    });
+  }
+  section.appendChild(row);
+  parent.appendChild(section);
+}
+
 export function showDreamerDetail(dreamer, options = {}) {
   if (!dreamer) return;
+  hideDreamerDetailTooltip();
+  hideDreamerDetailOverlay();
+  hideRadialMenu();
 
   const modal = document.getElementById("utility-modal");
   const body = document.getElementById("utility-modal-body");
-  body.innerHTML = buildDreamerDetailHtml(dreamer, options);
-  modal.querySelector(".utility-content")?.classList.add("dreamer-detail-modal");
-  modal.classList.remove("hidden");
+  const content = modal?.querySelector(".utility-content");
+  content?.classList.remove(
+    "landscape-detail-modal",
+    "dreamer-power-modal-wrap",
+    "phase-skip-modal",
+    "rules-reference-modal",
+    "info-hub-modal",
+    "fullscreen-browser",
+    "card-choice-modal-wrap",
+  );
+  content?.classList.add("dreamer-detail-modal", "dreamer-inspect-modal");
+
+  const player = options.player || null;
+  const tokens = player?.powerTokens ?? 0;
+  body.innerHTML = `
+    <div class="dreamer-inspect">
+      <div class="dreamer-inspect-portrait"></div>
+      <div class="dreamer-inspect-info">
+        ${buildDreamerDetailHtml(dreamer, { ...options, textOnly: true })}
+        <p class="dreamer-inspect-tokens"><strong>${tokens}</strong> Power Token${tokens === 1 ? "" : "s"}</p>
+        <div class="dreamer-inspect-resources"></div>
+      </div>
+    </div>
+  `;
+
+  const portrait = body.querySelector(".dreamer-inspect-portrait");
+  if (portrait) {
+    portrait.appendChild(renderCard({ ...dreamer, type: "dreamer" }, { portrait: true }));
+  }
+
+  const resources = body.querySelector(".dreamer-inspect-resources");
+  if (resources && player) {
+    appendInspectRow(resources, "Psyche", psycheCardsInHand(player), "No Psyche in hand.", player.id);
+    appendInspectRow(resources, "Allies", alliesInHand(player), "No allies.", player.id);
+    appendInspectRow(resources, "Objects", player.objects || [], "No Objects.", player.id);
+    appendInspectRow(resources, "Persistent", player.persistent || [], "No Persistent Objects.", player.id);
+  }
+
+  modal.classList.remove("hidden", "utility-modal-minimized");
+  document.body.classList.add("utility-modal-open");
 }
 
 function bindUtilityModalActions(body, { onCancel } = {}) {

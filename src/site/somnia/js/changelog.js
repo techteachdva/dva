@@ -5,10 +5,21 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "21.2";
+export const SOMNIA_VERSION = "21.3";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "21.3",
+    title: "Taller table chrome & object use modal",
+    notes: [
+      "Dreamers, Overview, and Tips left the top bar — the roster lives in the hand, rules live in ? and Pause → Help.",
+      "The phase tracker is taller and bolder, the top bar is about twice as high, and the Active Archetype card is larger.",
+      "The bottom third lines up all six Dreamers, Power Tokens, a 10-card Psyche spread, allies, Objects, and Persistent Objects.",
+      "Click an Object to view it and Use it. Instants discard to their Mindstream pile unless the card says to Repress; Persistent Objects spend a Power Token to activate.",
+      "View on a Dreamer radial opens a zoomed card with stats, Power Tokens, Psyche, allies, Objects, and Persistent Objects.",
+    ],
+  },
   {
     version: "21.2",
     title: "Phone landscape Dreamer picker",

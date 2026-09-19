@@ -175,6 +175,7 @@ import {
   showLandscapeActionPicker,
   showLandscapeDetail,
   showDreamerDetailOverlay,
+  showDreamerDetail,
   hideDreamerDetailTooltip,
   showDreamerPowerChoice,
   showObjectCardPicker,
@@ -524,60 +525,10 @@ function bindRestart() {
 }
 
 function bindHeaderDropdowns() {
-  const menus = [
-    { btnId: "btn-header-dreamers", panelId: "dreamers-dropdown-panel" },
-  ];
-
-  const closeAll = (exceptPanel = null) => {
-    menus.forEach(({ btnId, panelId }) => {
-      const panel = document.getElementById(panelId);
-      const btn = document.getElementById(btnId);
-      if (panel && panel !== exceptPanel) panel.classList.add("hidden");
-      if (btn && panel !== exceptPanel) btn.setAttribute("aria-expanded", "false");
-    });
-    hideDreamerDetailOverlay();
-  };
-
-  menus.forEach(({ btnId, panelId }) => {
-    const btn = document.getElementById(btnId);
-    const panel = document.getElementById(panelId);
-    if (!btn || !panel) return;
-    btn.addEventListener("click", (event) => {
-      event.stopPropagation();
-      const headerKind = "headerDreamers";
-      if (!isTutorialActionAllowed(state, headerKind)) {
-        tutorialActionBlocked(state);
-        renderAll();
-        return;
-      }
-      const willOpen = panel.classList.contains("hidden");
-      closeAll();
-      if (willOpen) {
-        panel.classList.remove("hidden");
-        btn.setAttribute("aria-expanded", "true");
-      }
-    });
-  });
-
-  document.addEventListener("click", (event) => {
-    if (event.target.closest(".header-dropdown")) return;
-    closeAll();
-  });
-
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") closeAll();
-  });
+  /* Dreamers / Overview / Tips left the header in 21.3. */
 }
 
 function bindHelp() {
-  document.getElementById("btn-overview")?.addEventListener("click", () => {
-    if (!isTutorialActionAllowed(state, "headerOverview")) {
-      tutorialActionBlocked(state);
-      renderAll();
-      return;
-    }
-    showOverviewModal(state);
-  });
   document.getElementById("btn-moment-history")?.addEventListener("click", () => {
     if (!isTutorialActionAllowed(state, "headerMomentHistory")) {
       tutorialActionBlocked(state);
@@ -601,10 +552,6 @@ function bindHelp() {
       return;
     }
     showSubconsciousBrowse(state, (card) => showModal(card));
-  });
-  document.getElementById("btn-tutorial")?.addEventListener("click", () => {
-    tutorialIndex = 0;
-    showTutorialAt(tutorialIndex);
   });
   document.getElementById("btn-end-overview")?.addEventListener("click", showOverviewModal);
   document.getElementById("btn-pause")?.addEventListener("click", () => {
@@ -1211,25 +1158,19 @@ function buildPhaseHandlers() {
   };
 }
 
-let lastObjectClick = { id: null, time: 0 };
 let lastDreamerTokenTap = { id: null, time: 0 };
 
 function onObjectCardClick(card, zone) {
-  const now = Date.now();
-  const id = card.instanceId || card.id;
-  if (lastObjectClick.id === id && now - lastObjectClick.time < 450) {
-    if (zone === "persistent") {
-      playObject(state, card.instanceId || card.id, { usePower: true });
-    } else {
-      playObject(state, card.instanceId || card.id);
-    }
-    lastObjectClick.id = null;
-    renderAll();
-    return;
-  }
-  lastObjectClick.id = id;
-  lastObjectClick.time = now;
-  showModal(card);
+  const player = activePlayer(state);
+  showModal(card, {
+    objectZone: zone,
+    canSpendPower: (player?.powerTokens || 0) >= 1,
+    onUse: () => {
+      hideModal();
+      playObject(state, card.instanceId || card.id, { usePower: zone === "persistent" });
+      renderAll();
+    },
+  });
 }
 
 function shortenRadialLabel(text, max = 20) {
@@ -1298,7 +1239,7 @@ function showDreamerBoardRadialMenu(playerId, tileId, player) {
     hint: "Zoomed character details and hand",
     disabled: false,
     primary: options.length === 0,
-    onPick: () => showDreamerDetailOverlay(player.dreamer, { player, state }),
+    onPick: () => {},
   });
 
   showRadialMenu(null, options, (opt) => {
@@ -1309,6 +1250,9 @@ function showDreamerBoardRadialMenu(playerId, tileId, player) {
     }
     opt.onPick?.();
     renderAll();
+    if (opt.id === "view") {
+      showDreamerDetail(player.dreamer, { player, state });
+    }
   }, {
     ariaLabel: `${player.name} actions`,
     resolveAnchor: () => document.querySelector(`.hex-occupant-dreamer[data-dreamer-id="${playerId}"]`)
