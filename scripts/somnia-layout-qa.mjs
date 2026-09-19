@@ -2,10 +2,11 @@
  * Headless QA for Somnia device/form detection and compact layout metrics.
  */
 
+const storage = new Map();
 globalThis.localStorage = {
-  getItem() { return null; },
-  setItem() {},
-  removeItem() {},
+  getItem(key) { return storage.has(key) ? storage.get(key) : null; },
+  setItem(key, value) { storage.set(key, String(value)); },
+  removeItem(key) { storage.delete(key); },
 };
 
 function installWindow({
@@ -136,6 +137,15 @@ caseStudy("Desktop 1600x900 mouse", { w: 1600, h: 900, touch: 0, coarse: false, 
   device: "desktop",
   menuLayout: "triad",
 });
+
+{
+  console.log("\nForm override phone on desktop viewport");
+  storage.set("somnia.formOverride", "phone");
+  installWindow({ w: 1600, h: 900, touch: 0, coarse: false, hover: true, dpr: 1 });
+  const profile = getCapabilityProfile();
+  assert("override form=phone", profile.form === "phone", profile.form);
+  storage.delete("somnia.formOverride");
+}
 
 caseStudy("Laptop 1366x768 no touch", { w: 1366, h: 768, touch: 0, coarse: false, hover: true, dpr: 1 }, {
   form: "desktop",

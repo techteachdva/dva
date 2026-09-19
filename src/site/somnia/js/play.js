@@ -2,6 +2,9 @@ import { bindMusicToggle, initGameAudio, startGameRadio, bindButtonRipples, play
 import { initClickFeedback } from "./click-feedback.js";
 import { syncGameCursor, flashRevealOpenCursor } from "./game-cursor.js";
 import { initDeviceMode } from "./device-mode.js";
+import { initCompactChrome } from "./compact-chrome.js";
+import { initSomniaPwa } from "./pwa.js";
+import { writeLaunchConfig, readStoredLaunchConfig } from "./launch-store.js";
 import { initDialogAccessibility } from "./dialog-a11y.js";
 import { initPanelLayout } from "./panel-layout.js";
 import {
@@ -36,6 +39,7 @@ import {
   deleteCloudSave,
   deleteLocalSave,
   reattachGameRuntime,
+  listLocalSaves,
 } from "./game-save.js";
 import { startVictoryCelebration, stopVictoryCelebration } from "./victory-celebration.js";
 import { LENGTHS, loadGameData } from "./data.js";
@@ -211,8 +215,6 @@ import {
   ensureTutorialStepTargetsVisible,
 } from "./ui.js";
 
-const LAUNCH_KEY = "somnia.launch";
-
 let gameData = null;
 let state = null;
 let launchConfig = null;
@@ -254,6 +256,8 @@ function getNewHandCardIds(state) {
 
 async function init() {
   initDeviceMode();
+  initSomniaPwa();
+  initCompactChrome();
   initDialogAccessibility();
   initFxLayer();
   initMomentOverlay();
@@ -312,7 +316,7 @@ function readLaunchConfig() {
         && Array.isArray(config.selectedDreamerIds)
         && config.selectedDreamerIds.length;
       if (validResume || validNewGame) {
-        sessionStorage.setItem(LAUNCH_KEY, JSON.stringify(config));
+        writeLaunchConfig(config);
         const clean = new URL(window.location.href);
         clean.searchParams.delete("launch");
         history.replaceState(null, "", `${clean.pathname}${clean.search}${clean.hash}`);
@@ -320,13 +324,14 @@ function readLaunchConfig() {
       }
     }
 
-    const raw = sessionStorage.getItem(LAUNCH_KEY);
-    if (!raw) return null;
-    const config = JSON.parse(raw);
-    if (config?.resumeSaveId) return config;
-    if (!config?.lengthKey || !Array.isArray(config.selectedDreamerIds)) return null;
-    if (!config.selectedDreamerIds.length) return null;
-    return config;
+    const stored = readStoredLaunchConfig();
+    if (stored) return stored;
+    const playing = listLocalSaves().filter((save) => save.status === "playing");
+    const autosave = playing.find((save) => save.id === "autosave") || playing[0];
+    if (!autosave) return null;
+    const resume = { resumeSaveId: autosave.id, launchedAt: Date.now() };
+    writeLaunchConfig(resume);
+    return resume;
   } catch {
     return null;
   }
@@ -952,12 +957,12 @@ function showTutorialGraduation() {
 }
 
 function launchGentleDaydream() {
-  sessionStorage.setItem(LAUNCH_KEY, JSON.stringify({
+  writeLaunchConfig({
     lengthKey: "daydream",
     selectedDreamerIds: [...RECOMMENDED_STARTER_IDS],
     gentleStart: true,
     launchedAt: Date.now(),
-  }));
+  });
   const playUrl = new URL("play.html", window.location.href);
   if (new URLSearchParams(window.location.search).get("dev") === "1") {
     playUrl.searchParams.set("dev", "1");
@@ -966,12 +971,12 @@ function launchGentleDaydream() {
 }
 
 function launchReplayTutorial() {
-  sessionStorage.setItem(LAUNCH_KEY, JSON.stringify({
+  writeLaunchConfig({
     lengthKey: "daydream",
     selectedDreamerIds: [...RECOMMENDED_STARTER_IDS],
     tutorialMode: true,
     launchedAt: Date.now(),
-  }));
+  });
   window.location.href = "play.html";
 }
 

@@ -3,6 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0a14">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Somnia">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="images/icons/somnia-192.png">
   <title>Somnia — Enter the Dreamscape</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,7 +32,7 @@
   <div id="app">
     <header class="top-bar">
       <button type="button" class="brand brand-logo-btn" id="btn-somnia-changelog" title="Somnia Changelog &amp; Credits" aria-label="Open Somnia Changelog and Credits">
-        <span class="version-label">Somnia v 20.0</span>
+        <span class="version-label">Somnia v 20.1</span>
         <h1>Somnia</h1>
         <p class="tagline">Cooperative Dreamscape Roguelike</p>
       </button>
@@ -85,6 +92,8 @@
               <button type="button" id="btn-tutorial-mode" class="btn btn-tutorial-menu" title="Two guided rounds with step-by-step coaching">Tutorial</button>
             </div>
             <p class="menu-tutorial-hint">Tutorial Mode walks you through two guided rounds. The in-game <strong>Tips</strong> button shows a short reminder anytime.</p>
+            <button type="button" id="btn-pwa-install" class="btn btn-pwa-install hidden" hidden>Install Somnia</button>
+            <p id="pwa-install-hint" class="pwa-install-hint" hidden>On iPad or phone: Share → Add to Home Screen for a full-bleed table.</p>
           </div>
         </div>
       </section>

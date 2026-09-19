@@ -24,7 +24,7 @@ Recommended first pair: **The Visionary** (Lucidity) and **The Immovable** (Will
 
 Bosses, death, Objects, Trade, and Final Recurrence are in the ? Dream Guide. They are not on the required tutorial path.
 
-Live rules match Somnia **v 20.0** (`src/site/somnia/js/guide.js`).
+Live rules match Somnia **v 20.1** (`src/site/somnia/js/guide.js`). Play on the site or itch.io — same build. Add to Home Screen from the hosted table.
 
 <iframe
     src="/somnia/"

@@ -1,5 +1,7 @@
 import { bindMusicToggle, initMenuAudioSettings, bindButtonRipples } from "./audio.js";
 import { initDeviceMode } from "./device-mode.js";
+import { initSomniaPwa } from "./pwa.js";
+import { writeLaunchConfig } from "./launch-store.js";
 import { initDialogAccessibility } from "./dialog-a11y.js";
 import { initFxLayer } from "./fx.js";
 import { initPanelLayout, setViewMode } from "./panel-layout.js";
@@ -16,7 +18,6 @@ import {
 import { hasSeenTutorial, hasUsedGentleStart } from "./guide.js";
 import { TUTORIAL_DREAMER_IDS } from "./tutorial-mode.js";
 
-const LAUNCH_KEY = "somnia.launch";
 const SPLASH_MIN_MS = 3200;
 const SPLASH_DISSOLVE_MS = 1600;
 
@@ -104,6 +105,7 @@ function refreshContinueDream() {
 async function init() {
   const startedAt = Date.now();
   initDeviceMode();
+  initSomniaPwa();
   initDialogAccessibility();
   initFxLayer();
   initPanelLayout();
@@ -192,7 +194,7 @@ function launchGame(config = null) {
     payload.launchedAt = Date.now();
   }
 
-  sessionStorage.setItem(LAUNCH_KEY, JSON.stringify(payload));
+  writeLaunchConfig(payload);
 
   const playUrl = new URL("play.html", window.location.href);
   if (new URLSearchParams(window.location.search).get("dev") === "1") {

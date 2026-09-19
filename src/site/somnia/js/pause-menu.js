@@ -19,6 +19,7 @@ import {
   setSfxPan,
 } from "./audio.js";
 import { applyLayout, resetPanelLayout, setViewMode } from "./panel-layout.js";
+import { getFormOverride, setFormOverride } from "./device-mode.js";
 import { validateScoreName } from "./highscores.js";
 import { showDreamFeedModal } from "./ui.js";
 
@@ -92,8 +93,17 @@ function renderDisplayTab() {
   const modes = VIEW_MODE_ORDER.map(
     (m) => `<button type="button" class="btn ${mode === m ? "primary" : ""}" data-view-mode="${m}">${VIEW_MODE_LABELS[m] || m}</button>`,
   ).join("");
+  const form = getFormOverride();
+  const forms = ["auto", "phone", "tablet", "desktop"].map(
+    (m) => `<button type="button" class="btn ${form === m ? "primary" : ""}" data-form-override="${m}">${m === "auto" ? "Auto" : m[0].toUpperCase() + m.slice(1)}</button>`,
+  ).join("");
 
   return `
+    <div class="pause-section">
+      <h3>Device layout</h3>
+      <p class="pause-hint">Auto follows this screen. Override if the table picks the wrong chrome.</p>
+      <div class="pause-btn-row">${forms}</div>
+    </div>
     <div class="pause-section">
       <h3>Interface size</h3>
       <p class="pause-hint">Auto matches your screen resolution and Windows display scaling. Presets still shrink so the table fits on smaller windows.</p>
@@ -305,6 +315,12 @@ function bindDisplayControls(root) {
   root.querySelectorAll("[data-view-mode]").forEach((btn) => {
     btn.addEventListener("click", () => {
       setViewMode(btn.dataset.viewMode);
+      showTab("display");
+    });
+  });
+  root.querySelectorAll("[data-form-override]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      setFormOverride(btn.dataset.formOverride);
       showTab("display");
     });
   });

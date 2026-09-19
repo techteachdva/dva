@@ -3,6 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0b0a14">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Somnia">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="images/icons/somnia-192.png">
   <title>Somnia — Dream Table</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -27,7 +34,7 @@
   <div id="app">
     <header class="top-bar play-top-bar">
       <div class="brand">
-        <span class="version-label">Somnia v 20.0</span>
+        <span class="version-label">Somnia v 20.1</span>
         <h1>Somnia</h1>
       </div>
       <div id="phase-stepper" class="phase-stepper top-bar-stepper" aria-label="Round phases"></div>
@@ -43,8 +50,8 @@
         </div>
       </div>
       <div id="header-actions" class="header-actions">
-        <button type="button" id="btn-header-subconscious" class="btn btn-sm btn-header-subconscious" data-deck-id="subconscious" title="Browse The Subconscious">☠ Subconscious</button>
-        <div class="header-dropdown" id="header-dreamers-menu">
+        <button type="button" id="btn-header-subconscious" class="btn btn-sm btn-header-subconscious" data-deck-id="subconscious" data-chrome-overflow="compact" title="Browse The Subconscious">☠ Subconscious</button>
+        <div class="header-dropdown" id="header-dreamers-menu" data-chrome-overflow="phone">
           <button type="button" id="btn-header-dreamers" class="btn btn-sm header-dropdown-toggle" aria-expanded="false" aria-haspopup="true">Dreamers</button>
           <div id="dreamers-dropdown-panel" class="header-dropdown-panel hidden" role="menu" aria-label="Dreamer roster">
             <p class="header-dropdown-hint input-hint">
@@ -56,14 +63,19 @@
         </div>
         <button type="button" class="btn btn-icon btn-music-toggle" data-music-toggle aria-pressed="true" title="Mute music" aria-label="Mute music">🔊</button>
         <button type="button" id="btn-pause" class="btn btn-sm" title="Pause menu (Esc)">⏸ Pause</button>
-        <button type="button" id="btn-overview" class="btn btn-sm" title="Game overview">Overview</button>
-        <button type="button" id="btn-tutorial" class="btn btn-sm">Tips</button>
+        <button type="button" id="btn-overview" class="btn btn-sm" data-chrome-overflow="compact" title="Game overview">Overview</button>
+        <button type="button" id="btn-tutorial" class="btn btn-sm" data-chrome-overflow="compact">Tips</button>
+        <div class="header-dropdown chrome-more" id="header-more-menu" hidden>
+          <button type="button" id="btn-header-more" class="btn btn-sm btn-icon" aria-expanded="false" aria-haspopup="true" title="More table actions" aria-label="More table actions">⋯</button>
+          <div id="header-more-panel" class="header-dropdown-panel hidden" role="menu" aria-label="More table actions"></div>
+        </div>
       </div>
     </header>
 
     <main>
       <section id="screen-game" class="screen active">
         <div class="table-surface" id="table-surface">
+          <button type="button" id="btn-deck-drawer" class="chrome-edge-toggle chrome-edge-toggle-deck" aria-expanded="false" aria-controls="deck-column">Decks</button>
           <aside id="deck-column" class="deck-column" aria-label="Game decks"></aside>
           <div id="coop-play-banner" class="coop-play-banner hidden" aria-live="polite"></div>
           <div id="phase-banner" class="phase-banner" aria-live="polite"></div>
@@ -76,6 +88,8 @@
           </div>
         </div>
 
+        <button type="button" id="btn-sidebar-drawer" class="chrome-edge-toggle chrome-edge-toggle-side" aria-expanded="false" aria-controls="sidebar-right">Table</button>
+        <div id="sidebar-drawer-backdrop" class="chrome-drawer-backdrop hidden"></div>
         <aside class="sidebar right sidebar-v14" id="sidebar-right">
           <div class="resize-handle resize-col edge-left" id="resize-sidebar-right" title="Drag to resize sidebar"></div>
           <h3>Active Archetype</h3>

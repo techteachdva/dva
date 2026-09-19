@@ -4,6 +4,27 @@
  */
 
 const MODES = ["desktop", "tablet", "mobile"];
+const FORM_OVERRIDE_KEY = "somnia.formOverride";
+const FORM_OVERRIDE_VALUES = ["phone", "tablet", "desktop"];
+
+export function getFormOverride() {
+  try {
+    const value = localStorage.getItem(FORM_OVERRIDE_KEY);
+    return FORM_OVERRIDE_VALUES.includes(value) ? value : "auto";
+  } catch {
+    return "auto";
+  }
+}
+
+export function setFormOverride(form) {
+  try {
+    if (!form || form === "auto") localStorage.removeItem(FORM_OVERRIDE_KEY);
+    else if (FORM_OVERRIDE_VALUES.includes(form)) localStorage.setItem(FORM_OVERRIDE_KEY, form);
+  } catch {
+    /* private mode */
+  }
+  applyMode(detectDeviceMode());
+}
 
 function hasTouch() {
   return navigator.maxTouchPoints > 0;
@@ -42,6 +63,9 @@ function detectPointerKind() {
 }
 
 function detectForm() {
+  const override = getFormOverride();
+  if (override !== "auto") return override;
+
   const w = window.innerWidth;
   const h = window.innerHeight;
   const minSide = Math.min(w, h);
@@ -107,11 +131,15 @@ function applyMode(mode) {
   root.dataset.orientation = profile.orientation;
   root.dataset.display = profile.display;
   root.dataset.motion = profile.motion;
+  root.dataset.formOverride = getFormOverride();
 
   body?.classList.toggle("device-mobile", mode === "mobile");
   body?.classList.toggle("device-tablet", mode === "tablet");
   body?.classList.toggle("device-desktop", mode === "desktop");
   body?.classList.toggle("touch-device", profile.touch);
+  body?.classList.toggle("compact-chrome", profile.form === "phone" || profile.form === "tablet");
+
+  window.dispatchEvent(new CustomEvent("somnia:capabilities", { detail: profile }));
 }
 
 let resizeTimer = null;

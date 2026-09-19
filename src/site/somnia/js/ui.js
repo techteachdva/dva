@@ -70,6 +70,7 @@ import { BOSS_DREAM_DECK_SLOTS } from "./data.js";
 import { consumeBoardClickSuppression, getBoardZoom, cancelPendingBoardGesture, suppressNextBoardClick, isBoardCameraBusy } from "./board-zoom.js";
 import { bindLongPress, bindInspectGesture } from "./pointer-gestures.js";
 import { prefersTouchUi, getCapabilityProfile } from "./device-mode.js";
+import { revealCompactTarget } from "./compact-chrome.js";
 import { getMomentHistory, flashMoment } from "./moment-overlay.js";
 import { isBeastTokenHidden, isDreamerTokenHidden } from "./board-fx.js";
 import { powerTokensInPool, MAX_POWER_TOKEN_POOL } from "./power-tokens.js";
@@ -4538,6 +4539,7 @@ function populateTutorialJumpMenu(stepIndex, onJump) {
 export function ensureTutorialStepTargetsVisible(step) {
   const selectors = getStepTargetSelectors(step);
   const spotlight = getSpotlightSelector(step);
+  [...selectors, spotlight].filter(Boolean).forEach((sel) => revealCompactTarget(sel));
   if (
     selectors.some((s) => s === "#btn-advance-phase" || s === "#phase-advance-bar")
     || spotlight === "#btn-advance-phase"

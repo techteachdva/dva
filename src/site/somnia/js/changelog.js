@@ -5,10 +5,21 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "20.0";
+export const SOMNIA_VERSION = "20.1";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "20.1",
+    title: "Device chrome & installable PWA",
+    notes: [
+      "Phone, iPad, and desktop share one 20.1 build — the table picks a stack, split, or triad menu and a play layout that leaves the hex map room.",
+      "Phone and iPad play fold Overview, Tips, and Subconscious into ⋯; decks and the archetype table become edge drawers.",
+      "Add to Home Screen installs Somnia from the live site. A Reload toast appears when a new dreamscape is waiting.",
+      "Launch config and device autosave survive iOS tab eviction, so a Home Screen cold start can Continue Dream offline.",
+      "The itch.io zip is the same 20.1 table. Install-to-Home-Screen is first-class on the hosted site.",
+    ],
+  },
   {
     version: "20.0",
     title: "Touch table & device-aware camera",
@@ -18,7 +29,6 @@ export const CHANGELOG = [
       "Double-tap a Dreamer chip or board token to zoom in on them.",
       "The table detects phone, tablet, and desktop, including large iPads, and swaps hover-only chrome for touch copy.",
       "Audio unlocks on the first tap, not only click or key.",
-      "iPad menu is a two-column split with no horizontal scroll; phones stack. Play chrome yields the hex map on both.",
     ],
   },
   {
