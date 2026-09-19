@@ -3673,10 +3673,16 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
   transition: transform 0.16s ease, filter 0.16s ease;
 }
 
-.hex-tile .hex-occupant-token:hover {
+.hex-tile .hex-occupant-token:hover,
+.hex-tile .hex-occupant-token:focus-visible {
   transform: translateY(calc(-4px * var(--hex-scale, 1))) scale(1.06);
   filter: drop-shadow(0 6px 14px rgba(201, 160, 255, 0.55));
   z-index: 4;
+}
+
+.hex-tile .hex-occupant-dreamer:focus-visible {
+  outline: 2px solid rgba(240, 201, 106, 0.9);
+  outline-offset: 2px;
 }
 
 .hex-tile .hex-occupant-beast {
@@ -3919,14 +3925,14 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
   left: var(--px);
   top: var(--py);
   z-index: 2;
-  min-width: 6.4rem;
-  max-width: 8.2rem;
-  padding: 0.45rem 0.55rem;
+  min-width: 6.8rem;
+  max-width: 9rem;
+  padding: 0.48rem 0.62rem;
   border-radius: 999px;
   border: 1px solid rgba(201, 160, 255, 0.35);
   background: rgba(16, 10, 32, 0.94);
   color: rgba(232, 228, 255, 0.55);
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   font-weight: 700;
   line-height: 1.15;
   text-align: center;
@@ -3934,7 +3940,7 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
   cursor: pointer;
   transform: translate(-50%, -50%) scale(0.72);
   opacity: 0;
-  transition: transform 0.18s ease, opacity 0.18s ease, box-shadow 0.15s ease;
+  transition: left 0.12s linear, top 0.12s linear, transform 0.18s ease, opacity 0.18s ease, box-shadow 0.15s ease;
 }
 
 .power-token-radial-layer.open .power-token-radial-item {
@@ -5465,6 +5471,28 @@ body.card-detail-open .tutorial-card {
   align-items: center;
   gap: 0.35rem;
   width: 100%;
+}
+
+.landscape-detail-occupant-card.is-clickable {
+  cursor: pointer;
+  border-radius: 12px;
+  padding: 0.2rem 0.15rem 0.35rem;
+  outline: 1px solid transparent;
+  transition: outline-color 0.15s ease, box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.landscape-detail-occupant-card.is-clickable:hover,
+.landscape-detail-occupant-card.is-clickable:focus-visible {
+  outline-color: rgba(240, 201, 106, 0.75);
+  box-shadow: 0 0 18px rgba(123, 92, 255, 0.32);
+  transform: translateY(-2px);
+}
+
+.landscape-detail-occupant-hint {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: rgba(201, 160, 255, 0.82);
 }
 
 .landscape-detail-occupant-card .game-card {

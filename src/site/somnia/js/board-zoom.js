@@ -13,6 +13,7 @@ let panY = 0;
 let userAdjusted = false;
 let bound = false;
 let zoomChangeHandler = null;
+let cameraMoveHandler = null;
 let zoomRaf = 0;
 let pendingPan = null;
 /** Applied after the hex board is in the DOM (avoids focus races with re-render). */
@@ -32,13 +33,22 @@ export function getBoardZoom() {
   return zoom;
 }
 
+export function getMaxBoardZoom() {
+  return MAX_ZOOM;
+}
+
 export function setBoardZoomChangeHandler(handler) {
   zoomChangeHandler = handler;
+}
+
+export function setBoardCameraMoveHandler(handler) {
+  cameraMoveHandler = handler;
 }
 
 function applyTransform() {
   if (!stage) return;
   stage.style.transform = `translate3d(${panX}px, ${panY}px, 0)`;
+  cameraMoveHandler?.();
 }
 
 function getBoardEl() {
@@ -88,10 +98,13 @@ export function fitBoardToViewport() {
 
 function applyQueuedBoardFocus() {
   if (!pendingFocus || !viewport || !stage) return false;
-  const { landscapeId, animate } = pendingFocus;
+  const { landscapeId, playerId, animate } = pendingFocus;
   pendingFocus = null;
 
-  const tile = document.querySelector(`.hex-tile[data-tile-id="${landscapeId}"]`);
+  const token = playerId
+    ? document.querySelector(`.hex-occupant-dreamer[data-dreamer-id="${playerId}"]`)
+    : null;
+  const tile = token || document.querySelector(`.hex-tile[data-tile-id="${landscapeId}"]`);
   if (!tile) return false;
 
   const tileRect = tile.getBoundingClientRect();
@@ -119,13 +132,13 @@ export function syncBoardZoomAfterRender() {
 }
 
 /** Snap pan/zoom to center a landscape hex (e.g. dreamer selection). */
-export function focusOnLandscape(landscapeId, { zoom: targetZoom = 2.35, animate = true } = {}) {
+export function focusOnLandscape(landscapeId, { zoom: targetZoom = 2.35, animate = true, playerId = null } = {}) {
   if (!viewport || !stage || !landscapeId) return false;
   const nextZoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, targetZoom));
   const zoomChanged = Math.abs(nextZoom - zoom) > 0.001;
   zoom = nextZoom;
   userAdjusted = true;
-  pendingFocus = { landscapeId, animate: animate !== false };
+  pendingFocus = { landscapeId, playerId, animate: animate !== false };
 
   if (zoomChanged) {
     zoomChangeHandler?.();
@@ -134,6 +147,15 @@ export function focusOnLandscape(landscapeId, { zoom: targetZoom = 2.35, animate
 
   applyQueuedBoardFocus();
   return true;
+}
+
+/** Max-zoom onto a Dreamer token on the board and center the camera on it. */
+export function focusOnDreamer(playerId, landscapeId, options = {}) {
+  return focusOnLandscape(landscapeId, {
+    zoom: MAX_ZOOM,
+    animate: options.animate !== false,
+    playerId,
+  });
 }
 
 /** Suppress the next hex click after a space/alt pan drag so tiles are not selected accidentally. */

@@ -9,7 +9,9 @@ import {
   syncBoardZoomAfterRender,
   fitBoardToViewport,
   setBoardZoomChangeHandler,
+  setBoardCameraMoveHandler,
   focusOnLandscape,
+  focusOnDreamer,
 } from "./board-zoom.js";
 import { initPauseMenu, openPauseMenu } from "./pause-menu.js";
 import { initFxLayer, burstSparklesAtElement } from "./fx.js";
@@ -47,6 +49,7 @@ import {
   acceptDreamerDeath,
   isBlockingGameChoice,
   blockingChoiceLabel,
+  encounterKey,
 } from "./state.js";
 import {
   getPhaseActions,
@@ -144,6 +147,7 @@ import {
   showPowerTokenRadial,
   showRadialMenu,
   hideRadialMenu,
+  repositionRadialMenu,
   renderMeetPoolGuide,
   renderPhaseSpendHands,
   renderCoopMeetHands,
@@ -194,6 +198,7 @@ import {
   showOverviewModal,
   resetQuestReadyFlashes,
   hideDreamerDetailOverlay,
+  suppressDreamerOverlay,
   showTutorialStep,
   showTutorialBrief,
   hideTutorialBrief,
@@ -221,6 +226,8 @@ let lastTutorialStepId = null;
 let lastTutorialCameraKey = null;
 let pendingDreamerFocusId = null;
 let pendingDreamerRadial = null;
+let dockSelectTimer = null;
+const DOCK_SELECT_DELAY_MS = 280;
 let tutorialAutoAdvanceTimer = null;
 let fullscreenReady = false;
 const lastCardClick = { id: null, time: 0 };
@@ -264,6 +271,10 @@ async function init() {
   initBoardZoom();
   setBoardZoomChangeHandler(() => {
     renderBoardArea();
+    repositionRadialMenu();
+  });
+  setBoardCameraMoveHandler(() => {
+    repositionRadialMenu();
   });
   bindFullscreenPrompt();
   bindRestart();
@@ -1211,9 +1222,47 @@ function onObjectCardClick(card, zone) {
   showModal(card);
 }
 
-function shortenRadialLabel(text, max = 22) {
-  if (!text || text.length <= max) return text || "";
-  return `${text.slice(0, max - 1)}…`;
+function shortenRadialLabel(text, max = 20) {
+  const raw = (text || "").trim();
+  if (!raw) return "";
+  const aliases = [
+    [/^Draw & Resolve Dream$/i, "Draw Dream"],
+    [/^Reveal Landscapes \(select Lucidity\)$/i, "Reveal"],
+    [/^Reveal Landscapes \((\d+) for team\)$/i, "Reveal ($1)"],
+    [/^Power Token as 1 (.+) \(on\)$/i, "Token as $1"],
+    [/^Power Token as 1 (.+)$/i, "Token as $1"],
+  ];
+  let label = raw;
+  for (const [pattern, replacement] of aliases) {
+    if (pattern.test(label)) {
+      label = label.replace(pattern, replacement);
+      break;
+    }
+  }
+  if (label.length <= max) return label;
+  return `${label.slice(0, max - 1)}…`;
+}
+
+function clearDockSelectTimer() {
+  if (!dockSelectTimer) return;
+  clearTimeout(dockSelectTimer);
+  dockSelectTimer = null;
+}
+
+function zoomMaxOnDreamer(playerId, tileId) {
+  clearDockSelectTimer();
+  pendingDreamerFocusId = null;
+  pendingDreamerRadial = null;
+  hideRadialMenu();
+  hideUtilityModal(true);
+  suppressDreamerOverlay(800);
+  const playerIndex = state.players.findIndex((p) => p.id === playerId);
+  if (playerIndex >= 0) state.activePlayerIndex = playerIndex;
+  if (getPhase(state) === "Meet" && tileId) state.selectedLandscapeId = tileId;
+  if (playerId && tileId) focusOnDreamer(playerId, tileId);
+  if (tileId) playLandscapeSfx(tileId);
+  renderAll();
+  suppressDreamerOverlay(800);
 }
 
 function showDreamerBoardRadialMenu(playerId, tileId, player) {
@@ -1234,10 +1283,6 @@ function showDreamerBoardRadialMenu(playerId, tileId, player) {
     onPick: () => showDreamerDetailOverlay(player.dreamer, { player, state }),
   });
 
-  if (options.length === 1 && options[0].id === "view") {
-    return;
-  }
-
   showRadialMenu(null, options, (opt) => {
     if (opt.kind && !isTutorialActionAllowed(state, opt.kind, { action: opt.action, tileId })) {
       tutorialActionBlocked(state);
@@ -1256,9 +1301,11 @@ function showDreamerBoardRadialMenu(playerId, tileId, player) {
 function openDreamerBoardRadial(anchorEl, playerId, tileId) {
   const playerIndex = state.players.findIndex((p) => p.id === playerId);
   if (playerIndex < 0) return;
+  clearDockSelectTimer();
+  pendingDreamerFocusId = null;
+  hideUtilityModal(true);
   state.activePlayerIndex = playerIndex;
   if (getPhase(state) === "Meet") state.selectedLandscapeId = tileId;
-  queueDreamerBoardFocus(tileId);
   playLandscapeSfx(tileId);
   pendingDreamerRadial = {
     playerId,
@@ -1317,7 +1364,12 @@ function openBeastBoardRadial(anchorEl, encounter, tileId) {
     }
     opt.onPick?.();
     renderAll();
-  }, { ariaLabel: `${encounter.name} encounter` });
+  }, {
+    ariaLabel: `${encounter.name} encounter`,
+    resolveAnchor: () => document.querySelector(`.hex-occupant-beast[data-encounter-key="${encounterKey(encounter)}"]`)
+      || document.querySelector(`.hex-tile[data-tile-id="${tileId}"] .hex-occupant-beast`)
+      || document.querySelector(`.hex-tile[data-tile-id="${tileId}"]`),
+  });
 }
 
 function onHandCardClick(card, owner) {
@@ -1588,13 +1640,26 @@ function renderBoardArea() {
     }
     handleBoardTileClick(state, id);
     renderAll();
-  }, legalMoves, pickHighlights, (id) => showLandscapeDetail(state, id), {
-    onDreamerTokenClick: (playerId, tileId, anchorEl) => {
+  }, legalMoves, pickHighlights, (id) => showLandscapeDetail(state, id, {
+    onDreamerClick: (playerId, tileId) => {
+      hideUtilityModal(true);
+      openDreamerBoardRadial(null, playerId, tileId);
+    },
+    onBeastClick: (encounter, tileId) => {
+      hideUtilityModal(true);
+      openBeastBoardRadial(null, encounter, tileId);
+    },
+  }), {
+    onDreamerTokenClick: (playerId, tileId, anchorEl, event) => {
       const playerIndex = state.players.findIndex((p) => p.id === playerId);
       if (playerIndex < 0) return;
       if (!isTutorialActionAllowed(state, "dreamerSelect", { playerIndex })) {
         tutorialActionBlocked(state);
         renderAll();
+        return;
+      }
+      if (event?.detail >= 2) {
+        zoomMaxOnDreamer(playerId, tileId);
         return;
       }
       const beat = currentRailBeat(state);
@@ -1710,6 +1775,7 @@ function renderAll() {
       }
       return;
     }
+    hideRadialMenu();
     const prevId = state.players[state.activePlayerIndex]?.id;
     state.activePlayerIndex = index;
     const player = state.players[index];
@@ -1717,7 +1783,6 @@ function renderAll() {
       state.selectedLandscapeId = player.landscapeId;
     }
     if (player?.alive && player.landscapeId) {
-      queueDreamerBoardFocus(player.landscapeId);
       playLandscapeSfx(player.landscapeId);
     }
     const nextId = state.players[index]?.id;
@@ -1725,6 +1790,23 @@ function renderAll() {
       playDreamerHandSparkle(prevId, nextId);
     }
     renderAll();
+    clearDockSelectTimer();
+    dockSelectTimer = window.setTimeout(() => {
+      dockSelectTimer = null;
+      const focused = state.players[index];
+      if (focused?.alive && focused.landscapeId) {
+        queueDreamerBoardFocus(focused.landscapeId);
+        flushDreamerBoardFocus();
+      }
+    }, DOCK_SELECT_DELAY_MS);
+  }, (index) => {
+    if (!isTutorialActionAllowed(state, "dreamerSelect", { playerIndex: index })) {
+      tutorialActionBlocked(state);
+      renderAll();
+      return;
+    }
+    const player = state.players[index];
+    zoomMaxOnDreamer(player?.id, player?.landscapeId);
   });
 
   if (phaseOpeningActive(state)) {
@@ -1796,6 +1878,7 @@ function renderAll() {
     const radial = pendingDreamerRadial;
     pendingDreamerRadial = null;
     showDreamerBoardRadialMenu(radial.playerId, radial.tileId, radial.player);
+    requestAnimationFrame(() => repositionRadialMenu());
   }
 
   updateHandSnapshots(state);

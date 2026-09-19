@@ -963,12 +963,25 @@ export function refundPowerBonus(state) {
 
 export function getDreamerBoardRadialOptions(state, player, tileId, handlers) {
   const options = [];
-  const phase = getPhase(state);
-  const tile = landscapeById(state, tileId);
+  for (const action of getPhaseActions(state, handlers)) {
+    if (action.advance) continue;
+    const label = action.label || "";
+    if (action.disabled && (/move\(s\)/.test(label) || /^Actions \d/.test(label))) continue;
+    options.push({
+      id: action.id || label,
+      label,
+      hint: action.hint || label,
+      disabled: !!action.disabled,
+      primary: !!action.primary,
+      onPick: action.onClick,
+    });
+  }
 
-  if (phase === "Meet" && tile && player?.landscapeId === tileId) {
+  const tile = landscapeById(state, tileId);
+  if (getPhase(state) === "Meet" && tile && player?.landscapeId === tileId) {
     getLandscapeActionChoices(tile).forEach((choice) => {
       const label = choice.label || "";
+      if (options.some((opt) => opt.label === label)) return;
       let kind = "landscapeAction";
       if (choice.id === "A" || /Action A/i.test(label) || label.startsWith("Draw [")) {
         kind = "landscapeActionA";

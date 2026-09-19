@@ -1,28 +1,184 @@
 {
-  "suburbia": { "skip": true, "title": "Night Crickets Back Porch", "artist": "freesound_community", "artistUrl": "https://pixabay.com/users/freesound_community-46691455/", "sourceUrl": "https://pixabay.com/sound-effects/night-crickets-back-porch-6180/" },
-  "lava": { "skip": true, "title": "Hot Bubbling Mud", "artist": "freesound_community", "artistUrl": "https://pixabay.com/users/freesound_community-46691455/", "sourceUrl": "https://pixabay.com/sound-effects/hot-bubbling-mud-99785/" },
-  "field-of-broken-glass": { "skip": true, "title": "Glass_breaking", "artist": "Mauricio Póvoa", "artistUrl": "https://pixabay.com/users/magiaz-10236927/", "sourceUrl": "https://pixabay.com/sound-effects/glass-breaking-363541/" },
-  "candy-mountain": { "skip": true, "title": "Eating pop-rocks", "artist": "freesound_community", "artistUrl": "https://pixabay.com/users/freesound_community-46691455/", "sourceUrl": "https://pixabay.com/sound-effects/eating-pop-rocks-69995/" },
-  "bed": { "pageUrl": "https://pixabay.com/sound-effects/sleep-breathing-67336/", "title": "Sleep breathing", "artist": "freesound_community", "artistUrl": "https://pixabay.com/users/freesound_community-46691455/" },
-  "city": { "pageUrl": "https://pixabay.com/sound-effects/city-night-crickets-24013/", "title": "City night crickets", "artist": "freesound_community", "artistUrl": "https://pixabay.com/users/freesound_community-46691455/" },
-  "forest": { "pageUrl": "https://pixabay.com/sound-effects/nature-forest-quiet-birdsong-distant-roar-of-trees-branches-in-wind-could-pass-as-a-distant-river-16798/", "title": "Forest ambience", "artist": "arpeggio1980 (Freesound)", "artistUrl": "https://pixabay.com/users/arpeggio1980-17457684/" },
-  "house": { "pageUrl": "https://pixabay.com/sound-effects/creaking-door-41706/", "title": "Creaking door", "artist": "freesound_community", "artistUrl": "https://pixabay.com/users/freesound_community-46691455/" },
-  "road": { "pageUrl": "https://pixabay.com/sound-effects/car-passing-by-6208/", "title": "Car passing by", "artist": "freesound_community", "artistUrl": "https://pixabay.com/users/freesound_community-46691455/" },
-  "sky": { "pageUrl": "https://pixabay.com/sound-effects/howling-wind-14499/", "title": "Howling wind", "artist": "freesound_community", "artistUrl": "https://pixabay.com/users/freesound_community-46691455/" },
-  "black-void": { "pageUrl": "https://pixabay.com/sound-effects/synth-wind-25628/", "title": "Synth wind", "artist": "freesound_community", "artistUrl": "https://pixabay.com/users/freesound_community-46691455/" },
-  "the-attic": { "pageUrl": "https://pixabay.com/sound-effects/creaking-attic-door-30908/", "title": "Creaking attic door", "artist": "freesound_community", "artistUrl": "https://pixabay.com/users/freesound_community-46691455/" },
-  "the-basement": { "pageUrl": "https://pixabay.com/sound-effects/dripping-water-tap-233602/", "title": "Dripping water tap", "artist": "freesound_community", "artistUrl": "https://pixabay.com/users/freesound_community-46691455/" },
-  "desert": { "pageUrl": "https://pixabay.com/sound-effects/desert-monolith-6369/", "title": "Desert monolith", "artist": "freesound_community", "artistUrl": "https://pixabay.com/users/freesound_community-46691455/" },
-  "endless-hallway": { "pageUrl": "https://pixabay.com/sound-effects/footsteps-echo-hallway-6290/", "title": "Footsteps echo hallway", "artist": "freesound_community", "artistUrl": "https://pixabay.com/users/freesound_community-46691455/" },
-  "the-party": { "pageUrl": "https://pixabay.com/sound-effects/party-crowd-6112/", "title": "Party crowd", "artist": "freesound_community", "artistUrl": "https://pixabay.com/users/freesound_community-46691455/" },
-  "awards": { "pageUrl": "https://pixabay.com/sound-effects/applause-86759/", "title": "Applause", "artist": "freesound_community", "artistUrl": "https://pixabay.com/users/freesound_community-46691455/" },
-  "sea-of-teeth": { "pageUrl": "https://pixabay.com/sound-effects/bone-cracking-sound-effect-6829/", "title": "Bone cracking", "artist": "freesound_community", "artistUrl": "https://pixabay.com/users/freesound_community-46691455/" },
-  "endless-ocean": { "pageUrl": "https://pixabay.com/sound-effects/ocean-waves-6176/", "title": "Ocean waves", "artist": "freesound_community", "artistUrl": "https://pixabay.com/users/freesound_community-46691455/" },
-  "naked-classroom": { "pageUrl": "https://pixabay.com/sound-effects/classroom-ambience-6113/", "title": "Classroom ambience", "artist": "freesound_community", "artistUrl": "https://pixabay.com/users/freesound_community-46691455/" },
-  "tranquil-grove": { "pageUrl": "https://pixabay.com/sound-effects/stream-birds-6177/", "title": "Stream with birds", "artist": "freesound_community", "artistUrl": "https://pixabay.com/users/freesound_community-46691455/" },
-  "day-in-the-life": { "pageUrl": "https://pixabay.com/sound-effects/alarm-clock-short-6402/", "title": "Alarm clock short", "artist": "freesound_community", "artistUrl": "https://pixabay.com/users/freesound_community-46691455/" },
-  "insanity": { "pageUrl": "https://pixabay.com/sound-effects/horror-scaryviolins-6829/", "title": "Horror scary violins", "artist": "freesound_community", "artistUrl": "https://pixabay.com/users/freesound_community-46691455/" },
-  "inner-sanctum": { "pageUrl": "https://pixabay.com/sound-effects/church-ambience-6114/", "title": "Church ambience", "artist": "freesound_community", "artistUrl": "https://pixabay.com/users/freesound_community-46691455/" },
-  "silver-mist": { "pageUrl": "https://pixabay.com/sound-effects/mist-wind-52608/", "title": "Mist wind", "artist": "freesound_community", "artistUrl": "https://pixabay.com/users/freesound_community-46691455/" },
-  "wasteland": { "pageUrl": "https://pixabay.com/sound-effects/desolate-wind-7597/", "title": "Desolate wind", "artist": "freesound_community", "artistUrl": "https://pixabay.com/users/freesound_community-46691455/" }
+  "bed": {
+    "pageUrl": "https://pixabay.com/sound-effects/nature-gentle-rain-on-window-350529/",
+    "title": "Rain, Window, Soft rain",
+    "artist": "Pixabay",
+    "artistUrl": "https://pixabay.com/sound-effects/",
+    "sourceUrl": "https://pixabay.com/sound-effects/nature-gentle-rain-on-window-350529/"
+  },
+  "city": {
+    "pageUrl": "https://pixabay.com/sound-effects/city-traffic-in-city-309236/",
+    "title": "Traffic, City, Sound",
+    "artist": "Pixabay",
+    "artistUrl": "https://pixabay.com/sound-effects/",
+    "sourceUrl": "https://pixabay.com/sound-effects/city-traffic-in-city-309236/"
+  },
+  "forest": {
+    "pageUrl": "https://pixabay.com/sound-effects/nature-beautiful-birdsong-3-301866/",
+    "title": "Birdsong, Bird singing, Birdsong sounds",
+    "artist": "Pixabay",
+    "artistUrl": "https://pixabay.com/sound-effects/",
+    "sourceUrl": "https://pixabay.com/sound-effects/nature-beautiful-birdsong-3-301866/"
+  },
+  "house": {
+    "pageUrl": "https://pixabay.com/sound-effects/film-special-effects-walking-on-wood-363349/",
+    "title": "Walking, Footsteps, Wood",
+    "artist": "Pixabay",
+    "artistUrl": "https://pixabay.com/sound-effects/",
+    "sourceUrl": "https://pixabay.com/sound-effects/film-special-effects-walking-on-wood-363349/"
+  },
+  "road": {
+    "pageUrl": "https://pixabay.com/sound-effects/city-car-pass-by-337871/",
+    "title": "Car passing, Vehicle passing, Traffic noise",
+    "artist": "Pixabay",
+    "artistUrl": "https://pixabay.com/sound-effects/",
+    "sourceUrl": "https://pixabay.com/sound-effects/city-car-pass-by-337871/"
+  },
+  "sky": {
+    "pageUrl": "https://pixabay.com/sound-effects/nature-wind-blowing-sfx-01-423673/",
+    "title": "Wind blowing sfx, Wind, Wind blowing",
+    "artist": "Pixabay",
+    "artistUrl": "https://pixabay.com/sound-effects/",
+    "sourceUrl": "https://pixabay.com/sound-effects/nature-wind-blowing-sfx-01-423673/"
+  },
+  "suburbia": {
+    "pageUrl": "https://pixabay.com/sound-effects/city-suburban-evening-18141/",
+    "title": "Evening, Crickets, Suburban",
+    "artist": "Pixabay",
+    "artistUrl": "https://pixabay.com/sound-effects/",
+    "sourceUrl": "https://pixabay.com/sound-effects/city-suburban-evening-18141/"
+  },
+  "lava": {
+    "pageUrl": "https://pixabay.com/sound-effects/nature-lava-loop-3-28887/",
+    "title": "Burn, Fire, Bubbling",
+    "artist": "Pixabay",
+    "artistUrl": "https://pixabay.com/sound-effects/",
+    "sourceUrl": "https://pixabay.com/sound-effects/nature-lava-loop-3-28887/"
+  },
+  "black-void": {
+    "pageUrl": "https://pixabay.com/sound-effects/musical-industrial-pulse-drone-27456/",
+    "title": "Industrial, Deep-space, Pulse",
+    "artist": "Pixabay",
+    "artistUrl": "https://pixabay.com/sound-effects/",
+    "sourceUrl": "https://pixabay.com/sound-effects/musical-industrial-pulse-drone-27456/"
+  },
+  "field-of-broken-glass": {
+    "pageUrl": "https://pixabay.com/sound-effects/film-special-effects-standing-on-broken-glass-67303/",
+    "title": "Crunching, Glass, Cracking",
+    "artist": "Pixabay",
+    "artistUrl": "https://pixabay.com/sound-effects/",
+    "sourceUrl": "https://pixabay.com/sound-effects/film-special-effects-standing-on-broken-glass-67303/"
+  },
+  "the-attic": {
+    "pageUrl": "https://pixabay.com/sound-effects/nature-soft-rain-on-a-tile-roof-14515/",
+    "title": "Attic, Roof, Gentle",
+    "artist": "Pixabay",
+    "artistUrl": "https://pixabay.com/sound-effects/",
+    "sourceUrl": "https://pixabay.com/sound-effects/nature-soft-rain-on-a-tile-roof-14515/"
+  },
+  "the-basement": {
+    "pageUrl": "https://pixabay.com/sound-effects/household-wind-basement-dripping-water-14721/",
+    "title": "Water, Dripping, Wind",
+    "artist": "Pixabay",
+    "artistUrl": "https://pixabay.com/sound-effects/",
+    "sourceUrl": "https://pixabay.com/sound-effects/household-wind-basement-dripping-water-14721/"
+  },
+  "desert": {
+    "pageUrl": "https://pixabay.com/sound-effects/film-special-effects-desert-sand-dunes-482890/",
+    "title": "Sand dunes, Desert sand, Sand dune",
+    "artist": "Pixabay",
+    "artistUrl": "https://pixabay.com/sound-effects/",
+    "sourceUrl": "https://pixabay.com/sound-effects/film-special-effects-desert-sand-dunes-482890/"
+  },
+  "endless-hallway": {
+    "pageUrl": "https://pixabay.com/sound-effects/film-special-effects-footsteps-74021/",
+    "title": "Tile, Hallway, Walking",
+    "artist": "Pixabay",
+    "artistUrl": "https://pixabay.com/sound-effects/",
+    "sourceUrl": "https://pixabay.com/sound-effects/film-special-effects-footsteps-74021/"
+  },
+  "the-party": {
+    "pageUrl": "https://pixabay.com/sound-effects/people-party-background-chatter-real-1-6194/",
+    "title": "Foley, Crowd, People",
+    "artist": "Pixabay",
+    "artistUrl": "https://pixabay.com/sound-effects/",
+    "sourceUrl": "https://pixabay.com/sound-effects/people-party-background-chatter-real-1-6194/"
+  },
+  "awards": {
+    "pageUrl": "https://pixabay.com/sound-effects/film-special-effects-applause-sound-effect-521104/",
+    "title": "Applause, Clapping, Audience applause",
+    "artist": "Pixabay",
+    "artistUrl": "https://pixabay.com/sound-effects/",
+    "sourceUrl": "https://pixabay.com/sound-effects/film-special-effects-applause-sound-effect-521104/"
+  },
+  "sea-of-teeth": {
+    "pageUrl": "https://pixabay.com/sound-effects/nature-deep-sea-underwater-ambience-472383/",
+    "title": "Deep, Sea, Ocean",
+    "artist": "Pixabay",
+    "artistUrl": "https://pixabay.com/sound-effects/",
+    "sourceUrl": "https://pixabay.com/sound-effects/nature-deep-sea-underwater-ambience-472383/"
+  },
+  "endless-ocean": {
+    "pageUrl": "https://pixabay.com/sound-effects/nature-ocean-beach-waves-332383/",
+    "title": "Beach, Wave, Ocean",
+    "artist": "Pixabay",
+    "artistUrl": "https://pixabay.com/sound-effects/",
+    "sourceUrl": "https://pixabay.com/sound-effects/nature-ocean-beach-waves-332383/"
+  },
+  "candy-mountain": {
+    "pageUrl": "https://pixabay.com/sound-effects/film-special-effects-chime-74910/",
+    "title": "Ding, Chime, Wind-chime",
+    "artist": "Pixabay",
+    "artistUrl": "https://pixabay.com/sound-effects/",
+    "sourceUrl": "https://pixabay.com/sound-effects/film-special-effects-chime-74910/"
+  },
+  "naked-classroom": {
+    "pageUrl": "https://pixabay.com/sound-effects/film-special-effects-thick-book-placed-on-a-classroom-desk-330037/",
+    "title": "Book drop, Thick book, Classroom sound",
+    "artist": "Pixabay",
+    "artistUrl": "https://pixabay.com/sound-effects/",
+    "sourceUrl": "https://pixabay.com/sound-effects/film-special-effects-thick-book-placed-on-a-classroom-desk-330037/"
+  },
+  "tranquil-grove": {
+    "pageUrl": "https://pixabay.com/sound-effects/nature-forest-stream-with-birds-chirping-581281/",
+    "title": "Stream, Water, Flowing",
+    "artist": "Pixabay",
+    "artistUrl": "https://pixabay.com/sound-effects/",
+    "sourceUrl": "https://pixabay.com/sound-effects/nature-forest-stream-with-birds-chirping-581281/"
+  },
+  "day-in-the-life": {
+    "pageUrl": "https://pixabay.com/sound-effects/nature-urban-morning-birds-4-am-soundscape-366500/",
+    "title": "City birds, Morning birds, Birdsong",
+    "artist": "Pixabay",
+    "artistUrl": "https://pixabay.com/sound-effects/",
+    "sourceUrl": "https://pixabay.com/sound-effects/nature-urban-morning-birds-4-am-soundscape-366500/"
+  },
+  "insanity": {
+    "pageUrl": "https://pixabay.com/sound-effects/film-special-effects-deep-haunting-drone-482880/",
+    "title": "Deep, Haunting, Drone",
+    "artist": "Pixabay",
+    "artistUrl": "https://pixabay.com/sound-effects/",
+    "sourceUrl": "https://pixabay.com/sound-effects/film-special-effects-deep-haunting-drone-482880/"
+  },
+  "inner-sanctum": {
+    "pageUrl": "https://pixabay.com/sound-effects/film-special-effects-single-church-bell-2-352062/",
+    "title": "Church bell, Church bell toll, Single church bell",
+    "artist": "Pixabay",
+    "artistUrl": "https://pixabay.com/sound-effects/",
+    "sourceUrl": "https://pixabay.com/sound-effects/film-special-effects-single-church-bell-2-352062/"
+  },
+  "silver-mist": {
+    "pageUrl": "https://pixabay.com/sound-effects/musical-ethereal-ambient-music-55115/",
+    "title": "Arpeggios, Synthesizer, Background-music",
+    "artist": "Pixabay",
+    "artistUrl": "https://pixabay.com/sound-effects/",
+    "sourceUrl": "https://pixabay.com/sound-effects/musical-ethereal-ambient-music-55115/"
+  },
+  "wasteland": {
+    "pageUrl": "https://pixabay.com/sound-effects/nature-mountain-wind-sound-effect-481156/",
+    "title": "Mountain wind, Alpine, Howling wind",
+    "artist": "Pixabay",
+    "artistUrl": "https://pixabay.com/sound-effects/",
+    "sourceUrl": "https://pixabay.com/sound-effects/nature-mountain-wind-sound-effect-481156/"
+  }
 }

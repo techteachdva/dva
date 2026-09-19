@@ -5,10 +5,21 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "19.0";
+export const SOMNIA_VERSION = "19.1";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "19.1",
+    title: "Board clicks, radials & landscape stings",
+    notes: [
+      "Click a Dreamer on the board for a full 360° radial of phase-contextual actions — no competing camera zoom.",
+      "Right-click a Landscape for the occupant and action overview; click a Dreamer or Dreambeast there to open the same radial.",
+      "Double-click a Dreamer on the board or in the dock to max-zoom and center the camera on that card.",
+      "The radial stays locked to the live Dreamer token after pan or zoom.",
+      "New Pixabay ambient stings for every Landscape.",
+    ],
+  },
   {
     version: "19.0",
     title: "Fullscreen Dream Guide",

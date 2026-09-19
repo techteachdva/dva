@@ -500,22 +500,72 @@ function onRadialMenuKey(event) {
   if (event.key === "Escape") hideRadialMenu();
 }
 
+let radialResolveAnchor = null;
+
 export function hideRadialMenu() {
   if (!radialMenuRoot) return;
   document.removeEventListener("keydown", onRadialMenuKey, true);
   radialMenuRoot.remove();
   radialMenuRoot = null;
+  radialResolveAnchor = null;
 }
 
 export const hidePowerTokenRadial = hideRadialMenu;
 
+function radialAnchorPoint(anchorEl) {
+  if (!anchorEl?.isConnected) return null;
+  const rect = anchorEl.getBoundingClientRect();
+  if (!rect.width && !rect.height && rect.left === 0 && rect.top === 0) return null;
+  return {
+    cx: rect.left + rect.width / 2,
+    cy: rect.top + rect.height / 2,
+  };
+}
+
+function fitRadialRing(cx, cy, radius) {
+  const pad = 84;
+  const minX = pad;
+  const maxX = window.innerWidth - pad;
+  const minY = pad;
+  const maxY = window.innerHeight - pad;
+  const room = Math.min(cx - minX, maxX - cx, cy - minY, maxY - cy);
+  const nextRadius = room < radius ? Math.max(96, room) : radius;
+  let nx = cx;
+  let ny = cy;
+  if (nx - nextRadius < minX) nx = minX + nextRadius;
+  if (nx + nextRadius > maxX) nx = maxX - nextRadius;
+  if (ny - nextRadius < minY) ny = minY + nextRadius;
+  if (ny + nextRadius > maxY) ny = maxY - nextRadius;
+  return { cx: nx, cy: ny, radius: nextRadius };
+}
+
+function layoutRadialButtons(anchorEl, buttons) {
+  const point = radialAnchorPoint(anchorEl);
+  if (!point || !buttons?.length) return false;
+  const count = buttons.length;
+  const desired = Math.min(230, Math.max(108, 84 + count * 12));
+  const ring = fitRadialRing(point.cx, point.cy, desired);
+  const startAngle = -Math.PI / 2;
+  buttons.forEach((btn, index) => {
+    const angle = startAngle + (2 * Math.PI * index) / count;
+    btn.style.setProperty("--px", `${ring.cx + Math.cos(angle) * ring.radius}px`);
+    btn.style.setProperty("--py", `${ring.cy + Math.sin(angle) * ring.radius}px`);
+  });
+  return true;
+}
+
+/** Keep an open radial centered on its live board token after pan/zoom. */
+export function repositionRadialMenu() {
+  if (!radialMenuRoot || !radialResolveAnchor) return false;
+  const el = radialResolveAnchor();
+  const buttons = [...radialMenuRoot.querySelectorAll(".radial-menu-item")];
+  return layoutRadialButtons(el, buttons);
+}
+
 function paintRadialMenu(anchorEl, options, onPick, { ariaLabel = "Actions" } = {}) {
   if (!anchorEl?.isConnected || !options?.length) return;
+  if (!radialAnchorPoint(anchorEl)) return;
 
-  const rect = anchorEl.getBoundingClientRect();
-  if (!rect.width && !rect.height && rect.left === 0 && rect.top === 0) return;
-  const cx = rect.left + rect.width / 2;
-  const cy = rect.top + rect.height / 2;
   const layer = document.createElement("div");
   layer.className = "power-token-radial-layer radial-menu-layer";
   layer.setAttribute("role", "menu");
@@ -532,16 +582,7 @@ function paintRadialMenu(anchorEl, options, onPick, { ariaLabel = "Actions" } = 
   const menu = document.createElement("div");
   menu.className = "power-token-radial-menu radial-menu";
 
-  const count = options.length;
-  const radius = Math.min(148, Math.max(92, 76 + count * 11));
-  const startAngle = -Math.PI / 2;
-  options.forEach((opt, index) => {
-    const angle = startAngle + (2 * Math.PI * index) / count;
-    const dx = Math.cos(angle) * radius;
-    const dy = Math.sin(angle) * radius;
-    const pad = 72;
-    const px = Math.min(window.innerWidth - pad, Math.max(pad, cx + dx));
-    const py = Math.min(window.innerHeight - pad, Math.max(pad, cy + dy));
+  options.forEach((opt) => {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = `power-token-radial-item radial-menu-item${opt.disabled ? "" : " ready"}${opt.primary ? " radial-primary" : ""}`;
@@ -550,8 +591,6 @@ function paintRadialMenu(anchorEl, options, onPick, { ariaLabel = "Actions" } = 
     btn.textContent = opt.label;
     btn.title = opt.hint || opt.label;
     btn.disabled = !!opt.disabled;
-    btn.style.setProperty("--px", `${px}px`);
-    btn.style.setProperty("--py", `${py}px`);
     btn.addEventListener("click", (event) => {
       event.stopPropagation();
       if (opt.disabled) return;
@@ -561,6 +600,7 @@ function paintRadialMenu(anchorEl, options, onPick, { ariaLabel = "Actions" } = 
     menu.appendChild(btn);
   });
 
+  layoutRadialButtons(anchorEl, [...menu.querySelectorAll(".radial-menu-item")]);
   layer.appendChild(menu);
   document.body.appendChild(layer);
   radialMenuRoot = layer;
@@ -575,9 +615,10 @@ function paintRadialMenu(anchorEl, options, onPick, { ariaLabel = "Actions" } = 
 export function showRadialMenu(anchorEl, options, onPick, { ariaLabel = "Actions", resolveAnchor = null } = {}) {
   hideRadialMenu();
   if (!options?.length) return;
+  radialResolveAnchor = resolveAnchor || (() => anchorEl);
 
   const open = () => {
-    const el = resolveAnchor?.() || anchorEl;
+    const el = radialResolveAnchor?.() || anchorEl;
     paintRadialMenu(el, options, onPick, { ariaLabel });
   };
 
@@ -1414,7 +1455,7 @@ export function renderBoard(
       const hidden = isDreamerTokenHidden(p.id);
       const arriving = hidden ? " is-arriving is-departing" : "";
       occupantTokens.push(
-        `<img class="hex-occupant-token hex-occupant-dreamer${arriving}" data-dreamer-id="${p.id}" src="${p.dreamer.image}" alt="${p.dreamer.name}" title="${p.name} — click for actions" decoding="async" draggable="false" onerror="this.remove()">`
+        `<img class="hex-occupant-token hex-occupant-dreamer${arriving}" data-dreamer-id="${p.id}" src="${p.dreamer.image}" alt="${p.dreamer.name}" title="${p.name} — click for actions · double-click to zoom" role="button" tabindex="0" decoding="async" draggable="false" onerror="this.remove()">`
       );
     });
     encounters.forEach((encounter, encIndex) => {
@@ -1427,7 +1468,7 @@ export function renderBoard(
       );
     });
     const occupantsHtml = occupantTokens.length
-      ? `<div class="hex-occupants" aria-hidden="true">${occupantTokens.join("")}</div>`
+      ? `<div class="hex-occupants">${occupantTokens.join("")}</div>`
       : "";
 
     el.innerHTML = `
@@ -1440,12 +1481,20 @@ export function renderBoard(
       <div class="tokens">${occupants.map((p) => p.dreamer.name.split(" ").pop()).join(" · ")} ${encounterMark}${encounters.length ? ` ${encounters.map((e) => e.name.split(" ")[0]).join(" · ")}` : ""}${finalMark}${finalArch && !finalArch.defeated ? ` ${finalArch.name.split(" ")[0]}` : ""}</div>
     `;
 
+    el.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      const dreamerEl = event.target.closest(".hex-occupant-dreamer");
+      if (!dreamerEl?.dataset.dreamerId) return;
+      event.preventDefault();
+      event.stopPropagation();
+      boardOptions.onDreamerTokenClick?.(dreamerEl.dataset.dreamerId, tile.id, dreamerEl, event);
+    });
     el.addEventListener("click", (event) => {
       if (consumeBoardClickSuppression()) return;
       const dreamerEl = event.target.closest(".hex-occupant-dreamer");
       if (dreamerEl?.dataset.dreamerId) {
         event.stopPropagation();
-        boardOptions.onDreamerTokenClick?.(dreamerEl.dataset.dreamerId, tile.id, dreamerEl);
+        boardOptions.onDreamerTokenClick?.(dreamerEl.dataset.dreamerId, tile.id, dreamerEl, event);
         return;
       }
       const beastEl = event.target.closest(".hex-occupant-beast");
@@ -1453,7 +1502,7 @@ export function renderBoard(
         const enc = encounters.find((e) => encounterKey(e) === beastEl.dataset.encounterKey);
         if (enc) {
           event.stopPropagation();
-          boardOptions.onBeastTokenClick?.(enc, tile.id, beastEl);
+          boardOptions.onBeastTokenClick?.(enc, tile.id, beastEl, event);
           return;
         }
       }
@@ -1476,7 +1525,7 @@ export function renderBoard(
   });
 }
 
-export function renderPlayers(state, onSelectPlayer) {
+export function renderPlayers(state, onSelectPlayer, onDoubleClickPlayer = null) {
   const dock = document.getElementById("player-list");
   const dropdown = document.getElementById("dreamers-dropdown-list");
   hideDreamerDetailTooltip();
@@ -1520,11 +1569,13 @@ export function renderPlayers(state, onSelectPlayer) {
         </div>
       `;
 
+      let tooltipTimer = 0;
       const showTooltip = () => {
-        const focusHint = !isActive && player.alive
-          ? "Click to focus this Dreamer"
-          : tradeTarget
-            ? "Click to trade with this Dreamer"
+        if (dreamerOverlaySuppressed()) return;
+        const focusHint = tradeTarget
+          ? "Click to trade with this Dreamer"
+          : player.alive
+            ? "Click to focus · double-click to zoom in on the board"
             : undefined;
         if (compact) {
           showDreamerDetailTooltip(player.dreamer, chip, { player, focusHint, state });
@@ -1534,19 +1585,38 @@ export function renderPlayers(state, onSelectPlayer) {
       };
 
       const hideTooltip = () => {
+        if (tooltipTimer) {
+          window.clearTimeout(tooltipTimer);
+          tooltipTimer = 0;
+        }
         if (compact) hideDreamerDetailTooltip();
         else hideDreamerDetailOverlay();
       };
 
-      chip.addEventListener("mouseenter", showTooltip);
+      const scheduleTooltip = () => {
+        if (dreamerOverlaySuppressed()) return;
+        if (tooltipTimer) window.clearTimeout(tooltipTimer);
+        tooltipTimer = window.setTimeout(() => {
+          tooltipTimer = 0;
+          showTooltip();
+        }, compact ? 320 : 160);
+      };
+
+      chip.addEventListener("mouseenter", scheduleTooltip);
       chip.addEventListener("mouseleave", hideTooltip);
-      chip.addEventListener("focusin", showTooltip);
+      chip.addEventListener("focusin", scheduleTooltip);
       chip.addEventListener("focusout", (event) => {
         if (!chip.contains(event.relatedTarget)) hideTooltip();
       });
-      chip.addEventListener("click", () => {
-        hideDreamerDetailTooltip();
+      chip.addEventListener("click", (event) => {
+        if (event.detail >= 2) return;
+        hideTooltip();
         onSelectPlayer(index);
+      });
+      chip.addEventListener("dblclick", (event) => {
+        event.preventDefault();
+        hideTooltip();
+        onDoubleClickPlayer?.(index);
       });
       list.appendChild(chip);
     };
@@ -3504,6 +3574,18 @@ export function showDreamerDetailOverlay(dreamer, options = {}) {
   overlay.classList.remove("hidden");
 }
 
+let suppressDreamerOverlayUntil = 0;
+
+export function suppressDreamerOverlay(ms = 600) {
+  suppressDreamerOverlayUntil = Date.now() + ms;
+  hideDreamerDetailTooltip();
+  hideDreamerDetailOverlay();
+}
+
+function dreamerOverlaySuppressed() {
+  return Date.now() < suppressDreamerOverlayUntil;
+}
+
 export function hideDreamerDetailOverlay() {
   dreamerOverlayEl?.classList.add("hidden");
 }
@@ -3601,7 +3683,7 @@ export function showMeetDreambeastSkipConfirm({
   document.body.classList.add("utility-modal-open");
 }
 
-function mountLandscapeOccupantCard(container, card, caption, detailHtml = "") {
+function mountLandscapeOccupantCard(container, card, caption, detailHtml = "", onClick = null) {
   const wrap = document.createElement("div");
   wrap.className = "landscape-detail-occupant-card landscape-detail-occupant-showcase";
   const el = renderCard(card, { portrait: true });
@@ -3618,6 +3700,26 @@ function mountLandscapeOccupantCard(container, card, caption, detailHtml = "") {
     detail.className = "landscape-detail-occupant-detail";
     detail.innerHTML = detailHtml;
     wrap.appendChild(detail);
+  }
+  if (onClick) {
+    wrap.classList.add("is-clickable");
+    wrap.setAttribute("role", "button");
+    wrap.tabIndex = 0;
+    wrap.title = "Click for available actions";
+    const hint = document.createElement("div");
+    hint.className = "landscape-detail-occupant-hint";
+    hint.textContent = "Click for actions";
+    wrap.appendChild(hint);
+    wrap.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      onClick(event);
+    });
+    wrap.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      onClick(event);
+    });
   }
   container.appendChild(wrap);
 }
@@ -3636,10 +3738,12 @@ function mountLandscapeOccupantColumn(container, label, entries) {
     return;
   }
 
-  entries.forEach(({ card, caption, detailHtml }) => mountLandscapeOccupantCard(container, card, caption, detailHtml));
+  entries.forEach(({ card, caption, detailHtml, onClick }) => {
+    mountLandscapeOccupantCard(container, card, caption, detailHtml, onClick);
+  });
 }
 
-export function showLandscapeDetail(state, tileId) {
+export function showLandscapeDetail(state, tileId, { onDreamerClick = null, onBeastClick = null } = {}) {
   const tile = state.board.find((t) => t.id === tileId);
   if (!tile) return;
 
@@ -3679,6 +3783,7 @@ export function showLandscapeDetail(state, tileId) {
     card: { ...player.dreamer, type: "dreamer" },
     caption: `${player.name}${player.isHead ? " ★" : ""}`,
     detailHtml: `${dreamerStatsHtml(player.dreamer)}<div class="landscape-detail-occupant-meta">${(player.hand || []).length} Psyche · ${player.powerTokens || 0} Power</div>`,
+    onClick: onDreamerClick ? (event) => onDreamerClick(player.id, tile.id, event) : null,
   }));
 
   const beastEntries = [];
@@ -3695,6 +3800,7 @@ export function showLandscapeDetail(state, tileId) {
         ${enc.effect ? `<div class="landscape-detail-beast-effect"><strong>Effect:</strong> ${enc.effect}</div>` : ""}
         ${enc.flavor ? `<div class="landscape-detail-beast-flavor">${enc.flavor}</div>` : ""}
       `,
+      onClick: onBeastClick ? (event) => onBeastClick(enc, tile.id, event) : null,
     });
   });
   if (tile.finalArchetype && !tile.finalArchetype.defeated) {
