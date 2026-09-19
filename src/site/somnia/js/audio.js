@@ -208,9 +208,15 @@ export function initSfx() {
     ensureAudioContext();
     ensureSfxChain();
     loadLandscapeSfxMap();
+    window.removeEventListener("click", unlock, true);
+    window.removeEventListener("keydown", unlock, true);
+    window.removeEventListener("pointerdown", unlock, true);
+    window.removeEventListener("touchstart", unlock, true);
   };
   window.addEventListener("click", unlock, { capture: true });
   window.addEventListener("keydown", unlock, { capture: true });
+  window.addEventListener("pointerdown", unlock, { capture: true });
+  window.addEventListener("touchstart", unlock, { capture: true, passive: true });
 }
 
 async function loadLandscapeSfxMap() {

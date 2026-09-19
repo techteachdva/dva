@@ -476,7 +476,7 @@ export function rulesIntroHtml() {
         <p>Use the <strong>R.E.M.</strong> tab for the three phases in depth. Use <strong>Details</strong> for encounters, death, bosses, objects, Mindstream, and Final Recurrence. The in-game <strong>Guide</strong> panel shows your next step every turn.</p>
       </section>
 
-            <p class="overview-footer">Somnia v 19.1 — cooperative rules reference.</p>
+            <p class="overview-footer">Somnia v 20.0 — cooperative rules reference.</p>
       ${footerCreditsHtml()}
     </div>
   `;
@@ -550,7 +550,7 @@ export function rulesDetailsHtml() {
 
       <h3>Psyche &amp; Hand Limits</h3>
       <ul>
-        <li>Click to select · double-click to inspect · play 1–2 suited cards per phase opener</li>
+        <li>Tap or click to select · double-tap, long-press, or right-click to inspect · play 1–2 suited cards per phase opener</li>
         <li>Max <strong>10 Psyche cards</strong> in hand (+2 with Persistent Severed Torso); overflow discards to the Psyche discard pile</li>
         <li>Max <strong>10 accepted allies</strong> (Dreambeasts) — separate from the Psyche limit</li>
         <li><strong>Wild Psyche</strong> (value 5) counts as any suit; also Represses the top card of each Mindstream deck when spent</li>
@@ -617,7 +617,7 @@ export function infoHubHtml(options = {}) {
     <div class="info-hub">
       <header class="info-hub-header">
         <div class="info-hub-brand">
-          <p class="info-hub-kicker">Somnia v 19.1</p>
+          <p class="info-hub-kicker">Somnia v 20.0</p>
           <h2>Dream Guide</h2>
           <p class="info-hub-lead">What just happened, and the rules you need to wake up.</p>
         </div>

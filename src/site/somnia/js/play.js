@@ -342,7 +342,7 @@ function bindFullscreenPrompt() {
     prompt.classList.add("hidden");
     startGameRadio();
     try {
-      if (!document.fullscreenElement) {
+      if (document.fullscreenEnabled && !document.fullscreenElement) {
         await document.documentElement.requestFullscreen();
       }
     } catch {
@@ -351,6 +351,10 @@ function bindFullscreenPrompt() {
     prompt.remove();
   };
 
+  prompt.addEventListener("pointerdown", (event) => {
+    if (event.button != null && event.button !== 0) return;
+    enter();
+  });
   prompt.addEventListener("click", enter);
   prompt.addEventListener("keydown", (e) => {
     if (e.key === "Enter" || e.key === " ") {
@@ -1203,6 +1207,7 @@ function buildPhaseHandlers() {
 }
 
 let lastObjectClick = { id: null, time: 0 };
+let lastDreamerTokenTap = { id: null, time: 0 };
 
 function onObjectCardClick(card, zone) {
   const now = Date.now();
@@ -1658,10 +1663,16 @@ function renderBoardArea() {
         renderAll();
         return;
       }
-      if (event?.detail >= 2) {
+      const now = Date.now();
+      if (
+        event?.detail >= 2
+        || (lastDreamerTokenTap.id === playerId && now - lastDreamerTokenTap.time < 400)
+      ) {
+        lastDreamerTokenTap = { id: null, time: 0 };
         zoomMaxOnDreamer(playerId, tileId);
         return;
       }
+      lastDreamerTokenTap = { id: playerId, time: now };
       const beat = currentRailBeat(state);
       if (
         isInteractiveTutorialActive(state)

@@ -67,7 +67,9 @@ import {
   tileFlipElapsedMs,
 } from "./fx.js";
 import { BOSS_DREAM_DECK_SLOTS } from "./data.js";
-import { consumeBoardClickSuppression, getBoardZoom } from "./board-zoom.js";
+import { consumeBoardClickSuppression, getBoardZoom, cancelPendingBoardGesture, suppressNextBoardClick, isBoardCameraBusy } from "./board-zoom.js";
+import { bindLongPress, bindInspectGesture } from "./pointer-gestures.js";
+import { prefersTouchUi } from "./device-mode.js";
 import { getMomentHistory, flashMoment } from "./moment-overlay.js";
 import { isBeastTokenHidden, isDreamerTokenHidden } from "./board-fx.js";
 import { powerTokensInPool, MAX_POWER_TOKEN_POOL } from "./power-tokens.js";
@@ -200,7 +202,13 @@ function createEventLandscapeIconRow(card, board = null) {
   return row;
 }
 
-function renderPsycheDreambeastCard(card, { selected, onClick, mini, dense, entering, playerId }) {
+function attachCardActions(el, { onClick, onInspect }) {
+  if (onClick) el.addEventListener("click", onClick);
+  if (onInspect) bindInspectGesture(el, () => onInspect());
+  return el;
+}
+
+function renderPsycheDreambeastCard(card, { selected, onClick, onInspect, mini, dense, entering, playerId }) {
   const el = document.createElement("button");
   el.type = "button";
   el.className = [
@@ -236,13 +244,13 @@ function renderPsycheDreambeastCard(card, { selected, onClick, mini, dense, ente
     el.appendChild(art);
   }
 
-  if (onClick) el.addEventListener("click", onClick);
+  attachCardActions(el, { onClick, onInspect });
   return attachCardMeta(el, card, playerId);
 }
 
-function renderPsycheCard(card, { selected, suggested, onClick, mini, dense, entering, playerId }) {
+function renderPsycheCard(card, { selected, suggested, onClick, onInspect, mini, dense, entering, playerId }) {
   if (isDreambeastPsycheCard(card)) {
-    return renderPsycheDreambeastCard(card, { selected, suggested, onClick, mini, dense, entering, playerId });
+    return renderPsycheDreambeastCard(card, { selected, suggested, onClick, onInspect, mini, dense, entering, playerId });
   }
   if (card.type === "psyche-power") {
     const el = document.createElement("button");
@@ -265,7 +273,7 @@ function renderPsycheCard(card, { selected, suggested, onClick, mini, dense, ent
       <span class="psyche-suit">+${card.powerTokens ?? 1}</span>
       <span class="psyche-label">Power</span>
     `;
-    if (onClick) el.addEventListener("click", onClick);
+    attachCardActions(el, { onClick, onInspect });
     return attachCardMeta(el, card, playerId);
   }
   const el = document.createElement("button");
@@ -302,7 +310,7 @@ function renderPsycheCard(card, { selected, suggested, onClick, mini, dense, ent
     `;
   }
 
-  if (onClick) el.addEventListener("click", onClick);
+  attachCardActions(el, { onClick, onInspect });
   return attachCardMeta(el, card, playerId);
 }
 
@@ -430,6 +438,7 @@ export function renderActiveDreamerHand(state, onCardClick, {
       dealIndex: index,
       playerId: player.id,
       onClick: clickable ? () => onCardClick(card, player) : undefined,
+      onInspect: () => showModal(card),
     });
   });
 
@@ -447,6 +456,7 @@ export function renderActiveDreamerHand(state, onCardClick, {
         playerId: player.id,
         dense: true,
         onClick: clickable ? () => onCardClick(card, player) : undefined,
+        onInspect: () => showModal(card),
       });
     });
   } else {
@@ -737,15 +747,16 @@ export function renderCard(card, options = {}) {
     selected = false,
     suggested = false,
     onClick,
+    onInspect,
     entering = false,
     playerId = null,
   } = options;
 
   if ((card.type === "psyche" || card.type === "psyche-power") && !portrait) {
-    return renderPsycheCard(card, { selected, suggested, onClick, mini, dense, entering, playerId });
+    return renderPsycheCard(card, { selected, suggested, onClick, onInspect, mini, dense, entering, playerId });
   }
   if (isDreambeastPsycheCard(card) && !portrait) {
-    return renderPsycheDreambeastCard(card, { selected, suggested, onClick, mini, dense, entering, playerId });
+    return renderPsycheDreambeastCard(card, { selected, suggested, onClick, onInspect, mini, dense, entering, playerId });
   }
 
   const el = document.createElement("button");
@@ -783,7 +794,7 @@ export function renderCard(card, options = {}) {
 
   if (card.type === "dreamer" && portrait) {
     el.appendChild(art);
-    if (onClick) el.addEventListener("click", onClick);
+    attachCardActions(el, { onClick, onInspect });
     return attachCardMeta(el, card, playerId);
   }
 
@@ -810,7 +821,7 @@ export function renderCard(card, options = {}) {
     el.style.minHeight = "96px";
   }
 
-  if (onClick) el.addEventListener("click", onClick);
+  attachCardActions(el, { onClick, onInspect });
   return attachCardMeta(el, card, playerId);
 }
 
@@ -1106,7 +1117,11 @@ export function hideModal() {
   document.body.classList.remove("card-detail-open");
 }
 
-const CARD_CHOICE_HINT = "Left-click a card to select it · Right-click any card for a full-size preview with details.";
+function cardChoiceHint() {
+  return prefersTouchUi()
+    ? "Tap a card to select it · Long-press any card for a full-size preview."
+    : "Left-click a card to select it · Right-click any card for a full-size preview with details.";
+}
 
 function cardChoiceKey(card) {
   return card?.instanceId || card?.id;
@@ -1195,9 +1210,7 @@ function mountChoicePickerCard(row, card, { cards, selected, orderIndex, disable
     if (disabled) return;
     onSelect?.(card);
   });
-  el.addEventListener("contextmenu", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
+  bindInspectGesture(el, () => {
     const idx = cards.findIndex((c) => cardChoiceKey(c) === cardChoiceKey(card));
     openCardInspectCarousel(cards, idx >= 0 ? idx : 0);
   });
@@ -1210,7 +1223,7 @@ function cardChoiceShellHtml({ title, message, statusText = "", showConfirm = tr
     <div class="card-choice-picker">
       <h2>${title || "Choose a card"}</h2>
       ${message ? `<p class="card-choice-message">${message}</p>` : ""}
-      <p class="card-choice-hint">${CARD_CHOICE_HINT}</p>
+      <p class="card-choice-hint">${cardChoiceHint()}</p>
       <div class="card-choice-row"></div>
       <p class="card-choice-status">${statusText}</p>
       <div class="utility-actions card-choice-actions">
@@ -1517,8 +1530,17 @@ export function renderBoard(
         event.stopPropagation();
         onInspectLandscape(tile.id);
       });
+      bindLongPress(el, (event) => {
+        if (event.target instanceof Element && event.target.closest(".hex-occupant-token")) return;
+        if (isBoardCameraBusy()) return;
+        cancelPendingBoardGesture();
+        suppressNextBoardClick();
+        onInspectLandscape(tile.id);
+      });
       if (!tutorialRevealTarget) {
-        el.title = "Click landscape to interact · Dreamer or Dreambeast opens action menu · right-click landscape for overview";
+        el.title = prefersTouchUi()
+          ? "Tap landscape to interact · hold for overview"
+          : "Click landscape to interact · Dreamer or Dreambeast opens action menu · right-click landscape for overview";
       }
     }
     board.appendChild(el);
@@ -1573,9 +1595,11 @@ export function renderPlayers(state, onSelectPlayer, onDoubleClickPlayer = null)
       const showTooltip = () => {
         if (dreamerOverlaySuppressed()) return;
         const focusHint = tradeTarget
-          ? "Click to trade with this Dreamer"
+          ? (prefersTouchUi() ? "Tap to trade with this Dreamer" : "Click to trade with this Dreamer")
           : player.alive
-            ? "Click to focus · double-click to zoom in on the board"
+            ? (prefersTouchUi()
+              ? "Tap to focus · hold for details · double-tap to zoom"
+              : "Click to focus · double-click to zoom in on the board")
             : undefined;
         if (compact) {
           showDreamerDetailTooltip(player.dreamer, chip, { player, focusHint, state });
@@ -1602,14 +1626,30 @@ export function renderPlayers(state, onSelectPlayer, onDoubleClickPlayer = null)
         }, compact ? 320 : 160);
       };
 
-      chip.addEventListener("mouseenter", scheduleTooltip);
-      chip.addEventListener("mouseleave", hideTooltip);
+      if (prefersTouchUi()) {
+        bindLongPress(chip, () => showTooltip());
+      } else {
+        chip.addEventListener("mouseenter", scheduleTooltip);
+        chip.addEventListener("mouseleave", hideTooltip);
+      }
       chip.addEventListener("focusin", scheduleTooltip);
       chip.addEventListener("focusout", (event) => {
         if (!chip.contains(event.relatedTarget)) hideTooltip();
       });
+      let lastTapAt = 0;
       chip.addEventListener("click", (event) => {
-        if (event.detail >= 2) return;
+        if (prefersTouchUi()) {
+          const now = Date.now();
+          if (now - lastTapAt < 400) {
+            lastTapAt = 0;
+            hideTooltip();
+            onDoubleClickPlayer?.(index);
+            return;
+          }
+          lastTapAt = now;
+        } else if (event.detail >= 2) {
+          return;
+        }
         hideTooltip();
         onSelectPlayer(index);
       });
@@ -1641,6 +1681,7 @@ export function renderObjects(state, onCardClick) {
       container.appendChild(renderCard(card, {
         mini: true,
         onClick: () => onCardClick(card, "hand"),
+        onInspect: () => showModal(card),
       }));
     });
   }
@@ -1653,6 +1694,7 @@ export function renderObjects(state, onCardClick) {
         persistentEl.appendChild(renderCard(card, {
           mini: true,
           onClick: () => onCardClick(card, "persistent"),
+          onInspect: () => showModal(card),
         }));
       });
     }
@@ -1764,7 +1806,7 @@ export function renderCoopMeetHands(state, onCardClick) {
     title: `${player.name} — Meet Hand`,
     statsText: meetActor
       ? (isActor
-        ? `Pool ${poolCount}/3 Psyche${allyCount ? ` + ${allyCount} ally` : ""} = ${poolTotal} total${bonusText}${pending} · double-click to inspect`
+        ? `Pool ${poolCount}/3 Psyche${allyCount ? ` + ${allyCount} ally` : ""} = ${poolTotal} total${bonusText}${pending} · ${prefersTouchUi() ? "long-press to inspect" : "double-click to inspect"}`
         : `Only ${meetActor.name} on the Encounter may add to the pool · click their chip or board token`)
       : "Click a Dreamer on an Encounter Landscape · pool 1–3 Psyche (+ Power spread bonus) to Accept or Reject",
     canClickCard: (card) => card.type === "psyche-power" || !meetActor || isActor,
@@ -2621,13 +2663,19 @@ export function renderDreamerPicker(dreamers, selectedIds, onToggle, options = {
       const nextSlot = selectedIds.length < playerCount ? selectedIds.length + 1 : null;
       showDreamerDetailTooltip(dreamer, wrapper, {
         playerSlot: selected ? slotIndex + 1 : undefined,
-        setupHint: !selected && nextSlot ? `Click to assign Player ${nextSlot}` : undefined,
+        setupHint: !selected && nextSlot
+          ? `${prefersTouchUi() ? "Tap" : "Click"} to assign Player ${nextSlot}`
+          : undefined,
         partyFull: !selected && !nextSlot,
       });
     };
 
-    wrapper.addEventListener("mouseenter", showTooltip);
-    wrapper.addEventListener("mouseleave", hideDreamerDetailTooltip);
+    if (prefersTouchUi()) {
+      bindLongPress(wrapper, showTooltip);
+    } else {
+      wrapper.addEventListener("mouseenter", showTooltip);
+      wrapper.addEventListener("mouseleave", hideDreamerDetailTooltip);
+    }
     wrapper.addEventListener("focusin", showTooltip);
     wrapper.addEventListener("focusout", (event) => {
       if (!wrapper.contains(event.relatedTarget)) hideDreamerDetailTooltip();
@@ -3134,7 +3182,7 @@ export function showSubconsciousPicker(state, { onConfirm, onSkip } = {}) {
     <div class="card-choice-picker card-choice-picker-wide">
       <h2>Return from Subconscious</h2>
       <p class="card-choice-message">${pending?.reason || `Choose up to ${need} card(s) to Return to discard piles.`}</p>
-      <p class="card-choice-hint">${CARD_CHOICE_HINT}</p>
+      <p class="card-choice-hint">${cardChoiceHint()}</p>
       <div id="subconscious-piles" class="subconscious-piles card-choice-piles"></div>
       <p class="card-choice-status">Selected 0 / ${need}</p>
       <div class="utility-actions card-choice-actions">
@@ -3237,7 +3285,7 @@ export function showRepressPicker(state, onPick, onConfirm) {
       <p class="card-choice-message">${pending.reason || instruction}</p>
       <p class="resolution-player">${playerName}</p>
       <p class="resolution-instruction">${instruction}</p>
-      <p class="card-choice-hint">${CARD_CHOICE_HINT}</p>
+      <p class="card-choice-hint">${cardChoiceHint()}</p>
       <div id="repress-pool" class="subconscious-piles card-choice-piles"></div>
       <p class="card-choice-status">${picked}/${needed} repressed</p>
       <div class="utility-actions card-choice-actions">

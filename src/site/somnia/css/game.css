@@ -411,6 +411,18 @@ body.play-window #screen-game.active {
   color: var(--accent);
 }
 
+.hint-coarse {
+  display: none;
+}
+
+html[data-touch="true"] .hint-fine {
+  display: none;
+}
+
+html[data-touch="true"] .hint-coarse {
+  display: inline;
+}
+
 body.play-window #screen-end.active {
   display: flex;
   flex: 1;
@@ -3471,7 +3483,8 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
 .board-viewport::after {
   content: "F fit table · scroll zoom · arrow keys or Space+drag pan";
   position: absolute;
-  right: 0.65rem;
+  left: 0.65rem;
+  right: auto;
   bottom: 0.45rem;
   font-size: 0.65rem;
   letter-spacing: 0.04em;
@@ -3479,6 +3492,51 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
   color: rgba(240, 201, 106, 0.45);
   pointer-events: none;
   z-index: 2;
+}
+
+html[data-touch="true"] .board-viewport::after {
+  content: "Pinch to zoom · drag to pan";
+}
+
+html[data-pointer="hybrid"] .board-viewport::after {
+  content: "Pinch or scroll to zoom · drag or Space+drag to pan";
+}
+
+.board-camera-controls {
+  position: absolute;
+  right: max(0.5rem, env(safe-area-inset-right));
+  bottom: max(0.5rem, env(safe-area-inset-bottom));
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  pointer-events: auto;
+}
+
+.board-camera-controls button {
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0 0.55rem;
+  border: 1px solid rgba(201, 160, 255, 0.45);
+  border-radius: 10px;
+  background: rgba(12, 8, 24, 0.82);
+  color: #f4ebff;
+  font: 600 0.95rem/1 var(--font-ui, inherit);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.board-camera-controls button:focus-visible {
+  outline: 2px solid rgba(240, 201, 106, 0.9);
+  outline-offset: 2px;
+}
+
+html[data-touch="true"] .board-camera-controls button,
+html[data-pointer="coarse"] .board-camera-controls button {
+  min-width: 44px;
+  min-height: 44px;
+  font-size: 1.15rem;
 }
 
 .hex-board {
@@ -3673,11 +3731,18 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
   transition: transform 0.16s ease, filter 0.16s ease;
 }
 
-.hex-tile .hex-occupant-token:hover,
 .hex-tile .hex-occupant-token:focus-visible {
   transform: translateY(calc(-4px * var(--hex-scale, 1))) scale(1.06);
   filter: drop-shadow(0 6px 14px rgba(201, 160, 255, 0.55));
   z-index: 4;
+}
+
+@media (hover: hover) {
+  html:not([data-hover="false"]) .hex-tile .hex-occupant-token:hover {
+    transform: translateY(calc(-4px * var(--hex-scale, 1))) scale(1.06);
+    filter: drop-shadow(0 6px 14px rgba(201, 160, 255, 0.55));
+    z-index: 4;
+  }
 }
 
 .hex-tile .hex-occupant-dreamer:focus-visible {
@@ -3698,12 +3763,14 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
   background: linear-gradient(180deg, rgba(20,10,30,0.3) 0%, rgba(0,0,0,0.75) 100%);
 }
 
-.hex-tile:hover .hex-overlay {
-  background: linear-gradient(180deg, rgba(123, 92, 255, 0.1) 0%, rgba(0, 0, 0, 0.42) 100%);
-}
+@media (hover: hover) {
+  html:not([data-hover="false"]) .hex-tile:hover .hex-overlay {
+    background: linear-gradient(180deg, rgba(123, 92, 255, 0.1) 0%, rgba(0, 0, 0, 0.42) 100%);
+  }
 
-.hex-tile:hover .hex-face {
-  box-shadow: inset 0 0 0 2px rgba(123, 92, 255, 0.42);
+  html:not([data-hover="false"]) .hex-tile:hover .hex-face {
+    box-shadow: inset 0 0 0 2px rgba(123, 92, 255, 0.42);
+  }
 }
 
 .hex-tile.center { --hex-border-color: rgba(240, 201, 106, 0.42); background: rgba(240, 201, 106, 0.42); }
@@ -3732,8 +3799,10 @@ body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
   background: linear-gradient(180deg, rgba(109, 255, 176, 0.26) 0%, rgba(28, 72, 48, 0.2) 100%);
   animation: hex-move-glow 2.1s ease-in-out infinite;
 }
-.hex-tile.movable:hover .hex-overlay {
-  background: linear-gradient(180deg, rgba(109, 255, 176, 0.38) 0%, rgba(28, 72, 48, 0.28) 100%);
+@media (hover: hover) {
+  html:not([data-hover="false"]) .hex-tile.movable:hover .hex-overlay {
+    background: linear-gradient(180deg, rgba(109, 255, 176, 0.38) 0%, rgba(28, 72, 48, 0.28) 100%);
+  }
 }
 @keyframes hex-move-glow {
   0%, 100% { opacity: 0.7; }
@@ -4311,6 +4380,7 @@ body.tutorial-mode-active .radial-menu-item.tutorial-highlight {
   overflow: hidden;
   cursor: pointer;
   position: relative;
+  touch-action: manipulation;
   transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
@@ -4319,9 +4389,11 @@ body.tutorial-mode-active .radial-menu-item.tutorial-highlight {
   animation-delay: calc(var(--deal-i, 0) * 45ms);
 }
 
-.game-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 24px rgba(0,0,0,0.35);
+@media (hover: hover) {
+  html:not([data-hover="false"]) .game-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 24px rgba(0,0,0,0.35);
+  }
 }
 
 .game-card:active {
@@ -4653,6 +4725,7 @@ body.tutorial-mode-active .radial-menu-item.tutorial-highlight {
   background: transparent;
   color: inherit;
   font: inherit;
+  touch-action: manipulation;
 }
 
 .sidebar.left {
@@ -6056,7 +6129,9 @@ body.card-detail-open .tutorial-card {
 
 /* Device-mode layouts (set by device-mode.js on <html data-device>) */
 html[data-device="mobile"] body.play-window,
-html[data-device="tablet"] body.play-window {
+html[data-device="tablet"] body.play-window,
+html[data-display="standalone"] body.play-window {
+  padding-top: env(safe-area-inset-top);
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
   padding-bottom: env(safe-area-inset-bottom);

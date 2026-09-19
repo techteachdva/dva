@@ -5,10 +5,21 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "19.1";
+export const SOMNIA_VERSION = "20.0";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "20.0",
+    title: "Touch table & device-aware camera",
+    notes: [
+      "One-finger drag pans the table; pinch zooms; on-screen + / − / Fit buttons sit on the board.",
+      "Long-press a Landscape or card to inspect — the same action as right-click.",
+      "Double-tap a Dreamer chip or board token to zoom in on them.",
+      "The table detects phone, tablet, and desktop, including large iPads, and swaps hover-only chrome for touch copy.",
+      "Audio unlocks on the first tap, not only click or key.",
+    ],
+  },
   {
     version: "19.1",
     title: "Board clicks, radials & landscape stings",

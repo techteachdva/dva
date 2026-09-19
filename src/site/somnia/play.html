@@ -13,15 +13,21 @@
   <div id="fullscreen-prompt" class="fullscreen-prompt" role="button" tabindex="0">
     <div class="fullscreen-prompt-card">
       <h2>Enter the Dreamscape</h2>
-      <p>Click anywhere to begin and enter fullscreen.</p>
-      <span class="fullscreen-prompt-hint">Esc — pause menu · music starts here</span>
+      <p class="input-hint">
+        <span class="hint-fine">Click anywhere to begin and enter fullscreen.</span>
+        <span class="hint-coarse">Tap anywhere to begin.</span>
+      </p>
+      <span class="fullscreen-prompt-hint input-hint">
+        <span class="hint-fine">Esc — pause menu · music starts here</span>
+        <span class="hint-coarse">Pause is in the top bar · music starts here</span>
+      </span>
     </div>
   </div>
 
   <div id="app">
     <header class="top-bar play-top-bar">
       <div class="brand">
-        <span class="version-label">Somnia v 19.1</span>
+        <span class="version-label">Somnia v 20.0</span>
         <h1>Somnia</h1>
       </div>
       <div id="phase-stepper" class="phase-stepper top-bar-stepper" aria-label="Round phases"></div>
@@ -41,7 +47,10 @@
         <div class="header-dropdown" id="header-dreamers-menu">
           <button type="button" id="btn-header-dreamers" class="btn btn-sm header-dropdown-toggle" aria-expanded="false" aria-haspopup="true">Dreamers</button>
           <div id="dreamers-dropdown-panel" class="header-dropdown-panel hidden" role="menu" aria-label="Dreamer roster">
-            <p class="header-dropdown-hint">Discuss · hover for tips · click to focus</p>
+            <p class="header-dropdown-hint input-hint">
+              <span class="hint-fine">Discuss · hover for tips · click to focus</span>
+              <span class="hint-coarse">Discuss · hold for tips · tap to focus</span>
+            </p>
             <div id="dreamers-dropdown-list" class="dreamers-dropdown-list"></div>
           </div>
         </div>
@@ -60,7 +69,7 @@
           <div id="phase-banner" class="phase-banner" aria-live="polite"></div>
           <div id="moment-overlay-stack" class="moment-overlay-stack" role="status" aria-live="polite"></div>
           <div id="guide-panel" class="guide-panel" hidden></div>
-          <div class="board-viewport" id="board-viewport" title="Scroll to zoom · arrow keys or hold Space and drag to pan">
+          <div class="board-viewport" id="board-viewport" title="Scroll to zoom · pinch to zoom · drag or Space+drag to pan">
             <div class="board-zoom-stage" id="board-zoom-stage">
               <div id="hex-board" class="hex-board"></div>
             </div>
@@ -85,7 +94,10 @@
           <div class="dreamer-dock" id="dreamer-dock">
             <div class="hand-header dreamer-dock-header">
               <h3>Dreamers</h3>
-              <span class="hand-hint">click to focus</span>
+              <span class="hand-hint input-hint">
+                <span class="hint-fine">click to focus</span>
+                <span class="hint-coarse">tap to focus · hold for details</span>
+              </span>
             </div>
             <div id="player-list" class="player-list-dock"></div>
           </div>
@@ -113,7 +125,10 @@
                 <h3 id="hand-title">Your Psyche Hand</h3>
                 <span id="hand-stats" class="hand-stats-line"></span>
               </div>
-              <span class="hand-hint hand-hint-subtle">Click Dreamer chips to switch · double-click cards to inspect</span>
+              <span class="hand-hint hand-hint-subtle input-hint">
+                <span class="hint-fine">Click Dreamer chips to switch · double-click cards to inspect</span>
+                <span class="hint-coarse">Tap Dreamer chips to switch · long-press cards to inspect</span>
+              </span>
             </div>
             <div id="meet-pool-guide" class="meet-pool-guide hidden" aria-live="polite"></div>
             <div id="hand" class="hand-dreamer-display" data-player-id="">
@@ -123,7 +138,7 @@
           </div>
           <div class="hand-section objects-panel">
             <div class="objects-subsection">
-              <h3>Objects (hand) <span class="hand-hint-subtle">click to view · double-click to play</span></h3>
+              <h3>Objects (hand) <span class="hand-hint-subtle input-hint"><span class="hint-fine">click to view · double-click to play</span><span class="hint-coarse">tap to view · double-tap to play</span></span></h3>
               <div id="player-objects" class="hand objects-row"></div>
             </div>
             <div class="objects-subsection">
