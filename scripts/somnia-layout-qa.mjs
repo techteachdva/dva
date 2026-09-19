@@ -103,7 +103,7 @@ caseStudy("iPhone 14 portrait", { w: 390, h: 844, touch: 5, coarse: true, hover:
 caseStudy("iPhone 14 landscape", { w: 844, h: 390, touch: 5, coarse: true, hover: false, dpr: 3 }, {
   form: "phone",
   device: "mobile",
-  menuLayout: "stack",
+  menuLayout: "split",
   sidebarHidden: true,
 });
 

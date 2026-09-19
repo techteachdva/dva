@@ -5,10 +5,18 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "21.1";
+export const SOMNIA_VERSION = "21.2";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "21.2",
+    title: "Phone landscape Dreamer picker",
+    notes: [
+      "Phone landscape no longer stacks full-size portrait cards. Settings and Tutorial / Begin sit on the left; all six Dreamers sit in a 3×2 grid on the right.",
+      "Phone picker tiles drop the desktop 5:7 card floor so the roster fits on a real phone without scrolling past two giant cards.",
+    ],
+  },
   {
     version: "21.1",
     title: "Quiet table, smaller phone menu",

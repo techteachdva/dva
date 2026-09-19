@@ -80,7 +80,7 @@ export function computeViewportMetrics() {
 /** Menu/setup scaling — keeps triad panels inside side gutters around box art. */
 export function computeMenuViewportMetrics() {
   const { w, h, dpr } = readViewport();
-  const { form } = getCapabilityProfile();
+  const { form, orientation } = getCapabilityProfile();
   const artSize = Math.min(w, h);
   const gutter = Math.max(0, (w - artSize) / 2);
   const compact = form === "phone" || form === "tablet";
@@ -103,11 +103,14 @@ export function computeMenuViewportMetrics() {
     form === "phone" ? 0.62 : 0.75,
     form === "phone" ? 0.82 : 1.12,
   ).toFixed(3));
-  const menuLayout = form === "phone" || w < 720 || w / h < 0.78
-    ? "stack"
-    : form === "tablet" || w < 1180
-      ? "split"
-      : "triad";
+  const phoneLandscape = form === "phone" && orientation === "landscape";
+  const menuLayout = phoneLandscape
+    ? "split"
+    : form === "phone" || w < 720 || w / h < 0.78
+      ? "stack"
+      : form === "tablet" || w < 1180
+        ? "split"
+        : "triad";
 
   return {
     w,
