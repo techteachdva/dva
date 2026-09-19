@@ -30,7 +30,7 @@ const CURSOR_SELECTORS = {
   "explore-dreamer": "#board-viewport .hex-occupant-dreamer, #player-list .player-chip",
   "explore-move": "#board-viewport .hex-tile.movable, #board-viewport",
   "meet-fist": "#board-viewport .hex-occupant-dreamer, #player-list .player-chip",
-  "meet-point": "#board-viewport, #hand-bar, #phase-actions, #sidebar-right",
+  "meet-point": "#board-viewport, #hand-bar, #sidebar-right, .radial-menu-item",
 };
 
 let revealOpenTimer = null;

@@ -3025,8 +3025,7 @@ body.tutorial-mode-active .tutorial-highlight {
   pointer-events: auto;
 }
 
-body.tutorial-mode-active #hand-bar:has(.tutorial-highlight),
-body.tutorial-mode-active #hand-bar:has(#btn-advance-phase.tutorial-highlight) {
+body.tutorial-mode-active #hand-bar:has(.tutorial-highlight) {
   overflow: visible;
   z-index: 151;
 }
@@ -3039,13 +3038,12 @@ body.tutorial-mode-active #board-viewport.tutorial-highlight {
   z-index: 151;
 }
 
-body.tutorial-mode-active #btn-advance-phase.tutorial-highlight {
+body.tutorial-mode-active .hex-occupant-dreamer.tutorial-highlight,
+body.tutorial-mode-active .radial-menu-item.tutorial-highlight {
   animation: advance-glow 2.8s ease-in-out infinite;
 }
 
-body.tutorial-mode-active #phase-actions.tutorial-highlight .action-section-primary .btn:not(:disabled),
-body.tutorial-mode-active #phase-actions.tutorial-highlight .action-group-main .btn:not(:disabled),
-body.tutorial-mode-active #btn-advance-phase.tutorial-highlight:not(:disabled) {
+body.tutorial-mode-active .radial-menu-item.tutorial-highlight:not(:disabled) {
   box-shadow: 0 4px 24px rgba(123, 92, 255, 0.5);
 }
 
@@ -7895,7 +7893,7 @@ html[data-device="mobile"] .player-chip {
 
 #screen-game .hand-bar {
   grid-template-columns: minmax(112px, 13vw) minmax(96px, 130px) minmax(0, 1fr) minmax(0, 22vw);
-  grid-template-rows: auto minmax(6.5rem, 1fr);
+  grid-template-rows: minmax(6.5rem, 1fr);
   gap: 0.45rem 0.65rem;
   padding-top: 0.35rem;
 }
@@ -7905,24 +7903,38 @@ html[data-device="mobile"] .player-chip {
   display: none !important;
 }
 
-.action-dock-wrap {
-  grid-column: 1 / -1;
-  grid-row: 1;
-  min-width: 0;
-  min-height: 0;
-  max-height: none;
-  overflow: visible;
-  border: 1px solid rgba(201, 160, 255, 0.38);
-  border-radius: 10px;
+.table-action-cue {
+  position: absolute;
+  top: 0.45rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 8;
+  max-width: min(36rem, 82%);
+  margin: 0;
+  padding: 0.28rem 0.75rem;
+  border-radius: 999px;
   background: rgba(8, 6, 18, 0.78);
-  padding: 0.4rem 0.5rem 0.45rem;
-  box-shadow: inset 0 0 0 1px rgba(201, 160, 255, 0.08);
+  border: 1px solid rgba(201, 160, 255, 0.28);
+  color: #e8e4ff;
+  font-size: 0.78rem;
+  line-height: 1.3;
+  text-align: center;
+  pointer-events: none;
 }
 
-#screen-game .hand-bar > .dreamer-dock { grid-column: 1; grid-row: 2; }
-#screen-game .hand-bar > .power-section { grid-column: 2; grid-row: 2; }
-#screen-game .hand-bar > .psyche-hand-section { grid-column: 3; grid-row: 2; }
-#screen-game .hand-bar > .objects-panel { grid-column: 4; grid-row: 2; }
+.table-action-cue[hidden] {
+  display: none !important;
+}
+
+.action-dock-wrap,
+body.play-window .action-dock-wrap {
+  display: none !important;
+}
+
+#screen-game .hand-bar > .dreamer-dock { grid-column: 1; grid-row: 1; }
+#screen-game .hand-bar > .power-section { grid-column: 2; grid-row: 1; }
+#screen-game .hand-bar > .psyche-hand-section { grid-column: 3; grid-row: 1; }
+#screen-game .hand-bar > .objects-panel { grid-column: 4; grid-row: 1; }
 
 .action-dock {
   display: flex;
@@ -8476,10 +8488,6 @@ html[data-touch="true"] .action-dock .btn-advance {
     grid-template-columns: 1fr;
   }
 
-  .action-dock-wrap {
-    grid-column: 1 / -1;
-  }
-
   #screen-game .hand-bar > .dreamer-dock,
   #screen-game .hand-bar > .power-section,
   #screen-game .hand-bar > .psyche-hand-section,
@@ -8742,7 +8750,7 @@ body.play-window .subconscious-graveyard {
 }
 
 #screen-game .hand-bar {
-  grid-template-rows: minmax(0, auto) minmax(6.5rem, 1fr);
+  grid-template-rows: minmax(6.5rem, 1fr);
   align-content: stretch;
 }
 
@@ -9150,6 +9158,57 @@ body.menu-window .brand h1 {
   #board-zoom-stage.board-focus-snap {
     transition: none;
   }
+}
+
+html[data-form="phone"] #screen-game .table-surface,
+html[data-form="tablet"] #screen-game .table-surface,
+html[data-touch="true"] #screen-game .table-surface {
+  animation: none;
+}
+
+html[data-form="phone"] .hex-board,
+html[data-form="tablet"] .hex-board {
+  contain: layout paint;
+}
+
+html[data-form="phone"] .hex-tile,
+html[data-form="tablet"] .hex-tile,
+html[data-touch="true"] .hex-tile {
+  contain: layout paint;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+html[data-form="phone"] .hex-tile .hex-mist,
+html[data-form="tablet"] .hex-tile .hex-mist,
+html[data-touch="true"] .hex-tile .hex-mist {
+  animation: none !important;
+  mix-blend-mode: normal;
+  opacity: 0.22;
+}
+
+html[data-form="phone"] .hex-tile .hex-face.hex-face-hd,
+html[data-form="tablet"] .hex-tile .hex-face.hex-face-hd,
+html[data-touch="true"] .hex-tile .hex-face.hex-face-hd {
+  filter: none;
+  image-rendering: auto;
+}
+
+html[data-form="phone"] .hex-occupant-token,
+html[data-form="tablet"] .hex-occupant-token,
+html[data-touch="true"] .hex-occupant-token {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+html[data-form="phone"] .sidebar,
+html[data-form="tablet"] .sidebar,
+html[data-form="phone"] .hand-bar,
+html[data-form="tablet"] .hand-bar,
+html[data-form="phone"] .top-bar,
+html[data-form="tablet"] .top-bar {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 /* ── Card choice picker (18.2) ── */

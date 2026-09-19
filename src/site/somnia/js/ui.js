@@ -46,11 +46,11 @@ import {
 } from "./subconscious.js";
 import {
   TUTORIAL_SECTIONS,
-  classifyPhaseAction,
   getTutorialSpotlightSelector,
   getTutorialStepTargetSelectors,
   getTutorialRevealTargetId,
   tutorialPhaseActionSelector,
+  tutorialDreamerTokenSelector,
 } from "./tutorial-mode.js";
 import { getNarratorView } from "./narrator.js";
 import {
@@ -1324,6 +1324,15 @@ const HEX_BASE = 58;
 const HEX_MIN = 44;
 /** ~1024px source art / sqrt(3) — keeps landscape faces sharp when zoomed in. */
 const HEX_MAX_NATIVE = 640;
+const HEX_MAX_COMPACT = 360;
+let lastFitHexSize = 0;
+let lastBoardStructureKey = "";
+let lastBoardChromeKey = "";
+
+function compactHexCap() {
+  const form = getCapabilityProfile()?.form;
+  return form === "phone" || form === "tablet" ? HEX_MAX_COMPACT : HEX_MAX_NATIVE;
+}
 
 function fitHexSize(state) {
   const viewport = document.getElementById("board-viewport");
@@ -1336,7 +1345,100 @@ function fitHexSize(state) {
   const fit = Math.min(maxW / bounds.width, maxH / bounds.height);
   const base = Math.max(HEX_MIN, Math.floor(HEX_BASE * fit));
   const zoomed = Math.floor(base * getBoardZoom());
-  return Math.min(HEX_MAX_NATIVE, Math.max(HEX_MIN, zoomed));
+  const next = Math.min(compactHexCap(), Math.max(HEX_MIN, zoomed));
+  if (lastFitHexSize && Math.abs(next - lastFitHexSize) <= 2) return lastFitHexSize;
+  lastFitHexSize = next;
+  return next;
+}
+
+function boardStructureKey(state, size) {
+  const tiles = state.board.map((tile) => [
+    tile.id,
+    tile.revealed ? 1 : 0,
+    tile.wasteland ? 1 : 0,
+    tile.image || "",
+    tile.wastelandImage || "",
+    tile.center ? 1 : 0,
+    tile.finalRecurrenceSide ? 1 : 0,
+    tile.finalArchetype?.id || "",
+    tile.finalArchetype?.defeated ? 1 : 0,
+    tileEncounters(tile).map((enc) => `${encounterKey(enc)}:${enc.image || ""}`).join(","),
+  ].join("/"));
+  const occupants = state.players
+    .filter((p) => p.alive)
+    .map((p) => `${p.id}:${p.landscapeId}:${p.dreamer?.image || ""}:${isDreamerTokenHidden(p.id) ? 1 : 0}`)
+    .join("|");
+  return `${size}#${tiles.join("|")}#${occupants}`;
+}
+
+function boardChromeKey(state, legalMoveIds, pickHighlights) {
+  return [
+    state.selectedLandscapeId || "",
+    (legalMoveIds || []).join(","),
+    (pickHighlights.reveal || []).join(","),
+    (pickHighlights.forget || []).join(","),
+    (pickHighlights.choose || []).join(","),
+    getTutorialRevealTargetId(state) || "",
+    activeQuestLandscapeIds(state).join(","),
+  ].join("|");
+}
+
+function hexTileClassName(tile, state, sets) {
+  const isBedFinal = tile.center && tile.finalRecurrenceSide;
+  const showFace = tile.revealed && !tile.wasteland;
+  const encounters = tileEncounters(tile);
+  const isSelected = state.selectedLandscapeId === tile.id;
+  const tutorialRevealTarget = sets.tutorialRevealId === tile.id && !showFace;
+  return [
+    "hex-tile",
+    tile.center ? "center" : "",
+    tile.wasteland || !tile.revealed ? "wasteland" : "",
+    !tile.revealed && !tile.center ? "face-down" : "",
+    showFace ? "face-up" : "",
+    isBedFinal ? "bed-final" : "",
+    isSelected ? "selected" : "",
+    isSelected && encounters.length ? "selected-encounter" : "",
+    encounters.length ? "has-encounter" : "",
+    sets.questHighlightSet.has(tile.id) ? "quest-highlight" : "",
+    sets.legalSet.has(tile.id) ? "movable" : "",
+    sets.revealSet.has(tile.id) ? "pick-reveal" : "",
+    tutorialRevealTarget ? "tutorial-reveal-target" : "",
+    sets.forgetSet.has(tile.id) ? "pick-forget" : "",
+    sets.chooseSet.has(tile.id) ? "pick-choose" : "",
+    sets.justRevealed.has(tile.id) ? "just-revealed" : "",
+    sets.justForgotten.has(tile.id) ? "just-forgotten" : "",
+    tile.suit ? `suit-${tile.suit}` : "",
+  ].filter(Boolean).join(" ");
+}
+
+function patchBoardChrome(state, legalMoveIds, pickHighlights, size) {
+  const board = document.getElementById("hex-board");
+  if (!board) return false;
+  const bounds = boardPixelBounds(state, size);
+  const sets = {
+    legalSet: new Set(legalMoveIds),
+    revealSet: new Set(pickHighlights.reveal || []),
+    forgetSet: new Set(pickHighlights.forget || []),
+    chooseSet: new Set(pickHighlights.choose || []),
+    questHighlightSet: new Set(activeQuestLandscapeIds(state)),
+    justRevealed: new Set(),
+    justForgotten: new Set(),
+    tutorialRevealId: getTutorialRevealTargetId(state),
+  };
+  let patched = 0;
+  state.board.forEach((tile) => {
+    const el = board.querySelector(`.hex-tile[data-tile-id="${tile.id}"]`);
+    if (!el) return;
+    const { y } = hexToPixel(tile.q, tile.r, size);
+    const tutorialRevealTarget = sets.tutorialRevealId === tile.id && !(tile.revealed && !tile.wasteland);
+    el.className = hexTileClassName(tile, state, sets);
+    el.style.zIndex = String(
+      (tutorialRevealTarget || sets.revealSet.has(tile.id) || sets.legalSet.has(tile.id) ? 4000 : 1000)
+      + Math.round(y + bounds.offsetY)
+    );
+    patched += 1;
+  });
+  return patched === state.board.length;
 }
 
 export function renderBoard(
@@ -1348,9 +1450,25 @@ export function renderBoard(
   boardOptions = {},
 ) {
   const board = document.getElementById("hex-board");
+  const size = fitHexSize(state);
+  const chromeKey = boardChromeKey(state, legalMoveIds, pickHighlights);
+  const structureKey = boardStructureKey(state, size);
+  if (
+    structureKey === lastBoardStructureKey
+    && board?.childElementCount
+    && !board.querySelector(".just-revealed, .just-forgotten")
+  ) {
+    if (chromeKey !== lastBoardChromeKey) {
+      lastBoardChromeKey = chromeKey;
+      patchBoardChrome(state, legalMoveIds, pickHighlights, size);
+    }
+    return;
+  }
+  lastBoardStructureKey = structureKey;
+  lastBoardChromeKey = chromeKey;
+
   board.innerHTML = "";
 
-  const size = fitHexSize(state);
   const scale = size / HEX_BASE;
   board.style.setProperty("--hex-scale", String(scale));
   board.style.setProperty("--hex-size", `${size}px`);
@@ -1368,6 +1486,16 @@ export function renderBoard(
   const justRevealed = new Set(consumeRevealedTiles());
   const justForgotten = new Set(consumeForgottenTiles());
   const tutorialRevealId = getTutorialRevealTargetId(state);
+  const chromeSets = {
+    legalSet,
+    revealSet,
+    forgetSet,
+    chooseSet,
+    questHighlightSet,
+    justRevealed,
+    justForgotten,
+    tutorialRevealId,
+  };
 
   state.board.forEach((tile) => {
     const { x, y } = hexToPixel(tile.q, tile.r, size);
@@ -1377,29 +1505,9 @@ export function renderBoard(
     const isBedFinal = tile.center && tile.finalRecurrenceSide;
     const showFace = tile.revealed && !tile.wasteland;
     const encounters = tileEncounters(tile);
-    const isSelected = state.selectedLandscapeId === tile.id;
     const pickRevealHidden = revealSet.has(tile.id) && !showFace;
     const tutorialRevealTarget = tutorialRevealId === tile.id && !showFace;
-    el.className = [
-      "hex-tile",
-      tile.center ? "center" : "",
-      tile.wasteland || !tile.revealed ? "wasteland" : "",
-      !tile.revealed && !tile.center ? "face-down" : "",
-      showFace ? "face-up" : "",
-      isBedFinal ? "bed-final" : "",
-      isSelected ? "selected" : "",
-      isSelected && encounters.length ? "selected-encounter" : "",
-      encounters.length ? "has-encounter" : "",
-      questHighlightSet.has(tile.id) ? "quest-highlight" : "",
-      legalSet.has(tile.id) ? "movable" : "",
-      revealSet.has(tile.id) ? "pick-reveal" : "",
-      tutorialRevealTarget ? "tutorial-reveal-target" : "",
-      forgetSet.has(tile.id) ? "pick-forget" : "",
-      chooseSet.has(tile.id) ? "pick-choose" : "",
-      justRevealed.has(tile.id) ? "just-revealed" : "",
-      justForgotten.has(tile.id) ? "just-forgotten" : "",
-      tile.suit ? `suit-${tile.suit}` : "",
-    ].filter(Boolean).join(" ");
+    el.className = hexTileClassName(tile, state, chromeSets);
 
     el.style.left = `${x + bounds.offsetX}px`;
     el.style.top = `${y + bounds.offsetY}px`;
@@ -2398,133 +2506,24 @@ function buildDreamFeedHtml(state) {
 }
 
 export function renderPhaseAdvanceBar() {
-  // Advance button is rendered inside #phase-actions via renderPhaseActions.
+  // Advance lives on the Dreamer radial; keep this hook for callers.
 }
 
-const ACTION_SECTIONS = {
-  main: "Phase",
-  encounter: "Encounter",
-  actions: "Landscape",
-  progress: "Power",
-};
-
-const ACTION_DOCK_ROWS = [
-  { id: "phase", sections: ["main"] },
-  { id: "scene", sections: ["encounter", "actions"] },
-  { id: "power", sections: ["progress"] },
-];
-
-function createActionButton(action) {
-  const btn = document.createElement("button");
-  btn.type = "button";
-  const classes = ["btn", "action-dock-btn"];
-  if (action.primary) classes.push("primary");
-  if (!action.disabled) classes.push("btn-ready");
-  if (action.disabled && action.hint) classes.push("action-disabled-hint");
-  btn.className = classes.join(" ");
-  btn.textContent = action.label;
-  btn.title = action.hint || action.label;
-  btn.disabled = !!action.disabled;
-  if (action.section) btn.dataset.section = action.section;
-  const tutorialAction = classifyPhaseAction(action);
-  if (tutorialAction && tutorialAction !== "other") {
-    btn.dataset.tutorialAction = tutorialAction;
-  }
-  btn.addEventListener("click", action.onClick);
-  return btn;
-}
-
-function createAdvanceButton(advanceAction) {
-  const wrap = document.createElement("div");
-  wrap.className = "action-dock-advance";
-  wrap.id = "phase-advance-bar";
-  const btn = document.createElement("button");
-  btn.type = "button";
-  btn.id = "btn-advance-phase";
-  btn.className = `btn btn-advance action-dock-btn primary${advanceAction.disabled ? "" : " btn-ready"}`;
-  btn.textContent = advanceAction.label;
-  btn.disabled = !!advanceAction.disabled;
-  btn.title = advanceAction.hint || "Advance to the next phase when your group is ready";
-  btn.addEventListener("click", advanceAction.onClick);
-  wrap.appendChild(btn);
-  return wrap;
-}
-
-export function renderPhaseActions(actions, advanceAction = null, state = null) {
-  const container = document.getElementById("phase-actions");
-  if (!container) return;
-
-  container.innerHTML = "";
-  container.className = "phase-actions action-dock";
-
+export function renderPhaseActions(_actions, _advanceAction = null, state = null) {
+  const cue = document.getElementById("table-action-cue");
+  if (!cue) return;
   if (state && getPhase(state) === "Meet") {
     const toll = timelineTollPreview(state);
     if (toll) {
-      const note = document.createElement("p");
-      note.className = "timeline-toll-preview";
-      if (toll.unpaid > 0) {
-        note.textContent =
-          `Timeline toll: ${toll.beastCount} beast${toll.beastCount === 1 ? "" : "s"} — up to ${toll.paid} token${toll.paid === 1 ? "" : "s"}, else ${toll.unpaid} Dream${toll.unpaid === 1 ? "" : "s"} fray at round end`;
-      } else {
-        note.textContent =
-          `Timeline toll: ${toll.beastCount} beast${toll.beastCount === 1 ? "" : "s"} — team can pay ${toll.paid} token${toll.paid === 1 ? "" : "s"}`;
-      }
-      container.appendChild(note);
+      cue.hidden = false;
+      cue.textContent = toll.unpaid > 0
+        ? `Timeline toll: ${toll.beastCount} beast${toll.beastCount === 1 ? "" : "s"} — up to ${toll.paid} token${toll.paid === 1 ? "" : "s"}, else ${toll.unpaid} Dream${toll.unpaid === 1 ? "" : "s"} fray at round end`
+        : `Timeline toll: ${toll.beastCount} beast${toll.beastCount === 1 ? "" : "s"} — covered by Power Tokens`;
+      return;
     }
   }
-
-  const grouped = {};
-  actions.forEach((action) => {
-    if (action.hidden || action.advance) return;
-    const section = ACTION_SECTIONS[action.section] ? action.section : "main";
-    if (!grouped[section]) grouped[section] = [];
-    grouped[section].push(action);
-  });
-
-  const strip = document.createElement("div");
-  strip.className = "action-dock-strip";
-
-  ACTION_DOCK_ROWS.forEach((rowDef) => {
-    const row = document.createElement("div");
-    row.className = `action-dock-row action-dock-row-${rowDef.id}`;
-    let used = false;
-
-    rowDef.sections.forEach((section) => {
-      const items = grouped[section] || [];
-      const isPhase = section === "main";
-      if (!items.length && !(isPhase && advanceAction)) return;
-
-      const group = document.createElement("section");
-      group.className = `action-group action-group-${section}`;
-      if (isPhase) group.classList.add("action-section-primary");
-      group.setAttribute("aria-label", ACTION_SECTIONS[section]);
-
-      const heading = document.createElement("span");
-      heading.className = "action-group-label";
-      heading.textContent = ACTION_SECTIONS[section];
-      group.appendChild(heading);
-
-      const buttons = document.createElement("div");
-      buttons.className = "action-group-btns";
-      items.forEach((action) => {
-        buttons.appendChild(createActionButton(action));
-      });
-      if (isPhase && advanceAction) {
-        buttons.appendChild(createAdvanceButton(advanceAction));
-      }
-      group.appendChild(buttons);
-      row.appendChild(group);
-      used = true;
-    });
-
-    if (used) strip.appendChild(row);
-  });
-
-  if (strip.children.length) {
-    container.appendChild(strip);
-  } else {
-    container.innerHTML = "<p class=\"action-dock-empty\">No actions available right now.</p>";
-  }
+  cue.hidden = true;
+  cue.textContent = "";
 }
 
 export function showRulesReferenceModal(_activeTab = RULES_TAB_FEED, state = null) {
@@ -4008,8 +4007,7 @@ function getStepTargetSelectors(step) {
 }
 
 const TUTORIAL_BOTTOM_SELECTORS = new Set([
-  "#hand-bar", "#phase-actions", "#table-footer", "#dreamer-dock", "#player-list",
-  "#btn-advance-phase", "#phase-advance-bar",
+  "#hand-bar", "#table-footer", "#dreamer-dock", "#player-list",
 ]);
 const TUTORIAL_TOP_SELECTORS = new Set(["#phase-stepper", "#narrator-panel"]);
 const TUTORIAL_BOARD_SELECTORS = new Set(["#board-viewport", "#hex-board", "#player-list", "#dreamer-dock"]);
@@ -4045,6 +4043,7 @@ function resolvePrimarySpotlightElement(step) {
     return document.querySelector('.radial-menu-item.ready[data-tutorial-action="meetAccept"]')
       || document.querySelector(`${tutorialPhaseActionSelector("meetAccept")}:not(:disabled)`)
       || document.querySelector(tutorialPhaseActionSelector("meetAccept"))
+      || document.querySelector(tutorialDreamerTokenSelector(beat.playerId))
       || document.querySelector('.hex-tile[data-tile-id="house"] .hex-occupant-beast');
   }
 
@@ -4054,10 +4053,12 @@ function resolvePrimarySpotlightElement(step) {
     || beat?.kind === "gainMeetActions"
     || beat?.kind === "completeQuest0"
     || beat?.kind === "completeQuest1"
-    || beat?.kind === "landscapeActionA") {
-    const kind = beat.kind === "landscapeActionA" ? "landscapeActionA" : beat.kind;
+    || beat?.kind === "landscapeActionA"
+    || beat?.kind === "advancePhase") {
+    const kind = beat.kind;
     return document.querySelector(`${tutorialPhaseActionSelector(kind)}:not(:disabled)`)
-      || document.querySelector(tutorialPhaseActionSelector(kind));
+      || document.querySelector(tutorialPhaseActionSelector(kind))
+      || document.querySelector(tutorialDreamerTokenSelector(beat.playerId));
   }
 
   const spotlightSel = getSpotlightSelector(step);
@@ -4354,10 +4355,9 @@ function rectsOverlap(a, b, pad = 12) {
 
 function isAdvanceButtonTutorialStep(step) {
   const selectors = getStepTargetSelectors(step);
-  const spotlight = getSpotlightSelector(step);
-  return spotlight === "#btn-advance-phase"
-    || selectors.includes("#btn-advance-phase")
-    || selectors.includes("#phase-advance-bar");
+  const spotlight = getSpotlightSelector(step) || "";
+  return spotlight.includes("advancePhase")
+    || selectors.some((s) => s.includes("advancePhase"));
 }
 
 function suggestTutorialWindowPosition(step) {
@@ -4540,11 +4540,8 @@ export function ensureTutorialStepTargetsVisible(step) {
   const selectors = getStepTargetSelectors(step);
   const spotlight = getSpotlightSelector(step);
   [...selectors, spotlight].filter(Boolean).forEach((sel) => revealCompactTarget(sel));
-  if (
-    selectors.some((s) => s === "#btn-advance-phase" || s === "#phase-advance-bar")
-    || spotlight === "#btn-advance-phase"
-  ) {
-    document.getElementById("btn-advance-phase")?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  if (selectors.some((s) => s.includes("hex-occupant-dreamer") || s === "#board-viewport")) {
+    document.getElementById("board-viewport")?.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }
   if (selectors.some((s) => s === "#player-list" || s === "#dreamer-dock")) {
     document.getElementById("dreamer-dock")?.scrollIntoView({ block: "nearest", behavior: "smooth" });

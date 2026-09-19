@@ -72,8 +72,8 @@ function validateSpotlight(beat, spotlight, step, sync) {
 
   switch (beat.kind) {
     case "dreamerSelect":
-      if (!spotlight?.includes("player-chip") && !spotlight?.includes("dreamer-dock")) {
-        fail("dreamerSelect needs a dreamer chip selector", { step: step.id, spotlight });
+      if (!spotlight?.includes("hex-occupant-dreamer") && !spotlight?.includes("player-chip") && !spotlight?.includes("dreamer-dock")) {
+        fail("dreamerSelect needs a board Dreamer token or chip selector", { step: step.id, spotlight });
       }
       break;
     case "handToggle":
@@ -107,8 +107,8 @@ function validateSpotlight(beat, spotlight, step, sync) {
       }
       break;
     case "advancePhase":
-      if (spotlight !== "#btn-advance-phase") {
-        fail("advancePhase needs #btn-advance-phase", { step: step.id, spotlight });
+      if (!spotlight?.includes('data-tutorial-action="advancePhase"') && !spotlight?.includes("hex-occupant-dreamer")) {
+        fail("advancePhase needs a Dreamer radial or board token selector", { step: step.id, spotlight });
       }
       break;
     case "landscapeActionA":

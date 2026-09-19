@@ -48,11 +48,11 @@ export function computeViewportMetrics() {
   const sidebarW = phone || (form === "tablet" && orientation === "portrait")
     ? 0
     : Math.round(clamp(w * (compact ? 0.18 : 0.2), compact ? 168 : 196, compact ? 228 : 340));
-  const maxHand = Math.round(h * (phone ? 0.28 : compact ? 0.26 : 0.46));
-  const minBoard = Math.round(h * (phone ? 0.52 : compact ? 0.5 : 0.44));
+  const maxHand = Math.round(h * (phone ? 0.24 : compact ? 0.22 : 0.42));
+  const minBoard = Math.round(h * (phone ? 0.56 : compact ? 0.54 : 0.46));
   const handH = Math.round(clamp(
-    h * (phone ? 0.22 : compact ? 0.2 : 0.30),
-    phone ? 128 : compact ? 140 : 168,
+    h * (phone ? 0.18 : compact ? 0.16 : 0.28),
+    phone ? 108 : compact ? 118 : 160,
     Math.min(maxHand, h - chromeH - minBoard),
   ));
   const dockBudget = Math.round(handH * (phone ? 0.48 : 0.58));

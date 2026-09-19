@@ -34,7 +34,7 @@
   <div id="app">
     <header class="top-bar play-top-bar">
       <div class="brand">
-        <span class="version-label">Somnia v 20.1</span>
+        <span class="version-label">Somnia v 21.0</span>
         <h1>Somnia</h1>
       </div>
       <div id="phase-stepper" class="phase-stepper top-bar-stepper" aria-label="Round phases"></div>
@@ -79,6 +79,7 @@
           <aside id="deck-column" class="deck-column" aria-label="Game decks"></aside>
           <div id="coop-play-banner" class="coop-play-banner hidden" aria-live="polite"></div>
           <div id="phase-banner" class="phase-banner" aria-live="polite"></div>
+          <p id="table-action-cue" class="table-action-cue" hidden></p>
           <div id="moment-overlay-stack" class="moment-overlay-stack" role="status" aria-live="polite"></div>
           <div id="guide-panel" class="guide-panel" hidden></div>
           <div class="board-viewport" id="board-viewport" title="Scroll to zoom · pinch to zoom · drag or Space+drag to pan">
@@ -102,15 +103,12 @@
 
         <footer class="hand-bar" id="hand-bar">
           <div class="resize-handle resize-row edge-top" id="resize-hand" title="Drag to resize hand area"></div>
-          <div class="action-dock-wrap" id="action-dock-wrap">
-            <div id="phase-actions" class="phase-actions action-dock" aria-label="Phase actions"></div>
-          </div>
           <div class="dreamer-dock" id="dreamer-dock">
             <div class="hand-header dreamer-dock-header">
               <h3>Dreamers</h3>
               <span class="hand-hint input-hint">
-                <span class="hint-fine">click to focus</span>
-                <span class="hint-coarse">tap to focus · hold for details</span>
+                <span class="hint-fine">click to focus · board card opens actions</span>
+                <span class="hint-coarse">tap to focus · tap board card for actions</span>
               </span>
             </div>
             <div id="player-list" class="player-list-dock"></div>

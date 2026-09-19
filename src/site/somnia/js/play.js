@@ -1278,11 +1278,19 @@ function zoomMaxOnDreamer(playerId, tileId) {
 function showDreamerBoardRadialMenu(playerId, tileId, player) {
   const handlers = buildPhaseHandlers();
   const options = getDreamerBoardRadialOptions(state, player, tileId, handlers)
-    .map((opt) => ({
-      ...opt,
-      label: shortenRadialLabel(opt.label),
-      kind: opt.kind || classifyPhaseAction({ label: opt.label }),
-    }));
+    .map((opt) => {
+      const kind = opt.kind || classifyPhaseAction({ label: opt.label });
+      const allowed = !isInteractiveTutorialActive(state)
+        || !kind
+        || kind === "other"
+        || isTutorialActionAllowed(state, kind, { action: opt, tileId });
+      return {
+        ...opt,
+        label: shortenRadialLabel(opt.label),
+        kind,
+        disabled: !!opt.disabled || !allowed,
+      };
+    });
 
   options.push({
     id: "view",
@@ -1804,6 +1812,10 @@ function renderAll() {
     const nextId = state.players[index]?.id;
     if (prevId && nextId && prevId !== nextId) {
       playDreamerHandSparkle(prevId, nextId);
+    }
+    if (prevId && nextId && prevId === nextId && player?.alive && player.landscapeId) {
+      openDreamerBoardRadial(null, player.id, player.landscapeId);
+      return;
     }
     renderAll();
     clearDockSelectTimer();

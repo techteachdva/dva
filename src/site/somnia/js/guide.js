@@ -42,8 +42,8 @@ export const TUTORIAL_STEPS = [
   {
     id: "reveal",
     title: "Reveal Phase",
-    body: "Discuss, then draw the Dream and/or set reveal budget in any order. Anyone may click Draw & Resolve Dream for the Head Dreamer (★). One Dreamer spends Lucidity for team reveals.",
-    target: "#phase-actions",
+    body: "Discuss, then draw the Dream and/or set reveal budget in any order. Click a Dreamer on the board and choose Draw & Resolve Dream for the Head Dreamer (★). One Dreamer spends Lucidity for team reveals.",
+    target: "#board-viewport",
     phase: "Reveal",
   },
   {
@@ -56,8 +56,8 @@ export const TUTORIAL_STEPS = [
   {
     id: "meet",
     title: "Meet Phase",
-    body: "Discuss who spends Willpower, then take Meet actions in any order. For Encounters, only the Dreamer on that Landscape may spend Psyche (up to 3). The Accept or Reject icon color is the Psyche you must include at least one of, and that Dreamer's matching stat is added to the total.",
-    target: "#phase-actions",
+    body: "Discuss who spends Willpower, then click a Dreamer on the board for Meet actions. For Encounters, only the Dreamer on that Landscape may spend Psyche (up to 3). The Accept or Reject icon color is the Psyche you must include at least one of, and that Dreamer's matching stat is added to the total.",
+    target: "#board-viewport",
     phase: "Meet",
   },
   {
@@ -219,7 +219,7 @@ export function getCurrentObjective(state) {
         COOP_PLAY_TIP,
       ];
       if (!state.dreamDrawn) {
-        steps.push(`When the group agrees, anyone clicks **Draw & Resolve Dream** (${head.name} is Head ★).`);
+        steps.push(`When the group agrees, click a Dreamer on the board and choose **Draw & Resolve Dream** (${head.name} is Head ★).`);
       }
       if (state.dreamDrawn && !state.revealLandscapeUsed) {
         steps.push(
@@ -229,7 +229,7 @@ export function getCurrentObjective(state) {
             : "Pick the Dreamer with the highest Lucidity stat.",
         );
         if (budget >= 1) {
-          steps.push(`Click **Reveal Landscapes** (${budget} reveals), then click hex tiles in any order.`);
+          steps.push(`Open that Dreamer's radial and click **Reveal Landscapes** (${budget} reveals), then click hex tiles in any order.`);
         }
       }
       return {
@@ -258,7 +258,7 @@ export function getCurrentObjective(state) {
       phase: "Reveal",
       suit: "lucidity",
       title: "Reveal complete",
-      steps: ["Click **Next: Explore** when your group is ready."],
+      steps: ["Click a Dreamer on the board, then **Next: Explore** when your group is ready."],
     };
   }
 
@@ -279,8 +279,8 @@ export function getCurrentObjective(state) {
             ? `**${best.name}** has the best Elasticity bonus (+${totalStat(best, stat, state)}).`
             : "Pick the Dreamer with the highest Elasticity stat.",
           budget >= 1
-            ? `Click **Spend Elasticity** (${budget} moves for everyone).`
-            : "Then click Spend Elasticity to unlock moves.",
+            ? `Click that Dreamer on the board, then **Spend Elasticity** (${budget} moves for everyone).`
+            : "Then open that Dreamer's radial and click Spend Elasticity to unlock moves.",
         ],
         tip: "After unlocking, move any Dreamer in any order.",
       };
@@ -292,16 +292,16 @@ export function getCurrentObjective(state) {
         title: "Move on the board",
         steps: [
           `Click a **green dashed hex** to move ${player.name}.`,
-          `${state.exploreMovesLeft} team move(s) remaining — use all or click **Next Phase** to skip to Meet.`,
+          `${state.exploreMovesLeft} team move(s) remaining — use all or click a Dreamer on the board, then **Next: Meet**.`,
         ],
-        tip: "Click a Dreamer chip (left) to change who moves.",
+        tip: "Click a Dreamer on the board to open their actions, or a dock chip to focus them.",
       };
     }
     return {
       phase: "Explore",
       suit: "elasticity",
       title: "Exploration done",
-      steps: ["Click **Next: Meet** to continue the round."],
+      steps: ["Click a Dreamer on the board, then **Next: Meet** to continue the round."],
     };
   }
 
@@ -323,7 +323,7 @@ export function getCurrentObjective(state) {
             : "Pick the Dreamer with the highest Willpower stat.",
           budget >= 1 ? `Budget will be: **${budget}** team actions.` : "Cards played + Willpower stat = action count.",
         ],
-        tip: "Then spend Meet actions in any order.",
+        tip: "Click that Dreamer on the board, then Gain Actions. Spend Meet actions from the same radial.",
       };
     }
     const pool = coopMeetPlayTotal(state);
@@ -337,7 +337,7 @@ export function getCurrentObjective(state) {
       const enc = state.activeEncounter;
       lines.push(`Encounter **${enc.name}**: Accept (${enc.accept}) or Reject (${enc.reject ?? enc.repress}).`);
     } else {
-      lines.push("Use actions in any order — Landscape, Trade, Quests, or **End Round**. **Objects** are free anytime (Persistent Objects cost 1 Power Token to activate).");
+      lines.push("Open a Dreamer on the board for Landscape, Trade, Quests, or **End Round**. **Objects** are free anytime (Persistent Objects cost 1 Power Token to activate).");
     }
     return {
       phase: "Meet",
@@ -476,7 +476,7 @@ export function rulesIntroHtml() {
         <p>Use the <strong>R.E.M.</strong> tab for the three phases in depth. Use <strong>Details</strong> for encounters, death, bosses, objects, Mindstream, and Final Recurrence. The in-game <strong>Guide</strong> panel shows your next step every turn.</p>
       </section>
 
-            <p class="overview-footer">Somnia v 20.1 — cooperative rules reference.</p>
+            <p class="overview-footer">Somnia v 21.0 — cooperative rules reference.</p>
       ${footerCreditsHtml()}
     </div>
   `;
@@ -535,7 +535,7 @@ export function rulesRemHtml() {
 
       <section class="overview-block">
         <h3>Round End</h3>
-        <p>After Meet actions are spent (or skipped), click <strong>End Round</strong>. Head Dreamer rotates clockwise. Round counter increments and a new Reveal begins.</p>
+        <p>After Meet actions are spent (or skipped), click a Dreamer on the board and choose <strong>End Round</strong>. Head Dreamer rotates clockwise. Round counter increments and a new Reveal begins.</p>
       </section>
     </div>
   `;
@@ -617,7 +617,7 @@ export function infoHubHtml(options = {}) {
     <div class="info-hub">
       <header class="info-hub-header">
         <div class="info-hub-brand">
-          <p class="info-hub-kicker">Somnia v 20.1</p>
+          <p class="info-hub-kicker">Somnia v 21.0</p>
           <h2>Dream Guide</h2>
           <p class="info-hub-lead">What just happened, and the rules you need to wake up.</p>
         </div>

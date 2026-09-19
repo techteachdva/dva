@@ -5,10 +5,20 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "20.1";
+export const SOMNIA_VERSION = "21.0";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "21.0",
+    title: "Dreamer radials replace the action bar",
+    notes: [
+      "The always-on Action Button Bar is gone. Click a Dreamer on the board to open a phase-contextual radial for Draw Dream, Reveal, Spend Elasticity, Gain Actions, Accept/Reject, landscape actions, quests, Power Token spends, and Next / End Round.",
+      "The hand and map reclaim that bottom strip — especially on iPad — so cards and hexes have room again.",
+      "Tutorial highlights the board Dreamer card first, then the matching radial button, and the copy tells you to open actions that way.",
+      "Board and FX rendering skip full hex rebuilds when nothing changed, cap tile resolution on phones and tablets, and pause mist/blend filters that flickered on Safari.",
+    ],
+  },
   {
     version: "20.1",
     title: "Device chrome & installable PWA",

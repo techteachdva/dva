@@ -999,6 +999,19 @@ export function getDreamerBoardRadialOptions(state, player, tileId, handlers) {
     });
   }
 
+  const advance = getPhaseAdvanceAction(state, handlers);
+  if (advance) {
+    options.push({
+      id: "advancePhase",
+      kind: "advancePhase",
+      label: advance.label,
+      hint: advance.hint || advance.label,
+      disabled: !!advance.disabled,
+      primary: !!advance.primary,
+      onPick: advance.onClick,
+    });
+  }
+
   return options;
 }
 

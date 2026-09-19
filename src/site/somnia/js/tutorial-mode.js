@@ -7,6 +7,7 @@
   encounterOnLandscape,
   tileEncounters,
   checkDreamerPsycheDeath,
+  headPlayer,
 } from "./state.js";
 import { meetPsycheActor } from "./rules.js";
 import { hexNeighbors, getLegalMoveTargets } from "./hex.js";
@@ -433,29 +434,30 @@ function railBeatAllows(state, beat, kind, detail = {}) {
       return requiredCardIds(beat).includes(card.id);
     }
     case "drawDream":
-      return kind === "drawDream";
+      return kind === "drawDream" || kind === "dreamerSelect";
     case "revealLandscape":
-      return kind === "revealLandscape";
+      return kind === "revealLandscape" || kind === "dreamerSelect";
     case "boardClick":
       return (kind === "boardClick" || kind === "exploreMove") && detail.tileId === beat.tileId;
     case "spendElasticity":
-      return kind === "spendElasticity";
+      return kind === "spendElasticity" || kind === "dreamerSelect";
     case "exploreMove":
       if (kind !== "exploreMove" && kind !== "boardClick") return false;
       return exploreMoveAllowed(state, detail.tileId, [beat.tileId], beat.playerIndex);
     case "gainMeetActions":
-      return kind === "gainMeetActions";
+      return kind === "gainMeetActions" || kind === "dreamerSelect";
     case "meetAccept":
-      if (kind === "meetAccept" || kind === "beastRadial") return true;
+      if (kind === "meetAccept" || kind === "beastRadial" || kind === "dreamerSelect") return true;
       return kind === "boardClick" && detail.tileId === "house";
     case "advancePhase":
-      return kind === "advancePhase";
+      return kind === "advancePhase" || kind === "dreamerSelect";
     case "landscapeActionA":
-      if (kind === "landscapeActionA") return true;
+      if (kind === "landscapeActionA" || kind === "dreamerSelect") return true;
       return kind === "boardClick" && detail.tileId === beat.landscapeId;
     case "completeQuest0":
     case "completeQuest1":
-      return kind === beat.kind && state.activePlayerIndex === (beat.playerIndex ?? 0);
+      return (kind === beat.kind || kind === "dreamerSelect")
+        && (kind === "dreamerSelect" || state.activePlayerIndex === (beat.playerIndex ?? 0));
     default:
       return false;
   }
@@ -566,11 +568,34 @@ export function getTutorialCameraFocus(state) {
   };
 }
 
-function tutorialPhaseActionSelector(kind) {
-  return `#phase-actions button[data-tutorial-action="${kind}"]`;
+export function tutorialPhaseActionSelector(kind) {
+  return `.radial-menu-item[data-tutorial-action="${kind}"]`;
 }
 
-export { tutorialPhaseActionSelector };
+export function tutorialDreamerTokenSelector(playerId) {
+  return playerId ? `.hex-occupant-dreamer[data-dreamer-id="${playerId}"]` : ".hex-occupant-dreamer";
+}
+
+export function tutorialActionDreamerId(state, beat) {
+  if (beat?.playerIndex != null) return state.players[beat.playerIndex]?.id || null;
+  if (beat?.playerId) return beat.playerId;
+  if (beat?.landscapeId) {
+    const occupant = state.players.find((p) => p.alive && p.landscapeId === beat.landscapeId);
+    if (occupant) return occupant.id;
+  }
+  if (beat?.kind === "drawDream") return headPlayer(state)?.id || state.players[0]?.id || null;
+  return state.players[state.activePlayerIndex]?.id || state.players[0]?.id || null;
+}
+
+function radialOrDreamerHighlight(state, beat, kind) {
+  const playerId = tutorialActionDreamerId(state, beat);
+  const radialSel = tutorialPhaseActionSelector(kind);
+  const dreamerSel = tutorialDreamerTokenSelector(playerId);
+  return {
+    targets: [radialSel, dreamerSel, "#board-viewport"],
+    spotlight: radialSel,
+  };
+}
 
 function railHighlight(state, step, beat) {
   if (!beat) {
@@ -592,7 +617,7 @@ function railHighlight(state, step, beat) {
           "#dreamer-dock",
         ],
         spotlight: playerId
-          ? `.player-chip[data-player-id="${playerId}"]`
+          ? `.hex-occupant-dreamer[data-dreamer-id="${playerId}"]`
           : "#dreamer-dock",
       };
     case "handToggle": {
@@ -619,20 +644,12 @@ function railHighlight(state, step, beat) {
     case "drawDream":
     case "revealLandscape":
     case "spendElasticity":
-    case "gainMeetActions": {
-      const actionSel = tutorialPhaseActionSelector(beat.kind);
-      return { targets: [actionSel, "#phase-actions"], spotlight: actionSel };
-    }
+    case "gainMeetActions":
+      return radialOrDreamerHighlight(state, beat, beat.kind);
     case "meetAccept": {
-      const acceptSel = tutorialPhaseActionSelector("meetAccept");
-      return {
-        targets: [
-          acceptSel,
-          `.hex-tile[data-tile-id="house"] .hex-occupant-beast`,
-          "#phase-actions",
-        ],
-        spotlight: acceptSel,
-      };
+      const highlight = radialOrDreamerHighlight(state, beat, "meetAccept");
+      highlight.targets.push(`.hex-tile[data-tile-id="house"] .hex-occupant-beast`);
+      return highlight;
     }
     case "boardClick":
     case "exploreMove":
@@ -644,17 +661,14 @@ function railHighlight(state, step, beat) {
         spotlight: `.hex-tile[data-tile-id="${beat.tileId}"]`,
       };
     case "advancePhase":
-      return { targets: ["#btn-advance-phase"], spotlight: "#btn-advance-phase" };
+      return radialOrDreamerHighlight(state, beat, "advancePhase");
     case "landscapeActionA": {
       const hexSel = `.hex-tile[data-tile-id="${beat.landscapeId}"]`;
-      const actionSel = tutorialPhaseActionSelector("landscapeActionA");
+      const highlight = radialOrDreamerHighlight(state, beat, "landscapeActionA");
       const onTile = state.players[beat.playerIndex]?.landscapeId === beat.landscapeId;
-      const selected = state.selectedLandscapeId === beat.landscapeId;
-      if (onTile && selected) {
-        return {
-          targets: [actionSel, hexSel, "#phase-actions"],
-          spotlight: actionSel,
-        };
+      if (onTile) {
+        highlight.targets.push(hexSel);
+        return highlight;
       }
       return {
         targets: [hexSel, "#board-viewport"],
@@ -663,11 +677,9 @@ function railHighlight(state, step, beat) {
     }
     case "completeQuest0":
     case "completeQuest1": {
-      const questSel = tutorialPhaseActionSelector(beat.kind);
-      return {
-        targets: [questSel, "#active-archetype", "#phase-actions"],
-        spotlight: questSel,
-      };
+      const highlight = radialOrDreamerHighlight(state, beat, beat.kind);
+      highlight.targets.push("#active-archetype");
+      return highlight;
     }
     default:
       return {
@@ -687,7 +699,7 @@ function decorateTutorialStep(state, step, objective) {
     spotlightBeat: beat
       ? {
         ...beat,
-        playerId: beat.playerIndex != null ? state.players[beat.playerIndex]?.id : null,
+        playerId: tutorialActionDreamerId(state, beat),
       }
       : null,
     objectiveText: objective,
@@ -995,7 +1007,7 @@ export const TUTORIAL_SCRIPT = [
     id: "welcome",
     round: 1,
     title: "Welcome to Somnia",
-    body: "Every round is Reveal, Explore, Meet. Flip wasteland into Landscapes, walk onto them, then Meet: draw Mindstream (luck, good and bad) or deal with Dreambeasts. Once the map is open, chase the Active Archetype's quests. Click only the highlights. The ? Dream Guide and Tips hold the rest of the rules — you will learn the cards by playing.",
+    body: "Every round is Reveal, Explore, Meet. Flip wasteland into Landscapes, walk onto them, then Meet: draw Mindstream (luck, good and bad) or deal with Dreambeasts. Phase actions live on the Dreamer card on the board — click it to open a radial menu. Click only the highlights. The ? Dream Guide and Tips hold the rest of the rules — you will learn the cards by playing.",
     targets: ["#active-archetype", "#phase-stepper"],
     spotlight: "#active-archetype",
   },
@@ -1003,10 +1015,10 @@ export const TUTORIAL_SCRIPT = [
     id: "draw-dream-r1",
     round: 1,
     title: "Reveal: Draw the Dream",
-    body: "Reveal starts with a Dream. The Head (*) draws one each round. Quiet does nothing - many Dreams do. Click Draw & Resolve Dream.",
-    target: "#phase-actions",
+    body: "Reveal starts with a Dream. The Head (*) draws one each round. Quiet does nothing — many Dreams do. Click The Visionary on the board, then Draw & Resolve Dream from the radial.",
+    targets: ["#board-viewport"],
     rail: [
-      { kind: "drawDream", prompt: "Click Draw & Resolve Dream." },
+      { kind: "drawDream", prompt: "Click The Visionary on the board, then Draw & Resolve Dream." },
     ],
     until: (s) => s.dreamDrawn,
   },
@@ -1014,14 +1026,14 @@ export const TUTORIAL_SCRIPT = [
     id: "reveal-r1",
     round: 1,
     title: "Reveal: Flip the Map",
-    body: "Early game, spend Lucidity to flip wasteland hexes into Landscapes. More map means more places to Explore and Meet. Click The Visionary, Lucidity 1, Reveal Landscapes, then the glowing wasteland (Candy Mountain). Extra flips are skipped here. Then Next: Explore.",
-    targets: ["#hand-bar", "#phase-actions", "#board-viewport"],
+    body: "Early game, spend Lucidity to flip wasteland hexes into Landscapes. More map means more places to Explore and Meet. Click The Visionary on the board, Lucidity 1, then Reveal Landscapes from the radial. Flip the glowing wasteland (Candy Mountain). Extra flips are skipped here. Then open the radial again for Next: Explore.",
+    targets: ["#hand-bar", "#board-viewport"],
     rail: [
-      { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary (dock chip or map token)." },
+      { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on the board." },
       { kind: "handToggle", playerIndex: 0, cardId: "lucidity-1-v-l1", prompt: "Select Lucidity 1 in The Visionary's hand." },
-      { kind: "revealLandscape", prompt: "Click Reveal Landscapes." },
-      { kind: "boardClick", tileId: "candy-mountain", reveal: true, prompt: "Click the glowing wasteland hex - that is Candy Mountain's hidden side." },
-      { kind: "advancePhase", toPhase: "Explore", prompt: "Click Next: Explore." },
+      { kind: "revealLandscape", prompt: "Click The Visionary on the board, then Reveal Landscapes." },
+      { kind: "boardClick", tileId: "candy-mountain", reveal: true, prompt: "Click the glowing wasteland hex — that is Candy Mountain's hidden side." },
+      { kind: "advancePhase", toPhase: "Explore", prompt: "Click The Visionary on the board, then Next: Explore." },
     ],
     until: (s) => getPhase(s) === "Explore",
   },
@@ -1029,14 +1041,14 @@ export const TUTORIAL_SCRIPT = [
     id: "explore-r1",
     round: 1,
     title: "Explore: Walk the Map",
-    body: "Explore is movement. Spend Elasticity for a shared move budget, then walk onto Landscapes you want to Meet on - you cannot move during Meet. Click The Visionary, Elasticity 2, Spend Elasticity, then House (Mandrake is there). Then Next: Meet.",
-    targets: ["#hand-bar", "#phase-actions", "#board-viewport"],
+    body: "Explore is movement. Spend Elasticity for a shared move budget, then walk onto Landscapes you want to Meet on — you cannot move during Meet. Click The Visionary on the board, Elasticity 2, Spend Elasticity from the radial, then House (Mandrake is there). Open the radial again for Next: Meet.",
+    targets: ["#hand-bar", "#board-viewport"],
     rail: [
-      { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary." },
+      { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on the board." },
       { kind: "handToggle", playerIndex: 0, cardId: "elasticity-2-v-e2", prompt: "Select Elasticity 2." },
-      { kind: "spendElasticity", prompt: "Click Spend Elasticity." },
+      { kind: "spendElasticity", prompt: "Click The Visionary on the board, then Spend Elasticity." },
       { kind: "exploreMove", playerIndex: 0, tileId: "house", prompt: "Click House to move The Visionary there." },
-      { kind: "advancePhase", toPhase: "Meet", prompt: "Click Next: Meet." },
+      { kind: "advancePhase", toPhase: "Meet", prompt: "Click The Visionary on the board, then Next: Meet." },
     ],
     until: (s) => getPhase(s) === "Meet",
   },
@@ -1044,20 +1056,20 @@ export const TUTORIAL_SCRIPT = [
     id: "meet-r1",
     round: 1,
     title: "Meet: Dreambeasts and Luck",
-    body: "Meet is where the table comes alive, with Dreambeasts, Events, Objects, and Actions. Spend Willpower for shared actions, then Accept or Reject Dreambeasts. The Accept icon's color is the Psyche you must play: Mandrake's Accept 6 blue eye means at least 1 Lucidity, and The Visionary's Lucidity is added to the total. Click The Visionary, Willpower 2, Gain Actions, Lucidity 3 and 2, then Accept Mandrake. Then Next Phase.",
-    targets: ["#hand-bar", "#phase-actions", "#board-viewport"],
+    body: "Meet is where the table comes alive, with Dreambeasts, Events, Objects, and Actions. Spend Willpower for shared actions, then Accept or Reject Dreambeasts. The Accept icon's color is the Psyche you must play: Mandrake's Accept 6 blue eye means at least 1 Lucidity, and The Visionary's Lucidity is added to the total. Click The Visionary on the board, Willpower 2, Gain Actions from the radial, Lucidity 3 and 2, then Accept Mandrake. Open the radial again to end the round.",
+    targets: ["#hand-bar", "#board-viewport"],
     rail: [
-      { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary." },
+      { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on the board." },
       { kind: "handToggle", playerIndex: 0, cardId: "willpower-2-v-w2", prompt: "Select Willpower 2." },
-      { kind: "gainMeetActions", prompt: "Click Gain Actions." },
+      { kind: "gainMeetActions", prompt: "Click The Visionary on the board, then Gain Actions." },
       {
         kind: "handToggle",
         playerIndex: 0,
         cardIds: ["lucidity-3-v-l3", "lucidity-2-v-l2"],
         prompt: "Select Lucidity 3 and Lucidity 2.",
       },
-      { kind: "meetAccept", prompt: "Click Accept on Mandrake. The blue eye means play at least 1 Lucidity; The Visionary's Lucidity adds to the total." },
-      { kind: "advancePhase", toRound: 2, prompt: "Click Next Phase to end Round 1." },
+      { kind: "meetAccept", prompt: "Click The Visionary on the board (or Mandrake), then Accept. The blue eye means play at least 1 Lucidity; The Visionary's Lucidity adds to the total." },
+      { kind: "advancePhase", toRound: 2, prompt: "Click The Visionary on the board, then End Round to start Round 2." },
     ],
     until: (s) => s.round >= 2,
   },
@@ -1073,15 +1085,15 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-reveal",
     round: 2,
     title: "Round 2 - Reveal",
-    body: "Same Reveal: draw the Dream, spend Lucidity. In a real game you would keep flipping map. Here we skip extra hexes so you can hunt quests. Then Next: Explore.",
+    body: "Same Reveal: click The Visionary on the board to draw the Dream, then spend Lucidity. In a real game you would keep flipping map. Here we skip extra hexes so you can hunt quests. Open the radial again for Next: Explore.",
     closeRevealPick: true,
-    targets: ["#phase-actions", "#hand-bar"],
+    targets: ["#hand-bar", "#board-viewport"],
     rail: [
-      { kind: "drawDream", prompt: "Click Draw & Resolve Dream." },
-      { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary." },
+      { kind: "drawDream", prompt: "Click The Visionary on the board, then Draw & Resolve Dream." },
+      { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on the board." },
       { kind: "handToggle", playerIndex: 0, cardId: "lucidity-2-r2-a", prompt: "Select Lucidity 2." },
-      { kind: "revealLandscape", prompt: "Click Reveal Landscapes." },
-      { kind: "advancePhase", toPhase: "Explore", prompt: "Click Next: Explore." },
+      { kind: "revealLandscape", prompt: "Click The Visionary on the board, then Reveal Landscapes." },
+      { kind: "advancePhase", toPhase: "Explore", prompt: "Click The Visionary on the board, then Next: Explore." },
     ],
     until: (s) => atRound(s, 2) && getPhase(s) === "Explore",
   },
@@ -1089,18 +1101,18 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-explore",
     round: 2,
     title: "Round 2 - Explore to Quests",
-    body: "Walk Dreamers onto the quest Landscapes before Meet. Click The Immovable, Elasticity 3, Spend Elasticity. Move The Visionary to The Attic, then The Immovable via City onto The Basement. Then Next: Meet.",
+    body: "Walk Dreamers onto the quest Landscapes before Meet. Click The Immovable on the board, Elasticity 3, Spend Elasticity from the radial. Move The Visionary to The Attic, then The Immovable via City onto The Basement. Open a Dreamer radial for Next: Meet.",
     targets: ["#hand-bar", "#board-viewport"],
     rail: [
-      { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Immovable." },
+      { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Immovable on the board." },
       { kind: "handToggle", playerIndex: 1, cardId: "elasticity-3-i-e3", prompt: "Select Elasticity 3." },
-      { kind: "spendElasticity", prompt: "Click Spend Elasticity." },
-      { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary." },
+      { kind: "spendElasticity", prompt: "Click The Immovable on the board, then Spend Elasticity." },
+      { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on the board." },
       { kind: "exploreMove", playerIndex: 0, tileId: "the-attic", prompt: "Click The Attic to move The Visionary there." },
-      { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Immovable." },
+      { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Immovable on the board." },
       { kind: "exploreMove", playerIndex: 1, tileId: "city", prompt: "Click City to move The Immovable there." },
       { kind: "exploreMove", playerIndex: 1, tileId: "the-basement", prompt: "Click The Basement to move The Immovable there." },
-      { kind: "advancePhase", toPhase: "Meet", prompt: "Click Next: Meet." },
+      { kind: "advancePhase", toPhase: "Meet", prompt: "Click a Dreamer on the board, then Next: Meet." },
     ],
     until: (s) => atRound(s, 2) && getPhase(s) === "Meet",
   },
@@ -1108,19 +1120,19 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-meet",
     round: 2,
     title: "Round 2 - Draw Mindstream",
-    body: "Landscape Action A draws that tile's Mindstream suit: luck, plus quest progress. That is the usual Meet beat once the map is open. Spend Willpower 3, then Action A on The Attic and The Basement.",
-    targets: ["#phase-actions", "#board-viewport"],
+    body: "Landscape Action A draws that tile's Mindstream suit: luck, plus quest progress. That is the usual Meet beat once the map is open. Click The Immovable on the board, spend Willpower 3, Gain Actions from the radial, then Action A on The Attic and The Basement.",
+    targets: ["#board-viewport"],
     rail: [
-      { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Immovable." },
+      { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Immovable on the board." },
       { kind: "handToggle", playerIndex: 1, cardId: "willpower-3-i-w3", prompt: "Select Willpower 3." },
-      { kind: "gainMeetActions", prompt: "Click Gain Actions." },
+      { kind: "gainMeetActions", prompt: "Click The Immovable on the board, then Gain Actions." },
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on The Attic." },
       {
         kind: "landscapeActionA",
         playerIndex: 0,
         landscapeId: "the-attic",
         done: (s) => innocentAtticDone(s),
-        prompt: "Click The Attic, then Action A (Draw Lucidity Mindstream).",
+        prompt: "Click The Visionary on The Attic, then Action A (Draw Lucidity Mindstream).",
       },
       { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Immovable on The Basement." },
       {
@@ -1128,7 +1140,7 @@ export const TUTORIAL_SCRIPT = [
         playerIndex: 1,
         landscapeId: "the-basement",
         done: (s) => innocentBasementDone(s),
-        prompt: "Click The Basement, then Action A (Draw Willpower Mindstream).",
+        prompt: "Click The Immovable on The Basement, then Action A (Draw Willpower Mindstream).",
       },
     ],
     until: (s) => atRound(s, 2) && innocentAtticDone(s) && innocentBasementDone(s),
@@ -1137,15 +1149,15 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-acquire",
     round: 2,
     title: "Mark Quests and Acquire",
-    body: "Each Dreamer begins with 1 Power Token. Quests cost 1 token to mark. Click The Visionary, play Power Surge for a second token, then Quest 1 and Quest 2. Marking the last quest acquires The Innocent.",
+    body: "Each Dreamer begins with 1 Power Token. Quests cost 1 token to mark. Click The Visionary on the board, play Power Surge for a second token, then open the radial for Quest 1 and Quest 2. Marking the last quest acquires The Innocent.",
     target: "#active-archetype",
     rail: [
-      { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary — they hold Power Surge." },
+      { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on the board — they hold Power Surge." },
       { kind: "handToggle", playerIndex: 0, cardId: "psyche-power-r2", prompt: "Click Power Surge to gain 1 Power Token (2 total on The Visionary)." },
-      { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary to mark Quest 1." },
-      { kind: "completeQuest0", playerIndex: 0, prompt: "Click Quest 1 and spend 1 Power Token." },
-      { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary to mark Quest 2." },
-      { kind: "completeQuest1", playerIndex: 0, prompt: "Click Quest 2 and spend 1 Power Token to acquire The Innocent." },
+      { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on the board to mark Quest 1." },
+      { kind: "completeQuest0", playerIndex: 0, prompt: "Click The Visionary on the board, then Quest 1, and spend 1 Power Token." },
+      { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on the board to mark Quest 2." },
+      { kind: "completeQuest1", playerIndex: 0, prompt: "Click The Visionary on the board, then Quest 2, and spend 1 Power Token to acquire The Innocent." },
     ],
     until: (s) => innocentAcquired(s),
   },
@@ -1315,14 +1327,14 @@ export function getTutorialSpotlightSelector(step, { utilityModalOpen = false } 
   if (step.spotlight) return step.spotlight;
   const selectors = getTutorialStepTargetSelectors(step);
   if (!selectors.length) return null;
-  if (selectors.includes("#btn-advance-phase")) return "#btn-advance-phase";
-  if (selectors.includes("#phase-advance-bar") && !selectors.includes("#board-viewport")) {
-    return "#btn-advance-phase";
+  if (selectors.some((s) => s.includes("data-tutorial-action=\"advancePhase\""))) {
+    return selectors.find((s) => s.includes("data-tutorial-action=\"advancePhase\"")) || null;
   }
   if (selectors.includes("#active-encounter")) return "#active-encounter";
-  if (selectors.includes("#phase-actions") && !selectors.includes("#board-viewport")) {
-    return "#phase-actions";
-  }
+  const radialSel = selectors.find((s) => s.includes("radial-menu-item"));
+  if (radialSel && !selectors.includes("#board-viewport")) return radialSel;
+  const dreamerSel = selectors.find((s) => s.includes("hex-occupant-dreamer"));
+  if (dreamerSel) return dreamerSel;
   if (selectors.length > 1) {
     const primary = selectors.find((s) => !TUTORIAL_BOARD_SELECTORS.has(s));
     if (primary) return primary;
