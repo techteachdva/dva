@@ -5,7 +5,6 @@ import {
   meetPsychePlayTotal,
   allSelectedCards,
   spreadPsycheCount,
-  allyPsycheCount,
   meetBonusBreakdown,
   SUIT_LABELS,
   suitIconHtml,
@@ -1854,10 +1853,10 @@ export function renderPhaseSpendHands(state, onCardClick) {
     title: `${player.name} — Spend ${suitLabel}`,
     statsText: opener
       || (isBest
-        ? `Best ${suitLabel} bonus (+${totalStat(player, statKey, state)})${budgetNote} · select 1–2 highlighted cards`
+        ? `Best +${totalStat(player, statKey, state)} ${suitLabel}${budgetNote}`
         : best
-          ? `Tip: ${best.name} has +${totalStat(best, statKey, state)} ${suitLabel} — click their chip · highlighted cards count`
-          : `Select 1–2 ${suitLabel} or Wild cards · click a Dreamer chip to switch hands`),
+          ? `${best.name} +${totalStat(best, statKey, state)} ${suitLabel}`
+          : `1–2 ${suitLabel}`),
     canClickCard: (card) => card.type === "psyche-power" || isPhaseSpendPsycheCard(card, state),
     suggestCard: (card) => isPhaseSpendPsycheCard(card, state),
   });
@@ -1866,58 +1865,34 @@ export function renderPhaseSpendHands(state, onCardClick) {
 export function renderMeetPoolGuide(state) {
   const el = document.getElementById("meet-pool-guide");
   if (!el) return;
-  const phase = getPhase(state);
-  const tile = state.board.find((t) => t.id === state.selectedLandscapeId);
-  const enc = tileEncounters(tile)[0] || currentMeetEncounter(state).encounter;
-  if (phase !== "Meet" || !state.meetActionBudget || !enc) {
-    el.classList.add("hidden");
-    el.innerHTML = "";
-    return;
-  }
-  const poolCount = spreadPsycheCount(state);
-  const acceptTotal = encounterPlayTotal(state, { accept: true });
-  const rejectTotal = encounterPlayTotal(state, { accept: false });
-  const bonus = state.pendingPowerBonus || 0;
-  const anchor = state.anchorMeetSpreadBonus || 0;
-  const acceptCost = enc.accept;
-  const rejectCost = encounterRejectCost(enc);
-  const actor = meetPsycheActor(state);
-  const acceptOk = acceptTotal >= acceptCost;
-  const rejectOk = rejectTotal >= rejectCost;
-  el.classList.remove("hidden");
-  el.innerHTML = `
-    <strong>Meet pool:</strong>
-    Select <strong>1–3 Psyche</strong> from ${actor?.name || "the Dreamer on this Encounter"}'s hand.
-    ${encounterPayHint(enc, true)} ${encounterPayHint(enc, false)}
-    ${bonus ? ` · <strong>+${bonus}</strong> from Power Token spread` : ""}
-    ${anchor ? ` · <strong>+${anchor}</strong> Hold the Line` : ""}
-    · current <strong>${poolCount}/3</strong> cards
-    <span class="meet-pool-targets">
-      <span class="${acceptOk ? "meet-pool-ready" : ""}">Accept ${acceptTotal}/${acceptCost}</span>
-      <span class="${rejectOk ? "meet-pool-ready" : ""}">Reject ${rejectTotal}/${rejectCost}</span>
-    </span>
-  `;
+  el.classList.add("hidden");
+  el.innerHTML = "";
+  el.setAttribute("hidden", "");
 }
 
 export function renderCoopMeetHands(state, onCardClick) {
   const player = activePlayer(state);
   const meetActor = meetPsycheActor(state);
   const poolCount = spreadPsycheCount(state);
-  const allyCount = allyPsycheCount(state);
   const poolTotal = meetPsychePlayTotal(state);
   const bonus = meetBonusBreakdown(state);
-  const bonusText = bonus.total ? ` · +${bonus.total} Dreamer (${bonus.parts.join(", ")})` : "";
-  const pending = state.pendingPowerBonus ? ` · +${state.pendingPowerBonus} bonus pending` : "";
+  const bonusText = bonus.total ? ` · +${bonus.total}` : "";
+  const pending = state.pendingPowerBonus ? ` · +${state.pendingPowerBonus}` : "";
   const isActor = meetActor?.id === player.id;
+  const tile = state.board.find((t) => t.id === state.selectedLandscapeId);
+  const enc = tileEncounters(tile)[0] || currentMeetEncounter(state).encounter;
+  const acceptBit = enc
+    ? ` · A ${encounterPlayTotal(state, { accept: true })}/${enc.accept} · R ${encounterPlayTotal(state, { accept: false })}/${encounterRejectCost(enc)}`
+    : "";
   renderMeetPoolGuide(state);
 
   renderActiveDreamerHand(state, onCardClick, {
     title: `${player.name} — Meet Hand`,
     statsText: meetActor
       ? (isActor
-        ? `Pool ${poolCount}/3 Psyche${allyCount ? ` + ${allyCount} ally` : ""} = ${poolTotal} total${bonusText}${pending} · ${prefersTouchUi() ? "long-press to inspect" : "double-click to inspect"}`
-        : `Only ${meetActor.name} on the Encounter may add to the pool · click their chip or board token`)
-      : "Click a Dreamer on an Encounter Landscape · pool 1–3 Psyche (+ Power spread bonus) to Accept or Reject",
+        ? `Pool ${poolCount}/3 = ${poolTotal}${bonusText}${pending}${acceptBit}`
+        : `${meetActor.name} may pool`)
+      : "Pool 1–3",
     canClickCard: (card) => card.type === "psyche-power" || !meetActor || isActor,
   });
 }
@@ -4103,9 +4078,9 @@ function inferTutorialCardDock(step) {
   return "bottom";
 }
 
-const TUTORIAL_WINDOW_STORAGE_KEY = "somnia_tutorial_window_v3";
-const TUTORIAL_WINDOW_MIN_WIDTH = 240;
-const TUTORIAL_WINDOW_MIN_HEIGHT = 160;
+const TUTORIAL_WINDOW_STORAGE_KEY = "somnia_tutorial_window_v4";
+const TUTORIAL_WINDOW_MIN_WIDTH = 220;
+const TUTORIAL_WINDOW_MIN_HEIGHT = 132;
 const TUTORIAL_WINDOW_MARGIN = 12;
 
 let tutorialWindowChromeReady = false;
@@ -4143,15 +4118,15 @@ function defaultTutorialWindowState() {
   const phone = form === "phone";
   const tablet = form === "tablet";
   const width = phone
-    ? Math.max(TUTORIAL_WINDOW_MIN_WIDTH, vw - TUTORIAL_WINDOW_MARGIN * 2)
+    ? Math.min(300, Math.max(TUTORIAL_WINDOW_MIN_WIDTH, vw - TUTORIAL_WINDOW_MARGIN * 2))
     : tablet
-      ? Math.min(340, Math.max(260, Math.round(vw * 0.3)))
-      : Math.min(720, Math.max(420, Math.round(vw * 0.38)));
+      ? Math.min(280, Math.max(220, Math.round(vw * 0.28)))
+      : Math.min(360, Math.max(260, Math.round(vw * 0.26)));
   return {
     left: TUTORIAL_WINDOW_MARGIN,
     top: phone ? Math.max(TUTORIAL_WINDOW_MARGIN, Math.round(vh * 0.08)) : TUTORIAL_WINDOW_MARGIN + 64,
     width,
-    height: phone ? Math.min(280, Math.round(vh * 0.36)) : tablet ? Math.min(420, Math.round(vh * 0.48)) : null,
+    height: phone ? Math.min(168, Math.round(vh * 0.26)) : tablet ? Math.min(200, Math.round(vh * 0.28)) : null,
     minimized: false,
     userPositioned: false,
     userResized: phone || tablet,
@@ -4891,7 +4866,11 @@ export function showTutorialStep(step, stepIndex, total, {
   activeTutorialStep = step;
   const waiting = step.until && !canAdvance;
   document.getElementById("tutorial-title").textContent = step.title;
-  document.getElementById("tutorial-body").textContent = step.body;
+  const bodyEl = document.getElementById("tutorial-body");
+  if (bodyEl) {
+    bodyEl.textContent = "";
+    bodyEl.hidden = true;
+  }
   setTutorialProgress(stepIndex, total, roundLabel);
   const nextBtn = document.getElementById("tutorial-next");
   const backBtn = document.getElementById("tutorial-back");

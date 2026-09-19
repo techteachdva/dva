@@ -5,10 +5,18 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "21.0";
+export const SOMNIA_VERSION = "21.1";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "21.1",
+    title: "Quiet table, smaller phone menu",
+    notes: [
+      "In-game essays are gone — Meet pool, hand tips, and tutorial bodies no longer cover Psyche cards. Click instructions stay; rules live in ? and Tips (!).",
+      "Phone and stacked menus use a much smaller type scale so Settings, Dreamers, Tutorial, and Begin fit on one screen.",
+    ],
+  },
   {
     version: "21.0",
     title: "Dreamer radials replace the action bar",

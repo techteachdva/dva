@@ -40,8 +40,8 @@ export function computeViewportMetrics() {
   const heightScale = h / 900;
   const uiScale = Number(clamp(
     Math.min(widthScale, heightScale),
-    phone ? 0.78 : 0.7,
-    phone ? 0.92 : 1.08,
+    phone ? 0.62 : 0.7,
+    phone ? 0.78 : 1.08,
   ).toFixed(3));
 
   const chromeH = Math.round(clamp(h * (phone ? 0.048 : 0.055), phone ? 40 : 44, phone ? 48 : 58));
@@ -85,18 +85,24 @@ export function computeMenuViewportMetrics() {
   const gutter = Math.max(0, (w - artSize) / 2);
   const compact = form === "phone" || form === "tablet";
   const menuUiScale = Number(clamp(
-    compact ? 1 : Math.min(gutter / 300, h / 980, w / 1500),
-    compact ? 1 : 0.42,
-    compact ? 1 : 0.74,
+    form === "phone" ? 0.72 : compact ? 0.88 : Math.min(gutter / 300, h / 980, w / 1500),
+    form === "phone" ? 0.62 : compact ? 0.78 : 0.42,
+    form === "phone" ? 0.78 : compact ? 0.92 : 0.74,
   ).toFixed(3));
   const setupTypeScale = Number(clamp(
-    compact
-      ? Math.min(w / 820, h / 720, form === "phone" ? 1.05 : 1.12)
-      : Math.min(w / 620, h / 420, menuUiScale * 4.2),
-    compact ? 0.95 : 1.35,
-    compact ? (form === "phone" ? 1.08 : 1.16) : 2.75,
+    form === "phone"
+      ? Math.min(w / 1280, h / 1100, 0.58)
+      : compact
+        ? Math.min(w / 920, h / 820, 0.86)
+        : Math.min(w / 620, h / 420, menuUiScale * 4.2),
+    form === "phone" ? 0.48 : compact ? 0.72 : 1.35,
+    form === "phone" ? 0.62 : compact ? 0.9 : 2.75,
   ).toFixed(2));
-  const uiScale = Number(clamp(Math.min(w / 1600, h / 900), 0.75, 1.12).toFixed(3));
+  const uiScale = Number(clamp(
+    Math.min(w / 1600, h / 900),
+    form === "phone" ? 0.62 : 0.75,
+    form === "phone" ? 0.82 : 1.12,
+  ).toFixed(3));
   const menuLayout = form === "phone" || w < 720 || w / h < 0.78
     ? "stack"
     : form === "tablet" || w < 1180
