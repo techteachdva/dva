@@ -68,6 +68,7 @@ import {
 } from "./event-choices.js";
 import { flipLeviathan } from "./dreambeasts.js";
 import { discardDreamCard } from "./dream-deck.js";
+import { isHighStat, isLowStat, harmCount } from "./stat-tier.js";
 
 function alive(state) {
   return state.players.filter((p) => p.alive);
@@ -252,9 +253,11 @@ export const EXTRA_MINDSTREAM_EFFECTS = {
   "is-that-music": (state, player) => {
     if (player.hand.length) state.psycheDiscard.push(player.hand.pop());
     drawPsycheForPlayer(state, player, 1);
-    if (stat(player, "elasticity") >= 3) {
+    if (isHighStat(player, "elasticity")) {
       grantPowerTokens(state, player, 1);
       moveToIfRevealed(state, player, ["awards", "the-party"]);
+    } else {
+      repressFromHand(state, player, harmCount(player, "elasticity", 1), `${player.name}: Is That Music — strain.`);
     }
   },
   "cotton-candy": (state, player) => {
@@ -296,8 +299,11 @@ export const EXTRA_MINDSTREAM_EFFECTS = {
     drawPsycheForPlayer(state, player, 2);
   },
   flooded: (state, player) => {
-    if (stat(player, "elasticity") <= 2) moveToIfRevealed(state, player, ["endless-ocean"]);
-    else moveToIfRevealed(state, player, ["house", "suburbia"]);
+    if (isHighStat(player, "elasticity")) moveToIfRevealed(state, player, ["house", "suburbia"]);
+    else {
+      moveToIfRevealed(state, player, ["endless-ocean"]);
+      repressFromHand(state, player, harmCount(player, "elasticity", 1), `${player.name}: Flooded — strain.`);
+    }
   },
   "giant-animated-pile": (state, player, helpers) => {
     beginGiantPile(state, player, helpers);
@@ -311,10 +317,11 @@ export const EXTRA_MINDSTREAM_EFFECTS = {
     if (helpers?.drawObjects) helpers.drawObjects(state, player, 1, helpers);
   },
   "lost-treasure": (state, player, helpers, event) => {
-    if (stat(player, "elasticity") <= 2 && player.hand.length) {
-      state.psycheDiscard.push(player.hand.pop());
-    } else {
+    if (isHighStat(player, "elasticity")) {
       drawPsycheForPlayer(state, player, 3);
+    } else if (player.hand.length) {
+      const n = harmCount(player, "elasticity", 1);
+      for (let i = 0; i < n && player.hand.length; i += 1) state.psycheDiscard.push(player.hand.pop());
     }
     logAffectedStatus(state, event, "Lost Treasure");
     returnN(state, countAffectedLandscapes(state, event), player);
@@ -345,7 +352,7 @@ export const EXTRA_MINDSTREAM_EFFECTS = {
     }
   },
   "just-out-of-reach": (state, player, helpers, event) => {
-    if (stat(player, "elasticity") >= 3 && player.hand.length) {
+    if (isHighStat(player, "elasticity") && player.hand.length) {
       state.psycheDiscard.push(player.hand.pop());
       logAffectedStatus(state, event, "Just out of Reach");
       returnN(state, countAffectedLandscapes(state, event), player);
@@ -363,8 +370,8 @@ export const EXTRA_MINDSTREAM_EFFECTS = {
     if (!a && !b) repressFromHand(state, player, 2);
   },
   "searing-day": (state, player) => {
-    if (stat(player, "elasticity") <= 2) repressFromHand(state, player, 2);
-    else drawPsycheForPlayer(state, player, 2);
+    if (isHighStat(player, "elasticity")) drawPsycheForPlayer(state, player, 2);
+    else repressFromHand(state, player, harmCount(player, "elasticity", 2), `${player.name}: Searing Day — strain.`);
   },
   "a-mirage": (state, player, helpers) => {
     beginAMirage(state, player, helpers);
@@ -417,8 +424,11 @@ export const EXTRA_MINDSTREAM_EFFECTS = {
     beginMouthRises(state, player, helpers);
   },
   whirlpool: (state, player, helpers) => {
-    if (stat(player, "willpower") <= 2) tryFlipLeviathan(state, helpers);
-    else moveToIfRevealed(state, player, ["endless-ocean", "sea-of-teeth"]);
+    if (isHighStat(player, "willpower")) moveToIfRevealed(state, player, ["endless-ocean", "sea-of-teeth"]);
+    else if (isLowStat(player, "willpower")) {
+      tryFlipLeviathan(state, helpers);
+      repressFromHand(state, player, 2, `${player.name}: Whirlpool — Willpower 0.`);
+    } else tryFlipLeviathan(state, helpers);
   },
   "syrup-lake": (state, player) => {
     grantPowerTokens(state, player, 1);

@@ -42,6 +42,7 @@ import {
   listLocalSaves,
 } from "./game-save.js";
 import { recoverLegacySilver } from "./event-choices.js";
+import { updateFinalRecurrenceAtmosphere } from "./final-recurrence-atmosphere.js";
 import { startVictoryCelebration, stopVictoryCelebration } from "./victory-celebration.js";
 import { LENGTHS, loadGameData } from "./data.js";
 import {
@@ -1855,6 +1856,7 @@ function renderAll() {
     requestAnimationFrame(() => repositionRadialMenu());
   }
 
+  updateFinalRecurrenceAtmosphere(state);
   updateHandSnapshots(state);
   syncBoardMotion(state);
   syncGameCursor(state);

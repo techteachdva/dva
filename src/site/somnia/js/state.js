@@ -40,6 +40,7 @@ import {
   resolvePowerCardsInHand,
   resolveAllPowerCardsInHands,
 } from "./power-tokens.js";
+import { applyMeetPhaseDreambeastTax } from "./meet-phase-tax.js";
 
 function pinFirstById(list, id) {
   const index = list.findIndex((item) => item.id === id);
@@ -722,7 +723,8 @@ export function beginFinalRecurrence(state) {
     return { ...arch, defeated: false, landscapeId: tile?.id };
   });
 
-  addLog(state, "Defeat each Remaining Archetype with a 12 Psyche Play using opposing suits.");
+  state.finalRecurrenceDreamsAtStart = Math.max(1, state.dreamDeck?.length || 1);
+  addLog(state, "Defeat each Remaining Archetype with a 15 Psyche Play using opposing suits.");
   markDreamFeedNudge();
   checkVictory(state);
 }
@@ -747,6 +749,7 @@ export function advancePhase(state) {
   if (getPhase(state) === "Explore") {
     addLog(state, "Explore Phase — one Dreamer spends Elasticity to unlock shared moves.");
   } else if (getPhase(state) === "Meet") {
+    applyMeetPhaseDreambeastTax(state);
     if (state.anchorMeetSpreadPending) {
       state.anchorMeetSpreadBonus = state.anchorMeetSpreadPending;
       state.anchorMeetSpreadPending = 0;

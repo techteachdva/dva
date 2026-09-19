@@ -1,4 +1,4 @@
-import { getPhase, activePlayer, headPlayer, tileEncounters, encounterKey } from "./state.js";
+import { getPhase, activePlayer, headPlayer, tileEncounters, encounterKey, allDreamersOnBed } from "./state.js";
 import {
   coopMeetPlayTotal,
   meetPsycheActor,
@@ -2434,6 +2434,36 @@ export function renderHud(state, hint = "") {
   }
 
   if (pointsEl) pointsEl.textContent = String(state.acquiredPoints);
+
+  const escapeBanner = document.getElementById("hud-escape-banner");
+  if (escapeBanner) {
+    const needsBed = !state.finalRecurrence
+      && state.status === "playing"
+      && (state.acquiredPoints || 0) >= (state.goalPoints || 0);
+    if (needsBed) {
+      const onBed = allDreamersOnBed(state);
+      escapeBanner.classList.remove("hidden");
+      escapeBanner.textContent = onBed
+        ? "Everyone is on The Bed — advance to wake up!"
+        : "Archetype goal reached! Every living Dreamer must stand on The Bed to escape.";
+    } else {
+      escapeBanner.classList.add("hidden");
+      escapeBanner.textContent = "";
+    }
+  }
+
+  const forgetBanner = document.getElementById("hud-forget-banner");
+  if (forgetBanner) {
+    const pick = state.landscapePick;
+    if (pick?.mode === "forget" && pick.remaining > 0) {
+      const total = pick.totalRequested || pick.remaining;
+      forgetBanner.classList.remove("hidden");
+      forgetBanner.textContent = `Forgetting Landscapes (${total - pick.remaining}/${total}): click pulsing map tiles. Each becomes Wasteland; Dreamers there lose 1 Psyche.`;
+    } else {
+      forgetBanner.classList.add("hidden");
+      forgetBanner.textContent = "";
+    }
+  }
 
   const dreamsLeft = state.dreamDeck.length;
   if (dreamsEl) dreamsEl.textContent = String(dreamsLeft);

@@ -161,6 +161,7 @@ const COMMANDS = {
         });
         lines.push("");
       });
+      lines.push("Quick playtest: /dream draw — draw and resolve the top Dream card.");
       lines.push("Toggle console: ` (backtick) · Enable: ?dev=1 or /dev on");
       return ok(lines.join("\n"), lines);
     },
@@ -245,7 +246,8 @@ const COMMANDS = {
 
   dream: {
     usage: "dream <id>|draw",
-    desc: "Resolve a specific dream effect, or draw from the Dream deck.",
+    aliases: ["draw-dream"],
+    desc: "Resolve a specific dream effect, or draw+resolve top Dream (/dream draw).",
     run: (state, args, ctx) => {
       if (args[0] === "draw") {
         const head = headPlayer(state);

@@ -5,10 +5,30 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "21.4";
+export const SOMNIA_VERSION = "22.0";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "22.0",
+    title: "Final Nightmare — recurrence pressure & Meet toll",
+    notes: [
+      "Each Meet Phase: for every Dreambeast on the board, each Dreamer Represses 1 Psyche per beast and the table Forgets 1 Landscape per beast.",
+      "Final Recurrence requires 15-Psyche opposing-suit plays; final Dream cards (Delta–Homeostasis) hit harder. Many resolved Events also spawn Dreambeasts from Mindstream or Subconscious.",
+      "While the Final Recurrence runs, the table dims as Dreams dwindle and a nightmare hellscape fades in behind the veil.",
+      "Dev: ?dev=1 or /dev on, backtick console, /dream draw (alias /draw-dream) to draw and resolve the top Dream quickly.",
+    ],
+  },
+  {
+    version: "21.5",
+    title: "Harder dreamscape & clearer escape/forget cues",
+    notes: [
+      "After you hit the Archetype point goal, a persistent banner reminds the table to rally on The Bed to wake up.",
+      "Forget-Landscape picks show a bold banner and moment text; wasted Events cost 2 Psyche each when their Landscapes are hidden.",
+      "Stat riders use Dreamer stats: 2+ boon, 1 strain, 0 harsh (×2). Encounter fails hit harder; Dream/Mindstream draws skew ~66% hazard.",
+      "Shorter Dream decks per length (−3 regular Dreams each): Daydream 11, Nap 14, Deep Sleep 18.",
+    ],
+  },
   {
     version: "21.4",
     title: "Boss dreams, Silver spawn, save repair",

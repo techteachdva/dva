@@ -39,6 +39,7 @@ import {
 import { countAffectedLandscapes } from "./event-landscapes.js";
 import { recordCancellableDiscard } from "./dreamer-powers.js";
 import { discardDreamCard, isBossDreamCard, isDreambeastLike } from "./dream-deck.js";
+import { isHighStat, isLowStat } from "./stat-tier.js";
 
 function alive(state) {
   return state.players.filter((p) => p.alive);
@@ -465,9 +466,10 @@ registerEffectResolver("the-council-of-the-years", (state, choiceId) => {
 });
 
 export function beginHarmonicResonance(state, player) {
-  const luc = player.dreamer?.lucidity ?? 0;
-  if (luc <= 1) drawPsycheForPlayer(state, player, 1);
-  else if (luc >= 3) returnN(state, 2, player);
+  if (isHighStat(player, "lucidity")) returnN(state, 2, player);
+  else if (isLowStat(player, "lucidity")) {
+    enqueueRepressFromHand(state, player, 2, `${player.name}: Harmonic Resonance — Lucidity 0.`);
+  } else drawPsycheForPlayer(state, player, 1);
   offerEffectChoice(state, player, {
     cardId: "harmonic-resonance",
     title: "Harmonic Resonance",
@@ -527,13 +529,12 @@ registerEffectResolver("keep-it-together", (state, choiceId) => {
 });
 
 export function beginEveryonesLaughing(state, player) {
-  const luc = player.dreamer?.lucidity ?? 0;
   const encCount = Math.max(1, Math.floor(allEncountersOnBoard(state).length / 2));
-  if (luc >= 3) {
+  if (isHighStat(player, "lucidity")) {
     offerEffectChoice(state, player, {
       cardId: "everyones-laughing",
       title: "Everyone's Laughing",
-      message: "Lucidity 3+: discard 1 Psyche instead of 2 Objects, then discard Psyche equal to half Encounters.",
+      message: "Lucidity 2+: discard 1 Psyche instead of 2 Objects, then discard Psyche equal to half Encounters.",
       ui: "cards",
       cards: psycheCards(player),
       payload: { extra: encCount },
@@ -669,7 +670,7 @@ export function beginFreezingNight(state, player, helpers) {
     }
     drawn.forEach((c) => player.hand.push(c));
   }
-  if (wp >= 3 && helpers?.drawObjects) beginFreezingObjects(state, player, helpers);
+  if (isHighStat(player, "willpower") && helpers?.drawObjects) beginFreezingObjects(state, player, helpers);
 }
 
 function beginFreezingObjects(state, player, helpers) {
@@ -696,7 +697,7 @@ registerEffectResolver("freezing-night", (state, choiceId, helpers) => {
       else state.psycheDiscard.push(c);
     });
     state.pendingEffectChoice = null;
-    if ((pending.payload?.wp ?? 0) >= 3) beginFreezingObjects(state, player, helpers);
+    if (isHighStat(player, "willpower")) beginFreezingObjects(state, player, helpers);
     return true;
   }
   if (pending.step === "keep-object") {
@@ -1707,12 +1708,11 @@ registerEffectResolver("a-way-out-forms", (state, choiceId) => {
 export function beginMistSwirls(state, player) {
   if (state.dreamDeck.length) discardDreamCard(state, state.dreamDeck.pop());
   addLog(state, "Mist Swirls: discarded 1 Dream.");
-  const luc = player.dreamer?.lucidity ?? 0;
-  if (luc < 3 || !psycheCards(player).length) return;
+  if (!isHighStat(player, "lucidity") || !psycheCards(player).length) return;
   offerEffectChoice(state, player, {
     cardId: "mist-swirls",
     title: "Mist Swirls",
-    message: "Lucidity 3+: discard 1 Psyche to Reveal Persona+1 Landscapes?",
+    message: "Lucidity 2+: discard 1 Psyche to Reveal Persona+1 Landscapes?",
     choices: [
       { id: "yes", label: "Discard 1 Psyche and reveal" },
       { id: "no", label: "Keep your Psyche" },
@@ -1847,13 +1847,12 @@ registerEffectResolver("i-remember", (state, choiceId) => {
 });
 
 export function beginNoOne(state, player) {
-  const wp = player.dreamer?.willpower ?? 0;
   const encounters = allEncountersOnBoard(state);
-  if (wp >= 3 && encounters.length) {
+  if (isHighStat(player, "willpower") && encounters.length) {
     offerEffectChoice(state, player, {
       cardId: "no-one",
       title: "No One",
-      message: "Willpower 3+: discard 1 Encounter instead of all.",
+      message: "Willpower 2+: discard 1 Encounter instead of all.",
       choices: encounters.map(({ tile, encounter }) => ({
         id: `${tile.id}:${encounterKey(encounter)}`,
         label: `${encounter.name} on ${tile.name}`,

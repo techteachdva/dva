@@ -32,6 +32,7 @@ import {
 import { EXTRA_MINDSTREAM_EFFECTS } from "./mindstream-extra.js";
 import { flipLeviathan } from "./dreambeasts.js";
 import { discardDreamCard } from "./dream-deck.js";
+import { isHighStat, harmCount, statTier } from "./stat-tier.js";
 import {
   beginPopQuiz,
   beginHarmonicResonance,
@@ -257,8 +258,12 @@ export const MINDSTREAM_EFFECTS = {
   // —— Lucidity ——
   "fantastic-imagination": (state, player) => {
     revealHidden(state, 1);
-    if (stat(player, "lucidity") >= 3) returnN(state, 3, player);
-    else revealHidden(state, 1);
+    if (isHighStat(player, "lucidity")) returnN(state, 3, player);
+    else if (statTier(player, "lucidity") === "mid") revealHidden(state, 1);
+    else {
+      revealHidden(state, 1);
+      repressFromHand(state, player, 2, `${player.name}: Fantastic Imagination — Repress 2 Psyche.`);
+    }
   },
 
   centering: (state, player) => {
@@ -322,8 +327,10 @@ export const MINDSTREAM_EFFECTS = {
   "a-face-appears": (state, player, helpers, event) => {
     spawnMindstreamEncounter(state, player, "lucidity", helpers);
     logAffectedStatus(state, event, "A Face Appears");
-    if (hasAffectedLandscapes(state, event) && stat(player, "lucidity") >= 3) {
+    if (hasAffectedLandscapes(state, event) && isHighStat(player, "lucidity")) {
       returnN(state, 3, player);
+    } else if (hasAffectedLandscapes(state, event)) {
+      repressFromHand(state, player, harmCount(player, "lucidity", 1), `${player.name}: A Face Appears strains Lucidity.`);
     }
   },
 
@@ -336,14 +343,15 @@ export const MINDSTREAM_EFFECTS = {
   },
 
   denial: (state, player) => {
-    const extra = stat(player, "lucidity") >= 3 ? dreamerCount(state) : 0;
+    const extra = isHighStat(player, "lucidity") ? dreamerCount(state) : 0;
+    const tax = harmCount(player, "lucidity", 1);
+    if (tax) repressFromHand(state, player, tax, `${player.name}: Denial — Repress ${tax} Psyche.`);
     returnN(state, 4 + extra, player);
   },
 
   "forgot-clothes": (state, player) => {
     repressFromHand(state, player, 1);
-    const luc = stat(player, "lucidity");
-    if (luc >= 3) {
+    if (isHighStat(player, "lucidity")) {
       const dests = state.board.filter((t) => t.revealed && !t.wasteland);
       requestChooseTile(state, {
         allowedIds: dests.map((t) => t.id),
@@ -352,7 +360,10 @@ export const MINDSTREAM_EFFECTS = {
         title: "Forgot Clothes",
         detail: "Move to any Landscape.",
       });
-    } else moveAdjacent(state, player);
+    } else {
+      repressFromHand(state, player, harmCount(player, "lucidity", 1), `${player.name}: Forgot Clothes — strain.`);
+      moveAdjacent(state, player);
+    }
   },
 
   "pop-quiz": (state, player) => {
@@ -371,9 +382,11 @@ export const MINDSTREAM_EFFECTS = {
 
   // —— Elasticity ——
   "a-shining-wind": (state, player, helpers, event) => {
-    if (stat(player, "elasticity") >= 3) {
+    if (isHighStat(player, "elasticity")) {
       grantPowerTokens(state, player, 2);
       recordQuestEvent(state, "power_token", { count: 2 });
+    } else {
+      repressFromHand(state, player, harmCount(player, "elasticity", 1), `${player.name}: A Shining Wind — strain.`);
     }
     logAffectedStatus(state, event, "A Shining Wind");
     if (hasAffectedLandscapes(state, event)) {
@@ -382,8 +395,10 @@ export const MINDSTREAM_EFFECTS = {
   },
 
   "roof-dive": (state, player, helpers, event) => {
-    if (stat(player, "elasticity") < 3) {
-      addLog(state, "Need Elasticity 3+ for Roof Dive.");
+    if (!isHighStat(player, "elasticity")) {
+      const strain = harmCount(player, "elasticity", 1);
+      if (strain) repressFromHand(state, player, strain, `${player.name}: Roof Dive — Repress ${strain} Psyche.`);
+      addLog(state, "Roof Dive needs Elasticity 2+ to leap; you strain instead.");
       return;
     }
     logAffectedStatus(state, event, "Roof Dive");
@@ -408,7 +423,7 @@ export const MINDSTREAM_EFFECTS = {
     logAffectedStatus(state, event, "Running Somewhere?");
     if (
       hasAffectedLandscapes(state, event)
-      && stat(player, "elasticity") >= 3
+      && isHighStat(player, "elasticity")
       && player.hand.length
     ) {
       const card = player.hand.pop();
@@ -418,8 +433,8 @@ export const MINDSTREAM_EFFECTS = {
   },
 
   "portal-another-world": (state, player) => {
-    const ela = stat(player, "elasticity");
-    const moves = ela >= 3 ? 3 : 1;
+    const tier = statTier(player, "elasticity");
+    const moves = tier === "high" ? 3 : tier === "mid" ? 1 : 0;
     state.exploreMovesLeft = (state.exploreMovesLeft || 0) + moves;
     moveToEdge(state, player);
     addLog(state, `Portal: ${moves} move(s) toward the Dreamscape edge.`);
@@ -432,16 +447,20 @@ export const MINDSTREAM_EFFECTS = {
   "freezing-night": (state, player, helpers, event) => {
     logAffectedStatus(state, event, "Freezing Night");
     beginFreezingNight(state, player, helpers);
-    if (hasAffectedLandscapes(state, event) && stat(player, "elasticity") >= 3) {
+    if (hasAffectedLandscapes(state, event) && isHighStat(player, "elasticity")) {
       grantFreeMeetAction(state);
+    } else if (hasAffectedLandscapes(state, event)) {
+      repressFromHand(state, player, harmCount(player, "elasticity", 1), `${player.name}: Freezing Night — strain.`);
     }
   },
 
   friendship: (state, player, helpers, event) => {
     beginFriendship(state, player);
     logAffectedStatus(state, event, "Friendship");
-    if (hasAffectedLandscapes(state, event) && stat(player, "elasticity") >= 3) {
+    if (hasAffectedLandscapes(state, event) && isHighStat(player, "elasticity")) {
       grantFreeMeetAction(state);
+    } else if (hasAffectedLandscapes(state, event)) {
+      repressFromHand(state, player, harmCount(player, "elasticity", 1), `${player.name}: Friendship — strain.`);
     }
   },
 
@@ -507,7 +526,7 @@ export const MINDSTREAM_EFFECTS = {
     const yanked = state.dreamDeck.splice(-discard, discard);
     yanked.forEach((card) => discardDreamCard(state, card));
     addLog(state, `Discarded ${discard} Dream card(s) from the deck.`);
-    if (stat(player, "willpower") >= 3 && state.dreamDeck.length) {
+    if (isHighStat(player, "willpower") && state.dreamDeck.length) {
       const card = state.dreamDeck.pop();
       state.dreamDeck = shuffle([...state.dreamDeck, card]);
       addLog(state, `Returned ${card.name} to the Dream Deck and shuffled.`);
@@ -541,7 +560,8 @@ export const MINDSTREAM_EFFECTS = {
   "clear-as-crystal": (state, player) => {
     const n = drawPsycheForPlayer(state, player, 3);
     recordQuestEvent(state, "draw_psyche", { count: n.length });
-    if (stat(player, "willpower") >= 3) returnN(state, 2, player);
+    if (isHighStat(player, "willpower")) returnN(state, 2, player);
+    else repressFromHand(state, player, harmCount(player, "willpower", 1), `${player.name}: Clear as Crystal — strain.`);
   },
 
   "jaw-shark": (state, player) => {
@@ -560,8 +580,9 @@ export const MINDSTREAM_EFFECTS = {
   },
 
   "golden-tooth": (state, player, helpers) => {
-    const wp = stat(player, "willpower");
-    if (wp <= 2) {
+    if (isLowStat(player, "willpower")) {
+      repressFromHand(state, player, 2, `${player.name}: Golden Tooth — Willpower 0.`);
+    } else if (isMidStat(player, "willpower")) {
       const n = drawPsycheForPlayer(state, player, 2);
       recordQuestEvent(state, "draw_psyche", { count: n.length });
     } else if (helpers?.drawObjects) {

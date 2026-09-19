@@ -23,6 +23,7 @@ import { adjacentTiles, hexDistance } from "./hex.js";
 import { requestChooseTile, requestForgetLandscapes, forgetNamedLandscapes } from "./landscapes.js";
 import { offerEffectChoice, registerEffectResolver } from "./effect-choices.js";
 import { discardToMindstream } from "./mindstream-supply.js";
+import { scaleFailCount } from "./psyche-pressure.js";
 
 const SUIT_LABELS = {
   lucidity: "Lucidity",
@@ -252,10 +253,10 @@ const ACCEPT_EFFECTS = {
 };
 
 const FAIL_EFFECTS = {
-  cerberus: { type: "repress-top-psyche", count: 4 },
-  double: { type: "repress-top-psyche", count: 4 },
-  leviathan: { type: "repress-top-psyche", count: 4 },
-  werewolf: { type: "repress-hand", count: 3 },
+  cerberus: { type: "repress-top-psyche", count: 5 },
+  double: { type: "repress-top-psyche", count: 5 },
+  leviathan: { type: "repress-top-psyche", count: 5 },
+  werewolf: { type: "repress-hand", count: 4 },
   bogey: { type: "discard-and-repress", discard: 1, repress: 1 },
   mindless: { type: "forget-and-repress-per-dreamer" },
   automaton: { type: "discard-power", count: 1 },
@@ -558,8 +559,9 @@ export function applyAcceptEffect(state, encounter, actor, helpers = {}) {
 
 export function applyFailEffect(state, player, encounter) {
   const id = encounter.refId || encounter.id;
-  const spec = FAIL_EFFECTS[id] || { type: "repress-hand", count: 1 };
-  const count = encounter.failDoubled && spec.count ? spec.count * 2 : spec.count;
+  const spec = FAIL_EFFECTS[id] || { type: "repress-hand", count: 2 };
+  let count = encounter.failDoubled && spec.count ? spec.count * 2 : spec.count;
+  if (count) count = scaleFailCount(count);
   const effect = { ...spec, count };
 
   switch (effect.type) {

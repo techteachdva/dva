@@ -28,6 +28,8 @@ import {
 } from "./subconscious.js";
 import { MINDSTREAM_EFFECTS } from "./mindstream.js";
 import { markDreamFeedNudge } from "./fx.js";
+import { maybeSpawnAfterEvent } from "./event-spawn-pressure.js";
+import { FINAL_RECURRENCE_PSYCHE_REQUIRED } from "./final-recurrence-rules.js";
 import { discardDreamsFromDeck } from "./dream-deck.js";
 import { logMoment } from "./narrator.js";
 import { onObjectDrawn } from "./objects.js";
@@ -440,25 +442,45 @@ const DREAM_EFFECTS = {
     beginAbandonmentMoves(state);
   },
   delta: (state) => {
-    forgetEdgeLandscapes(state, 4);
+    forgetEdgeLandscapes(state, state.finalRecurrence ? 6 : 4);
     alivePlayers(state).forEach((p) => {
-      if (p.hand.length) state.psycheDiscard.push(p.hand.pop());
+      const n = state.finalRecurrence ? 2 : 1;
+      for (let i = 0; i < n && p.hand.length; i += 1) {
+        state.psycheDiscard.push(p.hand.pop());
+      }
     });
     recordQuestEvent(state, "discard_psyche", { count: dreamerCount(state) });
+    logMoment(state, state.finalRecurrence ? "Delta — the map frays; Psyche slips away." : "Delta waves crash through the Dreamscape.");
   },
   theta: (state) => {
-    forgetEdgeLandscapes(state, 8);
-    allDrawPsyche(state, 2);
+    forgetEdgeLandscapes(state, state.finalRecurrence ? 10 : 8);
+    if (state.finalRecurrence) {
+      alivePlayers(state).forEach((p) => {
+        enqueueRepressFromHand(state, p, 1, { reason: "Theta — Repress 1 Psyche in the Final Recurrence." });
+      });
+      logMoment(state, "Theta — deep sleep pulls your hand into the Subconscious.");
+    } else {
+      allDrawPsyche(state, 2);
+    }
   },
   alpha: (state, _player, helpers) => {
-    forgetEdgeLandscapes(state, 4);
+    forgetEdgeLandscapes(state, state.finalRecurrence ? 6 : 4);
     alivePlayers(state).forEach((p) => {
-      if (helpers?.drawObjects) helpers.drawObjects(state, p, 1, helpers);
+      if (state.finalRecurrence) {
+        enqueueRepressFromHand(state, p, 2, { reason: "Alpha — Repress 2 Psyche." });
+      } else if (helpers?.drawObjects) helpers.drawObjects(state, p, 1, helpers);
     });
   },
   beta: (state) => {
-    forgetEdgeLandscapes(state, 4);
-    alivePlayers(state).forEach((p) => drawPsycheForPlayer(state, p, 1));
+    forgetEdgeLandscapes(state, state.finalRecurrence ? 6 : 4);
+    alivePlayers(state).forEach((p) => {
+      if (state.finalRecurrence) {
+        for (let i = 0; i < 2 && p.hand.length; i += 1) state.psycheDiscard.push(p.hand.pop());
+      } else {
+        drawPsycheForPlayer(state, p, 1);
+      }
+    });
+    if (state.finalRecurrence) logMoment(state, "Beta — arousal without rest; Psyche burns off.");
   },
   circadia: (state) => {
     beginCircadiaChoices(state);
@@ -467,8 +489,16 @@ const DREAM_EFFECTS = {
     beginSomnambulanceChoices(state);
   },
   homeostasis: (state) => {
-    allDrawPsyche(state, 5);
-    logMoment(state, "Homeostasis — all Dreamers draw 5 Psyche.");
+    if (state.finalRecurrence) {
+      allDrawPsyche(state, 2);
+      alivePlayers(state).forEach((p) => {
+        for (let i = 0; i < 3 && p.hand.length; i += 1) state.psycheDiscard.push(p.hand.pop());
+      });
+      logMoment(state, "Homeostasis breaks — draw 2, then lose 3 Psyche each.");
+    } else {
+      allDrawPsyche(state, 5);
+      logMoment(state, "Homeostasis — all Dreamers draw 5 Psyche.");
+    }
   },
   "pineal-purge": (state) => {
     beginPinealPurgeChoices(state);
@@ -574,10 +604,14 @@ export function resolveCardEffect(state, card, player, helpers) {
     if (!beginEventOrWaste(state, card)) return;
     if (MINDSTREAM_EFFECTS[id]) {
       MINDSTREAM_EFFECTS[id](state, player, helpers, card);
+      maybeSpawnAfterEvent(state, player, helpers, card);
       return;
     }
   }
-  matchTextEffect(card, state, player, helpers);
+  const matched = matchTextEffect(card, state, player, helpers);
+  if (card.type === "event" && matched) {
+    maybeSpawnAfterEvent(state, player, helpers, card);
+  }
 }
 
 export function createEffectHelpers(spawnFn) {
@@ -590,8 +624,8 @@ export function createEffectHelpers(spawnFn) {
 export function defeatFinalArchetype(state, archetype, player, selectedCards, meetPlayTotalFn) {
   if (!state.finalRecurrence) return false;
   const played = meetPlayTotalFn(state);
-  if (played < 12) {
-    addLog(state, `Need 12 Psyche to defeat ${archetype.name} (have ${played}).`);
+  if (played < FINAL_RECURRENCE_PSYCHE_REQUIRED) {
+    addLog(state, `Need ${FINAL_RECURRENCE_PSYCHE_REQUIRED} Psyche to defeat ${archetype.name} (have ${played}).`);
     return false;
   }
   const opposing = opposingSuit(archetype.suit);

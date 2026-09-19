@@ -17,6 +17,8 @@
   <link rel="stylesheet" href="css/game.css">
 </head>
 <body class="in-game play-window">
+  <div id="final-nightmare-backdrop" class="final-nightmare-backdrop" aria-hidden="true"></div>
+  <div id="final-recurrence-veil" class="final-recurrence-veil" aria-hidden="true"></div>
   <div id="fullscreen-prompt" class="fullscreen-prompt" role="button" tabindex="0">
     <div class="fullscreen-prompt-card">
       <h2>Enter the Dreamscape</h2>
@@ -34,12 +36,12 @@
   <div id="app">
     <header class="top-bar play-top-bar">
       <div class="brand">
-        <span class="version-label">Somnia v 21.4</span>
+        <span class="version-label">Somnia v 22.0</span>
         <h1>Somnia</h1>
       </div>
       <div id="phase-stepper" class="phase-stepper top-bar-stepper" aria-label="Round phases"></div>
       <div id="hud" class="hud">
-        <div class="hud-item hud-goal-wrap"><span class="label">Goal</span><span id="hud-goal">12 pts</span><span id="hud-goal-bar" class="hud-goal-bar" aria-hidden="true"></span></div>
+        <div class="hud-item hud-goal-wrap"><span class="label">Goal</span><span id="hud-goal">12 pts</span><span id="hud-goal-bar" class="hud-goal-bar" aria-hidden="true"></span><div id="hud-escape-banner" class="hud-escape-banner hidden" role="status" aria-live="polite"></div></div>
         <div class="hud-item"><span class="label">Points</span><span id="hud-points">0</span></div>
         <div class="hud-item hud-dreams-wrap"><span class="label">Dreams Left</span><span id="hud-dreams">16</span></div>
         <div class="hud-item hud-beasts-wrap hidden" id="hud-beasts-wrap"><span class="label">Roaming</span><span id="hud-beasts">0</span></div>
@@ -66,6 +68,7 @@
           <button type="button" id="btn-deck-drawer" class="chrome-edge-toggle chrome-edge-toggle-deck" aria-expanded="false" aria-controls="deck-column">Decks</button>
           <aside id="deck-column" class="deck-column" aria-label="Game decks"></aside>
           <div id="coop-play-banner" class="coop-play-banner hidden" aria-live="polite"></div>
+          <div id="hud-forget-banner" class="hud-forget-banner hidden" role="status" aria-live="assertive"></div>
           <div id="phase-banner" class="phase-banner" aria-live="polite"></div>
           <p id="table-action-cue" class="table-action-cue" hidden></p>
           <div id="moment-overlay-stack" class="moment-overlay-stack" role="status" aria-live="polite"></div>

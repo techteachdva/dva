@@ -52,6 +52,39 @@ body.in-game {
   font-size: calc(1rem * var(--ui-scale));
 }
 
+.final-nightmare-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: url("../images/final-nightmare-hellscape.png") center center / cover no-repeat;
+  transition: opacity 1.4s ease;
+}
+
+.final-recurrence-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    radial-gradient(ellipse 120% 80% at 50% 40%, rgba(8, 4, 18, 0.35), rgba(0, 0, 0, 0.92) 72%),
+    linear-gradient(180deg, rgba(12, 6, 24, 0.55), rgba(0, 0, 0, 0.88));
+  transition: opacity 1.2s ease;
+}
+
+body.final-recurrence-active #app {
+  position: relative;
+  z-index: 2;
+  filter: saturate(0.82) contrast(1.08) brightness(0.94);
+  transition: filter 1s ease;
+}
+
+body.final-recurrence-active #fullscreen-prompt {
+  z-index: 3;
+}
+
 #app {
   min-height: 100vh;
   min-height: 100dvh;
@@ -1961,6 +1994,46 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
   border-radius: 2px;
   transition: width 0.25s ease;
   pointer-events: none;
+}
+
+.hud-escape-banner {
+  display: block;
+  margin-top: 0.35rem;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.78rem;
+  line-height: 1.25;
+  font-weight: 700;
+  color: #ffe8a8;
+  background: linear-gradient(90deg, rgba(120, 70, 10, 0.55), rgba(40, 90, 120, 0.45));
+  border: 1px solid rgba(255, 210, 120, 0.45);
+  border-radius: 6px;
+  animation: pulse-escape-hint 2.2s ease-in-out infinite;
+}
+
+.hud-escape-banner.hidden {
+  display: none;
+}
+
+.hud-forget-banner {
+  margin: 0.35rem 0 0.5rem;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #ffd4d4;
+  background: rgba(90, 20, 20, 0.72);
+  border: 2px solid rgba(255, 120, 100, 0.75);
+  border-radius: 8px;
+  box-shadow: 0 0 18px rgba(255, 80, 60, 0.35);
+}
+
+.hud-forget-banner.hidden {
+  display: none;
+}
+
+@keyframes pulse-escape-hint {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.82; }
 }
 
 .hud-dreams-wrap.hud-urgent-warn #hud-dreams {

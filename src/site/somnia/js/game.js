@@ -481,7 +481,7 @@ export function getPhaseActions(state, handlers) {
           label: `Defeat ${onTile.finalArchetype.name} (${poolTotal} pool)`,
           section: "encounter",
           disabled: !canUseMeetAction(state, MEET_ACTIONS.MEET),
-          hint: meetActionHint(state, MEET_ACTIONS.MEET, null, "Pool Psyche from all Dreamers to defeat this Remaining Archetype."),
+          hint: meetActionHint(state, MEET_ACTIONS.MEET, null, "Pool 15+ Psyche from all Dreamers (opposing suit) to defeat this Remaining Archetype."),
           onClick: handlers.defeatFinalArchetype,
         });
         actions.push({

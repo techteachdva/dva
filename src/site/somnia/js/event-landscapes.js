@@ -7,7 +7,8 @@
  * - "Affected Landscape" counts and riders use only matching Revealed tiles.
  */
 
-import { narrate } from "./narrator.js";
+import { narrate, logMoment } from "./narrator.js";
+import { allDreamersDiscardPsyche } from "./psyche-pressure.js";
 
 export function eventLandscapeIds(event) {
   if (!event) return [];
@@ -129,11 +130,17 @@ export function beginEventOrWaste(state, event) {
   };
 
   if (info.wasted) {
+    allDreamersDiscardPsyche(state, 2);
+    logMoment(
+      state,
+      `${event.name} fizzles — the Dreamscape is hidden. Each Dreamer discards 2 Psyche.`,
+      { forget: true },
+    );
     narrate(
       state,
-      `${event.name} is discarded unused`,
-      `None of this Event's Landscapes are Revealed (${formatNameList(info.needed)}). No effect happens. The card is placed in the ${info.discardPile}.`,
-      ["No Event effect happens", `Discarded unused to the ${info.discardPile}`],
+      `${event.name} cannot resolve`,
+      `None of this Event's Landscapes are Revealed (${formatNameList(info.needed)}). The Event is wasted: every Dreamer discards 2 Psyche, then the card goes to the ${info.discardPile}.`,
+      ["Each Dreamer discards 2 Psyche", `Discarded unused to the ${info.discardPile}`],
     );
     return false;
   }

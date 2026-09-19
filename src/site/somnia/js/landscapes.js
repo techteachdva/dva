@@ -133,12 +133,24 @@ export function beginForgetPicking(state, count) {
     return true;
   }
 
-  state.landscapePick = { mode: "forget", remaining: count, picked: [], totalRequested: count };
+  state.landscapePick = {
+    mode: "forget",
+    remaining: count,
+    picked: [],
+    totalRequested: count,
+    title: `Forget ${count} Landscape${count === 1 ? "" : "s"}`,
+  };
+  state.forgetPickActive = true;
+  logMoment(
+    state,
+    `Forget ${count} Landscape${count === 1 ? "" : "s"} — click glowing map tiles.`,
+    { forget: true },
+  );
   narrate(
     state,
     `Forget ${count} Landscape(s) — click the map.`,
-    `Choose ${count} revealed Landscape hex tiles to turn into Wasteland. Encounters there are Repressed; Dreamers there lose 1 Psyche to the Subconscious.`,
-    [`${count} tile(s) to forget`],
+    `Choose ${count} revealed Landscape hex tiles (they pulse red). Each becomes a Wasteland: Encounters Repress to the Subconscious; Dreamers standing there lose 1 Psyche.`,
+    [`${count} tile(s) to forget`, "The Bed cannot be forgotten"],
   );
   return true;
 }
@@ -333,11 +345,13 @@ export function handleLandscapeTilePick(state, tileId) {
 
     if (pick.remaining <= 0) {
       state.landscapePick = null;
+      state.forgetPickActive = false;
       if (allOuterTilesWasteland(state)) {
         triggerBedFinalRecurrence(state, "Landscapes collapsed — The Bed flips to Final Recurrence.");
       }
     } else if (allOuterTilesWasteland(state)) {
       state.landscapePick = null;
+      state.forgetPickActive = false;
       triggerBedFinalRecurrence(state, "All Landscapes are Wastelands — Final Recurrence begins.");
     }
     return true;
@@ -353,6 +367,7 @@ export function cancelLandscapePick(state) {
     state.revealLandscapeUsed = true;
   }
   state.landscapePick = null;
+  state.forgetPickActive = false;
 }
 
 /** Clear map pickers that have no valid targets left (prevents advance lock). */
@@ -370,6 +385,7 @@ export function resolveStaleLandscapePick(state) {
 
   if (pick.mode === "forget" && pick.remaining > 0 && forgettableTiles(state).length === 0) {
     state.landscapePick = null;
+    state.forgetPickActive = false;
     addLog(state, "No Landscapes left to forget — forget action complete.");
     return;
   }
@@ -487,7 +503,7 @@ export function triggerBedFinalRecurrence(state, reason) {
   narrate(
     state,
     "The Bed flips — Final Recurrence!",
-    reason || "The Dreamscape collapses to its final form. The Dream Deck is now only Final Recurrence cards. Defeat each Remaining Archetype on the map with 12-Psyche plays using opposing suits.",
+    reason || "The Dreamscape collapses to its final form. The Dream Deck is now only Final Recurrence cards. Defeat each Remaining Archetype on the map with 15-Psyche plays using opposing suits.",
     [
       `${state.dreamDeck.length} Final Dream cards remain`,
       "Goal changes: defeat all Remaining Archetypes",

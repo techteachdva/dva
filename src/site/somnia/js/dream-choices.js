@@ -142,8 +142,8 @@ export function beginMortalityChoices(state) {
 function presentMortality(state, player) {
   const hand = psycheCards(player);
   const objs = player.objects || [];
-  const canPsyche = hand.length >= 4;
-  const canObjects = objs.length >= 2;
+  const canPsyche = hand.length >= 5;
+  const canObjects = objs.length >= 3;
   if (!canPsyche && !canObjects) {
     if (hand.length) discardPsyche(state, player, hand);
     if (objs.length) discardObjects(state, player, objs);
@@ -157,10 +157,10 @@ function presentMortality(state, player) {
       ui: "spend",
       step: "pay-psyche",
       title: "Mortality",
-      message: `${player.name}: discard 4 Psyche.`,
+      message: `${player.name}: discard 5 Psyche.`,
       cards: hand,
-      needCount: 4,
-      log: `${player.name} must discard 4 Psyche.`,
+      needCount: 5,
+      log: `${player.name} must discard 5 Psyche.`,
     });
     return;
   }
@@ -170,20 +170,20 @@ function presentMortality(state, player) {
       ui: "spend",
       step: "pay-objects",
       title: "Mortality",
-      message: `${player.name}: discard 2 Objects.`,
+      message: `${player.name}: discard 3 Objects.`,
       cards: objs,
-      needCount: 2,
-      log: `${player.name} must discard 2 Objects.`,
+      needCount: 3,
+      log: `${player.name} must discard 3 Objects.`,
     });
     return;
   }
   offer(state, player, {
     dreamId: "mortality",
     title: "Mortality",
-    message: `${player.name}: discard 4 Psyche or 2 Objects.`,
+    message: `${player.name}: discard 5 Psyche or 3 Objects.`,
     choices: [
-      { id: "psyche", label: "Discard 4 Psyche", hint: `${hand.length} Psyche in hand.` },
-      { id: "objects", label: "Discard 2 Objects", hint: `${objs.length} Object(s) in hand.` },
+      { id: "psyche", label: "Discard 5 Psyche", hint: `${hand.length} Psyche in hand.` },
+      { id: "objects", label: "Discard 3 Objects", hint: `${objs.length} Object(s) in hand.` },
     ],
   });
 }
@@ -637,9 +637,9 @@ export function resolveDreamChoice(state, choiceId, h = null) {
         ui: "spend",
         step: "pay-psyche",
         title: "Mortality",
-        message: `${player.name}: discard 4 Psyche.`,
+        message: `${player.name}: discard 5 Psyche.`,
         cards: psycheCards(player),
-        needCount: 4,
+        needCount: 5,
       });
       return true;
     }
@@ -649,9 +649,9 @@ export function resolveDreamChoice(state, choiceId, h = null) {
         ui: "spend",
         step: "pay-objects",
         title: "Mortality",
-        message: `${player.name}: discard 2 Objects.`,
+        message: `${player.name}: discard 3 Objects.`,
         cards: player.objects || [],
-        needCount: 2,
+        needCount: 3,
       });
       return true;
     }

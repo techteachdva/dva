@@ -45,10 +45,52 @@ function enrichMindstreamEvents(mindstream, catalog) {
 }
 
 export const LENGTHS = {
-  daydream: { label: "Daydream", points: 12, dreams: 14 },
-  nap: { label: "Nap", points: 18, dreams: 17 },
-  deep: { label: "Deep Sleep", points: 24, dreams: 21 },
+  daydream: { label: "Daydream", points: 12, dreams: 11 },
+  nap: { label: "Nap", points: 18, dreams: 14 },
+  deep: { label: "Deep Sleep", points: 24, dreams: 18 },
 };
+
+/** ~33% boon / 66% hazard in weighted session draws. */
+export const DREAM_BOON_IDS = new Set([
+  "quiet",
+  "recovery",
+  "well-being",
+  "heroism",
+  "transformation",
+  "travel",
+  "wanderlust",
+]);
+
+export const MINDSTREAM_EVENT_BOON_IDS = new Set([
+  "centering",
+  "friendship",
+  "flashing-lights",
+  "i-know-this-place",
+  "harmonic-resonance",
+  "sacred-geometry",
+  "clear-as-crystal",
+  "into-the-next",
+]);
+
+const HAZARD_DRAW_RATIO = 0.66;
+
+function pickWeightedUnique(items, count, isHazard) {
+  if (!items.length || count <= 0) return [];
+  const hazards = shuffle(items.filter((item) => isHazard(item)));
+  const boons = shuffle(items.filter((item) => !isHazard(item)));
+  const hazardTarget = Math.min(hazards.length, Math.round(count * HAZARD_DRAW_RATIO));
+  let picked = [
+    ...hazards.slice(0, hazardTarget),
+    ...boons.slice(0, Math.min(boons.length, count - hazardTarget)),
+  ];
+  const pool = shuffle([...hazards, ...boons]);
+  let i = 0;
+  while (picked.length < count && pool.length) {
+    picked.push(pool[i % pool.length]);
+    i += 1;
+  }
+  return shuffle(picked.slice(0, count));
+}
 
 /** Deck insert indices (0-based) — bosses appear on Reveal rounds 3, 6, and 9. */
 export const BOSS_DREAM_DECK_SLOTS = [2, 5, 8];
@@ -275,7 +317,11 @@ export function buildMindstreamDecks(mindstreamData, dreambeasts = [], objects =
       deck.push(mindstreamObjectCard(obj, suit));
     });
 
-    pickPool(events, MINDSTREAM_COMPOSITION.events).forEach((evt) => {
+    pickWeightedUnique(
+      events,
+      MINDSTREAM_COMPOSITION.events,
+      (evt) => !MINDSTREAM_EVENT_BOON_IDS.has(evt.id),
+    ).forEach((evt) => {
       deck.push(mindstreamEventCard(evt, suit));
     });
 
@@ -320,8 +366,20 @@ export function expandDreamPool(dreams) {
  * `sessionCount` is how many regular dreams to include (14 / 17 / 21 by game length).
  */
 export function buildDreamDeck(dreams, sessionCount) {
-  const regularPool = shuffle(expandDreamPool(dreams));
-  const picked = regularPool.slice(0, Math.min(sessionCount, regularPool.length));
+  const expanded = expandDreamPool(dreams);
+  const uniqueDreams = [];
+  const seen = new Set();
+  expanded.forEach((card) => {
+    if (seen.has(card.id)) return;
+    seen.add(card.id);
+    uniqueDreams.push(card);
+  });
+  const pickedTemplates = pickWeightedUnique(
+    uniqueDreams,
+    Math.min(sessionCount, uniqueDreams.length),
+    (d) => !DREAM_BOON_IDS.has(d.id),
+  );
+  const picked = pickedTemplates.map((d) => ({ ...d, instanceId: uid("dream") }));
 
   const finals = dreams.filter((d) => d.type === "final");
   const neverWake = finals.find((d) => d.id === "you-never-wake");
