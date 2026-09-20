@@ -5,10 +5,21 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "22.3";
+export const SOMNIA_VERSION = "23.0";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "23.0",
+    title: "Readable Psyche, Next Phase, Spawn & Subconscious",
+    notes: [
+      "Psyche rank and suit icons are three times larger, Power Surge is yellowish-purple, and the hand fans with tighter stacking.",
+      "After Reveal, Explore, or Meet budgets are spent, a circular Next Phase button appears at the top-right of the map. Dreamer radials no longer advance the phase.",
+      "Ebony Pawn now spawns a Nightmare (Ivory a Fantasy) on a chosen revealed Landscape. Spawn a Dreambeast cycles a Mindstream from the top until a beast, then discards the rest of that suit and reshuffles. Dreams and Events spawn on the acting Dreamer's tile (bosses on The Bed). Printed Spawn 1: 2 Dreams, Ebony/Ivory/Polyhedral/Marble Grid, Lava's unique action, plus Event pressure.",
+      "Draw Mindstream is repeatable; each unique Landscape action is once per Dreamer. Archetype Powers cost a Meet action. Instant Objects and spent allies Repress. Empty Mindstream discard reshuffles; a fully Repressed Mindstream suit loses the game.",
+      "Meet tax is louder: at the start of Meet, each Dreamer Represses 1 Psyche and the table Forgets 1 Landscape per active Dreambeast. Moment toasts stay on screen longer.",
+    ],
+  },
   {
     version: "22.3",
     title: "Shuffled Dreamscape & one Psyche per phase",

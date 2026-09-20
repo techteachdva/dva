@@ -55,13 +55,9 @@ function pileForCard(sub, card) {
   return sub.other;
 }
 
-/** Repress: card goes face-up into the Subconscious (or Mindstream for accepted allies). */
+/** Repress: card goes face-up into the Subconscious. Spent allies go here, not back to Mindstream. */
 export function repressCard(state, card) {
   if (!card) return;
-  if (isDreambeastPsycheCard(card)) {
-    returnDreambeastToMindstreamDeck(state, card);
-    return;
-  }
   state.subconscious = normalizeSubconscious(state.subconscious);
   pileForCard(state.subconscious, card).push(card);
 }

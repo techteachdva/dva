@@ -56,6 +56,7 @@ import {
   isBlockingGameChoice,
   blockingChoiceLabel,
   encounterKey,
+  checkDefeat,
 } from "./state.js";
 import {
   getPhaseActions,
@@ -1664,6 +1665,7 @@ function renderBoardArea() {
 
 function renderAll() {
   if (!state) return;
+  checkDefeat(state);
   bindUiRenderState(state);
   resolveStaleLandscapePick(state);
   if (isInteractiveTutorialActive(state)) {
@@ -1733,7 +1735,7 @@ function renderAll() {
   }
   renderNarratorPanel(state);
   renderGuidePanel(state, phaseActions);
-  renderPhaseAdvanceBar();
+  renderPhaseAdvanceBar(advanceAction);
   renderPhaseActions(phaseActions, advanceAction, state);
 
   renderBoardArea();

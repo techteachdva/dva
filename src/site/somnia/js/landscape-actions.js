@@ -30,6 +30,7 @@ import {
   encounterFromDreambeastCard,
   reshuffleMindstreamDiscardIfNeeded,
   reorderMindstreamTop,
+  pullDreambeastFromMindstream,
 } from "./mindstream-supply.js";
 import { recordQuestEvent } from "./quests.js";
 import { shuffle } from "./data.js";
@@ -40,11 +41,11 @@ import { discardDreamCard, isBossDreamCard, spawnBossEncounterOnBed } from "./dr
 export const LANDSCAPE_ACTION_DEFS = {
   "draw-mindstream": {
     label: "Draw Mindstream",
-    description: "Draw 1 card from this Landscape's matching Mindstream deck.",
+    description: "Draw 1 card from this Landscape's matching Mindstream deck. Repeatable each Meet as long as you have actions.",
   },
   "spawn-dreambeast": {
     label: "Spawn Dreambeast",
-    description: "Choose a Mindstream deck; draw until you find a Dreambeast and place it on a matching-suit Landscape.",
+    description: "Choose a Mindstream. Cycle from the top until a Dreambeast, place it on a matching-suit Landscape, then discard the rest of that Mindstream and reshuffle.",
   },
   "swap-psyche": {
     label: "Swap 2 Psyche",
@@ -259,25 +260,12 @@ function returnTypedCard(state, type, count = 1) {
 }
 
 function spawnDreambeastFromMindstream(state, suit) {
-  reshuffleMindstreamDiscardIfNeeded(state, suit);
-  const deck = state.mindstreamDecks[suit];
-  const drawn = [];
-  let beast = null;
-
-  while (deck.length) {
-    const card = deck.shift();
-    drawn.push(card);
-    if (card.type === "dreambeast" && !card.boss) {
-      beast = card;
-      break;
-    }
-  }
-
-  drawn.filter((c) => c !== beast).forEach((c) => state.mindstreamDiscard[suit].push(c));
-  if (!beast) {
+  const pulled = pullDreambeastFromMindstream(state, { suit });
+  if (!pulled) {
     addLog(state, `No Dreambeast found in ${SUIT_LABELS[suit]} Mindstream.`);
     return null;
   }
+  const beast = pulled.card;
 
   const targets = revealedLandscapeTiles(state, { suit });
   if (!targets.length) {
@@ -898,10 +886,14 @@ export function getUniqueLandscapeActionChoices(tile) {
   if (!tile?.revealed || tile.hidden || tile.wasteland) return [];
 
   if (tile.landscapeActions?.length) {
-    return tile.landscapeActions.map((id) => ({
-      id,
-      ...LANDSCAPE_ACTION_DEFS[id],
-    }));
+    return tile.landscapeActions.map((id) => {
+      const def = LANDSCAPE_ACTION_DEFS[id] || { label: id, description: "" };
+      return {
+        id,
+        ...def,
+        description: `${def.description || ""} Once per Dreamer this Meet.`.trim(),
+      };
+    });
   }
 
   if (!tile.uniqueAction) return [];
@@ -909,7 +901,11 @@ export function getUniqueLandscapeActionChoices(tile) {
   const def = LANDSCAPE_ACTION_DEFS[tile.uniqueAction];
   if (!def) return [];
 
-  return [{ id: tile.uniqueAction, ...def }];
+  return [{
+    id: tile.uniqueAction,
+    ...def,
+    description: `${def.description} Once per Dreamer this Meet.`,
+  }];
 }
 
 export function canDrawMindstreamOnLandscape(tile) {

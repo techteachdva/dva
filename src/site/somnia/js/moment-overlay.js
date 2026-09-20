@@ -1,9 +1,9 @@
 /** Brief HUD toasts stacked at the top of the table viewport — up to 6 at once. */
 
-const DEFAULT_DURATION_MS = 3000;
+const DEFAULT_DURATION_MS = 14000;
 const MAX_VISIBLE = 6;
 const HISTORY_MAX = 80;
-const REDUCED_MOTION_MS = 2200;
+const REDUCED_MOTION_MS = 11000;
 
 let activeToasts = [];
 let momentHistory = [];

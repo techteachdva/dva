@@ -3731,6 +3731,47 @@ html[data-pointer="hybrid"] .board-viewport::after {
   pointer-events: auto;
 }
 
+.btn-next-phase {
+  position: absolute;
+  top: max(0.55rem, env(safe-area-inset-top));
+  right: max(0.55rem, env(safe-area-inset-right));
+  z-index: 8;
+  width: 4.75rem;
+  height: 4.75rem;
+  padding: 0.35rem;
+  border-radius: 50%;
+  border: 2px solid rgba(240, 201, 106, 0.85);
+  background:
+    radial-gradient(circle at 30% 25%, rgba(255, 255, 220, 0.35), transparent 42%),
+    linear-gradient(160deg, #5b3d9c, #1a1028);
+  color: #ffe9a8;
+  font: 700 0.72rem/1.15 var(--font-display, inherit);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45), 0 0 16px rgba(201, 160, 255, 0.35);
+  cursor: pointer;
+  pointer-events: auto;
+  touch-action: manipulation;
+}
+
+.btn-next-phase:hover:not(:disabled),
+.btn-next-phase:focus-visible:not(:disabled) {
+  transform: scale(1.06);
+  outline: 2px solid rgba(240, 201, 106, 0.9);
+  outline-offset: 2px;
+}
+
+.btn-next-phase:disabled {
+  opacity: 0.55;
+  cursor: default;
+  transform: none;
+}
+
+.btn-next-phase.hidden,
+.btn-next-phase[hidden] {
+  display: none !important;
+}
+
 .board-camera-controls button {
   min-width: 36px;
   min-height: 36px;
@@ -3820,7 +3861,7 @@ html[data-pointer="coarse"] .board-camera-controls button {
 }
 
 .moment-toast.is-playing {
-  animation: moment-toast-in var(--moment-duration, 3s) ease forwards;
+  animation: moment-toast-in var(--moment-duration, 14s) ease forwards;
 }
 
 .moment-toast.is-fading {
@@ -3832,11 +3873,11 @@ html[data-pointer="coarse"] .board-camera-controls button {
     opacity: 0;
     transform: translateY(8px) scale(0.98);
   }
-  8% {
+  4% {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
-  75% {
+  92% {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
@@ -4454,8 +4495,8 @@ body.tutorial-mode-active .radial-menu-item.tutorial-highlight {
   transform: translateY(-6px) scale(1.04);
 }
 
-.hand-spillover .game-card.hand-dense .psyche-value {
-  font-size: 1.2rem;
+.hand-spillover .game-card.hand-dense .psyche-pip .psyche-value {
+  font-size: 2.4rem;
 }
 
 .hand-spillover .game-card.hand-dense .psyche-label {
@@ -5448,8 +5489,8 @@ body.card-detail-open .tutorial-card {
 
 .psyche-pip {
   position: absolute;
-  top: 0.14rem;
-  left: 0.14rem;
+  top: 0.08rem;
+  left: 0.08rem;
   z-index: 3;
   display: flex;
   flex-direction: column;
@@ -5460,18 +5501,18 @@ body.card-detail-open .tutorial-card {
 }
 
 .psyche-pip .psyche-value {
-  font-size: 0.98rem;
-  line-height: 1;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+  font-size: 2.85rem;
+  line-height: 0.9;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
 }
 
 .psyche-pip .psyche-suit {
-  font-size: 0.72rem;
+  font-size: 2.15rem;
 }
 
 .psyche-pip .psyche-suit .suit-icon svg {
-  width: 0.78rem;
-  height: 0.78rem;
+  width: 2.3rem;
+  height: 2.3rem;
 }
 
 .psyche-value {
@@ -5575,8 +5616,8 @@ body.card-detail-open .tutorial-card {
 .spread-tray .game-card {
   pointer-events: auto;
   flex: 0 0 auto;
-  width: 76px;
-  min-width: 64px;
+  width: 96px;
+  min-width: 80px;
   margin-left: var(--fan-overlap, 0px);
   z-index: var(--fan-z, 1);
   transform-origin: 50% 100%;
@@ -5614,6 +5655,12 @@ body.card-detail-open .tutorial-card {
 .psyche-modal-face.willpower {
   background: linear-gradient(160deg, rgba(232, 72, 72, 0.22), rgba(80, 16, 16, 0.6));
   border: 1px solid var(--willpower);
+}
+
+.psyche-modal-face.psyche-power {
+  background: linear-gradient(155deg, rgba(212, 179, 255, 0.42), rgba(90, 40, 140, 0.72) 48%, rgba(201, 162, 39, 0.45));
+  border: 1px solid rgba(232, 208, 120, 0.85);
+  color: #fff8e8;
 }
 
 .psyche-modal-face .psyche-value.large { font-size: 4rem; }
@@ -9417,15 +9464,16 @@ html[data-viewport-width="narrow"] .top-bar-stepper {
 }
 
 .game-card.psyche-card.psyche-power {
-  box-shadow: 0 0 16px rgba(240, 201, 106, 0.35), inset 0 0 12px rgba(240, 201, 106, 0.12);
-  border-color: rgba(240, 201, 106, 0.75);
-  background: linear-gradient(160deg, rgba(240, 201, 106, 0.42), rgba(72, 56, 8, 0.92));
+  box-shadow: 0 0 18px rgba(186, 130, 255, 0.5), inset 0 0 14px rgba(240, 210, 110, 0.28);
+  border-color: rgba(232, 208, 120, 0.85);
+  background: linear-gradient(155deg, #d4b3ff 0%, #9b6bdb 42%, #c9a227 100%);
+  color: #fff8e8;
 }
 
 .game-card.psyche-card.psyche-power .psyche-sparkle {
   background:
-    radial-gradient(circle at 30% 40%, rgba(255, 255, 200, 0.5), transparent 35%),
-    radial-gradient(circle at 65% 55%, rgba(240, 201, 106, 0.4), transparent 40%);
+    radial-gradient(circle at 30% 40%, rgba(255, 240, 180, 0.7), transparent 35%),
+    radial-gradient(circle at 65% 55%, rgba(186, 130, 255, 0.5), transparent 40%);
   animation: psyche-sparkle-pulse 2.2s ease-in-out infinite;
   mix-blend-mode: screen;
 }
@@ -9826,8 +9874,8 @@ body.play-window .phase-stepper.top-bar-stepper {
 
 #screen-game .hand-primary .game-card {
   flex: 0 0 auto;
-  width: clamp(52px, 5.4vw, 78px);
-  min-width: 52px;
+  width: clamp(64px, 6.6vw, 96px);
+  min-width: 64px;
   margin-right: 0;
   margin-left: var(--fan-overlap, 0px);
   z-index: var(--fan-z, 1);

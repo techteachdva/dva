@@ -1,10 +1,10 @@
 import { shuffle, uid } from "./data.js";
 
-const SUITS = ["lucidity", "elasticity", "willpower"];
+export const MINDSTREAM_SUIT_IDS = ["lucidity", "elasticity", "willpower"];
 
 function suitsToSearch(suit) {
   if (suit) return [suit];
-  return shuffle([...SUITS]);
+  return shuffle([...MINDSTREAM_SUIT_IDS]);
 }
 
 export function reshuffleMindstreamDiscardIfNeeded(state, suit) {
@@ -14,7 +14,101 @@ export function reshuffleMindstreamDiscardIfNeeded(state, suit) {
     state.mindstreamDecks[suit] = shuffle(discard);
     state.mindstreamDiscard[suit] = [];
     if (state.revealedDeckTops) delete state.revealedDeckTops[`mindstream-${suit}`];
+    return true;
   }
+  return false;
+}
+
+const CIRCULATING_MINDSTREAM_TYPES = new Set([
+  "dreambeast",
+  "object",
+  "event",
+  "power-token",
+  "draw-dream",
+  "psyche-dreambeast",
+]);
+
+function cardIsMindstreamSuit(card, suit) {
+  if (!card) return false;
+  if (card.isDreambeastPsyche || CIRCULATING_MINDSTREAM_TYPES.has(card.type)) {
+    return (card.mindstreamSuit || card.suit) === suit;
+  }
+  return false;
+}
+
+function tileEncounterList(tile) {
+  if (!tile) return [];
+  if (Array.isArray(tile.encounters)) return tile.encounters;
+  return tile.encounter ? [tile.encounter] : [];
+}
+
+/** True when this suit still has cards in decks, discard, or in play (not only Subconscious). */
+export function mindstreamSuitHasCirculation(state, suit) {
+  if (state.mindstreamDecks?.[suit]?.length) return true;
+  if (state.mindstreamDiscard?.[suit]?.length) return true;
+  for (const tile of state.board || []) {
+    if (tileEncounterList(tile).some((enc) => cardIsMindstreamSuit(enc, suit))) return true;
+  }
+  if (cardIsMindstreamSuit(state.landscapePick?.encounter, suit)) return true;
+  for (const player of state.players || []) {
+    const piles = [
+      ...(player.objects || []),
+      ...(player.persistent || []),
+      ...(player.hand || []),
+    ];
+    if (piles.some((card) => cardIsMindstreamSuit(card, suit))) return true;
+  }
+  return false;
+}
+
+export function isMindstreamSuitGone(state, suit) {
+  return !mindstreamSuitHasCirculation(state, suit);
+}
+
+export function goneMindstreamSuit(state) {
+  return MINDSTREAM_SUIT_IDS.find((suit) => isMindstreamSuitGone(state, suit)) || null;
+}
+
+function matchesSpawnBeast(card, { beastKind = null, filter = null } = {}) {
+  if (!card || card.type !== "dreambeast" || card.boss) return false;
+  if (beastKind && card.beastKind !== beastKind) return false;
+  if (filter && !filter(card)) return false;
+  return true;
+}
+
+function discardRestOfMindstream(state, suit, extra = []) {
+  const deck = state.mindstreamDecks[suit];
+  const discard = state.mindstreamDiscard[suit];
+  extra.forEach((card) => discard.push(card));
+  while (deck.length) discard.push(deck.shift());
+  reshuffleMindstreamDiscardIfNeeded(state, suit);
+}
+
+/**
+ * Cycle a suit from the top until a matching Dreambeast.
+ * On a hit, discard the rest of that Mindstream and reshuffle.
+ * If this suit has no match, restore the cards and leave the pile intact.
+ */
+function cycleSuitForDreambeast(state, suit, options, millRest) {
+  reshuffleMindstreamDiscardIfNeeded(state, suit);
+  const deck = state.mindstreamDecks[suit];
+  if (!millRest) {
+    const idx = deck.findIndex((card) => matchesSpawnBeast(card, options));
+    if (idx < 0) return null;
+    const [card] = deck.splice(idx, 1);
+    return { card, suit };
+  }
+  const skipped = [];
+  while (deck.length) {
+    const card = deck.shift();
+    if (matchesSpawnBeast(card, options)) {
+      discardRestOfMindstream(state, suit, skipped);
+      return { card, suit };
+    }
+    skipped.push(card);
+  }
+  skipped.forEach((card) => deck.push(card));
+  return null;
 }
 
 /**
@@ -36,11 +130,19 @@ export function pullFromMindstreamByType(state, type, { suit = null, filter = nu
   return null;
 }
 
+/**
+ * Spawn-a-Dreambeast search: flip from the top of a Mindstream until a (non-boss) Dreambeast,
+ * optionally matching beastKind (fantasy / nightmare). Cards passed and the rest of that
+ * draw pile go to discard, which then reshuffles into a new draw pile.
+ */
 export function pullDreambeastFromMindstream(state, options = {}) {
-  return pullFromMindstreamByType(state, "dreambeast", {
-    ...options,
-    filter: (card) => !card.boss,
-  });
+  const { suit = null, beastKind = null, filter = null, millRest = true } = options;
+  const opts = { beastKind, filter };
+  for (const s of suitsToSearch(suit)) {
+    const found = cycleSuitForDreambeast(state, s, opts, millRest);
+    if (found) return found;
+  }
+  return null;
 }
 
 export function pullObjectFromMindstream(state, options = {}) {
@@ -48,9 +150,9 @@ export function pullObjectFromMindstream(state, options = {}) {
 }
 
 export function drawTwoDreambeasts(state, { suit = null } = {}) {
-  const first = pullDreambeastFromMindstream(state, { suit });
+  const first = pullDreambeastFromMindstream(state, { suit, millRest: false });
   if (!first) return null;
-  const second = pullDreambeastFromMindstream(state, { suit: first.suit });
+  const second = pullDreambeastFromMindstream(state, { suit: first.suit, millRest: false });
   return { first, second };
 }
 
@@ -104,7 +206,7 @@ export function objectForPlayer(card) {
 }
 
 export function pullObjectFromMindstreamDiscards(state) {
-  for (const suit of SUITS) {
+  for (const suit of MINDSTREAM_SUIT_IDS) {
     const discard = state.mindstreamDiscard[suit];
     for (let i = discard.length - 1; i >= 0; i -= 1) {
       if (discard[i].type === "object") {
@@ -126,7 +228,7 @@ export function pullObjectsFromMindstreamDiscards(state, count = 1) {
 }
 
 export function countMindstreamDreambeasts(state) {
-  return SUITS.reduce((sum, suit) => {
+  return MINDSTREAM_SUIT_IDS.reduce((sum, suit) => {
     const inDeck = state.mindstreamDecks[suit].filter((c) => c.type === "dreambeast").length;
     const inDiscard = state.mindstreamDiscard[suit].filter((c) => c.type === "dreambeast").length;
     return sum + inDeck + inDiscard;
@@ -134,7 +236,7 @@ export function countMindstreamDreambeasts(state) {
 }
 
 export function countMindstreamObjects(state) {
-  return SUITS.reduce((sum, suit) => {
+  return MINDSTREAM_SUIT_IDS.reduce((sum, suit) => {
     const inDeck = state.mindstreamDecks[suit].filter((c) => c.type === "object").length;
     const inDiscard = state.mindstreamDiscard[suit].filter((c) => c.type === "object").length;
     return sum + inDeck + inDiscard;

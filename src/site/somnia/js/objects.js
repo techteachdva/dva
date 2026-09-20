@@ -22,10 +22,8 @@ export function isNothingCard(card) {
 }
 
 export function objectUseFate(card) {
-  const text = `${card?.text || ""} ${card?.effect || ""}`.toLowerCase();
   if (card?.subtype === "persistent") return "play";
-  if (text.includes("repress this")) return "repress";
-  return "discard";
+  return "repress";
 }
 
 function alivePlayers(state) {
@@ -42,9 +40,8 @@ function repressPsycheFromDeck(state, count) {
 }
 
 function finishNothingDiscard(state, card) {
-  discardToMindstream(state, card);
-  const suit = card.mindstreamSuit || card.suit || "Mindstream";
-  addLog(state, `${card.name} discarded to ${suit} Mindstream discard.`);
+  repressCard(state, card);
+  addLog(state, `${card.name} is Repressed to the Subconscious.`);
 }
 
 export function beginNothingResolution(state, player, card) {

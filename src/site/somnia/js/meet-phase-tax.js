@@ -13,8 +13,8 @@ export function applyMeetPhaseDreambeastTax(state) {
   const alive = state.players.filter((p) => p.alive);
   logMoment(
     state,
-    `${beastCount} Dreambeast${beastCount === 1 ? "" : "s"} roam — each Dreamer Represses ${beastCount} Psyche; the Dreamscape Forgets ${beastCount} Landscape${beastCount === 1 ? "" : "s"}.`,
-    { forget: true },
+    `Meet Phase tax: ${beastCount} active Dreambeast${beastCount === 1 ? "" : "s"} on the board. Each Dreamer Represses 1 Psyche from hand per Dreambeast (${beastCount} total), and the table Forgets 1 Landscape per Dreambeast (${beastCount} total).`,
+    { forget: true, durationMs: 18000 },
   );
 
   alive.forEach((player) => {

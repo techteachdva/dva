@@ -194,7 +194,7 @@ function clearAllUsedMeetActions(state) {
 }
 
 function meetActionActor(state, action) {
-  if (action === MEET_ACTIONS.TRADE) return activePlayer(state);
+  if (action === MEET_ACTIONS.TRADE || action === MEET_ACTIONS.ARCHETYPE) return activePlayer(state);
   const tile = meetLandscapeTile(state) || landscapeById(state, state.selectedLandscapeId);
   if (!tile?.revealed || tile.wasteland) return null;
   return actorOnLandscape(state, tile.id);
@@ -203,7 +203,7 @@ function meetActionActor(state, action) {
 function canUseMeetActionForActor(state, actor, action, landscapeActionId = null) {
   if (!actor) return false;
   if (!canSpendMeetAction(state, actor, action, MEET_ACTIONS)) return false;
-  if (hasUsedMeetAction(state, actor, meetActionKey(action, landscapeActionId))) return false;
+  if (landscapeActionId !== "draw-mindstream" && hasUsedMeetAction(state, actor, meetActionKey(action, landscapeActionId))) return false;
   if (state.meetActionsUsed >= state.meetActionBudget) return false;
   return true;
 }
@@ -256,7 +256,9 @@ function spendMeetAction(state, action, landscapeActionId = null) {
     return false;
   }
   state.meetActionsUsed += 1;
-  markUsedMeetAction(state, actor, meetActionKey(action, landscapeActionId));
+  if (landscapeActionId !== "draw-mindstream") {
+    markUsedMeetAction(state, actor, meetActionKey(action, landscapeActionId));
+  }
   return true;
 }
 
@@ -372,15 +374,6 @@ export function getPhaseActions(state, handlers) {
     if (state.dreamDrawn && !state.revealLandscapeUsed) actions.push(phaseTokenAction("Lucidity"));
     actions.push(dreamerPowerAction());
     actions.push(...questActions());
-    actions.push({
-      label: "Next: Explore →",
-      section: "phase",
-      advance: true,
-      primary: true,
-      disabled: !state.dreamDrawn,
-      hint: !state.dreamDrawn ? "Draw & Resolve the Dream before advancing to Explore." : "Advance to the Explore phase.",
-      onClick: handlers.nextPhase,
-    });
   }
 
   if (phase === "Explore") {
@@ -412,19 +405,6 @@ export function getPhaseActions(state, handlers) {
     }
     actions.push(dreamerPowerAction());
     actions.push(...questActions());
-    const movesLeft = state.exploreMovesLeft || 0;
-    actions.push({
-      label: movesLeft > 0 ? `Next: Meet → (${movesLeft} move${movesLeft === 1 ? "" : "s"} left)` : "Next: Meet →",
-      section: "phase",
-      advance: true,
-      primary: true,
-      hint: !state.exploreActivated
-        ? "Skip Explore without spending Elasticity (confirmation required)."
-        : movesLeft > 0
-          ? `${movesLeft} unused move(s) — advance to Meet anytime (confirmation required).`
-          : "Advance to the Meet phase.",
-      onClick: handlers.nextPhase,
-    });
   }
 
   if (phase === "Meet") {
@@ -561,22 +541,10 @@ export function getPhaseActions(state, handlers) {
       actions.push({
         label: `${acquired.name} Power`,
         section: "progress",
-        disabled: activePlayer(state).powerTokens < 1,
+        hint: meetActionHint(state, MEET_ACTIONS.ARCHETYPE, acquired.id, `${acquired.power} Costs 1 Meet action and 1 Power Token.`),
+        disabled: activePlayer(state).powerTokens < 1 || !canUseMeetAction(state, MEET_ACTIONS.ARCHETYPE, acquired.id),
         onClick: () => handlers.useArchetypePower(acquired.id),
       });
-    });
-    const actionsLeft = Math.max(0, (state.meetActionBudget || 0) - (state.meetActionsUsed || 0));
-    actions.push({
-      label: state.meetActionBudget > 0 && actionsLeft > 0
-        ? `End Round → (${actionsLeft} action${actionsLeft === 1 ? "" : "s"} left)`
-        : "End Round →",
-      section: "round",
-      advance: true,
-      primary: true,
-      hint: state.meetActionBudget > 0 && actionsLeft > 0
-        ? `${actionsLeft} unused Meet action${actionsLeft === 1 ? "" : "s"} — end the round anytime (confirmation required).`
-        : "Finish the Meet phase and start the next round when your group is ready.",
-      onClick: handlers.nextPhase,
     });
   }
 
@@ -599,19 +567,51 @@ function phaseAdvanceBlockReason(state) {
   return null;
 }
 
+function phaseAdvanceLabel(state) {
+  const phase = getPhase(state);
+  if (phase === "Reveal") return "Next: Explore";
+  if (phase === "Explore") return "Next: Meet";
+  return "End Round";
+}
+
+export function phaseBudgetExhausted(state) {
+  const phase = getPhase(state);
+  if (state.tutorialMode) {
+    if (phase === "Reveal") return Boolean(state.revealLandscapeUsed);
+    if (phase === "Explore") return Boolean(state.exploreActivated);
+    if (phase === "Meet") return (state.meetActionBudget || 0) > 0;
+    return false;
+  }
+  if (phase === "Reveal") {
+    return Boolean(state.dreamDrawn && state.revealLandscapeUsed && !state.landscapePick);
+  }
+  if (phase === "Explore") {
+    return Boolean(state.exploreActivated);
+  }
+  if (phase === "Meet") {
+    const budget = state.meetActionBudget || 0;
+    return budget > 0 && (state.meetActionsUsed || 0) >= budget;
+  }
+  return false;
+}
+
 export function getPhaseAdvanceAction(state, handlers) {
-  const actions = getPhaseActions(state, handlers);
-  const advance = actions.find((a) => a.advance);
-  if (!advance) return null;
+  if (!handlers?.nextPhase) return null;
+  if (!phaseBudgetExhausted(state)) return null;
+  const label = phaseAdvanceLabel(state);
+  const action = {
+    label,
+    section: "phase",
+    advance: true,
+    primary: true,
+    hint: `${label} — phase budget is spent.`,
+    onClick: handlers.nextPhase,
+  };
   const blockReason = phaseAdvanceBlockReason(state);
   if (blockReason) {
-    return {
-      ...advance,
-      disabled: true,
-      hint: blockReason,
-    };
+    return { ...action, disabled: true, hint: blockReason };
   }
-  return advance.disabled ? { ...advance } : advance;
+  return action;
 }
 
 export function resolvePendingDeathDream(state, onShowModal) {
@@ -1035,19 +1035,6 @@ export function getDreamerBoardRadialOptions(state, player, tileId, handlers) {
         disabled: !canUseLandscapeAction(state, choice.id),
         onPick: () => handlers.landscapeAction(choice.id),
       });
-    });
-  }
-
-  const advance = getPhaseAdvanceAction(state, handlers);
-  if (advance) {
-    options.push({
-      id: "advancePhase",
-      kind: "advancePhase",
-      label: advance.label,
-      hint: advance.hint || advance.label,
-      disabled: !!advance.disabled,
-      primary: !!advance.primary,
-      onPick: advance.onClick,
     });
   }
 
@@ -1673,7 +1660,14 @@ export function handleUseArchetypePower(state, archetypeId) {
   const powers = getActivatableArchetypePowers(state);
   const archetype = powers.find((a) => a.id === archetypeId);
   if (!archetype) return false;
-  return useArchetypePower(state, archetype, activePlayer(state), getEffectHelpers());
+  if (getPhase(state) !== "Meet") {
+    addLog(state, "Archetype Powers are Meet actions.");
+    return false;
+  }
+  if (!spendMeetAction(state, MEET_ACTIONS.ARCHETYPE, archetype.id)) return false;
+  const ok = useArchetypePower(state, archetype, activePlayer(state), getEffectHelpers());
+  if (!ok) refundMeetAction(state, activePlayer(state), MEET_ACTIONS.ARCHETYPE, archetype.id);
+  return ok;
 }
 
 export function handleAcquire(state) {
@@ -1741,7 +1735,7 @@ export function endPhase(state) {
       ? `${COOP_PLAY_TIP} Head Dreamer (★) draws the Dream once. One Dreamer spends Lucidity to set team reveals.`
       : phase === "Explore"
         ? `${COOP_PLAY_TIP} One Dreamer spends Elasticity to unlock shared moves — then move any Dreamer.`
-        : `${COOP_PLAY_TIP} One Dreamer spends Willpower to unlock shared Meet actions.`,
+        : `${COOP_PLAY_TIP} One Dreamer spends Willpower to unlock shared Meet actions. At the start of Meet, each Dreamer Represses 1 Psyche and the table Forgets 1 Landscape per active Dreambeast.`,
     [],
     { moment: `${phase} Phase begins.` },
   );
@@ -1782,6 +1776,7 @@ export function getPhaseHint(state) {
     const parts = [COOP_PLAY_TIP];
     if (!state.dreamDrawn) parts.push(`${head.name} (★) Draw & Resolve the Dream first.`);
     else if (!state.revealLandscapeUsed) parts.push("One Dreamer spends Lucidity for team reveals.");
+    else parts.push("When reveals are spent, tap the circular Next Phase button at the top-right of the map.");
     return parts.join(" ");
   }
   if (phase === "Explore") {
@@ -1789,18 +1784,18 @@ export function getPhaseHint(state) {
     if (!state.exploreActivated) {
       return `${COOP_PLAY_TIP} One Dreamer spends Elasticity to unlock shared moves.`;
     }
-    return `${COOP_PLAY_TIP} ${state.exploreMovesLeft} team move(s) · ${legal} hexes reachable — or advance to Meet with moves unused.`;
+    return `${COOP_PLAY_TIP} ${state.exploreMovesLeft} team move(s) · ${legal} hexes reachable. Tap Next Phase at the top-right of the map when you are done moving.`;
   }
   if (phase === "Meet") {
     if (state.meetActionBudget === 0) {
-      return `${COOP_PLAY_TIP} One Dreamer spends Willpower for shared Meet actions.`;
+      return `${COOP_PLAY_TIP} Start of Meet: each Dreamer Represses 1 Psyche and the table Forgets 1 Landscape per active Dreambeast. One Dreamer spends Willpower for shared Meet actions.`;
     }
     const pool = coopMeetPlayTotal(state);
     const count = allSelectedCards(state).length;
     const actionsLeft = Math.max(0, state.meetActionBudget - (state.meetActionsUsed || 0));
     const actionsTail = actionsLeft > 0
-      ? ` · ${actionsLeft} action${actionsLeft === 1 ? "" : "s"} left — End Round anytime`
-      : "";
+      ? ` · ${actionsLeft} action${actionsLeft === 1 ? "" : "s"} left`
+      : " · Next Phase when actions are spent";
     return `${COOP_PLAY_TIP} ${state.meetActionsUsed}/${state.meetActionBudget} actions · pool ${count}/3 (${pool})${actionsTail}.`;
   }
 }

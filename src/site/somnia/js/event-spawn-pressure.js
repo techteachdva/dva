@@ -28,11 +28,6 @@ export function spawnDreambeastFromSupply(state, player, helpers, { suit = null,
     const sub = popSubconsciousDreambeast(state);
     if (sub) card = { ...sub, type: "dreambeast" };
   }
-  if (!card && helpers?.spawnEncounter) {
-    helpers.spawnEncounter(state, pickSpawnLandscape(state, player));
-    addLog(state, "A nightmare stirs — an Encounter claws into the Dreamscape.");
-    return true;
-  }
   if (!card) return false;
 
   const landId = pickSpawnLandscape(state, player);

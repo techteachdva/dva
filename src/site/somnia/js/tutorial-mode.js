@@ -122,7 +122,7 @@ const TUTORIAL_QUEST_PLACEMENT = [
 ];
 
 export const TUTORIAL_REVEAL_TILE = "candy-mountain";
-const TUTORIAL_SNAPSHOT_VERSION = 18;
+const TUTORIAL_SNAPSHOT_VERSION = 19;
 let tutorialSnapshotCache = null;
 let tutorialSnapshotCacheVersion = 0;
 
@@ -668,7 +668,10 @@ function railHighlight(state, step, beat) {
         spotlight: `.hex-tile[data-tile-id="${beat.tileId}"]`,
       };
     case "advancePhase":
-      return radialOrDreamerHighlight(state, beat, "advancePhase");
+      return {
+        targets: ["#btn-next-phase", "#board-viewport"],
+        spotlight: "#btn-next-phase",
+      };
     case "landscapeActionA": {
       const hexSel = `.hex-tile[data-tile-id="${beat.landscapeId}"]`;
       const highlight = radialOrDreamerHighlight(state, beat, "landscapeActionA");
@@ -1042,7 +1045,7 @@ export const TUTORIAL_SCRIPT = [
       { kind: "handToggle", playerIndex: 0, cardId: "lucidity-1-v-l1", prompt: "Select Lucidity 1 in The Visionary's hand." },
       { kind: "revealLandscape", prompt: "Click The Visionary on the board, then Reveal Landscapes." },
       { kind: "boardClick", tileId: "candy-mountain", reveal: true, prompt: "Click the glowing wasteland hex — that is Candy Mountain's hidden side." },
-      { kind: "advancePhase", toPhase: "Explore", prompt: "Click The Visionary on the board, then Next: Explore." },
+      { kind: "advancePhase", toPhase: "Explore", prompt: "Click Next: Explore in the top-right of the map." },
     ],
     until: (s) => getPhase(s) === "Explore",
   },
@@ -1057,7 +1060,7 @@ export const TUTORIAL_SCRIPT = [
       { kind: "handToggle", playerIndex: 0, cardId: "elasticity-2-v-e2", prompt: "Select Elasticity 2." },
       { kind: "spendElasticity", prompt: "Click The Visionary on the board, then Spend Elasticity." },
       { kind: "exploreMove", playerIndex: 0, tileId: "house", prompt: "Click House to move The Visionary there." },
-      { kind: "advancePhase", toPhase: "Meet", prompt: "Click The Visionary on the board, then Next: Meet." },
+      { kind: "advancePhase", toPhase: "Meet", prompt: "Click Next: Meet in the top-right of the map." },
     ],
     until: (s) => getPhase(s) === "Meet",
   },
@@ -1078,7 +1081,7 @@ export const TUTORIAL_SCRIPT = [
         prompt: "Select Lucidity 3 and Lucidity 2.",
       },
       { kind: "meetAccept", prompt: "Click The Visionary or Mandrake, then Accept." },
-      { kind: "advancePhase", toRound: 2, prompt: "Click The Visionary on the board, then End Round to start Round 2." },
+      { kind: "advancePhase", toRound: 2, prompt: "Click End Round in the top-right of the map to start Round 2." },
     ],
     until: (s) => s.round >= 2,
   },
@@ -1103,7 +1106,7 @@ export const TUTORIAL_SCRIPT = [
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on the board." },
       { kind: "handToggle", playerIndex: 0, cardId: "lucidity-2-r2-a", prompt: "Select Lucidity 2." },
       { kind: "revealLandscape", prompt: "Click The Visionary on the board, then Reveal Landscapes." },
-      { kind: "advancePhase", toPhase: "Explore", prompt: "Click The Visionary on the board, then Next: Explore." },
+      { kind: "advancePhase", toPhase: "Explore", prompt: "Click Next: Explore in the top-right of the map." },
     ],
     until: (s) => atRound(s, 2) && getPhase(s) === "Explore",
   },
@@ -1122,7 +1125,7 @@ export const TUTORIAL_SCRIPT = [
       { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Immovable on the board." },
       { kind: "exploreMove", playerIndex: 1, tileId: "city", prompt: "Click City to move The Immovable there." },
       { kind: "exploreMove", playerIndex: 1, tileId: "the-basement", prompt: "Click The Basement to move The Immovable there." },
-      { kind: "advancePhase", toPhase: "Meet", prompt: "Click a Dreamer on the board, then Next: Meet." },
+      { kind: "advancePhase", toPhase: "Meet", prompt: "Click Next: Meet in the top-right of the map." },
     ],
     until: (s) => atRound(s, 2) && getPhase(s) === "Meet",
   },

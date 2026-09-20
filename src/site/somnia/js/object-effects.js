@@ -160,13 +160,16 @@ function setRequiredForTag(tag) {
 function spawnBeastOn(state, helpers, landscapeId, options = {}) {
   const pulled = pullDreambeastFromMindstream(state, options);
   if (!pulled) {
-    helpers?.spawnEncounter?.(state, landscapeId);
+    addLog(state, options.beastKind
+      ? `No ${options.beastKind} Dreambeast remains in the Mindstream.`
+      : "No Dreambeast remains in the Mindstream.");
     return;
   }
   const encounter = encounterFromDreambeastCard(pulled.card);
   const tile = landscapeById(state, landscapeId);
   if (tile) setEncounterOnLandscape(state, landscapeId, encounter);
-  addLog(state, `${pulled.card.name} appears on ${tile?.name || "the Dreamscape"}!`);
+  const kindNote = options.beastKind ? ` (${options.beastKind})` : "";
+  addLog(state, `${pulled.card.name}${kindNote} appears on ${tile?.name || "the Dreamscape"} from the ${pulled.suit} Mindstream.`);
 }
 
 function trackChessPlay(state, player) {
@@ -314,12 +317,12 @@ function continueFlow(state, follow, helpers) {
   if (cardId === "possibility-polyhedral" && step === "place") {
     const pulled = pullDreambeastFromMindstream(state, { suit: payload.suit });
     if (!pulled) {
-      helpers?.spawnEncounter?.(state, lastTileId);
+      addLog(state, "No Dreambeast remains in that Mindstream.");
       return;
     }
     const encounter = encounterFromDreambeastCard(pulled.card);
     setEncounterOnLandscape(state, lastTileId, encounter);
-    addLog(state, `${pulled.card.name} appears on ${tileName(state, lastTileId)}!`);
+    addLog(state, `${pulled.card.name} appears on ${tileName(state, lastTileId)} from the ${pulled.suit} Mindstream.`);
     return;
   }
   if (cardId === "marble-grid" && step === "spawned") {

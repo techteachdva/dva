@@ -35,7 +35,7 @@ import {
   uid,
   PSYCHE_STARTING_HAND,
 } from "./data.js";
-import { discardToMindstream, pullObjectFromMindstream, objectForPlayer, reshuffleMindstreamDiscardIfNeeded } from "./mindstream-supply.js";
+import { discardToMindstream, pullObjectFromMindstream, objectForPlayer, reshuffleMindstreamDiscardIfNeeded, goneMindstreamSuit } from "./mindstream-supply.js";
 import { psycheHandCount, hasPsycheHealth } from "./psyche.js";
 import {
   grantPowerTokens,
@@ -346,9 +346,16 @@ export function drawPsyche(state, count = 1) {
 export function drawMindstream(state, suit, count = 1) {
   const drawn = [];
   for (let i = 0; i < count; i += 1) {
-    reshuffleMindstreamDiscardIfNeeded(state, suit);
+    const wasEmpty = !state.mindstreamDecks[suit]?.length;
+    const reshuffled = reshuffleMindstreamDiscardIfNeeded(state, suit);
+    if (wasEmpty && reshuffled) {
+      addLog(state, `${suit[0].toUpperCase()}${suit.slice(1)} Mindstream discard shuffled into a new draw pile.`);
+    }
     const deck = state.mindstreamDecks[suit];
-    if (!deck.length) break;
+    if (!deck.length) {
+      checkDefeat(state);
+      break;
+    }
     drawn.push(deck.shift());
     consumeRevealedTop(state, `mindstream-${suit}`);
   }
@@ -769,7 +776,7 @@ export function advancePhase(state) {
       t.revealed && tileHasEncounters(t) && state.players.some((p) => p.alive && p.landscapeId === t.id),
     );
     if (meetHere) state.selectedLandscapeId = meetHere.id;
-    addLog(state, "Meet Phase — one Dreamer spends Willpower for shared Actions; Encounters are Met by the Dreamer on that Landscape.");
+    addLog(state, "Meet Phase — one Dreamer spends Willpower for shared Actions. Each active Dreambeast taxes 1 Psyche (Repress from each hand) and 1 Forgotten Landscape.");
   }
 }
 
@@ -829,6 +836,12 @@ export function checkVictory(state) {
 
 export function checkDefeat(state) {
   if (state.tutorialMode) return;
+  const collapsed = goneMindstreamSuit(state);
+  if (collapsed) {
+    state.status = "lost";
+    addLog(state, `The ${collapsed} Mindstream is gone — every card is Repressed in the Subconscious. You never wake up.`);
+    return;
+  }
   if (state.finalRecurrence) {
     const left = state.finalArchetypes?.filter((a) => !a.defeated).length || 0;
     if (state.dreamDeck.length === 0 && left > 0) {

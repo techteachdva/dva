@@ -247,9 +247,9 @@ function layoutPsycheFan(container) {
   const avail = Math.max(cardW, container.clientWidth || cardW);
   const mid = (n - 1) / 2;
   const maxRot = Math.min(12, 3 + n * 0.8);
-  const pip = 30;
+  const pip = 18;
   const maxStep = n <= 1 ? cardW : (avail - cardW) / Math.max(n - 1, 1);
-  const step = Math.min(cardW - 10, Math.max(pip, maxStep));
+  const step = Math.min(cardW * 0.42, Math.max(pip, maxStep));
   cards.forEach((el, i) => {
     const t = n <= 1 ? 0 : (i - mid) / Math.max(mid, 1);
     el.style.setProperty("--fan-rot", `${(t * maxRot).toFixed(2)}deg`);
@@ -1083,7 +1083,7 @@ function fillModalObjectActions(card, options = {}) {
     ? "Spend 1 Power Token"
     : fate === "play"
       ? "Put into play"
-      : "Use Object";
+      : "Use Object (Repress)";
   if (zone === "persistent" && options.canSpendPower === false) {
     btn.disabled = true;
     btn.title = "Need 1 Power Token";
@@ -2696,20 +2696,58 @@ function buildDreamFeedHtml(state) {
   `;
 }
 
-export function renderPhaseAdvanceBar() {
-  // Advance lives on the Dreamer radial; keep this hook for callers.
+export function renderPhaseAdvanceBar(advanceAction = null) {
+  const viewport = document.getElementById("board-viewport");
+  if (!viewport) return;
+  let btn = document.getElementById("btn-next-phase");
+  if (!btn) {
+    btn = document.createElement("button");
+    btn.type = "button";
+    btn.id = "btn-next-phase";
+    btn.className = "btn-next-phase";
+    btn.setAttribute("data-tutorial-action", "advancePhase");
+    viewport.appendChild(btn);
+  }
+  if (!advanceAction) {
+    btn.hidden = true;
+    btn.classList.add("hidden");
+    btn.setAttribute("aria-hidden", "true");
+    btn.disabled = true;
+    return;
+  }
+  btn.hidden = false;
+  btn.classList.remove("hidden");
+  btn.setAttribute("aria-hidden", "false");
+  btn.disabled = !!advanceAction.disabled;
+  btn.textContent = advanceAction.label.replace(/\s*→\s*$/, "").trim() || "Next";
+  btn.title = advanceAction.hint || advanceAction.label;
+  btn.setAttribute("aria-label", advanceAction.label);
+  btn.onclick = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (advanceAction.disabled) return;
+    advanceAction.onClick?.();
+  };
 }
 
 export function renderPhaseActions(_actions, _advanceAction = null, state = null) {
   const cue = document.getElementById("table-action-cue");
   if (!cue) return;
   if (state && getPhase(state) === "Meet") {
+    const parts = [];
+    const beastCount = countBoardDreambeasts(state);
+    if (beastCount > 0) {
+      parts.push(`Meet tax: each Dreamer Represses 1 Psyche per active Dreambeast (${beastCount}) and the table Forgets 1 Landscape per Dreambeast (${beastCount}).`);
+    }
     const toll = timelineTollPreview(state);
     if (toll) {
-      cue.hidden = false;
-      cue.textContent = toll.unpaid > 0
+      parts.push(toll.unpaid > 0
         ? `Timeline toll: ${toll.beastCount} beast${toll.beastCount === 1 ? "" : "s"} — up to ${toll.paid} token${toll.paid === 1 ? "" : "s"}, else ${toll.unpaid} Dream${toll.unpaid === 1 ? "" : "s"} fray at round end`
-        : `Timeline toll: ${toll.beastCount} beast${toll.beastCount === 1 ? "" : "s"} — covered by Power Tokens`;
+        : `Timeline toll: ${toll.beastCount} beast${toll.beastCount === 1 ? "" : "s"} — covered by Power Tokens`);
+    }
+    if (parts.length) {
+      cue.hidden = false;
+      cue.textContent = parts.join(" ");
       return;
     }
   }
@@ -4312,6 +4350,10 @@ function resolvePrimarySpotlightElement(step) {
     || beat?.kind === "completeQuest1"
     || beat?.kind === "landscapeActionA"
     || beat?.kind === "advancePhase") {
+    if (beat.kind === "advancePhase") {
+      return document.querySelector("#btn-next-phase:not([hidden])")
+        || document.querySelector("#btn-next-phase");
+    }
     const kind = beat.kind;
     return document.querySelector(`${tutorialPhaseActionSelector(kind)}:not(:disabled)`)
       || document.querySelector(tutorialPhaseActionSelector(kind))

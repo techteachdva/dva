@@ -5,7 +5,6 @@ import {
   isDreambeastPsycheCard,
   repressTopMindstreamFromEachDeck,
 } from "./subconscious.js";
-import { returnDreambeastToMindstreamDeck } from "./mindstream-supply.js";
 import { dreamerMeetBonuses, encounterRejectCost } from "./dreambeasts.js";
 import { canTradeBetween as hexCanTradeBetween } from "./hex.js";
 import { persistentMeetBonus, sumEffectivePsycheValue } from "./objects.js";
@@ -79,6 +78,7 @@ export const MEET_ACTIONS = {
   MEET: "meet",
   LANDSCAPE: "landscape",
   TRADE: "trade",
+  ARCHETYPE: "archetype-power",
 };
 
 export function dreamerStat(dreamer, stat) {
@@ -477,9 +477,9 @@ export function coopMeetPlayTotal(state) {
 function routeSpentHandCard(state, player, card, { toRepress = false } = {}) {
   const wild = isWildPsyche(card);
   const isAlly = isDreambeastPsycheCard(card);
-  const toSub = toRepress || wild;
-  const target = isAlly ? "mindstream" : (toSub ? "subconscious" : "discard");
-  const reason = isAlly ? "discard" : (toSub ? "repress" : "spend");
+  const toSub = toRepress || wild || isAlly;
+  const target = toSub ? "subconscious" : "discard";
+  const reason = toSub ? "repress" : "spend";
   queueCardDiscard(player.id, card, target, reason);
   queueHandDelta(player.id, -1);
 
@@ -490,8 +490,8 @@ function routeSpentHandCard(state, player, card, { toRepress = false } = {}) {
     return;
   }
   if (isAlly) {
-    returnDreambeastToMindstreamDeck(state, card);
-    playSfx("discard");
+    repressCard(state, card);
+    playSfx("repress");
     return;
   }
   if (toRepress) {
