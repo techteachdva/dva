@@ -2693,13 +2693,10 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
   pointer-events: none;
 }
 
-.tutorial-overlay:not(.hidden) { pointer-events: auto; }
+.tutorial-overlay:not(.hidden) { pointer-events: none; }
 
 .tutorial-backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(4, 3, 10, 0.55);
-  pointer-events: auto;
+  display: none;
 }
 
 .tutorial-card {
@@ -2708,11 +2705,12 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
   left: 1.5rem;
   top: auto;
   bottom: auto;
-  width: min(28vw, 360px);
-  min-width: 240px;
-  max-width: calc(100vw - 2rem);
+  width: min(34vw, 420px);
+  min-width: 300px;
+  max-width: min(440px, calc(100vw - 2rem));
   height: auto;
-  max-height: min(42vh, 280px);
+  min-height: 280px;
+  max-height: min(58vh, 520px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -2808,7 +2806,8 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
 .tutorial-card-body {
   overflow-y: auto;
   padding: 0.9rem 1.25rem 1rem;
-  flex: 0 0 auto;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .tutorial-card-resize-handle {
@@ -2905,7 +2904,14 @@ body.menu-window #screen-setup #btn-start.begin-dream-btn {
   font-size: 1.15rem;
 }
 
-#tutorial-body,
+#tutorial-body {
+  display: block;
+  margin: 0 0 0.65rem;
+  color: rgba(226, 214, 255, 0.88);
+  font-size: 0.98rem;
+  line-height: 1.45;
+}
+
 #tutorial-body[hidden] {
   display: none !important;
 }
@@ -6791,13 +6797,16 @@ html[data-form="tablet"] .tutorial-card {
 }
 
 html[data-form="phone"] .tutorial-card {
-  width: min(18.5rem, calc(100vw - 1rem));
-  max-height: min(28vh, 168px);
+  width: min(22rem, calc(100vw - 1rem));
+  min-height: 240px;
+  max-height: min(52vh, 440px);
 }
 
 html[data-form="tablet"] .tutorial-card {
-  width: min(280px, 30vw);
-  max-height: min(32vh, 220px);
+  width: min(400px, calc(100vw - 2rem));
+  min-width: 300px;
+  min-height: 280px;
+  max-height: min(56vh, 520px);
 }
 
 html[data-form="phone"] .tutorial-card h2,
@@ -9245,9 +9254,10 @@ html[data-viewport-height="short"] #screen-game .psyche-hand-section {
 }
 
 html[data-viewport-height="short"] .tutorial-card {
-  max-height: min(48vh, 380px);
+  max-height: min(58vh, 480px);
   width: min(42vw, 440px);
-  min-width: 280px;
+  min-width: 300px;
+  min-height: 260px;
 }
 
 html[data-viewport-height="short"] .action-group-label {

@@ -4335,11 +4335,12 @@ function resolvePrimarySpotlightElement(step) {
   }
 
   if (beat?.kind === "meetAccept") {
+    const tileId = beat.tileId || "house";
     return document.querySelector('.radial-menu-item.ready[data-tutorial-action="meetAccept"]')
       || document.querySelector(`${tutorialPhaseActionSelector("meetAccept")}:not(:disabled)`)
       || document.querySelector(tutorialPhaseActionSelector("meetAccept"))
       || document.querySelector(tutorialDreamerTokenSelector(beat.playerId))
-      || document.querySelector('.hex-tile[data-tile-id="house"] .hex-occupant-beast');
+      || document.querySelector(`.hex-tile[data-tile-id="${tileId}"] .hex-occupant-beast`);
   }
 
   if (beat?.kind === "drawDream"
@@ -4402,10 +4403,11 @@ function inferTutorialCardDock(step) {
   return "bottom";
 }
 
-const TUTORIAL_WINDOW_STORAGE_KEY = "somnia_tutorial_window_v4";
-const TUTORIAL_WINDOW_MIN_WIDTH = 220;
-const TUTORIAL_WINDOW_MIN_HEIGHT = 132;
+const TUTORIAL_WINDOW_STORAGE_KEY = "somnia_tutorial_window_v6";
+const TUTORIAL_WINDOW_MIN_WIDTH = 300;
+const TUTORIAL_WINDOW_MIN_HEIGHT = 280;
 const TUTORIAL_WINDOW_MARGIN = 12;
+const TUTORIAL_WINDOW_STATE_VERSION = 6;
 
 let tutorialWindowChromeReady = false;
 let tutorialWindowState = null;
@@ -4418,6 +4420,7 @@ function loadTutorialWindowState() {
     if (!raw) return null;
     const saved = JSON.parse(raw);
     if (!saved || typeof saved !== "object") return null;
+    if (saved.version !== TUTORIAL_WINDOW_STATE_VERSION) return null;
     if (!saved.userResized) saved.height = null;
     return saved;
   } catch {
@@ -4429,6 +4432,7 @@ function loadTutorialWindowState() {
 function saveTutorialWindowState() {
   if (!tutorialWindowState) return;
   try {
+    tutorialWindowState.version = TUTORIAL_WINDOW_STATE_VERSION;
     localStorage.setItem(TUTORIAL_WINDOW_STORAGE_KEY, JSON.stringify(tutorialWindowState));
   } catch {
     /* ignore */
@@ -4438,22 +4442,32 @@ function saveTutorialWindowState() {
 function defaultTutorialWindowState() {
   const vw = window.innerWidth;
   const vh = window.innerHeight;
-  const { form } = getCapabilityProfile();
+  const form = getCapabilityProfile().form;
   const phone = form === "phone";
   const tablet = form === "tablet";
+  const board = document.getElementById("board-viewport")?.getBoundingClientRect();
   const width = phone
-    ? Math.min(300, Math.max(TUTORIAL_WINDOW_MIN_WIDTH, vw - TUTORIAL_WINDOW_MARGIN * 2))
-    : tablet
-      ? Math.min(280, Math.max(220, Math.round(vw * 0.28)))
-      : Math.min(360, Math.max(260, Math.round(vw * 0.26)));
+    ? Math.min(vw - TUTORIAL_WINDOW_MARGIN * 2, 360)
+    : Math.min(tablet ? 400 : 420, Math.max(TUTORIAL_WINDOW_MIN_WIDTH, Math.round(vw * 0.32)));
+  const left = phone
+    ? TUTORIAL_WINDOW_MARGIN
+    : Math.max(
+      TUTORIAL_WINDOW_MARGIN,
+      Math.round((board?.left || TUTORIAL_WINDOW_MARGIN) + 12),
+    );
+  const top = Math.max(
+    TUTORIAL_WINDOW_MARGIN,
+    Math.round((board?.top || 72) + 8),
+  );
   return {
-    left: TUTORIAL_WINDOW_MARGIN,
-    top: phone ? Math.max(TUTORIAL_WINDOW_MARGIN, Math.round(vh * 0.08)) : TUTORIAL_WINDOW_MARGIN + 64,
+    version: TUTORIAL_WINDOW_STATE_VERSION,
+    left,
+    top,
     width,
-    height: phone ? Math.min(168, Math.round(vh * 0.26)) : tablet ? Math.min(200, Math.round(vh * 0.28)) : null,
+    height: null,
     minimized: false,
     userPositioned: false,
-    userResized: phone || tablet,
+    userResized: false,
   };
 }
 
@@ -4979,11 +4993,11 @@ function startTutorialSpotlightTracker() {
 }
 
 export function refreshTutorialSpotlight() {
-  const modalOpen = isUtilityModalOpen();
-  if (activeTutorialStep && modalOpen !== lastUtilityModalSpotlightState) {
+  lastUtilityModalSpotlightState = isUtilityModalOpen();
+  if (activeTutorialStep) {
     applyTutorialHighlight(activeTutorialStep, { animateIn: false });
+    return;
   }
-  lastUtilityModalSpotlightState = modalOpen;
   positionTutorialSpotlight();
 }
 
@@ -5166,6 +5180,12 @@ export function updateTutorialStepUI({
     setTutorialProgress(stepIndex, total, roundLabel);
   }
   if (step) {
+    const bodyEl = document.getElementById("tutorial-body");
+    if (bodyEl) {
+      const why = step.spotlightBeat?.why || step.why || step.body || "";
+      bodyEl.textContent = why;
+      bodyEl.hidden = !why;
+    }
     updateTutorialHeaderLabel(step, stepIndex, total, roundLabel);
     positionTutorialCard(step);
     applyTutorialHighlight(step, { animateIn: false });
@@ -5192,8 +5212,9 @@ export function showTutorialStep(step, stepIndex, total, {
   document.getElementById("tutorial-title").textContent = step.title;
   const bodyEl = document.getElementById("tutorial-body");
   if (bodyEl) {
-    bodyEl.textContent = "";
-    bodyEl.hidden = true;
+    const why = step.spotlightBeat?.why || step.why || step.body || "";
+    bodyEl.textContent = why;
+    bodyEl.hidden = !why;
   }
   setTutorialProgress(stepIndex, total, roundLabel);
   const nextBtn = document.getElementById("tutorial-next");

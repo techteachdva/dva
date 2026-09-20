@@ -122,7 +122,7 @@ const TUTORIAL_QUEST_PLACEMENT = [
 ];
 
 export const TUTORIAL_REVEAL_TILE = "candy-mountain";
-const TUTORIAL_SNAPSHOT_VERSION = 19;
+const TUTORIAL_SNAPSHOT_VERSION = 23;
 let tutorialSnapshotCache = null;
 let tutorialSnapshotCacheVersion = 0;
 
@@ -390,8 +390,13 @@ function isRailBeatComplete(state, beat) {
       return exploreMoveBeatComplete(state, beat);
     case "gainMeetActions":
       return state.meetActionBudget > 0;
-    case "meetAccept":
-      return houseEncounterCleared(state) || !!state.tutorialFlags?.encounterResolved;
+    case "meetAccept": {
+      const tileId = beat.tileId || "house";
+      const tile = landscapeById(state, tileId);
+      if (tile && tileEncounters(tile).length === 0) return true;
+      if (tileId === "house" && state.tutorialFlags?.encounterResolved) return true;
+      return false;
+    }
     case "advancePhase":
       if (beat.toRound) return state.round >= beat.toRound;
       return getPhase(state) === beat.toPhase;
@@ -566,7 +571,7 @@ export function getTutorialCameraFocus(state) {
     return { tileId: "the-attic", key: "r2-intro:the-attic", zoom: 1.5 };
   }
 
-  const tileId = beat?.tileId || beat?.landscapeId || (beat?.kind === "meetAccept" ? "house" : null);
+  const tileId = beat?.tileId || beat?.landscapeId || null;
   if (!tileId) return null;
   return {
     tileId,
@@ -655,7 +660,8 @@ function railHighlight(state, step, beat) {
       return radialOrDreamerHighlight(state, beat, beat.kind);
     case "meetAccept": {
       const highlight = radialOrDreamerHighlight(state, beat, "meetAccept");
-      highlight.targets.push(`.hex-tile[data-tile-id="house"] .hex-occupant-beast`);
+      const tileId = beat.tileId || player?.landscapeId || "house";
+      highlight.targets.push(`.hex-tile[data-tile-id="${tileId}"] .hex-occupant-beast`);
       return highlight;
     }
     case "boardClick":
@@ -1018,7 +1024,7 @@ export const TUTORIAL_SCRIPT = [
     id: "welcome",
     round: 1,
     title: "Welcome to Somnia",
-    body: "",
+    why: "You are Dreamers trapped in a collapsing Dreamscape. Cooperate to earn Archetype points and wake up before the Dream Deck runs out.",
     objective: "Click Continue. Rules live in ? and Pause → Help.",
     targets: ["#active-archetype", "#phase-stepper"],
     spotlight: "#active-archetype",
@@ -1027,7 +1033,7 @@ export const TUTORIAL_SCRIPT = [
     id: "draw-dream-r1",
     round: 1,
     title: "Reveal: Draw the Dream",
-    body: "",
+    why: "Every round the Head Dreamer draws one Dream that twists the table. Resolve it first so you know what the map is doing this round.",
     targets: ["#board-viewport"],
     rail: [
       { kind: "drawDream", prompt: "Click The Visionary on the board, then Draw & Resolve Dream." },
@@ -1038,7 +1044,7 @@ export const TUTORIAL_SCRIPT = [
     id: "reveal-r1",
     round: 1,
     title: "Reveal: Flip the Map",
-    body: "",
+    why: "Forgotten hexes are Wasteland. Spending 1 Lucidity sets a shared reveal budget so the team can flip tiles face-up and walk them later.",
     targets: ["#hand-bar", "#board-viewport"],
     rail: [
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on the board." },
@@ -1053,7 +1059,7 @@ export const TUTORIAL_SCRIPT = [
     id: "explore-r1",
     round: 1,
     title: "Explore: Walk the Map",
-    body: "",
+    why: "One Elasticity card unlocks shared team moves. You need to stand on a Landscape to Meet what lives there, so move The Visionary onto House.",
     targets: ["#hand-bar", "#board-viewport"],
     rail: [
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on the board." },
@@ -1068,7 +1074,7 @@ export const TUTORIAL_SCRIPT = [
     id: "meet-r1",
     round: 1,
     title: "Meet: Dreambeasts and Luck",
-    body: "",
+    why: "Willpower opens a shared action budget. Accepting a Dreambeast spends Psyche and keeps it as a 3-value ally. Only the Dreamer on that hex can Meet it.",
     targets: ["#hand-bar", "#board-viewport"],
     rail: [
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on the board." },
@@ -1080,7 +1086,7 @@ export const TUTORIAL_SCRIPT = [
         cardIds: ["lucidity-3-v-l3", "lucidity-2-v-l2"],
         prompt: "Select Lucidity 3 and Lucidity 2.",
       },
-      { kind: "meetAccept", prompt: "Click The Visionary or Mandrake, then Accept." },
+      { kind: "meetAccept", tileId: "house", prompt: "Click The Visionary or Mandrake, then Accept." },
       { kind: "advancePhase", toRound: 2, prompt: "Click End Round in the top-right of the map to start Round 2." },
     ],
     until: (s) => s.round >= 2,
@@ -1089,7 +1095,7 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-intro",
     round: 2,
     title: "Now Chase the Archetype",
-    body: "",
+    why: "Points come from completing both quests on the Active Archetype, then Acquiring it. The Innocent needs a Mindstream draw on The Attic and a Meet on The Attic or The Basement.",
     objective: "The Innocent wants Mindstream on The Attic and a Dreambeast Met on The Attic or The Basement.",
     targets: ["#active-archetype", "#board-viewport"],
     spotlight: "#board-viewport",
@@ -1098,7 +1104,7 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-reveal",
     round: 2,
     title: "Round 2 - Reveal",
-    body: "",
+    why: "Round 2 repeats Reveal: draw the Dream, then spend one Lucidity to keep opening the map. Unused leftover reveals can be skipped with Next Phase.",
     closeRevealPick: true,
     targets: ["#hand-bar", "#board-viewport"],
     rail: [
@@ -1114,7 +1120,7 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-explore",
     round: 2,
     title: "Round 2 - Explore to Quests",
-    body: "",
+    why: "Quest Landscapes only count if a Dreamer is standing on them. Move The Visionary to The Attic and The Immovable to The Basement before Meet.",
     targets: ["#hand-bar", "#board-viewport"],
     rail: [
       { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Immovable on the board." },
@@ -1133,9 +1139,12 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-meet",
     round: 2,
     title: "Round 2 - Quest Landscapes",
-    body: "",
+    why: "Open a shared Meet budget first. Draw Mindstream on The Attic for Innocent quest 1 — it is repeatable. Accepting the beast on The Basement marks quest 2. Unique Landscape actions are once per Dreamer.",
     targets: ["#board-viewport"],
     rail: [
+      { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Immovable on The Basement." },
+      { kind: "handToggle", playerIndex: 1, cardId: "willpower-3-i-w3", prompt: "Select Willpower 3." },
+      { kind: "gainMeetActions", prompt: "Click The Immovable on The Basement, then Gain Actions." },
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on The Attic." },
       {
         kind: "landscapeActionA",
@@ -1145,16 +1154,15 @@ export const TUTORIAL_SCRIPT = [
         prompt: "Click The Visionary on The Attic, then Action A (Draw Lucidity Mindstream).",
       },
       { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Immovable on The Basement." },
-      { kind: "handToggle", playerIndex: 1, cardId: "willpower-3-i-w3", prompt: "Select Willpower 3." },
-      { kind: "gainMeetActions", prompt: "Click The Immovable on The Basement, then Gain Actions." },
       {
         kind: "handToggle",
         playerIndex: 1,
-        cardIds: ["elasticity-3-i-e3", "elasticity-2-i-e2"],
-        prompt: "Select Elasticity 3 and Elasticity 2 for Accept.",
+        cardIds: ["elasticity-2-i-e2", "lucidity-2-i-l2", "willpower-1-i-w1"],
+        prompt: "Select Elasticity 2, Lucidity 2, and Willpower 1 for Accept.",
       },
       {
         kind: "meetAccept",
+        tileId: "the-basement",
         done: (s) => innocentMeetQuestDone(s),
         prompt: "Click The Immovable or the Dreambeast on The Basement, then Accept.",
       },
@@ -1165,7 +1173,7 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-acquire",
     round: 2,
     title: "Mark Quests and Acquire",
-    body: "",
+    why: "Each completed quest costs 1 Power Token. Power Surge is yellowish-purple and can be clicked any phase for a token. Mark both quests to Acquire The Innocent.",
     target: "#active-archetype",
     rail: [
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on the board — they hold Power Surge." },
@@ -1181,7 +1189,7 @@ export const TUTORIAL_SCRIPT = [
     id: "graduate",
     round: 2,
     title: "Go Play",
-    body: "",
+    why: "You now know the R.E.M. loop: Reveal, Explore, Meet, then Next Phase on the map. A real Daydream uses shuffled Landscapes and the full Meet tax.",
     objective: "Click Finish, then play a Daydream. Rules stay in ? and !.",
     target: "#phase-stepper",
   },
@@ -1276,8 +1284,8 @@ export function notifyTutorialDreamDrawn(state) {
 
 export function notifyTutorialEncounterResolved(state, landscapeId) {
   if (!state?.tutorialMode) return;
-  if (landscapeId === "house") {
-    state.tutorialFlags.encounterResolved = true;
+  if (landscapeId === "house" || landscapeId === "the-basement") {
+    if (landscapeId === "house") state.tutorialFlags.encounterResolved = true;
   }
 }
 
@@ -1344,8 +1352,8 @@ export function getTutorialSpotlightSelector(step, { utilityModalOpen = false } 
   if (step.spotlight) return step.spotlight;
   const selectors = getTutorialStepTargetSelectors(step);
   if (!selectors.length) return null;
-  if (selectors.some((s) => s.includes("data-tutorial-action=\"advancePhase\""))) {
-    return selectors.find((s) => s.includes("data-tutorial-action=\"advancePhase\"")) || null;
+  if (selectors.some((s) => s.includes("#btn-next-phase") || s.includes("data-tutorial-action=\"advancePhase\""))) {
+    return "#btn-next-phase";
   }
   if (selectors.includes("#active-encounter")) return "#active-encounter";
   const radialSel = selectors.find((s) => s.includes("radial-menu-item"));

@@ -5,17 +5,28 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "23.0";
+export const SOMNIA_VERSION = "23.1";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "23.1",
+    title: "Tutorial window, why-copy, and rules",
+    notes: [
+      "The tutorial guide docks at a readable default size (about 420×280 and up) and forgets the old cramped window size.",
+      "Each step keeps the punchy one-sentence Objective and adds one or two sentences of why/what you are doing.",
+      "Highlights follow every click: Dreamer token first, then the matching radial button, then the map Next Phase control.",
+      "Rules Details and the Dream Guide match 23.1: Next Phase on the map, Draw Mindstream vs unique Landscape actions, Meet tax, spawn mill, and Dream deck sizes 11 / 14 / 18.",
+      "Removed unauthorized Event pressure (a ~45% extra Dreambeast after resolved Events). Dreambeasts spawn only from authored card and effect text, Draw Mindstream when the card itself is a Dreambeast, and explicit Spawn a Dreambeast effects.",
+    ],
+  },
   {
     version: "23.0",
     title: "Readable Psyche, Next Phase, Spawn & Subconscious",
     notes: [
       "Psyche rank and suit icons are three times larger, Power Surge is yellowish-purple, and the hand fans with tighter stacking.",
       "After Reveal, Explore, or Meet budgets are spent, a circular Next Phase button appears at the top-right of the map. Dreamer radials no longer advance the phase.",
-      "Ebony Pawn now spawns a Nightmare (Ivory a Fantasy) on a chosen revealed Landscape. Spawn a Dreambeast cycles a Mindstream from the top until a beast, then discards the rest of that suit and reshuffles. Dreams and Events spawn on the acting Dreamer's tile (bosses on The Bed). Printed Spawn 1: 2 Dreams, Ebony/Ivory/Polyhedral/Marble Grid, Lava's unique action, plus Event pressure.",
+      "Ebony Pawn now spawns a Nightmare (Ivory a Fantasy) on a chosen revealed Landscape. Spawn a Dreambeast cycles a Mindstream from the top until a beast, then discards the rest of that suit and reshuffles. Dreams and Events spawn on the acting Dreamer's tile (bosses on The Bed). Printed Spawn 1: 2 Dreams, Ebony/Ivory/Polyhedral/Marble Grid, Lava's unique action.",
       "Draw Mindstream is repeatable; each unique Landscape action is once per Dreamer. Archetype Powers cost a Meet action. Instant Objects and spent allies Repress. Empty Mindstream discard reshuffles; a fully Repressed Mindstream suit loses the game.",
       "Meet tax is louder: at the start of Meet, each Dreamer Represses 1 Psyche and the table Forgets 1 Landscape per active Dreambeast. Moment toasts stay on screen longer.",
     ],
@@ -53,7 +64,7 @@ export const CHANGELOG = [
     title: "Final Nightmare — recurrence pressure & Meet toll",
     notes: [
       "Each Meet Phase: for every Dreambeast on the board, each Dreamer Represses 1 Psyche per beast and the table Forgets 1 Landscape per beast.",
-      "Final Recurrence requires 15-Psyche opposing-suit plays; final Dream cards (Delta–Homeostasis) hit harder. Many resolved Events also spawn Dreambeasts from Mindstream or Subconscious.",
+      "Final Recurrence requires 15-Psyche opposing-suit plays; final Dream cards (Delta–Homeostasis) hit harder.",
       "While the Final Recurrence runs, the table dims as Dreams dwindle and a nightmare hellscape fades in behind the veil.",
       "A tester console with playtest commands exists for development (not needed to play).",
     ],

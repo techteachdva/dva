@@ -43,7 +43,8 @@
         "audit:radial-focus": "node scripts/somnia-radial-focus-audit.mjs",
         "audit:balance": "node scripts/somnia-balance-sim.mjs",
         "audit:somnia": "npm run test:tutorial-e2e && npm run audit:tutorial && npm run audit:radial-focus && npm run audit:balance && npm run audit:final-recurrence",
-        "audit:somnia-18-3": "node scripts/somnia-18-3-check.mjs"
+        "audit:somnia-18-3": "node scripts/somnia-18-3-check.mjs",
+        "print:somnia": "node scripts/generate-somnia-print-pdfs.mjs"
     },
     "keywords": [],
     "author": "",

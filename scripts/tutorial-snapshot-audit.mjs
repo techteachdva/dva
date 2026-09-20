@@ -214,7 +214,10 @@ const STEP_ENTRY_CHECKS = {
   },
   "r2-acquire": (s) => {
     if (!s.questTracker?.mindstreamOnLandscape?.["the-attic"]) return "Attic quest not complete in snapshot";
-    if (!s.questTracker?.mindstreamOnLandscape?.["the-basement"]) return "Basement quest not complete in snapshot";
+    const meets = s.questTracker?.meetOnLandscape || {};
+    if (!((meets["the-attic"] || 0) > 0 || (meets["the-basement"] || 0) > 0)) {
+      return "Basement/Attic Meet quest not complete in snapshot";
+    }
     return true;
   },
 };
@@ -230,7 +233,8 @@ const STEP_EFFECT_CHECKS = {
     && s.players.some((p) => p.landscapeId === "the-attic")
     && s.players.some((p) => p.landscapeId === "the-basement"),
   "r2-meet": (s) => !!s.questTracker?.mindstreamOnLandscape?.["the-attic"]
-    && !!s.questTracker?.mindstreamOnLandscape?.["the-basement"],
+    && ((s.questTracker?.meetOnLandscape?.["the-basement"] || 0) > 0
+      || (s.questTracker?.meetOnLandscape?.["the-attic"] || 0) > 0),
   "r2-acquire": (s) => s.tutorialFlags?.archetypeAcquired
     || s.players.some((p) => (p.acquiredArchetypes || []).some((a) => a.id === "innocent")),
 };

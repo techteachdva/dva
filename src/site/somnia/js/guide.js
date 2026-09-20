@@ -441,7 +441,7 @@ export function rulesIntroHtml() {
 
       <section class="overview-block">
         <h3>How You Lose</h3>
-        <p>The <strong>Dream Deck</strong> empties before you reach your goal (<strong>14 / 17 / 21</strong> Dreams for Daydream, Nap, or Deep Sleep, plus Final Recurrence cards). In <strong>Final Recurrence</strong>, you lose if Dreams run out while Remaining Archetypes still stand on the map.</p>
+        <p>The <strong>Dream Deck</strong> empties before you reach your goal (<strong>11 / 14 / 18</strong> regular Dreams for Daydream, Nap, or Deep Sleep, plus Final Recurrence cards and three boss Dreams). In <strong>Final Recurrence</strong>, you lose if Dreams run out while Remaining Archetypes still stand on the map, or if any Mindstream suit is entirely Repressed.</p>
       </section>
 
       <section class="overview-block">
@@ -477,7 +477,7 @@ export function rulesIntroHtml() {
         <p>Use the <strong>R.E.M.</strong> tab for the three phases in depth. Use <strong>Details</strong> for encounters, death, bosses, objects, Mindstream, and Final Recurrence. The in-game <strong>Guide</strong> panel shows your next step every turn.</p>
       </section>
 
-            <p class="overview-footer">Somnia v 23.0 — cooperative rules reference.</p>
+            <p class="overview-footer">Somnia v 23.1 — cooperative rules reference.</p>
       ${footerCreditsHtml()}
     </div>
   `;
@@ -538,7 +538,7 @@ export function rulesRemHtml() {
 
       <section class="overview-block">
         <h3>Round End</h3>
-        <p>After Reveals are spent, Explore moves are spent, or Meet actions are spent, a circular <strong>Next Phase</strong> button appears in the top-right of the map. Head Dreamer rotates clockwise at round end.</p>
+        <p>After Reveals are spent, Explore moves are spent, or Meet actions are spent, a circular <strong>Next Phase</strong> button appears in the top-right of the map. You may also press it early to skip leftover budget. Head Dreamer rotates clockwise at round end. Dreamer radials do not advance the phase.</p>
       </section>
     </div>
   `;
@@ -550,6 +550,13 @@ export function rulesDetailsHtml() {
     <div class="rules-page rules-page-details">
       <h2>Detailed Rules</h2>
       <p class="rules-lead">Encounters, hands, tokens, and edge cases — everything beyond the R.E.M. phase loop.</p>
+
+      <h3>Guided Tutorial</h3>
+      <ul>
+        <li>The in-game tutorial is two scripted rounds. The guide window docks on the map at a readable size; drag the header or resize the corner if you want it elsewhere.</li>
+        <li>Follow the sparkle: click the highlighted <strong>Dreamer on the board</strong>, then the highlighted <strong>radial button</strong>. Every required click is highlighted, including hand cards, hexes, and the circular <strong>Next Phase</strong> control at the top-right of the map.</li>
+        <li>Each step shows a punchy Objective plus one or two sentences of why that action matters. <strong>?</strong> and Pause → Help stay available after you graduate.</li>
+      </ul>
 
       <h3>Psyche &amp; Hand Limits</h3>
       <ul>
@@ -640,7 +647,7 @@ export function infoHubHtml(options = {}) {
     <div class="info-hub">
       <header class="info-hub-header">
         <div class="info-hub-brand">
-          <p class="info-hub-kicker">Somnia v 23.0</p>
+          <p class="info-hub-kicker">Somnia v 23.1</p>
           <h2>Dream Guide</h2>
           <p class="info-hub-lead">What just happened, and the rules you need to wake up.</p>
         </div>
@@ -680,7 +687,7 @@ export function infoHubHtml(options = {}) {
             <h3>Death &amp; Final Recurrence</h3>
             <p>At 0 Psyche, spend Power Tokens to draw 1 and live, or die: return to The Bed with 4/3/2/1 Psyche. Fifth death is permanent. Forget every outer Landscape — or draw <strong>The Final Recurrence</strong> — to start the endgame. Defeat remaining Archetypes with <strong>≥ 15</strong> pooled Psyche including the opposing suit, or sacrifice acquired Archetypes 1:1. Last card: <strong>You Never Wake Up</strong>.</p>
           </div>
-          <p class="info-hub-footer">After a phase budget is spent, a circular Next Phase button appears at the top-right of the map. Landscapes are named in their suit color. Draw Mindstream is repeatable; the unique tile action is once per Meet.</p>
+          <p class="info-hub-footer">After a phase budget is spent, a circular Next Phase button appears at the top-right of the map. The guided tutorial highlights the Dreamer, then the radial, then Next Phase. Landscapes are named in their suit color. Draw Mindstream is repeatable; the unique tile action is once per Meet.</p>
         </section>
       </div>
     </div>

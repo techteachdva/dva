@@ -1665,9 +1665,9 @@ function renderBoardArea() {
 
 function renderAll() {
   if (!state) return;
-  checkDefeat(state);
   bindUiRenderState(state);
   resolveStaleLandscapePick(state);
+  checkDefeat(state);
   if (isInteractiveTutorialActive(state)) {
     syncTutorial(state);
   }

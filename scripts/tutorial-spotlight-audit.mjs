@@ -107,8 +107,8 @@ function validateSpotlight(beat, spotlight, step, sync) {
       }
       break;
     case "advancePhase":
-      if (!spotlight?.includes('data-tutorial-action="advancePhase"') && !spotlight?.includes("hex-occupant-dreamer")) {
-        fail("advancePhase needs a Dreamer radial or board token selector", { step: step.id, spotlight });
+      if (!spotlight?.includes("btn-next-phase") && !spotlight?.includes('data-tutorial-action="advancePhase"')) {
+        fail("advancePhase needs the map Next Phase button", { step: step.id, spotlight });
       }
       break;
     case "landscapeActionA":
@@ -133,9 +133,16 @@ function performBeat(step, beat) {
   switch (beat.kind) {
     case "dreamerSelect":
       state.activePlayerIndex = beat.playerIndex;
+      if (state.players[beat.playerIndex]?.landscapeId) {
+        state.selectedLandscapeId = state.players[beat.playerIndex].landscapeId;
+      }
       break;
     case "handToggle": {
       const player = state.players[beat.playerIndex ?? 0];
+      if (player) {
+        state.activePlayerIndex = beat.playerIndex ?? 0;
+        if (player.landscapeId) state.selectedLandscapeId = player.landscapeId;
+      }
       const ids = beat.cardIds || [beat.cardId];
       for (const cardId of ids) {
         const card = player?.hand.find((c) => c.id === cardId);
@@ -164,8 +171,13 @@ function performBeat(step, beat) {
       gm.gainMeetActions(state);
       break;
     case "meetAccept":
+      if (beat.tileId) {
+        state.selectedLandscapeId = beat.tileId;
+        const occupantIndex = state.players.findIndex((p) => p.alive && p.landscapeId === beat.tileId);
+        if (occupantIndex >= 0) state.activePlayerIndex = occupantIndex;
+      }
       gm.meetEncounter(state, "accept");
-      tm.notifyTutorialEncounterResolved(state, "house");
+      tm.notifyTutorialEncounterResolved(state, beat.tileId || "house");
       break;
     case "advancePhase":
       gm.endPhase(state);

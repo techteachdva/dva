@@ -319,6 +319,7 @@ export function getPhaseActions(state, handlers) {
     return [
       {
         label: "Quest 1",
+        kind: "completeQuest0",
         section: "progress",
         hint: "Spend 1 Power Token to mark this quest — any phase, once the condition is met.",
         disabled: !arch || arch.questProgress[0] || !isQuestConditionMet(state, arch.id, arch.quests[0]) || player.powerTokens < 1,
@@ -326,6 +327,7 @@ export function getPhaseActions(state, handlers) {
       },
       {
         label: "Quest 2",
+        kind: "completeQuest1",
         section: "progress",
         hint: "Spend 1 Power Token to mark this quest — any phase, once the condition is met.",
         disabled: !arch || arch.questProgress[1] || !isQuestConditionMet(state, arch.id, arch.quests[1]) || player.powerTokens < 1,
@@ -348,6 +350,7 @@ export function getPhaseActions(state, handlers) {
     const head = headPlayer(state);
     actions.push({
       label: "Draw & Resolve Dream",
+      kind: "drawDream",
       hint: `${head.name} is Head ★ — anyone may click after the group agrees`,
       primary: !state.dreamDrawn,
       section: "main",
@@ -362,6 +365,7 @@ export function getPhaseActions(state, handlers) {
       label: budget >= 1
         ? `Reveal Landscapes (${budget} for team)`
         : "Reveal Landscapes (select Lucidity)",
+      kind: "revealLandscape",
       hint: !state.dreamDrawn
         ? "Draw & Resolve the Dream first, then spend Lucidity to reveal Landscapes."
         : best
@@ -386,6 +390,7 @@ export function getPhaseActions(state, handlers) {
         label: budget >= 1
           ? `Spend Elasticity (${budget} team moves)`
           : "Spend Elasticity (select cards)",
+        kind: "spendElasticity",
         hint: best
           ? `One Dreamer spends 1 Elasticity — ${best.name} adds +${totalStat(best, stat, state)} (best bonus).`
           : "One Dreamer spends Elasticity to set everyone's move budget.",
@@ -421,6 +426,7 @@ export function getPhaseActions(state, handlers) {
         label: budget >= 1
           ? `Gain Actions (${budget} for team)`
           : "Gain Actions (select Willpower)",
+        kind: "gainMeetActions",
         hint: best
           ? `One Dreamer spends 1 Willpower — ${best.name} adds +${totalStat(best, stat, state)} (best bonus).`
           : "One Dreamer spends Willpower to set shared Meet actions.",
@@ -480,6 +486,7 @@ export function getPhaseActions(state, handlers) {
       const payHint = encounterPayHint(meetEnc, true);
       actions.push({
         label: `Accept ${meetEnc.accept} — ${encounterAcceptSummary(meetEnc)}${shapeHint}`,
+        kind: "meetAccept",
         section: "encounter",
         hint: meetActionHint(
           state,
@@ -494,6 +501,7 @@ export function getPhaseActions(state, handlers) {
       if (!state.forcedAccept) {
         actions.push({
           label: `Reject ${encounterRejectCost(meetEnc)} — ${encounterRejectSummary(meetEnc)}${shapeHint}`,
+          kind: "meetReject",
           section: "encounter",
           hint: meetActionHint(
             state,
@@ -508,8 +516,10 @@ export function getPhaseActions(state, handlers) {
     }
     const landscapeChoices = meetTile ? getLandscapeActionChoices(meetTile) : [];
     landscapeChoices.forEach((choice) => {
+      const isDraw = choice.id === "draw-mindstream";
       actions.push({
         label: choice.label,
+        kind: isDraw ? "landscapeActionA" : "landscapeActionB",
         section: "actions",
         hint: meetActionHint(state, MEET_ACTIONS.LANDSCAPE, choice.id, choice.description),
         disabled: !canUseLandscapeAction(state, choice.id),
@@ -1009,6 +1019,7 @@ export function getDreamerBoardRadialOptions(state, player, tileId, handlers) {
     options.push({
       id: action.id || label,
       label,
+      kind: action.kind || classifyPhaseAction({ label }),
       hint: action.hint || label,
       disabled: !!action.disabled,
       primary: !!action.primary,

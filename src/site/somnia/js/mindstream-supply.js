@@ -132,8 +132,10 @@ export function pullFromMindstreamByType(state, type, { suit = null, filter = nu
 
 /**
  * Spawn-a-Dreambeast search: flip from the top of a Mindstream until a (non-boss) Dreambeast,
- * optionally matching beastKind (fantasy / nightmare). Cards passed and the rest of that
- * draw pile go to discard, which then reshuffles into a new draw pile.
+ * optionally matching beastKind (fantasy / nightmare). With millRest (the printed "Spawn a
+ * Dreambeast" effect), cards passed and the rest of that draw pile go to discard, which then
+ * reshuffles into a new draw pile. Two-beast draws pass millRest: false so they pull beasts
+ * without milling the suit.
  */
 export function pullDreambeastFromMindstream(state, options = {}) {
   const { suit = null, beastKind = null, filter = null, millRest = true } = options;

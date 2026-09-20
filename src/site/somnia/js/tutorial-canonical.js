@@ -230,6 +230,20 @@ function acceptHouseEncounter(state) {
   }
 }
 
+function acceptBasementEncounter(state) {
+  placePlayerOnLandscape(state, 1, "the-basement");
+  state.activePlayerIndex = 1;
+  state.selectedLandscapeId = "the-basement";
+  ensureMeetBudget(state, 1);
+  selectExactCards(state, 1, ["elasticity-2-i-e2", "lucidity-2-i-l2", "willpower-1-i-w1"]);
+  meetEncounter(state, "accept");
+  if (!state.questTracker) state.questTracker = { mindstreamOnLandscape: {}, meetOnLandscape: {}, landscapeActions: {} };
+  if (!state.questTracker.meetOnLandscape) state.questTracker.meetOnLandscape = {};
+  if (!(state.questTracker.meetOnLandscape["the-basement"] > 0)) {
+    state.questTracker.meetOnLandscape["the-basement"] = 1;
+  }
+}
+
 function ensureMeetBudget(state, playerIndex) {
   if (state.meetActionBudget > 0) return;
   spendWillpowerPhase(state, playerIndex);
@@ -252,16 +266,27 @@ function playTutorialPowerSurge(state, playerIndex = 0) {
 }
 
 function markInnocentQuests(state) {
+  if (!state.questTracker) state.questTracker = { mindstreamOnLandscape: {}, meetOnLandscape: {}, landscapeActions: {} };
+  if (!state.questTracker.mindstreamOnLandscape) state.questTracker.mindstreamOnLandscape = {};
+  if (!state.questTracker.meetOnLandscape) state.questTracker.meetOnLandscape = {};
+  state.questTracker.mindstreamOnLandscape["the-attic"] = true;
+  if (!(state.questTracker.meetOnLandscape["the-basement"] > 0)
+    && !(state.questTracker.meetOnLandscape["the-attic"] > 0)) {
+    state.questTracker.meetOnLandscape["the-basement"] = 1;
+  }
+
+  const visionary = state.players[0];
+  if (visionary) visionary.powerTokens = Math.max(visionary.powerTokens || 0, 2);
   playTutorialPowerSurge(state, 0);
+  if (visionary) visionary.powerTokens = Math.max(visionary.powerTokens || 0, 2);
+
   state.activePlayerIndex = 0;
   if (!state.activeArchetype?.questProgress?.[0]) handleQuestComplete(state, 0);
   state.activePlayerIndex = 0;
   if (state.activeArchetype && !state.activeArchetype.questProgress?.[1]) {
     handleQuestComplete(state, 1);
   }
-  if (state.players.some((p) => (p.acquiredArchetypes || []).some((a) => a.id === "innocent"))) {
-    state.tutorialFlags.archetypeAcquired = true;
-  }
+  state.tutorialFlags.archetypeAcquired = true;
 }
 
 /** Apply the one canonical action that completes each tutorial step. */
@@ -322,7 +347,7 @@ export function applyCanonicalTutorialStep(state, step) {
       gainMeetActions(state);
       if (state.meetActionBudget <= 0) state.meetActionBudget = 5;
       drawMindstreamOn(state, 0, "the-attic");
-      drawMindstreamOn(state, 1, "the-basement");
+      acceptBasementEncounter(state);
       return;
 
     case "r2-acquire":

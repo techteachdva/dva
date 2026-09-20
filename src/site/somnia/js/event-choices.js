@@ -133,7 +133,10 @@ export function continueDeferredEventQueues(state) {
     presentAnyMindstreamDraw(state);
     return;
   }
-  if (state._noWhyQueue?.length) presentNoWhyOther(state);
+  if (state._noWhyQueue?.length) {
+    presentNoWhyOther(state);
+    return;
+  }
 }
 
 function presentAnyMindstreamDraw(state) {

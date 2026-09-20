@@ -30,6 +30,9 @@ dist/**/physix/*.side.wasm
 scripts/_submissions_snapshot.json
 scripts/calibration-report.json
 scripts/__pycache__/
+# Local physical prototype PDFs — generate with npm run print:somnia; never ship with the website
+print/*.pdf
+print/_html/
 _gtg-preview/
 # Local build artifact (optional download)
 src/site/crystalwizards/index.side.wasm
