@@ -235,7 +235,7 @@ function visionaryPowerStart(state) {
     {
       id: "reveal-landscapes",
       label: "Reveal Landscapes",
-      hint: "Each Dreamer reveals 1 hidden Landscape on the map.",
+      hint: "Reveal 1 Landscape per Dreamer, plus 1 more.",
     },
     {
       id: "peek-decks",
@@ -445,7 +445,7 @@ export function resolveDreamerPowerChoice(state, choiceId) {
   if (pending.dreamerId === "the-visionary") {
     if (choiceId === "reveal-landscapes") {
       const available = revealableTiles(state).length;
-      const count = Math.min(alivePlayers(state).length, available);
+      const count = Math.min(alivePlayers(state).length + 1, available);
       if (!count) {
         addLog(state, "No Landscapes available to reveal.");
         clearDreamerPower(state);

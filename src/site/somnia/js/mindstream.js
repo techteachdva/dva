@@ -32,7 +32,7 @@ import {
 import { EXTRA_MINDSTREAM_EFFECTS } from "./mindstream-extra.js";
 import { flipLeviathan } from "./dreambeasts.js";
 import { discardDreamCard } from "./dream-deck.js";
-import { isHighStat, harmCount, statTier } from "./stat-tier.js";
+import { isHighStat, isMidStat, isLowStat, harmCount, statTier } from "./stat-tier.js";
 import {
   beginPopQuiz,
   beginHarmonicResonance,

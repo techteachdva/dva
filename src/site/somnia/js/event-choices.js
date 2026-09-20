@@ -1468,7 +1468,8 @@ export function beginPerilousPinnacle(state, player) {
 registerEffectResolver("perilous-pinnacle", (state, choiceId) => {
   state.pendingEffectChoice = null;
   const [tileId, encKey] = String(choiceId).split(":");
-  const tile = landscapeById(tileId);
+  const tile = landscapeById(state, tileId);
+  if (!tile) return true;
   const encounter = tileEncounters(tile).find((enc) => encounterKey(enc) === encKey);
   if (tile && encounter) {
     state.selectedLandscapeId = tile.id;
@@ -1870,7 +1871,8 @@ export function beginNoOne(state, player) {
 registerEffectResolver("no-one", (state, choiceId) => {
   state.pendingEffectChoice = null;
   const [tileId, encKey] = String(choiceId).split(":");
-  const tile = landscapeById(tileId);
+  const tile = landscapeById(state, tileId);
+  if (!tile) return true;
   const encounter = tileEncounters(tile).find((enc) => encounterKey(enc) === encKey);
   if (encounter) {
     addLog(state, `No One: discarded ${encounter.name}.`);

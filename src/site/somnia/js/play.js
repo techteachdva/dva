@@ -148,6 +148,7 @@ import {
   renderBoard,
   renderPlayers,
   renderHand,
+  renderSpreadTray,
   playDreamerHandSparkle,
   renderPowerTokens,
   showPowerTokenRadial,
@@ -1792,6 +1793,7 @@ function renderAll() {
     renderMeetPoolGuide(state);
     renderHand(state, onHandCardClick, getNewHandCardIds(state));
   }
+  renderSpreadTray(state, onHandCardClick);
   renderPowerTokens(state, {
     onTokenClick: (el) => openPowerTokenRadial(el),
   });

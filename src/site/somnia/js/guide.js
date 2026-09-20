@@ -42,7 +42,7 @@ export const TUTORIAL_STEPS = [
   {
     id: "reveal",
     title: "Reveal Phase",
-    body: "Discuss, then draw the Dream and/or set reveal budget in any order. Click a Dreamer on the board and choose Draw & Resolve Dream for the Head Dreamer (★). One Dreamer spends Lucidity for team reveals.",
+    body: "Discuss, then draw the Dream and/or set reveal budget in any order. Click a Dreamer on the board and choose Draw & Resolve Dream for the Head Dreamer (★). One Dreamer spends Lucidity for team reveals. Finish the map: all Landscapes Revealed Returns Dreamers+3 from the Subconscious.",
     target: "#board-viewport",
     phase: "Reveal",
   },
@@ -476,7 +476,7 @@ export function rulesIntroHtml() {
         <p>Use the <strong>R.E.M.</strong> tab for the three phases in depth. Use <strong>Details</strong> for encounters, death, bosses, objects, Mindstream, and Final Recurrence. The in-game <strong>Guide</strong> panel shows your next step every turn.</p>
       </section>
 
-            <p class="overview-footer">Somnia v 22.1 — cooperative rules reference.</p>
+            <p class="overview-footer">Somnia v 22.2 — cooperative rules reference.</p>
       ${footerCreditsHtml()}
     </div>
   `;
@@ -584,7 +584,7 @@ export function rulesDetailsHtml() {
       <p>Each costs <strong>1 Power Token</strong> and can be used in any phase. Lucidity Dreamers help Reveal, Elasticity Dreamers help Explore, Willpower Dreamers help Meet.</p>
       <ul>
         <li><strong>The Rested</strong> — All Dreamers Draw from the Psyche Discard, or Refresh: put 1 Psyche on the deck bottom and Draw 1.</li>
-        <li><strong>The Visionary</strong> — Reveal 1 Landscape per Dreamer, or each Dreamer Peeks at 1 deck top and may send it to the bottom.</li>
+        <li><strong>The Visionary</strong> — Reveal Dreamers+1 Landscapes, or each Dreamer Peeks at 1 deck top and may send it to the bottom.</li>
         <li><strong>The Runner</strong> — All Dreamers Move 2 spaces toward or away from The Bed / Final Recurrence.</li>
         <li><strong>The Hunter</strong> — Move each active Dreambeast 1 space toward the nearest Dreamer or away from The Bed.</li>
         <li><strong>The Immovable</strong> — Hold the Line: during the next Meet Phase, all Dreamers may add +1 Psyche to any Accept or Reject spread.</li>
@@ -606,6 +606,7 @@ export function rulesDetailsHtml() {
         <li><strong>Subconscious</strong> — face-up Repressed piles (Psyche, Dreambeasts, Mindstream by suit, Objects). Return effects pull cards back to matching discard piles</li>
         <li><strong>Trade</strong> — 1 Meet action; partner on same or adjacent hex; offer up to 3 Psyche</li>
         <li><strong>Landscape actions</strong> — 1 Meet action while standing on a tile: draw matching Mindstream, swap Psyche, move pieces, take Power, Return from Subconscious, and more</li>
+        <li><strong>Map thresholds</strong> — Revealing every Landscape Returns <strong>Dreamers+3</strong> from the Subconscious. Forgetting every Landscape but The Bed Represses <strong>Dreamers+3</strong> Psyche from hands (and still starts Final Recurrence)</li>
         <li><strong>Forget</strong> — turns Landscapes to Wasteland; Encounters Repressed; Dreamers there lose 1 Psyche. If all outer tiles are Wasteland → <strong>Final Recurrence</strong></li>
       </ul>
 
@@ -628,7 +629,7 @@ export function infoHubHtml(options = {}) {
     <div class="info-hub">
       <header class="info-hub-header">
         <div class="info-hub-brand">
-          <p class="info-hub-kicker">Somnia v 22.1</p>
+          <p class="info-hub-kicker">Somnia v 22.2</p>
           <h2>Dream Guide</h2>
           <p class="info-hub-lead">What just happened, and the rules you need to wake up.</p>
         </div>

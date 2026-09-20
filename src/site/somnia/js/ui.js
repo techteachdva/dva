@@ -208,6 +208,72 @@ function attachCardActions(el, { onClick, onInspect }) {
   return el;
 }
 
+function psychePipHtml(valueHtml, suitHtml, suitClassName = "", suitTitle = "") {
+  const titleAttr = suitTitle ? ` title="${suitTitle}"` : "";
+  return `<span class="psyche-pip">
+      <span class="psyche-value">${valueHtml}</span>
+      <span class="psyche-suit ${suitClassName}"${titleAttr}>${suitHtml}</span>
+    </span>`;
+}
+
+function bindHoloParallax(el) {
+  if (!el?.classList.contains("selected")) return el;
+  const apply = (clientX, clientY) => {
+    const r = el.getBoundingClientRect();
+    const px = ((clientX - r.left) / Math.max(r.width, 1)) * 2 - 1;
+    const py = ((clientY - r.top) / Math.max(r.height, 1)) * 2 - 1;
+    el.style.setProperty("--tilt-y", `${(px * 12).toFixed(2)}deg`);
+    el.style.setProperty("--tilt-x", `${(-py * 9).toFixed(2)}deg`);
+    el.style.setProperty("--holo-px", px.toFixed(3));
+    el.style.setProperty("--holo-py", py.toFixed(3));
+  };
+  const reset = () => {
+    el.style.setProperty("--tilt-x", "0deg");
+    el.style.setProperty("--tilt-y", "0deg");
+    el.style.setProperty("--holo-px", "0");
+    el.style.setProperty("--holo-py", "0");
+  };
+  el.addEventListener("pointermove", (e) => apply(e.clientX, e.clientY));
+  el.addEventListener("pointerleave", reset);
+  return el;
+}
+
+function layoutPsycheFan(container) {
+  if (!container) return;
+  const cards = [...container.querySelectorAll(":scope > .game-card")];
+  const n = cards.length;
+  if (!n) return;
+  const cardW = cards[0].offsetWidth || 64;
+  const avail = Math.max(cardW, container.clientWidth || cardW);
+  const mid = (n - 1) / 2;
+  const maxRot = Math.min(12, 3 + n * 0.8);
+  const pip = 30;
+  const maxStep = n <= 1 ? cardW : (avail - cardW) / Math.max(n - 1, 1);
+  const step = Math.min(cardW - 10, Math.max(pip, maxStep));
+  cards.forEach((el, i) => {
+    const t = n <= 1 ? 0 : (i - mid) / Math.max(mid, 1);
+    el.style.setProperty("--fan-rot", `${(t * maxRot).toFixed(2)}deg`);
+    el.style.setProperty("--fan-y", `${(Math.abs(t) * 10).toFixed(1)}px`);
+    el.style.setProperty("--fan-overlap", i === 0 ? "0px" : `${(step - cardW).toFixed(1)}px`);
+    el.style.setProperty("--fan-z", String(i + 1));
+  });
+}
+
+function schedulePsycheFan(container) {
+  if (!container) return;
+  layoutPsycheFan(container);
+  if (typeof requestAnimationFrame === "function") {
+    requestAnimationFrame(() => layoutPsycheFan(container));
+  }
+  if (typeof ResizeObserver === "undefined") return;
+  if (container._psycheFanObs) {
+    container._psycheFanObs.disconnect();
+  }
+  const obs = new ResizeObserver(() => layoutPsycheFan(container));
+  container._psycheFanObs = obs;
+  obs.observe(container);
+}
+
 function renderPsycheDreambeastCard(card, { selected, onClick, onInspect, mini, dense, entering, playerId }) {
   const el = document.createElement("button");
   el.type = "button";
@@ -224,12 +290,12 @@ function renderPsycheDreambeastCard(card, { selected, onClick, onInspect, mini, 
     mini ? "mini" : "",
   ].filter(Boolean).join(" ");
 
-  const symbol = suitIconHtml(card.suit, { size: mini ? 14 : 18 });
-  const label = SUIT_LABELS[card.suit] || card.suit;
+  const symbol = suitIconHtml(card.suit, { size: mini ? 12 : 14 });
 
   el.innerHTML = `
-    <span class="psyche-value">3</span>
-    <span class="psyche-suit ${suitClass(card.suit)}">${symbol}</span>
+    ${selected ? `<span class="psyche-holo psyche-holo-${card.suit}" aria-hidden="true"></span>
+    <span class="psyche-quanta psyche-quanta-${card.suit}" aria-hidden="true"></span>` : ""}
+    ${psychePipHtml("3", symbol, suitClass(card.suit))}
     <span class="psyche-dreambeast-badge" title="Accepted Dreambeast">⚔</span>
     <span class="psyche-label">${card.name.split(" ")[0]}</span>
   `;
@@ -245,7 +311,7 @@ function renderPsycheDreambeastCard(card, { selected, onClick, onInspect, mini, 
   }
 
   attachCardActions(el, { onClick, onInspect });
-  return attachCardMeta(el, card, playerId);
+  return bindHoloParallax(attachCardMeta(el, card, playerId));
 }
 
 function renderPsycheCard(card, { selected, suggested, onClick, onInspect, mini, dense, entering, playerId }) {
@@ -266,15 +332,14 @@ function renderPsycheCard(card, { selected, suggested, onClick, onInspect, mini,
       mini ? "mini" : "",
     ].filter(Boolean).join(" ");
     el.innerHTML = `
-      <span class="psyche-holo psyche-holo-gold" aria-hidden="true"></span>
+      ${selected ? `<span class="psyche-holo psyche-holo-gold" aria-hidden="true"></span>
       <span class="psyche-quanta psyche-quanta-gold" aria-hidden="true"></span>
-      <span class="psyche-sparkle" aria-hidden="true"></span>
-      <span class="psyche-value">⚡</span>
-      <span class="psyche-suit">+${card.powerTokens ?? 1}</span>
+      <span class="psyche-sparkle" aria-hidden="true"></span>` : ""}
+      ${psychePipHtml("⚡", `+${card.powerTokens ?? 1}`)}
       <span class="psyche-label">Power</span>
     `;
     attachCardActions(el, { onClick, onInspect });
-    return attachCardMeta(el, card, playerId);
+    return bindHoloParallax(attachCardMeta(el, card, playerId));
   }
   const el = document.createElement("button");
   el.type = "button";
@@ -292,26 +357,24 @@ function renderPsycheCard(card, { selected, suggested, onClick, onInspect, mini,
 
   if (isWild) {
     el.innerHTML = `
-      <span class="psyche-holo psyche-holo-wild" aria-hidden="true"></span>
-      <span class="psyche-quanta" aria-hidden="true"></span>
-      <span class="psyche-value">5</span>
-      <span class="psyche-suit wild-gradient" title="Wild — any suit">★</span>
+      ${selected ? `<span class="psyche-holo psyche-holo-wild" aria-hidden="true"></span>
+      <span class="psyche-quanta" aria-hidden="true"></span>` : ""}
+      ${psychePipHtml("5", "★", "wild-gradient", "Wild — any suit")}
       <span class="psyche-label">Wild</span>
     `;
   } else {
-    const symbol = suitIconHtml(card.suit, { size: mini ? 14 : 18 });
+    const symbol = suitIconHtml(card.suit, { size: mini ? 12 : 14 });
     const label = SUIT_LABELS[card.suit] || card.suit;
     el.innerHTML = `
-      <span class="psyche-holo psyche-holo-${card.suit}" aria-hidden="true"></span>
-      <span class="psyche-quanta psyche-quanta-${card.suit}" aria-hidden="true"></span>
-      <span class="psyche-value">${card.value}</span>
-      <span class="psyche-suit ${suitClass(card.suit)}">${symbol}</span>
+      ${selected ? `<span class="psyche-holo psyche-holo-${card.suit}" aria-hidden="true"></span>
+      <span class="psyche-quanta psyche-quanta-${card.suit}" aria-hidden="true"></span>` : ""}
+      ${psychePipHtml(card.value, symbol, suitClass(card.suit))}
       <span class="psyche-label">${label}</span>
     `;
   }
 
   attachCardActions(el, { onClick, onInspect });
-  return attachCardMeta(el, card, playerId);
+  return bindHoloParallax(attachCardMeta(el, card, playerId));
 }
 
 function formatHandPsycheLine(state, player) {
@@ -410,6 +473,9 @@ export function renderActiveDreamerHand(state, onCardClick, {
 
   const fresh = newCardIds || new Set();
   const { main, spill } = splitHandCards(player);
+  const spreadIds = new Set(state.selectedHand || []);
+  const inHand = main.filter((card) => !spreadIds.has(card.instanceId));
+  const spreadCount = main.length - inHand.length;
 
   if (!main.length && !spill.length) {
     primary.textContent = emptyText;
@@ -424,21 +490,20 @@ export function renderActiveDreamerHand(state, onCardClick, {
 
   primary.classList.remove("empty");
   primary.innerHTML = "";
-  if (!main.length) {
+  if (!inHand.length) {
     primary.classList.add("empty");
     const note = document.createElement("span");
     note.className = "hand-primary-empty-note";
-    note.textContent = "No Psyche cards";
+    note.textContent = spreadCount ? "Selected cards are on the table" : "No Psyche cards";
     primary.appendChild(note);
   } else {
     primary.classList.remove("empty");
   }
 
-  main.forEach((card, index) => {
+  inHand.forEach((card, index) => {
     const clickable = canClickCard(card, player);
     appendHandCard(primary, card, {
-      selected: state.selectedHand.includes(card.instanceId)
-        || state.trade?.offerPsycheIds?.includes(card.instanceId),
+      selected: Boolean(state.trade?.offerPsycheIds?.includes(card.instanceId)),
       suggested: suggestCard(card, player),
       entering: fresh.has(card.instanceId),
       dealIndex: index,
@@ -447,6 +512,7 @@ export function renderActiveDreamerHand(state, onCardClick, {
       onInspect: () => showModal(card),
     });
   });
+  if (inHand.length) schedulePsycheFan(primary);
 
   const allyHost = alliesEl || spillover;
   if (allyHost) {
@@ -472,6 +538,47 @@ export function renderActiveDreamerHand(state, onCardClick, {
       });
     }
   }
+}
+
+/** Selected Psyche sit on the table as a holographic spread. */
+export function renderSpreadTray(state, onCardClick) {
+  const tray = document.getElementById("spread-tray");
+  if (!tray) return;
+
+  const cards = allSelectedCards(state);
+  tray.innerHTML = "";
+  if (!cards.length) {
+    tray.classList.add("hidden");
+    tray.setAttribute("hidden", "");
+    tray.setAttribute("aria-hidden", "true");
+    return;
+  }
+
+  tray.classList.remove("hidden");
+  tray.removeAttribute("hidden");
+  tray.setAttribute("aria-hidden", "false");
+
+  const caption = document.createElement("p");
+  caption.className = "spread-tray-label";
+  caption.textContent = cards.length === 1 ? "Spread — 1 Psyche" : `Spread — ${cards.length} Psyche`;
+  tray.appendChild(caption);
+
+  const row = document.createElement("div");
+  row.className = "spread-tray-fan";
+  tray.appendChild(row);
+
+  cards.forEach((card) => {
+    const owner = (state.players || []).find((p) => (p.hand || []).some((c) => c.instanceId === card.instanceId));
+    const el = renderCard(card, {
+      selected: true,
+      playerId: owner?.id,
+      onClick: onCardClick && owner ? () => onCardClick(card, owner) : undefined,
+      onInspect: () => showModal(card),
+    });
+    el.classList.add("spread-card");
+    row.appendChild(el);
+  });
+  schedulePsycheFan(row);
 }
 
 /** Sparkle link when the focused Dreamer changes — chip ↔ hand panel. */

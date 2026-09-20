@@ -70,6 +70,7 @@ function repressObjects(state, player, cards) {
 }
 
 function offer(state, player, spec) {
+  if (!player) return;
   state.pendingDreamChoice = {
     ui: spec.ui || "choice",
     dreamId: spec.dreamId,
@@ -477,6 +478,10 @@ export function beginJudgementChoice(state, spawnHelpers) {
     return;
   }
   const head = alive(state)[0];
+  if (!head) {
+    addLog(state, "Judgement finds no living Dreamer.");
+    return;
+  }
   offer(state, head, {
     dreamId: "judgement",
     title: "Judgement",

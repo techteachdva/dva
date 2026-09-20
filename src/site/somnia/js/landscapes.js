@@ -10,6 +10,7 @@ import {
   tileEncounters,
   tileHasEncounters,
   clearEncountersOnLandscape,
+  maybeMapRevealForgetThresholds,
 } from "./state.js";
 import { shuffle } from "./data.js";
 import { repressCard } from "./subconscious.js";
@@ -94,6 +95,7 @@ function forgetTile(state, tile) {
   markTileForgotten(tile.id);
   queueTileForgetFx(tile.id);
   addLog(state, `Forgot ${tile.name} — now a Wasteland.`);
+  maybeMapRevealForgetThresholds(state);
 }
 
 function applyAutoForget(state, count) {

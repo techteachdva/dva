@@ -13,7 +13,10 @@ import {
   repressFromMindstreamSetup,
   isDreambeastPsycheCard,
   repressTopMindstreamFromEachDeck,
+  enqueueReturnCards,
+  enqueueCollectiveRepressFromHand,
 } from "./subconscious.js";
+import { flashMoment } from "./moment-overlay.js";
 import {
   handLimitForPlayer,
   handRoomForPsycheDraw,
@@ -914,6 +917,54 @@ export function completeQuest(state, questIndex, player, onAcquireFn) {
 
 export { forgetLandscapes, forgetNamedLandscapes } from "./landscapes.js";
 
+function dreamersPlusThree(state) {
+  return (state.players || []).filter((p) => p.alive).length + 3;
+}
+
+function outerLandscapes(state) {
+  return (state.board || []).filter((t) => t && t.id !== "bed" && !t.center);
+}
+
+/** Full-map Reveal Return and all-but-Bed Forget Repress. Edge-triggered; rearms if the map leaves that state. */
+export function maybeMapRevealForgetThresholds(state) {
+  if (!state?.board?.length || state.tutorialMode) return;
+
+  const outer = outerLandscapes(state);
+  if (!outer.length) return;
+
+  const allRevealed = outer.every((t) => t.revealed && !t.wasteland);
+  const allForgotten = !outer.some((t) => t.revealed && !t.wasteland)
+    && outer.some((t) => t.wasteland || t.forgotten);
+
+  if (allRevealed) {
+    if (!state.mapFullyRevealedLatch) {
+      state.mapFullyRevealedLatch = true;
+      const n = dreamersPlusThree(state);
+      enqueueReturnCards(state, n, null, {
+        reason: `The Dreamscape is fully Revealed. Return ${n} card(s) from the Subconscious (Dreamers+3).`,
+      });
+      addLog(state, `All Landscapes revealed — Return ${n} from the Subconscious.`);
+      flashMoment(`Fully Revealed — Return ${n} from the Subconscious.`);
+    }
+  } else {
+    state.mapFullyRevealedLatch = false;
+  }
+
+  if (allForgotten) {
+    if (!state.mapFullyForgottenLatch) {
+      state.mapFullyForgottenLatch = true;
+      const n = dreamersPlusThree(state);
+      enqueueCollectiveRepressFromHand(state, n, {
+        reason: `Only The Bed remains. Repress ${n} Psyche from hands (Dreamers+3).`,
+      });
+      addLog(state, `All Landscapes forgotten — Repress ${n} Psyche from hands.`);
+      flashMoment(`The map collapses — Repress ${n} Psyche.`);
+    }
+  } else {
+    state.mapFullyForgottenLatch = false;
+  }
+}
+
 export function revealLandscapeTile(state, tile) {
   if (!tile.revealed) {
     tile.revealed = true;
@@ -929,4 +980,5 @@ export function revealLandscapeTile(state, tile) {
     queueTileRevealFx(tile.id);
     playSfx("reveal");
   }
+  maybeMapRevealForgetThresholds(state);
 }

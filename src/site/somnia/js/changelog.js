@@ -5,10 +5,21 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "22.1";
+export const SOMNIA_VERSION = "22.2";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "22.2",
+    title: "Readable Psyche hands, holographic spreads, map thresholds",
+    notes: [
+      "A tester console with playtest commands exists for development. It is not needed to play, and this page does not list how to turn it on.",
+      "Psyche hands fan like a held deck so a full 10-card hand stays readable, with rank and suit in the upper-left corner of each card.",
+      "Selected Psyche leave the hand and sit on the table as a holographic spread; the shimmer and parallax glow only while a card is selected.",
+      "Revealing every Landscape Returns Dreamers+3 cards from the Subconscious. Forgetting every Landscape but The Bed Represses Dreamers+3 Psyche from hands.",
+      "The Visionary now Reveals Dreamers+1 Landscapes (or still peeks deck tops).",
+    ],
+  },
   {
     version: "22.1",
     title: "Archetype goals 8/12/24 & meet quests on 1-point Archetypes",
@@ -24,7 +35,7 @@ export const CHANGELOG = [
       "Each Meet Phase: for every Dreambeast on the board, each Dreamer Represses 1 Psyche per beast and the table Forgets 1 Landscape per beast.",
       "Final Recurrence requires 15-Psyche opposing-suit plays; final Dream cards (Delta–Homeostasis) hit harder. Many resolved Events also spawn Dreambeasts from Mindstream or Subconscious.",
       "While the Final Recurrence runs, the table dims as Dreams dwindle and a nightmare hellscape fades in behind the veil.",
-      "Dev: ?dev=1 or /dev on, backtick console, /dream draw (alias /draw-dream) to draw and resolve the top Dream quickly.",
+      "A tester console with playtest commands exists for development (not needed to play).",
     ],
   },
   {
