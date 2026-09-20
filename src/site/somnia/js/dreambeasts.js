@@ -60,6 +60,23 @@ export function encounterRejectCost(encounter) {
   return encounter.reject ?? encounter.repress ?? 0;
 }
 
+/** Dice the Dreambeast rolls — Accept and Reject Power are the same point value. */
+export function encounterPower(encounter, accept = true) {
+  if (!encounter) return 0;
+  return Number(accept ? (encounter.accept || 0) : encounterRejectCost(encounter)) || 0;
+}
+
+/** Recommended Dreamer Power is beast Power + 2. Underpaying is legal. */
+export function recommendedEncounterPower(encounter, accept = true) {
+  return encounterPower(encounter, accept) + 2;
+}
+
+export function encounterPowerLabel(encounter, accept = true) {
+  const power = encounterPower(encounter, accept);
+  const verb = accept ? "Accept" : "Reject";
+  return `${verb} · Power ${power} · Rec ${power + 2}`;
+}
+
 export function encounterAcceptSummary(encounter) {
   const suit = SUIT_LABELS[encounter?.suit] || encounter?.suit || "matching";
   return `Gain 3 ${suit} Psyche ally in hand`;

@@ -10477,7 +10477,7 @@ body.play-window #screen-game.active .hand-bar {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 0.45rem;
+  gap: var(--die-gap, 0.45rem);
   padding: 0.6rem 0.2rem;
   min-height: calc(var(--die-size, 52px) + 12px);
   perspective: 600px;

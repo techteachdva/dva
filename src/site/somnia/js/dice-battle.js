@@ -1,11 +1,12 @@
 /**
- * Dreambeast dice battle — Accept/Reject resolution (Somnia 26.0).
+ * Dreambeast dice battle — Accept/Reject resolution (Somnia 27.0).
  * Each side rolls Nd6; 5–6 is a success. Most successes wins. Ties favor the beast.
+ * Dreamer Power can underpay beast Power; pools up to 22d6.
  */
 import { playSfx } from "./audio.js";
 
 const SUCCESS_MIN = 5;
-const MAX_SHOWN = 18;
+const MAX_SHOWN = 22;
 const TUMBLE_MS = 920;
 const STAGGER_MS = 42;
 const RESULT_HOLD_MS = 4800;
@@ -169,16 +170,18 @@ export function playDiceBattle(opts) {
 
   const shownD = Math.min(dCount, MAX_SHOWN);
   const shownB = Math.min(bCount, MAX_SHOWN);
-  const size = dCount + bCount > 20 ? 38 : dCount + bCount > 12 ? 46 : 56;
+  const totalDice = shownD + shownB;
+  const size = totalDice >= 30 ? 26 : totalDice >= 22 ? 30 : totalDice > 14 ? 40 : 52;
 
   stage.hidden = false;
   stage.style.setProperty("--die-size", `${size}px`);
+  stage.style.setProperty("--die-gap", totalDice > 18 ? "0.22rem" : "0.45rem");
   stage.innerHTML = `
     <div class="dice-battle-veil"></div>
     <div class="dice-battle-table">
       <div class="dice-battle-pool dreamer-pool">
         <p class="dice-battle-label">${escapeHtml(dreamerName)}</p>
-        <p class="dice-battle-count"><span data-score="dreamer">0</span> successes <span class="dice-battle-pool-size">${dCount}d6</span></p>
+        <p class="dice-battle-count"><span data-score="dreamer">0</span> successes <span class="dice-battle-pool-size">${dCount}d6 Power</span></p>
         <div class="dice-battle-tray" data-tray="dreamer">
           ${Array.from({ length: shownD }, (_, i) => dieHtml("dreamer", i)).join("")}
         </div>
@@ -189,7 +192,7 @@ export function playDiceBattle(opts) {
       </div>
       <div class="dice-battle-pool beast-pool">
         <p class="dice-battle-label">${escapeHtml(beastName)}</p>
-        <p class="dice-battle-count"><span data-score="beast">0</span> successes <span class="dice-battle-pool-size">${bCount}d6</span></p>
+        <p class="dice-battle-count"><span data-score="beast">0</span> successes <span class="dice-battle-pool-size">${bCount}d6 Power</span></p>
         <div class="dice-battle-tray" data-tray="beast">
           ${Array.from({ length: shownB }, (_, i) => dieHtml("beast", i)).join("")}
         </div>

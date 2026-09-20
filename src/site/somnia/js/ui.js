@@ -30,6 +30,9 @@ import {
   encounterAcceptSummary,
   encounterRejectSummary,
   encounterRejectCost,
+  encounterPower,
+  recommendedEncounterPower,
+  encounterPowerLabel,
 } from "./dreambeasts.js";
 import { handLimitForPlayer, handRoomForPsycheDraw, objectUseFate } from "./objects.js";
 import { psycheHandCount, alliesInHand, psycheCardsInHand, allyHandCount, allyHandLimitForPlayer, effectivePsycheHealth, MAX_ALLIES_IN_HAND, MAX_PSYCHE_IN_HAND, psycheCardValue } from "./psyche.js";
@@ -116,7 +119,7 @@ function dreambeastCostMeta(card) {
   const rejectGain = card.rejectReward ? ` → ${card.rejectReward}` : "";
   const acceptTitle = encounterPayHint(card, true);
   const rejectTitle = encounterPayHint(card, false);
-  return `<span class="meta dreambeast-costs"><span title="${acceptTitle}">A${card.accept}${acceptGain} ${acceptSuit}</span><span title="${rejectTitle}">R${reject}${rejectGain} ${rejectSuit}</span></span>`;
+  return `<span class="meta dreambeast-costs"><span title="${acceptTitle}">P${card.accept} rec ${card.accept + 2}${acceptGain} ${acceptSuit}</span><span title="${rejectTitle}">P${reject} rec ${reject + 2}${rejectGain} ${rejectSuit}</span></span>`;
 }
 
 function isDreambeastCard(card) {
@@ -1065,12 +1068,12 @@ function appendDreambeastModalDetail(detail, card) {
   costs.className = "dreambeast-cost-breakdown";
   costs.innerHTML = `
     <div class="dreambeast-cost-row accept">
-      <strong>Accept ${card.accept}${acceptSuit}</strong>
+      <strong>Power ${card.accept}${acceptSuit} · Rec ${card.accept + 2}</strong>
       <span>${encounterPayHint(card, true)}</span>
       <span>${encounterAcceptSummary(card)}</span>
     </div>
     <div class="dreambeast-cost-row reject">
-      <strong>Reject ${rejectCost}${rejectSuit}</strong>
+      <strong>Power ${rejectCost}${rejectSuit} · Rec ${rejectCost + 2}</strong>
       <span>${encounterPayHint(card, false)}</span>
       <span>${encounterRejectSummary(card)}</span>
     </div>
@@ -2114,7 +2117,7 @@ export function renderCoopMeetHands(state, onCardClick) {
   const tile = state.board.find((t) => t.id === state.selectedLandscapeId);
   const enc = tileEncounters(tile)[0] || currentMeetEncounter(state).encounter;
   const acceptBit = enc
-    ? ` · A ${encounterPlayTotal(state, { accept: true })}/${enc.accept} · R ${encounterPlayTotal(state, { accept: false })}/${encounterRejectCost(enc)}`
+    ? ` · A ${encounterPlayTotal(state, { accept: true })} vs P${encounterPower(enc, true)} (rec ${recommendedEncounterPower(enc, true)}) · R ${encounterPlayTotal(state, { accept: false })} vs P${encounterPower(enc, false)} (rec ${recommendedEncounterPower(enc, false)})`
     : "";
   renderMeetPoolGuide(state);
 
@@ -4335,8 +4338,8 @@ export function showLandscapeDetail(state, tileId, { onDreamerClick = null, onBe
       card: { ...enc, type: enc.type || "dreambeast" },
       caption: enc.name,
       detailHtml: `
-        <div class="landscape-detail-beast-cost accept"><strong>A${enc.accept}</strong> ${acceptSuit}<span>${encounterPayHint(enc, true)}</span></div>
-        <div class="landscape-detail-beast-cost reject"><strong>R${rejectCost}</strong> ${rejectSuit}<span>${encounterPayHint(enc, false)}</span></div>
+        <div class="landscape-detail-beast-cost accept"><strong>P${enc.accept} · Rec ${enc.accept + 2}</strong> ${acceptSuit}<span>${encounterPayHint(enc, true)}</span></div>
+        <div class="landscape-detail-beast-cost reject"><strong>P${rejectCost} · Rec ${rejectCost + 2}</strong> ${rejectSuit}<span>${encounterPayHint(enc, false)}</span></div>
         ${enc.effect ? `<div class="landscape-detail-beast-effect"><strong>Effect:</strong> ${enc.effect}</div>` : ""}
         ${enc.flavor ? `<div class="landscape-detail-beast-flavor">${enc.flavor}</div>` : ""}
       `,

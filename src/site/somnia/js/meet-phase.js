@@ -1,11 +1,13 @@
 /**
- * Canonical Meet Phase flow (Somnia 26.0) — one source of truth.
+ * Canonical Meet Phase flow (Somnia 26+) — one source of truth.
  *
  * 1) Start of Meet — each Dreamer Represses 1 Psyche from hand per active
  *    Dreambeast on the board. Roaming beasts stay where they are.
  * 2) Middle of Meet — one Dreamer may spend 1 Willpower Psyche to unlock
  *    shared Meet Actions. Dreamers take Actions (Meet / Landscape / Trade /
- *    Powers) as they wish. Accept and Reject are dice battles; a win removes
+ *    Powers) as they wish. Accept and Reject need 1 Psyche of the required
+ *    suit (1–3 cards; allies extra). Beast Power is its dice; recommended
+ *    Dreamer Power is beast Power + 2. Underpaying is legal. A win removes
  *    the beast, a loss spends the play and leaves the beast on the map.
  * 3) End of Meet — if any Dreambeasts remain, Forget 1 random Landscape per
  *    remaining beast (never the Bed, never a hex that still hosts a beast),

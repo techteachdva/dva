@@ -1068,7 +1068,7 @@ export const OBJECT_EFFECTS = {
       choices: encounters.map(({ tile, encounter }) => ({
         id: `${tile.id}:${encounterKey(encounter)}`,
         label: `${encounter.name} on ${tile.name}`,
-        hint: `Accept ${encounter.accept} · Reject ${encounterRejectCost(encounter)}`,
+        hint: `Power ${encounter.accept} · Rec ${encounter.accept + 2}`,
       })),
     });
   },

@@ -152,7 +152,7 @@ function syncPsychePlayCursor(state) {
     .join("");
 
   const meetLine = breakdown.acceptNeed != null
-    ? `<span class="psyche-play-need">A ${breakdown.acceptTotal}/${breakdown.acceptNeed}${breakdown.rejectNeed != null ? ` · R ${breakdown.rejectTotal}/${breakdown.rejectNeed}` : ""}</span>`
+    ? `<span class="psyche-play-need">A ${breakdown.acceptTotal} vs P${breakdown.acceptNeed} (rec ${breakdown.acceptRec})${breakdown.rejectNeed != null ? ` · R ${breakdown.rejectTotal} vs P${breakdown.rejectNeed} (rec ${breakdown.rejectRec})` : ""}</span>`
     : "";
 
   psycheHudEl.innerHTML = `

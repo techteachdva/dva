@@ -5,10 +5,18 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "26.0";
+export const SOMNIA_VERSION = "27.0";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "27.0",
+    title: "Underpay Dice Battles",
+    notes: [
+      "Accept and Reject no longer require matching the beast's Power. You need at least 1 Psyche of the required suit (1–3 cards; allies extra). Recommended Dreamer Power is beast Power + 2. Play less and you might still win the roll.",
+      "A Dreambeast's Power is the dice it rolls. Your Power is the Psyche you played (Nightmare/Fantasy and Suit included), plus matching Dreamer stat, +1d6 for matching type, +1d6 for matching the beast's suit, and +1d6 per Power Token on the spread (max 3). Pools display up to 22d6. Wild mill is paid before the dice hit the table.",
+    ],
+  },
   {
     version: "26.0",
     title: "The Dreambeast Dice Battle Update",

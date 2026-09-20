@@ -56,10 +56,13 @@ import {
   isWildPsyche,
   encounterPlayTotal,
   encounterPayHint,
+  payWildSpreadCost,
   PHASE_OPENER_MAX_CARDS,
 } from "./rules.js";
 import {
-  encounterRejectCost,
+  encounterPower,
+  recommendedEncounterPower,
+  encounterPowerLabel,
   encounterAcceptSummary,
   encounterRejectSummary,
   applyRejectReward,
@@ -474,11 +477,11 @@ export function getPhaseActions(state, handlers) {
       });
       actions.push({
         label: state.pendingPowerBonus
-          ? `+1 Spread (now +${state.pendingPowerBonus})`
-          : "+1 to Spread",
+          ? `+1d6 Spread (now +${state.pendingPowerBonus})`
+          : "+1d6 to Spread",
         section: "main",
-        hint: "Free action — spend any number of Power Tokens. Each adds +1 to the current Psyche spread. Does not cost a Meet action.",
-        disabled: player.powerTokens < 1,
+        hint: "Free action — spend up to 3 Power Tokens. Each adds +1d6 to this spread. Does not cost a Meet action.",
+        disabled: player.powerTokens < 1 || (state.pendingPowerBonusTokens || 0) >= 3,
         onClick: handlers.powerBonus,
       });
       if ((state.pendingPowerBonusTokens || 0) > 0) {
@@ -514,7 +517,7 @@ export function getPhaseActions(state, handlers) {
       const shapeHint = shape ? ` · ${bossPlayShapeLabel(shape)}` : "";
       const payHint = encounterPayHint(meetEnc, true);
       actions.push({
-        label: `Accept ${meetEnc.accept} — ${encounterAcceptSummary(meetEnc)}${shapeHint}`,
+        label: `${encounterPowerLabel(meetEnc, true)} — ${encounterAcceptSummary(meetEnc)}${shapeHint}`,
         kind: "meetAccept",
         section: "encounter",
         hint: meetActionHint(
@@ -529,7 +532,7 @@ export function getPhaseActions(state, handlers) {
       });
       if (!state.forcedAccept) {
         actions.push({
-          label: `Reject ${encounterRejectCost(meetEnc)} — ${encounterRejectSummary(meetEnc)}${shapeHint}`,
+          label: `${encounterPowerLabel(meetEnc, false)} — ${encounterRejectSummary(meetEnc)}${shapeHint}`,
           kind: "meetReject",
           section: "encounter",
           hint: meetActionHint(
@@ -1064,10 +1067,14 @@ export function powerBonus(state) {
     addLog(state, "Need 1 Power Token.");
     return false;
   }
+  if ((state.pendingPowerBonusTokens || 0) >= 3) {
+    addLog(state, "A spread can take at most 3 Power Tokens.");
+    return false;
+  }
   if (!spendPowerTokens(state, player, 1)) return false;
   state.pendingPowerBonus = (state.pendingPowerBonus || 0) + 1;
   state.pendingPowerBonusTokens = (state.pendingPowerBonusTokens || 0) + 1;
-  addLog(state, `${player.name} spends 1 Power Token: +1 to the Psyche spread (now +${state.pendingPowerBonus}).`);
+  addLog(state, `${player.name} spends 1 Power Token: +1d6 to the spread (now +${state.pendingPowerBonus}, max 3).`);
   playSfx("select");
   return true;
 }
@@ -1198,11 +1205,11 @@ export function getPowerTokenRadialOptions(state) {
     {
       id: "spreadPlus",
       kind: "powerBonus",
-      label: pending > 0 ? `+1 Spread (now +${pending})` : "+1 Spread",
+      label: pending > 0 ? `+1d6 Spread (now +${pending})` : "+1d6 Spread",
       hint: phase === "Meet"
-        ? "Spend 1 Power Token. Adds +1 to the current Psyche spread."
+        ? "Spend 1 Power Token for +1d6 on this spread (max 3 tokens)."
         : "Spread bonuses are spent during Meet, when Psyche is played.",
-      disabled: phase !== "Meet" || held < 1,
+      disabled: phase !== "Meet" || held < 1 || refundable >= 3,
     },
   ];
   if (refundable > 0) {
@@ -1267,7 +1274,8 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone 
     return;
   }
   const isReject = mode === "reject" || mode === "repress";
-  const needed = isReject ? encounterRejectCost(encounter) : encounter.accept;
+  const beastPower = encounterPower(encounter, !isReject);
+  const recommended = recommendedEncounterPower(encounter, !isReject);
   const selected = selectedCards(state, actor);
 
   if (!isReject && !canAddAllyToHand(state, actor)) {
@@ -1290,15 +1298,24 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone 
     if (declared) addLog(state, `Chimera Declared Card: ${declared.name || `${declared.suit} ${declared.value}`}.`);
   }
 
-  const played = encounterPlayTotal(state, { accept: !isReject });
+  const played = Math.max(1, encounterPlayTotal(state, { accept: !isReject }));
   const bonus = meetBonusBreakdown(state);
-  if (played < needed) {
-    const bonusNote = bonus.total ? ` (includes +${bonus.total} Dreamer bonus)` : "";
-    abortMeet(`Need ${needed} Psyche to ${isReject ? "Reject" : "Accept"} (${actor.name} on ${tile.name}: ${played}${bonusNote}).`);
+  const ctx = { mode, isReject, encounter, tile, actor, selected, played, needed: beastPower };
+
+  payWildSpreadCost(state, selected);
+  if (state.status === "lost") {
+    discardSelected(state, actor);
+    onDone?.();
     return;
   }
 
-  const ctx = { mode, isReject, encounter, tile, actor, selected, played, needed };
+  const recNote = played < recommended
+    ? ` Under recommended ${recommended} (beast Power ${beastPower}).`
+    : "";
+  addLog(
+    state,
+    `${actor.name} Power ${played}d6 vs ${encounter.name} Power ${beastPower}d6.${bonus.total ? ` Affinity +${bonus.total}.` : ""}${recNote}`,
+  );
 
   const finish = (dreamerWins) => {
     state.diceBattle = null;
@@ -1316,7 +1333,7 @@ export function meetEncounter(state, mode = "accept", { instant = false, onDone 
     dreamerName: actor.name,
     beastName: encounter.name,
     dreamerDice: played,
-    beastDice: needed,
+    beastDice: beastPower,
     forceWinner: state.tutorialMode ? "dreamer" : null,
     instant: typeof document === "undefined",
     onComplete: ({ dreamerWins }) => finish(dreamerWins),

@@ -108,7 +108,7 @@ import {
   getEffectHelpers,
   canDreamerMeetOnLandscape,
 } from "./game.js";
-import { encounterRejectCost, encounterAcceptSummary, encounterRejectSummary } from "./dreambeasts.js";
+import { encounterAcceptSummary, encounterRejectSummary, encounterPowerLabel } from "./dreambeasts.js";
 import { requestEndPhase } from "./phase-skip.js";
 import { initDevConsole } from "./dev-console.js";
 import { enableDevMode } from "./dev-commands.js";
@@ -1367,12 +1367,11 @@ function openBeastBoardRadial(anchorEl, encounter, tileId) {
 
   const handlers = buildPhaseHandlers();
   const canMeet = occupant && canDreamerMeetOnLandscape(state, occupant, tileId);
-  const rejectCost = encounterRejectCost(encounter);
 
   const options = [
     {
       id: "accept",
-      label: `Accept ${encounter.accept}`,
+      label: encounterPowerLabel(encounter, true),
       hint: `${encounterPayHint(encounter, true)} ${encounterAcceptSummary(encounter)} · pool Psyche on ${occupant?.name || "Dreamer"}'s hand`,
       disabled: !canMeet || (isInteractiveTutorialActive(state) && !isTutorialActionAllowed(state, "meetAccept", { tileId })),
       primary: true,
@@ -1381,7 +1380,7 @@ function openBeastBoardRadial(anchorEl, encounter, tileId) {
     },
     !state.forcedAccept && {
       id: "reject",
-      label: `Reject ${rejectCost}`,
+      label: encounterPowerLabel(encounter, false),
       hint: `${encounterPayHint(encounter, false)} ${encounterRejectSummary(encounter)} · pool Psyche on ${occupant?.name || "Dreamer"}'s hand`,
       disabled: !canMeet || (isInteractiveTutorialActive(state) && !isTutorialActionAllowed(state, "meetReject", { tileId })),
       kind: "meetReject",

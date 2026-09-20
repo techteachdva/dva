@@ -4,7 +4,7 @@ import {
   repressCard,
   isDreambeastPsycheCard,
 } from "./subconscious.js";
-import { dreamerMeetBonuses, encounterRejectCost } from "./dreambeasts.js";
+import { dreamerMeetBonuses, encounterRejectCost, encounterPower, recommendedEncounterPower } from "./dreambeasts.js";
 import { canTradeBetween as hexCanTradeBetween } from "./hex.js";
 import { persistentMeetBonus, sumEffectivePsycheValue } from "./objects.js";
 import { effectiveDreamerStat } from "./archetype-stats.js";
@@ -259,8 +259,10 @@ export function psycheCursorBreakdown(state) {
       total: encounterPlayTotal(state, { accept: selectedHasPaySuit(selected, encounterPaySuit(encounter, true)) }),
       acceptTotal: encounter ? encounterPlayTotal(state, { accept: true }) : null,
       rejectTotal: encounter ? encounterPlayTotal(state, { accept: false }) : null,
-      acceptNeed: encounter?.accept ?? null,
-      rejectNeed: encounter ? encounterRejectCost(encounter) : null,
+      acceptNeed: encounter ? encounterPower(encounter, true) : null,
+      rejectNeed: encounter ? encounterPower(encounter, false) : null,
+      acceptRec: encounter ? recommendedEncounterPower(encounter, true) : null,
+      rejectRec: encounter ? recommendedEncounterPower(encounter, false) : null,
     };
   }
 
@@ -421,7 +423,8 @@ export function encounterPayHint(encounter, accept = true) {
   const suit = encounterPaySuit(encounter, accept);
   if (!suit) return "";
   const verb = accept ? "Accept" : "Reject";
-  return `${verb} needs at least 1 ${SUIT_LABELS[suit]} Psyche. That Dreamer's ${SUIT_LABELS[suit]} is added to the total.`;
+  const power = encounterPower(encounter, accept);
+  return `${verb} needs at least 1 ${SUIT_LABELS[suit]} Psyche (1–3 cards; allies extra). Beast Power ${power}, recommended ${power + 2}. You may play less and still roll. Matching ${SUIT_LABELS[suit]} is added to your Power.`;
 }
 
 /** Meet pay total for Accept or Reject, including matching Dreamer stat when the required color is played. */
@@ -486,7 +489,7 @@ function routeSpentHandCard(state, player, card, { toRepress = false } = {}) {
 
   if (wild) {
     repressCard(state, card);
-    repressTopPsycheFromDeck(state, 5);
+    if (!state.wildMillPrepaid) repressTopPsycheFromDeck(state, 5);
     playSfx("repress");
     return;
   }
@@ -511,6 +514,7 @@ export function discardSelected(state, player, { toRepress = false } = {}) {
   state.selectedHand = [];
   state.pendingPowerBonus = 0;
   state.pendingPowerBonusTokens = 0;
+  state.wildMillPrepaid = false;
   if (state.checkPsycheDeath) state.checkPsycheDeath(player);
   return selected;
 }
@@ -530,6 +534,7 @@ export function discardAllSelected(state, { toRepress = false } = {}) {
   state.selectedHand = [];
   state.pendingPowerBonus = 0;
   state.pendingPowerBonusTokens = 0;
+  state.wildMillPrepaid = false;
   return byPlayer;
 }
 
@@ -572,7 +577,21 @@ export function bossPlayShapeLabel(shape) {
   return shape;
 }
 
+export function payWildSpreadCost(state, cards) {
+  const wilds = (cards || []).filter((c) => isWildPsyche(c));
+  if (!wilds.length) return 0;
+  state.wildMillPrepaid = true;
+  wilds.forEach(() => repressTopPsycheFromDeck(state, 5));
+  return wilds.length;
+}
+
 export function validateEncounterPlayShape(encounter, cards, { accept = true } = {}) {
+  if (!(cards || []).length) {
+    return {
+      ok: false,
+      message: "Play 1 to 3 Psyche (allies extra). Include at least 1 of the required suit.",
+    };
+  }
   const boss = validateBossPlayShape(encounter, cards);
   if (!boss.ok) return boss;
   const paySuit = encounterPaySuit(encounter, accept);

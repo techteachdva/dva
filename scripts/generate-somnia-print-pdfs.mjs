@@ -16,7 +16,7 @@ const SOMNIA = path.join(REPO, "src/site/somnia");
 const DATA = path.join(SOMNIA, "data");
 const PRINT = path.join(REPO, "print");
 const HTML_DIR = path.join(PRINT, "_html");
-const VERSION = "26.0";
+const VERSION = "27.0";
 
 const SUIT_LABELS = {
   lucidity: "Lucidity",
@@ -659,9 +659,9 @@ function rulesHtml(data) {
   <h3>Meet — Willpower</h3>
   <ul>
     <li><strong>Start:</strong> each Dreamer Represses 1 Psyche from hand per roaming Dreambeast. Beasts stay on the map.</li>
-    <li>One Dreamer spends 1 Willpower for shared Meet actions. Accept and Reject are dice battles (your played Psyche vs the beast cost; 5–6 succeed).</li>
+    <li>One Dreamer spends 1 Willpower for shared Meet actions. Accept and Reject are dice battles. Need 1 Psyche of the required suit (1–3 cards; allies extra). Beast Power = its dice. Recommended Dreamer Power is beast Power + 2; underpaying is legal. +1d6 type, +1d6 suit, +1d6 per Power Token (max 3). 5–6 succeed. Wild mill is paid before the roll.</li>
     <li><strong>Draw Mindstream</strong> is repeatable. Each unique Landscape action is once per Dreamer this Meet. Archetype Powers cost 1 Meet action + 1 quarter.</li>
-    <li>Only the Dreamer standing on a hex may Meet its Encounter (up to 3 Psyche). Win the dice battle to Accept (ally) or Reject (Subconscious + reward). Lose and the play is spent; the beast stays.</li>
+    <li>Only the Dreamer standing on a hex may Meet its Encounter (up to 3 Psyche; allies extra). Win the dice battle to Accept (ally) or Reject (Subconscious + reward). Lose and the play is spent; the beast stays.</li>
     <li><strong>End:</strong> Forget 1 random Landscape per remaining beast, then Fail costs in spawn order. Beasts remain until Accepted or Rejected.</li>
   </ul>
   <p>When a phase budget is spent — or you agree to skip leftovers — advance with a <strong>Next Phase</strong> marker (the digital game uses a circular button at the top-right of the map). Dreamer action menus do not change phase.</p>

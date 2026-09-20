@@ -1126,7 +1126,7 @@ export const TUTORIAL_SCRIPT = [
     id: "meet-r1",
     round: 1,
     title: "Meet: Dreambeasts and Luck",
-    why: "Willpower opens a shared action budget. Accept and Reject are dice battles — your Psyche pool versus the beast. Winning removes it; losing spends the play and leaves it to Fail at round end. Roaming beasts stay until you beat them.",
+    why: "Willpower opens a shared action budget. Accept and Reject are dice battles — at least 1 required-suit Psyche versus the beast's Power. Recommended is Power + 2; underpaying can still win. Winning removes it; losing spends the play and leaves it to Fail at round end. Roaming beasts stay until you beat them.",
     targets: ["#hand-bar", "#board-viewport"],
     rail: [
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on the board." },
