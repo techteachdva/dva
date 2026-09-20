@@ -12,7 +12,7 @@ export const HEX_DIRS = [
   { q: 0, r: 1 },
 ];
 
-/** Fixed layout: Bed center, six starters on ring 1. */
+/** Bed stays at origin. Ring-1 coordinates used to pin tutorial starters. */
 export const STARTER_HEX = {
   bed: { q: 0, r: 0 },
   city: { q: 1, r: 0 },
@@ -22,6 +22,9 @@ export const STARTER_HEX = {
   house: { q: -1, r: 1 },
   suburbia: { q: 0, r: 1 },
 };
+
+/** Six hexes touching The Bed. */
+export const RING1_HEX = HEX_DIRS.map((d) => ({ q: d.q, r: d.r }));
 
 /** All coordinates on a single hex ring (radius 0 = center only). */
 export function hexRingCoords(radius) {
@@ -187,53 +190,72 @@ export function hexDiskCoords(maxRadius) {
   return coords;
 }
 
-/**
- * Build board: Bed + six starters (revealed) + all eighteen pool landscapes
- * (twelve on ring 2, six on ring-3 corners). Twenty-five tiles total.
- */
-export function buildHexBoard(landscapes) {
-  const all = landscapes.filter((l) => !l.hidden);
-  const center = all.find((l) => l.center);
-  const starters = all.filter((l) => l.starting && !l.center);
-  const pool = shufflePool(all.filter((l) => !l.starting && !l.center));
-  const poolSlots = poolBoardSlots();
+function pushTile(board, landscape, slot, { revealed, wasteland }) {
+  board.push({
+    ...landscape,
+    q: slot.q,
+    r: slot.r,
+    revealed,
+    wasteland,
+    finalRecurrenceSide: false,
+  });
+}
 
+function placeTutorialStarters(board, landscapes) {
+  landscapes
+    .filter((l) => l.starting && !l.center)
+    .forEach((landscape) => {
+      const pos = STARTER_HEX[landscape.id];
+      if (!pos) return;
+      pushTile(board, landscape, pos, { revealed: true, wasteland: false });
+    });
+  const pool = shufflePool(landscapes.filter((l) => !l.starting && !l.center));
+  const poolSlots = poolBoardSlots();
   if (pool.length > poolSlots.length) {
     console.warn(`Somnia board: ${pool.length} pool landscapes but only ${poolSlots.length} slots.`);
   }
-
-  const board = [];
-
-  if (center && STARTER_HEX.bed) {
-    const { q, r } = STARTER_HEX.bed;
-    board.push({ ...center, q, r, revealed: true, wasteland: false, finalRecurrenceSide: false });
-  }
-
-  starters.forEach((landscape) => {
-    const pos = STARTER_HEX[landscape.id];
-    if (!pos) return;
-    board.push({
-      ...landscape,
-      q: pos.q,
-      r: pos.r,
-      revealed: true,
-      wasteland: false,
-      finalRecurrenceSide: false,
-    });
-  });
-
   poolSlots.forEach((slot, index) => {
     const landscape = pool[index];
     if (!landscape) return;
-    board.push({
-      ...landscape,
-      q: slot.q,
-      r: slot.r,
-      revealed: false,
-      wasteland: true,
-      finalRecurrenceSide: false,
-    });
+    pushTile(board, landscape, slot, { revealed: false, wasteland: true });
   });
+}
+
+function placeShuffledDreamscape(board, landscapes) {
+  const pool = shufflePool(landscapes.filter((l) => !l.center));
+  const outerSlots = allBoardSlots().filter((s) => !(s.q === 0 && s.r === 0));
+  if (pool.length > outerSlots.length) {
+    console.warn(`Somnia board: ${pool.length} landscapes but only ${outerSlots.length} outer slots.`);
+  }
+  const ring1Keys = new Set(RING1_HEX.map((s) => hexKey(s.q, s.r)));
+  outerSlots.forEach((slot, index) => {
+    const landscape = pool[index];
+    if (!landscape) return;
+    pushTile(board, landscape, slot, { revealed: false, wasteland: true });
+  });
+  const ring1Tiles = board.filter((t) => ring1Keys.has(hexKey(t.q, t.r)));
+  if (!ring1Tiles.length) return;
+  const opening = ring1Tiles[Math.floor(Math.random() * ring1Tiles.length)];
+  opening.revealed = true;
+  opening.wasteland = false;
+}
+
+/**
+ * Build board: Bed at origin, remaining 24 Landscapes shuffled onto the hex disk.
+ * Normal games start with every ring-1 tile hidden except one random neighbor of The Bed.
+ * Tutorial keeps the six classic starters revealed on ring 1 so the script can teach House/City.
+ */
+export function buildHexBoard(landscapes, { tutorialLayout = false } = {}) {
+  const all = landscapes.filter((l) => !l.hidden);
+  const center = all.find((l) => l.center);
+  const board = [];
+
+  if (center && STARTER_HEX.bed) {
+    pushTile(board, center, STARTER_HEX.bed, { revealed: true, wasteland: false });
+  }
+
+  if (tutorialLayout) placeTutorialStarters(board, all);
+  else placeShuffledDreamscape(board, all);
 
   return board;
 }

@@ -2042,7 +2042,7 @@ export function renderPhaseSpendHands(state, onCardClick) {
         ? `Best +${totalStat(player, statKey, state)} ${suitLabel}${budgetNote}`
         : best
           ? `${best.name} +${totalStat(best, statKey, state)} ${suitLabel}`
-          : `1–2 ${suitLabel}`),
+          : `1 ${suitLabel}`),
     canClickCard: (card) => card.type === "psyche-power" || isPhaseSpendPsycheCard(card, state),
     suggestCard: (card) => isPhaseSpendPsycheCard(card, state),
   });

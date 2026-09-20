@@ -55,6 +55,7 @@ import {
   isWildPsyche,
   encounterPlayTotal,
   encounterPayHint,
+  PHASE_OPENER_MAX_CARDS,
 } from "./rules.js";
 import {
   encounterRejectCost,
@@ -362,7 +363,7 @@ export function getPhaseActions(state, handlers) {
       hint: !state.dreamDrawn
         ? "Draw & Resolve the Dream first, then spend Lucidity to reveal Landscapes."
         : best
-          ? `One Dreamer spends 1–2 Lucidity — ${best.name} adds +${totalStat(best, stat, state)} (best bonus).`
+          ? `One Dreamer spends 1 Lucidity — ${best.name} adds +${totalStat(best, stat, state)} (best bonus).`
           : "One Dreamer spends Lucidity to set everyone's reveal budget.",
       section: "main",
       disabled: !state.dreamDrawn || state.revealLandscapeUsed || budget < 1,
@@ -393,7 +394,7 @@ export function getPhaseActions(state, handlers) {
           ? `Spend Elasticity (${budget} team moves)`
           : "Spend Elasticity (select cards)",
         hint: best
-          ? `One Dreamer spends 1–2 Elasticity — ${best.name} adds +${totalStat(best, stat, state)} (best bonus).`
+          ? `One Dreamer spends 1 Elasticity — ${best.name} adds +${totalStat(best, stat, state)} (best bonus).`
           : "One Dreamer spends Elasticity to set everyone's move budget.",
         section: "main",
         primary: true,
@@ -441,7 +442,7 @@ export function getPhaseActions(state, handlers) {
           ? `Gain Actions (${budget} for team)`
           : "Gain Actions (select Willpower)",
         hint: best
-          ? `One Dreamer spends 1–2 Willpower — ${best.name} adds +${totalStat(best, stat, state)} (best bonus).`
+          ? `One Dreamer spends 1 Willpower — ${best.name} adds +${totalStat(best, stat, state)} (best bonus).`
           : "One Dreamer spends Willpower to set shared Meet actions.",
         section: "main",
         primary: true,
@@ -726,8 +727,8 @@ export function revealLandscape(state) {
       state,
       "Select Lucidity Psyche first",
       best
-        ? `One Dreamer spends 1–2 blue ${SUIT_LABELS.lucidity} cards to set the team's reveal budget. ${best.name} has the highest Lucidity (+${totalStat(best, stat, state)}) — have them play the cards.`
-        : `Choose 1–2 blue ${SUIT_LABELS.lucidity} cards from any Dreamer's hand, then click Reveal Landscapes.`,
+        ? `One Dreamer spends 1 blue ${SUIT_LABELS.lucidity} card to set the team's reveal budget. ${best.name} has the highest Lucidity (+${totalStat(best, stat, state)}) — have them play the card.`
+        : `Choose 1 blue ${SUIT_LABELS.lucidity} card from any Dreamer's hand, then click Reveal Landscapes.`,
     );
     return;
   }
@@ -736,7 +737,7 @@ export function revealLandscape(state) {
     narrate(
       state,
       "Select Lucidity Psyche first",
-      `Choose 1–2 blue ${SUIT_LABELS.lucidity} cards from ${player.name}'s hand. Their Lucidity stat (+${totalStat(player, "lucidity", state)}) is added to the card values.`,
+      `Choose 1 blue ${SUIT_LABELS.lucidity} card from ${player.name}'s hand. Their Lucidity stat (+${totalStat(player, "lucidity", state)}) is added to the card value.`,
     );
     return;
   }
@@ -745,8 +746,8 @@ export function revealLandscape(state) {
 
   const lucidityCards = selectedBySuit(state, player, "lucidity");
   const tokenValue = phaseTokenValue(state, player);
-  if (lucidityCards.length > 2 || (lucidityCards.length < 1 && tokenValue < 1)) {
-    narrate(state, "Select Lucidity or 1 Power Token", `Play 1–2 blue Psyche from ${player.name}, or spend 1 Power Token as 1 Lucidity.`);
+  if (lucidityCards.length > PHASE_OPENER_MAX_CARDS || (lucidityCards.length < 1 && tokenValue < 1)) {
+    narrate(state, "Select Lucidity or 1 Power Token", `Play 1 blue Psyche from ${player.name}, or spend 1 Power Token as 1 Lucidity.`);
     return;
   }
 
@@ -776,16 +777,16 @@ export function activateExplore(state) {
     const best = bestPhaseContributor(state);
     const stat = statForPhaseBudget("Explore", state);
     addLog(state, best
-      ? `Select 1–2 Elasticity cards from a Dreamer's hand. ${best.name} has the best Elasticity bonus (+${totalStat(best, stat, state)}).`
-      : `Select 1–2 ${SUIT_LABELS.elasticity} Psyche cards from any Dreamer to set team moves.`);
+      ? `Select 1 Elasticity card from a Dreamer's hand. ${best.name} has the best Elasticity bonus (+${totalStat(best, stat, state)}).`
+      : `Select 1 ${SUIT_LABELS.elasticity} Psyche card from any Dreamer to set team moves.`);
     return;
   }
 
   const elaCards = player ? selectedBySuit(state, player, "elasticity") : [];
 
   const tokenValue = player ? phaseTokenValue(state, player) : 0;
-  if (!freeRound && (elaCards.length > 2 || (elaCards.length < 1 && tokenValue < 1))) {
-    addLog(state, `Play 1 or 2 ${SUIT_LABELS.elasticity} Psyche cards, or spend 1 Power Token as 1 Elasticity.`);
+  if (!freeRound && (elaCards.length > PHASE_OPENER_MAX_CARDS || (elaCards.length < 1 && tokenValue < 1))) {
+    addLog(state, `Play 1 ${SUIT_LABELS.elasticity} Psyche card, or spend 1 Power Token as 1 Elasticity.`);
     return;
   }
 
@@ -897,16 +898,16 @@ export function gainMeetActions(state) {
     const best = bestPhaseContributor(state);
     const stat = statForPhaseBudget("Meet", state);
     addLog(state, best
-      ? `Select 1–2 Willpower cards from a Dreamer's hand. ${best.name} has the best Willpower bonus (+${totalStat(best, stat, state)}).`
-      : `Play 1 or 2 ${SUIT_LABELS.willpower} Psyche cards from any Dreamer for shared Meet Actions.`);
+      ? `Select 1 Willpower card from a Dreamer's hand. ${best.name} has the best Willpower bonus (+${totalStat(best, stat, state)}).`
+      : `Play 1 ${SUIT_LABELS.willpower} Psyche card from any Dreamer for shared Meet Actions.`);
     return;
   }
   const budget = meetActionBudgetFromWillpower(state, player);
   const wilCards = selectedBySuit(state, player, "willpower");
 
   const tokenValue = phaseTokenValue(state, player);
-  if (wilCards.length > 2 || (wilCards.length < 1 && tokenValue < 1)) {
-    addLog(state, `Play 1 or 2 ${SUIT_LABELS.willpower} Psyche cards from ${player.name}, or spend 1 Power Token as 1 Willpower.`);
+  if (wilCards.length > PHASE_OPENER_MAX_CARDS || (wilCards.length < 1 && tokenValue < 1)) {
+    addLog(state, `Play 1 ${SUIT_LABELS.willpower} Psyche card from ${player.name}, or spend 1 Power Token as 1 Willpower.`);
     return;
   }
 
@@ -929,7 +930,7 @@ export function togglePhasePowerToken(state) {
     return;
   }
   if (!canUsePhasePowerToken(state, player)) {
-    addLog(state, "Spend 1 Power Token as 1 suited Psyche for this phase opener (max 1, and not with 2 cards).");
+    addLog(state, "Spend 1 Power Token as 1 suited Psyche for this phase opener (instead of a Psyche card).");
     return;
   }
   state.phaseTokenAsPsyche = player.id;
@@ -1623,7 +1624,7 @@ export function toggleHandCard(state, card, owner = null) {
   }
 
   const coopMeet = phase === "Meet" && state.meetActionBudget > 0;
-  const maxCards = coopMeet ? 3 : (phase === "Meet" ? 2 : 2);
+  const maxCards = coopMeet ? 3 : PHASE_OPENER_MAX_CARDS;
   if (!isDreambeastPsycheCard(card) && coopMeet && spreadPsycheCount(state) >= 3) return;
   if (!coopMeet && state.selectedHand.length >= maxCards) return;
 
@@ -1656,7 +1657,7 @@ export function toggleHandCard(state, card, owner = null) {
     }
 
     const suited = selectedBySuit(state, player, suit);
-    if (suited.length >= 2) return;
+    if (suited.length >= PHASE_OPENER_MAX_CARDS) return;
     state.selectedHand.push(id);
     return;
   }
@@ -1687,7 +1688,7 @@ function canAutoActivateExplore(state) {
   const player = findPhaseContributor(state);
   if (!player) return false;
   const elaCards = selectedBySuit(state, player, "elasticity");
-  if (elaCards.length > 2) return false;
+  if (elaCards.length > PHASE_OPENER_MAX_CARDS) return false;
   if (elaCards.length >= 1) return true;
   return phaseTokenValue(state, player) >= 1;
 }

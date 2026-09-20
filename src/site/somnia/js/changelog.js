@@ -5,10 +5,19 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "22.2";
+export const SOMNIA_VERSION = "22.3";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "22.3",
+    title: "Shuffled Dreamscape & one Psyche per phase",
+    notes: [
+      "Every Landscape is shuffled at setup. The Bed is face-up. Only one Landscape touching The Bed starts Revealed; the rest begin forgotten.",
+      "Further Reveals require playing 1 Lucidity Psyche. Each R.E.M. phase opener is now 1 Psyche card (or 1 Power Token as that card).",
+      "Dreamer, Object, and Acquired Archetype bonuses still add to the phase budget. Encounter Play Spreads still allow 1–3 Psyche.",
+    ],
+  },
   {
     version: "22.2",
     title: "Readable Psyche hands, holographic spreads, map thresholds",

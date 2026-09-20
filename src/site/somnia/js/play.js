@@ -727,11 +727,15 @@ async function startGame(config) {
       gentleStart: !!config.gentleStart,
     });
     if (config.gentleStart) markGentleStartUsed();
+    const opening = state.board.find((t) => !t.center && t.revealed && !t.wasteland);
+    const openingLine = opening
+      ? `${opening.name} is the only Landscape touching The Bed that begins Revealed.`
+      : "Only one Landscape touching The Bed begins Revealed.";
     narrate(
       state,
       "The Dreamscape forms",
-      "Each Dreamer starts on The Bed with 5 Psyche and 1 Power Token. Round 1 begins in the Reveal Phase — discuss, plan, and act in any order. The Head Dreamer (★) should Draw the Dream when the group is ready.",
-      ["Reveal Phase: spend Lucidity to flip Landscapes on the hex map"],
+      `Each Dreamer starts on The Bed with 5 Psyche and 1 Power Token. The Dreamscape is shuffled: ${openingLine} Round 1 begins in the Reveal Phase — discuss, plan, and act in any order. The Head Dreamer (★) should Draw the Dream when the group is ready.`,
+      ["Reveal Phase: spend 1 Lucidity to flip Landscapes on the hex map"],
     );
   }
 

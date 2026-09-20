@@ -74,7 +74,11 @@ export function createInitialState(data, options) {
   const usedDreamerIds = new Set(options.selectedDreamers.map((d) => d.id));
   const availableDreamers = data.dreamers.filter((d) => !usedDreamerIds.has(d.id));
 
-  const board = buildHexBoard(landscapes);
+  const tutorialLayout = Boolean(options.tutorialMode);
+  const board = buildHexBoard(landscapes, { tutorialLayout });
+  const openingNeighbor = tutorialLayout
+    ? null
+    : board.find((t) => !t.center && t.revealed && !t.wasteland);
 
   const psycheDeck = buildPsycheDeck(data.psyche);
   const dreamDeck = insertBossDreams(buildDreamDeck(data.dreams, length.dreams), data.dreambeasts);
@@ -151,7 +155,11 @@ export function createInitialState(data, options) {
     acquiredPoints: 0,
     selectedHand: [],
     selectedLandscapeId: "bed",
-    log: ["The Dreamscape forms around The Bed..."],
+    log: [
+      openingNeighbor
+        ? `The Dreamscape is shuffled. Only ${openingNeighbor.name} is Revealed beside The Bed; every other Landscape starts forgotten.`
+        : "The Dreamscape forms around The Bed...",
+    ],
     status: "playing",
     finalRecurrence: false,
     dreamDrawn: false,

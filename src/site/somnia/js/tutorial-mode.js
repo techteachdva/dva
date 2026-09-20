@@ -122,7 +122,7 @@ const TUTORIAL_QUEST_PLACEMENT = [
 ];
 
 export const TUTORIAL_REVEAL_TILE = "candy-mountain";
-const TUTORIAL_SNAPSHOT_VERSION = 17;
+const TUTORIAL_SNAPSHOT_VERSION = 18;
 let tutorialSnapshotCache = null;
 let tutorialSnapshotCacheVersion = 0;
 
@@ -136,6 +136,7 @@ export function createTutorialBaseState(data) {
   const state = createInitialState(data, {
     lengthKey: "daydream",
     selectedDreamers: dreamers,
+    tutorialMode: true,
   });
 
   state.tutorialMode = true;

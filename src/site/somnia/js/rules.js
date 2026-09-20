@@ -32,6 +32,9 @@ export const SUIT_LABELS = {
   willpower: "Willpower",
 };
 
+/** Phase opener: one Psyche card (or 1 Power Token as that card). Meet encounter spreads still allow 1–3. */
+export const PHASE_OPENER_MAX_CARDS = 1;
+
 /** @deprecated Use suitIconHtml() in UI; kept for non-HTML fallbacks. */
 export const SUIT_SYMBOLS = {
   lucidity: "◉",
@@ -120,7 +123,7 @@ export function phaseTokenValue(state, player) {
   const phase = PHASES[state.phaseIndex];
   const suit = phaseSuitForOpening(phase);
   const cards = suit ? selectedBySuit(state, player, suit) : selectedCards(state, player);
-  if (cards.length >= 2) return 0;
+  if (cards.length >= PHASE_OPENER_MAX_CARDS) return 0;
   return 1;
 }
 
@@ -130,7 +133,7 @@ export function canUsePhasePowerToken(state, player) {
   const phase = PHASES[state.phaseIndex];
   const suit = phaseSuitForOpening(phase);
   const cards = suit ? selectedBySuit(state, player, suit) : selectedCards(state, player);
-  return cards.length < 2;
+  return cards.length < PHASE_OPENER_MAX_CARDS;
 }
 
 /** Dreamer whose selected Psyche (or 1 Power Token) will open the current phase. */
@@ -333,7 +336,7 @@ export function canSelectCard(state, card, phase, player = null) {
     const suit = phaseSuitForOpening(phase);
     if (!cardCountsAsSuit(card, suit, state)) return false;
     const suited = selectedBySuit(state, active, suit);
-    if (suited.length >= 2) return false;
+    if (suited.length >= PHASE_OPENER_MAX_CARDS) return false;
     return true;
   }
 
@@ -346,11 +349,11 @@ export function canSelectCard(state, card, phase, player = null) {
   }
 
   if (phase === "Reveal") {
-    if (selected.length >= 2) return false;
+    if (selected.length >= PHASE_OPENER_MAX_CARDS) return false;
     return card.suit === "lucidity" || isWildPsyche(card);
   }
   if (phase === "Explore") {
-    if (selected.length >= 2) return false;
+    if (selected.length >= PHASE_OPENER_MAX_CARDS) return false;
     return card.suit === "elasticity" || isWildPsyche(card);
   }
   if (phase === "Meet") {
@@ -359,7 +362,7 @@ export function canSelectCard(state, card, phase, player = null) {
       return true;
     }
     if (state.meetActionBudget === 0) {
-      if (selected.length >= 2) return false;
+      if (selected.length >= PHASE_OPENER_MAX_CARDS) return false;
       return card.suit === "willpower" || isWildPsyche(card);
     }
     return selected.length < 3;

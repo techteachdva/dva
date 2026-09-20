@@ -36,7 +36,7 @@ export const TUTORIAL_STEPS = [
   {
     id: "suits",
     title: "Three Suits of Psyche",
-    body: "Each phase, one Dreamer spends 1–2 suited Psyche to set the team's budget. Pick the Dreamer with the highest matching stat. The table may discuss and act in any order before advancing.",
+    body: "Each phase, one Dreamer spends 1 suited Psyche to set the team's budget. Pick the Dreamer with the highest matching stat. Dreamer, Object, and Acquired Archetype bonuses still add. The table may discuss and act in any order before advancing.",
     target: "#hand-bar",
   },
   {
@@ -223,7 +223,7 @@ export function getCurrentObjective(state) {
       }
       if (state.dreamDrawn && !state.revealLandscapeUsed) {
         steps.push(
-          "One Dreamer spends **1–2 Lucidity** to set the team reveal budget.",
+          "One Dreamer spends **1 Lucidity** to set the team reveal budget.",
           best
             ? `**${best.name}** has the best Lucidity bonus (+${totalStat(best, stat, state)}).`
             : "Pick the Dreamer with the highest Lucidity stat.",
@@ -274,7 +274,7 @@ export function getCurrentObjective(state) {
         title: "Activate movement",
         steps: [
           COOP_PLAY_TIP,
-          "One Dreamer spends **1–2 Elasticity** cards to set **shared team moves**.",
+          "One Dreamer spends **1 Elasticity** card to set **shared team moves**.",
           best
             ? `**${best.name}** has the best Elasticity bonus (+${totalStat(best, stat, state)}).`
             : "Pick the Dreamer with the highest Elasticity stat.",
@@ -317,7 +317,7 @@ export function getCurrentObjective(state) {
         title: "Gain shared actions",
         steps: [
           COOP_PLAY_TIP,
-          "One Dreamer spends **1–2 Willpower** cards to set **shared Meet actions**.",
+          "One Dreamer spends **1 Willpower** card to set **shared Meet actions**.",
           best
             ? `**${best.name}** has the best Willpower bonus (+${totalStat(best, stat, state)}).`
             : "Pick the Dreamer with the highest Willpower stat.",
@@ -465,7 +465,7 @@ export function rulesIntroHtml() {
             <li><strong>Head Dreamer (★)</strong> rotates; their name is on the Dream draw</li>
             <li><strong>Round 1:</strong> each Dreamer starts with <strong>5 Psyche</strong></li>
             <li><strong>Round 2+:</strong> alive Dreamers draw <strong>2 Psyche</strong> at round start</li>
-            <li><strong>One Dreamer per phase</strong> spends 1–2 suited cards to set the team budget</li>
+            <li><strong>One Dreamer per phase</strong> spends 1 suited card to set the team budget</li>
             <li>Unresolved Encounters fail at end of Meet; roaming Dreambeasts hunger for the Timeline (see Encounters)</li>
           </ul>
         </div>
@@ -476,7 +476,7 @@ export function rulesIntroHtml() {
         <p>Use the <strong>R.E.M.</strong> tab for the three phases in depth. Use <strong>Details</strong> for encounters, death, bosses, objects, Mindstream, and Final Recurrence. The in-game <strong>Guide</strong> panel shows your next step every turn.</p>
       </section>
 
-            <p class="overview-footer">Somnia v 22.2 — cooperative rules reference.</p>
+            <p class="overview-footer">Somnia v 22.3 — cooperative rules reference.</p>
       ${footerCreditsHtml()}
     </div>
   `;
@@ -487,16 +487,17 @@ export function rulesRemHtml() {
   return `
     <div class="rules-page rules-page-rem">
       <h2>R.E.M. — Every Round</h2>
-      <p class="rules-lead">Each round has three phases in order. One Dreamer spends 1–2 suited Psyche cards to open each phase; the whole team shares the resulting budget.</p>
+      <p class="rules-lead">Each round has three phases in order. One Dreamer spends 1 suited Psyche card to open each phase; the whole team shares the resulting budget.</p>
 
-      <p class="rules-formula"><strong>Budget formula:</strong> sum of card values + that Dreamer's matching stat. You may spend <strong>1 Power Token as 1 suited Psyche</strong> instead of (or with) a card. Minimum 1 Psyche or 1 token.</p>
+      <p class="rules-formula"><strong>Budget formula:</strong> that 1 card's value + that Dreamer's matching stat, including Object and Acquired Archetype bonuses. You may spend <strong>1 Power Token as 1 suited Psyche</strong> instead of a card. Minimum 1 Psyche or 1 token.</p>
 
       <section class="overview-block overview-phases">
         <div class="overview-phase suit-lucidity">
           <div class="overview-phase-head">${suitIconHtml("lucidity", { size: 16 })} <strong>Reveal</strong> — ${SUIT_LABELS.lucidity}</div>
-          <p><strong>Head Dreamer (★)</strong> draws and resolves one <strong>Dream</strong> card each round (anyone may click Draw once the group agrees). Then <strong>one Dreamer</strong> spends 1–2 Lucidity cards.</p>
+          <p><strong>Head Dreamer (★)</strong> draws and resolves one <strong>Dream</strong> card each round (anyone may click Draw once the group agrees). Then <strong>one Dreamer</strong> spends 1 Lucidity card.</p>
           <ul>
-            <li><strong>Reveal budget</strong> = card values + Lucidity stat → click that many Wasteland hexes to flip Landscapes face-up</li>
+            <li><strong>Setup:</strong> every Landscape is shuffled. The Bed is face-up. One random Landscape touching The Bed starts Revealed; all others start forgotten</li>
+            <li><strong>Reveal budget</strong> = that 1 card's value + Lucidity bonuses (Dreamer, Objects, Acquired Archetypes) → click that many Wasteland hexes to flip Landscapes face-up</li>
             <li>Draw the Dream and spend Lucidity in either order during Reveal</li>
             <li><strong>Round 1:</strong> each Dreamer already has 5 Psyche — no round-start draw</li>
             <li><strong>Round 2+:</strong> each alive Dreamer draws <strong>2 Psyche</strong> at the start of Reveal</li>
@@ -505,9 +506,9 @@ export function rulesRemHtml() {
 
         <div class="overview-phase suit-elasticity">
           <div class="overview-phase-head">${suitIconHtml("elasticity", { size: 16 })} <strong>Explore</strong> — ${SUIT_LABELS.elasticity}</div>
-          <p><strong>One Dreamer</strong> spends 1–2 Elasticity cards to unlock <strong>shared team moves</strong>.</p>
+          <p><strong>One Dreamer</strong> spends 1 Elasticity card to unlock <strong>shared team moves</strong>.</p>
           <ul>
-            <li><strong>Move budget</strong> = card values + Elasticity stat → that many moves for the whole team</li>
+            <li><strong>Move budget</strong> = that 1 card's value + Elasticity bonuses → that many moves for the whole team</li>
             <li>Click Dreamer chips and green dashed hexes in any order; you do not have to use every move</li>
             <li>Entering the <strong>Wasteland</strong> during Explore discards 1 Psyche (can trigger death)</li>
             <li><strong>Paradox Dream:</strong> Explore uses Willpower stat instead (card suits unchanged)</li>
@@ -516,10 +517,10 @@ export function rulesRemHtml() {
 
         <div class="overview-phase suit-willpower">
           <div class="overview-phase-head">${suitIconHtml("willpower", { size: 16 })} <strong>Meet</strong> — ${SUIT_LABELS.willpower}</div>
-          <p><strong>One Dreamer</strong> spends 1–2 Willpower cards to gain <strong>shared Meet actions</strong> for the team.</p>
+          <p><strong>One Dreamer</strong> spends 1 Willpower card to gain <strong>shared Meet actions</strong> for the team.</p>
           <ul>
-            <li><strong>Action budget</strong> = card values + Willpower stat → spend on Encounters, Landscapes, Trade, or End Round</li>
-            <li><strong>Once per action</strong> for each Dreamer this Meet. Another Dreamer may take the same action. Power Tokens, 1–2 Psyche to open a phase, and 1–3 Psyche on a Play Spread can still stack</li>
+            <li><strong>Action budget</strong> = that 1 card's value + Willpower bonuses → spend on Encounters, Landscapes, Trade, or End Round</li>
+            <li><strong>Once per action</strong> for each Dreamer this Meet. Another Dreamer may take the same action. Power Tokens, 1 Psyche to open a phase, and 1–3 Psyche on a Play Spread can still stack</li>
             <li>Each Landscape offers <strong>Action A</strong> (Draw matching Mindstream) and <strong>Action B</strong> (its unique action from the rulebook)</li>
             <li><strong>Objects</strong> are free during Meet; Persistent Objects cost 1 Power Token to activate</li>
             <li>At Meet end, unresolved Encounters <strong>fail</strong> — Dreamers on those tiles lose Psyche to the Subconscious</li>
@@ -530,7 +531,7 @@ export function rulesRemHtml() {
 
       <section class="overview-block">
         <h3>Phase Spender Tips</h3>
-        <p>Pick the Dreamer with the <strong>highest matching stat</strong> to maximize budget. The UI highlights the best candidate. Only one Dreamer spends per phase — discuss first, then commit cards.</p>
+        <p>Pick the Dreamer with the <strong>highest matching stat</strong> to maximize budget. The UI highlights the best candidate. Only one Dreamer spends per phase — discuss first, then commit a card.</p>
       </section>
 
       <section class="overview-block">
@@ -550,7 +551,7 @@ export function rulesDetailsHtml() {
 
       <h3>Psyche &amp; Hand Limits</h3>
       <ul>
-        <li>Tap or click to select · double-tap, long-press, or right-click to inspect · play 1–2 suited cards per phase opener</li>
+        <li>Tap or click to select · double-tap, long-press, or right-click to inspect · play 1 suited card per phase opener</li>
         <li>Max <strong>10 Psyche cards</strong> in hand (+2 with Persistent Severed Torso); overflow discards to the Psyche discard pile</li>
         <li>Max <strong>10 accepted allies</strong> (Dreambeasts) — separate from the Psyche limit</li>
         <li><strong>Wild Psyche</strong> (value 5) counts as any suit; also Represses the top card of each Mindstream deck when spent</li>
@@ -606,6 +607,7 @@ export function rulesDetailsHtml() {
         <li><strong>Subconscious</strong> — face-up Repressed piles (Psyche, Dreambeasts, Mindstream by suit, Objects). Return effects pull cards back to matching discard piles</li>
         <li><strong>Trade</strong> — 1 Meet action; partner on same or adjacent hex; offer up to 3 Psyche</li>
         <li><strong>Landscape actions</strong> — 1 Meet action while standing on a tile: draw matching Mindstream, swap Psyche, move pieces, take Power, Return from Subconscious, and more</li>
+        <li><strong>Map setup</strong> — shuffle every Landscape. The Bed is face-up. One random Landscape touching The Bed starts Revealed; all others start forgotten. Further Reveals require 1 Lucidity Psyche</li>
         <li><strong>Map thresholds</strong> — Revealing every Landscape Returns <strong>Dreamers+3</strong> from the Subconscious. Forgetting every Landscape but The Bed Represses <strong>Dreamers+3</strong> Psyche from hands (and still starts Final Recurrence)</li>
         <li><strong>Forget</strong> — turns Landscapes to Wasteland; Encounters Repressed; Dreamers there lose 1 Psyche. If all outer tiles are Wasteland → <strong>Final Recurrence</strong></li>
       </ul>
@@ -629,7 +631,7 @@ export function infoHubHtml(options = {}) {
     <div class="info-hub">
       <header class="info-hub-header">
         <div class="info-hub-brand">
-          <p class="info-hub-kicker">Somnia v 22.2</p>
+          <p class="info-hub-kicker">Somnia v 22.3</p>
           <h2>Dream Guide</h2>
           <p class="info-hub-lead">What just happened, and the rules you need to wake up.</p>
         </div>
@@ -647,7 +649,7 @@ export function infoHubHtml(options = {}) {
           </div>
           <div class="info-hub-rule">
             <h3>Play Together</h3>
-            <p>${COOP_PLAY_TIP} One Dreamer opens each phase with <strong>1–2 suited Psyche</strong> (or <strong>1 Power Token as 1 Psyche</strong>). Budget = card values + that Dreamer's matching stat.</p>
+            <p>${COOP_PLAY_TIP} One Dreamer opens each phase with <strong>1 suited Psyche</strong> (or <strong>1 Power Token as 1 Psyche</strong>). Budget = that card's value + Dreamer, Object, and Acquired Archetype bonuses.</p>
           </div>
           <div class="info-hub-rule info-hub-rem">
             <h3>R.E.M. — Every Round</h3>
