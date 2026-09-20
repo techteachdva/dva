@@ -5,10 +5,18 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "24.1";
+export const SOMNIA_VERSION = "24.2";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "24.2",
+    title: "Skip any phase, undo any action",
+    notes: [
+      "Next Phase stays in the top-right of the map. You can skip a phase without spending Psyche. The circle is the color of the phase you are about to enter: yellow into Explore, red into Meet, blue into Reveal.",
+      "Back sits in the top-left of the map, the same size as Next. It restores the table to the moment before your last action.",
+    ],
+  },
   {
     version: "24.1",
     title: "Dreamer radial hotfix",

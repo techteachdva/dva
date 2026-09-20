@@ -258,7 +258,7 @@ export function getCurrentObjective(state) {
       phase: "Reveal",
       suit: "lucidity",
       title: "Reveal complete",
-      steps: ["Click a Dreamer on the board, then **Next: Explore** when your group is ready."],
+      steps: ["Click **Next: Explore** in the top-right of the map when your group is ready. You do not have to spend Lucidity."],
     };
   }
 
@@ -292,7 +292,7 @@ export function getCurrentObjective(state) {
         title: "Move on the board",
         steps: [
           `Click a **green dashed hex** to move ${player.name}.`,
-          `${state.exploreMovesLeft} team move(s) remaining — use all or click a Dreamer on the board, then **Next: Meet**.`,
+          `${state.exploreMovesLeft} team move(s) remaining — use them, or click **Next: Meet** in the top-right.`,
         ],
         tip: "Click a Dreamer on the board to open their actions, or a dock chip to focus them.",
       };
@@ -301,7 +301,7 @@ export function getCurrentObjective(state) {
       phase: "Explore",
       suit: "elasticity",
       title: "Exploration done",
-      steps: ["Click a Dreamer on the board, then **Next: Meet** to continue the round."],
+      steps: ["Click **Next: Meet** in the top-right of the map whenever you are ready. Unused moves are forfeited."],
     };
   }
 
@@ -477,7 +477,7 @@ export function rulesIntroHtml() {
         <p>Use the <strong>R.E.M.</strong> tab for the three phases in depth. Use <strong>Details</strong> for encounters, death, bosses, objects, Mindstream, and Final Recurrence. The in-game <strong>Guide</strong> panel shows your next step every turn.</p>
       </section>
 
-            <p class="overview-footer">Somnia v 24.1 — cooperative rules reference.</p>
+            <p class="overview-footer">Somnia v 24.2 — cooperative rules reference.</p>
       ${footerCreditsHtml()}
     </div>
   `;
@@ -648,7 +648,7 @@ export function infoHubHtml(options = {}) {
     <div class="info-hub">
       <header class="info-hub-header">
         <div class="info-hub-brand">
-          <p class="info-hub-kicker">Somnia v 24.1</p>
+          <p class="info-hub-kicker">Somnia v 24.2</p>
           <h2>Dream Guide</h2>
           <p class="info-hub-lead">What just happened, and the rules you need to wake up.</p>
         </div>

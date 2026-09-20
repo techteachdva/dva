@@ -1,25 +1,6 @@
-import { getPhase, addLog, checkDefeat, countEncountersOnBoard, tileEncounters, encounterKey } from "./state.js";
+import { getPhase, addLog, countEncountersOnBoard } from "./state.js";
 import { logMoment } from "./narrator.js";
-import { SUIT_LABELS, phaseSuitForOpening } from "./rules.js";
 import { endPhase } from "./game.js";
-import { enqueueCollectiveRepressFromHand } from "./subconscious.js";
-import { showPhaseSkipConfirm, showMeetDreambeastSkipConfirm } from "./ui.js";
-import { discardDreamsFromDeck } from "./dream-deck.js";
-
-const PHASE_SKIP_COPY = {
-  Reveal: {
-    suit: "lucidity",
-    action: "spend Lucidity to reveal Landscapes",
-  },
-  Explore: {
-    suit: "elasticity",
-    action: "spend Elasticity for shared moves",
-  },
-  Meet: {
-    suit: "willpower",
-    action: "spend Willpower for shared Meet actions",
-  },
-};
 
 export function countBoardDreambeasts(state) {
   return countEncountersOnBoard(
@@ -38,25 +19,6 @@ export function timelineTollPreview(state) {
   const paid = Math.min(beastCount, available);
   const unpaid = beastCount - paid;
   return { beastCount, paid, unpaid };
-}
-
-export function phasePsycheSpent(state) {
-  const phase = getPhase(state);
-  if (phase === "Reveal") return state.revealLandscapeUsed;
-  if (phase === "Explore") return state.exploreActivated;
-  if (phase === "Meet") return state.meetActionBudget > 0;
-  return true;
-}
-
-function discardDreamCardsFromDeck(state, count) {
-  const discarded = discardDreamsFromDeck(state, count);
-  if (discarded > 0) {
-    logMoment(
-      state,
-      `The Timeline frays — ${discarded} Dream card${discarded === 1 ? "" : "s"} discarded from the deck.`,
-    );
-  }
-  return discarded;
 }
 
 function finishPhaseAdvance(state, onComplete) {
@@ -92,136 +54,14 @@ function forfeitRemainingMeetActions(state) {
   );
 }
 
-function showExploreMovesLeftWarning(state, movesLeft, onConfirm, onCancel) {
-  showPhaseSkipConfirm({
-    title: "Moves remaining",
-    message: `Your team still has <strong>${movesLeft}</strong> shared Explore move${movesLeft === 1 ? "" : "s"} left. Advance to <strong>Meet</strong> anyway? Unused moves are lost.`,
-    confirmLabel: "Go to Meet",
-    onConfirm: () => {
-      forfeitRemainingExploreMoves(state);
-      onConfirm();
-    },
-    onCancel,
-  });
-}
-
-function showMeetActionsLeftWarning(state, actionsLeft, onConfirm, onCancel) {
-  showPhaseSkipConfirm({
-    title: "Meet actions remaining",
-    message: `Your team still has <strong>${actionsLeft}</strong> shared Meet action${actionsLeft === 1 ? "" : "s"} left. <strong>End Round</strong> anyway? Unused actions are lost.`,
-    confirmLabel: "End Round",
-    onConfirm: () => {
-      forfeitRemainingMeetActions(state);
-      onConfirm();
-    },
-    onCancel,
-  });
-}
-
-function applyMeetDreambeastPenalty(state, count, method, onComplete) {
-  if (method === "discard") {
-    discardDreamCardsFromDeck(state, count);
-    finishPhaseAdvance(state, onComplete);
-    return;
-  }
-
-  state.onResolutionIdle = () => finishPhaseAdvance(state, onComplete);
-  enqueueCollectiveRepressFromHand(state, count, {
-    reason: `${count} Dreambeast${count === 1 ? "" : "s"} remain — collectively Repress ${count} Psyche card${count === 1 ? "" : "s"} (consume your souls).`,
-  });
-  onComplete();
-}
-
-function showGenericPhaseSkipWarning(state, onConfirm, onCancel) {
-  const phase = getPhase(state);
-  const copy = PHASE_SKIP_COPY[phase];
-  const suit = copy?.suit || phaseSuitForOpening(phase);
-  const suitLabel = SUIT_LABELS[suit] || suit;
-
-  showPhaseSkipConfirm({
-    title: `Skip ${phase} actions?`,
-    message: `You're advancing without spending any <strong>${suitLabel}</strong> Psyche to ${copy?.action || "open this phase"}.`,
-    confirmLabel: `End ${phase}`,
-    onConfirm,
-    onCancel,
-  });
-}
-
-function showMeetDreambeastWarning(state, beastCount, onComplete, onCancel) {
-  const names = [];
-  state.board.forEach((tile) => {
-    tileEncounters(tile).forEach((enc) => {
-      if (enc.type === "dreambeast" || enc.boss || enc.type === "boss-dream") names.push(enc.name);
-    });
-  });
-  const rosterNames = names.slice(0, 4);
-  const roster = rosterNames.length ? ` (${rosterNames.join(", ")}${beastCount > rosterNames.length ? ", …" : ""})` : "";
-
-  showMeetDreambeastSkipConfirm({
-    beastCount,
-    roster,
-    onRepressSouls: () => applyMeetDreambeastPenalty(state, beastCount, "repress", onComplete),
-    onConsumeTimeline: () => applyMeetDreambeastPenalty(state, beastCount, "discard", onComplete),
-    onCancel,
-  });
-}
-
 /**
- * Gate phase advance with skip warnings. Returns true if the phase advanced immediately.
+ * Advance immediately. Players may skip a phase without spending Psyche.
+ * Leftover Explore moves / Meet actions are forfeited with a log line.
  */
 export function requestEndPhase(state, onComplete = () => {}) {
   const phase = getPhase(state);
-  const psycheSpent = phasePsycheSpent(state);
-  const beastCount = countBoardDreambeasts(state);
-
-  if (phase === "Meet" && !psycheSpent && beastCount > 0) {
-    showMeetDreambeastWarning(
-      state,
-      beastCount,
-      onComplete,
-      () => {},
-    );
-    return false;
-  }
-
-  if (phase === "Meet" && state.meetActionBudget > 0) {
-    const actionsLeft = state.meetActionBudget - (state.meetActionsUsed || 0);
-    if (actionsLeft > 0) {
-      showMeetActionsLeftWarning(
-        state,
-        actionsLeft,
-        () => requestEndPhase(state, onComplete),
-        () => {},
-      );
-      return false;
-    }
-  }
-
-  if (phase === "Explore" && state.exploreActivated && (state.exploreMovesLeft || 0) > 0) {
-    showExploreMovesLeftWarning(
-      state,
-      state.exploreMovesLeft,
-      () => finishPhaseAdvance(state, onComplete),
-      () => {},
-    );
-    return false;
-  }
-
-  if (!psycheSpent && PHASE_SKIP_COPY[phase]) {
-    // Tutorial advance steps must not stall on the skip confirm (the guide
-    // card can cover the modal, and Lucidity may be spent without flipping).
-    if (state.tutorialMode) {
-      finishPhaseAdvance(state, onComplete);
-      return true;
-    }
-    showGenericPhaseSkipWarning(
-      state,
-      () => finishPhaseAdvance(state, onComplete),
-      () => {},
-    );
-    return false;
-  }
-
+  if (phase === "Explore") forfeitRemainingExploreMoves(state);
+  if (phase === "Meet") forfeitRemainingMeetActions(state);
   finishPhaseAdvance(state, onComplete);
   return true;
 }

@@ -41,6 +41,14 @@ import {
   reattachGameRuntime,
   listLocalSaves,
 } from "./game-save.js";
+import {
+  clearActionHistory,
+  recordActionCheckpoint,
+  canUndoAction,
+  popActionCheckpoint,
+  restorePlayState,
+  undoStackSize,
+} from "./action-history.js";
 import { recoverLegacySilver } from "./event-choices.js";
 import { updateFinalRecurrenceAtmosphere } from "./final-recurrence-atmosphere.js";
 import { startVictoryCelebration, stopVictoryCelebration } from "./victory-celebration.js";
@@ -659,6 +667,7 @@ function buildPauseSaveHooks() {
 }
 
 function applyLoadedGame(loaded) {
+  clearActionHistory();
   state = reattachGameRuntime(loaded.state);
   recoverLegacySilver(state);
   launchConfig = {
@@ -678,6 +687,25 @@ function applyLoadedGame(loaded) {
   narrate(state, "Dream resumed", loaded.label || "Your saved dream continues.");
 }
 
+function undoLastTableAction() {
+  const prev = popActionCheckpoint();
+  if (!prev || !state) return;
+  hideRadialMenu();
+  hideUtilityModal(true);
+  restorePlayState(state, prev);
+  reattachGameRuntime(state);
+  recoverLegacySilver(state);
+  resetHandSnapshots(state);
+  resetDeckColumnRender();
+  resetBoardMotion(state);
+  lastTutorialSyncKey = null;
+  lastTutorialStepId = null;
+  lastTutorialCameraKey = null;
+  pendingDreamerRadial = null;
+  addLog(state, "Back — the last action was undone.");
+  renderAll();
+}
+
 function scheduleAutoSave() {
   if (!canSaveGame(state)) return;
   clearTimeout(autoSaveTimer);
@@ -693,6 +721,7 @@ function clearAutosave() {
 
 async function startGame(config) {
   launchConfig = config;
+  clearActionHistory();
 
   if (config.resumeSaveId) {
     const loaded = await loadGameLocal(config.resumeSaveId);
@@ -1773,6 +1802,8 @@ function renderAll() {
     }
   }
 
+  recordActionCheckpoint(state);
+
   syncHandRemovals(state);
 
   renderHud(state, getPhaseHint(state));
@@ -1799,7 +1830,11 @@ function renderAll() {
   }
   renderNarratorPanel(state);
   renderGuidePanel(state, phaseActions);
-  renderPhaseAdvanceBar(advanceAction);
+  renderPhaseAdvanceBar(advanceAction, {
+    canUndo: canUndoAction(),
+    stackSize: undoStackSize(),
+    onUndo: undoLastTableAction,
+  });
   renderPhaseActions(phaseActions, advanceAction, state);
 
   renderBoardArea();

@@ -580,7 +580,6 @@ export function getPhaseActions(state, handlers) {
 }
 
 function phaseAdvanceBlockReason(state) {
-  if (state.landscapePick) return "Finish map selection, leftover Reveals, or skip leftovers before advancing.";
   if (state.pendingRepress) return "Complete Repress selection before advancing.";
   if (state.pendingReturn) return "Complete Return selection before advancing.";
   if (state.pendingDeathChoice) return "Resolve the death choice before advancing.";
@@ -590,7 +589,6 @@ function phaseAdvanceBlockReason(state) {
   if (state.pendingEffectChoice) return "Choose an Event or Encounter effect before advancing.";
   if (state.pendingArchetypePower) return "Finish the Archetype Power before advancing.";
   if (state.pendingObjectFollowup) return "Finish the Object effect before advancing.";
-  if (hasPendingDreamerPower(state)) return "Finish or cancel Dreamer Power before advancing.";
   if (state.forcedAccept) return "Silver: Accept the spawned Dreambeast (Reject is not allowed).";
   return null;
 }
@@ -600,6 +598,14 @@ function phaseAdvanceLabel(state) {
   if (phase === "Reveal") return "Next: Explore";
   if (phase === "Explore") return "Next: Meet";
   return "End Round";
+}
+
+/** Tint for the Next Phase button: the phase you are about to enter. */
+export function upcomingPhaseTint(state) {
+  const phase = getPhase(state);
+  if (phase === "Reveal") return "explore";
+  if (phase === "Explore") return "meet";
+  return "reveal";
 }
 
 export function phaseBudgetExhausted(state) {
@@ -625,14 +631,17 @@ export function phaseBudgetExhausted(state) {
 
 export function getPhaseAdvanceAction(state, handlers) {
   if (!handlers?.nextPhase) return null;
-  if (!phaseBudgetExhausted(state)) return null;
   const label = phaseAdvanceLabel(state);
+  const spent = phaseBudgetExhausted(state);
   const action = {
     label,
     section: "phase",
     advance: true,
     primary: true,
-    hint: `${label} — phase budget is spent.`,
+    tint: upcomingPhaseTint(state),
+    hint: spent
+      ? `${label} — or skip leftover work in this phase.`
+      : `${label} — skip this phase without spending Psyche.`,
     onClick: handlers.nextPhase,
   };
   const blockReason = phaseAdvanceBlockReason(state);
@@ -1765,8 +1774,12 @@ export function endPhase(state) {
   cancelDreamerPower(state);
   const leaving = getPhase(state);
   if (leaving === "Reveal" && !state.dreamDrawn) {
-    narrate(state, "Draw the Dream first", "Resolve the active Dream before advancing to Explore.");
-    return;
+    drawDreamCard(state);
+    const block = phaseAdvanceBlockReason(state);
+    if (block) {
+      narrate(state, "Dream drawn", "Resolve this Dream, then Next Phase is ready.");
+      return;
+    }
   }
   if (leaving === "Explore") onExplorePhaseEnd(state);
   if (leaving === "Meet") onMeetPhaseEnd(state);

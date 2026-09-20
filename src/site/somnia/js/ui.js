@@ -2781,9 +2781,37 @@ function buildDreamFeedHtml(state) {
   `;
 }
 
-export function renderPhaseAdvanceBar(advanceAction = null) {
+export function renderPhaseAdvanceBar(advanceAction = null, undo = null) {
   const viewport = document.getElementById("board-viewport");
   if (!viewport) return;
+
+  let backBtn = document.getElementById("btn-map-back");
+  if (!backBtn) {
+    backBtn = document.createElement("button");
+    backBtn.type = "button";
+    backBtn.id = "btn-map-back";
+    backBtn.className = "btn-map-back";
+    backBtn.setAttribute("data-tutorial-action", "mapBack");
+    backBtn.textContent = "Back";
+    viewport.appendChild(backBtn);
+  }
+  const canUndo = !!undo?.canUndo;
+  backBtn.hidden = false;
+  backBtn.classList.remove("hidden");
+  backBtn.disabled = !canUndo;
+  backBtn.dataset.stackSize = String(undo?.stackSize || 0);
+  backBtn.setAttribute("aria-hidden", "false");
+  backBtn.title = canUndo
+    ? "Undo the most recent action and restore the table."
+    : "No action to undo yet.";
+  backBtn.setAttribute("aria-label", "Back one action");
+  backBtn.onclick = (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!canUndo) return;
+    undo.onUndo?.();
+  };
+
   let btn = document.getElementById("btn-next-phase");
   if (!btn) {
     btn = document.createElement("button");
@@ -2793,16 +2821,20 @@ export function renderPhaseAdvanceBar(advanceAction = null) {
     btn.setAttribute("data-tutorial-action", "advancePhase");
     viewport.appendChild(btn);
   }
-  if (!advanceAction) {
-    btn.hidden = true;
-    btn.classList.add("hidden");
-    btn.setAttribute("aria-hidden", "true");
-    btn.disabled = true;
-    return;
-  }
   btn.hidden = false;
   btn.classList.remove("hidden");
   btn.setAttribute("aria-hidden", "false");
+  btn.classList.remove("tint-reveal", "tint-explore", "tint-meet");
+  const tint = advanceAction?.tint || "explore";
+  btn.classList.add(`tint-${tint}`);
+  if (!advanceAction) {
+    btn.disabled = true;
+    btn.textContent = "Next";
+    btn.title = "Next phase";
+    btn.setAttribute("aria-label", "Next phase");
+    btn.onclick = null;
+    return;
+  }
   btn.disabled = !!advanceAction.disabled;
   btn.textContent = advanceAction.label.replace(/\s*→\s*$/, "").trim() || "Next";
   btn.title = advanceAction.hint || advanceAction.label;
