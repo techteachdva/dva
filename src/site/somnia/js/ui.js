@@ -4468,6 +4468,7 @@ function resolvePrimarySpotlightElement(step) {
     || beat?.kind === "completeQuest0"
     || beat?.kind === "completeQuest1"
     || beat?.kind === "landscapeActionA"
+    || beat?.kind === "landscapeActionB"
     || beat?.kind === "advancePhase") {
     if (beat.kind === "advancePhase") {
       return document.querySelector("#btn-next-phase:not([hidden])")

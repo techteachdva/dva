@@ -195,7 +195,9 @@ function clearAllUsedMeetActions(state) {
 }
 
 function meetActionActor(state, action) {
-  if (action === MEET_ACTIONS.TRADE || action === MEET_ACTIONS.ARCHETYPE) return activePlayer(state);
+  if (action === MEET_ACTIONS.TRADE || action === MEET_ACTIONS.ARCHETYPE || action === MEET_ACTIONS.DREAMER) {
+    return activePlayer(state);
+  }
   const tile = meetLandscapeTile(state) || landscapeById(state, state.selectedLandscapeId);
   if (!tile?.revealed || tile.wasteland) return null;
   return actorOnLandscape(state, tile.id);
@@ -307,13 +309,20 @@ export function getPhaseActions(state, handlers) {
   const player = activePlayer(state);
   const actions = [];
 
-  const dreamerPowerAction = () => ({
-    label: "Dreamer Power",
-    section: "progress",
-    hint: player.dreamer.power,
-    disabled: player.powerTokens < 1 || hasPendingDreamerPower(state) || !canActivateDreamerPower(state, player),
-    onClick: handlers.useDreamerPower,
-  });
+  const dreamerPowerAction = () => {
+    const inMeet = phase === "Meet";
+    const meetBlocked = inMeet && !canUseMeetAction(state, MEET_ACTIONS.DREAMER);
+    return {
+      label: "Dreamer Power",
+      kind: "dreamerPower",
+      section: "progress",
+      hint: inMeet
+        ? meetActionHint(state, MEET_ACTIONS.DREAMER, null, `${player.dreamer.power} Costs 1 Meet action and 1 Power Token.`)
+        : `${player.dreamer.power} Costs 1 Power Token.`,
+      disabled: player.powerTokens < 1 || hasPendingDreamerPower(state) || !canActivateDreamerPower(state, player) || meetBlocked,
+      onClick: handlers.useDreamerPower,
+    };
+  };
 
   const questActions = () => {
     const arch = state.activeArchetype;
@@ -322,7 +331,7 @@ export function getPhaseActions(state, handlers) {
         label: "Quest 1",
         kind: "completeQuest0",
         section: "progress",
-        hint: "Spend 1 Power Token to mark this quest — any phase, once the condition is met.",
+        hint: "Free action — spend 1 Power Token to mark this quest once the condition is met. Does not cost a Meet action.",
         disabled: !arch || arch.questProgress[0] || !isQuestConditionMet(state, arch.id, arch.quests[0]) || player.powerTokens < 1,
         onClick: () => handlers.completeQuest(0),
       },
@@ -330,7 +339,7 @@ export function getPhaseActions(state, handlers) {
         label: "Quest 2",
         kind: "completeQuest1",
         section: "progress",
-        hint: "Spend 1 Power Token to mark this quest — any phase, once the condition is met.",
+        hint: "Free action — spend 1 Power Token to mark this quest once the condition is met. Does not cost a Meet action.",
         disabled: !arch || arch.questProgress[1] || !isQuestConditionMet(state, arch.id, arch.quests[1]) || player.powerTokens < 1,
         onClick: () => handlers.completeQuest(1),
       },
@@ -466,7 +475,7 @@ export function getPhaseActions(state, handlers) {
           ? `+1 Spread (now +${state.pendingPowerBonus})`
           : "+1 to Spread",
         section: "main",
-        hint: "Spend any number of Power Tokens. Each adds +1 to the current Psyche spread.",
+        hint: "Free action — spend any number of Power Tokens. Each adds +1 to the current Psyche spread. Does not cost a Meet action.",
         disabled: player.powerTokens < 1,
         onClick: handlers.powerBonus,
       });
@@ -533,11 +542,10 @@ export function getPhaseActions(state, handlers) {
       }
     }
     const landscapeChoices = meetTile ? getLandscapeActionChoices(meetTile) : [];
-    landscapeChoices.forEach((choice) => {
-      const isDraw = choice.id === "draw-mindstream";
+    landscapeChoices.forEach((choice, index) => {
       actions.push({
         label: choice.label,
-        kind: isDraw ? "landscapeActionA" : "landscapeActionB",
+        kind: index === 0 ? "landscapeActionA" : "landscapeActionB",
         section: "actions",
         hint: meetActionHint(state, MEET_ACTIONS.LANDSCAPE, choice.id, choice.description),
         disabled: !canUseLandscapeAction(state, choice.id),
@@ -546,18 +554,23 @@ export function getPhaseActions(state, handlers) {
     });
     actions.push({
       label: "Play Object",
+      kind: "playObject",
       section: "actions",
+      hint: "Free action — Instant Objects Repress when used. Does not cost a Meet action.",
       disabled: !player.objects?.length,
       onClick: handlers.playObject,
     });
     actions.push({
       label: "Activate Persistent",
+      kind: "activateObject",
       section: "actions",
+      hint: "Free action — spend 1 Power Token to activate. Does not cost a Meet action.",
       disabled: !player.persistent?.length || player.powerTokens < 1,
       onClick: handlers.activateObject,
     });
     actions.push({
       label: "Trade",
+      kind: "trade",
       section: "actions",
       hint: meetActionHint(state, MEET_ACTIONS.TRADE, null, "Trade up to 3 Psyche with an adjacent Dreamer."),
       disabled: !canUseMeetAction(state, MEET_ACTIONS.TRADE),
@@ -568,6 +581,7 @@ export function getPhaseActions(state, handlers) {
     getActivatableArchetypePowers(state).forEach((acquired) => {
       actions.push({
         label: `${acquired.name} Power`,
+        kind: "archetypePower",
         section: "progress",
         hint: meetActionHint(state, MEET_ACTIONS.ARCHETYPE, acquired.id, `${acquired.power} Costs 1 Meet action and 1 Power Token.`),
         disabled: activePlayer(state).powerTokens < 1 || !canUseMeetAction(state, MEET_ACTIONS.ARCHETYPE, acquired.id),
@@ -1056,18 +1070,12 @@ export function getDreamerBoardRadialOptions(state, player, tileId, handlers) {
 
   const tile = landscapeById(state, tileId);
   if (getPhase(state) === "Meet" && tile && player?.landscapeId === tileId) {
-    getLandscapeActionChoices(tile).forEach((choice) => {
+    getLandscapeActionChoices(tile).forEach((choice, index) => {
       const label = choice.label || "";
       if (options.some((opt) => opt.label === label)) return;
-      let kind = "landscapeAction";
-      if (choice.id === "A" || /Action A/i.test(label) || label.startsWith("Draw [")) {
-        kind = "landscapeActionA";
-      } else if (choice.id === "B" || /Action B/i.test(label)) {
-        kind = "landscapeActionB";
-      }
       options.push({
         id: choice.id,
-        kind,
+        kind: index === 0 ? "landscapeActionA" : "landscapeActionB",
         label,
         hint: choice.description,
         disabled: !canUseLandscapeAction(state, choice.id),
@@ -1096,7 +1104,7 @@ export function getPowerTokenRadialOptions(state) {
     if (!isQuestConditionMet(state, arch.id, arch.quests[index])) {
       return `Quest not met yet: ${arch.quests[index]}`;
     }
-    return "Spend 1 Power Token to mark this quest.";
+    return "Free action — spend 1 Power Token to mark this quest. Does not cost a Meet action.";
   };
   const options = [
     {
@@ -1269,6 +1277,7 @@ function landscapeActionHelpers(state) {
     pickMindstreamSuit: true,
     pickDeck: true,
     psychePoolTotal: coopMeetPlayTotal,
+    psychePointTotal: (s) => allSelectedCards(s).reduce((n, card) => n + (Number(card.value) || 0), 0),
     discardPsychePool: (s) => {
       const discardedBy = discardAllSelected(s);
       discardedBy.forEach(({ player: p, cards }) => trackPsycheDiscard(s, p, cards));
@@ -1287,15 +1296,11 @@ function validateMeetLandscape(state) {
 }
 
 function landscapeActionPreflight(state, actionId) {
-  if (actionId !== "bed-spend-10-draw-3") return true;
+  if (actionId !== "bed-play-3-draw-3") return true;
   const helpers = landscapeActionHelpers(state);
-  if (!helpers?.psychePoolTotal) {
-    addLog(state, "Select Psyche cards totaling 10 from hand.");
-    return false;
-  }
-  const pool = helpers.psychePoolTotal(state);
-  if (pool < 10) {
-    addLog(state, `Need 10 Psyche in the pool (currently ${pool}).`);
+  const points = helpers.psychePointTotal(state);
+  if (points < 3) {
+    addLog(state, `Select Psyche totaling 3 points (currently ${points}).`);
     return false;
   }
   return true;
@@ -1592,11 +1597,14 @@ export function useDreamerPower(state) {
     addLog(state, `${player.dreamer.name} Power cannot be used right now.`);
     return null;
   }
+  const inMeet = getPhase(state) === "Meet";
+  if (inMeet && !spendMeetAction(state, MEET_ACTIONS.DREAMER)) return null;
   if (!spendPowerTokens(state, player, 1)) {
+    if (inMeet) refundMeetAction(state, player, MEET_ACTIONS.DREAMER);
     addLog(state, "Need 1 Power Token.");
     return null;
   }
-  addLog(state, `${player.name} activates ${player.dreamer.name} Power (1 Power Token).`);
+  addLog(state, `${player.name} activates ${player.dreamer.name} Power (1 Power Token${inMeet ? " and 1 Meet action" : ""}).`);
   state.pendingDreamerPower = { dreamerId: player.dreamer.id, actorId: player.id };
   return beginDreamerPower(state);
 }

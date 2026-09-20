@@ -1,5 +1,5 @@
 [
-  { "id": "bed", "name": "Bed", "suit": null, "starting": true, "center": true, "image": "images/landscapes/bed.webp", "wastelandImage": "images/landscapes/wasteland.webp", "landscapeActions": ["bed-spend-10-draw-3", "draw-3-psyche"] },
+  { "id": "bed", "name": "Bed", "suit": null, "starting": true, "center": true, "image": "images/landscapes/bed.webp", "wastelandImage": "images/landscapes/wasteland.webp", "landscapeActions": ["draw-3-psyche", "bed-play-3-draw-3"] },
   { "id": "city", "name": "City", "suit": "willpower", "starting": true, "image": "images/landscapes/city.webp", "uniqueAction": "power-draw-psyche" },
   { "id": "forest", "name": "Forest", "suit": "elasticity", "starting": true, "image": "images/landscapes/forest.webp", "uniqueAction": "draw-any-mindstream" },
   { "id": "house", "name": "House", "suit": "willpower", "starting": true, "image": "images/landscapes/house.webp", "uniqueAction": "return-2" },

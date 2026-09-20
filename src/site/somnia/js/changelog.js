@@ -5,10 +5,19 @@ import {
 } from "./audio-settings.js";
 import { hideUtilityModal } from "./ui.js";
 
-export const SOMNIA_VERSION = "24.2";
+export const SOMNIA_VERSION = "24.3";
 
 /** Major releases and notable revisions (newest first). */
 export const CHANGELOG = [
+  {
+    version: "24.3",
+    title: "Bed restock and Meet action costs",
+    notes: [
+      "The Bed keeps Draw 3 Psyche as Action A. Action B is now Play 3 Psyche Points, then Draw 3 Psyche Cards. Each Bed action is once per Dreamer per Meet.",
+      "During Meet, using a Dreamer Power or an Archetype Power spends 1 of the shared action budget. Placing a Power Token for +1 on a spread, activating an Object, and marking a completed quest stay free.",
+      "The Dream Guide, rules overview, and tutorial match 24.3: skippable Next Phase, map Back, Bed actions, and which Meet clicks cost an action.",
+    ],
+  },
   {
     version: "24.2",
     title: "Skip any phase, undo any action",

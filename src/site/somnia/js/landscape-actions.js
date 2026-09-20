@@ -131,9 +131,9 @@ export const LANDSCAPE_ACTION_DEFS = {
     label: "Draw 3 Psyche",
     description: "Draw 3 Psyche cards from the Psyche deck.",
   },
-  "bed-spend-10-draw-3": {
-    label: "Spend 10 Psyche → Draw 3",
-    description: "Spend Psyche cards totaling 10 from hand, then Draw 3 Psyche.",
+  "bed-play-3-draw-3": {
+    label: "Play 3 Psyche Points → Draw 3",
+    description: "Play Psyche totaling 3 points, then Draw 3 Psyche cards.",
   },
 };
 
@@ -1083,23 +1083,21 @@ export function executeLandscapeActionChoice(state, tile, player, actionId, help
       return { ok: true };
     }
 
-    case "bed-spend-10-draw-3": {
-      if (!helpers?.psychePoolTotal) {
-        addLog(state, "Select Psyche cards totaling 10 from hand.");
-        return { ok: false, refund: true, needsPsychePool: 10 };
-      }
-      const pool = helpers.psychePoolTotal(state);
-      if (pool < 10) {
-        addLog(state, `Need 10 Psyche in the pool (currently ${pool}).`);
-        return { ok: false, refund: true };
+    case "bed-play-3-draw-3": {
+      const points = helpers?.psychePointTotal
+        ? helpers.psychePointTotal(state)
+        : 0;
+      if (points < 3) {
+        addLog(state, `Need 3 Psyche points in the spread (currently ${points}).`);
+        return { ok: false, refund: true, needsPsychePool: 3 };
       }
       if (helpers.discardPsychePool) {
         helpers.discardPsychePool(state);
       }
       const drawn = drawPsycheForPlayer(state, player, 3);
-      addLog(state, `The Bed: spent 10 Psyche — ${player.name} draws ${drawn.length} Psyche.`);
+      addLog(state, `The Bed: played ${points} Psyche points — ${player.name} draws ${drawn.length} Psyche.`);
       recordQuestEvent(state, "draw_psyche", { count: drawn.length });
-      recordQuestEvent(state, "discard_psyche", { count: 10, landscapeId: "bed" });
+      recordQuestEvent(state, "discard_psyche", { count: points, landscapeId: "bed" });
       return { ok: true };
     }
 

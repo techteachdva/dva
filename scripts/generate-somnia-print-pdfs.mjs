@@ -58,9 +58,9 @@ const LANDSCAPE_ACTIONS = {
   "return-event": { label: "Return Event", description: "Return 1 Event from the Subconscious." },
   "return-object": { label: "Return Object", description: "Return 1 Object from the Subconscious." },
   "draw-3-psyche": { label: "Draw 3 Psyche", description: "Draw 3 Psyche from the Psyche deck." },
-  "bed-spend-10-draw-3": {
-    label: "Spend 10 Psyche → Draw 3",
-    description: "Spend Psyche totaling 10, then Draw 3 Psyche.",
+  "bed-play-3-draw-3": {
+    label: "Play 3 Psyche Points → Draw 3",
+    description: "Play Psyche totaling 3 points, then Draw 3 Psyche cards.",
   },
 };
 const MINDSTREAM_COMPOSITION = {

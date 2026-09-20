@@ -230,7 +230,7 @@ async function downloadFonts(outDir) {
 function writeManifest(outDir) {
   const manifest = {
     name: "Somnia",
-    version: "24.2",
+    version: "24.3",
     standalone: true,
     pwaWorker: false,
     packagedAt: new Date().toISOString(),

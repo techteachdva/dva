@@ -79,6 +79,7 @@ export const MEET_ACTIONS = {
   LANDSCAPE: "landscape",
   TRADE: "trade",
   ARCHETYPE: "archetype-power",
+  DREAMER: "dreamer-power",
 };
 
 export function dreamerStat(dreamer, stat) {

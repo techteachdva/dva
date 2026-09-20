@@ -56,7 +56,7 @@ export const TUTORIAL_STEPS = [
   {
     id: "meet",
     title: "Meet Phase",
-    body: "Discuss who spends Willpower, then click a Dreamer on the board for Meet actions. For Encounters, only the Dreamer on that Landscape may spend Psyche (up to 3). The Accept or Reject icon color is the Psyche you must include at least one of, and that Dreamer's matching stat is added to the total.",
+    body: "Discuss who spends Willpower, then click a Dreamer on the board for Meet actions. Encounters, Landscape actions, Trade, Dreamer Powers, and Archetype Powers each spend 1 action. Marking a quest, +1 on a spread, and activating an Object are free. For Encounters, only the Dreamer on that Landscape may spend Psyche (up to 3).",
     target: "#board-viewport",
     phase: "Meet",
   },
@@ -338,14 +338,14 @@ export function getCurrentObjective(state) {
       const enc = state.activeEncounter;
       lines.push(`Encounter **${enc.name}**: Accept (${enc.accept}) or Reject (${enc.reject ?? enc.repress}).`);
     } else {
-      lines.push("Open a Dreamer on the board for Landscape, Trade, or Quests. After all Meet actions are spent, tap the circular Next Phase button on the map.");
+      lines.push("Open a Dreamer on the board for Landscape actions, Trade, Dreamer Powers, or Quests. Next Phase is always on the map — skip leftover actions whenever you are ready.");
     }
     return {
       phase: "Meet",
       suit: "willpower",
       title: state.activeEncounter ? "Meet the Encounter" : "Spend Meet actions",
       steps: lines,
-        tip: "Draw Mindstream as often as you have actions. Each Dreamer's unique Landscape action is once per Meet. Archetype Powers also cost a Meet action.",
+        tip: "Draw Mindstream as often as you have actions. Unique Landscape actions are once per Dreamer. Dreamer Powers and Archetype Powers cost 1 Meet action each. +1 spread, Object activation, and quest marks are free.",
     };
   }
 
@@ -477,7 +477,7 @@ export function rulesIntroHtml() {
         <p>Use the <strong>R.E.M.</strong> tab for the three phases in depth. Use <strong>Details</strong> for encounters, death, bosses, objects, Mindstream, and Final Recurrence. The in-game <strong>Guide</strong> panel shows your next step every turn.</p>
       </section>
 
-            <p class="overview-footer">Somnia v 24.2 — cooperative rules reference.</p>
+            <p class="overview-footer">Somnia v 24.3 — cooperative rules reference.</p>
       ${footerCreditsHtml()}
     </div>
   `;
@@ -521,11 +521,12 @@ export function rulesRemHtml() {
           <div class="overview-phase-head">${suitIconHtml("willpower", { size: 16 })} <strong>Meet</strong> — ${SUIT_LABELS.willpower}</div>
           <p><strong>One Dreamer</strong> spends 1 Willpower card to gain <strong>shared Meet actions</strong> for the team.</p>
           <ul>
-            <li><strong>Action budget</strong> = that 1 card's value + Willpower bonuses → spend on Encounters, Landscapes, Trade, or Archetype Powers</li>
+            <li><strong>Action budget</strong> = that 1 card's value + Willpower bonuses → spend on Encounters, Landscapes, Trade, Dreamer Powers, or Archetype Powers</li>
             <li><strong>Meet tax:</strong> at the start of every Meet, each Dreamer Represses 1 Psyche from hand and the table Forgets 1 Landscape per active Dreambeast on the board</li>
-            <li><strong>Once per action</strong> for each Dreamer this Meet, except Draw Mindstream which may be repeated. Unique Landscape actions are once. Archetype Powers cost 1 Meet action + 1 Power Token</li>
-            <li>Each Landscape offers <strong>Draw Mindstream</strong> (repeatable) and one <strong>unique action</strong> (once per Dreamer this Meet)</li>
-            <li><strong>Objects</strong> are free during Meet; using an Instant Object Represses it. Persistent Objects cost 1 Power Token to activate</li>
+            <li><strong>Once per action</strong> for each Dreamer this Meet, except Draw Mindstream which may be repeated. Unique Landscape actions are once. Dreamer Powers and Archetype Powers each cost 1 Meet action + 1 Power Token</li>
+            <li>Each Landscape offers <strong>Draw Mindstream</strong> (repeatable) and one <strong>unique action</strong> (once per Dreamer this Meet). <strong>The Bed</strong> has two unique actions: Draw 3 Psyche, or Play 3 Psyche Points then Draw 3 Psyche Cards — each once per Dreamer this Meet</li>
+            <li><strong>Free during Meet:</strong> place a Power Token for +1 on a Psyche spread, activate an Object (Persistent costs 1 token), or mark a completed Quest (1 token). These do not spend the action budget</li>
+            <li>Using an Instant Object Represses it</li>
             <li>At Meet end, unresolved Encounters <strong>fail</strong> — Dreamers on those tiles lose Psyche to the Subconscious</li>
             <li><strong>Paradox Dream:</strong> Meet uses Elasticity stat instead</li>
           </ul>
@@ -539,7 +540,7 @@ export function rulesRemHtml() {
 
       <section class="overview-block">
         <h3>Round End</h3>
-        <p>After Reveals are spent, Explore moves are spent, or Meet actions are spent, a circular <strong>Next Phase</strong> button appears in the top-right of the map. You may also press it early to skip leftover budget. Head Dreamer rotates clockwise at round end. Dreamer radials do not advance the phase.</p>
+        <p>A circular <strong>Next Phase</strong> button stays in the top-right of the map. You may press it after the budget is spent, or early to skip leftover Reveals, moves, or Meet actions without spending Psyche. It is tinted the color of the phase you are about to enter (yellow Explore, red Meet, blue Reveal). <strong>Back</strong> in the top-left undoes the last action. Head Dreamer rotates clockwise at round end. Dreamer radials do not advance the phase.</p>
       </section>
     </div>
   `;
@@ -555,7 +556,7 @@ export function rulesDetailsHtml() {
       <h3>Guided Tutorial</h3>
       <ul>
         <li>The in-game tutorial is two scripted rounds. The guide window docks on the map at a readable size; drag the header or resize the corner if you want it elsewhere.</li>
-        <li>Follow the sparkle: click the highlighted <strong>Dreamer on the board</strong>, then the highlighted <strong>radial button</strong>. Every required click is highlighted, including hand cards, hexes, and the circular <strong>Next Phase</strong> control at the top-right of the map.</li>
+        <li>Follow the sparkle: click the highlighted <strong>Dreamer on the board</strong>, then the highlighted <strong>radial button</strong>. Every required click is highlighted, including hand cards, hexes, and the circular <strong>Next Phase</strong> control at the top-right of the map. <strong>Back</strong> sits opposite Next if you need to undo.</li>
         <li>Each step shows a punchy Objective plus one or two sentences of why that action matters. <strong>?</strong> and Pause → Help stay available after you graduate.</li>
       </ul>
 
@@ -596,10 +597,10 @@ export function rulesDetailsHtml() {
       </ul>
 
       <h3>Power Tokens</h3>
-      <p>Team pool cap <strong>24</strong>. Start with <strong>1</strong> per Dreamer. Spend on quest marks (1 each, any phase), Dreamer Powers (1, any phase), Archetype Powers (1 Meet action + 1 Token), Persistent Object activation (1), <strong>1 as a suited Psyche</strong> for a Reveal / Explore / Meet opener (max 1 per opener), stacking <strong>+1 per token</strong> on a Psyche spread (no coin flip), Timeline hunger (1 per roaming Dreambeast at end of Meet), and avoiding death.</p>
+      <p>Team pool cap <strong>24</strong>. Start with <strong>1</strong> per Dreamer. Spend on quest marks (1 each, any phase, free of Meet actions), Dreamer Powers (1, plus 1 Meet action during Meet), Archetype Powers (1 Meet action + 1 Token), Persistent Object activation (1, free of Meet actions), <strong>1 as a suited Psyche</strong> for a Reveal / Explore / Meet opener (max 1 per opener), stacking <strong>+1 per token</strong> on a Psyche spread (free of Meet actions), Timeline hunger (1 per roaming Dreambeast at end of Meet), and avoiding death.</p>
 
       <h3>Dreamer Powers</h3>
-      <p>Each costs <strong>1 Power Token</strong> and can be used in any phase. Lucidity Dreamers help Reveal, Elasticity Dreamers help Explore, Willpower Dreamers help Meet.</p>
+      <p>Each costs <strong>1 Power Token</strong> and can be used in any phase. During Meet, using a Dreamer Power also spends <strong>1 Meet action</strong>. Lucidity Dreamers help Reveal, Elasticity Dreamers help Explore, Willpower Dreamers help Meet.</p>
       <ul>
         <li><strong>The Rested</strong> — All Dreamers Draw from the Psyche Discard, or Refresh: put 1 Psyche on the deck bottom and Draw 1.</li>
         <li><strong>The Visionary</strong> — Reveal Dreamers+1 Landscapes, or each Dreamer Peeks at 1 deck top and may send it to the bottom.</li>
@@ -614,8 +615,8 @@ export function rulesDetailsHtml() {
 
       <h3>Objects</h3>
       <ul>
-        <li><strong>Instant</strong> — play from hand during Meet at no action cost; the Object is then <strong>Repressed</strong></li>
-        <li><strong>Persistent</strong> — stays in play; activate for 1 Power Token</li>
+        <li><strong>Instant</strong> — play from hand during Meet as a free action; the Object is then <strong>Repressed</strong></li>
+        <li><strong>Persistent</strong> — stays in play; activate for 1 Power Token as a free action</li>
         <li><strong>Must-play</strong> — auto-resolves on draw (e.g. The Nothing, All Seeing Eye), then Repressed</li>
       </ul>
 
@@ -623,7 +624,7 @@ export function rulesDetailsHtml() {
       <ul>
         <li><strong>Subconscious</strong> — face-up Repressed piles (Psyche, Dreambeasts, Mindstream by suit, Objects). Return effects pull cards back to matching discard piles</li>
         <li><strong>Trade</strong> — 1 Meet action; partner on same or adjacent hex; offer up to 3 Psyche</li>
-        <li><strong>Landscape actions</strong> — Draw matching Mindstream as often as you have Meet actions. Each unique Landscape action is once per Dreamer this Meet</li>
+        <li><strong>Landscape actions</strong> — Draw matching Mindstream as often as you have Meet actions. Each unique Landscape action is once per Dreamer this Meet. <strong>The Bed:</strong> Draw 3 Psyche, or Play 3 Psyche Points then Draw 3 Psyche Cards — each once per Dreamer this Meet</li>
         <li><strong>Map setup</strong> — shuffle every Landscape. The Bed is face-up. One random Landscape touching The Bed starts Revealed; all others start forgotten. Further Reveals require 1 Lucidity Psyche</li>
         <li><strong>Map thresholds</strong> — Revealing every Landscape Returns <strong>Dreamers+3</strong> from the Subconscious. Forgetting every Landscape but The Bed Represses <strong>Dreamers+3</strong> Psyche from hands (and still starts Final Recurrence)</li>
         <li><strong>Forget</strong> — turns Landscapes to Wasteland; Encounters Repressed; Dreamers there lose 1 Psyche. If all outer tiles are Wasteland → <strong>Final Recurrence</strong></li>
@@ -648,7 +649,7 @@ export function infoHubHtml(options = {}) {
     <div class="info-hub">
       <header class="info-hub-header">
         <div class="info-hub-brand">
-          <p class="info-hub-kicker">Somnia v 24.2</p>
+          <p class="info-hub-kicker">Somnia v 24.3</p>
           <h2>Dream Guide</h2>
           <p class="info-hub-lead">What just happened, and the rules you need to wake up.</p>
         </div>
@@ -673,7 +674,7 @@ export function infoHubHtml(options = {}) {
             <ul>
               <li class="suit-lucidity"><strong>Reveal</strong> — Head (★) draws a Dream. Spend Lucidity to flip Wastelands, or Mindstream tops once the map is fully Revealed.</li>
               <li class="suit-elasticity"><strong>Explore</strong> — Spend Elasticity for shared moves. Entering Wasteland discards 1 Psyche.</li>
-              <li class="suit-willpower"><strong>Meet</strong> — Spend Willpower. Start of Meet: Repress 1 Psyche and Forget 1 Landscape per active Dreambeast. Draw Mindstream is repeatable; unique Landscape actions and Archetype Powers cost 1 action.</li>
+              <li class="suit-willpower"><strong>Meet</strong> — Spend Willpower. Start of Meet: Repress 1 Psyche and Forget 1 Landscape per active Dreambeast. Draw Mindstream is repeatable. Unique Landscape actions, Dreamer Powers, and Archetype Powers each cost 1 action. The Bed: Draw 3 Psyche, or Play 3 Psyche Points then Draw 3. +1 spread, Object activation, and quest marks are free.</li>
             </ul>
           </div>
           <div class="info-hub-rule">
@@ -682,13 +683,13 @@ export function infoHubHtml(options = {}) {
           </div>
           <div class="info-hub-rule">
             <h3>Hands, Tokens &amp; Objects</h3>
-            <p>Max <strong>10 Psyche</strong>. Wild (5) is any suit. Power Surge is yellowish-purple — click anytime for 1 Power Token. Instant Objects Repress when used. Spent allies Repress to the Subconscious.</p>
+            <p>Max <strong>10 Psyche</strong>. Wild (5) is any suit. Power Surge is yellowish-purple — click anytime for 1 Power Token. Instant Objects Repress when used. Persistent Objects activate for 1 token as a free Meet action. Spent allies Repress to the Subconscious.</p>
           </div>
           <div class="info-hub-rule">
             <h3>Death &amp; Final Recurrence</h3>
             <p>At 0 Psyche, spend Power Tokens to draw 1 and live, or die: return to The Bed with 4/3/2/1 Psyche. Fifth death is permanent. Forget every outer Landscape — or draw <strong>The Final Recurrence</strong> — to start the endgame. Defeat remaining Archetypes with <strong>≥ 15</strong> pooled Psyche including the opposing suit, or sacrifice acquired Archetypes 1:1. Last card: <strong>You Never Wake Up</strong>.</p>
           </div>
-          <p class="info-hub-footer">After a phase budget is spent, a circular Next Phase button appears at the top-right of the map. The guided tutorial highlights the Dreamer, then the radial, then Next Phase. Landscapes are named in their suit color. Draw Mindstream is repeatable; the unique tile action is once per Meet.</p>
+          <p class="info-hub-footer">Next Phase stays in the top-right of the map — skip leftover budget without spending Psyche. Back in the top-left undoes the last action. The guided tutorial highlights the next required click. Landscapes are named in their suit color. Draw Mindstream is repeatable; unique tile actions, Dreamer Powers, and Archetype Powers each cost 1 Meet action and are once per Dreamer.</p>
         </section>
       </div>
     </div>

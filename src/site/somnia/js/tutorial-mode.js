@@ -123,7 +123,7 @@ const TUTORIAL_QUEST_PLACEMENT = [
 ];
 
 export const TUTORIAL_REVEAL_TILE = "candy-mountain";
-const TUTORIAL_SNAPSHOT_VERSION = 25;
+const TUTORIAL_SNAPSHOT_VERSION = 26;
 let tutorialSnapshotCache = null;
 let tutorialSnapshotCacheVersion = 0;
 
@@ -405,6 +405,7 @@ function isRailBeatComplete(state, beat) {
       if (beat.toRound) return state.round >= beat.toRound;
       return getPhase(state) === beat.toPhase;
     case "landscapeActionA":
+    case "landscapeActionB":
       return typeof beat.done === "function" ? !!beat.done(state) : false;
     case "completeQuest0":
       return !!state.activeArchetype?.questProgress?.[0] || innocentAcquired(state);
@@ -471,7 +472,8 @@ function railBeatAllows(state, beat, kind, detail = {}) {
     case "advancePhase":
       return kind === "advancePhase" || kind === "dreamerSelect";
     case "landscapeActionA":
-      if (kind === "landscapeActionA" || kind === "dreamerSelect") return true;
+    case "landscapeActionB":
+      if (kind === beat.kind || kind === "dreamerSelect") return true;
       return kind === "boardClick" && detail.tileId === beat.landscapeId;
     case "completeQuest0":
     case "completeQuest1":
@@ -706,9 +708,10 @@ function railHighlight(state, step, beat) {
         targets: ["#btn-next-phase", "#board-viewport"],
         spotlight: "#btn-next-phase",
       };
-    case "landscapeActionA": {
+    case "landscapeActionA":
+    case "landscapeActionB": {
       const hexSel = `.hex-tile[data-tile-id="${beat.landscapeId}"]`;
-      const highlight = radialOrDreamerHighlight(state, beat, "landscapeActionA");
+      const highlight = radialOrDreamerHighlight(state, beat, beat.kind);
       const onTile = state.players[beat.playerIndex]?.landscapeId === beat.landscapeId;
       if (onTile) {
         highlight.targets.push(hexSel);
@@ -751,6 +754,7 @@ function decorateTutorialStep(state, step, objective) {
 }
 
 export function classifyPhaseAction(action) {
+  if (action?.kind) return action.kind;
   const label = action?.label || "";
   if (label.startsWith("Draw & Resolve")) return "drawDream";
   if (label.startsWith("Reveal Landscapes")) return "revealLandscape";
@@ -764,7 +768,8 @@ export function classifyPhaseAction(action) {
   if (label.startsWith("+1 Spread") || label === "+1 to Spread") return "powerBonus";
   if (label.startsWith("-1 Spread")) return "refundPowerBonus";
   if (label.includes("Next:") || label.startsWith("End Round")) return "advancePhase";
-  if (/Action A/i.test(label) || label.startsWith("Draw [")) return "landscapeActionA";
+  if (/Action A/i.test(label) || label.startsWith("Draw [") || label === "Draw 3 Psyche") return "landscapeActionA";
+  if (/Action B/i.test(label) || /Play 3 Psyche/i.test(label)) return "landscapeActionB";
   if (label === "Dreamer Power") return "dreamerPower";
   if (label === "Trade" || label === "Play Object" || label === "Activate Persistent") return "blockedExtra";
   return "other";
@@ -1102,7 +1107,7 @@ export const TUTORIAL_SCRIPT = [
     id: "meet-r1",
     round: 1,
     title: "Meet: Dreambeasts and Luck",
-    why: "Willpower opens a shared action budget. Accepting a Dreambeast spends Psyche and keeps it as a 3-value ally. Only the Dreamer on that hex can Meet it.",
+    why: "Willpower opens a shared action budget. Accepting a Dreambeast, Landscape actions, Trade, Dreamer Powers, and Archetype Powers each spend 1 action. Marking a quest, adding +1 to a spread, and activating an Object stay free.",
     targets: ["#hand-bar", "#board-viewport"],
     rail: [
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on the board." },
@@ -1132,7 +1137,7 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-reveal",
     round: 2,
     title: "Round 2 - Reveal",
-    why: "Round 2 repeats Reveal: draw the Dream, then spend one Lucidity to keep opening the map. Unused leftover reveals can be skipped with Next Phase.",
+    why: "Round 2 repeats Reveal: draw the Dream, then spend one Lucidity to keep opening the map. Next Phase is always on the map — you may skip leftover Reveals without spending more Psyche.",
     closeRevealPick: true,
     targets: ["#hand-bar", "#board-viewport"],
     rail: [
@@ -1167,7 +1172,7 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-meet",
     round: 2,
     title: "Round 2 - Quest Landscapes",
-    why: "Open a shared Meet budget first. Draw Mindstream on The Attic for Innocent quest 1 — it is repeatable. Rejecting Goofus Bird on The Basement marks quest 2. Unique Landscape actions are once per Dreamer.",
+    why: "Open a shared Meet budget first. Draw Mindstream on The Attic for Innocent quest 1 — it is repeatable. Rejecting Goofus Bird on The Basement marks quest 2. Unique Landscape actions are once per Dreamer. Dreamer and Archetype Powers also spend a Meet action.",
     targets: ["#board-viewport"],
     rail: [
       { kind: "dreamerSelect", playerIndex: 1, prompt: "Click The Immovable on The Basement." },
@@ -1202,7 +1207,7 @@ export const TUTORIAL_SCRIPT = [
     id: "r2-acquire",
     round: 2,
     title: "Mark Quests and Acquire",
-    why: "Each completed quest costs 1 Power Token. Power Surge is yellowish-purple and can be clicked any phase for a token. Mark both quests to Acquire The Innocent.",
+    why: "Each completed quest costs 1 Power Token and is a free action — it does not spend the Meet budget. Power Surge is yellowish-purple and can be clicked any phase for a token. Mark both quests to Acquire The Innocent.",
     target: "#active-archetype",
     rail: [
       { kind: "dreamerSelect", playerIndex: 0, prompt: "Click The Visionary on the board — they hold Power Surge." },
@@ -1218,7 +1223,7 @@ export const TUTORIAL_SCRIPT = [
     id: "graduate",
     round: 2,
     title: "Go Play",
-    why: "You now know the R.E.M. loop: Reveal, Explore, Meet, then Next Phase on the map. A real Daydream uses shuffled Landscapes and the full Meet tax.",
+    why: "You now know the R.E.M. loop: Reveal, Explore, Meet. Next Phase stays on the map (skip leftover budget; Back undoes the last action). The Bed offers Draw 3 Psyche or Play 3 Psyche Points then Draw 3, each once per Dreamer. A real Daydream uses shuffled Landscapes and the full Meet tax.",
     objective: "Click Finish, then play a Daydream. Rules stay in ? and !.",
     target: "#phase-stepper",
   },
